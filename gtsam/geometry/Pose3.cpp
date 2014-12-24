@@ -202,18 +202,18 @@ Vector6 Pose3::localCoordinates(const Pose3& T,
 }
 
 /* ************************************************************************* */
-Matrix6 Pose3::ExpmapDerivative(const Vector6& xi) {
+Matrix3 Pose3::computeQforExpmapDerivative(const Vector6& xi) {
   Vector3 w(sub(xi, 0, 3));
-  Matrix3 Jw = Rot3::ExpmapDerivative(w);
-
   Vector3 v(sub(xi, 3, 6));
   Matrix3 V = skewSymmetric(v);
   Matrix3 W = skewSymmetric(w);
 
+  Matrix3 Q;
+
 #ifdef NUMERICAL_EXPMAP_DERIV
   Matrix3 Qj = Z_3x3;
   double invFac = 1.0;
-  Matrix3 Q = Z_3x3;
+  Q = Z_3x3;
   Matrix3 Wj = I_3x3;
   for (size_t j=1; j<10; ++j) {
     Qj = Qj*W + Wj*V;
@@ -226,13 +226,20 @@ Matrix6 Pose3::ExpmapDerivative(const Vector6& xi) {
   double phi = w.norm(), sinPhi = sin(phi), cosPhi = cos(phi), phi2 = phi * phi,
       phi3 = phi2 * phi, phi4 = phi3 * phi, phi5 = phi4 * phi;
   // Invert the sign of odd-order terms to have the right Jacobian
-  Matrix3 Q = -0.5*V + (phi-sinPhi)/phi3*(W*V + V*W - W*V*W)
+  Q = -0.5*V + (phi-sinPhi)/phi3*(W*V + V*W - W*V*W)
           + (1-phi2/2-cosPhi)/phi4*(W*W*V + V*W*W - 3*W*V*W)
           - 0.5*((1-phi2/2-cosPhi)/phi4 - 3*(phi-sinPhi-phi3/6)/phi5)*(W*V*W*W + W*W*V*W);
 #endif
 
-  Matrix6 J;
-  J = (Matrix(6,6) << Jw, Z_3x3, Q, Jw).finished();
+  return Q;
+}
+
+/* ************************************************************************* */
+Matrix6 Pose3::ExpmapDerivative(const Vector6& xi) {
+  Vector3 w(sub(xi, 0, 3));
+  Matrix3 Jw = Rot3::ExpmapDerivative(w);
+  Matrix3 Q = computeQforExpmapDerivative(xi);
+  Matrix6 J = (Matrix(6,6) << Jw, Z_3x3, Q, Jw).finished();
   return J;
 }
 
@@ -240,22 +247,9 @@ Matrix6 Pose3::ExpmapDerivative(const Vector6& xi) {
 Matrix6 Pose3::LogmapDerivative(const Vector6& xi) {
   Vector3 w(sub(xi, 0, 3));
   Matrix3 Jw = Rot3::LogmapDerivative(w);
-
-  Vector3 v(sub(xi, 3, 6));
-  Matrix3 V = skewSymmetric(v);
-  Matrix3 W = skewSymmetric(w);
-
-  // The closed-form formula in Barfoot14tro eq. (102)
-  double phi = w.norm(), sinPhi = sin(phi), cosPhi = cos(phi), phi2 = phi * phi,
-      phi3 = phi2 * phi, phi4 = phi3 * phi, phi5 = phi4 * phi;
-  // Invert the sign of odd-order terms to have the right Jacobian
-  Matrix3 Q = -0.5*V + (phi-sinPhi)/phi3*(W*V + V*W - W*V*W)
-                        + (1-phi2/2-cosPhi)/phi4*(W*W*V + V*W*W - 3*W*V*W)
-                        - 0.5*((1-phi2/2-cosPhi)/phi4 - 3*(phi-sinPhi-phi3/6)/phi5)*(W*V*W*W + W*W*V*W);
+  Matrix3 Q = computeQforExpmapDerivative(xi);
   Matrix3 Q2 = -Jw*Q*Jw;
-
-  Matrix6 J;
-  J = (Matrix(6,6) << Jw, Z_3x3, Q2, Jw).finished();
+  Matrix6 J = (Matrix(6,6) << Jw, Z_3x3, Q2, Jw).finished();
   return J;
 }
 
