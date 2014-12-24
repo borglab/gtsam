@@ -29,11 +29,11 @@ struct lie_group_tag: public manifold_tag, public group_tag {};
 
 namespace internal {
 
-/// A helper that implements the traits interface for GTSAM lie groups.
+/// A helper class that implements the traits interface for GTSAM lie groups.
 /// To use this for your gtsam type, define:
-/// template<> struct traits<Type> : public LieGroup<Type> { };
+/// template<> struct traits<Class> : public internal::LieGroupTraits<Class> {};
 template<class Class>
-struct LieGroup : Testable<Class> {
+struct LieGroupTraits : Testable<Class> {
   typedef lie_group_tag structure_category;
 
   /// @name Group
@@ -53,7 +53,7 @@ struct LieGroup : Testable<Class> {
   typedef OptionalJacobian<dimension, dimension> ChartJacobian;
 
   BOOST_STATIC_ASSERT_MSG(dimension != Eigen::Dynamic,
-      "LieGroup not yet specialized for dynamically sized types.");
+      "LieGroupTraits not yet specialized for dynamically sized types.");
 
   static int GetDimension(const Class&) {return dimension;}
 
