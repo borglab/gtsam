@@ -94,26 +94,6 @@ Vector6 Pose3::adjointTranspose(const Vector6& xi, const Vector6& y,
 }
 
 /* ************************************************************************* */
-Matrix6 Pose3::dExpInv_exp(const Vector6& xi) {
-  // Bernoulli numbers, from Wikipedia
-  static const Vector B = (Vector(9) << 1.0, -1.0 / 2.0, 1. / 6., 0.0, -1.0 / 30.0,
-      0.0, 1.0 / 42.0, 0.0, -1.0 / 30).finished();
-  static const int N = 5; // order of approximation
-  Matrix6 res;
-  res = I_6x6;
-  Matrix6 ad_i;
-  ad_i = I_6x6;
-  Matrix6 ad_xi = adjointMap(xi);
-  double fac = 1.0;
-  for (int i = 1; i < N; ++i) {
-    ad_i = ad_xi * ad_i;
-    fac = fac * i;
-    res = res + B(i) / fac * ad_i;
-  }
-  return res;
-}
-
-/* ************************************************************************* */
 void Pose3::print(const string& s) const {
   cout << s;
   R_.print("R:\n");
@@ -219,6 +199,64 @@ Vector6 Pose3::localCoordinates(const Pose3& T,
     assert(false);
     exit(1);
   }
+}
+
+/* ************************************************************************* */
+Matrix6 Pose3::ExpmapDerivative(const Vector6& xi) {
+  Vector3 w(sub(xi, 0, 3));
+  Matrix3 Jw = Rot3::ExpmapDerivative(w);
+
+  Vector3 v(sub(xi, 3, 6));
+  Matrix3 V = skewSymmetric(v);
+  Matrix3 W = skewSymmetric(w);
+
+#ifdef NUMERICAL_EXPMAP_DERIV
+  Matrix3 Qj = Z_3x3;
+  double invFac = 1.0;
+  Matrix3 Q = Z_3x3;
+  Matrix3 Wj = I_3x3;
+  for (size_t j=1; j<10; ++j) {
+    Qj = Qj*W + Wj*V;
+    invFac = -invFac/(j+1);
+    Q = Q + invFac*Qj;
+    Wj = Wj*W;
+  }
+#else
+  // The closed-form formula in Barfoot14tro eq. (102)
+  double phi = w.norm(), sinPhi = sin(phi), cosPhi = cos(phi), phi2 = phi * phi,
+      phi3 = phi2 * phi, phi4 = phi3 * phi, phi5 = phi4 * phi;
+  // Invert the sign of odd-order terms to have the right Jacobian
+  Matrix3 Q = -0.5*V + (phi-sinPhi)/phi3*(W*V + V*W - W*V*W)
+          + (1-phi2/2-cosPhi)/phi4*(W*W*V + V*W*W - 3*W*V*W)
+          - 0.5*((1-phi2/2-cosPhi)/phi4 - 3*(phi-sinPhi-phi3/6)/phi5)*(W*V*W*W + W*W*V*W);
+#endif
+
+  Matrix6 J;
+  J = (Matrix(6,6) << Jw, Z_3x3, Q, Jw).finished();
+  return J;
+}
+
+/* ************************************************************************* */
+Matrix6 Pose3::LogmapDerivative(const Vector6& xi) {
+  Vector3 w(sub(xi, 0, 3));
+  Matrix3 Jw = Rot3::LogmapDerivative(w);
+
+  Vector3 v(sub(xi, 3, 6));
+  Matrix3 V = skewSymmetric(v);
+  Matrix3 W = skewSymmetric(w);
+
+  // The closed-form formula in Barfoot14tro eq. (102)
+  double phi = w.norm(), sinPhi = sin(phi), cosPhi = cos(phi), phi2 = phi * phi,
+      phi3 = phi2 * phi, phi4 = phi3 * phi, phi5 = phi4 * phi;
+  // Invert the sign of odd-order terms to have the right Jacobian
+  Matrix3 Q = -0.5*V + (phi-sinPhi)/phi3*(W*V + V*W - W*V*W)
+                        + (1-phi2/2-cosPhi)/phi4*(W*W*V + V*W*W - 3*W*V*W)
+                        - 0.5*((1-phi2/2-cosPhi)/phi4 - 3*(phi-sinPhi-phi3/6)/phi5)*(W*V*W*W + W*W*V*W);
+  Matrix3 Q2 = -Jw*Q*Jw;
+
+  Matrix6 J;
+  J = (Matrix(6,6) << Jw, Z_3x3, Q2, Jw).finished();
+  return J;
 }
 
 /* ************************************************************************* */
