@@ -31,7 +31,7 @@ namespace gtsam {
  * @addtogroup geometry
  * \nosubgrouping
  */
-class GTSAM_EXPORT Pose2 {
+class GTSAM_EXPORT Pose2: public LieGroup<Pose2, 3> {
 
 public:
 
@@ -40,12 +40,11 @@ public:
   typedef Point2 Translation;
 
 private:
+
   Rot2 r_;
   Point2 t_;
 
 public:
-
-  enum { dimension = 3 };
 
   /// @name Standard Constructors
   /// @{
@@ -106,52 +105,23 @@ public:
   /// identity for group operation
   inline static Pose2 identity() { return Pose2(); }
 
-  /// inverse transformation with derivatives
-  Pose2 inverse(OptionalJacobian<3, 3> H1=boost::none) const;
-
-  /// compose this transformation onto another (first *this and then p2)
-  Pose2 compose(const Pose2& p2,
-      OptionalJacobian<3, 3> H1 = boost::none,
-      OptionalJacobian<3, 3> H2 = boost::none) const;
+  /// inverse
+  Pose2 inverse() const;
 
   /// compose syntactic sugar
   inline Pose2 operator*(const Pose2& p2) const {
     return Pose2(r_*p2.r(), t_ + r_*p2.t());
   }
 
-  /**
-   * Return relative pose between p1 and p2, in p1 coordinate frame
-   */
-  Pose2 between(const Pose2& p2, OptionalJacobian<3,3> H1 = boost::none,
-      OptionalJacobian<3,3> H = boost::none) const;
-
-  /// @}
-  /// @name Manifold
-  /// @{
-
-  /// Dimensionality of tangent space = 3 DOF - used to autodetect sizes
-  inline static size_t Dim() { return 3; }
-
-  /// Dimensionality of tangent space = 3 DOF
-  inline size_t dim() const { return 3; }
-
-  /// Retraction from R^3 \f$ [T_x,T_y,\theta] \f$ to Pose2 manifold neighborhood around current pose
-  Pose2 retract(const Vector& v, OptionalJacobian<3, 3> Hthis =
-      boost::none, OptionalJacobian<3, 3> Hv = boost::none) const;
-
-  /// Local 3D coordinates \f$ [T_x,T_y,\theta] \f$ of Pose2 manifold neighborhood around current pose
-  Vector localCoordinates(const Pose2& p2, OptionalJacobian<3, 3> Hthis =
-      boost::none, OptionalJacobian<3, 3> Hother = boost::none) const;
-
   /// @}
   /// @name Lie Group
   /// @{
 
   ///Exponential map at identity - create a rotation from canonical coordinates \f$ [T_x,T_y,\theta] \f$
-  static Pose2 Expmap(const Vector& xi, OptionalJacobian<3, 3> H = boost::none);
+  static Pose2 Expmap(const Vector& xi, ChartJacobian H = boost::none);
 
   ///Log map at identity - return the canonical coordinates \f$ [T_x,T_y,\theta] \f$ of this rotation
-  static Vector3 Logmap(const Pose2& p, OptionalJacobian<3, 3> H = boost::none);
+  static Vector3 Logmap(const Pose2& p, ChartJacobian H = boost::none);
 
   /**
    * Calculate Adjoint map
@@ -189,6 +159,13 @@ public:
   /// Left-trivialized derivative inverse of the exponential map
   static Matrix3 dexpInvL(const Vector3& v);
 
+  // Chart at origin, depends on compile-time flag SLOW_BUT_CORRECT_EXPMAP
+  struct ChartAtOrigin {
+    static Pose2 Retract(const Vector3& v, ChartJacobian H = boost::none);
+    static Vector3 Local(const Pose2& r, ChartJacobian H = boost::none);
+  };
+
+  using LieGroup<Pose2, 3>::inverse; // version with derivative
 
   /// @}
   /// @name Group Action on Point2

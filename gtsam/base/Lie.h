@@ -24,6 +24,67 @@
 
 namespace gtsam {
 
+/// A CRTP helper class that implements Lie group methods
+/// Prerequisites: methods operator*, inverse, and AdjointMap, as well as a
+/// ChartAtOrigin struct that will be used to define the manifold Chart
+/// To use, simply derive, but also say "using LieGroup<Class,N>::inverse"
+/// For derivative math, see doc/math.pdf
+template <class Class, int N>
+struct LieGroup {
+
+  BOOST_STATIC_ASSERT_MSG(N != Eigen::Dynamic,
+      "LieGroup not yet specialized for dynamically sized types.");
+
+  enum { dimension = N };
+  typedef OptionalJacobian<N, N> ChartJacobian;
+  typedef Eigen::Matrix<double, N, 1> TangentVector;
+
+  const Class & derived() const {
+    return static_cast<const Class&>(*this);
+  }
+
+  Class compose(const Class& g) const {
+    return derived() * g;
+  }
+
+  Class between(const Class& g) const {
+    return derived().inverse() * g;
+  }
+
+  Class compose(const Class& g, ChartJacobian H1,
+      ChartJacobian H2 = boost::none) const {
+    if (H1) *H1 = g.inverse().AdjointMap();
+    if (H2) *H2 = Eigen::Matrix<double, N, N>::Identity();
+    return derived() * g;
+  }
+
+  Class between(const Class& g, ChartJacobian H1,
+      ChartJacobian H2 = boost::none) const {
+    Class result = derived().inverse() * g;
+    if (H1) *H1 = - result.inverse().AdjointMap();
+    if (H2) *H2 = Eigen::Matrix<double, N, N>::Identity();
+    return result;
+  }
+
+  Class inverse(ChartJacobian H) const {
+    if (H) *H = - derived().AdjointMap();
+    return derived().inverse();
+  }
+
+  Class retract(const TangentVector& v, //
+      ChartJacobian H1 = boost::none, //
+      ChartJacobian H2 = boost::none) const {
+    return compose(Class::ChartAtOrigin::Retract(v),H1,H2);
+  }
+
+  TangentVector localCoordinates(const Class& g, //
+      ChartJacobian H1 = boost::none, //
+      ChartJacobian H2 = boost::none) const {
+    return Class::ChartAtOrigin::Local(between(g,H1,H2));
+  }
+
+};
+
 /// tag to assert a type is a Lie group
 struct lie_group_tag: public manifold_tag, public group_tag {};
 

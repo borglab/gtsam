@@ -92,25 +92,20 @@ Vector3 Pose2::Logmap(const Pose2& p, OptionalJacobian<3, 3> H) {
 }
 
 /* ************************************************************************* */
-Pose2 Pose2::retract(const Vector& v, OptionalJacobian<3, 3> Hthis,
-    OptionalJacobian<3, 3> Hv) const {
-  if (Hthis || Hv) CONCEPT_NOT_IMPLEMENTED;
+Pose2 Pose2::ChartAtOrigin::Retract(const Vector3& v, ChartJacobian H) {
 #ifdef SLOW_BUT_CORRECT_EXPMAP
-  return compose(Expmap(v));
+  return Expmap(v, H);
 #else
-  assert(v.size() == 3);
-  return compose(Pose2(v[0], v[1], v[2]));
+  if (H) *H = Matrix3::Identity();
+  return Pose2(v[0], v[1], v[2]);
 #endif
 }
-
 /* ************************************************************************* */
-Vector Pose2::localCoordinates(const Pose2& p2, OptionalJacobian<3, 3> Hthis,
-    OptionalJacobian<3, 3> Hother) const {
-  if (Hthis || Hother) CONCEPT_NOT_IMPLEMENTED;
+Vector3 Pose2::ChartAtOrigin::Local(const Pose2& r, ChartJacobian H) {
 #ifdef SLOW_BUT_CORRECT_EXPMAP
-  return Logmap(between(p2));
+  return Logmap(r, H);
 #else
-  Pose2 r = between(p2);
+  if (H) *H = Matrix3::Identity();
   return Vector3(r.x(), r.y(), r.theta());
 #endif
 }
@@ -189,8 +184,7 @@ Matrix3 Pose2::dexpInvL(const Vector3& v) {
 }
 
 /* ************************************************************************* */
-Pose2 Pose2::inverse(OptionalJacobian<3,3> H1) const {
-  if (H1) *H1 = -AdjointMap();
+Pose2 Pose2::inverse() const {
   return Pose2(r_.inverse(), r_.unrotate(Point2(-t_.x(), -t_.y())));
 }
 
@@ -210,16 +204,6 @@ Point2 Pose2::transform_to(const Point2& point,
 
 /* ************************************************************************* */
 // see doc/math.lyx, SE(2) section
-Pose2 Pose2::compose(const Pose2& p2, OptionalJacobian<3,3> H1,
-    OptionalJacobian<3,3> H2) const {
-  // TODO: inline and reuse?
-  if(H1) *H1 = p2.inverse().AdjointMap();
-  if(H2) *H2 = I_3x3;
-  return (*this)*p2;
-}
-
-/* ************************************************************************* */
-// see doc/math.lyx, SE(2) section
 Point2 Pose2::transform_from(const Point2& p,
     OptionalJacobian<2, 3> H1, OptionalJacobian<2, 2> H2) const {
   const Point2 q = r_ * p;
@@ -231,40 +215,6 @@ Point2 Pose2::transform_from(const Point2& p,
     if (H2) *H2 = R; // R
   }
   return q + t_;
-}
-
-/* ************************************************************************* */
-Pose2 Pose2::between(const Pose2& p2, OptionalJacobian<3,3> H1,
-    OptionalJacobian<3,3> H2) const {
-  // get cosines and sines from rotation matrices
-  const Rot2& R1 = r_, R2 = p2.r();
-  double c1=R1.c(), s1=R1.s(), c2=R2.c(), s2=R2.s();
-
-  // Assert that R1 and R2 are normalized
-  assert(std::abs(c1*c1 + s1*s1 - 1.0) < 1e-5 && std::abs(c2*c2 + s2*s2 - 1.0) < 1e-5);
-
-  // Calculate delta rotation = between(R1,R2)
-  double c = c1 * c2 + s1 * s2, s = -s1 * c2 + c1 * s2;
-  Rot2 R(Rot2::atan2(s,c)); // normalizes
-
-  // Calculate delta translation = unrotate(R1, dt);
-  Point2 dt = p2.t() - t_;
-  double x = dt.x(), y = dt.y();
-  // t = R1' * (t2-t1)
-  Point2 t(c1 * x + s1 * y, -s1 * x + c1 * y);
-
-  // FD: This is just -AdjointMap(between(p2,p1)) inlined and re-using above
-  if (H1) {
-    double dt1 = -s2 * x + c2 * y;
-    double dt2 = -c2 * x - s2 * y;
-    *H1 <<
-        -c,  -s,  dt1,
-        s,  -c,  dt2,
-        0.0, 0.0,-1.0;
-  }
-  if (H2) *H2 = I_3x3;
-
-  return Pose2(R,t);
 }
 
 /* ************************************************************************* */
