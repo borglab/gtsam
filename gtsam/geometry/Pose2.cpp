@@ -137,6 +137,7 @@ Matrix3 Pose2::adjointMap(const Vector& v) {
 /* ************************************************************************* */
 Matrix3 Pose2::ExpmapDerivative(const Vector3& v) {
   double alpha = v[2];
+  Matrix3 J;
   if (fabs(alpha) > 1e-5) {
     // Chirikjian11book2, pg. 36
     /* !!!Warning!!! Compare Iserles05an, formula 2.42 and Chirikjian11book2 pg.26
@@ -149,7 +150,7 @@ Matrix3 Pose2::ExpmapDerivative(const Vector3& v) {
      */
     double sZalpha = sin(alpha)/alpha, c_1Zalpha = (cos(alpha)-1)/alpha;
     double v1Zalpha = v[0]/alpha, v2Zalpha = v[1]/alpha;
-    return (Matrix(3,3) <<
+    J = (Matrix(3,3) <<
         sZalpha, -c_1Zalpha, v1Zalpha + v2Zalpha*c_1Zalpha - v1Zalpha*sZalpha,
         c_1Zalpha, sZalpha, -v1Zalpha*c_1Zalpha + v2Zalpha - v2Zalpha*sZalpha,
         0, 0, 1).finished();
@@ -157,30 +158,34 @@ Matrix3 Pose2::ExpmapDerivative(const Vector3& v) {
   else {
     // Thanks to Krunal: Apply L'Hospital rule to several times to
     // compute the limits when alpha -> 0
-    return (Matrix(3,3) << 1,0,-0.5*v[1],
+    J = (Matrix(3,3) << 1,0,-0.5*v[1],
         0,1, 0.5*v[0],
         0,0, 1).finished();
   }
+
+  return J;
 }
 
 /* ************************************************************************* */
 Matrix3 Pose2::LogmapDerivative(const Vector3& v) {
   double alpha = v[2];
+  Matrix3 J;
   if (fabs(alpha) > 1e-5) {
     double alphaInv = 1/alpha;
     double halfCotHalfAlpha = 0.5*sin(alpha)/(1-cos(alpha));
     double v1 = v[0], v2 = v[1];
 
-    return (Matrix(3,3) <<
+    J = (Matrix(3,3) <<
         alpha*halfCotHalfAlpha, -0.5*alpha, v1*alphaInv - v1*halfCotHalfAlpha + 0.5*v2,
         0.5*alpha, alpha*halfCotHalfAlpha,  v2*alphaInv - 0.5*v1 - v2*halfCotHalfAlpha,
         0, 0, 1).finished();
   }
   else {
-    return (Matrix(3,3) << 1,0, 0.5*v[1],
+    J = (Matrix(3,3) << 1,0, 0.5*v[1],
         0,1, -0.5*v[0],
         0,0, 1).finished();
   }
+  return J;
 }
 
 /* ************************************************************************* */
