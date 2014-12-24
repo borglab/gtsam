@@ -211,22 +211,22 @@ Vector3 testDexpL(const Vector3 w, const Vector3& dw) {
   return y;
 }
 
-TEST( Pose2, dexpL) {
-  Matrix actualDexpL = Pose2::dexpL(w);
+TEST( Pose2, ExpmapDerivative) {
+  Matrix actualDexpL = Pose2::ExpmapDerivative(w);
   Matrix expectedDexpL = numericalDerivative11<Vector3, Vector3>(
           boost::bind(testDexpL, w, _1), zero(3), 1e-2);
   EXPECT(assert_equal(expectedDexpL, actualDexpL, 1e-5));
 
-  Matrix actualDexpInvL = Pose2::dexpInvL(w);
+  Matrix actualDexpInvL = Pose2::LogmapDerivative(w);
   EXPECT(assert_equal(expectedDexpL.inverse(), actualDexpInvL, 1e-5));
 
   // test case where alpha = 0
-  Matrix actualDexpL0 = Pose2::dexpL(w0);
+  Matrix actualDexpL0 = Pose2::ExpmapDerivative(w0);
   Matrix expectedDexpL0 = numericalDerivative11<Vector3, Vector3>(
           boost::bind(testDexpL, w0, _1), zero(3), 1e-2);
   EXPECT(assert_equal(expectedDexpL0, actualDexpL0, 1e-5));
 
-  Matrix actualDexpInvL0 = Pose2::dexpInvL(w0);
+  Matrix actualDexpInvL0 = Pose2::LogmapDerivative(w0);
   EXPECT(assert_equal(expectedDexpL.inverse(), actualDexpInvL, 1e-5));
 }
 

@@ -154,10 +154,10 @@ public:
   }
 
   /// Left-trivialized derivative of the exponential map
-  static Matrix3 dexpL(const Vector3& v);
+  static Matrix3 ExpmapDerivative(const Vector3& v);
 
   /// Left-trivialized derivative inverse of the exponential map
-  static Matrix3 dexpInvL(const Vector3& v);
+  static Matrix3 LogmapDerivative(const Vector3& v);
 
   // Chart at origin, depends on compile-time flag SLOW_BUT_CORRECT_EXPMAP
   struct ChartAtOrigin {

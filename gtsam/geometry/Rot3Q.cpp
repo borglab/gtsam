@@ -102,7 +102,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Rot3 Rot3::inverse(boost::optional<Matrix3&> H1) const {
+  Rot3 Rot3::inverse(OptionalJacobian<3,3> H1) const {
     if (H1) *H1 = -matrix();
     return Rot3(quaternion_.inverse());
   }
@@ -135,7 +135,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   Vector3 Rot3::Logmap(const Rot3& R, OptionalJacobian<3, 3> H) {
-    if (H) CONCEPT_NOT_IMPLEMENTED;
+    if(H) *H = Rot3::LogmapDerivative(thetaR);
     return QuaternionChart::Logmap(R.quaternion_);
   }
 
