@@ -262,7 +262,7 @@ Vector ImuFactor::evaluateError(const Pose3& pose_i, const Vector3& vel_i, const
 
   // We compute factor's Jacobians
   /* ---------------------------------------------------------------------------------------------------- */
-  const Rot3 deltaRij_biascorrected = preintegratedMeasurements_.deltaRij_.retract(preintegratedMeasurements_.delRdelBiasOmega_ * biasOmegaIncr, Rot3::EXPMAP);
+  const Rot3 deltaRij_biascorrected = preintegratedMeasurements_.deltaRij_ * Rot3::Expmap(preintegratedMeasurements_.delRdelBiasOmega_ * biasOmegaIncr);
   // deltaRij_biascorrected is expmap(deltaRij) * expmap(delRdelBiasOmega * biasOmegaIncr)
 
   Vector3 theta_biascorrected = Rot3::Logmap(deltaRij_biascorrected);
@@ -422,7 +422,7 @@ PoseVelocity ImuFactor::Predict(const Pose3& pose_i, const Vector3& vel_i,
     vel_j += - skewSymmetric(omegaCoriolis) * skewSymmetric(omegaCoriolis) * pos_i * deltaTij; // 2nd order term for velocity
   }
 
-  const Rot3 deltaRij_biascorrected = preintegratedMeasurements.deltaRij_.retract(preintegratedMeasurements.delRdelBiasOmega_ * biasOmegaIncr, Rot3::EXPMAP);
+  const Rot3 deltaRij_biascorrected = preintegratedMeasurements.deltaRij_ * Rot3::Expmap(preintegratedMeasurements.delRdelBiasOmega_ * biasOmegaIncr);
   // deltaRij_biascorrected is expmap(deltaRij) * expmap(delRdelBiasOmega * biasOmegaIncr)
   Vector3 theta_biascorrected = Rot3::Logmap(deltaRij_biascorrected);
   Vector3 theta_biascorrected_corioliscorrected = theta_biascorrected  -

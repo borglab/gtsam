@@ -528,17 +528,6 @@ DLT(const Matrix& A, double rank_tol = 1e-9);
  */
 GTSAM_EXPORT Matrix expm(const Matrix& A, size_t K=7);
 
-/// Cayley transform
-GTSAM_EXPORT Matrix Cayley(const Matrix& A);
-
-/// Implementation of Cayley transform using fixed size matrices to let
-/// Eigen do more optimization
-template<int N>
-Eigen::Matrix<double, N, N> CayleyFixed(const Eigen::Matrix<double, N, N>& A) {
-  typedef Eigen::Matrix<double, N, N> FMat;
-  return (FMat::Identity() - A)*(FMat::Identity() + A).inverse();
-}
-
 std::string formatMatrixIndented(const std::string& label, const Matrix& matrix, bool makeVectorHorizontal = false);
 
 } // namespace gtsam

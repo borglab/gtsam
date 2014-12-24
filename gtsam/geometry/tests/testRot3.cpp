@@ -294,12 +294,10 @@ TEST(Rot3, manifold_expmap)
   Rot3 origin;
 
   // log behaves correctly
-  Vector d12 = gR1.localCoordinates(gR2, Rot3::EXPMAP);
-  CHECK(assert_equal(gR2, gR1.retract(d12, Rot3::EXPMAP)));
-  Vector d21 = gR2.localCoordinates(gR1, Rot3::EXPMAP);
-  CHECK(assert_equal(gR1, gR2.retract(d21, Rot3::EXPMAP)));
+  Vector d12 = Rot3::Logmap(gR1.between(gR2));
+  Vector d21 = Rot3::Logmap(gR2.between(gR1));
 
-  // Check that it is expmap
+  // Check expmap
   CHECK(assert_equal(gR2, gR1*Rot3::Expmap(d12)));
   CHECK(assert_equal(gR1, gR2*Rot3::Expmap(d21)));
 
@@ -596,6 +594,12 @@ TEST(Rot3, quaternion) {
 }
 
 /* ************************************************************************* */
+Matrix Cayley(const Matrix& A) {
+  Matrix::Index n = A.cols();
+  const Matrix I = eye(n);
+  return (I-A)*inverse(I+A);
+}
+
 TEST( Rot3, Cayley ) {
   Matrix A = skewSymmetric(1,2,-3);
   Matrix Q = Cayley(A);

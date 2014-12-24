@@ -661,19 +661,6 @@ Matrix expm(const Matrix& A, size_t K) {
 }
 
 /* ************************************************************************* */
-Matrix Cayley(const Matrix& A) {
-  Matrix::Index n = A.cols();
-  assert(A.rows() == n);
-
-  // original
-//  const Matrix I = eye(n);
-//  return (I-A)*inverse(I+A);
-
-  // inlined to let Eigen do more optimization
-  return (Matrix::Identity(n, n) - A)*(Matrix::Identity(n, n) + A).inverse();
-}
-
-/* ************************************************************************* */
 std::string formatMatrixIndented(const std::string& label, const Matrix& matrix, bool makeVectorHorizontal)
 {
   stringstream ss;

@@ -16,7 +16,7 @@
  **/
 
 #include <gtsam/base/Lie.h>
-#include <gtsam/base/Matrix.h>
+#include <gtsam/base/concepts.h>
 
 #define QUATERNION_TYPE Eigen::Quaternion<_Scalar,_Options>
 
@@ -96,8 +96,7 @@ struct traits_x<QUATERNION_TYPE> {
       _Scalar angle = omega.norm();
       return Q(Eigen::AngleAxis<_Scalar>(angle, omega / angle));
     }
-    if (H)
-      throw std::runtime_error("TODO: implement Jacobian");
+    if (H) CONCEPT_NOT_IMPLEMENTED;
   }
 
   /// We use our own Logmap, as there is a slight bug in Eigen
@@ -129,8 +128,7 @@ struct traits_x<QUATERNION_TYPE> {
       return (angle / s) * q.vec();
     }
 
-    if (H)
-      throw std::runtime_error("TODO: implement Jacobian");
+    if (H) CONCEPT_NOT_IMPLEMENTED;
   }
 
   /// @}

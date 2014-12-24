@@ -140,8 +140,7 @@ Vector3 AHRSFactor::PreintegratedMeasurements::predict(const Vector3& bias,
     boost::optional<Matrix&> H) const {
   const Vector3 biasOmegaIncr = bias - biasHat_;
   Vector3 delRdelBiasOmega_biasOmegaIncr = delRdelBiasOmega_ * biasOmegaIncr;
-  const Rot3 deltaRij_biascorrected = deltaRij_.retract(
-      delRdelBiasOmega_biasOmegaIncr, Rot3::EXPMAP);
+  const Rot3 deltaRij_biascorrected = deltaRij_ * Rot3::Expmap(delRdelBiasOmega_biasOmegaIncr);
   const Vector3 theta_biascorrected = Rot3::Logmap(deltaRij_biascorrected);
   if (H) {
     const Matrix3 Jrinv_theta_bc = //

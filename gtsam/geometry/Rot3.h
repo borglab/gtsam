@@ -52,7 +52,7 @@ namespace gtsam {
    * @addtogroup geometry
    * \nosubgrouping
    */
-  class GTSAM_EXPORT Rot3 {
+  class GTSAM_EXPORT Rot3 : public LieGroup<Rot3,3> {
 
   private:
 
@@ -64,8 +64,6 @@ namespace gtsam {
 #endif
 
   public:
-    /// The intrinsic dimension of this manifold.
-    enum { dimension = 3 };
 
     /// @name Constructors and named constructors
     /// @{
@@ -210,15 +208,12 @@ namespace gtsam {
       return Rot3();
     }
 
-    /// derivative of inverse rotation R^T s.t. inverse(R)*R = identity
-    Rot3 inverse(OptionalJacobian<3,3> H1=boost::none) const;
-
-    /// Compose two rotations i.e., R= (*this) * R2
-    Rot3 compose(const Rot3& R2, OptionalJacobian<3, 3> H1 = boost::none,
-        OptionalJacobian<3, 3> H2 = boost::none) const;
-
     /** compose two rotations */
     Rot3 operator*(const Rot3& R2) const;
+
+    Rot3 inverse() const {
+      return Rot3(Matrix3(transpose()));
+    }
 
     /**
      * Conjugation: given a rotation acting in frame B, compute rotation c1Rc2 acting in a frame C
@@ -230,22 +225,9 @@ namespace gtsam {
       return cRb * (*this) * cRb.inverse();
     }
 
-    /**
-     * Return relative rotation D s.t. R2=D*R1, i.e. D=R2*R1'
-     */
-    Rot3 between(const Rot3& R2,
-        OptionalJacobian<3,3> H1=boost::none,
-        OptionalJacobian<3,3> H2=boost::none) const;
-
     /// @}
     /// @name Manifold
     /// @{
-
-    /// dimension of the variable - used to autodetect sizes
-    static size_t Dim() { return 3; }
-
-    /// return dimensionality of tangent space, DOF = 3
-    size_t dim() const { return 3; }
 
     /**
      * The method retract() is used to map from the tangent space back to the manifold.
@@ -260,20 +242,28 @@ namespace gtsam {
       EXPMAP, ///< Use the Lie group exponential map to retract
 #ifndef GTSAM_USE_QUATERNIONS
       CAYLEY, ///< Retract and localCoordinates using the Cayley transform.
-      SLOW_CAYLEY ///< Slow matrix implementation of Cayley transform (for tests only).
 #endif
       };
 
 #ifndef GTSAM_USE_QUATERNIONS
+
+    // Cayley chart around origin, no derivatives
+    struct CayleyChart {
+      static Rot3 Retract(const Vector3& v);
+      static Vector3 Local(const Rot3& r);
+    };
+
     /// Retraction from R^3 to Rot3 manifold using the Cayley transform
-    Rot3 retractCayley(const Vector& omega) const;
+    Rot3 retractCayley(const Vector& omega) const {
+      return compose(CayleyChart::Retract(omega));
+    }
+
+    /// Inverse of retractCayley
+    Vector3 localCayley(const Rot3& other) const {
+      return CayleyChart::Local(between(other));
+    }
+
 #endif
-
-    /// Retraction from R^3 \f$ [R_x,R_y,R_z] \f$ to Rot3 manifold neighborhood around current rotation
-    Rot3 retract(const Vector& omega, Rot3::CoordinatesMode mode = ROT3_DEFAULT_COORDINATES_MODE) const;
-
-    /// Returns local retract coordinates \f$ [R_x,R_y,R_z] \f$ in neighborhood around current rotation
-    Vector3 localCoordinates(const Rot3& t2, Rot3::CoordinatesMode mode = ROT3_DEFAULT_COORDINATES_MODE) const;
 
     /// @}
     /// @name Lie Group
@@ -300,27 +290,16 @@ namespace gtsam {
     /// Derivative of Logmap
     static Matrix3 LogmapDerivative(const Vector3& x);
 
-    Rot3 retract(const Vector& omega, OptionalJacobian<3, 3> Hthis,
-        OptionalJacobian<3, 3> Hv = boost::none, Rot3::CoordinatesMode mode =
-            ROT3_DEFAULT_COORDINATES_MODE) const;
-
-    Vector3 localCoordinates(const Rot3& R2, OptionalJacobian<3, 3> Horigin,
-        OptionalJacobian<3, 3> H2 = boost::none, Rot3::CoordinatesMode mode =
-            ROT3_DEFAULT_COORDINATES_MODE) const;
-
     /** Calculate Adjoint map */
     Matrix3 AdjointMap() const { return matrix(); }
 
-    /**
-     * Right Jacobian for Exponential map in SO(3) - equation (10.86) and following equations in
-     * G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups", Volume 2, 2008.
-     */
-    static Matrix3 rightJacobianExpMapSO3(const Vector3& x);
+    // Chart at origin, depends on compile-time flag ROT3_DEFAULT_COORDINATES_MODE
+    struct ChartAtOrigin {
+      static Rot3 Retract(const Vector3& v, ChartJacobian H = boost::none);
+      static Vector3 Local(const Rot3& r, ChartJacobian H = boost::none);
+    };
 
-    /** Right Jacobian for Log map in SO(3) - equation (10.86) and following equations in
-     * G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups", Volume 2, 2008.
-     */
-    static Matrix3 rightJacobianExpMapSO3inverse(const Vector3& x);
+    using LieGroup<Rot3, 3>::inverse; // version with derivative
 
     /// @}
     /// @name Group Action on Point3

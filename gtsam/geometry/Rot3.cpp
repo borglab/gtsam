@@ -59,20 +59,6 @@ Rot3 Rot3::rodriguez(const Vector3& w) {
 }
 
 /* ************************************************************************* */
-Rot3 Rot3::retract(const Vector& omega, OptionalJacobian<3, 3> Hthis,
-    OptionalJacobian<3, 3> Hv, Rot3::CoordinatesMode mode) const {
-  if (Hthis || Hv) CONCEPT_NOT_IMPLEMENTED;
-  return retract(omega, mode);
-}
-
-/* ************************************************************************* */
-Vector3 Rot3::localCoordinates(const Rot3& R2, OptionalJacobian<3, 3> Horigin,
-    OptionalJacobian<3, 3> H2, Rot3::CoordinatesMode mode) const {
-  if (Horigin || H2) CONCEPT_NOT_IMPLEMENTED;
-  return localCoordinates(R2, mode);
-}
-
-/* ************************************************************************* */
 bool Rot3::equals(const Rot3 & R, double tol) const {
   return equal_with_abs_tol(matrix(), R.matrix(), tol);
 }
@@ -248,8 +234,8 @@ ostream &operator<<(ostream &os, const Rot3& R) {
 Rot3 Rot3::slerp(double t, const Rot3& other) const {
   // amazingly simple in GTSAM :-)
   assert(t>=0 && t<=1);
-  Vector3 omega = localCoordinates(other, Rot3::EXPMAP);
-  return retract(t * omega, Rot3::EXPMAP);
+  Vector3 omega = Logmap(between(other));
+  return compose(Expmap(t * omega));
 }
 
 /* ************************************************************************* */
