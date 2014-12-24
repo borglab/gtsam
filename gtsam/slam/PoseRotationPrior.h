@@ -29,6 +29,10 @@ public:
   GTSAM_CONCEPT_GROUP_TYPE(Pose)
   GTSAM_CONCEPT_LIE_TYPE(Rotation)
 
+  // Get dimensions of pose and rotation type at compile time
+  static const int xDim = FixedDimension<POSE>::value;
+  static const int rDim = FixedDimension<POSE::Rotation>::value;
+
 protected:
 
   Rotation measured_;
@@ -70,7 +74,6 @@ public:
   /** h(x)-z */
   Vector evaluateError(const Pose& pose, boost::optional<Matrix&> H = boost::none) const {
     const Rotation& newR = pose.rotation();
-    const size_t rDim = newR.dim(), xDim = pose.dim();
     if (H) {
       *H = gtsam::zeros(rDim, xDim);
       std::pair<size_t, size_t> rotInterval = POSE::rotationInterval();
