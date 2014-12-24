@@ -335,7 +335,7 @@ void Test_arg_EigenConstRef_22(int nargout, mxArray *out[], int nargin, const mx
   typedef boost::shared_ptr<Test> Shared;
   checkArguments("arg_EigenConstRef",nargout,nargin-1,1);
   Shared obj = unwrap_shared_ptr<Test>(in[0], "ptr_Test");
-  Matrix& value = *unwrap_shared_ptr< Matrix >(in[1], "ptr_Matrix");
+  Matrix value = unwrap< Matrix >(in[1]);
   obj->arg_EigenConstRef(value);
 }
 
@@ -679,7 +679,7 @@ void MyTemplatePoint2_templatedMethod_55(int nargout, mxArray *out[], int nargin
   typedef boost::shared_ptr<MyTemplatePoint2> Shared;
   checkArguments("templatedMethodMatrix",nargout,nargin-1,1);
   Shared obj = unwrap_shared_ptr<MyTemplatePoint2>(in[0], "ptr_MyTemplatePoint2");
-  Matrix& t = *unwrap_shared_ptr< Matrix >(in[1], "ptr_Matrix");
+  Matrix t = unwrap< Matrix >(in[1]);
   out[0] = wrap< Matrix >(obj->templatedMethod<Matrix>(t));
 }
 
@@ -708,7 +708,7 @@ void MyTemplatePoint2_templatedMethod_58(int nargout, mxArray *out[], int nargin
   typedef boost::shared_ptr<MyTemplatePoint2> Shared;
   checkArguments("templatedMethodVector",nargout,nargin-1,1);
   Shared obj = unwrap_shared_ptr<MyTemplatePoint2>(in[0], "ptr_MyTemplatePoint2");
-  Vector& t = *unwrap_shared_ptr< Vector >(in[1], "ptr_Vector");
+  Vector t = unwrap< Vector >(in[1]);
   out[0] = wrap< Vector >(obj->templatedMethod<Vector>(t));
 }
 
@@ -767,7 +767,7 @@ void MyTemplateMatrix_accept_T_63(int nargout, mxArray *out[], int nargin, const
   typedef boost::shared_ptr<MyTemplateMatrix> Shared;
   checkArguments("accept_T",nargout,nargin-1,1);
   Shared obj = unwrap_shared_ptr<MyTemplateMatrix>(in[0], "ptr_MyTemplateMatrix");
-  Matrix& value = *unwrap_shared_ptr< Matrix >(in[1], "ptr_Matrix");
+  Matrix value = unwrap< Matrix >(in[1]);
   obj->accept_T(value);
 }
 
@@ -776,7 +776,7 @@ void MyTemplateMatrix_accept_Tptr_64(int nargout, mxArray *out[], int nargin, co
   typedef boost::shared_ptr<MyTemplateMatrix> Shared;
   checkArguments("accept_Tptr",nargout,nargin-1,1);
   Shared obj = unwrap_shared_ptr<MyTemplateMatrix>(in[0], "ptr_MyTemplateMatrix");
-  boost::shared_ptr<Matrix> value = unwrap_shared_ptr< Matrix >(in[1], "ptr_Matrix");
+  Matrix value = unwrap< Matrix >(in[1]);
   obj->accept_Tptr(value);
 }
 
@@ -814,7 +814,7 @@ void MyTemplateMatrix_return_T_67(int nargout, mxArray *out[], int nargin, const
   typedef boost::shared_ptr<MyTemplateMatrix> Shared;
   checkArguments("return_T",nargout,nargin-1,1);
   Shared obj = unwrap_shared_ptr<MyTemplateMatrix>(in[0], "ptr_MyTemplateMatrix");
-  boost::shared_ptr<Matrix> value = unwrap_shared_ptr< Matrix >(in[1], "ptr_Matrix");
+  Matrix value = unwrap< Matrix >(in[1]);
   out[0] = wrap< Matrix >(obj->return_T(value));
 }
 
@@ -823,7 +823,7 @@ void MyTemplateMatrix_return_Tptr_68(int nargout, mxArray *out[], int nargin, co
   typedef boost::shared_ptr<MyTemplateMatrix> Shared;
   checkArguments("return_Tptr",nargout,nargin-1,1);
   Shared obj = unwrap_shared_ptr<MyTemplateMatrix>(in[0], "ptr_MyTemplateMatrix");
-  boost::shared_ptr<Matrix> value = unwrap_shared_ptr< Matrix >(in[1], "ptr_Matrix");
+  Matrix value = unwrap< Matrix >(in[1]);
   {
   SharedMatrix* ret = new SharedMatrix(obj->return_Tptr(value));
   out[0] = wrap_shared_ptr(ret,"Matrix");
@@ -835,8 +835,8 @@ void MyTemplateMatrix_return_ptrs_69(int nargout, mxArray *out[], int nargin, co
   typedef boost::shared_ptr<MyTemplateMatrix> Shared;
   checkArguments("return_ptrs",nargout,nargin-1,2);
   Shared obj = unwrap_shared_ptr<MyTemplateMatrix>(in[0], "ptr_MyTemplateMatrix");
-  boost::shared_ptr<Matrix> p1 = unwrap_shared_ptr< Matrix >(in[1], "ptr_Matrix");
-  boost::shared_ptr<Matrix> p2 = unwrap_shared_ptr< Matrix >(in[2], "ptr_Matrix");
+  Matrix p1 = unwrap< Matrix >(in[1]);
+  Matrix p2 = unwrap< Matrix >(in[2]);
   pair< SharedMatrix, SharedMatrix > pairResult = obj->return_ptrs(p1,p2);
   {
   SharedMatrix* ret = new SharedMatrix(pairResult.first);
@@ -853,7 +853,7 @@ void MyTemplateMatrix_templatedMethod_70(int nargout, mxArray *out[], int nargin
   typedef boost::shared_ptr<MyTemplateMatrix> Shared;
   checkArguments("templatedMethodMatrix",nargout,nargin-1,1);
   Shared obj = unwrap_shared_ptr<MyTemplateMatrix>(in[0], "ptr_MyTemplateMatrix");
-  Matrix& t = *unwrap_shared_ptr< Matrix >(in[1], "ptr_Matrix");
+  Matrix t = unwrap< Matrix >(in[1]);
   out[0] = wrap< Matrix >(obj->templatedMethod<Matrix>(t));
 }
 
@@ -882,7 +882,7 @@ void MyTemplateMatrix_templatedMethod_73(int nargout, mxArray *out[], int nargin
   typedef boost::shared_ptr<MyTemplateMatrix> Shared;
   checkArguments("templatedMethodVector",nargout,nargin-1,1);
   Shared obj = unwrap_shared_ptr<MyTemplateMatrix>(in[0], "ptr_MyTemplateMatrix");
-  Vector& t = *unwrap_shared_ptr< Vector >(in[1], "ptr_Vector");
+  Vector t = unwrap< Vector >(in[1]);
   out[0] = wrap< Vector >(obj->templatedMethod<Vector>(t));
 }
 

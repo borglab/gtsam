@@ -173,6 +173,12 @@ public:
   /// Log map around identity - just return the Point2 as a vector
   static inline Vector2 Logmap(const Point2& dp) { return Vector2(dp.x(), dp.y()); }
 
+  /// Left-trivialized derivative of the exponential map
+  static Matrix ExpmapDerivative(const Vector2& v) {return I_2x2;}
+
+  /// Left-trivialized derivative inverse of the exponential map
+  static Matrix LogmapDerivative(const Vector2& v) { return I_2x2;}
+
   /// @}
   /// @name Vector Space
   /// @{

@@ -175,6 +175,16 @@ namespace gtsam {
       return v;
     }
 
+    /// Left-trivialized derivative of the exponential map
+    static Matrix ExpmapDerivative(const Vector& v) {
+      return ones(1);
+    }
+
+    /// Left-trivialized derivative inverse of the exponential map
+    static Matrix LogmapDerivative(const Vector& v) {
+      return ones(1);
+    }
+
     /// @}
     /// @name Group Action on Point2
     /// @{

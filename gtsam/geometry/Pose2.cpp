@@ -124,6 +124,66 @@ Matrix3 Pose2::AdjointMap() const {
 }
 
 /* ************************************************************************* */
+Matrix3 Pose2::adjointMap(const Vector& v) {
+  // See Chirikjian12book2, vol.2, pg. 36
+  Matrix3 ad = zeros(3,3);
+  ad(0,1) = -v[2];
+  ad(1,0) = v[2];
+  ad(0,2) = v[1];
+  ad(1,2) = -v[0];
+  return ad;
+}
+
+/* ************************************************************************* */
+Matrix3 Pose2::ExpmapDerivative(const Vector3& v) {
+  double alpha = v[2];
+  if (fabs(alpha) > 1e-5) {
+    // Chirikjian11book2, pg. 36
+    /* !!!Warning!!! Compare Iserles05an, formula 2.42 and Chirikjian11book2 pg.26
+     * Iserles' right-trivialization dexpR is actually the left Jacobian J_l in Chirikjian's notation
+     * In fact, Iserles 2.42 can be written as:
+     *    \dot{g} g^{-1} = dexpR_{q}\dot{q}
+     * where q = A, and g = exp(A)
+     * and the LHS is in the definition of J_l in Chirikjian11book2, pg. 26.
+     * Hence, to compute ExpmapDerivative, we have to use the formula of J_r Chirikjian11book2, pg.36
+     */
+    double sZalpha = sin(alpha)/alpha, c_1Zalpha = (cos(alpha)-1)/alpha;
+    double v1Zalpha = v[0]/alpha, v2Zalpha = v[1]/alpha;
+    return (Matrix(3,3) <<
+        sZalpha, -c_1Zalpha, v1Zalpha + v2Zalpha*c_1Zalpha - v1Zalpha*sZalpha,
+        c_1Zalpha, sZalpha, -v1Zalpha*c_1Zalpha + v2Zalpha - v2Zalpha*sZalpha,
+        0, 0, 1).finished();
+  }
+  else {
+    // Thanks to Krunal: Apply L'Hospital rule to several times to
+    // compute the limits when alpha -> 0
+    return (Matrix(3,3) << 1,0,-0.5*v[1],
+        0,1, 0.5*v[0],
+        0,0, 1).finished();
+  }
+}
+
+/* ************************************************************************* */
+Matrix3 Pose2::LogmapDerivative(const Vector3& v) {
+  double alpha = v[2];
+  if (fabs(alpha) > 1e-5) {
+    double alphaInv = 1/alpha;
+    double halfCotHalfAlpha = 0.5*sin(alpha)/(1-cos(alpha));
+    double v1 = v[0], v2 = v[1];
+
+    return (Matrix(3,3) <<
+        alpha*halfCotHalfAlpha, -0.5*alpha, v1*alphaInv - v1*halfCotHalfAlpha + 0.5*v2,
+        0.5*alpha, alpha*halfCotHalfAlpha,  v2*alphaInv - 0.5*v1 - v2*halfCotHalfAlpha,
+        0, 0, 1).finished();
+  }
+  else {
+    return (Matrix(3,3) << 1,0, 0.5*v[1],
+        0,1, -0.5*v[0],
+        0,0, 1).finished();
+  }
+}
+
+/* ************************************************************************* */
 Pose2 Pose2::inverse(OptionalJacobian<3,3> H1) const {
   if (H1) *H1 = -AdjointMap();
   return Pose2(r_.inverse(), r_.unrotate(Point2(-t_.x(), -t_.y())));

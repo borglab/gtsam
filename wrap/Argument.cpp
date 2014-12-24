@@ -78,11 +78,11 @@ void Argument::matlab_unwrap(FileWriter& file, const string& matlabName) const {
   string cppType = type.qualifiedName("::");
   string matlabUniqueType = type.qualifiedName();
 
-  if (is_ptr)
+  if (is_ptr && type.category != Qualified::EIGEN)
     // A pointer: emit an "unwrap_shared_ptr" call which returns a pointer
     file.oss << "boost::shared_ptr<" << cppType << "> " << name
         << " = unwrap_shared_ptr< ";
-  else if (is_ref)
+  else if (is_ref && type.category != Qualified::EIGEN)
     // A reference: emit an "unwrap_shared_ptr" call and de-reference the pointer
     file.oss << cppType << "& " << name << " = *unwrap_shared_ptr< ";
   else
@@ -94,7 +94,7 @@ void Argument::matlab_unwrap(FileWriter& file, const string& matlabName) const {
     file.oss << cppType << " " << name << " = unwrap< ";
 
   file.oss << cppType << " >(" << matlabName;
-  if (is_ptr || is_ref)
+  if( (is_ptr || is_ref) && type.category != Qualified::EIGEN)
     file.oss << ", \"ptr_" << matlabUniqueType << "\"";
   file.oss << ");" << endl;
 }

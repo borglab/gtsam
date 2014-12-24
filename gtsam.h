@@ -1224,6 +1224,7 @@ class VectorValues {
 
 #include <gtsam/linear/GaussianFactor.h>
 virtual class GaussianFactor {
+  gtsam::KeyVector keys() const;
   void print(string s) const;
   bool equals(const gtsam::GaussianFactor& lf, double tol) const;
   double error(const gtsam::VectorValues& c) const;
@@ -1647,6 +1648,7 @@ class NonlinearFactorGraph {
   void push_back(gtsam::NonlinearFactor* factor);
   void add(gtsam::NonlinearFactor* factor);
   bool exists(size_t idx) const;
+  gtsam::KeySet keys() const;
 
   // NonlinearFactorGraph
   double error(const gtsam::Values& values) const;
@@ -1728,6 +1730,7 @@ class Values {
   void insert(size_t j, const gtsam::Cal3DS2& t);
   void insert(size_t j, const gtsam::Cal3Bundler& t);
   void insert(size_t j, const gtsam::EssentialMatrix& t);
+  void insert(size_t j, const gtsam::SimpleCamera& t);
   void insert(size_t j, const gtsam::imuBias::ConstantBias& t);
   void insert(size_t j, Vector t);
   void insert(size_t j, Matrix t);
@@ -1751,6 +1754,16 @@ class Values {
 
   template<T = {gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Pose2, gtsam::Rot3, gtsam::Pose3, gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler, gtsam::EssentialMatrix, gtsam::imuBias::ConstantBias, Vector, Matrix}>
   T at(size_t j);
+
+  /// Fixed size versions, for n in 1..9
+  void insertFixed(size_t j, Vector t, size_t n);
+
+  /// Fixed size versions, for n in 1..9
+  Vector atFixed(size_t j, size_t n);
+  
+  /// version for double
+  void insertDouble(size_t j, double c);
+  double atDouble(size_t j) const;
 };
 
 // Actually a FastList<Key>
@@ -2147,7 +2160,7 @@ class NonlinearISAM {
 #include <gtsam/geometry/StereoPoint2.h>
 
 #include <gtsam/slam/PriorFactor.h>
-template<T = { gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2,gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::imuBias::ConstantBias}>
+template<T = {Vector, gtsam::Point2, gtsam::StereoPoint2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3, gtsam::Cal3_S2,gtsam::CalibratedCamera, gtsam::SimpleCamera, gtsam::imuBias::ConstantBias}>
 virtual class PriorFactor : gtsam::NoiseModelFactor {
   PriorFactor(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
   T prior() const;
@@ -2391,24 +2404,25 @@ class ConstantBias {
 }///\namespace imuBias
 
 #include <gtsam/navigation/ImuFactor.h>
-class PoseVelocityBias{
-    PoseVelocityBias(const gtsam::Pose3& pose, Vector velocity, const gtsam::imuBias::ConstantBias& bias);
+class PoseVelocity{
+    PoseVelocity(const gtsam::Pose3& pose, Vector velocity);
   };
 class ImuFactorPreintegratedMeasurements {
   // Standard Constructor
   ImuFactorPreintegratedMeasurements(const gtsam::imuBias::ConstantBias& bias, Matrix measuredAccCovariance,Matrix measuredOmegaCovariance, Matrix integrationErrorCovariance, bool use2ndOrderIntegration);
   ImuFactorPreintegratedMeasurements(const gtsam::imuBias::ConstantBias& bias, Matrix measuredAccCovariance,Matrix measuredOmegaCovariance, Matrix integrationErrorCovariance);
-  // ImuFactorPreintegratedMeasurements(const gtsam::ImuFactorPreintegratedMeasurements& rhs);
+  ImuFactorPreintegratedMeasurements(const gtsam::ImuFactorPreintegratedMeasurements& rhs);
 
   // Testable
   void print(string s) const;
   bool equals(const gtsam::ImuFactorPreintegratedMeasurements& expected, double tol);
 
-  double deltaTij() const;
+  Matrix measurementCovariance() const;
   Matrix deltaRij() const;
+  double deltaTij() const;
   Vector deltaPij() const;
   Vector deltaVij() const;
-  Vector biasHatVector() const;
+  Vector biasHat() const;
   Matrix delPdelBiasAcc() const;
   Matrix delPdelBiasOmega() const;
   Matrix delVdelBiasAcc() const;
@@ -2416,11 +2430,10 @@ class ImuFactorPreintegratedMeasurements {
   Matrix delRdelBiasOmega() const;
   Matrix preintMeasCov() const;
 
+
   // Standard Interface
   void integrateMeasurement(Vector measuredAcc, Vector measuredOmega, double deltaT);
   void integrateMeasurement(Vector measuredAcc, Vector measuredOmega, double deltaT, const gtsam::Pose3& body_P_sensor);
-  gtsam::PoseVelocityBias predict(const gtsam::Pose3& pose_i, Vector vel_i, const gtsam::imuBias::ConstantBias& bias,
-      Vector gravity, Vector omegaCoriolis) const;
 };
 
 virtual class ImuFactor : gtsam::NonlinearFactor {
@@ -2431,58 +2444,9 @@ virtual class ImuFactor : gtsam::NonlinearFactor {
       const gtsam::Pose3& body_P_sensor);
   // Standard Interface
   gtsam::ImuFactorPreintegratedMeasurements preintegratedMeasurements() const;
-};
-
-#include <gtsam/navigation/CombinedImuFactor.h>
-class CombinedImuFactorPreintegratedMeasurements {
-  // Standard Constructor
-  CombinedImuFactorPreintegratedMeasurements(
-      const gtsam::imuBias::ConstantBias& bias,
-      Matrix measuredAccCovariance,
-      Matrix measuredOmegaCovariance,
-      Matrix integrationErrorCovariance,
-      Matrix biasAccCovariance,
-      Matrix biasOmegaCovariance,
-      Matrix biasAccOmegaInit);
-  CombinedImuFactorPreintegratedMeasurements(
-      const gtsam::imuBias::ConstantBias& bias,
-      Matrix measuredAccCovariance,
-      Matrix measuredOmegaCovariance,
-      Matrix integrationErrorCovariance,
-      Matrix biasAccCovariance,
-      Matrix biasOmegaCovariance,
-      Matrix biasAccOmegaInit,
-      bool use2ndOrderIntegration);
-  // CombinedImuFactorPreintegratedMeasurements(const gtsam::CombinedImuFactorPreintegratedMeasurements& rhs);
-
-  // Testable
-  void print(string s) const;
-  bool equals(const gtsam::CombinedImuFactorPreintegratedMeasurements& expected, double tol);
-
-  double deltaTij() const;
-  Matrix deltaRij() const;
-  Vector deltaPij() const;
-  Vector deltaVij() const;
-  Vector biasHatVector() const;
-  Matrix delPdelBiasAcc() const;
-  Matrix delPdelBiasOmega() const;
-  Matrix delVdelBiasAcc() const;
-  Matrix delVdelBiasOmega() const;
-  Matrix delRdelBiasOmega() const;
-  Matrix preintMeasCov() const;
-
-  // Standard Interface
-  void integrateMeasurement(Vector measuredAcc, Vector measuredOmega, double deltaT);
-  void integrateMeasurement(Vector measuredAcc, Vector measuredOmega, double deltaT, const gtsam::Pose3& body_P_sensor);
-  gtsam::PoseVelocityBias predict(const gtsam::Pose3& pose_i, Vector vel_i, const gtsam::imuBias::ConstantBias& bias,
+  gtsam::PoseVelocity Predict(const gtsam::Pose3& pose_i, Vector vel_i, const gtsam::imuBias::ConstantBias& bias,
+      const gtsam::ImuFactorPreintegratedMeasurements& preintegratedMeasurements,
       Vector gravity, Vector omegaCoriolis) const;
-};
-
-virtual class CombinedImuFactor : gtsam::NonlinearFactor {
-  CombinedImuFactor(size_t pose_i, size_t vel_i, size_t pose_j, size_t vel_j, size_t bias_i, size_t bias_j,
-      const gtsam::CombinedImuFactorPreintegratedMeasurements& CombinedPreintegratedMeasurements, Vector gravity, Vector omegaCoriolis);
-  // Standard Interface
-  gtsam::CombinedImuFactorPreintegratedMeasurements preintegratedMeasurements() const;
 };
 
 #include <gtsam/navigation/AHRSFactor.h>
@@ -2497,6 +2461,7 @@ class AHRSFactorPreintegratedMeasurements {
   bool equals(const gtsam::AHRSFactorPreintegratedMeasurements& expected, double tol);
 
   // get Data
+  Matrix measurementCovariance() const;
   Matrix deltaRij() const;
   double deltaTij() const;
   Vector biasHat() const;
@@ -2521,6 +2486,64 @@ virtual class AHRSFactor : gtsam::NonlinearFactor {
   gtsam::Rot3 predict(const gtsam::Rot3& rot_i, Vector bias,
       const gtsam::AHRSFactorPreintegratedMeasurements& preintegratedMeasurements,
       Vector omegaCoriolis) const;
+};
+
+#include <gtsam/navigation/CombinedImuFactor.h>
+class PoseVelocityBias{
+    PoseVelocityBias(const gtsam::Pose3& pose, Vector velocity, const gtsam::imuBias::ConstantBias& bias);
+  };
+class CombinedImuFactorPreintegratedMeasurements {
+  // Standard Constructor
+  CombinedImuFactorPreintegratedMeasurements(
+      const gtsam::imuBias::ConstantBias& bias,
+      Matrix measuredAccCovariance,
+      Matrix measuredOmegaCovariance,
+      Matrix integrationErrorCovariance,
+      Matrix biasAccCovariance,
+      Matrix biasOmegaCovariance,
+      Matrix biasAccOmegaInit);
+  CombinedImuFactorPreintegratedMeasurements(
+      const gtsam::imuBias::ConstantBias& bias,
+      Matrix measuredAccCovariance,
+      Matrix measuredOmegaCovariance,
+      Matrix integrationErrorCovariance,
+      Matrix biasAccCovariance,
+      Matrix biasOmegaCovariance,
+      Matrix biasAccOmegaInit,
+      bool use2ndOrderIntegration);
+  CombinedImuFactorPreintegratedMeasurements(const gtsam::CombinedImuFactorPreintegratedMeasurements& rhs);
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::CombinedImuFactorPreintegratedMeasurements& expected, double tol);
+
+  // Standard Interface
+  void integrateMeasurement(Vector measuredAcc, Vector measuredOmega, double deltaT);
+  void integrateMeasurement(Vector measuredAcc, Vector measuredOmega, double deltaT, const gtsam::Pose3& body_P_sensor);
+
+  Matrix measurementCovariance() const;
+  Matrix deltaRij() const;
+  double deltaTij() const;
+  Vector deltaPij() const;
+  Vector deltaVij() const;
+  Vector biasHat() const;
+  Matrix delPdelBiasAcc() const;
+  Matrix delPdelBiasOmega() const;
+  Matrix delVdelBiasAcc() const;
+  Matrix delVdelBiasOmega() const;
+  Matrix delRdelBiasOmega() const;
+  Matrix PreintMeasCov() const;
+};
+
+virtual class CombinedImuFactor : gtsam::NonlinearFactor {
+  CombinedImuFactor(size_t pose_i, size_t vel_i, size_t pose_j, size_t vel_j, size_t bias_i, size_t bias_j,
+      const gtsam::CombinedImuFactorPreintegratedMeasurements& CombinedPreintegratedMeasurements, Vector gravity, Vector omegaCoriolis);
+
+  // Standard Interface
+  gtsam::CombinedImuFactorPreintegratedMeasurements preintegratedMeasurements() const;
+  gtsam::PoseVelocityBias Predict(const gtsam::Pose3& pose_i, Vector vel_i, const gtsam::imuBias::ConstantBias& bias_i,
+      const gtsam::CombinedImuFactorPreintegratedMeasurements& preintegratedMeasurements,
+      Vector gravity, Vector omegaCoriolis);
 };
 
 #include <gtsam/navigation/AttitudeFactor.h>
