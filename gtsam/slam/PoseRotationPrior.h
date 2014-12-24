@@ -31,7 +31,7 @@ public:
 
   // Get dimensions of pose and rotation type at compile time
   static const int xDim = FixedDimension<POSE>::value;
-  static const int rDim = FixedDimension<POSE::Rotation>::value;
+  static const int rDim = FixedDimension<typename POSE::Rotation>::value;
 
 protected:
 
