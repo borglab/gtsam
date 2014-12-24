@@ -204,11 +204,16 @@ public:
      */
     static Vector6 adjointTranspose(const Vector6& xi, const Vector6& y, OptionalJacobian<6, 6> H = boost::none);
 
+private:
+    static Matrix3 computeQforExpmapDerivative(const Vector6& xi);
+
+public:
+
     /// Left-trivialized derivative of the exponential map
-    static Matrix6 ExpmapDerivative(const Vector6& v);
+    static Matrix6 ExpmapDerivative(const Vector6& xi);
 
     /// Left-trivialized inverse derivative of the exponential map
-    static Matrix6 LogmapDerivative(const Vector6& v);
+    static Matrix6 LogmapDerivative(const Vector6& xi);
 
     /**
      * wedge for Pose3:
