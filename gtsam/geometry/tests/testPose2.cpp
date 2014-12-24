@@ -37,6 +37,13 @@ using namespace std;
 GTSAM_CONCEPT_TESTABLE_INST(Pose2)
 GTSAM_CONCEPT_LIE_INST(Pose2)
 
+//******************************************************************************
+TEST(Pose2 , Concept) {
+  BOOST_CONCEPT_ASSERT((IsGroup<Pose2 >));
+  BOOST_CONCEPT_ASSERT((IsManifold<Pose2 >));
+  BOOST_CONCEPT_ASSERT((IsLieGroup<Pose2 >));
+}
+
 /* ************************************************************************* */
 TEST(Pose2, constructors) {
   Point2 p;
@@ -513,13 +520,6 @@ TEST( Pose2, round_trip )
   EXPECT(assert_equal(odo, p1.between(p2)));
 }
 
-/* ************************************************************************* */
-TEST(Pose2, members)
-{
-  Pose2 pose;
-  EXPECT(pose.dim() == 3);
-}
-
 namespace {
   /* ************************************************************************* */
   // some shared test values
@@ -758,6 +758,45 @@ TEST(Pose2, align_4) {
 
   boost::optional<Pose2> actual = align(ps, qs, make_pair(t1,t2));
   EXPECT(assert_equal(expected, *actual));
+}
+
+//******************************************************************************
+TEST(Pose2 , Traits) {
+  Pose2 t1(M_PI/4.0, Point2(sqrt(0.5), sqrt(0.5)));
+  Pose2 t2(M_PI/2.0, Point2(0.0, 2.0));
+  check_group_invariants(t1, t2);
+  check_manifold_invariants(t1, t2);
+
+  Pose2 expected, actual;
+  Matrix actualH1, actualH2;
+  Matrix numericalH1, numericalH2;
+
+  expected = t1 * t2;
+  actual = traits_x<Pose2>::Compose(t1, t2, actualH1, actualH2);
+  EXPECT(assert_equal(expected,actual));
+
+  numericalH1 = numericalDerivative21(traits_x<Pose2>::Compose, t1, t2);
+  EXPECT(assert_equal(numericalH1,actualH1));
+
+  numericalH2 = numericalDerivative22(traits_x<Pose2>::Compose, t1, t2);
+  EXPECT(assert_equal(numericalH2,actualH2));
+
+  expected = t1.inverse() * t2;
+  actual = traits_x<Pose2>::Between(t1, t2, actualH1, actualH2);
+  EXPECT(assert_equal(expected,actual));
+
+  numericalH1 = numericalDerivative21(traits_x<Pose2>::Between, t1, t2);
+  EXPECT(assert_equal(numericalH1,actualH1));
+
+  numericalH2 = numericalDerivative22(traits_x<Pose2>::Between, t1, t2);
+  EXPECT(assert_equal(numericalH2,actualH2));
+
+  expected = t1.inverse();
+  actual = traits_x<Pose2>::Inverse(t1, actualH1);
+  EXPECT(assert_equal(expected,actual));
+
+  numericalH1 = numericalDerivative11(traits_x<Pose2>::Inverse, t1);
+  EXPECT(assert_equal(numericalH1,actualH1));
 }
 
 /* ************************************************************************* */
