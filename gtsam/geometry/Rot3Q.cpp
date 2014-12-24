@@ -101,7 +101,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Rot3 Rot3::inverse(boost::optional<Matrix3&> H1) const {
+  Rot3 Rot3::inverse(OptionalJacobian<3,3> H1) const {
     if (H1) *H1 = -matrix();
     return Rot3(quaternion_.inverse());
   }
@@ -133,7 +133,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Vector3 Rot3::Logmap(const Rot3& R, boost::optional<Matrix3&> H) {
+  Vector3 Rot3::Logmap(const Rot3& R, OptionalJacobian<3,3> H) {
     using std::acos;
     using std::sqrt;
     static const double twoPi = 2.0 * M_PI,
@@ -160,10 +160,7 @@ namespace gtsam {
       thetaR = (angle / s) * q.vec();
     }
 
-    if(H){
-      H->resize(3,3);
-      *H = Rot3::LogmapDerivative(thetaR);
-    }
+    if(H) *H = Rot3::LogmapDerivative(thetaR);
     return thetaR;
   }
 

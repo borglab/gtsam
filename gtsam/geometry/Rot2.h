@@ -176,12 +176,12 @@ namespace gtsam {
     }
 
     /// Left-trivialized derivative of the exponential map
-    static Matrix dexpL(const Vector& v) {
+    static Matrix ExpmapDerivative(const Vector& v) {
       return ones(1);
     }
 
     /// Left-trivialized derivative inverse of the exponential map
-    static Matrix dexpInvL(const Vector& v) {
+    static Matrix LogmapDerivative(const Vector& v) {
       return ones(1);
     }
 

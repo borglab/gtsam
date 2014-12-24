@@ -158,7 +158,7 @@ Matrix3 Rot3::transpose() const {
 }
 
 /* ************************************************************************* */
-Rot3 Rot3::inverse(boost::optional<Matrix3 &> H1) const {
+Rot3 Rot3::inverse(OptionalJacobian<3,3> H1) const {
   if (H1) *H1 = -rot_;
   return Rot3(Matrix3(transpose()));
 }
@@ -184,7 +184,7 @@ Point3 Rot3::rotate(const Point3& p,
 
 /* ************************************************************************* */
 // Log map at identity - return the canonical coordinates of this rotation
-Vector3 Rot3::Logmap(const Rot3& R, boost::optional<Matrix3&> H) {
+Vector3 Rot3::Logmap(const Rot3& R, OptionalJacobian<3,3> H) {
 
   static const double PI = boost::math::constants::pi<double>();
 
@@ -223,10 +223,7 @@ Vector3 Rot3::Logmap(const Rot3& R, boost::optional<Matrix3&> H) {
         rot(1,0)-rot(0,1));
   }
 
-  if(H){
-    H->resize(3,3);
-    *H = Rot3::LogmapDerivative(thetaR);
-  }
+  if(H) *H = Rot3::LogmapDerivative(thetaR);
   return thetaR;
 }
 

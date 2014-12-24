@@ -215,13 +215,38 @@ TEST(Rot3, log)
 }
 
 /* ************************************************************************* */
+Vector w = Vector3(0.1, 0.27, -0.2);
+
+// Left trivialization Derivative of exp(w) wrpt w:
+// How does exp(w) change when w changes?
+// We find a y such that: exp(w) exp(y) = exp(w + dw) for dw --> 0
+// => y = log (exp(-w) * exp(w+dw))
+Vector3 testDexpL(const Vector3& dw) {
+  return Rot3::Logmap(Rot3::Expmap(-w) * Rot3::Expmap(w + dw));
+}
+
+TEST( Rot3, ExpmapDerivative) {
+  Matrix actualDexpL = Rot3::ExpmapDerivative(w);
+  Matrix expectedDexpL = numericalDerivative11<Vector3, Vector3>(testDexpL,
+      Vector3::Zero(), 1e-2);
+  EXPECT(assert_equal(expectedDexpL, actualDexpL,1e-7));
+
+  Matrix actualDexpInvL = Rot3::LogmapDerivative(w);
+  EXPECT(assert_equal(expectedDexpL.inverse(), actualDexpInvL,1e-7));
+}
+
+/* ************************************************************************* */
 Vector3 thetahat(0.1, 0, 0.1);
-TEST( Rot3, ExpmapDerivative )
+TEST( Rot3, ExpmapDerivative2)
 {
   Matrix Jexpected = numericalDerivative11<Rot3, Vector3>(
       boost::bind(&Rot3::Expmap, _1, boost::none), thetahat);
+
   Matrix Jactual = Rot3::ExpmapDerivative(thetahat);
   CHECK(assert_equal(Jexpected, Jactual));
+
+  Matrix Jactual2 = Rot3::ExpmapDerivative(thetahat);
+  CHECK(assert_equal(Jexpected, Jactual2));
 }
 
 /* ************************************************************************* */
@@ -410,27 +435,6 @@ TEST( Rot3, between )
 
   Matrix numericalH2 = numericalDerivative22(testing::between<Rot3> , R1, R2);
   CHECK(assert_equal(numericalH2,actualH2));
-}
-
-/* ************************************************************************* */
-Vector w = Vector3(0.1, 0.27, -0.2);
-
-// Left trivialization Derivative of exp(w) wrpt w:
-// How does exp(w) change when w changes?
-// We find a y such that: exp(w) exp(y) = exp(w + dw) for dw --> 0
-// => y = log (exp(-w) * exp(w+dw))
-Vector3 testDexpL(const Vector3& dw) {
-  return Rot3::Logmap(Rot3::Expmap(-w) * Rot3::Expmap(w + dw));
-}
-
-TEST( Rot3, dexpL) {
-  Matrix actualDexpL = Rot3::dexpL(w);
-  Matrix expectedDexpL = numericalDerivative11<Vector3, Vector3>(testDexpL,
-      Vector3::Zero(), 1e-2);
-  EXPECT(assert_equal(expectedDexpL, actualDexpL,1e-7));
-
-  Matrix actualDexpInvL = Rot3::dexpInvL(w);
-  EXPECT(assert_equal(expectedDexpL.inverse(), actualDexpInvL,1e-7));
 }
 
 /* ************************************************************************* */

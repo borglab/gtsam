@@ -174,14 +174,10 @@ public:
   static inline Vector2 Logmap(const Point2& dp) { return Vector2(dp.x(), dp.y()); }
 
   /// Left-trivialized derivative of the exponential map
-  static Matrix dexpL(const Vector2& v) {
-    return eye(2);
-  }
+  static Matrix ExpmapDerivative(const Vector2& v) {return I_2x2;}
 
   /// Left-trivialized derivative inverse of the exponential map
-  static Matrix dexpInvL(const Vector2& v) {
-    return eye(2);
-  }
+  static Matrix LogmapDerivative(const Vector2& v) { return I_2x2;}
 
   /// @}
   /// @name Vector Space
