@@ -133,21 +133,22 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Vector3 Rot3::Logmap(const Rot3& R) {
+  Vector3 Rot3::Logmap(const Rot3& R, boost::optional<Matrix3&> H) {
     using std::acos;
     using std::sqrt;
     static const double twoPi = 2.0 * M_PI,
     // define these compile time constants to avoid std::abs:
-        NearlyOne = 1.0 - 1e-10, NearlyNegativeOne = -1.0 + 1e-10;
+    NearlyOne = 1.0 - 1e-10, NearlyNegativeOne = -1.0 + 1e-10;
 
+    Vector3 thetaR;
     const Quaternion& q = R.quaternion_;
     const double qw = q.w();
     if (qw > NearlyOne) {
       // Taylor expansion of (angle / s) at 1
-      return (2 - 2 * (qw - 1) / 3) * q.vec();
+      thetaR = (2 - 2 * (qw - 1) / 3) * q.vec();
     } else if (qw < NearlyNegativeOne) {
       // Angle is zero, return zero vector
-      return Vector3::Zero();
+      thetaR = Vector3::Zero();
     } else {
       // Normal, away from zero case
       double angle = 2 * acos(qw), s = sqrt(1 - qw * qw);
@@ -156,8 +157,14 @@ namespace gtsam {
         angle -= twoPi;
       else if (angle < -M_PI)
         angle += twoPi;
-      return (angle / s) * q.vec();
+      thetaR = (angle / s) * q.vec();
     }
+
+    if(H){
+      H->resize(3,3);
+      *H = Rot3::LogmapDerivative(thetaR);
+    }
+    return thetaR;
   }
 
   /* ************************************************************************* */

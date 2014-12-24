@@ -16,6 +16,7 @@
  * @author  Christian Potthast
  * @author  Frank Dellaert
  * @author  Richard Roberts
+ * @author  Luca Carlone
  */
 // \callgraph
 
@@ -287,15 +288,21 @@ namespace gtsam {
      * Exponential map at identity - create a rotation from canonical coordinates
      * \f$ [R_x,R_y,R_z] \f$ using Rodriguez' formula
      */
-    static Rot3 Expmap(const Vector& v)  {
-      if(zero(v)) return Rot3();
-      else return rodriguez(v);
+    static Rot3 Expmap(const Vector& v, boost::optional<Matrix3&> H = boost::none) {
+      if(H){
+        H->resize(3,3);
+        *H = Rot3::ExpmapDerivative(v);
+      }
+      if(zero(v))
+        return Rot3();
+      else
+        return rodriguez(v);
     }
 
     /**
      * Log map at identity - return the canonical coordinates \f$ [R_x,R_y,R_z] \f$ of this rotation
      */
-    static Vector3 Logmap(const Rot3& R);
+    static Vector3 Logmap(const Rot3& R, boost::optional<Matrix3&> H = boost::none);
 
     /// Left-trivialized derivative of the exponential map
     static Matrix3 dexpL(const Vector3& v);
@@ -306,13 +313,21 @@ namespace gtsam {
     /**
      * Right Jacobian for Exponential map in SO(3) - equation (10.86) and following equations in
      * G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups", Volume 2, 2008.
+     * expmap(thetahat + omega) \approx expmap(thetahat) * expmap(Jr * omega)
+     * where Jr = ExpmapDerivative(thetahat);
+     * This maps a perturbation in the tangent space (omega) to
+     * a perturbation on the manifold (expmap(Jr * omega))
      */
-    static Matrix3 rightJacobianExpMapSO3(const Vector3& x);
+    static Matrix3 ExpmapDerivative(const Vector3& x);
 
     /** Right Jacobian for Log map in SO(3) - equation (10.86) and following equations in
      * G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups", Volume 2, 2008.
+     * logmap( Rhat * expmap(omega) ) \approx logmap( Rhat ) + Jrinv * omega
+     * where Jrinv = LogmapDerivative(omega);
+     * This maps a perturbation on the manifold (expmap(omega))
+     * to a perturbation in the tangent space (Jrinv * omega)
      */
-    static Matrix3 rightJacobianExpMapSO3inverse(const Vector3& x);
+    static Matrix3 LogmapDerivative(const Vector3& x);
 
     /// @}
     /// @name Group Action on Point3
