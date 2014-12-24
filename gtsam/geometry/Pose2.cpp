@@ -135,7 +135,7 @@ Matrix3 Pose2::adjointMap(const Vector& v) {
 }
 
 /* ************************************************************************* */
-Matrix3 Pose2::dexpL(const Vector3& v) {
+Matrix3 Pose2::ExpmapDerivative(const Vector3& v) {
   double alpha = v[2];
   if (fabs(alpha) > 1e-5) {
     // Chirikjian11book2, pg. 36
@@ -145,7 +145,7 @@ Matrix3 Pose2::dexpL(const Vector3& v) {
      *    \dot{g} g^{-1} = dexpR_{q}\dot{q}
      * where q = A, and g = exp(A)
      * and the LHS is in the definition of J_l in Chirikjian11book2, pg. 26.
-     * Hence, to compute dexpL, we have to use the formula of J_r Chirikjian11book2, pg.36
+     * Hence, to compute ExpmapDerivative, we have to use the formula of J_r Chirikjian11book2, pg.36
      */
     double sZalpha = sin(alpha)/alpha, c_1Zalpha = (cos(alpha)-1)/alpha;
     double v1Zalpha = v[0]/alpha, v2Zalpha = v[1]/alpha;
@@ -164,7 +164,7 @@ Matrix3 Pose2::dexpL(const Vector3& v) {
 }
 
 /* ************************************************************************* */
-Matrix3 Pose2::dexpInvL(const Vector3& v) {
+Matrix3 Pose2::LogmapDerivative(const Vector3& v) {
   double alpha = v[2];
   if (fabs(alpha) > 1e-5) {
     double alphaInv = 1/alpha;

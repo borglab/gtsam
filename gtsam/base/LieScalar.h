@@ -107,12 +107,12 @@ namespace gtsam {
     static Vector Logmap(const LieScalar& p) { return (Vector(1) << p.value()).finished(); }
 
     /// Left-trivialized derivative of the exponential map
-    static Matrix dexpL(const Vector& v) {
+    static Matrix ExpmapDerivative(const Vector& v) {
       return eye(1);
     }
 
     /// Left-trivialized derivative inverse of the exponential map
-    static Matrix dexpInvL(const Vector& v) {
+    static Matrix LogmapDerivative(const Vector& v) {
       return eye(1);
     }
 

@@ -166,14 +166,14 @@ Vector1 testDexpL(const Vector& dw) {
   return y;
 }
 
-TEST( Rot2, dexpL) {
-  Matrix actualDexpL = Rot2::dexpL(w);
+TEST( Rot2, ExpmapDerivative) {
+  Matrix actualDexpL = Rot2::ExpmapDerivative(w);
   Matrix expectedDexpL = numericalDerivative11<Vector, Vector1>(
       boost::function<Vector(const Vector&)>(
           boost::bind(testDexpL, _1)), Vector(zero(1)), 1e-2);
   EXPECT(assert_equal(expectedDexpL, actualDexpL, 1e-5));
 
-  Matrix actualDexpInvL = Rot2::dexpInvL(w);
+  Matrix actualDexpInvL = Rot2::LogmapDerivative(w);
   EXPECT(assert_equal(expectedDexpL.inverse(), actualDexpInvL, 1e-5));
 }
 

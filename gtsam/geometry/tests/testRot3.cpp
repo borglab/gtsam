@@ -214,33 +214,70 @@ TEST(Rot3, log)
   CHECK_OMEGA_ZERO(x*2.*PI,y*2.*PI,z*2.*PI)
 }
 
-Vector3 evaluateLogRotation(const Vector3 thetahat, const Vector3 deltatheta){
-  return Rot3::Logmap( Rot3::Expmap(thetahat).compose( Rot3::Expmap(deltatheta) ) );
+/* ************************************************************************* */
+Vector w = Vector3(0.1, 0.27, -0.2);
+
+// Left trivialization Derivative of exp(w) wrpt w:
+// How does exp(w) change when w changes?
+// We find a y such that: exp(w) exp(y) = exp(w + dw) for dw --> 0
+// => y = log (exp(-w) * exp(w+dw))
+Vector3 testDexpL(const Vector3& dw) {
+  return Rot3::Logmap(Rot3::Expmap(-w) * Rot3::Expmap(w + dw));
+}
+
+TEST( Rot3, ExpmapDerivative) {
+  Matrix actualDexpL = Rot3::ExpmapDerivative(w);
+  Matrix expectedDexpL = numericalDerivative11<Vector3, Vector3>(testDexpL,
+      Vector3::Zero(), 1e-2);
+  EXPECT(assert_equal(expectedDexpL, actualDexpL,1e-7));
+
+  Matrix actualDexpInvL = Rot3::LogmapDerivative(w);
+  EXPECT(assert_equal(expectedDexpL.inverse(), actualDexpInvL,1e-7));
 }
 
 /* ************************************************************************* */
-TEST( Rot3, rightJacobianExpMapSO3 )
+Vector3 thetahat(0.1, 0, 0.1);
+TEST( Rot3, ExpmapDerivative2)
 {
-  // Linearization point
-  Vector3 thetahat; thetahat << 0.1, 0, 0;
+  Matrix Jexpected = numericalDerivative11<Rot3, Vector3>(
+      boost::bind(&Rot3::Expmap, _1, boost::none), thetahat);
 
-  Matrix expectedJacobian = numericalDerivative11<Rot3, Vector3>(
-      boost::bind(&Rot3::Expmap, _1), thetahat);
-  Matrix actualJacobian = Rot3::rightJacobianExpMapSO3(thetahat);
-  CHECK(assert_equal(expectedJacobian, actualJacobian));
+  Matrix Jactual = Rot3::ExpmapDerivative(thetahat);
+  CHECK(assert_equal(Jexpected, Jactual));
+
+  Matrix Jactual2 = Rot3::ExpmapDerivative(thetahat);
+  CHECK(assert_equal(Jexpected, Jactual2));
 }
 
 /* ************************************************************************* */
-TEST( Rot3, rightJacobianExpMapSO3inverse )
+TEST( Rot3, jacobianExpmap )
 {
-  // Linearization point
-  Vector3 thetahat; thetahat << 0.1,0.1,0; ///< Current estimate of rotation rate bias
-  Vector3 deltatheta; deltatheta << 0, 0, 0;
+  Matrix Jexpected = numericalDerivative11<Rot3, Vector3>(boost::bind(
+      &Rot3::Expmap, _1, boost::none), thetahat);
+  Matrix3 Jactual;
+  const Rot3 R = Rot3::Expmap(thetahat, Jactual);
+  EXPECT(assert_equal(Jexpected, Jactual));
+}
 
-  Matrix expectedJacobian = numericalDerivative11<Vector3,Vector3>(
-      boost::bind(&evaluateLogRotation, thetahat, _1), deltatheta);
-  Matrix actualJacobian = Rot3::rightJacobianExpMapSO3inverse(thetahat);
-  EXPECT(assert_equal(expectedJacobian, actualJacobian));
+/* ************************************************************************* */
+TEST( Rot3, LogmapDerivative )
+{
+  Rot3 R = Rot3::Expmap(thetahat); // some rotation
+  Matrix Jexpected = numericalDerivative11<Vector,Rot3>(boost::bind(
+      &Rot3::Logmap, _1, boost::none), R);
+  Matrix3 Jactual = Rot3::LogmapDerivative(thetahat);
+  EXPECT(assert_equal(Jexpected, Jactual));
+}
+
+/* ************************************************************************* */
+TEST( Rot3, jacobianLogmap )
+{
+  Rot3 R = Rot3::Expmap(thetahat); // some rotation
+  Matrix Jexpected = numericalDerivative11<Vector,Rot3>(boost::bind(
+      &Rot3::Logmap, _1, boost::none), R);
+  Matrix3 Jactual;
+  Rot3::Logmap(R, Jactual);
+  EXPECT(assert_equal(Jexpected, Jactual));
 }
 
 /* ************************************************************************* */
@@ -398,27 +435,6 @@ TEST( Rot3, between )
 
   Matrix numericalH2 = numericalDerivative22(testing::between<Rot3> , R1, R2);
   CHECK(assert_equal(numericalH2,actualH2));
-}
-
-/* ************************************************************************* */
-Vector w = Vector3(0.1, 0.27, -0.2);
-
-// Left trivialization Derivative of exp(w) wrpt w:
-// How does exp(w) change when w changes?
-// We find a y such that: exp(w) exp(y) = exp(w + dw) for dw --> 0
-// => y = log (exp(-w) * exp(w+dw))
-Vector3 testDexpL(const Vector3& dw) {
-  return Rot3::Logmap(Rot3::Expmap(-w) * Rot3::Expmap(w + dw));
-}
-
-TEST( Rot3, dexpL) {
-  Matrix actualDexpL = Rot3::dexpL(w);
-  Matrix expectedDexpL = numericalDerivative11<Vector3, Vector3>(testDexpL,
-      Vector3::Zero(), 1e-2);
-  EXPECT(assert_equal(expectedDexpL, actualDexpL,1e-7));
-
-  Matrix actualDexpInvL = Rot3::dexpInvL(w);
-  EXPECT(assert_equal(expectedDexpL.inverse(), actualDexpInvL,1e-7));
 }
 
 /* ************************************************************************* */

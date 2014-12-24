@@ -113,7 +113,7 @@ void ImuFactor::PreintegratedMeasurements::integrateMeasurement(
   const Vector3 theta_incr = correctedOmega * deltaT; // rotation vector describing rotation increment computed from the current rotation rate measurement
   const Rot3 Rincr = Rot3::Expmap(theta_incr); // rotation increment computed from the current rotation rate measurement
 
-  const Matrix3 Jr_theta_incr = Rot3::rightJacobianExpMapSO3(theta_incr); // Right jacobian computed at theta_incr
+  const Matrix3 Jr_theta_incr = Rot3::ExpmapDerivative(theta_incr); // Right jacobian computed at theta_incr
 
   // Update Jacobians
   /* ----------------------------------------------------------------------------------------------------------------------- */
@@ -133,11 +133,11 @@ void ImuFactor::PreintegratedMeasurements::integrateMeasurement(
   // as in [2] we consider a first order propagation that can be seen as a prediction phase in an EKF framework
   /* ----------------------------------------------------------------------------------------------------------------------- */
   const Vector3 theta_i = Rot3::Logmap(deltaRij_); // parametrization of so(3)
-  const Matrix3 Jr_theta_i = Rot3::rightJacobianExpMapSO3(theta_i);
+  const Matrix3 Jr_theta_i = Rot3::ExpmapDerivative(theta_i);
 
   Rot3 Rot_j = deltaRij_ * Rincr;
   const Vector3 theta_j = Rot3::Logmap(Rot_j); // parametrization of so(3)
-  const Matrix3 Jrinv_theta_j = Rot3::rightJacobianExpMapSO3inverse(theta_j);
+  const Matrix3 Jrinv_theta_j = Rot3::LogmapDerivative(theta_j);
 
   Matrix H_pos_pos    = I_3x3;
   Matrix H_pos_vel    = I_3x3 * deltaT;
@@ -275,11 +275,11 @@ Vector ImuFactor::evaluateError(const Pose3& pose_i, const Vector3& vel_i, const
 
   const Rot3 fRhat = deltaRij_biascorrected_corioliscorrected.between(Rot_i.between(Rot_j));
 
-  const Matrix3 Jr_theta_bcc = Rot3::rightJacobianExpMapSO3(theta_biascorrected_corioliscorrected);
+  const Matrix3 Jr_theta_bcc = Rot3::ExpmapDerivative(theta_biascorrected_corioliscorrected);
 
   const Matrix3 Jtheta = -Jr_theta_bcc  * skewSymmetric(Rot_i.inverse().matrix() * omegaCoriolis_ * deltaTij);
 
-  const Matrix3 Jrinv_fRhat = Rot3::rightJacobianExpMapSO3inverse(Rot3::Logmap(fRhat));
+  const Matrix3 Jrinv_fRhat = Rot3::LogmapDerivative(Rot3::Logmap(fRhat));
 
   if(H1) {
     H1->resize(9,6);
@@ -348,8 +348,8 @@ Vector ImuFactor::evaluateError(const Pose3& pose_i, const Vector3& vel_i, const
   }
 
   if(H5) {
-    const Matrix3 Jrinv_theta_bc = Rot3::rightJacobianExpMapSO3inverse(theta_biascorrected);
-    const Matrix3 Jr_JbiasOmegaIncr = Rot3::rightJacobianExpMapSO3(preintegratedMeasurements_.delRdelBiasOmega_ * biasOmegaIncr);
+    const Matrix3 Jrinv_theta_bc = Rot3::LogmapDerivative(theta_biascorrected);
+    const Matrix3 Jr_JbiasOmegaIncr = Rot3::ExpmapDerivative(preintegratedMeasurements_.delRdelBiasOmega_ * biasOmegaIncr);
     const Matrix3 JbiasOmega = Jr_theta_bcc * Jrinv_theta_bc * Jr_JbiasOmegaIncr * preintegratedMeasurements_.delRdelBiasOmega_;
 
     H5->resize(9,6);

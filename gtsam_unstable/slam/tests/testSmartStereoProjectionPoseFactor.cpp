@@ -45,7 +45,7 @@ static boost::shared_ptr<Cal3Bundler> Kbundler(new Cal3Bundler(500, 1e-3, 1e-3, 
 
 static double rankTol = 1.0;
 static double linThreshold = -1.0;
-static bool manageDegeneracy = true;
+// static bool manageDegeneracy = true;
 // Create a noise model for the pixel error
 static SharedNoiseModel model(noiseModel::Unit::Create(3));
 

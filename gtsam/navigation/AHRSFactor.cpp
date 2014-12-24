@@ -99,7 +99,7 @@ void AHRSFactor::PreintegratedMeasurements::integrateMeasurement(
   const Matrix3 incrRt = incrR.transpose();
 
   // Right Jacobian computed at theta_incr
-  const Matrix3 Jr_theta_incr = Rot3::rightJacobianExpMapSO3(theta_incr);
+  const Matrix3 Jr_theta_incr = Rot3::ExpmapDerivative(theta_incr);
 
   // Update Jacobians
   // ---------------------------------------------------------------------------
@@ -108,11 +108,11 @@ void AHRSFactor::PreintegratedMeasurements::integrateMeasurement(
   // Update preintegrated measurements covariance
   // ---------------------------------------------------------------------------
   const Vector3 theta_i = Rot3::Logmap(deltaRij_); // Parameterization of so(3)
-  const Matrix3 Jr_theta_i = Rot3::rightJacobianExpMapSO3inverse(theta_i);
+  const Matrix3 Jr_theta_i = Rot3::LogmapDerivative(theta_i);
 
   Rot3 Rot_j = deltaRij_ * incrR;
   const Vector3 theta_j = Rot3::Logmap(Rot_j); // Parameterization of so(3)
-  const Matrix3 Jrinv_theta_j = Rot3::rightJacobianExpMapSO3inverse(theta_j);
+  const Matrix3 Jrinv_theta_j = Rot3::LogmapDerivative(theta_j);
 
   // Update preintegrated measurements covariance: as in [2] we consider a first
   // order propagation that can be seen as a prediction phase in an EKF framework
@@ -145,9 +145,9 @@ Vector3 AHRSFactor::PreintegratedMeasurements::predict(const Vector3& bias,
   const Vector3 theta_biascorrected = Rot3::Logmap(deltaRij_biascorrected);
   if (H) {
     const Matrix3 Jrinv_theta_bc = //
-        Rot3::rightJacobianExpMapSO3inverse(theta_biascorrected);
+        Rot3::LogmapDerivative(theta_biascorrected);
     const Matrix3 Jr_JbiasOmegaIncr = //
-        Rot3::rightJacobianExpMapSO3(delRdelBiasOmega_biasOmegaIncr);
+        Rot3::ExpmapDerivative(delRdelBiasOmega_biasOmegaIncr);
     (*H) = Jrinv_theta_bc * Jr_JbiasOmegaIncr * delRdelBiasOmega_;
   }
   return theta_biascorrected;
@@ -238,8 +238,8 @@ Vector AHRSFactor::evaluateError(const Rot3& rot_i, const Rot3& rot_j,
   Vector3 fR = Rot3::Logmap(fRhat);
 
   // Terms common to derivatives
-  const Matrix3 Jr_theta_bcc = Rot3::rightJacobianExpMapSO3(theta_corrected);
-  const Matrix3 Jrinv_fRhat = Rot3::rightJacobianExpMapSO3inverse(fR);
+  const Matrix3 Jr_theta_bcc = Rot3::ExpmapDerivative(theta_corrected);
+  const Matrix3 Jrinv_fRhat = Rot3::LogmapDerivative(fR);
 
   if (H1) {
     // dfR/dRi

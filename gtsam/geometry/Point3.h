@@ -142,12 +142,12 @@ namespace gtsam {
     static inline Vector3 Logmap(const Point3& dp) { return Vector3(dp.x(), dp.y(), dp.z()); }
 
     /// Left-trivialized derivative of the exponential map
-    static Matrix3 dexpL(const Vector& v) {
+    static Matrix3 ExpmapDerivative(const Vector& v) {
       return I_3x3;
     }
 
     /// Left-trivialized derivative inverse of the exponential map
-    static Matrix3 dexpInvL(const Vector& v) {
+    static Matrix3 LogmapDerivative(const Vector& v) {
       return I_3x3;
     }
 

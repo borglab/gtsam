@@ -241,7 +241,7 @@ TEST( AHRSFactor, PartialDerivativeExpmap ) {
   Matrix expectedDelRdelBiasOmega = numericalDerivative11<Rot3, Vector3>(
       boost::bind(&evaluateRotation, measuredOmega, _1, deltaT), biasOmega);
 
-  const Matrix3 Jr = Rot3::rightJacobianExpMapSO3(
+  const Matrix3 Jr = Rot3::ExpmapDerivative(
       (measuredOmega - biasOmega) * deltaT);
 
   Matrix3 actualdelRdelBiasOmega = -Jr * deltaT; // the delta bias appears with the minus sign
@@ -293,7 +293,7 @@ TEST( AHRSFactor, fistOrderExponential ) {
   Vector3 deltabiasOmega;
   deltabiasOmega << alpha, alpha, alpha;
 
-  const Matrix3 Jr = Rot3::rightJacobianExpMapSO3(
+  const Matrix3 Jr = Rot3::ExpmapDerivative(
       (measuredOmega - biasOmega) * deltaT);
 
   Matrix3 delRdelBiasOmega = -Jr * deltaT; // the delta bias appears with the minus sign
