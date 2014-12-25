@@ -18,7 +18,7 @@
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/base/Testable.h>
-#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/base/testLie.h>
 #include <gtsam/base/lieProxies.h>
 
 #include <CppUnitLite/TestHarness.h>
@@ -769,69 +769,11 @@ TEST(Pose2, align_4) {
 
 //******************************************************************************
 TEST(Pose2 , Traits) {
-  Pose2 id;
   Pose2 t1(M_PI / 4.0, Point2(sqrt(0.5), sqrt(0.5)));
   Pose2 t2(M_PI / 2.0, Point2(0.0, 2.0));
   check_group_invariants(t1, t2);
   check_manifold_invariants(t1, t2);
-
-  Matrix H1, H2;
-  typedef traits_x<Pose2> T;
-
-  EXPECT(assert_equal(t1, T::Compose(id, t1, H1, H2)));
-  EXPECT(assert_equal(numericalDerivative21(T::Compose, id, t1), H1));
-  EXPECT(assert_equal(numericalDerivative22(T::Compose, id, t1), H2));
-
-  EXPECT(assert_equal(t2, T::Compose(id, t2, H1, H2)));
-  EXPECT(assert_equal(numericalDerivative21(T::Compose, id, t2), H1));
-  EXPECT(assert_equal(numericalDerivative22(T::Compose, id, t2), H2));
-
-  EXPECT(assert_equal(t1 * t2,T::Compose(t1, t2, H1, H2)));
-  EXPECT(assert_equal(numericalDerivative21(T::Compose, t1, t2), H1));
-  EXPECT(assert_equal(numericalDerivative22(T::Compose, t1, t2), H2));
-
-  EXPECT(assert_equal(t1.inverse() * t2,T::Between(t1, t2, H1, H2)));
-  EXPECT(assert_equal(numericalDerivative21(T::Between, t1, t2), H1));
-  EXPECT(assert_equal(numericalDerivative22(T::Between, t1, t2), H2));
-
-  EXPECT(assert_equal(t1.inverse(),T::Inverse(t1, H1)));
-  EXPECT(assert_equal(numericalDerivative11(T::Inverse, t1),H1));
-
-  Vector3 z = T::Local(id, id);
-  EXPECT(assert_equal(id, T::Retract(id,z, H1, H2)));
-  EXPECT(assert_equal(numericalDerivative21(T::Retract, id, z), H1));
-  EXPECT(assert_equal(numericalDerivative22(T::Retract, id, z), H2));
-
-  EXPECT(assert_equal(z, id.localCoordinates(id, H1, H2)));
-  EXPECT(assert_equal(numericalDerivative21(T::Local, id, id), H1));
-  EXPECT(assert_equal(numericalDerivative22(T::Local, id, id), H2));
-
-  Vector3 w1 = T::Local(id, t1);
-  EXPECT(assert_equal(t1, T::Retract(id,w1, H1, H2)));
-  EXPECT(assert_equal(numericalDerivative21(T::Retract, id, w1), H1));
-  EXPECT(assert_equal(numericalDerivative22(T::Retract, id, w1), H2));
-
-  EXPECT(assert_equal(w1, id.localCoordinates(t1, H1, H2)));
-  EXPECT(assert_equal(numericalDerivative21(T::Local, id, t1), H1));
-  EXPECT(assert_equal(numericalDerivative22(T::Local, id, t1), H2));
-
-  Vector3 w2 = T::Local(id, t2);
-  EXPECT(assert_equal(t2, T::Retract(id,w2, H1, H2)));
-  EXPECT(assert_equal(numericalDerivative21(T::Retract, id, w2), H1));
-  EXPECT(assert_equal(numericalDerivative22(T::Retract, id, w2), H2));
-
-  EXPECT(assert_equal(w2, id.localCoordinates(t2, H1, H2)));
-  EXPECT(assert_equal(numericalDerivative21(T::Local, id, t2), H1));
-  EXPECT(assert_equal(numericalDerivative22(T::Local, id, t2), H2));
-
-  Vector3 w12 = T::Local(t1, t2);
-  EXPECT(assert_equal(t2, T::Retract(t1,w12, H1, H2)));
-  EXPECT(assert_equal(numericalDerivative21(T::Retract, t1, w12), H1));
-  EXPECT(assert_equal(numericalDerivative22(T::Retract, t1, w12), H2));
-
-  EXPECT(assert_equal(w12, t1.localCoordinates(t2, H1, H2)));
-  EXPECT(assert_equal(numericalDerivative21(T::Local, t1, t2), H1));
-  EXPECT(assert_equal(numericalDerivative22(T::Local, t1, t2), H2));
+  CHECK_LIE_GROUP_DERIVATIVES(t1,t2);
 }
 
 /* ************************************************************************* */
