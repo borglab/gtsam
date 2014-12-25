@@ -57,7 +57,7 @@ TEST(Reconstruction, ExpmapInvDeriv) {
           ),
       Vector6(Vector::Zero(6)), 1e-5
       );
-  Matrix dExpInv = Pose3::dExpInv_exp(h*V1_g1);
+  Matrix dExpInv = Pose3::ExpmapDerivative(h*V1_g1);
   EXPECT(assert_equal(numericalExpmap, dExpInv, 1e-2));
 }
 

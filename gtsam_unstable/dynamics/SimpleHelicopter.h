@@ -60,7 +60,7 @@ public:
     }
 
     if (H3) {
-      Matrix D_exphxi_xi = Pose3::dExpInv_exp(h_*xik)*h_;
+      Matrix D_exphxi_xi = Pose3::ExpmapDerivative(h_*xik)*h_;
       Matrix D_hx_xi = D_hx_gkxi * D_gkxi_exphxi * D_exphxi_xi;
       *H3 = D_hx_xi;
     }
