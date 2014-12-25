@@ -46,32 +46,29 @@ public:
       boost::optional<Matrix&> H2 = boost::none,
       boost::optional<Matrix&> H3 = boost::none) const {
 
-    Matrix D_exphxi_xi;
-    Pose3 newPose = Pose3::Expmap(h_*xik, D_exphxi_xi);
-    D_exphxi_xi = D_exphxi_xi*h_;
-    Matrix D_gkxi_gk, D_gkxi_exphxi;
-    Pose3 gkxi = gk.compose(newPose, D_gkxi_gk, D_gkxi_exphxi);
+    if (H1 || H2 || H3) {
+      Matrix6 D_Xi_3;
+      Pose3 Xi = traits_x<Pose3>::Expmap(h_ * xik, D_Xi_3);
 
-    Matrix D_hx_gk1, D_hx_gkxi;
-    Pose3 hx = gkxi.between(gk1, D_hx_gkxi, D_hx_gk1);
+      Matrix6 D_gkxi_2, D_gkxi_Xi;
+      Pose3 gkxi = gk.compose(Xi, D_gkxi_2, D_gkxi_Xi);
 
-    Matrix D_log_hx;
-    Vector error = Pose3::Logmap(hx, D_log_hx);
+      Matrix6 D_hx_1, D_hx_gkxi;
+      Pose3 hx = gkxi.between(gk1, D_hx_gkxi, D_hx_1);
 
-    if (H1) {
-      *H1 = D_log_hx*D_hx_gk1;
+      Matrix6 D_e_hx;
+      Vector6 error = traits_x<Pose3>::Logmap(hx, D_e_hx);
+      if (H1) *H1 = D_e_hx * D_hx_1;
+      if (H2) *H2 = D_e_hx * D_hx_gkxi * D_gkxi_2;
+      if (H3) *H3 = D_e_hx * D_gkxi_Xi * D_Xi_3;
+
+      return error;
+    } else {
+      Pose3 Xi = Pose3::Expmap(h_ * xik);
+      Pose3 gkxi = gk.compose(Xi);
+      Pose3 hx = gkxi.between(gk1);
+      return Pose3::Logmap(hx);
     }
-    if (H2) {
-      Matrix D_hx_gk = D_hx_gkxi * D_gkxi_gk;
-      *H2 = D_log_hx*D_hx_gk;
-    }
-
-    if (H3) {
-      Matrix D_hx_xi = D_hx_gkxi * D_gkxi_exphxi * D_exphxi_xi;
-      *H3 = D_log_hx*D_hx_xi;
-    }
-
-    return error;
   }
 
 };
