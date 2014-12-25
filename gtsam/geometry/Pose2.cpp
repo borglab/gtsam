@@ -76,7 +76,7 @@ Pose2 Pose2::Expmap(const Vector& xi, OptionalJacobian<3, 3> H) {
 
 /* ************************************************************************* */
 Vector3 Pose2::Logmap(const Pose2& p, OptionalJacobian<3, 3> H) {
-  if (H) CONCEPT_NOT_IMPLEMENTED;
+  if (H) *H = Pose2::LogmapDerivative(p);
   const Rot2& R = p.r();
   const Point2& t = p.t();
   double w = R.theta();
@@ -164,7 +164,8 @@ Matrix3 Pose2::ExpmapDerivative(const Vector3& v) {
 }
 
 /* ************************************************************************* */
-Matrix3 Pose2::LogmapDerivative(const Vector3& v) {
+Matrix3 Pose2::LogmapDerivative(const Pose2& p) {
+  Vector3 v = Logmap(p);
   double alpha = v[2];
   if (fabs(alpha) > 1e-5) {
     double alphaInv = 1/alpha;

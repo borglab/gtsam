@@ -198,53 +198,44 @@ TEST(Pose2, logmap_full) {
 }
 
 /* ************************************************************************* */
-Vector3 w(0.1, 0.27, -0.3);
-Vector3 w0(0.1, 0.27, 0.0);  // alpha = 0
-
-// Left trivialization Derivative of exp(w) over w:
-// How exp(w) changes when w changes?
-// We find y such that: exp(w) exp(y) = exp(w + dw) for dw --> 0
-// => y = log (exp(-w) * exp(w+dw))
-Vector3 testDexpL(const Vector3 w, const Vector3& dw) {
-  Vector3 y = Pose2::Logmap(Pose2::Expmap(-w) * Pose2::Expmap(w + dw));
-  return y;
-}
-
-TEST( Pose2, ExpmapDerivative) {
-  Matrix actualDexpL = Pose2::ExpmapDerivative(w);
-  Matrix expectedDexpL = numericalDerivative11<Vector3, Vector3>(
-          boost::bind(testDexpL, w, _1), zero(3), 1e-2);
-  EXPECT(assert_equal(expectedDexpL, actualDexpL, 1e-5));
-
-  Matrix actualDexpInvL = Pose2::LogmapDerivative(w);
-  EXPECT(assert_equal(expectedDexpL.inverse(), actualDexpInvL, 1e-5));
-
-  // test case where alpha = 0
-  Matrix actualDexpL0 = Pose2::ExpmapDerivative(w0);
-  Matrix expectedDexpL0 = numericalDerivative11<Vector3, Vector3>(
-          boost::bind(testDexpL, w0, _1), zero(3), 1e-2);
-  EXPECT(assert_equal(expectedDexpL0, actualDexpL0, 1e-5));
-
-  Matrix actualDexpInvL0 = Pose2::LogmapDerivative(w0);
-  EXPECT(assert_equal(expectedDexpL.inverse(), actualDexpInvL, 1e-5));
+TEST( Pose2, ExpmapDerivative1) {
+  Matrix3 actualH;
+  Vector3 w(0.1, 0.27, -0.3);
+  Pose2::Expmap(w,actualH);
+  Matrix3 expectedH = numericalDerivative21<Pose2, Vector3,
+      OptionalJacobian<3, 3> >(&Pose2::Expmap, w, boost::none, 1e-2);
+  EXPECT(assert_equal(expectedH, actualH, 1e-5));
 }
 
 /* ************************************************************************* */
 TEST( Pose2, ExpmapDerivative2) {
   Matrix3 actualH;
-  Pose2::Expmap(w,actualH);
-  Matrix3 expectedH = numericalDerivative11<Pose2, Vector3>(
-          boost::bind(Pose2::Expmap, _1, boost::none), w, 1e-2);
+  Vector3 w0(0.1, 0.27, 0.0);  // alpha = 0
+  Pose2::Expmap(w0,actualH);
+  Matrix3 expectedH = numericalDerivative21<Pose2, Vector3,
+      OptionalJacobian<3, 3> >(&Pose2::Expmap, w0, boost::none, 1e-2);
+  EXPECT(assert_equal(expectedH, actualH, 1e-5));
+}
+
+/* ************************************************************************* */
+TEST( Pose2, LogmapDerivative1) {
+  Matrix3 actualH;
+  Vector3 w(0.1, 0.27, -0.3);
+  Pose2 p = Pose2::Expmap(w);
+  EXPECT(assert_equal(w, Pose2::Logmap(p,actualH), 1e-5));
+  Matrix3 expectedH = numericalDerivative21<Vector3, Pose2,
+      OptionalJacobian<3, 3> >(&Pose2::Logmap, p, boost::none, 1e-2);
   EXPECT(assert_equal(expectedH, actualH, 1e-5));
 }
 
 /* ************************************************************************* */
 TEST( Pose2, LogmapDerivative2) {
-  Pose2 p = Pose2::Expmap(w);
-  EXPECT(assert_equal(w, Pose2::Logmap(p), 1e-5));
-  Matrix3 actualH = Pose2::LogmapDerivative(w);
-  Matrix3 expectedH = numericalDerivative11<Vector3, Pose2>(
-          boost::bind(Pose2::Logmap, _1, boost::none), p, 1e-2);
+  Matrix3 actualH;
+  Vector3 w0(0.1, 0.27, 0.0);  // alpha = 0
+  Pose2 p = Pose2::Expmap(w0);
+  EXPECT(assert_equal(w0, Pose2::Logmap(p,actualH), 1e-5));
+  Matrix3 expectedH = numericalDerivative21<Vector3, Pose2,
+      OptionalJacobian<3, 3> >(&Pose2::Logmap, p, boost::none, 1e-2);
   EXPECT(assert_equal(expectedH, actualH, 1e-5));
 }
 
