@@ -18,11 +18,45 @@
 
 #pragma once
 
-#include <gtsam/3rdparty/ceres/autodiff.h>
+#include <gtsam/base/Group.h>
 #include <gtsam/base/concepts.h>
 #include <gtsam/base/OptionalJacobian.h>
+#include <gtsam/3rdparty/ceres/autodiff.h>
+
+#include <boost/static_assert.hpp>
+#include <boost/type_traits/is_base_of.hpp>
 
 namespace gtsam {
+
+template <typename T> struct traits_x;
+
+template<typename T>
+struct Canonical {
+  typedef traits_x<T> Traits;
+  BOOST_STATIC_ASSERT_MSG(
+      (boost::is_base_of<group_tag, typename Traits::structure_category>::value),
+      "This type's trait does not assert it is a manifold (or derived)");
+  typedef typename Traits::TangentVector TangentVector;
+  enum { dimension = Traits::dimension };
+  typedef OptionalJacobian<dimension, dimension> ChartJacobian;
+
+  static TangentVector Local(const T& other) {
+    return Traits::Local(Traits::Identity(), other);
+  }
+
+  static T Retract(const TangentVector& v) {
+    return Traits::Retract(Traits::Identity(), v);
+  }
+
+  static TangentVector Local(const T& other, ChartJacobian Hother) {
+    return Traits::Local(Traits::Identity(), other, boost::none, Hother);
+  }
+
+  static T Retract(const T& origin, const TangentVector& v,
+      ChartJacobian Horigin, ChartJacobian Hv) {
+    return Traits::Retract(Traits::Identity(), v, boost::none, Hv);
+  }
+};
 
 /// Adapt ceres-style autodiff
 template<typename F, typename T, typename A1, typename A2>

@@ -160,57 +160,6 @@ TEST(Manifold, _identity) {
 }
 
 /* ************************************************************************* */
-// charts
-TEST(Manifold, Canonical) {
-
-  Canonical<Point2> chart1;
-  EXPECT(chart1.Local(Point2(1, 0))==Vector2(1, 0));
-  EXPECT(chart1.Retract(Vector2(1, 0))==Point2(1, 0));
-
-  Vector v2(2);
-  v2 << 1, 0;
-  Canonical<Vector2> chart2;
-  EXPECT(assert_equal(v2, chart2.Local(Vector2(1, 0))));
-  EXPECT(chart2.Retract(v2)==Vector2(1, 0));
-
-  Canonical<double> chart3;
-  Eigen::Matrix<double, 1, 1> v1;
-  v1 << 1;
-  EXPECT(chart3.Local(1)==v1);
-  EXPECT_DOUBLES_EQUAL(chart3.Retract(v1), 1, 1e-9);
-
-  Canonical<Point3> chart4;
-  Point3 point(1, 2, 3);
-  Vector v3(3);
-  v3 << 1, 2, 3;
-  EXPECT(assert_equal(v3, chart4.Local(point)));
-  EXPECT(assert_equal(chart4.Retract(v3), point));
-
-  Canonical<Pose3> chart5;
-  Pose3 pose(Rot3::identity(), point);
-  Vector v6(6);
-  v6 << 0, 0, 0, 1, 2, 3;
-  EXPECT(assert_equal(v6, chart5.Local(pose)));
-  EXPECT(assert_equal(chart5.Retract(v6), pose));
-
-#if 0 // TODO: Canonical should not require group?
-  Canonical<Camera> chart6;
-  Cal3Bundler cal0(0, 0, 0);
-  Camera camera(Pose3(), cal0);
-  Vector z9 = Vector9::Zero();
-  EXPECT(assert_equal(z9, chart6.Local(camera)));
-  EXPECT(assert_equal(chart6.Retract(z9), camera));
-
-  Cal3Bundler cal; // Note !! Cal3Bundler() != zero<Cal3Bundler>::value()
-  Camera camera2(pose, cal);
-  Vector v9(9);
-  v9 << 0, 0, 0, 1, 2, 3, 1, 0, 0;
-  EXPECT(assert_equal(v9, chart6.Local(camera2)));
-  EXPECT(assert_equal(chart6.Retract(v9), camera2));
-#endif
-}
-
-/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
