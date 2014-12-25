@@ -23,6 +23,8 @@
 #include <iostream>
 #include <cmath>
 
+#define GTSAM_POSE3_EXPMAP
+
 using namespace std;
 
 namespace gtsam {
@@ -34,6 +36,12 @@ GTSAM_CONCEPT_POSE_INST(Pose3);
 Pose3::Pose3(const Pose2& pose2) :
     R_(Rot3::rodriguez(0, 0, pose2.theta())), t_(
         Point3(pose2.x(), pose2.y(), 0)) {
+}
+
+/* ************************************************************************* */
+Pose3 Pose3::inverse() const {
+  Rot3 Rt = R_.inverse();
+  return Pose3(Rt, Rt * (-t_));
 }
 
 /* ************************************************************************* */
@@ -127,8 +135,7 @@ Pose3 Pose3::Expmap(const Vector& xi, OptionalJacobian<6, 6> H) {
 
 /* ************************************************************************* */
 Vector6 Pose3::Logmap(const Pose3& p, OptionalJacobian<6, 6> H) {
-  if (H) CONCEPT_NOT_IMPLEMENTED;
-
+  if (H) *H = LogmapDerivative(p);
   Vector3 w = Rot3::Logmap(p.rotation()), T = p.translation().vector();
   double t = w.norm();
   if (t < 1e-10) {
@@ -149,57 +156,25 @@ Vector6 Pose3::Logmap(const Pose3& p, OptionalJacobian<6, 6> H) {
 }
 
 /* ************************************************************************* */
-Pose3 Pose3::retractFirstOrder(const Vector& xi) const {
-  Vector3 omega(sub(xi, 0, 3));
-  Point3 v(sub(xi, 3, 6));
-  Rot3 R = R_.retract(omega); // R is done exactly
-  Point3 t = t_ + R_ * v; // First order t approximation
-  return Pose3(R, t);
+Pose3 Pose3::ChartAtOrigin::Retract(const Vector6& xi, ChartJacobian H) {
+#ifdef GTSAM_POSE3_EXPMAP
+  return Expmap(xi, H);
+#else
+  if (H) CONCEPT_NOT_IMPLEMENTED;
+  return Pose3(Rot3::Retract(xi.head<3>()), Point3(xi.tail<3>()));
+#endif
 }
 
 /* ************************************************************************* */
-// Different versions of retract
-Pose3 Pose3::retract(const Vector& xi, Pose3::CoordinatesMode mode) const {
-  if (mode == Pose3::EXPMAP) {
-    // Lie group exponential map, traces out geodesic
-    return compose(Expmap(xi));
-  } else if (mode == Pose3::FIRST_ORDER) {
-    // First order
-    return retractFirstOrder(xi);
-  } else {
-    // Point3 t = t_.retract(v.vector()); // Incorrect version retracts t independently
-    // Point3 t = t_ + R_ * (v+Point3(omega).cross(v)/2); // Second order t approximation
-    assert(false);
-    exit(1);
-  }
-}
-
-/* ************************************************************************* */
-// different versions of localCoordinates
-Vector6 Pose3::localCoordinates(const Pose3& T,
-    Pose3::CoordinatesMode mode) const {
-  if (mode == Pose3::EXPMAP) {
-    // Lie group logarithm map, exact inverse of exponential map
-    return Logmap(between(T));
-  } else if (mode == Pose3::FIRST_ORDER) {
-    // R is always done exactly in all three retract versions below
-    Vector3 omega = R_.localCoordinates(T.rotation());
-
-    // Incorrect version
-    // Independently computes the logmap of the translation and rotation
-    // Vector v = t_.localCoordinates(T.translation());
-
-    // Correct first order t inverse
-    Point3 d = R_.unrotate(T.translation() - t_);
-
-    // TODO: correct second order t inverse
-    Vector6 local;
-    local << omega(0), omega(1), omega(2), d.x(), d.y(), d.z();
-    return local;
-  } else {
-    assert(false);
-    exit(1);
-  }
+Vector6 Pose3::ChartAtOrigin::Local(const Pose3& T, ChartJacobian H) {
+#ifdef GTSAM_POSE3_EXPMAP
+  return Logmap(T, H);
+#else
+  if (H) CONCEPT_NOT_IMPLEMENTED;
+  Vector6 xi;
+  xi << Rot3::Logmap(T.rotation()), T.translation().vector();
+  return xi;
+#endif
 }
 
 /* ************************************************************************* */
@@ -253,27 +228,14 @@ Matrix6 Pose3::ExpmapDerivative(const Vector6& xi) {
 }
 
 /* ************************************************************************* */
-Matrix6 Pose3::LogmapDerivative(const Vector6& xi) {
+Matrix6 Pose3::LogmapDerivative(const Pose3& pose) {
+  Vector6 xi = Logmap(pose);
   Vector3 w(sub(xi, 0, 3));
   Matrix3 Jw = Rot3::LogmapDerivative(w);
   Matrix3 Q = computeQforExpmapDerivative(xi);
   Matrix3 Q2 = -Jw*Q*Jw;
   Matrix6 J = (Matrix(6,6) << Jw, Z_3x3, Q2, Jw).finished();
   return J;
-}
-
-/* ************************************************************************* */
-Pose3 Pose3::retract(const Vector& d, OptionalJacobian<6, 6> Hthis,
-    OptionalJacobian<6, 6> Hd, Pose3::CoordinatesMode mode) const {
-  if (Hthis || Hd) CONCEPT_NOT_IMPLEMENTED;
-  return retract(d, mode);
-}
-
-/* ************************************************************************* */
-Vector6 Pose3::localCoordinates(const Pose3& T2, OptionalJacobian<6, 6> Horigin,
-    OptionalJacobian<6, 6> Hother, Pose3::CoordinatesMode mode) const {
-  if (Horigin || Hother) CONCEPT_NOT_IMPLEMENTED;
-  return localCoordinates(T2, mode);
 }
 
 /* ************************************************************************* */
@@ -324,31 +286,6 @@ Point3 Pose3::transform_to(const Point3& p, OptionalJacobian<3,6> Dpose,
   if (Dpoint)
     *Dpoint = Rt;
   return q;
-}
-
-/* ************************************************************************* */
-Pose3 Pose3::compose(const Pose3& p2, OptionalJacobian<6,6> H1,
-    OptionalJacobian<6,6> H2) const {
-  if (H1) *H1 = p2.inverse().AdjointMap();
-  if (H2) *H2 = I_6x6;
-  return (*this) * p2;
-}
-
-/* ************************************************************************* */
-Pose3 Pose3::inverse(OptionalJacobian<6,6> H1) const {
-  if (H1) *H1 = -AdjointMap();
-  Rot3 Rt = R_.inverse();
-  return Pose3(Rt, Rt * (-t_));
-}
-
-/* ************************************************************************* */
-// between = compose(p2,inverse(p1));
-Pose3 Pose3::between(const Pose3& p2, OptionalJacobian<6,6> H1,
-    OptionalJacobian<6,6> H2) const {
-  Pose3 result = inverse() * p2;
-  if (H1) *H1 = -result.inverse().AdjointMap();
-  if (H2) *H2 = I_6x6;
-  return result;
 }
 
 /* ************************************************************************* */

@@ -7,9 +7,10 @@
 
 #pragma once
 
-#include <gtsam/base/numericalDerivative.h>
-#include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/base/numericalDerivative.h>
+#include <cmath>
 
 namespace gtsam {
 
@@ -29,7 +30,7 @@ class Reconstruction : public NoiseModelFactor3<Pose3, Pose3, Vector6>  {
   typedef NoiseModelFactor3<Pose3, Pose3, Vector6> Base;
 public:
   Reconstruction(Key gKey1, Key gKey, Key xiKey, double h, double mu = 1000.0) :
-    Base(noiseModel::Constrained::All(Pose3::Dim(), fabs(mu)), gKey1, gKey,
+    Base(noiseModel::Constrained::All(6, std::abs(mu)), gKey1, gKey,
         xiKey), h_(h) {
   }
   virtual ~Reconstruction() {}
@@ -46,7 +47,8 @@ public:
       boost::optional<Matrix&> H3 = boost::none) const {
 
     Matrix D_gkxi_gk, D_gkxi_exphxi;
-    Pose3 gkxi = gk.compose(Pose3::Expmap(h_*xik), D_gkxi_gk, D_gkxi_exphxi);
+    Pose3 newPose = Pose3::Expmap(h_*xik);
+    Pose3 gkxi = gk.compose(newPose, D_gkxi_gk, D_gkxi_exphxi);
 
     Matrix D_hx_gk1, D_hx_gkxi;
     Pose3 hx = gkxi.between(gk1, D_hx_gkxi, D_hx_gk1);
@@ -60,7 +62,7 @@ public:
     }
 
     if (H3) {
-      Matrix D_exphxi_xi = Pose3::LogmapDerivative(h_*xik)*h_;
+      Matrix D_exphxi_xi = Pose3::LogmapDerivative(newPose)*h_;
       Matrix D_hx_xi = D_hx_gkxi * D_gkxi_exphxi * D_exphxi_xi;
       *H3 = D_hx_xi;
     }
@@ -92,7 +94,7 @@ public:
   DiscreteEulerPoincareHelicopter(Key xiKey1, Key xiKey_1, Key gKey,
       double h, const Matrix& Inertia, const Vector& Fu, double m,
       double mu = 1000.0) :
-        Base(noiseModel::Constrained::All(Pose3::Dim(), fabs(mu)), xiKey1, xiKey_1, gKey),
+        Base(noiseModel::Constrained::All(6, std::abs(mu)), xiKey1, xiKey_1, gKey),
         h_(h), Inertia_(Inertia), Fu_(Fu), m_(m) {
   }
   virtual ~DiscreteEulerPoincareHelicopter() {}
