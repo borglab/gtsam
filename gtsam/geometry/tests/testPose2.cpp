@@ -32,8 +32,6 @@ using namespace boost::assign;
 using namespace gtsam;
 using namespace std;
 
-//#define SLOW_BUT_CORRECT_EXPMAP
-
 GTSAM_CONCEPT_TESTABLE_INST(Pose2)
 GTSAM_CONCEPT_LIE_INST(Pose2)
 
@@ -180,9 +178,9 @@ TEST(Pose2, logmap) {
   Pose2 pose0(M_PI/2.0, Point2(1, 2));
   Pose2 pose(M_PI/2.0+0.018, Point2(1.015, 2.01));
 #ifdef SLOW_BUT_CORRECT_EXPMAP
-  Vector expected = Vector3(0.00986473, -0.0150896, 0.018);
+  Vector3 expected(0.00986473, -0.0150896, 0.018);
 #else
-  Vector expected = Vector3(0.01, -0.015, 0.018);
+  Vector3 expected(0.01, -0.015, 0.018);
 #endif
   Vector actual = pose0.localCoordinates(pose);
   EXPECT(assert_equal(expected, actual, 1e-5));
@@ -771,41 +769,69 @@ TEST(Pose2, align_4) {
 
 //******************************************************************************
 TEST(Pose2 , Traits) {
-  Pose2 t1(M_PI/4.0, Point2(sqrt(0.5), sqrt(0.5)));
-  Pose2 t2(M_PI/2.0, Point2(0.0, 2.0));
+  Pose2 id;
+  Pose2 t1(M_PI / 4.0, Point2(sqrt(0.5), sqrt(0.5)));
+  Pose2 t2(M_PI / 2.0, Point2(0.0, 2.0));
   check_group_invariants(t1, t2);
   check_manifold_invariants(t1, t2);
 
-  Pose2 expected, actual;
-  Matrix actualH1, actualH2;
-  Matrix numericalH1, numericalH2;
+  Matrix H1, H2;
+  typedef traits_x<Pose2> T;
 
-  expected = t1 * t2;
-  actual = traits_x<Pose2>::Compose(t1, t2, actualH1, actualH2);
-  EXPECT(assert_equal(expected,actual));
+  EXPECT(assert_equal(t1, T::Compose(id, t1, H1, H2)));
+  EXPECT(assert_equal(numericalDerivative21(T::Compose, id, t1), H1));
+  EXPECT(assert_equal(numericalDerivative22(T::Compose, id, t1), H2));
 
-  numericalH1 = numericalDerivative21(traits_x<Pose2>::Compose, t1, t2);
-  EXPECT(assert_equal(numericalH1,actualH1));
+  EXPECT(assert_equal(t2, T::Compose(id, t2, H1, H2)));
+  EXPECT(assert_equal(numericalDerivative21(T::Compose, id, t2), H1));
+  EXPECT(assert_equal(numericalDerivative22(T::Compose, id, t2), H2));
 
-  numericalH2 = numericalDerivative22(traits_x<Pose2>::Compose, t1, t2);
-  EXPECT(assert_equal(numericalH2,actualH2));
+  EXPECT(assert_equal(t1 * t2,T::Compose(t1, t2, H1, H2)));
+  EXPECT(assert_equal(numericalDerivative21(T::Compose, t1, t2), H1));
+  EXPECT(assert_equal(numericalDerivative22(T::Compose, t1, t2), H2));
 
-  expected = t1.inverse() * t2;
-  actual = traits_x<Pose2>::Between(t1, t2, actualH1, actualH2);
-  EXPECT(assert_equal(expected,actual));
+  EXPECT(assert_equal(t1.inverse() * t2,T::Between(t1, t2, H1, H2)));
+  EXPECT(assert_equal(numericalDerivative21(T::Between, t1, t2), H1));
+  EXPECT(assert_equal(numericalDerivative22(T::Between, t1, t2), H2));
 
-  numericalH1 = numericalDerivative21(traits_x<Pose2>::Between, t1, t2);
-  EXPECT(assert_equal(numericalH1,actualH1));
+  EXPECT(assert_equal(t1.inverse(),T::Inverse(t1, H1)));
+  EXPECT(assert_equal(numericalDerivative11(T::Inverse, t1),H1));
 
-  numericalH2 = numericalDerivative22(traits_x<Pose2>::Between, t1, t2);
-  EXPECT(assert_equal(numericalH2,actualH2));
+  Vector3 z = T::Local(id, id);
+  EXPECT(assert_equal(id, T::Retract(id,z, H1, H2)));
+  EXPECT(assert_equal(numericalDerivative21(T::Retract, id, z), H1));
+  EXPECT(assert_equal(numericalDerivative22(T::Retract, id, z), H2));
 
-  expected = t1.inverse();
-  actual = traits_x<Pose2>::Inverse(t1, actualH1);
-  EXPECT(assert_equal(expected,actual));
+  EXPECT(assert_equal(z, id.localCoordinates(id, H1, H2)));
+  EXPECT(assert_equal(numericalDerivative21(T::Local, id, id), H1));
+  EXPECT(assert_equal(numericalDerivative22(T::Local, id, id), H2));
 
-  numericalH1 = numericalDerivative11(traits_x<Pose2>::Inverse, t1);
-  EXPECT(assert_equal(numericalH1,actualH1));
+  Vector3 w1 = T::Local(id, t1);
+  EXPECT(assert_equal(t1, T::Retract(id,w1, H1, H2)));
+  EXPECT(assert_equal(numericalDerivative21(T::Retract, id, w1), H1));
+  EXPECT(assert_equal(numericalDerivative22(T::Retract, id, w1), H2));
+
+  EXPECT(assert_equal(w1, id.localCoordinates(t1, H1, H2)));
+  EXPECT(assert_equal(numericalDerivative21(T::Local, id, t1), H1));
+  EXPECT(assert_equal(numericalDerivative22(T::Local, id, t1), H2));
+
+  Vector3 w2 = T::Local(id, t2);
+  EXPECT(assert_equal(t2, T::Retract(id,w2, H1, H2)));
+  EXPECT(assert_equal(numericalDerivative21(T::Retract, id, w2), H1));
+  EXPECT(assert_equal(numericalDerivative22(T::Retract, id, w2), H2));
+
+  EXPECT(assert_equal(w2, id.localCoordinates(t2, H1, H2)));
+  EXPECT(assert_equal(numericalDerivative21(T::Local, id, t2), H1));
+  EXPECT(assert_equal(numericalDerivative22(T::Local, id, t2), H2));
+
+  Vector3 w12 = T::Local(t1, t2);
+  EXPECT(assert_equal(t2, T::Retract(t1,w12, H1, H2)));
+  EXPECT(assert_equal(numericalDerivative21(T::Retract, t1, w12), H1));
+  EXPECT(assert_equal(numericalDerivative22(T::Retract, t1, w12), H2));
+
+  EXPECT(assert_equal(w12, t1.localCoordinates(t2, H1, H2)));
+  EXPECT(assert_equal(numericalDerivative21(T::Local, t1, t2), H1));
+  EXPECT(assert_equal(numericalDerivative22(T::Local, t1, t2), H2));
 }
 
 /* ************************************************************************* */

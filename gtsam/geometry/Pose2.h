@@ -24,6 +24,8 @@
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/base/Lie.h>
 
+#define SLOW_BUT_CORRECT_EXPMAP
+
 namespace gtsam {
 
 /**

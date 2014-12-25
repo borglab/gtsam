@@ -37,6 +37,7 @@ struct LieGroup {
 
   enum { dimension = N };
   typedef OptionalJacobian<N, N> ChartJacobian;
+  typedef Eigen::Matrix<double, N, N> Jacobian;
   typedef Eigen::Matrix<double, N, 1> TangentVector;
 
   const Class & derived() const {
@@ -71,16 +72,39 @@ struct LieGroup {
     return derived().inverse();
   }
 
+  Class expmap(const TangentVector& v) const {
+    return compose(Class::Expmap(v));
+  }
+
+  TangentVector logmap(const Class& g) const {
+    return Class::Logmap(between(g));
+  }
+
+  Class retract(const TangentVector& v) const {
+    return compose(Class::ChartAtOrigin::Retract(v));
+  }
+
+  TangentVector localCoordinates(const Class& g) const {
+    return Class::ChartAtOrigin::Local(between(g));
+  }
+
   Class retract(const TangentVector& v, //
-      ChartJacobian H1 = boost::none, //
-      ChartJacobian H2 = boost::none) const {
-    return compose(Class::ChartAtOrigin::Retract(v),H1,H2);
+      ChartJacobian H1, ChartJacobian H2 = boost::none) const {
+    Jacobian D_g_v;
+    Class g = Class::ChartAtOrigin::Retract(v,D_g_v);
+    Class h = compose(g,H1,H2);
+    if (H2) *H2 = (*H2) * D_g_v;
+    return h;
   }
 
   TangentVector localCoordinates(const Class& g, //
-      ChartJacobian H1 = boost::none, //
-      ChartJacobian H2 = boost::none) const {
-    return Class::ChartAtOrigin::Local(between(g,H1,H2));
+      ChartJacobian H1, ChartJacobian H2 = boost::none) const {
+    Class h = between(g,H1,H2);
+    Jacobian D_v_h;
+    TangentVector v = Class::ChartAtOrigin::Local(h, D_v_h);
+    if (H1) *H1 = D_v_h * (*H1);
+    if (H2) *H2 = D_v_h * (*H2);
+    return v;
   }
 
 };
@@ -118,13 +142,21 @@ struct LieGroupTraits : Testable<Class> {
 
   static int GetDimension(const Class&) {return dimension;}
 
+  static TangentVector Local(const Class& origin, const Class& other) {
+    return origin.localCoordinates(other);
+  }
+
+  static Class Retract(const Class& origin, const TangentVector& v) {
+    return origin.retract(v);
+  }
+
   static TangentVector Local(const Class& origin, const Class& other,
-      ChartJacobian Horigin = boost::none, ChartJacobian Hother = boost::none) {
+      ChartJacobian Horigin, ChartJacobian Hother = boost::none) {
     return origin.localCoordinates(other, Horigin, Hother);
   }
 
   static Class Retract(const Class& origin, const TangentVector& v,
-      ChartJacobian Horigin = boost::none, ChartJacobian Hv = boost::none) {
+      ChartJacobian Horigin, ChartJacobian Hv = boost::none) {
     return origin.retract(v, Horigin, Hv);
   }
 
