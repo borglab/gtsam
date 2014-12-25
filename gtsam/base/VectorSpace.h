@@ -329,7 +329,7 @@ struct traits_x<Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > {
   }
   static bool Equals(const ManifoldType& v1, const ManifoldType& v2,
       double tol = 1e-8) {
-    return equal_with_abs_tol(v1, v2, 1e-9);
+    return equal_with_abs_tol(v1, v2, tol);
   }
 
   static TangentVector Local(const ManifoldType& origin,
