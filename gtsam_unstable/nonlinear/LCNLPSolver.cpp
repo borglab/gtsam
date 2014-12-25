@@ -70,19 +70,21 @@ VectorValues LCNLPSolver::initializeDuals() const {
 }
 
 /* ************************************************************************* */
-std::pair<Values, VectorValues> LCNLPSolver::optimize(const Values& initialValues) const {
+std::pair<Values, VectorValues> LCNLPSolver::optimize(const Values& initialValues, bool debug) const {
   LCNLPState state(initialValues);
   state.duals = initializeDuals();
   while (!state.converged && state.iterations < 100) {
-    state = iterate(state);
+    if (debug)
+    std::cout << "state: iteration " << state.iterations << std::endl;
+    state = iterate(state, debug);
   }
+  if (debug)
   std::cout << "Number of iterations: " << state.iterations << std::endl;
   return std::make_pair(state.values, state.duals);
 }
 
 /* ************************************************************************* */
-LCNLPState LCNLPSolver::iterate(const LCNLPState& state) const {
-  static const bool debug = true;
+LCNLPState LCNLPSolver::iterate(const LCNLPState& state, bool debug) const {
 
   // construct the qp subproblem
   QP qp;
