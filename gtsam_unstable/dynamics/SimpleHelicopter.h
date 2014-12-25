@@ -46,28 +46,32 @@ public:
       boost::optional<Matrix&> H2 = boost::none,
       boost::optional<Matrix&> H3 = boost::none) const {
 
+    Matrix D_exphxi_xi;
+    Pose3 newPose = Pose3::Expmap(h_*xik, D_exphxi_xi);
+    D_exphxi_xi = D_exphxi_xi*h_;
     Matrix D_gkxi_gk, D_gkxi_exphxi;
-    Pose3 newPose = Pose3::Expmap(h_*xik);
     Pose3 gkxi = gk.compose(newPose, D_gkxi_gk, D_gkxi_exphxi);
 
     Matrix D_hx_gk1, D_hx_gkxi;
     Pose3 hx = gkxi.between(gk1, D_hx_gkxi, D_hx_gk1);
 
+    Matrix D_log_hx;
+    Vector error = Pose3::Logmap(hx, D_log_hx);
+
     if (H1) {
-      *H1 = D_hx_gk1;
+      *H1 = D_log_hx*D_hx_gk1;
     }
     if (H2) {
       Matrix D_hx_gk = D_hx_gkxi * D_gkxi_gk;
-      *H2 = D_hx_gk;
+      *H2 = D_log_hx*D_hx_gk;
     }
 
     if (H3) {
-      Matrix D_exphxi_xi = Pose3::LogmapDerivative(newPose)*h_;
       Matrix D_hx_xi = D_hx_gkxi * D_gkxi_exphxi * D_exphxi_xi;
-      *H3 = D_hx_xi;
+      *H3 = D_log_hx*D_hx_xi;
     }
 
-    return Pose3::Logmap(hx);
+    return error;
   }
 
 };

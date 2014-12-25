@@ -55,8 +55,8 @@ TEST(Reconstruction, ExpmapInvDeriv) {
       boost::function<Vector(const Vector6&)>(boost::bind(testExpmapDeriv, _1)),
       Vector6(Vector::Zero(6)), 1e-5);
   Pose3 newPose = Pose3::Expmap(h * V1_g1);
-  Matrix dExpInv = Pose3::LogmapDerivative(newPose);
-  EXPECT(assert_equal(numericalExpmap, dExpInv, 1e-2));
+  Matrix dexp = Pose3::ExpmapDerivative(h * V1_g1);
+  EXPECT(assert_equal(numericalExpmap, dexp, 1e-2));
 }
 
 /* ************************************************************************* */
