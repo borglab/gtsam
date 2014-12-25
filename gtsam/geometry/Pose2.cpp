@@ -96,7 +96,10 @@ Pose2 Pose2::ChartAtOrigin::Retract(const Vector3& v, ChartJacobian H) {
 #ifdef SLOW_BUT_CORRECT_EXPMAP
   return Expmap(v, H);
 #else
-  if (H) *H = Matrix3::Identity();
+  if (H) {
+    *H = I_3x3;
+    H->topLeftCorner<2,2>() = Rot2(-v[2]).matrix();
+  }
   return Pose2(v[0], v[1], v[2]);
 #endif
 }
@@ -105,7 +108,10 @@ Vector3 Pose2::ChartAtOrigin::Local(const Pose2& r, ChartJacobian H) {
 #ifdef SLOW_BUT_CORRECT_EXPMAP
   return Logmap(r, H);
 #else
-  if (H) *H = Matrix3::Identity();
+  if (H) {
+    *H = I_3x3;
+    H->topLeftCorner<2,2>() = r.rotation().matrix();
+  }
   return Vector3(r.x(), r.y(), r.theta());
 #endif
 }
