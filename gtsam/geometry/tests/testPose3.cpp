@@ -28,8 +28,6 @@ using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 
-#define GTSAM_POSE3_EXPMAP
-
 GTSAM_CONCEPT_TESTABLE_INST(Pose3)
 GTSAM_CONCEPT_LIE_INST(Pose3)
 
@@ -463,16 +461,24 @@ TEST( Pose3, transformPose_to)
 }
 
 /* ************************************************************************* */
-#ifndef GTSAM_POSE3_EXPMAP
-TEST(Pose3, localCoordinates_first_order)
+TEST(Pose3, Retract_LocalCoordinates)
 {
-  Vector d12 = repeat(6,0.1);
+  Vector6 d;
+  d << 1,2,3,4,5,6; d/=10;
+  R = Rot3::Retract(d.head<3>());
+  Pose3 t = Pose3::Retract(d);
+  EXPECT(assert_equal(d, Pose3::LocalCoordinates(t)));
+}
+/* ************************************************************************* */
+TEST(Pose3, retract_localCoordinates)
+{
+  Vector6 d12;
+  d12 << 1,2,3,4,5,6; d12/=10;
   Pose3 t1 = T, t2 = t1.retract(d12);
   EXPECT(assert_equal(d12, t1.localCoordinates(t2)));
 }
-#endif
 /* ************************************************************************* */
-TEST(Pose3, localCoordinates_expmap)
+TEST(Pose3, expmap_logmap)
 {
   Vector d12 = repeat(6,0.1);
   Pose3 t1 = T, t2 = t1.expmap(d12);
@@ -480,8 +486,7 @@ TEST(Pose3, localCoordinates_expmap)
 }
 
 /* ************************************************************************* */
-#ifndef GTSAM_POSE3_EXPMAP
-TEST(Pose3, manifold_first_order)
+TEST(Pose3, retract_localCoordinates2)
 {
   Pose3 t1 = T;
   Pose3 t2 = T3;
@@ -491,7 +496,6 @@ TEST(Pose3, manifold_first_order)
   Vector d21 = t2.localCoordinates(t1);
   EXPECT(assert_equal(t1, t2.retract(d21)));
 }
-#endif
 /* ************************************************************************* */
 TEST(Pose3, manifold_expmap)
 {
@@ -678,9 +682,9 @@ TEST( Pose3, ExpmapDerivative1) {
   Matrix6 actualH;
   Vector6 w; w << 0.1, 0.2, 0.3, 4.0, 5.0, 6.0;
   Pose3::Expmap(w,actualH);
-  Matrix6 expectedH = numericalDerivative21<Pose3, Vector6,
-      OptionalJacobian<6, 6> >(&Pose3::Expmap, w, boost::none, 1e-2);
-  EXPECT(assert_equal(expectedH, actualH, 1e-5));
+  Matrix expectedH = numericalDerivative21<Pose3, Vector6,
+      OptionalJacobian<6, 6> >(&Pose3::Expmap, w, boost::none);
+  EXPECT(assert_equal(expectedH, actualH));
 }
 
 /* ************************************************************************* */
@@ -689,9 +693,9 @@ TEST( Pose3, LogmapDerivative1) {
   Vector6 w; w << 0.1, 0.2, 0.3, 4.0, 5.0, 6.0;
   Pose3 p = Pose3::Expmap(w);
   EXPECT(assert_equal(w, Pose3::Logmap(p,actualH), 1e-5));
-  Matrix6 expectedH = numericalDerivative21<Vector6, Pose3,
-      OptionalJacobian<6, 6> >(&Pose3::Logmap, p, boost::none, 1e-2);
-  EXPECT(assert_equal(expectedH, actualH, 1e-5));
+  Matrix expectedH = numericalDerivative21<Vector6, Pose3,
+      OptionalJacobian<6, 6> >(&Pose3::Logmap, p, boost::none);
+  EXPECT(assert_equal(expectedH, actualH));
 }
 
 /* ************************************************************************* */
@@ -745,7 +749,7 @@ TEST( Pose3, stream)
 TEST(Pose3 , Traits) {
   check_group_invariants(T2,T3);
   check_manifold_invariants(T2,T3);
-  CHECK_LIE_GROUP_DERIVATIVES(T2,T3);
+  CHECK_LIE_GROUP_DERIVATIVES(T2,T3,false);
 }
 
 /* ************************************************************************* */

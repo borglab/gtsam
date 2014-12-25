@@ -247,10 +247,10 @@ namespace gtsam {
 
 #ifndef GTSAM_USE_QUATERNIONS
 
-    // Cayley chart around origin, no derivatives
+    // Cayley chart around origin
     struct CayleyChart {
-      static Rot3 Retract(const Vector3& v);
-      static Vector3 Local(const Rot3& r);
+    static Rot3 Retract(const Vector3& v, OptionalJacobian<3, 3> H = boost::none);
+    static Vector3 Local(const Rot3& r, OptionalJacobian<3, 3> H = boost::none);
     };
 
     /// Retraction from R^3 to Rot3 manifold using the Cayley transform

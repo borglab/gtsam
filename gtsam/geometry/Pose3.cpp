@@ -23,8 +23,6 @@
 #include <iostream>
 #include <cmath>
 
-#define GTSAM_POSE3_EXPMAP
-
 using namespace std;
 
 namespace gtsam {
@@ -160,8 +158,13 @@ Pose3 Pose3::ChartAtOrigin::Retract(const Vector6& xi, ChartJacobian H) {
 #ifdef GTSAM_POSE3_EXPMAP
   return Expmap(xi, H);
 #else
-  if (H) CONCEPT_NOT_IMPLEMENTED;
-  return Pose3(Rot3::Retract(xi.head<3>()), Point3(xi.tail<3>()));
+  Matrix3 DR;
+  Rot3 R = Rot3::Retract(xi.head<3>(), H ? &DR : 0);
+  if (H) {
+    *H = I_6x6;
+    H->topLeftCorner<3,3>() = DR;
+  }
+  return Pose3(R, Point3(xi.tail<3>()));
 #endif
 }
 
@@ -170,9 +173,14 @@ Vector6 Pose3::ChartAtOrigin::Local(const Pose3& T, ChartJacobian H) {
 #ifdef GTSAM_POSE3_EXPMAP
   return Logmap(T, H);
 #else
-  if (H) CONCEPT_NOT_IMPLEMENTED;
+  Matrix3 DR;
+  Vector3 omega = Rot3::LocalCoordinates(T.rotation(), H ? &DR : 0);
+  if (H) {
+    *H = I_6x6;
+    H->topLeftCorner<3,3>() = DR;
+  }
   Vector6 xi;
-  xi << Rot3::Logmap(T.rotation()), T.translation().vector();
+  xi << omega, T.translation().vector();
   return xi;
 #endif
 }

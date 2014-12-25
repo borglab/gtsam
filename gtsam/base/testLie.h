@@ -29,9 +29,8 @@ namespace gtsam {
 
 // Do a comprehensive test of Lie Group derivatives
 template<typename G>
-void testLieGroupDerivatives(TestResult& result_,
-                      const std::string& name_,
-                      const G& t1, const G& t2) {
+void testLieGroupDerivatives(TestResult& result_, const std::string& name_,
+    const G& t1, const G& t2, bool advanced) {
 
   G id;
   Matrix H1, H2;
@@ -76,6 +75,8 @@ void testLieGroupDerivatives(TestResult& result_,
   EXPECT(assert_equal(numericalDerivative21(T::Between, id, t2), H1));
   EXPECT(assert_equal(numericalDerivative22(T::Between, id, t2), H2));
 
+  if (!advanced) return;
+
   // Retract
 
   typename G::TangentVector z = T::Local(id, id);
@@ -117,9 +118,9 @@ void testLieGroupDerivatives(TestResult& result_,
   EXPECT(assert_equal(numericalDerivative22(T::Local, t1, t2), H2));
 
 }
-}  // namespace gtsam
+} // namespace gtsam
 
 /// \brief Perform a concept check on the default chart for a type.
 /// \param value An instantiation of the type to be tested.
-#define CHECK_LIE_GROUP_DERIVATIVES(t1,t2) \
-    { gtsam::testLieGroupDerivatives(result_, name_, t1,t2); }
+#define CHECK_LIE_GROUP_DERIVATIVES(t1,t2,flag) \
+    { gtsam::testLieGroupDerivatives(result_, name_, t1, t2, flag); }

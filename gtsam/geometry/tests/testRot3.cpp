@@ -18,11 +18,10 @@
 
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Rot3.h>
+#include <gtsam/base/testLie.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/lieProxies.h>
-#include <gtsam/base/testLie.h>
-//#include <gtsam/base/chartTesting.h>
 
 #include <boost/math/constants/constants.hpp>
 
@@ -220,6 +219,30 @@ TEST(Rot3, log)
   CHECK_OMEGA_ZERO(x*2.*PI,y*2.*PI,z*2.*PI)
 }
 
+/* ************************************************************************* */
+TEST(Rot3, retract_localCoordinates)
+{
+  Vector3 d12 = repeat(3,0.1);
+  Rot3 R2 = R.retract(d12);
+  EXPECT(assert_equal(d12, R.localCoordinates(R2)));
+}
+/* ************************************************************************* */
+TEST(Rot3, expmap_logmap)
+{
+  Vector3 d12 = repeat(3,0.1);
+  Rot3 R2 = R.expmap(d12);
+  EXPECT(assert_equal(d12, R.logmap(R2)));
+}
+
+/* ************************************************************************* */
+TEST(Rot3, retract_localCoordinates2)
+{
+  Rot3 t1 = R, t2 = R*R, origin;
+  Vector d12 = t1.localCoordinates(t2);
+  EXPECT(assert_equal(t2, t1.retract(d12)));
+  Vector d21 = t2.localCoordinates(t1);
+  EXPECT(assert_equal(t1, t2.retract(d21)));
+}
 /* ************************************************************************* */
 Vector w = Vector3(0.1, 0.27, -0.2);
 
@@ -634,39 +657,7 @@ TEST(Rot3 , Traits) {
   Rot3 R2(Rot3::rodriguez(Vector3(0, 1, 0), 2));
   check_group_invariants(R1, R2);
   check_manifold_invariants(R1, R2);
-
-  Rot3 expected, actual;
-  Matrix actualH1, actualH2;
-  Matrix numericalH1, numericalH2;
-
-  expected = R1 * R2;
-  actual = traits_x<Rot3>::Compose(R1, R2, actualH1, actualH2);
-  EXPECT(assert_equal(expected,actual));
-
-  numericalH1 = numericalDerivative21(traits_x<Rot3>::Compose, R1, R2);
-  EXPECT(assert_equal(numericalH1,actualH1));
-
-  numericalH2 = numericalDerivative22(traits_x<Rot3>::Compose, R1, R2);
-  EXPECT(assert_equal(numericalH2,actualH2));
-
-  expected = R1.inverse() * R2;
-  actual = traits_x<Rot3>::Between(R1, R2, actualH1, actualH2);
-  EXPECT(assert_equal(expected,actual));
-
-  numericalH1 = numericalDerivative21(traits_x<Rot3>::Between, R1, R2);
-  EXPECT(assert_equal(numericalH1,actualH1));
-
-  numericalH2 = numericalDerivative22(traits_x<Rot3>::Between, R1, R2);
-  EXPECT(assert_equal(numericalH2,actualH2));
-
-  expected = R1.inverse();
-  actual = traits_x<Rot3>::Inverse(R1, actualH1);
-  EXPECT(assert_equal(expected,actual));
-
-  numericalH1 = numericalDerivative11(traits_x<Rot3>::Inverse, R1);
-  EXPECT(assert_equal(numericalH1,actualH1));
-
-  CHECK_LIE_GROUP_DERIVATIVES(R1,R2);
+  CHECK_LIE_GROUP_DERIVATIVES(R1,R2,false);
 }
 
 /* ************************************************************************* */

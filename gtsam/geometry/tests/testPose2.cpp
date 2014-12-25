@@ -773,7 +773,7 @@ TEST(Pose2 , Traits) {
   Pose2 t2(M_PI / 2.0, Point2(0.0, 2.0));
   check_group_invariants(t1, t2);
   check_manifold_invariants(t1, t2);
-  CHECK_LIE_GROUP_DERIVATIVES(t1,t2);
+  CHECK_LIE_GROUP_DERIVATIVES(t1,t2,true);
 }
 
 /* ************************************************************************* */

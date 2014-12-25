@@ -206,7 +206,8 @@ Vector3 Rot3::Logmap(const Rot3& R, OptionalJacobian<3,3> H) {
 }
 
 /* ************************************************************************* */
-Rot3 Rot3::CayleyChart::Retract(const Vector3& omega) {
+Rot3 Rot3::CayleyChart::Retract(const Vector3& omega, OptionalJacobian<3,3> H) {
+  if (H) throw std::runtime_error("Rot3::CayleyChart::Retract Derivative");
   const double x = omega(0), y = omega(1), z = omega(2);
   const double x2 = x * x, y2 = y * y, z2 = z * z;
   const double xy = x * y, xz = x * z, yz = y * z;
@@ -217,7 +218,8 @@ Rot3 Rot3::CayleyChart::Retract(const Vector3& omega) {
 }
 
 /* ************************************************************************* */
-Vector3 Rot3::CayleyChart::Local(const Rot3& R) {
+Vector3 Rot3::CayleyChart::Local(const Rot3& R, OptionalJacobian<3,3> H) {
+  if (H) throw std::runtime_error("Rot3::CayleyChart::Local Derivative");
   // Create a fixed-size matrix
   Matrix3 A = R.matrix();
   // Mathematica closed form optimization (procrastination?) gone wild:
@@ -237,28 +239,16 @@ Vector3 Rot3::CayleyChart::Local(const Rot3& R) {
 Rot3 Rot3::ChartAtOrigin::Retract(const Vector3& omega, ChartJacobian H) {
   static const CoordinatesMode mode = ROT3_DEFAULT_COORDINATES_MODE;
   if (mode == Rot3::EXPMAP) return Expmap(omega, H);
-
-  if (H) CONCEPT_NOT_IMPLEMENTED;
-  if(mode == Rot3::CAYLEY) {
-    return CayleyChart::Retract(omega);
-  } else {
-    assert(false);
-    exit(1);
-  }
+  if (mode == Rot3::CAYLEY) return CayleyChart::Retract(omega, H);
+  else throw std::runtime_error("Rot3::Retract: unknown mode");
 }
 
 /* ************************************************************************* */
 Vector3 Rot3::ChartAtOrigin::Local(const Rot3& R, ChartJacobian H) {
   static const CoordinatesMode mode = ROT3_DEFAULT_COORDINATES_MODE;
-  if (mode == Rot3::EXPMAP) return Logmap(R,H);
-
-  if (H) CONCEPT_NOT_IMPLEMENTED;
-  if(mode == Rot3::CAYLEY) {
-    return CayleyChart::Local(R);
-  } else {
-    assert(false);
-    exit(1);
-  }
+  if (mode == Rot3::EXPMAP) return Logmap(R, H);
+  if (mode == Rot3::CAYLEY) return CayleyChart::Local(R, H);
+  else throw std::runtime_error("Rot3::Local: unknown mode");
 }
 
 /* ************************************************************************* */
