@@ -104,13 +104,13 @@ public:
   /**
    * Single iteration of SQP
    */
-  LCNLPState iterate(const LCNLPState& state) const;
+  LCNLPState iterate(const LCNLPState& state, bool debug = false) const;
 
   VectorValues initializeDuals() const;
   /**
-   * Main optimization function.
+   * Main optimization function. new
    */
-  std::pair<Values, VectorValues> optimize(const Values& initialValues) const;
+  std::pair<Values, VectorValues> optimize(const Values& initialValues, bool debug = false) const;
 
 };
 }
