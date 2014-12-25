@@ -181,10 +181,10 @@ public:
     return m;
   }
 
-  /// Left-trivialized derivative of the exponential map
+  /// Derivative of Expmap
   static Matrix3 ExpmapDerivative(const Vector3& v);
 
-  /// Left-trivialized derivative inverse of the exponential map
+  /// Derivative of Logmap
   static Matrix3 LogmapDerivative(const Vector3& v);
 
 
