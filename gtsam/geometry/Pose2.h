@@ -155,10 +155,10 @@ public:
     return m;
   }
 
-  /// Left-trivialized derivative of the exponential map
+  /// Derivative of Expmap
   static Matrix3 ExpmapDerivative(const Vector3& v);
 
-  /// Left-trivialized derivative inverse of the exponential map
+  /// Derivative of Logmap
   static Matrix3 LogmapDerivative(const Pose2& v);
 
   // Chart at origin, depends on compile-time flag SLOW_BUT_CORRECT_EXPMAP

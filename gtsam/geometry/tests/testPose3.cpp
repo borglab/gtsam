@@ -672,21 +672,22 @@ TEST(Pose3, align_2) {
 }
 
 /* ************************************************************************* */
-/// exp(xi) exp(y) = exp(xi + x)
-/// Hence, y = log (exp(-xi)*exp(xi+x))
-Vector xi = (Vector(6) << 0.1, 0.2, 0.3, 1.0, 2.0, 3.0).finished();
+/// exp(xi) exp(y) = exp(xi + dxi)
+/// Hence, y = log (exp(-xi)*exp(xi+dxi))
+Vector6 xi = (Vector(6) << 0.1, 0.2, 0.3, 4.0, 5.0, 6.0).finished();
 
-Vector testDerivExpmapInv(const Vector6& dxi) {
+Vector6 testExpmapDerivative(const Vector6& xi, const Vector6& dxi) {
   return Pose3::Logmap(Pose3::Expmap(-xi) * Pose3::Expmap(xi + dxi));
 }
 
-TEST( Pose3, dExpInv_TLN) {
-  Matrix res = Pose3::dExpInv_exp(xi);
+TEST( Pose3, ExpmapDerivative) {
+  Matrix actualDexpL = Pose3::ExpmapDerivative(xi);
+  Matrix expectedDexpL = numericalDerivative11<Vector6, Vector6>(
+      boost::bind(testExpmapDerivative, xi, _1), zero(6), 1e-2);
+  EXPECT(assert_equal(expectedDexpL, actualDexpL, 1e-5));
 
-  Matrix numericalDerivExpmapInv = numericalDerivative11<Vector6, Vector6>(
-      testDerivExpmapInv, Vector6::Zero(), 1e-5);
-
-  EXPECT(assert_equal(numericalDerivExpmapInv,res,3e-1));
+  Matrix actualDexpInvL = Pose3::LogmapDerivative(xi);
+  EXPECT(assert_equal(expectedDexpL.inverse(), actualDexpInvL, 1e-5));
 }
 
 /* ************************************************************************* */
