@@ -202,7 +202,15 @@ Vector6 Pose3::localCoordinates(const Pose3& T,
 }
 
 /* ************************************************************************* */
-Matrix3 Pose3::computeQforExpmapDerivative(const Vector6& xi) {
+/**
+ * Compute the 3x3 bottom-left block Q of the SE3 Expmap derivative matrix
+ *  J(xi) = [J_(w) Z_3x3;
+ *             Q   J_(w)]
+ *  where J_(w) is the SO3 Expmap derivative.
+ *  (see Chirikjian11book2, pg 44, eq 10.95.
+ *  The closed-form formula is similar to formula 102 in Barfoot14tro)
+ */
+static Matrix3 computeQforExpmapDerivative(const Vector6& xi) {
   Vector3 w(sub(xi, 0, 3));
   Vector3 v(sub(xi, 3, 6));
   Matrix3 V = skewSymmetric(v);
