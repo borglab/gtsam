@@ -207,12 +207,20 @@ static Matrix3 computeQforExpmapDerivative(const Vector6& xi) {
   }
 #else
   // The closed-form formula in Barfoot14tro eq. (102)
-  double phi = w.norm(), sinPhi = sin(phi), cosPhi = cos(phi), phi2 = phi * phi,
-      phi3 = phi2 * phi, phi4 = phi3 * phi, phi5 = phi4 * phi;
-  // Invert the sign of odd-order terms to have the right Jacobian
-  Q = -0.5*V + (phi-sinPhi)/phi3*(W*V + V*W - W*V*W)
-          + (1-phi2/2-cosPhi)/phi4*(W*W*V + V*W*W - 3*W*V*W)
-          - 0.5*((1-phi2/2-cosPhi)/phi4 - 3*(phi-sinPhi-phi3/6)/phi5)*(W*V*W*W + W*W*V*W);
+  double phi = w.norm();
+  if (fabs(phi)>1e-5) {
+    double sinPhi = sin(phi), cosPhi = cos(phi);
+    double phi2 = phi * phi, phi3 = phi2 * phi, phi4 = phi3 * phi, phi5 = phi4 * phi;
+    // Invert the sign of odd-order terms to have the right Jacobian
+    Q = -0.5*V + (phi-sinPhi)/phi3*(W*V + V*W - W*V*W)
+            + (1-phi2/2-cosPhi)/phi4*(W*W*V + V*W*W - 3*W*V*W)
+            - 0.5*((1-phi2/2-cosPhi)/phi4 - 3*(phi-sinPhi-phi3/6.)/phi5)*(W*V*W*W + W*W*V*W);
+  }
+  else {
+    Q = -0.5*V + 1./6.*(W*V + V*W - W*V*W)
+        + 1./24.*(W*W*V + V*W*W - 3*W*V*W)
+        - 0.5*(1./24. + 3./120.)*(W*V*W*W + W*W*V*W);
+  }
 #endif
 
   return Q;

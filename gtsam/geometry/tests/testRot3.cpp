@@ -18,10 +18,10 @@
 
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Rot3.h>
-
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/lieProxies.h>
+#include <gtsam/base/testLie.h>
 //#include <gtsam/base/chartTesting.h>
 
 #include <boost/math/constants/constants.hpp>
@@ -665,6 +665,8 @@ TEST(Rot3 , Traits) {
 
   numericalH1 = numericalDerivative11(traits_x<Rot3>::Inverse, R1);
   EXPECT(assert_equal(numericalH1,actualH1));
+
+  CHECK_LIE_GROUP_DERIVATIVES(R1,R2);
 }
 
 /* ************************************************************************* */
