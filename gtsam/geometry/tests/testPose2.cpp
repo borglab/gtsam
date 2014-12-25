@@ -145,7 +145,6 @@ TEST(Pose2, expmap0d) {
   EXPECT(assert_equal(expected, actual, 1e-5));
 }
 
-#ifdef SLOW_BUT_CORRECT_EXPMAP
 /* ************************************************************************* */
 // test case for screw motion in the plane
 namespace screw {
@@ -162,7 +161,6 @@ TEST(Pose3, expmap_c)
   EXPECT(assert_equal(screw::expected, Pose2::Expmap(screw::xi),1e-6));
   EXPECT(assert_equal(screw::xi, Pose2::Logmap(screw::expected),1e-6));
 }
-#endif
 
 /* ************************************************************************* */
 TEST(Pose2, expmap_c_full)
@@ -200,10 +198,11 @@ TEST(Pose2, logmap_full) {
 }
 
 /* ************************************************************************* */
-Vector3 w = (Vector(3) << 0.1, 0.27, -0.3).finished();
-Vector3 w0 = (Vector(3) << 0.1, 0.27, 0.0).finished();  // alpha = 0
+Vector3 w(0.1, 0.27, -0.3);
+Vector3 w0(0.1, 0.27, 0.0);  // alpha = 0
 
-// Left trivialization Derivative of exp(w) over w: How exp(w) changes when w changes?
+// Left trivialization Derivative of exp(w) over w:
+// How exp(w) changes when w changes?
 // We find y such that: exp(w) exp(y) = exp(w + dw) for dw --> 0
 // => y = log (exp(-w) * exp(w+dw))
 Vector3 testDexpL(const Vector3 w, const Vector3& dw) {
@@ -228,6 +227,25 @@ TEST( Pose2, ExpmapDerivative) {
 
   Matrix actualDexpInvL0 = Pose2::LogmapDerivative(w0);
   EXPECT(assert_equal(expectedDexpL.inverse(), actualDexpInvL, 1e-5));
+}
+
+/* ************************************************************************* */
+TEST( Pose2, ExpmapDerivative2) {
+  Matrix3 actualH;
+  Pose2::Expmap(w,actualH);
+  Matrix3 expectedH = numericalDerivative11<Pose2, Vector3>(
+          boost::bind(Pose2::Expmap, _1, boost::none), w, 1e-2);
+  EXPECT(assert_equal(expectedH, actualH, 1e-5));
+}
+
+/* ************************************************************************* */
+TEST( Pose2, LogmapDerivative2) {
+  Pose2 p = Pose2::Expmap(w);
+  EXPECT(assert_equal(w, Pose2::Logmap(p), 1e-5));
+  Matrix3 actualH = Pose2::LogmapDerivative(w);
+  Matrix3 expectedH = numericalDerivative11<Vector3, Pose2>(
+          boost::bind(Pose2::Logmap, _1, boost::none), p, 1e-2);
+  EXPECT(assert_equal(expectedH, actualH, 1e-5));
 }
 
 /* ************************************************************************* */

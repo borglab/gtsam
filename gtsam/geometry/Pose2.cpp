@@ -60,7 +60,7 @@ bool Pose2::equals(const Pose2& q, double tol) const {
 
 /* ************************************************************************* */
 Pose2 Pose2::Expmap(const Vector& xi, OptionalJacobian<3, 3> H) {
-  if (H) CONCEPT_NOT_IMPLEMENTED;
+  if (H) *H = Pose2::ExpmapDerivative(xi);
   assert(xi.size() == 3);
   Point2 v(xi(0),xi(1));
   double w = xi(2);
