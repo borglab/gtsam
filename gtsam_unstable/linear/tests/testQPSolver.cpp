@@ -176,7 +176,7 @@ TEST(QPSolver, iterate) {
   LinearInequalityFactorGraph workingSet =
       solver.identifyActiveConstraints(qp.inequalities, currentSolution);
 
-  QPState state(currentSolution, VectorValues(), workingSet, false);
+  QPState state(currentSolution, VectorValues(), workingSet, false, 100);
 
   int it = 0;
   while (!state.converged) {
