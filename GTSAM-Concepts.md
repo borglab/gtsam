@@ -96,7 +96,7 @@ Lie Group
 
 A Lie group is both a manifold *and* a group. Hence, a LIE_GROUP type should implements both MANIFOLD and GROUP concepts. 
 However, we now also need to be able to evaluate the derivatives of compose and inverse. 
-Hence, we have the following extra valid static functions defined in the struct `gtsam::manifold::traits<T>`:
+Hence, we have the following extra valid static functions defined in the struct `gtsam::traits<T>`:
 
 * `r = traits<T>::Compose(p,q,Hq,Hp)`
 * `q = traits<T>::Inverse(p,Hp)`
@@ -173,7 +173,7 @@ Implementation
 GTSAM Types start with Uppercase, e.g., `gtsam::Point2`, and are models of the 
 TESTABLE, MANIFOLD, GROUP, LIE_GROUP, and VECTOR_SPACE concepts.
 
-`gtsam::manifold::traits` is our way to associate these concepts with types, 
+`gtsam::traits` is our way to associate these concepts with types, 
 and we also define a limited number of `gtsam::tags` to select the correct implementation
 of certain functions at compile time (tag dispatching). 
 
