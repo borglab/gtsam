@@ -54,44 +54,66 @@ template <typename T> struct traits_x;
 
 namespace internal {
 
-/// A helper that implements the traits interface for GTSAM manifolds.
-/// To use this for your gtsam type, define:
-/// template<> struct traits<Type> : public Manifold<Type> { };
-template<typename _ManifoldType>
-struct Manifold : Testable<_ManifoldType> {
-  // Typedefs required by all manifold types.
-  typedef _ManifoldType ManifoldType;
-  typedef manifold_tag structure_category;
-  enum { dimension = ManifoldType::dimension };
-  typedef Eigen::Matrix<double, dimension, 1> TangentVector;
-  typedef OptionalJacobian<dimension, dimension> ChartJacobian;
+/// Requirements on type to pass it to Manifold template below
+template<class Class>
+struct HasManifoldPrereqs {
 
-  static TangentVector Local(const ManifoldType& origin,
-                             const ManifoldType& other) {
+  enum { dim = Class::dimension };
+
+  Class p, q;
+  Eigen::Matrix<double, dim, 1> v;
+  OptionalJacobian<dim, dim> Hp, Hq, Hv;
+
+  BOOST_CONCEPT_USAGE(HasManifoldPrereqs) {
+    v = p.localCoordinates(q);
+    q = p.retract(v);
+  }
+};
+
+/// Extra manifold traits for fixed-dimension types
+template<class Class, size_t N>
+struct ManifoldImpl {
+  // Compile-time dimensionality
+  static int GetDimension(const Class&) {
+    return N;
+  }
+};
+
+/// Extra manifold traits for variable-dimension types
+template<class Class>
+struct ManifoldImpl<Class, Eigen::Dynamic> {
+  // Run-time dimensionality
+  static int GetDimension(const Class& m) {
+    return m.dim();
+  }
+};
+
+/// A helper that implements the traits interface for GTSAM manifolds.
+/// To use this for your class type, define:
+/// template<> struct traits<Class> : public Manifold<Class> { };
+template<class Class>
+struct Manifold: Testable<Class>, ManifoldImpl<Class, Class::dimension> {
+
+  // Check that Class has the necessary machinery
+  BOOST_CONCEPT_ASSERT((HasManifoldPrereqs<Class>));
+
+  // Dimension of the manifold
+  enum { dimension = Class::dimension };
+
+  // Typedefs required by all manifold types.
+  typedef Class ManifoldType;
+  typedef manifold_tag structure_category;
+  typedef Eigen::Matrix<double, dimension, 1> TangentVector;
+
+  // Local coordinates
+  static TangentVector Local(const Class& origin, const Class& other) {
     return origin.localCoordinates(other);
   }
 
-  static ManifoldType Retract(const ManifoldType& origin,
-                              const TangentVector& v) {
+  // Retraction back to manifold
+  static Class Retract(const Class& origin, const TangentVector& v) {
     return origin.retract(v);
   }
-
-  static TangentVector Local(const ManifoldType& origin,
-                             const ManifoldType& other,
-                             ChartJacobian Horigin,
-                             ChartJacobian Hother) {
-    return origin.localCoordinates(other, Horigin, Hother);
-  }
-
-  static ManifoldType Retract(const ManifoldType& origin,
-                              const TangentVector& v,
-                              ChartJacobian Horigin,
-                              ChartJacobian Hv) {
-    return origin.retract(v, Horigin, Hv);
-  }
-
-  static int GetDimension(const ManifoldType& m){ return m.dim(); }
-
 };
 
 } // \ namespace internal
@@ -106,35 +128,16 @@ check_manifold_invariants(const T& a, const T& b, double tol=1e-9) {
   return v0.norm() < tol && traits_x<T>::Equals(b,c,tol);
 }
 
-#define GTSAM_MANIFOLD_DECLARATIONS(MANIFOLD,DIM,TANGENT_VECTOR) \
-  typedef MANIFOLD ManifoldType;\
-  typedef manifold_tag structure_category; \
-  struct dimension : public boost::integral_constant<int, DIM> {};\
-  typedef TANGENT_VECTOR TangentVector;\
-  typedef OptionalJacobian<dimension, dimension> ChartJacobian;  \
-  static TangentVector Local(const ManifoldType& origin, \
-                              const ManifoldType& other, \
-                              ChartJacobian Horigin=boost::none, \
-                              ChartJacobian Hother=boost::none); \
-  static ManifoldType Retract(const ManifoldType& origin, \
-                             const TangentVector& v,\
-                             ChartJacobian Horigin=boost::none, \
-                             ChartJacobian Hv=boost::none); \
-  static int GetDimension(const ManifoldType& m) { return dimension; }
-
-/**
- * Manifold concept
- */
-template<typename M>
+/// Manifold concept
+template<typename T>
 class IsManifold {
 
 public:
 
-  typedef typename traits_x<M>::structure_category structure_category_tag;
-  static const size_t dim = traits_x<M>::dimension;
-  typedef typename traits_x<M>::ManifoldType ManifoldType;
-  typedef typename traits_x<M>::TangentVector TangentVector;
-  typedef typename traits_x<M>::ChartJacobian ChartJacobian;
+  typedef typename traits_x<T>::structure_category structure_category_tag;
+  static const size_t dim = traits_x<T>::dimension;
+  typedef typename traits_x<T>::ManifoldType ManifoldType;
+  typedef typename traits_x<T>::TangentVector TangentVector;
 
   BOOST_CONCEPT_USAGE(IsManifold) {
     BOOST_STATIC_ASSERT_MSG(
@@ -143,26 +146,21 @@ public:
     BOOST_STATIC_ASSERT(TangentVector::SizeAtCompileTime == dim);
 
     // make sure Chart methods are defined
-    v = traits_x<M>::Local(p, q);
-    q = traits_x<M>::Retract(p, v);
-    // and the versions with Jacobians.
-    //v = traits_x<M>::Local(p,q,Hp,Hq);
-    //q = traits_x<M>::Retract(p,v,Hp,Hv);
+    v = traits_x<T>::Local(p, q);
+    q = traits_x<T>::Retract(p, v);
   }
 
 private:
 
-  ManifoldType p, q;
-  ChartJacobian Hp, Hq, Hv;
   TangentVector v;
-  bool b;
+  ManifoldType p, q;
 };
 
 /// Give fixed size dimension of a type, fails at compile time if dynamic
-template<typename M>
+template<typename T>
 struct FixedDimension {
   typedef const int value_type;
-  static const int value = traits_x<M>::dimension;
+  static const int value = traits_x<T>::dimension;
   BOOST_STATIC_ASSERT_MSG(value != Eigen::Dynamic,
       "FixedDimension instantiated for dymanically-sized type.");
 };
