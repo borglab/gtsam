@@ -18,8 +18,7 @@
 
 #pragma once
 
-#include <gtsam/base/Group.h>
-#include <gtsam/base/concepts.h>
+#include <gtsam/base/VectorSpace.h>
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/3rdparty/ceres/autodiff.h>
 
@@ -28,33 +27,41 @@
 
 namespace gtsam {
 
-template <typename T> struct traits_x;
+namespace detail {
 
+// By default, we assume an Identity element
+template<typename T, typename structure_category>
+struct Origin { T operator()() { return traits_x<T>::Identity();} };
+
+// but dimple manifolds don't have one, so we just use the default constructor
+template<typename T>
+struct Origin<T, manifold_tag> { T operator()() { return T();} };
+
+} // \ detail
+
+/**
+ * Canonical is a template that creates canonical coordinates for a given type.
+ * A simple manifold type (i.e., not a Lie Group) has no concept of identity,
+ * hence in that case we use the value given by the default constructor T() as
+ * the origin of a "canonical coordinate" parameterization.
+ */
 template<typename T>
 struct Canonical {
+
+  GTSAM_CONCEPT_MANIFOLD_TYPE(T)
+
   typedef traits_x<T> Traits;
-  BOOST_STATIC_ASSERT_MSG(
-      (boost::is_base_of<group_tag, typename Traits::structure_category>::value),
-      "This type's trait does not assert it is a manifold (or derived)");
-  typedef typename Traits::TangentVector TangentVector;
   enum { dimension = Traits::dimension };
-  typedef OptionalJacobian<dimension, dimension> ChartJacobian;
+  typedef typename Traits::TangentVector TangentVector;
+  typedef typename Traits::structure_category Category;
+  typedef detail::Origin<T, Category> Origin;
 
   static TangentVector Local(const T& other) {
-    return Traits::Local(Traits::Identity(), other);
+    return Traits::Local(Origin()(), other);
   }
 
   static T Retract(const TangentVector& v) {
-    return Traits::Retract(Traits::Identity(), v);
-  }
-
-  static TangentVector Local(const T& other, ChartJacobian Hother) {
-    return Traits::Local(Traits::Identity(), other, boost::none, Hother);
-  }
-
-  static T Retract(const T& origin, const TangentVector& v,
-      ChartJacobian Horigin, ChartJacobian Hv) {
-    return Traits::Retract(Traits::Identity(), v, boost::none, Hv);
+    return Traits::Retract(Origin()(), v);
   }
 };
 

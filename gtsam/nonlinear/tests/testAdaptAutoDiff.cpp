@@ -33,15 +33,35 @@
 using boost::assign::list_of;
 using boost::assign::map_list_of;
 
+namespace gtsam {
+
+// Special version of Cal3Bundler so that default constructor = 0,0,0
+struct Cal: public Cal3Bundler {
+  Cal(double f = 0, double k1 = 0, double k2 = 0, double u0 = 0, double v0 = 0) :
+      Cal3Bundler(f, k1, k2, u0, v0) {
+  }
+  Cal retract(const Vector& d) const {
+    return Cal(fx() + d(0), k1() + d(1), k2() + d(2), u0(), v0());
+  }
+  Vector3 localCoordinates(const Cal& T2) const {
+    return T2.vector() - vector();
+  }
+};
+
+template<>
+struct traits_x<Cal> : public internal::Manifold<Cal> {};
+
+// With that, camera below behaves like Snavely's 9-dim vector
+typedef PinholeCamera<Cal> Camera;
+
+}
+
 using namespace std;
 using namespace gtsam;
 
-// The DefaultChart of Camera below is laid out like Snavely's 9-dim vector
-typedef PinholeCamera<Cal3Bundler> Camera;
-
 /* ************************************************************************* */
 // charts
-TEST(Manifold, Canonical) {
+TEST(AdaptAutoDiff, Canonical) {
 
   Canonical<Point2> chart1;
   EXPECT(chart1.Local(Point2(1, 0))==Vector2(1, 0));
@@ -73,21 +93,17 @@ TEST(Manifold, Canonical) {
   EXPECT(assert_equal(v6, chart5.Local(pose)));
   EXPECT(assert_equal(chart5.Retract(v6), pose));
 
-#if 0 // TODO: Canonical should not require group?
-  Canonical<Camera> chart6;
-  Cal3Bundler cal0(0, 0, 0);
+  Canonical<Cal> chart6;
+  Cal cal0;
+  Vector z3 = Vector3::Zero();
+  EXPECT(assert_equal(z3, chart6.Local(cal0)));
+  EXPECT(assert_equal(chart6.Retract(z3), cal0));
+
+  Canonical<Camera> chart7;
   Camera camera(Pose3(), cal0);
   Vector z9 = Vector9::Zero();
-  EXPECT(assert_equal(z9, chart6.Local(camera)));
-  EXPECT(assert_equal(chart6.Retract(z9), camera));
-
-  Cal3Bundler cal; // Note !! Cal3Bundler() != zero<Cal3Bundler>::value()
-  Camera camera2(pose, cal);
-  Vector v9(9);
-  v9 << 0, 0, 0, 1, 2, 3, 1, 0, 0;
-  EXPECT(assert_equal(v9, chart6.Local(camera2)));
-  EXPECT(assert_equal(chart6.Retract(v9), camera2));
-#endif
+  EXPECT(assert_equal(z9, chart7.Local(camera)));
+  EXPECT(assert_equal(chart7.Retract(z9), camera));
 }
 
 /* ************************************************************************* */
@@ -137,7 +153,7 @@ struct Projective {
 
 /* ************************************************************************* */
 // Test Ceres AutoDiff
-TEST(Expression, AutoDiff) {
+TEST(AdaptAutoDiff, AutoDiff) {
   using ceres::internal::AutoDiff;
 
   // Instantiate function
@@ -181,7 +197,7 @@ Vector2 adapted(const Vector9& P, const Vector3& X) {
     throw std::runtime_error("Snavely fail");
 }
 
-TEST(Expression, AutoDiff2) {
+TEST(AdaptAutoDiff, AutoDiff2) {
   using ceres::internal::AutoDiff;
 
   // Instantiate function
@@ -212,12 +228,12 @@ TEST(Expression, AutoDiff2) {
   EXPECT(assert_equal(E2,H2,1e-8));
 }
 
-/* ************************************************************************* *
+/* ************************************************************************* */
 // Test AutoDiff wrapper Snavely
-TEST(Expression, AutoDiff3) {
+TEST(AdaptAutoDiff, AutoDiff3) {
 
   // Make arguments
-  Camera P(Pose3(Rot3(), Point3(0, 5, 0)), Cal3Bundler(1, 0, 0));
+  Camera P(Pose3(Rot3(), Point3(0, 5, 0)), Cal(1, 0, 0));
   Point3 X(10, 0, -5); // negative Z-axis convention of Snavely!
 
   typedef AdaptAutoDiff<SnavelyProjection, Point2, Camera, Point3> Adaptor;
@@ -233,17 +249,17 @@ TEST(Expression, AutoDiff3) {
   Matrix E2 = numericalDerivative22<Point2, Camera, Point3>(Adaptor(), P, X);
 
   // Get derivatives with AutoDiff, not gives RowMajor results!
-  OptionalJacobian<2,9> H1;
-  OptionalJacobian<2,3> H2;
+  Matrix29 H1;
+  Matrix23 H2;
   Point2 actual2 = snavely(P, X, H1, H2);
   EXPECT(assert_equal(expected,actual2,1e-9));
-  EXPECT(assert_equal(E1,*H1,1e-8));
-  EXPECT(assert_equal(E2,*H2,1e-8));
+  EXPECT(assert_equal(E1,H1,1e-8));
+  EXPECT(assert_equal(E2,H2,1e-8));
 }
 
-/* ************************************************************************* *
+/* ************************************************************************* */
 // Test AutoDiff wrapper in an expression
-TEST(Expression, Snavely) {
+TEST(AdaptAutoDiff, Snavely) {
   Expression<Camera> P(1);
   Expression<Point3> X(2);
   typedef AdaptAutoDiff<SnavelyProjection, Point2, Camera, Point3> Adaptor;
