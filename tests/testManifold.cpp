@@ -22,8 +22,8 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Cal3Bundler.h>
-#include <gtsam/base/Manifold.h>
-#include <gtsam/base/concepts.h>
+#include <gtsam/base/VectorSpace.h>
+#include <gtsam/base/testLie.h>
 #include <gtsam/base/Testable.h>
 
 #undef CHECK
@@ -39,34 +39,49 @@ using namespace gtsam;
 // The DefaultChart of Camera below is laid out like Snavely's 9-dim vector
 typedef PinholeCamera<Cal3Bundler> Camera;
 
-/* ************************************************************************* */
-// is_manifold
-TEST(Manifold, IsManifold) {
-
+//******************************************************************************
+TEST(Manifold, SomeManifoldsGTSAM) {
   //BOOST_CONCEPT_ASSERT((IsManifold<int>)); // integer is not a manifold
-  BOOST_CONCEPT_ASSERT((IsManifold<Point2>));
-  BOOST_CONCEPT_ASSERT((IsManifold<Matrix24>));
-  BOOST_CONCEPT_ASSERT((IsManifold<double>));
   BOOST_CONCEPT_ASSERT((IsManifold<Camera>));
-
-  // dynamic not working yet
-  //BOOST_CONCEPT_ASSERT((IsManifold<Vector>));
-  //BOOST_CONCEPT_ASSERT((IsManifold<Matrix>));
-
+  BOOST_CONCEPT_ASSERT((IsManifold<Cal3_S2>));
+  BOOST_CONCEPT_ASSERT((IsManifold<Cal3Bundler>));
+  BOOST_CONCEPT_ASSERT((IsManifold<Camera>));
 }
 
-/* ************************************************************************* */
+//******************************************************************************
+TEST(Manifold, SomeLieGroupsGTSAM) {
+  BOOST_CONCEPT_ASSERT((IsLieGroup<Rot2>));
+  BOOST_CONCEPT_ASSERT((IsLieGroup<Pose2>));
+  BOOST_CONCEPT_ASSERT((IsLieGroup<Rot3>));
+  BOOST_CONCEPT_ASSERT((IsLieGroup<Pose3>));
+}
+
+//******************************************************************************
+TEST(Manifold, SomeVectorSpacesGTSAM) {
+  BOOST_CONCEPT_ASSERT((IsVectorSpace<double>));
+  BOOST_CONCEPT_ASSERT((IsVectorSpace<float>));
+  BOOST_CONCEPT_ASSERT((IsVectorSpace<Point2>));
+  BOOST_CONCEPT_ASSERT((IsVectorSpace<Matrix24>));
+}
+
+//******************************************************************************
 // dimension
 TEST(Manifold, _dimension) {
   //using namespace traits;
   EXPECT_LONGS_EQUAL(2, traits_x<Point2>::dimension);
   EXPECT_LONGS_EQUAL(8, traits_x<Matrix24>::dimension);
   EXPECT_LONGS_EQUAL(1, traits_x<double>::dimension);
-//  EXPECT_LONGS_EQUAL(Eigen::Dynamic, traits_x<Vector>::dimension);
-//  EXPECT_LONGS_EQUAL(Eigen::Dynamic, traits_x<Matrix>::dimension);
 }
 
-/* ************************************************************************* */
+//******************************************************************************
+TEST(Manifold, Identity) {
+  EXPECT_DOUBLES_EQUAL(0.0, traits_x<double>::Identity(), 0.0);
+  EXPECT(assert_equal(Matrix(Matrix24::Zero()), Matrix(traits_x<Matrix24>::Identity())));
+  EXPECT(assert_equal(Pose3(), traits_x<Pose3>::Identity()));
+  EXPECT(assert_equal(Point2(), traits_x<Point2>::Identity()));
+}
+
+//******************************************************************************
 // charts
 TEST(Manifold, DefaultChart) {
 
@@ -134,35 +149,10 @@ TEST(Manifold, DefaultChart) {
   EXPECT(assert_equal(zero(3), traits_x<Rot3>::Local(R, R)));
 }
 
-/* ************************************************************************* */
-// zero
-//TEST(Manifold, _zero) {
-//  EXPECT(assert_equal(Pose3(), traits::zero<Pose3>::value()));
-//  Cal3Bundler cal(0, 0, 0);
-//  EXPECT(assert_equal(cal, traits::zero<Cal3Bundler>::value()));
-//  EXPECT(assert_equal(Camera(Pose3(), cal), traits::zero<Camera>::value()));
-//  EXPECT(assert_equal(Point2(), traits::zero<Point2>::value()));
-//  EXPECT(assert_equal(Matrix(Matrix24::Zero()), Matrix(traits::zero<Matrix24>::value())));
-//  EXPECT_DOUBLES_EQUAL(0.0, traits::zero<double>::value(), 0.0);
-//}
-//
-/* ************************************************************************* */
-// identity
-TEST(Manifold, _identity) {
-  EXPECT(assert_equal(Pose3(), traits_x<Pose3>::Identity()));
-//  BOOST_CONCEPT_ASSERT((IsLieGroup<Cal3Bundler>));
-//  EXPECT(assert_equal(Cal3Bundler(), traits_x<Cal3Bundler>::Identity()));
-//  BOOST_CONCEPT_ASSERT((IsLieGroup<Camera>));
-//  EXPECT(assert_equal(Camera(), traits_x<Camera>::Identity())); // not a lie group
-  EXPECT(assert_equal(Point2(), traits_x<Point2>::Identity()));
-  EXPECT(assert_equal(Matrix(Matrix24::Zero()), Matrix(traits_x<Matrix24>::Identity())));
-  EXPECT_DOUBLES_EQUAL(0.0, traits_x<double>::Identity(), 0.0);
-}
-
-/* ************************************************************************* */
+//******************************************************************************
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
 }
-/* ************************************************************************* */
+//******************************************************************************
 
