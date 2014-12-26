@@ -196,74 +196,68 @@ bool CombinedImuFactor::equals(const NonlinearFactor& expected, double tol) cons
 }
 
 //------------------------------------------------------------------------------
-Vector CombinedImuFactor::evaluateError(const Pose3& pose_i, const Vector3& vel_i, const Pose3& pose_j, const Vector3& vel_j,
+Vector CombinedImuFactor::evaluateError(const Pose3& pose_i,
+    const Vector3& vel_i, const Pose3& pose_j, const Vector3& vel_j,
     const imuBias::ConstantBias& bias_i, const imuBias::ConstantBias& bias_j,
     boost::optional<Matrix&> H1, boost::optional<Matrix&> H2,
     boost::optional<Matrix&> H3, boost::optional<Matrix&> H4,
     boost::optional<Matrix&> H5, boost::optional<Matrix&> H6) const {
 
-  // if we need the jacobians
-  if(H1 || H2 || H3 || H4 || H5 || H6){
-    Matrix H1_pvR, H2_pvR, H3_pvR, H4_pvR, H5_pvR, Hbias_i, Hbias_j; // pvR = mnemonic: position (p), velocity (v), rotation (R)
-
-    // error wrt preintegrated measurements
-    Vector r_pvR(9);
-    r_pvR = _PIM_.computeErrorAndJacobians(pose_i, vel_i, pose_j, vel_j, bias_i,
-        gravity_, omegaCoriolis_, use2ndOrderCoriolis_, //
-        H1_pvR, H2_pvR, H3_pvR, H4_pvR, H5_pvR);
-
-    // error wrt bias evolution model (random walk)
-    Vector6 fbias = bias_j.between(bias_i, Hbias_j, Hbias_i).vector(); // [bias_j.acc - bias_i.acc; bias_j.gyr - bias_i.gyr]
-
-    if(H1) {
-      H1->resize(15,6);
-      H1->block<9,6>(0,0) = H1_pvR;
-      // adding: [dBiasAcc/dPi ; dBiasOmega/dPi]
-      H1->block<6,6>(9,0) = Z_6x6;
-    }
-    if(H2) {
-      H2->resize(15,3);
-      H2->block<9,3>(0,0) = H2_pvR;
-      // adding: [dBiasAcc/dVi ; dBiasOmega/dVi]
-      H2->block<6,3>(9,0) = Matrix::Zero(6,3);
-    }
-    if(H3) {
-      H3->resize(15,6);
-      H3->block<9,6>(0,0) = H3_pvR;
-      // adding: [dBiasAcc/dPj ; dBiasOmega/dPj]
-      H3->block<6,6>(9,0) = Z_6x6;
-    }
-    if(H4) {
-      H4->resize(15,3);
-      H4->block<9,3>(0,0) = H4_pvR;
-      // adding: [dBiasAcc/dVi ; dBiasOmega/dVi]
-      H4->block<6,3>(9,0) = Matrix::Zero(6,3);
-    }
-    if(H5) {
-      H5->resize(15,6);
-      H5->block<9,6>(0,0) = H5_pvR;
-      // adding: [dBiasAcc/dBias_i ; dBiasOmega/dBias_i]
-      H5->block<6,6>(9,0) = Hbias_i;
-    }
-    if(H6) {
-      H6->resize(15,6);
-      H6->block<9,6>(0,0) = Matrix::Zero(9,6);
-      // adding: [dBiasAcc/dBias_j ; dBiasOmega/dBias_j]
-      H6->block<6,6>(9,0) = Hbias_j;
-    }
-    Vector r(15); r << r_pvR, fbias; // vector of size 15
-    return r;
-  }
-  // else, only compute the error vector:
-  // error wrt preintegrated measurements
-  Vector r_pvR(9);
-  r_pvR = _PIM_.computeErrorAndJacobians(pose_i, vel_i, pose_j, vel_j, bias_i,
-      gravity_, omegaCoriolis_, use2ndOrderCoriolis_, //
-      boost::none, boost::none, boost::none, boost::none, boost::none);
   // error wrt bias evolution model (random walk)
-  Vector6 fbias = bias_j.between(bias_i).vector(); // [bias_j.acc - bias_i.acc; bias_j.gyr - bias_i.gyr]
+  Matrix6 Hbias_i, Hbias_j;
+  Vector6 fbias = traits<imuBias::ConstantBias>::Between(bias_j, bias_i,
+      H6 ? &Hbias_j : 0, H5 ? &Hbias_i : 0).vector();
+
+  Matrix96 D_r_pose_i, D_r_pose_j, D_r_bias_i;
+  Matrix93 D_r_vel_i, D_r_vel_j;
+
+  // error wrt preintegrated measurements
+  Vector9 r_pvR = _PIM_.computeErrorAndJacobians(pose_i, vel_i, pose_j, vel_j,
+      bias_i, gravity_, omegaCoriolis_, use2ndOrderCoriolis_,
+      H1 ? &D_r_pose_i : 0, H2 ? &D_r_vel_i : 0, H3 ? &D_r_pose_j : 0,
+      H4 ? &D_r_vel_j : 0, H5 ? &D_r_bias_i : 0);
+
+  // if we need the jacobians
+  if (H1) {
+    H1->resize(15, 6);
+    H1->block < 9, 6 > (0, 0) = D_r_pose_i;
+    // adding: [dBiasAcc/dPi ; dBiasOmega/dPi]
+    H1->block < 6, 6 > (9, 0) = Z_6x6;
+  }
+  if (H2) {
+    H2->resize(15, 3);
+    H2->block < 9, 3 > (0, 0) = D_r_vel_i;
+    // adding: [dBiasAcc/dVi ; dBiasOmega/dVi]
+    H2->block < 6, 3 > (9, 0) = Matrix::Zero(6, 3);
+  }
+  if (H3) {
+    H3->resize(15, 6);
+    H3->block < 9, 6 > (0, 0) = D_r_pose_j;
+    // adding: [dBiasAcc/dPj ; dBiasOmega/dPj]
+    H3->block < 6, 6 > (9, 0) = Z_6x6;
+  }
+  if (H4) {
+    H4->resize(15, 3);
+    H4->block < 9, 3 > (0, 0) = D_r_vel_j;
+    // adding: [dBiasAcc/dVi ; dBiasOmega/dVi]
+    H4->block < 6, 3 > (9, 0) = Matrix::Zero(6, 3);
+  }
+  if (H5) {
+    H5->resize(15, 6);
+    H5->block < 9, 6 > (0, 0) = D_r_bias_i;
+    // adding: [dBiasAcc/dBias_i ; dBiasOmega/dBias_i]
+    H5->block < 6, 6 > (9, 0) = Hbias_i;
+  }
+  if (H6) {
+    H6->resize(15, 6);
+    H6->block < 9, 6 > (0, 0) = Matrix::Zero(9, 6);
+    // adding: [dBiasAcc/dBias_j ; dBiasOmega/dBias_j]
+    H6->block < 6, 6 > (9, 0) = Hbias_j;
+  }
+
   // overall error
-  Vector r(15); r << r_pvR, fbias; // vector of size 15
+  Vector r(15);
+  r << r_pvR, fbias; // vector of size 15
   return r;
 }
 
