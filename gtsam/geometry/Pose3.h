@@ -204,18 +204,13 @@ public:
      */
     static Vector6 adjointTranspose(const Vector6& xi, const Vector6& y, OptionalJacobian<6, 6> H = boost::none);
 
-    /**
-     * Compute the inverse right-trivialized tangent (derivative) map of the exponential map,
-     * as detailed in [Kobilarov09siggraph] eq. (15)
-     * The full formula is documented in [Celledoni99cmame]
-     *    Elena Celledoni and Brynjulf Owren. Lie group methods for rigid body dynamics and
-     *    time integration on manifolds. Comput. meth. in Appl. Mech. and Eng., 19(3,4):421-438, 2003.
-     * and in [Hairer06book] in formula (4.5), pg. 84, Lemma 4.2
-     *    Ernst Hairer, et al., Geometric Numerical Integration,
-     *      Structure-Preserving Algorithms for Ordinary Differential Equations, 2nd edition, Springer-Verlag, 2006.
-   * See also Iserles05an, pg. 33, formula 2.46
-     */
-    static Matrix6 dExpInv_exp(const Vector6 &xi);
+public:
+
+    /// Derivative of Expmap
+    static Matrix6 ExpmapDerivative(const Vector6& xi);
+
+    /// Derivative of Logmap
+    static Matrix6 LogmapDerivative(const Vector6& xi);
 
     /**
      * wedge for Pose3:
