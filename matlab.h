@@ -143,7 +143,7 @@ void perturbPoint2(Values& values, double sigma, int32_t seed = 42u) {
       sigma);
   Sampler sampler(model, seed);
   BOOST_FOREACH(const Values::ConstFiltered<Point2>::KeyValuePair& key_value, values.filter<Point2>()) {
-    values.update(key_value.key, key_value.value.retract(sampler.sample()));
+    values.update(key_value.key, key_value.value + Point2(sampler.sample()));
   }
 }
 
@@ -164,7 +164,7 @@ void perturbPoint3(Values& values, double sigma, int32_t seed = 42u) {
       sigma);
   Sampler sampler(model, seed);
   BOOST_FOREACH(const Values::ConstFiltered<Point3>::KeyValuePair& key_value, values.filter<Point3>()) {
-    values.update(key_value.key, key_value.value.retract(sampler.sample()));
+    values.update(key_value.key, key_value.value + Point3(sampler.sample()));
   }
 }
 
