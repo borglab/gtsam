@@ -71,7 +71,7 @@ struct CallConfig {
 
 /// traits
 namespace gtsam {
-template<> struct traits_x<CallConfig> : public Testable<CallConfig> {};
+template<> struct traits<CallConfig> : public Testable<CallConfig> {};
 }
 
 struct Record: public internal::CallRecordImplementor<Record, Cols> {

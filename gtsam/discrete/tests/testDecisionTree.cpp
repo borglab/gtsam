@@ -46,7 +46,7 @@ typedef DecisionTree<string,Crazy> CrazyDecisionTree; // check that DecisionTree
 
 // traits
 namespace gtsam {
-template<> struct traits_x<CrazyDecisionTree> : public Testable<CrazyDecisionTree> {};
+template<> struct traits<CrazyDecisionTree> : public Testable<CrazyDecisionTree> {};
 }
 
 /* ******************************************************************************** */
@@ -57,7 +57,7 @@ typedef DecisionTree<string, int> DT;
 
 // traits
 namespace gtsam {
-template<> struct traits_x<DT> : public Testable<DT> {};
+template<> struct traits<DT> : public Testable<DT> {};
 }
 
 struct Ring {

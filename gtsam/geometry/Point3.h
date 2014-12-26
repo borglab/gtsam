@@ -185,5 +185,5 @@ namespace gtsam {
   inline Point3 operator*(double s, const Point3& p) { return p*s;}
 
   template<>
-  struct traits_x<Point3> : public internal::VectorSpace<Point3> {};
+  struct traits<Point3> : public internal::VectorSpace<Point3> {};
 }

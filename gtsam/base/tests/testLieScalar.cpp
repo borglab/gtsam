@@ -48,7 +48,7 @@ TEST( testLieScalar, construction ) {
 
   EXPECT_DOUBLES_EQUAL(2., lie1.value(),tol);
   EXPECT_DOUBLES_EQUAL(2., lie2.value(),tol);
-  EXPECT(traits_x<LieScalar>::dimension == 1);
+  EXPECT(traits<LieScalar>::dimension == 1);
   EXPECT(assert_equal(lie1, lie2));
 }
 
@@ -56,7 +56,7 @@ TEST( testLieScalar, construction ) {
 TEST( testLieScalar, localCoordinates ) {
   LieScalar lie1(1.), lie2(3.);
 
-  Vector1 actual = traits_x<LieScalar>::Local(lie1, lie2);
+  Vector1 actual = traits<LieScalar>::Local(lie1, lie2);
   EXPECT( assert_equal((Vector)(Vector(1) << 2).finished(), actual));
 }
 

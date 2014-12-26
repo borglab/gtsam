@@ -42,7 +42,7 @@ typedef AlgebraicDecisionTree<Key> ADT;
 
 // traits
 namespace gtsam {
-template<> struct traits_x<ADT> : public Testable<ADT> {};
+template<> struct traits<ADT> : public Testable<ADT> {};
 }
 
 #define DISABLE_DOT

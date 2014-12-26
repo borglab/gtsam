@@ -747,7 +747,7 @@ private:
 
 /// traits
 template<class POSE, class LANDMARK, class CALIBRATION, size_t D>
-struct traits_x<SmartStereoProjectionFactor<POSE, LANDMARK, CALIBRATION, D> > :
+struct traits<SmartStereoProjectionFactor<POSE, LANDMARK, CALIBRATION, D> > :
     public Testable<SmartStereoProjectionFactor<POSE, LANDMARK, CALIBRATION, D> > {
 };
 

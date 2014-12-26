@@ -202,7 +202,7 @@ private:
 };
 
 template<>
-struct traits_x<CalibratedCamera> : public internal::Manifold<CalibratedCamera> {};
+struct traits<CalibratedCamera> : public internal::Manifold<CalibratedCamera> {};
 
 }
 

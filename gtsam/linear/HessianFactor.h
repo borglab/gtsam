@@ -445,7 +445,7 @@ namespace gtsam {
 
 /// traits
 template<>
-struct traits_x<HessianFactor> : public Testable<HessianFactor> {};
+struct traits<HessianFactor> : public Testable<HessianFactor> {};
 
 } // \ namespace gtsam
 

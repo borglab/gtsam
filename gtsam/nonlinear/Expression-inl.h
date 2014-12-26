@@ -141,7 +141,7 @@ void handleLeafCase(const Eigen::MatrixBase<Derived>& dTdA,
  */
 template<class T>
 class ExecutionTrace {
-  static const int Dim = traits_x<T>::dimension;
+  static const int Dim = traits<T>::dimension;
   enum {
     Constant, Leaf, Function
   } kind;
@@ -326,7 +326,7 @@ public:
 
   /// Return dimensions for each argument
   virtual void dims(std::map<Key, int>& map) const {
-    map[key_] = traits_x<T>::dimension;
+    map[key_] = traits<T>::dimension;
   }
 
   /// Return value
@@ -402,15 +402,15 @@ public:
 /// meta-function to generate fixed-size JacobianTA type
 template<class T, class A>
 struct Jacobian {
-  typedef Eigen::Matrix<double, traits_x<T>::dimension,
-      traits_x<A>::dimension> type;
+  typedef Eigen::Matrix<double, traits<T>::dimension,
+      traits<A>::dimension> type;
 };
 
 /// meta-function to generate JacobianTA optional reference
 template<class T, class A>
 struct MakeOptionalJacobian {
-  typedef OptionalJacobian<traits_x<T>::dimension,
-      traits_x<A>::dimension> type;
+  typedef OptionalJacobian<traits<T>::dimension,
+      traits<A>::dimension> type;
 };
 
 /**
@@ -576,7 +576,7 @@ struct FunctionalNode {
     /// Provide convenience access to Record storage and implement
     /// the virtual function based interface of CallRecord using the CallRecordImplementor
     struct Record: public internal::CallRecordImplementor<Record,
-        traits_x<T>::dimension>, public Base::Record {
+        traits<T>::dimension>, public Base::Record {
       using Base::Record::print;
       using Base::Record::startReverseAD4;
       using Base::Record::reverseAD4;

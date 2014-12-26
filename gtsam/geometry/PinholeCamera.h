@@ -497,6 +497,6 @@ private:
 
 
 template<typename Calibration>
-struct traits_x< PinholeCamera<Calibration> > : public internal::Manifold<PinholeCamera<Calibration> > {};
+struct traits< PinholeCamera<Calibration> > : public internal::Manifold<PinholeCamera<Calibration> > {};
 
 } // \ gtsam

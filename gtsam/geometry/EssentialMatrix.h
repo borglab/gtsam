@@ -199,7 +199,7 @@ private:
 };
 
 template<>
-struct traits_x<EssentialMatrix> : public internal::Manifold<EssentialMatrix> {};
+struct traits<EssentialMatrix> : public internal::Manifold<EssentialMatrix> {};
 
 } // gtsam
 

@@ -51,7 +51,7 @@ TEST(SO3 , Local) {
   SO3 q2(Eigen::AngleAxisd(0.1, z_axis));
   SO3Jacobian H1,H2;
   Vector3 expected(0, 0, 0.1);
-  Vector3 actual = traits_x<SO3>::Local(q1, q2, H1, H2);
+  Vector3 actual = traits<SO3>::Local(q1, q2, H1, H2);
   EXPECT(assert_equal((Vector)expected,actual));
 }
 
@@ -61,7 +61,7 @@ TEST(SO3 , Retract) {
   SO3 q(Eigen::AngleAxisd(0, z_axis));
   SO3 expected(Eigen::AngleAxisd(0.1, z_axis));
   Vector3 v(0, 0, 0.1);
-  SO3 actual = traits_x<SO3>::Retract(q, v);
+  SO3 actual = traits<SO3>::Retract(q, v);
   EXPECT(actual.isApprox(expected));
 }
 
@@ -73,13 +73,13 @@ TEST(SO3 , Compose) {
 
   SO3 expected = q1 * q2;
   Matrix actualH1, actualH2;
-  SO3 actual = traits_x<SO3>::Compose(q1, q2, actualH1, actualH2);
-  EXPECT(traits_x<SO3>::Equals(expected,actual));
+  SO3 actual = traits<SO3>::Compose(q1, q2, actualH1, actualH2);
+  EXPECT(traits<SO3>::Equals(expected,actual));
 
-  Matrix numericalH1 = numericalDerivative21(traits_x<SO3>::Compose, q1, q2);
+  Matrix numericalH1 = numericalDerivative21(traits<SO3>::Compose, q1, q2);
   EXPECT(assert_equal(numericalH1,actualH1));
 
-  Matrix numericalH2 = numericalDerivative22(traits_x<SO3>::Compose, q1, q2);
+  Matrix numericalH2 = numericalDerivative22(traits<SO3>::Compose, q1, q2);
   EXPECT(assert_equal(numericalH2,actualH2));
 }
 
@@ -91,13 +91,13 @@ TEST(SO3 , Between) {
 
   SO3 expected = q1.inverse() * q2;
   Matrix actualH1, actualH2;
-  SO3 actual = traits_x<SO3>::Between(q1, q2, actualH1, actualH2);
-  EXPECT(traits_x<SO3>::Equals(expected,actual));
+  SO3 actual = traits<SO3>::Between(q1, q2, actualH1, actualH2);
+  EXPECT(traits<SO3>::Equals(expected,actual));
 
-  Matrix numericalH1 = numericalDerivative21(traits_x<SO3>::Between, q1, q2);
+  Matrix numericalH1 = numericalDerivative21(traits<SO3>::Between, q1, q2);
   EXPECT(assert_equal(numericalH1,actualH1));
 
-  Matrix numericalH2 = numericalDerivative22(traits_x<SO3>::Between, q1, q2);
+  Matrix numericalH2 = numericalDerivative22(traits<SO3>::Between, q1, q2);
   EXPECT(assert_equal(numericalH2,actualH2));
 }
 
@@ -108,10 +108,10 @@ TEST(SO3 , Inverse) {
   SO3 expected(Eigen::AngleAxisd(-0.1, z_axis));
 
   Matrix actualH;
-  SO3 actual = traits_x<SO3>::Inverse(q1, actualH);
-  EXPECT(traits_x<SO3>::Equals(expected,actual));
+  SO3 actual = traits<SO3>::Inverse(q1, actualH);
+  EXPECT(traits<SO3>::Equals(expected,actual));
 
-  Matrix numericalH = numericalDerivative11(traits_x<SO3>::Inverse, q1);
+  Matrix numericalH = numericalDerivative11(traits<SO3>::Inverse, q1);
   EXPECT(assert_equal(numericalH,actualH));
 }
 #endif

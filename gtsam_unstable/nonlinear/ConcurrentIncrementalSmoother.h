@@ -170,7 +170,7 @@ typedef ConcurrentIncrementalSmoother::Result ConcurrentIncrementalSmootherResul
 
 /// traits
 template<>
-struct traits_x<ConcurrentIncrementalSmoother> : public Testable<ConcurrentIncrementalSmoother> {
+struct traits<ConcurrentIncrementalSmoother> : public Testable<ConcurrentIncrementalSmoother> {
 };
 
 } // \ namespace gtsam

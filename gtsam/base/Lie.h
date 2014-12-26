@@ -238,10 +238,10 @@ inline Class expmap_default(const Class& t, const Vector& d) {
 template<typename T>
 class IsLieGroup: public IsGroup<T>, public IsManifold<T> {
 public:
-  typedef typename traits_x<T>::structure_category structure_category_tag;
-  typedef typename traits_x<T>::ManifoldType ManifoldType;
-  typedef typename traits_x<T>::TangentVector TangentVector;
-  typedef typename traits_x<T>::ChartJacobian ChartJacobian;
+  typedef typename traits<T>::structure_category structure_category_tag;
+  typedef typename traits<T>::ManifoldType ManifoldType;
+  typedef typename traits<T>::TangentVector TangentVector;
+  typedef typename traits<T>::ChartJacobian ChartJacobian;
 
   BOOST_CONCEPT_USAGE(IsLieGroup) {
     BOOST_STATIC_ASSERT_MSG(
@@ -249,15 +249,15 @@ public:
         "This type's trait does not assert it is a Lie group (or derived)");
 
     // group opertations with Jacobians
-    g = traits_x<T>::Compose(g, h, Hg, Hh);
-    g = traits_x<T>::Between(g, h, Hg, Hh);
-    g = traits_x<T>::Inverse(g, Hg);
+    g = traits<T>::Compose(g, h, Hg, Hh);
+    g = traits<T>::Between(g, h, Hg, Hh);
+    g = traits<T>::Inverse(g, Hg);
     // log and exp map without Jacobians
-    g = traits_x<T>::Expmap(v);
-    v = traits_x<T>::Logmap(g);
+    g = traits<T>::Expmap(v);
+    v = traits<T>::Logmap(g);
     // log and expnential map with Jacobians
-    g = traits_x<T>::Expmap(v, Hg);
-    v = traits_x<T>::Logmap(g, Hg);
+    g = traits<T>::Expmap(v, Hg);
+    v = traits<T>::Logmap(g, Hg);
   }
 private:
   T g, h;

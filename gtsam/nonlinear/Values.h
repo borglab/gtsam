@@ -525,7 +525,7 @@ namespace gtsam {
 
   /// traits
   template<>
-  struct traits_x<Values> : public Testable<Values> {
+  struct traits<Values> : public Testable<Values> {
   };
 
 } //\ namespace gtsam

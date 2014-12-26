@@ -63,7 +63,7 @@ public:
 };
 
 template<>
-struct traits_x<SO3> : public internal::LieGroupTraits<SO3> {};
+struct traits<SO3> : public internal::LieGroupTraits<SO3> {};
 
 
 } // end namespace gtsam

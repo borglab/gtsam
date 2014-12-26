@@ -24,7 +24,7 @@ namespace gtsam {
 
 // Define traits
 template<typename _Scalar, int _Options>
-struct traits_x<QUATERNION_TYPE> {
+struct traits<QUATERNION_TYPE> {
   typedef QUATERNION_TYPE ManifoldType;
   typedef QUATERNION_TYPE Q;
 

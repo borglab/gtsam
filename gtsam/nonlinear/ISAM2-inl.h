@@ -29,7 +29,7 @@ namespace gtsam {
 template<class VALUE>
 VALUE ISAM2::calculateEstimate(Key key) const {
   const Vector& delta = getDelta()[key];
-  return traits_x<VALUE>::Retract(theta_.at<VALUE>(key), delta);
+  return traits<VALUE>::Retract(theta_.at<VALUE>(key), delta);
 }
 
 /* ************************************************************************* */

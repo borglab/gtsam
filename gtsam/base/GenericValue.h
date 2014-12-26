@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include <gtsam/base/Matrix.h>
+#include <gtsam/base/Manifold.h>
 #include <gtsam/base/Value.h>
 
 #include <boost/make_shared.hpp>
@@ -29,71 +29,6 @@
 #include <iostream>
 
 namespace gtsam {
-
-// To play as a GenericValue, we need the following traits
-namespace traits {
-
-// trait to wrap the default equals of types
-template<typename T>
-struct equals {
-  typedef T type;
-  typedef bool result_type;
-  bool operator()(const T& a, const T& b, double tol) {
-    return a.equals(b, tol);
-  }
-};
-
-// trait to wrap the default print of types
-template<typename T>
-struct print {
-  typedef T type;
-  typedef void result_type;
-  void operator()(const T& obj, const std::string& str) {
-    obj.print(str);
-  }
-};
-
-// equals for scalars
-template<>
-struct equals<double> {
-  typedef double type;
-  typedef bool result_type;
-  bool operator()(double a, double b, double tol) {
-    return std::abs(a - b) <= tol;
-  }
-};
-
-// print for scalars
-template<>
-struct print<double> {
-  typedef double type;
-  typedef void result_type;
-  void operator()(double a, const std::string& str) {
-    std::cout << str << ": " << a << std::endl;
-  }
-};
-
-// equals for Matrix types
-template<int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols>
-struct equals<Eigen::Matrix<double, _Rows, _Cols, _Options, _MaxRows, _MaxCols> > {
-  typedef Eigen::Matrix<double, _Rows, _Cols, _Options, _MaxRows, _MaxCols> type;
-  typedef bool result_type;
-  bool operator()(const type& A, const type& B, double tol) {
-    return equal_with_abs_tol(A, B, tol);
-  }
-};
-
-// print for Matrix types
-template<int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols>
-struct print<Eigen::Matrix<double, _Rows, _Cols, _Options, _MaxRows, _MaxCols> > {
-  typedef Eigen::Matrix<double, _Rows, _Cols, _Options, _MaxRows, _MaxCols> type;
-  typedef void result_type;
-  void operator()(const type& A, const std::string& str) {
-    std::cout << str << ": " << A << std::endl;
-  }
-};
-
-}
 
 /**
  * Wraps any type T so it can play as a Value
@@ -137,17 +72,17 @@ public:
     // Cast the base class Value pointer to a templated generic class pointer
     const GenericValue& genericValue2 = static_cast<const GenericValue&>(p);
     // Return the result of using the equals traits for the derived class
-    return traits::equals<T>()(this->value_, genericValue2.value_, tol);
+    return traits<T>::Equals(this->value_, genericValue2.value_, tol);
   }
 
   /// non virtual equals function, uses traits
   bool equals(const GenericValue &other, double tol = 1e-9) const {
-    return traits::equals<T>()(this->value(), other.value(), tol);
+    return traits<T>::Equals(this->value(), other.value(), tol);
   }
 
   /// Virtual print function, uses traits
   virtual void print(const std::string& str) const {
-    traits::print<T>()(value_, str);
+    traits<T>::Print(value_, str);
   }
 
     /**
@@ -179,7 +114,7 @@ public:
     /// Generic Value interface version of retract
     virtual Value* retract_(const Vector& delta) const {
       // Call retract on the derived class using the retract trait function
-      const T retractResult = traits_x<T>::Retract(GenericValue<T>::value(), delta);
+      const T retractResult = traits<T>::Retract(GenericValue<T>::value(), delta);
 
       // Create a Value pointer copy of the result
       void* resultAsValuePlace =
@@ -197,12 +132,12 @@ public:
           static_cast<const GenericValue<T>&>(value2);
 
       // Return the result of calling localCoordinates trait on the derived class
-      return traits_x<T>::Local(GenericValue<T>::value(), genericValue2.value());
+      return traits<T>::Local(GenericValue<T>::value(), genericValue2.value());
     }
 
     /// Non-virtual version of retract
     GenericValue retract(const Vector& delta) const {
-      return GenericValue(traits_x<T>::Retract(GenericValue<T>::value(), delta));
+      return GenericValue(traits<T>::Retract(GenericValue<T>::value(), delta));
     }
 
     /// Non-virtual version of localCoordinates
@@ -212,7 +147,7 @@ public:
 
     /// Return run-time dimensionality
     virtual size_t dim() const {
-      return traits_x<T>::GetDimension(value_);
+      return traits<T>::GetDimension(value_);
     }
 
     /// Assignment operator

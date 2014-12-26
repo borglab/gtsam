@@ -395,7 +395,7 @@ private:
 
 /// traits
 template<class POSE, class VELOCITY, class IMUBIAS>
-struct traits_x<InertialNavFactor_GlobalVelocity<POSE, VELOCITY, IMUBIAS> > :
+struct traits<InertialNavFactor_GlobalVelocity<POSE, VELOCITY, IMUBIAS> > :
     public Testable<InertialNavFactor_GlobalVelocity<POSE, VELOCITY, IMUBIAS> > {
 };
 

@@ -27,7 +27,7 @@ typedef Cyclic<3> G; // Let's use the cyclic group of order 3
 //******************************************************************************
 TEST(Cyclic, Concept) {
   BOOST_CONCEPT_ASSERT((IsGroup<G>));
-  EXPECT_LONGS_EQUAL(0, traits_x<G>::Identity());
+  EXPECT_LONGS_EQUAL(0, traits<G>::Identity());
 }
 
 //******************************************************************************
@@ -37,31 +37,31 @@ TEST(Cyclic, Constructor) {
 
 //******************************************************************************
 TEST(Cyclic, Compose) {
-  EXPECT_LONGS_EQUAL(0, traits_x<G>::Compose(G(0),G(0)));
-  EXPECT_LONGS_EQUAL(1, traits_x<G>::Compose(G(0),G(1)));
-  EXPECT_LONGS_EQUAL(2, traits_x<G>::Compose(G(0),G(2)));
+  EXPECT_LONGS_EQUAL(0, traits<G>::Compose(G(0),G(0)));
+  EXPECT_LONGS_EQUAL(1, traits<G>::Compose(G(0),G(1)));
+  EXPECT_LONGS_EQUAL(2, traits<G>::Compose(G(0),G(2)));
 
-  EXPECT_LONGS_EQUAL(2, traits_x<G>::Compose(G(2),G(0)));
-  EXPECT_LONGS_EQUAL(0, traits_x<G>::Compose(G(2),G(1)));
-  EXPECT_LONGS_EQUAL(1, traits_x<G>::Compose(G(2),G(2)));
+  EXPECT_LONGS_EQUAL(2, traits<G>::Compose(G(2),G(0)));
+  EXPECT_LONGS_EQUAL(0, traits<G>::Compose(G(2),G(1)));
+  EXPECT_LONGS_EQUAL(1, traits<G>::Compose(G(2),G(2)));
 }
 
 //******************************************************************************
 TEST(Cyclic, Between) {
-  EXPECT_LONGS_EQUAL(0, traits_x<G>::Between(G(0),G(0)));
-  EXPECT_LONGS_EQUAL(1, traits_x<G>::Between(G(0),G(1)));
-  EXPECT_LONGS_EQUAL(2, traits_x<G>::Between(G(0),G(2)));
+  EXPECT_LONGS_EQUAL(0, traits<G>::Between(G(0),G(0)));
+  EXPECT_LONGS_EQUAL(1, traits<G>::Between(G(0),G(1)));
+  EXPECT_LONGS_EQUAL(2, traits<G>::Between(G(0),G(2)));
 
-  EXPECT_LONGS_EQUAL(1, traits_x<G>::Between(G(2),G(0)));
-  EXPECT_LONGS_EQUAL(2, traits_x<G>::Between(G(2),G(1)));
-  EXPECT_LONGS_EQUAL(0, traits_x<G>::Between(G(2),G(2)));
+  EXPECT_LONGS_EQUAL(1, traits<G>::Between(G(2),G(0)));
+  EXPECT_LONGS_EQUAL(2, traits<G>::Between(G(2),G(1)));
+  EXPECT_LONGS_EQUAL(0, traits<G>::Between(G(2),G(2)));
 }
 
 //******************************************************************************
 TEST(Cyclic, Ivnverse) {
-  EXPECT_LONGS_EQUAL(0, traits_x<G>::Inverse(G(0)));
-  EXPECT_LONGS_EQUAL(2, traits_x<G>::Inverse(G(1)));
-  EXPECT_LONGS_EQUAL(1, traits_x<G>::Inverse(G(2)));
+  EXPECT_LONGS_EQUAL(0, traits<G>::Inverse(G(0)));
+  EXPECT_LONGS_EQUAL(2, traits<G>::Inverse(G(1)));
+  EXPECT_LONGS_EQUAL(1, traits<G>::Inverse(G(2)));
 }
 
 //******************************************************************************

@@ -101,7 +101,7 @@ public:
     Point newlocal = transform_point<Transform,Point>(trans, global, Dtrans, Dforeign);
     if (Dlocal)
       *Dlocal = -1* gtsam::eye(Point::dimension);
-    return traits_x<Point>::Local(local,newlocal);
+    return traits<Point>::Local(local,newlocal);
   }
 
   virtual void print(const std::string& s="",
@@ -130,6 +130,6 @@ private:
 
 /// traits
 template<class T1, class T2>
-struct traits_x<ReferenceFrameFactor<T1, T2> > : public Testable<ReferenceFrameFactor<T1, T2> > {};
+struct traits<ReferenceFrameFactor<T1, T2> > : public Testable<ReferenceFrameFactor<T1, T2> > {};
 
 } // \namespace gtsam

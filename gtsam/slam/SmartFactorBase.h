@@ -48,7 +48,7 @@ protected:
 
   boost::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame (one for all cameras)
 
-  static const int ZDim = traits_x<Z>::dimension;    ///< Measurement dimension
+  static const int ZDim = traits<Z>::dimension;    ///< Measurement dimension
 
   /// Definitions for blocks of F
   typedef Eigen::Matrix<double, ZDim, D> Matrix2D; // F

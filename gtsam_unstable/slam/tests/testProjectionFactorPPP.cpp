@@ -51,7 +51,7 @@ typedef ProjectionFactorPPP<Pose3, Point3> TestProjectionFactor;
 /// traits
 namespace gtsam {
 template<>
-struct traits_x<TestProjectionFactor> : public Testable<TestProjectionFactor> {
+struct traits<TestProjectionFactor> : public Testable<TestProjectionFactor> {
 };
 }
 

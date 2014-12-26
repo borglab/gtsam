@@ -130,7 +130,7 @@ namespace gtsam {
 
   /// traits
   template<>
-  struct traits_x<GaussianBayesTree> : public Testable<GaussianBayesTree> {
+  struct traits<GaussianBayesTree> : public Testable<GaussianBayesTree> {
   };
 
 } //\ namespace gtsam

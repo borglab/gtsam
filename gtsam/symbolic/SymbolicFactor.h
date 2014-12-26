@@ -162,7 +162,7 @@ namespace gtsam {
 
   /// traits
   template<>
-  struct traits_x<SymbolicFactor> : public Testable<SymbolicFactor> {
+  struct traits<SymbolicFactor> : public Testable<SymbolicFactor> {
   };
 
 } //\ namespace gtsam

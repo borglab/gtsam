@@ -147,6 +147,6 @@ private:
 };
 
 template<>
-struct traits_x<StereoCamera> : public internal::Manifold<StereoCamera> {};
+struct traits<StereoCamera> : public internal::Manifold<StereoCamera> {};
 
 }

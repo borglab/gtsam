@@ -44,7 +44,7 @@ public:
 };
 
 /// traits
-template<> struct traits_x<LinearInequalityFactorGraph> : public Testable<
+template<> struct traits<LinearInequalityFactorGraph> : public Testable<
     LinearInequalityFactorGraph> {
 };
 

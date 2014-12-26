@@ -274,12 +274,12 @@ namespace simulated2D {
 /// traits
 namespace gtsam {
 template<class POSE, class LANDMARK>
-struct traits_x<simulated2D::GenericMeasurement<POSE, LANDMARK> > : Testable<
+struct traits<simulated2D::GenericMeasurement<POSE, LANDMARK> > : Testable<
     simulated2D::GenericMeasurement<POSE, LANDMARK> > {
 };
 
 template<>
-struct traits_x<simulated2D::Values> : public Testable<simulated2D::Values> {
+struct traits<simulated2D::Values> : public Testable<simulated2D::Values> {
 };
 }
 

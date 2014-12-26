@@ -132,7 +132,7 @@ private:
 };
 
 /// traits
-template<> struct traits_x<Rot3AttitudeFactor> : public Testable<Rot3AttitudeFactor> {};
+template<> struct traits<Rot3AttitudeFactor> : public Testable<Rot3AttitudeFactor> {};
 
 /**
  * Version of AttitudeFactor for Pose3
@@ -216,7 +216,7 @@ private:
 };
 
 /// traits
-template<> struct traits_x<Pose3AttitudeFactor> : public Testable<Pose3AttitudeFactor> {};
+template<> struct traits<Pose3AttitudeFactor> : public Testable<Pose3AttitudeFactor> {};
 
 } /// namespace gtsam
 

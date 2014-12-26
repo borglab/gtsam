@@ -143,7 +143,7 @@ namespace gtsam {
 
 /// traits
 template<>
-struct traits_x<GaussianConditional> : public Testable<GaussianConditional> {};
+struct traits<GaussianConditional> : public Testable<GaussianConditional> {};
 
 } // \ namespace gtsam
 

@@ -120,7 +120,7 @@ private:
 
 
 template<>
-struct traits_x<LieMatrix> : public internal::VectorSpace<LieMatrix> {
+struct traits<LieMatrix> : public internal::VectorSpace<LieMatrix> {
 
   // Override Retract, as the default version does not know how to initialize
   static LieMatrix Retract(const LieMatrix& origin, const TangentVector& v,

@@ -162,7 +162,7 @@ inline Key Z(size_t j) { return Symbol('z', j); }
 }
 
 /// traits
-template<> struct traits_x<Symbol> : public Testable<Symbol> {};
+template<> struct traits<Symbol> : public Testable<Symbol> {};
 
 } // \ namespace gtsam
 

@@ -68,17 +68,17 @@ TEST(Manifold, SomeVectorSpacesGTSAM) {
 // dimension
 TEST(Manifold, _dimension) {
   //using namespace traits;
-  EXPECT_LONGS_EQUAL(2, traits_x<Point2>::dimension);
-  EXPECT_LONGS_EQUAL(8, traits_x<Matrix24>::dimension);
-  EXPECT_LONGS_EQUAL(1, traits_x<double>::dimension);
+  EXPECT_LONGS_EQUAL(2, traits<Point2>::dimension);
+  EXPECT_LONGS_EQUAL(8, traits<Matrix24>::dimension);
+  EXPECT_LONGS_EQUAL(1, traits<double>::dimension);
 }
 
 //******************************************************************************
 TEST(Manifold, Identity) {
-  EXPECT_DOUBLES_EQUAL(0.0, traits_x<double>::Identity(), 0.0);
-  EXPECT(assert_equal(Matrix(Matrix24::Zero()), Matrix(traits_x<Matrix24>::Identity())));
-  EXPECT(assert_equal(Pose3(), traits_x<Pose3>::Identity()));
-  EXPECT(assert_equal(Point2(), traits_x<Point2>::Identity()));
+  EXPECT_DOUBLES_EQUAL(0.0, traits<double>::Identity(), 0.0);
+  EXPECT(assert_equal(Matrix(Matrix24::Zero()), Matrix(traits<Matrix24>::Identity())));
+  EXPECT(assert_equal(Pose3(), traits<Pose3>::Identity()));
+  EXPECT(assert_equal(Point2(), traits<Point2>::Identity()));
 }
 
 //******************************************************************************
@@ -86,14 +86,14 @@ TEST(Manifold, Identity) {
 TEST(Manifold, DefaultChart) {
 
   //DefaultChart<Point2> chart1;
-  EXPECT(traits_x<Point2>::Local(Point2(0, 0), Point2(1, 0)) == Vector2(1, 0));
-  EXPECT(traits_x<Point2>::Retract(Point2(0, 0), Vector2(1, 0)) == Point2(1, 0));
+  EXPECT(traits<Point2>::Local(Point2(0, 0), Point2(1, 0)) == Vector2(1, 0));
+  EXPECT(traits<Point2>::Retract(Point2(0, 0), Vector2(1, 0)) == Point2(1, 0));
 
   Vector v2(2);
   v2 << 1, 0;
   //DefaultChart<Vector2> chart2;
-  EXPECT(assert_equal(v2, traits_x<Vector2>::Local(Vector2(0, 0), Vector2(1, 0))));
-  EXPECT(traits_x<Vector2>::Retract(Vector2(0, 0), v2) == Vector2(1, 0));
+  EXPECT(assert_equal(v2, traits<Vector2>::Local(Vector2(0, 0), Vector2(1, 0))));
+  EXPECT(traits<Vector2>::Retract(Vector2(0, 0), v2) == Vector2(1, 0));
 
   {
     typedef Matrix2 ManifoldPoint;
@@ -102,8 +102,8 @@ TEST(Manifold, DefaultChart) {
     m << 1, 3,
          2, 4;
     // m as per default is in column-major storage mode. So this yields a linear representation of (1, 2, 3, 4)!
-    EXPECT(assert_equal(Vector(Vector4(1, 2, 3, 4)), Vector(traits_x<ManifoldPoint>::Local(ManifoldPoint::Zero(), m))));
-    EXPECT(traits_x<ManifoldPoint>::Retract(m, Vector4(1, 2, 3, 4)) == 2 * m);
+    EXPECT(assert_equal(Vector(Vector4(1, 2, 3, 4)), Vector(traits<ManifoldPoint>::Local(ManifoldPoint::Zero(), m))));
+    EXPECT(traits<ManifoldPoint>::Retract(m, Vector4(1, 2, 3, 4)) == 2 * m);
   }
 
   {
@@ -111,8 +111,8 @@ TEST(Manifold, DefaultChart) {
     ManifoldPoint m;
     //DefaultChart<ManifoldPoint> chart;
     m << 1, 2;
-    EXPECT(assert_equal(Vector(Vector2(1, 2)), Vector(traits_x<ManifoldPoint>::Local(ManifoldPoint::Zero(), m))));
-    EXPECT(traits_x<ManifoldPoint>::Retract(m, Vector2(1, 2)) == 2 * m);
+    EXPECT(assert_equal(Vector(Vector2(1, 2)), Vector(traits<ManifoldPoint>::Local(ManifoldPoint::Zero(), m))));
+    EXPECT(traits<ManifoldPoint>::Retract(m, Vector2(1, 2)) == 2 * m);
   }
 
   {
@@ -120,33 +120,33 @@ TEST(Manifold, DefaultChart) {
     ManifoldPoint m;
     //DefaultChart<ManifoldPoint> chart;
     m << 1;
-    EXPECT(assert_equal(Vector(ManifoldPoint::Ones()), Vector(traits_x<ManifoldPoint>::Local(ManifoldPoint::Zero(), m))));
-    EXPECT(traits_x<ManifoldPoint>::Retract(m, ManifoldPoint::Ones()) == 2 * m);
+    EXPECT(assert_equal(Vector(ManifoldPoint::Ones()), Vector(traits<ManifoldPoint>::Local(ManifoldPoint::Zero(), m))));
+    EXPECT(traits<ManifoldPoint>::Retract(m, ManifoldPoint::Ones()) == 2 * m);
   }
 
   //DefaultChart<double> chart3;
   Vector v1(1);
   v1 << 1;
-  EXPECT(assert_equal(v1, traits_x<double>::Local(0, 1)));
-  EXPECT_DOUBLES_EQUAL(traits_x<double>::Retract(0, v1), 1, 1e-9);
+  EXPECT(assert_equal(v1, traits<double>::Local(0, 1)));
+  EXPECT_DOUBLES_EQUAL(traits<double>::Retract(0, v1), 1, 1e-9);
 
   // Dynamic does not work yet !
   Vector z = zero(2), v(2);
   v << 1, 0;
   //DefaultChart<Vector> chart4;
-//  EXPECT(assert_equal(traits_x<Vector>::Local(z, v), v));
-//  EXPECT(assert_equal(traits_x<Vector>::Retract(z, v), v));
+//  EXPECT(assert_equal(traits<Vector>::Local(z, v), v));
+//  EXPECT(assert_equal(traits<Vector>::Retract(z, v), v));
 
   Vector v3(3);
   v3 << 1, 1, 1;
   Rot3 I = Rot3::identity();
   Rot3 R = I.retract(v3);
   //DefaultChart<Rot3> chart5;
-  EXPECT(assert_equal(v3, traits_x<Rot3>::Local(I, R)));
-  EXPECT(assert_equal(traits_x<Rot3>::Retract(I, v3), R));
+  EXPECT(assert_equal(v3, traits<Rot3>::Local(I, R)));
+  EXPECT(assert_equal(traits<Rot3>::Retract(I, v3), R));
   // Check zero vector
   //DefaultChart<Rot3> chart6;
-  EXPECT(assert_equal(zero(3), traits_x<Rot3>::Local(R, R)));
+  EXPECT(assert_equal(zero(3), traits<Rot3>::Local(R, R)));
 }
 
 //******************************************************************************

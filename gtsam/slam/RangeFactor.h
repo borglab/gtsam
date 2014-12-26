@@ -100,7 +100,7 @@ private:
 
 /// traits
 template<class T1, class T2>
-struct traits_x<RangeFactor<T1,T2> > : public Testable<RangeFactor<T1,T2> > {};
+struct traits<RangeFactor<T1,T2> > : public Testable<RangeFactor<T1,T2> > {};
 
 /**
  * Binary factor for a range measurement, with a transform applied
@@ -192,6 +192,6 @@ private:
 
 /// traits
 template<class T1, class T2>
-struct traits_x<RangeFactorWithTransform<T1, T2> > : public Testable<RangeFactorWithTransform<T1, T2> > {};
+struct traits<RangeFactorWithTransform<T1, T2> > : public Testable<RangeFactorWithTransform<T1, T2> > {};
 
 } // \ namespace gtsam

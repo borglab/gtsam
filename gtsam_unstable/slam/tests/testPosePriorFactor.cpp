@@ -31,7 +31,7 @@ typedef PosePriorFactor<Pose3> TestPosePriorFactor;
 /// traits
 namespace gtsam {
 template<>
-struct traits_x<TestPosePriorFactor> : public Testable<TestPosePriorFactor> {
+struct traits<TestPosePriorFactor> : public Testable<TestPosePriorFactor> {
 };
 }
 

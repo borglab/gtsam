@@ -462,6 +462,6 @@ namespace gtsam {
   GTSAM_EXPORT std::pair<Matrix3,Vector3> RQ(const Matrix3& A);
 
   template<>
-  struct traits_x<Rot3> : public internal::LieGroupTraits<Rot3> {};
+  struct traits<Rot3> : public internal::LieGroupTraits<Rot3> {};
 }
 

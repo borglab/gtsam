@@ -140,7 +140,7 @@ private:
 };
 
 template<>
-struct traits_x<Cal3Unified> : public internal::Manifold<Cal3Unified> {};
+struct traits<Cal3Unified> : public internal::Manifold<Cal3Unified> {};
 
 }
 

@@ -93,7 +93,7 @@ public:
    */
   NonlinearEquality(Key j, const T& feasible,
       bool (*_compare)(const T&, const T&) = compare<T>) :
-      Base(noiseModel::Constrained::All(traits_x<T>::GetDimension(feasible)),
+      Base(noiseModel::Constrained::All(traits<T>::GetDimension(feasible)),
           j), feasible_(feasible), allow_error_(false), error_gain_(0.0), //
       compare_(_compare) {
   }
@@ -103,7 +103,7 @@ public:
    */
   NonlinearEquality(Key j, const T& feasible, double error_gain,
       bool (*_compare)(const T&, const T&) = compare<T>) :
-      Base(noiseModel::Constrained::All(traits_x<T>::GetDimension(feasible)),
+      Base(noiseModel::Constrained::All(traits<T>::GetDimension(feasible)),
           j), feasible_(feasible), allow_error_(true), error_gain_(error_gain), //
       compare_(_compare) {
   }
@@ -115,8 +115,8 @@ public:
   virtual void print(const std::string& s = "",
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
     std::cout << s << "Constraint: on [" << keyFormatter(this->key()) << "]\n";
-    traits_x<VALUE>::Print(feasible_, "Feasible Point:\n");
-    std::cout << "Variable Dimension: " << traits_x<T>::GetDimension(feasible_) << std::endl;
+    traits<VALUE>::Print(feasible_, "Feasible Point:\n");
+    std::cout << "Variable Dimension: " << traits<T>::GetDimension(feasible_) << std::endl;
   }
 
   /** Check if two factors are equal */
@@ -144,11 +144,11 @@ public:
   /** error function */
   Vector evaluateError(const T& xj,
       boost::optional<Matrix&> H = boost::none) const {
-    const size_t nj = traits_x<T>::GetDimension(feasible_);
+    const size_t nj = traits<T>::GetDimension(feasible_);
     if (allow_error_) {
       if (H)
         *H = eye(nj); // FIXME: this is not the right linearization for nonlinear compare
-      return traits_x<T>::Local(xj,feasible_);
+      return traits<T>::Local(xj,feasible_);
     } else if (compare_(feasible_, xj)) {
       if (H)
         *H = eye(nj);
@@ -198,7 +198,7 @@ private:
 // \class NonlinearEquality
 
 template<typename VALUE>
-struct traits_x<NonlinearEquality<VALUE> > : Testable<NonlinearEquality<VALUE> > {
+struct traits<NonlinearEquality<VALUE> > : Testable<NonlinearEquality<VALUE> > {
 };
 
 /* ************************************************************************* */
@@ -237,7 +237,7 @@ public:
    *
    */
   NonlinearEquality1(const X& value, Key key, double mu = 1000.0) :
-      Base( noiseModel::Constrained::All(traits_x<X>::GetDimension(value),
+      Base( noiseModel::Constrained::All(traits<X>::GetDimension(value),
               std::abs(mu)), key), value_(value) {
   }
 
@@ -254,9 +254,9 @@ public:
   Vector evaluateError(const X& x1,
       boost::optional<Matrix&> H = boost::none) const {
     if (H)
-      (*H) = eye(traits_x<X>::GetDimension(x1));
+      (*H) = eye(traits<X>::GetDimension(x1));
     // manifold equivalent of h(x)-z -> log(z,h(x))
-    return traits_x<X>::Local(value_,x1);
+    return traits<X>::Local(value_,x1);
   }
 
   /** Print */
@@ -283,7 +283,7 @@ private:
 // \NonlinearEquality1
 
 template<typename VALUE>
-struct traits_x<NonlinearEquality1<VALUE> > : Testable<NonlinearEquality1<VALUE> > {
+struct traits<NonlinearEquality1<VALUE> > : Testable<NonlinearEquality1<VALUE> > {
 };
 
 /* ************************************************************************* */
@@ -312,7 +312,7 @@ public:
 
   ///TODO: comment
   NonlinearEquality2(Key key1, Key key2, double mu = 1000.0) :
-      Base(noiseModel::Constrained::All(traits_x<X>::dimension, std::abs(mu)), key1, key2) {
+      Base(noiseModel::Constrained::All(traits<X>::dimension, std::abs(mu)), key1, key2) {
   }
   virtual ~NonlinearEquality2() {
   }
@@ -326,10 +326,10 @@ public:
   /** g(x) with optional derivative2 */
   Vector evaluateError(const X& x1, const X& x2, boost::optional<Matrix&> H1 =
       boost::none, boost::optional<Matrix&> H2 = boost::none) const {
-    static const size_t p = traits_x<X>::dimension;
+    static const size_t p = traits<X>::dimension;
     if (H1) *H1 = -eye(p);
     if (H2) *H2 =  eye(p);
-    return traits_x<X>::Local(x1,x2);
+    return traits<X>::Local(x1,x2);
   }
 
 private:
@@ -346,7 +346,7 @@ private:
 // \NonlinearEquality2
 
 template<typename VALUE>
-struct traits_x<NonlinearEquality2<VALUE> > : Testable<NonlinearEquality2<VALUE> > {
+struct traits<NonlinearEquality2<VALUE> > : Testable<NonlinearEquality2<VALUE> > {
 };
 
 

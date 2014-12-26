@@ -179,7 +179,7 @@ protected:
 
 /// traits
 template<>
-struct traits_x<VariableIndex> : public Testable<VariableIndex> {
+struct traits<VariableIndex> : public Testable<VariableIndex> {
 };
 
 } //\ namespace gtsam

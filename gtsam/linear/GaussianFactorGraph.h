@@ -346,7 +346,7 @@ namespace gtsam {
 
 /// traits
 template<>
-struct traits_x<GaussianFactorGraph> : public Testable<GaussianFactorGraph> {
+struct traits<GaussianFactorGraph> : public Testable<GaussianFactorGraph> {
 };
 
 } // \ namespace gtsam

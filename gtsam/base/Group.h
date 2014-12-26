@@ -33,7 +33,7 @@ struct group_tag {};
 struct multiplicative_group_tag {};
 struct additive_group_tag {};
 
-template <typename T> struct traits_x;
+template <typename T> struct traits;
 
 /**
  * Group Concept
@@ -41,18 +41,18 @@ template <typename T> struct traits_x;
 template<typename G>
 class IsGroup {
 public:
-  typedef typename traits_x<G>::structure_category structure_category_tag;
-  typedef typename traits_x<G>::group_flavor flavor_tag;
-  //typedef typename traits_x<G>::identity::value_type identity_value_type;
+  typedef typename traits<G>::structure_category structure_category_tag;
+  typedef typename traits<G>::group_flavor flavor_tag;
+  //typedef typename traits<G>::identity::value_type identity_value_type;
 
   BOOST_CONCEPT_USAGE(IsGroup) {
     BOOST_STATIC_ASSERT_MSG(
         (boost::is_base_of<group_tag, structure_category_tag>::value),
         "This type's structure_category trait does not assert it as a group (or derived)");
-    e = traits_x<G>::Identity();
-    e = traits_x<G>::Compose(g, h);
-    e = traits_x<G>::Between(g, h);
-    e = traits_x<G>::Inverse(g);
+    e = traits<G>::Identity();
+    e = traits<G>::Compose(g, h);
+    e = traits<G>::Between(g, h);
+    e = traits<G>::Inverse(g);
     operator_usage(flavor);
     // todo: how do we test the act concept? or do we even need to?
   }
@@ -77,10 +77,10 @@ private:
 template<typename G>
 BOOST_CONCEPT_REQUIRES(((IsGroup<G>)),(bool)) //
 check_group_invariants(const G& a, const G& b, double tol = 1e-9) {
-  G e = traits_x<G>::Identity();
-  return traits_x<G>::Equals(traits_x<G>::Compose(a, traits_x<G>::Inverse(a)), e, tol)
-      && traits_x<G>::Equals(traits_x<G>::Between(a, b), traits_x<G>::Compose(traits_x<G>::Inverse(a), b), tol)
-      && traits_x<G>::Equals(traits_x<G>::Compose(a, traits_x<G>::Between(a, b)), b, tol);
+  G e = traits<G>::Identity();
+  return traits<G>::Equals(traits<G>::Compose(a, traits<G>::Inverse(a)), e, tol)
+      && traits<G>::Equals(traits<G>::Between(a, b), traits<G>::Compose(traits<G>::Inverse(a), b), tol)
+      && traits<G>::Equals(traits<G>::Compose(a, traits<G>::Between(a, b)), b, tol);
 }
 
 /// Macro to add group traits, additive flavor

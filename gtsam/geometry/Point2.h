@@ -191,7 +191,7 @@ private:
 inline Point2 operator*(double s, const Point2& p) {return p*s;}
 
 template<>
-struct traits_x<Point2> : public internal::VectorSpace<Point2> {};
+struct traits<Point2> : public internal::VectorSpace<Point2> {};
 
 } // \ namespace gtsam
 

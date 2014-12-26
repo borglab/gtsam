@@ -131,7 +131,7 @@ public:
 // DiscreteConditional
 
 // traits
-template<> struct traits_x<DiscreteConditional> : public Testable<DiscreteConditional> {};
+template<> struct traits<DiscreteConditional> : public Testable<DiscreteConditional> {};
 
 /* ************************************************************************* */
 template<typename ITERATOR>

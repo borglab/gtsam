@@ -31,7 +31,7 @@ typedef PoseBetweenFactor<Pose3> TestPoseBetweenFactor;
 /// traits
 namespace gtsam {
 template<>
-struct traits_x<TestPoseBetweenFactor> : public Testable<TestPoseBetweenFactor> {
+struct traits<TestPoseBetweenFactor> : public Testable<TestPoseBetweenFactor> {
 };
 }
 

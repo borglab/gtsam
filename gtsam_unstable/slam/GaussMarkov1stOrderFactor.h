@@ -91,8 +91,8 @@ public:
       boost::optional<Matrix&> H1 = boost::none,
       boost::optional<Matrix&> H2 = boost::none) const {
 
-    Vector v1( traits_x<VALUE>::Logmap(p1) );
-    Vector v2( traits_x<VALUE>::Logmap(p2) );
+    Vector v1( traits<VALUE>::Logmap(p1) );
+    Vector v2( traits<VALUE>::Logmap(p2) );
 
     Vector alpha(tau_.size());
     Vector alpha_v1(tau_.size());
@@ -133,7 +133,7 @@ private:
 }; // \class GaussMarkov1stOrderFactor
 
 /// traits
-template<class VALUE> struct traits_x<GaussMarkov1stOrderFactor<VALUE> > :
+template<class VALUE> struct traits<GaussMarkov1stOrderFactor<VALUE> > :
     public Testable<GaussMarkov1stOrderFactor<VALUE> > {
 };
 

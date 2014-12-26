@@ -29,7 +29,7 @@ public:
 };
 
 /// traits
-template<> struct traits_x<LinearEqualityFactorGraph> : public Testable<
+template<> struct traits<LinearEqualityFactorGraph> : public Testable<
     LinearEqualityFactorGraph> {
 };
 

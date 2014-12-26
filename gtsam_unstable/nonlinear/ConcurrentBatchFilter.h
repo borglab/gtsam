@@ -255,7 +255,7 @@ typedef ConcurrentBatchFilter::Result ConcurrentBatchFilterResult;
 
 /// traits
 template<>
-struct traits_x<ConcurrentBatchFilter> : public Testable<ConcurrentBatchFilter> {
+struct traits<ConcurrentBatchFilter> : public Testable<ConcurrentBatchFilter> {
 };
 
 } // \ namespace gtsam

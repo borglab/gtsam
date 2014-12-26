@@ -50,7 +50,7 @@ struct manifold_tag {};
  *
  */
 
-template <typename T> struct traits_x;
+template <typename T> struct traits;
 
 namespace internal {
 
@@ -122,10 +122,10 @@ struct Manifold: Testable<Class>, ManifoldImpl<Class, Class::dimension> {
 template<typename T>
 BOOST_CONCEPT_REQUIRES(((IsTestable<T>)),(bool)) //
 check_manifold_invariants(const T& a, const T& b, double tol=1e-9) {
-  typename traits_x<T>::TangentVector v0 = traits_x<T>::Local(a,a);
-  typename traits_x<T>::TangentVector v = traits_x<T>::Local(a,b);
-  T c = traits_x<T>::Retract(a,v);
-  return v0.norm() < tol && traits_x<T>::Equals(b,c,tol);
+  typename traits<T>::TangentVector v0 = traits<T>::Local(a,a);
+  typename traits<T>::TangentVector v = traits<T>::Local(a,b);
+  T c = traits<T>::Retract(a,v);
+  return v0.norm() < tol && traits<T>::Equals(b,c,tol);
 }
 
 /// Manifold concept
@@ -134,10 +134,10 @@ class IsManifold {
 
 public:
 
-  typedef typename traits_x<T>::structure_category structure_category_tag;
-  static const size_t dim = traits_x<T>::dimension;
-  typedef typename traits_x<T>::ManifoldType ManifoldType;
-  typedef typename traits_x<T>::TangentVector TangentVector;
+  typedef typename traits<T>::structure_category structure_category_tag;
+  static const size_t dim = traits<T>::dimension;
+  typedef typename traits<T>::ManifoldType ManifoldType;
+  typedef typename traits<T>::TangentVector TangentVector;
 
   BOOST_CONCEPT_USAGE(IsManifold) {
     BOOST_STATIC_ASSERT_MSG(
@@ -146,8 +146,8 @@ public:
     BOOST_STATIC_ASSERT(TangentVector::SizeAtCompileTime == dim);
 
     // make sure Chart methods are defined
-    v = traits_x<T>::Local(p, q);
-    q = traits_x<T>::Retract(p, v);
+    v = traits<T>::Local(p, q);
+    q = traits<T>::Retract(p, v);
   }
 
 private:
@@ -160,7 +160,7 @@ private:
 template<typename T>
 struct FixedDimension {
   typedef const int value_type;
-  static const int value = traits_x<T>::dimension;
+  static const int value = traits<T>::dimension;
   BOOST_STATIC_ASSERT_MSG(value != Eigen::Dynamic,
       "FixedDimension instantiated for dymanically-sized type.");
 };

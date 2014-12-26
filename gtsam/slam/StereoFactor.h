@@ -182,6 +182,6 @@ private:
 
 /// traits
 template<class T1, class T2>
-struct traits_x<GenericStereoFactor<T1, T2> > : public Testable<GenericStereoFactor<T1, T2> > {};
+struct traits<GenericStereoFactor<T1, T2> > : public Testable<GenericStereoFactor<T1, T2> > {};
 
 } // \ namespace gtsam

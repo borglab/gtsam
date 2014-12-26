@@ -23,7 +23,7 @@ using namespace std;
 using namespace gtsam;
 
 typedef Quaternion Q; // Typedef
-typedef traits_x<Q>::ChartJacobian QuaternionJacobian;
+typedef traits<Q>::ChartJacobian QuaternionJacobian;
 
 //******************************************************************************
 TEST(Quaternion , Concept) {
@@ -52,7 +52,7 @@ TEST(Quaternion , Local) {
   Q q2(Eigen::AngleAxisd(0.1, z_axis));
   QuaternionJacobian H1, H2;
   Vector3 expected(0, 0, 0.1);
-  Vector3 actual = traits_x<Q>::Local(q1, q2, H1, H2);
+  Vector3 actual = traits<Q>::Local(q1, q2, H1, H2);
   EXPECT(assert_equal((Vector)expected,actual));
 }
 
@@ -63,7 +63,7 @@ TEST(Quaternion , Retract) {
   Q expected(Eigen::AngleAxisd(0.1, z_axis));
   Vector3 v(0, 0, 0.1);
   QuaternionJacobian Hq, Hv;
-  Q actual = traits_x<Q>::Retract(q, v, Hq, Hv);
+  Q actual = traits<Q>::Retract(q, v, Hq, Hv);
   EXPECT(actual.isApprox(expected));
 }
 
@@ -75,13 +75,13 @@ TEST(Quaternion , Compose) {
 
   Q expected = q1 * q2;
   Matrix actualH1, actualH2;
-  Q actual = traits_x<Q>::Compose(q1, q2, actualH1, actualH2);
-  EXPECT(traits_x<Q>::Equals(expected,actual));
+  Q actual = traits<Q>::Compose(q1, q2, actualH1, actualH2);
+  EXPECT(traits<Q>::Equals(expected,actual));
 
-  Matrix numericalH1 = numericalDerivative21(traits_x<Q>::Compose, q1, q2);
+  Matrix numericalH1 = numericalDerivative21(traits<Q>::Compose, q1, q2);
   EXPECT(assert_equal(numericalH1,actualH1));
 
-  Matrix numericalH2 = numericalDerivative22(traits_x<Q>::Compose, q1, q2);
+  Matrix numericalH2 = numericalDerivative22(traits<Q>::Compose, q1, q2);
   EXPECT(assert_equal(numericalH2,actualH2));
 }
 
@@ -93,13 +93,13 @@ TEST(Quaternion , Between) {
 
   Q expected = q1.inverse() * q2;
   Matrix actualH1, actualH2;
-  Q actual = traits_x<Q>::Between(q1, q2, actualH1, actualH2);
-  EXPECT(traits_x<Q>::Equals(expected,actual));
+  Q actual = traits<Q>::Between(q1, q2, actualH1, actualH2);
+  EXPECT(traits<Q>::Equals(expected,actual));
 
-  Matrix numericalH1 = numericalDerivative21(traits_x<Q>::Between, q1, q2);
+  Matrix numericalH1 = numericalDerivative21(traits<Q>::Between, q1, q2);
   EXPECT(assert_equal(numericalH1,actualH1));
 
-  Matrix numericalH2 = numericalDerivative22(traits_x<Q>::Between, q1, q2);
+  Matrix numericalH2 = numericalDerivative22(traits<Q>::Between, q1, q2);
   EXPECT(assert_equal(numericalH2,actualH2));
 }
 
@@ -110,10 +110,10 @@ TEST(Quaternion , Inverse) {
   Q expected(Eigen::AngleAxisd(-0.1, z_axis));
 
   Matrix actualH;
-  Q actual = traits_x<Q>::Inverse(q1, actualH);
-  EXPECT(traits_x<Q>::Equals(expected,actual));
+  Q actual = traits<Q>::Inverse(q1, actualH);
+  EXPECT(traits<Q>::Equals(expected,actual));
 
-  Matrix numericalH = numericalDerivative11(traits_x<Q>::Inverse, q1);
+  Matrix numericalH = numericalDerivative11(traits<Q>::Inverse, q1);
   EXPECT(assert_equal(numericalH,actualH));
 }
 

@@ -362,7 +362,7 @@ namespace gtsam {
 
 /// traits
 template<>
-struct traits_x<JacobianFactor> : public Testable<JacobianFactor> {
+struct traits<JacobianFactor> : public Testable<JacobianFactor> {
 };
 
 } // \ namespace gtsam

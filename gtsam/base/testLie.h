@@ -33,7 +33,7 @@ void testLieGroupDerivatives(TestResult& result_, const std::string& name_,
     const G& t1, const G& t2) {
 
   Matrix H1, H2;
-  typedef traits_x<G> T;
+  typedef traits<G> T;
 
   // Inverse
   EXPECT(assert_equal(t1.inverse(),T::Inverse(t1, H1)));
@@ -58,7 +58,7 @@ void testChartDerivatives(TestResult& result_, const std::string& name_,
     const G& t1, const G& t2) {
 
   Matrix H1, H2;
-  typedef traits_x<G> T;
+  typedef traits<G> T;
 
   // Retract
   typename G::TangentVector w12 = T::Local(t1, t2);

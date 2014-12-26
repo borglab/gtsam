@@ -72,7 +72,7 @@ public:
 };
 
 namespace gtsam {
-template <> struct traits_x<TestValue> : public internal::Manifold<TestValue> {};
+template <> struct traits<TestValue> : public internal::Manifold<TestValue> {};
 }
 
 

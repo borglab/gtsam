@@ -145,7 +145,7 @@ public:
 }; // \class NonlinearFactor
 
 /// traits
-template<> struct traits_x<NonlinearFactor> : public Testable<NonlinearFactor> {
+template<> struct traits<NonlinearFactor> : public Testable<NonlinearFactor> {
 };
 
 /* ************************************************************************* */

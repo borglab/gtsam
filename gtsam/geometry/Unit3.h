@@ -163,7 +163,7 @@ private:
 };
 
 // Define GTSAM traits
-template <> struct traits_x<Unit3> : public internal::Manifold<Unit3> {};
+template <> struct traits<Unit3> : public internal::Manifold<Unit3> {};
 
 } // namespace gtsam
 

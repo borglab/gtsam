@@ -110,7 +110,7 @@ private:
 };
 
 template<>
-struct traits_x<Cal3DS2> : public internal::Manifold<Cal3DS2> {};
+struct traits<Cal3DS2> : public internal::Manifold<Cal3DS2> {};
 
 }
 

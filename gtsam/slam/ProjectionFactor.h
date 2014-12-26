@@ -190,7 +190,7 @@ namespace gtsam {
 
   /// traits
   template<class POSE, class LANDMARK, class CALIBRATION>
-  struct traits_x<GenericProjectionFactor<POSE, LANDMARK, CALIBRATION> > :
+  struct traits<GenericProjectionFactor<POSE, LANDMARK, CALIBRATION> > :
       public Testable<GenericProjectionFactor<POSE, LANDMARK, CALIBRATION> > {
   };
 

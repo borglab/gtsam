@@ -226,7 +226,7 @@ namespace gtsam {
 
   /// traits
   template<class VALUE>
-  struct traits_x<TransformBtwRobotsUnaryFactor<VALUE> > :
+  struct traits<TransformBtwRobotsUnaryFactor<VALUE> > :
       public Testable<TransformBtwRobotsUnaryFactor<VALUE> > {
   };
 

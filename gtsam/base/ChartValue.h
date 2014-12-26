@@ -210,11 +210,11 @@
 //template<typename T>
 //GenericValue<T> convertToChartValue(const T& value,
 //    boost::optional<
-//        Eigen::Matrix<double, traits_x<T>::dimension,
-//            traits_x<T>::dimension>&> H = boost::none) {
+//        Eigen::Matrix<double, traits<T>::dimension,
+//            traits<T>::dimension>&> H = boost::none) {
 //  if (H) {
-//    *H = Eigen::Matrix<double, traits_x<T>::dimension,
-//        traits_x<T>::dimension>::Identity();
+//    *H = Eigen::Matrix<double, traits<T>::dimension,
+//        traits<T>::dimension>::Identity();
 //  }
 //  return GenericValue<T>(value);
 //}

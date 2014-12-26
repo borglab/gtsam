@@ -16,7 +16,7 @@ namespace gtsam {
 struct vector_space_tag: public lie_group_tag {
 };
 
-template<typename T> struct traits_x;
+template<typename T> struct traits;
 
 namespace internal {
 
@@ -254,16 +254,16 @@ struct ScalarTraits : VectorSpaceImpl<Scalar, 1> {
 } // namespace internal
 
 /// double
-template<> struct traits_x<double> : public internal::ScalarTraits<double> {
+template<> struct traits<double> : public internal::ScalarTraits<double> {
 };
 
 /// float
-template<> struct traits_x<float> : public internal::ScalarTraits<float> {
+template<> struct traits<float> : public internal::ScalarTraits<float> {
 };
 
 // traits for any fixed double Eigen matrix
 template<int M, int N, int Options, int MaxRows, int MaxCols>
-struct traits_x<Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > :
+struct traits<Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > :
     internal::VectorSpaceImpl<
         Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols>, M * N> {
 
@@ -431,19 +431,19 @@ struct DynamicTraits {
 
 // traits for fully dynamic matrix
 template<int Options, int MaxRows, int MaxCols>
-struct traits_x<Eigen::Matrix<double, -1, -1, Options, MaxRows, MaxCols> > :
+struct traits<Eigen::Matrix<double, -1, -1, Options, MaxRows, MaxCols> > :
     public internal::DynamicTraits<-1, -1, Options, MaxRows, MaxCols> {
 };
 
 // traits for dynamic column vector
 template<int Options, int MaxRows, int MaxCols>
-struct traits_x<Eigen::Matrix<double, -1, 1, Options, MaxRows, MaxCols> > :
+struct traits<Eigen::Matrix<double, -1, 1, Options, MaxRows, MaxCols> > :
     public internal::DynamicTraits<-1, 1, Options, MaxRows, MaxCols> {
 };
 
 // traits for dynamic row vector
 template<int Options, int MaxRows, int MaxCols>
-struct traits_x<Eigen::Matrix<double, 1, -1, Options, MaxRows, MaxCols> > :
+struct traits<Eigen::Matrix<double, 1, -1, Options, MaxRows, MaxCols> > :
     public internal::DynamicTraits<1, -1, Options, MaxRows, MaxCols> {
 };
 
@@ -452,7 +452,7 @@ template<typename T>
 class IsVectorSpace: public IsLieGroup<T> {
 public:
 
-  typedef typename traits_x<T>::structure_category structure_category_tag;
+  typedef typename traits<T>::structure_category structure_category_tag;
 
   BOOST_CONCEPT_USAGE(IsVectorSpace) {
     BOOST_STATIC_ASSERT_MSG(

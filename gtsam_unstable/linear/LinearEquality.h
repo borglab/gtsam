@@ -117,7 +117,7 @@ public:
 
 
 /// traits
-template<> struct traits_x<LinearEquality> : public Testable<LinearEquality> {};
+template<> struct traits<LinearEquality> : public Testable<LinearEquality> {};
 
 } // \ namespace gtsam
 

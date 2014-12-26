@@ -83,7 +83,7 @@ public:
 };
 
 /// traits
-template<> struct traits_x<VariableSlots> : public Testable<VariableSlots> {};
+template<> struct traits<VariableSlots> : public Testable<VariableSlots> {};
 
 /* ************************************************************************* */
 template<class FG>

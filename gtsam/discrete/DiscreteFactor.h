@@ -103,7 +103,7 @@ public:
 // DiscreteFactor
 
 // traits
-template<> struct traits_x<DiscreteFactor> : public Testable<DiscreteFactor> {};
-template<> struct traits_x<DiscreteFactor::Values> : public Testable<DiscreteFactor::Values> {};
+template<> struct traits<DiscreteFactor> : public Testable<DiscreteFactor> {};
+template<> struct traits<DiscreteFactor::Values> : public Testable<DiscreteFactor::Values> {};
 
 }// namespace gtsam

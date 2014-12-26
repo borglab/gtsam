@@ -83,7 +83,7 @@ namespace gtsam {
 
   /// traits
   template<>
-  struct traits_x<SymbolicBayesNet> : public Testable<SymbolicBayesNet> {
+  struct traits<SymbolicBayesNet> : public Testable<SymbolicBayesNet> {
   };
 
 } //\ namespace gtsam

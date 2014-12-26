@@ -73,7 +73,7 @@ namespace gtsam {
 
   /// traits
   template<>
-  struct traits_x<Errors> : public Testable<Errors> {
+  struct traits<Errors> : public Testable<Errors> {
   };
 
 } //\ namespace gtsam

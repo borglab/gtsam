@@ -634,7 +634,7 @@ protected:
 }; // ISAM2
 
 /// traits
-template<> struct traits_x<ISAM2> : public Testable<ISAM2> {};
+template<> struct traits<ISAM2> : public Testable<ISAM2> {};
 
 /// Optimize the BayesTree, starting from the root.
 /// @param replaced Needs to contain

@@ -66,16 +66,16 @@ TEST(Point2, Lie) {
   Point2 p1(1, 2), p2(4, 5);
   Matrix H1, H2;
 
-  EXPECT(assert_equal(Point2(5,7), traits_x<Point2>::Compose(p1, p2, H1, H2)));
+  EXPECT(assert_equal(Point2(5,7), traits<Point2>::Compose(p1, p2, H1, H2)));
   EXPECT(assert_equal(eye(2), H1));
   EXPECT(assert_equal(eye(2), H2));
 
-  EXPECT(assert_equal(Point2(3,3), traits_x<Point2>::Between(p1, p2, H1, H2)));
+  EXPECT(assert_equal(Point2(3,3), traits<Point2>::Between(p1, p2, H1, H2)));
   EXPECT(assert_equal(-eye(2), H1));
   EXPECT(assert_equal(eye(2), H2));
 
-  EXPECT(assert_equal(Point2(5,7), traits_x<Point2>::Retract(p1, Vector2(4., 5.))));
-  EXPECT(assert_equal(Vector2(3.,3.), traits_x<Point2>::Local(p1,p2)));
+  EXPECT(assert_equal(Point2(5,7), traits<Point2>::Retract(p1, Vector2(4., 5.))));
+  EXPECT(assert_equal(Vector2(3.,3.), traits<Point2>::Local(p1,p2)));
 }
 
 /* ************************************************************************* */
@@ -83,7 +83,7 @@ TEST( Point2, expmap) {
   Vector d(2);
   d(0) = 1;
   d(1) = -1;
-  Point2 a(4, 5), b = traits_x<Point2>::Retract(a,d), c(5, 4);
+  Point2 a(4, 5), b = traits<Point2>::Retract(a,d), c(5, 4);
   EXPECT(assert_equal(b,c));
 }
 

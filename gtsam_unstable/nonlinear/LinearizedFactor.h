@@ -158,7 +158,7 @@ private:
 
 /// traits
 template<>
-struct traits_x<LinearizedJacobianFactor> : public Testable<LinearizedJacobianFactor> {
+struct traits<LinearizedJacobianFactor> : public Testable<LinearizedJacobianFactor> {
 };
 
 /**
@@ -273,7 +273,7 @@ private:
 
 /// traits
 template<>
-struct traits_x<LinearizedHessianFactor> : public Testable<LinearizedHessianFactor> {
+struct traits<LinearizedHessianFactor> : public Testable<LinearizedHessianFactor> {
 };
 
 } // \namespace aspn

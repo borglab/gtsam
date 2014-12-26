@@ -74,14 +74,14 @@ namespace gtsam {
       std::cout << s << "BetweenFactor("
           << keyFormatter(this->key1()) << ","
           << keyFormatter(this->key2()) << ")\n";
-      traits_x<T>::Print(measured_, "  measured: ");
+      traits<T>::Print(measured_, "  measured: ");
       this->noiseModel_->print("  noise model: ");
     }
 
     /** equals */
     virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
       const This *e =  dynamic_cast<const This*> (&expected);
-      return e != NULL && Base::equals(*e, tol) && traits_x<T>::Equals(this->measured_, e->measured_, tol);
+      return e != NULL && Base::equals(*e, tol) && traits<T>::Equals(this->measured_, e->measured_, tol);
     }
 
     /** implement functions needed to derive from Factor */
@@ -89,16 +89,16 @@ namespace gtsam {
     /** vector of errors */
   Vector evaluateError(const T& p1, const T& p2, boost::optional<Matrix&> H1 =
       boost::none, boost::optional<Matrix&> H2 = boost::none) const {
-      T hx = traits_x<T>::Between(p1, p2, H1, H2); // h(x)
+      T hx = traits<T>::Between(p1, p2, H1, H2); // h(x)
       // manifold equivalent of h(x)-z -> log(z,h(x))
 #ifdef SLOW_BUT_CORRECT_BETWEENFACTOR
-      typename traits_x<T>::ChartJacobian::Fixed Hlocal;
-      Vector rval = traits_x<T>::Local(measured_, hx, boost::none, (H1 || H2) ? &Hlocal : 0);
+      typename traits<T>::ChartJacobian::Fixed Hlocal;
+      Vector rval = traits<T>::Local(measured_, hx, boost::none, (H1 || H2) ? &Hlocal : 0);
       if (H1) *H1 = Hlocal * (*H1);
       if (H1) *H2 = Hlocal * (*H2);
       return rval;
 #else
-      return traits_x<T>::Local(measured_, hx);
+      return traits<T>::Local(measured_, hx);
 #endif
     }
 
@@ -126,7 +126,7 @@ namespace gtsam {
 
   /// traits
   template<class VALUE>
-  struct traits_x<BetweenFactor<VALUE> > : public Testable<BetweenFactor<VALUE> > {};
+  struct traits<BetweenFactor<VALUE> > : public Testable<BetweenFactor<VALUE> > {};
 
   /**
    * Binary between constraint - forces between to a given value
@@ -141,7 +141,7 @@ namespace gtsam {
     /** Syntactic sugar for constrained version */
     BetweenConstraint(const VALUE& measured, Key key1, Key key2, double mu = 1000.0) :
       BetweenFactor<VALUE>(key1, key2, measured,
-                           noiseModel::Constrained::All(traits_x<VALUE>::GetDimension(measured), fabs(mu)))
+                           noiseModel::Constrained::All(traits<VALUE>::GetDimension(measured), fabs(mu)))
     {}
 
   private:
@@ -157,6 +157,6 @@ namespace gtsam {
 
   /// traits
   template<class VALUE>
-  struct traits_x<BetweenConstraint<VALUE> > : public Testable<BetweenConstraint<VALUE> > {};
+  struct traits<BetweenConstraint<VALUE> > : public Testable<BetweenConstraint<VALUE> > {};
 
 } /// namespace gtsam

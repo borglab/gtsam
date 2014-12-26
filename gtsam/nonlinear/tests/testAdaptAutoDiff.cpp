@@ -49,7 +49,7 @@ struct Cal: public Cal3Bundler {
 };
 
 template<>
-struct traits_x<Cal> : public internal::Manifold<Cal> {};
+struct traits<Cal> : public internal::Manifold<Cal> {};
 
 // With that, camera below behaves like Snavely's 9-dim vector
 typedef PinholeCamera<Cal> Camera;

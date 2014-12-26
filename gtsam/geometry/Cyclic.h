@@ -65,7 +65,7 @@ public:
 
 /// Define cyclic group traits to be a model of the Group concept
 template<size_t N>
-struct traits_x<Cyclic<N> > {
+struct traits<Cyclic<N> > {
   typedef group_tag structure_category;GTSAM_ADDITIVE_GROUP(Cyclic<N>)
   static Cyclic<N> Identity() {
     return Cyclic<N>::Identity();

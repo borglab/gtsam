@@ -200,7 +200,7 @@ typedef ConcurrentIncrementalFilter::Result ConcurrentIncrementalFilterResult;
 
 /// traits
 template<>
-struct traits_x<ConcurrentIncrementalFilter> : public Testable<ConcurrentIncrementalFilter> {
+struct traits<ConcurrentIncrementalFilter> : public Testable<ConcurrentIncrementalFilter> {
 };
 
 } //\ namespace gtsam

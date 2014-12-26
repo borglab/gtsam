@@ -102,6 +102,6 @@ private:
 
 
 template<>
-struct traits_x<LieVector> : public internal::VectorSpace<LieVector> {};
+struct traits<LieVector> : public internal::VectorSpace<LieVector> {};
 
 } // \namespace gtsam

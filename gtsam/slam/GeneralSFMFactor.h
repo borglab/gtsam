@@ -128,7 +128,7 @@ namespace gtsam {
   };
 
   template<class CAMERA, class LANDMARK>
-  struct traits_x<GeneralSFMFactor<CAMERA, LANDMARK> > : Testable<
+  struct traits<GeneralSFMFactor<CAMERA, LANDMARK> > : Testable<
       GeneralSFMFactor<CAMERA, LANDMARK> > {
   };
 
@@ -230,7 +230,7 @@ namespace gtsam {
   };
 
   template<class CALIBRATION>
-  struct traits_x<GeneralSFMFactor2<CALIBRATION> > : Testable<
+  struct traits<GeneralSFMFactor2<CALIBRATION> > : Testable<
       GeneralSFMFactor2<CALIBRATION> > {
   };
 

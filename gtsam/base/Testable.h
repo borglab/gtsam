@@ -43,7 +43,7 @@
 namespace gtsam {
 
   // Forward declaration
-  template <typename T> struct traits_x;
+  template <typename T> struct traits;
 
   /**
    * A testable concept check that should be placed in applicable unit
@@ -61,13 +61,13 @@ namespace gtsam {
 
     BOOST_CONCEPT_USAGE(IsTestable) {
       // check print function, with optional string
-      traits_x<T>::Print(t, std::string());
-      traits_x<T>::Print(t);
+      traits<T>::Print(t, std::string());
+      traits<T>::Print(t);
 
       // check print, with optional threshold
       double tol = 1.0;
-      r1 = traits_x<T>::Equals(t,t,tol);
-      r2 = traits_x<T>::Equals(t,t);
+      r1 = traits<T>::Equals(t,t,tol);
+      r2 = traits<T>::Equals(t,t);
     }
   }; // \ Testable
 
@@ -81,13 +81,13 @@ namespace gtsam {
   /** Call equal on the object */
   template<class T>
   inline bool equal(const T& obj1, const T& obj2, double tol) {
-    return traits_x<T>::Equals(obj1,obj2, tol);
+    return traits<T>::Equals(obj1,obj2, tol);
   }
 
   /** Call equal without tolerance (use default tolerance) */
   template<class T>
   inline bool equal(const T& obj1, const T& obj2) {
-    return traits_x<T>::Equals(obj1,obj2);
+    return traits<T>::Equals(obj1,obj2);
   }
 
   /**
@@ -95,11 +95,11 @@ namespace gtsam {
    */
   template<class V>
   bool assert_equal(const V& expected, const V& actual, double tol = 1e-9) {
-    if (traits_x<V>::Equals(actual,expected, tol))
+    if (traits<V>::Equals(actual,expected, tol))
       return true;
     printf("Not equal:\n");
-    traits_x<V>::Print(expected,"expected:\n");
-    traits_x<V>::Print(actual,"actual:\n");
+    traits<V>::Print(expected,"expected:\n");
+    traits<V>::Print(actual,"actual:\n");
     return false;
   }
 
@@ -111,7 +111,7 @@ namespace gtsam {
     double tol_;
     equals(double tol = 1e-9) : tol_(tol) {}
     bool operator()(const V& expected, const V& actual) {
-      return (traits_x<V>::Equals(actual, expected, tol_));
+      return (traits<V>::Equals(actual, expected, tol_));
     }
   };
 
@@ -124,7 +124,7 @@ namespace gtsam {
     equals_star(double tol = 1e-9) : tol_(tol) {}
     bool operator()(const boost::shared_ptr<V>& expected, const boost::shared_ptr<V>& actual) {
       if (!actual || !expected) return false;
-      return (traits_x<V>::Equals(*actual,*expected, tol_));
+      return (traits<V>::Equals(*actual,*expected, tol_));
     }
   };
 

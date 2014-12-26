@@ -124,7 +124,7 @@ namespace gtsam {
 
 /// traits
 template<>
-struct traits_x<SymbolicConditional> : public Testable<SymbolicConditional> {
+struct traits<SymbolicConditional> : public Testable<SymbolicConditional> {
 };
 
 } //\ namespace gtsam

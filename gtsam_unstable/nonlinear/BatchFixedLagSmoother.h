@@ -67,7 +67,7 @@ public:
   template<class VALUE>
   VALUE calculateEstimate(Key key) const {
     const Vector delta = delta_.at(key);
-    return traits_x<VALUE>::Retract(theta_.at<VALUE>(key), delta);
+    return traits<VALUE>::Retract(theta_.at<VALUE>(key), delta);
   }
 
   /** read the current set of optimizer parameters */

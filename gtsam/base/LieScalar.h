@@ -67,6 +67,6 @@ namespace gtsam {
   };
 
   template<>
-  struct traits_x<LieScalar> : public internal::ScalarTraits<LieScalar> {};
+  struct traits<LieScalar> : public internal::ScalarTraits<LieScalar> {};
 
 } // \namespace gtsam

@@ -180,7 +180,7 @@ namespace imuBias {
 } // namespace imuBias
 
 template<>
-struct traits_x<imuBias::ConstantBias> : public internal::VectorSpace<
+struct traits<imuBias::ConstantBias> : public internal::VectorSpace<
     imuBias::ConstantBias> {
 };
 

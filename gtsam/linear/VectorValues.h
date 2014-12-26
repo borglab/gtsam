@@ -383,7 +383,7 @@ namespace gtsam {
 
   /// traits
   template<>
-  struct traits_x<VectorValues> : public Testable<VectorValues> {
+  struct traits<VectorValues> : public Testable<VectorValues> {
   };
 
 } // \namespace gtsam

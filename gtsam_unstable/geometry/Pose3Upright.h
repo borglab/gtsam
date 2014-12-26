@@ -141,7 +141,7 @@ private:
 }; // \class Pose3Upright
 
 template<>
-struct traits_x<Pose3Upright> : public internal::Manifold<Pose3Upright> {};
+struct traits<Pose3Upright> : public internal::Manifold<Pose3Upright> {};
 
 
 } // \namespace gtsam

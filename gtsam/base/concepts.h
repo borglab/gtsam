@@ -27,6 +27,6 @@
 
 namespace gtsam {
 
-template <typename T> struct traits_x;
+template <typename T> struct traits;
 
 }

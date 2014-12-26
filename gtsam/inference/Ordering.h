@@ -193,7 +193,7 @@ namespace gtsam {
   };
 
   /// traits
-  template<> struct traits_x<Ordering> : public Testable<Ordering> {};
+  template<> struct traits<Ordering> : public Testable<Ordering> {};
 
 }
 

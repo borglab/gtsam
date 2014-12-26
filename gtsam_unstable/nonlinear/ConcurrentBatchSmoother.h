@@ -206,7 +206,7 @@ typedef ConcurrentBatchSmoother::Result ConcurrentBatchSmootherResult;
 
 /// traits
 template<>
-struct traits_x<ConcurrentBatchSmoother> : public Testable<ConcurrentBatchSmoother> {
+struct traits<ConcurrentBatchSmoother> : public Testable<ConcurrentBatchSmoother> {
 };
 
 } //\ namespace gtsam

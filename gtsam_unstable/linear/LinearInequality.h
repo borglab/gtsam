@@ -139,7 +139,7 @@ public:
 }; // \ LinearInequality
 
 /// traits
-template<> struct traits_x<LinearInequality> : public Testable<LinearInequality> {};
+template<> struct traits<LinearInequality> : public Testable<LinearInequality> {};
 
 } // \ namespace gtsam
 

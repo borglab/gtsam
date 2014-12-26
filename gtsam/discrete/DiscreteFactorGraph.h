@@ -148,6 +148,6 @@ public:
 }; // \ DiscreteFactorGraph
 
 /// traits
-template<> struct traits_x<DiscreteFactorGraph> : public Testable<DiscreteFactorGraph> {};
+template<> struct traits<DiscreteFactorGraph> : public Testable<DiscreteFactorGraph> {};
 
 } // \ namespace gtsam

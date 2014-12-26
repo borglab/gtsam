@@ -31,7 +31,7 @@ namespace detail {
 
 // By default, we assume an Identity element
 template<typename T, typename structure_category>
-struct Origin { T operator()() { return traits_x<T>::Identity();} };
+struct Origin { T operator()() { return traits<T>::Identity();} };
 
 // but dimple manifolds don't have one, so we just use the default constructor
 template<typename T>
@@ -50,7 +50,7 @@ struct Canonical {
 
   GTSAM_CONCEPT_MANIFOLD_TYPE(T)
 
-  typedef traits_x<T> Traits;
+  typedef traits<T> Traits;
   enum { dimension = Traits::dimension };
   typedef typename Traits::TangentVector TangentVector;
   typedef typename Traits::structure_category Category;
@@ -69,9 +69,9 @@ struct Canonical {
 template<typename F, typename T, typename A1, typename A2>
 class AdaptAutoDiff {
 
-  static const int N = traits_x<T>::dimension;
-  static const int M1 = traits_x<A1>::dimension;
-  static const int M2 = traits_x<A2>::dimension;
+  static const int N = traits<T>::dimension;
+  static const int M1 = traits<A1>::dimension;
+  static const int M2 = traits<A2>::dimension;
 
   typedef Eigen::Matrix<double, N, M1, Eigen::RowMajor> RowMajor1;
   typedef Eigen::Matrix<double, N, M2, Eigen::RowMajor> RowMajor2;

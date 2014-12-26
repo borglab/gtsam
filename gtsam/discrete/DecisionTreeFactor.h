@@ -168,6 +168,6 @@ namespace gtsam {
 // DecisionTreeFactor
 
 // traits
-template<> struct traits_x<DecisionTreeFactor> : public Testable<DecisionTreeFactor> {};
+template<> struct traits<DecisionTreeFactor> : public Testable<DecisionTreeFactor> {};
 
 }// namespace gtsam
