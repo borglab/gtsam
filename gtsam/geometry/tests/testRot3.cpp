@@ -652,12 +652,44 @@ TEST( Rot3, slerp)
 }
 
 //******************************************************************************
-TEST(Rot3 , Traits) {
-  Rot3 R1(Rot3::rodriguez(Vector3(0, 0, 1), 1));
-  Rot3 R2(Rot3::rodriguez(Vector3(0, 1, 0), 2));
-  check_group_invariants(R1, R2);
-  check_manifold_invariants(R1, R2);
-  CHECK_LIE_GROUP_DERIVATIVES(R1,R2,false);
+Rot3 T1(Rot3::rodriguez(Vector3(0, 0, 1), 1));
+Rot3 T2(Rot3::rodriguez(Vector3(0, 1, 0), 2));
+
+//******************************************************************************
+TEST(Rot3 , Invariants) {
+  Rot3 id;
+
+  check_group_invariants(id,id);
+  check_group_invariants(id,T1);
+  check_group_invariants(T2,id);
+  check_group_invariants(T2,T1);
+
+  check_manifold_invariants(id,id);
+  check_manifold_invariants(id,T1);
+  check_manifold_invariants(T2,id);
+  check_manifold_invariants(T2,T1);
+
+}
+
+//******************************************************************************
+TEST(Rot3 , LieGroupDerivatives) {
+  Rot3 id;
+
+  CHECK_LIE_GROUP_DERIVATIVES(id,id);
+  CHECK_LIE_GROUP_DERIVATIVES(id,T2);
+  CHECK_LIE_GROUP_DERIVATIVES(T2,id);
+  CHECK_LIE_GROUP_DERIVATIVES(T2,T1);
+
+}
+
+//******************************************************************************
+TEST(Rot3 , ChartDerivatives) {
+  Rot3 id;
+
+  CHECK_CHART_DERIVATIVES(id,id);
+  CHECK_CHART_DERIVATIVES(id,T2);
+  CHECK_CHART_DERIVATIVES(T2,id);
+  CHECK_CHART_DERIVATIVES(T2,T1);
 }
 
 /* ************************************************************************* */

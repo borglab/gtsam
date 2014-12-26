@@ -30,17 +30,12 @@ namespace gtsam {
 // Do a comprehensive test of Lie Group derivatives
 template<typename G>
 void testLieGroupDerivatives(TestResult& result_, const std::string& name_,
-    const G& t1, const G& t2, bool advanced) {
+    const G& t1, const G& t2) {
 
-  G id;
   Matrix H1, H2;
   typedef traits_x<G> T;
 
   // Inverse
-
-  EXPECT(assert_equal(id,T::Inverse(id, H1)));
-  EXPECT(assert_equal(numericalDerivative11(T::Inverse, id),H1));
-
   EXPECT(assert_equal(t1.inverse(),T::Inverse(t1, H1)));
   EXPECT(assert_equal(numericalDerivative11(T::Inverse, t1),H1));
 
@@ -48,79 +43,38 @@ void testLieGroupDerivatives(TestResult& result_, const std::string& name_,
   EXPECT(assert_equal(numericalDerivative11(T::Inverse, t2),H1));
 
   // Compose
-
-  EXPECT(assert_equal(t1, T::Compose(id, t1, H1, H2)));
-  EXPECT(assert_equal(numericalDerivative21(T::Compose, id, t1), H1));
-  EXPECT(assert_equal(numericalDerivative22(T::Compose, id, t1), H2));
-
-  EXPECT(assert_equal(t2, T::Compose(id, t2, H1, H2)));
-  EXPECT(assert_equal(numericalDerivative21(T::Compose, id, t2), H1));
-  EXPECT(assert_equal(numericalDerivative22(T::Compose, id, t2), H2));
-
   EXPECT(assert_equal(t1 * t2,T::Compose(t1, t2, H1, H2)));
   EXPECT(assert_equal(numericalDerivative21(T::Compose, t1, t2), H1));
   EXPECT(assert_equal(numericalDerivative22(T::Compose, t1, t2), H2));
 
   // Between
-
   EXPECT(assert_equal(t1.inverse() * t2,T::Between(t1, t2, H1, H2)));
   EXPECT(assert_equal(numericalDerivative21(T::Between, t1, t2), H1));
   EXPECT(assert_equal(numericalDerivative22(T::Between, t1, t2), H2));
+}
+// Do a comprehensive test of Lie Group Chart derivatives
+template<typename G>
+void testChartDerivatives(TestResult& result_, const std::string& name_,
+    const G& t1, const G& t2) {
 
-  EXPECT(assert_equal(id.inverse() * t1,T::Between(id, t1, H1, H2)));
-  EXPECT(assert_equal(numericalDerivative21(T::Between, id, t1), H1));
-  EXPECT(assert_equal(numericalDerivative22(T::Between, id, t1), H2));
-
-  EXPECT(assert_equal(id.inverse() * t2,T::Between(id, t2, H1, H2)));
-  EXPECT(assert_equal(numericalDerivative21(T::Between, id, t2), H1));
-  EXPECT(assert_equal(numericalDerivative22(T::Between, id, t2), H2));
-
-  if (!advanced) return;
+  Matrix H1, H2;
+  typedef traits_x<G> T;
 
   // Retract
-
-  typename G::TangentVector z = T::Local(id, id);
-  EXPECT(assert_equal(id, T::Retract(id,z, H1, H2)));
-  EXPECT(assert_equal(numericalDerivative21(T::Retract, id, z), H1));
-  EXPECT(assert_equal(numericalDerivative22(T::Retract, id, z), H2));
-
-  typename G::TangentVector w1 = T::Local(id, t1);
-  EXPECT(assert_equal(t1, T::Retract(id,w1, H1, H2)));
-  EXPECT(assert_equal(numericalDerivative21(T::Retract, id, w1), H1));
-  EXPECT(assert_equal(numericalDerivative22(T::Retract, id, w1), H2));
-
-  typename G::TangentVector w2 = T::Local(id, t2);
-  EXPECT(assert_equal(t2, T::Retract(id,w2, H1, H2)));
-  EXPECT(assert_equal(numericalDerivative21(T::Retract, id, w2), H1));
-  EXPECT(assert_equal(numericalDerivative22(T::Retract, id, w2), H2));
-
   typename G::TangentVector w12 = T::Local(t1, t2);
   EXPECT(assert_equal(t2, T::Retract(t1,w12, H1, H2)));
   EXPECT(assert_equal(numericalDerivative21(T::Retract, t1, w12), H1));
   EXPECT(assert_equal(numericalDerivative22(T::Retract, t1, w12), H2));
 
   // Local
-
-  EXPECT(assert_equal(z, id.localCoordinates(id, H1, H2)));
-  EXPECT(assert_equal(numericalDerivative21(T::Local, id, id), H1));
-  EXPECT(assert_equal(numericalDerivative22(T::Local, id, id), H2));
-
-  EXPECT(assert_equal(w1, id.localCoordinates(t1, H1, H2)));
-  EXPECT(assert_equal(numericalDerivative21(T::Local, id, t1), H1));
-  EXPECT(assert_equal(numericalDerivative22(T::Local, id, t1), H2));
-
-  EXPECT(assert_equal(w2, id.localCoordinates(t2, H1, H2)));
-  EXPECT(assert_equal(numericalDerivative21(T::Local, id, t2), H1));
-  EXPECT(assert_equal(numericalDerivative22(T::Local, id, t2), H2));
-
   EXPECT(assert_equal(w12, t1.localCoordinates(t2, H1, H2)));
   EXPECT(assert_equal(numericalDerivative21(T::Local, t1, t2), H1));
   EXPECT(assert_equal(numericalDerivative22(T::Local, t1, t2), H2));
-
 }
 } // namespace gtsam
 
-/// \brief Perform a concept check on the default chart for a type.
-/// \param value An instantiation of the type to be tested.
-#define CHECK_LIE_GROUP_DERIVATIVES(t1,t2,flag) \
-    { gtsam::testLieGroupDerivatives(result_, name_, t1, t2, flag); }
+#define CHECK_LIE_GROUP_DERIVATIVES(t1,t2) \
+    { gtsam::testLieGroupDerivatives(result_, name_, t1, t2); }
+
+#define CHECK_CHART_DERIVATIVES(t1,t2) \
+    { gtsam::testChartDerivatives(result_, name_, t1, t2); }

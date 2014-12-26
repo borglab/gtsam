@@ -153,7 +153,7 @@ namespace screw {
   Pose2 expected(expectedR, expectedT);
 }
 
-TEST(Pose3, expmap_c)
+TEST(Pose2, expmap_c)
 {
   EXPECT(assert_equal(screw::expected, expm<Pose2>(screw::xi),1e-6));
   EXPECT(assert_equal(screw::expected, Pose2::Expmap(screw::xi),1e-6));
@@ -768,12 +768,44 @@ TEST(Pose2, align_4) {
 }
 
 //******************************************************************************
-TEST(Pose2 , Traits) {
-  Pose2 t1(M_PI / 4.0, Point2(sqrt(0.5), sqrt(0.5)));
-  Pose2 t2(M_PI / 2.0, Point2(0.0, 2.0));
-  check_group_invariants(t1, t2);
-  check_manifold_invariants(t1, t2);
-  CHECK_LIE_GROUP_DERIVATIVES(t1,t2,true);
+Pose2 T1(M_PI / 4.0, Point2(sqrt(0.5), sqrt(0.5)));
+Pose2 T2(M_PI / 2.0, Point2(0.0, 2.0));
+
+//******************************************************************************
+TEST(Pose2 , Invariants) {
+  Pose2 id;
+
+  check_group_invariants(id,id);
+  check_group_invariants(id,T1);
+  check_group_invariants(T2,id);
+  check_group_invariants(T2,T1);
+
+  check_manifold_invariants(id,id);
+  check_manifold_invariants(id,T1);
+  check_manifold_invariants(T2,id);
+  check_manifold_invariants(T2,T1);
+
+}
+
+//******************************************************************************
+TEST(Pose2 , LieGroupDerivatives) {
+  Pose2 id;
+
+  CHECK_LIE_GROUP_DERIVATIVES(id,id);
+  CHECK_LIE_GROUP_DERIVATIVES(id,T2);
+  CHECK_LIE_GROUP_DERIVATIVES(T2,id);
+  CHECK_LIE_GROUP_DERIVATIVES(T2,T1);
+
+}
+
+//******************************************************************************
+TEST(Pose2 , ChartDerivatives) {
+  Pose2 id;
+
+  CHECK_CHART_DERIVATIVES(id,id);
+  CHECK_CHART_DERIVATIVES(id,T2);
+  CHECK_CHART_DERIVATIVES(T2,id);
+  CHECK_CHART_DERIVATIVES(T2,T1);
 }
 
 /* ************************************************************************* */

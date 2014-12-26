@@ -746,10 +746,40 @@ TEST( Pose3, stream)
 }
 
 //******************************************************************************
-TEST(Pose3 , Traits) {
+TEST(Pose3 , Invariants) {
+  Pose3 id;
+
+  check_group_invariants(id,id);
+  check_group_invariants(id,T3);
+  check_group_invariants(T2,id);
   check_group_invariants(T2,T3);
+
+  check_manifold_invariants(id,id);
+  check_manifold_invariants(id,T3);
+  check_manifold_invariants(T2,id);
   check_manifold_invariants(T2,T3);
-  CHECK_LIE_GROUP_DERIVATIVES(T2,T3,false);
+
+}
+
+//******************************************************************************
+TEST(Pose3 , LieGroupDerivatives) {
+  Pose3 id;
+
+  CHECK_LIE_GROUP_DERIVATIVES(id,id);
+  CHECK_LIE_GROUP_DERIVATIVES(id,T2);
+  CHECK_LIE_GROUP_DERIVATIVES(T2,id);
+  CHECK_LIE_GROUP_DERIVATIVES(T2,T3);
+
+}
+
+//******************************************************************************
+TEST(Pose3 , ChartDerivatives) {
+  Pose3 id;
+
+  CHECK_CHART_DERIVATIVES(id,id);
+  CHECK_CHART_DERIVATIVES(id,T2);
+  CHECK_CHART_DERIVATIVES(T2,id);
+  CHECK_CHART_DERIVATIVES(T2,T3);
 }
 
 /* ************************************************************************* */
