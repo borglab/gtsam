@@ -28,7 +28,7 @@
 namespace gtsam {
 
 /**
- * @deprecated: LieScalar, LieVector and LieMatrix are obsolete in GTSAM 4.0 as
+ * @deprecated: LieVector, LieVector and LieMatrix are obsolete in GTSAM 4.0 as
  * we can directly add double, Vector, and Matrix into values now, because of
  * gtsam::traits.
  */
@@ -60,16 +60,31 @@ struct LieVector : public Vector {
 
   /// @name Testable
   /// @{
-
-  /** print @param name optional string naming the object */
   GTSAM_EXPORT void print(const std::string& name="") const;
-
-  /** equality up to tolerance */
   bool equals(const LieVector& expected, double tol=1e-5) const {
     return gtsam::equal(vector(), expected.vector(), tol);
   }
-
   /// @}
+
+  /// @name Group
+  /// @{
+  LieVector compose(const LieVector& q) { return (*this)+q;}
+  LieVector between(const LieVector& q) { return q-(*this);}
+  LieVector inverse() { return -(*this);}
+  /// @}
+
+  /// @name Manifold
+  /// @{
+  Vector localCoordinates(const LieVector& q) { return between(q).vector();}
+  LieVector retract(const Vector& v) {return compose(LieVector(v));}
+  /// @}
+
+  /// @name Lie Group
+  /// @{
+  static Vector Logmap(const LieVector& p) {return p.vector();}
+  static LieVector Expmap(const Vector& v) { return LieVector(v);}
+  /// @}
+
   /// @name VectorSpace requirements
   /// @{
 

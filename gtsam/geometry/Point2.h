@@ -160,10 +160,18 @@ public:
   Vector2 vector() const { return Vector2(x_, y_); }
 
   /// @}
-  /// @name Deprecated (non-const, non-functional style. Do not use).
+
+  /// @name Deprecated
   /// @{
   inline void operator += (const Point2& q) {x_+=q.x_;y_+=q.y_;}
   inline void operator *= (double s) {x_*=s;y_*=s;}
+  Point2 inverse() { return -(*this);}
+  Point2 compose(const Point2& q) { return (*this)+q;}
+  Point2 between(const Point2& q) { return q-(*this);}
+  Vector2 localCoordinates(const Point2& q) { return between(q).vector();}
+  Point2 retract(const Vector2& v) {return compose(Point2(v));}
+  static Vector2 Logmap(const Point2& p) {return p.vector();}
+  static Point2 Expmap(const Vector2& v) { return Point2(v);}
   /// @}
 
   /// Streaming

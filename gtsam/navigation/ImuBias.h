@@ -159,6 +159,17 @@ namespace imuBias {
 
     /// @}
 
+    /// @name Deprecated
+    /// @{
+    ConstantBias inverse() { return -(*this);}
+    ConstantBias compose(const ConstantBias& q) { return (*this)+q;}
+    ConstantBias between(const ConstantBias& q) { return q-(*this);}
+    Vector6 localCoordinates(const ConstantBias& q) { return between(q).vector();}
+    ConstantBias retract(const Vector6& v) {return compose(ConstantBias(v));}
+    static Vector6 Logmap(const ConstantBias& p) {return p.vector();}
+    static ConstantBias Expmap(const Vector6& v) { return ConstantBias(v);}
+    /// @}
+
   private:
 
     /// @name Advanced Interface

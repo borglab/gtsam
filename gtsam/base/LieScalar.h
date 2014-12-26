@@ -49,17 +49,36 @@ namespace gtsam {
     /** Automatic conversion to underlying value */
     operator double() const { return d_; }
 
+    /** convert vector */
+    Vector1 vector() const { Vector1 v; v<<d_; return v; }
+
     /// @name Testable
     /// @{
-
-    /** print @param name optional string naming the object */
     void print(const std::string& name="") const;
-
-    /** equality up to tolerance */
     bool equals(const LieScalar& expected, double tol=1e-5) const {
       return fabs(expected.d_ - d_) <= tol;
     }
+    /// @}
 
+    /// @name Group
+    /// @{
+    static LieScalar identity() { return LieScalar(0);}
+    LieScalar compose(const LieScalar& q) { return (*this)+q;}
+    LieScalar between(const LieScalar& q) { return q-(*this);}
+    LieScalar inverse() { return -(*this);}
+    /// @}
+
+    /// @name Manifold
+    /// @{
+    size_t dim() const { return 1; }
+    Vector1 localCoordinates(const LieScalar& q) { return between(q).vector();}
+    LieScalar retract(const Vector1& v) {return compose(LieScalar(v[0]));}
+    /// @}
+
+    /// @name Lie Group
+    /// @{
+    static Vector1 Logmap(const LieScalar& p) { return p.vector();}
+    static LieScalar Expmap(const Vector1& v) { return LieScalar(v[0]);}
     /// @}
 
   private:
