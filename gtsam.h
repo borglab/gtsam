@@ -270,8 +270,6 @@ class Point2 {
   gtsam::Point2 between(const gtsam::Point2& p2) const;
 
   // Manifold
-  static size_t Dim();
-  size_t dim() const;
   gtsam::Point2 retract(Vector v) const;
   Vector localCoordinates(const gtsam::Point2& p) const;
 
@@ -342,8 +340,6 @@ class Point3 {
   gtsam::Point3 between(const gtsam::Point3& p2) const;
 
   // Manifold
-  static size_t Dim();
-  size_t dim() const;
   gtsam::Point3 retract(Vector v) const;
   Vector localCoordinates(const gtsam::Point3& p) const;
 
@@ -380,8 +376,6 @@ class Rot2 {
   gtsam::Rot2 between(const gtsam::Rot2& p2) const;
 
   // Manifold
-  static size_t Dim();
-  size_t dim() const;
   gtsam::Rot2 retract(Vector v) const;
   Vector localCoordinates(const gtsam::Rot2& p) const;
 
@@ -433,8 +427,6 @@ class Rot3 {
   gtsam::Rot3 between(const gtsam::Rot3& p2) const;
 
   // Manifold
-  static size_t Dim();
-  size_t dim() const;
   //gtsam::Rot3 retractCayley(Vector v) const; // FIXME, does not exist in both Matrix and Quaternion options
   gtsam::Rot3 retract(Vector v) const;
   Vector localCoordinates(const gtsam::Rot3& p) const;
@@ -482,8 +474,6 @@ class Pose2 {
   gtsam::Pose2 between(const gtsam::Pose2& p2) const;
 
   // Manifold
-  static size_t Dim();
-  size_t dim() const;
   gtsam::Pose2 retract(Vector v) const;
   Vector localCoordinates(const gtsam::Pose2& p) const;
 
@@ -531,10 +521,7 @@ class Pose3 {
   gtsam::Pose3 between(const gtsam::Pose3& p2) const;
 
   // Manifold
-  static size_t Dim();
-  size_t dim() const;
   gtsam::Pose3 retract(Vector v) const;
-  gtsam::Pose3 retractFirstOrder(Vector v) const;
   Vector localCoordinates(const gtsam::Pose3& T2) const;
 
   // Lie Group
@@ -2384,8 +2371,6 @@ class ConstantBias {
   gtsam::imuBias::ConstantBias between(const gtsam::imuBias::ConstantBias& b) const;
 
   // Manifold
-  static size_t Dim();
-  size_t dim() const;
   gtsam::imuBias::ConstantBias retract(Vector v) const;
   Vector localCoordinates(const gtsam::imuBias::ConstantBias& b) const;
 
