@@ -50,7 +50,7 @@ public:
 
   /// methods to access class variables
   Matrix3 deltaRij() const {return deltaRij_.matrix();} // expensive
-  Vector3 thetaRij(boost::optional<Matrix3&> H = boost::none) const {return Rot3::Logmap(deltaRij_, H);} // super-expensive
+  Vector3 thetaRij(OptionalJacobian<3,3> H = boost::none) const {return Rot3::Logmap(deltaRij_, H);} // super-expensive
   const double& deltaTij() const{return deltaTij_;}
   const Matrix3& delRdelBiasOmega() const{ return delRdelBiasOmega_;}
   const Matrix3& gyroscopeCovariance() const { return gyroscopeCovariance_;}
