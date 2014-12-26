@@ -14,6 +14,9 @@
  * @brief Base class and basic functions for Lie types
  * @author Richard Roberts
  * @author Alex Cunningham
+ * @author Frank Dellaert
+ * @author Mike Bosse
+ * @author Duy Nguyen Ta
  */
 
 
