@@ -116,8 +116,7 @@ TEST( AHRSFactor, PreintegratedMeasurements ) {
 /* ************************************************************************* */
 TEST(AHRSFactor, Error) {
   // Linearization point
-  Vector3 bias; // Bias
-  bias.setZero();
+  Vector3 bias(0.,0.,0.); // Bias
   Rot3 x1(Rot3::RzRyRx(M_PI / 12.0, M_PI / 6.0, M_PI / 4.0));
   Rot3 x2(Rot3::RzRyRx(M_PI / 12.0 + M_PI / 100.0, M_PI / 6.0, M_PI / 4.0));
 
