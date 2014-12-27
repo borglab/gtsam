@@ -16,19 +16,18 @@
  **/
 
 #include <gtsam/geometry/SO3.h>
-#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/base/testLie.h>
+#include <gtsam/base/Testable.h>
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
 using namespace gtsam;
 
-typedef OptionalJacobian<3,3> SO3Jacobian;
-
 //******************************************************************************
 TEST(SO3 , Concept) {
   BOOST_CONCEPT_ASSERT((IsGroup<SO3 >));
-//  BOOST_CONCEPT_ASSERT((IsManifold<SO3 >));
-//  BOOST_CONCEPT_ASSERT((IsLieGroup<SO3 >));
+  BOOST_CONCEPT_ASSERT((IsManifold<SO3 >));
+  BOOST_CONCEPT_ASSERT((IsLieGroup<SO3 >));
 }
 
 //******************************************************************************
@@ -37,84 +36,94 @@ TEST(SO3 , Constructor) {
 }
 
 //******************************************************************************
-TEST(SO3 , Invariants) {
-  SO3 q1(Eigen::AngleAxisd(1, Vector3(0, 0, 1)));
-  SO3 q2(Eigen::AngleAxisd(2, Vector3(0, 1, 0)));
-  // group::check_invariants(q1,q2); Does not satisfy Testable concept (yet!)
-}
+SO3 id;
+Vector3 z_axis(0, 0, 1);
+SO3 R1(Eigen::AngleAxisd(0.1, z_axis));
+SO3 R2(Eigen::AngleAxisd(0.2, z_axis));
 
-#if 0
 //******************************************************************************
 TEST(SO3 , Local) {
-  Vector3 z_axis(0, 0, 1);
-  SO3 q1(Eigen::AngleAxisd(0, z_axis));
-  SO3 q2(Eigen::AngleAxisd(0.1, z_axis));
-  SO3Jacobian H1,H2;
   Vector3 expected(0, 0, 0.1);
-  Vector3 actual = traits<SO3>::Local(q1, q2, H1, H2);
+  Vector3 actual = traits<SO3>::Local(R1, R2);
   EXPECT(assert_equal((Vector)expected,actual));
 }
 
 //******************************************************************************
 TEST(SO3 , Retract) {
-  Vector3 z_axis(0, 0, 1);
-  SO3 q(Eigen::AngleAxisd(0, z_axis));
-  SO3 expected(Eigen::AngleAxisd(0.1, z_axis));
   Vector3 v(0, 0, 0.1);
-  SO3 actual = traits<SO3>::Retract(q, v);
-  EXPECT(actual.isApprox(expected));
+  SO3 actual = traits<SO3>::Retract(R1, v);
+  EXPECT(actual.isApprox(R2));
 }
 
 //******************************************************************************
 TEST(SO3 , Compose) {
-  Vector3 z_axis(0, 0, 1);
-  SO3 q1(Eigen::AngleAxisd(0.2, z_axis));
-  SO3 q2(Eigen::AngleAxisd(0.1, z_axis));
-
-  SO3 expected = q1 * q2;
+  SO3 expected = R1 * R2;
   Matrix actualH1, actualH2;
-  SO3 actual = traits<SO3>::Compose(q1, q2, actualH1, actualH2);
+  SO3 actual = traits<SO3>::Compose(R1, R2, actualH1, actualH2);
   EXPECT(traits<SO3>::Equals(expected,actual));
 
-  Matrix numericalH1 = numericalDerivative21(traits<SO3>::Compose, q1, q2);
+  Matrix numericalH1 = numericalDerivative21(traits<SO3>::Compose, R1, R2);
   EXPECT(assert_equal(numericalH1,actualH1));
 
-  Matrix numericalH2 = numericalDerivative22(traits<SO3>::Compose, q1, q2);
+  Matrix numericalH2 = numericalDerivative22(traits<SO3>::Compose, R1, R2);
   EXPECT(assert_equal(numericalH2,actualH2));
 }
 
 //******************************************************************************
 TEST(SO3 , Between) {
-  Vector3 z_axis(0, 0, 1);
-  SO3 q1(Eigen::AngleAxisd(0.2, z_axis));
-  SO3 q2(Eigen::AngleAxisd(0.1, z_axis));
-
-  SO3 expected = q1.inverse() * q2;
+  SO3 expected = R1.inverse() * R2;
   Matrix actualH1, actualH2;
-  SO3 actual = traits<SO3>::Between(q1, q2, actualH1, actualH2);
+  SO3 actual = traits<SO3>::Between(R1, R2, actualH1, actualH2);
   EXPECT(traits<SO3>::Equals(expected,actual));
 
-  Matrix numericalH1 = numericalDerivative21(traits<SO3>::Between, q1, q2);
+  Matrix numericalH1 = numericalDerivative21(traits<SO3>::Between, R1, R2);
   EXPECT(assert_equal(numericalH1,actualH1));
 
-  Matrix numericalH2 = numericalDerivative22(traits<SO3>::Between, q1, q2);
+  Matrix numericalH2 = numericalDerivative22(traits<SO3>::Between, R1, R2);
   EXPECT(assert_equal(numericalH2,actualH2));
 }
 
 //******************************************************************************
 TEST(SO3 , Inverse) {
-  Vector3 z_axis(0, 0, 1);
-  SO3 q1(Eigen::AngleAxisd(0.1, z_axis));
   SO3 expected(Eigen::AngleAxisd(-0.1, z_axis));
 
   Matrix actualH;
-  SO3 actual = traits<SO3>::Inverse(q1, actualH);
+  SO3 actual = traits<SO3>::Inverse(R1, actualH);
   EXPECT(traits<SO3>::Equals(expected,actual));
 
-  Matrix numericalH = numericalDerivative11(traits<SO3>::Inverse, q1);
+  Matrix numericalH = numericalDerivative11(traits<SO3>::Inverse, R1);
   EXPECT(assert_equal(numericalH,actualH));
 }
-#endif
+
+//******************************************************************************
+TEST(SO3 , Invariants) {
+  check_group_invariants(id,id);
+  check_group_invariants(id,R1);
+  check_group_invariants(R2,id);
+  check_group_invariants(R2,R1);
+
+  check_manifold_invariants(id,id);
+  check_manifold_invariants(id,R1);
+  check_manifold_invariants(R2,id);
+  check_manifold_invariants(R2,R1);
+
+}
+
+//******************************************************************************
+//TEST(SO3 , LieGroupDerivatives) {
+//  CHECK_LIE_GROUP_DERIVATIVES(id,id);
+//  CHECK_LIE_GROUP_DERIVATIVES(id,R2);
+//  CHECK_LIE_GROUP_DERIVATIVES(R2,id);
+//  CHECK_LIE_GROUP_DERIVATIVES(R2,R1);
+//}
+
+//******************************************************************************
+TEST(SO3 , ChartDerivatives) {
+  CHECK_CHART_DERIVATIVES(id,id);
+  CHECK_CHART_DERIVATIVES(id,R2);
+  CHECK_CHART_DERIVATIVES(R2,id);
+  CHECK_CHART_DERIVATIVES(R2,R1);
+}
 
 //******************************************************************************
 int main() {

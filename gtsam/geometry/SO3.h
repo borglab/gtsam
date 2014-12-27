@@ -30,12 +30,16 @@ namespace gtsam {
  *  We guarantee (all but first) constructors only generate from sub-manifold.
  *  However, round-off errors in repeated composition could move off it...
  */
-class SO3: public Matrix3 {
+class SO3: public Matrix3, public LieGroup<SO3,3> {
 
 protected:
 
 public:
   enum { dimension=3 };
+
+  /// Constructor from AngleAxisd
+  SO3() : Matrix3(I_3x3) {
+  }
 
   /// Constructor from Eigen Matrix
   template<typename Derived>
@@ -48,10 +52,6 @@ public:
       Matrix3(angleAxis) {
   }
 
-  static SO3 identity() {
-    return I_3x3;
-  }
-
   void print(const std::string& s) const {
     std::cout << s << *this << std::endl;
   }
@@ -59,6 +59,26 @@ public:
   bool equals(const SO3 & R, double tol) const {
     return equal_with_abs_tol(*this, R, tol);
   }
+
+  static SO3 identity() { return I_3x3; }
+  SO3 inverse() const { return this->Matrix3::inverse(); }
+
+  static SO3 Expmap(const Eigen::Ref<const Vector3>& omega, ChartJacobian H = boost::none);
+  static Vector3 Logmap(const SO3& R, ChartJacobian H = boost::none);
+
+  Matrix3 AdjointMap() const { return *this; }
+
+  // Chart at origin
+  struct ChartAtOrigin {
+    static SO3 Retract(const Vector3& v, ChartJacobian H = boost::none) {
+      return Expmap(v,H);
+    }
+    static Vector3 Local(const SO3& R, ChartJacobian H = boost::none) {
+      return Logmap(R,H);
+    }
+  };
+
+  using LieGroup<SO3,3>::inverse;
 
 };
 
