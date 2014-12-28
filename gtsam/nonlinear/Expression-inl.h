@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include <gtsam_unstable/nonlinear/CallRecord.h>
+#include <gtsam/nonlinear/CallRecord.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/base/Lie.h>
 

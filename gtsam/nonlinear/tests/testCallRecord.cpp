@@ -18,7 +18,7 @@
  * @brief unit tests for CallRecord class
  */
 
-#include <gtsam_unstable/nonlinear/CallRecord.h>
+#include <gtsam/nonlinear/CallRecord.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Testable.h>
 

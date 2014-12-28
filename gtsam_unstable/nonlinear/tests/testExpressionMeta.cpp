@@ -16,7 +16,7 @@
  * @brief Test meta-programming constructs for Expressions
  */
 
-#include <gtsam_unstable/nonlinear/ExpressionFactor.h>
+#include <gtsam/nonlinear/ExpressionFactor.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/base/Testable.h>
