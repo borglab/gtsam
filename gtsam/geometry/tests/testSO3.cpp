@@ -56,46 +56,6 @@ TEST(SO3 , Retract) {
 }
 
 //******************************************************************************
-TEST(SO3 , Compose) {
-  SO3 expected = R1 * R2;
-  Matrix actualH1, actualH2;
-  SO3 actual = traits<SO3>::Compose(R1, R2, actualH1, actualH2);
-  EXPECT(traits<SO3>::Equals(expected,actual));
-
-  Matrix numericalH1 = numericalDerivative21(traits<SO3>::Compose, R1, R2);
-  EXPECT(assert_equal(numericalH1,actualH1));
-
-  Matrix numericalH2 = numericalDerivative22(traits<SO3>::Compose, R1, R2);
-  EXPECT(assert_equal(numericalH2,actualH2));
-}
-
-//******************************************************************************
-TEST(SO3 , Between) {
-  SO3 expected = R1.inverse() * R2;
-  Matrix actualH1, actualH2;
-  SO3 actual = traits<SO3>::Between(R1, R2, actualH1, actualH2);
-  EXPECT(traits<SO3>::Equals(expected,actual));
-
-  Matrix numericalH1 = numericalDerivative21(traits<SO3>::Between, R1, R2);
-  EXPECT(assert_equal(numericalH1,actualH1));
-
-  Matrix numericalH2 = numericalDerivative22(traits<SO3>::Between, R1, R2);
-  EXPECT(assert_equal(numericalH2,actualH2));
-}
-
-//******************************************************************************
-TEST(SO3 , Inverse) {
-  SO3 expected(Eigen::AngleAxisd(-0.1, z_axis));
-
-  Matrix actualH;
-  SO3 actual = traits<SO3>::Inverse(R1, actualH);
-  EXPECT(traits<SO3>::Equals(expected,actual));
-
-  Matrix numericalH = numericalDerivative11(traits<SO3>::Inverse, R1);
-  EXPECT(assert_equal(numericalH,actualH));
-}
-
-//******************************************************************************
 TEST(SO3 , Invariants) {
   check_group_invariants(id,id);
   check_group_invariants(id,R1);
