@@ -65,32 +65,6 @@ We do *not* at this time support more than one composition operator per type. Al
 
 Also, a type should provide either multiplication or addition operators depending on the flavor of the operation. To distinguish between the two, we will use a tag (see below).
 
-Group Action
-------------
-
-Group actions are concepts in and of themselves that can be concept checked (see below).
-In particular, a group can *act* on another space.
-For example, the [cyclic group of order 6](http://en.wikipedia.org/wiki/Cyclic_group) can rotate 2D vectors around the origin:
-
-    q = R(i)*p
-    where R(i) = R(60)^i, where R(60) rotates by 60 degrees
-    
-Hence, we formalize by the following extension of the concept:
-
-* valid expressions:
-    * `q = traits<T>::Act(g,p)`, for some instance, *p*,  of a space *S*, that can be acted upon by the group element *g* to produce *q* in *S*.
-    * `q = traits<T>::Act(g,p,Hp)`, if the space acted upon is a continuous differentiable manifold. *
-  
-In the latter case, if *S* is an n-dimensional manifold, *Hp* is an output argument that should be 
-filled with the *nxn* Jacobian matrix of the action with respect to a change in *p*. It typically depends
-on the group element *g*, but in most common example will *not* depend on the value of *p*. For example, in 
-the cyclic group example above, we simply have
-
-    Hp = R(i)
-  
-Note there is no derivative of the action with respect to a change in g. That will only be defined
-for Lie groups, which we introduce now.
-
 Lie Group
 ---------
 
@@ -128,22 +102,6 @@ associates straight lines in the tangent space with geodesics on the manifold
 However, the exponential map is unnecessarily expensive for use in optimization. Hence, in GTSAM there is the option to provide a cheaper chart by means of the `ChartAtOrigin` struct in a class. This is done for *SE(2)*, *SO(3)* and *SE(3)* (see `Pose2`, `Rot3`, `Pose3`)
 
 Most Lie groups we care about are *Matrix groups*, continuous sub-groups of *GL(n)*, the group of *n x n* invertible matrices. In this case, a lot of the derivatives calculations needed can be standardized, and this is done by the `LieGroup` superclass. You only need to provide an `AdjointMap` method.
-
-Lie Group Action
-----------------
-
-When a Lie group acts on a space, we have two derivatives to care about:
-
-  * `gtasm::manifold::traits<T>::act(g,p,Hg,Hp)`, if the space acted upon is a continuous differentiable manifold.
-
-An example is a *similarity transform* in 3D, which can act on 3D space, like
-
-    q = s*R*p + t
-    
-Note that again the derivative in *p*,  *Hp* is simply *s R*, which depends on *g* but not on *p*. 
-The derivative  in *g*,  *Hg*, is in general more complex.
-
-For now, we won't care about Lie groups acting on non-manifolds.
 
 Vector Space
 ------------
@@ -199,3 +157,50 @@ Boost provides a nice way to check whether a given type satisfies a concept. For
     BOOST_CONCEPT_ASSERT(IsVectorSpace<Point2>)
     
 asserts that Point2 indeed is a model for the VectorSpace concept.
+
+Future Concepts
+===============
+
+
+Group Action
+------------
+
+Group actions are concepts in and of themselves that can be concept checked (see below).
+In particular, a group can *act* on another space.
+For example, the [cyclic group of order 6](http://en.wikipedia.org/wiki/Cyclic_group) can rotate 2D vectors around the origin:
+
+    q = R(i)*p
+    where R(i) = R(60)^i, where R(60) rotates by 60 degrees
+    
+Hence, we formalize by the following extension of the concept:
+
+* valid expressions:
+    * `q = traits<T>::Act(g,p)`, for some instance, *p*,  of a space *S*, that can be acted upon by the group element *g* to produce *q* in *S*.
+    * `q = traits<T>::Act(g,p,Hp)`, if the space acted upon is a continuous differentiable manifold. *
+  
+In the latter case, if *S* is an n-dimensional manifold, *Hp* is an output argument that should be 
+filled with the *nxn* Jacobian matrix of the action with respect to a change in *p*. It typically depends
+on the group element *g*, but in most common example will *not* depend on the value of *p*. For example, in 
+the cyclic group example above, we simply have
+
+    Hp = R(i)
+  
+Note there is no derivative of the action with respect to a change in g. That will only be defined
+for Lie groups, which we introduce now.
+
+
+Lie Group Action
+----------------
+
+When a Lie group acts on a space, we have two derivatives to care about:
+
+  * `gtasm::manifold::traits<T>::act(g,p,Hg,Hp)`, if the space acted upon is a continuous differentiable manifold.
+
+An example is a *similarity transform* in 3D, which can act on 3D space, like
+
+    q = s*R*p + t
+    
+Note that again the derivative in *p*,  *Hp* is simply *s R*, which depends on *g* but not on *p*. 
+The derivative  in *g*,  *Hg*, is in general more complex.
+
+For now, we won't care about Lie groups acting on non-manifolds.
