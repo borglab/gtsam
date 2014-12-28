@@ -17,8 +17,8 @@
  *  @date December 2014
  */
 
-#include <gtsam_unstable/nonlinear/ExpressionFactorGraph.h>
 #include <gtsam_unstable/geometry/Event.h>
+#include <gtsam/nonlinear/ExpressionFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/base/numericalDerivative.h>
 

@@ -23,8 +23,8 @@
  */
 
 // The two new headers that allow using our Automatic Differentiation Expression framework
-#include <gtsam_unstable/slam/expressions.h>
-#include <gtsam_unstable/nonlinear/ExpressionFactorGraph.h>
+#include <gtsam/slam/expressions.h>
+#include <gtsam/nonlinear/ExpressionFactorGraph.h>
 
 // Header order is close to far
 #include <examples/SFMdata.h>
