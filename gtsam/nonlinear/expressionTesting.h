@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include <gtsam_unstable/nonlinear/ExpressionFactor.h>
+#include <gtsam/nonlinear/ExpressionFactor.h>
 #include <gtsam/nonlinear/Expression.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Testable.h>
