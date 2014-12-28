@@ -391,7 +391,12 @@ private:
         boost::serialization::base_object<Base>(*this));
   }
 
-}; // \class GaussMarkov1stOrderFactor
+}; // \class InertialNavFactor_GlobalVelocity
 
+/// traits
+template<class POSE, class VELOCITY, class IMUBIAS>
+struct traits<InertialNavFactor_GlobalVelocity<POSE, VELOCITY, IMUBIAS> > :
+    public Testable<InertialNavFactor_GlobalVelocity<POSE, VELOCITY, IMUBIAS> > {
+};
 
 } /// namespace aspn

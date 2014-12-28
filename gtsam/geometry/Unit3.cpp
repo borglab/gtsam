@@ -131,7 +131,7 @@ double Unit3::distance(const Unit3& q, OptionalJacobian<1,2> H) const {
 Unit3 Unit3::retract(const Vector2& v) const {
 
   // Get the vector form of the point and the basis matrix
-  Vector3 p = Point3::Logmap(p_);
+  Vector3 p = p_.vector();
   Matrix32 B = basis();
 
   // Compute the 3D xi_hat vector
@@ -156,8 +156,7 @@ Unit3 Unit3::retract(const Vector2& v) const {
 /* ************************************************************************* */
 Vector2 Unit3::localCoordinates(const Unit3& y) const {
 
-  Vector3 p = Point3::Logmap(p_);
-  Vector3 q = Point3::Logmap(y.p_);
+  Vector3 p = p_.vector(), q = y.p_.vector();
   double dot = p.dot(q);
 
   // Check for special cases

@@ -19,11 +19,9 @@
 
 #pragma once
 
-#include <gtsam_unstable/nonlinear/CallRecord.h>
+#include <gtsam/nonlinear/CallRecord.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/Manifold.h>
-#include <gtsam/base/OptionalJacobian.h>
+#include <gtsam/base/Lie.h>
 
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -144,7 +142,7 @@ void handleLeafCase(const Eigen::MatrixBase<Derived>& dTdA,
  */
 template<class T>
 class ExecutionTrace {
-  static const int Dim = traits::dimension<T>::value;
+  static const int Dim = traits<T>::dimension;
   enum {
     Constant, Leaf, Function
   } kind;
@@ -309,57 +307,11 @@ public:
   }
 };
 
-//-----------------------------------------------------------------------------
-/// Leaf Expression
-template<class T, class Chart = DefaultChart<T> >
-class LeafExpression: public ExpressionNode<T> {
-  typedef ChartValue<T, Chart> value_type; // perhaps this can be something else like a std::pair<T,Chart> ??
-
-  /// The key into values
-  Key key_;
-
-  /// Constructor with a single key
-  LeafExpression(Key key) :
-      key_(key) {
-  }
-  // todo: do we need a virtual destructor here too?
-
-  friend class Expression<value_type> ;
-
-public:
-
-  /// Return keys that play in this expression
-  virtual std::set<Key> keys() const {
-    std::set<Key> keys;
-    keys.insert(key_);
-    return keys;
-  }
-
-  /// Return dimensions for each argument
-  virtual void dims(std::map<Key, int>& map) const {
-    // get dimension from the chart; only works for fixed dimension charts
-    map[key_] = traits::dimension<Chart>::value;
-  }
-
-  /// Return value
-  virtual const value_type& value(const Values& values) const {
-    return dynamic_cast<const value_type&>(values.at(key_));
-  }
-
-  /// Construct an execution trace for reverse AD
-  virtual const value_type& traceExecution(const Values& values,
-      ExecutionTrace<value_type>& trace,
-      ExecutionTraceStorage* traceStorage) const {
-    trace.setLeaf(key_);
-    return dynamic_cast<const value_type&>(values.at(key_));
-  }
-
-};
 
 //-----------------------------------------------------------------------------
 /// Leaf Expression, if no chart is given, assume default chart and value_type is just the plain value
 template<typename T>
-class LeafExpression<T, DefaultChart<T> > : public ExpressionNode<T> {
+class LeafExpression : public ExpressionNode<T> {
   typedef T value_type;
 
   /// The key into values
@@ -384,7 +336,7 @@ public:
 
   /// Return dimensions for each argument
   virtual void dims(std::map<Key, int>& map) const {
-    map[key_] = traits::dimension<T>::value;
+    map[key_] = traits<T>::dimension;
   }
 
   /// Return value
@@ -460,15 +412,15 @@ public:
 /// meta-function to generate fixed-size JacobianTA type
 template<class T, class A>
 struct Jacobian {
-  typedef Eigen::Matrix<double, traits::dimension<T>::value,
-      traits::dimension<A>::value> type;
+  typedef Eigen::Matrix<double, traits<T>::dimension,
+      traits<A>::dimension> type;
 };
 
 /// meta-function to generate JacobianTA optional reference
 template<class T, class A>
 struct MakeOptionalJacobian {
-  typedef OptionalJacobian<traits::dimension<T>::value,
-      traits::dimension<A>::value> type;
+  typedef OptionalJacobian<traits<T>::dimension,
+      traits<A>::dimension> type;
 };
 
 /**
@@ -572,7 +524,8 @@ struct GenerateFunctionalNode: Argument<T, A, Base::N + 1>, Base {
     /// Given df/dT, multiply in dT/dA and continue reverse AD process
     // Cols is always known at compile time
     template<typename SomeMatrix>
-    void reverseAD4(const SomeMatrix & dFdT, JacobianMap& jacobians) const {
+    void reverseAD4(const SomeMatrix & dFdT,
+        JacobianMap& jacobians) const {
       Base::Record::reverseAD4(dFdT, jacobians);
       This::trace.reverseAD1(dFdT * This::dTdA, jacobians);
     }
@@ -633,7 +586,7 @@ struct FunctionalNode {
     /// Provide convenience access to Record storage and implement
     /// the virtual function based interface of CallRecord using the CallRecordImplementor
     struct Record: public internal::CallRecordImplementor<Record,
-        traits::dimension<T>::value>, public Base::Record {
+        traits<T>::dimension>, public Base::Record {
       using Base::Record::print;
       using Base::Record::startReverseAD4;
       using Base::Record::reverseAD4;

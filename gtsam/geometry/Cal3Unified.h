@@ -50,6 +50,7 @@ private:
   double xi_;  // mirror parameter
 
 public:
+  enum { dimension = 10 };
 
     Vector10 vector() const ;
 
@@ -138,23 +139,8 @@ private:
 
 };
 
-// Define GTSAM traits
-namespace traits {
-
 template<>
-struct GTSAM_EXPORT is_manifold<Cal3Unified> : public boost::true_type{
-};
-
-template<>
-struct GTSAM_EXPORT dimension<Cal3Unified> : public boost::integral_constant<int, 10>{
-};
-
-template<>
-struct GTSAM_EXPORT zero<Cal3Unified> {
-  static Cal3Unified value() { return Cal3Unified();}
-};
-
-}
+struct traits<Cal3Unified> : public internal::Manifold<Cal3Unified> {};
 
 }
 

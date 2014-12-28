@@ -23,7 +23,8 @@
 
 /* GTSAM includes */
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/navigation/ImuBias.h>
+#include <gtsam/navigation/PreintegrationBase.h>
+#include <gtsam/navigation/ImuFactorBase.h>
 #include <gtsam/base/debug.h>
 
 namespace gtsam {
@@ -33,77 +34,62 @@ namespace gtsam {
  * @addtogroup SLAM
  *
  * If you are using the factor, please cite:
- * L. Carlone, Z. Kira, C. Beall, V. Indelman, F. Dellaert, Eliminating conditionally
- * independent sets in factor graphs: a unifying perspective based on smart factors,
- * Int. Conf. on Robotics and Automation (ICRA), 2014.
+ * L. Carlone, Z. Kira, C. Beall, V. Indelman, F. Dellaert, Eliminating
+ * conditionally independent sets in factor graphs: a unifying perspective based
+ * on smart factors, Int. Conf. on Robotics and Automation (ICRA), 2014.
  *
- * REFERENCES:
- * [1] G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups", Volume 2, 2008.
- * [2] T. Lupton and S.Sukkarieh, "Visual-Inertial-Aided Navigation for High-Dynamic Motion in Built
- * Environments Without Initial Conditions", TRO, 28(1):61-76, 2012.
- * [3] L. Carlone, S. Williams, R. Roberts, "Preintegrated IMU factor: Computation of the Jacobian Matrices", Tech. Report, 2013.
+ ** REFERENCES:
+ * [1] G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups",
+ *     Volume 2, 2008.
+ * [2] T. Lupton and S.Sukkarieh, "Visual-Inertial-Aided Navigation for
+ *     High-Dynamic Motion in Built Environments Without Initial Conditions",
+ *     TRO, 28(1):61-76, 2012.
+ * [3] L. Carlone, S. Williams, R. Roberts, "Preintegrated IMU factor:
+ *     Computation of the Jacobian Matrices", Tech. Report, 2013.
  */
 
 /**
- * Struct to hold all state variables of CombinedImuFactor returned by Predict function
+ * CombinedImuFactor is a 6-ways factor involving previous state (pose and
+ * velocity of the vehicle, as well as bias at previous time step), and current
+ * state (pose, velocity, bias at current time step). Following the pre-
+ * integration scheme proposed in [2], the CombinedImuFactor includes many IMU
+ * measurements, which are "summarized" using the CombinedPreintegratedMeasurements
+ * class. There are 3 main differences wrpt the ImuFactor class:
+ * 1) The factor is 6-ways, meaning that it also involves both biases (previous
+ *    and current time step).Therefore, the factor internally imposes the biases
+ *    to be slowly varying; in particular, the matrices "biasAccCovariance" and
+ *    "biasOmegaCovariance" described the random walk that models bias evolution.
+ * 2) The preintegration covariance takes into account the noise in the bias
+ *    estimate used for integration.
+ * 3) The covariance matrix of the CombinedPreintegratedMeasurements preserves
+ *    the correlation between the bias uncertainty and the preintegrated
+ *    measurements uncertainty.
  */
-struct PoseVelocityBias {
-  Pose3 pose;
-  Vector3 velocity;
-  imuBias::ConstantBias bias;
-
-  PoseVelocityBias(const Pose3& _pose, const Vector3& _velocity,
-      const imuBias::ConstantBias _bias) :
-        pose(_pose), velocity(_velocity), bias(_bias) {
-  }
-};
-
-/**
- * CombinedImuFactor is a 6-ways factor involving previous state (pose and velocity of the vehicle, as well as bias
- * at previous time step), and current state (pose, velocity, bias at current time step). According to the
- * preintegration scheme proposed in [2], the CombinedImuFactor includes many IMU measurements, which are
- * "summarized" using the CombinedPreintegratedMeasurements class. There are 3 main differences wrt ImuFactor:
- * 1) The factor is 6-ways, meaning that it also involves both biases (previous and current time step).
- * Therefore, the factor internally imposes the biases to be slowly varying; in particular, the matrices
- * "biasAccCovariance" and "biasOmegaCovariance" described the random walk that models bias evolution.
- * 2) The preintegration covariance takes into account the noise in the bias estimate used for integration.
- * 3) The covariance matrix of the CombinedPreintegratedMeasurements preserves the correlation between the bias uncertainty
- * and the preintegrated measurements uncertainty.
- */
-class CombinedImuFactor: public NoiseModelFactor6<Pose3,Vector3,Pose3,Vector3,imuBias::ConstantBias,imuBias::ConstantBias> {
+class CombinedImuFactor: public NoiseModelFactor6<Pose3,Vector3,Pose3,Vector3,imuBias::ConstantBias,imuBias::ConstantBias>, public ImuFactorBase{
 public:
 
-  /** CombinedPreintegratedMeasurements accumulates (integrates) the IMU measurements (rotation rates and accelerations)
-   * and the corresponding covariance matrix. The measurements are then used to build the CombinedPreintegrated IMU factor (CombinedImuFactor).
-   * Integration is done incrementally (ideally, one integrates the measurement as soon as it is received
-   * from the IMU) so as to avoid costly integration at time of factor construction.
+  /**
+   * CombinedPreintegratedMeasurements integrates the IMU measurements
+   * (rotation rates and accelerations) and the corresponding covariance matrix.
+   * The measurements are then used to build the CombinedImuFactor. Integration
+   * is done incrementally (ideally, one integrates the measurement as soon as
+   * it is received from the IMU) so as to avoid costly integration at time of
+   * factor construction.
    */
-  class CombinedPreintegratedMeasurements {
+  class CombinedPreintegratedMeasurements: public PreintegrationBase {
 
     friend class CombinedImuFactor;
 
   protected:
-    imuBias::ConstantBias biasHat_; ///< Acceleration and angular rate bias values used during preintegration
-    Eigen::Matrix<double,21,21> measurementCovariance_; ///< (Raw measurements uncertainty) Covariance of the vector
-    ///< [integrationError measuredAcc measuredOmega biasAccRandomWalk biasOmegaRandomWalk biasAccInit biasOmegaInit] in R^(21 x 21)
 
-    Vector3 deltaPij_; ///< Preintegrated relative position (does not take into account velocity at time i, see deltap+, in [2]) (in frame i)
-    Vector3 deltaVij_; ///< Preintegrated relative velocity (in global frame)
-    Rot3 deltaRij_;    ///< Preintegrated relative orientation (in frame i)
-    double deltaTij_;  ///< Time interval from i to j
+    Matrix3 biasAccCovariance_;   ///< continuous-time "Covariance" describing accelerometer bias random walk
+    Matrix3 biasOmegaCovariance_; ///< continuous-time "Covariance" describing gyroscope bias random walk
+    Matrix6 biasAccOmegaInit_;    ///< covariance of bias used for pre-integration
 
-    Matrix3 delPdelBiasAcc_;   ///< Jacobian of preintegrated position w.r.t. acceleration bias
-    Matrix3 delPdelBiasOmega_; ///< Jacobian of preintegrated position w.r.t. angular rate bias
-    Matrix3 delVdelBiasAcc_;   ///< Jacobian of preintegrated velocity w.r.t. acceleration bias
-    Matrix3 delVdelBiasOmega_; ///< Jacobian of preintegrated velocity w.r.t. angular rate bias
-    Matrix3 delRdelBiasOmega_; ///< Jacobian of preintegrated rotation w.r.t. angular rate bias
-
-    Eigen::Matrix<double,15,15> PreintMeasCov_; ///< Covariance matrix of the preintegrated measurements
+    Eigen::Matrix<double,15,15> preintMeasCov_; ///< Covariance matrix of the preintegrated measurements
     ///< COVARIANCE OF: [PreintPOSITION PreintVELOCITY PreintROTATION BiasAcc BiasOmega]
     ///< (first-order propagation from *measurementCovariance*). CombinedPreintegratedMeasurements also include the biases and keep the correlation
     ///< between the preintegrated measurements and the biases
-
-    bool use2ndOrderIntegration_; ///< Controls the order of integration
 
   public:
 
@@ -141,60 +127,20 @@ public:
      * @param body_P_sensor Optional sensor frame (pose of the IMU in the body frame)
      */
     void integrateMeasurement(const Vector3& measuredAcc, const Vector3& measuredOmega, double deltaT,
-        boost::optional<const Pose3&> body_P_sensor = boost::none);
+        boost::optional<const Pose3&> body_P_sensor = boost::none,
+        boost::optional<Matrix&> F_test = boost::none, boost::optional<Matrix&> G_test = boost::none);
 
     /// methods to access class variables
-    Matrix measurementCovariance() const {return measurementCovariance_;}
-    Matrix deltaRij() const {return deltaRij_.matrix();}
-    double deltaTij() const{return deltaTij_;}
-    Vector deltaPij() const {return deltaPij_;}
-    Vector deltaVij() const {return deltaVij_;}
-    Vector biasHat() const { return biasHat_.vector();}
-    Matrix delPdelBiasAcc() const { return delPdelBiasAcc_;}
-    Matrix delPdelBiasOmega() const { return delPdelBiasOmega_;}
-    Matrix delVdelBiasAcc() const { return delVdelBiasAcc_;}
-    Matrix delVdelBiasOmega() const { return delVdelBiasOmega_;}
-    Matrix delRdelBiasOmega() const{ return delRdelBiasOmega_;}
-    Matrix PreintMeasCov() const { return PreintMeasCov_;}
-
-    /* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-    // This function is only used for test purposes (compare numerical derivatives wrt analytic ones)
-    static inline Vector PreIntegrateIMUObservations_delta_vel(const Vector& msr_gyro_t, const Vector& msr_acc_t, const double msr_dt,
-        const Vector3& delta_angles, const Vector& delta_vel_in_t0){
-      // Note: all delta terms refer to an IMU\sensor system at t0
-      Vector body_t_a_body = msr_acc_t;
-      Rot3 R_t_to_t0 = Rot3::Expmap(delta_angles);
-      return delta_vel_in_t0 + R_t_to_t0.matrix() * body_t_a_body * msr_dt;
-    }
-
-    // This function is only used for test purposes (compare numerical derivatives wrt analytic ones)
-    static inline Vector PreIntegrateIMUObservations_delta_angles(const Vector& msr_gyro_t, const double msr_dt,
-        const Vector3& delta_angles){
-      // Note: all delta terms refer to an IMU\sensor system at t0
-      // Calculate the corrected measurements using the Bias object
-      Vector body_t_omega_body= msr_gyro_t;
-      Rot3 R_t_to_t0 = Rot3::Expmap(delta_angles);
-      R_t_to_t0    = R_t_to_t0 * Rot3::Expmap( body_t_omega_body*msr_dt );
-      return Rot3::Logmap(R_t_to_t0);
-    }
-    /* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+    Matrix preintMeasCov() const { return preintMeasCov_;}
 
   private:
-    /** Serialization function */
+
+    /// Serialization function
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int version) {
-      ar & BOOST_SERIALIZATION_NVP(biasHat_);
-      ar & BOOST_SERIALIZATION_NVP(measurementCovariance_);
-      ar & BOOST_SERIALIZATION_NVP(deltaPij_);
-      ar & BOOST_SERIALIZATION_NVP(deltaVij_);
-      ar & BOOST_SERIALIZATION_NVP(deltaRij_);
-      ar & BOOST_SERIALIZATION_NVP(deltaTij_);
-      ar & BOOST_SERIALIZATION_NVP(delPdelBiasAcc_);
-      ar & BOOST_SERIALIZATION_NVP(delPdelBiasOmega_);
-      ar & BOOST_SERIALIZATION_NVP(delVdelBiasAcc_);
-      ar & BOOST_SERIALIZATION_NVP(delVdelBiasOmega_);
-      ar & BOOST_SERIALIZATION_NVP(delRdelBiasOmega_);
+      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegrationBase);
+      ar & BOOST_SERIALIZATION_NVP(preintMeasCov_);
     }
   };
 
@@ -203,12 +149,7 @@ private:
   typedef CombinedImuFactor This;
   typedef NoiseModelFactor6<Pose3,Vector3,Pose3,Vector3,imuBias::ConstantBias,imuBias::ConstantBias> Base;
 
-  CombinedPreintegratedMeasurements preintegratedMeasurements_;
-  Vector3 gravity_;
-  Vector3 omegaCoriolis_;
-  boost::optional<Pose3> body_P_sensor_; ///< The pose of the sensor in the body frame
-
-  bool use2ndOrderCoriolis_; ///< Controls whether higher order terms are included when calculating the Coriolis Effect
+  CombinedPreintegratedMeasurements _PIM_;
 
 public:
 
@@ -257,11 +198,7 @@ public:
   /** Access the preintegrated measurements. */
 
   const CombinedPreintegratedMeasurements& preintegratedMeasurements() const {
-    return preintegratedMeasurements_; }
-
-  const Vector3& gravity() const { return gravity_; }
-
-  const Vector3& omegaCoriolis() const { return omegaCoriolis_; }
+    return _PIM_; }
 
   /** implement functions needed to derive from Factor */
 
@@ -275,12 +212,6 @@ public:
       boost::optional<Matrix&> H5 = boost::none,
       boost::optional<Matrix&> H6 = boost::none) const;
 
-  /// predicted states from IMU
-  static PoseVelocityBias Predict(const Pose3& pose_i, const Vector3& vel_i,
-      const imuBias::ConstantBias& bias_i,
-      const CombinedPreintegratedMeasurements& preintegratedMeasurements,
-      const Vector3& gravity, const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis = false);
-
 private:
 
   /** Serialization function */
@@ -289,7 +220,7 @@ private:
   void serialize(ARCHIVE & ar, const unsigned int version) {
     ar & boost::serialization::make_nvp("NoiseModelFactor6",
         boost::serialization::base_object<Base>(*this));
-    ar & BOOST_SERIALIZATION_NVP(preintegratedMeasurements_);
+    ar & BOOST_SERIALIZATION_NVP(_PIM_);
     ar & BOOST_SERIALIZATION_NVP(gravity_);
     ar & BOOST_SERIALIZATION_NVP(omegaCoriolis_);
     ar & BOOST_SERIALIZATION_NVP(body_P_sensor_);

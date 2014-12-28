@@ -17,12 +17,12 @@
  * @brief unit tests for Block Automatic Differentiation
  */
 
-#include <gtsam_unstable/slam/expressions.h>
-#include <gtsam_unstable/nonlinear/ExpressionFactor.h>
-#include <gtsam_unstable/nonlinear/expressionTesting.h>
+#include <gtsam/slam/expressions.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/slam/ProjectionFactor.h>
 #include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/ExpressionFactor.h>
+#include <gtsam/nonlinear/expressionTesting.h>
 #include <gtsam/base/Testable.h>
 
 #include <CppUnitLite/TestHarness.h>
@@ -148,6 +148,7 @@ TEST(ExpressionFactor, Wide) {
   values.insert(2, Point3(0, 0, 1));
   Point3_ point(2);
   Vector9 measured;
+  measured.setZero();
   Expression<Vector9> expression(wide,point);
   SharedNoiseModel model = noiseModel::Unit::Create(9);
 

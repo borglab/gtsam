@@ -48,6 +48,13 @@ using symbol_shorthand::T;
 
 typedef ProjectionFactorPPP<Pose3, Point3> TestProjectionFactor;
 
+/// traits
+namespace gtsam {
+template<>
+struct traits<TestProjectionFactor> : public Testable<TestProjectionFactor> {
+};
+}
+
 /* ************************************************************************* */
 TEST( ProjectionFactorPPP, nonStandard ) {
   ProjectionFactorPPP<Pose3, Point3, Cal3DS2> f;

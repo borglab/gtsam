@@ -80,7 +80,7 @@ public:
   /// Construct a nullary method expression
   template<typename A>
   Expression(const Expression<A>& expression,
-      T (A::*method)(typename UnaryExpression<T, A>::OJ1) const) :
+      T (A::*method)(typename MakeOptionalJacobian<T, A>::type) const) :
       root_(new UnaryExpression<T, A>(boost::bind(method, _1, _2), expression)) {
   }
 
@@ -94,8 +94,8 @@ public:
   /// Construct a unary method expression
   template<typename A1, typename A2>
   Expression(const Expression<A1>& expression1,
-      T (A1::*method)(const A2&, typename BinaryExpression<T, A1, A2>::OJ1,
-          typename BinaryExpression<T, A1, A2>::OJ2) const,
+      T (A1::*method)(const A2&, typename MakeOptionalJacobian<T, A1>::type,
+          typename MakeOptionalJacobian<T, A2>::type) const,
       const Expression<A2>& expression2) :
       root_(
           new BinaryExpression<T, A1, A2>(boost::bind(method, _1, _2, _3, _4),
@@ -192,7 +192,7 @@ private:
     assert(H.size()==keys.size());
 
     // Pre-allocate and zero VerticalBlockMatrix
-    static const int Dim = traits::dimension<T>::value;
+    static const int Dim = traits<T>::dimension;
     VerticalBlockMatrix Ab(dims, Dim);
     Ab.matrix().setZero();
     JacobianMap jacobianMap(keys, Ab);
@@ -256,7 +256,7 @@ private:
 template<class T>
 struct apply_compose {
   typedef T result_type;
-  static const int Dim = traits::dimension<T>::value;
+  static const int Dim = traits<T>::dimension;
   T operator()(const T& x, const T& y, OptionalJacobian<Dim, Dim> H1 =
       boost::none, OptionalJacobian<Dim, Dim> H2 = boost::none) const {
     return x.compose(y, H1, H2);

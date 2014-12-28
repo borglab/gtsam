@@ -344,4 +344,9 @@ namespace gtsam {
   //GTSAM_EXPORT void residual(const GaussianFactorGraph& fg, const VectorValues &x, VectorValues &r);
   //GTSAM_EXPORT void multiply(const GaussianFactorGraph& fg, const VectorValues &x, VectorValues &r);
 
-} // namespace gtsam
+/// traits
+template<>
+struct traits<GaussianFactorGraph> : public Testable<GaussianFactorGraph> {
+};
+
+} // \ namespace gtsam

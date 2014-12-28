@@ -10,19 +10,13 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file Lie-inl.h
- * @date Jan 9, 2010
- * @author Richard Roberts
- * @brief Instantiate macro for Lie type
- */
+ * @file   Cyclic.cpp
+ * @brief  Cyclic group implementation
+ * @author Frank Dellaert
+ **/
 
-#pragma once
+#include <gtsam/geometry/Cyclic.h>
 
-#include <gtsam/base/Lie.h>
-
-#define INSTANTIATE_LIE(T) \
-  template T between_default(const T&, const T&); \
-  template Vector logmap_default(const T&, const T&); \
-  template T expmap_default(const T&, const Vector&);
-
+namespace gtsam {
+} // \namespace gtsam
 

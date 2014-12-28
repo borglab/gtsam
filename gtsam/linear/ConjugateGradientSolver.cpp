@@ -2,7 +2,7 @@
  * ConjugateGradientSolver.cpp
  *
  *  Created on: Jun 4, 2014
- *      Author: ydjian
+ *      Author: Yong-Dian Jian
  */
 
 #include <gtsam/linear/ConjugateGradientSolver.h>

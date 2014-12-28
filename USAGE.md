@@ -1,6 +1,5 @@
 USAGE - Georgia Tech Smoothing and Mapping library
----------------------------------------------------
-
+===================================
 What is this file?
 
 	This file explains how to make use of the library for common SLAM tasks, 
@@ -34,18 +33,12 @@ The GTSAM library has three primary components necessary for the construction
 of factor graph representation and optimization which users will need to 
 adapt to their particular problem.  
 
-FactorGraph:
-	A factor graph contains a set of variables to solve for (i.e., robot poses,
-	landmark poses, etc.) and a set of constraints between these variables, which 
-	make up factors.  
-Values: 
-	Values is a single object containing labeled values for all of the 
-	variables.  Currently, all variables are labeled with strings, but the type 
-	or organization of the variables can change
-Factors:
-	A nonlinear factor expresses a constraint between variables, which in the
-	SLAM example, is a measurement such as a visual reading on a landmark or
-	odometry.
+* FactorGraph:
+	A factor graph contains a set of variables to solve for (i.e., robot poses, landmark poses, etc.) and a set of constraints between these variables, which make up factors.  
+* Values: 
+	Values is a single object containing labeled values for all of the variables.  Currently, all variables are labeled with strings, but the type or organization of the variables can change
+* Factors:
+	A nonlinear factor expresses a constraint between variables, which in the SLAM example, is a measurement such as a visual reading on a landmark or odometry.
 
 The library is organized according to the following directory structure:
 
@@ -59,23 +52,3 @@ The library is organized according to the following directory structure:
 
 
 
-VSLAM Example
----------------------------------------------------
-The visual slam example shows a full implementation of a slam system.  The example contains
-derived versions of NonlinearFactor, NonlinearFactorGraph, in classes visualSLAM::ProjectionFactor, 
-visualSLAM::Graph, respectively. The values for the system are stored in the generic 
-Values structure. For definitions and interface, see gtsam/slam/visualSLAM.h. 
-
-The clearest example of the use of the graph to find a solution is in 
-testVSLAM.  The basic process for using graphs is as follows (and can be seen in 
-the test):
-  - Create a NonlinearFactorGraph object (visualSLAM::Graph)
-  - Add factors to the graph (note the use of Boost.shared_ptr here) (visualSLAM::ProjectionFactor)
-  - Create an initial configuration (Values)
-  - Create an elimination ordering of variables (this must include all variables)
-  - Create and initialize a NonlinearOptimizer object (Note that this is a generic 
-      algorithm that does not need to be derived for a particular problem)
-  - Call optimization functions with the optimizer to optimize the graph
-  - Extract an updated values from the optimizer
- 
-  

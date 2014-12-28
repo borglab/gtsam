@@ -69,13 +69,13 @@ TEST (RotateFactor, test) {
   Matrix actual, expected;
   // Use numerical derivatives to calculate the expected Jacobian
   {
-    expected = numericalDerivative11<Vector,Rot3>(
+    expected = numericalDerivative11<Vector3,Rot3>(
         boost::bind(&RotateFactor::evaluateError, &f, _1, boost::none), iRc);
     f.evaluateError(iRc, actual);
     EXPECT(assert_equal(expected, actual, 1e-9));
   }
   {
-    expected = numericalDerivative11<Vector,Rot3>(
+    expected = numericalDerivative11<Vector3,Rot3>(
         boost::bind(&RotateFactor::evaluateError, &f, _1, boost::none), R);
     f.evaluateError(R, actual);
     EXPECT(assert_equal(expected, actual, 1e-9));

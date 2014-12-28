@@ -38,7 +38,7 @@ protected:
   Expression<T> expression_; ///< the expression that is AD enabled
   FastVector<int> dims_; ///< dimensions of the Jacobian matrices
 
-  static const int Dim = traits::dimension<T>::value;
+  static const int Dim = traits<T>::dimension;
 
 public:
 
@@ -65,13 +65,12 @@ public:
    */
   virtual Vector unwhitenedError(const Values& x,
       boost::optional<std::vector<Matrix>&> H = boost::none) const {
-    DefaultChart<T> chart;
-    if (H) {
+     if (H) {
       const T value = expression_.value(x, keys_, dims_, *H);
-      return chart.local(measurement_, value);
+      return traits<T>::Local(measurement_, value);
     } else {
       const T value = expression_.value(x);
-      return chart.local(measurement_, value);
+      return traits<T>::Local(measurement_, value);
     }
   }
 
@@ -99,8 +98,7 @@ public:
     T value = expression_.value(x, jacobianMap); // <<< Reverse AD happens here !
 
     // Evaluate error and set RHS vector b
-    DefaultChart<T> chart;
-    Ab(size()).col(0) = -chart.local(measurement_, value);
+    Ab(size()).col(0) = -traits<T>::Local(measurement_, value);
 
     // Whiten the corresponding system, Ab already contains RHS
     Vector dummy(Dim);

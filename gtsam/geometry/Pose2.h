@@ -20,11 +20,9 @@
 
 #pragma once
 
-#include <boost/optional.hpp>
-#include <gtsam/base/Matrix.h>
-#include <gtsam/base/DerivedValue.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Rot2.h>
+#include <gtsam/base/Lie.h>
 
 namespace gtsam {
 
@@ -33,7 +31,7 @@ namespace gtsam {
  * @addtogroup geometry
  * \nosubgrouping
  */
-class GTSAM_EXPORT Pose2 {
+class GTSAM_EXPORT Pose2: public LieGroup<Pose2, 3> {
 
 public:
 
@@ -42,6 +40,7 @@ public:
   typedef Point2 Translation;
 
 private:
+
   Rot2 r_;
   Point2 t_;
 
@@ -106,50 +105,23 @@ public:
   /// identity for group operation
   inline static Pose2 identity() { return Pose2(); }
 
-  /// inverse transformation with derivatives
-  Pose2 inverse(OptionalJacobian<3, 3> H1=boost::none) const;
-
-  /// compose this transformation onto another (first *this and then p2)
-  Pose2 compose(const Pose2& p2,
-      OptionalJacobian<3, 3> H1 = boost::none,
-      OptionalJacobian<3, 3> H2 = boost::none) const;
+  /// inverse
+  Pose2 inverse() const;
 
   /// compose syntactic sugar
   inline Pose2 operator*(const Pose2& p2) const {
     return Pose2(r_*p2.r(), t_ + r_*p2.t());
   }
 
-  /**
-   * Return relative pose between p1 and p2, in p1 coordinate frame
-   */
-  Pose2 between(const Pose2& p2, OptionalJacobian<3,3> H1 = boost::none,
-      OptionalJacobian<3,3> H = boost::none) const;
-
-  /// @}
-  /// @name Manifold
-  /// @{
-
-  /// Dimensionality of tangent space = 3 DOF - used to autodetect sizes
-  inline static size_t Dim() { return 3; }
-
-  /// Dimensionality of tangent space = 3 DOF
-  inline size_t dim() const { return 3; }
-
-  /// Retraction from R^3 \f$ [T_x,T_y,\theta] \f$ to Pose2 manifold neighborhood around current pose
-  Pose2 retract(const Vector& v) const;
-
-  /// Local 3D coordinates \f$ [T_x,T_y,\theta] \f$ of Pose2 manifold neighborhood around current pose
-  Vector3 localCoordinates(const Pose2& p2) const;
-
   /// @}
   /// @name Lie Group
   /// @{
 
   ///Exponential map at identity - create a rotation from canonical coordinates \f$ [T_x,T_y,\theta] \f$
-  static Pose2 Expmap(const Vector& xi);
+  static Pose2 Expmap(const Vector& xi, ChartJacobian H = boost::none);
 
   ///Log map at identity - return the canonical coordinates \f$ [T_x,T_y,\theta] \f$ of this rotation
-  static Vector3 Logmap(const Pose2& p);
+  static Vector3 Logmap(const Pose2& p, ChartJacobian H = boost::none);
 
   /**
    * Calculate Adjoint map
@@ -160,6 +132,11 @@ public:
     assert(xi.size() == 3);
     return AdjointMap()*xi;
   }
+
+  /**
+   * Compute the [ad(w,v)] operator for SE2 as in [Kobilarov09siggraph], pg 19
+   */
+  static Matrix3 adjointMap(const Vector& v);
 
   /**
    * wedge for SE(2):
@@ -175,6 +152,20 @@ public:
          0., 0.,  0.;
     return m;
   }
+
+  /// Derivative of Expmap
+  static Matrix3 ExpmapDerivative(const Vector3& v);
+
+  /// Derivative of Logmap
+  static Matrix3 LogmapDerivative(const Pose2& v);
+
+  // Chart at origin, depends on compile-time flag SLOW_BUT_CORRECT_EXPMAP
+  struct ChartAtOrigin {
+    static Pose2 Retract(const Vector3& v, ChartJacobian H = boost::none);
+    static Vector3 Local(const Pose2& r, ChartJacobian H = boost::none);
+  };
+
+  using LieGroup<Pose2, 3>::inverse; // version with derivative
 
   /// @}
   /// @name Group Action on Point2
@@ -299,18 +290,8 @@ inline Matrix wedge<Pose2>(const Vector& xi) {
 typedef std::pair<Point2,Point2> Point2Pair;
 GTSAM_EXPORT boost::optional<Pose2> align(const std::vector<Point2Pair>& pairs);
 
-// Define GTSAM traits
-namespace traits {
-
 template<>
-struct GTSAM_EXPORT is_manifold<Pose2> : public boost::true_type{
-};
-
-template<>
-struct GTSAM_EXPORT dimension<Pose2> : public boost::integral_constant<int, 3>{
-};
-
-}
+struct traits<Pose2> : public internal::LieGroupTraits<Pose2> {};
 
 } // namespace gtsam
 

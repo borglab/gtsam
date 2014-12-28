@@ -237,7 +237,10 @@ Eigen::Block<const MATRIX> sub(const MATRIX& A, size_t i1, size_t i2, size_t j1,
  * @param i is the row of the upper left corner insert location
  * @param j is the column of the upper left corner insert location
  */
-GTSAM_EXPORT void insertSub(Matrix& fullMatrix, const Matrix& subMatrix, size_t i, size_t j);
+template <typename Derived1, typename Derived2>
+GTSAM_EXPORT void insertSub(Eigen::MatrixBase<Derived1>& fullMatrix, const Eigen::MatrixBase<Derived2>& subMatrix, size_t i, size_t j) {
+  fullMatrix.block(i, j, subMatrix.rows(), subMatrix.cols()) = subMatrix;
+}
 
 /**
  * Create a matrix with submatrices along its diagonal
@@ -525,17 +528,6 @@ DLT(const Matrix& A, double rank_tol = 1e-9);
  */
 GTSAM_EXPORT Matrix expm(const Matrix& A, size_t K=7);
 
-/// Cayley transform
-GTSAM_EXPORT Matrix Cayley(const Matrix& A);
-
-/// Implementation of Cayley transform using fixed size matrices to let
-/// Eigen do more optimization
-template<int N>
-Eigen::Matrix<double, N, N> CayleyFixed(const Eigen::Matrix<double, N, N>& A) {
-  typedef Eigen::Matrix<double, N, N> FMat;
-  return (FMat::Identity() - A)*(FMat::Identity() + A).inverse();
-}
-
 std::string formatMatrixIndented(const std::string& label, const Matrix& matrix, bool makeVectorHorizontal = false);
 
 } // namespace gtsam
@@ -568,4 +560,5 @@ namespace boost {
   } // namespace serialization
 } // namespace boost
 
-BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Matrix)
+BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Matrix);
+

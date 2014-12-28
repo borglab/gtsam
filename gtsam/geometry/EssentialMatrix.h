@@ -30,6 +30,8 @@ private:
 
 public:
 
+  enum { dimension = 5 };
+
   /// Static function to convert Point2 to homogeneous coordinates
   static Vector3 Homogeneous(const Point2& p) {
     return Vector3(p.x(), p.y(), 1);
@@ -196,23 +198,8 @@ private:
 
 };
 
-// Define GTSAM traits
-namespace traits {
-
 template<>
-struct GTSAM_EXPORT is_manifold<EssentialMatrix> : public boost::true_type{
-};
-
-template<>
-struct GTSAM_EXPORT dimension<EssentialMatrix> : public boost::integral_constant<int, 5>{
-};
-
-template<>
-struct GTSAM_EXPORT zero<EssentialMatrix> {
-  static EssentialMatrix value() { return EssentialMatrix();}
-};
-
-}
+struct traits<EssentialMatrix> : public internal::Manifold<EssentialMatrix> {};
 
 } // gtsam
 

@@ -191,5 +191,9 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     }
   };
+
+  /// traits
+  template<> struct traits<Ordering> : public Testable<Ordering> {};
+
 }
 

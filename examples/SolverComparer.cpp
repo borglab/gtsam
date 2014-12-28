@@ -72,22 +72,22 @@ typedef NoiseModelFactor1<Pose> NM1;
 typedef NoiseModelFactor2<Pose,Pose> NM2;
 typedef BearingRangeFactor<Pose,Point2> BR;
 
-BOOST_CLASS_EXPORT(Value);
-BOOST_CLASS_EXPORT(Pose);
-BOOST_CLASS_EXPORT(Rot2);
-BOOST_CLASS_EXPORT(Point2);
-BOOST_CLASS_EXPORT(NonlinearFactor);
-BOOST_CLASS_EXPORT(NoiseModelFactor);
-BOOST_CLASS_EXPORT(NM1);
-BOOST_CLASS_EXPORT(NM2);
-BOOST_CLASS_EXPORT(BetweenFactor<Pose>);
-BOOST_CLASS_EXPORT(PriorFactor<Pose>);
-BOOST_CLASS_EXPORT(BR);
-BOOST_CLASS_EXPORT(noiseModel::Base);
-BOOST_CLASS_EXPORT(noiseModel::Isotropic);
-BOOST_CLASS_EXPORT(noiseModel::Gaussian);
-BOOST_CLASS_EXPORT(noiseModel::Diagonal);
-BOOST_CLASS_EXPORT(noiseModel::Unit);
+GTSAM_VALUE_EXPORT(Value);
+GTSAM_VALUE_EXPORT(Pose);
+GTSAM_VALUE_EXPORT(Rot2);
+GTSAM_VALUE_EXPORT(Point2);
+GTSAM_VALUE_EXPORT(NonlinearFactor);
+GTSAM_VALUE_EXPORT(NoiseModelFactor);
+GTSAM_VALUE_EXPORT(NM1);
+GTSAM_VALUE_EXPORT(NM2);
+GTSAM_VALUE_EXPORT(BetweenFactor<Pose>);
+GTSAM_VALUE_EXPORT(PriorFactor<Pose>);
+GTSAM_VALUE_EXPORT(BR);
+GTSAM_VALUE_EXPORT(noiseModel::Base);
+GTSAM_VALUE_EXPORT(noiseModel::Isotropic);
+GTSAM_VALUE_EXPORT(noiseModel::Gaussian);
+GTSAM_VALUE_EXPORT(noiseModel::Diagonal);
+GTSAM_VALUE_EXPORT(noiseModel::Unit);
 
 double chi2_red(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& config) {
   // Compute degrees of freedom (observations - variables)

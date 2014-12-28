@@ -95,5 +95,8 @@ namespace gtsam {
     }
   };
 
-} // namespace
+// traits
+template<> struct traits<DiscreteBayesNet> : public Testable<DiscreteBayesNet> {};
+
+} // \ namespace gtsam
 

@@ -37,6 +37,8 @@ private:
 
 public:
 
+  enum { dimension = 3 };
+
   /// @name Standard Constructors
   /// @{
 
@@ -169,24 +171,7 @@ private:
 
 };
 
-// Define GTSAM traits
-namespace traits {
-
 template<>
-struct GTSAM_EXPORT is_manifold<Cal3Bundler> : public boost::true_type{
-};
-
-template<>
-struct GTSAM_EXPORT dimension<Cal3Bundler> : public boost::integral_constant<int, 3>{
-};
-
-template<>
-struct GTSAM_EXPORT zero<Cal3Bundler> {
-  static Cal3Bundler value() {
-    return Cal3Bundler(0, 0, 0);
-  }
-};
-
-}
+struct traits<Cal3Bundler> : public internal::Manifold<Cal3Bundler> {};
 
 } // namespace gtsam

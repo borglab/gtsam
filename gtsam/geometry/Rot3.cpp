@@ -108,32 +108,6 @@ Point3 Rot3::unrotate(const Point3& p, OptionalJacobian<3,3> H1,
 }
 
 /* ************************************************************************* */
-/// Follow Iserles05an, B10, pg 147, with a sign change in the second term (left version)
-Matrix3 Rot3::dexpL(const Vector3& v) {
-  if(zero(v)) return eye(3);
-  Matrix3 x = skewSymmetric(v);
-  Matrix3 x2 = x*x;
-  double theta = v.norm(), vi = theta/2.0;
-  double s1 = sin(vi)/vi;
-  double s2 = (theta - sin(theta))/(theta*theta*theta);
-  Matrix3 res = I_3x3 - 0.5*s1*s1*x + s2*x2;
-  return res;
-}
-
-/* ************************************************************************* */
-/// Follow Iserles05an, B11, pg 147, with a sign change in the second term (left version)
-Matrix3 Rot3::dexpInvL(const Vector3& v) {
-  if(zero(v)) return eye(3);
-  Matrix3 x = skewSymmetric(v);
-  Matrix3 x2 = x*x;
-  double theta = v.norm(), vi = theta/2.0;
-  double s2 = (theta*tan(M_PI_2-vi) - 2)/(2*theta*theta);
-  Matrix3 res = I_3x3 + 0.5*x - s2*x2;
-  return res;
-}
-
-
-/* ************************************************************************* */
 Point3 Rot3::column(int index) const{
   if(index == 3)
     return r3();
@@ -175,36 +149,57 @@ Vector Rot3::quaternion() const {
 }
 
 /* ************************************************************************* */
-Matrix3 Rot3::rightJacobianExpMapSO3(const Vector3& x)    {
-  // x is the axis-angle representation (exponential coordinates) for a rotation
-  double normx = norm_2(x); // rotation angle
-  Matrix3 Jr;
-  if (normx < 10e-8){
-    Jr = I_3x3;
-  }
-  else{
-    const Matrix3 X = skewSymmetric(x); // element of Lie algebra so(3): X = x^
-    Jr = I_3x3 - ((1-cos(normx))/(normx*normx)) * X +
-        ((normx-sin(normx))/(normx*normx*normx)) * X * X; // right Jacobian
-  }
-  return Jr;
+Matrix3 Rot3::ExpmapDerivative(const Vector3& x)    {
+  if(zero(x)) return I_3x3;
+  double theta = x.norm();  // rotation angle
+#ifdef DUY_VERSION
+  /// Follow Iserles05an, B10, pg 147, with a sign change in the second term (left version)
+  Matrix3 X = skewSymmetric(x);
+  Matrix3 X2 = X*X;
+  double vi = theta/2.0;
+  double s1 = sin(vi)/vi;
+  double s2 = (theta - sin(theta))/(theta*theta*theta);
+  return I_3x3 - 0.5*s1*s1*X + s2*X2;
+#else // Luca's version
+  /**
+   * Right Jacobian for Exponential map in SO(3) - equation (10.86) and following equations in
+   * G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups", Volume 2, 2008.
+   * expmap(thetahat + omega) \approx expmap(thetahat) * expmap(Jr * omega)
+   * where Jr = ExpmapDerivative(thetahat);
+   * This maps a perturbation in the tangent space (omega) to
+   * a perturbation on the manifold (expmap(Jr * omega))
+   */
+  // element of Lie algebra so(3): X = x^, normalized by normx
+  const Matrix3 Y = skewSymmetric(x) / theta;
+  return I_3x3 - ((1 - cos(theta)) / (theta)) * Y
+      + (1 - sin(theta) / theta) * Y * Y; // right Jacobian
+#endif
 }
 
 /* ************************************************************************* */
-Matrix3 Rot3::rightJacobianExpMapSO3inverse(const Vector3& x)    {
-  // x is the axis-angle representation (exponential coordinates) for a rotation
-  double normx = norm_2(x); // rotation angle
-  Matrix3 Jrinv;
-
-  if (normx < 10e-8){
-    Jrinv = I_3x3;
-  }
-  else{
-    const Matrix3 X = skewSymmetric(x); // element of Lie algebra so(3): X = x^
-    Jrinv = I_3x3 +
-        0.5 * X + (1/(normx*normx) - (1+cos(normx))/(2*normx * sin(normx))   ) * X * X;
-  }
-  return Jrinv;
+Matrix3 Rot3::LogmapDerivative(const Vector3& x)    {
+  if(zero(x)) return I_3x3;
+  double theta = x.norm();
+#ifdef DUY_VERSION
+  /// Follow Iserles05an, B11, pg 147, with a sign change in the second term (left version)
+  Matrix3 X = skewSymmetric(x);
+  Matrix3 X2 = X*X;
+  double vi = theta/2.0;
+  double s2 = (theta*tan(M_PI_2-vi) - 2)/(2*theta*theta);
+  return I_3x3 + 0.5*X - s2*X2;
+#else // Luca's version
+  /** Right Jacobian for Log map in SO(3) - equation (10.86) and following equations in
+   * G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups", Volume 2, 2008.
+   * logmap( Rhat * expmap(omega) ) \approx logmap( Rhat ) + Jrinv * omega
+   * where Jrinv = LogmapDerivative(omega);
+   * This maps a perturbation on the manifold (expmap(omega))
+   * to a perturbation in the tangent space (Jrinv * omega)
+   */
+  const Matrix3 X = skewSymmetric(x); // element of Lie algebra so(3): X = x^
+  return I_3x3 + 0.5 * X
+      + (1 / (theta * theta) - (1 + cos(theta)) / (2 * theta * sin(theta))) * X
+          * X;
+#endif
 }
 
 /* ************************************************************************* */
@@ -239,8 +234,8 @@ ostream &operator<<(ostream &os, const Rot3& R) {
 Rot3 Rot3::slerp(double t, const Rot3& other) const {
   // amazingly simple in GTSAM :-)
   assert(t>=0 && t<=1);
-  Vector3 omega = localCoordinates(other, Rot3::EXPMAP);
-  return retract(t * omega, Rot3::EXPMAP);
+  Vector3 omega = Logmap(between(other));
+  return compose(Expmap(t * omega));
 }
 
 /* ************************************************************************* */

@@ -18,12 +18,11 @@
  * @brief unit tests for CallRecord class
  */
 
-#include <gtsam_unstable/nonlinear/CallRecord.h>
-
-#include <CppUnitLite/TestHarness.h>
-
+#include <gtsam/nonlinear/CallRecord.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Testable.h>
+
+#include <CppUnitLite/TestHarness.h>
 
 using namespace std;
 using namespace gtsam;
@@ -69,6 +68,11 @@ struct CallConfig {
     std::cout << prefix << "{" << compTimeRows << ", " << compTimeCols << ", " << runTimeRows << ", " << runTimeCols << "}\n" ;
   }
 };
+
+/// traits
+namespace gtsam {
+template<> struct traits<CallConfig> : public Testable<CallConfig> {};
+}
 
 struct Record: public internal::CallRecordImplementor<Record, Cols> {
   Record() : cc(0, 0) {}
