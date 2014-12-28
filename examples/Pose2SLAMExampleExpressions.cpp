@@ -19,7 +19,7 @@
 
 // The two new headers that allow using our Automatic Differentiation Expression framework
 #include <gtsam/slam/expressions.h>
-#include <gtsam/nonlinear/ExpressionFactor.h>
+#include <gtsam/nonlinear/ExpressionFactorGraph.h>
 
 // Header order is close to far
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -35,26 +35,26 @@ using namespace gtsam;
 int main(int argc, char** argv) {
 
   // 1. Create a factor graph container and add factors to it
-  NonlinearFactorGraph graph;
+  ExpressionFactorGraph graph;
 
   // Create Expressions for unknowns
   Pose2_ x1(1), x2(2), x3(3), x4(4), x5(5);
 
   // 2a. Add a prior on the first pose, setting it to the origin
   noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Sigmas(Vector3(0.3, 0.3, 0.1));
-  graph.push_back(ExpressionFactor<Pose2>(priorNoise, Pose2(0, 0, 0), x1));
+  graph.addExpressionFactor(x1, Pose2(0, 0, 0), priorNoise);
 
   // For simplicity, we will use the same noise model for odometry and loop closures
   noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Sigmas(Vector3(0.2, 0.2, 0.1));
 
   // 2b. Add odometry factors
-  graph.push_back(ExpressionFactor<Pose2>(model, Pose2(2, 0, 0     ), between(x1,x2)));
-  graph.push_back(ExpressionFactor<Pose2>(model, Pose2(2, 0, M_PI_2), between(x2,x3)));
-  graph.push_back(ExpressionFactor<Pose2>(model, Pose2(2, 0, M_PI_2), between(x3,x4)));
-  graph.push_back(ExpressionFactor<Pose2>(model, Pose2(2, 0, M_PI_2), between(x4,x5)));
+  graph.addExpressionFactor(between(x1,x2), Pose2(2, 0, 0     ), model);
+  graph.addExpressionFactor(between(x2,x3), Pose2(2, 0, M_PI_2), model);
+  graph.addExpressionFactor(between(x3,x4), Pose2(2, 0, M_PI_2), model);
+  graph.addExpressionFactor(between(x4,x5), Pose2(2, 0, M_PI_2), model);
 
   // 2c. Add the loop closure constraint
-  graph.push_back(ExpressionFactor<Pose2>(model, Pose2(2, 0, M_PI_2), between(x5,x2)));
+  graph.addExpressionFactor(between(x5,x2), Pose2(2, 0, M_PI_2), model);
   graph.print("\nFactor Graph:\n"); // print
 
   // 3. Create the data structure to hold the initialEstimate estimate to the solution
