@@ -84,8 +84,9 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Rot3 Rot3::rodriguez(const Vector& w, double theta) {
-    return Quaternion(Eigen::AngleAxisd(theta, w)); }
+  Rot3 Rot3::rodriguez(const Vector3& w, double theta) {
+    return QuaternionChart::Expmap(theta,w);
+  }
 
   /* ************************************************************************* */
   Rot3 Rot3::compose(const Rot3& R2,
@@ -119,7 +120,7 @@ namespace gtsam {
   OptionalJacobian<3,3> H1, OptionalJacobian<3,3> H2) const {
     if (H1) *H1 = -(R2.transpose()*matrix());
     if (H2) *H2 = I3;
-    return between_default(*this, R2);
+    return inverse() * R2;
   }
 
   /* ************************************************************************* */
@@ -133,35 +134,9 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Vector3 Rot3::Logmap(const Rot3& R, OptionalJacobian<3,3> H) {
-    using std::acos;
-    using std::sqrt;
-    static const double twoPi = 2.0 * M_PI,
-    // define these compile time constants to avoid std::abs:
-    NearlyOne = 1.0 - 1e-10, NearlyNegativeOne = -1.0 + 1e-10;
-
-    Vector3 thetaR;
-    const Quaternion& q = R.quaternion_;
-    const double qw = q.w();
-    if (qw > NearlyOne) {
-      // Taylor expansion of (angle / s) at 1
-      thetaR = (2 - 2 * (qw - 1) / 3) * q.vec();
-    } else if (qw < NearlyNegativeOne) {
-      // Angle is zero, return zero vector
-      thetaR = Vector3::Zero();
-    } else {
-      // Normal, away from zero case
-      double angle = 2 * acos(qw), s = sqrt(1 - qw * qw);
-      // Important:  convert to [-pi,pi] to keep error continuous
-      if (angle > M_PI)
-        angle -= twoPi;
-      else if (angle < -M_PI)
-        angle += twoPi;
-      thetaR = (angle / s) * q.vec();
-    }
-
+  Vector3 Rot3::Logmap(const Rot3& R, OptionalJacobian<3, 3> H) {
     if(H) *H = Rot3::LogmapDerivative(thetaR);
-    return thetaR;
+    return QuaternionChart::Logmap(R.quaternion_);
   }
 
   /* ************************************************************************* */

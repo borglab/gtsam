@@ -95,6 +95,12 @@ TEST(testNumericalDerivative, numericalHessian211) {
   EXPECT(assert_equal(expected22, actual22, 1e-5));
 }
 
+TEST(testNumericalDerivative, numericalHessian212) {
+  // TODO should implement test for all the variants of numerical Hessian, for mixed dimension types,
+  // like Point3 y = Project(Camera, Point3);
+  // I'm not sure how numericalHessian212 is different from 211 or 222 -Mike B.
+}
+
 /* ************************************************************************* */
 double f4(double x, double y, double z) {
   return sin(x) * cos(y) * z * z;

@@ -107,7 +107,7 @@ void testExpressionJacobians(TestResult& result_, const std::string& name_,
     const gtsam::Expression<T>& expression, const gtsam::Values& values,
     double nd_step, double tolerance) {
   // Create factor
-  size_t size = traits::dimension<T>::value;
+  size_t size = traits<T>::dimension;
   ExpressionFactor<T> f(noiseModel::Unit::Create(size),
       expression.value(values), expression);
   testFactorJacobians(result_, name_, f, values, nd_step, tolerance);

@@ -36,7 +36,7 @@ private:
   double fx_, fy_, s_, u0_, v0_;
 
 public:
-
+  enum { dimension = 5 };
   typedef boost::shared_ptr<Cal3_S2> shared_ptr; ///< shared pointer to calibration object
 
   /// @name Standard Constructors
@@ -223,22 +223,7 @@ private:
 
 };
 
-// Define GTSAM traits
-namespace traits {
-
 template<>
-struct GTSAM_EXPORT is_manifold<Cal3_S2> : public boost::true_type{
-};
-
-template<>
-struct GTSAM_EXPORT dimension<Cal3_S2> : public boost::integral_constant<int, 5>{
-};
-
-template<>
-struct GTSAM_EXPORT zero<Cal3_S2> {
-  static Cal3_S2 value() { return Cal3_S2();}
-};
-
-}
+struct traits<Cal3_S2> : public internal::Manifold<Cal3_S2> {};
 
 } // \ namespace gtsam

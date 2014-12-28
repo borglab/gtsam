@@ -360,7 +360,12 @@ namespace gtsam {
     }
   }; // JacobianFactor
 
-} // gtsam
+/// traits
+template<>
+struct traits<JacobianFactor> : public Testable<JacobianFactor> {
+};
+
+} // \ namespace gtsam
 
 #include <gtsam/linear/JacobianFactor-inl.h>
 

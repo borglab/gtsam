@@ -443,6 +443,11 @@ namespace gtsam {
     }
   };
 
-}
+/// traits
+template<>
+struct traits<HessianFactor> : public Testable<HessianFactor> {};
+
+} // \ namespace gtsam
+
 
 #include <gtsam/linear/HessianFactor-inl.h>

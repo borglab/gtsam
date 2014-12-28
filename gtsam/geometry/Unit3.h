@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include <gtsam/base/Manifold.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/base/DerivedValue.h>
 #include <boost/random/mersenne_twister.hpp>
@@ -28,7 +29,7 @@
 namespace gtsam {
 
 /// Represents a 3D point on a unit sphere.
-class GTSAM_EXPORT Unit3{
+class GTSAM_EXPORT Unit3 {
 
 private:
 
@@ -36,6 +37,8 @@ private:
   mutable boost::optional<Matrix32> B_; ///< Cached basis
 
 public:
+
+  enum { dimension = 2 };
 
   /// @name Constructors
   /// @{
@@ -160,24 +163,7 @@ private:
 };
 
 // Define GTSAM traits
-namespace traits {
-
-template<>
-struct GTSAM_EXPORT is_manifold<Unit3> : public boost::true_type{
-};
-
-template<>
-struct GTSAM_EXPORT dimension<Unit3> : public boost::integral_constant<int, 2>{
-};
-
-template<>
-struct GTSAM_EXPORT zero<Unit3> {
-  static Unit3 value() {
-    return Unit3();
-  }
-};
-
-}
+template <> struct traits<Unit3> : public internal::Manifold<Unit3> {};
 
 } // namespace gtsam
 

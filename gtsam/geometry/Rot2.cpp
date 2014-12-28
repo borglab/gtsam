@@ -17,14 +17,10 @@
  */
 
 #include <gtsam/geometry/Rot2.h>
-#include <gtsam/base/Lie-inl.h>
 
 using namespace std;
 
 namespace gtsam {
-
-/** Explicit instantiation of base class to export members */
-INSTANTIATE_LIE(Rot2);
 
 /* ************************************************************************* */
 Rot2 Rot2::fromCosSin(double c, double s) {
@@ -63,6 +59,24 @@ Rot2& Rot2::normalize() {
   return *this;
 }
 
+/* ************************************************************************* */
+Rot2 Rot2::Expmap(const Vector1& v, OptionalJacobian<1, 1> H) {
+  if (H)
+    *H = I_1x1;
+  if (zero(v))
+    return (Rot2());
+  else
+    return Rot2::fromAngle(v(0));
+}
+
+/* ************************************************************************* */
+Vector1 Rot2::Logmap(const Rot2& r, OptionalJacobian<1, 1> H) {
+  if (H)
+    *H = I_1x1;
+  Vector1 v;
+  v << r.theta();
+  return v;
+}
 /* ************************************************************************* */
 Matrix2 Rot2::matrix() const {
   Matrix2 rvalue_;

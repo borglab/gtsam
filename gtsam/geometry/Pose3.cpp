@@ -17,7 +17,8 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/concepts.h>
-#include <gtsam/base/Lie-inl.h>
+#include <gtsam/base/concepts.h>
+
 #include <boost/foreach.hpp>
 #include <iostream>
 #include <cmath>
@@ -26,9 +27,6 @@ using namespace std;
 
 namespace gtsam {
 
-/** Explicit instantiation of base class to export members */
-INSTANTIATE_LIE(Pose3);
-
 /** instantiate concept checks */
 GTSAM_CONCEPT_POSE_INST(Pose3);
 
@@ -36,6 +34,12 @@ GTSAM_CONCEPT_POSE_INST(Pose3);
 Pose3::Pose3(const Pose2& pose2) :
     R_(Rot3::rodriguez(0, 0, pose2.theta())), t_(
         Point3(pose2.x(), pose2.y(), 0)) {
+}
+
+/* ************************************************************************* */
+Pose3 Pose3::inverse() const {
+  Rot3 Rt = R_.inverse();
+  return Pose3(Rt, Rt * (-t_));
 }
 
 /* ************************************************************************* */
@@ -107,7 +111,8 @@ bool Pose3::equals(const Pose3& pose, double tol) const {
 
 /* ************************************************************************* */
 /** Modified from Murray94book version (which assumes w and v normalized?) */
-Pose3 Pose3::Expmap(const Vector& xi) {
+Pose3 Pose3::Expmap(const Vector& xi, OptionalJacobian<6, 6> H) {
+  if (H) *H = ExpmapDerivative(xi);
 
   // get angular velocity omega and translational velocity v from twist xi
   Point3 w(xi(0), xi(1), xi(2)), v(xi(3), xi(4), xi(5));
@@ -127,7 +132,8 @@ Pose3 Pose3::Expmap(const Vector& xi) {
 }
 
 /* ************************************************************************* */
-Vector6 Pose3::Logmap(const Pose3& p) {
+Vector6 Pose3::Logmap(const Pose3& p, OptionalJacobian<6, 6> H) {
+  if (H) *H = LogmapDerivative(p);
   Vector3 w = Rot3::Logmap(p.rotation()), T = p.translation().vector();
   double t = w.norm();
   if (t < 1e-10) {
@@ -148,57 +154,35 @@ Vector6 Pose3::Logmap(const Pose3& p) {
 }
 
 /* ************************************************************************* */
-Pose3 Pose3::retractFirstOrder(const Vector& xi) const {
-  Vector3 omega(sub(xi, 0, 3));
-  Point3 v(sub(xi, 3, 6));
-  Rot3 R = R_.retract(omega); // R is done exactly
-  Point3 t = t_ + R_ * v; // First order t approximation
-  return Pose3(R, t);
+Pose3 Pose3::ChartAtOrigin::Retract(const Vector6& xi, ChartJacobian H) {
+#ifdef GTSAM_POSE3_EXPMAP
+  return Expmap(xi, H);
+#else
+  Matrix3 DR;
+  Rot3 R = Rot3::Retract(xi.head<3>(), H ? &DR : 0);
+  if (H) {
+    *H = I_6x6;
+    H->topLeftCorner<3,3>() = DR;
+  }
+  return Pose3(R, Point3(xi.tail<3>()));
+#endif
 }
 
 /* ************************************************************************* */
-// Different versions of retract
-Pose3 Pose3::retract(const Vector& xi, Pose3::CoordinatesMode mode) const {
-  if (mode == Pose3::EXPMAP) {
-    // Lie group exponential map, traces out geodesic
-    return compose(Expmap(xi));
-  } else if (mode == Pose3::FIRST_ORDER) {
-    // First order
-    return retractFirstOrder(xi);
-  } else {
-    // Point3 t = t_.retract(v.vector()); // Incorrect version retracts t independently
-    // Point3 t = t_ + R_ * (v+Point3(omega).cross(v)/2); // Second order t approximation
-    assert(false);
-    exit(1);
+Vector6 Pose3::ChartAtOrigin::Local(const Pose3& T, ChartJacobian H) {
+#ifdef GTSAM_POSE3_EXPMAP
+  return Logmap(T, H);
+#else
+  Matrix3 DR;
+  Vector3 omega = Rot3::LocalCoordinates(T.rotation(), H ? &DR : 0);
+  if (H) {
+    *H = I_6x6;
+    H->topLeftCorner<3,3>() = DR;
   }
-}
-
-/* ************************************************************************* */
-// different versions of localCoordinates
-Vector6 Pose3::localCoordinates(const Pose3& T,
-    Pose3::CoordinatesMode mode) const {
-  if (mode == Pose3::EXPMAP) {
-    // Lie group logarithm map, exact inverse of exponential map
-    return Logmap(between(T));
-  } else if (mode == Pose3::FIRST_ORDER) {
-    // R is always done exactly in all three retract versions below
-    Vector3 omega = R_.localCoordinates(T.rotation());
-
-    // Incorrect version
-    // Independently computes the logmap of the translation and rotation
-    // Vector v = t_.localCoordinates(T.translation());
-
-    // Correct first order t inverse
-    Point3 d = R_.unrotate(T.translation() - t_);
-
-    // TODO: correct second order t inverse
-    Vector6 local;
-    local << omega(0), omega(1), omega(2), d.x(), d.y(), d.z();
-    return local;
-  } else {
-    assert(false);
-    exit(1);
-  }
+  Vector6 xi;
+  xi << omega, T.translation().vector();
+  return xi;
+#endif
 }
 
 /* ************************************************************************* */
@@ -231,12 +215,20 @@ static Matrix3 computeQforExpmapDerivative(const Vector6& xi) {
   }
 #else
   // The closed-form formula in Barfoot14tro eq. (102)
-  double phi = w.norm(), sinPhi = sin(phi), cosPhi = cos(phi), phi2 = phi * phi,
-      phi3 = phi2 * phi, phi4 = phi3 * phi, phi5 = phi4 * phi;
-  // Invert the sign of odd-order terms to have the right Jacobian
-  Q = -0.5*V + (phi-sinPhi)/phi3*(W*V + V*W - W*V*W)
-          + (1-phi2/2-cosPhi)/phi4*(W*W*V + V*W*W - 3*W*V*W)
-          - 0.5*((1-phi2/2-cosPhi)/phi4 - 3*(phi-sinPhi-phi3/6)/phi5)*(W*V*W*W + W*W*V*W);
+  double phi = w.norm();
+  if (fabs(phi)>1e-5) {
+    double sinPhi = sin(phi), cosPhi = cos(phi);
+    double phi2 = phi * phi, phi3 = phi2 * phi, phi4 = phi3 * phi, phi5 = phi4 * phi;
+    // Invert the sign of odd-order terms to have the right Jacobian
+    Q = -0.5*V + (phi-sinPhi)/phi3*(W*V + V*W - W*V*W)
+            + (1-phi2/2-cosPhi)/phi4*(W*W*V + V*W*W - 3*W*V*W)
+            - 0.5*((1-phi2/2-cosPhi)/phi4 - 3*(phi-sinPhi-phi3/6.)/phi5)*(W*V*W*W + W*W*V*W);
+  }
+  else {
+    Q = -0.5*V + 1./6.*(W*V + V*W - W*V*W)
+        + 1./24.*(W*W*V + V*W*W - 3*W*V*W)
+        - 0.5*(1./24. + 3./120.)*(W*V*W*W + W*W*V*W);
+  }
 #endif
 
   return Q;
@@ -252,7 +244,8 @@ Matrix6 Pose3::ExpmapDerivative(const Vector6& xi) {
 }
 
 /* ************************************************************************* */
-Matrix6 Pose3::LogmapDerivative(const Vector6& xi) {
+Matrix6 Pose3::LogmapDerivative(const Pose3& pose) {
+  Vector6 xi = Logmap(pose);
   Vector3 w(sub(xi, 0, 3));
   Matrix3 Jw = Rot3::LogmapDerivative(w);
   Matrix3 Q = computeQforExpmapDerivative(xi);
@@ -309,31 +302,6 @@ Point3 Pose3::transform_to(const Point3& p, OptionalJacobian<3,6> Dpose,
   if (Dpoint)
     *Dpoint = Rt;
   return q;
-}
-
-/* ************************************************************************* */
-Pose3 Pose3::compose(const Pose3& p2, OptionalJacobian<6,6> H1,
-    OptionalJacobian<6,6> H2) const {
-  if (H1) *H1 = p2.inverse().AdjointMap();
-  if (H2) *H2 = I_6x6;
-  return (*this) * p2;
-}
-
-/* ************************************************************************* */
-Pose3 Pose3::inverse(OptionalJacobian<6,6> H1) const {
-  if (H1) *H1 = -AdjointMap();
-  Rot3 Rt = R_.inverse();
-  return Pose3(Rt, Rt * (-t_));
-}
-
-/* ************************************************************************* */
-// between = compose(p2,inverse(p1));
-Pose3 Pose3::between(const Pose3& p2, OptionalJacobian<6,6> H1,
-    OptionalJacobian<6,6> H2) const {
-  Pose3 result = inverse() * p2;
-  if (H1) *H1 = -result.inverse().AdjointMap();
-  if (H2) *H2 = I_6x6;
-  return result;
 }
 
 /* ************************************************************************* */

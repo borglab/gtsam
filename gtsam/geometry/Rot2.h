@@ -18,10 +18,9 @@
 
 #pragma once
 
-#include <boost/optional.hpp>
-
-#include <gtsam/base/DerivedValue.h>
 #include <gtsam/geometry/Point2.h>
+#include <gtsam/base/Lie.h>
+#include <boost/optional.hpp>
 
 namespace gtsam {
 
@@ -31,25 +30,16 @@ namespace gtsam {
    * @addtogroup geometry
    * \nosubgrouping
    */
-  class GTSAM_EXPORT Rot2 {
-
-  public:
-    /** get the dimension by the type */
-    static const size_t dimension = 1;
-
-  private:
+  class GTSAM_EXPORT Rot2 : public LieGroup<Rot2, 1> {
 
     /** we store cos(theta) and sin(theta) */
     double c_, s_;
-
 
     /** normalize to make sure cos and sin form unit vector */
     Rot2& normalize();
 
     /** private constructor from cos/sin */
-    inline Rot2(double c, double s) :
-        c_(c), s_(s) {
-    }
+    inline Rot2(double c, double s) : c_(c), s_(s) {}
 
   public:
 
@@ -57,14 +47,10 @@ namespace gtsam {
     /// @{
 
     /** default constructor, zero rotation */
-    Rot2() :
-        c_(1.0), s_(0.0) {
-    }
+    Rot2() : c_(1.0), s_(0.0) {}
 
     /// Constructor from angle in radians == exponential map at identity
-    Rot2(double theta) :
-        c_(cos(theta)), s_(sin(theta)) {
-    }
+    Rot2(double theta) : c_(cos(theta)), s_(sin(theta)) {}
 
     /// Named constructor from angle in radians
     static Rot2 fromAngle(double theta) {
@@ -111,69 +97,25 @@ namespace gtsam {
     inline static Rot2 identity() {  return Rot2(); }
 
     /** The inverse rotation - negative angle */
-    Rot2 inverse() const {
-      return Rot2(c_, -s_);
-    }
-
-    /** Compose - make a new rotation by adding angles */
-    inline Rot2 compose(const Rot2& R, OptionalJacobian<1,1> H1 =
-        boost::none, OptionalJacobian<1,1> H2 = boost::none) const {
-      if (H1) *H1 = I_1x1; // set to 1x1 identity matrix
-      if (H2) *H2 = I_1x1; // set to 1x1 identity matrix
-      return fromCosSin(c_ * R.c_ - s_ * R.s_, s_ * R.c_ + c_ * R.s_);
-    }
+    Rot2 inverse() const { return Rot2(c_, -s_);}
 
     /** Compose - make a new rotation by adding angles */
     Rot2 operator*(const Rot2& R) const {
       return fromCosSin(c_ * R.c_ - s_ * R.s_, s_ * R.c_ + c_ * R.s_);
     }
 
-    /** Between using the default implementation */
-    inline Rot2 between(const Rot2& R, OptionalJacobian<1,1> H1 =
-        boost::none, OptionalJacobian<1,1> H2 = boost::none) const {
-      if (H1) *H1 = -I_1x1; // set to 1x1 identity matrix
-      if (H2) *H2 =  I_1x1; // set to 1x1 identity matrix
-      return fromCosSin(c_ * R.c_ + s_ * R.s_, -s_ * R.c_ + c_ * R.s_);
-    }
-
-    /// @}
-    /// @name Manifold
-    /// @{
-
-    /// dimension of the variable - used to autodetect sizes
-    inline static size_t Dim() {
-      return dimension;
-    }
-
-    /// Dimensionality of the tangent space, DOF = 1
-    inline size_t dim() const {
-      return dimension;
-    }
-
-    /// Updates a with tangent space delta
-    inline Rot2 retract(const Vector& v) const { return *this * Expmap(v); }
-
-    /// Returns inverse retraction
-    inline Vector1 localCoordinates(const Rot2& t2) const { return Logmap(between(t2)); }
-
     /// @}
     /// @name Lie Group
     /// @{
 
-    ///Exponential map at identity - create a rotation from canonical coordinates
-    static Rot2 Expmap(const Vector& v) {
-      if (zero(v))
-        return (Rot2());
-      else
-        return Rot2::fromAngle(v(0));
-    }
+    /// Exponential map at identity - create a rotation from canonical coordinates
+    static Rot2 Expmap(const Vector1& v, ChartJacobian H = boost::none);
 
-    ///Log map at identity - return the canonical coordinates of this rotation
-    static inline Vector1 Logmap(const Rot2& r) {
-      Vector1 v;
-      v << r.theta();
-      return v;
-    }
+    /// Log map at identity - return the canonical coordinates of this rotation
+    static Vector1 Logmap(const Rot2& r, ChartJacobian H = boost::none);
+
+    /** Calculate Adjoint map */
+    Matrix1 AdjointMap() const { return I_1x1; }
 
     /// Left-trivialized derivative of the exponential map
     static Matrix ExpmapDerivative(const Vector& v) {
@@ -184,6 +126,18 @@ namespace gtsam {
     static Matrix LogmapDerivative(const Vector& v) {
       return ones(1);
     }
+
+    // Chart at origin simply uses exponential map and its inverse
+    struct ChartAtOrigin {
+      static Rot2 Retract(const Vector1& v, ChartJacobian H = boost::none) {
+        return Expmap(v, H);
+      }
+      static Vector1 Local(const Rot2& r, ChartJacobian H = boost::none) {
+        return Logmap(r, H);
+      }
+    };
+
+    using LieGroup<Rot2, 1>::inverse; // version with derivative
 
     /// @}
     /// @name Group Action on Point2
@@ -253,20 +207,7 @@ namespace gtsam {
 
   };
 
-  // Define GTSAM traits
-  namespace traits {
-
   template<>
-  struct GTSAM_EXPORT is_group<Rot2> : public boost::true_type{
-  };
+  struct traits<Rot2> : public internal::LieGroupTraits<Rot2> {};
 
-  template<>
-  struct GTSAM_EXPORT is_manifold<Rot2> : public boost::true_type{
-  };
-
-  template<>
-  struct GTSAM_EXPORT dimension<Rot2> : public boost::integral_constant<int, 1>{
-  };
-
-  }
 } // gtsam

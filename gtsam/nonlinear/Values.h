@@ -24,8 +24,12 @@
 
 #pragma once
 
+#include <gtsam/base/ChartValue.h>
+#include <gtsam/base/VectorSpace.h>
+#include <gtsam/base/FastMap.h>
+#include <gtsam/inference/Key.h>
+
 #include <boost/optional.hpp>
-#include <boost/pool/pool_alloc.hpp>
 #include <boost/ptr_container/ptr_map.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/iterator/filter_iterator.hpp>
@@ -43,10 +47,6 @@
 
 #include <string>
 #include <utility>
-
-#include <gtsam/base/ChartValue.h>
-#include <gtsam/base/FastMap.h>
-#include <gtsam/inference/Key.h>
 
 namespace gtsam {
 
@@ -523,6 +523,12 @@ namespace gtsam {
     }
   };
 
-}
+  /// traits
+  template<>
+  struct traits<Values> : public Testable<Values> {
+  };
+
+} //\ namespace gtsam
+
 
 #include <gtsam/nonlinear/Values-inl.h>

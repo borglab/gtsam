@@ -117,7 +117,7 @@ Rot3 Rot3::RzRyRx(double x, double y, double z) {
 }
 
 /* ************************************************************************* */
-Rot3 Rot3::rodriguez(const Vector& w, double theta) {
+Rot3 Rot3::rodriguez(const Vector3& w, double theta) {
   // get components of axis \omega
   double wx = w(0), wy=w(1), wz=w(2);
   double wwTxx = wx*wx, wwTyy = wy*wy, wwTzz = wz*wz;
@@ -140,13 +140,6 @@ Rot3 Rot3::rodriguez(const Vector& w, double theta) {
 }
 
 /* ************************************************************************* */
-Rot3 Rot3::compose(const Rot3& R2, OptionalJacobian<3, 3> H1, OptionalJacobian<3, 3> H2) const {
-  if (H1) *H1 = R2.transpose();
-  if (H2) *H2 = I_3x3;
-  return *this * R2;
-}
-
-/* ************************************************************************* */
 Rot3 Rot3::operator*(const Rot3& R2) const {
   return Rot3(Matrix3(rot_*R2.rot_));
 }
@@ -155,21 +148,6 @@ Rot3 Rot3::operator*(const Rot3& R2) const {
 // TODO const Eigen::Transpose<const Matrix3> Rot3::transpose() const {
 Matrix3 Rot3::transpose() const {
   return rot_.transpose();
-}
-
-/* ************************************************************************* */
-Rot3 Rot3::inverse(OptionalJacobian<3,3> H1) const {
-  if (H1) *H1 = -rot_;
-  return Rot3(Matrix3(transpose()));
-}
-
-/* ************************************************************************* */
-Rot3 Rot3::between (const Rot3& R2,
-    OptionalJacobian<3,3> H1, OptionalJacobian<3,3> H2) const {
-  if (H1) *H1 = -(R2.transpose()*rot_);
-  if (H2) *H2 = I_3x3;
-  Matrix3 R12 = transpose()*R2.rot_;
-  return Rot3(R12);
 }
 
 /* ************************************************************************* */
@@ -228,60 +206,49 @@ Vector3 Rot3::Logmap(const Rot3& R, OptionalJacobian<3,3> H) {
 }
 
 /* ************************************************************************* */
-Rot3 Rot3::retractCayley(const Vector& omega) const {
+Rot3 Rot3::CayleyChart::Retract(const Vector3& omega, OptionalJacobian<3,3> H) {
+  if (H) throw std::runtime_error("Rot3::CayleyChart::Retract Derivative");
   const double x = omega(0), y = omega(1), z = omega(2);
   const double x2 = x * x, y2 = y * y, z2 = z * z;
   const double xy = x * y, xz = x * z, yz = y * z;
   const double f = 1.0 / (4.0 + x2 + y2 + z2), _2f = 2.0 * f;
-  return (*this)
-      * Rot3((4 + x2 - y2 - z2) * f, (xy - 2 * z) * _2f, (xz + 2 * y) * _2f,
+  return Rot3((4 + x2 - y2 - z2) * f, (xy - 2 * z) * _2f, (xz + 2 * y) * _2f,
           (xy + 2 * z) * _2f, (4 - x2 + y2 - z2) * f, (yz - 2 * x) * _2f,
           (xz - 2 * y) * _2f, (yz + 2 * x) * _2f, (4 - x2 - y2 + z2) * f);
 }
 
 /* ************************************************************************* */
-Rot3 Rot3::retract(const Vector& omega, Rot3::CoordinatesMode mode) const {
-  if(mode == Rot3::EXPMAP) {
-    return (*this)*Expmap(omega);
-  } else if(mode == Rot3::CAYLEY) {
-    return retractCayley(omega);
-  } else if(mode == Rot3::SLOW_CAYLEY) {
-    Matrix3 Omega = skewSymmetric(omega);
-    return (*this)*CayleyFixed<3>(-Omega/2);
-  } else {
-    assert(false);
-    exit(1);
-  }
+Vector3 Rot3::CayleyChart::Local(const Rot3& R, OptionalJacobian<3,3> H) {
+  if (H) throw std::runtime_error("Rot3::CayleyChart::Local Derivative");
+  // Create a fixed-size matrix
+  Matrix3 A = R.matrix();
+  // Mathematica closed form optimization (procrastination?) gone wild:
+  const double a = A(0, 0), b = A(0, 1), c = A(0, 2);
+  const double d = A(1, 0), e = A(1, 1), f = A(1, 2);
+  const double g = A(2, 0), h = A(2, 1), i = A(2, 2);
+  const double di = d * i, ce = c * e, cd = c * d, fg = f * g;
+  const double M = 1 + e - f * h + i + e * i;
+  const double K = -4.0 / (cd * h + M + a * M - g * (c + ce) - b * (d + di - fg));
+  const double x = a * f - cd + f;
+  const double y = b * f - ce - c;
+  const double z = fg - di - d;
+  return K * Vector3(x, y, z);
 }
 
 /* ************************************************************************* */
-Vector3 Rot3::localCoordinates(const Rot3& T, Rot3::CoordinatesMode mode) const {
-  if(mode == Rot3::EXPMAP) {
-    return Logmap(between(T));
-  } else if(mode == Rot3::CAYLEY) {
-    // Create a fixed-size matrix
-    Matrix3 A = rot_.transpose() * T.matrix();
-    // Mathematica closed form optimization (procrastination?) gone wild:
-    const double a=A(0,0),b=A(0,1),c=A(0,2);
-    const double d=A(1,0),e=A(1,1),f=A(1,2);
-    const double g=A(2,0),h=A(2,1),i=A(2,2);
-    const double di = d*i, ce = c*e, cd = c*d, fg=f*g;
-    const double M = 1 + e - f*h + i + e*i;
-    const double K = - 4.0 / (cd*h + M + a*M -g*(c + ce) - b*(d + di - fg));
-    const double x = a * f - cd + f;
-    const double y = b * f - ce - c;
-    const double z = fg - di - d;
-    return K * Vector3(x, y, z);
-  } else if(mode == Rot3::SLOW_CAYLEY) {
-    // Create a fixed-size matrix
-    Matrix3 A(between(T).matrix());
-    // using templated version of Cayley
-    Matrix3 Omega = CayleyFixed<3>(A);
-    return -2*Vector3(Omega(2,1),Omega(0,2),Omega(1,0));
-  } else {
-    assert(false);
-    exit(1);
-  }
+Rot3 Rot3::ChartAtOrigin::Retract(const Vector3& omega, ChartJacobian H) {
+  static const CoordinatesMode mode = ROT3_DEFAULT_COORDINATES_MODE;
+  if (mode == Rot3::EXPMAP) return Expmap(omega, H);
+  if (mode == Rot3::CAYLEY) return CayleyChart::Retract(omega, H);
+  else throw std::runtime_error("Rot3::Retract: unknown mode");
+}
+
+/* ************************************************************************* */
+Vector3 Rot3::ChartAtOrigin::Local(const Rot3& R, ChartJacobian H) {
+  static const CoordinatesMode mode = ROT3_DEFAULT_COORDINATES_MODE;
+  if (mode == Rot3::EXPMAP) return Logmap(R, H);
+  if (mode == Rot3::CAYLEY) return CayleyChart::Local(R, H);
+  else throw std::runtime_error("Rot3::Local: unknown mode");
 }
 
 /* ************************************************************************* */

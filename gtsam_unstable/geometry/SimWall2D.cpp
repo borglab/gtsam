@@ -156,7 +156,7 @@ std::pair<Pose2, bool> moveWithBounce(const Pose2& cur_pose, double step_size,
 
     // Simple check to make sure norm is on side closest robot
     if (cur_pose.t().distance(intersection + norm) > cur_pose.t().distance(intersection - norm))
-      norm = norm.inverse();
+      norm = - norm;
 
     // using the reflection
     const double inside_bias = 0.05;

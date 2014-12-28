@@ -55,21 +55,26 @@ int TestValueData::DestructorCount = 0;
 class TestValue {
   TestValueData data_;
 public:
+  enum {dimension = 0};
   void print(const std::string& str = "") const {}
   bool equals(const TestValue& other, double tol = 1e-9) const { return true; }
   size_t dim() const { return 0; }
-  TestValue retract(const Vector&) const { return TestValue(); }
-  Vector localCoordinates(const TestValue&) const { return Vector(); }
+  TestValue retract(const Vector&,
+                    OptionalJacobian<dimension,dimension> H1=boost::none,
+                    OptionalJacobian<dimension,dimension> H2=boost::none) const {
+    return TestValue();
+  }
+  Vector localCoordinates(const TestValue&,
+                          OptionalJacobian<dimension,dimension> H1=boost::none,
+                          OptionalJacobian<dimension,dimension> H2=boost::none) const {
+    return Vector();
+  }
 };
 
 namespace gtsam {
-namespace traits {
-template <>
-struct is_manifold<TestValue> : public boost::true_type {};
-template <>
-struct dimension<TestValue> : public boost::integral_constant<int, 0> {};
+template <> struct traits<TestValue> : public internal::Manifold<TestValue> {};
 }
-}
+
 
 /* ************************************************************************* */
 TEST( Values, equals1 )
@@ -170,9 +175,9 @@ TEST(Values, basic_functions)
   Values values;
   const Values& values_c = values;
   values.insert(2, Vector3());
-  values.insert(4, Vector(3));
+  values.insert(4, Vector3());
   values.insert(6, Matrix23());
-  values.insert(8, Matrix(2,3));
+  values.insert(8, Matrix23());
 
   // find
   EXPECT_LONGS_EQUAL(4, values.find(4)->key);

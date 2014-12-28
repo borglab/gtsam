@@ -18,7 +18,7 @@
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/base/Testable.h>
-#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/base/testLie.h>
 #include <gtsam/base/lieProxies.h>
 
 #include <CppUnitLite/TestHarness.h>
@@ -32,10 +32,15 @@ using namespace boost::assign;
 using namespace gtsam;
 using namespace std;
 
-//#define SLOW_BUT_CORRECT_EXPMAP
-
 GTSAM_CONCEPT_TESTABLE_INST(Pose2)
 GTSAM_CONCEPT_LIE_INST(Pose2)
+
+//******************************************************************************
+TEST(Pose2 , Concept) {
+  BOOST_CONCEPT_ASSERT((IsGroup<Pose2 >));
+  BOOST_CONCEPT_ASSERT((IsManifold<Pose2 >));
+  BOOST_CONCEPT_ASSERT((IsLieGroup<Pose2 >));
+}
 
 /* ************************************************************************* */
 TEST(Pose2, constructors) {
@@ -138,7 +143,6 @@ TEST(Pose2, expmap0d) {
   EXPECT(assert_equal(expected, actual, 1e-5));
 }
 
-#ifdef SLOW_BUT_CORRECT_EXPMAP
 /* ************************************************************************* */
 // test case for screw motion in the plane
 namespace screw {
@@ -149,13 +153,12 @@ namespace screw {
   Pose2 expected(expectedR, expectedT);
 }
 
-TEST(Pose3, expmap_c)
+TEST(Pose2, expmap_c)
 {
   EXPECT(assert_equal(screw::expected, expm<Pose2>(screw::xi),1e-6));
   EXPECT(assert_equal(screw::expected, Pose2::Expmap(screw::xi),1e-6));
   EXPECT(assert_equal(screw::xi, Pose2::Logmap(screw::expected),1e-6));
 }
-#endif
 
 /* ************************************************************************* */
 TEST(Pose2, expmap_c_full)
@@ -175,9 +178,9 @@ TEST(Pose2, logmap) {
   Pose2 pose0(M_PI/2.0, Point2(1, 2));
   Pose2 pose(M_PI/2.0+0.018, Point2(1.015, 2.01));
 #ifdef SLOW_BUT_CORRECT_EXPMAP
-  Vector expected = Vector3(0.00986473, -0.0150896, 0.018);
+  Vector3 expected(0.00986473, -0.0150896, 0.018);
 #else
-  Vector expected = Vector3(0.01, -0.015, 0.018);
+  Vector3 expected(0.01, -0.015, 0.018);
 #endif
   Vector actual = pose0.localCoordinates(pose);
   EXPECT(assert_equal(expected, actual, 1e-5));
@@ -193,34 +196,45 @@ TEST(Pose2, logmap_full) {
 }
 
 /* ************************************************************************* */
-Vector3 w = (Vector(3) << 0.1, 0.27, -0.3).finished();
-Vector3 w0 = (Vector(3) << 0.1, 0.27, 0.0).finished();  // alpha = 0
-
-// Left trivialization Derivative of exp(w) over w: How exp(w) changes when w changes?
-// We find y such that: exp(w) exp(y) = exp(w + dw) for dw --> 0
-// => y = log (exp(-w) * exp(w+dw))
-Vector3 testDexpL(const Vector3 w, const Vector3& dw) {
-  Vector3 y = Pose2::Logmap(Pose2::Expmap(-w) * Pose2::Expmap(w + dw));
-  return y;
+TEST( Pose2, ExpmapDerivative1) {
+  Matrix3 actualH;
+  Vector3 w(0.1, 0.27, -0.3);
+  Pose2::Expmap(w,actualH);
+  Matrix3 expectedH = numericalDerivative21<Pose2, Vector3,
+      OptionalJacobian<3, 3> >(&Pose2::Expmap, w, boost::none, 1e-2);
+  EXPECT(assert_equal(expectedH, actualH, 1e-5));
 }
 
-TEST( Pose2, ExpmapDerivative) {
-  Matrix actualDexpL = Pose2::ExpmapDerivative(w);
-  Matrix expectedDexpL = numericalDerivative11<Vector3, Vector3>(
-          boost::bind(testDexpL, w, _1), zero(3), 1e-2);
-  EXPECT(assert_equal(expectedDexpL, actualDexpL, 1e-5));
+/* ************************************************************************* */
+TEST( Pose2, ExpmapDerivative2) {
+  Matrix3 actualH;
+  Vector3 w0(0.1, 0.27, 0.0);  // alpha = 0
+  Pose2::Expmap(w0,actualH);
+  Matrix3 expectedH = numericalDerivative21<Pose2, Vector3,
+      OptionalJacobian<3, 3> >(&Pose2::Expmap, w0, boost::none, 1e-2);
+  EXPECT(assert_equal(expectedH, actualH, 1e-5));
+}
 
-  Matrix actualDexpInvL = Pose2::LogmapDerivative(w);
-  EXPECT(assert_equal(expectedDexpL.inverse(), actualDexpInvL, 1e-5));
+/* ************************************************************************* */
+TEST( Pose2, LogmapDerivative1) {
+  Matrix3 actualH;
+  Vector3 w(0.1, 0.27, -0.3);
+  Pose2 p = Pose2::Expmap(w);
+  EXPECT(assert_equal(w, Pose2::Logmap(p,actualH), 1e-5));
+  Matrix3 expectedH = numericalDerivative21<Vector3, Pose2,
+      OptionalJacobian<3, 3> >(&Pose2::Logmap, p, boost::none, 1e-2);
+  EXPECT(assert_equal(expectedH, actualH, 1e-5));
+}
 
-  // test case where alpha = 0
-  Matrix actualDexpL0 = Pose2::ExpmapDerivative(w0);
-  Matrix expectedDexpL0 = numericalDerivative11<Vector3, Vector3>(
-          boost::bind(testDexpL, w0, _1), zero(3), 1e-2);
-  EXPECT(assert_equal(expectedDexpL0, actualDexpL0, 1e-5));
-
-  Matrix actualDexpInvL0 = Pose2::LogmapDerivative(w0);
-  EXPECT(assert_equal(expectedDexpL.inverse(), actualDexpInvL, 1e-5));
+/* ************************************************************************* */
+TEST( Pose2, LogmapDerivative2) {
+  Matrix3 actualH;
+  Vector3 w0(0.1, 0.27, 0.0);  // alpha = 0
+  Pose2 p = Pose2::Expmap(w0);
+  EXPECT(assert_equal(w0, Pose2::Logmap(p,actualH), 1e-5));
+  Matrix3 expectedH = numericalDerivative21<Vector3, Pose2,
+      OptionalJacobian<3, 3> >(&Pose2::Logmap, p, boost::none, 1e-2);
+  EXPECT(assert_equal(expectedH, actualH, 1e-5));
 }
 
 /* ************************************************************************* */
@@ -513,13 +527,6 @@ TEST( Pose2, round_trip )
   EXPECT(assert_equal(odo, p1.between(p2)));
 }
 
-/* ************************************************************************* */
-TEST(Pose2, members)
-{
-  Pose2 pose;
-  EXPECT(pose.dim() == 3);
-}
-
 namespace {
   /* ************************************************************************* */
   // some shared test values
@@ -758,6 +765,47 @@ TEST(Pose2, align_4) {
 
   boost::optional<Pose2> actual = align(ps, qs, make_pair(t1,t2));
   EXPECT(assert_equal(expected, *actual));
+}
+
+//******************************************************************************
+Pose2 T1(M_PI / 4.0, Point2(sqrt(0.5), sqrt(0.5)));
+Pose2 T2(M_PI / 2.0, Point2(0.0, 2.0));
+
+//******************************************************************************
+TEST(Pose2 , Invariants) {
+  Pose2 id;
+
+  check_group_invariants(id,id);
+  check_group_invariants(id,T1);
+  check_group_invariants(T2,id);
+  check_group_invariants(T2,T1);
+
+  check_manifold_invariants(id,id);
+  check_manifold_invariants(id,T1);
+  check_manifold_invariants(T2,id);
+  check_manifold_invariants(T2,T1);
+
+}
+
+//******************************************************************************
+TEST(Pose2 , LieGroupDerivatives) {
+  Pose2 id;
+
+  CHECK_LIE_GROUP_DERIVATIVES(id,id);
+  CHECK_LIE_GROUP_DERIVATIVES(id,T2);
+  CHECK_LIE_GROUP_DERIVATIVES(T2,id);
+  CHECK_LIE_GROUP_DERIVATIVES(T2,T1);
+
+}
+
+//******************************************************************************
+TEST(Pose2 , ChartDerivatives) {
+  Pose2 id;
+
+  CHECK_CHART_DERIVATIVES(id,id);
+  CHECK_CHART_DERIVATIVES(id,T2);
+  CHECK_CHART_DERIVATIVES(T2,id);
+  CHECK_CHART_DERIVATIVES(T2,T1);
 }
 
 /* ************************************************************************* */

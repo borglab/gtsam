@@ -41,7 +41,7 @@ TEST( AntiFactor, NegativeHessian)
   Pose3 pose1(Rot3(), Point3(0, 0, 0));
   Pose3 pose2(Rot3(), Point3(2, 1, 3));
   Pose3 z(Rot3(), Point3(1, 1, 1));
-  SharedNoiseModel sigma(noiseModel::Unit::Create(Pose3::Dim()));
+  SharedNoiseModel sigma(noiseModel::Unit::Create(6));
 
   // Create a configuration corresponding to the ground truth
   Values values;
@@ -92,7 +92,7 @@ TEST( AntiFactor, EquivalentBayesNet)
   Pose3 pose1(Rot3(), Point3(0, 0, 0));
   Pose3 pose2(Rot3(), Point3(2, 1, 3));
   Pose3 z(Rot3(), Point3(1, 1, 1));
-  SharedNoiseModel sigma(noiseModel::Unit::Create(Pose3::Dim()));
+  SharedNoiseModel sigma(noiseModel::Unit::Create(6));
 
   NonlinearFactorGraph graph;
   graph.push_back(PriorFactor<Pose3>(1, pose1, sigma));

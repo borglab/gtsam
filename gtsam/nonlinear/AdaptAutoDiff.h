@@ -18,19 +18,60 @@
 
 #pragma once
 
-#include <gtsam/3rdparty/ceres/autodiff.h>
-#include <gtsam/base/Manifold.h>
+#include <gtsam/base/VectorSpace.h>
 #include <gtsam/base/OptionalJacobian.h>
+#include <gtsam/3rdparty/ceres/autodiff.h>
+
+#include <boost/static_assert.hpp>
+#include <boost/type_traits/is_base_of.hpp>
 
 namespace gtsam {
+
+namespace detail {
+
+// By default, we assume an Identity element
+template<typename T, typename structure_category>
+struct Origin { T operator()() { return traits<T>::Identity();} };
+
+// but dimple manifolds don't have one, so we just use the default constructor
+template<typename T>
+struct Origin<T, manifold_tag> { T operator()() { return T();} };
+
+} // \ detail
+
+/**
+ * Canonical is a template that creates canonical coordinates for a given type.
+ * A simple manifold type (i.e., not a Lie Group) has no concept of identity,
+ * hence in that case we use the value given by the default constructor T() as
+ * the origin of a "canonical coordinate" parameterization.
+ */
+template<typename T>
+struct Canonical {
+
+  GTSAM_CONCEPT_MANIFOLD_TYPE(T)
+
+  typedef traits<T> Traits;
+  enum { dimension = Traits::dimension };
+  typedef typename Traits::TangentVector TangentVector;
+  typedef typename Traits::structure_category Category;
+  typedef detail::Origin<T, Category> Origin;
+
+  static TangentVector Local(const T& other) {
+    return Traits::Local(Origin()(), other);
+  }
+
+  static T Retract(const TangentVector& v) {
+    return Traits::Retract(Origin()(), v);
+  }
+};
 
 /// Adapt ceres-style autodiff
 template<typename F, typename T, typename A1, typename A2>
 class AdaptAutoDiff {
 
-  static const int N = traits::dimension<T>::value;
-  static const int M1 = traits::dimension<A1>::value;
-  static const int M2 = traits::dimension<A2>::value;
+  static const int N = traits<T>::dimension;
+  static const int M1 = traits<A1>::dimension;
+  static const int M2 = traits<A2>::dimension;
 
   typedef Eigen::Matrix<double, N, M1, Eigen::RowMajor> RowMajor1;
   typedef Eigen::Matrix<double, N, M2, Eigen::RowMajor> RowMajor2;
@@ -39,14 +80,10 @@ class AdaptAutoDiff {
   typedef Canonical<A1> Canonical1;
   typedef Canonical<A2> Canonical2;
 
-  typedef typename CanonicalT::vector VectorT;
-  typedef typename Canonical1::vector Vector1;
-  typedef typename Canonical2::vector Vector2;
+  typedef typename CanonicalT::TangentVector VectorT;
+  typedef typename Canonical1::TangentVector Vector1;
+  typedef typename Canonical2::TangentVector Vector2;
 
-  // Instantiate function and charts
-  CanonicalT chartT;
-  Canonical1 chart1;
-  Canonical2 chart2;
   F f;
 
 public:
@@ -57,8 +94,8 @@ public:
     using ceres::internal::AutoDiff;
 
     // Make arguments
-    Vector1 v1 = chart1.local(a1);
-    Vector2 v2 = chart2.local(a2);
+    Vector1 v1 = Canonical1::Local(a1);
+    Vector2 v2 = Canonical2::Local(a2);
 
     bool success;
     VectorT result;
@@ -84,7 +121,7 @@ public:
     if (!success)
       throw std::runtime_error(
           "AdaptAutoDiff: function call resulted in failure");
-    return chartT.retract(result);
+    return CanonicalT::Retract(result);
   }
 
 };

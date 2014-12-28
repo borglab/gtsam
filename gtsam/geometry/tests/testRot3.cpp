@@ -18,11 +18,10 @@
 
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Rot3.h>
-
+#include <gtsam/base/testLie.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/lieProxies.h>
-#include <gtsam/base/chartTesting.h>
 
 #include <boost/math/constants/constants.hpp>
 
@@ -38,12 +37,18 @@ static Rot3 R = Rot3::rodriguez(0.1, 0.4, 0.2);
 static Point3 P(0.2, 0.7, -2.0);
 static double error = 1e-9, epsilon = 0.001;
 
+//******************************************************************************
+TEST(Rot3 , Concept) {
+  BOOST_CONCEPT_ASSERT((IsGroup<Rot3 >));
+  BOOST_CONCEPT_ASSERT((IsManifold<Rot3 >));
+  BOOST_CONCEPT_ASSERT((IsLieGroup<Rot3 >));
+}
+
 /* ************************************************************************* */
 TEST( Rot3, chart)
 {
   Matrix R = (Matrix(3, 3) << 0, 1, 0, 1, 0, 0, 0, 0, -1).finished();
   Rot3 rot3(R);
-  CHECK_CHART_CONCEPT(rot3);
 }
 
 /* ************************************************************************* */
@@ -148,10 +153,10 @@ TEST( Rot3, retract)
   Vector v = zero(3);
   CHECK(assert_equal(R, R.retract(v)));
 
-  // test Canonical coordinates
-  Canonical<Rot3> chart;
-  Vector v2 = chart.local(R);
-  CHECK(assert_equal(R, chart.retract(v2)));
+//  // test Canonical coordinates
+//  Canonical<Rot3> chart;
+//  Vector v2 = chart.local(R);
+//  CHECK(assert_equal(R, chart.retract(v2)));
 }
 
 /* ************************************************************************* */
@@ -214,6 +219,30 @@ TEST(Rot3, log)
   CHECK_OMEGA_ZERO(x*2.*PI,y*2.*PI,z*2.*PI)
 }
 
+/* ************************************************************************* */
+TEST(Rot3, retract_localCoordinates)
+{
+  Vector3 d12 = repeat(3,0.1);
+  Rot3 R2 = R.retract(d12);
+  EXPECT(assert_equal(d12, R.localCoordinates(R2)));
+}
+/* ************************************************************************* */
+TEST(Rot3, expmap_logmap)
+{
+  Vector3 d12 = repeat(3,0.1);
+  Rot3 R2 = R.expmap(d12);
+  EXPECT(assert_equal(d12, R.logmap(R2)));
+}
+
+/* ************************************************************************* */
+TEST(Rot3, retract_localCoordinates2)
+{
+  Rot3 t1 = R, t2 = R*R, origin;
+  Vector d12 = t1.localCoordinates(t2);
+  EXPECT(assert_equal(t2, t1.retract(d12)));
+  Vector d21 = t2.localCoordinates(t1);
+  EXPECT(assert_equal(t1, t2.retract(d21)));
+}
 /* ************************************************************************* */
 Vector w = Vector3(0.1, 0.27, -0.2);
 
@@ -288,12 +317,10 @@ TEST(Rot3, manifold_expmap)
   Rot3 origin;
 
   // log behaves correctly
-  Vector d12 = gR1.localCoordinates(gR2, Rot3::EXPMAP);
-  CHECK(assert_equal(gR2, gR1.retract(d12, Rot3::EXPMAP)));
-  Vector d21 = gR2.localCoordinates(gR1, Rot3::EXPMAP);
-  CHECK(assert_equal(gR1, gR2.retract(d21, Rot3::EXPMAP)));
+  Vector d12 = Rot3::Logmap(gR1.between(gR2));
+  Vector d21 = Rot3::Logmap(gR2.between(gR1));
 
-  // Check that it is expmap
+  // Check expmap
   CHECK(assert_equal(gR2, gR1*Rot3::Expmap(d12)));
   CHECK(assert_equal(gR1, gR2*Rot3::Expmap(d21)));
 
@@ -590,6 +617,12 @@ TEST(Rot3, quaternion) {
 }
 
 /* ************************************************************************* */
+Matrix Cayley(const Matrix& A) {
+  Matrix::Index n = A.cols();
+  const Matrix I = eye(n);
+  return (I-A)*inverse(I+A);
+}
+
 TEST( Rot3, Cayley ) {
   Matrix A = skewSymmetric(1,2,-3);
   Matrix Q = Cayley(A);
@@ -616,6 +649,47 @@ TEST( Rot3, slerp)
   EXPECT(assert_equal(R3, R1.slerp(0.5,R2)));
   // Make sure other can be *this
   EXPECT(assert_equal(R1, R1.slerp(0.5,R1)));
+}
+
+//******************************************************************************
+Rot3 T1(Rot3::rodriguez(Vector3(0, 0, 1), 1));
+Rot3 T2(Rot3::rodriguez(Vector3(0, 1, 0), 2));
+
+//******************************************************************************
+TEST(Rot3 , Invariants) {
+  Rot3 id;
+
+  check_group_invariants(id,id);
+  check_group_invariants(id,T1);
+  check_group_invariants(T2,id);
+  check_group_invariants(T2,T1);
+
+  check_manifold_invariants(id,id);
+  check_manifold_invariants(id,T1);
+  check_manifold_invariants(T2,id);
+  check_manifold_invariants(T2,T1);
+
+}
+
+//******************************************************************************
+TEST(Rot3 , LieGroupDerivatives) {
+  Rot3 id;
+
+  CHECK_LIE_GROUP_DERIVATIVES(id,id);
+  CHECK_LIE_GROUP_DERIVATIVES(id,T2);
+  CHECK_LIE_GROUP_DERIVATIVES(T2,id);
+  CHECK_LIE_GROUP_DERIVATIVES(T2,T1);
+
+}
+
+//******************************************************************************
+TEST(Rot3 , ChartDerivatives) {
+  Rot3 id;
+
+  CHECK_CHART_DERIVATIVES(id,id);
+  CHECK_CHART_DERIVATIVES(id,T2);
+  CHECK_CHART_DERIVATIVES(T2,id);
+  CHECK_CHART_DERIVATIVES(T2,T1);
 }
 
 /* ************************************************************************* */

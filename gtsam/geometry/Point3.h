@@ -21,12 +21,8 @@
 
 #pragma once
 
-#include <gtsam/base/DerivedValue.h>
-#include <gtsam/base/Lie.h>
-#include <gtsam/base/OptionalJacobian.h>
-
+#include <gtsam/base/VectorSpace.h>
 #include <boost/serialization/nvp.hpp>
-
 #include <cmath>
 
 namespace gtsam {
@@ -43,6 +39,7 @@ namespace gtsam {
     double x_, y_, z_;  
     
   public:
+    enum { dimension = 3 };
 
     /// @name Standard Constructors
     /// @{
@@ -58,9 +55,7 @@ namespace gtsam {
     /// @{
 
     /// Construct from 3-element vector
-    Point3(const Vector& v) {
-      if(v.size() != 3)
-        throw std::invalid_argument("Point3 constructor from Vector requires that the Vector have dimension 3");
+    Point3(const Vector3& v) {
       x_ = v(0);
       y_ = v(1);
       z_ = v(2);
@@ -81,75 +76,16 @@ namespace gtsam {
     /// @{
 
     /// identity for group operation
-    inline static Point3 identity() {
-      return Point3();
-    }
+    inline static Point3 identity() { return Point3();}
 
-    /// "Inverse" - negates the coordinates such that compose(p, inverse(p)) = Point3()
-    inline Point3 inverse() const { return Point3(-x_, -y_, -z_); }
-
-    /// syntactic sugar for inverse, i.e., -p == inverse(p)
+    /// inverse
     Point3 operator - () const { return Point3(-x_,-y_,-z_);}
 
-    /// "Compose" - just adds coordinates of two points
-    inline Point3 compose(const Point3& p2,
-        OptionalJacobian<3,3> H1=boost::none,
-        OptionalJacobian<3,3> H2=boost::none) const {
-      if (H1) *H1 << I_3x3;
-      if (H2) *H2 << I_3x3;
-      return *this + p2;
-    }
-
-    ///syntactic sugar for adding two points, i.e., p+q == compose(p,q)
+    /// add
     Point3 operator + (const Point3& q) const;
 
-    /** Between using the default implementation */
-    inline Point3 between(const Point3& p2,
-        OptionalJacobian<3,3> H1=boost::none,
-        OptionalJacobian<3,3> H2=boost::none) const {
-      if(H1) *H1 = -I_3x3;
-      if(H2) *H2 = I_3x3;
-      return p2 - *this;
-    }
-
-    /// syntactic sugar for subtracting points, i.e., q-p == between(p,q)
+    /// subtract
     Point3 operator - (const Point3& q) const;
-
-    /// @}
-    /// @name Manifold
-    /// @{
-
-    /// dimension of the variable - used to autodetect sizes
-    inline static size_t Dim() { return 3; }
-
-    /// return dimensionality of tangent space, DOF = 3
-    inline size_t dim() const { return 3; }
-
-    /// Updates a with tangent space delta
-    inline Point3 retract(const Vector& v) const { return Point3(*this + v); }
-
-    /// Returns inverse retraction
-    inline Vector3 localCoordinates(const Point3& q) const { return (q -*this).vector(); }
-
-    /// @}
-    /// @name Lie Group
-    /// @{
-
-    /** Exponential map at identity - just create a Point3 from x,y,z */
-    static inline Point3 Expmap(const Vector& v) { return Point3(v); }
-
-    /** Log map at identity - return the x,y,z of this point */
-    static inline Vector3 Logmap(const Point3& dp) { return Vector3(dp.x(), dp.y(), dp.z()); }
-
-    /// Left-trivialized derivative of the exponential map
-    static Matrix3 ExpmapDerivative(const Vector& v) {
-      return I_3x3;
-    }
-
-    /// Left-trivialized derivative inverse of the exponential map
-    static Matrix3 LogmapDerivative(const Vector& v) {
-      return I_3x3;
-    }
 
     /// @}
     /// @name Vector Space
@@ -226,6 +162,17 @@ namespace gtsam {
     /// Output stream operator
     GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os, const Point3& p);
 
+    /// @name Deprecated
+    /// @{
+    Point3 inverse() { return -(*this);}
+    Point3 compose(const Point3& q) { return (*this)+q;}
+    Point3 between(const Point3& q) { return q-(*this);}
+    Vector3 localCoordinates(const Point3& q) { return between(q).vector();}
+    Point3 retract(const Vector3& v) {return compose(Point3(v));}
+    static Vector3 Logmap(const Point3& p) {return p.vector();}
+    static Point3 Expmap(const Vector3& v) { return Point3(v);}
+    /// @}
+
   private:
 
     /// @name Advanced Interface
@@ -248,20 +195,6 @@ namespace gtsam {
   /// Syntactic sugar for multiplying coordinates by a scalar s*p
   inline Point3 operator*(double s, const Point3& p) { return p*s;}
 
-  // Define GTSAM traits
-  namespace traits {
-
   template<>
-  struct GTSAM_EXPORT is_group<Point3> : public boost::true_type{
-  };
-
-  template<>
-  struct GTSAM_EXPORT is_manifold<Point3> : public boost::true_type{
-  };
-
-  template<>
-  struct GTSAM_EXPORT dimension<Point3> : public boost::integral_constant<int, 3>{
-  };
-
-  }
+  struct traits<Point3> : public internal::VectorSpace<Point3> {};
 }

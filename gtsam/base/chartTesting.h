@@ -31,6 +31,9 @@ template<typename T>
 void testDefaultChart(TestResult& result_,
                       const std::string& name_,
                       const T& value) {
+
+  GTSAM_CONCEPT_TESTABLE_TYPE(T);
+
   typedef typename gtsam::DefaultChart<T> Chart;
   typedef typename Chart::vector Vector;
 

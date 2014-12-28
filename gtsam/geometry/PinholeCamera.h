@@ -31,15 +31,19 @@ namespace gtsam {
  */
 template<typename Calibration>
 class PinholeCamera {
+
 private:
   Pose3 pose_;
   Calibration K_;
 
-  // Get dimensions of calibration type and This at compile time
-  static const int DimK = traits::dimension<Calibration>::value, //
-      DimC = 6 + DimK;
+  GTSAM_CONCEPT_MANIFOLD_TYPE(Calibration)
+
+  // Get dimensions of calibration type at compile time
+  static const int DimK = FixedDimension<Calibration>::value;
 
 public:
+
+  enum { dimension = 6 + DimK };
 
   /// @name Standard Constructors
   /// @{
@@ -168,15 +172,15 @@ public:
 
   /// Manifold dimension
   inline size_t dim() const {
-    return DimC;
+    return dimension;
   }
 
   /// Manifold dimension
   inline static size_t Dim() {
-    return DimC;
+    return dimension;
   }
 
-  typedef Eigen::Matrix<double, DimC, 1> VectorK6;
+  typedef Eigen::Matrix<double, dimension, 1> VectorK6;
 
   /// move a cameras according to d
   PinholeCamera retract(const Vector& d) const {
@@ -189,10 +193,16 @@ public:
 
   /// return canonical coordinate
   VectorK6 localCoordinates(const PinholeCamera& T2) const {
-    VectorK6 d; // TODO: why does d.head<6>() not compile??
+    VectorK6 d;
+    // TODO: why does d.head<6>() not compile??
     d.head(6) = pose().localCoordinates(T2.pose());
     d.tail(DimK) = calibration().localCoordinates(T2.calibration());
     return d;
+  }
+
+  /// for Canonical
+  static PinholeCamera identity() {
+    return PinholeCamera(); // assumes that the default constructor is valid
   }
 
   /// @}
@@ -309,7 +319,7 @@ public:
    */
   Point2 project2(
       const Point3& pw, //
-      OptionalJacobian<2, DimC> Dcamera = boost::none,
+      OptionalJacobian<2, dimension> Dcamera = boost::none,
       OptionalJacobian<2, 3> Dpoint = boost::none) const {
 
     const Point3 pc = pose_.transform_to(pw);
@@ -359,7 +369,7 @@ public:
    */
   double range(
       const Point3& point, //
-      OptionalJacobian<1, DimC> Dcamera = boost::none,
+      OptionalJacobian<1, dimension> Dcamera = boost::none,
       OptionalJacobian<1, 3> Dpoint = boost::none) const {
     Matrix16 Dpose_;
     double result = pose_.range(point, Dcamera ? &Dpose_ : 0, Dpoint);
@@ -377,7 +387,7 @@ public:
    */
   double range(
       const Pose3& pose, //
-      OptionalJacobian<1, DimC> Dcamera = boost::none,
+      OptionalJacobian<1, dimension> Dcamera = boost::none,
       OptionalJacobian<1, 6> Dpose = boost::none) const {
     Matrix16 Dpose_;
     double result = pose_.range(pose, Dcamera ? &Dpose_ : 0, Dpose);
@@ -396,7 +406,7 @@ public:
   template<class CalibrationB>
   double range(
       const PinholeCamera<CalibrationB>& camera, //
-      OptionalJacobian<1, DimC> Dcamera = boost::none,
+      OptionalJacobian<1, dimension> Dcamera = boost::none,
 //      OptionalJacobian<1, 6 + traits::dimension<CalibrationB>::value> Dother =
        boost::optional<Matrix&> Dother =
           boost::none) const {
@@ -408,7 +418,7 @@ public:
       *Dcamera << Dcamera_, Eigen::Matrix<double, 1, DimK>::Zero();
     }
     if (Dother) {
-      Dother->resize(1, 6+traits::dimension<CalibrationB>::value);
+      Dother->resize(1, 6+CalibrationB::dimension);
       Dother->setZero();
       Dother->block(0, 0, 1, 6) = Dother_;
     }
@@ -424,7 +434,7 @@ public:
    */
   double range(
       const CalibratedCamera& camera, //
-      OptionalJacobian<1, DimC> Dcamera = boost::none,
+      OptionalJacobian<1, dimension> Dcamera = boost::none,
       OptionalJacobian<1, 6> Dother = boost::none) const {
     return range(camera.pose(), Dcamera, Dother);
   }
@@ -485,26 +495,8 @@ private:
 
 };
 
-// Define GTSAM traits
-namespace traits {
 
 template<typename Calibration>
-struct GTSAM_EXPORT is_manifold<PinholeCamera<Calibration> > : public boost::true_type {
-};
-
-template<typename Calibration>
-struct GTSAM_EXPORT dimension<PinholeCamera<Calibration> > : public boost::integral_constant<
-    int, dimension<Pose3>::value + dimension<Calibration>::value> {
-};
-
-template<typename Calibration>
-struct GTSAM_EXPORT zero<PinholeCamera<Calibration> > {
-  static PinholeCamera<Calibration> value() {
-    return PinholeCamera<Calibration>(zero<Pose3>::value(),
-        zero<Calibration>::value());
-  }
-};
-
-}
+struct traits< PinholeCamera<Calibration> > : public internal::Manifold<PinholeCamera<Calibration> > {};
 
 } // \ gtsam
