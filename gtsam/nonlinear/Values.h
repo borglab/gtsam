@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include <gtsam/base/ChartValue.h>
+#include <gtsam/base/GenericValue.h>
 #include <gtsam/base/VectorSpace.h>
 #include <gtsam/base/FastMap.h>
 #include <gtsam/inference/Key.h>
