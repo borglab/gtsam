@@ -24,14 +24,11 @@
 
 // The two new headers that allow using our Automatic Differentiation Expression framework
 #include <gtsam/slam/expressions.h>
-#include <gtsam/nonlinear/ExpressionFactor.h>
+#include <gtsam/nonlinear/ExpressionFactorGraph.h>
 
 // Header order is close to far
 #include <examples/SFMdata.h>
-#include <gtsam/slam/PriorFactor.h>
-#include <gtsam/slam/ProjectionFactor.h>
 #include <gtsam/geometry/Point2.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/DoglegOptimizer.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/inference/Symbol.h>
@@ -40,27 +37,29 @@
 
 using namespace std;
 using namespace gtsam;
+using namespace noiseModel;
 
 /* ************************************************************************* */
 int main(int argc, char* argv[]) {
 
   Cal3_S2 K(50.0, 50.0, 0.0, 50.0, 50.0);
-  noiseModel::Isotropic::shared_ptr measurementNoise = noiseModel::Isotropic::Sigma(2, 1.0); // one pixel in u and v
+  Isotropic::shared_ptr measurementNoise = Isotropic::Sigma(2, 1.0); // one pixel in u and v
 
   // Create the set of ground-truth landmarks and poses
   vector<Point3> points = createPoints();
   vector<Pose3> poses = createPoses();
 
   // Create a factor graph
-  NonlinearFactorGraph graph;
+  ExpressionFactorGraph graph;
 
   // Specify uncertainty on first pose prior
-  noiseModel::Diagonal::shared_ptr poseNoise = noiseModel::Diagonal::Sigmas((Vector(6) << Vector3::Constant(0.3), Vector3::Constant(0.1)).finished());
+  Vector6 sigmas; sigmas << Vector3(0.3,0.3,0.3), Vector3(0.1,0.1,0.1);
+  Diagonal::shared_ptr poseNoise = Diagonal::Sigmas(sigmas);
 
   // Here we don't use a PriorFactor but directly the ExpressionFactor class
-  // The object x0 is an Expression, and we create a factor wanting it to be equal to poses[0]
+  // x0 is an Expression, and we create a factor wanting it to be equal to poses[0]
   Pose3_ x0('x',0);
-  graph.push_back(ExpressionFactor<Pose3>(poseNoise, poses[0], x0));
+  graph.addExpressionFactor(x0, poses[0], poseNoise);
 
   // We create a constant Expression for the calibration here
   Cal3_S2_ cK(K);
@@ -74,25 +73,26 @@ int main(int argc, char* argv[]) {
       // Below an expression for the prediction of the measurement:
       Point3_ p('l', j);
       Point2_ prediction = uncalibrate(cK, project(transform_to(x, p)));
-      // Again, here we use a ExpressionFactor
-      graph.push_back(ExpressionFactor<Point2>(measurementNoise, measurement, prediction));
+      // Again, here we use an ExpressionFactor
+      graph.addExpressionFactor(prediction, measurement, measurementNoise);
     }
   }
 
   // Add prior on first point to constrain scale, again with ExpressionFactor
-  noiseModel::Isotropic::shared_ptr pointNoise = noiseModel::Isotropic::Sigma(3, 0.1);
-  graph.push_back(ExpressionFactor<Point3>(pointNoise, points[0], Point3_('l', 0)));
+  Isotropic::shared_ptr pointNoise = Isotropic::Sigma(3, 0.1);
+  graph.addExpressionFactor(Point3_('l', 0), points[0], pointNoise);
 
   // Create perturbed initial
-  Values initialEstimate;
+  Values initial;
+  Pose3 delta(Rot3::rodriguez(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20));
   for (size_t i = 0; i < poses.size(); ++i)
-    initialEstimate.insert(Symbol('x', i), poses[i].compose(Pose3(Rot3::rodriguez(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20))));
+    initial.insert(Symbol('x', i), poses[i].compose(delta));
   for (size_t j = 0; j < points.size(); ++j)
-    initialEstimate.insert(Symbol('l', j), points[j].compose(Point3(-0.25, 0.20, 0.15)));
-  cout << "initial error = " << graph.error(initialEstimate) << endl;
+    initial.insert(Symbol('l', j), points[j].compose(Point3(-0.25, 0.20, 0.15)));
+  cout << "initial error = " << graph.error(initial) << endl;
 
   /* Optimize the graph and print results */
-  Values result = DoglegOptimizer(graph, initialEstimate).optimize();
+  Values result = DoglegOptimizer(graph, initial).optimize();
   cout << "final error = " << graph.error(result) << endl;
 
   return 0;

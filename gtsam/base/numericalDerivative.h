@@ -297,6 +297,48 @@ inline typename internal::FixedSizeMatrix<Y,X3>::type numericalDerivative33(Y (*
 }
 
 /**
+ * Compute numerical derivative in argument 1 of 4-argument function
+ * @param h ternary function yielding m-vector
+ * @param x1 n-dimensional first argument value
+ * @param x2 second argument value
+ * @param x3 third argument value
+ * @param x4 fourth argument value
+ * @param delta increment for numerical derivative
+ * @return m*n Jacobian computed via central differencing
+ */
+template<class Y, class X1, class X2, class X3, class X4>
+typename internal::FixedSizeMatrix<Y,X1>::type numericalDerivative41(
+    boost::function<Y(const X1&, const X2&, const X3&, const X4&)> h, const X1& x1,
+    const X2& x2, const X3& x3, const X4& x4, double delta = 1e-5) {
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
+      "Template argument Y must be a manifold type.");
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
+      "Template argument X1 must be a manifold type.");
+  return numericalDerivative11<Y, X1>(boost::bind(h, _1, x2, x3, x4), x1, delta);
+}
+
+/**
+ * Compute numerical derivative in argument 2 of 4-argument function
+ * @param h ternary function yielding m-vector
+ * @param x1 n-dimensional first argument value
+ * @param x2 second argument value
+ * @param x3 third argument value
+ * @param x4 fourth argument value
+ * @param delta increment for numerical derivative
+ * @return m*n Jacobian computed via central differencing
+ */
+template<class Y, class X1, class X2, class X3, class X4>
+typename internal::FixedSizeMatrix<Y,X2>::type numericalDerivative42(
+    boost::function<Y(const X1&, const X2&, const X3&, const X4&)> h, const X1& x1,
+    const X2& x2, const X3& x3, const X4& x4, double delta = 1e-5) {
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<Y>::structure_category>::value),
+      "Template argument Y must be a manifold type.");
+  BOOST_STATIC_ASSERT_MSG( (boost::is_base_of<gtsam::manifold_tag, typename traits<X1>::structure_category>::value),
+      "Template argument X1 must be a manifold type.");
+  return numericalDerivative11<Y, X2>(boost::bind(h, x1, _1, x3, x4), x2, delta);
+}
+
+/**
  * Compute numerical Hessian matrix.  Requires a single-argument Lie->scalar
  * function.  This is implemented simply as the derivative of the gradient.
  * @param f A function taking a Lie object as input and returning a scalar

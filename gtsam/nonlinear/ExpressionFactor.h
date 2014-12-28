@@ -109,5 +109,5 @@ public:
 };
 // ExpressionFactor
 
-}
+} // \ namespace gtsam
 

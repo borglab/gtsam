@@ -32,6 +32,7 @@
 #include <boost/mpl/fold.hpp>
 namespace MPL = boost::mpl::placeholders;
 
+#include <typeinfo>       // operator typeid
 #include <map>
 
 class ExpressionFactorBinaryTest;
@@ -243,6 +244,15 @@ public:
 
   /// Destructor
   virtual ~ExpressionNode() {
+  }
+
+  /// Streaming
+  GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os,
+      const ExpressionNode& node) {
+    os << "Expression of type " << typeid(T).name();
+    if (node.traceSize_>0) os << ", trace size = " << node.traceSize_;
+    os << "\n";
+    return os;
   }
 
   /// Return keys that play in this expression as a set
@@ -621,10 +631,11 @@ struct FunctionalNode {
 template<class T, class A1>
 class UnaryExpression: public FunctionalNode<T, boost::mpl::vector<A1> >::type {
 
+  typedef typename MakeOptionalJacobian<T, A1>::type OJ1;
+
 public:
 
-  typedef boost::function<
-      T(const A1&, typename MakeOptionalJacobian<T, A1>::type)> Function;
+  typedef boost::function<T(const A1&, OJ1)> Function;
   typedef typename FunctionalNode<T, boost::mpl::vector<A1> >::type Base;
   typedef typename Base::Record Record;
 
@@ -664,13 +675,15 @@ public:
 /// Binary Expression
 
 template<class T, class A1, class A2>
-class BinaryExpression: public FunctionalNode<T, boost::mpl::vector<A1, A2> >::type {
+class BinaryExpression:
+    public FunctionalNode<T, boost::mpl::vector<A1, A2> >::type {
+
+  typedef typename MakeOptionalJacobian<T, A1>::type OJ1;
+  typedef typename MakeOptionalJacobian<T, A2>::type OJ2;
 
 public:
 
-  typedef boost::function<
-      T(const A1&, const A2&, typename MakeOptionalJacobian<T, A1>::type,
-          typename MakeOptionalJacobian<T, A2>::type)> Function;
+  typedef boost::function<T(const A1&, const A2&, OJ1, OJ2)> Function;
   typedef typename FunctionalNode<T, boost::mpl::vector<A1, A2> >::type Base;
   typedef typename Base::Record Record;
 
@@ -718,15 +731,16 @@ public:
 /// Ternary Expression
 
 template<class T, class A1, class A2, class A3>
-class TernaryExpression: public FunctionalNode<T, boost::mpl::vector<A1, A2, A3> >::type {
+class TernaryExpression:
+    public FunctionalNode<T, boost::mpl::vector<A1, A2, A3> >::type {
+
+  typedef typename MakeOptionalJacobian<T, A1>::type OJ1;
+  typedef typename MakeOptionalJacobian<T, A2>::type OJ2;
+  typedef typename MakeOptionalJacobian<T, A3>::type OJ3;
 
 public:
 
-  typedef boost::function<
-      T(const A1&, const A2&, const A3&,
-          typename MakeOptionalJacobian<T, A1>::type,
-          typename MakeOptionalJacobian<T, A2>::type,
-          typename MakeOptionalJacobian<T, A3>::type)> Function;
+  typedef boost::function<T(const A1&, const A2&, const A3&, OJ1, OJ2, OJ3)> Function;
   typedef typename FunctionalNode<T, boost::mpl::vector<A1, A2, A3> >::type Base;
   typedef typename Base::Record Record;
 

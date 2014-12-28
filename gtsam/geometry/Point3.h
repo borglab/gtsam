@@ -164,12 +164,12 @@ namespace gtsam {
 
     /// @name Deprecated
     /// @{
-    Point3 inverse() { return -(*this);}
-    Point3 compose(const Point3& q) { return (*this)+q;}
-    Point3 between(const Point3& q) { return q-(*this);}
-    Vector3 localCoordinates(const Point3& q) { return between(q).vector();}
-    Point3 retract(const Vector3& v) {return compose(Point3(v));}
-    static Vector3 Logmap(const Point3& p) {return p.vector();}
+    Point3 inverse() const { return -(*this);}
+    Point3 compose(const Point3& q) const { return (*this)+q;}
+    Point3 between(const Point3& q) const { return q-(*this);}
+    Vector3 localCoordinates(const Point3& q) const { return between(q).vector();}
+    Point3 retract(const Vector3& v) const { return compose(Point3(v));}
+    static Vector3 Logmap(const Point3& p) { return p.vector();}
     static Point3 Expmap(const Vector3& v) { return Point3(v);}
     /// @}
 

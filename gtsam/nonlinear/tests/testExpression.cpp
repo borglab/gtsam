@@ -21,7 +21,6 @@
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/base/Testable.h>
-#include <gtsam/base/LieScalar.h>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -78,9 +77,6 @@ namespace unary {
 Point2 f0(const Point3& p, OptionalJacobian<2,3> H) {
   return Point2();
 }
-LieScalar f1(const Point3& p, OptionalJacobian<1, 3> H) {
-  return LieScalar(0.0);
-}
 double f2(const Point3& p, OptionalJacobian<1, 3> H) {
   return 0.0;
 }
@@ -90,11 +86,6 @@ set<Key> expected = list_of(1);
 TEST(Expression, Unary0) {
   using namespace unary;
   Expression<Point2> e(f0, p);
-  EXPECT(expected == e.keys());
-}
-TEST(Expression, Unary1) {
-  using namespace unary;
-  Expression<double> e(f1, p);
   EXPECT(expected == e.keys());
 }
 TEST(Expression, Unary2) {

@@ -52,6 +52,11 @@ private:
 
 public:
 
+  /// Print
+  void print(const std::string& s) const {
+    std::cout << s << *root_ << std::endl;
+  }
+
   // Construct a constant expression
   Expression(const T& value) :
       root_(new ConstantExpression<T>(value)) {
@@ -102,6 +107,20 @@ public:
   Expression(typename BinaryExpression<T, A1, A2>::Function function,
       const Expression<A1>& expression1, const Expression<A2>& expression2) :
       root_(new BinaryExpression<T, A1, A2>(function, expression1, expression2)) {
+  }
+
+  /// Construct a binary method expression
+  template<typename A1, typename A2, typename A3>
+  Expression(const Expression<A1>& expression1,
+      T (A1::*method)(const A2&, const A3&,
+          typename TernaryExpression<T, A1, A2, A3>::OJ1,
+          typename TernaryExpression<T, A1, A2, A3>::OJ2,
+          typename TernaryExpression<T, A1, A2, A3>::OJ3) const,
+      const Expression<A2>& expression2, const Expression<A3>& expression3) :
+      root_(
+          new TernaryExpression<T, A1, A2, A3>(
+              boost::bind(method, _1, _2, _3, _4, _5, _6), expression1,
+              expression2, expression3)) {
   }
 
   /// Construct a ternary function expression
