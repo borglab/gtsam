@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include <gtsam_unstable/nonlinear/ExpressionFactor.h>
+#include <gtsam/nonlinear/ExpressionFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 namespace gtsam {
