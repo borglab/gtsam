@@ -31,6 +31,7 @@ class Event {
   Point3 location_; ///< Location at time event was generated
 
 public:
+  enum { dimension = 4 };
 
   /// Speed of sound
   static const double Speed;
@@ -72,15 +73,6 @@ public:
         && location_.equals(other.location_, tol);
   }
 
-  /// Manifold stuff:
-
-  size_t dim() const {
-    return 4;
-  }
-  static size_t Dim() {
-    return 4;
-  }
-
   /// Updates a with tangent space delta
   inline Event retract(const Vector4& v) const {
     return Event(time_ + v[0], location_.retract(v.tail(3)));
@@ -111,16 +103,7 @@ const double Event::Speed = 330;
 const Matrix14 Event::JacobianZ = (Matrix14() << 0,0,0,1).finished();
 
 // Define GTSAM traits
-namespace traits {
-
 template<>
-struct GTSAM_EXPORT dimension<Event> : public boost::integral_constant<int, 4> {
-};
-
-template<>
-struct GTSAM_EXPORT is_manifold<Event> : public boost::true_type {
-};
-
-}
+struct GTSAM_EXPORT traits<Event> : internal::Manifold<Event> {};
 
 } //\ namespace gtsam
