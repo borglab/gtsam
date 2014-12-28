@@ -144,9 +144,6 @@ struct LieGroupTraits : Testable<Class> {
   /// @{
   typedef multiplicative_group_tag group_flavor;
   static Class Identity() { return Class::identity();}
-  static Class Compose(const Class& m1, const Class& m2) { return m1 * m2;}
-  static Class Between(const Class& m1, const Class& m2) { return m1.inverse() * m2;}
-  static Class Inverse(const Class& m) { return m.inverse();}
   /// @}
 
   /// @name Manifold
@@ -161,21 +158,13 @@ struct LieGroupTraits : Testable<Class> {
 
   static int GetDimension(const Class&) {return dimension;}
 
-  static TangentVector Local(const Class& origin, const Class& other) {
-    return origin.localCoordinates(other);
-  }
-
-  static Class Retract(const Class& origin, const TangentVector& v) {
-    return origin.retract(v);
-  }
-
   static TangentVector Local(const Class& origin, const Class& other,
-      ChartJacobian Horigin, ChartJacobian Hother = boost::none) {
+      ChartJacobian Horigin = boost::none, ChartJacobian Hother = boost::none) {
     return origin.localCoordinates(other, Horigin, Hother);
   }
 
   static Class Retract(const Class& origin, const TangentVector& v,
-      ChartJacobian Horigin, ChartJacobian Hv = boost::none) {
+      ChartJacobian Horigin = boost::none, ChartJacobian Hv = boost::none) {
     return origin.retract(v, Horigin, Hv);
   }
 
@@ -192,17 +181,18 @@ struct LieGroupTraits : Testable<Class> {
     return Class::Expmap(v, Hv);
   }
 
-  static Class Compose(const Class& m1, const Class& m2, ChartJacobian H1,
-      ChartJacobian H2 = boost::none) {
+  static Class Compose(const Class& m1, const Class& m2, //
+      ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) {
     return m1.compose(m2, H1, H2);
   }
 
-  static Class Between(const Class& m1, const Class& m2, ChartJacobian H1,
-      ChartJacobian H2 = boost::none) {
+  static Class Between(const Class& m1, const Class& m2, //
+      ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) {
     return m1.between(m2, H1, H2);
   }
 
-  static Class Inverse(const Class& m, ChartJacobian H) {
+  static Class Inverse(const Class& m, //
+      ChartJacobian H = boost::none) {
     return m.inverse(H);
   }
 

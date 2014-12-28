@@ -18,8 +18,8 @@
  */
 
 // The two new headers that allow using our Automatic Differentiation Expression framework
-#include <gtsam_unstable/slam/expressions.h>
-#include <gtsam_unstable/nonlinear/ExpressionFactor.h>
+#include <gtsam/slam/expressions.h>
+#include <gtsam/nonlinear/ExpressionFactor.h>
 
 // Header order is close to far
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -48,6 +48,8 @@ int main(int argc, char** argv) {
   noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Sigmas(Vector3(0.2, 0.2, 0.1));
 
   // 2b. Add odometry factors
+  BinaryExpression<Pose2, Pose2, Pose2>::Function f = traits<Pose2>::Between;
+  Expression<Pose2>(traits<Pose2>::Between, x1, x2);
   graph.push_back(ExpressionFactor<Pose2>(model, Pose2(2, 0, 0     ), between(x1,x2)));
   graph.push_back(ExpressionFactor<Pose2>(model, Pose2(2, 0, M_PI_2), between(x2,x3)));
   graph.push_back(ExpressionFactor<Pose2>(model, Pose2(2, 0, M_PI_2), between(x3,x4)));
