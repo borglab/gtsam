@@ -5,27 +5,29 @@
  */
 
 #pragma once
-#include "gtsam/slam/JacobianSchurFactor.h"
+#include <gtsam/slam/RegularJacobianFactor.h>
 
 namespace gtsam {
 /**
  * JacobianFactor for Schur complement that uses Q noise model
  */
 template<size_t D>
-class JacobianFactorSVD: public JacobianSchurFactor<D> {
+class JacobianFactorSVD: public RegularJacobianFactor<D> {
 
-public:
+private:
 
   typedef Eigen::Matrix<double, 2, D> Matrix2D;
   typedef std::pair<Key, Matrix2D> KeyMatrix2D;
   typedef std::pair<Key, Matrix> KeyMatrix;
+
+public:
 
   /// Default constructor
   JacobianFactorSVD() {}
 
   /// Empty constructor with keys
   JacobianFactorSVD(const FastVector<Key>& keys,
-      const SharedDiagonal& model =  SharedDiagonal()) : JacobianSchurFactor<D>() {
+      const SharedDiagonal& model =  SharedDiagonal()) : RegularJacobianFactor<D>() {
     Matrix zeroMatrix = Matrix::Zero(0,D);
     Vector zeroVector = Vector::Zero(0);
     std::vector<KeyMatrix> QF;
@@ -37,7 +39,7 @@ public:
 
   /// Constructor
   JacobianFactorSVD(const std::vector<KeyMatrix2D>& Fblocks, const Matrix& Enull, const Vector& b,
-      const SharedDiagonal& model =  SharedDiagonal()) : JacobianSchurFactor<D>() {
+      const SharedDiagonal& model =  SharedDiagonal()) : RegularJacobianFactor<D>() {
     size_t numKeys = Enull.rows() / 2;
     size_t j = 0, m2 = 2*numKeys-3;
     // PLAIN NULL SPACE TRICK
