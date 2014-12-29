@@ -170,6 +170,15 @@ public:
       return root_->value(values);
   }
 
+  /**
+   *  @return a "deep" copy of this Expression
+   *  "deep" is in quotes because the ExpressionNode hierarchy is *not* cloned.
+   *  The intent is for derived classes to be copied using only a Base pointer.
+   */
+  virtual boost::shared_ptr<Expression> clone() const {
+    return boost::make_shared<Expression>(*this);
+  }
+
 private:
 
   /// Vaguely unsafe keys and dimensions in same order
