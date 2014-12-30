@@ -246,8 +246,7 @@ Matrix6 Pose3::ExpmapDerivative(const Vector6& xi) {
 /* ************************************************************************* */
 Matrix6 Pose3::LogmapDerivative(const Pose3& pose) {
   Vector6 xi = Logmap(pose);
-  Vector3 w(sub(xi, 0, 3));
-  Matrix3 Jw = Rot3::LogmapDerivative(w);
+  Matrix3 Jw = Rot3::LogmapDerivative(pose.rotation());
   Matrix3 Q = computeQforExpmapDerivative(xi);
   Matrix3 Q2 = -Jw*Q*Jw;
   Matrix6 J = (Matrix(6,6) << Jw, Z_3x3, Q2, Jw).finished();

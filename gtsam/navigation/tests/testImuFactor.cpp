@@ -418,7 +418,7 @@ TEST( ImuFactor, PartialDerivativeLogmap )
   Matrix expectedDelFdeltheta = numericalDerivative11<Vector,Vector3>(boost::bind(
       &evaluateLogRotation, thetahat, _1), Vector3(deltatheta));
 
-  Matrix3 actualDelFdeltheta = Rot3::LogmapDerivative(thetahat);
+  Matrix3 actualDelFdeltheta = Rot3::LogmapDerivative(Rot3::Expmap(thetahat));
 
   // Compare Jacobians
   EXPECT(assert_equal(expectedDelFdeltheta, actualDelFdeltheta));

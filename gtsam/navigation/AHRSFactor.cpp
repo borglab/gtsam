@@ -186,7 +186,7 @@ Vector AHRSFactor::evaluateError(const Rot3& Ri, const Rot3& Rj,
 
   // Terms common to derivatives
   const Matrix3 D_cDeltaRij_cOmega = Rot3::ExpmapDerivative(correctedOmega);
-  const Matrix3 D_fR_fRrot = Rot3::LogmapDerivative(fR);
+  const Matrix3 D_fR_fRrot = Rot3::LogmapDerivative(fRrot);
 
   if (H1) {
     // dfR/dRi

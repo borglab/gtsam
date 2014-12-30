@@ -260,7 +260,7 @@ TEST( Rot3, ExpmapDerivative) {
       Vector3::Zero(), 1e-2);
   EXPECT(assert_equal(expectedDexpL, actualDexpL,1e-7));
 
-  Matrix actualDexpInvL = Rot3::LogmapDerivative(w);
+  Matrix actualDexpInvL = Rot3::LogmapDerivative(Rot3::Expmap(w));
   EXPECT(assert_equal(expectedDexpL.inverse(), actualDexpInvL,1e-7));
 }
 
@@ -294,7 +294,7 @@ TEST( Rot3, LogmapDerivative )
   Rot3 R = Rot3::Expmap(thetahat); // some rotation
   Matrix Jexpected = numericalDerivative11<Vector,Rot3>(boost::bind(
       &Rot3::Logmap, _1, boost::none), R);
-  Matrix3 Jactual = Rot3::LogmapDerivative(thetahat);
+  Matrix3 Jactual = Rot3::LogmapDerivative(R);
   EXPECT(assert_equal(Jexpected, Jactual));
 }
 

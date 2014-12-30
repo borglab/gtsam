@@ -177,7 +177,8 @@ Matrix3 Rot3::ExpmapDerivative(const Vector3& x)    {
 }
 
 /* ************************************************************************* */
-Matrix3 Rot3::LogmapDerivative(const Vector3& x)    {
+Matrix3 Rot3::LogmapDerivative(const Rot3& R)    {
+  Vector3 x = Logmap(R);
   if(zero(x)) return I_3x3;
   double theta = x.norm();
 #ifdef DUY_VERSION

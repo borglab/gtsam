@@ -288,7 +288,7 @@ namespace gtsam {
     static Matrix3 ExpmapDerivative(const Vector3& x);
 
     /// Derivative of Logmap
-    static Matrix3 LogmapDerivative(const Vector3& x);
+    static Matrix3 LogmapDerivative(const Rot3& R);
 
     /** Calculate Adjoint map */
     Matrix3 AdjointMap() const { return matrix(); }

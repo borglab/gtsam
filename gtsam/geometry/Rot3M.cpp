@@ -201,7 +201,7 @@ Vector3 Rot3::Logmap(const Rot3& R, OptionalJacobian<3,3> H) {
         rot(1,0)-rot(0,1));
   }
 
-  if(H) *H = Rot3::LogmapDerivative(thetaR);
+  if(H) *H = Rot3::LogmapDerivative(R);
   return thetaR;
 }
 
