@@ -279,6 +279,17 @@ TEST( Rot3, ExpmapDerivative2)
 }
 
 /* ************************************************************************* */
+TEST( Rot3, CayleyDerivative)
+{
+  Matrix Jexpected = numericalDerivative11<Rot3, Vector3>(
+      boost::bind(&Rot3::CayleyChart::Retract, _1, boost::none), thetahat);
+
+  Matrix Jactual;
+  Rot3::CayleyChart::Retract(thetahat, Jactual);
+  CHECK(assert_equal(Jexpected, Jactual));
+}
+
+/* ************************************************************************* */
 TEST( Rot3, jacobianExpmap )
 {
   Matrix Jexpected = numericalDerivative11<Rot3, Vector3>(boost::bind(
