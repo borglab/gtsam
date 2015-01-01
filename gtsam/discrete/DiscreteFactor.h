@@ -20,6 +20,7 @@
 
 #include <gtsam/discrete/Assignment.h>
 #include <gtsam/inference/Factor.h>
+#include <gtsam/base/Testable.h>
 
 namespace gtsam {
 
@@ -100,5 +101,9 @@ public:
   /// @}
 };
 // DiscreteFactor
+
+// traits
+template<> struct traits<DiscreteFactor> : public Testable<DiscreteFactor> {};
+template<> struct traits<DiscreteFactor::Values> : public Testable<DiscreteFactor::Values> {};
 
 }// namespace gtsam

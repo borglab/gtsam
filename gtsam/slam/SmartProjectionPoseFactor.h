@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "SmartProjectionFactor.h"
+#include <gtsam/slam/SmartProjectionFactor.h>
 
 namespace gtsam {
 /**
@@ -37,8 +37,8 @@ namespace gtsam {
  * The calibration is known here. The factor only constraints poses (variable dimension is 6)
  * @addtogroup SLAM
  */
-template<class POSE, class LANDMARK, class CALIBRATION>
-class SmartProjectionPoseFactor: public SmartProjectionFactor<POSE, LANDMARK, CALIBRATION, 6> {
+template<class POSE, class CALIBRATION>
+class SmartProjectionPoseFactor: public SmartProjectionFactor<POSE, CALIBRATION, 6> {
 protected:
 
   LinearizationMode linearizeTo_;  ///< How to linearize the factor (HESSIAN, JACOBIAN_SVD, JACOBIAN_Q)
@@ -48,10 +48,10 @@ protected:
 public:
 
   /// shorthand for base class type
-  typedef SmartProjectionFactor<POSE, LANDMARK, CALIBRATION, 6> Base;
+  typedef SmartProjectionFactor<POSE, CALIBRATION, 6> Base;
 
   /// shorthand for this class
-  typedef SmartProjectionPoseFactor<POSE, LANDMARK, CALIBRATION> This;
+  typedef SmartProjectionPoseFactor<POSE, CALIBRATION> This;
 
   /// shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<This> shared_ptr;
@@ -214,5 +214,9 @@ private:
   }
 
 }; // end of class declaration
+
+/// traits
+template<class T1, class T2>
+struct traits<SmartProjectionPoseFactor<T1, T2> > : public Testable<SmartProjectionPoseFactor<T1, T2> > {};
 
 } // \ namespace gtsam

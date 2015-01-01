@@ -64,7 +64,7 @@ TEST( Iterative, conjugateGradientDescent )
   Vector b;
   Vector x0 = gtsam::zero(6);
   boost::tie(A, b) = fg.jacobian();
-  Vector expectedX = (Vector(6) << -0.1, 0.1, -0.1, -0.1, 0.1, -0.2);
+  Vector expectedX = (Vector(6) << -0.1, 0.1, -0.1, -0.1, 0.1, -0.2).finished();
 
   // Do conjugate gradient descent, System version
   System Ab(A, b);
@@ -105,7 +105,7 @@ TEST( Iterative, conjugateGradientDescent_hard_constraint )
 
   VectorValues expected;
   expected.insert(X(1), zero(3));
-  expected.insert(X(2), (Vector(3) << -0.5,0.,0.));
+  expected.insert(X(2), Vector3(-0.5,0.,0.));
   CHECK(assert_equal(expected, actual));
 }
 
@@ -132,7 +132,7 @@ TEST( Iterative, conjugateGradientDescent_soft_constraint )
 
   VectorValues expected;
   expected.insert(X(1), zero(3));
-  expected.insert(X(2), (Vector(3) << -0.5,0.,0.));
+  expected.insert(X(2), Vector3(-0.5,0.,0.));
   CHECK(assert_equal(expected, actual));
 }
 

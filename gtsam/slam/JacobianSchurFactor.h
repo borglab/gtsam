@@ -18,12 +18,12 @@ namespace gtsam {
 /**
  * JacobianFactor for Schur complement that uses Q noise model
  */
-template<size_t D>
+template<size_t D, size_t ZDim>
 class JacobianSchurFactor: public JacobianFactor {
 
 public:
 
-  typedef Eigen::Matrix<double, 2, D> Matrix2D;
+  typedef Eigen::Matrix<double, ZDim, D> Matrix2D;
   typedef std::pair<Key, Matrix2D> KeyMatrix2D;
 
   // Use eigen magic to access raw memory

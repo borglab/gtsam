@@ -31,18 +31,42 @@ TEST(BetweenFactor, Rot3) {
   Vector expected = Rot3::Logmap(measured.inverse() * R1.between(R2));
   EXPECT(assert_equal(expected,actual/*, 1e-100*/)); // Uncomment to make unit test fail
 
-  Matrix numericalH1 = numericalDerivative21(
+  Matrix numericalH1 = numericalDerivative21<Vector3,Rot3,Rot3>(
       boost::function<Vector(const Rot3&, const Rot3&)>(boost::bind(
           &BetweenFactor<Rot3>::evaluateError, factor, _1, _2, boost::none,
           boost::none)), R1, R2, 1e-5);
   EXPECT(assert_equal(numericalH1,actualH1, 1E-5));
 
-  Matrix numericalH2 = numericalDerivative22(
+  Matrix numericalH2 = numericalDerivative22<Vector3,Rot3,Rot3>(
       boost::function<Vector(const Rot3&, const Rot3&)>(boost::bind(
           &BetweenFactor<Rot3>::evaluateError, factor, _1, _2, boost::none,
           boost::none)), R1, R2, 1e-5);
   EXPECT(assert_equal(numericalH2,actualH2, 1E-5));
 }
+
+/* ************************************************************************* */
+/*
+// Constructor scalar
+TEST(BetweenFactor, ConstructorScalar) {
+  SharedNoiseModel model;
+  double measured_value = 0.0;
+  BetweenFactor<double> factor(1, 2, measured_value, model);
+}
+
+// Constructor vector3
+TEST(BetweenFactor, ConstructorVector3) {
+  SharedNoiseModel model = noiseModel::Isotropic::Sigma(3, 1.0);
+  Vector3 measured_value(1, 2, 3);
+  BetweenFactor<Vector3> factor(1, 2, measured_value, model);
+}
+
+// Constructor dynamic sized vector
+TEST(BetweenFactor, ConstructorDynamicSizeVector) {
+  SharedNoiseModel model = noiseModel::Isotropic::Sigma(5, 1.0);
+  Vector measured_value(5); measured_value << 1, 2, 3, 4, 5;
+  BetweenFactor<Vector> factor(1, 2, measured_value, model);
+}
+*/
 
 /* ************************************************************************* */
 int main() {

@@ -29,7 +29,7 @@ namespace gtsam {
 template<class VALUE>
 VALUE ISAM2::calculateEstimate(Key key) const {
   const Vector& delta = getDelta()[key];
-  return theta_.at<VALUE>(key).retract(delta);
+  return traits<VALUE>::Retract(theta_.at<VALUE>(key), delta);
 }
 
 /* ************************************************************************* */
@@ -302,5 +302,4 @@ int calculate_nnz(const boost::shared_ptr<CLIQUE>& clique) {
 }
 
 }
-
 

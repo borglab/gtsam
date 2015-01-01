@@ -106,22 +106,22 @@ TEST(Unit3, unrotate) {
 
 //*******************************************************************************
 TEST(Unit3, error) {
-  Unit3 p(1, 0, 0), q = p.retract((Vector(2) << 0.5, 0)), //
-  r = p.retract((Vector(2) << 0.8, 0));
-  EXPECT(assert_equal((Vector(2) << 0, 0), p.error(p), 1e-8));
-  EXPECT(assert_equal((Vector(2) << 0.479426, 0), p.error(q), 1e-5));
-  EXPECT(assert_equal((Vector(2) << 0.717356, 0), p.error(r), 1e-5));
+  Unit3 p(1, 0, 0), q = p.retract(Vector2(0.5, 0)), //
+  r = p.retract(Vector2(0.8, 0));
+  EXPECT(assert_equal((Vector)(Vector2(0, 0)), p.error(p), 1e-8));
+  EXPECT(assert_equal((Vector)(Vector2(0.479426, 0)), p.error(q), 1e-5));
+  EXPECT(assert_equal((Vector)(Vector2(0.717356, 0)), p.error(r), 1e-5));
 
   Matrix actual, expected;
   // Use numerical derivatives to calculate the expected Jacobian
   {
-    expected = numericalDerivative11<Unit3>(
+    expected = numericalDerivative11<Vector2,Unit3>(
         boost::bind(&Unit3::error, &p, _1, boost::none), q);
     p.error(q, actual);
     EXPECT(assert_equal(expected.transpose(), actual, 1e-9));
   }
   {
-    expected = numericalDerivative11<Unit3>(
+    expected = numericalDerivative11<Vector2,Unit3>(
         boost::bind(&Unit3::error, &p, _1, boost::none), r);
     p.error(r, actual);
     EXPECT(assert_equal(expected.transpose(), actual, 1e-9));
@@ -130,8 +130,8 @@ TEST(Unit3, error) {
 
 //*******************************************************************************
 TEST(Unit3, distance) {
-  Unit3 p(1, 0, 0), q = p.retract((Vector(2) << 0.5, 0)), //
-  r = p.retract((Vector(2) << 0.8, 0));
+  Unit3 p(1, 0, 0), q = p.retract(Vector2(0.5, 0)), //
+  r = p.retract(Vector2(0.8, 0));
   EXPECT_DOUBLES_EQUAL(0, p.distance(p), 1e-8);
   EXPECT_DOUBLES_EQUAL(0.47942553860420301, p.distance(q), 1e-8);
   EXPECT_DOUBLES_EQUAL(0.71735609089952279, p.distance(r), 1e-8);
@@ -169,7 +169,7 @@ TEST(Unit3, localCoordinates1) {
 //*******************************************************************************
 TEST(Unit3, localCoordinates2) {
   Unit3 p, q(-1, 0, 0);
-  Vector expected = (Vector(2) << M_PI, 0);
+  Vector expected = (Vector(2) << M_PI, 0).finished();
   Vector actual = p.localCoordinates(q);
   CHECK(assert_equal(expected, actual, 1e-8));
 }
@@ -228,9 +228,9 @@ inline static Vector randomVector(const Vector& minLimits,
 TEST(Unit3, localCoordinates_retract) {
 
   size_t numIterations = 10000;
-  Vector minSphereLimit = (Vector(3) << -1.0, -1.0, -1.0), maxSphereLimit =
-      (Vector(3) << 1.0, 1.0, 1.0);
-  Vector minXiLimit = (Vector(2) << -1.0, -1.0), maxXiLimit = (Vector(2) << 1.0, 1.0);
+  Vector minSphereLimit = Vector3(-1.0, -1.0, -1.0), maxSphereLimit =
+      Vector3(1.0, 1.0, 1.0);
+  Vector minXiLimit = Vector2(-1.0, -1.0), maxXiLimit = Vector2(1.0, 1.0);
   for (size_t i = 0; i < numIterations; i++) {
 
     // Sleep for the random number generator (TODO?: Better create all of them first).
@@ -258,9 +258,9 @@ TEST(Unit3, localCoordinates_retract) {
 TEST(Unit3, localCoordinates_retract_expmap) {
 
   size_t numIterations = 10000;
-  Vector minSphereLimit = (Vector(3) << -1.0, -1.0, -1.0), maxSphereLimit =
-      (Vector(3) << 1.0, 1.0, 1.0);
-  Vector minXiLimit = (Vector(2) << -M_PI, -M_PI), maxXiLimit = (Vector(2) << M_PI, M_PI);
+  Vector minSphereLimit = Vector3(-1.0, -1.0, -1.0), maxSphereLimit =
+      Vector3(1.0, 1.0, 1.0);
+  Vector minXiLimit = (Vector(2) << -M_PI, -M_PI).finished(), maxXiLimit = (Vector(2) << M_PI, M_PI).finished();
   for (size_t i = 0; i < numIterations; i++) {
 
     // Sleep for the random number generator (TODO?: Better create all of them first).

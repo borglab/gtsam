@@ -122,8 +122,8 @@ struct GTSAM_EXPORT ISAM2Params {
    * entries would be added with:
    * \code
      FastMap<char,Vector> thresholds;
-     thresholds['x'] = (Vector(6) << 0.1, 0.1, 0.1, 0.5, 0.5, 0.5); // 0.1 rad rotation threshold, 0.5 m translation threshold
-     thresholds['l'] = (Vector(3) << 1.0, 1.0, 1.0);                // 1.0 m landmark position threshold
+     thresholds['x'] = (Vector(6) << 0.1, 0.1, 0.1, 0.5, 0.5, 0.5).finished(); // 0.1 rad rotation threshold, 0.5 m translation threshold
+     thresholds['l'] = Vector3(1.0, 1.0, 1.0);                // 1.0 m landmark position threshold
      params.relinearizeThreshold = thresholds;
      \endcode
    */
@@ -632,6 +632,9 @@ protected:
   void updateDelta(bool forceFullSolve = false) const;
 
 }; // ISAM2
+
+/// traits
+template<> struct traits<ISAM2> : public Testable<ISAM2> {};
 
 /// Optimize the BayesTree, starting from the root.
 /// @param replaced Needs to contain

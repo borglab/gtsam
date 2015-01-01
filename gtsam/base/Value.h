@@ -120,7 +120,14 @@ namespace gtsam {
     virtual Vector localCoordinates_(const Value& value) const = 0;
 
     /** Assignment operator */
-    virtual Value& operator=(const Value& rhs) = 0;
+    virtual Value& operator=(const Value& rhs) {
+      //needs a empty definition so recursion in implicit derived assignment operators work
+     return *this;
+    }
+
+    /** Cast to known ValueType */
+    template<typename ValueType>
+    const ValueType& cast() const;
 
     /** Virutal destructor */
     virtual ~Value() {}
@@ -158,7 +165,8 @@ namespace gtsam {
      * */
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version) {}
+    void serialize(ARCHIVE & ar, const unsigned int version) {
+    }
 
   };
 

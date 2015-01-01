@@ -34,25 +34,27 @@ Cal3Bundler::Cal3Bundler(double f, double k1, double k2, double u0, double v0) :
 }
 
 /* ************************************************************************* */
-Matrix Cal3Bundler::K() const {
+Matrix3 Cal3Bundler::K() const {
   Matrix3 K;
   K << f_, 0, u0_, 0, f_, v0_, 0, 0, 1;
   return K;
 }
 
 /* ************************************************************************* */
-Vector Cal3Bundler::k() const {
-  return (Vector(4) << k1_, k2_, 0, 0);
+Vector4 Cal3Bundler::k() const {
+  Vector4 rvalue_;
+  rvalue_ << k1_, k2_, 0, 0;
+  return rvalue_;
 }
 
 /* ************************************************************************* */
-Vector Cal3Bundler::vector() const {
-  return (Vector(3) << f_, k1_, k2_);
+Vector3 Cal3Bundler::vector() const {
+  return Vector3(f_, k1_, k2_);
 }
 
 /* ************************************************************************* */
 void Cal3Bundler::print(const std::string& s) const {
-  gtsam::print((Vector)(Vector(5) << f_, k1_, k2_, u0_, v0_), s + ".K");
+  gtsam::print((Vector)(Vector(5) << f_, k1_, k2_, u0_, v0_).finished(), s + ".K");
 }
 
 /* ************************************************************************* */
@@ -66,7 +68,7 @@ bool Cal3Bundler::equals(const Cal3Bundler& K, double tol) const {
 
 /* ************************************************************************* */
 Point2 Cal3Bundler::uncalibrate(const Point2& p, //
-    boost::optional<Matrix&> Dcal, boost::optional<Matrix&> Dp) const {
+    OptionalJacobian<2, 3> Dcal, OptionalJacobian<2, 2> Dp) const {
   //  r = x^2 + y^2;
   //  g = (1 + k(1)*r + k(2)*r^2);
   //  pi(:,i) = g * pn(:,i)
@@ -78,14 +80,12 @@ Point2 Cal3Bundler::uncalibrate(const Point2& p, //
   // Derivatives make use of intermediate variables above
   if (Dcal) {
     double rx = r * x, ry = r * y;
-    Dcal->resize(2, 3);
     *Dcal << u, f_ * rx, f_ * r * rx, v, f_ * ry, f_ * r * ry;
   }
 
   if (Dp) {
     const double a = 2. * (k1_ + 2. * k2_ * r);
     const double axx = a * x * x, axy = a * x * y, ayy = a * y * y;
-    Dp->resize(2,2);
     *Dp << g + axx, axy, axy, g + ayy;
     *Dp *= f_;
   }
@@ -122,24 +122,25 @@ Point2 Cal3Bundler::calibrate(const Point2& pi, const double tol) const {
 }
 
 /* ************************************************************************* */
-Matrix Cal3Bundler::D2d_intrinsic(const Point2& p) const {
-  Matrix Dp;
+Matrix2 Cal3Bundler::D2d_intrinsic(const Point2& p) const {
+  Matrix2 Dp;
   uncalibrate(p, boost::none, Dp);
   return Dp;
 }
 
 /* ************************************************************************* */
-Matrix Cal3Bundler::D2d_calibration(const Point2& p) const {
-  Matrix Dcal;
+Matrix23 Cal3Bundler::D2d_calibration(const Point2& p) const {
+  Matrix23 Dcal;
   uncalibrate(p, Dcal, boost::none);
   return Dcal;
 }
 
 /* ************************************************************************* */
-Matrix Cal3Bundler::D2d_intrinsic_calibration(const Point2& p) const {
-  Matrix Dcal, Dp;
+Matrix25 Cal3Bundler::D2d_intrinsic_calibration(const Point2& p) const {
+  Matrix23 Dcal;
+  Matrix2 Dp;
   uncalibrate(p, Dcal, Dp);
-  Matrix H(2, 5);
+  Matrix25 H;
   H << Dp, Dcal;
   return H;
 }
@@ -150,7 +151,7 @@ Cal3Bundler Cal3Bundler::retract(const Vector& d) const {
 }
 
 /* ************************************************************************* */
-Vector Cal3Bundler::localCoordinates(const Cal3Bundler& T2) const {
+Vector3 Cal3Bundler::localCoordinates(const Cal3Bundler& T2) const {
   return T2.vector() - vector();
 }
 

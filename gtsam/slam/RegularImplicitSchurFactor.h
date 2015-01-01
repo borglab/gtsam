@@ -29,7 +29,6 @@ public:
 protected:
 
   typedef Eigen::Matrix<double, 2, D> Matrix2D; ///< type of an F block
-  typedef Eigen::Matrix<double, 2, 3> Matrix23;
   typedef Eigen::Matrix<double, D, D> MatrixDD; ///< camera hessian
   typedef std::pair<Key, Matrix2D> KeyMatrix2D; ///< named F block
 
@@ -203,7 +202,7 @@ public:
 
       // F'*(I - E*P*E')*F, TODO: this should work, but it does not :-(
       //      static const Eigen::Matrix<double, 2, 2> I2 = eye(2);
-      //      Eigen::Matrix<double, 2, 2> Q = //
+      //      Matrix2 Q = //
       //          I2 - E_.block<2, 3>(2 * pos, 0) * PointCovariance_ * E_.block<2, 3>(2 * pos, 0).transpose();
       //      blocks[j] = Fj.transpose() * Q * Fj;
     }
@@ -453,6 +452,12 @@ public:
       DMap(d + D * j) += -Fblocks_[k].second.transpose() * e2[k];
     }
   }
+
+  /// Gradient wrt a key at any values
+  Vector gradient(Key key, const VectorValues& x) const {
+    throw std::runtime_error("gradient for RegularImplicitSchurFactor is not implemented yet");
+  }
+
 
 };
 // RegularImplicitSchurFactor

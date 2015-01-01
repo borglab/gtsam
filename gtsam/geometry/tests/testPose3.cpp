@@ -16,9 +16,8 @@
 
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Pose2.h>
+#include <gtsam/base/testLie.h>
 #include <gtsam/base/lieProxies.h>
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/numericalDerivative.h>
 
 #include <boost/assign/std/vector.hpp> // for operator +=
 using namespace boost::assign;
@@ -57,25 +56,24 @@ TEST( Pose3, constructors)
 }
 
 /* ************************************************************************* */
+#ifndef GTSAM_POSE3_EXPMAP
 TEST( Pose3, retract_first_order)
 {
   Pose3 id;
   Vector v = zero(6);
   v(0) = 0.3;
-  EXPECT(assert_equal(Pose3(R, Point3()), id.retract(v, Pose3::FIRST_ORDER),1e-2));
+  EXPECT(assert_equal(Pose3(R, Point3()), id.retract(v),1e-2));
   v(3)=0.2;v(4)=0.7;v(5)=-2;
-  EXPECT(assert_equal(Pose3(R, P),id.retract(v, Pose3::FIRST_ORDER),1e-2));
+  EXPECT(assert_equal(Pose3(R, P),id.retract(v),1e-2));
 }
-
+#endif
 /* ************************************************************************* */
 TEST( Pose3, retract_expmap)
 {
-  Pose3 id;
-  Vector v = zero(6);
-  v(0) = 0.3;
-  EXPECT(assert_equal(Pose3(R, Point3()), id.retract(v, Pose3::EXPMAP),1e-2));
-  v(3)=0.2;v(4)=0.394742;v(5)=-2.08998;
-  EXPECT(assert_equal(Pose3(R, P),id.retract(v, Pose3::EXPMAP),1e-2));
+  Vector v = zero(6); v(0) = 0.3;
+  Pose3 pose = Pose3::Expmap(v);
+  EXPECT(assert_equal(Pose3(R, Point3()), pose, 1e-2));
+  EXPECT(assert_equal(v,Pose3::Logmap(pose),1e-2));
 }
 
 /* ************************************************************************* */
@@ -104,7 +102,7 @@ TEST( Pose3, expmap_a_full2)
 TEST(Pose3, expmap_b)
 {
   Pose3 p1(Rot3(), Point3(100, 0, 0));
-  Pose3 p2 = p1.retract((Vector(6) << 0.0, 0.0, 0.1, 0.0, 0.0, 0.0));
+  Pose3 p2 = p1.retract((Vector(6) << 0.0, 0.0, 0.1, 0.0, 0.0, 0.0).finished());
   Pose3 expected(Rot3::rodriguez(0.0, 0.0, 0.1), Point3(100.0, 0.0, 0.0));
   EXPECT(assert_equal(expected, p2,1e-2));
 }
@@ -113,7 +111,7 @@ TEST(Pose3, expmap_b)
 // test case for screw motion in the plane
 namespace screw {
   double a=0.3, c=cos(a), s=sin(a), w=0.3;
-  Vector xi = (Vector(6) << 0.0, 0.0, w, w, 0.0, 1.0);
+  Vector xi = (Vector(6) << 0.0, 0.0, w, w, 0.0, 1.0).finished();
   Rot3 expectedR(c, -s, 0, s, c, 0, 0, 0, 1);
   Point3 expectedT(0.29552, 0.0446635, 1);
   Pose3 expected(expectedR, expectedT);
@@ -151,11 +149,11 @@ Pose3 Agrawal06iros(const Vector& xi) {
   Vector v = xi.tail(3);
   double t = norm_2(w);
   if (t < 1e-5)
-    return Pose3(Rot3(), Point3::Expmap(v));
+    return Pose3(Rot3(), Point3(v));
   else {
     Matrix W = skewSymmetric(w/t);
     Matrix A = eye(3) + ((1 - cos(t)) / t) * W + ((t - sin(t)) / t) * (W * W);
-    return Pose3(Rot3::Expmap (w), Point3::Expmap(A * v));
+    return Pose3(Rot3::Expmap (w), Point3(A * v));
   }
 }
 
@@ -163,13 +161,13 @@ Pose3 Agrawal06iros(const Vector& xi) {
 TEST(Pose3, expmaps_galore_full)
 {
   Vector xi; Pose3 actual;
-  xi = (Vector(6) << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6);
+  xi = (Vector(6) << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6).finished();
   actual = Pose3::Expmap(xi);
   EXPECT(assert_equal(expm<Pose3>(xi), actual,1e-6));
   EXPECT(assert_equal(Agrawal06iros(xi), actual,1e-6));
   EXPECT(assert_equal(xi, Pose3::Logmap(actual),1e-6));
 
-  xi = (Vector(6) << 0.1, -0.2, 0.3, -0.4, 0.5, -0.6);
+  xi = (Vector(6) << 0.1, -0.2, 0.3, -0.4, 0.5, -0.6).finished();
   for (double theta=1.0;0.3*theta<=M_PI;theta*=2) {
     Vector txi = xi*theta;
     actual = Pose3::Expmap(txi);
@@ -181,7 +179,7 @@ TEST(Pose3, expmaps_galore_full)
   }
 
   // Works with large v as well, but expm needs 10 iterations!
-  xi = (Vector(6) << 0.2, 0.3, -0.8, 100.0, 120.0, -60.0);
+  xi = (Vector(6) << 0.2, 0.3, -0.8, 100.0, 120.0, -60.0).finished();
   actual = Pose3::Expmap(xi);
   EXPECT(assert_equal(expm<Pose3>(xi,10), actual,1e-5));
   EXPECT(assert_equal(Agrawal06iros(xi), actual,1e-6));
@@ -194,7 +192,7 @@ TEST(Pose3, Adjoint_compose_full)
   // To debug derivatives of compose, assert that
   // T1*T2*exp(Adjoint(inv(T2),x) = T1*exp(x)*T2
   const Pose3& T1 = T;
-  Vector x = (Vector(6) << 0.1, 0.1, 0.1, 0.4, 0.2, 0.8);
+  Vector x = (Vector(6) << 0.1, 0.1, 0.1, 0.4, 0.2, 0.8).finished();
   Pose3 expected = T1 * Pose3::Expmap(x) * T2;
   Vector y = T2.inverse().Adjoint(x);
   Pose3 actual = T1 * T2 * Pose3::Expmap(y);
@@ -463,43 +461,51 @@ TEST( Pose3, transformPose_to)
 }
 
 /* ************************************************************************* */
-TEST(Pose3, localCoordinates_first_order)
+TEST(Pose3, Retract_LocalCoordinates)
+{
+  Vector6 d;
+  d << 1,2,3,4,5,6; d/=10;
+  R = Rot3::Retract(d.head<3>());
+  Pose3 t = Pose3::Retract(d);
+  EXPECT(assert_equal(d, Pose3::LocalCoordinates(t)));
+}
+/* ************************************************************************* */
+TEST(Pose3, retract_localCoordinates)
+{
+  Vector6 d12;
+  d12 << 1,2,3,4,5,6; d12/=10;
+  Pose3 t1 = T, t2 = t1.retract(d12);
+  EXPECT(assert_equal(d12, t1.localCoordinates(t2)));
+}
+/* ************************************************************************* */
+TEST(Pose3, expmap_logmap)
 {
   Vector d12 = repeat(6,0.1);
-  Pose3 t1 = T, t2 = t1.retract(d12, Pose3::FIRST_ORDER);
-  EXPECT(assert_equal(d12, t1.localCoordinates(t2, Pose3::FIRST_ORDER)));
+  Pose3 t1 = T, t2 = t1.expmap(d12);
+  EXPECT(assert_equal(d12, t1.logmap(t2)));
 }
 
 /* ************************************************************************* */
-TEST(Pose3, localCoordinates_expmap)
-{
-  Vector d12 = repeat(6,0.1);
-  Pose3 t1 = T, t2 = t1.retract(d12, Pose3::EXPMAP);
-  EXPECT(assert_equal(d12, t1.localCoordinates(t2, Pose3::EXPMAP)));
-}
-
-/* ************************************************************************* */
-TEST(Pose3, manifold_first_order)
+TEST(Pose3, retract_localCoordinates2)
 {
   Pose3 t1 = T;
   Pose3 t2 = T3;
   Pose3 origin;
-  Vector d12 = t1.localCoordinates(t2, Pose3::FIRST_ORDER);
-  EXPECT(assert_equal(t2, t1.retract(d12, Pose3::FIRST_ORDER)));
-  Vector d21 = t2.localCoordinates(t1, Pose3::FIRST_ORDER);
-  EXPECT(assert_equal(t1, t2.retract(d21, Pose3::FIRST_ORDER)));
+  Vector d12 = t1.localCoordinates(t2);
+  EXPECT(assert_equal(t2, t1.retract(d12)));
+  Vector d21 = t2.localCoordinates(t1);
+  EXPECT(assert_equal(t1, t2.retract(d21)));
 }
-
 /* ************************************************************************* */
 TEST(Pose3, manifold_expmap)
 {
   Pose3 t1 = T;
   Pose3 t2 = T3;
   Pose3 origin;
-  Vector d12 = t1.localCoordinates(t2, Pose3::EXPMAP);
-  EXPECT(assert_equal(t2, t1.retract(d12, Pose3::EXPMAP)));
-  Vector d21 = t2.localCoordinates(t1, Pose3::EXPMAP);
-  EXPECT(assert_equal(t1, t2.retract(d21, Pose3::EXPMAP)));
+  Vector d12 = t1.logmap(t2);
+  EXPECT(assert_equal(t2, t1.expmap(d12)));
+  Vector d21 = t2.logmap(t1);
+  EXPECT(assert_equal(t1, t2.expmap(d21)));
 
   // Check that log(t1,t2)=-log(t2,t1)
   EXPECT(assert_equal(d12,-d21));
@@ -510,7 +516,7 @@ TEST(Pose3, subgroups)
 {
   // Frank - Below only works for correct "Agrawal06iros style expmap
   // lines in canonical coordinates correspond to Abelian subgroups in SE(3)
-   Vector d = (Vector(6) << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6);
+   Vector d = (Vector(6) << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6).finished();
   // exp(-d)=inverse(exp(d))
    EXPECT(assert_equal(Pose3::Expmap(-d),Pose3::Expmap(d).inverse()));
   // exp(5d)=exp(2*d+3*d)=exp(2*d)exp(3*d)=exp(3*d)exp(2*d)
@@ -547,8 +553,8 @@ Pose3
     xl4(Rot3::ypr(0.0, 0.0, 1.0), Point3(1, 4,-4));
 
 /* ************************************************************************* */
-LieVector range_proxy(const Pose3& pose, const Point3& point) {
-  return LieVector(pose.range(point));
+double range_proxy(const Pose3& pose, const Point3& point) {
+  return pose.range(point);
 }
 TEST( Pose3, range )
 {
@@ -582,8 +588,8 @@ TEST( Pose3, range )
 }
 
 /* ************************************************************************* */
-LieVector range_pose_proxy(const Pose3& pose, const Pose3& point) {
-  return LieVector(pose.range(point));
+double range_pose_proxy(const Pose3& pose, const Pose3& point) {
+  return pose.range(point);
 }
 TEST( Pose3, range_pose )
 {
@@ -672,32 +678,29 @@ TEST(Pose3, align_2) {
 }
 
 /* ************************************************************************* */
-/// exp(xi) exp(y) = exp(xi + x)
-/// Hence, y = log (exp(-xi)*exp(xi+x))
-
-Vector xi = (Vector(6) << 0.1, 0.2, 0.3, 1.0, 2.0, 3.0);
-
-Vector testDerivExpmapInv(const LieVector& dxi) {
-  Vector y = Pose3::Logmap(Pose3::Expmap(-xi)*Pose3::Expmap(xi+dxi));
-  return y;
-}
-
-TEST( Pose3, dExpInv_TLN) {
-  Matrix res = Pose3::dExpInv_exp(xi);
-
-  Matrix numericalDerivExpmapInv = numericalDerivative11(
-      boost::function<Vector(const LieVector&)>(
-          boost::bind(testDerivExpmapInv,  _1)
-          ),
-      LieVector(Vector::Zero(6)), 1e-5
-      );
-
-  EXPECT(assert_equal(numericalDerivExpmapInv,res,3e-1));
+TEST( Pose3, ExpmapDerivative1) {
+  Matrix6 actualH;
+  Vector6 w; w << 0.1, 0.2, 0.3, 4.0, 5.0, 6.0;
+  Pose3::Expmap(w,actualH);
+  Matrix expectedH = numericalDerivative21<Pose3, Vector6,
+      OptionalJacobian<6, 6> >(&Pose3::Expmap, w, boost::none);
+  EXPECT(assert_equal(expectedH, actualH));
 }
 
 /* ************************************************************************* */
-Vector testDerivAdjoint(const LieVector& xi, const LieVector& v) {
-  return Pose3::adjointMap(xi)*v;
+TEST( Pose3, LogmapDerivative1) {
+  Matrix6 actualH;
+  Vector6 w; w << 0.1, 0.2, 0.3, 4.0, 5.0, 6.0;
+  Pose3 p = Pose3::Expmap(w);
+  EXPECT(assert_equal(w, Pose3::Logmap(p,actualH), 1e-5));
+  Matrix expectedH = numericalDerivative21<Vector6, Pose3,
+      OptionalJacobian<6, 6> >(&Pose3::Logmap, p, boost::none);
+  EXPECT(assert_equal(expectedH, actualH));
+}
+
+/* ************************************************************************* */
+Vector6 testDerivAdjoint(const Vector6& xi, const Vector6& v) {
+  return Pose3::adjointMap(xi) * v;
 }
 
 TEST( Pose3, adjoint) {
@@ -706,36 +709,28 @@ TEST( Pose3, adjoint) {
   Matrix actualH;
   Vector actual = Pose3::adjoint(screw::xi, screw::xi, actualH);
 
-  Matrix numericalH = numericalDerivative21(
-      boost::function<Vector(const LieVector&, const LieVector&)>(
-          boost::bind(testDerivAdjoint,  _1, _2)
-          ),
-      LieVector(screw::xi), LieVector(screw::xi), 1e-5
-      );
+  Matrix numericalH = numericalDerivative21<Vector6, Vector6, Vector6>(
+      testDerivAdjoint, screw::xi, screw::xi, 1e-5);
 
   EXPECT(assert_equal(expected,actual,1e-5));
   EXPECT(assert_equal(numericalH,actualH,1e-5));
 }
 
 /* ************************************************************************* */
-Vector testDerivAdjointTranspose(const LieVector& xi, const LieVector& v) {
-  return Pose3::adjointMap(xi).transpose()*v;
+Vector6 testDerivAdjointTranspose(const Vector6& xi, const Vector6& v) {
+  return Pose3::adjointMap(xi).transpose() * v;
 }
 
 TEST( Pose3, adjointTranspose) {
-  Vector xi = (Vector(6) << 0.01, 0.02, 0.03, 1.0, 2.0, 3.0);
-  Vector v = (Vector(6) << 0.04, 0.05, 0.06, 4.0, 5.0, 6.0);
+  Vector xi = (Vector(6) << 0.01, 0.02, 0.03, 1.0, 2.0, 3.0).finished();
+  Vector v = (Vector(6) << 0.04, 0.05, 0.06, 4.0, 5.0, 6.0).finished();
   Vector expected = testDerivAdjointTranspose(xi, v);
 
   Matrix actualH;
   Vector actual = Pose3::adjointTranspose(xi, v, actualH);
 
-  Matrix numericalH = numericalDerivative21(
-      boost::function<Vector(const LieVector&, const LieVector&)>(
-          boost::bind(testDerivAdjointTranspose,  _1, _2)
-          ),
-      LieVector(xi), LieVector(v), 1e-5
-      );
+  Matrix numericalH = numericalDerivative21<Vector6, Vector6, Vector6>(
+      testDerivAdjointTranspose, xi, v, 1e-5);
 
   EXPECT(assert_equal(expected,actual,1e-15));
   EXPECT(assert_equal(numericalH,actualH,1e-5));
@@ -748,6 +743,43 @@ TEST( Pose3, stream)
   std::ostringstream os;
   os << T;
   EXPECT(os.str() == "\n|1, 0, 0|\n|0, 1, 0|\n|0, 0, 1|\n\n[0, 0, 0]';\n");
+}
+
+//******************************************************************************
+TEST(Pose3 , Invariants) {
+  Pose3 id;
+
+  check_group_invariants(id,id);
+  check_group_invariants(id,T3);
+  check_group_invariants(T2,id);
+  check_group_invariants(T2,T3);
+
+  check_manifold_invariants(id,id);
+  check_manifold_invariants(id,T3);
+  check_manifold_invariants(T2,id);
+  check_manifold_invariants(T2,T3);
+
+}
+
+//******************************************************************************
+TEST(Pose3 , LieGroupDerivatives) {
+  Pose3 id;
+
+  CHECK_LIE_GROUP_DERIVATIVES(id,id);
+  CHECK_LIE_GROUP_DERIVATIVES(id,T2);
+  CHECK_LIE_GROUP_DERIVATIVES(T2,id);
+  CHECK_LIE_GROUP_DERIVATIVES(T2,T3);
+
+}
+
+//******************************************************************************
+TEST(Pose3 , ChartDerivatives) {
+  Pose3 id;
+
+  CHECK_CHART_DERIVATIVES(id,id);
+  CHECK_CHART_DERIVATIVES(id,T2);
+  CHECK_CHART_DERIVATIVES(T2,id);
+  CHECK_CHART_DERIVATIVES(T2,T3);
 }
 
 /* ************************************************************************* */

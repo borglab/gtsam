@@ -1,5 +1,11 @@
 % Test runner script - runs each test 
 
+% display 'Starting: testPriorFactor'
+% testPriorFactor
+
+display 'Starting: testValues'
+testValues
+
 display 'Starting: testJacobianFactor'
 testJacobianFactor
 
@@ -30,11 +36,11 @@ testStereoVOExample
 display 'Starting: testVisualISAMExample'
 testVisualISAMExample
 
-display 'Starting: testSerialization'
-testSerialization
-
 display 'Starting: testUtilities'
 testUtilities
+
+display 'Starting: testSerialization'
+testSerialization
 
 % end of tests
 display 'Tests complete!'

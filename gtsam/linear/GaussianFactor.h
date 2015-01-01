@@ -20,8 +20,9 @@
 
 #pragma once
 
-#include <gtsam/base/Matrix.h>
 #include <gtsam/inference/Factor.h>
+#include <gtsam/base/Matrix.h>
+#include <gtsam/base/Testable.h>
 
 namespace gtsam {
 
@@ -127,6 +128,9 @@ namespace gtsam {
     /// Raw memory access version of gradientAtZero
     virtual void gradientAtZero(double* d) const = 0;
 
+    /// Gradient wrt a key at any values
+    virtual Vector gradient(Key key, const VectorValues& x) const = 0;
+
   private:
     /** Serialization function */
     friend class boost::serialization::access;
@@ -137,4 +141,9 @@ namespace gtsam {
 
   }; // GaussianFactor
   
-} // namespace gtsam
+/// traits
+template<>
+struct traits<GaussianFactor> : public Testable<GaussianFactor> {
+};
+
+} // \ namespace gtsam

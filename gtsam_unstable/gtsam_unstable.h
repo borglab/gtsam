@@ -4,14 +4,15 @@
 
 // specify the classes from gtsam we are using
 virtual class gtsam::Value;
-virtual class gtsam::LieScalar;
-virtual class gtsam::LieVector;
-virtual class gtsam::Point2;
-virtual class gtsam::Rot2;
-virtual class gtsam::Pose2;
-virtual class gtsam::Point3;
-virtual class gtsam::Rot3;
-virtual class gtsam::Pose3;
+class gtsam::Vector6;
+class gtsam::LieScalar;
+class gtsam::LieVector;
+class gtsam::Point2;
+class gtsam::Rot2;
+class gtsam::Pose2;
+class gtsam::Point3;
+class gtsam::Rot3;
+class gtsam::Pose3;
 virtual class gtsam::noiseModel::Base;
 virtual class gtsam::noiseModel::Gaussian;
 virtual class gtsam::imuBias::ConstantBias;
@@ -23,8 +24,8 @@ virtual class gtsam::NoiseModelFactor4;
 virtual class gtsam::GaussianFactor;
 virtual class gtsam::HessianFactor;
 virtual class gtsam::JacobianFactor;
-virtual class gtsam::Cal3_S2;
-virtual class gtsam::Cal3DS2;
+class gtsam::Cal3_S2;
+class gtsam::Cal3DS2;
 class gtsam::GaussianFactorGraph;
 class gtsam::NonlinearFactorGraph;
 class gtsam::Ordering;
@@ -48,7 +49,7 @@ class Dummy {
 };
 
 #include <gtsam_unstable/dynamics/PoseRTV.h>
-virtual class PoseRTV : gtsam::Value {
+class PoseRTV {
   PoseRTV();
   PoseRTV(Vector rtv);
   PoseRTV(const gtsam::Point3& pt, const gtsam::Rot3& rot, const gtsam::Point3& vel);
@@ -99,7 +100,7 @@ virtual class PoseRTV : gtsam::Value {
 };
 
 #include <gtsam_unstable/geometry/Pose3Upright.h>
-virtual class Pose3Upright : gtsam::Value {
+class Pose3Upright {
   Pose3Upright();
   Pose3Upright(const gtsam::Pose3Upright& x);
   Pose3Upright(const gtsam::Rot2& bearing, const gtsam::Point3& t);
@@ -137,7 +138,7 @@ virtual class Pose3Upright : gtsam::Value {
 }; // \class Pose3Upright
 
 #include <gtsam_unstable/geometry/BearingS2.h>
-virtual class BearingS2 : gtsam::Value {
+class BearingS2 {
   BearingS2();
   BearingS2(double azimuth, double elevation);
   BearingS2(const gtsam::Rot2& azimuth, const gtsam::Rot2& elevation);
@@ -515,20 +516,19 @@ virtual class PendulumFactorPk1 : gtsam::NonlinearFactor {
   Vector evaluateError(const gtsam::LieScalar& pk1, const gtsam::LieScalar& qk, const gtsam::LieScalar& qk1) const;
 };
 
-#include <gtsam/base/LieVector.h>
 #include <gtsam_unstable/dynamics/SimpleHelicopter.h>
 
 virtual class Reconstruction : gtsam::NonlinearFactor {
   Reconstruction(size_t gKey1, size_t gKey, size_t xiKey, double h);
 
-  Vector evaluateError(const gtsam::Pose3& gK1, const gtsam::Pose3& gK, const gtsam::LieVector& xiK) const;
+  Vector evaluateError(const gtsam::Pose3& gK1, const gtsam::Pose3& gK, const gtsam::Vector6& xiK) const;
 };
 
 virtual class DiscreteEulerPoincareHelicopter : gtsam::NonlinearFactor {
   DiscreteEulerPoincareHelicopter(size_t xiKey, size_t xiKey_1, size_t gKey,
       double h, Matrix Inertia, Vector Fu, double m);
 
-  Vector evaluateError(const gtsam::LieVector& xiK, const gtsam::LieVector& xiK_1, const gtsam::Pose3& gK) const;
+  Vector evaluateError(const gtsam::Vector6& xiK, const gtsam::Vector6& xiK_1, const gtsam::Pose3& gK) const;
 };
 
 //*************************************************************************

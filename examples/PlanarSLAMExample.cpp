@@ -80,18 +80,18 @@ int main(int argc, char** argv) {
 
   // Add a prior on pose x1 at the origin. A prior factor consists of a mean and a noise model (covariance matrix)
   Pose2 prior(0.0, 0.0, 0.0); // prior mean is at origin
-  noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Sigmas((Vector(3) << 0.3, 0.3, 0.1)); // 30cm std on x,y, 0.1 rad on theta
+  noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Sigmas(Vector3(0.3, 0.3, 0.1)); // 30cm std on x,y, 0.1 rad on theta
   graph.add(PriorFactor<Pose2>(x1, prior, priorNoise)); // add directly to graph
 
   // Add two odometry factors
   Pose2 odometry(2.0, 0.0, 0.0); // create a measurement for both factors (the same in this case)
-  noiseModel::Diagonal::shared_ptr odometryNoise = noiseModel::Diagonal::Sigmas((Vector(3) << 0.2, 0.2, 0.1)); // 20cm std on x,y, 0.1 rad on theta
+  noiseModel::Diagonal::shared_ptr odometryNoise = noiseModel::Diagonal::Sigmas(Vector3(0.2, 0.2, 0.1)); // 20cm std on x,y, 0.1 rad on theta
   graph.add(BetweenFactor<Pose2>(x1, x2, odometry, odometryNoise));
   graph.add(BetweenFactor<Pose2>(x2, x3, odometry, odometryNoise));
 
   // Add Range-Bearing measurements to two different landmarks
   // create a noise model for the landmark measurements
-  noiseModel::Diagonal::shared_ptr measurementNoise = noiseModel::Diagonal::Sigmas((Vector(2) << 0.1, 0.2)); // 0.1 rad std on bearing, 20cm on range
+  noiseModel::Diagonal::shared_ptr measurementNoise = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.2)); // 0.1 rad std on bearing, 20cm on range
   // create the measurement values - indices are (pose id, landmark id)
   Rot2 bearing11 = Rot2::fromDegrees(45),
        bearing21 = Rot2::fromDegrees(90),

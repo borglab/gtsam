@@ -37,11 +37,13 @@ namespace gtsam {
  *                      k3 (rr + 2 Pn.y^2) + 2*k4 pn.x pn.y  ]
  * pi = K*pn
  */
-class GTSAM_EXPORT Cal3DS2 : public Cal3DS2_Base, public DerivedValue<Cal3DS2> {
+class GTSAM_EXPORT Cal3DS2 : public Cal3DS2_Base {
 
   typedef Cal3DS2_Base Base;
 
 public:
+
+  enum { dimension = 9 };
 
   /// @name Standard Constructors
   /// @{
@@ -87,6 +89,7 @@ public:
   /// Return dimensions of calibration manifold object
   static size_t Dim() { return 9; }  //TODO: make a final dimension variable
 
+
 private:
 
   /// @}
@@ -99,14 +102,15 @@ private:
   void serialize(Archive & ar, const unsigned int version)
   {
     ar & boost::serialization::make_nvp("Cal3DS2",
-        boost::serialization::base_object<Value>(*this));
-    ar & boost::serialization::make_nvp("Cal3DS2",
         boost::serialization::base_object<Cal3DS2_Base>(*this));
   }
 
   /// @}
 
 };
+
+template<>
+struct traits<Cal3DS2> : public internal::Manifold<Cal3DS2> {};
 
 }
 

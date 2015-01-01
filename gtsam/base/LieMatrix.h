@@ -19,26 +19,36 @@
 
 #include <cstdarg>
 
-#include <gtsam/base/DerivedValue.h>
-#include <gtsam/base/Lie.h>
-#include <gtsam/base/Matrix.h>
+#ifdef _MSC_VER
+#pragma message("LieMatrix.h is deprecated. Please use Eigen::Matrix instead.")
+#else
+#warning "LieMatrix.h is deprecated. Please use Eigen::Matrix instead."
+#endif
+
+#include <gtsam/base/VectorSpace.h>
 #include <boost/serialization/nvp.hpp>
 
 namespace gtsam {
 
 /**
- * LieVector is a wrapper around vector to allow it to be a Lie type
+ * @deprecated: LieMatrix, LieVector and LieMatrix are obsolete in GTSAM 4.0 as
+ * we can directly add double, Vector, and Matrix into values now, because of
+ * gtsam::traits.
  */
-struct LieMatrix : public Matrix, public DerivedValue<LieMatrix> {
+struct LieMatrix : public Matrix {
 
   /// @name Constructors
   /// @{
+  enum { dimension = Eigen::Dynamic };
 
-  /** default constructor - should be unnecessary */
+  /** default constructor - only for serialize */
   LieMatrix() {}
 
   /** initialize from a normal matrix */
   LieMatrix(const Matrix& v) : Matrix(v) {}
+
+  template <class M>
+  LieMatrix(const M& v) : Matrix(v) {}
 
 // Currently TMP constructor causes ICE on MSVS 2013
 #if (_MSC_VER < 1800)
@@ -62,102 +72,57 @@ struct LieMatrix : public Matrix, public DerivedValue<LieMatrix> {
   inline bool equals(const LieMatrix& expected, double tol=1e-5) const {
     return gtsam::equal_with_abs_tol(matrix(), expected.matrix(), tol);
   }
-  
+
   /// @}
   /// @name Standard Interface
   /// @{
 
-  /** get the underlying vector */
+  /** get the underlying matrix */
   inline Matrix matrix() const {
     return static_cast<Matrix>(*this);
   }
-  
+
   /// @}
-  /// @name Manifold interface
+
+  /// @name Group
+  /// @{
+  LieMatrix compose(const LieMatrix& q) { return (*this)+q;}
+  LieMatrix between(const LieMatrix& q) { return q-(*this);}
+  LieMatrix inverse() { return -(*this);}
+  /// @}
+
+  /// @name Manifold
+  /// @{
+  Vector localCoordinates(const LieMatrix& q) { return between(q).vector();}
+  LieMatrix retract(const Vector& v) {return compose(LieMatrix(v));}
+  /// @}
+
+  /// @name Lie Group
+  /// @{
+  static Vector Logmap(const LieMatrix& p) {return p.vector();}
+  static LieMatrix Expmap(const Vector& v) { return LieMatrix(v);}
+  /// @}
+
+  /// @name VectorSpace requirements
   /// @{
 
   /** Returns dimensionality of the tangent space */
-  inline size_t dim() const { return this->size(); }
+  inline size_t dim() const { return size(); }
 
-  /** Update the LieMatrix with a tangent space update.  The elements of the
-   * tangent space vector correspond to the matrix entries arranged in
-   * *row-major* order. */
-  inline LieMatrix retract(const Vector& v) const {
-    if(v.size() != this->size())
-      throw std::invalid_argument("LieMatrix::retract called with Vector of incorrect size");
-
-    return LieMatrix(*this +
-      Eigen::Map<const Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> >(
-      &v(0), this->rows(), this->cols()));
-  }
-
-  /** @return the local coordinates of another object.  The elements of the
-   * tangent space vector correspond to the matrix entries arranged in
-   * *row-major* order. */
-  inline Vector localCoordinates(const LieMatrix& t2) const {
-    Vector result(this->size());
-    Eigen::Map<Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic,Eigen::RowMajor> >(
-      &result(0), this->rows(), this->cols()) = t2 - *this;
+  /** Convert to vector, is done row-wise - TODO why? */
+  inline Vector vector() const {
+    Vector result(size());
+    typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic,
+        Eigen::RowMajor> RowMajor;
+    Eigen::Map<RowMajor>(&result(0), rows(), cols()) = *this;
     return result;
   }
-
-  /// @}
-  /// @name Group interface
-  /// @{
 
   /** identity - NOTE: no known size at compile time - so zero length */
   inline static LieMatrix identity() {
     throw std::runtime_error("LieMatrix::identity(): Don't use this function");
     return LieMatrix();
   }
-
-  // Note: Manually specifying the 'gtsam' namespace for the optional Matrix arguments
-  // This is a work-around for linux g++ 4.6.1 that incorrectly selects the Eigen::Matrix class
-  // instead of the gtsam::Matrix class. This is related to deriving this class from an Eigen Vector
-  // as the other geometry objects (Point3, Rot3, etc.) have this problem
-  /** compose with another object */
-  inline LieMatrix compose(const LieMatrix& p,
-      boost::optional<gtsam::Matrix&> H1=boost::none,
-      boost::optional<gtsam::Matrix&> H2=boost::none) const {
-    if(H1) *H1 = eye(dim());
-    if(H2) *H2 = eye(p.dim());
-
-    return LieMatrix(*this + p);
-  }
-
-  /** between operation */
-  inline LieMatrix between(const LieMatrix& l2,
-      boost::optional<gtsam::Matrix&> H1=boost::none,
-      boost::optional<gtsam::Matrix&> H2=boost::none) const {
-    if(H1) *H1 = -eye(dim());
-    if(H2) *H2 = eye(l2.dim());
-    return LieMatrix(l2 - *this);
-  }
-
-  /** invert the object and yield a new one */
-  inline LieMatrix inverse(boost::optional<gtsam::Matrix&> H=boost::none) const {
-    if(H) *H = -eye(dim());
-
-    return LieMatrix(-(*this));
-  }
-
-  /// @}
-  /// @name Lie group interface
-  /// @{
-
-  /** Expmap around identity */
-  static inline LieMatrix Expmap(const Vector& v) {
-    throw std::runtime_error("LieMatrix::Expmap(): Don't use this function");
-    return LieMatrix(v); }
-
-  /** Logmap around identity */
-  static inline Vector Logmap(const LieMatrix& p) {
-    Vector result(p.size());
-    Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> >(
-        result.data(), p.rows(), p.cols()) = p;
-    return result;
-  }
-  
   /// @}
 
 private:
@@ -166,12 +131,27 @@ private:
   friend class boost::serialization::access;
   template<class Archive>
   void serialize(Archive & ar, const unsigned int version) {
-    ar & boost::serialization::make_nvp("LieMatrix",
-       boost::serialization::base_object<Value>(*this));
     ar & boost::serialization::make_nvp("Matrix",
        boost::serialization::base_object<Matrix>(*this));
 
   }
 
 };
+
+
+template<>
+struct traits<LieMatrix> : public internal::VectorSpace<LieMatrix> {
+
+  // Override Retract, as the default version does not know how to initialize
+  static LieMatrix Retract(const LieMatrix& origin, const TangentVector& v,
+      ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) {
+    if (H1) *H1 = Eye(origin);
+    if (H2) *H2 = Eye(origin);
+    typedef const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic,
+        Eigen::RowMajor> RowMajor;
+    return origin + Eigen::Map<RowMajor>(&v(0), origin.rows(), origin.cols());
+  }
+
+};
+
 } // \namespace gtsam

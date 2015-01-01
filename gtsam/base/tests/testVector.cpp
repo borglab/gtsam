@@ -15,10 +15,12 @@
  * @author Frank Dellaert
  **/
 
-#include <iostream>
+#include <gtsam/base/Vector.h>
+#include <gtsam/base/VectorSpace.h>
+#include <gtsam/base/testLie.h>
 #include <CppUnitLite/TestHarness.h>
 #include <boost/tuple/tuple.hpp>
-#include <gtsam/base/Vector.h>
+#include <iostream>
 
 using namespace std;
 using namespace gtsam;
@@ -40,24 +42,24 @@ namespace {
 }
 
 /* ************************************************************************* */
-TEST( TestVector, special_comma_initializer)
+TEST(Vector, special_comma_initializer)
 {
   Vector expected(3);
   expected(0) = 1;
   expected(1) = 2;
   expected(2) = 3;
 
-  Vector actual1 = (Vector(3) << 1, 2, 3);
-  Vector actual2((Vector(3) << 1, 2, 3));
+  Vector actual1 = Vector3(1, 2, 3);
+  Vector actual2(Vector3(1, 2, 3));
 
-  Vector subvec1 = (Vector(2) << 2, 3);
-  Vector actual4 = (Vector(3) << 1, subvec1);
+  Vector subvec1 = Vector2(2, 3);
+  Vector actual4 = (Vector(3) << 1, subvec1).finished();
 
-  Vector subvec2 = (Vector(2) << 1, 2);
-  Vector actual5 = (Vector(3) << subvec2, 3);
+  Vector subvec2 = Vector2(1, 2);
+  Vector actual5 = (Vector(3) << subvec2, 3).finished();
 
-  Vector actual6 = testFcn1((Vector(3) << 1, 2, 3));
-  Vector actual7 = testFcn2((Vector(3) << 1, 2, 3));
+  Vector actual6 = testFcn1(Vector3(1, 2, 3));
+  Vector actual7 = testFcn2(Vector3(1, 2, 3));
 
   EXPECT(assert_equal(expected, actual1));
   EXPECT(assert_equal(expected, actual2));
@@ -68,7 +70,7 @@ TEST( TestVector, special_comma_initializer)
 }
 
 /* ************************************************************************* */
-TEST( TestVector, copy )
+TEST(Vector, copy )
 {
   Vector a(2); a(0) = 10; a(1) = 20;
   double data[] = {10,20};
@@ -78,14 +80,14 @@ TEST( TestVector, copy )
 }
 
 /* ************************************************************************* */
-TEST( TestVector, zero1 )
+TEST(Vector, zero1 )
 {
   Vector v = Vector::Zero(2);
   EXPECT(zero(v));
 }
 
 /* ************************************************************************* */
-TEST( TestVector, zero2 )
+TEST(Vector, zero2 )
 {
   Vector a = zero(2);
   Vector b = Vector::Zero(2);
@@ -94,7 +96,7 @@ TEST( TestVector, zero2 )
 }
 
 /* ************************************************************************* */
-TEST( TestVector, scalar_multiply )
+TEST(Vector, scalar_multiply )
 {
   Vector a(2); a(0) = 10; a(1) = 20;
   Vector b(2); b(0) = 1; b(1) = 2;
@@ -102,7 +104,7 @@ TEST( TestVector, scalar_multiply )
 }
 
 /* ************************************************************************* */
-TEST( TestVector, scalar_divide )
+TEST(Vector, scalar_divide )
 {
   Vector a(2); a(0) = 10; a(1) = 20;
   Vector b(2); b(0) = 1; b(1) = 2;
@@ -110,7 +112,7 @@ TEST( TestVector, scalar_divide )
 }
 
 /* ************************************************************************* */
-TEST( TestVector, negate )
+TEST(Vector, negate )
 {
   Vector a(2); a(0) = 10; a(1) = 20;
   Vector b(2); b(0) = -10; b(1) = -20;
@@ -118,7 +120,7 @@ TEST( TestVector, negate )
 }
 
 /* ************************************************************************* */
-TEST( TestVector, sub )
+TEST(Vector, sub )
 {
   Vector a(6);
   a(0) = 10; a(1) = 20; a(2) = 3;
@@ -134,7 +136,7 @@ TEST( TestVector, sub )
 }
 
 /* ************************************************************************* */
-TEST( TestVector, subInsert )
+TEST(Vector, subInsert )
 {
   Vector big = zero(6),
        small = ones(3);
@@ -142,13 +144,13 @@ TEST( TestVector, subInsert )
   size_t i = 2;
   subInsert(big, small, i);
 
-  Vector expected = (Vector(6) << 0.0, 0.0, 1.0, 1.0, 1.0, 0.0);
+  Vector expected = (Vector(6) << 0.0, 0.0, 1.0, 1.0, 1.0, 0.0).finished();
 
   EXPECT(assert_equal(expected, big));
 }
 
 /* ************************************************************************* */
-TEST( TestVector, householder )
+TEST(Vector, householder )
 {
   Vector x(4);
   x(0) = 3; x(1) = 1; x(2) = 5; x(3) = 1;
@@ -163,7 +165,7 @@ TEST( TestVector, householder )
 }
 
 /* ************************************************************************* */
-TEST( TestVector, concatVectors)
+TEST(Vector, concatVectors)
 {
   Vector A(2);
   for(int i = 0; i < 2; i++)
@@ -187,7 +189,7 @@ TEST( TestVector, concatVectors)
 }
 
 /* ************************************************************************* */
-TEST( TestVector, weightedPseudoinverse )
+TEST(Vector, weightedPseudoinverse )
 {
   // column from a matrix
   Vector x(2);
@@ -213,7 +215,7 @@ TEST( TestVector, weightedPseudoinverse )
 }
 
 /* ************************************************************************* */
-TEST( TestVector, weightedPseudoinverse_constraint )
+TEST(Vector, weightedPseudoinverse_constraint )
 {
   // column from a matrix
   Vector x(2);
@@ -238,98 +240,106 @@ TEST( TestVector, weightedPseudoinverse_constraint )
 }
 
 /* ************************************************************************* */
-TEST( TestVector, weightedPseudoinverse_nan )
+TEST(Vector, weightedPseudoinverse_nan )
 {
-  Vector a = (Vector(4) << 1., 0., 0., 0.);
-  Vector sigmas = (Vector(4) << 0.1, 0.1, 0., 0.);
+  Vector a = (Vector(4) << 1., 0., 0., 0.).finished();
+  Vector sigmas = (Vector(4) << 0.1, 0.1, 0., 0.).finished();
   Vector weights = reciprocal(emul(sigmas,sigmas));
   Vector pseudo; double precision;
   boost::tie(pseudo, precision) = weightedPseudoinverse(a, weights);
 
-  Vector expected = (Vector(4) << 1., 0., 0.,0.);
+  Vector expected = (Vector(4) << 1., 0., 0.,0.).finished();
   EXPECT(assert_equal(expected, pseudo));
   DOUBLES_EQUAL(100, precision, 1e-5);
 }
 
 /* ************************************************************************* */
-TEST( TestVector, ediv )
+TEST(Vector, ediv )
 {
-  Vector a = (Vector(3) << 10., 20., 30.);
-  Vector b = (Vector(3) << 2.0, 5.0, 6.0);
+  Vector a = Vector3(10., 20., 30.);
+  Vector b = Vector3(2.0, 5.0, 6.0);
   Vector actual(ediv(a,b));
 
-  Vector c = (Vector(3) << 5.0, 4.0, 5.0);
+  Vector c = Vector3(5.0, 4.0, 5.0);
   EXPECT(assert_equal(c,actual));
 }
 
 /* ************************************************************************* */
-TEST( TestVector, dot )
+TEST(Vector, dot )
 {
-  Vector a = (Vector(3) << 10., 20., 30.);
-  Vector b = (Vector(3) << 2.0, 5.0, 6.0);
+  Vector a = Vector3(10., 20., 30.);
+  Vector b = Vector3(2.0, 5.0, 6.0);
   DOUBLES_EQUAL(20+100+180,dot(a,b),1e-9);
 }
 
 /* ************************************************************************* */
-TEST( TestVector, axpy )
+TEST(Vector, axpy )
 {
-  Vector x = (Vector(3) << 10., 20., 30.);
-  Vector y0 = (Vector(3) << 2.0, 5.0, 6.0);
+  Vector x = Vector3(10., 20., 30.);
+  Vector y0 = Vector3(2.0, 5.0, 6.0);
   Vector y1 = y0, y2 = y0;
   axpy(0.1,x,y1);
   axpy(0.1,x,y2.head(3));
-  Vector expected = (Vector(3) << 3.0, 7.0, 9.0);
+  Vector expected = Vector3(3.0, 7.0, 9.0);
   EXPECT(assert_equal(expected,y1));
   EXPECT(assert_equal(expected,Vector(y2)));
 }
 
 /* ************************************************************************* */
-TEST( TestVector, equals )
+TEST(Vector, equals )
 {
-  Vector v1 = (Vector(1) << 0.0/std::numeric_limits<double>::quiet_NaN()); //testing nan
-  Vector v2 = (Vector(1) << 1.0);
+  Vector v1 = (Vector(1) << 0.0/std::numeric_limits<double>::quiet_NaN()).finished(); //testing nan
+  Vector v2 = (Vector(1) << 1.0).finished();
   double tol = 1.;
   EXPECT(!equal_with_abs_tol(v1, v2, tol));
 }
 
 /* ************************************************************************* */
-TEST( TestVector, greater_than )
+TEST(Vector, greater_than )
 {
-  Vector v1 = (Vector(3) << 1.0, 2.0, 3.0),
+  Vector v1 = Vector3(1.0, 2.0, 3.0),
        v2 = zero(3);
   EXPECT(greaterThanOrEqual(v1, v1)); // test basic greater than
   EXPECT(greaterThanOrEqual(v1, v2)); // test equals
 }
 
 /* ************************************************************************* */
-TEST( TestVector, reciprocal )
+TEST(Vector, reciprocal )
 {
-  Vector v = (Vector(3) << 1.0, 2.0, 4.0);
-  EXPECT(assert_equal((Vector(3) << 1.0, 0.5, 0.25),reciprocal(v)));
+  Vector v = Vector3(1.0, 2.0, 4.0);
+  EXPECT(assert_equal(Vector3(1.0, 0.5, 0.25),reciprocal(v)));
 }
 
 /* ************************************************************************* */
-TEST( TestVector, linear_dependent )
+TEST(Vector, linear_dependent )
 {
-  Vector v1 = (Vector(3) << 1.0, 2.0, 3.0);
-  Vector v2 = (Vector(3) << -2.0, -4.0, -6.0);
+  Vector v1 = Vector3(1.0, 2.0, 3.0);
+  Vector v2 = Vector3(-2.0, -4.0, -6.0);
   EXPECT(linear_dependent(v1, v2));
 }
 
 /* ************************************************************************* */
-TEST( TestVector, linear_dependent2 )
+TEST(Vector, linear_dependent2 )
 {
-  Vector v1 = (Vector(3) << 0.0, 2.0, 0.0);
-  Vector v2 = (Vector(3) << 0.0, -4.0, 0.0);
+  Vector v1 = Vector3(0.0, 2.0, 0.0);
+  Vector v2 = Vector3(0.0, -4.0, 0.0);
   EXPECT(linear_dependent(v1, v2));
 }
 
 /* ************************************************************************* */
-TEST( TestVector, linear_dependent3 )
+TEST(Vector, linear_dependent3 )
 {
-  Vector v1 = (Vector(3) << 0.0, 2.0, 0.0);
-  Vector v2 = (Vector(3) << 0.1, -4.1, 0.0);
+  Vector v1 = Vector3(0.0, 2.0, 0.0);
+  Vector v2 = Vector3(0.1, -4.1, 0.0);
   EXPECT(!linear_dependent(v1, v2));
+}
+
+//******************************************************************************
+TEST(Vector, IsVectorSpace) {
+  BOOST_CONCEPT_ASSERT((IsVectorSpace<Vector5>));
+  BOOST_CONCEPT_ASSERT((IsVectorSpace<Vector>));
+  typedef Eigen::Matrix<double,1,-1> RowVector;
+  BOOST_CONCEPT_ASSERT((IsVectorSpace<RowVector>));
 }
 
 /* ************************************************************************* */

@@ -12,6 +12,7 @@
 /**
  * @file    Ordering.cpp
  * @author  Richard Roberts
+ * @author  Andrew Melim
  * @date    Sep 2, 2010
  */
 
@@ -22,6 +23,7 @@
 
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/3rdparty/CCOLAMD/Include/ccolamd.h>
+#include <gtsam/3rdparty/metis/include/metis.h>
 
 using namespace std;
 
@@ -37,15 +39,15 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Ordering Ordering::COLAMD(const VariableIndex& variableIndex)
+  Ordering Ordering::colamd(const VariableIndex& variableIndex)
   {
     // Call constrained version with all groups set to zero
     vector<int> dummy_groups(variableIndex.size(), 0);
-    return Ordering::COLAMDConstrained(variableIndex, dummy_groups);
+    return Ordering::colamdConstrained(variableIndex, dummy_groups);
   }
 
   /* ************************************************************************* */
-  Ordering Ordering::COLAMDConstrained(
+  Ordering Ordering::colamdConstrained(
     const VariableIndex& variableIndex, std::vector<int>& cmember)
   {
     gttic(Ordering_COLAMDConstrained);
@@ -112,7 +114,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Ordering Ordering::COLAMDConstrainedLast(
+  Ordering Ordering::colamdConstrainedLast(
     const VariableIndex& variableIndex, const std::vector<Key>& constrainLast, bool forceOrder)
   {
     gttic(Ordering_COLAMDConstrainedLast);
@@ -135,11 +137,11 @@ namespace gtsam {
         ++ group;
     }
 
-    return Ordering::COLAMDConstrained(variableIndex, cmember);
+    return Ordering::colamdConstrained(variableIndex, cmember);
   }
 
   /* ************************************************************************* */
-  Ordering Ordering::COLAMDConstrainedFirst(
+  Ordering Ordering::colamdConstrainedFirst(
     const VariableIndex& variableIndex, const std::vector<Key>& constrainFirst, bool forceOrder)
   {
     gttic(Ordering_COLAMDConstrainedFirst);
@@ -169,11 +171,11 @@ namespace gtsam {
       if(c == none)
         c = group;
 
-    return Ordering::COLAMDConstrained(variableIndex, cmember);
+    return Ordering::colamdConstrained(variableIndex, cmember);
   }
 
   /* ************************************************************************* */
-  Ordering Ordering::COLAMDConstrained(const VariableIndex& variableIndex,
+  Ordering Ordering::colamdConstrained(const VariableIndex& variableIndex,
     const FastMap<Key, int>& groups)
   {
     gttic(Ordering_COLAMDConstrained);
@@ -193,7 +195,43 @@ namespace gtsam {
       cmember[keyIndices.at(p.first)] = p.second;
     }
 
-    return Ordering::COLAMDConstrained(variableIndex, cmember);
+    return Ordering::colamdConstrained(variableIndex, cmember);
+  }
+
+
+  /* ************************************************************************* */
+  Ordering Ordering::metis(const MetisIndex& met)
+  {
+    gttic(Ordering_METIS);
+
+    vector<idx_t> xadj   = met.xadj();
+    vector<idx_t>  adj   = met.adj();
+    vector<idx_t> perm, iperm;
+
+    idx_t size = met.nValues();
+    for (idx_t i = 0; i < size; i++)
+    {
+	    perm.push_back(0);
+	    iperm.push_back(0);
+    }
+
+    int outputError;
+      
+    outputError = METIS_NodeND(&size, &xadj[0], &adj[0], NULL, NULL, &perm[0], &iperm[0]);
+    Ordering result;
+
+    if (outputError != METIS_OK)
+    {
+        std::cout << "METIS failed during Nested Dissection ordering!\n";
+        return result;
+    }
+
+    result.resize(size);
+    for (size_t j = 0; j < (size_t)size; ++j){
+	    // We have to add the minKey value back to obtain the original key in the Values
+	    result[j] = met.intToKey(perm[j]);
+    }
+    return result;
   }
 
   /* ************************************************************************* */

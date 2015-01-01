@@ -156,8 +156,10 @@ private:
   }
 };
 
-
-
+/// traits
+template<>
+struct traits<LinearizedJacobianFactor> : public Testable<LinearizedJacobianFactor> {
+};
 
 /**
  * A factor that takes a linear, Hessian factor and inserts it into
@@ -269,6 +271,9 @@ private:
   }
 };
 
-
+/// traits
+template<>
+struct traits<LinearizedHessianFactor> : public Testable<LinearizedHessianFactor> {
+};
 
 } // \namespace aspn

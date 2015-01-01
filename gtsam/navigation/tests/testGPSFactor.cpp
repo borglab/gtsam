@@ -56,7 +56,7 @@ TEST( GPSFactor, Constructors ) {
   EXPECT(assert_equal(zero(3),factor.evaluateError(T),1e-5));
 
   // Calculate numerical derivatives
-  Matrix expectedH = numericalDerivative11<Pose3>(
+  Matrix expectedH = numericalDerivative11<Vector,Pose3>(
       boost::bind(&GPSFactor::evaluateError, &factor, _1, boost::none), T);
 
   // Use the factor to calculate the derivative

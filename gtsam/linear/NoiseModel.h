@@ -18,12 +18,14 @@
 
 #pragma once
 
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/Matrix.h>
+
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/extended_type_info.hpp>
 #include <boost/serialization/singleton.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/optional.hpp>
-#include <gtsam/base/Matrix.h>
 #include <cmath>
 
 namespace gtsam {
@@ -60,6 +62,11 @@ namespace gtsam {
       /** primary constructor @param dim is the dimension of the model */
       Base(size_t dim = 1):dim_(dim) {}
       virtual ~Base() {}
+
+      /// true if a constrained noise mode, saves slow/clumsy dynamic casting
+      virtual bool isConstrained() const {
+        return false; // default false
+      }
 
       /// Dimensionality
       inline size_t dim() const { return dim_;}
@@ -232,12 +239,6 @@ namespace gtsam {
        */
       virtual Matrix R() const { return thisR();}
 
-      /**
-       * Simple check for constrained-ness
-       * FIXME Find a better way of handling this
-       */
-      virtual bool isConstrained() const {return false;}
-
     private:
       /** Serialization function */
       friend class boost::serialization::access;
@@ -385,6 +386,14 @@ namespace gtsam {
 
       virtual ~Constrained() {}
 
+      /// true if a constrained noise mode, saves slow/clumsy dynamic casting
+      virtual bool isConstrained() const {
+        return true;
+      }
+
+      /// Return true if a particular dimension is free or constrained
+      bool constrained(size_t i) const;
+
       /// Access mu as a vector
       const Vector& mu() const { return mu_; }
 
@@ -392,24 +401,22 @@ namespace gtsam {
        * A diagonal noise model created by specifying a Vector of
        * standard devations, some of which might be zero
        */
-      static shared_ptr MixedSigmas(const Vector& mu, const Vector& sigmas,
-          bool smart = true);
+      static shared_ptr MixedSigmas(const Vector& mu, const Vector& sigmas);
 
       /**
        * A diagonal noise model created by specifying a Vector of
        * standard devations, some of which might be zero
        */
-      static shared_ptr MixedSigmas(const Vector& sigmas, bool smart = true) {
-        return MixedSigmas(repeat(sigmas.size(), 1000.0), sigmas, smart);
+      static shared_ptr MixedSigmas(const Vector& sigmas) {
+        return MixedSigmas(repeat(sigmas.size(), 1000.0), sigmas);
       }
 
       /**
        * A diagonal noise model created by specifying a Vector of
        * standard devations, some of which might be zero
        */
-      static shared_ptr MixedSigmas(double m, const Vector& sigmas,
-          bool smart = true) {
-        return MixedSigmas(repeat(sigmas.size(), m), sigmas, smart);
+      static shared_ptr MixedSigmas(double m, const Vector& sigmas) {
+        return MixedSigmas(repeat(sigmas.size(), m), sigmas);
       }
 
       /**
@@ -471,12 +478,6 @@ namespace gtsam {
        * Apply QR factorization to the system [A b], taking into account constraints
        */
       virtual Diagonal::shared_ptr QR(Matrix& Ab) const;
-
-      /**
-       * Check constrained is always true
-       * FIXME Find a better way of handling this
-       */
-      virtual bool isConstrained() const { return true; }
 
       /**
        * Returns a Unit version of a constrained noisemodel in which
@@ -886,6 +887,13 @@ namespace gtsam {
   typedef noiseModel::Diagonal::shared_ptr SharedDiagonal;
   typedef noiseModel::Constrained::shared_ptr SharedConstrained;
 
-} // namespace gtsam
+  /// traits
+  template<> struct traits<noiseModel::Gaussian> : public Testable<noiseModel::Gaussian> {};
+  template<> struct traits<noiseModel::Diagonal> : public Testable<noiseModel::Diagonal> {};
+  template<> struct traits<noiseModel::Constrained> : public Testable<noiseModel::Constrained> {};
+  template<> struct traits<noiseModel::Isotropic> : public Testable<noiseModel::Isotropic> {};
+  template<> struct traits<noiseModel::Unit> : public Testable<noiseModel::Unit> {};
+
+} //\ namespace gtsam
 
 

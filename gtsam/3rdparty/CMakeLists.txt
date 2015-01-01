@@ -18,7 +18,7 @@ if(NOT GTSAM_USE_SYSTEM_EIGEN)
 
 	# do the same for the unsupported eigen folder
 	file(GLOB_RECURSE  unsupported_eigen_headers "${CMAKE_CURRENT_SOURCE_DIR}/Eigen/unsupported/Eigen/*.h")
-	
+
 	file(GLOB unsupported_eigen_dir_headers_all "Eigen/unsupported/Eigen/*")
 	foreach(unsupported_eigen_dir ${unsupported_eigen_dir_headers_all})
 		get_filename_component(filename ${unsupported_eigen_dir} NAME)
@@ -36,17 +36,17 @@ if(NOT GTSAM_USE_SYSTEM_EIGEN)
 	install(DIRECTORY Eigen/Eigen
 		DESTINATION include/gtsam/3rdparty/Eigen
 		FILES_MATCHING PATTERN "*.h")
-	
+
 	install(DIRECTORY Eigen/unsupported/Eigen
 		DESTINATION include/gtsam/3rdparty/Eigen/unsupported/
 		FILES_MATCHING PATTERN "*.h")
 endif()
 
-option(GTSAM_BUILD_METIS "Build metis library" ON)
 option(GTSAM_BUILD_METIS_EXECUTABLES "Build metis library executables" OFF)
-if(GTSAM_BUILD_METIS)
-	add_subdirectory(metis-5.1.0)
-endif(GTSAM_BUILD_METIS)
+add_subdirectory(metis)
+
+add_subdirectory(ceres)
+
 ############ NOTE:  When updating GeographicLib be sure to disable building their examples
 ############        and unit tests by commenting out their lines:
 # add_subdirectory (examples)
@@ -73,3 +73,5 @@ endif()
 if(GTSAM_INSTALL_GEOGRAPHICLIB)
   add_subdirectory(GeographicLib)
 endif()
+
+set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)

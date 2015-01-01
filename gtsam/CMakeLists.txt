@@ -1,14 +1,14 @@
 # We split the library in to separate subfolders, each containing
 # tests, timing, and an optional convenience library.
 # The following variable is the master list of subdirs to add
-set (gtsam_subdirs 
-    base 
-    geometry 
-    inference 
-	symbolic 
-    discrete 
-    linear 
-    nonlinear 
+set (gtsam_subdirs
+    base
+    geometry
+    inference
+    symbolic
+    discrete
+    linear
+    nonlinear
     slam
 	navigation
 )
@@ -16,13 +16,12 @@ set (gtsam_subdirs
 set(gtsam_srcs)
 
 # Build 3rdparty separately
-message(STATUS "Building 3rdparty") 
+message(STATUS "Building 3rdparty")
 add_subdirectory(3rdparty)
 
-# build convenience library
-set (3rdparty_srcs 
+set (3rdparty_srcs
  ${eigen_headers} # Set by 3rdparty/CMakeLists.txt
- ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/CCOLAMD/Source/ccolamd.c 
+ ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/CCOLAMD/Source/ccolamd.c
  ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/CCOLAMD/Source/ccolamd_global.c
  ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/UFconfig/UFconfig.c)
 gtsam_assign_source_folders("${3rdparty_srcs}") # Create MSVC structure
@@ -37,7 +36,7 @@ set (excluded_sources #"")
 set (excluded_headers #"")
     "${CMAKE_CURRENT_SOURCE_DIR}/slam/serialization.h"
 )
-    
+
 if(GTSAM_USE_QUATERNIONS)
     set(excluded_sources ${excluded_sources} "${CMAKE_CURRENT_SOURCE_DIR}/geometry/Rot3M.cpp")
 else()
@@ -59,10 +58,10 @@ foreach(subdir ${gtsam_subdirs})
     set(${subdir}_srcs ${subdir_srcs})
 
     # Build local library and tests
-    message(STATUS "Building ${subdir}") 
+    message(STATUS "Building ${subdir}")
     add_subdirectory(${subdir})
 endforeach(subdir)
- 
+
 # To add additional sources to gtsam when building the full library (static or shared)
 # Add the subfolder with _srcs appended to the end to this list
 set(gtsam_srcs
@@ -70,15 +69,15 @@ set(gtsam_srcs
     ${base_srcs}
     ${geometry_srcs}
     ${inference_srcs}
-	${symbolic_srcs}
+    ${symbolic_srcs}
     ${discrete_srcs}
     ${linear_srcs}
     ${nonlinear_srcs}
     ${slam_srcs}
-	${navigation_srcs}
+    ${navigation_srcs}
 	${gtsam_core_headers}
 )
-	
+
 # Generate and install config and dllexport files
 configure_file(config.h.in config.h)
 set(library_name GTSAM) # For substitution in dllexport.h.in
@@ -86,18 +85,20 @@ configure_file("${PROJECT_SOURCE_DIR}/cmake/dllexport.h.in" "dllexport.h")
 list(APPEND gtsam_srcs "${PROJECT_BINARY_DIR}/gtsam/config.h" "${PROJECT_BINARY_DIR}/gtsam/dllexport.h")
 install(FILES "${PROJECT_BINARY_DIR}/gtsam/config.h" "${PROJECT_BINARY_DIR}/gtsam/dllexport.h" DESTINATION include/gtsam)
 
+list(APPEND GTSAM_ADDITIONAL_LIBRARIES metis)
+
 # Versions
 set(gtsam_version   ${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH})
 set(gtsam_soversion ${GTSAM_VERSION_MAJOR})
 message(STATUS "GTSAM Version: ${gtsam_version}")
 message(STATUS "Install prefix: ${CMAKE_INSTALL_PREFIX}")
- 
+
 # build shared and static versions of the library
 if (GTSAM_BUILD_STATIC_LIBRARY)
     message(STATUS "Building GTSAM - static")
     add_library(gtsam STATIC ${gtsam_srcs})
 	target_link_libraries(gtsam ${GTSAM_BOOST_LIBRARIES} ${GTSAM_ADDITIONAL_LIBRARIES})
-    set_target_properties(gtsam PROPERTIES 
+    set_target_properties(gtsam PROPERTIES
         OUTPUT_NAME         gtsam
         CLEAN_DIRECT_OUTPUT 1
     	VERSION             ${gtsam_version}
@@ -114,7 +115,7 @@ else()
     message(STATUS "Building GTSAM - shared")
     add_library(gtsam SHARED ${gtsam_srcs})
     target_link_libraries(gtsam ${GTSAM_BOOST_LIBRARIES} ${GTSAM_ADDITIONAL_LIBRARIES})
-    set_target_properties(gtsam PROPERTIES 
+    set_target_properties(gtsam PROPERTIES
         OUTPUT_NAME         gtsam
         CLEAN_DIRECT_OUTPUT 1
     	VERSION             ${gtsam_version}
@@ -135,7 +136,7 @@ set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/slam/dataset.cpp"
     APPEND PROPERTY COMPILE_DEFINITIONS
 	"SOURCE_TREE_DATASET_DIR=\"${PROJECT_SOURCE_DIR}/examples/Data\""
 	"INSTALLED_DATASET_DIR=\"${GTSAM_TOOLBOX_INSTALL_PATH}/gtsam_examples/Data\"")
-	
+
 # Special cases
 if(MSVC)
 	set_property(SOURCE
@@ -148,7 +149,7 @@ endif()
 if (GTSAM_INSTALL_MATLAB_TOOLBOX)
     # Set up codegen
     include(GtsamMatlabWrap)
-    
+
     # Generate, build and install toolbox
     set(mexFlags "${GTSAM_BUILD_MEX_BINARY_FLAGS}")
 	if(GTSAM_BUILD_STATIC_LIBRARY)

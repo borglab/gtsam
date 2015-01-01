@@ -555,6 +555,30 @@ void HessianFactor::gradientAtZero(double* d) const {
 }
 
 /* ************************************************************************* */
+Vector HessianFactor::gradient(Key key, const VectorValues& x) const {
+  Factor::const_iterator i = find(key);
+  // Sum over G_ij*xj for all xj connecting to xi
+  Vector b = zero(x.at(key).size());
+  for (Factor::const_iterator j = begin(); j != end(); ++j) {
+    // Obtain Gij from the Hessian factor
+    // Hessian factor only stores an upper triangular matrix, so be careful when i>j
+    Matrix Gij;
+    if (i > j) {
+      Matrix Gji = info(j, i);
+      Gij = Gji.transpose();
+    }
+    else {
+      Gij = info(i, j);
+    }
+    // Accumulate Gij*xj to gradf
+    b += Gij * x.at(*j);
+  }
+  // Subtract the linear term gi
+  b += -linearTerm(i);
+  return b;
+}
+
+/* ************************************************************************* */
 std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<HessianFactor> >
 EliminateCholesky(const GaussianFactorGraph& factors, const Ordering& keys)
 {

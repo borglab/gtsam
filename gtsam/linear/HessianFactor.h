@@ -387,6 +387,12 @@ namespace gtsam {
     virtual void gradientAtZero(double* d) const;
 
     /**
+     * Compute the gradient at a key:
+     *      \grad f(x_i) = \sum_j G_ij*x_j - g_i
+     */
+    Vector gradient(Key key, const VectorValues& x) const;
+
+    /**
     *   Densely partially eliminate with Cholesky factorization.  JacobianFactors are
     *   left-multiplied with their transpose to form the Hessian using the conversion constructor
     *   HessianFactor(const JacobianFactor&).
@@ -434,6 +440,11 @@ namespace gtsam {
     }
   };
 
-}
+/// traits
+template<>
+struct traits<HessianFactor> : public Testable<HessianFactor> {};
+
+} // \ namespace gtsam
+
 
 #include <gtsam/linear/HessianFactor-inl.h>

@@ -81,4 +81,9 @@ namespace gtsam {
     }
 };
 
-} // namespace gtsam
+  /// traits
+  template<>
+  struct traits<SymbolicBayesNet> : public Testable<SymbolicBayesNet> {
+  };
+
+} //\ namespace gtsam

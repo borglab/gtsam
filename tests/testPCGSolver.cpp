@@ -57,19 +57,19 @@ TEST( PCGSolver, llt ) {
   Matrix R = (Matrix(3,3) <<
                 1., -1., -1.,
                 0.,  2., -1.,
-                0.,  0.,  1.);
+                0.,  0.,  1.).finished();
   Matrix AtA = R.transpose() * R;
 
   Vector Rvector = (Vector(9) << 1., -1., -1.,
                                  0.,  2., -1.,
-                                 0.,  0.,  1.);
+                                 0.,  0.,  1.).finished();
 //  Vector Rvector = (Vector(6) << 1., -1., -1.,
 //                                      2., -1.,
-//                                           1.);
+//                                           1.).finished();
 
-  Vector b = (Vector(3) << 1., 2., 3.);
+  Vector b = Vector3(1., 2., 3.);
 
-  Vector x = (Vector(3) << 6.5, 2.5, 3.) ;
+  Vector x = Vector3(6.5, 2.5, 3.) ;
 
   /* test cholesky */
   Matrix Rhat = AtA.llt().matrixL().transpose();

@@ -30,7 +30,8 @@ namespace gtsam {
 
   /* ************************************************************************* */
   StereoPoint2 StereoCamera::project(const Point3& point,
-      boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
+      OptionalJacobian<3,6> H1, OptionalJacobian<3,3> H2,
+      OptionalJacobian<3,6> H3) const {
 
 #ifdef STEREOCAMERA_CHAIN_RULE
     const Point3 q = leftCamPose_.transform_to(point, H1, H2);
@@ -57,28 +58,28 @@ namespace gtsam {
     if (H1 || H2) {
 #ifdef STEREOCAMERA_CHAIN_RULE
       // just implement chain rule
-      Matrix D_project_point = Dproject_to_stereo_camera1(q); // 3x3 Jacobian
+      Matrix3 D_project_point = Dproject_to_stereo_camera1(q); // 3x3 Jacobian
       if (H1) *H1 = D_project_point*(*H1);
       if (H2) *H2 = D_project_point*(*H2);
 #else
       // optimized version, see StereoCamera.nb
       if (H1) {
         const double v1 = v/fy, v2 = fx*v1, dx=d*x;
-        *H1 = (Matrix(3, 6) <<
-                uL*v1, -fx-dx*uL,     v2, -dfx,  0.0, d*uL,
+        *H1  << uL*v1, -fx-dx*uL,     v2, -dfx,  0.0, d*uL,
                 uR*v1, -fx-dx*uR,     v2, -dfx,  0.0, d*uR,
-            fy + v*v1,    -dx*v , -x*dfy,  0.0, -dfy, d*v
-          );
+                fy + v*v1,    -dx*v , -x*dfy,  0.0, -dfy, d*v;
       }
       if (H2) {
-        const Matrix R(leftCamPose_.rotation().matrix());
-        *H2 = d * (Matrix(3, 3) <<
-             fx*R(0, 0) - R(0, 2)*uL, fx*R(1, 0) - R(1, 2)*uL, fx*R(2, 0) - R(2, 2)*uL,
-             fx*R(0, 0) - R(0, 2)*uR, fx*R(1, 0) - R(1, 2)*uR, fx*R(2, 0) - R(2, 2)*uR,
-             fy*R(0, 1) - R(0, 2)*v , fy*R(1, 1) - R(1, 2)*v , fy*R(2, 1) - R(2, 2)*v
-         );
+        const Matrix3 R(leftCamPose_.rotation().matrix());
+        *H2  << fx*R(0, 0) - R(0, 2)*uL, fx*R(1, 0) - R(1, 2)*uL, fx*R(2, 0) - R(2, 2)*uL,
+                fx*R(0, 0) - R(0, 2)*uR, fx*R(1, 0) - R(1, 2)*uR, fx*R(2, 0) - R(2, 2)*uR,
+                fy*R(0, 1) - R(0, 2)*v , fy*R(1, 1) - R(1, 2)*v , fy*R(2, 1) - R(2, 2)*v;
+        *H2 << d * (*H2);
       }
 #endif
+      if (H3)
+        // TODO, this is set to zero, as Cal3_S2Stereo cannot be optimized yet
+        H3->setZero();
     }
 
     // finally translate
@@ -86,15 +87,15 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Matrix StereoCamera::Dproject_to_stereo_camera1(const Point3& P) const {
+  Matrix3 StereoCamera::Dproject_to_stereo_camera1(const Point3& P) const {
     double d = 1.0 / P.z(), d2 = d*d;
     const Cal3_S2Stereo& K = *K_;
     double f_x = K.fx(), f_y = K.fy(), b = K.baseline();
-    return (Matrix(3, 3) <<
-         f_x*d,   0.0, -d2*f_x* P.x(),
+    Matrix3 m;
+    m << f_x*d,   0.0, -d2*f_x* P.x(),
          f_x*d,   0.0, -d2*f_x*(P.x() - b),
-           0.0, f_y*d, -d2*f_y* P.y()
-    );
+           0.0, f_y*d, -d2*f_y* P.y();
+    return m;
   }
 
 }

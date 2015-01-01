@@ -239,11 +239,6 @@ istream& operator>>(istream& inputStream, Matrix& destinationMatrix) {
 }
 
 /* ************************************************************************* */
-void insertSub(Matrix& fullMatrix, const Matrix& subMatrix, size_t i, size_t j) {
-  fullMatrix.block(i, j, subMatrix.rows(), subMatrix.cols()) = subMatrix;
-}
-
-/* ************************************************************************* */
 Matrix diag(const std::vector<Matrix>& Hs) {
   size_t rows = 0, cols = 0;
   for (size_t i = 0; i<Hs.size(); ++i) {
@@ -663,19 +658,6 @@ Matrix expm(const Matrix& A, size_t K) {
     E = E + A_k;
   }
   return E;
-}
-
-/* ************************************************************************* */
-Matrix Cayley(const Matrix& A) {
-  size_t n = A.cols();
-  assert(A.rows() == n);
-
-  // original
-//  const Matrix I = eye(n);
-//  return (I-A)*inverse(I+A);
-
-  // inlined to let Eigen do more optimization
-  return (Matrix::Identity(n, n) - A)*(Matrix::Identity(n, n) + A).inverse();
 }
 
 /* ************************************************************************* */

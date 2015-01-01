@@ -148,21 +148,21 @@ BOOST_CLASS_EXPORT_GUID(gtsam::SharedDiagonal, "gtsam_SharedDiagonal");
 
 /* Create GUIDs for geometry */
 /* ************************************************************************* */
-BOOST_CLASS_EXPORT(gtsam::LieVector);
-BOOST_CLASS_EXPORT(gtsam::LieMatrix);
-BOOST_CLASS_EXPORT(gtsam::Point2);
-BOOST_CLASS_EXPORT(gtsam::StereoPoint2);
-BOOST_CLASS_EXPORT(gtsam::Point3);
-BOOST_CLASS_EXPORT(gtsam::Rot2);
-BOOST_CLASS_EXPORT(gtsam::Rot3);
-BOOST_CLASS_EXPORT(gtsam::Pose2);
-BOOST_CLASS_EXPORT(gtsam::Pose3);
-BOOST_CLASS_EXPORT(gtsam::Cal3_S2);
-BOOST_CLASS_EXPORT(gtsam::Cal3DS2);
-BOOST_CLASS_EXPORT(gtsam::Cal3_S2Stereo);
-BOOST_CLASS_EXPORT(gtsam::CalibratedCamera);
-BOOST_CLASS_EXPORT(gtsam::SimpleCamera);
-BOOST_CLASS_EXPORT(gtsam::StereoCamera);
+GTSAM_VALUE_EXPORT(gtsam::LieVector);
+GTSAM_VALUE_EXPORT(gtsam::LieMatrix);
+GTSAM_VALUE_EXPORT(gtsam::Point2);
+GTSAM_VALUE_EXPORT(gtsam::StereoPoint2);
+GTSAM_VALUE_EXPORT(gtsam::Point3);
+GTSAM_VALUE_EXPORT(gtsam::Rot2);
+GTSAM_VALUE_EXPORT(gtsam::Rot3);
+GTSAM_VALUE_EXPORT(gtsam::Pose2);
+GTSAM_VALUE_EXPORT(gtsam::Pose3);
+GTSAM_VALUE_EXPORT(gtsam::Cal3_S2);
+GTSAM_VALUE_EXPORT(gtsam::Cal3DS2);
+GTSAM_VALUE_EXPORT(gtsam::Cal3_S2Stereo);
+GTSAM_VALUE_EXPORT(gtsam::CalibratedCamera);
+GTSAM_VALUE_EXPORT(gtsam::SimpleCamera);
+GTSAM_VALUE_EXPORT(gtsam::StereoCamera);
 
 /* Create GUIDs for factors */
 /* ************************************************************************* */
@@ -287,8 +287,8 @@ TEST (testSerializationSLAM, smallExample_nonlinear) {
 /* ************************************************************************* */
 TEST (testSerializationSLAM, factors) {
 
-  LieVector lieVector((Vector(4) << 1.0, 2.0, 3.0, 4.0));
-  LieMatrix lieMatrix((Matrix(2, 3) << 1.0, 2.0, 3.0, 4.0, 5.0 ,6.0));
+  LieVector lieVector((Vector(4) << 1.0, 2.0, 3.0, 4.0).finished());
+  LieMatrix lieMatrix((Matrix(2, 3) << 1.0, 2.0, 3.0, 4.0, 5.0 ,6.0).finished());
   Point2 point2(1.0, 2.0);
   StereoPoint2 stereoPoint2(1.0, 2.0, 3.0);
   Point3 point3(1.0, 2.0, 3.0);

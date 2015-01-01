@@ -26,22 +26,36 @@ GTSAM_CONCEPT_LIE_INST(Point3)
 
 static Point3 P(0.2, 0.7, -2);
 
+//******************************************************************************
+TEST(Point3 , Concept) {
+  BOOST_CONCEPT_ASSERT((IsGroup<Point3>));
+  BOOST_CONCEPT_ASSERT((IsManifold<Point3>));
+  BOOST_CONCEPT_ASSERT((IsVectorSpace<Point3>));
+}
+
+//******************************************************************************
+TEST(Point3 , Invariants) {
+  Point3 p1(1, 2, 3), p2(4, 5, 6);
+  check_group_invariants(p1, p2);
+  check_manifold_invariants(p1, p2);
+}
+
 /* ************************************************************************* */
 TEST(Point3, Lie) {
   Point3 p1(1, 2, 3);
   Point3 p2(4, 5, 6);
   Matrix H1, H2;
 
-  EXPECT(assert_equal(Point3(5, 7, 9), p1.compose(p2, H1, H2)));
+  EXPECT(assert_equal(Point3(5, 7, 9), traits<Point3>::Compose(p1, p2, H1, H2)));
   EXPECT(assert_equal(eye(3), H1));
   EXPECT(assert_equal(eye(3), H2));
 
-  EXPECT(assert_equal(Point3(3, 3, 3), p1.between(p2, H1, H2)));
+  EXPECT(assert_equal(Point3(3, 3, 3), traits<Point3>::Between(p1, p2, H1, H2)));
   EXPECT(assert_equal(-eye(3), H1));
   EXPECT(assert_equal(eye(3), H2));
 
-  EXPECT(assert_equal(Point3(5, 7, 9), p1.retract((Vector(3) << 4., 5., 6.))));
-  EXPECT(assert_equal((Vector)(Vector(3) << 3.,3.,3.), p1.localCoordinates(p2)));
+  EXPECT(assert_equal(Point3(5, 7, 9), traits<Point3>::Retract(p1, Vector3(4,5,6))));
+  EXPECT(assert_equal(Vector3(3, 3, 3), traits<Point3>::Local(p1,p2)));
 }
 
 /* ************************************************************************* */
@@ -86,6 +100,37 @@ TEST (Point3, normalize) {
   Matrix expectedH = numericalDerivative11<Point3, Point3>(
       boost::bind(&Point3::normalize, _1, boost::none), point);
   EXPECT(assert_equal(expectedH, actualH, 1e-8));
+}
+
+//*************************************************************************
+double norm_proxy(const Point3& point) {
+  return double(point.norm());
+}
+
+TEST (Point3, norm) {
+  Matrix actualH;
+  Point3 point(3,4,5); // arbitrary point
+  double expected = sqrt(50);
+  EXPECT_DOUBLES_EQUAL(expected, point.norm(actualH), 1e-8);
+  Matrix expectedH = numericalDerivative11<double, Point3>(norm_proxy, point);
+  EXPECT(assert_equal(expectedH, actualH, 1e-8));
+}
+
+/* ************************************************************************* */
+double testFunc(const Point3& P, const Point3& Q) {
+  return P.distance(Q);
+}
+
+TEST (Point3, distance) {
+  Point3 P(1., 12.8, -32.), Q(52.7, 4.9, -13.3);
+  Matrix H1, H2;
+  double d = P.distance(Q, H1, H2);
+  double expectedDistance = 55.542686;
+  Matrix numH1 = numericalDerivative21(testFunc, P, Q);
+  Matrix numH2 = numericalDerivative22(testFunc, P, Q);
+  DOUBLES_EQUAL(expectedDistance, d, 1e-5);
+  EXPECT(assert_equal(numH1, H1, 1e-8));
+  EXPECT(assert_equal(numH2, H2, 1e-8));
 }
 
 /* ************************************************************************* */

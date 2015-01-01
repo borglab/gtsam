@@ -17,14 +17,10 @@
  */
 
 #include <gtsam/geometry/Rot2.h>
-#include <gtsam/base/Lie-inl.h>
 
 using namespace std;
 
 namespace gtsam {
-
-/** Explicit instantiation of base class to export members */
-INSTANTIATE_LIE(Rot2);
 
 /* ************************************************************************* */
 Rot2 Rot2::fromCosSin(double c, double s) {
@@ -64,21 +60,43 @@ Rot2& Rot2::normalize() {
 }
 
 /* ************************************************************************* */
-Matrix Rot2::matrix() const {
-  return (Matrix(2, 2) <<  c_, -s_, s_, c_);
+Rot2 Rot2::Expmap(const Vector1& v, OptionalJacobian<1, 1> H) {
+  if (H)
+    *H = I_1x1;
+  if (zero(v))
+    return (Rot2());
+  else
+    return Rot2::fromAngle(v(0));
 }
 
 /* ************************************************************************* */
-Matrix Rot2::transpose() const {
-  return (Matrix(2, 2) <<  c_, s_, -s_, c_);
+Vector1 Rot2::Logmap(const Rot2& r, OptionalJacobian<1, 1> H) {
+  if (H)
+    *H = I_1x1;
+  Vector1 v;
+  v << r.theta();
+  return v;
+}
+/* ************************************************************************* */
+Matrix2 Rot2::matrix() const {
+  Matrix2 rvalue_;
+  rvalue_ <<  c_, -s_, s_, c_;
+  return rvalue_;
+}
+
+/* ************************************************************************* */
+Matrix2 Rot2::transpose() const {
+  Matrix2 rvalue_;
+  rvalue_ <<   c_, s_, -s_, c_;
+  return rvalue_;
 }
 
 /* ************************************************************************* */
 // see doc/math.lyx, SO(2) section
-Point2 Rot2::rotate(const Point2& p, boost::optional<Matrix&> H1,
-    boost::optional<Matrix&> H2) const {
+Point2 Rot2::rotate(const Point2& p, OptionalJacobian<2, 1> H1,
+    OptionalJacobian<2, 2> H2) const {
   const Point2 q = Point2(c_ * p.x() + -s_ * p.y(), s_ * p.x() + c_ * p.y());
-  if (H1) *H1 = (Matrix(2, 1) <<  -q.y(), q.x());
+  if (H1) *H1 << -q.y(), q.x();
   if (H2) *H2 = matrix();
   return q;
 }
@@ -86,21 +104,23 @@ Point2 Rot2::rotate(const Point2& p, boost::optional<Matrix&> H1,
 /* ************************************************************************* */
 // see doc/math.lyx, SO(2) section
 Point2 Rot2::unrotate(const Point2& p,
-    boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
+    OptionalJacobian<2, 1> H1, OptionalJacobian<2, 2> H2) const {
   const Point2 q = Point2(c_ * p.x() + s_ * p.y(), -s_ * p.x() + c_ * p.y());
-  if (H1) *H1 = (Matrix(2, 1) << q.y(), -q.x());  // R_{pi/2}q
+  if (H1) *H1 << q.y(), -q.x();
   if (H2) *H2 = transpose();
   return q;
 }
 
 /* ************************************************************************* */
-Rot2 Rot2::relativeBearing(const Point2& d, boost::optional<Matrix&> H) {
+Rot2 Rot2::relativeBearing(const Point2& d, OptionalJacobian<1, 2> H) {
   double x = d.x(), y = d.y(), d2 = x * x + y * y, n = sqrt(d2);
   if(fabs(n) > 1e-5) {
-    if (H) *H = (Matrix(1, 2) << -y / d2, x / d2);
+    if (H) {
+      *H << -y / d2, x / d2;
+    }
     return Rot2::fromCosSin(x / n, y / n);
   } else {
-    if (H) *H = (Matrix(1, 2) << 0.0, 0.0);
+    if (H) *H << 0.0, 0.0;
     return Rot2();
   }
 }

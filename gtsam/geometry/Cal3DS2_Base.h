@@ -18,7 +18,6 @@
 
 #pragma once
 
-#include <gtsam/base/DerivedValue.h>
 #include <gtsam/geometry/Point2.h>
 
 namespace gtsam {
@@ -46,9 +45,9 @@ protected:
   double p1_, p2_ ; // tangential distortion
 
 public:
-  Matrix K() const ;
-  Eigen::Vector4d k() const { return Eigen::Vector4d(k1_, k2_, p1_, p2_); }
-  Vector vector() const ;
+  Matrix3 K() const ;
+  Vector4 k() const { return Vector4(k1_, k2_, p1_, p2_); }
+  Vector9 vector() const ;
 
   /// @name Standard Constructors
   /// @{
@@ -115,18 +114,17 @@ public:
    * @return point in (distorted) image coordinates
    */
   Point2 uncalibrate(const Point2& p,
-      boost::optional<Matrix&> Dcal = boost::none,
-      boost::optional<Matrix&> Dp = boost::none) const ;
+       OptionalJacobian<2,9> Dcal = boost::none,
+       OptionalJacobian<2,2> Dp = boost::none) const ;
 
   /// Convert (distorted) image coordinates uv to intrinsic coordinates xy
   Point2 calibrate(const Point2& p, const double tol=1e-5) const;
 
   /// Derivative of uncalibrate wrpt intrinsic coordinates
-  Matrix D2d_intrinsic(const Point2& p) const ;
+  Matrix2 D2d_intrinsic(const Point2& p) const ;
 
   /// Derivative of uncalibrate wrpt the calibration parameters
-  Matrix D2d_calibration(const Point2& p) const ;
-
+  Matrix29 D2d_calibration(const Point2& p) const ;
 
 private:
 

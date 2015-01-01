@@ -17,16 +17,18 @@
 
 #pragma once
 
+#include <gtsam/inference/Key.h>
+#include <gtsam/base/FastList.h>
+#include <gtsam/base/FastMap.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/types.h>
+#include <gtsam/base/timing.h>
+
+#include <boost/foreach.hpp>
+
 #include <vector>
 #include <deque>
 #include <stdexcept>
-#include <boost/foreach.hpp>
-
-#include <gtsam/base/FastList.h>
-#include <gtsam/base/FastMap.h>
-#include <gtsam/base/types.h>
-#include <gtsam/base/timing.h>
-#include <gtsam/inference/Key.h>
 
 namespace gtsam {
 
@@ -175,6 +177,11 @@ protected:
   /// @}
 };
 
-}
+/// traits
+template<>
+struct traits<VariableIndex> : public Testable<VariableIndex> {
+};
+
+} //\ namespace gtsam
 
 #include <gtsam/inference/VariableIndex-inl.h>

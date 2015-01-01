@@ -250,7 +250,6 @@ namespace gtsam {
     void print(const std::string& s = "FactorGraph",
       const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
-  protected:
     /** Check equality */
     bool equals(const This& fg, double tol = 1e-9) const;
     /// @}

@@ -43,7 +43,7 @@ int main(const int argc, const char *argv[]) {
   // Add prior on the pose having index (key) = 0
   NonlinearFactorGraph graphWithPrior = *graph;
   noiseModel::Diagonal::shared_ptr priorModel = //
-      noiseModel::Diagonal::Variances((Vector(3) << 1e-6, 1e-6, 1e-8));
+      noiseModel::Diagonal::Variances(Vector3(1e-6, 1e-6, 1e-8));
   graphWithPrior.add(PriorFactor<Pose2>(0, Pose2(), priorModel));
   graphWithPrior.print();
 

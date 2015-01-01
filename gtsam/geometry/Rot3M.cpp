@@ -30,10 +30,8 @@ using namespace std;
 
 namespace gtsam {
 
-static const Matrix3 I3 = Matrix3::Identity();
-
 /* ************************************************************************* */
-Rot3::Rot3() : rot_(Matrix3::Identity()) {}
+Rot3::Rot3() : rot_(I_3x3) {}
 
 /* ************************************************************************* */
 Rot3::Rot3(const Point3& col1, const Point3& col2, const Point3& col3) {
@@ -63,11 +61,9 @@ Rot3::Rot3(const Matrix& R) {
   rot_ = R;
 }
 
-///* ************************************************************************* */
-//Rot3::Rot3(const Matrix3& R) : rot_(R) {}
-
 /* ************************************************************************* */
-Rot3::Rot3(const Quaternion& q) : rot_(q.toRotationMatrix()) {}
+Rot3::Rot3(const Quaternion& q) : rot_(q.toRotationMatrix()) {
+}
 
 /* ************************************************************************* */
 Rot3 Rot3::Rx(double t) {
@@ -121,7 +117,7 @@ Rot3 Rot3::RzRyRx(double x, double y, double z) {
 }
 
 /* ************************************************************************* */
-Rot3 Rot3::rodriguez(const Vector& w, double theta) {
+Rot3 Rot3::rodriguez(const Vector3& w, double theta) {
   // get components of axis \omega
   double wx = w(0), wy=w(1), wz=w(2);
   double wwTxx = wx*wx, wwTyy = wy*wy, wwTzz = wz*wz;
@@ -144,35 +140,19 @@ Rot3 Rot3::rodriguez(const Vector& w, double theta) {
 }
 
 /* ************************************************************************* */
-Rot3 Rot3::compose (const Rot3& R2,
-    boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
-  if (H1) *H1 = R2.transpose();
-  if (H2) *H2 = I3;
-  return *this * R2;
-}
-
-/* ************************************************************************* */
 Rot3 Rot3::operator*(const Rot3& R2) const {
   return Rot3(Matrix3(rot_*R2.rot_));
 }
 
 /* ************************************************************************* */
-Rot3 Rot3::inverse(boost::optional<Matrix&> H1) const {
-  if (H1) *H1 = -rot_;
-  return Rot3(Matrix3(rot_.transpose()));
-}
-
-/* ************************************************************************* */
-Rot3 Rot3::between (const Rot3& R2,
-    boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
-  if (H1) *H1 = -(R2.transpose()*rot_);
-  if (H2) *H2 = I3;
-  return Rot3(Matrix3(rot_.transpose()*R2.rot_));
+// TODO const Eigen::Transpose<const Matrix3> Rot3::transpose() const {
+Matrix3 Rot3::transpose() const {
+  return rot_.transpose();
 }
 
 /* ************************************************************************* */
 Point3 Rot3::rotate(const Point3& p,
-    boost::optional<Matrix&> H1,  boost::optional<Matrix&> H2) const {
+    OptionalJacobian<3,3> H1,  OptionalJacobian<3,3> H2) const {
   if (H1 || H2) {
       if (H1) *H1 = rot_ * skewSymmetric(-p.x(), -p.y(), -p.z());
       if (H2) *H2 = rot_;
@@ -182,13 +162,15 @@ Point3 Rot3::rotate(const Point3& p,
 
 /* ************************************************************************* */
 // Log map at identity - return the canonical coordinates of this rotation
-Vector3 Rot3::Logmap(const Rot3& R) {
+Vector3 Rot3::Logmap(const Rot3& R, OptionalJacobian<3,3> H) {
 
   static const double PI = boost::math::constants::pi<double>();
 
   const Matrix3& rot = R.rot_;
   // Get trace(R)
   double tr = rot.trace();
+
+  Vector3 thetaR;
 
   // when trace == -1, i.e., when theta = +-pi, +-3pi, +-5pi, etc.
   // we do something special
@@ -200,7 +182,7 @@ Vector3 Rot3::Logmap(const Rot3& R) {
       return (PI / sqrt(2.0+2.0*rot(1,1))) *
           Vector3(rot(0,1), 1.0+rot(1,1), rot(2,1));
     else // if(std::abs(R.r1_.x()+1.0) > 1e-10)  This is implicit
-      return (PI / sqrt(2.0+2.0*rot(0,0))) *
+      thetaR = (PI / sqrt(2.0+2.0*rot(0,0))) *
           Vector3(1.0+rot(0,0), rot(1,0), rot(2,0));
   } else {
     double magnitude;
@@ -213,78 +195,65 @@ Vector3 Rot3::Logmap(const Rot3& R) {
       // use Taylor expansion: magnitude \approx 1/2-(t-3)/12 + O((t-3)^2)
       magnitude = 0.5 - tr_3*tr_3/12.0;
     }
-    return magnitude*Vector3(
+    thetaR =  magnitude*Vector3(
         rot(2,1)-rot(1,2),
         rot(0,2)-rot(2,0),
         rot(1,0)-rot(0,1));
   }
+
+  if(H) *H = Rot3::LogmapDerivative(thetaR);
+  return thetaR;
 }
 
 /* ************************************************************************* */
-Rot3 Rot3::retractCayley(const Vector& omega) const {
+Rot3 Rot3::CayleyChart::Retract(const Vector3& omega, OptionalJacobian<3,3> H) {
+  if (H) throw std::runtime_error("Rot3::CayleyChart::Retract Derivative");
   const double x = omega(0), y = omega(1), z = omega(2);
   const double x2 = x * x, y2 = y * y, z2 = z * z;
   const double xy = x * y, xz = x * z, yz = y * z;
   const double f = 1.0 / (4.0 + x2 + y2 + z2), _2f = 2.0 * f;
-  return (*this)
-      * Rot3((4 + x2 - y2 - z2) * f, (xy - 2 * z) * _2f, (xz + 2 * y) * _2f,
+  return Rot3((4 + x2 - y2 - z2) * f, (xy - 2 * z) * _2f, (xz + 2 * y) * _2f,
           (xy + 2 * z) * _2f, (4 - x2 + y2 - z2) * f, (yz - 2 * x) * _2f,
           (xz - 2 * y) * _2f, (yz + 2 * x) * _2f, (4 - x2 - y2 + z2) * f);
 }
 
 /* ************************************************************************* */
-Rot3 Rot3::retract(const Vector& omega, Rot3::CoordinatesMode mode) const {
-  if(mode == Rot3::EXPMAP) {
-    return (*this)*Expmap(omega);
-  } else if(mode == Rot3::CAYLEY) {
-    return retractCayley(omega);
-  } else if(mode == Rot3::SLOW_CAYLEY) {
-    Matrix Omega = skewSymmetric(omega);
-    return (*this)*CayleyFixed<3>(-Omega/2);
-  } else {
-    assert(false);
-    exit(1);
-  }
+Vector3 Rot3::CayleyChart::Local(const Rot3& R, OptionalJacobian<3,3> H) {
+  if (H) throw std::runtime_error("Rot3::CayleyChart::Local Derivative");
+  // Create a fixed-size matrix
+  Matrix3 A = R.matrix();
+  // Mathematica closed form optimization (procrastination?) gone wild:
+  const double a = A(0, 0), b = A(0, 1), c = A(0, 2);
+  const double d = A(1, 0), e = A(1, 1), f = A(1, 2);
+  const double g = A(2, 0), h = A(2, 1), i = A(2, 2);
+  const double di = d * i, ce = c * e, cd = c * d, fg = f * g;
+  const double M = 1 + e - f * h + i + e * i;
+  const double K = -4.0 / (cd * h + M + a * M - g * (c + ce) - b * (d + di - fg));
+  const double x = a * f - cd + f;
+  const double y = b * f - ce - c;
+  const double z = fg - di - d;
+  return K * Vector3(x, y, z);
 }
 
 /* ************************************************************************* */
-Vector3 Rot3::localCoordinates(const Rot3& T, Rot3::CoordinatesMode mode) const {
-  if(mode == Rot3::EXPMAP) {
-    return Logmap(between(T));
-  } else if(mode == Rot3::CAYLEY) {
-    // Create a fixed-size matrix
-    Eigen::Matrix3d A(between(T).matrix());
-    // Mathematica closed form optimization (procrastination?) gone wild:
-    const double a=A(0,0),b=A(0,1),c=A(0,2);
-    const double d=A(1,0),e=A(1,1),f=A(1,2);
-    const double g=A(2,0),h=A(2,1),i=A(2,2);
-    const double di = d*i, ce = c*e, cd = c*d, fg=f*g;
-    const double M = 1 + e - f*h + i + e*i;
-    const double K = 2.0 / (cd*h + M + a*M -g*(c + ce) - b*(d + di - fg));
-    const double x = (a * f - cd + f) * K;
-    const double y = (b * f - ce - c) * K;
-    const double z = (fg - di - d) * K;
-    return -2 * Vector3(x, y, z);
-  } else if(mode == Rot3::SLOW_CAYLEY) {
-    // Create a fixed-size matrix
-    Eigen::Matrix3d A(between(T).matrix());
-    // using templated version of Cayley
-    Eigen::Matrix3d Omega = CayleyFixed<3>(A);
-    return -2*Vector3(Omega(2,1),Omega(0,2),Omega(1,0));
-  } else {
-    assert(false);
-    exit(1);
-  }
+Rot3 Rot3::ChartAtOrigin::Retract(const Vector3& omega, ChartJacobian H) {
+  static const CoordinatesMode mode = ROT3_DEFAULT_COORDINATES_MODE;
+  if (mode == Rot3::EXPMAP) return Expmap(omega, H);
+  if (mode == Rot3::CAYLEY) return CayleyChart::Retract(omega, H);
+  else throw std::runtime_error("Rot3::Retract: unknown mode");
+}
+
+/* ************************************************************************* */
+Vector3 Rot3::ChartAtOrigin::Local(const Rot3& R, ChartJacobian H) {
+  static const CoordinatesMode mode = ROT3_DEFAULT_COORDINATES_MODE;
+  if (mode == Rot3::EXPMAP) return Logmap(R, H);
+  if (mode == Rot3::CAYLEY) return CayleyChart::Local(R, H);
+  else throw std::runtime_error("Rot3::Local: unknown mode");
 }
 
 /* ************************************************************************* */
 Matrix3 Rot3::matrix() const {
   return rot_;
-}
-
-/* ************************************************************************* */
-Matrix3 Rot3::transpose() const {
-  return rot_.transpose();
 }
 
 /* ************************************************************************* */

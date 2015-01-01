@@ -9,8 +9,8 @@ if(NOT DEFINED CMAKE_MACOSX_RPATH)
 endif()
 
 # Set the version number for the library
-set (GTSAM_VERSION_MAJOR 3)
-set (GTSAM_VERSION_MINOR 1)
+set (GTSAM_VERSION_MAJOR 4)
+set (GTSAM_VERSION_MINOR 0)
 set (GTSAM_VERSION_PATCH 0)
 math (EXPR GTSAM_VERSION_NUMERIC "10000 * ${GTSAM_VERSION_MAJOR} + 100 * ${GTSAM_VERSION_MINOR} + ${GTSAM_VERSION_PATCH}")
 set (GTSAM_VERSION_STRING "${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH}")
@@ -59,7 +59,7 @@ option(GTSAM_BUILD_STATIC_LIBRARY        "Build a static gtsam library, instead 
 option(GTSAM_USE_QUATERNIONS             "Enable/Disable using an internal Quaternion representation for rotations instead of rotation matrices. If enable, Rot3::EXPMAP is enforced by default." OFF)
 option(GTSAM_POSE3_EXPMAP 			 	 "Enable/Disable using Pose3::EXPMAP as the default mode. If disabled, Pose3::FIRST_ORDER will be used." OFF)
 option(GTSAM_ROT3_EXPMAP 			 	 "Ignore if GTSAM_USE_QUATERNIONS is OFF (Rot3::EXPMAP by default). Otherwise, enable Rot3::EXPMAP, or if disabled, use Rot3::CAYLEY." OFF)
-option(GTSAM_ENABLE_CONSISTENCY_CHECKS   "Enable/Disable expensive consistency checks"       OFF) 
+option(GTSAM_ENABLE_CONSISTENCY_CHECKS   "Enable/Disable expensive consistency checks"       OFF)
 option(GTSAM_WITH_TBB                    "Use Intel Threaded Building Blocks (TBB) if available" ON)
 option(GTSAM_WITH_EIGEN_MKL              "Eigen will use Intel MKL if available" ON)
 option(GTSAM_WITH_EIGEN_MKL_OPENMP       "Eigen, when using Intel MKL, will also use OpenMP for multithreading if available" ON)
@@ -129,7 +129,7 @@ else()
 endif()
 
 
-if(${Boost_VERSION} EQUAL 105600)
+if(NOT (${Boost_VERSION} LESS 105600))
 	message("Ignoring Boost restriction on optional lvalue assignment from rvalues")
 	add_definitions(-DBOOST_OPTIONAL_ALLOW_BINDING_TO_RVALUES)
 endif()
@@ -203,13 +203,13 @@ set(GTSAM_USE_SYSTEM_EIGEN OFF)
 if(GTSAM_USE_SYSTEM_EIGEN)
 	# Use generic Eigen include paths e.g. <Eigen/Core>
 	set(GTSAM_EIGEN_INCLUDE_PREFIX "")
-	
+
 	find_package(Eigen3 REQUIRED)
 	include_directories(AFTER "${EIGEN3_INCLUDE_DIR}")
 else()
 	# Use bundled Eigen include paths e.g. <gtsam/3rdparty/Eigen/Eigen/Core>
 	set(GTSAM_EIGEN_INCLUDE_PREFIX "gtsam/3rdparty/Eigen/")
-	
+
 	# Clear any variables set by FindEigen3
 	if(EIGEN3_INCLUDE_DIR)
 		set(EIGEN3_INCLUDE_DIR NOTFOUND CACHE STRING "" FORCE)
@@ -221,7 +221,6 @@ configure_file(gtsam/3rdparty/gtsam_eigen_includes.h.in gtsam/3rdparty/gtsam_eig
 
 # Install the configuration file for Eigen
 install(FILES ${PROJECT_BINARY_DIR}/gtsam/3rdparty/gtsam_eigen_includes.h DESTINATION include/gtsam/3rdparty)
-
 
 ###############################################################################
 # Global compile options
@@ -269,18 +268,18 @@ include_directories(BEFORE ${Boost_INCLUDE_DIR})
 # paths so that the compiler uses GTSAM headers in our source directory instead
 # of any previously installed GTSAM headers.
 include_directories(BEFORE
-  gtsam/3rdparty/UFconfig 
+  gtsam/3rdparty/UFconfig
   gtsam/3rdparty/CCOLAMD/Include
-  gtsam/3rdparty/metis-5.1.0/include
-  gtsam/3rdparty/metis-5.1.0/libmetis
-  gtsam/3rdparty/metis-5.1.0/GKlib
+  gtsam/3rdparty/metis/include
+  gtsam/3rdparty/metis/libmetis
+  gtsam/3rdparty/metis/GKlib
   ${PROJECT_SOURCE_DIR}
   ${PROJECT_BINARY_DIR} # So we can include generated config header files
   CppUnitLite)
 
 if(MSVC)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
-	add_definitions(/wd4251 /wd4275 /wd4251 /wd4661 /wd4344) # Disable non-DLL-exported base class and other warnings
+	add_definitions(/wd4251 /wd4275 /wd4251 /wd4661 /wd4344 /wd4503) # Disable non-DLL-exported base class and other warnings
 endif()
 
 # GCC 4.8+ complains about local typedefs which we use for shared_ptr etc.
@@ -330,6 +329,7 @@ endif(GTSAM_BUILD_UNSTABLE)
 # Install config and export files
 GtsamMakeConfigFile(GTSAM "${CMAKE_CURRENT_SOURCE_DIR}/gtsam_extra.cmake.in")
 export(TARGETS ${GTSAM_EXPORTED_TARGETS} FILE GTSAM-exports.cmake)
+
 
 # Check for doxygen availability - optional dependency
 find_package(Doxygen)

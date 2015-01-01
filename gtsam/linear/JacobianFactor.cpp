@@ -463,8 +463,7 @@ VectorValues JacobianFactor::hessianDiagonal() const {
 /* ************************************************************************* */
 // Raw memory access version should be called in Regular Factors only currently
 void JacobianFactor::hessianDiagonal(double* d) const {
-  throw std::runtime_error(
-      "JacobianFactor::hessianDiagonal raw memory access is allowed for Regular Factors only");
+  throw std::runtime_error("JacobianFactor::hessianDiagonal raw memory access is allowed for Regular Factors only");
 }
 
 /* ************************************************************************* */
@@ -530,8 +529,14 @@ VectorValues JacobianFactor::gradientAtZero() const {
 /* ************************************************************************* */
 // Raw memory access version should be called in Regular Factors only currently
 void JacobianFactor::gradientAtZero(double* d) const {
-  throw std::runtime_error(
-      "JacobianFactor::gradientAtZero raw memory access is allowed for Regular Factors only");
+  throw std::runtime_error("JacobianFactor::gradientAtZero raw memory access is allowed for Regular Factors only");
+}
+
+/* ************************************************************************* */
+Vector JacobianFactor::gradient(Key key, const VectorValues& x) const {
+  // TODO: optimize it for JacobianFactor without converting to a HessianFactor
+  HessianFactor hessian(*this);
+  return hessian.gradient(key, x);
 }
 
 /* ************************************************************************* */

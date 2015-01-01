@@ -65,36 +65,39 @@ namespace gtsam {
 
     /** Construct from a container of the sizes of each vertical block. */
     template<typename CONTAINER>
-    VerticalBlockMatrix(const CONTAINER& dimensions, DenseIndex height, bool appendOneDimension = false) :
-      rowStart_(0), rowEnd_(height), blockStart_(0)
-    {
+    VerticalBlockMatrix(const CONTAINER& dimensions, DenseIndex height,
+        bool appendOneDimension = false) :
+        variableColOffsets_(dimensions.size() + (appendOneDimension ? 2 : 1)),
+        rowStart_(0), rowEnd_(height), blockStart_(0) {
       fillOffsets(dimensions.begin(), dimensions.end(), appendOneDimension);
       matrix_.resize(height, variableColOffsets_.back());
       assertInvariants();
     }
 
     /** Construct from a container of the sizes of each vertical block and a pre-prepared matrix. */
-    template<typename CONTAINER>
-    VerticalBlockMatrix(const CONTAINER& dimensions, const Matrix& matrix, bool appendOneDimension = false) :
-      matrix_(matrix), rowStart_(0), rowEnd_(matrix.rows()), blockStart_(0)
-    {
+    template<typename CONTAINER, typename DERIVED>
+    VerticalBlockMatrix(const CONTAINER& dimensions,
+        const Eigen::MatrixBase<DERIVED>& matrix, bool appendOneDimension = false) :
+        matrix_(matrix), variableColOffsets_(dimensions.size() + (appendOneDimension ? 2 : 1)),
+        rowStart_(0), rowEnd_(matrix.rows()), blockStart_(0) {
       fillOffsets(dimensions.begin(), dimensions.end(), appendOneDimension);
-      if(variableColOffsets_.back() != matrix_.cols())
-        throw std::invalid_argument("Requested to create a VerticalBlockMatrix with dimensions that do not sum to the total columns of the provided matrix.");
+      if (variableColOffsets_.back() != matrix_.cols())
+        throw std::invalid_argument(
+            "Requested to create a VerticalBlockMatrix with dimensions that do not sum to the total columns of the provided matrix.");
       assertInvariants();
     }
 
-    /**
-     * Construct from iterator over the sizes of each vertical block. */
+    /** Construct from iterator over the sizes of each vertical block. */
     template<typename ITERATOR>
-    VerticalBlockMatrix(ITERATOR firstBlockDim, ITERATOR lastBlockDim, DenseIndex height, bool appendOneDimension = false) :
-      rowStart_(0), rowEnd_(height), blockStart_(0)
-    {
+    VerticalBlockMatrix(ITERATOR firstBlockDim, ITERATOR lastBlockDim,
+        DenseIndex height, bool appendOneDimension = false) :
+        variableColOffsets_((lastBlockDim-firstBlockDim) + (appendOneDimension ? 2 : 1)),
+        rowStart_(0), rowEnd_(height), blockStart_(0) {
       fillOffsets(firstBlockDim, lastBlockDim, appendOneDimension);
       matrix_.resize(height, variableColOffsets_.back());
       assertInvariants();
     }
-    
+
     /** Copy the block structure and resize the underlying matrix, but do not copy the matrix data.
     *  If blockStart(), rowStart(), and/or rowEnd() have been modified, this copies the structure of
     *  the corresponding matrix view. In the destination VerticalBlockView, blockStart() and
@@ -203,18 +206,12 @@ namespace gtsam {
 
     template<typename ITERATOR>
     void fillOffsets(ITERATOR firstBlockDim, ITERATOR lastBlockDim, bool appendOneDimension) {
-      variableColOffsets_.resize((lastBlockDim-firstBlockDim) + 1 + (appendOneDimension ? 1 : 0));
       variableColOffsets_[0] = 0;
       DenseIndex j=0;
-      for(ITERATOR dim=firstBlockDim; dim!=lastBlockDim; ++dim) {
+      for(ITERATOR dim=firstBlockDim; dim!=lastBlockDim; ++dim, ++j)
         variableColOffsets_[j+1] = variableColOffsets_[j] + *dim;
-        ++ j;
-      }
       if(appendOneDimension)
-      {
         variableColOffsets_[j+1] = variableColOffsets_[j] + 1;
-        ++ j;
-      }
     }
 
     friend class SymmetricBlockMatrix;

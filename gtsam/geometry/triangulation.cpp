@@ -30,7 +30,7 @@ namespace gtsam {
  * @param rank_tol SVD rank tolerance
  * @return Triangulated Point3
  */
-Point3 triangulateDLT(const std::vector<Matrix>& projection_matrices,
+Point3 triangulateDLT(const std::vector<Matrix34>& projection_matrices,
     const std::vector<Point2>& measurements, double rank_tol) {
 
   // number of cameras
@@ -41,7 +41,7 @@ Point3 triangulateDLT(const std::vector<Matrix>& projection_matrices,
 
   for (size_t i = 0; i < m; i++) {
     size_t row = i * 2;
-    const Matrix& projection = projection_matrices.at(i);
+    const Matrix34& projection = projection_matrices.at(i);
     const Point2& p = measurements.at(i);
 
     // build system of equations
