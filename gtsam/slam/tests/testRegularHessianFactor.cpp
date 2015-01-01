@@ -34,18 +34,18 @@ const double tol = 1e-5;
 /* ************************************************************************* */
 TEST(RegularHessianFactor, ConstructorNWay)
 {
-  Matrix G11 = (Matrix(2,2) << 111, 112, 113, 114);
-  Matrix G12 = (Matrix(2,2) << 121, 122, 123, 124);
-  Matrix G13 = (Matrix(2,2) << 131, 132, 133, 134);
+  Matrix G11 = (Matrix(2,2) << 111, 112, 113, 114).finished();
+  Matrix G12 = (Matrix(2,2) << 121, 122, 123, 124).finished();
+  Matrix G13 = (Matrix(2,2) << 131, 132, 133, 134).finished();
 
-  Matrix G22 = (Matrix(2,2) << 221, 222, 222, 224);
-  Matrix G23 = (Matrix(2,2) << 231, 232, 233, 234);
+  Matrix G22 = (Matrix(2,2) << 221, 222, 222, 224).finished();
+  Matrix G23 = (Matrix(2,2) << 231, 232, 233, 234).finished();
 
-  Matrix G33 = (Matrix(2,2) << 331, 332, 332, 334);
+  Matrix G33 = (Matrix(2,2) << 331, 332, 332, 334).finished();
 
-  Vector g1 = (Vector(2) << -7, -9);
-  Vector g2 = (Vector(2) << -9,  1);
-  Vector g3 = (Vector(2) <<  2,  3);
+  Vector g1 = (Vector(2) << -7, -9).finished();
+  Vector g2 = (Vector(2) << -9,  1).finished();
+  Vector g3 = (Vector(2) <<  2,  3).finished();
 
   double f = 10;
 
@@ -68,9 +68,9 @@ TEST(RegularHessianFactor, ConstructorNWay)
   EXPECT(assert_equal(Y,AtA*X));
 
   VectorValues x = map_list_of<Key, Vector>
-    (0, (Vector(2) << 1,2))
-    (1, (Vector(2) << 3,4))
-    (3, (Vector(2) << 5,6));
+    (0, (Vector(2) << 1,2).finished())
+    (1, (Vector(2) << 3,4).finished())
+    (3, (Vector(2) << 5,6).finished());
 
   VectorValues expected;
   expected.insert(0, Y.segment<2>(0));

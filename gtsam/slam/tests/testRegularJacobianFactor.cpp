@@ -35,8 +35,8 @@ namespace {
       (make_pair(2, 3*Matrix3::Identity()));
 
     // RHS and sigmas
-    const Vector b = (Vector(3) << 1., 2., 3.);
-    const SharedDiagonal noise = noiseModel::Diagonal::Sigmas((Vector(3) << 0.5,0.5,0.5));
+    const Vector b = (Vector(3) << 1., 2., 3.).finished();
+    const SharedDiagonal noise = noiseModel::Diagonal::Sigmas((Vector(3) << 0.5,0.5,0.5).finished());
   }
 
   namespace simple2 {
@@ -47,7 +47,7 @@ namespace {
       (make_pair(2, 6*Matrix3::Identity()));
 
     // RHS
-    const Vector b2 = (Vector(3) << 2., 4., 6.);
+    const Vector b2 = (Vector(3) << 2., 4., 6.).finished();
   }
 }
 
@@ -179,15 +179,15 @@ TEST(RegularJacobian, multiplyHessianAdd)
 
   // arbitrary vector X
   VectorValues X;
-  X.insert(0, (Vector(3) << 10.,20.,30.));
-  X.insert(1, (Vector(3) << 10.,20.,30.));
-  X.insert(2, (Vector(3) << 10.,20.,30.));
+  X.insert(0, (Vector(3) << 10.,20.,30.).finished());
+  X.insert(1, (Vector(3) << 10.,20.,30.).finished());
+  X.insert(2, (Vector(3) << 10.,20.,30.).finished());
 
   // arbitrary vector Y
   VectorValues Y;
-  Y.insert(0, (Vector(3) << 10.,10.,10.));
-  Y.insert(1, (Vector(3) << 20.,20.,20.));
-  Y.insert(2, (Vector(3) << 30.,30.,30.));
+  Y.insert(0, (Vector(3) << 10.,10.,10.).finished());
+  Y.insert(1, (Vector(3) << 20.,20.,20.).finished());
+  Y.insert(2, (Vector(3) << 30.,30.,30.).finished());
 
   // multiplyHessianAdd Y += alpha*A'A*X
   double alpha = 2.0;
