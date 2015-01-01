@@ -6,35 +6,31 @@
  */
 
 #pragma once
-#include <gtsam/slam/RegularJacobianFactor.h>
+#include <gtsam/slam/JacobianSchurFactor.h>
 
 namespace gtsam {
 /**
  * JacobianFactor for Schur complement that uses Q noise model
  */
 template<size_t D>
-class JacobianFactorQR: public RegularJacobianFactor<D> {
+class JacobianFactorQR: public JacobianSchurFactor<D> {
 
-private:
-
-  typedef RegularJacobianFactor<D> Base;
-  typedef Eigen::Matrix<double, 2, D> Matrix2D;
-  typedef std::pair<Key, Matrix2D> KeyMatrix2D;
+  typedef JacobianSchurFactor<D> Base;
 
 public:
 
   /**
    * Constructor
    */
-  JacobianFactorQR(const std::vector<KeyMatrix2D>& Fblocks,
+  JacobianFactorQR(const std::vector<typename Base::KeyMatrix2D>& Fblocks,
       const Matrix& E, const Matrix3& P, const Vector& b,
       const SharedDiagonal& model = SharedDiagonal()) :
-        RegularJacobianFactor<D>() {
+      JacobianSchurFactor<D>() {
     // Create a number of Jacobian factors in a factor graph
     GaussianFactorGraph gfg;
     Symbol pointKey('p', 0);
     size_t i = 0;
-    BOOST_FOREACH(const KeyMatrix2D& it, Fblocks) {
+    BOOST_FOREACH(const typename Base::KeyMatrix2D& it, Fblocks) {
       gfg.add(pointKey, E.block<2, 3>(2 * i, 0), it.first, it.second,
           b.segment<2>(2 * i), model);
       i += 1;

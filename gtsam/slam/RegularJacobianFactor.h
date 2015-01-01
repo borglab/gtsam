@@ -18,8 +18,6 @@
 
 #pragma once
 
-#include <gtsam/inference/Symbol.h>
-#include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/VectorValues.h>
 #include <boost/foreach.hpp>
@@ -32,19 +30,12 @@ class RegularJacobianFactor: public JacobianFactor {
 
 private:
 
-  typedef JacobianFactor Base;
-  typedef RegularJacobianFactor<D> This;
-
   /** Use eigen magic to access raw memory */
   typedef Eigen::Matrix<double, D, 1> DVector;
   typedef Eigen::Map<DVector> DMap;
   typedef Eigen::Map<const DVector> ConstDMap;
 
 public:
-
-  /// Default constructor
-  RegularJacobianFactor() {
-  }
 
   /** Construct an n-ary factor
    * @tparam TERMS A container whose value type is std::pair<Key, Matrix>, specifying the
@@ -66,33 +57,6 @@ public:
       JacobianFactor(keys, augmentedMatrix, sigmas) {
   }
 
-  /**
-   * @brief double* Matrix-vector multiply, i.e. y = A*x
-   * RAW memory access! Assumes keys start at 0 and go to M-1, and x is laid out that way
-   */
-  Vector operator*(const double* x) const {
-    Vector Ax = zero(Ab_.rows());
-    if (empty()) return Ax;
-
-    // Just iterate over all A matrices and multiply in correct config part
-    for(size_t pos=0; pos<size(); ++pos)
-      Ax += Ab_(pos) * ConstDMap(x + D * keys_[pos]);
-
-    return model_ ? model_->whiten(Ax) : Ax;
-  }
-
-  /**
-   * @brief double* Transpose Matrix-vector multiply, i.e. x += A'*e
-   * RAW memory access! Assumes keys start at 0 and go to M-1, and y is laid out that way
-   */
-  void transposeMultiplyAdd(double alpha, const Vector& e, double* x) const
-  {
-    Vector E = alpha * (model_ ? model_->whiten(e) : e);
-    // Just iterate over all A matrices and insert Ai^e into y
-    for(size_t pos=0; pos<size(); ++pos)
-      DMap(x + D * keys_[pos]) += Ab_(pos).transpose() * E;
-  }
-
   /** Raw memory access version of multiplyHessianAdd y += alpha * A'*A*x
    * Note: this is not assuming a fixed dimension for the variables,
    * but requires the vector accumulatedDims to tell the dimension of
@@ -101,6 +65,11 @@ public:
    * NOTE: size of accumulatedDims is size of keys + 1!! */
   void multiplyHessianAdd(double alpha, const double* x, double* y,
       const std::vector<size_t>& accumulatedDims) const {
+
+    /// Use eigen magic to access raw memory
+    typedef Eigen::Matrix<double, Eigen::Dynamic, 1> VectorD;
+    typedef Eigen::Map<VectorD> MapD;
+    typedef Eigen::Map<const VectorD> ConstMapD;
 
     if (empty())
       return;
@@ -112,7 +81,7 @@ public:
     for (size_t pos = 0; pos < size(); ++pos)
     {
       Ax += Ab_(pos)
-          * ConstDMap(x + accumulatedDims[keys_[pos]], accumulatedDims[keys_[pos] + 1] - accumulatedDims[keys_[pos]]);
+          * ConstMapD(x + accumulatedDims[keys_[pos]], accumulatedDims[keys_[pos] + 1] - accumulatedDims[keys_[pos]]);
     }
     /// Deal with noise properly, need to Double* whiten as we are dividing by variance
     if (model_) {
@@ -125,15 +94,12 @@ public:
 
     /// Again iterate over all A matrices and insert Ai^T into y
     for (size_t pos = 0; pos < size(); ++pos){
-      DMap(y + accumulatedDims[keys_[pos]], accumulatedDims[keys_[pos] + 1] - accumulatedDims[keys_[pos]]) += Ab_(
+      MapD(y + accumulatedDims[keys_[pos]], accumulatedDims[keys_[pos] + 1] - accumulatedDims[keys_[pos]]) += Ab_(
           pos).transpose() * Ax;
     }
   }
 
-  /**
-   * @brief double* Hessian-vector multiply, i.e. y += A'*(A*x)
-   * RAW memory access! Assumes keys start at 0 and go to M-1, and x and and y are laid out that way
-   */
+  /** Raw memory access version of multiplyHessianAdd */
   void multiplyHessianAdd(double alpha, const double* x, double* y) const {
 
     if (empty()) return;
@@ -201,13 +167,6 @@ public:
       DMap(d + D * j) += dj;
     }
   }
-
-  /** Non-RAW memory access versions for testRegularImplicitSchurFactor
-   * TODO: They should be removed from Regular Factors
-   */
-  using Base::multiplyHessianAdd;
-  using Base::hessianDiagonal;
-  using Base::gradientAtZero;
 
 };
 
