@@ -97,7 +97,8 @@ public:
     // Also, how do we actually get s out?  Seems like we need to store it somewhere.
     return Similarity3( //
         rotation().retract(v.head<3>()), // retract rotation using v[0,1,2]
-        translation().retract(v.segment<3>(3)), scale() + v[6]); // finally, update scale using v[6]
+        translation().retract(R() * v.segment<3>(3)), // Retract the translation
+        scale() + v[6]); //finally, update scale using v[6]
   }
 
   /// 7-dimensional vector v in tangent space that makes other = this->retract(v)
@@ -105,7 +106,8 @@ public:
 
     Vector7 v;
     v.head<3>() = rotation().localCoordinates(other.rotation());
-    v.segment<3>(3) = translation().localCoordinates(other.translation());
+    v.segment<3>(3) = rotation().unrotate(other.translation() - translation()).vector();
+    //v.segment<3>(3) = translation().localCoordinates(other.translation());
     v[6] = other.scale() - scale();
     return v;
   }
@@ -166,13 +168,19 @@ TEST(Similarity3, Manifold) {
 
   EXPECT(assert_equal(z, sim2.localCoordinates(sim)));
 
-  Similarity3 sim3 = Similarity3(Rot3(), Point3(1, 1, 1), 1);
+  Similarity3 sim3 = Similarity3(Rot3(), Point3(1, 2, 3), 1);
   Vector v3(7);
-  v3 << 0, 0, 0, 1, 1, 1, 0;
+  v3 << 0, 0, 0, 1, 2, 3, 0;
   EXPECT(assert_equal(v3, sim2.localCoordinates(sim3)));
 
-  Similarity3 other = Similarity3(Rot3::ypr(1, 2, 3), Point3(4, 5, 6), 7);
+  Similarity3 other = Similarity3(Rot3::ypr(0.01, 0.02, 0.03), Point3(0.4, 0.5, 0.6), 1);
 //  Similarity3 other = Similarity3(Rot3(),Point3(4,5,6),1);
+
+  std::cout << "Local Coords: " << sim.localCoordinates(other) << std::endl;
+  std::cout << "Retracted: \n"
+      << sim.retract(sim.localCoordinates(other)).rotation().matrix() << std::endl
+      << sim.retract(sim.localCoordinates(other)).translation().vector() << std::endl
+      << sim.retract(sim.localCoordinates(other)).scale() << std::endl;
 
   EXPECT(sim.retract(sim.localCoordinates(other)) == other);
 
