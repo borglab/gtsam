@@ -218,15 +218,15 @@ QPState QPSolver::iterate(const QPState& state) const {
 //******************************************************************************
 LinearInequalityFactorGraph QPSolver::identifyActiveConstraints(
     const LinearInequalityFactorGraph& inequalities,
-    const VectorValues& initialValues, const VectorValues& duals) const {
+    const VectorValues& initialValues, const VectorValues& duals, bool useWarmStart) const {
   LinearInequalityFactorGraph workingSet;
   BOOST_FOREACH(const LinearInequality::shared_ptr& factor, inequalities) {
     LinearInequality::shared_ptr workingFactor(new LinearInequality(*factor));
-    if (duals.exists(workingFactor->dualKey())) {
+    if (useWarmStart == true && duals.exists(workingFactor->dualKey())) {
       workingFactor->activate();
     }
     else {
-      if (duals.size() > 0) {
+      if (useWarmStart == true && duals.size() > 0) {
         workingFactor->inactivate();
       } else {
         double error = workingFactor->error(initialValues);
@@ -245,11 +245,11 @@ LinearInequalityFactorGraph QPSolver::identifyActiveConstraints(
 
 //******************************************************************************
 pair<VectorValues, VectorValues> QPSolver::optimize(
-    const VectorValues& initialValues, const VectorValues& duals) const {
+    const VectorValues& initialValues, const VectorValues& duals, bool useWarmStart) const {
 
   // Initialize workingSet from the feasible initialValues
   LinearInequalityFactorGraph workingSet =
-      identifyActiveConstraints(qp_.inequalities, initialValues, duals);
+      identifyActiveConstraints(qp_.inequalities, initialValues, duals, useWarmStart);
   QPState state(initialValues, duals, workingSet, false, 0);
 
   /// main loop of the solver

@@ -186,7 +186,7 @@ public:
   LinearInequalityFactorGraph identifyActiveConstraints(
       const LinearInequalityFactorGraph& inequalities,
       const VectorValues& initialValues,
-      const VectorValues& duals = VectorValues()) const;
+      const VectorValues& duals = VectorValues(), bool useWarmStart = true) const;
 
   /** Optimize with a provided initial values
    * For this version, it is the responsibility of the caller to provide
@@ -196,7 +196,7 @@ public:
    * @return a pair of <primal, dual> solutions
    */
   std::pair<VectorValues, VectorValues> optimize(
-      const VectorValues& initialValues, const VectorValues& duals = VectorValues()) const;
+      const VectorValues& initialValues, const VectorValues& duals = VectorValues(), bool useWarmStart = true) const;
 
   /** Optimize without an initial value.
    * This version of optimize will try to find a feasible initial value by solving

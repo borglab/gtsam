@@ -348,7 +348,8 @@ TEST(testlcnlpSolver, posesInA2DBox) {
 
   // Instantiate LCNLPSolver
   LCNLPSolver lcnlpSolver(lcnlp);
-  Values actualSolution = lcnlpSolver.optimize(initialValues).first;
+  bool useWarmStart = true;
+  Values actualSolution = lcnlpSolver.optimize(initialValues, useWarmStart).first;
 
 //  cout << "Rotation angles: " << endl;
 //  for (size_t i = 1; i<=3; i++) {
@@ -367,6 +368,7 @@ TEST(testlcnlpSolver, posesInA2DBox) {
 
 //******************************************************************************
 int main() {
+  cout<<"here: "<<endl;
   TestResult tr;
   return TestRegistry::runAllTests(tr);
 }
