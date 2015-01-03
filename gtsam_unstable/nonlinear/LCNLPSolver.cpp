@@ -70,13 +70,13 @@ VectorValues LCNLPSolver::initializeDuals() const {
 }
 
 /* ************************************************************************* */
-std::pair<Values, VectorValues> LCNLPSolver::optimize(const Values& initialValues, bool debug) const {
+std::pair<Values, VectorValues> LCNLPSolver::optimize(const Values& initialValues, bool useWarmStart, bool debug) const {
   LCNLPState state(initialValues);
   state.duals = initializeDuals();
   while (!state.converged && state.iterations < 100) {
     if (debug)
     std::cout << "state: iteration " << state.iterations << std::endl;
-    state = iterate(state, debug);
+    state = iterate(state, useWarmStart, debug);
   }
   if (debug)
   std::cout << "Number of iterations: " << state.iterations << std::endl;
@@ -84,7 +84,7 @@ std::pair<Values, VectorValues> LCNLPSolver::optimize(const Values& initialValue
 }
 
 /* ************************************************************************* */
-LCNLPState LCNLPSolver::iterate(const LCNLPState& state, bool debug) const {
+LCNLPState LCNLPSolver::iterate(const LCNLPState& state, bool useWarmStart, bool debug) const {
 
   // construct the qp subproblem
   QP qp;
@@ -98,14 +98,14 @@ LCNLPState LCNLPSolver::iterate(const LCNLPState& state, bool debug) const {
   // solve the QP subproblem
   VectorValues delta, duals;
   QPSolver qpSolver(qp);
-  if (state.iterations == 0)
+  if (useWarmStart == false || state.iterations == 0)
     boost::tie(delta, duals) = qpSolver.optimize();
   else {
     VectorValues zeroInitialValues;
     BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, state.values) {
       zeroInitialValues.insert(key_value.key, zero(key_value.value.dim()));
     }
-    boost::tie(delta, duals) = qpSolver.optimize(zeroInitialValues, state.duals);
+    boost::tie(delta, duals) = qpSolver.optimize(zeroInitialValues, state.duals, useWarmStart);
   }
 
   if (debug)
