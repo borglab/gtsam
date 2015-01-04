@@ -27,6 +27,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <typeinfo> // operator typeid
 
 namespace gtsam {
 
@@ -82,6 +83,7 @@ public:
 
   /// Virtual print function, uses traits
   virtual void print(const std::string& str) const {
+    std::cout << "(" << typeid(T).name() << ") ";
     traits<T>::Print(value_, str);
   }
 

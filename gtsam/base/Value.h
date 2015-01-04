@@ -129,9 +129,6 @@ namespace gtsam {
     template<typename ValueType>
     const ValueType& cast() const;
 
-    template<typename Chart>
-    const Chart& getChart() const;
-
     /** Virutal destructor */
     virtual ~Value() {}
 
