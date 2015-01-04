@@ -213,7 +213,7 @@ Rot3 Rot3::CayleyChart::Retract(const Vector3& omega, OptionalJacobian<3,3> H) {
   const double f = 1.0 / (4.0 + x2 + y2 + z2), _2f = 2.0 * f;
   if (H) {
     // Iserles05an, pg 147, (B.12)
-    *H = 4/(4+x2+y2+z2)*(I_3x3 + 0.5*skewSymmetric(-omega));
+    *H = 4 * f * (I_3x3 + 0.5 * skewSymmetric(-omega));
   }
   return Rot3((4 + x2 - y2 - z2) * f, (xy - 2 * z) * _2f, (xz + 2 * y) * _2f,
           (xy + 2 * z) * _2f, (4 - x2 + y2 - z2) * f, (yz - 2 * x) * _2f,
@@ -236,8 +236,8 @@ Vector3 Rot3::CayleyChart::Local(const Rot3& R, OptionalJacobian<3,3> H) {
   const double z = fg - di - d;
   const Vector3 v = K * Vector3(x, y, z);
   if (H) {
-    // Iserles05an, pg 147, (B.13)
-    *H = (4/(4+v.dot(v))*(I_3x3 + 0.5*skewSymmetric(-v))).inverse();
+    // Iserles05an, pg 147, (B.13). Note: Mathematica says the coefficient c in B.13 is redundant!
+    *H = I_3x3 - 0.5 * skewSymmetric(-v) + 0.25 * v * v.transpose();
   }
   return v;
 }
