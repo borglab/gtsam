@@ -61,6 +61,19 @@ public:
     return Matrix4::operator==(other);
   }
 
+  /// Compare with tolerance
+  bool equals(const Similarity3& sim, double tol) const {
+    return rotation().equals(sim.rotation(), tol) && translation().equals(sim.translation(), tol)
+        && scale() < (sim.scale()+tol) && scale() > (sim.scale()-tol);
+  }
+
+  void print(const std::string& s) const {
+    std::cout << s;
+    rotation().print("R:\n");
+    translation().print("t: ");
+    std::cout << "s: " << scale() << std::endl;
+  }
+
   /// @name Manifold
   /// @{
 
@@ -127,11 +140,18 @@ public:
 };
 }
 
+
 #include <gtsam/base/Testable.h>
 #include <CppUnitLite/TestHarness.h>
 
 using namespace gtsam;
 using namespace std;
+
+static Point3 P(0.2,0.7,-2);
+static Rot3 R = Rot3::rodriguez(0.3,0,0);
+static Similarity3 T(R,Point3(3.5,-8.2,4.2),1);
+static Similarity3 T2(Rot3::rodriguez(0.3,0.2,0.1),Point3(3.5,-8.2,4.2),1);
+static Similarity3 T3(Rot3::rodriguez(-90, 0, 0), Point3(1, 2, 3), 1);
 
 //******************************************************************************
 TEST(Similarity3, Constructors) {
@@ -168,24 +188,54 @@ TEST(Similarity3, Manifold) {
 
   EXPECT(assert_equal(z, sim2.localCoordinates(sim)));
 
-  Similarity3 sim3 = Similarity3(Rot3(), Point3(1, 2, 3), 1);
+  Similarity3 sim3 = Similarity3(Rot3().ypr(0.5,1,1.5), Point3(1, 2, 3), 1);
   Vector v3(7);
   v3 << 0, 0, 0, 1, 2, 3, 0;
   EXPECT(assert_equal(v3, sim2.localCoordinates(sim3)));
 
-  Similarity3 other = Similarity3(Rot3::ypr(0.01, 0.02, 0.03), Point3(0.4, 0.5, 0.6), 1);
-//  Similarity3 other = Similarity3(Rot3(),Point3(4,5,6),1);
+//  Similarity3 other = Similarity3(Rot3::ypr(0.01, 0.02, 0.03), Point3(0.4, 0.5, 0.6), 1);
+  Similarity3 other = Similarity3(Rot3::ypr(0.01, 0.02, 0.03),Point3(4,5,6),1);
+  Rot3 R = Rot3::rodriguez(0.3,0,0);
 
-  std::cout << "Local Coords: " << sim.localCoordinates(other) << std::endl;
-  std::cout << "Retracted: \n"
-      << sim.retract(sim.localCoordinates(other)).rotation().matrix() << std::endl
-      << sim.retract(sim.localCoordinates(other)).translation().vector() << std::endl
-      << sim.retract(sim.localCoordinates(other)).scale() << std::endl;
+  Vector vlocal = sim.localCoordinates(other);
 
-  EXPECT(sim.retract(sim.localCoordinates(other)) == other);
+  EXPECT(assert_equal(sim.retract(vlocal), other, 1e-2));
 
   // TODO add unit tests for retract and localCoordinates
 }
+
+/* ************************************************************************* */
+TEST( Similarity3, retract_first_order)
+{
+  Similarity3 id;
+  Vector v = zero(7);
+  v(0) = 0.3;
+  EXPECT(assert_equal(Similarity3(R, Point3(), 1), id.retract(v),1e-2));
+  v(3)=0.2;v(4)=0.7;v(5)=-2;
+  EXPECT(assert_equal(Similarity3(R, P, 1),id.retract(v),1e-2));
+}
+
+/* ************************************************************************* */
+TEST(Similarity3, localCoordinates_first_order)
+{
+  Vector d12 = repeat(7,0.1);
+  d12(6) = 1.0;
+  Similarity3 t1 = T, t2 = t1.retract(d12);
+  EXPECT(assert_equal(d12, t1.localCoordinates(t2)));
+}
+
+/* ************************************************************************* */
+TEST(Similarity3, manifold_first_order)
+{
+  Similarity3 t1 = T;
+  Similarity3 t2 = T3;
+  Similarity3 origin;
+  Vector d12 = t1.localCoordinates(t2);
+  EXPECT(assert_equal(t2, t1.retract(d12)));
+  Vector d21 = t2.localCoordinates(t1);
+  EXPECT(assert_equal(t1, t2.retract(d21)));
+}
+
 
 //******************************************************************************
 int main() {
