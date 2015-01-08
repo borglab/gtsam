@@ -746,7 +746,7 @@ TEST( Pose3, stream)
 }
 
 //******************************************************************************
-TEST(Pose3 , Invariants) {
+TEST(Pose3, Invariants) {
   Pose3 id;
 
   check_group_invariants(id,id);
@@ -762,7 +762,7 @@ TEST(Pose3 , Invariants) {
 }
 
 //******************************************************************************
-TEST(Pose3 , LieGroupDerivatives) {
+TEST(Pose3, LieGroupDerivatives) {
   Pose3 id;
 
   CHECK_LIE_GROUP_DERIVATIVES(id,id);
@@ -773,13 +773,30 @@ TEST(Pose3 , LieGroupDerivatives) {
 }
 
 //******************************************************************************
-TEST(Pose3 , ChartDerivatives) {
+TEST(Pose3, ChartDerivatives) {
   Pose3 id;
 
   CHECK_CHART_DERIVATIVES(id,id);
   CHECK_CHART_DERIVATIVES(id,T2);
   CHECK_CHART_DERIVATIVES(T2,id);
   CHECK_CHART_DERIVATIVES(T2,T3);
+}
+
+//*****************************************************************************
+// Duy's translation test
+double h1(const Pose3& pose) {
+  return pose.translation().x();
+}
+
+TEST(Pose3, NumericalHessian) {
+  Matrix6 expected;
+  expected << 0,0,0,0,0,0, //
+      0,0,0,0,0,0, //
+      0,0,0,0,0,0, //
+      0,0,0,0,0,0, //
+      0,0,0,0,0,0, //
+      0,0,0,0,0,0;
+  EXPECT(assert_equal(expected, numericalHessian(h1, T), 1e-5));
 }
 
 /* ************************************************************************* */
