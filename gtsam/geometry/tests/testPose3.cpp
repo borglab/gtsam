@@ -799,18 +799,6 @@ TEST(Pose3, NumericalHessian) {
   EXPECT(assert_equal(expected, numericalHessian(h1, T), 1e-5));
 }
 
-//******************************************************************************
-template<class Vector6>
-Matrix6 numericalHessian(boost::function<double(const Vector6&)> f, const Vector6& x,
-    double delta = 1e-5) {
-  typedef Eigen::Matrix<double, 6, 1> VectorD;
-  typedef boost::function<double(const Vector6&)> F;
-  typedef boost::function<VectorD(F, const Vector6&, double)> G;
-  G ng = static_cast<G>(numericalGradient<Vector6> );
-  return numericalDerivative11<VectorD, Vector6>(boost::bind(ng, f, _1, delta),
-      x, delta);
-}
-
 //*****************************************************************************
 // Duy's translation test, as Lie algebra function
 double h2(const Vector6& v) {
@@ -831,7 +819,7 @@ TEST(Pose3, NumericalHessian2) {
 }
 
 //*****************************************************************************
-// Duy's translation test, as Lie algebra function
+// Duy's translation test, with retract
 double h3(const Vector6& v) {
   return T.retract(v).translation().x();
 }
