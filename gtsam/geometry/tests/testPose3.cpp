@@ -782,6 +782,104 @@ TEST(Pose3, ChartDerivatives) {
   CHECK_CHART_DERIVATIVES(T2,T3);
 }
 
+// Numerical Hessian internals
+namespace internal {
+
+// Create function on tangent space
+template<class X>
+class ScalarDerivatives {
+  enum {
+    N = traits<X>::dimension
+  }; // dimension
+  typedef boost::function<double(const X&)> F; // Scalar function
+  typedef typename traits<X>::TangentVector TangentX; // Tangent Vector
+  typedef Eigen::Matrix<N, 1> V; // Gradient type
+  typedef Eigen::Matrix<N, N> M; // Hessian type
+  F f_;
+  const X& x_;
+  double delta_;
+public:
+  /// Constructor, given function and derivative step size
+  ScalarDerivatives(F f, const X& x, double delta) :
+      f_(f), x_(x), delta_(delta) {
+    BOOST_STATIC_ASSERT_MSG(
+        (boost::is_base_of<manifold_tag, typename traits<X>::structure_category>::value),
+        "Template argument X must be a manifold type.");
+    BOOST_STATIC_ASSERT_MSG(N>0,
+        "Template argument X must be fixed-size type.");
+  }
+  /// Scalar function on manifold
+  double scalar(const TangentX& d) {
+    return f(traits<X>::Retract(x_, d));
+  }
+  /// Numerical gradient
+  V numericalGradient() {
+    double factor = 1.0 / (2.0 * delta);
+
+    // Prepare a tangent vector to perturb x with, only works for fixed size
+    TangentX d = TangentX::Zero();
+    V g = V::Zero();
+    for (int j = 0; j < N; j++) {
+      d(j) = delta;
+      double hxplus = scalar(d);
+      d(j) = -delta;
+      double hxmin = scalar(d);
+      d(j) = 0.;
+      g(j) = (hxplus - hxmin) * factor;
+    }
+    return g;
+  }
+  // Numerical hessian
+  M operator()(boost::function<double(const V&)> f, const V& x, double delta) {
+    typedef boost::function<double(const V&)> F;
+    typedef boost::function<V(F, const X&, double)> G;
+    G ng = static_cast<G>(numericalGradient<V> );
+    return numericalDerivative11<V, V>(boost::bind(ng, f, _1, delta), x, delta);
+  }
+};
+
+// Vector valued functor
+// Implemented simply as the derivative of the gradient.
+template<int N>
+class NumericalHessian {
+  typedef Eigen::Matrix<N, 1> V; // argument
+  typedef Eigen::Matrix<N, N> M; // return value
+  M operator()(boost::function<double(const V&)> f, const V& x, double delta) {
+    typedef boost::function<double(const V&)> F;
+    typedef boost::function<V(F, const X&, double)> G;
+    G ng = static_cast<G>(numericalGradient<V> );
+    return numericalDerivative11<V, V>(boost::bind(ng, f, _1, delta), x, delta);
+  }
+};
+
+// Manifold functor
+template<typename X>
+class Numericalhessian {
+  static
+};
+}
+
+/**
+ * Compute numerical Hessian matrix, requiring a single manifold argument.
+ * @param f A function taking a manifold type as input and returning a scalar
+ * @param x The center point for computing the Hessian
+ * @param delta The numerical derivative step size
+ * @return n*n Hessian matrix computed via central differencing
+ */
+template<class X>
+typename internal::FixedSizeMatrix<X,X>::type numericalHessian(boost::function<double(const X&)> f, const X& x,
+    double delta = 1e-5) {
+  BOOST_STATIC_ASSERT_MSG(
+      (boost::is_base_of<gtsam::manifold_tag, typename traits<X>::structure_category>::value),
+      "Template argument X must be a manifold type.");
+  typedef Eigen::Matrix<double, traits<X>::dimension, 1> VectorD;
+  typedef boost::function<double(const X&)> F;
+  typedef boost::function<VectorD(F, const X&, double)> G;
+  G ng = static_cast<G>(numericalGradient<X> );
+  return numericalDerivative11<VectorD, X>(boost::bind(ng, f, _1, delta), x,
+      delta);
+}
+
 //*****************************************************************************
 // Duy's translation test
 double h1(const Pose3& pose) {
