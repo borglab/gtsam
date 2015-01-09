@@ -1,22 +1,25 @@
-function [cylinder] = cylinderSampling(Point2, radius, height, density)
+function [cylinder] = cylinderSampling(baseCentroid, radius, height, density)
 %
     import gtsam.*
     % calculate the cylinder area
-    A = 2 * pi * radius * height;
+    area = 2 * pi * radius * height;
     
-    PointsNum = round(A * density);
+    pointsNum = round(area * density);
     
-    Points3 = cell(PointsNum, 1);
+    points3 = cell(pointsNum, 1);
     
     % sample the points
-    for i = 1:PointsNum
+    for i = 1:pointsNum
         theta = 2 * pi * rand;
-        x = radius * cos(theta) + Point2.x;
-        y = radius * sin(theta) + Point2.y;
+        x = radius * cos(theta) + baseCentroid.x;
+        y = radius * sin(theta) + baseCentroid.y;
         z = height * rand;
-        Points3{i,1} = Point3([x,y,z]');
+        points3{i,1} = Point3([x,y,z]');
     end
    
-    cylinder.area = A;
-    cylinder.Points = Points3;
+    cylinder.area = area;
+    cylinder.radius = radius;
+    cylinder.height = height;
+    cylinder.Points = points3;
+    cylinder.centroid = Point3(baseCentroid.x, baseCentroid.y, height/2);
 end
