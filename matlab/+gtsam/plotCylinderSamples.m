@@ -1,4 +1,8 @@
-function plotCylinderSamples(cylinders, fieldSize)
+function plotCylinderSamples(cylinders, fieldSize, figID)
+% plot the cylinders on the given field
+% @author: Zhaoyang Lv
+
+    figure(figID);
 
     holdstate = ishold;
     hold on
@@ -6,10 +10,9 @@ function plotCylinderSamples(cylinders, fieldSize)
     num = size(cylinders, 1);
 
     sampleDensity = 120;
-    figure
+    
 
-    for i = 1:num        
-        %base.z = cylinders{i}.centroid.z - cylinders{i}.height/2;        
+    for i = 1:num                
         [X,Y,Z] = cylinder(cylinders{i}.radius, sampleDensity * cylinders{i}.radius * cylinders{i}.height);
         
         X = X + cylinders{i}.centroid.x;
@@ -24,6 +27,8 @@ function plotCylinderSamples(cylinders, fieldSize)
     axis equal
     axis([0, fieldSize.x, 0, fieldSize.y, 0, 20]);
         
+    grid on
+    
     if ~holdstate
         hold off
     end
