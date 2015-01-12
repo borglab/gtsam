@@ -140,6 +140,11 @@ public:
 };
 }
 
+#include <gtsam/inference/Symbol.h>
+#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/Values.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 
 #include <gtsam/base/Testable.h>
 #include <CppUnitLite/TestHarness.h>
@@ -188,18 +193,24 @@ TEST(Similarity3, Manifold) {
 
   EXPECT(assert_equal(z, sim2.localCoordinates(sim)));
 
-  Similarity3 sim3 = Similarity3(Rot3().ypr(0.5,1,1.5), Point3(1, 2, 3), 1);
+  Similarity3 sim3 = Similarity3(Rot3(), Point3(1, 2, 3), 1);
   Vector v3(7);
   v3 << 0, 0, 0, 1, 2, 3, 0;
   EXPECT(assert_equal(v3, sim2.localCoordinates(sim3)));
 
 //  Similarity3 other = Similarity3(Rot3::ypr(0.01, 0.02, 0.03), Point3(0.4, 0.5, 0.6), 1);
-  Similarity3 other = Similarity3(Rot3::ypr(0.01, 0.02, 0.03),Point3(4,5,6),1);
-  Rot3 R = Rot3::rodriguez(0.3,0,0);
+  Similarity3 other = Similarity3(Rot3::ypr(0.1, 0.2, 0.3),Point3(4,5,6),1);
 
   Vector vlocal = sim.localCoordinates(other);
 
   EXPECT(assert_equal(sim.retract(vlocal), other, 1e-2));
+
+  Similarity3 other2 = Similarity3(Rot3::ypr(0.3, 0, 0),Point3(4,5,6),1);
+  Rot3 R = Rot3::rodriguez(0.3,0,0);
+
+  Vector vlocal2 = sim.localCoordinates(other2);
+
+  EXPECT(assert_equal(sim.retract(vlocal2), other2, 1e-2));
 
   // TODO add unit tests for retract and localCoordinates
 }
@@ -234,6 +245,27 @@ TEST(Similarity3, manifold_first_order)
   EXPECT(assert_equal(t2, t1.retract(d12)));
   Vector d21 = t2.localCoordinates(t1);
   EXPECT(assert_equal(t1, t2.retract(d21)));
+}
+
+TEST(Similarity3, Optimization) {
+  Similarity3 prior = Similarity3(Rot3::ypr(0.1, 0.2, 0.3), Point3(1, 2, 3), 4);
+  prior.print("goal angle");
+  noiseModel::Isotropic::shared_ptr model = noiseModel::Isotropic::Sigma(7, 1);
+  Symbol key('x',1);
+  PriorFactor<Similarity3> factor(key, prior, model);
+
+  NonlinearFactorGraph graph;
+  graph.push_back(factor);
+  graph.print("full graph");
+
+  Values initial;
+  initial.insert(key, Similarity3());
+  initial.print("initial estimate");
+
+  Values result = LevenbergMarquardtOptimizer(graph, initial).optimize();
+  result.print("final result");
+
+  EXPECT(assert_equal(prior, result, 1e-2));
 }
 
 
