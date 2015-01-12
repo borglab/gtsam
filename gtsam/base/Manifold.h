@@ -71,7 +71,7 @@ struct HasManifoldPrereqs {
 };
 
 /// Extra manifold traits for fixed-dimension types
-template<class Class, size_t N>
+template<class Class, int N>
 struct ManifoldImpl {
   // Compile-time dimensionality
   static int GetDimension(const Class&) {
