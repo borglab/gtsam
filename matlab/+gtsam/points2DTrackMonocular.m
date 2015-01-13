@@ -79,12 +79,15 @@ marginals = Marginals(graph, initialEstimate);
 
 %% get all the 2d points track information
 % currently throws the Indeterminant linear system exception
-ptIdx = 0;
+ptx = 0;
 for i = 1:pointsNum
+   ptx = ptx + 1;
    if isempty(pts3d.pts{i})
        continue;
    end
-   pts2dTracksMono.cov{ptIdx} = marginals.marginalCovariance(symbol('p',i));
+   % cylinder index and measurements
+   pts2dTracksMono.Points{ptx} = pts3d.pts{i};
+   pts2dTracksMono.cov{ptx} = marginals.marginalCovariance(symbol('p',i));
 end
 
 end
