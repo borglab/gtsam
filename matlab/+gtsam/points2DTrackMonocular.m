@@ -77,17 +77,30 @@ graph.print(sprintf('\nFactor graph:\n'));
 
 marginals = Marginals(graph, initialEstimate);
 
-%% get all the 2d points track information
+%% get all the points track information
 % currently throws the Indeterminant linear system exception
 ptx = 0;
-for i = 1:pointsNum
-   ptx = ptx + 1;
-   if isempty(pts3d.pts{i})
-       continue;
-   end
-   % cylinder index and measurements
-   pts2dTracksMono.Points{ptx} = pts3d.pts{i};
-   pts2dTracksMono.cov{ptx} = marginals.marginalCovariance(symbol('p',i));
+for k = 1:cameraPosesNum
+
+    for i = 1:length(cylinders)
+        for j = 1:length(cylinders{i}.Points)
+            if isempty(pts3d.pts{k}.index{i}{j})
+                continue;
+            end
+            ptx = ptx + 1;
+   
+            idx = pts3d.pts{k}.index{i}{j};
+            pts2dTracksMono.pt3d{ptx} = pts3d.pts{k}.data{idx};
+            pts2dTracksMono.Z{ptx} = pts3d.pts{k}.Z{idx};
+            pts2dTracksMono.cov{ptx} = marginals.marginalCovariance(symbol('p',idx));
+        end
+    end
+   
 end
+
+%% plot the result with covariance ellipses
+hold on;
+plot3DPoints(initialEstimate, [], marginals);
+plot3DTrajectory(initialEstimate, '*', 1, 8, marginals);
 
 end
