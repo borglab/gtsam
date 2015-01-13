@@ -11,7 +11,6 @@ function plotCylinderSamples(cylinders, fieldSize, figID)
 
     sampleDensity = 120;
     
-
     for i = 1:num                
         [X,Y,Z] = cylinder(cylinders{i}.radius, sampleDensity * cylinders{i}.radius * cylinders{i}.height);
         

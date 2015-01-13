@@ -1,4 +1,4 @@
-function [visiblePoints] = cylinderSampleProjection(camera, imageSize, cylinders)
+function [visiblePoints] = cylinderSampleProjection(K, pose, imageSize, cylinders)
 
 % Input: 
 % Output:
@@ -12,6 +12,8 @@ function [visiblePoints] = cylinderSampleProjection(camera, imageSize, cylinders
 % @Authors: Zhaoyang Lv
 
 import gtsam.*
+
+camera = SimpleCamera(pose, K);
 
 %% memory allocation
 cylinderNum = length(cylinders);
