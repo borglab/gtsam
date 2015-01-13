@@ -15,14 +15,15 @@ import gtsam.*
 
 %% memory allocation
 cylinderNum = length(cylinders);
-visiblePoints.index = cell(cylinderNum);
+visiblePoints.index = cell(cylinderNum,1);
 
 pointCloudNum = 0;
 for i = 1:cylinderNum
     pointCloudNum = pointCloudNum + length(cylinders{i}.Points);
-    visiblePoints.index{i} = cell(pointCloudNum);
+    visiblePoints.index{i} = cell(pointCloudNum,1);
 end
-visiblePoints.data = cell(pointCloudNum);
+visiblePoints.data = cell(pointCloudNum,1);
+visiblePoints.Z = cell(pointCloudNum, 1);
 
 %% check visiblity of points on each cylinder
 pointCloudIndex = 0;
@@ -34,8 +35,12 @@ for i = 1:cylinderNum
     for j = 1:pointNum
 
         pointCloudIndex  = pointCloudIndex + 1;
-        
+                
         sampledPoint3 = cylinders{i}.Points{j};
+        sampledPoint3local = camera.pose.transform_to(sampledPoint3);
+        if sampledPoint3local.z < 0
+            continue; % Cheirality Exception
+        end
         Z2d = camera.project(sampledPoint3);
 
         % ignore points not visible in the scene
@@ -50,8 +55,8 @@ for i = 1:cylinderNum
         %   2. For points behind the cylinders' surfaces, the cylinder
         for k = 1:cylinderNum
 
-            rayCameraToPoint = cameraPose.translation().between(sampledPoint3).vector();
-            rayCameraToCylinder = cameraPose.translation().between(cylinders{i}.centroid).vector();
+            rayCameraToPoint = camera.pose.translation().between(sampledPoint3).vector();
+            rayCameraToCylinder = camera.pose.translation().between(cylinders{i}.centroid).vector();
             rayCylinderToPoint = cylinders{i}.centroid.between(sampledPoint3).vector();
 
             % Condition 1: all points in front of the cylinders'
@@ -69,7 +74,7 @@ for i = 1:cylinderNum
                 rayCylinderToProjected = norm(projectedRay) / norm(rayCameraToPoint) * rayCameraToPoint;
                 if rayCylinderToProjected(1) > cylinders{i}.radius && ...
                         rayCylinderToProjected(2) > cylinders{i}.radius
-                    visiblePoints.data{pointCloudIndex} = sampledPoints3;
+                    visiblePoints.data{pointCloudIndex} = sampledPoint3;
                     visiblePoints.Z{pointCloudIndex} = Z2d;
                     visiblePoints.index{i}{j} = pointCloudIndex;
                 end
