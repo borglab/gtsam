@@ -31,7 +31,7 @@ options.imageSize = Point2([640, 480]');
 % use Monocular camera or Stereo camera
 options.Mono = false;
 
-%% test1: visibility
+%% test1: visibility test in monocular camera 
 cylinders{1}.centroid = Point3(30, 50, 5);
 cylinders{2}.centroid = Point3(50, 50, 5);
 cylinders{3}.centroid = Point3(70, 50, 5);
@@ -44,16 +44,18 @@ for i = 1:3
     cylinders{i}.Points{2} = cylinders{i}.centroid.compose(Point3(cylinders{i}.radius, 0, 0));
 end
 
-camera = SimpleCamera.Lookat(Point3(40, 50, 10), ... 
+camera = SimpleCamera.Lookat(Point3(10, 50, 10), ... 
     Point3(options.fieldSize.x/2, options.fieldSize.y/2, 0), ...
     Point3([0,0,1]'), options.monoK); 
 
 pose = camera.pose;
-pts3d = cylinderSampleProjection(options.monoK, pose, options.imageSize, cylinders);
+prjMonoResult = cylinderSampleProjection(options.monoK, pose, options.imageSize, cylinders);
 
-figID = 1;
-figure(figID);
-plotCylinderSamples(cylinders, options.fieldSize, figID);
+%% test2: visibility test in stereo camera  
+prjStereoResult = cylinderSampleProjectionStereo(options.stereoK, pose, options.imageSize, cylinders);
+
+
+
 
 %% generate a set of cylinders and Samples
 cylinderNum = options.cylinderNum;

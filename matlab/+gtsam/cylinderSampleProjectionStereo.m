@@ -33,10 +33,10 @@ for i = 1:cylinderNum
         end
         
         % measurements 
-        Z.du = K.fx() * K.baseline() / samplePoint3.z;  
-        Z.uL = K.fx() * samplePoint3.x / samplePoint3.z + K.px();
-        Z.uR = uL + du;
-        Z.v = K.fy() / samplePoint3.z + K.py();
+        Z.du = K.fx() * K.baseline() / sampledPoint3local.z;  
+        Z.uL = K.fx() * sampledPoint3local.x / sampledPoint3local.z + K.px();
+        Z.uR = Z.uL + Z.du;
+        Z.v = K.fy() / sampledPoint3local.z + K.py();
 
         % ignore points not visible in the scene
         if Z.uL < 0 || Z.uL >= imageSize.x || ...
@@ -49,34 +49,39 @@ for i = 1:cylinderNum
         % use a simple math hack to check occlusion:
         %   1. All points in front of cylinders' surfaces are visible
         %   2. For points behind the cylinders' surfaces, the cylinder
+        visible = true;
         for k = 1:cylinderNum
 
             rayCameraToPoint = pose.translation().between(sampledPoint3).vector();
-            rayCameraToCylinder = pose.translation().between(cylinders{i}.centroid).vector();
-            rayCylinderToPoint = cylinders{i}.centroid.between(sampledPoint3).vector();
+            rayCameraToCylinder = pose.translation().between(cylinders{k}.centroid).vector();
+            rayCylinderToPoint = cylinders{k}.centroid.between(sampledPoint3).vector();
 
             % Condition 1: all points in front of the cylinders'
             % surfaces are visible
             if dot(rayCylinderToPoint, rayCameraToCylinder) < 0
-                visiblePoints.data{pointCloudIndex} = sampledPoint3;
-                visiblePoints.Z{pointCloudIndex} = Z;
-                visiblePoints.index{i}{j} = pointCloudIndex; 
-                continue;
-            end
-
-            % Condition 2
-            projectedRay = dot(rayCameraToCylinder, rayCameraToPoint);
-            if projectedRay > 0
-                rayCylinderToProjected = norm(projectedRay) / norm(rayCameraToPoint) * rayCameraToPoint;
-                if rayCylinderToProjected(1) > cylinders{i}.radius && ...
-                        rayCylinderToProjected(2) > cylinders{i}.radius
-                    visiblePoints.data{pointCloudIndex} = sampledPoint3;
-                    visiblePoints.Z{pointCloudIndex} = Z;
-                    visiblePoints.index{i}{j} = pointCloudIndex;
+               continue;
+            else 
+                projectedRay = dot(rayCameraToCylinder, rayCameraToPoint) / norm(rayCameraToCylinder);
+                if projectedRay > 0
+                    %rayCylinderToProjected = rayCameraToCylinder - norm(projectedRay) / norm(rayCameraToPoint) * rayCameraToPoint;
+                    if rayCylinderToPoint(1) > cylinders{i}.radius && ...
+                            rayCylinderToPoint(2) > cylinders{i}.radius
+                       continue;
+                    else
+                        visible = false;
+                        break;
+                    end
                 end
             end
-
+            
         end
+        
+        if visible
+            visiblePoints.data{pointCloudIndex} = sampledPoint3;
+            visiblePoints.Z{pointCloudIndex} = Z;
+            visiblePoints.index{i}{j} = pointCloudIndex; 
+        end
+        
     end
 
 end

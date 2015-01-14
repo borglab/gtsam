@@ -10,12 +10,8 @@ import gtsam.*
 graph = NonlinearFactorGraph;
 
 %% create the noise factors
-pointNoiseSigma = 0.1;
 poseNoiseSigmas = [0.001 0.001 0.001 0.1 0.1 0.1]';
-measurementNoiseSigma = 1.0;
 posePriorNoise  = noiseModel.Diagonal.Sigmas(poseNoiseSigmas);
-pointPriorNoise = noiseModel.Isotropic.Sigma(3, pointNoiseSigma);
-measurementNoise = noiseModel.Isotropic.Sigma(2, measurementNoiseSigma);
 stereoNoise = noiseModel.Isotropic.Sigma(3,1);
 
 cameraPosesNum = length(cameraPoses);
@@ -31,15 +27,15 @@ pts3d = cell(cameraPosesNum, 1);
 initialEstimate = Values;
 initialized = false;
 for i = 1:cameraPosesNum 
-    pts3d{i} = cylinderSampleProjectionStereo(K, cameraPose, imageSize, cylinders);
+    pts3d{i} = cylinderSampleProjectionStereo(K, cameraPoses{i}, imageSize, cylinders);
     
     if ~initialized
-        graph.add(PriorFactorPose3(symbol('x', 1), camera.pose, posePriorNoise));
+        graph.add(PriorFactorPose3(symbol('x', 1), cameraPoses{i}, posePriorNoise));
         initialized = true;
     end
     
-    for j = 1:length(pts3d.pts{i}.Z)
-        if isempty(pts3d.pts{i}.Z{j})
+    for j = 1:length(pts3d{i}.Z)
+        if isempty(pts3d{i}.Z{j})
             continue;
         end
         graph.add(GenericStereoFactor3D(StereoPoint2(pts3d{i}.Z{j}.uL, pts3d{i}.Z{j}.uR, pts3d{i}.Z{j}.v), ...
@@ -49,7 +45,7 @@ end
 
 %% initialize cameras and points close to ground truth 
 for i = 1:cameraPosesNum
-    pose_i = camera.pose.retract(0.1*randn(6,1));
+    pose_i = cameraPoses{i}.retract(0.1*randn(6,1));
     initialEstimate.insert(symbol('x', i), pose_i);    
 end
 ptsIdx = 0;
@@ -69,17 +65,19 @@ marginals = Marginals(graph, initialEstimate);
 %% get all the 2d points track information
 % currently throws the Indeterminant linear system exception
 ptx = 1;
-for i = 1:length(cylinders)
-    for j = 1:length(cylinders{i}.Points)
-        if isempty(pts3d{k}.index{i}{j})
-            continue;
-        end
-        idx = pts3d{k}.index{i}{j};
-        pts2dTracksMono.pt3d{ptx} = pts3d{k}.data{idx};
-        pts2dTracksMono.Z{ptx} = pts3d{k}.Z{idx};
-        pts2dTracksMono.cov{ptx} = marginals.marginalCovariance(symbol('p',idx));
+for k = 1:cameraPosesNum
+    for i = 1:length(cylinders)
+        for j = 1:length(cylinders{i}.Points)
+            if isempty(pts3d{k}.index{i}{j})
+                continue;
+            end
+            idx = pts3d{k}.index{i}{j};
+            pts2dTracksStereo.pt3d{ptx} = pts3d{k}.data{idx};
+            pts2dTracksStereo.Z{ptx} = pts3d{k}.Z{idx};
+            pts2dTracksStereo.cov{ptx} = marginals.marginalCovariance(symbol('p',idx));
 
-        ptx = ptx + 1;
+            ptx = ptx + 1;
+        end
     end
 end
 
