@@ -1,4 +1,4 @@
-function pts2dTracksStereo = points2DTrackStereo(cameras, imageSize, cylinders)
+function pts2dTracksStereo = points2DTrackStereo(K, cameraPoses, imageSize, cylinders)
 % Assess how accurately we can reconstruct points from a particular monocular camera setup. 
 % After creation of the factor graph for each track, linearize it around ground truth. 
 % There is no optimization
@@ -16,8 +16,9 @@ measurementNoiseSigma = 1.0;
 posePriorNoise  = noiseModel.Diagonal.Sigmas(poseNoiseSigmas);
 pointPriorNoise = noiseModel.Isotropic.Sigma(3, pointNoiseSigma);
 measurementNoise = noiseModel.Isotropic.Sigma(2, measurementNoiseSigma);
+stereoNoise = noiseModel.Isotropic.Sigma(3,1);
 
-cameraPosesNum = length(cameras);
+cameraPosesNum = length(cameraPoses);
 
 %% add measurements and initial camera & points values
 pointsNum = 0;
@@ -26,25 +27,14 @@ for i = 1:cylinderNum
     pointsNum = pointsNum + length(cylinders{i}.Points);
 end
 
-pts3d = {};
+pts3d = cell(cameraPosesNum, 1);
 initialEstimate = Values;
 initialized = false;
-for i = 1:cameraPosesNum
-    % add a constraint on the starting pose    
-    camera = cameras{i};
+for i = 1:cameraPosesNum 
+    pts3d{i} = cylinderSampleProjectionStereo(K, cameraPose, imageSize, cylinders);
     
-    pts3d.pts{i} = cylinderSampleProjection(camera, imageSize, cylinders);
-    pts3d.camera{i} = camera;
-   
     if ~initialized
         graph.add(PriorFactorPose3(symbol('x', 1), camera.pose, posePriorNoise));
-        k = 0;
-        if ~isempty(pts3d.pts{i}.data{1+k})
-            graph.add(PriorFactorPoint3(symbol('p', 1), ...
-                pts3d.pts{i}.data{1+k}, pointPriorNoise));
-        else
-            k = k+1;
-        end
         initialized = true;
     end
     
@@ -52,10 +42,9 @@ for i = 1:cameraPosesNum
         if isempty(pts3d.pts{i}.Z{j})
             continue;
         end
-        graph.add(GenericProjectionFactorCal3_S2(pts3d.pts{i}.Z{j}, ...
-            measurementNoise, symbol('x', i), symbol('p', j), camera.calibration) );    
+        graph.add(GenericStereoFactor3D(StereoPoint2(pts3d{i}.Z{j}.uL, pts3d{i}.Z{j}.uR, pts3d{i}.Z{j}.v), ...
+            stereoNoise, symbol('x', i), symbol('p', j), K));    
     end
-
 end
 
 %% initialize cameras and points close to ground truth 
@@ -79,12 +68,19 @@ marginals = Marginals(graph, initialEstimate);
 
 %% get all the 2d points track information
 % currently throws the Indeterminant linear system exception
-ptIdx = 0;
-for i = 1:pointsNum
-   if isempty(pts3d.pts{i})
-       continue;
-   end
-   pts2dTracksMono.cov{ptIdx} = marginals.marginalCovariance(symbol('p',i));
+ptx = 1;
+for i = 1:length(cylinders)
+    for j = 1:length(cylinders{i}.Points)
+        if isempty(pts3d{k}.index{i}{j})
+            continue;
+        end
+        idx = pts3d{k}.index{i}{j};
+        pts2dTracksMono.pt3d{ptx} = pts3d{k}.data{idx};
+        pts2dTracksMono.Z{ptx} = pts3d{k}.Z{idx};
+        pts2dTracksMono.cov{ptx} = marginals.marginalCovariance(symbol('p',idx));
+
+        ptx = ptx + 1;
+    end
 end
 
 end
