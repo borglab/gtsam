@@ -63,9 +63,19 @@ marginals = Marginals(graph, initialEstimate);
 %% get all the 2d points track information
 % currently throws the Indeterminant linear system exception
 for k = 1:cameraPosesNum
-    pts2dTracksStereo.pt3d{ptx} = pts3d{k}.data{idx};
-    pts2dTracksStereo.Z{ptx} = pts3d{k}.Z{idx};
-    pts2dTracksStereo.cov{ptx} = marginals.marginalCovariance(symbol('p',pts3d{k}.overallIdx{visiblePointIdx}));
+    num = length(pts3d{k}.data);
+    for i = 1:num
+        pts2dTracksStereo.pt3d{i} = pts3d{k}.data{i};
+        pts2dTracksStereo.Z{i} = pts3d{k}.Z{i};
+        pts2dTracksStereo.cov{i} = marginals.marginalCovariance(symbol('p',pts3d{k}.overallIdx{i}));
+    end
 end
+
+%% plot the result with covariance ellipses
+hold on;
+%plot3DPoints(initialEstimate, [], marginals);
+%plot3DTrajectory(initialEstimate, '*', 1, 8, marginals);
+plot3DTrajectory(initialEstimate, '*', 1, 8, marginals);
+view(3);
 
 end

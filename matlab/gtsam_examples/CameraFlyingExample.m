@@ -20,6 +20,8 @@ import gtsam.*
 options.fieldSize = Point2([100, 100]');
 % the number of cylinders
 options.cylinderNum = 10;
+% point density on cylinder
+options.density = 1;
 % The number of camera poses
 options.poseNum = 20;
 % Monocular Camera Calibration
@@ -29,7 +31,8 @@ options.stereoK = Cal3_S2Stereo(1000, 1000, 0, 320, 240, 0.2);
 % the image size of camera
 options.imageSize = Point2([640, 480]');
 % use Monocular camera or Stereo camera
-options.Mono = true;
+options.Mono = false;
+
 
 %% test1: visibility test in monocular camera 
 cylinders{1}.centroid = Point3(30, 50, 5);
@@ -66,7 +69,7 @@ for i = 1:cylinderNum
     x = 10 * cos(theta) + options.fieldSize.x/2;
     y = 10 * sin(theta) + options.fieldSize.y/2;
     baseCentroid = Point2([x, y]');
-    cylinders{i,1} = cylinderSampling(baseCentroid, 1, 5, 1);
+    cylinders{i,1} = cylinderSampling(baseCentroid, 1, 5, options.density);
 end
 
 %% plot all the cylinders and sampled points
