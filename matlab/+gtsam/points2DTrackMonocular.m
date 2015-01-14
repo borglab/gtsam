@@ -10,11 +10,10 @@ import gtsam.*
 graph = NonlinearFactorGraph;
 
 %% create the noise factors
-pointNoiseSigma = 0.1;
 poseNoiseSigmas = [0.001 0.001 0.001 0.1 0.1 0.1]';
-measurementNoiseSigma = 1.0;
 posePriorNoise  = noiseModel.Diagonal.Sigmas(poseNoiseSigmas);
-pointPriorNoise = noiseModel.Isotropic.Sigma(3, pointNoiseSigma);
+
+measurementNoiseSigma = 1.0;
 measurementNoise = noiseModel.Isotropic.Sigma(2, measurementNoiseSigma);
 
 cameraPosesNum = length(cameraPoses);
@@ -37,13 +36,6 @@ for i = 1:cameraPosesNum
    
     if ~initialized
         graph.add(PriorFactorPose3(symbol('x', 1), cameraPose, posePriorNoise));
-        k = 0;
-        if ~isempty(pts3d{i}.data{1+k})
-            graph.add(PriorFactorPoint3(symbol('p', 1), ...
-                pts3d{i}.data{1+k}, pointPriorNoise));
-        else
-            k = k+1;
-        end
         initialized = true;
     end
     
@@ -74,7 +66,7 @@ end
 %% Print the graph
 graph.print(sprintf('\nFactor graph:\n'));
 
-%marginals = Marginals(graph, initialEstimate);
+marginals = Marginals(graph, initialEstimate);
 
 %% get all the points track information
 % currently throws the Indeterminant linear system exception
@@ -89,7 +81,7 @@ for k = 1:cameraPosesNum
             idx = pts3d{k}.index{i}{j};
             pts2dTracksMono.pt3d{ptx} = pts3d{k}.data{idx};
             pts2dTracksMono.Z{ptx} = pts3d{k}.Z{idx};
-            %pts2dTracksMono.cov{ptx} = marginals.marginalCovariance(symbol('p',idx));
+            pts2dTracksMono.cov{ptx} = marginals.marginalCovariance(symbol('p',idx));
             
             ptx = ptx + 1;
         end

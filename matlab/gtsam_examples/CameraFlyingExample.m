@@ -1,15 +1,59 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+% Atlanta, Georgia 30332-0415
+% All Rights Reserved
+% Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+% 
+% See LICENSE for the license information
+%
+% @brief A camera flying example through a field of cylinder landmarks
+% @author Zhaoyang Lv
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 clear all;
 clc;
 clf;
 import gtsam.*
 
 %% define the options 
+% the testing field size
 options.fieldSize = Point2([100, 100]');
+% the number of cylinders
 options.cylinderNum = 10;
+% The number of camera poses
 options.poseNum = 20;
+% Monocular Camera Calibration
 options.monoK = Cal3_S2(525,525,0,320,240);
-options.stereoK = Cal3_S2Stereo(721,721,0.0,609,172,0.53715); % read from the VO calibration file
+% Stereo Camera Calibration
+options.stereoK = Cal3_S2Stereo(1000, 1000, 0, 320, 240, 0.2);
+% the image size of camera
 options.imageSize = Point2([640, 480]');
+% use Monocular camera or Stereo camera
+options.Mono = false;
+
+%% test1: visibility
+cylinders{1}.centroid = Point3(30, 50, 5);
+cylinders{2}.centroid = Point3(50, 50, 5);
+cylinders{3}.centroid = Point3(70, 50, 5);
+
+for i = 1:3
+    cylinders{i}.radius = 5;
+    cylinders{i}.height = 10;
+    
+    cylinders{i}.Points{1} = cylinders{i}.centroid.compose(Point3(-cylinders{i}.radius, 0, 0));
+    cylinders{i}.Points{2} = cylinders{i}.centroid.compose(Point3(cylinders{i}.radius, 0, 0));
+end
+
+camera = SimpleCamera.Lookat(Point3(40, 50, 10), ... 
+    Point3(options.fieldSize.x/2, options.fieldSize.y/2, 0), ...
+    Point3([0,0,1]'), options.monoK); 
+
+pose = camera.pose;
+pts3d = cylinderSampleProjection(options.monoK, pose, options.imageSize, cylinders);
+
+figID = 1;
+figure(figID);
+plotCylinderSamples(cylinders, options.fieldSize, figID);
 
 %% generate a set of cylinders and Samples
 cylinderNum = options.cylinderNum;
@@ -32,11 +76,9 @@ figID = 1;
 figure(figID);
 plotCylinderSamples(cylinders, options.fieldSize, figID);
 
-%% generate camera trajectories: a circle 
+%% generate ground truth camera trajectories: a circle 
 KMono = Cal3_S2(525,525,0,320,240);
-imageSize = Point2([640, 480]');
 cameraPoses = cell(options.poseNum, 1);
-% Generate ground truth trajectory r.w.t. the field center
 theta = 0;
 r = 40;
 for i = 1:options.poseNum    
@@ -45,27 +87,23 @@ for i = 1:options.poseNum
         r*sin(theta) + options.fieldSize.y/2, 10]');
     camera = SimpleCamera.Lookat(t, ... 
         Point3(options.fieldSize.x/2, options.fieldSize.y/2, 0), ...
-        Point3([0,0,1]'), KMono);    
+        Point3([0,0,1]'), options.monoK);    
     cameraPoses{i} = camera.pose;
 end
-
-%% visibility validation
-% for a simple test, it will be removed later
-%visiblePoints3 = cylinderSampleProjection(cameras{1}, imageSize, cylinders);
 
 %% plot all the projected points
 %plotProjectedCylinderSamples(visiblePoints3, cameraPoses{1}, figID);
 
-%% setp up monocular camera and get measurements
-pts2dTracksMono = points2DTrackMonocular(KMono, cameraPoses, imageSize, cylinders);
-
-%% set up stereo camera and get measurements
-% load stereo calibration
-calib = dlmread(findExampleDataFile('VO_calibration.txt'));
-KStereo = Cal3_S2Stereo(calib(1), calib(2), calib(3), calib(4), calib(5), calib(6));
-camerasStereo = cell(options.poseNum, 1);
-
-%pts2dTracksStereo = points2DTrackStereo(KStereo, cameraPoses, imageSize, cylinders);
+%% set up camera and get measurements
+if options.Mono 
+    % use Monocular Camera
+    pts2dTracksMono = points2DTrackMonocular(options.monoK, cameraPoses, ...
+        options.imageSize, cylinders);
+else 
+    % use Stereo Camera
+    pts2dTracksStereo = points2DTrackStereo(options.stereoK, cameraPoses, ...
+        options.imageSize, cylinders);
+end
 
 % plot the 2D tracks
 
