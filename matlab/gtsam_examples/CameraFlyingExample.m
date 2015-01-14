@@ -29,7 +29,7 @@ options.stereoK = Cal3_S2Stereo(1000, 1000, 0, 320, 240, 0.2);
 % the image size of camera
 options.imageSize = Point2([640, 480]');
 % use Monocular camera or Stereo camera
-options.Mono = false;
+options.Mono = true;
 
 %% test1: visibility test in monocular camera 
 cylinders{1}.centroid = Point3(30, 50, 5);
@@ -53,9 +53,6 @@ prjMonoResult = cylinderSampleProjection(options.monoK, pose, options.imageSize,
 
 %% test2: visibility test in stereo camera  
 prjStereoResult = cylinderSampleProjectionStereo(options.stereoK, pose, options.imageSize, cylinders);
-
-
-
 
 %% generate a set of cylinders and Samples
 cylinderNum = options.cylinderNum;
@@ -93,9 +90,6 @@ for i = 1:options.poseNum
     cameraPoses{i} = camera.pose;
 end
 
-%% plot all the projected points
-%plotProjectedCylinderSamples(visiblePoints3, cameraPoses{1}, figID);
-
 %% set up camera and get measurements
 if options.Mono 
     % use Monocular Camera
@@ -106,6 +100,9 @@ else
     pts2dTracksStereo = points2DTrackStereo(options.stereoK, cameraPoses, ...
         options.imageSize, cylinders);
 end
+
+%% plot all the projected points
+%plotProjectedCylinderSamples(visiblePoints3, cameraPoses{1}, figID);
 
 % plot the 2D tracks
 

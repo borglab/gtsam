@@ -28,10 +28,9 @@ end
 pts3d = cell(cameraPosesNum, 1);
 initialEstimate = Values;
 initialized = false;
-for i = 1:cameraPosesNum
-    % add a constraint on the starting pose    
-    cameraPose = cameraPoses{i};
+for i = 1:cameraPosesNum 
     
+    cameraPose = cameraPoses{i};    
     pts3d{i} = cylinderSampleProjection(K, cameraPose, imageSize, cylinders);
    
     if ~initialized
@@ -39,12 +38,10 @@ for i = 1:cameraPosesNum
         initialized = true;
     end
     
-    for j = 1:length(pts3d{i}.Z)
-        if isempty(pts3d{i}.Z{j})
-            continue;
-        end
+    measurementNum = length(pts3d{i}.Z);
+    for j = 1:measurementNum
         graph.add(GenericProjectionFactorCal3_S2(pts3d{i}.Z{j}, ...
-            measurementNoise, symbol('x', i), symbol('p', j), K) );    
+            measurementNoise, symbol('x', i), symbol('p', pts3d{i}.overallIdx{j}), K) );    
     end
 
 end
@@ -70,23 +67,13 @@ marginals = Marginals(graph, initialEstimate);
 
 %% get all the points track information
 % currently throws the Indeterminant linear system exception
-ptx = 1;
 for k = 1:cameraPosesNum
-
-    for i = 1:length(cylinders)
-        for j = 1:length(cylinders{i}.Points)
-            if isempty(pts3d{k}.index{i}{j})
-                continue;
-            end
-            idx = pts3d{k}.index{i}{j};
-            pts2dTracksMono.pt3d{ptx} = pts3d{k}.data{idx};
-            pts2dTracksMono.Z{ptx} = pts3d{k}.Z{idx};
-            pts2dTracksMono.cov{ptx} = marginals.marginalCovariance(symbol('p',idx));
-            
-            ptx = ptx + 1;
-        end
+    num = length(pts3d{k}.data);
+    for i = 1:num
+        pts2dTracksMono.pt3d{i} = pts3d{k}.data{i};
+        pts2dTracksMono.Z{i} = pts3d{k}.Z{i};
+        pts2dTracksMono.cov{i} = marginals.marginalCovariance(symbol('p',pts3d{k}.overallIdx{visiblePointIdx}));
     end
-   
 end
 
 %% plot the result with covariance ellipses

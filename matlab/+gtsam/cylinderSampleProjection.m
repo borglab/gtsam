@@ -17,18 +17,10 @@ camera = SimpleCamera(pose, K);
 
 %% memory allocation
 cylinderNum = length(cylinders);
-visiblePoints.index = cell(cylinderNum,1);
-
-pointCloudNum = 0;
-for i = 1:cylinderNum
-    pointCloudNum = pointCloudNum + length(cylinders{i}.Points);
-    visiblePoints.index{i} = cell(pointCloudNum,1);
-end
-visiblePoints.data = cell(pointCloudNum,1);
-visiblePoints.Z = cell(pointCloudNum, 1);
 
 %% check visiblity of points on each cylinder
 pointCloudIndex = 0;
+visiblePointIdx = 1;
 for i = 1:cylinderNum
     
     pointNum = length(cylinders{i}.Points);
@@ -70,8 +62,8 @@ for i = 1:cylinderNum
                 projectedRay = dot(rayCameraToCylinder, rayCameraToPoint) / norm(rayCameraToCylinder);
                 if projectedRay > 0
                     %rayCylinderToProjected = rayCameraToCylinder - norm(projectedRay) / norm(rayCameraToPoint) * rayCameraToPoint;
-                    if rayCylinderToPoint(1) > cylinders{i}.radius && ...
-                            rayCylinderToPoint(2) > cylinders{i}.radius
+                    if rayCylinderToPoint(1) > cylinders{k}.radius && ...
+                            rayCylinderToPoint(2) > cylinders{k}.radius
                        continue;
                     else
                         visible = false;
@@ -83,10 +75,13 @@ for i = 1:cylinderNum
         end
         
         if visible
-            visiblePoints.data{pointCloudIndex} = sampledPoint3;
-            visiblePoints.Z{pointCloudIndex} = Z2d;
-            visiblePoints.index{i}{j} = pointCloudIndex; 
+            visiblePoints.data{visiblePointIdx} = sampledPoint3;
+            visiblePoints.Z{visiblePointIdx} = Z2d;
+            visiblePoints.cylinderIdx{visiblePointIdx} = i;
+            visiblePoints.overallIdx{visiblePointIdx} = pointCloudIndex;
+            visiblePointIdx = visiblePointIdx + 1;
         end
+
     end
     
 end

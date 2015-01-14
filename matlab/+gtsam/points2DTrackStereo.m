@@ -34,12 +34,10 @@ for i = 1:cameraPosesNum
         initialized = true;
     end
     
-    for j = 1:length(pts3d{i}.Z)
-        if isempty(pts3d{i}.Z{j})
-            continue;
-        end
+    measurementNum = length(pts3d{i}.Z);
+    for j = 1:measurementNum
         graph.add(GenericStereoFactor3D(StereoPoint2(pts3d{i}.Z{j}.uL, pts3d{i}.Z{j}.uR, pts3d{i}.Z{j}.v), ...
-            stereoNoise, symbol('x', i), symbol('p', j), K));    
+            stereoNoise, symbol('x', i), symbol('p', pts3d{i}.overallIdx{j}), K));    
     end
 end
 
@@ -64,21 +62,10 @@ marginals = Marginals(graph, initialEstimate);
 
 %% get all the 2d points track information
 % currently throws the Indeterminant linear system exception
-ptx = 1;
 for k = 1:cameraPosesNum
-    for i = 1:length(cylinders)
-        for j = 1:length(cylinders{i}.Points)
-            if isempty(pts3d{k}.index{i}{j})
-                continue;
-            end
-            idx = pts3d{k}.index{i}{j};
-            pts2dTracksStereo.pt3d{ptx} = pts3d{k}.data{idx};
-            pts2dTracksStereo.Z{ptx} = pts3d{k}.Z{idx};
-            pts2dTracksStereo.cov{ptx} = marginals.marginalCovariance(symbol('p',idx));
-
-            ptx = ptx + 1;
-        end
-    end
+    pts2dTracksStereo.pt3d{ptx} = pts3d{k}.data{idx};
+    pts2dTracksStereo.Z{ptx} = pts3d{k}.Z{idx};
+    pts2dTracksStereo.cov{ptx} = marginals.marginalCovariance(symbol('p',pts3d{k}.overallIdx{visiblePointIdx}));
 end
 
 end
