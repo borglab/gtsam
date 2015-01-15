@@ -1,4 +1,4 @@
-function plotProjectedCylinderSamples(visiblePoints3, cameraPose, figID)
+function plotProjectedCylinderSamples(pts3d, covariance, figID)
 % plot the visible projected points on the cylinders
 % author: Zhaoyang Lv
 
@@ -9,26 +9,31 @@ function plotProjectedCylinderSamples(visiblePoints3, cameraPose, figID)
     holdstate = ishold;
     hold on
 
-    %plotCamera(cameraPose, 5);
-    
-    pointsNum = size(visiblePoints3, 1)
-    
-    for i=1:pointsNum
-        ray = visiblePoints3{i}.between(cameraPose.translation()).vector();
-        dist = norm(ray);
-        
-        p = plot3(visiblePoints3{i}.x, visiblePoints3{i}.y, visiblePoints3{i}.z, ...
-            'o', 'MarkerFaceColor', 'Green');
-        
-        for t=0:0.1:dist
-            marchingRay = ray * t;
-            p.XData = visiblePoints3{i}.x + marchingRay(1);
-            p.YData = visiblePoints3{i}.y + marchingRay(2);
-            p.ZData = visiblePoints3{i}.z + marchingRay(3);
-            drawnow update
-        end
-        
+    pointsNum = length(pts3d);
+    for i = 1:pointsNum
+        plotPoint3(pts3d{i}, 'green', covariance{i}); 
+        hold on
     end
+    
+%     for i=1:pointsNum
+%         ray = pts2dTracksStereo{i}.between(cameraPose.translation()).vector();
+%         dist = norm(ray);
+%         
+%         p = plot3(pts2dTracksStereo{i}.x, pts2dTracksStereo{i}.y, pts2dTracksStereo{i}.z, ...
+%             'o', 'MarkerFaceColor', 'Green');
+%         
+%         for t=0:0.1:dist
+%             marchingRay = ray * t;
+%             p.XData = pts2dTracksStereo{i}.x + marchingRay(1);
+%             p.YData = pts2dTracksStereo{i}.y + marchingRay(2);
+%             p.ZData = pts2dTracksStereo{i}.z + marchingRay(3);
+%             drawnow update
+%         end
+%         
+%     end
+
+    axis equal;
+    axis([0, options.fieldSize.x, 0, options.fieldSize.y, 0, 20]);
     
     if ~holdstate
         hold off

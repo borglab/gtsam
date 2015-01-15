@@ -5,6 +5,11 @@ import gtsam.*
 %% memory allocation
 cylinderNum = length(cylinders);
 
+visiblePoints.data = cell(1);
+visiblePoints.Z = cell(1);
+visiblePoints.cylinderIdx = cell(1);
+visiblePoints.overallIdx = cell(1);
+
 %% check visiblity of points on each cylinder
 pointCloudIndex = 0;
 visiblePointIdx = 1;

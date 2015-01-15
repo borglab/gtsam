@@ -12,7 +12,7 @@ graph = NonlinearFactorGraph;
 %% create the noise factors
 poseNoiseSigmas = [0.001 0.001 0.001 0.1 0.1 0.1]';
 posePriorNoise  = noiseModel.Diagonal.Sigmas(poseNoiseSigmas);
-stereoNoise = noiseModel.Isotropic.Sigma(3,1);
+stereoNoise = noiseModel.Isotropic.Sigma(3,0.2);
 
 cameraPosesNum = length(cameraPoses);
 
@@ -35,6 +35,9 @@ for i = 1:cameraPosesNum
     end
     
     measurementNum = length(pts3d{i}.Z);
+    if measurementNum < 1
+        continue;
+    end
     for j = 1:measurementNum
         graph.add(GenericStereoFactor3D(StereoPoint2(pts3d{i}.Z{j}.uL, pts3d{i}.Z{j}.uR, pts3d{i}.Z{j}.v), ...
             stereoNoise, symbol('x', i), symbol('p', pts3d{i}.overallIdx{j}), K));    
@@ -64,6 +67,9 @@ marginals = Marginals(graph, initialEstimate);
 % currently throws the Indeterminant linear system exception
 for k = 1:cameraPosesNum
     num = length(pts3d{k}.data);
+    if num < 1
+        continue;
+    end
     for i = 1:num
         pts2dTracksStereo.pt3d{i} = pts3d{k}.data{i};
         pts2dTracksStereo.Z{i} = pts3d{k}.Z{i};

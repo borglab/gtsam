@@ -37,13 +37,11 @@ options.stereoK = Cal3_S2Stereo(1000, 1000, 0, 320, 240, 0.2);
 % the image size of camera
 options.imageSize = Point2([640, 480]');
 % use Monocular camera or Stereo camera
-options.Mono = true;
+options.Mono = false;
 % fps for image
 options.fps = 20;
 % camera flying speed
 options.speed = 20;
-
-
 
 
 %% test1: visibility test in monocular camera 
@@ -131,23 +129,12 @@ else
         options.imageSize, cylinders);
     
     figID = 2;
-    figure(figID)
+    plotProjectedCylinderSamples(pts2dTracksStereo.pt3d, pts2dTracksStereo.cov, figID);
 
-    axis equal;
-    axis([0, options.fieldSize.x, 0, options.fieldSize.y, 0, 20]);
-    
-    ptsSize = length(pts2dTracksStereo.pt3d{i});
-    for i = 1:ptsSize
-        plotPoint3(pts2dTracksStereo.pt3d{i}, 'red', pts2dTracksStereo.cov{i}); 
-        hold on
-    end
-    
-    hold off
 end
 
 %% plot all the projected points
 
-%plotProjectedCylinderSamples(visiblePoints3, cameraPoses{1}, figID);
 
 % plot the 2D tracks
 
