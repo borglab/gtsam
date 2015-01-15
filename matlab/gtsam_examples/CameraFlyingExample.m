@@ -87,7 +87,7 @@ end
 % now is plotting on a 100 * 100 field
 figID = 1;
 figure(figID);
-plotCylinderSamples(cylinders, options.fieldSize, figID);
+plotCylinderSamples(cylinders, options, figID);
 
 % %% generate ground truth camera trajectories: a circle 
 % KMono = Cal3_S2(525,525,0,320,240);
@@ -129,7 +129,7 @@ else
         options.imageSize, cylinders);
     
     figID = 2;
-    plotProjectedCylinderSamples(pts2dTracksStereo.pt3d, pts2dTracksStereo.cov, figID);
+    plotProjectedCylinderSamples(pts2dTracksStereo.pt3d, pts2dTracksStereo.cov, options, figID);
 
 end
 

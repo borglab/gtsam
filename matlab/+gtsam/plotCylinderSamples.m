@@ -1,4 +1,4 @@
-function plotCylinderSamples(cylinders, fieldSize, figID)
+function plotCylinderSamples(cylinders, options, figID)
 % plot the cylinders on the given field
 % @author: Zhaoyang Lv
 
@@ -24,7 +24,7 @@ function plotCylinderSamples(cylinders, fieldSize, figID)
     end
     
     axis equal
-    axis([0, fieldSize.x, 0, fieldSize.y, 0, 20]);
+    axis([0, options.fieldSize.x, 0, options.fieldSize.y, 0, 20]);
         
     grid on
     

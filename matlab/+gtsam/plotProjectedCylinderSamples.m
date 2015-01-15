@@ -1,5 +1,5 @@
-function plotProjectedCylinderSamples(pts3d, covariance, figID)
-% plot the visible projected points on the cylinders
+function plotProjectedCylinderSamples(pts3d, covariance, options, figID)
+% plot the visible points on the cylinders
 % author: Zhaoyang Lv
 
     import gtsam.*
@@ -11,7 +11,8 @@ function plotProjectedCylinderSamples(pts3d, covariance, figID)
 
     pointsNum = length(pts3d);
     for i = 1:pointsNum
-        plotPoint3(pts3d{i}, 'green', covariance{i}); 
+        %gtsam.plotPoint3(p, 'g', covariance{i});
+        plotPoint3(pts3d{i}, 'r', covariance{i}); 
         hold on
     end
     

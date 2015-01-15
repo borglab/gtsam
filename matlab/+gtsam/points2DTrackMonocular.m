@@ -59,6 +59,13 @@ for i = 1:cameraPosesNum
 end
 
 for i = 1:pointsNum
+    % add in values
+    point_j = points3d{i}.data.retract(0.1*randn(3,1));
+    initialEstimate.insert(symbol('p', i), point_j); 
+    
+    if ~points3d{i}.visiblity 
+        continue;
+    end
     % single measurement. not added to graph
     factorNum = length(points3d{i}.Z);
     if factorNum > 1
@@ -68,41 +75,40 @@ for i = 1:pointsNum
                 measurementNoise, symbol('x', cameraIdx), symbol('p', points3d{i}.cameraConstraint{j}), K) );    
         end
     end
-   
-    % add in values
-    point_j = points3d{i}.data.retract(0.1*randn(3,1));
-    initialEstimate.insert(symbol('p', i), point_j);
-    
+  
 end
 
 %% Print the graph
 graph.print(sprintf('\nFactor graph:\n'));
 
+%% linearize the graph
+% currently throws the Indeterminant linear system exception
 marginals = Marginals(graph, initialEstimate);
 
 %% get all the points track information
-% currently throws the Indeterminant linear system exception
 for i = 1:pointsNum
-    if points3d{i}.visiblity
-        pts2dTracksMono.pt3d{i} = points3d{i}.data;
-        pts2dTracksMono.Z = points3d{i}.Z;
+    if ~points3d{i}.visiblity
+        continue;
+    end
+    
+    pts2dTracksMono.pt3d{end+1} = points3d{i}.data;
+    pts2dTracksMono.Z{end+1} = points3d{i}.Z;
 
-        if length(points3d{i}.Z) == 1
-            %pts2dTracksMono.cov{i} singular matrix 
-        else 
-            pts2dTracksMono.cov{i} = marginals.marginalCovariance(symbol('p', i));    
-        end
+    if length(points3d{i}.Z) == 1
+        %pts2dTracksMono.cov{i} singular matrix 
+    else 
+        pts2dTracksMono.cov{end+1} = marginals.marginalCovariance(symbol('p', i));    
     end
 end
 
-for k = 1:cameraPosesNum
-    num = length(pts3d{k}.data);
-    for i = 1:num
-        pts2dTracksMono.pt3d{i} = pts3d{k}.data{i};
-        pts2dTracksMono.Z{i} = pts3d{k}.Z{i};
-        pts2dTracksMono.cov{i} = marginals.marginalCovariance(symbol('p',pts3d{k}.overallIdx{visiblePointIdx}));
-    end
-end
+% for k = 1:cameraPosesNum
+%     num = length(pts3d{k}.data);
+%     for i = 1:num
+%         pts2dTracksMono.pt3d{i} = pts3d{k}.data{i};
+%         pts2dTracksMono.Z{i} = pts3d{k}.Z{i};
+%         pts2dTracksMono.cov{i} = marginals.marginalCovariance(symbol('p',pts3d{k}.overallIdx{visiblePointIdx}));
+%     end
+% end
 
 %% plot the result with covariance ellipses
 hold on;

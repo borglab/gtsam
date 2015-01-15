@@ -19,63 +19,99 @@ cameraPosesNum = length(cameraPoses);
 %% add measurements and initial camera & points values
 pointsNum = 0;
 cylinderNum = length(cylinders);
+points3d = cell(0);
 for i = 1:cylinderNum
+    cylinderPointsNum = length(cylinders{i}.Points);
     pointsNum = pointsNum + length(cylinders{i}.Points);
+    for j = 1:cylinderPointsNum
+        points3d{end+1}.data = cylinders{i}.Points{j};
+        points3d{end}.Z = cell(0);
+        points3d{end}.cameraConstraint = cell(0);
+        points3d{end}.visiblity = false;
+    end
 end
+
+graph.add(PriorFactorPose3(symbol('x', 1), cameraPoses{1}, posePriorNoise));
 
 pts3d = cell(cameraPosesNum, 1);
 initialEstimate = Values;
-initialized = false;
 for i = 1:cameraPosesNum 
     pts3d{i} = cylinderSampleProjectionStereo(K, cameraPoses{i}, imageSize, cylinders);
     
-    if ~initialized
-        graph.add(PriorFactorPose3(symbol('x', 1), cameraPoses{i}, posePriorNoise));
-        initialized = true;
+    if isempty(pts3d{i}.Z)
+        continue;
     end
     
     measurementNum = length(pts3d{i}.Z);
-    if measurementNum < 1
-        continue;
-    end
     for j = 1:measurementNum
+        index = pts3d{i}.overallIdx{j};
+        points3d{index}.Z{end+1} = pts3d{i}.Z{j};
+        points3d{index}.cameraConstraint{end+1} = i;
+        points3d{index}.visiblity = true;
+    end
+    
+    for j = 1:length(pts3d{i}.Z)
         graph.add(GenericStereoFactor3D(StereoPoint2(pts3d{i}.Z{j}.uL, pts3d{i}.Z{j}.uR, pts3d{i}.Z{j}.v), ...
             stereoNoise, symbol('x', i), symbol('p', pts3d{i}.overallIdx{j}), K));    
     end
 end
 
-%% initialize cameras and points close to ground truth 
+%% initialize graph and values
 for i = 1:cameraPosesNum
     pose_i = cameraPoses{i}.retract(0.1*randn(6,1));
     initialEstimate.insert(symbol('x', i), pose_i);    
 end
-ptsIdx = 0;
-for i = 1:length(cylinders)
-    for j = 1:length(cylinders{i}.Points)
-        ptsIdx = ptsIdx + 1;
-        point_j = cylinders{i}.Points{j}.retract(0.1*randn(3,1));
-        initialEstimate.insert(symbol('p', ptsIdx), point_j);
+
+for i = 1:pointsNum
+    point_j = points3d{i}.data.retract(0.1*randn(3,1));
+    initialEstimate.insert(symbol('p', i), point_j);
+    
+    if ~points3d{i}.visiblity
+        continue;
     end
+    
+    factorNum = length(points3d{i}.Z);
+    for j = 1:factorNum
+        cameraIdx = points3d{i}.cameraConstraint{j};
+        graph.add(GenericStereoFactor3D(StereoPoint2(points3d{i}.Z{j}.uL, points3d{i}.Z{j}.uR, points3d{i}.Z{j}.v), ...
+            stereoNoise, symbol('x', cameraIdx), symbol('p', points3d{i}.cameraConstraint{j}), K));            
+    end    
 end
+
 
 %% Print the graph
 graph.print(sprintf('\nFactor graph:\n'));
 
+%% linearize the graph
 marginals = Marginals(graph, initialEstimate);
 
 %% get all the 2d points track information
-% currently throws the Indeterminant linear system exception
-for k = 1:cameraPosesNum
-    num = length(pts3d{k}.data);
-    if num < 1
+pts2dTracksStereo.pt3d = cell(0);
+pts2dTracksStereo.Z = cell(0);
+pts2dTracksStereo.cov = cell(0);
+for i = 1:pointsNum
+    if ~points3d{i}.visiblity
         continue;
     end
-    for i = 1:num
-        pts2dTracksStereo.pt3d{i} = pts3d{k}.data{i};
-        pts2dTracksStereo.Z{i} = pts3d{k}.Z{i};
-        pts2dTracksStereo.cov{i} = marginals.marginalCovariance(symbol('p',pts3d{k}.overallIdx{i}));
-    end
+    
+    pts2dTracksStereo.pt3d{end+1} = points3d{i}.data;
+    pts2dTracksStereo.Z{end+1} = points3d{i}.Z;
+    pts2dTracksStereo.cov{end+1} = marginals.marginalCovariance(symbol('p', i));    
+   
 end
+
+
+% for k = 1:cameraPosesNum
+%     if isempty(pts3d{k}.data)
+%         continue;
+%     end
+% 
+%     for i = 1:length(pts3d{k}.data)
+%         pts2dTracksStereo.pt3d{end+1} = pts3d{k}.data{i};
+%         pts2dTracksStereo.Z{end+1} = pts3d{k}.Z{i};
+%         pts2dTracksStereo.cov{end+1} = marginals.marginalCovariance(symbol('p',pts3d{k}.overallIdx{i}));
+%     end
+% end
 
 %% plot the result with covariance ellipses
 hold on;
