@@ -19,11 +19,17 @@ import gtsam.*
 % the testing field size
 options.fieldSize = Point2([100, 100]');
 % the number of cylinders
-options.cylinderNum = 10;
+options.cylinderNum = 20;
 % point density on cylinder
 options.density = 1;
+
 % The number of camera poses
 options.poseNum = 20;
+% covariance scaling factor
+options.scale = 1;
+
+
+%% Camera Setup
 % Monocular Camera Calibration
 options.monoK = Cal3_S2(525,525,0,320,240);
 % Stereo Camera Calibration
@@ -31,7 +37,13 @@ options.stereoK = Cal3_S2Stereo(1000, 1000, 0, 320, 240, 0.2);
 % the image size of camera
 options.imageSize = Point2([640, 480]');
 % use Monocular camera or Stereo camera
-options.Mono = false;
+options.Mono = true;
+% fps for image
+options.fps = 20;
+% camera flying speed
+options.speed = 20;
+
+
 
 
 %% test1: visibility test in monocular camera 
@@ -57,7 +69,7 @@ prjMonoResult = cylinderSampleProjection(options.monoK, pose, options.imageSize,
 %% test2: visibility test in stereo camera  
 prjStereoResult = cylinderSampleProjectionStereo(options.stereoK, pose, options.imageSize, cylinders);
 
-%% generate a set of cylinders and Samples
+%% generate a set of cylinders and samples
 cylinderNum = options.cylinderNum;
 cylinders = cell(cylinderNum, 1);
 
@@ -65,12 +77,13 @@ cylinders = cell(cylinderNum, 1);
 % Now it set up a circle of cylinders
 theta = 0;
 for i = 1:cylinderNum
-    theta = theta + 2*pi / 10;
-    x = 10 * cos(theta) + options.fieldSize.x/2;
-    y = 10 * sin(theta) + options.fieldSize.y/2;
+    theta = theta + 2*pi/10;
+    x = 30 * rand * cos(theta) + options.fieldSize.x/2;
+    y = 20 * rand * sin(theta) + options.fieldSize.y/2;
     baseCentroid = Point2([x, y]');
     cylinders{i,1} = cylinderSampling(baseCentroid, 1, 5, options.density);
 end
+
 
 %% plot all the cylinders and sampled points
 % now is plotting on a 100 * 100 field
@@ -78,20 +91,34 @@ figID = 1;
 figure(figID);
 plotCylinderSamples(cylinders, options.fieldSize, figID);
 
-%% generate ground truth camera trajectories: a circle 
+% %% generate ground truth camera trajectories: a circle 
+% KMono = Cal3_S2(525,525,0,320,240);
+% cameraPoses = cell(options.poseNum, 1);
+% theta = 0;
+% r = 40;
+% for i = 1:options.poseNum    
+%     theta = (i-1)*2*pi/options.poseNum;
+%     t = Point3([r*cos(theta) + options.fieldSize.x/2, ...
+%         r*sin(theta) + options.fieldSize.y/2, 10]');
+%     camera = SimpleCamera.Lookat(t, ... 
+%         Point3(options.fieldSize.x/2, options.fieldSize.y/2, 0), ...
+%         Point3([0,0,1]'), options.monoK);    
+%     cameraPoses{i} = camera.pose;
+% end
+
+%% generate ground truth camera trajectories: a line
 KMono = Cal3_S2(525,525,0,320,240);
 cameraPoses = cell(options.poseNum, 1);
 theta = 0;
-r = 40;
 for i = 1:options.poseNum    
-    theta = (i-1)*2*pi/options.poseNum;
-    t = Point3([r*cos(theta) + options.fieldSize.x/2, ...
-        r*sin(theta) + options.fieldSize.y/2, 10]');
+    t = Point3([(i-1)*(options.fieldSize.x - 20)/options.poseNum + 20, ...
+        15, 10]');
     camera = SimpleCamera.Lookat(t, ... 
         Point3(options.fieldSize.x/2, options.fieldSize.y/2, 0), ...
         Point3([0,0,1]'), options.monoK);    
     cameraPoses{i} = camera.pose;
 end
+
 
 %% set up camera and get measurements
 if options.Mono 
@@ -102,9 +129,24 @@ else
     % use Stereo Camera
     pts2dTracksStereo = points2DTrackStereo(options.stereoK, cameraPoses, ...
         options.imageSize, cylinders);
+    
+    figID = 2;
+    figure(figID)
+
+    axis equal;
+    axis([0, options.fieldSize.x, 0, options.fieldSize.y, 0, 20]);
+    
+    ptsSize = length(pts2dTracksStereo.pt3d{i});
+    for i = 1:ptsSize
+        plotPoint3(pts2dTracksStereo.pt3d{i}, 'red', pts2dTracksStereo.cov{i}); 
+        hold on
+    end
+    
+    hold off
 end
 
 %% plot all the projected points
+
 %plotProjectedCylinderSamples(visiblePoints3, cameraPoses{1}, figID);
 
 % plot the 2D tracks
