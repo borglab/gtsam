@@ -100,7 +100,7 @@ public:
 
   /// Return true is allocated, false if default constructor was used
   operator bool() const {
-    return map_.data();
+    return map_.data() != NULL;
   }
 
   /// De-reference, like boost optional
@@ -156,7 +156,7 @@ public:
 
   /// Return true is allocated, false if default constructor was used
   operator bool() const {
-    return pointer_;
+    return pointer_!=NULL;
   }
 
   /// De-reference, like boost optional
