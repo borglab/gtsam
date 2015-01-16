@@ -81,7 +81,7 @@ struct ManifoldImpl {
 
 /// Extra manifold traits for variable-dimension types
 template<class Class>
-struct ManifoldImpl<Class, Eigen::Dynamic> {
+    struct ManifoldImpl<Class, size_t(Eigen::Dynamic)> {
   // Run-time dimensionality
   static int GetDimension(const Class& m) {
     return m.dim();
