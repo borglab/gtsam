@@ -2,7 +2,7 @@
 # note the source dir on each 
 set (tests_exclude "")
 
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang") # might not be best test - Richard & Jason & Frank
+if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang") # might not be best test - Richard & Jason & Frank
 	# clang linker segfaults on large testSerializationSLAM 
 	list (APPEND tests_exclude "testSerializationSLAM.cpp") 
 endif()
