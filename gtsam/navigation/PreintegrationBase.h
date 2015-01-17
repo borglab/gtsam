@@ -360,7 +360,7 @@ public:
           // dfV/dPosej
           Matrix::Zero(3,6),
           // dfR/dPosej
-          D_fR_fRrot *  ( I_3x3 ), Z_3x3;
+          D_fR_fRrot, Z_3x3;
     }
     if(H4) {
       H4->resize(9,3);
