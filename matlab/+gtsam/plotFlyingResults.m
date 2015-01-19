@@ -24,15 +24,16 @@ for i = 0:keys.size - 1
     P = marginals.marginalCovariance(key);
     
     h_result = gtsam.plotPose3(pose, P, 1);
+
 end
 
 %% plot point covariance
 
+
+
 if exist('h_result', 'var')
     delete(h_result);
 end
-
-
 
 if ~holdstate
     hold off

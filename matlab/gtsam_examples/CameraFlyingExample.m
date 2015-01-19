@@ -26,7 +26,7 @@ options.cylinder.cylinderNum = 15; % pls be smaller than 20
 options.cylinder.radius = 3;  % pls be smaller than 5
 options.cylinder.height = 10;
 % point density on cylinder
-options.cylinder.pointDensity = 1;
+options.cylinder.pointDensity = 0.05;
 
 %% set up the camera
 %   parameters set according to the stereo camera:
@@ -162,8 +162,6 @@ else
     % use Stereo Camera
     [pts2dTracksStereo, estimateValuesStereo] = points2DTrackStereo(options.camera.stereoK, ...
         cameraPoses, options.camera.resolution, cylinders);
-    
-    plotFlyingResults(pts2dTracksStereo.pt3d, pts2dTracksStereo.cov, estimateValuesStereo, options, figID);
 end
 
 %% plot all the projected points

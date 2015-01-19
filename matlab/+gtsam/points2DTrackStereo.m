@@ -101,7 +101,7 @@ for i = 1:pointsNum
 end
 
 %% plot the result with covariance ellipses
-plotFlyingResults(pts2dTracksStereo.pts3d, pts2dTracksStereo.cov, initialiEstimate, marginals);
+plotFlyingResults(pts2dTracksStereo.pt3d, pts2dTracksStereo.cov, initialEstimate, marginals);
 
 %plot3DTrajectory(initialEstimate, '*', 1, 8, marginals);
 %view(3);
