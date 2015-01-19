@@ -476,13 +476,22 @@ TEST(Values, Destructors) {
 }
 
 /* ************************************************************************* */
-TEST(Values, FixedSize) {
+TEST(Values, FixedVector) {
   Values values;
   Vector v(3); v << 5.0, 6.0, 7.0;
-  values.insertFixed(key1, v, 3);
+  values.insert(key1, v);
   Vector3 expected(5.0, 6.0, 7.0);
   CHECK(assert_equal((Vector)expected, values.at<Vector3>(key1)));
-  CHECK_EXCEPTION(values.insertFixed(key1, v, 12),runtime_error);
+  CHECK_EXCEPTION(values.at<Vector7>(key1), exception);
+}
+/* ************************************************************************* */
+TEST(Values, FixedMatrix) {
+  Values values;
+  Matrix v(1,3); v << 5.0, 6.0, 7.0;
+  values.insert(key1, v);
+  Vector3 expected(5.0, 6.0, 7.0);
+  CHECK(assert_equal((Vector)expected, values.at<Matrix13>(key1)));
+  CHECK_EXCEPTION(values.at<Matrix23>(key1), exception);
 }
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }

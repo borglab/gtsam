@@ -25,8 +25,6 @@
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/linear/VectorValues.h>
 
-#include <list>
-
 #include <boost/foreach.hpp>
 #ifdef __GNUC__
 #pragma GCC diagnostic push
@@ -37,6 +35,9 @@
 #pragma GCC diagnostic pop
 #endif
 #include <boost/iterator/transform_iterator.hpp>
+
+#include <list>
+#include <sstream>
 
 using namespace std;
 
@@ -113,24 +114,6 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Vector Values::atFixed(Key j,  size_t n) {
-    switch (n) {
-    case 1: return at<Vector1>(j);
-    case 2: return at<Vector2>(j);
-    case 3: return at<Vector3>(j);
-    case 4: return at<Vector4>(j);
-    case 5: return at<Vector5>(j);
-    case 6: return at<Vector6>(j);
-    case 7: return at<Vector7>(j);
-    case 8: return at<Vector8>(j);
-    case 9: return at<Vector9>(j);
-    default:
-      throw runtime_error(
-          "Values::at fixed size can only handle n in 1..9");
-    }
-  }
-
-  /* ************************************************************************* */
   const Value& Values::at(Key j) const {
     // Find the item
     KeyValueMap::const_iterator item = values_.find(j);
@@ -146,24 +129,6 @@ namespace gtsam {
     std::pair<iterator,bool> insertResult = tryInsert(j, val);
     if(!insertResult.second)
       throw ValuesKeyAlreadyExists(j);
-  }
-
-  /* ************************************************************************* */
-  void Values::insertFixed(Key j, const Vector& v, size_t n) {
-    switch (n) {
-    case 1: insert<Vector1>(j,v); break;
-    case 2: insert<Vector2>(j,v); break;
-    case 3: insert<Vector3>(j,v); break;
-    case 4: insert<Vector4>(j,v); break;
-    case 5: insert<Vector5>(j,v); break;
-    case 6: insert<Vector6>(j,v); break;
-    case 7: insert<Vector7>(j,v); break;
-    case 8: insert<Vector8>(j,v); break;
-    case 9: insert<Vector9>(j,v); break;
-    default:
-      throw runtime_error(
-          "Values::insert fixed size can only handle n in 1..9");
-    }
   }
 
   /* ************************************************************************* */
@@ -264,6 +229,20 @@ namespace gtsam {
       message_ =
           "Attempting to retrieve value with key \"" + DefaultKeyFormatter(key_) + "\", type stored in Values is " +
           std::string(storedTypeId_.name()) + " but requested type was " + std::string(requestedTypeId_.name());
+    return message_.c_str();
+  }
+
+  /* ************************************************************************* */
+  const char* NoMatchFoundForFixed::what() const throw() {
+    if(message_.empty()) {
+      ostringstream oss;
+    oss
+        << "Attempting to retrieve fixed-size matrix with dimensions " //
+        << M1_ << "x" << N1_
+        << ", but found dynamic Matrix with mismatched dimensions " //
+        << M2_ << "x" << N2_;
+      message_ = oss.str();
+    }
     return message_.c_str();
   }
 

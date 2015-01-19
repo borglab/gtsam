@@ -252,23 +252,97 @@ namespace gtsam {
      return filter(key_value.key);
    }
 
-  /* ************************************************************************* */
-  template<typename ValueType>
-  const ValueType& Values::at(Key j) const {
-    // Find the item
-    KeyValueMap::const_iterator item = values_.find(j);
+   /* ************************************************************************* */
 
-    // Throw exception if it does not exist
-    if(item == values_.end())
-      throw ValuesKeyDoesNotExist("retrieve", j);
+    namespace internal {
 
     // Check the type and throw exception if incorrect
-    try {
-      return dynamic_cast<const GenericValue<ValueType>&>(*item->second).value();
-    } catch (std::bad_cast &) {
-      throw ValuesIncorrectType(j, typeid(*item->second), typeid(ValueType));
-    }
-  }
+    template<typename ValueType>
+    struct handle {
+      ValueType operator()(Key j, const gtsam::Value * const pointer) {
+        try {
+          return dynamic_cast<const GenericValue<ValueType>&>(*pointer).value();
+        } catch (std::bad_cast &) {
+          throw ValuesIncorrectType(j, typeid(*pointer), typeid(ValueType));
+        }
+      }
+    };
+
+    // Handle dynamic vectors
+    template<>
+    struct handle<Eigen::Matrix<double, -1, 1> > {
+       Eigen::Matrix<double, -1, 1> operator()(Key j,
+          const gtsam::Value * const pointer) {
+        try {
+          return dynamic_cast<const GenericValue<Eigen::Matrix<double, -1, 1> >&>(*pointer).value();
+        } catch (std::bad_cast &) {
+          throw ValuesIncorrectType(j, typeid(*pointer),
+              typeid(Eigen::Matrix<double, -1, 1>));
+        }
+      }
+    };
+
+    // Handle dynamic matrices
+    template<int N>
+    struct handle<Eigen::Matrix<double, -1, N> > {
+       Eigen::Matrix<double, -1, N> operator()(Key j,
+          const gtsam::Value * const pointer) {
+        try {
+          return dynamic_cast<const GenericValue<Eigen::Matrix<double, -1, N> >&>(*pointer).value();
+        } catch (std::bad_cast &) {
+          throw ValuesIncorrectType(j, typeid(*pointer),
+              typeid(Eigen::Matrix<double, -1, N>));
+        }
+      }
+    };
+
+    // Request for a fixed vector
+    template<int M>
+    struct handle<Eigen::Matrix<double, M, 1> > {
+      Eigen::Matrix<double, M, 1> operator()(Key j,
+          const gtsam::Value * const pointer) {
+        try {
+          return dynamic_cast<const GenericValue<Eigen::Matrix<double, M, 1> >&>(*pointer).value();
+        } catch (std::bad_cast &) {
+          Matrix A = handle<Eigen::VectorXd>()(j, pointer);
+          if (A.rows() != M || A.cols() != 1)
+            throw NoMatchFoundForFixed(M, 1, A.rows(), A.cols());
+          else
+            return A;
+        }
+      }
+    };
+
+    // Request for a fixed matrix
+    template<int M, int N>
+    struct handle<Eigen::Matrix<double, M, N> > {
+      Eigen::Matrix<double, M, N> operator()(Key j,
+          const gtsam::Value * const pointer) {
+        try {
+          return dynamic_cast<const GenericValue<Eigen::Matrix<double, M, N> >&>(*pointer).value();
+        } catch (std::bad_cast &) {
+          Matrix A = handle<Eigen::MatrixXd>()(j, pointer);
+          if (A.rows() != M || A.cols() != N)
+            throw NoMatchFoundForFixed(M, N, A.rows(), A.cols());
+          else
+            return A;
+        }
+      }
+    };
+    } // internal
+
+   /* ************************************************************************* */
+   template<typename ValueType>
+   ValueType Values::at(Key j) const {
+     // Find the item
+     KeyValueMap::const_iterator item = values_.find(j);
+
+     // Throw exception if it does not exist
+     if(item == values_.end())
+       throw ValuesKeyDoesNotExist("at", j);
+
+     return internal::handle<ValueType>()(j,item->second);
+   }
 
   /* ************************************************************************* */
   template<typename ValueType>
