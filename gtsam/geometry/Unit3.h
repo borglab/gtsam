@@ -155,7 +155,13 @@ private:
   template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int version) {
       ar & BOOST_SERIALIZATION_NVP(p_);
-      ar & BOOST_SERIALIZATION_NVP(B_);
+      // homebrew serialize Eigen Matrix
+      ar & boost::serialization::make_nvp("B11", (*B_)(0,0));
+      ar & boost::serialization::make_nvp("B12", (*B_)(0,1));
+      ar & boost::serialization::make_nvp("B21", (*B_)(1,0));
+      ar & boost::serialization::make_nvp("B22", (*B_)(1,1));
+      ar & boost::serialization::make_nvp("B31", (*B_)(2,0));
+      ar & boost::serialization::make_nvp("B32", (*B_)(2,1));
     }
 
   /// @}
