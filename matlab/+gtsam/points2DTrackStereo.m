@@ -1,4 +1,4 @@
-function pts2dTracksStereo = points2DTrackStereo(K, cameraPoses, imageSize, cylinders)
+function [pts2dTracksStereo, initialEstimate] = points2DTrackStereo(K, cameraPoses, imageSize, cylinders)
 % Assess how accurately we can reconstruct points from a particular monocular camera setup. 
 % After creation of the factor graph for each track, linearize it around ground truth. 
 % There is no optimization
@@ -100,24 +100,10 @@ for i = 1:pointsNum
    
 end
 
-
-% for k = 1:cameraPosesNum
-%     if isempty(pts3d{k}.data)
-%         continue;
-%     end
-% 
-%     for i = 1:length(pts3d{k}.data)
-%         pts2dTracksStereo.pt3d{end+1} = pts3d{k}.data{i};
-%         pts2dTracksStereo.Z{end+1} = pts3d{k}.Z{i};
-%         pts2dTracksStereo.cov{end+1} = marginals.marginalCovariance(symbol('p',pts3d{k}.overallIdx{i}));
-%     end
-% end
-
 %% plot the result with covariance ellipses
-hold on;
-%plot3DPoints(initialEstimate, [], marginals);
+plotFlyingResults(pts2dTracksStereo.pts3d, pts2dTracksStereo.cov, initialiEstimate, marginals);
+
 %plot3DTrajectory(initialEstimate, '*', 1, 8, marginals);
-plot3DTrajectory(initialEstimate, '*', 1, 8, marginals);
-view(3);
+%view(3);
 
 end

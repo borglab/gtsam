@@ -101,20 +101,8 @@ for i = 1:pointsNum
     end
 end
 
-% for k = 1:cameraPosesNum
-%     num = length(pts3d{k}.data);
-%     for i = 1:num
-%         pts2dTracksMono.pt3d{i} = pts3d{k}.data{i};
-%         pts2dTracksMono.Z{i} = pts3d{k}.Z{i};
-%         pts2dTracksMono.cov{i} = marginals.marginalCovariance(symbol('p',pts3d{k}.overallIdx{visiblePointIdx}));
-%     end
-% end
-
-%% plot the result with covariance ellipses
-hold on;
 %plot3DPoints(initialEstimate, [], marginals);
 %plot3DTrajectory(initialEstimate, '*', 1, 8, marginals);
-plot3DTrajectory(initialEstimate, '*', 1, 8);
 view(3);
 
 
