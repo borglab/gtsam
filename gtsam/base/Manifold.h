@@ -71,7 +71,7 @@ struct HasManifoldPrereqs {
 };
 
 /// Extra manifold traits for fixed-dimension types
-template<class Class, size_t N>
+template<class Class, int N>
 struct ManifoldImpl {
   // Compile-time dimensionality
   static int GetDimension(const Class&) {
@@ -81,7 +81,7 @@ struct ManifoldImpl {
 
 /// Extra manifold traits for variable-dimension types
 template<class Class>
-    struct ManifoldImpl<Class, size_t(Eigen::Dynamic)> {
+    struct ManifoldImpl<Class, Eigen::Dynamic> {
   // Run-time dimensionality
   static int GetDimension(const Class& m) {
     return m.dim();
