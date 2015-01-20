@@ -1,4 +1,4 @@
-function [pts2dTracksStereo, initialEstimate] = points2DTrackStereo(K, cameraPoses, imageSize, cylinders)
+function [pts2dTracksStereo, initialEstimate] = points2DTrackStereo(K, cameraPoses, options, cylinders)
 % Assess how accurately we can reconstruct points from a particular monocular camera setup. 
 % After creation of the factor graph for each track, linearize it around ground truth. 
 % There is no optimization
@@ -36,7 +36,7 @@ graph.add(PriorFactorPose3(symbol('x', 1), cameraPoses{1}, posePriorNoise));
 pts3d = cell(cameraPosesNum, 1);
 initialEstimate = Values;
 for i = 1:cameraPosesNum 
-    pts3d{i} = cylinderSampleProjectionStereo(K, cameraPoses{i}, imageSize, cylinders);
+    pts3d{i} = cylinderSampleProjectionStereo(K, cameraPoses{i}, options.camera.resolution, cylinders);
     
     if isempty(pts3d{i}.Z)
         continue;
@@ -48,12 +48,11 @@ for i = 1:cameraPosesNum
         points3d{index}.Z{end+1} = pts3d{i}.Z{j};
         points3d{index}.cameraConstraint{end+1} = i;
         points3d{index}.visiblity = true;
+  
+        graph.add(GenericStereoFactor3D(StereoPoint2(pts3d{i}.Z{j}.uL, pts3d{i}.Z{j}.uR, pts3d{i}.Z{j}.v), ...
+            stereoNoise, symbol('x', i), symbol('p', index), K));    
     end
     
-    for j = 1:length(pts3d{i}.Z)
-        graph.add(GenericStereoFactor3D(StereoPoint2(pts3d{i}.Z{j}.uL, pts3d{i}.Z{j}.uR, pts3d{i}.Z{j}.v), ...
-            stereoNoise, symbol('x', i), symbol('p', pts3d{i}.overallIdx{j}), K));    
-    end
 end
 
 %% initialize graph and values
@@ -64,18 +63,7 @@ end
 
 for i = 1:pointsNum
     point_j = points3d{i}.data.retract(0.1*randn(3,1));
-    initialEstimate.insert(symbol('p', i), point_j);
-    
-    if ~points3d{i}.visiblity
-        continue;
-    end
-    
-    factorNum = length(points3d{i}.Z);
-    for j = 1:factorNum
-        cameraIdx = points3d{i}.cameraConstraint{j};
-        graph.add(GenericStereoFactor3D(StereoPoint2(points3d{i}.Z{j}.uL, points3d{i}.Z{j}.uR, points3d{i}.Z{j}.v), ...
-            stereoNoise, symbol('x', cameraIdx), symbol('p', points3d{i}.cameraConstraint{j}), K));            
-    end    
+    initialEstimate.insert(symbol('p', i), point_j);    
 end
 
 
@@ -96,12 +84,16 @@ for i = 1:pointsNum
     
     pts2dTracksStereo.pt3d{end+1} = points3d{i}.data;
     pts2dTracksStereo.Z{end+1} = points3d{i}.Z;
-    pts2dTracksStereo.cov{end+1} = marginals.marginalCovariance(symbol('p', i));    
-   
+    pts2dTracksStereo.cov{end+1} = marginals.marginalCovariance(symbol('p', i));       
+end
+
+cameraPosesCov = cell(cameraPosesNum, 1);
+for i = 1:cameraPosesNum
+    cameraPosesCov{i} = marginals.marginalCovariance(symbol('x', i));
 end
 
 %% plot the result with covariance ellipses
-plotFlyingResults(pts2dTracksStereo.pt3d, pts2dTracksStereo.cov, initialEstimate, marginals);
+plotFlyingResults(pts2dTracksStereo.pt3d, pts2dTracksStereo.cov, cameraPoses, cameraPosesCov, cylinders, options);
 
 %plot3DTrajectory(initialEstimate, '*', 1, 8, marginals);
 %view(3);

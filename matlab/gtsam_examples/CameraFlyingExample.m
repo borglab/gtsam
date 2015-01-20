@@ -37,7 +37,7 @@ options.camera.IS_MONO = false;
 % the field of view of camera
 options.camera.fov = 120;
 % fps for image
-options.camera.fps = 25;
+options.camera.fps = 10;
 % camera pixel resolution
 options.camera.resolution = Point2(752, 480);
 % camera horizon
@@ -68,12 +68,6 @@ options.speed = 20;
 options.poseNum = options.fieldSize.x / (options.speed / options.camera.fps);
 % display covariance scaling factor
 options.scale = 1;
-
-% if(options.writeVideo)
-%     videoObj = VideoWriter('Camera_Flying_Example.avi');
-%     videoObj.Quality = 100;
-%     videoObj.FrameRate = options.fps;
-% end
 
 
 %% This is for tests
@@ -133,12 +127,6 @@ while i <= cylinderNum
     i = i+1;
 end
 
-%% plot all the cylinders and sampled points
-% now is plotting on a 100 * 100 field
-figID = 1;
-figure(figID);
-plotCylinderSamples(cylinders, options, figID);
-
 %% generate ground truth camera trajectories: a line
 KMono = Cal3_S2(525,525,0,320,240);
 cameraPoses = cell(options.poseNum, 1);
@@ -161,22 +149,11 @@ if options.camera.IS_MONO
 else 
     % use Stereo Camera
     [pts2dTracksStereo, estimateValuesStereo] = points2DTrackStereo(options.camera.stereoK, ...
-        cameraPoses, options.camera.resolution, cylinders);
+        cameraPoses, options, cylinders);
 end
 
-%% plot all the projected points
 
 
-% plot the 2D tracks
-
-% ToDo: plot the trajectories
-%plot3DTrajectory();
-
-
-%%close video
-% if(options.writeVideo)
-%     close(videoObj);
-% end
 
  
 
