@@ -129,7 +129,7 @@ else()
 endif()
 
 
-if(${Boost_VERSION} EQUAL 105600)
+if(NOT (${Boost_VERSION} LESS 105600))
 	message("Ignoring Boost restriction on optional lvalue assignment from rvalues")
 	add_definitions(-DBOOST_OPTIONAL_ALLOW_BINDING_TO_RVALUES)
 endif()
