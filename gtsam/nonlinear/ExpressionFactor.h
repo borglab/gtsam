@@ -106,6 +106,12 @@ public:
 
     return factor;
   }
+
+  /// @return a deep copy of this factor
+  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+        gtsam::NonlinearFactor::shared_ptr(new ExpressionFactor(*this))); }
+
 };
 // ExpressionFactor
 
