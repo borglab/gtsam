@@ -11,6 +11,7 @@ if(options.writeVideo)
     videoObj = VideoWriter('Camera_Flying_Example.avi');
     videoObj.Quality = 100;
     videoObj.FrameRate = options.camera.fps;
+    open(videoObj);
 end
 
 %% plot all the cylinders and sampled points
@@ -32,9 +33,16 @@ for i = 1:cylinderNum
     Y = Y + cylinders{i}.centroid.y;
     Z = Z * cylinders{i}.height;
 
-    cylinderHandle = surf(X,Y,Z);
-    set(cylinderHandle, 'FaceAlpha', 0.5);
+    h_cylinder = surf(X,Y,Z);
+    set(h_cylinder, 'FaceAlpha', 0.5);
     hold on
+end
+
+drawnow;
+
+if options.writeVideo
+    currFrame = getframe(gcf);
+    writeVideo(videoObj, currFrame);
 end
 
 %% plot trajectories
@@ -69,13 +77,38 @@ for i = 1:posesSize
     h_cov = gtsam.covarianceEllipse3D(C,gPp); 
     
     drawnow;
+    
+    if options.writeVideo
+        currFrame = getframe(gcf);
+        writeVideo(videoObj, currFrame);
+    end
 end
+
+
+if exist('h_cov', 'var')
+    delete(h_cov);
+end
+
+% wait for two seconds
+pause(2);
+
 
 %% plot point covariance
 
+% if exist('h_cylinder', 'var')
+%     delete(h_cylinder);
+% end
+
 pointSize = length(pts3d);
 for i = 1:pointSize
+    plot3(pts3d{i}.x, pts3d{i}.y, pts3d{i}.z);
+    gtsam.covarianceEllipse3D([pts3d{i}.x; pts3d{i}.y; pts3d{i}.z], pts3dCov{i});
+    %drawnow;
     
+    if options.writeVideo
+        currFrame = getframe(gcf);
+        writeVideo(videoObj, currFrame);
+    end
 end
 
 if ~holdstate
