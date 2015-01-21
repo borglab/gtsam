@@ -30,7 +30,7 @@ public:
   NonlinearInequalityFactorGraph() {
   }
 
-  /// Linearize to a LinearEqualityFactorGraph
+  /// Linearize to a LinearInequalityFactorGraph
   LinearInequalityFactorGraph::shared_ptr linearize(
       const Values& linearizationPoint) const {
     LinearInequalityFactorGraph::shared_ptr linearGraph(

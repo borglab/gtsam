@@ -159,12 +159,14 @@ boost::tuple<double, int> QPSolver::computeStepSize(
 QPState QPSolver::iterate(const QPState& state) const {
   static bool debug = false;
 
-  // Solve with the current working set
+  // Algorithm 16.3 from Nocedal06book.
+  // Solve with the current working set eqn 16.39, but instead of solving for p solve for x
   VectorValues newValues = solveWithCurrentWorkingSet(state.workingSet);
   if (debug)
     newValues.print("New solution:");
 
   // If we CAN'T move further
+  // if p_k = 0 is the original condition, modified by Duy to say that the state update is zero.
   if (newValues.equals(state.values, 1e-7)) {
     // Compute lambda from the dual graph
     if (debug)
@@ -192,12 +194,12 @@ QPState QPSolver::iterate(const QPState& state) const {
     }
   }
   else {
-    // If we CAN make some progress
+    // If we CAN make some progress, i.e. p_k != 0
     // Adapt stepsize if some inactive constraints complain about this move
     double alpha;
     int factorIx;
     VectorValues p = newValues - state.values;
-    boost::tie(alpha, factorIx) = //
+    boost::tie(alpha, factorIx) = // using 16.41
         computeStepSize(state.workingSet, state.values, p);
     if (debug)
       cout << "alpha, factorIx: " << alpha << " " << factorIx << " "
