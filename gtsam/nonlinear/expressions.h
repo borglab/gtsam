@@ -18,7 +18,7 @@ Expression<T> between(const Expression<T>& t1, const Expression<T>& t2) {
   return Expression<T>(traits<T>::Between, t1, t2);
 }
 
-//typedef Expression<double> double_;
+typedef Expression<double> Double_;
 typedef Expression<Vector3> Vector3_;
 
 } // \namespace gtsam
