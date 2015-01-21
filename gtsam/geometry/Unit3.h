@@ -171,5 +171,7 @@ private:
 // Define GTSAM traits
 template <> struct traits<Unit3> : public internal::Manifold<Unit3> {};
 
+template <> struct traits<const Unit3> : public internal::Manifold<Unit3> {};
+
 } // namespace gtsam
 

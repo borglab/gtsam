@@ -142,5 +142,8 @@ private:
 template<>
 struct traits<Cal3Unified> : public internal::Manifold<Cal3Unified> {};
 
+template<>
+struct traits<const Cal3Unified> : public internal::Manifold<Cal3Unified> {};
+
 }
 

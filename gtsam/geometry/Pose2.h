@@ -293,5 +293,8 @@ GTSAM_EXPORT boost::optional<Pose2> align(const std::vector<Point2Pair>& pairs);
 template<>
 struct traits<Pose2> : public internal::LieGroupTraits<Pose2> {};
 
+template<>
+struct traits<const Pose2> : public internal::LieGroupTraits<Pose2> {};
+
 } // namespace gtsam
 
