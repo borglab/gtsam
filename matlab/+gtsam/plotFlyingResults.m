@@ -19,10 +19,7 @@ end
 figID = 1;
 figure(figID);
 
-axis equal
-axis([0, options.fieldSize.x, 0, options.fieldSize.y, 0, 20]);
-
-view(3);
+view([30, 0]);
 
 sampleDensity = 120;
 cylinderNum = length(cylinders);
@@ -34,7 +31,7 @@ for i = 1:cylinderNum
     Z = Z * cylinders{i}.height;
 
     h_cylinder = surf(X,Y,Z);
-    set(h_cylinder, 'FaceAlpha', 0.5);
+    set(h_cylinder, 'FaceColor', [0 0 0.5], 'FaceAlpha', 0.2, 'EdgeColor', [0 0 1]);
     hold on
 end
 
@@ -98,6 +95,9 @@ for i = 1:posesSize
         end
     end
     
+    axis equal
+    axis([0, options.fieldSize.x, 0, options.fieldSize.y, 0, 20]);
+    
     drawnow;
     
     if options.writeVideo
@@ -113,6 +113,11 @@ end
 
 % wait for two seconds
 pause(2);
+
+% change views
+for i = 0 : 0.5 : 60
+    view([i + 30, i]);
+end
 
 
 %% plot point covariance

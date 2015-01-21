@@ -103,7 +103,5 @@ end
 
 %plot3DPoints(initialEstimate, [], marginals);
 %plot3DTrajectory(initialEstimate, '*', 1, 8, marginals);
-view(3);
-
 
 end
