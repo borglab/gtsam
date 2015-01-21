@@ -56,6 +56,21 @@ TEST( PinholeCamera, constructor)
 }
 
 //******************************************************************************
+TEST(PinholeCamera, Create) {
+
+  Matrix actualH1, actualH2;
+  EXPECT(assert_equal(camera, Camera::Create(pose,K, actualH1, actualH2)));
+
+  // Check derivative
+  boost::function<Camera(Pose3,Cal3_S2)> f = //
+      boost::bind(Camera::Create,_1,_2,boost::none,boost::none);
+  Matrix numericalH1 = numericalDerivative21<Camera,Pose3,Cal3_S2>(f,pose,K);
+  EXPECT(assert_equal(numericalH1, actualH1, 1e-9));
+  Matrix numericalH2 = numericalDerivative22<Camera,Pose3,Cal3_S2>(f,pose,K);
+  EXPECT(assert_equal(numericalH2, actualH2, 1e-8));
+}
+
+//******************************************************************************
 TEST(PinholeCamera, Pose) {
 
   Matrix actualH;

@@ -108,6 +108,20 @@ public:
     return PinholeCamera(pose3, K);
   }
 
+  // Create PinholeCamera, with derivatives
+  static PinholeCamera Create(const Pose3& pose, const Calibration &K,
+      OptionalJacobian<dimension, 6> H1 = boost::none, //
+      OptionalJacobian<dimension, DimK> H2 = boost::none) {
+    typedef Eigen::Matrix<double, DimK, 6> MatrixK6;
+    if (H1)
+      *H1 << I_6x6, MatrixK6::Zero();
+    typedef Eigen::Matrix<double, 6, DimK> Matrix6K;
+    typedef Eigen::Matrix<double, DimK, DimK> MatrixK;
+    if (H2)
+      *H2 << Matrix6K::Zero(), MatrixK::Identity();
+    return PinholeCamera(pose,K);
+  }
+
   /// @}
   /// @name Advanced Constructors
   /// @{
