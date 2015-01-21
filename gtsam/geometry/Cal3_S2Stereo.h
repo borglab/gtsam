@@ -158,4 +158,8 @@ namespace gtsam {
   struct traits<Cal3_S2Stereo> : public internal::Manifold<Cal3_S2Stereo> {
   };
 
+  template<>
+  struct traits<const Cal3_S2Stereo> : public internal::Manifold<Cal3_S2Stereo> {
+  };
+
 } // \ namespace gtsam

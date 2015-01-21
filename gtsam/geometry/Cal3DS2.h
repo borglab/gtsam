@@ -112,5 +112,8 @@ private:
 template<>
 struct traits<Cal3DS2> : public internal::Manifold<Cal3DS2> {};
 
+template<>
+struct traits<const Cal3DS2> : public internal::Manifold<Cal3DS2> {};
+
 }
 

@@ -204,5 +204,8 @@ private:
 template<>
 struct traits<CalibratedCamera> : public internal::Manifold<CalibratedCamera> {};
 
+template<>
+struct traits<const CalibratedCamera> : public internal::Manifold<CalibratedCamera> {};
+
 }
 

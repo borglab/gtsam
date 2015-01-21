@@ -226,4 +226,7 @@ private:
 template<>
 struct traits<Cal3_S2> : public internal::Manifold<Cal3_S2> {};
 
+template<>
+struct traits<const Cal3_S2> : public internal::Manifold<Cal3_S2> {};
+
 } // \ namespace gtsam
