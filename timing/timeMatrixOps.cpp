@@ -62,9 +62,9 @@ int main(int argc, char* argv[]) {
     gtsam::SubMatrix top = mat.block(0, 0, n, n);
     gtsam::SubMatrix block = mat.block(m/4, n/4, m-m/2, n-n/2);
 
-    cout << format("  Basic: %1%x%2%\n") % m % n;
-    cout << format("  Full:  mat(%1%:%2%, %3%:%4%)\n") % 0 % m % 0 % n;
-    cout << format("  Top:   mat(%1%:%2%, %3%:%4%)\n") % 0 % n % 0 % n;
+    cout << format("  Basic: %1%x%2%\n") % (int)m % (int)n;
+    cout << format("  Full:  mat(%1%:%2%, %3%:%4%)\n") % 0 % (int)m % 0 % (int)n;
+    cout << format("  Top:   mat(%1%:%2%, %3%:%4%)\n") % 0 % (int)n % 0 % (int)n;
     cout << format("  Block: mat(%1%:%2%, %3%:%4%)\n") % size_t(m/4) % size_t(m-m/4) % size_t(n/4) % size_t(n-n/4);
     cout << endl;
 
