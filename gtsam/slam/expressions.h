@@ -36,6 +36,7 @@ Point3_ transform_to(const Pose3_& x, const Point3_& p) {
 // Projection
 
 typedef Expression<Cal3_S2> Cal3_S2_;
+typedef Expression<Cal3Bundler> Cal3Bundler_;
 
 Point2_ project(const Point3_& p_cam) {
   return Point2_(PinholeCamera<Cal3_S2>::project_to_camera, p_cam);
