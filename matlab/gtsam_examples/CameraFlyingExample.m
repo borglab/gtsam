@@ -20,6 +20,7 @@ import gtsam.*
 % test or run
 options.enableTests = false;
 
+%% cylinder options
 % the number of cylinders in the field
 options.cylinder.cylinderNum = 15; % pls be smaller than 20
 % cylinder size
@@ -28,7 +29,7 @@ options.cylinder.height = 10;
 % point density on cylinder
 options.cylinder.pointDensity = 0.05;
 
-%% set up the camera
+%% camera options
 %   parameters set according to the stereo camera:
 %   http://www.matrix-vision.com/USB2.0-single-board-camera-mvbluefox-mlc.html
 
@@ -66,9 +67,14 @@ options.fieldSize = Point2([100, 100]');
 options.speed = 20;
 % number of camera poses in the simulated trajectory
 options.poseNum = options.fieldSize.x / (options.speed / options.camera.fps);
-% display covariance scaling factor
-options.scale = 1;
 
+%% ploting options
+% display covariance scaling factor
+options.plot.scale = 1;
+% plot the trajectory covariance
+options.plot.DISP_TRAJ_COV = true;
+% plot points covariance
+options.plot.POINTS_COV = true;
 
 %% This is for tests
 if options.enableTests
@@ -140,7 +146,6 @@ for i = 1:options.poseNum
     cameraPoses{i} = camera.pose;
 end
 
-
 %% set up camera and get measurements
 if options.camera.IS_MONO 
     % use Monocular Camera
@@ -148,7 +153,7 @@ if options.camera.IS_MONO
         options.camera.resolution, cylinders);
 else 
     % use Stereo Camera
-    [pts2dTracksStereo, estimateValuesStereo] = points2DTrackStereo(options.camera.stereoK, ...
+    pts2dTracksStereo = points2DTrackStereo(options.camera.stereoK, ...
         cameraPoses, options, cylinders);
 end
 

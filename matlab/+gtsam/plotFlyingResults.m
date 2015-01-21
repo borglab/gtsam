@@ -1,4 +1,4 @@
-function plotFlyingResults(pts3d, pts3dCov, poses, posesCov, cylinders, options)
+function plotFlyingResults(pts3d, poses, posesCov, cylinders, options)
 % plot the visible points on the cylinders and trajectories
 % author: Zhaoyang Lv
 
@@ -45,15 +45,16 @@ if options.writeVideo
     writeVideo(videoObj, currFrame);
 end
 
-%% plot trajectories
+%% plot trajectories and points 
 posesSize = length(poses);
+pointSize = length(pts3d);
 for i = 1:posesSize
     if i > 1
         plot3([poses{i}.x; poses{i-1}.x], [poses{i}.y; poses{i-1}.y], [poses{i}.z; poses{i-1}.z], '-b');
     end
     
     if exist('h_cov', 'var')
-        delete(h_cov);
+        delete(h_pose_cov);
     end
     
     gRp = poses{i}.rotation().matrix();  % rotation from pose to global
@@ -74,7 +75,28 @@ for i = 1:posesSize
     
     pPp = posesCov{i}(4:6,4:6); % covariance matrix in pose coordinate frame    
     gPp = gRp*pPp*gRp'; % convert the covariance matrix to global coordinate frame
-    h_cov = gtsam.covarianceEllipse3D(C,gPp); 
+    h_pose_cov = gtsam.covarianceEllipse3D(C,gPp); 
+      
+    
+    if exist('h_point', 'var')
+        for j = 1:pointSize
+            delete(h_point{j});
+        end
+    end
+    if exist('h_point_cov', 'var')
+        for j = 1:pointSize
+            delete(h_point_cov{j});
+        end
+    end
+    
+    h_point = cell(pointSize, 1);
+    h_point_cov = cell(pointSize, 1);
+    for j = 1:pointSize
+        if ~isempty(pts3d{j}.cov{i})
+            h_point{j} = plot3(pts3d{j}.data.x, pts3d{j}.data.y, pts3d{j}.data.z);
+            h_point_cov{j} = gtsam.covarianceEllipse3D([pts3d{j}.data.x; pts3d{j}.data.y; pts3d{j}.data.z], pts3d{j}.cov{i});
+        end
+    end
     
     drawnow;
     
@@ -85,8 +107,8 @@ for i = 1:posesSize
 end
 
 
-if exist('h_cov', 'var')
-    delete(h_cov);
+if exist('h_pose_cov', 'var')
+    delete(h_pose_cov);
 end
 
 % wait for two seconds
@@ -99,17 +121,7 @@ pause(2);
 %     delete(h_cylinder);
 % end
 
-pointSize = length(pts3d);
-for i = 1:pointSize
-    plot3(pts3d{i}.x, pts3d{i}.y, pts3d{i}.z);
-    gtsam.covarianceEllipse3D([pts3d{i}.x; pts3d{i}.y; pts3d{i}.z], pts3dCov{i});
-    %drawnow;
-    
-    if options.writeVideo
-        currFrame = getframe(gcf);
-        writeVideo(videoObj, currFrame);
-    end
-end
+
 
 if ~holdstate
     hold off

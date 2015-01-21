@@ -12,7 +12,7 @@ graph = NonlinearFactorGraph;
 %% create the noise factors
 poseNoiseSigmas = [0.001 0.001 0.001 0.1 0.1 0.1]';
 posePriorNoise  = noiseModel.Diagonal.Sigmas(poseNoiseSigmas);
-stereoNoise = noiseModel.Isotropic.Sigma(3,0.2);
+stereoNoise = noiseModel.Isotropic.Sigma(3, 0.05);
 
 cameraPosesNum = length(cameraPoses);
 
@@ -28,13 +28,21 @@ for i = 1:cylinderNum
         points3d{end}.Z = cell(0);
         points3d{end}.cameraConstraint = cell(0);
         points3d{end}.visiblity = false;
+        points3d{end}.cov = cell(cameraPosesNum);
     end
 end
 
 graph.add(PriorFactorPose3(symbol('x', 1), cameraPoses{1}, posePriorNoise));
 
-pts3d = cell(cameraPosesNum, 1);
+%% initialize graph and values
 initialEstimate = Values;
+for i = 1:pointsNum
+    point_j = points3d{i}.data.retract(0.05*randn(3,1));
+    initialEstimate.insert(symbol('p', i), point_j);    
+end
+
+pts3d = cell(cameraPosesNum, 1);
+cameraPosesCov = cell(cameraPosesNum, 1);
 for i = 1:cameraPosesNum 
     pts3d{i} = cylinderSampleProjectionStereo(K, cameraPoses{i}, options.camera.resolution, cylinders);
     
@@ -52,26 +60,24 @@ for i = 1:cameraPosesNum
         graph.add(GenericStereoFactor3D(StereoPoint2(pts3d{i}.Z{j}.uL, pts3d{i}.Z{j}.uR, pts3d{i}.Z{j}.v), ...
             stereoNoise, symbol('x', i), symbol('p', index), K));    
     end
+
+    pose_i = cameraPoses{i}.retract(poseNoiseSigmas);
+    initialEstimate.insert(symbol('x', i), pose_i);
+
+    %% linearize the graph
+    marginals = Marginals(graph, initialEstimate);
+
+    for j = 1:pointsNum
+        if points3d{j}.visiblity
+            points3d{j}.cov{i} = marginals.marginalCovariance(symbol('p', j));
+        end       
+    end
     
+    cameraPosesCov{i} = marginals.marginalCovariance(symbol('x', i));    
 end
 
-%% initialize graph and values
-for i = 1:cameraPosesNum
-    pose_i = cameraPoses{i}.retract(0.1*randn(6,1));
-    initialEstimate.insert(symbol('x', i), pose_i);    
-end
-
-for i = 1:pointsNum
-    point_j = points3d{i}.data.retract(0.1*randn(3,1));
-    initialEstimate.insert(symbol('p', i), point_j);    
-end
-
-
-%% Print the graph
-graph.print(sprintf('\nFactor graph:\n'));
-
-%% linearize the graph
-marginals = Marginals(graph, initialEstimate);
+%% Plot the result
+plotFlyingResults(points3d, cameraPoses, cameraPosesCov, cylinders, options);
 
 %% get all the 2d points track information
 pts2dTracksStereo.pt3d = cell(0);
@@ -87,15 +93,8 @@ for i = 1:pointsNum
     pts2dTracksStereo.cov{end+1} = marginals.marginalCovariance(symbol('p', i));       
 end
 
-cameraPosesCov = cell(cameraPosesNum, 1);
-for i = 1:cameraPosesNum
-    cameraPosesCov{i} = marginals.marginalCovariance(symbol('x', i));
-end
-
-%% plot the result with covariance ellipses
-plotFlyingResults(pts2dTracksStereo.pt3d, pts2dTracksStereo.cov, cameraPoses, cameraPosesCov, cylinders, options);
-
-%plot3DTrajectory(initialEstimate, '*', 1, 8, marginals);
-%view(3);
+% 
+% %% plot the result with covariance ellipses
+% plotFlyingResults(pts2dTracksStereo.pt3d, pts2dTracksStereo.cov, cameraPoses, cameraPosesCov, cylinders, options);
 
 end
