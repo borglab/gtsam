@@ -27,7 +27,8 @@ for i = 1:cylinderNum
     for j = 1:cylinderPointsNum
         points3d{end+1}.data = cylinders{i}.Points{j};
         points3d{end}.Z = cell(0);
-        points3d{end}.cameraConstraint = cell(0);
+        points3d{end}.camConstraintIdx = cell(0);
+        points3d{end}.added = cell(0);
         points3d{end}.visiblity = false;
         points3d{end}.cov = cell(cameraPosesNum);
     end
@@ -44,6 +45,7 @@ end
 
 pts3d = cell(cameraPosesNum, 1);
 cameraPosesCov = cell(cameraPosesNum, 1);
+marginals = Values;
 for i = 1:cameraPosesNum     
     cameraPose = cameraPoses{i};    
     pts3d{i} = cylinderSampleProjection(K, cameraPose, imageSize, cylinders);
@@ -52,25 +54,38 @@ for i = 1:cameraPosesNum
     for j = 1:measurementNum
         index = pts3d{i}.overallIdx{j};
         points3d{index}.Z{end+1} = pts3d{i}.Z{j};
-        points3d{index}.cameraConstraint{end+1} = i;
-        points3d{index}.visiblity = true;    
+        points3d{index}.camConstraintIdx{end+1} = i;
+        points3d{index}.added{end+1} = false;
         
-        graph.add(GenericProjectionFactorCal3_S2(pts3d{i}.Z{j}, ...
-            measurementNoise, symbol('x', i), symbol('p', index), K) );    
+        if length(points3d{index}.Z) < 2
+            continue;
+        else
+            for k = 1:length(points3d{index}.Z)
+                if ~points3d{index}.added{k}                
+                    graph.add(GenericProjectionFactorCal3_S2(points3d{index}.Z{k}, ...
+                        measurementNoise, symbol('x', points3d{index}.camConstraintIdx{k}), ...
+                        symbol('p', index), K) );
+                    points3d{index}.added{k} = true;
+                end
+            end
+        end 
+        
+        points3d{index}.visiblity = true;    
     end
 
     pose_i = cameraPoses{i}.retract(0.1*randn(6,1));
     initialEstimate.insert(symbol('x', i), pose_i);    
 
     marginals = Marginals(graph, initialEstimate);
-    
+
     for j = 1:pointsNum
         if points3d{j}.visiblity
             points3d{j}.cov{i} = marginals.marginalCovariance(symbol('p',j));
         end
     end
-    
+
     cameraPosesCov{i} = marginals.marginalCovariance(symbol('x',i));
+
 end
   
 %% Print the graph
