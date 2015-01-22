@@ -6,6 +6,8 @@ function sc = covarianceEllipse3D(c,P)
 %
 % Modified from http://www.mathworks.com/matlabcentral/newsreader/view_thread/42966
 
+hold on
+
 [e,s] = svd(P);
 k = 11.82; 
 radii = k*sqrt(diag(s));

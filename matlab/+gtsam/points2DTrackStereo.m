@@ -2,6 +2,7 @@ function [pts2dTracksStereo, initialEstimate] = points2DTrackStereo(K, cameraPos
 % Assess how accurately we can reconstruct points from a particular monocular camera setup. 
 % After creation of the factor graph for each track, linearize it around ground truth. 
 % There is no optimization
+%
 % @author: Zhaoyang Lv
 
 import gtsam.*
