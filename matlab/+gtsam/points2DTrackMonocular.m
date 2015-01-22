@@ -12,7 +12,6 @@ graph = NonlinearFactorGraph;
 %% create the noise factors
 poseNoiseSigmas = [0.001 0.001 0.001 0.1 0.1 0.1]';
 posePriorNoise  = noiseModel.Diagonal.Sigmas(poseNoiseSigmas);
-
 measurementNoiseSigma = 1.0;
 measurementNoise = noiseModel.Isotropic.Sigma(2, measurementNoiseSigma);
 
@@ -30,15 +29,22 @@ for i = 1:cylinderNum
         points3d{end}.Z = cell(0);
         points3d{end}.cameraConstraint = cell(0);
         points3d{end}.visiblity = false;
+        points3d{end}.cov = cell(cameraPosesNum);
     end
 end
 
 graph.add(PriorFactorPose3(symbol('x', 1), cameraPoses{1}, posePriorNoise));
 
-pts3d = cell(cameraPosesNum, 1);
+%% initialize graph and values
 initialEstimate = Values;
-for i = 1:cameraPosesNum 
-    
+for i = 1:pointsNum
+    point_j = points3d{i}.data.retract(0.1*randn(3,1));
+    initialEstimate.insert(symbol('p', i), point_j); 
+end
+
+pts3d = cell(cameraPosesNum, 1);
+cameraPosesCov = cell(cameraPosesNum, 1);
+for i = 1:cameraPosesNum     
     cameraPose = cameraPoses{i};    
     pts3d{i} = cylinderSampleProjection(K, cameraPose, imageSize, cylinders);
     
@@ -47,43 +53,31 @@ for i = 1:cameraPosesNum
         index = pts3d{i}.overallIdx{j};
         points3d{index}.Z{end+1} = pts3d{i}.Z{j};
         points3d{index}.cameraConstraint{end+1} = i;
-        points3d{index}.visiblity = true;
+        points3d{index}.visiblity = true;    
+        
+        graph.add(GenericProjectionFactorCal3_S2(pts3d{i}.Z{j}, ...
+            measurementNoise, symbol('x', i), symbol('p', index), K) );    
     end
-    
-end
 
-%% initialize graph and values
-for i = 1:cameraPosesNum
     pose_i = cameraPoses{i}.retract(0.1*randn(6,1));
     initialEstimate.insert(symbol('x', i), pose_i);    
-end
 
-for i = 1:pointsNum
-    % add in values
-    point_j = points3d{i}.data.retract(0.1*randn(3,1));
-    initialEstimate.insert(symbol('p', i), point_j); 
+    marginals = Marginals(graph, initialEstimate);
     
-    if ~points3d{i}.visiblity 
-        continue;
-    end
-    % single measurement. not added to graph
-    factorNum = length(points3d{i}.Z);
-    if factorNum > 1
-        for j = 1:factorNum
-            cameraIdx = points3d{i}.cameraConstraint{j};
-            graph.add(GenericProjectionFactorCal3_S2(points3d{i}.Z{j}, ...
-                measurementNoise, symbol('x', cameraIdx), symbol('p', points3d{i}.cameraConstraint{j}), K) );    
+    for j = 1:pointsNum
+        if points3d{j}.visiblity
+            points3d{j}.cov{i} = marginals.marginalCovariance(symbol('p',j));
         end
     end
-  
+    
+    cameraPosesCov{i} = marginals.marginalCovariance(symbol('x',i));
 end
-
+  
 %% Print the graph
 graph.print(sprintf('\nFactor graph:\n'));
 
-%% linearize the graph
-% currently throws the Indeterminant linear system exception
-marginals = Marginals(graph, initialEstimate);
+%% Plot the result
+plotFlyingResults(points3d, cameraPoses, cameraPosesCov, cylinders, options);
 
 %% get all the points track information
 for i = 1:pointsNum
@@ -100,8 +94,5 @@ for i = 1:pointsNum
         pts2dTracksMono.cov{end+1} = marginals.marginalCovariance(symbol('p', i));    
     end
 end
-
-%plot3DPoints(initialEstimate, [], marginals);
-%plot3DTrajectory(initialEstimate, '*', 1, 8, marginals);
 
 end
