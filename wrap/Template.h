@@ -26,6 +26,7 @@ namespace wrap {
 class Template {
   std::string argName_;
   std::vector<Qualified> argValues_;
+  std::vector<int> intList_;
   friend struct TemplateGrammar;
 public:
   /// The only way to get values into a Template is via our friendly Grammar
@@ -37,6 +38,9 @@ public:
   }
   const std::string& argName() const {
     return argName_;
+  }
+  const std::vector<int>& intList() const {
+    return intList_;
   }
   const std::vector<Qualified>& argValues() const {
     return argValues_;
@@ -55,14 +59,50 @@ public:
 
 /* ************************************************************************* */
 // http://boost-spirit.com/distrib/spirit_1_8_2/libs/spirit/doc/grammar.html
+struct IntListGrammar: public classic::grammar<IntListGrammar > {
+
+  typedef std::vector<int> IntList;
+  IntList& result_; ///< successful parse will be placed in here
+
+  /// Construct type grammar and specify where result is placed
+  IntListGrammar(IntList& result) :
+      result_(result) {
+  }
+
+  /// Definition of type grammar
+  template<typename ScannerT>
+  struct definition {
+
+    classic::rule<ScannerT> integer_p, intList_p;
+
+    definition(IntListGrammar const& self) {
+      using namespace classic;
+
+      integer_p = int_p[push_back_a(self.result_)];
+
+      intList_p = '{' >> !integer_p >> *(',' >> integer_p) >> '}';
+    }
+
+    classic::rule<ScannerT> const& start() const {
+      return intList_p;
+    }
+
+  };
+};
+// IntListGrammar
+
+/* ************************************************************************* */
+// http://boost-spirit.com/distrib/spirit_1_8_2/libs/spirit/doc/grammar.html
 struct TemplateGrammar: public classic::grammar<TemplateGrammar> {
 
   Template& result_; ///< successful parse will be placed in here
   TypeListGrammar<'{', '}'> argValues_g; ///< TypeList parser
+  IntListGrammar intList_g; ///< TypeList parser
 
   /// Construct type grammar and specify where result is placed
   TemplateGrammar(Template& result) :
-      result_(result), argValues_g(result.argValues_) {
+      result_(result), argValues_g(result.argValues_), //
+      intList_g(result.intList_) {
   }
 
   /// Definition of type grammar
@@ -76,7 +116,7 @@ struct TemplateGrammar: public classic::grammar<TemplateGrammar> {
       using classic::assign_a;
       templateArgValues_p = (str_p("template") >> '<'
           >> (BasicRules<ScannerT>::name_p)[assign_a(self.result_.argName_)]
-          >> '=' >> self.argValues_g >> '>');
+          >> '=' >> (self.argValues_g | self.intList_g) >> '>');
     }
 
     classic::rule<ScannerT> const& start() const {
