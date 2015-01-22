@@ -4,15 +4,15 @@ function plotCamera(pose, axisLength)
     
     xAxis = C+R(:,1)*axisLength;
     L = [C xAxis]';
-    line(L(:,1),L(:,2),L(:,3),'Color','r');
+    h_x = line(L(:,1),L(:,2),L(:,3),'Color','r');
     
     yAxis = C+R(:,2)*axisLength;
     L = [C yAxis]';
-    line(L(:,1),L(:,2),L(:,3),'Color','g');
+    h_y = line(L(:,1),L(:,2),L(:,3),'Color','g');
     
     zAxis = C+R(:,3)*axisLength;
     L = [C zAxis]';
-    line(L(:,1),L(:,2),L(:,3),'Color','b');
+    h_z = line(L(:,1),L(:,2),L(:,3),'Color','b');
     
     axis equal
 end

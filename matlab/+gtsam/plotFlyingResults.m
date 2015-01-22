@@ -19,7 +19,10 @@ end
 figID = 1;
 figure(figID);
 
-view([30, 0]);
+view([30, 30]);
+
+hlight = camlight('headlight'); 
+lighting gouraud
 
 sampleDensity = 120;
 cylinderNum = length(cylinders);
@@ -31,7 +34,8 @@ for i = 1:cylinderNum
     Z = Z * cylinders{i}.height;
 
     h_cylinder = surf(X,Y,Z);
-    set(h_cylinder, 'FaceColor', [0 0 0.5], 'FaceAlpha', 0.2, 'EdgeColor', [0 0 1]);
+    set(h_cylinder, 'FaceColor', [0 0 1], 'FaceAlpha', 0.2);
+    h_cylinder.AmbientStrength = 1;
     hold on
 end
 
@@ -53,23 +57,25 @@ for i = 1:posesSize
     if exist('h_cov', 'var')
         delete(h_pose_cov);
     end
+       
+    plotCamera(poses{i}, 2);
     
-    gRp = poses{i}.rotation().matrix();  % rotation from pose to global
-    C = poses{i}.translation().vector();
-    axisLength = 2;
-    
-    xAxis = C+gRp(:,1)*axisLength;
-    L = [C xAxis]';
-    line(L(:,1),L(:,2),L(:,3),'Color','r');
-    
-    yAxis = C+gRp(:,2)*axisLength;
-    L = [C yAxis]';
-    line(L(:,1),L(:,2),L(:,3),'Color','g');
-    
-    zAxis = C+gRp(:,3)*axisLength;
-    L = [C zAxis]';
-    line(L(:,1),L(:,2),L(:,3),'Color','b');
-    
+     gRp = poses{i}.rotation().matrix();  % rotation from pose to global
+     C = poses{i}.translation().vector();
+%     axisLength = 2;
+%     
+%     xAxis = C+gRp(:,1)*axisLength;
+%     L = [C xAxis]';
+%     line(L(:,1),L(:,2),L(:,3),'Color','r');
+%     
+%     yAxis = C+gRp(:,2)*axisLength;
+%     L = [C yAxis]';
+%     line(L(:,1),L(:,2),L(:,3),'Color','g');
+%     
+%     zAxis = C+gRp(:,3)*axisLength;
+%     L = [C zAxis]';
+%     line(L(:,1),L(:,2),L(:,3),'Color','b');
+%     
     pPp = posesCov{i}(4:6,4:6); % covariance matrix in pose coordinate frame    
     gPp = gRp*pPp*gRp'; % convert the covariance matrix to global coordinate frame
     h_pose_cov = gtsam.covarianceEllipse3D(C,gPp); 
@@ -114,18 +120,19 @@ end
 % wait for two seconds
 pause(2);
 
-% change views
+% change views angle
 for i = 0 : 0.5 : 60
     view([i + 30, i]);
 end
 
-
-%% plot point covariance
-
-% if exist('h_cylinder', 'var')
-%     delete(h_cylinder);
-% end
-
+% camera flying through
+for i = 1 : posesSize
+    campos([poses{i}.x, poses{i}.y, poses{i}.z]);
+    camtarget([options.fieldSize.x/2, options.fieldSize.y/2, 0]);
+    camlight(hlight, 'headlight');
+    
+    drawnow
+end
 
 
 if ~holdstate
