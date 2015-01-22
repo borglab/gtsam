@@ -18,6 +18,11 @@ Expression<T> between(const Expression<T>& t1, const Expression<T>& t2) {
   return Expression<T>(traits<T>::Between, t1, t2);
 }
 
+template<typename T>
+Expression<T> compose(const Expression<T>& t1, const Expression<T>& t2) {
+  return Expression<T>(traits<T>::Compose, t1, t2);
+}
+
 typedef Expression<double> Double_;
 typedef Expression<Vector3> Vector3_;
 
