@@ -106,6 +106,10 @@ public:
   std::vector<Class> expandTemplate(Str templateArg,
       const std::vector<Qualified>& instantiations) const;
 
+  // Create new classes with integer template arguments
+  std::vector<Class> expandTemplate(Str templateArg,
+      const std::vector<int>& integers) const;
+
   /// Add potentially overloaded, potentially templated method
   void addMethod(bool verbose, bool is_const, Str methodName,
       const ArgumentList& argumentList, const ReturnValue& returnValue,

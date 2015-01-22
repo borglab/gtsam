@@ -222,6 +222,29 @@ TEST( Class, TemplateSubstition ) {
 }
 
 //******************************************************************************
+TEST( Class, TemplateSubstitionIntList ) {
+
+  using classic::space_p;
+
+  // Create type grammar that will place result in cls
+  Class cls;
+  Template t;
+  ClassGrammar g(cls, t);
+
+  string markup(string("template<N = {3,4}>"
+      "class Point2 {"
+      " void myMethod(Matrix A) const;"
+      "};"));
+
+  EXPECT(parse(markup.c_str(), g, space_p).full);
+
+  vector<Class> classes = cls.expandTemplate(t.argName(), t.intList());
+
+  // check the number of new classes is 2
+  EXPECT_LONGS_EQUAL(2, classes.size());
+}
+
+//******************************************************************************
 TEST(Class, Template) {
 
   using classic::space_p;
