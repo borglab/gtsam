@@ -148,7 +148,7 @@ TEST( wrap, Small ) {
 TEST( wrap, Geometry ) {
   string markup_header_path = topdir + "/wrap/tests";
   Module module(markup_header_path.c_str(), "geometry",enable_verbose);
-  EXPECT_LONGS_EQUAL(7, module.classes.size());
+  EXPECT_LONGS_EQUAL(9, module.classes.size());
 
   // forward declarations
   LONGS_EQUAL(2, module.forward_declarations.size());
@@ -159,7 +159,7 @@ TEST( wrap, Geometry ) {
   strvec exp_includes; exp_includes += "folder/path/to/Test.h";
   EXPECT(assert_equal(exp_includes, module.includes));
 
-  LONGS_EQUAL(7, module.classes.size());
+  LONGS_EQUAL(9, module.classes.size());
 
   // Key for ReturnType::return_category
 //  CLASS = 1,
