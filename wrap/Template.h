@@ -35,6 +35,7 @@ public:
   void clear() {
     argName_.clear();
     argValues_.clear();
+    intList_.clear();
   }
   const std::string& argName() const {
     return argName_;
