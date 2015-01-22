@@ -45,6 +45,9 @@ public:
   const std::vector<Qualified>& argValues() const {
     return argValues_;
   }
+  bool empty() const {
+    return argValues_.empty() && intList_.empty();
+  }
   size_t nrValues() const {
     return argValues_.size();
   }
