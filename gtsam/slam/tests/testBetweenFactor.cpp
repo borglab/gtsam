@@ -31,13 +31,13 @@ TEST(BetweenFactor, Rot3) {
   Vector expected = Rot3::Logmap(measured.inverse() * R1.between(R2));
   EXPECT(assert_equal(expected,actual/*, 1e-100*/)); // Uncomment to make unit test fail
 
-  Matrix numericalH1 = numericalDerivative21(
+  Matrix numericalH1 = numericalDerivative21<Vector3,Rot3,Rot3>(
       boost::function<Vector(const Rot3&, const Rot3&)>(boost::bind(
           &BetweenFactor<Rot3>::evaluateError, factor, _1, _2, boost::none,
           boost::none)), R1, R2, 1e-5);
   EXPECT(assert_equal(numericalH1,actualH1, 1E-5));
 
-  Matrix numericalH2 = numericalDerivative22(
+  Matrix numericalH2 = numericalDerivative22<Vector3,Rot3,Rot3>(
       boost::function<Vector(const Rot3&, const Rot3&)>(boost::bind(
           &BetweenFactor<Rot3>::evaluateError, factor, _1, _2, boost::none,
           boost::none)), R1, R2, 1e-5);

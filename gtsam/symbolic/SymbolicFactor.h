@@ -17,13 +17,15 @@
 
 #pragma once
 
-#include <utility>
+#include <gtsam/inference/Factor.h>
+#include <gtsam/inference/Key.h>
+#include <gtsam/base/Testable.h>
+
 #include <boost/shared_ptr.hpp>
 #include <boost/assign/list_of.hpp>
 #include <boost/make_shared.hpp>
 
-#include <gtsam/inference/Factor.h>
-#include <gtsam/inference/Key.h>
+#include <utility>
 
 namespace gtsam {
 
@@ -158,4 +160,10 @@ namespace gtsam {
   GTSAM_EXPORT std::pair<boost::shared_ptr<SymbolicConditional>, boost::shared_ptr<SymbolicFactor> >
     EliminateSymbolic(const SymbolicFactorGraph& factors, const Ordering& keys);
 
-}
+  /// traits
+  template<>
+  struct traits<SymbolicFactor> : public Testable<SymbolicFactor> {
+  };
+
+} //\ namespace gtsam
+

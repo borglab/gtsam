@@ -42,7 +42,8 @@ namespace gtsam {
 
     // Extract the current estimate of x1,P1
     VectorValues result = marginal->solve(VectorValues());
-    T x = linearizationPoints.at<T>(lastKey).retract(result[lastKey]);
+    const T& current = linearizationPoints.at<T>(lastKey);
+    T x = traits<T>::Retract(current, result[lastKey]);
 
     // Create a Jacobian Factor from the root node of the produced Bayes Net.
     // This will act as a prior for the next iteration.
@@ -70,9 +71,10 @@ namespace gtsam {
     // Create a Jacobian Prior Factor directly P_initial.
     // Since x0 is set to the provided mean, the b vector in the prior will be zero
     // TODO Frank asks: is there a reason why noiseModel is not simply P_initial ?
+    int n = traits<T>::GetDimension(x_initial);
     priorFactor_ = JacobianFactor::shared_ptr(
-        new JacobianFactor(key_initial, P_initial->R(), Vector::Zero(x_initial.dim()),
-            noiseModel::Unit::Create(P_initial->dim())));
+        new JacobianFactor(key_initial, P_initial->R(), Vector::Zero(n),
+            noiseModel::Unit::Create(n)));
   }
 
   /* ************************************************************************* */

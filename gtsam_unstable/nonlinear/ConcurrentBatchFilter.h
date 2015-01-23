@@ -253,4 +253,9 @@ void ConcurrentBatchFilter::PrintKeys(const Container& keys, const std::string& 
 /// Typedef for Matlab wrapping
 typedef ConcurrentBatchFilter::Result ConcurrentBatchFilterResult;
 
-}/// namespace gtsam
+/// traits
+template<>
+struct traits<ConcurrentBatchFilter> : public Testable<ConcurrentBatchFilter> {
+};
+
+} // \ namespace gtsam

@@ -28,6 +28,13 @@ using namespace gtsam;
 
 typedef PosePriorFactor<Pose3> TestPosePriorFactor;
 
+/// traits
+namespace gtsam {
+template<>
+struct traits<TestPosePriorFactor> : public Testable<TestPosePriorFactor> {
+};
+}
+
 /* ************************************************************************* */
 TEST( PosePriorFactor, Constructor) {
   Key poseKey(1);

@@ -16,7 +16,7 @@
  * @brief Test meta-programming constructs for Expressions
  */
 
-#include <gtsam_unstable/nonlinear/ExpressionFactor.h>
+#include <gtsam/nonlinear/ExpressionFactor.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/base/Testable.h>
@@ -179,29 +179,29 @@ TEST(ExpressionFactor, InvokeDerivatives) {
 
   // Let's assign it it to a boost function object
   // cast is needed because Pose3::transform_to is overloaded
-  typedef boost::function<Point3(const Pose3&, const Point3&)> F;
-  F f = static_cast<Point3 (Pose3::*)(
-      const Point3&) const >(&Pose3::transform_to);
-
-  // Create arguments
-Pose3  pose;
-  Point3 point;
-  typedef boost::fusion::vector<Pose3, Point3> Arguments;
-  Arguments args = boost::fusion::make_vector(pose, point);
-
-  // Create fused function (takes fusion vector) and call it
-  boost::fusion::fused<F> g(f);
-  Point3 actual = g(args);
-  CHECK(assert_equal(point,actual));
-
-  // We can *immediately* do this using invoke
-  Point3 actual2 = boost::fusion::invoke(f, args);
-  CHECK(assert_equal(point,actual2));
+//  typedef boost::function<Point3(const Pose3&, const Point3&)> F;
+//  F f = static_cast<Point3 (Pose3::*)(
+//      const Point3&) const >(&Pose3::transform_to);
+//
+//  // Create arguments
+//  Pose3  pose;
+//  Point3 point;
+//  typedef boost::fusion::vector<Pose3, Point3> Arguments;
+//  Arguments args = boost::fusion::make_vector(pose, point);
+//
+//  // Create fused function (takes fusion vector) and call it
+//  boost::fusion::fused<F> g(f);
+//  Point3 actual = g(args);
+//  CHECK(assert_equal(point,actual));
+//
+//  // We can *immediately* do this using invoke
+//  Point3 actual2 = boost::fusion::invoke(f, args);
+//  CHECK(assert_equal(point,actual2));
 
   // Now, let's create the optional Jacobian arguments
   typedef Point3 T;
   typedef boost::mpl::vector<Pose3, Point3> TYPES;
-  typedef boost::mpl::transform<TYPES, OptionalJacobian<T, MPL::_1> >::type Optionals;
+  typedef boost::mpl::transform<TYPES, MakeOptionalJacobian<T, MPL::_1> >::type Optionals;
 
   // Unfortunately this is moot: we need a pointer to a function with the
   // optional derivatives; I don't see a way of calling a function that we
@@ -215,8 +215,8 @@ struct proxy {
     return pose.transform_to(point);
   }
   Point3 operator()(const Pose3& pose, const Point3& point,
-      boost::optional<Matrix36&> Dpose,
-      boost::optional<Matrix3&> Dpoint) const {
+      OptionalJacobian<3,6> Dpose,
+      OptionalJacobian<3,3> Dpoint) const {
     return pose.transform_to(point, Dpose, Dpoint);
   }
 };

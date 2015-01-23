@@ -36,7 +36,7 @@ private:
   double fx_, fy_, s_, u0_, v0_;
 
 public:
-
+  enum { dimension = 5 };
   typedef boost::shared_ptr<Cal3_S2> shared_ptr; ///< shared pointer to calibration object
 
   /// @name Standard Constructors
@@ -117,36 +117,32 @@ public:
   }
 
   /// vectorized form (column-wise)
-  Vector vector() const {
-    double r[] = { fx_, fy_, s_, u0_, v0_ };
-    Vector v(5);
-    std::copy(r, r + 5, v.data());
+  Vector5 vector() const {
+    Vector5 v;
+    v << fx_, fy_, s_, u0_, v0_;
     return v;
   }
 
   /// return calibration matrix K
-  Matrix K() const {
-    return (Matrix(3, 3) <<  fx_, s_, u0_, 0.0, fy_, v0_, 0.0, 0.0, 1.0).finished();
+  Matrix3 K() const {
+    Matrix3 K;
+    K <<  fx_, s_, u0_, 0.0, fy_, v0_, 0.0, 0.0, 1.0;
+    return K;
   }
 
   /** @deprecated The following function has been deprecated, use K above */
-  Matrix matrix() const {
+  Matrix3 matrix() const {
     return K();
   }
 
   /// return inverted calibration matrix inv(K)
-  Matrix matrix_inverse() const {
+  Matrix3 matrix_inverse() const {
     const double fxy = fx_ * fy_, sv0 = s_ * v0_, fyu0 = fy_ * u0_;
-    return (Matrix(3, 3) << 1.0 / fx_, -s_ / fxy, (sv0 - fyu0) / fxy, 0.0,
-        1.0 / fy_, -v0_ / fy_, 0.0, 0.0, 1.0).finished();
+    Matrix3 K_inverse;
+    K_inverse << 1.0 / fx_, -s_ / fxy, (sv0 - fyu0) / fxy, 0.0,
+        1.0 / fy_, -v0_ / fy_, 0.0, 0.0, 1.0;
+    return K_inverse;
   }
-
-  /**
-   * convert intrinsic coordinates xy to image coordinates uv
-   * @param p point in intrinsic coordinates
-   * @return point in image coordinates
-   */
-  Point2 uncalibrate(const Point2& p) const;
 
   /**
    * convert intrinsic coordinates xy to image coordinates uv, fixed derivaitves
@@ -155,18 +151,8 @@ public:
    * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
    * @return point in image coordinates
    */
-  Point2 uncalibrate(const Point2& p, boost::optional<Matrix25&> Dcal,
-      boost::optional<Matrix2&> Dp) const;
-
-  /**
-   * convert intrinsic coordinates xy to image coordinates uv, dynamic derivaitves
-   * @param p point in intrinsic coordinates
-   * @param Dcal optional 2*5 Jacobian wrpt Cal3_S2 parameters
-   * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
-   * @return point in image coordinates
-   */
-  Point2 uncalibrate(const Point2& p, boost::optional<Matrix&> Dcal,
-      boost::optional<Matrix&> Dp) const;
+  Point2 uncalibrate(const Point2& p, OptionalJacobian<2,5> Dcal = boost::none,
+      OptionalJacobian<2,2> Dp = boost::none) const;
 
   /**
    * convert image coordinates uv to intrinsic coordinates xy
@@ -184,10 +170,10 @@ public:
 
   /// "Between", subtracts calibrations. between(p,q) == compose(inverse(p),q)
   inline Cal3_S2 between(const Cal3_S2& q,
-      boost::optional<Matrix&> H1=boost::none,
-      boost::optional<Matrix&> H2=boost::none) const {
-    if(H1) *H1 = -eye(5);
-    if(H2) *H2 = eye(5);
+      OptionalJacobian<5,5> H1=boost::none,
+      OptionalJacobian<5,5> H2=boost::none) const {
+    if(H1) *H1 = -I_5x5;
+    if(H2) *H2 =  I_5x5;
     return Cal3_S2(q.fx_-fx_, q.fy_-fy_, q.s_-s_, q.u0_-u0_, q.v0_-v0_);
   }
 
@@ -212,7 +198,7 @@ public:
   }
 
   /// Unretraction for the calibration
-  Vector localCoordinates(const Cal3_S2& T2) const {
+  Vector5 localCoordinates(const Cal3_S2& T2) const {
     return T2.vector() - vector();
   }
 
@@ -237,22 +223,7 @@ private:
 
 };
 
-// Define GTSAM traits
-namespace traits {
-
 template<>
-struct GTSAM_EXPORT is_manifold<Cal3_S2> : public boost::true_type{
-};
-
-template<>
-struct GTSAM_EXPORT dimension<Cal3_S2> : public boost::integral_constant<int, 5>{
-};
-
-template<>
-struct GTSAM_EXPORT zero<Cal3_S2> {
-  static Cal3_S2 value() { return Cal3_S2();}
-};
-
-}
+struct traits<Cal3_S2> : public internal::Manifold<Cal3_S2> {};
 
 } // \ namespace gtsam

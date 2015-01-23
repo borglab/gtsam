@@ -159,7 +159,7 @@ public:
    * @brief add the contribution of this factor to the diagonal of the hessian
    * d(output) = d(input) + deltaHessianFactor
    */
-  void hessianDiagonal(double* d) const {
+  virtual void hessianDiagonal(double* d) const {
     // diag(Hessian) = diag(F' * (I - E * PointCov * E') * F);
     // Use eigen magic to access raw memory
     typedef Eigen::Matrix<double, D, 1> DVector;
@@ -434,7 +434,7 @@ public:
   /**
    * Calculate gradient, which is -F'Q*b, see paper - RAW MEMORY ACCESS
    */
-  void gradientAtZero(double* d) const {
+  virtual void gradientAtZero(double* d) const {
 
     // Use eigen magic to access raw memory
     typedef Eigen::Matrix<double, D, 1> DVector;
@@ -452,6 +452,12 @@ public:
       DMap(d + D * j) += -Fblocks_[k].second.transpose() * e2[k];
     }
   }
+
+  /// Gradient wrt a key at any values
+  Vector gradient(Key key, const VectorValues& x) const {
+    throw std::runtime_error("gradient for RegularImplicitSchurFactor is not implemented yet");
+  }
+
 
 };
 // RegularImplicitSchurFactor

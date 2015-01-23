@@ -129,9 +129,6 @@ namespace gtsam {
     template<typename ValueType>
     const ValueType& cast() const;
 
-    template<typename Chart>
-    const Chart& getChart() const;
-
     /** Virutal destructor */
     virtual ~Value() {}
 
@@ -168,7 +165,8 @@ namespace gtsam {
      * */
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version) {}
+    void serialize(ARCHIVE & ar, const unsigned int version) {
+    }
 
   };
 

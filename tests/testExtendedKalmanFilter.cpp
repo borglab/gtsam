@@ -92,10 +92,7 @@ TEST( ExtendedKalmanFilter, linear ) {
 
 // Create Motion Model Factor
 class NonlinearMotionModel : public NoiseModelFactor2<Point2,Point2> {
-public:
-  typedef Point2 T;
 
-private:
   typedef NoiseModelFactor2<Point2, Point2> Base;
   typedef NonlinearMotionModel This;
 
@@ -126,19 +123,19 @@ public:
   virtual ~NonlinearMotionModel() {}
 
   // Calculate the next state prediction using the nonlinear function f()
-  T f(const T& x_t0) const {
+  Point2 f(const Point2& x_t0) const {
 
     // Calculate f(x)
     double x = x_t0.x() * x_t0.x();
     double y = x_t0.x() * x_t0.y();
-    T x_t1(x,y);
+    Point2 x_t1(x,y);
 
     // In this example, the noiseModel remains constant
     return x_t1;
   }
 
   // Calculate the Jacobian of the nonlinear function f()
-  Matrix F(const T& x_t0) const {
+  Matrix F(const Point2& x_t0) const {
     // Calculate Jacobian of f()
     Matrix F = Matrix(2,2);
     F(0,0) = 2*x_t0.x();
@@ -150,7 +147,7 @@ public:
   }
 
   // Calculate the inverse square root of the motion model covariance, Q
-  Matrix QInvSqrt(const T& x_t0) const {
+  Matrix QInvSqrt(const Point2& x_t0) const {
     // This motion model has a constant covariance
     return Q_invsqrt_;
   }
@@ -184,7 +181,7 @@ public:
 
   /** Vector of errors, whitened ! */
   Vector whitenedError(const Values& c) const {
-    return QInvSqrt(c.at<T>(key1()))*unwhitenedError(c);
+    return QInvSqrt(c.at<Point2>(key1()))*unwhitenedError(c);
   }
 
   /**
@@ -213,35 +210,29 @@ public:
   }
 
   /** vector of errors */
-  Vector evaluateError(const T& p1, const T& p2,
+  Vector evaluateError(const Point2& p1, const Point2& p2,
       boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
           boost::none) const {
 
     // error = p2 - f(p1)
     // H1 = d error / d p1 = -d f/ d p1 = -F
     // H2 = d error / d p2 = I
-    T prediction = f(p1);
+    Point2 prediction = f(p1);
 
-    if(H1){
+    if(H1)
       *H1 = -F(p1);
-    }
 
-    if(H2){
+    if(H2)
       *H2 = eye(dim());
-    }
 
     // Return the error between the prediction and the supplied value of p2
-    return prediction.localCoordinates(p2);
+    return (p2 - prediction).vector();
   }
 
 };
 
 // Create Measurement Model Factor
 class NonlinearMeasurementModel : public NoiseModelFactor1<Point2> {
-public:
-  typedef Point2 T;
-
-private:
 
   typedef NoiseModelFactor1<Point2> Base;
   typedef NonlinearMeasurementModel This;
@@ -268,7 +259,7 @@ public:
 
   // Calculate the predicted measurement using the nonlinear function h()
   // Byproduct: updates Jacobian H, and noiseModel (R)
-  Vector h(const T& x_t1) const {
+  Vector h(const Point2& x_t1) const {
 
     // Calculate prediction
     Vector z_hat(1);
@@ -277,7 +268,7 @@ public:
     return z_hat;
   }
 
-  Matrix H(const T& x_t1) const {
+  Matrix H(const Point2& x_t1) const {
     // Update Jacobian
     Matrix H(1,2);
     H(0,0) =  4*x_t1.x() - x_t1.y() - 2.5;
@@ -287,7 +278,7 @@ public:
   }
 
   // Calculate the inverse square root of the motion model covariance, Q
-  Matrix RInvSqrt(const T& x_t0) const {
+  Matrix RInvSqrt(const Point2& x_t0) const {
     // This motion model has a constant covariance
     return R_invsqrt_;
   }
@@ -320,7 +311,7 @@ public:
 
   /** Vector of errors, whitened ! */
   Vector whitenedError(const Values& c) const {
-    return RInvSqrt(c.at<T>(key()))*unwhitenedError(c);
+    return RInvSqrt(c.at<Point2>(key()))*unwhitenedError(c);
   }
 
   /**
@@ -345,7 +336,7 @@ public:
   }
 
   /** vector of errors */
-  Vector evaluateError(const T& p, boost::optional<Matrix&> H1 = boost::none) const {
+  Vector evaluateError(const Point2& p, boost::optional<Matrix&> H1 = boost::none) const {
     // error = z - h(p)
     // H = d error / d p = -d h/ d p = -H
     Vector z_hat = h(p);

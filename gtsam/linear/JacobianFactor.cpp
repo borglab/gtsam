@@ -461,22 +461,9 @@ VectorValues JacobianFactor::hessianDiagonal() const {
 }
 
 /* ************************************************************************* */
-// TODO: currently assumes all variables of the same size 9 and keys arranged from 0 to n
+// Raw memory access version should be called in Regular Factors only currently
 void JacobianFactor::hessianDiagonal(double* d) const {
-
-  // Use eigen magic to access raw memory
-  typedef Eigen::Matrix<double, 9, 1> DVector;
-  typedef Eigen::Map<DVector> DMap;
-
-  // Loop over all variables in the factor
-  for (DenseIndex j = 0; j < (DenseIndex) size(); ++j) {
-    // Get the diagonal block, and insert its diagonal
-    DVector dj;
-    for (size_t k = 0; k < 9; ++k)
-      dj(k) = Ab_(j).col(k).squaredNorm();
-
-    DMap(d + 9 * j) += dj;
-  }
+  throw std::runtime_error("JacobianFactor::hessianDiagonal raw memory access is allowed for Regular Factors only");
 }
 
 /* ************************************************************************* */
@@ -528,40 +515,6 @@ void JacobianFactor::multiplyHessianAdd(double alpha, const VectorValues& x,
   transposeMultiplyAdd(alpha, Ax, y);
 }
 
-void JacobianFactor::multiplyHessianAdd(double alpha, const double* x,
-    double* y, std::vector<size_t> keys) const {
-
-  // Use eigen magic to access raw memory
-  typedef Eigen::Matrix<double, Eigen::Dynamic, 1> DVector;
-  typedef Eigen::Map<DVector> DMap;
-  typedef Eigen::Map<const DVector> ConstDMap;
-
-  if (empty())
-    return;
-  Vector Ax = zero(Ab_.rows());
-
-  // Just iterate over all A matrices and multiply in correct config part
-  for (size_t pos = 0; pos < size(); ++pos)
-    Ax += Ab_(pos)
-        * ConstDMap(x + keys[keys_[pos]],
-            keys[keys_[pos] + 1] - keys[keys_[pos]]);
-
-  // Deal with noise properly, need to Double* whiten as we are dividing by variance
-  if (model_) {
-    model_->whitenInPlace(Ax);
-    model_->whitenInPlace(Ax);
-  }
-
-  // multiply with alpha
-  Ax *= alpha;
-
-  // Again iterate over all A matrices and insert Ai^e into y
-  for (size_t pos = 0; pos < size(); ++pos)
-    DMap(y + keys[keys_[pos]], keys[keys_[pos] + 1] - keys[keys_[pos]]) += Ab_(
-        pos).transpose() * Ax;
-
-}
-
 /* ************************************************************************* */
 VectorValues JacobianFactor::gradientAtZero() const {
   VectorValues g;
@@ -574,8 +527,16 @@ VectorValues JacobianFactor::gradientAtZero() const {
 }
 
 /* ************************************************************************* */
+// Raw memory access version should be called in Regular Factors only currently
 void JacobianFactor::gradientAtZero(double* d) const {
-  //throw std::runtime_error("gradientAtZero not implemented for Jacobian factor");
+  throw std::runtime_error("JacobianFactor::gradientAtZero raw memory access is allowed for Regular Factors only");
+}
+
+/* ************************************************************************* */
+Vector JacobianFactor::gradient(Key key, const VectorValues& x) const {
+  // TODO: optimize it for JacobianFactor without converting to a HessianFactor
+  HessianFactor hessian(*this);
+  return hessian.gradient(key, x);
 }
 
 /* ************************************************************************* */

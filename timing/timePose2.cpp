@@ -32,7 +32,7 @@ using namespace gtsam;
 
 /* ************************************************************************* */
 Pose2 Pose2betweenDefault(const Pose2& r1, const Pose2& r2) {
-  return between_default(r1, r2);
+  return r1.inverse() * r2;
 }
 
 /* ************************************************************************* */

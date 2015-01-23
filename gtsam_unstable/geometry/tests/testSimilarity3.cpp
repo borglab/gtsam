@@ -23,42 +23,55 @@ namespace gtsam {
 /**
  * 3D similarity transform
  */
-class Similarity3: private Matrix4 {
+class Similarity3: public LieGroup<Similarity3, 7> {
 
+  /** Pose Concept requirements */
+  typedef Rot3 Rotation;
+  typedef Point3 Translation;
+
+private:
+  Rot3 R_;
+  Point3 t_;
+  double s_;
+
+public:
   /// Construct from Eigen types
   Similarity3(const Matrix3& R, const Vector3& t, double s) {
-    *this << s * R, t, 0, 0, 0, 1;
+    R_ = R;
+    t_ = t;
+    s_ = s;
   }
 
   /// Return the translation
-  const Eigen::Block<const Matrix4, 3, 1> t() const {
-    return this->topRightCorner<3, 1>();
+  const Vector3 t() const {
+    return t_.vector();
   }
 
   /// Return the rotation matrix
-  const Eigen::Block<const Matrix4, 3, 3> R() const {
-    return this->topLeftCorner<3, 3>();
+  const Matrix3 R() const {
+    return R_.matrix();
   }
 
 public:
 
-  Similarity3() {
-    setIdentity();
+  Similarity3() :
+    R_(), t_(), s_(1){
   }
 
   /// Construct pure scaling
   Similarity3(double s) {
-    setIdentity();
-    this->topLeftCorner<3, 3>() = s * Matrix3::Identity();
+    s_ = s;
   }
 
   /// Construct from GTSAM types
   Similarity3(const Rot3& R, const Point3& t, double s) {
-    *this << R.matrix(), t.vector(), 0, 0, 0, 1.0 / s;
+    R_ = R;
+    t_ = t;
+    s_ = s;
   }
 
   bool operator==(const Similarity3& other) const {
-    return Matrix4::operator==(other);
+    return (R_.equals(other.R_)) && (t_ == other.t_) && (s_ == other.s_);
   }
 
   /// Compare with tolerance
@@ -66,6 +79,39 @@ public:
     return rotation().equals(sim.rotation(), tol) && translation().equals(sim.translation(), tol)
         && scale() < (sim.scale()+tol) && scale() > (sim.scale()-tol);
   }
+
+  Point3 transform_from(const Point3& p) const {
+    /*if (Dpose) {
+      const Matrix3 R = R_.matrix();
+      Matrix3 DR = R * skewSymmetric(-p.x(), -p.y(), -p.z());
+      (*Dpose) << DR, R;
+    }
+    if (Dpoint)
+      *Dpoint = R_.matrix();*/
+    return R_ * (s_ * p) + t_;
+  }
+
+  Matrix7 adjointMap() const{
+    const Matrix3 R = R_.matrix();
+    const Vector3 t = t_.vector();
+    Matrix3 A = s_ * skewSymmetric(t) * R;
+    Matrix7 adj;
+    adj << s_*R, A, -s_*t, Z_3x3, R, Eigen::Matrix<double, 3, 1>::Zero(), Z_3x3, Z_3x3, 1;
+  }
+
+  /** syntactic sugar for transform_from */
+  inline Point3 operator*(const Point3& p) const {
+    return transform_from(p);
+  }
+
+  /*Similarity3 inverse() const {
+    Rot3 Rt = R_.inverse();
+    return Pose3(Rt, Rt * (-t_));
+  }*/
+
+  Similarity3 operator*(const Similarity3& T) const {
+      return Similarity3(R_ * T.R_, ((1.0/s_)*t_) + R_ * T.t_, s_*T.s_);
+    }
 
   void print(const std::string& s) const {
     std::cout << s;
@@ -82,35 +128,34 @@ public:
     return 7;
   }
 
-  /// Dimensionality of tangent space = 3 DOF
+  /// Dimensionality of tangent space = 7 DOF
   inline size_t dim() const {
     return 7;
   }
 
   /// Return the rotation matrix
   Rot3 rotation() const {
-    return R().eval();
+    return R_;
   }
 
   /// Return the translation
   Point3 translation() const {
-    Vector3 t = this->t();
-    return Point3::Expmap(t);
+    return t_;
   }
 
   /// Return the scale
   double scale() const {
-    return 1.0 / (*this)(3, 3);
+    return s_;
   }
 
   /// Update Similarity transform via 7-dim vector in tangent space
-  Similarity3 retract(const Vector7& v) const {
+/*  Similarity3 retract(const Vector7& v) const {
 
     // Will retracting or localCoordinating R work if R is not a unit rotation?
     // Also, how do we actually get s out?  Seems like we need to store it somewhere.
     return Similarity3( //
-        rotation().retract(v.head<3>()), // retract rotation using v[0,1,2]
-        translation().retract(R() * v.segment<3>(3)), // Retract the translation
+        R_.retract(v.head<3>()), // retract rotation using v[0,1,2]
+        t_.retract(R() * v.segment<3>(3)), // Retract the translation
         scale() + v[6]); //finally, update scale using v[6]
   }
 
@@ -118,12 +163,12 @@ public:
   Vector7 localCoordinates(const Similarity3& other) const {
 
     Vector7 v;
-    v.head<3>() = rotation().localCoordinates(other.rotation());
-    v.segment<3>(3) = rotation().unrotate(other.translation() - translation()).vector();
+    v.head<3>() = R_.localCoordinates(other.R_);
+    v.segment<3>(3) = R_.unrotate(other.t_ - t_).vector();
     //v.segment<3>(3) = translation().localCoordinates(other.translation());
-    v[6] = other.scale() - scale();
+    v[6] = other.s_ - s_;
     return v;
-  }
+  }*/
 
   /// @}
 
@@ -138,6 +183,9 @@ public:
   /// @}
 
 };
+
+template<>
+struct traits<Similarity3> : public internal::LieGroupTraits<Similarity3> {};
 }
 
 #include <gtsam/inference/Symbol.h>
@@ -151,6 +199,8 @@ public:
 
 using namespace gtsam;
 using namespace std;
+
+//GTSAM_CONCEPT_POSE_INST(Similarity3);
 
 static Point3 P(0.2,0.7,-2);
 static Rot3 R = Rot3::rodriguez(0.3,0,0);
@@ -252,6 +302,7 @@ TEST(Similarity3, Optimization) {
   prior.print("goal angle");
   noiseModel::Isotropic::shared_ptr model = noiseModel::Isotropic::Sigma(7, 1);
   Symbol key('x',1);
+  Symbol key2('x',2);
   PriorFactor<Similarity3> factor(key, prior, model);
 
   NonlinearFactorGraph graph;
@@ -259,13 +310,13 @@ TEST(Similarity3, Optimization) {
   graph.print("full graph");
 
   Values initial;
-  initial.insert(key, Similarity3());
+  initial.insert<Similarity3>(key, Similarity3());
   initial.print("initial estimate");
 
-  Values result = LevenbergMarquardtOptimizer(graph, initial).optimize();
+  Values result;
+  result.insert(key2, LevenbergMarquardtOptimizer(graph, initial).optimize());
   result.print("final result");
-
-  EXPECT(assert_equal(prior, result, 1e-2));
+  EXPECT(assert_equal(prior, result.at<Similarity3>(key2), 1e-2));
 }
 
 

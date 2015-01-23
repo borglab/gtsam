@@ -31,6 +31,9 @@ template<typename T>
 void testDefaultChart(TestResult& result_,
                       const std::string& name_,
                       const T& value) {
+
+  GTSAM_CONCEPT_TESTABLE_TYPE(T);
+
   typedef typename gtsam::DefaultChart<T> Chart;
   typedef typename Chart::vector Vector;
 
@@ -39,12 +42,6 @@ void testDefaultChart(TestResult& result_,
   BOOST_CONCEPT_ASSERT((ChartConcept<Chart>));
 
   T other = value;
-  // Check for the existence of a print function.
-  gtsam::traits::print<T>()(value, "value");
-  gtsam::traits::print<T>()(other, "other");
-
-  // Check for the existence of "equals"
-  EXPECT(gtsam::traits::equals<T>()(value, other, 1e-12));
 
   // Check that the dimension of the local value matches the chart dimension.
   Vector dx = Chart::local(value, other);

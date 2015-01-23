@@ -116,4 +116,9 @@ namespace gtsam {
     }
   };
 
-} // namespace gtsam
+/// traits
+template<>
+struct traits<SymbolicFactorGraph> : public Testable<SymbolicFactorGraph> {
+};
+
+} //\ namespace gtsam

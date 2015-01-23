@@ -17,12 +17,8 @@
 
 #include <iostream>
 
-#include <boost/mpl/char.hpp>
 #include <boost/format.hpp>
-#include <boost/function.hpp>
-#include <boost/lambda/bind.hpp>
-#include <boost/lambda/construct.hpp>
-#include <boost/lambda/lambda.hpp>
+#include <boost/bind.hpp>
 
 #include <boost/lexical_cast.hpp>
 
@@ -111,23 +107,21 @@ bool LabeledSymbol::operator!=(gtsam::Key comp) const {
 }
 
 /* ************************************************************************* */
+static LabeledSymbol make(gtsam::Key key) { return LabeledSymbol(key);}
+
 boost::function<bool(gtsam::Key)> LabeledSymbol::TypeTest(unsigned char c) {
-  namespace bl = boost::lambda;
-  return bl::bind(&LabeledSymbol::chr, bl::bind(bl::constructor<LabeledSymbol>(), bl::_1)) == c;
+  return boost::bind(&LabeledSymbol::chr, boost::bind(make, _1)) == c;
 }
 
-/* ************************************************************************* */
 boost::function<bool(gtsam::Key)> LabeledSymbol::LabelTest(unsigned char label) {
-  namespace bl = boost::lambda;
-  return bl::bind(&LabeledSymbol::label, bl::bind(bl::constructor<LabeledSymbol>(), bl::_1)) == label;
+  return boost::bind(&LabeledSymbol::label, boost::bind(make, _1)) == label;
 }
 
-/* ************************************************************************* */
 boost::function<bool(gtsam::Key)> LabeledSymbol::TypeLabelTest(unsigned char c, unsigned char label) {
-  namespace bl = boost::lambda;
-  return bl::bind(&LabeledSymbol::chr,   bl::bind(bl::constructor<LabeledSymbol>(), bl::_1)) == c &&
-      bl::bind(&LabeledSymbol::label, bl::bind(bl::constructor<LabeledSymbol>(), bl::_1)) == label;
+  return boost::bind(&LabeledSymbol::chr,   boost::bind(make, _1)) == c &&
+      boost::bind(&LabeledSymbol::label, boost::bind(make, _1)) == label;
 }
+/* ************************************************************************* */
 
 } // \namespace gtsam
 

@@ -18,16 +18,9 @@
 
 #pragma once
 
-#include <cmath>
-#include <boost/optional.hpp>
-#include <boost/serialization/nvp.hpp>
-#include <gtsam/base/DerivedValue.h>
-#include <gtsam/base/Vector.h>
-#include <gtsam/base/Matrix.h>
-#include <gtsam/geometry/Point2.h>
-#include <gtsam/geometry/Pose2.h>
-#include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/CalibratedCamera.h>
+#include <gtsam/geometry/Pose2.h>
+#include <cmath>
 
 namespace gtsam {
 
@@ -38,13 +31,19 @@ namespace gtsam {
  */
 template<typename Calibration>
 class PinholeCamera {
+
 private:
   Pose3 pose_;
   Calibration K_;
 
-  static const int DimK = traits::dimension<Calibration>::value;
+  GTSAM_CONCEPT_MANIFOLD_TYPE(Calibration)
+
+  // Get dimensions of calibration type at compile time
+  static const int DimK = FixedDimension<Calibration>::value;
 
 public:
+
+  enum { dimension = 6 + DimK };
 
   /// @name Standard Constructors
   /// @{
@@ -114,9 +113,9 @@ public:
   /// @{
 
   explicit PinholeCamera(const Vector &v) {
-    pose_ = Pose3::Expmap(v.head(Pose3::Dim()));
-    if (v.size() > Pose3::Dim()) {
-      K_ = Calibration(v.tail(Calibration::Dim()));
+    pose_ = Pose3::Expmap(v.head(6));
+    if (v.size() > 6) {
+      K_ = Calibration(v.tail(DimK));
     }
   }
 
@@ -168,98 +167,42 @@ public:
   }
 
   /// @}
-  /// @name Group ?? Frank says this might not make sense
-  /// @{
-
-  /// compose two cameras: TODO Frank says this might not make sense
-  inline const PinholeCamera compose(const PinholeCamera &c,
-      boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
-          boost::none) const {
-    PinholeCamera result(pose_.compose(c.pose(), H1, H2), K_);
-    if (H1) {
-      H1->conservativeResize(Dim(), Dim());
-      H1->topRightCorner(Pose3::Dim(), Calibration::Dim()) = zeros(Pose3::Dim(),
-          Calibration::Dim());
-      H1->bottomRows(Calibration::Dim()) = zeros(Calibration::Dim(), Dim());
-    }
-    if (H2) {
-      H2->conservativeResize(Dim(), Dim());
-      H2->topRightCorner(Pose3::Dim(), Calibration::Dim()) = zeros(Pose3::Dim(),
-          Calibration::Dim());
-      H2->bottomRows(Calibration::Dim()) = zeros(Calibration::Dim(), Dim());
-    }
-    return result;
-  }
-
-  /// between two cameras: TODO Frank says this might not make sense
-  inline const PinholeCamera between(const PinholeCamera& c,
-      boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
-          boost::none) const {
-    PinholeCamera result(pose_.between(c.pose(), H1, H2), K_);
-    if (H1) {
-      H1->conservativeResize(Dim(), Dim());
-      H1->topRightCorner(Pose3::Dim(), Calibration::Dim()) = zeros(Pose3::Dim(),
-          Calibration::Dim());
-      H1->bottomRows(Calibration::Dim()) = zeros(Calibration::Dim(), Dim());
-    }
-    if (H2) {
-      H2->conservativeResize(Dim(), Dim());
-      H2->topRightCorner(Pose3::Dim(), Calibration::Dim()) = zeros(Pose3::Dim(),
-          Calibration::Dim());
-      H2->bottomRows(Calibration::Dim()) = zeros(Calibration::Dim(), Dim());
-    }
-    return result;
-  }
-
-  /// inverse camera: TODO Frank says this might not make sense
-  inline const PinholeCamera inverse(
-      boost::optional<Matrix&> H1 = boost::none) const {
-    PinholeCamera result(pose_.inverse(H1), K_);
-    if (H1) {
-      H1->conservativeResize(Dim(), Dim());
-      H1->topRightCorner(Pose3::Dim(), Calibration::Dim()) = zeros(Pose3::Dim(),
-          Calibration::Dim());
-      H1->bottomRows(Calibration::Dim()) = zeros(Calibration::Dim(), Dim());
-    }
-    return result;
-  }
-
-  /// compose two cameras: TODO Frank says this might not make sense
-  inline const PinholeCamera compose(const Pose3 &c) const {
-    return PinholeCamera(pose_.compose(c), K_);
-  }
-
-  /// @}
   /// @name Manifold
   /// @{
 
+  /// Manifold dimension
+  inline size_t dim() const {
+    return dimension;
+  }
+
+  /// Manifold dimension
+  inline static size_t Dim() {
+    return dimension;
+  }
+
+  typedef Eigen::Matrix<double, dimension, 1> VectorK6;
+
   /// move a cameras according to d
   PinholeCamera retract(const Vector& d) const {
-    if ((size_t) d.size() == pose_.dim())
+    if ((size_t) d.size() == 6)
       return PinholeCamera(pose().retract(d), calibration());
     else
-      return PinholeCamera(pose().retract(d.head(pose().dim())),
+      return PinholeCamera(pose().retract(d.head(6)),
           calibration().retract(d.tail(calibration().dim())));
   }
 
-  typedef Eigen::Matrix<double,6+DimK,1> VectorK6;
-
   /// return canonical coordinate
   VectorK6 localCoordinates(const PinholeCamera& T2) const {
-    VectorK6 d; // TODO: why does d.head<6>() not compile??
+    VectorK6 d;
+    // TODO: why does d.head<6>() not compile??
     d.head(6) = pose().localCoordinates(T2.pose());
     d.tail(DimK) = calibration().localCoordinates(T2.calibration());
     return d;
   }
 
-  /// Manifold dimension
-  inline size_t dim() const {
-    return pose_.dim() + K_.dim();
-  }
-
-  /// Manifold dimension
-  inline static size_t Dim() {
-    return Pose3::Dim() + Calibration::Dim();
+  /// for Canonical
+  static PinholeCamera identity() {
+    return PinholeCamera(); // assumes that the default constructor is valid
   }
 
   /// @}
@@ -272,8 +215,8 @@ public:
    * @param P A point in camera coordinates
    * @param Dpoint is the 2*3 Jacobian w.r.t. P
    */
-  inline static Point2 project_to_camera(const Point3& P,
-      boost::optional<Matrix23&> Dpoint = boost::none) {
+  static Point2 project_to_camera(const Point3& P, //
+      OptionalJacobian<2, 3> Dpoint = boost::none) {
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
     if (P.z() <= 0)
       throw CheiralityException();
@@ -292,21 +235,7 @@ public:
     return std::make_pair(K_.uncalibrate(pn), pc.z() > 0);
   }
 
-  /** project a point from world coordinate to the image
-   *  @param pw is a point in world coordinates
-   */
-  inline Point2 project(const Point3& pw) const {
-
-    // Transform to camera coordinates and check cheirality
-    const Point3 pc = pose_.transform_to(pw);
-
-    // Project to normalized image coordinates
-    const Point2 pn = project_to_camera(pc);
-
-    return K_.uncalibrate(pn);
-  }
-
-  typedef Eigen::Matrix<double,2,DimK> Matrix2K;
+  typedef Eigen::Matrix<double, 2, DimK> Matrix2K;
 
   /** project a point from world coordinate to the image
    *  @param pw is a point in world coordinates
@@ -314,11 +243,9 @@ public:
    *  @param Dpoint is the Jacobian w.r.t. point3
    *  @param Dcal is the Jacobian w.r.t. calibration
    */
-  inline Point2 project(
-      const Point3& pw, //
-      boost::optional<Matrix26&> Dpose,
-      boost::optional<Matrix23&> Dpoint,
-      boost::optional<Matrix2K&> Dcal) const {
+  inline Point2 project(const Point3& pw, OptionalJacobian<2, 6> Dpose =
+      boost::none, OptionalJacobian<2, 3> Dpoint = boost::none,
+      OptionalJacobian<2, DimK> Dcal = boost::none) const {
 
     // Transform to camera coordinates and check cheirality
     const Point3 pc = pose_.transform_to(pw);
@@ -340,46 +267,7 @@ public:
         calculateDpoint(pn, d, pose_.rotation().matrix(), Dpi_pn, *Dpoint);
       return pi;
     } else
-      return K_.uncalibrate(pn, Dcal, boost::none);
-  }
-
-  /** project a point from world coordinate to the image
-   *  @param pw is a point in world coordinates
-   *  @param Dpose is the Jacobian w.r.t. pose3
-   *  @param Dpoint is the Jacobian w.r.t. point3
-   *  @param Dcal is the Jacobian w.r.t. calibration
-   */
-  inline Point2 project(
-      const Point3& pw, //
-      boost::optional<Matrix&> Dpose,
-      boost::optional<Matrix&> Dpoint,
-      boost::optional<Matrix&> Dcal) const {
-
-    // Transform to camera coordinates and check cheirality
-    const Point3 pc = pose_.transform_to(pw);
-
-    // Project to normalized image coordinates
-    const Point2 pn = project_to_camera(pc);
-
-    if (Dpose || Dpoint) {
-      const double z = pc.z(), d = 1.0 / z;
-
-      // uncalibration
-      Matrix Dpi_pn(2, 2);
-      const Point2 pi = K_.uncalibrate(pn, Dcal, Dpi_pn);
-
-      // chain the Jacobian matrices
-      if (Dpose) {
-        Dpose->resize(2, 6);
-        calculateDpose(pn, d, Dpi_pn, *Dpose);
-      }
-      if (Dpoint) {
-        Dpoint->resize(2, 3);
-        calculateDpoint(pn, d, pose_.rotation().matrix(), Dpi_pn, *Dpoint);
-      }
-      return pi;
-    } else
-      return K_.uncalibrate(pn, Dcal, boost::none);
+      return K_.uncalibrate(pn, Dcal);
   }
 
   /** project a point at infinity from world coordinate to the image
@@ -388,11 +276,10 @@ public:
    *  @param Dpoint is the Jacobian w.r.t. point3
    *  @param Dcal is the Jacobian w.r.t. calibration
    */
-  inline Point2 projectPointAtInfinity(
-      const Point3& pw, //
-      boost::optional<Matrix&> Dpose = boost::none,
-      boost::optional<Matrix&> Dpoint = boost::none,
-      boost::optional<Matrix&> Dcal = boost::none) const {
+  inline Point2 projectPointAtInfinity(const Point3& pw,
+      OptionalJacobian<2, 6> Dpose = boost::none,
+      OptionalJacobian<2, 2> Dpoint = boost::none,
+      OptionalJacobian<2, DimK> Dcal = boost::none) const {
 
     if (!Dpose && !Dpoint && !Dcal) {
       const Point3 pc = pose_.rotation().unrotate(pw); // get direction in camera frame (translation does not matter)
@@ -401,38 +288,28 @@ public:
     }
 
     // world to camera coordinate
-    Matrix Dpc_rot /* 3*3 */, Dpc_point /* 3*3 */;
+    Matrix3 Dpc_rot, Dpc_point;
     const Point3 pc = pose_.rotation().unrotate(pw, Dpc_rot, Dpc_point);
 
-    Matrix Dpc_pose = Matrix::Zero(3, 6);
-    Dpc_pose.block(0, 0, 3, 3) = Dpc_rot;
+    Matrix36 Dpc_pose;
+    Dpc_pose.setZero();
+    Dpc_pose.leftCols<3>() = Dpc_rot;
 
     // camera to normalized image coordinate
     Matrix23 Dpn_pc; // 2*3
     const Point2 pn = project_to_camera(pc, Dpn_pc);
 
     // uncalibration
-    Matrix Dpi_pn; // 2*2
+    Matrix2 Dpi_pn; // 2*2
     const Point2 pi = K_.uncalibrate(pn, Dcal, Dpi_pn);
 
     // chain the Jacobian matrices
-    const Matrix Dpi_pc = Dpi_pn * Dpn_pc;
+    const Matrix23 Dpi_pc = Dpi_pn * Dpn_pc;
     if (Dpose)
       *Dpose = Dpi_pc * Dpc_pose;
     if (Dpoint)
-      *Dpoint = (Dpi_pc * Dpc_point).block(0, 0, 2, 2); // only 2dof are important for the point (direction-only)
+      *Dpoint = (Dpi_pc * Dpc_point).leftCols<2>(); // only 2dof are important for the point (direction-only)
     return pi;
-  }
-
-  typedef Eigen::Matrix<double,2,6+DimK> Matrix2K6;
-
-  /** project a point from world coordinate to the image
-   *  @param pw is a point in the world coordinate
-   */
-  Point2 project2(const Point3& pw) const {
-    const Point3 pc = pose_.transform_to(pw);
-    const Point2 pn = project_to_camera(pc);
-    return K_.uncalibrate(pn);
   }
 
   /** project a point from world coordinate to the image, fixed Jacobians
@@ -442,8 +319,8 @@ public:
    */
   Point2 project2(
       const Point3& pw, //
-      boost::optional<Matrix2K6&> Dcamera,
-      boost::optional<Matrix23&> Dpoint) const {
+      OptionalJacobian<2, dimension> Dcamera = boost::none,
+      OptionalJacobian<2, 3> Dpoint = boost::none) const {
 
     const Point3 pc = pose_.transform_to(pw);
     const Point2 pn = project_to_camera(pc);
@@ -459,44 +336,10 @@ public:
       const Point2 pi = K_.uncalibrate(pn, Dcal, Dpi_pn);
 
       if (Dcamera) { // TODO why does leftCols<6>() not compile ??
-        calculateDpose(pn, d, Dpi_pn, Dcamera->leftCols(6));
-        Dcamera->rightCols(K_.dim()) = Dcal; // Jacobian wrt calib
+        calculateDpose(pn, d, Dpi_pn, (*Dcamera).leftCols(6));
+        (*Dcamera).rightCols(DimK) = Dcal; // Jacobian wrt calib
       }
       if (Dpoint) {
-        calculateDpoint(pn, d, pose_.rotation().matrix(), Dpi_pn, *Dpoint);
-      }
-      return pi;
-    }
-  }
-
-  /** project a point from world coordinate to the image
-   *  @param pw is a point in the world coordinate
-   *  @param Dcamera is the Jacobian w.r.t. [pose3 calibration]
-   *  @param Dpoint is the Jacobian w.r.t. point3
-   */
-  Point2 project2(const Point3& pw, //
-      boost::optional<Matrix&> Dcamera, boost::optional<Matrix&> Dpoint) const {
-
-    const Point3 pc = pose_.transform_to(pw);
-    const Point2 pn = project_to_camera(pc);
-
-    if (!Dcamera && !Dpoint) {
-      return K_.uncalibrate(pn);
-    } else {
-      const double z = pc.z(), d = 1.0 / z;
-
-      // uncalibration
-      Matrix2K Dcal;
-      Matrix2 Dpi_pn;
-      const Point2 pi = K_.uncalibrate(pn, Dcal, Dpi_pn);
-
-      if (Dcamera) {
-        Dcamera->resize(2, this->dim());
-        calculateDpose(pn, d, Dpi_pn, Dcamera->leftCols<6>());
-        Dcamera->rightCols(K_.dim()) = Dcal; // Jacobian wrt calib
-      }
-      if (Dpoint) {
-        Dpoint->resize(2, 3);
         calculateDpoint(pn, d, pose_.rotation().matrix(), Dpi_pn, *Dpoint);
       }
       return pi;
@@ -520,71 +363,64 @@ public:
   /**
    * Calculate range to a landmark
    * @param point 3D location of landmark
-   * @param Dpose the optionally computed Jacobian with respect to pose
+   * @param Dcamera the optionally computed Jacobian with respect to pose
    * @param Dpoint the optionally computed Jacobian with respect to the landmark
    * @return range (double)
    */
   double range(
       const Point3& point, //
-      boost::optional<Matrix&> Dpose = boost::none,
-      boost::optional<Matrix&> Dpoint = boost::none) const {
-    double result = pose_.range(point, Dpose, Dpoint);
-    if (Dpose) {
-      // Add columns of zeros to Jacobian for calibration
-      Matrix& H1r(*Dpose);
-      H1r.conservativeResize(Eigen::NoChange, pose_.dim() + K_.dim());
-      H1r.block(0, pose_.dim(), 1, K_.dim()) = Matrix::Zero(1, K_.dim());
-    }
+      OptionalJacobian<1, dimension> Dcamera = boost::none,
+      OptionalJacobian<1, 3> Dpoint = boost::none) const {
+    Matrix16 Dpose_;
+    double result = pose_.range(point, Dcamera ? &Dpose_ : 0, Dpoint);
+    if (Dcamera)
+      *Dcamera << Dpose_, Eigen::Matrix<double, 1, DimK>::Zero();
     return result;
   }
 
   /**
    * Calculate range to another pose
    * @param pose Other SO(3) pose
-   * @param Dpose the optionally computed Jacobian with respect to pose
+   * @param Dcamera the optionally computed Jacobian with respect to pose
    * @param Dpose2 the optionally computed Jacobian with respect to the other pose
    * @return range (double)
    */
   double range(
       const Pose3& pose, //
-      boost::optional<Matrix&> Dpose = boost::none,
-      boost::optional<Matrix&> Dpose2 = boost::none) const {
-    double result = pose_.range(pose, Dpose, Dpose2);
-    if (Dpose) {
-      // Add columns of zeros to Jacobian for calibration
-      Matrix& H1r(*Dpose);
-      H1r.conservativeResize(Eigen::NoChange, pose_.dim() + K_.dim());
-      H1r.block(0, pose_.dim(), 1, K_.dim()) = Matrix::Zero(1, K_.dim());
-    }
+      OptionalJacobian<1, dimension> Dcamera = boost::none,
+      OptionalJacobian<1, 6> Dpose = boost::none) const {
+    Matrix16 Dpose_;
+    double result = pose_.range(pose, Dcamera ? &Dpose_ : 0, Dpose);
+    if (Dcamera)
+      *Dcamera << Dpose_, Eigen::Matrix<double, 1, DimK>::Zero();
     return result;
   }
 
   /**
    * Calculate range to another camera
    * @param camera Other camera
-   * @param Dpose the optionally computed Jacobian with respect to pose
+   * @param Dcamera the optionally computed Jacobian with respect to pose
    * @param Dother the optionally computed Jacobian with respect to the other camera
    * @return range (double)
    */
   template<class CalibrationB>
   double range(
       const PinholeCamera<CalibrationB>& camera, //
-      boost::optional<Matrix&> Dpose = boost::none,
-      boost::optional<Matrix&> Dother = boost::none) const {
-    double result = pose_.range(camera.pose_, Dpose, Dother);
-    if (Dpose) {
-      // Add columns of zeros to Jacobian for calibration
-      Matrix& H1r(*Dpose);
-      H1r.conservativeResize(Eigen::NoChange, pose_.dim() + K_.dim());
-      H1r.block(0, pose_.dim(), 1, K_.dim()) = Matrix::Zero(1, K_.dim());
+      OptionalJacobian<1, dimension> Dcamera = boost::none,
+//      OptionalJacobian<1, 6 + traits::dimension<CalibrationB>::value> Dother =
+       boost::optional<Matrix&> Dother =
+          boost::none) const {
+    Matrix16 Dcamera_, Dother_;
+    double result = pose_.range(camera.pose(), Dcamera ? &Dcamera_ : 0,
+        Dother ? &Dother_ : 0);
+    if (Dcamera) {
+       Dcamera->resize(1, 6 + DimK);
+      *Dcamera << Dcamera_, Eigen::Matrix<double, 1, DimK>::Zero();
     }
     if (Dother) {
-      // Add columns of zeros to Jacobian for calibration
-      Matrix& H2r(*Dother);
-      H2r.conservativeResize(Eigen::NoChange,
-          camera.pose().dim() + camera.calibration().dim());
-      H2r.block(0, camera.pose().dim(), 1, camera.calibration().dim()) =
-          Matrix::Zero(1, camera.calibration().dim());
+      Dother->resize(1, 6+CalibrationB::dimension);
+      Dother->setZero();
+      Dother->block(0, 0, 1, 6) = Dother_;
     }
     return result;
   }
@@ -592,15 +428,15 @@ public:
   /**
    * Calculate range to another camera
    * @param camera Other camera
-   * @param Dpose the optionally computed Jacobian with respect to pose
+   * @param Dcamera the optionally computed Jacobian with respect to pose
    * @param Dother the optionally computed Jacobian with respect to the other camera
    * @return range (double)
    */
   double range(
       const CalibratedCamera& camera, //
-      boost::optional<Matrix&> Dpose = boost::none,
-      boost::optional<Matrix&> Dother = boost::none) const {
-    return pose_.range(camera.pose_, Dpose, Dother);
+      OptionalJacobian<1, dimension> Dcamera = boost::none,
+      OptionalJacobian<1, 6> Dother = boost::none) const {
+    return range(camera.pose(), Dcamera, Dother);
   }
 
 private:
@@ -659,26 +495,8 @@ private:
 
 };
 
-// Define GTSAM traits
-namespace traits {
 
 template<typename Calibration>
-struct GTSAM_EXPORT is_manifold<PinholeCamera<Calibration> > : public boost::true_type{
-};
-
-template<typename Calibration>
-struct GTSAM_EXPORT dimension<PinholeCamera<Calibration> > : public boost::integral_constant<
-    int, dimension<Pose3>::value + dimension<Calibration>::value> {
-};
-
-template<typename Calibration>
-struct GTSAM_EXPORT zero<PinholeCamera<Calibration> > {
-  static PinholeCamera<Calibration> value() {
-    return PinholeCamera<Calibration>(zero<Pose3>::value(),
-        zero<Calibration>::value());
-  }
-};
-
-}
+struct traits< PinholeCamera<Calibration> > : public internal::Manifold<PinholeCamera<Calibration> > {};
 
 } // \ gtsam

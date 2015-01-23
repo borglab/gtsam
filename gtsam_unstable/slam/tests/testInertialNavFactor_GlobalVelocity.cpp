@@ -218,7 +218,7 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
   Vector3 Vel1(Vector3(0.5, -0.5, 0.4));
   Rot3 R2(0.473618898, 0.119523052, 0.872582019, 0.609241153, 0.67099888,
       -0.422594037, -0.636011287, 0.731761397, 0.244979388);
-  Point3 t2 = t1.compose(Point3(Vel1 * measurement_dt));
+  Point3 t2 = t1 + Point3(Vel1 * measurement_dt);
   Pose3 Pose2(R2, t2);
   Vector dv = measurement_dt * (R1.matrix() * measurement_acc + world_g);
   Vector3 Vel2 = Vel1 + dv;
@@ -568,7 +568,7 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
   Vector3 Vel1(Vector3(0.5, -0.5, 0.4));
   Rot3 R2(0.473618898, 0.119523052, 0.872582019, 0.609241153, 0.67099888,
       -0.422594037, -0.636011287, 0.731761397, 0.244979388);
-  Point3 t2 = t1.compose(Point3(Vel1 * measurement_dt));
+  Point3 t2 = t1+ Point3(Vel1 * measurement_dt);
   Pose3 Pose2(R2, t2);
   Vector dv =
       measurement_dt

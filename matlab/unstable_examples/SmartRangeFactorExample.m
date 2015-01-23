@@ -82,8 +82,8 @@ for ind_pose = 2:7
   
   key_prev = poseKey(ind_pose-1);
   key_curr = poseKey(ind_pose);
-  prev_pose = smartValues.at(key_prev);
-  curr_pose = smartValues.at(key_curr);
+  prev_pose = smartValues.atPose2(key_prev);
+  curr_pose = smartValues.atPose2(key_curr);
   GTDeltaPose = prev_pose.between(curr_pose);
   noisePose = Pose2([t_noise*rand; t_noise*rand; r_noise*rand]);
   NoisyDeltaPose = GTDeltaPose.compose(noisePose);

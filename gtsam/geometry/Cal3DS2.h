@@ -43,6 +43,8 @@ class GTSAM_EXPORT Cal3DS2 : public Cal3DS2_Base {
 
 public:
 
+  enum { dimension = 9 };
+
   /// @name Standard Constructors
   /// @{
 
@@ -107,18 +109,8 @@ private:
 
 };
 
-// Define GTSAM traits
-namespace traits {
-
 template<>
-struct GTSAM_EXPORT is_manifold<Cal3DS2> : public boost::true_type{
-};
-
-template<>
-struct GTSAM_EXPORT dimension<Cal3DS2> : public boost::integral_constant<int, 9>{
-};
-
-}
+struct traits<Cal3DS2> : public internal::Manifold<Cal3DS2> {};
 
 }
 
