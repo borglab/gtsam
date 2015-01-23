@@ -27,7 +27,7 @@ options.cylinder.cylinderNum = 15; % pls be smaller than 20
 options.cylinder.radius = 3;  % pls be smaller than 5
 options.cylinder.height = 10;
 % point density on cylinder
-options.cylinder.pointDensity = 0.05;
+options.cylinder.pointDensity = 0.1;
 
 %% camera options
 %   parameters set according to the stereo camera:
@@ -38,7 +38,7 @@ options.camera.IS_MONO = false;
 % the field of view of camera
 options.camera.fov = 120;
 % fps for image
-options.camera.fps = 10;
+options.camera.fps = 25;
 % camera pixel resolution
 options.camera.resolution = Point2(752, 480);
 % camera horizon
@@ -65,8 +65,8 @@ options.writeVideo = true;
 options.fieldSize = Point2([100, 100]');
 % camera flying speed (unit: meter / second)
 options.speed = 20;
-% number of camera poses in the simulated trajectory
-options.poseNum = options.fieldSize.x / (options.speed / options.camera.fps);
+% camera flying height
+options.height = 30;
 
 %% ploting options
 % display covariance scaling factor
@@ -135,15 +135,28 @@ end
 
 %% generate ground truth camera trajectories: a line
 KMono = Cal3_S2(525,525,0,320,240);
-cameraPoses = cell(options.poseNum, 1);
+cameraPoses = cell(0);
 theta = 0;
-for i = 1:options.poseNum    
-    t = Point3([(i-1)*(options.fieldSize.x - 10)/options.poseNum + 10, ...
-        15, 10]');
+t = Point3(5, 5, options.height);
+i = 0;
+while 1
+    i = i+1;
+    distance = options.speed / options.camera.fps;
+    angle = 0.1*pi*(rand-0.5);
+    inc_t = Point3(distance * cos(angle), ...
+        distance * sin(angle), 0);
+    t = t.compose(inc_t);
+    
+    if t.x > options.fieldSize.x - 10 || t.y > options.fieldSize.y - 10;
+        break;
+    end
+    
+    %t = Point3([(i-1)*(options.fieldSize.x - 10)/options.poseNum + 10, ...
+    %    15, 10]');
     camera = SimpleCamera.Lookat(t, ... 
         Point3(options.fieldSize.x/2, options.fieldSize.y/2, 0), ...
         Point3([0,0,1]'), options.camera.monoK);    
-    cameraPoses{i} = camera.pose;
+    cameraPoses{end+1} = camera.pose;
 end
 
 %% set up camera and get measurements
