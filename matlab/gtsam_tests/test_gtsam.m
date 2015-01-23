@@ -1,17 +1,25 @@
 % Test runner script - runs each test 
 
-% display 'Starting: testPriorFactor'
-% testPriorFactor
+%% geometry
+display 'Starting: testCal3Unified'
+testCal3Unified
 
-display 'Starting: testValues'
-testValues
+%% linear
+display 'Starting: testKalmanFilter'
+testKalmanFilter
 
 display 'Starting: testJacobianFactor'
 testJacobianFactor
 
-display 'Starting: testKalmanFilter'
-testKalmanFilter
+%% nonlinear
+display 'Starting: testValues'
+testValues
 
+%% SLAM
+display 'Starting: testPriorFactor'
+testPriorFactor
+
+%% examples
 display 'Starting: testLocalizationExample'
 testLocalizationExample
 
@@ -36,6 +44,7 @@ testStereoVOExample
 display 'Starting: testVisualISAMExample'
 testVisualISAMExample
 
+%% MATLAB specific
 display 'Starting: testUtilities'
 testUtilities
 
