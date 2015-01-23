@@ -13,10 +13,12 @@ set(gcf, 'Position', [80,1,1800,1000]);
 %% plot all the cylinders and sampled points
 
 axis equal
-axis([0, options.fieldSize.x, 0, options.fieldSize.y, 0, 30]);
+axis([0, options.fieldSize.x, 0, options.fieldSize.y, 0, options.height + 30]);
 xlabel('X (m)');
 ylabel('Y (m)');
 zlabel('Height (m)');
+
+h = cameratoolbar('Show');
 
 if options.camera.IS_MONO
     h_title = title('Quadrotor Flight Simulation with Monocular Camera');
@@ -91,7 +93,7 @@ for i = 1:posesSize
     
     pPp = posesCov{i}(4:6,4:6); % covariance matrix in pose coordinate frame    
     gPp = gRp*pPp*gRp'; % convert the covariance matrix to global coordinate frame
-    h_pose_cov = gtsam.covarianceEllipse3D(C,gPp); 
+    h_pose_cov = gtsam.covarianceEllipse3D(C, gPp, options.plot.covarianceScale); 
     
     if exist('h_point', 'var')
         for j = 1:pointSize
@@ -110,13 +112,14 @@ for i = 1:posesSize
         if ~isempty(pts3d{j}.cov{i})
             hold on
             h_point{j} = plot3(pts3d{j}.data.x, pts3d{j}.data.y, pts3d{j}.data.z);
-            h_point_cov{j} = gtsam.covarianceEllipse3D([pts3d{j}.data.x; pts3d{j}.data.y; pts3d{j}.data.z], pts3d{j}.cov{i});
+            h_point_cov{j} = gtsam.covarianceEllipse3D([pts3d{j}.data.x; pts3d{j}.data.y; pts3d{j}.data.z], ...
+                pts3d{j}.cov{i}, options.plot.covarianceScale);
         end
-    end
+    end 
     
     axis equal
-    axis([0, options.fieldSize.x, 0, options.fieldSize.y, 0, 20]); 
-    
+    axis([0, options.fieldSize.x, 0, options.fieldSize.y, 0, options.height + 30]);
+
     drawnow
     
     if options.writeVideo
@@ -149,22 +152,21 @@ end
 
 
 %% camera flying through video
+camzoom(0.8);
 for i = 1 : posesSize
+    
+    hold on
+    
     campos([poses{i}.x, poses{i}.y, poses{i}.z]);
     camtarget([options.fieldSize.x/2, options.fieldSize.y/2, 0]);
     camlight(hlight, 'headlight');
-
+    
     if options.writeVideo
         currFrame = getframe(gcf);
         writeVideo(videoObj, currFrame);
     end
     
     drawnow
-end
-
-
-if ~holdstate
-    hold off
 end
 
 %%close video

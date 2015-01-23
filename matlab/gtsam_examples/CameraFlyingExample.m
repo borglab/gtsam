@@ -69,8 +69,9 @@ options.speed = 20;
 options.height = 30;
 
 %% ploting options
-% display covariance scaling factor
-options.plot.scale = 1;
+% display covariance scaling factor, default to be 1.
+% The covariance visualization default models 99% of all probablity 
+options.plot.covarianceScale = 1;
 % plot the trajectory covariance
 options.plot.DISP_TRAJ_COV = true;
 % plot points covariance
