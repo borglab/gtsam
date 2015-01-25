@@ -96,7 +96,7 @@ public:
     const Vector3 t = t_.vector();
     Matrix3 A = s_ * skewSymmetric(t) * R;
     Matrix7 adj;
-    adj << s_*R, A, -s_*t, Z_3x3, R, Eigen::Matrix<double, 3, 1>::Zero(), Z_3x3, Z_3x3, 1;
+    adj << s_*R, A, -s_*t, Z_3x3, R, Eigen::Matrix<double, 3, 1>::Zero(), Eigen::Matrix<double, 1, 6>::Zero(), 1;
     return adj;
   }
 
@@ -161,7 +161,7 @@ public:
     return Similarity3( //
         r.retract(v.head<3>()), // retract rotation using v[0,1,2]
         Point3(v.segment<3>(3)), // Retract the translation
-        v[6]); //finally, update scale using v[6]
+        1.0 + v[6]); //finally, update scale using v[6]
   }
 
   /// 7-dimensional vector v in tangent space that makes other = this->retract(v)
@@ -171,7 +171,7 @@ public:
     v.head<3>() = r.localCoordinates(other.R_);
     v.segment<3>(3) = other.t_.vector();
     //v.segment<3>(3) = translation().localCoordinates(other.translation());
-    v[6] = other.s_;
+    v[6] = other.s_ - 1.0;
     return v;
   }
   };
@@ -235,6 +235,19 @@ TEST(Similarity3, Getters2) {
   EXPECT(assert_equal(Rot3::ypr(1, 2, 3), test.rotation()));
   EXPECT(assert_equal(Point3(4, 5, 6), test.translation()));
   EXPECT_DOUBLES_EQUAL(7.0, test.scale(), 1e-9);
+}
+
+TEST(Similarity3, AdjointMap) {
+  Similarity3 test(Rot3::ypr(1,2,3).inverse(), Point3(4,5,6), 7);
+  Matrix7 result;
+  result <<    -1.5739,   -2.4512,   -6.3651,  -50.7671,  -11.2503,   16.8859,  -28.0000,
+      6.3167,   -2.9884,   -0.4111,    0.8502,    8.6373,  -49.7260,  -35.0000,
+     -2.5734,   -5.8362,    2.8839,   33.1363,    0.3024,   30.1811,  -42.0000,
+           0,         0,         0,   -0.2248,   -0.3502,   -0.9093,         0,
+           0,         0,         0,    0.9024,   -0.4269,   -0.0587,         0,
+           0,         0,         0,   -0.3676,   -0.8337,    0.4120,         0,
+           0,         0,         0,         0,         0,         0,    1.0000;
+  EXPECT(assert_equal(result, test.AdjointMap(), 1e-3));
 }
 
 //******************************************************************************
