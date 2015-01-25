@@ -91,12 +91,13 @@ public:
     return R_ * (s_ * p) + t_;
   }
 
-  Matrix7 adjointMap() const{
+  Matrix7 AdjointMap() const{
     const Matrix3 R = R_.matrix();
     const Vector3 t = t_.vector();
     Matrix3 A = s_ * skewSymmetric(t) * R;
     Matrix7 adj;
     adj << s_*R, A, -s_*t, Z_3x3, R, Eigen::Matrix<double, 3, 1>::Zero(), Z_3x3, Z_3x3, 1;
+    return adj;
   }
 
   /** syntactic sugar for transform_from */
@@ -104,16 +105,18 @@ public:
     return transform_from(p);
   }
 
-  /*Similarity3 inverse() const {
+  Similarity3 inverse() const {
     Rot3 Rt = R_.inverse();
-    return Pose3(Rt, Rt * (-t_));
-  }*/
+    Point3 sRt = R_.inverse() * (s_ * t_);
+    return Similarity3(Rt, sRt, 1.0/s_);
+  }
 
   Similarity3 operator*(const Similarity3& T) const {
       return Similarity3(R_ * T.R_, ((1.0/s_)*t_) + R_ * T.t_, s_*T.s_);
     }
 
   void print(const std::string& s) const {
+    std::cout << std::endl;
     std::cout << s;
     rotation().print("R:\n");
     translation().print("t: ");
@@ -149,26 +152,31 @@ public:
   }
 
   /// Update Similarity transform via 7-dim vector in tangent space
-/*  Similarity3 retract(const Vector7& v) const {
+  struct ChartAtOrigin {
+    static Similarity3 Retract(const Vector7& v,  ChartJacobian H = boost::none) {
 
     // Will retracting or localCoordinating R work if R is not a unit rotation?
     // Also, how do we actually get s out?  Seems like we need to store it somewhere.
+    Rot3 r;  //Create a zero rotation to do our retraction.
     return Similarity3( //
-        R_.retract(v.head<3>()), // retract rotation using v[0,1,2]
-        t_.retract(R() * v.segment<3>(3)), // Retract the translation
-        scale() + v[6]); //finally, update scale using v[6]
+        r.retract(v.head<3>()), // retract rotation using v[0,1,2]
+        Point3(v.segment<3>(3)), // Retract the translation
+        v[6]); //finally, update scale using v[6]
   }
 
   /// 7-dimensional vector v in tangent space that makes other = this->retract(v)
-  Vector7 localCoordinates(const Similarity3& other) const {
-
+  static Vector7 Local(const Similarity3& other,  ChartJacobian H = boost::none) {
+    Rot3 r;  //Create a zero rotation to do the retraction
     Vector7 v;
-    v.head<3>() = R_.localCoordinates(other.R_);
-    v.segment<3>(3) = R_.unrotate(other.t_ - t_).vector();
+    v.head<3>() = r.localCoordinates(other.R_);
+    v.segment<3>(3) = other.t_.vector();
     //v.segment<3>(3) = translation().localCoordinates(other.translation());
-    v[6] = other.s_ - s_;
+    v[6] = other.s_;
     return v;
-  }*/
+  }
+  };
+
+  using LieGroup<Similarity3, 7>::inverse; // version with derivative
 
   /// @}
 
@@ -200,7 +208,7 @@ struct traits<Similarity3> : public internal::LieGroupTraits<Similarity3> {};
 using namespace gtsam;
 using namespace std;
 
-//GTSAM_CONCEPT_POSE_INST(Similarity3);
+GTSAM_CONCEPT_TESTABLE_INST(Similarity3)
 
 static Point3 P(0.2,0.7,-2);
 static Rot3 R = Rot3::rodriguez(0.3,0,0);
@@ -299,24 +307,23 @@ TEST(Similarity3, manifold_first_order)
 
 TEST(Similarity3, Optimization) {
   Similarity3 prior = Similarity3(Rot3::ypr(0.1, 0.2, 0.3), Point3(1, 2, 3), 4);
-  prior.print("goal angle");
+  prior.print("Goal Transform");
   noiseModel::Isotropic::shared_ptr model = noiseModel::Isotropic::Sigma(7, 1);
   Symbol key('x',1);
-  Symbol key2('x',2);
   PriorFactor<Similarity3> factor(key, prior, model);
 
   NonlinearFactorGraph graph;
   graph.push_back(factor);
-  graph.print("full graph");
+  graph.print("Full Graph");
 
   Values initial;
   initial.insert<Similarity3>(key, Similarity3());
-  initial.print("initial estimate");
+  initial.print("Initial Estimate");
 
   Values result;
-  result.insert(key2, LevenbergMarquardtOptimizer(graph, initial).optimize());
-  result.print("final result");
-  EXPECT(assert_equal(prior, result.at<Similarity3>(key2), 1e-2));
+  result = LevenbergMarquardtOptimizer(graph, initial).optimize();
+  result.print("Optimized Estimate");
+  EXPECT(assert_equal(prior, result.at<Similarity3>(key)));
 }
 
 
