@@ -107,12 +107,12 @@ public:
 
   Similarity3 inverse() const {
     Rot3 Rt = R_.inverse();
-    Point3 sRt = R_.inverse() * (s_ * t_);
+    Point3 sRt = R_.inverse() * (-s_ * t_);
     return Similarity3(Rt, sRt, 1.0/s_);
   }
 
   Similarity3 operator*(const Similarity3& T) const {
-      return Similarity3(R_ * T.R_, ((1.0/s_)*t_) + R_ * T.t_, s_*T.s_);
+      return Similarity3(R_ * T.R_, ((1.0/T.s_)*t_) + R_ * T.t_, s_*T.s_);
     }
 
   void print(const std::string& s) const {
@@ -250,6 +250,29 @@ TEST(Similarity3, AdjointMap) {
   EXPECT(assert_equal(result, test.AdjointMap(), 1e-3));
 }
 
+TEST(Similarity3, inverse) {
+  Similarity3 test(Rot3::ypr(1,2,3).inverse(), Point3(4,5,6), 7);
+  Matrix3 Re;
+  Re <<    -0.2248,    0.9024,   -0.3676,
+   -0.3502,   -0.4269,   -0.8337,
+   -0.9093,   -0.0587,    0.4120;
+  Vector3 te(-9.8472, 59.7640, 10.2125);
+  Similarity3 expected(Re, te, 1.0/7.0);
+  EXPECT(assert_equal(expected, test.inverse(), 1e-3));
+}
+
+TEST(Similarity3, multiplication) {
+  Similarity3 test1(Rot3::ypr(1,2,3).inverse(), Point3(4,5,6), 7);
+  Similarity3 test2(Rot3::ypr(1,2,3).inverse(), Point3(8,9,10), 11);
+  Matrix3 re;
+  re << 0.0688,    0.9863,   -0.1496,
+     -0.5665,   -0.0848,   -0.8197,
+     -0.8211,    0.1412,    0.5530;
+  Vector3 te(-13.6797, 3.2441, -5.7794);
+  Similarity3 expected(re, te, 77);
+  EXPECT(assert_equal(expected, test1*test2, 1e-2));
+}
+
 //******************************************************************************
 TEST(Similarity3, Manifold) {
   EXPECT_LONGS_EQUAL(7, Similarity3::Dim());
@@ -320,23 +343,25 @@ TEST(Similarity3, manifold_first_order)
 
 TEST(Similarity3, Optimization) {
   Similarity3 prior = Similarity3(Rot3::ypr(0.1, 0.2, 0.3), Point3(1, 2, 3), 4);
-  prior.print("Goal Transform");
+  //prior.print("Goal Transform");
   noiseModel::Isotropic::shared_ptr model = noiseModel::Isotropic::Sigma(7, 1);
   Symbol key('x',1);
   PriorFactor<Similarity3> factor(key, prior, model);
 
   NonlinearFactorGraph graph;
   graph.push_back(factor);
-  graph.print("Full Graph");
+  //graph.print("Full Graph");
 
   Values initial;
   initial.insert<Similarity3>(key, Similarity3());
-  initial.print("Initial Estimate");
+  //initial.print("Initial Estimate");
 
   Values result;
+  LevenbergMarquardtParams params;
+  params.setVerbosityLM("TRYCONFIG");
   result = LevenbergMarquardtOptimizer(graph, initial).optimize();
-  result.print("Optimized Estimate");
-  EXPECT(assert_equal(prior, result.at<Similarity3>(key)));
+  //result.print("Optimized Estimate");
+  EXPECT(assert_equal(prior, result.at<Similarity3>(key), 1e-4));
 }
 
 
