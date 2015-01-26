@@ -323,7 +323,10 @@ typedef std::pair<Point3, Point3> Point3Pair;
 GTSAM_EXPORT boost::optional<Pose3> align(const std::vector<Point3Pair>& pairs);
 
 template<>
-struct traits<Pose3> : public internal::LieGroupTraits<Pose3> {
-};
+struct traits<Pose3> : public internal::LieGroupTraits<Pose3> {};
+
+template<>
+struct traits<const Pose3> : public internal::LieGroupTraits<Pose3> {};
+
 
 } // namespace gtsam

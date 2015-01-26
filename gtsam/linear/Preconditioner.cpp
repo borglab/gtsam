@@ -126,7 +126,9 @@ void BlockJacobiPreconditioner::transposeSolve(const Vector& y, Vector& x) const
 void BlockJacobiPreconditioner::build(
   const GaussianFactorGraph &gfg, const KeyInfo &keyInfo, const std::map<Key,Vector> &lambda)
 {
+  // n is the number of keys
   const size_t n = keyInfo.size();
+  // dims_ is a vector that contains the dimension of keys
   dims_ = keyInfo.colSpec();
 
   /* prepare the buffer of block diagonals */

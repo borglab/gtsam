@@ -197,4 +197,7 @@ namespace gtsam {
 
   template<>
   struct traits<Point3> : public internal::VectorSpace<Point3> {};
+
+ template<>
+  struct traits<const Point3> : public internal::VectorSpace<Point3> {};
 }

@@ -238,7 +238,7 @@ Eigen::Block<const MATRIX> sub(const MATRIX& A, size_t i1, size_t i2, size_t j1,
  * @param j is the column of the upper left corner insert location
  */
 template <typename Derived1, typename Derived2>
-GTSAM_EXPORT void insertSub(Eigen::MatrixBase<Derived1>& fullMatrix, const Eigen::MatrixBase<Derived2>& subMatrix, size_t i, size_t j) {
+void insertSub(Eigen::MatrixBase<Derived1>& fullMatrix, const Eigen::MatrixBase<Derived2>& subMatrix, size_t i, size_t j) {
   fullMatrix.block(i, j, subMatrix.rows(), subMatrix.cols()) = subMatrix;
 }
 

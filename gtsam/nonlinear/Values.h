@@ -260,7 +260,6 @@ namespace gtsam {
 
     /** Templated version to add a variable with the given j,
      * throws KeyAlreadyExists<J> if j is already present
-     * if no chart is specified, the DefaultChart<ValueType> is used
      */
     template <typename ValueType>
     void insert(Key j, const ValueType& val);
@@ -271,15 +270,6 @@ namespace gtsam {
 
     /// version for double
     void insertDouble(Key j, double c) { insert<double>(j,c); }
-
-    /// overloaded insert version that also specifies a chart
-    template <typename ValueType, typename Chart>
-    void insert(Key j, const ValueType& val);
-
-    /// overloaded insert version that also specifies a chart initializer
-    template <typename ValueType, typename Chart>
-    void insert(Key j, const ValueType& val, Chart chart);
-
 
     /** insert that mimics the STL map insert - if the value already exists, the map is not modified
      *  and an iterator to the existing value is returned, along with 'false'.  If the value did not
@@ -296,14 +286,6 @@ namespace gtsam {
       */
     template <typename T>
     void update(Key j, const T& val);
-
-    /// overloaded insert version that also specifies a chart
-    template <typename T, typename Chart>
-    void update(Key j, const T& val);
-
-    /// overloaded insert version that also specifies a chart initializer
-    template <typename T, typename Chart>
-    void update(Key j, const T& val, Chart chart);
 
     /** update the current available values without adding new ones */
     void update(const Values& values);
