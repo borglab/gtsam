@@ -70,6 +70,20 @@ public:
     s_ = s;
   }
 
+  static Similarity3 identity() {
+    std::cout << "Identity!" << std::endl;
+    return Similarity3(); }
+
+  static Vector7 Logmap(const Similarity3& s, OptionalJacobian<7, 7> Hm = boost::none) {
+    std::cout << "Logmap!" << std::endl;
+    return Vector7();
+  }
+
+  static Similarity3 Expmap(const Vector7& v, OptionalJacobian<7, 7> Hm = boost::none) {
+    std::cout << "Expmap!" << std::endl;
+    return Similarity3();
+  }
+
   bool operator==(const Similarity3& other) const {
     return (R_.equals(other.R_)) && (t_ == other.t_) && (s_ == other.s_);
   }
@@ -198,6 +212,7 @@ struct traits<Similarity3> : public internal::LieGroupTraits<Similarity3> {};
 
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/slam/PriorFactor.h>
+#include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
@@ -207,6 +222,7 @@ struct traits<Similarity3> : public internal::LieGroupTraits<Similarity3> {};
 
 using namespace gtsam;
 using namespace std;
+using symbol_shorthand::X;
 
 GTSAM_CONCEPT_TESTABLE_INST(Similarity3)
 
@@ -364,6 +380,46 @@ TEST(Similarity3, Optimization) {
   EXPECT(assert_equal(prior, result.at<Similarity3>(key), 1e-4));
 }
 
+TEST(Similarity3, Optimization2) {
+  Similarity3 prior = Similarity3();//Rot3::ypr(0, 0, 0), Point3(1, 2, 3), 4);
+  Similarity3 m1 = Similarity3(Rot3::ypr(M_PI/2.0, 0, 0), Point3(1.0, 0, 0), 1.0);
+  Similarity3 m2 = Similarity3(Rot3::ypr(M_PI/2.0, 0, 0), Point3(1.0, 0, 0), 1.0);
+  Similarity3 m3 = Similarity3(Rot3::ypr(M_PI/2.0, 0, 0), Point3(0.9, 0, 0), 1.0);
+  Similarity3 m4 = Similarity3(Rot3::ypr(M_PI/2.0, 0, 0), Point3(0.9, 0, 0), 1.0);
+
+  //prior.print("Goal Transform");
+  noiseModel::Isotropic::shared_ptr model = noiseModel::Isotropic::Sigma(7, 1);
+  SharedDiagonal betweenNoise = noiseModel::Diagonal::Sigmas(
+        (Vector(7) << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.010).finished());
+  PriorFactor<Similarity3> factor(X(1), prior, model);
+  BetweenFactor<Similarity3> b1(X(1), X(2), m1, betweenNoise);
+  BetweenFactor<Similarity3> b2(X(2), X(3), m2, betweenNoise);
+  BetweenFactor<Similarity3> b3(X(3), X(4), m3, betweenNoise);
+  BetweenFactor<Similarity3> b4(X(4), X(1), m4, betweenNoise);
+
+
+  NonlinearFactorGraph graph;
+  graph.push_back(factor);
+  graph.push_back(b1);
+  graph.push_back(b2);
+  graph.push_back(b3);
+  graph.push_back(b4);
+
+  graph.print("Full Graph");
+
+  Values initial;
+  initial.insert<Similarity3>(X(1), Similarity3());
+  initial.insert<Similarity3>(X(2), Similarity3(Rot3::ypr(M_PI/2.0, 0, 0), Point3(1, 0, 0), 1.0));
+  initial.insert<Similarity3>(X(3), Similarity3(Rot3::ypr(2.0*M_PI/2.0, 0, 0), Point3(1, 1.5, 0), 1.0));
+  initial.insert<Similarity3>(X(4), Similarity3(Rot3::ypr(3.0*M_PI/2.0, 0, 0), Point3(0, 1, 0), 1.0));
+
+  initial.print("Initial Estimate");
+
+  Values result;
+  result = LevenbergMarquardtOptimizer(graph, initial).optimize();
+  result.print("Optimized Estimate");
+  //EXPECT(assert_equal(prior, result.at<Similarity3>(key), 1e-4));
+}
 
 //******************************************************************************
 int main() {
