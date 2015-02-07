@@ -307,6 +307,23 @@ virtual class PriorFactor : gtsam::NonlinearFactor {
   void serializable() const; // enabling serialization functionality
 };
 
+
+#include <gtsam_unstable/slam/BiasedPriorFactor.h>
+template<T, B>
+virtual class BiasedPriorFactor : gtsam::NoiseModelFactor {
+  BiasedPriorFactor(size_t key, const T& prior, const B& bias, const gtsam::noiseModel::Base* noiseModel);
+  T prior() const;
+  B bias() const;
+
+  // enabling serialization functionality
+  void serialize() const;
+};
+typedef gtsam::BiasedPriorFactor<gtsam::Pose2, Vector> BiasedPriorFactorPose2;
+typedef gtsam::BiasedPriorFactor<gtsam::Pose3, Vector> BiasedPriorFactorPose3;
+
+
+
+
 #include <gtsam_unstable/slam/BiasedBetweenFactor.h>
 template<T, B>
 virtual class BiasedBetweenFactor : gtsam::NoiseModelFactor {
