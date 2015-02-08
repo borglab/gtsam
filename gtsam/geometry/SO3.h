@@ -30,7 +30,7 @@ namespace gtsam {
  *  We guarantee (all but first) constructors only generate from sub-manifold.
  *  However, round-off errors in repeated composition could move off it...
  */
-class SO3: public Matrix3, public LieGroup<SO3,3> {
+class GTSAM_EXPORT SO3: public Matrix3, public LieGroup<SO3,3> {
 
 protected:
 

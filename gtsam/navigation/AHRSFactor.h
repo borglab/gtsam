@@ -26,7 +26,7 @@
 
 namespace gtsam {
 
-class AHRSFactor: public NoiseModelFactor3<Rot3, Rot3, Vector3> {
+class GTSAM_EXPORT AHRSFactor: public NoiseModelFactor3<Rot3, Rot3, Vector3> {
 public:
 
   /**
@@ -36,7 +36,7 @@ public:
    * Can be built incrementally so as to avoid costly integration at time of
    * factor construction.
    */
-  class PreintegratedMeasurements : public PreintegratedRotation {
+  class GTSAM_EXPORT PreintegratedMeasurements : public PreintegratedRotation {
 
     friend class AHRSFactor;
 
