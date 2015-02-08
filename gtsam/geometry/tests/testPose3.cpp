@@ -109,7 +109,7 @@ TEST(Pose3, expmap_b)
 
 /* ************************************************************************* */
 // test case for screw motion in the plane
-namespace screw {
+namespace screwPose3 {
   double a=0.3, c=cos(a), s=sin(a), w=0.3;
   Vector xi = (Vector(6) << 0.0, 0.0, w, w, 0.0, 1.0).finished();
   Rot3 expectedR(c, -s, 0, s, c, 0, 0, 0, 1);
@@ -121,24 +121,24 @@ namespace screw {
 // Checks correct exponential map (Expmap) with brute force matrix exponential
 TEST(Pose3, expmap_c_full)
 {
-  EXPECT(assert_equal(screw::expected, expm<Pose3>(screw::xi),1e-6));
-  EXPECT(assert_equal(screw::expected, Pose3::Expmap(screw::xi),1e-6));
+  EXPECT(assert_equal(screwPose3::expected, expm<Pose3>(screwPose3::xi),1e-6));
+  EXPECT(assert_equal(screwPose3::expected, Pose3::Expmap(screwPose3::xi),1e-6));
 }
 
 /* ************************************************************************* */
 // assert that T*exp(xi)*T^-1 is equal to exp(Ad_T(xi))
 TEST(Pose3, Adjoint_full)
 {
-  Pose3 expected = T * Pose3::Expmap(screw::xi) * T.inverse();
-  Vector xiprime = T.Adjoint(screw::xi);
+  Pose3 expected = T * Pose3::Expmap(screwPose3::xi) * T.inverse();
+  Vector xiprime = T.Adjoint(screwPose3::xi);
   EXPECT(assert_equal(expected, Pose3::Expmap(xiprime), 1e-6));
 
-  Pose3 expected2 = T2 * Pose3::Expmap(screw::xi) * T2.inverse();
-  Vector xiprime2 = T2.Adjoint(screw::xi);
+  Pose3 expected2 = T2 * Pose3::Expmap(screwPose3::xi) * T2.inverse();
+  Vector xiprime2 = T2.Adjoint(screwPose3::xi);
   EXPECT(assert_equal(expected2, Pose3::Expmap(xiprime2), 1e-6));
 
-  Pose3 expected3 = T3 * Pose3::Expmap(screw::xi) * T3.inverse();
-  Vector xiprime3 = T3.Adjoint(screw::xi);
+  Pose3 expected3 = T3 * Pose3::Expmap(screwPose3::xi) * T3.inverse();
+  Vector xiprime3 = T3.Adjoint(screwPose3::xi);
   EXPECT(assert_equal(expected3, Pose3::Expmap(xiprime3), 1e-6));
 }
 
@@ -634,9 +634,9 @@ TEST( Pose3, unicycle )
 
 /* ************************************************************************* */
 TEST( Pose3, adjointMap) {
-  Matrix res = Pose3::adjointMap(screw::xi);
-  Matrix wh = skewSymmetric(screw::xi(0), screw::xi(1), screw::xi(2));
-  Matrix vh = skewSymmetric(screw::xi(3), screw::xi(4), screw::xi(5));
+  Matrix res = Pose3::adjointMap(screwPose3::xi);
+  Matrix wh = skewSymmetric(screwPose3::xi(0), screwPose3::xi(1), screwPose3::xi(2));
+  Matrix vh = skewSymmetric(screwPose3::xi(3), screwPose3::xi(4), screwPose3::xi(5));
   Matrix Z3 = zeros(3,3);
   Matrix6 expected;
   expected << wh, Z3, vh, wh;
@@ -704,13 +704,13 @@ Vector6 testDerivAdjoint(const Vector6& xi, const Vector6& v) {
 }
 
 TEST( Pose3, adjoint) {
-  Vector expected = testDerivAdjoint(screw::xi, screw::xi);
+  Vector expected = testDerivAdjoint(screwPose3::xi, screwPose3::xi);
 
   Matrix actualH;
-  Vector actual = Pose3::adjoint(screw::xi, screw::xi, actualH);
+  Vector actual = Pose3::adjoint(screwPose3::xi, screwPose3::xi, actualH);
 
   Matrix numericalH = numericalDerivative21<Vector6, Vector6, Vector6>(
-      testDerivAdjoint, screw::xi, screw::xi, 1e-5);
+      testDerivAdjoint, screwPose3::xi, screwPose3::xi, 1e-5);
 
   EXPECT(assert_equal(expected,actual,1e-5));
   EXPECT(assert_equal(numericalH,actualH,1e-5));

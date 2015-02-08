@@ -175,7 +175,6 @@ TEST(GaussianBayesTree, complicatedMarginal) {
 }
 
 /* ************************************************************************* */
-typedef Eigen::Matrix<double, 10, 1> Vector10;
 namespace {
 double computeError(const GaussianBayesTree& gbt, const Vector10& values) {
   pair<Matrix, Vector> Rd = GaussianFactorGraph(gbt).jacobian();
