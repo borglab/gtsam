@@ -15,6 +15,8 @@
  * @author Frank Dellaert
  **/
 
+#pragma once
+
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/concepts.h>
 
