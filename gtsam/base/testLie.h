@@ -38,19 +38,19 @@ void testLieGroupDerivatives(TestResult& result_, const std::string& name_,
 
   // Inverse
   OJ none;
-  EXPECT(assert_equal(t1.inverse(),T::Inverse(t1, H1)));
+  EXPECT(assert_equal<G>(t1.inverse(),T::Inverse(t1, H1)));
   EXPECT(assert_equal(numericalDerivative21<G,G,OJ>(T::Inverse, t1, none),H1));
 
-  EXPECT(assert_equal(t2.inverse(),T::Inverse(t2, H1)));
+  EXPECT(assert_equal<G>(t2.inverse(),T::Inverse(t2, H1)));
   EXPECT(assert_equal(numericalDerivative21<G,G,OJ>(T::Inverse, t2, none),H1));
 
   // Compose
-  EXPECT(assert_equal(t1 * t2,T::Compose(t1, t2, H1, H2)));
+  EXPECT(assert_equal<G>(t1 * t2,T::Compose(t1, t2, H1, H2)));
   EXPECT(assert_equal(numericalDerivative41<G,G,G,OJ,OJ>(T::Compose, t1, t2, none, none), H1));
   EXPECT(assert_equal(numericalDerivative42<G,G,G,OJ,OJ>(T::Compose, t1, t2, none, none), H2));
 
   // Between
-  EXPECT(assert_equal(t1.inverse() * t2,T::Between(t1, t2, H1, H2)));
+  EXPECT(assert_equal<G>(t1.inverse() * t2,T::Between(t1, t2, H1, H2)));
   EXPECT(assert_equal(numericalDerivative41<G,G,G,OJ,OJ>(T::Between, t1, t2, none, none), H1));
   EXPECT(assert_equal(numericalDerivative42<G,G,G,OJ,OJ>(T::Between, t1, t2, none, none), H2));
 }
@@ -67,7 +67,7 @@ void testChartDerivatives(TestResult& result_, const std::string& name_,
   // Retract
   OJ none;
   V w12 = T::Local(t1, t2);
-  EXPECT(assert_equal(t2, T::Retract(t1,w12, H1, H2)));
+  EXPECT(assert_equal<G>(t2, T::Retract(t1,w12, H1, H2)));
   EXPECT(assert_equal(numericalDerivative41<G,G,V,OJ,OJ>(T::Retract, t1, w12, none, none), H1));
   EXPECT(assert_equal(numericalDerivative42<G,G,V,OJ,OJ>(T::Retract, t1, w12, none, none), H2));
 
