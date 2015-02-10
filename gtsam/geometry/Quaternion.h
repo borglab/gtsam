@@ -40,19 +40,6 @@ struct traits<QUATERNION_TYPE> {
     return Q::Identity();
   }
 
-  static Q Compose(const Q &g, const Q & h) {
-    return g * h;
-  }
-
-  static Q Between(const Q &g, const Q & h) {
-    Q d = g.inverse() * h;
-    return d;
-  }
-
-  static Q Inverse(const Q &g) {
-    return g.inverse();
-  }
-
   /// @}
   /// @name Basic manifold traits
   /// @{
@@ -65,28 +52,29 @@ struct traits<QUATERNION_TYPE> {
   /// @}
   /// @name Lie group traits
   /// @{
-  static Q Compose(const Q &g, const Q & h, ChartJacobian Hg, ChartJacobian Hh =
-      boost::none) {
+  static Q Compose(const Q &g, const Q & h,
+      ChartJacobian Hg = boost::none, ChartJacobian Hh = boost::none) {
     if (Hg)
-      *Hg = h.toRotationMatrix().transpose(); // TODO : check Jacobian consistent with chart ( h.toRotationMatrix().transpose() ? )
+    *Hg = h.toRotationMatrix().transpose(); // TODO : check Jacobian consistent with chart ( h.toRotationMatrix().transpose() ? )
     if (Hh)
-      *Hh = I_3x3; // TODO : check Jacobian consistent with chart ( I(3)? )
+    *Hh = I_3x3;// TODO : check Jacobian consistent with chart ( I(3)? )
     return g * h;
   }
 
-  static Q Between(const Q &g, const Q & h, ChartJacobian Hg, ChartJacobian Hh =
-      boost::none) {
+  static Q Between(const Q &g, const Q & h,
+      ChartJacobian Hg = boost::none, ChartJacobian Hh = boost::none) {
     Q d = g.inverse() * h;
     if (Hg)
-      *Hg = -d.toRotationMatrix().transpose(); // TODO : check Jacobian consistent with chart
+    *Hg = -d.toRotationMatrix().transpose(); // TODO : check Jacobian consistent with chart
     if (Hh)
-      *Hh = I_3x3; // TODO : check Jacobian consistent with chart (my guess I(3) )
+    *Hh = I_3x3;// TODO : check Jacobian consistent with chart (my guess I(3) )
     return d;
   }
 
-  static Q Inverse(const Q &g, ChartJacobian H) {
+  static Q Inverse(const Q &g,
+      ChartJacobian H = boost::none) {
     if (H)
-      *H = -g.toRotationMatrix(); // TODO : check Jacobian consistent with chart
+    *H = -g.toRotationMatrix(); // TODO : check Jacobian consistent with chart
     return g.inverse();
   }
 
@@ -94,7 +82,7 @@ struct traits<QUATERNION_TYPE> {
   static Q Expmap(const Eigen::Ref<const TangentVector>& omega,
       ChartJacobian H = boost::none) {
     if (omega.isZero())
-      return Q::Identity();
+    return Q::Identity();
     else {
       _Scalar angle = omega.norm();
       return Q(Eigen::AngleAxis<_Scalar>(angle, omega / angle));
@@ -109,7 +97,7 @@ struct traits<QUATERNION_TYPE> {
 
     // define these compile time constants to avoid std::abs:
     static const double twoPi = 2.0 * M_PI, NearlyOne = 1.0 - 1e-10,
-        NearlyNegativeOne = -1.0 + 1e-10;
+    NearlyNegativeOne = -1.0 + 1e-10;
 
     Vector3 omega;
 
@@ -127,9 +115,9 @@ struct traits<QUATERNION_TYPE> {
       double angle = 2 * acos(qw), s = sqrt(1 - qw * qw);
       // Important:  convert to [-pi,pi] to keep error continuous
       if (angle > M_PI)
-        angle -= twoPi;
+      angle -= twoPi;
       else if (angle < -M_PI)
-        angle += twoPi;
+      angle += twoPi;
       omega = (angle / s) * q.vec();
     }
 
@@ -156,9 +144,9 @@ struct traits<QUATERNION_TYPE> {
   /// @{
   static void Print(const Q& q, const std::string& str = "") {
     if (str.size() == 0)
-      std::cout << "Eigen::Quaternion: ";
+    std::cout << "Eigen::Quaternion: ";
     else
-      std::cout << str << " ";
+    std::cout << str << " ";
     std::cout << q.vec().transpose() << std::endl;
   }
   static bool Equals(const Q& q1, const Q& q2, double tol = 1e-8) {
