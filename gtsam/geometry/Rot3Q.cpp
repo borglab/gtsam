@@ -87,25 +87,10 @@ namespace gtsam {
   Rot3 Rot3::rodriguez(const Vector3& w, double theta) {
     return Quaternion(Eigen::AngleAxis<double>(theta, w));
   }
-
-  /* ************************************************************************* */
-//  Rot3 Rot3::compose(const Rot3& R2,
-//  OptionalJacobian<3,3> H1, OptionalJacobian<3,3> H2) const {
-//    if (H1) *H1 = R2.transpose();
-//    if (H2) *H2 = I3;
-//    return Rot3(quaternion_ * R2.quaternion_);
-//  }
-
   /* ************************************************************************* */
   Rot3 Rot3::operator*(const Rot3& R2) const {
     return Rot3(quaternion_ * R2.quaternion_);
   }
-
-  /* ************************************************************************* */
-//  Rot3 Rot3::inverse(OptionalJacobian<3,3> H1) const {
-//    if (H1) *H1 = -matrix();
-//    return Rot3(quaternion_.inverse());
-//  }
 
   /* ************************************************************************* */
   // TODO: Could we do this? It works in Rot3M but not here, probably because
@@ -114,14 +99,6 @@ namespace gtsam {
   Matrix3 Rot3::transpose() const {
     return matrix().transpose();
   }
-
-  /* ************************************************************************* */
-//  Rot3 Rot3::between(const Rot3& R2,
-//  OptionalJacobian<3,3> H1, OptionalJacobian<3,3> H2) const {
-//    if (H1) *H1 = -(R2.transpose()*matrix());
-//    if (H2) *H2 = I3;
-//    return inverse() * R2;
-//  }
 
   /* ************************************************************************* */
   Point3 Rot3::rotate(const Point3& p,
@@ -135,9 +112,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   Vector3 Rot3::Logmap(const Rot3& R, OptionalJacobian<3, 3> H) {
-//    if(H) *H = Rot3::LogmapDerivative(thetaR);
     return traits<Quaternion>::Logmap(R.quaternion_, H);
-    return Vector3(0,0,0);
   }
 
   /* ************************************************************************* */
@@ -153,16 +128,6 @@ namespace gtsam {
     if (mode == Rot3::EXPMAP) return Logmap(R, H);
     else throw std::runtime_error("Rot3::Local: unknown mode");
   }
-
-  /* ************************************************************************* */
-//  Rot3 Rot3::retract(const Vector& omega, Rot3::CoordinatesMode mode) const {
-//    return compose(Expmap(omega));
-//  }
-
-  /* ************************************************************************* */
-//  Vector3 Rot3::localCoordinates(const Rot3& t2, Rot3::CoordinatesMode mode) const {
-//    return Logmap(between(t2));
-//  }
 
   /* ************************************************************************* */
   Matrix3 Rot3::matrix() const {return quaternion_.toRotationMatrix();}
