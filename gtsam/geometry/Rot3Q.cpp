@@ -85,8 +85,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   Rot3 Rot3::rodriguez(const Vector3& w, double theta) {
-// TODO   return QuaternionChart::Expmap(theta,w);
-    return Rot3();
+    return Quaternion(Eigen::AngleAxis<double>(theta, w));
   }
 
   /* ************************************************************************* */
