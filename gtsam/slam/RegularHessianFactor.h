@@ -56,6 +56,12 @@ public:
   mutable std::vector<DVector> y;
 
   /** y += alpha * A'*A*x */
+  void multiplyHessianAdd(double alpha, const VectorValues& x, VectorValues& y) const{
+    throw std::runtime_error(
+          "RegularHessianFactor::forbidden use of multiplyHessianAdd without raw memory access, use HessianFactor instead");
+  }
+
+  /** y += alpha * A'*A*x */
   void multiplyHessianAdd(double alpha, const double* x, double* yvalues) const {
     // Create a vector of temporary y values, corresponding to rows i
     y.resize(size());
