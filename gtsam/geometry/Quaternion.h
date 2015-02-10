@@ -54,40 +54,34 @@ struct traits<QUATERNION_TYPE> {
   /// @{
   static Q Compose(const Q &g, const Q & h,
       ChartJacobian Hg = boost::none, ChartJacobian Hh = boost::none) {
-    if (Hg)
-    *Hg = h.toRotationMatrix().transpose(); // TODO : check Jacobian consistent with chart ( h.toRotationMatrix().transpose() ? )
-    if (Hh)
-    *Hh = I_3x3;// TODO : check Jacobian consistent with chart ( I(3)? )
+    if (Hg) *Hg = h.toRotationMatrix().transpose();
+    if (Hh) *Hh = I_3x3;
     return g * h;
   }
 
   static Q Between(const Q &g, const Q & h,
       ChartJacobian Hg = boost::none, ChartJacobian Hh = boost::none) {
     Q d = g.inverse() * h;
-    if (Hg)
-    *Hg = -d.toRotationMatrix().transpose(); // TODO : check Jacobian consistent with chart
-    if (Hh)
-    *Hh = I_3x3;// TODO : check Jacobian consistent with chart (my guess I(3) )
+    if (Hg) *Hg = -d.toRotationMatrix().transpose();
+    if (Hh) *Hh = I_3x3;
     return d;
   }
 
   static Q Inverse(const Q &g,
       ChartJacobian H = boost::none) {
-    if (H)
-    *H = -g.toRotationMatrix(); // TODO : check Jacobian consistent with chart
+    if (H) *H = -g.toRotationMatrix();
     return g.inverse();
   }
 
   /// Exponential map, simply be converting omega to axis/angle representation
   static Q Expmap(const Eigen::Ref<const TangentVector>& omega,
       ChartJacobian H = boost::none) {
-    if (omega.isZero())
-    return Q::Identity();
+    if(H) *H = SO3::ExpmapDerivative(omega);
+    if (omega.isZero()) return Q::Identity();
     else {
       _Scalar angle = omega.norm();
       return Q(Eigen::AngleAxis<_Scalar>(angle, omega / angle));
     }
-    if(H) *H = SO3::ExpmapDerivative(omega);
   }
 
   /// We use our own Logmap, as there is a slight bug in Eigen
@@ -105,7 +99,7 @@ struct traits<QUATERNION_TYPE> {
     if (qw > NearlyOne) {
       // Taylor expansion of (angle / s) at 1
       //return (2 + 2 * (1-qw) / 3) * q.vec();
-      return (8. / 3. - 2. / 3. * qw) * q.vec();
+      omega = (8. / 3. - 2. / 3. * qw) * q.vec();
     } else if (qw < NearlyNegativeOne) {
       // Taylor expansion of (angle / s) at -1
       //return (-2 - 2 * (1 + qw) / 3) * q.vec();
@@ -128,15 +122,24 @@ struct traits<QUATERNION_TYPE> {
   /// @}
   /// @name Manifold traits
   /// @{
-  static TangentVector Local(const Q& origin, const Q& other,
-      ChartJacobian Horigin = boost::none, ChartJacobian Hother = boost::none) {
-    return Logmap(Between(origin, other, Horigin, Hother));
-    // TODO: incorporate Jacobian of Logmap
+
+  static TangentVector Local(const Q& g, const Q& h,
+      ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) {
+    Q b = Between(g, h, H1, H2);
+    Matrix3 D_v_b;
+    TangentVector v = Logmap(b, (H1 || H2) ? &D_v_b : 0);
+    if (H1) *H1 = D_v_b * (*H1);
+    if (H2) *H2 = D_v_b * (*H2);
+    return v;
   }
-  static Q Retract(const Q& origin, const TangentVector& v,
-      ChartJacobian Horigin = boost::none, ChartJacobian Hv = boost::none) {
-    return Compose(origin, Expmap(v), Horigin, Hv);
-    // TODO : incorporate Jacobian of Expmap
+
+  static Q Retract(const Q& g, const TangentVector& v,
+      ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) {
+    Matrix3 D_h_v;
+    Q b = Expmap(v,H2 ? &D_h_v : 0);
+    Q h = Compose(g, b, H1, H2);
+    if (H2) *H2 = (*H2) * D_h_v;
+    return h;
   }
 
   /// @}
