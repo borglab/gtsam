@@ -20,9 +20,12 @@
 #include <gtsam/base/concepts.h>
 #include <cmath>
 
+using namespace std;
+
 namespace gtsam {
 
-SO3 Rodrigues(const double& theta, const Vector3& axis) {
+/* ************************************************************************* */
+SO3 SO3::Rodrigues(const Vector3& axis, double theta) {
   using std::cos;
   using std::sin;
 
@@ -46,26 +49,24 @@ SO3 Rodrigues(const double& theta, const Vector3& axis) {
 }
 
 /// simply convert omega to axis/angle representation
-SO3 SO3::Expmap(const Eigen::Ref<const Vector3>& omega,
+SO3 SO3::Expmap(const Vector3& omega,
     ChartJacobian H) {
 
   if (H)
-    CONCEPT_NOT_IMPLEMENTED;
+    *H = ExpmapDerivative(omega);
 
   if (omega.isZero())
-    return SO3::Identity();
+    return Identity();
   else {
     double angle = omega.norm();
-    return Rodrigues(angle, omega / angle);
+    return Rodrigues(omega / angle, angle);
   }
 }
 
+/* ************************************************************************* */
 Vector3 SO3::Logmap(const SO3& R, ChartJacobian H) {
   using std::sqrt;
   using std::sin;
-
-  if (H)
-    CONCEPT_NOT_IMPLEMENTED;
 
   // note switch to base 1
   const double& R11 = R(0, 0), R12 = R(0, 1), R13 = R(0, 2);
@@ -75,16 +76,18 @@ Vector3 SO3::Logmap(const SO3& R, ChartJacobian H) {
   // Get trace(R)
   double tr = R.trace();
 
+  Vector3 thetaR;
+
   // when trace == -1, i.e., when theta = +-pi, +-3pi, +-5pi, etc.
   // we do something special
   if (std::abs(tr + 1.0) < 1e-10) {
     if (std::abs(R33 + 1.0) > 1e-10)
-      return (M_PI / sqrt(2.0 + 2.0 * R33)) * Vector3(R13, R23, 1.0 + R33);
+      thetaR = (M_PI / sqrt(2.0 + 2.0 * R33)) * Vector3(R13, R23, 1.0 + R33);
     else if (std::abs(R22 + 1.0) > 1e-10)
-      return (M_PI / sqrt(2.0 + 2.0 * R22)) * Vector3(R12, 1.0 + R22, R32);
+      thetaR = (M_PI / sqrt(2.0 + 2.0 * R22)) * Vector3(R12, 1.0 + R22, R32);
     else
       // if(std::abs(R.r1_.x()+1.0) > 1e-10)  This is implicit
-      return (M_PI / sqrt(2.0 + 2.0 * R11)) * Vector3(1.0 + R11, R21, R31);
+      thetaR = (M_PI / sqrt(2.0 + 2.0 * R11)) * Vector3(1.0 + R11, R21, R31);
   } else {
     double magnitude;
     double tr_3 = tr - 3.0; // always negative
@@ -96,9 +99,74 @@ Vector3 SO3::Logmap(const SO3& R, ChartJacobian H) {
       // use Taylor expansion: theta \approx 1/2-(t-3)/12 + O((t-3)^2)
       magnitude = 0.5 - tr_3 * tr_3 / 12.0;
     }
-    return magnitude * Vector3(R32 - R23, R13 - R31, R21 - R12);
+    thetaR = magnitude * Vector3(R32 - R23, R13 - R31, R21 - R12);
   }
+
+  if(H) *H = LogmapDerivative(thetaR);
+  return thetaR;
 }
+
+/* ************************************************************************* */
+Matrix3 SO3::ExpmapDerivative(const Vector3& omega)    {
+  using std::cos;
+  using std::sin;
+
+  if(zero(omega)) return I_3x3;
+  double theta = omega.norm();  // rotation angle
+#ifdef DUY_VERSION
+  /// Follow Iserles05an, B10, pg 147, with a sign change in the second term (left version)
+  Matrix3 X = skewSymmetric(omega);
+  Matrix3 X2 = X*X;
+  double vi = theta/2.0;
+  double s1 = sin(vi)/vi;
+  double s2 = (theta - sin(theta))/(theta*theta*theta);
+  return I_3x3 - 0.5*s1*s1*X + s2*X2;
+#else // Luca's version
+  /**
+   * Right Jacobian for Exponential map in SO(3) - equation (10.86) and following equations in
+   * G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups", Volume 2, 2008.
+   * expmap(thetahat + omega) \approx expmap(thetahat) * expmap(Jr * omega)
+   * where Jr = ExpmapDerivative(thetahat);
+   * This maps a perturbation in the tangent space (omega) to
+   * a perturbation on the manifold (expmap(Jr * omega))
+   */
+  // element of Lie algebra so(3): X = omega^, normalized by normx
+  const Matrix3 Y = skewSymmetric(omega) / theta;
+  return I_3x3 - ((1 - cos(theta)) / (theta)) * Y
+      + (1 - sin(theta) / theta) * Y * Y; // right Jacobian
+#endif
+}
+
+/* ************************************************************************* */
+Matrix3 SO3::LogmapDerivative(const Vector3& omega)    {
+  using std::cos;
+  using std::sin;
+
+  if(zero(omega)) return I_3x3;
+  double theta = omega.norm();
+#ifdef DUY_VERSION
+  /// Follow Iserles05an, B11, pg 147, with a sign change in the second term (left version)
+  Matrix3 X = skewSymmetric(omega);
+  Matrix3 X2 = X*X;
+  double vi = theta/2.0;
+  double s2 = (theta*tan(M_PI_2-vi) - 2)/(2*theta*theta);
+  return I_3x3 + 0.5*X - s2*X2;
+#else // Luca's version
+  /** Right Jacobian for Log map in SO(3) - equation (10.86) and following equations in
+   * G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups", Volume 2, 2008.
+   * logmap( Rhat * expmap(omega) ) \approx logmap( Rhat ) + Jrinv * omega
+   * where Jrinv = LogmapDerivative(omega);
+   * This maps a perturbation on the manifold (expmap(omega))
+   * to a perturbation in the tangent space (Jrinv * omega)
+   */
+  const Matrix3 X = skewSymmetric(omega); // element of Lie algebra so(3): X = omega^
+  return I_3x3 + 0.5 * X
+      + (1 / (theta * theta) - (1 + cos(theta)) / (2 * theta * sin(theta))) * X
+          * X;
+#endif
+}
+
+/* ************************************************************************* */
 
 } // end namespace gtsam
 

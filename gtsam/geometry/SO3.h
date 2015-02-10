@@ -30,15 +30,21 @@ namespace gtsam {
  *  We guarantee (all but first) constructors only generate from sub-manifold.
  *  However, round-off errors in repeated composition could move off it...
  */
-class GTSAM_EXPORT SO3: public Matrix3, public LieGroup<SO3,3> {
+class GTSAM_EXPORT SO3: public Matrix3, public LieGroup<SO3, 3> {
 
 protected:
 
 public:
-  enum { dimension=3 };
+  enum {
+    dimension = 3
+  };
+
+  /// @name Constructors
+  /// @{
 
   /// Constructor from AngleAxisd
-  SO3() : Matrix3(I_3x3) {
+  SO3() :
+      Matrix3(I_3x3) {
   }
 
   /// Constructor from Eigen Matrix
@@ -52,6 +58,13 @@ public:
       Matrix3(angleAxis) {
   }
 
+  /// Static, named constructor TODO think about relation with above
+  static SO3 Rodrigues(const Vector3& axis, double theta);
+
+  /// @}
+  /// @name Testable
+  /// @{
+
   void print(const std::string& s) const {
     std::cout << s << *this << std::endl;
   }
@@ -60,32 +73,67 @@ public:
     return equal_with_abs_tol(*this, R, tol);
   }
 
-  static SO3 identity() { return I_3x3; }
-  SO3 inverse() const { return this->Matrix3::inverse(); }
+  /// @}
+  /// @name Group
+  /// @{
 
-  static SO3 Expmap(const Eigen::Ref<const Vector3>& omega, ChartJacobian H = boost::none);
+  /// identity rotation for group operation
+  static SO3 identity() {
+    return I_3x3;
+  }
+
+  /// inverse of a rotation = transpose
+  SO3 inverse() const {
+    return this->Matrix3::inverse();
+  }
+
+  /// @}
+  /// @name Lie Group
+  /// @{
+
+  /**
+   * Exponential map at identity - create a rotation from canonical coordinates
+   * \f$ [R_x,R_y,R_z] \f$ using Rodriguez' formula
+   */
+  static SO3 Expmap(const Vector3& omega, ChartJacobian H = boost::none);
+
+  /**
+   * Log map at identity - returns the canonical coordinates
+   * \f$ [R_x,R_y,R_z] \f$ of this rotation
+   */
   static Vector3 Logmap(const SO3& R, ChartJacobian H = boost::none);
 
-  Matrix3 AdjointMap() const { return *this; }
+  /// Derivative of Expmap
+  static Matrix3 ExpmapDerivative(const Vector3& omega);
+
+  /// Derivative of Logmap
+  static Matrix3 LogmapDerivative(const Vector3& omega);
+
+  Matrix3 AdjointMap() const {
+    return *this;
+  }
 
   // Chart at origin
   struct ChartAtOrigin {
-    static SO3 Retract(const Vector3& v, ChartJacobian H = boost::none) {
-      return Expmap(v,H);
+    static SO3 Retract(const Vector3& omega, ChartJacobian H = boost::none) {
+      return Expmap(omega, H);
     }
     static Vector3 Local(const SO3& R, ChartJacobian H = boost::none) {
-      return Logmap(R,H);
+      return Logmap(R, H);
     }
   };
 
-  using LieGroup<SO3,3>::inverse;
+  using LieGroup<SO3, 3>::inverse;
 
+  /// @}
 };
 
 template<>
-struct traits<SO3> : public internal::LieGroupTraits<SO3> {};
+struct traits<SO3> : public internal::LieGroupTraits<SO3> {
+};
 
 template<>
-struct traits<const SO3> : public internal::LieGroupTraits<SO3> {};
+struct traits<const SO3> : public internal::LieGroupTraits<SO3> {
+};
 } // end namespace gtsam
 
