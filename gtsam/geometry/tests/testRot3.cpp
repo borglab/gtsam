@@ -686,12 +686,13 @@ TEST(Rot3 , LieGroupDerivatives) {
 //******************************************************************************
 TEST(Rot3 , ChartDerivatives) {
   Rot3 id;
-
-  CHECK_CHART_DERIVATIVES(id,id);
-  CHECK_CHART_DERIVATIVES(id,T2);
-  CHECK_CHART_DERIVATIVES(T2,id);
-  CHECK_CHART_DERIVATIVES(T1,T2);
-  CHECK_CHART_DERIVATIVES(T2,T1);
+  if (ROT3_DEFAULT_COORDINATES_MODE == Rot3::EXPMAP) {
+    CHECK_CHART_DERIVATIVES(id,id);
+    CHECK_CHART_DERIVATIVES(id,T2);
+    CHECK_CHART_DERIVATIVES(T2,id);
+    CHECK_CHART_DERIVATIVES(T1,T2);
+    CHECK_CHART_DERIVATIVES(T2,T1);
+  }
 }
 
 /* ************************************************************************* */

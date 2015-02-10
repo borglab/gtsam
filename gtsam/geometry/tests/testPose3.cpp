@@ -775,11 +775,12 @@ TEST(Pose3 , LieGroupDerivatives) {
 //******************************************************************************
 TEST(Pose3 , ChartDerivatives) {
   Pose3 id;
-
-  CHECK_CHART_DERIVATIVES(id,id);
-  CHECK_CHART_DERIVATIVES(id,T2);
-  CHECK_CHART_DERIVATIVES(T2,id);
-  CHECK_CHART_DERIVATIVES(T2,T3);
+  if (ROT3_DEFAULT_COORDINATES_MODE == Rot3::EXPMAP) {
+    CHECK_CHART_DERIVATIVES(id,id);
+    CHECK_CHART_DERIVATIVES(id,T2);
+    CHECK_CHART_DERIVATIVES(T2,id);
+    CHECK_CHART_DERIVATIVES(T2,T3);
+  }
 }
 
 /* ************************************************************************* */
