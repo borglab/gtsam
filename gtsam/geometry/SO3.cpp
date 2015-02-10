@@ -76,18 +76,18 @@ Vector3 SO3::Logmap(const SO3& R, ChartJacobian H) {
   // Get trace(R)
   double tr = R.trace();
 
-  Vector3 thetaR;
+  Vector3 omega;
 
   // when trace == -1, i.e., when theta = +-pi, +-3pi, +-5pi, etc.
   // we do something special
   if (std::abs(tr + 1.0) < 1e-10) {
     if (std::abs(R33 + 1.0) > 1e-10)
-      thetaR = (M_PI / sqrt(2.0 + 2.0 * R33)) * Vector3(R13, R23, 1.0 + R33);
+      omega = (M_PI / sqrt(2.0 + 2.0 * R33)) * Vector3(R13, R23, 1.0 + R33);
     else if (std::abs(R22 + 1.0) > 1e-10)
-      thetaR = (M_PI / sqrt(2.0 + 2.0 * R22)) * Vector3(R12, 1.0 + R22, R32);
+      omega = (M_PI / sqrt(2.0 + 2.0 * R22)) * Vector3(R12, 1.0 + R22, R32);
     else
       // if(std::abs(R.r1_.x()+1.0) > 1e-10)  This is implicit
-      thetaR = (M_PI / sqrt(2.0 + 2.0 * R11)) * Vector3(1.0 + R11, R21, R31);
+      omega = (M_PI / sqrt(2.0 + 2.0 * R11)) * Vector3(1.0 + R11, R21, R31);
   } else {
     double magnitude;
     double tr_3 = tr - 3.0; // always negative
@@ -99,11 +99,11 @@ Vector3 SO3::Logmap(const SO3& R, ChartJacobian H) {
       // use Taylor expansion: theta \approx 1/2-(t-3)/12 + O((t-3)^2)
       magnitude = 0.5 - tr_3 * tr_3 / 12.0;
     }
-    thetaR = magnitude * Vector3(R32 - R23, R13 - R31, R21 - R12);
+    omega = magnitude * Vector3(R32 - R23, R13 - R31, R21 - R12);
   }
 
-  if(H) *H = LogmapDerivative(thetaR);
-  return thetaR;
+  if(H) *H = LogmapDerivative(omega);
+  return omega;
 }
 
 /* ************************************************************************* */
