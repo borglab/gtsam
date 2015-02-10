@@ -19,6 +19,7 @@
 
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/concepts.h>
+#include <gtsam/geometry/SO3.h> // Logmap/Expmap derivatives
 
 #define QUATERNION_TYPE Eigen::Quaternion<_Scalar,_Options>
 
@@ -98,7 +99,7 @@ struct traits<QUATERNION_TYPE> {
       _Scalar angle = omega.norm();
       return Q(Eigen::AngleAxis<_Scalar>(angle, omega / angle));
     }
-    if (H) CONCEPT_NOT_IMPLEMENTED;
+    if(H) *H = SO3::ExpmapDerivative(omega);
   }
 
   /// We use our own Logmap, as there is a slight bug in Eigen
@@ -110,6 +111,8 @@ struct traits<QUATERNION_TYPE> {
     static const double twoPi = 2.0 * M_PI, NearlyOne = 1.0 - 1e-10,
         NearlyNegativeOne = -1.0 + 1e-10;
 
+    Vector3 omega;
+
     const double qw = q.w();
     if (qw > NearlyOne) {
       // Taylor expansion of (angle / s) at 1
@@ -118,7 +121,7 @@ struct traits<QUATERNION_TYPE> {
     } else if (qw < NearlyNegativeOne) {
       // Taylor expansion of (angle / s) at -1
       //return (-2 - 2 * (1 + qw) / 3) * q.vec();
-      return (-8. / 3 + 2. / 3 * qw) * q.vec();
+      omega = (-8. / 3 + 2. / 3 * qw) * q.vec();
     } else {
       // Normal, away from zero case
       double angle = 2 * acos(qw), s = sqrt(1 - qw * qw);
@@ -127,10 +130,11 @@ struct traits<QUATERNION_TYPE> {
         angle -= twoPi;
       else if (angle < -M_PI)
         angle += twoPi;
-      return (angle / s) * q.vec();
+      omega = (angle / s) * q.vec();
     }
 
-    if (H) CONCEPT_NOT_IMPLEMENTED;
+    if(H) *H = SO3::LogmapDerivative(omega);
+    return omega;
   }
 
   /// @}
