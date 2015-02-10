@@ -136,7 +136,7 @@ namespace gtsam {
   /* ************************************************************************* */
   Vector3 Rot3::Logmap(const Rot3& R, OptionalJacobian<3, 3> H) {
 //    if(H) *H = Rot3::LogmapDerivative(thetaR);
-//    return QuaternionChart::Logmap(R.quaternion_);
+    return traits<Quaternion>::Logmap(R.quaternion_, H);
     return Vector3(0,0,0);
   }
 
