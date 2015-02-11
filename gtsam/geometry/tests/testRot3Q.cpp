@@ -62,6 +62,9 @@ TEST(Rot3Q , Compare) {
   R R5 = R3.between(R4);
   EXPECT(assert_equal(R(q5), R5));
 
+  // Check toQuaternion
+  EXPECT(assert_equal(q5, R5.toQuaternion()));
+
   // Check Logmap
   Vector3 vQ = TQ::Logmap(q5);
   Vector3 vR = R::Logmap(R5);
