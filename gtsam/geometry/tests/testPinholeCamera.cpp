@@ -51,8 +51,21 @@ static const Point3 point4_inf( 0.16,-0.16, -1.0);
 /* ************************************************************************* */
 TEST( PinholeCamera, constructor)
 {
-  EXPECT(assert_equal( camera.calibration(), K));
-  EXPECT(assert_equal( camera.pose(), pose));
+  EXPECT(assert_equal( K, camera.calibration()));
+  EXPECT(assert_equal( pose, camera.pose()));
+}
+
+//******************************************************************************
+TEST(PinholeCamera, Pose) {
+
+  Matrix actualH;
+  EXPECT(assert_equal(pose, camera.getPose(actualH)));
+
+  // Check derivative
+  boost::function<Pose3(Camera)> f = //
+      boost::bind(&Camera::getPose,_1,boost::none);
+  Matrix numericalH = numericalDerivative11<Pose3,Camera>(f,camera);
+  EXPECT(assert_equal(numericalH, actualH, 1e-9));
 }
 
 /* ************************************************************************* */

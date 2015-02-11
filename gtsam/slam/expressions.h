@@ -9,6 +9,7 @@
 
 #include <gtsam/nonlinear/expressions.h>
 #include <gtsam/geometry/Cal3_S2.h>
+#include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam/geometry/PinholeCamera.h>
 
 namespace gtsam {
@@ -19,7 +20,7 @@ typedef Expression<Point2> Point2_;
 typedef Expression<Rot2> Rot2_;
 typedef Expression<Pose2> Pose2_;
 
-Point2_ transform_to(const Pose2_& x, const Point2_& p) {
+inline Point2_ transform_to(const Pose2_& x, const Point2_& p) {
   return Point2_(x, &Pose2::transform_to, p);
 }
 
@@ -29,24 +30,36 @@ typedef Expression<Point3> Point3_;
 typedef Expression<Rot3> Rot3_;
 typedef Expression<Pose3> Pose3_;
 
-Point3_ transform_to(const Pose3_& x, const Point3_& p) {
+inline Point3_ transform_to(const Pose3_& x, const Point3_& p) {
   return Point3_(x, &Pose3::transform_to, p);
 }
 
 // Projection
 
 typedef Expression<Cal3_S2> Cal3_S2_;
+typedef Expression<Cal3Bundler> Cal3Bundler_;
 
-Point2_ project(const Point3_& p_cam) {
+inline Point2_ project(const Point3_& p_cam) {
   return Point2_(PinholeCamera<Cal3_S2>::project_to_camera, p_cam);
 }
 
-Point2 project6(const Pose3& x, const Point3& p, const Cal3_S2& K,
+template <class CAMERA>
+Point2 project4(const CAMERA& camera, const Point3& p,
+    OptionalJacobian<2, CAMERA::dimension> Dcam, OptionalJacobian<2, 3> Dpoint) {
+  return camera.project2(p, Dcam, Dpoint);
+}
+
+template <class CAMERA>
+Point2_ project2(const Expression<CAMERA>& camera_, const Point3_& p_) {
+  return Point2_(project4<CAMERA>, camera_, p_);
+}
+
+inline Point2 project6(const Pose3& x, const Point3& p, const Cal3_S2& K,
     OptionalJacobian<2, 6> Dpose, OptionalJacobian<2, 3> Dpoint, OptionalJacobian<2, 5> Dcal) {
   return PinholeCamera<Cal3_S2>(x, K).project(p, Dpose, Dpoint, Dcal);
 }
 
-Point2_ project3(const Pose3_& x, const Point3_& p, const Cal3_S2_& K) {
+inline Point2_ project3(const Pose3_& x, const Point3_& p, const Cal3_S2_& K) {
   return Point2_(project6, x, p, K);
 }
 

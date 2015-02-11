@@ -151,8 +151,17 @@ public:
     return pose_;
   }
 
-  /// return pose
+  /// return pose, constant version
   inline const Pose3& pose() const {
+    return pose_;
+  }
+
+  /// return pose, with derivative
+  inline const Pose3& getPose(gtsam::OptionalJacobian<6, dimension> H) const {
+    if (H) {
+      H->setZero();
+      H->block(0, 0, 6, 6) = I_6x6;
+    }
     return pose_;
   }
 
