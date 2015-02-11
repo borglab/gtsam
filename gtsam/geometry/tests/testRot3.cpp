@@ -697,9 +697,8 @@ TEST(Rot3 , ChartDerivatives) {
 
 /* ************************************************************************* */
 int main() {
-//  TestResult tr;
-//  return TestRegistry::runAllTests(tr);
-  std::cout << "testRot3 currently disabled!!" << std::endl;
+  TestResult tr;
+  return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
 
