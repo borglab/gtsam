@@ -4,22 +4,28 @@
 
 // specify the classes from gtsam we are using
 virtual class gtsam::Value;
-virtual class gtsam::LieScalar;
-virtual class gtsam::LieVector;
-virtual class gtsam::Point2;
-virtual class gtsam::Rot2;
-virtual class gtsam::Pose2;
-virtual class gtsam::Point3;
-virtual class gtsam::Rot3;
-virtual class gtsam::Pose3;
+class gtsam::Vector6;
+class gtsam::LieScalar;
+class gtsam::LieVector;
+class gtsam::Point2;
+class gtsam::Rot2;
+class gtsam::Pose2;
+class gtsam::Point3;
+class gtsam::Rot3;
+class gtsam::Pose3;
 virtual class gtsam::noiseModel::Base;
 virtual class gtsam::noiseModel::Gaussian;
 virtual class gtsam::imuBias::ConstantBias;
-virtual class gtsam::NoiseModelFactor;
 virtual class gtsam::NonlinearFactor;
+virtual class gtsam::NoiseModelFactor;
+virtual class gtsam::NoiseModelFactor2;
+virtual class gtsam::NoiseModelFactor3;
+virtual class gtsam::NoiseModelFactor4;
 virtual class gtsam::GaussianFactor;
 virtual class gtsam::HessianFactor;
 virtual class gtsam::JacobianFactor;
+class gtsam::Cal3_S2;
+class gtsam::Cal3DS2;
 class gtsam::GaussianFactorGraph;
 class gtsam::NonlinearFactorGraph;
 class gtsam::Ordering;
@@ -43,7 +49,7 @@ class Dummy {
 };
 
 #include <gtsam_unstable/dynamics/PoseRTV.h>
-virtual class PoseRTV : gtsam::Value {
+class PoseRTV {
   PoseRTV();
   PoseRTV(Vector rtv);
   PoseRTV(const gtsam::Point3& pt, const gtsam::Rot3& rot, const gtsam::Point3& vel);
@@ -94,7 +100,7 @@ virtual class PoseRTV : gtsam::Value {
 };
 
 #include <gtsam_unstable/geometry/Pose3Upright.h>
-virtual class Pose3Upright : gtsam::Value {
+class Pose3Upright {
   Pose3Upright();
   Pose3Upright(const gtsam::Pose3Upright& x);
   Pose3Upright(const gtsam::Rot2& bearing, const gtsam::Point3& t);
@@ -132,7 +138,7 @@ virtual class Pose3Upright : gtsam::Value {
 }; // \class Pose3Upright
 
 #include <gtsam_unstable/geometry/BearingS2.h>
-virtual class BearingS2 : gtsam::Value {
+class BearingS2 {
   BearingS2();
   BearingS2(double azimuth, double elevation);
   BearingS2(const gtsam::Rot2& azimuth, const gtsam::Rot2& elevation);
@@ -328,6 +334,11 @@ virtual class BetweenFactorEM : gtsam::NonlinearFactor {
   void set_flag_bump_up_near_zero_probs(bool flag);
   bool get_flag_bump_up_near_zero_probs() const;
 
+  void updateNoiseModels(const gtsam::Values& values, const gtsam::NonlinearFactorGraph& graph);
+  void updateNoiseModels_givenCovs(const gtsam::Values& values, Matrix cov1, Matrix cov2, Matrix cov12);
+  Matrix get_model_inlier_cov();
+  Matrix get_model_outlier_cov();
+
   void serializable() const; // enabling serialization functionality
 };
 
@@ -349,6 +360,25 @@ virtual class TransformBtwRobotsUnaryFactorEM : gtsam::NonlinearFactor {
   Vector calcIndicatorProb(const gtsam::Values& x);
   void setValAValB(const gtsam::Values valA, const gtsam::Values valB);
 
+  void updateNoiseModels(const gtsam::Values& values, const gtsam::NonlinearFactorGraph& graph);
+  void updateNoiseModels_givenCovs(const gtsam::Values& values, Matrix cov1, Matrix cov2, Matrix cov12);
+  Matrix get_model_inlier_cov();
+  Matrix get_model_outlier_cov();
+
+  void serializable() const; // enabling serialization functionality
+};
+
+#include <gtsam_unstable/slam/TransformBtwRobotsUnaryFactor.h>
+template<T = {gtsam::Pose2}>
+virtual class TransformBtwRobotsUnaryFactor : gtsam::NonlinearFactor {
+  TransformBtwRobotsUnaryFactor(size_t key, const T& relativePose, size_t keyA, size_t keyB,
+      const gtsam::Values& valA, const gtsam::Values& valB,
+      const gtsam::noiseModel::Gaussian* model);
+
+  Vector whitenedError(const gtsam::Values& x);
+  Vector unwhitenedError(const gtsam::Values& x);
+  void setValAValB(const gtsam::Values valA, const gtsam::Values valB);
+
   void serializable() const; // enabling serialization functionality
 };
 
@@ -361,7 +391,6 @@ virtual class SmartRangeFactor : gtsam::NoiseModelFactor {
   void print(string s) const;
 
 };
-
 
 #include <gtsam/slam/RangeFactor.h>
 template<POSE, POINT>
@@ -487,20 +516,19 @@ virtual class PendulumFactorPk1 : gtsam::NonlinearFactor {
   Vector evaluateError(const gtsam::LieScalar& pk1, const gtsam::LieScalar& qk, const gtsam::LieScalar& qk1) const;
 };
 
-#include <gtsam/base/LieVector.h>
 #include <gtsam_unstable/dynamics/SimpleHelicopter.h>
 
 virtual class Reconstruction : gtsam::NonlinearFactor {
   Reconstruction(size_t gKey1, size_t gKey, size_t xiKey, double h);
 
-  Vector evaluateError(const gtsam::Pose3& gK1, const gtsam::Pose3& gK, const gtsam::LieVector& xiK) const;
+  Vector evaluateError(const gtsam::Pose3& gK1, const gtsam::Pose3& gK, const gtsam::Vector6& xiK) const;
 };
 
 virtual class DiscreteEulerPoincareHelicopter : gtsam::NonlinearFactor {
   DiscreteEulerPoincareHelicopter(size_t xiKey, size_t xiKey_1, size_t gKey,
       double h, Matrix Inertia, Vector Fu, double m);
 
-  Vector evaluateError(const gtsam::LieVector& xiK, const gtsam::LieVector& xiK_1, const gtsam::Pose3& gK) const;
+  Vector evaluateError(const gtsam::Vector6& xiK, const gtsam::Vector6& xiK_1, const gtsam::Pose3& gK) const;
 };
 
 //*************************************************************************
@@ -694,5 +722,74 @@ class AHRS {
   pair<gtsam::Mechanization_bRn2, gtsam::GaussianDensity*> aidGeneral(const gtsam::Mechanization_bRn2& mech, gtsam::GaussianDensity* state, Vector f, Vector f_expected, const gtsam::Rot3& increment);
   void print(string s) const;
 };
+
+// Tectonic SAM Factors
+
+#include <gtsam_unstable/slam/TSAMFactors.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
+
+//typedef gtsam::NoiseModelFactor2<gtsam::Pose2, gtsam::Point2> NLPosePose;
+virtual class DeltaFactor : gtsam::NoiseModelFactor {
+  DeltaFactor(size_t i, size_t j, const gtsam::Point2& measured,
+      const gtsam::noiseModel::Base* noiseModel);
+  void print(string s) const;
+};
+
+//typedef gtsam::NoiseModelFactor4<gtsam::Pose2, gtsam::Pose2, gtsam::Pose2,
+//    gtsam::Point2> NLPosePosePosePoint;
+virtual class DeltaFactorBase : gtsam::NoiseModelFactor {
+  DeltaFactorBase(size_t b1, size_t i, size_t b2, size_t j,
+      const gtsam::Point2& measured, const gtsam::noiseModel::Base* noiseModel);
+  void print(string s) const;
+};
+
+//typedef gtsam::NoiseModelFactor4<gtsam::Pose2, gtsam::Pose2, gtsam::Pose2,
+//    gtsam::Pose2> NLPosePosePosePose;
+virtual class OdometryFactorBase : gtsam::NoiseModelFactor {
+  OdometryFactorBase(size_t b1, size_t i, size_t b2, size_t j,
+      const gtsam::Pose2& measured, const gtsam::noiseModel::Base* noiseModel);
+  void print(string s) const;
+};
+
+#include <gtsam/geometry/Cal3DS2.h>
+#include <gtsam_unstable/slam/ProjectionFactorPPP.h>
+template<POSE, LANDMARK, CALIBRATION>
+virtual class ProjectionFactorPPP : gtsam::NoiseModelFactor {
+  ProjectionFactorPPP(const gtsam::Point2& measured, const gtsam::noiseModel::Base* noiseModel,
+    size_t poseKey, size_t transformKey, size_t pointKey, const CALIBRATION* k);
+
+  ProjectionFactorPPP(const gtsam::Point2& measured, const gtsam::noiseModel::Base* noiseModel,
+      size_t poseKey, size_t transformKey, size_t pointKey, const CALIBRATION* k, bool throwCheirality, bool verboseCheirality);
+
+  gtsam::Point2 measured() const;
+  CALIBRATION* calibration() const;
+  bool verboseCheirality() const;
+  bool throwCheirality() const;
+
+  // enabling serialization functionality
+  void serialize() const;
+};
+typedef gtsam::ProjectionFactorPPP<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> ProjectionFactorPPPCal3_S2;
+typedef gtsam::ProjectionFactorPPP<gtsam::Pose3, gtsam::Point3, gtsam::Cal3DS2> ProjectionFactorPPPCal3DS2;
+
+
+#include <gtsam_unstable/slam/ProjectionFactorPPPC.h>
+template<POSE, LANDMARK, CALIBRATION>
+virtual class ProjectionFactorPPPC : gtsam::NoiseModelFactor {
+  ProjectionFactorPPPC(const gtsam::Point2& measured, const gtsam::noiseModel::Base* noiseModel,
+    size_t poseKey, size_t transformKey, size_t pointKey, size_t calibKey);
+
+  ProjectionFactorPPPC(const gtsam::Point2& measured, const gtsam::noiseModel::Base* noiseModel,
+      size_t poseKey, size_t transformKey, size_t pointKey, size_t calibKey, bool throwCheirality, bool verboseCheirality);
+
+  gtsam::Point2 measured() const;
+  bool verboseCheirality() const;
+  bool throwCheirality() const;
+
+  // enabling serialization functionality
+  void serialize() const;
+};
+typedef gtsam::ProjectionFactorPPPC<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> ProjectionFactorPPPCCal3_S2;
+typedef gtsam::ProjectionFactorPPPC<gtsam::Pose3, gtsam::Point3, gtsam::Cal3DS2> ProjectionFactorPPPCCal3DS2;
 
 } //\namespace gtsam

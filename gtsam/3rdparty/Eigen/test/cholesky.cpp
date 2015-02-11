@@ -68,6 +68,7 @@ template<typename MatrixType> void cholesky(const MatrixType& m)
   Index cols = m.cols();
 
   typedef typename MatrixType::Scalar Scalar;
+  typedef typename NumTraits<Scalar>::Real RealScalar;
   typedef Matrix<Scalar, MatrixType::RowsAtCompileTime, MatrixType::RowsAtCompileTime> SquareMatrixType;
   typedef Matrix<Scalar, MatrixType::RowsAtCompileTime, 1> VectorType;
 
@@ -179,6 +180,57 @@ template<typename MatrixType> void cholesky(const MatrixType& m)
     // restore
     if(sign == -1)
       symm = -symm;
+
+    // check matrices coming from linear constraints with Lagrange multipliers
+    if(rows>=3)
+    {
+      SquareMatrixType A = symm;
+      int c = internal::random<int>(0,rows-2);
+      A.bottomRightCorner(c,c).setZero();
+      // Make sure a solution exists:
+      vecX.setRandom();
+      vecB = A * vecX;
+      vecX.setZero();
+      ldltlo.compute(A);
+      VERIFY_IS_APPROX(A, ldltlo.reconstructedMatrix());
+      vecX = ldltlo.solve(vecB);
+      VERIFY_IS_APPROX(A * vecX, vecB);
+    }
+    
+    // check non-full rank matrices
+    if(rows>=3)
+    {
+      int r = internal::random<int>(1,rows-1);
+      Matrix<Scalar,Dynamic,Dynamic> a = Matrix<Scalar,Dynamic,Dynamic>::Random(rows,r);
+      SquareMatrixType A = a * a.adjoint();
+      // Make sure a solution exists:
+      vecX.setRandom();
+      vecB = A * vecX;
+      vecX.setZero();
+      ldltlo.compute(A);
+      VERIFY_IS_APPROX(A, ldltlo.reconstructedMatrix());
+      vecX = ldltlo.solve(vecB);
+      VERIFY_IS_APPROX(A * vecX, vecB);
+    }
+    
+    // check matrices with a wide spectrum
+    if(rows>=3)
+    {
+      RealScalar s = (std::min)(16,std::numeric_limits<RealScalar>::max_exponent10/8);
+      Matrix<Scalar,Dynamic,Dynamic> a = Matrix<Scalar,Dynamic,Dynamic>::Random(rows,rows);
+      Matrix<RealScalar,Dynamic,1> d =  Matrix<RealScalar,Dynamic,1>::Random(rows);
+      for(int k=0; k<rows; ++k)
+        d(k) = d(k)*std::pow(RealScalar(10),internal::random<RealScalar>(-s,s));
+      SquareMatrixType A = a * d.asDiagonal() * a.adjoint();
+      // Make sure a solution exists:
+      vecX.setRandom();
+      vecB = A * vecX;
+      vecX.setZero();
+      ldltlo.compute(A);
+      VERIFY_IS_APPROX(A, ldltlo.reconstructedMatrix());
+      vecX = ldltlo.solve(vecB);
+      VERIFY_IS_APPROX(A * vecX, vecB);
+    }
   }
 
   // update/downdate
@@ -263,8 +315,8 @@ template<typename MatrixType> void cholesky_bug241(const MatrixType& m)
 
 // LDLT is not guaranteed to work for indefinite matrices, but happens to work fine if matrix is diagonal.
 // This test checks that LDLT reports correctly that matrix is indefinite. 
-// See http://forum.kde.org/viewtopic.php?f=74&t=106942
-template<typename MatrixType> void cholesky_indefinite(const MatrixType& m)
+// See http://forum.kde.org/viewtopic.php?f=74&t=106942 and bug 736
+template<typename MatrixType> void cholesky_definiteness(const MatrixType& m)
 {
   eigen_assert(m.rows() == 2 && m.cols() == 2);
   MatrixType mat;
@@ -278,6 +330,24 @@ template<typename MatrixType> void cholesky_indefinite(const MatrixType& m)
     mat << 1, 2, 2, 1;
     LDLT<MatrixType> ldlt(mat);
     VERIFY(!ldlt.isNegative());
+    VERIFY(!ldlt.isPositive());
+  }
+  {
+    mat << 0, 0, 0, 0;
+    LDLT<MatrixType> ldlt(mat);
+    VERIFY(ldlt.isNegative());
+    VERIFY(ldlt.isPositive());
+  }
+  {
+    mat << 0, 0, 0, 1;
+    LDLT<MatrixType> ldlt(mat);
+    VERIFY(!ldlt.isNegative());
+    VERIFY(ldlt.isPositive());
+  }
+  {
+    mat << -1, 0, 0, 0;
+    LDLT<MatrixType> ldlt(mat);
+    VERIFY(ldlt.isNegative());
     VERIFY(!ldlt.isPositive());
   }
 }
@@ -309,7 +379,7 @@ void test_cholesky()
     CALL_SUBTEST_1( cholesky(Matrix<double,1,1>()) );
     CALL_SUBTEST_3( cholesky(Matrix2d()) );
     CALL_SUBTEST_3( cholesky_bug241(Matrix2d()) );
-    CALL_SUBTEST_3( cholesky_indefinite(Matrix2d()) );
+    CALL_SUBTEST_3( cholesky_definiteness(Matrix2d()) );
     CALL_SUBTEST_4( cholesky(Matrix3f()) );
     CALL_SUBTEST_5( cholesky(Matrix4d()) );
     s = internal::random<int>(1,EIGEN_TEST_MAX_SIZE);

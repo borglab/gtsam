@@ -15,8 +15,6 @@
 #include <boost/optional.hpp>
 #include <boost/serialization/nvp.hpp>
 #include <gtsam/base/Vector.h>
-#include <gtsam/base/LieVector.h>
-#include <gtsam/base/LieScalar.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Pose3.h>
@@ -71,10 +69,9 @@ public:
    * @param inv inverse depth
    * @return Point3
    */
-  static gtsam::Point3 invDepthTo3D(const gtsam::LieVector& pw, const gtsam::LieScalar& inv) {
-    gtsam::Point3 ray_base(pw.vector().segment(0,3));
+  static gtsam::Point3 invDepthTo3D(const Vector5& pw, double rho) {
+    gtsam::Point3 ray_base(pw.segment(0,3));
     double theta = pw(3), phi = pw(4);
-    double rho = inv.value();  // inverse depth
     gtsam::Point3 m(cos(theta)*cos(phi),sin(theta)*cos(phi),sin(phi));
     return ray_base + m/rho;
   }
@@ -84,15 +81,14 @@ public:
    *  @param H1 is the jacobian w.r.t. [pose3 calibration]
    *  @param H2 is the jacobian w.r.t. inv_depth_landmark
    */
-  inline gtsam::Point2 project(const gtsam::LieVector& pw,
-      const gtsam::LieScalar& inv_depth,
+  inline gtsam::Point2 project(const Vector5& pw,
+      double rho,
       boost::optional<gtsam::Matrix&> H1 = boost::none,
       boost::optional<gtsam::Matrix&> H2 = boost::none,
       boost::optional<gtsam::Matrix&> H3 = boost::none) const {
 
-    gtsam::Point3 ray_base(pw.vector().segment(0,3));
+    gtsam::Point3 ray_base(pw.segment(0,3));
     double theta = pw(3), phi = pw(4);
-    double rho = inv_depth.value();  // inverse depth
     gtsam::Point3 m(cos(theta)*cos(phi),sin(theta)*cos(phi),sin(phi));
     const gtsam::Point3 landmark = ray_base + m/rho;
 
@@ -104,7 +100,7 @@ public:
     }
     else {
       gtsam::Matrix J2;
-      gtsam::Point2 uv= camera.project(landmark,H1, J2);
+      gtsam::Point2 uv= camera.project(landmark,H1, J2, boost::none);
       if (H1) {
         *H1 = (*H1) * gtsam::eye(6);
       }
@@ -137,7 +133,7 @@ public:
         *H2 = J2 * (Matrix(3, 5) <<
             H11, H12, H13, H14, H15,
             H21, H22, H23, H24, H25,
-            H31, H32, H33, H34, H35);
+            H31, H32, H33, H34, H35).finished();
       }
       if(H3) {
         double H16 = -cos_phi*cos_theta/rho2;
@@ -146,7 +142,7 @@ public:
         *H3 = J2 * (Matrix(3, 1) <<
             H16,
             H26,
-            H36);
+            H36).finished();
       }
       return uv;
     }
@@ -157,7 +153,7 @@ public:
    * useful for point initialization
    */
 
-  inline std::pair<gtsam::LieVector, gtsam::LieScalar> backproject(const gtsam::Point2& pi, const double depth) const {
+  inline std::pair<Vector5, double> backproject(const gtsam::Point2& pi, const double depth) const {
     const gtsam::Point2 pn = k_->calibrate(pi);
     gtsam::Point3 pc(pn.x(), pn.y(), 1.0);
     pc = pc/pc.norm();
@@ -166,8 +162,8 @@ public:
     gtsam::Point3 ray = pw - pt;
     double theta = atan2(ray.y(), ray.x()); // longitude
     double phi = atan2(ray.z(), sqrt(ray.x()*ray.x()+ray.y()*ray.y()));
-    return std::make_pair(gtsam::LieVector(5, pt.x(),pt.y(),pt.z(), theta, phi),
-        gtsam::LieScalar(1./depth));
+    return std::make_pair((Vector5() << pt.x(),pt.y(),pt.z(), theta, phi).finished(),
+        double(1./depth));
   }
 
 private:

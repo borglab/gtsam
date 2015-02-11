@@ -1,29 +1,18 @@
-Copyright (c) 2010, Georgia Tech Research Corporation
-Atlanta, Georgia 30332-0415
-All Rights Reserved
+GTSAM is released under the simplified BSD license, reproduced in the file 
+LICENSE.BSD in this directory.
 
-See also README for licensing of 3rd-party code included in GTSAM.
+GTSAM contains two third party libraries, with documentation of licensing and 
+modifications as follows:
 
-Redistribution and use in source and binary forms, with or without modification, 
-are permitted provided that the following conditions are met:
-
-    * Redistributions of source code must retain the above copyright notice, 
-      this list of conditions and the following disclaimer.
-
-    * Redistributions in binary form must reproduce the above copyright notice, 
-      this list of conditions and the following disclaimer in the documentation 
-      and/or other materials provided with the distribution.
-
-    * Neither the name of the copyright holders nor the names of its contributors 
-      may be used to endorse or promote products derived from this software without 
-      specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY 
-EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES 
-OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT 
-SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
-INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED 
-TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR 
-BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN 
-CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY 
-WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+- CCOLAMD 2.73: Tim Davis' constrained column approximate minimum degree 
+ordering library
+    - Included unmodified in gtsam/3rdparty/CCOLAMD and gtsam/3rdparty/UFconfig
+    - http://www.cise.ufl.edu/research/sparse
+    - Licenced under LGPL v2.1, provided in gtsam/3rdparty/CCOLAMD/Doc/lesser.txt
+- Eigen 3.2:  General C++ matrix and linear algebra library
+    - Modified with 3 patches that have been contributed back to the Eigen team:
+        - http://eigen.tuxfamily.org/bz/show_bug.cgi?id=704 (Householder QR MKL selection)
+        - http://eigen.tuxfamily.org/bz/show_bug.cgi?id=705 (Fix MKL LLT return code)
+        - http://eigen.tuxfamily.org/bz/show_bug.cgi?id=716 (Improved comma initialization)
+    - Licenced under MPL2, provided in gtsam/3rdparty/Eigen/COPYING.README 
+    - Some code that is 3rd-party to Eigen is BSD and LGPL

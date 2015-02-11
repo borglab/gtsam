@@ -234,26 +234,110 @@ TEST(NonlinearOptimizer, NullFactor) {
 }
 
 /* ************************************************************************* */
-TEST(NonlinearOptimizer, MoreOptimization) {
+TEST_UNSAFE(NonlinearOptimizer, MoreOptimization) {
 
   NonlinearFactorGraph fg;
-  fg += PriorFactor<Pose2>(0, Pose2(0,0,0), noiseModel::Isotropic::Sigma(3,1));
-  fg += BetweenFactor<Pose2>(0, 1, Pose2(1,0,M_PI/2), noiseModel::Isotropic::Sigma(3,1));
-  fg += BetweenFactor<Pose2>(1, 2, Pose2(1,0,M_PI/2), noiseModel::Isotropic::Sigma(3,1));
+  fg += PriorFactor<Pose2>(0, Pose2(0, 0, 0),
+      noiseModel::Isotropic::Sigma(3, 1));
+  fg += BetweenFactor<Pose2>(0, 1, Pose2(1, 0, M_PI / 2),
+      noiseModel::Isotropic::Sigma(3, 1));
+  fg += BetweenFactor<Pose2>(1, 2, Pose2(1, 0, M_PI / 2),
+      noiseModel::Isotropic::Sigma(3, 1));
 
   Values init;
-  init.insert(0, Pose2(3,4,-M_PI));
-  init.insert(1, Pose2(10,2,-M_PI));
-  init.insert(2, Pose2(11,7,-M_PI));
+  init.insert(0, Pose2(3, 4, -M_PI));
+  init.insert(1, Pose2(10, 2, -M_PI));
+  init.insert(2, Pose2(11, 7, -M_PI));
 
   Values expected;
-  expected.insert(0, Pose2(0,0,0));
-  expected.insert(1, Pose2(1,0,M_PI/2));
-  expected.insert(2, Pose2(1,1,M_PI));
+  expected.insert(0, Pose2(0, 0, 0));
+  expected.insert(1, Pose2(1, 0, M_PI / 2));
+  expected.insert(2, Pose2(1, 1, M_PI));
+
+  VectorValues expectedGradient;
+  expectedGradient.insert(0,zero(3));
+  expectedGradient.insert(1,zero(3));
+  expectedGradient.insert(2,zero(3));
 
   // Try LM and Dogleg
-  EXPECT(assert_equal(expected, LevenbergMarquardtOptimizer(fg, init).optimize()));
+  LevenbergMarquardtParams params;
+//  params.setVerbosityLM("TRYDELTA");
+//  params.setVerbosity("TERMINATION");
+  params.setlambdaUpperBound(1e9);
+//  params.setRelativeErrorTol(0);
+//  params.setAbsoluteErrorTol(0);
+  //params.setlambdaInitial(10);
+
+  {
+    LevenbergMarquardtOptimizer optimizer(fg, init, params);
+
+    // test convergence
+    Values actual = optimizer.optimize();
+    EXPECT(assert_equal(expected, actual));
+
+    // Check that the gradient is zero
+    GaussianFactorGraph::shared_ptr linear = optimizer.linearize();
+    EXPECT(assert_equal(expectedGradient,linear->gradientAtZero()));
+  }
   EXPECT(assert_equal(expected, DoglegOptimizer(fg, init).optimize()));
+
+//  cout << "===================================================================================" << endl;
+
+  // Try LM with diagonal damping
+  Values initBetter;
+    initBetter.insert(0, Pose2(3,4,0));
+    initBetter.insert(1, Pose2(10,2,M_PI/3));
+    initBetter.insert(2, Pose2(11,7,M_PI/2));
+
+  {
+    params.setDiagonalDamping(true);
+    LevenbergMarquardtOptimizer optimizer(fg, initBetter, params);
+
+    // test the diagonal
+    GaussianFactorGraph::shared_ptr linear = optimizer.linearize();
+    GaussianFactorGraph damped = *optimizer.buildDampedSystem(*linear);
+    VectorValues d = linear->hessianDiagonal(), //
+    expectedDiagonal = d + params.lambdaInitial * d;
+    EXPECT(assert_equal(expectedDiagonal, damped.hessianDiagonal()));
+
+    // test convergence (does not!)
+    Values actual = optimizer.optimize();
+    EXPECT(assert_equal(expected, actual));
+
+    // Check that the gradient is zero (it is not!)
+    linear = optimizer.linearize();
+    EXPECT(assert_equal(expectedGradient,linear->gradientAtZero()));
+
+    // Check that the gradient is zero for damped system (it is not!)
+    damped = *optimizer.buildDampedSystem(*linear);
+    VectorValues actualGradient = damped.gradientAtZero();
+    EXPECT(assert_equal(expectedGradient,actualGradient));
+
+    /* This block was made to test the original initial guess "init"
+    // Check errors at convergence and errors in direction of gradient (decreases!)
+    EXPECT_DOUBLES_EQUAL(46.02558,fg.error(actual),1e-5);
+    EXPECT_DOUBLES_EQUAL(44.742237,fg.error(actual.retract(-0.01*actualGradient)),1e-5);
+
+    // Check that solve yields gradient (it's not equal to gradient, as predicted)
+    VectorValues delta = damped.optimize();
+    double factor = actualGradient[0][0]/delta[0][0];
+    EXPECT(assert_equal(actualGradient,factor*delta));
+
+    // Still pointing downhill wrt actual gradient !
+    EXPECT_DOUBLES_EQUAL( 0.1056157,dot(-1*actualGradient,delta),1e-3);
+
+    // delta.print("This is the delta value computed by LM with diagonal damping");
+
+    // Still pointing downhill wrt expected gradient (IT DOES NOT! actually they are perpendicular)
+    EXPECT_DOUBLES_EQUAL( 0.0,dot(-1*expectedGradient,delta),1e-5);
+
+    // Check errors at convergence and errors in direction of solution (does not decrease!)
+    EXPECT_DOUBLES_EQUAL(46.0254859,fg.error(actual.retract(delta)),1e-5);
+
+    // Check errors at convergence and errors at a small step in direction of solution (does not decrease!)
+    EXPECT_DOUBLES_EQUAL(46.0255,fg.error(actual.retract(0.01*delta)),1e-3);
+    */
+  }
 }
 
 /* ************************************************************************* */

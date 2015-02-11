@@ -5,7 +5,7 @@
 
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/Vector.h>
-#include <gtsam/base/Lie-inl.h>
+
 #include <gtsam/geometry/Pose2.h>
 
 #include <gtsam_unstable/dynamics/PoseRTV.h>
@@ -15,7 +15,6 @@ namespace gtsam {
 using namespace std;
 
 static const Vector g = delta(3, 2, 9.81);
-const double pi = M_PI;
 
 /* ************************************************************************* */
 double bound(double a, double min, double max) {
@@ -58,22 +57,26 @@ void PoseRTV::print(const string& s) const {
 }
 
 /* ************************************************************************* */
-PoseRTV PoseRTV::Expmap(const Vector& v) {
-  assert(v.size() == 9);
-  Pose3 newPose = Pose3::Expmap(sub(v, 0, 6));
-  Velocity3 newVel = Velocity3::Expmap(sub(v, 6, 9));
+PoseRTV PoseRTV::Expmap(const Vector9& v, ChartJacobian H) {
+  if (H) CONCEPT_NOT_IMPLEMENTED;
+  Pose3 newPose = Pose3::Expmap(v.head<6>());
+  Velocity3 newVel = Velocity3(v.tail<3>());
   return PoseRTV(newPose, newVel);
 }
 
 /* ************************************************************************* */
-Vector PoseRTV::Logmap(const PoseRTV& p) {
-  Vector Lx = Pose3::Logmap(p.Rt_);
-  Vector Lv = Velocity3::Logmap(p.v_);
-  return concatVectors(2, &Lx, &Lv);
+Vector9 PoseRTV::Logmap(const PoseRTV& p, ChartJacobian H) {
+  if (H) CONCEPT_NOT_IMPLEMENTED;
+  Vector6 Lx = Pose3::Logmap(p.Rt_);
+  Vector3 Lv = p.v_.vector();
+  return (Vector9() << Lx, Lv).finished();
 }
 
 /* ************************************************************************* */
-PoseRTV PoseRTV::retract(const Vector& v) const {
+PoseRTV PoseRTV::retract(const Vector& v,
+                         ChartJacobian Horigin,
+                         ChartJacobian Hv) const {
+  if (Horigin || Hv) CONCEPT_NOT_IMPLEMENTED;
   assert(v.size() == 9);
   // First order approximation
   Pose3 newPose = Rt_.retract(sub(v, 0, 6));
@@ -82,36 +85,38 @@ PoseRTV PoseRTV::retract(const Vector& v) const {
 }
 
 /* ************************************************************************* */
-Vector PoseRTV::localCoordinates(const PoseRTV& p1) const {
+Vector PoseRTV::localCoordinates(const PoseRTV& p1,
+                                 ChartJacobian Horigin,
+                                 ChartJacobian Hp) const {
+  if (Horigin || Hp) CONCEPT_NOT_IMPLEMENTED;
   const Pose3& x0 = pose(), &x1 = p1.pose();
   // First order approximation
-  Vector poseLogmap = x0.localCoordinates(x1);
-  Vector lv = rotation().unrotate(p1.velocity() - v_).vector();
-  return concatVectors(2, &poseLogmap, &lv);
+  Vector6 poseLogmap = x0.localCoordinates(x1);
+  Vector3 lv = rotation().unrotate(p1.velocity() - v_).vector();
+  return (Vector(9) << poseLogmap, lv).finished();
 }
 
 /* ************************************************************************* */
 PoseRTV inverse_(const PoseRTV& p) { return p.inverse(); }
-PoseRTV PoseRTV::inverse(boost::optional<Matrix&> H1) const {
+PoseRTV PoseRTV::inverse(ChartJacobian H1) const {
   if (H1) *H1 = numericalDerivative11<PoseRTV,PoseRTV>(inverse_, *this, 1e-5);
-  return PoseRTV(Rt_.inverse(), v_.inverse());
+  return PoseRTV(Rt_.inverse(), - v_);
 }
 
 /* ************************************************************************* */
 PoseRTV compose_(const PoseRTV& p1, const PoseRTV& p2) { return p1.compose(p2); }
-PoseRTV PoseRTV::compose(const PoseRTV& p,
-    boost::optional<Matrix&> H1,
-    boost::optional<Matrix&> H2) const {
+PoseRTV PoseRTV::compose(const PoseRTV& p, ChartJacobian H1,
+    ChartJacobian H2) const {
   if (H1) *H1 = numericalDerivative21(compose_, *this, p, 1e-5);
   if (H2) *H2 = numericalDerivative22(compose_, *this, p, 1e-5);
-  return PoseRTV(Rt_.compose(p.Rt_), v_.compose(p.v_));
+  return PoseRTV(Rt_.compose(p.Rt_), v_+p.v_);
 }
 
 /* ************************************************************************* */
 PoseRTV between_(const PoseRTV& p1, const PoseRTV& p2) { return p1.between(p2); }
 PoseRTV PoseRTV::between(const PoseRTV& p,
-    boost::optional<Matrix&> H1,
-    boost::optional<Matrix&> H2) const {
+    ChartJacobian H1,
+    ChartJacobian H2) const {
   if (H1) *H1 = numericalDerivative21(between_, *this, p, 1e-5);
   if (H2) *H2 = numericalDerivative22(between_, *this, p, 1e-5);
   return inverse().compose(p);
@@ -126,7 +131,7 @@ PoseRTV PoseRTV::planarDynamics(double vel_rate, double heading_rate,
   const Velocity3& v1 = v();
 
   // Update vehicle heading
-  Rot3 r2 = r1.retract((Vector(3) << 0.0, 0.0, heading_rate * dt));
+  Rot3 r2 = r1.retract((Vector(3) << 0.0, 0.0, heading_rate * dt).finished());
   const double yaw2 = r2.ypr()(0);
 
   // Update vehicle position
@@ -150,7 +155,7 @@ PoseRTV PoseRTV::flyingDynamics(
   const Velocity3& v1 = v();
 
   // Update vehicle heading (and normalise yaw)
-  Vector rot_rates = (Vector(3) << 0.0, pitch_rate, heading_rate);
+  Vector rot_rates = (Vector(3) << 0.0, pitch_rate, heading_rate).finished();
   Rot3 r2 = r1.retract(rot_rates*dt);
 
   // Work out dynamics on platform
@@ -164,9 +169,9 @@ PoseRTV PoseRTV::flyingDynamics(
   Rot3 yaw_correction_bn = Rot3::yaw(yaw2);
   Point3 forward(forward_accel, 0.0, 0.0);
   Vector Acc_n =
-      yaw_correction_bn.rotate(forward).vector()   // applies locally forward force in the global frame
-      - drag * (Vector(3) << v1.x(), v1.y(), 0.0)     // drag term dependent on v1
-      + delta(3, 2, loss_lift - lift_control);     // falling due to lift lost from pitch
+      yaw_correction_bn.rotate(forward).vector()              // applies locally forward force in the global frame
+      - drag * (Vector(3) << v1.x(), v1.y(), 0.0).finished()  // drag term dependent on v1
+      + delta(3, 2, loss_lift - lift_control);                // falling due to lift lost from pitch
 
   // Update Vehicle Position and Velocity
   Velocity3 v2 = v1 + Velocity3(Acc_n * dt);
@@ -182,7 +187,7 @@ PoseRTV PoseRTV::generalDynamics(
   Rot3 r2 = rotation().retract(gyro * dt);
 
   //  Integrate Velocity Equations
-  Velocity3 v2 = v_.compose(Velocity3(dt * (r2.matrix() * accel + g)));
+  Velocity3 v2 = v_ + (Velocity3(dt * (r2.matrix() * accel + g)));
 
   //  Integrate Position Equations
   Point3 t2 = translationIntegration(r2, v2, dt);
@@ -191,28 +196,28 @@ PoseRTV PoseRTV::generalDynamics(
 }
 
 /* ************************************************************************* */
-Vector PoseRTV::imuPrediction(const PoseRTV& x2, double dt) const {
+Vector6 PoseRTV::imuPrediction(const PoseRTV& x2, double dt) const {
   // split out states
   const Rot3      &r1 = R(), &r2 = x2.R();
   const Velocity3 &v1 = v(), &v2 = x2.v();
 
-  Vector imu(6);
+  Vector6 imu;
 
   // acceleration
-  Vector accel = v1.localCoordinates(v2) / dt;
-  imu.head(3) = r2.transpose() * (accel - g);
+  Vector3 accel = (v2-v1).vector() / dt;
+  imu.head<3>() = r2.transpose() * (accel - g);
 
   // rotation rates
   // just using euler angles based on matlab code
   // FIXME: this is silly - we shouldn't use differences in Euler angles
   Matrix Enb = RRTMnb(r1);
-  Vector euler1 = r1.xyz(), euler2 = r2.xyz();
-  Vector dR = euler2 - euler1;
+  Vector3 euler1 = r1.xyz(), euler2 = r2.xyz();
+  Vector3 dR = euler2 - euler1;
 
   // normalize yaw in difference (as per Mitch's code)
   dR(2) = Rot2::fromAngle(dR(2)).theta();
   dR /= dt;
-  imu.tail(3) = Enb * dR;
+  imu.tail<3>() = Enb * dR;
 //  imu.tail(3) = r1.transpose() * dR;
 
   return imu;
@@ -229,7 +234,7 @@ Point3 PoseRTV::translationIntegration(const Rot3& r2, const Velocity3& v2, doub
 /* ************************************************************************* */
 double range_(const PoseRTV& A, const PoseRTV& B) { return A.range(B); }
 double PoseRTV::range(const PoseRTV& other,
-    boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
+    OptionalJacobian<1,9> H1, OptionalJacobian<1,9> H2) const {
   if (H1) *H1 = numericalDerivative21(range_, *this, other, 1e-5);
   if (H2) *H2 = numericalDerivative22(range_, *this, other, 1e-5);
   return t().distance(other.t());
@@ -240,9 +245,8 @@ PoseRTV transformed_from_(const PoseRTV& global, const Pose3& transform) {
   return global.transformed_from(transform);
 }
 
-PoseRTV PoseRTV::transformed_from(const Pose3& trans,
-    boost::optional<Matrix&> Dglobal,
-    boost::optional<Matrix&> Dtrans) const {
+PoseRTV PoseRTV::transformed_from(const Pose3& trans, ChartJacobian Dglobal,
+    OptionalJacobian<9, 6> Dtrans) const {
   // Note that we rotate the velocity
   Matrix DVr, DTt;
   Velocity3 newvel = trans.rotation().rotate(v_, DVr, DTt);

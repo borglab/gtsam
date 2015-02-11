@@ -24,21 +24,10 @@ namespace gtsam {
 
 /* ************************************************************************* */
 LieVector::LieVector(size_t m, const double* const data)
-: Vector(Vector_(m,data))
-{
-}
-
-/* ************************************************************************* */
-LieVector::LieVector(size_t m, ...)
 : Vector(m)
 {
-  va_list ap;
-  va_start(ap, m);
-  for( size_t i = 0 ; i < m ; i++) {
-    double value = va_arg(ap, double);
-    (*this)(i) = value;
-  }
-  va_end(ap);
+  for(size_t i = 0; i < m; i++)
+    (*this)(i) = data[i];
 }
 
 /* ************************************************************************* */
@@ -46,4 +35,6 @@ void LieVector::print(const std::string& name) const {
   gtsam::print(vector(), name);
 }
 
+// Does not compile because LieVector is not fixed size.
+// GTSAM_CONCEPT_LIE_INST(LieVector)
 } // \namespace gtsam

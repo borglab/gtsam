@@ -199,3 +199,13 @@ h3.version {
 td.width20em p.endtd {
   width:  20em;
 }
+
+.bigwarning {
+  font-size:2em;
+  font-weight:bold;
+  margin:1em;
+  padding:1em;
+  color:red;
+  border:solid;
+}
+

@@ -51,6 +51,7 @@ void trmm(int rows=internal::random<int>(1,EIGEN_TEST_MAX_SIZE),
   
   ge_xs_save = ge_xs;
   VERIFY_IS_APPROX( (ge_xs_save + s1*triTr.conjugate() * (s2*ge_left.adjoint())).eval(), ge_xs.noalias() += (s1*mat.adjoint()).template triangularView<Mode>() * (s2*ge_left.adjoint()) );
+  ge_sx.setRandom();
   ge_sx_save = ge_sx;
   VERIFY_IS_APPROX( ge_sx_save - (ge_right.adjoint() * (-s1 * triTr).conjugate()).eval(), ge_sx.noalias() -= (ge_right.adjoint() * (-s1 * mat).adjoint().template triangularView<Mode>()).eval());
   

@@ -29,6 +29,10 @@ public:
   GTSAM_CONCEPT_GROUP_TYPE(Pose)
   GTSAM_CONCEPT_LIE_TYPE(Rotation)
 
+  // Get dimensions of pose and rotation type at compile time
+  static const int xDim = FixedDimension<POSE>::value;
+  static const int rDim = FixedDimension<typename POSE::Rotation>::value;
+
 protected:
 
   Rotation measured_;
@@ -44,6 +48,11 @@ public:
   : Base(model, key), measured_(pose_z.rotation()) {}
 
   virtual ~PoseRotationPrior() {}
+
+  /// @return a deep copy of this factor
+  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+        gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
   // access
   const Rotation& measured() const { return measured_; }
@@ -65,14 +74,13 @@ public:
   /** h(x)-z */
   Vector evaluateError(const Pose& pose, boost::optional<Matrix&> H = boost::none) const {
     const Rotation& newR = pose.rotation();
-    const size_t rDim = newR.dim(), xDim = pose.dim();
     if (H) {
       *H = gtsam::zeros(rDim, xDim);
       std::pair<size_t, size_t> rotInterval = POSE::rotationInterval();
       (*H).middleCols(rotInterval.first, rDim).setIdentity(rDim, rDim);
     }
 
-    return Rotation::Logmap(newR) - Rotation::Logmap(measured_);
+    return measured_.localCoordinates(newR);
   }
 
 private:

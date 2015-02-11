@@ -34,33 +34,19 @@ namespace gtsam {
 typedef Eigen::VectorXd Vector;
 
 // Commonly used fixed size vectors
+typedef Eigen::Matrix<double, 1, 1> Vector1;
 typedef Eigen::Vector2d Vector2;
 typedef Eigen::Vector3d Vector3;
+typedef Eigen::Matrix<double, 4, 1> Vector4;
+typedef Eigen::Matrix<double, 5, 1> Vector5;
 typedef Eigen::Matrix<double, 6, 1> Vector6;
+typedef Eigen::Matrix<double, 7, 1> Vector7;
+typedef Eigen::Matrix<double, 8, 1> Vector8;
+typedef Eigen::Matrix<double, 9, 1> Vector9;
+typedef Eigen::Matrix<double, 10, 1> Vector10;
 
 typedef Eigen::VectorBlock<Vector> SubVector;
 typedef Eigen::VectorBlock<const Vector> ConstSubVector;
-
-/**
- * An auxiliary function to printf for Win32 compatibility, added by Kai
- */
-GTSAM_EXPORT void odprintf(const char *format, ...);
-
-/**
- *  constructor with size and initial data, row order !
- */
-GTSAM_EXPORT Vector Vector_( size_t m, const double* const data);
-
-/**
- *  nice constructor, dangerous as number of arguments must be exactly right
- *  and you have to pass doubles !!! always use 0.0 never 0
- */
-GTSAM_EXPORT Vector Vector_(size_t m, ...);
-
-/**
- * Create a numeric vector from an STL vector of doubles
- */
-GTSAM_EXPORT Vector Vector_(const std::vector<double>& data);
 
 /**
  * Create vector initialized to a constant value

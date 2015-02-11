@@ -48,7 +48,7 @@ public:
   virtual Vector evaluateError(const Pose3& pose, boost::optional<Matrix&> H =
       boost::none) const {
     SimpleCamera camera(pose, *K_);
-    Point2 reprojectionError(camera.project(P_, H) - p_);
+    Point2 reprojectionError(camera.project(P_, H, boost::none, boost::none) - p_);
     return reprojectionError.vector();
   }
 };
@@ -70,7 +70,7 @@ int main(int argc, char* argv[]) {
 
   /* 2. add factors to the graph */
   // add measurement factors
-  SharedDiagonal measurementNoise = Diagonal::Sigmas((Vector(2) << 0.5, 0.5));
+  SharedDiagonal measurementNoise = Diagonal::Sigmas(Vector2(0.5, 0.5));
   boost::shared_ptr<ResectioningFactor> factor;
   graph.push_back(
       boost::make_shared<ResectioningFactor>(measurementNoise, X(1), calib,

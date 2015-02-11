@@ -28,7 +28,7 @@ namespace gtsam {
    * @addtogroup geometry
    * \nosubgrouping
    */
-  class GTSAM_EXPORT StereoPoint2 : public DerivedValue<StereoPoint2> {
+  class GTSAM_EXPORT StereoPoint2 {
   public:
     static const size_t dimension = 3;
   private:
@@ -88,7 +88,7 @@ namespace gtsam {
     StereoPoint2 operator-(const StereoPoint2& b) const {
       return StereoPoint2(uL_ - b.uL_, uR_ - b.uR_, v_ - b.v_);
     }
-
+    
     /// @}
     /// @name Manifold
     /// @{
@@ -121,7 +121,7 @@ namespace gtsam {
 
     /** The difference between another point and this point */
     inline StereoPoint2 between(const StereoPoint2& p2) const {
-      return gtsam::between_default(*this, p2);
+      return p2 - *this;
     }
 
     /// @}
@@ -143,14 +143,17 @@ namespace gtsam {
     }
 
     /** convenient function to get a Point2 from the left image */
-    inline Point2 point2(){
+    Point2 point2() const {
       return Point2(uL_, v_);
     }
 
     /** convenient function to get a Point2 from the right image */
-    inline Point2 right(){
+    Point2 right() const {
       return Point2(uR_, v_);
     }
+
+    /// Streaming
+    GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os, const StereoPoint2& p);
 
   private:
 
@@ -162,8 +165,6 @@ namespace gtsam {
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int version) {
-      ar & boost::serialization::make_nvp("StereoPoint2",
-          boost::serialization::base_object<Value>(*this));
       ar & BOOST_SERIALIZATION_NVP(uL_);
       ar & BOOST_SERIALIZATION_NVP(uR_);
       ar & BOOST_SERIALIZATION_NVP(v_);
@@ -173,4 +174,9 @@ namespace gtsam {
 
   };
 
+  template<>
+  struct traits<StereoPoint2> : public internal::Manifold<StereoPoint2> {};
+
+  template<>
+  struct traits<const StereoPoint2> : public internal::Manifold<StereoPoint2> {};
 }

@@ -103,6 +103,11 @@ public:
   /** Check for equality within tolerance to implement Testable */
   bool equals(const FastSet<VALUE>& other, double tol = 1e-9) const { return FastSetTestableHelper<VALUE>::equals(*this, other, tol); }
 
+  /** insert another set: handy for MATLAB access */
+  void merge(const FastSet& other) {
+    Base::insert(other.begin(),other.end());
+  }
+
 private:
   /** Serialization function */
   friend class boost::serialization::access;

@@ -62,7 +62,7 @@ private:
   const GaussianFactorGraph::Eliminate function_; /** algorithm */
 
   State solve(const GaussianFactorGraph& factorGraph) const;
-  State fuse(const State& p, GaussianFactor::shared_ptr newFactor);
+  State fuse(const State& p, GaussianFactor::shared_ptr newFactor) const;
 
 public:
 
@@ -80,10 +80,10 @@ public:
    * @param x0 estimate at time 0
    * @param P0 covariance at time 0, given as a diagonal Gaussian 'model'
    */
-  State init(const Vector& x0, const SharedDiagonal& P0);
+  State init(const Vector& x0, const SharedDiagonal& P0) const;
 
   /// version of init with a full covariance matrix
-  State init(const Vector& x0, const Matrix& P0);
+  State init(const Vector& x0, const Matrix& P0) const;
 
   /// print
   void print(const std::string& s = "") const;
@@ -102,7 +102,7 @@ public:
    *   and w is zero-mean, Gaussian white noise with covariance Q.
    */
   State predict(const State& p, const Matrix& F, const Matrix& B,
-      const Vector& u, const SharedDiagonal& modelQ);
+      const Vector& u, const SharedDiagonal& modelQ) const;
 
   /*
    *  Version of predict with full covariance
@@ -111,7 +111,7 @@ public:
    *  This version allows more realistic models than a diagonal covariance matrix.
    */
   State predictQ(const State& p, const Matrix& F, const Matrix& B,
-      const Vector& u, const Matrix& Q);
+      const Vector& u, const Matrix& Q) const;
 
   /**
    * Predict the state P(x_{t+1}|Z^t)
@@ -122,7 +122,7 @@ public:
    *   with an optional noise model.
    */
   State predict2(const State& p, const Matrix& A0, const Matrix& A1,
-      const Vector& b, const SharedDiagonal& model);
+      const Vector& b, const SharedDiagonal& model) const;
 
   /**
    * Update Kalman filter with a measurement
@@ -133,7 +133,7 @@ public:
    * In this version, R is restricted to diagonal Gaussians (model parameter)
    */
   State update(const State& p, const Matrix& H, const Vector& z,
-      const SharedDiagonal& model);
+      const SharedDiagonal& model) const;
 
   /*
    *  Version of update with full covariance
@@ -142,7 +142,7 @@ public:
    *  This version allows more realistic models than a diagonal covariance matrix.
    */
   State updateQ(const State& p, const Matrix& H, const Vector& z,
-      const Matrix& Q);
+      const Matrix& Q) const;
 };
 
 } // \namespace gtsam

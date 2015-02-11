@@ -19,13 +19,17 @@ typedef Point3 Velocity3;
  * Robot state for use with IMU measurements
  * - contains translation, translational velocity and rotation
  */
-class GTSAM_UNSTABLE_EXPORT PoseRTV : public DerivedValue<PoseRTV> {
+class GTSAM_UNSTABLE_EXPORT PoseRTV {
 protected:
 
   Pose3 Rt_;
   Velocity3 v_;
 
+  typedef OptionalJacobian<9, 9> ChartJacobian;
+
 public:
+  enum { dimension = 9 };
+
   // constructors - with partial versions
   PoseRTV() {}
   PoseRTV(const Point3& pt, const Rot3& rot, const Velocity3& vel)
@@ -78,38 +82,39 @@ public:
    *    - v(3-5): Point3
    *    - v(6-8): Translational velocity
    */
-  PoseRTV retract(const Vector& v) const;
-  Vector localCoordinates(const PoseRTV& p) const;
+  PoseRTV retract(const Vector& v, ChartJacobian Horigin=boost::none, ChartJacobian Hv=boost::none) const;
+  Vector localCoordinates(const PoseRTV& p, ChartJacobian Horigin=boost::none,ChartJacobian Hp=boost::none) const;
 
-  // Lie
+  // Lie TODO IS this a Lie group or just a Manifold????
   /**
    * expmap/logmap are poor approximations that assume independence of components
    * Currently implemented using the poor retract/unretract approximations
    */
-  static PoseRTV Expmap(const Vector& v);
-  static Vector Logmap(const PoseRTV& p);
+  static PoseRTV Expmap(const Vector9& v, ChartJacobian H = boost::none);
+  static Vector9 Logmap(const PoseRTV& p, ChartJacobian H = boost::none);
 
   static PoseRTV identity() { return PoseRTV(); }
 
   /** Derivatives calculated numerically */
-  PoseRTV inverse(boost::optional<Matrix&> H1=boost::none) const;
+  PoseRTV inverse(ChartJacobian H1=boost::none) const;
 
   /** Derivatives calculated numerically */
   PoseRTV compose(const PoseRTV& p,
-      boost::optional<Matrix&> H1=boost::none,
-      boost::optional<Matrix&> H2=boost::none) const;
+      ChartJacobian H1=boost::none,
+      ChartJacobian H2=boost::none) const;
 
+  PoseRTV operator*(const PoseRTV& p) const { return compose(p); }
 
   /** Derivatives calculated numerically */
   PoseRTV between(const PoseRTV& p,
-      boost::optional<Matrix&> H1=boost::none,
-      boost::optional<Matrix&> H2=boost::none) const;
+                  ChartJacobian H1=boost::none,
+                  ChartJacobian H2=boost::none) const;
 
   // measurement functions
   /** Derivatives calculated numerically */
   double range(const PoseRTV& other,
-      boost::optional<Matrix&> H1=boost::none,
-      boost::optional<Matrix&> H2=boost::none) const;
+               OptionalJacobian<1,9> H1=boost::none,
+               OptionalJacobian<1,9> H2=boost::none) const;
 
   // IMU-specific
 
@@ -129,7 +134,7 @@ public:
   /// Dynamics predictor for both ground and flying robots, given states at 1 and 2
   /// Always move from time 1 to time 2
   /// @return imu measurement, as [accel, gyro]
-  Vector imuPrediction(const PoseRTV& x2, double dt) const;
+  Vector6 imuPrediction(const PoseRTV& x2, double dt) const;
 
   /// predict measurement and where Point3 for x2 should be, as a way
   /// of enforcing a velocity constraint
@@ -156,8 +161,8 @@ public:
    * Note: the transform jacobian convention is flipped
    */
   PoseRTV transformed_from(const Pose3& trans,
-      boost::optional<Matrix&> Dglobal=boost::none,
-      boost::optional<Matrix&> Dtrans=boost::none) const;
+      ChartJacobian Dglobal = boost::none,
+      OptionalJacobian<9, 6> Dtrans = boost::none) const;
 
   // Utility functions
 
@@ -182,5 +187,9 @@ private:
     ar & BOOST_SERIALIZATION_NVP(v_);
   }
 };
+
+
+template<>
+struct traits<PoseRTV> : public internal::LieGroupTraits<PoseRTV> {};
 
 } // \namespace gtsam

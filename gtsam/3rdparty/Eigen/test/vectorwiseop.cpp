@@ -101,6 +101,16 @@ template<typename ArrayType> void vectorwiseop_array(const ArrayType& m)
 
   VERIFY_RAISES_ASSERT(m2.rowwise() /= rowvec.transpose());
   VERIFY_RAISES_ASSERT(m1.rowwise() / rowvec.transpose());
+  
+  m2 = m1;
+  // yes, there might be an aliasing issue there but ".rowwise() /="
+  // is suppposed to evaluate " m2.colwise().sum()" into to temporary to avoid
+  // evaluating the reducions multiple times
+  if(ArrayType::RowsAtCompileTime>2 || ArrayType::RowsAtCompileTime==Dynamic)
+  {
+    m2.rowwise() /= m2.colwise().sum();
+    VERIFY_IS_APPROX(m2, m1.rowwise() / m1.colwise().sum());
+  }
 }
 
 template<typename MatrixType> void vectorwiseop_matrix(const MatrixType& m)

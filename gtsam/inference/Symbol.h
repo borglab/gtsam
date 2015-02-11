@@ -18,9 +18,9 @@
 
 #pragma once
 
-#include <boost/serialization/nvp.hpp>
-
 #include <gtsam/inference/Key.h>
+#include <gtsam/base/Testable.h>
+#include <boost/serialization/nvp.hpp>
 
 namespace gtsam {
 
@@ -161,5 +161,8 @@ inline Key Y(size_t j) { return Symbol('y', j); }
 inline Key Z(size_t j) { return Symbol('z', j); }
 }
 
-} // namespace gtsam
+/// traits
+template<> struct traits<Symbol> : public Testable<Symbol> {};
+
+} // \ namespace gtsam
 

@@ -12,6 +12,8 @@
 
 import gtsam.*
 
+%% PLEASE NOTE THAT PLOTTING TAKES A VERY LONG TIME HERE
+
 %% Find data file
 N = 2500;
 % dataset = 'sphere_smallnoise.graph';
@@ -26,7 +28,7 @@ model = noiseModel.Diagonal.Sigmas([5*pi/180; 5*pi/180; 5*pi/180; 0.05; 0.05; 0.
 
 %% Plot Initial Estimate
 cla
-first = initial.at(0);
+first = initial.atPose3(0);
 plot3(first.x(),first.y(),first.z(),'r*'); hold on
 plot3DTrajectory(initial,'g-',false);
 drawnow;

@@ -22,12 +22,12 @@
 #include <gtsam/base/FastMap.h>
 #include <gtsam/base/FastVector.h>
 #include <gtsam/base/timing.h>
-
-#include <iostream>
+#include <gtsam/base/Testable.h>
 
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 
+#include <iostream>
 #include <string>
 
 namespace gtsam {
@@ -55,7 +55,7 @@ class VariableSlots : public FastMap<Key, FastVector<size_t> > {
 public:
 
   typedef FastMap<Key, FastVector<size_t> > Base;
-  static const size_t Empty;
+  GTSAM_EXPORT static const size_t Empty;
 
   /// @name Standard Constructors
   /// @{
@@ -81,6 +81,9 @@ public:
 
   /// @}
 };
+
+/// traits
+template<> struct traits<VariableSlots> : public Testable<VariableSlots> {};
 
 /* ************************************************************************* */
 template<class FG>

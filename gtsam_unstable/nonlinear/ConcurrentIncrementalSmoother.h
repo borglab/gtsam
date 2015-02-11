@@ -168,4 +168,9 @@ private:
 /// Typedef for Matlab wrapping
 typedef ConcurrentIncrementalSmoother::Result ConcurrentIncrementalSmootherResult;
 
-}/// namespace gtsam
+/// traits
+template<>
+struct traits<ConcurrentIncrementalSmoother> : public Testable<ConcurrentIncrementalSmoother> {
+};
+
+} // \ namespace gtsam

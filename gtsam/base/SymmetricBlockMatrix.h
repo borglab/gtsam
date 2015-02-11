@@ -61,32 +61,32 @@ namespace gtsam {
 
     /// Construct from a container of the sizes of each block.
     template<typename CONTAINER>
-    SymmetricBlockMatrix(const CONTAINER& dimensions) :
+    SymmetricBlockMatrix(const CONTAINER& dimensions, bool appendOneDimension = false) :
       blockStart_(0)
     {
-      fillOffsets(dimensions.begin(), dimensions.end());
+      fillOffsets(dimensions.begin(), dimensions.end(), appendOneDimension);
       matrix_.resize(variableColOffsets_.back(), variableColOffsets_.back());
       assertInvariants();
     }
 
     /// Construct from iterator over the sizes of each vertical block.
     template<typename ITERATOR>
-    SymmetricBlockMatrix(ITERATOR firstBlockDim, ITERATOR lastBlockDim) :
+    SymmetricBlockMatrix(ITERATOR firstBlockDim, ITERATOR lastBlockDim, bool appendOneDimension = false) :
       blockStart_(0)
     {
-      fillOffsets(firstBlockDim, lastBlockDim);
+      fillOffsets(firstBlockDim, lastBlockDim, appendOneDimension);
       matrix_.resize(variableColOffsets_.back(), variableColOffsets_.back());
       assertInvariants();
     }
 
     /// Construct from a container of the sizes of each vertical block and a pre-prepared matrix.
     template<typename CONTAINER>
-    SymmetricBlockMatrix(const CONTAINER& dimensions, const Matrix& matrix) :
+    SymmetricBlockMatrix(const CONTAINER& dimensions, const Matrix& matrix, bool appendOneDimension = false) :
       blockStart_(0)
     {
       matrix_.resize(matrix.rows(), matrix.cols());
       matrix_.triangularView<Eigen::Upper>() = matrix.triangularView<Eigen::Upper>();
-      fillOffsets(dimensions.begin(), dimensions.end());
+      fillOffsets(dimensions.begin(), dimensions.end(), appendOneDimension);
       if(matrix_.rows() != matrix_.cols())
         throw std::invalid_argument("Requested to create a SymmetricBlockMatrix from a non-square matrix.");
       if(variableColOffsets_.back() != matrix_.cols())
@@ -211,83 +211,19 @@ namespace gtsam {
       return variableColOffsets_[block + blockStart_];
     }
 
-    //void checkRange(DenseIndex i_startBlock, DenseIndex i_endBlock, DenseIndex j_startBlock, DenseIndex j_endBlock) const
-    //{
-    //  const DenseIndex i_actualStartBlock = i_startBlock + blockStart_;
-    //  const DenseIndex i_actualEndBlock = i_endBlock + blockStart_;
-    //  const DenseIndex j_actualStartBlock = j_startBlock + blockStart_;
-    //  const DenseIndex j_actualEndBlock = j_endBlock + blockStart_;
-    //  checkBlock(i_actualStartBlock);
-    //  checkBlock(j_actualStartBlock);
-    //  if(i_startBlock != 0 || i_endBlock != 0) {
-    //    checkBlock(i_actualStartBlock);
-    //    assert(i_actualEndBlock < (DenseIndex)variableColOffsets_.size());
-    //  }
-    //  if(j_startBlock != 0 || j_endBlock != 0) {
-    //    checkBlock(j_actualStartBlock);
-    //    assert(j_actualEndBlock < (DenseIndex)variableColOffsets_.size());
-    //  }
-    //}
-
-    //void checkRange(DenseIndex startBlock, DenseIndex endBlock) const
-    //{
-    //  const DenseIndex actualStartBlock = startBlock + blockStart_;
-    //  const DenseIndex actualEndBlock = endBlock + blockStart_;
-    //  checkBlock(actualStartBlock);
-    //  if(startBlock != 0 || endBlock != 0) {
-    //    checkBlock(actualStartBlock);
-    //    assert(actualEndBlock < (DenseIndex)variableColOffsets_.size());
-    //  }
-    //}
-
-    //Block rangeUnchecked(DenseIndex i_startBlock, DenseIndex i_endBlock, DenseIndex j_startBlock, DenseIndex j_endBlock)
-    //{
-    //  const DenseIndex i_actualStartBlock = i_startBlock + blockStart_;
-    //  const DenseIndex i_actualEndBlock = i_endBlock + blockStart_;
-    //  const DenseIndex j_actualStartBlock = j_startBlock + blockStart_;
-    //  const DenseIndex j_actualEndBlock = j_endBlock + blockStart_;
-
-    //  return Block(matrix(),
-    //    variableColOffsets_[i_actualStartBlock],
-    //    variableColOffsets_[j_actualStartBlock],
-    //    variableColOffsets_[i_actualEndBlock] - variableColOffsets_[i_actualStartBlock],
-    //    variableColOffsets_[j_actualEndBlock] - variableColOffsets_[j_actualStartBlock]);
-    //}
-
-    //constBlock rangeUnchecked(DenseIndex i_startBlock, DenseIndex i_endBlock, DenseIndex j_startBlock, DenseIndex j_endBlock) const
-    //{
-    //  // Convert Block to constBlock
-    //  const Block block = const_cast<This*>(this)->rangeUnchecked(i_startBlock, i_endBlock, j_startBlock, j_endBlock);
-    //  return constBlock(matrix(), block.Base::Base::, block.startCol(), block.rows(), block.cols());
-    //}
-
-    //Block rangeUnchecked(DenseIndex startBlock, DenseIndex endBlock)
-    //{
-    //  const DenseIndex actualStartBlock = startBlock + blockStart_;
-    //  const DenseIndex actualEndBlock = endBlock + blockStart_;
-
-    //  return Block(matrix(),
-    //    variableColOffsets_[actualStartBlock],
-    //    variableColOffsets_[actualStartBlock],
-    //    variableColOffsets_[actualEndBlock] - variableColOffsets_[actualStartBlock],
-    //    variableColOffsets_[actualEndBlock] - variableColOffsets_[actualStartBlock]);
-    //}
-
-    //constBlock rangeUnchecked(DenseIndex startBlock, DenseIndex endBlock) const
-    //{
-    //  // Convert Block to constBlock
-    //  const Block block = const_cast<This*>(this)->rangeUnchecked(startBlock, endBlock);
-    //  return constBlock(matrix(), block.startRow(), block.startCol(), block.rows(), block.cols());
-    //}
-
     template<typename ITERATOR>
-    void fillOffsets(ITERATOR firstBlockDim, ITERATOR lastBlockDim)
+    void fillOffsets(ITERATOR firstBlockDim, ITERATOR lastBlockDim, bool appendOneDimension)
     {
-      variableColOffsets_.resize((lastBlockDim-firstBlockDim)+1);
+      variableColOffsets_.resize((lastBlockDim-firstBlockDim) + 1 + (appendOneDimension ? 1 : 0));
       variableColOffsets_[0] = 0;
       DenseIndex j=0;
       for(ITERATOR dim=firstBlockDim; dim!=lastBlockDim; ++dim) {
         variableColOffsets_[j+1] = variableColOffsets_[j] + *dim;
+        ++ j;
+      }
+      if(appendOneDimension)
+      {
+        variableColOffsets_[j+1] = variableColOffsets_[j] + 1;
         ++ j;
       }
     }
@@ -300,6 +236,10 @@ namespace gtsam {
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int version) {
+      // Fill in the lower triangle part of the matrix, so boost::serialization won't
+      // complain about uninitialized data with an input_stream_error exception
+      // http://www.boost.org/doc/libs/1_37_0/libs/serialization/doc/exceptions.html#stream_error
+      matrix_.triangularView<Eigen::Lower>() = matrix_.triangularView<Eigen::Upper>().transpose();
       ar & BOOST_SERIALIZATION_NVP(matrix_);
       ar & BOOST_SERIALIZATION_NVP(variableColOffsets_);
       ar & BOOST_SERIALIZATION_NVP(blockStart_);

@@ -36,6 +36,9 @@ protected:
 
 public:
 
+  /** default constructor - only use for serialization */
+  PoseTranslationPrior() {}
+
   /** standard constructor */
   PoseTranslationPrior(Key key, const Translation& measured, const noiseModel::Base::shared_ptr& model)
   : Base(model, key), measured_(measured) {
@@ -59,7 +62,8 @@ public:
   Vector evaluateError(const Pose& pose, boost::optional<Matrix&> H = boost::none) const {
     const Translation& newTrans = pose.translation();
     const Rotation& R = pose.rotation();
-    const size_t tDim = newTrans.dim(), xDim = pose.dim();
+    const int tDim = traits<Translation>::GetDimension(newTrans);
+    const int xDim = traits<Pose>::GetDimension(pose);
     if (H) {
       *H = gtsam::zeros(tDim, xDim);
       std::pair<size_t, size_t> transInterval = POSE::translationInterval();

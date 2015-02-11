@@ -19,11 +19,6 @@
 #pragma once
 
 #include <gtsam/linear/linearExceptions.h>
-#include <boost/assign/list_of.hpp>
-#include <boost/range/adaptor/transformed.hpp>
-#include <boost/range/join.hpp>
-#include <boost/range/algorithm/for_each.hpp>
-#include <boost/foreach.hpp>
 
 namespace gtsam {
 
@@ -61,57 +56,9 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  namespace internal {
-    static inline DenseIndex getColsJF(const std::pair<Key,Matrix>& p) {
-      return p.second.cols();
-    }
-
-    // Helper to fill terms from any Eigen matrix type, e.g. could be a matrix expression.  Also
-    // handles the cases where the matrix part of the term pair is or isn't a reference, and also
-    // assignment from boost::cref_list_of, where the term ends up wrapped in a assign_reference<T>
-    // that is implicitly convertible to T&.  This was introduced to work around a problem where
-    // BOOST_FOREACH over terms did not work on GCC.
-    struct fillTerm {
-      FastVector<Key>& keys;
-      VerticalBlockMatrix& Ab;
-      DenseIndex& i;
-      fillTerm(FastVector<Key>& keys, VerticalBlockMatrix& Ab, DenseIndex& i)
-        : keys(keys), Ab(Ab), i(i) {}
-
-      template<class MATRIX>
-      void operator()(const std::pair<Key, MATRIX>& term) const
-      {
-        // Check block rows
-        if(term.second.rows() != Ab.rows())
-          throw InvalidMatrixBlock(Ab.rows(), term.second.rows());
-        // Assign key and matrix
-        keys[i] = term.first;
-        Ab(i) = term.second;
-        // Increment block index
-        ++ i;
-      }
-
-      template<class MATRIX>
-      void operator()(const std::pair<int, MATRIX>& term) const
-      {
-        operator()(std::pair<Key, const MATRIX&>(term));
-      }
-
-      template<class T>
-      void operator()(boost::assign_detail::assign_reference<T> assignReference) const
-      {
-        operator()(assignReference.get_ref());
-      }
-    };
-  }
-
-  /* ************************************************************************* */
   template<typename TERMS>
   void JacobianFactor::fillTerms(const TERMS& terms, const Vector& b, const SharedDiagonal& noiseModel)
   {
-    using boost::adaptors::transformed;
-    namespace br = boost::range;
-
     // Check noise model dimension
     if(noiseModel && (DenseIndex)noiseModel->dim() != b.size())
       throw InvalidNoiseModel(b.size(), noiseModel->dim());
@@ -119,16 +66,36 @@ namespace gtsam {
     // Resize base class key vector
     Base::keys_.resize(terms.size());
 
-    // Gather dimensions - uses boost range adaptors to take terms, extract .second which are the
-    // matrices, then extract the number of columns e.g. dimensions in each matrix.  Then joins with
-    // a single '1' to add a dimension for the b vector.
-    {
-      Ab_ = VerticalBlockMatrix(br::join(terms | transformed(&internal::getColsJF), ListOfOne((DenseIndex)1)), b.size());
+    // Get dimensions of matrices
+    std::vector<size_t> dimensions;
+    dimensions.reserve(terms.size());
+    for(typename TERMS::const_iterator it = terms.begin(); it != terms.end(); ++it) {
+      const std::pair<Key, Matrix>& term = *it;
+      const Matrix& Ai = term.second;
+      dimensions.push_back(Ai.cols());
     }
+
+    // Construct block matrix
+    Ab_ = VerticalBlockMatrix(dimensions, b.size(), true);
 
     // Check and add terms
     DenseIndex i = 0; // For block index
-    br::for_each(terms, internal::fillTerm(Base::keys_, Ab_, i));
+    for(typename TERMS::const_iterator it = terms.begin(); it != terms.end(); ++it) {
+      const std::pair<Key, Matrix>& term = *it;
+      Key key = term.first;
+      const Matrix& Ai = term.second;
+
+      // Check block rows
+      if(Ai.rows() != Ab_.rows())
+        throw InvalidMatrixBlock(Ab_.rows(), Ai.rows());
+
+      // Assign key and matrix
+      Base::keys_[i] = key;
+      Ab_(i) = Ai;
+
+      // Increment block index
+      ++ i;
+    }
 
     // Assign RHS vector
     getb() = b;

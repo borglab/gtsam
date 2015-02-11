@@ -36,7 +36,7 @@ TEST( Cal3DS2, uncalibrate)
   double g = 1+k[0]*r+k[1]*r*r ;
   double tx = 2*k[2]*p.x()*p.y()       +   k[3]*(r+2*p.x()*p.x()) ;
   double ty =   k[2]*(r+2*p.y()*p.y()) + 2*k[3]*p.x()*p.y() ;
-  Vector v_hat = Vector_(3, g*p.x() + tx, g*p.y() + ty, 1.0) ;
+  Vector v_hat = (Vector(3) << g*p.x() + tx, g*p.y() + ty, 1.0).finished();
   Vector v_i = K.K() * v_hat ;
   Point2 p_i(v_i(0)/v_i(2), v_i(1)/v_i(2)) ;
   Point2 q = K.uncalibrate(p);
@@ -60,6 +60,8 @@ TEST( Cal3DS2, Duncalibrate1)
   K.uncalibrate(p, computed, boost::none);
   Matrix numerical = numericalDerivative21(uncalibrate_, K, p, 1e-7);
   CHECK(assert_equal(numerical,computed,1e-5));
+  Matrix separate = K.D2d_calibration(p);
+  CHECK(assert_equal(numerical,separate,1e-5));
 }
 
 /* ************************************************************************* */
@@ -68,12 +70,26 @@ TEST( Cal3DS2, Duncalibrate2)
   Matrix computed; K.uncalibrate(p, boost::none, computed);
   Matrix numerical = numericalDerivative22(uncalibrate_, K, p, 1e-7);
   CHECK(assert_equal(numerical,computed,1e-5));
+  Matrix separate = K.D2d_intrinsic(p);
+  CHECK(assert_equal(numerical,separate,1e-5));
 }
 
 /* ************************************************************************* */
 TEST( Cal3DS2, assert_equal)
 {
   CHECK(assert_equal(K,K,1e-5));
+}
+
+/* ************************************************************************* */
+TEST( Cal3DS2, retract)
+{
+  Cal3DS2 expected(500 + 1, 100 + 2, 0.1 + 3, 320 + 4, 240 + 5, 1e-3 + 6,
+      2.0 * 1e-3 + 7, 3.0 * 1e-3 + 8, 4.0 * 1e-3 + 9);
+  Vector d(9);
+  d << 1,2,3,4,5,6,7,8,9;
+  Cal3DS2 actual = K.retract(d);
+  CHECK(assert_equal(expected,actual,1e-7));
+  CHECK(assert_equal(d,K.localCoordinates(actual),1e-7));
 }
 
 /* ************************************************************************* */

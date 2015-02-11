@@ -55,6 +55,48 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  std::map<Key, size_t> GaussianFactorGraph::getKeyDimMap() const {
+    map<Key, size_t> spec;
+    BOOST_FOREACH ( const GaussianFactor::shared_ptr &gf, *this ) {
+      for ( GaussianFactor::const_iterator it = gf->begin() ; it != gf->end() ; it++ ) {
+        map<Key,size_t>::iterator it2 = spec.find(*it);
+        if ( it2 == spec.end() ) {
+          spec.insert(make_pair(*it, gf->getDim(it)));
+        }
+      }
+    }
+    return spec;
+  }
+
+  /* ************************************************************************* */
+    vector<size_t> GaussianFactorGraph::getkeydim() const {
+      // First find dimensions of each variable
+      vector<size_t> dims;
+      BOOST_FOREACH(const sharedFactor& factor, *this) {
+        for (GaussianFactor::const_iterator pos = factor->begin();
+            pos != factor->end(); ++pos) {
+          if (dims.size() <= *pos)
+            dims.resize(*pos + 1, 0);
+          dims[*pos] = factor->getDim(pos);
+        }
+      }
+      // Find accumulated dimensions for variables
+      vector<size_t> dims_accumulated;
+      dims_accumulated.resize(dims.size()+1,0);
+      dims_accumulated[0]=0;
+      for (size_t i=1; i<dims_accumulated.size(); i++)
+        dims_accumulated[i] = dims_accumulated[i-1]+dims[i-1];
+      return dims_accumulated;
+    }
+
+  /* ************************************************************************* */
+  GaussianFactorGraph::shared_ptr GaussianFactorGraph::cloneToPtr() const {
+    gtsam::GaussianFactorGraph::shared_ptr result(new GaussianFactorGraph());
+    *result = *this;
+    return result;
+  }
+
+  /* ************************************************************************* */
   GaussianFactorGraph GaussianFactorGraph::clone() const {
     GaussianFactorGraph result;
     BOOST_FOREACH(const sharedFactor& f, *this) {
@@ -79,21 +121,22 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  std::vector<boost::tuple<size_t, size_t, double> > GaussianFactorGraph::sparseJacobian() const {
+  vector<boost::tuple<size_t, size_t, double> > GaussianFactorGraph::sparseJacobian() const {
     // First find dimensions of each variable
     vector<size_t> dims;
     BOOST_FOREACH(const sharedFactor& factor, *this) {
-      for(GaussianFactor::const_iterator pos = factor->begin(); pos != factor->end(); ++pos) {
-        if(dims.size() <= *pos)
+      for (GaussianFactor::const_iterator pos = factor->begin();
+          pos != factor->end(); ++pos) {
+        if (dims.size() <= *pos)
           dims.resize(*pos + 1, 0);
         dims[*pos] = factor->getDim(pos);
       }
     }
 
     // Compute first scalar column of each variable
-    vector<size_t> columnIndices(dims.size()+1, 0);
-    for(size_t j=1; j<dims.size()+1; ++j)
-      columnIndices[j] = columnIndices[j-1] + dims[j-1];
+    vector<size_t> columnIndices(dims.size() + 1, 0);
+    for (size_t j = 1; j < dims.size() + 1; ++j)
+      columnIndices[j] = columnIndices[j - 1] + dims[j - 1];
 
     // Iterate over all factors, adding sparse scalar entries
     typedef boost::tuple<size_t, size_t, double> triplet;
@@ -104,7 +147,8 @@ namespace gtsam {
       JacobianFactor::shared_ptr jacobianFactor(
           boost::dynamic_pointer_cast<JacobianFactor>(factor));
       if (!jacobianFactor) {
-        HessianFactor::shared_ptr hessian(boost::dynamic_pointer_cast<HessianFactor>(factor));
+        HessianFactor::shared_ptr hessian(
+            boost::dynamic_pointer_cast<HessianFactor>(factor));
         if (hessian)
           jacobianFactor.reset(new JacobianFactor(*hessian));
         else
@@ -115,22 +159,23 @@ namespace gtsam {
       // Whiten the factor and add entries for it
       // iterate over all variables in the factor
       const JacobianFactor whitened(jacobianFactor->whiten());
-      for(JacobianFactor::const_iterator pos=whitened.begin(); pos<whitened.end(); ++pos) {
+      for (JacobianFactor::const_iterator pos = whitened.begin();
+          pos < whitened.end(); ++pos) {
         JacobianFactor::constABlock whitenedA = whitened.getA(pos);
         // find first column index for this key
         size_t column_start = columnIndices[*pos];
         for (size_t i = 0; i < (size_t) whitenedA.rows(); i++)
           for (size_t j = 0; j < (size_t) whitenedA.cols(); j++) {
-            double s = whitenedA(i,j);
-            if (std::abs(s) > 1e-12) entries.push_back(
-                boost::make_tuple(row+i, column_start+j, s));
+            double s = whitenedA(i, j);
+            if (std::abs(s) > 1e-12)
+              entries.push_back(boost::make_tuple(row + i, column_start + j, s));
           }
       }
 
       JacobianFactor::constBVector whitenedb(whitened.getb());
       size_t bcolumn = columnIndices.back();
       for (size_t i = 0; i < (size_t) whitenedb.size(); i++)
-        entries.push_back(boost::make_tuple(row+i, bcolumn, whitenedb(i)));
+        entries.push_back(boost::make_tuple(row + i, bcolumn, whitenedb(i)));
 
       // Increment row index
       row += jacobianFactor->rows();
@@ -143,7 +188,7 @@ namespace gtsam {
 
     // call sparseJacobian
     typedef boost::tuple<size_t, size_t, double> triplet;
-    std::vector<triplet> result = sparseJacobian();
+    vector<triplet> result = sparseJacobian();
 
     // translate to base 1 matrix
     size_t nzmax = result.size();
@@ -158,22 +203,24 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Matrix GaussianFactorGraph::augmentedJacobian(boost::optional<const Ordering&> optionalOrdering) const {
+  Matrix GaussianFactorGraph::augmentedJacobian(
+      boost::optional<const Ordering&> optionalOrdering) const {
     // combine all factors
     JacobianFactor combined(*this, optionalOrdering);
     return combined.augmentedJacobian();
   }
 
   /* ************************************************************************* */
-  std::pair<Matrix,Vector> GaussianFactorGraph::jacobian(boost::optional<const Ordering&> optionalOrdering) const {
+  pair<Matrix, Vector> GaussianFactorGraph::jacobian(
+      boost::optional<const Ordering&> optionalOrdering) const {
     Matrix augmented = augmentedJacobian(optionalOrdering);
-    return make_pair(
-      augmented.leftCols(augmented.cols()-1),
-      augmented.col(augmented.cols()-1));
+    return make_pair(augmented.leftCols(augmented.cols() - 1),
+        augmented.col(augmented.cols() - 1));
   }
 
   /* ************************************************************************* */
-  Matrix GaussianFactorGraph::augmentedHessian(boost::optional<const Ordering&> optionalOrdering) const {
+  Matrix GaussianFactorGraph::augmentedHessian(
+      boost::optional<const Ordering&> optionalOrdering) const {
     // combine all factors and get upper-triangular part of Hessian
     HessianFactor combined(*this, Scatter(*this, optionalOrdering));
     Matrix result = combined.info();
@@ -183,13 +230,45 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  std::pair<Matrix,Vector> GaussianFactorGraph::hessian(boost::optional<const Ordering&> optionalOrdering) const {
+  pair<Matrix, Vector> GaussianFactorGraph::hessian(
+      boost::optional<const Ordering&> optionalOrdering) const {
     Matrix augmented = augmentedHessian(optionalOrdering);
     return make_pair(
-      augmented.topLeftCorner(augmented.rows()-1, augmented.rows()-1),
-      augmented.col(augmented.rows()-1).head(augmented.rows()-1));
+        augmented.topLeftCorner(augmented.rows() - 1, augmented.rows() - 1),
+        augmented.col(augmented.rows() - 1).head(augmented.rows() - 1));
   }
-  
+
+  /* ************************************************************************* */
+  VectorValues GaussianFactorGraph::hessianDiagonal() const {
+    VectorValues d;
+    BOOST_FOREACH(const sharedFactor& factor, *this) {
+      if(factor){
+        VectorValues di = factor->hessianDiagonal();
+        d.addInPlace_(di);
+      }
+    }
+    return d;
+  }
+
+  /* ************************************************************************* */
+  map<Key,Matrix> GaussianFactorGraph::hessianBlockDiagonal() const {
+    map<Key,Matrix> blocks;
+    BOOST_FOREACH(const sharedFactor& factor, *this) {
+      if (!factor) continue;
+      map<Key,Matrix> BD = factor->hessianBlockDiagonal();
+      map<Key,Matrix>::const_iterator it = BD.begin();
+      for(;it!=BD.end();it++) {
+        Key j = it->first; // variable key for this block
+        const Matrix& Bj = it->second;
+        if (blocks.count(j))
+          blocks[j] += Bj;
+        else
+          blocks.insert(make_pair(j,Bj));
+      }
+    }
+    return blocks;
+  }
+
   /* ************************************************************************* */
   VectorValues GaussianFactorGraph::optimize(OptionalOrdering ordering, const Eliminate& function) const
   {
@@ -201,9 +280,9 @@ namespace gtsam {
   namespace {
     JacobianFactor::shared_ptr convertToJacobianFactorPtr(const GaussianFactor::shared_ptr &gf) {
       JacobianFactor::shared_ptr result = boost::dynamic_pointer_cast<JacobianFactor>(gf);
-      if( !result ) {
-        result = boost::make_shared<JacobianFactor>(*gf); // Convert any non-Jacobian factors to Jacobians (e.g. Hessian -> Jacobian with Cholesky)
-      }
+      if( !result )
+        // Convert any non-Jacobian factors to Jacobians (e.g. Hessian -> Jacobian with Cholesky)
+        result = boost::make_shared<JacobianFactor>(*gf);
       return result;
     }
   }
@@ -225,6 +304,7 @@ namespace gtsam {
     // Zero-out the gradient
     VectorValues g;
     BOOST_FOREACH(const sharedFactor& factor, *this) {
+      if (!factor) continue;
       VectorValues gi = factor->gradientAtZero();
       g.addInPlace_(gi);
     }
@@ -274,7 +354,7 @@ namespace gtsam {
   void GaussianFactorGraph::multiplyHessianAdd(double alpha,
       const VectorValues& x, VectorValues& y) const {
     BOOST_FOREACH(const GaussianFactor::shared_ptr& f, *this)
-      f->multiplyHessianAdd(alpha, x, y);
+     f->multiplyHessianAdd(alpha, x, y);
   }
 
   /* ************************************************************************* */
@@ -306,15 +386,15 @@ namespace gtsam {
 
   /* ************************************************************************* */
   // x += alpha*A'*e
-void GaussianFactorGraph::transposeMultiplyAdd(double alpha, const Errors& e,
-    VectorValues& x) const {
-  // For each factor add the gradient contribution
-  Errors::const_iterator ei = e.begin();
-  BOOST_FOREACH(const sharedFactor& Ai_G, *this) {
-    JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
-    Ai->transposeMultiplyAdd(alpha, *(ei++), x);
+  void GaussianFactorGraph::transposeMultiplyAdd(double alpha, const Errors& e,
+                                                 VectorValues& x) const {
+    // For each factor add the gradient contribution
+    Errors::const_iterator ei = e.begin();
+    BOOST_FOREACH(const sharedFactor& Ai_G, *this) {
+      JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
+      Ai->transposeMultiplyAdd(alpha, *(ei++), x);
+    }
   }
-}
 
   ///* ************************************************************************* */
   //void residual(const GaussianFactorGraph& fg, const VectorValues &x, VectorValues &r) {

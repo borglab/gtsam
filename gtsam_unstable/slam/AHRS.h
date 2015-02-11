@@ -14,8 +14,6 @@
 
 namespace gtsam {
 
-GTSAM_UNSTABLE_EXPORT Matrix cov(const Matrix& m);
-
 class GTSAM_UNSTABLE_EXPORT AHRS {
 
 private:
@@ -25,18 +23,24 @@ private:
   KalmanFilter KF_;          ///< initial Kalman filter
 
   // Quantities needed for integration
-  Matrix F_g_;              ///< gyro bias dynamics
-  Matrix F_a_;              ///< acc bias dynamics
-  Matrix var_w_;            ///< dynamic noise variances
+  Matrix3 F_g_;              ///< gyro bias dynamics
+  Matrix3 F_a_;              ///< acc bias dynamics
+
+  typedef Eigen::Matrix<double,12,1> Variances;
+  Variances var_w_;            ///< dynamic noise variances
 
   // Quantities needed for aiding
-  Vector sigmas_v_a_;       ///< measurement sigma
-  Vector n_g_;              ///< gravity in nav frame
-  Matrix n_g_cross_;        ///< and its skew-symmetric matrix
+  Vector3 sigmas_v_a_;       ///< measurement sigma
+  Vector3 n_g_;              ///< gravity in nav frame
+  Matrix3 n_g_cross_;        ///< and its skew-symmetric matrix
 
-  Matrix Pg_, Pa_;
+  Matrix3 Pg_, Pa_;
 
 public:
+
+  typedef Eigen::Matrix<double,3,Eigen::Dynamic> Vector3s;
+  static Matrix3 Cov(const Vector3s& m);
+
   /**
    * AHRS constructor
    * @param stationaryU initial interval of gyro measurements, 3xn matrix
@@ -52,15 +56,22 @@ public:
       const Vector& u, double dt);
 
   bool isAidingAvailable(const Mechanization_bRn2& mech,
-      const Vector& f, const Vector& u, double ge);
+      const Vector& f, const Vector& u, double ge) const;
 
+  /**
+   * Aid the AHRS with an accelerometer reading, typically called when isAidingAvailable == true
+   * @param mech current mechanization state
+   * @param state current Kalman filter state
+   * @param f accelerometer reading
+   * @param Farrell
+   */
   std::pair<Mechanization_bRn2, KalmanFilter::State> aid(
       const Mechanization_bRn2& mech, KalmanFilter::State state,
-      const Vector& f, bool Farrell=0);
+      const Vector& f, bool Farrell=0) const;
 
   std::pair<Mechanization_bRn2, KalmanFilter::State> aidGeneral(
       const Mechanization_bRn2& mech, KalmanFilter::State state,
-      const Vector& f, const Vector& f_expected, const Rot3& R_previous);
+      const Vector& f, const Vector& f_expected, const Rot3& R_previous) const;
 
   /// print
   void print(const std::string& s = "") const;

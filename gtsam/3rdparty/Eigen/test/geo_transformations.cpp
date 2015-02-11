@@ -279,6 +279,13 @@ template<typename Scalar, int Mode, int Options> void transformations()
   t1 = Eigen::Scaling(s0,s0,s0) * t1;
   VERIFY_IS_APPROX(t0.matrix(), t1.matrix());
 
+  t0 = t3;
+  t0.scale(s0);
+  t1 = t3 * Eigen::Scaling(s0);
+  VERIFY_IS_APPROX(t0.matrix(), t1.matrix());
+  t0.prescale(s0);
+  t1 = Eigen::Scaling(s0) * t1;
+  VERIFY_IS_APPROX(t0.matrix(), t1.matrix());
 
   t0.setIdentity();
   t0.prerotate(q1).prescale(v0).pretranslate(v0);

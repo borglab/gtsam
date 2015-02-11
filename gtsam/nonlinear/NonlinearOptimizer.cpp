@@ -21,6 +21,7 @@
 #include <gtsam/linear/GaussianEliminationTree.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/SubgraphSolver.h>
+#include <gtsam/linear/PCGSolver.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
 
@@ -55,8 +56,12 @@ void NonlinearOptimizer::defaultOptimize() {
   if (params.verbosity >= NonlinearOptimizerParams::ERROR) cout << "Initial error: " << currentError << endl;
 
   // Return if we already have too many iterations
-  if(this->iterations() >= params.maxIterations)
+  if(this->iterations() >= params.maxIterations){
+    if (params.verbosity >= NonlinearOptimizerParams::TERMINATION) {
+        cout << "iterations: " << this->iterations() << " >? " << params.maxIterations << endl;
+      }
     return;
+  }
 
   // Iterative loop
   do {
@@ -72,9 +77,11 @@ void NonlinearOptimizer::defaultOptimize() {
             params.errorTol, currentError, this->error(), params.verbosity));
 
   // Printing if verbose
-  if (params.verbosity >= NonlinearOptimizerParams::ERROR &&
-      this->iterations() >= params.maxIterations)
-    cout << "Terminating because reached maximum iterations" << endl;
+  if (params.verbosity >= NonlinearOptimizerParams::TERMINATION) {
+    cout << "iterations: " << this->iterations() << " >? " << params.maxIterations << endl;
+    if (this->iterations() >= params.maxIterations)
+      cout << "Terminating because reached maximum iterations" << endl;
+  }
 }
 
 /* ************************************************************************* */
@@ -92,30 +99,39 @@ const Values& NonlinearOptimizer::optimizeSafely() {
 /* ************************************************************************* */
 VectorValues NonlinearOptimizer::solve(const GaussianFactorGraph &gfg,
     const Values& initial, const NonlinearOptimizerParams& params) const {
+
+  // solution of linear solver is an update to the linearization point
   VectorValues delta;
+
+  // Check which solver we are using
   if (params.isMultifrontal()) {
+    // Multifrontal QR or Cholesky (decided by params.getEliminationFunction())
     delta = gfg.optimize(*params.ordering, params.getEliminationFunction());
   } else if (params.isSequential()) {
-    delta = gfg.eliminateSequential(*params.ordering,
-        params.getEliminationFunction())->optimize();
-  } else if (params.isCG()) {
+    // Sequential QR or Cholesky (decided by params.getEliminationFunction())
+    delta = gfg.eliminateSequential(*params.ordering, params.getEliminationFunction(), 
+								     boost::none, params.orderingType)->optimize();
+  } else if (params.isIterative()) {
+
+    // Conjugate Gradient -> needs params.iterativeParams
     if (!params.iterativeParams)
-      throw std::runtime_error(
-          "NonlinearOptimizer::solve: cg parameter has to be assigned ...");
-    if (boost::dynamic_pointer_cast<SubgraphSolverParameters>(
-        params.iterativeParams)) {
-      SubgraphSolver solver(gfg,
-          dynamic_cast<const SubgraphSolverParameters&>(*params.iterativeParams),
-          *params.ordering);
-      delta = solver.optimize();
-    } else {
-      throw std::runtime_error(
-          "NonlinearOptimizer::solve: special cg parameter type is not handled in LM solver ...");
+      throw std::runtime_error("NonlinearOptimizer::solve: cg parameter has to be assigned ...");
+
+    if (boost::shared_ptr<PCGSolverParameters> pcg = boost::dynamic_pointer_cast<PCGSolverParameters>(params.iterativeParams) ) {
+      delta = PCGSolver(*pcg).optimize(gfg);
+    }
+    else if (boost::shared_ptr<SubgraphSolverParameters> spcg = boost::dynamic_pointer_cast<SubgraphSolverParameters>(params.iterativeParams) ) {
+      delta = SubgraphSolver(gfg, *spcg, *params.ordering).optimize();
+    }
+    else {
+      throw std::runtime_error("NonlinearOptimizer::solve: special cg parameter type is not handled in LM solver ...");
     }
   } else {
     throw std::runtime_error(
         "NonlinearOptimizer::solve: Optimization parameter is invalid");
   }
+
+  // return update
   return delta;
 }
 
@@ -152,11 +168,16 @@ bool checkConvergence(double relativeErrorTreshold, double absoluteErrorTreshold
   }
   bool converged = (relativeErrorTreshold && (relativeDecrease <= relativeErrorTreshold))
       || (absoluteDecrease <= absoluteErrorTreshold);
-  if (verbosity >= NonlinearOptimizerParams::ERROR && converged) {
+  if (verbosity >= NonlinearOptimizerParams::TERMINATION && converged) {
+
     if(absoluteDecrease >= 0.0)
       cout << "converged" << endl;
     else
       cout << "Warning:  stopping nonlinear iterations because error increased" << endl;
+
+    cout << "errorThreshold: " << newError << " <? " << errorThreshold << endl;
+    cout << "absoluteDecrease: " << setprecision(12) << absoluteDecrease << " <? " << absoluteErrorTreshold << endl;
+    cout << "relativeDecrease: " << setprecision(12) << relativeDecrease << " <? " << relativeErrorTreshold << endl;
   }
   return converged;
 }

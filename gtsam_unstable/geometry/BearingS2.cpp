@@ -32,7 +32,7 @@ BearingS2 BearingS2::fromDownwardsObservation(const Pose3& A, const Point3& B) {
   Matrix Cbc = (Matrix(3,3) <<
       0.,0.,1.,
       0.,1.,0.,
-      -1.,0.,0.);
+      -1.,0.,0.).finished();
   //  p_rel_c = Cbc*Cnb*(PosObj - Pos);
   Vector p_rel_c = Cbc*Cnb*(B.vector() - A.translation().vector());
 
@@ -69,8 +69,8 @@ BearingS2 BearingS2::retract(const Vector& v) const {
 
 /* ************************************************************************* */
 Vector BearingS2::localCoordinates(const BearingS2& x) const {
-  return Vector_(2, azimuth_.localCoordinates(x.azimuth_)(0),
-                    elevation_.localCoordinates(x.elevation_)(0));
+  return (Vector(2) << azimuth_.localCoordinates(x.azimuth_)(0),
+                    elevation_.localCoordinates(x.elevation_)(0)).finished();
 }
 
 } // \namespace gtsam

@@ -13,6 +13,9 @@
 
 #ifndef NPRINT
 #ifdef MATLAB_MEX_FILE
+#include <stdlib.h>
+#include <stdint.h>
+typedef uint16_t char16_t;
 #include "mex.h"
 int (*ccolamd_printf) (const char *, ...) = mexPrintf ;
 #else

@@ -130,4 +130,8 @@ void test_qr_fullpivoting()
 
   // Test problem size constructors
   CALL_SUBTEST_7(FullPivHouseholderQR<MatrixXf>(10, 20));
+  CALL_SUBTEST_7((FullPivHouseholderQR<Matrix<float,10,20> >(10,20)));
+  CALL_SUBTEST_7((FullPivHouseholderQR<Matrix<float,10,20> >(Matrix<float,10,20>::Random())));
+  CALL_SUBTEST_7((FullPivHouseholderQR<Matrix<float,20,10> >(20,10)));
+  CALL_SUBTEST_7((FullPivHouseholderQR<Matrix<float,20,10> >(Matrix<float,20,10>::Random())));
 }

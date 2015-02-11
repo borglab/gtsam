@@ -37,34 +37,35 @@ namespace gtsam {
 typedef Eigen::MatrixXd Matrix;
 typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> MatrixRowMajor;
 
-typedef Eigen::Matrix3d Matrix3;
-typedef Eigen::Matrix4d Matrix4;
-typedef Eigen::Matrix<double,6,6> Matrix6;
+// Create handy typedefs and constants for square-size matrices
+// MatrixMN, MatrixN = MatrixNN, I_NxN, and Z_NxN, for M,N=1..9
+#define GTSAM_MAKE_TYPEDEFS(SIZE, SUFFIX)   \
+typedef Eigen::Matrix<double, SIZE, SIZE> Matrix##SUFFIX;  \
+typedef Eigen::Matrix<double, 1, SIZE> Matrix1##SUFFIX;  \
+typedef Eigen::Matrix<double, 2, SIZE> Matrix2##SUFFIX;  \
+typedef Eigen::Matrix<double, 3, SIZE> Matrix3##SUFFIX;  \
+typedef Eigen::Matrix<double, 4, SIZE> Matrix4##SUFFIX;  \
+typedef Eigen::Matrix<double, 5, SIZE> Matrix5##SUFFIX;  \
+typedef Eigen::Matrix<double, 6, SIZE> Matrix6##SUFFIX;  \
+typedef Eigen::Matrix<double, 7, SIZE> Matrix7##SUFFIX;  \
+typedef Eigen::Matrix<double, 8, SIZE> Matrix8##SUFFIX;  \
+typedef Eigen::Matrix<double, 9, SIZE> Matrix9##SUFFIX;  \
+static const Eigen::MatrixBase<Matrix##SUFFIX>::IdentityReturnType I_##SUFFIX##x##SUFFIX = Matrix##SUFFIX::Identity(); \
+static const Eigen::MatrixBase<Matrix##SUFFIX>::ConstantReturnType Z_##SUFFIX##x##SUFFIX = Matrix##SUFFIX::Zero();
+
+GTSAM_MAKE_TYPEDEFS(1,1);
+GTSAM_MAKE_TYPEDEFS(2,2);
+GTSAM_MAKE_TYPEDEFS(3,3);
+GTSAM_MAKE_TYPEDEFS(4,4);
+GTSAM_MAKE_TYPEDEFS(5,5);
+GTSAM_MAKE_TYPEDEFS(6,6);
+GTSAM_MAKE_TYPEDEFS(7,7);
+GTSAM_MAKE_TYPEDEFS(8,8);
+GTSAM_MAKE_TYPEDEFS(9,9);
 
 // Matrix expressions for accessing parts of matrices
 typedef Eigen::Block<Matrix> SubMatrix;
 typedef Eigen::Block<const Matrix> ConstSubMatrix;
-
-/**
- *  constructor with size and initial data, row order !
- */
-GTSAM_EXPORT Matrix Matrix_(size_t m, size_t n, const double* const data);
-
-/**
- *  constructor with size and vector data, column order !!!
- */
-GTSAM_EXPORT Matrix Matrix_(size_t m, size_t n, const Vector& v);
-
-/**
- *  constructor from Vector yielding v.size()*1 vector
- */
-inline Matrix Matrix_(const Vector& v) { return Matrix_(v.size(),1,v);}
-
-/**
- *  nice constructor, dangerous as number of arguments must be exactly right
- *  and you have to pass doubles !!! always use 0.0 never 0
-*/
-GTSAM_EXPORT Matrix Matrix_(size_t m, size_t n, ...);
 
 // Matlab-like syntax
 
@@ -197,11 +198,6 @@ inline MATRIX prod(const MATRIX& A, const MATRIX&B) {
 }
 
 /**
- * convert to column vector, column order !!!
- */
-GTSAM_EXPORT Vector Vector_(const Matrix& A);
-
-/**
  * print a matrix
  */
 GTSAM_EXPORT void print(const Matrix& A, const std::string& s = "", std::ostream& stream = std::cout);
@@ -241,7 +237,10 @@ Eigen::Block<const MATRIX> sub(const MATRIX& A, size_t i1, size_t i2, size_t j1,
  * @param i is the row of the upper left corner insert location
  * @param j is the column of the upper left corner insert location
  */
-GTSAM_EXPORT void insertSub(Matrix& fullMatrix, const Matrix& subMatrix, size_t i, size_t j);
+template <typename Derived1, typename Derived2>
+void insertSub(Eigen::MatrixBase<Derived1>& fullMatrix, const Eigen::MatrixBase<Derived2>& subMatrix, size_t i, size_t j) {
+  fullMatrix.block(i, j, subMatrix.rows(), subMatrix.cols()) = subMatrix;
+}
 
 /**
  * Create a matrix with submatrices along its diagonal
@@ -300,6 +299,49 @@ void zeroBelowDiagonal(MATRIX& A, size_t cols=0) {
  * static transpose function, just calls Eigen transpose member function
  */
 inline Matrix trans(const Matrix& A) { return A.transpose(); }
+
+/// Reshape functor
+template <int OutM, int OutN, int OutOptions, int InM, int InN, int InOptions>
+struct Reshape {
+  //TODO replace this with Eigen's reshape function as soon as available. (There is a PR already pending : https://bitbucket.org/eigen/eigen/pull-request/41/reshape/diff)
+  typedef Eigen::Map<const Eigen::Matrix<double, OutM, OutN, OutOptions> > ReshapedType;
+  static inline ReshapedType reshape(const Eigen::Matrix<double, InM, InN, InOptions> & in) {
+    return in.data();
+  }
+};
+
+/// Reshape specialization that does nothing as shape stays the same (needed to not be ambiguous for square input equals square output)
+template <int M, int InOptions>
+struct Reshape<M, M, InOptions, M, M, InOptions> {
+  typedef const Eigen::Matrix<double, M, M, InOptions> & ReshapedType;
+  static inline ReshapedType reshape(const Eigen::Matrix<double, M, M, InOptions> & in) {
+    return in;
+  }
+};
+
+/// Reshape specialization that does nothing as shape stays the same
+template <int M, int N, int InOptions>
+struct Reshape<M, N, InOptions, M, N, InOptions> {
+  typedef const Eigen::Matrix<double, M, N, InOptions> & ReshapedType;
+  static inline ReshapedType reshape(const Eigen::Matrix<double, M, N, InOptions> & in) {
+    return in;
+  }
+};
+
+/// Reshape specialization that does transpose
+template <int M, int N, int InOptions>
+struct Reshape<N, M, InOptions, M, N, InOptions> {
+  typedef typename Eigen::Matrix<double, M, N, InOptions>::ConstTransposeReturnType ReshapedType;
+  static inline ReshapedType reshape(const Eigen::Matrix<double, M, N, InOptions> & in) {
+    return in.transpose();
+  }
+};
+
+template <int OutM, int OutN, int OutOptions, int InM, int InN, int InOptions>
+inline typename Reshape<OutM, OutN, OutOptions, InM, InN, InOptions>::ReshapedType reshape(const Eigen::Matrix<double, InM, InN, InOptions> & m){
+  BOOST_STATIC_ASSERT(InM * InN == OutM * OutN);
+  return Reshape<OutM, OutN, OutOptions, InM, InN, InOptions>::reshape(m);
+}
 
 /**
  * solve AX=B via in-place Lu factorization and backsubstitution
@@ -424,7 +466,6 @@ GTSAM_EXPORT Matrix collect(size_t nrMatrices, ...);
  * Arguments (Matrix, Vector) scales the columns,
  * (Vector, Matrix) scales the rows
  * @param inf_mask when true, will not scale with a NaN or inf value.
- * The inplace version also allows v.size()<A.rows() and only scales the first v.size() rows of A.
  */
 GTSAM_EXPORT void vector_scale_inplace(const Vector& v, Matrix& A, bool inf_mask = false); // row
 GTSAM_EXPORT Matrix vector_scale(const Vector& v, const Matrix& A, bool inf_mask = false); // row
@@ -444,7 +485,7 @@ GTSAM_EXPORT Matrix3 skewSymmetric(double wx, double wy, double wz);
 template<class Derived>
 inline Matrix3 skewSymmetric(const Eigen::MatrixBase<Derived>& w) { return skewSymmetric(w(0),w(1),w(2));}
 
-/** Use SVD to calculate inverse square root of a matrix */
+/** Use Cholesky to calculate inverse square root of a matrix */
 GTSAM_EXPORT Matrix inverse_square_root(const Matrix& A);
 
 /** Calculate the LL^t decomposition of a S.P.D matrix */
@@ -487,17 +528,6 @@ DLT(const Matrix& A, double rank_tol = 1e-9);
  */
 GTSAM_EXPORT Matrix expm(const Matrix& A, size_t K=7);
 
-/// Cayley transform
-GTSAM_EXPORT Matrix Cayley(const Matrix& A);
-
-/// Implementation of Cayley transform using fixed size matrices to let
-/// Eigen do more optimization
-template<int N>
-Eigen::Matrix<double, N, N> Cayley(const Eigen::Matrix<double, N, N>& A) {
-  typedef Eigen::Matrix<double, N, N> FMat;
-  return (FMat::Identity() - A)*(FMat::Identity() + A).inverse();
-}
-
 std::string formatMatrixIndented(const std::string& label, const Matrix& matrix, bool makeVectorHorizontal = false);
 
 } // namespace gtsam
@@ -530,4 +560,5 @@ namespace boost {
   } // namespace serialization
 } // namespace boost
 
-BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Matrix)
+BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Matrix);
+

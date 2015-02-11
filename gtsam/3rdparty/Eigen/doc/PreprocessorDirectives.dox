@@ -62,14 +62,19 @@ run time. However, these assertions do cost time and can thus be turned off.
    expect that any objects passed to it are aligned. This will turn off vectorization. Not defined by default.
  - \b EIGEN_DONT_ALIGN_STATICALLY - disables alignment of arrays on the stack. Not defined by default, unless
    \c EIGEN_DONT_ALIGN is defined.
+ - \b EIGEN_DONT_PARALLELIZE - if defined, this disables multi-threading. This is only relevant if you enabled OpenMP.
+   See \ref TopicMultiThreading for details.
  - \b EIGEN_DONT_VECTORIZE - disables explicit vectorization when defined. Not defined by default, unless 
    alignment is disabled by %Eigen's platform test or the user defining \c EIGEN_DONT_ALIGN.
- - \b EIGEN_FAST_MATH - enables some optimizations which might affect the accuracy of the result. The only
-   optimization this currently includes is single precision sin() and cos() in the present of SSE
-   vectorization. Defined by default. 
+ - \b EIGEN_FAST_MATH - enables some optimizations which might affect the accuracy of the result. This currently
+   enables the SSE vectorization of sin() and cos(), and speedups sqrt() for single precision. Defined to 1 by default.
+   Define it to 0 to disable.
  - \b EIGEN_UNROLLING_LIMIT - defines the size of a loop to enable meta unrolling. Set it to zero to disable
    unrolling. The size of a loop here is expressed in %Eigen's own notion of "number of FLOPS", it does not
-   correspond to the number of iterations or the number of instructions. The default is value 100. 
+   correspond to the number of iterations or the number of instructions. The default is value 100.
+ - \b EIGEN_STACK_ALLOCATION_LIMIT - defines the maximum bytes for a buffer to be allocated on the stack. For internal
+   temporary buffers, dynamic memory allocation is employed as a fall back. For fixed-size matrices or arrays, exceeding
+   this threshold raises a compile time assertion. Use 0 to set no limit. Default is 128 KB.
 
 
 \section TopicPreprocessorDirectivesPlugins Plugins

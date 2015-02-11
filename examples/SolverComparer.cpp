@@ -13,6 +13,22 @@
 * @brief   Incremental and batch solving, timing, and accuracy comparisons
 * @author  Richard Roberts
 * @date    August, 2013
+*
+* Here is an example. Below, to run in batch mode, we first generate an initialization in incremental mode.
+*
+* Solve in incremental and write to file w_inc:
+* ./SolverComparer --incremental -d w10000 -o w_inc
+*
+* You can then perturb that initialization to get batch something to optimize.
+* Read in w_inc, perturb it with noise of stddev 0.6, and write to w_pert:
+* ./SolverComparer --perturb 0.6 -i w_inc -o w_pert
+*
+* Then optimize with batch, read in w_pert, solve in batch, and write to w_batch:
+* ./SolverComparer --batch -d w10000 -i w_pert -o w_batch
+*
+* And finally compare solutions in w_inc and w_batch to check that batch converged to the global minimum
+* ./SolverComparer --compare w_inc w_batch
+*
 */
 
 #include <gtsam/base/timing.h>
@@ -56,22 +72,22 @@ typedef NoiseModelFactor1<Pose> NM1;
 typedef NoiseModelFactor2<Pose,Pose> NM2;
 typedef BearingRangeFactor<Pose,Point2> BR;
 
-BOOST_CLASS_EXPORT(Value);
-BOOST_CLASS_EXPORT(Pose);
-BOOST_CLASS_EXPORT(Rot2);
-BOOST_CLASS_EXPORT(Point2);
-BOOST_CLASS_EXPORT(NonlinearFactor);
-BOOST_CLASS_EXPORT(NoiseModelFactor);
-BOOST_CLASS_EXPORT(NM1);
-BOOST_CLASS_EXPORT(NM2);
-BOOST_CLASS_EXPORT(BetweenFactor<Pose>);
-BOOST_CLASS_EXPORT(PriorFactor<Pose>);
-BOOST_CLASS_EXPORT(BR);
-BOOST_CLASS_EXPORT(noiseModel::Base);
-BOOST_CLASS_EXPORT(noiseModel::Isotropic);
-BOOST_CLASS_EXPORT(noiseModel::Gaussian);
-BOOST_CLASS_EXPORT(noiseModel::Diagonal);
-BOOST_CLASS_EXPORT(noiseModel::Unit);
+//GTSAM_VALUE_EXPORT(Value);
+//GTSAM_VALUE_EXPORT(Pose);
+//GTSAM_VALUE_EXPORT(Rot2);
+//GTSAM_VALUE_EXPORT(Point2);
+//GTSAM_VALUE_EXPORT(NonlinearFactor);
+//GTSAM_VALUE_EXPORT(NoiseModelFactor);
+//GTSAM_VALUE_EXPORT(NM1);
+//GTSAM_VALUE_EXPORT(NM2);
+//GTSAM_VALUE_EXPORT(BetweenFactor<Pose>);
+//GTSAM_VALUE_EXPORT(PriorFactor<Pose>);
+//GTSAM_VALUE_EXPORT(BR);
+//GTSAM_VALUE_EXPORT(noiseModel::Base);
+//GTSAM_VALUE_EXPORT(noiseModel::Isotropic);
+//GTSAM_VALUE_EXPORT(noiseModel::Gaussian);
+//GTSAM_VALUE_EXPORT(noiseModel::Diagonal);
+//GTSAM_VALUE_EXPORT(noiseModel::Unit);
 
 double chi2_red(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& config) {
   // Compute degrees of freedom (observations - variables)
@@ -95,6 +111,7 @@ int lastStep;
 int nThreads;
 int relinSkip;
 bool incremental;
+bool dogleg;
 bool batch;
 bool compare;
 bool perturb;
@@ -126,6 +143,7 @@ int main(int argc, char *argv[]) {
     ("threads", po::value<int>(&nThreads)->default_value(-1), "Number of threads, or -1 to use all processors")
     ("relinSkip", po::value<int>(&relinSkip)->default_value(10), "Fluid relinearization check every arg steps")
     ("incremental", "Run in incremental mode using ISAM2 (default)")
+    ("dogleg", "When in incremental mode, solve with Dogleg instead of Gauss-Newton in iSAM2")
     ("batch", "Run in batch mode, requires an initialization from --read-solution")
     ("compare", po::value<vector<string> >()->multitoken(), "Compare two solution files")
     ("perturb", po::value<double>(&perturbationNoise), "Perturb a solution file with the specified noise")
@@ -141,6 +159,7 @@ int main(int argc, char *argv[]) {
   stats = (vm.count("stats") > 0);
   const int modesSpecified = int(batch) + int(compare) + int(perturb) + int(stats);
   incremental = (vm.count("incremental") > 0 || modesSpecified == 0);
+  dogleg = (vm.count("dogleg") > 0);
   if(compare) {
     const vector<string>& compareFiles = vm["compare"].as<vector<string> >();
     if(compareFiles.size() != 2) {
@@ -233,6 +252,8 @@ int main(int argc, char *argv[]) {
 void runIncremental()
 {
   ISAM2Params params;
+  if(dogleg)
+    params.optimizationParams = ISAM2DoglegParams();
   params.relinearizeSkip = relinSkip;
   params.enablePartialRelinearizationCheck = true;
   ISAM2 isam2(params);
@@ -274,7 +295,7 @@ void runIncremental()
     NonlinearFactorGraph newFactors;
     Values newVariables;
 
-    newFactors.push_back(boost::make_shared<PriorFactor<Pose> >(firstPose, Pose(), noiseModel::Unit::Create(Pose::Dim())));
+    newFactors.push_back(boost::make_shared<PriorFactor<Pose> >(firstPose, Pose(), noiseModel::Unit::Create(3)));
     newVariables.insert(firstPose, Pose());
 
     isam2.update(newFactors, newVariables);
@@ -453,7 +474,7 @@ void runBatch()
   cout << "Creating batch optimizer..." << endl;
 
   NonlinearFactorGraph measurements = datasetMeasurements;
-  measurements.push_back(boost::make_shared<PriorFactor<Pose> >(0, Pose(), noiseModel::Unit::Create(Pose::Dim())));
+  measurements.push_back(boost::make_shared<PriorFactor<Pose> >(0, Pose(), noiseModel::Unit::Create(3)));
 
   gttic_(Create_optimizer);
   GaussNewtonParams params;
@@ -536,8 +557,8 @@ void runCompare()
 void runPerturb()
 {
   // Set up random number generator
-  boost::random::mt19937 rng;
-  boost::random::normal_distribution<double> normal(0.0, perturbationNoise);
+  boost::mt19937 rng;
+  boost::normal_distribution<double> normal(0.0, perturbationNoise);
 
   // Perturb values
   VectorValues noise;
@@ -568,7 +589,7 @@ void runStats()
 {
   cout << "Gathering statistics..." << endl;
   GaussianFactorGraph linear = *datasetMeasurements.linearize(initial);
-  GaussianJunctionTree jt(GaussianEliminationTree(linear, Ordering::COLAMD(linear)));
+  GaussianJunctionTree jt(GaussianEliminationTree(linear, Ordering::colamd(linear)));
   treeTraversal::ForestStatistics statistics = treeTraversal::GatherStatistics(jt);
 
   ofstream file;

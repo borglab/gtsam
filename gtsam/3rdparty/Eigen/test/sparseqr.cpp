@@ -2,24 +2,24 @@
 // for linear algebra.
 //
 // Copyright (C) 2012 Desire Nuentsa Wakam <desire.nuentsa_wakam@inria.fr>
+// Copyright (C) 2014 Gael Guennebaud <gael.guennebaud@inria.fr>
 //
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 #include "sparse.h"
 #include <Eigen/SparseQR>
 
-
 template<typename MatrixType,typename DenseMat>
-int generate_sparse_rectangular_problem(MatrixType& A, DenseMat& dA, int maxRows = 300, int maxCols = 300)
+int generate_sparse_rectangular_problem(MatrixType& A, DenseMat& dA, int maxRows = 300, int maxCols = 150)
 {
   eigen_assert(maxRows >= maxCols);
   typedef typename MatrixType::Scalar Scalar;
   int rows = internal::random<int>(1,maxRows);
-  int cols = internal::random<int>(1,rows);
+  int cols = internal::random<int>(1,maxCols);
   double density = (std::max)(8./(rows*cols), 0.01);
   
-  A.resize(rows,rows);
-  dA.resize(rows,rows);
+  A.resize(rows,cols);
+  dA.resize(rows,cols);
   initSparse<Scalar>(density, dA, A,ForceNonZeroDiag);
   A.makeCompressed();
   int nop = internal::random<int>(0, internal::random<double>(0,1) > 0.5 ? cols/2 : 0);
@@ -31,6 +31,13 @@ int generate_sparse_rectangular_problem(MatrixType& A, DenseMat& dA, int maxRows
     A.col(j0)  = s * A.col(j1);
     dA.col(j0) = s * dA.col(j1);
   }
+  
+//   if(rows<cols) {
+//     A.conservativeResize(cols,cols);
+//     dA.conservativeResize(cols,cols);
+//     dA.bottomRows(cols-rows).setZero();
+//   }
+  
   return rows;
 }
 
@@ -42,11 +49,10 @@ template<typename Scalar> void test_sparseqr_scalar()
   MatrixType A;
   DenseMat dA;
   DenseVector refX,x,b; 
-  SparseQR<MatrixType, AMDOrdering<int> > solver; 
+  SparseQR<MatrixType, COLAMDOrdering<int> > solver; 
   generate_sparse_rectangular_problem(A,dA);
   
-  int n = A.cols();
-  b = DenseVector::Random(n);
+  b = dA * DenseVector::Random(A.cols());
   solver.compute(A);
   if (solver.info() != Success)
   {
@@ -60,17 +66,19 @@ template<typename Scalar> void test_sparseqr_scalar()
     std::cerr << "sparse QR factorization failed\n";
     exit(0);
     return;
-  } 
+  }
+  
+  VERIFY_IS_APPROX(A * x, b);
+  
   //Compare with a dense QR solver
   ColPivHouseholderQR<DenseMat> dqr(dA);
   refX = dqr.solve(b);
   
   VERIFY_IS_EQUAL(dqr.rank(), solver.rank());
-  
-  if(solver.rank()<A.cols())
-    VERIFY((dA * refX - b).norm() * 2 > (A * x - b).norm() );
-  else
+  if(solver.rank()==A.cols()) // full rank
     VERIFY_IS_APPROX(x, refX);
+//   else
+//     VERIFY((dA * refX - b).norm() * 2 > (A * x - b).norm() );
 
   // Compute explicitly the matrix Q
   MatrixType Q, QtQ, idM;
@@ -88,3 +96,4 @@ void test_sparseqr()
     CALL_SUBTEST_2(test_sparseqr_scalar<std::complex<double> >());
   }
 }
+

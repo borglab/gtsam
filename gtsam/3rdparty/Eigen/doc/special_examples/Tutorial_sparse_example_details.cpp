@@ -11,8 +11,8 @@ void insertCoefficient(int id, int i, int j, double w, std::vector<T>& coeffs,
   int n = boundary.size();
   int id1 = i+j*n;
 
-        if(i==-1 || i==n) b(id) -= w * boundary(j); // constrained coeffcieint
-  else  if(j==-1 || j==n) b(id) -= w * boundary(i); // constrained coeffcieint
+        if(i==-1 || i==n) b(id) -= w * boundary(j); // constrained coefficient
+  else  if(j==-1 || j==n) b(id) -= w * boundary(i); // constrained coefficient
   else  coeffs.push_back(T(id,id1,w));              // unknown coefficient
 }
 

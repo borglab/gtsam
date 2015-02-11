@@ -271,7 +271,8 @@ inline static void optimizeInPlace(const boost::shared_ptr<ISAM2Clique>& clique,
 }
 
 /* ************************************************************************* */
-size_t ISAM2::Impl::UpdateDelta(const FastVector<ISAM2::sharedClique>& roots, FastSet<Key>& replacedKeys, VectorValues& delta, double wildfireThreshold) {
+size_t ISAM2::Impl::UpdateGaussNewtonDelta(const FastVector<ISAM2::sharedClique>& roots,
+    const FastSet<Key>& replacedKeys, VectorValues& delta, double wildfireThreshold) {
 
   size_t lastBacksubVariableCount;
 
@@ -294,15 +295,12 @@ size_t ISAM2::Impl::UpdateDelta(const FastVector<ISAM2::sharedClique>& roots, Fa
 #endif
   }
 
-  // Clear replacedKeys
-  replacedKeys.clear();
-
   return lastBacksubVariableCount;
 }
 
 /* ************************************************************************* */
 namespace internal {
-void updateDoglegDeltas(const boost::shared_ptr<ISAM2Clique>& clique, const FastSet<Key>& replacedKeys,
+void updateRgProd(const boost::shared_ptr<ISAM2Clique>& clique, const FastSet<Key>& replacedKeys,
     const VectorValues& grad, VectorValues& RgProd, size_t& varsUpdated) {
 
   // Check if any frontal or separator keys were recalculated, if so, we need
@@ -340,30 +338,37 @@ void updateDoglegDeltas(const boost::shared_ptr<ISAM2Clique>& clique, const Fast
 
     // Recurse to children
     BOOST_FOREACH(const ISAM2Clique::shared_ptr& child, clique->children) {
-      updateDoglegDeltas(child, replacedKeys, grad, RgProd, varsUpdated); }
+      updateRgProd(child, replacedKeys, grad, RgProd, varsUpdated); }
   }
 }
 }
 
 /* ************************************************************************* */
-size_t ISAM2::Impl::UpdateDoglegDeltas(const ISAM2& isam, double wildfireThreshold, FastSet<Key>& replacedKeys,
-    VectorValues& deltaNewton, VectorValues& RgProd) {
-
-  // Get gradient
-  VectorValues grad;
-  gradientAtZero(isam, grad);
+size_t ISAM2::Impl::UpdateRgProd(const ISAM2::Roots& roots, const FastSet<Key>& replacedKeys,
+    const VectorValues& gradAtZero, VectorValues& RgProd) {
 
   // Update variables
   size_t varsUpdated = 0;
-  BOOST_FOREACH(const ISAM2::sharedClique& root, isam.roots())
-  {
-    internal::updateDoglegDeltas(root, replacedKeys, grad, RgProd, varsUpdated);
-    optimizeWildfireNonRecursive(root, wildfireThreshold, replacedKeys, deltaNewton);
+  BOOST_FOREACH(const ISAM2::sharedClique& root, roots) {
+    internal::updateRgProd(root, replacedKeys, gradAtZero, RgProd, varsUpdated);
   }
 
-  replacedKeys.clear();
-
   return varsUpdated;
+}
+  
+/* ************************************************************************* */
+VectorValues ISAM2::Impl::ComputeGradientSearch(const VectorValues& gradAtZero,
+                                     const VectorValues& RgProd)
+{
+  // Compute gradient squared-magnitude
+  const double gradientSqNorm = gradAtZero.dot(gradAtZero);
+  
+  // Compute minimizing step size
+  double RgNormSq = RgProd.vector().squaredNorm();
+  double step = -gradientSqNorm / RgNormSq;
+
+  // Compute steepest descent point
+  return step * gradAtZero;
 }
 
 }

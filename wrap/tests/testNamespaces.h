@@ -47,6 +47,10 @@ class ClassC {
 // separate namespace global function, same name
 Vector aGlobalFunction();
 
+// An overloaded global function
+ns1::ClassA overloadedGlobalFunction(const ns1::ClassA& a);
+ns1::ClassA overloadedGlobalFunction(const ns1::ClassA& a, double b);
+
 } //\namespace ns2
 
 class ClassD {

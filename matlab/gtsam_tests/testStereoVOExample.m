@@ -61,8 +61,8 @@ optimizer = LevenbergMarquardtOptimizer(graph, initialEstimate);
 result = optimizer.optimize();
 
 %% check equality for the first pose and point
-pose_x1 = result.at(x1);
+pose_x1 = result.atPose3(x1);
 CHECK('pose_x1.equals(first_pose,1e-4)',pose_x1.equals(first_pose,1e-4));
 
-point_l1 = result.at(l1);
+point_l1 = result.atPoint3(l1);
 CHECK('point_1.equals(expected_l1,1e-4)',point_l1.equals(expected_l1,1e-4));

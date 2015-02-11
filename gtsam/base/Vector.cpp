@@ -30,81 +30,10 @@
 
 #include <gtsam/base/Vector.h>
 
-//#ifdef WIN32
-//#include <Windows.h>
-//#endif
 
 using namespace std;
 
 namespace gtsam {
-
-/* ************************************************************************* */
-void odprintf_(const char *format, ostream& stream, ...) {
-  char buf[4096], *p = buf;
-
-  va_list args;
-  va_start(args, stream);
-#ifdef WIN32
-  _vsnprintf(p, sizeof buf - 3, format, args); // buf-3 is room for CR/LF/NUL
-#else
-  vsnprintf(p, sizeof buf - 3, format, args); // buf-3 is room for CR/LF/NUL
-#endif
-  va_end(args);
-
-//#ifdef WIN32
-//  OutputDebugString(buf);
-//#else
-  stream << buf;
-//#endif
-}
-
-/* ************************************************************************* */
-
-void odprintf(const char *format, ...) {
-  char buf[4096], *p = buf;
-
-  va_list args;
-  va_start(args, format);
-#ifdef WIN32
-  _vsnprintf(p, sizeof buf - 3, format, args); // buf-3 is room for CR/LF/NUL
-#else
-  vsnprintf(p, sizeof buf - 3, format, args); // buf-3 is room for CR/LF/NUL
-#endif
-  va_end(args);
-
-//#ifdef WIN32
-//  OutputDebugString(buf);
-//#else
-  cout << buf;
-//#endif
-}
-
-/* ************************************************************************* */
-Vector Vector_( size_t m, const double* const data) {
-  Vector A(m);
-  copy(data, data+m, A.data());
-  return A;
-}
-
-/* ************************************************************************* */
-Vector Vector_(size_t m, ...) {
-  Vector v(m);
-  va_list ap;
-  va_start(ap, m);
-  for( size_t i = 0 ; i < m ; i++) {
-    double value = va_arg(ap, double);
-    v(i) = value;
-  }
-  va_end(ap);
-  return v;
-}
-
-/* ************************************************************************* */
-Vector Vector_(const std::vector<double>& d) {
-  Vector v(d.size());
-  copy(d.begin(), d.end(), v.data());
-  return v;
-}
 
 /* ************************************************************************* */
 bool zero(const Vector& v) {
@@ -128,10 +57,12 @@ Vector delta(size_t n, size_t i, double value) {
 /* ************************************************************************* */
 void print(const Vector& v, const string& s, ostream& stream) {
   size_t n = v.size();
-  odprintf_("%s [", stream, s.c_str());
-  for(size_t i=0; i<n; i++)
-    odprintf_("%g%s", stream, v[i], (i<n-1 ? "; " : ""));
-  odprintf_("];\n", stream);
+
+  stream << s << "[";
+  for(size_t i=0; i<n; i++) {
+      stream << setprecision(9) << v(i) << (i<n-1 ? "; " : "");
+  }
+  stream << "];" << endl;
 }
 
 /* ************************************************************************* */
@@ -355,11 +286,15 @@ double weightedPseudoinverse(const Vector& a, const Vector& weights,
   for (size_t i = 0; i < m; ++i) isZero.push_back(fabs(a[i]) < 1e-9);
 
   // If there is a valid (a!=0) constraint (sigma==0) return the first one
-  for (size_t i = 0; i < m; ++i)
+  for (size_t i = 0; i < m; ++i) {
     if (weights[i] == inf && !isZero[i]) {
+      // Basically, instead of doing a normal QR step with the weighted
+      // pseudoinverse, we enforce the constraint by turning
+      // ax + AS = b into x + (A/a)S = b/a, for the first row where a!=0
       pseudo = delta(m, i, 1 / a[i]);
       return inf;
     }
+  }
 
   // Form psuedo-inverse inv(a'inv(Sigma)a)a'inv(Sigma)
   // For diagonal Sigma, inv(Sigma) = diag(precisions)

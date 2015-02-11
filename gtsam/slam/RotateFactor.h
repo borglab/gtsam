@@ -55,7 +55,7 @@ public:
     // predict p_ as q = R*z_, derivative H will be filled if not none
     Point3 q = R.rotate(z_,H);
     // error is just difference, and note derivative of that wrpt q is I3
-    return Vector(3) << q.x()-p_.x(), q.y()-p_.y(), q.z()-p_.z();
+    return (Vector(3) << q.x()-p_.x(), q.y()-p_.y(), q.z()-p_.z()).finished();
   }
 
 };
@@ -66,7 +66,7 @@ public:
  */
 class RotateDirectionsFactor: public NoiseModelFactor1<Rot3> {
 
-  Sphere2 p_, z_; ///< Predicted and measured directions, p = iRc * z
+  Unit3 p_, z_; ///< Predicted and measured directions, p = iRc * z
 
   typedef NoiseModelFactor1<Rot3> Base;
   typedef RotateDirectionsFactor This;
@@ -74,7 +74,7 @@ class RotateDirectionsFactor: public NoiseModelFactor1<Rot3> {
 public:
 
   /// Constructor
-  RotateDirectionsFactor(Key key, const Sphere2& p, const Sphere2& z,
+  RotateDirectionsFactor(Key key, const Unit3& p, const Unit3& z,
       const SharedNoiseModel& model) :
       Base(model, key), p_(p), z_(z) {
   }
@@ -96,7 +96,7 @@ public:
   /// vector of errors returns 2D vector
   Vector evaluateError(const Rot3& R,
       boost::optional<Matrix&> H = boost::none) const {
-    Sphere2 q = R * z_;
+    Unit3 q = R * z_;
     Vector e = p_.error(q, H);
     if (H) {
       Matrix DR;

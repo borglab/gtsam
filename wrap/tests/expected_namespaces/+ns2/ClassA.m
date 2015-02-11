@@ -40,22 +40,12 @@ classdef ClassA < handle
     function varargout = memberFunction(this, varargin)
       % MEMBERFUNCTION usage: memberFunction() : returns double
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
-      % 
-      % Method Overloads
-      % memberFunction()
-      if length(varargin) == 0
-        varargout{1} = testNamespaces_wrapper(9, this, varargin{:});
-      else
-        error('Arguments do not match any overload of function ns2.ClassA.memberFunction');
-      end
+      varargout{1} = testNamespaces_wrapper(9, this, varargin{:});
     end
 
     function varargout = nsArg(this, varargin)
       % NSARG usage: nsArg(ClassB arg) : returns int
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
-      % 
-      % Method Overloads
-      % nsArg(ClassB arg)
       if length(varargin) == 1 && isa(varargin{1},'ns1.ClassB')
         varargout{1} = testNamespaces_wrapper(10, this, varargin{:});
       else
@@ -66,14 +56,7 @@ classdef ClassA < handle
     function varargout = nsReturn(this, varargin)
       % NSRETURN usage: nsReturn(double q) : returns ns2::ns3::ClassB
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
-      % 
-      % Method Overloads
-      % nsReturn(double q)
-      if length(varargin) == 1 && isa(varargin{1},'double')
-        varargout{1} = testNamespaces_wrapper(11, this, varargin{:});
-      else
-        error('Arguments do not match any overload of function ns2.ClassA.nsReturn');
-      end
+      varargout{1} = testNamespaces_wrapper(11, this, varargin{:});
     end
 
   end
@@ -82,14 +65,7 @@ classdef ClassA < handle
     function varargout = Afunction(varargin)
       % AFUNCTION usage: afunction() : returns double
       % Doxygen can be found at http://research.cc.gatech.edu/borg/sites/edu.borg/html/index.html
-      % 
-      % Usage
-      % AFUNCTION()
-      if length(varargin) == 0
-        varargout{1} = testNamespaces_wrapper(12, varargin{:});
-      else
-        error('Arguments do not match any overload of function ns2.ClassA.Afunction');
-      end
+      varargout{1} = testNamespaces_wrapper(12, varargin{:});
     end
 
   end

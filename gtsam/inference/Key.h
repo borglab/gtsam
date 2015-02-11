@@ -47,6 +47,14 @@ namespace gtsam {
   typedef FastMap<Key,int> KeyGroupMap;
 
   /// Utility function to print sets of keys with optional prefix
+  GTSAM_EXPORT void printKeyList(const KeyList& keys, const std::string& s = "",
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter);
+
+  /// Utility function to print sets of keys with optional prefix
+  GTSAM_EXPORT void printKeyVector(const KeyVector& keys, const std::string& s = "",
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter);
+
+  /// Utility function to print sets of keys with optional prefix
   GTSAM_EXPORT void printKeySet(const KeySet& keys, const std::string& s = "",
       const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 }

@@ -150,9 +150,7 @@ ConcurrentBatchFilter::Result ConcurrentBatchFilter::update(const NonlinearFacto
 
   if(removeFactorIndices){
     if(debug){
-      BOOST_FOREACH(size_t slot, *removeFactorIndices) {
-        std::cout << "ConcurrentBatchFilter::update  removeFactorIndices " << std::endl;
-      }
+      std::cout << "ConcurrentBatchFilter::update  removeFactorIndices " << std::endl;
     }
     removeFactors(*removeFactorIndices);
   }
@@ -364,9 +362,9 @@ void ConcurrentBatchFilter::reorder(const boost::optional<FastList<Key> >& keysT
 
   // COLAMD groups will be used to place marginalize keys in Group 0, and everything else in Group 1
   if(keysToMove && keysToMove->size() > 0) {
-    ordering_ = Ordering::COLAMDConstrainedFirst(factors_, std::vector<Key>(keysToMove->begin(), keysToMove->end()));
+    ordering_ = Ordering::colamdConstrainedFirst(factors_, std::vector<Key>(keysToMove->begin(), keysToMove->end()));
   }else{
-    ordering_ = Ordering::COLAMD(factors_);
+    ordering_ = Ordering::colamd(factors_);
   }
 
 }
@@ -539,9 +537,7 @@ void ConcurrentBatchFilter::moveSeparator(const FastList<Key>& keysToMove) {
   VariableIndex variableIndex(factors_);
   BOOST_FOREACH(Key key, keysToMove) {
     const FastList<size_t>& slots = variableIndex[key];
-    BOOST_FOREACH(size_t slot, slots) {
-      removedFactorSlots.insert(removedFactorSlots.end(), slots.begin(), slots.end());
-    }
+    removedFactorSlots.insert(removedFactorSlots.end(), slots.begin(), slots.end());
   }
 
   // Sort and remove duplicates

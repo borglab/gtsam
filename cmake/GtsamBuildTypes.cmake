@@ -10,17 +10,13 @@ if(NOT FIRST_PASS_DONE AND NOT CMAKE_BUILD_TYPE AND NOT MSVC AND NOT XCODE_VERSI
 endif()
 
 # Add option for using build type postfixes to allow installing multiple build modes
-if(MSVC OR XCODE_VERSION)
-  option(GTSAM_BUILD_TYPE_POSTFIXES        "Enable/Disable appending the build type to the name of compiled libraries" ON)
-else()
-  option(GTSAM_BUILD_TYPE_POSTFIXES        "Enable/Disable appending the build type to the name of compiled libraries" OFF)
-endif()
+option(GTSAM_BUILD_TYPE_POSTFIXES        "Enable/Disable appending the build type to the name of compiled libraries" ON)
 
 # Add debugging flags but only on the first pass
 if(NOT FIRST_PASS_DONE)
   if(MSVC)
-    set(CMAKE_C_FLAGS_DEBUG            "/D_DEBUG /MDd /Zi /Ob0 /Od /RTC1 /W3 /GR /EHsc /MP /DWINDOWS_LEAN_AND_MEAN" CACHE STRING "Flags used by the compiler during debug builds." FORCE)
-    set(CMAKE_CXX_FLAGS_DEBUG          "/D_DEBUG /MDd /Zi /Ob0 /Od /RTC1 /W3 /GR /EHsc /MP /DWINDOWS_LEAN_AND_MEAN" CACHE STRING "Flags used by the compiler during debug builds." FORCE)
+    set(CMAKE_C_FLAGS_DEBUG            "/D_DEBUG /MDd /Zi /Ob0 /Od /RTC1 /W3 /GR /EHsc /MP /DWINDOWS_LEAN_AND_MEAN /DEIGEN_INITIALIZE_MATRICES_BY_NAN" CACHE STRING "Flags used by the compiler during debug builds." FORCE)
+    set(CMAKE_CXX_FLAGS_DEBUG          "/D_DEBUG /MDd /Zi /Ob0 /Od /RTC1 /W3 /GR /EHsc /MP /DWINDOWS_LEAN_AND_MEAN /DEIGEN_INITIALIZE_MATRICES_BY_NAN" CACHE STRING "Flags used by the compiler during debug builds." FORCE)
     set(CMAKE_C_FLAGS_RELWITHDEBINFO   "/MD /O2 /DNDEBUG /W3 /GR /EHsc /MP /Zi /d2Zi+ /DWINDOWS_LEAN_AND_MEAN" CACHE STRING "Flags used by the compiler during relwithdebinfo builds." FORCE)
     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/MD /O2 /DNDEBUG /W3 /GR /EHsc /MP /Zi /d2Zi+ /DWINDOWS_LEAN_AND_MEAN" CACHE STRING "Flags used by the compiler during relwithdebinfo builds." FORCE)
     set(CMAKE_C_FLAGS_RELEASE          "/MD /O2 /DNDEBUG /W3 /GR /EHsc /MP /DWINDOWS_LEAN_AND_MEAN" CACHE STRING "Flags used by the compiler during release builds." FORCE)
@@ -38,8 +34,8 @@ if(NOT FIRST_PASS_DONE)
     set(CMAKE_MODULE_LINKER_FLAGS_PROFILING "${CMAKE_MODULE_LINKER_FLAGS_RELEASE}" CACHE STRING "Linker flags during profiling builds." FORCE)
     mark_as_advanced(CMAKE_C_FLAGS_PROFILING CMAKE_CXX_FLAGS_PROFILING CMAKE_EXE_LINKER_FLAGS_PROFILING CMAKE_SHARED_LINKER_FLAGS_PROFILING CMAKE_MODULE_LINKER_FLAGS_PROFILING)
   else()
-    set(CMAKE_C_FLAGS_DEBUG            "${CMAKE_C_FLAGS_DEBUG} -fno-inline -Wall" CACHE STRING "Flags used by the compiler during debug builds." FORCE)
-    set(CMAKE_CXX_FLAGS_DEBUG          "${CMAKE_CXX_FLAGS_DEBUG} -fno-inline -Wall" CACHE STRING "Flags used by the compiler during debug builds." FORCE)
+    set(CMAKE_C_FLAGS_DEBUG            "${CMAKE_C_FLAGS_DEBUG} -fno-inline -Wall -DEIGEN_INITIALIZE_MATRICES_BY_NAN" CACHE STRING "Flags used by the compiler during debug builds." FORCE)
+    set(CMAKE_CXX_FLAGS_DEBUG          "${CMAKE_CXX_FLAGS_DEBUG} -fno-inline -Wall -DEIGEN_INITIALIZE_MATRICES_BY_NAN" CACHE STRING "Flags used by the compiler during debug builds." FORCE)
     set(CMAKE_C_FLAGS_RELWITHDEBINFO   "-g -O3 -Wall -DNDEBUG" CACHE STRING "Flags used by the compiler during relwithdebinfo builds." FORCE)
     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O3 -Wall -DNDEBUG" CACHE STRING "Flags used by the compiler during relwithdebinfo builds." FORCE)
     set(CMAKE_C_FLAGS_RELEASE          "-O3 -Wall -DNDEBUG -Wall" CACHE STRING "Flags used by the compiler during release builds." FORCE)
@@ -58,15 +54,15 @@ if(NOT FIRST_PASS_DONE)
 endif()
 
 # Clang on Mac uses a template depth that is less than standard and is too small
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
 	if(NOT "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS "5.0")
-		add_definitions(-ftemplate-depth=1024)
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-depth=1024")
 	endif()
 endif()
 
 # Set up build type library postfixes
 if(GTSAM_BUILD_TYPE_POSTFIXES)
-	foreach(build_type Debug Timing RelWithDebInfo MinSizeRel)
+	foreach(build_type Debug Timing Profiling RelWithDebInfo MinSizeRel)
 		string(TOUPPER "${build_type}" build_type_toupper)
 		set(CMAKE_${build_type_toupper}_POSTFIX ${build_type})
 	endforeach()
@@ -106,7 +102,7 @@ if(    NOT cmake_build_type_tolower STREQUAL ""
 endif()
 
 # Mark that first pass is done
-set(FIRST_PASS_DONE TRUE CACHE BOOL "Internally used to mark whether cmake has been run multiple times" FORCE)
+set(FIRST_PASS_DONE TRUE CACHE INTERNAL "Internally used to mark whether cmake has been run multiple times")
 mark_as_advanced(FIRST_PASS_DONE) 
 
 # Enable Visual Studio solution folders

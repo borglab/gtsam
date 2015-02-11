@@ -23,7 +23,7 @@ function(workaround_9220 language language_works)
   #message("DEBUG: language = ${language}")
   set(text
     "project(test NONE)
-    cmake_minimum_required(VERSION 2.6.0)
+    cmake_minimum_required(VERSION 2.8.0)
     set (CMAKE_Fortran_FLAGS \"${CMAKE_Fortran_FLAGS}\")
     set (CMAKE_EXE_LINKER_FLAGS \"${CMAKE_EXE_LINKER_FLAGS}\")
     enable_language(${language} OPTIONAL)

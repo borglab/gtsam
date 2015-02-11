@@ -35,16 +35,22 @@ namespace gtsam {
    * @addtogroup SLAM
    */
   template <class CAMERA, class LANDMARK>
-  class GeneralSFMFactor:  public NoiseModelFactor2<CAMERA, LANDMARK> {
+  class GeneralSFMFactor: public NoiseModelFactor2<CAMERA, LANDMARK> {
+
+    GTSAM_CONCEPT_MANIFOLD_TYPE(CAMERA)
+    GTSAM_CONCEPT_MANIFOLD_TYPE(LANDMARK)
+
+    static const int DimC = FixedDimension<CAMERA>::value;
+    static const int DimL = FixedDimension<LANDMARK>::value;
+
   protected:
+
     Point2 measured_;      ///< the 2D measurement
 
   public:
 
-    typedef CAMERA Cam;                        ///< typedef for camera type
-    typedef GeneralSFMFactor<CAMERA, LANDMARK> This;  ///< typedef for this object
+    typedef GeneralSFMFactor<CAMERA, LANDMARK> This;   ///< typedef for this object
     typedef NoiseModelFactor2<CAMERA, LANDMARK> Base;  ///< typedef for the base class
-    typedef Point2 Measurement;              ///< typedef for the measurement
 
     // shorthand for a smart pointer to a factor
     typedef boost::shared_ptr<This> shared_ptr;
@@ -89,7 +95,7 @@ namespace gtsam {
     }
 
     /** h(x)-z */
-    Vector evaluateError(const Cam& camera,  const Point3& point,
+    Vector evaluateError(const CAMERA& camera, const LANDMARK& point,
         boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const {
 
       try {
@@ -97,12 +103,12 @@ namespace gtsam {
         return reprojError.vector();
       }
       catch( CheiralityException& e) {
-        if (H1) *H1 = zeros(2, camera.dim());
-        if (H2) *H2 = zeros(2, point.dim());
+        if (H1) *H1 = zeros(2, DimC);
+        if (H2) *H2 = zeros(2, DimL);
         std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2())
                               << " behind Camera " << DefaultKeyFormatter(this->key1()) << std::endl;
+        return zero(2);
       }
-      return zero(2);
     }
 
     /** return the measured */
@@ -121,21 +127,30 @@ namespace gtsam {
     }
   };
 
+  template<class CAMERA, class LANDMARK>
+  struct traits<GeneralSFMFactor<CAMERA, LANDMARK> > : Testable<
+      GeneralSFMFactor<CAMERA, LANDMARK> > {
+  };
+
   /**
    * Non-linear factor for a constraint derived from a 2D measurement.
    * Compared to GeneralSFMFactor, it is a ternary-factor because the calibration is isolated from camera..
    */
   template <class CALIBRATION>
   class GeneralSFMFactor2: public NoiseModelFactor3<Pose3, Point3, CALIBRATION> {
+
+    GTSAM_CONCEPT_MANIFOLD_TYPE(CALIBRATION)
+    static const int DimK = FixedDimension<CALIBRATION>::value;
+
   protected:
-    Point2 measured_;     ///< the 2D measurement
+
+    Point2 measured_; ///< the 2D measurement
 
   public:
 
     typedef GeneralSFMFactor2<CALIBRATION> This;
     typedef PinholeCamera<CALIBRATION> Camera;                  ///< typedef for camera type
     typedef NoiseModelFactor3<Pose3, Point3, CALIBRATION> Base; ///< typedef for the base class
-    typedef Point2 Measurement;                                 ///< typedef for the measurement
 
     // shorthand for a smart pointer to a factor
     typedef boost::shared_ptr<This> shared_ptr;
@@ -189,9 +204,9 @@ namespace gtsam {
         return reprojError.vector();
       }
       catch( CheiralityException& e) {
-        if (H1) *H1 = zeros(2, pose3.dim());
-        if (H2) *H2 = zeros(2, point.dim());
-        if (H3) *H3 = zeros(2, calib.dim());
+        if (H1) *H1 = zeros(2, 6);
+        if (H2) *H2 = zeros(2, 3);
+        if (H3) *H3 = zeros(2, DimK);
         std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2())
                               << " behind Camera " << DefaultKeyFormatter(this->key1()) << std::endl;
       }
@@ -214,6 +229,9 @@ namespace gtsam {
     }
   };
 
-
+  template<class CALIBRATION>
+  struct traits<GeneralSFMFactor2<CALIBRATION> > : Testable<
+      GeneralSFMFactor2<CALIBRATION> > {
+  };
 
 } //namespace

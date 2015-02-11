@@ -37,20 +37,20 @@ TEST( ExtendedKalmanFilter, linear ) {
 
   // Create the Kalman Filter initialization point
   Point2 x_initial(0.0, 0.0);
-  SharedDiagonal P_initial = noiseModel::Diagonal::Sigmas((Vector(2) << 0.1, 0.1));
+  SharedDiagonal P_initial = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1));
 
   // Create an ExtendedKalmanFilter object
   ExtendedKalmanFilter<Point2> ekf(x0, x_initial, P_initial);
 
   // Create the controls and measurement properties for our example
   double dt = 1.0;
-  Vector u = (Vector(2) << 1.0, 0.0);
+  Vector u = Vector2(1.0, 0.0);
   Point2 difference(u*dt);
-  SharedDiagonal Q = noiseModel::Diagonal::Sigmas((Vector(2) << 0.1, 0.1), true);
+  SharedDiagonal Q = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1), true);
   Point2 z1(1.0, 0.0);
   Point2 z2(2.0, 0.0);
   Point2 z3(3.0, 0.0);
-  SharedDiagonal R = noiseModel::Diagonal::Sigmas((Vector(2) << 0.25, 0.25), true);
+  SharedDiagonal R = noiseModel::Diagonal::Sigmas(Vector2(0.25, 0.25), true);
 
   // Create the set of expected output TestValues
   Point2 expected1(1.0, 0.0);
@@ -92,10 +92,7 @@ TEST( ExtendedKalmanFilter, linear ) {
 
 // Create Motion Model Factor
 class NonlinearMotionModel : public NoiseModelFactor2<Point2,Point2> {
-public:
-  typedef Point2 T;
 
-private:
   typedef NoiseModelFactor2<Point2, Point2> Base;
   typedef NonlinearMotionModel This;
 
@@ -107,7 +104,7 @@ public:
   NonlinearMotionModel(){}
 
   NonlinearMotionModel(const Symbol& TestKey1, const Symbol& TestKey2) :
-    Base(noiseModel::Diagonal::Sigmas((Vector(2) << 1.0, 1.0)), TestKey1, TestKey2), Q_(2,2) {
+    Base(noiseModel::Diagonal::Sigmas(Vector2(1.0, 1.0)), TestKey1, TestKey2), Q_(2,2) {
 
     // Initialize motion model parameters:
     // w is vector of motion noise sigmas. The final covariance is calculated as G*w*w'*G'
@@ -126,19 +123,19 @@ public:
   virtual ~NonlinearMotionModel() {}
 
   // Calculate the next state prediction using the nonlinear function f()
-  T f(const T& x_t0) const {
+  Point2 f(const Point2& x_t0) const {
 
     // Calculate f(x)
     double x = x_t0.x() * x_t0.x();
     double y = x_t0.x() * x_t0.y();
-    T x_t1(x,y);
+    Point2 x_t1(x,y);
 
     // In this example, the noiseModel remains constant
     return x_t1;
   }
 
   // Calculate the Jacobian of the nonlinear function f()
-  Matrix F(const T& x_t0) const {
+  Matrix F(const Point2& x_t0) const {
     // Calculate Jacobian of f()
     Matrix F = Matrix(2,2);
     F(0,0) = 2*x_t0.x();
@@ -150,7 +147,7 @@ public:
   }
 
   // Calculate the inverse square root of the motion model covariance, Q
-  Matrix QInvSqrt(const T& x_t0) const {
+  Matrix QInvSqrt(const Point2& x_t0) const {
     // This motion model has a constant covariance
     return Q_invsqrt_;
   }
@@ -184,7 +181,7 @@ public:
 
   /** Vector of errors, whitened ! */
   Vector whitenedError(const Values& c) const {
-    return QInvSqrt(c.at<T>(key1()))*unwhitenedError(c);
+    return QInvSqrt(c.at<Point2>(key1()))*unwhitenedError(c);
   }
 
   /**
@@ -192,16 +189,15 @@ public:
    * Ax-b \approx h(x1+dx1,x2+dx2)-z = h(x1,x2) + A2*dx1 + A2*dx2 - z
    * Hence b = z - h(x1,x2) = - error_vector(x)
    */
-  boost::shared_ptr<GaussianFactor> linearize(const Values& c, const Ordering& ordering) const {
+  boost::shared_ptr<GaussianFactor> linearize(const Values& c) const {
     const X1& x1 = c.at<X1>(key1());
     const X2& x2 = c.at<X2>(key2());
     Matrix A1, A2;
     Vector b = -evaluateError(x1, x2, A1, A2);
-    const Key var1 = ordering[key1()], var2 = ordering[key2()];
     SharedDiagonal constrained =
         boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
     if (constrained.get() != NULL) {
-      return JacobianFactor::shared_ptr(new JacobianFactor(var1, A1, var2,
+      return JacobianFactor::shared_ptr(new JacobianFactor(key1(), A1, key2(),
           A2, b, constrained));
     }
     // "Whiten" the system before converting to a Gaussian Factor
@@ -209,40 +205,34 @@ public:
     A1 = Qinvsqrt*A1;
     A2 = Qinvsqrt*A2;
     b = Qinvsqrt*b;
-    return GaussianFactor::shared_ptr(new JacobianFactor(var1, A1, var2,
+    return GaussianFactor::shared_ptr(new JacobianFactor(key1(), A1, key2(),
         A2, b, noiseModel::Unit::Create(b.size())));
   }
 
   /** vector of errors */
-  Vector evaluateError(const T& p1, const T& p2,
+  Vector evaluateError(const Point2& p1, const Point2& p2,
       boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
           boost::none) const {
 
     // error = p2 - f(p1)
     // H1 = d error / d p1 = -d f/ d p1 = -F
     // H2 = d error / d p2 = I
-    T prediction = f(p1);
+    Point2 prediction = f(p1);
 
-    if(H1){
+    if(H1)
       *H1 = -F(p1);
-    }
 
-    if(H2){
+    if(H2)
       *H2 = eye(dim());
-    }
 
     // Return the error between the prediction and the supplied value of p2
-    return prediction.localCoordinates(p2);
+    return (p2 - prediction).vector();
   }
 
 };
 
 // Create Measurement Model Factor
 class NonlinearMeasurementModel : public NoiseModelFactor1<Point2> {
-public:
-  typedef Point2 T;
-
-private:
 
   typedef NoiseModelFactor1<Point2> Base;
   typedef NonlinearMeasurementModel This;
@@ -269,7 +259,7 @@ public:
 
   // Calculate the predicted measurement using the nonlinear function h()
   // Byproduct: updates Jacobian H, and noiseModel (R)
-  Vector h(const T& x_t1) const {
+  Vector h(const Point2& x_t1) const {
 
     // Calculate prediction
     Vector z_hat(1);
@@ -278,7 +268,7 @@ public:
     return z_hat;
   }
 
-  Matrix H(const T& x_t1) const {
+  Matrix H(const Point2& x_t1) const {
     // Update Jacobian
     Matrix H(1,2);
     H(0,0) =  4*x_t1.x() - x_t1.y() - 2.5;
@@ -288,7 +278,7 @@ public:
   }
 
   // Calculate the inverse square root of the motion model covariance, Q
-  Matrix RInvSqrt(const T& x_t0) const {
+  Matrix RInvSqrt(const Point2& x_t0) const {
     // This motion model has a constant covariance
     return R_invsqrt_;
   }
@@ -321,7 +311,7 @@ public:
 
   /** Vector of errors, whitened ! */
   Vector whitenedError(const Values& c) const {
-    return RInvSqrt(c.at<T>(key()))*unwhitenedError(c);
+    return RInvSqrt(c.at<Point2>(key()))*unwhitenedError(c);
   }
 
   /**
@@ -329,25 +319,24 @@ public:
    * Ax-b \approx h(x1+dx1)-z = h(x1) + A1*dx1 - z
    * Hence b = z - h(x1) = - error_vector(x)
    */
-  boost::shared_ptr<GaussianFactor> linearize(const Values& c, const Ordering& ordering) const {
+  boost::shared_ptr<GaussianFactor> linearize(const Values& c) const {
     const X& x1 = c.at<X>(key());
     Matrix A1;
     Vector b = -evaluateError(x1, A1);
-    const Key var1 = ordering[key()];
     SharedDiagonal constrained =
         boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
     if (constrained.get() != NULL) {
-      return JacobianFactor::shared_ptr(new JacobianFactor(var1, A1, b, constrained));
+      return JacobianFactor::shared_ptr(new JacobianFactor(key(), A1, b, constrained));
     }
     // "Whiten" the system before converting to a Gaussian Factor
     Matrix Rinvsqrt = RInvSqrt(x1);
     A1 = Rinvsqrt*A1;
     b = Rinvsqrt*b;
-    return GaussianFactor::shared_ptr(new JacobianFactor(var1, A1, b, noiseModel::Unit::Create(b.size())));
+    return GaussianFactor::shared_ptr(new JacobianFactor(key(), A1, b, noiseModel::Unit::Create(b.size())));
   }
 
   /** vector of errors */
-  Vector evaluateError(const T& p, boost::optional<Matrix&> H1 = boost::none) const {
+  Vector evaluateError(const Point2& p, boost::optional<Matrix&> H1 = boost::none) const {
     // error = z - h(p)
     // H = d error / d p = -d h/ d p = -H
     Vector z_hat = h(p);
@@ -405,7 +394,7 @@ TEST( ExtendedKalmanFilter, nonlinear ) {
 
   // Create the Kalman Filter initialization point
   Point2 x_initial(0.90, 1.10);
-  SharedDiagonal P_initial = noiseModel::Diagonal::Sigmas((Vector(2) << 0.1, 0.1));
+  SharedDiagonal P_initial = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1));
 
   // Create an ExtendedKalmanFilter object
   ExtendedKalmanFilter<Point2> ekf(X(0), x_initial, P_initial);
@@ -418,7 +407,7 @@ TEST( ExtendedKalmanFilter, nonlinear ) {
     x_predict = ekf.predict(motionFactor);
 
     // Create a measurement factor
-    NonlinearMeasurementModel measurementFactor(X(i+1), (Vector(1) << z[i]));
+    NonlinearMeasurementModel measurementFactor(X(i+1), (Vector(1) << z[i]).finished());
     x_update = ekf.update(measurementFactor);
 
     EXPECT(assert_equal(expected_predict[i],x_predict, 1e-6));

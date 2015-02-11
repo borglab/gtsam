@@ -231,7 +231,7 @@ void ConcurrentBatchSmoother::reorder() {
   variableIndex_ = VariableIndex(factors_);
 
   FastList<Key> separatorKeys = separatorValues_.keys();
-  ordering_ = Ordering::COLAMDConstrainedLast(variableIndex_, std::vector<Key>(separatorKeys.begin(), separatorKeys.end()));
+  ordering_ = Ordering::colamdConstrainedLast(variableIndex_, std::vector<Key>(separatorKeys.begin(), separatorKeys.end()));
 
 }
 
@@ -350,7 +350,7 @@ ConcurrentBatchSmoother::Result ConcurrentBatchSmoother::optimize() {
       std::cout << "using lambda = " << lambda << std::endl;
 
     result.iterations++;
-  } while(result.iterations < parameters_.maxIterations &&
+  } while(result.iterations < (size_t)parameters_.maxIterations &&
       !checkConvergence(parameters_.relativeErrorTol, parameters_.absoluteErrorTol, parameters_.errorTol, previousError, result.error, NonlinearOptimizerParams::SILENT));
 
   return result;

@@ -76,7 +76,7 @@ void DoglegOptimizer::iterate(void) {
     result = DoglegOptimizerImpl::Iterate(state_.Delta, DoglegOptimizerImpl::ONE_STEP_PER_ITERATION,
       dx_u, dx_n, bn, graph_, state_.values, state_.error, dlVerbose);
   }
-  else if ( params_.isCG() ) {
+  else if ( params_.isIterative() ) {
     throw runtime_error("Dogleg is not currently compatible with the linear conjugate gradient solver");
   }
   else {
@@ -96,7 +96,7 @@ void DoglegOptimizer::iterate(void) {
 /* ************************************************************************* */
 DoglegParams DoglegOptimizer::ensureHasOrdering(DoglegParams params, const NonlinearFactorGraph& graph) const {
   if(!params.ordering)
-    params.ordering = Ordering::COLAMD(graph);
+    params.ordering = Ordering::colamd(graph);
   return params;
 }
 

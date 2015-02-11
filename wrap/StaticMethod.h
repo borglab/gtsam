@@ -19,49 +19,27 @@
 
 #pragma once
 
-#include <string>
-#include <list>
-
-#include "Argument.h"
-#include "ReturnValue.h"
-#include "TypeAttributesTable.h"
-#include <boost/algorithm/string.hpp>
+#include "MethodBase.h"
 
 namespace wrap {
 
 /// StaticMethod class
-struct StaticMethod {
+struct StaticMethod: public MethodBase {
 
-  /// Constructor creates empty object
-  StaticMethod(bool verbosity = true) :
-      verbose(verbosity) {}
+  typedef const std::string& Str;
 
-  // Then the instance variables are set directly by the Module constructor
-  bool verbose;
-  std::string name;
-  std::vector<ArgumentList> argLists;
-  std::vector<ReturnValue> returnVals;
+  friend std::ostream& operator<<(std::ostream& os, const StaticMethod& m) {
+    for (size_t i = 0; i < m.nrOverloads(); i++)
+      os << "static " << m.returnVals_[i] << " " << m.name_ << m.argLists_[i];
+    return os;
+  }
 
-  // The first time this function is called, it initializes the class members
-  // with those in rhs, but in subsequent calls it adds additional argument
-  // lists as function overloads.
-  void addOverload(bool verbose, const std::string& name,
-    const ArgumentList& args, const ReturnValue& retVal);
+protected:
 
-  // MATLAB code generation
-  // classPath is class directory, e.g., ../matlab/@Point2
-  void proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wrapperFile,
-    const std::string& cppClassName, const std::string& matlabQualName, const std::string& matlabUniqueName,
-    const std::string& wrapperName, const TypeAttributesTable& typeAttributes,
-    std::vector<std::string>& functionNames) const;
+  virtual void proxy_header(FileWriter& proxyFile) const;
 
-private:
-  std::string wrapper_fragment(FileWriter& file,
-      const std::string& cppClassName,
-      const std::string& matlabUniqueName,
-      int overload,
-      int id,
-      const TypeAttributesTable& typeAttributes) const; ///< cpp wrapper
+  virtual std::string wrapper_call(FileWriter& wrapperFile, Str cppClassName,
+      Str matlabUniqueName, const ArgumentList& args) const;
 };
 
 } // \namespace wrap

@@ -27,7 +27,7 @@ TEST(testNonlinearISAM, markov_chain ) {
   NonlinearISAM isamChol(reorder_interval, EliminatePreferCholesky); // create an ISAM object
   NonlinearISAM isamQR(reorder_interval, EliminateQR); // create an ISAM object
 
-  SharedDiagonal model = noiseModel::Diagonal::Sigmas((Vector(3) << 3.0, 3.0, 0.5));
+  SharedDiagonal model = noiseModel::Diagonal::Sigmas(Vector3(3.0, 3.0, 0.5));
   Sampler sampler(model, 42u);
 
   // create initial graph
@@ -74,8 +74,8 @@ TEST(testNonlinearISAM, markov_chain_with_disconnects ) {
   NonlinearISAM isamChol(reorder_interval, EliminatePreferCholesky); // create an ISAM object
   NonlinearISAM isamQR(reorder_interval, EliminateQR); // create an ISAM object
 
-  SharedDiagonal model3 = noiseModel::Diagonal::Sigmas((Vector(3) << 3.0, 3.0, 0.5));
-  SharedDiagonal model2 = noiseModel::Diagonal::Sigmas((Vector(2) << 2.0, 2.0));
+  SharedDiagonal model3 = noiseModel::Diagonal::Sigmas(Vector3(3.0, 3.0, 0.5));
+  SharedDiagonal model2 = noiseModel::Diagonal::Sigmas(Vector2(2.0, 2.0));
   Sampler sampler(model3, 42u);
 
   // create initial graph
@@ -151,8 +151,8 @@ TEST(testNonlinearISAM, markov_chain_with_reconnect ) {
   NonlinearISAM isamChol(reorder_interval, EliminatePreferCholesky); // create an ISAM object
   NonlinearISAM isamQR(reorder_interval, EliminateQR); // create an ISAM object
 
-  SharedDiagonal model3 = noiseModel::Diagonal::Sigmas((Vector(3) << 3.0, 3.0, 0.5));
-  SharedDiagonal model2 = noiseModel::Diagonal::Sigmas((Vector(2) << 2.0, 2.0));
+  SharedDiagonal model3 = noiseModel::Diagonal::Sigmas(Vector3(3.0, 3.0, 0.5));
+  SharedDiagonal model2 = noiseModel::Diagonal::Sigmas(Vector2(2.0, 2.0));
   Sampler sampler(model3, 42u);
 
   // create initial graph
@@ -212,11 +212,11 @@ TEST(testNonlinearISAM, markov_chain_with_reconnect ) {
   // verify values - all but the last one should be very close
   Values actualChol = isamChol.estimate();
   for (size_t i=0; i<nrPoses; ++i)
-    EXPECT(assert_equal(expected.at<Pose2>(i), actualChol.at<Pose2>(i), tol));
+    EXPECT(assert_equal(expected.at<Pose2>(i), actualChol.at<Pose2>(i), 1e-4));
 
   Values actualQR = isamQR.estimate();
   for (size_t i=0; i<nrPoses; ++i)
-    EXPECT(assert_equal(expected.at<Pose2>(i), actualQR.at<Pose2>(i), tol));
+    EXPECT(assert_equal(expected.at<Pose2>(i), actualQR.at<Pose2>(i), 1e-4));
 
   // Check landmarks
   EXPECT(assert_equal(expected.at<Point2>(lm1), actualChol.at<Point2>(lm1), tol));

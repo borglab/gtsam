@@ -60,7 +60,7 @@ TEST( Cal3_S2, calibrate_homogeneous) {
 Point2 uncalibrate_(const Cal3_S2& k, const Point2& pt) { return k.uncalibrate(pt); }
 TEST( Cal3_S2, Duncalibrate1)
 {
-  Matrix computed; K.uncalibrate(p, computed, boost::none);
+  Matrix25 computed; K.uncalibrate(p, computed, boost::none);
   Matrix numerical = numericalDerivative21(uncalibrate_, K, p);
   CHECK(assert_equal(numerical,computed,1e-8));
 }
@@ -80,6 +80,28 @@ TEST( Cal3_S2, assert_equal)
 
   Cal3_S2 K1(500, 500, 0.1, 640 / 2, 480 / 2);
   CHECK(assert_equal(K,K1,1e-9));
+}
+
+/* ************************************************************************* */
+TEST( Cal3_S2, retract)
+{
+  Cal3_S2 expected(500+1, 500+2, 0.1+3, 640 / 2+4, 480 / 2+5);
+  Vector d(5);
+  d << 1,2,3,4,5;
+  Cal3_S2 actual = K.retract(d);
+  CHECK(assert_equal(expected,actual,1e-7));
+  CHECK(assert_equal(d,K.localCoordinates(actual),1e-7));
+}
+
+/* ************************************************************************* */
+TEST(Cal3_S2, between) {
+  Cal3_S2 k1(5, 5, 5, 5, 5), k2(5, 6, 7, 8, 9);
+  Matrix H1, H2;
+
+  EXPECT(assert_equal(Cal3_S2(0,1,2,3,4), k1.between(k2, H1, H2)));
+  EXPECT(assert_equal(-eye(5), H1));
+  EXPECT(assert_equal(eye(5), H2));
+
 }
 
 /* ************************************************************************* */

@@ -42,7 +42,6 @@
 #include <boost/assign/list_of.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/adaptor/map.hpp>
-#include <boost/range/join.hpp>
 #include <boost/range/algorithm/copy.hpp>
 
 #include <sstream>
@@ -62,41 +61,44 @@ string SlotEntry::toString() const {
 }
 
 /* ************************************************************************* */
-Scatter::Scatter(const GaussianFactorGraph& gfg, boost::optional<const Ordering&> ordering)
-{
+Scatter::Scatter(const GaussianFactorGraph& gfg,
+    boost::optional<const Ordering&> ordering) {
   gttic(Scatter_Constructor);
   static const size_t none = std::numeric_limits<size_t>::max();
 
   // First do the set union.
   BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, gfg) {
-    if(factor) {
-      for(GaussianFactor::const_iterator variable = factor->begin(); variable != factor->end(); ++variable) {
+    if (factor) {
+      for (GaussianFactor::const_iterator variable = factor->begin();
+          variable != factor->end(); ++variable) {
         // TODO: Fix this hack to cope with zero-row Jacobians that come from BayesTreeOrphanWrappers
-        const JacobianFactor* asJacobian = dynamic_cast<const JacobianFactor*>(factor.get());
-        if(!asJacobian || asJacobian->cols() > 1)
-          this->insert(make_pair(*variable, SlotEntry(none, factor->getDim(variable))));
+        const JacobianFactor* asJacobian =
+            dynamic_cast<const JacobianFactor*>(factor.get());
+        if (!asJacobian || asJacobian->cols() > 1)
+          this->insert(
+              make_pair(*variable, SlotEntry(none, factor->getDim(variable))));
       }
     }
   }
 
   // If we have an ordering, pre-fill the ordered variables first
   size_t slot = 0;
-  if(ordering) {
+  if (ordering) {
     BOOST_FOREACH(Key key, *ordering) {
       const_iterator entry = find(key);
-      if(entry == end())
+      if (entry == end())
         throw std::invalid_argument(
             "The ordering provided to the HessianFactor Scatter constructor\n"
-            "contained extra variables that did not appear in the factors to combine.");
-      at(key).slot = (slot ++);
+                "contained extra variables that did not appear in the factors to combine.");
+      at(key).slot = (slot++);
     }
   }
 
   // Next fill in the slot indices (we can only get these after doing the set
   // union.
   BOOST_FOREACH(value_type& var_slot, *this) {
-    if(var_slot.second.slot == none)
-      var_slot.second.slot = (slot ++);
+    if (var_slot.second.slot == none)
+      var_slot.second.slot = (slot++);
   }
 }
 
@@ -179,7 +181,7 @@ DenseIndex _getSizeHF(const Vector& m) { return m.size(); }
 /* ************************************************************************* */
 HessianFactor::HessianFactor(const std::vector<Key>& js, const std::vector<Matrix>& Gs,
     const std::vector<Vector>& gs, double f) :
-                        GaussianFactor(js), info_(br::join(gs | br::transformed(&_getSizeHF), ListOfOne((DenseIndex)1)))
+                        GaussianFactor(js), info_(gs | br::transformed(&_getSizeHF), true)
 {
   // Get the number of variables
   size_t variable_count = js.size();
@@ -267,14 +269,10 @@ HessianFactor::HessianFactor(const GaussianFactor& gf) :
 }
 
 /* ************************************************************************* */
-namespace {
-DenseIndex _dimFromScatterEntry(const Scatter::value_type& key_slotentry) {
-  return key_slotentry.second.dimension; } }
-
-/* ************************************************************************* */
 HessianFactor::HessianFactor(const GaussianFactorGraph& factors,
     boost::optional<const Scatter&> scatter)
 {
+  gttic(HessianFactor_MergeConstructor);
   boost::optional<Scatter> computedScatter;
   if(!scatter) {
     computedScatter = Scatter(factors);
@@ -346,6 +344,37 @@ Matrix HessianFactor::augmentedInformation() const
 Matrix HessianFactor::information() const
 {
   return info_.range(0, this->size(), 0, this->size()).selfadjointView();
+}
+
+/* ************************************************************************* */
+VectorValues HessianFactor::hessianDiagonal() const {
+  VectorValues d;
+  // Loop over all variables
+  for (DenseIndex j = 0; j < (DenseIndex)size(); ++j) {
+    // Get the diagonal block, and insert its diagonal
+    Matrix B = info_(j, j).selfadjointView();
+    d.insert(keys_[j],B.diagonal());
+  }
+  return d;
+}
+
+/* ************************************************************************* */
+// Raw memory access version should be called in Regular Factors only currently
+void HessianFactor::hessianDiagonal(double* d) const {
+  throw std::runtime_error(
+      "HessianFactor::hessianDiagonal raw memory access is allowed for Regular Factors only");
+}
+
+/* ************************************************************************* */
+map<Key,Matrix> HessianFactor::hessianBlockDiagonal() const {
+  map<Key,Matrix> blocks;
+  // Loop over all variables
+  for (DenseIndex j = 0; j < (DenseIndex)size(); ++j) {
+    // Get the diagonal block, and insert it
+    Matrix B = info_(j, j).selfadjointView();
+    blocks.insert(make_pair(keys_[j],B));
+  }
+  return blocks;
 }
 
 /* ************************************************************************* */
@@ -499,7 +528,7 @@ void HessianFactor::multiplyHessianAdd(double alpha, const VectorValues& x,
 
   // copy to yvalues
   for(DenseIndex i = 0; i < (DenseIndex)size(); ++i) {
-    bool didNotExist;
+  bool didNotExist;
     VectorValues::iterator it;
     boost::tie(it, didNotExist) = yvalues.tryInsert(keys_[i], Vector());
     if (didNotExist)
@@ -516,6 +545,37 @@ VectorValues HessianFactor::gradientAtZero() const {
   for (size_t j = 0; j < n; ++j)
     g.insert(keys_[j], -info_(j,n).knownOffDiagonal());
   return g;
+}
+
+/* ************************************************************************* */
+// Raw memory access version should be called in Regular Factors only currently
+void HessianFactor::gradientAtZero(double* d) const {
+  throw std::runtime_error(
+      "HessianFactor::gradientAtZero raw memory access is allowed for Regular Factors only");
+}
+
+/* ************************************************************************* */
+Vector HessianFactor::gradient(Key key, const VectorValues& x) const {
+  Factor::const_iterator i = find(key);
+  // Sum over G_ij*xj for all xj connecting to xi
+  Vector b = zero(x.at(key).size());
+  for (Factor::const_iterator j = begin(); j != end(); ++j) {
+    // Obtain Gij from the Hessian factor
+    // Hessian factor only stores an upper triangular matrix, so be careful when i>j
+    Matrix Gij;
+    if (i > j) {
+      Matrix Gji = info(j, i);
+      Gij = Gji.transpose();
+    }
+    else {
+      Gij = info(i, j);
+    }
+    // Accumulate Gij*xj to gradf
+    b += Gij * x.at(*j);
+  }
+  // Subtract the linear term gi
+  b += -linearTerm(i);
+  return b;
 }
 
 /* ************************************************************************* */
@@ -537,10 +597,11 @@ EliminateCholesky(const GaussianFactorGraph& factors, const Ordering& keys)
   // Do dense elimination
   GaussianConditional::shared_ptr conditional;
   try {
-    VerticalBlockMatrix Ab = jointFactor->info_.choleskyPartial(keys.size());
-    conditional = boost::make_shared<GaussianConditional>(jointFactor->keys(), keys.size(), Ab);
+    size_t numberOfKeysToEliminate = keys.size();
+    VerticalBlockMatrix Ab = jointFactor->info_.choleskyPartial(numberOfKeysToEliminate);
+    conditional = boost::make_shared<GaussianConditional>(jointFactor->keys(), numberOfKeysToEliminate, Ab);
     // Erase the eliminated keys in the remaining factor
-    jointFactor->keys_.erase(jointFactor->begin(), jointFactor->begin() + keys.size());
+    jointFactor->keys_.erase(jointFactor->begin(), jointFactor->begin() + numberOfKeysToEliminate);
   } catch(CholeskyFailed&) {
     throw IndeterminantLinearSystemException(keys.front());
   }

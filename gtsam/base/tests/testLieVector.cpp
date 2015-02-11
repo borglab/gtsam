@@ -25,9 +25,23 @@ using namespace gtsam;
 GTSAM_CONCEPT_TESTABLE_INST(LieVector)
 GTSAM_CONCEPT_LIE_INST(LieVector)
 
-/* ************************************************************************* */
+//******************************************************************************
+TEST(LieVector , Concept) {
+  BOOST_CONCEPT_ASSERT((IsGroup<LieVector>));
+  BOOST_CONCEPT_ASSERT((IsManifold<LieVector>));
+  BOOST_CONCEPT_ASSERT((IsLieGroup<LieVector>));
+}
+
+//******************************************************************************
+TEST(LieVector , Invariants) {
+  Vector v = Vector3(1.0, 2.0, 3.0);
+  LieVector lie1(v), lie2(v);
+  check_manifold_invariants(lie1, lie2);
+}
+
+//******************************************************************************
 TEST( testLieVector, construction ) {
-  Vector v = (Vector(3) << 1.0, 2.0, 3.0);
+  Vector v = Vector3(1.0, 2.0, 3.0);
   LieVector lie1(v), lie2(v);
 
   EXPECT(lie1.dim() == 3);
@@ -35,22 +49,19 @@ TEST( testLieVector, construction ) {
   EXPECT(assert_equal(lie1, lie2));
 }
 
-/* ************************************************************************* */
+//******************************************************************************
 TEST( testLieVector, other_constructors ) {
-  Vector init = (Vector(2) << 10.0, 20.0);
+  Vector init = Vector2(10.0, 20.0);
   LieVector exp(init);
-  LieVector a(2,10.0,20.0);
-  double data[] = {10,20};
-  LieVector b(2,data);
-  LieVector c(2.3), c_exp(LieVector(1, 2.3));
-  EXPECT(assert_equal(exp, a));
+  double data[] = { 10, 20 };
+  LieVector b(2, data);
   EXPECT(assert_equal(exp, b));
-  EXPECT(assert_equal(b, a));
-  EXPECT(assert_equal(c_exp, c));
 }
 
 /* ************************************************************************* */
-int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
+int main() {
+  TestResult tr;
+  return TestRegistry::runAllTests(tr);
+}
 /* ************************************************************************* */
-
 

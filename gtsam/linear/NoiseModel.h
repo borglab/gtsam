@@ -18,10 +18,14 @@
 
 #pragma once
 
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/Matrix.h>
+
 #include <boost/serialization/nvp.hpp>
+#include <boost/serialization/extended_type_info.hpp>
+#include <boost/serialization/singleton.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/optional.hpp>
-#include <gtsam/base/Matrix.h>
 #include <cmath>
 
 namespace gtsam {
@@ -58,6 +62,11 @@ namespace gtsam {
       /** primary constructor @param dim is the dimension of the model */
       Base(size_t dim = 1):dim_(dim) {}
       virtual ~Base() {}
+
+      /// true if a constrained noise mode, saves slow/clumsy dynamic casting
+      virtual bool isConstrained() const {
+        return false; // default false
+      }
 
       /// Dimensionality
       inline size_t dim() const { return dim_;}
@@ -159,10 +168,17 @@ namespace gtsam {
 
       /**
        * A Gaussian noise model created by specifying a square root information matrix.
+       * @param R The (upper-triangular) square root information matrix
+       * @param smart check if can be simplified to derived class
        */
-      static shared_ptr SqrtInformation(const Matrix& R) {
-        return shared_ptr(new Gaussian(R.rows(),R));
-      }
+      static shared_ptr SqrtInformation(const Matrix& R, bool smart = true);
+
+      /**
+       * A Gaussian noise model created by specifying an information matrix.
+       * @param M The information matrix
+       * @param smart check if can be simplified to derived class
+       */
+      static shared_ptr Information(const Matrix& M, bool smart = true);
 
       /**
        * A Gaussian noise model created by specifying a covariance matrix.
@@ -222,12 +238,6 @@ namespace gtsam {
        * Return R itself, but note that Whiten(H) is cheaper than R*H
        */
       virtual Matrix R() const { return thisR();}
-
-      /**
-       * Simple check for constrained-ness
-       * FIXME Find a better way of handling this
-       */
-      virtual bool isConstrained() const {return false;}
 
     private:
       /** Serialization function */
@@ -376,6 +386,14 @@ namespace gtsam {
 
       virtual ~Constrained() {}
 
+      /// true if a constrained noise mode, saves slow/clumsy dynamic casting
+      virtual bool isConstrained() const {
+        return true;
+      }
+
+      /// Return true if a particular dimension is free or constrained
+      bool constrained(size_t i) const;
+
       /// Access mu as a vector
       const Vector& mu() const { return mu_; }
 
@@ -383,24 +401,22 @@ namespace gtsam {
        * A diagonal noise model created by specifying a Vector of
        * standard devations, some of which might be zero
        */
-      static shared_ptr MixedSigmas(const Vector& mu, const Vector& sigmas,
-          bool smart = true);
+      static shared_ptr MixedSigmas(const Vector& mu, const Vector& sigmas);
 
       /**
        * A diagonal noise model created by specifying a Vector of
        * standard devations, some of which might be zero
        */
-      static shared_ptr MixedSigmas(const Vector& sigmas, bool smart = true) {
-        return MixedSigmas(repeat(sigmas.size(), 1000.0), sigmas, smart);
+      static shared_ptr MixedSigmas(const Vector& sigmas) {
+        return MixedSigmas(repeat(sigmas.size(), 1000.0), sigmas);
       }
 
       /**
        * A diagonal noise model created by specifying a Vector of
        * standard devations, some of which might be zero
        */
-      static shared_ptr MixedSigmas(double m, const Vector& sigmas,
-          bool smart = true) {
-        return MixedSigmas(repeat(sigmas.size(), m), sigmas, smart);
+      static shared_ptr MixedSigmas(double m, const Vector& sigmas) {
+        return MixedSigmas(repeat(sigmas.size(), m), sigmas);
       }
 
       /**
@@ -464,17 +480,10 @@ namespace gtsam {
       virtual Diagonal::shared_ptr QR(Matrix& Ab) const;
 
       /**
-       * Check constrained is always true
-       * FIXME Find a better way of handling this
-       */
-      virtual bool isConstrained() const { return true; }
-
-      /**
        * Returns a Unit version of a constrained noisemodel in which
        * constrained sigmas remain constrained and the rest are unit scaled
-       * Now support augmented part from the Lagrange multiplier.
        */
-      shared_ptr unit(size_t augmentedDim = 0) const;
+      shared_ptr unit() const;
 
     private:
       /** Serialization function */
@@ -585,6 +594,10 @@ namespace gtsam {
       virtual Matrix Whiten(const Matrix& H) const { return H; }
       virtual void WhitenInPlace(Matrix& H) const {}
       virtual void WhitenInPlace(Eigen::Block<Matrix> H) const {}
+      virtual void whitenInPlace(Vector& v) const {}
+      virtual void unwhitenInPlace(Vector& v) const {}
+      virtual void whitenInPlace(Eigen::Block<Vector>& v) const {}
+      virtual void unwhitenInPlace(Eigen::Block<Vector>& v) const {}
 
     private:
       /** Serialization function */
@@ -719,7 +732,7 @@ namespace gtsam {
       };
 
       /// Cauchy implements the "Cauchy" robust error model (Lee2013IROS).  Contributed by:
-      ///   Dipl.-Inform. Jan Oberl�nder (M.Sc.), FZI Research Center for
+      ///   Dipl.-Inform. Jan Oberlaender (M.Sc.), FZI Research Center for
       ///   Information Technology, Karlsruhe, Germany.
       ///   oberlaender@fzi.de
       /// Thanks Jan!
@@ -860,6 +873,9 @@ namespace gtsam {
         ar & boost::serialization::make_nvp("noise_", const_cast<NoiseModel::shared_ptr&>(noise_));
       }
     };
+    
+    // Helper function
+    GTSAM_EXPORT boost::optional<Vector> checkIfDiagonal(const Matrix M);
 
   } // namespace noiseModel
 
@@ -872,6 +888,13 @@ namespace gtsam {
   typedef noiseModel::Constrained::shared_ptr SharedConstrained;
   typedef noiseModel::Isotropic::shared_ptr SharedIsotropic;
 
-} // namespace gtsam
+  /// traits
+  template<> struct traits<noiseModel::Gaussian> : public Testable<noiseModel::Gaussian> {};
+  template<> struct traits<noiseModel::Diagonal> : public Testable<noiseModel::Diagonal> {};
+  template<> struct traits<noiseModel::Constrained> : public Testable<noiseModel::Constrained> {};
+  template<> struct traits<noiseModel::Isotropic> : public Testable<noiseModel::Isotropic> {};
+  template<> struct traits<noiseModel::Unit> : public Testable<noiseModel::Unit> {};
+
+} //\ namespace gtsam
 
 
