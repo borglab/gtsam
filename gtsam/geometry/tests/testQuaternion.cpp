@@ -40,6 +40,14 @@ TEST(Quaternion , Constructor) {
 }
 
 //******************************************************************************
+TEST(Quaternion , Logmap) {
+  Q q1(5e-06, 0, 0, 1), q2(-5e-06, 0, 0, -1);
+  Vector3 v1 = traits<Q>::Logmap(q1);
+  Vector3 v2 = traits<Q>::Logmap(q2);
+  EXPECT(assert_equal(v1, v2));
+}
+
+//******************************************************************************
 TEST(Quaternion , Local) {
   Vector3 z_axis(0, 0, 1);
   Q q1(Eigen::AngleAxisd(0, z_axis));
@@ -47,7 +55,7 @@ TEST(Quaternion , Local) {
   QuaternionJacobian H1, H2;
   Vector3 expected(0, 0, 0.1);
   Vector3 actual = traits<Q>::Local(q1, q2, H1, H2);
-  EXPECT(assert_equal((Vector)expected,actual));
+  EXPECT(assert_equal((Vector )expected, actual));
 }
 
 //******************************************************************************
@@ -69,7 +77,7 @@ TEST(Quaternion , Compose) {
 
   Q expected = q1 * q2;
   Q actual = traits<Q>::Compose(q1, q2);
-  EXPECT(traits<Q>::Equals(expected,actual));
+  EXPECT(traits<Q>::Equals(expected, actual));
 }
 
 //******************************************************************************
@@ -85,7 +93,7 @@ TEST(Quaternion , Between) {
 
   Q expected = q1.inverse() * q2;
   Q actual = traits<Q>::Between(q1, q2);
-  EXPECT(traits<Q>::Equals(expected,actual));
+  EXPECT(traits<Q>::Equals(expected, actual));
 }
 
 //******************************************************************************
@@ -94,36 +102,36 @@ TEST(Quaternion , Inverse) {
   Q expected(Eigen::AngleAxisd(-0.1, z_axis));
 
   Q actual = traits<Q>::Inverse(q1);
-  EXPECT(traits<Q>::Equals(expected,actual));
+  EXPECT(traits<Q>::Equals(expected, actual));
 }
 
 //******************************************************************************
 TEST(Quaternion , Invariants) {
-  check_group_invariants(id,id);
-  check_group_invariants(id,R1);
-  check_group_invariants(R2,id);
-  check_group_invariants(R2,R1);
+  check_group_invariants(id, id);
+  check_group_invariants(id, R1);
+  check_group_invariants(R2, id);
+  check_group_invariants(R2, R1);
 
-  check_manifold_invariants(id,id);
-  check_manifold_invariants(id,R1);
-  check_manifold_invariants(R2,id);
-  check_manifold_invariants(R2,R1);
+  check_manifold_invariants(id, id);
+  check_manifold_invariants(id, R1);
+  check_manifold_invariants(R2, id);
+  check_manifold_invariants(R2, R1);
 }
 
 //******************************************************************************
 TEST(Quaternion , LieGroupDerivatives) {
-  CHECK_LIE_GROUP_DERIVATIVES(id,id);
-  CHECK_LIE_GROUP_DERIVATIVES(id,R2);
-  CHECK_LIE_GROUP_DERIVATIVES(R2,id);
-  CHECK_LIE_GROUP_DERIVATIVES(R2,R1);
+  CHECK_LIE_GROUP_DERIVATIVES(id, id);
+  CHECK_LIE_GROUP_DERIVATIVES(id, R2);
+  CHECK_LIE_GROUP_DERIVATIVES(R2, id);
+  CHECK_LIE_GROUP_DERIVATIVES(R2, R1);
 }
 
 //******************************************************************************
 TEST(Quaternion , ChartDerivatives) {
-  CHECK_CHART_DERIVATIVES(id,id);
-  CHECK_CHART_DERIVATIVES(id,R2);
-  CHECK_CHART_DERIVATIVES(R2,id);
-  CHECK_CHART_DERIVATIVES(R2,R1);
+  CHECK_CHART_DERIVATIVES(id, id);
+  CHECK_CHART_DERIVATIVES(id, R2);
+  CHECK_CHART_DERIVATIVES(R2, id);
+  CHECK_CHART_DERIVATIVES(R2, R1);
 }
 
 //******************************************************************************
