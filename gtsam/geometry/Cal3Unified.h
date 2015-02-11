@@ -50,9 +50,8 @@ private:
   double xi_;  // mirror parameter
 
 public:
-  enum { dimension = 10 };
 
-    Vector10 vector() const ;
+  enum { dimension = 10 };
 
   /// @name Standard Constructors
   /// @{
@@ -77,7 +76,7 @@ public:
   /// @{
 
   /// print with optional string
-  void print(const std::string& s = "") const ;
+  virtual void print(const std::string& s = "") const ;
 
   /// assert equality up to a tolerance
   bool equals(const Cal3Unified& K, double tol = 10e-9) const;
@@ -125,6 +124,11 @@ public:
   /// Return dimensions of calibration manifold object
   static size_t Dim() { return 10; }  //TODO: make a final dimension variable
 
+  /// Return all parameters as a vector
+  Vector10 vector() const ;
+
+  /// @}
+
 private:
 
   /** Serialization function */
@@ -141,6 +145,9 @@ private:
 
 template<>
 struct traits<Cal3Unified> : public internal::Manifold<Cal3Unified> {};
+
+template<>
+struct traits<const Cal3Unified> : public internal::Manifold<Cal3Unified> {};
 
 }
 

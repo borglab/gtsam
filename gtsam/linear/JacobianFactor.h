@@ -283,10 +283,6 @@ namespace gtsam {
     /** y += alpha * A'*A*x */
     void multiplyHessianAdd(double alpha, const VectorValues& x, VectorValues& y) const;
 
-    void multiplyHessianAdd(double alpha, const double* x, double* y, std::vector<size_t> keys) const;
-
-    void multiplyHessianAdd(double alpha, const double* x, double* y) const {};
-
     /// A'*b for Jacobian
     VectorValues gradientAtZero() const;
 

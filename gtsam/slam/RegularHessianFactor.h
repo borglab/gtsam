@@ -51,18 +51,18 @@ public:
       HessianFactor(keys, augmentedInformation) {
   }
 
-  /** y += alpha * A'*A*x */
-  void multiplyHessianAdd(double alpha, const VectorValues& x,
-      VectorValues& y) const {
-    HessianFactor::multiplyHessianAdd(alpha, x, y);
-  }
-
   // Scratch space for multiplyHessianAdd
   typedef Eigen::Matrix<double, D, 1> DVector;
   mutable std::vector<DVector> y;
 
-  void multiplyHessianAdd(double alpha, const double* x,
-      double* yvalues) const {
+  /** y += alpha * A'*A*x */
+  void multiplyHessianAdd(double alpha, const VectorValues& x, VectorValues& y) const{
+    throw std::runtime_error(
+          "RegularHessianFactor::forbidden use of multiplyHessianAdd without raw memory access, use HessianFactor instead");
+  }
+
+  /** y += alpha * A'*A*x */
+  void multiplyHessianAdd(double alpha, const double* x, double* yvalues) const {
     // Create a vector of temporary y values, corresponding to rows i
     y.resize(size());
     BOOST_FOREACH(DVector & yi, y)
@@ -92,6 +92,83 @@ public:
     for (DenseIndex i = 0; i < (DenseIndex) size(); ++i) {
       Key key = keys_[i];
       DMap(yvalues + key * D) += alpha * y[i];
+    }
+  }
+
+  void multiplyHessianAdd(double alpha, const double* x, double* yvalues,
+      std::vector<size_t> offsets) const {
+
+    // Use eigen magic to access raw memory
+    typedef Eigen::Matrix<double, Eigen::Dynamic, 1> DVector;
+    typedef Eigen::Map<DVector> DMap;
+    typedef Eigen::Map<const DVector> ConstDMap;
+
+    // Create a vector of temporary y values, corresponding to rows i
+    std::vector<Vector> y;
+    y.reserve(size());
+    for (const_iterator it = begin(); it != end(); it++)
+      y.push_back(zero(getDim(it)));
+
+    // Accessing the VectorValues one by one is expensive
+    // So we will loop over columns to access x only once per column
+    // And fill the above temporary y values, to be added into yvalues after
+    for (DenseIndex j = 0; j < (DenseIndex) size(); ++j) {
+      DenseIndex i = 0;
+      for (; i < j; ++i)
+        y[i] += info_(i, j).knownOffDiagonal()
+            * ConstDMap(x + offsets[keys_[j]],
+                offsets[keys_[j] + 1] - offsets[keys_[j]]);
+      // blocks on the diagonal are only half
+      y[i] += info_(j, j).selfadjointView()
+          * ConstDMap(x + offsets[keys_[j]],
+              offsets[keys_[j] + 1] - offsets[keys_[j]]);
+      // for below diagonal, we take transpose block from upper triangular part
+      for (i = j + 1; i < (DenseIndex) size(); ++i)
+        y[i] += info_(i, j).knownOffDiagonal()
+            * ConstDMap(x + offsets[keys_[j]],
+                offsets[keys_[j] + 1] - offsets[keys_[j]]);
+    }
+
+    // copy to yvalues
+    for (DenseIndex i = 0; i < (DenseIndex) size(); ++i)
+      DMap(yvalues + offsets[keys_[i]], offsets[keys_[i] + 1] - offsets[keys_[i]]) +=
+          alpha * y[i];
+  }
+
+  /** Return the diagonal of the Hessian for this factor (raw memory version) */
+  virtual void hessianDiagonal(double* d) const {
+
+    // Use eigen magic to access raw memory
+    //typedef Eigen::Matrix<double, 9, 1> DVector;
+    typedef Eigen::Matrix<double, D, 1> DVector;
+    typedef Eigen::Map<DVector> DMap;
+
+    // Loop over all variables in the factor
+    for (DenseIndex pos = 0; pos < (DenseIndex)size(); ++pos) {
+      Key j = keys_[pos];
+      // Get the diagonal block, and insert its diagonal
+      const Matrix& B = info_(pos, pos).selfadjointView();
+      //DMap(d + 9 * j) += B.diagonal();
+      DMap(d + D * j) += B.diagonal();
+    }
+  }
+
+  /* ************************************************************************* */
+  // TODO: currently assumes all variables of the same size 9 and keys arranged from 0 to n
+  virtual void gradientAtZero(double* d) const {
+
+    // Use eigen magic to access raw memory
+    //typedef Eigen::Matrix<double, 9, 1> DVector;
+    typedef Eigen::Matrix<double, D, 1> DVector;
+    typedef Eigen::Map<DVector> DMap;
+
+    // Loop over all variables in the factor
+    for (DenseIndex pos = 0; pos < (DenseIndex)size(); ++pos) {
+      Key j = keys_[pos];
+      // Get the diagonal block, and insert its diagonal
+      VectorD dj =  -info_(pos,size()).knownOffDiagonal();
+      //DMap(d + 9 * j) += dj;
+      DMap(d + D * j) += dj;
     }
   }
 

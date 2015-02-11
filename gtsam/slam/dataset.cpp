@@ -19,6 +19,7 @@
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/BearingRangeFactor.h>
 #include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Pose3.h>
 #include <gtsam/linear/Sampler.h>
 #include <gtsam/inference/Symbol.h>
 

@@ -83,6 +83,7 @@ public:
     integrationCovariance_(integrationErrorCovariance) {}
 
   /// methods to access class variables
+  const bool use2ndOrderIntegration() const {return use2ndOrderIntegration_;}
   const Vector3& deltaPij() const {return deltaPij_;}
   const Vector3& deltaVij() const {return deltaVij_;}
   const imuBias::ConstantBias& biasHat() const { return biasHat_;}
@@ -149,8 +150,14 @@ public:
 
     if(F){
       Matrix3 F_vel_angles = - R_i * skewSymmetric(correctedAcc) * deltaT;
+      Matrix3 F_pos_angles;
+      if(use2ndOrderIntegration_)
+        F_pos_angles = 0.5 * F_vel_angles * deltaT;
+      else
+        F_pos_angles = Z_3x3;
+
       //    pos          vel              angle
-      *F << I_3x3,       I_3x3 * deltaT,  Z_3x3,          // pos
+      *F << I_3x3,       I_3x3 * deltaT,  F_pos_angles,   // pos
             Z_3x3,       I_3x3,           F_vel_angles,   // vel
             Z_3x3,       Z_3x3,           F_angles_angles;// angle
     }
@@ -353,7 +360,7 @@ public:
           // dfV/dPosej
           Matrix::Zero(3,6),
           // dfR/dPosej
-          D_fR_fRrot *  ( I_3x3 ), Z_3x3;
+          D_fR_fRrot, Z_3x3;
     }
     if(H4) {
       H4->resize(9,3);

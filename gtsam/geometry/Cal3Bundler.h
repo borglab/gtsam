@@ -174,4 +174,7 @@ private:
 template<>
 struct traits<Cal3Bundler> : public internal::Manifold<Cal3Bundler> {};
 
+template<>
+struct traits<const Cal3Bundler> : public internal::Manifold<Cal3Bundler> {};
+
 } // namespace gtsam

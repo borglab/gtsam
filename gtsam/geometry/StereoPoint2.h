@@ -176,4 +176,7 @@ namespace gtsam {
 
   template<>
   struct traits<StereoPoint2> : public internal::Manifold<StereoPoint2> {};
+
+  template<>
+  struct traits<const StereoPoint2> : public internal::Manifold<StereoPoint2> {};
 }

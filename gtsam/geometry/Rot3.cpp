@@ -19,6 +19,7 @@
  */
 
 #include <gtsam/geometry/Rot3.h>
+#include <gtsam/geometry/SO3.h>
 #include <boost/math/constants/constants.hpp>
 #include <boost/random.hpp>
 #include <cmath>
@@ -149,57 +150,13 @@ Vector Rot3::quaternion() const {
 }
 
 /* ************************************************************************* */
-Matrix3 Rot3::ExpmapDerivative(const Vector3& x)    {
-  if(zero(x)) return I_3x3;
-  double theta = x.norm();  // rotation angle
-#ifdef DUY_VERSION
-  /// Follow Iserles05an, B10, pg 147, with a sign change in the second term (left version)
-  Matrix3 X = skewSymmetric(x);
-  Matrix3 X2 = X*X;
-  double vi = theta/2.0;
-  double s1 = sin(vi)/vi;
-  double s2 = (theta - sin(theta))/(theta*theta*theta);
-  return I_3x3 - 0.5*s1*s1*X + s2*X2;
-#else // Luca's version
-  /**
-   * Right Jacobian for Exponential map in SO(3) - equation (10.86) and following equations in
-   * G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups", Volume 2, 2008.
-   * expmap(thetahat + omega) \approx expmap(thetahat) * expmap(Jr * omega)
-   * where Jr = ExpmapDerivative(thetahat);
-   * This maps a perturbation in the tangent space (omega) to
-   * a perturbation on the manifold (expmap(Jr * omega))
-   */
-  // element of Lie algebra so(3): X = x^, normalized by normx
-  const Matrix3 Y = skewSymmetric(x) / theta;
-  return I_3x3 - ((1 - cos(theta)) / (theta)) * Y
-      + (1 - sin(theta) / theta) * Y * Y; // right Jacobian
-#endif
+Matrix3 Rot3::ExpmapDerivative(const Vector3& x) {
+  return SO3::ExpmapDerivative(x);
 }
 
 /* ************************************************************************* */
 Matrix3 Rot3::LogmapDerivative(const Vector3& x)    {
-  if(zero(x)) return I_3x3;
-  double theta = x.norm();
-#ifdef DUY_VERSION
-  /// Follow Iserles05an, B11, pg 147, with a sign change in the second term (left version)
-  Matrix3 X = skewSymmetric(x);
-  Matrix3 X2 = X*X;
-  double vi = theta/2.0;
-  double s2 = (theta*tan(M_PI_2-vi) - 2)/(2*theta*theta);
-  return I_3x3 + 0.5*X - s2*X2;
-#else // Luca's version
-  /** Right Jacobian for Log map in SO(3) - equation (10.86) and following equations in
-   * G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups", Volume 2, 2008.
-   * logmap( Rhat * expmap(omega) ) \approx logmap( Rhat ) + Jrinv * omega
-   * where Jrinv = LogmapDerivative(omega);
-   * This maps a perturbation on the manifold (expmap(omega))
-   * to a perturbation in the tangent space (Jrinv * omega)
-   */
-  const Matrix3 X = skewSymmetric(x); // element of Lie algebra so(3): X = x^
-  return I_3x3 + 0.5 * X
-      + (1 / (theta * theta) - (1 + cos(theta)) / (2 * theta * sin(theta))) * X
-          * X;
-#endif
+  return SO3::LogmapDerivative(x);
 }
 
 /* ************************************************************************* */

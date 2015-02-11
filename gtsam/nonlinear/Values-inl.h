@@ -289,13 +289,13 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  // insert a plain value using the default chart
+  // insert a templated value
   template<typename ValueType>
    void Values::insert(Key j, const ValueType& val) {
      insert(j, static_cast<const Value&>(GenericValue<ValueType>(val)));
    }
 
-  // update with default chart
+  // update with templated value
   template <typename ValueType>
   void Values::update(Key j, const ValueType& val) {
     update(j, static_cast<const Value&>(GenericValue<ValueType >(val)));

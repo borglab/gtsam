@@ -663,12 +663,13 @@ TEST(Rot3 , Invariants) {
   check_group_invariants(id,T1);
   check_group_invariants(T2,id);
   check_group_invariants(T2,T1);
+  check_group_invariants(T1,T2);
 
   check_manifold_invariants(id,id);
   check_manifold_invariants(id,T1);
   check_manifold_invariants(T2,id);
   check_manifold_invariants(T2,T1);
-
+  check_manifold_invariants(T1,T2);
 }
 
 //******************************************************************************
@@ -678,18 +679,20 @@ TEST(Rot3 , LieGroupDerivatives) {
   CHECK_LIE_GROUP_DERIVATIVES(id,id);
   CHECK_LIE_GROUP_DERIVATIVES(id,T2);
   CHECK_LIE_GROUP_DERIVATIVES(T2,id);
+  CHECK_LIE_GROUP_DERIVATIVES(T1,T2);
   CHECK_LIE_GROUP_DERIVATIVES(T2,T1);
-
 }
 
 //******************************************************************************
 TEST(Rot3 , ChartDerivatives) {
   Rot3 id;
-
-  CHECK_CHART_DERIVATIVES(id,id);
-  CHECK_CHART_DERIVATIVES(id,T2);
-  CHECK_CHART_DERIVATIVES(T2,id);
-  CHECK_CHART_DERIVATIVES(T2,T1);
+  if (ROT3_DEFAULT_COORDINATES_MODE == Rot3::EXPMAP) {
+    CHECK_CHART_DERIVATIVES(id,id);
+    CHECK_CHART_DERIVATIVES(id,T2);
+    CHECK_CHART_DERIVATIVES(T2,id);
+    CHECK_CHART_DERIVATIVES(T1,T2);
+    CHECK_CHART_DERIVATIVES(T2,T1);
+  }
 }
 
 /* ************************************************************************* */
