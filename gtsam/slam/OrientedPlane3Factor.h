@@ -44,19 +44,20 @@ namespace gtsam {
           landmarkSymbol_ (landmark),
           measured_coeffs_ (z)
       {
-        measured_p_ = OrientedPlane3 (Sphere2 (z (0), z (1), z (2)), z (3));
+        measured_p_ = OrientedPlane3 (Unit3 (z (0), z (1), z (2)), z (3));
       }
 
       /// print
       void print(const std::string& s="PlaneFactor") const;
       
-      virtual Vector evaluateError(const Pose3& pose, const OrientedPlane3& plane, 
+      virtual Vector evaluateError(const Pose3& pose, const OrientedPlane3& plane,
                                    boost::optional<Matrix&> H1 = boost::none,
                                    boost::optional<Matrix&> H2 = boost::none) const 
       {
         OrientedPlane3 predicted_plane = OrientedPlane3::Transform (plane, pose, H1, H2);
-        Vector error = predicted_plane.error (measured_p_);
-        return (error);
+        Vector err;
+        err << predicted_plane.error (measured_p_);
+        return (err);
       };
   };
 
@@ -82,7 +83,7 @@ namespace gtsam {
         : Base (noiseModel, key),
           landmarkKey_ (key)
       {
-        measured_p_ = OrientedPlane3 (Sphere2 (z (0), z (1), z (2)), z (3));
+        measured_p_ = OrientedPlane3 (Unit3 (z (0), z (1), z (2)), z (3));
       }
 
       /// print

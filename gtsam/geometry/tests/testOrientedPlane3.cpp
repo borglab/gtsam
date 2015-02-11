@@ -68,7 +68,7 @@ TEST (OrientedPlane3, transform)
  }
 
 //*******************************************************************************
-/// Returns a random vector -- copied from testUnit3.cpp
+// Returns a random vector -- copied from testUnit3.cpp
 inline static Vector randomVector(const Vector& minLimits,
     const Vector& maxLimits) {
 
@@ -88,11 +88,11 @@ inline static Vector randomVector(const Vector& minLimits,
 TEST(OrientedPlane3, localCoordinates_retract) {
   
   size_t numIterations = 10000;
-  Vector minPlaneLimit, maxPlaneLimit;
-  minPlaneLimit << 4, -1.0, -1.0, -1.0, 0.01;
-  maxPlaneLimit << 4, 1.0, 1.0, 10.0;
+  gtsam::Vector minPlaneLimit(4), maxPlaneLimit(4);
+  minPlaneLimit << -1.0, -1.0, -1.0, 0.01;
+  maxPlaneLimit << 1.0, 1.0, 1.0, 10.0;
 
-  Vector minXiLimit,maxXiLimit;
+  Vector minXiLimit(3),maxXiLimit(3);
   minXiLimit <<  -M_PI, -M_PI, -10.0;
   maxXiLimit <<   M_PI, M_PI, 10.0;
   for (size_t i = 0; i < numIterations; i++) {
