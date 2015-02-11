@@ -84,8 +84,7 @@ void GaussianFactorGraphSystem::multiply(const Vector &x, Vector& AtAx) const {
   gfg_.multiplyHessianAdd(1.0, vvX, vvAtAx);
 
   // Make the result as Vector form
-  AtAx = vvAtAx.vector();
-
+  AtAx = vvAtAx.vector(keyInfo_.ordering());
 }
 
 /*****************************************************************************/
@@ -96,7 +95,7 @@ void GaussianFactorGraphSystem::getb(Vector &b) const {
   VectorValues vvb = gfg_.gradientAtZero();
 
   // Make the result as Vector form
-  b = -vvb.vector();
+  b = -vvb.vector(keyInfo_.ordering());
 }
 
 /**********************************************************************************/
