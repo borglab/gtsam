@@ -17,6 +17,8 @@
 
 #include <gtsam/geometry/Quaternion.h>
 #include <gtsam/base/numericalDerivative.h>
+#include <gtsam/base/testLie.h>
+
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
@@ -35,14 +37,6 @@ TEST(Quaternion , Concept) {
 //******************************************************************************
 TEST(Quaternion , Constructor) {
   Q q(Eigen::AngleAxisd(1, Vector3(0, 0, 1)));
-}
-
-//******************************************************************************
-TEST(Quaternion , Invariants) {
-  Q q1(Eigen::AngleAxisd(1, Vector3(0, 0, 1)));
-  Q q2(Eigen::AngleAxisd(2, Vector3(0, 1, 0)));
-  check_group_invariants(q1, q2);
-  check_manifold_invariants(q1, q2);
 }
 
 //******************************************************************************
@@ -74,47 +68,62 @@ TEST(Quaternion , Compose) {
   Q q2(Eigen::AngleAxisd(0.1, z_axis));
 
   Q expected = q1 * q2;
-  Matrix actualH1, actualH2;
-  Q actual = traits<Q>::Compose(q1, q2, actualH1, actualH2);
+  Q actual = traits<Q>::Compose(q1, q2);
   EXPECT(traits<Q>::Equals(expected,actual));
-
-  Matrix numericalH1 = numericalDerivative21(traits<Q>::Compose, q1, q2);
-  EXPECT(assert_equal(numericalH1,actualH1));
-
-  Matrix numericalH2 = numericalDerivative22(traits<Q>::Compose, q1, q2);
-  EXPECT(assert_equal(numericalH2,actualH2));
 }
 
 //******************************************************************************
+Vector3 z_axis(0, 0, 1);
+Q id(Eigen::AngleAxisd(0, z_axis));
+Q R1(Eigen::AngleAxisd(1, z_axis));
+Q R2(Eigen::AngleAxisd(2, Vector3(0, 1, 0)));
+
+//******************************************************************************
 TEST(Quaternion , Between) {
-  Vector3 z_axis(0, 0, 1);
   Q q1(Eigen::AngleAxisd(0.2, z_axis));
   Q q2(Eigen::AngleAxisd(0.1, z_axis));
 
   Q expected = q1.inverse() * q2;
-  Matrix actualH1, actualH2;
-  Q actual = traits<Q>::Between(q1, q2, actualH1, actualH2);
+  Q actual = traits<Q>::Between(q1, q2);
   EXPECT(traits<Q>::Equals(expected,actual));
-
-  Matrix numericalH1 = numericalDerivative21(traits<Q>::Between, q1, q2);
-  EXPECT(assert_equal(numericalH1,actualH1));
-
-  Matrix numericalH2 = numericalDerivative22(traits<Q>::Between, q1, q2);
-  EXPECT(assert_equal(numericalH2,actualH2));
 }
 
 //******************************************************************************
 TEST(Quaternion , Inverse) {
-  Vector3 z_axis(0, 0, 1);
   Q q1(Eigen::AngleAxisd(0.1, z_axis));
   Q expected(Eigen::AngleAxisd(-0.1, z_axis));
 
-  Matrix actualH;
-  Q actual = traits<Q>::Inverse(q1, actualH);
+  Q actual = traits<Q>::Inverse(q1);
   EXPECT(traits<Q>::Equals(expected,actual));
+}
 
-  Matrix numericalH = numericalDerivative11(traits<Q>::Inverse, q1);
-  EXPECT(assert_equal(numericalH,actualH));
+//******************************************************************************
+TEST(Quaternion , Invariants) {
+  check_group_invariants(id,id);
+  check_group_invariants(id,R1);
+  check_group_invariants(R2,id);
+  check_group_invariants(R2,R1);
+
+  check_manifold_invariants(id,id);
+  check_manifold_invariants(id,R1);
+  check_manifold_invariants(R2,id);
+  check_manifold_invariants(R2,R1);
+}
+
+//******************************************************************************
+TEST(Quaternion , LieGroupDerivatives) {
+  CHECK_LIE_GROUP_DERIVATIVES(id,id);
+  CHECK_LIE_GROUP_DERIVATIVES(id,R2);
+  CHECK_LIE_GROUP_DERIVATIVES(R2,id);
+  CHECK_LIE_GROUP_DERIVATIVES(R2,R1);
+}
+
+//******************************************************************************
+TEST(Quaternion , ChartDerivatives) {
+  CHECK_CHART_DERIVATIVES(id,id);
+  CHECK_CHART_DERIVATIVES(id,R2);
+  CHECK_CHART_DERIVATIVES(R2,id);
+  CHECK_CHART_DERIVATIVES(R2,R1);
 }
 
 //******************************************************************************

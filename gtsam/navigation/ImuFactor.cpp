@@ -94,15 +94,27 @@ void ImuFactor::PreintegratedMeasurements::integrateMeasurement(
   preintMeasCov_.block<3,3>(3,3) += R_i * accelerometerCovariance() * R_i.transpose() * deltaT;
   preintMeasCov_.block<3,3>(6,6) += D_Rincr_integratedOmega * gyroscopeCovariance() * D_Rincr_integratedOmega.transpose() * deltaT;
 
+  Matrix3 F_pos_noiseacc;
+  if(use2ndOrderIntegration()){
+    F_pos_noiseacc = 0.5 * R_i * deltaT * deltaT;
+    preintMeasCov_.block<3,3>(0,0) += (1/deltaT) * F_pos_noiseacc * accelerometerCovariance() * F_pos_noiseacc.transpose();
+    Matrix3 temp = F_pos_noiseacc * accelerometerCovariance() * R_i.transpose(); // already includes 1/deltaT
+    preintMeasCov_.block<3,3>(0,3) += temp;
+    preintMeasCov_.block<3,3>(3,0) += temp.transpose();
+  }
+
   // F_test and G_test are given as output for testing purposes and are not needed by the factor
   if(F_test){ // This in only for testing
     (*F_test) << F;
   }
   if(G_test){ // This in only for testing & documentation, while the actual computation is done block-wise
-    //           intNoise         accNoise      omegaNoise
-    (*G_test) << I_3x3 * deltaT,   Z_3x3,        Z_3x3,                                 // pos
-                 Z_3x3,            R_i * deltaT, Z_3x3,                                 // vel
-                 Z_3x3,            Z_3x3,        D_Rincr_integratedOmega * deltaT;      // angle
+    if(!use2ndOrderIntegration())
+      F_pos_noiseacc = Z_3x3;
+
+    //           intNoise          accNoise           omegaNoise
+    (*G_test) << I_3x3 * deltaT,   F_pos_noiseacc,   Z_3x3,                                 // pos
+                 Z_3x3,            R_i * deltaT,     Z_3x3,                                 // vel
+                 Z_3x3,            Z_3x3,            D_Rincr_integratedOmega * deltaT;      // angle
   }
 }
 

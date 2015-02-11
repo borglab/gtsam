@@ -56,7 +56,7 @@ Vector updatePreintegratedMeasurementsTest(
   if(!use2ndOrderIntegration){
     deltaPij_new = deltaPij_old + deltaVij_old * deltaT;
   }else{
-    deltaPij_new += deltaPij_old + deltaVij_old * deltaT + 0.5 * temp * deltaT;
+    deltaPij_new = deltaPij_old + deltaVij_old * deltaT + 0.5 * temp * deltaT;
   }
   Vector3 deltaVij_new = deltaVij_old + temp;
   Rot3 deltaRij_new = deltaRij_old * Rot3::Expmap((correctedOmega-bias_old.gyroscope()) * deltaT);

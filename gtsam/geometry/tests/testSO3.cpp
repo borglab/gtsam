@@ -66,16 +66,15 @@ TEST(SO3 , Invariants) {
   check_manifold_invariants(id,R1);
   check_manifold_invariants(R2,id);
   check_manifold_invariants(R2,R1);
-
 }
 
 //******************************************************************************
-//TEST(SO3 , LieGroupDerivatives) {
-//  CHECK_LIE_GROUP_DERIVATIVES(id,id);
-//  CHECK_LIE_GROUP_DERIVATIVES(id,R2);
-//  CHECK_LIE_GROUP_DERIVATIVES(R2,id);
-//  CHECK_LIE_GROUP_DERIVATIVES(R2,R1);
-//}
+TEST(SO3 , LieGroupDerivatives) {
+  CHECK_LIE_GROUP_DERIVATIVES(id,id);
+  CHECK_LIE_GROUP_DERIVATIVES(id,R2);
+  CHECK_LIE_GROUP_DERIVATIVES(R2,id);
+  CHECK_LIE_GROUP_DERIVATIVES(R2,R1);
+}
 
 //******************************************************************************
 TEST(SO3 , ChartDerivatives) {

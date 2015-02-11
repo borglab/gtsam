@@ -208,9 +208,10 @@ namespace gtsam {
       return Rot3();
     }
 
-    /** compose two rotations */
+    /// Syntatic sugar for composing two rotations
     Rot3 operator*(const Rot3& R2) const;
 
+    /// inverse of a rotation, TODO should be different for M/Q
     Rot3 inverse() const {
       return Rot3(Matrix3(transpose()));
     }

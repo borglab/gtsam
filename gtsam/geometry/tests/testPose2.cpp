@@ -145,7 +145,7 @@ TEST(Pose2, expmap0d) {
 
 /* ************************************************************************* */
 // test case for screw motion in the plane
-namespace screw {
+namespace screwPose2 {
   double w=0.3;
   Vector xi = (Vector(3) << 0.0, w, w).finished();
   Rot2 expectedR = Rot2::fromAngle(w);
@@ -155,9 +155,9 @@ namespace screw {
 
 TEST(Pose2, expmap_c)
 {
-  EXPECT(assert_equal(screw::expected, expm<Pose2>(screw::xi),1e-6));
-  EXPECT(assert_equal(screw::expected, Pose2::Expmap(screw::xi),1e-6));
-  EXPECT(assert_equal(screw::xi, Pose2::Logmap(screw::expected),1e-6));
+  EXPECT(assert_equal(screwPose2::expected, expm<Pose2>(screwPose2::xi),1e-6));
+  EXPECT(assert_equal(screwPose2::expected, Pose2::Expmap(screwPose2::xi),1e-6));
+  EXPECT(assert_equal(screwPose2::xi, Pose2::Logmap(screwPose2::expected),1e-6));
 }
 
 /* ************************************************************************* */

@@ -23,6 +23,7 @@
 #ifndef GTSAM_USE_QUATERNIONS
 
 #include <gtsam/geometry/Rot3.h>
+#include <gtsam/geometry/SO3.h>
 #include <boost/math/constants/constants.hpp>
 #include <cmath>
 
@@ -118,25 +119,7 @@ Rot3 Rot3::RzRyRx(double x, double y, double z) {
 
 /* ************************************************************************* */
 Rot3 Rot3::rodriguez(const Vector3& w, double theta) {
-  // get components of axis \omega
-  double wx = w(0), wy=w(1), wz=w(2);
-  double wwTxx = wx*wx, wwTyy = wy*wy, wwTzz = wz*wz;
-#ifndef NDEBUG
-  double l_n = wwTxx + wwTyy + wwTzz;
-  if (std::abs(l_n-1.0)>1e-9) throw domain_error("rodriguez: length of n should be 1");
-#endif
-
-  double c = cos(theta), s = sin(theta), c_1 = 1 - c;
-
-  double swx = wx * s, swy = wy * s, swz = wz * s;
-  double C00 = c_1*wwTxx, C01 = c_1*wx*wy, C02 = c_1*wx*wz;
-  double                  C11 = c_1*wwTyy, C12 = c_1*wy*wz;
-  double                                   C22 = c_1*wwTzz;
-
-  return Rot3(
-        c + C00, -swz + C01,  swy + C02,
-      swz + C01,    c + C11, -swx + C12,
-     -swy + C02,  swx + C12,    c + C22);
+  return SO3::Rodrigues(w,theta);
 }
 
 /* ************************************************************************* */
@@ -163,46 +146,7 @@ Point3 Rot3::rotate(const Point3& p,
 /* ************************************************************************* */
 // Log map at identity - return the canonical coordinates of this rotation
 Vector3 Rot3::Logmap(const Rot3& R, OptionalJacobian<3,3> H) {
-
-  static const double PI = boost::math::constants::pi<double>();
-
-  const Matrix3& rot = R.rot_;
-  // Get trace(R)
-  double tr = rot.trace();
-
-  Vector3 thetaR;
-
-  // when trace == -1, i.e., when theta = +-pi, +-3pi, +-5pi, etc.
-  // we do something special
-  if (std::abs(tr+1.0) < 1e-10) {
-    if(std::abs(rot(2,2)+1.0) > 1e-10)
-      return (PI / sqrt(2.0+2.0*rot(2,2) )) *
-          Vector3(rot(0,2), rot(1,2), 1.0+rot(2,2));
-    else if(std::abs(rot(1,1)+1.0) > 1e-10)
-      return (PI / sqrt(2.0+2.0*rot(1,1))) *
-          Vector3(rot(0,1), 1.0+rot(1,1), rot(2,1));
-    else // if(std::abs(R.r1_.x()+1.0) > 1e-10)  This is implicit
-      thetaR = (PI / sqrt(2.0+2.0*rot(0,0))) *
-          Vector3(1.0+rot(0,0), rot(1,0), rot(2,0));
-  } else {
-    double magnitude;
-    double tr_3 = tr-3.0; // always negative
-    if (tr_3<-1e-7) {
-      double theta = acos((tr-1.0)/2.0);
-      magnitude = theta/(2.0*sin(theta));
-    } else {
-      // when theta near 0, +-2pi, +-4pi, etc. (trace near 3.0)
-      // use Taylor expansion: magnitude \approx 1/2-(t-3)/12 + O((t-3)^2)
-      magnitude = 0.5 - tr_3*tr_3/12.0;
-    }
-    thetaR =  magnitude*Vector3(
-        rot(2,1)-rot(1,2),
-        rot(0,2)-rot(2,0),
-        rot(1,0)-rot(0,1));
-  }
-
-  if(H) *H = Rot3::LogmapDerivative(thetaR);
-  return thetaR;
+  return SO3::Logmap(R.rot_,H);
 }
 
 /* ************************************************************************* */
