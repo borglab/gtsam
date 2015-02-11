@@ -20,7 +20,7 @@
 #pragma once
 
 #include <gtsam/geometry/Rot3.h>
-#include <gtsam/geometry/Sphere2.h>
+#include <gtsam/geometry/Unit3.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/DerivedValue.h>
 
@@ -31,11 +31,11 @@ class OrientedPlane3: public DerivedValue<OrientedPlane3> {
 
 private:
 
-    Sphere2 n_; /// The direction of the planar normal
+    Unit3 n_; /// The direction of the planar normal
     double d_; /// The perpendicular distance to this plane
 
 public:
-
+  enum { dimension = 3 };
   /// @name Constructors
   /// @{
 
@@ -45,8 +45,8 @@ public:
     d_ (0.0){
   }
 
-  /// Construct from a Sphere2 and a distance
-    OrientedPlane3 (const Sphere2& s, double d)
+  /// Construct from a Unit3 and a distance
+    OrientedPlane3 (const Unit3& s, double d)
       : n_ (s),
         d_ (d)
     {}    
@@ -61,7 +61,7 @@ public:
   /// Construct from a, b, c, d
   OrientedPlane3(double a, double b, double c, double d) {
     Point3 p (a, b, c);
-    n_ = Sphere2(p);
+    n_ = Unit3(p);
     d_ = d;
   }
 
@@ -80,7 +80,7 @@ public:
                             boost::optional<Matrix&> Hp);
 
   /// Computes the error between two poses
-  Vector error (const gtsam::OrientedPlane3& plane) const;
+  Vector3 error (const gtsam::OrientedPlane3& plane) const;
 
   /// Dimensionality of tangent space = 3 DOF
   inline static size_t Dim() {
@@ -96,17 +96,21 @@ public:
   OrientedPlane3 retract(const Vector& v) const;
 
   /// The local coordinates function
-  Vector localCoordinates(const OrientedPlane3& s) const;
+  Vector3 localCoordinates(const OrientedPlane3& s) const;
 
   /// Returns the plane coefficients (a, b, c, d)
-  Vector planeCoefficients () const;
+  Vector3 planeCoefficients () const;
 
-  inline Sphere2 normal () const {
+  inline Unit3 normal () const {
     return n_;
   }
     
   /// @}
 };
+
+template <> struct traits<OrientedPlane3> : public internal::Manifold<OrientedPlane3> {};
+
+template <> struct traits<const OrientedPlane3> : public internal::Manifold<OrientedPlane3> {};
 
 } // namespace gtsam
 

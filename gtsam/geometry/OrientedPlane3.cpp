@@ -40,7 +40,7 @@ void OrientedPlane3::print(const std::string& s) const {
   {
     Matrix n_hr;
     Matrix n_hp;
-    Sphere2 n_rotated = xr.rotation ().unrotate (plane.n_, n_hr, n_hp);
+    Unit3 n_rotated = xr.rotation ().unrotate (plane.n_, n_hr, n_hp);
     
     Vector n_unit = plane.n_.unitVector ();
     Vector unit_vec = n_rotated.unitVector ();
@@ -68,34 +68,40 @@ void OrientedPlane3::print(const std::string& s) const {
   }
   
 /* ************************************************************************* */
-  Vector OrientedPlane3::error (const gtsam::OrientedPlane3& plane) const
+  Vector3 OrientedPlane3::error (const gtsam::OrientedPlane3& plane) const
   {
-    Vector n_error = -n_.localCoordinates (plane.n_, Sphere2::EXPMAP);
+    Vector2 n_error = -n_.localCoordinates (plane.n_);
     double d_error = d_ - plane.d_;
-    return (Vector (3) << n_error (0), n_error (1), d_error);
+    Vector3 e;
+    e << n_error (0), n_error (1), d_error;
+    return (e);
   }
 
 /* ************************************************************************* */
 OrientedPlane3 OrientedPlane3::retract(const Vector& v) const {
-  // Retract the Sphere2
+  // Retract the Unit3
   Vector2 n_v (v (0), v (1));
-  Sphere2 n_retracted = n_.retract (n_v, Sphere2::EXPMAP);
+  Unit3 n_retracted = n_.retract (n_v);
   double d_retracted = d_ + v (2);
   return OrientedPlane3 (n_retracted, d_retracted);
 }
 
 /* ************************************************************************* */
-Vector OrientedPlane3::localCoordinates(const OrientedPlane3& y) const {
-  Vector n_local = n_.localCoordinates (y.n_, Sphere2::EXPMAP);
+Vector3 OrientedPlane3::localCoordinates(const OrientedPlane3& y) const {
+  Vector n_local = n_.localCoordinates (y.n_);
   double d_local = d_ - y.d_;
-  return Vector (3) << n_local (0), n_local (1), -d_local;
+  Vector3 e;
+  e << n_local (0), n_local (1), -d_local;
+  return e;
 }
 
 /* ************************************************************************* */
-  Vector OrientedPlane3::planeCoefficients () const 
+  Vector3 OrientedPlane3::planeCoefficients () const
   {
     Vector unit_vec = n_.unitVector ();
-    return Vector (4) << unit_vec[0], unit_vec[1], unit_vec[2], d_;
+    Vector3 a;
+    a << unit_vec[0], unit_vec[1], unit_vec[2], d_;
+    return a;
   }
 
 /* ************************************************************************* */

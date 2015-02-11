@@ -16,7 +16,7 @@
  * @brief Tests the OrientedPlane3 class
  */
 
-#include <gtsam/geometry/Sphere2.h>
+#include <gtsam/geometry/Unit3.h>
 #include <gtsam/geometry/OrientedPlane3.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/geometry/Pose3.h>
@@ -68,7 +68,7 @@ TEST (OrientedPlane3, transform)
  }
 
 //*******************************************************************************
-/// Returns a random vector -- copied from testSphere2.cpp
+/// Returns a random vector -- copied from testUnit3.cpp
 inline static Vector randomVector(const Vector& minLimits,
     const Vector& maxLimits) {
 
@@ -88,9 +88,13 @@ inline static Vector randomVector(const Vector& minLimits,
 TEST(OrientedPlane3, localCoordinates_retract) {
   
   size_t numIterations = 10000;
-  Vector minPlaneLimit = Vector_(4, -1.0, -1.0, -1.0, 0.01), maxPlaneLimit =
-      Vector_(4, 1.0, 1.0, 10.0);
-  Vector minXiLimit = Vector_(3, -M_PI, -M_PI, -10.0), maxXiLimit = Vector_(3, M_PI, M_PI, 10.0);
+  Vector minPlaneLimit, maxPlaneLimit;
+  minPlaneLimit << 4, -1.0, -1.0, -1.0, 0.01;
+  maxPlaneLimit << 4, 1.0, 1.0, 10.0;
+
+  Vector minXiLimit,maxXiLimit;
+  minXiLimit <<  -M_PI, -M_PI, -10.0;
+  maxXiLimit <<   M_PI, M_PI, 10.0;
   for (size_t i = 0; i < numIterations; i++) {
 
     sleep(0);
