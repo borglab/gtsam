@@ -57,9 +57,19 @@ TEST(Rot3Q , Compare) {
   R R4 = TR::Retract(R3, v);
   EXPECT(assert_equal(R(q4), R4));
 
+  // Check Between
+  Q q5 = TQ::Between(q3, q4);
+  R R5 = R3.between(R4);
+  EXPECT(assert_equal(R(q5), R5));
+
+  // Check Logmap
+  Vector3 vQ = TQ::Logmap(q5);
+  Vector3 vR = R::Logmap(R5);
+  EXPECT(assert_equal(vQ, vR));
+
   // Check Local
-  Vector3 vQ = TQ::Local(q3, q4);
-  Vector3 vR = TR::Local(R3, R4);
+  vQ = TQ::Local(q3, q4);
+  vR = TR::Local(R3, R4);
   EXPECT(assert_equal(vQ, vR));
 
   // Check Retract/Local of Compose
