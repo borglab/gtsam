@@ -51,10 +51,15 @@ TEST(Rot3Q , Compare) {
   R R3 = TR::Compose(R1, R2, none, none);
   EXPECT(assert_equal(R(q3), R3));
 
-  // Check Retract/Local
+  // Check Retract
   Vector3 v(1e-5, 0, 0);
-  Vector3 vQ = TQ::Local(q3, TQ::Retract(q3, v));
-  Vector3 vR = TR::Local(R3, TR::Retract(R3, v));
+  Q q4 = TQ::Retract(q3, v);
+  R R4 = TR::Retract(R3, v);
+  EXPECT(assert_equal(R(q4), R4));
+
+  // Check Local
+  Vector3 vQ = TQ::Local(q3, q4);
+  Vector3 vR = TR::Local(R3, R4);
   EXPECT(assert_equal(vQ, vR));
 
   // Check Retract/Local of Compose
@@ -65,7 +70,6 @@ TEST(Rot3Q , Compare) {
   Vector3 vR2 = TR::Local(R3, TR::Compose(R1, TR::Retract(R2, -v)));
   EXPECT(assert_equal(vQ2, vR2));
   EXPECT(assert_equal<Vector3>((vQ1 - vQ2) / 0.2, (vR1 - vR2) / 0.2));
-  cout << (vR1 - vR2) / 0.2 << endl;
 
   // Check Compose Derivatives
   Matrix HQ, HR;
