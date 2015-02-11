@@ -105,13 +105,20 @@ public:
     return p_;
   }
 
+  /// Return unit-norm Vector
+  Vector unitVector(boost::optional<Matrix&> H = boost::none) const {
+    if (H)
+      *H = basis();
+    return (p_.vector ());
+  }
+
   /// Return scaled direction as Point3
   friend Point3 operator*(double s, const Unit3& d) {
     return s * d.p_;
   }
 
   /// Signed, vector-valued error between two directions
-  Vector2 error(const Unit3& q,
+  Vector error(const Unit3& q,
       OptionalJacobian<2,2> H = boost::none) const;
 
   /// Distance between two directions

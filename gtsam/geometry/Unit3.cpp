@@ -108,7 +108,7 @@ Matrix3 Unit3::skew() const {
 }
 
 /* ************************************************************************* */
-Vector2 Unit3::error(const Unit3& q, OptionalJacobian<2,2> H) const {
+Vector Unit3::error(const Unit3& q, OptionalJacobian<2,2> H) const {
   // 2D error is equal to B'*q, as B is 3x2 matrix and q is 3x1
   Matrix23 Bt = basis().transpose();
   Vector2 xi = Bt * q.p_.vector();
