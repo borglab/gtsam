@@ -76,8 +76,8 @@ public:
   /// Transforms a plane to the specified pose
   static OrientedPlane3 Transform (const gtsam::OrientedPlane3& plane,
                             const gtsam::Pose3& xr,
-                            boost::optional<Matrix&> Hr,
-                            boost::optional<Matrix&> Hp);
+                            OptionalJacobian<3, 6> Hr = boost::none,
+                            OptionalJacobian<3, 3> Hp = boost::none);
 
   /// Computes the error between two poses
   Vector3 error (const gtsam::OrientedPlane3& plane) const;

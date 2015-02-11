@@ -35,8 +35,8 @@ void OrientedPlane3::print(const std::string& s) const {
 /* ************************************************************************* */
   OrientedPlane3 OrientedPlane3::Transform (const gtsam::OrientedPlane3& plane,
                             const gtsam::Pose3& xr,
-                            boost::optional<Matrix&> Hr,
-                            boost::optional<Matrix&> Hp)
+                            OptionalJacobian<3, 6> Hr,
+                            OptionalJacobian<3, 3> Hp)
   {
     Matrix n_hr;
     Matrix n_hp;
