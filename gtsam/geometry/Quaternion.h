@@ -96,14 +96,15 @@ struct traits<QUATERNION_TYPE> {
     Vector3 omega;
 
     const double qw = q.w();
+    // See Quaternion-Logmap.nb in doc for Taylor expansions
     if (qw > NearlyOne) {
       // Taylor expansion of (angle / s) at 1
-      //return (2 + 2 * (1-qw) / 3) * q.vec();
-      omega = (8. / 3. - 2. / 3. * qw) * q.vec();
+      // (2 + 2 * (1-qw) / 3) * q.vec();
+      omega = ( 8. / 3. - 2. / 3. * qw) * q.vec();
     } else if (qw < NearlyNegativeOne) {
       // Taylor expansion of (angle / s) at -1
-      //return (-2 - 2 * (1 + qw) / 3) * q.vec();
-      omega = (-8. / 3 + 2. / 3 * qw) * q.vec();
+      // (-2 - 2 * (1 + qw) / 3) * q.vec();
+      omega = (-8. / 3. - 2. / 3. * qw) * q.vec();
     } else {
       // Normal, away from zero case
       double angle = 2 * acos(qw), s = sqrt(1 - qw * qw);
