@@ -78,13 +78,13 @@ TEST (OrientedPlane3, lm_translation_error)
   new_graph.add (test_meas1);
   
   // Optimize
-//  gtsam::ISAM2Result result = isam2.update (new_graph, new_values);
-//  gtsam::Values result_values = isam2.calculateEstimate ();
-//  gtsam::OrientedPlane3 optimized_plane_landmark = result_values.at<gtsam::OrientedPlane3>(lm_sym);
+  gtsam::ISAM2Result result = isam2.update (new_graph, new_values);
+  gtsam::Values result_values = isam2.calculateEstimate ();
+  gtsam::OrientedPlane3 optimized_plane_landmark = result_values.at<gtsam::OrientedPlane3>(lm_sym);
 
-//  // Given two noisy measurements of equal weight, expect result between the two
-//  gtsam::OrientedPlane3 expected_plane_landmark (-1.0, 0.0, 0.0, 2.0);
-//  EXPECT (assert_equal (optimized_plane_landmark, expected_plane_landmark));
+  // Given two noisy measurements of equal weight, expect result between the two
+  gtsam::OrientedPlane3 expected_plane_landmark (-1.0, 0.0, 0.0, 2.0);
+  EXPECT (assert_equal (optimized_plane_landmark, expected_plane_landmark));
 }
 
 TEST (OrientedPlane3, lm_rotation_error)
@@ -113,18 +113,18 @@ TEST (OrientedPlane3, lm_rotation_error)
   gtsam::OrientedPlane3Factor test_meas0 (test_meas0_mean, gtsam::noiseModel::Diagonal::Sigmas(Vector3( 0.1, 0.1, 0.1)), init_sym, lm_sym);
   new_graph.add (test_meas0);
   Vector test_meas1_mean(4);
-  test_meas1_mean << -1.0, 0.0, 0.0, 3.0;
+  test_meas1_mean << 0.0, -1.0, 0.0, 3.0;
   gtsam::OrientedPlane3Factor test_meas1 (test_meas1_mean, gtsam::noiseModel::Diagonal::Sigmas (Vector3( 0.1, 0.1, 0.1)), init_sym, lm_sym);
   new_graph.add (test_meas1);
   
   // Optimize
-//  gtsam::ISAM2Result result = isam2.update (new_graph, new_values);
-//  gtsam::Values result_values = isam2.calculateEstimate ();
-//  gtsam::OrientedPlane3 optimized_plane_landmark = result_values.at<gtsam::OrientedPlane3>(lm_sym);
+  gtsam::ISAM2Result result = isam2.update (new_graph, new_values);
+  gtsam::Values result_values = isam2.calculateEstimate ();
+  gtsam::OrientedPlane3 optimized_plane_landmark = result_values.at<gtsam::OrientedPlane3>(lm_sym);
 
   // Given two noisy measurements of equal weight, expect result between the two
-//  gtsam::OrientedPlane3 expected_plane_landmark (-sqrt (2.0)/2.0, -sqrt (2.0)/2.0, 0.0, 3.0);
-//  EXPECT (assert_equal (optimized_plane_landmark, expected_plane_landmark));
+  gtsam::OrientedPlane3 expected_plane_landmark (-sqrt (2.0)/2.0, -sqrt (2.0)/2.0, 0.0, 3.0);
+  EXPECT (assert_equal (optimized_plane_landmark, expected_plane_landmark));
 }
 
 // *************************************************************************

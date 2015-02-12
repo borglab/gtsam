@@ -55,7 +55,7 @@ namespace gtsam {
                                    boost::optional<Matrix&> H2 = boost::none) const 
       {
         OrientedPlane3 predicted_plane = OrientedPlane3::Transform (plane, pose, H1, H2);
-        Vector err;
+        Vector err(3);
         err << predicted_plane.error (measured_p_);
         return (err);
       };
