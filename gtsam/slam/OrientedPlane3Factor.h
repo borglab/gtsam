@@ -24,7 +24,7 @@ class OrientedPlane3Factor: public NoiseModelFactor2<Pose3, OrientedPlane3> {
 protected:
   Symbol poseSymbol_;
   Symbol landmarkSymbol_;
-  Vector3 measured_coeffs_;
+  Vector measured_coeffs_;
   OrientedPlane3 measured_p_;
 
   typedef NoiseModelFactor2<Pose3, OrientedPlane3 > Base;
