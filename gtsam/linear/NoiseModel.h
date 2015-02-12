@@ -886,6 +886,7 @@ namespace gtsam {
   typedef noiseModel::Gaussian::shared_ptr SharedGaussian;
   typedef noiseModel::Diagonal::shared_ptr SharedDiagonal;
   typedef noiseModel::Constrained::shared_ptr SharedConstrained;
+  typedef noiseModel::Isotropic::shared_ptr SharedIsotropic;
 
   /// traits
   template<> struct traits<noiseModel::Gaussian> : public Testable<noiseModel::Gaussian> {};

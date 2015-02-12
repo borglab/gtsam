@@ -38,7 +38,9 @@ private:
 
 public:
 
-  enum { dimension = 2 };
+  enum {
+    dimension = 2
+  };
 
   /// @name Constructors
   /// @{
@@ -65,8 +67,8 @@ public:
   }
 
   /// Named constructor from Point3 with optional Jacobian
-  static Unit3 FromPoint3(const Point3& point, OptionalJacobian<2,3> H =
-      boost::none);
+  static Unit3 FromPoint3(const Point3& point, //
+      OptionalJacobian<2, 3> H = boost::none);
 
   /// Random direction, using boost::uniform_on_sphere
   static Unit3 Random(boost::mt19937 & rng);
@@ -99,10 +101,17 @@ public:
   Matrix3 skew() const;
 
   /// Return unit-norm Point3
-  const Point3& point3(OptionalJacobian<3,2> H = boost::none) const {
+  const Point3& point3(OptionalJacobian<3, 2> H = boost::none) const {
     if (H)
       *H = basis();
     return p_;
+  }
+
+  /// Return unit-norm Vector
+  Vector unitVector(boost::optional<Matrix&> H = boost::none) const {
+    if (H)
+      *H = basis();
+    return (p_.vector());
   }
 
   /// Return scaled direction as Point3
@@ -111,12 +120,10 @@ public:
   }
 
   /// Signed, vector-valued error between two directions
-  Vector2 error(const Unit3& q,
-      OptionalJacobian<2,2> H = boost::none) const;
+  Vector error(const Unit3& q, OptionalJacobian<2, 2> H = boost::none) const;
 
   /// Distance between two directions
-  double distance(const Unit3& q,
-      OptionalJacobian<1,2> H = boost::none) const;
+  double distance(const Unit3& q, OptionalJacobian<1, 2> H = boost::none) const;
 
   /// @}
 
@@ -153,25 +160,27 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version) {
-      ar & BOOST_SERIALIZATION_NVP(p_);
-      // homebrew serialize Eigen Matrix
-      ar & boost::serialization::make_nvp("B11", (*B_)(0,0));
-      ar & boost::serialization::make_nvp("B12", (*B_)(0,1));
-      ar & boost::serialization::make_nvp("B21", (*B_)(1,0));
-      ar & boost::serialization::make_nvp("B22", (*B_)(1,1));
-      ar & boost::serialization::make_nvp("B31", (*B_)(2,0));
-      ar & boost::serialization::make_nvp("B32", (*B_)(2,1));
-    }
+  void serialize(ARCHIVE & ar, const unsigned int version) {
+    ar & BOOST_SERIALIZATION_NVP(p_);
+    // homebrew serialize Eigen Matrix
+    ar & boost::serialization::make_nvp("B11", (*B_)(0, 0));
+    ar & boost::serialization::make_nvp("B12", (*B_)(0, 1));
+    ar & boost::serialization::make_nvp("B21", (*B_)(1, 0));
+    ar & boost::serialization::make_nvp("B22", (*B_)(1, 1));
+    ar & boost::serialization::make_nvp("B31", (*B_)(2, 0));
+    ar & boost::serialization::make_nvp("B32", (*B_)(2, 1));
+  }
 
   /// @}
 
 };
 
 // Define GTSAM traits
-template <> struct traits<Unit3> : public internal::Manifold<Unit3> {};
+template<> struct traits<Unit3> : public internal::Manifold<Unit3> {
+};
 
-template <> struct traits<const Unit3> : public internal::Manifold<Unit3> {};
+template<> struct traits<const Unit3> : public internal::Manifold<Unit3> {
+};
 
 } // namespace gtsam
 
