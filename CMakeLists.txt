@@ -424,6 +424,7 @@ message(STATUS "  CPack Generator                : ${CPACK_GENERATOR}")
 message(STATUS "GTSAM flags                                               ")
 print_config_flag(${GTSAM_USE_QUATERNIONS}             "Quaternions as default Rot3    ")
 print_config_flag(${GTSAM_ENABLE_CONSISTENCY_CHECKS}   "Runtime consistency checking   ")
+print_config_flag(${GTSAM_ROT3_EXPMAP}                 "Rot3 retract is full ExpMap    ")
 print_config_flag(${GTSAM_POSE3_EXPMAP}                "Pose3 retract is full ExpMap   ")
 
 message(STATUS "MATLAB toolbox flags                                      ")
