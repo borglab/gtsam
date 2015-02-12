@@ -42,30 +42,30 @@ GTSAM_CONCEPT_MANIFOLD_INST(OrientedPlane3)
 
 //*******************************************************************************
 TEST (OrientedPlane3, transform)
- {
-   // Test transforming a plane to a pose
-   gtsam::Pose3 pose(gtsam::Rot3::ypr (-M_PI/4.0, 0.0, 0.0), gtsam::Point3(2.0, 3.0, 4.0));
-   OrientedPlane3 plane (-1 , 0, 0, 5);
-   OrientedPlane3 expected_meas (-sqrt (2.0)/2.0, -sqrt (2.0)/2.0, 0.0, 3);
-   OrientedPlane3 transformed_plane = OrientedPlane3::Transform (plane, pose, boost::none, boost::none);
-   EXPECT (assert_equal (expected_meas, transformed_plane, 1e-9));
+{
+  // Test transforming a plane to a pose
+  gtsam::Pose3 pose(gtsam::Rot3::ypr (-M_PI/4.0, 0.0, 0.0), gtsam::Point3(2.0, 3.0, 4.0));
+  OrientedPlane3 plane (-1 , 0, 0, 5);
+  OrientedPlane3 expected_meas (-sqrt (2.0)/2.0, -sqrt (2.0)/2.0, 0.0, 3);
+  OrientedPlane3 transformed_plane = OrientedPlane3::Transform (plane, pose, boost::none, boost::none);
+  EXPECT (assert_equal (expected_meas, transformed_plane, 1e-9));
 
-   // Test the jacobians of transform
-   Matrix actualH1, expectedH1, actualH2, expectedH2;
-   {
-      expectedH1 = numericalDerivative11<OrientedPlane3, Pose3>(boost::bind (&OrientedPlane3::Transform, plane, _1, boost::none, boost::none), pose);
+  // Test the jacobians of transform
+  Matrix actualH1, expectedH1, actualH2, expectedH2;
+  {
+    expectedH1 = numericalDerivative11<OrientedPlane3, Pose3>(boost::bind (&OrientedPlane3::Transform, plane, _1, boost::none, boost::none), pose);
 
-      OrientedPlane3 tformed = OrientedPlane3::Transform (plane, pose, actualH1, boost::none);
-      EXPECT (assert_equal (expectedH1, actualH1, 1e-9));
-   }
-   {
-     expectedH2 = numericalDerivative11<OrientedPlane3, OrientedPlane3> (boost::bind (&OrientedPlane3::Transform, _1, pose, boost::none, boost::none), plane);
-     
-     OrientedPlane3 tformed = OrientedPlane3::Transform (plane, pose, boost::none, actualH2);
-     EXPECT (assert_equal (expectedH2, actualH2, 1e-9));
-   }
-                                                    
- }
+    OrientedPlane3 tformed = OrientedPlane3::Transform (plane, pose, actualH1, boost::none);
+    EXPECT (assert_equal (expectedH1, actualH1, 1e-9));
+  }
+  {
+    expectedH2 = numericalDerivative11<OrientedPlane3, OrientedPlane3> (boost::bind (&OrientedPlane3::Transform, _1, pose, boost::none, boost::none), plane);
+
+    OrientedPlane3 tformed = OrientedPlane3::Transform (plane, pose, boost::none, actualH2);
+    EXPECT (assert_equal (expectedH2, actualH2, 1e-9));
+  }
+
+}
 
 //*******************************************************************************
 // Returns a random vector -- copied from testUnit3.cpp
@@ -78,9 +78,9 @@ inline static Vector randomVector(const Vector& minLimits,
 
   // Create the random vector
   for (size_t i = 0; i < numDims; i++) {
-    double range = maxLimits(i) - minLimits(i);
-    vector(i) = (((double) rand()) / RAND_MAX) * range + minLimits(i);
-  }
+      double range = maxLimits(i) - minLimits(i);
+      vector(i) = (((double) rand()) / RAND_MAX) * range + minLimits(i);
+    }
   return vector;
 }
 
@@ -102,7 +102,7 @@ TEST(OrientedPlane3, localCoordinates_retract) {
     // Create a Plane
     OrientedPlane3 p1(randomVector(minPlaneLimit, maxPlaneLimit));
     Vector v12 = randomVector(minXiLimit, maxXiLimit);
-    
+
     // Magnitude of the rotation can be at most pi
     if (v12.segment<3>(0).norm () > M_PI)
       v12.segment<3>(0) = v12.segment<3>(0) / M_PI;

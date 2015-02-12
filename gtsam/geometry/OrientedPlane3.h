@@ -31,8 +31,8 @@ class OrientedPlane3: public DerivedValue<OrientedPlane3> {
 
 private:
 
-    Unit3 n_; /// The direction of the planar normal
-    double d_; /// The perpendicular distance to this plane
+  Unit3 n_; /// The direction of the planar normal
+  double d_; /// The perpendicular distance to this plane
 
 public:
   enum { dimension = 3 };
@@ -46,16 +46,16 @@ public:
   }
 
   /// Construct from a Unit3 and a distance
-    OrientedPlane3 (const Unit3& s, double d)
-      : n_ (s),
-        d_ (d)
-    {}    
+  OrientedPlane3 (const Unit3& s, double d)
+    : n_ (s),
+      d_ (d)
+  {}
   
-    OrientedPlane3 (Vector vec) 
-      : n_ (vec (0), vec (1), vec (2)),
-        d_ (vec (3))
-    {
-    }
+  OrientedPlane3 (Vector vec)
+    : n_ (vec (0), vec (1), vec (2)),
+      d_ (vec (3))
+  {
+  }
   
 
   /// Construct from a, b, c, d
@@ -75,9 +75,9 @@ public:
 
   /// Transforms a plane to the specified pose
   static OrientedPlane3 Transform (const gtsam::OrientedPlane3& plane,
-                            const gtsam::Pose3& xr,
-                            OptionalJacobian<3, 6> Hr = boost::none,
-                            OptionalJacobian<3, 3> Hp = boost::none);
+                                   const gtsam::Pose3& xr,
+                                   OptionalJacobian<3, 6> Hr = boost::none,
+                                   OptionalJacobian<3, 3> Hp = boost::none);
 
   /// Computes the error between two poses
   Vector3 error (const gtsam::OrientedPlane3& plane) const;
@@ -104,7 +104,7 @@ public:
   inline Unit3 normal () const {
     return n_;
   }
-    
+
   /// @}
 };
 

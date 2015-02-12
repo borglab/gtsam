@@ -33,49 +33,48 @@ void OrientedPlane3::print(const std::string& s) const {
 
 
 /* ************************************************************************* */
-  OrientedPlane3 OrientedPlane3::Transform (const gtsam::OrientedPlane3& plane,
+OrientedPlane3 OrientedPlane3::Transform (const gtsam::OrientedPlane3& plane,
                             const gtsam::Pose3& xr,
                             OptionalJacobian<3, 6> Hr,
-                            OptionalJacobian<3, 3> Hp)
-  {
-    Matrix n_hr;
-    Matrix n_hp;
-    Unit3 n_rotated = xr.rotation ().unrotate (plane.n_, n_hr, n_hp);
-    
-    Vector n_unit = plane.n_.unitVector ();
-    Vector unit_vec = n_rotated.unitVector ();
-    double pred_d = n_unit.dot (xr.translation ().vector ()) + plane.d_;
-    OrientedPlane3 transformed_plane (unit_vec (0), unit_vec (1), unit_vec (2), pred_d);
+                            OptionalJacobian<3, 3> Hp) {
+  Matrix n_hr;
+  Matrix n_hp;
+  Unit3 n_rotated = xr.rotation ().unrotate (plane.n_, n_hr, n_hp);
 
-    if (Hr)
-    {
-      *Hr = gtsam::zeros (3, 6);
-      (*Hr).block<2,3> (0,0) = n_hr;
-      (*Hr).block<1,3> (2,3) = unit_vec;
-    }
-    if (Hp)
-    {
-      Vector xrp = xr.translation ().vector ();
-      Matrix n_basis = plane.n_.basis();
-      Vector hpp = n_basis.transpose() * xrp;
-      *Hp = gtsam::zeros (3,3);
-      (*Hp).block<2,2> (0,0) = n_hp;
-      (*Hp).block<1,2> (2,0) = hpp;
-      (*Hp) (2,2) = 1;
-    }
-    
-    return (transformed_plane);
+  Vector n_unit = plane.n_.unitVector ();
+  Vector unit_vec = n_rotated.unitVector ();
+  double pred_d = n_unit.dot (xr.translation ().vector ()) + plane.d_;
+  OrientedPlane3 transformed_plane (unit_vec (0), unit_vec (1), unit_vec (2), pred_d);
+
+  if (Hr)
+  {
+    *Hr = gtsam::zeros (3, 6);
+    (*Hr).block<2,3> (0,0) = n_hr;
+    (*Hr).block<1,3> (2,3) = unit_vec;
   }
+  if (Hp)
+  {
+    Vector xrp = xr.translation ().vector ();
+    Matrix n_basis = plane.n_.basis();
+    Vector hpp = n_basis.transpose() * xrp;
+    *Hp = gtsam::zeros (3,3);
+    (*Hp).block<2,2> (0,0) = n_hp;
+    (*Hp).block<1,2> (2,0) = hpp;
+    (*Hp) (2,2) = 1;
+  }
+    
+  return (transformed_plane);
+}
   
 /* ************************************************************************* */
-  Vector3 OrientedPlane3::error (const gtsam::OrientedPlane3& plane) const
-  {
-    Vector2 n_error = -n_.localCoordinates (plane.n_);
-    double d_error = d_ - plane.d_;
-    Vector3 e;
-    e << n_error (0), n_error (1), d_error;
-    return (e);
-  }
+Vector3 OrientedPlane3::error (const gtsam::OrientedPlane3& plane) const
+{
+  Vector2 n_error = -n_.localCoordinates (plane.n_);
+  double d_error = d_ - plane.d_;
+  Vector3 e;
+  e << n_error (0), n_error (1), d_error;
+  return (e);
+}
 
 /* ************************************************************************* */
 OrientedPlane3 OrientedPlane3::retract(const Vector& v) const {
@@ -96,13 +95,13 @@ Vector3 OrientedPlane3::localCoordinates(const OrientedPlane3& y) const {
 }
 
 /* ************************************************************************* */
-  Vector3 OrientedPlane3::planeCoefficients () const
-  {
-    Vector unit_vec = n_.unitVector ();
-    Vector3 a;
-    a << unit_vec[0], unit_vec[1], unit_vec[2], d_;
-    return a;
-  }
+Vector3 OrientedPlane3::planeCoefficients () const
+{
+  Vector unit_vec = n_.unitVector ();
+  Vector3 a;
+  a << unit_vec[0], unit_vec[1], unit_vec[2], d_;
+  return a;
+}
 
 /* ************************************************************************* */
 
