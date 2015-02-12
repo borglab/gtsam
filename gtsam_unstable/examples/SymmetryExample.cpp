@@ -32,29 +32,38 @@ using namespace noiseModel;
 
 /* ************************************************************************* */
 // A local function that just adds two points
-static Point3 add(const Point3& p, const Point3& q, //
-    OptionalJacobian<3, 3> H1, OptionalJacobian<3, 3> H2) {
-  if (H1)
-    *H1 = I_3x3;
-  if (H2)
-    *H2 = I_3x3;
-  return p + q;
-}
+struct add {
+  int n_;
+  add(int n) :
+      n_(n) {
+  }
+  Point3 operator()(const Point3& p, const Point3& t, //
+      OptionalJacobian<3, 3> H1, OptionalJacobian<3, 3> H2) {
+    if (H1)
+      *H1 = I_3x3;
+    if (H2 && n_ == 0) *H2 = Z_3x3;
+    if (H2 && n_ != 0) *H2 = n_ * I_3x3;
+    return p + n_ * t;
+  }
+};
+
 /* ************************************************************************* */
 int main(int argc, char* argv[]) {
 
   // Create calibration and noise model
-  Cal3_S2 K(50.0, 50.0, 0.0, 50.0, 50.0);
+  Cal3_S2 K;//(50.0, 50.0, 0.0, 50.0, 50.0);
   Isotropic::shared_ptr measurementNoise = Isotropic::Sigma(2, 1.0);
 
   // =========== Create a ground truth example with symmetry ===================
 
-  // We create one 3D point that is translated by t to generate a second point
-  // So we have two "real" points
+  // We create one 3D point that is translated by t to generate 3 more points
+  // So we have 4 "real" points
   vector<Point3> points;
   Point3 p(0, 0, 10), t(5, 0, 0);
   points.push_back(p);
   points.push_back(p + t);
+  points.push_back(p + 2 * t);
+  points.push_back(p + 3 * t);
 
   // Just use a known camera at the origin
   SimpleCamera camera(Pose3(), K);
@@ -74,9 +83,6 @@ int main(int argc, char* argv[]) {
   // We create a constant Expression for the camera here
   Expression<SimpleCamera> constantCameraExpression(camera);
 
-  // and also for the known translation
-  Point3_ constantTranslationExpression(t);
-
   // Create an expression for the unknown point by calling the constructor
   // with a key, in this case, 42. Note, there is only *one* unknown point,
   // because we know that the measurements originated from symmetric points.
@@ -84,28 +90,32 @@ int main(int argc, char* argv[]) {
   // point as the unknown to optimize for.
   Point3_ unknownPointExpression(42);
 
+  // and also for the known translation
+  Point3_ unknownTranslationExpression(55);
+
   // Add a factor for each measurement
   for (size_t j = 0; j < measurements.size(); ++j) {
     Point2 measurement = measurements[j];
     // Create an expression for the prediction of the measurement,
+    Point3_ displacedPointExpression(add(j), unknownPointExpression,
+        unknownTranslationExpression);
+    Point2_ prediction = //
+        project2(constantCameraExpression, displacedPointExpression);
     // and add to ExpressionFactorGraph with handy-dandy method...
-    if (j == 0) {
-      Point2_ prediction = //
-          project2(constantCameraExpression, unknownPointExpression);
-      graph.addExpressionFactor(prediction, measurement, measurementNoise);
-    } else {
-      Point3_ displacedPointExpression(add, unknownPointExpression,
-          constantTranslationExpression);
-      Point2_ prediction = //
-          project2(constantCameraExpression, displacedPointExpression);
-      graph.addExpressionFactor(prediction, measurement, measurementNoise);
-    }
+    graph.addExpressionFactor(prediction, measurement, measurementNoise);
   }
+  graph.print("graph");
 
   // Create perturbed initial
   Values initial;
-  initial.insert(42, Point3(1, 2, 3));
+//  initial.insert(42, Point3(1, 2, 3));
+//  initial.insert(55, Point3(1, 2, 3));
+  initial.insert(42, p);
+  initial.insert(55, t);
   cout << "initial error = " << graph.error(initial) << endl;
+
+  boost::shared_ptr<GaussianFactorGraph> g = graph.linearize(initial);
+  g->print("g");
 
   /* Optimize the graph and print results */
   Values result = DoglegOptimizer(graph, initial).optimize();
