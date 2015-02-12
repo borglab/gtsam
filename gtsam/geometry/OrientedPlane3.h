@@ -35,32 +35,29 @@ private:
   double d_; /// The perpendicular distance to this plane
 
 public:
-  enum { dimension = 3 };
+  enum {
+    dimension = 3
+  };
   /// @name Constructors
   /// @{
 
   /// Default constructor
   OrientedPlane3() :
-    n_(),
-    d_ (0.0){
+      n_(), d_(0.0) {
   }
 
   /// Construct from a Unit3 and a distance
-  OrientedPlane3 (const Unit3& s, double d)
-    : n_ (s),
-      d_ (d)
-  {}
-  
-  OrientedPlane3 (Vector vec)
-    : n_ (vec (0), vec (1), vec (2)),
-      d_ (vec (3))
-  {
+  OrientedPlane3(const Unit3& s, double d) :
+      n_(s), d_(d) {
   }
-  
+
+  OrientedPlane3(Vector vec) :
+      n_(vec(0), vec(1), vec(2)), d_(vec(3)) {
+  }
 
   /// Construct from a, b, c, d
   OrientedPlane3(double a, double b, double c, double d) {
-    Point3 p (a, b, c);
+    Point3 p(a, b, c);
     n_ = Unit3(p);
     d_ = d;
   }
@@ -70,17 +67,16 @@ public:
 
   /// The equals function with tolerance
   bool equals(const OrientedPlane3& s, double tol = 1e-9) const {
-    return (n_.equals(s.n_, tol) && (fabs (d_ - s.d_) < tol));
+    return (n_.equals(s.n_, tol) && (fabs(d_ - s.d_) < tol));
   }
 
   /// Transforms a plane to the specified pose
-  static OrientedPlane3 Transform (const gtsam::OrientedPlane3& plane,
-                                   const gtsam::Pose3& xr,
-                                   OptionalJacobian<3, 6> Hr = boost::none,
-                                   OptionalJacobian<3, 3> Hp = boost::none);
+  static OrientedPlane3 Transform(const gtsam::OrientedPlane3& plane,
+      const gtsam::Pose3& xr, OptionalJacobian<3, 6> Hr = boost::none,
+      OptionalJacobian<3, 3> Hp = boost::none);
 
   /// Computes the error between two poses
-  Vector3 error (const gtsam::OrientedPlane3& plane) const;
+  Vector3 error(const gtsam::OrientedPlane3& plane) const;
 
   /// Dimensionality of tangent space = 3 DOF
   inline static size_t Dim() {
@@ -99,18 +95,22 @@ public:
   Vector3 localCoordinates(const OrientedPlane3& s) const;
 
   /// Returns the plane coefficients (a, b, c, d)
-  Vector3 planeCoefficients () const;
+  Vector3 planeCoefficients() const;
 
-  inline Unit3 normal () const {
+  inline Unit3 normal() const {
     return n_;
   }
 
   /// @}
 };
 
-template <> struct traits<OrientedPlane3> : public internal::Manifold<OrientedPlane3> {};
+template<> struct traits<OrientedPlane3> : public internal::Manifold<
+    OrientedPlane3> {
+};
 
-template <> struct traits<const OrientedPlane3> : public internal::Manifold<OrientedPlane3> {};
+template<> struct traits<const OrientedPlane3> : public internal::Manifold<
+    OrientedPlane3> {
+};
 
 } // namespace gtsam
 
