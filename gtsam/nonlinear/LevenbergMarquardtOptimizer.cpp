@@ -344,12 +344,8 @@ void LevenbergMarquardtOptimizer::iterate() {
 /* ************************************************************************* */
 LevenbergMarquardtParams LevenbergMarquardtOptimizer::ensureHasOrdering(
     LevenbergMarquardtParams params, const NonlinearFactorGraph& graph) const {
-  if (!params.ordering){
-    if (params.orderingType == Ordering::METIS)
-      params.ordering = Ordering::metis(graph);
-    else
-      params.ordering = Ordering::colamd(graph);
-  }
+  if (!params.ordering)
+    params.ordering = Ordering::Create(params.orderingType, graph);
   return params;
 }
 
