@@ -231,9 +231,31 @@ TEST(Ordering, metis) {
 }
 
 /* ************************************************************************* */
+TEST(Ordering, MetisLoop) {
+
+  // create linear graph
+  SymbolicFactorGraph sfg = example::symbolicChain();
+
+  // add loop closure
+  sfg.push_factor(0,5);
+
+  // METIS
+  {
+  Ordering actual = Ordering::Create(Ordering::METIS,sfg);
+  // 0,3
+  //  1
+  //   2
+  //  4
+  //   5
+  Ordering expected = Ordering(list_of(5)(4)(2)(1)(0)(3));
+  EXPECT(assert_equal(expected, actual));
+  }
+}
+
+/* ************************************************************************* */
 TEST(Ordering, Create) {
 
-  // create graph with wanted variable set = 2, 4
+  // create chain graph
   SymbolicFactorGraph sfg = example::symbolicChain();
 
   // COLAMD
