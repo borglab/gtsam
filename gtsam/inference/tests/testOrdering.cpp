@@ -28,16 +28,22 @@ using namespace std;
 using namespace gtsam;
 using namespace boost::assign;
 
+namespace example {
+SymbolicFactorGraph symbolicChain() {
+  SymbolicFactorGraph sfg;
+  sfg.push_factor(0, 1);
+  sfg.push_factor(1, 2);
+  sfg.push_factor(2, 3);
+  sfg.push_factor(3, 4);
+  sfg.push_factor(4, 5);
+  return sfg;
+}
+}
 /* ************************************************************************* */
 TEST(Ordering, constrained_ordering) {
-  SymbolicFactorGraph sfg;
 
   // create graph with wanted variable set = 2, 4
-  sfg.push_factor(0,1);
-  sfg.push_factor(1,2);
-  sfg.push_factor(2,3);
-  sfg.push_factor(3,4);
-  sfg.push_factor(4,5);
+  SymbolicFactorGraph sfg = example::symbolicChain();
 
   // unconstrained version
   Ordering actUnconstrained = Ordering::colamd(sfg);
@@ -57,16 +63,11 @@ TEST(Ordering, constrained_ordering) {
 
 /* ************************************************************************* */
 TEST(Ordering, grouped_constrained_ordering) {
-  SymbolicFactorGraph sfg;
 
   // create graph with constrained groups:
   // 1: 2, 4
   // 2: 5
-  sfg.push_factor(0,1);
-  sfg.push_factor(1,2);
-  sfg.push_factor(2,3);
-  sfg.push_factor(3,4);
-  sfg.push_factor(4,5);
+  SymbolicFactorGraph sfg = example::symbolicChain();
 
   // constrained version - push one set to the end
   FastMap<size_t, int> constraints;
@@ -140,7 +141,6 @@ TEST(Ordering, csr_format_2) {
   EXPECT(xadjExpected == mi.xadj());
   EXPECT(adjExpected.size() == mi.adj().size());
   EXPECT(adjExpected == mi.adj());
-
 }
 
 /* ************************************************************************* */
@@ -170,7 +170,6 @@ TEST(Ordering, csr_format_3) {
   EXPECT(xadjExpected == mi.xadj());
   EXPECT(adjExpected.size() == mi.adj().size());
   EXPECT(adjExpected == adjAcutal);
-  
 }
 
 /* ************************************************************************* */
@@ -207,7 +206,6 @@ TEST(Ordering, csr_format_4) {
   sfg.push_factor(Symbol('x', 4), Symbol('l', 1));
 
   Ordering metOrder2 = Ordering::metis(sfg);
-
 }
 
 /* ************************************************************************* */
@@ -231,6 +229,37 @@ TEST(Ordering, metis) {
 
   Ordering metis = Ordering::metis(sfg);
 }
+
+/* ************************************************************************* */
+TEST(Ordering, Create) {
+
+  // create graph with wanted variable set = 2, 4
+  SymbolicFactorGraph sfg = example::symbolicChain();
+
+  // COLAMD
+  {
+  Ordering actual = Ordering::Create(Ordering::COLAMD,sfg);
+  Ordering expected = Ordering(list_of(0)(1)(2)(3)(4)(5));
+  EXPECT(assert_equal(expected, actual));
+  }
+
+  // METIS
+  {
+  Ordering actual = Ordering::Create(Ordering::METIS,sfg);
+  // 2
+  //  0
+  //   1
+  //  4
+  //   3
+  //   5
+  Ordering expected = Ordering(list_of(5)(3)(4)(1)(0)(2));
+  EXPECT(assert_equal(expected, actual));
+  }
+
+  // CUSTOM
+  CHECK_EXCEPTION(Ordering::Create(Ordering::CUSTOM,sfg),runtime_error);
+}
+
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */

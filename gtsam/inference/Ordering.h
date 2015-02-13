@@ -170,6 +170,28 @@ namespace gtsam {
 
     /// @}
 
+    /// @name Named Constructors @{
+
+    template<class FACTOR>
+    static Ordering Create(OrderingType orderingType,
+        const FactorGraph<FACTOR>& graph) {
+
+      switch (orderingType) {
+      case COLAMD:
+        return colamd(graph);
+      case METIS:
+        return metis(graph);
+      case CUSTOM:
+        throw std::runtime_error(
+            "Ordering::Create error: called with CUSTOM ordering type.");
+      default:
+        throw std::runtime_error(
+            "Ordering::Create error: called with unknown ordering type.");
+      }
+    }
+
+    /// @}
+
     /// @name Testable @{
 
     GTSAM_EXPORT void print(const std::string& str = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
