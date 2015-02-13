@@ -241,11 +241,10 @@ TEST(Ordering, MetisLoop) {
   // METIS
   {
     Ordering actual = Ordering::Create(Ordering::METIS, sfg);
-    // 0,3
-    //  1,3
-    //   2
-    //  4,0
-    //   5
+    //  - P( 1 0 3)
+    //  | - P( 4 | 0 3)
+    //  | | - P( 5 | 0 4)
+    //  | - P( 2 | 1 3)
     Ordering expected = Ordering(list_of(5)(4)(2)(1)(0)(3));
     EXPECT(assert_equal(expected, actual));
   }
@@ -259,6 +258,11 @@ TEST(Ordering, Create) {
 
   // COLAMD
   {
+    //- P( 4 5)
+    //| - P( 3 | 4)
+    //| | - P( 2 | 3)
+    //| | | - P( 1 | 2)
+    //| | | | - P( 0 | 1)
     Ordering actual = Ordering::Create(Ordering::COLAMD, sfg);
     Ordering expected = Ordering(list_of(0)(1)(2)(3)(4)(5));
     EXPECT(assert_equal(expected, actual));
@@ -267,12 +271,9 @@ TEST(Ordering, Create) {
   // METIS
   {
     Ordering actual = Ordering::Create(Ordering::METIS, sfg);
-    // 2
-    //  0
-    //   1
-    //  4
-    //   3
-    //   5
+    //- P( 1 0 2)
+    //| - P( 3 4 | 2)
+    //| | - P( 5 | 4)
     Ordering expected = Ordering(list_of(5)(3)(4)(1)(0)(2));
     EXPECT(assert_equal(expected, actual));
   }
