@@ -383,9 +383,9 @@ TEST(Similarity3, Optimization) {
 TEST(Similarity3, Optimization2) {
   Similarity3 prior = Similarity3();//Rot3::ypr(0, 0, 0), Point3(1, 2, 3), 4);
   Similarity3 m1 = Similarity3(Rot3::ypr(M_PI/2.0, 0, 0), Point3(1.0, 0, 0), 1.0);
-  Similarity3 m2 = Similarity3(Rot3::ypr(M_PI/2.0, 0, 0), Point3(1.0, 0, 0), 1.0);
-  Similarity3 m3 = Similarity3(Rot3::ypr(M_PI/2.0, 0, 0), Point3(0.9, 0, 0), 1.0);
-  Similarity3 m4 = Similarity3(Rot3::ypr(M_PI/2.0, 0, 0), Point3(0.9, 0, 0), 1.0);
+  Similarity3 m2 = Similarity3(Rot3::ypr(M_PI/2.0, 0, 0), Point3(0.9, 0, 0), 1.0);
+  Similarity3 m3 = Similarity3(Rot3::ypr(M_PI/2.0, 0, 0), Point3(0.8, 0, 0), 1.0);
+  Similarity3 m4 = Similarity3(Rot3::ypr(M_PI/2.0, 0, 0), Point3(0.7, 0, 0), 1.42);
 
   //prior.print("Goal Transform");
   noiseModel::Isotropic::shared_ptr model = noiseModel::Isotropic::Sigma(7, 1);
