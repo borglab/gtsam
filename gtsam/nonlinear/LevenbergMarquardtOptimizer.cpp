@@ -242,8 +242,10 @@ void LevenbergMarquardtOptimizer::iterate() {
 
     bool systemSolvedSuccessfully;
     try {
+      // ============ Solve is where most computation happens !! =================
       delta = solve(dampedSystem, state_.values, params_);
       systemSolvedSuccessfully = true;
+      // =========================================================================
     } catch (IndeterminantLinearSystemException) {
       systemSolvedSuccessfully = false;
     }
@@ -267,7 +269,9 @@ void LevenbergMarquardtOptimizer::iterate() {
       if (linearizedCostChange >= 0) { // step is valid
         // update values
         gttic(retract);
+        // ============ This is where the solution is updated ====================
         newValues = state_.values.retract(delta);
+        // =======================================================================
         gttoc(retract);
 
         // compute new error
