@@ -239,7 +239,7 @@ TEST(Ordering, MetisLoop) {
   sfg.push_factor(0, 5);
 
   // METIS
-#ifdef LINUX
+#if !defined(__APPLE__)
   {
     Ordering actual = Ordering::Create(Ordering::METIS, sfg);
     //  - P( 0 4 1)
