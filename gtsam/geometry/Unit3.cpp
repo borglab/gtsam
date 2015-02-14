@@ -31,6 +31,10 @@
 #  pragma clang diagnostic pop
 #endif
 
+#ifdef GTSAM_USE_TBB
+#include <tbb/mutex.h>
+#endif
+
 #include <boost/random/variate_generator.hpp>
 #include <iostream>
 
@@ -65,8 +69,15 @@ Unit3 Unit3::Random(boost::mt19937 & rng) {
   return result;
 }
 
+#ifdef GTSAM_USE_TBB
+tbb::mutex unit3BasisMutex;
+#endif
+
 /* ************************************************************************* */
 const Matrix32& Unit3::basis() const {
+#ifdef GTSAM_USE_TBB
+  tbb::mutex::scoped_lock lock(unit3BasisMutex);
+#endif
 
   // Return cached version if exists
   if (B_)
