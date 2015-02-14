@@ -239,6 +239,17 @@ TEST(Ordering, MetisLoop) {
   sfg.push_factor(0, 5);
 
   // METIS
+#ifdef LINUX
+  {
+    Ordering actual = Ordering::Create(Ordering::METIS, sfg);
+    //  - P( 0 4 1)
+    //  | - P( 2 | 4 1)
+    //  | | - P( 3 | 4 2)
+    //  | - P( 5 | 0 1)
+    Ordering expected = Ordering(list_of(3)(2)(5)(0)(4)(1));
+    EXPECT(assert_equal(expected, actual));
+  }
+#else
   {
     Ordering actual = Ordering::Create(Ordering::METIS, sfg);
     //  - P( 1 0 3)
@@ -248,6 +259,7 @@ TEST(Ordering, MetisLoop) {
     Ordering expected = Ordering(list_of(5)(4)(2)(1)(0)(3));
     EXPECT(assert_equal(expected, actual));
   }
+#endif
 }
 
 /* ************************************************************************* */
