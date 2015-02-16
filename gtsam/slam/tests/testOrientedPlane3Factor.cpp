@@ -16,21 +16,11 @@
  * @brief Tests the OrientedPlane3Factor class
  */
 
-#include <gtsam/geometry/Unit3.h>
-#include <gtsam/geometry/OrientedPlane3.h>
 #include <gtsam/slam/OrientedPlane3Factor.h>
-#include <gtsam/nonlinear/Symbol.h>
-#include <gtsam/geometry/Pose3.h>
-#include <gtsam/inference/FactorGraph.h>
-#include <gtsam/linear/NoiseModel.h>
 #include <gtsam/slam/PriorFactor.h>
-#include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/nonlinear/Marginals.h>
 #include <gtsam/nonlinear/ISAM2.h>
-#include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
+
 #include <CppUnitLite/TestHarness.h>
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
@@ -43,7 +33,8 @@ using namespace std;
 GTSAM_CONCEPT_TESTABLE_INST(OrientedPlane3)
 GTSAM_CONCEPT_MANIFOLD_INST(OrientedPlane3)
 
-TEST (OrientedPlane3, lm_translation_error) 
+// *************************************************************************
+TEST (OrientedPlane3Factor, lm_translation_error)
 {
   // Tests one pose, two measurements of the landmark that differ in range only.
   // Normal along -x, 3m away
@@ -87,7 +78,8 @@ TEST (OrientedPlane3, lm_translation_error)
   EXPECT (assert_equal (optimized_plane_landmark, expected_plane_landmark));
 }
 
-TEST (OrientedPlane3, lm_rotation_error)
+// *************************************************************************
+TEST (OrientedPlane3Factor, lm_rotation_error)
 {
   // Tests one pose, two measurements of the landmark that differ in angle only.
   // Normal along -x, 3m away
@@ -128,7 +120,7 @@ TEST (OrientedPlane3, lm_rotation_error)
 }
 
 // *************************************************************************
-TEST( OrientedPlane3DirectionPriorFactor, Constructor ) {
+TEST( OrientedPlane3DirectionPrior, Constructor ) {
 
   // Example: pitch and roll of aircraft in an ENU Cartesian frame.
   // If pitch and roll are zero for an aerospace frame,
