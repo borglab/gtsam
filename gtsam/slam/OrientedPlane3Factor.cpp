@@ -14,7 +14,7 @@ namespace gtsam {
 //***************************************************************************
 void OrientedPlane3Factor::print(const string& s,
     const KeyFormatter& keyFormatter) const {
-  cout << "OrientedPlane3Factor Factor on " << landmarkSymbol_ << "\n";
+  cout << "OrientedPlane3Factor Factor on " << landmarkKey_ << "\n";
   measured_p_.print("Measured Plane");
   this->noiseModel_->print("  noise model: ");
 }

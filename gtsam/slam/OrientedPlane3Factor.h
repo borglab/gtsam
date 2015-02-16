@@ -9,9 +9,6 @@
 
 #include <gtsam/geometry/OrientedPlane3.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/nonlinear/Symbol.h>
-#include <gtsam/inference/Key.h>
-#include <iostream>
 
 namespace gtsam {
 
@@ -21,8 +18,8 @@ namespace gtsam {
 class OrientedPlane3Factor: public NoiseModelFactor2<Pose3, OrientedPlane3> {
 
 protected:
-  Symbol poseSymbol_;
-  Symbol landmarkSymbol_;
+  Key poseKey_;
+  Key landmarkKey_;
   Vector measured_coeffs_;
   OrientedPlane3 measured_p_;
 
@@ -36,9 +33,9 @@ public:
 
   /// Constructor with measured plane coefficients (a,b,c,d), noise model, pose symbol
   OrientedPlane3Factor(const Vector&z, const SharedGaussian& noiseModel,
-      const Symbol& pose, const Symbol& landmark) :
-      Base(noiseModel, pose, landmark), poseSymbol_(pose), landmarkSymbol_(
-          landmark), measured_coeffs_(z) {
+      const Key& pose, const Key& landmark) :
+      Base(noiseModel, pose, landmark), poseKey_(pose), landmarkKey_(landmark), measured_coeffs_(
+          z) {
     measured_p_ = OrientedPlane3(Unit3(z(0), z(1), z(2)), z(3));
   }
 
