@@ -13,15 +13,22 @@ using namespace std;
 namespace gtsam {
 
 //***************************************************************************
+void OrientedPlane3Factor::print(const string& s,
+    const KeyFormatter& keyFormatter) const {
+  cout << "OrientedPlane3Factor Factor on " << landmarkSymbol_ << "\n";
+  measured_p_.print("Measured Plane");
+  this->noiseModel_->print("  noise model: ");
+}
 
-void OrientedPlane3DirectionPrior::print(const string& s) const {
+//***************************************************************************
+void OrientedPlane3DirectionPrior::print(const string& s,
+    const KeyFormatter& keyFormatter) const {
   cout << "Prior Factor on " << landmarkKey_ << "\n";
   measured_p_.print("Measured Plane");
   this->noiseModel_->print("  noise model: ");
 }
 
 //***************************************************************************
-
 bool OrientedPlane3DirectionPrior::equals(const NonlinearFactor& expected,
   double tol) const {
   const This* e = dynamic_cast<const This*>(&expected);

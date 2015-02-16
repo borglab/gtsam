@@ -7,16 +7,15 @@
 
 #pragma once
 
-#include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/OrientedPlane3.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/inference/Key.h>
 #include <iostream>
 
 namespace gtsam {
 
-  /**
+/**
  * Factor to measure a planar landmark from a given pose
  */
 class OrientedPlane3Factor: public NoiseModelFactor2<Pose3, OrientedPlane3> {
@@ -48,7 +47,10 @@ public:
   }
 
   /// print
-  void print(const std::string& s="PlaneFactor") const;
+  virtual void print(const std::string& s = "OrientedPlane3Factor",
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+
+  /// evaluateError
   virtual Vector evaluateError(const Pose3& pose, const OrientedPlane3& plane,
                                boost::optional<Matrix&> H1 = boost::none,
                                 boost::optional<Matrix&> H2 = boost::none) const
@@ -81,10 +83,12 @@ public:
   {
     measured_p_ = OrientedPlane3 (Unit3 (z (0), z (1), z (2)), z (3));
   }
-  /// print
-  void print(const std::string& s) const;
 
-  /** equals */
+  /// print
+  virtual void print(const std::string& s = "OrientedPlane3DirectionPrior",
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+
+  /// equals
   virtual bool equals(const NonlinearFactor& expected, double tol = 1e-9) const;
 
   virtual Vector evaluateError(const OrientedPlane3& plane,
