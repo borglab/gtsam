@@ -34,89 +34,99 @@ GTSAM_CONCEPT_TESTABLE_INST(OrientedPlane3)
 GTSAM_CONCEPT_MANIFOLD_INST(OrientedPlane3)
 
 // *************************************************************************
-TEST (OrientedPlane3Factor, lm_translation_error)
-{
+TEST (OrientedPlane3Factor, lm_translation_error) {
   // Tests one pose, two measurements of the landmark that differ in range only.
   // Normal along -x, 3m away
-  gtsam::Symbol lm_sym ('p', 0);
-  gtsam::OrientedPlane3 test_lm0 (-1.0, 0.0, 0.0, 3.0);
- 
+  gtsam::Symbol lm_sym('p', 0);
+  gtsam::OrientedPlane3 test_lm0(-1.0, 0.0, 0.0, 3.0);
+
   gtsam::ISAM2 isam2;
   gtsam::Values new_values;
   gtsam::NonlinearFactorGraph new_graph;
 
   // Init pose and prior.  Pose Prior is needed since a single plane measurement does not fully constrain the pose
-  gtsam::Symbol init_sym ('x', 0);
-  gtsam::Pose3 init_pose (gtsam::Rot3::ypr (0.0, 0.0, 0.0), 
-  	                      gtsam::Point3 (0.0, 0.0, 0.0));
+  gtsam::Symbol init_sym('x', 0);
+  gtsam::Pose3 init_pose(gtsam::Rot3::ypr(0.0, 0.0, 0.0),
+      gtsam::Point3(0.0, 0.0, 0.0));
   gtsam::Vector sigmas(6);
   sigmas << 0.001, 0.001, 0.001, 0.001, 0.001, 0.001;
-  gtsam::PriorFactor<gtsam::Pose3> pose_prior (init_sym, init_pose, gtsam::noiseModel::Diagonal::Sigmas (sigmas) );
-  new_values.insert (init_sym, init_pose);
-  new_graph.add (pose_prior);
-  
+  gtsam::PriorFactor<gtsam::Pose3> pose_prior(init_sym, init_pose,
+      gtsam::noiseModel::Diagonal::Sigmas(sigmas));
+  new_values.insert(init_sym, init_pose);
+  new_graph.add(pose_prior);
+
   // Add two landmark measurements, differing in range
-  new_values.insert (lm_sym, test_lm0);
+  new_values.insert(lm_sym, test_lm0);
   gtsam::Vector sigmas3(3);
   sigmas3 << 0.1, 0.1, 0.1;
   gtsam::Vector test_meas0_mean(4);
   test_meas0_mean << -1.0, 0.0, 0.0, 3.0;
-  gtsam::OrientedPlane3Factor test_meas0 (test_meas0_mean, gtsam::noiseModel::Diagonal::Sigmas (sigmas3), init_sym, lm_sym);
-  new_graph.add (test_meas0);
+  gtsam::OrientedPlane3Factor test_meas0(test_meas0_mean,
+      gtsam::noiseModel::Diagonal::Sigmas(sigmas3), init_sym, lm_sym);
+  new_graph.add(test_meas0);
   gtsam::Vector test_meas1_mean(4);
   test_meas1_mean << -1.0, 0.0, 0.0, 1.0;
-  gtsam::OrientedPlane3Factor test_meas1 (test_meas1_mean, gtsam::noiseModel::Diagonal::Sigmas (sigmas3), init_sym, lm_sym);
-  new_graph.add (test_meas1);
-  
+  gtsam::OrientedPlane3Factor test_meas1(test_meas1_mean,
+      gtsam::noiseModel::Diagonal::Sigmas(sigmas3), init_sym, lm_sym);
+  new_graph.add(test_meas1);
+
   // Optimize
-  gtsam::ISAM2Result result = isam2.update (new_graph, new_values);
-  gtsam::Values result_values = isam2.calculateEstimate ();
-  gtsam::OrientedPlane3 optimized_plane_landmark = result_values.at<gtsam::OrientedPlane3>(lm_sym);
+  gtsam::ISAM2Result result = isam2.update(new_graph, new_values);
+  gtsam::Values result_values = isam2.calculateEstimate();
+  gtsam::OrientedPlane3 optimized_plane_landmark = result_values.at<
+      gtsam::OrientedPlane3>(lm_sym);
 
   // Given two noisy measurements of equal weight, expect result between the two
-  gtsam::OrientedPlane3 expected_plane_landmark (-1.0, 0.0, 0.0, 2.0);
-  EXPECT (assert_equal (optimized_plane_landmark, expected_plane_landmark));
+  gtsam::OrientedPlane3 expected_plane_landmark(-1.0, 0.0, 0.0, 2.0);
+  EXPECT(assert_equal(optimized_plane_landmark, expected_plane_landmark));
 }
 
 // *************************************************************************
-TEST (OrientedPlane3Factor, lm_rotation_error)
-{
+TEST (OrientedPlane3Factor, lm_rotation_error) {
   // Tests one pose, two measurements of the landmark that differ in angle only.
   // Normal along -x, 3m away
-  gtsam::Symbol lm_sym ('p', 0);
-  gtsam::OrientedPlane3 test_lm0 (-1.0, 0.0, 0.0, 3.0);
+  gtsam::Symbol lm_sym('p', 0);
+  gtsam::OrientedPlane3 test_lm0(-1.0, 0.0, 0.0, 3.0);
 
   gtsam::ISAM2 isam2;
   gtsam::Values new_values;
   gtsam::NonlinearFactorGraph new_graph;
 
   // Init pose and prior.  Pose Prior is needed since a single plane measurement does not fully constrain the pose
-  gtsam::Symbol init_sym ('x', 0);
-  gtsam::Pose3 init_pose (gtsam::Rot3::ypr (0.0, 0.0, 0.0),
-                              gtsam::Point3 (0.0, 0.0, 0.0));
-  gtsam::PriorFactor<gtsam::Pose3> pose_prior (init_sym, init_pose, gtsam::noiseModel::Diagonal::Sigmas ((Vector(6) << 0.001, 0.001, 0.001, 0.001, 0.001, 0.001).finished()));
-  new_values.insert (init_sym, init_pose);
-  new_graph.add (pose_prior);
-  
+  gtsam::Symbol init_sym('x', 0);
+  gtsam::Pose3 init_pose(gtsam::Rot3::ypr(0.0, 0.0, 0.0),
+      gtsam::Point3(0.0, 0.0, 0.0));
+  gtsam::PriorFactor<gtsam::Pose3> pose_prior(init_sym, init_pose,
+      gtsam::noiseModel::Diagonal::Sigmas(
+          (Vector(6) << 0.001, 0.001, 0.001, 0.001, 0.001, 0.001).finished()));
+  new_values.insert(init_sym, init_pose);
+  new_graph.add(pose_prior);
+
 //  // Add two landmark measurements, differing in angle
-  new_values.insert (lm_sym, test_lm0);
+  new_values.insert(lm_sym, test_lm0);
   Vector test_meas0_mean(4);
   test_meas0_mean << -1.0, 0.0, 0.0, 3.0;
-  gtsam::OrientedPlane3Factor test_meas0 (test_meas0_mean, gtsam::noiseModel::Diagonal::Sigmas(Vector3( 0.1, 0.1, 0.1)), init_sym, lm_sym);
-  new_graph.add (test_meas0);
+  gtsam::OrientedPlane3Factor test_meas0(test_meas0_mean,
+      gtsam::noiseModel::Diagonal::Sigmas(Vector3(0.1, 0.1, 0.1)), init_sym,
+      lm_sym);
+  new_graph.add(test_meas0);
   Vector test_meas1_mean(4);
   test_meas1_mean << 0.0, -1.0, 0.0, 3.0;
-  gtsam::OrientedPlane3Factor test_meas1 (test_meas1_mean, gtsam::noiseModel::Diagonal::Sigmas (Vector3( 0.1, 0.1, 0.1)), init_sym, lm_sym);
-  new_graph.add (test_meas1);
-  
+  gtsam::OrientedPlane3Factor test_meas1(test_meas1_mean,
+      gtsam::noiseModel::Diagonal::Sigmas(Vector3(0.1, 0.1, 0.1)), init_sym,
+      lm_sym);
+  new_graph.add(test_meas1);
+
   // Optimize
-  gtsam::ISAM2Result result = isam2.update (new_graph, new_values);
-  gtsam::Values result_values = isam2.calculateEstimate ();
-  gtsam::OrientedPlane3 optimized_plane_landmark = result_values.at<gtsam::OrientedPlane3>(lm_sym);
+  gtsam::ISAM2Result result = isam2.update(new_graph, new_values);
+  gtsam::Values result_values = isam2.calculateEstimate();
+  gtsam::OrientedPlane3 optimized_plane_landmark = result_values.at<
+      gtsam::OrientedPlane3>(lm_sym);
 
   // Given two noisy measurements of equal weight, expect result between the two
-  gtsam::OrientedPlane3 expected_plane_landmark (-sqrt (2.0)/2.0, -sqrt (2.0)/2.0, 0.0, 3.0);
-  EXPECT (assert_equal (optimized_plane_landmark, expected_plane_landmark));
+  gtsam::OrientedPlane3 expected_plane_landmark(-sqrt(2.0) / 2.0,
+      -sqrt(2.0) / 2.0, 0.0, 3.0);
+  EXPECT(assert_equal(optimized_plane_landmark, expected_plane_landmark));
 }
 
 // *************************************************************************
@@ -130,29 +140,31 @@ TEST( OrientedPlane3DirectionPrior, Constructor ) {
 
   // Factor
   Key key(1);
-  SharedGaussian model = gtsam::noiseModel::Diagonal::Sigmas (Vector3(0.1, 0.1, 10.0));
+  SharedGaussian model = gtsam::noiseModel::Diagonal::Sigmas(
+      Vector3(0.1, 0.1, 10.0));
   OrientedPlane3DirectionPrior factor(key, planeOrientation, model);
 
   // Create a linearization point at the zero-error point
   Vector theta1 = Vector4(0.0, 0.02, -1.2, 10.0);
-  Vector theta2 = Vector4(0.0, 0.1, - 0.8, 10.0);
-  Vector theta3 = Vector4(0.0, 0.2,  -0.9, 10.0);
-
+  Vector theta2 = Vector4(0.0, 0.1, -0.8, 10.0);
+  Vector theta3 = Vector4(0.0, 0.2, -0.9, 10.0);
 
   OrientedPlane3 T1(theta1);
   OrientedPlane3 T2(theta2);
   OrientedPlane3 T3(theta3);
 
-
   // Calculate numerical derivatives
-  Matrix expectedH1 = numericalDerivative11<Vector,OrientedPlane3>(
-      boost::bind(&OrientedPlane3DirectionPrior::evaluateError, &factor, _1, boost::none), T1);
+  Matrix expectedH1 = numericalDerivative11<Vector, OrientedPlane3>(
+      boost::bind(&OrientedPlane3DirectionPrior::evaluateError, &factor, _1,
+          boost::none), T1);
 
-  Matrix expectedH2 = numericalDerivative11<Vector,OrientedPlane3>(
-      boost::bind(&OrientedPlane3DirectionPrior::evaluateError, &factor, _1, boost::none), T2);
+  Matrix expectedH2 = numericalDerivative11<Vector, OrientedPlane3>(
+      boost::bind(&OrientedPlane3DirectionPrior::evaluateError, &factor, _1,
+          boost::none), T2);
 
-  Matrix expectedH3 = numericalDerivative11<Vector,OrientedPlane3>(
-      boost::bind(&OrientedPlane3DirectionPrior::evaluateError, &factor, _1, boost::none), T3);
+  Matrix expectedH3 = numericalDerivative11<Vector, OrientedPlane3>(
+      boost::bind(&OrientedPlane3DirectionPrior::evaluateError, &factor, _1,
+          boost::none), T3);
 
   // Use the factor to calculate the derivative
   Matrix actualH1, actualH2, actualH3;
