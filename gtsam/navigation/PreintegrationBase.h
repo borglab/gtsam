@@ -83,7 +83,7 @@ public:
     integrationCovariance_(integrationErrorCovariance) {}
 
   /// methods to access class variables
-  const bool use2ndOrderIntegration() const {return use2ndOrderIntegration_;}
+  bool use2ndOrderIntegration() const {return use2ndOrderIntegration_;}
   const Vector3& deltaPij() const {return deltaPij_;}
   const Vector3& deltaVij() const {return deltaVij_;}
   const imuBias::ConstantBias& biasHat() const { return biasHat_;}
