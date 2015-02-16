@@ -16,21 +16,9 @@
  * @brief Tests the OrientedPlane3 class
  */
 
-#include <gtsam/geometry/Unit3.h>
 #include <gtsam/geometry/OrientedPlane3.h>
-#include <gtsam/nonlinear/Symbol.h>
-#include <gtsam/geometry/Pose3.h>
-#include <gtsam/inference/FactorGraph.h>
-#include <gtsam/linear/NoiseModel.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/nonlinear/Marginals.h>
-#include <gtsam/nonlinear/ISAM2.h>
-#include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <CppUnitLite/TestHarness.h>
-#include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 #include <boost/assign/std/vector.hpp>
 
 using namespace boost::assign;
