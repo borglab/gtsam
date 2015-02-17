@@ -16,53 +16,47 @@
  * @brief Tests the OrientedPlane3 class
  */
 
-#include <gtsam/geometry/Unit3.h>
 #include <gtsam/geometry/OrientedPlane3.h>
-#include <gtsam/nonlinear/Symbol.h>
-#include <gtsam/geometry/Pose3.h>
-#include <gtsam/inference/FactorGraph.h>
-#include <gtsam/linear/NoiseModel.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/nonlinear/Marginals.h>
-#include <gtsam/nonlinear/ISAM2.h>
-#include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <CppUnitLite/TestHarness.h>
-#include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 #include <boost/assign/std/vector.hpp>
 
 using namespace boost::assign;
 using namespace gtsam;
 using namespace std;
+using boost::none;
 
 GTSAM_CONCEPT_TESTABLE_INST(OrientedPlane3)
 GTSAM_CONCEPT_MANIFOLD_INST(OrientedPlane3)
 
 //*******************************************************************************
-TEST (OrientedPlane3, transform)
-{
+TEST (OrientedPlane3, transform) {
   // Test transforming a plane to a pose
-  gtsam::Pose3 pose(gtsam::Rot3::ypr (-M_PI/4.0, 0.0, 0.0), gtsam::Point3(2.0, 3.0, 4.0));
-  OrientedPlane3 plane (-1 , 0, 0, 5);
-  OrientedPlane3 expected_meas (-sqrt (2.0)/2.0, -sqrt (2.0)/2.0, 0.0, 3);
-  OrientedPlane3 transformed_plane = OrientedPlane3::Transform (plane, pose, boost::none, boost::none);
-  EXPECT (assert_equal (expected_meas, transformed_plane, 1e-9));
+  gtsam::Pose3 pose(gtsam::Rot3::ypr(-M_PI / 4.0, 0.0, 0.0),
+      gtsam::Point3(2.0, 3.0, 4.0));
+  OrientedPlane3 plane(-1, 0, 0, 5);
+  OrientedPlane3 expected_meas(-sqrt(2.0) / 2.0, -sqrt(2.0) / 2.0, 0.0, 3);
+  OrientedPlane3 transformed_plane = OrientedPlane3::Transform(plane, pose,
+      none, none);
+  EXPECT(assert_equal(expected_meas, transformed_plane, 1e-9));
 
   // Test the jacobians of transform
   Matrix actualH1, expectedH1, actualH2, expectedH2;
   {
-    expectedH1 = numericalDerivative11<OrientedPlane3, Pose3>(boost::bind (&OrientedPlane3::Transform, plane, _1, boost::none, boost::none), pose);
+    expectedH1 = numericalDerivative11<OrientedPlane3, Pose3>(
+        boost::bind(&OrientedPlane3::Transform, plane, _1, none, none), pose);
 
-    OrientedPlane3 tformed = OrientedPlane3::Transform (plane, pose, actualH1, boost::none);
-    EXPECT (assert_equal (expectedH1, actualH1, 1e-9));
+    OrientedPlane3 tformed = OrientedPlane3::Transform(plane, pose, actualH1,
+        none);
+    EXPECT(assert_equal(expectedH1, actualH1, 1e-9));
   }
   {
-    expectedH2 = numericalDerivative11<OrientedPlane3, OrientedPlane3> (boost::bind (&OrientedPlane3::Transform, _1, pose, boost::none, boost::none), plane);
+    expectedH2 = numericalDerivative11<OrientedPlane3, OrientedPlane3>(
+        boost::bind(&OrientedPlane3::Transform, _1, pose, none, none), plane);
 
-    OrientedPlane3 tformed = OrientedPlane3::Transform (plane, pose, boost::none, actualH2);
-    EXPECT (assert_equal (expectedH2, actualH2, 1e-9));
+    OrientedPlane3 tformed = OrientedPlane3::Transform(plane, pose, none,
+        actualH2);
+    EXPECT(assert_equal(expectedH2, actualH2, 1e-9));
   }
 
 }
@@ -78,23 +72,23 @@ inline static Vector randomVector(const Vector& minLimits,
 
   // Create the random vector
   for (size_t i = 0; i < numDims; i++) {
-      double range = maxLimits(i) - minLimits(i);
-      vector(i) = (((double) rand()) / RAND_MAX) * range + minLimits(i);
-    }
+    double range = maxLimits(i) - minLimits(i);
+    vector(i) = (((double) rand()) / RAND_MAX) * range + minLimits(i);
+  }
   return vector;
 }
 
 //*******************************************************************************
 TEST(OrientedPlane3, localCoordinates_retract) {
-  
+
   size_t numIterations = 10000;
   gtsam::Vector minPlaneLimit(4), maxPlaneLimit(4);
   minPlaneLimit << -1.0, -1.0, -1.0, 0.01;
   maxPlaneLimit << 1.0, 1.0, 1.0, 10.0;
 
-  Vector minXiLimit(3),maxXiLimit(3);
-  minXiLimit <<  -M_PI, -M_PI, -10.0;
-  maxXiLimit <<   M_PI, M_PI, 10.0;
+  Vector minXiLimit(3), maxXiLimit(3);
+  minXiLimit << -M_PI, -M_PI, -10.0;
+  maxXiLimit << M_PI, M_PI, 10.0;
   for (size_t i = 0; i < numIterations; i++) {
 
     sleep(0);
@@ -104,7 +98,7 @@ TEST(OrientedPlane3, localCoordinates_retract) {
     Vector v12 = randomVector(minXiLimit, maxXiLimit);
 
     // Magnitude of the rotation can be at most pi
-    if (v12.segment<3>(0).norm () > M_PI)
+    if (v12.segment<3>(0).norm() > M_PI)
       v12.segment<3>(0) = v12.segment<3>(0) / M_PI;
     OrientedPlane3 p2 = p1.retract(v12);
 
