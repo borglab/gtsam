@@ -64,7 +64,7 @@ protected:
   typedef NonlinearConstraint1<VALUE> This;
 
 private:
-  static const int X1Dim = traits::dimension<VALUE>::value;
+  static const int X1Dim = traits<VALUE>::dimension;
 
 public:
 
@@ -184,8 +184,8 @@ protected:
   typedef NonlinearConstraint2<VALUE1, VALUE2> This;
 
 private:
-  static const int X1Dim = traits::dimension<VALUE1>::value;
-  static const int X2Dim = traits::dimension<VALUE2>::value;
+  static const int X1Dim = traits<VALUE1>::dimension;
+  static const int X2Dim = traits<VALUE2>::dimension;
 
 public:
 
@@ -270,8 +270,8 @@ public:
       gtsam::print(G11all, "G11all: ");
       gtsam::print(G12all, "G12all: ");
       gtsam::print(G22all, "G22all: ");
-      std::cout << "x1dim: " << traits::dimension<VALUE1>::value << std::endl;
-      std::cout << "x2dim: " << traits::dimension<VALUE2>::value << std::endl;
+      std::cout << "x1dim: " << traits<VALUE1>::dimension << std::endl;
+      std::cout << "x2dim: " << traits<VALUE2>::dimension << std::endl;
     }
 
     for (size_t i = 0; i < Base::get_noiseModel()->dim(); ++i) {
@@ -338,9 +338,9 @@ protected:
   typedef NonlinearConstraint3<VALUE1, VALUE2, VALUE3> This;
 
 private:
-  static const int X1Dim = traits::dimension<VALUE1>::value;
-  static const int X2Dim = traits::dimension<VALUE2>::value;
-  static const int X3Dim = traits::dimension<VALUE3>::value;
+  static const int X1Dim = traits<VALUE1>::dimension;
+  static const int X2Dim = traits<VALUE2>::dimension;
+  static const int X3Dim = traits<VALUE3>::dimension;
 
 public:
 
