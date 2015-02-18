@@ -57,6 +57,12 @@ public:
       JacobianFactor(keys, augmentedMatrix, sigmas) {
   }
 
+  /** y += alpha * A'*A*x */
+  virtual void multiplyHessianAdd(double alpha, const VectorValues& x,
+      VectorValues& y) const {
+    JacobianFactor::multiplyHessianAdd(alpha, x, y);
+  }
+
   /** Raw memory access version of multiplyHessianAdd y += alpha * A'*A*x
    * Note: this is not assuming a fixed dimension for the variables,
    * but requires the vector accumulatedDims to tell the dimension of
