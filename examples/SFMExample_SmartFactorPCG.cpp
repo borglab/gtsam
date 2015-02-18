@@ -21,8 +21,8 @@
 
 // These extra headers allow us a LM outer loop with PCG linear solver (inner loop)
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/linear/PCGSolver.h>
 #include <gtsam/linear/Preconditioner.h>
+#include <gtsam/linear/PCGSolver.h>
 
 using namespace std;
 using namespace gtsam;
@@ -88,14 +88,20 @@ int main(int argc, char* argv[]) {
   // iterative solver, in this case the SPCG (subgraph PCG)
   LevenbergMarquardtParams parameters;
   parameters.linearSolverType = NonlinearOptimizerParams::Iterative;
+  parameters.absoluteErrorTol = 1e-10;
+  parameters.relativeErrorTol = 1e-10;
+  parameters.maxIterations = 500;
   PCGSolverParameters::shared_ptr pcg =
       boost::make_shared<PCGSolverParameters>();
   pcg->preconditioner_ =
       boost::make_shared<BlockJacobiPreconditionerParameters>();
+  // Following is crucial:
+  pcg->setEpsilon_abs(1e-10);
+  pcg->setEpsilon_rel(1e-10);
   parameters.iterativeParams = pcg;
 
-  LevenbergMarquardtOptimizer Optimizer(graph, initialEstimate, parameters);
-  Values result = Optimizer.optimize();
+  LevenbergMarquardtOptimizer optimizer(graph, initialEstimate, parameters);
+  Values result = optimizer.optimize();
 
   // Display result as in SFMExample_SmartFactor.run
   result.print("Final results:\n");
@@ -111,6 +117,8 @@ int main(int argc, char* argv[]) {
   }
 
   landmark_result.print("Landmark results:\n");
+  cout << "final error: " << graph.error(result) << endl;
+  cout << "number of iterations: " << optimizer.iterations() << endl;
 
   return 0;
 }

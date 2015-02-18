@@ -26,7 +26,7 @@
 
 // For an explanation of these headers, see SFMExample.cpp
 #include "SFMdata.h"
-#include <gtsam/nonlinear/DoglegOptimizer.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 
 using namespace std;
 using namespace gtsam;
@@ -98,7 +98,8 @@ int main(int argc, char* argv[]) {
   initialEstimate.print("Initial Estimates:\n");
 
   // Optimize the graph and print results
-  Values result = DoglegOptimizer(graph, initialEstimate).optimize();
+  LevenbergMarquardtOptimizer optimizer(graph, initialEstimate);
+  Values result = optimizer.optimize();
   result.print("Final results:\n");
 
   // A smart factor represent the 3D point inside the factor, not as a variable.
@@ -107,20 +108,20 @@ int main(int argc, char* argv[]) {
   Values landmark_result;
   for (size_t j = 0; j < points.size(); ++j) {
 
-    // The output of point() is in boost::optional<gtsam::Point3>, as sometimes
-    // the triangulation operation inside smart factor will encounter degeneracy.
-    boost::optional<Point3> point;
-
     // The graph stores Factor shared_ptrs, so we cast back to a SmartFactor first
     SmartFactor::shared_ptr smart = boost::dynamic_pointer_cast<SmartFactor>(graph[j]);
     if (smart) {
-      point = smart->point(result);
+      // The output of point() is in boost::optional<gtsam::Point3>, as sometimes
+      // the triangulation operation inside smart factor will encounter degeneracy.
+      boost::optional<Point3> point = smart->point(result);
       if (point) // ignore if boost::optional return NULL
         landmark_result.insert(j, *point);
     }
   }
 
   landmark_result.print("Landmark results:\n");
+  cout << "final error: " << graph.error(result) << endl;
+  cout << "number of iterations: " << optimizer.iterations() << endl;
 
   return 0;
 }
