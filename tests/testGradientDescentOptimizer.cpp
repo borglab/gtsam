@@ -1,7 +1,14 @@
 /**
+ * @file   NonlinearConjugateGradientOptimizer.cpp
+ * @brief  Test simple CG optimizer
+ * @author Yong-Dian Jian
+ * @date   June 11, 2012
+ */
+
+/**
  * @file   testGradientDescentOptimizer.cpp
- * @brief  
- * @author ydjian
+ * @brief  Small test of NonlinearConjugateGradientOptimizer
+ * @author Yong-Dian Jian
  * @date   Jun 11, 2012
  */
 
@@ -22,7 +29,7 @@
 using namespace std;
 using namespace gtsam;
 
-
+// Generate a small PoseSLAM problem
 boost::tuple<NonlinearFactorGraph, Values> generateProblem() {
 
   // 1. Create graph container and add factors to it
@@ -56,49 +63,23 @@ boost::tuple<NonlinearFactorGraph, Values> generateProblem() {
 }
 
 /* ************************************************************************* */
-TEST(optimize, GradientDescentOptimizer) {
+TEST(NonlinearConjugateGradientOptimizer, Optimize) {
 
   NonlinearFactorGraph graph;
   Values initialEstimate;
 
   boost::tie(graph, initialEstimate) = generateProblem();
-  // cout << "initial error = " << graph.error(initialEstimate) << endl ;
+    cout << "initial error = " << graph.error(initialEstimate) << endl ;
 
-  // Single Step Optimization using Levenberg-Marquardt
   NonlinearOptimizerParams param;
   param.maxIterations = 500;    /* requires a larger number of iterations to converge */
-  param.verbosity = NonlinearOptimizerParams::SILENT;
+  param.verbosity = NonlinearOptimizerParams::ERROR;
 
   NonlinearConjugateGradientOptimizer optimizer(graph, initialEstimate, param);
   Values result = optimizer.optimize();
-//  cout << "gd1 solver final error = " << graph.error(result) << endl;
+    cout << "cg final error = " << graph.error(result) << endl;
 
-  /* the optimality of the solution is not comparable to the */
-  DOUBLES_EQUAL(0.0, graph.error(result), 1e-2);
-
-  CHECK(1);
-}
-
-/* ************************************************************************* */
-TEST(optimize, ConjugateGradientOptimizer) {
-
-  NonlinearFactorGraph graph;
-  Values initialEstimate;
-
-  boost::tie(graph, initialEstimate) = generateProblem();
-//  cout << "initial error = " << graph.error(initialEstimate) << endl ;
-
-  // Single Step Optimization using Levenberg-Marquardt
-  NonlinearOptimizerParams param;
-  param.maxIterations = 500;    /* requires a larger number of iterations to converge */
-  param.verbosity = NonlinearOptimizerParams::SILENT;
-
-  NonlinearConjugateGradientOptimizer optimizer(graph, initialEstimate, param);
-  Values result = optimizer.optimize();
-//  cout << "cg final error = " << graph.error(result) << endl;
-
-  /* the optimality of the solution is not comparable to the */
-  DOUBLES_EQUAL(0.0, graph.error(result), 1e-2);
+  EXPECT_DOUBLES_EQUAL(0.0, graph.error(result), 1e-4);
 }
 
 /* ************************************************************************* */
