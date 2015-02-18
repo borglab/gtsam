@@ -193,7 +193,7 @@ boost::tuple<V, int> nonlinearConjugateGradient(const S &system,
       // Polak-Ribiere: beta = g'*(g_n-g_n-1)/g_n-1'*g_n-1
       const double beta = std::max(0.0,
           currentGradient.dot(currentGradient - prevGradient)
-              / currentGradient.dot(currentGradient));
+              / prevGradient.dot(prevGradient));
       direction = currentGradient + (beta * direction);
     }
 
