@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- *  @file  TestSmartProjectionPoseFactor.cpp
+ *  @file  testSmartProjectionPoseFactor.cpp
  *  @brief Unit tests for ProjectionFactor Class
  *  @author Chris Beall
  *  @author Luca Carlone

@@ -52,8 +52,8 @@ public:
    *  factor. */
   template<typename KEYS>
   RegularJacobianFactor(const KEYS& keys,
-      const VerticalBlockMatrix& augmentedMatrix,
-      const SharedDiagonal& sigmas = SharedDiagonal()) :
+      const VerticalBlockMatrix& augmentedMatrix, const SharedDiagonal& sigmas =
+          SharedDiagonal()) :
       JacobianFactor(keys, augmentedMatrix, sigmas) {
   }
 
@@ -78,10 +78,10 @@ public:
     /// Just iterate over all A matrices and multiply in correct config part (looping over keys)
     /// E.g.: Jacobian A = [A0 A1 A2] multiplies x = [x0 x1 x2]'
     /// Hence: Ax = A0 x0 + A1 x1 + A2 x2 (hence we loop over the keys and accumulate)
-    for (size_t pos = 0; pos < size(); ++pos)
-    {
+    for (size_t pos = 0; pos < size(); ++pos) {
       Ax += Ab_(pos)
-          * ConstMapD(x + accumulatedDims[keys_[pos]], accumulatedDims[keys_[pos] + 1] - accumulatedDims[keys_[pos]]);
+          * ConstMapD(x + accumulatedDims[keys_[pos]],
+              accumulatedDims[keys_[pos] + 1] - accumulatedDims[keys_[pos]]);
     }
     /// Deal with noise properly, need to Double* whiten as we are dividing by variance
     if (model_) {
@@ -93,8 +93,9 @@ public:
     Ax *= alpha;
 
     /// Again iterate over all A matrices and insert Ai^T into y
-    for (size_t pos = 0; pos < size(); ++pos){
-      MapD(y + accumulatedDims[keys_[pos]], accumulatedDims[keys_[pos] + 1] - accumulatedDims[keys_[pos]]) += Ab_(
+    for (size_t pos = 0; pos < size(); ++pos) {
+      MapD(y + accumulatedDims[keys_[pos]],
+          accumulatedDims[keys_[pos] + 1] - accumulatedDims[keys_[pos]]) += Ab_(
           pos).transpose() * Ax;
     }
   }
@@ -102,21 +103,25 @@ public:
   /** Raw memory access version of multiplyHessianAdd */
   void multiplyHessianAdd(double alpha, const double* x, double* y) const {
 
-    if (empty()) return;
+    if (empty())
+      return;
     Vector Ax = zero(Ab_.rows());
 
     // Just iterate over all A matrices and multiply in correct config part
-    for(size_t pos=0; pos<size(); ++pos)
+    for (size_t pos = 0; pos < size(); ++pos)
       Ax += Ab_(pos) * ConstDMap(x + D * keys_[pos]);
 
     // Deal with noise properly, need to Double* whiten as we are dividing by variance
-    if  (model_) { model_->whitenInPlace(Ax); model_->whitenInPlace(Ax); }
+    if (model_) {
+      model_->whitenInPlace(Ax);
+      model_->whitenInPlace(Ax);
+    }
 
     // multiply with alpha
     Ax *= alpha;
 
     // Again iterate over all A matrices and insert Ai^e into y
-    for(size_t pos=0; pos<size(); ++pos)
+    for (size_t pos = 0; pos < size(); ++pos)
       DMap(y + D * keys_[pos]) += Ab_(pos).transpose() * Ax;
   }
 
@@ -128,12 +133,12 @@ public:
     for (DenseIndex j = 0; j < (DenseIndex) size(); ++j) {
       // Get the diagonal block, and insert its diagonal
       DVector dj;
-      for (size_t k = 0; k < D; ++k){
-        if (model_){
+      for (size_t k = 0; k < D; ++k) {
+        if (model_) {
           Vector column_k = Ab_(j).col(k);
           column_k = model_->whiten(column_k);
           dj(k) = dot(column_k, column_k);
-        }else{
+        } else {
           dj(k) = Ab_(j).col(k).squaredNorm();
         }
       }
@@ -156,13 +161,13 @@ public:
     }
 
     // Just iterate over all A matrices
-    for (DenseIndex j = 0; j < (DenseIndex)size(); ++j) {
+    for (DenseIndex j = 0; j < (DenseIndex) size(); ++j) {
       DVector dj;
       // gradient -= A'*b/sigma^2
       // Computing with each column
-      for (size_t k = 0; k < D; ++k){
+      for (size_t k = 0; k < D; ++k) {
         Vector column_k = Ab_(j).col(k);
-        dj(k) = -1.0*dot(b, column_k);
+        dj(k) = -1.0 * dot(b, column_k);
       }
       DMap(d + D * j) += dj;
     }
