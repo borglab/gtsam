@@ -17,45 +17,16 @@
  * @author  Frank Dellaert
  */
 
-/**
- * A structure-from-motion example with landmarks
- *  - The landmarks form a 10 meter cube
- *  - The robot rotates around the landmarks, always facing towards the cube
- */
-
-// For loading the data
-#include "SFMdata.h"
-
-// Camera observations of landmarks (i.e. pixel coordinates) will be stored as Point2 (x, y).
-#include <gtsam/geometry/Point2.h>
-
 // In GTSAM, measurement functions are represented as 'factors'.
-// The factor we used here is SmartProjectionPoseFactor. Every smart factor represent a single landmark,
-// The SmartProjectionPoseFactor only optimize the pose of camera, not the calibration,
-// The calibration should be known.
+// The factor we used here is SmartProjectionPoseFactor.
+// Every smart factor represent a single landmark, seen from multiple cameras.
+// The SmartProjectionPoseFactor only optimizes for the poses of a camera,
+// not the calibration, which is assumed known.
 #include <gtsam/slam/SmartProjectionPoseFactor.h>
 
-// Also, we will initialize the robot at some location using a Prior factor.
-#include <gtsam/slam/PriorFactor.h>
-
-// When the factors are created, we will add them to a Factor Graph. As the factors we are using
-// are nonlinear factors, we will need a Nonlinear Factor Graph.
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-
-// Finally, once all of the factors have been added to our factor graph, we will want to
-// solve/optimize to graph to find the best (Maximum A Posteriori) set of variable values.
-// GTSAM includes several nonlinear optimizers to perform this step. Here we will use a
-// trust-region method known as Powell's Degleg
+// For an explanation of these headers, see SFMExample.cpp
+#include "SFMdata.h"
 #include <gtsam/nonlinear/DoglegOptimizer.h>
-
-// The nonlinear solvers within GTSAM are iterative solvers, meaning they linearize the
-// nonlinear functions around an initial linearization point, then solve the linear system
-// to update the linearization point. This happens repeatedly until the solver converges
-// to a consistent set of variable values. This requires us to specify an initial guess
-// for each variable, held in a Values container.
-#include <gtsam/nonlinear/Values.h>
-
-#include <vector>
 
 using namespace std;
 using namespace gtsam;

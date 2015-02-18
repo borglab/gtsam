@@ -15,13 +15,7 @@
  * @author  Duy-Nguyen Ta
  */
 
-/**
- * A structure-from-motion example with landmarks
- *  - The landmarks form a 10 meter cube
- *  - The robot rotates around the landmarks, always facing towards the cube
- */
-
-// For loading the data
+// For loading the data, see the comments therein for scenario (camera rotates around cube)
 #include "SFMdata.h"
 
 // Camera observations of landmarks (i.e. pixel coordinates) will be stored as Point2 (x, y).
