@@ -25,7 +25,6 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/tuple/tuple.hpp>
 
-
 using namespace std;
 using namespace gtsam;
 
@@ -33,31 +32,40 @@ using namespace gtsam;
 boost::tuple<NonlinearFactorGraph, Values> generateProblem() {
 
   // 1. Create graph container and add factors to it
-  NonlinearFactorGraph graph ;
+  NonlinearFactorGraph graph;
 
   // 2a. Add Gaussian prior
   Pose2 priorMean(0.0, 0.0, 0.0); // prior at origin
-  SharedDiagonal priorNoise = noiseModel::Diagonal::Sigmas(Vector3(0.3, 0.3, 0.1));
+  SharedDiagonal priorNoise = noiseModel::Diagonal::Sigmas(
+      Vector3(0.3, 0.3, 0.1));
   graph += PriorFactor<Pose2>(1, priorMean, priorNoise);
 
   // 2b. Add odometry factors
-  SharedDiagonal odometryNoise = noiseModel::Diagonal::Sigmas(Vector3(0.2, 0.2, 0.1));
-  graph += BetweenFactor<Pose2>(1, 2, Pose2(2.0, 0.0, 0.0   ), odometryNoise);
+  SharedDiagonal odometryNoise = noiseModel::Diagonal::Sigmas(
+      Vector3(0.2, 0.2, 0.1));
+  graph += BetweenFactor<Pose2>(1, 2, Pose2(2.0, 0.0, 0.0), odometryNoise);
   graph += BetweenFactor<Pose2>(2, 3, Pose2(2.0, 0.0, M_PI_2), odometryNoise);
   graph += BetweenFactor<Pose2>(3, 4, Pose2(2.0, 0.0, M_PI_2), odometryNoise);
   graph += BetweenFactor<Pose2>(4, 5, Pose2(2.0, 0.0, M_PI_2), odometryNoise);
 
   // 2c. Add pose constraint
-  SharedDiagonal constraintUncertainty = noiseModel::Diagonal::Sigmas(Vector3(0.2, 0.2, 0.1));
-  graph += BetweenFactor<Pose2>(5, 2, Pose2(2.0, 0.0, M_PI_2), constraintUncertainty);
+  SharedDiagonal constraintUncertainty = noiseModel::Diagonal::Sigmas(
+      Vector3(0.2, 0.2, 0.1));
+  graph += BetweenFactor<Pose2>(5, 2, Pose2(2.0, 0.0, M_PI_2),
+      constraintUncertainty);
 
   // 3. Create the data structure to hold the initialEstimate estimate to the solution
   Values initialEstimate;
-  Pose2 x1(0.5, 0.0, 0.2   ); initialEstimate.insert(1, x1);
-  Pose2 x2(2.3, 0.1,-0.2   ); initialEstimate.insert(2, x2);
-  Pose2 x3(4.1, 0.1, M_PI_2); initialEstimate.insert(3, x3);
-  Pose2 x4(4.0, 2.0, M_PI  ); initialEstimate.insert(4, x4);
-  Pose2 x5(2.1, 2.1,-M_PI_2); initialEstimate.insert(5, x5);
+  Pose2 x1(0.5, 0.0, 0.2);
+  initialEstimate.insert(1, x1);
+  Pose2 x2(2.3, 0.1, -0.2);
+  initialEstimate.insert(2, x2);
+  Pose2 x3(4.1, 0.1, M_PI_2);
+  initialEstimate.insert(3, x3);
+  Pose2 x4(4.0, 2.0, M_PI);
+  initialEstimate.insert(4, x4);
+  Pose2 x5(2.1, 2.1, -M_PI_2);
+  initialEstimate.insert(5, x5);
 
   return boost::tie(graph, initialEstimate);
 }
@@ -69,19 +77,22 @@ TEST(NonlinearConjugateGradientOptimizer, Optimize) {
   Values initialEstimate;
 
   boost::tie(graph, initialEstimate) = generateProblem();
-    cout << "initial error = " << graph.error(initialEstimate) << endl ;
+//  cout << "initial error = " << graph.error(initialEstimate) << endl;
 
   NonlinearOptimizerParams param;
-  param.maxIterations = 500;    /* requires a larger number of iterations to converge */
-  param.verbosity = NonlinearOptimizerParams::ERROR;
+  param.maxIterations = 500; /* requires a larger number of iterations to converge */
+  param.verbosity = NonlinearOptimizerParams::SILENT;
 
   NonlinearConjugateGradientOptimizer optimizer(graph, initialEstimate, param);
   Values result = optimizer.optimize();
-    cout << "cg final error = " << graph.error(result) << endl;
+//  cout << "cg final error = " << graph.error(result) << endl;
 
   EXPECT_DOUBLES_EQUAL(0.0, graph.error(result), 1e-4);
 }
 
 /* ************************************************************************* */
-int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
+int main() {
+  TestResult tr;
+  return TestRegistry::runAllTests(tr);
+}
 /* ************************************************************************* */
