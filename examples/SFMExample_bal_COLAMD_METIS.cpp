@@ -48,7 +48,7 @@ int main (int argc, char* argv[]) {
   cout << boost::format("read %1% tracks on %2% cameras\n") % mydata.number_tracks() % mydata.number_cameras();
 
   // Create a factor graph
-  NonlinearFactorGraph graph;
+  NonlinearFactorGraph graph_for_COLAMD;
 
   // We share *one* noiseModel between all projection factors
   noiseModel::Isotropic::shared_ptr noise =
@@ -60,15 +60,15 @@ int main (int argc, char* argv[]) {
     BOOST_FOREACH(const SfM_Measurement& m, track.measurements) {
       size_t i = m.first;
       Point2 uv = m.second;
-      graph.push_back(MyFactor(uv, noise, C(i), P(j))); // note use of shorthand symbols C and P
+      graph_for_COLAMD.push_back(MyFactor(uv, noise, C(i), P(j))); // note use of shorthand symbols C and P
     }
     j += 1;
   }
 
   // Add a prior on pose x1. This indirectly specifies where the origin is.
   // and a prior on the position of the first landmark to fix the scale
-  graph.push_back(PriorFactor<SfM_Camera>(C(0), mydata.cameras[0],  noiseModel::Isotropic::Sigma(9, 0.1)));
-  graph.push_back(PriorFactor<Point3>    (P(0), mydata.tracks[0].p, noiseModel::Isotropic::Sigma(3, 0.1)));
+  graph_for_COLAMD.push_back(PriorFactor<SfM_Camera>(C(0), mydata.cameras[0],  noiseModel::Isotropic::Sigma(9, 0.1)));
+  graph_for_COLAMD.push_back(PriorFactor<Point3>    (P(0), mydata.tracks[0].p, noiseModel::Isotropic::Sigma(3, 0.1)));
 
   // Create initial estimate
   Values initial;
@@ -76,7 +76,11 @@ int main (int argc, char* argv[]) {
   BOOST_FOREACH(const SfM_Camera& camera, mydata.cameras) initial.insert(C(i++), camera);
   BOOST_FOREACH(const SfM_Track& track, mydata.tracks)    initial.insert(P(j++), track.p);
 
-  /** ---------------------------------------------------**/
+  NonlinearFactorGraph graph_for_METIS = graph_for_COLAMD.clone();
+
+
+  /** ---------------  COMPARISON  -----------------------**/
+  /** ----------------------------------------------------**/
 
   /* With COLAMD, optimize the graph and print the results */
   cout << "Optimize with COLAMD..." << endl;
@@ -87,13 +91,13 @@ int main (int argc, char* argv[]) {
 
     LevenbergMarquardtParams params_using_COLAMD;
     params_using_COLAMD.setVerbosity("ERROR");
-    params_using_COLAMD.ordering = Ordering::Create(Ordering::COLAMD, graph);
+    params_using_COLAMD.ordering = Ordering::Create(Ordering::COLAMD, graph_for_COLAMD);
 
     double toc_t = (clock() - tic_t)/CLOCKS_PER_SEC;
 
     tic_t = clock();
 
-    LevenbergMarquardtOptimizer lm(graph, initial, params_using_COLAMD);
+    LevenbergMarquardtOptimizer lm(graph_for_COLAMD, initial, params_using_COLAMD);
     result_COLAMD = lm.optimize();
 
     tic_t = clock();
@@ -105,12 +109,14 @@ int main (int argc, char* argv[]) {
     cout << e.what();
   }
 
+  cout << endl << endl;
+
   // To see the error, check SFMExample_bal.cpp file
   //cout << "final error: " << graph.error(result_COLAMD) << endl;
 
   /** ---------------------------------------------------**/
-
   /* with METIS, optimize the graph and print the results */
+
   cout << "Optimize with METIS" << endl;
 
   Values results_METIS;
@@ -119,13 +125,13 @@ int main (int argc, char* argv[]) {
 
     LevenbergMarquardtParams params_using_METIS;
     params_using_METIS.setVerbosity("ERROR");
-    params_using_METIS.ordering = Ordering::Create(Ordering::METIS, graph);
+    params_using_METIS.ordering = Ordering::Create(Ordering::METIS, graph_for_METIS);
 
     double toc_t = (clock() - tic_t)/CLOCKS_PER_SEC;
 
     tic_t = clock();
 
-    LevenbergMarquardtOptimizer lm(graph, initial, params_using_METIS);
+    LevenbergMarquardtOptimizer lm(graph_for_METIS, initial, params_using_METIS);
     results_METIS = lm.optimize();
 
     tic_t = clock();
