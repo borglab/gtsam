@@ -40,6 +40,9 @@ namespace gtsam {
  * @brief  Base class for smart factors
  * This base class has no internal point, but it has a measurement, noise model
  * and an optional sensor pose.
+ * This class mainly computes the derivatives and returns them as a variety of factors.
+ * The methods take a Cameras argument, which should behave like PinholeCamera, and
+ * the value of a point, which is kept in the base class.
  */
 template<class POSE, class Z, class CAMERA, size_t D>
 class SmartFactorBase: public NonlinearFactor {
@@ -47,9 +50,12 @@ class SmartFactorBase: public NonlinearFactor {
 protected:
 
   // Keep a copy of measurement for I/O
-  std::vector<Z> measured_; ///< 2D measurement for each of the m views
-  ///< (important that the order is the same as the keys that we use to create the factor)
 
+  /**
+   * 2D measurement and noise model for each of the m views
+   * The order is kept the same as the keys that we use to create the factor.
+   */
+  std::vector<Z> measured_;
   std::vector<SharedNoiseModel> noise_; ///< noise model used
 
   boost::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame (one for all cameras)
@@ -95,7 +101,7 @@ public:
   }
 
   /**
-   * add a new measurement and pose key
+   * Add a new measurement and pose key
    * @param measured_i is the 2m dimensional projection of a single landmark
    * @param poseKey is the index corresponding to the camera observing the landmark
    * @param noise_i is the measurement noise
@@ -108,7 +114,7 @@ public:
   }
 
   /**
-   * variant of the previous add: adds a bunch of measurements, together with the camera keys and noises
+   * Add a bunch of measurements, together with the camera keys and noises
    */
   void add(std::vector<Z>& measurements, std::vector<Key>& poseKeys,
       std::vector<SharedNoiseModel>& noises) {
@@ -120,7 +126,7 @@ public:
   }
 
   /**
-   * variant of the previous add: adds a bunch of measurements and uses the same noise model for all of them
+   * Add a bunch of measurements and uses the same noise model for all of them
    */
   void add(std::vector<Z>& measurements, std::vector<Key>& poseKeys,
       const SharedNoiseModel& noise) {
@@ -149,7 +155,7 @@ public:
     return measured_;
   }
 
-  /** return the noise model */
+  /** return the noise models */
   const std::vector<SharedNoiseModel>& noise() const {
     return noise_;
   }
@@ -237,7 +243,11 @@ public:
     return overallError;
   }
 
-  /// Assumes non-degenerate !
+  /**
+   * Compute the matrices E and PointCov = inv(E'*E), where E stacks the ZDim*3 derivatives
+   * of project with respect to the point, given each of the m cameras.
+   * Assumes non-degenerate !
+   */
   void computeEP(Matrix& E, Matrix& PointCov, const Cameras& cameras,
       const Point3& point) const {
 
@@ -262,8 +272,12 @@ public:
   }
 
   /**
-   *  Compute F, E only (called below in both vanilla and SVD versions)
-   *  Given a Point3, assumes dimensionality is 3
+   *  Compute F, E, and b (called below in both vanilla and SVD versions), where
+   *  F is a vector of derivatives wrpt the cameras, and E the stacked derivatives
+   *  with respect to the point. The value of cameras/point are passed as parameters.
+   *  Given a Point3, assumes dimensionality is 3.
+   *  TODO We assume below the dimensionality of POSE is 6. Frank thinks the templating
+   *  of this factor is only for show, and should just assume a PinholeCamera.
    */
   double computeJacobians(std::vector<KeyMatrix2D>& Fblocks, Matrix& E,
       Vector& b, const Cameras& cameras, const Point3& point) const {
@@ -273,13 +287,15 @@ public:
     b = zero(ZDim * numKeys);
     double f = 0;
 
-    Matrix Fi(ZDim, 6), Ei(ZDim, 3), Hcali(ZDim, D - 6), Hcam(ZDim, D);
+    Matrix Fi(ZDim, 6), Ei(ZDim, 3), Hcali(ZDim, D - 6);
     for (size_t i = 0; i < this->measured_.size(); i++) {
 
       Vector bi;
       try {
-        bi =
-            -(cameras[i].project(point, Fi, Ei, Hcali) - this->measured_.at(i)).vector();
+        const Z& zi = this->measured_.at(i);
+        bi = -(cameras[i].project(point, Fi, Ei, Hcali) - zi).vector();
+
+        // if we have a sensor offset, correct derivatives
         if (body_P_sensor_) {
           Pose3 w_Pose_body = (cameras[i].pose()).compose(
               body_P_sensor_->inverse());
@@ -289,14 +305,18 @@ public:
         }
       } catch (CheiralityException&) {
         std::cout << "Cheirality exception " << std::endl;
-        exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE); // TODO: throw exception
       }
+
+      // Whiten derivatives according to noise parameters
       this->noise_.at(i)->WhitenSystem(Fi, Ei, Hcali, bi);
 
       f += bi.squaredNorm();
-      if (D == 6) { // optimize only camera pose
+      // TODO: if D==6 we optimize only camera pose. What's up with that ???
+      if (D == 6) {
         Fblocks.push_back(KeyMatrix2D(this->keys_[i], Fi));
       } else {
+        Matrix Hcam(ZDim, D);
         Hcam.block<ZDim, 6>(0, 0) = Fi; // ZDim x 6 block for the cameras
         Hcam.block<ZDim, D - 6>(0, 6) = Hcali; // ZDim x nrCal block for the cameras
         Fblocks.push_back(KeyMatrix2D(this->keys_[i], Hcam));
@@ -386,7 +406,9 @@ public:
     return f;
   }
 
-  /// linearize returns a Hessianfactor that is an approximation of error(p)
+  /**
+   * Linearize returns a Hessianfactor that is an approximation of error(p)
+   */
   boost::shared_ptr<RegularHessianFactor<D> > createHessianFactor(
       const Cameras& cameras, const Point3& point, const double lambda = 0.0,
       bool diagonalDamping = false) const {
@@ -412,8 +434,7 @@ public:
     //std::vector < Matrix > Gs2(Gs.begin(), Gs.end());
     //std::vector < Vector > gs2(gs.begin(), gs.end());
 
-    return boost::make_shared < RegularHessianFactor<D>
-    > (this->keys_, Gs, gs, f);
+    return boost::make_shared < RegularHessianFactor<D> > (this->keys_, Gs, gs, f);
 #else // we create directly a SymmetricBlockMatrix
     size_t n1 = D * numKeys + 1;
     std::vector<DenseIndex> dims(numKeys + 1); // this also includes the b term
@@ -429,7 +450,8 @@ public:
   }
 
   /**
-   * slow version - works on full (sparse) matrices
+   * Do Schur complement, given Jacobian as F,E,PointCov.
+   * Slow version - works on full matrices
    */
   void schurComplement(const std::vector<KeyMatrix2D>& Fblocks, const Matrix& E,
       const Matrix& PointCov, const Vector& b,
@@ -467,7 +489,10 @@ public:
     }
   }
 
-  // ****************************************************************************************************
+  /**
+   * Do Schur complement, given Jacobian as F,E,PointCov, return SymmetricBlockMatrix
+   * Fast version - works on with sparsity
+   */
   void sparseSchurComplement(const std::vector<KeyMatrix2D>& Fblocks,
       const Matrix& E, const Matrix& P /*Point Covariance*/, const Vector& b,
       /*output ->*/SymmetricBlockMatrix& augmentedHessian) const {
@@ -506,7 +531,8 @@ public:
   }
 
   /**
-   *
+   * Do Schur complement, given Jacobian as F,E,PointCov, return Gs/gs
+   * Fast version - works on with sparsity
    */
   void sparseSchurComplement(const std::vector<KeyMatrix2D>& Fblocks,
       const Matrix& E, const Matrix& P /*Point Covariance*/, const Vector& b,
@@ -554,28 +580,7 @@ public:
   }
 
   /**
-   *
-   */
-  void updateAugmentedHessian(const Cameras& cameras, const Point3& point,
-      const double lambda, bool diagonalDamping,
-      SymmetricBlockMatrix& augmentedHessian,
-      const FastVector<Key> allKeys) const {
-
-    // int numKeys = this->keys_.size();
-
-    std::vector<KeyMatrix2D> Fblocks;
-    Matrix E;
-    Matrix3 PointCov;
-    Vector b;
-    double f = computeJacobians(Fblocks, E, PointCov, b, cameras, point, lambda,
-        diagonalDamping);
-
-    updateSparseSchurComplement(Fblocks, E, PointCov, b, f, allKeys,
-        augmentedHessian); // augmentedHessian.matrix().block<D,D> (i1,i2) = ...
-  }
-
-  /**
-   *
+   * No idea. TODO Luca should document
    */
   void updateSparseSchurComplement(const std::vector<KeyMatrix2D>& Fblocks,
       const Matrix& E, const Matrix& P /*Point Covariance*/, const Vector& b,
@@ -648,7 +653,28 @@ public:
   }
 
   /**
-   *
+   * No idea. TODO Luca should document
+   */
+  void updateAugmentedHessian(const Cameras& cameras, const Point3& point,
+      const double lambda, bool diagonalDamping,
+      SymmetricBlockMatrix& augmentedHessian,
+      const FastVector<Key> allKeys) const {
+
+    // int numKeys = this->keys_.size();
+
+    std::vector<KeyMatrix2D> Fblocks;
+    Matrix E;
+    Matrix3 PointCov;
+    Vector b;
+    double f = computeJacobians(Fblocks, E, PointCov, b, cameras, point, lambda,
+        diagonalDamping);
+
+    updateSparseSchurComplement(Fblocks, E, PointCov, b, f, allKeys,
+        augmentedHessian); // augmentedHessian.matrix().block<D,D> (i1,i2) = ...
+  }
+
+  /**
+   * Return Jacobians as RegularImplicitSchurFactor with raw access
    */
   boost::shared_ptr<RegularImplicitSchurFactor<D> > createRegularImplicitSchurFactor(
       const Cameras& cameras, const Point3& point, double lambda = 0.0,
@@ -662,7 +688,7 @@ public:
   }
 
   /**
-   *
+   * Return Jacobians as JacobianFactorQ
    */
   boost::shared_ptr<JacobianFactorQ<D, ZDim> > createJacobianQFactor(
       const Cameras& cameras, const Point3& point, double lambda = 0.0,
@@ -678,7 +704,7 @@ public:
   }
 
   /**
-   *
+   * Return Jacobians as JacobianFactor
    */
   boost::shared_ptr<JacobianFactor> createJacobianSVDFactor(
       const Cameras& cameras, const Point3& point, double lambda = 0.0) const {
