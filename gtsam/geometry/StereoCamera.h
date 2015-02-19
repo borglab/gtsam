@@ -38,6 +38,14 @@ public:
  */
 class GTSAM_EXPORT StereoCamera {
 
+public:
+
+  /**
+   *  Some classes template on either PinholeCamera or StereoCamera,
+   *  and this typedef informs those classes what "project" returns.
+   */
+  typedef StereoPoint2 Measurement;
+
 private:
   Pose3 leftCamPose_;
   Cal3_S2Stereo::shared_ptr K_;
