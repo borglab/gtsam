@@ -26,6 +26,7 @@ using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
+// Cal3Bundler test
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Cal3Bundler.h>
 TEST(CameraSet, Pinhole) {
@@ -36,7 +37,14 @@ TEST(CameraSet, Pinhole) {
   set.add(camera);
   set.add(camera);
   Point3 p(0, 0, 1);
-  // Calculate actual
+
+  // Check measurements
+  Point2 expected;
+  ZZ z = set.project(p);
+  CHECK(assert_equal(expected, z[0]));
+  CHECK(assert_equal(expected, z[1]));
+
+  // Calculate expected derivatives using Pinhole
   Matrix46 actualF;
   Matrix43 actualE;
   Matrix43 actualH;
@@ -49,11 +57,10 @@ TEST(CameraSet, Pinhole) {
     actualF << F1, F1;
     actualH << H1, H1;
   }
-  Point2 expected;
+
+  // Check computed derivatives
   Matrix F, E, H;
-  ZZ z = set.project(p, F, E, H);
-  CHECK(assert_equal(expected, z[0]));
-  CHECK(assert_equal(expected, z[1]));
+  set.project(p, F, E, H);
   CHECK(assert_equal(actualF, F));
   CHECK(assert_equal(actualE, E));
   CHECK(assert_equal(actualH, H));
@@ -62,7 +69,36 @@ TEST(CameraSet, Pinhole) {
 /* ************************************************************************* */
 #include <gtsam/geometry/StereoCamera.h>
 TEST(CameraSet, Stereo) {
-  CameraSet<StereoCamera> f;
+  typedef vector<StereoPoint2> ZZ;
+  CameraSet<StereoCamera> set;
+  StereoCamera camera;
+  set.add(camera);
+  set.add(camera);
+  Point3 p(0, 0, 1);
+  EXPECT_LONGS_EQUAL(6,traits<StereoCamera>::dimension);
+
+  // Check measurements
+  StereoPoint2 expected;
+  ZZ z = set.project(p);
+  CHECK(assert_equal(expected, z[0]));
+  CHECK(assert_equal(expected, z[1]));
+
+  // Calculate expected derivatives using Pinhole
+  Matrix46 actualF;
+  Matrix43 actualE;
+  {
+    Matrix36 F1;
+    Matrix33 E1;
+    camera.project(p, F1, E1);
+    actualE << E1, E1;
+    actualF << F1, F1;
+  }
+
+  // Check computed derivatives
+  Matrix F, E;
+  set.project(p, F, E);
+  CHECK(assert_equal(actualF, F));
+  CHECK(assert_equal(actualE, E));
 }
 
 /* ************************************************************************* */

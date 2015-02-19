@@ -20,14 +20,13 @@
 
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/CalibratedCamera.h> // for Cheirality exception
-#include <boost/foreach.hpp>
-
 #include <vector>
 
 namespace gtsam {
 
 /**
  * @brief A set of cameras, all with their own calibration
+ * Assumes that a camera is laid out as 6 Pose3 parameters then calibration
  */
 template<class CAMERA>
 class CameraSet {
@@ -91,13 +90,13 @@ public:
    *  project, with derivatives in this, point, and calibration
    * throws CheiralityException
    */
-  std::vector<Z> project(const Point3& point, boost::optional<Matrix&> F,
-      boost::optional<Matrix&> E, boost::optional<Matrix&> H) const {
+  std::vector<Z> project(const Point3& point, boost::optional<Matrix&> F=boost::none,
+      boost::optional<Matrix&> E=boost::none, boost::optional<Matrix&> H=boost::none) const {
 
     size_t nrCameras = cameras_.size();
     if (F) F->resize(ZDim * nrCameras, 6);
     if (E) E->resize(ZDim * nrCameras, 3);
-    if (H) H->resize(ZDim * nrCameras, Dim - 6);
+    if (H && Dim>6) H->resize(ZDim * nrCameras, Dim - 6);
     std::vector<Z> z(nrCameras);
 
     for (size_t i = 0; i < cameras_.size(); i++) {
