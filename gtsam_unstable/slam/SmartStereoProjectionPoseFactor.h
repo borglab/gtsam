@@ -143,11 +143,6 @@ public:
     return e && Base::equals(p, tol);
   }
 
-  /// get the dimension of the factor
-  virtual size_t dim() const {
-    return 6 * this->keys_.size();
-  }
-
   /**
    * Collect all cameras involved in this factor
    * @param values Values structure which must contain camera poses corresponding

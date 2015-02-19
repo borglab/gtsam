@@ -25,10 +25,8 @@
 #include <gtsam/slam/RegularHessianFactor.h>
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/geometry/PinholeCamera.h>  // for Cheirality exception
-#include <gtsam/geometry/StereoCamera.h>
-#include <gtsam/geometry/Pose3.h>
-#include <gtsam/inference/Symbol.h>
+#include <gtsam/geometry/Point3.h>
+#include <gtsam/geometry/CalibratedCamera.h> // for Cheirality exception
 
 #include <boost/optional.hpp>
 #include <boost/make_shared.hpp>
@@ -148,6 +146,11 @@ public:
       this->keys_.push_back(trackToAdd.measurements[k].first);
       this->noise_.push_back(noise);
     }
+  }
+
+  /// get the dimension (number of rows!) of the factor
+  virtual size_t dim() const {
+    return ZDim * this->measured_.size();
   }
 
   /** return the measurements */
