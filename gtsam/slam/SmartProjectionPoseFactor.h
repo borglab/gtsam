@@ -37,8 +37,8 @@ namespace gtsam {
  * The calibration is known here. The factor only constraints poses (variable dimension is 6)
  * @addtogroup SLAM
  */
-template<class POSE, class CALIBRATION>
-class SmartProjectionPoseFactor: public SmartProjectionFactor<POSE, CALIBRATION, 6> {
+template<class CALIBRATION>
+class SmartProjectionPoseFactor: public SmartProjectionFactor<CALIBRATION, 6> {
 protected:
 
   LinearizationMode linearizeTo_;  ///< How to linearize the factor (HESSIAN, JACOBIAN_SVD, JACOBIAN_Q)
@@ -48,10 +48,10 @@ protected:
 public:
 
   /// shorthand for base class type
-  typedef SmartProjectionFactor<POSE, CALIBRATION, 6> Base;
+  typedef SmartProjectionFactor<CALIBRATION, 6> Base;
 
   /// shorthand for this class
-  typedef SmartProjectionPoseFactor<POSE, CALIBRATION> This;
+  typedef SmartProjectionPoseFactor<CALIBRATION> This;
 
   /// shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<This> shared_ptr;
@@ -67,7 +67,7 @@ public:
    */
   SmartProjectionPoseFactor(const double rankTol = 1,
       const double linThreshold = -1, const bool manageDegeneracy = false,
-      const bool enableEPI = false, boost::optional<POSE> body_P_sensor = boost::none,
+      const bool enableEPI = false, boost::optional<Pose3> body_P_sensor = boost::none,
       LinearizationMode linearizeTo = HESSIAN, double landmarkDistanceThreshold = 1e10,
       double dynamicOutlierRejectionThreshold = -1) :
         Base(rankTol, linThreshold, manageDegeneracy, enableEPI, body_P_sensor,
@@ -211,7 +211,9 @@ private:
 }; // end of class declaration
 
 /// traits
-template<class T1, class T2>
-struct traits<SmartProjectionPoseFactor<T1, T2> > : public Testable<SmartProjectionPoseFactor<T1, T2> > {};
+template<class CALIBRATION>
+struct traits<SmartProjectionPoseFactor<CALIBRATION> > : public Testable<
+    SmartProjectionPoseFactor<CALIBRATION> > {
+};
 
 } // \ namespace gtsam

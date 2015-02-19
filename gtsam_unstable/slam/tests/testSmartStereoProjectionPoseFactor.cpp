@@ -62,8 +62,8 @@ static Key poseKey1(x1);
 static StereoPoint2 measurement1(323.0, 300.0, 240.0); //potentially use more reasonable measurement value?
 static Pose3 body_P_sensor1(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));
 
-typedef SmartStereoProjectionPoseFactor<Pose3,Point3,Cal3_S2Stereo> SmartFactor;
-typedef SmartStereoProjectionPoseFactor<Pose3,Point3,Cal3Bundler> SmartFactorBundler;
+typedef SmartStereoProjectionPoseFactor<Cal3_S2Stereo> SmartFactor;
+typedef SmartStereoProjectionPoseFactor<Cal3Bundler> SmartFactorBundler;
 
 vector<StereoPoint2> stereo_projectToMultipleCameras(
     const StereoCamera& cam1, const StereoCamera& cam2,

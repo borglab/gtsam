@@ -26,8 +26,7 @@ using namespace gtsam;
 /* ************************************************************************* */
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Cal3Bundler.h>
-class PinholeFactor: public SmartFactorBase<Pose3, Point2,
-    PinholeCamera<Cal3Bundler>, 9> {
+class PinholeFactor: public SmartFactorBase<PinholeCamera<Cal3Bundler>, 9> {
   virtual double error(const Values& values) const {
     return 0.0;
   }
@@ -39,14 +38,14 @@ class PinholeFactor: public SmartFactorBase<Pose3, Point2,
 
 TEST(SmartFactorBase, Pinhole) {
   PinholeFactor f;
-  f.add(Point2(),1,SharedNoiseModel());
-  f.add(Point2(),2,SharedNoiseModel());
-  EXPECT_LONGS_EQUAL(2*2,f.dim());
+  f.add(Point2(), 1, SharedNoiseModel());
+  f.add(Point2(), 2, SharedNoiseModel());
+  EXPECT_LONGS_EQUAL(2 * 2, f.dim());
 }
 
 /* ************************************************************************* */
 #include <gtsam/geometry/StereoCamera.h>
-class StereoFactor: public SmartFactorBase<Pose3, StereoPoint2, StereoCamera, 9> {
+class StereoFactor: public SmartFactorBase<StereoCamera, 9> {
   virtual double error(const Values& values) const {
     return 0.0;
   }
@@ -58,9 +57,9 @@ class StereoFactor: public SmartFactorBase<Pose3, StereoPoint2, StereoCamera, 9>
 
 TEST(SmartFactorBase, Stereo) {
   StereoFactor f;
-  f.add(StereoPoint2(),1,SharedNoiseModel());
-  f.add(StereoPoint2(),2,SharedNoiseModel());
-  EXPECT_LONGS_EQUAL(2*3,f.dim());
+  f.add(StereoPoint2(), 1, SharedNoiseModel());
+  f.add(StereoPoint2(), 2, SharedNoiseModel());
+  EXPECT_LONGS_EQUAL(2 * 3, f.dim());
 }
 
 /* ************************************************************************* */

@@ -62,10 +62,9 @@ enum LinearizationMode {
 
 /**
  * SmartStereoProjectionFactor: triangulates point
- * TODO: why LANDMARK parameter?
  */
-template<class POSE, class LANDMARK, class CALIBRATION, size_t D>
-class SmartStereoProjectionFactor: public SmartFactorBase<POSE, gtsam::StereoPoint2, gtsam::StereoCamera, D> {
+template<class CALIBRATION, size_t D>
+class SmartStereoProjectionFactor: public SmartFactorBase<StereoCamera, D> {
 protected:
 
   // Some triangulation parameters
@@ -95,7 +94,7 @@ protected:
   typedef boost::shared_ptr<SmartStereoProjectionFactorState> SmartFactorStatePtr;
 
   /// shorthand for base class type
-  typedef SmartFactorBase<POSE, gtsam::StereoPoint2, gtsam::StereoCamera, D> Base;
+  typedef SmartFactorBase<StereoCamera, D> Base;
 
   double landmarkDistanceThreshold_; // if the landmark is triangulated at a
   // distance larger than that the factor is considered degenerate
@@ -105,7 +104,7 @@ protected:
   // and the factor is disregarded if the error is large
 
   /// shorthand for this class
-  typedef SmartStereoProjectionFactor<POSE, LANDMARK, CALIBRATION, D> This;
+  typedef SmartStereoProjectionFactor<CALIBRATION, D> This;
 
   enum {ZDim = 3};    ///< Dimension trait of measurement type
 
@@ -131,7 +130,7 @@ public:
    */
   SmartStereoProjectionFactor(const double rankTol, const double linThreshold,
       const bool manageDegeneracy, const bool enableEPI,
-      boost::optional<POSE> body_P_sensor = boost::none,
+      boost::optional<Pose3> body_P_sensor = boost::none,
       double landmarkDistanceThreshold = 1e10,
       double dynamicOutlierRejectionThreshold = -1,
       SmartFactorStatePtr state = SmartFactorStatePtr(new SmartStereoProjectionFactorState())) :
@@ -370,7 +369,7 @@ public:
         || (!this->manageDegeneracy_
             && (this->cheiralityException_ || this->degenerate_))) {
       if (isDebug) std::cout << "In linearize: exception" << std::endl;
-      BOOST_FOREACH(gtsam::Matrix& m, Gs)
+      BOOST_FOREACH(Matrix& m, Gs)
         m = zeros(D, D);
       BOOST_FOREACH(Vector& v, gs)
         v = zero(D);
@@ -746,9 +745,9 @@ private:
 };
 
 /// traits
-template<class POSE, class LANDMARK, class CALIBRATION, size_t D>
-struct traits<SmartStereoProjectionFactor<POSE, LANDMARK, CALIBRATION, D> > :
-    public Testable<SmartStereoProjectionFactor<POSE, LANDMARK, CALIBRATION, D> > {
+template<class CALIBRATION, size_t D>
+struct traits<SmartStereoProjectionFactor<CALIBRATION, D> > :
+    public Testable<SmartStereoProjectionFactor<CALIBRATION, D> > {
 };
 
 } // \ namespace gtsam

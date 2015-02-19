@@ -42,7 +42,7 @@ namespace gtsam {
  * The methods take a Cameras argument, which should behave like PinholeCamera, and
  * the value of a point, which is kept in the base class.
  */
-template<class POSE, class Z, class CAMERA, size_t D>
+template<class CAMERA, size_t D>
 class SmartFactorBase: public NonlinearFactor {
 
 protected:
@@ -53,10 +53,11 @@ protected:
    * 2D measurement and noise model for each of the m views
    * The order is kept the same as the keys that we use to create the factor.
    */
+  typedef typename CAMERA::Measurement Z;
   std::vector<Z> measured_;
   std::vector<SharedNoiseModel> noise_; ///< noise model used
 
-  boost::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame (one for all cameras)
+  boost::optional<Pose3> body_P_sensor_; ///< The pose of the sensor in the body frame (one for all cameras)
 
   static const int ZDim = traits<Z>::dimension; ///< Measurement dimension
 
@@ -73,7 +74,7 @@ protected:
   typedef NonlinearFactor Base;
 
   /// shorthand for this class
-  typedef SmartFactorBase<POSE, Z, CAMERA, D> This;
+  typedef SmartFactorBase<CAMERA, D> This;
 
 public:
 
@@ -90,7 +91,7 @@ public:
    * Constructor
    * @param body_P_sensor is the transform from sensor to body frame (default identity)
    */
-  SmartFactorBase(boost::optional<POSE> body_P_sensor = boost::none) :
+  SmartFactorBase(boost::optional<Pose3> body_P_sensor = boost::none) :
       body_P_sensor_(body_P_sensor) {
   }
 
@@ -279,7 +280,7 @@ public:
    *  F is a vector of derivatives wrpt the cameras, and E the stacked derivatives
    *  with respect to the point. The value of cameras/point are passed as parameters.
    *  Given a Point3, assumes dimensionality is 3.
-   *  TODO We assume below the dimensionality of POSE is 6. Frank thinks the templating
+   *  TODO We assume below the dimensionality of Pose3 is 6. Frank thinks the templating
    *  of this factor is only for show, and should just assume a PinholeCamera.
    */
   double computeJacobians(std::vector<KeyMatrix2D>& Fblocks, Matrix& E,
@@ -731,7 +732,7 @@ private:
   }
 };
 
-template<class POSE, class Z, class CAMERA, size_t D>
-const int SmartFactorBase<POSE, Z, CAMERA, D>::ZDim;
+template<class CAMERA, size_t D>
+const int SmartFactorBase<CAMERA, D>::ZDim;
 
 } // \ namespace gtsam
