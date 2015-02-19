@@ -34,13 +34,13 @@ TEST(CameraSet, Pinhole) {
   typedef vector<Point2> ZZ;
   CameraSet<Camera> set;
   Camera camera;
-  set.add(camera);
-  set.add(camera);
+  set.push_back(camera);
+  set.push_back(camera);
   Point3 p(0, 0, 1);
-  CHECK(assert_equal(set,set));
+  CHECK(assert_equal(set, set));
   CameraSet<Camera> set2 = set;
-  set2.add(camera);
-  CHECK(!assert_equal(set,set2));
+  set2.push_back(camera);
+  CHECK(!set.equals(set2));
 
   // Check measurements
   Point2 expected;
@@ -76,20 +76,20 @@ TEST(CameraSet, Stereo) {
   typedef vector<StereoPoint2> ZZ;
   CameraSet<StereoCamera> set;
   StereoCamera camera;
-  set.add(camera);
-  set.add(camera);
+  set.push_back(camera);
+  set.push_back(camera);
   Point3 p(0, 0, 1);
-  EXPECT_LONGS_EQUAL(6,traits<StereoCamera>::dimension);
+  EXPECT_LONGS_EQUAL(6, traits<StereoCamera>::dimension);
 
   // Check measurements
-  StereoPoint2 expected;
+  StereoPoint2 expected(0, -1, 0);
   ZZ z = set.project(p);
   CHECK(assert_equal(expected, z[0]));
   CHECK(assert_equal(expected, z[1]));
 
   // Calculate expected derivatives using Pinhole
-  Matrix46 actualF;
-  Matrix43 actualE;
+  Matrix66 actualF;
+  Matrix63 actualE;
   {
     Matrix36 F1;
     Matrix33 E1;

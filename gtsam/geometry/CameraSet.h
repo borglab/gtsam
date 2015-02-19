@@ -30,11 +30,9 @@ namespace gtsam {
  * Assumes that a camera is laid out as 6 Pose3 parameters then calibration
  */
 template<class CAMERA>
-class CameraSet {
+class CameraSet: public std::vector<CAMERA> {
 
 private:
-
-  std::vector<CAMERA> cameras_;
 
   /**
    * 2D measurement and noise model for each of the m views
@@ -45,24 +43,7 @@ private:
   static const int ZDim = traits<Z>::dimension; ///< Measurement dimension
   static const int Dim = traits<CAMERA>::dimension; ///< Camera dimension
 
-  /// shorthand for this class
-  typedef CameraSet<CAMERA> This;
-
 public:
-
-  /// Default Constructor
-  CameraSet() {
-  }
-
-  /// Add a new camera
-  void add(const CAMERA& camera) {
-    cameras_.push_back(camera);
-  }
-
-  /// Retrieve ith camera
-  const CAMERA& operator[](size_t i) const {
-    return cameras_[i];
-  }
 
   /**
    * print
@@ -71,15 +52,17 @@ public:
    */
   void print(const std::string& s = "") const {
     std::cout << s << "CameraSet, cameras = \n";
-    for (size_t k = 0; k < cameras_.size(); ++k)
-      cameras_[k].print();
+    for (size_t k = 0; k < this->size(); ++k)
+      this->at(k).print();
   }
 
   /// equals
   virtual bool equals(const CameraSet& p, double tol = 1e-9) const {
+    if (this->size() != p.size())
+      return false;
     bool camerasAreEqual = true;
-    for (size_t i = 0; i < cameras_.size(); i++) {
-      if (cameras_.at(i).equals(p.cameras_.at(i), tol) == false)
+    for (size_t i = 0; i < this->size(); i++) {
+      if (this->at(i).equals(p.at(i), tol) == false)
         camerasAreEqual = false;
       break;
     }
@@ -94,26 +77,20 @@ public:
       boost::none, boost::optional<Matrix&> E = boost::none,
       boost::optional<Matrix&> H = boost::none) const {
 
-    size_t nrCameras = cameras_.size();
-    if (F)
-      F->resize(ZDim * nrCameras, 6);
-    if (E)
-      E->resize(ZDim * nrCameras, 3);
-    if (H && Dim > 6)
-      H->resize(ZDim * nrCameras, Dim - 6);
+    size_t nrCameras = this->size();
+    if (F) F->resize(ZDim * nrCameras, 6);
+    if (E) E->resize(ZDim * nrCameras, 3);
+    if (H && Dim > 6) H->resize(ZDim * nrCameras, Dim - 6);
     std::vector<Z> z(nrCameras);
 
-    for (size_t i = 0; i < cameras_.size(); i++) {
+    for (size_t i = 0; i < nrCameras; i++) {
       Eigen::Matrix<double, ZDim, 6> Fi;
       Eigen::Matrix<double, ZDim, 3> Ei;
       Eigen::Matrix<double, ZDim, Dim - 6> Hi;
-      z[i] = cameras_[i].project(point, F ? &Fi : 0, E ? &Ei : 0, H ? &Hi : 0);
-      if (F)
-        F->block<ZDim, 6>(ZDim * i, 0) = Fi;
-      if (E)
-        E->block<ZDim, 3>(ZDim * i, 0) = Ei;
-      if (H)
-        H->block<ZDim, Dim - 6>(ZDim * i, 0) = Hi;
+      z[i] = this->at(i).project(point, F ? &Fi : 0, E ? &Ei : 0, H ? &Hi : 0);
+      if (F) F->block<ZDim, 6>(ZDim * i, 0) = Fi;
+      if (E) E->block<ZDim, 3>(ZDim * i, 0) = Ei;
+      if (H) H->block<ZDim, Dim - 6>(ZDim * i, 0) = Hi;
     }
     return z;
   }
@@ -124,7 +101,7 @@ private:
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int version) {
-    ar & cameras_;
+    ar & (*this);
   }
 };
 
