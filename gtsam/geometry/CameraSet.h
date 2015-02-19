@@ -101,7 +101,9 @@ public:
     std::vector<Z> z(nrCameras);
 
     for (size_t i = 0; i < cameras_.size(); i++) {
-      Matrix Fi(ZDim, 6), Ei(ZDim, 3), Hi(ZDim, Dim - 6);
+      Eigen::Matrix<double, ZDim, 6> Fi;
+      Eigen::Matrix<double, ZDim, 3> Ei;
+      Eigen::Matrix<double, ZDim, Dim - 6> Hi;
       z[i] = cameras_[i].project(point, F ? &Fi : 0, E ? &Ei : 0, H ? &Hi : 0);
       if (F) F->block<ZDim, 6>(ZDim * i, 0) = Fi;
       if (E) E->block<ZDim, 3>(ZDim * i, 0) = Ei;

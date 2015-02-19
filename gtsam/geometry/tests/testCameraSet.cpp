@@ -18,6 +18,7 @@
 
 #include <gtsam/geometry/CameraSet.h>
 #include <gtsam/geometry/Pose3.h>
+#include <gtsam/base/numericalDerivative.h>
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
@@ -26,20 +27,23 @@ using namespace gtsam;
 /* ************************************************************************* */
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Cal3Bundler.h>
-class PinholeSet: public CameraSet<PinholeCamera<Cal3Bundler> > {
-};
-
 TEST(CameraSet, Pinhole) {
-  PinholeSet f;
+  typedef PinholeCamera<Cal3Bundler> Camera;
+  CameraSet<Camera> set;
+  set.add(Camera());
+  set.add(Camera());
+  Point3 p(0,0,1);
+  Matrix F,E,H;
+  vector<Point2> z = set.project(p,F,E,H);
+  Point2 expected;
+  CHECK(assert_equal(expected,z[0]));
+  CHECK(assert_equal(expected,z[1]));
 }
 
 /* ************************************************************************* */
 #include <gtsam/geometry/StereoCamera.h>
-class StereoSet: public CameraSet<StereoCamera> {
-};
-
 TEST(CameraSet, Stereo) {
-  StereoSet f;
+  CameraSet<StereoCamera> f;
 }
 
 /* ************************************************************************* */
