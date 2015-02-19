@@ -9,7 +9,7 @@
 
  * -------------------------------------------------------------------------- */
 /**
- * @file 	 NonlinearConstraint.h
+ * @file 	 NonlinearInequality.h
  * @brief  
  * @author Duy-Nguyen Ta
  * @date 	 Sep 30, 2013
@@ -38,7 +38,7 @@ protected:
   typedef NonlinearInequality1<VALUE> This;
 
 private:
-  static const int X1Dim = traits::dimension<VALUE>::value;
+  static const int X1Dim = traits<VALUE>::dimension;
 
 public:
 
@@ -100,8 +100,8 @@ protected:
   typedef NonlinearInequality2<VALUE1, VALUE2> This;
 
 private:
-  static const int X1Dim = traits::dimension<VALUE1>::value;
-  static const int X2Dim = traits::dimension<VALUE2>::value;
+  static const int X1Dim = traits<VALUE1>::dimension;
+  static const int X2Dim = traits<VALUE2>::dimension;
 
 public:
 

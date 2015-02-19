@@ -26,10 +26,19 @@
 
 namespace gtsam {
 
+/**
+ * A base class for all NonlinearConstraint factors,
+ * containing additional information for the constraint,
+ * e.g., a unique key for the dual variable associated with it,
+ * and special treatments for nonlinear constraint linearization in SQP.
+ *
+ * Derived classes of NonlinearConstraint should also inherit from
+ * NoiseModelFactorX to reuse the normal linearization procedure in NonlinearFactor
+ */
 class NonlinearConstraint {
 
 protected:
-  Key dualKey_;
+  Key dualKey_; //!< Unique key for the dual variable associated with this constraint
 
 public:
   typedef boost::shared_ptr<NonlinearConstraint> shared_ptr;
@@ -37,14 +46,17 @@ public:
   /// Construct with dual key
   NonlinearConstraint(Key dualKey) : dualKey_(dualKey) {}
 
+
+  /// Return the dual key
+  Key dualKey() const { return dualKey_; }
+
   /**
-   * compute the HessianFactor of the (-dual * constraintHessian) for the qp subproblem's objective function
+   * Special linearization for nonlinear constraint in SQP
+   * Compute the HessianFactor of the (-dual * constraintHessian)
+   * for the qp subproblem's objective function
    */
   virtual GaussianFactor::shared_ptr multipliedHessian(const Values& x,
       const VectorValues& duals) const = 0;
-
-  /// return the dual key
-  Key dualKey() const { return dualKey_; }
 };
 
 /* ************************************************************************* */

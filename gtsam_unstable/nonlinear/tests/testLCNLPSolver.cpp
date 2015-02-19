@@ -436,15 +436,15 @@ TEST_DISABLED(testlcnlpSolver, iterativePoseinBox) {
 
     // Instantiate LCNLPSolver
     LCNLPSolver lcnlpSolver(lcnlp);
-    if (firstTime) {
+//    if (firstTime) {
       solutionAndDuals = lcnlpSolver.optimize(isamValues, useWarmStart);
-      firstTime = false;
-    }
-    else {
-      cout << " using this \n ";
-      solutionAndDuals = lcnlpSolver.optimize(isamValues, solutionAndDuals.second, useWarmStart);
-
-    }
+//      firstTime = false;
+//    }
+//    else {
+//      cout << " using this \n ";
+//      solutionAndDuals = lcnlpSolver.optimize(isamValues, solutionAndDuals.second, useWarmStart);
+//
+//    }
     cout << " ************************** \n";
   }
   actualSolution = solutionAndDuals.first;

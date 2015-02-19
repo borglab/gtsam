@@ -107,6 +107,7 @@ public:
   LCNLPState iterate(const LCNLPState& state, bool useWarmStart = true, bool debug = false) const;
 
   VectorValues initializeDuals() const;
+
   /**
    * Main optimization function. new
    */
