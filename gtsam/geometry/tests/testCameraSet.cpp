@@ -20,6 +20,7 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <CppUnitLite/TestHarness.h>
+#include <boost/bind.hpp>
 
 using namespace std;
 using namespace gtsam;
@@ -29,15 +30,33 @@ using namespace gtsam;
 #include <gtsam/geometry/Cal3Bundler.h>
 TEST(CameraSet, Pinhole) {
   typedef PinholeCamera<Cal3Bundler> Camera;
+  typedef vector<Point2> ZZ;
   CameraSet<Camera> set;
-  set.add(Camera());
-  set.add(Camera());
-  Point3 p(0,0,1);
-  Matrix F,E,H;
-  vector<Point2> z = set.project(p,F,E,H);
+  Camera camera;
+  set.add(camera);
+  set.add(camera);
+  Point3 p(0, 0, 1);
+  // Calculate actual
+  Matrix46 actualF;
+  Matrix43 actualE;
+  Matrix43 actualH;
+  {
+    Matrix26 F1;
+    Matrix23 E1;
+    Matrix23 H1;
+    camera.project(p, F1, E1, H1);
+    actualE << E1, E1;
+    actualF << F1, F1;
+    actualH << H1, H1;
+  }
   Point2 expected;
-  CHECK(assert_equal(expected,z[0]));
-  CHECK(assert_equal(expected,z[1]));
+  Matrix F, E, H;
+  ZZ z = set.project(p, F, E, H);
+  CHECK(assert_equal(expected, z[0]));
+  CHECK(assert_equal(expected, z[1]));
+  CHECK(assert_equal(actualF, F));
+  CHECK(assert_equal(actualE, E));
+  CHECK(assert_equal(actualH, H));
 }
 
 /* ************************************************************************* */
