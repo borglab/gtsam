@@ -110,7 +110,7 @@ public:
 
   /// shorthand for a pinhole camera
   typedef PinholeCamera<CALIBRATION> Camera;
-  typedef std::vector<Camera> Cameras;
+  typedef CameraSet<Camera> Cameras;
 
   /**
    * Constructor

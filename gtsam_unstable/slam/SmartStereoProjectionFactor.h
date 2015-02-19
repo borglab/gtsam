@@ -117,7 +117,7 @@ public:
   typedef StereoCamera Camera;
 
   /// Vector of cameras
-  typedef std::vector<Camera> Cameras;
+  typedef CameraSet<Camera> Cameras;
 
   /**
    * Constructor

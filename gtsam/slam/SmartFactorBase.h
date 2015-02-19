@@ -25,8 +25,7 @@
 #include <gtsam/slam/RegularHessianFactor.h>
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/geometry/Point3.h>
-#include <gtsam/geometry/CalibratedCamera.h> // for Cheirality exception
+#include <gtsam/geometry/CameraSet.h>
 
 #include <boost/optional.hpp>
 #include <boost/make_shared.hpp>
@@ -47,14 +46,15 @@ class SmartFactorBase: public NonlinearFactor {
 
 protected:
 
-  // Keep a copy of measurement for I/O
+  typedef typename CAMERA::Measurement Z;
 
   /**
    * 2D measurement and noise model for each of the m views
+   * We keep a copy of measurements for I/O and computing the error.
    * The order is kept the same as the keys that we use to create the factor.
    */
-  typedef typename CAMERA::Measurement Z;
   std::vector<Z> measured_;
+
   std::vector<SharedNoiseModel> noise_; ///< noise model used
 
   boost::optional<Pose3> body_P_sensor_; ///< The pose of the sensor in the body frame (one for all cameras)
@@ -83,9 +83,7 @@ public:
   /// shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<This> shared_ptr;
 
-  /// shorthand for a pinhole camera
-  typedef CAMERA Camera;
-  typedef std::vector<CAMERA> Cameras;
+  typedef CameraSet<CAMERA> Cameras;
 
   /**
    * Constructor
@@ -200,22 +198,32 @@ public:
   /// Calculate vector of re-projection errors, before applying noise model
   Vector reprojectionError(const Cameras& cameras, const Point3& point) const {
 
-    Vector b = zero(ZDim * cameras.size());
-
-    size_t i = 0;
-    BOOST_FOREACH(const CAMERA& camera, cameras) {
-      const Z& zi = this->measured_.at(i);
-      try {
-        Z e(camera.project(point) - zi);
-        b[ZDim * i] = e.x();
-        b[ZDim * i + 1] = e.y();
-      } catch (CheiralityException& e) {
-        std::cout << "Cheirality exception " << std::endl;
-        exit(EXIT_FAILURE);
-      }
-      i += 1;
+    // Project into CameraSet
+    std::vector<Z> predicted;
+    try {
+      predicted = cameras.project(point);
+    } catch (CheiralityException&) {
+      std::cout << "reprojectionError: Cheirality exception " << std::endl;
+      exit(EXIT_FAILURE); // TODO: throw exception
     }
 
+    // Calculate vector of errors
+    size_t nrCameras = cameras.size();
+    Vector b(ZDim * nrCameras);
+    for (size_t i = 0, row = 0; i < nrCameras; i++, row += ZDim) {
+      Z e = predicted[i] - measured_.at(i);
+      b.segment<ZDim>(row) = e.vector();
+    }
+
+    return b;
+  }
+
+  /// Calculate vector of re-projection errors, noise model applied
+  Vector whitenedError(const Cameras& cameras, const Point3& point) const {
+    Vector b = reprojectionError(cameras, point);
+    size_t nrCameras = cameras.size();
+    for (size_t i = 0, row = 0; i < nrCameras; i++, row += ZDim)
+      b.segment<ZDim>(row) = noise_.at(i)->whiten(b.segment<ZDim>(row));
     return b;
   }
 
@@ -228,23 +236,12 @@ public:
    */
   double totalReprojectionError(const Cameras& cameras,
       const Point3& point) const {
-
+    Vector b = reprojectionError(cameras, point);
     double overallError = 0;
-
-    size_t i = 0;
-    BOOST_FOREACH(const CAMERA& camera, cameras) {
-      const Z& zi = this->measured_.at(i);
-      try {
-        Z reprojectionError(camera.project(point) - zi);
-        overallError += 0.5
-            * this->noise_.at(i)->distance(reprojectionError.vector());
-      } catch (CheiralityException&) {
-        std::cout << "Cheirality exception " << std::endl;
-        exit(EXIT_FAILURE);
-      }
-      i += 1;
-    }
-    return overallError;
+    size_t nrCameras = cameras.size();
+    for (size_t i = 0; i < nrCameras; i++)
+      overallError += noise_.at(i)->distance(b.segment<ZDim>(i * ZDim));
+    return 0.5 * overallError;
   }
 
   /**
@@ -255,78 +252,124 @@ public:
   void computeEP(Matrix& E, Matrix& PointCov, const Cameras& cameras,
       const Point3& point) const {
 
-    int numKeys = this->keys_.size();
-    E = zeros(ZDim * numKeys, 3);
-    Vector b = zero(2 * numKeys);
-
-    Matrix Ei(ZDim, 3);
-    for (size_t i = 0; i < this->measured_.size(); i++) {
-      try {
-        cameras[i].project(point, boost::none, Ei, boost::none);
-      } catch (CheiralityException& e) {
-        std::cout << "Cheirality exception " << std::endl;
-        exit(EXIT_FAILURE);
-      }
-      this->noise_.at(i)->WhitenSystem(Ei, b);
-      E.block<ZDim, 3>(ZDim * i, 0) = Ei;
+    // Project into CameraSet, calculating derivatives
+    std::vector<Z> predicted;
+    try {
+      using boost::none;
+      predicted = cameras.project(point, none, E, none);
+    } catch (CheiralityException&) {
+      std::cout << "computeEP: Cheirality exception " << std::endl;
+      exit(EXIT_FAILURE); // TODO: throw exception
     }
 
+    // if needed, whiten
+    for (size_t i = 0, row = 0; i < noise_.size(); i++, row += ZDim) {
+      SharedNoiseModel model = noise_.at(i);
+      if (model) {
+        // TODO: re-factor noiseModel to take any block/fixed vector/matrix
+        Vector dummy;
+        Matrix Ei = E.block<ZDim, 3>(row, 0);
+        model->WhitenSystem(Ei, dummy);
+        E.block<ZDim, 3>(row, 0) = Ei;
+      }
+    }
     // Matrix PointCov;
     PointCov.noalias() = (E.transpose() * E).inverse();
+  }
+
+  /**
+   *  Compute F, E, and optionally H, where F and E are the stacked derivatives
+   *  with respect to the cameras, point, and calibration, respectively.
+   *  The value of cameras/point are passed as parameters.
+   *  Returns error vector b
+   *  TODO: the treatment of body_P_sensor_ is weird: the transformation
+   *  is applied in the caller, but the derivatives are computed here.
+   */
+  Vector whitenedError(const Cameras& cameras, const Point3& point, Matrix& F,
+      Matrix& E, boost::optional<Matrix&> H = boost::none) const {
+
+    // Project into CameraSet, calculating derivatives
+    std::vector<Z> predicted;
+    try {
+      predicted = cameras.project(point, F, E, H);
+    } catch (CheiralityException&) {
+      std::cout << "computeJacobians: Cheirality exception " << std::endl;
+      exit(EXIT_FAILURE); // TODO: throw exception
+    }
+
+    // Calculate error and whiten derivatives if needed
+    size_t numKeys = keys_.size();
+    Vector b(ZDim * numKeys);
+    for (size_t i = 0, row = 0; i < numKeys; i++, row += ZDim) {
+
+      // Calculate error
+      const Z& zi = measured_.at(i);
+      b.segment<ZDim>(row) = (zi - predicted[i]).vector();
+
+      // if we have a sensor offset, correct camera derivatives
+      if (body_P_sensor_) {
+        // TODO: no simpler way ??
+        const Pose3& pose_i = cameras[i].pose();
+        Pose3 w_Pose_body = pose_i.compose(body_P_sensor_->inverse());
+        Matrix66 J;
+        Pose3 world_P_body = w_Pose_body.compose(*body_P_sensor_, J);
+        F.block<ZDim, 6>(row, 0) *= J;
+      }
+
+      // if needed, whiten
+      SharedNoiseModel model = noise_.at(i);
+      if (model) {
+        // TODO, refactor noiseModel so we can take blocks
+        Matrix Fi = F.block<ZDim, 6>(row, 0);
+        Matrix Ei = E.block<ZDim, 3>(row, 0);
+        Vector bi = b.segment<ZDim>(row);
+        if (!H)
+          model->WhitenSystem(Fi, Ei, bi);
+        else {
+          Matrix Hi = H->block<ZDim, D - 6>(row, 0);
+          model->WhitenSystem(Fi, Ei, Hi, bi);
+          H->block<ZDim, D - 6>(row, 0) = Hi;
+        }
+        b.segment<ZDim>(row) = bi;
+        F.block<ZDim, 6>(row, 0) = Fi;
+        E.block<ZDim, 3>(row, 0) = Ei;
+      }
+    }
+    return b;
   }
 
   /**
    *  Compute F, E, and b (called below in both vanilla and SVD versions), where
    *  F is a vector of derivatives wrpt the cameras, and E the stacked derivatives
    *  with respect to the point. The value of cameras/point are passed as parameters.
-   *  Given a Point3, assumes dimensionality is 3.
-   *  TODO We assume below the dimensionality of Pose3 is 6. Frank thinks the templating
-   *  of this factor is only for show, and should just assume a PinholeCamera.
    */
   double computeJacobians(std::vector<KeyMatrix2D>& Fblocks, Matrix& E,
       Vector& b, const Cameras& cameras, const Point3& point) const {
 
-    size_t numKeys = this->keys_.size();
-    E = zeros(ZDim * numKeys, 3);
-    b = zero(ZDim * numKeys);
-    double f = 0;
+    // Project into Camera set and calculate derivatives
+    // TODO: if D==6 we optimize only camera pose. That is fairly hacky!
+    Matrix F, H;
+    using boost::none;
+    boost::optional<Matrix&> optionalH(H);
+    b = whitenedError(cameras, point, F, E, D == 6 ? none : optionalH);
 
-    Matrix Fi(ZDim, 6), Ei(ZDim, 3), Hcali(ZDim, D - 6);
-    for (size_t i = 0; i < this->measured_.size(); i++) {
+    // Now calculate f and divide up the F derivatives into Fblocks
+    double f = 0.0;
+    size_t numKeys = keys_.size();
+    for (size_t i = 0, row = 0; i < numKeys; i++, row += ZDim) {
 
-      Vector bi;
-      try {
-        const Z& zi = this->measured_.at(i);
-        bi = -(cameras[i].project(point, Fi, Ei, Hcali) - zi).vector();
+      // Accumulate normalized error
+      f += b.segment<ZDim>(row).squaredNorm();
 
-        // if we have a sensor offset, correct derivatives
-        if (body_P_sensor_) {
-          Pose3 w_Pose_body = (cameras[i].pose()).compose(
-              body_P_sensor_->inverse());
-          Matrix J(6, 6);
-          Pose3 world_P_body = w_Pose_body.compose(*body_P_sensor_, J);
-          Fi = Fi * J;
-        }
-      } catch (CheiralityException&) {
-        std::cout << "Cheirality exception " << std::endl;
-        exit(EXIT_FAILURE); // TODO: throw exception
-      }
+      // Get piece of F and possibly H
+      Matrix2D Fi;
+      if (D == 6)
+        Fi << F.block<ZDim, 6>(row, 0);
+      else
+        Fi << F.block<ZDim, 6>(row, 0), H.block<ZDim, D - 6>(row, 0);
 
-      // Whiten derivatives according to noise parameters
-      this->noise_.at(i)->WhitenSystem(Fi, Ei, Hcali, bi);
-
-      f += bi.squaredNorm();
-      // TODO: if D==6 we optimize only camera pose. What's up with that ???
-      if (D == 6) {
-        Fblocks.push_back(KeyMatrix2D(this->keys_[i], Fi));
-      } else {
-        Matrix Hcam(ZDim, D);
-        Hcam.block<ZDim, 6>(0, 0) = Fi; // ZDim x 6 block for the cameras
-        Hcam.block<ZDim, D - 6>(0, 6) = Hcali; // ZDim x nrCal block for the cameras
-        Fblocks.push_back(KeyMatrix2D(this->keys_[i], Hcam));
-      }
-      E.block<ZDim, 3>(ZDim * i, 0) = Ei;
-      subInsert(b, bi, ZDim * i);
+      // Push it onto Fblocks
+      Fblocks.push_back(KeyMatrix2D(keys_[i], Fi));
     }
     return f;
   }
@@ -356,18 +399,21 @@ public:
     return f;
   }
 
-  // TODO, there should not be a Matrix version, really
+  /**
+   *  Compute F, E, and b, where F and E are the stacked derivatives
+   *  with respect to the point. The value of cameras/point are passed as parameters.
+   */
   double computeJacobians(Matrix& F, Matrix& E, Matrix3& PointCov, Vector& b,
       const Cameras& cameras, const Point3& point,
       const double lambda = 0.0) const {
 
-    size_t numKeys = this->keys_.size();
+    size_t numKeys = keys_.size();
     std::vector<KeyMatrix2D> Fblocks;
     double f = computeJacobians(Fblocks, E, PointCov, b, cameras, point,
         lambda);
     F = zeros(This::ZDim * numKeys, D * numKeys);
 
-    for (size_t i = 0; i < this->keys_.size(); ++i) {
+    for (size_t i = 0; i < keys_.size(); ++i) {
       F.block<This::ZDim, D>(This::ZDim * i, D * i) = Fblocks.at(i).second; // ZDim x 6 block for the cameras
     }
     return f;
@@ -584,7 +630,8 @@ public:
   }
 
   /**
-   * No idea. TODO Luca should document
+   * Applies Schur complement (exploiting block structure) to get a smart factor on cameras,
+   * and adds the contribution of the smart factor to a pre-allocated augmented Hessian.
    */
   void updateSparseSchurComplement(const std::vector<KeyMatrix2D>& Fblocks,
       const Matrix& E, const Matrix& P /*Point Covariance*/, const Vector& b,
@@ -657,7 +704,9 @@ public:
   }
 
   /**
-   * No idea. TODO Luca should document
+   * Add the contribution of the smart factor to a pre-allocated Hessian,
+   * using sparse linear algebra. More efficient than the creation of the
+   * Hessian without preallocation of the SymmetricBlockMatrix
    */
   void updateAugmentedHessian(const Cameras& cameras, const Point3& point,
       const double lambda, bool diagonalDamping,
@@ -730,7 +779,8 @@ private:
     ar & BOOST_SERIALIZATION_NVP(measured_);
     ar & BOOST_SERIALIZATION_NVP(body_P_sensor_);
   }
-};
+}
+;
 
 template<class CAMERA, size_t D>
 const int SmartFactorBase<CAMERA, D>::ZDim;
