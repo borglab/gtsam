@@ -37,6 +37,10 @@ TEST(CameraSet, Pinhole) {
   set.add(camera);
   set.add(camera);
   Point3 p(0, 0, 1);
+  CHECK(assert_equal(set,set));
+  CameraSet<Camera> set2 = set;
+  set2.add(camera);
+  CHECK(!assert_equal(set,set2));
 
   // Check measurements
   Point2 expected;
