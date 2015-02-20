@@ -32,7 +32,7 @@ namespace gtsam {
 template<class CAMERA>
 class CameraSet: public std::vector<CAMERA> {
 
-private:
+protected:
 
   /**
    * 2D measurement and noise model for each of the m views
@@ -44,6 +44,10 @@ private:
   static const int Dim = traits<CAMERA>::dimension; ///< Camera dimension
 
 public:
+
+  /// Definitions for blocks of F
+  typedef Eigen::Matrix<double, ZDim, Dim> MatrixZD; // F
+  typedef std::pair<Key, MatrixZD> FBlock; // Fblocks
 
   /**
    * print
@@ -70,7 +74,7 @@ public:
   }
 
   /**
-   *  project, with derivatives in this, point, and calibration
+   * Project a point, with derivatives in this, point, and calibration
    * throws CheiralityException
    */
   std::vector<Z> project(const Point3& point, boost::optional<Matrix&> F =
