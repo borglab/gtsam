@@ -32,7 +32,7 @@ using namespace std;
 using namespace gtsam;
 
 // Make the typename short so it looks much cleaner
-typedef gtsam::SmartProjectionPoseFactor<gtsam::Pose3, gtsam::Cal3_S2> SmartFactor;
+typedef SmartProjectionPoseFactor<Cal3_S2> SmartFactor;
 
 /* ************************************************************************* */
 int main(int argc, char* argv[]) {
@@ -111,7 +111,7 @@ int main(int argc, char* argv[]) {
     // The graph stores Factor shared_ptrs, so we cast back to a SmartFactor first
     SmartFactor::shared_ptr smart = boost::dynamic_pointer_cast<SmartFactor>(graph[j]);
     if (smart) {
-      // The output of point() is in boost::optional<gtsam::Point3>, as sometimes
+      // The output of point() is in boost::optional<Point3>, as sometimes
       // the triangulation operation inside smart factor will encounter degeneracy.
       boost::optional<Point3> point = smart->point(result);
       if (point) // ignore if boost::optional return NULL
