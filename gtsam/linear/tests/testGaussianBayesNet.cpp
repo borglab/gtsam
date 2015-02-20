@@ -148,7 +148,6 @@ TEST( GaussianBayesNet, DeterminantTest )
 }
 
 /* ************************************************************************* */
-typedef Eigen::Matrix<double,10,1> Vector10;
 namespace {
   double computeError(const GaussianBayesNet& gbn, const Vector10& values)
   {

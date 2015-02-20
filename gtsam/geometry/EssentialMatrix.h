@@ -201,5 +201,8 @@ private:
 template<>
 struct traits<EssentialMatrix> : public internal::Manifold<EssentialMatrix> {};
 
+template<>
+struct traits<const EssentialMatrix> : public internal::Manifold<EssentialMatrix> {};
+
 } // gtsam
 

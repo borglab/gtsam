@@ -629,28 +629,13 @@ class Cal3_S2 {
   void serialize() const;
 };
 
-#include <gtsam/geometry/Cal3DS2.h>
-class Cal3DS2 {
+#include <gtsam/geometry/Cal3DS2_Base.h>
+virtual class Cal3DS2_Base {
   // Standard Constructors
-  Cal3DS2();
-  Cal3DS2(double fx, double fy, double s, double u0, double v0, double k1, double k2, double k3, double k4);
-  Cal3DS2(Vector v);
+  Cal3DS2_Base();
 
   // Testable
   void print(string s) const;
-  bool equals(const gtsam::Cal3DS2& rhs, double tol) const;
-
-  // Manifold
-  static size_t Dim();
-  size_t dim() const;
-  gtsam::Cal3DS2 retract(Vector v) const;
-  Vector localCoordinates(const gtsam::Cal3DS2& c) const;
-
-  // Action on Point2
-  gtsam::Point2 calibrate(const gtsam::Point2& p, double tol) const;
-  gtsam::Point2 calibrate(const gtsam::Point2& p) const;
-  gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
-  // TODO: D2d functions that start with an uppercase letter
 
   // Standard Interface
   double fx() const;
@@ -658,14 +643,66 @@ class Cal3DS2 {
   double skew() const;
   double px() const;
   double py() const;
-  Vector vector() const;
-  Vector k() const;
-  //Matrix K() const; //FIXME: Uppercase
+  double k1() const;
+  double k2() const;
+
+  // Action on Point2
+  gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
+  gtsam::Point2 calibrate(const gtsam::Point2& p, double tol) const;
+  gtsam::Point2 calibrate(const gtsam::Point2& p) const;
 
   // enabling serialization functionality
   void serialize() const;
 };
 
+#include <gtsam/geometry/Cal3DS2.h>
+virtual class Cal3DS2 : gtsam::Cal3DS2_Base {
+  // Standard Constructors
+  Cal3DS2();
+  Cal3DS2(double fx, double fy, double s, double u0, double v0, double k1, double k2);
+  Cal3DS2(double fx, double fy, double s, double u0, double v0, double k1, double k2, double p1, double p2);
+  Cal3DS2(Vector v);
+
+  // Testable
+  bool equals(const gtsam::Cal3DS2& rhs, double tol) const;
+
+  // Manifold
+  size_t dim() const;
+  static size_t Dim();
+  gtsam::Cal3DS2 retract(Vector v) const;
+  Vector localCoordinates(const gtsam::Cal3DS2& c) const;
+
+  // enabling serialization functionality
+  void serialize() const;
+};
+
+#include <gtsam/geometry/Cal3Unified.h>
+virtual class Cal3Unified : gtsam::Cal3DS2_Base {
+  // Standard Constructors
+  Cal3Unified();
+  Cal3Unified(double fx, double fy, double s, double u0, double v0, double k1, double k2);
+  Cal3Unified(double fx, double fy, double s, double u0, double v0, double k1, double k2, double p1, double p2, double xi);
+  Cal3Unified(Vector v);
+
+  // Testable
+  bool equals(const gtsam::Cal3Unified& rhs, double tol) const;
+
+  // Standard Interface
+  double xi() const;
+  gtsam::Point2 spaceToNPlane(const gtsam::Point2& p) const;
+  gtsam::Point2 nPlaneToSpace(const gtsam::Point2& p) const;
+
+  // Manifold
+  size_t dim() const;
+  static size_t Dim();
+  gtsam::Cal3Unified retract(Vector v) const;
+  Vector localCoordinates(const gtsam::Cal3Unified& c) const;
+
+  // enabling serialization functionality
+  void serialize() const;
+};
+
+#include <gtsam/geometry/Cal3_S2Stereo.h>
 class Cal3_S2Stereo {
   // Standard Constructors
   Cal3_S2Stereo();

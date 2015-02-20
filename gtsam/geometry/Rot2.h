@@ -210,4 +210,7 @@ namespace gtsam {
   template<>
   struct traits<Rot2> : public internal::LieGroupTraits<Rot2> {};
 
+  template<>
+  struct traits<const Rot2> : public internal::LieGroupTraits<Rot2> {};
+
 } // gtsam

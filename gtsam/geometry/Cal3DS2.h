@@ -68,7 +68,7 @@ public:
   /// @{
 
   /// print with optional string
-  void print(const std::string& s = "") const ;
+  virtual void print(const std::string& s = "") const ;
 
   /// assert equality up to a tolerance
   bool equals(const Cal3DS2& K, double tol = 10e-9) const;
@@ -89,10 +89,20 @@ public:
   /// Return dimensions of calibration manifold object
   static size_t Dim() { return 9; }  //TODO: make a final dimension variable
 
+  /// @}
+  /// @name Clone
+  /// @{
+
+  /// @return a deep copy of this object
+  virtual boost::shared_ptr<Base> clone() const {
+    return boost::shared_ptr<Base>(new Cal3DS2(*this));
+  }
+
+  /// @}
+
 
 private:
 
-  /// @}
   /// @name Advanced Interface
   /// @{
 
@@ -111,6 +121,9 @@ private:
 
 template<>
 struct traits<Cal3DS2> : public internal::Manifold<Cal3DS2> {};
+
+template<>
+struct traits<const Cal3DS2> : public internal::Manifold<Cal3DS2> {};
 
 }
 

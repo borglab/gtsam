@@ -134,7 +134,7 @@ map<int, double> testWithMemoryAllocation()
     tbb::parallel_for(tbb::blocked_range<size_t>(0, numberOfProblems), WorkerWithAllocation(results));
     tbb::tick_count t1 = tbb::tick_count::now();
     cout << "With memory allocation, grain size = " << grainSize << ", time = " << (t1 - t0).seconds() << endl;
-    timingResults[grainSize] = (t1 - t0).seconds();
+    timingResults[(int)grainSize] = (t1 - t0).seconds();
   }
 
   return timingResults;
@@ -152,9 +152,9 @@ int main(int argc, char* argv[])
   BOOST_FOREACH(size_t n, numThreads)
   {
     cout << "With " << n << " threads:" << endl;
-    tbb::task_scheduler_init init(n);
-    results[n].grainSizesWithoutAllocation = testWithoutMemoryAllocation();
-    results[n].grainSizesWithAllocation = testWithMemoryAllocation();
+    tbb::task_scheduler_init init((int)n);
+    results[(int)n].grainSizesWithoutAllocation = testWithoutMemoryAllocation();
+    results[(int)n].grainSizesWithAllocation = testWithMemoryAllocation();
     cout << endl;
   }
 
