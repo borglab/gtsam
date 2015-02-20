@@ -407,9 +407,8 @@ public:
 
     // ==================================================================
     Matrix F, E;
-    Matrix3 PointCov;
     Vector b;
-    double f = computeJacobians(F, E, PointCov, b, cameras, lambda);
+    double f = computeJacobians(F, E, b, cameras);
 
     // Schur complement trick
     // Frank says: should be possible to do this more efficiently?
@@ -417,9 +416,9 @@ public:
     Matrix H(D * numKeys, D * numKeys);
     Vector gs_vector;
 
-    H.noalias() = F.transpose() * (F - (E * (PointCov * (E.transpose() * F))));
-    gs_vector.noalias() = F.transpose()
-        * (b - (E * (PointCov * (E.transpose() * b))));
+    Matrix3 P = Base::PointCov(E,lambda);
+    H.noalias() = F.transpose() * (F - (E * (P * (E.transpose() * F))));
+    gs_vector.noalias() = F.transpose() * (b - (E * (P * (E.transpose() * b))));
 
     if (isDebug) std::cout << "gs_vector size " << gs_vector.size() << std::endl;
     if (isDebug) std::cout << "H:\n" << H << std::endl;
@@ -514,6 +513,11 @@ public:
     return true;
   }
 
+  /// Assumes non-degenerate !
+  void computeEP(Matrix& E, Matrix& PointCov, const Cameras& cameras) const {
+    Base::computeEP(E, PointCov, cameras, point_);
+  }
+
   /// Takes values
   bool computeEP(Matrix& E, Matrix& PointCov, const Values& values) const {
     Cameras myCameras;
@@ -523,18 +527,13 @@ public:
     return nonDegenerate;
   }
 
-  /// Assumes non-degenerate !
-  void computeEP(Matrix& E, Matrix& PointCov, const Cameras& cameras) const {
-    return Base::computeEP(E, PointCov, cameras, point_);
-  }
-
   /// Version that takes values, and creates the point
   bool computeJacobians(std::vector<typename Base::KeyMatrix2D>& Fblocks,
-      Matrix& E, Matrix& PointCov, Vector& b, const Values& values) const {
+      Matrix& E, Vector& b, const Values& values) const {
     Cameras myCameras;
     bool nonDegenerate = computeCamerasAndTriangulate(values, myCameras);
     if (nonDegenerate)
-      computeJacobians(Fblocks, E, PointCov, b, myCameras, 0.0);
+      computeJacobians(Fblocks, E, b, myCameras, 0.0);
     return nonDegenerate;
   }
 
@@ -620,9 +619,9 @@ public:
 //  }
 
   /// Returns Matrix, TODO: maybe should not exist -> not sparse !
-  double computeJacobians(Matrix& F, Matrix& E, Matrix3& PointCov, Vector& b,
-      const Cameras& cameras, const double lambda) const {
-    return Base::computeJacobians(F, E, PointCov, b, cameras, point_, lambda);
+  double computeJacobians(Matrix& F, Matrix& E, Vector& b,
+      const Cameras& cameras) const {
+    return Base::computeJacobians(F, E, b, cameras, point_);
   }
 
   /// Calculate vector of re-projection errors, before applying noise model

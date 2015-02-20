@@ -245,12 +245,12 @@ public:
   }
 
   /**
-   * Compute the matrices E and PointCov = inv(E'*E), where E stacks the ZDim*3 derivatives
-   * of project with respect to the point, given each of the m cameras.
-   * Assumes non-degenerate !
+   * Compute whitenedError, returning only the derivative E, i.e.,
+   * the stacked ZDim*3 derivatives of project with respect to the point.
+   * Assumes non-degenerate ! TODO explain this
    */
-  void computeEP(Matrix& E, Matrix& PointCov, const Cameras& cameras,
-      const Point3& point) const {
+  Vector whitenedError(const Cameras& cameras, const Point3& point,
+      Matrix& E) const {
 
     // Project into CameraSet, calculating derivatives
     std::vector<Z> predicted;
@@ -258,12 +258,20 @@ public:
       using boost::none;
       predicted = cameras.project(point, none, E, none);
     } catch (CheiralityException&) {
-      std::cout << "computeEP: Cheirality exception " << std::endl;
+      std::cout << "whitenedError(E): Cheirality exception " << std::endl;
       exit(EXIT_FAILURE); // TODO: throw exception
     }
 
     // if needed, whiten
-    for (size_t i = 0, row = 0; i < noise_.size(); i++, row += ZDim) {
+    size_t m = keys_.size();
+    Vector b(ZDim * m);
+    for (size_t i = 0, row = 0; i < m; i++, row += ZDim) {
+
+      // Calculate error
+      const Z& zi = measured_.at(i);
+      Vector bi = (zi - predicted[i]).vector();
+
+      // if needed, whiten
       SharedNoiseModel model = noise_.at(i);
       if (model) {
         // TODO: re-factor noiseModel to take any block/fixed vector/matrix
@@ -272,9 +280,9 @@ public:
         model->WhitenSystem(Ei, dummy);
         E.block<ZDim, 3>(row, 0) = Ei;
       }
+      b.segment<ZDim>(row) = bi;
     }
-    // Matrix PointCov;
-    PointCov.noalias() = (E.transpose() * E).inverse();
+    return b;
   }
 
   /**
@@ -286,25 +294,25 @@ public:
    *  is applied in the caller, but the derivatives are computed here.
    */
   Vector whitenedError(const Cameras& cameras, const Point3& point, Matrix& F,
-      Matrix& E, boost::optional<Matrix&> H = boost::none) const {
+      Matrix& E, boost::optional<Matrix&> G = boost::none) const {
 
     // Project into CameraSet, calculating derivatives
     std::vector<Z> predicted;
     try {
-      predicted = cameras.project(point, F, E, H);
+      predicted = cameras.project(point, F, E, G);
     } catch (CheiralityException&) {
-      std::cout << "computeJacobians: Cheirality exception " << std::endl;
+      std::cout << "whitenedError(E,F): Cheirality exception " << std::endl;
       exit(EXIT_FAILURE); // TODO: throw exception
     }
 
     // Calculate error and whiten derivatives if needed
-    size_t numKeys = keys_.size();
-    Vector b(ZDim * numKeys);
-    for (size_t i = 0, row = 0; i < numKeys; i++, row += ZDim) {
+    size_t m = keys_.size();
+    Vector b(ZDim * m);
+    for (size_t i = 0, row = 0; i < m; i++, row += ZDim) {
 
       // Calculate error
       const Z& zi = measured_.at(i);
-      b.segment<ZDim>(row) = (zi - predicted[i]).vector();
+      Vector bi = (zi - predicted[i]).vector();
 
       // if we have a sensor offset, correct camera derivatives
       if (body_P_sensor_) {
@@ -322,66 +330,30 @@ public:
         // TODO, refactor noiseModel so we can take blocks
         Matrix Fi = F.block<ZDim, 6>(row, 0);
         Matrix Ei = E.block<ZDim, 3>(row, 0);
-        Vector bi = b.segment<ZDim>(row);
-        if (!H)
+        if (!G)
           model->WhitenSystem(Fi, Ei, bi);
         else {
-          Matrix Hi = H->block<ZDim, D - 6>(row, 0);
-          model->WhitenSystem(Fi, Ei, Hi, bi);
-          H->block<ZDim, D - 6>(row, 0) = Hi;
+          Matrix Gi = G->block<ZDim, D - 6>(row, 0);
+          model->WhitenSystem(Fi, Ei, Gi, bi);
+          G->block<ZDim, D - 6>(row, 0) = Gi;
         }
-        b.segment<ZDim>(row) = bi;
         F.block<ZDim, 6>(row, 0) = Fi;
         E.block<ZDim, 3>(row, 0) = Ei;
       }
+      b.segment<ZDim>(row) = bi;
     }
     return b;
   }
 
-  /**
-   *  Compute F, E, and b (called below in both vanilla and SVD versions), where
-   *  F is a vector of derivatives wrpt the cameras, and E the stacked derivatives
-   *  with respect to the point. The value of cameras/point are passed as parameters.
-   */
-  double computeJacobians(std::vector<KeyMatrix2D>& Fblocks, Matrix& E,
-      Vector& b, const Cameras& cameras, const Point3& point) const {
-
-    // Project into Camera set and calculate derivatives
-    // TODO: if D==6 we optimize only camera pose. That is fairly hacky!
-    Matrix F, H;
-    using boost::none;
-    boost::optional<Matrix&> optionalH(H);
-    b = whitenedError(cameras, point, F, E, D == 6 ? none : optionalH);
-
-    // Now calculate f and divide up the F derivatives into Fblocks
-    double f = 0.0;
-    size_t numKeys = keys_.size();
-    for (size_t i = 0, row = 0; i < numKeys; i++, row += ZDim) {
-
-      // Accumulate normalized error
-      f += b.segment<ZDim>(row).squaredNorm();
-
-      // Get piece of F and possibly H
-      Matrix2D Fi;
-      if (D == 6)
-        Fi << F.block<ZDim, 6>(row, 0);
-      else
-        Fi << F.block<ZDim, 6>(row, 0), H.block<ZDim, D - 6>(row, 0);
-
-      // Push it onto Fblocks
-      Fblocks.push_back(KeyMatrix2D(keys_[i], Fi));
-    }
-    return f;
+  /// Computes Point Covariance P from E
+  static Matrix3 PointCov(Matrix& E) {
+    return (E.transpose() * E).inverse();
   }
 
-  /// Version that computes PointCov, with optional lambda parameter
-  double computeJacobians(std::vector<KeyMatrix2D>& Fblocks, Matrix& E,
-      Matrix3& PointCov, Vector& b, const Cameras& cameras, const Point3& point,
-      double lambda = 0.0, bool diagonalDamping = false) const {
+  /// Computes Point Covariance P, with lambda parameter
+  static Matrix3 PointCov(Matrix& E, double lambda,
+      bool diagonalDamping = false) {
 
-    double f = computeJacobians(Fblocks, E, b, cameras, point);
-
-    // Point covariance inv(E'*E)
     Matrix3 EtE = E.transpose() * E;
 
     if (diagonalDamping) { // diagonal of the hessian
@@ -394,47 +366,86 @@ public:
       EtE(2, 2) += lambda;
     }
 
-    PointCov.noalias() = (EtE).inverse();
+    return (EtE).inverse();
+  }
 
+  /// Assumes non-degenerate !
+  void computeEP(Matrix& E, Matrix& P, const Cameras& cameras,
+      const Point3& point) const {
+    whitenedError(cameras, point, E);
+    P = PointCov(E);
+  }
+
+  /**
+   *  Compute F, E, and b (called below in both vanilla and SVD versions), where
+   *  F is a vector of derivatives wrpt the cameras, and E the stacked derivatives
+   *  with respect to the point. The value of cameras/point are passed as parameters.
+   */
+  double computeJacobians(std::vector<KeyMatrix2D>& Fblocks, Matrix& E,
+      Vector& b, const Cameras& cameras, const Point3& point) const {
+
+    // Project into Camera set and calculate derivatives
+    // TODO: if D==6 we optimize only camera pose. That is fairly hacky!
+    Matrix F, G;
+    using boost::none;
+    boost::optional<Matrix&> optionalG(G);
+    b = whitenedError(cameras, point, F, E, D == 6 ? none : optionalG);
+
+    // Now calculate f and divide up the F derivatives into Fblocks
+    double f = 0.0;
+    size_t m = keys_.size();
+    for (size_t i = 0, row = 0; i < m; i++, row += ZDim) {
+
+      // Accumulate normalized error
+      f += b.segment<ZDim>(row).squaredNorm();
+
+      // Get piece of F and possibly G
+      Matrix2D Fi;
+      if (D == 6)
+        Fi << F.block<ZDim, 6>(row, 0);
+      else
+        Fi << F.block<ZDim, 6>(row, 0), G.block<ZDim, D - 6>(row, 0);
+
+      // Push it onto Fblocks
+      Fblocks.push_back(KeyMatrix2D(keys_[i], Fi));
+    }
     return f;
+  }
+
+  /// Create BIG block-diagonal matrix F from Fblocks
+  static void FillDiagonalF(const std::vector<KeyMatrix2D>& Fblocks, Matrix& F) {
+    size_t m = Fblocks.size();
+    F.resize(ZDim * m, D * m);
+    F.setZero();
+    for (size_t i = 0; i < m; ++i)
+      F.block<This::ZDim, D>(This::ZDim * i, D * i) = Fblocks.at(i).second;
   }
 
   /**
    *  Compute F, E, and b, where F and E are the stacked derivatives
    *  with respect to the point. The value of cameras/point are passed as parameters.
    */
-  double computeJacobians(Matrix& F, Matrix& E, Matrix3& PointCov, Vector& b,
-      const Cameras& cameras, const Point3& point,
-      const double lambda = 0.0) const {
-
-    size_t numKeys = keys_.size();
+  double computeJacobians(Matrix& F, Matrix& E, Vector& b,
+      const Cameras& cameras, const Point3& point) const {
     std::vector<KeyMatrix2D> Fblocks;
-    double f = computeJacobians(Fblocks, E, PointCov, b, cameras, point,
-        lambda);
-    F = zeros(This::ZDim * numKeys, D * numKeys);
-
-    for (size_t i = 0; i < keys_.size(); ++i) {
-      F.block<This::ZDim, D>(This::ZDim * i, D * i) = Fblocks.at(i).second; // ZDim x 6 block for the cameras
-    }
+    double f = computeJacobians(Fblocks, E, b, cameras, point);
+    FillDiagonalF(Fblocks, F);
     return f;
   }
 
   /// SVD version
   double computeJacobiansSVD(std::vector<KeyMatrix2D>& Fblocks, Matrix& Enull,
-      Vector& b, const Cameras& cameras, const Point3& point, double lambda =
-          0.0, bool diagonalDamping = false) const {
+      Vector& b, const Cameras& cameras, const Point3& point) const {
 
     Matrix E;
-    Matrix3 PointCov; // useless
-    double f = computeJacobians(Fblocks, E, PointCov, b, cameras, point, lambda,
-        diagonalDamping); // diagonalDamping should have no effect (only on PointCov)
+    double f = computeJacobians(Fblocks, E, b, cameras, point);
 
     // Do SVD on A
     Eigen::JacobiSVD<Matrix> svd(E, Eigen::ComputeFullU);
     Vector s = svd.singularValues();
-    // Enull = zeros(ZDim * numKeys, ZDim * numKeys - 3);
-    size_t numKeys = this->keys_.size();
-    Enull = svd.matrixU().block(0, 3, ZDim * numKeys, ZDim * numKeys - 3); // last ZDimm-3 columns
+    size_t m = this->keys_.size();
+    // Enull = zeros(ZDim * m, ZDim * m - 3);
+    Enull = svd.matrixU().block(0, 3, ZDim * m, ZDim * m - 3); // last ZDim*m-3 columns
 
     return f;
   }
@@ -443,16 +454,9 @@ public:
   // TODO, there should not be a Matrix version, really
   double computeJacobiansSVD(Matrix& F, Matrix& Enull, Vector& b,
       const Cameras& cameras, const Point3& point) const {
-
-    int numKeys = this->keys_.size();
     std::vector<KeyMatrix2D> Fblocks;
     double f = computeJacobiansSVD(Fblocks, Enull, b, cameras, point);
-    F.resize(ZDim * numKeys, D * numKeys);
-    F.setZero();
-
-    for (size_t i = 0; i < this->keys_.size(); ++i)
-      F.block<ZDim, D>(ZDim * i, D * i) = Fblocks.at(i).second; // ZDim x 6 block for the cameras
-
+    FillDiagonalF(Fblocks, F);
     return f;
   }
 
@@ -467,10 +471,9 @@ public:
 
     std::vector<KeyMatrix2D> Fblocks;
     Matrix E;
-    Matrix3 PointCov;
     Vector b;
-    double f = computeJacobians(Fblocks, E, PointCov, b, cameras, point, lambda,
-        diagonalDamping);
+    double f = computeJacobians(Fblocks, E, b, cameras, point);
+    Matrix3 P = PointCov(E, lambda, diagonalDamping);
 
 //#define HESSIAN_BLOCKS // slower, as internally the Hessian factor will transform the blocks into SymmetricBlockMatrix
 #ifdef HESSIAN_BLOCKS
@@ -478,8 +481,8 @@ public:
     std::vector < Matrix > Gs(numKeys * (numKeys + 1) / 2);
     std::vector < Vector > gs(numKeys);
 
-    sparseSchurComplement(Fblocks, E, PointCov, b, Gs, gs);
-    // schurComplement(Fblocks, E, PointCov, b, Gs, gs);
+    sparseSchurComplement(Fblocks, E, P, b, Gs, gs);
+    // schurComplement(Fblocks, E, P, b, Gs, gs);
 
     //std::vector < Matrix > Gs2(Gs.begin(), Gs.end());
     //std::vector < Vector > gs2(gs.begin(), gs.end());
@@ -492,7 +495,7 @@ public:
     dims.back() = 1;
 
     SymmetricBlockMatrix augmentedHessian(dims, Matrix::Zero(n1, n1)); // for 10 cameras, size should be (10*D+1 x 10*D+1)
-    sparseSchurComplement(Fblocks, E, PointCov, b, augmentedHessian); // augmentedHessian.matrix().block<D,D> (i1,i2) = ...
+    sparseSchurComplement(Fblocks, E, P, b, augmentedHessian); // augmentedHessian.matrix().block<D,D> (i1,i2) = ...
     augmentedHessian(numKeys, numKeys)(0, 0) = f;
     return boost::make_shared<RegularHessianFactor<D> >(this->keys_,
         augmentedHessian);
@@ -500,11 +503,11 @@ public:
   }
 
   /**
-   * Do Schur complement, given Jacobian as F,E,PointCov.
+   * Do Schur complement, given Jacobian as F,E,P.
    * Slow version - works on full matrices
    */
   void schurComplement(const std::vector<KeyMatrix2D>& Fblocks, const Matrix& E,
-      const Matrix& PointCov, const Vector& b,
+      const Matrix3& P, const Vector& b,
       /*output ->*/std::vector<Matrix>& Gs, std::vector<Vector>& gs) const {
     // Schur complement trick
     // Gs = F' * F - F' * E * inv(E'*E) * E' * F
@@ -514,16 +517,14 @@ public:
     int numKeys = this->keys_.size();
 
     /// Compute Full F ????
-    Matrix F = zeros(ZDim * numKeys, D * numKeys);
-    for (size_t i = 0; i < this->keys_.size(); ++i)
-      F.block<ZDim, D>(ZDim * i, D * i) = Fblocks.at(i).second; // ZDim x 6 block for the cameras
+    Matrix F;
+    FillDiagonalF(Fblocks, F);
 
     Matrix H(D * numKeys, D * numKeys);
     Vector gs_vector;
 
-    H.noalias() = F.transpose() * (F - (E * (PointCov * (E.transpose() * F))));
-    gs_vector.noalias() = F.transpose()
-        * (b - (E * (PointCov * (E.transpose() * b))));
+    H.noalias() = F.transpose() * (F - (E * (P * (E.transpose() * F))));
+    gs_vector.noalias() = F.transpose() * (b - (E * (P * (E.transpose() * b))));
 
     // Populate Gs and gs
     int GsCount2 = 0;
@@ -540,11 +541,11 @@ public:
   }
 
   /**
-   * Do Schur complement, given Jacobian as F,E,PointCov, return SymmetricBlockMatrix
+   * Do Schur complement, given Jacobian as F,E,P, return SymmetricBlockMatrix
    * Fast version - works on with sparsity
    */
   void sparseSchurComplement(const std::vector<KeyMatrix2D>& Fblocks,
-      const Matrix& E, const Matrix& P /*Point Covariance*/, const Vector& b,
+      const Matrix& E, const Matrix3& P /*Point Covariance*/, const Vector& b,
       /*output ->*/SymmetricBlockMatrix& augmentedHessian) const {
     // Schur complement trick
     // Gs = F' * F - F' * E * P * E' * F
@@ -581,11 +582,11 @@ public:
   }
 
   /**
-   * Do Schur complement, given Jacobian as F,E,PointCov, return Gs/gs
+   * Do Schur complement, given Jacobian as F,E,P, return Gs/gs
    * Fast version - works on with sparsity
    */
   void sparseSchurComplement(const std::vector<KeyMatrix2D>& Fblocks,
-      const Matrix& E, const Matrix& P /*Point Covariance*/, const Vector& b,
+      const Matrix& E, const Matrix3& P /*Point Covariance*/, const Vector& b,
       /*output ->*/std::vector<Matrix>& Gs, std::vector<Vector>& gs) const {
     // Schur complement trick
     // Gs = F' * F - F' * E * P * E' * F
@@ -634,7 +635,7 @@ public:
    * and adds the contribution of the smart factor to a pre-allocated augmented Hessian.
    */
   void updateSparseSchurComplement(const std::vector<KeyMatrix2D>& Fblocks,
-      const Matrix& E, const Matrix& P /*Point Covariance*/, const Vector& b,
+      const Matrix& E, const Matrix3& P /*Point Covariance*/, const Vector& b,
       const double f, const FastVector<Key> allKeys,
       /*output ->*/SymmetricBlockMatrix& augmentedHessian) const {
     // Schur complement trick
@@ -717,13 +718,10 @@ public:
 
     std::vector<KeyMatrix2D> Fblocks;
     Matrix E;
-    Matrix3 PointCov;
     Vector b;
-    double f = computeJacobians(Fblocks, E, PointCov, b, cameras, point, lambda,
-        diagonalDamping);
-
-    updateSparseSchurComplement(Fblocks, E, PointCov, b, f, allKeys,
-        augmentedHessian); // augmentedHessian.matrix().block<D,D> (i1,i2) = ...
+    double f = computeJacobians(Fblocks, E, b, cameras, point);
+    Matrix3 P = PointCov(E, lambda, diagonalDamping);
+    updateSparseSchurComplement(Fblocks, E, P, b, f, allKeys, augmentedHessian); // augmentedHessian.matrix().block<D,D> (i1,i2) = ...
   }
 
   /**
@@ -734,8 +732,8 @@ public:
       bool diagonalDamping = false) const {
     typename boost::shared_ptr<RegularImplicitSchurFactor<D> > f(
         new RegularImplicitSchurFactor<D>());
-    computeJacobians(f->Fblocks(), f->E(), f->PointCovariance(), f->b(),
-        cameras, point, lambda, diagonalDamping);
+    computeJacobians(f->Fblocks(), f->E(), f->b(), cameras, point);
+    f->PointCovariance() = PointCov(f->E(), lambda, diagonalDamping);
     f->initKeys();
     return f;
   }
@@ -748,16 +746,15 @@ public:
       bool diagonalDamping = false) const {
     std::vector<KeyMatrix2D> Fblocks;
     Matrix E;
-    Matrix3 PointCov;
     Vector b;
-    computeJacobians(Fblocks, E, PointCov, b, cameras, point, lambda,
-        diagonalDamping);
-    return boost::make_shared<JacobianFactorQ<D, ZDim> >(Fblocks, E, PointCov,
-        b);
+    computeJacobians(Fblocks, E, b, cameras, point);
+    Matrix3 P = PointCov(E, lambda, diagonalDamping);
+    return boost::make_shared<JacobianFactorQ<D, ZDim> >(Fblocks, E, P, b);
   }
 
   /**
    * Return Jacobians as JacobianFactor
+   * TODO lambda is currently ignored
    */
   boost::shared_ptr<JacobianFactor> createJacobianSVDFactor(
       const Cameras& cameras, const Point3& point, double lambda = 0.0) const {
@@ -765,7 +762,7 @@ public:
     std::vector<KeyMatrix2D> Fblocks;
     Vector b;
     Matrix Enull(ZDim * numKeys, ZDim * numKeys - 3);
-    computeJacobiansSVD(Fblocks, Enull, b, cameras, point, lambda);
+    computeJacobiansSVD(Fblocks, Enull, b, cameras, point);
     return boost::make_shared<JacobianFactorSVD<6, ZDim> >(Fblocks, Enull, b);
   }
 
