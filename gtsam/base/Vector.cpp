@@ -16,9 +16,10 @@
  * @author  Frank Dellaert
  */
 
+
 #include <cstdarg>
 #include <limits>
-#include <iostream>
+//#include <iostream>
 #include <fstream>
 #include <sstream>
 #include <iomanip>
@@ -27,7 +28,7 @@
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <cstdio>
-
+#include <vector> //added by alex
 #include <gtsam/base/Vector.h>
 
 

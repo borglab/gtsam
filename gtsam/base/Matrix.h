@@ -27,6 +27,12 @@
 #include <boost/tuple/tuple.hpp>
 #include <boost/math/special_functions/fpclassify.hpp>
 
+#include <gtsam/3rdparty/Eigen/Eigen/Core>
+#include <gtsam/3rdparty/Eigen/Eigen/Cholesky>
+#include <gtsam/3rdparty/Eigen/Eigen/SVD> 
+#include <gtsam/3rdparty/Eigen/Eigen/LU>
+
+
 /**
  * Matrix is a typedef in the gtsam namespace
  * TODO: make a version to work with matlab wrapping

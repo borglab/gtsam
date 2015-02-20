@@ -18,14 +18,16 @@
 
 // \callgraph
 
+
 #pragma once
-
 #include <list>
-#include <vector>
-#include <iostream>
+//#include <vector>
+//#include <iostream>
 #include <gtsam/global_includes.h>
-#include <gtsam/3rdparty/gtsam_eigen_includes.h>
-
+//#include <gtsam/3rdparty/gtsam_eigen_includes.h>
+//#include <gtsam/3rdparty/Eigen/Eigen/src/Core/Matrix.h>
+//#include <gtsam/3rdparty/Eigen/Eigen/src/Core/MatrixBase.h> 
+#include <gtsam/3rdparty/Eigen/Eigen/Core>
 namespace gtsam {
 
 // Vector is just a typedef of the Eigen dynamic vector type
