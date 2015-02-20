@@ -21,10 +21,11 @@
 
 #include <gtsam/dllexport.h>
 #include <gtsam/config.h>
-
+//#include <iosfwd>
+#include <iostream>
 #include <cstddef>
 #include <string>
-#include <iostream>
+#include <ostream>
 #include <boost/function/function1.hpp>
 #include <boost/range/concepts.hpp>
 #include <boost/optional.hpp>

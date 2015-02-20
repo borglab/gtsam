@@ -21,7 +21,7 @@
 #include <gtsam/base/FastDefaultAllocator.h>
 
 #include <set>
-#include <iostream>
+#include <iosfwd>
 #include <string>
 #include <cmath>
 #include <boost/mpl/has_xxx.hpp>
