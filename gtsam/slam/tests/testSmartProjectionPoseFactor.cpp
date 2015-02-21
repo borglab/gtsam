@@ -380,6 +380,67 @@ TEST( SmartProjectionPoseFactor, smartFactorWithSensorBodyTransform ){
   EXPECT(assert_equal(bodyPose3,result.at<Pose3>(x3)));
 }
 
+/* *************************************************************************/
+TEST( SmartProjectionPoseFactor, FactorsWithSensorTransform ){
+
+  // Default cameras for simple derivatives
+  SimpleCamera cam1, cam2;
+
+  // create arbitrary body_Pose_sensor (transforms from sensor to body)
+  Pose3 sensor_to_body =  Pose3(Rot3::ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(1, 1, 1)); // Pose3(); //
+
+  // one landmarks ~5 meters infront of camera
+  Point3 landmark1(5, 0.5, 1.2);
+
+  vector<Point2> measurements_cam1;
+
+  // Project 2 landmarks into 2 cameras
+  measurements_cam1.push_back(cam1.project(landmark1));
+  measurements_cam1.push_back(cam2.project(landmark1));
+
+  // Create smart factors
+  std::vector<Key> views;
+  views.push_back(x1);
+  views.push_back(x2);
+
+  double rankTol = 1;
+  double linThreshold = -1;
+  bool manageDegeneracy = false;
+  bool enableEPI = false;
+
+  SmartFactor::shared_ptr smartFactor1(new SmartFactor(rankTol,linThreshold,manageDegeneracy,enableEPI,sensor_to_body));
+  smartFactor1->add(measurements_cam1, views, model, K);
+
+  SmartFactor::Cameras cameras;
+  cameras.push_back(cam1);
+  cameras.push_back(cam2);
+
+  {
+    // RegularHessianFactor<6>
+    Matrix66 G11; G11.setZero();
+    Matrix66 G12; G12.setZero();
+    Matrix66 G22; G22.setZero();
+
+    Vector6 g1; g1.setZero();
+    Vector6 g2; g2.setZero();
+
+    double f = 10;
+
+    std::vector<Key> js;
+    js.push_back(x1); js.push_back(x2);
+    std::vector<Matrix> Gs;
+    Gs.push_back(G11); Gs.push_back(G12); Gs.push_back(G22);
+    std::vector<Vector> gs;
+    gs.push_back(g1); gs.push_back(g2);
+    RegularHessianFactor<6> expected(js, Gs, gs, f);
+
+    boost::shared_ptr<RegularHessianFactor<6> > actual =
+          smartFactor1->createHessianFactor(cameras, 0.0);
+    CHECK(assert_equal(expected,*actual));
+  }
+
+}
+
 
 /* *************************************************************************/
 TEST( SmartProjectionPoseFactor, 3poses_iterative_smart_projection_factor ){

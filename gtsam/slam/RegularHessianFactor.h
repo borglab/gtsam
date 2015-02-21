@@ -172,6 +172,13 @@ public:
     }
   }
 
+  /* ************************************************************************* */
+
+}; // end class RegularHessianFactor
+
+// traits
+template<size_t D> struct traits<RegularHessianFactor<D> > : public Testable<
+    RegularHessianFactor<D> > {
 };
 
 }
