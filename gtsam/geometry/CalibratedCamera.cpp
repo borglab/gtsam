@@ -34,13 +34,13 @@ Matrix26 PinholeBase::Dpose(const Point2& pn, double d) {
 }
 
 /* ************************************************************************* */
-Matrix23 PinholeBase::Dpoint(const Point2& pn, double d, const Matrix3& R) {
+Matrix23 PinholeBase::Dpoint(const Point2& pn, double d, const Matrix3& Rt) {
   // optimized version of derivatives, see CalibratedCamera.nb
   const double u = pn.x(), v = pn.y();
   Matrix23 Dpn_point;
   Dpn_point << //
-      R(0, 0) - u * R(0, 2), R(1, 0) - u * R(1, 2), R(2, 0) - u * R(2, 2), //
-  /**/R(0, 1) - v * R(0, 2), R(1, 1) - v * R(1, 2), R(2, 1) - v * R(2, 2);
+      Rt(0, 0) - u * Rt(2, 0), Rt(0, 1) - u * Rt(2, 1), Rt(0, 2) - u * Rt(2, 2), //
+  /**/Rt(1, 0) - v * Rt(2, 0), Rt(1, 1) - v * Rt(2, 1), Rt(1, 2) - v * Rt(2, 2);
   Dpn_point *= d;
   return Dpn_point;
 }
@@ -118,7 +118,7 @@ Point2 PinholeBase::project2(const Point3& point, OptionalJacobian<2, 6> Dpose,
     if (Dpose)
       *Dpose = PinholeBase::Dpose(pn, d);
     if (Dpoint)
-      *Dpoint = PinholeBase::Dpoint(pn, d, Rt.transpose()); // TODO transpose
+      *Dpoint = PinholeBase::Dpoint(pn, d, Rt);
   }
   return pn;
 }

@@ -59,9 +59,9 @@ protected:
    * Calculate Jacobian with respect to point
    * @param pn projection in normalized coordinates
    * @param d disparity (inverse depth)
-   * @param R rotation matrix
+   * @param Rt transposed rotation matrix
    */
-  static Matrix23 Dpoint(const Point2& pn, double d, const Matrix3& R);
+  static Matrix23 Dpoint(const Point2& pn, double d, const Matrix3& Rt);
 
   /// @}
 
