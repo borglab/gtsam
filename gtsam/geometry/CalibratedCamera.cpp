@@ -22,6 +22,48 @@
 namespace gtsam {
 
 /* ************************************************************************* */
+Matrix26 PinholeBase::Dpose(const Point2& pn, double d) {
+  // optimized version of derivatives, see CalibratedCamera.nb
+  const double u = pn.x(), v = pn.y();
+  double uv = u * v, uu = u * u, vv = v * v;
+  Matrix26 Dpn_pose;
+  Dpn_pose << uv, -1 - uu, v, -d, 0, d * u, 1 + vv, -uv, -u, 0, -d, d * v;
+  return Dpn_pose;
+}
+
+/* ************************************************************************* */
+Matrix23 PinholeBase::Dpoint(const Point2& pn, double d, const Matrix3& R) {
+  // optimized version of derivatives, see CalibratedCamera.nb
+  const double u = pn.x(), v = pn.y();
+  Matrix23 Dpn_point;
+  Dpn_point << //
+      R(0, 0) - u * R(0, 2), R(1, 0) - u * R(1, 2), R(2, 0) - u * R(2, 2), //
+  /**/R(0, 1) - v * R(0, 2), R(1, 1) - v * R(1, 2), R(2, 1) - v * R(2, 2);
+  Dpn_point *= d;
+  return Dpn_point;
+}
+
+/* ************************************************************************* */
+Pose3 PinholeBase::LevelPose(const Pose2& pose2, double height) {
+  const double st = sin(pose2.theta()), ct = cos(pose2.theta());
+  const Point3 x(st, -ct, 0), y(0, 0, -1), z(ct, st, 0);
+  const Rot3 wRc(x, y, z);
+  const Point3 t(pose2.x(), pose2.y(), height);
+  return Pose3(wRc, t);
+}
+
+/* ************************************************************************* */
+Pose3 PinholeBase::LookatPose(const Point3& eye, const Point3& target,
+    const Point3& upVector) {
+  Point3 zc = target - eye;
+  zc = zc / zc.norm();
+  Point3 xc = (-upVector).cross(zc); // minus upVector since yc is pointing down
+  xc = xc / xc.norm();
+  Point3 yc = zc.cross(xc);
+  return Pose3(Rot3(xc, yc, zc), eye);
+}
+
+/* ************************************************************************* */
 bool PinholeBase::equals(const PinholeBase &camera, double tol) const {
   return pose_.equals(camera.pose(), tol);
 }
@@ -58,48 +100,6 @@ Point2 PinholeBase::project_to_camera(const Point3& P,
 Point3 PinholeBase::backproject_from_camera(const Point2& p,
     const double depth) {
   return Point3(p.x() * depth, p.y() * depth, depth);
-}
-
-/* ************************************************************************* */
-Pose3 PinholeBase::LevelPose(const Pose2& pose2, double height) {
-  const double st = sin(pose2.theta()), ct = cos(pose2.theta());
-  const Point3 x(st, -ct, 0), y(0, 0, -1), z(ct, st, 0);
-  const Rot3 wRc(x, y, z);
-  const Point3 t(pose2.x(), pose2.y(), height);
-  return Pose3(wRc, t);
-}
-
-/* ************************************************************************* */
-Pose3 PinholeBase::LookatPose(const Point3& eye, const Point3& target,
-    const Point3& upVector) {
-  Point3 zc = target - eye;
-  zc = zc / zc.norm();
-  Point3 xc = (-upVector).cross(zc); // minus upVector since yc is pointing down
-  xc = xc / xc.norm();
-  Point3 yc = zc.cross(xc);
-  return Pose3(Rot3(xc, yc, zc), eye);
-}
-
-/* ************************************************************************* */
-Matrix26 PinholeBase::Dpose(const Point2& pn, double d) {
-  // optimized version of derivatives, see CalibratedCamera.nb
-  const double u = pn.x(), v = pn.y();
-  double uv = u * v, uu = u * u, vv = v * v;
-  Matrix26 Dpn_pose;
-  Dpn_pose << uv, -1 - uu, v, -d, 0, d * u, 1 + vv, -uv, -u, 0, -d, d * v;
-  return Dpn_pose;
-}
-
-/* ************************************************************************* */
-Matrix23 PinholeBase::Dpoint(const Point2& pn, double d, const Matrix3& R) {
-  // optimized version of derivatives, see CalibratedCamera.nb
-  const double u = pn.x(), v = pn.y();
-  Matrix23 Dpn_point;
-  Dpn_point << //
-      R(0, 0) - u * R(0, 2), R(1, 0) - u * R(1, 2), R(2, 0) - u * R(2, 2), //
-  /**/R(0, 1) - v * R(0, 2), R(1, 1) - v * R(1, 2), R(2, 1) - v * R(2, 2);
-  Dpn_point *= d;
-  return Dpn_point;
 }
 
 /* ************************************************************************* */

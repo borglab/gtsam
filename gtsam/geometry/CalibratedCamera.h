@@ -43,6 +43,28 @@ private:
 
   Pose3 pose_; ///< 3D pose of camera
 
+protected:
+
+  /// @name Derivatives
+  /// @{
+
+  /**
+   * Calculate Jacobian with respect to pose
+   * @param pn projection in normalized coordinates
+   * @param d disparity (inverse depth)
+   */
+  static Matrix26 Dpose(const Point2& pn, double d);
+
+  /**
+   * Calculate Jacobian with respect to point
+   * @param pn projection in normalized coordinates
+   * @param d disparity (inverse depth)
+   * @param R rotation matrix
+   */
+  static Matrix23 Dpoint(const Point2& pn, double d, const Matrix3& R);
+
+  /// @}
+
 public:
 
   /// @name Static functions
@@ -128,23 +150,6 @@ public:
    * backproject a 2-dimensional point to a 3-dimension point
    */
   static Point3 backproject_from_camera(const Point2& p, const double depth);
-
-protected:
-
-  /**
-   * Calculate Jacobian with respect to pose
-   * @param pn projection in normalized coordinates
-   * @param d disparity (inverse depth)
-   */
-  static Matrix26 Dpose(const Point2& pn, double d);
-
-  /**
-   * Calculate Jacobian with respect to point
-   * @param pn projection in normalized coordinates
-   * @param d disparity (inverse depth)
-   * @param R rotation matrix
-   */
-  static Matrix23 Dpoint(const Point2& pn, double d, const Matrix3& R);
 
 private:
 
