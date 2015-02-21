@@ -381,20 +381,21 @@ TEST( SmartProjectionPoseFactor, smartFactorWithSensorBodyTransform ){
 }
 
 /* *************************************************************************/
-TEST( SmartProjectionPoseFactor, FactorsWithSensorTransform ){
+TEST( SmartProjectionPoseFactor, Factors ){
 
   // Default cameras for simple derivatives
-  SimpleCamera cam1, cam2;
+  Rot3 R;
+  static Cal3_S2::shared_ptr K(new Cal3_S2(100, 100, 0, 0, 0));
+  SimpleCamera cam1(Pose3(R,Point3(0,0,0)),*K), cam2(Pose3(R,Point3(1,0,0)),*K);
 
-  // create arbitrary body_Pose_sensor (transforms from sensor to body)
-  Pose3 sensor_to_body =  Pose3(Rot3::ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(1, 1, 1)); // Pose3(); //
-
-  // one landmarks ~5 meters infront of camera
-  Point3 landmark1(5, 0.5, 1.2);
+  // one landmarks 1m in front of camera
+  Point3 landmark1(0,0,10);
 
   vector<Point2> measurements_cam1;
 
   // Project 2 landmarks into 2 cameras
+  cout << cam1.project(landmark1) << endl;
+  cout << cam2.project(landmark1) << endl;
   measurements_cam1.push_back(cam1.project(landmark1));
   measurements_cam1.push_back(cam2.project(landmark1));
 
@@ -403,39 +404,55 @@ TEST( SmartProjectionPoseFactor, FactorsWithSensorTransform ){
   views.push_back(x1);
   views.push_back(x2);
 
-  double rankTol = 1;
-  double linThreshold = -1;
-  bool manageDegeneracy = false;
-  bool enableEPI = false;
-
-  SmartFactor::shared_ptr smartFactor1(new SmartFactor(rankTol,linThreshold,manageDegeneracy,enableEPI,sensor_to_body));
+  SmartFactor::shared_ptr smartFactor1 = boost::make_shared<SmartFactor>();
   smartFactor1->add(measurements_cam1, views, model, K);
 
   SmartFactor::Cameras cameras;
   cameras.push_back(cam1);
   cameras.push_back(cam2);
 
+  // Make sure triangulation works
+  LONGS_EQUAL(2,smartFactor1->triangulateSafe(cameras));
+  CHECK(!smartFactor1->isDegenerate());
+  CHECK(!smartFactor1->isPointBehindCamera());
+  boost::optional<Point3> p = smartFactor1->point();
+  CHECK(p);
+  EXPECT(assert_equal(landmark1,*p));
+
   {
     // RegularHessianFactor<6>
-    Matrix66 G11; G11.setZero();
-    Matrix66 G12; G12.setZero();
-    Matrix66 G22; G22.setZero();
+    Matrix66 G11; G11.setZero(); G11(0,0) = 100; G11(0,4) = -10; G11(4,0) = -10; G11(4,4) = 1;
+    Matrix66 G12; G12 = -G11; G12(0,2) = -10; G12(4,2) = 1;
+    Matrix66 G22; G22 = G11; G22(0,2) = 10; G22(2,0) = 10; G22(2,2) = 1; G22(2,4) = -1; G22(4,2) = -1;
 
     Vector6 g1; g1.setZero();
     Vector6 g2; g2.setZero();
 
-    double f = 10;
+    double f = 0;
 
-    std::vector<Key> js;
-    js.push_back(x1); js.push_back(x2);
-    std::vector<Matrix> Gs;
-    Gs.push_back(G11); Gs.push_back(G12); Gs.push_back(G22);
-    std::vector<Vector> gs;
-    gs.push_back(g1); gs.push_back(g2);
-    RegularHessianFactor<6> expected(js, Gs, gs, f);
+    RegularHessianFactor<6> expected(x1, x2, 50 * G11, 50 * G12, g1, 50 * G22, g2, f);
 
     boost::shared_ptr<RegularHessianFactor<6> > actual =
           smartFactor1->createHessianFactor(cameras, 0.0);
+    CHECK(assert_equal(expected.information(),actual->information(),1e-8));
+    CHECK(assert_equal(expected,*actual,1e-8));
+  }
+
+  {
+    // RegularImplicitSchurFactor<6>
+    Matrix26 F1; F1.setZero(); F1(0,1)=-100; F1(0,3)=-10; F1(1,0)=100; F1(1,4)=-10;
+    Matrix26 F2; F2.setZero(); F2(0,1)=-101; F2(0,3)=-10; F2(0,5)=-1; F2(1,0)=100; F2(1,2)=10; F2(1,4)=-10;
+    Matrix43 E; E.setZero(); E(0,0)=10; E(1,1)=10; E(2,0)=10; E(2,2)=1;E(3,1)=10;
+    const vector<pair<Key, Matrix26> > Fblocks = list_of<pair<Key, Matrix> > //
+        (make_pair(x1, F1))(make_pair(x2, F2));
+    Matrix3 P = (E.transpose() * E).inverse();
+    Vector4 b; b.setZero();
+
+    RegularImplicitSchurFactor<6> expected(Fblocks, E, P, b);
+
+    boost::shared_ptr<RegularImplicitSchurFactor<6> > actual =
+          smartFactor1->createRegularImplicitSchurFactor(cameras, 0.0);
+    CHECK(actual);
     CHECK(assert_equal(expected,*actual));
   }
 
