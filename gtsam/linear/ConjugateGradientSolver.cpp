@@ -1,8 +1,20 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /*
- * ConjugateGradientSolver.cpp
- *
- *  Created on: Jun 4, 2014
- *      Author: Yong-Dian Jian
+ *  @file   ConjugateGradientSolver.cpp
+ *  @brief  Implementation of Conjugate Gradient solver for a linear system
+ *  @author Yong-Dian Jian
+ *  @author Sungtae An
+ *  @date   Nov 6, 2014
  */
 
 #include <gtsam/linear/ConjugateGradientSolver.h>
@@ -35,7 +47,8 @@ std::string ConjugateGradientParameters::blasTranslator(const BLASKernel value) 
 }
 
 /*****************************************************************************/
-ConjugateGradientParameters::BLASKernel ConjugateGradientParameters::blasTranslator(const std::string &src) {
+ConjugateGradientParameters::BLASKernel ConjugateGradientParameters::blasTranslator(
+    const std::string &src) {
   std::string s = src;  boost::algorithm::to_upper(s);
   if (s == "GTSAM")  return ConjugateGradientParameters::GTSAM;
 
@@ -43,6 +56,7 @@ ConjugateGradientParameters::BLASKernel ConjugateGradientParameters::blasTransla
   return ConjugateGradientParameters::GTSAM;
 }
 
+/*****************************************************************************/
 
 }
 

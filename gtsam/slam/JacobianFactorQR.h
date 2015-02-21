@@ -7,8 +7,13 @@
 
 #pragma once
 #include <gtsam/slam/JacobianSchurFactor.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/inference/Symbol.h>
 
 namespace gtsam {
+
+class GaussianBayesNet;
+
 /**
  * JacobianFactor for Schur complement that uses Q noise model
  */
@@ -38,7 +43,7 @@ public:
     //gfg.print("gfg");
 
     // eliminate the point
-    GaussianBayesNet::shared_ptr bn;
+    boost::shared_ptr<GaussianBayesNet> bn;
     GaussianFactorGraph::shared_ptr fg;
     std::vector < Key > variables;
     variables.push_back(pointKey);

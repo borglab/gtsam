@@ -46,7 +46,7 @@ using namespace gtsam;
 
 int main(int argc, char** argv){
 
-  typedef SmartStereoProjectionPoseFactor<Pose3, Point3, Cal3_S2Stereo> SmartFactor;
+  typedef SmartStereoProjectionPoseFactor<Cal3_S2Stereo> SmartFactor;
 
   bool output_poses = true;
   string poseOutput("../../../examples/data/optimized_poses.txt");

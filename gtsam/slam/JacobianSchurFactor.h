@@ -1,3 +1,14 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /*
  * @file  JacobianSchurFactor.h
  * @brief Jacobianfactor that combines and eliminates points
@@ -7,11 +18,7 @@
 
 #pragma once
 
-#include <gtsam/inference/Symbol.h>
-#include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/JacobianFactor.h>
-#include <gtsam/linear/GaussianBayesNet.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
 #include <boost/foreach.hpp>
 
 namespace gtsam {

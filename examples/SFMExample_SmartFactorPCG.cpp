@@ -10,23 +10,19 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    SFMExample_SmartFactor.cpp
- * @brief   A structure-from-motion problem on a simulated dataset, using smart projection factor
- * @author  Duy-Nguyen Ta
- * @author  Jing Dong
+ * @file    SFMExample_SmartFactorPCG.cpp
+ * @brief   Version of SFMExample_SmartFactor that uses Preconditioned Conjugate Gradient
  * @author  Frank Dellaert
  */
 
-// In GTSAM, measurement functions are represented as 'factors'.
-// The factor we used here is SmartProjectionPoseFactor.
-// Every smart factor represent a single landmark, seen from multiple cameras.
-// The SmartProjectionPoseFactor only optimizes for the poses of a camera,
-// not the calibration, which is assumed known.
+// For an explanation of these headers, see SFMExample_SmartFactor.cpp
+#include "SFMdata.h"
 #include <gtsam/slam/SmartProjectionPoseFactor.h>
 
-// For an explanation of these headers, see SFMExample.cpp
-#include "SFMdata.h"
+// These extra headers allow us a LM outer loop with PCG linear solver (inner loop)
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/linear/Preconditioner.h>
+#include <gtsam/linear/PCGSolver.h>
 
 using namespace std;
 using namespace gtsam;
@@ -64,10 +60,6 @@ int main(int argc, char* argv[]) {
       Point2 measurement = camera.project(points[j]);
 
       // call add() function to add measurement into a single factor, here we need to add:
-      //    1. the 2D measurement
-      //    2. the corresponding camera's key
-      //    3. camera noise model
-      //    4. camera calibration
       smartfactor->add(measurement, i, measurementNoise, K);
     }
 
@@ -81,38 +73,43 @@ int main(int argc, char* argv[]) {
       (Vector(6) << Vector3::Constant(0.3), Vector3::Constant(0.1)).finished());
   graph.push_back(PriorFactor<Pose3>(0, poses[0], poseNoise));
 
-  // Because the structure-from-motion problem has a scale ambiguity, the problem is
-  // still under-constrained. Here we add a prior on the second pose x1, so this will
-  // fix the scale by indicating the distance between x0 and x1.
-  // Because these two are fixed, the rest of the poses will be also be fixed.
-  graph.push_back(PriorFactor<Pose3>(1, poses[1], poseNoise)); // add directly to graph
-
-  graph.print("Factor Graph:\n");
+  // Fix the scale ambiguity by adding a prior
+  graph.push_back(PriorFactor<Pose3>(1, poses[1], poseNoise));
 
   // Create the initial estimate to the solution
-  // Intentionally initialize the variables off from the ground truth
   Values initialEstimate;
   Pose3 delta(Rot3::rodriguez(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20));
   for (size_t i = 0; i < poses.size(); ++i)
     initialEstimate.insert(i, poses[i].compose(delta));
-  initialEstimate.print("Initial Estimates:\n");
 
-  // Optimize the graph and print results
-  LevenbergMarquardtOptimizer optimizer(graph, initialEstimate);
+  // We will use LM in the outer optimization loop, but by specifying "Iterative" below
+  // We indicate that an iterative linear solver should be used.
+  // In addition, the *type* of the iterativeParams decides on the type of
+  // iterative solver, in this case the SPCG (subgraph PCG)
+  LevenbergMarquardtParams parameters;
+  parameters.linearSolverType = NonlinearOptimizerParams::Iterative;
+  parameters.absoluteErrorTol = 1e-10;
+  parameters.relativeErrorTol = 1e-10;
+  parameters.maxIterations = 500;
+  PCGSolverParameters::shared_ptr pcg =
+      boost::make_shared<PCGSolverParameters>();
+  pcg->preconditioner_ =
+      boost::make_shared<BlockJacobiPreconditionerParameters>();
+  // Following is crucial:
+  pcg->setEpsilon_abs(1e-10);
+  pcg->setEpsilon_rel(1e-10);
+  parameters.iterativeParams = pcg;
+
+  LevenbergMarquardtOptimizer optimizer(graph, initialEstimate, parameters);
   Values result = optimizer.optimize();
-  result.print("Final results:\n");
 
-  // A smart factor represent the 3D point inside the factor, not as a variable.
-  // The 3D position of the landmark is not explicitly calculated by the optimizer.
-  // To obtain the landmark's 3D position, we use the "point" method of the smart factor.
+  // Display result as in SFMExample_SmartFactor.run
+  result.print("Final results:\n");
   Values landmark_result;
   for (size_t j = 0; j < points.size(); ++j) {
-
-    // The graph stores Factor shared_ptrs, so we cast back to a SmartFactor first
-    SmartFactor::shared_ptr smart = boost::dynamic_pointer_cast<SmartFactor>(graph[j]);
+    SmartFactor::shared_ptr smart = //
+        boost::dynamic_pointer_cast<SmartFactor>(graph[j]);
     if (smart) {
-      // The output of point() is in boost::optional<Point3>, as sometimes
-      // the triangulation operation inside smart factor will encounter degeneracy.
       boost::optional<Point3> point = smart->point(result);
       if (point) // ignore if boost::optional return NULL
         landmark_result.insert(j, *point);
