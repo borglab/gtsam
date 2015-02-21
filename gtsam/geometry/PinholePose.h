@@ -22,7 +22,6 @@
 #include <gtsam/geometry/CalibratedCamera.h>
 #include <gtsam/geometry/Point2.h>
 #include <boost/make_shared.hpp>
-#include <cmath>
 
 namespace gtsam {
 
@@ -34,7 +33,9 @@ namespace gtsam {
 template<typename Calibration>
 class GTSAM_EXPORT PinholeBaseK: public PinholeBase {
 
-public:
+  GTSAM_CONCEPT_MANIFOLD_TYPE(Calibration)
+
+public  :
 
   /// @name Standard Constructors
   /// @{
@@ -45,7 +46,7 @@ public:
 
   /** constructor with pose */
   explicit PinholeBaseK(const Pose3& pose) :
-      PinholeBase(pose) {
+  PinholeBase(pose) {
   }
 
   /// @}
@@ -53,7 +54,7 @@ public:
   /// @{
 
   explicit PinholeBaseK(const Vector &v) :
-      PinholeBase(v) {
+  PinholeBase(v) {
   }
 
   /// @}
@@ -92,10 +93,8 @@ public:
         Dpose || Dpoint ? &Dpi_pn : 0);
 
     // If needed, apply chain rule
-    if (Dpose)
-      *Dpose = Dpi_pn * *Dpose;
-    if (Dpoint)
-      *Dpoint = Dpi_pn * *Dpoint;
+    if (Dpose) *Dpose = Dpi_pn * (*Dpose);
+    if (Dpoint) *Dpoint = Dpi_pn * (*Dpoint);
 
     return pi;
   }
@@ -246,10 +245,12 @@ public:
   /// @name Advanced Constructors
   /// @{
 
+  /// Init from 6D vector
   explicit PinholePose(const Vector &v) :
       Base(v), K_(new Calibration()) {
   }
 
+  /// Init from Vector and calibration
   PinholePose(const Vector &v, const Vector &K) :
       Base(v), K_(new Calibration(K)) {
   }
@@ -286,17 +287,15 @@ public:
   /// @name Manifold
   /// @{
 
-  /// Manifold 6
+  /// @deprecated
   size_t dim() const {
     return 6;
   }
 
-  /// Manifold 6
+  /// @deprecated
   static size_t Dim() {
     return 6;
   }
-
-  typedef Eigen::Matrix<double, 6, 1> VectorK6;
 
   /// move a cameras according to d
   PinholePose retract(const Vector6& d) const {
@@ -304,7 +303,7 @@ public:
   }
 
   /// return canonical coordinate
-  VectorK6 localCoordinates(const PinholePose& p) const {
+  Vector6 localCoordinates(const PinholePose& p) const {
     return Base::pose().localCoordinates(p.Base::pose());
   }
 

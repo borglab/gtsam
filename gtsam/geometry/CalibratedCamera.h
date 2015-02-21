@@ -249,12 +249,12 @@ public:
   /// Return canonical coordinate
   Vector localCoordinates(const CalibratedCamera& T2) const;
 
-  /// Lie group dimensionality
+  /// @deprecated
   inline size_t dim() const {
     return 6;
   }
 
-  /// Lie group dimensionality
+  /// @deprecated
   inline static size_t Dim() {
     return 6;
   }
