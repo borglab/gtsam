@@ -144,7 +144,21 @@ public:
   }
 
   /**
-   * Calculate range to another camera
+   * Calculate range to a CalibratedCamera
+   * @param camera Other camera
+   * @param Dcamera the optionally computed Jacobian with respect to pose
+   * @param Dother the optionally computed Jacobian with respect to the other camera
+   * @return range (double)
+   */
+  double range(
+      const CalibratedCamera& camera, //
+      OptionalJacobian<1, 6> Dcamera = boost::none,
+      OptionalJacobian<1, 6> Dother = boost::none) const {
+    return pose().range(camera.pose(), Dcamera, Dother);
+  }
+
+  /**
+   * Calculate range to a PinholePoseK derived class
    * @param camera Other camera
    * @param Dcamera the optionally computed Jacobian with respect to pose
    * @param Dother the optionally computed Jacobian with respect to the other camera
@@ -153,20 +167,6 @@ public:
   template<class CalibrationB>
   double range(
       const PinholeBaseK<CalibrationB>& camera, //
-      OptionalJacobian<1, 6> Dcamera = boost::none,
-      OptionalJacobian<1, 6> Dother = boost::none) const {
-    return pose().range(camera.pose(), Dcamera, Dother);
-  }
-
-  /**
-   * Calculate range to another camera
-   * @param camera Other camera
-   * @param Dcamera the optionally computed Jacobian with respect to pose
-   * @param Dother the optionally computed Jacobian with respect to the other camera
-   * @return range (double)
-   */
-  double range(
-      const CalibratedCamera& camera, //
       OptionalJacobian<1, 6> Dcamera = boost::none,
       OptionalJacobian<1, 6> Dother = boost::none) const {
     return pose().range(camera.pose(), Dcamera, Dother);
