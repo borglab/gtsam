@@ -75,7 +75,7 @@ public:
    */
   static PinholeCamera Level(const Calibration &K, const Pose2& pose2,
       double height) {
-    return PinholeCamera(CalibratedCamera::LevelPose(pose2, height), K);
+    return PinholeCamera(Base::LevelPose(pose2, height), K);
   }
 
   /// PinholeCamera::level with default calibration
@@ -94,7 +94,7 @@ public:
    */
   static PinholeCamera Lookat(const Point3& eye, const Point3& target,
       const Point3& upVector, const Calibration& K = Calibration()) {
-    return PinholeCamera(CalibratedCamera::LookatPose(eye, target, upVector), K);
+    return PinholeCamera(Base::LookatPose(eye, target, upVector), K);
   }
 
   /// @}

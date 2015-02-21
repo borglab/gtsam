@@ -220,7 +220,7 @@ public:
    */
   static PinholePose Level(const boost::shared_ptr<Calibration>& K,
       const Pose2& pose2, double height) {
-    return PinholePose(CalibratedCamera::LevelPose(pose2, height), K);
+    return PinholePose(Base::LevelPose(pose2, height), K);
   }
 
   /// PinholePose::level with default calibration
@@ -240,7 +240,7 @@ public:
   static PinholePose Lookat(const Point3& eye, const Point3& target,
       const Point3& upVector, const boost::shared_ptr<Calibration>& K =
           boost::make_shared<Calibration>()) {
-    return PinholePose(CalibratedCamera::LookatPose(eye, target, upVector), K);
+    return PinholePose(Base::LookatPose(eye, target, upVector), K);
   }
 
   /// @}
