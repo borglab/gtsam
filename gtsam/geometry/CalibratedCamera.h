@@ -19,9 +19,10 @@
 #pragma once
 
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/geometry/Point2.h>
 
 namespace gtsam {
+
+class Point2;
 
 class GTSAM_EXPORT CheiralityException: public ThreadsafeException<
     CheiralityException> {
