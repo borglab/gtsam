@@ -81,6 +81,28 @@ Pose3 PinholeBase::LookatPose(const Point3& eye, const Point3& target,
 }
 
 /* ************************************************************************* */
+Matrix26 PinholeBase::Dpose(const Point2& pn, double d) {
+  // optimized version of derivatives, see CalibratedCamera.nb
+  const double u = pn.x(), v = pn.y();
+  double uv = u * v, uu = u * u, vv = v * v;
+  Matrix26 Dpn_pose;
+  Dpn_pose << uv, -1 - uu, v, -d, 0, d * u, 1 + vv, -uv, -u, 0, -d, d * v;
+  return Dpn_pose;
+}
+
+/* ************************************************************************* */
+Matrix23 PinholeBase::Dpoint(const Point2& pn, double d, const Matrix3& R) {
+  // optimized version of derivatives, see CalibratedCamera.nb
+  const double u = pn.x(), v = pn.y();
+  Matrix23 Dpn_point;
+  Dpn_point << //
+      R(0, 0) - u * R(0, 2), R(1, 0) - u * R(1, 2), R(2, 0) - u * R(2, 2), //
+  /**/R(0, 1) - v * R(0, 2), R(1, 1) - v * R(1, 2), R(2, 1) - v * R(2, 2);
+  Dpn_point *= d;
+  return Dpn_point;
+}
+
+/* ************************************************************************* */
 CalibratedCamera CalibratedCamera::Level(const Pose2& pose2, double height) {
   return CalibratedCamera(LevelPose(pose2, height));
 }
@@ -93,32 +115,20 @@ CalibratedCamera CalibratedCamera::Lookat(const Point3& eye,
 
 /* ************************************************************************* */
 Point2 CalibratedCamera::project(const Point3& point,
-    OptionalJacobian<2, 6> Dpose, OptionalJacobian<2, 3> Dpoint) const {
+    OptionalJacobian<2, 6> Dcamera, OptionalJacobian<2, 3> Dpoint) const {
 
-  Point3 q = pose().transform_to(point);
-  Point2 intrinsic = project_to_camera(q);
+  Matrix3 Rt; // calculated by transform_to if needed
+  const Point3 q = pose().transform_to(point, boost::none, Dpoint ? &Rt : 0);
+  Point2 pn = project_to_camera(q);
 
-  // Check if point is in front of camera
-  if (q.z() <= 0)
-    throw CheiralityException();
-
-  if (Dpose || Dpoint) {
-    // optimized version, see CalibratedCamera.nb
+  if (Dcamera || Dpoint) {
     const double z = q.z(), d = 1.0 / z;
-    const double u = intrinsic.x(), v = intrinsic.y(), uv = u * v;
-    if (Dpose)
-      *Dpose << uv, -(1. + u * u), v, -d, 0., d * u, (1. + v * v), -uv, -u, 0., -d, d
-          * v;
-    if (Dpoint) {
-      const Matrix3 R(pose().rotation().matrix());
-      Matrix23 Dpoint_;
-      Dpoint_ << R(0, 0) - u * R(0, 2), R(1, 0) - u * R(1, 2), R(2, 0)
-          - u * R(2, 2), R(0, 1) - v * R(0, 2), R(1, 1) - v * R(1, 2), R(2, 1)
-          - v * R(2, 2);
-      *Dpoint = d * Dpoint_;
-    }
+    if (Dcamera)
+      *Dcamera = PinholeBase::Dpose(pn, d);
+    if (Dpoint)
+      *Dpoint = PinholeBase::Dpoint(pn, d, Rt.transpose()); // TODO transpose
   }
-  return intrinsic;
+  return pn;
 }
 
 /* ************************************************************************* */

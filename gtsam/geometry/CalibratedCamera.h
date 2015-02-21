@@ -19,9 +19,10 @@
 #pragma once
 
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/geometry/Point2.h>
 
 namespace gtsam {
+
+class Point2;
 
 class GTSAM_EXPORT CheiralityException: public ThreadsafeException<
     CheiralityException> {
@@ -134,45 +135,16 @@ protected:
    * Calculate Jacobian with respect to pose
    * @param pn projection in normalized coordinates
    * @param d disparity (inverse depth)
-   * @param Dpi_pn derivative of uncalibrate with respect to pn
-   * @param Dpose Output argument, can be matrix or block, assumed right size !
-   * See http://eigen.tuxfamily.org/dox/TopicFunctionTakingEigenTypes.html
    */
-  template<typename Derived>
-  static void calculateDpose(const Point2& pn, double d, const Matrix2& Dpi_pn,
-      Eigen::MatrixBase<Derived> const & Dpose) {
-    // optimized version of derivatives, see CalibratedCamera.nb
-    const double u = pn.x(), v = pn.y();
-    double uv = u * v, uu = u * u, vv = v * v;
-    Matrix26 Dpn_pose;
-    Dpn_pose << uv, -1 - uu, v, -d, 0, d * u, 1 + vv, -uv, -u, 0, -d, d * v;
-    assert(Dpose.rows()==2 && Dpose.cols()==6);
-    const_cast<Eigen::MatrixBase<Derived>&>(Dpose) = //
-        Dpi_pn * Dpn_pose;
-  }
+  static Matrix26 Dpose(const Point2& pn, double d);
 
   /**
    * Calculate Jacobian with respect to point
    * @param pn projection in normalized coordinates
    * @param d disparity (inverse depth)
-   * @param Dpi_pn derivative of uncalibrate with respect to pn
-   * @param Dpoint Output argument, can be matrix or block, assumed right size !
-   * See http://eigen.tuxfamily.org/dox/TopicFunctionTakingEigenTypes.html
+   * @param R rotation matrix
    */
-  template<typename Derived>
-  static void calculateDpoint(const Point2& pn, double d, const Matrix3& R,
-      const Matrix2& Dpi_pn, Eigen::MatrixBase<Derived> const & Dpoint) {
-    // optimized version of derivatives, see CalibratedCamera.nb
-    const double u = pn.x(), v = pn.y();
-    Matrix23 Dpn_point;
-    Dpn_point << //
-        R(0, 0) - u * R(0, 2), R(1, 0) - u * R(1, 2), R(2, 0) - u * R(2, 2), //
-    /**/R(0, 1) - v * R(0, 2), R(1, 1) - v * R(1, 2), R(2, 1) - v * R(2, 2);
-    Dpn_point *= d;
-    assert(Dpoint.rows()==2 && Dpoint.cols()==3);
-    const_cast<Eigen::MatrixBase<Derived>&>(Dpoint) = //
-        Dpi_pn * Dpn_point;
-  }
+  static Matrix23 Dpoint(const Point2& pn, double d, const Matrix3& R);
 
 private:
 

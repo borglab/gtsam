@@ -20,6 +20,7 @@
 #pragma once
 
 #include <gtsam/geometry/CalibratedCamera.h>
+#include <gtsam/geometry/Point2.h>
 #include <boost/make_shared.hpp>
 #include <cmath>
 
@@ -85,7 +86,8 @@ public:
       OptionalJacobian<2, 6> Dcamera = boost::none,
       OptionalJacobian<2, 3> Dpoint = boost::none) const {
 
-    const Point3 pc = pose().transform_to(pw);
+    Matrix3 Rt; // calculated by transform_to if needed
+    const Point3 pc = pose().transform_to(pw, boost::none, Dpoint ? &Rt : 0);
     const Point2 pn = project_to_camera(pc);
 
     if (!Dcamera && !Dpoint) {
@@ -98,9 +100,9 @@ public:
       const Point2 pi = calibration().uncalibrate(pn, boost::none, Dpi_pn);
 
       if (Dcamera)
-        calculateDpose(pn, d, Dpi_pn, *Dcamera);
+        *Dcamera = Dpi_pn * PinholeBase::Dpose(pn, d);
       if (Dpoint)
-        calculateDpoint(pn, d, pose().rotation().matrix(), Dpi_pn, *Dpoint);
+        *Dpoint = Dpi_pn * PinholeBase::Dpoint(pn, d, Rt.transpose()); // TODO transpose
 
       return pi;
     }
