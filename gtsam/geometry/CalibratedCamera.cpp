@@ -97,6 +97,24 @@ Point2 PinholeBase::project_to_camera(const Point3& P,
 }
 
 /* ************************************************************************* */
+Point2 PinholeBase::project2(const Point3& point, OptionalJacobian<2, 6> Dpose,
+    OptionalJacobian<2, 3> Dpoint) const {
+
+  Matrix3 Rt; // calculated by transform_to if needed
+  const Point3 q = pose().transform_to(point, boost::none, Dpoint ? &Rt : 0);
+  Point2 pn = project_to_camera(q);
+
+  if (Dpose || Dpoint) {
+    const double z = q.z(), d = 1.0 / z;
+    if (Dpose)
+      *Dpose = PinholeBase::Dpose(pn, d);
+    if (Dpoint)
+      *Dpoint = PinholeBase::Dpoint(pn, d, Rt.transpose()); // TODO transpose
+  }
+  return pn;
+}
+
+/* ************************************************************************* */
 Point3 PinholeBase::backproject_from_camera(const Point2& p,
     const double depth) {
   return Point3(p.x() * depth, p.y() * depth, depth);
@@ -116,19 +134,7 @@ CalibratedCamera CalibratedCamera::Lookat(const Point3& eye,
 /* ************************************************************************* */
 Point2 CalibratedCamera::project(const Point3& point,
     OptionalJacobian<2, 6> Dcamera, OptionalJacobian<2, 3> Dpoint) const {
-
-  Matrix3 Rt; // calculated by transform_to if needed
-  const Point3 q = pose().transform_to(point, boost::none, Dpoint ? &Rt : 0);
-  Point2 pn = project_to_camera(q);
-
-  if (Dcamera || Dpoint) {
-    const double z = q.z(), d = 1.0 / z;
-    if (Dcamera)
-      *Dcamera = PinholeBase::Dpose(pn, d);
-    if (Dpoint)
-      *Dpoint = PinholeBase::Dpoint(pn, d, Rt.transpose()); // TODO transpose
-  }
-  return pn;
+  return project2(point, Dcamera, Dpoint);
 }
 
 /* ************************************************************************* */

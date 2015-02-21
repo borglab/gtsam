@@ -147,9 +147,19 @@ public:
       OptionalJacobian<2, 3> Dpoint = boost::none);
 
   /**
-   * backproject a 2-dimensional point to a 3-dimension point
+   * backproject a 2-dimensional point to a 3-dimensional point at given depth
    */
   static Point3 backproject_from_camera(const Point2& p, const double depth);
+
+  /**
+   * Project point into the image
+   * @param point 3D point in world coordinates
+   * @param Dpose the optionally computed Jacobian with respect to camera
+   * @param Dpoint the optionally computed Jacobian with respect to the 3D point
+   * @return the intrinsic coordinates of the projected point
+   */
+  Point2 project2(const Point3& point, OptionalJacobian<2, 6> Dpose =
+      boost::none, OptionalJacobian<2, 3> Dpoint = boost::none) const;
 
 private:
 
@@ -253,16 +263,13 @@ public:
   /// @}
   /// @name Transformations and mesaurement functions
   /// @{
+
   /**
-   * This function receives the camera pose and the landmark location and
-   * returns the location the point is supposed to appear in the image
-   * @param point a 3D point to be projected
-   * @param Dpose the optionally computed Jacobian with respect to pose
-   * @param Dpoint the optionally computed Jacobian with respect to the 3D point
-   * @return the intrinsic coordinates of the projected point
+   * @deprecated
+   * Use project2, which is more consistently named across Pinhole cameras
    */
   Point2 project(const Point3& point,
-      OptionalJacobian<2, 6> Dpose = boost::none,
+      OptionalJacobian<2, 6> Dcamera = boost::none,
       OptionalJacobian<2, 3> Dpoint = boost::none) const;
 
   /**
