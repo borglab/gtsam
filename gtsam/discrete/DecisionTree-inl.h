@@ -478,7 +478,7 @@ namespace gtsam {
     }
 
     // if label is already in correct order, just put together a choice on label
-    if (!highestLabel || label > *highestLabel) {
+    if (!highestLabel || !nrChoices || label > *highestLabel) {
       boost::shared_ptr<Choice> choiceOnLabel(new Choice(label, end - begin));
       for (Iterator it = begin; it != end; it++)
         choiceOnLabel->push_back(it->root_);
