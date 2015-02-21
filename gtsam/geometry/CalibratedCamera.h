@@ -149,9 +149,6 @@ public:
   /// Project a point into the image and check depth
   std::pair<Point2, bool> projectSafe(const Point3& pw) const;
 
-  /// backproject a 2-dimensional point to a 3-dimensional point at given depth
-  static Point3 backproject_from_camera(const Point2& p, const double depth);
-
   /**
    * Project point into the image
    * Throws a CheiralityException if point behind image plane iff GTSAM_THROW_CHEIRALITY_EXCEPTION
@@ -162,6 +159,9 @@ public:
    */
   Point2 project2(const Point3& point, OptionalJacobian<2, 6> Dpose =
       boost::none, OptionalJacobian<2, 3> Dpoint = boost::none) const;
+
+  /// backproject a 2-dimensional point to a 3-dimensional point at given depth
+  static Point3 backproject_from_camera(const Point2& p, const double depth);
 
 private:
 
@@ -273,6 +273,11 @@ public:
   Point2 project(const Point3& point,
       OptionalJacobian<2, 6> Dcamera = boost::none,
       OptionalJacobian<2, 3> Dpoint = boost::none) const;
+
+  /// backproject a 2-dimensional point to a 3-dimensional point at given depth
+  Point3 backproject(const Point2& pn, double depth) const {
+    return pose().transform_from(backproject_from_camera(pn, depth));
+  }
 
   /**
    * Calculate range to a landmark
