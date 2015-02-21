@@ -43,6 +43,15 @@ public:
       HessianFactor(js, Gs, gs, f) {
   }
 
+  /** Construct a binary factor.  Gxx are the upper-triangle blocks of the
+   * quadratic term (the Hessian matrix), gx the pieces of the linear vector
+   * term, and f the constant term.
+   */
+  RegularHessianFactor(Key j1, Key j2, const Matrix& G11, const Matrix& G12,
+      const Vector& g1, const Matrix& G22, const Vector& g2, double f) :
+      HessianFactor(j1, j2, G11, G12, g1, G22, g2, f) {
+  }
+
   /** Constructor with an arbitrary number of keys and with the augmented information matrix
    *   specified as a block matrix. */
   template<typename KEYS>
@@ -172,6 +181,13 @@ public:
     }
   }
 
+  /* ************************************************************************* */
+
+}; // end class RegularHessianFactor
+
+// traits
+template<size_t D> struct traits<RegularHessianFactor<D> > : public Testable<
+    RegularHessianFactor<D> > {
 };
 
 }
