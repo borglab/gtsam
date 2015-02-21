@@ -131,7 +131,7 @@ public:
   }
 
   /// return pose, with derivative
-  const Pose3& pose(OptionalJacobian<6, 6> H) const;
+  const Pose3& getPose(OptionalJacobian<6, 6> H) const;
 
   /// @}
   /// @name Transformations and measurement functions

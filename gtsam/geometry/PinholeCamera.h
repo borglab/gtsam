@@ -142,7 +142,7 @@ public:
   }
 
   /// return pose, with derivative
-  const Pose3& pose(OptionalJacobian<6, dimension> H) const {
+  const Pose3& getPose(OptionalJacobian<6, dimension> H) const {
     if (H) {
       H->setZero();
       H->block(0, 0, 6, 6) = I_6x6;

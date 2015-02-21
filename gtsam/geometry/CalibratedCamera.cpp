@@ -76,7 +76,7 @@ void PinholeBase::print(const string& s) const {
 }
 
 /* ************************************************************************* */
-const Pose3& PinholeBase::pose(OptionalJacobian<6, 6> H) const {
+const Pose3& PinholeBase::getPose(OptionalJacobian<6, 6> H) const {
   if (H) {
     H->setZero();
     H->block(0, 0, 6, 6) = I_6x6;
