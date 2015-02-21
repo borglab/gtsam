@@ -46,17 +46,17 @@ TEST(Ordering, constrained_ordering) {
   SymbolicFactorGraph sfg = example::symbolicChain();
 
   // unconstrained version
-  Ordering actUnconstrained = Ordering::colamd(sfg);
+  Ordering actUnconstrained = Ordering::Colamd(sfg);
   Ordering expUnconstrained = Ordering(list_of(0)(1)(2)(3)(4)(5));
   EXPECT(assert_equal(expUnconstrained, actUnconstrained));
 
   // constrained version - push one set to the end
-  Ordering actConstrained = Ordering::colamdConstrainedLast(sfg, list_of(2)(4));
+  Ordering actConstrained = Ordering::ColamdConstrainedLast(sfg, list_of(2)(4));
   Ordering expConstrained = Ordering(list_of(0)(1)(5)(3)(4)(2));
   EXPECT(assert_equal(expConstrained, actConstrained));
 
   // constrained version - push one set to the start
-  Ordering actConstrained2 = Ordering::colamdConstrainedFirst(sfg,
+  Ordering actConstrained2 = Ordering::ColamdConstrainedFirst(sfg,
       list_of(2)(4));
   Ordering expConstrained2 = Ordering(list_of(2)(4)(0)(1)(3)(5));
   EXPECT(assert_equal(expConstrained2, actConstrained2));
@@ -76,7 +76,7 @@ TEST(Ordering, grouped_constrained_ordering) {
   constraints[4] = 1;
   constraints[5] = 2;
 
-  Ordering actConstrained = Ordering::colamdConstrained(sfg, constraints);
+  Ordering actConstrained = Ordering::ColamdConstrained(sfg, constraints);
   Ordering expConstrained = list_of(0)(1)(3)(2)(4)(5);
   EXPECT(assert_equal(expConstrained, actConstrained));
 }
@@ -195,7 +195,7 @@ TEST(Ordering, csr_format_4) {
   EXPECT(adjExpected.size() == mi.adj().size());
   EXPECT(adjExpected == adjAcutal);
 
-  Ordering metOrder = Ordering::metis(sfg);
+  Ordering metOrder = Ordering::Metis(sfg);
 
   // Test different symbol types
   sfg.push_factor(Symbol('l', 1));
@@ -204,7 +204,7 @@ TEST(Ordering, csr_format_4) {
   sfg.push_factor(Symbol('x', 3), Symbol('l', 1));
   sfg.push_factor(Symbol('x', 4), Symbol('l', 1));
 
-  Ordering metOrder2 = Ordering::metis(sfg);
+  Ordering metOrder2 = Ordering::Metis(sfg);
 }
 
 /* ************************************************************************* */
@@ -226,7 +226,7 @@ TEST(Ordering, metis) {
   EXPECT(adjExpected.size() == mi.adj().size());
   EXPECT(adjExpected == mi.adj());
 
-  Ordering metis = Ordering::metis(sfg);
+  Ordering metis = Ordering::Metis(sfg);
 }
 
 /* ************************************************************************* */

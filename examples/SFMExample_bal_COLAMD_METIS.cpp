@@ -80,8 +80,6 @@ int main (int argc, char* argv[]) {
   /** ---------------  COMPARISON  -----------------------**/
   /** ----------------------------------------------------**/
 
-  /** ---------------------------------------------------**/
-
   double t_COLAMD_ordering, t_METIS_ordering; //, t_NATURAL_ordering;
   LevenbergMarquardtParams params_using_COLAMD, params_using_METIS, params_using_NATURAL;
   try {

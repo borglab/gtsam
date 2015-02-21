@@ -38,7 +38,7 @@ public:
 
   /// Type of ordering to use
   enum OrderingType {
-    COLAMD, METIS, CUSTOM, NATURAL
+    COLAMD, METIS, NATURAL, CUSTOM
   };
 
   typedef Ordering This; ///< Typedef to this class
@@ -78,12 +78,12 @@ public:
   /// performance). This internally builds a VariableIndex so if you already have a VariableIndex,
   /// it is faster to use COLAMD(const VariableIndex&)
   template<class FACTOR>
-  static Ordering colamd(const FactorGraph<FACTOR>& graph) {
-    return colamd(VariableIndex(graph));
+  static Ordering Colamd(const FactorGraph<FACTOR>& graph) {
+    return Colamd(VariableIndex(graph));
   }
 
   /// Compute a fill-reducing ordering using COLAMD from a VariableIndex.
-  static GTSAM_EXPORT Ordering colamd(const VariableIndex& variableIndex);
+  static GTSAM_EXPORT Ordering Colamd(const VariableIndex& variableIndex);
 
   /// Compute a fill-reducing ordering using constrained COLAMD from a factor graph (see details
   /// for note on performance).  This internally builds a VariableIndex so if you already have a
@@ -94,9 +94,9 @@ public:
   /// constrainLast.   If \c forceOrder is false, the variables in \c constrainLast will be
   /// ordered after all the others, but will be rearranged by CCOLAMD to reduce fill-in as well.
   template<class FACTOR>
-  static Ordering colamdConstrainedLast(const FactorGraph<FACTOR>& graph,
+  static Ordering ColamdConstrainedLast(const FactorGraph<FACTOR>& graph,
       const std::vector<Key>& constrainLast, bool forceOrder = false) {
-    return colamdConstrainedLast(VariableIndex(graph), constrainLast,
+    return ColamdConstrainedLast(VariableIndex(graph), constrainLast,
         forceOrder);
   }
 
@@ -106,7 +106,7 @@ public:
   /// variables in \c constrainLast will be ordered in the same order specified in the vector<Key>
   /// \c constrainLast.   If \c forceOrder is false, the variables in \c constrainLast will be
   /// ordered after all the others, but will be rearranged by CCOLAMD to reduce fill-in as well.
-  static GTSAM_EXPORT Ordering colamdConstrainedLast(
+  static GTSAM_EXPORT Ordering ColamdConstrainedLast(
       const VariableIndex& variableIndex, const std::vector<Key>& constrainLast,
       bool forceOrder = false);
 
@@ -119,9 +119,9 @@ public:
   /// constrainLast.   If \c forceOrder is false, the variables in \c constrainFirst will be
   /// ordered after all the others, but will be rearranged by CCOLAMD to reduce fill-in as well.
   template<class FACTOR>
-  static Ordering colamdConstrainedFirst(const FactorGraph<FACTOR>& graph,
+  static Ordering ColamdConstrainedFirst(const FactorGraph<FACTOR>& graph,
       const std::vector<Key>& constrainFirst, bool forceOrder = false) {
-    return colamdConstrainedFirst(VariableIndex(graph), constrainFirst,
+    return ColamdConstrainedFirst(VariableIndex(graph), constrainFirst,
         forceOrder);
   }
 
@@ -132,7 +132,7 @@ public:
   /// vector<Key> \c constrainFirst.   If \c forceOrder is false, the variables in \c
   /// constrainFirst will be ordered after all the others, but will be rearranged by CCOLAMD to
   /// reduce fill-in as well.
-  static GTSAM_EXPORT Ordering colamdConstrainedFirst(
+  static GTSAM_EXPORT Ordering ColamdConstrainedFirst(
       const VariableIndex& variableIndex,
       const std::vector<Key>& constrainFirst, bool forceOrder = false);
 
@@ -146,9 +146,9 @@ public:
   /// function simply fills the \c cmember argument to CCOLAMD with the supplied indices, see the
   /// CCOLAMD documentation for more information.
   template<class FACTOR>
-  static Ordering colamdConstrained(const FactorGraph<FACTOR>& graph,
+  static Ordering ColamdConstrained(const FactorGraph<FACTOR>& graph,
       const FastMap<Key, int>& groups) {
-    return colamdConstrained(VariableIndex(graph), groups);
+    return ColamdConstrained(VariableIndex(graph), groups);
   }
 
   /// Compute a fill-reducing ordering using constrained COLAMD from a VariableIndex.  In this
@@ -158,12 +158,12 @@ public:
   /// appear in \c groups in arbitrary order.  Any variables not present in \c groups will be
   /// assigned to group 0.  This function simply fills the \c cmember argument to CCOLAMD with the
   /// supplied indices, see the CCOLAMD documentation for more information.
-  static GTSAM_EXPORT Ordering colamdConstrained(
+  static GTSAM_EXPORT Ordering ColamdConstrained(
       const VariableIndex& variableIndex, const FastMap<Key, int>& groups);
 
   /// Return a natural Ordering. Typically used by iterative solvers
   template<class FACTOR>
-  static Ordering natural(const FactorGraph<FACTOR> &fg) {
+  static Ordering Natural(const FactorGraph<FACTOR> &fg) {
     FastSet<Key> src = fg.keys();
     std::vector<Key> keys(src.begin(), src.end());
     std::stable_sort(keys.begin(), keys.end());
@@ -176,11 +176,11 @@ public:
       std::vector<int>& adj, const FactorGraph<FACTOR>& graph);
 
   /// Compute an ordering determined by METIS from a VariableIndex
-  static GTSAM_EXPORT Ordering metis(const MetisIndex& met);
+  static GTSAM_EXPORT Ordering Metis(const MetisIndex& met);
 
   template<class FACTOR>
-  static Ordering metis(const FactorGraph<FACTOR>& graph) {
-    return metis(MetisIndex(graph));
+  static Ordering Metis(const FactorGraph<FACTOR>& graph) {
+    return Metis(MetisIndex(graph));
   }
 
   /// @}
@@ -193,11 +193,11 @@ public:
 
     switch (orderingType) {
     case COLAMD:
-      return colamd(graph);
+      return Colamd(graph);
     case METIS:
-      return metis(graph);
+      return Metis(graph);
     case NATURAL:
-      return natural(graph);
+      return Natural(graph);
     case CUSTOM:
       throw std::runtime_error(
           "Ordering::Create error: called with CUSTOM ordering type.");
@@ -222,7 +222,7 @@ public:
 
 private:
   /// Internal COLAMD function
-  static GTSAM_EXPORT Ordering colamdConstrained(
+  static GTSAM_EXPORT Ordering ColamdConstrained(
       const VariableIndex& variableIndex, std::vector<int>& cmember);
 
   /** Serialization function */

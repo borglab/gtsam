@@ -38,14 +38,14 @@ FastMap<Key, size_t> Ordering::invert() const {
 }
 
 /* ************************************************************************* */
-Ordering Ordering::colamd(const VariableIndex& variableIndex) {
+Ordering Ordering::Colamd(const VariableIndex& variableIndex) {
   // Call constrained version with all groups set to zero
   vector<int> dummy_groups(variableIndex.size(), 0);
-  return Ordering::colamdConstrained(variableIndex, dummy_groups);
+  return Ordering::ColamdConstrained(variableIndex, dummy_groups);
 }
 
 /* ************************************************************************* */
-Ordering Ordering::colamdConstrained(const VariableIndex& variableIndex,
+Ordering Ordering::ColamdConstrained(const VariableIndex& variableIndex,
     std::vector<int>& cmember) {
   gttic(Ordering_COLAMDConstrained);
 
@@ -115,7 +115,7 @@ Ordering Ordering::colamdConstrained(const VariableIndex& variableIndex,
 }
 
 /* ************************************************************************* */
-Ordering Ordering::colamdConstrainedLast(const VariableIndex& variableIndex,
+Ordering Ordering::ColamdConstrainedLast(const VariableIndex& variableIndex,
     const std::vector<Key>& constrainLast, bool forceOrder) {
   gttic(Ordering_COLAMDConstrainedLast);
 
@@ -137,11 +137,11 @@ Ordering Ordering::colamdConstrainedLast(const VariableIndex& variableIndex,
       ++group;
   }
 
-  return Ordering::colamdConstrained(variableIndex, cmember);
+  return Ordering::ColamdConstrained(variableIndex, cmember);
 }
 
 /* ************************************************************************* */
-Ordering Ordering::colamdConstrainedFirst(const VariableIndex& variableIndex,
+Ordering Ordering::ColamdConstrainedFirst(const VariableIndex& variableIndex,
     const std::vector<Key>& constrainFirst, bool forceOrder) {
   gttic(Ordering_COLAMDConstrainedFirst);
 
@@ -170,11 +170,11 @@ Ordering Ordering::colamdConstrainedFirst(const VariableIndex& variableIndex,
     if (c == none)
       c = group;
 
-  return Ordering::colamdConstrained(variableIndex, cmember);
+  return Ordering::ColamdConstrained(variableIndex, cmember);
 }
 
 /* ************************************************************************* */
-Ordering Ordering::colamdConstrained(const VariableIndex& variableIndex,
+Ordering Ordering::ColamdConstrained(const VariableIndex& variableIndex,
     const FastMap<Key, int>& groups) {
   gttic(Ordering_COLAMDConstrained);
   size_t n = variableIndex.size();
@@ -193,11 +193,11 @@ Ordering Ordering::colamdConstrained(const VariableIndex& variableIndex,
     cmember[keyIndices.at(p.first)] = p.second;
   }
 
-  return Ordering::colamdConstrained(variableIndex, cmember);
+  return Ordering::ColamdConstrained(variableIndex, cmember);
 }
 
 /* ************************************************************************* */
-Ordering Ordering::metis(const MetisIndex& met) {
+Ordering Ordering::Metis(const MetisIndex& met) {
   gttic(Ordering_METIS);
 
   vector<idx_t> xadj = met.xadj();
