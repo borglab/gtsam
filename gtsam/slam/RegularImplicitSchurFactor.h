@@ -89,9 +89,12 @@ public:
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
     std::cout << " RegularImplicitSchurFactor " << std::endl;
     Factor::print(s);
-    std::cout << " PointCovariance_ \n" << PointCovariance_ << std::endl;
-    std::cout << " E_ \n" << E_ << std::endl;
-    std::cout << " b_ \n" << b_.transpose() << std::endl;
+    for (size_t pos = 0; pos < size(); ++pos) {
+      std::cout << "Fblock:\n" << Fblocks_[pos].second << std::endl;
+    }
+    std::cout << "PointCovariance:\n" << PointCovariance_ << std::endl;
+    std::cout << "E:\n" << E_ << std::endl;
+    std::cout << "b:\n" << b_.transpose() << std::endl;
   }
 
   /// equals
