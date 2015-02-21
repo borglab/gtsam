@@ -102,9 +102,6 @@ public:
   /// @name Standard Interface
   /// @{
 
-  virtual ~PinholeBase() {
-  }
-
   /// return pose, constant version
   const Pose3& pose() const {
     return pose_;
@@ -129,35 +126,7 @@ public:
   /**
    * backproject a 2-dimensional point to a 3-dimension point
    */
-  static Point3 backproject_from_camera(const Point2& p, const double scale);
-
-  /**
-   * Calculate range to a landmark
-   * @param point 3D location of landmark
-   * @param Dcamera the optionally computed Jacobian with respect to pose
-   * @param Dpoint the optionally computed Jacobian with respect to the landmark
-   * @return range (double)
-   */
-  double range(
-      const Point3& point, //
-      OptionalJacobian<1, 6> Dcamera = boost::none,
-      OptionalJacobian<1, 3> Dpoint = boost::none) const {
-    return pose_.range(point, Dcamera, Dpoint);
-  }
-
-  /**
-   * Calculate range to another pose
-   * @param pose Other SO(3) pose
-   * @param Dcamera the optionally computed Jacobian with respect to pose
-   * @param Dpose2 the optionally computed Jacobian with respect to the other pose
-   * @return range (double)
-   */
-  double range(
-      const Pose3& pose, //
-      OptionalJacobian<1, 6> Dcamera = boost::none,
-      OptionalJacobian<1, 6> Dpose = boost::none) const {
-    return pose_.range(pose, Dcamera, Dpose);
-  }
+  static Point3 backproject_from_camera(const Point2& p, const double depth);
 
 protected:
 
@@ -318,6 +287,34 @@ public:
   Point2 project(const Point3& point,
       OptionalJacobian<2, 6> Dpose = boost::none,
       OptionalJacobian<2, 3> Dpoint = boost::none) const;
+
+  /**
+   * Calculate range to a landmark
+   * @param point 3D location of landmark
+   * @param Dcamera the optionally computed Jacobian with respect to pose
+   * @param Dpoint the optionally computed Jacobian with respect to the landmark
+   * @return range (double)
+   */
+  double range(
+      const Point3& point, //
+      OptionalJacobian<1, 6> Dcamera = boost::none,
+      OptionalJacobian<1, 3> Dpoint = boost::none) const {
+    return pose().range(point, Dcamera, Dpoint);
+  }
+
+  /**
+   * Calculate range to another pose
+   * @param pose Other SO(3) pose
+   * @param Dcamera the optionally computed Jacobian with respect to pose
+   * @param Dpose2 the optionally computed Jacobian with respect to the other pose
+   * @return range (double)
+   */
+  double range(
+      const Pose3& pose, //
+      OptionalJacobian<1, 6> Dcamera = boost::none,
+      OptionalJacobian<1, 6> Dpose = boost::none) const {
+    return this->pose().range(pose, Dcamera, Dpose);
+  }
 
   /**
    * Calculate range to another camera
