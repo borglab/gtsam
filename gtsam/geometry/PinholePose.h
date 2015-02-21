@@ -36,7 +36,7 @@ class PinholeBase {
 
 private:
 
-  Pose3 pose_;
+  Pose3 pose_; ///< 3D pose of camera
 
 public:
 
@@ -229,7 +229,7 @@ public:
     return range(camera.pose(), Dcamera, Dother);
   }
 
-private:
+protected:
 
   /**
    * Calculate Jacobian with respect to pose
@@ -275,6 +275,8 @@ private:
         Dpi_pn * Dpn_point;
   }
 
+private:
+
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
@@ -297,14 +299,14 @@ class PinholePose: public PinholeBase<Calibration> {
 
 private:
 
-  typedef PinholeBase<Calibration> Base;
-  boost::shared_ptr<Calibration> K_;
+  typedef PinholeBase<Calibration> Base; ///< base class has 3D pose as private member
+  boost::shared_ptr<Calibration> K_; ///< shared pointer to fixed calibration
 
 public:
 
   enum {
     dimension = 6
-  };
+  }; ///< There are 6 DOF to optimize for
 
   /// @name Standard Constructors
   /// @{
@@ -395,7 +397,7 @@ public:
   }
 
   /// return calibration
-  const Calibration& calibration() const {
+  virtual const Calibration& calibration() const {
     return *K_;
   }
 
@@ -431,182 +433,8 @@ public:
   }
 
   /// @}
-  /// @name Transformations and measurement functions
-  /// @{
-
-  /**
-   * projects a 3-dimensional point in camera coordinates into the
-   * camera and returns a 2-dimensional point, no calibration applied
-   * @param P A point in camera coordinates
-   * @param Dpoint is the 2*3 Jacobian w.r.t. P
-   */
-  static Point2 project_to_camera(const Point3& P, //
-      OptionalJacobian<2, 3> Dpoint = boost::none) {
-#ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
-    if (P.z() <= 0)
-    throw CheiralityException();
-#endif
-    double d = 1.0 / P.z();
-    const double u = P.x() * d, v = P.y() * d;
-    if (Dpoint)
-      *Dpoint << d, 0.0, -u * d, 0.0, d, -v * d;
-    return Point2(u, v);
-  }
-
-  /// Project a point into the image and check depth
-  std::pair<Point2, bool> projectSafe(const Point3& pw) const {
-    const Point3 pc = Base::pose().transform_to(pw);
-    const Point2 pn = project_to_camera(pc);
-    return std::make_pair(calibration().uncalibrate(pn), pc.z() > 0);
-  }
-
-  /** project a point from world coordinate to the image, fixed Jacobians
-   *  @param pw is a point in the world coordinate
-   *  @param Dcamera is the Jacobian w.r.t. [pose3 calibration]
-   *  @param Dpoint is the Jacobian w.r.t. point3
-   */
-  Point2 project2(const Point3& pw,
-      OptionalJacobian<2, 6> Dcamera = boost::none,
-      OptionalJacobian<2, 3> Dpoint = boost::none) const {
-
-    const Point3 pc = Base::pose().transform_to(pw);
-    const Point2 pn = project_to_camera(pc);
-
-    if (!Dcamera && !Dpoint) {
-      return calibration().uncalibrate(pn);
-    } else {
-      const double z = pc.z(), d = 1.0 / z;
-
-      // uncalibration
-      Matrix2 Dpi_pn;
-      const Point2 pi = calibration().uncalibrate(pn, boost::none, Dpi_pn);
-
-      if (Dcamera)
-        calculateDpose(pn, d, Dpi_pn, *Dcamera);
-      if (Dpoint)
-        calculateDpoint(pn, d, Base::pose().rotation().matrix(), Dpi_pn,
-            *Dpoint);
-
-      return pi;
-    }
-  }
-
-  /// backproject a 2-dimensional point to a 3-dimensional point at given depth
-  Point3 backproject(const Point2& p, double depth) const {
-    const Point2 pn = calibration().calibrate(p);
-    const Point3 pc(pn.x() * depth, pn.y() * depth, depth);
-    return Base::pose().transform_from(pc);
-  }
-
-  /// backproject a 2-dimensional point to a 3-dimensional point at infinity
-  Point3 backprojectPointAtInfinity(const Point2& p) const {
-    const Point2 pn = calibration().calibrate(p);
-    const Point3 pc(pn.x(), pn.y(), 1.0); //by convention the last element is 1
-    return Base::pose().rotation().rotate(pc);
-  }
-
-  /**
-   * Calculate range to a landmark
-   * @param point 3D location of landmark
-   * @param Dcamera the optionally computed Jacobian with respect to pose
-   * @param Dpoint the optionally computed Jacobian with respect to the landmark
-   * @return range (double)
-   */
-  double range(
-      const Point3& point, //
-      OptionalJacobian<1, 6> Dcamera = boost::none,
-      OptionalJacobian<1, 3> Dpoint = boost::none) const {
-    return Base::pose().range(point, Dcamera, Dpoint);
-  }
-
-  /**
-   * Calculate range to another pose
-   * @param pose Other SO(3) pose
-   * @param Dcamera the optionally computed Jacobian with respect to pose
-   * @param Dpose2 the optionally computed Jacobian with respect to the other pose
-   * @return range (double)
-   */
-  double range(
-      const Pose3& pose, //
-      OptionalJacobian<1, 6> Dcamera = boost::none,
-      OptionalJacobian<1, 6> Dpose = boost::none) const {
-    return Base::pose().range(pose, Dcamera, Dpose);
-  }
-
-  /**
-   * Calculate range to another camera
-   * @param camera Other camera
-   * @param Dcamera the optionally computed Jacobian with respect to pose
-   * @param Dother the optionally computed Jacobian with respect to the other camera
-   * @return range (double)
-   */
-  template<class CalibrationB>
-  double range(
-      const PinholePose<CalibrationB>& camera, //
-      OptionalJacobian<1, 6> Dcamera = boost::none,
-      OptionalJacobian<1, 6> Dother = boost::none) const {
-    return Base::pose().range(camera.pose(), Dcamera, Dother);
-  }
-
-  /**
-   * Calculate range to another camera
-   * @param camera Other camera
-   * @param Dcamera the optionally computed Jacobian with respect to pose
-   * @param Dother the optionally computed Jacobian with respect to the other camera
-   * @return range (double)
-   */
-  double range(
-      const CalibratedCamera& camera, //
-      OptionalJacobian<1, 6> Dcamera = boost::none,
-      OptionalJacobian<1, 6> Dother = boost::none) const {
-    return range(camera.pose(), Dcamera, Dother);
-  }
 
 private:
-
-  /**
-   * Calculate Jacobian with respect to pose
-   * @param pn projection in normalized coordinates
-   * @param d disparity (inverse depth)
-   * @param Dpi_pn derivative of uncalibrate with respect to pn
-   * @param Dpose Output argument, can be matrix or block, assumed right size !
-   * See http://eigen.tuxfamily.org/dox/TopicFunctionTakingEigenTypes.html
-   */
-  template<typename Derived>
-  static void calculateDpose(const Point2& pn, double d, const Matrix2& Dpi_pn,
-      Eigen::MatrixBase<Derived> const & Dpose) {
-    // optimized version of derivatives, see CalibratedCamera.nb
-    const double u = pn.x(), v = pn.y();
-    double uv = u * v, uu = u * u, vv = v * v;
-    Matrix26 Dpn_pose;
-    Dpn_pose << uv, -1 - uu, v, -d, 0, d * u, 1 + vv, -uv, -u, 0, -d, d * v;
-    assert(Dpose.rows()==2 && Dpose.cols()==6);
-    const_cast<Eigen::MatrixBase<Derived>&>(Dpose) = //
-        Dpi_pn * Dpn_pose;
-  }
-
-  /**
-   * Calculate Jacobian with respect to point
-   * @param pn projection in normalized coordinates
-   * @param d disparity (inverse depth)
-   * @param Dpi_pn derivative of uncalibrate with respect to pn
-   * @param Dpoint Output argument, can be matrix or block, assumed right size !
-   * See http://eigen.tuxfamily.org/dox/TopicFunctionTakingEigenTypes.html
-   */
-  template<typename Derived>
-  static void calculateDpoint(const Point2& pn, double d, const Matrix3& R,
-      const Matrix2& Dpi_pn, Eigen::MatrixBase<Derived> const & Dpoint) {
-    // optimized version of derivatives, see CalibratedCamera.nb
-    const double u = pn.x(), v = pn.y();
-    Matrix23 Dpn_point;
-    Dpn_point << //
-        R(0, 0) - u * R(0, 2), R(1, 0) - u * R(1, 2), R(2, 0) - u * R(2, 2), //
-    /**/R(0, 1) - v * R(0, 2), R(1, 1) - v * R(1, 2), R(2, 1) - v * R(2, 2);
-    Dpn_point *= d;
-    assert(Dpoint.rows()==2 && Dpoint.cols()==3);
-    const_cast<Eigen::MatrixBase<Derived>&>(Dpoint) = //
-        Dpi_pn * Dpn_point;
-  }
 
   /** Serialization function */
   friend class boost::serialization::access;
