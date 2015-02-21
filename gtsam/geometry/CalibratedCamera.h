@@ -141,7 +141,6 @@ public:
    * Project from 3D point in camera coordinates into image
    * Does *not* throw a CheiralityException, even if pc behind image plane
    * @param pc point in camera coordinates
-   * @param Dpoint is the 2*3 Jacobian w.r.t. pc
    */
   static Point2 project_to_camera(const Point3& pc, //
       OptionalJacobian<2, 3> Dpoint = boost::none);
@@ -153,8 +152,6 @@ public:
    * Project point into the image
    * Throws a CheiralityException if point behind image plane iff GTSAM_THROW_CHEIRALITY_EXCEPTION
    * @param point 3D point in world coordinates
-   * @param Dpose the optionally computed Jacobian with respect to camera
-   * @param Dpoint the optionally computed Jacobian with respect to the 3D point
    * @return the intrinsic coordinates of the projected point
    */
   Point2 project2(const Point3& point, OptionalJacobian<2, 6> Dpose =
@@ -270,9 +267,8 @@ public:
    * @deprecated
    * Use project2, which is more consistently named across Pinhole cameras
    */
-  Point2 project(const Point3& point,
-      OptionalJacobian<2, 6> Dcamera = boost::none,
-      OptionalJacobian<2, 3> Dpoint = boost::none) const;
+  Point2 project(const Point3& point, OptionalJacobian<2, 6> Dcamera =
+      boost::none, OptionalJacobian<2, 3> Dpoint = boost::none) const;
 
   /// backproject a 2-dimensional point to a 3-dimensional point at given depth
   Point3 backproject(const Point2& pn, double depth) const {
@@ -282,12 +278,9 @@ public:
   /**
    * Calculate range to a landmark
    * @param point 3D location of landmark
-   * @param Dcamera the optionally computed Jacobian with respect to pose
-   * @param Dpoint the optionally computed Jacobian with respect to the landmark
    * @return range (double)
    */
-  double range(
-      const Point3& point, //
+  double range(const Point3& point,
       OptionalJacobian<1, 6> Dcamera = boost::none,
       OptionalJacobian<1, 3> Dpoint = boost::none) const {
     return pose().range(point, Dcamera, Dpoint);
@@ -296,13 +289,9 @@ public:
   /**
    * Calculate range to another pose
    * @param pose Other SO(3) pose
-   * @param Dcamera the optionally computed Jacobian with respect to pose
-   * @param Dpose2 the optionally computed Jacobian with respect to the other pose
    * @return range (double)
    */
-  double range(
-      const Pose3& pose, //
-      OptionalJacobian<1, 6> Dcamera = boost::none,
+  double range(const Pose3& pose, OptionalJacobian<1, 6> Dcamera = boost::none,
       OptionalJacobian<1, 6> Dpose = boost::none) const {
     return this->pose().range(pose, Dcamera, Dpose);
   }
@@ -310,12 +299,11 @@ public:
   /**
    * Calculate range to another camera
    * @param camera Other camera
-   * @param H1 optionally computed Jacobian with respect to pose
-   * @param H2 optionally computed Jacobian with respect to the 3D point
    * @return range (double)
    */
-  double range(const CalibratedCamera& camera, OptionalJacobian<1, 6> H1 =
-      boost::none, OptionalJacobian<1, 6> H2 = boost::none) const {
+  double range(const CalibratedCamera& camera, //
+      OptionalJacobian<1, 6> H1 = boost::none, //
+      OptionalJacobian<1, 6> H2 = boost::none) const {
     return pose().range(camera.pose(), H1, H2);
   }
 

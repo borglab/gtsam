@@ -79,8 +79,6 @@ public:
 
   /** project a point from world coordinate to the image, fixed Jacobians
    *  @param pw is a point in the world coordinates
-   *  @param Dpose is the Jacobian w.r.t. pose
-   *  @param Dpoint is the Jacobian w.r.t. pw
    */
   Point2 project2(const Point3& pw, OptionalJacobian<2, 6> Dpose = boost::none,
       OptionalJacobian<2, 3> Dpoint = boost::none) const {
@@ -118,12 +116,9 @@ public:
   /**
    * Calculate range to a landmark
    * @param point 3D location of landmark
-   * @param Dcamera the optionally computed Jacobian with respect to pose
-   * @param Dpoint the optionally computed Jacobian with respect to the landmark
    * @return range (double)
    */
-  double range(
-      const Point3& point, //
+  double range(const Point3& point,
       OptionalJacobian<1, 6> Dcamera = boost::none,
       OptionalJacobian<1, 3> Dpoint = boost::none) const {
     return pose().range(point, Dcamera, Dpoint);
@@ -132,13 +127,9 @@ public:
   /**
    * Calculate range to another pose
    * @param pose Other SO(3) pose
-   * @param Dcamera the optionally computed Jacobian with respect to pose
-   * @param Dpose2 the optionally computed Jacobian with respect to the other pose
    * @return range (double)
    */
-  double range(
-      const Pose3& pose, //
-      OptionalJacobian<1, 6> Dcamera = boost::none,
+  double range(const Pose3& pose, OptionalJacobian<1, 6> Dcamera = boost::none,
       OptionalJacobian<1, 6> Dpose = boost::none) const {
     return this->pose().range(pose, Dcamera, Dpose);
   }
@@ -146,27 +137,20 @@ public:
   /**
    * Calculate range to a CalibratedCamera
    * @param camera Other camera
-   * @param Dcamera the optionally computed Jacobian with respect to pose
-   * @param Dother the optionally computed Jacobian with respect to the other camera
    * @return range (double)
    */
-  double range(
-      const CalibratedCamera& camera, //
-      OptionalJacobian<1, 6> Dcamera = boost::none,
-      OptionalJacobian<1, 6> Dother = boost::none) const {
+  double range(const CalibratedCamera& camera, OptionalJacobian<1, 6> Dcamera =
+      boost::none, OptionalJacobian<1, 6> Dother = boost::none) const {
     return pose().range(camera.pose(), Dcamera, Dother);
   }
 
   /**
    * Calculate range to a PinholePoseK derived class
    * @param camera Other camera
-   * @param Dcamera the optionally computed Jacobian with respect to pose
-   * @param Dother the optionally computed Jacobian with respect to the other camera
    * @return range (double)
    */
   template<class CalibrationB>
-  double range(
-      const PinholeBaseK<CalibrationB>& camera, //
+  double range(const PinholeBaseK<CalibrationB>& camera,
       OptionalJacobian<1, 6> Dcamera = boost::none,
       OptionalJacobian<1, 6> Dother = boost::none) const {
     return pose().range(camera.pose(), Dcamera, Dother);
