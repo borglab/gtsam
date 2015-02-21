@@ -17,9 +17,8 @@
  * @brief unit tests for Block Automatic Differentiation
  */
 
-#include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/PinholeCamera.h>
-#include <gtsam/geometry/Pose3.h>
+#include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam/base/VectorSpace.h>

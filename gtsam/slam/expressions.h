@@ -8,6 +8,7 @@
 #pragma once
 
 #include <gtsam/nonlinear/expressions.h>
+#include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam/geometry/PinholeCamera.h>

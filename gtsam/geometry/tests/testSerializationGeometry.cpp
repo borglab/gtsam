@@ -16,8 +16,6 @@
  * @date Feb 7, 2012
  */
 
-#include <gtsam/geometry/Point2.h>
-#include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/geometry/EssentialMatrix.h>
