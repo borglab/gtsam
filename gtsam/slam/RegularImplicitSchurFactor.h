@@ -96,11 +96,17 @@ public:
 
   /// equals
   bool equals(const GaussianFactor& lf, double tol) const {
-    if (!dynamic_cast<const RegularImplicitSchurFactor*>(&lf))
+    const This* f = dynamic_cast<const This*>(&lf);
+    if (!f)
       return false;
-    else {
-      return false;
+    for (size_t pos = 0; pos < size(); ++pos) {
+      if (keys_[pos] != f->keys_[pos]) return false;
+      if (Fblocks_[pos].first != f->Fblocks_[pos].first) return false;
+      if (!equal_with_abs_tol(Fblocks_[pos].second,f->Fblocks_[pos].second,tol)) return false;
     }
+    return equal_with_abs_tol(PointCovariance_, f->PointCovariance_, tol)
+        && equal_with_abs_tol(E_, f->E_, tol)
+        && equal_with_abs_tol(b_, f->b_, tol);
   }
 
   /// Degrees of freedom of camera
@@ -460,7 +466,12 @@ public:
 
 
 };
-// RegularImplicitSchurFactor
+// end class RegularImplicitSchurFactor
+
+// traits
+template<size_t D> struct traits<RegularImplicitSchurFactor<D> > : public Testable<
+    RegularImplicitSchurFactor<D> > {
+};
 
 }
 
