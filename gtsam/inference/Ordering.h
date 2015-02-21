@@ -38,7 +38,7 @@ public:
 
   /// Type of ordering to use
   enum OrderingType {
-    COLAMD, METIS, CUSTOM
+    COLAMD, METIS, CUSTOM, NATURAL
   };
 
   typedef Ordering This; ///< Typedef to this class
@@ -163,7 +163,7 @@ public:
 
   /// Return a natural Ordering. Typically used by iterative solvers
   template<class FACTOR>
-  static Ordering Natural(const FactorGraph<FACTOR> &fg) {
+  static Ordering natural(const FactorGraph<FACTOR> &fg) {
     FastSet<Key> src = fg.keys();
     std::vector<Key> keys(src.begin(), src.end());
     std::stable_sort(keys.begin(), keys.end());
@@ -196,6 +196,8 @@ public:
       return colamd(graph);
     case METIS:
       return metis(graph);
+    case NATURAL:
+      return natural(graph);
     case CUSTOM:
       throw std::runtime_error(
           "Ordering::Create error: called with CUSTOM ordering type.");

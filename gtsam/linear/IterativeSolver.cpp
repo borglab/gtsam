@@ -86,7 +86,7 @@ KeyInfo::KeyInfo(const GaussianFactorGraph &fg, const Ordering &ordering)
 
 /****************************************************************************/
 KeyInfo::KeyInfo(const GaussianFactorGraph &fg)
-  : ordering_(Ordering::Natural(fg)) {
+  : ordering_(Ordering::natural(fg)) {
   initialize(fg);
 }
 

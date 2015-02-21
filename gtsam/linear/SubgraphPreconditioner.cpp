@@ -366,7 +366,7 @@ std::vector<size_t> SubgraphBuilder::sample(const std::vector<double> &weights, 
 Subgraph::shared_ptr SubgraphBuilder::operator() (const GaussianFactorGraph &gfg) const {
 
   const SubgraphBuilderParameters &p = parameters_;
-  const Ordering inverse_ordering = Ordering::Natural(gfg);
+  const Ordering inverse_ordering = Ordering::natural(gfg);
   const FastMap<Key, size_t> forward_ordering = inverse_ordering.invert();
   const size_t n = inverse_ordering.size(), t = n * p.complexity_ ;
 
