@@ -87,18 +87,27 @@ public:
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
     std::cout << " RegularImplicitSchurFactor " << std::endl;
     Factor::print(s);
-    std::cout << " PointCovariance_ \n" << PointCovariance_ << std::endl;
-    std::cout << " E_ \n" << E_ << std::endl;
-    std::cout << " b_ \n" << b_.transpose() << std::endl;
+    for (size_t pos = 0; pos < size(); ++pos) {
+      std::cout << "Fblock:\n" << Fblocks_[pos].second << std::endl;
+    }
+    std::cout << "PointCovariance:\n" << PointCovariance_ << std::endl;
+    std::cout << "E:\n" << E_ << std::endl;
+    std::cout << "b:\n" << b_.transpose() << std::endl;
   }
 
   /// equals
   bool equals(const GaussianFactor& lf, double tol) const {
-    if (!dynamic_cast<const RegularImplicitSchurFactor*>(&lf))
+    const This* f = dynamic_cast<const This*>(&lf);
+    if (!f)
       return false;
-    else {
-      return false;
+    for (size_t pos = 0; pos < size(); ++pos) {
+      if (keys_[pos] != f->keys_[pos]) return false;
+      if (Fblocks_[pos].first != f->Fblocks_[pos].first) return false;
+      if (!equal_with_abs_tol(Fblocks_[pos].second,f->Fblocks_[pos].second,tol)) return false;
     }
+    return equal_with_abs_tol(PointCovariance_, f->PointCovariance_, tol)
+        && equal_with_abs_tol(E_, f->E_, tol)
+        && equal_with_abs_tol(b_, f->b_, tol);
   }
 
   /// Degrees of freedom of camera
@@ -458,7 +467,12 @@ public:
 
 
 };
-// RegularImplicitSchurFactor
+// end class RegularImplicitSchurFactor
+
+// traits
+template<size_t D> struct traits<RegularImplicitSchurFactor<D> > : public Testable<
+    RegularImplicitSchurFactor<D> > {
+};
 
 }
 
