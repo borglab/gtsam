@@ -60,11 +60,11 @@ TEST( PinholePose, constructor)
 TEST(PinholePose, Pose) {
 
   Matrix actualH;
-  EXPECT(assert_equal(pose, camera.getPose(actualH)));
+  EXPECT(assert_equal(pose, camera.pose(actualH)));
 
   // Check derivative
   boost::function<Pose3(Camera)> f = //
-      boost::bind(&Camera::getPose,_1,boost::none);
+      boost::bind(&Camera::pose,_1,boost::none);
   Matrix numericalH = numericalDerivative11<Pose3,Camera>(f,camera);
   EXPECT(assert_equal(numericalH, actualH, 1e-9));
 }

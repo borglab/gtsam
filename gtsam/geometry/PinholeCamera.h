@@ -147,17 +147,17 @@ public:
   }
 
   /// return pose
-  inline Pose3& pose() {
+  Pose3& pose() {
     return pose_;
   }
 
   /// return pose, constant version
-  inline const Pose3& pose() const {
+  const Pose3& pose() const {
     return pose_;
   }
 
   /// return pose, with derivative
-  inline const Pose3& getPose(gtsam::OptionalJacobian<6, dimension> H) const {
+  const Pose3& pose(OptionalJacobian<6, dimension> H) const {
     if (H) {
       H->setZero();
       H->block(0, 0, 6, 6) = I_6x6;
@@ -166,12 +166,12 @@ public:
   }
 
   /// return calibration
-  inline Calibration& calibration() {
+  Calibration& calibration() {
     return K_;
   }
 
   /// return calibration
-  inline const Calibration& calibration() const {
+  const Calibration& calibration() const {
     return K_;
   }
 
@@ -180,12 +180,12 @@ public:
   /// @{
 
   /// Manifold dimension
-  inline size_t dim() const {
+  size_t dim() const {
     return dimension;
   }
 
   /// Manifold dimension
-  inline static size_t Dim() {
+  static size_t Dim() {
     return dimension;
   }
 
@@ -238,7 +238,7 @@ public:
   }
 
   /// Project a point into the image and check depth
-  inline std::pair<Point2, bool> projectSafe(const Point3& pw) const {
+  std::pair<Point2, bool> projectSafe(const Point3& pw) const {
     const Point3 pc = pose_.transform_to(pw);
     const Point2 pn = project_to_camera(pc);
     return std::make_pair(K_.uncalibrate(pn), pc.z() > 0);
@@ -252,7 +252,7 @@ public:
    *  @param Dpoint is the Jacobian w.r.t. point3
    *  @param Dcal is the Jacobian w.r.t. calibration
    */
-  inline Point2 project(const Point3& pw, OptionalJacobian<2, 6> Dpose =
+  Point2 project(const Point3& pw, OptionalJacobian<2, 6> Dpose =
       boost::none, OptionalJacobian<2, 3> Dpoint = boost::none,
       OptionalJacobian<2, DimK> Dcal = boost::none) const {
 
@@ -285,7 +285,7 @@ public:
    *  @param Dpoint is the Jacobian w.r.t. point3
    *  @param Dcal is the Jacobian w.r.t. calibration
    */
-  inline Point2 projectPointAtInfinity(const Point3& pw,
+  Point2 projectPointAtInfinity(const Point3& pw,
       OptionalJacobian<2, 6> Dpose = boost::none,
       OptionalJacobian<2, 2> Dpoint = boost::none,
       OptionalJacobian<2, DimK> Dcal = boost::none) const {
@@ -356,14 +356,14 @@ public:
   }
 
   /// backproject a 2-dimensional point to a 3-dimensional point at given depth
-  inline Point3 backproject(const Point2& p, double depth) const {
+  Point3 backproject(const Point2& p, double depth) const {
     const Point2 pn = K_.calibrate(p);
     const Point3 pc(pn.x() * depth, pn.y() * depth, depth);
     return pose_.transform_from(pc);
   }
 
   /// backproject a 2-dimensional point to a 3-dimensional point at infinity
-  inline Point3 backprojectPointAtInfinity(const Point2& p) const {
+  Point3 backprojectPointAtInfinity(const Point2& p) const {
     const Point2 pn = K_.calibrate(p);
     const Point3 pc(pn.x(), pn.y(), 1.0); //by convention the last element is 1
     return pose_.rotation().rotate(pc);
