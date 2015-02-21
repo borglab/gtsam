@@ -20,7 +20,6 @@
 #pragma once
 
 #include <gtsam/geometry/CalibratedCamera.h>
-#include <gtsam/geometry/Pose2.h>
 #include <boost/make_shared.hpp>
 #include <cmath>
 
@@ -32,11 +31,7 @@ namespace gtsam {
  * \nosubgrouping
  */
 template<typename Calibration>
-class PinholeBase {
-
-private:
-
-  Pose3 pose_; ///< 3D pose of camera
+class GTSAM_EXPORT PinholeBaseK : public PinholeBase {
 
 public:
 
@@ -44,55 +39,27 @@ public:
   /// @{
 
   /** default constructor */
-  PinholeBase() {
+  PinholeBaseK() {
   }
 
   /** constructor with pose */
-  explicit PinholeBase(const Pose3& pose) :
-      pose_(pose) {
+  explicit PinholeBaseK(const Pose3& pose) :
+    PinholeBase(pose) {
   }
 
   /// @}
   /// @name Advanced Constructors
   /// @{
 
-  explicit PinholeBase(const Vector &v) :
-      pose_(Pose3::Expmap(v)) {
-  }
-
-  /// @}
-  /// @name Testable
-  /// @{
-
-  /// assert equality up to a tolerance
-  bool equals(const PinholeBase &camera, double tol = 1e-9) const {
-    return pose_.equals(camera.pose(), tol);
-  }
-
-  /// print
-  void print(const std::string& s = "PinholeBase") const {
-    pose_.print(s + ".pose");
+  explicit PinholeBaseK(const Vector &v) :
+    PinholeBase(v) {
   }
 
   /// @}
   /// @name Standard Interface
   /// @{
 
-  virtual ~PinholeBase() {
-  }
-
-  /// return pose, constant version
-  const Pose3& pose() const {
-    return pose_;
-  }
-
-  /// return pose, with derivative
-  const Pose3& pose(OptionalJacobian<6, 6> H) const {
-    if (H) {
-      H->setZero();
-      H->block(0, 0, 6, 6) = I_6x6;
-    }
-    return pose_;
+  virtual ~PinholeBaseK() {
   }
 
   /// return calibration
@@ -102,28 +69,9 @@ public:
   /// @name Transformations and measurement functions
   /// @{
 
-  /**
-   * projects a 3-dimensional point in camera coordinates into the
-   * camera and returns a 2-dimensional point, no calibration applied
-   * @param P A point in camera coordinates
-   * @param Dpoint is the 2*3 Jacobian w.r.t. P
-   */
-  static Point2 project_to_camera(const Point3& P, //
-      OptionalJacobian<2, 3> Dpoint = boost::none) {
-#ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
-    if (P.z() <= 0)
-    throw CheiralityException();
-#endif
-    double d = 1.0 / P.z();
-    const double u = P.x() * d, v = P.y() * d;
-    if (Dpoint)
-      *Dpoint << d, 0.0, -u * d, 0.0, d, -v * d;
-    return Point2(u, v);
-  }
-
   /// Project a point into the image and check depth
   std::pair<Point2, bool> projectSafe(const Point3& pw) const {
-    const Point3 pc = pose_.transform_to(pw);
+    const Point3 pc = pose().transform_to(pw);
     const Point2 pn = project_to_camera(pc);
     return std::make_pair(calibration().uncalibrate(pn), pc.z() > 0);
   }
@@ -137,7 +85,7 @@ public:
       OptionalJacobian<2, 6> Dcamera = boost::none,
       OptionalJacobian<2, 3> Dpoint = boost::none) const {
 
-    const Point3 pc = pose_.transform_to(pw);
+    const Point3 pc = pose().transform_to(pw);
     const Point2 pn = project_to_camera(pc);
 
     if (!Dcamera && !Dpoint) {
@@ -152,7 +100,7 @@ public:
       if (Dcamera)
         calculateDpose(pn, d, Dpi_pn, *Dcamera);
       if (Dpoint)
-        calculateDpoint(pn, d, pose_.rotation().matrix(), Dpi_pn, *Dpoint);
+        calculateDpoint(pn, d, pose().rotation().matrix(), Dpi_pn, *Dpoint);
 
       return pi;
     }
@@ -161,15 +109,14 @@ public:
   /// backproject a 2-dimensional point to a 3-dimensional point at given depth
   Point3 backproject(const Point2& p, double depth) const {
     const Point2 pn = calibration().calibrate(p);
-    const Point3 pc(pn.x() * depth, pn.y() * depth, depth);
-    return pose_.transform_from(pc);
+    return pose().transform_from(backproject_from_camera(pn,depth));
   }
 
   /// backproject a 2-dimensional point to a 3-dimensional point at infinity
   Point3 backprojectPointAtInfinity(const Point2& p) const {
     const Point2 pn = calibration().calibrate(p);
     const Point3 pc(pn.x(), pn.y(), 1.0); //by convention the last element is 1
-    return pose_.rotation().rotate(pc);
+    return pose().rotation().rotate(pc);
   }
 
   /**
@@ -183,7 +130,7 @@ public:
       const Point3& point, //
       OptionalJacobian<1, 6> Dcamera = boost::none,
       OptionalJacobian<1, 3> Dpoint = boost::none) const {
-    return pose_.range(point, Dcamera, Dpoint);
+    return pose().range(point, Dcamera, Dpoint);
   }
 
   /**
@@ -197,7 +144,7 @@ public:
       const Pose3& pose, //
       OptionalJacobian<1, 6> Dcamera = boost::none,
       OptionalJacobian<1, 6> Dpose = boost::none) const {
-    return pose_.range(pose, Dcamera, Dpose);
+    return this->pose().range(pose, Dcamera, Dpose);
   }
 
   /**
@@ -209,10 +156,10 @@ public:
    */
   template<class CalibrationB>
   double range(
-      const PinholeBase<CalibrationB>& camera, //
+      const PinholeBaseK<CalibrationB>& camera, //
       OptionalJacobian<1, 6> Dcamera = boost::none,
       OptionalJacobian<1, 6> Dother = boost::none) const {
-    return pose_.range(camera.pose(), Dcamera, Dother);
+    return pose().range(camera.pose(), Dcamera, Dother);
   }
 
   /**
@@ -226,53 +173,7 @@ public:
       const CalibratedCamera& camera, //
       OptionalJacobian<1, 6> Dcamera = boost::none,
       OptionalJacobian<1, 6> Dother = boost::none) const {
-    return range(camera.pose(), Dcamera, Dother);
-  }
-
-protected:
-
-  /**
-   * Calculate Jacobian with respect to pose
-   * @param pn projection in normalized coordinates
-   * @param d disparity (inverse depth)
-   * @param Dpi_pn derivative of uncalibrate with respect to pn
-   * @param Dpose Output argument, can be matrix or block, assumed right size !
-   * See http://eigen.tuxfamily.org/dox/TopicFunctionTakingEigenTypes.html
-   */
-  template<typename Derived>
-  static void calculateDpose(const Point2& pn, double d, const Matrix2& Dpi_pn,
-      Eigen::MatrixBase<Derived> const & Dpose) {
-    // optimized version of derivatives, see CalibratedCamera.nb
-    const double u = pn.x(), v = pn.y();
-    double uv = u * v, uu = u * u, vv = v * v;
-    Matrix26 Dpn_pose;
-    Dpn_pose << uv, -1 - uu, v, -d, 0, d * u, 1 + vv, -uv, -u, 0, -d, d * v;
-    assert(Dpose.rows()==2 && Dpose.cols()==6);
-    const_cast<Eigen::MatrixBase<Derived>&>(Dpose) = //
-        Dpi_pn * Dpn_pose;
-  }
-
-  /**
-   * Calculate Jacobian with respect to point
-   * @param pn projection in normalized coordinates
-   * @param d disparity (inverse depth)
-   * @param Dpi_pn derivative of uncalibrate with respect to pn
-   * @param Dpoint Output argument, can be matrix or block, assumed right size !
-   * See http://eigen.tuxfamily.org/dox/TopicFunctionTakingEigenTypes.html
-   */
-  template<typename Derived>
-  static void calculateDpoint(const Point2& pn, double d, const Matrix3& R,
-      const Matrix2& Dpi_pn, Eigen::MatrixBase<Derived> const & Dpoint) {
-    // optimized version of derivatives, see CalibratedCamera.nb
-    const double u = pn.x(), v = pn.y();
-    Matrix23 Dpn_point;
-    Dpn_point << //
-        R(0, 0) - u * R(0, 2), R(1, 0) - u * R(1, 2), R(2, 0) - u * R(2, 2), //
-    /**/R(0, 1) - v * R(0, 2), R(1, 1) - v * R(1, 2), R(2, 1) - v * R(2, 2);
-    Dpn_point *= d;
-    assert(Dpoint.rows()==2 && Dpoint.cols()==3);
-    const_cast<Eigen::MatrixBase<Derived>&>(Dpoint) = //
-        Dpi_pn * Dpn_point;
+    return pose().range(camera.pose(), Dcamera, Dother);
   }
 
 private:
@@ -281,11 +182,11 @@ private:
   friend class boost::serialization::access;
   template<class Archive>
   void serialize(Archive & ar, const unsigned int version) {
-    ar & BOOST_SERIALIZATION_NVP(pose_);
+    ar & BOOST_SERIALIZATION_NVP(pose());
   }
 
 };
-// end of class PinholeBase
+// end of class PinholeBaseK
 
 /**
  * A pinhole camera class that has a Pose3 and a *fixed* Calibration.
@@ -295,11 +196,11 @@ private:
  * \nosubgrouping
  */
 template<typename Calibration>
-class PinholePose: public PinholeBase<Calibration> {
+class GTSAM_EXPORT PinholePose: public PinholeBaseK<Calibration> {
 
 private:
 
-  typedef PinholeBase<Calibration> Base; ///< base class has 3D pose as private member
+  typedef PinholeBaseK<Calibration> Base; ///< base class has 3D pose as private member
   boost::shared_ptr<Calibration> K_; ///< shared pointer to fixed calibration
 
 public:
@@ -441,7 +342,7 @@ private:
   template<class Archive>
   void serialize(Archive & ar, const unsigned int version) {
     ar
-        & boost::serialization::make_nvp("PinholeBase",
+        & boost::serialization::make_nvp("PinholeBaseK",
             boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(K_);
   }
