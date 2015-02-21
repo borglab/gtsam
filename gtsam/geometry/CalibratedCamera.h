@@ -44,7 +44,9 @@ private:
 
 public:
 
-  enum { dimension = 6 };
+  enum {
+    dimension = 6
+  };
 
   /// @name Standard Constructors
   /// @{
@@ -55,6 +57,49 @@ public:
 
   /// construct with pose
   explicit CalibratedCamera(const Pose3& pose);
+
+  /// @}
+  /// @name Named Constructors
+  /// @{
+
+  /**
+   * Create a level pose at the given 2D pose and height
+   * @param K the calibration
+   * @param pose2 specifies the location and viewing direction
+   * (theta 0 = looking in direction of positive X axis)
+   * @param height camera height
+   */
+  static Pose3 LevelPose(const Pose2& pose2, double height);
+
+  /**
+   * Create a level camera at the given 2D pose and height
+   * @param pose2 specifies the location and viewing direction
+   * @param height specifies the height of the camera (along the positive Z-axis)
+   * (theta 0 = looking in direction of positive X axis)
+   */
+  static CalibratedCamera Level(const Pose2& pose2, double height);
+
+  /**
+   * Create a camera pose at the given eye position looking at a target point in the scene
+   * with the specified up direction vector.
+   * @param eye specifies the camera position
+   * @param target the point to look at
+   * @param upVector specifies the camera up direction vector,
+   *        doesn't need to be on the image plane nor orthogonal to the viewing axis
+   */
+  static Pose3 LookatPose(const Point3& eye, const Point3& target,
+      const Point3& upVector);
+
+  /**
+   * Create a camera at the given eye position looking at a target point in the scene
+   * with the specified up direction vector.
+   * @param eye specifies the camera position
+   * @param target the point to look at
+   * @param upVector specifies the camera up direction vector,
+   *        doesn't need to be on the image plane nor orthogonal to the viewing axis
+   */
+  static CalibratedCamera Lookat(const Point3& eye, const Point3& target,
+      const Point3& upVector);
 
   /// @}
   /// @name Advanced Constructors
@@ -88,14 +133,6 @@ public:
   inline const Pose3& pose() const {
     return pose_;
   }
-
-  /**
-   * Create a level camera at the given 2D pose and height
-   * @param pose2 specifies the location and viewing direction
-   * @param height specifies the height of the camera (along the positive Z-axis)
-   * (theta 0 = looking in direction of positive X axis)
-   */
-  static CalibratedCamera Level(const Pose2& pose2, double height);
 
   /// @}
   /// @name Manifold
@@ -202,10 +239,13 @@ private:
 };
 
 template<>
-struct traits<CalibratedCamera> : public internal::Manifold<CalibratedCamera> {};
+struct traits<CalibratedCamera> : public internal::Manifold<CalibratedCamera> {
+};
 
 template<>
-struct traits<const CalibratedCamera> : public internal::Manifold<CalibratedCamera> {};
+struct traits<const CalibratedCamera> : public internal::Manifold<
+    CalibratedCamera> {
+};
 
 }
 
