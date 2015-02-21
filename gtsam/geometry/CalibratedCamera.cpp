@@ -95,13 +95,7 @@ CalibratedCamera CalibratedCamera::Lookat(const Point3& eye,
 Point2 CalibratedCamera::project(const Point3& point,
     OptionalJacobian<2, 6> Dpose, OptionalJacobian<2, 3> Dpoint) const {
 
-#ifdef CALIBRATEDCAMERA_CHAIN_RULE
-  Matrix36 Dpose_;
-  Matrix3 Dpoint_;
-  Point3 q = pose_.transform_to(point, Dpose ? Dpose_ : 0, Dpoint ? Dpoint_ : 0);
-#else
   Point3 q = pose().transform_to(point);
-#endif
   Point2 intrinsic = project_to_camera(q);
 
   // Check if point is in front of camera
@@ -109,15 +103,6 @@ Point2 CalibratedCamera::project(const Point3& point,
     throw CheiralityException();
 
   if (Dpose || Dpoint) {
-#ifdef CALIBRATEDCAMERA_CHAIN_RULE
-    // just implement chain rule
-    if(Dpose && Dpoint) {
-      Matrix23 H;
-      project_to_camera(q,H);
-      if (Dpose) *Dpose = H * (*Dpose_);
-      if (Dpoint) *Dpoint = H * (*Dpoint_);
-    }
-#else
     // optimized version, see CalibratedCamera.nb
     const double z = q.z(), d = 1.0 / z;
     const double u = intrinsic.x(), v = intrinsic.y(), uv = u * v;
@@ -132,7 +117,6 @@ Point2 CalibratedCamera::project(const Point3& point,
           - v * R(2, 2);
       *Dpoint = d * Dpoint_;
     }
-#endif
   }
   return intrinsic;
 }
