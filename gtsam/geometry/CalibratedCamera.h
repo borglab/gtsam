@@ -44,6 +44,30 @@ private:
 
 public:
 
+  /// @name Static functions
+  /// @{
+
+  /**
+   * Create a level pose at the given 2D pose and height
+   * @param K the calibration
+   * @param pose2 specifies the location and viewing direction
+   * (theta 0 = looking in direction of positive X axis)
+   * @param height camera height
+   */
+  static Pose3 LevelPose(const Pose2& pose2, double height);
+
+  /**
+   * Create a camera pose at the given eye position looking at a target point in the scene
+   * with the specified up direction vector.
+   * @param eye specifies the camera position
+   * @param target the point to look at
+   * @param upVector specifies the camera up direction vector,
+   *        doesn't need to be on the image plane nor orthogonal to the viewing axis
+   */
+  static Pose3 LookatPose(const Point3& eye, const Point3& target,
+      const Point3& upVector);
+
+  /// @}
   /// @name Standard Constructors
   /// @{
 
@@ -101,6 +125,11 @@ public:
    */
   static Point2 project_to_camera(const Point3& P, //
       OptionalJacobian<2, 3> Dpoint = boost::none);
+
+  /**
+   * backproject a 2-dimensional point to a 3-dimension point
+   */
+  static Point3 backproject_from_camera(const Point2& p, const double scale);
 
   /**
    * Calculate range to a landmark
@@ -195,9 +224,7 @@ private:
  * @addtogroup geometry
  * \nosubgrouping
  */
-class GTSAM_EXPORT CalibratedCamera {
-private:
-  Pose3 pose_; // 6DOF pose
+class GTSAM_EXPORT CalibratedCamera: public PinholeBase {
 
 public:
 
@@ -213,20 +240,13 @@ public:
   }
 
   /// construct with pose
-  explicit CalibratedCamera(const Pose3& pose);
+  explicit CalibratedCamera(const Pose3& pose) :
+      PinholeBase(pose) {
+  }
 
   /// @}
   /// @name Named Constructors
   /// @{
-
-  /**
-   * Create a level pose at the given 2D pose and height
-   * @param K the calibration
-   * @param pose2 specifies the location and viewing direction
-   * (theta 0 = looking in direction of positive X axis)
-   * @param height camera height
-   */
-  static Pose3 LevelPose(const Pose2& pose2, double height);
 
   /**
    * Create a level camera at the given 2D pose and height
@@ -235,17 +255,6 @@ public:
    * (theta 0 = looking in direction of positive X axis)
    */
   static CalibratedCamera Level(const Pose2& pose2, double height);
-
-  /**
-   * Create a camera pose at the given eye position looking at a target point in the scene
-   * with the specified up direction vector.
-   * @param eye specifies the camera position
-   * @param target the point to look at
-   * @param upVector specifies the camera up direction vector,
-   *        doesn't need to be on the image plane nor orthogonal to the viewing axis
-   */
-  static Pose3 LookatPose(const Point3& eye, const Point3& target,
-      const Point3& upVector);
 
   /**
    * Create a camera at the given eye position looking at a target point in the scene
@@ -263,19 +272,8 @@ public:
   /// @{
 
   /// construct from vector
-  explicit CalibratedCamera(const Vector &v);
-
-  /// @}
-  /// @name Testable
-  /// @{
-
-  virtual void print(const std::string& s = "") const {
-    pose_.print(s);
-  }
-
-  /// check equality to another camera
-  bool equals(const CalibratedCamera &camera, double tol = 1e-9) const {
-    return pose_.equals(camera.pose(), tol);
+  explicit CalibratedCamera(const Vector &v) :
+      PinholeBase(v) {
   }
 
   /// @}
@@ -284,11 +282,6 @@ public:
 
   /// destructor
   virtual ~CalibratedCamera() {
-  }
-
-  /// return pose
-  inline const Pose3& pose() const {
-    return pose_;
   }
 
   /// @}
@@ -311,10 +304,6 @@ public:
     return 6;
   }
 
-  /* ************************************************************************* */
-  // measurement functions and derivatives
-  /* ************************************************************************* */
-
   /// @}
   /// @name Transformations and mesaurement functions
   /// @{
@@ -331,43 +320,6 @@ public:
       OptionalJacobian<2, 3> Dpoint = boost::none) const;
 
   /**
-   * projects a 3-dimensional point in camera coordinates into the
-   * camera and returns a 2-dimensional point, no calibration applied
-   * With optional 2by3 derivative
-   */
-  static Point2 project_to_camera(const Point3& cameraPoint,
-      OptionalJacobian<2, 3> H1 = boost::none);
-
-  /**
-   * backproject a 2-dimensional point to a 3-dimension point
-   */
-  static Point3 backproject_from_camera(const Point2& p, const double scale);
-
-  /**
-   * Calculate range to a landmark
-   * @param point 3D location of landmark
-   * @param H1 optionally computed Jacobian with respect to pose
-   * @param H2 optionally computed Jacobian with respect to the 3D point
-   * @return range (double)
-   */
-  double range(const Point3& point, OptionalJacobian<1, 6> H1 = boost::none,
-      OptionalJacobian<1, 3> H2 = boost::none) const {
-    return pose_.range(point, H1, H2);
-  }
-
-  /**
-   * Calculate range to another pose
-   * @param pose Other SO(3) pose
-   * @param H1 optionally computed Jacobian with respect to pose
-   * @param H2 optionally computed Jacobian with respect to the 3D point
-   * @return range (double)
-   */
-  double range(const Pose3& pose, OptionalJacobian<1, 6> H1 = boost::none,
-      OptionalJacobian<1, 6> H2 = boost::none) const {
-    return pose_.range(pose, H1, H2);
-  }
-
-  /**
    * Calculate range to another camera
    * @param camera Other camera
    * @param H1 optionally computed Jacobian with respect to pose
@@ -376,12 +328,13 @@ public:
    */
   double range(const CalibratedCamera& camera, OptionalJacobian<1, 6> H1 =
       boost::none, OptionalJacobian<1, 6> H2 = boost::none) const {
-    return pose_.range(camera.pose_, H1, H2);
+    return pose().range(camera.pose(), H1, H2);
   }
+
+  /// @}
 
 private:
 
-  /// @}
   /// @name Advanced Interface
   /// @{
 
@@ -389,7 +342,9 @@ private:
   friend class boost::serialization::access;
   template<class Archive>
   void serialize(Archive & ar, const unsigned int version) {
-    ar & BOOST_SERIALIZATION_NVP(pose_);
+    ar
+        & boost::serialization::make_nvp("PinholeBase",
+            boost::serialization::base_object<PinholeBase>(*this));
   }
 
   /// @}
