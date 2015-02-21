@@ -22,6 +22,39 @@
 namespace gtsam {
 
 /* ************************************************************************* */
+bool PinholeBase::equals(const PinholeBase &camera, double tol) const {
+  return pose_.equals(camera.pose(), tol);
+}
+
+/* ************************************************************************* */
+void PinholeBase::print(const std::string& s) const {
+  pose_.print(s + ".pose");
+}
+
+/* ************************************************************************* */
+const Pose3& PinholeBase::pose(OptionalJacobian<6, 6> H) const {
+  if (H) {
+    H->setZero();
+    H->block(0, 0, 6, 6) = I_6x6;
+  }
+  return pose_;
+}
+
+/* ************************************************************************* */
+Point2 PinholeBase::project_to_camera(const Point3& P,
+    OptionalJacobian<2, 3> Dpoint) {
+#ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
+  if (P.z() <= 0)
+  throw CheiralityException();
+#endif
+  double d = 1.0 / P.z();
+  const double u = P.x() * d, v = P.y() * d;
+  if (Dpoint)
+    *Dpoint << d, 0.0, -u * d, 0.0, d, -v * d;
+  return Point2(u, v);
+}
+
+/* ************************************************************************* */
 CalibratedCamera::CalibratedCamera(const Pose3& pose) :
     pose_(pose) {
 }
