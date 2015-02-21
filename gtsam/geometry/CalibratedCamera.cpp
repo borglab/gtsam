@@ -56,8 +56,8 @@ Point2 PinholeBase::project_to_camera(const Point3& P,
 
 /* ************************************************************************* */
 Point3 PinholeBase::backproject_from_camera(const Point2& p,
-    const double scale) {
-  return Point3(p.x() * scale, p.y() * scale, scale);
+    const double depth) {
+  return Point3(p.x() * depth, p.y() * depth, depth);
 }
 
 /* ************************************************************************* */
