@@ -72,9 +72,9 @@ public:
 
   /// Project a point into the image and check depth
   std::pair<Point2, bool> projectSafe(const Point3& pw) const {
-    const Point3 pc = pose().transform_to(pw);
-    const Point2 pn = project_to_camera(pc);
-    return std::make_pair(calibration().uncalibrate(pn), pc.z() > 0);
+    std::pair<Point2, bool> pn = PinholeBase::projectSafe(pw);
+    pn.first = calibration().uncalibrate(pn.first);
+    return pn;
   }
 
   /** project a point from world coordinate to the image, fixed Jacobians

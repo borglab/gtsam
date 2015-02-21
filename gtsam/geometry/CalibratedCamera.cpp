@@ -19,6 +19,8 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/CalibratedCamera.h>
 
+using namespace std;
+
 namespace gtsam {
 
 /* ************************************************************************* */
@@ -69,7 +71,7 @@ bool PinholeBase::equals(const PinholeBase &camera, double tol) const {
 }
 
 /* ************************************************************************* */
-void PinholeBase::print(const std::string& s) const {
+void PinholeBase::print(const string& s) const {
   pose_.print(s + ".pose");
 }
 
@@ -83,17 +85,20 @@ const Pose3& PinholeBase::pose(OptionalJacobian<6, 6> H) const {
 }
 
 /* ************************************************************************* */
-Point2 PinholeBase::project_to_camera(const Point3& P,
+Point2 PinholeBase::project_to_camera(const Point3& pc,
     OptionalJacobian<2, 3> Dpoint) {
-#ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
-  if (P.z() <= 0)
-  throw CheiralityException();
-#endif
-  double d = 1.0 / P.z();
-  const double u = P.x() * d, v = P.y() * d;
+  double d = 1.0 / pc.z();
+  const double u = pc.x() * d, v = pc.y() * d;
   if (Dpoint)
     *Dpoint << d, 0.0, -u * d, 0.0, d, -v * d;
   return Point2(u, v);
+}
+
+/* ************************************************************************* */
+pair<Point2, bool> PinholeBase::projectSafe(const Point3& pw) const {
+  const Point3 pc = pose().transform_to(pw);
+  const Point2 pn = project_to_camera(pc);
+  return make_pair(pn, pc.z() > 0);
 }
 
 /* ************************************************************************* */
@@ -102,10 +107,14 @@ Point2 PinholeBase::project2(const Point3& point, OptionalJacobian<2, 6> Dpose,
 
   Matrix3 Rt; // calculated by transform_to if needed
   const Point3 q = pose().transform_to(point, boost::none, Dpoint ? &Rt : 0);
-  Point2 pn = project_to_camera(q);
+#ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
+  if (q.z() <= 0)
+  throw CheiralityException();
+#endif
+  const Point2 pn = project_to_camera(q);
 
   if (Dpose || Dpoint) {
-    const double z = q.z(), d = 1.0 / z;
+    const double d = 1.0 / q.z();
     if (Dpose)
       *Dpose = PinholeBase::Dpose(pn, d);
     if (Dpoint)

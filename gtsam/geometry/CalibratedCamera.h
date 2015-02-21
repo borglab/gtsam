@@ -138,21 +138,23 @@ public:
   /// @{
 
   /**
-   * projects a 3-dimensional point in camera coordinates into the
-   * camera and returns a 2-dimensional point
-   * @param P A point in camera coordinates
-   * @param Dpoint is the 2*3 Jacobian w.r.t. P
+   * Project from 3D point in camera coordinates into image
+   * Does *not* throw a CheiralityException, even if pc behind image plane
+   * @param pc point in camera coordinates
+   * @param Dpoint is the 2*3 Jacobian w.r.t. pc
    */
-  static Point2 project_to_camera(const Point3& P, //
+  static Point2 project_to_camera(const Point3& pc, //
       OptionalJacobian<2, 3> Dpoint = boost::none);
 
-  /**
-   * backproject a 2-dimensional point to a 3-dimensional point at given depth
-   */
+  /// Project a point into the image and check depth
+  std::pair<Point2, bool> projectSafe(const Point3& pw) const;
+
+  /// backproject a 2-dimensional point to a 3-dimensional point at given depth
   static Point3 backproject_from_camera(const Point2& p, const double depth);
 
   /**
    * Project point into the image
+   * Throws a CheiralityException if point behind image plane iff GTSAM_THROW_CHEIRALITY_EXCEPTION
    * @param point 3D point in world coordinates
    * @param Dpose the optionally computed Jacobian with respect to camera
    * @param Dpoint the optionally computed Jacobian with respect to the 3D point
