@@ -32,7 +32,7 @@ namespace gtsam {
  * \nosubgrouping
  */
 template<typename Calibration>
-class GTSAM_EXPORT PinholeBaseK : public PinholeBase {
+class GTSAM_EXPORT PinholeBaseK: public PinholeBase {
 
 public:
 
@@ -45,7 +45,7 @@ public:
 
   /** constructor with pose */
   explicit PinholeBaseK(const Pose3& pose) :
-    PinholeBase(pose) {
+      PinholeBase(pose) {
   }
 
   /// @}
@@ -53,7 +53,7 @@ public:
   /// @{
 
   explicit PinholeBaseK(const Vector &v) :
-    PinholeBase(v) {
+      PinholeBase(v) {
   }
 
   /// @}
@@ -78,40 +78,34 @@ public:
   }
 
   /** project a point from world coordinate to the image, fixed Jacobians
-   *  @param pw is a point in the world coordinate
-   *  @param Dcamera is the Jacobian w.r.t. [pose3 calibration]
-   *  @param Dpoint is the Jacobian w.r.t. point3
+   *  @param pw is a point in the world coordinates
+   *  @param Dpose is the Jacobian w.r.t. pose
+   *  @param Dpoint is the Jacobian w.r.t. pw
    */
-  Point2 project2(const Point3& pw,
-      OptionalJacobian<2, 6> Dcamera = boost::none,
+  Point2 project2(const Point3& pw, OptionalJacobian<2, 6> Dpose = boost::none,
       OptionalJacobian<2, 3> Dpoint = boost::none) const {
 
-    Matrix3 Rt; // calculated by transform_to if needed
-    const Point3 pc = pose().transform_to(pw, boost::none, Dpoint ? &Rt : 0);
-    const Point2 pn = project_to_camera(pc);
+    // project to normalized coordinates
+    const Point2 pn = PinholeBase::project2(pw, Dpose, Dpoint);
 
-    if (!Dcamera && !Dpoint) {
-      return calibration().uncalibrate(pn);
-    } else {
-      const double z = pc.z(), d = 1.0 / z;
+    // uncalibrate to pixel coordinates
+    Matrix2 Dpi_pn;
+    const Point2 pi = calibration().uncalibrate(pn, boost::none,
+        Dpose || Dpoint ? &Dpi_pn : 0);
 
-      // uncalibration
-      Matrix2 Dpi_pn;
-      const Point2 pi = calibration().uncalibrate(pn, boost::none, Dpi_pn);
+    // If needed, apply chain rule
+    if (Dpose)
+      *Dpose = Dpi_pn * *Dpose;
+    if (Dpoint)
+      *Dpoint = Dpi_pn * *Dpoint;
 
-      if (Dcamera)
-        *Dcamera = Dpi_pn * PinholeBase::Dpose(pn, d);
-      if (Dpoint)
-        *Dpoint = Dpi_pn * PinholeBase::Dpoint(pn, d, Rt.transpose()); // TODO transpose
-
-      return pi;
-    }
+    return pi;
   }
 
   /// backproject a 2-dimensional point to a 3-dimensional point at given depth
   Point3 backproject(const Point2& p, double depth) const {
     const Point2 pn = calibration().calibrate(p);
-    return pose().transform_from(backproject_from_camera(pn,depth));
+    return pose().transform_from(backproject_from_camera(pn, depth));
   }
 
   /// backproject a 2-dimensional point to a 3-dimensional point at infinity
