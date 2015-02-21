@@ -15,12 +15,13 @@
  * @brief test PinholeCamera class
  */
 
-#include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Cal3Bundler.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/numericalDerivative.h>
+
+#include <CppUnitLite/TestHarness.h>
 
 #include <cmath>
 #include <iostream>

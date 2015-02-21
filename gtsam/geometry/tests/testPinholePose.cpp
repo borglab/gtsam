@@ -16,12 +16,13 @@
  * @date   Feb 20, 2015
  */
 
-#include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/PinholePose.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Cal3Bundler.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/numericalDerivative.h>
+
+#include <CppUnitLite/TestHarness.h>
 
 #include <cmath>
 #include <iostream>
