@@ -239,6 +239,20 @@ TEST( PinholeCamera, Dproject2)
 }
 
 /* ************************************************************************* */
+// Add a test with more arbitrary rotation
+TEST( PinholeCamera, Dproject3)
+{
+  static const Pose3 pose1(Rot3::ypr(0.1, -0.1, 0.4), Point3(0, 0, -10));
+  static const Camera camera(pose1);
+  Matrix Dpose, Dpoint;
+  camera.project2(point1, Dpose, Dpoint);
+  Matrix numerical_pose  = numericalDerivative21(project4, camera, point1);
+  Matrix numerical_point = numericalDerivative22(project4, camera, point1);
+  CHECK(assert_equal(numerical_pose,  Dpose, 1e-7));
+  CHECK(assert_equal(numerical_point, Dpoint, 1e-7));
+}
+
+/* ************************************************************************* */
 static double range0(const Camera& camera, const Point3& point) {
   return camera.range(point);
 }
