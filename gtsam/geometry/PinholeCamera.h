@@ -39,11 +39,11 @@ private:
   GTSAM_CONCEPT_MANIFOLD_TYPE(Calibration)
 
   // Get dimensions of calibration type at compile time
-  static const int DimK = FixedDimension<Calibration>::value;
+static  const int DimK = FixedDimension<Calibration>::value;
 
 public:
 
-  enum { dimension = 6 + DimK };
+  enum {dimension = 6 + DimK};
 
   /// @name Standard Constructors
   /// @{
@@ -54,12 +54,12 @@ public:
 
   /** constructor with pose */
   explicit PinholeCamera(const Pose3& pose) :
-      pose_(pose) {
+  pose_(pose) {
   }
 
   /** constructor with pose and calibration */
   PinholeCamera(const Pose3& pose, const Calibration& K) :
-      pose_(pose), K_(K) {
+  pose_(pose), K_(K) {
   }
 
   /// @}
@@ -120,7 +120,7 @@ public:
   }
 
   PinholeCamera(const Vector &v, const Vector &K) :
-      pose_(Pose3::Expmap(v)), K_(K) {
+  pose_(Pose3::Expmap(v)), K_(K) {
   }
 
   /// @}
@@ -130,7 +130,7 @@ public:
   /// assert equality up to a tolerance
   bool equals(const PinholeCamera &camera, double tol = 1e-9) const {
     return pose_.equals(camera.pose(), tol)
-        && K_.equals(camera.calibration(), tol);
+    && K_.equals(camera.calibration(), tol);
   }
 
   /// print
@@ -194,10 +194,10 @@ public:
   /// move a cameras according to d
   PinholeCamera retract(const Vector& d) const {
     if ((size_t) d.size() == 6)
-      return PinholeCamera(pose().retract(d), calibration());
+    return PinholeCamera(pose().retract(d), calibration());
     else
-      return PinholeCamera(pose().retract(d.head(6)),
-          calibration().retract(d.tail(calibration().dim())));
+    return PinholeCamera(pose().retract(d.head(6)),
+        calibration().retract(d.tail(calibration().dim())));
   }
 
   /// return canonical coordinate
@@ -228,12 +228,12 @@ public:
       OptionalJacobian<2, 3> Dpoint = boost::none) {
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
     if (P.z() <= 0)
-      throw CheiralityException();
+    throw CheiralityException();
 #endif
     double d = 1.0 / P.z();
     const double u = P.x() * d, v = P.y() * d;
     if (Dpoint)
-      *Dpoint << d, 0.0, -u * d, 0.0, d, -v * d;
+    *Dpoint << d, 0.0, -u * d, 0.0, d, -v * d;
     return Point2(u, v);
   }
 
@@ -271,12 +271,12 @@ public:
 
       // chain the Jacobian matrices
       if (Dpose)
-        calculateDpose(pn, d, Dpi_pn, *Dpose);
+      calculateDpose(pn, d, Dpi_pn, *Dpose);
       if (Dpoint)
-        calculateDpoint(pn, d, pose_.rotation().matrix(), Dpi_pn, *Dpoint);
+      calculateDpoint(pn, d, pose_.rotation().matrix(), Dpi_pn, *Dpoint);
       return pi;
     } else
-      return K_.uncalibrate(pn, Dcal);
+    return K_.uncalibrate(pn, Dcal);
   }
 
   /** project a point at infinity from world coordinate to the image
@@ -292,7 +292,7 @@ public:
 
     if (!Dpose && !Dpoint && !Dcal) {
       const Point3 pc = pose_.rotation().unrotate(pw); // get direction in camera frame (translation does not matter)
-      const Point2 pn = project_to_camera(pc); // project the point to the camera
+      const Point2 pn = project_to_camera(pc);// project the point to the camera
       return K_.uncalibrate(pn);
     }
 
@@ -305,19 +305,19 @@ public:
     Dpc_pose.leftCols<3>() = Dpc_rot;
 
     // camera to normalized image coordinate
-    Matrix23 Dpn_pc; // 2*3
+    Matrix23 Dpn_pc;// 2*3
     const Point2 pn = project_to_camera(pc, Dpn_pc);
 
     // uncalibration
-    Matrix2 Dpi_pn; // 2*2
+    Matrix2 Dpi_pn;// 2*2
     const Point2 pi = K_.uncalibrate(pn, Dcal, Dpi_pn);
 
     // chain the Jacobian matrices
     const Matrix23 Dpi_pc = Dpi_pn * Dpn_pc;
     if (Dpose)
-      *Dpose = Dpi_pc * Dpc_pose;
+    *Dpose = Dpi_pc * Dpc_pose;
     if (Dpoint)
-      *Dpoint = (Dpi_pc * Dpc_point).leftCols<2>(); // only 2dof are important for the point (direction-only)
+    *Dpoint = (Dpi_pc * Dpc_point).leftCols<2>();// only 2dof are important for the point (direction-only)
     return pi;
   }
 
@@ -346,7 +346,7 @@ public:
 
       if (Dcamera) { // TODO why does leftCols<6>() not compile ??
         calculateDpose(pn, d, Dpi_pn, (*Dcamera).leftCols(6));
-        (*Dcamera).rightCols(DimK) = Dcal; // Jacobian wrt calib
+        (*Dcamera).rightCols(DimK) = Dcal;// Jacobian wrt calib
       }
       if (Dpoint) {
         calculateDpoint(pn, d, pose_.rotation().matrix(), Dpi_pn, *Dpoint);
@@ -383,7 +383,7 @@ public:
     Matrix16 Dpose_;
     double result = pose_.range(point, Dcamera ? &Dpose_ : 0, Dpoint);
     if (Dcamera)
-      *Dcamera << Dpose_, Eigen::Matrix<double, 1, DimK>::Zero();
+    *Dcamera << Dpose_, Eigen::Matrix<double, 1, DimK>::Zero();
     return result;
   }
 
@@ -401,7 +401,7 @@ public:
     Matrix16 Dpose_;
     double result = pose_.range(pose, Dcamera ? &Dpose_ : 0, Dpose);
     if (Dcamera)
-      *Dcamera << Dpose_, Eigen::Matrix<double, 1, DimK>::Zero();
+    *Dcamera << Dpose_, Eigen::Matrix<double, 1, DimK>::Zero();
     return result;
   }
 
@@ -417,13 +417,13 @@ public:
       const PinholeCamera<CalibrationB>& camera, //
       OptionalJacobian<1, dimension> Dcamera = boost::none,
 //      OptionalJacobian<1, 6 + traits::dimension<CalibrationB>::value> Dother =
-       boost::optional<Matrix&> Dother =
-          boost::none) const {
+      boost::optional<Matrix&> Dother =
+      boost::none) const {
     Matrix16 Dcamera_, Dother_;
     double result = pose_.range(camera.pose(), Dcamera ? &Dcamera_ : 0,
         Dother ? &Dother_ : 0);
     if (Dcamera) {
-       Dcamera->resize(1, 6 + DimK);
+      Dcamera->resize(1, 6 + DimK);
       *Dcamera << Dcamera_, Eigen::Matrix<double, 1, DimK>::Zero();
     }
     if (Dother) {
@@ -467,8 +467,8 @@ private:
     Matrix26 Dpn_pose;
     Dpn_pose << uv, -1 - uu, v, -d, 0, d * u, 1 + vv, -uv, -u, 0, -d, d * v;
     assert(Dpose.rows()==2 && Dpose.cols()==6);
-    const_cast<Eigen::MatrixBase<Derived>&>(Dpose) = //
-        Dpi_pn * Dpn_pose;
+    const_cast<Eigen::MatrixBase<Derived>&>(Dpose) =//
+    Dpi_pn * Dpn_pose;
   }
 
   /**
@@ -485,13 +485,13 @@ private:
     // optimized version of derivatives, see CalibratedCamera.nb
     const double u = pn.x(), v = pn.y();
     Matrix23 Dpn_point;
-    Dpn_point << //
-        R(0, 0) - u * R(0, 2), R(1, 0) - u * R(1, 2), R(2, 0) - u * R(2, 2), //
+    Dpn_point <<//
+    R(0, 0) - u * R(0, 2), R(1, 0) - u * R(1, 2), R(2, 0) - u * R(2, 2),//
     /**/R(0, 1) - v * R(0, 2), R(1, 1) - v * R(1, 2), R(2, 1) - v * R(2, 2);
     Dpn_point *= d;
     assert(Dpoint.rows()==2 && Dpoint.cols()==3);
-    const_cast<Eigen::MatrixBase<Derived>&>(Dpoint) = //
-        Dpi_pn * Dpn_point;
+    const_cast<Eigen::MatrixBase<Derived>&>(Dpoint) =//
+    Dpi_pn * Dpn_point;
   }
 
   /** Serialization function */
@@ -504,11 +504,14 @@ private:
 
 };
 
+template<typename Calibration>
+struct traits<PinholeCamera<Calibration> > : public internal::Manifold<
+    PinholeCamera<Calibration> > {
+};
 
 template<typename Calibration>
-struct traits< PinholeCamera<Calibration> > : public internal::Manifold<PinholeCamera<Calibration> > {};
-
-template<typename Calibration>
-struct traits< const PinholeCamera<Calibration> > : public internal::Manifold<PinholeCamera<Calibration> > {};
+struct traits<const PinholeCamera<Calibration> > : public internal::Manifold<
+    PinholeCamera<Calibration> > {
+};
 
 } // \ gtsam

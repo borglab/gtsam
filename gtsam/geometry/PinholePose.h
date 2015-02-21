@@ -40,7 +40,9 @@ private:
 
 public:
 
-  enum { dimension = 6 };
+  enum {
+    dimension = 6
+  };
 
   /// @name Standard Constructors
   /// @{
@@ -70,8 +72,8 @@ public:
    * (theta 0 = looking in direction of positive X axis)
    * @param height camera height
    */
-  static PinholePose Level(const boost::shared_ptr<Calibration>& K, const Pose2& pose2,
-      double height) {
+  static PinholePose Level(const boost::shared_ptr<Calibration>& K,
+      const Pose2& pose2, double height) {
     const double st = sin(pose2.theta()), ct = cos(pose2.theta());
     const Point3 x(st, -ct, 0), y(0, 0, -1), z(ct, st, 0);
     const Rot3 wRc(x, y, z);
@@ -214,7 +216,7 @@ public:
       OptionalJacobian<2, 3> Dpoint = boost::none) {
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
     if (P.z() <= 0)
-      throw CheiralityException();
+    throw CheiralityException();
 #endif
     double d = 1.0 / P.z();
     const double u = P.x() * d, v = P.y() * d;
@@ -235,8 +237,7 @@ public:
    *  @param Dcamera is the Jacobian w.r.t. [pose3 calibration]
    *  @param Dpoint is the Jacobian w.r.t. point3
    */
-  Point2 project2(
-      const Point3& pw,
+  Point2 project2(const Point3& pw,
       OptionalJacobian<2, 6> Dcamera = boost::none,
       OptionalJacobian<2, 3> Dpoint = boost::none) const {
 
@@ -388,11 +389,14 @@ private:
 
 };
 
+template<typename Calibration>
+struct traits<PinholePose<Calibration> > : public internal::Manifold<
+    PinholePose<Calibration> > {
+};
 
 template<typename Calibration>
-struct traits< PinholePose<Calibration> > : public internal::Manifold<PinholePose<Calibration> > {};
-
-template<typename Calibration>
-struct traits< const PinholePose<Calibration> > : public internal::Manifold<PinholePose<Calibration> > {};
+struct traits<const PinholePose<Calibration> > : public internal::Manifold<
+    PinholePose<Calibration> > {
+};
 
 } // \ gtsam
