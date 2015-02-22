@@ -483,18 +483,22 @@ TEST( SmartProjectionPoseFactor, Factors ){
   CHECK(p);
   EXPECT(assert_equal(landmark1,*p));
 
+  // After eliminating the point, A1 and A2 contain 2-rank information on cameras:
+  Matrix16 A1, A2;
+  A1 << -1000, 0, 0, 0, 100, 0;
+  A2 << 1000, 0, 100, 0, -100, 0;
   {
     // createHessianFactor
-    Matrix66 G11; G11.setZero(); G11(0,0) = 100; G11(0,4) = -10; G11(4,0) = -10; G11(4,4) = 1;
-    Matrix66 G12; G12 = -G11; G12(0,2) = -10; G12(4,2) = 1;
-    Matrix66 G22; G22 = G11; G22(0,2) = 10; G22(2,0) = 10; G22(2,2) = 1; G22(2,4) = -1; G22(4,2) = -1;
+    Matrix66 G11 = 0.5*A1.transpose()*A1;
+    Matrix66 G12 = 0.5*A1.transpose()*A2;
+    Matrix66 G22 = 0.5*A2.transpose()*A2;
 
     Vector6 g1; g1.setZero();
     Vector6 g2; g2.setZero();
 
     double f = 0;
 
-    RegularHessianFactor<6> expected(x1, x2, 5000 * G11, 5000 * G12, g1, 5000 * G22, g2, f);
+    RegularHessianFactor<6> expected(x1, x2, G11, G12, g1, G22, g2, f);
 
     boost::shared_ptr<RegularHessianFactor<6> > actual =
         smartFactor1->createHessianFactor(cameras, 0.0);
@@ -530,9 +534,6 @@ TEST( SmartProjectionPoseFactor, Factors ){
 
   {
     // createJacobianSVDFactor
-    Matrix16 A1, A2;
-    A1 << -1000, 0, 0, 0, 100, 0;
-    A2 << 1000, 0, 100, 0, -100, 0;
     Vector1 b; b.setZero();
     double s = sin(M_PI_4);
     JacobianFactor expected(x1, s*A1, x2, s*A2, b);
@@ -542,7 +543,6 @@ TEST( SmartProjectionPoseFactor, Factors ){
     CHECK(actual);
     CHECK(assert_equal(expected, *actual));
   }
-
 }
 
 /* *************************************************************************/
