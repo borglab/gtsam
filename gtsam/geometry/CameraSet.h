@@ -64,8 +64,8 @@ protected:
 public:
 
   /// Definitions for blocks of F
-  typedef Eigen::Matrix<double, ZDim, Dim> MatrixZD; // F
-  typedef std::pair<Key, MatrixZD> FBlock; // Fblocks
+  typedef Eigen::Matrix<double, ZDim, 6> MatrixZ6; // F
+  typedef std::vector<MatrixZ6> FBlocks;
 
   /**
    * print
@@ -93,10 +93,12 @@ public:
 
   /**
    * Project a point, with derivatives in this, point, and calibration
+   * Note that F is a sparse block-diagonal matrix, so instead of a large dense
+   * matrix this function returns the diagonal blocks.
    * throws CheiralityException
    */
   std::vector<Z> project(const Point3& point, //
-      boost::optional<Matrix&> F = boost::none, //
+      boost::optional<FBlocks&> F = boost::none, //
       boost::optional<Matrix&> E = boost::none, //
       boost::optional<Matrix&> H = boost::none) const {
 
@@ -105,8 +107,6 @@ public:
     std::vector<Z> z(m);
 
     // Allocate derivatives
-    if (F)
-      F->resize(ZDim * m, 6);
     if (E)
       E->resize(ZDim * m, 3);
     if (H && Dim > 6)
@@ -120,7 +120,7 @@ public:
     for (size_t i = 0; i < m; i++) {
       z[i] = this->at(i).project(point, F ? &Fi : 0, E ? &Ei : 0, H ? &Hi : 0);
       if (F)
-        F->block<ZDim, 6>(ZDim * i, 0) = Fi;
+        F->push_back(Fi);
       if (E)
         E->block<ZDim, 3>(ZDim * i, 0) = Ei;
       if (H)
