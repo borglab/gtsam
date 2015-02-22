@@ -55,8 +55,7 @@ protected:
    */
   std::vector<Z> measured_;
 
-  //SharedIsotropic noiseModel_;
-  std::vector<SharedNoiseModel> noise_; ///< noise model used
+  SharedIsotropic noiseModel_;
 
   boost::optional<Pose3> body_P_sensor_; ///< The pose of the sensor in the body frame (one for all cameras)
 
@@ -159,8 +158,8 @@ public:
   }
 
   /** return the noise models */
-  const std::vector<SharedNoiseModel>& noise() const {
-    return noise_;
+  const SharedIsotropic& noise() const {
+    return noiseModel_;
   }
 
   /**
@@ -173,7 +172,7 @@ public:
     std::cout << s << "SmartFactorBase, z = \n";
     for (size_t k = 0; k < measured_.size(); ++k) {
       std::cout << "measurement, p = " << measured_[k] << "\t";
-      noise_[k]->print("noise model = ");
+      noiseModel_->print("noise model = ");
     }
     if (this->body_P_sensor_)
       this->body_P_sensor_->print("  sensor pose in body frame: ");
