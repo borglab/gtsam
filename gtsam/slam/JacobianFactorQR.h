@@ -6,7 +6,7 @@
  */
 
 #pragma once
-#include <gtsam/slam/JacobianSchurFactor.h>
+#include <gtsam/slam/RegularJacobianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/inference/Symbol.h>
 
@@ -18,9 +18,9 @@ class GaussianBayesNet;
  * JacobianFactor for Schur complement that uses Q noise model
  */
 template<size_t D, size_t ZDim>
-class JacobianFactorQR: public JacobianSchurFactor<D> {
+class JacobianFactorQR: public RegularJacobianFactor<D> {
 
-  typedef JacobianSchurFactor<D> Base;
+  typedef RegularJacobianFactor<D> Base;
   typedef Eigen::Matrix<double, ZDim, D> MatrixZD;
   typedef std::pair<Key, MatrixZD> KeyMatrixZD;
 

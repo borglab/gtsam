@@ -17,16 +17,16 @@
 
 #pragma once
 
-#include "JacobianSchurFactor.h"
+#include "RegularJacobianFactor.h"
 
 namespace gtsam {
 /**
  * JacobianFactor for Schur complement that uses Q noise model
  */
 template<size_t D, size_t ZDim>
-class JacobianFactorQ: public JacobianSchurFactor<D> {
+class JacobianFactorQ: public RegularJacobianFactor<D> {
 
-  typedef JacobianSchurFactor<D> Base;
+  typedef RegularJacobianFactor<D> Base;
   typedef Eigen::Matrix<double, ZDim, D> MatrixZD;
   typedef std::pair<Key, MatrixZD> KeyMatrixZD;
 
