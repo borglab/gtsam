@@ -1,3 +1,14 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /**
  * @file    testRegularJacobianFactor.cpp
  * @brief   unit test regular jacobian factors
@@ -5,13 +16,13 @@
  * @date    Nov 12, 2014
  */
 
-#include <gtsam/base/TestableAssertions.h>
-#include <CppUnitLite/TestHarness.h>
-
 #include <gtsam/slam/RegularJacobianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/VectorValues.h>
+#include <gtsam/base/TestableAssertions.h>
+
+#include <CppUnitLite/TestHarness.h>
 
 #include <boost/assign/std/vector.hpp>
 #include <boost/assign/list_of.hpp>

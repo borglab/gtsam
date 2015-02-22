@@ -15,11 +15,10 @@
  * @date    March 4, 2014
  */
 
-#include <gtsam/linear/VectorValues.h>
-#include <CppUnitLite/TestHarness.h>
-
-//#include <gtsam_unstable/slam/RegularHessianFactor.h>
 #include <gtsam/slam/RegularHessianFactor.h>
+#include <gtsam/linear/VectorValues.h>
+
+#include <CppUnitLite/TestHarness.h>
 
 #include <boost/assign/std/vector.hpp>
 #include <boost/assign/std/map.hpp>
@@ -28,8 +27,6 @@
 using namespace std;
 using namespace gtsam;
 using namespace boost::assign;
-
-const double tol = 1e-5;
 
 /* ************************************************************************* */
 TEST(RegularHessianFactor, ConstructorNWay)
@@ -77,15 +74,24 @@ TEST(RegularHessianFactor, ConstructorNWay)
   expected.insert(1, Y.segment<2>(2));
   expected.insert(3, Y.segment<2>(4));
 
+  // VectorValues version
+  double alpha = 1.0;
+  VectorValues actualVV;
+  actualVV.insert(0, zero(2));
+  actualVV.insert(1, zero(2));
+  actualVV.insert(3, zero(2));
+  factor.multiplyHessianAdd(alpha, x, actualVV);
+  EXPECT(assert_equal(expected, actualVV));
+
   // RAW ACCESS
   Vector expected_y(8); expected_y << 2633, 2674, 4465, 4501, 0, 0, 5669, 5696;
   Vector fast_y = gtsam::zero(8);
   double xvalues[8] = {1,2,3,4,0,0,5,6};
-  factor.multiplyHessianAdd(1, xvalues, fast_y.data());
+  factor.multiplyHessianAdd(alpha, xvalues, fast_y.data());
   EXPECT(assert_equal(expected_y, fast_y));
 
   // now, do it with non-zero y
-  factor.multiplyHessianAdd(1, xvalues, fast_y.data());
+  factor.multiplyHessianAdd(alpha, xvalues, fast_y.data());
   EXPECT(assert_equal(2*expected_y, fast_y));
 
   // check some expressions

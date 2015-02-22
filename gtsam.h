@@ -2310,23 +2310,23 @@ virtual class GeneralSFMFactor2 : gtsam::NoiseModelFactor {
 };
 
 #include <gtsam/slam/SmartProjectionPoseFactor.h>
-template<POSE, CALIBRATION>
+template<CALIBRATION>
 virtual class SmartProjectionPoseFactor : gtsam::NonlinearFactor {
 
   SmartProjectionPoseFactor(double rankTol, double linThreshold,
-      bool manageDegeneracy, bool enableEPI, const POSE& body_P_sensor);
+      bool manageDegeneracy, bool enableEPI, const gtsam::Pose3& body_P_sensor);
 
   SmartProjectionPoseFactor(double rankTol);
   SmartProjectionPoseFactor();
 
-  void add(const gtsam::Point2& measured_i, size_t poseKey_i, const gtsam::noiseModel::Base* noise_i,
-      const CALIBRATION* K_i);
+  void add(const gtsam::Point2& measured_i, size_t poseKey_i,
+      const gtsam::noiseModel::Base* noise_i, const CALIBRATION* K_i);
 
   // enabling serialization functionality
   //void serialize() const;
 };
 
-typedef gtsam::SmartProjectionPoseFactor<gtsam::Pose3, gtsam::Cal3_S2> SmartProjectionPose3Factor;
+typedef gtsam::SmartProjectionPoseFactor<gtsam::Cal3_S2> SmartProjectionPose3Factor;
 
 
 #include <gtsam/slam/StereoFactor.h>
