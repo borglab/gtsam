@@ -227,7 +227,7 @@ public:
   }
 
   /* ************************************************************************* */
-  bool equals(const PinholeBase &camera, double tol) const {
+  bool equals(const PinholeBase &camera, double tol=1e-9) const {
     return pose_.equals(camera.pose(), tol);
   }
 
