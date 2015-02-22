@@ -26,7 +26,7 @@ using namespace gtsam;
 /* ************************************************************************* */
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Cal3Bundler.h>
-class PinholeFactor: public SmartFactorBase<PinholeCamera<Cal3Bundler>, 9> {
+class PinholeFactor: public SmartFactorBase<PinholeCamera<Cal3Bundler> > {
   virtual double error(const Values& values) const {
     return 0.0;
   }
@@ -45,7 +45,7 @@ TEST(SmartFactorBase, Pinhole) {
 
 /* ************************************************************************* */
 #include <gtsam/geometry/StereoCamera.h>
-class StereoFactor: public SmartFactorBase<StereoCamera, 9> {
+class StereoFactor: public SmartFactorBase<StereoCamera> {
   virtual double error(const Values& values) const {
     return 0.0;
   }

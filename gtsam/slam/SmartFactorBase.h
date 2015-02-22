@@ -41,7 +41,7 @@ namespace gtsam {
  * The methods take a Cameras argument, which should behave like PinholeCamera, and
  * the value of a point, which is kept in the base class.
  */
-template<class CAMERA, size_t D>
+template<class CAMERA>
 class SmartFactorBase: public NonlinearFactor {
 
 private:
@@ -70,18 +70,18 @@ protected:
   typedef NonlinearFactor Base;
 
   /// shorthand for this class
-  typedef SmartFactorBase<CAMERA, D> This;
+  typedef SmartFactorBase<CAMERA> This;
 
-  // Figure out the measurement dimension
-  static const int ZDim = traits<Z>::dimension;
+  static const int ZDim = traits<Z>::dimension; ///< Measurement dimension
+  static const int Dim = traits<CAMERA>::dimension; ///< Camera dimension
 
   // Definitions for blocks of F
-  typedef Eigen::Matrix<double, ZDim, D> Matrix2D; // F
-  typedef Eigen::Matrix<double, D, ZDim> MatrixD2; // F'
+  typedef Eigen::Matrix<double, ZDim, Dim> Matrix2D; // F
+  typedef Eigen::Matrix<double, Dim, ZDim> MatrixD2; // F'
   typedef std::pair<Key, Matrix2D> KeyMatrix2D; // Fblocks
-  typedef Eigen::Matrix<double, D, D> MatrixDD; // camera hessian block
+  typedef Eigen::Matrix<double, Dim, Dim> MatrixDD; // camera hessian block
   typedef Eigen::Matrix<double, ZDim, 3> Matrix23;
-  typedef Eigen::Matrix<double, D, 1> VectorD;
+  typedef Eigen::Matrix<double, Dim, 1> VectorD;
   typedef Eigen::Matrix<double, ZDim, ZDim> Matrix2;
 
   /// An optional sensor pose, in the body frame (one for all cameras)
@@ -260,18 +260,12 @@ public:
    * the stacked ZDim*3 derivatives of project with respect to the point.
    * Assumes non-degenerate ! TODO explain this
    */
-  Vector whitenedError(const Cameras& cameras, const Point3& point,
+  Vector reprojectionErrors(const Cameras& cameras, const Point3& point,
       Matrix& E) const {
 
     // Project into CameraSet, calculating derivatives
     std::vector<Z> predicted;
-    try {
-      using boost::none;
-      predicted = cameras.project(point, none, E, none);
-    } catch (CheiralityException&) {
-      std::cout << "whitenedError(E): Cheirality exception " << std::endl;
-      exit(EXIT_FAILURE); // TODO: throw exception
-    }
+    predicted = cameras.project2(point, boost::none, E);
 
     // if needed, whiten
     size_t m = keys_.size();
@@ -281,10 +275,6 @@ public:
       // Calculate error
       const Z& zi = measured_.at(i);
       Vector bi = (zi - predicted[i]).vector();
-
-      // if needed, whiten
-      if (noiseModel_)
-        E.block<ZDim, 3>(row, 0) /= noiseModel_->sigma();
       b.segment<ZDim>(row) = bi;
     }
     return b;
@@ -298,22 +288,17 @@ public:
    *  TODO: the treatment of body_P_sensor_ is weird: the transformation
    *  is applied in the caller, but the derivatives are computed here.
    */
-  Vector whitenedError(const Cameras& cameras, const Point3& point, Matrix& F,
-      Matrix& E, boost::optional<Matrix&> G = boost::none) const {
+  Vector reprojectionErrors(const Cameras& cameras, const Point3& point,
+      typename Cameras::FBlocks& F, Matrix& E) const {
 
     // Project into CameraSet, calculating derivatives
     std::vector<Z> predicted;
-    try {
-      predicted = cameras.project(point, F, E, G);
-    } catch (CheiralityException&) {
-      std::cout << "whitenedError(E,F): Cheirality exception " << std::endl;
-      exit(EXIT_FAILURE); // TODO: throw exception
-    }
+    predicted = cameras.project2(point, F, E);
 
     // Calculate error and whiten derivatives if needed
     size_t m = keys_.size();
     Vector b(ZDim * m);
-    for (size_t i = 0, row = 0; i < m; i++, row += ZDim) {
+    for (size_t i = 0; i < m; i++) {
 
       // Calculate error
       const Z& zi = measured_.at(i);
@@ -326,7 +311,7 @@ public:
         Pose3 w_Pose_body = pose_i.compose(body_P_sensor_->inverse());
         Matrix66 J;
         Pose3 world_P_body = w_Pose_body.compose(*body_P_sensor_, J);
-        F.block<ZDim, 6>(row, 0) *= J;
+        F[i].leftCols(6) *= J;
       }
     }
     return b;
@@ -359,7 +344,7 @@ public:
   /// Assumes non-degenerate !
   void computeEP(Matrix& E, Matrix& P, const Cameras& cameras,
       const Point3& point) const {
-    whitenedError(cameras, point, E);
+    reprojectionErrors(cameras, point, E);
     P = PointCov(E);
   }
 
@@ -372,11 +357,8 @@ public:
       Vector& b, const Cameras& cameras, const Point3& point) const {
 
     // Project into Camera set and calculate derivatives
-    // TODO: if D==6 we optimize only camera pose. That is fairly hacky!
-    Matrix F, G;
-    using boost::none;
-    boost::optional<Matrix&> optionalG(G);
-    b = whitenedError(cameras, point, F, E, D == 6 ? none : optionalG);
+    typename Cameras::FBlocks F;
+    b = reprojectionErrors(cameras, point, F, E);
 
     // Now calculate f and divide up the F derivatives into Fblocks
     double f = 0.0;
@@ -386,15 +368,8 @@ public:
       // Accumulate normalized error
       f += b.segment<ZDim>(row).squaredNorm();
 
-      // Get piece of F and possibly G
-      Matrix2D Fi;
-      if (D == 6)
-        Fi << F.block<ZDim, 6>(row, 0);
-      else
-        Fi << F.block<ZDim, 6>(row, 0), G.block<ZDim, D - 6>(row, 0);
-
-      // Push it onto Fblocks
-      Fblocks.push_back(KeyMatrix2D(keys_[i], Fi));
+      // Push piece of F onto Fblocks with associated key
+      Fblocks.push_back(KeyMatrix2D(keys_[i], F[i]));
     }
     return f;
   }
@@ -403,10 +378,10 @@ public:
   static void FillDiagonalF(const std::vector<KeyMatrix2D>& Fblocks,
       Matrix& F) {
     size_t m = Fblocks.size();
-    F.resize(ZDim * m, D * m);
+    F.resize(ZDim * m, Dim * m);
     F.setZero();
     for (size_t i = 0; i < m; ++i)
-      F.block<This::ZDim, D>(This::ZDim * i, D * i) = Fblocks.at(i).second;
+      F.block<This::ZDim, Dim>(This::ZDim * i, Dim * i) = Fblocks.at(i).second;
   }
 
   /**
@@ -451,7 +426,7 @@ public:
   /**
    * Linearize returns a Hessianfactor that is an approximation of error(p)
    */
-  boost::shared_ptr<RegularHessianFactor<D> > createHessianFactor(
+  boost::shared_ptr<RegularHessianFactor<Dim> > createHessianFactor(
       const Cameras& cameras, const Point3& point, const double lambda = 0.0,
       bool diagonalDamping = false) const {
 
@@ -475,17 +450,17 @@ public:
     //std::vector < Matrix > Gs2(Gs.begin(), Gs.end());
     //std::vector < Vector > gs2(gs.begin(), gs.end());
 
-    return boost::make_shared < RegularHessianFactor<D> > (this->keys_, Gs, gs, f);
+    return boost::make_shared < RegularHessianFactor<Dim> > (this->keys_, Gs, gs, f);
 #else // we create directly a SymmetricBlockMatrix
-    size_t n1 = D * numKeys + 1;
+    size_t n1 = Dim * numKeys + 1;
     std::vector<DenseIndex> dims(numKeys + 1); // this also includes the b term
-    std::fill(dims.begin(), dims.end() - 1, D);
+    std::fill(dims.begin(), dims.end() - 1, Dim);
     dims.back() = 1;
 
-    SymmetricBlockMatrix augmentedHessian(dims, Matrix::Zero(n1, n1)); // for 10 cameras, size should be (10*D+1 x 10*D+1)
-    sparseSchurComplement(Fblocks, E, P, b, augmentedHessian); // augmentedHessian.matrix().block<D,D> (i1,i2) = ...
+    SymmetricBlockMatrix augmentedHessian(dims, Matrix::Zero(n1, n1)); // for 10 cameras, size should be (10*Dim+1 x 10*Dim+1)
+    sparseSchurComplement(Fblocks, E, P, b, augmentedHessian); // augmentedHessian.matrix().block<Dim,Dim> (i1,i2) = ...
     augmentedHessian(numKeys, numKeys)(0, 0) = f;
-    return boost::make_shared<RegularHessianFactor<D> >(this->keys_,
+    return boost::make_shared<RegularHessianFactor<Dim> >(this->keys_,
         augmentedHessian);
 #endif
   }
@@ -508,7 +483,7 @@ public:
     Matrix F;
     FillDiagonalF(Fblocks, F);
 
-    Matrix H(D * numKeys, D * numKeys);
+    Matrix H(Dim * numKeys, Dim * numKeys);
     Vector gs_vector;
 
     H.noalias() = F.transpose() * (F - (E * (P * (E.transpose() * F))));
@@ -517,11 +492,11 @@ public:
     // Populate Gs and gs
     int GsCount2 = 0;
     for (DenseIndex i1 = 0; i1 < numKeys; i1++) { // for each camera
-      DenseIndex i1D = i1 * D;
-      gs.at(i1) = gs_vector.segment<D>(i1D);
+      DenseIndex i1D = i1 * Dim;
+      gs.at(i1) = gs_vector.segment<Dim>(i1D);
       for (DenseIndex i2 = 0; i2 < numKeys; i2++) {
         if (i2 >= i1) {
-          Gs.at(GsCount2) = H.block<D, D>(i1D, i2 * D);
+          Gs.at(GsCount2) = H.block<Dim, Dim>(i1D, i2 * Dim);
           GsCount2++;
         }
       }
@@ -548,11 +523,11 @@ public:
       const Matrix2D& Fi1 = Fblocks.at(i1).second;
       const Matrix23 Ei1_P = E.block<ZDim, 3>(ZDim * i1, 0) * P;
 
-      // D = (Dx2) * (2)
-      // (augmentedHessian.matrix()).block<D,1> (i1,numKeys+1) = Fi1.transpose() * b.segment < 2 > (2 * i1); // F' * b
+      // Dim = (Dx2) * (2)
+      // (augmentedHessian.matrix()).block<Dim,1> (i1,numKeys+1) = Fi1.transpose() * b.segment < 2 > (2 * i1); // F' * b
       augmentedHessian(i1, numKeys) = Fi1.transpose()
           * b.segment<ZDim>(ZDim * i1) // F' * b
-      - Fi1.transpose() * (Ei1_P * (E.transpose() * b)); // D = (DxZDim) * (ZDimx3) * (3*ZDimm) * (ZDimm x 1)
+      - Fi1.transpose() * (Ei1_P * (E.transpose() * b)); // Dim = (DxZDim) * (ZDimx3) * (3*ZDimm) * (ZDimm x 1)
 
       // (DxD) = (DxZDim) * ( (ZDimxD) - (ZDimx3) * (3xZDim) * (ZDimxD) )
       augmentedHessian(i1, i1) = Fi1.transpose()
@@ -597,9 +572,9 @@ public:
       const Matrix23 Ei1_P = E.block<ZDim, 3>(ZDim * i1, 0) * P;
 
       { // for i1 = i2
-        // D = (Dx2) * (2)
+        // Dim = (Dx2) * (2)
         gs.at(i1) = Fi1.transpose() * b.segment<ZDim>(ZDim * i1) // F' * b
-        - Fi1.transpose() * (Ei1_P * (E.transpose() * b)); // D = (DxZDim) * (ZDimx3) * (3*ZDimm) * (ZDimm x 1)
+        - Fi1.transpose() * (Ei1_P * (E.transpose() * b)); // Dim = (DxZDim) * (ZDimx3) * (3*ZDimm) * (ZDimm x 1)
 
         // (DxD) = (DxZDim) * ( (ZDimxD) - (ZDimx3) * (3xZDim) * (ZDimxD) )
         Gs.at(GsIndex) = Fi1.transpose()
@@ -639,7 +614,7 @@ public:
 
     // a single point is observed in numKeys cameras
     size_t numKeys = this->keys_.size(); // cameras observing current point
-    size_t aug_numKeys = (augmentedHessian.rows() - 1) / D; // all cameras in the group
+    size_t aug_numKeys = (augmentedHessian.rows() - 1) / Dim; // all cameras in the group
 
     // Blockwise Schur complement
     for (size_t i1 = 0; i1 < numKeys; i1++) { // for each camera in the current factor
@@ -647,7 +622,7 @@ public:
       const Matrix2D& Fi1 = Fblocks.at(i1).second;
       const Matrix23 Ei1_P = E.block<ZDim, 3>(ZDim * i1, 0) * P;
 
-      // D = (DxZDim) * (ZDim)
+      // Dim = (DxZDim) * (ZDim)
       // allKeys are the list of all camera keys in the group, e.g, (1,3,4,5,7)
       // we should map those to a slot in the local (grouped) hessian (0,1,2,3,4)
       // Key cameraKey_i1 = this->keys_[i1];
@@ -659,7 +634,7 @@ public:
       augmentedHessian(aug_i1, aug_numKeys) = augmentedHessian(aug_i1,
           aug_numKeys).knownOffDiagonal()
           + Fi1.transpose() * b.segment<ZDim>(ZDim * i1) // F' * b
-      - Fi1.transpose() * (Ei1_P * (E.transpose() * b)); // D = (DxZDim) * (ZDimx3) * (3*ZDimm) * (ZDimm x 1)
+      - Fi1.transpose() * (Ei1_P * (E.transpose() * b)); // Dim = (DxZDim) * (ZDimx3) * (3*ZDimm) * (ZDimm x 1)
 
       // (DxD) = (DxZDim) * ( (ZDimxD) - (ZDimx3) * (3xZDim) * (ZDimxD) )
       // main block diagonal - store previous block
@@ -709,17 +684,17 @@ public:
     Vector b;
     double f = computeJacobians(Fblocks, E, b, cameras, point);
     Matrix3 P = PointCov(E, lambda, diagonalDamping);
-    updateSparseSchurComplement(Fblocks, E, P, b, f, allKeys, augmentedHessian); // augmentedHessian.matrix().block<D,D> (i1,i2) = ...
+    updateSparseSchurComplement(Fblocks, E, P, b, f, allKeys, augmentedHessian); // augmentedHessian.matrix().block<Dim,Dim> (i1,i2) = ...
   }
 
   /**
    * Return Jacobians as RegularImplicitSchurFactor with raw access
    */
-  boost::shared_ptr<RegularImplicitSchurFactor<D> > createRegularImplicitSchurFactor(
+  boost::shared_ptr<RegularImplicitSchurFactor<Dim> > createRegularImplicitSchurFactor(
       const Cameras& cameras, const Point3& point, double lambda = 0.0,
       bool diagonalDamping = false) const {
-    typename boost::shared_ptr<RegularImplicitSchurFactor<D> > f(
-        new RegularImplicitSchurFactor<D>());
+    typename boost::shared_ptr<RegularImplicitSchurFactor<Dim> > f(
+        new RegularImplicitSchurFactor<Dim>());
     computeJacobians(f->Fblocks(), f->E(), f->b(), cameras, point);
     f->PointCovariance() = PointCov(f->E(), lambda, diagonalDamping);
     f->initKeys();
@@ -729,7 +704,7 @@ public:
   /**
    * Return Jacobians as JacobianFactorQ
    */
-  boost::shared_ptr<JacobianFactorQ<D, ZDim> > createJacobianQFactor(
+  boost::shared_ptr<JacobianFactorQ<Dim, ZDim> > createJacobianQFactor(
       const Cameras& cameras, const Point3& point, double lambda = 0.0,
       bool diagonalDamping = false) const {
     std::vector<KeyMatrix2D> Fblocks;
@@ -737,7 +712,7 @@ public:
     Vector b;
     computeJacobians(Fblocks, E, b, cameras, point);
     Matrix3 P = PointCov(E, lambda, diagonalDamping);
-    return boost::make_shared<JacobianFactorQ<D, ZDim> >(Fblocks, E, P, b);
+    return boost::make_shared<JacobianFactorQ<Dim, ZDim> >(Fblocks, E, P, b);
   }
 
   /**
@@ -751,7 +726,7 @@ public:
     Vector b;
     Matrix Enull(ZDim * numKeys, ZDim * numKeys - 3);
     computeJacobiansSVD(Fblocks, Enull, b, cameras, point);
-    return boost::make_shared<JacobianFactorSVD<6, ZDim> >(Fblocks, Enull, b);
+    return boost::make_shared<JacobianFactorSVD<Dim, ZDim> >(Fblocks, Enull, b);
   }
 
 private:
@@ -764,10 +739,11 @@ private:
     ar & BOOST_SERIALIZATION_NVP(measured_);
     ar & BOOST_SERIALIZATION_NVP(body_P_sensor_);
   }
-}
-;
+};
+// end class SmartFactorBase
 
-template<class CAMERA, size_t D>
-const int SmartFactorBase<CAMERA, D>::ZDim;
+// TODO: Why is this here?
+template<class CAMERA>
+const int SmartFactorBase<CAMERA>::ZDim;
 
 } // \ namespace gtsam
