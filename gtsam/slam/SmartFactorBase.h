@@ -97,17 +97,32 @@ public:
   virtual ~SmartFactorBase() {
   }
 
+  // check that noise model is isotropic and the same
+  void maybeSetNoiseModel(const SharedNoiseModel& sharedNoiseModel) {
+    if (!sharedNoiseModel)
+      return;
+    SharedIsotropic sharedIsotropic = boost::dynamic_pointer_cast<
+        noiseModel::Isotropic>(sharedNoiseModel);
+    if (!sharedIsotropic)
+      throw std::runtime_error("SmartFactorBase: needs isotropic");
+    if (!noiseModel_)
+      noiseModel_ = sharedIsotropic;
+    else if (!sharedIsotropic->equals(*noiseModel_))
+      throw std::runtime_error(
+          "SmartFactorBase: cannot add measurements with different noise model");
+  }
+
   /**
    * Add a new measurement and pose key
    * @param measured_i is the 2m dimensional projection of a single landmark
    * @param poseKey is the index corresponding to the camera observing the landmark
-   * @param noise_i is the measurement noise
+   * @param sharedNoiseModel is the measurement noise
    */
   void add(const Z& measured_i, const Key& poseKey_i,
-      const SharedNoiseModel& noise_i) {
+      const SharedNoiseModel& sharedNoiseModel) {
     this->measured_.push_back(measured_i);
     this->keys_.push_back(poseKey_i);
-    this->noise_.push_back(noise_i);
+    maybeSetNoiseModel(sharedNoiseModel);
   }
 
   /**
@@ -118,7 +133,7 @@ public:
     for (size_t i = 0; i < measurements.size(); i++) {
       this->measured_.push_back(measurements.at(i));
       this->keys_.push_back(poseKeys.at(i));
-      this->noise_.push_back(noises.at(i));
+      maybeSetNoiseModel(noises.at(i));
     }
   }
 
@@ -130,7 +145,7 @@ public:
     for (size_t i = 0; i < measurements.size(); i++) {
       this->measured_.push_back(measurements.at(i));
       this->keys_.push_back(poseKeys.at(i));
-      this->noise_.push_back(noise);
+      maybeSetNoiseModel(noise);
     }
   }
 
@@ -143,7 +158,7 @@ public:
     for (size_t k = 0; k < trackToAdd.number_measurements(); k++) {
       this->measured_.push_back(trackToAdd.measurements[k].second);
       this->keys_.push_back(trackToAdd.measurements[k].first);
-      this->noise_.push_back(noise);
+      maybeSetNoiseModel(noise);
     }
   }
 
@@ -223,7 +238,7 @@ public:
     Vector b = reprojectionError(cameras, point);
     size_t nrCameras = cameras.size();
     for (size_t i = 0, row = 0; i < nrCameras; i++, row += ZDim)
-      b.segment<ZDim>(row) = noise_.at(i)->whiten(b.segment<ZDim>(row));
+      b.segment<ZDim>(row) = noiseModel_->whiten(b.segment<ZDim>(row));
     return b;
   }
 
@@ -240,7 +255,7 @@ public:
     double overallError = 0;
     size_t nrCameras = cameras.size();
     for (size_t i = 0; i < nrCameras; i++)
-      overallError += noise_.at(i)->distance(b.segment<ZDim>(i * ZDim));
+      overallError += noiseModel_->distance(b.segment<ZDim>(i * ZDim));
     return 0.5 * overallError;
   }
 
@@ -272,7 +287,7 @@ public:
       Vector bi = (zi - predicted[i]).vector();
 
       // if needed, whiten
-      SharedNoiseModel model = noise_.at(i);
+      SharedNoiseModel model = noiseModel_;
       if (model) {
         // TODO: re-factor noiseModel to take any block/fixed vector/matrix
         Vector dummy;
@@ -325,16 +340,15 @@ public:
       }
 
       // if needed, whiten
-      SharedNoiseModel model = noise_.at(i);
-      if (model) {
+      if (noiseModel_) {
         // TODO, refactor noiseModel so we can take blocks
         Matrix Fi = F.block<ZDim, 6>(row, 0);
         Matrix Ei = E.block<ZDim, 3>(row, 0);
         if (!G)
-          model->WhitenSystem(Fi, Ei, bi);
+          noiseModel_->WhitenSystem(Fi, Ei, bi);
         else {
           Matrix Gi = G->block<ZDim, D - 6>(row, 0);
-          model->WhitenSystem(Fi, Ei, Gi, bi);
+          noiseModel_->WhitenSystem(Fi, Ei, Gi, bi);
           G->block<ZDim, D - 6>(row, 0) = Gi;
         }
         F.block<ZDim, 6>(row, 0) = Fi;
@@ -413,7 +427,8 @@ public:
   }
 
   /// Create BIG block-diagonal matrix F from Fblocks
-  static void FillDiagonalF(const std::vector<KeyMatrix2D>& Fblocks, Matrix& F) {
+  static void FillDiagonalF(const std::vector<KeyMatrix2D>& Fblocks,
+      Matrix& F) {
     size_t m = Fblocks.size();
     F.resize(ZDim * m, D * m);
     F.setZero();

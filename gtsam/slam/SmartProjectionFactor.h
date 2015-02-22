@@ -533,7 +533,7 @@ public:
         Vector bi = -(cameras[i].projectPointAtInfinity(this->point_, Fi, Ei)
             - this->measured_.at(i)).vector();
 
-        this->noise_.at(i)->WhitenSystem(Fi, Ei, bi);
+        this->noiseModel_->WhitenSystem(Fi, Ei, bi);
         f += bi.squaredNorm();
         Fblocks.push_back(typename Base::KeyMatrix2D(this->keys_[i], Fi));
         E.block<2, 2>(2 * i, 0) = Ei;
@@ -639,7 +639,7 @@ public:
         Point2 reprojectionError(
             camera.projectPointAtInfinity(this->point_) - zi);
         overallError += 0.5
-            * this->noise_.at(i)->distance(reprojectionError.vector());
+            * this->noiseModel_->distance(reprojectionError.vector());
         i += 1;
       }
       return overallError;
