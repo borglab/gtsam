@@ -217,19 +217,9 @@ public:
                 && body_P_sensor_->equals(*e->body_P_sensor_)));
   }
 
-  /// Calculate vector of re-projection errors, before applying noise model
-  Vector reprojectionErrors(const Cameras& cameras, const Point3& point) const {
-    try {
-      return cameras.reprojectionErrors(point, measured_);
-    } catch (CheiralityException&) {
-      std::cout << "reprojectionError: Cheirality exception " << std::endl;
-      exit(EXIT_FAILURE); // TODO: throw exception
-    }
-  }
-
   /// Calculate vector of re-projection errors, noise model applied
   Vector whitenedErrors(const Cameras& cameras, const Point3& point) const {
-    Vector b = reprojectionErrors(cameras, point);
+    Vector b = cameras.reprojectionErrors(point, measured_);
     if (noiseModel_)
       noiseModel_->whitenInPlace(b);
     return b;
@@ -338,23 +328,6 @@ public:
         Pose3 world_P_body = w_Pose_body.compose(*body_P_sensor_, J);
         F.block<ZDim, 6>(row, 0) *= J;
       }
-
-      // if needed, whiten
-      if (noiseModel_) {
-        // TODO, refactor noiseModel so we can take blocks
-        Matrix Fi = F.block<ZDim, 6>(row, 0);
-        Matrix Ei = E.block<ZDim, 3>(row, 0);
-        if (!G)
-          noiseModel_->WhitenSystem(Fi, Ei, bi);
-        else {
-          Matrix Gi = G->block<ZDim, D - 6>(row, 0);
-          noiseModel_->WhitenSystem(Fi, Ei, Gi, bi);
-          G->block<ZDim, D - 6>(row, 0) = Gi;
-        }
-        F.block<ZDim, 6>(row, 0) = Fi;
-        E.block<ZDim, 3>(row, 0) = Ei;
-      }
-      b.segment<ZDim>(row) = bi;
     }
     return b;
   }
