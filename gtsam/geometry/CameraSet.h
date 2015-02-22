@@ -43,6 +43,24 @@ protected:
   static const int ZDim = traits<Z>::dimension; ///< Measurement dimension
   static const int Dim = traits<CAMERA>::dimension; ///< Camera dimension
 
+  /// Make a vector of re-projection errors
+  static Vector ErrorVector(const std::vector<Z>& predicted,
+      const std::vector<Z>& measured) {
+
+    // Check size
+    size_t m = predicted.size();
+    if (measured.size() != m)
+      throw std::runtime_error("CameraSet::errors: size mismatch");
+
+    // Project and fill derivatives
+    Vector b(ZDim * m);
+    for (size_t i = 0, row = 0; i < m; i++, row += ZDim) {
+      Z e = predicted[i] - measured[i];
+      b.segment<ZDim>(row) = e.vector();
+    }
+    return b;
+  }
+
 public:
 
   /// Definitions for blocks of F
@@ -77,26 +95,69 @@ public:
    * Project a point, with derivatives in this, point, and calibration
    * throws CheiralityException
    */
-  std::vector<Z> project(const Point3& point, boost::optional<Matrix&> F =
-      boost::none, boost::optional<Matrix&> E = boost::none,
+  std::vector<Z> project(const Point3& point, //
+      boost::optional<Matrix&> F = boost::none, //
+      boost::optional<Matrix&> E = boost::none, //
       boost::optional<Matrix&> H = boost::none) const {
 
-    size_t nrCameras = this->size();
-    if (F) F->resize(ZDim * nrCameras, 6);
-    if (E) E->resize(ZDim * nrCameras, 3);
-    if (H && Dim > 6) H->resize(ZDim * nrCameras, Dim - 6);
-    std::vector<Z> z(nrCameras);
+    // Allocate result
+    size_t m = this->size();
+    std::vector<Z> z(m);
 
-    for (size_t i = 0; i < nrCameras; i++) {
-      Eigen::Matrix<double, ZDim, 6> Fi;
-      Eigen::Matrix<double, ZDim, 3> Ei;
-      Eigen::Matrix<double, ZDim, Dim - 6> Hi;
+    // Allocate derivatives
+    if (F)
+      F->resize(ZDim * m, 6);
+    if (E)
+      E->resize(ZDim * m, 3);
+    if (H && Dim > 6)
+      H->resize(ZDim * m, Dim - 6);
+
+    Eigen::Matrix<double, ZDim, 6> Fi;
+    Eigen::Matrix<double, ZDim, 3> Ei;
+    Eigen::Matrix<double, ZDim, Dim - 6> Hi;
+
+    // Project and fill derivatives
+    for (size_t i = 0; i < m; i++) {
       z[i] = this->at(i).project(point, F ? &Fi : 0, E ? &Ei : 0, H ? &Hi : 0);
-      if (F) F->block<ZDim, 6>(ZDim * i, 0) = Fi;
-      if (E) E->block<ZDim, 3>(ZDim * i, 0) = Ei;
-      if (H) H->block<ZDim, Dim - 6>(ZDim * i, 0) = Hi;
+      if (F)
+        F->block<ZDim, 6>(ZDim * i, 0) = Fi;
+      if (E)
+        E->block<ZDim, 3>(ZDim * i, 0) = Ei;
+      if (H)
+        H->block<ZDim, Dim - 6>(ZDim * i, 0) = Hi;
     }
+
     return z;
+  }
+
+  /**
+   * Project a point, with derivatives in this, point, and calibration
+   * throws CheiralityException
+   */
+  std::vector<Z> projectAtInfinity(const Point3& point) const {
+
+    // Allocate result
+    size_t m = this->size();
+    std::vector<Z> z(m);
+
+    // Project and fill derivatives
+    for (size_t i = 0; i < m; i++)
+      z[i] = this->at(i).projectPointAtInfinity(point);
+
+    return z;
+  }
+
+  /// Calculate vector of re-projection errors
+  Vector reprojectionErrors(const Point3& point,
+      const std::vector<Z>& measured) const {
+    return ErrorVector(project(point), measured);
+  }
+
+  /// Calculate vector of re-projection errors, from point at infinity
+  // TODO: take Unit3 instead
+  Vector reprojectionErrorsAtInfinity(const Point3& point,
+      const std::vector<Z>& measured) const {
+    return ErrorVector(projectAtInfinity(point), measured);
   }
 
 private:

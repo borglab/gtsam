@@ -37,16 +37,16 @@ TEST(CameraSet, Pinhole) {
   set.push_back(camera);
   set.push_back(camera);
   Point3 p(0, 0, 1);
-  CHECK(assert_equal(set, set));
+  EXPECT(assert_equal(set, set));
   CameraSet<Camera> set2 = set;
   set2.push_back(camera);
-  CHECK(!set.equals(set2));
+  EXPECT(!set.equals(set2));
 
   // Check measurements
   Point2 expected;
   ZZ z = set.project(p);
-  CHECK(assert_equal(expected, z[0]));
-  CHECK(assert_equal(expected, z[1]));
+  EXPECT(assert_equal(expected, z[0]));
+  EXPECT(assert_equal(expected, z[1]));
 
   // Calculate expected derivatives using Pinhole
   Matrix46 actualF;
@@ -65,9 +65,27 @@ TEST(CameraSet, Pinhole) {
   // Check computed derivatives
   Matrix F, E, H;
   set.project(p, F, E, H);
-  CHECK(assert_equal(actualF, F));
-  CHECK(assert_equal(actualE, E));
-  CHECK(assert_equal(actualH, H));
+  EXPECT(assert_equal(actualF, F));
+  EXPECT(assert_equal(actualE, E));
+  EXPECT(assert_equal(actualH, H));
+
+  // Check errors
+  ZZ measured;
+  measured.push_back(Point2(1, 2));
+  measured.push_back(Point2(3, 4));
+  Vector4 expectedV;
+
+  // reprojectionErrors
+  expectedV << -1, -2, -3, -4;
+  Vector actualV = set.reprojectionErrors(p, measured);
+  EXPECT(assert_equal(expectedV, actualV));
+
+  // reprojectionErrorsAtInfinity
+  EXPECT(
+      assert_equal(Point3(0, 0, 1),
+          camera.backprojectPointAtInfinity(Point2())));
+  actualV = set.reprojectionErrorsAtInfinity(p, measured);
+  EXPECT(assert_equal(expectedV, actualV));
 }
 
 /* ************************************************************************* */
@@ -84,8 +102,8 @@ TEST(CameraSet, Stereo) {
   // Check measurements
   StereoPoint2 expected(0, -1, 0);
   ZZ z = set.project(p);
-  CHECK(assert_equal(expected, z[0]));
-  CHECK(assert_equal(expected, z[1]));
+  EXPECT(assert_equal(expected, z[0]));
+  EXPECT(assert_equal(expected, z[1]));
 
   // Calculate expected derivatives using Pinhole
   Matrix66 actualF;
@@ -101,8 +119,8 @@ TEST(CameraSet, Stereo) {
   // Check computed derivatives
   Matrix F, E;
   set.project(p, F, E);
-  CHECK(assert_equal(actualF, F));
-  CHECK(assert_equal(actualE, E));
+  EXPECT(assert_equal(actualF, F));
+  EXPECT(assert_equal(actualE, E));
 }
 
 /* ************************************************************************* */
