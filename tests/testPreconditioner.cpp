@@ -18,11 +18,12 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/linear/Preconditioner.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/geometry/Point2.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/Preconditioner.h>
 #include <gtsam/linear/PCGSolver.h>
+#include <gtsam/geometry/Point2.h>
 
 using namespace std;
 using namespace gtsam;

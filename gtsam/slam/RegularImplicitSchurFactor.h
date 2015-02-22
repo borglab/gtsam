@@ -7,12 +7,10 @@
 
 #pragma once
 
-#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/VectorValues.h>
 #include <boost/foreach.hpp>
-#include <boost/make_shared.hpp>
-#include <iostream>
+#include <iosfwd>
 
 namespace gtsam {
 

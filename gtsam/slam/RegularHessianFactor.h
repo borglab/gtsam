@@ -65,13 +65,14 @@ public:
   mutable std::vector<DVector> y;
 
   /** y += alpha * A'*A*x */
-  void multiplyHessianAdd(double alpha, const VectorValues& x, VectorValues& y) const{
-    throw std::runtime_error(
-          "RegularHessianFactor::forbidden use of multiplyHessianAdd without raw memory access, use HessianFactor instead");
+  virtual void multiplyHessianAdd(double alpha, const VectorValues& x,
+      VectorValues& y) const {
+    HessianFactor::multiplyHessianAdd(alpha, x, y);
   }
 
   /** y += alpha * A'*A*x */
-  void multiplyHessianAdd(double alpha, const double* x, double* yvalues) const {
+  void multiplyHessianAdd(double alpha, const double* x,
+      double* yvalues) const {
     // Create a vector of temporary y values, corresponding to rows i
     y.resize(size());
     BOOST_FOREACH(DVector & yi, y)
@@ -104,6 +105,7 @@ public:
     }
   }
 
+  /// Raw memory version, with offsets TODO document reasoning
   void multiplyHessianAdd(double alpha, const double* x, double* yvalues,
       std::vector<size_t> offsets) const {
 
@@ -140,43 +142,38 @@ public:
 
     // copy to yvalues
     for (DenseIndex i = 0; i < (DenseIndex) size(); ++i)
-      DMap(yvalues + offsets[keys_[i]], offsets[keys_[i] + 1] - offsets[keys_[i]]) +=
-          alpha * y[i];
+      DMap(yvalues + offsets[keys_[i]],
+          offsets[keys_[i] + 1] - offsets[keys_[i]]) += alpha * y[i];
   }
 
   /** Return the diagonal of the Hessian for this factor (raw memory version) */
   virtual void hessianDiagonal(double* d) const {
 
     // Use eigen magic to access raw memory
-    //typedef Eigen::Matrix<double, 9, 1> DVector;
     typedef Eigen::Matrix<double, D, 1> DVector;
     typedef Eigen::Map<DVector> DMap;
 
     // Loop over all variables in the factor
-    for (DenseIndex pos = 0; pos < (DenseIndex)size(); ++pos) {
+    for (DenseIndex pos = 0; pos < (DenseIndex) size(); ++pos) {
       Key j = keys_[pos];
       // Get the diagonal block, and insert its diagonal
       const Matrix& B = info_(pos, pos).selfadjointView();
-      //DMap(d + 9 * j) += B.diagonal();
       DMap(d + D * j) += B.diagonal();
     }
   }
 
-  /* ************************************************************************* */
-  // TODO: currently assumes all variables of the same size 9 and keys arranged from 0 to n
+  /// Add gradient at zero to d TODO: is it really the goal to add ??
   virtual void gradientAtZero(double* d) const {
 
     // Use eigen magic to access raw memory
-    //typedef Eigen::Matrix<double, 9, 1> DVector;
     typedef Eigen::Matrix<double, D, 1> DVector;
     typedef Eigen::Map<DVector> DMap;
 
     // Loop over all variables in the factor
-    for (DenseIndex pos = 0; pos < (DenseIndex)size(); ++pos) {
+    for (DenseIndex pos = 0; pos < (DenseIndex) size(); ++pos) {
       Key j = keys_[pos];
       // Get the diagonal block, and insert its diagonal
-      VectorD dj =  -info_(pos,size()).knownOffDiagonal();
-      //DMap(d + 9 * j) += dj;
+      VectorD dj = -info_(pos, size()).knownOffDiagonal();
       DMap(d + D * j) += dj;
     }
   }

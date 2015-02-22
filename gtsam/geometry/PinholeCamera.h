@@ -31,6 +31,14 @@ namespace gtsam {
 template<typename Calibration>
 class GTSAM_EXPORT PinholeCamera: public PinholeBaseK<Calibration> {
 
+public:
+
+  /**
+   *  Some classes template on either PinholeCamera or StereoCamera,
+   *  and this typedef informs those classes what "project" returns.
+   */
+  typedef Point2 Measurement;
+
 private:
 
   typedef PinholeBaseK<Calibration> Base; ///< base class has 3D pose as private member
