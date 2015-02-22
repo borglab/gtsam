@@ -630,19 +630,10 @@ public:
       std::cout
           << "SmartProjectionHessianFactor: trying to manage degeneracy (this should not happen is manageDegeneracy is disabled)!"
           << std::endl;
-      size_t i = 0;
-      double overallError = 0;
-      BOOST_FOREACH(const Camera& camera, cameras) {
-        const Point2& zi = this->measured_.at(i);
-        if (i == 0) // first pose
-          this->point_ = camera.backprojectPointAtInfinity(zi); // 3D parametrization of point at infinity
-        Point2 reprojectionError(
-            camera.projectPointAtInfinity(this->point_) - zi);
-        overallError += 0.5
-            * this->noiseModel_->distance(reprojectionError.vector());
-        i += 1;
-      }
-      return overallError;
+      // 3D parameterization of point at infinity
+      const Point2& zi = this->measured_.at(0);
+      this->point_ = cameras.front().backprojectPointAtInfinity(zi);
+      return Base::totalReprojectionErrorAtInfinity(cameras,this->point_);
     } else {
       // Just use version in base class
       return Base::totalReprojectionError(cameras, point_);
