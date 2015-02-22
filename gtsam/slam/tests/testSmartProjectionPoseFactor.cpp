@@ -485,8 +485,17 @@ TEST( SmartProjectionPoseFactor, Factors ){
   CHECK(p);
   EXPECT(assert_equal(landmark1,*p));
 
+  Matrix26 F1; F1.setZero(); F1(0,1)=-100; F1(0,3)=-10; F1(1,0)=100; F1(1,4)=-10;
+  Matrix26 F2; F2.setZero(); F2(0,1)=-101; F2(0,3)=-10; F2(0,5)=-1; F2(1,0)=100; F2(1,2)=10; F2(1,4)=-10;
+  Matrix43 E; E.setZero(); E(0,0)=100; E(1,1)=100; E(2,0)=100; E(2,2)=10;E(3,1)=100;
+  const vector<pair<Key, Matrix26> > Fblocks = list_of<pair<Key, Matrix> > //
+      (make_pair(x1, 10*F1))(make_pair(x2, 10*F2));
+  Matrix3 P = (E.transpose() * E).inverse();
+  Vector4 b; b.setZero();
+
   {
     // RegularHessianFactor<6>
+    // TODO, calculate G from F
     Matrix66 G11; G11.setZero(); G11(0,0) = 100; G11(0,4) = -10; G11(4,0) = -10; G11(4,4) = 1;
     Matrix66 G12; G12 = -G11; G12(0,2) = -10; G12(4,2) = 1;
     Matrix66 G22; G22 = G11; G22(0,2) = 10; G22(2,0) = 10; G22(2,2) = 1; G22(2,4) = -1; G22(4,2) = -1;
@@ -506,20 +515,22 @@ TEST( SmartProjectionPoseFactor, Factors ){
 
   {
     // RegularImplicitSchurFactor<6>
-    Matrix26 F1; F1.setZero(); F1(0,1)=-100; F1(0,3)=-10; F1(1,0)=100; F1(1,4)=-10;
-    Matrix26 F2; F2.setZero(); F2(0,1)=-101; F2(0,3)=-10; F2(0,5)=-1; F2(1,0)=100; F2(1,2)=10; F2(1,4)=-10;
-    Matrix43 E; E.setZero(); E(0,0)=100; E(1,1)=100; E(2,0)=100; E(2,2)=10;E(3,1)=100;
-    const vector<pair<Key, Matrix26> > Fblocks = list_of<pair<Key, Matrix> > //
-        (make_pair(x1, 10*F1))(make_pair(x2, 10*F2));
-    Matrix3 P = (E.transpose() * E).inverse();
-    Vector4 b; b.setZero();
-
     RegularImplicitSchurFactor<6> expected(Fblocks, E, P, b);
 
     boost::shared_ptr<RegularImplicitSchurFactor<6> > actual =
           smartFactor1->createRegularImplicitSchurFactor(cameras, 0.0);
     CHECK(actual);
     CHECK(assert_equal(expected,*actual));
+  }
+
+  {
+    // createJacobianQFactor<6,2>
+    JacobianFactorQ<6, 2> expected(Fblocks, E, P, b);
+
+    boost::shared_ptr<JacobianFactorQ<6, 2> > actual =
+        smartFactor1->createJacobianQFactor(cameras, 0.0);
+    CHECK(actual);
+    CHECK(assert_equal(expected, *actual));
   }
 
 }
