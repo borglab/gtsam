@@ -27,7 +27,6 @@ namespace gtsam {
 
 /**
  * @brief A set of cameras, all with their own calibration
- * Assumes that a camera is laid out as 6 Pose3 parameters then calibration
  */
 template<class CAMERA>
 class CameraSet: public std::vector<CAMERA> {
@@ -64,8 +63,8 @@ protected:
 public:
 
   /// Definitions for blocks of F
-  typedef Eigen::Matrix<double, ZDim, 6> MatrixZ6; // F
-  typedef std::vector<MatrixZ6> FBlocks;
+  typedef Eigen::Matrix<double, ZDim, Dim> MatrixZD; // F
+  typedef std::vector<MatrixZD> FBlocks;
 
   /**
    * print
@@ -92,15 +91,14 @@ public:
   }
 
   /**
-   * Project a point, with derivatives in this, point, and calibration
+   * Project a point, with derivatives in CameraSet and Point3
    * Note that F is a sparse block-diagonal matrix, so instead of a large dense
    * matrix this function returns the diagonal blocks.
    * throws CheiralityException
    */
-  std::vector<Z> project(const Point3& point, //
+  std::vector<Z> project2(const Point3& point, //
       boost::optional<FBlocks&> F = boost::none, //
-      boost::optional<Matrix&> E = boost::none, //
-      boost::optional<Matrix&> H = boost::none) const {
+      boost::optional<Matrix&> E = boost::none) const {
 
     // Allocate result
     size_t m = this->size();
@@ -109,22 +107,16 @@ public:
     // Allocate derivatives
     if (E)
       E->resize(ZDim * m, 3);
-    if (H && Dim > 6)
-      H->resize(ZDim * m, Dim - 6);
-
-    Eigen::Matrix<double, ZDim, 6> Fi;
-    Eigen::Matrix<double, ZDim, 3> Ei;
-    Eigen::Matrix<double, ZDim, Dim - 6> Hi;
 
     // Project and fill derivatives
     for (size_t i = 0; i < m; i++) {
-      z[i] = this->at(i).project(point, F ? &Fi : 0, E ? &Ei : 0, H ? &Hi : 0);
+      Eigen::Matrix<double, ZDim, Dim> Fi;
+      Eigen::Matrix<double, ZDim, 3> Ei;
+      z[i] = this->at(i).project2(point, F ? &Fi : 0, E ? &Ei : 0);
       if (F)
         F->push_back(Fi);
       if (E)
         E->block<ZDim, 3>(ZDim * i, 0) = Ei;
-      if (H)
-        H->block<ZDim, Dim - 6>(ZDim * i, 0) = Hi;
     }
 
     return z;
@@ -150,7 +142,7 @@ public:
   /// Calculate vector of re-projection errors
   Vector reprojectionErrors(const Point3& point,
       const std::vector<Z>& measured) const {
-    return ErrorVector(project(point), measured);
+    return ErrorVector(project2(point), measured);
   }
 
   /// Calculate vector of re-projection errors, from point at infinity

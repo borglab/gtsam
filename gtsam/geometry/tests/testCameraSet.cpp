@@ -44,31 +44,28 @@ TEST(CameraSet, Pinhole) {
 
   // Check measurements
   Point2 expected;
-  ZZ z = set.project(p);
+  ZZ z = set.project2(p);
   EXPECT(assert_equal(expected, z[0]));
   EXPECT(assert_equal(expected, z[1]));
 
   // Calculate expected derivatives using Pinhole
   Matrix43 actualE;
-  Matrix43 actualH;
   Matrix F1;
   {
     Matrix23 E1;
     Matrix23 H1;
-    camera.project(p, F1, E1, H1);
+    camera.project2(p, F1, E1);
     actualE << E1, E1;
-    actualH << H1, H1;
   }
 
   // Check computed derivatives
   CameraSet<Camera>::FBlocks F;
   Matrix E, H;
-  set.project(p, F, E, H);
+  set.project2(p, F, E);
   LONGS_EQUAL(2,F.size());
   EXPECT(assert_equal(F1, F[0]));
   EXPECT(assert_equal(F1, F[1]));
   EXPECT(assert_equal(actualE, E));
-  EXPECT(assert_equal(actualH, H));
 
   // Check errors
   ZZ measured;
@@ -102,7 +99,7 @@ TEST(CameraSet, Stereo) {
 
   // Check measurements
   StereoPoint2 expected(0, -1, 0);
-  ZZ z = set.project(p);
+  ZZ z = set.project2(p);
   EXPECT(assert_equal(expected, z[0]));
   EXPECT(assert_equal(expected, z[1]));
 
@@ -111,14 +108,14 @@ TEST(CameraSet, Stereo) {
   Matrix F1;
   {
     Matrix33 E1;
-    camera.project(p, F1, E1);
+    camera.project2(p, F1, E1);
     actualE << E1, E1;
   }
 
   // Check computed derivatives
   CameraSet<StereoCamera>::FBlocks F;
   Matrix E;
-  set.project(p, F, E);
+  set.project2(p, F, E);
   LONGS_EQUAL(2,F.size());
   EXPECT(assert_equal(F1, F[0]));
   EXPECT(assert_equal(F1, F[1]));
