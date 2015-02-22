@@ -17,9 +17,6 @@
 
 #pragma once
 
-#include <boost/tuple/tuple.hpp>
-
-#include <gtsam/base/DerivedValue.h>
 #include <gtsam/geometry/Cal3_S2Stereo.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/StereoPoint2.h>
@@ -127,32 +124,36 @@ public:
     return K_->baseline();
   }
 
-  /*
-   * project 3D point and compute optional derivatives
+  /// Project 3D point to StereoPoint2 (uL,uR,v)
+  StereoPoint2 project(const Point3& point) const;
+
+  /** Project 3D point and compute optional derivatives
+   * @param H1 derivative with respect to pose
+   * @param H2 derivative with respect to point
+   */
+  StereoPoint2 project2(const Point3& point, OptionalJacobian<3, 6> H1 =
+      boost::none, OptionalJacobian<3, 3> H2 = boost::none) const;
+
+  /// back-project a measurement
+  Point3 backproject(const StereoPoint2& z) const;
+
+  /// @}
+  /// @name Deprecated
+  /// @{
+
+  /** Project 3D point and compute optional derivatives
+   * @deprecated, use project2 - this class has fixed calibration
    * @param H1 derivative with respect to pose
    * @param H2 derivative with respect to point
    * @param H3 IGNORED (for calibration)
    */
-  StereoPoint2 project(const Point3& point, OptionalJacobian<3, 6> H1 =
-      boost::none, OptionalJacobian<3, 3> H2 = boost::none,
-      OptionalJacobian<3, 0> H3 = boost::none) const;
-
-  /// back-project a measurement
-  Point3 backproject(const StereoPoint2& z) const {
-    Vector measured = z.vector();
-    double Z = K_->baseline() * K_->fx() / (measured[0] - measured[1]);
-    double X = Z * (measured[0] - K_->px()) / K_->fx();
-    double Y = Z * (measured[2] - K_->py()) / K_->fy();
-    Point3 world_point = leftCamPose_.transform_from(Point3(X, Y, Z));
-    return world_point;
-  }
+  StereoPoint2 project(const Point3& point, OptionalJacobian<3, 6> H1,
+      OptionalJacobian<3, 3> H2 = boost::none, OptionalJacobian<3, 0> H3 =
+          boost::none) const;
 
   /// @}
 
 private:
-
-  /// utility function
-  Matrix3 Dproject_to_stereo_camera1(const Point3& P) const;
 
   friend class boost::serialization::access;
   template<class Archive>
