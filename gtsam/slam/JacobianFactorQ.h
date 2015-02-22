@@ -35,15 +35,16 @@ public:
   }
 
   /// Empty constructor with keys
-  JacobianFactorQ(const FastVector<Key>& keys,
-      const SharedDiagonal& model =  SharedDiagonal()) : JacobianSchurFactor<D, ZDim>() {
-    Matrix zeroMatrix = Matrix::Zero(0,D);
+  JacobianFactorQ(const FastVector<Key>& keys, //
+      const SharedDiagonal& model = SharedDiagonal()) :
+      JacobianSchurFactor<D, ZDim>() {
+    Matrix zeroMatrix = Matrix::Zero(0, D);
     Vector zeroVector = Vector::Zero(0);
     typedef std::pair<Key, Matrix> KeyMatrix;
     std::vector<KeyMatrix> QF;
     QF.reserve(keys.size());
     BOOST_FOREACH(const Key& key, keys)
-            QF.push_back(KeyMatrix(key, zeroMatrix));
+      QF.push_back(KeyMatrix(key, zeroMatrix));
     JacobianFactor::fillTerms(QF, zeroVector, model);
   }
 
@@ -58,14 +59,21 @@ public:
     // Calculate pre-computed Jacobian matrices
     // TODO: can we do better ?
     typedef std::pair<Key, Matrix> KeyMatrix;
-    std::vector < KeyMatrix > QF;
+    std::vector<KeyMatrix> QF;
     QF.reserve(m);
     // Below, we compute each mZDim*D block A_j = Q_j * F_j = (mZDim*ZDim) * (Zdim*D)
     BOOST_FOREACH(const typename Base::KeyMatrix2D& it, Fblocks)
-      QF.push_back(KeyMatrix(it.first, Q.block(0, ZDim * j++, m2, ZDim) * it.second));
+      QF.push_back(
+          KeyMatrix(it.first, Q.block(0, ZDim * j++, m2, ZDim) * it.second));
     // Which is then passed to the normal JacobianFactor constructor
     JacobianFactor::fillTerms(QF, Q * b, model);
   }
+};
+// end class JacobianFactorQ
+
+// traits
+template<size_t D, size_t ZDim> struct traits<JacobianFactorQ<D, ZDim> > : public Testable<
+    JacobianFactorQ<D, ZDim> > {
 };
 
 }
