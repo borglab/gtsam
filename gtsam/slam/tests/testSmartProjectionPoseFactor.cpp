@@ -502,7 +502,7 @@ TEST( SmartProjectionPoseFactor, Factors ){
 
     boost::shared_ptr<RegularHessianFactor<6> > actual =
         smartFactor1->createHessianFactor(cameras, 0.0);
-    CHECK(assert_equal(expected.information(), actual->information(), 1e-8));
+    CHECK(assert_equal(expected.augmentedInformation(), actual->augmentedInformation(), 1e-8));
     CHECK(assert_equal(expected, *actual, 1e-8));
   }
 
@@ -529,6 +529,7 @@ TEST( SmartProjectionPoseFactor, Factors ){
     boost::shared_ptr<JacobianFactorQ<6, 2> > actualQ =
         smartFactor1->createJacobianQFactor(cameras, 0.0);
     CHECK(actual);
+    CHECK(assert_equal(expectedQ.augmentedInformation(), actualQ->augmentedInformation(), 1e-8));
     CHECK(assert_equal(expectedQ, *actualQ));
   }
 
@@ -541,6 +542,7 @@ TEST( SmartProjectionPoseFactor, Factors ){
     boost::shared_ptr<JacobianFactor> actual =
         smartFactor1->createJacobianSVDFactor(cameras, 0.0);
     CHECK(actual);
+    CHECK(assert_equal(expected.augmentedInformation(), actual->augmentedInformation(), 1e-8));
     CHECK(assert_equal(expected, *actual));
   }
 }
