@@ -515,6 +515,11 @@ void Isotropic::WhitenInPlace(Matrix& H) const {
 }
 
 /* ************************************************************************* */
+void Isotropic::whitenInPlace(Vector& v) const {
+  v *= invsigma_;
+}
+
+/* ************************************************************************* */
 void Isotropic::WhitenInPlace(Eigen::Block<Matrix> H) const {
   H *= invsigma_;
 }
