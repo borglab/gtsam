@@ -46,22 +46,17 @@ class SmartFactorBase: public NonlinearFactor {
 
 protected:
 
+  /// shorthand for base class type
+  typedef NonlinearFactor Base;
+
+  /// shorthand for this class
+  typedef SmartFactorBase<CAMERA, D> This;
+
+  // Figure out the measurement type and dimension
   typedef typename CAMERA::Measurement Z;
-
-  /**
-   * 2D measurement and noise model for each of the m views
-   * We keep a copy of measurements for I/O and computing the error.
-   * The order is kept the same as the keys that we use to create the factor.
-   */
-  std::vector<Z> measured_;
-
-  SharedIsotropic noiseModel_;
-
-  boost::optional<Pose3> body_P_sensor_; ///< The pose of the sensor in the body frame (one for all cameras)
-
   static const int ZDim = traits<Z>::dimension; ///< Measurement dimension
 
-  /// Definitions for blocks of F
+  // Definitions for blocks of F
   typedef Eigen::Matrix<double, ZDim, D> Matrix2D; // F
   typedef Eigen::Matrix<double, D, ZDim> MatrixD2; // F'
   typedef std::pair<Key, Matrix2D> KeyMatrix2D; // Fblocks
@@ -70,11 +65,39 @@ protected:
   typedef Eigen::Matrix<double, D, 1> VectorD;
   typedef Eigen::Matrix<double, ZDim, ZDim> Matrix2;
 
-  /// shorthand for base class type
-  typedef NonlinearFactor Base;
+  /**
+   * 2D measurement and noise model for each of the m views
+   * We keep a copy of measurements for I/O and computing the error.
+   * The order is kept the same as the keys that we use to create the factor.
+   */
+  std::vector<Z> measured_;
 
-  /// shorthand for this class
-  typedef SmartFactorBase<CAMERA, D> This;
+  /**
+   * As of Feb 22, 2015, the noise model is the same for all measurements and
+   * is isotropic. This allows for moving most calculations of Schur complement
+   * etc to be moved to CameraSet very easily, and also agrees pragmatically
+   * with what is normally done.
+   */
+  SharedIsotropic noiseModel_;
+
+  /// An optional sensor pose, in the body frame (one for all cameras)
+  /// This seems to make sense for a CameraTrack, not for a CameraSet
+  boost::optional<Pose3> body_P_sensor_;
+
+  // check that noise model is isotropic and the same
+  void maybeSetNoiseModel(const SharedNoiseModel& sharedNoiseModel) {
+    if (!sharedNoiseModel)
+      return;
+    SharedIsotropic sharedIsotropic = boost::dynamic_pointer_cast<
+        noiseModel::Isotropic>(sharedNoiseModel);
+    if (!sharedIsotropic)
+      throw std::runtime_error("SmartFactorBase: needs isotropic");
+    if (!noiseModel_)
+      noiseModel_ = sharedIsotropic;
+    else if (!sharedIsotropic->equals(*noiseModel_))
+      throw std::runtime_error(
+          "SmartFactorBase: cannot add measurements with different noise model");
+  }
 
 public:
 
@@ -95,21 +118,6 @@ public:
 
   /** Virtual destructor */
   virtual ~SmartFactorBase() {
-  }
-
-  // check that noise model is isotropic and the same
-  void maybeSetNoiseModel(const SharedNoiseModel& sharedNoiseModel) {
-    if (!sharedNoiseModel)
-      return;
-    SharedIsotropic sharedIsotropic = boost::dynamic_pointer_cast<
-        noiseModel::Isotropic>(sharedNoiseModel);
-    if (!sharedIsotropic)
-      throw std::runtime_error("SmartFactorBase: needs isotropic");
-    if (!noiseModel_)
-      noiseModel_ = sharedIsotropic;
-    else if (!sharedIsotropic->equals(*noiseModel_))
-      throw std::runtime_error(
-          "SmartFactorBase: cannot add measurements with different noise model");
   }
 
   /**
