@@ -22,9 +22,9 @@
 #include <gtsam/slam/JacobianFactorQ.h>
 #include <gtsam/slam/JacobianFactorSVD.h>
 #include <gtsam/slam/RegularImplicitSchurFactor.h>
-#include <gtsam/slam/RegularHessianFactor.h>
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/linear/RegularHessianFactor.h>
 #include <gtsam/geometry/CameraSet.h>
 
 #include <boost/optional.hpp>
@@ -55,6 +55,7 @@ protected:
    */
   std::vector<Z> measured_;
 
+  //SharedIsotropic noiseModel_;
   std::vector<SharedNoiseModel> noise_; ///< noise model used
 
   boost::optional<Pose3> body_P_sensor_; ///< The pose of the sensor in the body frame (one for all cameras)
