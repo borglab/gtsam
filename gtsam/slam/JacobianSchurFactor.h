@@ -27,13 +27,10 @@ namespace gtsam {
  * Is base class for JacobianQFactor, JacobianFactorQR, and JacobianFactorSVD
  * Provides raw memory access versions of linear operator.
  */
-template<size_t D, size_t ZDim>
+template<size_t D>
 class JacobianSchurFactor: public JacobianFactor {
 
 public:
-
-  typedef Eigen::Matrix<double, ZDim, D> Matrix2D;
-  typedef std::pair<Key, Matrix2D> KeyMatrix2D;
 
   // Use eigen magic to access raw memory
   typedef Eigen::Matrix<double, D, 1> DVector;

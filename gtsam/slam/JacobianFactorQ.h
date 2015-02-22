@@ -24,9 +24,11 @@ namespace gtsam {
  * JacobianFactor for Schur complement that uses Q noise model
  */
 template<size_t D, size_t ZDim>
-class JacobianFactorQ: public JacobianSchurFactor<D, ZDim> {
+class JacobianFactorQ: public JacobianSchurFactor<D> {
 
-  typedef JacobianSchurFactor<D, ZDim> Base;
+  typedef JacobianSchurFactor<D> Base;
+  typedef Eigen::Matrix<double, ZDim, D> MatrixZD;
+  typedef std::pair<Key, MatrixZD> KeyMatrixZD;
 
 public:
 
@@ -37,7 +39,7 @@ public:
   /// Empty constructor with keys
   JacobianFactorQ(const FastVector<Key>& keys, //
       const SharedDiagonal& model = SharedDiagonal()) :
-      JacobianSchurFactor<D, ZDim>() {
+      Base() {
     Matrix zeroMatrix = Matrix::Zero(0, D);
     Vector zeroVector = Vector::Zero(0);
     typedef std::pair<Key, Matrix> KeyMatrix;
@@ -49,10 +51,10 @@ public:
   }
 
   /// Constructor
-  JacobianFactorQ(const std::vector<typename Base::KeyMatrix2D>& Fblocks,
-      const Matrix& E, const Matrix3& P, const Vector& b,
-      const SharedDiagonal& model = SharedDiagonal()) :
-      JacobianSchurFactor<D, ZDim>() {
+  JacobianFactorQ(const std::vector<KeyMatrixZD>& Fblocks, const Matrix& E,
+      const Matrix3& P, const Vector& b, const SharedDiagonal& model =
+          SharedDiagonal()) :
+      Base() {
     size_t j = 0, m2 = E.rows(), m = m2 / ZDim;
     // Calculate projector Q
     Matrix Q = eye(m2) - E * P * E.transpose();
@@ -62,7 +64,7 @@ public:
     std::vector<KeyMatrix> QF;
     QF.reserve(m);
     // Below, we compute each mZDim*D block A_j = Q_j * F_j = (mZDim*ZDim) * (Zdim*D)
-    BOOST_FOREACH(const typename Base::KeyMatrix2D& it, Fblocks)
+    BOOST_FOREACH(const KeyMatrixZD& it, Fblocks)
       QF.push_back(
           KeyMatrix(it.first, Q.block(0, ZDim * j++, m2, ZDim) * it.second));
     // Which is then passed to the normal JacobianFactor constructor
