@@ -163,7 +163,7 @@ TEST_UNSAFE( SmartProjectionPoseFactor, noiseless ) {
 
   // Calculate expected derivative for point (easiest to check)
   boost::function<Vector(Point3)> f = //
-      boost::bind(&SmartFactor::whitenedError, factor, cameras, _1);
+      boost::bind(&SmartFactor::whitenedErrors, factor, cameras, _1);
   boost::optional<Point3> point = factor.point();
   CHECK(point);
   Matrix expectedE = numericalDerivative11<Vector, Point3>(f, *point);
@@ -425,7 +425,7 @@ TEST( SmartProjectionPoseFactor, smartFactorWithSensorBodyTransform ) {
   // Calculate expected derivative for point (easiest to check)
   SmartFactor::Cameras cameras = smartFactor1->cameras(values);
   boost::function<Vector(Point3)> f = //
-      boost::bind(&SmartFactor::whitenedError, *smartFactor1, cameras, _1);
+      boost::bind(&SmartFactor::whitenedErrors, *smartFactor1, cameras, _1);
   boost::optional<Point3> point = smartFactor1->point();
   CHECK(point);
   Matrix expectedE = numericalDerivative11<Vector, Point3>(f, *point);

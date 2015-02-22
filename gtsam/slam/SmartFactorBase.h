@@ -44,7 +44,27 @@ namespace gtsam {
 template<class CAMERA, size_t D>
 class SmartFactorBase: public NonlinearFactor {
 
+private:
+
+  /**
+   * As of Feb 22, 2015, the noise model is the same for all measurements and
+   * is isotropic. This allows for moving most calculations of Schur complement
+   * etc to be moved to CameraSet very easily, and also agrees pragmatically
+   * with what is normally done.
+   */
+  SharedIsotropic noiseModel_;
+
 protected:
+
+  // Figure out the measurement type
+  typedef typename CAMERA::Measurement Z;
+
+  /**
+   * 2D measurement and noise model for each of the m views
+   * We keep a copy of measurements for I/O and computing the error.
+   * The order is kept the same as the keys that we use to create the factor.
+   */
+  std::vector<Z> measured_;
 
   /// shorthand for base class type
   typedef NonlinearFactor Base;
@@ -52,9 +72,8 @@ protected:
   /// shorthand for this class
   typedef SmartFactorBase<CAMERA, D> This;
 
-  // Figure out the measurement type and dimension
-  typedef typename CAMERA::Measurement Z;
-  static const int ZDim = traits<Z>::dimension; ///< Measurement dimension
+  // Figure out the measurement dimension
+  static const int ZDim = traits<Z>::dimension;
 
   // Definitions for blocks of F
   typedef Eigen::Matrix<double, ZDim, D> Matrix2D; // F
@@ -64,21 +83,6 @@ protected:
   typedef Eigen::Matrix<double, ZDim, 3> Matrix23;
   typedef Eigen::Matrix<double, D, 1> VectorD;
   typedef Eigen::Matrix<double, ZDim, ZDim> Matrix2;
-
-  /**
-   * 2D measurement and noise model for each of the m views
-   * We keep a copy of measurements for I/O and computing the error.
-   * The order is kept the same as the keys that we use to create the factor.
-   */
-  std::vector<Z> measured_;
-
-  /**
-   * As of Feb 22, 2015, the noise model is the same for all measurements and
-   * is isotropic. This allows for moving most calculations of Schur complement
-   * etc to be moved to CameraSet very easily, and also agrees pragmatically
-   * with what is normally done.
-   */
-  SharedIsotropic noiseModel_;
 
   /// An optional sensor pose, in the body frame (one for all cameras)
   /// This seems to make sense for a CameraTrack, not for a CameraSet
@@ -180,11 +184,6 @@ public:
     return measured_;
   }
 
-  /** return the noise models */
-  const SharedIsotropic& noise() const {
-    return noiseModel_;
-  }
-
   /**
    * print
    * @param s optional string naming the factor
@@ -219,39 +218,34 @@ public:
   }
 
   /// Calculate vector of re-projection errors, before applying noise model
-  Vector reprojectionError(const Cameras& cameras, const Point3& point) const {
-
-    // Project into CameraSet
-    std::vector<Z> predicted;
+  Vector reprojectionErrors(const Cameras& cameras, const Point3& point) const {
     try {
-      predicted = cameras.project(point);
+      return cameras.reprojectionErrors(point, measured_);
     } catch (CheiralityException&) {
       std::cout << "reprojectionError: Cheirality exception " << std::endl;
       exit(EXIT_FAILURE); // TODO: throw exception
     }
+  }
 
-    // Calculate vector of errors
-    size_t nrCameras = cameras.size();
-    Vector b(ZDim * nrCameras);
-    for (size_t i = 0, row = 0; i < nrCameras; i++, row += ZDim) {
-      Z e = predicted[i] - measured_.at(i);
-      b.segment<ZDim>(row) = e.vector();
-    }
-
+  /// Calculate vector of re-projection errors, noise model applied
+  Vector whitenedErrors(const Cameras& cameras, const Point3& point) const {
+    Vector b = reprojectionErrors(cameras, point);
+    if (noiseModel_)
+      noiseModel_->whitenInPlace(b);
     return b;
   }
 
   /// Calculate vector of re-projection errors, noise model applied
-  Vector whitenedError(const Cameras& cameras, const Point3& point) const {
-    Vector b = reprojectionError(cameras, point);
-    size_t nrCameras = cameras.size();
-    for (size_t i = 0, row = 0; i < nrCameras; i++, row += ZDim)
-      b.segment<ZDim>(row) = noiseModel_->whiten(b.segment<ZDim>(row));
+  // TODO: Unit3
+  Vector whitenedErrorsAtInfinity(const Cameras& cameras,
+      const Point3& point) const {
+    Vector b = cameras.reprojectionErrorsAtInfinity(point, measured_);
+    if (noiseModel_)
+      noiseModel_->whitenInPlace(b);
     return b;
   }
 
-  /**
-   * Calculate the error of the factor.
+  /** Calculate the error of the factor.
    * This is the log-likelihood, e.g. \f$ 0.5(h(x)-z)^2/\sigma^2 \f$ in case of Gaussian.
    * In this class, we take the raw prediction error \f$ h(x)-z \f$, ask the noise model
    * to transform it to \f$ (h(x)-z)^2/\sigma^2 \f$, and then multiply by 0.5.
@@ -259,12 +253,16 @@ public:
    */
   double totalReprojectionError(const Cameras& cameras,
       const Point3& point) const {
-    Vector b = reprojectionError(cameras, point);
-    double overallError = 0;
-    size_t nrCameras = cameras.size();
-    for (size_t i = 0; i < nrCameras; i++)
-      overallError += noiseModel_->distance(b.segment<ZDim>(i * ZDim));
-    return 0.5 * overallError;
+    Vector b = whitenedErrors(cameras, point);
+    return 0.5 * b.dot(b);
+  }
+
+  /// Version for infinity
+  // TODO: Unit3
+  double totalReprojectionErrorAtInfinity(const Cameras& cameras,
+      const Point3& point) const {
+    Vector b = whitenedErrorsAtInfinity(cameras, point);
+    return 0.5 * b.dot(b);
   }
 
   /**
@@ -295,14 +293,8 @@ public:
       Vector bi = (zi - predicted[i]).vector();
 
       // if needed, whiten
-      SharedNoiseModel model = noiseModel_;
-      if (model) {
-        // TODO: re-factor noiseModel to take any block/fixed vector/matrix
-        Vector dummy;
-        Matrix Ei = E.block<ZDim, 3>(row, 0);
-        model->WhitenSystem(Ei, dummy);
-        E.block<ZDim, 3>(row, 0) = Ei;
-      }
+      if (noiseModel_)
+        E.block<ZDim, 3>(row, 0) /= noiseModel_->sigma();
       b.segment<ZDim>(row) = bi;
     }
     return b;
