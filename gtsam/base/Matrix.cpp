@@ -32,6 +32,9 @@
 #include <fstream>
 #include <limits>
 
+#include <gtsam/3rdparty/Eigen/Eigen/SVD>  
+#include <gtsam/3rdparty/Eigen/Eigen/LU>
+
 using namespace std;
 
 namespace gtsam {
@@ -697,6 +700,19 @@ std::string formatMatrixIndented(const std::string& label, const Matrix& matrix,
   return ss.str();
 }
 
+void inplace_QR(Matrix& A){
+  size_t rows = A.rows();
+  size_t cols = A.cols();
+  size_t size = std::min(rows,cols);
 
+  typedef Eigen::internal::plain_diag_type<Matrix>::type HCoeffsType;
+  typedef Eigen::internal::plain_row_type<Matrix>::type RowVectorType;
+  HCoeffsType hCoeffs(size);
+  RowVectorType temp(cols);
+
+  Eigen::internal::householder_qr_inplace_blocked<Matrix, HCoeffsType>::run(A, hCoeffs, 48, temp.data());
+
+  zeroBelowDiagonal(A);
+}
 
 } // namespace gtsam
