@@ -24,6 +24,9 @@
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/slam/dataset.h> // for loading BAL datasets !
+
+#include <gtsam/base/timing.h>
+
 #include <vector>
 
 using namespace std;
@@ -80,24 +83,17 @@ int main (int argc, char* argv[]) {
   /** ---------------  COMPARISON  -----------------------**/
   /** ----------------------------------------------------**/
 
-  double t_COLAMD_ordering, t_METIS_ordering; //, t_NATURAL_ordering;
-  LevenbergMarquardtParams params_using_COLAMD, params_using_METIS, params_using_NATURAL;
+  LevenbergMarquardtParams params_using_COLAMD, params_using_METIS;
   try {
-    double tic_t = clock();
     params_using_METIS.setVerbosity("ERROR");
+    gttic_(METIS_ORDERING);
     params_using_METIS.ordering = Ordering::Create(Ordering::METIS, graph);
-    t_METIS_ordering = (clock() - tic_t)/CLOCKS_PER_SEC;
+    gttoc_(METIS_ORDERING);
 
-    tic_t = clock();
     params_using_COLAMD.setVerbosity("ERROR");
+    gttic_(COLAMD_ORDERING);
     params_using_COLAMD.ordering = Ordering::Create(Ordering::COLAMD, graph);
-    t_COLAMD_ordering = (clock() - tic_t)/CLOCKS_PER_SEC;
-
-//    tic_t = clock();
-//    params_using_NATURAL.setVerbosity("ERROR");
-//    params_using_NATURAL.ordering = Ordering::Create(Ordering::NATURAL, graph);
-//    t_NATURAL_ordering = (clock() - tic_t)/CLOCKS_PER_SEC;
-
+    gttoc_(COLAMD_ORDERING);
   } catch (exception& e) {
     cout << e.what();
   }
@@ -108,48 +104,22 @@ int main (int argc, char* argv[]) {
          << "Problem here!!!" << endl;
   }
 
-  /* with METIS, optimize the graph and print the results */
-  cout << "Optimize with METIS" << endl;
+  /* Optimize the graph with METIS and COLAMD and time the results */
 
-  Values result_METIS;
-  double t_METIS_solving;
+  Values result_METIS, result_COLAMD;
   try {
-    double tic_t = clock();
-    LevenbergMarquardtOptimizer lm_METIS(graph, initial, params_using_COLAMD);
+    gttic_(OPTIMIZE_WITH_METIS);
+    LevenbergMarquardtOptimizer lm_METIS(graph, initial, params_using_METIS);
     result_METIS = lm_METIS.optimize();
-    t_METIS_solving = (clock() - tic_t)/CLOCKS_PER_SEC;
-  } catch (exception& e) {
-    cout << e.what();
-  }
+    gttoc_(OPTIMIZE_WITH_METIS);
 
-  /* With COLAMD, optimize the graph and print the results */
-  cout << "Optimize with COLAMD..." << endl;
-
-  Values result_COLAMD;
-  double t_COLAMD_solving;
-  try {
-    double tic_t = clock();
+    gttic_(OPTIMIZE_WITH_COLAMD);
     LevenbergMarquardtOptimizer lm_COLAMD(graph, initial, params_using_COLAMD);
     result_COLAMD = lm_COLAMD.optimize();
-    t_COLAMD_solving = (clock() - tic_t)/CLOCKS_PER_SEC;
+    gttoc_(OPTIMIZE_WITH_COLAMD);
   } catch (exception& e) {
     cout << e.what();
   }
-
-  // disable optimizer with NATURAL since it doesn't converge on large problem
-  /* Use Natural ordering and solve both respectively */
-  //  cout << "Solving with natural ordering: " << endl;
-
-  //  Values result_NATURAL;
-  //  double t_NATURAL_solving;
-  //  try {
-  //    double tic_t = clock();
-  //    LevenbergMarquardtOptimizer lm_NATURAL(graph, initial, params_using_NATURAL);
-  //    result_NATURAL = lm_NATURAL.optimize();
-  //    t_NATURAL_solving = (clock() - tic_t)/CLOCKS_PER_SEC;
-  //  } catch (exception& e) {
-  //    cout << e.what();
-  //  }
 
   cout << endl << endl;
 
@@ -160,21 +130,20 @@ int main (int argc, char* argv[]) {
             % mydata.number_tracks() % mydata.number_cameras() \
          << endl;
 
-    cout << "COLAMD: " << endl;
-    cout << "Ordering: " << t_COLAMD_ordering << "seconds" << endl;
-    cout << "Solving: "  << t_COLAMD_solving  << "seconds" << endl;
-    cout << "final error: " << graph.error(result_COLAMD) << endl;
+    cout << "COLAMD final error: " << graph.error(result_COLAMD) << endl;
+    cout << "METIS final error: " << graph.error(result_METIS) << endl;
 
-    cout << "METIS: " << endl;
-    cout << "Ordering: " << t_METIS_ordering << "seconds" << endl;
-    cout << "Solving: "  << t_METIS_solving  << "seconds" << endl;
-    cout << "final error: " << graph.error(result_METIS) << endl;
+    tictoc_print_();
 
-//    cout << "Natural: " << endl;
-//    cout << "Ordering: " << t_NATURAL_ordering << "seconds" << endl;
-//    cout << "Solving: "  << t_NATURAL_solving  << "seconds" << endl;
-//    cout << "final error: " << graph.error(result_NATURAL) << endl;
+//    cout << "COLAMD: " << endl;
+//    cout << "Ordering: " << t_COLAMD_ordering << "seconds" << endl;
+//    cout << "Solving: "  << t_COLAMD_solving  << "seconds" << endl;
+
+//    cout << "METIS: " << endl;
+//    cout << "Ordering: " << t_METIS_ordering << "seconds" << endl;
+//    cout << "Solving: "  << t_METIS_solving  << "seconds" << endl;
   }
+
 
   return 0;
 }
