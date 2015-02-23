@@ -42,6 +42,14 @@ public:
  */
 class GTSAM_EXPORT PinholeBase {
 
+public:
+
+  /**
+   *  Some classes template on either PinholeCamera or StereoCamera,
+   *  and this typedef informs those classes what "project" returns.
+   */
+  typedef Point2 Measurement;
+
 private:
 
   Pose3 pose_; ///< 3D pose of camera
@@ -263,8 +271,8 @@ public:
   }
 
   /* ************************************************************************* */
-  Point2 project2(const Point3& point, OptionalJacobian<2, 6> Dpose,
-      OptionalJacobian<2, 3> Dpoint) const {
+  Point2 project2(const Point3& point, OptionalJacobian<2, 6> Dpose = boost::none,
+      OptionalJacobian<2, 3> Dpoint = boost::none) const {
 
     Matrix3 Rt; // calculated by transform_to if needed
     const Point3 q = pose().transform_to(point, boost::none, Dpoint ? &Rt : 0);
