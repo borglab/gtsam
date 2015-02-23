@@ -251,6 +251,11 @@ public:
     return 0.5 * b.dot(b);
   }
 
+  /// Compute reprojection errors
+  Vector reprojectionErrors(const Cameras& cameras, const Point3& point) const {
+    return cameras.reprojectionErrors(point, measured_);
+  }
+
   /**
    *  Compute reprojection errors and derivatives
    *  TODO: the treatment of body_P_sensor_ is weird: the transformation
