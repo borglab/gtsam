@@ -18,7 +18,6 @@
 
 #pragma once
 
-
 #include <gtsam/slam/TriangulationFactor.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -114,7 +113,8 @@ std::pair<NonlinearFactorGraph, Values> triangulationGraph(
     const std::vector<PinholeCamera<CALIBRATION> >& cameras,
     const std::vector<Point2>& measurements, Key landmarkKey,
     const Point3& initialEstimate) {
-  return triangulationGraph(cameras, measurements, landmarkKey, initialEstimate);
+  return triangulationGraph<PinholeCamera<CALIBRATION> > //
+  (cameras, measurements, landmarkKey, initialEstimate);
 }
 
 /**
@@ -143,8 +143,8 @@ Point3 triangulateNonlinear(const std::vector<Pose3>& poses,
   // Create a factor graph and initial values
   Values values;
   NonlinearFactorGraph graph;
-  boost::tie(graph, values) = triangulationGraph(poses, sharedCal, measurements,
-      Symbol('p', 0), initialEstimate);
+  boost::tie(graph, values) = triangulationGraph<CALIBRATION> //
+      (poses, sharedCal, measurements, Symbol('p', 0), initialEstimate);
 
   return optimize(graph, values, Symbol('p', 0));
 }
@@ -163,8 +163,8 @@ Point3 triangulateNonlinear(const std::vector<CAMERA>& cameras,
   // Create a factor graph and initial values
   Values values;
   NonlinearFactorGraph graph;
-  boost::tie(graph, values) = triangulationGraph(cameras, measurements,
-      Symbol('p', 0), initialEstimate);
+  boost::tie(graph, values) = triangulationGraph<CAMERA> //
+      (cameras, measurements, Symbol('p', 0), initialEstimate);
 
   return optimize(graph, values, Symbol('p', 0));
 }
@@ -174,7 +174,8 @@ template<class CALIBRATION>
 Point3 triangulateNonlinear(
     const std::vector<PinholeCamera<CALIBRATION> >& cameras,
     const std::vector<Point2>& measurements, const Point3& initialEstimate) {
-  return triangulateNonlinear(cameras, measurements, initialEstimate);
+  return triangulateNonlinear<PinholeCamera<CALIBRATION> > //
+  (cameras, measurements, initialEstimate);
 }
 
 /**
@@ -203,21 +204,22 @@ Point3 triangulatePoint3(const std::vector<Pose3>& poses,
   std::vector<Matrix34> projection_matrices;
   BOOST_FOREACH(const Pose3& pose, poses) {
     projection_matrices.push_back(
-        sharedCal->K() * (pose.inverse().matrix()).block<3,4>(0,0));
+        sharedCal->K() * (pose.inverse().matrix()).block<3, 4>(0, 0));
   }
   // Triangulate linearly
   Point3 point = triangulateDLT(projection_matrices, measurements, rank_tol);
 
   // The n refine using non-linear optimization
   if (optimize)
-    point = triangulateNonlinear(poses, sharedCal, measurements, point);
+    point = triangulateNonlinear<CALIBRATION> //
+        (poses, sharedCal, measurements, point);
 
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
   // verify that the triangulated point lies infront of all cameras
   BOOST_FOREACH(const Pose3& pose, poses) {
     const Point3& p_local = pose.transform_to(point);
     if (p_local.z() <= 0)
-    throw(TriangulationCheiralityException());
+      throw(TriangulationCheiralityException());
   }
 #endif
 
@@ -237,8 +239,7 @@ Point3 triangulatePoint3(const std::vector<Pose3>& poses,
  * @return Returns a Point3
  */
 template<class CAMERA>
-Point3 triangulatePoint3(
-    const std::vector<CAMERA>& cameras,
+Point3 triangulatePoint3(const std::vector<CAMERA>& cameras,
     const std::vector<Point2>& measurements, double rank_tol = 1e-9,
     bool optimize = false) {
 
@@ -251,21 +252,22 @@ Point3 triangulatePoint3(
   // construct projection matrices from poses & calibration
   std::vector<Matrix34> projection_matrices;
   BOOST_FOREACH(const CAMERA& camera, cameras) {
-  Matrix P_ = (camera.pose().inverse().matrix());
-    projection_matrices.push_back(camera.calibration().K()* (P_.block<3,4>(0,0)) );
-   }
+    Matrix P_ = (camera.pose().inverse().matrix());
+    projection_matrices.push_back(
+        camera.calibration().K() * (P_.block<3, 4>(0, 0)));
+  }
   Point3 point = triangulateDLT(projection_matrices, measurements, rank_tol);
 
   // The n refine using non-linear optimization
   if (optimize)
-    point = triangulateNonlinear(cameras, measurements, point);
+    point = triangulateNonlinear<CAMERA>(cameras, measurements, point);
 
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
   // verify that the triangulated point lies infront of all cameras
   BOOST_FOREACH(const CAMERA& camera, cameras) {
     const Point3& p_local = camera.pose().transform_to(point);
     if (p_local.z() <= 0)
-    throw(TriangulationCheiralityException());
+      throw(TriangulationCheiralityException());
   }
 #endif
 
@@ -278,8 +280,8 @@ Point3 triangulatePoint3(
     const std::vector<PinholeCamera<CALIBRATION> >& cameras,
     const std::vector<Point2>& measurements, double rank_tol = 1e-9,
     bool optimize = false) {
-  return triangulatePoint3<PinholeCamera<CALIBRATION> >(cameras, measurements,
-      rank_tol, optimize);
+  return triangulatePoint3<PinholeCamera<CALIBRATION> > //
+  (cameras, measurements, rank_tol, optimize);
 }
 
 } // \namespace gtsam
