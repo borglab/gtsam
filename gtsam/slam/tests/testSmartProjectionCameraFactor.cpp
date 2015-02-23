@@ -18,35 +18,18 @@
  *  @date   Sept 2013
  */
 
-#include <gtsam/slam/SmartProjectionCameraFactor.h>
-
+#include "smartFactorScenarios.h"
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/slam/PoseTranslationPrior.h>
-#include <gtsam/slam/GeneralSFMFactor.h>
-#include <gtsam/slam/dataset.h>
-#include <gtsam/nonlinear/GaussNewtonOptimizer.h>
-#include <boost/assign/std/vector.hpp>
-
-//#include "../SmartNonlinearFactorGraph.h"
-#undef CHECK
+#include <boost/assign/std/map.hpp>
 #include <CppUnitLite/TestHarness.h>
 #include <iostream>
-
-using namespace std;
+//
 using namespace boost::assign;
-using namespace gtsam;
 
 static bool isDebugTest = false;
 
-// make a realistic calibration matrix
-static double fov = 60; // degrees
-static size_t w = 640, h = 480;
-
 static double rankTol = 1.0;
 static double linThreshold = -1.0;
-
-// Create a noise model for the pixel error
-static SharedNoiseModel model(noiseModel::Unit::Create(2));
 
 // Convenience for named keys
 using symbol_shorthand::X;
@@ -56,69 +39,9 @@ static Key x1(1);
 Symbol l1('l', 1), l2('l', 2), l3('l', 3);
 Key c1 = 1, c2 = 2, c3 = 3;
 
-// First camera pose, looking along X-axis, 1 meter above ground plane (x-y)
-Pose3 level_pose = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
-// Second camera 1 meter to the right of first camera
-Pose3 pose_right = level_pose * Pose3(Rot3(), Point3(1, 0, 0));
-// Third camera 1 meter above the first camera
-Pose3 pose_up = level_pose * Pose3(Rot3(), Point3(0, -1, 0));
-
 static Point2 measurement1(323.0, 240.0);
 static Pose3 body_P_sensor1(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2),
     Point3(0.25, -0.10, 1.0));
-
-template<class CALIBRATION>
-PinholeCamera<CALIBRATION> perturbCameraPose(
-    const PinholeCamera<CALIBRATION>& camera) {
-  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 10, 0., -M_PI / 10),
-      Point3(0.5, 0.1, 0.3));
-  Pose3 cameraPose = camera.pose();
-  Pose3 perturbedCameraPose = cameraPose.compose(noise_pose);
-  return PinholeCamera<CALIBRATION>(perturbedCameraPose, camera.calibration());
-}
-
-template<class CALIBRATION>
-PinholeCamera<CALIBRATION> perturbCameraPoseAndCalibration(
-    const PinholeCamera<CALIBRATION>& camera) {
-  GTSAM_CONCEPT_MANIFOLD_TYPE(CALIBRATION)
-  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 10, 0., -M_PI / 10),
-      Point3(0.5, 0.1, 0.3));
-  Pose3 cameraPose = camera.pose();
-  Pose3 perturbedCameraPose = cameraPose.compose(noise_pose);
-  typename gtsam::traits<CALIBRATION>::TangentVector d;
-  d.setRandom();
-  d *= 0.1;
-  CALIBRATION perturbedCalibration = camera.calibration().retract(d);
-  return PinholeCamera<CALIBRATION>(perturbedCameraPose, perturbedCalibration);
-}
-
-template<class CALIBRATION>
-void projectToMultipleCameras(const PinholeCamera<CALIBRATION>& cam1,
-    const PinholeCamera<CALIBRATION>& cam2,
-    const PinholeCamera<CALIBRATION>& cam3, Point3 landmark,
-    vector<Point2>& measurements_cam) {
-  Point2 cam1_uv1 = cam1.project(landmark);
-  Point2 cam2_uv1 = cam2.project(landmark);
-  Point2 cam3_uv1 = cam3.project(landmark);
-  measurements_cam.push_back(cam1_uv1);
-  measurements_cam.push_back(cam2_uv1);
-  measurements_cam.push_back(cam3_uv1);
-}
-
-/* ************************************************************************* */
-// default Cal3_S2 cameras
-namespace vanilla {
-typedef PinholeCamera<Cal3_S2> Camera;
-static Cal3_S2 K(fov, w, h);
-static Cal3_S2 K2(1500, 1200, 0, 640, 480);
-Camera level_camera(level_pose, K2);
-Camera level_camera_right(pose_right, K2);
-Camera cam1(level_pose, K2);
-Camera cam2(pose_right, K2);
-Camera cam3(pose_up, K2);
-typedef GeneralSFMFactor<Camera, Point3> SFMFactor;
-typedef SmartProjectionCameraFactor<Cal3_S2> SmartFactor;
-}
 
 /* ************************************************************************* */
 TEST( SmartProjectionCameraFactor, perturbCameraPose) {
@@ -148,14 +71,14 @@ TEST( SmartProjectionCameraFactor, Constructor2) {
 TEST( SmartProjectionCameraFactor, Constructor3) {
   using namespace vanilla;
   SmartFactor::shared_ptr factor1(new SmartFactor());
-  factor1->add(measurement1, x1, model);
+  factor1->add(measurement1, x1, unit2);
 }
 
 /* ************************************************************************* */
 TEST( SmartProjectionCameraFactor, Constructor4) {
   using namespace vanilla;
   SmartFactor factor1(rankTol, linThreshold);
-  factor1.add(measurement1, x1, model);
+  factor1.add(measurement1, x1, unit2);
 }
 
 /* ************************************************************************* */
@@ -166,17 +89,17 @@ TEST( SmartProjectionCameraFactor, ConstructorWithTransform) {
   bool enableEPI = false;
   SmartFactor factor1(rankTol, linThreshold, manageDegeneracy, isImplicit,
       enableEPI, body_P_sensor1);
-  factor1.add(measurement1, x1, model);
+  factor1.add(measurement1, x1, unit2);
 }
 
 /* ************************************************************************* */
 TEST( SmartProjectionCameraFactor, Equals ) {
   using namespace vanilla;
   SmartFactor::shared_ptr factor1(new SmartFactor());
-  factor1->add(measurement1, x1, model);
+  factor1->add(measurement1, x1, unit2);
 
   SmartFactor::shared_ptr factor2(new SmartFactor());
-  factor2->add(measurement1, x1, model);
+  factor2->add(measurement1, x1, unit2);
 }
 
 /* *************************************************************************/
@@ -184,20 +107,13 @@ TEST( SmartProjectionCameraFactor, noiseless ) {
   // cout << " ************************ SmartProjectionCameraFactor: noisy ****************************" << endl;
   using namespace vanilla;
 
-  // landmark ~5 meters infront of camera
-  Point3 landmark(5, 0.5, 1.2);
-
-  // 1. Project two landmarks into two cameras and triangulate
-  Point2 level_uv = level_camera.project(landmark);
-  Point2 level_uv_right = level_camera_right.project(landmark);
-
   Values values;
   values.insert(c1, level_camera);
   values.insert(c2, level_camera_right);
 
   SmartFactor::shared_ptr factor1(new SmartFactor());
-  factor1->add(level_uv, c1, model);
-  factor1->add(level_uv_right, c2, model);
+  factor1->add(level_uv, c1, unit2);
+  factor1->add(level_uv_right, c2, unit2);
 
   double expectedError = 0.0;
   DOUBLES_EQUAL(expectedError, factor1->error(values), 1e-7);
@@ -209,13 +125,10 @@ TEST( SmartProjectionCameraFactor, noisy ) {
 
   using namespace vanilla;
 
-  // landmark ~5 meters infront of camera
-  Point3 landmark(5, 0.5, 1.2);
-
   // 1. Project two landmarks into two cameras and triangulate
   Point2 pixelError(0.2, 0.2);
-  Point2 level_uv = level_camera.project(landmark) + pixelError;
-  Point2 level_uv_right = level_camera_right.project(landmark);
+  Point2 level_uv = level_camera.project(landmark1) + pixelError;
+  Point2 level_uv_right = level_camera_right.project(landmark1);
 
   Values values;
   values.insert(c1, level_camera);
@@ -223,8 +136,8 @@ TEST( SmartProjectionCameraFactor, noisy ) {
   values.insert(c2, perturbed_level_camera_right);
 
   SmartFactor::shared_ptr factor1(new SmartFactor());
-  factor1->add(level_uv, c1, model);
-  factor1->add(level_uv_right, c2, model);
+  factor1->add(level_uv, c1, unit2);
+  factor1->add(level_uv_right, c2, unit2);
 
   double actualError1 = factor1->error(values);
 
@@ -234,8 +147,8 @@ TEST( SmartProjectionCameraFactor, noisy ) {
   measurements.push_back(level_uv_right);
 
   vector<SharedNoiseModel> noises;
-  noises.push_back(model);
-  noises.push_back(model);
+  noises.push_back(unit2);
+  noises.push_back(unit2);
 
   vector<Key> views;
   views.push_back(c1);
@@ -253,11 +166,6 @@ TEST( SmartProjectionCameraFactor, perturbPoseAndOptimize ) {
 
   using namespace vanilla;
 
-  // three landmarks ~5 meters infront of camera
-  Point3 landmark1(5, 0.5, 1.2);
-  Point3 landmark2(5, -0.5, 1.2);
-  Point3 landmark3(3, 0, 3.0);
-
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
 
   // 1. Project three landmarks into three cameras and triangulate
@@ -271,13 +179,13 @@ TEST( SmartProjectionCameraFactor, perturbPoseAndOptimize ) {
   views.push_back(c3);
 
   SmartFactor::shared_ptr smartFactor1(new SmartFactor());
-  smartFactor1->add(measurements_cam1, views, model);
+  smartFactor1->add(measurements_cam1, views, unit2);
 
   SmartFactor::shared_ptr smartFactor2(new SmartFactor());
-  smartFactor2->add(measurements_cam2, views, model);
+  smartFactor2->add(measurements_cam2, views, unit2);
 
   SmartFactor::shared_ptr smartFactor3(new SmartFactor());
-  smartFactor3->add(measurements_cam3, views, model);
+  smartFactor3->add(measurements_cam3, views, unit2);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6 + 5, 1e-5);
 
@@ -327,11 +235,6 @@ TEST( SmartProjectionCameraFactor, perturbPoseAndOptimizeFromSfM_tracks ) {
 
   using namespace vanilla;
 
-  // three landmarks ~5 meters infront of camera
-  Point3 landmark1(5, 0.5, 1.2);
-  Point3 landmark2(5, -0.5, 1.2);
-  Point3 landmark3(3, 0, 3.0);
-
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
   // 1. Project three landmarks into three cameras and triangulate
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
@@ -351,7 +254,7 @@ TEST( SmartProjectionCameraFactor, perturbPoseAndOptimizeFromSfM_tracks ) {
     track1.measurements.push_back(measures);
   }
   SmartFactor::shared_ptr smartFactor1(new SmartFactor());
-  smartFactor1->add(track1, model);
+  smartFactor1->add(track1, unit2);
 
   SfM_Track track2;
   for (size_t i = 0; i < 3; ++i) {
@@ -361,10 +264,10 @@ TEST( SmartProjectionCameraFactor, perturbPoseAndOptimizeFromSfM_tracks ) {
     track2.measurements.push_back(measures);
   }
   SmartFactor::shared_ptr smartFactor2(new SmartFactor());
-  smartFactor2->add(track2, model);
+  smartFactor2->add(track2, unit2);
 
   SmartFactor::shared_ptr smartFactor3(new SmartFactor());
-  smartFactor3->add(measurements_cam3, views, model);
+  smartFactor3->add(measurements_cam3, views, unit2);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6 + 5, 1e-5);
 
@@ -414,13 +317,6 @@ TEST( SmartProjectionCameraFactor, perturbCamerasAndOptimize ) {
 
   using namespace vanilla;
 
-  // three landmarks ~5 meters infront of camera
-  Point3 landmark1(5, 0.5, 1.2);
-  Point3 landmark2(5, -0.5, 1.2);
-  Point3 landmark3(3, 0, 3.0);
-  Point3 landmark4(10, 0.5, 1.2);
-  Point3 landmark5(10, -0.5, 1.2);
-
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3,
       measurements_cam4, measurements_cam5;
 
@@ -437,19 +333,19 @@ TEST( SmartProjectionCameraFactor, perturbCamerasAndOptimize ) {
   views.push_back(c3);
 
   SmartFactor::shared_ptr smartFactor1(new SmartFactor());
-  smartFactor1->add(measurements_cam1, views, model);
+  smartFactor1->add(measurements_cam1, views, unit2);
 
   SmartFactor::shared_ptr smartFactor2(new SmartFactor());
-  smartFactor2->add(measurements_cam2, views, model);
+  smartFactor2->add(measurements_cam2, views, unit2);
 
   SmartFactor::shared_ptr smartFactor3(new SmartFactor());
-  smartFactor3->add(measurements_cam3, views, model);
+  smartFactor3->add(measurements_cam3, views, unit2);
 
   SmartFactor::shared_ptr smartFactor4(new SmartFactor());
-  smartFactor4->add(measurements_cam4, views, model);
+  smartFactor4->add(measurements_cam4, views, unit2);
 
   SmartFactor::shared_ptr smartFactor5(new SmartFactor());
-  smartFactor5->add(measurements_cam5, views, model);
+  smartFactor5->add(measurements_cam5, views, unit2);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6 + 5, 1e-5);
 
@@ -500,31 +396,9 @@ TEST( SmartProjectionCameraFactor, perturbCamerasAndOptimize ) {
 }
 
 /* *************************************************************************/
-// Cal3Bundler cameras
-namespace bundler {
-typedef PinholeCamera<Cal3Bundler> Camera;
-static Cal3Bundler K(500, 1e-3, 1e-3, 0, 0);
-Camera level_camera(level_pose, K);
-Camera level_camera_right(pose_right, K);
-Pose3 pose1 = level_pose;
-Camera cam1(level_pose, K);
-Camera cam2(pose_right, K);
-Camera cam3(pose_up, K);
-typedef GeneralSFMFactor<Camera, Point3> SFMFactor;
-typedef SmartProjectionCameraFactor<Cal3Bundler> SmartFactorBundler;
-}
-
-/* *************************************************************************/
 TEST( SmartProjectionCameraFactor, Cal3Bundler ) {
 
   using namespace bundler;
-
-  // three landmarks ~5 meters infront of camera
-  Point3 landmark1(5, 0.5, 1.2);
-  Point3 landmark2(5, -0.5, 1.2);
-  Point3 landmark3(3, 0, 3.0);
-  Point3 landmark4(10, 0.5, 1.2);
-  Point3 landmark5(10, -0.5, 1.2);
 
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3,
       measurements_cam4, measurements_cam5;
@@ -542,19 +416,19 @@ TEST( SmartProjectionCameraFactor, Cal3Bundler ) {
   views.push_back(c3);
 
   SmartFactorBundler::shared_ptr smartFactor1(new SmartFactorBundler());
-  smartFactor1->add(measurements_cam1, views, model);
+  smartFactor1->add(measurements_cam1, views, unit2);
 
   SmartFactorBundler::shared_ptr smartFactor2(new SmartFactorBundler());
-  smartFactor2->add(measurements_cam2, views, model);
+  smartFactor2->add(measurements_cam2, views, unit2);
 
   SmartFactorBundler::shared_ptr smartFactor3(new SmartFactorBundler());
-  smartFactor3->add(measurements_cam3, views, model);
+  smartFactor3->add(measurements_cam3, views, unit2);
 
   SmartFactorBundler::shared_ptr smartFactor4(new SmartFactorBundler());
-  smartFactor4->add(measurements_cam4, views, model);
+  smartFactor4->add(measurements_cam4, views, unit2);
 
   SmartFactorBundler::shared_ptr smartFactor5(new SmartFactorBundler());
-  smartFactor5->add(measurements_cam5, views, model);
+  smartFactor5->add(measurements_cam5, views, unit2);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(9, 1e-6);
 
@@ -605,13 +479,6 @@ TEST( SmartProjectionCameraFactor, Cal3Bundler2 ) {
 
   using namespace bundler;
 
-  // three landmarks ~5 meters infront of camera
-  Point3 landmark1(5, 0.5, 1.2);
-  Point3 landmark2(5, -0.5, 1.2);
-  Point3 landmark3(3, 0, 3.0);
-  Point3 landmark4(10, 0.5, 1.2);
-  Point3 landmark5(10, -0.5, 1.2);
-
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3,
       measurements_cam4, measurements_cam5;
 
@@ -628,19 +495,19 @@ TEST( SmartProjectionCameraFactor, Cal3Bundler2 ) {
   views.push_back(c3);
 
   SmartFactorBundler::shared_ptr smartFactor1(new SmartFactorBundler());
-  smartFactor1->add(measurements_cam1, views, model);
+  smartFactor1->add(measurements_cam1, views, unit2);
 
   SmartFactorBundler::shared_ptr smartFactor2(new SmartFactorBundler());
-  smartFactor2->add(measurements_cam2, views, model);
+  smartFactor2->add(measurements_cam2, views, unit2);
 
   SmartFactorBundler::shared_ptr smartFactor3(new SmartFactorBundler());
-  smartFactor3->add(measurements_cam3, views, model);
+  smartFactor3->add(measurements_cam3, views, unit2);
 
   SmartFactorBundler::shared_ptr smartFactor4(new SmartFactorBundler());
-  smartFactor4->add(measurements_cam4, views, model);
+  smartFactor4->add(measurements_cam4, views, unit2);
 
   SmartFactorBundler::shared_ptr smartFactor5(new SmartFactorBundler());
-  smartFactor5->add(measurements_cam5, views, model);
+  smartFactor5->add(measurements_cam5, views, unit2);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(9, 1e-6);
 
@@ -690,20 +557,13 @@ TEST( SmartProjectionCameraFactor, Cal3Bundler2 ) {
 TEST( SmartProjectionCameraFactor, noiselessBundler ) {
 
   using namespace bundler;
-  // landmark ~5 meters infront of camera
-  Point3 landmark(5, 0.5, 1.2);
-
-  // 1. Project two landmarks into two cameras and triangulate
-  Point2 level_uv = level_camera.project(landmark);
-  Point2 level_uv_right = level_camera_right.project(landmark);
-
   Values values;
   values.insert(c1, level_camera);
   values.insert(c2, level_camera_right);
 
   SmartFactorBundler::shared_ptr factor1(new SmartFactorBundler());
-  factor1->add(level_uv, c1, model);
-  factor1->add(level_uv_right, c2, model);
+  factor1->add(level_uv, c1, unit2);
+  factor1->add(level_uv_right, c2, unit2);
 
   double actualError = factor1->error(values);
 
@@ -718,28 +578,21 @@ TEST( SmartProjectionCameraFactor, noiselessBundler ) {
   if (factor1->point(values))
     expectedPoint = *(factor1->point(values));
 
-  EXPECT(assert_equal(expectedPoint, landmark, 1e-3));
+  EXPECT(assert_equal(expectedPoint, landmark1, 1e-3));
 }
 
 /* *************************************************************************/
 TEST( SmartProjectionCameraFactor, comparisonGeneralSfMFactor ) {
 
   using namespace bundler;
-  // landmark ~5 meters infront of camera
-  Point3 landmark(5, 0.5, 1.2);
-
-  // 1. Project two landmarks into two cameras and triangulate
-  Point2 level_uv = level_camera.project(landmark);
-  Point2 level_uv_right = level_camera_right.project(landmark);
-
   Values values;
   values.insert(c1, level_camera);
   values.insert(c2, level_camera_right);
 
   NonlinearFactorGraph smartGraph;
   SmartFactorBundler::shared_ptr factor1(new SmartFactorBundler());
-  factor1->add(level_uv, c1, model);
-  factor1->add(level_uv_right, c2, model);
+  factor1->add(level_uv, c1, unit2);
+  factor1->add(level_uv_right, c2, unit2);
   smartGraph.push_back(factor1);
   double expectedError = factor1->error(values);
   double expectedErrorGraph = smartGraph.error(values);
@@ -752,8 +605,8 @@ TEST( SmartProjectionCameraFactor, comparisonGeneralSfMFactor ) {
   // 1) triangulation introduces small errors, then for a fair comparison we use expectedPoint as
   // value in the generalGrap
   NonlinearFactorGraph generalGraph;
-  SFMFactor sfm1(level_uv, model, c1, l1);
-  SFMFactor sfm2(level_uv_right, model, c2, l1);
+  SFMFactor sfm1(level_uv, unit2, c1, l1);
+  SFMFactor sfm2(level_uv_right, unit2, c2, l1);
   generalGraph.push_back(sfm1);
   generalGraph.push_back(sfm2);
   values.insert(l1, expectedPoint); // note: we get rid of possible errors in the triangulation
@@ -773,20 +626,14 @@ TEST( SmartProjectionCameraFactor, comparisonGeneralSfMFactor ) {
 TEST( SmartProjectionCameraFactor, comparisonGeneralSfMFactor1 ) {
 
   using namespace bundler;
-  // landmark ~5 meters infront of camera
-  Point3 landmark(5, 0.5, 1.2);
-  // 1. Project two landmarks into two cameras and triangulate
-  Point2 level_uv = level_camera.project(landmark);
-  Point2 level_uv_right = level_camera_right.project(landmark);
-
   Values values;
   values.insert(c1, level_camera);
   values.insert(c2, level_camera_right);
 
   NonlinearFactorGraph smartGraph;
   SmartFactorBundler::shared_ptr factor1(new SmartFactorBundler());
-  factor1->add(level_uv, c1, model);
-  factor1->add(level_uv_right, c2, model);
+  factor1->add(level_uv, c1, unit2);
+  factor1->add(level_uv_right, c2, unit2);
   smartGraph.push_back(factor1);
   Matrix expectedHessian = smartGraph.linearize(values)->hessian().first;
   Vector expectedInfoVector = smartGraph.linearize(values)->hessian().second;
@@ -798,8 +645,8 @@ TEST( SmartProjectionCameraFactor, comparisonGeneralSfMFactor1 ) {
   // 1) triangulation introduces small errors, then for a fair comparison we use expectedPoint as
   // value in the generalGrap
   NonlinearFactorGraph generalGraph;
-  SFMFactor sfm1(level_uv, model, c1, l1);
-  SFMFactor sfm2(level_uv_right, model, c2, l1);
+  SFMFactor sfm1(level_uv, unit2, c1, l1);
+  SFMFactor sfm2(level_uv_right, unit2, c2, l1);
   generalGraph.push_back(sfm1);
   generalGraph.push_back(sfm2);
   values.insert(l1, expectedPoint); // note: we get rid of possible errors in the triangulation
@@ -822,20 +669,14 @@ TEST( SmartProjectionCameraFactor, comparisonGeneralSfMFactor1 ) {
 // Have to think about how to compare multiplyHessianAdd in generalSfMFactor and smartFactors
 //TEST( SmartProjectionCameraFactor, comparisonGeneralSfMFactor2 ){
 //
-//  // landmark ~5 meters infront of camera
-//  Point3 landmark(5, 0.5, 1.2);
-//  // 1. Project two landmarks into two cameras
-//  Point2 level_uv = level_camera.project(landmark);
-//  Point2 level_uv_right = level_camera_right.project(landmark);
-//
 //  Values values;
 //  values.insert(c1, level_camera);
 //  values.insert(c2, level_camera_right);
 //
 //  NonlinearFactorGraph smartGraph;
 //  SmartFactorBundler::shared_ptr factor1(new SmartFactorBundler());
-//  factor1->add(level_uv, c1, model);
-//  factor1->add(level_uv_right, c2, model);
+//  factor1->add(level_uv, c1, unit2);
+//  factor1->add(level_uv_right, c2, unit2);
 //  smartGraph.push_back(factor1);
 //  GaussianFactorGraph::shared_ptr gfgSmart = smartGraph.linearize(values);
 //
@@ -847,8 +688,8 @@ TEST( SmartProjectionCameraFactor, comparisonGeneralSfMFactor1 ) {
 //  // 1) triangulation introduces small errors, then for a fair comparison we use expectedPoint as
 //  // value in the generalGrap
 //  NonlinearFactorGraph generalGraph;
-//  SFMFactor sfm1(level_uv, model, c1, l1);
-//  SFMFactor sfm2(level_uv_right, model, c2, l1);
+//  SFMFactor sfm1(level_uv, unit2, c1, l1);
+//  SFMFactor sfm2(level_uv_right, unit2, c2, l1);
 //  generalGraph.push_back(sfm1);
 //  generalGraph.push_back(sfm2);
 //  values.insert(l1, expectedPoint); // note: we get rid of possible errors in the triangulation
@@ -877,19 +718,13 @@ TEST( SmartProjectionCameraFactor, comparisonGeneralSfMFactor1 ) {
 TEST( SmartProjectionCameraFactor, computeImplicitJacobian ) {
 
   using namespace bundler;
-  // landmark ~5 meters infront of camera
-  Point3 landmark(5, 0.5, 1.2);
-  // 1. Project two landmarks into two cameras and triangulate
-  Point2 level_uv = level_camera.project(landmark);
-  Point2 level_uv_right = level_camera_right.project(landmark);
-
   Values values;
   values.insert(c1, level_camera);
   values.insert(c2, level_camera_right);
 
   SmartFactorBundler::shared_ptr factor1(new SmartFactorBundler());
-  factor1->add(level_uv, c1, model);
-  factor1->add(level_uv_right, c2, model);
+  factor1->add(level_uv, c1, unit2);
+  factor1->add(level_uv_right, c2, unit2);
   Matrix expectedF, expectedE;
   Vector expectedb;
 
@@ -904,8 +739,8 @@ TEST( SmartProjectionCameraFactor, computeImplicitJacobian ) {
   factor1->computeJacobians(expectedF, expectedE, expectedb, cameras);
 
   NonlinearFactorGraph generalGraph;
-  SFMFactor sfm1(level_uv, model, c1, l1);
-  SFMFactor sfm2(level_uv_right, model, c2, l1);
+  SFMFactor sfm1(level_uv, unit2, c1, l1);
+  SFMFactor sfm2(level_uv_right, unit2, c2, l1);
   generalGraph.push_back(sfm1);
   generalGraph.push_back(sfm2);
   values.insert(l1, expectedPoint); // note: we get rid of possible errors in the triangulation
@@ -921,12 +756,6 @@ TEST( SmartProjectionCameraFactor, implicitJacobianFactor ) {
 
   using namespace bundler;
 
-  // landmark ~5 meters infront of camera
-  Point3 landmark(5, 0.5, 1.2);
-  // 1. Project two landmarks into two cameras and triangulate
-  Point2 level_uv = level_camera.project(landmark);
-  Point2 level_uv_right = level_camera_right.project(landmark);
-
   Values values;
   values.insert(c1, level_camera);
   values.insert(c2, level_camera_right);
@@ -940,8 +769,8 @@ TEST( SmartProjectionCameraFactor, implicitJacobianFactor ) {
   SmartFactorBundler::shared_ptr explicitFactor(
       new SmartFactorBundler(rankTol, linThreshold, manageDegeneracy, useEPI,
           isImplicit));
-  explicitFactor->add(level_uv, c1, model);
-  explicitFactor->add(level_uv_right, c2, model);
+  explicitFactor->add(level_uv, c1, unit2);
+  explicitFactor->add(level_uv_right, c2, unit2);
 
   GaussianFactor::shared_ptr gaussianHessianFactor = explicitFactor->linearize(
       values);
@@ -953,8 +782,8 @@ TEST( SmartProjectionCameraFactor, implicitJacobianFactor ) {
   SmartFactorBundler::shared_ptr implicitFactor(
       new SmartFactorBundler(rankTol, linThreshold, manageDegeneracy, useEPI,
           isImplicit));
-  implicitFactor->add(level_uv, c1, model);
-  implicitFactor->add(level_uv_right, c2, model);
+  implicitFactor->add(level_uv, c1, unit2);
+  implicitFactor->add(level_uv_right, c2, unit2);
   GaussianFactor::shared_ptr gaussianImplicitSchurFactor =
       implicitFactor->linearize(values);
   typedef RegularImplicitSchurFactor<9> Implicit9;
