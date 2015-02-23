@@ -16,8 +16,7 @@
  */
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/geometry/SimpleCamera.h>
-#include <boost/optional.hpp>
+#include <gtsam/geometry/CalibratedCamera.h>
 #include <boost/make_shared.hpp>
 
 namespace gtsam {
@@ -27,7 +26,7 @@ namespace gtsam {
  * The calibration and pose are assumed known.
  * @addtogroup SLAM
  */
-template<class CAMERA = PinholeCamera<Cal3_S2> >
+template<class CAMERA>
 class TriangulationFactor: public NoiseModelFactor1<Point3> {
 
 public:

@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <gtsam/geometry/PinholePose.h>
 #include <gtsam/slam/TriangulationFactor.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -74,8 +75,8 @@ std::pair<NonlinearFactorGraph, Values> triangulationGraph(
   static SharedNoiseModel prior_model(noiseModel::Isotropic::Sigma(6, 1e-6));
   for (size_t i = 0; i < measurements.size(); i++) {
     const Pose3& pose_i = poses[i];
-    PinholePose<CALIBRATION> camera_i(pose_i, sharedCal);
-    graph.push_back(TriangulationFactor<PinholePose<CALIBRATION> > //
+    PinholeBaseK<CALIBRATION> camera_i(pose_i, sharedCal);
+    graph.push_back(TriangulationFactor<PinholeBaseK<CALIBRATION> > //
         (camera_i, measurements[i], unit2, landmarkKey));
   }
   return std::make_pair(graph, values);
@@ -107,13 +108,13 @@ std::pair<NonlinearFactorGraph, Values> triangulationGraph(
   return std::make_pair(graph, values);
 }
 
-/// PinholeCamera specific version
+/// PinholeBaseK specific version
 template<class CALIBRATION>
 std::pair<NonlinearFactorGraph, Values> triangulationGraph(
-    const std::vector<PinholeCamera<CALIBRATION> >& cameras,
+    const std::vector<PinholeBaseK<CALIBRATION> >& cameras,
     const std::vector<Point2>& measurements, Key landmarkKey,
     const Point3& initialEstimate) {
-  return triangulationGraph<PinholeCamera<CALIBRATION> > //
+  return triangulationGraph<PinholeBaseK<CALIBRATION> > //
   (cameras, measurements, landmarkKey, initialEstimate);
 }
 
@@ -169,12 +170,12 @@ Point3 triangulateNonlinear(const std::vector<CAMERA>& cameras,
   return optimize(graph, values, Symbol('p', 0));
 }
 
-/// PinholeCamera specific version
+/// PinholeBaseK specific version
 template<class CALIBRATION>
 Point3 triangulateNonlinear(
-    const std::vector<PinholeCamera<CALIBRATION> >& cameras,
+    const std::vector<PinholeBaseK<CALIBRATION> >& cameras,
     const std::vector<Point2>& measurements, const Point3& initialEstimate) {
-  return triangulateNonlinear<PinholeCamera<CALIBRATION> > //
+  return triangulateNonlinear<PinholeBaseK<CALIBRATION> > //
   (cameras, measurements, initialEstimate);
 }
 
@@ -277,10 +278,10 @@ Point3 triangulatePoint3(const std::vector<CAMERA>& cameras,
 /// Pinhole-specific version
 template<class CALIBRATION>
 Point3 triangulatePoint3(
-    const std::vector<PinholeCamera<CALIBRATION> >& cameras,
+    const std::vector<PinholeBaseK<CALIBRATION> >& cameras,
     const std::vector<Point2>& measurements, double rank_tol = 1e-9,
     bool optimize = false) {
-  return triangulatePoint3<PinholeCamera<CALIBRATION> > //
+  return triangulatePoint3<PinholeBaseK<CALIBRATION> > //
   (cameras, measurements, rank_tol, optimize);
 }
 
