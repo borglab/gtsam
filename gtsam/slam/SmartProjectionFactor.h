@@ -22,7 +22,6 @@
 #include <gtsam/slam/SmartFactorBase.h>
 
 #include <gtsam/geometry/triangulation.h>
-#include <gtsam/geometry/Pose3.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/slam/dataset.h>
 
