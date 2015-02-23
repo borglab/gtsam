@@ -121,27 +121,20 @@ int main (int argc, char* argv[]) {
     cout << e.what();
   }
 
-  cout << endl << endl;
 
-  {
-    // printing the result
+  { // printing the result
+
+    cout << "COLAMD final error: " << graph.error(result_COLAMD) << endl;
+    cout << "METIS final error: " << graph.error(result_METIS) << endl;
+
+    cout << endl << endl;
+
     cout << "Time comparison by solving " << filename << " results:" << endl;
     cout << boost::format("%1% point tracks and %2% cameras\n") \
             % mydata.number_tracks() % mydata.number_cameras() \
          << endl;
 
-    cout << "COLAMD final error: " << graph.error(result_COLAMD) << endl;
-    cout << "METIS final error: " << graph.error(result_METIS) << endl;
-
     tictoc_print_();
-
-//    cout << "COLAMD: " << endl;
-//    cout << "Ordering: " << t_COLAMD_ordering << "seconds" << endl;
-//    cout << "Solving: "  << t_COLAMD_solving  << "seconds" << endl;
-
-//    cout << "METIS: " << endl;
-//    cout << "Ordering: " << t_METIS_ordering << "seconds" << endl;
-//    cout << "Solving: "  << t_METIS_solving  << "seconds" << endl;
   }
 
 
