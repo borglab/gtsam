@@ -36,7 +36,7 @@ Pose3 level_pose = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
 // Second camera 1 meter to the right of first camera
 Pose3 pose_right = level_pose * Pose3(Rot3(), Point3(1, 0, 0));
 // Third camera 1 meter above the first camera
-Pose3 pose_up = level_pose * Pose3(Rot3(), Point3(0, -1, 0));
+Pose3 pose_above = level_pose * Pose3(Rot3(), Point3(0, -1, 0));
 
 // Create a noise unit2 for the pixel error
 static SharedNoiseModel unit2(noiseModel::Unit::Create(2));
@@ -56,7 +56,7 @@ Point2 level_uv = level_camera.project(landmark1);
 Point2 level_uv_right = level_camera_right.project(landmark1);
 Camera cam1(level_pose, K2);
 Camera cam2(pose_right, K2);
-Camera cam3(pose_up, K2);
+Camera cam3(pose_above, K2);
 typedef GeneralSFMFactor<Camera, Point3> SFMFactor;
 }
 
@@ -69,7 +69,7 @@ Camera level_camera(level_pose, sharedK);
 Camera level_camera_right(pose_right, sharedK);
 Camera cam1(level_pose, sharedK);
 Camera cam2(pose_right, sharedK);
-Camera cam3(pose_up, sharedK);
+Camera cam3(pose_above, sharedK);
 }
 
 /* ************************************************************************* */
@@ -81,7 +81,7 @@ Camera level_camera(level_pose, sharedK2);
 Camera level_camera_right(pose_right, sharedK2);
 Camera cam1(level_pose, sharedK2);
 Camera cam2(pose_right, sharedK2);
-Camera cam3(pose_up, sharedK2);
+Camera cam3(pose_above, sharedK2);
 }
 
 /* *************************************************************************/
@@ -96,7 +96,7 @@ Point2 level_uv_right = level_camera_right.project(landmark1);
 Pose3 pose1 = level_pose;
 Camera cam1(level_pose, K);
 Camera cam2(pose_right, K);
-Camera cam3(pose_up, K);
+Camera cam3(pose_above, K);
 typedef GeneralSFMFactor<Camera, Point3> SFMFactor;
 }
 /* *************************************************************************/
@@ -109,7 +109,7 @@ Camera level_camera(level_pose, sharedBundlerK);
 Camera level_camera_right(pose_right, sharedBundlerK);
 Camera cam1(level_pose, sharedBundlerK);
 Camera cam2(pose_right, sharedBundlerK);
-Camera cam3(pose_up, sharedBundlerK);
+Camera cam3(pose_above, sharedBundlerK);
 }
 /* *************************************************************************/
 

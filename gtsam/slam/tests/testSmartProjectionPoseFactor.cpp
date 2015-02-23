@@ -18,34 +18,24 @@
  *  @date   Sept 2013
  */
 
-#include "../SmartProjectionPoseFactor.h"
-
-#include <gtsam/slam/PoseTranslationPrior.h>
+#include "smartFactorScenarios.h"
 #include <gtsam/slam/ProjectionFactor.h>
+#include <gtsam/slam/SmartProjectionPoseFactor.h>
+#include <gtsam/slam/PoseTranslationPrior.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <CppUnitLite/TestHarness.h>
-#include <boost/assign/std/vector.hpp>
+#include <boost/assign/std/map.hpp>
 #include <iostream>
 
-using namespace std;
 using namespace boost::assign;
-using namespace gtsam;
 
-static bool isDebugTest = true;
-
-// make a realistic calibration matrix
-static double fov = 60; // degrees
-static size_t w = 640, h = 480;
-
-static Cal3_S2::shared_ptr sharedK(new Cal3_S2(fov, w, h));
-static Cal3_S2::shared_ptr sharedK2(new Cal3_S2(1500, 1200, 0, 640, 480));
-static boost::shared_ptr<Cal3Bundler> sharedBundlerK(
-    new Cal3Bundler(500, 1e-3, 1e-3, 1000, 2000));
+static bool isDebugTest = false;
 
 static const double rankTol = 1.0;
 static const double linThreshold = -1.0;
 static const bool manageDegeneracy = true;
+
 // Create a noise model for the pixel error
 static const double sigma = 0.1;
 static SharedNoiseModel model(noiseModel::Isotropic::Sigma(2, sigma));
@@ -59,41 +49,12 @@ static Symbol x1('X', 1);
 static Symbol x2('X', 2);
 static Symbol x3('X', 3);
 
-static Key poseKey1(x1);
 static Point2 measurement1(323.0, 240.0);
 static Pose3 body_P_sensor1(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2),
     Point3(0.25, -0.10, 1.0));
 
-typedef PinholePose<Cal3_S2> Camera;
 typedef SmartProjectionPoseFactor<Cal3_S2> SmartFactor;
-
-typedef PinholePose<Cal3Bundler> CameraBundler;
 typedef SmartProjectionPoseFactor<Cal3Bundler> SmartFactorBundler;
-
-// create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-Pose3 level_pose = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2),
-    Point3(0, 0, 1));
-Camera level_camera(level_pose, sharedK2);
-
-// create second camera 1 meter to the right of first camera
-Pose3 level_pose_right = level_pose * Pose3(Rot3(), Point3(1, 0, 0));
-Camera level_camera_right(level_pose_right, sharedK2);
-
-// landmarks ~5 meters in front of camera
-Point3 landmark1(5, 0.5, 1.2);
-Point3 landmark2(5, -0.5, 1.2);
-Point3 landmark3(5, 0, 3.0);
-
-void projectToMultipleCameras(Camera cam1, Camera cam2, Camera cam3,
-    Point3 landmark, vector<Point2>& measurements_cam) {
-
-  Point2 cam1_uv1 = cam1.project(landmark);
-  Point2 cam2_uv1 = cam2.project(landmark);
-  Point2 cam3_uv1 = cam3.project(landmark);
-  measurements_cam.push_back(cam1_uv1);
-  measurements_cam.push_back(cam2_uv1);
-  measurements_cam.push_back(cam3_uv1);
-}
 
 /* ************************************************************************* */
 TEST( SmartProjectionPoseFactor, Constructor) {
@@ -107,32 +68,36 @@ TEST( SmartProjectionPoseFactor, Constructor2) {
 
 /* ************************************************************************* */
 TEST( SmartProjectionPoseFactor, Constructor3) {
+  using namespace vanillaPose;
   SmartFactor::shared_ptr factor1(new SmartFactor());
-  factor1->add(measurement1, poseKey1, model, sharedK);
+  factor1->add(measurement1, x1, model, sharedK);
 }
 
 /* ************************************************************************* */
 TEST( SmartProjectionPoseFactor, Constructor4) {
+  using namespace vanillaPose;
   SmartFactor factor1(rankTol, linThreshold);
-  factor1.add(measurement1, poseKey1, model, sharedK);
+  factor1.add(measurement1, x1, model, sharedK);
 }
 
 /* ************************************************************************* */
 TEST( SmartProjectionPoseFactor, ConstructorWithTransform) {
+  using namespace vanillaPose;
   bool manageDegeneracy = true;
   bool enableEPI = false;
   SmartFactor factor1(rankTol, linThreshold, manageDegeneracy, enableEPI,
       body_P_sensor1);
-  factor1.add(measurement1, poseKey1, model, sharedK);
+  factor1.add(measurement1, x1, model, sharedK);
 }
 
 /* ************************************************************************* */
 TEST( SmartProjectionPoseFactor, Equals ) {
+  using namespace vanillaPose;
   SmartFactor::shared_ptr factor1(new SmartFactor());
-  factor1->add(measurement1, poseKey1, model, sharedK);
+  factor1->add(measurement1, x1, model, sharedK);
 
   SmartFactor::shared_ptr factor2(new SmartFactor());
-  factor2->add(measurement1, poseKey1, model, sharedK);
+  factor2->add(measurement1, x1, model, sharedK);
 
   CHECK(assert_equal(*factor1, *factor2));
 }
@@ -140,6 +105,8 @@ TEST( SmartProjectionPoseFactor, Equals ) {
 /* *************************************************************************/
 TEST_UNSAFE( SmartProjectionPoseFactor, noiseless ) {
   // cout << " ************************ SmartProjectionPoseFactor: noisy ****************************" << endl;
+
+  using namespace vanillaPose;
 
   // Project two landmarks into two cameras
   Point2 level_uv = level_camera.project(landmark1);
@@ -151,7 +118,7 @@ TEST_UNSAFE( SmartProjectionPoseFactor, noiseless ) {
 
   Values values;
   values.insert(x1, level_pose);
-  values.insert(x2, level_pose_right);
+  values.insert(x2, pose_right);
 
   double actualError = factor.error(values);
   double expectedError = 0.0;
@@ -195,7 +162,9 @@ TEST_UNSAFE( SmartProjectionPoseFactor, noiseless ) {
 TEST( SmartProjectionPoseFactor, noisy ) {
   // cout << " ************************ SmartProjectionPoseFactor: noisy ****************************" << endl;
 
-  // 1. Project two landmarks into two cameras and triangulate
+  using namespace vanillaPose;
+
+  // Project two landmarks into two cameras and triangulate
   Point2 pixelError(0.2, 0.2);
   Point2 level_uv = level_camera.project(landmark1) + pixelError;
   Point2 level_uv_right = level_camera_right.project(landmark1);
@@ -204,7 +173,7 @@ TEST( SmartProjectionPoseFactor, noisy ) {
   values.insert(x1, level_pose);
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 10, 0., -M_PI / 10),
       Point3(0.5, 0.1, 0.3));
-  values.insert(x2, level_pose_right.compose(noise_pose));
+  values.insert(x2, pose_right.compose(noise_pose));
 
   SmartFactor::shared_ptr factor(new SmartFactor());
   factor->add(level_uv, x1, model, sharedK);
@@ -240,21 +209,10 @@ TEST( SmartProjectionPoseFactor, noisy ) {
 TEST( SmartProjectionPoseFactor, 3poses_smart_projection_factor ) {
   // cout << " ************************ SmartProjectionPoseFactor: 3 cams + 3 landmarks **********************" << endl;
 
-  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
-  Camera cam1(pose1, sharedK2);
-
-  // create second camera 1 meter to the right of first camera
-  Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(1, 0, 0));
-  Camera cam2(pose2, sharedK2);
-
-  // create third camera 1 meter above the first camera
-  Pose3 pose3 = pose1 * Pose3(Rot3(), Point3(0, -1, 0));
-  Camera cam3(pose3, sharedK2);
-
+  using namespace vanillaPose2;
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
 
-  // 1. Project three landmarks into three cameras and triangulate
+  // Project three landmarks into three cameras and triangulate
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
   projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
@@ -279,17 +237,17 @@ TEST( SmartProjectionPoseFactor, 3poses_smart_projection_factor ) {
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
-  graph.push_back(PriorFactor<Pose3>(x2, pose2, noisePrior));
+  graph.push_back(PriorFactor<Pose3>(x1, level_pose, noisePrior));
+  graph.push_back(PriorFactor<Pose3>(x2, pose_right, noisePrior));
 
   //  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
   Values values;
-  values.insert(x1, pose1);
-  values.insert(x2, pose2);
-  // initialize third pose with some noise, we expect it to move back to original pose3
-  values.insert(x3, pose3 * noise_pose);
+  values.insert(x1, level_pose);
+  values.insert(x2, pose_right);
+  // initialize third pose with some noise, we expect it to move back to original pose_above
+  values.insert(x3, pose_above * noise_pose);
   if (isDebugTest)
     values.at<Pose3>(x3).print("Smart: Pose3 before optimization: ");
 
@@ -312,7 +270,7 @@ TEST( SmartProjectionPoseFactor, 3poses_smart_projection_factor ) {
   // result.print("results of 3 camera, 3 landmark optimization \n");
   if (isDebugTest)
     result.at<Pose3>(x3).print("Smart: Pose3 after optimization: ");
-  EXPECT(assert_equal(pose3, result.at<Pose3>(x3), 1e-8));
+  EXPECT(assert_equal(pose_above, result.at<Pose3>(x3), 1e-8));
   if (isDebugTest)
     tictoc_print_();
 }
@@ -320,24 +278,16 @@ TEST( SmartProjectionPoseFactor, 3poses_smart_projection_factor ) {
 /* *************************************************************************/
 TEST( SmartProjectionPoseFactor, smartFactorWithSensorBodyTransform ) {
 
-  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  Pose3 cameraPose1 = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2),
-      Point3(0, 0, 1)); // body poses
-  Pose3 cameraPose2 = cameraPose1 * Pose3(Rot3(), Point3(1, 0, 0));
-  Pose3 cameraPose3 = cameraPose1 * Pose3(Rot3(), Point3(0, -1, 0));
-
-  Camera cam1(cameraPose1, sharedK); // with camera poses
-  Camera cam2(cameraPose2, sharedK);
-  Camera cam3(cameraPose3, sharedK);
+  using namespace vanillaPose;
 
   // create arbitrary body_Pose_sensor (transforms from sensor to body)
   Pose3 sensor_to_body = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2),
       Point3(1, 1, 1)); // Pose3(); //
 
   // These are the poses we want to estimate, from camera measurements
-  Pose3 bodyPose1 = cameraPose1.compose(sensor_to_body.inverse());
-  Pose3 bodyPose2 = cameraPose2.compose(sensor_to_body.inverse());
-  Pose3 bodyPose3 = cameraPose3.compose(sensor_to_body.inverse());
+  Pose3 bodyPose1 = level_pose.compose(sensor_to_body.inverse());
+  Pose3 bodyPose2 = pose_right.compose(sensor_to_body.inverse());
+  Pose3 bodyPose3 = pose_above.compose(sensor_to_body.inverse());
 
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
 
@@ -396,7 +346,7 @@ TEST( SmartProjectionPoseFactor, smartFactorWithSensorBodyTransform ) {
   Values values;
   values.insert(x1, bodyPose1);
   values.insert(x2, bodyPose2);
-  // initialize third pose with some noise, we expect it to move back to original pose3
+  // initialize third pose with some noise, we expect it to move back to original pose_above
   values.insert(x3, bodyPose3 * noise_pose);
 
   LevenbergMarquardtParams params;
@@ -564,26 +514,16 @@ TEST( SmartProjectionPoseFactor, Factors ) {
 TEST( SmartProjectionPoseFactor, 3poses_iterative_smart_projection_factor ) {
   // cout << " ************************ SmartProjectionPoseFactor: 3 cams + 3 landmarks **********************" << endl;
 
+  using namespace vanillaPose;
+
   vector<Key> views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
 
-  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
-  Camera cam1(pose1, sharedK);
-
-  // create second camera 1 meter to the right of first camera
-  Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(1, 0, 0));
-  Camera cam2(pose2, sharedK);
-
-  // create third camera 1 meter above the first camera
-  Pose3 pose3 = pose1 * Pose3(Rot3(), Point3(0, -1, 0));
-  Camera cam3(pose3, sharedK);
-
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
 
-  // 1. Project three landmarks into three cameras and triangulate
+  // Project three landmarks into three cameras and triangulate
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
   projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
@@ -603,17 +543,17 @@ TEST( SmartProjectionPoseFactor, 3poses_iterative_smart_projection_factor ) {
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
-  graph.push_back(PriorFactor<Pose3>(x2, pose2, noisePrior));
+  graph.push_back(PriorFactor<Pose3>(x1, level_pose, noisePrior));
+  graph.push_back(PriorFactor<Pose3>(x2, pose_right, noisePrior));
 
   //  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
   Values values;
-  values.insert(x1, pose1);
-  values.insert(x2, pose2);
-  // initialize third pose with some noise, we expect it to move back to original pose3
-  values.insert(x3, pose3 * noise_pose);
+  values.insert(x1, level_pose);
+  values.insert(x2, pose_right);
+  // initialize third pose with some noise, we expect it to move back to original pose_above
+  values.insert(x3, pose_above * noise_pose);
   if (isDebugTest)
     values.at<Pose3>(x3).print("Smart: Pose3 before optimization: ");
 
@@ -633,7 +573,7 @@ TEST( SmartProjectionPoseFactor, 3poses_iterative_smart_projection_factor ) {
   // result.print("results of 3 camera, 3 landmark optimization \n");
   if (isDebugTest)
     result.at<Pose3>(x3).print("Smart: Pose3 after optimization: ");
-  EXPECT(assert_equal(pose3, result.at<Pose3>(x3), 1e-7));
+  EXPECT(assert_equal(pose_above, result.at<Pose3>(x3), 1e-7));
   if (isDebugTest)
     tictoc_print_();
 }
@@ -641,24 +581,16 @@ TEST( SmartProjectionPoseFactor, 3poses_iterative_smart_projection_factor ) {
 /* *************************************************************************/
 TEST( SmartProjectionPoseFactor, jacobianSVD ) {
 
+  using namespace vanillaPose;
+
   vector<Key> views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
 
-  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
-  Camera cam1(pose1, sharedK);
-  // create second camera 1 meter to the right of first camera
-  Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(1, 0, 0));
-  Camera cam2(pose2, sharedK);
-  // create third camera 1 meter above the first camera
-  Pose3 pose3 = pose1 * Pose3(Rot3(), Point3(0, -1, 0));
-  Camera cam3(pose3, sharedK);
-
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
 
-  // 1. Project three landmarks into three cameras and triangulate
+  // Project three landmarks into three cameras and triangulate
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
   projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
@@ -681,26 +613,28 @@ TEST( SmartProjectionPoseFactor, jacobianSVD ) {
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
-  graph.push_back(PriorFactor<Pose3>(x2, pose2, noisePrior));
+  graph.push_back(PriorFactor<Pose3>(x1, level_pose, noisePrior));
+  graph.push_back(PriorFactor<Pose3>(x2, pose_right, noisePrior));
 
   //  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
   Values values;
-  values.insert(x1, pose1);
-  values.insert(x2, pose2);
-  values.insert(x3, pose3 * noise_pose);
+  values.insert(x1, level_pose);
+  values.insert(x2, pose_right);
+  values.insert(x3, pose_above * noise_pose);
 
   LevenbergMarquardtParams params;
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
-  EXPECT(assert_equal(pose3, result.at<Pose3>(x3), 1e-8));
+  EXPECT(assert_equal(pose_above, result.at<Pose3>(x3), 1e-8));
 }
 
 /* *************************************************************************/
 TEST( SmartProjectionPoseFactor, landmarkDistance ) {
+
+  using namespace vanillaPose;
 
   double excludeLandmarksFutherThanDist = 2;
 
@@ -709,19 +643,9 @@ TEST( SmartProjectionPoseFactor, landmarkDistance ) {
   views.push_back(x2);
   views.push_back(x3);
 
-  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
-  Camera cam1(pose1, sharedK);
-  // create second camera 1 meter to the right of first camera
-  Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(1, 0, 0));
-  Camera cam2(pose2, sharedK);
-  // create third camera 1 meter above the first camera
-  Pose3 pose3 = pose1 * Pose3(Rot3(), Point3(0, -1, 0));
-  Camera cam3(pose3, sharedK);
-
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
 
-  // 1. Project three landmarks into three cameras and triangulate
+  // Project three landmarks into three cameras and triangulate
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
   projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
@@ -747,16 +671,16 @@ TEST( SmartProjectionPoseFactor, landmarkDistance ) {
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
-  graph.push_back(PriorFactor<Pose3>(x2, pose2, noisePrior));
+  graph.push_back(PriorFactor<Pose3>(x1, level_pose, noisePrior));
+  graph.push_back(PriorFactor<Pose3>(x2, pose_right, noisePrior));
 
   //  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
   Values values;
-  values.insert(x1, pose1);
-  values.insert(x2, pose2);
-  values.insert(x3, pose3 * noise_pose);
+  values.insert(x1, level_pose);
+  values.insert(x2, pose_right);
+  values.insert(x3, pose_above * noise_pose);
 
   // All factors are disabled and pose should remain where it is
   LevenbergMarquardtParams params;
@@ -769,6 +693,8 @@ TEST( SmartProjectionPoseFactor, landmarkDistance ) {
 /* *************************************************************************/
 TEST( SmartProjectionPoseFactor, dynamicOutlierRejection ) {
 
+  using namespace vanillaPose;
+
   double excludeLandmarksFutherThanDist = 1e10;
   double dynamicOutlierRejectionThreshold = 1; // max 1 pixel of average reprojection error
 
@@ -777,23 +703,13 @@ TEST( SmartProjectionPoseFactor, dynamicOutlierRejection ) {
   views.push_back(x2);
   views.push_back(x3);
 
-  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
-  Camera cam1(pose1, sharedK);
-  // create second camera 1 meter to the right of first camera
-  Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(1, 0, 0));
-  Camera cam2(pose2, sharedK);
-  // create third camera 1 meter above the first camera
-  Pose3 pose3 = pose1 * Pose3(Rot3(), Point3(0, -1, 0));
-  Camera cam3(pose3, sharedK);
-
   // add fourth landmark
   Point3 landmark4(5, -0.5, 1);
 
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3,
       measurements_cam4;
 
-  // 1. Project three landmarks into three cameras and triangulate
+  // Project three landmarks into three cameras and triangulate
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
   projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
@@ -827,45 +743,37 @@ TEST( SmartProjectionPoseFactor, dynamicOutlierRejection ) {
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
   graph.push_back(smartFactor4);
-  graph.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
-  graph.push_back(PriorFactor<Pose3>(x2, pose2, noisePrior));
+  graph.push_back(PriorFactor<Pose3>(x1, level_pose, noisePrior));
+  graph.push_back(PriorFactor<Pose3>(x2, pose_right, noisePrior));
 
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
   Values values;
-  values.insert(x1, pose1);
-  values.insert(x2, pose2);
-  values.insert(x3, pose3);
+  values.insert(x1, level_pose);
+  values.insert(x2, pose_right);
+  values.insert(x3, pose_above);
 
   // All factors are disabled and pose should remain where it is
   LevenbergMarquardtParams params;
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
-  EXPECT(assert_equal(pose3, result.at<Pose3>(x3)));
+  EXPECT(assert_equal(pose_above, result.at<Pose3>(x3)));
 }
 
 /* *************************************************************************/
 TEST( SmartProjectionPoseFactor, jacobianQ ) {
+
+  using namespace vanillaPose;
 
   vector<Key> views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
 
-  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
-  Camera cam1(pose1, sharedK);
-  // create second camera 1 meter to the right of first camera
-  Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(1, 0, 0));
-  Camera cam2(pose2, sharedK);
-  // create third camera 1 meter above the first camera
-  Pose3 pose3 = pose1 * Pose3(Rot3(), Point3(0, -1, 0));
-  Camera cam3(pose3, sharedK);
-
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
 
-  // 1. Project three landmarks into three cameras and triangulate
+  // Project three landmarks into three cameras and triangulate
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
   projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
@@ -888,49 +796,39 @@ TEST( SmartProjectionPoseFactor, jacobianQ ) {
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
-  graph.push_back(PriorFactor<Pose3>(x2, pose2, noisePrior));
+  graph.push_back(PriorFactor<Pose3>(x1, level_pose, noisePrior));
+  graph.push_back(PriorFactor<Pose3>(x2, pose_right, noisePrior));
 
   //  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
   Values values;
-  values.insert(x1, pose1);
-  values.insert(x2, pose2);
-  values.insert(x3, pose3 * noise_pose);
+  values.insert(x1, level_pose);
+  values.insert(x2, pose_right);
+  values.insert(x3, pose_above * noise_pose);
 
   LevenbergMarquardtParams params;
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
-  EXPECT(assert_equal(pose3, result.at<Pose3>(x3), 1e-8));
+  EXPECT(assert_equal(pose_above, result.at<Pose3>(x3), 1e-8));
 }
 
 /* *************************************************************************/
 TEST( SmartProjectionPoseFactor, 3poses_projection_factor ) {
   //  cout << " ************************ Normal ProjectionFactor: 3 cams + 3 landmarks **********************" << endl;
 
+  using namespace vanillaPose2;
+
   vector<Key> views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
 
-  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
-  Camera cam1(pose1, sharedK2);
-
-  // create second camera 1 meter to the right of first camera
-  Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(1, 0, 0));
-  Camera cam2(pose2, sharedK2);
-
-  // create third camera 1 meter above the first camera
-  Pose3 pose3 = pose1 * Pose3(Rot3(), Point3(0, -1, 0));
-  Camera cam3(pose3, sharedK2);
-
   typedef GenericProjectionFactor<Pose3, Point3> ProjectionFactor;
   NonlinearFactorGraph graph;
 
-  // 1. Project three landmarks into three cameras and triangulate
+  // Project three landmarks into three cameras and triangulate
   graph.push_back(
       ProjectionFactor(cam1.project(landmark1), model, x1, L(1), sharedK2));
   graph.push_back(
@@ -953,15 +851,15 @@ TEST( SmartProjectionPoseFactor, 3poses_projection_factor ) {
       ProjectionFactor(cam3.project(landmark3), model, x3, L(3), sharedK2));
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
-  graph.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
-  graph.push_back(PriorFactor<Pose3>(x2, pose2, noisePrior));
+  graph.push_back(PriorFactor<Pose3>(x1, level_pose, noisePrior));
+  graph.push_back(PriorFactor<Pose3>(x2, pose_right, noisePrior));
 
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 10, 0., -M_PI / 10),
       Point3(0.5, 0.1, 0.3));
   Values values;
-  values.insert(x1, pose1);
-  values.insert(x2, pose2);
-  values.insert(x3, pose3 * noise_pose);
+  values.insert(x1, level_pose);
+  values.insert(x2, pose_right);
+  values.insert(x3, pose_above * noise_pose);
   values.insert(L(1), landmark1);
   values.insert(L(2), landmark2);
   values.insert(L(3), landmark3);
@@ -978,7 +876,7 @@ TEST( SmartProjectionPoseFactor, 3poses_projection_factor ) {
 
   if (isDebugTest)
     result.at<Pose3>(x3).print("Pose3 after optimization: ");
-  EXPECT(assert_equal(pose3, result.at<Pose3>(x3), 1e-7));
+  EXPECT(assert_equal(pose_above, result.at<Pose3>(x3), 1e-7));
 }
 
 /* *************************************************************************/
@@ -989,21 +887,17 @@ TEST( SmartProjectionPoseFactor, CheckHessian) {
   views.push_back(x2);
   views.push_back(x3);
 
-  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
-  Camera cam1(pose1, sharedK);
+  using namespace vanillaPose;
 
-  // create second camera 1 meter to the right of first camera
-  Pose3 pose2 = pose1 * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
+  // Two slightly different cameras
+  Pose3 pose2 = level_pose * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
+  Pose3 pose3 = level_pose * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
   Camera cam2(pose2, sharedK);
-
-  // create third camera 1 meter above the first camera
-  Pose3 pose3 = pose2 * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
   Camera cam3(pose3, sharedK);
 
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
 
-  // 1. Project three landmarks into three cameras and triangulate
+  // Project three landmarks into three cameras and triangulate
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
   projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
@@ -1028,10 +922,10 @@ TEST( SmartProjectionPoseFactor, CheckHessian) {
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
   Values values;
-  values.insert(x1, pose1);
-  values.insert(x2, pose2);
-  // initialize third pose with some noise, we expect it to move back to original pose3
-  values.insert(x3, pose3 * noise_pose);
+  values.insert(x1, level_pose);
+  values.insert(x2, pose_right);
+  // initialize third pose with some noise, we expect it to move back to original pose_above
+  values.insert(x3, pose_above * noise_pose);
   if (isDebugTest)
     values.at<Pose3>(x3).print("Smart: Pose3 before optimization: ");
 
@@ -1068,26 +962,22 @@ TEST( SmartProjectionPoseFactor, CheckHessian) {
 TEST( SmartProjectionPoseFactor, 3poses_2land_rotation_only_smart_projection_factor ) {
   // cout << " ************************ SmartProjectionPoseFactor: 3 cams + 2 landmarks: Rotation Only**********************" << endl;
 
+  using namespace vanillaPose2;
+
   vector<Key> views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
 
-  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
-  Camera cam1(pose1, sharedK2);
-
-  // create second camera 1 meter to the right of first camera
-  Pose3 pose2 = pose1 * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
+  // Two different cameras
+  Pose3 pose2 = level_pose * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
+  Pose3 pose3 = level_pose * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
   Camera cam2(pose2, sharedK2);
-
-  // create third camera 1 meter above the first camera
-  Pose3 pose3 = pose2 * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
   Camera cam3(pose3, sharedK2);
 
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
 
-  // 1. Project three landmarks into three cameras and triangulate
+  // Project three landmarks into three cameras and triangulate
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
   projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
 
@@ -1108,7 +998,7 @@ TEST( SmartProjectionPoseFactor, 3poses_2land_rotation_only_smart_projection_fac
   NonlinearFactorGraph graph;
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
-  graph.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
+  graph.push_back(PriorFactor<Pose3>(x1, level_pose, noisePrior));
   graph.push_back(
       PoseTranslationPrior<Pose3>(x2, positionPrior, noisePriorTranslation));
   graph.push_back(
@@ -1117,10 +1007,10 @@ TEST( SmartProjectionPoseFactor, 3poses_2land_rotation_only_smart_projection_fac
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 10, 0., -M_PI / 10),
       Point3(0.1, 0.1, 0.1)); // smaller noise
   Values values;
-  values.insert(x1, pose1);
-  values.insert(x2, pose2 * noise_pose);
-  // initialize third pose with some noise, we expect it to move back to original pose3
-  values.insert(x3, pose3 * noise_pose * noise_pose);
+  values.insert(x1, level_pose);
+  values.insert(x2, pose_right * noise_pose);
+  // initialize third pose with some noise, we expect it to move back to original pose_above
+  values.insert(x3, pose_above * noise_pose * noise_pose);
   if (isDebugTest)
     values.at<Pose3>(x3).print("Smart: Pose3 before optimization: ");
 
@@ -1143,7 +1033,7 @@ TEST( SmartProjectionPoseFactor, 3poses_2land_rotation_only_smart_projection_fac
   cout
       << "TEST COMMENTED: rotation only version of smart factors has been deprecated "
       << endl;
-  // EXPECT(assert_equal(pose3,result.at<Pose3>(x3)));
+  // EXPECT(assert_equal(pose_above,result.at<Pose3>(x3)));
   if (isDebugTest)
     tictoc_print_();
 }
@@ -1152,26 +1042,22 @@ TEST( SmartProjectionPoseFactor, 3poses_2land_rotation_only_smart_projection_fac
 TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) {
   // cout << " ************************ SmartProjectionPoseFactor: 3 cams + 3 landmarks: Rotation Only**********************" << endl;
 
+  using namespace vanillaPose;
+
   vector<Key> views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
 
-  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
-  Camera cam1(pose1, sharedK);
-
-  // create second camera 1 meter to the right of first camera
-  Pose3 pose2 = pose1 * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
+  // Two different cameras
+  Pose3 pose2 = level_pose * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
+  Pose3 pose3 = level_pose * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
   Camera cam2(pose2, sharedK);
-
-  // create third camera 1 meter above the first camera
-  Pose3 pose3 = pose2 * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
   Camera cam3(pose3, sharedK);
 
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
 
-  // 1. Project three landmarks into three cameras and triangulate
+  // Project three landmarks into three cameras and triangulate
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
   projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
@@ -1199,7 +1085,7 @@ TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) 
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
+  graph.push_back(PriorFactor<Pose3>(x1, level_pose, noisePrior));
   graph.push_back(
       PoseTranslationPrior<Pose3>(x2, positionPrior, noisePriorTranslation));
   graph.push_back(
@@ -1209,10 +1095,10 @@ TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) 
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
   Values values;
-  values.insert(x1, pose1);
-  values.insert(x2, pose2);
-  // initialize third pose with some noise, we expect it to move back to original pose3
-  values.insert(x3, pose3 * noise_pose);
+  values.insert(x1, level_pose);
+  values.insert(x2, pose_right);
+  // initialize third pose with some noise, we expect it to move back to original pose_above
+  values.insert(x3, pose_above * noise_pose);
   if (isDebugTest)
     values.at<Pose3>(x3).print("Smart: Pose3 before optimization: ");
 
@@ -1235,7 +1121,7 @@ TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) 
   cout
       << "TEST COMMENTED: rotation only version of smart factors has been deprecated "
       << endl;
-  // EXPECT(assert_equal(pose3,result.at<Pose3>(x3)));
+  // EXPECT(assert_equal(pose_above,result.at<Pose3>(x3)));
   if (isDebugTest)
     tictoc_print_();
 }
@@ -1244,19 +1130,13 @@ TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) 
 TEST( SmartProjectionPoseFactor, Hessian ) {
   // cout << " ************************ SmartProjectionPoseFactor: Hessian **********************" << endl;
 
+  using namespace vanillaPose2;
+
   vector<Key> views;
   views.push_back(x1);
   views.push_back(x2);
 
-  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
-  Camera cam1(pose1, sharedK2);
-
-  // create second camera 1 meter to the right of first camera
-  Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(1, 0, 0));
-  Camera cam2(pose2, sharedK2);
-
-  // 1. Project three landmarks into three cameras and triangulate
+  // Project three landmarks into 2 cameras and triangulate
   Point2 cam1_uv1 = cam1.project(landmark1);
   Point2 cam2_uv1 = cam2.project(landmark1);
   vector<Point2> measurements_cam1;
@@ -1269,8 +1149,8 @@ TEST( SmartProjectionPoseFactor, Hessian ) {
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 10, 0., -M_PI / 10),
       Point3(0.5, 0.1, 0.3));
   Values values;
-  values.insert(x1, pose1);
-  values.insert(x2, pose2);
+  values.insert(x1, level_pose);
+  values.insert(x2, pose_right);
 
   boost::shared_ptr<GaussianFactor> hessianFactor = smartFactor1->linearize(
       values);
@@ -1287,22 +1167,12 @@ TEST( SmartProjectionPoseFactor, Hessian ) {
 TEST( SmartProjectionPoseFactor, HessianWithRotation ) {
   // cout << " ************************ SmartProjectionPoseFactor: rotated Hessian **********************" << endl;
 
+  using namespace vanillaPose;
+
   vector<Key> views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
-
-  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
-  Camera cam1(pose1, sharedK);
-
-  // create second camera 1 meter to the right of first camera
-  Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(1, 0, 0));
-  Camera cam2(pose2, sharedK);
-
-  // create third camera 1 meter above the first camera
-  Pose3 pose3 = pose1 * Pose3(Rot3(), Point3(0, -1, 0));
-  Camera cam3(pose3, sharedK);
 
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
 
@@ -1312,24 +1182,22 @@ TEST( SmartProjectionPoseFactor, HessianWithRotation ) {
   smartFactorInstance->add(measurements_cam1, views, model, sharedK);
 
   Values values;
-  values.insert(x1, pose1);
-  values.insert(x2, pose2);
-  values.insert(x3, pose3);
+  values.insert(x1, level_pose);
+  values.insert(x2, pose_right);
+  values.insert(x3, pose_above);
 
   boost::shared_ptr<GaussianFactor> hessianFactor =
       smartFactorInstance->linearize(values);
-  // hessianFactor->print("Hessian factor \n");
 
   Pose3 poseDrift = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 0));
 
   Values rotValues;
-  rotValues.insert(x1, poseDrift.compose(pose1));
-  rotValues.insert(x2, poseDrift.compose(pose2));
-  rotValues.insert(x3, poseDrift.compose(pose3));
+  rotValues.insert(x1, poseDrift.compose(level_pose));
+  rotValues.insert(x2, poseDrift.compose(pose_right));
+  rotValues.insert(x3, poseDrift.compose(pose_above));
 
   boost::shared_ptr<GaussianFactor> hessianFactorRot =
       smartFactorInstance->linearize(rotValues);
-  // hessianFactorRot->print("Hessian factor \n");
 
   // Hessian is invariant to rotations in the nondegenerate case
   EXPECT(
@@ -1340,9 +1208,9 @@ TEST( SmartProjectionPoseFactor, HessianWithRotation ) {
       Point3(10, -4, 5));
 
   Values tranValues;
-  tranValues.insert(x1, poseDrift2.compose(pose1));
-  tranValues.insert(x2, poseDrift2.compose(pose2));
-  tranValues.insert(x3, poseDrift2.compose(pose3));
+  tranValues.insert(x1, poseDrift2.compose(level_pose));
+  tranValues.insert(x2, poseDrift2.compose(pose_right));
+  tranValues.insert(x3, poseDrift2.compose(pose_above));
 
   boost::shared_ptr<GaussianFactor> hessianFactorRotTran =
       smartFactorInstance->linearize(tranValues);
@@ -1357,22 +1225,12 @@ TEST( SmartProjectionPoseFactor, HessianWithRotation ) {
 TEST( SmartProjectionPoseFactor, HessianWithRotationDegenerate ) {
   // cout << " ************************ SmartProjectionPoseFactor: rotated Hessian (degenerate) **********************" << endl;
 
+  using namespace vanillaPose2;
+
   vector<Key> views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
-
-  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
-  Camera cam1(pose1, sharedK2);
-
-  // create second camera 1 meter to the right of first camera
-  Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(0, 0, 0));
-  Camera cam2(pose2, sharedK2);
-
-  // create third camera 1 meter above the first camera
-  Pose3 pose3 = pose1 * Pose3(Rot3(), Point3(0, 0, 0));
-  Camera cam3(pose3, sharedK2);
 
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
 
@@ -1382,9 +1240,9 @@ TEST( SmartProjectionPoseFactor, HessianWithRotationDegenerate ) {
   smartFactor->add(measurements_cam1, views, model, sharedK2);
 
   Values values;
-  values.insert(x1, pose1);
-  values.insert(x2, pose2);
-  values.insert(x3, pose3);
+  values.insert(x1, level_pose);
+  values.insert(x2, pose_right);
+  values.insert(x3, pose_above);
 
   boost::shared_ptr<GaussianFactor> hessianFactor = smartFactor->linearize(
       values);
@@ -1394,9 +1252,9 @@ TEST( SmartProjectionPoseFactor, HessianWithRotationDegenerate ) {
   Pose3 poseDrift = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 0));
 
   Values rotValues;
-  rotValues.insert(x1, poseDrift.compose(pose1));
-  rotValues.insert(x2, poseDrift.compose(pose2));
-  rotValues.insert(x3, poseDrift.compose(pose3));
+  rotValues.insert(x1, poseDrift.compose(level_pose));
+  rotValues.insert(x2, poseDrift.compose(pose_right));
+  rotValues.insert(x3, poseDrift.compose(pose_above));
 
   boost::shared_ptr<GaussianFactor> hessianFactorRot = smartFactor->linearize(
       rotValues);
@@ -1412,9 +1270,9 @@ TEST( SmartProjectionPoseFactor, HessianWithRotationDegenerate ) {
       Point3(10, -4, 5));
 
   Values tranValues;
-  tranValues.insert(x1, poseDrift2.compose(pose1));
-  tranValues.insert(x2, poseDrift2.compose(pose2));
-  tranValues.insert(x3, poseDrift2.compose(pose3));
+  tranValues.insert(x1, poseDrift2.compose(level_pose));
+  tranValues.insert(x2, poseDrift2.compose(pose_right));
+  tranValues.insert(x3, poseDrift2.compose(pose_above));
 
   boost::shared_ptr<GaussianFactor> hessianFactorRotTran =
       smartFactor->linearize(tranValues);
@@ -1430,31 +1288,21 @@ TEST( SmartProjectionPoseFactor, ConstructorWithCal3Bundler) {
   SmartFactorBundler factor(rankTol, linThreshold);
   boost::shared_ptr<Cal3Bundler> sharedBundlerK(
       new Cal3Bundler(500, 1e-3, 1e-3, 1000, 2000));
-  factor.add(measurement1, poseKey1, model, sharedBundlerK);
+  factor.add(measurement1, x1, model, sharedBundlerK);
 }
 
 /* *************************************************************************/
 TEST( SmartProjectionPoseFactor, Cal3Bundler ) {
   // cout << " ************************ SmartProjectionPoseFactor: Cal3Bundler **********************" << endl;
 
-  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
-  CameraBundler cam1(pose1, sharedBundlerK);
-
-  // create second camera 1 meter to the right of first camera
-  Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(1, 0, 0));
-  CameraBundler cam2(pose2, sharedBundlerK);
-
-  // create third camera 1 meter above the first camera
-  Pose3 pose3 = pose1 * Pose3(Rot3(), Point3(0, -1, 0));
-  CameraBundler cam3(pose3, sharedBundlerK);
+  using namespace bundlerPose;
 
   // three landmarks ~5 meters infront of camera
   Point3 landmark3(3, 0, 3.0);
 
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
 
-  // 1. Project three landmarks into three cameras and triangulate
+  // Project three landmarks into three cameras and triangulate
   Point2 cam1_uv1 = cam1.project(landmark1);
   Point2 cam2_uv1 = cam2.project(landmark1);
   Point2 cam3_uv1 = cam3.project(landmark1);
@@ -1496,17 +1344,17 @@ TEST( SmartProjectionPoseFactor, Cal3Bundler ) {
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
-  graph.push_back(PriorFactor<Pose3>(x2, pose2, noisePrior));
+  graph.push_back(PriorFactor<Pose3>(x1, level_pose, noisePrior));
+  graph.push_back(PriorFactor<Pose3>(x2, pose_right, noisePrior));
 
   //  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
   Values values;
-  values.insert(x1, pose1);
-  values.insert(x2, pose2);
-  // initialize third pose with some noise, we expect it to move back to original pose3
-  values.insert(x3, pose3 * noise_pose);
+  values.insert(x1, level_pose);
+  values.insert(x2, pose_right);
+  // initialize third pose with some noise, we expect it to move back to original pose_above
+  values.insert(x3, pose_above * noise_pose);
   if (isDebugTest)
     values.at<Pose3>(x3).print("Smart: Pose3 before optimization: ");
 
@@ -1526,7 +1374,7 @@ TEST( SmartProjectionPoseFactor, Cal3Bundler ) {
   // result.print("results of 3 camera, 3 landmark optimization \n");
   if (isDebugTest)
     result.at<Pose3>(x3).print("Smart: Pose3 after optimization: ");
-  EXPECT(assert_equal(pose3, result.at<Pose3>(x3), 1e-6));
+  EXPECT(assert_equal(pose_above, result.at<Pose3>(x3), 1e-6));
   if (isDebugTest)
     tictoc_print_();
 }
@@ -1534,29 +1382,25 @@ TEST( SmartProjectionPoseFactor, Cal3Bundler ) {
 /* *************************************************************************/
 TEST( SmartProjectionPoseFactor, Cal3BundlerRotationOnly ) {
 
+  using namespace bundlerPose;
+
   vector<Key> views;
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
 
-  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
-  CameraBundler cam1(pose1, sharedBundlerK);
-
-  // create second camera 1 meter to the right of first camera
-  Pose3 pose2 = pose1 * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
-  CameraBundler cam2(pose2, sharedBundlerK);
-
-  // create third camera 1 meter above the first camera
-  Pose3 pose3 = pose2 * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
-  CameraBundler cam3(pose3, sharedBundlerK);
+  // Two different cameras
+  Pose3 pose2 = level_pose * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
+  Pose3 pose3 = level_pose * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
+  Camera cam2(pose2, sharedBundlerK);
+  Camera cam3(pose3, sharedBundlerK);
 
   // landmark3 at 3 meters now
   Point3 landmark3(3, 0, 3.0);
 
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
 
-  // 1. Project three landmarks into three cameras and triangulate
+  // Project three landmarks into three cameras and triangulate
   Point2 cam1_uv1 = cam1.project(landmark1);
   Point2 cam2_uv1 = cam2.project(landmark1);
   Point2 cam3_uv1 = cam3.project(landmark1);
@@ -1601,7 +1445,7 @@ TEST( SmartProjectionPoseFactor, Cal3BundlerRotationOnly ) {
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
-  graph.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
+  graph.push_back(PriorFactor<Pose3>(x1, level_pose, noisePrior));
   graph.push_back(
       PoseTranslationPrior<Pose3>(x2, positionPrior, noisePriorTranslation));
   graph.push_back(
@@ -1611,10 +1455,10 @@ TEST( SmartProjectionPoseFactor, Cal3BundlerRotationOnly ) {
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
   Values values;
-  values.insert(x1, pose1);
-  values.insert(x2, pose2);
-  // initialize third pose with some noise, we expect it to move back to original pose3
-  values.insert(x3, pose3 * noise_pose);
+  values.insert(x1, level_pose);
+  values.insert(x2, pose_right);
+  // initialize third pose with some noise, we expect it to move back to original pose_above
+  values.insert(x3, pose_above * noise_pose);
   if (isDebugTest)
     values.at<Pose3>(x3).print("Smart: Pose3 before optimization: ");
 
@@ -1637,7 +1481,7 @@ TEST( SmartProjectionPoseFactor, Cal3BundlerRotationOnly ) {
   cout
       << "TEST COMMENTED: rotation only version of smart factors has been deprecated "
       << endl;
-  // EXPECT(assert_equal(pose3,result.at<Pose3>(x3)));
+  // EXPECT(assert_equal(pose_above,result.at<Pose3>(x3)));
   if (isDebugTest)
     tictoc_print_();
 }
