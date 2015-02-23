@@ -69,8 +69,6 @@ private:
 
 protected:
 
-  static const int Dim = traits<CAMERA>::dimension; ///< CAMERA dimension
-
   // Some triangulation parameters
   const double rankTolerance_; ///< threshold to decide whether triangulation is degenerate_
   const double retriangulationThreshold_; ///< threshold to decide whether to re-triangulate
@@ -313,10 +311,9 @@ public:
   }
 
   /// linearize returns a Hessianfactor that is an approximation of error(p)
-  boost::shared_ptr<RegularHessianFactor<Dim> > createHessianFactor(
+  boost::shared_ptr<RegularHessianFactor<Base::Dim> > createHessianFactor(
       const Cameras& cameras, const double lambda = 0.0) const {
 
-    bool isDebug = false;
     size_t numKeys = this->keys_.size();
     // Create structures for Hessian Factors
     std::vector<Key> js;
@@ -337,10 +334,10 @@ public:
             && (this->cheiralityException_ || this->degenerate_))) {
       // std::cout << "In linearize: exception" << std::endl;
       BOOST_FOREACH(Matrix& m, Gs)
-        m = zeros(Dim, Dim);
+        m = zeros(Base::Dim, Base::Dim);
       BOOST_FOREACH(Vector& v, gs)
-        v = zero(Dim);
-      return boost::make_shared<RegularHessianFactor<Dim> >(this->keys_, Gs, gs,
+        v = zero(Base::Dim);
+      return boost::make_shared<RegularHessianFactor<Base::Dim> >(this->keys_, Gs, gs,
           0.0);
     }
 
@@ -365,7 +362,7 @@ public:
           << "something wrong in SmartProjectionHessianFactor: selective relinearization should be disabled"
           << std::endl;
       exit(1);
-      return boost::make_shared<RegularHessianFactor<Dim> >(this->keys_,
+      return boost::make_shared<RegularHessianFactor<Base::Dim> >(this->keys_,
           this->state_->Gs, this->state_->gs, this->state_->f);
     }
 
@@ -377,23 +374,28 @@ public:
     // Schur complement trick
     // Frank says: should be possible to do this more efficiently?
     // And we care, as in grouped factors this is called repeatedly
-    Matrix H(Dim * numKeys, Dim * numKeys);
+    Matrix H(Base::Dim * numKeys, Base::Dim * numKeys);
     Vector gs_vector;
 
     Matrix3 P = Base::PointCov(E, lambda);
+
+    // Create reduced Hessian matrix via Schur complement F'*F - F'*E*P*E'*F
     H.noalias() = F.transpose() * (F - (E * (P * (E.transpose() * F))));
-    gs_vector.noalias() = F.transpose() * (b - (E * (P * (E.transpose() * b))));
-    if (isDebug)
-      std::cout << "gs_vector size " << gs_vector.size() << std::endl;
+
+    // Create reduced gradient - (F'*b - F'*E*P*E'*b)
+    // Note the minus sign above! g has negative b.
+    // Informal reasoning: when we write the error as 0.5*|Ax-b|^2
+    // the derivative is A'*(Ax-b), and at x=0, this becomes -A'*b
+    gs_vector.noalias() = - F.transpose() * (b - (E * (P * (E.transpose() * b))));
 
     // Populate Gs and gs
     int GsCount2 = 0;
     for (DenseIndex i1 = 0; i1 < (DenseIndex) numKeys; i1++) { // for each camera
-      DenseIndex i1D = i1 * Dim;
-      gs.at(i1) = gs_vector.segment<Dim>(i1D);
+      DenseIndex i1D = i1 * Base::Dim;
+      gs.at(i1) = gs_vector.segment<Base::Dim>(i1D);
       for (DenseIndex i2 = 0; i2 < (DenseIndex) numKeys; i2++) {
         if (i2 >= i1) {
-          Gs.at(GsCount2) = H.block<Dim, Dim>(i1D, i2 * Dim);
+          Gs.at(GsCount2) = H.block<Base::Dim, Base::Dim>(i1D, i2 * Base::Dim);
           GsCount2++;
         }
       }
@@ -404,29 +406,29 @@ public:
       this->state_->gs = gs;
       this->state_->f = f;
     }
-    return boost::make_shared<RegularHessianFactor<Dim> >(this->keys_, Gs, gs, f);
+    return boost::make_shared<RegularHessianFactor<Base::Dim> >(this->keys_, Gs, gs, f);
   }
 
   // create factor
-  boost::shared_ptr<RegularImplicitSchurFactor<Dim> > createRegularImplicitSchurFactor(
+  boost::shared_ptr<RegularImplicitSchurFactor<Base::Dim> > createRegularImplicitSchurFactor(
       const Cameras& cameras, double lambda) const {
     if (triangulateForLinearize(cameras))
       return Base::createRegularImplicitSchurFactor(cameras, point_, lambda);
     else
-      return boost::shared_ptr<RegularImplicitSchurFactor<Dim> >();
+      return boost::shared_ptr<RegularImplicitSchurFactor<Base::Dim> >();
   }
 
   /// create factor
-  boost::shared_ptr<JacobianFactorQ<Dim, 2> > createJacobianQFactor(
+  boost::shared_ptr<JacobianFactorQ<Base::Dim, 2> > createJacobianQFactor(
       const Cameras& cameras, double lambda) const {
     if (triangulateForLinearize(cameras))
       return Base::createJacobianQFactor(cameras, point_, lambda);
     else
-      return boost::make_shared<JacobianFactorQ<Dim, 2> >(this->keys_);
+      return boost::make_shared<JacobianFactorQ<Base::Dim, 2> >(this->keys_);
   }
 
   /// Create a factor, takes values
-  boost::shared_ptr<JacobianFactorQ<Dim, 2> > createJacobianQFactor(
+  boost::shared_ptr<JacobianFactorQ<Base::Dim, 2> > createJacobianQFactor(
       const Values& values, double lambda) const {
     Cameras cameras;
     // TODO triangulate twice ??
@@ -434,7 +436,7 @@ public:
     if (nonDegenerate)
       return createJacobianQFactor(cameras, lambda);
     else
-      return boost::make_shared<JacobianFactorQ<Dim, 2> >(this->keys_);
+      return boost::make_shared<JacobianFactorQ<Base::Dim, 2> >(this->keys_);
   }
 
   /// different (faster) way to compute Jacobian factor
@@ -443,7 +445,7 @@ public:
     if (triangulateForLinearize(cameras))
       return Base::createJacobianSVDFactor(cameras, point_, lambda);
     else
-      return boost::make_shared<JacobianFactorSVD<Dim, 2> >(this->keys_);
+      return boost::make_shared<JacobianFactorSVD<Base::Dim, 2> >(this->keys_);
   }
 
   /// Returns true if nonDegenerate
@@ -507,7 +509,7 @@ public:
       std::cout
           << "SmartProjectionFactor: Management of degeneracy is disabled - not ready to be used"
           << std::endl;
-      if (Dim > 6) {
+      if (Base::Dim > 6) {
         std::cout
             << "Management of degeneracy is not yet ready when one also optimizes for the calibration "
             << std::endl;
@@ -572,7 +574,7 @@ public:
   /// Calculate vector of re-projection errors, before applying noise model
   /// Assumes triangulation was done and degeneracy handled
   Vector reprojectionError(const Cameras& cameras) const {
-    return Base::reprojectionError(cameras, point_);
+    return cameras.reprojectionErrors(point_,this->measured_);
   }
 
   /// Calculate vector of re-projection errors, before applying noise model
