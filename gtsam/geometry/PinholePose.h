@@ -35,7 +35,10 @@ class GTSAM_EXPORT PinholeBaseK: public PinholeBase {
 
   GTSAM_CONCEPT_MANIFOLD_TYPE(Calibration)
 
-public  :
+  // Get dimensions of calibration type at compile time
+static  const int DimK = FixedDimension<Calibration>::value;
+
+public :
 
   /// @name Standard Constructors
   /// @{
@@ -78,7 +81,19 @@ public  :
     return pn;
   }
 
-  /** project a point from world coordinate to the image, fixed Jacobians
+  /** project a point from world coordinate to the image
+   *  @param pw is a point in the world coordinates
+   */
+  Point2 project(const Point3& pw) const {
+
+    // project to normalized coordinates
+    const Point2 pn = PinholeBase::project2(pw);
+
+    // uncalibrate to pixel coordinates
+    return calibration().uncalibrate(pn);
+  }
+
+  /** project a point from world coordinate to the image, w 2 derivatives
    *  @param pw is a point in the world coordinates
    */
   Point2 project2(const Point3& pw, OptionalJacobian<2, 6> Dpose = boost::none,
@@ -96,6 +111,47 @@ public  :
     if (Dpose) *Dpose = Dpi_pn * (*Dpose);
     if (Dpoint) *Dpoint = Dpi_pn * (*Dpoint);
 
+    return pi;
+  }
+
+  /** project a point at infinity from world coordinate to the image
+   *  @param pw is a point in the world coordinate (it is pw = lambda*[pw_x  pw_y  pw_z] with lambda->inf)
+   *  @param Dpose is the Jacobian w.r.t. pose3
+   *  @param Dpoint is the Jacobian w.r.t. point3
+   *  @param Dcal is the Jacobian w.r.t. calibration
+   */
+  Point2 projectPointAtInfinity(const Point3& pw, OptionalJacobian<2, 6> Dpose =
+      boost::none, OptionalJacobian<2, 2> Dpoint = boost::none,
+      OptionalJacobian<2, DimK> Dcal = boost::none) const {
+
+    if (!Dpose && !Dpoint && !Dcal) {
+      const Point3 pc = this->pose().rotation().unrotate(pw); // get direction in camera frame (translation does not matter)
+      const Point2 pn = PinholeBase::project_to_camera(pc);// project the point to the camera
+      return calibration().uncalibrate(pn);
+    }
+
+    // world to camera coordinate
+    Matrix3 Dpc_rot, Dpc_point;
+    const Point3 pc = this->pose().rotation().unrotate(pw, Dpc_rot, Dpc_point);
+
+    Matrix36 Dpc_pose;
+    Dpc_pose.setZero();
+    Dpc_pose.leftCols<3>() = Dpc_rot;
+
+    // camera to normalized image coordinate
+    Matrix23 Dpn_pc;// 2*3
+    const Point2 pn = PinholeBase::project_to_camera(pc, Dpn_pc);
+
+    // uncalibration
+    Matrix2 Dpi_pn;// 2*2
+    const Point2 pi = calibration().uncalibrate(pn, Dcal, Dpi_pn);
+
+    // chain the Jacobian matrices
+    const Matrix23 Dpi_pc = Dpi_pn * Dpn_pc;
+    if (Dpose)
+    *Dpose = Dpi_pc * Dpc_pose;
+    if (Dpoint)
+    *Dpoint = (Dpi_pc * Dpc_point).leftCols<2>();// only 2dof are important for the point (direction-only)
     return pi;
   }
 
