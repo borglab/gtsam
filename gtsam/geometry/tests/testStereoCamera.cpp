@@ -96,16 +96,12 @@ static StereoPoint2 project3(const Pose3& pose, const Point3& point, const Cal3_
 TEST( StereoCamera, Dproject)
 {
   Matrix expected1 = numericalDerivative31(project3, camPose, landmark, *K);
-  Matrix actual1; stereoCam.project(landmark, actual1, boost::none, boost::none);
+  Matrix actual1; stereoCam.project2(landmark, actual1, boost::none);
   CHECK(assert_equal(expected1,actual1,1e-7));
 
   Matrix expected2 = numericalDerivative32(project3,camPose, landmark, *K);
-  Matrix actual2; stereoCam.project(landmark, boost::none, actual2, boost::none);
+  Matrix actual2; stereoCam.project2(landmark, boost::none, actual2);
   CHECK(assert_equal(expected2,actual2,1e-7));
-
-  Matrix expected3 = numericalDerivative33(project3,camPose, landmark, *K);
-  Matrix actual3; stereoCam.project(landmark, boost::none, boost::none, actual3);
-//  CHECK(assert_equal(expected3,actual3,1e-8));
 }
 
 /* ************************************************************************* */
