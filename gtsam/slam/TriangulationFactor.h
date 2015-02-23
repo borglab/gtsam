@@ -27,15 +27,21 @@ namespace gtsam {
  * The calibration and pose are assumed known.
  * @addtogroup SLAM
  */
-template<class CALIBRATION = Cal3_S2>
+template<class CAMERA = PinholeCamera<Cal3_S2> >
 class TriangulationFactor: public NoiseModelFactor1<Point3> {
 
 public:
 
   /// Camera type
-  typedef PinholeCamera<CALIBRATION> Camera;
+  typedef CAMERA Camera;
 
 protected:
+
+  /// shorthand for base class type
+  typedef NoiseModelFactor1<Point3> Base;
+
+  /// shorthand for this class
+  typedef TriangulationFactor<CAMERA> This;
 
   // Keep a copy of measurement and calibration for I/O
   const Camera camera_; ///< Camera in which this landmark was seen
@@ -46,12 +52,6 @@ protected:
   const bool verboseCheirality_; ///< If true, prints text for Cheirality exceptions (default: false)
 
 public:
-
-  /// shorthand for base class type
-  typedef NoiseModelFactor1<Point3> Base;
-
-  /// shorthand for this class
-  typedef TriangulationFactor<CALIBRATION> This;
 
   /// shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<This> shared_ptr;
@@ -114,7 +114,7 @@ public:
   Vector evaluateError(const Point3& point, boost::optional<Matrix&> H2 =
       boost::none) const {
     try {
-      Point2 error(camera_.project(point, boost::none, H2, boost::none) - measured_);
+      Point2 error(camera_.project2(point, boost::none, H2) - measured_);
       return error.vector();
     } catch (CheiralityException& e) {
       if (H2)
@@ -154,7 +154,7 @@ public:
 
     // Would be even better if we could pass blocks to project
     const Point3& point = x.at<Point3>(key());
-    b = -(camera_.project(point, boost::none, A, boost::none) - measured_).vector();
+    b = -(camera_.project2(point, boost::none, A) - measured_).vector();
     if (noiseModel_)
       this->noiseModel_->WhitenSystem(A, b);
 
