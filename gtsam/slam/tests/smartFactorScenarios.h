@@ -17,8 +17,9 @@
  */
 
 #pragma once
-#include <gtsam/slam/SmartProjectionCameraFactor.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
+#include <gtsam/geometry/Cal3_S2.h>
+#include <gtsam/geometry/Cal3Bundler.h>
 
 using namespace std;
 using namespace gtsam;
@@ -40,13 +41,13 @@ Pose3 pose_up = level_pose * Pose3(Rot3(), Point3(0, -1, 0));
 // Create a noise unit2 for the pixel error
 static SharedNoiseModel unit2(noiseModel::Unit::Create(2));
 
+static double fov = 60; // degrees
+static size_t w = 640, h = 480;
+
 /* ************************************************************************* */
 // default Cal3_S2 cameras
 namespace vanilla {
 typedef PinholeCamera<Cal3_S2> Camera;
-// make a realistic calibration matrix
-static double fov = 60; // degrees
-static size_t w = 640, h = 480;
 static Cal3_S2 K(fov, w, h);
 static Cal3_S2 K2(1500, 1200, 0, w, h);
 Camera level_camera(level_pose, K2);
@@ -57,7 +58,30 @@ Camera cam1(level_pose, K2);
 Camera cam2(pose_right, K2);
 Camera cam3(pose_up, K2);
 typedef GeneralSFMFactor<Camera, Point3> SFMFactor;
-typedef SmartProjectionCameraFactor<Cal3_S2> SmartFactor;
+}
+
+/* ************************************************************************* */
+// default Cal3_S2 poses
+namespace vanillaPose {
+typedef PinholePose<Cal3_S2> Camera;
+static Cal3_S2::shared_ptr sharedK(new Cal3_S2(fov, w, h));
+Camera level_camera(level_pose, sharedK);
+Camera level_camera_right(pose_right, sharedK);
+Camera cam1(level_pose, sharedK);
+Camera cam2(pose_right, sharedK);
+Camera cam3(pose_up, sharedK);
+}
+
+/* ************************************************************************* */
+// default Cal3_S2 poses
+namespace vanillaPose2 {
+typedef PinholePose<Cal3_S2> Camera;
+static Cal3_S2::shared_ptr sharedK2(new Cal3_S2(1500, 1200, 0, 640, 480));
+Camera level_camera(level_pose, sharedK2);
+Camera level_camera_right(pose_right, sharedK2);
+Camera cam1(level_pose, sharedK2);
+Camera cam2(pose_right, sharedK2);
+Camera cam3(pose_up, sharedK2);
 }
 
 /* *************************************************************************/
@@ -74,40 +98,33 @@ Camera cam1(level_pose, K);
 Camera cam2(pose_right, K);
 Camera cam3(pose_up, K);
 typedef GeneralSFMFactor<Camera, Point3> SFMFactor;
-typedef SmartProjectionCameraFactor<Cal3Bundler> SmartFactorBundler;
+}
+/* *************************************************************************/
+// Cal3Bundler poses
+namespace bundlerPose {
+typedef PinholePose<Cal3Bundler> Camera;
+static boost::shared_ptr<Cal3Bundler> sharedBundlerK(
+    new Cal3Bundler(500, 1e-3, 1e-3, 1000, 2000));
+Camera level_camera(level_pose, sharedBundlerK);
+Camera level_camera_right(pose_right, sharedBundlerK);
+Camera cam1(level_pose, sharedBundlerK);
+Camera cam2(pose_right, sharedBundlerK);
+Camera cam3(pose_up, sharedBundlerK);
 }
 /* *************************************************************************/
 
-template<class CALIBRATION>
-PinholeCamera<CALIBRATION> perturbCameraPose(
-    const PinholeCamera<CALIBRATION>& camera) {
+template<class CAMERA>
+CAMERA perturbCameraPose(const CAMERA& camera) {
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 10, 0., -M_PI / 10),
       Point3(0.5, 0.1, 0.3));
   Pose3 cameraPose = camera.pose();
   Pose3 perturbedCameraPose = cameraPose.compose(noise_pose);
-  return PinholeCamera<CALIBRATION>(perturbedCameraPose, camera.calibration());
+  return CAMERA(perturbedCameraPose, camera.calibration());
 }
 
-template<class CALIBRATION>
-PinholeCamera<CALIBRATION> perturbCameraPoseAndCalibration(
-    const PinholeCamera<CALIBRATION>& camera) {
-  GTSAM_CONCEPT_MANIFOLD_TYPE(CALIBRATION)
-  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 10, 0., -M_PI / 10),
-      Point3(0.5, 0.1, 0.3));
-  Pose3 cameraPose = camera.pose();
-  Pose3 perturbedCameraPose = cameraPose.compose(noise_pose);
-  typename gtsam::traits<CALIBRATION>::TangentVector d;
-  d.setRandom();
-  d *= 0.1;
-  CALIBRATION perturbedCalibration = camera.calibration().retract(d);
-  return PinholeCamera<CALIBRATION>(perturbedCameraPose, perturbedCalibration);
-}
-
-template<class CALIBRATION>
-void projectToMultipleCameras(const PinholeCamera<CALIBRATION>& cam1,
-    const PinholeCamera<CALIBRATION>& cam2,
-    const PinholeCamera<CALIBRATION>& cam3, Point3 landmark,
-    vector<Point2>& measurements_cam) {
+template<class CAMERA>
+void projectToMultipleCameras(const CAMERA& cam1, const CAMERA& cam2,
+    const CAMERA& cam3, Point3 landmark, vector<Point2>& measurements_cam) {
   Point2 cam1_uv1 = cam1.project(landmark);
   Point2 cam2_uv1 = cam2.project(landmark);
   Point2 cam3_uv1 = cam3.project(landmark);

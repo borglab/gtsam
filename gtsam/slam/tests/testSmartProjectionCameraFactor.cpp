@@ -19,11 +19,12 @@
  */
 
 #include "smartFactorScenarios.h"
+#include <gtsam/slam/SmartProjectionCameraFactor.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <boost/assign/std/map.hpp>
 #include <CppUnitLite/TestHarness.h>
+#include <boost/assign/std/map.hpp>
 #include <iostream>
-//
+
 using namespace boost::assign;
 
 static bool isDebugTest = false;
@@ -42,6 +43,24 @@ Key c1 = 1, c2 = 2, c3 = 3;
 static Point2 measurement1(323.0, 240.0);
 static Pose3 body_P_sensor1(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2),
     Point3(0.25, -0.10, 1.0));
+
+typedef SmartProjectionCameraFactor<Cal3_S2> SmartFactor;
+typedef SmartProjectionCameraFactor<Cal3Bundler> SmartFactorBundler;
+
+template<class CALIBRATION>
+PinholeCamera<CALIBRATION> perturbCameraPoseAndCalibration(
+    const PinholeCamera<CALIBRATION>& camera) {
+  GTSAM_CONCEPT_MANIFOLD_TYPE(CALIBRATION)
+  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 10, 0., -M_PI / 10),
+      Point3(0.5, 0.1, 0.3));
+  Pose3 cameraPose = camera.pose();
+  Pose3 perturbedCameraPose = cameraPose.compose(noise_pose);
+  typename gtsam::traits<CALIBRATION>::TangentVector d;
+  d.setRandom();
+  d *= 0.1;
+  CALIBRATION perturbedCalibration = camera.calibration().retract(d);
+  return PinholeCamera<CALIBRATION>(perturbedCameraPose, perturbedCalibration);
+}
 
 /* ************************************************************************* */
 TEST( SmartProjectionCameraFactor, perturbCameraPose) {
