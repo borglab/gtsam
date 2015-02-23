@@ -32,22 +32,23 @@ using namespace std;
 using namespace boost::assign;
 using namespace gtsam;
 
-static bool isDebugTest = false;
+static bool isDebugTest = true;
 
 // make a realistic calibration matrix
 static double fov = 60; // degrees
 static size_t w = 640, h = 480;
 
-static Cal3_S2::shared_ptr K(new Cal3_S2(fov, w, h));
-static Cal3_S2::shared_ptr K2(new Cal3_S2(1500, 1200, 0, 640, 480));
-static boost::shared_ptr<Cal3Bundler> Kbundler(
+static Cal3_S2::shared_ptr sharedK(new Cal3_S2(fov, w, h));
+static Cal3_S2::shared_ptr sharedK2(new Cal3_S2(1500, 1200, 0, 640, 480));
+static boost::shared_ptr<Cal3Bundler> sharedBundlerK(
     new Cal3Bundler(500, 1e-3, 1e-3, 1000, 2000));
 
-static double rankTol = 1.0;
-static double linThreshold = -1.0;
-static bool manageDegeneracy = true;
+static const double rankTol = 1.0;
+static const double linThreshold = -1.0;
+static const bool manageDegeneracy = true;
 // Create a noise model for the pixel error
-static SharedNoiseModel model(noiseModel::Isotropic::Sigma(2, 0.1));
+static const double sigma = 0.1;
+static SharedNoiseModel model(noiseModel::Isotropic::Sigma(2, sigma));
 
 // Convenience for named keys
 using symbol_shorthand::X;
@@ -63,11 +64,28 @@ static Point2 measurement1(323.0, 240.0);
 static Pose3 body_P_sensor1(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2),
     Point3(0.25, -0.10, 1.0));
 
+typedef PinholePose<Cal3_S2> Camera;
 typedef SmartProjectionPoseFactor<Cal3_S2> SmartFactor;
+
+typedef PinholePose<Cal3Bundler> CameraBundler;
 typedef SmartProjectionPoseFactor<Cal3Bundler> SmartFactorBundler;
 
-void projectToMultipleCameras(SimpleCamera cam1, SimpleCamera cam2,
-    SimpleCamera cam3, Point3 landmark, vector<Point2>& measurements_cam) {
+// create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
+Pose3 level_pose = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2),
+    Point3(0, 0, 1));
+Camera level_camera(level_pose, sharedK2);
+
+// create second camera 1 meter to the right of first camera
+Pose3 level_pose_right = level_pose * Pose3(Rot3(), Point3(1, 0, 0));
+Camera level_camera_right(level_pose_right, sharedK2);
+
+// landmarks ~5 meters in front of camera
+Point3 landmark1(5, 0.5, 1.2);
+Point3 landmark2(5, -0.5, 1.2);
+Point3 landmark3(5, 0, 3.0);
+
+void projectToMultipleCameras(Camera cam1, Camera cam2, Camera cam3,
+    Point3 landmark, vector<Point2>& measurements_cam) {
 
   Point2 cam1_uv1 = cam1.project(landmark);
   Point2 cam2_uv1 = cam2.project(landmark);
@@ -90,13 +108,13 @@ TEST( SmartProjectionPoseFactor, Constructor2) {
 /* ************************************************************************* */
 TEST( SmartProjectionPoseFactor, Constructor3) {
   SmartFactor::shared_ptr factor1(new SmartFactor());
-  factor1->add(measurement1, poseKey1, model, K);
+  factor1->add(measurement1, poseKey1, model, sharedK);
 }
 
 /* ************************************************************************* */
 TEST( SmartProjectionPoseFactor, Constructor4) {
   SmartFactor factor1(rankTol, linThreshold);
-  factor1.add(measurement1, poseKey1, model, K);
+  factor1.add(measurement1, poseKey1, model, sharedK);
 }
 
 /* ************************************************************************* */
@@ -105,16 +123,16 @@ TEST( SmartProjectionPoseFactor, ConstructorWithTransform) {
   bool enableEPI = false;
   SmartFactor factor1(rankTol, linThreshold, manageDegeneracy, enableEPI,
       body_P_sensor1);
-  factor1.add(measurement1, poseKey1, model, K);
+  factor1.add(measurement1, poseKey1, model, sharedK);
 }
 
 /* ************************************************************************* */
 TEST( SmartProjectionPoseFactor, Equals ) {
   SmartFactor::shared_ptr factor1(new SmartFactor());
-  factor1->add(measurement1, poseKey1, model, K);
+  factor1->add(measurement1, poseKey1, model, sharedK);
 
   SmartFactor::shared_ptr factor2(new SmartFactor());
-  factor2->add(measurement1, poseKey1, model, K);
+  factor2->add(measurement1, poseKey1, model, sharedK);
 
   CHECK(assert_equal(*factor1, *factor2));
 }
@@ -123,29 +141,17 @@ TEST( SmartProjectionPoseFactor, Equals ) {
 TEST_UNSAFE( SmartProjectionPoseFactor, noiseless ) {
   // cout << " ************************ SmartProjectionPoseFactor: noisy ****************************" << endl;
 
-  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  Pose3 level_pose = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2),
-      Point3(0, 0, 1));
-  SimpleCamera level_camera(level_pose, *K2);
-
-  // create second camera 1 meter to the right of first camera
-  Pose3 level_pose_right = level_pose * Pose3(Rot3(), Point3(1, 0, 0));
-  SimpleCamera level_camera_right(level_pose_right, *K2);
-
-  // landmark ~5 meters infront of camera
-  Point3 landmark(5, 0.5, 1.2);
-
   // Project two landmarks into two cameras
-  Point2 level_uv = level_camera.project(landmark);
-  Point2 level_uv_right = level_camera_right.project(landmark);
+  Point2 level_uv = level_camera.project(landmark1);
+  Point2 level_uv_right = level_camera_right.project(landmark1);
+
+  SmartFactor factor;
+  factor.add(level_uv, x1, model, sharedK);
+  factor.add(level_uv_right, x2, model, sharedK);
 
   Values values;
   values.insert(x1, level_pose);
   values.insert(x2, level_pose_right);
-
-  SmartFactor factor;
-  factor.add(level_uv, x1, model, K);
-  factor.add(level_uv_right, x2, model, K);
 
   double actualError = factor.error(values);
   double expectedError = 0.0;
@@ -155,51 +161,44 @@ TEST_UNSAFE( SmartProjectionPoseFactor, noiseless ) {
   double actualError2 = factor.totalReprojectionError(cameras);
   EXPECT_DOUBLES_EQUAL(expectedError, actualError2, 1e-7);
 
-  // test vector of errors
-  //Vector actual = factor.unwhitenedError(values);
-  //EXPECT(assert_equal(zero(4),actual,1e-8));
-
-  // Check derivatives
-
   // Calculate expected derivative for point (easiest to check)
   boost::function<Vector(Point3)> f = //
       boost::bind(&SmartFactor::whitenedErrors, factor, cameras, _1);
   boost::optional<Point3> point = factor.point();
   CHECK(point);
-  Matrix expectedE = numericalDerivative11<Vector, Point3>(f, *point);
+
+  // Note ! After refactor the noiseModel is only in the factors, not these matrices
+  Matrix expectedE = sigma * numericalDerivative11<Vector, Point3>(f, *point);
 
   // Calculate using computeEP
   Matrix actualE, PointCov;
-  factor.computeEP(actualE, PointCov, cameras);
+  factor.computeEP(actualE, PointCov, values);
   EXPECT(assert_equal(expectedE, actualE, 1e-7));
 
-  // Calculate using whitenedError
-  Matrix F, actualE2;
-  Vector actualErrors = factor.whitenedError(cameras, *point, F, actualE2);
-  EXPECT(assert_equal(expectedE, actualE2, 1e-7));
-  EXPECT(assert_equal(f(*point), actualErrors, 1e-7));
+  // Calculate using reprojectionErrors, note not yet divided by sigma !
+  SmartFactor::Cameras::FBlocks F;
+  Matrix E;
+  Vector actualErrors = factor.reprojectionErrors(cameras, *point, F, E);
+  EXPECT(assert_equal(expectedE, E, 1e-7));
+
+  EXPECT(assert_equal(zero(4), actualErrors, 1e-7));
+
+  // Calculate using computeJacobians
+  Vector b;
+  vector<SmartFactor::KeyMatrix2D> Fblocks;
+  double actualError3 = factor.computeJacobians(Fblocks, E, b, cameras);
+  EXPECT(assert_equal(expectedE, E, 1e-7));
+  EXPECT_DOUBLES_EQUAL(expectedError, actualError3, 1e-8);
 }
 
 /* *************************************************************************/
 TEST( SmartProjectionPoseFactor, noisy ) {
   // cout << " ************************ SmartProjectionPoseFactor: noisy ****************************" << endl;
 
-  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  Pose3 level_pose = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2),
-      Point3(0, 0, 1));
-  SimpleCamera level_camera(level_pose, *K2);
-
-  // create second camera 1 meter to the right of first camera
-  Pose3 level_pose_right = level_pose * Pose3(Rot3(), Point3(1, 0, 0));
-  SimpleCamera level_camera_right(level_pose_right, *K2);
-
-  // landmark ~5 meters infront of camera
-  Point3 landmark(5, 0.5, 1.2);
-
   // 1. Project two landmarks into two cameras and triangulate
   Point2 pixelError(0.2, 0.2);
-  Point2 level_uv = level_camera.project(landmark) + pixelError;
-  Point2 level_uv_right = level_camera_right.project(landmark);
+  Point2 level_uv = level_camera.project(landmark1) + pixelError;
+  Point2 level_uv_right = level_camera_right.project(landmark1);
 
   Values values;
   values.insert(x1, level_pose);
@@ -208,8 +207,8 @@ TEST( SmartProjectionPoseFactor, noisy ) {
   values.insert(x2, level_pose_right.compose(noise_pose));
 
   SmartFactor::shared_ptr factor(new SmartFactor());
-  factor->add(level_uv, x1, model, K);
-  factor->add(level_uv_right, x2, model, K);
+  factor->add(level_uv, x1, model, sharedK);
+  factor->add(level_uv_right, x2, model, sharedK);
 
   double actualError1 = factor->error(values);
 
@@ -223,8 +222,8 @@ TEST( SmartProjectionPoseFactor, noisy ) {
   noises.push_back(model);
 
   vector<boost::shared_ptr<Cal3_S2> > Ks; ///< shared pointer to calibration object (one for each camera)
-  Ks.push_back(K);
-  Ks.push_back(K);
+  Ks.push_back(sharedK);
+  Ks.push_back(sharedK);
 
   vector<Key> views;
   views.push_back(x1);
@@ -243,20 +242,15 @@ TEST( SmartProjectionPoseFactor, 3poses_smart_projection_factor ) {
 
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
   Pose3 pose1 = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
-  SimpleCamera cam1(pose1, *K2);
+  Camera cam1(pose1, sharedK2);
 
   // create second camera 1 meter to the right of first camera
   Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(1, 0, 0));
-  SimpleCamera cam2(pose2, *K2);
+  Camera cam2(pose2, sharedK2);
 
   // create third camera 1 meter above the first camera
   Pose3 pose3 = pose1 * Pose3(Rot3(), Point3(0, -1, 0));
-  SimpleCamera cam3(pose3, *K2);
-
-  // three landmarks ~5 meters infront of camera
-  Point3 landmark1(5, 0.5, 1.2);
-  Point3 landmark2(5, -0.5, 1.2);
-  Point3 landmark3(3, 0, 3.0);
+  Camera cam3(pose3, sharedK2);
 
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
 
@@ -271,13 +265,13 @@ TEST( SmartProjectionPoseFactor, 3poses_smart_projection_factor ) {
   views.push_back(x3);
 
   SmartFactor::shared_ptr smartFactor1(new SmartFactor());
-  smartFactor1->add(measurements_cam1, views, model, K2);
+  smartFactor1->add(measurements_cam1, views, model, sharedK2);
 
   SmartFactor::shared_ptr smartFactor2(new SmartFactor());
-  smartFactor2->add(measurements_cam2, views, model, K2);
+  smartFactor2->add(measurements_cam2, views, model, sharedK2);
 
   SmartFactor::shared_ptr smartFactor3(new SmartFactor());
-  smartFactor3->add(measurements_cam3, views, model, K2);
+  smartFactor3->add(measurements_cam3, views, model, sharedK2);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
 
@@ -312,8 +306,8 @@ TEST( SmartProjectionPoseFactor, 3poses_smart_projection_factor ) {
   gttoc_(SmartProjectionPoseFactor);
   tictoc_finishedIteration_();
 
-//  GaussianFactorGraph::shared_ptr GFG = graph.linearize(values);
-//  VectorValues delta = GFG->optimize();
+  GaussianFactorGraph::shared_ptr GFG = graph.linearize(values);
+  VectorValues delta = GFG->optimize();
 
   // result.print("results of 3 camera, 3 landmark optimization \n");
   if (isDebugTest)
@@ -332,9 +326,9 @@ TEST( SmartProjectionPoseFactor, smartFactorWithSensorBodyTransform ) {
   Pose3 cameraPose2 = cameraPose1 * Pose3(Rot3(), Point3(1, 0, 0));
   Pose3 cameraPose3 = cameraPose1 * Pose3(Rot3(), Point3(0, -1, 0));
 
-  SimpleCamera cam1(cameraPose1, *K); // with camera poses
-  SimpleCamera cam2(cameraPose2, *K);
-  SimpleCamera cam3(cameraPose3, *K);
+  Camera cam1(cameraPose1, sharedK); // with camera poses
+  Camera cam2(cameraPose2, sharedK);
+  Camera cam3(cameraPose3, sharedK);
 
   // create arbitrary body_Pose_sensor (transforms from sensor to body)
   Pose3 sensor_to_body = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2),
@@ -344,11 +338,6 @@ TEST( SmartProjectionPoseFactor, smartFactorWithSensorBodyTransform ) {
   Pose3 bodyPose1 = cameraPose1.compose(sensor_to_body.inverse());
   Pose3 bodyPose2 = cameraPose2.compose(sensor_to_body.inverse());
   Pose3 bodyPose3 = cameraPose3.compose(sensor_to_body.inverse());
-
-  // three landmarks ~5 meters infront of camera
-  Point3 landmark1(5, 0.5, 1.2);
-  Point3 landmark2(5, -0.5, 1.2);
-  Point3 landmark3(5, 0, 3.0);
 
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
 
@@ -371,17 +360,17 @@ TEST( SmartProjectionPoseFactor, smartFactorWithSensorBodyTransform ) {
   SmartFactor::shared_ptr smartFactor1(
       new SmartFactor(rankTol, linThreshold, manageDegeneracy, enableEPI,
           sensor_to_body));
-  smartFactor1->add(measurements_cam1, views, model, K);
+  smartFactor1->add(measurements_cam1, views, model, sharedK);
 
   SmartFactor::shared_ptr smartFactor2(
       new SmartFactor(rankTol, linThreshold, manageDegeneracy, enableEPI,
           sensor_to_body));
-  smartFactor2->add(measurements_cam2, views, model, K);
+  smartFactor2->add(measurements_cam2, views, model, sharedK);
 
   SmartFactor::shared_ptr smartFactor3(
       new SmartFactor(rankTol, linThreshold, manageDegeneracy, enableEPI,
           sensor_to_body));
-  smartFactor3->add(measurements_cam3, views, model, K);
+  smartFactor3->add(measurements_cam3, views, model, sharedK);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
 
@@ -428,34 +417,36 @@ TEST( SmartProjectionPoseFactor, smartFactorWithSensorBodyTransform ) {
       boost::bind(&SmartFactor::whitenedErrors, *smartFactor1, cameras, _1);
   boost::optional<Point3> point = smartFactor1->point();
   CHECK(point);
-  Matrix expectedE = numericalDerivative11<Vector, Point3>(f, *point);
+
+  // Note ! After refactor the noiseModel is only in the factors, not these matrices
+  Matrix expectedE = sigma * numericalDerivative11<Vector, Point3>(f, *point);
 
   // Calculate using computeEP
   Matrix actualE, PointCov;
-  smartFactor1->computeEP(actualE, PointCov, cameras);
+  smartFactor1->computeEP(actualE, PointCov, values);
   EXPECT(assert_equal(expectedE, actualE, 1e-7));
 
   // Calculate using whitenedError
-  Matrix F, actualE2;
-  Vector actualErrors = smartFactor1->whitenedError(cameras, *point, F,
-      actualE2);
-  EXPECT(assert_equal(expectedE, actualE2, 1e-7));
+  Matrix E;
+  SmartFactor::Cameras::FBlocks F;
+  Vector actualErrors = smartFactor1->reprojectionErrors(cameras, *point, F, E);
+  EXPECT(assert_equal(expectedE, E, 1e-7));
 
-  // TODO the derivatives agree with f, but returned errors are -f :-(
-  // TODO We should merge the two whitenedErrors functions and make derivatives optional
-  EXPECT(assert_equal(-f(*point), actualErrors, 1e-7));
+  // Success ! The derivatives of reprojectionErrors now agree with f !
+  EXPECT(assert_equal(f(*point) * sigma, actualErrors, 1e-7));
 }
 
 /* *************************************************************************/
-TEST( SmartProjectionPoseFactor, Factors ){
+TEST( SmartProjectionPoseFactor, Factors ) {
 
   // Default cameras for simple derivatives
   Rot3 R;
-  static Cal3_S2::shared_ptr K(new Cal3_S2(100, 100, 0, 0, 0));
-  SimpleCamera cam1(Pose3(R,Point3(0,0,0)),*K), cam2(Pose3(R,Point3(1,0,0)),*K);
+  static Cal3_S2::shared_ptr sharedK(new Cal3_S2(100, 100, 0, 0, 0));
+  PinholePose<Cal3_S2> cam1(Pose3(R, Point3(0, 0, 0)), sharedK), cam2(
+      Pose3(R, Point3(1, 0, 0)), sharedK);
 
   // one landmarks 1m in front of camera
-  Point3 landmark1(0,0,10);
+  Point3 landmark1(0, 0, 10);
 
   vector<Point2> measurements_cam1;
 
@@ -464,24 +455,24 @@ TEST( SmartProjectionPoseFactor, Factors ){
   measurements_cam1.push_back(cam2.project(landmark1));
 
   // Create smart factors
-  std::vector<Key> views;
+  vector<Key> views;
   views.push_back(x1);
   views.push_back(x2);
 
   SmartFactor::shared_ptr smartFactor1 = boost::make_shared<SmartFactor>();
-  smartFactor1->add(measurements_cam1, views, model, K);
+  smartFactor1->add(measurements_cam1, views, model, sharedK);
 
   SmartFactor::Cameras cameras;
   cameras.push_back(cam1);
   cameras.push_back(cam2);
 
   // Make sure triangulation works
-  LONGS_EQUAL(2,smartFactor1->triangulateSafe(cameras));
+  LONGS_EQUAL(2, smartFactor1->triangulateSafe(cameras));
   CHECK(!smartFactor1->isDegenerate());
   CHECK(!smartFactor1->isPointBehindCamera());
   boost::optional<Point3> p = smartFactor1->point();
   CHECK(p);
-  EXPECT(assert_equal(landmark1,*p));
+  EXPECT(assert_equal(landmark1, *p));
 
   // After eliminating the point, A1 and A2 contain 2-rank information on cameras:
   Matrix16 A1, A2;
@@ -489,12 +480,14 @@ TEST( SmartProjectionPoseFactor, Factors ){
   A2 << 1000, 0, 100, 0, -100, 0;
   {
     // createHessianFactor
-    Matrix66 G11 = 0.5*A1.transpose()*A1;
-    Matrix66 G12 = 0.5*A1.transpose()*A2;
-    Matrix66 G22 = 0.5*A2.transpose()*A2;
+    Matrix66 G11 = 0.5 * A1.transpose() * A1;
+    Matrix66 G12 = 0.5 * A1.transpose() * A2;
+    Matrix66 G22 = 0.5 * A2.transpose() * A2;
 
-    Vector6 g1; g1.setZero();
-    Vector6 g2; g2.setZero();
+    Vector6 g1;
+    g1.setZero();
+    Vector6 g2;
+    g2.setZero();
 
     double f = 0;
 
@@ -502,18 +495,37 @@ TEST( SmartProjectionPoseFactor, Factors ){
 
     boost::shared_ptr<RegularHessianFactor<6> > actual =
         smartFactor1->createHessianFactor(cameras, 0.0);
-    CHECK(assert_equal(expected.augmentedInformation(), actual->augmentedInformation(), 1e-8));
-    CHECK(assert_equal(expected, *actual, 1e-8));
+    EXPECT(assert_equal(expected.information(), actual->information(), 1e-8));
+    EXPECT(assert_equal(expected, *actual, 1e-8));
   }
 
   {
-    Matrix26 F1; F1.setZero(); F1(0,1)=-100; F1(0,3)=-10; F1(1,0)=100; F1(1,4)=-10;
-    Matrix26 F2; F2.setZero(); F2(0,1)=-101; F2(0,3)=-10; F2(0,5)=-1; F2(1,0)=100; F2(1,2)=10; F2(1,4)=-10;
-    Matrix43 E; E.setZero(); E(0,0)=100; E(1,1)=100; E(2,0)=100; E(2,2)=10;E(3,1)=100;
+    Matrix26 F1;
+    F1.setZero();
+    F1(0, 1) = -100;
+    F1(0, 3) = -10;
+    F1(1, 0) = 100;
+    F1(1, 4) = -10;
+    Matrix26 F2;
+    F2.setZero();
+    F2(0, 1) = -101;
+    F2(0, 3) = -10;
+    F2(0, 5) = -1;
+    F2(1, 0) = 100;
+    F2(1, 2) = 10;
+    F2(1, 4) = -10;
+    Matrix43 E;
+    E.setZero();
+    E(0, 0) = 100;
+    E(1, 1) = 100;
+    E(2, 0) = 100;
+    E(2, 2) = 10;
+    E(3, 1) = 100;
     const vector<pair<Key, Matrix26> > Fblocks = list_of<pair<Key, Matrix> > //
-        (make_pair(x1, 10*F1))(make_pair(x2, 10*F2));
+        (make_pair(x1, 10 * F1))(make_pair(x2, 10 * F2));
     Matrix3 P = (E.transpose() * E).inverse();
-    Vector4 b; b.setZero();
+    Vector4 b;
+    b.setZero();
 
     // createRegularImplicitSchurFactor
     RegularImplicitSchurFactor<6> expected(Fblocks, E, P, b);
@@ -524,26 +536,27 @@ TEST( SmartProjectionPoseFactor, Factors ){
     CHECK(assert_equal(expected, *actual));
 
     // createJacobianQFactor
-    JacobianFactorQ < 6, 2 > expectedQ(Fblocks, E, P, b);
+    JacobianFactorQ<6, 2> expectedQ(Fblocks, E, P, b);
 
     boost::shared_ptr<JacobianFactorQ<6, 2> > actualQ =
         smartFactor1->createJacobianQFactor(cameras, 0.0);
     CHECK(actual);
-    CHECK(assert_equal(expectedQ.augmentedInformation(), actualQ->augmentedInformation(), 1e-8));
-    CHECK(assert_equal(expectedQ, *actualQ));
+    EXPECT(assert_equal(expectedQ.information(), actualQ->information(), 1e-8));
+    EXPECT(assert_equal(expectedQ, *actualQ));
   }
 
   {
     // createJacobianSVDFactor
-    Vector1 b; b.setZero();
+    Vector1 b;
+    b.setZero();
     double s = sin(M_PI_4);
-    JacobianFactor expected(x1, s*A1, x2, s*A2, b);
+    JacobianFactor expected(x1, s * A1, x2, s * A2, b);
 
     boost::shared_ptr<JacobianFactor> actual =
         smartFactor1->createJacobianSVDFactor(cameras, 0.0);
     CHECK(actual);
-    CHECK(assert_equal(expected.augmentedInformation(), actual->augmentedInformation(), 1e-8));
-    CHECK(assert_equal(expected, *actual));
+    EXPECT(assert_equal(expected.information(), actual->information(), 1e-8));
+    EXPECT(assert_equal(expected, *actual));
   }
 }
 
@@ -558,20 +571,15 @@ TEST( SmartProjectionPoseFactor, 3poses_iterative_smart_projection_factor ) {
 
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
   Pose3 pose1 = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
-  SimpleCamera cam1(pose1, *K);
+  Camera cam1(pose1, sharedK);
 
   // create second camera 1 meter to the right of first camera
   Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(1, 0, 0));
-  SimpleCamera cam2(pose2, *K);
+  Camera cam2(pose2, sharedK);
 
   // create third camera 1 meter above the first camera
   Pose3 pose3 = pose1 * Pose3(Rot3(), Point3(0, -1, 0));
-  SimpleCamera cam3(pose3, *K);
-
-  // three landmarks ~5 meters infront of camera
-  Point3 landmark1(5, 0.5, 1.2);
-  Point3 landmark2(5, -0.5, 1.2);
-  Point3 landmark3(3, 0, 3.0);
+  Camera cam3(pose3, sharedK);
 
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
 
@@ -581,13 +589,13 @@ TEST( SmartProjectionPoseFactor, 3poses_iterative_smart_projection_factor ) {
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
 
   SmartFactor::shared_ptr smartFactor1(new SmartFactor());
-  smartFactor1->add(measurements_cam1, views, model, K);
+  smartFactor1->add(measurements_cam1, views, model, sharedK);
 
   SmartFactor::shared_ptr smartFactor2(new SmartFactor());
-  smartFactor2->add(measurements_cam2, views, model, K);
+  smartFactor2->add(measurements_cam2, views, model, sharedK);
 
   SmartFactor::shared_ptr smartFactor3(new SmartFactor());
-  smartFactor3->add(measurements_cam3, views, model, K);
+  smartFactor3->add(measurements_cam3, views, model, sharedK);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
 
@@ -640,18 +648,13 @@ TEST( SmartProjectionPoseFactor, jacobianSVD ) {
 
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
   Pose3 pose1 = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
-  SimpleCamera cam1(pose1, *K);
+  Camera cam1(pose1, sharedK);
   // create second camera 1 meter to the right of first camera
   Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(1, 0, 0));
-  SimpleCamera cam2(pose2, *K);
+  Camera cam2(pose2, sharedK);
   // create third camera 1 meter above the first camera
   Pose3 pose3 = pose1 * Pose3(Rot3(), Point3(0, -1, 0));
-  SimpleCamera cam3(pose3, *K);
-
-  // three landmarks ~5 meters infront of camera
-  Point3 landmark1(5, 0.5, 1.2);
-  Point3 landmark2(5, -0.5, 1.2);
-  Point3 landmark3(3, 0, 3.0);
+  Camera cam3(pose3, sharedK);
 
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
 
@@ -662,15 +665,15 @@ TEST( SmartProjectionPoseFactor, jacobianSVD ) {
 
   SmartFactor::shared_ptr smartFactor1(
       new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD));
-  smartFactor1->add(measurements_cam1, views, model, K);
+  smartFactor1->add(measurements_cam1, views, model, sharedK);
 
   SmartFactor::shared_ptr smartFactor2(
       new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD));
-  smartFactor2->add(measurements_cam2, views, model, K);
+  smartFactor2->add(measurements_cam2, views, model, sharedK);
 
   SmartFactor::shared_ptr smartFactor3(
       new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD));
-  smartFactor3->add(measurements_cam3, views, model, K);
+  smartFactor3->add(measurements_cam3, views, model, sharedK);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
 
@@ -708,18 +711,13 @@ TEST( SmartProjectionPoseFactor, landmarkDistance ) {
 
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
   Pose3 pose1 = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
-  SimpleCamera cam1(pose1, *K);
+  Camera cam1(pose1, sharedK);
   // create second camera 1 meter to the right of first camera
   Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(1, 0, 0));
-  SimpleCamera cam2(pose2, *K);
+  Camera cam2(pose2, sharedK);
   // create third camera 1 meter above the first camera
   Pose3 pose3 = pose1 * Pose3(Rot3(), Point3(0, -1, 0));
-  SimpleCamera cam3(pose3, *K);
-
-  // three landmarks ~5 meters infront of camera
-  Point3 landmark1(5, 0.5, 1.2);
-  Point3 landmark2(5, -0.5, 1.2);
-  Point3 landmark3(3, 0, 3.0);
+  Camera cam3(pose3, sharedK);
 
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
 
@@ -731,17 +729,17 @@ TEST( SmartProjectionPoseFactor, landmarkDistance ) {
   SmartFactor::shared_ptr smartFactor1(
       new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD,
           excludeLandmarksFutherThanDist));
-  smartFactor1->add(measurements_cam1, views, model, K);
+  smartFactor1->add(measurements_cam1, views, model, sharedK);
 
   SmartFactor::shared_ptr smartFactor2(
       new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD,
           excludeLandmarksFutherThanDist));
-  smartFactor2->add(measurements_cam2, views, model, K);
+  smartFactor2->add(measurements_cam2, views, model, sharedK);
 
   SmartFactor::shared_ptr smartFactor3(
       new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD,
           excludeLandmarksFutherThanDist));
-  smartFactor3->add(measurements_cam3, views, model, K);
+  smartFactor3->add(measurements_cam3, views, model, sharedK);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
 
@@ -781,18 +779,15 @@ TEST( SmartProjectionPoseFactor, dynamicOutlierRejection ) {
 
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
   Pose3 pose1 = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
-  SimpleCamera cam1(pose1, *K);
+  Camera cam1(pose1, sharedK);
   // create second camera 1 meter to the right of first camera
   Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(1, 0, 0));
-  SimpleCamera cam2(pose2, *K);
+  Camera cam2(pose2, sharedK);
   // create third camera 1 meter above the first camera
   Pose3 pose3 = pose1 * Pose3(Rot3(), Point3(0, -1, 0));
-  SimpleCamera cam3(pose3, *K);
+  Camera cam3(pose3, sharedK);
 
-  // three landmarks ~5 meters infront of camera
-  Point3 landmark1(5, 0.5, 1.2);
-  Point3 landmark2(5, -0.5, 1.2);
-  Point3 landmark3(3, 0, 3.0);
+  // add fourth landmark
   Point3 landmark4(5, -0.5, 1);
 
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3,
@@ -808,22 +803,22 @@ TEST( SmartProjectionPoseFactor, dynamicOutlierRejection ) {
   SmartFactor::shared_ptr smartFactor1(
       new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD,
           excludeLandmarksFutherThanDist, dynamicOutlierRejectionThreshold));
-  smartFactor1->add(measurements_cam1, views, model, K);
+  smartFactor1->add(measurements_cam1, views, model, sharedK);
 
   SmartFactor::shared_ptr smartFactor2(
       new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD,
           excludeLandmarksFutherThanDist, dynamicOutlierRejectionThreshold));
-  smartFactor2->add(measurements_cam2, views, model, K);
+  smartFactor2->add(measurements_cam2, views, model, sharedK);
 
   SmartFactor::shared_ptr smartFactor3(
       new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD,
           excludeLandmarksFutherThanDist, dynamicOutlierRejectionThreshold));
-  smartFactor3->add(measurements_cam3, views, model, K);
+  smartFactor3->add(measurements_cam3, views, model, sharedK);
 
   SmartFactor::shared_ptr smartFactor4(
       new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD,
           excludeLandmarksFutherThanDist, dynamicOutlierRejectionThreshold));
-  smartFactor4->add(measurements_cam4, views, model, K);
+  smartFactor4->add(measurements_cam4, views, model, sharedK);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
 
@@ -860,18 +855,13 @@ TEST( SmartProjectionPoseFactor, jacobianQ ) {
 
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
   Pose3 pose1 = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
-  SimpleCamera cam1(pose1, *K);
+  Camera cam1(pose1, sharedK);
   // create second camera 1 meter to the right of first camera
   Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(1, 0, 0));
-  SimpleCamera cam2(pose2, *K);
+  Camera cam2(pose2, sharedK);
   // create third camera 1 meter above the first camera
   Pose3 pose3 = pose1 * Pose3(Rot3(), Point3(0, -1, 0));
-  SimpleCamera cam3(pose3, *K);
-
-  // three landmarks ~5 meters infront of camera
-  Point3 landmark1(5, 0.5, 1.2);
-  Point3 landmark2(5, -0.5, 1.2);
-  Point3 landmark3(3, 0, 3.0);
+  Camera cam3(pose3, sharedK);
 
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
 
@@ -882,15 +872,15 @@ TEST( SmartProjectionPoseFactor, jacobianQ ) {
 
   SmartFactor::shared_ptr smartFactor1(
       new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_Q));
-  smartFactor1->add(measurements_cam1, views, model, K);
+  smartFactor1->add(measurements_cam1, views, model, sharedK);
 
   SmartFactor::shared_ptr smartFactor2(
       new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_Q));
-  smartFactor2->add(measurements_cam2, views, model, K);
+  smartFactor2->add(measurements_cam2, views, model, sharedK);
 
   SmartFactor::shared_ptr smartFactor3(
       new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_Q));
-  smartFactor3->add(measurements_cam3, views, model, K);
+  smartFactor3->add(measurements_cam3, views, model, sharedK);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
 
@@ -927,45 +917,40 @@ TEST( SmartProjectionPoseFactor, 3poses_projection_factor ) {
 
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
   Pose3 pose1 = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
-  SimpleCamera cam1(pose1, *K2);
+  Camera cam1(pose1, sharedK2);
 
   // create second camera 1 meter to the right of first camera
   Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(1, 0, 0));
-  SimpleCamera cam2(pose2, *K2);
+  Camera cam2(pose2, sharedK2);
 
   // create third camera 1 meter above the first camera
   Pose3 pose3 = pose1 * Pose3(Rot3(), Point3(0, -1, 0));
-  SimpleCamera cam3(pose3, *K2);
-
-  // three landmarks ~5 meters infront of camera
-  Point3 landmark1(5, 0.5, 1.2);
-  Point3 landmark2(5, -0.5, 1.2);
-  Point3 landmark3(3, 0, 3.0);
+  Camera cam3(pose3, sharedK2);
 
   typedef GenericProjectionFactor<Pose3, Point3> ProjectionFactor;
   NonlinearFactorGraph graph;
 
   // 1. Project three landmarks into three cameras and triangulate
   graph.push_back(
-      ProjectionFactor(cam1.project(landmark1), model, x1, L(1), K2));
+      ProjectionFactor(cam1.project(landmark1), model, x1, L(1), sharedK2));
   graph.push_back(
-      ProjectionFactor(cam2.project(landmark1), model, x2, L(1), K2));
+      ProjectionFactor(cam2.project(landmark1), model, x2, L(1), sharedK2));
   graph.push_back(
-      ProjectionFactor(cam3.project(landmark1), model, x3, L(1), K2));
+      ProjectionFactor(cam3.project(landmark1), model, x3, L(1), sharedK2));
 
   graph.push_back(
-      ProjectionFactor(cam1.project(landmark2), model, x1, L(2), K2));
+      ProjectionFactor(cam1.project(landmark2), model, x1, L(2), sharedK2));
   graph.push_back(
-      ProjectionFactor(cam2.project(landmark2), model, x2, L(2), K2));
+      ProjectionFactor(cam2.project(landmark2), model, x2, L(2), sharedK2));
   graph.push_back(
-      ProjectionFactor(cam3.project(landmark2), model, x3, L(2), K2));
+      ProjectionFactor(cam3.project(landmark2), model, x3, L(2), sharedK2));
 
   graph.push_back(
-      ProjectionFactor(cam1.project(landmark3), model, x1, L(3), K2));
+      ProjectionFactor(cam1.project(landmark3), model, x1, L(3), sharedK2));
   graph.push_back(
-      ProjectionFactor(cam2.project(landmark3), model, x2, L(3), K2));
+      ProjectionFactor(cam2.project(landmark3), model, x2, L(3), sharedK2));
   graph.push_back(
-      ProjectionFactor(cam3.project(landmark3), model, x3, L(3), K2));
+      ProjectionFactor(cam3.project(landmark3), model, x3, L(3), sharedK2));
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
   graph.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
@@ -1006,20 +991,15 @@ TEST( SmartProjectionPoseFactor, CheckHessian) {
 
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
   Pose3 pose1 = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
-  SimpleCamera cam1(pose1, *K);
+  Camera cam1(pose1, sharedK);
 
   // create second camera 1 meter to the right of first camera
   Pose3 pose2 = pose1 * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
-  SimpleCamera cam2(pose2, *K);
+  Camera cam2(pose2, sharedK);
 
   // create third camera 1 meter above the first camera
   Pose3 pose3 = pose2 * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
-  SimpleCamera cam3(pose3, *K);
-
-  // three landmarks ~5 meters infront of camera
-  Point3 landmark1(5, 0.5, 1.2);
-  Point3 landmark2(5, -0.5, 1.2);
-  Point3 landmark3(3, 0, 3.0);
+  Camera cam3(pose3, sharedK);
 
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
 
@@ -1031,13 +1011,13 @@ TEST( SmartProjectionPoseFactor, CheckHessian) {
   double rankTol = 10;
 
   SmartFactor::shared_ptr smartFactor1(new SmartFactor(rankTol));
-  smartFactor1->add(measurements_cam1, views, model, K);
+  smartFactor1->add(measurements_cam1, views, model, sharedK);
 
   SmartFactor::shared_ptr smartFactor2(new SmartFactor(rankTol));
-  smartFactor2->add(measurements_cam2, views, model, K);
+  smartFactor2->add(measurements_cam2, views, model, sharedK);
 
   SmartFactor::shared_ptr smartFactor3(new SmartFactor(rankTol));
-  smartFactor3->add(measurements_cam3, views, model, K);
+  smartFactor3->add(measurements_cam3, views, model, sharedK);
 
   NonlinearFactorGraph graph;
   graph.push_back(smartFactor1);
@@ -1095,19 +1075,15 @@ TEST( SmartProjectionPoseFactor, 3poses_2land_rotation_only_smart_projection_fac
 
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
   Pose3 pose1 = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
-  SimpleCamera cam1(pose1, *K2);
+  Camera cam1(pose1, sharedK2);
 
   // create second camera 1 meter to the right of first camera
   Pose3 pose2 = pose1 * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
-  SimpleCamera cam2(pose2, *K2);
+  Camera cam2(pose2, sharedK2);
 
   // create third camera 1 meter above the first camera
   Pose3 pose3 = pose2 * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
-  SimpleCamera cam3(pose3, *K2);
-
-  // three landmarks ~5 meters infront of camera
-  Point3 landmark1(5, 0.5, 1.2);
-  Point3 landmark2(5, -0.5, 1.2);
+  Camera cam3(pose3, sharedK2);
 
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
 
@@ -1118,11 +1094,11 @@ TEST( SmartProjectionPoseFactor, 3poses_2land_rotation_only_smart_projection_fac
   double rankTol = 50;
   SmartFactor::shared_ptr smartFactor1(
       new SmartFactor(rankTol, linThreshold, manageDegeneracy));
-  smartFactor1->add(measurements_cam1, views, model, K2);
+  smartFactor1->add(measurements_cam1, views, model, sharedK2);
 
   SmartFactor::shared_ptr smartFactor2(
       new SmartFactor(rankTol, linThreshold, manageDegeneracy));
-  smartFactor2->add(measurements_cam2, views, model, K2);
+  smartFactor2->add(measurements_cam2, views, model, sharedK2);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
   const SharedDiagonal noisePriorTranslation = noiseModel::Isotropic::Sigma(3,
@@ -1183,20 +1159,15 @@ TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) 
 
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
   Pose3 pose1 = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
-  SimpleCamera cam1(pose1, *K);
+  Camera cam1(pose1, sharedK);
 
   // create second camera 1 meter to the right of first camera
   Pose3 pose2 = pose1 * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
-  SimpleCamera cam2(pose2, *K);
+  Camera cam2(pose2, sharedK);
 
   // create third camera 1 meter above the first camera
   Pose3 pose3 = pose2 * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
-  SimpleCamera cam3(pose3, *K);
-
-  // three landmarks ~5 meters infront of camera
-  Point3 landmark1(5, 0.5, 1.2);
-  Point3 landmark2(5, -0.5, 1.2);
-  Point3 landmark3(3, 0, 3.0);
+  Camera cam3(pose3, sharedK);
 
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
 
@@ -1209,15 +1180,15 @@ TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) 
 
   SmartFactor::shared_ptr smartFactor1(
       new SmartFactor(rankTol, linThreshold, manageDegeneracy));
-  smartFactor1->add(measurements_cam1, views, model, K);
+  smartFactor1->add(measurements_cam1, views, model, sharedK);
 
   SmartFactor::shared_ptr smartFactor2(
       new SmartFactor(rankTol, linThreshold, manageDegeneracy));
-  smartFactor2->add(measurements_cam2, views, model, K);
+  smartFactor2->add(measurements_cam2, views, model, sharedK);
 
   SmartFactor::shared_ptr smartFactor3(
       new SmartFactor(rankTol, linThreshold, manageDegeneracy));
-  smartFactor3->add(measurements_cam3, views, model, K);
+  smartFactor3->add(measurements_cam3, views, model, sharedK);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
   const SharedDiagonal noisePriorTranslation = noiseModel::Isotropic::Sigma(3,
@@ -1279,14 +1250,11 @@ TEST( SmartProjectionPoseFactor, Hessian ) {
 
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
   Pose3 pose1 = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
-  SimpleCamera cam1(pose1, *K2);
+  Camera cam1(pose1, sharedK2);
 
   // create second camera 1 meter to the right of first camera
   Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(1, 0, 0));
-  SimpleCamera cam2(pose2, *K2);
-
-  // three landmarks ~5 meters infront of camera
-  Point3 landmark1(5, 0.5, 1.2);
+  Camera cam2(pose2, sharedK2);
 
   // 1. Project three landmarks into three cameras and triangulate
   Point2 cam1_uv1 = cam1.project(landmark1);
@@ -1296,7 +1264,7 @@ TEST( SmartProjectionPoseFactor, Hessian ) {
   measurements_cam1.push_back(cam2_uv1);
 
   SmartFactor::shared_ptr smartFactor1(new SmartFactor());
-  smartFactor1->add(measurements_cam1, views, model, K2);
+  smartFactor1->add(measurements_cam1, views, model, sharedK2);
 
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 10, 0., -M_PI / 10),
       Point3(0.5, 0.1, 0.3));
@@ -1326,24 +1294,22 @@ TEST( SmartProjectionPoseFactor, HessianWithRotation ) {
 
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
   Pose3 pose1 = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
-  SimpleCamera cam1(pose1, *K);
+  Camera cam1(pose1, sharedK);
 
   // create second camera 1 meter to the right of first camera
   Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(1, 0, 0));
-  SimpleCamera cam2(pose2, *K);
+  Camera cam2(pose2, sharedK);
 
   // create third camera 1 meter above the first camera
   Pose3 pose3 = pose1 * Pose3(Rot3(), Point3(0, -1, 0));
-  SimpleCamera cam3(pose3, *K);
-
-  Point3 landmark1(5, 0.5, 1.2);
+  Camera cam3(pose3, sharedK);
 
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
 
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
 
   SmartFactor::shared_ptr smartFactorInstance(new SmartFactor());
-  smartFactorInstance->add(measurements_cam1, views, model, K);
+  smartFactorInstance->add(measurements_cam1, views, model, sharedK);
 
   Values values;
   values.insert(x1, pose1);
@@ -1398,24 +1364,22 @@ TEST( SmartProjectionPoseFactor, HessianWithRotationDegenerate ) {
 
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
   Pose3 pose1 = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
-  SimpleCamera cam1(pose1, *K2);
+  Camera cam1(pose1, sharedK2);
 
   // create second camera 1 meter to the right of first camera
   Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(0, 0, 0));
-  SimpleCamera cam2(pose2, *K2);
+  Camera cam2(pose2, sharedK2);
 
   // create third camera 1 meter above the first camera
   Pose3 pose3 = pose1 * Pose3(Rot3(), Point3(0, 0, 0));
-  SimpleCamera cam3(pose3, *K2);
-
-  Point3 landmark1(5, 0.5, 1.2);
+  Camera cam3(pose3, sharedK2);
 
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
 
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
 
   SmartFactor::shared_ptr smartFactor(new SmartFactor());
-  smartFactor->add(measurements_cam1, views, model, K2);
+  smartFactor->add(measurements_cam1, views, model, sharedK2);
 
   Values values;
   values.insert(x1, pose1);
@@ -1464,9 +1428,9 @@ TEST( SmartProjectionPoseFactor, HessianWithRotationDegenerate ) {
 /* ************************************************************************* */
 TEST( SmartProjectionPoseFactor, ConstructorWithCal3Bundler) {
   SmartFactorBundler factor(rankTol, linThreshold);
-  boost::shared_ptr<Cal3Bundler> Kbundler(
+  boost::shared_ptr<Cal3Bundler> sharedBundlerK(
       new Cal3Bundler(500, 1e-3, 1e-3, 1000, 2000));
-  factor.add(measurement1, poseKey1, model, Kbundler);
+  factor.add(measurement1, poseKey1, model, sharedBundlerK);
 }
 
 /* *************************************************************************/
@@ -1475,19 +1439,17 @@ TEST( SmartProjectionPoseFactor, Cal3Bundler ) {
 
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
   Pose3 pose1 = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
-  PinholeCamera<Cal3Bundler> cam1(pose1, *Kbundler);
+  CameraBundler cam1(pose1, sharedBundlerK);
 
   // create second camera 1 meter to the right of first camera
   Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(1, 0, 0));
-  PinholeCamera<Cal3Bundler> cam2(pose2, *Kbundler);
+  CameraBundler cam2(pose2, sharedBundlerK);
 
   // create third camera 1 meter above the first camera
   Pose3 pose3 = pose1 * Pose3(Rot3(), Point3(0, -1, 0));
-  PinholeCamera<Cal3Bundler> cam3(pose3, *Kbundler);
+  CameraBundler cam3(pose3, sharedBundlerK);
 
   // three landmarks ~5 meters infront of camera
-  Point3 landmark1(5, 0.5, 1.2);
-  Point3 landmark2(5, -0.5, 1.2);
   Point3 landmark3(3, 0, 3.0);
 
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
@@ -1520,13 +1482,13 @@ TEST( SmartProjectionPoseFactor, Cal3Bundler ) {
   views.push_back(x3);
 
   SmartFactorBundler::shared_ptr smartFactor1(new SmartFactorBundler());
-  smartFactor1->add(measurements_cam1, views, model, Kbundler);
+  smartFactor1->add(measurements_cam1, views, model, sharedBundlerK);
 
   SmartFactorBundler::shared_ptr smartFactor2(new SmartFactorBundler());
-  smartFactor2->add(measurements_cam2, views, model, Kbundler);
+  smartFactor2->add(measurements_cam2, views, model, sharedBundlerK);
 
   SmartFactorBundler::shared_ptr smartFactor3(new SmartFactorBundler());
-  smartFactor3->add(measurements_cam3, views, model, Kbundler);
+  smartFactor3->add(measurements_cam3, views, model, sharedBundlerK);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
 
@@ -1579,19 +1541,17 @@ TEST( SmartProjectionPoseFactor, Cal3BundlerRotationOnly ) {
 
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
   Pose3 pose1 = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
-  PinholeCamera<Cal3Bundler> cam1(pose1, *Kbundler);
+  CameraBundler cam1(pose1, sharedBundlerK);
 
   // create second camera 1 meter to the right of first camera
   Pose3 pose2 = pose1 * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
-  PinholeCamera<Cal3Bundler> cam2(pose2, *Kbundler);
+  CameraBundler cam2(pose2, sharedBundlerK);
 
   // create third camera 1 meter above the first camera
   Pose3 pose3 = pose2 * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
-  PinholeCamera<Cal3Bundler> cam3(pose3, *Kbundler);
+  CameraBundler cam3(pose3, sharedBundlerK);
 
-  // three landmarks ~5 meters infront of camera
-  Point3 landmark1(5, 0.5, 1.2);
-  Point3 landmark2(5, -0.5, 1.2);
+  // landmark3 at 3 meters now
   Point3 landmark3(3, 0, 3.0);
 
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
@@ -1622,15 +1582,15 @@ TEST( SmartProjectionPoseFactor, Cal3BundlerRotationOnly ) {
 
   SmartFactorBundler::shared_ptr smartFactor1(
       new SmartFactorBundler(rankTol, linThreshold, manageDegeneracy));
-  smartFactor1->add(measurements_cam1, views, model, Kbundler);
+  smartFactor1->add(measurements_cam1, views, model, sharedBundlerK);
 
   SmartFactorBundler::shared_ptr smartFactor2(
       new SmartFactorBundler(rankTol, linThreshold, manageDegeneracy));
-  smartFactor2->add(measurements_cam2, views, model, Kbundler);
+  smartFactor2->add(measurements_cam2, views, model, sharedBundlerK);
 
   SmartFactorBundler::shared_ptr smartFactor3(
       new SmartFactorBundler(rankTol, linThreshold, manageDegeneracy));
-  smartFactor3->add(measurements_cam3, views, model, Kbundler);
+  smartFactor3->add(measurements_cam3, views, model, sharedBundlerK);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
   const SharedDiagonal noisePriorTranslation = noiseModel::Isotropic::Sigma(3,

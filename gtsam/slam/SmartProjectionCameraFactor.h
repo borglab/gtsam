@@ -25,22 +25,28 @@ namespace gtsam {
 /**
  * @addtogroup SLAM
  */
-template<class CALIBRATION, size_t D>
-class SmartProjectionCameraFactor: public SmartProjectionFactor<CALIBRATION, D> {
+template<class CALIBRATION>
+class SmartProjectionCameraFactor: public SmartProjectionFactor<
+    PinholeCamera<CALIBRATION> > {
+
+private:
+  typedef PinholeCamera<CALIBRATION> Camera;
+  typedef SmartProjectionFactor<Camera> Base;
+  typedef SmartProjectionCameraFactor<CALIBRATION> This;
+
 protected:
+
+  static const int Dim = traits<Camera>::dimension; ///< CAMERA dimension
 
   bool isImplicit_;
 
 public:
 
-  /// shorthand for base class type
-  typedef SmartProjectionFactor<CALIBRATION, D> Base;
-
-  /// shorthand for this class
-  typedef SmartProjectionCameraFactor<CALIBRATION, D> This;
-
   /// shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<This> shared_ptr;
+
+  // A set of cameras
+  typedef CameraSet<Camera> Cameras;
 
   /**
    * Constructor
@@ -88,14 +94,14 @@ public:
 
   /// get the dimension of the factor (number of rows on linearization)
   virtual size_t dim() const {
-    return D * this->keys_.size(); // 6 for the pose and 3 for the calibration
+    return Dim * this->keys_.size(); // 6 for the pose and 3 for the calibration
   }
 
   /// Collect all cameras: important that in key order
-  typename Base::Cameras cameras(const Values& values) const {
-    typename Base::Cameras cameras;
+  Cameras cameras(const Values& values) const {
+    Cameras cameras;
     BOOST_FOREACH(const Key& k, this->keys_)
-      cameras.push_back(values.at<typename Base::Camera>(k));
+      cameras.push_back(values.at<Camera>(k));
     return cameras;
   }
 
@@ -109,19 +115,19 @@ public:
   }
 
   /// linearize returns a Hessianfactor that is an approximation of error(p)
-  virtual boost::shared_ptr<RegularHessianFactor<D> > linearizeToHessian(
+  virtual boost::shared_ptr<RegularHessianFactor<Dim> > linearizeToHessian(
       const Values& values, double lambda=0.0) const {
     return Base::createHessianFactor(cameras(values),lambda);
   }
 
   /// linearize returns a Hessianfactor that is an approximation of error(p)
-  virtual boost::shared_ptr<RegularImplicitSchurFactor<D> > linearizeToImplicit(
+  virtual boost::shared_ptr<RegularImplicitSchurFactor<Dim> > linearizeToImplicit(
       const Values& values, double lambda=0.0) const {
     return Base::createRegularImplicitSchurFactor(cameras(values),lambda);
   }
 
   /// linearize returns a Jacobianfactor that is an approximation of error(p)
-  virtual boost::shared_ptr<JacobianFactorQ<D, 2> > linearizeToJacobian(
+  virtual boost::shared_ptr<JacobianFactorQ<Dim, 2> > linearizeToJacobian(
       const Values& values, double lambda=0.0) const {
     return Base::createJacobianQFactor(cameras(values),lambda);
   }

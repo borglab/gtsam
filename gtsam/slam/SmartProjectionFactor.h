@@ -60,10 +60,16 @@ enum LinearizationMode {
 /**
  * SmartProjectionFactor: triangulates point and keeps an estimate of it around.
  */
-template<class CALIBRATION, size_t D>
-class SmartProjectionFactor: public SmartFactorBase<PinholeCamera<CALIBRATION>,
-    D> {
+template<class CAMERA>
+class SmartProjectionFactor: public SmartFactorBase<CAMERA> {
+
+private:
+  typedef SmartFactorBase<CAMERA> Base;
+  typedef SmartProjectionFactor<CAMERA> This;
+
 protected:
+
+  static const int Dim = traits<CAMERA>::dimension; ///< CAMERA dimension
 
   // Some triangulation parameters
   const double rankTolerance_; ///< threshold to decide whether triangulation is degenerate_
@@ -91,9 +97,6 @@ protected:
   /// shorthand for smart projection factor state variable
   typedef boost::shared_ptr<SmartProjectionFactorState> SmartFactorStatePtr;
 
-  /// shorthand for base class type
-  typedef SmartFactorBase<PinholeCamera<CALIBRATION>, D> Base;
-
   double landmarkDistanceThreshold_; // if the landmark is triangulated at a
   // distance larger than that the factor is considered degenerate
 
@@ -101,17 +104,13 @@ protected:
   // average reprojection error is smaller than this threshold after triangulation,
   // and the factor is disregarded if the error is large
 
-  /// shorthand for this class
-  typedef SmartProjectionFactor<CALIBRATION, D> This;
-
 public:
 
   /// shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<This> shared_ptr;
 
-  /// shorthand for a pinhole camera
-  typedef PinholeCamera<CALIBRATION> Camera;
-  typedef CameraSet<Camera> Cameras;
+  /// shorthand for a set of cameras
+  typedef CameraSet<CAMERA> Cameras;
 
   /**
    * Constructor
@@ -243,7 +242,7 @@ public:
       // We triangulate the 3D position of the landmark
       try {
         // std::cout << "triangulatePoint3 i \n" << rankTolerance << std::endl;
-        point_ = triangulatePoint3<CALIBRATION>(cameras, this->measured_,
+        point_ = triangulatePoint3<CAMERA>(cameras, this->measured_,
             rankTolerance_, enableEPI_);
         degenerate_ = false;
         cheiralityException_ = false;
@@ -251,7 +250,7 @@ public:
         // Check landmark distance and reprojection errors to avoid outliers
         double totalReprojError = 0.0;
         size_t i = 0;
-        BOOST_FOREACH(const Camera& camera, cameras) {
+        BOOST_FOREACH(const CAMERA& camera, cameras) {
           Point3 cameraTranslation = camera.pose().translation();
           // we discard smart factors corresponding to points that are far away
           if (cameraTranslation.distance(point_) > landmarkDistanceThreshold_) {
@@ -314,7 +313,7 @@ public:
   }
 
   /// linearize returns a Hessianfactor that is an approximation of error(p)
-  boost::shared_ptr<RegularHessianFactor<D> > createHessianFactor(
+  boost::shared_ptr<RegularHessianFactor<Dim> > createHessianFactor(
       const Cameras& cameras, const double lambda = 0.0) const {
 
     bool isDebug = false;
@@ -338,10 +337,10 @@ public:
             && (this->cheiralityException_ || this->degenerate_))) {
       // std::cout << "In linearize: exception" << std::endl;
       BOOST_FOREACH(Matrix& m, Gs)
-        m = zeros(D, D);
+        m = zeros(Dim, Dim);
       BOOST_FOREACH(Vector& v, gs)
-        v = zero(D);
-      return boost::make_shared<RegularHessianFactor<D> >(this->keys_, Gs, gs,
+        v = zero(Dim);
+      return boost::make_shared<RegularHessianFactor<Dim> >(this->keys_, Gs, gs,
           0.0);
     }
 
@@ -366,7 +365,7 @@ public:
           << "something wrong in SmartProjectionHessianFactor: selective relinearization should be disabled"
           << std::endl;
       exit(1);
-      return boost::make_shared<RegularHessianFactor<D> >(this->keys_,
+      return boost::make_shared<RegularHessianFactor<Dim> >(this->keys_,
           this->state_->Gs, this->state_->gs, this->state_->f);
     }
 
@@ -378,7 +377,7 @@ public:
     // Schur complement trick
     // Frank says: should be possible to do this more efficiently?
     // And we care, as in grouped factors this is called repeatedly
-    Matrix H(D * numKeys, D * numKeys);
+    Matrix H(Dim * numKeys, Dim * numKeys);
     Vector gs_vector;
 
     Matrix3 P = Base::PointCov(E, lambda);
@@ -390,11 +389,11 @@ public:
     // Populate Gs and gs
     int GsCount2 = 0;
     for (DenseIndex i1 = 0; i1 < (DenseIndex) numKeys; i1++) { // for each camera
-      DenseIndex i1D = i1 * D;
-      gs.at(i1) = gs_vector.segment<D>(i1D);
+      DenseIndex i1D = i1 * Dim;
+      gs.at(i1) = gs_vector.segment<Dim>(i1D);
       for (DenseIndex i2 = 0; i2 < (DenseIndex) numKeys; i2++) {
         if (i2 >= i1) {
-          Gs.at(GsCount2) = H.block<D, D>(i1D, i2 * D);
+          Gs.at(GsCount2) = H.block<Dim, Dim>(i1D, i2 * Dim);
           GsCount2++;
         }
       }
@@ -405,37 +404,37 @@ public:
       this->state_->gs = gs;
       this->state_->f = f;
     }
-    return boost::make_shared<RegularHessianFactor<D> >(this->keys_, Gs, gs, f);
+    return boost::make_shared<RegularHessianFactor<Dim> >(this->keys_, Gs, gs, f);
   }
 
   // create factor
-  boost::shared_ptr<RegularImplicitSchurFactor<D> > createRegularImplicitSchurFactor(
+  boost::shared_ptr<RegularImplicitSchurFactor<Dim> > createRegularImplicitSchurFactor(
       const Cameras& cameras, double lambda) const {
     if (triangulateForLinearize(cameras))
       return Base::createRegularImplicitSchurFactor(cameras, point_, lambda);
     else
-      return boost::shared_ptr<RegularImplicitSchurFactor<D> >();
+      return boost::shared_ptr<RegularImplicitSchurFactor<Dim> >();
   }
 
   /// create factor
-  boost::shared_ptr<JacobianFactorQ<D, 2> > createJacobianQFactor(
+  boost::shared_ptr<JacobianFactorQ<Dim, 2> > createJacobianQFactor(
       const Cameras& cameras, double lambda) const {
     if (triangulateForLinearize(cameras))
       return Base::createJacobianQFactor(cameras, point_, lambda);
     else
-      return boost::make_shared<JacobianFactorQ<D, 2> >(this->keys_);
+      return boost::make_shared<JacobianFactorQ<Dim, 2> >(this->keys_);
   }
 
   /// Create a factor, takes values
-  boost::shared_ptr<JacobianFactorQ<D, 2> > createJacobianQFactor(
+  boost::shared_ptr<JacobianFactorQ<Dim, 2> > createJacobianQFactor(
       const Values& values, double lambda) const {
-    Cameras myCameras;
+    Cameras cameras;
     // TODO triangulate twice ??
-    bool nonDegenerate = computeCamerasAndTriangulate(values, myCameras);
+    bool nonDegenerate = computeCamerasAndTriangulate(values, cameras);
     if (nonDegenerate)
-      return createJacobianQFactor(myCameras, lambda);
+      return createJacobianQFactor(cameras, lambda);
     else
-      return boost::make_shared<JacobianFactorQ<D, 2> >(this->keys_);
+      return boost::make_shared<JacobianFactorQ<Dim, 2> >(this->keys_);
   }
 
   /// different (faster) way to compute Jacobian factor
@@ -444,20 +443,20 @@ public:
     if (triangulateForLinearize(cameras))
       return Base::createJacobianSVDFactor(cameras, point_, lambda);
     else
-      return boost::make_shared<JacobianFactorSVD<D, 2> >(this->keys_);
+      return boost::make_shared<JacobianFactorSVD<Dim, 2> >(this->keys_);
   }
 
   /// Returns true if nonDegenerate
   bool computeCamerasAndTriangulate(const Values& values,
-      Cameras& myCameras) const {
+      Cameras& cameras) const {
     Values valuesFactor;
 
     // Select only the cameras
     BOOST_FOREACH(const Key key, this->keys_)
       valuesFactor.insert(key, values.at(key));
 
-    myCameras = this->cameras(valuesFactor);
-    size_t nrCameras = this->triangulateSafe(myCameras);
+    cameras = this->cameras(valuesFactor);
+    size_t nrCameras = this->triangulateSafe(cameras);
 
     if (nrCameras < 2
         || (!this->manageDegeneracy_
@@ -477,27 +476,22 @@ public:
     return true;
   }
 
-  /// Assumes non-degenerate !
-  void computeEP(Matrix& E, Matrix& P, const Cameras& cameras) const {
-    return Base::computeEP(E, P, cameras, point_);
-  }
-
   /// Takes values
   bool computeEP(Matrix& E, Matrix& P, const Values& values) const {
-    Cameras myCameras;
-    bool nonDegenerate = computeCamerasAndTriangulate(values, myCameras);
+    Cameras cameras;
+    bool nonDegenerate = computeCamerasAndTriangulate(values, cameras);
     if (nonDegenerate)
-      computeEP(E, P, myCameras);
+      Base::computeEP(E, P, cameras, point_);
     return nonDegenerate;
   }
 
   /// Version that takes values, and creates the point
   bool computeJacobians(std::vector<typename Base::KeyMatrix2D>& Fblocks,
       Matrix& E, Vector& b, const Values& values) const {
-    Cameras myCameras;
-    bool nonDegenerate = computeCamerasAndTriangulate(values, myCameras);
+    Cameras cameras;
+    bool nonDegenerate = computeCamerasAndTriangulate(values, cameras);
     if (nonDegenerate)
-      computeJacobians(Fblocks, E, b, myCameras);
+      computeJacobians(Fblocks, E, b, cameras);
     return nonDegenerate;
   }
 
@@ -513,12 +507,13 @@ public:
       std::cout
           << "SmartProjectionFactor: Management of degeneracy is disabled - not ready to be used"
           << std::endl;
-      if (D > 6) {
+      if (Dim > 6) {
         std::cout
             << "Management of degeneracy is not yet ready when one also optimizes for the calibration "
             << std::endl;
       }
 
+      // TODO replace all this by Call to CameraSet
       int numKeys = this->keys_.size();
       E = zeros(2 * numKeys, 2);
       b = zero(2 * numKeys);
@@ -533,7 +528,6 @@ public:
         Vector bi = -(cameras[i].projectPointAtInfinity(this->point_, Fi, Ei)
             - this->measured_.at(i)).vector();
 
-        this->noiseModel_->WhitenSystem(Fi, Ei, bi);
         f += bi.squaredNorm();
         Fblocks.push_back(typename Base::KeyMatrix2D(this->keys_[i], Fi));
         E.block<2, 2>(2 * i, 0) = Ei;
@@ -549,10 +543,10 @@ public:
   /// takes values
   bool computeJacobiansSVD(std::vector<typename Base::KeyMatrix2D>& Fblocks,
       Matrix& Enull, Vector& b, const Values& values) const {
-    typename Base::Cameras myCameras;
-    double good = computeCamerasAndTriangulate(values, myCameras);
+    typename Base::Cameras cameras;
+    double good = computeCamerasAndTriangulate(values, cameras);
     if (good)
-      computeJacobiansSVD(Fblocks, Enull, b, myCameras);
+      computeJacobiansSVD(Fblocks, Enull, b, cameras);
     return true;
   }
 
@@ -583,12 +577,12 @@ public:
 
   /// Calculate vector of re-projection errors, before applying noise model
   Vector reprojectionError(const Values& values) const {
-    Cameras myCameras;
-    bool nonDegenerate = computeCamerasAndTriangulate(values, myCameras);
+    Cameras cameras;
+    bool nonDegenerate = computeCamerasAndTriangulate(values, cameras);
     if (nonDegenerate)
-      return reprojectionError(myCameras);
+      return reprojectionError(cameras);
     else
-      return zero(myCameras.size() * 2);
+      return zero(cameras.size() * 2);
   }
 
   /**

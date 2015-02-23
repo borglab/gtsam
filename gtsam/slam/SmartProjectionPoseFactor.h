@@ -38,20 +38,21 @@ namespace gtsam {
  * @addtogroup SLAM
  */
 template<class CALIBRATION>
-class SmartProjectionPoseFactor: public SmartProjectionFactor<CALIBRATION, 6> {
+class SmartProjectionPoseFactor: public SmartProjectionFactor<
+    PinholePose<CALIBRATION> > {
+
+private:
+  typedef PinholePose<CALIBRATION> Camera;
+  typedef SmartProjectionFactor<Camera> Base;
+  typedef SmartProjectionPoseFactor<CALIBRATION> This;
+
 protected:
 
   LinearizationMode linearizeTo_;  ///< How to linearize the factor (HESSIAN, JACOBIAN_SVD, JACOBIAN_Q)
 
-  std::vector<boost::shared_ptr<CALIBRATION> > K_all_; ///< shared pointer to calibration object (one for each camera)
+  std::vector<boost::shared_ptr<CALIBRATION> > sharedKs_; ///< shared pointer to calibration object (one for each camera)
 
 public:
-
-  /// shorthand for base class type
-  typedef SmartProjectionFactor<CALIBRATION, 6> Base;
-
-  /// shorthand for this class
-  typedef SmartProjectionPoseFactor<CALIBRATION> This;
 
   /// shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<This> shared_ptr;
@@ -87,7 +88,7 @@ public:
       const SharedNoiseModel noise_i,
       const boost::shared_ptr<CALIBRATION> K_i) {
     Base::add(measured_i, poseKey_i, noise_i);
-    K_all_.push_back(K_i);
+    sharedKs_.push_back(K_i);
   }
 
   /**
@@ -102,7 +103,7 @@ public:
       std::vector<boost::shared_ptr<CALIBRATION> > Ks) {
     Base::add(measurements, poseKeys, noises);
     for (size_t i = 0; i < measurements.size(); i++) {
-      K_all_.push_back(Ks.at(i));
+      sharedKs_.push_back(Ks.at(i));
     }
   }
 
@@ -117,7 +118,7 @@ public:
       const SharedNoiseModel noise, const boost::shared_ptr<CALIBRATION> K) {
     for (size_t i = 0; i < measurements.size(); i++) {
       Base::add(measurements.at(i), poseKeys.at(i), noise);
-      K_all_.push_back(K);
+      sharedKs_.push_back(K);
     }
   }
 
@@ -129,7 +130,7 @@ public:
   void print(const std::string& s = "", const KeyFormatter& keyFormatter =
       DefaultKeyFormatter) const {
     std::cout << s << "SmartProjectionPoseFactor, z = \n ";
-    BOOST_FOREACH(const boost::shared_ptr<CALIBRATION>& K, K_all_)
+    BOOST_FOREACH(const boost::shared_ptr<CALIBRATION>& K, sharedKs_)
     K->print("calibration = ");
     Base::print("", keyFormatter);
   }
@@ -155,7 +156,7 @@ public:
       if(Base::body_P_sensor_)
         pose = pose.compose(*(Base::body_P_sensor_));
 
-      typename Base::Camera camera(pose, *K_all_[i++]);
+      Camera camera(pose, sharedKs_[i++]);
       cameras.push_back(camera);
     }
     return cameras;
@@ -193,9 +194,9 @@ public:
     }
   }
 
-  /** return the calibration object */
+  /** return calibration shared pointers */
   inline const std::vector<boost::shared_ptr<CALIBRATION> > calibration() const {
-    return K_all_;
+    return sharedKs_;
   }
 
 private:
@@ -205,7 +206,7 @@ private:
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int version) {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-    ar & BOOST_SERIALIZATION_NVP(K_all_);
+    ar & BOOST_SERIALIZATION_NVP(sharedKs_);
   }
 
 }; // end of class declaration

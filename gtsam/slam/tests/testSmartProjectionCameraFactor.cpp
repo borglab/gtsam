@@ -72,8 +72,8 @@ static Point2 measurement1(323.0, 240.0);
 static Pose3 body_P_sensor1(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));
 
 typedef PinholeCamera<Cal3_S2> CameraCal3_S2;
-typedef SmartProjectionCameraFactor<Cal3_S2, 11> SmartFactor;
-typedef SmartProjectionCameraFactor<Cal3Bundler, 9> SmartFactorBundler;
+typedef SmartProjectionCameraFactor<Cal3_S2> SmartFactor;
+typedef SmartProjectionCameraFactor<Cal3Bundler> SmartFactorBundler;
 typedef GeneralSFMFactor<Camera, Point3> SFMFactor;
 
 template<class CALIBRATION>

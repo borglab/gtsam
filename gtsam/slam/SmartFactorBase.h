@@ -45,6 +45,9 @@ template<class CAMERA>
 class SmartFactorBase: public NonlinearFactor {
 
 private:
+  typedef NonlinearFactor Base;
+  typedef SmartFactorBase<CAMERA> This;
+  typedef typename CAMERA::Measurement Z;
 
   /**
    * As of Feb 22, 2015, the noise model is the same for all measurements and
@@ -56,9 +59,6 @@ private:
 
 protected:
 
-  // Figure out the measurement type
-  typedef typename CAMERA::Measurement Z;
-
   /**
    * 2D measurement and noise model for each of the m views
    * We keep a copy of measurements for I/O and computing the error.
@@ -66,19 +66,11 @@ protected:
    */
   std::vector<Z> measured_;
 
-  /// shorthand for base class type
-  typedef NonlinearFactor Base;
-
-  /// shorthand for this class
-  typedef SmartFactorBase<CAMERA> This;
-
   static const int ZDim = traits<Z>::dimension; ///< Measurement dimension
   static const int Dim = traits<CAMERA>::dimension; ///< Camera dimension
 
-  // Definitions for blocks of F
-  typedef Eigen::Matrix<double, ZDim, Dim> Matrix2D; // F
+  // Definitions for block matrices used internally
   typedef Eigen::Matrix<double, Dim, ZDim> MatrixD2; // F'
-  typedef std::pair<Key, Matrix2D> KeyMatrix2D; // Fblocks
   typedef Eigen::Matrix<double, Dim, Dim> MatrixDD; // camera hessian block
   typedef Eigen::Matrix<double, ZDim, 3> Matrix23;
   typedef Eigen::Matrix<double, Dim, 1> VectorD;
@@ -104,6 +96,10 @@ protected:
   }
 
 public:
+
+  // Definitions for blocks of F, externally visible
+  typedef Eigen::Matrix<double, ZDim, Dim> Matrix2D; // F
+  typedef std::pair<Key, Matrix2D> KeyMatrix2D; // Fblocks
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -256,57 +252,19 @@ public:
   }
 
   /**
-   * Compute whitenedError, returning only the derivative E, i.e.,
-   * the stacked ZDim*3 derivatives of project with respect to the point.
-   * Assumes non-degenerate ! TODO explain this
-   */
-  Vector reprojectionErrors(const Cameras& cameras, const Point3& point,
-      Matrix& E) const {
-
-    // Project into CameraSet, calculating derivatives
-    std::vector<Z> predicted;
-    predicted = cameras.project2(point, boost::none, E);
-
-    // if needed, whiten
-    size_t m = keys_.size();
-    Vector b(ZDim * m);
-    for (size_t i = 0, row = 0; i < m; i++, row += ZDim) {
-
-      // Calculate error
-      const Z& zi = measured_.at(i);
-      Vector bi = (zi - predicted[i]).vector();
-      b.segment<ZDim>(row) = bi;
-    }
-    return b;
-  }
-
-  /**
-   *  Compute F, E, and optionally H, where F and E are the stacked derivatives
-   *  with respect to the cameras, point, and calibration, respectively.
-   *  The value of cameras/point are passed as parameters.
-   *  Returns error vector b
+   *  Compute reprojection errors and derivatives
    *  TODO: the treatment of body_P_sensor_ is weird: the transformation
    *  is applied in the caller, but the derivatives are computed here.
    */
   Vector reprojectionErrors(const Cameras& cameras, const Point3& point,
       typename Cameras::FBlocks& F, Matrix& E) const {
 
-    // Project into CameraSet, calculating derivatives
-    std::vector<Z> predicted;
-    predicted = cameras.project2(point, F, E);
+    Vector b = cameras.reprojectionErrors(point, measured_, F, E);
 
-    // Calculate error and whiten derivatives if needed
-    size_t m = keys_.size();
-    Vector b(ZDim * m);
-    for (size_t i = 0; i < m; i++) {
-
-      // Calculate error
-      const Z& zi = measured_.at(i);
-      Vector bi = (zi - predicted[i]).vector();
-
-      // if we have a sensor offset, correct camera derivatives
-      if (body_P_sensor_) {
-        // TODO: no simpler way ??
+    // Apply sensor chain rule if needed TODO: no simpler way ??
+    if (body_P_sensor_) {
+      size_t m = keys_.size();
+      for (size_t i = 0; i < m; i++) {
         const Pose3& pose_i = cameras[i].pose();
         Pose3 w_Pose_body = pose_i.compose(body_P_sensor_->inverse());
         Matrix66 J;
@@ -314,6 +272,7 @@ public:
         F[i].leftCols(6) *= J;
       }
     }
+
     return b;
   }
 
@@ -344,7 +303,7 @@ public:
   /// Assumes non-degenerate !
   void computeEP(Matrix& E, Matrix& P, const Cameras& cameras,
       const Point3& point) const {
-    reprojectionErrors(cameras, point, E);
+    cameras.reprojectionErrors(point, measured_, boost::none, E);
     P = PointCov(E);
   }
 
