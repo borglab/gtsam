@@ -15,16 +15,16 @@
  * @author  Richard Roberts, Luca Carlone
  */
 
-#include <CppUnitLite/TestHarness.h>
-
-#include <boost/algorithm/string.hpp>
-
-#include <gtsam/inference/Symbol.h>
-#include <gtsam/base/TestableAssertions.h>
-#include <gtsam/inference/Symbol.h>
 
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/dataset.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/inference/Symbol.h>
+#include <gtsam/base/TestableAssertions.h>
+
+#include <boost/algorithm/string.hpp>
+
+#include <CppUnitLite/TestHarness.h>
 
 using namespace gtsam::symbol_shorthand;
 using namespace std;

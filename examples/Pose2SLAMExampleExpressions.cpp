@@ -14,20 +14,18 @@
  * @brief Expressions version of Pose2SLAMExample.cpp
  * @date Oct 2, 2014
  * @author Frank Dellaert
- * @author Yong Dian Jian
  */
 
 // The two new headers that allow using our Automatic Differentiation Expression framework
 #include <gtsam/slam/expressions.h>
 #include <gtsam/nonlinear/ExpressionFactorGraph.h>
 
-// Header order is close to far
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+// For an explanation of headers below, please see Pose2SLAMExample.cpp
+#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/geometry/Pose2.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/nonlinear/Marginals.h>
-#include <gtsam/nonlinear/Values.h>
-#include <gtsam/geometry/Pose2.h>
-#include <gtsam/inference/Key.h>
 
 using namespace std;
 using namespace gtsam;
