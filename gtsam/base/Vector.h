@@ -23,6 +23,7 @@
 #include <list>
 #include <gtsam/global_includes.h>
 #include <gtsam/3rdparty/Eigen/Eigen/Core>
+#include <iostream>
 namespace gtsam {
 
 // Vector is just a typedef of the Eigen dynamic vector type

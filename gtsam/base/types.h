@@ -21,7 +21,6 @@
 
 #include <gtsam/dllexport.h>
 #include <gtsam/config.h>
-#include <iostream>
 #include <cstddef>
 #include <string>
 #include <ostream>
@@ -33,6 +32,7 @@
 #include <tbb/task_scheduler_init.h>
 #include <tbb/tbb_exception.h>
 #include <tbb/scalable_allocator.h>
+#include <iostream>
 #endif
 
 #ifdef GTSAM_USE_EIGEN_MKL_OPENMP

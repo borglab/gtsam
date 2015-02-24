@@ -19,9 +19,8 @@
 #pragma once
 
 #include <gtsam/base/FastDefaultAllocator.h>
-
 #include <set>
-#include <iosfwd>
+#include <iostream>
 #include <string>
 #include <cmath>
 #include <boost/mpl/has_xxx.hpp>
