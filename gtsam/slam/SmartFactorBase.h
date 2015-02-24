@@ -66,8 +66,8 @@ protected:
    */
   std::vector<Z> measured_;
 
-  static const int ZDim = traits<Z>::dimension; ///< Measurement dimension
   static const int Dim = traits<CAMERA>::dimension; ///< Camera dimension
+  static const int ZDim = traits<Z>::dimension; ///< Measurement dimension
 
   // Definitions for block matrices used internally
   typedef Eigen::Matrix<double, Dim, ZDim> MatrixD2; // F'
@@ -706,8 +706,8 @@ private:
 };
 // end class SmartFactorBase
 
-// TODO: Why is this here?
-template<class CAMERA>
-const int SmartFactorBase<CAMERA>::ZDim;
+// Definitions need to avoid link errors (above are only declarations)
+template<class CAMERA> const int SmartFactorBase<CAMERA>::Dim;
+template<class CAMERA> const int SmartFactorBase<CAMERA>::ZDim;
 
 } // \ namespace gtsam
