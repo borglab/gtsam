@@ -17,6 +17,7 @@
  */
 
 #include <gtsam/geometry/triangulation.h>
+#include <gtsam/geometry/SimpleCamera.h>
 #include <gtsam/geometry/Cal3Bundler.h>
 #include <CppUnitLite/TestHarness.h>
 
