@@ -73,16 +73,16 @@ TEST(CameraSet, Pinhole) {
   measured.push_back(Point2(3, 4));
   Vector4 expectedV;
 
-  // reprojectionErrors
+  // reprojectionError
   expectedV << -1, -2, -3, -4;
-  Vector actualV = set.reprojectionErrors(p, measured);
+  Vector actualV = set.reprojectionError(p, measured);
   EXPECT(assert_equal(expectedV, actualV));
 
-  // reprojectionErrorsAtInfinity
+  // reprojectionErrorAtInfinity
   EXPECT(
       assert_equal(Point3(0, 0, 1),
           camera.backprojectPointAtInfinity(Point2())));
-  actualV = set.reprojectionErrorsAtInfinity(p, measured);
+  actualV = set.reprojectionErrorAtInfinity(p, measured);
   EXPECT(assert_equal(expectedV, actualV));
 }
 

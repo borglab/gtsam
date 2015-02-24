@@ -215,7 +215,7 @@ public:
 
   /// Calculate vector of re-projection errors, noise model applied
   Vector whitenedErrors(const Cameras& cameras, const Point3& point) const {
-    Vector b = cameras.reprojectionErrors(point, measured_);
+    Vector b = cameras.reprojectionError(point, measured_);
     if (noiseModel_)
       noiseModel_->whitenInPlace(b);
     return b;
@@ -225,7 +225,7 @@ public:
   // TODO: Unit3
   Vector whitenedErrorsAtInfinity(const Cameras& cameras,
       const Point3& point) const {
-    Vector b = cameras.reprojectionErrorsAtInfinity(point, measured_);
+    Vector b = cameras.reprojectionErrorAtInfinity(point, measured_);
     if (noiseModel_)
       noiseModel_->whitenInPlace(b);
     return b;
@@ -252,8 +252,8 @@ public:
   }
 
   /// Compute reprojection errors
-  Vector reprojectionErrors(const Cameras& cameras, const Point3& point) const {
-    return cameras.reprojectionErrors(point, measured_);
+  Vector reprojectionError(const Cameras& cameras, const Point3& point) const {
+    return cameras.reprojectionError(point, measured_);
   }
 
   /**
@@ -261,10 +261,10 @@ public:
    *  TODO: the treatment of body_P_sensor_ is weird: the transformation
    *  is applied in the caller, but the derivatives are computed here.
    */
-  Vector reprojectionErrors(const Cameras& cameras, const Point3& point,
+  Vector reprojectionError(const Cameras& cameras, const Point3& point,
       typename Cameras::FBlocks& F, Matrix& E) const {
 
-    Vector b = cameras.reprojectionErrors(point, measured_, F, E);
+    Vector b = cameras.reprojectionError(point, measured_, F, E);
 
     // Apply sensor chain rule if needed TODO: no simpler way ??
     if (body_P_sensor_) {
@@ -308,7 +308,7 @@ public:
   /// Assumes non-degenerate !
   void computeEP(Matrix& E, Matrix& P, const Cameras& cameras,
       const Point3& point) const {
-    cameras.reprojectionErrors(point, measured_, boost::none, E);
+    cameras.reprojectionError(point, measured_, boost::none, E);
     P = PointCov(E);
   }
 
@@ -322,7 +322,7 @@ public:
 
     // Project into Camera set and calculate derivatives
     typename Cameras::FBlocks F;
-    b = reprojectionErrors(cameras, point, F, E);
+    b = reprojectionError(cameras, point, F, E);
 
     // Now calculate f and divide up the F derivatives into Fblocks
     double f = 0.0;

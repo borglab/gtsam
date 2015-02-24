@@ -573,7 +573,7 @@ public:
   /// Calculate vector of re-projection errors, before applying noise model
   /// Assumes triangulation was done and degeneracy handled
   Vector reprojectionError(const Cameras& cameras) const {
-    return cameras.reprojectionErrors(point_,this->measured_);
+    return cameras.reprojectionError(point_,this->measured_);
   }
 
   /// Calculate vector of re-projection errors, before applying noise model

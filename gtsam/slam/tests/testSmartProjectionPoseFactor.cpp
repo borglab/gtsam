@@ -142,10 +142,10 @@ TEST_UNSAFE( SmartProjectionPoseFactor, noiseless ) {
   factor.computeEP(actualE, PointCov, values);
   EXPECT(assert_equal(expectedE, actualE, 1e-7));
 
-  // Calculate using reprojectionErrors, note not yet divided by sigma !
+  // Calculate using reprojectionError, note not yet divided by sigma !
   SmartFactor::Cameras::FBlocks F;
   Matrix E;
-  Vector actualErrors = factor.reprojectionErrors(cameras, *point, F, E);
+  Vector actualErrors = factor.reprojectionError(cameras, *point, F, E);
   EXPECT(assert_equal(expectedE, E, 1e-7));
 
   EXPECT(assert_equal(zero(4), actualErrors, 1e-7));
@@ -379,10 +379,10 @@ TEST( SmartProjectionPoseFactor, smartFactorWithSensorBodyTransform ) {
   // Calculate using whitenedError
   Matrix E;
   SmartFactor::Cameras::FBlocks F;
-  Vector actualErrors = smartFactor1->reprojectionErrors(cameras, *point, F, E);
+  Vector actualErrors = smartFactor1->reprojectionError(cameras, *point, F, E);
   EXPECT(assert_equal(expectedE, E, 1e-7));
 
-  // Success ! The derivatives of reprojectionErrors now agree with f !
+  // Success ! The derivatives of reprojectionError now agree with f !
   EXPECT(assert_equal(f(*point) * sigma, actualErrors, 1e-7));
 }
 

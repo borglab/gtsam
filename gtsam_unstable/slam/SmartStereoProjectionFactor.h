@@ -629,7 +629,7 @@ public:
     Cameras cameras;
     bool nonDegenerate = computeCamerasAndTriangulate(values, cameras);
     if (nonDegenerate)
-      return cameras.reprojectionErrors(point_);
+      return cameras.reprojectionError(point_);
     else
       return zero(cameras.size() * 3);
   }
