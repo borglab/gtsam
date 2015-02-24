@@ -18,7 +18,6 @@
  */
 
 #include <boost/lexical_cast.hpp>
-//#include <iostream>
 #include <gtsam/base/types.h>
 #include <gtsam/inference/Symbol.h>
 

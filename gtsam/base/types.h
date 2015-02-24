@@ -21,7 +21,6 @@
 
 #include <gtsam/dllexport.h>
 #include <gtsam/config.h>
-//#include <iosfwd>
 #include <iostream>
 #include <cstddef>
 #include <string>

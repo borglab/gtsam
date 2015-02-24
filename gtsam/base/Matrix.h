@@ -370,7 +370,6 @@ GTSAM_EXPORT std::pair<Matrix,Matrix> qr(const Matrix& A);
  * @param A is the input matrix, and is the output
  * @param clear_below_diagonal enables zeroing out below diagonal
  */
-//template <class MATRIX>
 void inplace_QR(Matrix& A);
 
 /**
