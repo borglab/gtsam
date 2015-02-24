@@ -17,6 +17,7 @@
  */
 
 #include <gtsam/geometry/triangulation.h>
+#include <gtsam/geometry/SimpleCamera.h>
 #include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <CppUnitLite/TestHarness.h>
@@ -35,7 +36,7 @@ static const boost::shared_ptr<Cal3_S2> sharedCal = //
 // Looking along X-axis, 1 meter above ground plane (x-y)
 static const Rot3 upright = Rot3::ypr(-M_PI / 2, 0., -M_PI / 2);
 static const Pose3 pose1 = Pose3(upright, gtsam::Point3(0, 0, 1));
-PinholeCamera<Cal3_S2> camera1(pose1, *sharedCal);
+SimpleCamera camera1(pose1, *sharedCal);
 
 // landmark ~5 meters infront of camera
 static const Point3 landmark(5, 0.5, 1.2);
@@ -48,7 +49,7 @@ TEST( triangulation, TriangulationFactor ) {
   // Create the factor with a measurement that is 3 pixels off in x
   Key pointKey(1);
   SharedNoiseModel model;
-  typedef TriangulationFactor<> Factor;
+  typedef TriangulationFactor<SimpleCamera> Factor;
   Factor factor(camera1, z1, model, pointKey);
 
   // Use the factor to calculate the Jacobians

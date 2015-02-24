@@ -75,8 +75,9 @@ std::pair<NonlinearFactorGraph, Values> triangulationGraph(
   static SharedNoiseModel prior_model(noiseModel::Isotropic::Sigma(6, 1e-6));
   for (size_t i = 0; i < measurements.size(); i++) {
     const Pose3& pose_i = poses[i];
-    PinholePose<CALIBRATION> camera_i(pose_i, sharedCal);
-    graph.push_back(TriangulationFactor<PinholeCamera<CALIBRATION> > //
+    typedef PinholePose<CALIBRATION> Camera;
+    Camera camera_i(pose_i, sharedCal);
+    graph.push_back(TriangulationFactor<Camera> //
         (camera_i, measurements[i], unit2, landmarkKey));
   }
   return std::make_pair(graph, values);
