@@ -9,7 +9,7 @@
 
 namespace gtsam {
 /**
- * JacobianFactor for Schur complement that uses Q noise model
+ * JacobianFactor for Schur complement
  */
 template<size_t D, size_t ZDim>
 class JacobianFactorSVD: public RegularJacobianFactor<D> {
@@ -38,7 +38,14 @@ public:
     JacobianFactor::fillTerms(QF, zeroVector, model);
   }
 
-  /// Constructor
+  /**
+   * @brief Constructor
+   * Takes the CameraSet derivatives (as ZDim*D blocks of block-diagonal F)
+   * and a reduced point derivative, Enull
+   * and creates a reduced-rank Jacobian factor on the CameraSet
+   *
+   * @Fblocks:
+   */
   JacobianFactorSVD(const std::vector<KeyMatrixZD>& Fblocks,
       const Matrix& Enull, const Vector& b, //
       const SharedDiagonal& model = SharedDiagonal()) :

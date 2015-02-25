@@ -81,6 +81,7 @@ protected:
   boost::optional<Pose3> body_P_sensor_;
 
   // check that noise model is isotropic and the same
+  // TODO, this is hacky, we should just do this via constructor, not add
   void maybeSetNoiseModel(const SharedNoiseModel& sharedNoiseModel) {
     if (!sharedNoiseModel)
       return;
@@ -213,6 +214,36 @@ public:
                 && body_P_sensor_->equals(*e->body_P_sensor_)));
   }
 
+  /// Compute reprojection errors
+  Vector reprojectionError(const Cameras& cameras, const Point3& point) const {
+    return cameras.reprojectionError(point, measured_);
+  }
+
+  /**
+   *  Compute reprojection errors and derivatives
+   *  TODO: the treatment of body_P_sensor_ is weird: the transformation
+   *  is applied in the caller, but the derivatives are computed here.
+   */
+  Vector reprojectionError(const Cameras& cameras, const Point3& point,
+      typename Cameras::FBlocks& F, Matrix& E) const {
+
+    Vector b = cameras.reprojectionError(point, measured_, F, E);
+
+    // Apply sensor chain rule if needed TODO: no simpler way ??
+    if (body_P_sensor_) {
+      size_t m = keys_.size();
+      for (size_t i = 0; i < m; i++) {
+        const Pose3& pose_i = cameras[i].pose();
+        Pose3 w_Pose_body = pose_i.compose(body_P_sensor_->inverse());
+        Matrix66 J;
+        Pose3 world_P_body = w_Pose_body.compose(*body_P_sensor_, J);
+        F[i].leftCols(6) *= J;
+      }
+    }
+
+    return b;
+  }
+
   /// Calculate vector of re-projection errors, noise model applied
   Vector whitenedErrors(const Cameras& cameras, const Point3& point) const {
     Vector b = cameras.reprojectionError(point, measured_);
@@ -249,36 +280,6 @@ public:
       const Point3& point) const {
     Vector b = whitenedErrorsAtInfinity(cameras, point);
     return 0.5 * b.dot(b);
-  }
-
-  /// Compute reprojection errors
-  Vector reprojectionError(const Cameras& cameras, const Point3& point) const {
-    return cameras.reprojectionError(point, measured_);
-  }
-
-  /**
-   *  Compute reprojection errors and derivatives
-   *  TODO: the treatment of body_P_sensor_ is weird: the transformation
-   *  is applied in the caller, but the derivatives are computed here.
-   */
-  Vector reprojectionError(const Cameras& cameras, const Point3& point,
-      typename Cameras::FBlocks& F, Matrix& E) const {
-
-    Vector b = cameras.reprojectionError(point, measured_, F, E);
-
-    // Apply sensor chain rule if needed TODO: no simpler way ??
-    if (body_P_sensor_) {
-      size_t m = keys_.size();
-      for (size_t i = 0; i < m; i++) {
-        const Pose3& pose_i = cameras[i].pose();
-        Pose3 w_Pose_body = pose_i.compose(body_P_sensor_->inverse());
-        Matrix66 J;
-        Pose3 world_P_body = w_Pose_body.compose(*body_P_sensor_, J);
-        F[i].leftCols(6) *= J;
-      }
-    }
-
-    return b;
   }
 
   /// Computes Point Covariance P from E
@@ -371,7 +372,6 @@ public:
     Eigen::JacobiSVD<Matrix> svd(E, Eigen::ComputeFullU);
     Vector s = svd.singularValues();
     size_t m = this->keys_.size();
-    // Enull = zeros(ZDim * m, ZDim * m - 3);
     Enull = svd.matrixU().block(0, 3, ZDim * m, ZDim * m - 3); // last ZDim*m-3 columns
 
     return f;
@@ -661,7 +661,7 @@ public:
     Matrix E;
     Vector b;
     computeJacobians(F, E, b, cameras, point);
-    noiseModel_->WhitenSystem(E,b);
+    noiseModel_->WhitenSystem(E, b);
     Matrix3 P = PointCov(E, lambda, diagonalDamping);
     // TODO make WhitenInPlace work with any dense matrix type
     BOOST_FOREACH(KeyMatrix2D& Fblock,F)
@@ -675,13 +675,15 @@ public:
   boost::shared_ptr<JacobianFactorQ<Dim, ZDim> > createJacobianQFactor(
       const Cameras& cameras, const Point3& point, double lambda = 0.0,
       bool diagonalDamping = false) const {
-    std::vector<KeyMatrix2D> Fblocks;
+    std::vector<KeyMatrix2D> F;
     Matrix E;
     Vector b;
-    computeJacobians(Fblocks, E, b, cameras, point);
+    computeJacobians(F, E, b, cameras, point);
+    const size_t M = b.size();
+    std::cout << M << std::endl;
     Matrix3 P = PointCov(E, lambda, diagonalDamping);
-    return boost::make_shared<JacobianFactorQ<Dim, ZDim> > //
-    (Fblocks, E, P, b, noiseModel_);
+    SharedIsotropic n = noiseModel::Isotropic::Sigma(M, noiseModel_->sigma());
+    return boost::make_shared<JacobianFactorQ<Dim, ZDim> >(F, E, P, b, n);
   }
 
   /**
@@ -690,13 +692,15 @@ public:
    */
   boost::shared_ptr<JacobianFactor> createJacobianSVDFactor(
       const Cameras& cameras, const Point3& point, double lambda = 0.0) const {
-    size_t numKeys = this->keys_.size();
-    std::vector<KeyMatrix2D> Fblocks;
+    size_t m = this->keys_.size();
+    std::vector<KeyMatrix2D> F;
     Vector b;
-    Matrix Enull(ZDim * numKeys, ZDim * numKeys - 3);
-    computeJacobiansSVD(Fblocks, Enull, b, cameras, point);
-    return boost::make_shared<JacobianFactorSVD<Dim, ZDim> > //
-    (Fblocks, Enull, b, noiseModel_);
+    const size_t M = ZDim * m;
+    Matrix E0(M, M - 3);
+    computeJacobiansSVD(F, E0, b, cameras, point);
+    std::cout << M << std::endl;
+    SharedIsotropic n = noiseModel::Isotropic::Sigma(M, noiseModel_->sigma());
+    return boost::make_shared<JacobianFactorSVD<Dim, ZDim> >(F, E0, b, n);
   }
 
 private:

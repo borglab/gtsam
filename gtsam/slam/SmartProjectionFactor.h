@@ -368,7 +368,12 @@ public:
     // ==================================================================
     Matrix F, E;
     Vector b;
-    double f = computeJacobians(F, E, b, cameras);
+    double f;
+    {
+      std::vector<typename Base::KeyMatrix2D> Fblocks;
+      f = computeJacobiansWithTriangulatedPoint(Fblocks, E, b, cameras);
+      Base::FillDiagonalF(Fblocks,F);  // expensive !
+    }
 
     // Schur complement trick
     // Frank says: should be possible to do this more efficiently?
@@ -486,21 +491,12 @@ public:
     return nonDegenerate;
   }
 
-  /// Version that takes values, and creates the point
-  bool computeJacobians(std::vector<typename Base::KeyMatrix2D>& Fblocks,
-      Matrix& E, Vector& b, const Values& values) const {
-    Cameras cameras;
-    bool nonDegenerate = computeCamerasAndTriangulate(values, cameras);
-    if (nonDegenerate)
-      computeJacobians(Fblocks, E, b, cameras);
-    return nonDegenerate;
-  }
-
   /// Compute F, E only (called below in both vanilla and SVD versions)
   /// Assumes the point has been computed
   /// Note E can be 2m*3 or 2m*2, in case point is degenerate
-  double computeJacobians(std::vector<typename Base::KeyMatrix2D>& Fblocks,
-      Matrix& E, Vector& b, const Cameras& cameras) const {
+  double computeJacobiansWithTriangulatedPoint(
+      std::vector<typename Base::KeyMatrix2D>& Fblocks, Matrix& E, Vector& b,
+      const Cameras& cameras) const {
 
     if (this->degenerate_) {
       std::cout << "manage degeneracy " << manageDegeneracy_ << std::endl;
@@ -515,9 +511,9 @@ public:
       }
 
       // TODO replace all this by Call to CameraSet
-      int numKeys = this->keys_.size();
-      E = zeros(2 * numKeys, 2);
-      b = zero(2 * numKeys);
+      int m = this->keys_.size();
+      E = zeros(2 * m, 2);
+      b = zero(2 * m);
       double f = 0;
       for (size_t i = 0; i < this->measured_.size(); i++) {
         if (i == 0) { // first pose
@@ -541,33 +537,25 @@ public:
     } // end else
   }
 
+  /// Version that takes values, and creates the point
+  bool triangulateAndComputeJacobians(std::vector<typename Base::KeyMatrix2D>& Fblocks,
+      Matrix& E, Vector& b, const Values& values) const {
+    Cameras cameras;
+    bool nonDegenerate = computeCamerasAndTriangulate(values, cameras);
+    if (nonDegenerate)
+      computeJacobiansWithTriangulatedPoint(Fblocks, E, b, cameras);
+    return nonDegenerate;
+  }
+
   /// takes values
-  bool computeJacobiansSVD(std::vector<typename Base::KeyMatrix2D>& Fblocks,
-      Matrix& Enull, Vector& b, const Values& values) const {
+  bool triangulateAndComputeJacobiansSVD(
+      std::vector<typename Base::KeyMatrix2D>& Fblocks, Matrix& Enull,
+      Vector& b, const Values& values) const {
     typename Base::Cameras cameras;
     double good = computeCamerasAndTriangulate(values, cameras);
     if (good)
-      computeJacobiansSVD(Fblocks, Enull, b, cameras);
+      Base::computeJacobiansSVD(Fblocks, Enull, b, cameras, point_);
     return true;
-  }
-
-  /// SVD version
-  double computeJacobiansSVD(std::vector<typename Base::KeyMatrix2D>& Fblocks,
-      Matrix& Enull, Vector& b, const Cameras& cameras) const {
-    return Base::computeJacobiansSVD(Fblocks, Enull, b, cameras, point_);
-  }
-
-  /// Returns Matrix, TODO: maybe should not exist -> not sparse !
-  // TODO should there be a lambda?
-  double computeJacobiansSVD(Matrix& F, Matrix& Enull, Vector& b,
-      const Cameras& cameras) const {
-    return Base::computeJacobiansSVD(F, Enull, b, cameras, point_);
-  }
-
-  /// Returns Matrix, TODO: maybe should not exist -> not sparse !
-  double computeJacobians(Matrix& F, Matrix& E, Vector& b,
-      const Cameras& cameras) const {
-    return Base::computeJacobians(F, E, b, cameras, point_);
   }
 
   /// Calculate vector of re-projection errors, before applying noise model
@@ -652,6 +640,7 @@ public:
   inline bool isPointBehindCamera() const {
     return cheiralityException_;
   }
+
   /** return cheirality verbosity */
   inline bool verboseCheirality() const {
     return verboseCheirality_;

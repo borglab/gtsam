@@ -754,17 +754,17 @@ TEST( SmartProjectionCameraFactor, computeImplicitJacobian ) {
   cameras.push_back(level_camera_right);
 
   factor1->error(values); // this is important to have a triangulation of the point
-  Point3 expectedPoint;
+  Point3 point;
   if (factor1->point())
-    expectedPoint = *(factor1->point());
-  factor1->computeJacobians(expectedF, expectedE, expectedb, cameras);
+    point = *(factor1->point());
+  factor1->computeJacobians(expectedF, expectedE, expectedb, cameras, point);
 
   NonlinearFactorGraph generalGraph;
   SFMFactor sfm1(level_uv, unit2, c1, l1);
   SFMFactor sfm2(level_uv_right, unit2, c2, l1);
   generalGraph.push_back(sfm1);
   generalGraph.push_back(sfm2);
-  values.insert(l1, expectedPoint); // note: we get rid of possible errors in the triangulation
+  values.insert(l1, point); // note: we get rid of possible errors in the triangulation
   Matrix actualFullHessian = generalGraph.linearize(values)->hessian().first;
   Matrix actualVinv = (actualFullHessian.block(18, 18, 3, 3)).inverse();
 

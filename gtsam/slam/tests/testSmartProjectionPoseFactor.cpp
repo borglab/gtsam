@@ -153,7 +153,7 @@ TEST_UNSAFE( SmartProjectionPoseFactor, noiseless ) {
   // Calculate using computeJacobians
   Vector b;
   vector<SmartFactor::KeyMatrix2D> Fblocks;
-  double actualError3 = factor.computeJacobians(Fblocks, E, b, cameras);
+  double actualError3 = factor.computeJacobians(Fblocks, E, b, cameras, *point);
   EXPECT(assert_equal(expectedE, E, 1e-7));
   EXPECT_DOUBLES_EQUAL(expectedError, actualError3, 1e-8);
 }
@@ -364,19 +364,19 @@ TEST( SmartProjectionPoseFactor, smartFactorWithSensorBodyTransform ) {
   // Calculate expected derivative for point (easiest to check)
   SmartFactor::Cameras cameras = smartFactor1->cameras(values);
   boost::function<Vector(Point3)> f = //
-      boost::bind(&SmartFactor::whitenedErrors, *smartFactor1, cameras, _1);
+      boost::bind(&SmartFactor::reprojectionError, *smartFactor1, cameras, _1);
   boost::optional<Point3> point = smartFactor1->point();
   CHECK(point);
 
-  // Note ! After refactor the noiseModel is only in the factors, not these matrices
-  Matrix expectedE = sigma * numericalDerivative11<Vector, Point3>(f, *point);
+  // TODO, this is really a test of CameraSet
+  Matrix expectedE = numericalDerivative11<Vector, Point3>(f, *point);
 
   // Calculate using computeEP
   Matrix actualE, PointCov;
   smartFactor1->computeEP(actualE, PointCov, values);
   EXPECT(assert_equal(expectedE, actualE, 1e-7));
 
-  // Calculate using whitenedError
+  // Calculate using reprojectionError
   Matrix E;
   SmartFactor::Cameras::FBlocks F;
   Vector actualErrors = smartFactor1->reprojectionError(cameras, *point, F, E);
@@ -472,7 +472,7 @@ TEST( SmartProjectionPoseFactor, Factors ) {
     E(2, 2) = 10;
     E(3, 1) = 100;
     const vector<pair<Key, Matrix26> > Fblocks = list_of<pair<Key, Matrix> > //
-        (make_pair(x1, 10 * F1))(make_pair(x2, 10 * F2));
+        (make_pair(x1, F1))(make_pair(x2, F2));
     Matrix3 P = (E.transpose() * E).inverse();
     Vector4 b;
     b.setZero();
@@ -483,10 +483,11 @@ TEST( SmartProjectionPoseFactor, Factors ) {
     boost::shared_ptr<RegularImplicitSchurFactor<6> > actual =
         smartFactor1->createRegularImplicitSchurFactor(cameras, 0.0);
     CHECK(actual);
-    CHECK(assert_equal(expected, *actual));
+    EXPECT(assert_equal(expected, *actual));
 
     // createJacobianQFactor
-    JacobianFactorQ<6, 2> expectedQ(Fblocks, E, P, b);
+    SharedIsotropic n = noiseModel::Isotropic::Sigma(4, sigma);
+    JacobianFactorQ<6, 2> expectedQ(Fblocks, E, P, b, n);
 
     boost::shared_ptr<JacobianFactorQ<6, 2> > actualQ =
         smartFactor1->createJacobianQFactor(cameras, 0.0);
@@ -890,8 +891,10 @@ TEST( SmartProjectionPoseFactor, CheckHessian) {
   using namespace vanillaPose;
 
   // Two slightly different cameras
-  Pose3 pose2 = level_pose * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
-  Pose3 pose3 = level_pose * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
+  Pose3 pose2 = level_pose
+      * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
+  Pose3 pose3 = level_pose
+      * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
   Camera cam2(pose2, sharedK);
   Camera cam3(pose3, sharedK);
 
@@ -970,8 +973,10 @@ TEST( SmartProjectionPoseFactor, 3poses_2land_rotation_only_smart_projection_fac
   views.push_back(x3);
 
   // Two different cameras
-  Pose3 pose2 = level_pose * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
-  Pose3 pose3 = level_pose * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
+  Pose3 pose2 = level_pose
+      * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
+  Pose3 pose3 = level_pose
+      * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
   Camera cam2(pose2, sharedK2);
   Camera cam3(pose3, sharedK2);
 
@@ -1050,8 +1055,10 @@ TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) 
   views.push_back(x3);
 
   // Two different cameras
-  Pose3 pose2 = level_pose * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
-  Pose3 pose3 = level_pose * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
+  Pose3 pose2 = level_pose
+      * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
+  Pose3 pose3 = level_pose
+      * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
   Camera cam2(pose2, sharedK);
   Camera cam3(pose3, sharedK);
 
@@ -1390,8 +1397,10 @@ TEST( SmartProjectionPoseFactor, Cal3BundlerRotationOnly ) {
   views.push_back(x3);
 
   // Two different cameras
-  Pose3 pose2 = level_pose * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
-  Pose3 pose3 = level_pose * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
+  Pose3 pose2 = level_pose
+      * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
+  Pose3 pose3 = level_pose
+      * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
   Camera cam2(pose2, sharedBundlerK);
   Camera cam3(pose3, sharedBundlerK);
 

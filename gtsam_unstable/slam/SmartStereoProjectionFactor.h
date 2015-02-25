@@ -582,41 +582,16 @@ public:
     } // end else
   }
 
-//  /// Version that computes PointCov, with optional lambda parameter
-//  double computeJacobians(std::vector<typename Base::KeyMatrix2D>& Fblocks,
-//      Matrix& E, Matrix& PointCov, Vector& b, const Cameras& cameras,
-//      const double lambda = 0.0) const {
-//
-//    double f = computeJacobians(Fblocks, E, b, cameras);
-//
-//    // Point covariance inv(E'*E)
-//    PointCov.noalias() = (E.transpose() * E + lambda * eye(E.cols())).inverse();
-//
-//    return f;
-//  }
-//
-//  /// takes values
-//  bool computeJacobiansSVD(std::vector<typename Base::KeyMatrix2D>& Fblocks,
-//      Matrix& Enull, Vector& b, const Values& values) const {
-//    typename Base::Cameras cameras;
-//    double good = computeCamerasAndTriangulate(values, cameras);
-//    if (good)
-//      computeJacobiansSVD(Fblocks, Enull, b, cameras);
-//    return true;
-//  }
-//
-//  /// SVD version
-//  double computeJacobiansSVD(std::vector<typename Base::KeyMatrix2D>& Fblocks,
-//      Matrix& Enull, Vector& b, const Cameras& cameras) const {
-//    return Base::computeJacobiansSVD(Fblocks, Enull, b, cameras, point_);
-//  }
-//
-//  /// Returns Matrix, TODO: maybe should not exist -> not sparse !
-//  // TODO should there be a lambda?
-//  double computeJacobiansSVD(Matrix& F, Matrix& Enull, Vector& b,
-//      const Cameras& cameras) const {
-//    return Base::computeJacobiansSVD(F, Enull, b, cameras, point_);
-//  }
+  /// takes values
+  bool triangulateAndComputeJacobiansSVD(
+      std::vector<typename Base::KeyMatrix2D>& Fblocks, Matrix& Enull,
+      Vector& b, const Values& values) const {
+    typename Base::Cameras cameras;
+    double good = computeCamerasAndTriangulate(values, cameras);
+    if (good)
+      return Base::computeJacobiansSVD(Fblocks, Enull, b, cameras, point_);
+    return true;
+  }
 
   /// Returns Matrix, TODO: maybe should not exist -> not sparse !
   double computeJacobians(Matrix& F, Matrix& E, Vector& b,
