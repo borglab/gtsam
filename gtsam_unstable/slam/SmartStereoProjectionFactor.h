@@ -625,11 +625,11 @@ public:
   }
 
   /// Calculate vector of re-projection errors, before applying noise model
-  Vector reprojectionError(const Values& values) const {
+  Vector reprojectionErrorAfterTriangulation(const Values& values) const {
     Cameras cameras;
     bool nonDegenerate = computeCamerasAndTriangulate(values, cameras);
     if (nonDegenerate)
-      return cameras.reprojectionError(point_);
+      return Base::reprojectionError(cameras, point_);
     else
       return zero(cameras.size() * 3);
   }
