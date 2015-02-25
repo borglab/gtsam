@@ -231,6 +231,11 @@ LinearInequalityFactorGraph QPSolver::identifyActiveConstraints(
         workingFactor->inactivate();
       } else {
         double error = workingFactor->error(initialValues);
+        // TODO: This version of QPSolver doesn't handle infeasible initial point
+        // since we haven't had an LPSolver yet
+        if (error > 0)
+          throw InfeasibleInitialValues();
+
         if (fabs(error)<1e-7) {
           workingFactor->activate();
         }
@@ -257,7 +262,7 @@ pair<VectorValues, VectorValues> QPSolver::optimize(
   while (!state.converged) {
     state = iterate(state);
   }
-  std::cout << "Number of inner iterations: " << state.iterations << std::endl;
+
   return make_pair(state.values, state.duals);
 }
 

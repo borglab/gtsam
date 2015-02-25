@@ -197,4 +197,24 @@ public:
 
 };
 
+/* ************************************************************************* */
+/** An exception indicating that the noise model dimension passed into a
+ * JacobianFactor has a different dimensionality than the factor. */
+class InfeasibleInitialValues : public ThreadsafeException<InfeasibleInitialValues> {
+public:
+  InfeasibleInitialValues() {}
+  virtual ~InfeasibleInitialValues() throw() {}
+
+  virtual const char* what() const throw() {
+    if(description_.empty())
+      description_ = "An infeasible intial value was provided for the QPSolver.\n"
+                     "This current version of QPSolver does not handle infeasible"
+                     "initial point due to the lack of a LPSolver.\n";
+    return description_.c_str();
+  }
+
+private:
+  mutable std::string description_;
+};
+
 } /* namespace gtsam */
