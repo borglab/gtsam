@@ -10,10 +10,10 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file: QPSolver.h
- * @brief: A quadratic programming solver implements the active set method
- * @date: Apr 15, 2014
- * @author: Duy-Nguyen Ta
+ * @file    QPSolver.h
+ * @brief   A quadratic programming solver implements the active set method
+ * @date    Apr 15, 2014
+ * @author  Duy-Nguyen Ta
  */
 
 #pragma once

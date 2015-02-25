@@ -11,7 +11,7 @@
 /**
  * @file 	 LinearInequalityFactor.h
  * @brief  
- * @author Duy-Nguyen Ta
+ * @author   Duy-Nguyen Ta
  * @date 	 Sep 30, 2013
  */
 

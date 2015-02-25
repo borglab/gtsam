@@ -10,10 +10,10 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * InequalityFactorGraph.h
- * @brief: Factor graph of all LinearInequality factors
- * @date: Dec 8, 2014
- * @author: Duy-Nguyen Ta
+ * @file    InequalityFactorGraph.h
+ * @brief   Factor graph of all LinearInequality factors
+ * @date    Dec 8, 2014
+ * @author  Duy-Nguyen Ta
  */
 
 #pragma once

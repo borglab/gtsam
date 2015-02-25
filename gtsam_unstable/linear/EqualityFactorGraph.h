@@ -10,10 +10,10 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * EqualityFactorGraph.h
- * @brief: Factor graph of all LinearEquality factors
- * @date: Dec 8, 2014
- * @author: Duy-Nguyen Ta
+ * @file    EqualityFactorGraph.h
+ * @brief   Factor graph of all LinearEquality factors
+ * @date    Dec 8, 2014
+ * @author  Duy-Nguyen Ta
  */
 
 #pragma once

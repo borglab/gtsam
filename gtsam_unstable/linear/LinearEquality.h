@@ -10,10 +10,10 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * LinearEquality.h
- * @brief: LinearEquality derived from Base with constrained noise model
- * @date: Nov 27, 2014
- * @author: Duy-Nguyen Ta
+ * @file    LinearEquality.h
+ * @brief   LinearEquality derived from Base with constrained noise model
+ * @date    Nov 27, 2014
+ * @author  Duy-Nguyen Ta
  */
 
 #pragma once

@@ -10,10 +10,10 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file: QPSolver.cpp
- * @brief:
- * @date: Apr 15, 2014
- * @author: Duy-Nguyen Ta
+ * @file    QPSolver.cpp
+ * @brief
+ * @date    Apr 15, 2014
+ * @author  Duy-Nguyen Ta
  */
 
 #include <gtsam/inference/Symbol.h>

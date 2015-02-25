@@ -10,10 +10,10 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file: QP.h
- * @brief: Factor graphs of a Quadratic Programming problem
- * @date: Dec 8, 2014
- * @author: Duy-Nguyen Ta
+ * @file    QP.h
+ * @brief   Factor graphs of a Quadratic Programming problem
+ * @date    Dec 8, 2014
+ * @author  Duy-Nguyen Ta
  */
 
 #pragma once
