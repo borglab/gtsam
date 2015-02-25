@@ -8,11 +8,12 @@
  * See LICENSE for the license information
 
  * -------------------------------------------------------------------------- */
-/*
- * QPSolver.h
+
+/**
+ * @file: QPSolver.h
  * @brief: A quadratic programming solver implements the active set method
  * @date: Apr 15, 2014
- * @author: thduynguyen
+ * @author: Duy-Nguyen Ta
  */
 
 #pragma once
@@ -47,19 +48,19 @@ struct QPState {
 };
 
 /**
- * This class implements the active set method to solve quadratic programming problems
- * encoded in a GaussianFactorGraph with special mixed constrained noise models, in which
- * a negative sigma denotes an inequality <=0 constraint,
- * a zero sigma denotes an equality =0 constraint,
- * and a positive sigma denotes a normal Gaussian noise model.
+ * This QPSolver uses the active set method to solve a quadratic programming problem
+ * defined in the QP struct.
+ * Note: This version of QPSolver only works with a feasible initial value.
  */
 class QPSolver {
 
   const QP& qp_; //!< factor graphs of the QP problem, can't be modified!
-  GaussianFactorGraph baseGraph_; //!< factor graphs of cost factors and linear equalities. The working set of inequalities will be added to this base graph in the process.
+  GaussianFactorGraph baseGraph_; //!< factor graphs of cost factors and linear equalities.
+                                  //!< used to initialize the working set factor graph,
+                                  //!< to which active inequalities will be added
   VariableIndex costVariableIndex_, equalityVariableIndex_,
-      inequalityVariableIndex_;
-  FastSet<Key> constrainedKeys_; //!< all constrained keys, will become factors in the dual graph
+      inequalityVariableIndex_;  //!< index to corresponding factors to build dual graphs
+  FastSet<Key> constrainedKeys_; //!< all constrained keys, will become factors in dual graphs
 
 public:
   /// Constructor
@@ -79,13 +80,13 @@ public:
       const VariableIndex& variableIndex) const {
     std::vector<std::pair<Key, Matrix> > Aterms;
     if (variableIndex.find(key) != variableIndex.end()) {
-      BOOST_FOREACH(size_t factorIx, variableIndex[key]){
-      typename FACTOR::shared_ptr factor = graph.at(factorIx);
-      if (!factor->active()) continue;
-      Matrix Ai = factor->getA(factor->find(key)).transpose();
-      Aterms.push_back(std::make_pair(factor->dualKey(), Ai));
+      BOOST_FOREACH(size_t factorIx, variableIndex[key]) {
+        typename FACTOR::shared_ptr factor = graph.at(factorIx);
+        if (!factor->active()) continue;
+        Matrix Ai = factor->getA(factor->find(key)).transpose();
+        Aterms.push_back(std::make_pair(factor->dualKey(), Ai));
+      }
     }
-  }
     return Aterms;
   }
 
@@ -189,7 +190,7 @@ public:
 
   /** Optimize with a provided initial values
    * For this version, it is the responsibility of the caller to provide
-   * a feasible initial value.
+   * a feasible initial value, otherwise, an exception will be thrown.
    * @return a pair of <primal, dual> solutions
    */
   std::pair<VectorValues, VectorValues> optimize(

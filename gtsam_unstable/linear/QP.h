@@ -9,11 +9,11 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * QP.h
+/**
+ * @file: QP.h
  * @brief: Factor graphs of a Quadratic Programming problem
  * @date: Dec 8, 2014
- * @author: thduynguyen
+ * @author: Duy-Nguyen Ta
  */
 
 #pragma once
@@ -25,12 +25,12 @@
 namespace gtsam {
 
 /**
- * struct contains factor graphs of a Quadratic Programming problem
+ * Struct contains factor graphs of a Quadratic Programming problem
  */
 struct QP {
   GaussianFactorGraph cost; //!< Quadratic cost factors
-  LinearEqualityFactorGraph equalities; //!< linear equality constraints
-  LinearInequalityFactorGraph inequalities; //!< linear inequality constraints
+  LinearEqualityFactorGraph equalities; //!< linear equality constraints: f(x) = 0
+  LinearInequalityFactorGraph inequalities; //!< linear inequality constraints: g(x) <= 0
 
   /** default constructor */
   QP() :

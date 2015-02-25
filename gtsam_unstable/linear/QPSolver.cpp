@@ -1,8 +1,19 @@
-/*
- * QPSolver.cpp
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file: QPSolver.cpp
  * @brief:
  * @date: Apr 15, 2014
- * @author: thduynguyen
+ * @author: Duy-Nguyen Ta
  */
 
 #include <gtsam/inference/Symbol.h>
@@ -231,8 +242,8 @@ LinearInequalityFactorGraph QPSolver::identifyActiveConstraints(
         workingFactor->inactivate();
       } else {
         double error = workingFactor->error(initialValues);
-        // TODO: This version of QPSolver doesn't handle infeasible initial point
-        // since we haven't had an LPSolver yet
+        // TODO: find a feasible initial point for QPSolver.
+        // For now, we just throw an exception, since we don't have an LPSolver to do this yet
         if (error > 0)
           throw InfeasibleInitialValues();
 
