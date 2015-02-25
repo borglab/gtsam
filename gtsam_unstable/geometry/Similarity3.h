@@ -20,6 +20,7 @@
 
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/Point3.h>
+#include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/Manifold.h>
 
 namespace gtsam {
@@ -50,6 +51,9 @@ public:
 
   /// Construct from Eigen types
   Similarity3(const Matrix3& R, const Vector3& t, double s);
+
+  /// Convert to a rigid body pose
+  operator Pose3() const;
 
   /// Return the translation
   const Vector3 t() const;

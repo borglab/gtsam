@@ -182,23 +182,26 @@ TEST(Similarity3, Optimization) {
 }
 
 TEST(Similarity3, Optimization2) {
-  Similarity3 prior = Similarity3();//Rot3::ypr(0, 0, 0), Point3(1, 2, 3), 4);
-  Similarity3 m1 = Similarity3(Rot3::ypr(M_PI/2.0, 0, 0), Point3(1.0, 0, 0), 1.0);
-  Similarity3 m2 = Similarity3(Rot3::ypr(M_PI/2.0, 0, 0), Point3(0.9, 0, 0), 1.0);
-  Similarity3 m3 = Similarity3(Rot3::ypr(M_PI/2.0, 0, 0), Point3(0.8, 0, 0), 1.0);
-  Similarity3 m4 = Similarity3(Rot3::ypr(M_PI/2.0, 0, 0), Point3(0.7, 0, 0), 1.42);
+  Similarity3 prior = Similarity3();
+  Similarity3 m1 = Similarity3(Rot3::ypr(M_PI/4.0, 0, 0), Point3(2.0, 0, 0), 1.0);
+  Similarity3 m2 = Similarity3(Rot3::ypr(M_PI/2.0, 0, 0), Point3(sqrt(8)*0.9, 0, 0), 1.0);
+  Similarity3 m3 = Similarity3(Rot3::ypr(3*M_PI/4.0, 0, 0), Point3(sqrt(32)*0.8, 0, 0), 1.0);
+  Similarity3 m4 = Similarity3(Rot3::ypr(M_PI/2.0, 0, 0), Point3(6*0.7, 0, 0), 1.0);
+  Similarity3 loop = Similarity3(1.42);
 
   //prior.print("Goal Transform");
-  noiseModel::Isotropic::shared_ptr model = noiseModel::Isotropic::Sigma(7, 1);
+  noiseModel::Isotropic::shared_ptr model = noiseModel::Isotropic::Sigma(7, 0.01);
   SharedDiagonal betweenNoise = noiseModel::Diagonal::Sigmas(
-        (Vector(7) << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 1).finished());
+        (Vector(7) << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 10).finished());
   SharedDiagonal betweenNoise2 = noiseModel::Diagonal::Sigmas(
-          (Vector(7) << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.01).finished());
+          (Vector(7) << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 1.0).finished());
   PriorFactor<Similarity3> factor(X(1), prior, model);
   BetweenFactor<Similarity3> b1(X(1), X(2), m1, betweenNoise);
   BetweenFactor<Similarity3> b2(X(2), X(3), m2, betweenNoise);
   BetweenFactor<Similarity3> b3(X(3), X(4), m3, betweenNoise);
-  BetweenFactor<Similarity3> b4(X(4), X(1), m4, betweenNoise2);
+  BetweenFactor<Similarity3> b4(X(4), X(5), m4, betweenNoise);
+  BetweenFactor<Similarity3> lc(X(5), X(1), loop, betweenNoise2);
+
 
 
   NonlinearFactorGraph graph;
@@ -207,21 +210,37 @@ TEST(Similarity3, Optimization2) {
   graph.push_back(b2);
   graph.push_back(b3);
   graph.push_back(b4);
+  graph.push_back(lc);
 
-  graph.print("Full Graph");
+  //graph.print("Full Graph\n");
 
   Values initial;
   initial.insert<Similarity3>(X(1), Similarity3());
   initial.insert<Similarity3>(X(2), Similarity3(Rot3::ypr(M_PI/2.0, 0, 0), Point3(1, 0, 0), 1.1));
   initial.insert<Similarity3>(X(3), Similarity3(Rot3::ypr(2.0*M_PI/2.0, 0, 0), Point3(0.9, 1.1, 0), 1.2));
   initial.insert<Similarity3>(X(4), Similarity3(Rot3::ypr(3.0*M_PI/2.0, 0, 0), Point3(0, 1, 0), 1.3));
+  initial.insert<Similarity3>(X(5), Similarity3(Rot3::ypr(4.0*M_PI/2.0, 0, 0), Point3(0, 0, 0), 1.0));
 
-  initial.print("Initial Estimate");
+  //initial.print("Initial Estimate\n");
 
   Values result;
   result = LevenbergMarquardtOptimizer(graph, initial).optimize();
-  result.print("Optimized Estimate");
-  //EXPECT(assert_equal(prior, result.at<Similarity3>(key), 1e-4));
+  //result.print("Optimized Estimate\n");
+  Pose3 p1, p2, p3, p4, p5;
+  p1 = Pose3(result.at<Similarity3>(X(1)));
+  p2 = Pose3(result.at<Similarity3>(X(2)));
+  p3 = Pose3(result.at<Similarity3>(X(3)));
+  p4 = Pose3(result.at<Similarity3>(X(4)));
+  p5 = Pose3(result.at<Similarity3>(X(5)));
+
+  //p1.print("Pose1");
+  //p2.print("Pose2");
+  //p3.print("Pose3");
+  //p4.print("Pose4");
+  //p5.print("Pose5");
+
+  Similarity3 expected(0.7);
+  EXPECT(assert_equal(expected, result.at<Similarity3>(X(5)), 0.4));
 }
 
 //******************************************************************************

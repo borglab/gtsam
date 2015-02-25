@@ -53,8 +53,12 @@ Similarity3::Similarity3(const Rot3& R, const Point3& t, double s) {
   s_ = s;
 }
 
+Similarity3::operator Pose3() const {
+  return Pose3(R_, s_*t_);
+}
+
 Similarity3 Similarity3::identity() {
-  std::cout << "Identity!" << std::endl;
+  //std::cout << "Identity!" << std::endl;
   return Similarity3(); }
 
 Vector7 Similarity3::Logmap(const Similarity3& s, OptionalJacobian<7, 7> Hm) {
