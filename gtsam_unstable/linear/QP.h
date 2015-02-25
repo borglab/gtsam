@@ -29,8 +29,8 @@ namespace gtsam {
  */
 struct QP {
   GaussianFactorGraph cost; //!< Quadratic cost factors
-  EqualityFactorGraph equalities; //!< linear equality constraints: f(x) = 0
-  InequalityFactorGraph inequalities; //!< linear inequality constraints: g(x) <= 0
+  EqualityFactorGraph equalities; //!< linear equality constraints: cE(x) = 0
+  InequalityFactorGraph inequalities; //!< linear inequality constraints: cI(x) <= 0
 
   /** default constructor */
   QP() :
