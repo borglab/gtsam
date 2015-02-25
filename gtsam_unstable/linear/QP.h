@@ -19,8 +19,8 @@
 #pragma once
 
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam_unstable/linear/LinearEqualityFactorGraph.h>
-#include <gtsam_unstable/linear/LinearInequalityFactorGraph.h>
+#include <gtsam_unstable/linear/EqualityFactorGraph.h>
+#include <gtsam_unstable/linear/InequalityFactorGraph.h>
 
 namespace gtsam {
 
@@ -29,8 +29,8 @@ namespace gtsam {
  */
 struct QP {
   GaussianFactorGraph cost; //!< Quadratic cost factors
-  LinearEqualityFactorGraph equalities; //!< linear equality constraints: f(x) = 0
-  LinearInequalityFactorGraph inequalities; //!< linear inequality constraints: g(x) <= 0
+  EqualityFactorGraph equalities; //!< linear equality constraints: f(x) = 0
+  InequalityFactorGraph inequalities; //!< linear inequality constraints: g(x) <= 0
 
   /** default constructor */
   QP() :
@@ -39,8 +39,8 @@ struct QP {
 
   /** constructor */
   QP(const GaussianFactorGraph& _cost,
-      const LinearEqualityFactorGraph& _linearEqualities,
-      const LinearInequalityFactorGraph& _linearInequalities) :
+      const EqualityFactorGraph& _linearEqualities,
+      const InequalityFactorGraph& _linearInequalities) :
       cost(_cost), equalities(_linearEqualities), inequalities(
           _linearInequalities) {
   }

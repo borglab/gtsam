@@ -39,7 +39,7 @@ QPSolver::QPSolver(const QP& qp) : qp_(qp) {
 
 //******************************************************************************
 VectorValues QPSolver::solveWithCurrentWorkingSet(
-    const LinearInequalityFactorGraph& workingSet) const {
+    const InequalityFactorGraph& workingSet) const {
   GaussianFactorGraph workingGraph = baseGraph_;
   BOOST_FOREACH(const LinearInequality::shared_ptr& factor, workingSet) {
     if (factor->active())
@@ -50,7 +50,7 @@ VectorValues QPSolver::solveWithCurrentWorkingSet(
 
 //******************************************************************************
 JacobianFactor::shared_ptr QPSolver::createDualFactor(Key key,
-    const LinearInequalityFactorGraph& workingSet, const VectorValues& delta) const {
+    const InequalityFactorGraph& workingSet, const VectorValues& delta) const {
 
   // Transpose the A matrix of constrained factors to have the jacobian of the dual key
   std::vector<std::pair<Key, Matrix> > Aterms = collectDualJacobians
@@ -78,7 +78,7 @@ JacobianFactor::shared_ptr QPSolver::createDualFactor(Key key,
 
 //******************************************************************************
 GaussianFactorGraph::shared_ptr QPSolver::buildDualGraph(
-    const LinearInequalityFactorGraph& workingSet, const VectorValues& delta) const {
+    const InequalityFactorGraph& workingSet, const VectorValues& delta) const {
   GaussianFactorGraph::shared_ptr dualGraph(new GaussianFactorGraph());
   BOOST_FOREACH(Key key, constrainedKeys_) {
     // Each constrained key becomes a factor in the dual graph
@@ -91,7 +91,7 @@ GaussianFactorGraph::shared_ptr QPSolver::buildDualGraph(
 
 //******************************************************************************
 int QPSolver::identifyLeavingConstraint(
-    const LinearInequalityFactorGraph& workingSet,
+    const InequalityFactorGraph& workingSet,
     const VectorValues& lambdas) const {
   int worstFactorIx = -1;
   // preset the maxLambda to 0.0: if lambda is <= 0.0, the constraint is either
@@ -127,7 +127,7 @@ int QPSolver::identifyLeavingConstraint(
  * We want the minimum of all those alphas among all inactive inequality.
  */
 boost::tuple<double, int> QPSolver::computeStepSize(
-    const LinearInequalityFactorGraph& workingSet, const VectorValues& xk,
+    const InequalityFactorGraph& workingSet, const VectorValues& xk,
     const VectorValues& p) const {
   static bool debug = false;
 
@@ -198,7 +198,7 @@ QPState QPSolver::iterate(const QPState& state) const {
     }
     else {
       // Inactivate the leaving constraint
-      LinearInequalityFactorGraph newWorkingSet = state.workingSet;
+      InequalityFactorGraph newWorkingSet = state.workingSet;
       newWorkingSet.at(leavingFactor)->inactivate();
       return QPState(newValues, duals, newWorkingSet, false, state.iterations+1);
     }
@@ -216,7 +216,7 @@ QPState QPSolver::iterate(const QPState& state) const {
            << endl;
 
     // also add to the working set the one that complains the most
-    LinearInequalityFactorGraph newWorkingSet = state.workingSet;
+    InequalityFactorGraph newWorkingSet = state.workingSet;
     if (factorIx >= 0)
       newWorkingSet.at(factorIx)->activate();
 
@@ -228,10 +228,10 @@ QPState QPSolver::iterate(const QPState& state) const {
 }
 
 //******************************************************************************
-LinearInequalityFactorGraph QPSolver::identifyActiveConstraints(
-    const LinearInequalityFactorGraph& inequalities,
+InequalityFactorGraph QPSolver::identifyActiveConstraints(
+    const InequalityFactorGraph& inequalities,
     const VectorValues& initialValues, const VectorValues& duals, bool useWarmStart) const {
-  LinearInequalityFactorGraph workingSet;
+  InequalityFactorGraph workingSet;
   BOOST_FOREACH(const LinearInequality::shared_ptr& factor, inequalities) {
     LinearInequality::shared_ptr workingFactor(new LinearInequality(*factor));
     if (useWarmStart == true && duals.exists(workingFactor->dualKey())) {
@@ -265,7 +265,7 @@ pair<VectorValues, VectorValues> QPSolver::optimize(
     const VectorValues& initialValues, const VectorValues& duals, bool useWarmStart) const {
 
   // Initialize workingSet from the feasible initialValues
-  LinearInequalityFactorGraph workingSet =
+  InequalityFactorGraph workingSet =
       identifyActiveConstraints(qp_.inequalities, initialValues, duals, useWarmStart);
   QPState state(initialValues, duals, workingSet, false, 0);
 

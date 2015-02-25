@@ -30,7 +30,7 @@ namespace gtsam {
 struct QPState {
   VectorValues values;
   VectorValues duals;
-  LinearInequalityFactorGraph workingSet;
+  InequalityFactorGraph workingSet;
   bool converged;
   size_t iterations;
 
@@ -41,7 +41,7 @@ struct QPState {
 
   /// constructor with initial values
   QPState(const VectorValues& initialValues, const VectorValues& initialDuals,
-      const LinearInequalityFactorGraph& initialWorkingSet, bool _converged, size_t _iterations) :
+      const InequalityFactorGraph& initialWorkingSet, bool _converged, size_t _iterations) :
       values(initialValues), duals(initialDuals), workingSet(initialWorkingSet), converged(
           _converged), iterations(_iterations) {
   }
@@ -68,7 +68,7 @@ public:
 
   /// Find solution with the current working set
   VectorValues solveWithCurrentWorkingSet(
-      const LinearInequalityFactorGraph& workingSet) const;
+      const InequalityFactorGraph& workingSet) const;
 
   /// @name Build the dual graph
   /// @{
@@ -92,7 +92,7 @@ public:
 
   /// Create a dual factor
   JacobianFactor::shared_ptr createDualFactor(Key key,
-      const LinearInequalityFactorGraph& workingSet,
+      const InequalityFactorGraph& workingSet,
       const VectorValues& delta) const;
 
   /**
@@ -123,7 +123,7 @@ public:
    *    Hessian factors connecting to xi: \grad f(xi) = \sum_j G_ij*xj - gi
    */
   GaussianFactorGraph::shared_ptr buildDualGraph(
-      const LinearInequalityFactorGraph& workingSet,
+      const InequalityFactorGraph& workingSet,
       const VectorValues& delta) const;
 
   /// @}
@@ -162,7 +162,7 @@ public:
    * And we want to remove the worst one with the largest lambda from the active set.
    *
    */
-  int identifyLeavingConstraint(const LinearInequalityFactorGraph& workingSet,
+  int identifyLeavingConstraint(const InequalityFactorGraph& workingSet,
       const VectorValues& lambdas) const;
 
   /**
@@ -174,7 +174,7 @@ public:
    *            in the next iteration
    */
   boost::tuple<double, int> computeStepSize(
-      const LinearInequalityFactorGraph& workingSet, const VectorValues& xk,
+      const InequalityFactorGraph& workingSet, const VectorValues& xk,
       const VectorValues& p) const;
 
   /** Iterate 1 step, return a new state with a new workingSet and values */
@@ -183,8 +183,8 @@ public:
   /**
    * Identify active constraints based on initial values.
    */
-  LinearInequalityFactorGraph identifyActiveConstraints(
-      const LinearInequalityFactorGraph& inequalities,
+  InequalityFactorGraph identifyActiveConstraints(
+      const InequalityFactorGraph& inequalities,
       const VectorValues& initialValues,
       const VectorValues& duals = VectorValues(), bool useWarmStart = true) const;
 

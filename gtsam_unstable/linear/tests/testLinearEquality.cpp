@@ -12,7 +12,7 @@
 /**
  *  @file   testLinearEquality.cpp
  *  @brief  Unit tests for LinearEquality
- *  @author thduynguyen
+ *  @author Duy-Nguyen Ta
  **/
 
 #include <gtsam_unstable/linear/LinearEquality.h>

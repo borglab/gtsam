@@ -132,7 +132,7 @@ TEST(QPSolver, indentifyActiveConstraints) {
   currentSolution.insert(X(1), zero(1));
   currentSolution.insert(X(2), zero(1));
 
-  LinearInequalityFactorGraph workingSet =
+  InequalityFactorGraph workingSet =
       solver.identifyActiveConstraints(qp.inequalities, currentSolution);
 
   CHECK(!workingSet.at(0)->active());   // inactive
@@ -173,7 +173,7 @@ TEST(QPSolver, iterate) {
   expectedSolutions[3].insert(X(1), (Vector(1) << 1.5).finished());
   expectedSolutions[3].insert(X(2), (Vector(1) << 0.5).finished());
 
-  LinearInequalityFactorGraph workingSet =
+  InequalityFactorGraph workingSet =
       solver.identifyActiveConstraints(qp.inequalities, currentSolution);
 
   QPState state(currentSolution, VectorValues(), workingSet, false, 100);

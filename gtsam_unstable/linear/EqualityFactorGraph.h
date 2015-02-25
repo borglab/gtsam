@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * LinearEqualityFactorGraph.h
+ * EqualityFactorGraph.h
  * @brief: Factor graph of all LinearEquality factors
  * @date: Dec 8, 2014
  * @author: Duy-Nguyen Ta
@@ -23,14 +23,14 @@
 
 namespace gtsam {
 
-class LinearEqualityFactorGraph : public FactorGraph<LinearEquality> {
+class EqualityFactorGraph : public FactorGraph<LinearEquality> {
 public:
-  typedef boost::shared_ptr<LinearEqualityFactorGraph> shared_ptr;
+  typedef boost::shared_ptr<EqualityFactorGraph> shared_ptr;
 };
 
 /// traits
-template<> struct traits<LinearEqualityFactorGraph> : public Testable<
-    LinearEqualityFactorGraph> {
+template<> struct traits<EqualityFactorGraph> : public Testable<
+    EqualityFactorGraph> {
 };
 
 } // \ namespace gtsam

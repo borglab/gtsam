@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * LinearInequalityFactorGraph.h
+ * InequalityFactorGraph.h
  * @brief: Factor graph of all LinearInequality factors
  * @date: Dec 8, 2014
  * @author: Duy-Nguyen Ta
@@ -23,12 +23,12 @@
 
 namespace gtsam {
 
-class LinearInequalityFactorGraph: public FactorGraph<LinearInequality> {
+class InequalityFactorGraph: public FactorGraph<LinearInequality> {
 private:
   typedef FactorGraph<LinearInequality> Base;
 
 public:
-  typedef boost::shared_ptr<LinearInequalityFactorGraph> shared_ptr;
+  typedef boost::shared_ptr<InequalityFactorGraph> shared_ptr;
 
   /** print */
   void print(const std::string& str, const KeyFormatter& keyFormatter =
@@ -37,15 +37,15 @@ public:
   }
 
   /** equals */
-  bool equals(const LinearInequalityFactorGraph& other,
+  bool equals(const InequalityFactorGraph& other,
       double tol = 1e-9) const {
     return Base::equals(other, tol);
   }
 };
 
 /// traits
-template<> struct traits<LinearInequalityFactorGraph> : public Testable<
-    LinearInequalityFactorGraph> {
+template<> struct traits<InequalityFactorGraph> : public Testable<
+    InequalityFactorGraph> {
 };
 
 } // \ namespace gtsam
