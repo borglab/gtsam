@@ -19,6 +19,7 @@
 
 #pragma once
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/NonlinearOptimizerParams.h>
 #include <gtsam_unstable/nonlinear/LinearEqualityFactorGraph.h>
 #include <gtsam_unstable/nonlinear/LinearInequalityFactorGraph.h>
 
@@ -62,16 +63,32 @@ struct LinearConstraintNLPState {
   }
 };
 
+/** Parameters for Gauss-Newton optimization, inherits from
+ * NonlinearOptimizationParams.
+ */
+class GTSAM_EXPORT LinearConstraintSQPParams : public NonlinearOptimizerParams {
+public:
+  bool warmStart;
+
+  LinearConstraintSQPParams() : NonlinearOptimizerParams(), warmStart(false) {}
+
+  void setWarmStart(bool _warmStart) {
+    _warmStart = warmStart;
+  }
+};
+
 /**
  * Simple SQP optimizer to solve nonlinear constrained problems
  * ONLY linear constraints are supported.
  */
 class LinearConstraintSQP {
   LinearConstraintNLP lcnlp_;
-  static const double errorTol = 1e-5;
+  LinearConstraintSQPParams params_;
+
 public:
-  LinearConstraintSQP(const LinearConstraintNLP& lcnlp) :
-      lcnlp_(lcnlp) {
+  LinearConstraintSQP(const LinearConstraintNLP& lcnlp,
+      const LinearConstraintSQPParams& params = LinearConstraintSQPParams()) :
+        lcnlp_(lcnlp), params_(params) {
   }
 
   /// Check if \nabla f(x) - \lambda * \nabla c(x) == 0
@@ -104,7 +121,7 @@ public:
   /**
    * Single iteration of SQP
    */
-  LinearConstraintNLPState iterate(const LinearConstraintNLPState& state, bool useWarmStart = true, bool debug = false) const;
+  LinearConstraintNLPState iterate(const LinearConstraintNLPState& state) const;
 
   /// Intialize all dual variables to zeros
   VectorValues initializeDuals() const;
@@ -112,7 +129,7 @@ public:
   /**
    * Main optimization function. new
    */
-  std::pair<Values, VectorValues> optimize(const Values& initialValues, bool useWarmStart = true, bool debug = false) const;
+  std::pair<Values, VectorValues> optimize(const Values& initialValues) const;
 
 };
 }

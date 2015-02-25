@@ -207,7 +207,6 @@ TEST(testlcnlpSolver, inequalityConstraint) {
 
 //******************************************************************************
 int main() {
-  cout<<"here: "<<endl;
   TestResult tr;
   return TestRegistry::runAllTests(tr);
 }

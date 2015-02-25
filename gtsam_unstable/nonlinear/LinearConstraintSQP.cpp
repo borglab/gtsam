@@ -25,17 +25,17 @@ namespace gtsam {
 
 /* ************************************************************************* */
 bool LinearConstraintSQP::isStationary(const VectorValues& delta) const {
-  return delta.vector().lpNorm<Eigen::Infinity>() < errorTol;
+  return delta.vector().lpNorm<Eigen::Infinity>() < params_.errorTol;
 }
 
 /* ************************************************************************* */
 bool LinearConstraintSQP::isPrimalFeasible(const LinearConstraintNLPState& state) const {
-  return lcnlp_.linearEqualities.checkFeasibility(state.values, errorTol);
+  return lcnlp_.linearEqualities.checkFeasibility(state.values, params_.errorTol);
 }
 
 /* ************************************************************************* */
 bool LinearConstraintSQP::isDualFeasible(const VectorValues& duals) const {
-  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, lcnlp_.linearInequalities){
+  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, lcnlp_.linearInequalities) {
     ConstrainedFactor::shared_ptr inequality
         = boost::dynamic_pointer_cast<ConstrainedFactor>(factor);
     Key dualKey = inequality->dualKey();
@@ -51,7 +51,7 @@ bool LinearConstraintSQP::isDualFeasible(const VectorValues& duals) const {
 /* ************************************************************************* */
 bool LinearConstraintSQP::isComplementary(const LinearConstraintNLPState& state) const {
   return lcnlp_.linearInequalities.checkFeasibilityAndComplimentary(
-      state.values, state.duals, errorTol);
+      state.values, state.duals, params_.errorTol);
 }
 
 /* ************************************************************************* */
@@ -74,8 +74,8 @@ VectorValues LinearConstraintSQP::initializeDuals() const {
 }
 
 /* ************************************************************************* */
-LinearConstraintNLPState LinearConstraintSQP::iterate(const LinearConstraintNLPState& state, bool useWarmStart,
-    bool debug) const {
+LinearConstraintNLPState LinearConstraintSQP::iterate(
+    const LinearConstraintNLPState& state) const {
 
   // construct the qp subproblem
   QP qp;
@@ -83,8 +83,8 @@ LinearConstraintNLPState LinearConstraintSQP::iterate(const LinearConstraintNLPS
   qp.equalities.add(*lcnlp_.linearEqualities.linearize(state.values));
   qp.inequalities.add(*lcnlp_.linearInequalities.linearize(state.values));
 
-//  if (debug)
-//    qp.print("QP subproblem:");
+  if(params_.verbosity >= NonlinearOptimizerParams::LINEAR)
+    qp.print("QP subproblem:");
 
   // solve the QP subproblem
   VectorValues delta, duals;
@@ -94,15 +94,10 @@ LinearConstraintNLPState LinearConstraintSQP::iterate(const LinearConstraintNLPS
     zeroInitialValues.insert(key_value.key, zero(key_value.value.dim()));
   }
   boost::tie(delta, duals) = qpSolver.optimize(zeroInitialValues, state.duals,
-      useWarmStart);
+      params_.warmStart);
 
-  if (debug)
-    state.values.print("state.values: ");
-  if (debug)
-    delta.print("delta = ");
-
-//  if (debug)
-//    duals.print("duals = ");
+  if(params_.verbosity >= NonlinearOptimizerParams::DELTA)
+    delta.print("Delta");
 
   // update new state
   LinearConstraintNLPState newState;
@@ -111,23 +106,25 @@ LinearConstraintNLPState LinearConstraintSQP::iterate(const LinearConstraintNLPS
   newState.converged = checkConvergence(newState, delta);
   newState.iterations = state.iterations + 1;
 
-  if (debug)
-    newState.print("newState: ");
+  if(params_.verbosity >= NonlinearOptimizerParams::VALUES) {
+    newState.values.print("Values");
+    newState.duals.print("Duals");
+  }
 
   return newState;
 }
 
 /* ************************************************************************* */
 std::pair<Values, VectorValues> LinearConstraintSQP::optimize(
-    const Values& initialValues, bool useWarmStart, bool debug) const {
+    const Values& initialValues) const {
   LinearConstraintNLPState state(initialValues);
   state.duals = initializeDuals();
-  while (!state.converged && state.iterations < 100) {
-    if (debug)
-      std::cout << "state: iteration " << state.iterations << std::endl;
-    state = iterate(state, useWarmStart, debug);
+  while (!state.converged && state.iterations < params_.maxIterations) {
+    if(params_.verbosity >= NonlinearOptimizerParams::ERROR)
+      std::cout << "Iteration # " << state.iterations << std::endl;
+    state = iterate(state);
   }
-  if (debug)
+  if(params_.verbosity >= NonlinearOptimizerParams::TERMINATION)
     std::cout << "Number of iterations: " << state.iterations << std::endl;
   return std::make_pair(state.values, state.duals);
 }
