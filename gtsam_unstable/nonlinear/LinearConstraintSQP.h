@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    LCNLPSolver.h
+ * @file    LinearConstraintSQP.h
  * @author  Duy-Nguyen Ta
  * @author  Krunal Chande
  * @author  Luca Carlone
@@ -19,8 +19,8 @@
 
 #pragma once
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam_unstable/nonlinear/NonlinearEqualityFactorGraph.h>
-#include <gtsam_unstable/nonlinear/NonlinearInequalityFactorGraph.h>
+#include <gtsam_unstable/nonlinear/LinearEqualityFactorGraph.h>
+#include <gtsam_unstable/nonlinear/LinearInequalityFactorGraph.h>
 
 namespace gtsam {
 
@@ -28,26 +28,26 @@ namespace gtsam {
  * Nonlinear Programming problem with
  * only linear constraints, encoded in factor graphs
  */
-struct LCNLP {
+struct LinearConstraintNLP {
   NonlinearFactorGraph cost;
-  NonlinearEqualityFactorGraph linearEqualities;
-  NonlinearInequalityFactorGraph linearInequalities;
+  LinearEqualityFactorGraph linearEqualities;
+  LinearInequalityFactorGraph linearInequalities;
 };
 
 /**
- * State of LCNLPSolver before/after each iteration
+ * State of LinearConstraintSQP before/after each iteration
  */
-struct LCNLPState {
-  Values values;
-  VectorValues duals;
-  bool converged;
-  size_t iterations;
+struct LinearConstraintNLPState {
+  Values values;        //!< current solution
+  VectorValues duals;   //!< current guess of the dual variables
+  bool converged;       //!< convergence flag
+  size_t iterations;    //!< number of iterations
 
   /// Default constructor
-  LCNLPState() : values(), duals(), converged(false), iterations(0) {}
+  LinearConstraintNLPState() : values(), duals(), converged(false), iterations(0) {}
 
   /// Constructor with an initialValues
-  LCNLPState(const Values& initialValues) :
+  LinearConstraintNLPState(const Values& initialValues) :
       values(initialValues), duals(VectorValues()), converged(false), iterations(0) {
   }
 
@@ -66,11 +66,11 @@ struct LCNLPState {
  * Simple SQP optimizer to solve nonlinear constrained problems
  * ONLY linear constraints are supported.
  */
-class LCNLPSolver {
-  LCNLP lcnlp_;
+class LinearConstraintSQP {
+  LinearConstraintNLP lcnlp_;
   static const double errorTol = 1e-5;
 public:
-  LCNLPSolver(const LCNLP& lcnlp) :
+  LinearConstraintSQP(const LinearConstraintNLP& lcnlp) :
       lcnlp_(lcnlp) {
   }
 
@@ -78,7 +78,7 @@ public:
   bool isStationary(const VectorValues& delta) const;
 
   /// Check if c_E(x) == 0
-  bool isPrimalFeasible(const LCNLPState& state) const;
+  bool isPrimalFeasible(const LinearConstraintNLPState& state) const;
 
   /**
    * Dual variables of inequality constraints need to be >=0
@@ -96,16 +96,17 @@ public:
    * If it is inactive, the dual should be 0, regardless of the error. However, we don't compute
    * dual variables for inactive constraints in the QP subproblem, so we don't care.
    */
-  bool isComplementary(const LCNLPState& state) const;
+  bool isComplementary(const LinearConstraintNLPState& state) const;
 
   /// Check convergence
-  bool checkConvergence(const LCNLPState& state, const VectorValues& delta) const;
+  bool checkConvergence(const LinearConstraintNLPState& state, const VectorValues& delta) const;
 
   /**
    * Single iteration of SQP
    */
-  LCNLPState iterate(const LCNLPState& state, bool useWarmStart = true, bool debug = false) const;
+  LinearConstraintNLPState iterate(const LinearConstraintNLPState& state, bool useWarmStart = true, bool debug = false) const;
 
+  /// Intialize all dual variables to zeros
   VectorValues initializeDuals() const;
 
   /**

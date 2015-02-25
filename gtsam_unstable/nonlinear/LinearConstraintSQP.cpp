@@ -10,34 +10,34 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    LCNLPSolver.cpp
+ * @file    LinearConstraintSQP.cpp
  * @author  Duy-Nguyen Ta
  * @author  Krunal Chande
  * @author  Luca Carlone
  * @date    Dec 15, 2014
  */
 
-#include <gtsam_unstable/nonlinear/LCNLPSolver.h>
+#include <gtsam_unstable/nonlinear/LinearConstraintSQP.h>
 #include <gtsam_unstable/linear/QPSolver.h>
 #include <iostream>
 
 namespace gtsam {
 
 /* ************************************************************************* */
-bool LCNLPSolver::isStationary(const VectorValues& delta) const {
+bool LinearConstraintSQP::isStationary(const VectorValues& delta) const {
   return delta.vector().lpNorm<Eigen::Infinity>() < errorTol;
 }
 
 /* ************************************************************************* */
-bool LCNLPSolver::isPrimalFeasible(const LCNLPState& state) const {
+bool LinearConstraintSQP::isPrimalFeasible(const LinearConstraintNLPState& state) const {
   return lcnlp_.linearEqualities.checkFeasibility(state.values, errorTol);
 }
 
 /* ************************************************************************* */
-bool LCNLPSolver::isDualFeasible(const VectorValues& duals) const {
+bool LinearConstraintSQP::isDualFeasible(const VectorValues& duals) const {
   BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, lcnlp_.linearInequalities){
-    NonlinearConstraint::shared_ptr inequality
-        = boost::dynamic_pointer_cast<NonlinearConstraint>(factor);
+    ConstrainedFactor::shared_ptr inequality
+        = boost::dynamic_pointer_cast<ConstrainedFactor>(factor);
     Key dualKey = inequality->dualKey();
     if (!duals.exists(dualKey)) continue; // should be inactive constraint!
     double dual = duals.at(dualKey)[0];// because we only support single-valued inequalities
@@ -49,24 +49,24 @@ bool LCNLPSolver::isDualFeasible(const VectorValues& duals) const {
 }
 
 /* ************************************************************************* */
-bool LCNLPSolver::isComplementary(const LCNLPState& state) const {
+bool LinearConstraintSQP::isComplementary(const LinearConstraintNLPState& state) const {
   return lcnlp_.linearInequalities.checkFeasibilityAndComplimentary(
       state.values, state.duals, errorTol);
 }
 
 /* ************************************************************************* */
-bool LCNLPSolver::checkConvergence(const LCNLPState& state,
+bool LinearConstraintSQP::checkConvergence(const LinearConstraintNLPState& state,
     const VectorValues& delta) const {
   return isStationary(delta) && isPrimalFeasible(state)
       && isDualFeasible(state.duals) && isComplementary(state);
 }
 
 /* ************************************************************************* */
-VectorValues LCNLPSolver::initializeDuals() const {
+VectorValues LinearConstraintSQP::initializeDuals() const {
   VectorValues duals;
   BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, lcnlp_.linearEqualities){
-    NonlinearConstraint::shared_ptr constraint
-        = boost::dynamic_pointer_cast<NonlinearConstraint>(factor);
+    ConstrainedFactor::shared_ptr constraint
+        = boost::dynamic_pointer_cast<ConstrainedFactor>(factor);
     duals.insert(constraint->dualKey(), zero(factor->dim()));
   }
 
@@ -74,22 +74,7 @@ VectorValues LCNLPSolver::initializeDuals() const {
 }
 
 /* ************************************************************************* */
-std::pair<Values, VectorValues> LCNLPSolver::optimize(
-    const Values& initialValues, bool useWarmStart, bool debug) const {
-  LCNLPState state(initialValues);
-  state.duals = initializeDuals();
-  while (!state.converged && state.iterations < 100) {
-    if (debug)
-      std::cout << "state: iteration " << state.iterations << std::endl;
-    state = iterate(state, useWarmStart, debug);
-  }
-  if (debug)
-    std::cout << "Number of iterations: " << state.iterations << std::endl;
-  return std::make_pair(state.values, state.duals);
-}
-
-/* ************************************************************************* */
-LCNLPState LCNLPSolver::iterate(const LCNLPState& state, bool useWarmStart,
+LinearConstraintNLPState LinearConstraintSQP::iterate(const LinearConstraintNLPState& state, bool useWarmStart,
     bool debug) const {
 
   // construct the qp subproblem
@@ -120,7 +105,7 @@ LCNLPState LCNLPSolver::iterate(const LCNLPState& state, bool useWarmStart,
 //    duals.print("duals = ");
 
   // update new state
-  LCNLPState newState;
+  LinearConstraintNLPState newState;
   newState.values = state.values.retract(delta);
   newState.duals = duals;
   newState.converged = checkConvergence(newState, delta);
@@ -130,6 +115,21 @@ LCNLPState LCNLPSolver::iterate(const LCNLPState& state, bool useWarmStart,
     newState.print("newState: ");
 
   return newState;
+}
+
+/* ************************************************************************* */
+std::pair<Values, VectorValues> LinearConstraintSQP::optimize(
+    const Values& initialValues, bool useWarmStart, bool debug) const {
+  LinearConstraintNLPState state(initialValues);
+  state.duals = initializeDuals();
+  while (!state.converged && state.iterations < 100) {
+    if (debug)
+      std::cout << "state: iteration " << state.iterations << std::endl;
+    state = iterate(state, useWarmStart, debug);
+  }
+  if (debug)
+    std::cout << "Number of iterations: " << state.iterations << std::endl;
+  return std::make_pair(state.values, state.duals);
 }
 
 } // namespace gtsam

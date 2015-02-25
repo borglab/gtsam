@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    NonlinearEqualityFactorGraph.h
+ * @file    LinearEqualityFactorGraph.h
  * @author  Duy-Nguyen Ta
  * @author  Krunal Chande
  * @author  Luca Carlone
@@ -18,26 +18,29 @@
  */
 
 #pragma once
-#include <gtsam_unstable/linear/LinearEqualityFactorGraph.h>
-#include <gtsam_unstable/nonlinear/NonlinearConstraint.h>
+#include <gtsam_unstable/linear/EqualityFactorGraph.h>
+#include <gtsam_unstable/nonlinear/ConstrainedFactor.h>
 
 namespace gtsam {
 
-class NonlinearEqualityFactorGraph: public FactorGraph<NonlinearFactor> {
+/**
+ * FactorGraph container for linear equality factors c(x)==0 at the nonlinear level
+ */
+class LinearEqualityFactorGraph: public FactorGraph<NonlinearFactor> {
 public:
   /// Default constructor
-  NonlinearEqualityFactorGraph() {
+  LinearEqualityFactorGraph() {
   }
 
-  /// Linearize to a LinearEqualityFactorGraph
-  LinearEqualityFactorGraph::shared_ptr linearize(
+  /// Linearize to a EqualityFactorGraph
+  EqualityFactorGraph::shared_ptr linearize(
       const Values& linearizationPoint) const {
-    LinearEqualityFactorGraph::shared_ptr linearGraph(
-        new LinearEqualityFactorGraph());
+    EqualityFactorGraph::shared_ptr linearGraph(
+        new EqualityFactorGraph());
     BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, *this){
       JacobianFactor::shared_ptr jacobian = boost::dynamic_pointer_cast<JacobianFactor>(
           factor->linearize(linearizationPoint));
-      NonlinearConstraint::shared_ptr constraint = boost::dynamic_pointer_cast<NonlinearConstraint>(factor);
+      ConstrainedFactor::shared_ptr constraint = boost::dynamic_pointer_cast<ConstrainedFactor>(factor);
       linearGraph->add(LinearEquality(*jacobian, constraint->dualKey()));
     }
     return linearGraph;
@@ -57,18 +60,6 @@ public:
     }
     return true;
   }
-
-//  /**
-//   * Additional cost for -lambda*ConstraintHessian for SQP
-//   */
-//  GaussianFactorGraph::shared_ptr multipliedHessians(const Values& values, const VectorValues& duals) const {
-//    GaussianFactorGraph::shared_ptr constrainedHessians(new GaussianFactorGraph());
-//    BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, *this) {
-//      NonlinearConstraint::shared_ptr constraint = boost::dynamic_pointer_cast<NonlinearConstraint>(factor);
-//      constrainedHessians->push_back(constraint->multipliedHessian(values, duals));
-//    }
-//    return constrainedHessians;
-//  }
 
 };
 

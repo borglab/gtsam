@@ -23,47 +23,15 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam_unstable/nonlinear/ConstrainedFactor.h>
 
 namespace gtsam {
-
-/**
- * A base class for all NonlinearConstraint factors,
- * containing additional information for the constraint,
- * e.g., a unique key for the dual variable associated with it,
- * and special treatments for nonlinear constraint linearization in SQP.
- *
- * Derived classes of NonlinearConstraint should also inherit from
- * NoiseModelFactorX to reuse the normal linearization procedure in NonlinearFactor
- */
-class NonlinearConstraint {
-
-protected:
-  Key dualKey_; //!< Unique key for the dual variable associated with this constraint
-
-public:
-  typedef boost::shared_ptr<NonlinearConstraint> shared_ptr;
-public:
-  /// Construct with dual key
-  NonlinearConstraint(Key dualKey) : dualKey_(dualKey) {}
-
-
-  /// Return the dual key
-  Key dualKey() const { return dualKey_; }
-
-  /**
-   * Special linearization for nonlinear constraint in SQP
-   * Compute the HessianFactor of the (-dual * constraintHessian)
-   * for the qp subproblem's objective function
-   */
-  virtual GaussianFactor::shared_ptr multipliedHessian(const Values& x,
-      const VectorValues& duals) const = 0;
-};
 
 /* ************************************************************************* */
 /** A convenient base class for creating a nonlinear equality constraint with 1
  * variables.  To derive from this class, implement evaluateError(). */
 template<class VALUE>
-class NonlinearConstraint1: public NoiseModelFactor1<VALUE>, public NonlinearConstraint {
+class NonlinearConstraint1: public NoiseModelFactor1<VALUE>, public ConstrainedFactor {
 
 public:
 
@@ -92,7 +60,7 @@ public:
    * @param constraintDim number of dimensions of the constraint error function
    */
   NonlinearConstraint1(Key key, Key dualKey, size_t constraintDim = 1) :
-    Base(noiseModel::Constrained::All(constraintDim), key), NonlinearConstraint(dualKey) {
+    Base(noiseModel::Constrained::All(constraintDim), key), ConstrainedFactor(dualKey) {
   }
 
   virtual ~NonlinearConstraint1() {
@@ -179,10 +147,10 @@ private:
 // \class NonlinearConstraint1
 
 /* ************************************************************************* */
-/** A convenient base class for creating your own NonlinearConstraint with 2
+/** A convenient base class for creating your own ConstrainedFactor with 2
  * variables.  To derive from this class, implement evaluateError(). */
 template<class VALUE1, class VALUE2>
-class NonlinearConstraint2: public NoiseModelFactor2<VALUE1, VALUE2>, public NonlinearConstraint {
+class NonlinearConstraint2: public NoiseModelFactor2<VALUE1, VALUE2>, public ConstrainedFactor {
 
 public:
 
@@ -214,7 +182,7 @@ public:
    * @param constraintDim number of dimensions of the constraint error function
    */
   NonlinearConstraint2(Key j1, Key j2, Key dualKey, size_t constraintDim = 1) :
-    Base(noiseModel::Constrained::All(constraintDim), j1, j2), NonlinearConstraint(dualKey) {
+    Base(noiseModel::Constrained::All(constraintDim), j1, j2), ConstrainedFactor(dualKey) {
   }
 
   virtual ~NonlinearConstraint2() {
@@ -332,10 +300,10 @@ private:
 // \class NonlinearConstraint2
 
 /* ************************************************************************* */
-/** A convenient base class for creating your own NonlinearConstraint with 3
+/** A convenient base class for creating your own ConstrainedFactor with 3
  * variables.  To derive from this class, implement evaluateError(). */
 template<class VALUE1, class VALUE2, class VALUE3>
-class NonlinearConstraint3: public NoiseModelFactor3<VALUE1, VALUE2, VALUE3>, public NonlinearConstraint {
+class NonlinearConstraint3: public NoiseModelFactor3<VALUE1, VALUE2, VALUE3>, public ConstrainedFactor {
 
 public:
 
@@ -369,7 +337,7 @@ public:
    * @param constraintDim number of dimensions of the constraint error function
    */
   NonlinearConstraint3(Key j1, Key j2, Key j3, Key dualKey, size_t constraintDim = 1) :
-    Base(noiseModel::Constrained::All(constraintDim), j1, j2, j3), NonlinearConstraint(dualKey) {
+    Base(noiseModel::Constrained::All(constraintDim), j1, j2, j3), ConstrainedFactor(dualKey) {
   }
 
   virtual ~NonlinearConstraint3() {
