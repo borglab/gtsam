@@ -280,7 +280,6 @@ TEST(QPSolver, optimizeNocedal06bookEx16_4) {
 }
 
 /* ************************************************************************* */
-
 TEST(QPSolver, failedSubproblem) {
   QP qp;
   qp.cost.push_back(JacobianFactor(X(1), eye(2), zero(2)));
@@ -297,9 +296,30 @@ TEST(QPSolver, failedSubproblem) {
   QPSolver solver(qp);
   VectorValues solution;
   boost::tie(solution, boost::tuples::ignore) = solver.optimize(initialValues);
-//  graph.print("Graph: ");
-//  solution.print("Solution: ");
+
   CHECK(assert_equal(expected, solution, 1e-7));
+}
+
+/* ************************************************************************* */
+TEST(QPSolver, infeasibleInitial) {
+  QP qp;
+  qp.cost.push_back(JacobianFactor(X(1), eye(2), zero(2)));
+  qp.cost.push_back(HessianFactor(X(1), zeros(2, 2), zero(2), 100.0));
+  qp.inequalities.push_back(
+      LinearInequality(X(1), (Matrix(1,2) << -1.0, 0.0).finished(), -1.0, 0));
+
+  VectorValues expected;
+  expected.insert(X(1), (Vector(2) << 1.0, 0.0).finished());
+
+  VectorValues initialValues;
+  initialValues.insert(X(1),  (Vector(2) << -10.0, 100.0).finished());
+
+  QPSolver solver(qp);
+  VectorValues solution;
+  CHECK_EXCEPTION(
+    solver.optimize(initialValues),
+    InfeasibleInitialValues
+  );
 }
 
 /* ************************************************************************* */
