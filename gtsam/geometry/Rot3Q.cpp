@@ -53,6 +53,10 @@ namespace gtsam {
       quaternion_(R) {}
 
   /* ************************************************************************* */
+  Rot3::Rot3(const Matrix& R) :
+      quaternion_(Matrix3(R)) {}
+
+  /* ************************************************************************* */
   Rot3::Rot3(const Quaternion& q) :
       quaternion_(q) {
   }

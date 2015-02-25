@@ -87,6 +87,9 @@ namespace gtsam {
     /** constructor from a rotation matrix */
     Rot3(const Matrix3& R);
 
+    /** constructor from a rotation matrix */
+    Rot3(const Matrix& R);
+
     /** Constructor from a quaternion.  This can also be called using a plain
      * Vector, due to implicit conversion from Vector to Quaternion
      * @param q The quaternion
