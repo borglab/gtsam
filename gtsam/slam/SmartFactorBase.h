@@ -657,12 +657,16 @@ public:
   boost::shared_ptr<RegularImplicitSchurFactor<Dim> > createRegularImplicitSchurFactor(
       const Cameras& cameras, const Point3& point, double lambda = 0.0,
       bool diagonalDamping = false) const {
-    typename boost::shared_ptr<RegularImplicitSchurFactor<Dim> > f(
-        new RegularImplicitSchurFactor<Dim>());
-    computeJacobians(f->Fblocks(), f->E(), f->b(), cameras, point);
-    f->PointCovariance() = PointCov(f->E(), lambda, diagonalDamping);
-    f->initKeys();
-    return f;
+    std::vector<KeyMatrix2D> F;
+    Matrix E;
+    Vector b;
+    computeJacobians(F, E, b, cameras, point);
+    noiseModel_->WhitenSystem(E,b);
+    Matrix3 P = PointCov(E, lambda, diagonalDamping);
+    // TODO make WhitenInPlace work with any dense matrix type
+    BOOST_FOREACH(KeyMatrix2D& Fblock,F)
+      Fblock.second = noiseModel_->Whiten(Fblock.second);
+    return boost::make_shared<RegularImplicitSchurFactor<Dim> >(F, E, P, b);
   }
 
   /**
@@ -676,7 +680,8 @@ public:
     Vector b;
     computeJacobians(Fblocks, E, b, cameras, point);
     Matrix3 P = PointCov(E, lambda, diagonalDamping);
-    return boost::make_shared<JacobianFactorQ<Dim, ZDim> >(Fblocks, E, P, b);
+    return boost::make_shared<JacobianFactorQ<Dim, ZDim> > //
+    (Fblocks, E, P, b, noiseModel_);
   }
 
   /**
@@ -690,12 +695,13 @@ public:
     Vector b;
     Matrix Enull(ZDim * numKeys, ZDim * numKeys - 3);
     computeJacobiansSVD(Fblocks, Enull, b, cameras, point);
-    return boost::make_shared<JacobianFactorSVD<Dim, ZDim> >(Fblocks, Enull, b);
+    return boost::make_shared<JacobianFactorSVD<Dim, ZDim> > //
+    (Fblocks, Enull, b, noiseModel_);
   }
 
 private:
 
-  /// Serialization function
+/// Serialization function
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int version) {
