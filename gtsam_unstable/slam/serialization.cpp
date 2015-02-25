@@ -5,6 +5,8 @@
  * @author Alex Cunningham
  */
 
+#include <gtsam/base/LieMatrix_Deprecated.h>
+#include <gtsam/base/LieVector_Deprecated.h>
 #include <gtsam/slam/serialization.h>
 #include <gtsam/base/serialization.h>
 
@@ -22,9 +24,6 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianISAM.h>
 #include <gtsam/linear/GaussianMultifrontalSolver.h>
-#include <gtsam/base/LieVector.h>
-#include <gtsam/base/LieMatrix.h>
-//#include <gtsam/geometry/StereoPoint2.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Cal3DS2.h>
