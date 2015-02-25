@@ -306,13 +306,6 @@ public:
     return (EtE).inverse();
   }
 
-  /// Assumes non-degenerate !
-  void computeEP(Matrix& E, Matrix& P, const Cameras& cameras,
-      const Point3& point) const {
-    cameras.reprojectionError(point, measured_, boost::none, E);
-    P = PointCov(E);
-  }
-
   /**
    *  Compute F, E, and b (called below in both vanilla and SVD versions), where
    *  F is a vector of derivatives wrpt the cameras, and E the stacked derivatives
@@ -394,8 +387,7 @@ public:
       const Cameras& cameras, const Point3& point, const double lambda = 0.0,
       bool diagonalDamping = false) const {
 
-    int numKeys = this->keys_.size();
-
+    int m = this->keys_.size();
     std::vector<KeyMatrix2D> Fblocks;
     Matrix E;
     Vector b;
@@ -405,8 +397,8 @@ public:
 //#define HESSIAN_BLOCKS // slower, as internally the Hessian factor will transform the blocks into SymmetricBlockMatrix
 #ifdef HESSIAN_BLOCKS
     // Create structures for Hessian Factors
-    std::vector < Matrix > Gs(numKeys * (numKeys + 1) / 2);
-    std::vector < Vector > gs(numKeys);
+    std::vector < Matrix > Gs(m * (m + 1) / 2);
+    std::vector < Vector > gs(m);
 
     sparseSchurComplement(Fblocks, E, P, b, Gs, gs);
     // schurComplement(Fblocks, E, P, b, Gs, gs);
@@ -416,15 +408,15 @@ public:
 
     return boost::make_shared < RegularHessianFactor<Dim> > (this->keys_, Gs, gs, f);
 #else // we create directly a SymmetricBlockMatrix
-    size_t n1 = Dim * numKeys + 1;
-    std::vector<DenseIndex> dims(numKeys + 1); // this also includes the b term
+    size_t n1 = Dim * m + 1;
+    std::vector<DenseIndex> dims(m + 1); // this also includes the b term
     std::fill(dims.begin(), dims.end() - 1, Dim);
     dims.back() = 1;
 
     SymmetricBlockMatrix augmentedHessian(dims, Matrix::Zero(n1, n1)); // for 10 cameras, size should be (10*Dim+1 x 10*Dim+1)
     sparseSchurComplement(Fblocks, E, P, b, augmentedHessian); // augmentedHessian.matrix().block<Dim,Dim> (i1,i2) = ...
-    augmentedHessian(numKeys, numKeys)(0, 0) = f;
-    return boost::make_shared<RegularHessianFactor<Dim> >(this->keys_,
+    augmentedHessian(m, m)(0, 0) = f;
+    return boost::make_shared<RegularHessianFactor<Dim> >(keys_,
         augmentedHessian);
 #endif
   }

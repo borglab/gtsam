@@ -513,17 +513,15 @@ public:
     return true;
   }
 
-  /// Assumes non-degenerate !
-  void computeEP(Matrix& E, Matrix& PointCov, const Cameras& cameras) const {
-    Base::computeEP(E, PointCov, cameras, point_);
-  }
-
-  /// Takes values
-  bool computeEP(Matrix& E, Matrix& PointCov, const Values& values) const {
+  /**
+   * Triangulate and compute derivative of error with respect to point
+   * @return whether triangulation worked
+   */
+  bool triangulateAndComputeE(Matrix& E, const Values& values) const {
     Cameras cameras;
     bool nonDegenerate = computeCamerasAndTriangulate(values, cameras);
     if (nonDegenerate)
-      computeEP(E, PointCov, cameras);
+      cameras.project2(point_, boost::none, E);
     return nonDegenerate;
   }
 

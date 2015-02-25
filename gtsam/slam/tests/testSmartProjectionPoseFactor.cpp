@@ -131,18 +131,20 @@ TEST_UNSAFE( SmartProjectionPoseFactor, noiseless ) {
   // Calculate expected derivative for point (easiest to check)
   boost::function<Vector(Point3)> f = //
       boost::bind(&SmartFactor::whitenedErrors, factor, cameras, _1);
+
+  // Calculate using computeEP
+  Matrix actualE;
+  factor.triangulateAndComputeE(actualE, values);
+
+  // get point
   boost::optional<Point3> point = factor.point();
   CHECK(point);
 
-  // Note ! After refactor the noiseModel is only in the factors, not these matrices
+  // calculate numerical derivative with triangulated point
   Matrix expectedE = sigma * numericalDerivative11<Vector, Point3>(f, *point);
-
-  // Calculate using computeEP
-  Matrix actualE, PointCov;
-  factor.computeEP(actualE, PointCov, values);
   EXPECT(assert_equal(expectedE, actualE, 1e-7));
 
-  // Calculate using reprojectionError, note not yet divided by sigma !
+  // Calculate using reprojectionError
   SmartFactor::Cameras::FBlocks F;
   Matrix E;
   Vector actualErrors = factor.reprojectionError(cameras, *point, F, E);
@@ -361,6 +363,10 @@ TEST( SmartProjectionPoseFactor, smartFactorWithSensorBodyTransform ) {
 
   // Check derivatives
 
+  // Calculate E and P using computeEP, triangulates
+  Matrix actualE;
+  smartFactor1->triangulateAndComputeE(actualE, values);
+
   // Calculate expected derivative for point (easiest to check)
   SmartFactor::Cameras cameras = smartFactor1->cameras(values);
   boost::function<Vector(Point3)> f = //
@@ -370,10 +376,6 @@ TEST( SmartProjectionPoseFactor, smartFactorWithSensorBodyTransform ) {
 
   // TODO, this is really a test of CameraSet
   Matrix expectedE = numericalDerivative11<Vector, Point3>(f, *point);
-
-  // Calculate using computeEP
-  Matrix actualE, PointCov;
-  smartFactor1->computeEP(actualE, PointCov, values);
   EXPECT(assert_equal(expectedE, actualE, 1e-7));
 
   // Calculate using reprojectionError
@@ -383,7 +385,7 @@ TEST( SmartProjectionPoseFactor, smartFactorWithSensorBodyTransform ) {
   EXPECT(assert_equal(expectedE, E, 1e-7));
 
   // Success ! The derivatives of reprojectionError now agree with f !
-  EXPECT(assert_equal(f(*point) * sigma, actualErrors, 1e-7));
+  EXPECT(assert_equal(f(*point), actualErrors, 1e-7));
 }
 
 /* *************************************************************************/
