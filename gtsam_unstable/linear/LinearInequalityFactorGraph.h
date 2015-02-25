@@ -9,11 +9,11 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
+/**
  * LinearInequalityFactorGraph.h
  * @brief: Factor graph of all LinearInequality factors
  * @date: Dec 8, 2014
- * @author: thduynguyen
+ * @author: Duy-Nguyen Ta
  */
 
 #pragma once

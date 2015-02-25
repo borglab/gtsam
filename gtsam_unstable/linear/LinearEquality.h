@@ -9,11 +9,11 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
+/**
  * LinearEquality.h
  * @brief: LinearEquality derived from Base with constrained noise model
  * @date: Nov 27, 2014
- * @author: thduynguyen
+ * @author: Duy-Nguyen Ta
  */
 
 #pragma once
@@ -23,7 +23,7 @@
 namespace gtsam {
 
 /**
- * This class defines Linear constraints by inherit Base
+ * This class defines a linear equality constraints, inheriting JacobianFactor
  * with the special Constrained noise model
  */
 class LinearEquality: public JacobianFactor {
