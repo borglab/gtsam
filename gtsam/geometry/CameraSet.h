@@ -78,7 +78,7 @@ public:
   }
 
   /// equals
-  virtual bool equals(const CameraSet& p, double tol = 1e-9) const {
+  bool equals(const CameraSet& p, double tol = 1e-9) const {
     if (this->size() != p.size())
       return false;
     bool camerasAreEqual = true;
@@ -143,7 +143,7 @@ public:
   Vector reprojectionError(const Point3& point, const std::vector<Z>& measured,
       boost::optional<FBlocks&> F = boost::none, //
       boost::optional<Matrix&> E = boost::none) const {
-    return ErrorVector(project2(point,F,E), measured);
+    return ErrorVector(project2(point, F, E), measured);
   }
 
   /// Calculate vector of re-projection errors, from point at infinity
