@@ -12,18 +12,20 @@
 /**
  * @file   Similarity3.h
  * @brief  Implementation of Similarity3 transform
+ * @author Paul Drews
  */
 
-#ifndef GTSAM_UNSTABLE_GEOMETRY_SIMILARITY3_H_
-#define GTSAM_UNSTABLE_GEOMETRY_SIMILARITY3_H_
-
+#pragma once
 
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/Point3.h>
-#include <gtsam/geometry/Pose3.h>
+#include <gtsam/base/Lie.h>
 #include <gtsam/base/Manifold.h>
 
 namespace gtsam {
+
+// Forward declarations
+class Pose3;
 
 /**
  * 3D similarity transform
@@ -35,11 +37,14 @@ class Similarity3: public LieGroup<Similarity3, 7> {
   typedef Point3 Translation;
 
 private:
-  Rot3 R_;
-  Point3 t_;
+  Rotation R_;
+  Translation t_;
   double s_;
 
 public:
+
+  /// @name Constructors
+  /// @{
 
   Similarity3();
 
@@ -47,43 +52,62 @@ public:
   Similarity3(double s);
 
   /// Construct from GTSAM types
-  Similarity3(const Rot3& R, const Point3& t, double s);
+  Similarity3(const Rotation& R, const Translation& t, double s);
 
   /// Construct from Eigen types
   Similarity3(const Matrix3& R, const Vector3& t, double s);
 
-  /// Convert to a rigid body pose
-  operator Pose3() const;
-
-  /// Return the translation
-  const Vector3 t() const;
-
-  /// Return the rotation matrix
-  const Matrix3 R() const;
-
-  static Similarity3 identity();
-
-  static Vector7 Logmap(const Similarity3& s, OptionalJacobian<7, 7> Hm = boost::none);
-
-  static Similarity3 Expmap(const Vector7& v, OptionalJacobian<7, 7> Hm = boost::none);
-
-  bool operator==(const Similarity3& other) const;
+  /// @}
+  /// @name Testable
+  /// @{
 
   /// Compare with tolerance
   bool equals(const Similarity3& sim, double tol) const;
 
-  Point3 transform_from(const Point3& p) const;
+  /// Compare with standard tolerance
+  bool operator==(const Similarity3& other) const;
 
-  Matrix7 AdjointMap() const;
+  /// Print with optional string
+  void print(const std::string& s) const;
+
+  /// @}
+  /// @name Group
+  /// @{
+
+  /// Return an identity transform
+  static Similarity3 identity();
+
+  /// Return the inverse
+  Similarity3 inverse() const;
+
+  Translation transform_from(const Translation& p) const;
 
   /** syntactic sugar for transform_from */
-  inline Point3 operator*(const Point3& p) const;
-
-  Similarity3 inverse() const;
+  inline Translation operator*(const Translation& p) const;
 
   Similarity3 operator*(const Similarity3& T) const;
 
-  void print(const std::string& s) const;
+  /// @}
+  /// @name Standard interface
+  /// @{
+
+  /// Return a GTSAM rotation
+  const Rotation& rotation() const {
+    return R_;
+  };
+
+  /// Return a GTSAM translation
+  const Translation& translation() const {
+    return t_;
+  };
+
+  /// Return the scale
+  double scale() const {
+    return s_;
+  };
+
+  /// Convert to a rigid body pose
+  operator Pose3() const;
 
   /// Dimensionality of tangent space = 7 DOF - used to autodetect sizes
   inline static size_t Dim() {
@@ -95,14 +119,9 @@ public:
     return 7;
   };
 
-  /// Return the rotation matrix
-  Rot3 rotation() const;
-
-  /// Return the translation
-  Point3 translation() const;
-
-  /// Return the scale
-  double scale() const;
+  /// @}
+  /// @name Chart
+  /// @{
 
   /// Update Similarity transform via 7-dim vector in tangent space
   struct ChartAtOrigin {
@@ -112,11 +131,20 @@ public:
   static Vector7 Local(const Similarity3& other,  ChartJacobian H = boost::none);
   };
 
+  /// Project from one tangent space to another
+  Matrix7 AdjointMap() const;
+
+  /// @}
+  /// @name Stubs
+  /// @{
+
+  /// Not currently implemented, required because this is a lie group
+  static Vector7 Logmap(const Similarity3& s, OptionalJacobian<7, 7> Hm = boost::none);
+  static Similarity3 Expmap(const Vector7& v, OptionalJacobian<7, 7> Hm = boost::none);
+
   using LieGroup<Similarity3, 7>::inverse; // version with derivative
 };
 
 template<>
 struct traits<Similarity3> : public internal::LieGroupTraits<Similarity3> {};
 }
-
-#endif /* GTSAM_UNSTABLE_GEOMETRY_SIMILARITY3_H_ */
