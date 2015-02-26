@@ -50,9 +50,6 @@ static Symbol x2('X', 2);
 static Symbol x3('X', 3);
 
 static Point2 measurement1(323.0, 240.0);
-static Pose3 body_P_sensor1(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2),
-    Point3(0.25, -0.10, 1.0));
-
 typedef SmartProjectionPoseFactor<Cal3_S2> SmartFactor;
 typedef SmartProjectionPoseFactor<Cal3Bundler> SmartFactorBundler;
 
@@ -77,16 +74,6 @@ TEST( SmartProjectionPoseFactor, Constructor3) {
 TEST( SmartProjectionPoseFactor, Constructor4) {
   using namespace vanillaPose;
   SmartFactor factor1(rankTol, linThreshold);
-  factor1.add(measurement1, x1, model, sharedK);
-}
-
-/* ************************************************************************* */
-TEST( SmartProjectionPoseFactor, ConstructorWithTransform) {
-  using namespace vanillaPose;
-  bool manageDegeneracy = true;
-  bool enableEPI = false;
-  SmartFactor factor1(rankTol, linThreshold, manageDegeneracy, enableEPI,
-      body_P_sensor1);
   factor1.add(measurement1, x1, model, sharedK);
 }
 
@@ -275,117 +262,6 @@ TEST( SmartProjectionPoseFactor, 3poses_smart_projection_factor ) {
   EXPECT(assert_equal(pose_above, result.at<Pose3>(x3), 1e-8));
   if (isDebugTest)
     tictoc_print_();
-}
-
-/* *************************************************************************/
-TEST( SmartProjectionPoseFactor, smartFactorWithSensorBodyTransform ) {
-
-  using namespace vanillaPose;
-
-  // create arbitrary body_Pose_sensor (transforms from sensor to body)
-  Pose3 sensor_to_body = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2),
-      Point3(1, 1, 1)); // Pose3(); //
-
-  // These are the poses we want to estimate, from camera measurements
-  Pose3 bodyPose1 = level_pose.compose(sensor_to_body.inverse());
-  Pose3 bodyPose2 = pose_right.compose(sensor_to_body.inverse());
-  Pose3 bodyPose3 = pose_above.compose(sensor_to_body.inverse());
-
-  vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
-
-  // Project three landmarks into three cameras
-  projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
-  projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
-  projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
-
-  // Create smart factors
-  vector<Key> views;
-  views.push_back(x1);
-  views.push_back(x2);
-  views.push_back(x3);
-
-  double rankTol = 1;
-  double linThreshold = -1;
-  bool manageDegeneracy = false;
-  bool enableEPI = false;
-
-  SmartFactor::shared_ptr smartFactor1(
-      new SmartFactor(rankTol, linThreshold, manageDegeneracy, enableEPI,
-          sensor_to_body));
-  smartFactor1->add(measurements_cam1, views, model, sharedK);
-
-  SmartFactor::shared_ptr smartFactor2(
-      new SmartFactor(rankTol, linThreshold, manageDegeneracy, enableEPI,
-          sensor_to_body));
-  smartFactor2->add(measurements_cam2, views, model, sharedK);
-
-  SmartFactor::shared_ptr smartFactor3(
-      new SmartFactor(rankTol, linThreshold, manageDegeneracy, enableEPI,
-          sensor_to_body));
-  smartFactor3->add(measurements_cam3, views, model, sharedK);
-
-  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
-
-  // Put all factors in factor graph, adding priors
-  NonlinearFactorGraph graph;
-  graph.push_back(smartFactor1);
-  graph.push_back(smartFactor2);
-  graph.push_back(smartFactor3);
-  graph.push_back(PriorFactor<Pose3>(x1, bodyPose1, noisePrior));
-  graph.push_back(PriorFactor<Pose3>(x2, bodyPose2, noisePrior));
-
-  // Check errors at ground truth poses
-  Values gtValues;
-  gtValues.insert(x1, bodyPose1);
-  gtValues.insert(x2, bodyPose2);
-  gtValues.insert(x3, bodyPose3);
-  double actualError = graph.error(gtValues);
-  double expectedError = 0.0;
-  DOUBLES_EQUAL(expectedError, actualError, 1e-7)
-
-  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
-      Point3(0.1, 0.1, 0.1));
-  Values values;
-  values.insert(x1, bodyPose1);
-  values.insert(x2, bodyPose2);
-  // initialize third pose with some noise, we expect it to move back to original pose_above
-  values.insert(x3, bodyPose3 * noise_pose);
-
-  LevenbergMarquardtParams params;
-  Values result;
-  LevenbergMarquardtOptimizer optimizer(graph, values, params);
-  result = optimizer.optimize();
-
-  // result.print("results of 3 camera, 3 landmark optimization \n");
-  if (isDebugTest)
-    result.at<Pose3>(x3).print("Smart: Pose3 after optimization: ");
-  EXPECT(assert_equal(bodyPose3, result.at<Pose3>(x3)));
-
-  // Check derivatives
-
-  // Calculate E and P using computeEP, triangulates
-  Matrix actualE;
-  smartFactor1->triangulateAndComputeE(actualE, values);
-
-  // Calculate expected derivative for point (easiest to check)
-  SmartFactor::Cameras cameras = smartFactor1->cameras(values);
-  boost::function<Vector(Point3)> f = //
-      boost::bind(&SmartFactor::reprojectionError, *smartFactor1, cameras, _1);
-  boost::optional<Point3> point = smartFactor1->point();
-  CHECK(point);
-
-  // TODO, this is really a test of CameraSet
-  Matrix expectedE = numericalDerivative11<Vector, Point3>(f, *point);
-  EXPECT(assert_equal(expectedE, actualE, 1e-7));
-
-  // Calculate using reprojectionError
-  Matrix E;
-  SmartFactor::Cameras::FBlocks F;
-  Vector actualErrors = smartFactor1->reprojectionError(cameras, *point, F, E);
-  EXPECT(assert_equal(expectedE, E, 1e-7));
-
-  // Success ! The derivatives of reprojectionError now agree with f !
-  EXPECT(assert_equal(f(*point), actualErrors, 1e-7));
 }
 
 /* *************************************************************************/
@@ -599,15 +475,15 @@ TEST( SmartProjectionPoseFactor, jacobianSVD ) {
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
 
   SmartFactor::shared_ptr smartFactor1(
-      new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD));
+      new SmartFactor(1, -1, false, false, JACOBIAN_SVD));
   smartFactor1->add(measurements_cam1, views, model, sharedK);
 
   SmartFactor::shared_ptr smartFactor2(
-      new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD));
+      new SmartFactor(1, -1, false, false, JACOBIAN_SVD));
   smartFactor2->add(measurements_cam2, views, model, sharedK);
 
   SmartFactor::shared_ptr smartFactor3(
-      new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD));
+      new SmartFactor(1, -1, false, false, JACOBIAN_SVD));
   smartFactor3->add(measurements_cam3, views, model, sharedK);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
@@ -654,17 +530,17 @@ TEST( SmartProjectionPoseFactor, landmarkDistance ) {
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
 
   SmartFactor::shared_ptr smartFactor1(
-      new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD,
+      new SmartFactor(1, -1, false, false, JACOBIAN_SVD,
           excludeLandmarksFutherThanDist));
   smartFactor1->add(measurements_cam1, views, model, sharedK);
 
   SmartFactor::shared_ptr smartFactor2(
-      new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD,
+      new SmartFactor(1, -1, false, false, JACOBIAN_SVD,
           excludeLandmarksFutherThanDist));
   smartFactor2->add(measurements_cam2, views, model, sharedK);
 
   SmartFactor::shared_ptr smartFactor3(
-      new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD,
+      new SmartFactor(1, -1, false, false, JACOBIAN_SVD,
           excludeLandmarksFutherThanDist));
   smartFactor3->add(measurements_cam3, views, model, sharedK);
 
@@ -720,22 +596,22 @@ TEST( SmartProjectionPoseFactor, dynamicOutlierRejection ) {
   measurements_cam4.at(0) = measurements_cam4.at(0) + Point2(10, 10); // add outlier
 
   SmartFactor::shared_ptr smartFactor1(
-      new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD,
+      new SmartFactor(1, -1, false, false, JACOBIAN_SVD,
           excludeLandmarksFutherThanDist, dynamicOutlierRejectionThreshold));
   smartFactor1->add(measurements_cam1, views, model, sharedK);
 
   SmartFactor::shared_ptr smartFactor2(
-      new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD,
+      new SmartFactor(1, -1, false, false, JACOBIAN_SVD,
           excludeLandmarksFutherThanDist, dynamicOutlierRejectionThreshold));
   smartFactor2->add(measurements_cam2, views, model, sharedK);
 
   SmartFactor::shared_ptr smartFactor3(
-      new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD,
+      new SmartFactor(1, -1, false, false, JACOBIAN_SVD,
           excludeLandmarksFutherThanDist, dynamicOutlierRejectionThreshold));
   smartFactor3->add(measurements_cam3, views, model, sharedK);
 
   SmartFactor::shared_ptr smartFactor4(
-      new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD,
+      new SmartFactor(1, -1, false, false, JACOBIAN_SVD,
           excludeLandmarksFutherThanDist, dynamicOutlierRejectionThreshold));
   smartFactor4->add(measurements_cam4, views, model, sharedK);
 
@@ -782,15 +658,15 @@ TEST( SmartProjectionPoseFactor, jacobianQ ) {
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
 
   SmartFactor::shared_ptr smartFactor1(
-      new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_Q));
+      new SmartFactor(1, -1, false, false, JACOBIAN_Q));
   smartFactor1->add(measurements_cam1, views, model, sharedK);
 
   SmartFactor::shared_ptr smartFactor2(
-      new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_Q));
+      new SmartFactor(1, -1, false, false, JACOBIAN_Q));
   smartFactor2->add(measurements_cam2, views, model, sharedK);
 
   SmartFactor::shared_ptr smartFactor3(
-      new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_Q));
+      new SmartFactor(1, -1, false, false, JACOBIAN_Q));
   smartFactor3->add(measurements_cam3, views, model, sharedK);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);

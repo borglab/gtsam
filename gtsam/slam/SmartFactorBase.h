@@ -76,10 +76,6 @@ protected:
   typedef Eigen::Matrix<double, Dim, 1> VectorD;
   typedef Eigen::Matrix<double, ZDim, ZDim> Matrix2;
 
-  /// An optional sensor pose, in the body frame (one for all cameras)
-  /// This seems to make sense for a CameraTrack, not for a CameraSet
-  boost::optional<Pose3> body_P_sensor_;
-
   // check that noise model is isotropic and the same
   // TODO, this is hacky, we should just do this via constructor, not add
   void maybeSetNoiseModel(const SharedNoiseModel& sharedNoiseModel) {
@@ -107,17 +103,10 @@ public:
   /// shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<This> shared_ptr;
 
+  /// We use the new CameraSte data structure to refer to a set of cameras
   typedef CameraSet<CAMERA> Cameras;
 
-  /**
-   * Constructor
-   * @param body_P_sensor is the transform from sensor to body frame (default identity)
-   */
-  SmartFactorBase(boost::optional<Pose3> body_P_sensor = boost::none) :
-      body_P_sensor_(body_P_sensor) {
-  }
-
-  /** Virtual destructor */
+  /// Virtual destructor, subclasses from NonlinearFactor
   virtual ~SmartFactorBase() {
   }
 
@@ -193,8 +182,6 @@ public:
       std::cout << "measurement, p = " << measured_[k] << "\t";
       noiseModel_->print("noise model = ");
     }
-    if (this->body_P_sensor_)
-      this->body_P_sensor_->print("  sensor pose in body frame: ");
     Base::print("", keyFormatter);
   }
 
@@ -208,10 +195,7 @@ public:
         areMeasurementsEqual = false;
       break;
     }
-    return e && Base::equals(p, tol) && areMeasurementsEqual
-        && ((!body_P_sensor_ && !e->body_P_sensor_)
-            || (body_P_sensor_ && e->body_P_sensor_
-                && body_P_sensor_->equals(*e->body_P_sensor_)));
+    return e && Base::equals(p, tol) && areMeasurementsEqual;
   }
 
   /// Compute reprojection errors
@@ -221,27 +205,10 @@ public:
 
   /**
    *  Compute reprojection errors and derivatives
-   *  TODO: the treatment of body_P_sensor_ is weird: the transformation
-   *  is applied in the caller, but the derivatives are computed here.
    */
   Vector reprojectionError(const Cameras& cameras, const Point3& point,
       typename Cameras::FBlocks& F, Matrix& E) const {
-
-    Vector b = cameras.reprojectionError(point, measured_, F, E);
-
-    // Apply sensor chain rule if needed TODO: no simpler way ??
-    if (body_P_sensor_) {
-      size_t m = keys_.size();
-      for (size_t i = 0; i < m; i++) {
-        const Pose3& pose_i = cameras[i].pose();
-        Pose3 w_Pose_body = pose_i.compose(body_P_sensor_->inverse());
-        Matrix66 J;
-        Pose3 world_P_body = w_Pose_body.compose(*body_P_sensor_, J);
-        F[i].leftCols(6) *= J;
-      }
-    }
-
-    return b;
+    return cameras.reprojectionError(point, measured_, F, E);
   }
 
   /// Calculate vector of re-projection errors, noise model applied
@@ -582,7 +549,6 @@ private:
   void serialize(ARCHIVE & ar, const unsigned int version) {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar & BOOST_SERIALIZATION_NVP(measured_);
-    ar & BOOST_SERIALIZATION_NVP(body_P_sensor_);
   }
 };
 // end class SmartFactorBase

@@ -130,16 +130,15 @@ public:
    */
   SmartStereoProjectionFactor(const double rankTol, const double linThreshold,
       const bool manageDegeneracy, const bool enableEPI,
-      boost::optional<Pose3> body_P_sensor = boost::none,
       double landmarkDistanceThreshold = 1e10,
-      double dynamicOutlierRejectionThreshold = -1,
-      SmartFactorStatePtr state = SmartFactorStatePtr(new SmartStereoProjectionFactorState())) :
-      Base(body_P_sensor), rankTolerance_(rankTol), retriangulationThreshold_(
-          1e-5), manageDegeneracy_(manageDegeneracy), enableEPI_(enableEPI), linearizationThreshold_(
+      double dynamicOutlierRejectionThreshold = -1, SmartFactorStatePtr state =
+          SmartFactorStatePtr(new SmartStereoProjectionFactorState())) :
+      rankTolerance_(rankTol), retriangulationThreshold_(1e-5), manageDegeneracy_(
+          manageDegeneracy), enableEPI_(enableEPI), linearizationThreshold_(
           linThreshold), degenerate_(false), cheiralityException_(false), throwCheirality_(
-          false), verboseCheirality_(false), state_(state),
-          landmarkDistanceThreshold_(landmarkDistanceThreshold),
-          dynamicOutlierRejectionThreshold_(dynamicOutlierRejectionThreshold) {
+          false), verboseCheirality_(false), state_(state), landmarkDistanceThreshold_(
+          landmarkDistanceThreshold), dynamicOutlierRejectionThreshold_(
+          dynamicOutlierRejectionThreshold) {
   }
 
   /** Virtual destructor */

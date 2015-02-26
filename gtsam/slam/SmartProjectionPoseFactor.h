@@ -64,15 +64,16 @@ public:
    * @param manageDegeneracy is true, in presence of degenerate triangulation, the factor is converted to a rotation-only constraint,
    * otherwise the factor is simply neglected
    * @param enableEPI if set to true linear triangulation is refined with embedded LM iterations
-   * @param body_P_sensor is the transform from sensor to body frame (default identity)
    */
   SmartProjectionPoseFactor(const double rankTol = 1,
       const double linThreshold = -1, const bool manageDegeneracy = false,
-      const bool enableEPI = false, boost::optional<Pose3> body_P_sensor = boost::none,
-      LinearizationMode linearizeTo = HESSIAN, double landmarkDistanceThreshold = 1e10,
+      const bool enableEPI = false, LinearizationMode linearizeTo = HESSIAN,
+      double landmarkDistanceThreshold = 1e10,
       double dynamicOutlierRejectionThreshold = -1) :
-        Base(rankTol, linThreshold, manageDegeneracy, enableEPI, body_P_sensor,
-        landmarkDistanceThreshold, dynamicOutlierRejectionThreshold), linearizeTo_(linearizeTo) {}
+      Base(rankTol, linThreshold, manageDegeneracy, enableEPI,
+          landmarkDistanceThreshold, dynamicOutlierRejectionThreshold), linearizeTo_(
+          linearizeTo) {
+  }
 
   /** Virtual destructor */
   virtual ~SmartProjectionPoseFactor() {}
@@ -150,12 +151,9 @@ public:
    */
   typename Base::Cameras cameras(const Values& values) const {
     typename Base::Cameras cameras;
-    size_t i=0;
+    size_t i = 0;
     BOOST_FOREACH(const Key& k, this->keys_) {
       Pose3 pose = values.at<Pose3>(k);
-      if(Base::body_P_sensor_)
-        pose = pose.compose(*(Base::body_P_sensor_));
-
       Camera camera(pose, sharedKs_[i++]);
       cameras.push_back(camera);
     }

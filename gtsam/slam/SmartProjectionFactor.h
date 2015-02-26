@@ -116,16 +116,14 @@ public:
    * @param manageDegeneracy is true, in presence of degenerate triangulation, the factor is converted to a rotation-only constraint,
    * otherwise the factor is simply neglected
    * @param enableEPI if set to true linear triangulation is refined with embedded LM iterations
-   * @param body_P_sensor is the transform from sensor to body frame (default identity)
    */
   SmartProjectionFactor(const double rankTol, const double linThreshold,
       const bool manageDegeneracy, const bool enableEPI,
-      boost::optional<Pose3> body_P_sensor = boost::none,
       double landmarkDistanceThreshold = 1e10,
       double dynamicOutlierRejectionThreshold = -1, SmartFactorStatePtr state =
           SmartFactorStatePtr(new SmartProjectionFactorState())) :
-      Base(body_P_sensor), rankTolerance_(rankTol), retriangulationThreshold_(
-          1e-5), manageDegeneracy_(manageDegeneracy), enableEPI_(enableEPI), linearizationThreshold_(
+      rankTolerance_(rankTol), retriangulationThreshold_(1e-5), manageDegeneracy_(
+          manageDegeneracy), enableEPI_(enableEPI), linearizationThreshold_(
           linThreshold), degenerate_(false), cheiralityException_(false), throwCheirality_(
           false), verboseCheirality_(false), state_(state), landmarkDistanceThreshold_(
           landmarkDistanceThreshold), dynamicOutlierRejectionThreshold_(
@@ -336,8 +334,8 @@ public:
         m = zeros(Base::Dim, Base::Dim);
       BOOST_FOREACH(Vector& v, gs)
         v = zero(Base::Dim);
-      return boost::make_shared<RegularHessianFactor<Base::Dim> >(this->keys_, Gs, gs,
-          0.0);
+      return boost::make_shared<RegularHessianFactor<Base::Dim> >(this->keys_,
+          Gs, gs, 0.0);
     }
 
     // instead, if we want to manage the exception..
@@ -372,7 +370,7 @@ public:
     {
       std::vector<typename Base::KeyMatrix2D> Fblocks;
       f = computeJacobiansWithTriangulatedPoint(Fblocks, E, b, cameras);
-      Base::FillDiagonalF(Fblocks,F);  // expensive !
+      Base::FillDiagonalF(Fblocks, F); // expensive !
     }
 
     // Schur complement trick
@@ -390,7 +388,8 @@ public:
     // Note the minus sign above! g has negative b.
     // Informal reasoning: when we write the error as 0.5*|Ax-b|^2
     // the derivative is A'*(Ax-b), and at x=0, this becomes -A'*b
-    gs_vector.noalias() = - F.transpose() * (b - (E * (P * (E.transpose() * b))));
+    gs_vector.noalias() = -F.transpose()
+        * (b - (E * (P * (E.transpose() * b))));
 
     // Populate Gs and gs
     int GsCount2 = 0;
@@ -410,7 +409,8 @@ public:
       this->state_->gs = gs;
       this->state_->f = f;
     }
-    return boost::make_shared<RegularHessianFactor<Base::Dim> >(this->keys_, Gs, gs, f);
+    return boost::make_shared<RegularHessianFactor<Base::Dim> >(this->keys_, Gs,
+        gs, f);
   }
 
   // create factor
@@ -541,8 +541,9 @@ public:
   }
 
   /// Version that takes values, and creates the point
-  bool triangulateAndComputeJacobians(std::vector<typename Base::KeyMatrix2D>& Fblocks,
-      Matrix& E, Vector& b, const Values& values) const {
+  bool triangulateAndComputeJacobians(
+      std::vector<typename Base::KeyMatrix2D>& Fblocks, Matrix& E, Vector& b,
+      const Values& values) const {
     Cameras cameras;
     bool nonDegenerate = computeCamerasAndTriangulate(values, cameras);
     if (nonDegenerate)
@@ -566,7 +567,7 @@ public:
     Cameras cameras;
     bool nonDegenerate = computeCamerasAndTriangulate(values, cameras);
     if (nonDegenerate)
-        return Base::reprojectionError(cameras, point_);
+      return Base::reprojectionError(cameras, point_);
     else
       return zero(cameras.size() * 2);
   }
@@ -613,7 +614,7 @@ public:
       // 3D parameterization of point at infinity
       const Point2& zi = this->measured_.at(0);
       this->point_ = cameras.front().backprojectPointAtInfinity(zi);
-      return Base::totalReprojectionErrorAtInfinity(cameras,this->point_);
+      return Base::totalReprojectionErrorAtInfinity(cameras, this->point_);
     } else {
       // Just use version in base class
       return Base::totalReprojectionError(cameras, point_);

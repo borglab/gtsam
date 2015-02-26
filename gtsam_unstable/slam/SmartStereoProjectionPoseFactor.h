@@ -65,15 +65,16 @@ public:
    * @param manageDegeneracy is true, in presence of degenerate triangulation, the factor is converted to a rotation-only constraint,
    * otherwise the factor is simply neglected
    * @param enableEPI if set to true linear triangulation is refined with embedded LM iterations
-   * @param body_P_sensor is the transform from body to sensor frame (default identity)
    */
   SmartStereoProjectionPoseFactor(const double rankTol = 1,
       const double linThreshold = -1, const bool manageDegeneracy = false,
-      const bool enableEPI = false, boost::optional<Pose3> body_P_sensor = boost::none,
-      LinearizationMode linearizeTo = HESSIAN, double landmarkDistanceThreshold = 1e10,
+      const bool enableEPI = false, LinearizationMode linearizeTo = HESSIAN,
+      double landmarkDistanceThreshold = 1e10,
       double dynamicOutlierRejectionThreshold = -1) :
-        Base(rankTol, linThreshold, manageDegeneracy, enableEPI, body_P_sensor,
-        landmarkDistanceThreshold, dynamicOutlierRejectionThreshold), linearizeTo_(linearizeTo) {}
+      Base(rankTol, linThreshold, manageDegeneracy, enableEPI,
+          landmarkDistanceThreshold, dynamicOutlierRejectionThreshold), linearizeTo_(
+          linearizeTo) {
+  }
 
   /** Virtual destructor */
   virtual ~SmartStereoProjectionPoseFactor() {}

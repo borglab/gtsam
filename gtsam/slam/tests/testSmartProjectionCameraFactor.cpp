@@ -41,8 +41,6 @@ Symbol l1('l', 1), l2('l', 2), l3('l', 3);
 Key c1 = 1, c2 = 2, c3 = 3;
 
 static Point2 measurement1(323.0, 240.0);
-static Pose3 body_P_sensor1(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2),
-    Point3(0.25, -0.10, 1.0));
 
 typedef SmartProjectionCameraFactor<Cal3_S2> SmartFactor;
 typedef SmartProjectionCameraFactor<Cal3Bundler> SmartFactorBundler;
@@ -97,17 +95,6 @@ TEST( SmartProjectionCameraFactor, Constructor3) {
 TEST( SmartProjectionCameraFactor, Constructor4) {
   using namespace vanilla;
   SmartFactor factor1(rankTol, linThreshold);
-  factor1.add(measurement1, x1, unit2);
-}
-
-/* ************************************************************************* */
-TEST( SmartProjectionCameraFactor, ConstructorWithTransform) {
-  using namespace vanilla;
-  bool manageDegeneracy = true;
-  bool isImplicit = false;
-  bool enableEPI = false;
-  SmartFactor factor1(rankTol, linThreshold, manageDegeneracy, isImplicit,
-      enableEPI, body_P_sensor1);
   factor1.add(measurement1, x1, unit2);
 }
 

@@ -56,17 +56,15 @@ public:
    * otherwise the factor is simply neglected
    * @param enableEPI if set to true linear triangulation is refined with embedded LM iterations
    * @param isImplicit if set to true linearize the factor to an implicit Schur factor
-   * @param body_P_sensor is the transform from body to sensor frame (default identity)
    */
   SmartProjectionCameraFactor(const double rankTol = 1,
       const double linThreshold = -1, const bool manageDegeneracy = false,
-      const bool enableEPI = false, const bool isImplicit = false,
-      boost::optional<Pose3> body_P_sensor = boost::none) :
-      Base(rankTol, linThreshold, manageDegeneracy, enableEPI, body_P_sensor), isImplicit_(
+      const bool enableEPI = false, const bool isImplicit = false) :
+      Base(rankTol, linThreshold, manageDegeneracy, enableEPI), isImplicit_(
           isImplicit) {
     if (linThreshold != -1) {
-      std::cout << "SmartProjectionCameraFactor:  linThreshold "
-          << linThreshold << std::endl;
+      std::cout << "SmartProjectionCameraFactor:  linThreshold " << linThreshold
+          << std::endl;
     }
   }
 
