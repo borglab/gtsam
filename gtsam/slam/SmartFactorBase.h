@@ -307,16 +307,6 @@ public:
     return f;
   }
 
-  /// Create BIG block-diagonal matrix F from Fblocks
-  static void FillDiagonalF(const std::vector<KeyMatrix2D>& Fblocks,
-      Matrix& F) {
-    size_t m = Fblocks.size();
-    F.resize(ZDim * m, Dim * m);
-    F.setZero();
-    for (size_t i = 0; i < m; ++i)
-      F.block<This::ZDim, Dim>(This::ZDim * i, Dim * i) = Fblocks.at(i).second;
-  }
-
   /// SVD version
   double computeJacobiansSVD(std::vector<KeyMatrix2D>& Fblocks, Matrix& Enull,
       Vector& b, const Cameras& cameras, const Point3& point) const {
@@ -547,6 +537,16 @@ public:
     std::cout << M << std::endl;
     SharedIsotropic n = noiseModel::Isotropic::Sigma(M, noiseModel_->sigma());
     return boost::make_shared<JacobianFactorSVD<Dim, ZDim> >(F, E0, b, n);
+  }
+
+  /// Create BIG block-diagonal matrix F from Fblocks
+  static void FillDiagonalF(const std::vector<KeyMatrix2D>& Fblocks,
+      Matrix& F) {
+    size_t m = Fblocks.size();
+    F.resize(ZDim * m, Dim * m);
+    F.setZero();
+    for (size_t i = 0; i < m; ++i)
+      F.block<This::ZDim, Dim>(This::ZDim * i, Dim * i) = Fblocks.at(i).second;
   }
 
 private:
