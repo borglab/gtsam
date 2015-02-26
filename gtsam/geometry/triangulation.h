@@ -221,7 +221,7 @@ Point3 triangulatePoint3(const std::vector<Pose3>& poses,
   BOOST_FOREACH(const Pose3& pose, poses) {
     const Point3& p_local = pose.transform_to(point);
     if (p_local.z() <= 0)
-      throw(TriangulationCheiralityException());
+    throw(TriangulationCheiralityException());
   }
 #endif
 
@@ -269,7 +269,7 @@ Point3 triangulatePoint3(const std::vector<CAMERA>& cameras,
   BOOST_FOREACH(const CAMERA& camera, cameras) {
     const Point3& p_local = camera.pose().transform_to(point);
     if (p_local.z() <= 0)
-      throw(TriangulationCheiralityException());
+    throw(TriangulationCheiralityException());
   }
 #endif
 
@@ -284,6 +284,108 @@ Point3 triangulatePoint3(
     bool optimize = false) {
   return triangulatePoint3<PinholeCamera<CALIBRATION> > //
   (cameras, measurements, rank_tol, optimize);
+}
+
+struct TriangulationParameters {
+
+  const double rankTolerance; ///< threshold to decide whether triangulation is result.degenerate
+  const bool enableEPI; ///< if set to true, will refine triangulation using LM
+
+  /**
+   * if the landmark is triangulated at distance larger than this,
+   * result is flagged as degenerate.
+   */
+  const double landmarkDistanceThreshold; //
+
+  /**
+   * If this is nonnegative the we will check if the average reprojection error
+   * is smaller than this threshold after triangulation, otherwise result is
+   * flagged as degenerate.
+   */
+  const double dynamicOutlierRejectionThreshold;
+
+  /**
+   * Constructor
+   * @param rankTol tolerance used to check if point triangulation is degenerate
+   * @param enableEPI if set to true linear triangulation is refined with embedded LM iterations
+   */
+  TriangulationParameters(const double _rankTolerance = 1.0,
+      const bool _enableEPI = false, double _landmarkDistanceThreshold = 1e10,
+      double _dynamicOutlierRejectionThreshold = -1) :
+      rankTolerance(_rankTolerance), enableEPI(_enableEPI), landmarkDistanceThreshold(
+          _landmarkDistanceThreshold), dynamicOutlierRejectionThreshold(
+          _dynamicOutlierRejectionThreshold) {
+  }
+};
+
+struct TriangulationResult {
+  Point3 point;
+  bool degenerate;
+  bool cheiralityException;
+};
+
+/// triangulateSafe: extensive checking of the outcome
+template<class CAMERA>
+TriangulationResult triangulateSafe(const std::vector<CAMERA>& cameras,
+    const std::vector<Point2>& measured,
+    const TriangulationParameters& params) {
+
+  TriangulationResult result;
+
+  size_t m = cameras.size();
+
+  // if we have a single pose the corresponding factor is uninformative
+  if (m < 2) {
+    result.degenerate = true;
+    return result;
+  }
+
+  // We triangulate the 3D position of the landmark
+  try {
+    // std::cout << "triangulatePoint3 i \n" << rankTolerance << std::endl;
+    result.point = triangulatePoint3<CAMERA>(cameras, measured,
+        params.rankTolerance, params.enableEPI);
+    result.degenerate = false;
+    result.cheiralityException = false;
+
+    // Check landmark distance and reprojection errors to avoid outliers
+    double totalReprojError = 0.0;
+    size_t i = 0;
+    BOOST_FOREACH(const CAMERA& camera, cameras) {
+      Point3 cameraTranslation = camera.pose().translation();
+      // we discard smart factors corresponding to points that are far away
+      if (cameraTranslation.distance(result.point)
+          > params.landmarkDistanceThreshold) {
+        result.degenerate = true;
+        break;
+      }
+      const Point2& zi = measured.at(i);
+      try {
+        Point2 reprojectionError(camera.project(result.point) - zi);
+        totalReprojError += reprojectionError.vector().norm();
+      } catch (CheiralityException) {
+        result.cheiralityException = true;
+      }
+      i += 1;
+    }
+    // we discard smart factors that have large reprojection error
+    if (params.dynamicOutlierRejectionThreshold > 0
+        && totalReprojError / m > params.dynamicOutlierRejectionThreshold)
+      result.degenerate = true;
+
+  } catch (TriangulationUnderconstrainedException&) {
+    // if TriangulationUnderconstrainedException can be
+    // 1) There is a single pose for triangulation - this should not happen because we checked the number of poses before
+    // 2) The rank of the matrix used for triangulation is < 3: rotation-only, parallel cameras (or motion towards the landmark)
+    // in the second case we want to use a rotation-only smart factor
+    result.degenerate = true;
+    result.cheiralityException = false;
+  } catch (TriangulationCheiralityException&) {
+    // point is behind one of the cameras: can be the case of close-to-parallel cameras or may depend on outliers
+    // we manage this case by either discarding the smart factor, or imposing a rotation-only constraint
+    result.cheiralityException = true;
+  }
+  return result;
 }
 
 } // \namespace gtsam

@@ -127,7 +127,8 @@ TEST(PinholeSet, Pinhole) {
   EXPECT(assert_equal(expectedV, actualV));
 
   // Instantiate triangulateSafe
-  PinholeSet<Camera>::Result actual = set.triangulateSafe(z);
+  TriangulationParameters params;
+  TriangulationResult actual = set.triangulateSafe(z,params);
   CHECK(actual.degenerate);
 }
 
