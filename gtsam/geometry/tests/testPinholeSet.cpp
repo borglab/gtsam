@@ -33,6 +33,7 @@ TEST(PinholeSet, Stereo) {
   CalibratedCamera camera;
   set.push_back(camera);
   set.push_back(camera);
+  //  set.print("set: ");
   Point3 p(0, 0, 1);
   EXPECT_LONGS_EQUAL(6, traits<CalibratedCamera>::dimension);
 
@@ -59,6 +60,10 @@ TEST(PinholeSet, Stereo) {
   EXPECT(assert_equal(F1, F[0]));
   EXPECT(assert_equal(F1, F[1]));
   EXPECT(assert_equal(actualE, E));
+
+  // Instantiate triangulateSafe
+  // TODO triangulation does not work yet for CalibratedCamera
+  // PinholeSet<CalibratedCamera>::Result actual = set.triangulateSafe(z);
 }
 
 /* ************************************************************************* */
@@ -120,6 +125,10 @@ TEST(PinholeSet, Pinhole) {
           camera.backprojectPointAtInfinity(Point2())));
   actualV = set.reprojectionErrorAtInfinity(p, measured);
   EXPECT(assert_equal(expectedV, actualV));
+
+  // Instantiate triangulateSafe
+  PinholeSet<Camera>::Result actual = set.triangulateSafe(z);
+  CHECK(actual.degenerate);
 }
 
 /* ************************************************************************* */
