@@ -50,8 +50,6 @@ protected:
 
   LinearizationMode linearizeTo_;  ///< How to linearize the factor (HESSIAN, JACOBIAN_SVD, JACOBIAN_Q)
 
-  std::vector<boost::shared_ptr<CALIBRATION> > sharedKs_; ///< shared pointer to calibration object (one for each camera)
-
 public:
 
   /// shorthand for a smart pointer to a factor
@@ -86,8 +84,6 @@ public:
   void print(const std::string& s = "", const KeyFormatter& keyFormatter =
       DefaultKeyFormatter) const {
     std::cout << s << "SmartProjectionPoseFactor, z = \n ";
-    BOOST_FOREACH(const boost::shared_ptr<CALIBRATION>& K, sharedKs_)
-    K->print("calibration = ");
     Base::print("", keyFormatter);
   }
 
@@ -130,11 +126,6 @@ public:
     }
   }
 
-  /** return calibration shared pointers */
-  inline const std::vector<boost::shared_ptr<CALIBRATION> > calibration() const {
-    return sharedKs_;
-  }
-
 private:
 
   /// Serialization function
@@ -142,7 +133,6 @@ private:
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int version) {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-    ar & BOOST_SERIALIZATION_NVP(sharedKs_);
   }
 
 }; // end of class declaration
