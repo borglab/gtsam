@@ -406,9 +406,11 @@ public:
     }
 
     // ==================================================================
+    std::vector<typename Base::KeyMatrix2D> Fblocks;
     Matrix F, E;
     Vector b;
-    double f = computeJacobians(F, E, b, cameras);
+    double f = computeJacobians(Fblocks, E, b, cameras);
+    Base::FillDiagonalF(Fblocks,F); // expensive !!!
 
     // Schur complement trick
     // Frank says: should be possible to do this more efficiently?
@@ -589,12 +591,6 @@ public:
     if (good)
       return Base::computeJacobiansSVD(Fblocks, Enull, b, cameras, point_);
     return true;
-  }
-
-  /// Returns Matrix, TODO: maybe should not exist -> not sparse !
-  double computeJacobians(Matrix& F, Matrix& E, Vector& b,
-      const Cameras& cameras) const {
-    return Base::computeJacobians(F, E, b, cameras, point_);
   }
 
   /// Calculate vector of re-projection errors, before applying noise model

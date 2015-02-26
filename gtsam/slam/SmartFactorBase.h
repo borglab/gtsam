@@ -342,18 +342,6 @@ public:
       F.block<This::ZDim, Dim>(This::ZDim * i, Dim * i) = Fblocks.at(i).second;
   }
 
-  /**
-   *  Compute F, E, and b, where F and E are the stacked derivatives
-   *  with respect to the point. The value of cameras/point are passed as parameters.
-   */
-  double computeJacobians(Matrix& F, Matrix& E, Vector& b,
-      const Cameras& cameras, const Point3& point) const {
-    std::vector<KeyMatrix2D> Fblocks;
-    double f = computeJacobians(Fblocks, E, b, cameras, point);
-    FillDiagonalF(Fblocks, F);
-    return f;
-  }
-
   /// SVD version
   double computeJacobiansSVD(std::vector<KeyMatrix2D>& Fblocks, Matrix& Enull,
       Vector& b, const Cameras& cameras, const Point3& point) const {
@@ -367,16 +355,6 @@ public:
     size_t m = this->keys_.size();
     Enull = svd.matrixU().block(0, 3, ZDim * m, ZDim * m - 3); // last ZDim*m-3 columns
 
-    return f;
-  }
-
-  /// Matrix version of SVD
-  // TODO, there should not be a Matrix version, really
-  double computeJacobiansSVD(Matrix& F, Matrix& Enull, Vector& b,
-      const Cameras& cameras, const Point3& point) const {
-    std::vector<KeyMatrix2D> Fblocks;
-    double f = computeJacobiansSVD(Fblocks, Enull, b, cameras, point);
-    FillDiagonalF(Fblocks, F);
     return f;
   }
 
@@ -394,69 +372,19 @@ public:
     double f = computeJacobians(Fblocks, E, b, cameras, point);
     Matrix3 P = PointCov(E, lambda, diagonalDamping);
 
-//#define HESSIAN_BLOCKS // slower, as internally the Hessian factor will transform the blocks into SymmetricBlockMatrix
-#ifdef HESSIAN_BLOCKS
-    // Create structures for Hessian Factors
-    std::vector < Matrix > Gs(m * (m + 1) / 2);
-    std::vector < Vector > gs(m);
-
-    sparseSchurComplement(Fblocks, E, P, b, Gs, gs);
-    // schurComplement(Fblocks, E, P, b, Gs, gs);
-
-    //std::vector < Matrix > Gs2(Gs.begin(), Gs.end());
-    //std::vector < Vector > gs2(gs.begin(), gs.end());
-
-    return boost::make_shared < RegularHessianFactor<Dim> > (this->keys_, Gs, gs, f);
-#else // we create directly a SymmetricBlockMatrix
-    size_t n1 = Dim * m + 1;
+    // we create directly a SymmetricBlockMatrix
+    size_t M1 = Dim * m + 1;
     std::vector<DenseIndex> dims(m + 1); // this also includes the b term
     std::fill(dims.begin(), dims.end() - 1, Dim);
     dims.back() = 1;
 
-    SymmetricBlockMatrix augmentedHessian(dims, Matrix::Zero(n1, n1)); // for 10 cameras, size should be (10*Dim+1 x 10*Dim+1)
-    sparseSchurComplement(Fblocks, E, P, b, augmentedHessian); // augmentedHessian.matrix().block<Dim,Dim> (i1,i2) = ...
+    // build augmented hessian
+    SymmetricBlockMatrix augmentedHessian(dims, Matrix::Zero(M1, M1));
+    sparseSchurComplement(Fblocks, E, P, b, augmentedHessian);
     augmentedHessian(m, m)(0, 0) = f;
+
     return boost::make_shared<RegularHessianFactor<Dim> >(keys_,
         augmentedHessian);
-#endif
-  }
-
-  /**
-   * Do Schur complement, given Jacobian as F,E,P.
-   * Slow version - works on full matrices
-   */
-  void schurComplement(const std::vector<KeyMatrix2D>& Fblocks, const Matrix& E,
-      const Matrix3& P, const Vector& b,
-      /*output ->*/std::vector<Matrix>& Gs, std::vector<Vector>& gs) const {
-    // Schur complement trick
-    // Gs = F' * F - F' * E * inv(E'*E) * E' * F
-    // gs = F' * (b - E * inv(E'*E) * E' * b)
-    // This version uses full matrices
-
-    int numKeys = this->keys_.size();
-
-    /// Compute Full F ????
-    Matrix F;
-    FillDiagonalF(Fblocks, F);
-
-    Matrix H(Dim * numKeys, Dim * numKeys);
-    Vector gs_vector;
-
-    H.noalias() = F.transpose() * (F - (E * (P * (E.transpose() * F))));
-    gs_vector.noalias() = F.transpose() * (b - (E * (P * (E.transpose() * b))));
-
-    // Populate Gs and gs
-    int GsCount2 = 0;
-    for (DenseIndex i1 = 0; i1 < numKeys; i1++) { // for each camera
-      DenseIndex i1D = i1 * Dim;
-      gs.at(i1) = gs_vector.segment<Dim>(i1D);
-      for (DenseIndex i2 = 0; i2 < numKeys; i2++) {
-        if (i2 >= i1) {
-          Gs.at(GsCount2) = H.block<Dim, Dim>(i1D, i2 * Dim);
-          GsCount2++;
-        }
-      }
-    }
   }
 
   /**
@@ -496,55 +424,6 @@ public:
         // (DxD) = (Dx2) * ( (2x2) * (2xD) )
         augmentedHessian(i1, i2) = -Fi1.transpose()
             * (Ei1_P * E.block<ZDim, 3>(ZDim * i2, 0).transpose() * Fi2);
-      }
-    } // end of for over cameras
-  }
-
-  /**
-   * Do Schur complement, given Jacobian as F,E,P, return Gs/gs
-   * Fast version - works on with sparsity
-   */
-  void sparseSchurComplement(const std::vector<KeyMatrix2D>& Fblocks,
-      const Matrix& E, const Matrix3& P /*Point Covariance*/, const Vector& b,
-      /*output ->*/std::vector<Matrix>& Gs, std::vector<Vector>& gs) const {
-    // Schur complement trick
-    // Gs = F' * F - F' * E * P * E' * F
-    // gs = F' * (b - E * P * E' * b)
-
-    // a single point is observed in numKeys cameras
-    size_t numKeys = this->keys_.size();
-
-    int GsIndex = 0;
-    // Blockwise Schur complement
-    for (size_t i1 = 0; i1 < numKeys; i1++) { // for each camera
-      // GsIndex points to the upper triangular blocks
-      // 0  1  2  3  4
-      // X  5  6  7  8
-      // X  X  9 10 11
-      // X  X  X 12 13
-      // X  X  X X  14
-      const Matrix2D& Fi1 = Fblocks.at(i1).second;
-
-      const Matrix23 Ei1_P = E.block<ZDim, 3>(ZDim * i1, 0) * P;
-
-      { // for i1 = i2
-        // Dim = (Dx2) * (2)
-        gs.at(i1) = Fi1.transpose() * b.segment<ZDim>(ZDim * i1) // F' * b
-        - Fi1.transpose() * (Ei1_P * (E.transpose() * b)); // Dim = (DxZDim) * (ZDimx3) * (3*ZDimm) * (ZDimm x 1)
-
-        // (DxD) = (DxZDim) * ( (ZDimxD) - (ZDimx3) * (3xZDim) * (ZDimxD) )
-        Gs.at(GsIndex) = Fi1.transpose()
-            * (Fi1 - Ei1_P * E.block<ZDim, 3>(ZDim * i1, 0).transpose() * Fi1);
-        GsIndex++;
-      }
-      // upper triangular part of the hessian
-      for (size_t i2 = i1 + 1; i2 < numKeys; i2++) { // for each camera
-        const Matrix2D& Fi2 = Fblocks.at(i2).second;
-
-        // (DxD) = (Dx2) * ( (2x2) * (2xD) )
-        Gs.at(GsIndex) = -Fi1.transpose()
-            * (Ei1_P * E.block<ZDim, 3>(ZDim * i2, 0).transpose() * Fi2);
-        GsIndex++;
       }
     } // end of for over cameras
   }

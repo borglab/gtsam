@@ -746,7 +746,7 @@ TEST( SmartProjectionCameraFactor, computeImplicitJacobian ) {
   SmartFactorBundler::shared_ptr factor1(new SmartFactorBundler());
   factor1->add(level_uv, c1, unit2);
   factor1->add(level_uv_right, c2, unit2);
-  Matrix expectedF, expectedE;
+  Matrix expectedE;
   Vector expectedb;
 
   CameraSet<Camera> cameras;
@@ -757,7 +757,8 @@ TEST( SmartProjectionCameraFactor, computeImplicitJacobian ) {
   Point3 point;
   if (factor1->point())
     point = *(factor1->point());
-  factor1->computeJacobians(expectedF, expectedE, expectedb, cameras, point);
+  vector<SmartFactorBundler::KeyMatrix2D> Fblocks;
+  factor1->computeJacobians(Fblocks, expectedE, expectedb, cameras, point);
 
   NonlinearFactorGraph generalGraph;
   SFMFactor sfm1(level_uv, unit2, c1, l1);
