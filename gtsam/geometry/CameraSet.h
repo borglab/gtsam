@@ -71,10 +71,10 @@ public:
    * @param s optional string naming the factor
    * @param keyFormatter optional formatter useful for printing Symbols
    */
-  void print(const std::string& s = "") const {
+  virtual void print(const std::string& s = "") const {
     std::cout << s << "CameraSet, cameras = \n";
     for (size_t k = 0; k < this->size(); ++k)
-      this->at(k).print();
+      this->at(k).print(s);
   }
 
   /// equals
