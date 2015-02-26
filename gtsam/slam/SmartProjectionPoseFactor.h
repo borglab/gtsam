@@ -79,51 +79,6 @@ public:
   virtual ~SmartProjectionPoseFactor() {}
 
   /**
-   * add a new measurement and pose key
-   * @param measured is the 2m dimensional location of the projection of a single landmark in the m view (the measurement)
-   * @param poseKey is key corresponding to the camera observing the same landmark
-   * @param noise_i is the measurement noise
-   * @param K_i is the (known) camera calibration
-   */
-  void add(const Point2 measured_i, const Key poseKey_i,
-      const SharedNoiseModel noise_i,
-      const boost::shared_ptr<CALIBRATION> K_i) {
-    Base::add(measured_i, poseKey_i, noise_i);
-    sharedKs_.push_back(K_i);
-  }
-
-  /**
-   *  Variant of the previous one in which we include a set of measurements
-   * @param measurements vector of the 2m dimensional location of the projection of a single landmark in the m view (the measurement)
-   * @param poseKeys vector of keys corresponding to the camera observing the same landmark
-   * @param noises vector of measurement noises
-   * @param Ks vector of calibration objects
-   */
-  void add(std::vector<Point2> measurements, std::vector<Key> poseKeys,
-      std::vector<SharedNoiseModel> noises,
-      std::vector<boost::shared_ptr<CALIBRATION> > Ks) {
-    Base::add(measurements, poseKeys, noises);
-    for (size_t i = 0; i < measurements.size(); i++) {
-      sharedKs_.push_back(Ks.at(i));
-    }
-  }
-
-  /**
-   * Variant of the previous one in which we include a set of measurements with the same noise and calibration
-   * @param mmeasurements vector of the 2m dimensional location of the projection of a single landmark in the m view (the measurement)
-   * @param poseKeys vector of keys corresponding to the camera observing the same landmark
-   * @param noise measurement noise (same for all measurements)
-   * @param K the (known) camera calibration (same for all measurements)
-   */
-  void add(std::vector<Point2> measurements, std::vector<Key> poseKeys,
-      const SharedNoiseModel noise, const boost::shared_ptr<CALIBRATION> K) {
-    for (size_t i = 0; i < measurements.size(); i++) {
-      Base::add(measurements.at(i), poseKeys.at(i), noise);
-      sharedKs_.push_back(K);
-    }
-  }
-
-  /**
    * print
    * @param s optional string naming the factor
    * @param keyFormatter optional formatter useful for printing Symbols
@@ -144,23 +99,6 @@ public:
   }
 
   /**
-   * Collect all cameras involved in this factor
-   * @param values Values structure which must contain camera poses corresponding
-   * to keys involved in this factor
-   * @return vector of Values
-   */
-  typename Base::Cameras cameras(const Values& values) const {
-    typename Base::Cameras cameras;
-    size_t i = 0;
-    BOOST_FOREACH(const Key& k, this->keys_) {
-      Pose3 pose = values.at<Pose3>(k);
-      Camera camera(pose, sharedKs_[i++]);
-      cameras.push_back(camera);
-    }
-    return cameras;
-  }
-
-  /**
    * Linearize to Gaussian Factor
    * @param values Values structure which must contain camera poses for this factor
    * @return
@@ -170,13 +108,13 @@ public:
     // depending on flag set on construction we may linearize to different linear factors
     switch(linearizeTo_){
     case JACOBIAN_SVD :
-      return this->createJacobianSVDFactor(cameras(values), 0.0);
+      return this->createJacobianSVDFactor(Base::cameras(values), 0.0);
       break;
     case JACOBIAN_Q :
-      return this->createJacobianQFactor(cameras(values), 0.0);
+      return this->createJacobianQFactor(Base::cameras(values), 0.0);
       break;
     default:
-      return this->createHessianFactor(cameras(values));
+      return this->createHessianFactor(Base::cameras(values));
       break;
     }
   }
@@ -186,7 +124,7 @@ public:
    */
   virtual double error(const Values& values) const {
     if (this->active(values)) {
-      return this->totalReprojectionError(cameras(values));
+      return this->totalReprojectionError(Base::cameras(values));
     } else { // else of active flag
       return 0.0;
     }

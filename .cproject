@@ -811,18 +811,10 @@
 				<useDefaultCommand>false</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
-			<target name="SmartProjectionFactorExample_kitti_nonbatch.run" path="build/gtsam_unstable/examples" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+			<target name="SmartStereoProjectionFactorExample.run" path="build/gtsam_unstable/examples" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
-				<buildArguments>-j5</buildArguments>
-				<buildTarget>SmartProjectionFactorExample_kitti_nonbatch.run</buildTarget>
-				<stopOnError>true</stopOnError>
-				<useDefaultCommand>true</useDefaultCommand>
-				<runAllBuilders>true</runAllBuilders>
-			</target>
-			<target name="SmartProjectionFactorExample_kitti.run" path="build/gtsam_unstable/examples" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
-				<buildCommand>make</buildCommand>
-				<buildArguments>-j5</buildArguments>
-				<buildTarget>SmartProjectionFactorExample_kitti.run</buildTarget>
+				<buildArguments>-j4</buildArguments>
+				<buildTarget>SmartStereoProjectionFactorExample.run</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
@@ -831,6 +823,14 @@
 				<buildCommand>make</buildCommand>
 				<buildArguments>-j5</buildArguments>
 				<buildTarget>SmartProjectionFactorTesting.run</buildTarget>
+				<stopOnError>true</stopOnError>
+				<useDefaultCommand>true</useDefaultCommand>
+				<runAllBuilders>true</runAllBuilders>
+			</target>
+			<target name="SmartProjectionFactorExample.run" path="build/gtsam_unstable/examples" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+				<buildCommand>make</buildCommand>
+				<buildArguments>-j4</buildArguments>
+				<buildTarget>SmartProjectionFactorExample.run</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>true</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>

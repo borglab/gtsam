@@ -95,39 +95,31 @@ public:
     return Dim * this->keys_.size(); // 6 for the pose and 3 for the calibration
   }
 
-  /// Collect all cameras: important that in key order
-  Cameras cameras(const Values& values) const {
-    Cameras cameras;
-    BOOST_FOREACH(const Key& k, this->keys_)
-      cameras.push_back(values.at<Camera>(k));
-    return cameras;
-  }
-
   /// linearize and adds damping on the points
   boost::shared_ptr<GaussianFactor> linearizeDamped(const Values& values,
       const double lambda=0.0) const {
     if (!isImplicit_)
-      return Base::createHessianFactor(cameras(values), lambda);
+      return Base::createHessianFactor(Base::cameras(values), lambda);
     else
-      return Base::createRegularImplicitSchurFactor(cameras(values));
+      return Base::createRegularImplicitSchurFactor(Base::cameras(values));
   }
 
   /// linearize returns a Hessianfactor that is an approximation of error(p)
   virtual boost::shared_ptr<RegularHessianFactor<Dim> > linearizeToHessian(
       const Values& values, double lambda=0.0) const {
-    return Base::createHessianFactor(cameras(values),lambda);
+    return Base::createHessianFactor(Base::cameras(values),lambda);
   }
 
   /// linearize returns a Hessianfactor that is an approximation of error(p)
   virtual boost::shared_ptr<RegularImplicitSchurFactor<Dim> > linearizeToImplicit(
       const Values& values, double lambda=0.0) const {
-    return Base::createRegularImplicitSchurFactor(cameras(values),lambda);
+    return Base::createRegularImplicitSchurFactor(Base::cameras(values),lambda);
   }
 
   /// linearize returns a Jacobianfactor that is an approximation of error(p)
   virtual boost::shared_ptr<JacobianFactorQ<Dim, 2> > linearizeToJacobian(
       const Values& values, double lambda=0.0) const {
-    return Base::createJacobianQFactor(cameras(values),lambda);
+    return Base::createJacobianQFactor(Base::cameras(values),lambda);
   }
 
   /// linearize returns a Hessianfactor that is an approximation of error(p)
@@ -148,7 +140,7 @@ public:
   /// Calculare total reprojection error
   virtual double error(const Values& values) const {
     if (this->active(values)) {
-      return Base::totalReprojectionError(cameras(values));
+      return Base::totalReprojectionError(Base::cameras(values));
     } else { // else of active flag
       return 0.0;
     }

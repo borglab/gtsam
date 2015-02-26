@@ -116,21 +116,21 @@ public:
    * @param poseKey is the index corresponding to the camera observing the landmark
    * @param sharedNoiseModel is the measurement noise
    */
-  void add(const Z& measured_i, const Key& poseKey_i,
+  void add(const Z& measured_i, const Key& cameraKey_i,
       const SharedNoiseModel& sharedNoiseModel) {
     this->measured_.push_back(measured_i);
-    this->keys_.push_back(poseKey_i);
+    this->keys_.push_back(cameraKey_i);
     maybeSetNoiseModel(sharedNoiseModel);
   }
 
   /**
    * Add a bunch of measurements, together with the camera keys and noises
    */
-  void add(std::vector<Z>& measurements, std::vector<Key>& poseKeys,
+  void add(std::vector<Z>& measurements, std::vector<Key>& cameraKeys,
       std::vector<SharedNoiseModel>& noises) {
     for (size_t i = 0; i < measurements.size(); i++) {
       this->measured_.push_back(measurements.at(i));
-      this->keys_.push_back(poseKeys.at(i));
+      this->keys_.push_back(cameraKeys.at(i));
       maybeSetNoiseModel(noises.at(i));
     }
   }
@@ -138,11 +138,11 @@ public:
   /**
    * Add a bunch of measurements and uses the same noise model for all of them
    */
-  void add(std::vector<Z>& measurements, std::vector<Key>& poseKeys,
+  void add(std::vector<Z>& measurements, std::vector<Key>& cameraKeys,
       const SharedNoiseModel& noise) {
     for (size_t i = 0; i < measurements.size(); i++) {
       this->measured_.push_back(measurements.at(i));
-      this->keys_.push_back(poseKeys.at(i));
+      this->keys_.push_back(cameraKeys.at(i));
       maybeSetNoiseModel(noise);
     }
   }
@@ -168,6 +168,14 @@ public:
   /** return the measurements */
   const std::vector<Z>& measured() const {
     return measured_;
+  }
+
+  /// Collect all cameras: important that in key order
+  Cameras cameras(const Values& values) const {
+    Cameras cameras;
+    BOOST_FOREACH(const Key& k, this->keys_)
+      cameras.push_back(values.at<CAMERA>(k));
+    return cameras;
   }
 
   /**

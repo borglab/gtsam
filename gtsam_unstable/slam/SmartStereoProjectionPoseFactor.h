@@ -15,6 +15,7 @@
  * @author Luca Carlone
  * @author Chris Beall
  * @author Zsolt Kira
+ * @author Frank Dellaert
  */
 
 #pragma once

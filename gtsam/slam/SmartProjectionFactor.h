@@ -621,9 +621,6 @@ public:
     }
   }
 
-  /// Cameras are computed in derived class
-  virtual Cameras cameras(const Values& values) const = 0;
-
   /** return the landmark */
   boost::optional<Point3> point() const {
     return point_;
