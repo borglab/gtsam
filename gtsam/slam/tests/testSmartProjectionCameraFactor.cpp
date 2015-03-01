@@ -27,7 +27,7 @@
 
 using namespace boost::assign;
 
-static bool isDebugTest = true;
+static bool isDebugTest = false;
 
 static double rankTol = 1.0;
 static double linThreshold = -1.0;
@@ -146,15 +146,15 @@ TEST( SmartProjectionCameraFactor, noisy ) {
   factor1->add(level_uv, c1, unit2);
   factor1->add(level_uv_right, c2, unit2);
 
-  // check point before triangulation
-  EXPECT(factor1->point());
-  EXPECT(assert_equal(Point3(),*factor1->point(), 1e-7));
+  // Point is now uninitialized before a triangulation event
+  EXPECT(!factor1->point());
 
   double expectedError = 58640;
   double actualError1 = factor1->error(values);
   EXPECT_DOUBLES_EQUAL(expectedError, actualError1, 1);
 
   // Check triangulated point
+  CHECK(factor1->point());
   EXPECT(assert_equal(Point3(13.7587, 1.43851, -1.14274),*factor1->point(), 1e-4));
 
   // Check whitened errors
@@ -217,24 +217,26 @@ TEST( SmartProjectionCameraFactor, perturbPoseAndOptimize ) {
   graph.push_back(PriorFactor<Camera>(c2, cam2, noisePrior));
 
   // Create initial estimate
-  Values initialEstimate;
-  initialEstimate.insert(c1, cam1);
-  initialEstimate.insert(c2, cam2);
-  initialEstimate.insert(c3, perturbCameraPose(cam3));
+  Values initial;
+  initial.insert(c1, cam1);
+  initial.insert(c2, cam2);
+  initial.insert(c3, perturbCameraPose(cam3));
   if (isDebugTest)
-    initialEstimate.at<Camera>(c3).print("Smart: Pose3 before optimization: ");
+    initial.at<Camera>(c3).print("Smart: Pose3 before optimization: ");
 
-  EXPECT(smartFactor1->point());
-  EXPECT(smartFactor2->point());
-  EXPECT(smartFactor3->point());
+  // Points are now uninitialized before a triangulation event
+  EXPECT(!smartFactor1->point());
+  EXPECT(!smartFactor2->point());
+  EXPECT(!smartFactor3->point());
 
-  EXPECT(assert_equal(Point3(),*smartFactor1->point(), 1e-7));
-  EXPECT(assert_equal(Point3(),*smartFactor2->point(), 1e-7));
-  EXPECT(assert_equal(Point3(),*smartFactor3->point(), 1e-7));
+  EXPECT_DOUBLES_EQUAL(75711, smartFactor1->error(initial), 1);
+  EXPECT_DOUBLES_EQUAL(58524, smartFactor2->error(initial), 1);
+  EXPECT_DOUBLES_EQUAL(77564, smartFactor3->error(initial), 1);
 
-  EXPECT_DOUBLES_EQUAL(75711, smartFactor1->error(values), 1);
-  EXPECT_DOUBLES_EQUAL(58524, smartFactor2->error(values), 1);
-  EXPECT_DOUBLES_EQUAL(77564, smartFactor3->error(values), 1);
+  // Error should trigger this and initialize the points, abort if not so
+  CHECK(smartFactor1->point());
+  CHECK(smartFactor2->point());
+  CHECK(smartFactor3->point());
 
   EXPECT(assert_equal(Point3(2.57696, -0.182566, 1.04085),*smartFactor1->point(), 1e-4));
   EXPECT(assert_equal(Point3(2.80114, -0.702153, 1.06594),*smartFactor2->point(), 1e-4));
@@ -243,7 +245,7 @@ TEST( SmartProjectionCameraFactor, perturbPoseAndOptimize ) {
   // Check whitened errors
   Vector expected(6);
   expected << 256, 29, -26, 29, -206, -202;
-  SmartFactor::Cameras cameras1 = smartFactor1->cameras(values);
+  SmartFactor::Cameras cameras1 = smartFactor1->cameras(initial);
   Point3 point1 = *smartFactor1->point();
   Vector actual = smartFactor1->whitenedErrors(cameras1, point1);
   EXPECT(assert_equal(expected, actual, 1));
@@ -254,29 +256,25 @@ TEST( SmartProjectionCameraFactor, perturbPoseAndOptimize ) {
     params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
     params.verbosity = NonlinearOptimizerParams::ERROR;
   }
-  LevenbergMarquardtOptimizer optimizer(graph, initialEstimate, params);
+  LevenbergMarquardtOptimizer optimizer(graph, initial, params);
   Values result = optimizer.optimize();
-
-
-  Values result;
-  gttic_(SmartProjectionCameraFactor);
-  LevenbergMarquardtOptimizer optimizer(graph, values, params);
-  result = optimizer.optimize();
-  gttoc_(SmartProjectionCameraFactor);
-  tictoc_finishedIteration_();
 
   EXPECT(assert_equal(landmark1,*smartFactor1->point(), 1e-7));
   EXPECT(assert_equal(landmark2,*smartFactor2->point(), 1e-7));
   EXPECT(assert_equal(landmark3,*smartFactor3->point(), 1e-7));
 
-  //  GaussianFactorGraph::shared_ptr GFG = graph.linearize(values);
+  //  GaussianFactorGraph::shared_ptr GFG = graph.linearize(initial);
   //  VectorValues delta = GFG->optimize();
 
   if (isDebugTest)
     result.at<Camera>(c3).print("Smart: Pose3 after optimization: ");
   EXPECT(assert_equal(cam1, result.at<Camera>(c1)));
   EXPECT(assert_equal(cam2, result.at<Camera>(c2)));
-  EXPECT(assert_equal(cam3, result.at<Camera>(c3), 1e-4));
+  EXPECT(assert_equal(result.at<Camera>(c3).pose(), cam3.pose(), 1e-4));
+  EXPECT(
+      assert_equal(result.at<Camera>(c3).calibration(), cam3.calibration(), 2));
+  if (isDebugTest)
+    tictoc_print_();
 }
 
 /* *************************************************************************/
@@ -351,7 +349,11 @@ TEST( SmartProjectionCameraFactor, perturbPoseAndOptimizeFromSfM_tracks ) {
     result.at<Camera>(c3).print("Smart: Pose3 after optimization: ");
   EXPECT(assert_equal(cam1, result.at<Camera>(c1)));
   EXPECT(assert_equal(cam2, result.at<Camera>(c2)));
-  EXPECT(assert_equal(cam3, result.at<Camera>(c3), 1e-4));
+  EXPECT(assert_equal(result.at<Camera>(c3).pose(), cam3.pose(), 1e-4));
+  EXPECT(
+      assert_equal(result.at<Camera>(c3).calibration(), cam3.calibration(), 2));
+  if (isDebugTest)
+    tictoc_print_();
 }
 
 /* *************************************************************************/
@@ -427,7 +429,11 @@ TEST( SmartProjectionCameraFactor, perturbCamerasAndOptimize ) {
     result.at<Camera>(c3).print("Smart: Pose3 after optimization: ");
   EXPECT(assert_equal(cam1, result.at<Camera>(c1)));
   EXPECT(assert_equal(cam2, result.at<Camera>(c2)));
-  EXPECT(assert_equal(cam3, result.at<Camera>(c3), 1e-4));
+  EXPECT(assert_equal(result.at<Camera>(c3).pose(), cam3.pose(), 1e-1));
+  EXPECT(
+      assert_equal(result.at<Camera>(c3).calibration(), cam3.calibration(), 20));
+  if (isDebugTest)
+    tictoc_print_();
 }
 
 /* *************************************************************************/
@@ -499,7 +505,11 @@ TEST( SmartProjectionCameraFactor, Cal3Bundler ) {
     result.at<Camera>(c3).print("Smart: Pose3 after optimization: ");
   EXPECT(assert_equal(cam1, result.at<Camera>(c1), 1e-4));
   EXPECT(assert_equal(cam2, result.at<Camera>(c2), 1e-4));
-  EXPECT(assert_equal(cam3, result.at<Camera>(c3), 1e-4));
+  EXPECT(assert_equal(result.at<Camera>(c3).pose(), cam3.pose(), 1e-1));
+  EXPECT(
+      assert_equal(result.at<Camera>(c3).calibration(), cam3.calibration(), 1));
+  if (isDebugTest)
+    tictoc_print_();
 }
 
 /* *************************************************************************/
@@ -571,7 +581,11 @@ TEST( SmartProjectionCameraFactor, Cal3Bundler2 ) {
     result.at<Camera>(c3).print("Smart: Pose3 after optimization: ");
   EXPECT(assert_equal(cam1, result.at<Camera>(c1), 1e-4));
   EXPECT(assert_equal(cam2, result.at<Camera>(c2), 1e-4));
-  EXPECT(assert_equal(cam3, result.at<Camera>(c3), 1e-4));
+  EXPECT(assert_equal(result.at<Camera>(c3).pose(), cam3.pose(), 1e-1));
+  EXPECT(
+      assert_equal(result.at<Camera>(c3).calibration(), cam3.calibration(), 2));
+  if (isDebugTest)
+    tictoc_print_();
 }
 
 /* *************************************************************************/
