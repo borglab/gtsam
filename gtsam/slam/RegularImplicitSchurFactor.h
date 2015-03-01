@@ -18,7 +18,7 @@ namespace gtsam {
 /**
  * RegularImplicitSchurFactor
  */
-template<size_t D, size_t Z=2> //
+template<size_t D, size_t Z = 2> //
 class RegularImplicitSchurFactor: public GaussianFactor {
 
 public:
@@ -170,8 +170,12 @@ public:
   static void updateSparseSchurComplement(
       const std::vector<KeyMatrix2D>& Fblocks, const Matrix& E,
       const Matrix3& P /*Point Covariance*/, const Vector& b, const double f,
-      const FastVector<Key>& keys, const FastMap<Key, size_t>& KeySlotMap,
+      const FastVector<Key>& allKeys, const FastVector<Key>& keys,
       /*output ->*/SymmetricBlockMatrix& augmentedHessian) {
+
+    FastMap<Key, size_t> KeySlotMap;
+    for (size_t slot = 0; slot < allKeys.size(); slot++)
+      KeySlotMap.insert(std::make_pair(allKeys[slot], slot));
     // Schur complement trick
     // G = F' * F - F' * E * P * E' * F
     // g = F' * (b - E * P * E' * b)
@@ -232,15 +236,28 @@ public:
     augmentedHessian(aug_m, aug_m)(0, 0) += f;
   }
 
+  /// *Compute* full augmented information matrix
   virtual Matrix augmentedInformation() const {
-    throw std::runtime_error(
-        "RegularImplicitSchurFactor::augmentedInformation non implemented");
-    return Matrix();
+
+    // Create a SymmetricBlockMatrix
+    int m = this->keys_.size();
+    size_t M1 = D * m + 1;
+    std::vector<DenseIndex> dims(m + 1); // this also includes the b term
+    std::fill(dims.begin(), dims.end() - 1, D);
+    dims.back() = 1;
+    SymmetricBlockMatrix augmentedHessian(dims, Matrix::Zero(M1, M1));
+
+    // Do the Schur complement
+    sparseSchurComplement(Fblocks_, E_, PointCovariance_, b_, augmentedHessian);
+    return augmentedHessian.matrix();
   }
+
+  /// *Compute* full information matrix
   virtual Matrix information() const {
-    throw std::runtime_error(
-        "RegularImplicitSchurFactor::information non implemented");
-    return Matrix();
+    Matrix augmented = augmentedInformation();
+    int m = this->keys_.size();
+    size_t M = D * m;
+    return augmented.block(0,0,M,M);
   }
 
   /// Return the diagonal of the Hessian for this factor

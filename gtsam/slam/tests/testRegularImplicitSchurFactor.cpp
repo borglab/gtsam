@@ -255,6 +255,18 @@ TEST(regularImplicitSchurFactor, hessianDiagonal)
   EXPECT(assert_equal(F0t*(I2-E0*P*E0.transpose())*F0,actualBD[0]));
   EXPECT(assert_equal(F1.transpose()*F1-FtE1*P*FtE1.transpose(),actualBD[1]));
   EXPECT(assert_equal(F3.transpose()*F3-FtE3*P*FtE3.transpose(),actualBD[3]));
+
+  // augmentedInformation (test just checks diagonals)
+  Matrix actualInfo = factor.augmentedInformation();
+  EXPECT(assert_equal(actualBD[0],actualInfo.block<6,6>(0,0)));
+  EXPECT(assert_equal(actualBD[1],actualInfo.block<6,6>(6,6)));
+  EXPECT(assert_equal(actualBD[3],actualInfo.block<6,6>(12,12)));
+
+  // information (test just checks diagonals)
+  Matrix actualInfo2 = factor.information();
+  EXPECT(assert_equal(actualBD[0],actualInfo2.block<6,6>(0,0)));
+  EXPECT(assert_equal(actualBD[1],actualInfo2.block<6,6>(6,6)));
+  EXPECT(assert_equal(actualBD[3],actualInfo2.block<6,6>(12,12)));
 }
 
 /* ************************************************************************* */
