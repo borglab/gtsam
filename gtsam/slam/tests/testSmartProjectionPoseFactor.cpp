@@ -289,7 +289,7 @@ TEST( SmartProjectionPoseFactor, Factors ) {
   cameras.push_back(cam2);
 
   // Make sure triangulation works
-  LONGS_EQUAL(2, smartFactor1->triangulateSafe(cameras));
+  CHECK(smartFactor1->triangulateSafe(cameras));
   CHECK(!smartFactor1->isDegenerate());
   CHECK(!smartFactor1->isPointBehindCamera());
   boost::optional<Point3> p = smartFactor1->point();

@@ -27,7 +27,7 @@
 
 using namespace boost::assign;
 
-static bool isDebugTest = false;
+static bool isDebugTest = true;
 
 static double rankTol = 1.0;
 static double linThreshold = -1.0;
@@ -133,9 +133,8 @@ TEST( SmartProjectionCameraFactor, noisy ) {
 
   using namespace vanilla;
 
-  // 1. Project two landmarks into two cameras and triangulate
-  Point2 pixelError(0.2, 0.2);
-  Point2 level_uv = level_camera.project(landmark1) + pixelError;
+  // Project one landmark into two cameras and add noise on first
+  Point2 level_uv = level_camera.project(landmark1) + Point2(0.2, 0.2);
   Point2 level_uv_right = level_camera_right.project(landmark1);
 
   Values values;
@@ -165,7 +164,6 @@ TEST( SmartProjectionCameraFactor, noisy ) {
   factor2->add(measurements, views, noises);
 
   double actualError2 = factor2->error(values);
-
   DOUBLES_EQUAL(actualError1, actualError2, 1e-7);
 }
 
@@ -174,68 +172,58 @@ TEST( SmartProjectionCameraFactor, perturbPoseAndOptimize ) {
 
   using namespace vanilla;
 
+  // Project three landmarks into three cameras
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
-
-  // 1. Project three landmarks into three cameras and triangulate
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
   projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
 
+  // Create and fill smartfactors
+  SmartFactor::shared_ptr smartFactor1(new SmartFactor());
+  SmartFactor::shared_ptr smartFactor2(new SmartFactor());
+  SmartFactor::shared_ptr smartFactor3(new SmartFactor());
   vector<Key> views;
   views.push_back(c1);
   views.push_back(c2);
   views.push_back(c3);
-
-  SmartFactor::shared_ptr smartFactor1(new SmartFactor());
   smartFactor1->add(measurements_cam1, views, unit2);
-
-  SmartFactor::shared_ptr smartFactor2(new SmartFactor());
   smartFactor2->add(measurements_cam2, views, unit2);
-
-  SmartFactor::shared_ptr smartFactor3(new SmartFactor());
   smartFactor3->add(measurements_cam3, views, unit2);
 
-  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6 + 5, 1e-5);
-
+  // Create factor graph and add priors on two cameras
   NonlinearFactorGraph graph;
   graph.push_back(smartFactor1);
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
+  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6 + 5, 1e-5);
   graph.push_back(PriorFactor<Camera>(c1, cam1, noisePrior));
   graph.push_back(PriorFactor<Camera>(c2, cam2, noisePrior));
 
-  Values values;
-  values.insert(c1, cam1);
-  values.insert(c2, cam2);
-  values.insert(c3, perturbCameraPose(cam3));
+  // Create initial estimate
+  Values initialEstimate;
+  initialEstimate.insert(c1, cam1);
+  initialEstimate.insert(c2, cam2);
+  initialEstimate.insert(c3, perturbCameraPose(cam3));
   if (isDebugTest)
-    values.at<Camera>(c3).print("Smart: Pose3 before optimization: ");
+    initialEstimate.at<Camera>(c3).print("Smart: Pose3 before optimization: ");
 
+  // Optimize
   LevenbergMarquardtParams params;
-  if (isDebugTest)
+  if (isDebugTest) {
     params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
-  if (isDebugTest)
     params.verbosity = NonlinearOptimizerParams::ERROR;
+  }
+  LevenbergMarquardtOptimizer optimizer(graph, initialEstimate, params);
+  Values result = optimizer.optimize();
 
-  Values result;
-  gttic_(SmartProjectionCameraFactor);
-  LevenbergMarquardtOptimizer optimizer(graph, values, params);
-  result = optimizer.optimize();
-  gttoc_(SmartProjectionCameraFactor);
-  tictoc_finishedIteration_();
-
-  //  GaussianFactorGraph::shared_ptr GFG = graph.linearize(values);
+  //  GaussianFactorGraph::shared_ptr GFG = graph.linearize(initialEstimate);
   //  VectorValues delta = GFG->optimize();
 
   if (isDebugTest)
     result.at<Camera>(c3).print("Smart: Pose3 after optimization: ");
   EXPECT(assert_equal(cam1, result.at<Camera>(c1)));
   EXPECT(assert_equal(cam2, result.at<Camera>(c2)));
-  EXPECT(assert_equal(result.at<Camera>(c3).pose(), cam3.pose(), 1e-4));
-  EXPECT(
-      assert_equal(result.at<Camera>(c3).calibration(), cam3.calibration(), 2));
-  if (isDebugTest)
-    tictoc_print_();
+  EXPECT(assert_equal(cam3, result.at<Camera>(c3), 1e-4));
 }
 
 /* *************************************************************************/
@@ -243,8 +231,8 @@ TEST( SmartProjectionCameraFactor, perturbPoseAndOptimizeFromSfM_tracks ) {
 
   using namespace vanilla;
 
+  // Project three landmarks into three cameras
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
-  // 1. Project three landmarks into three cameras and triangulate
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
   projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
@@ -300,11 +288,8 @@ TEST( SmartProjectionCameraFactor, perturbPoseAndOptimizeFromSfM_tracks ) {
     params.verbosity = NonlinearOptimizerParams::ERROR;
 
   Values result;
-  gttic_(SmartProjectionCameraFactor);
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
-  gttoc_(SmartProjectionCameraFactor);
-  tictoc_finishedIteration_();
 
   //  GaussianFactorGraph::shared_ptr GFG = graph.linearize(values);
   //  VectorValues delta = GFG->optimize();
@@ -313,11 +298,7 @@ TEST( SmartProjectionCameraFactor, perturbPoseAndOptimizeFromSfM_tracks ) {
     result.at<Camera>(c3).print("Smart: Pose3 after optimization: ");
   EXPECT(assert_equal(cam1, result.at<Camera>(c1)));
   EXPECT(assert_equal(cam2, result.at<Camera>(c2)));
-  EXPECT(assert_equal(result.at<Camera>(c3).pose(), cam3.pose(), 1e-4));
-  EXPECT(
-      assert_equal(result.at<Camera>(c3).calibration(), cam3.calibration(), 2));
-  if (isDebugTest)
-    tictoc_print_();
+  EXPECT(assert_equal(cam3, result.at<Camera>(c3), 1e-4));
 }
 
 /* *************************************************************************/
@@ -383,11 +364,8 @@ TEST( SmartProjectionCameraFactor, perturbCamerasAndOptimize ) {
     params.verbosity = NonlinearOptimizerParams::ERROR;
 
   Values result;
-  gttic_(SmartProjectionCameraFactor);
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
-  gttoc_(SmartProjectionCameraFactor);
-  tictoc_finishedIteration_();
 
   //  GaussianFactorGraph::shared_ptr GFG = graph.linearize(values);
   //  VectorValues delta = GFG->optimize();
@@ -396,11 +374,7 @@ TEST( SmartProjectionCameraFactor, perturbCamerasAndOptimize ) {
     result.at<Camera>(c3).print("Smart: Pose3 after optimization: ");
   EXPECT(assert_equal(cam1, result.at<Camera>(c1)));
   EXPECT(assert_equal(cam2, result.at<Camera>(c2)));
-  EXPECT(assert_equal(result.at<Camera>(c3).pose(), cam3.pose(), 1e-1));
-  EXPECT(
-      assert_equal(result.at<Camera>(c3).calibration(), cam3.calibration(), 20));
-  if (isDebugTest)
-    tictoc_print_();
+  EXPECT(assert_equal(cam3, result.at<Camera>(c3), 1e-4));
 }
 
 /* *************************************************************************/
@@ -465,21 +439,14 @@ TEST( SmartProjectionCameraFactor, Cal3Bundler ) {
     params.verbosity = NonlinearOptimizerParams::ERROR;
 
   Values result;
-  gttic_(SmartProjectionCameraFactor);
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
-  gttoc_(SmartProjectionCameraFactor);
-  tictoc_finishedIteration_();
 
   if (isDebugTest)
     result.at<Camera>(c3).print("Smart: Pose3 after optimization: ");
   EXPECT(assert_equal(cam1, result.at<Camera>(c1), 1e-4));
   EXPECT(assert_equal(cam2, result.at<Camera>(c2), 1e-4));
-  EXPECT(assert_equal(result.at<Camera>(c3).pose(), cam3.pose(), 1e-1));
-  EXPECT(
-      assert_equal(result.at<Camera>(c3).calibration(), cam3.calibration(), 1));
-  if (isDebugTest)
-    tictoc_print_();
+  EXPECT(assert_equal(cam3, result.at<Camera>(c3), 1e-4));
 }
 
 /* *************************************************************************/
@@ -544,21 +511,14 @@ TEST( SmartProjectionCameraFactor, Cal3Bundler2 ) {
     params.verbosity = NonlinearOptimizerParams::ERROR;
 
   Values result;
-  gttic_(SmartProjectionCameraFactor);
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
-  gttoc_(SmartProjectionCameraFactor);
-  tictoc_finishedIteration_();
 
   if (isDebugTest)
     result.at<Camera>(c3).print("Smart: Pose3 after optimization: ");
   EXPECT(assert_equal(cam1, result.at<Camera>(c1), 1e-4));
   EXPECT(assert_equal(cam2, result.at<Camera>(c2), 1e-4));
-  EXPECT(assert_equal(result.at<Camera>(c3).pose(), cam3.pose(), 1e-1));
-  EXPECT(
-      assert_equal(result.at<Camera>(c3).calibration(), cam3.calibration(), 2));
-  if (isDebugTest)
-    tictoc_print_();
+  EXPECT(assert_equal(cam3, result.at<Camera>(c3), 1e-4));
 }
 
 /* *************************************************************************/
