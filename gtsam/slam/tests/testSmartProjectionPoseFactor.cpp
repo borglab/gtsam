@@ -301,6 +301,7 @@ TEST( SmartProjectionPoseFactor, Factors ) {
   Matrix16 A1, A2;
   A1 << -1000, 0, 0, 0, 100, 0;
   A2 << 1000, 0, 100, 0, -100, 0;
+  Matrix expectedInformation; // filled below
   {
     // createHessianFactor
     Matrix66 G11 = 0.5 * A1.transpose() * A1;
@@ -315,10 +316,11 @@ TEST( SmartProjectionPoseFactor, Factors ) {
     double f = 0;
 
     RegularHessianFactor<6> expected(x1, x2, G11, G12, g1, G22, g2, f);
+    expectedInformation = expected.information();
 
     boost::shared_ptr<RegularHessianFactor<6> > actual =
         smartFactor1->createHessianFactor(cameras, 0.0);
-    EXPECT(assert_equal(expected.information(), actual->information(), 1e-8));
+    EXPECT(assert_equal(expectedInformation, actual->information(), 1e-8));
     EXPECT(assert_equal(expected, *actual, 1e-8));
   }
 
@@ -356,16 +358,19 @@ TEST( SmartProjectionPoseFactor, Factors ) {
     boost::shared_ptr<RegularImplicitSchurFactor<6> > actual =
         smartFactor1->createRegularImplicitSchurFactor(cameras, 0.0);
     CHECK(actual);
+    EXPECT(assert_equal(expectedInformation, expected.information(), 1e-8));
+    EXPECT(assert_equal(expectedInformation, actual->information(), 1e-8));
     EXPECT(assert_equal(expected, *actual));
 
     // createJacobianQFactor
     SharedIsotropic n = noiseModel::Isotropic::Sigma(4, sigma);
     JacobianFactorQ<6, 2> expectedQ(Fblocks, E, P, b, n);
+    EXPECT(assert_equal(expectedInformation, expectedQ.information(), 1e-8));
 
     boost::shared_ptr<JacobianFactorQ<6, 2> > actualQ =
         smartFactor1->createJacobianQFactor(cameras, 0.0);
     CHECK(actual);
-    EXPECT(assert_equal(expectedQ.information(), actualQ->information(), 1e-8));
+    EXPECT(assert_equal(expectedInformation, actualQ->information(), 1e-8));
     EXPECT(assert_equal(expectedQ, *actualQ));
   }
 
@@ -375,11 +380,12 @@ TEST( SmartProjectionPoseFactor, Factors ) {
     b.setZero();
     double s = sin(M_PI_4);
     JacobianFactor expected(x1, s * A1, x2, s * A2, b);
+    EXPECT(assert_equal(expectedInformation, expected.information(), 1e-8));
 
     boost::shared_ptr<JacobianFactor> actual =
         smartFactor1->createJacobianSVDFactor(cameras, 0.0);
     CHECK(actual);
-    EXPECT(assert_equal(expected.information(), actual->information(), 1e-8));
+    EXPECT(assert_equal(expectedInformation, actual->information(), 1e-8));
     EXPECT(assert_equal(expected, *actual));
   }
 }
