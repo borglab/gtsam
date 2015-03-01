@@ -360,21 +360,20 @@ public:
       const Matrix& E, const Matrix3& P /*Point Covariance*/, const Vector& b,
       /*output ->*/SymmetricBlockMatrix& augmentedHessian) const {
     // Schur complement trick
-    // Gs = F' * F - F' * E * P * E' * F
-    // gs = F' * (b - E * P * E' * b)
+    // G = F' * F - F' * E * P * E' * F
+    // g = F' * (b - E * P * E' * b)
 
-    // a single point is observed in numKeys cameras
-    size_t numKeys = this->keys_.size();
+    // a single point is observed in m cameras
+    size_t m = this->keys_.size();
 
     // Blockwise Schur complement
-    for (size_t i = 0; i < numKeys; i++) { // for each camera
+    for (size_t i = 0; i < m; i++) { // for each camera
 
       const Matrix2D& Fi = Fblocks.at(i).second;
       const Matrix23 Ei_P = E.block<ZDim, 3>(ZDim * i, 0) * P;
 
       // Dim = (Dx2) * (2)
-      // (augmentedHessian.matrix()).block<Dim,1> (i,numKeys+1) = Fi.transpose() * b.segment < 2 > (2 * i); // F' * b
-      augmentedHessian(i, numKeys) = Fi.transpose() * b.segment<ZDim>(ZDim * i) // F' * b
+      augmentedHessian(i, m) = Fi.transpose() * b.segment<ZDim>(ZDim * i) // F' * b
       - Fi.transpose() * (Ei_P * (E.transpose() * b)); // Dim = (DxZDim) * (ZDimx3) * (3*ZDimm) * (ZDimm x 1)
 
       // (DxD) = (DxZDim) * ( (ZDimxD) - (ZDimx3) * (3xZDim) * (ZDimxD) )
@@ -382,7 +381,7 @@ public:
           * (Fi - Ei_P * E.block<ZDim, 3>(ZDim * i, 0).transpose() * Fi);
 
       // upper triangular part of the hessian
-      for (size_t j = i + 1; j < numKeys; j++) { // for each camera
+      for (size_t j = i + 1; j < m; j++) { // for each camera
         const Matrix2D& Fj = Fblocks.at(j).second;
 
         // (DxD) = (Dx2) * ( (2x2) * (2xD) )
@@ -411,12 +410,12 @@ public:
     for (size_t slot = 0; slot < allKeys.size(); slot++)
       KeySlotMap.insert(std::make_pair(allKeys[slot], slot));
 
-    // a single point is observed in numKeys cameras
-    size_t numKeys = this->keys_.size(); // cameras observing current point
-    size_t aug_numKeys = (augmentedHessian.rows() - 1) / Dim; // all cameras in the group
+    // a single point is observed in m cameras
+    size_t m = this->keys_.size(); // cameras observing current point
+    size_t aug_m = (augmentedHessian.rows() - 1) / Dim; // all cameras in the group
 
     // Blockwise Schur complement
-    for (size_t i = 0; i < numKeys; i++) { // for each camera in the current factor
+    for (size_t i = 0; i < m; i++) { // for each camera in the current factor
 
       const Matrix2D& Fi = Fblocks.at(i).second;
       const Matrix23 Ei_P = E.block<ZDim, 3>(ZDim * i, 0) * P;
@@ -428,15 +427,15 @@ public:
       DenseIndex aug_i = KeySlotMap[this->keys_[i]];
 
       // information vector - store previous vector
-      // vectorBlock = augmentedHessian(aug_i, aug_numKeys).knownOffDiagonal();
+      // vectorBlock = augmentedHessian(aug_i, aug_m).knownOffDiagonal();
       // add contribution of current factor
-      augmentedHessian(aug_i, aug_numKeys) = augmentedHessian(aug_i,
-          aug_numKeys).knownOffDiagonal()
-          + Fi.transpose() * b.segment<ZDim>(ZDim * i) // F' * b
-      - Fi.transpose() * (Ei_P * (E.transpose() * b)); // Dim = (DxZDim) * (ZDimx3) * (3*ZDimm) * (ZDimm x 1)
+      augmentedHessian(aug_i, aug_m) =
+          augmentedHessian(aug_i, aug_m).knownOffDiagonal()
+              + Fi.transpose() * b.segment<ZDim>(ZDim * i) // F' * b
+          - Fi.transpose() * (Ei_P * (E.transpose() * b)); // Dim = (DxZDim) * (ZDimx3) * (3*ZDimm) * (ZDimm x 1)
 
-      // (DxD) = (DxZDim) * ( (ZDimxD) - (ZDimx3) * (3xZDim) * (ZDimxD) )
-      // main block diagonal - store previous block
+          // (DxD) = (DxZDim) * ( (ZDimxD) - (ZDimx3) * (3xZDim) * (ZDimxD) )
+          // main block diagonal - store previous block
       matrixBlock = augmentedHessian(aug_i, aug_i);
       // add contribution of current factor
       augmentedHessian(aug_i, aug_i) = matrixBlock
@@ -444,7 +443,7 @@ public:
               * (Fi - Ei_P * E.block<ZDim, 3>(ZDim * i, 0).transpose() * Fi));
 
       // upper triangular part of the hessian
-      for (size_t j = i + 1; j < numKeys; j++) { // for each camera
+      for (size_t j = i + 1; j < m; j++) { // for each camera
         const Matrix2D& Fj = Fblocks.at(j).second;
 
         //Key cameraKey_j = this->keys_[j];
@@ -461,7 +460,7 @@ public:
       }
     } // end of for over cameras
 
-    augmentedHessian(aug_numKeys, aug_numKeys)(0, 0) += f;
+    augmentedHessian(aug_m, aug_m)(0, 0) += f;
   }
 
   /**
@@ -473,8 +472,6 @@ public:
       const double lambda, bool diagonalDamping,
       SymmetricBlockMatrix& augmentedHessian,
       const FastVector<Key> allKeys) const {
-
-    // int numKeys = this->keys_.size();
 
     std::vector<KeyMatrix2D> Fblocks;
     Matrix E;
