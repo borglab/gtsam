@@ -15,6 +15,7 @@
  *  @author Chris Beall
  *  @author Luca Carlone
  *  @author Zsolt Kira
+ *  @author Frank Dellaert
  *  @date   Sept 2013
  */
 
