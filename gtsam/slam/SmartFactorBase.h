@@ -487,6 +487,15 @@ public:
     updateSparseSchurComplement(Fblocks, E, P, b, f, allKeys, augmentedHessian); // augmentedHessian.matrix().block<Dim,Dim> (i1,i2) = ...
   }
 
+  /// Whiten the Jacobians computed by computeJacobians using noiseModel_
+  void whitenJacobians(std::vector<KeyMatrix2D>& F, Matrix& E,
+      Vector& b) const {
+    noiseModel_->WhitenSystem(E, b);
+    // TODO make WhitenInPlace work with any dense matrix type
+    BOOST_FOREACH(KeyMatrix2D& Fblock,F)
+      Fblock.second = noiseModel_->Whiten(Fblock.second);
+  }
+
   /**
    * Return Jacobians as RegularImplicitSchurFactor with raw access
    */
@@ -497,11 +506,8 @@ public:
     Matrix E;
     Vector b;
     computeJacobians(F, E, b, cameras, point);
-    noiseModel_->WhitenSystem(E, b);
+    whitenJacobians(F, E, b);
     Matrix3 P = PointCov(E, lambda, diagonalDamping);
-    // TODO make WhitenInPlace work with any dense matrix type
-    BOOST_FOREACH(KeyMatrix2D& Fblock,F)
-      Fblock.second = noiseModel_->Whiten(Fblock.second);
     return boost::make_shared<RegularImplicitSchurFactor<Dim> >(F, E, P, b);
   }
 

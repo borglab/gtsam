@@ -280,6 +280,7 @@ public:
     {
       std::vector<typename Base::KeyMatrix2D> Fblocks;
       f = computeJacobiansWithTriangulatedPoint(Fblocks, E, b, cameras);
+      Base::whitenJacobians(Fblocks,E,b);
       Base::FillDiagonalF(Fblocks, F); // expensive !
     }
 
