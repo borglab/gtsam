@@ -9,6 +9,7 @@
 
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/VectorValues.h>
+#include <gtsam/base/SymmetricBlockMatrix.h>
 #include <boost/foreach.hpp>
 #include <iosfwd>
 
@@ -17,7 +18,7 @@ namespace gtsam {
 /**
  * RegularImplicitSchurFactor
  */
-template<size_t D> //
+template<size_t D, size_t Z=2> //
 class RegularImplicitSchurFactor: public GaussianFactor {
 
 public:
@@ -26,12 +27,12 @@ public:
 
 protected:
 
-  typedef Eigen::Matrix<double, 2, D> Matrix2D; ///< type of an F block
+  typedef Eigen::Matrix<double, Z, D> Matrix2D; ///< type of an F block
   typedef Eigen::Matrix<double, D, D> MatrixDD; ///< camera hessian
   typedef std::pair<Key, Matrix2D> KeyMatrix2D; ///< named F block
 
-  const std::vector<KeyMatrix2D> Fblocks_; ///< All 2*D F blocks (one for each camera)
-  const Matrix3 PointCovariance_; ///< the 3*3 matrix P = inv(E'E) (2*2 if degenerate)
+  const std::vector<KeyMatrix2D> Fblocks_; ///< All Z*D F blocks (one for each camera)
+  const Matrix3 PointCovariance_; ///< the 3*3 matrix P = inv(E'E) (Z*Z if degenerate)
   const Matrix E_; ///< The 2m*3 E Jacobian with respect to the point
   const Vector b_; ///< 2m-dimensional RHS vector
 
@@ -122,6 +123,115 @@ public:
         "RegularImplicitSchurFactor::jacobian non implemented");
     return std::make_pair(Matrix(), Vector());
   }
+
+  /**
+   * Do Schur complement, given Jacobian as F,E,P, return SymmetricBlockMatrix
+   * Fast version - works on with sparsity
+   */
+  static void sparseSchurComplement(const std::vector<KeyMatrix2D>& Fblocks,
+      const Matrix& E, const Matrix3& P /*Point Covariance*/, const Vector& b,
+      /*output ->*/SymmetricBlockMatrix& augmentedHessian) {
+    // Schur complement trick
+    // G = F' * F - F' * E * P * E' * F
+    // g = F' * (b - E * P * E' * b)
+
+    // a single point is observed in m cameras
+    size_t m = Fblocks.size();
+
+    // Blockwise Schur complement
+    for (size_t i = 0; i < m; i++) { // for each camera
+
+      const Matrix2D& Fi = Fblocks.at(i).second;
+      const Matrix23 Ei_P = E.block<Z, 3>(Z * i, 0) * P;
+
+      // D = (Dx2) * (Z)
+      augmentedHessian(i, m) = Fi.transpose() * b.segment<Z>(Z * i) // F' * b
+      - Fi.transpose() * (Ei_P * (E.transpose() * b)); // D = (DxZDim) * (ZDimx3) * (3*ZDimm) * (ZDimm x 1)
+
+      // (DxD) = (DxZDim) * ( (ZDimxD) - (ZDimx3) * (3xZDim) * (ZDimxD) )
+      augmentedHessian(i, i) = Fi.transpose()
+          * (Fi - Ei_P * E.block<Z, 3>(Z * i, 0).transpose() * Fi);
+
+      // upper triangular part of the hessian
+      for (size_t j = i + 1; j < m; j++) { // for each camera
+        const Matrix2D& Fj = Fblocks.at(j).second;
+
+        // (DxD) = (Dx2) * ( (2x2) * (2xD) )
+        augmentedHessian(i, j) = -Fi.transpose()
+            * (Ei_P * E.block<Z, 3>(Z * j, 0).transpose() * Fj);
+      }
+    } // end of for over cameras
+  }
+
+  /**
+   * Applies Schur complement (exploiting block structure) to get a smart factor on cameras,
+   * and adds the contribution of the smart factor to a pre-allocated augmented Hessian.
+   */
+  static void updateSparseSchurComplement(
+      const std::vector<KeyMatrix2D>& Fblocks, const Matrix& E,
+      const Matrix3& P /*Point Covariance*/, const Vector& b, const double f,
+      const FastVector<Key>& keys, const FastMap<Key, size_t>& KeySlotMap,
+      /*output ->*/SymmetricBlockMatrix& augmentedHessian) {
+    // Schur complement trick
+    // G = F' * F - F' * E * P * E' * F
+    // g = F' * (b - E * P * E' * b)
+
+    MatrixDD matrixBlock;
+    typedef SymmetricBlockMatrix::Block Block; ///< A block from the Hessian matrix
+
+    // a single point is observed in m cameras
+    size_t m = Fblocks.size(); // cameras observing current point
+    size_t aug_m = (augmentedHessian.rows() - 1) / D; // all cameras in the group
+
+    // Blockwise Schur complement
+    for (size_t i = 0; i < m; i++) { // for each camera in the current factor
+
+      const Matrix2D& Fi = Fblocks.at(i).second;
+      const Matrix23 Ei_P = E.block<Z, 3>(Z * i, 0) * P;
+
+      // D = (DxZDim) * (Z)
+      // allKeys are the list of all camera keys in the group, e.g, (1,3,4,5,7)
+      // we should map those to a slot in the local (grouped) hessian (0,1,2,3,4)
+      // Key cameraKey_i = this->keys_[i];
+      DenseIndex aug_i = KeySlotMap.at(keys[i]);
+
+      // information vector - store previous vector
+      // vectorBlock = augmentedHessian(aug_i, aug_m).knownOffDiagonal();
+      // add contribution of current factor
+      augmentedHessian(aug_i, aug_m) =
+          augmentedHessian(aug_i, aug_m).knownOffDiagonal()
+              + Fi.transpose() * b.segment<Z>(Z * i) // F' * b
+          - Fi.transpose() * (Ei_P * (E.transpose() * b)); // D = (DxZDim) * (ZDimx3) * (3*ZDimm) * (ZDimm x 1)
+
+          // (DxD) = (DxZDim) * ( (ZDimxD) - (ZDimx3) * (3xZDim) * (ZDimxD) )
+          // main block diagonal - store previous block
+      matrixBlock = augmentedHessian(aug_i, aug_i);
+      // add contribution of current factor
+      augmentedHessian(aug_i, aug_i) = matrixBlock
+          + (Fi.transpose()
+              * (Fi - Ei_P * E.block<Z, 3>(Z * i, 0).transpose() * Fi));
+
+      // upper triangular part of the hessian
+      for (size_t j = i + 1; j < m; j++) { // for each camera
+        const Matrix2D& Fj = Fblocks.at(j).second;
+
+        //Key cameraKey_j = this->keys_[j];
+        DenseIndex aug_j = KeySlotMap.at(keys[j]);
+
+        // (DxD) = (DxZDim) * ( (ZDimxZDim) * (ZDimxD) )
+        // off diagonal block - store previous block
+        // matrixBlock = augmentedHessian(aug_i, aug_j).knownOffDiagonal();
+        // add contribution of current factor
+        augmentedHessian(aug_i, aug_j) =
+            augmentedHessian(aug_i, aug_j).knownOffDiagonal()
+                - Fi.transpose()
+                    * (Ei_P * E.block<Z, 3>(Z * j, 0).transpose() * Fj);
+      }
+    } // end of for over cameras
+
+    augmentedHessian(aug_m, aug_m)(0, 0) += f;
+  }
+
   virtual Matrix augmentedInformation() const {
     throw std::runtime_error(
         "RegularImplicitSchurFactor::augmentedInformation non implemented");
@@ -142,10 +252,10 @@ public:
       Key j = keys_[pos];
 
       // Calculate Fj'*Ej for the current camera (observing a single point)
-      // D x 3 = (D x 2) * (2 x 3)
+      // D x 3 = (D x Z) * (Z x 3)
       const Matrix2D& Fj = Fblocks_[pos].second;
       Eigen::Matrix<double, D, 3> FtE = Fj.transpose()
-          * E_.block<2, 3>(2 * pos, 0);
+          * E_.block<Z, 3>(Z * pos, 0);
 
       Eigen::Matrix<double, D, 1> dj;
       for (size_t k = 0; k < D; ++k) { // for each diagonal element of the camera hessian
@@ -174,10 +284,10 @@ public:
       Key j = keys_[pos];
 
       // Calculate Fj'*Ej for the current camera (observing a single point)
-      // D x 3 = (D x 2) * (2 x 3)
+      // D x 3 = (D x Z) * (Z x 3)
       const Matrix2D& Fj = Fblocks_[pos].second;
       Eigen::Matrix<double, D, 3> FtE = Fj.transpose()
-          * E_.block<2, 3>(2 * pos, 0);
+          * E_.block<Z, 3>(Z * pos, 0);
 
       DVector dj;
       for (size_t k = 0; k < D; ++k) { // for each diagonal element of the camera hessian
@@ -195,28 +305,28 @@ public:
     // F'*(I - E*P*E')*F
     for (size_t pos = 0; pos < size(); ++pos) {
       Key j = keys_[pos];
-      // F'*F - F'*E*P*E'*F   (9*2)*(2*9) - (9*2)*(2*3)*(3*3)*(3*2)*(2*9)
+      // F'*F - F'*E*P*E'*F  e.g. (9*2)*(2*9) - (9*2)*(2*3)*(3*3)*(3*2)*(2*9)
       const Matrix2D& Fj = Fblocks_[pos].second;
       //      Eigen::Matrix<double, D, 3> FtE = Fj.transpose()
-      //          * E_.block<2, 3>(2 * pos, 0);
+      //          * E_.block<Z, 3>(Z * pos, 0);
       //      blocks[j] = Fj.transpose() * Fj
       //          - FtE * PointCovariance_ * FtE.transpose();
 
-      const Matrix23& Ej = E_.block<2, 3>(2 * pos, 0);
+      const Matrix23& Ej = E_.block<Z, 3>(Z * pos, 0);
       blocks[j] = Fj.transpose()
           * (Fj - Ej * PointCovariance_ * Ej.transpose() * Fj);
 
       // F'*(I - E*P*E')*F, TODO: this should work, but it does not :-(
-      //      static const Eigen::Matrix<double, 2, 2> I2 = eye(2);
+      //      static const Eigen::Matrix<double, Z, Z> I2 = eye(Z);
       //      Matrix2 Q = //
-      //          I2 - E_.block<2, 3>(2 * pos, 0) * PointCovariance_ * E_.block<2, 3>(2 * pos, 0).transpose();
+      //          I2 - E_.block<Z, 3>(Z * pos, 0) * PointCovariance_ * E_.block<Z, 3>(Z * pos, 0).transpose();
       //      blocks[j] = Fj.transpose() * Q * Fj;
     }
     return blocks;
   }
 
   virtual GaussianFactor::shared_ptr clone() const {
-    return boost::make_shared<RegularImplicitSchurFactor<D> >(Fblocks_,
+    return boost::make_shared<RegularImplicitSchurFactor<D, Z> >(Fblocks_,
         PointCovariance_, E_, b_);
     throw std::runtime_error(
         "RegularImplicitSchurFactor::clone non implemented");
@@ -226,7 +336,7 @@ public:
   }
 
   virtual GaussianFactor::shared_ptr negate() const {
-    return boost::make_shared<RegularImplicitSchurFactor<D> >(Fblocks_,
+    return boost::make_shared<RegularImplicitSchurFactor<D, Z> >(Fblocks_,
         PointCovariance_, E_, b_);
     throw std::runtime_error(
         "RegularImplicitSchurFactor::negate non implemented");
@@ -247,23 +357,23 @@ public:
   typedef std::vector<Vector2> Error2s;
 
   /**
-   * @brief Calculate corrected error Q*(e-2*b) = (I - E*P*E')*(e-2*b)
+   * @brief Calculate corrected error Q*(e-Z*b) = (I - E*P*E')*(e-Z*b)
    */
   void projectError2(const Error2s& e1, Error2s& e2) const {
 
-    // d1 = E.transpose() * (e1-2*b) = (3*2m)*2m
+    // d1 = E.transpose() * (e1-Z*b) = (3*2m)*2m
     Vector3 d1;
     d1.setZero();
     for (size_t k = 0; k < size(); k++)
-      d1 += E_.block<2, 3>(2 * k, 0).transpose()
-          * (e1[k] - 2 * b_.segment<2>(k * 2));
+      d1 += E_.block<Z, 3>(Z * k, 0).transpose()
+          * (e1[k] - Z * b_.segment<Z>(k * Z));
 
     // d2 = E.transpose() * e1 = (3*2m)*2m
     Vector3 d2 = PointCovariance_ * d1;
 
     // e3 = alpha*(e1 - E*d2) = 1*[2m-(2m*3)*3]
     for (size_t k = 0; k < size(); k++)
-      e2[k] = e1[k] - 2 * b_.segment<2>(k * 2) - E_.block<2, 3>(2 * k, 0) * d2;
+      e2[k] = e1[k] - Z * b_.segment<Z>(k * Z) - E_.block<Z, 3>(Z * k, 0) * d2;
   }
 
   /*
@@ -305,7 +415,7 @@ public:
 
     // e1 = F * x - b = (2m*dm)*dm
     for (size_t k = 0; k < size(); ++k)
-      e1[k] = Fblocks_[k].second * x.at(keys_[k]) - b_.segment<2>(k * 2);
+      e1[k] = Fblocks_[k].second * x.at(keys_[k]) - b_.segment<Z>(k * Z);
     projectError(e1, e2);
 
     double result = 0;
@@ -324,14 +434,14 @@ public:
     Vector3 d1;
     d1.setZero();
     for (size_t k = 0; k < size(); k++)
-      d1 += E_.block<2, 3>(2 * k, 0).transpose() * e1[k];
+      d1 += E_.block<Z, 3>(Z * k, 0).transpose() * e1[k];
 
     // d2 = E.transpose() * e1 = (3*2m)*2m
     Vector3 d2 = PointCovariance_ * d1;
 
     // e3 = alpha*(e1 - E*d2) = 1*[2m-(2m*3)*3]
     for (size_t k = 0; k < size(); k++)
-      e2[k] = e1[k] - E_.block<2, 3>(2 * k, 0) * d2;
+      e2[k] = e1[k] - E_.block<Z, 3>(Z * k, 0) * d2;
   }
 
   /// Scratch space for multiplyHessianAdd
@@ -426,7 +536,7 @@ public:
     e1.resize(size());
     e2.resize(size());
     for (size_t k = 0; k < size(); k++)
-      e1[k] = b_.segment<2>(2 * k);
+      e1[k] = b_.segment<Z>(Z * k);
     projectError(e1, e2);
 
     // g = F.transpose()*e2
@@ -453,7 +563,7 @@ public:
     e1.resize(size());
     e2.resize(size());
     for (size_t k = 0; k < size(); k++)
-      e1[k] = b_.segment<2>(2 * k);
+      e1[k] = b_.segment<Z>(Z * k);
     projectError(e1, e2);
 
     for (size_t k = 0; k < size(); ++k) { // for each camera in the factor
@@ -472,8 +582,8 @@ public:
 // end class RegularImplicitSchurFactor
 
 // traits
-template<size_t D> struct traits<RegularImplicitSchurFactor<D> > : public Testable<
-    RegularImplicitSchurFactor<D> > {
+template<size_t Z, size_t D> struct traits<RegularImplicitSchurFactor<D, Z> > : public Testable<
+    RegularImplicitSchurFactor<D, Z> > {
 };
 
 }
