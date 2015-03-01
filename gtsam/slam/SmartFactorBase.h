@@ -353,114 +353,6 @@ public:
   }
 
   /**
-   * Do Schur complement, given Jacobian as F,E,P, return SymmetricBlockMatrix
-   * Fast version - works on with sparsity
-   */
-  static void sparseSchurComplement(const std::vector<KeyMatrix2D>& Fblocks,
-      const Matrix& E, const Matrix3& P /*Point Covariance*/, const Vector& b,
-      /*output ->*/SymmetricBlockMatrix& augmentedHessian) {
-    // Schur complement trick
-    // G = F' * F - F' * E * P * E' * F
-    // g = F' * (b - E * P * E' * b)
-
-    // a single point is observed in m cameras
-    size_t m = Fblocks.size();
-
-    // Blockwise Schur complement
-    for (size_t i = 0; i < m; i++) { // for each camera
-
-      const Matrix2D& Fi = Fblocks.at(i).second;
-      const Matrix23 Ei_P = E.block<ZDim, 3>(ZDim * i, 0) * P;
-
-      // Dim = (Dx2) * (2)
-      augmentedHessian(i, m) = Fi.transpose() * b.segment<ZDim>(ZDim * i) // F' * b
-      - Fi.transpose() * (Ei_P * (E.transpose() * b)); // Dim = (DxZDim) * (ZDimx3) * (3*ZDimm) * (ZDimm x 1)
-
-      // (DxD) = (DxZDim) * ( (ZDimxD) - (ZDimx3) * (3xZDim) * (ZDimxD) )
-      augmentedHessian(i, i) = Fi.transpose()
-          * (Fi - Ei_P * E.block<ZDim, 3>(ZDim * i, 0).transpose() * Fi);
-
-      // upper triangular part of the hessian
-      for (size_t j = i + 1; j < m; j++) { // for each camera
-        const Matrix2D& Fj = Fblocks.at(j).second;
-
-        // (DxD) = (Dx2) * ( (2x2) * (2xD) )
-        augmentedHessian(i, j) = -Fi.transpose()
-            * (Ei_P * E.block<ZDim, 3>(ZDim * j, 0).transpose() * Fj);
-      }
-    } // end of for over cameras
-  }
-
-  /**
-   * Applies Schur complement (exploiting block structure) to get a smart factor on cameras,
-   * and adds the contribution of the smart factor to a pre-allocated augmented Hessian.
-   */
-  static void updateSparseSchurComplement(
-      const std::vector<KeyMatrix2D>& Fblocks, const Matrix& E,
-      const Matrix3& P /*Point Covariance*/, const Vector& b, const double f,
-      const FastVector<Key>& keys, const FastMap<Key, size_t>& KeySlotMap,
-      /*output ->*/SymmetricBlockMatrix& augmentedHessian) {
-    // Schur complement trick
-    // G = F' * F - F' * E * P * E' * F
-    // g = F' * (b - E * P * E' * b)
-
-    MatrixDD matrixBlock;
-    typedef SymmetricBlockMatrix::Block Block; ///< A block from the Hessian matrix
-
-    // a single point is observed in m cameras
-    size_t m = Fblocks.size(); // cameras observing current point
-    size_t aug_m = (augmentedHessian.rows() - 1) / Dim; // all cameras in the group
-
-    // Blockwise Schur complement
-    for (size_t i = 0; i < m; i++) { // for each camera in the current factor
-
-      const Matrix2D& Fi = Fblocks.at(i).second;
-      const Matrix23 Ei_P = E.block<ZDim, 3>(ZDim * i, 0) * P;
-
-      // Dim = (DxZDim) * (ZDim)
-      // allKeys are the list of all camera keys in the group, e.g, (1,3,4,5,7)
-      // we should map those to a slot in the local (grouped) hessian (0,1,2,3,4)
-      // Key cameraKey_i = this->keys_[i];
-      DenseIndex aug_i = KeySlotMap.at(keys[i]);
-
-      // information vector - store previous vector
-      // vectorBlock = augmentedHessian(aug_i, aug_m).knownOffDiagonal();
-      // add contribution of current factor
-      augmentedHessian(aug_i, aug_m) =
-          augmentedHessian(aug_i, aug_m).knownOffDiagonal()
-              + Fi.transpose() * b.segment<ZDim>(ZDim * i) // F' * b
-          - Fi.transpose() * (Ei_P * (E.transpose() * b)); // Dim = (DxZDim) * (ZDimx3) * (3*ZDimm) * (ZDimm x 1)
-
-          // (DxD) = (DxZDim) * ( (ZDimxD) - (ZDimx3) * (3xZDim) * (ZDimxD) )
-          // main block diagonal - store previous block
-      matrixBlock = augmentedHessian(aug_i, aug_i);
-      // add contribution of current factor
-      augmentedHessian(aug_i, aug_i) = matrixBlock
-          + (Fi.transpose()
-              * (Fi - Ei_P * E.block<ZDim, 3>(ZDim * i, 0).transpose() * Fi));
-
-      // upper triangular part of the hessian
-      for (size_t j = i + 1; j < m; j++) { // for each camera
-        const Matrix2D& Fj = Fblocks.at(j).second;
-
-        //Key cameraKey_j = this->keys_[j];
-        DenseIndex aug_j = KeySlotMap.at(keys[j]);
-
-        // (DxD) = (DxZDim) * ( (ZDimxZDim) * (ZDimxD) )
-        // off diagonal block - store previous block
-        // matrixBlock = augmentedHessian(aug_i, aug_j).knownOffDiagonal();
-        // add contribution of current factor
-        augmentedHessian(aug_i, aug_j) =
-            augmentedHessian(aug_i, aug_j).knownOffDiagonal()
-                - Fi.transpose()
-                    * (Ei_P * E.block<ZDim, 3>(ZDim * j, 0).transpose() * Fj);
-      }
-    } // end of for over cameras
-
-    augmentedHessian(aug_m, aug_m)(0, 0) += f;
-  }
-
-  /**
    * Applies Schur complement (exploiting block structure) to get a smart factor on cameras,
    * and adds the contribution of the smart factor to a pre-allocated augmented Hessian.
    */
@@ -471,7 +363,8 @@ public:
     FastMap<Key, size_t> KeySlotMap;
     for (size_t slot = 0; slot < allKeys.size(); slot++)
       KeySlotMap.insert(std::make_pair(allKeys[slot], slot));
-    updateSparseSchurComplement(Fblocks, E, P, b, f, augmentedHessian);
+    RegularImplicitSchurFactor<Dim>::updateSparseSchurComplement(Fblocks, E, P,
+        b, f, this->keys_, KeySlotMap, augmentedHessian);
   }
 
   /**
@@ -504,16 +397,17 @@ public:
   /**
    * Return Jacobians as RegularImplicitSchurFactor with raw access
    */
-  boost::shared_ptr<RegularImplicitSchurFactor<Dim> > createRegularImplicitSchurFactor(
-      const Cameras& cameras, const Point3& point, double lambda = 0.0,
-      bool diagonalDamping = false) const {
+  boost::shared_ptr<RegularImplicitSchurFactor<Dim, ZDim> > //
+  createRegularImplicitSchurFactor(const Cameras& cameras, const Point3& point,
+      double lambda = 0.0, bool diagonalDamping = false) const {
     std::vector<KeyMatrix2D> F;
     Matrix E;
     Vector b;
     computeJacobians(F, E, b, cameras, point);
     whitenJacobians(F, E, b);
     Matrix3 P = PointCov(E, lambda, diagonalDamping);
-    return boost::make_shared<RegularImplicitSchurFactor<Dim> >(F, E, P, b);
+    return boost::make_shared<RegularImplicitSchurFactor<Dim, ZDim> >(F, E, P,
+        b);
   }
 
   /**
