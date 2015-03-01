@@ -344,7 +344,7 @@ public:
   /// Create a factor, takes values
   boost::shared_ptr<JacobianFactorQ<Base::Dim, 2> > createJacobianQFactor(
       const Values& values, double lambda) const {
-    return createJacobianQFactor(this->cameras(values),lambda);
+    return createJacobianQFactor(this->cameras(values), lambda);
   }
 
   /// different (faster) way to compute Jacobian factor
@@ -444,6 +444,8 @@ public:
 
     if (externalPoint)
       result_ = TriangulationResult(*externalPoint);
+    else
+      result_ = triangulateSafe(cameras);
 
     // if we don't want to manage the exceptions we discard the factor
     if (!manageDegeneracy_ && !result_)
