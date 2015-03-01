@@ -356,15 +356,15 @@ public:
    * Do Schur complement, given Jacobian as F,E,P, return SymmetricBlockMatrix
    * Fast version - works on with sparsity
    */
-  void sparseSchurComplement(const std::vector<KeyMatrix2D>& Fblocks,
+  static void sparseSchurComplement(const std::vector<KeyMatrix2D>& Fblocks,
       const Matrix& E, const Matrix3& P /*Point Covariance*/, const Vector& b,
-      /*output ->*/SymmetricBlockMatrix& augmentedHessian) const {
+      /*output ->*/SymmetricBlockMatrix& augmentedHessian) {
     // Schur complement trick
     // G = F' * F - F' * E * P * E' * F
     // g = F' * (b - E * P * E' * b)
 
     // a single point is observed in m cameras
-    size_t m = this->keys_.size();
+    size_t m = Fblocks.size();
 
     // Blockwise Schur complement
     for (size_t i = 0; i < m; i++) { // for each camera
@@ -395,23 +395,20 @@ public:
    * Applies Schur complement (exploiting block structure) to get a smart factor on cameras,
    * and adds the contribution of the smart factor to a pre-allocated augmented Hessian.
    */
-  void updateSparseSchurComplement(const std::vector<KeyMatrix2D>& Fblocks,
-      const Matrix& E, const Matrix3& P /*Point Covariance*/, const Vector& b,
-      const double f, const FastVector<Key> allKeys,
-      /*output ->*/SymmetricBlockMatrix& augmentedHessian) const {
+  static void updateSparseSchurComplement(
+      const std::vector<KeyMatrix2D>& Fblocks, const Matrix& E,
+      const Matrix3& P /*Point Covariance*/, const Vector& b, const double f,
+      const FastVector<Key>& keys, const FastMap<Key, size_t>& KeySlotMap,
+      /*output ->*/SymmetricBlockMatrix& augmentedHessian) {
     // Schur complement trick
-    // Gs = F' * F - F' * E * P * E' * F
-    // gs = F' * (b - E * P * E' * b)
+    // G = F' * F - F' * E * P * E' * F
+    // g = F' * (b - E * P * E' * b)
 
     MatrixDD matrixBlock;
     typedef SymmetricBlockMatrix::Block Block; ///< A block from the Hessian matrix
 
-    FastMap<Key, size_t> KeySlotMap;
-    for (size_t slot = 0; slot < allKeys.size(); slot++)
-      KeySlotMap.insert(std::make_pair(allKeys[slot], slot));
-
     // a single point is observed in m cameras
-    size_t m = this->keys_.size(); // cameras observing current point
+    size_t m = Fblocks.size(); // cameras observing current point
     size_t aug_m = (augmentedHessian.rows() - 1) / Dim; // all cameras in the group
 
     // Blockwise Schur complement
@@ -424,7 +421,7 @@ public:
       // allKeys are the list of all camera keys in the group, e.g, (1,3,4,5,7)
       // we should map those to a slot in the local (grouped) hessian (0,1,2,3,4)
       // Key cameraKey_i = this->keys_[i];
-      DenseIndex aug_i = KeySlotMap[this->keys_[i]];
+      DenseIndex aug_i = KeySlotMap.at(keys[i]);
 
       // information vector - store previous vector
       // vectorBlock = augmentedHessian(aug_i, aug_m).knownOffDiagonal();
@@ -447,7 +444,7 @@ public:
         const Matrix2D& Fj = Fblocks.at(j).second;
 
         //Key cameraKey_j = this->keys_[j];
-        DenseIndex aug_j = KeySlotMap[this->keys_[j]];
+        DenseIndex aug_j = KeySlotMap.at(keys[j]);
 
         // (DxD) = (DxZDim) * ( (ZDimxZDim) * (ZDimxD) )
         // off diagonal block - store previous block
@@ -461,6 +458,20 @@ public:
     } // end of for over cameras
 
     augmentedHessian(aug_m, aug_m)(0, 0) += f;
+  }
+
+  /**
+   * Applies Schur complement (exploiting block structure) to get a smart factor on cameras,
+   * and adds the contribution of the smart factor to a pre-allocated augmented Hessian.
+   */
+  void updateSparseSchurComplement(const std::vector<KeyMatrix2D>& Fblocks,
+      const Matrix& E, const Matrix3& P /*Point Covariance*/, const Vector& b,
+      const double f, const FastVector<Key>& allKeys,
+      /*output ->*/SymmetricBlockMatrix& augmentedHessian) const {
+    FastMap<Key, size_t> KeySlotMap;
+    for (size_t slot = 0; slot < allKeys.size(); slot++)
+      KeySlotMap.insert(std::make_pair(allKeys[slot], slot));
+    updateSparseSchurComplement(Fblocks, E, P, b, f, augmentedHessian);
   }
 
   /**
