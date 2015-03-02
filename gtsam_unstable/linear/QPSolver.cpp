@@ -258,7 +258,7 @@ pair<VectorValues, VectorValues> QPSolver::optimize(
   while (!state.converged) {
     state = iterate(state);
   }
-  std::cout << "Number of inner iterations: " << state.iterations << std::endl;
+  std::cout << "Final Number of inner iterations: " << state.iterations << std::endl;
   return make_pair(state.values, state.duals);
 }
 
@@ -465,9 +465,16 @@ pair<VectorValues, VectorValues> QPSolver::optimize() const {
   bool isFeasible;
   VectorValues initialValues;
   boost::tie(isFeasible, initialValues) = findFeasibleInitialValues();
+  BOOST_FOREACH(const VectorValues::KeyValuePair& key_delta, initialValues) {
+    double maxDelta = key_delta.second.lpNorm<Eigen::Infinity>();
+    if(maxDelta >= 1e-2)
+      std::cout << "LP returned non-zero initialization: " << key_delta.second << std::endl;
+  }
+
   if (!isFeasible) {
     throw runtime_error("LP subproblem is infeasible!");
   }
+  std::cout << "Completed LPSolve initialization" << std::endl;
   return optimize(initialValues);
 }
 
