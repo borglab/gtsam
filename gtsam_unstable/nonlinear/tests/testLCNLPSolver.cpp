@@ -54,7 +54,7 @@ public:
   }
 };
 
-TEST_DISABLED(testlcnlpSolver, QPProblem) {
+TEST(testlcnlpSolver, QPProblem) {
   const Key dualKey = 0;
 
   // Simple quadratic cost: x1^2 + x2^2
@@ -120,7 +120,7 @@ public:
   }
 };
 
-TEST_DISABLED(testlcnlpSolver, poseOnALine) {
+TEST(testlcnlpSolver, poseOnALine) {
   const Key dualKey = 0;
 
 
@@ -161,7 +161,7 @@ public:
   }
 };
 
-TEST_DISABLED(testlcnlpSolver, inequalityConstraint) {
+TEST(testlcnlpSolver, inequalityConstraint) {
   const Key dualKey = 0;
 
   // Simple quadratic cost: x^2 + y^2
@@ -253,7 +253,7 @@ public:
   }
 };
 
-TEST_DISABLED(testlcnlpSolver, poseWithABoundary) {
+TEST(testlcnlpSolver, poseWithABoundary) {
   const Key dualKey = 0;
 
   //Instantiate LCNLP
@@ -294,7 +294,7 @@ TEST_DISABLED(testlcnlpSolver, poseWithNoConstraints) {
   CHECK(assert_equal(expectedSolution, actualSolution, 1e-10));
 }
 
-TEST_DISABLED(testlcnlpSolver, poseWithinA2DBox) {
+TEST(testlcnlpSolver, poseWithinA2DBox) {
   const Key dualKey = 0;
 
   //Instantiate LCNLP
@@ -318,7 +318,7 @@ TEST_DISABLED(testlcnlpSolver, poseWithinA2DBox) {
   CHECK(assert_equal(expectedSolution, actualSolution, 1e-10));
 }
 
-TEST_DISABLED(testlcnlpSolver, posesInA2DBox) {
+TEST(testlcnlpSolver, posesInA2DBox) {
   const double xLowerBound = -3.0,
       xUpperBound = 5.0,
       yLowerBound = -1.0,
@@ -442,7 +442,7 @@ TEST_DISABLED(testlcnlpSolver, iterativePoseinBox) {
     }
     else {
       cout << " using this \n ";
-      solutionAndDuals = lcnlpSolver.optimize(isamValues, solutionAndDuals.second, useWarmStart);
+      solutionAndDuals = lcnlpSolver.optimize(isamValues, useWarmStart); //solutionAndDuals.second,
 
     }
     cout << " ************************** \n";
@@ -471,20 +471,14 @@ TEST_DISABLED(testlcnlpSolver, iterativePoseinBox) {
 }
 
 
-double testHessian(const Pose3& X) {
-  return X.transform_from(Point3(0,0,0)).x();
-}
 
 Pose3 pose(Rot3::ypr(0.1, 0.4, 0.7), Point3(1, 9.5, 7.3));
-TEST_DISABLED(testlcnlpSolver, testingHessian) {
-  Matrix H = numericalHessian(testHessian, pose, 1e-5);
-}
 
 double h3(const Vector6& v) {
   return pose.retract(v).translation().x();
 }
 
-TEST_DISABLED(testlcnlpSolver, NumericalHessian3) {
+TEST(testlcnlpSolver, NumericalHessian3) {
   Matrix6 expected;
   expected.setZero();
   Vector6 z;
@@ -494,7 +488,6 @@ TEST_DISABLED(testlcnlpSolver, NumericalHessian3) {
 
 //******************************************************************************
 int main() {
-  cout<<"here: "<<endl;
   TestResult tr;
   return TestRegistry::runAllTests(tr);
 }
