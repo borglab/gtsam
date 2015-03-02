@@ -806,5 +806,95 @@ TEST(ImuFactor, PredictRotation) {
 }
 
 /* ************************************************************************* */
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/nonlinear/Marginals.h>
+
+TEST(ImuFactor, CheckBiasCorrection) {
+  int numFactors = 80;
+  imuBias::ConstantBias zeroBias(Vector3(0, 0, 0), Vector3(0.0, 0, 0)); // Biases (acc, rot)
+  Vector6 noiseBetweenBiasSigma; noiseBetweenBiasSigma << Vector3(2.0e-5,  2.0e-5,  2.0e-5), Vector3(3.0e-6, 3.0e-6, 3.0e-6);
+  SharedDiagonal biasNoiseModel = noiseModel::Diagonal::Sigmas(noiseBetweenBiasSigma);
+
+  // Measurements
+  Vector3 gravity; gravity << 0, 0, 9.81;
+  Vector3 omegaCoriolis; omegaCoriolis << 0, 0, 0;
+  Vector3 measuredOmega; measuredOmega << 0, 0.01, 0.0;
+  Vector3 measuredAcc; measuredAcc << 0,0,-9.81;
+  Matrix3 accCov = 1e-4 * I_3x3;
+  Matrix3 gyroCov = 1e-6 * I_3x3;
+  Matrix3 integrationCov = 1e-8 * I_3x3;
+  double deltaT = 0.005;
+
+  //   Specify noise values on priors
+  Vector6 priorNoisePoseSigmas((Vector(6) << 0.001, 0.001, 0.001, 0.01, 0.01, 0.01).finished());
+  Vector3 priorNoiseVelSigmas((Vector(3) <<  0.5, 0.5, 0.5).finished());
+  Vector6 priorNoiseBiasSigmas((Vector(6) << 0.5, 0.5, 0.5, 1e-1, 1e-1, 1e-1).finished());
+  SharedDiagonal priorNoisePose = noiseModel::Diagonal::Sigmas(priorNoisePoseSigmas);
+  SharedDiagonal priorNoiseVel = noiseModel::Diagonal::Sigmas(priorNoiseVelSigmas);
+  SharedDiagonal priorNoiseBias = noiseModel::Diagonal::Sigmas(priorNoiseBiasSigmas);
+  Vector3 zeroVel(0, 0.0, 0.0);
+
+
+
+  Values values;
+  NonlinearFactorGraph graph;
+
+  PriorFactor<Pose3> priorPose(X(0), Pose3(), priorNoisePose);
+  graph.add(priorPose);
+  values.insert(X(0), Pose3());
+
+  PriorFactor<Vector3> priorVel(V(0), zeroVel, priorNoiseVel);
+  graph.add(priorVel);
+  values.insert(V(0), zeroVel);
+
+  PriorFactor<imuBias::ConstantBias> priorBias(B(0), zeroBias, priorNoiseBias);
+  graph.add(priorBias);
+  values.insert(B(0), zeroBias);
+
+  for (int i = 1; i < numFactors; i++) {
+    ImuFactor::PreintegratedMeasurements pre_int_data = ImuFactor::PreintegratedMeasurements(imuBias::ConstantBias(Vector3(0, 0.0, 0.0),
+        Vector3(0.0, 0.0, 0.0)), accCov, gyroCov, integrationCov, true);
+    for (int j = 0; j<200; ++j)   pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+
+    // Create factor
+    ImuFactor factor(X(i-1), V(i-1), X(i), V(i), B(i-1), pre_int_data, gravity, omegaCoriolis);
+    graph.add(factor);
+    graph.add(BetweenFactor<imuBias::ConstantBias>(B(i-1), B(i), zeroBias, biasNoiseModel));
+
+    values.insert(X(i), Pose3());
+    values.insert(V(i), zeroVel);
+    values.insert(B(i), zeroBias);
+  }
+  Values results = LevenbergMarquardtOptimizer(graph, values).optimize();
+  cout.precision(2);
+  Marginals marginals(graph, results);
+  imuBias::ConstantBias biasActual = results.at<imuBias::ConstantBias>(B(numFactors-1));
+
+  imuBias::ConstantBias biasExpected(Vector3(0,0,0), Vector3(0, 0.01, 0.0));
+  EXPECT(assert_equal(biasExpected, biasActual, 1e-3));
+
+//  results.print("Results: \n");
+//
+//  for (int i = 0; i < numFactors; i++) {
+//    imuBias::ConstantBias currentBias = results.at<imuBias::ConstantBias>(B(i));
+//    cout << "currentBiasEstimate: " << currentBias.vector().transpose() << endl;
+//  }
+//  for (int i = 0; i < numFactors; i++) {
+//    Matrix biasCov = marginals.marginalCovariance(B(i));
+//    cout << "b" << i << " cov: " <<  biasCov.diagonal().transpose() << endl;
+//  }
+//
+//  for (int i = 0; i < numFactors; i++) {
+//    Pose3 currentPose = results.at<Pose3>(X(i));
+//    cout << "currentYPREstimate: " << currentPose.rotation().ypr().transpose()*180/M_PI << endl;
+//  }
+//  for (int i = 0; i < numFactors; i++)
+//    cout << "x" << i << " covariance: " << marginals.marginalCovariance(X(i)).diagonal().transpose() << endl;
+}
+
+/* ************************************************************************* */
   int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */
