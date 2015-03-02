@@ -180,9 +180,10 @@ public:
     update_delRdelBiasOmega(D_Rincr_integratedOmega,incrR,deltaT);
   }
 
-  void correctMeasurementsByBiasAndSensorPose(const Vector3& measuredAcc,
-      const Vector3& measuredOmega, Vector3& correctedAcc,
-      Vector3& correctedOmega, boost::optional<const Pose3&> body_P_sensor) {
+  boost::tuple<Vector3, Vector3>
+  correctMeasurementsByBiasAndSensorPose(const Vector3& measuredAcc,
+      const Vector3& measuredOmega, boost::optional<const Pose3&> body_P_sensor) {
+    Vector3 correctedAcc, correctedOmega;
     correctedAcc = biasHat_.correctAccelerometer(measuredAcc);
     correctedOmega = biasHat_.correctGyroscope(measuredOmega);
 
@@ -195,6 +196,7 @@ public:
       correctedAcc = body_R_sensor * correctedAcc - body_omega_body__cross * body_omega_body__cross * body_P_sensor->translation().vector();
       // linear acceleration vector in the body frame
     }
+    return boost::make_tuple(correctedAcc, correctedOmega);
   }
 
   /// Predict state at time j

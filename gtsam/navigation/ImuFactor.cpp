@@ -67,7 +67,7 @@ void ImuFactor::PreintegratedMeasurements::integrateMeasurement(
     OptionalJacobian<9, 9> F_test, OptionalJacobian<9, 9> G_test) {
 
   Vector3 correctedAcc, correctedOmega;
-  correctMeasurementsByBiasAndSensorPose(measuredAcc, measuredOmega, correctedAcc, correctedOmega, body_P_sensor);
+  boost::tie(correctedAcc, correctedOmega) = correctMeasurementsByBiasAndSensorPose(measuredAcc, measuredOmega, body_P_sensor);
 
   const Vector3 integratedOmega = correctedOmega * deltaT; // rotation vector describing rotation increment computed from the current rotation rate measurement
   Matrix3 D_Rincr_integratedOmega; // Right jacobian computed at theta_incr
