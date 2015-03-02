@@ -968,7 +968,6 @@ TEST(ImuFactor, bodyPSensorNoBias) {
 
 TEST(ImuFactor, bodyPSensorWithBias) {
   int numFactors = 80;
-  imuBias::ConstantBias zeroBias(Vector3(0, 0, 0), Vector3(0.0, 0, 0)); // Biases (acc, rot)
   Vector6 noiseBetweenBiasSigma; noiseBetweenBiasSigma << Vector3(2.0e-5,  2.0e-5,  2.0e-5), Vector3(3.0e-6, 3.0e-6, 3.0e-6);
   SharedDiagonal biasNoiseModel = noiseModel::Diagonal::Sigmas(noiseBetweenBiasSigma);
 
@@ -985,9 +984,9 @@ TEST(ImuFactor, bodyPSensorWithBias) {
 
   Pose3 bPs(Rot3::ypr(0,0,M_PI), Point3());
 
-  Matrix3 accCov = 1e-4 * I_3x3;
-  Matrix3 gyroCov = 1e-6 * I_3x3;
-  Matrix3 integrationCov = 1e-8 * I_3x3;
+  Matrix3 accCov = 1e-7 * I_3x3;
+  Matrix3 gyroCov = 1e-8 * I_3x3;
+  Matrix3 integrationCov = 1e-9 * I_3x3;
   double deltaT = 0.005;
 
   //   Specify noise values on priors
@@ -1012,9 +1011,10 @@ TEST(ImuFactor, bodyPSensorWithBias) {
   graph.add(priorVel);
   values.insert(V(0), zeroVel);
 
-  PriorFactor<imuBias::ConstantBias> priorBias(B(0), zeroBias, priorNoiseBias);
-  graph.add(priorBias);
-  values.insert(B(0), zeroBias);
+  imuBias::ConstantBias priorBias(Vector3(0, 0, 0), Vector3(0.0, 0.01, 0)); // Biases (acc, rot)
+  PriorFactor<imuBias::ConstantBias> priorBiasFactor(B(0), priorBias, priorNoiseBias);
+  graph.add(priorBiasFactor);
+  values.insert(B(0), priorBias);
 
   for (int i = 1; i < numFactors; i++) {
     ImuFactor::PreintegratedMeasurements pre_int_data = ImuFactor::PreintegratedMeasurements(imuBias::ConstantBias(Vector3(0, 0.0, 0.0),
@@ -1024,37 +1024,38 @@ TEST(ImuFactor, bodyPSensorWithBias) {
     // Create factor
     ImuFactor factor(X(i-1), V(i-1), X(i), V(i), B(i-1), pre_int_data, n_gravity, omegaCoriolis);
     graph.add(factor);
-    graph.add(BetweenFactor<imuBias::ConstantBias>(B(i-1), B(i), zeroBias, biasNoiseModel));
+    imuBias::ConstantBias betweenBias(Vector3(0, 0, 0), Vector3(0.0, 0, 0));
+    graph.add(BetweenFactor<imuBias::ConstantBias>(B(i-1), B(i), betweenBias, biasNoiseModel));
 
     values.insert(X(i), Pose3());
     values.insert(V(i), zeroVel);
-    values.insert(B(i), zeroBias);
+    values.insert(B(i), priorBias);
   }
   Values results = LevenbergMarquardtOptimizer(graph, values).optimize();
   cout.precision(2);
   Marginals marginals(graph, results);
   imuBias::ConstantBias biasActual = results.at<imuBias::ConstantBias>(B(numFactors-1));
 
-  imuBias::ConstantBias biasExpected(Vector3(0,0,0), Vector3(0, 0.01, 0.0));
-  EXPECT(assert_equal(biasExpected, biasActual, 1e-3));
+  results.print("Results: \n");
 
-//  results.print("Results: \n");
-//
-//  for (int i = 0; i < numFactors; i++) {
-//    imuBias::ConstantBias currentBias = results.at<imuBias::ConstantBias>(B(i));
-//    cout << "currentBiasEstimate: " << currentBias.vector().transpose() << endl;
-//  }
+  for (int i = 0; i < numFactors; i++) {
+    imuBias::ConstantBias currentBias = results.at<imuBias::ConstantBias>(B(i));
+    cout << "currentBiasEstimate: " << currentBias.vector().transpose() << endl;
+  }
 //  for (int i = 0; i < numFactors; i++) {
 //    Matrix biasCov = marginals.marginalCovariance(B(i));
 //    cout << "b" << i << " cov: " <<  biasCov.diagonal().transpose() << endl;
 //  }
 //
-//  for (int i = 0; i < numFactors; i++) {
-//    Pose3 currentPose = results.at<Pose3>(X(i));
-//    cout << "currentYPREstimate: " << currentPose.rotation().ypr().transpose()*180/M_PI << endl;
-//  }
+  for (int i = 0; i < numFactors; i++) {
+    Pose3 currentPose = results.at<Pose3>(X(i));
+    cout << "currentYPREstimate (in Deg): " << currentPose.rotation().ypr().transpose()*180/M_PI << endl;
+  }
 //  for (int i = 0; i < numFactors; i++)
 //    cout << "x" << i << " covariance: " << marginals.marginalCovariance(X(i)).diagonal().transpose() << endl;
+
+  imuBias::ConstantBias biasExpected(Vector3(0,0,0), Vector3(0, 0.01, 0.0));
+  EXPECT(assert_equal(biasExpected, biasActual, 1e-3));
 }
 
 /* ************************************************************************* */
