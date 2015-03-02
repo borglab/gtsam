@@ -19,8 +19,9 @@
 
 #pragma once
 #include <gtsam/linear/VectorValues.h>
+#include <gtsam/nonlinear/Values.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam_unstable/linear/InequalityFactorGraph.h>
-#include <gtsam_unstable/nonlinear/ConstrainedFactor.h>
 
 namespace gtsam {
 
@@ -31,52 +32,15 @@ class LinearInequalityFactorGraph: public FactorGraph<NonlinearFactor> {
 
 public:
   /// Default constructor
-  LinearInequalityFactorGraph() {
-  }
+  LinearInequalityFactorGraph() {}
 
   /// Linearize to a InequalityFactorGraph
-  InequalityFactorGraph::shared_ptr linearize(const Values& linearizationPoint) const {
-    InequalityFactorGraph::shared_ptr linearGraph(new InequalityFactorGraph());
-    BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, *this) {
-      JacobianFactor::shared_ptr jacobian = boost::dynamic_pointer_cast<JacobianFactor>(
-          factor->linearize(linearizationPoint));
-      ConstrainedFactor::shared_ptr constraint
-          = boost::dynamic_pointer_cast<ConstrainedFactor>(factor);
-      linearGraph->add(LinearInequality(*jacobian, constraint->dualKey()));
-    }
-    return linearGraph;
-  }
+  InequalityFactorGraph::shared_ptr linearize(const Values& linearizationPoint) const;
 
-  /**
-   * Return true if the all errors are <= 0.0
-   */
+  /// Return true if the all errors are <= 0.0
   bool checkFeasibilityAndComplimentary(const Values& values,
-      const VectorValues& dualValues, double tol) const {
+      const VectorValues& dualValues, double tol) const;
 
-    BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, *this) {
-      NoiseModelFactor::shared_ptr noiseModelFactor
-          = boost::dynamic_pointer_cast<NoiseModelFactor>(factor);
-      Vector error = noiseModelFactor->unwhitenedError(values);
-
-      // Primal feasibility condition: all constraints need to be <= 0.0
-      if (error[0] > tol)
-        return false;
-
-      // Complimentary condition: errors of active constraints need to be 0.0
-      ConstrainedFactor::shared_ptr constraint
-          = boost::dynamic_pointer_cast<ConstrainedFactor>(factor);
-      Key dualKey = constraint->dualKey();
-
-      // if dualKey doesn't exist in dualValues, it must be an inactive constraint!
-      if (!dualValues.exists(dualKey))
-        continue;
-
-      // for active constraint, the error should be 0.0
-      if (fabs(error[0]) > tol)
-        return false;
-    }
-
-    return true;
-  }
 };
-}
+
+} // namespace gtsam

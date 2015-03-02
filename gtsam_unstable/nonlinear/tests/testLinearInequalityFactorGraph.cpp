@@ -10,8 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    testQPSimple.cpp
- * @brief   Unit tests for testQPSimple
+ * @file    testLinearInequalityFactorGraph.cpp
  * @author  Duy-Nguyen Ta
  * @author  Krunal Chande
  * @author  Luca Carlone
@@ -19,7 +18,7 @@
  */
 
 #include <gtsam/inference/Symbol.h>
-#include <gtsam_unstable/nonlinear/NonlinearInequalityFactorGraph.h>
+#include <gtsam_unstable/nonlinear/LinearInequalityFactorGraph.h>
 #include <CppUnitLite/TestHarness.h>
 #include <iostream>
 
@@ -29,9 +28,9 @@ using namespace gtsam;
 const double tol = 1e-10;
 
 //******************************************************************************
-TEST(NonlinearInequalityFactorGraph, constructor) {
-  NonlinearInequalityFactorGraph nonlinearInequalities;
-  CHECK(nonlinearInequalities.empty());
+TEST(LinearInequalityFactorGraph, constructor) {
+  LinearInequalityFactorGraph linearInequalities;
+  CHECK(linearInequalities.empty());
 }
 
 

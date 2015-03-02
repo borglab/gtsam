@@ -17,8 +17,10 @@
  * @date    Dec 15, 2014
  */
 
-#include <gtsam_unstable/nonlinear/LinearConstraintSQP.h>
+#include <gtsam/inference/FactorGraph-inst.h>
 #include <gtsam_unstable/linear/QPSolver.h>
+#include <gtsam_unstable/nonlinear/LinearConstraintSQP.h>
+#include <gtsam_unstable/nonlinear/ConstrainedFactor.h>
 #include <iostream>
 
 namespace gtsam {
@@ -38,12 +40,12 @@ bool LinearConstraintSQP::isDualFeasible(const VectorValues& duals) const {
   BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, lcnlp_.linearInequalities) {
     ConstrainedFactor::shared_ptr inequality
         = boost::dynamic_pointer_cast<ConstrainedFactor>(factor);
+
     Key dualKey = inequality->dualKey();
     if (!duals.exists(dualKey)) continue; // should be inactive constraint!
     double dual = duals.at(dualKey)[0];// because we only support single-valued inequalities
-    if (dual > 0.0) { // See the explanation in QPSolver::identifyLeavingConstraint, we want dual < 0 ?
+    if (dual > 0.0) // See the explanation in QPSolver::identifyLeavingConstraint, we want dual < 0 ?
       return false;
-    }
   }
   return true;
 }
@@ -90,9 +92,9 @@ LinearConstraintNLPState LinearConstraintSQP::iterate(
   VectorValues delta, duals;
   QPSolver qpSolver(qp);
   VectorValues zeroInitialValues;
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, state.values) {
+  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, state.values)
     zeroInitialValues.insert(key_value.key, zero(key_value.value.dim()));
-  }
+
   boost::tie(delta, duals) = qpSolver.optimize(zeroInitialValues, state.duals,
       params_.warmStart);
 
@@ -106,10 +108,8 @@ LinearConstraintNLPState LinearConstraintSQP::iterate(
   newState.converged = checkConvergence(newState, delta);
   newState.iterations = state.iterations + 1;
 
-  if(params_.verbosity >= NonlinearOptimizerParams::VALUES) {
-    newState.values.print("Values");
-    newState.duals.print("Duals");
-  }
+  if(params_.verbosity >= NonlinearOptimizerParams::VALUES)
+    newState.print("Values");
 
   return newState;
 }

@@ -18,8 +18,10 @@
  */
 
 #pragma once
+#include <gtsam/inference/FactorGraph.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/Values.h>
 #include <gtsam_unstable/linear/EqualityFactorGraph.h>
-#include <gtsam_unstable/nonlinear/ConstrainedFactor.h>
 
 namespace gtsam {
 
@@ -33,33 +35,10 @@ public:
   }
 
   /// Linearize to a EqualityFactorGraph
-  EqualityFactorGraph::shared_ptr linearize(
-      const Values& linearizationPoint) const {
-    EqualityFactorGraph::shared_ptr linearGraph(
-        new EqualityFactorGraph());
-    BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, *this){
-      JacobianFactor::shared_ptr jacobian = boost::dynamic_pointer_cast<JacobianFactor>(
-          factor->linearize(linearizationPoint));
-      ConstrainedFactor::shared_ptr constraint = boost::dynamic_pointer_cast<ConstrainedFactor>(factor);
-      linearGraph->add(LinearEquality(*jacobian, constraint->dualKey()));
-    }
-    return linearGraph;
-  }
+  EqualityFactorGraph::shared_ptr linearize(const Values& linearizationPoint) const;
 
-  /**
-   * Return true if the max absolute error all factors is less than a tolerance
-   */
-  bool checkFeasibility(const Values& values, double tol) const {
-    BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, *this){
-      NoiseModelFactor::shared_ptr noiseModelFactor = boost::dynamic_pointer_cast<NoiseModelFactor>(
-          factor);
-      Vector error = noiseModelFactor->unwhitenedError(values);
-      if (error.lpNorm<Eigen::Infinity>() > tol) {
-        return false;
-      }
-    }
-    return true;
-  }
+  /// Return true if the max absolute error all factors is less than a tolerance
+  bool checkFeasibility(const Values& values, double tol) const;
 
 };
 
