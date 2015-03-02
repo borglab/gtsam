@@ -18,6 +18,8 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/concepts.h>
 #include <gtsam/base/concepts.h>
+#include <gtsam/base/Matrix.h>
+
 
 #include <boost/foreach.hpp>
 #include <iostream>
@@ -26,6 +28,16 @@
 using namespace std;
 
 namespace gtsam {
+
+#define FAC1 1.0
+#define FAC2 (2.0*FAC1)
+#define FAC3 (3.0*FAC2)
+#define FAC4 (4.0*FAC3)
+#define FAC5 (5.0*FAC4)
+#define FAC6 (6.0*FAC5)
+#define FAC7 (7.0*FAC6)
+#define FAC8 (8.0*FAC7)
+#define FAC9 (9.0*FAC8)
 
 /** instantiate concept checks */
 GTSAM_CONCEPT_POSE_INST(Pose3);
@@ -111,24 +123,54 @@ bool Pose3::equals(const Pose3& pose, double tol) const {
 
 /* ************************************************************************* */
 /** Modified from Murray94book version (which assumes w and v normalized?) */
+//Pose3 Pose3::Expmap(const Vector& xi, OptionalJacobian<6, 6> H) {
+//  if (H) *H = ExpmapDerivative(xi);
+//
+//  // get angular velocity omega and translational velocity v from twist xi
+//  Point3 w(xi(0), xi(1), xi(2)), v(xi(3), xi(4), xi(5));
+//
+//  double theta = w.norm();
+//  if (theta < 1e-10) {
+//    static const Rot3 I;
+//    return Pose3(I, v);
+//  } else {
+//    Point3 n(w / theta); // axis unit vector
+//    Rot3 R = Rot3::rodriguez(n.vector(), theta);
+//    double vn = n.dot(v); // translation parallel to n
+//    Point3 n_cross_v = n.cross(v); // points towards axis
+//    Point3 t = (n_cross_v - R * n_cross_v) / theta + vn * n;
+//    return Pose3(R, t);
+//  }
+//}
+
+/* ************************************************************************* */
+/** Implemented from http://www.ethaneade.org/latex2html/lie/node16.html */
 Pose3 Pose3::Expmap(const Vector& xi, OptionalJacobian<6, 6> H) {
   if (H) *H = ExpmapDerivative(xi);
-
   // get angular velocity omega and translational velocity v from twist xi
   Point3 w(xi(0), xi(1), xi(2)), v(xi(3), xi(4), xi(5));
 
   double theta = w.norm();
-  if (theta < 1e-10) {
-    static const Rot3 I;
-    return Pose3(I, v);
+  Matrix3 wx = skewSymmetric((Vector3)w.vector());
+  // Taylor series expansion for small theta, avoid a divide by 0
+  // Higher order taylor terms give no additional information at double precision.
+  double A, B, C;
+  if (theta < 1e-9) {
+    A = 1.0;// - pow(theta, 2)/FAC3 + pow(theta, 4)/FAC5 - pow(theta, 6)/FAC7;
+    //cout << "A - A^" << sin(theta)/theta - A << endl;
+    B = 1.0/FAC2;// - pow(theta, 2)/FAC4 + pow(theta, 4)/FAC6 - pow(theta, 6)/FAC8;
+    C = 1.0/FAC3;// - pow(theta, 2)/FAC5 + pow(theta, 4)/FAC7 - pow(theta, 6)/FAC9;
+
   } else {
-    Point3 n(w / theta); // axis unit vector
-    Rot3 R = Rot3::rodriguez(n.vector(), theta);
-    double vn = n.dot(v); // translation parallel to n
-    Point3 n_cross_v = n.cross(v); // points towards axis
-    Point3 t = (n_cross_v - R * n_cross_v) / theta + vn * n;
-    return Pose3(R, t);
+    //Point3 n(w / theta); // axis unit vector
+    A = sin(theta)/theta;
+    C = (1-sin(theta)/theta)/theta/theta;
+    B = (1-cos(theta))/theta/theta;
   }
+  //Rot3 R = Rot3::rodriguez(n.vector(), theta);
+  Rot3 R((Matrix3)(I_3x3 + A*wx + B*wx*wx));
+  Point3 t((I_3x3 + B*wx + C*wx*wx) * v.vector());
+  return Pose3(R, t);
 }
 
 /* ************************************************************************* */

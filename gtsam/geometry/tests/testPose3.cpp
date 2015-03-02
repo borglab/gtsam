@@ -98,6 +98,16 @@ TEST( Pose3, expmap_a_full2)
   EXPECT(assert_equal(Pose3(R, P),expmap_default<Pose3>(id, v),1e-5));
 }
 
+TEST( Pose3, expmap2)
+{
+  Pose3 id;
+  Vector v = zero(6);
+  v(0) = 0.3;
+  EXPECT(assert_equal(expmap_default<Pose3>(id, v), Pose3(R, Point3())));
+  v(3)=0.2;v(4)=0.394742;v(5)=-2.08998;
+  EXPECT(assert_equal(Pose3(R, P),expmap_default<Pose3>(id, v),1e-5));
+}
+
 /* ************************************************************************* */
 TEST(Pose3, expmap_b)
 {
@@ -105,6 +115,20 @@ TEST(Pose3, expmap_b)
   Pose3 p2 = p1.retract((Vector(6) << 0.0, 0.0, 0.1, 0.0, 0.0, 0.0).finished());
   Pose3 expected(Rot3::rodriguez(0.0, 0.0, 0.1), Point3(100.0, 0.0, 0.0));
   EXPECT(assert_equal(expected, p2,1e-2));
+}
+
+TEST(Pose3, expmap_around_zero)
+{
+  // Test the exponential map around zero to make sure it is correct for very small deltas
+  Vector6 dx = (Vector(6) << 1e-10 - 1e-11, 1e-10 - 1e-12, 1e-10 - 1e-13, 1e-10 - 1e-11, 1e-10 - 1e-12, 1e-10 - 1e-13).finished();
+  Pose3 p1 = Pose3::Expmap(dx);
+  p1.print("Calculated\n");
+  expm<Pose3>(dx,40).print("Matrix exp\n");
+  EXPECT(assert_equal(expm<Pose3>(dx,40), p1,1e-20));
+//  Pose3 p1(Rot3(), Point3(100, 0, 0));
+//  Pose3 p2 = p1.retract((Vector(6) << 0.0, 0.0, 0.1, 0.0, 0.0, 0.0).finished());
+//  Pose3 expected(Rot3::rodriguez(0.0, 0.0, 0.1), Point3(100.0, 0.0, 0.0));
+//  EXPECT(assert_equal(expected, p2,1e-2));
 }
 
 /* ************************************************************************* */
