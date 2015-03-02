@@ -39,7 +39,7 @@ static const bool manageDegeneracy = true;
 
 // Create a noise model for the pixel error
 static const double sigma = 0.1;
-static SharedNoiseModel model(noiseModel::Isotropic::Sigma(2, sigma));
+static SharedIsotropic model(noiseModel::Isotropic::Sigma(2, sigma));
 
 // Convenience for named keys
 using symbol_shorthand::X;
@@ -299,8 +299,10 @@ TEST( SmartProjectionPoseFactor, Factors ) {
 
   // After eliminating the point, A1 and A2 contain 2-rank information on cameras:
   Matrix16 A1, A2;
-  A1 << -1000, 0, 0, 0, 100, 0;
-  A2 << 1000, 0, 100, 0, -100, 0;
+  A1 << -10, 0, 0, 0, 1, 0;
+  A2 << 10, 0, 1, 0, -1, 0;
+  A1 *= 10. / sigma;
+  A2 *= 10. / sigma;
   Matrix expectedInformation; // filled below
   {
     // createHessianFactor
@@ -339,21 +341,38 @@ TEST( SmartProjectionPoseFactor, Factors ) {
     F2(1, 0) = 100;
     F2(1, 2) = 10;
     F2(1, 4) = -10;
-    Matrix43 E;
+    Matrix E(4, 3);
     E.setZero();
-    E(0, 0) = 100;
-    E(1, 1) = 100;
-    E(2, 0) = 100;
-    E(2, 2) = 10;
-    E(3, 1) = 100;
-    const vector<pair<Key, Matrix26> > Fblocks = list_of<pair<Key, Matrix> > //
+    E(0, 0) = 10;
+    E(1, 1) = 10;
+    E(2, 0) = 10;
+    E(2, 2) = 1;
+    E(3, 1) = 10;
+    vector<pair<Key, Matrix26> > Fblocks = list_of<pair<Key, Matrix> > //
         (make_pair(x1, F1))(make_pair(x2, F2));
-    Matrix3 P = (E.transpose() * E).inverse();
-    Vector4 b;
+    Vector b(4);
     b.setZero();
 
+    // createJacobianQFactor
+    SharedIsotropic n = noiseModel::Isotropic::Sigma(4, sigma);
+    Matrix3 P = (E.transpose() * E).inverse();
+    JacobianFactorQ<6, 2> expectedQ(Fblocks, E, P, b, n);
+    EXPECT(assert_equal(expectedInformation, expectedQ.information(), 1e-8));
+
+    boost::shared_ptr<JacobianFactorQ<6, 2> > actualQ =
+        smartFactor1->createJacobianQFactor(cameras, 0.0);
+    CHECK(actualQ);
+    EXPECT(assert_equal(expectedInformation, actualQ->information(), 1e-8));
+    EXPECT(assert_equal(expectedQ, *actualQ));
+
+    // Whiten for RegularImplicitSchurFactor (does not have noise model)
+    model->WhitenSystem(E, b);
+    Matrix3 whiteP = (E.transpose() * E).inverse();
+    BOOST_FOREACH(SmartFactor::KeyMatrix2D& Fblock,Fblocks)
+      Fblock.second = model->Whiten(Fblock.second);
+
     // createRegularImplicitSchurFactor
-    RegularImplicitSchurFactor<6> expected(Fblocks, E, P, b);
+    RegularImplicitSchurFactor<6> expected(Fblocks, E, whiteP, b);
 
     boost::shared_ptr<RegularImplicitSchurFactor<6> > actual =
         smartFactor1->createRegularImplicitSchurFactor(cameras, 0.0);
@@ -361,17 +380,6 @@ TEST( SmartProjectionPoseFactor, Factors ) {
     EXPECT(assert_equal(expectedInformation, expected.information(), 1e-8));
     EXPECT(assert_equal(expectedInformation, actual->information(), 1e-8));
     EXPECT(assert_equal(expected, *actual));
-
-    // createJacobianQFactor
-    SharedIsotropic n = noiseModel::Isotropic::Sigma(4, sigma);
-    JacobianFactorQ<6, 2> expectedQ(Fblocks, E, P, b, n);
-    EXPECT(assert_equal(expectedInformation, expectedQ.information(), 1e-8));
-
-    boost::shared_ptr<JacobianFactorQ<6, 2> > actualQ =
-        smartFactor1->createJacobianQFactor(cameras, 0.0);
-    CHECK(actual);
-    EXPECT(assert_equal(expectedInformation, actualQ->information(), 1e-8));
-    EXPECT(assert_equal(expectedQ, *actualQ));
   }
 
   {
@@ -983,7 +991,7 @@ TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) 
   values.insert(x1, cam2);
   values.insert(x2, cam2);
   // initialize third pose with some noise, we expect it to move back to original pose_above
-  values.insert(x3, Camera(pose_above * noise_pose,sharedK));
+  values.insert(x3, Camera(pose_above * noise_pose, sharedK));
   if (isDebugTest)
     values.at<Pose3>(x3).print("Smart: Pose3 before optimization: ");
 
@@ -1077,9 +1085,9 @@ TEST( SmartProjectionPoseFactor, HessianWithRotation ) {
   Pose3 poseDrift = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 0));
 
   Values rotValues;
-  rotValues.insert(x1, Camera(poseDrift.compose(level_pose),sharedK));
-  rotValues.insert(x2, Camera(poseDrift.compose(pose_right),sharedK));
-  rotValues.insert(x3, Camera(poseDrift.compose(pose_above),sharedK));
+  rotValues.insert(x1, Camera(poseDrift.compose(level_pose), sharedK));
+  rotValues.insert(x2, Camera(poseDrift.compose(pose_right), sharedK));
+  rotValues.insert(x3, Camera(poseDrift.compose(pose_above), sharedK));
 
   boost::shared_ptr<GaussianFactor> hessianFactorRot =
       smartFactorInstance->linearize(rotValues);
@@ -1093,9 +1101,9 @@ TEST( SmartProjectionPoseFactor, HessianWithRotation ) {
       Point3(10, -4, 5));
 
   Values tranValues;
-  tranValues.insert(x1, Camera(poseDrift2.compose(level_pose),sharedK));
-  tranValues.insert(x2, Camera(poseDrift2.compose(pose_right),sharedK));
-  tranValues.insert(x3, Camera(poseDrift2.compose(pose_above),sharedK));
+  tranValues.insert(x1, Camera(poseDrift2.compose(level_pose), sharedK));
+  tranValues.insert(x2, Camera(poseDrift2.compose(pose_right), sharedK));
+  tranValues.insert(x3, Camera(poseDrift2.compose(pose_above), sharedK));
 
   boost::shared_ptr<GaussianFactor> hessianFactorRotTran =
       smartFactorInstance->linearize(tranValues);
@@ -1137,9 +1145,9 @@ TEST( SmartProjectionPoseFactor, HessianWithRotationDegenerate ) {
   Pose3 poseDrift = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 0));
 
   Values rotValues;
-  rotValues.insert(x1, Camera(poseDrift.compose(level_pose),sharedK2));
-  rotValues.insert(x2, Camera(poseDrift.compose(pose_right),sharedK2));
-  rotValues.insert(x3, Camera(poseDrift.compose(pose_above),sharedK2));
+  rotValues.insert(x1, Camera(poseDrift.compose(level_pose), sharedK2));
+  rotValues.insert(x2, Camera(poseDrift.compose(pose_right), sharedK2));
+  rotValues.insert(x3, Camera(poseDrift.compose(pose_above), sharedK2));
 
   boost::shared_ptr<GaussianFactor> hessianFactorRot = smartFactor->linearize(
       rotValues);
@@ -1155,9 +1163,9 @@ TEST( SmartProjectionPoseFactor, HessianWithRotationDegenerate ) {
       Point3(10, -4, 5));
 
   Values tranValues;
-  tranValues.insert(x1, Camera(poseDrift2.compose(level_pose),sharedK2));
-  tranValues.insert(x2, Camera(poseDrift2.compose(pose_right),sharedK2));
-  tranValues.insert(x3, Camera(poseDrift2.compose(pose_above),sharedK2));
+  tranValues.insert(x1, Camera(poseDrift2.compose(level_pose), sharedK2));
+  tranValues.insert(x2, Camera(poseDrift2.compose(pose_right), sharedK2));
+  tranValues.insert(x3, Camera(poseDrift2.compose(pose_above), sharedK2));
 
   boost::shared_ptr<GaussianFactor> hessianFactorRotTran =
       smartFactor->linearize(tranValues);
@@ -1237,7 +1245,7 @@ TEST( SmartProjectionPoseFactor, Cal3Bundler ) {
   values.insert(x1, cam2);
   values.insert(x2, cam2);
   // initialize third pose with some noise, we expect it to move back to original pose_above
-  values.insert(x3, Camera(pose_above * noise_pose,sharedBundlerK));
+  values.insert(x3, Camera(pose_above * noise_pose, sharedBundlerK));
   if (isDebugTest)
     values.at<Pose3>(x3).print("Smart: Pose3 before optimization: ");
 
@@ -1343,7 +1351,7 @@ TEST( SmartProjectionPoseFactor, Cal3BundlerRotationOnly ) {
   values.insert(x1, cam2);
   values.insert(x2, cam2);
   // initialize third pose with some noise, we expect it to move back to original pose_above
-  values.insert(x3, Camera(pose_above * noise_pose,sharedBundlerK));
+  values.insert(x3, Camera(pose_above * noise_pose, sharedBundlerK));
   if (isDebugTest)
     values.at<Pose3>(x3).print("Smart: Pose3 before optimization: ");
 
