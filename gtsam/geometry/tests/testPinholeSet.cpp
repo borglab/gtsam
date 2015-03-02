@@ -129,7 +129,7 @@ TEST(PinholeSet, Pinhole) {
   // Instantiate triangulateSafe
   TriangulationParameters params;
   TriangulationResult actual = set.triangulateSafe(z,params);
-  CHECK(actual.degenerate);
+  CHECK(actual.degenerate());
 }
 
 /* ************************************************************************* */

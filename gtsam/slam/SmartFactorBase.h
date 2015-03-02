@@ -337,134 +337,19 @@ public:
     double f = computeJacobians(Fblocks, E, b, cameras, point);
     Matrix3 P = PointCov(E, lambda, diagonalDamping);
 
-    // we create directly a SymmetricBlockMatrix
+    // Create a SymmetricBlockMatrix
     size_t M1 = Dim * m + 1;
     std::vector<DenseIndex> dims(m + 1); // this also includes the b term
     std::fill(dims.begin(), dims.end() - 1, Dim);
     dims.back() = 1;
+    SymmetricBlockMatrix augmentedHessian(dims, Matrix::Zero(M1, M1));
 
     // build augmented hessian
-    SymmetricBlockMatrix augmentedHessian(dims, Matrix::Zero(M1, M1));
     sparseSchurComplement(Fblocks, E, P, b, augmentedHessian);
     augmentedHessian(m, m)(0, 0) = f;
 
     return boost::make_shared<RegularHessianFactor<Dim> >(keys_,
         augmentedHessian);
-  }
-
-  /**
-   * Do Schur complement, given Jacobian as F,E,P, return SymmetricBlockMatrix
-   * Fast version - works on with sparsity
-   */
-  void sparseSchurComplement(const std::vector<KeyMatrix2D>& Fblocks,
-      const Matrix& E, const Matrix3& P /*Point Covariance*/, const Vector& b,
-      /*output ->*/SymmetricBlockMatrix& augmentedHessian) const {
-    // Schur complement trick
-    // Gs = F' * F - F' * E * P * E' * F
-    // gs = F' * (b - E * P * E' * b)
-
-    // a single point is observed in numKeys cameras
-    size_t numKeys = this->keys_.size();
-
-    // Blockwise Schur complement
-    for (size_t i1 = 0; i1 < numKeys; i1++) { // for each camera
-
-      const Matrix2D& Fi1 = Fblocks.at(i1).second;
-      const Matrix23 Ei1_P = E.block<ZDim, 3>(ZDim * i1, 0) * P;
-
-      // Dim = (Dx2) * (2)
-      // (augmentedHessian.matrix()).block<Dim,1> (i1,numKeys+1) = Fi1.transpose() * b.segment < 2 > (2 * i1); // F' * b
-      augmentedHessian(i1, numKeys) = Fi1.transpose()
-          * b.segment<ZDim>(ZDim * i1) // F' * b
-      - Fi1.transpose() * (Ei1_P * (E.transpose() * b)); // Dim = (DxZDim) * (ZDimx3) * (3*ZDimm) * (ZDimm x 1)
-
-      // (DxD) = (DxZDim) * ( (ZDimxD) - (ZDimx3) * (3xZDim) * (ZDimxD) )
-      augmentedHessian(i1, i1) = Fi1.transpose()
-          * (Fi1 - Ei1_P * E.block<ZDim, 3>(ZDim * i1, 0).transpose() * Fi1);
-
-      // upper triangular part of the hessian
-      for (size_t i2 = i1 + 1; i2 < numKeys; i2++) { // for each camera
-        const Matrix2D& Fi2 = Fblocks.at(i2).second;
-
-        // (DxD) = (Dx2) * ( (2x2) * (2xD) )
-        augmentedHessian(i1, i2) = -Fi1.transpose()
-            * (Ei1_P * E.block<ZDim, 3>(ZDim * i2, 0).transpose() * Fi2);
-      }
-    } // end of for over cameras
-  }
-
-  /**
-   * Applies Schur complement (exploiting block structure) to get a smart factor on cameras,
-   * and adds the contribution of the smart factor to a pre-allocated augmented Hessian.
-   */
-  void updateSparseSchurComplement(const std::vector<KeyMatrix2D>& Fblocks,
-      const Matrix& E, const Matrix3& P /*Point Covariance*/, const Vector& b,
-      const double f, const FastVector<Key> allKeys,
-      /*output ->*/SymmetricBlockMatrix& augmentedHessian) const {
-    // Schur complement trick
-    // Gs = F' * F - F' * E * P * E' * F
-    // gs = F' * (b - E * P * E' * b)
-
-    MatrixDD matrixBlock;
-    typedef SymmetricBlockMatrix::Block Block; ///< A block from the Hessian matrix
-
-    FastMap<Key, size_t> KeySlotMap;
-    for (size_t slot = 0; slot < allKeys.size(); slot++)
-      KeySlotMap.insert(std::make_pair(allKeys[slot], slot));
-
-    // a single point is observed in numKeys cameras
-    size_t numKeys = this->keys_.size(); // cameras observing current point
-    size_t aug_numKeys = (augmentedHessian.rows() - 1) / Dim; // all cameras in the group
-
-    // Blockwise Schur complement
-    for (size_t i1 = 0; i1 < numKeys; i1++) { // for each camera in the current factor
-
-      const Matrix2D& Fi1 = Fblocks.at(i1).second;
-      const Matrix23 Ei1_P = E.block<ZDim, 3>(ZDim * i1, 0) * P;
-
-      // Dim = (DxZDim) * (ZDim)
-      // allKeys are the list of all camera keys in the group, e.g, (1,3,4,5,7)
-      // we should map those to a slot in the local (grouped) hessian (0,1,2,3,4)
-      // Key cameraKey_i1 = this->keys_[i1];
-      DenseIndex aug_i1 = KeySlotMap[this->keys_[i1]];
-
-      // information vector - store previous vector
-      // vectorBlock = augmentedHessian(aug_i1, aug_numKeys).knownOffDiagonal();
-      // add contribution of current factor
-      augmentedHessian(aug_i1, aug_numKeys) = augmentedHessian(aug_i1,
-          aug_numKeys).knownOffDiagonal()
-          + Fi1.transpose() * b.segment<ZDim>(ZDim * i1) // F' * b
-      - Fi1.transpose() * (Ei1_P * (E.transpose() * b)); // Dim = (DxZDim) * (ZDimx3) * (3*ZDimm) * (ZDimm x 1)
-
-      // (DxD) = (DxZDim) * ( (ZDimxD) - (ZDimx3) * (3xZDim) * (ZDimxD) )
-      // main block diagonal - store previous block
-      matrixBlock = augmentedHessian(aug_i1, aug_i1);
-      // add contribution of current factor
-      augmentedHessian(aug_i1, aug_i1) =
-          matrixBlock
-              + (Fi1.transpose()
-                  * (Fi1
-                      - Ei1_P * E.block<ZDim, 3>(ZDim * i1, 0).transpose() * Fi1));
-
-      // upper triangular part of the hessian
-      for (size_t i2 = i1 + 1; i2 < numKeys; i2++) { // for each camera
-        const Matrix2D& Fi2 = Fblocks.at(i2).second;
-
-        //Key cameraKey_i2 = this->keys_[i2];
-        DenseIndex aug_i2 = KeySlotMap[this->keys_[i2]];
-
-        // (DxD) = (DxZDim) * ( (ZDimxZDim) * (ZDimxD) )
-        // off diagonal block - store previous block
-        // matrixBlock = augmentedHessian(aug_i1, aug_i2).knownOffDiagonal();
-        // add contribution of current factor
-        augmentedHessian(aug_i1, aug_i2) =
-            augmentedHessian(aug_i1, aug_i2).knownOffDiagonal()
-                - Fi1.transpose()
-                    * (Ei1_P * E.block<ZDim, 3>(ZDim * i2, 0).transpose() * Fi2);
-      }
-    } // end of for over cameras
-
-    augmentedHessian(aug_numKeys, aug_numKeys)(0, 0) += f;
   }
 
   /**
@@ -476,33 +361,38 @@ public:
       const double lambda, bool diagonalDamping,
       SymmetricBlockMatrix& augmentedHessian,
       const FastVector<Key> allKeys) const {
-
-    // int numKeys = this->keys_.size();
-
-    std::vector<KeyMatrix2D> Fblocks;
     Matrix E;
     Vector b;
+    std::vector<KeyMatrix2D> Fblocks;
     double f = computeJacobians(Fblocks, E, b, cameras, point);
     Matrix3 P = PointCov(E, lambda, diagonalDamping);
-    updateSparseSchurComplement(Fblocks, E, P, b, f, allKeys, augmentedHessian); // augmentedHessian.matrix().block<Dim,Dim> (i1,i2) = ...
+    RegularImplicitSchurFactor<Dim, ZDim>::updateSparseSchurComplement(Fblocks,
+        E, P, b, f, allKeys, keys_, augmentedHessian);
+  }
+
+  /// Whiten the Jacobians computed by computeJacobians using noiseModel_
+  void whitenJacobians(std::vector<KeyMatrix2D>& F, Matrix& E,
+      Vector& b) const {
+    noiseModel_->WhitenSystem(E, b);
+    // TODO make WhitenInPlace work with any dense matrix type
+    BOOST_FOREACH(KeyMatrix2D& Fblock,F)
+      Fblock.second = noiseModel_->Whiten(Fblock.second);
   }
 
   /**
    * Return Jacobians as RegularImplicitSchurFactor with raw access
    */
-  boost::shared_ptr<RegularImplicitSchurFactor<Dim> > createRegularImplicitSchurFactor(
-      const Cameras& cameras, const Point3& point, double lambda = 0.0,
-      bool diagonalDamping = false) const {
-    std::vector<KeyMatrix2D> F;
+  boost::shared_ptr<RegularImplicitSchurFactor<Dim, ZDim> > //
+  createRegularImplicitSchurFactor(const Cameras& cameras, const Point3& point,
+      double lambda = 0.0, bool diagonalDamping = false) const {
     Matrix E;
     Vector b;
+    std::vector<KeyMatrix2D> F;
     computeJacobians(F, E, b, cameras, point);
-    noiseModel_->WhitenSystem(E, b);
+    whitenJacobians(F, E, b);
     Matrix3 P = PointCov(E, lambda, diagonalDamping);
-    // TODO make WhitenInPlace work with any dense matrix type
-    BOOST_FOREACH(KeyMatrix2D& Fblock,F)
-      Fblock.second = noiseModel_->Whiten(Fblock.second);
-    return boost::make_shared<RegularImplicitSchurFactor<Dim> >(F, E, P, b);
+    return boost::make_shared<RegularImplicitSchurFactor<Dim, ZDim> >(F, E, P,
+        b);
   }
 
   /**
@@ -511,12 +401,11 @@ public:
   boost::shared_ptr<JacobianFactorQ<Dim, ZDim> > createJacobianQFactor(
       const Cameras& cameras, const Point3& point, double lambda = 0.0,
       bool diagonalDamping = false) const {
-    std::vector<KeyMatrix2D> F;
     Matrix E;
     Vector b;
+    std::vector<KeyMatrix2D> F;
     computeJacobians(F, E, b, cameras, point);
     const size_t M = b.size();
-    std::cout << M << std::endl;
     Matrix3 P = PointCov(E, lambda, diagonalDamping);
     SharedIsotropic n = noiseModel::Isotropic::Sigma(M, noiseModel_->sigma());
     return boost::make_shared<JacobianFactorQ<Dim, ZDim> >(F, E, P, b, n);
