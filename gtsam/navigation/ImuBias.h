@@ -154,7 +154,7 @@ namespace imuBias {
 
     /** subtraction */
     ConstantBias operator-(const ConstantBias& b) const {
-      return ConstantBias(b.biasAcc_ - biasAcc_, b.biasGyro_ - biasGyro_);
+      return ConstantBias(biasAcc_ - b.biasAcc_, biasGyro_ - b.biasGyro_);
     }
 
     /// @}
