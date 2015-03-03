@@ -23,9 +23,13 @@
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/Testable.h>
 
 #include <CppUnitLite/TestHarness.h>
+
+#include <boost/function.hpp>
+#include <boost/bind.hpp>
 
 using namespace gtsam;
 using namespace std;
@@ -39,6 +43,9 @@ static Similarity3 T(R, Point3(3.5, -8.2, 4.2), 1);
 static Similarity3 T2(Rot3::rodriguez(0.3, 0.2, 0.1), Point3(3.5, -8.2, 4.2),
     1);
 static Similarity3 T3(Rot3::rodriguez(-90, 0, 0), Point3(1, 2, 3), 1);
+
+// Simpler transform
+Similarity3 T4(Rot3(), Point3(1, 1, 0), 2);
 
 //******************************************************************************
 TEST(Similarity3, Constructors) {
@@ -152,6 +159,24 @@ TEST(Similarity3, manifold_first_order) {
   EXPECT(assert_equal(t2, t1.retract(d12)));
   Vector d21 = t2.localCoordinates(t1);
   EXPECT(assert_equal(t1, t2.retract(d21)));
+}
+
+//******************************************************************************
+// Group action on Point3 (with simpler transform)
+TEST(Similarity3, GroupAction) {
+  EXPECT(assert_equal(Point3(1, 1, 0), T4 * Point3(0, 0, 0)));
+  EXPECT(assert_equal(Point3(3, 1, 0), T4 * Point3(1, 0, 0)));
+
+  // Test derivative
+  boost::function<Point3(Similarity3,Point3)> f = boost::bind(
+      &Similarity3::transform_from, _1, _2, boost::none, boost::none);
+  Point3 q(1, 0, 0);
+  Matrix expectedH1 = numericalDerivative21<Point3,Similarity3,Point3>(f,T4,q);
+  Matrix expectedH2 = numericalDerivative22<Point3,Similarity3,Point3>(f,T4,q);
+  Matrix actualH1,actualH2;
+  Point3 p = T4.transform_from(q,actualH1,actualH2);
+  EXPECT(assert_equal(expectedH1, actualH1));
+  EXPECT(assert_equal(expectedH2, actualH2));
 }
 
 //******************************************************************************

@@ -82,7 +82,9 @@ public:
   /// Return the inverse
   Similarity3 inverse() const;
 
-  Point3 transform_from(const Point3& p) const;
+  Point3 transform_from(const Point3& p, //
+      OptionalJacobian<3, 7> H1 = boost::none, //
+      OptionalJacobian<3, 3> H2 = boost::none) const;
 
   /** syntactic sugar for transform_from */
   Point3 operator*(const Point3& p) const;
@@ -96,17 +98,17 @@ public:
   /// Return a GTSAM rotation
   const Rot3& rotation() const {
     return R_;
-  };
+  }
 
   /// Return a GTSAM translation
   const Point3& translation() const {
     return t_;
-  };
+  }
 
   /// Return the scale
   double scale() const {
     return s_;
-  };
+  }
 
   /// Convert to a rigid body pose
   operator Pose3() const;
@@ -114,12 +116,12 @@ public:
   /// Dimensionality of tangent space = 7 DOF - used to autodetect sizes
   inline static size_t Dim() {
     return 7;
-  };
+  }
 
   /// Dimensionality of tangent space = 7 DOF
   inline size_t dim() const {
     return 7;
-  };
+  }
 
   /// @}
   /// @name Chart
@@ -127,10 +129,11 @@ public:
 
   /// Update Similarity transform via 7-dim vector in tangent space
   struct ChartAtOrigin {
-    static Similarity3 Retract(const Vector7& v,  ChartJacobian H = boost::none);
+    static Similarity3 Retract(const Vector7& v, ChartJacobian H = boost::none);
 
-  /// 7-dimensional vector v in tangent space that makes other = this->retract(v)
-  static Vector7 Local(const Similarity3& other,  ChartJacobian H = boost::none);
+    /// 7-dimensional vector v in tangent space that makes other = this->retract(v)
+    static Vector7 Local(const Similarity3& other,
+        ChartJacobian H = boost::none);
   };
 
   /// Project from one tangent space to another
@@ -141,12 +144,16 @@ public:
   /// @{
 
   /// Not currently implemented, required because this is a lie group
-  static Vector7 Logmap(const Similarity3& s, OptionalJacobian<7, 7> Hm = boost::none);
-  static Similarity3 Expmap(const Vector7& v, OptionalJacobian<7, 7> Hm = boost::none);
+  static Vector7 Logmap(const Similarity3& s, OptionalJacobian<7, 7> Hm =
+      boost::none);
+  static Similarity3 Expmap(const Vector7& v, OptionalJacobian<7, 7> Hm =
+      boost::none);
 
-  using LieGroup<Similarity3, 7>::inverse; // version with derivative
+  using LieGroup<Similarity3, 7>::inverse;
+  // version with derivative
 };
 
 template<>
-struct traits<Similarity3> : public internal::LieGroupTraits<Similarity3> {};
+struct traits<Similarity3> : public internal::LieGroupTraits<Similarity3> {
+};
 }

@@ -63,7 +63,8 @@ bool Similarity3::equals(const Similarity3& sim, double tol) const {
       && s_ > (sim.s_ - tol);
 }
 
-Point3 Similarity3::transform_from(const Point3& p) const {
+Point3 Similarity3::transform_from(const Point3& p, //
+    OptionalJacobian<3, 7> H1, OptionalJacobian<3, 3> H2) const {
   return R_ * (s_ * p) + t_;
 }
 
@@ -72,8 +73,9 @@ Matrix7 Similarity3::AdjointMap() const {
   const Vector3 t = t_.vector();
   Matrix3 A = s_ * skewSymmetric(t) * R;
   Matrix7 adj;
-  adj << s_ * R, A, -s_ * t, Z_3x3, R, Eigen::Matrix<double, 3, 1>::Zero(), Eigen::Matrix<
-      double, 1, 6>::Zero(), 1;
+  adj << s_ * R, A, -s_ * t, Z_3x3, R, //
+  Matrix31::Zero(), //
+  Matrix16::Zero(), 1;
   return adj;
 }
 
