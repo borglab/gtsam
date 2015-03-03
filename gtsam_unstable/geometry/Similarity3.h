@@ -48,6 +48,7 @@ public:
   /// @name Constructors
   /// @{
 
+  /// Default constructor
   Similarity3();
 
   /// Construct pure scaling
@@ -79,8 +80,15 @@ public:
   /// Return an identity transform
   static Similarity3 identity();
 
+  /// Composition
+  Similarity3 operator*(const Similarity3& T) const;
+
   /// Return the inverse
   Similarity3 inverse() const;
+
+  /// @}
+  /// @name Group action on Point3
+  /// @{
 
   Point3 transform_from(const Point3& p, //
       OptionalJacobian<3, 7> H1 = boost::none, //
@@ -89,7 +97,31 @@ public:
   /** syntactic sugar for transform_from */
   Point3 operator*(const Point3& p) const;
 
-  Similarity3 operator*(const Similarity3& T) const;
+  /// @}
+  /// @name Lie Group
+  /// @{
+
+  /// Not currently implemented, required because this is a lie group
+  static Vector7 Logmap(const Similarity3& s, //
+      OptionalJacobian<7, 7> Hm = boost::none);
+
+  /// Not currently implemented, required because this is a lie group
+  static Similarity3 Expmap(const Vector7& v, //
+      OptionalJacobian<7, 7> Hm = boost::none);
+
+  /// Update Similarity transform via 7-dim vector in tangent space
+  struct ChartAtOrigin {
+    static Similarity3 Retract(const Vector7& v, ChartJacobian H = boost::none);
+
+    /// 7-dimensional vector v in tangent space that makes other = this->retract(v)
+    static Vector7 Local(const Similarity3& other,
+        ChartJacobian H = boost::none);
+  };
+
+  /// Project from one tangent space to another
+  Matrix7 AdjointMap() const;
+
+  using LieGroup<Similarity3, 7>::inverse;
 
   /// @}
   /// @name Standard interface
@@ -127,33 +159,6 @@ public:
   }
 
   /// @}
-  /// @name Chart
-  /// @{
-
-  /// Update Similarity transform via 7-dim vector in tangent space
-  struct ChartAtOrigin {
-    static Similarity3 Retract(const Vector7& v, ChartJacobian H = boost::none);
-
-    /// 7-dimensional vector v in tangent space that makes other = this->retract(v)
-    static Vector7 Local(const Similarity3& other,
-        ChartJacobian H = boost::none);
-  };
-
-  /// Project from one tangent space to another
-  Matrix7 AdjointMap() const;
-
-  /// @}
-  /// @name Stubs
-  /// @{
-
-  /// Not currently implemented, required because this is a lie group
-  static Vector7 Logmap(const Similarity3& s, OptionalJacobian<7, 7> Hm =
-      boost::none);
-  static Similarity3 Expmap(const Vector7& v, OptionalJacobian<7, 7> Hm =
-      boost::none);
-
-  using LieGroup<Similarity3, 7>::inverse;
-  // version with derivative
 };
 
 template<>

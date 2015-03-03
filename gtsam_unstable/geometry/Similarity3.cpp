@@ -22,10 +22,6 @@
 
 namespace gtsam {
 
-Similarity3::Similarity3(const Matrix3& R, const Vector3& t, double s) :
-    R_(R), t_(t), s_(s) {
-}
-
 Similarity3::Similarity3() :
     R_(), t_(), s_(1) {
 }
@@ -38,29 +34,38 @@ Similarity3::Similarity3(const Rot3& R, const Point3& t, double s) :
     R_(R), t_(t), s_(s) {
 }
 
-Similarity3::operator Pose3() const {
-  return Pose3(R_, s_ * t_);
-}
-
-Similarity3 Similarity3::identity() {
-  return Similarity3();
-}
-
-//Vector7 Similarity3::Logmap(const Similarity3& s, OptionalJacobian<7, 7> Hm) {
-//  return Vector7();
-//}
-//
-//Similarity3 Similarity3::Expmap(const Vector7& v, OptionalJacobian<7, 7> Hm) {
-//  return Similarity3();
-//}
-
-bool Similarity3::operator==(const Similarity3& other) const {
-  return (R_.equals(other.R_)) && (t_ == other.t_) && (s_ == other.s_);
+Similarity3::Similarity3(const Matrix3& R, const Vector3& t, double s) :
+    R_(R), t_(t), s_(s) {
 }
 
 bool Similarity3::equals(const Similarity3& sim, double tol) const {
   return R_.equals(sim.R_, tol) && t_.equals(sim.t_, tol) && s_ < (sim.s_ + tol)
       && s_ > (sim.s_ - tol);
+}
+
+bool Similarity3::operator==(const Similarity3& other) const {
+  return (R_.equals(other.R_)) && (t_ == other.t_) && (s_ == other.s_);
+}
+
+void Similarity3::print(const std::string& s) const {
+  std::cout << std::endl;
+  std::cout << s;
+  rotation().print("R:\n");
+  translation().print("t: ");
+  std::cout << "s: " << scale() << std::endl;
+}
+
+Similarity3 Similarity3::identity() {
+  return Similarity3();
+}
+Similarity3 Similarity3::operator*(const Similarity3& T) const {
+  return Similarity3(R_ * T.R_, ((1.0 / T.s_) * t_) + R_ * T.t_, s_ * T.s_);
+}
+
+Similarity3 Similarity3::inverse() const {
+  Rot3 Rt = R_.inverse();
+  Point3 sRt = R_.inverse() * (-s_ * t_);
+  return Similarity3(Rt, sRt, 1.0 / s_);
 }
 
 Point3 Similarity3::transform_from(const Point3& p, //
@@ -78,11 +83,8 @@ Point3 Similarity3::transform_from(const Point3& p, //
   // 0001   000    1   1   000     1   1
 }
 
-const Matrix4 Similarity3::matrix() const {
-  Matrix4 T;
-  T.topRows<3>() << s_ * R_.matrix(), t_.vector();
-  T.bottomRows<1>() << 0, 0, 0, 1;
-  return T;
+Point3 Similarity3::operator*(const Point3& p) const {
+  return transform_from(p);
 }
 
 Matrix7 Similarity3::AdjointMap() const {
@@ -96,26 +98,12 @@ Matrix7 Similarity3::AdjointMap() const {
   return adj;
 }
 
-Point3 Similarity3::operator*(const Point3& p) const {
-  return transform_from(p);
+Vector7 Similarity3::Logmap(const Similarity3& s, OptionalJacobian<7, 7> Hm) {
+  return Vector7();
 }
 
-Similarity3 Similarity3::inverse() const {
-  Rot3 Rt = R_.inverse();
-  Point3 sRt = R_.inverse() * (-s_ * t_);
-  return Similarity3(Rt, sRt, 1.0 / s_);
-}
-
-Similarity3 Similarity3::operator*(const Similarity3& T) const {
-  return Similarity3(R_ * T.R_, ((1.0 / T.s_) * t_) + R_ * T.t_, s_ * T.s_);
-}
-
-void Similarity3::print(const std::string& s) const {
-  std::cout << std::endl;
-  std::cout << s;
-  rotation().print("R:\n");
-  translation().print("t: ");
-  std::cout << "s: " << scale() << std::endl;
+Similarity3 Similarity3::Expmap(const Vector7& v, OptionalJacobian<7, 7> Hm) {
+  return Similarity3();
 }
 
 Similarity3 Similarity3::ChartAtOrigin::Retract(const Vector7& v,
@@ -139,5 +127,16 @@ Vector7 Similarity3::ChartAtOrigin::Local(const Similarity3& other,
   v[6] = other.s_ - 1.0;
   return v;
 }
+
+const Matrix4 Similarity3::matrix() const {
+  Matrix4 T;
+  T.topRows<3>() << s_ * R_.matrix(), t_.vector();
+  T.bottomRows<1>() << 0, 0, 0, 1;
+  return T;
 }
 
+Similarity3::operator Pose3() const {
+  return Pose3(R_, s_ * t_);
+}
+
+}
