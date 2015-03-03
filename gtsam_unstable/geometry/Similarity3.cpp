@@ -65,9 +65,17 @@ bool Similarity3::equals(const Similarity3& sim, double tol) const {
 
 Point3 Similarity3::transform_from(const Point3& p, //
     OptionalJacobian<3, 7> H1, OptionalJacobian<3, 3> H2) const {
+  if (H1) {
+    const Matrix3 R = R_.matrix();
+    Matrix3 DR = s_ * R * skewSymmetric(-p.x(), -p.y(), -p.z());
+    *H1 << DR, R, R * p.vector();
+  }
   if (H2)
     *H2 = s_ * R_.matrix(); // just 3*3 sub-block of matrix()
   return R_ * (s_ * p) + t_;
+  // TODO: Effect of scale change is this, right?
+  // sR t * (1+v)I 0 * p = s(1+v)R t * p = s(1+v)Rp + t = sRp + vRp + t
+  // 0001   000    1   1   000     1   1
 }
 
 const Matrix4 Similarity3::matrix() const {
@@ -82,9 +90,9 @@ Matrix7 Similarity3::AdjointMap() const {
   const Vector3 t = t_.vector();
   Matrix3 A = s_ * skewSymmetric(t) * R;
   Matrix7 adj;
-  adj << s_ * R, A, -s_ * t, Z_3x3, R, //
-  Matrix31::Zero(), //
-  Matrix16::Zero(), 1;
+  adj << s_ * R, A, -s_ * t, // 3*7
+  Z_3x3, R, Matrix31::Zero(), // 3*7
+  Matrix16::Zero(), 1; // 1*7
   return adj;
 }
 

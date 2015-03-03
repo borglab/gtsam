@@ -19,6 +19,7 @@
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/ExpressionFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/geometry/Pose3.h>
@@ -68,6 +69,7 @@ TEST(Similarity3, Getters2) {
   EXPECT_DOUBLES_EQUAL(7.0, test.scale(), 1e-9);
 }
 
+//******************************************************************************
 TEST(Similarity3, AdjointMap) {
   Similarity3 test(Rot3::ypr(1, 2, 3).inverse(), Point3(4, 5, 6), 7);
   Matrix7 result;
@@ -75,6 +77,7 @@ TEST(Similarity3, AdjointMap) {
   EXPECT(assert_equal(result, test.AdjointMap(), 1e-3));
 }
 
+//******************************************************************************
 TEST(Similarity3, inverse) {
   Similarity3 test(Rot3::ypr(1, 2, 3).inverse(), Point3(4, 5, 6), 7);
   Matrix3 Re;
@@ -84,7 +87,8 @@ TEST(Similarity3, inverse) {
   EXPECT(assert_equal(expected, test.inverse(), 1e-3));
 }
 
-TEST(Similarity3, multiplication) {
+//******************************************************************************
+TEST(Similarity3, Multiplication) {
   Similarity3 test1(Rot3::ypr(1, 2, 3).inverse(), Point3(4, 5, 6), 7);
   Similarity3 test2(Rot3::ypr(1, 2, 3).inverse(), Point3(8, 9, 10), 11);
   Matrix3 re;
@@ -130,7 +134,7 @@ TEST(Similarity3, Manifold) {
   // TODO add unit tests for retract and localCoordinates
 }
 
-/* ************************************************************************* */
+//******************************************************************************
 TEST( Similarity3, retract_first_order) {
   Similarity3 id;
   Vector v = zero(7);
@@ -142,7 +146,7 @@ TEST( Similarity3, retract_first_order) {
   EXPECT(assert_equal(Similarity3(R, P, 1), id.retract(v), 1e-2));
 }
 
-/* ************************************************************************* */
+//******************************************************************************
 TEST(Similarity3, localCoordinates_first_order) {
   Vector d12 = repeat(7, 0.1);
   d12(6) = 1.0;
@@ -150,7 +154,7 @@ TEST(Similarity3, localCoordinates_first_order) {
   EXPECT(assert_equal(d12, t1.localCoordinates(t2)));
 }
 
-/* ************************************************************************* */
+//******************************************************************************
 TEST(Similarity3, manifold_first_order) {
   Similarity3 t1 = T;
   Similarity3 t2 = T3;
@@ -165,11 +169,7 @@ TEST(Similarity3, manifold_first_order) {
 // Return as a 4*4 Matrix
 TEST(Similarity3, Matrix) {
   Matrix4 expected;
-  expected <<
-      2, 0, 0, 1,
-      0, 2, 0, 1,
-      0, 0, 2, 0,
-      0, 0, 0, 1;
+  expected << 2, 0, 0, 1, 0, 2, 0, 1, 0, 0, 2, 0, 0, 0, 0, 1;
   Matrix4 actual = T4.matrix();
   EXPECT(assert_equal(expected, actual));
 }
@@ -177,23 +177,38 @@ TEST(Similarity3, Matrix) {
 // Group action on Point3 (with simpler transform)
 TEST(Similarity3, GroupAction) {
   EXPECT(assert_equal(Point3(1, 1, 0), T4 * Point3(0, 0, 0)));
-  EXPECT(assert_equal(Point3(3, 1, 0), T4 * Point3(1, 0, 0)));
 
   // Test actual group action on R^4
-  Vector4 qh; qh << 1,0,0,1;
-  Vector4 ph; ph << 3,1,0,1;
-  EXPECT(assert_equal((Vector)ph, T4.matrix()*qh));
+  Vector4 qh;
+  qh << 1, 0, 0, 1;
+  Vector4 ph;
+  ph << 3, 1, 0, 1;
+  EXPECT(assert_equal((Vector )ph, T4.matrix() * qh));
 
   // Test derivative
-  boost::function<Point3(Similarity3,Point3)> f = boost::bind(
+  boost::function<Point3(Similarity3, Point3)> f = boost::bind(
       &Similarity3::transform_from, _1, _2, boost::none, boost::none);
-  Point3 q(1, 0, 0);
-  Matrix expectedH1 = numericalDerivative21<Point3,Similarity3,Point3>(f,T4,q);
-  Matrix expectedH2 = numericalDerivative22<Point3,Similarity3,Point3>(f,T4,q);
-  Matrix actualH1,actualH2;
-  Point3 p = T4.transform_from(q,actualH1,actualH2);
-  EXPECT(assert_equal(expectedH1, actualH1));
-  EXPECT(assert_equal(expectedH2, actualH2));
+
+  { // T
+    Point3 q(1, 0, 0);
+    Matrix H1 = numericalDerivative21<Point3, Similarity3, Point3>(f, T, q);
+    Matrix H2 = numericalDerivative22<Point3, Similarity3, Point3>(f, T, q);
+    Matrix actualH1, actualH2;
+    T.transform_from(q, actualH1, actualH2);
+    EXPECT(assert_equal(H1, actualH1));
+    EXPECT(assert_equal(H2, actualH2));
+  }
+  { // T4
+    Point3 q(1, 0, 0);
+    Matrix H1 = numericalDerivative21<Point3, Similarity3, Point3>(f, T4, q);
+    Matrix H2 = numericalDerivative22<Point3, Similarity3, Point3>(f, T4, q);
+    Matrix actualH1, actualH2;
+    Point3 p = T4.transform_from(q, actualH1, actualH2);
+    EXPECT(assert_equal(Point3(3, 1, 0), p));
+    EXPECT(assert_equal(Point3(3, 1, 0), T4 * q));
+    EXPECT(assert_equal(H1, actualH1));
+    EXPECT(assert_equal(H2, actualH2));
+  }
 }
 
 //******************************************************************************
@@ -292,6 +307,33 @@ TEST(Similarity3, Optimization2) {
 
   Similarity3 expected(0.7);
   EXPECT(assert_equal(expected, result.at<Similarity3>(X(5)), 0.4));
+}
+
+//******************************************************************************
+// Align points (p,q) assuming that p = T*q + noise
+TEST(Similarity3, AlignScaledPointClouds) {
+// Create ground truth
+  Point3 q1(0, 0, 0), q2(1, 0, 0), q3(0, 1, 0);
+
+  // Create transformed cloud (noiseless)
+//  Point3 p1 = T4 * q1, p2 = T4 * q2, p3 = T4 * q3;
+
+  // Create an unknown expression
+  Expression<Similarity3> unknownT(0); // use key 0
+
+  // Create constant expressions for the ground truth points
+  Expression<Point3> q1_(q1), q2_(q2), q3_(q3);
+
+  // Create prediction expressions
+  Expression<Point3> predict1(unknownT, &Similarity3::transform_from, q1_);
+  Expression<Point3> predict2(unknownT, &Similarity3::transform_from, q2_);
+  Expression<Point3> predict3(unknownT, &Similarity3::transform_from, q3_);
+
+//// Create Expression factor graph
+//  ExpressionFactorGraph graph;
+//  graph.addExpressionFactor(predict1, p1, R); // |T*q1 - p1|
+//  graph.addExpressionFactor(predict2, p2, R); // |T*q2 - p2|
+//  graph.addExpressionFactor(predict3, p3, R); // |T*q3 - p3|
 }
 
 //******************************************************************************
