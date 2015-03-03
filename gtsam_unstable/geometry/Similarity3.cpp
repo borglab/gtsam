@@ -68,6 +68,13 @@ Point3 Similarity3::transform_from(const Point3& p, //
   return R_ * (s_ * p) + t_;
 }
 
+const Matrix4 Similarity3::matrix() const {
+  Matrix4 T;
+  T.topRows<3>() << s_ * R_.matrix(), t_.vector();
+  T.bottomRows<1>() << 0, 0, 0, 1;
+  return T;
+}
+
 Matrix7 Similarity3::AdjointMap() const {
   const Matrix3 R = R_.matrix();
   const Vector3 t = t_.vector();

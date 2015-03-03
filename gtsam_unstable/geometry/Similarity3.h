@@ -95,6 +95,9 @@ public:
   /// @name Standard interface
   /// @{
 
+  /// Calculate 4*4 matrix group equivalent
+  const Matrix4 matrix() const;
+
   /// Return a GTSAM rotation
   const Rot3& rotation() const {
     return R_;

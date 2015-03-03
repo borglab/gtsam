@@ -162,10 +162,27 @@ TEST(Similarity3, manifold_first_order) {
 }
 
 //******************************************************************************
+// Return as a 4*4 Matrix
+TEST(Similarity3, Matrix) {
+  Matrix4 expected;
+  expected <<
+      2, 0, 0, 1,
+      0, 2, 0, 1,
+      0, 0, 2, 0,
+      0, 0, 0, 1;
+  Matrix4 actual = T4.matrix();
+  EXPECT(assert_equal(expected, actual));
+}
+//******************************************************************************
 // Group action on Point3 (with simpler transform)
 TEST(Similarity3, GroupAction) {
   EXPECT(assert_equal(Point3(1, 1, 0), T4 * Point3(0, 0, 0)));
   EXPECT(assert_equal(Point3(3, 1, 0), T4 * Point3(1, 0, 0)));
+
+  // Test actual group action on R^4
+  Vector4 qh; qh << 1,0,0,1;
+  Vector4 ph; ph << 3,1,0,1;
+  EXPECT(assert_equal((Vector)ph, T4.matrix()*qh));
 
   // Test derivative
   boost::function<Point3(Similarity3,Point3)> f = boost::bind(
