@@ -113,7 +113,7 @@ public:
     return s_;
   }
 
-  /// Convert to a rigid body pose
+  /// Convert to a rigid body pose (R, s*t)
   operator Pose3() const;
 
   /// Dimensionality of tangent space = 7 DOF - used to autodetect sizes
