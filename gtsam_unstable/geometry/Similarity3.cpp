@@ -65,6 +65,8 @@ bool Similarity3::equals(const Similarity3& sim, double tol) const {
 
 Point3 Similarity3::transform_from(const Point3& p, //
     OptionalJacobian<3, 7> H1, OptionalJacobian<3, 3> H2) const {
+  if (H2)
+    *H2 = s_ * R_.matrix(); // just 3*3 sub-block of matrix()
   return R_ * (s_ * p) + t_;
 }
 
