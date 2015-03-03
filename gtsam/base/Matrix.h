@@ -22,12 +22,12 @@
 
 #pragma once
 #include <gtsam/base/Vector.h>
-#include <boost/format.hpp>
-#include <boost/tuple/tuple.hpp>
 #include <boost/math/special_functions/fpclassify.hpp>
 #include <gtsam/3rdparty/Eigen/Eigen/Core>
 #include <gtsam/3rdparty/Eigen/Eigen/Cholesky>
 #include <gtsam/3rdparty/Eigen/Eigen/LU>
+#include <boost/format.hpp>
+#include <boost/tuple/tuple.hpp>
 
 
 /**
@@ -201,9 +201,14 @@ inline MATRIX prod(const MATRIX& A, const MATRIX&B) {
 }
 
 /**
- * print a matrix
+ * print without optional string, must specify cout yourself
  */
-GTSAM_EXPORT void print(const Matrix& A, const std::string& s = "", std::ostream& stream = std::cout);
+GTSAM_EXPORT void print(const Matrix& A, const std::string& s, std::ostream& stream);
+
+/**
+ * print with optional string to cout
+ */
+GTSAM_EXPORT void print(const Matrix& A, const std::string& s = "");
 
 /**
  * save a matrix to file, which can be loaded by matlab

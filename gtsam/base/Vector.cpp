@@ -16,20 +16,18 @@
  * @author  Frank Dellaert
  */
 
-
+#include <gtsam/base/Vector.h>
+#include <boost/foreach.hpp>
+#include <boost/optional.hpp>
+#include <stdexcept>
 #include <cstdarg>
 #include <limits>
 #include <fstream>
 #include <sstream>
 #include <iomanip>
 #include <cmath>
-#include <stdexcept>
-#include <boost/foreach.hpp>
-#include <boost/optional.hpp>
 #include <cstdio>
 #include <vector>
-#include <gtsam/base/Vector.h>
-
 
 using namespace std;
 
@@ -55,6 +53,7 @@ Vector delta(size_t n, size_t i, double value) {
 }
 
 /* ************************************************************************* */
+//3 argument call
 void print(const Vector& v, const string& s, ostream& stream) {
   size_t n = v.size();
 
@@ -63,6 +62,12 @@ void print(const Vector& v, const string& s, ostream& stream) {
       stream << setprecision(9) << v(i) << (i<n-1 ? "; " : "");
   }
   stream << "];" << endl;
+}
+
+/* ************************************************************************* */
+//1 or 2 argument call
+void print(const Vector& v, const string& s) {
+    print(v, s, cout);
 }
 
 /* ************************************************************************* */

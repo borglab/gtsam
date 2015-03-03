@@ -20,6 +20,8 @@
 #include <gtsam/base/timing.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/FastList.h>
+#include <gtsam/3rdparty/Eigen/Eigen/SVD>  
+#include <gtsam/3rdparty/Eigen/Eigen/LU>
 
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -31,9 +33,6 @@
 #include <list>
 #include <fstream>
 #include <limits>
-
-#include <gtsam/3rdparty/Eigen/Eigen/SVD>  
-#include <gtsam/3rdparty/Eigen/Eigen/LU>
 
 using namespace std;
 
@@ -183,6 +182,7 @@ void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, SubVec
 }
 
 /* ************************************************************************* */
+//3 argument call
 void print(const Matrix& A, const string &s, ostream& stream) {
   size_t m = A.rows(), n = A.cols();
 
@@ -199,6 +199,12 @@ void print(const Matrix& A, const string &s, ostream& stream) {
     stream << endl;
   }
   stream << "];" << endl;
+}
+
+/* ************************************************************************* */
+//1 or 2 argument call
+void print(const Matrix& A, const string &s){
+  print(A, s, cout);
 }
 
 /* ************************************************************************* */

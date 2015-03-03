@@ -21,12 +21,12 @@
 
 #include <gtsam/dllexport.h>
 #include <gtsam/config.h>
-#include <cstddef>
-#include <string>
-#include <ostream>
 #include <boost/function/function1.hpp>
 #include <boost/range/concepts.hpp>
 #include <boost/optional.hpp>
+#include <cstddef>
+#include <string>
+#include <ostream>
 
 #ifdef GTSAM_USE_TBB
 #include <tbb/task_scheduler_init.h>
