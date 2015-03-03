@@ -32,13 +32,15 @@ class Pose3;
  */
 class Similarity3: public LieGroup<Similarity3, 7> {
 
-  /** Pose Concept requirements */
+  /// @name Pose Concept
+  /// @{
   typedef Rot3 Rotation;
   typedef Point3 Translation;
+  /// @}
 
 private:
-  Rotation R_;
-  Translation t_;
+  Rot3 R_;
+  Point3 t_;
   double s_;
 
 public:
@@ -52,7 +54,7 @@ public:
   Similarity3(double s);
 
   /// Construct from GTSAM types
-  Similarity3(const Rotation& R, const Translation& t, double s);
+  Similarity3(const Rot3& R, const Point3& t, double s);
 
   /// Construct from Eigen types
   Similarity3(const Matrix3& R, const Vector3& t, double s);
@@ -80,10 +82,10 @@ public:
   /// Return the inverse
   Similarity3 inverse() const;
 
-  Translation transform_from(const Translation& p) const;
+  Point3 transform_from(const Point3& p) const;
 
   /** syntactic sugar for transform_from */
-  inline Translation operator*(const Translation& p) const;
+  Point3 operator*(const Point3& p) const;
 
   Similarity3 operator*(const Similarity3& T) const;
 
@@ -92,12 +94,12 @@ public:
   /// @{
 
   /// Return a GTSAM rotation
-  const Rotation& rotation() const {
+  const Rot3& rotation() const {
     return R_;
   };
 
   /// Return a GTSAM translation
-  const Translation& translation() const {
+  const Point3& translation() const {
     return t_;
   };
 
