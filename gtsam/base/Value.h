@@ -18,9 +18,10 @@
 
 #pragma once
 
-#include <memory>
-#include <boost/serialization/assume_abstract.hpp>
 #include <gtsam/base/Vector.h>
+#include <boost/serialization/assume_abstract.hpp>
+#include <memory>
+
 
 namespace gtsam {
 
