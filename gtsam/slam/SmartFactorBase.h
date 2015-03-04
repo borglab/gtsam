@@ -423,8 +423,7 @@ public:
     const size_t M = ZDim * m;
     Matrix E0(M, M - 3);
     computeJacobiansSVD(F, E0, b, cameras, point);
-    std::cout << M << std::endl;
-    SharedIsotropic n = noiseModel::Isotropic::Sigma(M, noiseModel_->sigma());
+    SharedIsotropic n = noiseModel::Isotropic::Sigma(M-3, noiseModel_->sigma());
     return boost::make_shared<JacobianFactorSVD<Dim, ZDim> >(F, E0, b, n);
   }
 
