@@ -33,12 +33,14 @@ namespace gtsam {
 template<typename Calibration>
 class GTSAM_EXPORT PinholeBaseK: public PinholeBase {
 
-  GTSAM_CONCEPT_MANIFOLD_TYPE(Calibration)
+private:
+
+  GTSAM_CONCEPT_MANIFOLD_TYPE(Calibration);
 
   // Get dimensions of calibration type at compile time
-static  const int DimK = FixedDimension<Calibration>::value;
+  static const int DimK = FixedDimension<Calibration>::value;
 
-public :
+public:
 
   /// @name Standard Constructors
   /// @{
