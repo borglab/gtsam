@@ -31,7 +31,7 @@
 
 using namespace boost::assign;
 
-static bool isDebugTest = false;
+static bool isDebugTest = true;
 
 static const double rankTol = 1.0;
 static const double linThreshold = -1.0;
@@ -233,7 +233,7 @@ TEST( SmartProjectionPoseFactor, 3poses_smart_projection_factor ) {
   // initialize third pose with some noise, we expect it to move back to original pose_above
   values.insert(x3, Camera(pose_above * noise_pose, sharedK2));
   if (isDebugTest)
-    values.at<Pose3>(x3).print("Smart: Pose3 before optimization: ");
+    values.at<Camera>(x3).print("Camera before optimization: ");
 
   LevenbergMarquardtParams params;
   if (isDebugTest)
@@ -253,8 +253,8 @@ TEST( SmartProjectionPoseFactor, 3poses_smart_projection_factor ) {
 
   // result.print("results of 3 camera, 3 landmark optimization \n");
   if (isDebugTest)
-    result.at<Pose3>(x3).print("Smart: Pose3 after optimization: ");
-  EXPECT(assert_equal(pose_above, result.at<Pose3>(x3), 1e-8));
+    result.at<Camera>(x3).print("Camera after optimization: ");
+  EXPECT(assert_equal(cam3, result.at<Camera>(x3), 1e-8));
   if (isDebugTest)
     tictoc_print_();
 }
@@ -443,7 +443,7 @@ TEST( SmartProjectionPoseFactor, 3poses_iterative_smart_projection_factor ) {
   // initialize third pose with some noise, we expect it to move back to original pose_above
   values.insert(x3, Camera(pose_above * noise_pose, sharedK));
   if (isDebugTest)
-    values.at<Pose3>(x3).print("Smart: Pose3 before optimization: ");
+    values.at<Camera>(x3).print("Camera before optimization: ");
 
   LevenbergMarquardtParams params;
   if (isDebugTest)
@@ -460,8 +460,8 @@ TEST( SmartProjectionPoseFactor, 3poses_iterative_smart_projection_factor ) {
 
   // result.print("results of 3 camera, 3 landmark optimization \n");
   if (isDebugTest)
-    result.at<Pose3>(x3).print("Smart: Pose3 after optimization: ");
-  EXPECT(assert_equal(pose_above, result.at<Pose3>(x3), 1e-7));
+    result.at<Camera>(x3).print("Camera after optimization: ");
+  EXPECT(assert_equal(cam3, result.at<Camera>(x3), 1e-7));
   if (isDebugTest)
     tictoc_print_();
 }
@@ -516,7 +516,7 @@ TEST( SmartProjectionPoseFactor, jacobianSVD ) {
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
-  EXPECT(assert_equal(pose_above, result.at<Pose3>(x3), 1e-8));
+  EXPECT(assert_equal(cam3, result.at<Camera>(x3), 1e-8));
 }
 
 /* *************************************************************************/
@@ -575,7 +575,7 @@ TEST( SmartProjectionPoseFactor, landmarkDistance ) {
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
-  EXPECT(assert_equal(values.at<Pose3>(x3), result.at<Pose3>(x3)));
+  EXPECT(assert_equal(values.at<Camera>(x3), result.at<Camera>(x3)));
 }
 
 /* *************************************************************************/
@@ -646,7 +646,7 @@ TEST( SmartProjectionPoseFactor, dynamicOutlierRejection ) {
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
-  EXPECT(assert_equal(pose_above, result.at<Pose3>(x3)));
+  EXPECT(assert_equal(cam3, result.at<Camera>(x3)));
 }
 
 /* *************************************************************************/
@@ -698,7 +698,7 @@ TEST( SmartProjectionPoseFactor, jacobianQ ) {
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
-  EXPECT(assert_equal(pose_above, result.at<Pose3>(x3), 1e-8));
+  EXPECT(assert_equal(cam3, result.at<Camera>(x3), 1e-8));
 }
 
 /* *************************************************************************/
@@ -751,7 +751,7 @@ TEST( SmartProjectionPoseFactor, 3poses_projection_factor ) {
   values.insert(L(2), landmark2);
   values.insert(L(3), landmark3);
   if (isDebugTest)
-    values.at<Pose3>(x3).print("Pose3 before optimization: ");
+    values.at<Camera>(x3).print("Pose3 before optimization: ");
 
   LevenbergMarquardtParams params;
   if (isDebugTest)
@@ -762,8 +762,8 @@ TEST( SmartProjectionPoseFactor, 3poses_projection_factor ) {
   Values result = optimizer.optimize();
 
   if (isDebugTest)
-    result.at<Pose3>(x3).print("Pose3 after optimization: ");
-  EXPECT(assert_equal(pose_above, result.at<Pose3>(x3), 1e-7));
+    result.at<Camera>(x3).print("Pose3 after optimization: ");
+  EXPECT(assert_equal(cam3, result.at<Camera>(x3), 1e-7));
 }
 
 /* *************************************************************************/
@@ -816,7 +816,7 @@ TEST( SmartProjectionPoseFactor, CheckHessian) {
   // initialize third pose with some noise, we expect it to move back to original pose_above
   values.insert(x3, Camera(pose_above * noise_pose, sharedK));
   if (isDebugTest)
-    values.at<Pose3>(x3).print("Smart: Pose3 before optimization: ");
+    values.at<Camera>(x3).print("Camera before optimization: ");
 
   boost::shared_ptr<GaussianFactor> hessianFactor1 = smartFactor1->linearize(
       values);
@@ -903,7 +903,7 @@ TEST( SmartProjectionPoseFactor, 3poses_2land_rotation_only_smart_projection_fac
   // initialize third pose with some noise, we expect it to move back to original pose_above
   values.insert(x3, Camera(pose_above * noise_pose * noise_pose, sharedK2));
   if (isDebugTest)
-    values.at<Pose3>(x3).print("Smart: Pose3 before optimization: ");
+    values.at<Camera>(x3).print("Camera before optimization: ");
 
   LevenbergMarquardtParams params;
   if (isDebugTest)
@@ -920,11 +920,11 @@ TEST( SmartProjectionPoseFactor, 3poses_2land_rotation_only_smart_projection_fac
 
   // result.print("results of 3 camera, 3 landmark optimization \n");
   if (isDebugTest)
-    result.at<Pose3>(x3).print("Smart: Pose3 after optimization: ");
+    result.at<Camera>(x3).print("Camera after optimization: ");
   cout
       << "TEST COMMENTED: rotation only version of smart factors has been deprecated "
       << endl;
-  // EXPECT(assert_equal(pose_above,result.at<Pose3>(x3)));
+  // EXPECT(assert_equal(pose_above,result.at<Camera>(x3)));
   if (isDebugTest)
     tictoc_print_();
 }
@@ -993,7 +993,7 @@ TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) 
   // initialize third pose with some noise, we expect it to move back to original pose_above
   values.insert(x3, Camera(pose_above * noise_pose, sharedK));
   if (isDebugTest)
-    values.at<Pose3>(x3).print("Smart: Pose3 before optimization: ");
+    values.at<Camera>(x3).print("Camera before optimization: ");
 
   LevenbergMarquardtParams params;
   if (isDebugTest)
@@ -1010,11 +1010,11 @@ TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) 
 
   // result.print("results of 3 camera, 3 landmark optimization \n");
   if (isDebugTest)
-    result.at<Pose3>(x3).print("Smart: Pose3 after optimization: ");
+    result.at<Camera>(x3).print("Camera after optimization: ");
   cout
       << "TEST COMMENTED: rotation only version of smart factors has been deprecated "
       << endl;
-  // EXPECT(assert_equal(pose_above,result.at<Pose3>(x3)));
+  // EXPECT(assert_equal(pose_above,result.at<Camera>(x3)));
   if (isDebugTest)
     tictoc_print_();
 }
@@ -1247,7 +1247,7 @@ TEST( SmartProjectionPoseFactor, Cal3Bundler ) {
   // initialize third pose with some noise, we expect it to move back to original pose_above
   values.insert(x3, Camera(pose_above * noise_pose, sharedBundlerK));
   if (isDebugTest)
-    values.at<Pose3>(x3).print("Smart: Pose3 before optimization: ");
+    values.at<Camera>(x3).print("Camera before optimization: ");
 
   LevenbergMarquardtParams params;
   if (isDebugTest)
@@ -1264,8 +1264,8 @@ TEST( SmartProjectionPoseFactor, Cal3Bundler ) {
 
   // result.print("results of 3 camera, 3 landmark optimization \n");
   if (isDebugTest)
-    result.at<Pose3>(x3).print("Smart: Pose3 after optimization: ");
-  EXPECT(assert_equal(pose_above, result.at<Pose3>(x3), 1e-6));
+    result.at<Camera>(x3).print("Camera after optimization: ");
+  EXPECT(assert_equal(cam3, result.at<Camera>(x3), 1e-6));
   if (isDebugTest)
     tictoc_print_();
 }
@@ -1353,7 +1353,7 @@ TEST( SmartProjectionPoseFactor, Cal3BundlerRotationOnly ) {
   // initialize third pose with some noise, we expect it to move back to original pose_above
   values.insert(x3, Camera(pose_above * noise_pose, sharedBundlerK));
   if (isDebugTest)
-    values.at<Pose3>(x3).print("Smart: Pose3 before optimization: ");
+    values.at<Camera>(x3).print("Camera before optimization: ");
 
   LevenbergMarquardtParams params;
   if (isDebugTest)
@@ -1370,11 +1370,11 @@ TEST( SmartProjectionPoseFactor, Cal3BundlerRotationOnly ) {
 
   // result.print("results of 3 camera, 3 landmark optimization \n");
   if (isDebugTest)
-    result.at<Pose3>(x3).print("Smart: Pose3 after optimization: ");
+    result.at<Camera>(x3).print("Camera after optimization: ");
   cout
       << "TEST COMMENTED: rotation only version of smart factors has been deprecated "
       << endl;
-  // EXPECT(assert_equal(pose_above,result.at<Pose3>(x3)));
+  // EXPECT(assert_equal(pose_above,result.at<Camera>(x3)));
   if (isDebugTest)
     tictoc_print_();
 }
