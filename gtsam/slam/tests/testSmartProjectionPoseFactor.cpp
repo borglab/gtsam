@@ -248,8 +248,8 @@ TEST( SmartProjectionPoseFactor, 3poses_smart_projection_factor ) {
   gttoc_(SmartProjectionPoseFactor);
   tictoc_finishedIteration_();
 
-  GaussianFactorGraph::shared_ptr GFG = graph.linearize(values);
-  VectorValues delta = GFG->optimize();
+//  GaussianFactorGraph::shared_ptr GFG = graph.linearize(values);
+//  VectorValues delta = GFG->optimize();
 
   // result.print("results of 3 camera, 3 landmark optimization \n");
   if (isDebugTest)
