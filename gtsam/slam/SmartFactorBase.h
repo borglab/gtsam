@@ -258,24 +258,21 @@ public:
   }
 
   /// Computes Point Covariance P from E
-  static Matrix3 PointCov(Matrix& E) {
+  static Matrix PointCov(Matrix& E) {
     return (E.transpose() * E).inverse();
   }
 
   /// Computes Point Covariance P, with lambda parameter
-  static Matrix3 PointCov(Matrix& E, double lambda,
+  static Matrix PointCov(Matrix& E, double lambda,
       bool diagonalDamping = false) {
 
-    Matrix3 EtE = E.transpose() * E;
+    Matrix EtE = E.transpose() * E;
 
     if (diagonalDamping) { // diagonal of the hessian
-      EtE(0, 0) += lambda * EtE(0, 0);
-      EtE(1, 1) += lambda * EtE(1, 1);
-      EtE(2, 2) += lambda * EtE(2, 2);
+      EtE.diagonal() += lambda * EtE.diagonal();
     } else {
-      EtE(0, 0) += lambda;
-      EtE(1, 1) += lambda;
-      EtE(2, 2) += lambda;
+      DenseIndex n = E.cols();
+      EtE += lambda * Eigen::MatrixXd::Identity(n,n);
     }
 
     return (EtE).inverse();

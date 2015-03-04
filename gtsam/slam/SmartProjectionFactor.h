@@ -280,7 +280,7 @@ public:
     {
       std::vector<typename Base::KeyMatrix2D> Fblocks;
       f = computeJacobiansWithTriangulatedPoint(Fblocks, E, b, cameras);
-      Base::whitenJacobians(Fblocks,E,b);
+      Base::whitenJacobians(Fblocks, E, b);
       Base::FillDiagonalF(Fblocks, F); // expensive !
     }
 
@@ -290,7 +290,8 @@ public:
     Matrix H(Base::Dim * numKeys, Base::Dim * numKeys);
     Vector gs_vector;
 
-    Matrix3 P = Base::PointCov(E, lambda);
+    // Note P can 2*2 or 3*3
+    Matrix P = Base::PointCov(E, lambda);
 
     // Create reduced Hessian matrix via Schur complement F'*F - F'*E*P*E'*F
     H.noalias() = F.transpose() * (F - (E * (P * (E.transpose() * F))));
@@ -448,29 +449,29 @@ public:
     else
       result_ = triangulateSafe(cameras);
 
-    // if we don't want to manage the exceptions we discard the factor
-    if (!manageDegeneracy_ && !result_)
-      return 0.0;
-
-    if (isPointBehindCamera()) { // if we want to manage the exceptions with rotation-only factors
-      std::cout
-          << "SmartProjectionHessianFactor: cheirality exception (this should not happen if CheiralityException is disabled)!"
-          << std::endl;
-    }
-
-    if (isDegenerate()) {
-      // return 0.0; // TODO: this maybe should be zero?
-      std::cout
-          << "SmartProjectionHessianFactor: trying to manage degeneracy (this should not happen is manageDegeneracy is disabled)!"
-          << std::endl;
-      // 3D parameterization of point at infinity
-      const Point2& z0 = this->measured_.at(0);
-      result_ = TriangulationResult(
-          cameras.front().backprojectPointAtInfinity(z0));
-      return Base::totalReprojectionErrorAtInfinity(cameras, *result_);
-    } else {
-      // Just use version in base class
+    if (result_)
+      // All good, just use version in base class
       return Base::totalReprojectionError(cameras, *result_);
+    else {
+      // if we don't want to manage the exceptions we discard the factor
+      if (!manageDegeneracy_)
+        return 0.0;
+
+      if (isPointBehindCamera()) { // if we want to manage the exceptions with rotation-only factors
+        throw std::runtime_error(
+            "SmartProjectionFactor::totalReprojectionError does not handle point behind camera yet");
+      }
+
+      if (isDegenerate()) {
+        // 3D parameterization of point at infinity
+        const Point2& z0 = this->measured_.at(0);
+        result_ = TriangulationResult(
+            cameras.front().backprojectPointAtInfinity(z0));
+        return Base::totalReprojectionErrorAtInfinity(cameras, *result_);
+      }
+      // should not reach here. TODO use switch
+      throw std::runtime_error(
+          "SmartProjectionFactor::totalReprojectionError internal error");
     }
   }
 
