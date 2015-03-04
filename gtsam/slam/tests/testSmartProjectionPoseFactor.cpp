@@ -296,8 +296,12 @@ TEST( SmartProjectionPoseFactor, 3poses_smart_projection_factor ) {
   values.insert(x2, pose2);
   // initialize third pose with some noise, we expect it to move back to original pose3
   values.insert(x3, pose3 * noise_pose);
-  if (isDebugTest)
-    values.at<Pose3>(x3).print("Smart: Pose3 before optimization: ");
+  EXPECT(
+      assert_equal(
+          Pose3(
+              Rot3(0, -0.0314107591, 0.99950656, -0.99950656, -0.0313952598,
+                  -0.000986635786, 0.0314107591, -0.999013364, -0.0313952598),
+              Point3(0.1, -0.1, 1.9)), values.at<Pose3>(x3)));
 
   LevenbergMarquardtParams params;
   if (isDebugTest)
@@ -306,7 +310,7 @@ TEST( SmartProjectionPoseFactor, 3poses_smart_projection_factor ) {
     params.verbosity = NonlinearOptimizerParams::ERROR;
 
   Values result;
-  gttic_ (SmartProjectionPoseFactor);
+  gttic_(SmartProjectionPoseFactor);
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
   gttoc_(SmartProjectionPoseFactor);
@@ -316,8 +320,6 @@ TEST( SmartProjectionPoseFactor, 3poses_smart_projection_factor ) {
 //  VectorValues delta = GFG->optimize();
 
   // result.print("results of 3 camera, 3 landmark optimization \n");
-  if (isDebugTest)
-    result.at<Pose3>(x3).print("Smart: Pose3 after optimization: ");
   EXPECT(assert_equal(pose3, result.at<Pose3>(x3), 1e-8));
   if (isDebugTest)
     tictoc_print_();
@@ -416,8 +418,6 @@ TEST( SmartProjectionPoseFactor, smartFactorWithSensorBodyTransform ) {
   result = optimizer.optimize();
 
   // result.print("results of 3 camera, 3 landmark optimization \n");
-  if (isDebugTest)
-    result.at<Pose3>(x3).print("Smart: Pose3 after optimization: ");
   EXPECT(assert_equal(bodyPose3, result.at<Pose3>(x3)));
 
   // Check derivatives
@@ -447,15 +447,16 @@ TEST( SmartProjectionPoseFactor, smartFactorWithSensorBodyTransform ) {
 }
 
 /* *************************************************************************/
-TEST( SmartProjectionPoseFactor, Factors ){
+TEST( SmartProjectionPoseFactor, Factors ) {
 
   // Default cameras for simple derivatives
   Rot3 R;
   static Cal3_S2::shared_ptr K(new Cal3_S2(100, 100, 0, 0, 0));
-  SimpleCamera cam1(Pose3(R,Point3(0,0,0)),*K), cam2(Pose3(R,Point3(1,0,0)),*K);
+  SimpleCamera cam1(Pose3(R, Point3(0, 0, 0)), *K), cam2(
+      Pose3(R, Point3(1, 0, 0)), *K);
 
   // one landmarks 1m in front of camera
-  Point3 landmark1(0,0,10);
+  Point3 landmark1(0, 0, 10);
 
   vector<Point2> measurements_cam1;
 
@@ -476,12 +477,12 @@ TEST( SmartProjectionPoseFactor, Factors ){
   cameras.push_back(cam2);
 
   // Make sure triangulation works
-  LONGS_EQUAL(2,smartFactor1->triangulateSafe(cameras));
+  LONGS_EQUAL(2, smartFactor1->triangulateSafe(cameras));
   CHECK(!smartFactor1->isDegenerate());
   CHECK(!smartFactor1->isPointBehindCamera());
   boost::optional<Point3> p = smartFactor1->point();
   CHECK(p);
-  EXPECT(assert_equal(landmark1,*p));
+  EXPECT(assert_equal(landmark1, *p));
 
   // After eliminating the point, A1 and A2 contain 2-rank information on cameras:
   Matrix16 A1, A2;
@@ -489,12 +490,14 @@ TEST( SmartProjectionPoseFactor, Factors ){
   A2 << 1000, 0, 100, 0, -100, 0;
   {
     // createHessianFactor
-    Matrix66 G11 = 0.5*A1.transpose()*A1;
-    Matrix66 G12 = 0.5*A1.transpose()*A2;
-    Matrix66 G22 = 0.5*A2.transpose()*A2;
+    Matrix66 G11 = 0.5 * A1.transpose() * A1;
+    Matrix66 G12 = 0.5 * A1.transpose() * A2;
+    Matrix66 G22 = 0.5 * A2.transpose() * A2;
 
-    Vector6 g1; g1.setZero();
-    Vector6 g2; g2.setZero();
+    Vector6 g1;
+    g1.setZero();
+    Vector6 g2;
+    g2.setZero();
 
     double f = 0;
 
@@ -507,13 +510,32 @@ TEST( SmartProjectionPoseFactor, Factors ){
   }
 
   {
-    Matrix26 F1; F1.setZero(); F1(0,1)=-100; F1(0,3)=-10; F1(1,0)=100; F1(1,4)=-10;
-    Matrix26 F2; F2.setZero(); F2(0,1)=-101; F2(0,3)=-10; F2(0,5)=-1; F2(1,0)=100; F2(1,2)=10; F2(1,4)=-10;
-    Matrix43 E; E.setZero(); E(0,0)=100; E(1,1)=100; E(2,0)=100; E(2,2)=10;E(3,1)=100;
+    Matrix26 F1;
+    F1.setZero();
+    F1(0, 1) = -100;
+    F1(0, 3) = -10;
+    F1(1, 0) = 100;
+    F1(1, 4) = -10;
+    Matrix26 F2;
+    F2.setZero();
+    F2(0, 1) = -101;
+    F2(0, 3) = -10;
+    F2(0, 5) = -1;
+    F2(1, 0) = 100;
+    F2(1, 2) = 10;
+    F2(1, 4) = -10;
+    Matrix43 E;
+    E.setZero();
+    E(0, 0) = 100;
+    E(1, 1) = 100;
+    E(2, 0) = 100;
+    E(2, 2) = 10;
+    E(3, 1) = 100;
     const vector<pair<Key, Matrix26> > Fblocks = list_of<pair<Key, Matrix> > //
-        (make_pair(x1, 10*F1))(make_pair(x2, 10*F2));
+        (make_pair(x1, 10 * F1))(make_pair(x2, 10 * F2));
     Matrix3 P = (E.transpose() * E).inverse();
-    Vector4 b; b.setZero();
+    Vector4 b;
+    b.setZero();
 
     // createRegularImplicitSchurFactor
     RegularImplicitSchurFactor<6> expected(Fblocks, E, P, b);
@@ -524,7 +546,7 @@ TEST( SmartProjectionPoseFactor, Factors ){
     CHECK(assert_equal(expected, *actual));
 
     // createJacobianQFactor
-    JacobianFactorQ < 6, 2 > expectedQ(Fblocks, E, P, b);
+    JacobianFactorQ<6, 2> expectedQ(Fblocks, E, P, b);
 
     boost::shared_ptr<JacobianFactorQ<6, 2> > actualQ =
         smartFactor1->createJacobianQFactor(cameras, 0.0);
@@ -534,9 +556,10 @@ TEST( SmartProjectionPoseFactor, Factors ){
 
   {
     // createJacobianSVDFactor
-    Vector1 b; b.setZero();
+    Vector1 b;
+    b.setZero();
     double s = sin(M_PI_4);
-    JacobianFactor expected(x1, s*A1, x2, s*A2, b);
+    JacobianFactor expected(x1, s * A1, x2, s * A2, b);
 
     boost::shared_ptr<JacobianFactor> actual =
         smartFactor1->createJacobianSVDFactor(cameras, 0.0);
@@ -604,8 +627,13 @@ TEST( SmartProjectionPoseFactor, 3poses_iterative_smart_projection_factor ) {
   values.insert(x2, pose2);
   // initialize third pose with some noise, we expect it to move back to original pose3
   values.insert(x3, pose3 * noise_pose);
-  if (isDebugTest)
-    values.at<Pose3>(x3).print("Smart: Pose3 before optimization: ");
+  EXPECT(
+      assert_equal(
+          Pose3(
+              Rot3(1.11022302e-16, -0.0314107591, 0.99950656, -0.99950656,
+                  -0.0313952598, -0.000986635786, 0.0314107591, -0.999013364,
+                  -0.0313952598), Point3(0.1, -0.1, 1.9)),
+          values.at<Pose3>(x3)));
 
   LevenbergMarquardtParams params;
   if (isDebugTest)
@@ -614,15 +642,13 @@ TEST( SmartProjectionPoseFactor, 3poses_iterative_smart_projection_factor ) {
     params.verbosity = NonlinearOptimizerParams::ERROR;
 
   Values result;
-  gttic_ (SmartProjectionPoseFactor);
+  gttic_(SmartProjectionPoseFactor);
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
   gttoc_(SmartProjectionPoseFactor);
   tictoc_finishedIteration_();
 
   // result.print("results of 3 camera, 3 landmark optimization \n");
-  if (isDebugTest)
-    result.at<Pose3>(x3).print("Smart: Pose3 after optimization: ");
   EXPECT(assert_equal(pose3, result.at<Pose3>(x3), 1e-7));
   if (isDebugTest)
     tictoc_print_();
@@ -1050,8 +1076,14 @@ TEST( SmartProjectionPoseFactor, CheckHessian) {
   values.insert(x2, pose2);
   // initialize third pose with some noise, we expect it to move back to original pose3
   values.insert(x3, pose3 * noise_pose);
-  if (isDebugTest)
-    values.at<Pose3>(x3).print("Smart: Pose3 before optimization: ");
+  EXPECT(
+      assert_equal(
+          Pose3(
+              Rot3(0.00563056869, -0.130848107, 0.991386438, -0.991390265,
+                  -0.130426831, -0.0115837907, 0.130819108, -0.98278564,
+                  -0.130455917),
+              Point3(0.0897734171, -0.110201006, 0.901022872)),
+          values.at<Pose3>(x3)));
 
   boost::shared_ptr<GaussianFactor> hessianFactor1 = smartFactor1->linearize(
       values);
@@ -1143,8 +1175,14 @@ TEST( SmartProjectionPoseFactor, 3poses_2land_rotation_only_smart_projection_fac
   values.insert(x2, pose2 * noise_pose);
   // initialize third pose with some noise, we expect it to move back to original pose3
   values.insert(x3, pose3 * noise_pose * noise_pose);
-  if (isDebugTest)
-    values.at<Pose3>(x3).print("Smart: Pose3 before optimization: ");
+  EXPECT(
+      assert_equal(
+          Pose3(
+              Rot3(0.154256096, -0.632754061, 0.75883289, -0.753276814,
+                  -0.572308662, -0.324093872, 0.639358349, -0.521617766,
+                  -0.564921063),
+              Point3(0.145118171, -0.252907438, 0.819956033)),
+          values.at<Pose3>(x3)));
 
   LevenbergMarquardtParams params;
   if (isDebugTest)
@@ -1153,19 +1191,24 @@ TEST( SmartProjectionPoseFactor, 3poses_2land_rotation_only_smart_projection_fac
     params.verbosity = NonlinearOptimizerParams::ERROR;
 
   Values result;
-  gttic_ (SmartProjectionPoseFactor);
+  gttic_(SmartProjectionPoseFactor);
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
   gttoc_(SmartProjectionPoseFactor);
   tictoc_finishedIteration_();
 
   // result.print("results of 3 camera, 3 landmark optimization \n");
-  if (isDebugTest)
-    result.at<Pose3>(x3).print("Smart: Pose3 after optimization: ");
   cout
       << "TEST COMMENTED: rotation only version of smart factors has been deprecated "
       << endl;
-  // EXPECT(assert_equal(pose3,result.at<Pose3>(x3)));
+  EXPECT(
+      assert_equal(
+          Pose3(
+              Rot3(0.154256096, -0.632754061, 0.75883289, -0.753276814,
+                  -0.572308662, -0.324093872, 0.639358349, -0.521617766,
+                  -0.564921063),
+              Point3(0.145118171, -0.252907438, 0.819956033)),
+          result.at<Pose3>(x3)));
   if (isDebugTest)
     tictoc_print_();
 }
@@ -1240,8 +1283,14 @@ TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) 
   values.insert(x2, pose2);
   // initialize third pose with some noise, we expect it to move back to original pose3
   values.insert(x3, pose3 * noise_pose);
-  if (isDebugTest)
-    values.at<Pose3>(x3).print("Smart: Pose3 before optimization: ");
+  EXPECT(
+      assert_equal(
+          Pose3(
+              Rot3(0.00563056869, -0.130848107, 0.991386438, -0.991390265,
+                  -0.130426831, -0.0115837907, 0.130819108, -0.98278564,
+                  -0.130455917),
+              Point3(0.0897734171, -0.110201006, 0.901022872)),
+          values.at<Pose3>(x3)));
 
   LevenbergMarquardtParams params;
   if (isDebugTest)
@@ -1250,19 +1299,24 @@ TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) 
     params.verbosity = NonlinearOptimizerParams::ERROR;
 
   Values result;
-  gttic_ (SmartProjectionPoseFactor);
+  gttic_(SmartProjectionPoseFactor);
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
   gttoc_(SmartProjectionPoseFactor);
   tictoc_finishedIteration_();
 
   // result.print("results of 3 camera, 3 landmark optimization \n");
-  if (isDebugTest)
-    result.at<Pose3>(x3).print("Smart: Pose3 after optimization: ");
   cout
       << "TEST COMMENTED: rotation only version of smart factors has been deprecated "
       << endl;
-  // EXPECT(assert_equal(pose3,result.at<Pose3>(x3)));
+  EXPECT(
+      assert_equal(
+          Pose3(
+              Rot3(0.00563056869, -0.130848107, 0.991386438, -0.991390265,
+                  -0.130426831, -0.0115837907, 0.130819108, -0.98278564,
+                  -0.130455917),
+              Point3(0.0897734171, -0.110201006, 0.901022872)),
+          result.at<Pose3>(x3)));
   if (isDebugTest)
     tictoc_print_();
 }
@@ -1543,9 +1597,12 @@ TEST( SmartProjectionPoseFactor, Cal3Bundler ) {
   values.insert(x2, pose2);
   // initialize third pose with some noise, we expect it to move back to original pose3
   values.insert(x3, pose3 * noise_pose);
-  if (isDebugTest)
-    values.at<Pose3>(x3).print("Smart: Pose3 before optimization: ");
-
+  EXPECT(
+      assert_equal(
+          Pose3(
+              Rot3(0, -0.0314107591, 0.99950656, -0.99950656, -0.0313952598,
+                  -0.000986635786, 0.0314107591, -0.999013364, -0.0313952598),
+              Point3(0.1, -0.1, 1.9)), values.at<Pose3>(x3)));
   LevenbergMarquardtParams params;
   if (isDebugTest)
     params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
@@ -1553,15 +1610,12 @@ TEST( SmartProjectionPoseFactor, Cal3Bundler ) {
     params.verbosity = NonlinearOptimizerParams::ERROR;
 
   Values result;
-  gttic_ (SmartProjectionPoseFactor);
+  gttic_(SmartProjectionPoseFactor);
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
   gttoc_(SmartProjectionPoseFactor);
   tictoc_finishedIteration_();
 
-  // result.print("results of 3 camera, 3 landmark optimization \n");
-  if (isDebugTest)
-    result.at<Pose3>(x3).print("Smart: Pose3 after optimization: ");
   EXPECT(assert_equal(pose3, result.at<Pose3>(x3), 1e-6));
   if (isDebugTest)
     tictoc_print_();
@@ -1653,8 +1707,14 @@ TEST( SmartProjectionPoseFactor, Cal3BundlerRotationOnly ) {
   values.insert(x2, pose2);
   // initialize third pose with some noise, we expect it to move back to original pose3
   values.insert(x3, pose3 * noise_pose);
-  if (isDebugTest)
-    values.at<Pose3>(x3).print("Smart: Pose3 before optimization: ");
+  EXPECT(
+      assert_equal(
+          Pose3(
+              Rot3(0.00563056869, -0.130848107, 0.991386438, -0.991390265,
+                  -0.130426831, -0.0115837907, 0.130819108, -0.98278564,
+                  -0.130455917),
+              Point3(0.0897734171, -0.110201006, 0.901022872)),
+          values.at<Pose3>(x3)));
 
   LevenbergMarquardtParams params;
   if (isDebugTest)
@@ -1663,15 +1723,21 @@ TEST( SmartProjectionPoseFactor, Cal3BundlerRotationOnly ) {
     params.verbosity = NonlinearOptimizerParams::ERROR;
 
   Values result;
-  gttic_ (SmartProjectionPoseFactor);
+  gttic_(SmartProjectionPoseFactor);
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
   gttoc_(SmartProjectionPoseFactor);
   tictoc_finishedIteration_();
 
   // result.print("results of 3 camera, 3 landmark optimization \n");
-  if (isDebugTest)
-    result.at<Pose3>(x3).print("Smart: Pose3 after optimization: ");
+  EXPECT(
+      assert_equal(
+          Pose3(
+              Rot3(0.00563056869, -0.130848107, 0.991386438, -0.991390265,
+                  -0.130426831, -0.0115837907, 0.130819108, -0.98278564,
+                  -0.130455917),
+              Point3(0.0897734171, -0.110201006, 0.901022872)),
+          values.at<Pose3>(x3)));
   cout
       << "TEST COMMENTED: rotation only version of smart factors has been deprecated "
       << endl;
