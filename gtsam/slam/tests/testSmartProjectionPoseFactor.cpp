@@ -160,7 +160,7 @@ TEST( SmartProjectionPoseFactor, noisy ) {
   Point2 level_uv_right = level_camera_right.project(landmark1);
 
   Values values;
-  values.insert(x1, cam2);
+  values.insert(x1, cam1);
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 10, 0., -M_PI / 10),
       Point3(0.5, 0.1, 0.3));
   values.insert(x2, Camera(pose_right.compose(noise_pose), sharedK));
@@ -228,7 +228,7 @@ TEST( SmartProjectionPoseFactor, 3poses_smart_projection_factor ) {
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
   Values values;
-  values.insert(x1, cam2);
+  values.insert(x1, cam1);
   values.insert(x2, cam2);
   // initialize third pose with some noise, we expect it to move back to original pose_above
   values.insert(x3, Camera(pose_above * noise_pose, sharedK2));
@@ -242,7 +242,7 @@ TEST( SmartProjectionPoseFactor, 3poses_smart_projection_factor ) {
     params.verbosity = NonlinearOptimizerParams::ERROR;
 
   Values result;
-  gttic_ (SmartProjectionPoseFactor);
+  gttic_(SmartProjectionPoseFactor);
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
   gttoc_(SmartProjectionPoseFactor);
@@ -438,7 +438,7 @@ TEST( SmartProjectionPoseFactor, 3poses_iterative_smart_projection_factor ) {
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
   Values values;
-  values.insert(x1, cam2);
+  values.insert(x1, cam1);
   values.insert(x2, cam2);
   // initialize third pose with some noise, we expect it to move back to original pose_above
   values.insert(x3, Camera(pose_above * noise_pose, sharedK));
@@ -452,7 +452,7 @@ TEST( SmartProjectionPoseFactor, 3poses_iterative_smart_projection_factor ) {
     params.verbosity = NonlinearOptimizerParams::ERROR;
 
   Values result;
-  gttic_ (SmartProjectionPoseFactor);
+  gttic_(SmartProjectionPoseFactor);
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
   gttoc_(SmartProjectionPoseFactor);
@@ -508,7 +508,7 @@ TEST( SmartProjectionPoseFactor, jacobianSVD ) {
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
   Values values;
-  values.insert(x1, cam2);
+  values.insert(x1, cam1);
   values.insert(x2, cam2);
   values.insert(x3, Camera(pose_above * noise_pose, sharedK));
 
@@ -566,7 +566,7 @@ TEST( SmartProjectionPoseFactor, landmarkDistance ) {
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
   Values values;
-  values.insert(x1, cam2);
+  values.insert(x1, cam1);
   values.insert(x2, cam2);
   values.insert(x3, Camera(pose_above * noise_pose, sharedK));
 
@@ -637,7 +637,7 @@ TEST( SmartProjectionPoseFactor, dynamicOutlierRejection ) {
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
   Values values;
-  values.insert(x1, cam2);
+  values.insert(x1, cam1);
   values.insert(x2, cam2);
   values.insert(x3, Camera(pose_above * noise_pose, sharedK));
 
@@ -690,7 +690,7 @@ TEST( SmartProjectionPoseFactor, jacobianQ ) {
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
   Values values;
-  values.insert(x1, cam2);
+  values.insert(x1, cam1);
   values.insert(x2, cam2);
   values.insert(x3, Camera(pose_above * noise_pose, sharedK));
 
@@ -738,20 +738,22 @@ TEST( SmartProjectionPoseFactor, 3poses_projection_factor ) {
       ProjectionFactor(cam3.project(landmark3), model, x3, L(3), sharedK2));
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
-  graph.push_back(PriorFactor<Camera>(x1, cam1, noisePrior));
-  graph.push_back(PriorFactor<Camera>(x2, cam2, noisePrior));
+  graph.push_back(PriorFactor<Pose3>(x1, level_pose, noisePrior));
+  graph.push_back(PriorFactor<Pose3>(x2, pose_right, noisePrior));
 
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 10, 0., -M_PI / 10),
       Point3(0.5, 0.1, 0.3));
   Values values;
-  values.insert(x1, cam2);
-  values.insert(x2, cam2);
-  values.insert(x3, Camera(pose_above * noise_pose, sharedK2));
+  values.insert(x1, level_pose);
+  values.insert(x2, pose_right);
+  values.insert(x3, pose_above * noise_pose);
   values.insert(L(1), landmark1);
   values.insert(L(2), landmark2);
   values.insert(L(3), landmark3);
   if (isDebugTest)
-    values.at<Camera>(x3).print("Pose3 before optimization: ");
+    values.at<Pose3>(x3).print("Pose3 before optimization: ");
+
+  DOUBLES_EQUAL(48406055, graph.error(values), 1);
 
   LevenbergMarquardtParams params;
   if (isDebugTest)
@@ -761,9 +763,11 @@ TEST( SmartProjectionPoseFactor, 3poses_projection_factor ) {
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   Values result = optimizer.optimize();
 
+  DOUBLES_EQUAL(0, graph.error(result), 1e-9);
+
   if (isDebugTest)
-    result.at<Camera>(x3).print("Pose3 after optimization: ");
-  EXPECT(assert_equal(cam3, result.at<Camera>(x3), 1e-7));
+    result.at<Pose3>(x3).print("Pose3 after optimization: ");
+  EXPECT(assert_equal(pose_above, result.at<Pose3>(x3), 1e-7));
 }
 
 /* *************************************************************************/
@@ -811,22 +815,19 @@ TEST( SmartProjectionPoseFactor, CheckHessian) {
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
   Values values;
-  values.insert(x1, cam2);
+  values.insert(x1, cam1);
   values.insert(x2, cam2);
   // initialize third pose with some noise, we expect it to move back to original pose_above
   values.insert(x3, Camera(pose_above * noise_pose, sharedK));
   if (isDebugTest)
     values.at<Camera>(x3).print("Camera before optimization: ");
 
-  boost::shared_ptr<GaussianFactor> hessianFactor1 = smartFactor1->linearize(
-      values);
-  boost::shared_ptr<GaussianFactor> hessianFactor2 = smartFactor2->linearize(
-      values);
-  boost::shared_ptr<GaussianFactor> hessianFactor3 = smartFactor3->linearize(
-      values);
+  boost::shared_ptr<GaussianFactor> factor1 = smartFactor1->linearize(values);
+  boost::shared_ptr<GaussianFactor> factor2 = smartFactor2->linearize(values);
+  boost::shared_ptr<GaussianFactor> factor3 = smartFactor3->linearize(values);
 
-  Matrix CumulativeInformation = hessianFactor1->information()
-      + hessianFactor2->information() + hessianFactor3->information();
+  Matrix CumulativeInformation = factor1->information() + factor2->information()
+      + factor3->information();
 
   boost::shared_ptr<GaussianFactorGraph> GaussianGraph = graph.linearize(
       values);
@@ -835,9 +836,8 @@ TEST( SmartProjectionPoseFactor, CheckHessian) {
   // Check Hessian
   EXPECT(assert_equal(GraphInformation, CumulativeInformation, 1e-8));
 
-  Matrix AugInformationMatrix = hessianFactor1->augmentedInformation()
-      + hessianFactor2->augmentedInformation()
-      + hessianFactor3->augmentedInformation();
+  Matrix AugInformationMatrix = factor1->augmentedInformation()
+      + factor2->augmentedInformation() + factor3->augmentedInformation();
 
   // Check Information vector
   // cout << AugInformationMatrix.size() << endl;
@@ -891,14 +891,14 @@ TEST( SmartProjectionPoseFactor, 3poses_2land_rotation_only_smart_projection_fac
   graph.push_back(smartFactor2);
   graph.push_back(PriorFactor<Camera>(x1, cam1, noisePrior));
   graph.push_back(
-      PoseTranslationPrior<Pose3>(x2, positionPrior, noisePriorTranslation));
+      PoseTranslationPrior<Camera>(x2, positionPrior, noisePriorTranslation));
   graph.push_back(
-      PoseTranslationPrior<Pose3>(x3, positionPrior, noisePriorTranslation));
+      PoseTranslationPrior<Camera>(x3, positionPrior, noisePriorTranslation));
 
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 10, 0., -M_PI / 10),
       Point3(0.1, 0.1, 0.1)); // smaller noise
   Values values;
-  values.insert(x1, cam2);
+  values.insert(x1, cam1);
   values.insert(x2, Camera(pose_right * noise_pose, sharedK2));
   // initialize third pose with some noise, we expect it to move back to original pose_above
   values.insert(x3, Camera(pose_above * noise_pose * noise_pose, sharedK2));
@@ -912,7 +912,7 @@ TEST( SmartProjectionPoseFactor, 3poses_2land_rotation_only_smart_projection_fac
     params.verbosity = NonlinearOptimizerParams::ERROR;
 
   Values result;
-  gttic_ (SmartProjectionPoseFactor);
+  gttic_(SmartProjectionPoseFactor);
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
   gttoc_(SmartProjectionPoseFactor);
@@ -988,7 +988,7 @@ TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) 
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
   Values values;
-  values.insert(x1, cam2);
+  values.insert(x1, cam1);
   values.insert(x2, cam2);
   // initialize third pose with some noise, we expect it to move back to original pose_above
   values.insert(x3, Camera(pose_above * noise_pose, sharedK));
@@ -1002,7 +1002,7 @@ TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) 
     params.verbosity = NonlinearOptimizerParams::ERROR;
 
   Values result;
-  gttic_ (SmartProjectionPoseFactor);
+  gttic_(SmartProjectionPoseFactor);
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
   gttoc_(SmartProjectionPoseFactor);
@@ -1042,17 +1042,16 @@ TEST( SmartProjectionPoseFactor, Hessian ) {
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 10, 0., -M_PI / 10),
       Point3(0.5, 0.1, 0.3));
   Values values;
-  values.insert(x1, cam2);
+  values.insert(x1, cam1);
   values.insert(x2, cam2);
 
-  boost::shared_ptr<GaussianFactor> hessianFactor = smartFactor1->linearize(
-      values);
+  boost::shared_ptr<GaussianFactor> factor = smartFactor1->linearize(values);
   if (isDebugTest)
-    hessianFactor->print("Hessian factor \n");
+    factor->print("Hessian factor \n");
 
   // compute triangulation from linearization point
   // compute reprojection errors (sum squared)
-  // compare with hessianFactor.info(): the bottom right element is the squared sum of the reprojection errors (normalized by the covariance)
+  // compare with factor.info(): the bottom right element is the squared sum of the reprojection errors (normalized by the covariance)
   // check that it is correctly scaled when using noiseProjection = [1/4  0; 0 1/4]
 }
 
@@ -1075,12 +1074,12 @@ TEST( SmartProjectionPoseFactor, HessianWithRotation ) {
   smartFactorInstance->add(measurements_cam1, views, model);
 
   Values values;
-  values.insert(x1, cam2);
+  values.insert(x1, cam1);
   values.insert(x2, cam2);
   values.insert(x3, cam3);
 
-  boost::shared_ptr<GaussianFactor> hessianFactor =
-      smartFactorInstance->linearize(values);
+  boost::shared_ptr<GaussianFactor> factor = smartFactorInstance->linearize(
+      values);
 
   Pose3 poseDrift = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 0));
 
@@ -1089,13 +1088,11 @@ TEST( SmartProjectionPoseFactor, HessianWithRotation ) {
   rotValues.insert(x2, Camera(poseDrift.compose(pose_right), sharedK));
   rotValues.insert(x3, Camera(poseDrift.compose(pose_above), sharedK));
 
-  boost::shared_ptr<GaussianFactor> hessianFactorRot =
-      smartFactorInstance->linearize(rotValues);
+  boost::shared_ptr<GaussianFactor> factorRot = smartFactorInstance->linearize(
+      rotValues);
 
   // Hessian is invariant to rotations in the nondegenerate case
-  EXPECT(
-      assert_equal(hessianFactor->information(),
-          hessianFactorRot->information(), 1e-7));
+  EXPECT(assert_equal(factor->information(), factorRot->information(), 1e-7));
 
   Pose3 poseDrift2 = Pose3(Rot3::ypr(-M_PI / 2, -M_PI / 3, -M_PI / 2),
       Point3(10, -4, 5));
@@ -1105,13 +1102,12 @@ TEST( SmartProjectionPoseFactor, HessianWithRotation ) {
   tranValues.insert(x2, Camera(poseDrift2.compose(pose_right), sharedK));
   tranValues.insert(x3, Camera(poseDrift2.compose(pose_above), sharedK));
 
-  boost::shared_ptr<GaussianFactor> hessianFactorRotTran =
+  boost::shared_ptr<GaussianFactor> factorRotTran =
       smartFactorInstance->linearize(tranValues);
 
   // Hessian is invariant to rotations and translations in the nondegenerate case
   EXPECT(
-      assert_equal(hessianFactor->information(),
-          hessianFactorRotTran->information(), 1e-7));
+      assert_equal(factor->information(), factorRotTran->information(), 1e-7));
 }
 
 /* *************************************************************************/
@@ -1133,14 +1129,13 @@ TEST( SmartProjectionPoseFactor, HessianWithRotationDegenerate ) {
   smartFactor->add(measurements_cam1, views, model);
 
   Values values;
-  values.insert(x1, cam2);
+  values.insert(x1, cam1);
   values.insert(x2, cam2);
   values.insert(x3, cam3);
 
-  boost::shared_ptr<GaussianFactor> hessianFactor = smartFactor->linearize(
-      values);
+  boost::shared_ptr<GaussianFactor> factor = smartFactor->linearize(values);
   if (isDebugTest)
-    hessianFactor->print("Hessian factor \n");
+    factor->print("Hessian factor \n");
 
   Pose3 poseDrift = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 0));
 
@@ -1149,15 +1144,13 @@ TEST( SmartProjectionPoseFactor, HessianWithRotationDegenerate ) {
   rotValues.insert(x2, Camera(poseDrift.compose(pose_right), sharedK2));
   rotValues.insert(x3, Camera(poseDrift.compose(pose_above), sharedK2));
 
-  boost::shared_ptr<GaussianFactor> hessianFactorRot = smartFactor->linearize(
+  boost::shared_ptr<GaussianFactor> factorRot = smartFactor->linearize(
       rotValues);
   if (isDebugTest)
-    hessianFactorRot->print("Hessian factor \n");
+    factorRot->print("Hessian factor \n");
 
   // Hessian is invariant to rotations in the nondegenerate case
-  EXPECT(
-      assert_equal(hessianFactor->information(),
-          hessianFactorRot->information(), 1e-8));
+  EXPECT(assert_equal(factor->information(), factorRot->information(), 1e-8));
 
   Pose3 poseDrift2 = Pose3(Rot3::ypr(-M_PI / 2, -M_PI / 3, -M_PI / 2),
       Point3(10, -4, 5));
@@ -1167,13 +1160,12 @@ TEST( SmartProjectionPoseFactor, HessianWithRotationDegenerate ) {
   tranValues.insert(x2, Camera(poseDrift2.compose(pose_right), sharedK2));
   tranValues.insert(x3, Camera(poseDrift2.compose(pose_above), sharedK2));
 
-  boost::shared_ptr<GaussianFactor> hessianFactorRotTran =
-      smartFactor->linearize(tranValues);
+  boost::shared_ptr<GaussianFactor> factorRotTran = smartFactor->linearize(
+      tranValues);
 
   // Hessian is invariant to rotations and translations in the nondegenerate case
   EXPECT(
-      assert_equal(hessianFactor->information(),
-          hessianFactorRotTran->information(), 1e-8));
+      assert_equal(factor->information(), factorRotTran->information(), 1e-8));
 }
 
 /* ************************************************************************* */
@@ -1242,7 +1234,7 @@ TEST( SmartProjectionPoseFactor, Cal3Bundler ) {
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
   Values values;
-  values.insert(x1, cam2);
+  values.insert(x1, cam1);
   values.insert(x2, cam2);
   // initialize third pose with some noise, we expect it to move back to original pose_above
   values.insert(x3, Camera(pose_above * noise_pose, sharedBundlerK));
@@ -1256,7 +1248,7 @@ TEST( SmartProjectionPoseFactor, Cal3Bundler ) {
     params.verbosity = NonlinearOptimizerParams::ERROR;
 
   Values result;
-  gttic_ (SmartProjectionPoseFactor);
+  gttic_(SmartProjectionPoseFactor);
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
   gttoc_(SmartProjectionPoseFactor);
@@ -1348,7 +1340,7 @@ TEST( SmartProjectionPoseFactor, Cal3BundlerRotationOnly ) {
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
   Values values;
-  values.insert(x1, cam2);
+  values.insert(x1, cam1);
   values.insert(x2, cam2);
   // initialize third pose with some noise, we expect it to move back to original pose_above
   values.insert(x3, Camera(pose_above * noise_pose, sharedBundlerK));
@@ -1362,7 +1354,7 @@ TEST( SmartProjectionPoseFactor, Cal3BundlerRotationOnly ) {
     params.verbosity = NonlinearOptimizerParams::ERROR;
 
   Values result;
-  gttic_ (SmartProjectionPoseFactor);
+  gttic_(SmartProjectionPoseFactor);
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
   gttoc_(SmartProjectionPoseFactor);
