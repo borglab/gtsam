@@ -126,13 +126,14 @@ TEST( regularImplicitSchurFactor, addHessianMultiply ) {
   const SharedDiagonal model;
   JacobianFactorQ<6, 2> jf(keys, FBlocks, E, P, b, model);
 
+// TODO(frank) Neither tests pass, should get to bottom, possibly remove errorJF?
   { // error
     double expectedError = jf.error(xvalues);
-    double actualError = implicitFactor.errorJF(xvalues);
-    DOUBLES_EQUAL(expectedError,actualError,1e-7)
+    EXPECT_DOUBLES_EQUAL(expectedError,implicitFactor.error(xvalues),1e-7)
+    EXPECT_DOUBLES_EQUAL(expectedError,implicitFactor.errorJF(xvalues),1e-7)
   }
 
-  { // JacobianFactor with same error
+  {
     VectorValues yActual = zero;
     jf.multiplyHessianAdd(alpha, xvalues, yActual);
     EXPECT(assert_equal(yExpected, yActual, 1e-8));
@@ -175,6 +176,13 @@ TEST( regularImplicitSchurFactor, addHessianMultiply ) {
 
   // Create JacobianFactorQR
   JacobianFactorQR<6, 2> jfq(keys, FBlocks, E, P, b, model);
+  { // error
+    double expectedError = jfq.error(xvalues);
+    EXPECT_DOUBLES_EQUAL(expectedError, jf.error(xvalues),1e-7)
+    double actualError = implicitFactor.errorJF(xvalues);
+    EXPECT_DOUBLES_EQUAL(expectedError,actualError,1e-7)
+  }
+
   {
     const SharedDiagonal model;
     VectorValues yActual = zero;
