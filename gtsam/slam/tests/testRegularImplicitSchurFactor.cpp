@@ -124,33 +124,34 @@ TEST( regularImplicitSchurFactor, addHessianMultiply ) {
 
   // Create JacobianFactor with same error
   const SharedDiagonal model;
-  JacobianFactorQ<6, 2> jf(keys, FBlocks, E, P, b, model);
+  JacobianFactorQ<6, 2> jfQ(keys, FBlocks, E, P, b, model);
 
-// TODO(frank) Neither tests pass, should get to bottom, possibly remove errorJF?
+// Calculate expected error
+  double expectedError = 1000;
   { // error
-    double expectedError = jf.error(xvalues);
+    EXPECT_DOUBLES_EQUAL(expectedError,jfQ.error(xvalues),1e-7)
     EXPECT_DOUBLES_EQUAL(expectedError,implicitFactor.error(xvalues),1e-7)
     EXPECT_DOUBLES_EQUAL(expectedError,implicitFactor.errorJF(xvalues),1e-7)
   }
 
   {
     VectorValues yActual = zero;
-    jf.multiplyHessianAdd(alpha, xvalues, yActual);
+    jfQ.multiplyHessianAdd(alpha, xvalues, yActual);
     EXPECT(assert_equal(yExpected, yActual, 1e-8));
-    jf.multiplyHessianAdd(alpha, xvalues, yActual);
+    jfQ.multiplyHessianAdd(alpha, xvalues, yActual);
     EXPECT(assert_equal(2 * yExpected, yActual, 1e-8));
-    jf.multiplyHessianAdd(-1, xvalues, yActual);
+    jfQ.multiplyHessianAdd(-1, xvalues, yActual);
     EXPECT(assert_equal(zero, yActual, 1e-8));
   }
 
   { // check hessian Diagonal
-    VectorValues diagExpected = jf.hessianDiagonal();
+    VectorValues diagExpected = jfQ.hessianDiagonal();
     VectorValues diagActual = implicitFactor.hessianDiagonal();
     EXPECT(assert_equal(diagExpected, diagActual, 1e-8));
   }
 
   { // check hessian Block Diagonal
-    map<Key,Matrix> BD = jf.hessianBlockDiagonal();
+    map<Key,Matrix> BD = jfQ.hessianBlockDiagonal();
     map<Key,Matrix> actualBD = implicitFactor.hessianBlockDiagonal();
     LONGS_EQUAL(3,actualBD.size());
     EXPECT(assert_equal(BD[0],actualBD[0]));
@@ -160,47 +161,42 @@ TEST( regularImplicitSchurFactor, addHessianMultiply ) {
 
   { // Raw memory Version
     std::fill(y, y + 24, 0);// zero y !
-    jf.multiplyHessianAdd(alpha, xdata, y);
+    jfQ.multiplyHessianAdd(alpha, xdata, y);
     EXPECT(assert_equal(expected, XMap(y), 1e-8));
-    jf.multiplyHessianAdd(alpha, xdata, y);
+    jfQ.multiplyHessianAdd(alpha, xdata, y);
     EXPECT(assert_equal(Vector(2 * expected), XMap(y), 1e-8));
-    jf.multiplyHessianAdd(-1, xdata, y);
+    jfQ.multiplyHessianAdd(-1, xdata, y);
     EXPECT(assert_equal(Vector(0 * expected), XMap(y), 1e-8));
   }
 
   { // Check gradientAtZero
-    VectorValues expected = jf.gradientAtZero();
+    VectorValues expected = jfQ.gradientAtZero();
     VectorValues actual = implicitFactor.gradientAtZero();
     EXPECT(assert_equal(expected, actual, 1e-8));
   }
 
   // Create JacobianFactorQR
-  JacobianFactorQR<6, 2> jfq(keys, FBlocks, E, P, b, model);
-  { // error
-    double expectedError = jfq.error(xvalues);
-    EXPECT_DOUBLES_EQUAL(expectedError, jf.error(xvalues),1e-7)
-    double actualError = implicitFactor.errorJF(xvalues);
-    EXPECT_DOUBLES_EQUAL(expectedError,actualError,1e-7)
-  }
+  JacobianFactorQR<6, 2> jfQR(keys, FBlocks, E, P, b, model);
+    EXPECT_DOUBLES_EQUAL(expectedError, jfQR.error(xvalues),1e-7)
 
   {
     const SharedDiagonal model;
     VectorValues yActual = zero;
-    jfq.multiplyHessianAdd(alpha, xvalues, yActual);
+    jfQR.multiplyHessianAdd(alpha, xvalues, yActual);
     EXPECT(assert_equal(yExpected, yActual, 1e-8));
-    jfq.multiplyHessianAdd(alpha, xvalues, yActual);
+    jfQR.multiplyHessianAdd(alpha, xvalues, yActual);
     EXPECT(assert_equal(2 * yExpected, yActual, 1e-8));
-    jfq.multiplyHessianAdd(-1, xvalues, yActual);
+    jfQR.multiplyHessianAdd(-1, xvalues, yActual);
     EXPECT(assert_equal(zero, yActual, 1e-8));
   }
 
   { // Raw memory Version
     std::fill(y, y + 24, 0);// zero y !
-    jfq.multiplyHessianAdd(alpha, xdata, y);
+    jfQR.multiplyHessianAdd(alpha, xdata, y);
     EXPECT(assert_equal(expected, XMap(y), 1e-8));
-    jfq.multiplyHessianAdd(alpha, xdata, y);
+    jfQR.multiplyHessianAdd(alpha, xdata, y);
     EXPECT(assert_equal(Vector(2 * expected), XMap(y), 1e-8));
-    jfq.multiplyHessianAdd(-1, xdata, y);
+    jfQR.multiplyHessianAdd(-1, xdata, y);
     EXPECT(assert_equal(Vector(0 * expected), XMap(y), 1e-8));
   }
   delete [] y;
