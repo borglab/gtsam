@@ -68,7 +68,7 @@ public:
           KeyMatrix(key, Q.block(0, ZDim * j++, m2, ZDim) * FBlocks[k]));
     }
     // Which is then passed to the normal JacobianFactor constructor
-    JacobianFactor::fillTerms(QF, Q * b, model);
+    JacobianFactor::fillTerms(QF, - Q * b, model);
   }
 };
 // end class JacobianFactorQ
