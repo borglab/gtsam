@@ -7,8 +7,8 @@
 
 #pragma once
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/RegularJacobianFactor.h>
+#include <gtsam/inference/Symbol.h>
 
 namespace gtsam {
 
@@ -22,25 +22,24 @@ class JacobianFactorQR: public RegularJacobianFactor<D> {
 
   typedef RegularJacobianFactor<D> Base;
   typedef Eigen::Matrix<double, ZDim, D> MatrixZD;
-  typedef std::pair<Key, MatrixZD> KeyMatrixZD;
 
 public:
 
   /**
    * Constructor
    */
-  JacobianFactorQR(const std::vector<KeyMatrixZD>& Fblocks, const Matrix& E,
-      const Matrix3& P, const Vector& b, //
+  JacobianFactorQR(const FastVector<Key>& keys,
+      const std::vector<MatrixZD>& FBlocks, const Matrix& E, const Matrix3& P,
+      const Vector& b, //
       const SharedDiagonal& model = SharedDiagonal()) :
       Base() {
     // Create a number of Jacobian factors in a factor graph
     GaussianFactorGraph gfg;
     Symbol pointKey('p', 0);
-    size_t i = 0;
-    BOOST_FOREACH(const KeyMatrixZD& it, Fblocks) {
-      gfg.add(pointKey, E.block<ZDim, 3>(ZDim * i, 0), it.first, it.second,
-          b.segment<ZDim>(ZDim * i), model);
-      i += 1;
+    for (size_t k = 0; k < FBlocks.size(); ++k) {
+      Key key = keys[k];
+      gfg.add(pointKey, E.block<ZDim, 3>(ZDim * k, 0), key, FBlocks[k],
+          b.segment < ZDim > (ZDim * k), model);
     }
     //gfg.print("gfg");
 

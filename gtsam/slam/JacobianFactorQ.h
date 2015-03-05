@@ -28,7 +28,7 @@ class JacobianFactorQ: public RegularJacobianFactor<D> {
 
   typedef RegularJacobianFactor<D> Base;
   typedef Eigen::Matrix<double, ZDim, D> MatrixZD;
-  typedef std::pair<Key, MatrixZD> KeyMatrixZD;
+  typedef std::pair<Key, Matrix> KeyMatrix;
 
 public:
 
@@ -42,7 +42,6 @@ public:
       Base() {
     Matrix zeroMatrix = Matrix::Zero(0, D);
     Vector zeroVector = Vector::Zero(0);
-    typedef std::pair<Key, Matrix> KeyMatrix;
     std::vector<KeyMatrix> QF;
     QF.reserve(keys.size());
     BOOST_FOREACH(const Key& key, keys)
@@ -51,22 +50,23 @@ public:
   }
 
   /// Constructor
-  JacobianFactorQ(const std::vector<KeyMatrixZD>& Fblocks, const Matrix& E,
-      const Matrix3& P, const Vector& b, const SharedDiagonal& model =
-          SharedDiagonal()) :
+  JacobianFactorQ(const FastVector<Key>& keys,
+      const std::vector<MatrixZD>& FBlocks, const Matrix& E, const Matrix3& P,
+      const Vector& b, const SharedDiagonal& model = SharedDiagonal()) :
       Base() {
     size_t j = 0, m2 = E.rows(), m = m2 / ZDim;
     // Calculate projector Q
     Matrix Q = eye(m2) - E * P * E.transpose();
     // Calculate pre-computed Jacobian matrices
     // TODO: can we do better ?
-    typedef std::pair<Key, Matrix> KeyMatrix;
     std::vector<KeyMatrix> QF;
     QF.reserve(m);
     // Below, we compute each mZDim*D block A_j = Q_j * F_j = (mZDim*ZDim) * (Zdim*D)
-    BOOST_FOREACH(const KeyMatrixZD& it, Fblocks)
+    for (size_t k = 0; k < FBlocks.size(); ++k) {
+      Key key = keys[k];
       QF.push_back(
-          KeyMatrix(it.first, Q.block(0, ZDim * j++, m2, ZDim) * it.second));
+          KeyMatrix(key, Q.block(0, ZDim * j++, m2, ZDim) * FBlocks[k]));
+    }
     // Which is then passed to the normal JacobianFactor constructor
     JacobianFactor::fillTerms(QF, Q * b, model);
   }

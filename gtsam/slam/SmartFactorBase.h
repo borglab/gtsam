@@ -95,8 +95,7 @@ protected:
 public:
 
   // Definitions for blocks of F, externally visible
-  typedef Eigen::Matrix<double, ZDim, Dim> Matrix2D; // F
-  typedef std::pair<Key, Matrix2D> KeyMatrix2D; // Fblocks
+  typedef Eigen::Matrix<double, ZDim, Dim> MatrixZD; // F
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -283,29 +282,16 @@ public:
    *  F is a vector of derivatives wrpt the cameras, and E the stacked derivatives
    *  with respect to the point. The value of cameras/point are passed as parameters.
    */
-  double computeJacobians(std::vector<KeyMatrix2D>& Fblocks, Matrix& E,
-      Vector& b, const Cameras& cameras, const Point3& point) const {
-
+  double computeJacobians(std::vector<MatrixZD>& Fblocks, Matrix& E, Vector& b,
+      const Cameras& cameras, const Point3& point) const {
     // Project into Camera set and calculate derivatives
     typename Cameras::FBlocks F;
     b = reprojectionError(cameras, point, F, E);
-
-    // Now calculate f and divide up the F derivatives into Fblocks
-    double f = 0.0;
-    size_t m = keys_.size();
-    for (size_t i = 0, row = 0; i < m; i++, row += ZDim) {
-
-      // Accumulate normalized error
-      f += b.segment<ZDim>(row).squaredNorm();
-
-      // Push piece of F onto Fblocks with associated key
-      Fblocks.push_back(KeyMatrix2D(keys_[i], F[i]));
-    }
-    return f;
+    return b.squaredNorm();
   }
 
   /// SVD version
-  double computeJacobiansSVD(std::vector<KeyMatrix2D>& Fblocks, Matrix& Enull,
+  double computeJacobiansSVD(std::vector<MatrixZD>& Fblocks, Matrix& Enull,
       Vector& b, const Cameras& cameras, const Point3& point) const {
 
     Matrix E;
@@ -328,7 +314,7 @@ public:
       bool diagonalDamping = false) const {
 
     int m = this->keys_.size();
-    std::vector<KeyMatrix2D> Fblocks;
+    std::vector<MatrixZD> Fblocks;
     Matrix E;
     Vector b;
     double f = computeJacobians(Fblocks, E, b, cameras, point);
@@ -342,8 +328,7 @@ public:
     SymmetricBlockMatrix augmentedHessian(dims, Matrix::Zero(M1, M1));
 
     // build augmented hessian
-    RegularImplicitSchurFactor<Dim>::SparseSchurComplement(Fblocks, E, P, b,
-        augmentedHessian);
+    CameraSet<CAMERA>::SchurComplement(Fblocks, E, P, b, augmentedHessian);
     augmentedHessian(m, m)(0, 0) = f;
 
     return boost::make_shared<RegularHessianFactor<Dim> >(keys_,
@@ -361,36 +346,35 @@ public:
       const FastVector<Key> allKeys) const {
     Matrix E;
     Vector b;
-    std::vector<KeyMatrix2D> Fblocks;
-    double f = computeJacobians(Fblocks, E, b, cameras, point);
+    std::vector<MatrixZD> Fblocks;
+    computeJacobians(Fblocks, E, b, cameras, point);
     Matrix3 P = PointCov(E, lambda, diagonalDamping);
-    RegularImplicitSchurFactor<Dim, ZDim>::UpdateSparseSchurComplement(Fblocks,
-        E, P, b, f, allKeys, keys_, augmentedHessian);
+    CameraSet<CAMERA>::UpdateSchurComplement(Fblocks, E, P, b, allKeys, keys_,
+        augmentedHessian);
   }
 
   /// Whiten the Jacobians computed by computeJacobians using noiseModel_
-  void whitenJacobians(std::vector<KeyMatrix2D>& F, Matrix& E,
-      Vector& b) const {
+  void whitenJacobians(std::vector<MatrixZD>& F, Matrix& E, Vector& b) const {
     noiseModel_->WhitenSystem(E, b);
     // TODO make WhitenInPlace work with any dense matrix type
-    BOOST_FOREACH(KeyMatrix2D& Fblock,F)
+    BOOST_FOREACH(MatrixZD& Fblock,F)
       Fblock.second = noiseModel_->Whiten(Fblock.second);
   }
 
   /**
    * Return Jacobians as RegularImplicitSchurFactor with raw access
    */
-  boost::shared_ptr<RegularImplicitSchurFactor<Dim, ZDim> > //
+  boost::shared_ptr<RegularImplicitSchurFactor<CAMERA> > //
   createRegularImplicitSchurFactor(const Cameras& cameras, const Point3& point,
       double lambda = 0.0, bool diagonalDamping = false) const {
     Matrix E;
     Vector b;
-    std::vector<KeyMatrix2D> F;
+    std::vector<MatrixZD> F;
     computeJacobians(F, E, b, cameras, point);
     whitenJacobians(F, E, b);
     Matrix3 P = PointCov(E, lambda, diagonalDamping);
-    return boost::make_shared<RegularImplicitSchurFactor<Dim, ZDim> >(F, E, P,
-        b);
+    return boost::make_shared<RegularImplicitSchurFactor<CAMERA> >(keys_, F, E,
+        P, b);
   }
 
   /**
@@ -401,7 +385,7 @@ public:
       bool diagonalDamping = false) const {
     Matrix E;
     Vector b;
-    std::vector<KeyMatrix2D> F;
+    std::vector<MatrixZD> F;
     computeJacobians(F, E, b, cameras, point);
     const size_t M = b.size();
     Matrix3 P = PointCov(E, lambda, diagonalDamping);
@@ -416,7 +400,7 @@ public:
   boost::shared_ptr<JacobianFactor> createJacobianSVDFactor(
       const Cameras& cameras, const Point3& point, double lambda = 0.0) const {
     size_t m = this->keys_.size();
-    std::vector<KeyMatrix2D> F;
+    std::vector<MatrixZD> F;
     Vector b;
     const size_t M = ZDim * m;
     Matrix E0(M, M - 3);
@@ -427,8 +411,7 @@ public:
   }
 
   /// Create BIG block-diagonal matrix F from Fblocks
-  static void FillDiagonalF(const std::vector<KeyMatrix2D>& Fblocks,
-      Matrix& F) {
+  static void FillDiagonalF(const std::vector<MatrixZD>& Fblocks, Matrix& F) {
     size_t m = Fblocks.size();
     F.resize(ZDim * m, Dim * m);
     F.setZero();

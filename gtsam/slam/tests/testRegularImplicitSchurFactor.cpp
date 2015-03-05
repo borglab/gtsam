@@ -19,11 +19,13 @@
 #include <gtsam/slam/JacobianFactorQ.h>
 #include <gtsam/slam/JacobianFactorQR.h>
 #include <gtsam/slam/RegularImplicitSchurFactor.h>
+#include <gtsam/geometry/CalibratedCamera.h>
+#include <gtsam/geometry/Point2.h>
 
-#include <gtsam/base/timing.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/linear/GaussianFactor.h>
+#include <gtsam/base/timing.h>
 
 #include <boost/assign/list_of.hpp>
 #include <boost/assign/std/vector.hpp>
@@ -39,8 +41,8 @@ using namespace gtsam;
 const Matrix26 F0 = Matrix26::Ones();
 const Matrix26 F1 = 2 * Matrix26::Ones();
 const Matrix26 F3 = 3 * Matrix26::Ones();
-const vector<pair<Key, Matrix26> > Fblocks = list_of<pair<Key, Matrix> > //
-    (make_pair(0, F0))(make_pair(1, F1))(make_pair(3, F3));
+const vector<Matrix26> FBlocks = list_of<Matrix26>(F0)(F1)(F3);
+const FastVector<Key> keys = list_of<Key>(0)(1)(3);
 // RHS and sigmas
 const Vector b = (Vector(6) << 1., 2., 3., 4., 5., 6.).finished();
 
@@ -51,7 +53,7 @@ TEST( regularImplicitSchurFactor, creation ) {
   E.block<2,2>(0, 0) = eye(2);
   E.block<2,3>(2, 0) = 2 * ones(2, 3);
   Matrix3 P = (E.transpose() * E).inverse();
-  RegularImplicitSchurFactor<6> expected(Fblocks, E, P, b);
+  RegularImplicitSchurFactor<CalibratedCamera> expected(keys, FBlocks, E, P, b);
   Matrix expectedP = expected.getPointCovariance();
   EXPECT(assert_equal(expectedP, P));
 }
@@ -84,15 +86,15 @@ TEST( regularImplicitSchurFactor, addHessianMultiply ) {
   F << F0, zeros(2, d * 3), zeros(2, d), F1, zeros(2, d*2), zeros(2, d * 3), F3;
 
   // Calculate expected result F'*alpha*(I - E*P*E')*F*x
-  FastVector<Key> keys;
-  keys += 0,1,2,3;
-  Vector x = xvalues.vector(keys);
+  FastVector<Key> keys2;
+  keys2 += 0,1,2,3;
+  Vector x = xvalues.vector(keys2);
   Vector expected = zero(24);
-  RegularImplicitSchurFactor<6>::multiplyHessianAdd(F, E, P, alpha, x, expected);
-  EXPECT(assert_equal(expected, yExpected.vector(keys), 1e-8));
+  RegularImplicitSchurFactor<CalibratedCamera>::multiplyHessianAdd(F, E, P, alpha, x, expected);
+  EXPECT(assert_equal(expected, yExpected.vector(keys2), 1e-8));
 
   // Create ImplicitSchurFactor
-  RegularImplicitSchurFactor<6> implicitFactor(Fblocks, E, P, b);
+  RegularImplicitSchurFactor<CalibratedCamera> implicitFactor(keys, FBlocks, E, P, b);
 
   VectorValues zero = 0 * yExpected;// quick way to get zero w right structure
   { // First Version
@@ -122,7 +124,7 @@ TEST( regularImplicitSchurFactor, addHessianMultiply ) {
 
   // Create JacobianFactor with same error
   const SharedDiagonal model;
-  JacobianFactorQ<6, 2> jf(Fblocks, E, P, b, model);
+  JacobianFactorQ<6, 2> jf(keys, FBlocks, E, P, b, model);
 
   { // error
     double expectedError = jf.error(xvalues);
@@ -172,7 +174,7 @@ TEST( regularImplicitSchurFactor, addHessianMultiply ) {
   }
 
   // Create JacobianFactorQR
-  JacobianFactorQR<6, 2> jfq(Fblocks, E, P, b, model);
+  JacobianFactorQR<6, 2> jfq(keys, FBlocks, E, P, b, model);
   {
     const SharedDiagonal model;
     VectorValues yActual = zero;
@@ -214,7 +216,7 @@ TEST(regularImplicitSchurFactor, hessianDiagonal)
   E.block<2,3>(2, 0) << 1,2,3,4,5,6;
   E.block<2,3>(4, 0) << 0.5,1,2,3,4,5;
   Matrix3 P = (E.transpose() * E).inverse();
-  RegularImplicitSchurFactor<6> factor(Fblocks, E, P, b);
+  RegularImplicitSchurFactor<CalibratedCamera> factor(keys, FBlocks, E, P, b);
 
   // hessianDiagonal
   VectorValues expected;
