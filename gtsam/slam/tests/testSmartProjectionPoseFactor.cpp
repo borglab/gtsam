@@ -31,7 +31,7 @@
 
 using namespace boost::assign;
 
-static bool isDebugTest = true;
+static bool isDebugTest = false;
 
 static const double rankTol = 1.0;
 static const double linThreshold = -1.0;
@@ -1374,9 +1374,9 @@ TEST( SmartProjectionPoseFactor, Cal3BundlerRotationOnly ) {
   graph.push_back(smartFactor3);
   graph.push_back(PriorFactor<Camera>(x1, cam1, noisePrior));
   graph.push_back(
-      PoseTranslationPrior<Pose3>(x2, positionPrior, noisePriorTranslation));
+      PoseTranslationPrior<Camera>(x2, positionPrior, noisePriorTranslation));
   graph.push_back(
-      PoseTranslationPrior<Pose3>(x3, positionPrior, noisePriorTranslation));
+      PoseTranslationPrior<Camera>(x3, positionPrior, noisePriorTranslation));
 
   //  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
