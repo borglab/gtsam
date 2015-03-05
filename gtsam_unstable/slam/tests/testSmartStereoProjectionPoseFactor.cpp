@@ -279,6 +279,14 @@ TEST( SmartStereoProjectionPoseFactor, 3poses_smart_projection_factor ) {
   values.insert(x3, pose3 * noise_pose);
   if (isDebugTest)
     values.at<Pose3>(x3).print("Smart: Pose3 before optimization: ");
+  EXPECT(
+      assert_equal(
+          Pose3(
+              Rot3(0, -0.0314107591, 0.99950656, -0.99950656, -0.0313952598,
+                  -0.000986635786, 0.0314107591, -0.999013364, -0.0313952598),
+              Point3(0.1, -0.1, 1.9)), values.at<Pose3>(x3)));
+
+  EXPECT_DOUBLES_EQUAL(1888864, graph.error(values), 1);
 
   LevenbergMarquardtParams params;
   if (isDebugTest)
@@ -293,8 +301,12 @@ TEST( SmartStereoProjectionPoseFactor, 3poses_smart_projection_factor ) {
   gttoc_(SmartStereoProjectionPoseFactor);
   tictoc_finishedIteration_();
 
-//  GaussianFactorGraph::shared_ptr GFG = graph.linearize(values);
-//  VectorValues delta = GFG->optimize();
+  EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-6);
+
+  GaussianFactorGraph::shared_ptr GFG = graph.linearize(result);
+  VectorValues delta = GFG->optimize();
+  VectorValues expected = VectorValues::Zero(delta);
+  EXPECT(assert_equal(expected, delta,1e-6));
 
   // result.print("results of 3 camera, 3 landmark optimization \n");
   if (isDebugTest)
