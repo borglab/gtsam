@@ -15,10 +15,10 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/LieVector_Deprecated.h>
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Manifold.h>
-#include <gtsam/base/LieVector.h>
 
 using namespace gtsam;
 

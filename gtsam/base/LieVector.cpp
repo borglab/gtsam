@@ -15,8 +15,8 @@
  * @author Alex Cunningham
  */
 
+#include <gtsam/base/LieVector_Deprecated.h>
 #include <cstdarg>
-#include <gtsam/base/LieVector.h>
 
 using namespace std;
 

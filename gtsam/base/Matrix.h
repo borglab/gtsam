@@ -21,11 +21,14 @@
 // \callgraph
 
 #pragma once
-
 #include <gtsam/base/Vector.h>
+#include <boost/math/special_functions/fpclassify.hpp>
+#include <gtsam/3rdparty/Eigen/Eigen/Core>
+#include <gtsam/3rdparty/Eigen/Eigen/Cholesky>
+#include <gtsam/3rdparty/Eigen/Eigen/LU>
 #include <boost/format.hpp>
 #include <boost/tuple/tuple.hpp>
-#include <boost/math/special_functions/fpclassify.hpp>
+
 
 /**
  * Matrix is a typedef in the gtsam namespace
@@ -198,9 +201,14 @@ inline MATRIX prod(const MATRIX& A, const MATRIX&B) {
 }
 
 /**
- * print a matrix
+ * print without optional string, must specify cout yourself
  */
-GTSAM_EXPORT void print(const Matrix& A, const std::string& s = "", std::ostream& stream = std::cout);
+GTSAM_EXPORT void print(const Matrix& A, const std::string& s, std::ostream& stream);
+
+/**
+ * print with optional string to cout
+ */
+GTSAM_EXPORT void print(const Matrix& A, const std::string& s = "");
 
 /**
  * save a matrix to file, which can be loaded by matlab
@@ -367,21 +375,7 @@ GTSAM_EXPORT std::pair<Matrix,Matrix> qr(const Matrix& A);
  * @param A is the input matrix, and is the output
  * @param clear_below_diagonal enables zeroing out below diagonal
  */
-template <class MATRIX>
-void inplace_QR(MATRIX& A) {
-  size_t rows = A.rows();
-  size_t cols = A.cols();
-  size_t size = std::min(rows,cols);
-
-  typedef Eigen::internal::plain_diag_type<Matrix>::type HCoeffsType;
-  typedef Eigen::internal::plain_row_type<Matrix>::type RowVectorType;
-  HCoeffsType hCoeffs(size);
-  RowVectorType temp(cols);
-
-  Eigen::internal::householder_qr_inplace_blocked<MATRIX, HCoeffsType>::run(A, hCoeffs, 48, temp.data());
-
-  zeroBelowDiagonal(A);
-}
+void inplace_QR(Matrix& A);
 
 /**
  * Imperative algorithm for in-place full elimination with
