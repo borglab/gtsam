@@ -449,27 +449,15 @@ public:
     if (result_)
       // All good, just use version in base class
       return Base::totalReprojectionError(cameras, *result_);
-    else {
+    else if (manageDegeneracy_) {
+      // Otherwise, manage the exceptions with rotation-only factors
+      const Point2& z0 = this->measured_.at(0);
+      result_ = TriangulationResult(
+          cameras.front().backprojectPointAtInfinity(z0));
+      return Base::totalReprojectionErrorAtInfinity(cameras, *result_);
+    } else
       // if we don't want to manage the exceptions we discard the factor
-      if (!manageDegeneracy_)
-        return 0.0;
-
-      if (isPointBehindCamera()) { // if we want to manage the exceptions with rotation-only factors
-        throw std::runtime_error(
-            "SmartProjectionFactor::totalReprojectionError does not handle point behind camera yet");
-      }
-
-      if (isDegenerate()) {
-        // 3D parameterization of point at infinity
-        const Point2& z0 = this->measured_.at(0);
-        result_ = TriangulationResult(
-            cameras.front().backprojectPointAtInfinity(z0));
-        return Base::totalReprojectionErrorAtInfinity(cameras, *result_);
-      }
-      // should not reach here. TODO use switch
-      throw std::runtime_error(
-          "SmartProjectionFactor::totalReprojectionError internal error");
-    }
+      return 0.0;
   }
 
   /** return the landmark */
