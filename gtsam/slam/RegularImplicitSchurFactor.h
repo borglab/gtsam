@@ -96,8 +96,6 @@ public:
     for (size_t k = 0; k < FBlocks_.size(); ++k) {
       if (keys_[k] != f->keys_[k])
         return false;
-      if (FBlocks_[k] != f->FBlocks_[k])
-        return false;
       if (!equal_with_abs_tol(FBlocks_[k], f->FBlocks_[k], tol))
         return false;
     }
