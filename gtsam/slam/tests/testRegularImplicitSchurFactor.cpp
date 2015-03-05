@@ -126,12 +126,12 @@ TEST( regularImplicitSchurFactor, addHessianMultiply ) {
   const SharedDiagonal model;
   JacobianFactorQ<6, 2> jfQ(keys, FBlocks, E, P, b, model);
 
-// Calculate expected error
-  double expectedError = 1000;
-  { // error
+  // error
+  double expectedError = 11875.083333333334;
+  {
     EXPECT_DOUBLES_EQUAL(expectedError,jfQ.error(xvalues),1e-7)
-    EXPECT_DOUBLES_EQUAL(expectedError,implicitFactor.error(xvalues),1e-7)
     EXPECT_DOUBLES_EQUAL(expectedError,implicitFactor.errorJF(xvalues),1e-7)
+    EXPECT_DOUBLES_EQUAL(11903.500000000007,implicitFactor.error(xvalues),1e-7)
   }
 
   {
@@ -169,16 +169,20 @@ TEST( regularImplicitSchurFactor, addHessianMultiply ) {
     EXPECT(assert_equal(Vector(0 * expected), XMap(y), 1e-8));
   }
 
+  VectorValues expectedVV;
+  expectedVV.insert(0,-3.5*ones(6));
+  expectedVV.insert(1,10*ones(6)/3);
+  expectedVV.insert(3,-19.5*ones(6));
   { // Check gradientAtZero
-    VectorValues expected = jfQ.gradientAtZero();
     VectorValues actual = implicitFactor.gradientAtZero();
-    EXPECT(assert_equal(expected, actual, 1e-8));
+    EXPECT(assert_equal(expectedVV, jfQ.gradientAtZero(), 1e-8));
+    EXPECT(assert_equal(expectedVV, implicitFactor.gradientAtZero(), 1e-8));
   }
 
   // Create JacobianFactorQR
   JacobianFactorQR<6, 2> jfQR(keys, FBlocks, E, P, b, model);
     EXPECT_DOUBLES_EQUAL(expectedError, jfQR.error(xvalues),1e-7)
-
+  EXPECT(assert_equal(expectedVV,  jfQR.gradientAtZero(), 1e-8));
   {
     const SharedDiagonal model;
     VectorValues yActual = zero;
