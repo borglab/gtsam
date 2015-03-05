@@ -436,7 +436,7 @@ public:
     VectorValues g;
     for (size_t k = 0; k < size(); ++k) {
       Key key = keys_[k];
-      g.insert(key, FBlocks_[k].transpose() * e2[k]);
+      g.insert(key, - FBlocks_[k].transpose() * e2[k]);
     }
 
     // return it
