@@ -136,6 +136,7 @@ public:
     Matrix3 Dpc_rot, Dpc_point;
     const Point3 pc = this->pose().rotation().unrotate(pw, Dpc_rot, Dpc_point);
 
+    // only rotation is important
     Matrix36 Dpc_pose;
     Dpc_pose.setZero();
     Dpc_pose.leftCols<3>() = Dpc_rot;
