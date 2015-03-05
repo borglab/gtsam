@@ -388,8 +388,9 @@ TEST( SmartProjectionPoseFactor, Factors ) {
     // createJacobianSVDFactor
     Vector1 b;
     b.setZero();
-    double s = sin(M_PI_4);
-    JacobianFactor expected(x1, s * A1, x2, s * A2, b);
+    double s = sigma * sin(M_PI_4);
+    SharedIsotropic n = noiseModel::Isotropic::Sigma(4-3, sigma);
+    JacobianFactor expected(x1, s * A1, x2, s * A2, b, n);
     EXPECT(assert_equal(expectedInformation, expected.information(), 1e-8));
 
     boost::shared_ptr<JacobianFactor> actual =
