@@ -141,18 +141,18 @@ public:
     return z;
   }
 
-  /// Calculate vector of re-projection errors
+  /// Calculate vector [z-project2(point)] of re-projection errors
   Vector reprojectionError(const Point3& point, const std::vector<Z>& measured,
       boost::optional<FBlocks&> Fs = boost::none, //
       boost::optional<Matrix&> E = boost::none) const {
-    return ErrorVector(project2(point, Fs, E), measured);
+    return ErrorVector(measured, project2(point, Fs, E));
   }
 
-  /// Calculate vector of re-projection errors, from point at infinity
+  /// Calculate vector [z-project2(point)] of re-projection errors, from point at infinity
   // TODO: take Unit3 instead
   Vector reprojectionErrorAtInfinity(const Point3& point,
       const std::vector<Z>& measured) const {
-    return ErrorVector(projectAtInfinity(point), measured);
+    return ErrorVector(measured, projectAtInfinity(point));
   }
 
   /**
