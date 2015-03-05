@@ -31,8 +31,6 @@
 
 using namespace boost::assign;
 
-static bool isDebugTest = false;
-
 static const double rankTol = 1.0;
 static const double linThreshold = -1.0;
 static const bool manageDegeneracy = true;
@@ -53,6 +51,11 @@ static Symbol x3('X', 3);
 static Point2 measurement1(323.0, 240.0);
 typedef SmartProjectionPoseFactor<Cal3_S2> SmartFactor;
 typedef SmartProjectionPoseFactor<Cal3Bundler> SmartFactorBundler;
+
+LevenbergMarquardtParams params;
+// Make more verbose like so (in tests):
+// params.verbosityLM = LevenbergMarquardtParams::TRYDELTA;
+// params.verbosity = NonlinearOptimizerParams::ERROR;
 
 /* ************************************************************************* */
 TEST( SmartProjectionPoseFactor, Constructor) {
@@ -154,7 +157,7 @@ TEST( SmartProjectionPoseFactor, noisy ) {
 
   using namespace vanillaPose;
 
-  // Project two landmarks into two cameras and triangulate
+  // Project two landmarks into two cameras
   Point2 pixelError(0.2, 0.2);
   Point2 level_uv = level_camera.project(landmark1) + pixelError;
   Point2 level_uv_right = level_camera_right.project(landmark1);
@@ -196,7 +199,7 @@ TEST( SmartProjectionPoseFactor, 3poses_smart_projection_factor ) {
   using namespace vanillaPose2;
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
 
-  // Project three landmarks into three cameras and triangulate
+  // Project three landmarks into three cameras
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
   projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
@@ -239,14 +242,8 @@ TEST( SmartProjectionPoseFactor, 3poses_smart_projection_factor ) {
                   -0.000986635786, 0.0314107591, -0.999013364, -0.0313952598),
               Point3(0.1, -0.1, 1.9)), values.at<Camera>(x3).pose()));
 
-  LevenbergMarquardtParams params;
-  if (isDebugTest)
-    params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
-  if (isDebugTest)
-    params.verbosity = NonlinearOptimizerParams::ERROR;
-
   Values result;
-  gttic_ (SmartProjectionPoseFactor);
+  gttic_(SmartProjectionPoseFactor);
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
   gttoc_(SmartProjectionPoseFactor);
@@ -257,8 +254,6 @@ TEST( SmartProjectionPoseFactor, 3poses_smart_projection_factor ) {
 
   // result.print("results of 3 camera, 3 landmark optimization \n");
   EXPECT(assert_equal(pose_above, result.at<Camera>(x3).pose(), 1e-8));
-  if (isDebugTest)
-    tictoc_print_();
 }
 
 /* *************************************************************************/
@@ -360,7 +355,7 @@ TEST( SmartProjectionPoseFactor, Factors ) {
     FastVector<Key> keys;
     keys.push_back(x1);
     keys.push_back(x2);
-    
+
     // createJacobianQFactor
     SharedIsotropic n = noiseModel::Isotropic::Sigma(4, sigma);
     Matrix3 P = (E.transpose() * E).inverse();
@@ -420,7 +415,7 @@ TEST( SmartProjectionPoseFactor, 3poses_iterative_smart_projection_factor ) {
 
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
 
-  // Project three landmarks into three cameras and triangulate
+  // Project three landmarks into three cameras
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
   projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
@@ -459,14 +454,8 @@ TEST( SmartProjectionPoseFactor, 3poses_iterative_smart_projection_factor ) {
                   -0.0313952598), Point3(0.1, -0.1, 1.9)),
           values.at<Camera>(x3).pose()));
 
-  LevenbergMarquardtParams params;
-  if (isDebugTest)
-    params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
-  if (isDebugTest)
-    params.verbosity = NonlinearOptimizerParams::ERROR;
-
   Values result;
-  gttic_ (SmartProjectionPoseFactor);
+  gttic_(SmartProjectionPoseFactor);
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
   gttoc_(SmartProjectionPoseFactor);
@@ -474,8 +463,6 @@ TEST( SmartProjectionPoseFactor, 3poses_iterative_smart_projection_factor ) {
 
   // result.print("results of 3 camera, 3 landmark optimization \n");
   EXPECT(assert_equal(pose_above, result.at<Camera>(x3).pose(), 1e-7));
-  if (isDebugTest)
-    tictoc_print_();
 }
 
 /* *************************************************************************/
@@ -490,7 +477,7 @@ TEST( SmartProjectionPoseFactor, jacobianSVD ) {
 
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
 
-  // Project three landmarks into three cameras and triangulate
+  // Project three landmarks into three cameras
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
   projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
@@ -524,12 +511,6 @@ TEST( SmartProjectionPoseFactor, jacobianSVD ) {
   values.insert(x2, cam2);
   values.insert(x3, Camera(pose_above * noise_pose, sharedK));
 
-  LevenbergMarquardtParams params;
-  if (isDebugTest)
-    params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
-  if (isDebugTest)
-    params.verbosity = NonlinearOptimizerParams::ERROR;
-
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
@@ -550,7 +531,7 @@ TEST( SmartProjectionPoseFactor, landmarkDistance ) {
 
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
 
-  // Project three landmarks into three cameras and triangulate
+  // Project three landmarks into three cameras
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
   projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
@@ -588,7 +569,6 @@ TEST( SmartProjectionPoseFactor, landmarkDistance ) {
   values.insert(x3, Camera(pose_above * noise_pose, sharedK));
 
   // All factors are disabled and pose should remain where it is
-  LevenbergMarquardtParams params;
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
@@ -614,7 +594,7 @@ TEST( SmartProjectionPoseFactor, dynamicOutlierRejection ) {
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3,
       measurements_cam4;
 
-  // Project three landmarks into three cameras and triangulate
+  // Project 4 landmarks into three cameras
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
   projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
@@ -657,7 +637,6 @@ TEST( SmartProjectionPoseFactor, dynamicOutlierRejection ) {
   values.insert(x3, cam3);
 
   // All factors are disabled and pose should remain where it is
-  LevenbergMarquardtParams params;
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
@@ -676,7 +655,7 @@ TEST( SmartProjectionPoseFactor, jacobianQ ) {
 
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
 
-  // Project three landmarks into three cameras and triangulate
+  // Project three landmarks into three cameras
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
   projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
@@ -709,12 +688,6 @@ TEST( SmartProjectionPoseFactor, jacobianQ ) {
   values.insert(x2, cam2);
   values.insert(x3, Camera(pose_above * noise_pose, sharedK));
 
-  LevenbergMarquardtParams params;
-  if (isDebugTest)
-    params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
-  if (isDebugTest)
-    params.verbosity = NonlinearOptimizerParams::ERROR;
-
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
@@ -735,7 +708,7 @@ TEST( SmartProjectionPoseFactor, 3poses_projection_factor ) {
   typedef GenericProjectionFactor<Pose3, Point3> ProjectionFactor;
   NonlinearFactorGraph graph;
 
-  // Project three landmarks into three cameras and triangulate
+  // Project three landmarks into three cameras
   graph.push_back(
       ProjectionFactor(cam1.project(landmark1), model, x1, L(1), sharedK2));
   graph.push_back(
@@ -773,11 +746,6 @@ TEST( SmartProjectionPoseFactor, 3poses_projection_factor ) {
 
   DOUBLES_EQUAL(48406055, graph.error(values), 1);
 
-  LevenbergMarquardtParams params;
-  if (isDebugTest)
-    params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
-  if (isDebugTest)
-    params.verbosity = NonlinearOptimizerParams::ERROR;
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   Values result = optimizer.optimize();
 
@@ -799,14 +767,13 @@ TEST( SmartProjectionPoseFactor, CheckHessian) {
   // Two slightly different cameras
   Pose3 pose2 = level_pose
       * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
-  Pose3 pose3 = pose2
-      * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
+  Pose3 pose3 = pose2 * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
   Camera cam2(pose2, sharedK);
   Camera cam3(pose3, sharedK);
 
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
 
-  // Project three landmarks into three cameras and triangulate
+  // Project three landmarks into three cameras
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
   projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
@@ -888,7 +855,7 @@ TEST( SmartProjectionPoseFactor, 3poses_2land_rotation_only_smart_projection_fac
 
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
 
-  // Project three landmarks into three cameras and triangulate
+  // Project three landmarks into three cameras
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
   projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
 
@@ -931,23 +898,13 @@ TEST( SmartProjectionPoseFactor, 3poses_2land_rotation_only_smart_projection_fac
               Point3(0.145118171, -0.252907438, 0.819956033)),
           values.at<Camera>(x3).pose()));
 
-  LevenbergMarquardtParams params;
-  if (isDebugTest)
-    params.verbosityLM = LevenbergMarquardtParams::TRYDELTA;
-  if (isDebugTest)
-    params.verbosity = NonlinearOptimizerParams::ERROR;
-
   Values result;
-  gttic_ (SmartProjectionPoseFactor);
+  gttic_(SmartProjectionPoseFactor);
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
   gttoc_(SmartProjectionPoseFactor);
   tictoc_finishedIteration_();
 
-  // result.print("results of 3 camera, 3 landmark optimization \n");
-  cout
-      << "TEST COMMENTED: rotation only version of smart factors has been deprecated "
-      << endl;
   EXPECT(
       assert_equal(
           Pose3(
@@ -956,8 +913,6 @@ TEST( SmartProjectionPoseFactor, 3poses_2land_rotation_only_smart_projection_fac
                   -0.564921063),
               Point3(0.145118171, -0.252907438, 0.819956033)),
           result.at<Camera>(x3).pose()));
-  if (isDebugTest)
-    tictoc_print_();
 }
 
 /* *************************************************************************/
@@ -974,14 +929,13 @@ TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) 
   // Two different cameras
   Pose3 pose2 = level_pose
       * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
-  Pose3 pose3 = pose2
-      * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
+  Pose3 pose3 = pose2 * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
   Camera cam2(pose2, sharedK);
   Camera cam3(pose3, sharedK);
 
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
 
-  // Project three landmarks into three cameras and triangulate
+  // Project three landmarks into three cameras
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
   projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
@@ -1032,23 +986,13 @@ TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) 
               Point3(0.0897734171, -0.110201006, 0.901022872)),
           values.at<Camera>(x3).pose()));
 
-  LevenbergMarquardtParams params;
-  if (isDebugTest)
-    params.verbosityLM = LevenbergMarquardtParams::TRYDELTA;
-  if (isDebugTest)
-    params.verbosity = NonlinearOptimizerParams::ERROR;
-
   Values result;
-  gttic_ (SmartProjectionPoseFactor);
+  gttic_(SmartProjectionPoseFactor);
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
   gttoc_(SmartProjectionPoseFactor);
   tictoc_finishedIteration_();
 
-  // result.print("results of 3 camera, 3 landmark optimization \n");
-  cout
-      << "TEST COMMENTED: rotation only version of smart factors has been deprecated "
-      << endl;
   EXPECT(
       assert_equal(
           Pose3(
@@ -1057,8 +1001,6 @@ TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) 
                   -0.130455917),
               Point3(0.0897734171, -0.110201006, 0.901022872)),
           result.at<Camera>(x3).pose()));
-  if (isDebugTest)
-    tictoc_print_();
 }
 
 /* *************************************************************************/
@@ -1071,7 +1013,7 @@ TEST( SmartProjectionPoseFactor, Hessian ) {
   views.push_back(x1);
   views.push_back(x2);
 
-  // Project three landmarks into 2 cameras and triangulate
+  // Project three landmarks into 2 cameras
   Point2 cam1_uv1 = cam1.project(landmark1);
   Point2 cam2_uv1 = cam2.project(landmark1);
   vector<Point2> measurements_cam1;
@@ -1088,8 +1030,6 @@ TEST( SmartProjectionPoseFactor, Hessian ) {
   values.insert(x2, cam2);
 
   boost::shared_ptr<GaussianFactor> factor = smartFactor1->linearize(values);
-  if (isDebugTest)
-    factor->print("Hessian factor \n");
 
   // compute triangulation from linearization point
   // compute reprojection errors (sum squared)
@@ -1162,7 +1102,7 @@ TEST( SmartProjectionPoseFactor, HessianWithRotationDegenerate ) {
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
-  
+
   // All cameras have the same pose so will be degenerate !
   Camera cam2(level_pose, sharedK2);
   Camera cam3(level_pose, sharedK2);
@@ -1179,8 +1119,6 @@ TEST( SmartProjectionPoseFactor, HessianWithRotationDegenerate ) {
   values.insert(x3, cam3);
 
   boost::shared_ptr<GaussianFactor> factor = smartFactor->linearize(values);
-  if (isDebugTest)
-    factor->print("Hessian factor \n");
 
   Pose3 poseDrift = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 0));
 
@@ -1189,10 +1127,8 @@ TEST( SmartProjectionPoseFactor, HessianWithRotationDegenerate ) {
   rotValues.insert(x2, Camera(poseDrift.compose(level_pose), sharedK2));
   rotValues.insert(x3, Camera(poseDrift.compose(level_pose), sharedK2));
 
-  boost::shared_ptr<GaussianFactor> factorRot = smartFactor->linearize(
-      rotValues);
-  if (isDebugTest)
-    factorRot->print("Hessian factor \n");
+  boost::shared_ptr<GaussianFactor> factorRot = //
+      smartFactor->linearize(rotValues);
 
   // Hessian is invariant to rotations in the nondegenerate case
   EXPECT(assert_equal(factor->information(), factorRot->information(), 1e-8));
@@ -1230,27 +1166,10 @@ TEST( SmartProjectionPoseFactor, Cal3Bundler ) {
 
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
 
-  // Project three landmarks into three cameras and triangulate
-  Point2 cam1_uv1 = cam1.project(landmark1);
-  Point2 cam2_uv1 = cam2.project(landmark1);
-  Point2 cam3_uv1 = cam3.project(landmark1);
-  measurements_cam1.push_back(cam1_uv1);
-  measurements_cam1.push_back(cam2_uv1);
-  measurements_cam1.push_back(cam3_uv1);
-
-  Point2 cam1_uv2 = cam1.project(landmark2);
-  Point2 cam2_uv2 = cam2.project(landmark2);
-  Point2 cam3_uv2 = cam3.project(landmark2);
-  measurements_cam2.push_back(cam1_uv2);
-  measurements_cam2.push_back(cam2_uv2);
-  measurements_cam2.push_back(cam3_uv2);
-
-  Point2 cam1_uv3 = cam1.project(landmark3);
-  Point2 cam2_uv3 = cam2.project(landmark3);
-  Point2 cam3_uv3 = cam3.project(landmark3);
-  measurements_cam3.push_back(cam1_uv3);
-  measurements_cam3.push_back(cam2_uv3);
-  measurements_cam3.push_back(cam3_uv3);
+  // Project three landmarks into three cameras
+  projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
+  projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
+  projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
 
   vector<Key> views;
   views.push_back(x1);
@@ -1289,22 +1208,15 @@ TEST( SmartProjectionPoseFactor, Cal3Bundler ) {
               Rot3(0, -0.0314107591, 0.99950656, -0.99950656, -0.0313952598,
                   -0.000986635786, 0.0314107591, -0.999013364, -0.0313952598),
               Point3(0.1, -0.1, 1.9)), values.at<Camera>(x3).pose()));
-  LevenbergMarquardtParams params;
-  if (isDebugTest)
-    params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
-  if (isDebugTest)
-    params.verbosity = NonlinearOptimizerParams::ERROR;
 
   Values result;
-  gttic_ (SmartProjectionPoseFactor);
+  gttic_(SmartProjectionPoseFactor);
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
   gttoc_(SmartProjectionPoseFactor);
   tictoc_finishedIteration_();
 
   EXPECT(assert_equal(cam3, result.at<Camera>(x3), 1e-6));
-  if (isDebugTest)
-    tictoc_print_();
 }
 
 /* *************************************************************************/
@@ -1320,8 +1232,7 @@ TEST( SmartProjectionPoseFactor, Cal3BundlerRotationOnly ) {
   // Two different cameras
   Pose3 pose2 = level_pose
       * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
-  Pose3 pose3 = pose2
-      * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
+  Pose3 pose3 = pose2 * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
   Camera cam2(pose2, sharedBundlerK);
   Camera cam3(pose3, sharedBundlerK);
 
@@ -1330,27 +1241,10 @@ TEST( SmartProjectionPoseFactor, Cal3BundlerRotationOnly ) {
 
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
 
-  // Project three landmarks into three cameras and triangulate
-  Point2 cam1_uv1 = cam1.project(landmark1);
-  Point2 cam2_uv1 = cam2.project(landmark1);
-  Point2 cam3_uv1 = cam3.project(landmark1);
-  measurements_cam1.push_back(cam1_uv1);
-  measurements_cam1.push_back(cam2_uv1);
-  measurements_cam1.push_back(cam3_uv1);
-
-  Point2 cam1_uv2 = cam1.project(landmark2);
-  Point2 cam2_uv2 = cam2.project(landmark2);
-  Point2 cam3_uv2 = cam3.project(landmark2);
-  measurements_cam2.push_back(cam1_uv2);
-  measurements_cam2.push_back(cam2_uv2);
-  measurements_cam2.push_back(cam3_uv2);
-
-  Point2 cam1_uv3 = cam1.project(landmark3);
-  Point2 cam2_uv3 = cam2.project(landmark3);
-  Point2 cam3_uv3 = cam3.project(landmark3);
-  measurements_cam3.push_back(cam1_uv3);
-  measurements_cam3.push_back(cam2_uv3);
-  measurements_cam3.push_back(cam3_uv3);
+  // Project three landmarks into three cameras
+  projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
+  projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
+  projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
 
   double rankTol = 10;
 
@@ -1398,22 +1292,13 @@ TEST( SmartProjectionPoseFactor, Cal3BundlerRotationOnly ) {
               Point3(0.0897734171, -0.110201006, 0.901022872)),
           values.at<Camera>(x3).pose()));
 
-  LevenbergMarquardtParams params;
-  if (isDebugTest)
-    params.verbosityLM = LevenbergMarquardtParams::TRYDELTA;
-  if (isDebugTest)
-    params.verbosity = NonlinearOptimizerParams::ERROR;
-
   Values result;
-  gttic_ (SmartProjectionPoseFactor);
+  gttic_(SmartProjectionPoseFactor);
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
   gttoc_(SmartProjectionPoseFactor);
   tictoc_finishedIteration_();
 
-  cout
-      << "TEST COMMENTED: rotation only version of smart factors has been deprecated "
-      << endl;
   EXPECT(
       assert_equal(
           Pose3(
@@ -1422,8 +1307,6 @@ TEST( SmartProjectionPoseFactor, Cal3BundlerRotationOnly ) {
                   -0.130455917),
               Point3(0.0897734171, -0.110201006, 0.901022872)),
           values.at<Camera>(x3).pose()));
-  if (isDebugTest)
-    tictoc_print_();
 }
 
 /* ************************************************************************* */
