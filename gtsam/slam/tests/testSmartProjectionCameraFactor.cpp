@@ -772,7 +772,7 @@ TEST( SmartProjectionCameraFactor, computeImplicitJacobian ) {
   Point3 point;
   if (factor1->point())
     point = *(factor1->point());
-  vector<SmartFactorBundler::KeyMatrix2D> Fblocks;
+  vector<Matrix29> Fblocks;
   factor1->computeJacobians(Fblocks, expectedE, expectedb, cameras, point);
 
   NonlinearFactorGraph generalGraph;
@@ -823,7 +823,7 @@ TEST( SmartProjectionCameraFactor, implicitJacobianFactor ) {
   implicitFactor->add(level_uv_right, c2, unit2);
   GaussianFactor::shared_ptr gaussianImplicitSchurFactor =
       implicitFactor->linearize(values);
-  typedef RegularImplicitSchurFactor<9> Implicit9;
+  typedef RegularImplicitSchurFactor<Camera> Implicit9;
   Implicit9& implicitSchurFactor =
       dynamic_cast<Implicit9&>(*gaussianImplicitSchurFactor);
 

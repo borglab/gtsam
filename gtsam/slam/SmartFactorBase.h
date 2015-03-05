@@ -281,12 +281,12 @@ public:
    *  Compute F, E, and b (called below in both vanilla and SVD versions), where
    *  F is a vector of derivatives wrpt the cameras, and E the stacked derivatives
    *  with respect to the point. The value of cameras/point are passed as parameters.
+   *  TODO: Kill this obsolete method
    */
   double computeJacobians(std::vector<MatrixZD>& Fblocks, Matrix& E, Vector& b,
       const Cameras& cameras, const Point3& point) const {
     // Project into Camera set and calculate derivatives
-    typename Cameras::FBlocks F;
-    b = reprojectionError(cameras, point, F, E);
+    b = reprojectionError(cameras, point, Fblocks, E);
     return b.squaredNorm();
   }
 
@@ -357,8 +357,8 @@ public:
   void whitenJacobians(std::vector<MatrixZD>& F, Matrix& E, Vector& b) const {
     noiseModel_->WhitenSystem(E, b);
     // TODO make WhitenInPlace work with any dense matrix type
-    BOOST_FOREACH(MatrixZD& Fblock,F)
-      Fblock.second = noiseModel_->Whiten(Fblock.second);
+    for (size_t i = 0; i < F.size(); i++)
+      F[i] = noiseModel_->Whiten(F[i]);
   }
 
   /**
@@ -390,7 +390,7 @@ public:
     const size_t M = b.size();
     Matrix3 P = PointCov(E, lambda, diagonalDamping);
     SharedIsotropic n = noiseModel::Isotropic::Sigma(M, noiseModel_->sigma());
-    return boost::make_shared<JacobianFactorQ<Dim, ZDim> >(F, E, P, b, n);
+    return boost::make_shared<JacobianFactorQ<Dim, ZDim> >(keys_, F, E, P, b, n);
   }
 
   /**
@@ -407,7 +407,7 @@ public:
     computeJacobiansSVD(F, E0, b, cameras, point);
     SharedIsotropic n = noiseModel::Isotropic::Sigma(M - 3,
         noiseModel_->sigma());
-    return boost::make_shared<JacobianFactorSVD<Dim, ZDim> >(F, E0, b, n);
+    return boost::make_shared<JacobianFactorSVD<Dim, ZDim> >(keys_, F, E0, b, n);
   }
 
   /// Create BIG block-diagonal matrix F from Fblocks
@@ -416,7 +416,7 @@ public:
     F.resize(ZDim * m, Dim * m);
     F.setZero();
     for (size_t i = 0; i < m; ++i)
-      F.block<This::ZDim, Dim>(This::ZDim * i, Dim * i) = Fblocks.at(i).second;
+      F.block<ZDim, Dim>(ZDim * i, Dim * i) = Fblocks.at(i);
   }
 
 private:

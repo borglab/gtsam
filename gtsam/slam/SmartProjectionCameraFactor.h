@@ -112,7 +112,7 @@ public:
   }
 
   /// linearize returns a Hessianfactor that is an approximation of error(p)
-  virtual boost::shared_ptr<RegularImplicitSchurFactor<Dim> > linearizeToImplicit(
+  virtual boost::shared_ptr<RegularImplicitSchurFactor<Camera> > linearizeToImplicit(
       const Values& values, double lambda=0.0) const {
     return Base::createRegularImplicitSchurFactor(Base::cameras(values),lambda);
   }

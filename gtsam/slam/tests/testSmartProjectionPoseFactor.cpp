@@ -142,7 +142,7 @@ TEST_UNSAFE( SmartProjectionPoseFactor, noiseless ) {
 
   // Calculate using computeJacobians
   Vector b;
-  vector<SmartFactor::KeyMatrix2D> Fblocks;
+  vector<SmartFactor::MatrixZD> Fblocks;
   double actualError3 = factor.computeJacobians(Fblocks, E, b, cameras, *point);
   EXPECT(assert_equal(expectedE, E, 1e-7));
   EXPECT_DOUBLES_EQUAL(expectedError, actualError3, 1e-8);
@@ -264,10 +264,12 @@ TEST( SmartProjectionPoseFactor, 3poses_smart_projection_factor ) {
 /* *************************************************************************/
 TEST( SmartProjectionPoseFactor, Factors ) {
 
+  typedef PinholePose<Cal3_S2> Camera;
+
   // Default cameras for simple derivatives
   Rot3 R;
   static Cal3_S2::shared_ptr sharedK(new Cal3_S2(100, 100, 0, 0, 0));
-  PinholePose<Cal3_S2> cam1(Pose3(R, Point3(0, 0, 0)), sharedK), cam2(
+  Camera cam1(Pose3(R, Point3(0, 0, 0)), sharedK), cam2(
       Pose3(R, Point3(1, 0, 0)), sharedK);
 
   // one landmarks 1m in front of camera
@@ -350,15 +352,19 @@ TEST( SmartProjectionPoseFactor, Factors ) {
     E(2, 0) = 10;
     E(2, 2) = 1;
     E(3, 1) = 10;
-    vector<pair<Key, Matrix26> > Fblocks = list_of<pair<Key, Matrix> > //
-        (make_pair(x1, F1))(make_pair(x2, F2));
+    vector<Matrix26> Fblocks = list_of<Matrix>(F1)(F2);
     Vector b(4);
     b.setZero();
 
+    // Create smart factors
+    FastVector<Key> keys;
+    keys.push_back(x1);
+    keys.push_back(x2);
+    
     // createJacobianQFactor
     SharedIsotropic n = noiseModel::Isotropic::Sigma(4, sigma);
     Matrix3 P = (E.transpose() * E).inverse();
-    JacobianFactorQ<6, 2> expectedQ(Fblocks, E, P, b, n);
+    JacobianFactorQ<6, 2> expectedQ(keys, Fblocks, E, P, b, n);
     EXPECT(assert_equal(expectedInformation, expectedQ.information(), 1e-8));
 
     boost::shared_ptr<JacobianFactorQ<6, 2> > actualQ =
@@ -370,13 +376,13 @@ TEST( SmartProjectionPoseFactor, Factors ) {
     // Whiten for RegularImplicitSchurFactor (does not have noise model)
     model->WhitenSystem(E, b);
     Matrix3 whiteP = (E.transpose() * E).inverse();
-    BOOST_FOREACH(SmartFactor::KeyMatrix2D& Fblock,Fblocks)
-      Fblock.second = model->Whiten(Fblock.second);
+    Fblocks[0] = model->Whiten(Fblocks[0]);
+    Fblocks[1] = model->Whiten(Fblocks[1]);
 
     // createRegularImplicitSchurFactor
-    RegularImplicitSchurFactor<6> expected(Fblocks, E, whiteP, b);
+    RegularImplicitSchurFactor<Camera> expected(keys, Fblocks, E, whiteP, b);
 
-    boost::shared_ptr<RegularImplicitSchurFactor<6> > actual =
+    boost::shared_ptr<RegularImplicitSchurFactor<Camera> > actual =
         smartFactor1->createRegularImplicitSchurFactor(cameras, 0.0);
     CHECK(actual);
     EXPECT(assert_equal(expectedInformation, expected.information(), 1e-8));
@@ -764,8 +770,6 @@ TEST( SmartProjectionPoseFactor, 3poses_projection_factor ) {
   values.insert(L(1), landmark1);
   values.insert(L(2), landmark2);
   values.insert(L(3), landmark3);
-  if (isDebugTest)
-    values.at<Pose3>(x3).print("Pose3 before optimization: ");
 
   DOUBLES_EQUAL(48406055, graph.error(values), 1);
 
@@ -779,8 +783,6 @@ TEST( SmartProjectionPoseFactor, 3poses_projection_factor ) {
 
   DOUBLES_EQUAL(0, graph.error(result), 1e-9);
 
-  if (isDebugTest)
-    result.at<Pose3>(x3).print("Pose3 after optimization: ");
   EXPECT(assert_equal(pose_above, result.at<Pose3>(x3), 1e-7));
 }
 

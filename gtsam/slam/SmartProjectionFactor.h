@@ -278,7 +278,7 @@ public:
     Vector b;
     double f;
     {
-      std::vector<typename Base::KeyMatrix2D> Fblocks;
+      std::vector<typename Base::MatrixZD> Fblocks;
       f = computeJacobiansWithTriangulatedPoint(Fblocks, E, b, cameras);
       Base::whitenJacobians(Fblocks, E, b);
       Base::FillDiagonalF(Fblocks, F); // expensive !
@@ -326,12 +326,12 @@ public:
   }
 
   // create factor
-  boost::shared_ptr<RegularImplicitSchurFactor<Base::Dim> > createRegularImplicitSchurFactor(
+  boost::shared_ptr<RegularImplicitSchurFactor<CAMERA> > createRegularImplicitSchurFactor(
       const Cameras& cameras, double lambda) const {
     if (triangulateForLinearize(cameras))
       return Base::createRegularImplicitSchurFactor(cameras, *result_, lambda);
     else
-      return boost::shared_ptr<RegularImplicitSchurFactor<Base::Dim> >();
+      return boost::shared_ptr<RegularImplicitSchurFactor<CAMERA> >();
   }
 
   /// create factor
@@ -374,7 +374,7 @@ public:
   /// Assumes the point has been computed
   /// Note E can be 2m*3 or 2m*2, in case point is degenerate
   double computeJacobiansWithTriangulatedPoint(
-      std::vector<typename Base::KeyMatrix2D>& Fblocks, Matrix& E, Vector& b,
+      std::vector<typename Base::MatrixZD>& Fblocks, Matrix& E, Vector& b,
       const Cameras& cameras) const {
 
     if (!result_) {
@@ -385,18 +385,15 @@ public:
       int m = this->keys_.size();
       E = zeros(2 * m, 2);
       b = zero(2 * m);
-      double f = 0;
       for (size_t i = 0; i < this->measured_.size(); i++) {
         Matrix Fi, Ei;
         Vector bi = -(cameras[i].projectPointAtInfinity(*result_, Fi, Ei)
             - this->measured_.at(i)).vector();
-
-        f += bi.squaredNorm();
-        Fblocks.push_back(typename Base::KeyMatrix2D(this->keys_[i], Fi));
+        Fblocks.push_back(Fi);
         E.block<2, 2>(2 * i, 0) = Ei;
         subInsert(b, bi, 2 * i);
       }
-      return f;
+      return b.squaredNorm();
     } else {
       // valid result: just return Base version
       return Base::computeJacobians(Fblocks, E, b, cameras, *result_);
@@ -405,7 +402,7 @@ public:
 
   /// Version that takes values, and creates the point
   bool triangulateAndComputeJacobians(
-      std::vector<typename Base::KeyMatrix2D>& Fblocks, Matrix& E, Vector& b,
+      std::vector<typename Base::MatrixZD>& Fblocks, Matrix& E, Vector& b,
       const Values& values) const {
     Cameras cameras = this->cameras(values);
     bool nonDegenerate = triangulateForLinearize(cameras);
@@ -416,8 +413,8 @@ public:
 
   /// takes values
   bool triangulateAndComputeJacobiansSVD(
-      std::vector<typename Base::KeyMatrix2D>& Fblocks, Matrix& Enull,
-      Vector& b, const Values& values) const {
+      std::vector<typename Base::MatrixZD>& Fblocks, Matrix& Enull, Vector& b,
+      const Values& values) const {
     Cameras cameras = this->cameras(values);
     bool nonDegenerate = triangulateForLinearize(cameras);
     if (nonDegenerate)
