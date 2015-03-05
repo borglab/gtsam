@@ -246,7 +246,7 @@ TEST( SmartProjectionPoseFactor, 3poses_smart_projection_factor ) {
     params.verbosity = NonlinearOptimizerParams::ERROR;
 
   Values result;
-  gttic_(SmartProjectionPoseFactor);
+  gttic_ (SmartProjectionPoseFactor);
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
   gttoc_(SmartProjectionPoseFactor);
@@ -256,7 +256,7 @@ TEST( SmartProjectionPoseFactor, 3poses_smart_projection_factor ) {
 //  VectorValues delta = GFG->optimize();
 
   // result.print("results of 3 camera, 3 landmark optimization \n");
-  EXPECT(assert_equal(cam3, result.at<Camera>(x3), 1e-8));
+  EXPECT(assert_equal(pose_above, result.at<Camera>(x3).pose(), 1e-8));
   if (isDebugTest)
     tictoc_print_();
 }
@@ -389,7 +389,7 @@ TEST( SmartProjectionPoseFactor, Factors ) {
     Vector1 b;
     b.setZero();
     double s = sigma * sin(M_PI_4);
-    SharedIsotropic n = noiseModel::Isotropic::Sigma(4-3, sigma);
+    SharedIsotropic n = noiseModel::Isotropic::Sigma(4 - 3, sigma);
     JacobianFactor expected(x1, s * A1, x2, s * A2, b, n);
     EXPECT(assert_equal(expectedInformation, expected.information(), 1e-8));
 
@@ -460,14 +460,14 @@ TEST( SmartProjectionPoseFactor, 3poses_iterative_smart_projection_factor ) {
     params.verbosity = NonlinearOptimizerParams::ERROR;
 
   Values result;
-  gttic_(SmartProjectionPoseFactor);
+  gttic_ (SmartProjectionPoseFactor);
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
   gttoc_(SmartProjectionPoseFactor);
   tictoc_finishedIteration_();
 
   // result.print("results of 3 camera, 3 landmark optimization \n");
-  EXPECT(assert_equal(cam3, result.at<Camera>(x3), 1e-7));
+  EXPECT(assert_equal(pose_above, result.at<Camera>(x3).pose(), 1e-7));
   if (isDebugTest)
     tictoc_print_();
 }
@@ -519,10 +519,15 @@ TEST( SmartProjectionPoseFactor, jacobianSVD ) {
   values.insert(x3, Camera(pose_above * noise_pose, sharedK));
 
   LevenbergMarquardtParams params;
+  if (isDebugTest)
+    params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
+  if (isDebugTest)
+    params.verbosity = NonlinearOptimizerParams::ERROR;
+
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
-  EXPECT(assert_equal(cam3, result.at<Camera>(x3), 1e-8));
+  EXPECT(assert_equal(pose_above, result.at<Camera>(x3).pose(), 1e-8));
 }
 
 /* *************************************************************************/
@@ -640,12 +645,10 @@ TEST( SmartProjectionPoseFactor, dynamicOutlierRejection ) {
   graph.push_back(PriorFactor<Camera>(x1, cam1, noisePrior));
   graph.push_back(PriorFactor<Camera>(x2, cam2, noisePrior));
 
-  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
-      Point3(0.1, 0.1, 0.1)); // smaller noise
   Values values;
   values.insert(x1, cam1);
   values.insert(x2, cam2);
-  values.insert(x3, Camera(pose_above * noise_pose, sharedK));
+  values.insert(x3, cam3);
 
   // All factors are disabled and pose should remain where it is
   LevenbergMarquardtParams params;
@@ -701,10 +704,15 @@ TEST( SmartProjectionPoseFactor, jacobianQ ) {
   values.insert(x3, Camera(pose_above * noise_pose, sharedK));
 
   LevenbergMarquardtParams params;
+  if (isDebugTest)
+    params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
+  if (isDebugTest)
+    params.verbosity = NonlinearOptimizerParams::ERROR;
+
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
-  EXPECT(assert_equal(cam3, result.at<Camera>(x3), 1e-8));
+  EXPECT(assert_equal(pose_above, result.at<Camera>(x3).pose(), 1e-8));
 }
 
 /* *************************************************************************/
@@ -928,7 +936,7 @@ TEST( SmartProjectionPoseFactor, 3poses_2land_rotation_only_smart_projection_fac
     params.verbosity = NonlinearOptimizerParams::ERROR;
 
   Values result;
-  gttic_(SmartProjectionPoseFactor);
+  gttic_ (SmartProjectionPoseFactor);
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
   gttoc_(SmartProjectionPoseFactor);
@@ -1029,7 +1037,7 @@ TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) 
     params.verbosity = NonlinearOptimizerParams::ERROR;
 
   Values result;
-  gttic_(SmartProjectionPoseFactor);
+  gttic_ (SmartProjectionPoseFactor);
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
   gttoc_(SmartProjectionPoseFactor);
@@ -1283,7 +1291,7 @@ TEST( SmartProjectionPoseFactor, Cal3Bundler ) {
     params.verbosity = NonlinearOptimizerParams::ERROR;
 
   Values result;
-  gttic_(SmartProjectionPoseFactor);
+  gttic_ (SmartProjectionPoseFactor);
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
   gttoc_(SmartProjectionPoseFactor);
@@ -1392,7 +1400,7 @@ TEST( SmartProjectionPoseFactor, Cal3BundlerRotationOnly ) {
     params.verbosity = NonlinearOptimizerParams::ERROR;
 
   Values result;
-  gttic_(SmartProjectionPoseFactor);
+  gttic_ (SmartProjectionPoseFactor);
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
   gttoc_(SmartProjectionPoseFactor);
