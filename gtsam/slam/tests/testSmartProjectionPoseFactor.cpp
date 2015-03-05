@@ -1162,9 +1162,12 @@ TEST( SmartProjectionPoseFactor, HessianWithRotationDegenerate ) {
   views.push_back(x1);
   views.push_back(x2);
   views.push_back(x3);
+  
+  // All cameras have the same pose so will be degenerate !
+  Camera cam2(level_pose, sharedK2);
+  Camera cam3(level_pose, sharedK2);
 
-  vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
-
+  vector<Point2> measurements_cam1;
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
 
   SmartFactor::shared_ptr smartFactor(new SmartFactor());
@@ -1183,8 +1186,8 @@ TEST( SmartProjectionPoseFactor, HessianWithRotationDegenerate ) {
 
   Values rotValues;
   rotValues.insert(x1, Camera(poseDrift.compose(level_pose), sharedK2));
-  rotValues.insert(x2, Camera(poseDrift.compose(pose_right), sharedK2));
-  rotValues.insert(x3, Camera(poseDrift.compose(pose_above), sharedK2));
+  rotValues.insert(x2, Camera(poseDrift.compose(level_pose), sharedK2));
+  rotValues.insert(x3, Camera(poseDrift.compose(level_pose), sharedK2));
 
   boost::shared_ptr<GaussianFactor> factorRot = smartFactor->linearize(
       rotValues);
@@ -1199,8 +1202,8 @@ TEST( SmartProjectionPoseFactor, HessianWithRotationDegenerate ) {
 
   Values tranValues;
   tranValues.insert(x1, Camera(poseDrift2.compose(level_pose), sharedK2));
-  tranValues.insert(x2, Camera(poseDrift2.compose(pose_right), sharedK2));
-  tranValues.insert(x3, Camera(poseDrift2.compose(pose_above), sharedK2));
+  tranValues.insert(x2, Camera(poseDrift2.compose(level_pose), sharedK2));
+  tranValues.insert(x3, Camera(poseDrift2.compose(level_pose), sharedK2));
 
   boost::shared_ptr<GaussianFactor> factorRotTran = smartFactor->linearize(
       tranValues);
