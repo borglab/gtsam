@@ -106,7 +106,9 @@ protected:
   /// shorthand for this class
   typedef SmartStereoProjectionFactor<CALIBRATION, D> This;
 
-  enum {ZDim = 3};    ///< Dimension trait of measurement type
+  enum {
+    ZDim = 3
+  }; ///< Dimension trait of measurement type
 
 public:
 
@@ -156,7 +158,8 @@ public:
     std::cout << "rankTolerance_ = " << rankTolerance_ << std::endl;
     std::cout << "degenerate_ = " << degenerate_ << std::endl;
     std::cout << "cheiralityException_ = " << cheiralityException_ << std::endl;
-    std::cout << "linearizationThreshold_ = " << linearizationThreshold_ << std::endl;
+    std::cout << "linearizationThreshold_ = " << linearizationThreshold_
+        << std::endl;
     Base::print("", keyFormatter);
   }
 
@@ -280,11 +283,11 @@ public:
 
         // Check landmark distance and reprojection errors to avoid outliers
         double totalReprojError = 0.0;
-        size_t i=0;
+        size_t i = 0;
         BOOST_FOREACH(const Camera& camera, cameras) {
           Point3 cameraTranslation = camera.pose().translation();
           // we discard smart factors corresponding to points that are far away
-          if(cameraTranslation.distance(point_) > landmarkDistanceThreshold_){
+          if (cameraTranslation.distance(point_) > landmarkDistanceThreshold_) {
             degenerate_ = true;
             break;
           }
@@ -299,8 +302,8 @@ public:
         }
         //std::cout << "totalReprojError error: " << totalReprojError << std::endl;
         // we discard smart factors that have large reprojection error
-        if(dynamicOutlierRejectionThreshold_ > 0 &&
-            totalReprojError/m > dynamicOutlierRejectionThreshold_)
+        if (dynamicOutlierRejectionThreshold_ > 0
+            && totalReprojError / m > dynamicOutlierRejectionThreshold_)
           degenerate_ = true;
 
       } catch (TriangulationUnderconstrainedException&) {
@@ -350,9 +353,9 @@ public:
     bool isDebug = false;
     size_t numKeys = this->keys_.size();
     // Create structures for Hessian Factors
-    std::vector < Key > js;
-    std::vector < Matrix > Gs(numKeys * (numKeys + 1) / 2);
-    std::vector < Vector > gs(numKeys);
+    std::vector<Key> js;
+    std::vector<Matrix> Gs(numKeys * (numKeys + 1) / 2);
+    std::vector<Vector> gs(numKeys);
 
     if (this->measured_.size() != cameras.size()) {
       std::cout
@@ -362,12 +365,14 @@ public:
     }
 
     this->triangulateSafe(cameras);
-    if (isDebug) std::cout << "point_ = " << point_ << std::endl;
+    if (isDebug)
+      std::cout << "point_ = " << point_ << std::endl;
 
     if (numKeys < 2
         || (!this->manageDegeneracy_
             && (this->cheiralityException_ || this->degenerate_))) {
-      if (isDebug) std::cout << "In linearize: exception" << std::endl;
+      if (isDebug)
+        std::cout << "In linearize: exception" << std::endl;
       BOOST_FOREACH(Matrix& m, Gs)
         m = zeros(D, D);
       BOOST_FOREACH(Vector& v, gs)
@@ -379,12 +384,14 @@ public:
     // instead, if we want to manage the exception..
     if (this->cheiralityException_ || this->degenerate_) { // if we want to manage the exceptions with rotation-only factors
       this->degenerate_ = true;
-      if (isDebug) std::cout << "degenerate_ = true" << std::endl;
+      if (isDebug)
+        std::cout << "degenerate_ = true" << std::endl;
     }
 
     bool doLinearize = this->decideIfLinearize(cameras);
 
-    if (isDebug) std::cout << "doLinearize = " << doLinearize << std::endl;
+    if (isDebug)
+      std::cout << "doLinearize = " << doLinearize << std::endl;
 
     if (this->linearizationThreshold_ >= 0 && doLinearize) // if we apply selective relinearization and we need to relinearize
       for (size_t i = 0; i < cameras.size(); i++)
@@ -405,11 +412,11 @@ public:
     }
 
     // ==================================================================
-    std::vector<typename Base::KeyMatrix2D> Fblocks;
+    std::vector<typename Base::MatrixZD> Fblocks;
     Matrix F, E;
     Vector b;
     double f = computeJacobians(Fblocks, E, b, cameras);
-    Base::FillDiagonalF(Fblocks,F); // expensive !!!
+    Base::FillDiagonalF(Fblocks, F); // expensive !!!
 
     // Schur complement trick
     // Frank says: should be possible to do this more efficiently?
@@ -417,21 +424,23 @@ public:
     Matrix H(D * numKeys, D * numKeys);
     Vector gs_vector;
 
-    Matrix3 P = Base::PointCov(E,lambda);
+    Matrix3 P = Base::PointCov(E, lambda);
     H.noalias() = F.transpose() * (F - (E * (P * (E.transpose() * F))));
     gs_vector.noalias() = F.transpose() * (b - (E * (P * (E.transpose() * b))));
 
-    if (isDebug) std::cout << "gs_vector size " << gs_vector.size() << std::endl;
-    if (isDebug) std::cout << "H:\n" << H << std::endl;
+    if (isDebug)
+      std::cout << "gs_vector size " << gs_vector.size() << std::endl;
+    if (isDebug)
+      std::cout << "H:\n" << H << std::endl;
 
     // Populate Gs and gs
     int GsCount2 = 0;
-    for (DenseIndex i1 = 0; i1 < (DenseIndex)numKeys; i1++) { // for each camera
+    for (DenseIndex i1 = 0; i1 < (DenseIndex) numKeys; i1++) { // for each camera
       DenseIndex i1D = i1 * D;
-      gs.at(i1) = gs_vector.segment < D > (i1D);
-      for (DenseIndex i2 = 0; i2 < (DenseIndex)numKeys; i2++) {
+      gs.at(i1) = gs_vector.segment<D>(i1D);
+      for (DenseIndex i2 = 0; i2 < (DenseIndex) numKeys; i2++) {
         if (i2 >= i1) {
-          Gs.at(GsCount2) = H.block < D, D > (i1D, i2 * D);
+          Gs.at(GsCount2) = H.block<D, D>(i1D, i2 * D);
           GsCount2++;
         }
       }
@@ -476,12 +485,12 @@ public:
 //  }
 //
   /// different (faster) way to compute Jacobian factor
-  boost::shared_ptr< JacobianFactor > createJacobianSVDFactor(const Cameras& cameras,
-      double lambda) const {
+  boost::shared_ptr<JacobianFactor> createJacobianSVDFactor(
+      const Cameras& cameras, double lambda) const {
     if (triangulateForLinearize(cameras))
       return Base::createJacobianSVDFactor(cameras, point_, lambda);
     else
-      return boost::make_shared< JacobianFactorSVD<D, ZDim> >(this->keys_);
+      return boost::make_shared<JacobianFactorSVD<D, ZDim> >(this->keys_);
   }
 
   /// Returns true if nonDegenerate
@@ -506,7 +515,8 @@ public:
       this->degenerate_ = true;
 
     if (this->degenerate_) {
-      std::cout << "SmartStereoProjectionFactor: this is not ready" << std::endl;
+      std::cout << "SmartStereoProjectionFactor: this is not ready"
+          << std::endl;
       std::cout << "this->cheiralityException_ " << this->cheiralityException_
           << std::endl;
       std::cout << "this->degenerate_ " << this->degenerate_ << std::endl;
@@ -527,7 +537,7 @@ public:
   }
 
   /// Version that takes values, and creates the point
-  bool computeJacobians(std::vector<typename Base::KeyMatrix2D>& Fblocks,
+  bool computeJacobians(std::vector<typename Base::MatrixZD>& Fblocks,
       Matrix& E, Vector& b, const Values& values) const {
     Cameras cameras;
     bool nonDegenerate = computeCamerasAndTriangulate(values, cameras);
@@ -539,7 +549,7 @@ public:
   /// Compute F, E only (called below in both vanilla and SVD versions)
   /// Assumes the point has been computed
   /// Note E can be 2m*3 or 2m*2, in case point is degenerate
-  double computeJacobians(std::vector<typename Base::KeyMatrix2D>& Fblocks,
+  double computeJacobians(std::vector<typename Base::MatrixZD>& Fblocks,
       Matrix& E, Vector& b, const Cameras& cameras) const {
     if (this->degenerate_) {
       throw("FIXME: computeJacobians degenerate case commented out!");
@@ -570,7 +580,7 @@ public:
 //
 //        this->noise_.at(i)->WhitenSystem(Fi, Ei, bi);
 //        f += bi.squaredNorm();
-//        Fblocks.push_back(typename Base::KeyMatrix2D(this->keys_[i], Fi));
+//        Fblocks.push_back(typename Base::MatrixZD(this->keys_[i], Fi));
 //        E.block < 2, 2 > (2 * i, 0) = Ei;
 //        subInsert(b, bi, 2 * i);
 //      }
@@ -583,8 +593,8 @@ public:
 
   /// takes values
   bool triangulateAndComputeJacobiansSVD(
-      std::vector<typename Base::KeyMatrix2D>& Fblocks, Matrix& Enull,
-      Vector& b, const Values& values) const {
+      std::vector<typename Base::MatrixZD>& Fblocks, Matrix& Enull, Vector& b,
+      const Values& values) const {
     typename Base::Cameras cameras;
     double good = computeCamerasAndTriangulate(values, cameras);
     if (good)
@@ -637,7 +647,7 @@ public:
     }
 
     if (this->degenerate_) {
-       return 0.0; // TODO: this maybe should be zero?
+      return 0.0; // TODO: this maybe should be zero?
 //      std::cout
 //          << "SmartProjectionHessianFactor: trying to manage degeneracy (this should not happen is manageDegeneracy is disabled)!"
 //          << std::endl;
@@ -707,8 +717,8 @@ private:
 
 /// traits
 template<class CALIBRATION, size_t D>
-struct traits<SmartStereoProjectionFactor<CALIBRATION, D> > :
-    public Testable<SmartStereoProjectionFactor<CALIBRATION, D> > {
+struct traits<SmartStereoProjectionFactor<CALIBRATION, D> > : public Testable<
+    SmartStereoProjectionFactor<CALIBRATION, D> > {
 };
 
 } // \ namespace gtsam
