@@ -128,7 +128,7 @@ public:
    * Do Schur complement, given Jacobian as F,E,P, return SymmetricBlockMatrix
    * Fast version - works on with sparsity
    */
-  static void sparseSchurComplement(const std::vector<KeyMatrix2D>& Fblocks,
+  static void SparseSchurComplement(const std::vector<KeyMatrix2D>& Fblocks,
       const Matrix& E, const Matrix3& P /*Point Covariance*/, const Vector& b,
       /*output ->*/SymmetricBlockMatrix& augmentedHessian) {
     // Schur complement trick
@@ -167,7 +167,7 @@ public:
    * Applies Schur complement (exploiting block structure) to get a smart factor on cameras,
    * and adds the contribution of the smart factor to a pre-allocated augmented Hessian.
    */
-  static void updateSparseSchurComplement(
+  static void UpdateSparseSchurComplement(
       const std::vector<KeyMatrix2D>& Fblocks, const Matrix& E,
       const Matrix3& P /*Point Covariance*/, const Vector& b, const double f,
       const FastVector<Key>& allKeys, const FastVector<Key>& keys,
@@ -248,7 +248,7 @@ public:
     SymmetricBlockMatrix augmentedHessian(dims, Matrix::Zero(M1, M1));
 
     // Do the Schur complement
-    sparseSchurComplement(Fblocks_, E_, PointCovariance_, b_, augmentedHessian);
+    SparseSchurComplement(Fblocks_, E_, PointCovariance_, b_, augmentedHessian);
     return augmentedHessian.matrix();
   }
 
@@ -257,7 +257,7 @@ public:
     Matrix augmented = augmentedInformation();
     int m = this->keys_.size();
     size_t M = D * m;
-    return augmented.block(0,0,M,M);
+    return augmented.block(0, 0, M, M);
   }
 
   /// Return the diagonal of the Hessian for this factor

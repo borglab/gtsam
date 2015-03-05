@@ -63,7 +63,7 @@ public:
       QF.push_back(
           KeyMatrix(it.first,
               (Enull.transpose()).block(0, ZDim * j++, m2, ZDim) * it.second));
-    JacobianFactor::fillTerms(QF, Enull.transpose() * b, model);
+    JacobianFactor::fillTerms(QF, - Enull.transpose() * b, model);
   }
 };
 

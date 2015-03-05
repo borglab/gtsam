@@ -272,7 +272,7 @@ public:
       EtE.diagonal() += lambda * EtE.diagonal();
     } else {
       DenseIndex n = E.cols();
-      EtE += lambda * Eigen::MatrixXd::Identity(n,n);
+      EtE += lambda * Eigen::MatrixXd::Identity(n, n);
     }
 
     return (EtE).inverse();
@@ -342,7 +342,8 @@ public:
     SymmetricBlockMatrix augmentedHessian(dims, Matrix::Zero(M1, M1));
 
     // build augmented hessian
-    sparseSchurComplement(Fblocks, E, P, b, augmentedHessian);
+    RegularImplicitSchurFactor<Dim>::SparseSchurComplement(Fblocks, E, P, b,
+        augmentedHessian);
     augmentedHessian(m, m)(0, 0) = f;
 
     return boost::make_shared<RegularHessianFactor<Dim> >(keys_,
@@ -363,7 +364,7 @@ public:
     std::vector<KeyMatrix2D> Fblocks;
     double f = computeJacobians(Fblocks, E, b, cameras, point);
     Matrix3 P = PointCov(E, lambda, diagonalDamping);
-    RegularImplicitSchurFactor<Dim, ZDim>::updateSparseSchurComplement(Fblocks,
+    RegularImplicitSchurFactor<Dim, ZDim>::UpdateSparseSchurComplement(Fblocks,
         E, P, b, f, allKeys, keys_, augmentedHessian);
   }
 
@@ -420,7 +421,8 @@ public:
     const size_t M = ZDim * m;
     Matrix E0(M, M - 3);
     computeJacobiansSVD(F, E0, b, cameras, point);
-    SharedIsotropic n = noiseModel::Isotropic::Sigma(M-3, noiseModel_->sigma());
+    SharedIsotropic n = noiseModel::Isotropic::Sigma(M - 3,
+        noiseModel_->sigma());
     return boost::make_shared<JacobianFactorSVD<Dim, ZDim> >(F, E0, b, n);
   }
 
