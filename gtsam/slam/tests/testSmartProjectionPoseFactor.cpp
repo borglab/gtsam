@@ -974,7 +974,7 @@ TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) 
   // Two different cameras
   Pose3 pose2 = level_pose
       * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
-  Pose3 pose3 = level_pose
+  Pose3 pose3 = pose2
       * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
   Camera cam2(pose2, sharedK);
   Camera cam3(pose3, sharedK);
@@ -1011,9 +1011,9 @@ TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) 
   graph.push_back(smartFactor3);
   graph.push_back(PriorFactor<Camera>(x1, cam1, noisePrior));
   graph.push_back(
-      PoseTranslationPrior<Pose3>(x2, positionPrior, noisePriorTranslation));
+      PoseTranslationPrior<Camera>(x2, positionPrior, noisePriorTranslation));
   graph.push_back(
-      PoseTranslationPrior<Pose3>(x3, positionPrior, noisePriorTranslation));
+      PoseTranslationPrior<Camera>(x3, positionPrior, noisePriorTranslation));
 
   //  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
@@ -1022,7 +1022,7 @@ TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) 
   values.insert(x1, cam1);
   values.insert(x2, cam2);
   // initialize third pose with some noise, we expect it to move back to original pose_above
-  values.insert(x3, Camera(pose_above * noise_pose, sharedK));
+  values.insert(x3, Camera(pose3 * noise_pose, sharedK));
   EXPECT(
       assert_equal(
           Pose3(
