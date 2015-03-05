@@ -31,14 +31,15 @@ using namespace gtsam;
 #include <gtsam/geometry/Cal3Bundler.h>
 TEST(CameraSet, Pinhole) {
   typedef PinholeCamera<Cal3Bundler> Camera;
+  typedef CameraSet<Camera> Set;
   typedef vector<Point2> ZZ;
-  CameraSet<Camera> set;
+  Set set;
   Camera camera;
   set.push_back(camera);
   set.push_back(camera);
   Point3 p(0, 0, 1);
   EXPECT(assert_equal(set, set));
-  CameraSet<Camera> set2 = set;
+  Set set2 = set;
   set2.push_back(camera);
   EXPECT(!set.equals(set2));
 
@@ -50,7 +51,7 @@ TEST(CameraSet, Pinhole) {
 
   // Calculate expected derivatives using Pinhole
   Matrix43 actualE;
-  Matrix F1;
+  Matrix29 F1;
   {
     Matrix23 E1;
     Matrix23 H1;
@@ -59,12 +60,12 @@ TEST(CameraSet, Pinhole) {
   }
 
   // Check computed derivatives
-  CameraSet<Camera>::FBlocks F;
-  Matrix E, H;
-  set.project2(p, F, E);
-  LONGS_EQUAL(2,F.size());
-  EXPECT(assert_equal(F1, F[0]));
-  EXPECT(assert_equal(F1, F[1]));
+  Set::FBlocks Fs;
+  Matrix E;
+  set.project2(p, Fs, E);
+  LONGS_EQUAL(2, Fs.size());
+  EXPECT(assert_equal(F1, Fs[0]));
+  EXPECT(assert_equal(F1, Fs[1]));
   EXPECT(assert_equal(actualE, E));
 
   // Check errors
@@ -77,6 +78,40 @@ TEST(CameraSet, Pinhole) {
   expectedV << -1, -2, -3, -4;
   Vector actualV = set.reprojectionError(p, measured);
   EXPECT(assert_equal(expectedV, actualV));
+
+  // Check Schur complement
+  Matrix F(4, 18);
+  F << F1, Matrix29::Zero(), Matrix29::Zero(), F1;
+  Matrix Ft = F.transpose();
+  Matrix34 Et = E.transpose();
+  Matrix3 P = Et * E;
+  Matrix schur(19, 19);
+  Vector4 b = actualV;
+  Vector v = Ft * (b - E * P * Et * b);
+  schur << Ft * F - Ft * E * P * Et * F, v, v.transpose(), 30;
+  SymmetricBlockMatrix actualReduced = Set::SchurComplement(Fs, E, P, b);
+  EXPECT(assert_equal(schur, actualReduced.matrix()));
+
+  // Check Schur complement update, same order, should just double
+  FastVector<Key> allKeys, keys;
+  allKeys.push_back(1);
+  allKeys.push_back(2);
+  keys.push_back(1);
+  keys.push_back(2);
+  Set::UpdateSchurComplement(Fs, E, P, b, allKeys, keys, actualReduced);
+  EXPECT(assert_equal((Matrix )(2.0 * schur), actualReduced.matrix()));
+
+  // Check Schur complement update, keys reversed
+  FastVector<Key> keys2;
+  keys2.push_back(2);
+  keys2.push_back(1);
+  Set::UpdateSchurComplement(Fs, E, P, b, allKeys, keys2, actualReduced);
+  Vector4 reverse_b;
+  reverse_b << b.tail<2>(), b.head<2>();
+  Vector reverse_v = Ft * (reverse_b - E * P * Et * reverse_b);
+  Matrix A(19, 19);
+  A << Ft * F - Ft * E * P * Et * F, reverse_v, reverse_v.transpose(), 30;
+  EXPECT(assert_equal((Matrix )(2.0 * schur + A), actualReduced.matrix()));
 
   // reprojectionErrorAtInfinity
   EXPECT(
@@ -113,12 +148,12 @@ TEST(CameraSet, Stereo) {
   }
 
   // Check computed derivatives
-  CameraSet<StereoCamera>::FBlocks F;
+  CameraSet<StereoCamera>::FBlocks Fs;
   Matrix E;
-  set.project2(p, F, E);
-  LONGS_EQUAL(2,F.size());
-  EXPECT(assert_equal(F1, F[0]));
-  EXPECT(assert_equal(F1, F[1]));
+  set.project2(p, Fs, E);
+  LONGS_EQUAL(2, Fs.size());
+  EXPECT(assert_equal(F1, Fs[0]));
+  EXPECT(assert_equal(F1, Fs[1]));
   EXPECT(assert_equal(actualE, E));
 }
 
