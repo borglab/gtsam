@@ -29,7 +29,21 @@ template<typename MatrixType> void selfadjointeigensolver(const MatrixType& m)
   MatrixType a = MatrixType::Random(rows,cols);
   MatrixType a1 = MatrixType::Random(rows,cols);
   MatrixType symmA =  a.adjoint() * a + a1.adjoint() * a1;
+  MatrixType symmC = symmA;
+  
+  // randomly nullify some rows/columns
+  {
+    Index count = 1;//internal::random<Index>(-cols,cols);
+    for(Index k=0; k<count; ++k)
+    {
+      Index i = internal::random<Index>(0,cols-1);
+      symmA.row(i).setZero();
+      symmA.col(i).setZero();
+    }
+  }
+  
   symmA.template triangularView<StrictlyUpper>().setZero();
+  symmC.template triangularView<StrictlyUpper>().setZero();
 
   MatrixType b = MatrixType::Random(rows,cols);
   MatrixType b1 = MatrixType::Random(rows,cols);
@@ -40,7 +54,7 @@ template<typename MatrixType> void selfadjointeigensolver(const MatrixType& m)
   SelfAdjointEigenSolver<MatrixType> eiDirect;
   eiDirect.computeDirect(symmA);
   // generalized eigen pb
-  GeneralizedSelfAdjointEigenSolver<MatrixType> eiSymmGen(symmA, symmB);
+  GeneralizedSelfAdjointEigenSolver<MatrixType> eiSymmGen(symmC, symmB);
 
   VERIFY_IS_EQUAL(eiSymm.info(), Success);
   VERIFY((symmA.template selfadjointView<Lower>() * eiSymm.eigenvectors()).isApprox(
@@ -57,27 +71,28 @@ template<typename MatrixType> void selfadjointeigensolver(const MatrixType& m)
   VERIFY_IS_APPROX(eiSymm.eigenvalues(), eiSymmNoEivecs.eigenvalues());
   
   // generalized eigen problem Ax = lBx
-  eiSymmGen.compute(symmA, symmB,Ax_lBx);
+  eiSymmGen.compute(symmC, symmB,Ax_lBx);
   VERIFY_IS_EQUAL(eiSymmGen.info(), Success);
-  VERIFY((symmA.template selfadjointView<Lower>() * eiSymmGen.eigenvectors()).isApprox(
+  VERIFY((symmC.template selfadjointView<Lower>() * eiSymmGen.eigenvectors()).isApprox(
           symmB.template selfadjointView<Lower>() * (eiSymmGen.eigenvectors() * eiSymmGen.eigenvalues().asDiagonal()), largerEps));
 
   // generalized eigen problem BAx = lx
-  eiSymmGen.compute(symmA, symmB,BAx_lx);
+  eiSymmGen.compute(symmC, symmB,BAx_lx);
   VERIFY_IS_EQUAL(eiSymmGen.info(), Success);
-  VERIFY((symmB.template selfadjointView<Lower>() * (symmA.template selfadjointView<Lower>() * eiSymmGen.eigenvectors())).isApprox(
+  VERIFY((symmB.template selfadjointView<Lower>() * (symmC.template selfadjointView<Lower>() * eiSymmGen.eigenvectors())).isApprox(
          (eiSymmGen.eigenvectors() * eiSymmGen.eigenvalues().asDiagonal()), largerEps));
 
   // generalized eigen problem ABx = lx
-  eiSymmGen.compute(symmA, symmB,ABx_lx);
+  eiSymmGen.compute(symmC, symmB,ABx_lx);
   VERIFY_IS_EQUAL(eiSymmGen.info(), Success);
-  VERIFY((symmA.template selfadjointView<Lower>() * (symmB.template selfadjointView<Lower>() * eiSymmGen.eigenvectors())).isApprox(
+  VERIFY((symmC.template selfadjointView<Lower>() * (symmB.template selfadjointView<Lower>() * eiSymmGen.eigenvectors())).isApprox(
          (eiSymmGen.eigenvectors() * eiSymmGen.eigenvalues().asDiagonal()), largerEps));
 
 
+  eiSymm.compute(symmC);
   MatrixType sqrtSymmA = eiSymm.operatorSqrt();
-  VERIFY_IS_APPROX(MatrixType(symmA.template selfadjointView<Lower>()), sqrtSymmA*sqrtSymmA);
-  VERIFY_IS_APPROX(sqrtSymmA, symmA.template selfadjointView<Lower>()*eiSymm.operatorInverseSqrt());
+  VERIFY_IS_APPROX(MatrixType(symmC.template selfadjointView<Lower>()), sqrtSymmA*sqrtSymmA);
+  VERIFY_IS_APPROX(sqrtSymmA, symmC.template selfadjointView<Lower>()*eiSymm.operatorInverseSqrt());
 
   MatrixType id = MatrixType::Identity(rows, cols);
   VERIFY_IS_APPROX(id.template selfadjointView<Lower>().operatorNorm(), RealScalar(1));
@@ -95,15 +110,15 @@ template<typename MatrixType> void selfadjointeigensolver(const MatrixType& m)
   VERIFY_RAISES_ASSERT(eiSymmUninitialized.operatorInverseSqrt());
 
   // test Tridiagonalization's methods
-  Tridiagonalization<MatrixType> tridiag(symmA);
+  Tridiagonalization<MatrixType> tridiag(symmC);
   // FIXME tridiag.matrixQ().adjoint() does not work
-  VERIFY_IS_APPROX(MatrixType(symmA.template selfadjointView<Lower>()), tridiag.matrixQ() * tridiag.matrixT().eval() * MatrixType(tridiag.matrixQ()).adjoint());
+  VERIFY_IS_APPROX(MatrixType(symmC.template selfadjointView<Lower>()), tridiag.matrixQ() * tridiag.matrixT().eval() * MatrixType(tridiag.matrixQ()).adjoint());
   
   if (rows > 1)
   {
     // Test matrix with NaN
-    symmA(0,0) = std::numeric_limits<typename MatrixType::RealScalar>::quiet_NaN();
-    SelfAdjointEigenSolver<MatrixType> eiSymmNaN(symmA);
+    symmC(0,0) = std::numeric_limits<typename MatrixType::RealScalar>::quiet_NaN();
+    SelfAdjointEigenSolver<MatrixType> eiSymmNaN(symmC);
     VERIFY_IS_EQUAL(eiSymmNaN.info(), NoConvergence);
   }
 }
@@ -113,8 +128,10 @@ void test_eigensolver_selfadjoint()
   int s = 0;
   for(int i = 0; i < g_repeat; i++) {
     // very important to test 3x3 and 2x2 matrices since we provide special paths for them
+    CALL_SUBTEST_1( selfadjointeigensolver(Matrix2f()) );
     CALL_SUBTEST_1( selfadjointeigensolver(Matrix2d()) );
     CALL_SUBTEST_1( selfadjointeigensolver(Matrix3f()) );
+    CALL_SUBTEST_1( selfadjointeigensolver(Matrix3d()) );
     CALL_SUBTEST_2( selfadjointeigensolver(Matrix4d()) );
     s = internal::random<int>(1,EIGEN_TEST_MAX_SIZE/4);
     CALL_SUBTEST_3( selfadjointeigensolver(MatrixXf(s,s)) );
