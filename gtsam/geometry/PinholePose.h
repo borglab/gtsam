@@ -30,15 +30,15 @@ namespace gtsam {
  * @addtogroup geometry
  * \nosubgrouping
  */
-template<typename Calibration>
+template<typename CALIBRATION>
 class GTSAM_EXPORT PinholeBaseK: public PinholeBase {
 
 private:
 
-  GTSAM_CONCEPT_MANIFOLD_TYPE(Calibration);
+  GTSAM_CONCEPT_MANIFOLD_TYPE(CALIBRATION);
 
   // Get dimensions of calibration type at compile time
-  static const int DimK = FixedDimension<Calibration>::value;
+  static const int DimK = FixedDimension<CALIBRATION>::value;
 
 public:
 
@@ -70,7 +70,7 @@ public:
   }
 
   /// return calibration
-  virtual const Calibration& calibration() const = 0;
+  virtual const CALIBRATION& calibration() const = 0;
 
   /// @}
   /// @name Transformations and measurement functions
@@ -235,13 +235,13 @@ private:
  * @addtogroup geometry
  * \nosubgrouping
  */
-template<typename Calibration>
-class GTSAM_EXPORT PinholePose: public PinholeBaseK<Calibration> {
+template<typename CALIBRATION>
+class GTSAM_EXPORT PinholePose: public PinholeBaseK<CALIBRATION> {
 
 private:
 
-  typedef PinholeBaseK<Calibration> Base; ///< base class has 3D pose as private member
-  boost::shared_ptr<Calibration> K_; ///< shared pointer to fixed calibration
+  typedef PinholeBaseK<CALIBRATION> Base; ///< base class has 3D pose as private member
+  boost::shared_ptr<CALIBRATION> K_; ///< shared pointer to fixed calibration
 
 public:
 
@@ -258,11 +258,11 @@ public:
 
   /** constructor with pose, uses default calibration */
   explicit PinholePose(const Pose3& pose) :
-      Base(pose), K_(new Calibration()) {
+      Base(pose), K_(new CALIBRATION()) {
   }
 
   /** constructor with pose and calibration */
-  PinholePose(const Pose3& pose, const boost::shared_ptr<Calibration>& K) :
+  PinholePose(const Pose3& pose, const boost::shared_ptr<CALIBRATION>& K) :
       Base(pose), K_(K) {
   }
 
@@ -277,14 +277,14 @@ public:
    * (theta 0 = looking in direction of positive X axis)
    * @param height camera height
    */
-  static PinholePose Level(const boost::shared_ptr<Calibration>& K,
+  static PinholePose Level(const boost::shared_ptr<CALIBRATION>& K,
       const Pose2& pose2, double height) {
     return PinholePose(Base::LevelPose(pose2, height), K);
   }
 
   /// PinholePose::level with default calibration
   static PinholePose Level(const Pose2& pose2, double height) {
-    return PinholePose::Level(boost::make_shared<Calibration>(), pose2, height);
+    return PinholePose::Level(boost::make_shared<CALIBRATION>(), pose2, height);
   }
 
   /**
@@ -297,8 +297,8 @@ public:
    * @param K optional calibration parameter
    */
   static PinholePose Lookat(const Point3& eye, const Point3& target,
-      const Point3& upVector, const boost::shared_ptr<Calibration>& K =
-          boost::make_shared<Calibration>()) {
+      const Point3& upVector, const boost::shared_ptr<CALIBRATION>& K =
+          boost::make_shared<CALIBRATION>()) {
     return PinholePose(Base::LookatPose(eye, target, upVector), K);
   }
 
@@ -308,12 +308,12 @@ public:
 
   /// Init from 6D vector
   explicit PinholePose(const Vector &v) :
-      Base(v), K_(new Calibration()) {
+      Base(v), K_(new CALIBRATION()) {
   }
 
   /// Init from Vector and calibration
   PinholePose(const Vector &v, const Vector &K) :
-      Base(v), K_(new Calibration(K)) {
+      Base(v), K_(new CALIBRATION(K)) {
   }
 
   /// @}
@@ -340,7 +340,7 @@ public:
   }
 
   /// return calibration
-  virtual const Calibration& calibration() const {
+  virtual const CALIBRATION& calibration() const {
     return *K_;
   }
 
@@ -390,14 +390,14 @@ private:
 };
 // end of class PinholePose
 
-template<typename Calibration>
-struct traits<PinholePose<Calibration> > : public internal::Manifold<
-    PinholePose<Calibration> > {
+template<typename CALIBRATION>
+struct traits<PinholePose<CALIBRATION> > : public internal::Manifold<
+    PinholePose<CALIBRATION> > {
 };
 
-template<typename Calibration>
-struct traits<const PinholePose<Calibration> > : public internal::Manifold<
-    PinholePose<Calibration> > {
+template<typename CALIBRATION>
+struct traits<const PinholePose<CALIBRATION> > : public internal::Manifold<
+    PinholePose<CALIBRATION> > {
 };
 
 } // \ gtsam
