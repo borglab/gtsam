@@ -51,16 +51,10 @@ template<typename MatrixType> void submatrices(const MatrixType& m)
   MatrixType m1 = MatrixType::Random(rows, cols),
              m2 = MatrixType::Random(rows, cols),
              m3(rows, cols),
-             mzero = MatrixType::Zero(rows, cols),
              ones = MatrixType::Ones(rows, cols),
-             identity = Matrix<Scalar, MatrixType::RowsAtCompileTime, MatrixType::RowsAtCompileTime>
-                              ::Identity(rows, rows),
              square = Matrix<Scalar, MatrixType::RowsAtCompileTime, MatrixType::RowsAtCompileTime>
                               ::Random(rows, rows);
-  VectorType v1 = VectorType::Random(rows),
-             v2 = VectorType::Random(rows),
-             v3 = VectorType::Random(rows),
-             vzero = VectorType::Zero(rows);
+  VectorType v1 = VectorType::Random(rows);
 
   Scalar s1 = ei_random<Scalar>();
 

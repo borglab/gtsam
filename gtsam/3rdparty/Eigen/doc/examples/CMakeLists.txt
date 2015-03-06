@@ -6,12 +6,10 @@ foreach(example_src ${examples_SRCS})
   if(EIGEN_STANDARD_LIBRARIES_TO_LINK_TO)
     target_link_libraries(${example} ${EIGEN_STANDARD_LIBRARIES_TO_LINK_TO})
   endif()
-  get_target_property(example_executable
-                      ${example} LOCATION)
   add_custom_command(
     TARGET ${example}
     POST_BUILD
-    COMMAND ${example_executable}
+    COMMAND ${example}
     ARGS >${CMAKE_CURRENT_BINARY_DIR}/${example}.out
   )
   add_dependencies(all_examples ${example})

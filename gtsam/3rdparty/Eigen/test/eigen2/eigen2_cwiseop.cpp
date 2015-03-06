@@ -35,11 +35,8 @@ template<typename MatrixType> void cwiseops(const MatrixType& m)
              mzero = MatrixType::Zero(rows, cols),
              mones = MatrixType::Ones(rows, cols),
              identity = Matrix<Scalar, MatrixType::RowsAtCompileTime, MatrixType::RowsAtCompileTime>
-                              ::Identity(rows, rows),
-             square = Matrix<Scalar, MatrixType::RowsAtCompileTime, MatrixType::RowsAtCompileTime>::Random(rows, rows);
-  VectorType v1 = VectorType::Random(rows),
-             v2 = VectorType::Random(rows),
-             vzero = VectorType::Zero(rows),
+                              ::Identity(rows, rows);
+  VectorType vzero = VectorType::Zero(rows),
              vones = VectorType::Ones(rows),
              v3(rows);
 
