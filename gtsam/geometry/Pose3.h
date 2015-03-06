@@ -223,7 +223,8 @@ public:
   }
 
   /// get translation
-  const Point3& translation() const {
+  const Point3& translation(OptionalJacobian<3,6> H = boost::none) const {
+    if (H) *H << Matrix3::Zero(), R_.matrix();
     return t_;
   }
 

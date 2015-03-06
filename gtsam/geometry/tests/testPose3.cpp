@@ -56,6 +56,16 @@ TEST( Pose3, constructors)
 }
 
 /* ************************************************************************* */
+TEST( Pose3, translation)
+{
+  Matrix36 actualH;
+  Matrix expectedH = numericalDerivative11<Point3,Pose3>(
+      boost::bind(&Pose3::translation, _1, boost::none), T);
+  EXPECT(assert_equal(Point3(3.5,-8.2,4.2), T.translation(actualH), 1e-8));
+  EXPECT(assert_equal(expectedH, actualH, 1e-8));
+}
+
+/* ************************************************************************* */
 #ifndef GTSAM_POSE3_EXPMAP
 TEST( Pose3, retract_first_order)
 {
