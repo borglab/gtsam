@@ -415,7 +415,7 @@ public:
     std::vector<typename Base::MatrixZD> Fblocks;
     Matrix F, E;
     Vector b;
-    double f = computeJacobians(Fblocks, E, b, cameras);
+    computeJacobians(Fblocks, E, b, cameras);
     Base::FillDiagonalF(Fblocks, F); // expensive !!!
 
     // Schur complement trick
@@ -446,6 +446,7 @@ public:
       }
     }
     // ==================================================================
+    double f = b.squaredNorm();
     if (this->linearizationThreshold_ >= 0) { // if we do not use selective relinearization we don't need to store these variables
       this->state_->Gs = Gs;
       this->state_->gs = gs;
@@ -549,7 +550,7 @@ public:
   /// Compute F, E only (called below in both vanilla and SVD versions)
   /// Assumes the point has been computed
   /// Note E can be 2m*3 or 2m*2, in case point is degenerate
-  double computeJacobians(std::vector<typename Base::MatrixZD>& Fblocks,
+  void computeJacobians(std::vector<typename Base::MatrixZD>& Fblocks,
       Matrix& E, Vector& b, const Cameras& cameras) const {
     if (this->degenerate_) {
       throw("FIXME: computeJacobians degenerate case commented out!");
@@ -587,7 +588,7 @@ public:
 //      return f;
     } else {
       // nondegenerate: just return Base version
-      return Base::computeJacobians(Fblocks, E, b, cameras, point_);
+      Base::computeJacobians(Fblocks, E, b, cameras, point_);
     } // end else
   }
 
@@ -607,7 +608,7 @@ public:
     Cameras cameras;
     bool nonDegenerate = computeCamerasAndTriangulate(values, cameras);
     if (nonDegenerate)
-      return Base::reprojectionError(cameras, point_);
+      return Base::unwhitenedError(cameras, point_);
     else
       return zero(cameras.size() * 3);
   }

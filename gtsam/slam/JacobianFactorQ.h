@@ -65,7 +65,7 @@ public:
     for (size_t k = 0; k < FBlocks.size(); ++k) {
       Key key = keys[k];
       QF.push_back(
-          KeyMatrix(key, Q.block(0, ZDim * j++, m2, ZDim) * FBlocks[k]));
+          KeyMatrix(key, - Q.block(0, ZDim * j++, m2, ZDim) * FBlocks[k]));
     }
     // Which is then passed to the normal JacobianFactor constructor
     JacobianFactor::fillTerms(QF, - Q * b, model);
