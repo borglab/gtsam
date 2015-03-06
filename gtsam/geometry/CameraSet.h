@@ -53,7 +53,7 @@ protected:
     if (measured.size() != m)
       throw std::runtime_error("CameraSet::errors: size mismatch");
 
-    // Project and fill derivatives
+    // Project and fill error vector
     Vector b(ZDim * m);
     for (size_t i = 0, row = 0; i < m; i++, row += ZDim) {
       Z e = predicted[i] - measured[i];
@@ -141,18 +141,18 @@ public:
     return z;
   }
 
-  /// Calculate vector [z-project2(point)] of re-projection errors
+  /// Calculate vector [project2(point)-z] of re-projection errors
   Vector reprojectionError(const Point3& point, const std::vector<Z>& measured,
       boost::optional<FBlocks&> Fs = boost::none, //
       boost::optional<Matrix&> E = boost::none) const {
-    return ErrorVector(measured, project2(point, Fs, E));
+    return ErrorVector(project2(point, Fs, E), measured);
   }
 
-  /// Calculate vector [z-project2(point)] of re-projection errors, from point at infinity
+  /// Calculate vector [project2(point)-z] of re-projection errors, from point at infinity
   // TODO: take Unit3 instead
   Vector reprojectionErrorAtInfinity(const Point3& point,
       const std::vector<Z>& measured) const {
-    return ErrorVector(measured, projectAtInfinity(point));
+    return ErrorVector(projectAtInfinity(point), measured);
   }
 
   /**

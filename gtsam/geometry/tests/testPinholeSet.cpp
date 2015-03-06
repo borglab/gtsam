@@ -115,7 +115,7 @@ TEST(PinholeSet, Pinhole) {
   Vector4 expectedV;
 
   // reprojectionError
-  expectedV << 1, 2, 3, 4;
+  expectedV << -1, -2, -3, -4;
   Vector actualV = set.reprojectionError(p, measured);
   EXPECT(assert_equal(expectedV, actualV));
 
