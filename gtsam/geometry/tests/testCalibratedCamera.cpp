@@ -105,11 +105,12 @@ static Point2 project_to_camera2(const Unit3& point) {
   return PinholeBase::project_to_camera(point);
 }
 
+Unit3 pointAtInfinity(0, 0, 1000);
 TEST( CalibratedCamera, Dproject_to_cameraInfinity) {
-  Unit3 pp(0, 0, 1000);
   Matrix test1;
-  CalibratedCamera::project_to_camera(pp, test1);
-  Matrix test2 = numericalDerivative11<Point2, Unit3>(project_to_camera2, pp);
+  CalibratedCamera::project_to_camera(pointAtInfinity, test1);
+  Matrix test2 = numericalDerivative11<Point2, Unit3>(project_to_camera2,
+      pointAtInfinity);
   CHECK(assert_equal(test1, test2));
 }
 
@@ -140,6 +141,36 @@ TEST( CalibratedCamera, Dproject_point_pose2)
   camera.project(point1, Dpose, Dpoint);
   Matrix numerical_pose  = numericalDerivative21(project2, camera, point1);
   Matrix numerical_point = numericalDerivative22(project2, camera, point1);
+  CHECK(assert_equal(numerical_pose,  Dpose, 1e-7));
+  CHECK(assert_equal(numerical_point, Dpoint, 1e-7));
+}
+
+/* ************************************************************************* */
+static Point2 projectAtInfinity(const CalibratedCamera& camera, const Unit3& point) {
+  return camera.project2(point);
+}
+
+TEST( CalibratedCamera, Dproject_point_pose_infinity)
+{
+  Matrix Dpose, Dpoint;
+  Point2 result = camera.project2(pointAtInfinity, Dpose, Dpoint);
+  Matrix numerical_pose  = numericalDerivative21(projectAtInfinity, camera, pointAtInfinity);
+  Matrix numerical_point = numericalDerivative22(projectAtInfinity, camera, pointAtInfinity);
+  CHECK(assert_equal(Point2(), result));
+  CHECK(assert_equal(numerical_pose,  Dpose, 1e-7));
+  CHECK(assert_equal(numerical_point, Dpoint, 1e-7));
+}
+
+/* ************************************************************************* */
+// Add a test with more arbitrary rotation
+TEST( CalibratedCamera, Dproject_point_pose2_infinity)
+{
+  static const Pose3 pose1(Rot3::ypr(0.1, -0.1, 0.4), Point3(0, 0, -10));
+  static const CalibratedCamera camera(pose1);
+  Matrix Dpose, Dpoint;
+  camera.project2(pointAtInfinity, Dpose, Dpoint);
+  Matrix numerical_pose  = numericalDerivative21(projectAtInfinity, camera, pointAtInfinity);
+  Matrix numerical_point = numericalDerivative22(projectAtInfinity, camera, pointAtInfinity);
   CHECK(assert_equal(numerical_pose,  Dpose, 1e-7));
   CHECK(assert_equal(numerical_point, Dpoint, 1e-7));
 }

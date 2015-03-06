@@ -122,7 +122,7 @@ Point2 PinholeBase::project2(const Point3& point, OptionalJacobian<2, 6> Dpose,
   const Point3 q = pose().transform_to(point, boost::none, Dpoint ? &Rt : 0);
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
   if (q.z() <= 0)
-  throw CheiralityException();
+    throw CheiralityException();
 #endif
   const Point2 pn = project_to_camera(q);
 
@@ -136,6 +136,33 @@ Point2 PinholeBase::project2(const Point3& point, OptionalJacobian<2, 6> Dpose,
   return pn;
 }
 
+/* ************************************************************************* */
+Point2 PinholeBase::project2(const Unit3& pw, OptionalJacobian<2, 6> Dpose,
+    OptionalJacobian<2, 2> Dpoint) const {
+
+  // world to camera coordinate
+  Matrix23 Dpc_rot;
+  Matrix2 Dpc_point;
+  const Unit3 pc = pose().rotation().unrotate(pw, Dpose ? &Dpc_rot : 0,
+      Dpose ? &Dpc_point : 0);
+
+  // camera to normalized image coordinate
+  Matrix2 Dpn_pc;
+  const Point2 pn = PinholeBase::project_to_camera(pc,
+      Dpose || Dpoint ? &Dpn_pc : 0);
+
+  // chain the Jacobian matrices
+  if (Dpose) {
+    // only rotation is important
+    Matrix26 Dpc_pose;
+    Dpc_pose.setZero();
+    Dpc_pose.leftCols<3>() = Dpc_rot;
+    *Dpose = Dpn_pc * Dpc_pose; // 2x2 * 2x6
+  }
+  if (Dpoint)
+    *Dpoint = Dpn_pc * Dpc_point; // 2x2 * 2*2
+  return pn;
+}
 /* ************************************************************************* */
 Point3 PinholeBase::backproject_from_camera(const Point2& p,
     const double depth) {

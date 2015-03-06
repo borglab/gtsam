@@ -187,6 +187,15 @@ public:
   Point2 project2(const Point3& point, OptionalJacobian<2, 6> Dpose =
       boost::none, OptionalJacobian<2, 3> Dpoint = boost::none) const;
 
+  /**
+   * Project point at infinity into the image
+   * Throws a CheiralityException if point behind image plane iff GTSAM_THROW_CHEIRALITY_EXCEPTION
+   * @param point 3D point in world coordinates
+   * @return the intrinsic coordinates of the projected point
+   */
+  Point2 project2(const Unit3& point, OptionalJacobian<2, 6> Dpose =
+      boost::none, OptionalJacobian<2, 2> Dpoint = boost::none) const;
+
   /// backproject a 2-dimensional point to a 3-dimensional point at given depth
   static Point3 backproject_from_camera(const Point2& p, const double depth);
 
