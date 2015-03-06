@@ -93,14 +93,17 @@ public:
   }
 
   /**
-   * Project a point, with derivatives in CameraSet and Point3
+   * Project a point (posibly Unit3 at infinity), with derivatives
    * Note that F is a sparse block-diagonal matrix, so instead of a large dense
    * matrix this function returns the diagonal blocks.
    * throws CheiralityException
    */
-  std::vector<Z> project2(const Point3& point, //
+  template<class POINT>
+  std::vector<Z> project2(const POINT& point, //
       boost::optional<FBlocks&> Fs = boost::none, //
       boost::optional<Matrix&> E = boost::none) const {
+
+    static const int N = FixedDimension<POINT>::value;
 
     // Allocate result
     size_t m = this->size();
@@ -108,68 +111,30 @@ public:
 
     // Allocate derivatives
     if (E)
-      E->resize(ZDim * m, 3);
+      E->resize(ZDim * m, N);
     if (Fs)
       Fs->resize(m);
 
     // Project and fill derivatives
     for (size_t i = 0; i < m; i++) {
       MatrixZD Fi;
-      Eigen::Matrix<double, ZDim, 3> Ei;
+      Eigen::Matrix<double, ZDim, N> Ei;
       z[i] = this->at(i).project2(point, Fs ? &Fi : 0, E ? &Ei : 0);
       if (Fs)
         (*Fs)[i] = Fi;
       if (E)
-        E->block<ZDim, 3>(ZDim * i, 0) = Ei;
-    }
-
-    return z;
-  }
-
-  /**
-   * Project a point at infinity, with derivatives in this, point, and calibration
-   * throws CheiralityException
-   */
-  std::vector<Z> project2(const Unit3& point, //
-      boost::optional<FBlocks&> Fs = boost::none, //
-      boost::optional<Matrix&> E = boost::none) const {
-
-    // Allocate result
-    size_t m = this->size();
-    std::vector<Z> z(m);
-
-    // Allocate derivatives
-    if (E)
-      E->resize(ZDim * m, 2);
-    if (Fs)
-      Fs->resize(m);
-
-    // Project and fill derivatives
-    for (size_t i = 0; i < m; i++) {
-      MatrixZD Fi;
-      Eigen::Matrix<double, ZDim, 2> Ei;
-      z[i] = this->at(i).project2(point, Fs ? &Fi : 0, E ? &Ei : 0);
-      if (Fs)
-        (*Fs)[i] = Fi;
-      if (E)
-        E->block<ZDim, 2>(ZDim * i, 0) = Ei;
+        E->block<ZDim, N>(ZDim * i, 0) = Ei;
     }
 
     return z;
   }
 
   /// Calculate vector [project2(point)-z] of re-projection errors
-  Vector reprojectionError(const Point3& point, const std::vector<Z>& measured,
+  template<class POINT>
+  Vector reprojectionError(const POINT& point, const std::vector<Z>& measured,
       boost::optional<FBlocks&> Fs = boost::none, //
       boost::optional<Matrix&> E = boost::none) const {
     return ErrorVector(project2(point, Fs, E), measured);
-  }
-
-  /// Calculate vector [project2(point)-z] of re-projection errors, from point at infinity
-  Vector reprojectionError(const Unit3& point, const std::vector<Z>& measured,
-      boost::optional<FBlocks&> Fs = boost::none, //
-      boost::optional<Matrix&> E = boost::none) const {
-    return ErrorVector(project2(point,Fs,E), measured);
   }
 
   /**
