@@ -95,6 +95,19 @@ Point2 PinholeBase::project_to_camera(const Point3& pc,
 }
 
 /* ************************************************************************* */
+Point2 PinholeBase::project_to_camera(const Unit3& pc,
+    OptionalJacobian<2, 2> Dpoint) {
+  if (Dpoint) {
+    Matrix32 Dpoint3_pc;
+    Matrix23 Duv_point3;
+    Point2 uv = project_to_camera(pc.point3(Dpoint3_pc), Duv_point3);
+    *Dpoint = Duv_point3 * Dpoint3_pc;
+    return uv;
+  } else
+    return project_to_camera(pc.point3());
+}
+
+/* ************************************************************************* */
 pair<Point2, bool> PinholeBase::projectSafe(const Point3& pw) const {
   const Point3 pc = pose().transform_to(pw);
   const Point2 pn = project_to_camera(pc);

@@ -167,6 +167,14 @@ public:
   static Point2 project_to_camera(const Point3& pc, //
       OptionalJacobian<2, 3> Dpoint = boost::none);
 
+  /**
+   * Project from 3D point at infinity in camera coordinates into image
+   * Does *not* throw a CheiralityException, even if pc behind image plane
+   * @param pc point in camera coordinates
+   */
+  static Point2 project_to_camera(const Unit3& pc, //
+      OptionalJacobian<2, 2> Dpoint = boost::none);
+
   /// Project a point into the image and check depth
   std::pair<Point2, bool> projectSafe(const Point3& pw) const;
 

@@ -88,12 +88,28 @@ TEST( CalibratedCamera, project)
 }
 
 /* ************************************************************************* */
+static Point2 project_to_camera1(const Point3& point) {
+  return PinholeBase::project_to_camera(point);
+}
+
 TEST( CalibratedCamera, Dproject_to_camera1) {
-  Point3 pp(155,233,131);
+  Point3 pp(155, 233, 131);
   Matrix test1;
   CalibratedCamera::project_to_camera(pp, test1);
-  Matrix test2 = numericalDerivative11<Point2,Point3>(
-      boost::bind(CalibratedCamera::project_to_camera, _1, boost::none), pp);
+  Matrix test2 = numericalDerivative11<Point2, Point3>(project_to_camera1, pp);
+  CHECK(assert_equal(test1, test2));
+}
+
+/* ************************************************************************* */
+static Point2 project_to_camera2(const Unit3& point) {
+  return PinholeBase::project_to_camera(point);
+}
+
+TEST( CalibratedCamera, Dproject_to_cameraInfinity) {
+  Unit3 pp(0, 0, 1000);
+  Matrix test1;
+  CalibratedCamera::project_to_camera(pp, test1);
+  Matrix test2 = numericalDerivative11<Point2, Unit3>(project_to_camera2, pp);
   CHECK(assert_equal(test1, test2));
 }
 
