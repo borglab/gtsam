@@ -160,7 +160,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
-  void serialize(Archive & ar, const unsigned int version) {
+  void serialize(Archive & ar, const unsigned int /*version*/) {
     ar
     & boost::serialization::make_nvp("PinholeBase",
         boost::serialization::base_object<PinholeBase>(*this));
@@ -321,7 +321,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
-  void serialize(Archive & ar, const unsigned int version) {
+  void serialize(Archive & ar, const unsigned int /*version*/) {
     ar
         & boost::serialization::make_nvp("PinholeBaseK",
             boost::serialization::base_object<Base>(*this));

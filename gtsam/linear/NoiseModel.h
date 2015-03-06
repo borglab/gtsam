@@ -116,7 +116,7 @@ namespace gtsam {
       /** Serialization function */
       friend class boost::serialization::access;
       template<class ARCHIVE>
-      void serialize(ARCHIVE & ar, const unsigned int version) {
+      void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
         ar & BOOST_SERIALIZATION_NVP(dim_);
       }
     };
@@ -243,7 +243,7 @@ namespace gtsam {
       /** Serialization function */
       friend class boost::serialization::access;
       template<class ARCHIVE>
-      void serialize(ARCHIVE & ar, const unsigned int version) {
+      void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
         ar & BOOST_SERIALIZATION_NVP(sqrt_information_);
       }
@@ -338,7 +338,7 @@ namespace gtsam {
       /** Serialization function */
       friend class boost::serialization::access;
       template<class ARCHIVE>
-      void serialize(ARCHIVE & ar, const unsigned int version) {
+      void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Gaussian);
         ar & BOOST_SERIALIZATION_NVP(sigmas_);
         ar & BOOST_SERIALIZATION_NVP(invsigmas_);
@@ -489,7 +489,7 @@ namespace gtsam {
       /** Serialization function */
       friend class boost::serialization::access;
       template<class ARCHIVE>
-      void serialize(ARCHIVE & ar, const unsigned int version) {
+      void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Diagonal);
         ar & BOOST_SERIALIZATION_NVP(mu_);
       }
@@ -556,7 +556,7 @@ namespace gtsam {
       /** Serialization function */
       friend class boost::serialization::access;
       template<class ARCHIVE>
-      void serialize(ARCHIVE & ar, const unsigned int version) {
+      void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Diagonal);
         ar & BOOST_SERIALIZATION_NVP(sigma_);
         ar & BOOST_SERIALIZATION_NVP(invsigma_);
@@ -603,7 +603,7 @@ namespace gtsam {
       /** Serialization function */
       friend class boost::serialization::access;
       template<class ARCHIVE>
-      void serialize(ARCHIVE & ar, const unsigned int version) {
+      void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Isotropic);
       }
     };
@@ -655,7 +655,7 @@ namespace gtsam {
         /** Serialization function */
         friend class boost::serialization::access;
         template<class ARCHIVE>
-        void serialize(ARCHIVE & ar, const unsigned int version) {
+        void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
           ar & BOOST_SERIALIZATION_NVP(reweight_);
         }
       };
@@ -676,7 +676,7 @@ namespace gtsam {
         /** Serialization function */
         friend class boost::serialization::access;
         template<class ARCHIVE>
-        void serialize(ARCHIVE & ar, const unsigned int version) {
+        void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
           ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
         }
       };
@@ -700,7 +700,7 @@ namespace gtsam {
         /** Serialization function */
         friend class boost::serialization::access;
         template<class ARCHIVE>
-        void serialize(ARCHIVE & ar, const unsigned int version) {
+        void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
           ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
           ar & BOOST_SERIALIZATION_NVP(c_);
         }
@@ -725,7 +725,7 @@ namespace gtsam {
         /** Serialization function */
         friend class boost::serialization::access;
         template<class ARCHIVE>
-        void serialize(ARCHIVE & ar, const unsigned int version) {
+        void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
           ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
           ar & BOOST_SERIALIZATION_NVP(k_);
         }
@@ -754,7 +754,7 @@ namespace gtsam {
         /** Serialization function */
         friend class boost::serialization::access;
         template<class ARCHIVE>
-        void serialize(ARCHIVE & ar, const unsigned int version) {
+        void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
           ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
           ar & BOOST_SERIALIZATION_NVP(k_);
         }
@@ -779,7 +779,7 @@ namespace gtsam {
         /** Serialization function */
         friend class boost::serialization::access;
         template<class ARCHIVE>
-        void serialize(ARCHIVE & ar, const unsigned int version) {
+        void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
           ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
           ar & BOOST_SERIALIZATION_NVP(c_);
         }
@@ -804,7 +804,7 @@ namespace gtsam {
         /** Serialization function */
         friend class boost::serialization::access;
         template<class ARCHIVE>
-        void serialize(ARCHIVE & ar, const unsigned int version) {
+        void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
           ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
           ar & BOOST_SERIALIZATION_NVP(c_);
         }
@@ -867,7 +867,7 @@ namespace gtsam {
       /** Serialization function */
       friend class boost::serialization::access;
       template<class ARCHIVE>
-      void serialize(ARCHIVE & ar, const unsigned int version) {
+      void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
         ar & boost::serialization::make_nvp("robust_", const_cast<RobustModel::shared_ptr&>(robust_));
         ar & boost::serialization::make_nvp("noise_", const_cast<NoiseModel::shared_ptr&>(noise_));

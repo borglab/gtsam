@@ -235,7 +235,7 @@ namespace gtsam {
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version) {
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       // Fill in the lower triangle part of the matrix, so boost::serialization won't
       // complain about uninitialized data with an input_stream_error exception
       // http://www.boost.org/doc/libs/1_37_0/libs/serialization/doc/exceptions.html#stream_error
