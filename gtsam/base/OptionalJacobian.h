@@ -83,7 +83,7 @@ public:
 #ifndef OPTIONALJACOBIAN_NOBOOST
 
   /// Constructor with boost::none just makes empty
-  OptionalJacobian(boost::none_t none) :
+  OptionalJacobian(boost::none_t /*none*/) :
       map_(NULL) {
   }
 
@@ -142,7 +142,7 @@ public:
 #ifndef OPTIONALJACOBIAN_NOBOOST
 
   /// Constructor with boost::none just makes empty
-  OptionalJacobian(boost::none_t none) :
+  OptionalJacobian(boost::none_t /*none*/) :
     pointer_(NULL) {
   }
 

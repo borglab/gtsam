@@ -401,7 +401,7 @@ struct DynamicTraits {
     return result;
   }
 
-  static Dynamic Expmap(const TangentVector& v, ChartJacobian H = boost::none) {
+  static Dynamic Expmap(const TangentVector& /*v*/, ChartJacobian /*H*/) {
     throw std::runtime_error("Expmap not defined for dynamic types");
   }
 

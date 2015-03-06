@@ -118,12 +118,12 @@ namespace gtsam {
     Matrix1 AdjointMap() const { return I_1x1; }
 
     /// Left-trivialized derivative of the exponential map
-    static Matrix ExpmapDerivative(const Vector& v) {
+    static Matrix ExpmapDerivative(const Vector& /*v*/) {
       return ones(1);
     }
 
     /// Left-trivialized derivative inverse of the exponential map
-    static Matrix LogmapDerivative(const Vector& v) {
+    static Matrix LogmapDerivative(const Vector& /*v*/) {
       return ones(1);
     }
 

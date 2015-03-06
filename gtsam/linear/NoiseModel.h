@@ -592,12 +592,12 @@ namespace gtsam {
       virtual Vector whiten(const Vector& v) const { return v; }
       virtual Vector unwhiten(const Vector& v) const { return v; }
       virtual Matrix Whiten(const Matrix& H) const { return H; }
-      virtual void WhitenInPlace(Matrix& H) const {}
-      virtual void WhitenInPlace(Eigen::Block<Matrix> H) const {}
-      virtual void whitenInPlace(Vector& v) const {}
-      virtual void unwhitenInPlace(Vector& v) const {}
-      virtual void whitenInPlace(Eigen::Block<Vector>& v) const {}
-      virtual void unwhitenInPlace(Eigen::Block<Vector>& v) const {}
+      virtual void WhitenInPlace(Matrix& /*H*/) const {}
+      virtual void WhitenInPlace(Eigen::Block<Matrix> /*H*/) const {}
+      virtual void whitenInPlace(Vector& /*v*/) const {}
+      virtual void unwhitenInPlace(Vector& /*v*/) const {}
+      virtual void whitenInPlace(Eigen::Block<Vector>& /*v*/) const {}
+      virtual void unwhitenInPlace(Eigen::Block<Vector>& /*v*/) const {}
 
     private:
       /** Serialization function */
@@ -667,9 +667,9 @@ namespace gtsam {
 
         Null(const ReweightScheme reweight = Block) : Base(reweight) {}
         virtual ~Null() {}
-        virtual double weight(const double &error) const { return 1.0; }
+        virtual double weight(const double& /*error*/) const { return 1.0; }
         virtual void print(const std::string &s) const;
-        virtual bool equals(const Base& expected, const double tol=1e-8) const { return true; }
+        virtual bool equals(const Base& /*expected*/, const double /*tol*/) const { return true; }
         static shared_ptr Create() ;
 
       private:
@@ -848,7 +848,7 @@ namespace gtsam {
       // TODO: functions below are dummy but necessary for the noiseModel::Base
       inline virtual Vector whiten(const Vector& v) const
       { Vector r = v; this->WhitenSystem(r); return r; }
-      inline virtual Vector unwhiten(const Vector& v) const
+      inline virtual Vector unwhiten(const Vector& /*v*/) const
       { throw std::invalid_argument("unwhiten is not currently supported for robust noise models."); }
       inline virtual double distance(const Vector& v) const
       { return this->whiten(v).squaredNorm(); }

@@ -199,6 +199,7 @@ namespace gtsam {
     }
 
     void checkBlock(DenseIndex block) const {
+      static_cast<void>(block); //Disable unused varibale warnings.
       assert(matrix_.cols() == variableColOffsets_.back());
       assert(block < (DenseIndex)variableColOffsets_.size() - 1);
       assert(variableColOffsets_[block] < matrix_.cols() && variableColOffsets_[block+1] <= matrix_.cols());

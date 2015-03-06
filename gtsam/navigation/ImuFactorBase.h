@@ -61,7 +61,7 @@ public:
 
   /// Needed for testable
   //------------------------------------------------------------------------------
-  void print(const std::string& s) const {
+  void print(const std::string& /*s*/) const {
     std::cout << "  gravity: [ " << gravity_.transpose() << " ]" << std::endl;
     std::cout << "  omegaCoriolis: [ " << omegaCoriolis_.transpose() << " ]" << std::endl;
     std::cout << "  use2ndOrderCoriolis: [ " << use2ndOrderCoriolis_ << " ]" << std::endl;
