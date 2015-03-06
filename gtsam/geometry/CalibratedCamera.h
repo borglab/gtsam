@@ -164,7 +164,11 @@ public:
    * Does *not* throw a CheiralityException, even if pc behind image plane
    * @param pc point in camera coordinates
    */
-  static Point2 project_to_camera(const Point3& pc, //
+  static Point2 Project(const Point3& pc, //
+      OptionalJacobian<2, 3> Dpoint = boost::none);
+
+  /// @deprecated not correct naming for static function, use Project above
+  static Point2 project_to_camera_old(const Point3& pc, //
       OptionalJacobian<2, 3> Dpoint = boost::none);
 
   /**
@@ -172,7 +176,7 @@ public:
    * Does *not* throw a CheiralityException, even if pc behind image plane
    * @param pc point in camera coordinates
    */
-  static Point2 project_to_camera(const Unit3& pc, //
+  static Point2 Project(const Unit3& pc, //
       OptionalJacobian<2, 2> Dpoint = boost::none);
 
   /// Project a point into the image and check depth
@@ -193,8 +197,9 @@ public:
    * @param point 3D point in world coordinates
    * @return the intrinsic coordinates of the projected point
    */
-  Point2 project2(const Unit3& point, OptionalJacobian<2, 6> Dpose =
-      boost::none, OptionalJacobian<2, 2> Dpoint = boost::none) const;
+  Point2 project2(const Unit3& point,
+      OptionalJacobian<2, 6> Dpose = boost::none,
+      OptionalJacobian<2, 2> Dpoint = boost::none) const;
 
   /// backproject a 2-dimensional point to a 3-dimensional point at given depth
   static Point3 backproject_from_camera(const Point2& p, const double depth);
@@ -213,7 +218,6 @@ public:
   }
 
   /// @}
-
 
 private:
 

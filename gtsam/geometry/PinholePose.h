@@ -100,7 +100,7 @@ public:
    */
   Point2 project(const Unit3& pw) const {
     const Unit3 pc = pose().rotation().unrotate(pw); // convert to camera frame
-    const Point2 pn = PinholeBase::project_to_camera(pc);
+    const Point2 pn = PinholeBase::Project(pc);
     return calibration().uncalibrate(pn);
   }
 

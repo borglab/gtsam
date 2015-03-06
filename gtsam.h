@@ -778,7 +778,7 @@ class CalibratedCamera {
 
   // Action on Point3
   gtsam::Point2 project(const gtsam::Point3& point) const;
-  static gtsam::Point2 project_to_camera(const gtsam::Point3& cameraPoint);
+  static gtsam::Point2 Project(const gtsam::Point3& cameraPoint);
 
   // Standard Interface
   gtsam::Pose3 pose() const;
@@ -815,7 +815,7 @@ class SimpleCamera {
   static size_t Dim();
 
   // Transformations and measurement functions
-  static gtsam::Point2 project_to_camera(const gtsam::Point3& cameraPoint);
+  static gtsam::Point2 Project(const gtsam::Point3& cameraPoint);
   pair<gtsam::Point2,bool> projectSafe(const gtsam::Point3& pw) const;
   gtsam::Point2 project(const gtsam::Point3& point);
   gtsam::Point3 backproject(const gtsam::Point2& p, double depth) const;
@@ -854,7 +854,7 @@ class PinholeCamera {
   static size_t Dim();
 
   // Transformations and measurement functions
-  static gtsam::Point2 project_to_camera(const gtsam::Point3& cameraPoint);
+  static gtsam::Point2 Project(const gtsam::Point3& cameraPoint);
   pair<gtsam::Point2,bool> projectSafe(const gtsam::Point3& pw) const;
   gtsam::Point2 project(const gtsam::Point3& point);
   gtsam::Point3 backproject(const gtsam::Point2& p, double depth) const;

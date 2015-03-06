@@ -85,8 +85,7 @@ const Pose3& PinholeBase::getPose(OptionalJacobian<6, 6> H) const {
 }
 
 /* ************************************************************************* */
-Point2 PinholeBase::project_to_camera(const Point3& pc,
-    OptionalJacobian<2, 3> Dpoint) {
+Point2 PinholeBase::Project(const Point3& pc, OptionalJacobian<2, 3> Dpoint) {
   double d = 1.0 / pc.z();
   const double u = pc.x() * d, v = pc.y() * d;
   if (Dpoint)
@@ -95,22 +94,27 @@ Point2 PinholeBase::project_to_camera(const Point3& pc,
 }
 
 /* ************************************************************************* */
-Point2 PinholeBase::project_to_camera(const Unit3& pc,
-    OptionalJacobian<2, 2> Dpoint) {
+Point2 PinholeBase::project_to_camera_old(const Point3& pc,
+    OptionalJacobian<2, 3> Dpoint) {
+  return Project(pc);
+}
+
+/* ************************************************************************* */
+Point2 PinholeBase::Project(const Unit3& pc, OptionalJacobian<2, 2> Dpoint) {
   if (Dpoint) {
     Matrix32 Dpoint3_pc;
     Matrix23 Duv_point3;
-    Point2 uv = project_to_camera(pc.point3(Dpoint3_pc), Duv_point3);
+    Point2 uv = Project(pc.point3(Dpoint3_pc), Duv_point3);
     *Dpoint = Duv_point3 * Dpoint3_pc;
     return uv;
   } else
-    return project_to_camera(pc.point3());
+    return Project(pc.point3());
 }
 
 /* ************************************************************************* */
 pair<Point2, bool> PinholeBase::projectSafe(const Point3& pw) const {
   const Point3 pc = pose().transform_to(pw);
-  const Point2 pn = project_to_camera(pc);
+  const Point2 pn = Project(pc);
   return make_pair(pn, pc.z() > 0);
 }
 
@@ -124,7 +128,7 @@ Point2 PinholeBase::project2(const Point3& point, OptionalJacobian<2, 6> Dpose,
   if (q.z() <= 0)
     throw CheiralityException();
 #endif
-  const Point2 pn = project_to_camera(q);
+  const Point2 pn = Project(q);
 
   if (Dpose || Dpoint) {
     const double d = 1.0 / q.z();
@@ -148,8 +152,7 @@ Point2 PinholeBase::project2(const Unit3& pw, OptionalJacobian<2, 6> Dpose,
 
   // camera to normalized image coordinate
   Matrix2 Dpn_pc;
-  const Point2 pn = PinholeBase::project_to_camera(pc,
-      Dpose || Dpoint ? &Dpn_pc : 0);
+  const Point2 pn = Project(pc, Dpose || Dpoint ? &Dpn_pc : 0);
 
   // chain the Jacobian matrices
   if (Dpose) {
