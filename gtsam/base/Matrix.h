@@ -535,7 +535,7 @@ namespace boost {
 
     // split version - sends sizes ahead
     template<class Archive>
-    void save(Archive & ar, const gtsam::Matrix & m, unsigned int version) {
+    void save(Archive & ar, const gtsam::Matrix & m, unsigned int /*version*/) {
       const size_t rows = m.rows(), cols = m.cols();
       ar << BOOST_SERIALIZATION_NVP(rows);
       ar << BOOST_SERIALIZATION_NVP(cols);
@@ -543,7 +543,7 @@ namespace boost {
     }
 
     template<class Archive>
-    void load(Archive & ar, gtsam::Matrix & m, unsigned int version) {
+    void load(Archive & ar, gtsam::Matrix & m, unsigned int /*version*/) {
       size_t rows, cols;
       ar >> BOOST_SERIALIZATION_NVP(rows);
       ar >> BOOST_SERIALIZATION_NVP(cols);

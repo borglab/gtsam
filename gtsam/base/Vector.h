@@ -350,14 +350,14 @@ namespace boost {
 
     // split version - copies into an STL vector for serialization
     template<class Archive>
-    void save(Archive & ar, const gtsam::Vector & v, unsigned int version) {
+    void save(Archive & ar, const gtsam::Vector & v, unsigned int /*version*/) {
       const size_t size = v.size();
       ar << BOOST_SERIALIZATION_NVP(size);
       ar << make_nvp("data", make_array(v.data(), v.size()));
     }
 
     template<class Archive>
-    void load(Archive & ar, gtsam::Vector & v, unsigned int version) {
+    void load(Archive & ar, gtsam::Vector & v, unsigned int /*version*/) {
       size_t size;
       ar >> BOOST_SERIALIZATION_NVP(size);
       v.resize(size);
@@ -366,12 +366,12 @@ namespace boost {
 
     // split version - copies into an STL vector for serialization
     template<class Archive, int D>
-    void save(Archive & ar, const Eigen::Matrix<double,D,1> & v, unsigned int version) {
+    void save(Archive & ar, const Eigen::Matrix<double,D,1> & v, unsigned int /*version*/) {
       ar << make_nvp("data", make_array(v.data(), v.RowsAtCompileTime));
     }
 
     template<class Archive, int D>
-    void load(Archive & ar, Eigen::Matrix<double,D,1> & v, unsigned int version) {
+    void load(Archive & ar, Eigen::Matrix<double,D,1> & v, unsigned int /*version*/) {
       ar >> make_nvp("data", make_array(v.data(), v.RowsAtCompileTime));
     }
 
