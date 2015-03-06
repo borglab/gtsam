@@ -200,26 +200,14 @@ public:
 
   typedef Eigen::Matrix<double, 2, DimK> Matrix2K;
 
-  /** project a point from world coordinate to the image, fixed Jacobians
+  /** project a point from world coordinate to the image (possibly a Unit3)
    *  @param pw is a point in the world coordinate
    */
-  Point2 project2(const Point3& pw, OptionalJacobian<2, dimension> Dcamera =
-      boost::none, OptionalJacobian<2, 3> Dpoint = boost::none) const {
-    // We just call 3-derivative version in Base
-    Matrix26 Dpose;
-    Eigen::Matrix<double, 2, DimK> Dcal;
-    Point2 pi = Base::project(pw, Dcamera ? &Dpose : 0, Dpoint,
-        Dcamera ? &Dcal : 0);
-    if (Dcamera)
-      *Dcamera << Dpose, Dcal;
-    return pi;
-  }
-
-  /** project a point from world coordinate to the image, fixed Jacobians
-   *  @param pw is a point in the world coordinate
-   */
-  Point2 project2(const Unit3& pw, OptionalJacobian<2, dimension> Dcamera =
-      boost::none, OptionalJacobian<2, 3> Dpoint = boost::none) const {
+  template<class POINT>
+  Point2 project2(
+      const POINT& pw, //
+      OptionalJacobian<2, dimension> Dcamera = boost::none,
+      OptionalJacobian<2, FixedDimension<POINT>::value> Dpoint = boost::none) const {
     // We just call 3-derivative version in Base
     Matrix26 Dpose;
     Eigen::Matrix<double, 2, DimK> Dcal;

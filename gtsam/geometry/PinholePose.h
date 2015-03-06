@@ -104,14 +104,15 @@ public:
     return calibration().uncalibrate(pn);
   }
 
-  /** project a point from world coordinate to the image
+  /** project a point (possibly at infinity) from world coordinate to the image
    *  @param pw is a point in world coordinates
    *  @param Dpose is the Jacobian w.r.t. pose3
    *  @param Dpoint is the Jacobian w.r.t. point3
    *  @param Dcal is the Jacobian w.r.t. calibration
    */
-  Point2 project(const Point3& pw, OptionalJacobian<2, 6> Dpose,
-      OptionalJacobian<2, 3> Dpoint = boost::none,
+  template <class POINT>
+  Point2 project(const POINT& pw, OptionalJacobian<2, 6> Dpose,
+      OptionalJacobian<2, FixedDimension<POINT>::value> Dpoint = boost::none,
       OptionalJacobian<2, DimK> Dcal = boost::none) const {
 
     // project to normalized coordinates
@@ -124,36 +125,9 @@ public:
 
     // If needed, apply chain rule
     if (Dpose)
-      *Dpose = Dpi_pn * *Dpose;
+    *Dpose = Dpi_pn * *Dpose;
     if (Dpoint)
-      *Dpoint = Dpi_pn * *Dpoint;
-
-    return pi;
-  }
-
-  /** project a point at infinity from world coordinate to the image
-   *  @param pw is a point in the world coordinate (it is pw = lambda*[pw_x  pw_y  pw_z] with lambda->inf)
-   *  @param Dpose is the Jacobian w.r.t. pose3
-   *  @param Dpoint is the Jacobian w.r.t. point3
-   *  @param Dcal is the Jacobian w.r.t. calibration
-   */
-  Point2 project(const Unit3& pw, OptionalJacobian<2, 6> Dpose,
-      OptionalJacobian<2, 2> Dpoint = boost::none,
-      OptionalJacobian<2, DimK> Dcal = boost::none) const {
-
-    // project to normalized coordinates
-    const Point2 pn = PinholeBase::project2(pw, Dpose, Dpoint);
-
-    // uncalibrate to pixel coordinates
-    Matrix2 Dpi_pn;
-    const Point2 pi = calibration().uncalibrate(pn, Dcal,
-        Dpose || Dpoint ? &Dpi_pn : 0);
-
-    // If needed, apply chain rule
-    if (Dpose)
-      *Dpose = Dpi_pn * *Dpose;
-    if (Dpoint)
-      *Dpoint = Dpi_pn * *Dpoint;
+    *Dpoint = Dpi_pn * *Dpoint;
 
     return pi;
   }
@@ -344,35 +318,15 @@ public:
     return *K_;
   }
 
-  /** project a point from world coordinate to the image, w 2 derivatives
-   *  @param pw is a point in the world coordinates
-   */
-  Point2 project2(const Point3& pw, OptionalJacobian<2, 6> Dpose = boost::none,
-      OptionalJacobian<2, 3> Dpoint = boost::none) const {
-
-    // project to normalized coordinates
-    const Point2 pn = PinholeBase::project2(pw, Dpose, Dpoint);
-
-    // uncalibrate to pixel coordinates
-    Matrix2 Dpi_pn;
-    const Point2 pi = calibration().uncalibrate(pn, boost::none,
-        Dpose || Dpoint ? &Dpi_pn : 0);
-
-    // If needed, apply chain rule
-    if (Dpose) *Dpose = Dpi_pn * (*Dpose);
-    if (Dpoint) *Dpoint = Dpi_pn * (*Dpoint);
-
-    return pi;
-  }
-
-  /** project a point at infinity from world coordinate to the image, 2 derivatives only
-   *  @param pw is a point in the world coordinate (it is pw = lambda*[pw_x  pw_y  pw_z] with lambda->inf)
+  /** project a point (possibly at infinity) from world coordinate to the image, 2 derivatives only
+   *  @param pw is a point in world coordinates
    *  @param Dpose is the Jacobian w.r.t. the whole camera (realy only the pose)
    *  @param Dpoint is the Jacobian w.r.t. point3
    *  TODO should use Unit3
    */
-  Point2 project2(const Unit3& pw, OptionalJacobian<2, 6> Dpose = boost::none,
-      OptionalJacobian<2, 2> Dpoint = boost::none) const {
+  template<class POINT>
+  Point2 project2(const POINT& pw, OptionalJacobian<2, 6> Dpose = boost::none,
+      OptionalJacobian<2, FixedDimension<POINT>::value> Dpoint = boost::none) const {
     return Base::project(pw, Dpose, Dpoint);
   }
 
