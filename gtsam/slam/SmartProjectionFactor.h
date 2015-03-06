@@ -276,13 +276,13 @@ public:
     // ==================================================================
     Matrix F, E;
     Vector b;
-    double f;
     {
       std::vector<typename Base::MatrixZD> Fblocks;
-      f = computeJacobiansWithTriangulatedPoint(Fblocks, E, b, cameras);
+      computeJacobiansWithTriangulatedPoint(Fblocks, E, b, cameras);
       Base::whitenJacobians(Fblocks, E, b);
       Base::FillDiagonalF(Fblocks, F); // expensive !
     }
+    double f = b.squaredNorm();
 
     // Schur complement trick
     // Frank says: should be possible to do this more efficiently?
@@ -373,30 +373,18 @@ public:
   /// Compute F, E only (called below in both vanilla and SVD versions)
   /// Assumes the point has been computed
   /// Note E can be 2m*3 or 2m*2, in case point is degenerate
-  double computeJacobiansWithTriangulatedPoint(
+  void computeJacobiansWithTriangulatedPoint(
       std::vector<typename Base::MatrixZD>& Fblocks, Matrix& E, Vector& b,
       const Cameras& cameras) const {
 
     if (!result_) {
-      // TODO Luca clarify whether this works or not
-      result_ = TriangulationResult(
-          cameras[0].backprojectPointAtInfinity(this->measured_.at(0)));
-      // TODO replace all this by Call to CameraSet
-      int m = this->keys_.size();
-      E = zeros(2 * m, 2);
-      b = zero(2 * m);
-      for (size_t i = 0; i < this->measured_.size(); i++) {
-        Matrix Fi, Ei;
-        Vector bi = -(cameras[i].projectPointAtInfinity(*result_, Fi, Ei)
-            - this->measured_.at(i)).vector();
-        Fblocks.push_back(Fi);
-        E.block<2, 2>(2 * i, 0) = Ei;
-        subInsert(b, bi, 2 * i);
-      }
-      return b.squaredNorm();
+      // Handle degeneracy
+      // TODO check flag whether we should do this
+      Unit3 backProjected = cameras[0].backprojectPointAtInfinity(this->measured_.at(0));
+      Base::computeJacobians(Fblocks, E, b, cameras, backProjected);
     } else {
       // valid result: just return Base version
-      return Base::computeJacobians(Fblocks, E, b, cameras, *result_);
+      Base::computeJacobians(Fblocks, E, b, cameras, *result_);
     }
   }
 
@@ -427,7 +415,7 @@ public:
     Cameras cameras = this->cameras(values);
     bool nonDegenerate = triangulateForLinearize(cameras);
     if (nonDegenerate)
-      return Base::reprojectionError(cameras, *result_);
+      return Base::unwhitenedError(cameras, *result_);
     else
       return zero(cameras.size() * 2);
   }
@@ -452,9 +440,8 @@ public:
     else if (manageDegeneracy_) {
       // Otherwise, manage the exceptions with rotation-only factors
       const Point2& z0 = this->measured_.at(0);
-      result_ = TriangulationResult(
-          cameras.front().backprojectPointAtInfinity(z0));
-      return Base::totalReprojectionErrorAtInfinity(cameras, *result_);
+      Unit3 backprojected = cameras.front().backprojectPointAtInfinity(z0);
+      return Base::totalReprojectionError(cameras, backprojected);
     } else
       // if we don't want to manage the exceptions we discard the factor
       return 0.0;

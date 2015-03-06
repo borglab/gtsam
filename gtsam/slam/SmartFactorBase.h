@@ -205,55 +205,39 @@ public:
     return e && Base::equals(p, tol) && areMeasurementsEqual;
   }
 
-  /// Compute reprojection errors
-  Vector reprojectionError(const Cameras& cameras, const Point3& point) const {
-    return cameras.reprojectionError(point, measured_);
+  /**
+   *  Compute reprojection errors [h(x)-z] = [cameras.project(p)-z] and derivatives
+   */
+  template<class POINT>
+  Vector unwhitenedError(const Cameras& cameras, const POINT& point,
+      boost::optional<typename Cameras::FBlocks&> Fs = boost::none, //
+      boost::optional<Matrix&> E = boost::none) const {
+    return cameras.reprojectionError(point, measured_, Fs, E);
   }
 
   /**
-   *  Compute reprojection errors and derivatives
+   * Calculate vector of re-projection errors [h(x)-z] = [cameras.project(p) - z]
+   * Noise model applied
    */
-  Vector reprojectionError(const Cameras& cameras, const Point3& point,
-      typename Cameras::FBlocks& F, Matrix& E) const {
-    return cameras.reprojectionError(point, measured_, F, E);
-  }
-
-  /// Calculate vector of re-projection errors, noise model applied
-  Vector whitenedErrors(const Cameras& cameras, const Point3& point) const {
-    Vector b = cameras.reprojectionError(point, measured_);
+  template<class POINT>
+  Vector whitenedError(const Cameras& cameras, const POINT& point) const {
+    Vector e = cameras.reprojectionError(point, measured_);
     if (noiseModel_)
-      noiseModel_->whitenInPlace(b);
-    return b;
-  }
-
-  /// Calculate vector of re-projection errors, noise model applied
-  // TODO: Unit3
-  Vector whitenedErrorsAtInfinity(const Cameras& cameras,
-      const Point3& point) const {
-    Vector b = cameras.reprojectionErrorAtInfinity(point, measured_);
-    if (noiseModel_)
-      noiseModel_->whitenInPlace(b);
-    return b;
+      noiseModel_->whitenInPlace(e);
+    return e;
   }
 
   /** Calculate the error of the factor.
    * This is the log-likelihood, e.g. \f$ 0.5(h(x)-z)^2/\sigma^2 \f$ in case of Gaussian.
    * In this class, we take the raw prediction error \f$ h(x)-z \f$, ask the noise model
    * to transform it to \f$ (h(x)-z)^2/\sigma^2 \f$, and then multiply by 0.5.
-   * This is different from reprojectionError(cameras,point) as each point is whitened
+   * Will be used in "error(Values)" function required by NonlinearFactor base class
    */
+  template<class POINT>
   double totalReprojectionError(const Cameras& cameras,
-      const Point3& point) const {
-    Vector b = whitenedErrors(cameras, point);
-    return 0.5 * b.dot(b);
-  }
-
-  /// Version for infinity
-  // TODO: Unit3
-  double totalReprojectionErrorAtInfinity(const Cameras& cameras,
-      const Point3& point) const {
-    Vector b = whitenedErrorsAtInfinity(cameras, point);
-    return 0.5 * b.dot(b);
+      const POINT& point) const {
+    Vector e = whitenedError(cameras, point);
+    return 0.5 * e.dot(e);
   }
 
   /// Computes Point Covariance P from E
@@ -283,53 +267,49 @@ public:
    *  with respect to the point. The value of cameras/point are passed as parameters.
    *  TODO: Kill this obsolete method
    */
-  double computeJacobians(std::vector<MatrixZD>& Fblocks, Matrix& E, Vector& b,
-      const Cameras& cameras, const Point3& point) const {
+  template<class POINT>
+  void computeJacobians(std::vector<MatrixZD>& Fblocks, Matrix& E, Vector& b,
+      const Cameras& cameras, const POINT& point) const {
     // Project into Camera set and calculate derivatives
-    b = reprojectionError(cameras, point, Fblocks, E);
-    return b.squaredNorm();
+    // As in expressionFactor, RHS vector b = - (h(x_bar) - z) = z-h(x_bar)
+    // Indeed, nonlinear error |h(x_bar+dx)-z| ~ |h(x_bar) + A*dx - z|
+    //                                         = |A*dx - (z-h(x_bar))|
+    b = -unwhitenedError(cameras, point, Fblocks, E);
   }
 
   /// SVD version
-  double computeJacobiansSVD(std::vector<MatrixZD>& Fblocks, Matrix& Enull,
-      Vector& b, const Cameras& cameras, const Point3& point) const {
+  template<class POINT>
+  void computeJacobiansSVD(std::vector<MatrixZD>& Fblocks, Matrix& Enull,
+      Vector& b, const Cameras& cameras, const POINT& point) const {
 
     Matrix E;
-    double f = computeJacobians(Fblocks, E, b, cameras, point);
+    computeJacobians(Fblocks, E, b, cameras, point);
+
+    static const int N = FixedDimension<POINT>::value; // 2 (Unit3) or 3 (Point3)
 
     // Do SVD on A
     Eigen::JacobiSVD<Matrix> svd(E, Eigen::ComputeFullU);
     Vector s = svd.singularValues();
     size_t m = this->keys_.size();
-    Enull = svd.matrixU().block(0, 3, ZDim * m, ZDim * m - 3); // last ZDim*m-3 columns
-
-    return f;
+    Enull = svd.matrixU().block(0, N, ZDim * m, ZDim * m - N); // last ZDim*m-N columns
   }
 
   /**
-   * Linearize returns a Hessianfactor that is an approximation of error(p)
+   * Linearize to a Hessianfactor
    */
   boost::shared_ptr<RegularHessianFactor<Dim> > createHessianFactor(
       const Cameras& cameras, const Point3& point, const double lambda = 0.0,
       bool diagonalDamping = false) const {
 
-    int m = this->keys_.size();
     std::vector<MatrixZD> Fblocks;
     Matrix E;
     Vector b;
-    double f = computeJacobians(Fblocks, E, b, cameras, point);
-    Matrix3 P = PointCov(E, lambda, diagonalDamping);
-
-    // Create a SymmetricBlockMatrix
-    size_t M1 = Dim * m + 1;
-    std::vector<DenseIndex> dims(m + 1); // this also includes the b term
-    std::fill(dims.begin(), dims.end() - 1, Dim);
-    dims.back() = 1;
-    SymmetricBlockMatrix augmentedHessian(dims, Matrix::Zero(M1, M1));
+    computeJacobians(Fblocks, E, b, cameras, point);
+    Matrix P = PointCov(E, lambda, diagonalDamping);
 
     // build augmented hessian
-    CameraSet<CAMERA>::SchurComplement(Fblocks, E, P, b, augmentedHessian);
-    augmentedHessian(m, m)(0, 0) = f;
+    SymmetricBlockMatrix augmentedHessian = CameraSet<CAMERA>::SchurComplement(
+        Fblocks, E, P, b);
 
     return boost::make_shared<RegularHessianFactor<Dim> >(keys_,
         augmentedHessian);
@@ -348,7 +328,7 @@ public:
     Vector b;
     std::vector<MatrixZD> Fblocks;
     computeJacobians(Fblocks, E, b, cameras, point);
-    Matrix3 P = PointCov(E, lambda, diagonalDamping);
+    Matrix P = PointCov(E, lambda, diagonalDamping);
     CameraSet<CAMERA>::UpdateSchurComplement(Fblocks, E, P, b, allKeys, keys_,
         augmentedHessian);
   }
@@ -372,7 +352,7 @@ public:
     std::vector<MatrixZD> F;
     computeJacobians(F, E, b, cameras, point);
     whitenJacobians(F, E, b);
-    Matrix3 P = PointCov(E, lambda, diagonalDamping);
+    Matrix P = PointCov(E, lambda, diagonalDamping);
     return boost::make_shared<RegularImplicitSchurFactor<CAMERA> >(keys_, F, E,
         P, b);
   }
@@ -388,7 +368,7 @@ public:
     std::vector<MatrixZD> F;
     computeJacobians(F, E, b, cameras, point);
     const size_t M = b.size();
-    Matrix3 P = PointCov(E, lambda, diagonalDamping);
+    Matrix P = PointCov(E, lambda, diagonalDamping);
     SharedIsotropic n = noiseModel::Isotropic::Sigma(M, noiseModel_->sigma());
     return boost::make_shared<JacobianFactorQ<Dim, ZDim> >(keys_, F, E, P, b, n);
   }
