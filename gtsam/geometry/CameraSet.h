@@ -57,7 +57,7 @@ protected:
     Vector b(ZDim * m);
     for (size_t i = 0, row = 0; i < m; i++, row += ZDim) {
       Z e = predicted[i] - measured[i];
-      b.segment<ZDim>(row) = e.vector();
+      b.segment < ZDim > (row) = e.vector();
     }
     return b;
   }
@@ -109,6 +109,8 @@ public:
     // Allocate derivatives
     if (E)
       E->resize(ZDim * m, 3);
+    if (Fs)
+      Fs->resize(m);
 
     // Project and fill derivatives
     for (size_t i = 0; i < m; i++) {
@@ -116,7 +118,7 @@ public:
       Eigen::Matrix<double, ZDim, 3> Ei;
       z[i] = this->at(i).project2(point, Fs ? &Fi : 0, E ? &Ei : 0);
       if (Fs)
-        Fs->push_back(Fi);
+        (*Fs)[i] = Fi;
       if (E)
         E->block<ZDim, 3>(ZDim * i, 0) = Ei;
     }
@@ -125,18 +127,33 @@ public:
   }
 
   /**
-   * Project a point, with derivatives in this, point, and calibration
+   * Project a point at infinity, with derivatives in this, point, and calibration
    * throws CheiralityException
    */
-  std::vector<Z> projectAtInfinity(const Point3& point) const {
+  std::vector<Z> project2(const Unit3& point, //
+      boost::optional<FBlocks&> Fs = boost::none, //
+      boost::optional<Matrix&> E = boost::none) const {
 
     // Allocate result
     size_t m = this->size();
     std::vector<Z> z(m);
 
+    // Allocate derivatives
+    if (E)
+      E->resize(ZDim * m, 2);
+    if (Fs)
+      Fs->resize(m);
+
     // Project and fill derivatives
-    for (size_t i = 0; i < m; i++)
-      z[i] = this->at(i).projectPointAtInfinity(point);
+    for (size_t i = 0; i < m; i++) {
+      MatrixZD Fi;
+      Eigen::Matrix<double, ZDim, 2> Ei;
+      z[i] = this->at(i).project2(point, Fs ? &Fi : 0, E ? &Ei : 0);
+      if (Fs)
+        (*Fs)[i] = Fi;
+      if (E)
+        E->block<ZDim, 2>(ZDim * i, 0) = Ei;
+    }
 
     return z;
   }
@@ -149,10 +166,10 @@ public:
   }
 
   /// Calculate vector [project2(point)-z] of re-projection errors, from point at infinity
-  // TODO: take Unit3 instead
-  Vector reprojectionErrorAtInfinity(const Point3& point,
-      const std::vector<Z>& measured) const {
-    return ErrorVector(projectAtInfinity(point), measured);
+  Vector reprojectionError(const Unit3& point, const std::vector<Z>& measured,
+      boost::optional<FBlocks&> Fs = boost::none, //
+      boost::optional<Matrix&> E = boost::none) const {
+    return ErrorVector(project2(point,Fs,E), measured);
   }
 
   /**
@@ -180,7 +197,7 @@ public:
       const Matrix23 Ei_P = E.block<ZDim, 3>(ZDim * i, 0) * P;
 
       // D = (Dx2) * ZDim
-      augmentedHessian(i, m) = Fi.transpose() * b.segment<ZDim>(ZDim * i) // F' * b
+      augmentedHessian(i, m) = Fi.transpose() * b.segment < ZDim > (ZDim * i) // F' * b
       - Fi.transpose() * (Ei_P * (E.transpose() * b)); // D = (DxZDim) * (ZDimx3) * (3*ZDimm) * (ZDimm x 1)
 
       // (DxD) = (DxZDim) * ( (ZDimxD) - (ZDimx3) * (3xZDim) * (ZDimxD) )
@@ -212,7 +229,7 @@ public:
 
     assert(keys.size()==Fs.size());
     assert(keys.size()<=allKeys.size());
-    
+
     FastMap<Key, size_t> KeySlotMap;
     for (size_t slot = 0; slot < allKeys.size(); slot++)
       KeySlotMap.insert(std::make_pair(allKeys[slot], slot));
@@ -245,7 +262,7 @@ public:
       // vectorBlock = augmentedHessian(aug_i, aug_m).knownOffDiagonal();
       // add contribution of current factor
       augmentedHessian(aug_i, M) = augmentedHessian(aug_i, M).knownOffDiagonal()
-          + Fi.transpose() * b.segment<ZDim>(ZDim * i) // F' * b
+          + Fi.transpose() * b.segment < ZDim > (ZDim * i) // F' * b
       - Fi.transpose() * (Ei_P * (E.transpose() * b)); // D = (DxZDim) * (ZDimx3) * (3*ZDimm) * (ZDimm x 1)
 
       // (DxD) = (DxZDim) * ( (ZDimxD) - (ZDimx3) * (3xZDim) * (ZDimxD) )

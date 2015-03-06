@@ -53,12 +53,12 @@ TEST(PinholeSet, Stereo) {
   }
 
   // Check computed derivatives
-  PinholeSet<CalibratedCamera>::FBlocks F;
+  PinholeSet<CalibratedCamera>::FBlocks Fs;
   Matrix E;
-  set.project2(p, F, E);
-  LONGS_EQUAL(2, F.size());
-  EXPECT(assert_equal(F1, F[0]));
-  EXPECT(assert_equal(F1, F[1]));
+  set.project2(p, Fs, E);
+  LONGS_EQUAL(2, Fs.size());
+  EXPECT(assert_equal(F1, Fs[0]));
+  EXPECT(assert_equal(F1, Fs[1]));
   EXPECT(assert_equal(actualE, E));
 
   // Instantiate triangulateSafe
@@ -90,23 +90,25 @@ TEST(PinholeSet, Pinhole) {
   EXPECT(assert_equal(expected, z[1]));
 
   // Calculate expected derivatives using Pinhole
-  Matrix43 actualE;
+  Matrix actualE;
   Matrix F1;
   {
     Matrix23 E1;
-    Matrix23 H1;
     camera.project2(p, F1, E1);
+    actualE.resize(4, 3);
     actualE << E1, E1;
   }
 
   // Check computed derivatives
-  PinholeSet<Camera>::FBlocks F;
-  Matrix E, H;
-  set.project2(p, F, E);
-  LONGS_EQUAL(2, F.size());
-  EXPECT(assert_equal(F1, F[0]));
-  EXPECT(assert_equal(F1, F[1]));
-  EXPECT(assert_equal(actualE, E));
+  {
+    PinholeSet<Camera>::FBlocks Fs;
+    Matrix E;
+    set.project2(p, Fs, E);
+    EXPECT(assert_equal(actualE, E));
+    LONGS_EQUAL(2, Fs.size());
+    EXPECT(assert_equal(F1, Fs[0]));
+    EXPECT(assert_equal(F1, Fs[1]));
+  }
 
   // Check errors
   ZZ measured;
@@ -120,15 +122,30 @@ TEST(PinholeSet, Pinhole) {
   EXPECT(assert_equal(expectedV, actualV));
 
   // reprojectionErrorAtInfinity
+  Unit3 pointAtInfinity(0, 0, 1000);
+  {
+    Matrix22 E1;
+    camera.project2(pointAtInfinity, F1, E1);
+    actualE.resize(4, 2);
+    actualE << E1, E1;
+  }
   EXPECT(
-      assert_equal(Point3(0, 0, 1),
+      assert_equal(pointAtInfinity,
           camera.backprojectPointAtInfinity(Point2())));
-  actualV = set.reprojectionErrorAtInfinity(p, measured);
+  {
+    PinholeSet<Camera>::FBlocks Fs;
+    Matrix E;
+    actualV = set.reprojectionError(pointAtInfinity, measured, Fs, E);
+    EXPECT(assert_equal(actualE, E));
+    LONGS_EQUAL(2, Fs.size());
+    EXPECT(assert_equal(F1, Fs[0]));
+    EXPECT(assert_equal(F1, Fs[1]));
+  }
   EXPECT(assert_equal(expectedV, actualV));
 
   // Instantiate triangulateSafe
   TriangulationParameters params;
-  TriangulationResult actual = set.triangulateSafe(z,params);
+  TriangulationResult actual = set.triangulateSafe(z, params);
   CHECK(actual.degenerate());
 }
 

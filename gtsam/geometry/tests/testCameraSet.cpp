@@ -50,12 +50,12 @@ TEST(CameraSet, Pinhole) {
   EXPECT(assert_equal(expected, z[1]));
 
   // Calculate expected derivatives using Pinhole
-  Matrix43 actualE;
+  Matrix actualE;
   Matrix29 F1;
   {
     Matrix23 E1;
-    Matrix23 H1;
     camera.project2(p, F1, E1);
+    actualE.resize(4,3);
     actualE << E1, E1;
   }
 
@@ -114,11 +114,22 @@ TEST(CameraSet, Pinhole) {
   EXPECT(assert_equal((Matrix )(2.0 * schur + A), actualReduced.matrix()));
 
   // reprojectionErrorAtInfinity
+  Unit3 pointAtInfinity(0, 0, 1000);
   EXPECT(
-      assert_equal(Point3(0, 0, 1),
+      assert_equal(pointAtInfinity,
           camera.backprojectPointAtInfinity(Point2())));
-  actualV = set.reprojectionErrorAtInfinity(p, measured);
+  actualV = set.reprojectionError(pointAtInfinity, measured, Fs, E);
   EXPECT(assert_equal(expectedV, actualV));
+  LONGS_EQUAL(2, Fs.size());
+  {
+    Matrix22 E1;
+    camera.project2(pointAtInfinity, F1, E1);
+    actualE.resize(4,2);
+    actualE << E1, E1;
+  }
+  EXPECT(assert_equal(F1, Fs[0]));
+  EXPECT(assert_equal(F1, Fs[1]));
+  EXPECT(assert_equal(actualE, E));
 }
 
 /* ************************************************************************* */
