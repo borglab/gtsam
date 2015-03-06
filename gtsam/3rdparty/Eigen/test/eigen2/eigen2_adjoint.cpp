@@ -29,8 +29,6 @@ template<typename MatrixType> void adjoint(const MatrixType& m)
   MatrixType m1 = MatrixType::Random(rows, cols),
              m2 = MatrixType::Random(rows, cols),
              m3(rows, cols),
-             mzero = MatrixType::Zero(rows, cols),
-             identity = SquareMatrixType::Identity(rows, rows),
              square = SquareMatrixType::Random(rows, rows);
   VectorType v1 = VectorType::Random(rows),
              v2 = VectorType::Random(rows),

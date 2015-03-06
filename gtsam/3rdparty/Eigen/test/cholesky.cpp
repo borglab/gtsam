@@ -320,33 +320,35 @@ template<typename MatrixType> void cholesky_definiteness(const MatrixType& m)
 {
   eigen_assert(m.rows() == 2 && m.cols() == 2);
   MatrixType mat;
+  LDLT<MatrixType> ldlt(2);
+  
   {
     mat << 1, 0, 0, -1;
-    LDLT<MatrixType> ldlt(mat);
+    ldlt.compute(mat);
     VERIFY(!ldlt.isNegative());
     VERIFY(!ldlt.isPositive());
   }
   {
     mat << 1, 2, 2, 1;
-    LDLT<MatrixType> ldlt(mat);
+    ldlt.compute(mat);
     VERIFY(!ldlt.isNegative());
     VERIFY(!ldlt.isPositive());
   }
   {
     mat << 0, 0, 0, 0;
-    LDLT<MatrixType> ldlt(mat);
+    ldlt.compute(mat);
     VERIFY(ldlt.isNegative());
     VERIFY(ldlt.isPositive());
   }
   {
     mat << 0, 0, 0, 1;
-    LDLT<MatrixType> ldlt(mat);
+    ldlt.compute(mat);
     VERIFY(!ldlt.isNegative());
     VERIFY(ldlt.isPositive());
   }
   {
     mat << -1, 0, 0, 0;
-    LDLT<MatrixType> ldlt(mat);
+    ldlt.compute(mat);
     VERIFY(ldlt.isNegative());
     VERIFY(!ldlt.isPositive());
   }
