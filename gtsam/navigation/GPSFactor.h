@@ -37,7 +37,9 @@ private:
 
   typedef NoiseModelFactor1<Pose3> Base;
 
-  Point3 nT_; ///< Position measurement in
+  Point3 nZ_gps; ///< Position measurement in cartesian coordinates
+
+  boost::optional<Pose3> bTg_;
 
 public:
 
@@ -58,11 +60,11 @@ public:
    * @brief Constructor from a measurement in a Cartesian frame.
    * Use GeographicLib to convert from geographic (latitude and longitude) coordinates
    * @param key of the Pose3 variable that will be constrained
-   * @param gpsIn measurement already in  coordinates
+   * @param gpsIn measurement already in cartesion coordinates
    * @param model Gaussian noise model
    */
   GPSFactor(Key key, const Point3& gpsIn, const SharedNoiseModel& model) :
-      Base(model, key), nT_(gpsIn) {
+      Base(model, key), nZ_gps(gpsIn) {
   }
 
   /// @return a deep copy of this factor
@@ -82,16 +84,17 @@ public:
 
   /** implement functions needed to derive from Factor */
 
-  /** vector of errors */
-  Vector evaluateError(const Pose3& p,
+  /** Error, given pose nTg of GPS device in nav frame */
+  Vector evaluateError(const Pose3& nTg,
       boost::optional<Matrix&> H = boost::none) const;
 
+  /// Return GPS measurement in nav frame (cartesion coordinates)
   inline const Point3 & measurementIn() const {
-    return nT_;
+    return nZ_gps;
   }
 
   /*
-   *  Convenience funcion to estimate state at time t, given two GPS
+   *  Convenience funcion to estimate state (nTb, n_v_b) at time t, given two GPS
    *  readings (in local NED Cartesian frame) bracketing t
    *  Assumes roll is zero, calculates yaw and pitch from NED1->NED2 vector.
    */
@@ -107,7 +110,7 @@ private:
     ar
         & boost::serialization::make_nvp("NoiseModelFactor1",
             boost::serialization::base_object<Base>(*this));
-    ar & BOOST_SERIALIZATION_NVP(nT_);
+    ar & BOOST_SERIALIZATION_NVP(nZ_gps);
   }
 };
 
