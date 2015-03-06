@@ -66,20 +66,23 @@ public:
   virtual Vector unwhitenedError(const Values& x,
       boost::optional<std::vector<Matrix>&> H = boost::none) const {
      if (H) {
-      const T value = expression_.value(x, keys_, dims_, *H);
-      return traits<T>::Local(measurement_, value);
+      const T hx = expression_.value(x, keys_, dims_, *H); // h(x)
+      return traits<T>::Local(measurement_, hx); // h(x) - z
     } else {
-      const T value = expression_.value(x);
-      return traits<T>::Local(measurement_, value);
+      const T hx = expression_.value(x); // h(x)
+      return traits<T>::Local(measurement_, hx); // h(x) - z
     }
   }
 
-  virtual boost::shared_ptr<GaussianFactor> linearize(const Values& x) const {
+  /**
+   * Linearize the factor into a JacobianFactor
+   */
+  virtual boost::shared_ptr<GaussianFactor> linearize(const Values& x_bar) const {
     // Only linearize if the factor is active
-    if (!active(x))
+    if (!active(x_bar))
       return boost::shared_ptr<JacobianFactor>();
 
-    // Create a writeable JacobianFactor in advance
+    // Create a writable JacobianFactor in advance
     // In case noise model is constrained, we need to provide a noise model
     bool constrained = noiseModel_->isConstrained();
     boost::shared_ptr<JacobianFactor> factor(
@@ -88,17 +91,19 @@ public:
             new JacobianFactor(keys_, dims_, Dim));
 
     // Wrap keys and VerticalBlockMatrix into structure passed to expression_
-    VerticalBlockMatrix& Ab = factor->matrixObject();
+    VerticalBlockMatrix& Ab = factor->matrixObject(); // reference, no malloc !
     JacobianMap jacobianMap(keys_, Ab);
 
     // Zero out Jacobian so we can simply add to it
     Ab.matrix().setZero();
 
     // Get value and Jacobians, writing directly into JacobianFactor
-    T value = expression_.value(x, jacobianMap); // <<< Reverse AD happens here !
+    T hx = expression_.value(x_bar, jacobianMap); // <<< Reverse AD happens here !
 
-    // Evaluate error and set RHS vector b
-    Ab(size()).col(0) = -traits<T>::Local(measurement_, value);
+    // Evaluate error and set RHS vector b = - (h(x_bar) - z) = z-h(x_bar)
+    // Indeed, nonlinear error |h(x_bar+dx)-z| ~ |h(x_bar) + A*dx - z|
+    //                                         = |A*dx - (z-h(x_bar))|
+    Ab(size()).col(0) = - traits<T>::Local(measurement_, hx); // - unwhitenedError(x_bar)
 
     // Whiten the corresponding system, Ab already contains RHS
     Vector dummy(Dim);
