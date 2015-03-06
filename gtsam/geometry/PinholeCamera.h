@@ -200,57 +200,33 @@ public:
 
   typedef Eigen::Matrix<double, 2, DimK> Matrix2K;
 
-  /** project a point from world coordinate to the image
-   *  @param pw is a point in world coordinates
-   *  @param Dpose is the Jacobian w.r.t. pose3
-   *  @param Dpoint is the Jacobian w.r.t. point3
-   *  @param Dcal is the Jacobian w.r.t. calibration
+  /** project a point from world coordinate to the image, fixed Jacobians
+   *  @param pw is a point in the world coordinate
    */
-  Point2 project(const Point3& pw, OptionalJacobian<2, 6> Dpose = boost::none,
-      OptionalJacobian<2, 3> Dpoint = boost::none,
-      OptionalJacobian<2, DimK> Dcal = boost::none) const {
-
-    // project to normalized coordinates
-    const Point2 pn = PinholeBase::project2(pw, Dpose, Dpoint);
-
-    // uncalibrate to pixel coordinates
-    Matrix2 Dpi_pn;
-    const Point2 pi = calibration().uncalibrate(pn, Dcal,
-        Dpose || Dpoint ? &Dpi_pn : 0);
-
-    // If needed, apply chain rule
-    if (Dpose)
-      *Dpose = Dpi_pn * *Dpose;
-    if (Dpoint)
-      *Dpoint = Dpi_pn * *Dpoint;
-
+  Point2 project2(const Point3& pw, OptionalJacobian<2, dimension> Dcamera =
+      boost::none, OptionalJacobian<2, 3> Dpoint = boost::none) const {
+    // We just call 3-derivative version in Base
+    Matrix26 Dpose;
+    Eigen::Matrix<double, 2, DimK> Dcal;
+    Point2 pi = Base::project(pw, Dcamera ? &Dpose : 0, Dpoint,
+        Dcamera ? &Dcal : 0);
+    if (Dcamera)
+      *Dcamera << Dpose, Dcal;
     return pi;
   }
 
   /** project a point from world coordinate to the image, fixed Jacobians
    *  @param pw is a point in the world coordinate
    */
-  Point2 project2(
-      const Point3& pw, //
-      OptionalJacobian<2, dimension> Dcamera = boost::none,
-      OptionalJacobian<2, 3> Dpoint = boost::none) const {
-
-    // project to normalized coordinates
+  Point2 project2(const Unit3& pw, OptionalJacobian<2, dimension> Dcamera =
+      boost::none, OptionalJacobian<2, 3> Dpoint = boost::none) const {
+    // We just call 3-derivative version in Base
     Matrix26 Dpose;
-    const Point2 pn = PinholeBase::project2(pw, Dpose, Dpoint);
-
-    // uncalibrate to pixel coordinates
-    Matrix2K Dcal;
-    Matrix2 Dpi_pn;
-    const Point2 pi = calibration().uncalibrate(pn, Dcamera ? &Dcal : 0,
-        Dcamera || Dpoint ? &Dpi_pn : 0);
-
-    // If needed, calculate derivatives
+    Eigen::Matrix<double, 2, DimK> Dcal;
+    Point2 pi = Base::project(pw, Dcamera ? &Dpose : 0, Dpoint,
+        Dcamera ? &Dcal : 0);
     if (Dcamera)
-      *Dcamera << Dpi_pn * Dpose, Dcal;
-    if (Dpoint)
-      *Dpoint = Dpi_pn * (*Dpoint);
-
+      *Dcamera << Dpose, Dcal;
     return pi;
   }
 
