@@ -163,10 +163,14 @@ template<typename MatrixType> void cwise_min_max(const MatrixType& m)
 
   // min/max with scalar input
   VERIFY_IS_APPROX(MatrixType::Constant(rows,cols, minM1), m1.cwiseMin( minM1));
-  VERIFY_IS_APPROX(m1, m1.cwiseMin( maxM1));
+  VERIFY_IS_APPROX(m1, m1.cwiseMin(maxM1));
+  VERIFY_IS_APPROX(-m1, (-m1).cwiseMin(-minM1));
+  VERIFY_IS_APPROX(-m1.array(), ((-m1).array().min)( -minM1));
 
   VERIFY_IS_APPROX(MatrixType::Constant(rows,cols, maxM1), m1.cwiseMax( maxM1));
-  VERIFY_IS_APPROX(m1, m1.cwiseMax( minM1));
+  VERIFY_IS_APPROX(m1, m1.cwiseMax(minM1));
+  VERIFY_IS_APPROX(-m1, (-m1).cwiseMax(-maxM1));
+  VERIFY_IS_APPROX(-m1.array(), ((-m1).array().max)(-maxM1));
 
   VERIFY_IS_APPROX(MatrixType::Constant(rows,cols, minM1).array(), (m1.array().min)( minM1));
   VERIFY_IS_APPROX(m1.array(), (m1.array().min)( maxM1));
@@ -200,6 +204,12 @@ template<typename MatrixTraits> void resize(const MatrixTraits& t)
   VERIFY(v.size()==cols);
   a1.matrix().resize(cols);
   VERIFY(a1.size()==cols);
+}
+
+void regression_bug_654()
+{
+  ArrayXf a = RowVectorXf(3);
+  VectorXf v = Array<float,1,Dynamic>(3);
 }
 
 void test_array_for_matrix()
@@ -239,4 +249,5 @@ void test_array_for_matrix()
     CALL_SUBTEST_5( resize(MatrixXf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
     CALL_SUBTEST_6( resize(MatrixXi(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
   }
+  CALL_SUBTEST_6( regression_bug_654() );
 }

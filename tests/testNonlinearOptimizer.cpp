@@ -20,7 +20,7 @@
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/nonlinear/DoglegOptimizer.h>
@@ -37,6 +37,7 @@
 using namespace boost::assign;
 
 #include <iostream>
+#include <fstream>
 
 using namespace std;
 using namespace gtsam;
@@ -50,7 +51,7 @@ using symbol_shorthand::L;
 TEST( NonlinearOptimizer, iterateLM )
 {
   // really non-linear factor graph
-  example::Graph fg(example::createReallyNonlinearFactorGraph());
+  NonlinearFactorGraph fg(example::createReallyNonlinearFactorGraph());
 
   // config far from minimum
   Point2 x0(3,0);
@@ -74,7 +75,7 @@ TEST( NonlinearOptimizer, iterateLM )
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, optimize )
 {
-  example::Graph fg(example::createReallyNonlinearFactorGraph());
+  NonlinearFactorGraph fg(example::createReallyNonlinearFactorGraph());
 
   // test error at minimum
   Point2 xstar(0,0);
@@ -114,7 +115,7 @@ TEST( NonlinearOptimizer, optimize )
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, SimpleLMOptimizer )
 {
-  example::Graph fg(example::createReallyNonlinearFactorGraph());
+  NonlinearFactorGraph fg(example::createReallyNonlinearFactorGraph());
 
   Point2 x0(3,3);
   Values c0;
@@ -127,7 +128,7 @@ TEST( NonlinearOptimizer, SimpleLMOptimizer )
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, SimpleGNOptimizer )
 {
-  example::Graph fg(example::createReallyNonlinearFactorGraph());
+  NonlinearFactorGraph fg(example::createReallyNonlinearFactorGraph());
 
   Point2 x0(3,3);
   Values c0;
@@ -140,7 +141,7 @@ TEST( NonlinearOptimizer, SimpleGNOptimizer )
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, SimpleDLOptimizer )
 {
-  example::Graph fg(example::createReallyNonlinearFactorGraph());
+  NonlinearFactorGraph fg(example::createReallyNonlinearFactorGraph());
 
   Point2 x0(3,3);
   Values c0;
@@ -158,7 +159,7 @@ TEST( NonlinearOptimizer, optimization_method )
   LevenbergMarquardtParams paramsChol;
   paramsChol.linearSolverType = LevenbergMarquardtParams::MULTIFRONTAL_CHOLESKY;
 
-  example::Graph fg = example::createReallyNonlinearFactorGraph();
+  NonlinearFactorGraph fg = example::createReallyNonlinearFactorGraph();
 
   Point2 x0(3,3);
   Values c0;
@@ -179,8 +180,8 @@ TEST( NonlinearOptimizer, Factorization )
   config.insert(X(2), Pose2(1.5,0.,0.));
 
   NonlinearFactorGraph graph;
-  graph.add(PriorFactor<Pose2>(X(1), Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3, 1e-10)));
-  graph.add(BetweenFactor<Pose2>(X(1),X(2), Pose2(1.,0.,0.), noiseModel::Isotropic::Sigma(3, 1)));
+  graph += PriorFactor<Pose2>(X(1), Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3, 1e-10));
+  graph += BetweenFactor<Pose2>(X(1),X(2), Pose2(1.,0.,0.), noiseModel::Isotropic::Sigma(3, 1));
 
   Ordering ordering;
   ordering.push_back(X(1));
@@ -198,10 +199,10 @@ TEST( NonlinearOptimizer, Factorization )
 /* ************************************************************************* */
 TEST(NonlinearOptimizer, NullFactor) {
 
-  example::Graph fg = example::createReallyNonlinearFactorGraph();
+  NonlinearFactorGraph fg = example::createReallyNonlinearFactorGraph();
 
   // Add null factor
-  fg.push_back(example::Graph::sharedFactor());
+  fg.push_back(NonlinearFactorGraph::sharedFactor());
 
   // test error at minimum
   Point2 xstar(0,0);
@@ -233,39 +234,123 @@ TEST(NonlinearOptimizer, NullFactor) {
 }
 
 /* ************************************************************************* */
-TEST(NonlinearOptimizer, MoreOptimization) {
+TEST_UNSAFE(NonlinearOptimizer, MoreOptimization) {
 
   NonlinearFactorGraph fg;
-  fg.add(PriorFactor<Pose2>(0, Pose2(0,0,0), noiseModel::Isotropic::Sigma(3,1)));
-  fg.add(BetweenFactor<Pose2>(0, 1, Pose2(1,0,M_PI/2), noiseModel::Isotropic::Sigma(3,1)));
-  fg.add(BetweenFactor<Pose2>(1, 2, Pose2(1,0,M_PI/2), noiseModel::Isotropic::Sigma(3,1)));
+  fg += PriorFactor<Pose2>(0, Pose2(0, 0, 0),
+      noiseModel::Isotropic::Sigma(3, 1));
+  fg += BetweenFactor<Pose2>(0, 1, Pose2(1, 0, M_PI / 2),
+      noiseModel::Isotropic::Sigma(3, 1));
+  fg += BetweenFactor<Pose2>(1, 2, Pose2(1, 0, M_PI / 2),
+      noiseModel::Isotropic::Sigma(3, 1));
 
   Values init;
-  init.insert(0, Pose2(3,4,-M_PI));
-  init.insert(1, Pose2(10,2,-M_PI));
-  init.insert(2, Pose2(11,7,-M_PI));
+  init.insert(0, Pose2(3, 4, -M_PI));
+  init.insert(1, Pose2(10, 2, -M_PI));
+  init.insert(2, Pose2(11, 7, -M_PI));
 
   Values expected;
-  expected.insert(0, Pose2(0,0,0));
-  expected.insert(1, Pose2(1,0,M_PI/2));
-  expected.insert(2, Pose2(1,1,M_PI));
+  expected.insert(0, Pose2(0, 0, 0));
+  expected.insert(1, Pose2(1, 0, M_PI / 2));
+  expected.insert(2, Pose2(1, 1, M_PI));
+
+  VectorValues expectedGradient;
+  expectedGradient.insert(0,zero(3));
+  expectedGradient.insert(1,zero(3));
+  expectedGradient.insert(2,zero(3));
 
   // Try LM and Dogleg
-  EXPECT(assert_equal(expected, LevenbergMarquardtOptimizer(fg, init).optimize()));
+  LevenbergMarquardtParams params;
+//  params.setVerbosityLM("TRYDELTA");
+//  params.setVerbosity("TERMINATION");
+  params.setlambdaUpperBound(1e9);
+//  params.setRelativeErrorTol(0);
+//  params.setAbsoluteErrorTol(0);
+  //params.setlambdaInitial(10);
+
+  {
+    LevenbergMarquardtOptimizer optimizer(fg, init, params);
+
+    // test convergence
+    Values actual = optimizer.optimize();
+    EXPECT(assert_equal(expected, actual));
+
+    // Check that the gradient is zero
+    GaussianFactorGraph::shared_ptr linear = optimizer.linearize();
+    EXPECT(assert_equal(expectedGradient,linear->gradientAtZero()));
+  }
   EXPECT(assert_equal(expected, DoglegOptimizer(fg, init).optimize()));
+
+//  cout << "===================================================================================" << endl;
+
+  // Try LM with diagonal damping
+  Values initBetter;
+    initBetter.insert(0, Pose2(3,4,0));
+    initBetter.insert(1, Pose2(10,2,M_PI/3));
+    initBetter.insert(2, Pose2(11,7,M_PI/2));
+
+  {
+    params.setDiagonalDamping(true);
+    LevenbergMarquardtOptimizer optimizer(fg, initBetter, params);
+
+    // test the diagonal
+    GaussianFactorGraph::shared_ptr linear = optimizer.linearize();
+    GaussianFactorGraph damped = optimizer.buildDampedSystem(*linear);
+    VectorValues d = linear->hessianDiagonal(), //
+    expectedDiagonal = d + params.lambdaInitial * d;
+    EXPECT(assert_equal(expectedDiagonal, damped.hessianDiagonal()));
+
+    // test convergence (does not!)
+    Values actual = optimizer.optimize();
+    EXPECT(assert_equal(expected, actual));
+
+    // Check that the gradient is zero (it is not!)
+    linear = optimizer.linearize();
+    EXPECT(assert_equal(expectedGradient,linear->gradientAtZero()));
+
+    // Check that the gradient is zero for damped system (it is not!)
+    damped = optimizer.buildDampedSystem(*linear);
+    VectorValues actualGradient = damped.gradientAtZero();
+    EXPECT(assert_equal(expectedGradient,actualGradient));
+
+    /* This block was made to test the original initial guess "init"
+    // Check errors at convergence and errors in direction of gradient (decreases!)
+    EXPECT_DOUBLES_EQUAL(46.02558,fg.error(actual),1e-5);
+    EXPECT_DOUBLES_EQUAL(44.742237,fg.error(actual.retract(-0.01*actualGradient)),1e-5);
+
+    // Check that solve yields gradient (it's not equal to gradient, as predicted)
+    VectorValues delta = damped.optimize();
+    double factor = actualGradient[0][0]/delta[0][0];
+    EXPECT(assert_equal(actualGradient,factor*delta));
+
+    // Still pointing downhill wrt actual gradient !
+    EXPECT_DOUBLES_EQUAL( 0.1056157,dot(-1*actualGradient,delta),1e-3);
+
+    // delta.print("This is the delta value computed by LM with diagonal damping");
+
+    // Still pointing downhill wrt expected gradient (IT DOES NOT! actually they are perpendicular)
+    EXPECT_DOUBLES_EQUAL( 0.0,dot(-1*expectedGradient,delta),1e-5);
+
+    // Check errors at convergence and errors in direction of solution (does not decrease!)
+    EXPECT_DOUBLES_EQUAL(46.0254859,fg.error(actual.retract(delta)),1e-5);
+
+    // Check errors at convergence and errors at a small step in direction of solution (does not decrease!)
+    EXPECT_DOUBLES_EQUAL(46.0255,fg.error(actual.retract(0.01*delta)),1e-3);
+    */
+  }
 }
 
 /* ************************************************************************* */
 TEST(NonlinearOptimizer, MoreOptimizationWithHuber) {
 
   NonlinearFactorGraph fg;
-  fg.add(PriorFactor<Pose2>(0, Pose2(0,0,0), noiseModel::Isotropic::Sigma(3,1)));
-  fg.add(BetweenFactor<Pose2>(0, 1, Pose2(1,0,M_PI/2),
+  fg += PriorFactor<Pose2>(0, Pose2(0,0,0), noiseModel::Isotropic::Sigma(3,1));
+  fg += BetweenFactor<Pose2>(0, 1, Pose2(1,0,M_PI/2),
                               noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(2.0),
-                                                         noiseModel::Isotropic::Sigma(3,1))));
-  fg.add(BetweenFactor<Pose2>(1, 2, Pose2(1,0,M_PI/2),
+                                                         noiseModel::Isotropic::Sigma(3,1)));
+  fg += BetweenFactor<Pose2>(1, 2, Pose2(1,0,M_PI/2),
                               noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(3.0),
-                                                         noiseModel::Isotropic::Sigma(3,1))));
+                                                         noiseModel::Isotropic::Sigma(3,1)));
 
   Values init;
   init.insert(0, Pose2(10,10,0));
@@ -280,6 +365,100 @@ TEST(NonlinearOptimizer, MoreOptimizationWithHuber) {
   EXPECT(assert_equal(expected, GaussNewtonOptimizer(fg, init).optimize()));
   EXPECT(assert_equal(expected, LevenbergMarquardtOptimizer(fg, init).optimize()));
   EXPECT(assert_equal(expected, DoglegOptimizer(fg, init).optimize()));
+}
+
+/* ************************************************************************* */
+TEST(NonlinearOptimizer, disconnected_graph) {
+  Values expected;
+  expected.insert(X(1), Pose2(0.,0.,0.));
+  expected.insert(X(2), Pose2(1.5,0.,0.));
+  expected.insert(X(3), Pose2(3.0,0.,0.));
+
+  Values init;
+  init.insert(X(1), Pose2(0.,0.,0.));
+  init.insert(X(2), Pose2(0.,0.,0.));
+  init.insert(X(3), Pose2(0.,0.,0.));
+
+  NonlinearFactorGraph graph;
+  graph += PriorFactor<Pose2>(X(1), Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3,1));
+  graph += BetweenFactor<Pose2>(X(1),X(2), Pose2(1.5,0.,0.), noiseModel::Isotropic::Sigma(3,1));
+  graph += PriorFactor<Pose2>(X(3), Pose2(3.,0.,0.), noiseModel::Isotropic::Sigma(3,1));
+
+  EXPECT(assert_equal(expected, LevenbergMarquardtOptimizer(graph, init).optimize()));
+}
+
+/* ************************************************************************* */
+#include <gtsam/linear/iterative.h>
+
+class IterativeLM: public LevenbergMarquardtOptimizer {
+
+  /// Solver specific parameters
+  ConjugateGradientParameters cgParams_;
+
+public:
+  /// Constructor
+  IterativeLM(const NonlinearFactorGraph& graph, const Values& initialValues,
+      const ConjugateGradientParameters &p,
+      const LevenbergMarquardtParams& params = LevenbergMarquardtParams()) :
+      LevenbergMarquardtOptimizer(graph, initialValues, params), cgParams_(p) {
+  }
+
+  /// Solve that uses conjugate gradient
+  virtual VectorValues solve(const GaussianFactorGraph &gfg,
+      const Values& initial, const NonlinearOptimizerParams& params) const {
+    VectorValues zeros = initial.zeroVectors();
+    return conjugateGradientDescent(gfg, zeros, cgParams_);
+  }
+};
+
+/* ************************************************************************* */
+TEST(NonlinearOptimizer, subclass_solver) {
+  Values expected;
+  expected.insert(X(1), Pose2(0.,0.,0.));
+  expected.insert(X(2), Pose2(1.5,0.,0.));
+  expected.insert(X(3), Pose2(3.0,0.,0.));
+
+  Values init;
+  init.insert(X(1), Pose2(0.,0.,0.));
+  init.insert(X(2), Pose2(0.,0.,0.));
+  init.insert(X(3), Pose2(0.,0.,0.));
+
+  NonlinearFactorGraph graph;
+  graph += PriorFactor<Pose2>(X(1), Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3,1));
+  graph += BetweenFactor<Pose2>(X(1),X(2), Pose2(1.5,0.,0.), noiseModel::Isotropic::Sigma(3,1));
+  graph += PriorFactor<Pose2>(X(3), Pose2(3.,0.,0.), noiseModel::Isotropic::Sigma(3,1));
+
+  ConjugateGradientParameters p;
+  Values actual = IterativeLM(graph, init, p).optimize();
+  EXPECT(assert_equal(expected, actual, 1e-4));
+}
+
+/* ************************************************************************* */
+#include <wrap/utilities.h>
+TEST( NonlinearOptimizer, logfile )
+{
+  NonlinearFactorGraph fg(example::createReallyNonlinearFactorGraph());
+
+  Point2 x0(3,3);
+  Values c0;
+  c0.insert(X(1), x0);
+
+  // Levenberg-Marquardt
+  LevenbergMarquardtParams lmParams;
+  static const string filename("testNonlinearOptimizer.log");
+  lmParams.setLogFile(filename);
+  CHECK(lmParams.getLogFile()==filename);
+  LevenbergMarquardtOptimizer(fg, c0, lmParams).optimize();
+
+//  stringstream expected,actual;
+//  ifstream ifs(("../../gtsam/tests/" + filename).c_str());
+//  if(!ifs) throw std::runtime_error(filename);
+//  expected << ifs.rdbuf();
+//  ifs.close();
+//  ifstream ifs2(filename.c_str());
+//  if(!ifs2) throw std::runtime_error(filename);
+//  actual << ifs2.rdbuf();
+//  EXPECT(actual.str()==expected.str());
 }
 
 /* ************************************************************************* */

@@ -27,7 +27,7 @@ TEST(cholesky, choleskyPartial) {
 
   // choleskyPartial should only use the upper triangle, so this represents a
   // symmetric matrix.
-  Matrix ABC = Matrix_(7,7,
+  Matrix ABC = (Matrix(7,7) <<
                       4.0375,   3.4584,   3.5735,   2.4815,   2.1471,   2.7400,   2.2063,
                           0.,   4.7267,   3.8423,   2.3624,   2.8091,   2.9579,   2.5914,
                           0.,       0.,   5.1600,   2.0797,   3.4690,   3.2419,   2.9992,
@@ -55,7 +55,7 @@ TEST(cholesky, choleskyPartial) {
 
 /* ************************************************************************* */
 TEST(cholesky, BadScalingCholesky) {
-  Matrix A = Matrix_(2,2,
+  Matrix A = (Matrix(2,2) <<
       1e-40, 0.0,
       0.0, 1.0);
 
@@ -70,7 +70,7 @@ TEST(cholesky, BadScalingCholesky) {
 
 /* ************************************************************************* */
 TEST(cholesky, BadScalingSVD) {
-  Matrix A = Matrix_(2,2,
+  Matrix A = (Matrix(2,2) <<
       1.0, 0.0,
       0.0, 1e-40);
 

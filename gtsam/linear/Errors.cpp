@@ -18,7 +18,9 @@
  */
 
 #include <boost/foreach.hpp>
+#include <boost/range/adaptor/map.hpp>
 #include <gtsam/linear/Errors.h>
+#include <gtsam/linear/VectorValues.h>
 
 using namespace std;
 
@@ -28,11 +30,9 @@ namespace gtsam {
 Errors::Errors(){}
 
 /* ************************************************************************* */
-Errors::Errors(const VectorValues &V) {
-  this->resize(V.size()) ;
-  int i = 0 ;
-  BOOST_FOREACH( Vector &e, *this) {
-    e = V[i++];
+Errors::Errors(const VectorValues& V) {
+  BOOST_FOREACH(const Vector& e, V | boost::adaptors::map_values) {
+    push_back(e);
   }
 }
 

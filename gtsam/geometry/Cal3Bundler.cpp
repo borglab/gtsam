@@ -78,17 +78,16 @@ Point2 Cal3Bundler::uncalibrate(const Point2& p, //
   // Derivatives make use of intermediate variables above
   if (Dcal) {
     double rx = r * x, ry = r * y;
-    Eigen::Matrix<double, 2, 3> D;
-    D << u, f_ * rx, f_ * r * rx, v, f_ * ry, f_ * r * ry;
-    *Dcal = D;
+    Dcal->resize(2, 3);
+    *Dcal << u, f_ * rx, f_ * r * rx, v, f_ * ry, f_ * r * ry;
   }
 
   if (Dp) {
     const double a = 2. * (k1_ + 2. * k2_ * r);
     const double axx = a * x * x, axy = a * x * y, ayy = a * y * y;
-    Eigen::Matrix<double, 2, 2> D;
-    D << g + axx, axy, axy, g + ayy;
-    *Dp = f_ * D;
+    Dp->resize(2,2);
+    *Dp << g + axx, axy, axy, g + ayy;
+    *Dp *= f_;
   }
 
   return Point2(u0_ + f_ * u, v0_ + f_ * v);
@@ -152,7 +151,7 @@ Cal3Bundler Cal3Bundler::retract(const Vector& d) const {
 
 /* ************************************************************************* */
 Vector Cal3Bundler::localCoordinates(const Cal3Bundler& T2) const {
-  return vector() - T2.vector();
+  return T2.vector() - vector();
 }
 
 }

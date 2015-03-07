@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <gtsam/global_includes.h>
+
 namespace gtsam {
 
 /**

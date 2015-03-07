@@ -12,7 +12,7 @@
 /**
  * @file Signature.cpp
  * @brief signatures for conditional densities
- * @author Frank dellaert
+ * @author Frank Dellaert
  * @date Feb 27, 2011
  */
 
@@ -131,8 +131,8 @@ namespace gtsam {
     return keys;
   }
 
-  vector<Index> Signature::indices() const {
-    vector<Index> js;
+  vector<Key> Signature::indices() const {
+    vector<Key> js;
     js.push_back(key_.first);
     BOOST_FOREACH(const DiscreteKey& key, parents_)
       js.push_back(key.first);

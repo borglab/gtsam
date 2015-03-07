@@ -22,11 +22,16 @@
 #pragma once
 
 #include <gtsam/geometry/Point2.h>
-#include <gtsam/inference/SymbolicFactorGraph.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/inference/FactorGraph.h>
 
 namespace gtsam {
+
+  // Forward declarations
+  class Values;
+  class Ordering;
+  class GaussianFactorGraph;
+  class SymbolicFactorGraph;
 
   /**
    * Formatting options when saving in GraphViz format using
@@ -40,13 +45,16 @@ namespace gtsam {
     double figureHeightInches; ///< The figure height on paper in inches
     double scale; ///< Scale all positions to reduce / increase density
     bool mergeSimilarFactors; ///< Merge multiple factors that have the same connectivity
+    bool plotFactorPoints; ///< Plots each factor as a dot between the variables
+    bool connectKeysToFactor; ///< Draw a line from each key within a factor to the dot of the factor
     std::map<size_t, Point2> factorPositions; ///< (optional for each factor) Manually specify factor "dot" positions.
     /// Default constructor sets up robot coordinates.  Paper horizontal is robot Y,
     /// paper vertical is robot X.  Default figure size of 5x5 in.
     GraphvizFormatting() :
       paperHorizontalAxis(Y), paperVerticalAxis(X),
       figureWidthInches(5), figureHeightInches(5), scale(1),
-      mergeSimilarFactors(false) {}
+      mergeSimilarFactors(false), plotFactorPoints(true),
+      connectKeysToFactor(true) {}
   };
 
 
@@ -58,59 +66,58 @@ namespace gtsam {
    * tangent vector space at the linearization point. Because the tangent space is a true
    * vector space, the config type will be an VectorValues in that linearized factor graph.
    */
-  class NonlinearFactorGraph: public FactorGraph<NonlinearFactor> {
+  class GTSAM_EXPORT NonlinearFactorGraph: public FactorGraph<NonlinearFactor> {
 
   public:
 
     typedef FactorGraph<NonlinearFactor> Base;
-    typedef boost::shared_ptr<NonlinearFactorGraph> shared_ptr;
-    typedef boost::shared_ptr<NonlinearFactor> sharedFactor;
+    typedef NonlinearFactorGraph This;
+    typedef boost::shared_ptr<This> shared_ptr;
+
+    /** Default constructor */
+    NonlinearFactorGraph() {}
+
+    /** Construct from iterator over factors */
+    template<typename ITERATOR>
+    NonlinearFactorGraph(ITERATOR firstFactor, ITERATOR lastFactor) : Base(firstFactor, lastFactor) {}
+
+    /** Construct from container of factors (shared_ptr or plain objects) */
+    template<class CONTAINER>
+    explicit NonlinearFactorGraph(const CONTAINER& factors) : Base(factors) {}
+
+    /** Implicit copy/downcast constructor to override explicit template container constructor */
+    template<class DERIVEDFACTOR>
+    NonlinearFactorGraph(const FactorGraph<DERIVEDFACTOR>& graph) : Base(graph) {}
 
     /** print just calls base class */
-    GTSAM_EXPORT void print(const std::string& str = "NonlinearFactorGraph: ", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+    void print(const std::string& str = "NonlinearFactorGraph: ", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+
+    /** Test equality */
+    bool equals(const NonlinearFactorGraph& other, double tol = 1e-9) const;
 
     /** Write the graph in GraphViz format for visualization */
-    GTSAM_EXPORT void saveGraph(std::ostream& stm, const Values& values = Values(),
+    void saveGraph(std::ostream& stm, const Values& values = Values(),
       const GraphvizFormatting& graphvizFormatting = GraphvizFormatting(),
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
     /** return keys as an ordered set - ordering is by key value */
-    GTSAM_EXPORT FastSet<Key> keys() const;
+    FastSet<Key> keys() const;
 
     /** unnormalized error, \f$ 0.5 \sum_i (h_i(X_i)-z)^2/\sigma^2 \f$ in the most common case */
-    GTSAM_EXPORT double error(const Values& c) const;
+    double error(const Values& c) const;
 
     /** Unnormalized probability. O(n) */
-    GTSAM_EXPORT double probPrime(const Values& c) const;
-
-    /// Add a factor by value - copies the factor object
-    void add(const NonlinearFactor& factor) {
-      this->push_back(factor.clone());
-    }
-
-    /// Add a factor by pointer - stores pointer without copying factor object
-    void add(const sharedFactor& factor) {
-      this->push_back(factor);
-    }
+    double probPrime(const Values& c) const;
 
     /**
-     * Create a symbolic factor graph using an existing ordering
+     * Create a symbolic factor graph
      */
-    GTSAM_EXPORT SymbolicFactorGraph::shared_ptr symbolic(const Ordering& ordering) const;
-
-    /**
-     * Create a symbolic factor graph and initial variable ordering that can
-     * be used for graph operations like determining a fill-reducing ordering.
-     * The graph and ordering should be permuted after such a fill-reducing
-     * ordering is found.
-     */
-    GTSAM_EXPORT std::pair<SymbolicFactorGraph::shared_ptr, Ordering::shared_ptr>
-    symbolic(const Values& config) const;
+    boost::shared_ptr<SymbolicFactorGraph> symbolic() const;
 
     /**
      * Compute a fill-reducing ordering using COLAMD.
      */
-    GTSAM_EXPORT Ordering::shared_ptr orderingCOLAMD(const Values& config) const;
+    Ordering orderingCOLAMD() const;
 
     /**
      * Compute a fill-reducing ordering with constraints using CCOLAMD
@@ -120,19 +127,17 @@ namespace gtsam {
      * indices need to appear in the constraints, unconstrained is assumed for all
      * other variables
      */
-    GTSAM_EXPORT Ordering::shared_ptr orderingCOLAMDConstrained(const Values& config,
-        const std::map<Key, int>& constraints) const;
+    Ordering orderingCOLAMDConstrained(const FastMap<Key, int>& constraints) const;
 
     /**
      * linearize a nonlinear factor graph
      */
-    GTSAM_EXPORT boost::shared_ptr<GaussianFactorGraph >
-        linearize(const Values& config, const Ordering& ordering) const;
+    boost::shared_ptr<GaussianFactorGraph> linearize(const Values& linearizationPoint) const;
 
     /**
      * Clone() performs a deep-copy of the graph, including all of the factors
      */
-    GTSAM_EXPORT NonlinearFactorGraph clone() const;
+    NonlinearFactorGraph clone() const;
 
     /**
      * Rekey() performs a deep-copy of all of the factors, and changes
@@ -143,7 +148,7 @@ namespace gtsam {
      * @param rekey_mapping is a map of old->new keys
      * @result a cloned graph with updated keys
      */
-    GTSAM_EXPORT NonlinearFactorGraph rekey(const std::map<Key,Key>& rekey_mapping) const;
+    NonlinearFactorGraph rekey(const std::map<Key,Key>& rekey_mapping) const;
 
   private:
 

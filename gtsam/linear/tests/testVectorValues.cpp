@@ -15,30 +15,34 @@
  * @date    Sep 16, 2010
  */
 
-#include <boost/assign/std/vector.hpp>
-
 #include <gtsam/base/Testable.h>
 #include <gtsam/linear/VectorValues.h>
-#include <gtsam/inference/Permutation.h>
 
 #include <CppUnitLite/TestHarness.h>
 
+#include <boost/assign/std/vector.hpp>
+#include <boost/assign/list_of.hpp>
+#include <boost/range/adaptor/map.hpp>
+
 using namespace std;
 using namespace boost::assign;
+using boost::adaptors::map_keys;
 using namespace gtsam;
 
 /* ************************************************************************* */
-TEST(VectorValues, insert) {
+TEST(VectorValues, basics)
+{
+  // Tests insert(), size(), dim(), exists(), vector()
 
-  // insert, with out-of-order indices
+  // insert
   VectorValues actual;
-  actual.insert(0, Vector_(1, 1.0));
-  actual.insert(1, Vector_(2, 2.0, 3.0));
-  actual.insert(5, Vector_(2, 6.0, 7.0));
-  actual.insert(2, Vector_(2, 4.0, 5.0));
+  actual.insert(0, (Vector(1) << 1));
+  actual.insert(1, (Vector(2) << 2, 3));
+  actual.insert(5, (Vector(2) << 6, 7));
+  actual.insert(2, (Vector(2) << 4, 5));
 
   // Check dimensions
-  LONGS_EQUAL(6, actual.size());
+  LONGS_EQUAL(4, actual.size());
   LONGS_EQUAL(1, actual.dim(0));
   LONGS_EQUAL(2, actual.dim(1));
   LONGS_EQUAL(2, actual.dim(2));
@@ -54,11 +58,12 @@ TEST(VectorValues, insert) {
   EXPECT(!actual.exists(6));
 
   // Check values
-  EXPECT(assert_equal(Vector_(1, 1.0), actual[0]));
-  EXPECT(assert_equal(Vector_(2, 2.0, 3.0), actual[1]));
-  EXPECT(assert_equal(Vector_(2, 4.0, 5.0), actual[2]));
-  EXPECT(assert_equal(Vector_(2, 6.0, 7.0), actual[5]));
-  EXPECT(assert_equal(Vector_(7, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0), actual.asVector()));
+  EXPECT(assert_equal((Vector(1) << 1), actual[0]));
+  EXPECT(assert_equal((Vector(2) << 2, 3), actual[1]));
+  EXPECT(assert_equal((Vector(2) << 4, 5), actual[2]));
+  EXPECT(assert_equal((Vector(2) << 6, 7), actual[5]));
+  FastVector<Key> keys = list_of(0)(1)(2)(5);
+  EXPECT(assert_equal((Vector(7) << 1, 2, 3, 4, 5, 6, 7), actual.vector(keys)));
 
   // Check exceptions
   CHECK_EXCEPTION(actual.insert(1, Vector()), invalid_argument);
@@ -66,419 +71,154 @@ TEST(VectorValues, insert) {
 }
 
 /* ************************************************************************* */
-TEST(VectorValues, dimsConstructor) {
-  vector<size_t> dims;
-  dims.push_back(1);
-  dims.push_back(2);
-  dims.push_back(2);
-
-  VectorValues actual(dims);
-  actual[0] = Vector_(1, 1.0);
-  actual[1] = Vector_(2, 2.0, 3.0);
-  actual[2] = Vector_(2, 4.0, 5.0);
-
-  // Check dimensions
-  LONGS_EQUAL(3, actual.size());
-  LONGS_EQUAL(1, actual.dim(0));
-  LONGS_EQUAL(2, actual.dim(1));
-  LONGS_EQUAL(2, actual.dim(2));
-
-  // Check values
-  EXPECT(assert_equal(Vector_(1, 1.0), actual[0]));
-  EXPECT(assert_equal(Vector_(2, 2.0, 3.0), actual[1]));
-  EXPECT(assert_equal(Vector_(2, 4.0, 5.0), actual[2]));
-  EXPECT(assert_equal(Vector_(5, 1.0, 2.0, 3.0, 4.0, 5.0), actual.asVector()));
-}
-
-/* ************************************************************************* */
-TEST(VectorValues, copyConstructor) {
-
-  // insert, with out-of-order indices
-  VectorValues original;
-  original.insert(0, Vector_(1, 1.0));
-  original.insert(1, Vector_(2, 2.0, 3.0));
-  original.insert(5, Vector_(2, 6.0, 7.0));
-  original.insert(2, Vector_(2, 4.0, 5.0));
-
-  VectorValues actual(original);
-
-  // Check dimensions
-  LONGS_EQUAL(6, actual.size());
-  LONGS_EQUAL(1, actual.dim(0));
-  LONGS_EQUAL(2, actual.dim(1));
-  LONGS_EQUAL(2, actual.dim(2));
-  LONGS_EQUAL(2, actual.dim(5));
-
-  // Logic
-  EXPECT(actual.exists(0));
-  EXPECT(actual.exists(1));
-  EXPECT(actual.exists(2));
-  EXPECT(!actual.exists(3));
-  EXPECT(!actual.exists(4));
-  EXPECT(actual.exists(5));
-  EXPECT(!actual.exists(6));
-
-  // Check values
-  EXPECT(assert_equal(Vector_(1, 1.0), actual[0]));
-  EXPECT(assert_equal(Vector_(2, 2.0, 3.0), actual[1]));
-  EXPECT(assert_equal(Vector_(2, 4.0, 5.0), actual[2]));
-  EXPECT(assert_equal(Vector_(2, 6.0, 7.0), actual[5]));
-  EXPECT(assert_equal(Vector_(7, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0), actual.asVector()));
-
-  // Check exceptions
-  CHECK_EXCEPTION(actual.insert(1, Vector()), invalid_argument);
-}
-
-/* ************************************************************************* */
-TEST(VectorValues, assignment) {
-
-  VectorValues actual;
-
-  {
-    // insert, with out-of-order indices
-    VectorValues original;
-    original.insert(0, Vector_(1, 1.0));
-    original.insert(1, Vector_(2, 2.0, 3.0));
-    original.insert(5, Vector_(2, 6.0, 7.0));
-    original.insert(2, Vector_(2, 4.0, 5.0));
-    actual = original;
-  }
-
-  // Check dimensions
-  LONGS_EQUAL(6, actual.size());
-  LONGS_EQUAL(1, actual.dim(0));
-  LONGS_EQUAL(2, actual.dim(1));
-  LONGS_EQUAL(2, actual.dim(2));
-  LONGS_EQUAL(2, actual.dim(5));
-
-  // Logic
-  EXPECT(actual.exists(0));
-  EXPECT(actual.exists(1));
-  EXPECT(actual.exists(2));
-  EXPECT(!actual.exists(3));
-  EXPECT(!actual.exists(4));
-  EXPECT(actual.exists(5));
-  EXPECT(!actual.exists(6));
-
-  // Check values
-  EXPECT(assert_equal(Vector_(1, 1.0), actual[0]));
-  EXPECT(assert_equal(Vector_(2, 2.0, 3.0), actual[1]));
-  EXPECT(assert_equal(Vector_(2, 4.0, 5.0), actual[2]));
-  EXPECT(assert_equal(Vector_(2, 6.0, 7.0), actual[5]));
-  EXPECT(assert_equal(Vector_(7, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0), actual.asVector()));
-
-  // Check exceptions
-  CHECK_EXCEPTION(actual.insert(1, Vector()), invalid_argument);
-}
-
-/* ************************************************************************* */
-TEST(VectorValues, SameStructure) {
-  // insert, with out-of-order indices
-  VectorValues original;
-  original.insert(0, Vector_(1, 1.0));
-  original.insert(1, Vector_(2, 2.0, 3.0));
-  original.insert(5, Vector_(2, 6.0, 7.0));
-  original.insert(2, Vector_(2, 4.0, 5.0));
-
-  VectorValues actual(VectorValues::SameStructure(original));
-
-  // Check dimensions
-  LONGS_EQUAL(6, actual.size());
-  LONGS_EQUAL(1, actual.dim(0));
-  LONGS_EQUAL(2, actual.dim(1));
-  LONGS_EQUAL(2, actual.dim(2));
-  LONGS_EQUAL(2, actual.dim(5));
-
-  // Logic
-  EXPECT(actual.exists(0));
-  EXPECT(actual.exists(1));
-  EXPECT(actual.exists(2));
-  EXPECT(!actual.exists(3));
-  EXPECT(!actual.exists(4));
-  EXPECT(actual.exists(5));
-  EXPECT(!actual.exists(6));
-
-  // Check exceptions
-  CHECK_EXCEPTION(actual.insert(1, Vector()), invalid_argument);
-}
-
-/* ************************************************************************* */
-TEST(VectorValues, Zero_fromModel) {
-  // insert, with out-of-order indices
-  VectorValues original;
-  original.insert(0, Vector_(1, 1.0));
-  original.insert(1, Vector_(2, 2.0, 3.0));
-  original.insert(5, Vector_(2, 6.0, 7.0));
-  original.insert(2, Vector_(2, 4.0, 5.0));
-
-  VectorValues actual(VectorValues::Zero(original));
-
-  // Check dimensions
-  LONGS_EQUAL(6, actual.size());
-  LONGS_EQUAL(1, actual.dim(0));
-  LONGS_EQUAL(2, actual.dim(1));
-  LONGS_EQUAL(2, actual.dim(2));
-  LONGS_EQUAL(2, actual.dim(5));
-
-  // Values
-  EXPECT(assert_equal(Vector::Zero(1), actual[0]));
-  EXPECT(assert_equal(Vector::Zero(2), actual[1]));
-  EXPECT(assert_equal(Vector::Zero(2), actual[5]));
-  EXPECT(assert_equal(Vector::Zero(2), actual[2]));
-
-  // Logic
-  EXPECT(actual.exists(0));
-  EXPECT(actual.exists(1));
-  EXPECT(actual.exists(2));
-  EXPECT(!actual.exists(3));
-  EXPECT(!actual.exists(4));
-  EXPECT(actual.exists(5));
-  EXPECT(!actual.exists(6));
-
-  // Check exceptions
-  CHECK_EXCEPTION(actual.insert(1, Vector()), invalid_argument);
-}
-
-/* ************************************************************************* */
-TEST(VectorValues, Zero_fromDims) {
-  vector<size_t> dims;
-  dims.push_back(1);
-  dims.push_back(2);
-  dims.push_back(2);
-
-  VectorValues actual(VectorValues::Zero(dims));
-
-  // Check dimensions
-  LONGS_EQUAL(3, actual.size());
-  LONGS_EQUAL(1, actual.dim(0));
-  LONGS_EQUAL(2, actual.dim(1));
-  LONGS_EQUAL(2, actual.dim(2));
-
-  // Values
-  EXPECT(assert_equal(Vector::Zero(1), actual[0]));
-  EXPECT(assert_equal(Vector::Zero(2), actual[1]));
-  EXPECT(assert_equal(Vector::Zero(2), actual[2]));
-}
-
-/* ************************************************************************* */
-TEST(VectorValues, Zero_fromUniform) {
-  VectorValues actual(VectorValues::Zero(3, 2));
-
-  // Check dimensions
-  LONGS_EQUAL(3, actual.size());
-  LONGS_EQUAL(2, actual.dim(0));
-  LONGS_EQUAL(2, actual.dim(1));
-  LONGS_EQUAL(2, actual.dim(2));
-
-  // Values
-  EXPECT(assert_equal(Vector::Zero(2), actual[0]));
-  EXPECT(assert_equal(Vector::Zero(2), actual[1]));
-  EXPECT(assert_equal(Vector::Zero(2), actual[2]));
-}
-
-/* ************************************************************************* */
-TEST(VectorValues, resizeLike) {
-  // insert, with out-of-order indices
-  VectorValues original;
-  original.insert(0, Vector_(1, 1.0));
-  original.insert(1, Vector_(2, 2.0, 3.0));
-  original.insert(5, Vector_(2, 6.0, 7.0));
-  original.insert(2, Vector_(2, 4.0, 5.0));
-
-  VectorValues actual(10, 3);
-  actual.resizeLike(original);
-
-  // Check dimensions
-  LONGS_EQUAL(6, actual.size());
-  LONGS_EQUAL(1, actual.dim(0));
-  LONGS_EQUAL(2, actual.dim(1));
-  LONGS_EQUAL(2, actual.dim(2));
-  LONGS_EQUAL(2, actual.dim(5));
-
-  // Logic
-  EXPECT(actual.exists(0));
-  EXPECT(actual.exists(1));
-  EXPECT(actual.exists(2));
-  EXPECT(!actual.exists(3));
-  EXPECT(!actual.exists(4));
-  EXPECT(actual.exists(5));
-  EXPECT(!actual.exists(6));
-
-  // Check exceptions
-  CHECK_EXCEPTION(actual.insert(1, Vector()), invalid_argument);
-}
-
-/* ************************************************************************* */
-TEST(VectorValues, resize_fromUniform) {
-  VectorValues actual(4, 10);
-  actual.resize(3, 2);
-
-  actual[0] = Vector_(2, 1.0, 2.0);
-  actual[1] = Vector_(2, 2.0, 3.0);
-  actual[2] = Vector_(2, 4.0, 5.0);
-
-  // Check dimensions
-  LONGS_EQUAL(3, actual.size());
-  LONGS_EQUAL(2, actual.dim(0));
-  LONGS_EQUAL(2, actual.dim(1));
-  LONGS_EQUAL(2, actual.dim(2));
-
-  // Check values
-  EXPECT(assert_equal(Vector_(2, 1.0, 2.0), actual[0]));
-  EXPECT(assert_equal(Vector_(2, 2.0, 3.0), actual[1]));
-  EXPECT(assert_equal(Vector_(2, 4.0, 5.0), actual[2]));
-  EXPECT(assert_equal(Vector_(6, 1.0, 2.0, 2.0, 3.0, 4.0, 5.0), actual.asVector()));
-}
-
-/* ************************************************************************* */
-TEST(VectorValues, resize_fromDims) {
-  vector<size_t> dims;
-  dims.push_back(1);
-  dims.push_back(2);
-  dims.push_back(2);
-
-  VectorValues actual(4, 10);
-  actual.resize(dims);
-  actual[0] = Vector_(1, 1.0);
-  actual[1] = Vector_(2, 2.0, 3.0);
-  actual[2] = Vector_(2, 4.0, 5.0);
-
-  // Check dimensions
-  LONGS_EQUAL(3, actual.size());
-  LONGS_EQUAL(1, actual.dim(0));
-  LONGS_EQUAL(2, actual.dim(1));
-  LONGS_EQUAL(2, actual.dim(2));
-
-  // Check values
-  EXPECT(assert_equal(Vector_(1, 1.0), actual[0]));
-  EXPECT(assert_equal(Vector_(2, 2.0, 3.0), actual[1]));
-  EXPECT(assert_equal(Vector_(2, 4.0, 5.0), actual[2]));
-  EXPECT(assert_equal(Vector_(5, 1.0, 2.0, 3.0, 4.0, 5.0), actual.asVector()));
-}
-
-/* ************************************************************************* */
-TEST(VectorValues, append) {
-  // insert
-  VectorValues actual;
-  actual.insert(0, Vector_(1, 1.0));
-  actual.insert(1, Vector_(2, 2.0, 3.0));
-  actual.insert(2, Vector_(2, 4.0, 5.0));
-
-  // append
-  vector<size_t> dims(2);
-  dims[0] = 3;
-  dims[1] = 5;
-  actual.append(dims);
-
-  // Check dimensions
-  LONGS_EQUAL(5, actual.size());
-  LONGS_EQUAL(1, actual.dim(0));
-  LONGS_EQUAL(2, actual.dim(1));
-  LONGS_EQUAL(2, actual.dim(2));
-  LONGS_EQUAL(3, actual.dim(3));
-  LONGS_EQUAL(5, actual.dim(4));
-
-  // Logic
-  EXPECT(actual.exists(0));
-  EXPECT(actual.exists(1));
-  EXPECT(actual.exists(2));
-  EXPECT(actual.exists(3));
-  EXPECT(actual.exists(4));
-  EXPECT(!actual.exists(5));
-
-  // Check values
-  EXPECT(assert_equal(Vector_(1, 1.0), actual[0]));
-  EXPECT(assert_equal(Vector_(2, 2.0, 3.0), actual[1]));
-  EXPECT(assert_equal(Vector_(2, 4.0, 5.0), actual[2]));
-
-  // Check exceptions
-  CHECK_EXCEPTION(actual.insert(3, Vector()), invalid_argument);
-}
-
-/* ************************************************************************* */
-TEST(VectorValues, append_withValuesFromVector) {
-  // Constructor with initial values
-  vector<size_t> dims(3);
-  dims[0] = 1;
-  dims[1] = 2;
-  dims[2] = 2;
-  Vector d = Vector_(5, 1.0, 2.0, 3.0, 4.0, 5.0);
-  VectorValues actual(d, dims);
-
+TEST(VectorValues, combine)
+{
   VectorValues expected;
-  expected.insert(0, Vector_(1, 1.0));
-  expected.insert(1, Vector_(2, 2.0, 3.0));
-  expected.insert(2, Vector_(2, 4.0, 5.0));
+  expected.insert(0, (Vector(1) << 1));
+  expected.insert(1, (Vector(2) << 2, 3));
+  expected.insert(5, (Vector(2) << 6, 7));
+  expected.insert(2, (Vector(2) << 4, 5));
 
-  EXPECT(assert_equal(expected, actual));
+  VectorValues first;
+  first.insert(0, (Vector(1) << 1));
+  first.insert(1, (Vector(2) << 2, 3));
 
-  // Append with initial values
-  expected.insert(3, Vector_(1, 6.0));
-  expected.insert(4, Vector_(3, 7.0, 8.0, 9.0));
+  VectorValues second;
+  second.insert(5, (Vector(2) << 6, 7));
+  second.insert(2, (Vector(2) << 4, 5));
 
-  vector<size_t> dims2(2);
-  dims2[0] = 1;
-  dims2[1] = 3;
-  Vector d2 = Vector_(4, 6.0, 7.0, 8.0, 9.0);
-  actual.append(d2, dims2);
-
-  EXPECT(assert_equal(expected, actual));
-}
-
-/* ************************************************************************* */
-TEST(VectorValues, hasSameStructure) {
-  VectorValues v1(2, 3);
-  VectorValues v2(3, 2);
-  VectorValues v3(4, 2);
-  VectorValues v4(4, 2);
-
-  EXPECT(!v1.hasSameStructure(v2));
-  EXPECT(!v2.hasSameStructure(v3));
-  EXPECT(v3.hasSameStructure(v4));
-  EXPECT(VectorValues().hasSameStructure(VectorValues()));
-  EXPECT(!v1.hasSameStructure(VectorValues()));
-}
-
-
-/* ************************************************************************* */
-TEST(VectorValues, permute) {
-
-  VectorValues original;
-  original.insert(0, Vector_(1, 1.0));
-  original.insert(1, Vector_(2, 2.0, 3.0));
-  original.insert(2, Vector_(2, 4.0, 5.0));
-  original.insert(3, Vector_(2, 6.0, 7.0));
-
-  VectorValues expected;
-  expected.insert(0, Vector_(2, 4.0, 5.0)); // from 2
-  expected.insert(1, Vector_(1, 1.0)); // from 0
-  expected.insert(2, Vector_(2, 6.0, 7.0)); // from 3
-  expected.insert(3, Vector_(2, 2.0, 3.0)); // from 1
-
-  Permutation permutation(4);
-  permutation[0] = 2;
-  permutation[1] = 0;
-  permutation[2] = 3;
-  permutation[3] = 1;
-
-  VectorValues actual = original;
-  actual.permuteInPlace(permutation);
+  VectorValues actual(first, second);
 
   EXPECT(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
-TEST(VectorValues, subvector) {
+TEST(VectorValues, subvector)
+{
   VectorValues init;
-  init.insert(0, Vector_(1, 1.0));
-  init.insert(1, Vector_(2, 2.0, 3.0));
-  init.insert(2, Vector_(2, 4.0, 5.0));
-  init.insert(3, Vector_(2, 6.0, 7.0));
+  init.insert(10, (Vector(1) << 1));
+  init.insert(11, (Vector(2) << 2, 3));
+  init.insert(12, (Vector(2) << 4, 5));
+  init.insert(13, (Vector(2) << 6, 7));
 
-  std::vector<gtsam::Index> indices;
-  indices += 0, 2, 3;
-  Vector expSubVector = Vector_(5, 1.0, 4.0, 5.0, 6.0, 7.0);
-  EXPECT(assert_equal(expSubVector, init.vector(indices)));
+  std::vector<Key> keys;
+  keys += 10, 12, 13;
+  Vector expSubVector = (Vector(5) << 1, 4, 5, 6, 7);
+  EXPECT(assert_equal(expSubVector, init.vector(keys)));
+}
+
+/* ************************************************************************* */
+TEST(VectorValues, LinearAlgebra)
+{
+  VectorValues test1;
+  test1.insert(0, (Vector(1) << 1));
+  test1.insert(1, (Vector(2) << 2, 3));
+  test1.insert(5, (Vector(2) << 6, 7));
+  test1.insert(2, (Vector(2) << 4, 5));
+
+  VectorValues test2;
+  test2.insert(0, (Vector(1) << 6));
+  test2.insert(1, (Vector(2) << 1, 6));
+  test2.insert(5, (Vector(2) << 4, 3));
+  test2.insert(2, (Vector(2) << 1, 8));
+
+  // Dot product
+  double dotExpected = test1.vector().dot(test2.vector());
+  double dotActual = test1.dot(test2);
+  DOUBLES_EQUAL(dotExpected, dotActual, 1e-10);
+
+  // Norm
+  double normExpected = test1.vector().norm();
+  double normActual = test1.norm();
+  DOUBLES_EQUAL(normExpected, normActual, 1e-10);
+
+  // Squared norm
+  double sqNormExpected = test1.vector().norm();
+  double sqNormActual = test1.norm();
+  DOUBLES_EQUAL(sqNormExpected, sqNormActual, 1e-10);
+
+  // Addition
+  Vector sumExpected = test1.vector() + test2.vector();
+  VectorValues sumActual = test1 + test2;
+  EXPECT(sumActual.hasSameStructure(test1));
+  EXPECT(assert_equal(sumExpected, sumActual.vector()));
+  Vector sum2Expected = sumActual.vector() + test1.vector();
+  VectorValues sum2Actual = sumActual;
+  sum2Actual += test1;
+  EXPECT(assert_equal(sum2Expected, sum2Actual.vector()));
+
+  // Add to empty
+  VectorValues sumActual3;
+  sumActual3.addInPlace_(test1);
+  sumActual3.addInPlace_(test2);
+  EXPECT(assert_equal(sumExpected, sumActual3.vector()));
+
+  // Subtraction
+  Vector difExpected = test1.vector() - test2.vector();
+  VectorValues difActual = test1 - test2;
+  EXPECT(difActual.hasSameStructure(test1));
+  EXPECT(assert_equal(difExpected, difActual.vector()));
+
+  // Scaling
+  Vector scalExpected = test1.vector() * 5.0;
+  VectorValues scalActual = test1;
+  scalActual *= 5.0;
+  EXPECT(assert_equal(scalExpected, scalActual.vector()));
+  VectorValues scal2Actual = 5.0 * test1;
+  EXPECT(assert_equal(scalExpected, scal2Actual.vector()));
+}
+
+/* ************************************************************************* */
+TEST(VectorValues, convert)
+{
+  Vector x(7);
+  x << 1, 2, 3, 4, 5, 6, 7;
+
+  VectorValues expected;
+  expected.insert(0, (Vector(1) << 1));
+  expected.insert(1, (Vector(2) << 2, 3));
+  expected.insert(2, (Vector(2) << 4, 5));
+  expected.insert(5, (Vector(2) << 6, 7));
+
+  std::map<Key,size_t> dims;
+  dims.insert(make_pair(0,1));
+  dims.insert(make_pair(1,2));
+  dims.insert(make_pair(2,2));
+  dims.insert(make_pair(5,2));
+  VectorValues actual(x,dims);
+  EXPECT(assert_equal(expected, actual));
+
+  // Test other direction, note vector() is not guaranteed to give right result
+  FastVector<Key> keys = list_of(0)(1)(2)(5);
+  EXPECT(assert_equal(x, actual.vector(keys)));
+
+  // Test version with dims argument
+  EXPECT(assert_equal(x, actual.vector(dims)));
+}
+
+/* ************************************************************************* */
+TEST(VectorValues, vector_sub)
+{
+  VectorValues vv;
+  vv.insert(0, (Vector(1) << 1));
+  vv.insert(1, (Vector(2) << 2, 3));
+  vv.insert(2, (Vector(2) << 4, 5));
+  vv.insert(5, (Vector(2) << 6, 7));
+  vv.insert(7, (Vector(2) << 8, 9));
+
+  std::map<Key,size_t> dims;
+  dims.insert(make_pair(0,1));
+  dims.insert(make_pair(5,2));
+
+  Vector expected(3);
+  expected << 1, 6, 7;
+
+  // Test FastVector version
+  FastVector<Key> keys = list_of(0)(5);
+  EXPECT(assert_equal(expected, vv.vector(keys)));
+
+  // Test version with dims argument
+  EXPECT(assert_equal(expected, vv.vector(dims)));
 }
 
 /* ************************************************************************* */

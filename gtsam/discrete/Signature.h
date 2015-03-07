@@ -12,7 +12,7 @@
 /**
  * @file Signature.h
  * @brief signatures for conditional densities
- * @author Frank dellaert
+ * @author Frank Dellaert
  * @date Feb 27, 2011
  */
 
@@ -90,7 +90,7 @@ namespace gtsam {
     DiscreteKeys discreteKeysParentsFirst() const;
 
     /** All key indices, with variable key first */
-    std::vector<Index> indices() const;
+    std::vector<Key> indices() const;
 
     // the CPT as parsed, if successful
     const boost::optional<Table>& table() const {

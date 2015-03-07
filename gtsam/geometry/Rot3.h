@@ -104,7 +104,7 @@ namespace gtsam {
     Rot3(const Quaternion& q);
 
     /// Random, generates a random axis, then random angle \in [-p,pi]
-    static Rot3 Random(boost::random::mt19937 & rng);
+    static Rot3 Random(boost::mt19937 & rng);
 
     /** Virtual destructor */
     virtual ~Rot3() {}
@@ -194,7 +194,7 @@ namespace gtsam {
      * @return incremental rotation matrix
      */
     static Rot3 rodriguez(double wx, double wy, double wz)
-      { return rodriguez(Vector_(3,wx,wy,wz));}
+      { return rodriguez((Vector(3) << wx, wy, wz));}
 
     /// @}
     /// @name Testable
@@ -303,6 +303,17 @@ namespace gtsam {
 
     /// Left-trivialized derivative inverse of the exponential map
     static Matrix3 dexpInvL(const Vector3& v);
+
+    /**
+     * Right Jacobian for Exponential map in SO(3) - equation (10.86) and following equations in
+     * G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups", Volume 2, 2008.
+     */
+    static Matrix3 rightJacobianExpMapSO3(const Vector3& x);
+
+    /** Right Jacobian for Log map in SO(3) - equation (10.86) and following equations in
+     * G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups", Volume 2, 2008.
+     */
+    static Matrix3 rightJacobianExpMapSO3inverse(const Vector3& x);
 
     /// @}
     /// @name Group Action on Point3

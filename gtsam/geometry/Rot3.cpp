@@ -45,10 +45,10 @@ Rot3 Rot3::rodriguez(const Unit3& w, double theta) {
 }
 
 /* ************************************************************************* */
-Rot3 Rot3::Random(boost::random::mt19937 & rng) {
+Rot3 Rot3::Random(boost::mt19937 & rng) {
   // TODO allow any engine without including all of boost :-(
   Unit3 w = Unit3::Random(rng);
-  boost::random::uniform_real_distribution<double> randomAngle(-M_PI,M_PI);
+  boost::uniform_real<double> randomAngle(-M_PI,M_PI);
   double angle = randomAngle(rng);
   return rodriguez(w,angle);
 }
@@ -73,7 +73,7 @@ Point3 Rot3::operator*(const Point3& p) const {
 /* ************************************************************************* */
 Unit3 Rot3::rotate(const Unit3& p,
     boost::optional<Matrix&> HR, boost::optional<Matrix&> Hp) const {
-  Unit3 q = rotate(p.point3(Hp));
+  Unit3 q = Unit3(rotate(p.point3(Hp)));
   if (Hp)
     (*Hp) = q.basis().transpose() * matrix() * (*Hp);
   if (HR)
@@ -84,7 +84,7 @@ Unit3 Rot3::rotate(const Unit3& p,
 /* ************************************************************************* */
 Unit3 Rot3::unrotate(const Unit3& p,
     boost::optional<Matrix&> HR, boost::optional<Matrix&> Hp) const {
-  Unit3 q = unrotate(p.point3(Hp));
+  Unit3 q = Unit3(unrotate(p.point3(Hp)));
   if (Hp)
     (*Hp) = q.basis().transpose() * matrix().transpose () * (*Hp);
   if (HR)
@@ -101,10 +101,9 @@ Unit3 Rot3::operator*(const Unit3& p) const {
 // see doc/math.lyx, SO(3) section
 Point3 Rot3::unrotate(const Point3& p,
     boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
-  const Matrix Rt(transpose());
-  Point3 q(Rt*p.vector()); // q = Rt*p
+  Point3 q(transpose()*p.vector()); // q = Rt*p
   if (H1) *H1 = skewSymmetric(q.x(), q.y(), q.z());
-  if (H2) *H2 = Rt;
+  if (H2) *H2 = transpose();
   return q;
 }
 
@@ -173,6 +172,39 @@ Vector Rot3::quaternion() const {
   v(2) = q.y();
   v(3) = q.z();
   return v;
+}
+
+/* ************************************************************************* */
+Matrix3 Rot3::rightJacobianExpMapSO3(const Vector3& x)    {
+  // x is the axis-angle representation (exponential coordinates) for a rotation
+  double normx = norm_2(x); // rotation angle
+  Matrix3 Jr;
+  if (normx < 10e-8){
+    Jr = Matrix3::Identity();
+  }
+  else{
+    const Matrix3 X = skewSymmetric(x); // element of Lie algebra so(3): X = x^
+    Jr = Matrix3::Identity() - ((1-cos(normx))/(normx*normx)) * X +
+        ((normx-sin(normx))/(normx*normx*normx)) * X * X; // right Jacobian
+  }
+  return Jr;
+}
+
+/* ************************************************************************* */
+Matrix3 Rot3::rightJacobianExpMapSO3inverse(const Vector3& x)    {
+  // x is the axis-angle representation (exponential coordinates) for a rotation
+  double normx = norm_2(x); // rotation angle
+  Matrix3 Jrinv;
+
+  if (normx < 10e-8){
+    Jrinv = Matrix3::Identity();
+  }
+  else{
+    const Matrix3 X = skewSymmetric(x); // element of Lie algebra so(3): X = x^
+    Jrinv = Matrix3::Identity() +
+        0.5 * X + (1/(normx*normx) - (1+cos(normx))/(2*normx * sin(normx))   ) * X * X;
+  }
+  return Jrinv;
 }
 
 /* ************************************************************************* */

@@ -130,10 +130,11 @@ void run_fixed_size_test(int num_elements)
 
   // MUST be positive because in any other case det(cR_t) may become negative for
   // odd dimensions!
-  const Scalar c = abs(internal::random<Scalar>());
+  // Also if c is to small compared to t.norm(), problem is ill-posed (cf. Bug 744)
+  const Scalar c = internal::random<Scalar>(0.5, 2.0);
 
   FixedMatrix R = randMatrixSpecialUnitary<Scalar>(dim);
-  FixedVector t = Scalar(50)*FixedVector::Random(dim,1);
+  FixedVector t = Scalar(32)*FixedVector::Random(dim,1);
 
   HomMatrix cR_t = HomMatrix::Identity(dim+1,dim+1);
   cR_t.block(0,0,dim,dim) = c*R;
@@ -149,9 +150,9 @@ void run_fixed_size_test(int num_elements)
 
   HomMatrix cR_t_umeyama = umeyama(src_block, dst_block);
 
-  const Scalar error = ( cR_t_umeyama*src - dst ).array().square().sum();
+  const Scalar error = ( cR_t_umeyama*src - dst ).squaredNorm();
 
-  VERIFY(error < Scalar(10)*std::numeric_limits<Scalar>::epsilon());
+  VERIFY(error < Scalar(16)*std::numeric_limits<Scalar>::epsilon());
 }
 
 void test_umeyama()

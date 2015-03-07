@@ -10,93 +10,37 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    GaussianISAM.h
- * @brief   Linear ISAM only
- * @author  Michael Kaess
+ * @file SymbolicISAM.h
+ * @date July 29, 2013
+ * @author Frank Dellaert
+ * @author Richard Roberts
  */
-
-// \callgraph
 
 #pragma once
 
-#include <boost/optional.hpp>
-
+#include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/inference/ISAM.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/linear/GaussianJunctionTree.h>
 
 namespace gtsam {
 
-class GaussianISAM : public ISAM<GaussianConditional> {
+  class GTSAM_EXPORT GaussianISAM : public ISAM<GaussianBayesTree>
+  {
+  public:
+    typedef ISAM<GaussianBayesTree> Base;
+    typedef GaussianISAM This;
+    typedef boost::shared_ptr<This> shared_ptr;
 
-  typedef ISAM<GaussianConditional> Super;
-  std::vector<size_t> dims_;
+    /// @name Standard Constructors
+    /// @{
 
-public:
+    /** Create an empty Bayes Tree */
+    GaussianISAM();
 
-  typedef std::vector<size_t> Dims;
+    /** Copy constructor */
+    GaussianISAM(const GaussianBayesTree& bayesTree);
 
-  /** Create an empty Bayes Tree */
-  GaussianISAM() : Super() {}
+    /// @}
 
-  /** Create a Bayes Tree from a Bayes Net */
-//  GaussianISAM(const GaussianBayesNet& bayesNet) : Super(bayesNet) {}
-  GaussianISAM(const BayesTree<GaussianConditional>& bayesTree) : Super(bayesTree) {
-    GaussianJunctionTree::countDims(bayesTree, dims_);
-  }
+  };
 
-  /** Override update_internal to also keep track of variable dimensions. */
-  template<class FACTORGRAPH>
-  void update_internal(const FACTORGRAPH& newFactors, Cliques& orphans) {
-    Super::update_internal(newFactors, orphans, &EliminateQR); // TODO: why does this force QR?
-    update_dimensions(newFactors);
-  }
-
-  template<class FACTORGRAPH>
-  void update(const FACTORGRAPH& newFactors) {
-    Cliques orphans;
-    this->update_internal(newFactors, orphans);
-  }
-
-  template<class FACTORGRAPH>
-  inline void update_dimensions(const FACTORGRAPH& newFactors) {
-    BOOST_FOREACH(const typename FACTORGRAPH::sharedFactor& factor, newFactors) {
-      for(typename FACTORGRAPH::FactorType::const_iterator key = factor->begin(); key != factor->end(); ++key) {
-        if(*key >= dims_.size())
-          dims_.resize(*key + 1);
-        if(dims_[*key] == 0)
-          dims_[*key] = factor->getDim(key);
-        else
-          assert(dims_[*key] == factor->getDim(key));
-      }
-    }
-  }
-
-  void clear() {
-    Super::clear();
-    dims_.clear();
-  }
-
-  // access
-  const Dims& dims() const { return dims_; } ///< Const access to dimensions structure
-  Dims& dims() { return dims_; } ///< non-const access to dimensions structure (advanced interface)
-
-  GTSAM_EXPORT friend VectorValues optimize(const GaussianISAM&);
-
-  /** return marginal on any variable as a factor, Bayes net, or mean/cov */
-  GTSAM_EXPORT GaussianFactor::shared_ptr marginalFactor(Index j) const;
-  GTSAM_EXPORT BayesNet<GaussianConditional>::shared_ptr marginalBayesNet(Index key) const;
-  GTSAM_EXPORT Matrix marginalCovariance(Index key) const;
-
-  /** return joint between two variables, as a Bayes net */
-  GTSAM_EXPORT BayesNet<GaussianConditional>::shared_ptr jointBayesNet(Index key1, Index key2) const;
-
-  /** return the conditional P(S|Root) on the separator given the root */
-  GTSAM_EXPORT static BayesNet<GaussianConditional> shortcut(sharedClique clique, sharedClique root);
-
-}; // \class GaussianISAM
-
-// optimize the BayesTree, starting from the root
-GTSAM_EXPORT VectorValues optimize(const GaussianISAM& isam);
-
-} // \namespace gtsam
+}

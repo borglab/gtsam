@@ -116,19 +116,25 @@ TEST_UNSAFE( CSP, WesternUS)
   csp.addAllDiff(CO,NM);
 
   // Solve
-  CSP::sharedValues mpe = csp.optimalAssignment();
+  Ordering ordering;
+  ordering += Key(0),Key(1),Key(2),Key(3),Key(4),Key(5),Key(6),Key(7),Key(8),Key(9),Key(10);
+  CSP::sharedValues mpe = csp.optimalAssignment(ordering);
   // GTSAM_PRINT(*mpe);
   CSP::Values expected;
   insert(expected)
   (WA.first,1)(CA.first,1)(NV.first,3)(OR.first,0)
   (MT.first,1)(WY.first,0)(NM.first,3)(CO.first,2)
   (ID.first,2)(UT.first,1)(AZ.first,0);
+
+  // TODO: Fix me! mpe result seems to be right. (See the printing)
+  // It has the same prob as the expected solution.
+  // Is mpe another solution, or the expected solution is unique???
   EXPECT(assert_equal(expected,*mpe));
   EXPECT_DOUBLES_EQUAL(1, csp(*mpe), 1e-9);
 
   // Write out the dual graph for hmetis
 #ifdef DUAL
-  VariableIndex index(csp);
+  VariableIndexOrdered index(csp);
   index.print("index");
   ofstream os("/Users/dellaert/src/hmetis-1.5-osx-i686/US-West-dual.txt");
   index.outputMetisFormat(os);

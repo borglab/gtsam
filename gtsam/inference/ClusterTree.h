@@ -1,35 +1,20 @@
-/* ----------------------------------------------------------------------------
-
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
- * Atlanta, Georgia 30332-0415
- * All Rights Reserved
- * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
-
- * See LICENSE for the license information
-
- * -------------------------------------------------------------------------- */
-
 /**
  * @file ClusterTree.h
- * @date July 13, 2010
+ * @date Oct 8, 2013
  * @author Kai Ni
+ * @author Richard Roberts
  * @author Frank Dellaert
- * @brief: Collects factorgraph fragments defined on variable clusters, arranged in a tree
+ * @brief Collects factorgraph fragments defined on variable clusters, arranged in a tree
  */
 
 #pragma once
 
-#include <list>
-#include <vector>
-#include <string>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/FastVector.h>
+#include <gtsam/inference/Key.h>
 
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#include <boost/lexical_cast.hpp>
-
-#include <gtsam/global_includes.h>
-
-namespace gtsam {
+namespace gtsam
+{
 
   /**
    * A cluster-tree is associated with a factor graph and is defined as in Koller-Friedman:
@@ -37,105 +22,104 @@ namespace gtsam {
    * each factor \f$ f_i \f$ is associated with a single cluster and \f$ scope(f_i) \sub C_k \f$.
    * \nosubgrouping
    */
-  template <class FG>
-  class ClusterTree {
+  template<class BAYESTREE, class GRAPH>
+  class ClusterTree
+  {
   public:
-    // Access to factor types
-    typedef typename FG::KeyType KeyType;
+    typedef GRAPH FactorGraphType; ///< The factor graph type
+    typedef typename GRAPH::FactorType FactorType; ///< The type of factors
+    typedef ClusterTree<BAYESTREE, GRAPH> This; ///< This class
+    typedef boost::shared_ptr<This> shared_ptr; ///< Shared pointer to this class
+    typedef boost::shared_ptr<FactorType> sharedFactor;  ///< Shared pointer to a factor
+    typedef BAYESTREE BayesTreeType; ///< The BayesTree type produced by elimination
+    typedef typename BayesTreeType::ConditionalType ConditionalType; ///< The type of conditionals
+    typedef boost::shared_ptr<ConditionalType> sharedConditional; ///< Shared pointer to a conditional
+    typedef typename FactorGraphType::Eliminate Eliminate; ///< Typedef for an eliminate subroutine
+
+    struct Cluster {
+      typedef FastVector<Key> Keys;
+      typedef FastVector<sharedFactor> Factors;
+      typedef FastVector<boost::shared_ptr<Cluster> > Children;
+
+      Keys keys; ///< Frontal keys of this node
+      Factors factors; ///< Factors associated with this node
+      Children children; ///< sub-trees
+      int problemSize_;
+
+      int problemSize() const { return problemSize_; }
+
+      /** print this node */
+      void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+    };
+
+    typedef boost::shared_ptr<Cluster> sharedCluster; ///< Shared pointer to Cluster
+    typedef Cluster Node; ///< Define Node=Cluster for compatibility with tree traversal functions
+    typedef sharedCluster sharedNode; ///< Define Node=Cluster for compatibility with tree traversal functions
+
+    /** concept check */
+    GTSAM_CONCEPT_TESTABLE_TYPE(FactorType);
 
   protected:
+    FastVector<sharedNode> roots_;
+    FastVector<sharedFactor> remainingFactors_;
 
-    // the class for subgraphs that also include the pointers to the parents and two children
-    class Cluster : public FG {
-    public:
-      typedef typename boost::shared_ptr<Cluster> shared_ptr;
-      typedef typename boost::weak_ptr<Cluster> weak_ptr;
+    /// @name Standard Constructors
+    /// @{
 
-      const std::vector<Index> frontal;                   // the frontal variables
-      const std::vector<Index> separator;                // the separator variables
+    /** Copy constructor - makes a deep copy of the tree structure, but only pointers to factors are
+     *  copied, factors are not cloned. */
+    ClusterTree(const This& other) { *this = other; }
 
-    protected:
+    /// @}
 
-      weak_ptr parent_;                      // the parent cluster
-      std::list<shared_ptr> children_;     // the child clusters
-      const typename FG::sharedFactor eliminated_; // the eliminated factor to pass on to the parent
+  public:
+    /// @name Testable
+    /// @{
 
-    public:
+    /** Print the cluster tree */
+    void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
-      /// Construct empty clique
-      Cluster() {}
+    /// @}
 
-      /** Create a node with a single frontal variable */
-      template<typename Iterator>
-      Cluster(const FG& fg, Index key, Iterator firstSeparator, Iterator lastSeparator);
+    /// @name Standard Interface
+    /// @{
 
-      /** Create a node with several frontal variables */
-      template<typename FRONTALIT, typename SEPARATORIT>
-      Cluster(const FG& fg, FRONTALIT firstFrontal, FRONTALIT lastFrontal, SEPARATORIT firstSeparator, SEPARATORIT lastSeparator);
+    /** Eliminate the factors to a Bayes tree and remaining factor graph
+    * @param function The function to use to eliminate, see the namespace functions
+    * in GaussianFactorGraph.h
+    * @return The Bayes tree and factor graph resulting from elimination
+    */
+    std::pair<boost::shared_ptr<BayesTreeType>, boost::shared_ptr<FactorGraphType> >
+      eliminate(const Eliminate& function) const;
 
-      /** Create a node with several frontal variables */
-      template<typename FRONTALIT, typename SEPARATORIT>
-      Cluster(FRONTALIT firstFrontal, FRONTALIT lastFrontal, SEPARATORIT firstSeparator, SEPARATORIT lastSeparator);
-
-      /// print
-      void print(const std::string& indent, const IndexFormatter& formatter = DefaultIndexFormatter) const;
-
-      /// print the enire tree
-      void printTree(const std::string& indent, const IndexFormatter& formatter = DefaultIndexFormatter) const;
-
-      /// check equality
-      bool equals(const Cluster& other) const;
-
-      /// get a reference to the children
-      const std::list<shared_ptr>& children() const { return children_; }
-
-      /// add a child
-      void addChild(shared_ptr child);
-
-      /// get or set the parent
-      weak_ptr& parent() { return parent_; }
-
-    };
+    /// @}
 
     /// @name Advanced Interface
     /// @{
 
-    /// typedef for shared pointers to clusters
-    typedef typename Cluster::shared_ptr sharedCluster;
+    /** Return the set of roots (one for a tree, multiple for a forest) */
+    const FastVector<sharedNode>& roots() const { return roots_; }
 
-    /// Root cluster
-    sharedCluster root_;
-
-  public:
+    /** Return the remaining factors that are not pulled into elimination */
+    const FastVector<sharedFactor>& remainingFactors() const { return remainingFactors_; }
 
     /// @}
-    /// @name Standard Constructors
-    /// @{
 
-    /// constructor of empty tree
+  protected:
+    /// @name Details
+
+    /// Assignment operator - makes a deep copy of the tree structure, but only pointers to factors
+    /// are copied, factors are not cloned.
+    This& operator=(const This& other);
+
+    /// Default constructor to be used in derived classes
     ClusterTree() {}
 
     /// @}
-    /// @name Standard Interface
-    /// @{
 
-    /// return the root cluster
-    sharedCluster root() const { return root_; }
+  };
 
-    /// @}
-    /// @name Testable
-    /// @{
 
-    /// print the object
-    void print(const std::string& str="", const IndexFormatter& formatter = DefaultIndexFormatter) const;
+}
 
-    /** check equality */
-    bool equals(const ClusterTree<FG>& other, double tol = 1e-9) const;
 
-    /// @}
-
-  }; // ClusterTree
-
-} // namespace gtsam
-
-#include <gtsam/inference/ClusterTree-inl.h>

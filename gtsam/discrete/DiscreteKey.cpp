@@ -32,15 +32,15 @@ namespace gtsam {
     }
   }
 
-  vector<Index> DiscreteKeys::indices() const {
-    vector < Index > js;
+  vector<Key> DiscreteKeys::indices() const {
+    vector < Key > js;
     BOOST_FOREACH(const DiscreteKey& key, *this)
       js.push_back(key.first);
     return js;
   }
 
-  map<Index,size_t> DiscreteKeys::cardinalities() const {
-    map<Index,size_t> cs;
+  map<Key,size_t> DiscreteKeys::cardinalities() const {
+    map<Key,size_t> cs;
     cs.insert(begin(),end());
 //    BOOST_FOREACH(const DiscreteKey& key, *this)
 //      cs.insert(key);

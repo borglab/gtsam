@@ -1,0 +1,290 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file testGaussianBayesTree.cpp
+ * @date Jul 8, 2010
+ * @author Kai Ni
+ */
+
+#include <iostream>
+#include <CppUnitLite/TestHarness.h>
+
+#include <boost/assign/list_of.hpp>
+#include <boost/assign/std/list.hpp> // for operator +=
+#include <boost/assign/std/set.hpp> // for operator +=
+using namespace boost::assign;
+
+#include <gtsam/base/debug.h>
+#include <gtsam/base/LieVector.h>
+#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/geometry/Rot2.h>
+#include <gtsam/linear/GaussianJunctionTree.h>
+#include <gtsam/linear/GaussianBayesTree.h>
+#include <gtsam/linear/GaussianConditional.h>
+
+using namespace std;
+using namespace gtsam;
+
+namespace {
+  const Key x1=1, x2=2, x3=3, x4=4;
+  const SharedDiagonal chainNoise = noiseModel::Isotropic::Sigma(1, 0.5);
+  const GaussianFactorGraph chain = list_of
+    (JacobianFactor(x2, (Matrix(1, 1) << 1.), x1, (Matrix(1, 1) << 1.), (Vector(1) << 1.),  chainNoise))
+    (JacobianFactor(x2, (Matrix(1, 1) << 1.), x3, (Matrix(1, 1) << 1.), (Vector(1) << 1.),  chainNoise))
+    (JacobianFactor(x3, (Matrix(1, 1) << 1.), x4, (Matrix(1, 1) << 1.), (Vector(1) << 1.),  chainNoise))
+    (JacobianFactor(x4, (Matrix(1, 1) << 1.), (Vector(1) << 1.),  chainNoise));
+  const Ordering chainOrdering = Ordering(list_of(x2)(x1)(x3)(x4));
+
+  /* ************************************************************************* */
+  // Helper functions for below
+  GaussianBayesTreeClique::shared_ptr MakeClique(const GaussianConditional& conditional)
+  {
+    return boost::make_shared<GaussianBayesTreeClique>(
+      boost::make_shared<GaussianConditional>(conditional));
+  }
+
+  template<typename CHILDREN>
+  GaussianBayesTreeClique::shared_ptr MakeClique(
+    const GaussianConditional& conditional, const CHILDREN& children)
+  {
+    GaussianBayesTreeClique::shared_ptr clique =
+      boost::make_shared<GaussianBayesTreeClique>(
+      boost::make_shared<GaussianConditional>(conditional));
+    clique->children.assign(children.begin(), children.end());
+    for(typename CHILDREN::const_iterator child = children.begin(); child != children.end(); ++child)
+      (*child)->parent_ = clique;
+    return clique;
+  }
+}
+
+/* ************************************************************************* */
+/**
+ * x1 - x2 - x3 - x4
+ * x3 x4
+ *    x2 x1 : x3
+ *
+ * x2 x1 x3 x4  b
+ *  1  1        1
+ *  1     1     1
+ *        1  1  1
+ *           1  1
+ *
+ *  1  0  0  1
+ */
+TEST( GaussianBayesTree, eliminate )
+{
+  GaussianBayesTree bt = *chain.eliminateMultifrontal(chainOrdering);
+
+  Matrix two = (Matrix(1, 1) << 2.);
+  Matrix one = (Matrix(1, 1) << 1.);
+
+  GaussianBayesTree bayesTree_expected;
+  bayesTree_expected.insertRoot(
+    MakeClique(GaussianConditional(pair_list_of<Key, Matrix>(x3, (Matrix(2, 1) << 2., 0.)) (x4, (Matrix(2, 1) << 2., 2.)), 2, (Vector(2) << 2., 2.)), list_of
+      (MakeClique(GaussianConditional(pair_list_of<Key, Matrix>(x2, (Matrix(2, 1) << -2.*sqrt(2.), 0.)) (x1, (Matrix(2, 1) << -sqrt(2.), -sqrt(2.))) (x3, (Matrix(2, 1) << -sqrt(2.), sqrt(2.))), 2, (Vector(2) << -2.*sqrt(2.), 0.))))));
+
+  EXPECT(assert_equal(bayesTree_expected, bt));
+}
+
+/* ************************************************************************* */
+TEST( GaussianBayesTree, optimizeMultiFrontal )
+{
+  VectorValues expected = pair_list_of<Key, Vector>
+    (x1, (Vector(1) << 0.))
+    (x2, (Vector(1) << 1.))
+    (x3, (Vector(1) << 0.))
+    (x4, (Vector(1) << 1.));
+
+  VectorValues actual = chain.eliminateMultifrontal(chainOrdering)->optimize();
+  EXPECT(assert_equal(expected,actual));
+}
+
+/* ************************************************************************* */
+TEST(GaussianBayesTree, complicatedMarginal) {
+
+  // Create the conditionals to go in the BayesTree
+  GaussianBayesTree bt;
+  bt.insertRoot(
+    MakeClique(GaussianConditional(pair_list_of<Key, Matrix> (11, (Matrix(3,1) << 0.0971, 0, 0)) 
+                                                         (12, (Matrix(3,2) << 0.3171, 0.4387,  0.9502, 0.3816,  0, 0.7655)),
+                                            2, (Vector(3) << 0.2638, 0.1455, 0.1361)), list_of
+      (MakeClique(GaussianConditional(pair_list_of<Key, Matrix> (9, (Matrix(3,1) << 0.7952, 0, 0))
+                                                            (10, (Matrix(3,2) << 0.4456, 0.7547, 0.6463, 0.2760, 0, 0.6797))
+                                                            (11, (Matrix(3,1) << 0.6551, 0.1626, 0.1190))
+                                                            (12, (Matrix(3,2) << 0.4984, 0.5853, 0.9597, 0.2238, 0.3404, 0.7513)),
+                                               2, (Vector(3) << 0.4314, 0.9106, 0.1818))))
+      (MakeClique(GaussianConditional(pair_list_of<Key, Matrix> (7, (Matrix(3,1) << 0.2551, 0, 0))
+                                                            (8, (Matrix(3,2) << 0.8909, 0.1386, 0.9593, 0.1493, 0, 0.2575))
+                                                            (11, (Matrix(3,1) << 0.8407, 0.2543, 0.8143)),
+                                               2, (Vector(3) << 0.3998, 0.2599, 0.8001)), list_of
+          (MakeClique(GaussianConditional(pair_list_of<Key, Matrix> (5, (Matrix(3,1) << 0.2435, 0, 0))
+                                                                (6, (Matrix(3,2) << 0.4733, 0.1966, 0.3517, 0.2511, 0.8308,    0.0))
+                                                                // NOTE the non-upper-triangular form
+                                                                // here since this test was written when we had column permutations
+                                                                // from LDL.  The code still works currently (does not enfore
+                                                                // upper-triangularity in this case) but this test will need to be
+                                                                // redone if this stops working in the future
+                                                                (7, (Matrix(3,1) << 0.5853, 0.5497, 0.9172))
+                                                                (8, (Matrix(3,2) << 0.2858, 0.3804, 0.7572, 0.5678, 0.7537, 0.0759)),
+                                                  2, (Vector(3) << 0.8173, 0.8687, 0.0844)), list_of
+              (MakeClique(GaussianConditional(pair_list_of<Key, Matrix> (3, (Matrix(3,1) << 0.0540, 0, 0))
+                                                                    (4, (Matrix(3,2) << 0.9340, 0.4694, 0.1299, 0.0119, 0, 0.3371))
+                                                                    (6, (Matrix(3,2) << 0.1622, 0.5285, 0.7943, 0.1656, 0.3112, 0.6020)),
+                                                      2, (Vector(3) << 0.9619, 0.0046, 0.7749))))
+              (MakeClique(GaussianConditional(pair_list_of<Key, Matrix> (1, (Matrix(3,1) << 0.2630, 0, 0))
+                                                                    (2, (Matrix(3,2) << 0.7482, 0.2290, 0.4505, 0.9133, 0, 0.1524))
+                                                                    (5, (Matrix(3,1) << 0.8258, 0.5383, 0.9961)),
+                                                      2, (Vector(3) << 0.0782, 0.4427, 0.1067))))))))));
+
+  // Marginal on 5
+  Matrix expectedCov = (Matrix(1,1) << 236.5166);
+  //GaussianConditional actualJacobianChol = *bt.marginalFactor(5, EliminateCholesky);
+  GaussianConditional actualJacobianQR = *bt.marginalFactor(5, EliminateQR);
+  //EXPECT(assert_equal(actualJacobianChol, actualJacobianQR)); // Check that Chol and QR obtained marginals are the same
+  LONGS_EQUAL(1, (long)actualJacobianQR.rows());
+  LONGS_EQUAL(1, (long)actualJacobianQR.size());
+  LONGS_EQUAL(5, (long)actualJacobianQR.keys()[0]);
+  Matrix actualA = actualJacobianQR.getA(actualJacobianQR.begin());
+  Matrix actualCov = inverse(actualA.transpose() * actualA);
+  EXPECT(assert_equal(expectedCov, actualCov, 1e-1));
+
+  // Marginal on 6
+//  expectedCov = (Matrix(2,2) <<
+//      8471.2, 2886.2,
+//      2886.2, 1015.8);
+  expectedCov = (Matrix(2,2) <<
+      1015.8,    2886.2,
+      2886.2,    8471.2);
+  //actualJacobianChol = bt.marginalFactor(6, EliminateCholesky);
+  actualJacobianQR = *bt.marginalFactor(6, EliminateQR);
+  //EXPECT(assert_equal(actualJacobianChol, actualJacobianQR)); // Check that Chol and QR obtained marginals are the same
+  LONGS_EQUAL(2, (long)actualJacobianQR.rows());
+  LONGS_EQUAL(1, (long)actualJacobianQR.size());
+  LONGS_EQUAL(6, (long)actualJacobianQR.keys()[0]);
+  actualA = actualJacobianQR.getA(actualJacobianQR.begin());
+  actualCov = inverse(actualA.transpose() * actualA);
+  EXPECT(assert_equal(expectedCov, actualCov, 1e1));
+}
+
+namespace {
+  /* ************************************************************************* */
+  double computeError(const GaussianBayesTree& gbt, const LieVector& values)
+  {
+    pair<Matrix,Vector> Rd = GaussianFactorGraph(gbt).jacobian();
+    return 0.5 * (Rd.first * values - Rd.second).squaredNorm();
+  }
+}
+
+/* ************************************************************************* */
+TEST(GaussianBayesTree, ComputeSteepestDescentPointBT) {
+
+  // Create an arbitrary Bayes Tree
+  GaussianBayesTree bt;
+  bt.insertRoot(MakeClique(GaussianConditional(
+    pair_list_of<Key, Matrix>
+    (2, (Matrix(6, 2) <<
+    31.0,32.0,
+    0.0,34.0,
+    0.0,0.0,
+    0.0,0.0,
+    0.0,0.0,
+    0.0,0.0))
+    (3, (Matrix(6, 2) <<
+    35.0,36.0,
+    37.0,38.0,
+    41.0,42.0,
+    0.0,44.0,
+    0.0,0.0,
+    0.0,0.0))
+    (4, (Matrix(6, 2) <<
+    0.0,0.0,
+    0.0,0.0,
+    45.0,46.0,
+    47.0,48.0,
+    51.0,52.0,
+    0.0,54.0)),
+    3, (Vector(6) << 29.0,30.0,39.0,40.0,49.0,50.0)), list_of
+      (MakeClique(GaussianConditional(
+      pair_list_of<Key, Matrix>
+      (0, (Matrix(4, 2) <<
+      3.0,4.0,
+      0.0,6.0,
+      0.0,0.0,
+      0.0,0.0))
+      (1, (Matrix(4, 2) <<
+      0.0,0.0,
+      0.0,0.0,
+      17.0,18.0,
+      0.0,20.0))
+      (2, (Matrix(4, 2) <<
+      0.0,0.0,
+      0.0,0.0,
+      21.0,22.0,
+      23.0,24.0))
+      (3, (Matrix(4, 2) <<
+      7.0,8.0,
+      9.0,10.0,
+      0.0,0.0,
+      0.0,0.0))
+      (4, (Matrix(4, 2) <<
+      11.0,12.0,
+      13.0,14.0,
+      25.0,26.0,
+      27.0,28.0)),
+      2, (Vector(4) << 1.0,2.0,15.0,16.0))))));
+
+  // Compute the Hessian numerically
+  Matrix hessian = numericalHessian(
+    boost::function<double(const LieVector&)>(boost::bind(&computeError, bt, _1)),
+    LieVector(Vector::Zero(GaussianFactorGraph(bt).jacobian().first.cols())));
+
+  // Compute the gradient numerically
+  Vector gradient = numericalGradient(
+    boost::function<double(const LieVector&)>(boost::bind(&computeError, bt, _1)),
+    LieVector(Vector::Zero(GaussianFactorGraph(bt).jacobian().first.cols())));
+
+  // Compute the gradient using dense matrices
+  Matrix augmentedHessian = GaussianFactorGraph(bt).augmentedHessian();
+  LONGS_EQUAL(11, (long)augmentedHessian.cols());
+  Vector denseMatrixGradient = -augmentedHessian.col(10).segment(0,10);
+  EXPECT(assert_equal(gradient, denseMatrixGradient, 1e-5));
+
+  // Compute the steepest descent point
+  double step = -gradient.squaredNorm() / (gradient.transpose() * hessian * gradient)(0);
+  Vector expected = gradient * step;
+
+  // Known steepest descent point from Bayes' net version
+  VectorValues expectedFromBN = pair_list_of<Key, Vector>
+    (0, (Vector(2) << 0.000129034, 0.000688183))
+    (1, (Vector(2) << 0.0109679, 0.0253767))
+    (2, (Vector(2) << 0.0680441, 0.114496))
+    (3, (Vector(2) << 0.16125, 0.241294))
+    (4, (Vector(2) << 0.300134, 0.423233));
+
+  // Compute the steepest descent point with the dogleg function
+  VectorValues actual = bt.optimizeGradientSearch();
+
+  // Check that points agree
+  FastVector<Key> keys = list_of(0)(1)(2)(3)(4);
+  EXPECT(assert_equal(expected, actual.vector(keys), 1e-5));
+  EXPECT(assert_equal(expectedFromBN, actual, 1e-5));
+
+  // Check that point causes a decrease in error
+  double origError = GaussianFactorGraph(bt).error(VectorValues::Zero(actual));
+  double newError = GaussianFactorGraph(bt).error(actual);
+  EXPECT(newError < origError);
+}
+
+
+/* ************************************************************************* */
+int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
+/* ************************************************************************* */

@@ -11,7 +11,7 @@
 
 /**
  * @file    DecisionTree.h
- * @brief    Decision Tree for use in DiscreteFactors
+ * @brief   Decision Tree for use in DiscreteFactors
  * @author  Frank Dellaert
  * @author  Can Erdogan
  * @date    Jan 30, 2012
@@ -421,7 +421,7 @@ namespace gtsam {
   DecisionTree<L, Y>::DecisionTree(const std::vector<LabelC>& labelCs,
       const std::string& table) {
 
-    // Convert std::string to doubles
+    // Convert std::string to values of type Y
     std::vector<Y> ys;
     std::istringstream iss(table);
     copy(std::istream_iterator<Y>(iss), std::istream_iterator<Y>(),
@@ -643,6 +643,7 @@ namespace gtsam {
   // where there is no more branch on "label": only the subtree under that
   // branch point corresponding to the value "index" is left instead.
   // The function below get all these smaller trees and "ops" them together.
+  // This implements marginalization in Darwiche09book, pg 330
   template<typename L, typename Y>
   DecisionTree<L, Y> DecisionTree<L, Y>::combine(const L& label,
       size_t cardinality, const Binary& op) const {

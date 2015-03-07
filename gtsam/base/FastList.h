@@ -18,8 +18,9 @@
 
 #pragma once
 
+#include <gtsam/base/FastDefaultAllocator.h>
 #include <list>
-#include <boost/pool/pool_alloc.hpp>
+#include <boost/utility/enable_if.hpp>
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/list.hpp>
 
@@ -34,11 +35,11 @@ namespace gtsam {
    * @addtogroup base
  */
 template<typename VALUE>
-class FastList: public std::list<VALUE, boost::fast_pool_allocator<VALUE> > {
+class FastList: public std::list<VALUE, typename internal::FastDefaultAllocator<VALUE>::type> {
 
 public:
 
-  typedef std::list<VALUE, boost::fast_pool_allocator<VALUE> > Base;
+  typedef std::list<VALUE, typename internal::FastDefaultAllocator<VALUE>::type> Base;
 
   /** Default constructor */
   FastList() {}
@@ -53,6 +54,7 @@ public:
   /** Copy constructor from the base list class */
   FastList(const Base& x) : Base(x) {}
 
+#ifdef GTSAM_ALLOCATOR_BOOSTPOOL
   /** Copy constructor from a standard STL container */
   FastList(const std::list<VALUE>& x) {
     // This if statement works around a bug in boost pool allocator and/or
@@ -61,6 +63,7 @@ public:
     if(x.size() > 0)
       Base::assign(x.begin(), x.end());
   }
+#endif
 
   /** Conversion to a standard STL container */
   operator std::list<VALUE>() const {

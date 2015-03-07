@@ -18,7 +18,6 @@
  */
 
 #include <gtsam/discrete/DiscreteMarginals.h>
-#include <gtsam/discrete/DiscreteSequentialSolver.h>
 
 #include <boost/assign/std/vector.hpp>
 using namespace boost::assign;
@@ -54,10 +53,10 @@ TEST_UNSAFE( DiscreteMarginals, UGM_small ) {
   EXPECT_DOUBLES_EQUAL( 0.359631, (*actualC)(values), 1e-6);
 
   Vector actualCvector = marginals.marginalProbabilities(Cathy);
-  EXPECT(assert_equal(Vector_(2, 0.359631, 0.640369), actualCvector, 1e-6));
+  EXPECT(assert_equal((Vector(2) << 0.359631, 0.640369), actualCvector, 1e-6));
 
   actualCvector = marginals.marginalProbabilities(Mark);
-  EXPECT(assert_equal(Vector_(2, 0.48628, 0.51372), actualCvector, 1e-6));
+  EXPECT(assert_equal((Vector(2) << 0.48628, 0.51372), actualCvector, 1e-6));
 }
 
 /* ************************************************************************* */
@@ -119,11 +118,9 @@ TEST_UNSAFE( DiscreteMarginals, truss ) {
   graph.add(key[0] & key[2] & key[4],"2 2 2 2 1 1 1 1");
   graph.add(key[1] & key[3] & key[4],"1 1 1 1 2 2 2 2");
   graph.add(key[2] & key[3] & key[4],"1 1 1 1 1 1 1 1");
-  typedef JunctionTree<DiscreteFactorGraph> JT;
-  GenericMultifrontalSolver<DiscreteFactor, JT> solver(graph);
-  BayesTree<DiscreteConditional>::shared_ptr bayesTree = solver.eliminate(&EliminateDiscrete);
+  DiscreteBayesTree::shared_ptr bayesTree = graph.eliminateMultifrontal();
 //  bayesTree->print("Bayes Tree");
-  typedef BayesTreeClique<DiscreteConditional> Clique;
+  typedef DiscreteBayesTreeClique Clique;
 
   Clique expected0(boost::make_shared<DiscreteConditional>((key[0] | key[2], key[4]) = "2/1 2/1 2/1 2/1"));
   Clique::shared_ptr actual0 = (*bayesTree)[0];
@@ -180,16 +177,16 @@ TEST_UNSAFE( DiscreteMarginals, truss2 ) {
   }
 
   // Check all marginals given by a sequential solver and Marginals
-  DiscreteSequentialSolver solver(graph);
+//  DiscreteSequentialSolver solver(graph);
   DiscreteMarginals marginals(graph);
   for (size_t j=0;j<5;j++) {
     double sum = T[j]+F[j];
     T[j]/=sum;
     F[j]/=sum;
 
-    // solver
-    Vector actualV = solver.marginalProbabilities(key[j]);
-    EXPECT(assert_equal(Vector_(2,F[j],T[j]), actualV));
+//    // solver
+//    Vector actualV = solver.marginalProbabilities(key[j]);
+//    EXPECT(assert_equal((Vector(2) << F[j], T[j]), actualV));
 
     // Marginals
     vector<double> table;

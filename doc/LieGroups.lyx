@@ -3037,10 +3037,10 @@ key "Murray94book"
 \color none
 \begin_inset Formula 
 \[
-\exp\left(\left[\begin{array}{c}
+\exp\left(\widehat{\left[\begin{array}{c}
 \omega\\
 v
-\end{array}\right]t\right)=\left[\begin{array}{cc}
+\end{array}\right]}t\right)=\left[\begin{array}{cc}
 e^{\Skew{\omega}t} & (I-e^{\Skew{\omega}t})\left(\omega\times v\right)+\omega\omega^{T}vt\\
 0 & 1
 \end{array}\right]

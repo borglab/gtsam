@@ -24,10 +24,11 @@
 
 namespace gtsam {
 
-class GTSAM_EXPORT CheiralityException: public std::runtime_error {
+class GTSAM_EXPORT CheiralityException: public ThreadsafeException<
+    CheiralityException> {
 public:
   CheiralityException() :
-      std::runtime_error("Cheirality Exception") {
+      ThreadsafeException<CheiralityException>("Cheirality Exception") {
   }
 };
 
@@ -150,8 +151,9 @@ public:
    * @param Dpoint the optionally computed Jacobian with respect to the 3D point
    * @return the intrinsic coordinates of the projected point
    */
-  Point2 project(const Point3& point, boost::optional<Matrix&> Dpose =
-      boost::none, boost::optional<Matrix&> Dpoint = boost::none) const;
+  Point2 project(const Point3& point,
+      boost::optional<Matrix&> Dpose = boost::none,
+      boost::optional<Matrix&> Dpoint = boost::none) const;
 
   /**
    * projects a 3-dimensional point in camera coordinates into the
@@ -212,12 +214,12 @@ private:
   friend class boost::serialization::access;
   template<class Archive>
   void serialize(Archive & ar, const unsigned int version) {
-    ar & boost::serialization::make_nvp("CalibratedCamera",
-        boost::serialization::base_object<Value>(*this));
+    ar
+        & boost::serialization::make_nvp("CalibratedCamera",
+            boost::serialization::base_object<Value>(*this));
     ar & BOOST_SERIALIZATION_NVP(pose_);
   }
 
   /// @}
-};
-}
+      };}
 

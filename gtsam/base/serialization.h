@@ -135,12 +135,12 @@ void deserializeBinary(const std::string& serialized, T& output, const std::stri
 }
 
 template<class T>
-bool deserializeToBinaryFile(const T& input, const std::string& filename, const std::string& name="data") {
+bool serializeToBinaryFile(const T& input, const std::string& filename, const std::string& name="data") {
   std::ofstream out_archive_stream(filename.c_str());
   if (!out_archive_stream.is_open())
     return false;
   boost::archive::binary_oarchive out_archive(out_archive_stream);
-  out_archive << boost::serialization::make_nvp(name.c_str(), input);;
+  out_archive << boost::serialization::make_nvp(name.c_str(), input);
   out_archive_stream.close();
   return true;
 }

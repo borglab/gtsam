@@ -1,5 +1,7 @@
 # Writes a config file
 
+set(GTSAM_CONFIG_TEMPLATE_PATH ${CMAKE_CURRENT_LIST_DIR})
+
 function(GtsamMakeConfigFile PACKAGE_NAME)
 
 	if(WIN32 AND NOT CYGWIN)
@@ -20,7 +22,7 @@ function(GtsamMakeConfigFile PACKAGE_NAME)
 
 	file(RELATIVE_PATH CONF_REL_INCLUDE_DIR "${CMAKE_INSTALL_PREFIX}/${DEF_INSTALL_CMAKE_DIR}" "${CMAKE_INSTALL_PREFIX}/include")
 	file(RELATIVE_PATH CONF_REL_LIB_DIR "${CMAKE_INSTALL_PREFIX}/${DEF_INSTALL_CMAKE_DIR}" "${CMAKE_INSTALL_PREFIX}/lib")
-	configure_file(${PROJECT_SOURCE_DIR}/cmake/Config.cmake.in "${PROJECT_BINARY_DIR}/${PACKAGE_NAME}Config.cmake" @ONLY)
+	configure_file(${GTSAM_CONFIG_TEMPLATE_PATH}/Config.cmake.in "${PROJECT_BINARY_DIR}/${PACKAGE_NAME}Config.cmake" @ONLY)
 	message(STATUS "Wrote ${PROJECT_BINARY_DIR}/${PACKAGE_NAME}Config.cmake")
 
 	# Install config and exports files (for find scripts)

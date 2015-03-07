@@ -1594,7 +1594,7 @@ First, the derivative
 \begin_inset Formula $D_{2}f$
 \end_inset
 
- with respect to in 
+ with respect to 
 \begin_inset Formula $p$
 \end_inset
 
@@ -1614,11 +1614,11 @@ For the derivative
 \begin_inset Formula $T$
 \end_inset
 
-, we want
-\end_layout
+, we want to find the linear map 
+\begin_inset Formula $D_{1}f$
+\end_inset
 
-\begin_layout Proof
-
+ such that
 \family roman
 \series medium
 \shape up
@@ -1630,9 +1630,10 @@ For the derivative
 \uwave off
 \noun off
 \color none
+
 \begin_inset Formula 
 \[
-f(Te^{\hat{\xi}},p)=Te^{\hat{\xi}}p\approx Tp+D_{1}f(\xi)
+Tp+D_{1}f(\xi)\approx f(Te^{\hat{\xi}},p)=Te^{\hat{\xi}}p
 \]
 
 \end_inset
@@ -1661,7 +1662,12 @@ Te^{\hat{\xi}}p\approx T(I+\hat{\xi})p=Tp+T\hat{\xi}p
 
 \end_inset
 
+and 
+\begin_inset Formula $D_{1}f(\xi)=T\hat{\xi}p$
+\end_inset
 
+.
+ 
 \begin_inset Note Note
 status collapsed
 
@@ -1679,7 +1685,7 @@ T\hat{\xi}p=\left(T\hat{\xi}T^{-1}\right)Tp=\left(\Ad T\xihat\right)\left(Tp\rig
 
 \end_inset
 
-Hence, we need to show that 
+Hence, to complete the proof, we need to show that 
 \begin_inset Formula 
 \begin{equation}
 \xihat p=H(p)\xi\label{eq:Hp}
@@ -4173,9 +4179,9 @@ so
 .
  Hence, the final derivative of an action in its first argument is
 \begin_inset Formula 
-\[
-\deriv{\left(Rp\right)}{\omega}=RH(p)=-R\Skew p
-\]
+\begin{equation}
+\deriv{\left(Rp\right)}{\omega}=RH(p)=-R\Skew p\label{eq:Rot3action}
+\end{equation}
 
 \end_inset
 
@@ -5024,6 +5030,909 @@ Re^{\Skew{\omega}} & t+R\left[v+\left(\omega\times v\right)/2\right]\\
 
 \begin_layout Standard
 \begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+The Sphere 
+\begin_inset Formula $S^{2}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Definitions
+\end_layout
+
+\begin_layout Standard
+The sphere 
+\begin_inset Formula $S^{2}$
+\end_inset
+
+ is the set of all unit vectors in 
+\begin_inset Formula $\Rthree$
+\end_inset
+
+, i.e., all directions in three-space: 
+\begin_inset Formula 
+\[
+S^{2}=\{p\in\Rthree|\left\Vert p\right\Vert =1\}
+\]
+
+\end_inset
+
+The tangent space 
+\begin_inset Formula $T_{p}S^{2}$
+\end_inset
+
+ at a point
+\begin_inset Formula $p$
+\end_inset
+
+ consists of three-vectors 
+\begin_inset Formula $\xihat$
+\end_inset
+
+ such that 
+\begin_inset Formula $\xihat$
+\end_inset
+
+ is tangent to 
+\begin_inset Formula $S^{2}$
+\end_inset
+
+ at 
+\begin_inset Formula $p$
+\end_inset
+
+, i.e., 
+\begin_inset Formula 
+\[
+T_{p}S^{2}\define\left\{ \xihat\in\Rthree|p^{T}\xihat=0\right\} 
+\]
+
+\end_inset
+
+While not a Lie group, we can define an exponential map, which is given
+ in Ma et.
+ al 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Ma01ijcv"
+
+\end_inset
+
+, as well as in this CVPR tutorial by Anuj Srivastava: 
+\begin_inset CommandInset href
+LatexCommand href
+name "http://stat.fsu.edu/~anuj/CVPR_Tutorial/Part2.pdf"
+
+\end_inset
+
+.
+ 
+\begin_inset Formula 
+\[
+\exp_{p}\xihat=\cos\left(\left\Vert \xihat\right\Vert \right)p+\sin\left(\left\Vert \xihat\right\Vert \right)\frac{\xihat}{\left\Vert \xihat\right\Vert }
+\]
+
+\end_inset
+
+The latter also gives the inverse, i.e., get the tangent vector 
+\begin_inset Formula $z$
+\end_inset
+
+ to go from 
+\begin_inset Formula $p$
+\end_inset
+
+ to 
+\begin_inset Formula $q$
+\end_inset
+
+:
+\begin_inset Formula 
+\[
+z=\log_{p}q=\frac{\theta}{\sin\theta}\left(q-p\cos\theta\right)p
+\]
+
+\end_inset
+
+with 
+\begin_inset Formula $\theta=\cos^{-1}\left(p^{T}q\right)$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+Local Coordinates
+\end_layout
+
+\begin_layout Standard
+We can find a basis 
+\begin_inset Formula $B_{p}$
+\end_inset
+
+ for the tangent space 
+\begin_inset Formula $T_{p}S^{2}$
+\end_inset
+
+, with 
+\begin_inset Formula $B_{p}=\left[b_{1}|b_{2}\right]$
+\end_inset
+
+ a 
+\begin_inset Formula $3\times2$
+\end_inset
+
+ matrix, by either
+\end_layout
+
+\begin_layout Enumerate
+Decompose 
+\begin_inset Formula $p=QR$
+\end_inset
+
+, with 
+\begin_inset Formula $Q$
+\end_inset
+
+ orthonormal and 
+\begin_inset Formula $R$
+\end_inset
+
+ of the form 
+\begin_inset Formula $[1\,0\,0]^{T}$
+\end_inset
+
+, and hence 
+\begin_inset Formula $p=Q_{1}$
+\end_inset
+
+.
+ The basis 
+\begin_inset Formula $B_{p}=\left[Q_{2}|Q_{3}\right]$
+\end_inset
+
+, i.e., the last two columns of 
+\begin_inset Formula $Q$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Enumerate
+Form 
+\begin_inset Formula $b_{1}=p\times a$
+\end_inset
+
+, with 
+\begin_inset Formula $a$
+\end_inset
+
+ (consistently) chosen to be non-parallel to 
+\begin_inset Formula $p$
+\end_inset
+
+, and 
+\begin_inset Formula $b_{2}=p\times b_{1}$
+\end_inset
+
+.
+ 
+\begin_inset Note Note
+status collapsed
+
+\begin_layout Plain Layout
+To choose 
+\begin_inset Formula $a$
+\end_inset
+
+, one way is to divide the sphere into regions, e.g., pick the axis 
+\begin_inset Formula $e_{i}$
+\end_inset
+
+ such that 
+\begin_inset Formula $e_{i}^{T}p$
+\end_inset
+
+ is smallest.
+ However, that leads to discontinuous boundaries.
+ Since 
+\begin_inset Formula $0\leq\left|e_{i}^{T}p\right|\leq1$
+\end_inset
+
+ for all 
+\begin_inset Formula $p\in S^{2}$
+\end_inset
+
+, a better idea might be to use a mixture, e.g.,
+\begin_inset Formula 
+\[
+a=\frac{1}{2(x^{2}+y^{2}+z^{2})}\left[\begin{array}{c}
+y^{2}+z^{2}\\
+x^{2}+z^{2}\\
+x^{2}+y^{2}
+\end{array}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Now we can write 
+\begin_inset Formula $\xihat=B_{p}\xi$
+\end_inset
+
+ with 
+\begin_inset Formula $\xi\in R^{2}$
+\end_inset
+
+ the 2D coordinate in the tangent plane basis 
+\begin_inset Formula $B_{p}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+Retraction
+\end_layout
+
+\begin_layout Standard
+The exponential map uses 
+\begin_inset Formula $\cos$
+\end_inset
+
+ and 
+\begin_inset Formula $\sin$
+\end_inset
+
+, and is more than we need for optimization.
+ Suppose we have a point 
+\begin_inset Formula $p\in S^{2}$
+\end_inset
+
+ and a 3-vector 
+\begin_inset Formula $\xihat\in T_{p}S^{2}$
+\end_inset
+
+, Absil 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Absil07book"
+
+\end_inset
+
+ tells us we can simply add 
+\begin_inset Formula $\xihat$
+\end_inset
+
+ to 
+\begin_inset Formula $p$
+\end_inset
+
+ and renormalize to get a new point 
+\begin_inset Formula $q$
+\end_inset
+
+ on the sphere.
+ This is what he calls a 
+\series bold
+retraction 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula $\retract_{p}(\xihat)$
+\end_inset
+
+,
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+ 
+\begin_inset Formula 
+\[
+q=\retract_{p}(\xihat)=\frac{p+\xihat}{\left\Vert p+z\right\Vert }=\frac{p+\xihat}{\alpha}
+\]
+
+\end_inset
+
+with 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ the norm of 
+\begin_inset Formula $p+\xihat$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+We can also define a retraction from local coordinates 
+\begin_inset Formula $\xi\in\Rtwo$
+\end_inset
+
+: 
+\begin_inset Formula 
+\[
+q=\retract_{p}(\xi)=\frac{p+B_{p}\xi}{\left\Vert p+B_{p}\xi\right\Vert }
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection*
+Inverse Retraction
+\end_layout
+
+\begin_layout Standard
+If 
+\begin_inset Formula $\xihat=B_{p}\xi$
+\end_inset
+
+ with 
+\begin_inset Formula $\xi\in R^{2}$
+\end_inset
+
+ the 2D coordinate in the tangent plane basis 
+\begin_inset Formula $B_{p}$
+\end_inset
+
+, we have
+\begin_inset Formula 
+\[
+\xi=\frac{B_{p}^{T}q}{p^{T}q}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Proof
+We seek 
+\begin_inset Formula 
+\[
+\alpha q=p+B_{p}\xi
+\]
+
+\end_inset
+
+If we multiply both sides with 
+\begin_inset Formula $B_{p}^{T}$
+\end_inset
+
+ (project on the basis 
+\begin_inset Formula $B_{p}$
+\end_inset
+
+) we obtain
+\begin_inset Formula 
+\[
+\alpha B_{p}^{T}q=B_{p}^{T}p+B_{p}^{T}B_{p}\xi
+\]
+
+\end_inset
+
+and because 
+\begin_inset Formula $B_{p}^{T}p=0$
+\end_inset
+
+ and 
+\begin_inset Formula $B_{p}^{T}B_{p}=I$
+\end_inset
+
+ we trivially obtain 
+\begin_inset Formula $\xi$
+\end_inset
+
+ as the scaled projection 
+\begin_inset Formula $B_{p}^{T}q$
+\end_inset
+
+:
+\begin_inset Formula 
+\[
+\xi=\alpha B_{p}^{T}q
+\]
+
+\end_inset
+
+To recover the scale factor 
+\begin_inset Formula $\alpha$
+\end_inset
+
+ we multiply with 
+\begin_inset Formula $p^{T}$
+\end_inset
+
+ on both sides, and we get
+\begin_inset Formula 
+\[
+\alpha p^{T}q=p^{T}p+p^{T}B_{p}\xi
+\]
+
+\end_inset
+
+Since 
+\begin_inset Formula $p^{T}p=1$
+\end_inset
+
+ and 
+\begin_inset Formula $p^{T}B_{p}\xi=0$
+\end_inset
+
+, we then obtain 
+\begin_inset Formula $\alpha=1/(p^{T}q)$
+\end_inset
+
+, which completes the proof.
+\end_layout
+
+\begin_layout Subsection
+Rotation acting on a 3D Direction
+\end_layout
+
+\begin_layout Standard
+Rotating a point 
+\begin_inset Formula $p\in S^{2}$
+\end_inset
+
+ on the sphere obviously yields another point 
+\begin_inset Formula $q=Rp\in S^{2}$
+\end_inset
+
+, as rotation preserves the norm.
+ The derivative of 
+\begin_inset Formula $f(R,p)$
+\end_inset
+
+ with respect to 
+\begin_inset Formula $R$
+\end_inset
+
+ can be found by equating
+\begin_inset Formula 
+\[
+Rp+B_{Rp}\xi=R(I+\Skew{\omega})p=Rp+R\Skew{\omega}p
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+B_{Rp}\xi=-R\Skew p\omega
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\xi=-B_{Rp}^{T}R\Skew p\omega
+\]
+
+\end_inset
+
+whereas with respect to 
+\begin_inset Formula $p$
+\end_inset
+
+ we have
+\begin_inset Formula 
+\[
+Rp+B_{Rp}\xi_{q}=R(p+B_{p}\xi_{p})
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\xi_{q}=B_{Rp}^{T}RB_{p}\xi_{p}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In other words, the Jacobian matrix is given by
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula 
+\[
+f'(R,p)=\left[\begin{array}{cc}
+-B_{Rp}^{T}R\Skew p & B_{Rp}^{T}RB_{p}\end{array}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Error between 3D Directions
+\end_layout
+
+\begin_layout Standard
+We would like to define a distance metric 
+\begin_inset Formula $e(p,q)$
+\end_inset
+
+ between two directions 
+\begin_inset Formula $p,q\in S^{2}$
+\end_inset
+
+.
+ An obvious choice is
+\begin_inset Formula 
+\[
+\theta=\cos^{-1}\left(p^{T}q\right)
+\]
+
+\end_inset
+
+which is exactly the distance along the shortest path (geodesic) on the
+ sphere, i.e., this is the distance metric associated with the exponential.
+ The advantage is that it is defined everywhere, but it involves 
+\begin_inset Formula $\cos^{-1}$
+\end_inset
+
+.
+ The derivative with respect to a change in 
+\begin_inset Formula $q$
+\end_inset
+
+, via 
+\begin_inset Formula $\xi$
+\end_inset
+
+, is then
+\begin_inset Formula 
+\[
+\frac{\partial\theta(p,q)}{\partial\xi}=\frac{\partial\cos^{-1}\left(p^{T}q\right)}{\partial\xi}=\frac{p^{T}B_{q}}{\sqrt{1-\left(p^{T}q\right)^{2}}}
+\]
+
+\end_inset
+
+which is also undefined for 
+\begin_inset Formula $p=q$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+A simpler metric is derived from the retraction but only holds when 
+\begin_inset Formula $q\approx p$
+\end_inset
+
+.
+ It simply projects 
+\begin_inset Formula $q$
+\end_inset
+
+ onto the local coordinate basis 
+\begin_inset Formula $B_{p}$
+\end_inset
+
+ defined by 
+\begin_inset Formula $p$
+\end_inset
+
+, and takes the norm:
+\begin_inset Formula 
+\[
+\theta(p,q)=\left\Vert B_{p}^{T}q\right\Vert 
+\]
+
+\end_inset
+
+The derivative with respect to a change in 
+\begin_inset Formula $q$
+\end_inset
+
+, via 
+\begin_inset Formula $\xi$
+\end_inset
+
+, is then
+\begin_inset Formula 
+\[
+\frac{\partial\theta(p,q)}{\partial\xi_{q}}=\frac{\partial}{\partial\xi_{q}}\sqrt{\left(B_{p}^{T}q\right)^{2}}=\frac{1}{\sqrt{\left(B_{p}^{T}q\right)^{2}}}\left(B_{p}^{T}q\right)B_{p}^{T}B_{q}=\frac{B_{p}^{T}q}{\theta(q;p)}B_{p}^{T}B_{q}
+\]
+
+\end_inset
+
+Note that this again is undefined for 
+\begin_inset Formula $\theta=0$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+For use in a probabilistic factor, a signed, vector-valued error will not
+ have the discontinuity:
+\begin_inset Formula 
+\[
+\theta(p,q)=B_{p}^{T}q
+\]
+
+\end_inset
+
+Note this is the inverse retraction up to a scale.
+ The derivative with respect to a change in 
+\begin_inset Formula $q$
+\end_inset
+
+, via 
+\begin_inset Formula $\xi$
+\end_inset
+
+, is found by 
+\begin_inset Formula 
+\[
+\frac{\partial\theta(p,q)}{\partial\xi_{q}}=B_{p}^{T}\frac{\partial q}{\partial\xi_{q}}=B_{p}^{T}B_{q}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection*
+Application
+\end_layout
+
+\begin_layout Standard
+We can use the above to find the unknown rotation between a camera and an
+ IMU.
+ If we measure the rotation between two frames as 
+\begin_inset Formula $c_{1}Zc_{2}$
+\end_inset
+
+, and the predicted rotation from the IMU is 
+\begin_inset Formula $i_{1}Ri_{2}$
+\end_inset
+
+, then we can predict
+\begin_inset Formula 
+\[
+c_{1}Zc_{2}=iRc^{T}\cdot i_{1}Ri_{2}\cdot iRc
+\]
+
+\end_inset
+
+and the axis of the incremental rotations will relate as
+\begin_inset Formula 
+\[
+p=iRc\cdot z
+\]
+
+\end_inset
+
+with 
+\begin_inset Formula $p$
+\end_inset
+
+ the angular velocity axis in the IMU frame, and 
+\begin_inset Formula $z$
+\end_inset
+
+ the measured axis of rotation between the two cameras.
+ Note this only makes sense if the rotation is non-zero.
+ So, given an initial estimate 
+\begin_inset Formula $R$
+\end_inset
+
+ for the unknown rotation 
+\begin_inset Formula $iRc$
+\end_inset
+
+ between IMU and camera, the derivative of the error is (using 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:Rot3action"
+
+\end_inset
+
+)
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula 
+\[
+\frac{\partial\theta(Rz;p)}{\partial\omega}=B_{p}^{T}\left(Rz\right)B_{p}^{T}B_{Rz}\frac{\partial\left(Rz\right)}{\partial\omega}=B_{p}^{T}\left(Rz\right)B_{p}^{T}R\Skew z
+\]
+
+\end_inset
+
+Here the 
+\begin_inset Formula $2\times3$
+\end_inset
+
+ matrix 
+\begin_inset Formula $B_{Rz}^{T}\Skew z$
+\end_inset
+
+ translates changes in 
+\begin_inset Formula $R$
+\end_inset
+
+ to changes in 
+\begin_inset Formula $Rz$
+\end_inset
+
+, and the 
+\begin_inset Formula $1\times2$
+\end_inset
+
+ matrix 
+\begin_inset Formula $B_{p}^{T}\left(Rz\right)$
+\end_inset
+
+ describes the downstream effect on the error metric.
+\end_layout
+
+\begin_layout Section
+The Essential Matrix Manifold
+\end_layout
+
+\begin_layout Standard
+We parameterize essential matrices as a pair 
+\begin_inset Formula $(R,t)$
+\end_inset
+
+, where 
+\begin_inset Formula $R\in\SOthree$
+\end_inset
+
+ and 
+\begin_inset Formula $t\in S^{2}$
+\end_inset
+
+, the unit sphere.
+ The epipolar matrix is then given by 
+\begin_inset Formula 
+\[
+E=\Skew tR
+\]
+
+\end_inset
+
+and the epipolar error given two corresponding points 
+\begin_inset Formula $a$
+\end_inset
+
+ and 
+\begin_inset Formula $b$
+\end_inset
+
+ is
+\begin_inset Formula 
+\[
+e(R,t;a,b)=a^{T}Eb
+\]
+
+\end_inset
+
+We are of course interested in the derivative with respect to orientation
+ (using 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:Rot3action"
+
+\end_inset
+
+)
+\begin_inset Formula 
+\[
+\frac{\partial(a^{T}[t]_{\times}Rb)}{\partial\omega}=a^{T}[t]_{\times}\frac{\partial(Rb)}{\partial\omega}=-a^{T}[t]_{\times}R\Skew b=-a^{T}E[b]_{\times}
+\]
+
+\end_inset
+
+and with respect to change in the direction 
+\begin_inset Formula $t$
+\end_inset
+
+ 
+\begin_inset Formula 
+\[
+\frac{\partial e(a^{T}[t]_{\times}Rb)}{\partial\xi}=a^{T}\frac{\partial(B\xi\times Rb)}{\partial v}=-a^{T}[Rb]_{\times}B
+\]
+
+\end_inset
+
+where we made use of the fact that the retraction can be written as 
+\begin_inset Formula $t+B\xi$
+\end_inset
+
+, with 
+\begin_inset Formula $B$
+\end_inset
+
+ a local basis, and we made use of 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:Dcross1"
+
+\end_inset
+
+: 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula 
+\[
+\frac{\partial(a\times b)}{\partial a}=\Skew{-b}
+\]
+
 \end_inset
 
 

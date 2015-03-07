@@ -53,8 +53,8 @@ TEST( SmartRangeFactor, addRange ) {
 
 TEST( SmartRangeFactor, scenario ) {
   DOUBLES_EQUAL(10, r1, 1e-9);
-  DOUBLES_EQUAL(sqrt(100+25), r2, 1e-9);
-  DOUBLES_EQUAL(sqrt(50), r3, 1e-9);
+  DOUBLES_EQUAL(sqrt(100.0+25.0), r2, 1e-9);
+  DOUBLES_EQUAL(sqrt(50.0), r3, 1e-9);
 }
 /* ************************************************************************* */
 
@@ -74,22 +74,22 @@ TEST( SmartRangeFactor, unwhitenedError ) {
 
   // Whenever there are two ranges or less, error should be zero
   Vector actual1 = f.unwhitenedError(values);
-  EXPECT(assert_equal(Vector_(1,0.0), actual1));
+  EXPECT(assert_equal((Vector(1) << 0.0), actual1));
   f.addRange(2, r2);
   Vector actual2 = f.unwhitenedError(values);
-  EXPECT(assert_equal(Vector_(1,0.0), actual2));
+  EXPECT(assert_equal((Vector(1) << 0.0), actual2));
 
   f.addRange(3, r3);
   vector<Matrix> H(3);
   Vector actual3 = f.unwhitenedError(values);
   EXPECT_LONGS_EQUAL(3, f.keys().size());
-  EXPECT(assert_equal(Vector_(1,0.0), actual3));
+  EXPECT(assert_equal((Vector(1) << 0.0), actual3));
 
   // Check keys and Jacobian
   Vector actual4 = f.unwhitenedError(values, H); // with H now !
-  EXPECT(assert_equal(Vector_(1,0.0), actual4));
-  CHECK(assert_equal(Matrix_(1,3, 0.0,-1.0,0.0), H.front()));
-  CHECK(assert_equal(Matrix_(1,3, sqrt(2)/2,-sqrt(2)/2,0.0), H.back()));
+  EXPECT(assert_equal((Vector(1) << 0.0), actual4));
+  CHECK(assert_equal((Matrix(1, 3) << 0.0,-1.0,0.0), H.front()));
+  CHECK(assert_equal((Matrix(1, 3) << sqrt(2.0)/2,-sqrt(2.0)/2,0.0), H.back()));
 
   // Test clone
   NonlinearFactor::shared_ptr clone = f.clone();
@@ -109,15 +109,15 @@ TEST( SmartRangeFactor, optimization ) {
   initial.insert(2, pose2);
   initial.insert(3, Pose2(5, 6, 0)); // does not satisfy range measurement
   Vector actual5 = f.unwhitenedError(initial);
-  EXPECT(assert_equal(Vector_(1,sqrt(25+16)-sqrt(50)), actual5));
+  EXPECT(assert_equal((Vector(1) << sqrt(25.0+16.0)-sqrt(50.0)), actual5));
 
   // Create Factor graph
   NonlinearFactorGraph graph;
-  graph.add(f);
+  graph.push_back(f);
   const noiseModel::Base::shared_ptr //
   priorNoise = noiseModel::Diagonal::Sigmas(Vector3(1, 1, M_PI));
-  graph.add(PriorFactor<Pose2>(1, pose1, priorNoise));
-  graph.add(PriorFactor<Pose2>(2, pose2, priorNoise));
+  graph.push_back(PriorFactor<Pose2>(1, pose1, priorNoise));
+  graph.push_back(PriorFactor<Pose2>(2, pose2, priorNoise));
 
   // Try optimizing
   LevenbergMarquardtParams params;

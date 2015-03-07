@@ -23,6 +23,7 @@
 
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
+#include <boost/tokenizer.hpp>
 
 #include <cstdarg>
 #include <cstring>
@@ -34,38 +35,6 @@
 using namespace std;
 
 namespace gtsam {
-
-/* ************************************************************************* */
-Matrix Matrix_( size_t m, size_t n, const double* const data) {
-  MatrixRowMajor A(m,n);
-  copy(data, data+m*n, A.data());
-  return Matrix(A);
-}
-
-/* ************************************************************************* */
-Matrix Matrix_( size_t m, size_t n, const Vector& v)
-{
-  Matrix A(m,n);
-  // column-wise copy
-  for( size_t j = 0, k=0  ; j < n ; j++)
-    for( size_t i = 0; i < m ; i++,k++)
-      A(i,j) = v(k);
-  return A;
-}
-
-/* ************************************************************************* */
-Matrix Matrix_(size_t m, size_t n, ...) {
-  Matrix A(m,n);
-  va_list ap;
-  va_start(ap, n);
-  for( size_t i = 0 ; i < m ; i++)
-    for( size_t j = 0 ; j < n ; j++) {
-      double value = va_arg(ap, double);
-      A(i,j) = value;
-    }
-  va_end(ap);
-  return A;
-}
 
 /* ************************************************************************* */
 Matrix zeros( size_t m, size_t n ) {
@@ -208,17 +177,6 @@ void transposeMultiplyAdd(const Matrix& A, const Vector& e, Vector& x) {
 /* ************************************************************************* */
 void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, SubVector x) {
   x += alpha * A.transpose() * e;
-}
-
-/* ************************************************************************* */
-Vector Vector_(const Matrix& A)
-{
-  size_t m = A.rows(), n = A.cols();
-  Vector v(m*n);
-  for( size_t j = 0, k=0  ; j < n ; j++)
-    for( size_t i = 0; i < m ; i++,k++)
-      v(k) = A(i,j);
-  return v;
 }
 
 /* ************************************************************************* */
@@ -526,7 +484,7 @@ Matrix stack(size_t nrMatrices, ...)
 /* ************************************************************************* */
 Matrix stack(const std::vector<Matrix>& blocks) {
   if (blocks.size() == 1) return blocks.at(0);
-  int nrows = 0, ncols = blocks.at(0).cols();
+  DenseIndex nrows = 0, ncols = blocks.at(0).cols();
   BOOST_FOREACH(const Matrix& mat, blocks) {
     nrows += mat.rows();
     if (ncols != mat.cols())
@@ -534,7 +492,7 @@ Matrix stack(const std::vector<Matrix>& blocks) {
   }
   Matrix result(nrows, ncols);
 
-  int cur_row = 0;
+  DenseIndex cur_row = 0;
   BOOST_FOREACH(const Matrix& mat, blocks) {
     result.middleRows(cur_row, mat.rows()) = mat;
     cur_row += mat.rows();
@@ -583,16 +541,16 @@ Matrix collect(size_t nrMatrices, ...)
 /* ************************************************************************* */
 // row scaling, in-place
 void vector_scale_inplace(const Vector& v, Matrix& A, bool inf_mask) {
-  const int m = A.rows();
+  const DenseIndex m = A.rows();
   if (inf_mask) {
     // only scale the first v.size() rows of A to support augmented Matrix
-    for (size_t i=0; i<v.size(); ++i) {
+    for (DenseIndex i=0; i<v.size(); ++i) {
       const double& vi = v(i);
-      if (!isnan(vi) && !isinf(vi))
+      if (std::isfinite(vi))
         A.row(i) *= vi;
     }
   } else {
-    for (int i=0; i<m; ++i)
+    for (DenseIndex i=0; i<m; ++i)
       A.row(i) *= v(i);
   }
 }
@@ -613,7 +571,7 @@ Matrix vector_scale(const Matrix& A, const Vector& v, bool inf_mask) {
   if (inf_mask) {
     for (size_t j=0; j<n; ++j) {
       const double& vj = v(j);
-      if (!isnan(vj) && !isinf(vj))
+      if (std::isfinite(vj))
         M.col(j) *= vj;
     }
   } else {
@@ -684,29 +642,7 @@ Matrix cholesky_inverse(const Matrix &A)
 //  return BNU::prod(trans(inv), inv);
 }
 
-#if 0
 /* ************************************************************************* */
-// TODO, would be faster with Cholesky
-Matrix inverse_square_root(const Matrix& A) {
-  size_t m = A.cols(), n = A.rows();
-  if (m!=n)
-    throw invalid_argument("inverse_square_root: A must be square");
-
-  // Perform SVD, TODO: symmetric SVD?
-  Matrix U,V;
-  Vector S;
-  svd(A,U,S,V);
-
-  // invert and sqrt diagonal of S
-  // We also arbitrarily choose sign to make result have positive signs
-  for(size_t i = 0; i<m; i++) S(i) = - pow(S(i),-0.5);
-  return vector_scale(S, V); // V*S;
-}
-#endif
-
-/* ************************************************************************* */
-// New, improved, with 100% more Cholesky goodness!
-//
 // Semantics: 
 // if B = inverse_square_root(A), then all of the following are true:
 // inv(B) * inv(B)' == A
@@ -769,6 +705,44 @@ Matrix Cayley(const Matrix& A) {
   // inlined to let Eigen do more optimization
   return (Matrix::Identity(n, n) - A)*(Matrix::Identity(n, n) + A).inverse();
 }
+
 /* ************************************************************************* */
+std::string formatMatrixIndented(const std::string& label, const Matrix& matrix, bool makeVectorHorizontal)
+{
+  stringstream ss;
+  const string firstline = label;
+  ss << firstline;
+  const string padding(firstline.size(), ' ');
+  const bool transposeMatrix = makeVectorHorizontal && matrix.cols() == 1 && matrix.rows() > 1;
+  const DenseIndex effectiveRows = transposeMatrix ? matrix.cols() : matrix.rows();
+
+  if(matrix.rows() > 0 && matrix.cols() > 0)
+  {
+    stringstream matrixPrinted;
+    if(transposeMatrix)
+      matrixPrinted << matrix.transpose();
+    else
+      matrixPrinted << matrix;
+    const std::string matrixStr = matrixPrinted.str();
+    boost::tokenizer<boost::char_separator<char> > tok(matrixStr, boost::char_separator<char>("\n"));
+
+    DenseIndex row = 0;
+    BOOST_FOREACH(const std::string& line, tok)
+    {
+      assert(row < effectiveRows);
+      if(row > 0)
+        ss << padding;
+      ss << "[ " << line << " ]";
+      if(row < effectiveRows - 1)
+        ss << "\n";
+      ++ row;
+    }
+  } else {
+    ss << "Empty (" << matrix.rows() << "x" << matrix.cols() << ")";
+  }
+  return ss.str();
+}
+
+
 
 } // namespace gtsam

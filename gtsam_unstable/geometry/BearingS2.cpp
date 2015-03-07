@@ -29,7 +29,7 @@ BearingS2 BearingS2::fromDownwardsObservation(const Pose3& A, const Point3& B) {
   Matrix Cnb = A.rotation().matrix().transpose();
 
   //  Cbc = [0,0,1;0,1,0;-1,0,0];
-  Matrix Cbc = Matrix_(3,3,
+  Matrix Cbc = (Matrix(3,3) <<
       0.,0.,1.,
       0.,1.,0.,
       -1.,0.,0.);
@@ -69,7 +69,7 @@ BearingS2 BearingS2::retract(const Vector& v) const {
 
 /* ************************************************************************* */
 Vector BearingS2::localCoordinates(const BearingS2& x) const {
-  return Vector_(2, azimuth_.localCoordinates(x.azimuth_)(0),
+  return (Vector(2) << azimuth_.localCoordinates(x.azimuth_)(0),
                     elevation_.localCoordinates(x.elevation_)(0));
 }
 

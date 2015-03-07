@@ -169,38 +169,54 @@ static Point2 project3(const Pose3& pose, const Point3& point, const Cal3_S2& ca
 }
 
 /* ************************************************************************* */
-static Point2 projectInfinity3(const Pose3& pose, const Point2& point2D, const Cal3_S2& cal) {
-  Point3 point(point2D.x(), point2D.y(), 1.0);
-  return Camera(pose,cal).projectPointAtInfinity(point);
-}
-
-/* ************************************************************************* */
-TEST( PinholeCamera, Dproject_point_pose)
+TEST( PinholeCamera, Dproject)
 {
   Matrix Dpose, Dpoint, Dcal;
   Point2 result = camera.project(point1, Dpose, Dpoint, Dcal);
   Matrix numerical_pose  = numericalDerivative31(project3, pose1, point1, K);
   Matrix numerical_point = numericalDerivative32(project3, pose1, point1, K);
   Matrix numerical_cal   = numericalDerivative33(project3, pose1, point1, K);
-  CHECK(assert_equal(result, Point2(-100,  100) ));
-  CHECK(assert_equal(Dpose,  numerical_pose, 1e-7));
-  CHECK(assert_equal(Dpoint, numerical_point,1e-7));
-  CHECK(assert_equal(Dcal,   numerical_cal,1e-7));
+  CHECK(assert_equal(Point2(-100,  100), result));
+  CHECK(assert_equal(numerical_pose,  Dpose,  1e-7));
+  CHECK(assert_equal(numerical_point, Dpoint, 1e-7));
+  CHECK(assert_equal(numerical_cal,   Dcal,   1e-7));
 }
 
 /* ************************************************************************* */
-TEST( PinholeCamera, Dproject_point_pose_Infinity)
+//static Point2 projectInfinity3(const Pose3& pose, const Point2& point2D, const Cal3_S2& cal) {
+//  Point3 point(point2D.x(), point2D.y(), 1.0);
+//  return Camera(pose,cal).projectPointAtInfinity(point);
+//}
+//
+//TEST( PinholeCamera, Dproject_Infinity)
+//{
+//  Matrix Dpose, Dpoint, Dcal;
+//  Point2 point2D(-0.08,-0.08);
+//  Point3 point3D(point1.x(), point1.y(), 1.0);
+//  Point2 result = camera.projectPointAtInfinity(point3D, Dpose, Dpoint, Dcal);
+//  Matrix numerical_pose  = numericalDerivative31(projectInfinity3, pose1, point2D, K);
+//  Matrix numerical_point = numericalDerivative32(projectInfinity3, pose1, point2D, K);
+//  Matrix numerical_cal   = numericalDerivative33(projectInfinity3, pose1, point2D, K);
+//  CHECK(assert_equal(numerical_pose,  Dpose,  1e-7));
+//  CHECK(assert_equal(numerical_point, Dpoint, 1e-7));
+//  CHECK(assert_equal(numerical_cal,   Dcal,   1e-7));
+//}
+//
+/* ************************************************************************* */
+static Point2 project4(const Camera& camera, const Point3& point) {
+  return camera.project2(point);
+}
+
+/* ************************************************************************* */
+TEST( PinholeCamera, Dproject2)
 {
-  Matrix Dpose, Dpoint, Dcal;
-  Point2 point2D(-0.08,-0.08);
-  Point3 point3D(point1.x(), point1.y(), 1.0);
-  Point2 result = camera.projectPointAtInfinity(point3D, Dpose, Dpoint, Dcal);
-  Matrix numerical_pose  = numericalDerivative31(projectInfinity3, pose1, point2D, K);
-  Matrix numerical_point = numericalDerivative32(projectInfinity3, pose1, point2D, K);
-  Matrix numerical_cal   = numericalDerivative33(projectInfinity3, pose1, point2D, K);
-  CHECK(assert_equal(Dpose,  numerical_pose, 1e-7));
-  CHECK(assert_equal(Dpoint, numerical_point,1e-7));
-  CHECK(assert_equal(Dcal,   numerical_cal,1e-7));
+  Matrix Dcamera, Dpoint;
+  Point2 result = camera.project2(point1, Dcamera, Dpoint);
+  Matrix numerical_camera = numericalDerivative21(project4, camera, point1);
+  Matrix numerical_point  = numericalDerivative22(project4, camera, point1);
+  CHECK(assert_equal(result, Point2(-100,  100) ));
+  CHECK(assert_equal(numerical_camera, Dcamera, 1e-7));
+  CHECK(assert_equal(numerical_point,  Dpoint,  1e-7));
 }
 
 /* ************************************************************************* */

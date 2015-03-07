@@ -72,7 +72,7 @@ TEST( testPose3Upright, manifold ) {
   EXPECT(assert_equal(x1, x1.retract(zero(4)), tol));
   EXPECT(assert_equal(x2, x2.retract(zero(4)), tol));
 
-  Vector delta12 = Vector_(4, 3.0, 0.0, 4.0, 0.0), delta21 = -delta12;
+  Vector delta12 = (Vector(4) << 3.0, 0.0, 4.0, 0.0), delta21 = -delta12;
   EXPECT(assert_equal(x2, x1.retract(delta12), tol));
   EXPECT(assert_equal(x1, x2.retract(delta21), tol));
 

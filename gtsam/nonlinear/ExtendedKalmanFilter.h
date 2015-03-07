@@ -54,7 +54,7 @@ namespace gtsam {
     JacobianFactor::shared_ptr priorFactor_; // density
 
     T solve_(const GaussianFactorGraph& linearFactorGraph,
-        const Ordering& ordering, const Values& linearizationPoints,
+        const Values& linearizationPoints,
         Key x, JacobianFactor::shared_ptr& newPrior) const;
 
   public:
@@ -62,7 +62,7 @@ namespace gtsam {
     /// @name Standard Constructors
     /// @{
 
-    ExtendedKalmanFilter(T x_initial,
+    ExtendedKalmanFilter(Key key_initial, T x_initial,
         noiseModel::Gaussian::shared_ptr P_initial);
 
     /// @}

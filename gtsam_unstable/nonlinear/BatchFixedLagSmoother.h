@@ -55,7 +55,7 @@ public:
    * a single variable is needed, it is faster to call calculateEstimate(const KEY&).
    */
   Values calculateEstimate() const {
-    return theta_.retract(delta_, ordering_);
+    return theta_.retract(delta_);
   }
 
   /** Compute an estimate for a single variable using its incomplete linear delta computed
@@ -66,8 +66,7 @@ public:
    */
   template<class VALUE>
   VALUE calculateEstimate(Key key) const {
-    const Index index = ordering_.at(key);
-    const Vector delta = delta_.at(index);
+    const Vector delta = delta_.at(key);
     return theta_.at<VALUE>(key).retract(delta);
   }
 
@@ -104,7 +103,7 @@ public:
 protected:
 
   /** A typedef defining an Key-Factor mapping **/
-  typedef std::map<Key, std::set<Index> > FactorIndex;
+  typedef std::map<Key, std::set<Key> > FactorIndex;
 
   /** The L-M optimization parameters **/
   LevenbergMarquardtParams parameters_;
@@ -155,57 +154,6 @@ protected:
   /** Marginalize out selected variables */
   void marginalize(const std::set<Key>& marginalizableKeys);
 
-
-  // A custom elimination tree that supports forests and partial elimination
-  class EliminationForest {
-  public:
-    typedef boost::shared_ptr<EliminationForest> shared_ptr; ///< Shared pointer to this class
-
-  private:
-    typedef FastList<GaussianFactor::shared_ptr> Factors;
-    typedef FastList<shared_ptr> SubTrees;
-    typedef std::vector<GaussianConditional::shared_ptr> Conditionals;
-
-    Index key_; ///< index associated with root
-    Factors factors_; ///< factors associated with root
-    SubTrees subTrees_; ///< sub-trees
-
-    /** default constructor, private, as you should use Create below */
-    EliminationForest(Index key = 0) : key_(key) {}
-
-    /**
-     * Static internal function to build a vector of parent pointers using the
-     * algorithm of Gilbert et al., 2001, BIT.
-     */
-    static std::vector<Index> ComputeParents(const VariableIndex& structure);
-
-    /** add a factor, for Create use only */
-    void add(const GaussianFactor::shared_ptr& factor) { factors_.push_back(factor); }
-
-    /** add a subtree, for Create use only */
-    void add(const shared_ptr& child) { subTrees_.push_back(child); }
-
-  public:
-
-    /** return the key associated with this tree node */
-    Index key() const { return key_; }
-
-    /** return the const reference of children */
-    const SubTrees& children() const { return subTrees_; }
-
-    /** return the const reference to the factors */
-    const Factors& factors() const { return factors_; }
-
-    /** Create an elimination tree from a factor graph */
-    static std::vector<shared_ptr> Create(const GaussianFactorGraph& factorGraph, const VariableIndex& structure);
-
-    /** Recursive routine that eliminates the factors arranged in an elimination tree */
-    GaussianFactor::shared_ptr eliminateRecursive(GaussianFactorGraph::Eliminate function);
-
-    /** Recursive function that helps find the top of each tree */
-    static void removeChildrenIndices(std::set<Index>& indices, const EliminationForest::shared_ptr& tree);
-  };
-
   static NonlinearFactorGraph calculateMarginalFactors(const NonlinearFactorGraph& graph, const Values& theta,
       const std::set<Key>& marginalizeKeys, const GaussianFactorGraph::Eliminate& eliminateFunction);
 
@@ -214,9 +162,9 @@ private:
   static void PrintKeySet(const std::set<Key>& keys, const std::string& label);
   static void PrintKeySet(const gtsam::FastSet<Key>& keys, const std::string& label);
   static void PrintSymbolicFactor(const NonlinearFactor::shared_ptr& factor);
-  static void PrintSymbolicFactor(const GaussianFactor::shared_ptr& factor, const Ordering& ordering);
+  static void PrintSymbolicFactor(const GaussianFactor::shared_ptr& factor);
   static void PrintSymbolicGraph(const NonlinearFactorGraph& graph, const std::string& label);
-  static void PrintSymbolicGraph(const GaussianFactorGraph& graph, const Ordering& ordering, const std::string& label);
+  static void PrintSymbolicGraph(const GaussianFactorGraph& graph, const std::string& label);
 }; // BatchFixedLagSmoother
 
 } /// namespace gtsam

@@ -18,8 +18,11 @@
  * Are C++11 math functions available?
  **********************************************************************/
 #if !defined(GEOGRAPHICLIB_CPLUSPLUS11_MATH)
-#  if defined(__GNUC__) && __GNUC__ == 4 && __GNUC_MINOR__ >= 8 \
-  && __cplusplus >= 201103
+#  if defined(__GNUC__) && __GNUC__ == 4 && __GNUC_MINOR__ >= 7 \
+  && __cplusplus >= 201103 && !(defined(__ANDROID__) || defined(ANDROID))
+// The android toolchain uses g++ and supports C++11, but not, apparently, the
+// new mathematical functions introduced with C++11.  Android toolchains might
+// define __ANDROID__ or ANDROID; so need to check both.
 #    define GEOGRAPHICLIB_CPLUSPLUS11_MATH 1
 #  elif defined(_MSC_VER) && _MSC_VER >= 1800
 #    define GEOGRAPHICLIB_CPLUSPLUS11_MATH 1

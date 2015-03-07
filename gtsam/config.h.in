@@ -21,8 +21,8 @@
 #define GTSAM_VERSION_MAJOR @GTSAM_VERSION_MAJOR@
 #define GTSAM_VERSION_MINOR @GTSAM_VERSION_MINOR@
 #define GTSAM_VERSION_PATCH @GTSAM_VERSION_PATCH@
-#define GTSAM_VERSION_STRING "@GTSAM_VERSION_MAJOR@.@GTSAM_VERSION_MINOR@.@GTSAM_VERSION_PATCH@"
-#define GTSAM_VERSION_NUMERIC (10000 * @GTSAM_VERSION_MAJOR@ + 100 * @GTSAM_VERSION_MINOR@ + @GTSAM_VERSION_PATCH@)
+#define GTSAM_VERSION_NUMERIC @GTSAM_VERSION_NUMERIC@
+#define GTSAM_VERSION_STRING "@GTSAM_VERSION_STRING@"
 
 // Paths to example datasets distributed with GTSAM
 #define GTSAM_SOURCE_TREE_DATASET_DIR "@CMAKE_SOURCE_DIR@/examples/Data"
@@ -38,3 +38,23 @@
 #ifndef GTSAM_USE_QUATERNIONS
 	#cmakedefine GTSAM_ROT3_EXPMAP 
 #endif
+
+// Whether we are using TBB (if TBB was found and GTSAM_WITH_TBB is enabled in CMake)
+#cmakedefine GTSAM_USE_TBB
+
+// Whether Eigen will use MKL (if MKL was found and GTSAM_WITH_EIGEN_MKL is enabled in CMake)
+#cmakedefine GTSAM_USE_EIGEN_MKL
+#cmakedefine EIGEN_USE_MKL_ALL // This is also defined in gtsam_eigen_includes.h
+
+// Whether Eigen with MKL will use OpenMP (if OpenMP was found, Eigen uses MKL, and GTSAM_WITH_EIGEN_MKL_OPENMP is enabled in CMake)
+#cmakedefine GTSAM_USE_EIGEN_MKL_OPENMP
+
+// The default allocator to use
+#cmakedefine GTSAM_ALLOCATOR_BOOSTPOOL
+#cmakedefine GTSAM_ALLOCATOR_TBB
+#cmakedefine GTSAM_ALLOCATOR_STL
+
+// Option for not throwing the CheiralityException for points that are behind a camera
+#cmakedefine GTSAM_THROW_CHEIRALITY_EXCEPTION
+
+

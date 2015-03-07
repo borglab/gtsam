@@ -73,7 +73,7 @@ namespace gtsam {
       } else {
         hx = pose.range(point, H1, H2);
       }
-      return Vector_(1, hx - measured_);
+      return (Vector(1) << hx - measured_);
     }
 
     /** return the measured */

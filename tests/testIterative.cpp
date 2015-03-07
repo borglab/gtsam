@@ -19,9 +19,7 @@
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
-#include <gtsam/nonlinear/Ordering.h>
-#include <gtsam/nonlinear/Symbol.h>
-#include <gtsam/linear/GaussianSequentialSolver.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/iterative.h>
 #include <gtsam/geometry/Pose2.h>
 
@@ -41,12 +39,10 @@ static ConjugateGradientParameters parameters;
 TEST( Iterative, steepestDescent )
 {
   // Create factor graph
-  Ordering ordering;
-  ordering += L(1), X(1), X(2);
-  GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
+  GaussianFactorGraph fg = createGaussianFactorGraph();
 
   // eliminate and solve
-  VectorValues expected = *GaussianSequentialSolver(fg).optimize();
+  VectorValues expected = fg.optimize();
 
   // Do gradient descent
   VectorValues zero = VectorValues::Zero(expected); // TODO, how do we do this normally?
@@ -58,19 +54,17 @@ TEST( Iterative, steepestDescent )
 TEST( Iterative, conjugateGradientDescent )
 {
   // Create factor graph
-  Ordering ordering;
-  ordering += L(1), X(1), X(2);
-  GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
+  GaussianFactorGraph fg = createGaussianFactorGraph();
 
   // eliminate and solve
-  VectorValues expected = *GaussianSequentialSolver(fg).optimize();
+  VectorValues expected = fg.optimize();
 
   // get matrices
   Matrix A;
   Vector b;
   Vector x0 = gtsam::zero(6);
   boost::tie(A, b) = fg.jacobian();
-  Vector expectedX = Vector_(6, -0.1, 0.1, -0.1, -0.1, 0.1, -0.2);
+  Vector expectedX = (Vector(6) << -0.1, 0.1, -0.1, -0.1, 0.1, -0.2);
 
   // Do conjugate gradient descent, System version
   System Ab(A, b);
@@ -96,14 +90,12 @@ TEST( Iterative, conjugateGradientDescent_hard_constraint )
   config.insert(X(2), Pose2(1.5,0.,0.));
 
   NonlinearFactorGraph graph;
-  graph.add(NonlinearEquality<Pose2>(X(1), pose1));
-  graph.add(BetweenFactor<Pose2>(X(1),X(2), Pose2(1.,0.,0.), noiseModel::Isotropic::Sigma(3, 1)));
+  graph += NonlinearEquality<Pose2>(X(1), pose1);
+  graph += BetweenFactor<Pose2>(X(1),X(2), Pose2(1.,0.,0.), noiseModel::Isotropic::Sigma(3, 1));
 
-  Ordering ordering;
-  ordering += X(1), X(2);
-  boost::shared_ptr<GaussianFactorGraph> fg = graph.linearize(config,ordering);
+  boost::shared_ptr<GaussianFactorGraph> fg = graph.linearize(config);
 
-  VectorValues zeros = VectorValues::Zero(2, 3);
+  VectorValues zeros = config.zeroVectors();
 
   ConjugateGradientParameters parameters;
   parameters.setEpsilon_abs(1e-3);
@@ -112,8 +104,8 @@ TEST( Iterative, conjugateGradientDescent_hard_constraint )
   VectorValues actual = conjugateGradientDescent(*fg, zeros, parameters);
 
   VectorValues expected;
-  expected.insert(0, zero(3));
-  expected.insert(1, Vector_(3,-0.5,0.,0.));
+  expected.insert(X(1), zero(3));
+  expected.insert(X(2), (Vector(3) << -0.5,0.,0.));
   CHECK(assert_equal(expected, actual));
 }
 
@@ -125,14 +117,12 @@ TEST( Iterative, conjugateGradientDescent_soft_constraint )
   config.insert(X(2), Pose2(1.5,0.,0.));
 
   NonlinearFactorGraph graph;
-  graph.add(PriorFactor<Pose2>(X(1), Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3, 1e-10)));
-  graph.add(BetweenFactor<Pose2>(X(1),X(2), Pose2(1.,0.,0.), noiseModel::Isotropic::Sigma(3, 1)));
+  graph += PriorFactor<Pose2>(X(1), Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3, 1e-10));
+  graph += BetweenFactor<Pose2>(X(1),X(2), Pose2(1.,0.,0.), noiseModel::Isotropic::Sigma(3, 1));
 
-  Ordering ordering;
-  ordering += X(1), X(2);
-  boost::shared_ptr<GaussianFactorGraph> fg = graph.linearize(config,ordering);
+  boost::shared_ptr<GaussianFactorGraph> fg = graph.linearize(config);
 
-  VectorValues zeros = VectorValues::Zero(2, 3);
+  VectorValues zeros = config.zeroVectors();
 
   ConjugateGradientParameters parameters;
   parameters.setEpsilon_abs(1e-3);
@@ -141,8 +131,8 @@ TEST( Iterative, conjugateGradientDescent_soft_constraint )
   VectorValues actual = conjugateGradientDescent(*fg, zeros, parameters);
 
   VectorValues expected;
-  expected.insert(0, zero(3));
-  expected.insert(1, Vector_(3,-0.5,0.,0.));
+  expected.insert(X(1), zero(3));
+  expected.insert(X(2), (Vector(3) << -0.5,0.,0.));
   CHECK(assert_equal(expected, actual));
 }
 

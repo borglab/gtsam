@@ -16,13 +16,15 @@
  * @brief unit tests for DSF
  */
 
-#include <iostream>
+#include <gtsam_unstable/base/DSF.h>
+
+#include <CppUnitLite/TestHarness.h>
+
 #include <boost/assign/std/list.hpp>
 #include <boost/assign/std/set.hpp>
 using namespace boost::assign;
-#include <CppUnitLite/TestHarness.h>
 
-#include <gtsam_unstable/base/DSF.h>
+#include <iostream>
 
 using namespace std;
 using namespace gtsam;
@@ -40,7 +42,7 @@ TEST(DSF, findSet) {
   dsf = dsf.makeSet(5);
   dsf = dsf.makeSet(6);
   dsf = dsf.makeSet(7);
-  CHECK(dsf.findSet(5) != dsf.findSet(7));
+  EXPECT(dsf.findSet(5) != dsf.findSet(7));
 }
 
 /* ************************************************************************* */
@@ -50,7 +52,7 @@ TEST(DSF, makeUnion) {
   dsf = dsf.makeSet(6);
   dsf = dsf.makeSet(7);
   dsf = dsf.makeUnion(5,7);
-  CHECK(dsf.findSet(5) == dsf.findSet(7));
+  EXPECT(dsf.findSet(5) == dsf.findSet(7));
 }
 
 /* ************************************************************************* */
@@ -60,7 +62,7 @@ TEST(DSF, makeUnion2) {
   dsf = dsf.makeSet(6);
   dsf = dsf.makeSet(7);
   dsf = dsf.makeUnion(7,5);
-  CHECK(dsf.findSet(5) == dsf.findSet(7));
+  EXPECT(dsf.findSet(5) == dsf.findSet(7));
 }
 
 /* ************************************************************************* */
@@ -71,7 +73,7 @@ TEST(DSF, makeUnion3) {
   dsf = dsf.makeSet(7);
   dsf = dsf.makeUnion(5,6);
   dsf = dsf.makeUnion(6,7);
-  CHECK(dsf.findSet(5) == dsf.findSet(7));
+  EXPECT(dsf.findSet(5) == dsf.findSet(7));
 }
 
 /* ************************************************************************* */
@@ -80,7 +82,7 @@ TEST(DSF, makePair) {
   dsf = dsf.makePair(0, 1);
   dsf = dsf.makePair(1, 2);
   dsf = dsf.makePair(3, 2);
-  CHECK(dsf.findSet(0) == dsf.findSet(3));
+  EXPECT(dsf.findSet(0) == dsf.findSet(3));
 }
 
 /* ************************************************************************* */
@@ -88,7 +90,7 @@ TEST(DSF, makeList) {
   DSFInt dsf;
   list<int> keys; keys += 5, 6, 7;
   dsf = dsf.makeList(keys);
-  CHECK(dsf.findSet(5) == dsf.findSet(7));
+  EXPECT(dsf.findSet(5) == dsf.findSet(7));
 }
 
 /* ************************************************************************* */
@@ -111,7 +113,7 @@ TEST(DSF, sets) {
   LONGS_EQUAL(1, sets.size());
 
   set<int> expected; expected += 5, 6;
-  CHECK(expected == sets[dsf.findSet(5)]);
+  EXPECT(expected == sets[dsf.findSet(5)]);
 }
 
 /* ************************************************************************* */
@@ -126,7 +128,7 @@ TEST(DSF, sets2) {
   LONGS_EQUAL(1, sets.size());
 
   set<int> expected; expected += 5, 6, 7;
-  CHECK(expected == sets[dsf.findSet(5)]);
+  EXPECT(expected == sets[dsf.findSet(5)]);
 }
 
 /* ************************************************************************* */
@@ -140,7 +142,7 @@ TEST(DSF, sets3) {
   LONGS_EQUAL(2, sets.size());
 
   set<int> expected; expected += 5, 6;
-  CHECK(expected == sets[dsf.findSet(5)]);
+  EXPECT(expected == sets[dsf.findSet(5)]);
 }
 
 /* ************************************************************************* */
@@ -155,7 +157,7 @@ TEST(DSF, partition) {
   LONGS_EQUAL(1, partitions.size());
 
   set<int> expected; expected += 5;
-  CHECK(expected == partitions[dsf.findSet(5)]);
+  EXPECT(expected == partitions[dsf.findSet(5)]);
 }
 
 /* ************************************************************************* */
@@ -171,7 +173,7 @@ TEST(DSF, partition2) {
   LONGS_EQUAL(1, partitions.size());
 
   set<int> expected; expected += 7;
-  CHECK(expected == partitions[dsf.findSet(7)]);
+  EXPECT(expected == partitions[dsf.findSet(7)]);
 }
 
 /* ************************************************************************* */
@@ -187,7 +189,7 @@ TEST(DSF, partition3) {
   LONGS_EQUAL(2, partitions.size());
 
   set<int> expected; expected += 5;
-  CHECK(expected == partitions[dsf.findSet(5)]);
+  EXPECT(expected == partitions[dsf.findSet(5)]);
 }
 
 /* ************************************************************************* */
@@ -201,7 +203,7 @@ TEST(DSF, set) {
   LONGS_EQUAL(2, set.size());
 
   std::set<int> expected; expected += 5, 6;
-  CHECK(expected == set);
+  EXPECT(expected == set);
 }
 
 /* ************************************************************************* */
@@ -216,7 +218,7 @@ TEST(DSF, set2) {
   LONGS_EQUAL(3, set.size());
 
   std::set<int> expected; expected += 5, 6, 7;
-  CHECK(expected == set);
+  EXPECT(expected == set);
 }
 
 /* ************************************************************************* */
@@ -234,7 +236,7 @@ TEST(DSF, map) {
   expected = expected.makeSet(16);
   expected = expected.makeSet(17);
   expected = expected.makeUnion(15,16);
-  CHECK(actual == expected);
+  EXPECT(actual == expected);
 }
 
 /* ************************************************************************* */
@@ -253,7 +255,7 @@ TEST(DSF, flatten) {
   expected = expected.makePair(1, 5);
   expected = expected.makePair(1, 6);
   expected = expected.makePair(1, 7);
-  CHECK(actual == expected);
+  EXPECT(actual == expected);
 }
 
 /* ************************************************************************* */
@@ -265,13 +267,60 @@ TEST(DSF, flatten2) {
   dsf = dsf.makeUnion(x3,x4);
   dsf = dsf.makeUnion(x1,x3);
 
-  CHECK(dsf != dsf.flatten());
+  EXPECT(dsf != dsf.flatten());
 
   DSF<string> expected2;
   expected2 = expected2.makePair(x1, x2);
   expected2 = expected2.makePair(x1, x3);
   expected2 = expected2.makePair(x1, x4);
-  CHECK(expected2 == dsf.flatten());
+  EXPECT(expected2 == dsf.flatten());
+}
+
+/* ************************************************************************* */
+TEST(DSF, mergePairwiseMatches) {
+
+  // Create some measurements with image index and feature index
+  typedef pair<size_t,size_t> Measurement;
+  Measurement m11(1,1),m12(1,2),m14(1,4); // in image 1
+  Measurement m22(2,2),m23(2,3),m25(2,5),m26(2,6); // in image 2
+
+  // Add them all
+  list<Measurement> measurements;
+  measurements += m11,m12,m14, m22,m23,m25,m26;
+
+  // Create some "matches"
+  typedef pair<Measurement,Measurement> Match;
+  list<Match> matches;
+  matches += Match(m11,m22), Match(m12,m23), Match(m14,m25), Match(m14,m26);
+
+  // Merge matches
+  DSF<Measurement> dsf(measurements);
+  BOOST_FOREACH(const Match& m, matches)
+    dsf.makeUnionInPlace(m.first,m.second);
+
+  // Check that sets are merged correctly
+  EXPECT(dsf.findSet(m11)==m11);
+  EXPECT(dsf.findSet(m12)==m12);
+  EXPECT(dsf.findSet(m14)==m14);
+  EXPECT(dsf.findSet(m22)==m11);
+  EXPECT(dsf.findSet(m23)==m12);
+  EXPECT(dsf.findSet(m25)==m14);
+  EXPECT(dsf.findSet(m26)==m14);
+
+  // Check that we have three connected components
+  EXPECT_LONGS_EQUAL(3, dsf.numSets());
+
+  set<Measurement> expected1; expected1 += m11,m22;
+  set<Measurement> actual1 = dsf.set(m11);
+  EXPECT(expected1 == actual1);
+
+  set<Measurement> expected2; expected2 += m12,m23;
+  set<Measurement> actual2 = dsf.set(m12);
+  EXPECT(expected2 == actual2);
+
+  set<Measurement> expected3; expected3 += m14,m25,m26;
+  set<Measurement> actual3 = dsf.set(m14);
+  EXPECT(expected3 == actual3);
 }
 
 /* ************************************************************************* */

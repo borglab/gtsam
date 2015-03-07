@@ -17,7 +17,7 @@
 
 #include <gtsam/navigation/ImuFactor.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/navigation/ImuBias.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/LieVector.h>
@@ -167,9 +167,9 @@ TEST( ImuFactor, Error )
   // Linearization point
   imuBias::ConstantBias bias; // Bias
   Pose3 x1(Rot3::RzRyRx(M_PI/12.0, M_PI/6.0, M_PI/4.0), Point3(5.0, 1.0, -50.0));
-  LieVector v1(3, 0.5, 0.0, 0.0);
+  LieVector v1((Vector(3) << 0.5, 0.0, 0.0));
   Pose3 x2(Rot3::RzRyRx(M_PI/12.0 + M_PI/100.0, M_PI/6.0, M_PI/4.0), Point3(5.5, 1.0, -50.0));
-  LieVector v2(3, 0.5, 0.0, 0.0);
+  LieVector v2((Vector(3) << 0.5, 0.0, 0.0));
 
   // Measurements
   Vector3 gravity; gravity << 0, 0, 9.81;
@@ -238,16 +238,16 @@ TEST( ImuFactor, ErrorWithBiases )
   // Linearization point
 //  Vector bias(6); bias << 0.2, 0, 0, 0.1, 0, 0; // Biases (acc, rot)
 //  Pose3 x1(Rot3::RzRyRx(M_PI/12.0, M_PI/6.0, M_PI/4.0), Point3(5.0, 1.0, -50.0));
-//  LieVector v1(3, 0.5, 0.0, 0.0);
+//  LieVector v1((Vector(3) << 0.5, 0.0, 0.0));
 //  Pose3 x2(Rot3::RzRyRx(M_PI/12.0 + M_PI/10.0, M_PI/6.0, M_PI/4.0), Point3(5.5, 1.0, -50.0));
-//  LieVector v2(3, 0.5, 0.0, 0.0);
+//  LieVector v2((Vector(3) << 0.5, 0.0, 0.0));
 
 
   imuBias::ConstantBias bias(Vector3(0.2, 0, 0), Vector3(0, 0, 0.3)); // Biases (acc, rot)
   Pose3 x1(Rot3::Expmap(Vector3(0, 0, M_PI/4.0)), Point3(5.0, 1.0, -50.0));
-  LieVector v1(3, 0.5, 0.0, 0.0);
+  LieVector v1((Vector(3) << 0.5, 0.0, 0.0));
   Pose3 x2(Rot3::Expmap(Vector3(0, 0, M_PI/4.0 + M_PI/10.0)), Point3(5.5, 1.0, -50.0));
-  LieVector v2(3, 0.5, 0.0, 0.0);
+  LieVector v2((Vector(3) << 0.5, 0.0, 0.0));
 
   // Measurements
   Vector3 gravity; gravity << 0, 0, 9.81;
@@ -319,7 +319,7 @@ TEST( ImuFactor, PartialDerivativeExpmap )
   Matrix expectedDelRdelBiasOmega = numericalDerivative11<Rot3, LieVector>(boost::bind(
       &evaluateRotation, measuredOmega, _1, deltaT), LieVector(biasOmega));
 
-  const Matrix3 Jr = ImuFactor::rightJacobianExpMapSO3((measuredOmega - biasOmega) * deltaT);
+  const Matrix3 Jr = Rot3::rightJacobianExpMapSO3((measuredOmega - biasOmega) * deltaT);
 
    Matrix3  actualdelRdelBiasOmega = - Jr * deltaT; // the delta bias appears with the minus sign
 
@@ -371,7 +371,7 @@ TEST( ImuFactor, fistOrderExponential )
     Vector3 deltabiasOmega; deltabiasOmega << alpha,alpha,alpha;
 
 
-    const Matrix3 Jr = ImuFactor::rightJacobianExpMapSO3((measuredOmega - biasOmega) * deltaT);
+    const Matrix3 Jr = Rot3::rightJacobianExpMapSO3((measuredOmega - biasOmega) * deltaT);
 
      Matrix3  delRdelBiasOmega = - Jr * deltaT; // the delta bias appears with the minus sign
 
@@ -445,9 +445,9 @@ TEST( ImuFactor, FirstOrderPreIntegratedMeasurements )
 //{
 //  // Linearization point
 //  Pose3 x1(Rot3::RzRyRx(M_PI/12.0, M_PI/6.0, M_PI/4.0), Point3(5.0, 1.0, -50.0));
-//  LieVector v1(3, 0.5, 0.0, 0.0);
+//  LieVector v1((Vector(3) << 0.5, 0.0, 0.0));
 //  Pose3 x2(Rot3::RzRyRx(M_PI/12.0 + M_PI/100.0, M_PI/6.0, M_PI/4.0), Point3(5.5, 1.0, -50.0));
-//  LieVector v2(3, 0.5, 0.0, 0.0);
+//  LieVector v2((Vector(3) << 0.5, 0.0, 0.0));
 //  imuBias::ConstantBias bias(Vector3(0.001, 0.002, 0.008), Vector3(0.002, 0.004, 0.012));
 //
 //  // Pre-integrator
@@ -501,9 +501,9 @@ TEST( ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement )
 
   imuBias::ConstantBias bias(Vector3(0.2, 0, 0), Vector3(0, 0, 0.3)); // Biases (acc, rot)
   Pose3 x1(Rot3::Expmap(Vector3(0, 0, M_PI/4.0)), Point3(5.0, 1.0, -50.0));
-  LieVector v1(3, 0.5, 0.0, 0.0);
+  LieVector v1((Vector(3) << 0.5, 0.0, 0.0));
   Pose3 x2(Rot3::Expmap(Vector3(0, 0, M_PI/4.0 + M_PI/10.0)), Point3(5.5, 1.0, -50.0));
-  LieVector v2(3, 0.5, 0.0, 0.0);
+  LieVector v2((Vector(3) << 0.5, 0.0, 0.0));
 
   // Measurements
   Vector3 gravity; gravity << 0, 0, 9.81;

@@ -20,7 +20,6 @@
 
 #include <gtsam/nonlinear/ExtendedKalmanFilter.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 
@@ -29,45 +28,40 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class VALUE>
   typename ExtendedKalmanFilter<VALUE>::T ExtendedKalmanFilter<VALUE>::solve_(
-      const GaussianFactorGraph& linearFactorGraph, const Ordering& ordering,
+      const GaussianFactorGraph& linearFactorGraph,
       const Values& linearizationPoints, Key lastKey,
-      JacobianFactor::shared_ptr& newPrior) const {
-
-    // Extract the Index of the provided last key
-    gtsam::Index lastIndex = ordering.at(lastKey);
-
+      JacobianFactor::shared_ptr& newPrior) const
+  {
+    // Compute the marginal on the last key
     // Solve the linear factor graph, converting it into a linear Bayes Network
     // P(x0,x1) = P(x0|x1)*P(x1)
-    GaussianSequentialSolver solver(linearFactorGraph);
-    GaussianBayesNet::shared_ptr linearBayesNet = solver.eliminate();
+    Ordering lastKeyAsOrdering;
+    lastKeyAsOrdering += lastKey;
+    const GaussianConditional::shared_ptr marginal =
+      linearFactorGraph.marginalMultifrontalBayesNet(lastKeyAsOrdering)->front();
 
-    // Extract the current estimate of x1,P1 from the Bayes Network
-    VectorValues result = optimize(*linearBayesNet);
-    T x = linearizationPoints.at<T>(lastKey).retract(result[lastIndex]);
+    // Extract the current estimate of x1,P1
+    VectorValues result = marginal->solve(VectorValues());
+    T x = linearizationPoints.at<T>(lastKey).retract(result[lastKey]);
 
     // Create a Jacobian Factor from the root node of the produced Bayes Net.
     // This will act as a prior for the next iteration.
     // The linearization point of this prior must be moved to the new estimate of x,
     // and the key/index needs to be reset to 0, the first key in the next iteration.
-    const GaussianConditional::shared_ptr& cg = linearBayesNet->back();
-    assert(cg->nrFrontals() == 1);
-    assert(cg->nrParents() == 0);
-    // TODO: Find a way to create the correct Jacobian Factor in a single pass
-    JacobianFactor tmpPrior = JacobianFactor(*cg);
-    newPrior = JacobianFactor::shared_ptr(
-        new JacobianFactor(
-            0,
-            tmpPrior.getA(tmpPrior.begin()),
-            tmpPrior.getb()
-                - tmpPrior.getA(tmpPrior.begin()) * result[lastIndex],
-            tmpPrior.get_model()));
+    assert(marginal->nrFrontals() == 1);
+    assert(marginal->nrParents() == 0);
+    newPrior = boost::make_shared<JacobianFactor>(
+      marginal->keys().front(),
+      marginal->getA(marginal->begin()),
+      marginal->getb() - marginal->getA(marginal->begin()) * result[lastKey],
+      marginal->get_model());
 
     return x;
   }
 
   /* ************************************************************************* */
   template<class VALUE>
-  ExtendedKalmanFilter<VALUE>::ExtendedKalmanFilter(T x_initial,
+  ExtendedKalmanFilter<VALUE>::ExtendedKalmanFilter(Key key_initial, T x_initial,
       noiseModel::Gaussian::shared_ptr P_initial) {
 
     // Set the initial linearization point to the provided mean
@@ -77,7 +71,7 @@ namespace gtsam {
     // Since x0 is set to the provided mean, the b vector in the prior will be zero
     // TODO Frank asks: is there a reason why noiseModel is not simply P_initial ?
     priorFactor_ = JacobianFactor::shared_ptr(
-        new JacobianFactor(0, P_initial->R(), Vector::Zero(x_initial.dim()),
+        new JacobianFactor(key_initial, P_initial->R(), Vector::Zero(x_initial.dim()),
             noiseModel::Unit::Create(P_initial->dim())));
   }
 
@@ -94,11 +88,6 @@ namespace gtsam {
     Key x0 = motionFactor.key1();
     Key x1 = motionFactor.key2();
 
-    // Create an elimination ordering
-    Ordering ordering;
-    ordering.insert(x0, 0);
-    ordering.insert(x1, 1);
-
     // Create a set of linearization points
     Values linearizationPoints;
     linearizationPoints.insert(x0, x_);
@@ -112,11 +101,11 @@ namespace gtsam {
 
     // Linearize motion model and add it to the Kalman Filter graph
     linearFactorGraph.push_back(
-        motionFactor.linearize(linearizationPoints, ordering));
+        motionFactor.linearize(linearizationPoints));
 
     // Solve the factor graph and update the current state estimate
     // and the posterior for the next iteration.
-    x_ = solve_(linearFactorGraph, ordering, linearizationPoints, x1, priorFactor_);
+    x_ = solve_(linearFactorGraph, linearizationPoints, x1, priorFactor_);
 
     return x_;
   }
@@ -133,10 +122,6 @@ namespace gtsam {
     // Create Keys
     Key x0 = measurementFactor.key();
 
-    // Create an elimination ordering
-    Ordering ordering;
-    ordering.insert(x0, 0);
-
     // Create a set of linearization points
     Values linearizationPoints;
     linearizationPoints.insert(x0, x_);
@@ -149,11 +134,11 @@ namespace gtsam {
 
     // Linearize measurement factor and add it to the Kalman Filter graph
     linearFactorGraph.push_back(
-        measurementFactor.linearize(linearizationPoints, ordering));
+        measurementFactor.linearize(linearizationPoints));
 
     // Solve the factor graph and update the current state estimate
     // and the prior factor for the next iteration
-    x_ = solve_(linearFactorGraph, ordering, linearizationPoints, x0, priorFactor_);
+    x_ = solve_(linearFactorGraph, linearizationPoints, x0, priorFactor_);
 
     return x_;
   }

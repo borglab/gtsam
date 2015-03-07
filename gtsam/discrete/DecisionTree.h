@@ -11,7 +11,7 @@
 
 /**
  * @file    DecisionTree.h
- * @brief    Decision Tree for use in DiscreteFactors
+ * @brief   Decision Tree for use in DiscreteFactors
  * @author  Frank Dellaert
  * @author  Can Erdogan
  * @date    Jan 30, 2012
@@ -28,7 +28,7 @@
 namespace gtsam {
 
   /**
-   * Algebraic Decision Trees
+   * Decision Tree
    * L = label for variables
    * Y = function range (any algebra), e.g., bool, int, double
    */
@@ -44,7 +44,7 @@ namespace gtsam {
     /** A label annotated with cardinality */
     typedef std::pair<L,size_t> LabelC;
 
-    /** DD's consist of Leaf and Choice nodes, both subclasses of Node */
+    /** DTs consist of Leaf and Choice nodes, both subclasses of Node */
     class Leaf;
     class Choice;
 
@@ -60,16 +60,14 @@ namespace gtsam {
       // Constructor
       Node() {
 #ifdef DT_DEBUG_MEMORY
-        std::cout << ++nrNodes << " constructed " << id() << std::endl;         std::cout.flush();
-
+      std::cout << ++nrNodes << " constructed " << id() << std::endl; std::cout.flush();
 #endif
       }
 
       // Destructor
       virtual ~Node() {
 #ifdef DT_DEBUG_MEMORY
-        std::cout << --nrNodes << " destructed " << id() << std::endl;         std::cout.flush();
-
+      std::cout << --nrNodes << " destructed " << id() << std::endl; std::cout.flush();
 #endif
       }
 
@@ -94,10 +92,10 @@ namespace gtsam {
 
   public:
 
-    /** A function is a shared pointer to the root of an ADD */
+    /** A function is a shared pointer to the root of a DT */
     typedef typename Node::Ptr NodePtr;
 
-    /* an AlgebraicDecisionTree just contains the root */
+    /* a DecisionTree just contains the root */
     NodePtr root_;
 
   protected:
@@ -128,7 +126,7 @@ namespace gtsam {
     /** Allow Label+Cardinality for convenience */
     DecisionTree(const LabelC& label, const Y& y1, const Y& y2);
 
-    /** Create from keys and string table */
+    /** Create from keys and a corresponding vector of values */
     DecisionTree(const std::vector<LabelC>& labelCs, const std::vector<Y>& ys);
 
     /** Create from keys and string table */
@@ -138,7 +136,7 @@ namespace gtsam {
     template<typename Iterator>
     DecisionTree(Iterator begin, Iterator end, const L& label);
 
-    /** Create DecisionTree from others others (binary version) */
+    /** Create DecisionTree from two others */
     DecisionTree(const L& label, //
         const DecisionTree& f0, const DecisionTree& f1);
 
@@ -177,7 +175,8 @@ namespace gtsam {
     /** apply binary operation "op" to f and g */
     DecisionTree apply(const DecisionTree& g, const Binary& op) const;
 
-    /** create a new function where value(label)==index */
+    /** create a new function where value(label)==index
+     * It's like "restrict" in Darwiche09book pg329, 330? */
     DecisionTree choose(const L& label, size_t index) const {
       NodePtr newRoot = root_->choose(label, index);
       return DecisionTree(newRoot);

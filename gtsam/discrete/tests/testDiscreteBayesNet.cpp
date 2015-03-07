@@ -17,13 +17,15 @@
  */
 
 #include <gtsam/discrete/DiscreteBayesNet.h>
-#include <gtsam/discrete/DiscreteSequentialSolver.h>
+#include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/debug.h>
 
 #include <CppUnitLite/TestHarness.h>
 
 #include <boost/assign/std/map.hpp>
+#include <boost/assign/list_inserter.hpp>
+
 using namespace boost::assign;
 
 #include <iostream>
@@ -40,38 +42,39 @@ TEST(DiscreteBayesNet, Asia)
   DiscreteKey A(0,2), S(4,2), T(3,2), L(6,2), B(7,2), E(5,2), X(2,2), D(1,2);
 
   // TODO: make a version that doesn't use the parser
-  add_front(asia, A % "99/1");
-  add_front(asia, S % "50/50");
+  asia.add(A % "99/1");
+  asia.add(S % "50/50");
 
-  add_front(asia, T | A = "99/1 95/5");
-  add_front(asia, L | S = "99/1 90/10");
-  add_front(asia, B | S = "70/30 40/60");
+  asia.add(T | A = "99/1 95/5");
+  asia.add(L | S = "99/1 90/10");
+  asia.add(B | S = "70/30 40/60");
 
-  add_front(asia, (E | T, L) = "F T T T");
+  asia.add((E | T, L) = "F T T T");
 
-  add_front(asia, X | E = "95/5 2/98");
-  // next lines are same as add_front(asia, (D | E, B) = "9/1 2/8 3/7 1/9");
+  asia.add(X | E = "95/5 2/98");
+  // next lines are same as asia.add((D | E, B) = "9/1 2/8 3/7 1/9");
   DiscreteConditional::shared_ptr actual =
       boost::make_shared<DiscreteConditional>((D | E, B) = "9/1 2/8 3/7 1/9");
-  asia.push_front(actual);
+  asia.push_back(actual);
   //  GTSAM_PRINT(asia);
 
   // Convert to factor graph
   DiscreteFactorGraph fg(asia);
-  //  GTSAM_PRINT(fg);
-  LONGS_EQUAL(3,fg.front()->size());
+//    GTSAM_PRINT(fg);
+  LONGS_EQUAL(3,fg.back()->size());
   Potentials::ADT expected(B & D & E, "0.9 0.3 0.1 0.7 0.2 0.1 0.8 0.9");
   CHECK(assert_equal(expected,(Potentials::ADT)*actual));
 
   // Create solver and eliminate
-  DiscreteSequentialSolver solver(fg);
-  DiscreteBayesNet::shared_ptr chordal = solver.eliminate();
-  //  GTSAM_PRINT(*chordal);
+  Ordering ordering;
+  ordering += Key(0),Key(1),Key(2),Key(3),Key(4),Key(5),Key(6),Key(7);
+  DiscreteBayesNet::shared_ptr chordal = fg.eliminateSequential(ordering);
+//    GTSAM_PRINT(*chordal);
   DiscreteConditional expected2(B % "11/9");
   CHECK(assert_equal(expected2,*chordal->back()));
 
   // solve
-  DiscreteFactor::sharedValues actualMPE = optimize(*chordal);
+  DiscreteFactor::sharedValues actualMPE = chordal->optimize();
   DiscreteFactor::Values expectedMPE;
   insert(expectedMPE)(A.first, 0)(D.first, 0)(X.first, 0)(T.first, 0)(S.first,
       0)(E.first, 0)(L.first, 0)(B.first, 0);
@@ -83,10 +86,9 @@ TEST(DiscreteBayesNet, Asia)
 //  fg.product().dot("fg");
 
   // solve again, now with evidence
-  DiscreteSequentialSolver solver2(fg);
-  DiscreteBayesNet::shared_ptr chordal2 = solver2.eliminate();
+  DiscreteBayesNet::shared_ptr chordal2 = fg.eliminateSequential(ordering);
 //  GTSAM_PRINT(*chordal2);
-  DiscreteFactor::sharedValues actualMPE2 = optimize(*chordal2);
+  DiscreteFactor::sharedValues actualMPE2 = chordal2->optimize();
   DiscreteFactor::Values expectedMPE2;
   insert(expectedMPE2)(A.first, 1)(D.first, 1)(X.first, 0)(T.first, 0)(S.first,
       1)(E.first, 0)(L.first, 0)(B.first, 1);
@@ -97,7 +99,7 @@ TEST(DiscreteBayesNet, Asia)
   SETDEBUG("DiscreteConditional::sample", false);
   insert(expectedSample)(A.first, 1)(D.first, 1)(X.first, 0)(T.first, 0)(
       S.first, 1)(E.first, 0)(L.first, 0)(B.first, 1);
-  DiscreteFactor::sharedValues actualSample = sample(*chordal2);
+  DiscreteFactor::sharedValues actualSample = chordal2->sample();
   EXPECT(assert_equal(expectedSample, *actualSample));
 }
 
@@ -114,12 +116,12 @@ TEST_UNSAFE(DiscreteBayesNet, Sugar)
   //  add(bn, D | E = "blah");
 
   // try logic
-  add(bn, (E | T, L) = "OR");
-  add(bn, (E | T, L) = "AND");
+  bn.add((E | T, L) = "OR");
+  bn.add((E | T, L) = "AND");
 
   //  // try multivalued
-  add(bn, C % "1/1/2");
-  add(bn, C | S = "1/1/2 5/2/3");
+ bn.add(C % "1/1/2");
+ bn.add(C | S = "1/1/2 5/2/3");
 }
 
 /* ************************************************************************* */

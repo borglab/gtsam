@@ -11,11 +11,16 @@
 
 #pragma once
 
-#include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/linear/VectorValues.h>
+#include <gtsam/global_includes.h>
+
 #include <string>
+#include <iostream>
 
 namespace gtsam {
+
+  // Forward declarations
+  class VectorValues;
+  class GaussianFactorGraph;
 
   /**
    * parameters for iterative linear solvers
@@ -73,7 +78,7 @@ namespace gtsam {
     virtual VectorValues optimize (const VectorValues &initial) = 0;
 
     /* update interface to the nonlinear optimizer  */
-    virtual void replaceFactors(const GaussianFactorGraph::shared_ptr &factorGraph, const double lambda) {}
+    virtual void replaceFactors(const boost::shared_ptr<GaussianFactorGraph> &factorGraph, const double lambda) {}
   };
 
 }

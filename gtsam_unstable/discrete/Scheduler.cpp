@@ -7,7 +7,6 @@
 
 #include <gtsam_unstable/discrete/Scheduler.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
-#include <gtsam/discrete/DiscreteSequentialSolver.h>
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
 
@@ -71,9 +70,9 @@ namespace gtsam {
     student.name_ = studentName;
     // We fix the ordering by assigning a higher index to the student
     // and numbering the areas lower
-    Index j = 3*maxNrStudents_ + nrStudents();
+    Key j = 3*maxNrStudents_ + nrStudents();
     student.key_ = DiscreteKey(j, nrTimeSlots());
-    Index base = 3*nrStudents();
+    Key base = 3*nrStudents();
     student.keys_[0] = DiscreteKey(base+0, nrFaculty());
     student.keys_[1] = DiscreteKey(base+1, nrFaculty());
     student.keys_[2] = DiscreteKey(base+2, nrFaculty());
@@ -219,10 +218,10 @@ namespace gtsam {
     // Not intended to be general! Assumes very particular ordering !
     cout << endl;
     for (size_t s = 0; s < nrStudents(); s++) {
-      Index j = 3*maxNrStudents_ + s;
+      Key j = 3*maxNrStudents_ + s;
       size_t slot = assignment->at(j);
       cout << studentName(s) << " slot: " << slotName_[slot] << endl;
-      Index base = 3*s;
+      Key base = 3*s;
       for (size_t area = 0; area < 3; area++) {
         size_t faculty = assignment->at(base+area);
         cout << setw(12) << studentArea(s,area) << ": " << facultyName_[faculty]
@@ -246,7 +245,7 @@ namespace gtsam {
   void Scheduler::accumulateStats(sharedValues assignment, vector<
       size_t>& stats) const {
     for (size_t s = 0; s < nrStudents(); s++) {
-      Index base = 3*s;
+      Key base = 3*s;
       for (size_t area = 0; area < 3; area++) {
         size_t f = assignment->at(base+area);
         assert(f<stats.size());
@@ -257,11 +256,13 @@ namespace gtsam {
 
   /** Eliminate, return a Bayes net */
   DiscreteBayesNet::shared_ptr Scheduler::eliminate() const {
-    gttic(my_solver);
-    DiscreteSequentialSolver solver(*this);
-    gttoc(my_solver);
     gttic(my_eliminate);
-    DiscreteBayesNet::shared_ptr chordal = solver.eliminate();
+    // TODO: fix this!!
+    size_t maxKey = keys().size();
+    Ordering defaultKeyOrdering;
+    for (size_t i = 0; i<maxKey; ++i)
+      defaultKeyOrdering += Key(i);
+    DiscreteBayesNet::shared_ptr chordal = this->eliminateSequential(defaultKeyOrdering);
     gttoc(my_eliminate);
     return chordal;
   }
@@ -271,14 +272,14 @@ namespace gtsam {
     DiscreteBayesNet::shared_ptr chordal = eliminate();
 
     if (ISDEBUG("Scheduler::optimalAssignment")) {
-      DiscreteBayesNet::const_reverse_iterator it = chordal->rbegin();
+      DiscreteBayesNet::const_iterator it = chordal->end()-1;
       const Student & student = students_.front();
       cout << endl;
       (*it)->print(student.name_);
     }
 
     gttic(my_optimize);
-    sharedValues mpe = optimize(*chordal);
+    sharedValues mpe = chordal->optimize();
     gttoc(my_optimize);
     return mpe;
   }

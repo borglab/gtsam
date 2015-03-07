@@ -7,7 +7,6 @@
 
 #include <gtsam_unstable/discrete/Domain.h>
 #include <gtsam_unstable/discrete/CSP.h>
-#include <gtsam/discrete/DiscreteSequentialSolver.h>
 #include <gtsam/base/Testable.h>
 #include <boost/foreach.hpp>
 
@@ -16,10 +15,9 @@ using namespace std;
 namespace gtsam {
 
   /// Find the best total assignment - can be expensive
-  CSP::sharedValues CSP::optimalAssignment() const {
-    DiscreteSequentialSolver solver(*this);
-    DiscreteBayesNet::shared_ptr chordal = solver.eliminate();
-    sharedValues mpe = optimize(*chordal);
+  CSP::sharedValues CSP::optimalAssignment(OptionalOrdering ordering) const {
+    DiscreteBayesNet::shared_ptr chordal = this->eliminateSequential(ordering);
+    sharedValues mpe = chordal->optimize();
     return mpe;
   }
 

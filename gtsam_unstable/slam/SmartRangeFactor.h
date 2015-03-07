@@ -11,8 +11,9 @@
 
 #include <gtsam_unstable/base/dllexport.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/nonlinear/Key.h>
+#include <gtsam/inference/Key.h>
 #include <gtsam/geometry/Pose2.h>
+#include <gtsam/base/timing.h>
 #include <boost/foreach.hpp>
 #include <map>
 
@@ -85,7 +86,7 @@ public:
    * Checks for best pair that includes first point
    */
   Point2 triangulate(const Values& x) const {
-    gttic_(triangulate);
+    //gttic_(triangulate);
     // create n circles corresponding to measured range around each pose
     std::list<Circle2> circles;
     size_t n = size();
@@ -127,7 +128,7 @@ public:
       error2 += it.center.dist(p2);
     }
     return (error1 < error2) ? p1 : p2;
-    gttoc_(triangulate);
+    //gttoc_(triangulate);
   }
 
   /**

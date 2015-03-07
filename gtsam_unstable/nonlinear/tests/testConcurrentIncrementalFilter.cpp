@@ -23,10 +23,9 @@
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LinearContainerFactor.h>
-#include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/nonlinear/Symbol.h>
-#include <gtsam/nonlinear/Key.h>
+#include <gtsam/inference/Symbol.h>
+#include <gtsam/inference/Key.h>
 #include <gtsam/inference/JunctionTree.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/TestableAssertions.h>
@@ -39,14 +38,14 @@ namespace {
 
 // Set up initial pose, odometry difference, loop closure difference, and initialization errors
 const Pose3 poseInitial;
-const Pose3 poseOdometry( Rot3::RzRyRx(Vector_(3, 0.05, 0.10, -0.75)), Point3(1.0, -0.25, 0.10) );
-//const Pose3 poseError( Rot3::RzRyRx(Vector_(3, 0.01, 0.02, -0.1)), Point3(0.05, -0.05, 0.02) );
-const Pose3 poseError( Rot3::RzRyRx(Vector_(3, 0.1, 0.02, -0.1)), Point3(0.5, -0.05, 0.2) );
+const Pose3 poseOdometry( Rot3::RzRyRx((Vector(3) << 0.05, 0.10, -0.75)), Point3(1.0, -0.25, 0.10) );
+//const Pose3 poseError( Rot3::RzRyRx((Vector(3) << 0.01, 0.02, -0.1)), Point3(0.05, -0.05, 0.02) );
+const Pose3 poseError( Rot3::RzRyRx((Vector(3) << 0.1, 0.02, -0.1)), Point3(0.5, -0.05, 0.2) );
 
 // Set up noise models for the factors
 const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
-const SharedDiagonal noiseOdometery = noiseModel::Diagonal::Sigmas(Vector_(6, 0.1, 0.1, 0.1, 0.5, 0.5, 0.5));
-const SharedDiagonal noiseLoop = noiseModel::Diagonal::Sigmas(Vector_(6, 0.25, 0.25, 0.25, 1.0, 1.0, 1.0));
+const SharedDiagonal noiseOdometery = noiseModel::Diagonal::Sigmas((Vector(6) << 0.1, 0.1, 0.1, 0.5, 0.5, 0.5));
+const SharedDiagonal noiseLoop = noiseModel::Diagonal::Sigmas((Vector(6) << 0.25, 0.25, 0.25, 1.0, 1.0, 1.0));
 
 /* ************************************************************************* */
 Values BatchOptimize(const NonlinearFactorGraph& graph, const Values& theta, int maxIter = 100) {
@@ -59,7 +58,7 @@ Values BatchOptimize(const NonlinearFactorGraph& graph, const Values& theta, int
 //  parameters.lambdaInitial = 1;
 //  parameters.verbosity = NonlinearOptimizerParams::ERROR;
 //  parameters.verbosityLM = ISAM2Params::DAMPED;
-//  parameters.linearSolverType = SuccessiveLinearizationParams::MULTIFRONTAL_QR;
+//  parameters.linearSolverType = NonlinearOptimizerParams::MULTIFRONTAL_QR;
 
   // it is the same as the input graph, but we removed the empty factors that may be present in the input graph
   NonlinearFactorGraph graphForISAM2;
@@ -96,20 +95,16 @@ NonlinearFactorGraph CalculateMarginals(const NonlinearFactorGraph& factorGraph,
     ordering.push_back(key);
   }
 
-  GaussianFactorGraph linearGraph = *factorGraph.linearize(linPoint, ordering);
 
-  // Create the set of marginalizable variables
-  std::vector<Index> linearIndices;
-  BOOST_FOREACH(Key key, keysToMarginalize) {
-    linearIndices.push_back(ordering.at(key));
-  }
+  GaussianFactorGraph linearGraph = *factorGraph.linearize(linPoint);
 
-  std::pair<GaussianConditional::shared_ptr, GaussianFactorGraph> marginal = linearGraph.eliminate(linearIndices, EliminateCholesky);
+  GaussianFactorGraph marginal = *linearGraph.eliminatePartialMultifrontal(vector<Key>(keysToMarginalize.begin(), keysToMarginalize.end()), EliminateCholesky).second;
 
   NonlinearFactorGraph LinearContainerForGaussianMarginals;
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, marginal.second) {
-    LinearContainerForGaussianMarginals.add(LinearContainerFactor(factor, ordering, linPoint));
+  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, marginal) {
+    LinearContainerForGaussianMarginals.push_back(LinearContainerFactor(factor, linPoint));
   }
+
   return LinearContainerForGaussianMarginals;
 }
 
@@ -158,8 +153,8 @@ TEST( ConcurrentIncrementalFilter, getFactors )
 
   // Add some factors to the filter
   NonlinearFactorGraph newFactors1;
-  newFactors1.add(PriorFactor<Pose3>(1, poseInitial, noisePrior));
-  newFactors1.add(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  newFactors1.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors1.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
   Values newValues1;
   newValues1.insert(1, Pose3());
   newValues1.insert(2, newValues1.at<Pose3>(1).compose(poseOdometry));
@@ -175,8 +170,8 @@ TEST( ConcurrentIncrementalFilter, getFactors )
 
   // Add some more factors to the filter
   NonlinearFactorGraph newFactors2;
-  newFactors2.add(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
-  newFactors2.add(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
+  newFactors2.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+  newFactors2.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
   Values newValues2;
   newValues2.insert(3, newValues1.at<Pose3>(2).compose(poseOdometry));
   newValues2.insert(4, newValues2.at<Pose3>(3).compose(poseOdometry));
@@ -208,8 +203,8 @@ TEST( ConcurrentIncrementalFilter, getLinearizationPoint )
 
   // Add some factors to the filter
   NonlinearFactorGraph newFactors1;
-  newFactors1.add(PriorFactor<Pose3>(1, poseInitial, noisePrior));
-  newFactors1.add(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  newFactors1.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors1.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
   Values newValues1;
   newValues1.insert(1, Pose3());
   newValues1.insert(2, newValues1.at<Pose3>(1).compose(poseOdometry));
@@ -225,8 +220,8 @@ TEST( ConcurrentIncrementalFilter, getLinearizationPoint )
 
   // Add some more factors to the filter
   NonlinearFactorGraph newFactors2;
-  newFactors2.add(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
-  newFactors2.add(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
+  newFactors2.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+  newFactors2.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
   Values newValues2;
   newValues2.insert(3, newValues1.at<Pose3>(2).compose(poseOdometry));
   newValues2.insert(4, newValues2.at<Pose3>(3).compose(poseOdometry));
@@ -240,12 +235,6 @@ TEST( ConcurrentIncrementalFilter, getLinearizationPoint )
   Values actual3 = filter.getLinearizationPoint();
   // Check
   CHECK(assert_equal(expected3, actual3));
-}
-
-/* ************************************************************************* */
-TEST( ConcurrentIncrementalFilter, getOrdering )
-{
-  // TODO: Think about how to check ordering...
 }
 
 /* ************************************************************************* */
@@ -270,8 +259,8 @@ TEST( ConcurrentIncrementalFilter, calculateEstimate )
 
   // Add some factors to the filter
   NonlinearFactorGraph newFactors2;
-  newFactors2.add(PriorFactor<Pose3>(1, poseInitial, noisePrior));
-  newFactors2.add(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  newFactors2.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors2.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
   Values newValues2;
   newValues2.insert(1, Pose3().compose(poseError));
   newValues2.insert(2, newValues2.at<Pose3>(1).compose(poseOdometry).compose(poseError));
@@ -290,8 +279,8 @@ TEST( ConcurrentIncrementalFilter, calculateEstimate )
 
   // Add some more factors to the filter
   NonlinearFactorGraph newFactors3;
-  newFactors3.add(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
-  newFactors3.add(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
+  newFactors3.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+  newFactors3.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
   Values newValues3;
   newValues3.insert(3, newValues2.at<Pose3>(2).compose(poseOdometry).compose(poseError));
   newValues3.insert(4, newValues3.at<Pose3>(3).compose(poseOdometry).compose(poseError));
@@ -354,8 +343,8 @@ TEST( ConcurrentIncrementalFilter, update_multiple )
 
   // Add some factors to the filter
   NonlinearFactorGraph newFactors2;
-  newFactors2.add(PriorFactor<Pose3>(1, poseInitial, noisePrior));
-  newFactors2.add(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  newFactors2.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors2.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
   Values newValues2;
   newValues2.insert(1, Pose3().compose(poseError));
   newValues2.insert(2, newValues2.at<Pose3>(1).compose(poseOdometry).compose(poseError));
@@ -374,8 +363,8 @@ TEST( ConcurrentIncrementalFilter, update_multiple )
 
   // Add some more factors to the filter
   NonlinearFactorGraph newFactors3;
-  newFactors3.add(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
-  newFactors3.add(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
+  newFactors3.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+  newFactors3.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
   Values newValues3;
   newValues3.insert(3, newValues2.at<Pose3>(2).compose(poseOdometry).compose(poseError));
   newValues3.insert(4, newValues3.at<Pose3>(3).compose(poseOdometry).compose(poseError));
@@ -404,10 +393,10 @@ TEST( ConcurrentIncrementalFilter, update_and_marginalize_1 )
 
   // Add some factors to the filter
   NonlinearFactorGraph newFactors;
-  newFactors.add(PriorFactor<Pose3>(1, poseInitial, noisePrior));
-  newFactors.add(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
-  newFactors.add(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
-  newFactors.add(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
+  newFactors.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  newFactors.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+  newFactors.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
   Values newValues;
   newValues.insert(1, Pose3().compose(poseError));
   newValues.insert(2, newValues.at<Pose3>(1).compose(poseOdometry).compose(poseError));
@@ -434,29 +423,13 @@ TEST( ConcurrentIncrementalFilter, update_and_marginalize_1 )
 
   // ----------------------------------------------------------------------------------------------
   NonlinearFactorGraph partialGraph;
-  partialGraph.add(PriorFactor<Pose3>(1, poseInitial, noisePrior));
-  partialGraph.add(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
-  partialGraph.add(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+  partialGraph.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  partialGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  partialGraph.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
 
-  Values partialValues;
-  // ISAM2 after the update is computing the delta, without applying them to the current lin point
-  partialValues.insert(1, newValues.at(1));
-  partialValues.insert(2, newValues.at(2));
-  partialValues.insert(3, newValues.at(3));
+  GaussianFactorGraph linearGraph = *partialGraph.linearize(newValues);
 
-  // Create an ordering
-  Ordering ordering;
-  ordering.push_back(1);
-  ordering.push_back(2);
-  ordering.push_back(3);
-
-  // Create the set of marginalizable variables
-  std::vector<Index> linearIndices;
-  linearIndices.push_back(ordering.at(1));
-  linearIndices.push_back(ordering.at(2));
-
-  GaussianFactorGraph linearPartialGraph = *partialGraph.linearize(partialValues, ordering);
-  std::pair<GaussianConditional::shared_ptr, GaussianFactorGraph> result = linearPartialGraph.eliminate(linearIndices, EliminateCholesky);
+  GaussianFactorGraph marginal = *linearGraph.eliminatePartialMultifrontal(vector<Key>(keysToMove.begin(), keysToMove.end()), EliminateCholesky).second;
 
   NonlinearFactorGraph expectedGraph;
 
@@ -468,13 +441,13 @@ TEST( ConcurrentIncrementalFilter, update_and_marginalize_1 )
   expectedGraph.push_back(NonlinearFactor::shared_ptr());
   expectedGraph.push_back(NonlinearFactor::shared_ptr());
   // ==========================================================
-  expectedGraph.add(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
+  expectedGraph.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
 
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, result.second) {
+  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, marginal) {
     // the linearization point for the linear container is optional, but it is not used in the filter,
     // therefore if we add it here it will not pass the test
-    //    expectedGraph.add(LinearContainerFactor(factor, ordering, partialValues));
-    expectedGraph.add(LinearContainerFactor(factor, ordering));
+    //    expectedGraph.push_back(LinearContainerFactor(factor, ordering, partialValues));
+    expectedGraph.push_back(LinearContainerFactor(factor));
   }
 
   // ----------------------------------------------------------------------------------------------
@@ -503,10 +476,10 @@ TEST( ConcurrentIncrementalFilter, update_and_marginalize_2 )
 
   // Add some factors to the filter
   NonlinearFactorGraph newFactors;
-  newFactors.add(PriorFactor<Pose3>(1, poseInitial, noisePrior));
-  newFactors.add(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
-  newFactors.add(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
-  newFactors.add(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
+  newFactors.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  newFactors.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+  newFactors.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
   Values newValues;
   newValues.insert(1, Pose3().compose(poseError));
   newValues.insert(2, newValues.at<Pose3>(1).compose(poseOdometry).compose(poseError));
@@ -534,48 +507,32 @@ TEST( ConcurrentIncrementalFilter, update_and_marginalize_2 )
 
   // ----------------------------------------------------------------------------------------------
   NonlinearFactorGraph partialGraph;
-  partialGraph.add(PriorFactor<Pose3>(1, poseInitial, noisePrior));
-  partialGraph.add(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
-  partialGraph.add(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+  partialGraph.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  partialGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  partialGraph.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
 
-  Values partialValues;
-  // ISAM2 after the update is computing the delta, without applying them to the current lin point
-  partialValues.insert(1, optimalValues.at(1));
-  partialValues.insert(2, optimalValues.at(2));
-  partialValues.insert(3, optimalValues.at(3));
+  GaussianFactorGraph linearGraph = *partialGraph.linearize(optimalValues);
 
-  // Create an ordering
-  Ordering ordering;
-  ordering.push_back(1);
-  ordering.push_back(2);
-  ordering.push_back(3);
+    GaussianFactorGraph marginal = *linearGraph.eliminatePartialMultifrontal(vector<Key>(keysToMove.begin(), keysToMove.end()), EliminateCholesky).second;
 
-  // Create the set of marginalizable variables
-  std::vector<Index> linearIndices;
-  linearIndices.push_back(ordering.at(1));
-  linearIndices.push_back(ordering.at(2));
+    NonlinearFactorGraph expectedGraph;
 
-  GaussianFactorGraph linearPartialGraph = *partialGraph.linearize(partialValues, ordering);
-  std::pair<GaussianConditional::shared_ptr, GaussianFactorGraph> result = linearPartialGraph.eliminate(linearIndices, EliminateCholesky);
+    // These three lines create three empty factors in expectedGraph:
+    // this is done since the equal function in NonlinearFactorGraph also cares about the ordering of the factors
+    // and in the actualGraph produced by the HMF we first insert 5 nonlinear factors, then we delete 3 of them, by
+    // substituting them with a linear marginal
+    expectedGraph.push_back(NonlinearFactor::shared_ptr());
+    expectedGraph.push_back(NonlinearFactor::shared_ptr());
+    expectedGraph.push_back(NonlinearFactor::shared_ptr());
+    // ==========================================================
+    expectedGraph.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
 
-  NonlinearFactorGraph expectedGraph;
-
-  // These three lines create three empty factors in expectedGraph:
-  // this is done since the equal function in NonlinearFactorGraph also cares about the ordering of the factors
-  // and in the actualGraph produced by the HMF we first insert 5 nonlinear factors, then we delete 3 of them, by
-  // substituting them with a linear marginal
-  expectedGraph.push_back(NonlinearFactor::shared_ptr());
-  expectedGraph.push_back(NonlinearFactor::shared_ptr());
-  expectedGraph.push_back(NonlinearFactor::shared_ptr());
-  // ==========================================================
-  expectedGraph.add(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
-
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, result.second) {
-    // the linearization point for the linear container is optional, but it is not used in the filter,
-    // therefore if we add it here it will not pass the test
-    //    expectedGraph.add(LinearContainerFactor(factor, ordering, partialValues));
-    expectedGraph.add(LinearContainerFactor(factor, ordering));
-  }
+    BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, marginal) {
+      // the linearization point for the linear container is optional, but it is not used in the filter,
+      // therefore if we add it here it will not pass the test
+      //    expectedGraph.push_back(LinearContainerFactor(factor, ordering, partialValues));
+      expectedGraph.push_back(LinearContainerFactor(factor));
+    }
 
   // ----------------------------------------------------------------------------------------------
 
@@ -650,8 +607,8 @@ TEST( ConcurrentIncrementalFilter, synchronize_1 )
   // Insert factors into the filter, but do not marginalize out any variables.
   // The synchronization should still be empty
   NonlinearFactorGraph newFactors;
-  newFactors.add(PriorFactor<Pose3>(1, poseInitial, noisePrior));
-  newFactors.add(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  newFactors.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
   Values newValues;
   newValues.insert(1, Pose3().compose(poseError));
   newValues.insert(2, newValues.at<Pose3>(1).compose(poseOdometry).compose(poseError));
@@ -813,7 +770,7 @@ TEST( ConcurrentIncrementalFilter, synchronize_3 )
   expectedFilterSeparatorValues.insert(2, newValues.at(2));
   // ------------------------------------------------------------------------------
   NonlinearFactorGraph partialGraph;
-  partialGraph.add(factor3);
+  partialGraph.push_back(factor3);
 
   Values partialValues;
   partialValues.insert(2, newValues.at<Pose3>(2));
@@ -902,7 +859,7 @@ TEST( ConcurrentIncrementalFilter, synchronize_4 )
   expectedFilterSeparatorValues.insert(2, newValues.at<Pose3>(2));
   // ------------------------------------------------------------------------------
   NonlinearFactorGraph partialGraphFilter;
-  partialGraphFilter.add(factor3);
+  partialGraphFilter.push_back(factor3);
 
   Values partialValuesFilter;
   partialValuesFilter.insert(2, newValues.at<Pose3>(2));
@@ -995,8 +952,8 @@ TEST( ConcurrentIncrementalFilter, synchronize_5 )
   filter.postsync();
 
   NonlinearFactorGraph expectedSmootherFactors;
-  expectedSmootherFactors.add(factor1);
-  expectedSmootherFactors.add(factor2);
+  expectedSmootherFactors.push_back(factor1);
+  expectedSmootherFactors.push_back(factor2);
 
   Values optimalValues = BatchOptimize(newFactors, newValues, 1);
   Values expectedSmootherValues;
@@ -1026,11 +983,11 @@ TEST( ConcurrentIncrementalFilter, synchronize_5 )
   // currently the smoother contains factor 1 and 2 and node 1 and 2
 
   NonlinearFactorGraph partialGraph;
-  partialGraph.add(factor1);
-  partialGraph.add(factor2);
+  partialGraph.push_back(factor1);
+  partialGraph.push_back(factor2);
 
   // we also assume that the smoother received an extra factor (e.g., a prior on 1)
-  partialGraph.add(factor1);
+  partialGraph.push_back(factor1);
 
   Values partialValues;
   // Incrementaloptimization updates all linearization points but the ones of the separator
@@ -1059,8 +1016,8 @@ TEST( ConcurrentIncrementalFilter, synchronize_5 )
   filter.postsync();
 
   NonlinearFactorGraph expectedSmootherFactors2;
-  expectedSmootherFactors2.add(factor3);
-  expectedSmootherFactors2.add(factor4);
+  expectedSmootherFactors2.push_back(factor3);
+  expectedSmootherFactors2.push_back(factor4);
 
   Values expectedSmootherValues2;
   expectedSmootherValues2.insert(2, newValues.at(2));
@@ -1075,7 +1032,7 @@ TEST( ConcurrentIncrementalFilter, synchronize_5 )
   // ------------------------------------------------------------------------------
   // This cannot be nonempty for the first call to synchronize
   NonlinearFactorGraph partialGraphFilter;
-  partialGraphFilter.add(factor5);
+  partialGraphFilter.push_back(factor5);
 
 
   Values partialValuesFilter;
@@ -1096,8 +1053,8 @@ TEST( ConcurrentIncrementalFilter, synchronize_5 )
   // Now we should check that the smooother summarization on the old separator is correctly propagated
   // on the new separator by the filter
   NonlinearFactorGraph partialGraphTransition;
-  partialGraphTransition.add(factor3);
-  partialGraphTransition.add(factor4);
+  partialGraphTransition.push_back(factor3);
+  partialGraphTransition.push_back(factor4);
   partialGraphTransition.push_back(smootherSummarization2);
 
   Values partialValuesTransition;
@@ -1119,7 +1076,7 @@ TEST( ConcurrentIncrementalFilter, synchronize_5 )
   expectedFilterGraph.push_back(factorEmpty);
   expectedFilterGraph.push_back(factorEmpty);
   expectedFilterGraph.push_back(factorEmpty);
-  expectedFilterGraph.add(factor5);
+  expectedFilterGraph.push_back(factor5);
   expectedFilterGraph.push_back(factorEmpty);
   expectedFilterGraph.push_back(factorEmpty);
   expectedFilterGraph.push_back(factorEmpty);
@@ -1143,10 +1100,10 @@ TEST( ConcurrentIncrementalFilter, CalculateMarginals_1 )
   NonlinearFactor::shared_ptr factor4(new BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
 
   NonlinearFactorGraph factorGraph;
-  factorGraph.add(factor1);
-  factorGraph.add(factor2);
-  factorGraph.add(factor3);
-  factorGraph.add(factor4);
+  factorGraph.push_back(factor1);
+  factorGraph.push_back(factor2);
+  factorGraph.push_back(factor3);
+  factorGraph.push_back(factor4);
 
   Values newValues;
   Pose3 value1 = Pose3().compose(poseError);
@@ -1157,26 +1114,18 @@ TEST( ConcurrentIncrementalFilter, CalculateMarginals_1 )
   newValues.insert(2, value2);
   newValues.insert(3, value3);
 
-  // We first manually
-  // Create an ordering
-  Ordering ordering;
-  ordering.push_back(1);
-  ordering.push_back(2);
-  ordering.push_back(3);
-
-  GaussianFactorGraph linearFactorGraph = *factorGraph.linearize(newValues, ordering);
-
   // Create the set of marginalizable variables
-  std::vector<Index> linearIndices;
-  linearIndices.push_back(ordering.at(1));
+  std::vector<Key> linearIndices;
+  linearIndices.push_back(1);
 
-  std::pair<GaussianConditional::shared_ptr, GaussianFactorGraph> result = linearFactorGraph.eliminate(linearIndices, EliminateCholesky);
+  GaussianFactorGraph linearGraph = *factorGraph.linearize(newValues);
 
-  NonlinearFactorGraph expectedMarginals;
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, result.second) {
-    expectedMarginals.add(LinearContainerFactor(factor, ordering, newValues));
+    GaussianFactorGraph marginal = *linearGraph.eliminatePartialMultifrontal(vector<Key>(linearIndices.begin(), linearIndices.end()), EliminateCholesky).second;
 
-  }
+    NonlinearFactorGraph expectedMarginals;
+    BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, marginal) {
+      expectedMarginals.push_back(LinearContainerFactor(factor, newValues));
+    }
 
   FastList<Key> keysToMarginalize;
   keysToMarginalize.push_back(1);
@@ -1201,10 +1150,10 @@ TEST( ConcurrentIncrementalFilter, CalculateMarginals_2 )
   NonlinearFactor::shared_ptr factor4(new BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
 
   NonlinearFactorGraph factorGraph;
-  factorGraph.add(factor1);
-  factorGraph.add(factor2);
-  factorGraph.add(factor3);
-  factorGraph.add(factor4);
+  factorGraph.push_back(factor1);
+  factorGraph.push_back(factor2);
+  factorGraph.push_back(factor3);
+  factorGraph.push_back(factor4);
 
   Values newValues;
   Pose3 value1 = Pose3().compose(poseError);
@@ -1215,27 +1164,23 @@ TEST( ConcurrentIncrementalFilter, CalculateMarginals_2 )
   newValues.insert(2, value2);
   newValues.insert(3, value3);
 
-  // We first manually
-  // Create an ordering
-  Ordering ordering;
-  ordering.push_back(1);
-  ordering.push_back(2);
-  ordering.push_back(3);
 
-  GaussianFactorGraph linearFactorGraph = *factorGraph.linearize(newValues, ordering);
 
-  // Create the set of marginalizable variables
-  std::vector<Index> linearIndices;
-  linearIndices.push_back(ordering.at(1));
-  linearIndices.push_back(ordering.at(2));
+    // Create the set of marginalizable variables
+  std::vector<Key> linearIndices;
+  linearIndices.push_back(1);
+  linearIndices.push_back(2);
 
-  std::pair<GaussianConditional::shared_ptr, GaussianFactorGraph> result = linearFactorGraph.eliminate(linearIndices, EliminateCholesky);
+
+  GaussianFactorGraph linearGraph = *factorGraph.linearize(newValues);
+
+  GaussianFactorGraph marginal = *linearGraph.eliminatePartialMultifrontal(vector<Key>(linearIndices.begin(), linearIndices.end()), EliminateCholesky).second;
 
   NonlinearFactorGraph expectedMarginals;
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, result.second) {
-    expectedMarginals.add(LinearContainerFactor(factor, ordering, newValues));
-
+  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, marginal) {
+    expectedMarginals.push_back(LinearContainerFactor(factor, newValues));
   }
+
 
   FastList<Key> keysToMarginalize;
   keysToMarginalize.push_back(1);
@@ -1247,6 +1192,249 @@ TEST( ConcurrentIncrementalFilter, CalculateMarginals_2 )
   CHECK(assert_equal(expectedMarginals, actualMarginals, 1e-6));
 //  actualMarginals.print("actualMarginals \n");
 //  expectedMarginals.print("expectedMarginals \n");
+}
+
+
+
+///* ************************************************************************* */
+TEST( ConcurrentIncrementalFilter, removeFactors_topology_1 )
+{
+  std::cout << "*********************** removeFactors_topology_1 ************************" << std::endl;
+
+  // Create a set of optimizer parameters
+  ISAM2Params parameters;
+  parameters.relinearizeThreshold = 0;
+  // ISAM2 checks whether to relinearize or not a variable only every relinearizeSkip steps  and the
+  //  default value for that is 10 (if you set that to zero the code will crash)
+  parameters.relinearizeSkip = 1;
+
+  // Create a Concurrent IncrementalFilter
+  ConcurrentIncrementalFilter filter(parameters);
+
+  // Add some factors to the filter
+  NonlinearFactorGraph newFactors;
+  newFactors.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  newFactors.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+  newFactors.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
+  newFactors.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+
+  Values newValues;
+  newValues.insert(1, Pose3().compose(poseError));
+  newValues.insert(2, newValues.at<Pose3>(1).compose(poseOdometry).compose(poseError));
+  newValues.insert(3, newValues.at<Pose3>(2).compose(poseOdometry).compose(poseError));
+  newValues.insert(4, newValues.at<Pose3>(3).compose(poseOdometry).compose(poseError));
+
+  // Specify a subset of variables to marginalize/move to the smoother
+  FastList<Key> keysToMove;
+
+  // Update the filter: add all factors
+  filter.update(newFactors, newValues, keysToMove);
+
+  // factor we want to remove
+  // NOTE: we can remove factors, paying attention that the remaining graph remains connected
+  // we remove a single factor, the number 1, which is a BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery);
+  std::vector<size_t> removeFactorIndices(1,1);
+
+  // Add no factors to the filter (we only want to test the removal)
+  NonlinearFactorGraph noFactors;
+  Values noValues;
+  filter.update(noFactors, noValues, keysToMove, removeFactorIndices);
+
+  NonlinearFactorGraph actualGraph = filter.getFactors();
+
+  NonlinearFactorGraph expectedGraph;
+  expectedGraph.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  // we removed this one: expectedGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  // we should add an empty one, so that the ordering and labeling of the factors is preserved
+  expectedGraph.push_back(NonlinearFactor::shared_ptr());
+  expectedGraph.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+  expectedGraph.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
+  expectedGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+
+  CHECK(assert_equal(expectedGraph, actualGraph, 1e-6));
+}
+
+/////* ************************************************************************* */
+TEST( ConcurrentIncrementalFilter, removeFactors_topology_2 )
+{
+  std::cout << "*********************** removeFactors_topology_2 ************************" << std::endl;
+  // we try removing the last factor
+
+  ISAM2Params parameters;
+  parameters.relinearizeThreshold = 0;
+  // ISAM2 checks whether to relinearize or not a variable only every relinearizeSkip steps  and the
+  //  default value for that is 10 (if you set that to zero the code will crash)
+  parameters.relinearizeSkip = 1;
+
+  // Create a Concurrent IncrementalFilter
+  ConcurrentIncrementalFilter filter(parameters);
+
+  // Add some factors to the filter
+  NonlinearFactorGraph newFactors;
+  newFactors.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  newFactors.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+  newFactors.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
+  newFactors.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+
+  Values newValues;
+  newValues.insert(1, Pose3().compose(poseError));
+  newValues.insert(2, newValues.at<Pose3>(1).compose(poseOdometry).compose(poseError));
+  newValues.insert(3, newValues.at<Pose3>(2).compose(poseOdometry).compose(poseError));
+  newValues.insert(4, newValues.at<Pose3>(3).compose(poseOdometry).compose(poseError));
+
+  // Specify a subset of variables to marginalize/move to the smoother
+  FastList<Key> keysToMove;
+
+  // Update the filter: add all factors
+  filter.update(newFactors, newValues, keysToMove);
+
+  // factor we want to remove
+  // NOTE: we can remove factors, paying attention that the remaining graph remains connected
+  // we remove a single factor, the number 1, which is a BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery);
+  std::vector<size_t> removeFactorIndices(1,4);
+
+  // Add no factors to the filter (we only want to test the removal)
+  NonlinearFactorGraph noFactors;
+  Values noValues;
+  filter.update(noFactors, noValues, keysToMove, removeFactorIndices);
+
+  NonlinearFactorGraph actualGraph = filter.getFactors();
+
+  NonlinearFactorGraph expectedGraph;
+  expectedGraph.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  expectedGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  expectedGraph.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+  expectedGraph.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
+  // we removed this one: expectedGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  // we should add an empty one, so that the ordering and labeling of the factors is preserved
+  expectedGraph.push_back(NonlinearFactor::shared_ptr());
+
+  CHECK(assert_equal(expectedGraph, actualGraph, 1e-6));
+}
+
+
+/////* ************************************************************************* */
+TEST( ConcurrentIncrementalFilter, removeFactors_topology_3 )
+{
+  std::cout << "*********************** removeFactors_topology_3 ************************" << std::endl;
+  // we try removing the first factor
+
+  ISAM2Params parameters;
+  parameters.relinearizeThreshold = 0;
+  // ISAM2 checks whether to relinearize or not a variable only every relinearizeSkip steps  and the
+  //  default value for that is 10 (if you set that to zero the code will crash)
+  parameters.relinearizeSkip = 1;
+
+  // Create a Concurrent IncrementalFilter
+  ConcurrentIncrementalFilter filter(parameters);
+
+  // Add some factors to the filter
+  NonlinearFactorGraph newFactors;
+  newFactors.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  newFactors.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+  newFactors.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
+
+  Values newValues;
+  newValues.insert(1, Pose3().compose(poseError));
+  newValues.insert(2, newValues.at<Pose3>(1).compose(poseOdometry).compose(poseError));
+  newValues.insert(3, newValues.at<Pose3>(2).compose(poseOdometry).compose(poseError));
+  newValues.insert(4, newValues.at<Pose3>(3).compose(poseOdometry).compose(poseError));
+
+  // Specify a subset of variables to marginalize/move to the smoother
+  FastList<Key> keysToMove;
+
+  // Update the filter: add all factors
+  filter.update(newFactors, newValues, keysToMove);
+
+  // factor we want to remove
+  // NOTE: we can remove factors, paying attention that the remaining graph remains connected
+  // we remove a single factor, the number 0, which is a BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery);
+  std::vector<size_t> removeFactorIndices(1,0);
+
+  // Add no factors to the filter (we only want to test the removal)
+  NonlinearFactorGraph noFactors;
+  Values noValues;
+  filter.update(noFactors, noValues, keysToMove, removeFactorIndices);
+
+  NonlinearFactorGraph actualGraph = filter.getFactors();
+
+  NonlinearFactorGraph expectedGraph;
+  // we should add an empty one, so that the ordering and labeling of the factors is preserved
+  expectedGraph.push_back(NonlinearFactor::shared_ptr());
+  expectedGraph.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  expectedGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  expectedGraph.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+  expectedGraph.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
+
+  CHECK(assert_equal(expectedGraph, actualGraph, 1e-6));
+}
+
+/////* ************************************************************************* */
+TEST( ConcurrentIncrementalFilter, removeFactors_values )
+{
+  std::cout << "*********************** removeFactors_values ************************" << std::endl;
+  // we try removing the last factor
+
+  ISAM2Params parameters;
+  parameters.relinearizeThreshold = 0;
+  // ISAM2 checks whether to relinearize or not a variable only every relinearizeSkip steps  and the
+  //  default value for that is 10 (if you set that to zero the code will crash)
+  parameters.relinearizeSkip = 1;
+
+  // Create a Concurrent IncrementalFilter
+  ConcurrentIncrementalFilter filter(parameters);
+
+  // Add some factors to the filter
+  NonlinearFactorGraph newFactors;
+  newFactors.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  newFactors.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+  newFactors.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
+  newFactors.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+
+  Values newValues;
+  newValues.insert(1, Pose3().compose(poseError));
+  newValues.insert(2, newValues.at<Pose3>(1).compose(poseOdometry).compose(poseError));
+  newValues.insert(3, newValues.at<Pose3>(2).compose(poseOdometry).compose(poseError));
+  newValues.insert(4, newValues.at<Pose3>(3).compose(poseOdometry).compose(poseError));
+
+  // Specify a subset of variables to marginalize/move to the smoother
+  FastList<Key> keysToMove;
+
+  // Update the filter: add all factors
+  filter.update(newFactors, newValues, keysToMove);
+
+  // factor we want to remove
+  // NOTE: we can remove factors, paying attention that the remaining graph remains connected
+  // we remove a single factor, the number 4, which is a BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery);
+  std::vector<size_t> removeFactorIndices(1,4);
+
+  // Add no factors to the filter (we only want to test the removal)
+  NonlinearFactorGraph noFactors;
+  Values noValues;
+  filter.update(noFactors, noValues, keysToMove, removeFactorIndices);
+
+  NonlinearFactorGraph actualGraph = filter.getFactors();
+  Values actualValues = filter.getLinearizationPoint();
+
+  NonlinearFactorGraph expectedGraph;
+  expectedGraph.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  expectedGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  expectedGraph.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+  expectedGraph.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
+  // we removed this one: expectedGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  // we should add an empty one, so that the ordering and labeling of the factors is preserved
+  expectedGraph.push_back(NonlinearFactor::shared_ptr());
+
+  // Calculate expected factor graph and values
+  Values expectedValues = BatchOptimize(expectedGraph, newValues);
+
+  CHECK(assert_equal(expectedGraph, actualGraph, 1e-6));
+  CHECK(assert_equal(expectedValues, actualValues, 1e-6));
 }
 
 

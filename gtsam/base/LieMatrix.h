@@ -48,17 +48,12 @@ struct LieMatrix : public Matrix, public DerivedValue<LieMatrix> {
   LieMatrix(size_t m, size_t n, const double* const data) :
       Matrix(Eigen::Map<const Matrix>(data, m, n)) {}
 
-  /** Specify arguments directly, as in Matrix_() - always force these to be doubles */
-  GTSAM_EXPORT LieMatrix(size_t m, size_t n, ...);
-
   /// @}
   /// @name Testable interface
   /// @{
 
   /** print @param s optional string naming the object */
-  inline void print(const std::string& name="") const {
-    gtsam::print(matrix(), name);
-  }
+  GTSAM_EXPORT void print(const std::string& name="") const;
 
   /** equality up to tolerance */
   inline bool equals(const LieMatrix& expected, double tol=1e-5) const {
@@ -151,9 +146,13 @@ struct LieMatrix : public Matrix, public DerivedValue<LieMatrix> {
     throw std::runtime_error("LieMatrix::Expmap(): Don't use this function");
     return LieMatrix(v); }
 
-  /** Logmap around identity - just returns with default cast back */
+  /** Logmap around identity */
   static inline Vector Logmap(const LieMatrix& p) {
-    return Eigen::Map<const Vector>(&p(0,0), p.dim()); }
+    Vector result(p.size());
+    Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> >(
+        result.data(), p.rows(), p.cols()) = p;
+    return result;
+  }
 	
   /// @}
 

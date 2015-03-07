@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include <gtsam/nonlinear/SuccessiveLinearizationOptimizer.h>
+#include <gtsam/nonlinear/NonlinearOptimizer.h>
 
 namespace gtsam {
 
@@ -29,7 +29,7 @@ class DoglegOptimizer;
  * common to all nonlinear optimization algorithms.  This class also contains
  * all of those parameters.
  */
-class GTSAM_EXPORT DoglegParams : public SuccessiveLinearizationParams {
+class GTSAM_EXPORT DoglegParams : public NonlinearOptimizerParams {
 public:
   /** See DoglegParams::dlVerbosity */
   enum VerbosityDL {
@@ -46,7 +46,7 @@ public:
   virtual ~DoglegParams() {}
 
   virtual void print(const std::string& str = "") const {
-    SuccessiveLinearizationParams::print(str);
+    NonlinearOptimizerParams::print(str);
     std::cout << "               deltaInitial: " << deltaInitial << "\n";
     std::cout.flush();
   }
@@ -105,7 +105,7 @@ public:
    */
   DoglegOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues,
       const DoglegParams& params = DoglegParams()) :
-        NonlinearOptimizer(graph), params_(ensureHasOrdering(params, graph, initialValues)), state_(graph, initialValues, params_) {}
+        NonlinearOptimizer(graph), params_(ensureHasOrdering(params, graph)), state_(graph, initialValues, params_) {}
 
   /** Standard constructor, requires a nonlinear factor graph, initial
    * variable assignments, and optimization parameters.  For convenience this
@@ -158,11 +158,7 @@ protected:
   virtual const NonlinearOptimizerState& _state() const { return state_; }
 
   /** Internal function for computing a COLAMD ordering if no ordering is specified */
-  DoglegParams ensureHasOrdering(DoglegParams params, const NonlinearFactorGraph& graph, const Values& values) const {
-    if(!params.ordering)
-      params.ordering = *graph.orderingCOLAMD(values);
-    return params;
-  }
+  DoglegParams ensureHasOrdering(DoglegParams params, const NonlinearFactorGraph& graph) const;
 };
 
 }

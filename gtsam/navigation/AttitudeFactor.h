@@ -61,7 +61,7 @@ public:
  * Version of AttitudeFactor for Rot3
  * @addtogroup Navigation
  */
-class Rot3AttitudeFactor: public NoiseModelFactor1<Rot3>, public AttitudeFactor {
+class GTSAM_EXPORT Rot3AttitudeFactor: public NoiseModelFactor1<Rot3>, public AttitudeFactor {
 
   typedef NoiseModelFactor1<Rot3> Base;
 
@@ -129,7 +129,7 @@ private:
  * Version of AttitudeFactor for Pose3
  * @addtogroup Navigation
  */
-class Pose3AttitudeFactor: public NoiseModelFactor1<Pose3>,
+class GTSAM_EXPORT Pose3AttitudeFactor: public NoiseModelFactor1<Pose3>,
     public AttitudeFactor {
 
   typedef NoiseModelFactor1<Pose3> Base;

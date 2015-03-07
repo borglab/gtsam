@@ -27,7 +27,7 @@ GTSAM_CONCEPT_LIE_INST(LieMatrix)
 
 /* ************************************************************************* */
 TEST( LieMatrix, construction ) {
-  Matrix m = Matrix_(2,2, 1.0, 2.0, 3.0, 4.0);
+  Matrix m = (Matrix(2,2) << 1.0,2.0, 3.0,4.0);
   LieMatrix lie1(m), lie2(m);
 
   EXPECT(lie1.dim() == 4);
@@ -37,30 +37,31 @@ TEST( LieMatrix, construction ) {
 
 /* ************************************************************************* */
 TEST( LieMatrix, other_constructors ) {
-  Matrix init = Matrix_(2,2, 10.0, 20.0, 30.0, 40.0);
+  Matrix init = (Matrix(2,2) << 10.0,20.0, 30.0,40.0);
   LieMatrix exp(init);
-  LieMatrix a(2,2,10.0,20.0,30.0,40.0);
   double data[] = {10,30,20,40};
   LieMatrix b(2,2,data);
-  EXPECT(assert_equal(exp, a));
   EXPECT(assert_equal(exp, b));
-  EXPECT(assert_equal(b, a));
 }
 
 /* ************************************************************************* */
 TEST(LieMatrix, retract) {
-  LieMatrix init(2,2, 1.0,2.0,3.0,4.0);
-  Vector update = Vector_(4, 3.0, 4.0, 6.0, 7.0);
+  LieMatrix init((Matrix(2,2) << 1.0,2.0,3.0,4.0));
+  Vector update = (Vector(4) << 3.0, 4.0, 6.0, 7.0);
 
-  LieMatrix expected(2,2, 4.0, 6.0, 9.0, 11.0);
+  LieMatrix expected((Matrix(2,2) << 4.0, 6.0, 9.0, 11.0));
   LieMatrix actual = init.retract(update);
 
   EXPECT(assert_equal(expected, actual));
 
-  LieMatrix expectedUpdate = update;
-  LieMatrix actualUpdate = init.localCoordinates(actual);
+  Vector expectedUpdate = update;
+  Vector actualUpdate = init.localCoordinates(actual);
 
   EXPECT(assert_equal(expectedUpdate, actualUpdate));
+
+  Vector expectedLogmap = (Vector(4) << 1, 2, 3, 4);
+  Vector actualLogmap = LieMatrix::Logmap(LieMatrix((Matrix(2,2) << 1.0, 2.0, 3.0, 4.0)));
+  EXPECT(assert_equal(expectedLogmap, actualLogmap));
 }
 
 /* ************************************************************************* */

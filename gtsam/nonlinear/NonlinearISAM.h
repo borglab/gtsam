@@ -33,15 +33,15 @@ protected:
   /** The current linearization point */
   Values linPoint_;
 
-  /** The ordering */
-  gtsam::Ordering ordering_;
-
   /** The original factors, used when relinearizing */
   NonlinearFactorGraph factors_;
 
   /** The reordering interval and counter */
   int reorderInterval_;
   int reorderCounter_;
+
+  /** The elimination function */
+  GaussianFactorGraph::Eliminate eliminationFunction_;
 
 public:
 
@@ -55,7 +55,9 @@ public:
    *  1 (default) reorders every time, in worse case is batch every update
    *  typical values are 50 or 100
    */
-  NonlinearISAM(int reorderInterval = 1) : reorderInterval_(reorderInterval), reorderCounter_(0) {}
+  NonlinearISAM(int reorderInterval = 1,
+    const GaussianFactorGraph::Eliminate& eliminationFunction = GaussianFactorGraph::EliminationTraitsType::DefaultEliminate) :
+  reorderInterval_(reorderInterval), reorderCounter_(0), eliminationFunction_(eliminationFunction) {}
 
   /// @}
   /// @name Standard Interface
@@ -74,9 +76,6 @@ public:
 
   /** Return the current linearization point */
   const Values& getLinearizationPoint() const { return linPoint_; }
-
-  /** Get the ordering */
-  const gtsam::Ordering& getOrdering() const { return ordering_; }
 
   /** get underlying nonlinear graph */
   const NonlinearFactorGraph& getFactorsUnsafe() const { return factors_; }
@@ -104,15 +103,8 @@ public:
   /** Relinearization and reordering of variables */
   void reorder_relinearize();
 
-  /** manually add a key to the end of the ordering */
-  void addKey(Key key) { ordering_.push_back(key); }
-
-  /** replace the current ordering */
-  void setOrdering(const Ordering& new_ordering) { ordering_ = new_ordering; }
-
   /// @}
 
 };
 
 } // \namespace gtsam
-

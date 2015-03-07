@@ -18,15 +18,14 @@
  * @author  Frank Dellaert
  */
 
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/debug.h>
-#include <gtsam/base/timing.h>
-#include <gtsam/base/cholesky.h>
-#include <gtsam/base/FastVector.h>
-#include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/inference/BayesTree.h>
-#include <gtsam/inference/VariableSlots.h>
+#include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/GaussianBayesTree.h>
+#include <gtsam/linear/GaussianEliminationTree.h>
+#include <gtsam/linear/GaussianJunctionTree.h>
+#include <gtsam/linear/HessianFactor.h>
+#include <gtsam/inference/FactorGraph-inst.h>
+#include <gtsam/inference/EliminateableFactorGraph-inst.h>
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
 #include <gtsam/base/cholesky.h>
@@ -36,85 +35,99 @@ using namespace gtsam;
 
 namespace gtsam {
 
+  // Instantiate base classes
+  template class FactorGraph<GaussianFactor>;
+  template class EliminateableFactorGraph<GaussianFactorGraph>;
+
   /* ************************************************************************* */
-  GaussianFactorGraph::GaussianFactorGraph(const GaussianBayesNet& CBN) : Base(CBN) {}
+  bool GaussianFactorGraph::equals(const This& fg, double tol) const
+  {
+    return Base::equals(fg, tol);
+  }
 
   /* ************************************************************************* */
   GaussianFactorGraph::Keys GaussianFactorGraph::keys() const {
-    FastSet<Index> keys;
+    FastSet<Key> keys;
     BOOST_FOREACH(const sharedFactor& factor, *this)
-    if (factor) keys.insert(factor->begin(), factor->end());
+    if (factor)
+      keys.insert(factor->begin(), factor->end());
     return keys;
   }
 
   /* ************************************************************************* */
-  void GaussianFactorGraph::permuteWithInverse(
-      const Permutation& inversePermutation) {
-    BOOST_FOREACH(const sharedFactor& factor, factors_) {
-      if(factor)
-        factor->permuteWithInverse(inversePermutation);
-    }
-  }
-
-  /* ************************************************************************* */
-  void GaussianFactorGraph::reduceWithInverse(
-    const internal::Reduction& inverseReduction) {
-      BOOST_FOREACH(const sharedFactor& factor, factors_) {
-        if(factor)
-          factor->reduceWithInverse(inverseReduction);
+    vector<size_t> GaussianFactorGraph::getkeydim() const {
+      // First find dimensions of each variable
+      vector<size_t> dims;
+      BOOST_FOREACH(const sharedFactor& factor, *this) {
+        for (GaussianFactor::const_iterator pos = factor->begin();
+            pos != factor->end(); ++pos) {
+          if (dims.size() <= *pos)
+            dims.resize(*pos + 1, 0);
+          dims[*pos] = factor->getDim(pos);
+        }
       }
-  }
-
-  /* ************************************************************************* */
-  void GaussianFactorGraph::combine(const GaussianFactorGraph &lfg) {
-    for (const_iterator factor = lfg.factors_.begin(); factor
-    != lfg.factors_.end(); factor++) {
-      push_back(*factor);
+      // Find accumulated dimensions for variables
+      vector<size_t> dims_accumulated;
+      dims_accumulated.resize(dims.size()+1,0);
+      dims_accumulated[0]=0;
+      for (int i=1; i<dims_accumulated.size(); i++)
+    	  dims_accumulated[i] = dims_accumulated[i-1]+dims[i-1];
+      return dims_accumulated;
     }
-  }
 
   /* ************************************************************************* */
-  GaussianFactorGraph GaussianFactorGraph::combine2(
-      const GaussianFactorGraph& lfg1, const GaussianFactorGraph& lfg2) {
-
-    // create new linear factor graph equal to the first one
-    GaussianFactorGraph fg = lfg1;
-
-    // add the second factors_ in the graph
-    for (const_iterator factor = lfg2.factors_.begin(); factor
-    != lfg2.factors_.end(); factor++) {
-      fg.push_back(*factor);
+  GaussianFactorGraph GaussianFactorGraph::clone() const {
+    GaussianFactorGraph result;
+    BOOST_FOREACH(const sharedFactor& f, *this) {
+      if (f)
+        result.push_back(f->clone());
+      else
+        result.push_back(sharedFactor()); // Passes on null factors so indices remain valid
     }
-    return fg;
+    return result;
   }
 
   /* ************************************************************************* */
-  std::vector<boost::tuple<size_t, size_t, double> > GaussianFactorGraph::sparseJacobian() const {
+  GaussianFactorGraph GaussianFactorGraph::negate() const {
+    GaussianFactorGraph result;
+    BOOST_FOREACH(const sharedFactor& f, *this) {
+      if (f)
+        result.push_back(f->negate());
+      else
+        result.push_back(sharedFactor()); // Passes on null factors so indices remain valid
+    }
+    return result;
+  }
+
+  /* ************************************************************************* */
+  vector<boost::tuple<size_t, size_t, double> > GaussianFactorGraph::sparseJacobian() const {
     // First find dimensions of each variable
-    FastVector<size_t> dims;
+    vector<size_t> dims;
     BOOST_FOREACH(const sharedFactor& factor, *this) {
-      for(GaussianFactor::const_iterator pos = factor->begin(); pos != factor->end(); ++pos) {
-        if(dims.size() <= *pos)
+      for (GaussianFactor::const_iterator pos = factor->begin();
+          pos != factor->end(); ++pos) {
+        if (dims.size() <= *pos)
           dims.resize(*pos + 1, 0);
         dims[*pos] = factor->getDim(pos);
       }
     }
 
     // Compute first scalar column of each variable
-    vector<size_t> columnIndices(dims.size()+1, 0);
-    for(size_t j=1; j<dims.size()+1; ++j)
-      columnIndices[j] = columnIndices[j-1] + dims[j-1];
+    vector<size_t> columnIndices(dims.size() + 1, 0);
+    for (size_t j = 1; j < dims.size() + 1; ++j)
+      columnIndices[j] = columnIndices[j - 1] + dims[j - 1];
 
     // Iterate over all factors, adding sparse scalar entries
     typedef boost::tuple<size_t, size_t, double> triplet;
-    FastVector<triplet> entries;
+    vector<triplet> entries;
     size_t row = 0;
     BOOST_FOREACH(const sharedFactor& factor, *this) {
       // Convert to JacobianFactor if necessary
       JacobianFactor::shared_ptr jacobianFactor(
           boost::dynamic_pointer_cast<JacobianFactor>(factor));
       if (!jacobianFactor) {
-        HessianFactor::shared_ptr hessian(boost::dynamic_pointer_cast<HessianFactor>(factor));
+        HessianFactor::shared_ptr hessian(
+            boost::dynamic_pointer_cast<HessianFactor>(factor));
         if (hessian)
           jacobianFactor.reset(new JacobianFactor(*hessian));
         else
@@ -125,22 +138,23 @@ namespace gtsam {
       // Whiten the factor and add entries for it
       // iterate over all variables in the factor
       const JacobianFactor whitened(jacobianFactor->whiten());
-      for(JacobianFactor::const_iterator pos=whitened.begin(); pos<whitened.end(); ++pos) {
+      for (JacobianFactor::const_iterator pos = whitened.begin();
+          pos < whitened.end(); ++pos) {
         JacobianFactor::constABlock whitenedA = whitened.getA(pos);
         // find first column index for this key
         size_t column_start = columnIndices[*pos];
         for (size_t i = 0; i < (size_t) whitenedA.rows(); i++)
           for (size_t j = 0; j < (size_t) whitenedA.cols(); j++) {
-            double s = whitenedA(i,j);
-            if (std::abs(s) > 1e-12) entries.push_back(
-                boost::make_tuple(row+i, column_start+j, s));
+            double s = whitenedA(i, j);
+            if (std::abs(s) > 1e-12)
+              entries.push_back(boost::make_tuple(row + i, column_start + j, s));
           }
       }
 
       JacobianFactor::constBVector whitenedb(whitened.getb());
       size_t bcolumn = columnIndices.back();
       for (size_t i = 0; i < (size_t) whitenedb.size(); i++)
-        entries.push_back(boost::make_tuple(row+i, bcolumn, whitenedb(i)));
+        entries.push_back(boost::make_tuple(row + i, bcolumn, whitenedb(i)));
 
       // Increment row index
       row += jacobianFactor->rows();
@@ -153,7 +167,7 @@ namespace gtsam {
 
     // call sparseJacobian
     typedef boost::tuple<size_t, size_t, double> triplet;
-    std::vector<triplet> result = sparseJacobian();
+    vector<triplet> result = sparseJacobian();
 
     // translate to base 1 matrix
     size_t nzmax = result.size();
@@ -168,168 +182,26 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Matrix GaussianFactorGraph::augmentedJacobian() const {
-    // Convert to Jacobians
-    FactorGraph<JacobianFactor> jfg;
-    jfg.reserve(this->size());
-    BOOST_FOREACH(const sharedFactor& factor, *this) {
-      if(boost::shared_ptr<JacobianFactor> jf =
-        boost::dynamic_pointer_cast<JacobianFactor>(factor))
-        jfg.push_back(jf);
-      else
-        jfg.push_back(boost::make_shared<JacobianFactor>(*factor));
-    }
+  Matrix GaussianFactorGraph::augmentedJacobian(
+      boost::optional<const Ordering&> optionalOrdering) const {
     // combine all factors
-    JacobianFactor combined(*CombineJacobians(jfg, VariableSlots(*this)));
-    return combined.matrix_augmented();
+    JacobianFactor combined(*this, optionalOrdering);
+    return combined.augmentedJacobian();
   }
 
   /* ************************************************************************* */
-  std::pair<Matrix,Vector> GaussianFactorGraph::jacobian() const {
-    Matrix augmented = augmentedJacobian();
-    return make_pair(
-      augmented.leftCols(augmented.cols()-1),
-      augmented.col(augmented.cols()-1));
+  pair<Matrix, Vector> GaussianFactorGraph::jacobian(
+      boost::optional<const Ordering&> optionalOrdering) const {
+    Matrix augmented = augmentedJacobian(optionalOrdering);
+    return make_pair(augmented.leftCols(augmented.cols() - 1),
+        augmented.col(augmented.cols() - 1));
   }
 
   /* ************************************************************************* */
-  // Helper functions for Combine
-  static boost::tuple<vector<size_t>, size_t, size_t> countDims(const FactorGraph<JacobianFactor>& factors, const VariableSlots& variableSlots) {
-#ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
-    vector<size_t> varDims(variableSlots.size(), numeric_limits<size_t>::max());
-#else
-    vector<size_t> varDims(variableSlots.size());
-#endif
-    size_t m = 0;
-    size_t n = 0;
-    {
-      Index jointVarpos = 0;
-      BOOST_FOREACH(const VariableSlots::value_type& slots, variableSlots) {
-
-        assert(slots.second.size() == factors.size());
-
-        Index sourceFactorI = 0;
-        BOOST_FOREACH(const Index sourceVarpos, slots.second) {
-          if(sourceVarpos < numeric_limits<Index>::max()) {
-            const JacobianFactor& sourceFactor = *factors[sourceFactorI];
-            size_t vardim = sourceFactor.getDim(sourceFactor.begin() + sourceVarpos);
-#ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
-if(varDims[jointVarpos] == numeric_limits<size_t>::max()) {
-  varDims[jointVarpos] = vardim;
-  n += vardim;
-} else
-  assert(varDims[jointVarpos] == vardim);
-#else
-  varDims[jointVarpos] = vardim;
-n += vardim;
-break;
-#endif
-          }
-          ++ sourceFactorI;
-        }
-        ++ jointVarpos;
-      }
-      BOOST_FOREACH(const JacobianFactor::shared_ptr& factor, factors) {
-        m += factor->rows();
-      }
-    }
-    return boost::make_tuple(varDims, m, n);
-  }
-
-  /* ************************************************************************* */
-  JacobianFactor::shared_ptr CombineJacobians(
-      const FactorGraph<JacobianFactor>& factors,
-      const VariableSlots& variableSlots) {
-
-    const bool debug = ISDEBUG("CombineJacobians");
-    if (debug) factors.print("Combining factors: ");
-    if (debug) variableSlots.print();
-
-    if (debug) cout << "Determine dimensions" << endl;
-    gttic(countDims);
-    vector<size_t> varDims;
-    size_t m, n;
-    boost::tie(varDims, m, n) = countDims(factors, variableSlots);
-    if (debug) {
-      cout << "Dims: " << m << " x " << n << "\n";
-      BOOST_FOREACH(const size_t dim, varDims) cout << dim << " ";
-      cout << endl;
-    }
-    gttoc(countDims);
-
-    if (debug) cout << "Allocate new factor" << endl;
-    gttic(allocate);
-    JacobianFactor::shared_ptr combined(new JacobianFactor());
-    combined->allocate(variableSlots, varDims, m);
-    Vector sigmas(m);
-    gttoc(allocate);
-
-    if (debug) cout << "Copy blocks" << endl;
-    gttic(copy_blocks);
-    // Loop over slots in combined factor
-    Index combinedSlot = 0;
-    BOOST_FOREACH(const VariableSlots::value_type& varslot, variableSlots) {
-      JacobianFactor::ABlock destSlot(combined->getA(combined->begin()+combinedSlot));
-      // Loop over source factors
-      size_t nextRow = 0;
-      for(size_t factorI = 0; factorI < factors.size(); ++factorI) {
-        // Slot in source factor
-        const Index sourceSlot = varslot.second[factorI];
-        const size_t sourceRows = factors[factorI]->rows();
-        JacobianFactor::ABlock::RowsBlockXpr destBlock(destSlot.middleRows(nextRow, sourceRows));
-        // Copy if exists in source factor, otherwise set zero
-        if(sourceSlot != numeric_limits<Index>::max())
-          destBlock = factors[factorI]->getA(factors[factorI]->begin()+sourceSlot);
-        else
-          destBlock.setZero();
-        nextRow += sourceRows;
-      }
-      ++combinedSlot;
-    }
-    gttoc(copy_blocks);
-
-    if (debug) cout << "Copy rhs (b) and sigma" << endl;
-    gttic(copy_vectors);
-    bool anyConstrained = false;
-    // Loop over source factors
-    size_t nextRow = 0;
-    for(size_t factorI = 0; factorI < factors.size(); ++factorI) {
-      const size_t sourceRows = factors[factorI]->rows();
-      combined->getb().segment(nextRow, sourceRows) = factors[factorI]->getb();
-      sigmas.segment(nextRow, sourceRows) = factors[factorI]->get_model()->sigmas();
-      if (factors[factorI]->isConstrained()) anyConstrained = true;
-      nextRow += sourceRows;
-    }
-    gttoc(copy_vectors);
-
-    if (debug) cout << "Create noise model from sigmas" << endl;
-    gttic(noise_model);
-    combined->setModel(anyConstrained, sigmas);
-    gttoc(noise_model);
-
-    if (debug) cout << "Assert Invariants" << endl;
-    combined->assertInvariants();
-
-    return combined;
-  }
-
-  /* ************************************************************************* */
-  GaussianFactorGraph::EliminationResult EliminateJacobians(const FactorGraph<
-      JacobianFactor>& factors, size_t nrFrontals) {
-    gttic(Combine);
-    JacobianFactor::shared_ptr jointFactor =
-        CombineJacobians(factors, VariableSlots(factors));
-    gttoc(Combine);
-    gttic(eliminate);
-    GaussianConditional::shared_ptr gbn = jointFactor->eliminate(nrFrontals);
-    gttoc(eliminate);
-    return make_pair(gbn, jointFactor);
-  }
-
-  /* ************************************************************************* */
-  Matrix GaussianFactorGraph::augmentedHessian() const {
+  Matrix GaussianFactorGraph::augmentedHessian(
+      boost::optional<const Ordering&> optionalOrdering) const {
     // combine all factors and get upper-triangular part of Hessian
-    HessianFactor combined(*this);
+    HessianFactor combined(*this, Scatter(*this, optionalOrdering));
     Matrix result = combined.info();
     // Fill in lower-triangular part of Hessian
     result.triangularView<Eigen::StrictlyLower>() = result.transpose();
@@ -337,165 +209,149 @@ break;
   }
 
   /* ************************************************************************* */
-  std::pair<Matrix,Vector> GaussianFactorGraph::hessian() const {
-    Matrix augmented = augmentedHessian();
+  pair<Matrix, Vector> GaussianFactorGraph::hessian(
+      boost::optional<const Ordering&> optionalOrdering) const {
+    Matrix augmented = augmentedHessian(optionalOrdering);
     return make_pair(
-      augmented.topLeftCorner(augmented.rows()-1, augmented.rows()-1),
-      augmented.col(augmented.rows()-1).head(augmented.rows()-1));
+        augmented.topLeftCorner(augmented.rows() - 1, augmented.rows() - 1),
+        augmented.col(augmented.rows() - 1).head(augmented.rows() - 1));
   }
 
   /* ************************************************************************* */
-  GaussianFactorGraph::EliminationResult EliminateCholesky(const FactorGraph<
-      GaussianFactor>& factors, size_t nrFrontals) {
-
-    const bool debug = ISDEBUG("EliminateCholesky");
-
-    // Form Ab' * Ab
-    gttic(combine);
-    HessianFactor::shared_ptr combinedFactor(new HessianFactor(factors));
-    gttoc(combine);
-
-    // Do Cholesky, note that after this, the lower triangle still contains
-    // some untouched non-zeros that should be zero.  We zero them while
-    // extracting submatrices next.
-    gttic(partial_Cholesky);
-    combinedFactor->partialCholesky(nrFrontals);
-
-    gttoc(partial_Cholesky);
-
-    // Extract conditional and fill in details of the remaining factor
-    gttic(split);
-    GaussianConditional::shared_ptr conditional =
-        combinedFactor->splitEliminatedFactor(nrFrontals);
-    if (debug) {
-      conditional->print("Extracted conditional: ");
-      combinedFactor->print("Eliminated factor (L piece): ");
-    }
-    gttoc(split);
-
-    combinedFactor->assertInvariants();
-    return make_pair(conditional, combinedFactor);
-  }
-
-  /* ************************************************************************* */
-  static FactorGraph<JacobianFactor> convertToJacobians(const FactorGraph<
-      GaussianFactor>& factors) {
-
-    typedef JacobianFactor J;
-    typedef HessianFactor H;
-
-    const bool debug = ISDEBUG("convertToJacobians");
-
-    FactorGraph<J> jacobians;
-    jacobians.reserve(factors.size());
-    BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factors)
-    if (factor) {
-      J::shared_ptr jacobian(boost::dynamic_pointer_cast<J>(factor));
-      if (jacobian) {
-        jacobians.push_back(jacobian);
-        if (debug) jacobian->print("Existing JacobianFactor: ");
-      } else {
-        H::shared_ptr hessian(boost::dynamic_pointer_cast<H>(factor));
-        if (!hessian) throw std::invalid_argument(
-            "convertToJacobians: factor is neither a JacobianFactor nor a HessianFactor.");
-        J::shared_ptr converted(new J(*hessian));
-        if (debug) {
-          cout << "Converted HessianFactor to JacobianFactor:\n";
-          hessian->print("HessianFactor: ");
-          converted->print("JacobianFactor: ");
-          if (!assert_equal(*hessian, HessianFactor(*converted), 1e-3)) throw runtime_error(
-              "convertToJacobians: Conversion between Jacobian and Hessian incorrect");
-        }
-        jacobians.push_back(converted);
+  VectorValues GaussianFactorGraph::hessianDiagonal() const {
+    VectorValues d;
+    BOOST_FOREACH(const sharedFactor& factor, *this) {
+      if(factor){
+        VectorValues di = factor->hessianDiagonal();
+        d.addInPlace_(di);
       }
     }
-    return jacobians;
+    return d;
   }
 
   /* ************************************************************************* */
-  GaussianFactorGraph::EliminationResult EliminateQR(const FactorGraph<
-      GaussianFactor>& factors, size_t nrFrontals) {
-
-    const bool debug = ISDEBUG("EliminateQR");
-
-    // Convert all factors to the appropriate type and call the type-specific EliminateGaussian.
-    if (debug) cout << "Using QR" << endl;
-
-    gttic(convert_to_Jacobian);
-    FactorGraph<JacobianFactor> jacobians = convertToJacobians(factors);
-    gttoc(convert_to_Jacobian);
-
-    gttic(Jacobian_EliminateGaussian);
-    GaussianConditional::shared_ptr conditional;
-    GaussianFactor::shared_ptr factor;
-    boost::tie(conditional, factor) = EliminateJacobians(jacobians, nrFrontals);
-    gttoc(Jacobian_EliminateGaussian);
-
-    return make_pair(conditional, factor);
-  } // \EliminateQR
-
-  /* ************************************************************************* */
-  bool hasConstraints(const FactorGraph<GaussianFactor>& factors) {
-    typedef JacobianFactor J;
-    BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factors) {
-      J::shared_ptr jacobian(boost::dynamic_pointer_cast<J>(factor));
-      if (jacobian && jacobian->get_model()->isConstrained()) {
-        return true;
+  map<Key,Matrix> GaussianFactorGraph::hessianBlockDiagonal() const {
+    map<Key,Matrix> blocks;
+    BOOST_FOREACH(const sharedFactor& factor, *this) {
+      map<Key,Matrix> BD = factor->hessianBlockDiagonal();
+      map<Key,Matrix>::const_iterator it = BD.begin();
+      for(;it!=BD.end();it++) {
+        Key j = it->first; // variable key for this block
+        const Matrix& Bj = it->second;
+        if (blocks.count(j))
+          blocks[j] += Bj;
+        else
+          blocks.insert(make_pair(j,Bj));
       }
     }
-    return false;
+    return blocks;
   }
 
   /* ************************************************************************* */
-  GaussianFactorGraph::EliminationResult EliminatePreferCholesky(
-      const FactorGraph<GaussianFactor>& factors, size_t nrFrontals) {
-
-    // If any JacobianFactors have constrained noise models, we have to convert
-    // all factors to JacobianFactors.  Otherwise, we can convert all factors
-    // to HessianFactors.  This is because QR can handle constrained noise
-    // models but Cholesky cannot.
-    if (hasConstraints(factors))
-      return EliminateQR(factors, nrFrontals);
-    else {
-      GaussianFactorGraph::EliminationResult ret;
-      gttic(EliminateCholesky);
-      ret = EliminateCholesky(factors, nrFrontals);
-      gttoc(EliminateCholesky);
-      return ret;
-    }
-
-  } // \EliminatePreferCholesky
-
-
-
-  /* ************************************************************************* */
-  static JacobianFactor::shared_ptr convertToJacobianFactorPtr(const GaussianFactor::shared_ptr &gf) {
-    JacobianFactor::shared_ptr result = boost::dynamic_pointer_cast<JacobianFactor>(gf);
-    if( !result ) {
-      result = boost::make_shared<JacobianFactor>(*gf); // Convert any non-Jacobian factors to Jacobians (e.g. Hessian -> Jacobian with Cholesky)
-    }
-    return result;
+  VectorValues GaussianFactorGraph::optimize(OptionalOrdering ordering, const Eliminate& function) const
+  {
+    gttic(GaussianFactorGraph_optimize);
+    return BaseEliminateable::eliminateMultifrontal(ordering, function)->optimize();
   }
 
   /* ************************************************************************* */
-  Errors operator*(const GaussianFactorGraph& fg, const VectorValues& x) {
-    Errors e;
-    BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, fg) {
+  namespace {
+    JacobianFactor::shared_ptr convertToJacobianFactorPtr(const GaussianFactor::shared_ptr &gf) {
+      JacobianFactor::shared_ptr result = boost::dynamic_pointer_cast<JacobianFactor>(gf);
+      if( !result )
+        // Convert any non-Jacobian factors to Jacobians (e.g. Hessian -> Jacobian with Cholesky)
+        result = boost::make_shared<JacobianFactor>(*gf);
+      return result;
+    }
+  }
+
+  /* ************************************************************************* */
+  VectorValues GaussianFactorGraph::gradient(const VectorValues& x0) const
+  {
+    VectorValues g = VectorValues::Zero(x0);
+    BOOST_FOREACH(const sharedFactor& Ai_G, *this) {
       JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
-      e.push_back((*Ai)*x);
+      Vector e = Ai->error_vector(x0);
+      Ai->transposeMultiplyAdd(1.0, e, g);
+    }
+    return g;
+  }
+
+  /* ************************************************************************* */
+  VectorValues GaussianFactorGraph::gradientAtZero() const {
+    // Zero-out the gradient
+    VectorValues g;
+    BOOST_FOREACH(const sharedFactor& factor, *this) {
+      VectorValues gi = factor->gradientAtZero();
+      g.addInPlace_(gi);
+    }
+    return g;
+  }
+
+  /* ************************************************************************* */
+  VectorValues GaussianFactorGraph::optimizeGradientSearch() const
+  {
+    gttic(GaussianFactorGraph_optimizeGradientSearch);
+
+    gttic(Compute_Gradient);
+    // Compute gradient (call gradientAtZero function, which is defined for various linear systems)
+    VectorValues grad = gradientAtZero();
+    double gradientSqNorm = grad.dot(grad);
+    gttoc(Compute_Gradient);
+
+    gttic(Compute_Rg);
+    // Compute R * g
+    Errors Rg = *this * grad;
+    gttoc(Compute_Rg);
+
+    gttic(Compute_minimizing_step_size);
+    // Compute minimizing step size
+    double step = -gradientSqNorm / dot(Rg, Rg);
+    gttoc(Compute_minimizing_step_size);
+
+    gttic(Compute_point);
+    // Compute steepest descent point
+    grad *= step;
+    gttoc(Compute_point);
+
+    return grad;
+  }
+
+  /* ************************************************************************* */
+  Errors GaussianFactorGraph::operator*(const VectorValues& x) const {
+    Errors e;
+    BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, *this) {
+      JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
+      e.push_back((*Ai) * x);
     }
     return e;
   }
 
   /* ************************************************************************* */
-  void multiplyInPlace(const GaussianFactorGraph& fg, const VectorValues& x, Errors& e) {
-    multiplyInPlace(fg,x,e.begin());
+  void GaussianFactorGraph::multiplyHessianAdd(double alpha,
+      const VectorValues& x, VectorValues& y) const {
+    BOOST_FOREACH(const GaussianFactor::shared_ptr& f, *this)
+     f->multiplyHessianAdd(alpha, x, y);
   }
 
   /* ************************************************************************* */
-  void multiplyInPlace(const GaussianFactorGraph& fg, const VectorValues& x, const Errors::iterator& e) {
+  void GaussianFactorGraph::multiplyHessianAdd(double alpha,
+      const double* x, double* y) const {
+	vector<size_t> FactorKeys = getkeydim();
+	BOOST_FOREACH(const GaussianFactor::shared_ptr& f, *this)
+      f->multiplyHessianAdd(alpha, x, y, FactorKeys);
+
+  }
+
+  /* ************************************************************************* */
+  void GaussianFactorGraph::multiplyInPlace(const VectorValues& x, Errors& e) const {
+    multiplyInPlace(x, e.begin());
+  }
+
+  /* ************************************************************************* */
+  void GaussianFactorGraph::multiplyInPlace(const VectorValues& x, const Errors::iterator& e) const {
     Errors::iterator ei = e;
-    BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, fg) {
+    BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, *this) {
       JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
       *ei = (*Ai)*x;
       ei++;
@@ -503,87 +359,82 @@ break;
   }
 
   /* ************************************************************************* */
+  bool hasConstraints(const GaussianFactorGraph& factors) {
+    typedef JacobianFactor J;
+    BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factors) {
+      J::shared_ptr jacobian(boost::dynamic_pointer_cast<J>(factor));
+      if (jacobian && jacobian->get_model() && jacobian->get_model()->isConstrained()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /* ************************************************************************* */
   // x += alpha*A'*e
-  void transposeMultiplyAdd(const GaussianFactorGraph& fg, double alpha, const Errors& e, VectorValues& x) {
-    // For each factor add the gradient contribution
+void GaussianFactorGraph::transposeMultiplyAdd(double alpha, const Errors& e,
+    VectorValues& x) const {
+  // For each factor add the gradient contribution
+  Errors::const_iterator ei = e.begin();
+  BOOST_FOREACH(const sharedFactor& Ai_G, *this) {
+    JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
+    Ai->transposeMultiplyAdd(alpha, *(ei++), x);
+  }
+}
+
+  ///* ************************************************************************* */
+  //void residual(const GaussianFactorGraph& fg, const VectorValues &x, VectorValues &r) {
+  //  Key i = 0 ;
+  //  BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, fg) {
+  //    JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
+  //    r[i] = Ai->getb();
+  //    i++;
+  //  }
+  //  VectorValues Ax = VectorValues::SameStructure(r);
+  //  multiply(fg,x,Ax);
+  //  axpy(-1.0,Ax,r);
+  //}
+
+  ///* ************************************************************************* */
+  //void multiply(const GaussianFactorGraph& fg, const VectorValues &x, VectorValues &r) {
+  //  r.setZero();
+  //  Key i = 0;
+  //  BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, fg) {
+  //    JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
+  //    Vector &y = r[i];
+  //    for(JacobianFactor::const_iterator j = Ai->begin(); j != Ai->end(); ++j) {
+  //      y += Ai->getA(j) * x[*j];
+  //    }
+  //    ++i;
+  //  }
+  //}
+
+  /* ************************************************************************* */
+  VectorValues GaussianFactorGraph::transposeMultiply(const Errors& e) const
+  {
+    VectorValues x;
     Errors::const_iterator ei = e.begin();
-    BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, fg) {
-      JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
-      Ai->transposeMultiplyAdd(alpha,*(ei++),x);
-    }
-  }
-
-  /* ************************************************************************* */
-  VectorValues gradient(const GaussianFactorGraph& fg, const VectorValues& x0) {
-    // It is crucial for performance to make a zero-valued clone of x
-    VectorValues g = VectorValues::Zero(x0);
-    Errors e;
-    BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, fg) {
-      JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
-      e.push_back(Ai->error_vector(x0));
-    }
-    transposeMultiplyAdd(fg, 1.0, e, g);
-    return g;
-  }
-
-  /* ************************************************************************* */
-  void gradientAtZero(const GaussianFactorGraph& fg, VectorValues& g) {
-    // Zero-out the gradient
-    g.setZero();
-    Errors e;
-    BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, fg) {
-      JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
-      e.push_back(-Ai->getb());
-    }
-    transposeMultiplyAdd(fg, 1.0, e, g);
-  }
-
-  /* ************************************************************************* */
-  void residual(const GaussianFactorGraph& fg, const VectorValues &x, VectorValues &r) {
-    Index i = 0 ;
-    BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, fg) {
-      JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
-      r[i] = Ai->getb();
-      i++;
-    }
-    VectorValues Ax = VectorValues::SameStructure(r);
-    multiply(fg,x,Ax);
-    axpy(-1.0,Ax,r);
-  }
-
-  /* ************************************************************************* */
-  void multiply(const GaussianFactorGraph& fg, const VectorValues &x, VectorValues &r) {
-    r.setZero();
-    Index i = 0;
-    BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, fg) {
-      JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
-      Vector &y = r[i];
-      for(JacobianFactor::const_iterator j = Ai->begin(); j != Ai->end(); ++j) {
-        y += Ai->getA(j) * x[*j];
-      }
-      ++i;
-    }
-  }
-
-  /* ************************************************************************* */
-  void transposeMultiply(const GaussianFactorGraph& fg, const VectorValues &r, VectorValues &x) {
-    x.setZero();
-    Index i = 0;
-    BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, fg) {
+    BOOST_FOREACH(const sharedFactor& Ai_G, *this) {
       JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
       for(JacobianFactor::const_iterator j = Ai->begin(); j != Ai->end(); ++j) {
-        x[*j] += Ai->getA(j).transpose() * r[i];
+        // Create the value as a zero vector if it does not exist.
+        pair<VectorValues::iterator, bool> xi = x.tryInsert(*j, Vector());
+        if(xi.second)
+          xi.first->second = Vector::Zero(Ai->getDim(j));
+        xi.first->second += Ai->getA(j).transpose() * *ei;
       }
-      ++i;
+      ++ ei;
     }
+    return x;
   }
 
   /* ************************************************************************* */
-  boost::shared_ptr<Errors> gaussianErrors_(const GaussianFactorGraph& fg, const VectorValues& x) {
-    boost::shared_ptr<Errors> e(new Errors);
-    BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, fg) {
+  Errors GaussianFactorGraph::gaussianErrors(const VectorValues& x) const
+  {
+    Errors e;
+    BOOST_FOREACH(const sharedFactor& Ai_G, *this) {
       JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
-      e->push_back(Ai->error_vector(x));
+      e.push_back(Ai->error_vector(x));
     }
     return e;
   }

@@ -19,9 +19,11 @@
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/HessianFactor.h>
-#include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/GaussianISAM.h>
 #include <gtsam/linear/NoiseModel.h>
+
+#include <boost/assign/list_of.hpp>
+using namespace boost::assign;
 
 #include <gtsam/base/serializationTestHelpers.h>
 #include <CppUnitLite/TestHarness.h>
@@ -47,10 +49,10 @@ BOOST_CLASS_EXPORT_GUID(gtsam::SharedDiagonal, "gtsam_SharedDiagonal");
 
 /* ************************************************************************* */
 // example noise models
-static noiseModel::Diagonal::shared_ptr diag3 = noiseModel::Diagonal::Sigmas(Vector_(3, 0.1, 0.2, 0.3));
+static noiseModel::Diagonal::shared_ptr diag3 = noiseModel::Diagonal::Sigmas((Vector(3) << 0.1, 0.2, 0.3));
 static noiseModel::Gaussian::shared_ptr gaussian3 = noiseModel::Gaussian::SqrtInformation(2.0 * eye(3,3));
 static noiseModel::Isotropic::shared_ptr iso3 = noiseModel::Isotropic::Sigma(3, 0.2);
-static noiseModel::Constrained::shared_ptr constrained3 = noiseModel::Constrained::MixedSigmas(Vector_(3, 0.0, 0.0, 0.1));
+static noiseModel::Constrained::shared_ptr constrained3 = noiseModel::Constrained::MixedSigmas((Vector(3) << 0.0, 0.0, 0.1));
 static noiseModel::Unit::shared_ptr unit3 = noiseModel::Unit::Create(3);
 
 /* ************************************************************************* */
@@ -68,13 +70,13 @@ TEST (Serialization, noiseModels) {
   EXPECT(equalsDereferencedXML<noiseModel::Isotropic::shared_ptr>(iso3));
   EXPECT(equalsDereferencedBinary<noiseModel::Isotropic::shared_ptr>(iso3));
 
-  EXPECT(equalsDereferenced<noiseModel::Constrained::shared_ptr>(constrained3));
-  EXPECT(equalsDereferencedXML<noiseModel::Constrained::shared_ptr>(constrained3));
-  EXPECT(equalsDereferencedBinary<noiseModel::Constrained::shared_ptr>(constrained3));
-
   EXPECT(equalsDereferenced<noiseModel::Unit::shared_ptr>(unit3));
   EXPECT(equalsDereferencedXML<noiseModel::Unit::shared_ptr>(unit3));
   EXPECT(equalsDereferencedBinary<noiseModel::Unit::shared_ptr>(unit3));
+
+  EXPECT(equalsDereferencedBinary<noiseModel::Constrained::shared_ptr>(constrained3));
+  EXPECT(equalsDereferenced<noiseModel::Constrained::shared_ptr>(constrained3));
+  EXPECT(equalsDereferencedXML<noiseModel::Constrained::shared_ptr>(constrained3));
 }
 
 /* ************************************************************************* */
@@ -100,9 +102,9 @@ TEST (Serialization, SharedNoiseModel_noiseModels) {
   EXPECT(equalsDereferencedXML<SharedNoiseModel>(unit3));
   EXPECT(equalsDereferencedBinary<SharedNoiseModel>(unit3));
 
+  EXPECT(equalsDereferencedBinary<SharedNoiseModel>(constrained3));
   EXPECT(equalsDereferenced<SharedNoiseModel>(constrained3));
   EXPECT(equalsDereferencedXML<SharedNoiseModel>(constrained3));
-  EXPECT(equalsDereferencedBinary<SharedNoiseModel>(constrained3));
 }
 
 /* ************************************************************************* */
@@ -119,34 +121,31 @@ TEST (Serialization, SharedDiagonal_noiseModels) {
   EXPECT(equalsDereferencedXML<SharedDiagonal>(unit3));
   EXPECT(equalsDereferencedBinary<SharedDiagonal>(unit3));
 
+  EXPECT(equalsDereferencedBinary<SharedDiagonal>(constrained3));
   EXPECT(equalsDereferenced<SharedDiagonal>(constrained3));
   EXPECT(equalsDereferencedXML<SharedDiagonal>(constrained3));
-  EXPECT(equalsDereferencedBinary<SharedDiagonal>(constrained3));
 }
-
-/* ************************************************************************* */
-// Linear components
-/* ************************************************************************* */
 
 /* Create GUIDs for factors */
 /* ************************************************************************* */
 BOOST_CLASS_EXPORT_GUID(gtsam::JacobianFactor, "gtsam::JacobianFactor");
 BOOST_CLASS_EXPORT_GUID(gtsam::HessianFactor , "gtsam::HessianFactor");
+BOOST_CLASS_EXPORT_GUID(gtsam::GaussianConditional , "gtsam::GaussianConditional");
 
 /* ************************************************************************* */
 TEST (Serialization, linear_factors) {
   VectorValues values;
-  values.insert(0, Vector_(1, 1.0));
-  values.insert(1, Vector_(2, 2.0,3.0));
-  values.insert(2, Vector_(2, 4.0,5.0));
+  values.insert(0, (Vector(1) << 1.0));
+  values.insert(1, (Vector(2) << 2.0,3.0));
+  values.insert(2, (Vector(2) << 4.0,5.0));
   EXPECT(equalsObj<VectorValues>(values));
   EXPECT(equalsXML<VectorValues>(values));
   EXPECT(equalsBinary<VectorValues>(values));
 
-  Index i1 = 4, i2 = 7;
+  Key i1 = 4, i2 = 7;
   Matrix A1 = eye(3), A2 = -1.0 * eye(3);
   Vector b = ones(3);
-  SharedDiagonal model = noiseModel::Diagonal::Sigmas(Vector_(3, 1.0, 2.0, 3.0));
+  SharedDiagonal model = noiseModel::Diagonal::Sigmas((Vector(3) << 1.0, 2.0, 3.0));
   JacobianFactor jacobianfactor(i1, A1, i2, A2, b, model);
   EXPECT(equalsObj(jacobianfactor));
   EXPECT(equalsXML(jacobianfactor));
@@ -160,17 +159,63 @@ TEST (Serialization, linear_factors) {
 
 /* ************************************************************************* */
 TEST (Serialization, gaussian_conditional) {
-  Matrix A1 = Matrix_(2,2, 1., 2., 3., 4.);
-  Matrix A2 = Matrix_(2,2, 6., 0.2, 8., 0.4);
-  Matrix R = Matrix_(2,2, 0.1, 0.3, 0.0, 0.34);
+  Matrix A1 = (Matrix(2, 2) << 1., 2., 3., 4.);
+  Matrix A2 = (Matrix(2, 2) << 6., 0.2, 8., 0.4);
+  Matrix R = (Matrix(2, 2) << 0.1, 0.3, 0.0, 0.34);
   Vector d(2); d << 0.2, 0.5;
-  GaussianConditional cg(0, d, R, 1, A1, 2, A2, ones(2));
+  GaussianConditional cg(0, d, R, 1, A1, 2, A2);
 
   EXPECT(equalsObj(cg));
   EXPECT(equalsXML(cg));
   EXPECT(equalsBinary(cg));
 }
 
+/* ************************************************************************* */
+TEST (Serialization, gaussian_factor_graph) {
+  GaussianFactorGraph graph;
+  {
+    Matrix A1 = (Matrix(2, 2) << 1., 2., 3., 4.);
+    Matrix A2 = (Matrix(2, 2) << 6., 0.2, 8., 0.4);
+    Matrix R = (Matrix(2, 2) << 0.1, 0.3, 0.0, 0.34);
+    Vector d(2); d << 0.2, 0.5;
+    GaussianConditional cg(0, d, R, 1, A1, 2, A2);
+    graph.push_back(cg);
+  }
+
+  {
+    Key i1 = 4, i2 = 7;
+    Matrix A1 = eye(3), A2 = -1.0 * eye(3);
+    Vector b = ones(3);
+    SharedDiagonal model = noiseModel::Diagonal::Sigmas((Vector(3) << 1.0, 2.0, 3.0));
+    JacobianFactor jacobianfactor(i1, A1, i2, A2, b, model);
+    HessianFactor hessianfactor(jacobianfactor);
+    graph.push_back(jacobianfactor);
+    graph.push_back(hessianfactor);
+  }
+  EXPECT(equalsObj(graph));
+  EXPECT(equalsXML(graph));
+  EXPECT(equalsBinary(graph));
+}
+
+/* ************************************************************************* */
+TEST (Serialization, gaussian_bayes_tree) {
+  const Key x1=1, x2=2, x3=3, x4=4;
+  const Ordering chainOrdering = Ordering(list_of(x2)(x1)(x3)(x4));
+  const SharedDiagonal chainNoise = noiseModel::Isotropic::Sigma(1, 0.5);
+  const GaussianFactorGraph chain = list_of
+    (JacobianFactor(x2, (Matrix(1, 1) << 1.), x1, (Matrix(1, 1) << 1.), (Vector(1) << 1.),  chainNoise))
+    (JacobianFactor(x2, (Matrix(1, 1) << 1.), x3, (Matrix(1, 1) << 1.), (Vector(1) << 1.),  chainNoise))
+    (JacobianFactor(x3, (Matrix(1, 1) << 1.), x4, (Matrix(1, 1) << 1.), (Vector(1) << 1.),  chainNoise))
+    (JacobianFactor(x4, (Matrix(1, 1) << 1.), (Vector(1) << 1.),  chainNoise));
+
+  GaussianBayesTree init = *chain.eliminateMultifrontal(chainOrdering);
+  GaussianBayesTree expected = *chain.eliminateMultifrontal(chainOrdering);
+  GaussianBayesTree actual;
+
+  std::string serialized = serialize(init);
+  deserialize(serialized, actual);
+  EXPECT(assert_equal(expected, actual));
+}
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }

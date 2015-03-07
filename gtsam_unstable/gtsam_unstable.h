@@ -16,6 +16,10 @@ virtual class gtsam::noiseModel::Base;
 virtual class gtsam::noiseModel::Gaussian;
 virtual class gtsam::imuBias::ConstantBias;
 virtual class gtsam::NonlinearFactor;
+virtual class gtsam::NoiseModelFactor;
+virtual class gtsam::NoiseModelFactor2;
+virtual class gtsam::NoiseModelFactor3;
+virtual class gtsam::NoiseModelFactor4;
 virtual class gtsam::GaussianFactor;
 virtual class gtsam::HessianFactor;
 virtual class gtsam::JacobianFactor;
@@ -316,12 +320,65 @@ virtual class BetweenFactorEM : gtsam::NonlinearFactor {
       const gtsam::noiseModel::Gaussian* model_inlier, const gtsam::noiseModel::Gaussian* model_outlier,
       double prior_inlier, double prior_outlier);
 
+  BetweenFactorEM(size_t key1, size_t key2, const T& relativePose,
+        const gtsam::noiseModel::Gaussian* model_inlier, const gtsam::noiseModel::Gaussian* model_outlier,
+        double prior_inlier, double prior_outlier,  bool flag_bump_up_near_zero_probs);
+
   Vector whitenedError(const gtsam::Values& x);
   Vector unwhitenedError(const gtsam::Values& x);
   Vector calcIndicatorProb(const gtsam::Values& x);
+  gtsam::Pose2 measured(); // TODO: figure out how to output a template instead
+  void set_flag_bump_up_near_zero_probs(bool flag);
+  bool get_flag_bump_up_near_zero_probs() const;
 
   void serializable() const; // enabling serialization functionality
 };
+
+#include <gtsam_unstable/slam/TransformBtwRobotsUnaryFactorEM.h>
+template<T = {gtsam::Pose2}>
+virtual class TransformBtwRobotsUnaryFactorEM : gtsam::NonlinearFactor {
+  TransformBtwRobotsUnaryFactorEM(size_t key, const T& relativePose, size_t keyA, size_t keyB,
+      const gtsam::Values& valA, const gtsam::Values& valB,
+      const gtsam::noiseModel::Gaussian* model_inlier, const gtsam::noiseModel::Gaussian* model_outlier,
+      double prior_inlier, double prior_outlier);
+
+  TransformBtwRobotsUnaryFactorEM(size_t key, const T& relativePose, size_t keyA, size_t keyB,
+        const gtsam::Values& valA, const gtsam::Values& valB,
+        const gtsam::noiseModel::Gaussian* model_inlier, const gtsam::noiseModel::Gaussian* model_outlier,
+        double prior_inlier, double prior_outlier, bool flag_bump_up_near_zero_probs, bool start_with_M_step);
+
+  Vector whitenedError(const gtsam::Values& x);
+  Vector unwhitenedError(const gtsam::Values& x);
+  Vector calcIndicatorProb(const gtsam::Values& x);
+  void setValAValB(const gtsam::Values valA, const gtsam::Values valB);
+
+  void serializable() const; // enabling serialization functionality
+};
+
+#include <gtsam_unstable/slam/TransformBtwRobotsUnaryFactor.h>
+template<T = {gtsam::Pose2}>
+virtual class TransformBtwRobotsUnaryFactor : gtsam::NonlinearFactor {
+  TransformBtwRobotsUnaryFactor(size_t key, const T& relativePose, size_t keyA, size_t keyB,
+      const gtsam::Values& valA, const gtsam::Values& valB,
+      const gtsam::noiseModel::Gaussian* model);
+
+  Vector whitenedError(const gtsam::Values& x);
+  Vector unwhitenedError(const gtsam::Values& x);
+  void setValAValB(const gtsam::Values valA, const gtsam::Values valB);
+
+  void serializable() const; // enabling serialization functionality
+};
+
+#include <gtsam_unstable/slam/SmartRangeFactor.h>
+virtual class SmartRangeFactor : gtsam::NoiseModelFactor {
+  SmartRangeFactor(double s);
+
+  void addRange(size_t key, double measuredRange);
+  gtsam::Point2 triangulate(const gtsam::Values& x) const;
+  void print(string s) const;
+
+};
+
 
 #include <gtsam/slam/RangeFactor.h>
 template<POSE, POINT>
@@ -466,132 +523,132 @@ virtual class DiscreteEulerPoincareHelicopter : gtsam::NonlinearFactor {
 //*************************************************************************
 // nonlinear
 //*************************************************************************
-#include <gtsam_unstable/nonlinear/sequentialSummarization.h>
-gtsam::GaussianFactorGraph* summarizeGraphSequential(
-    const gtsam::GaussianFactorGraph& full_graph, const gtsam::KeyVector& indices);
-gtsam::GaussianFactorGraph* summarizeGraphSequential(
-    const gtsam::GaussianFactorGraph& full_graph, const gtsam::Ordering& ordering, const gtsam::KeySet& saved_keys);
+// #include <gtsam_unstable/nonlinear/sequentialSummarization.h>
+// gtsam::GaussianFactorGraph* summarizeGraphSequential(
+//     const gtsam::GaussianFactorGraph& full_graph, const gtsam::KeyVector& indices);
+// gtsam::GaussianFactorGraph* summarizeGraphSequential(
+//     const gtsam::GaussianFactorGraph& full_graph, const gtsam::Ordering& ordering, const gtsam::KeySet& saved_keys);
 
-#include <gtsam_unstable/nonlinear/FixedLagSmoother.h>
-class FixedLagSmootherKeyTimestampMapValue {
-  FixedLagSmootherKeyTimestampMapValue(const gtsam::Key& key, double timestamp);
-  FixedLagSmootherKeyTimestampMapValue(const gtsam::FixedLagSmootherKeyTimestampMapValue& other);
-};
-
-class FixedLagSmootherKeyTimestampMap {
-  FixedLagSmootherKeyTimestampMap();
-  FixedLagSmootherKeyTimestampMap(const gtsam::FixedLagSmootherKeyTimestampMap& other);
-
-  // Note: no print function
-
-  // common STL methods
-  size_t size() const;
-  bool empty() const;
-  void clear();
-
-  double at(const gtsam::Key& key) const;
-  void insert(const gtsam::FixedLagSmootherKeyTimestampMapValue& value);
-};
-
-class FixedLagSmootherResult {
-  size_t getIterations() const;
-  size_t getNonlinearVariables() const;
-  size_t getLinearVariables() const;
-  double getError() const;
-};
-
-#include <gtsam_unstable/nonlinear/FixedLagSmoother.h>
-virtual class FixedLagSmoother {
-  void print(string s) const;
-  bool equals(const gtsam::FixedLagSmoother& rhs, double tol) const;
-
-  gtsam::FixedLagSmootherKeyTimestampMap timestamps() const;
-  double smootherLag() const;
-
-  gtsam::FixedLagSmootherResult update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::FixedLagSmootherKeyTimestampMap& timestamps);
-  gtsam::Values calculateEstimate() const;
-};
-
-#include <gtsam_unstable/nonlinear/BatchFixedLagSmoother.h>
-virtual class BatchFixedLagSmoother : gtsam::FixedLagSmoother {
-  BatchFixedLagSmoother();
-  BatchFixedLagSmoother(double smootherLag);
-  BatchFixedLagSmoother(double smootherLag, const gtsam::LevenbergMarquardtParams& params);
-
-  gtsam::LevenbergMarquardtParams params() const;
-};
-
-#include <gtsam_unstable/nonlinear/IncrementalFixedLagSmoother.h>
-virtual class IncrementalFixedLagSmoother : gtsam::FixedLagSmoother {
-  IncrementalFixedLagSmoother();
-  IncrementalFixedLagSmoother(double smootherLag);
-  IncrementalFixedLagSmoother(double smootherLag, const gtsam::ISAM2Params& params);
-
-  gtsam::ISAM2Params params() const;
-};
-
-#include <gtsam_unstable/nonlinear/ConcurrentFilteringAndSmoothing.h>
-virtual class ConcurrentFilter {
-  void print(string s) const;
-  bool equals(const gtsam::ConcurrentFilter& rhs, double tol) const;
-};
-
-virtual class ConcurrentSmoother {
-  void print(string s) const;
-  bool equals(const gtsam::ConcurrentSmoother& rhs, double tol) const;
-};
-
-// Synchronize function
-void synchronize(gtsam::ConcurrentFilter& filter, gtsam::ConcurrentSmoother& smoother);
-
-#include <gtsam_unstable/nonlinear/ConcurrentBatchFilter.h>
-class ConcurrentBatchFilterResult {
-  size_t getIterations() const;
-  size_t getLambdas() const;
-  size_t getNonlinearVariables() const;
-  size_t getLinearVariables() const;
-  double getError() const;
-};
-
-virtual class ConcurrentBatchFilter : gtsam::ConcurrentFilter {
-  ConcurrentBatchFilter();
-  ConcurrentBatchFilter(const gtsam::LevenbergMarquardtParams& parameters);
-
-  gtsam::NonlinearFactorGraph getFactors() const;
-  gtsam::Values getLinearizationPoint() const;
-  gtsam::Ordering getOrdering() const;
-  gtsam::VectorValues getDelta() const;
-
-  gtsam::ConcurrentBatchFilterResult update();
-  gtsam::ConcurrentBatchFilterResult update(const gtsam::NonlinearFactorGraph& newFactors);
-  gtsam::ConcurrentBatchFilterResult update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta);
-  gtsam::ConcurrentBatchFilterResult update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::KeyList& keysToMove);
-  gtsam::Values calculateEstimate() const;
-};
-
-#include <gtsam_unstable/nonlinear/ConcurrentBatchSmoother.h>
-class ConcurrentBatchSmootherResult {
-  size_t getIterations() const;
-  size_t getLambdas() const;
-  size_t getNonlinearVariables() const;
-  size_t getLinearVariables() const;
-  double getError() const;
-};
-
-virtual class ConcurrentBatchSmoother : gtsam::ConcurrentSmoother {
-  ConcurrentBatchSmoother();
-  ConcurrentBatchSmoother(const gtsam::LevenbergMarquardtParams& parameters);
-
-  gtsam::NonlinearFactorGraph getFactors() const;
-  gtsam::Values getLinearizationPoint() const;
-  gtsam::Ordering getOrdering() const;
-  gtsam::VectorValues getDelta() const;
-
-  gtsam::ConcurrentBatchSmootherResult update();
-  gtsam::ConcurrentBatchSmootherResult update(const gtsam::NonlinearFactorGraph& newFactors);
-  gtsam::ConcurrentBatchSmootherResult update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta);
-  gtsam::Values calculateEstimate() const;
-};
+// #include <gtsam_unstable/nonlinear/FixedLagSmoother.h>
+// class FixedLagSmootherKeyTimestampMapValue {
+//   FixedLagSmootherKeyTimestampMapValue(const gtsam::Key& key, double timestamp);
+//   FixedLagSmootherKeyTimestampMapValue(const gtsam::FixedLagSmootherKeyTimestampMapValue& other);
+// };
+// 
+// class FixedLagSmootherKeyTimestampMap {
+//   FixedLagSmootherKeyTimestampMap();
+//   FixedLagSmootherKeyTimestampMap(const gtsam::FixedLagSmootherKeyTimestampMap& other);
+// 
+//   // Note: no print function
+// 
+//   // common STL methods
+//   size_t size() const;
+//   bool empty() const;
+//   void clear();
+// 
+//   double at(const gtsam::Key& key) const;
+//   void insert(const gtsam::FixedLagSmootherKeyTimestampMapValue& value);
+// };
+// 
+// class FixedLagSmootherResult {
+//   size_t getIterations() const;
+//   size_t getNonlinearVariables() const;
+//   size_t getLinearVariables() const;
+//   double getError() const;
+// };
+// 
+// #include <gtsam_unstable/nonlinear/FixedLagSmoother.h>
+// virtual class FixedLagSmoother {
+//   void print(string s) const;
+//   bool equals(const gtsam::FixedLagSmoother& rhs, double tol) const;
+// 
+//   gtsam::FixedLagSmootherKeyTimestampMap timestamps() const;
+//   double smootherLag() const;
+// 
+//   gtsam::FixedLagSmootherResult update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::FixedLagSmootherKeyTimestampMap& timestamps);
+//   gtsam::Values calculateEstimate() const;
+// };
+// 
+// #include <gtsam_unstable/nonlinear/BatchFixedLagSmoother.h>
+// virtual class BatchFixedLagSmoother : gtsam::FixedLagSmoother {
+//   BatchFixedLagSmoother();
+//   BatchFixedLagSmoother(double smootherLag);
+//   BatchFixedLagSmoother(double smootherLag, const gtsam::LevenbergMarquardtParams& params);
+// 
+//   gtsam::LevenbergMarquardtParams params() const;
+// };
+// 
+// #include <gtsam_unstable/nonlinear/IncrementalFixedLagSmoother.h>
+// virtual class IncrementalFixedLagSmoother : gtsam::FixedLagSmoother {
+//   IncrementalFixedLagSmoother();
+//   IncrementalFixedLagSmoother(double smootherLag);
+//   IncrementalFixedLagSmoother(double smootherLag, const gtsam::ISAM2Params& params);
+// 
+//   gtsam::ISAM2Params params() const;
+// };
+// 
+// #include <gtsam_unstable/nonlinear/ConcurrentFilteringAndSmoothing.h>
+// virtual class ConcurrentFilter {
+//   void print(string s) const;
+//   bool equals(const gtsam::ConcurrentFilter& rhs, double tol) const;
+// };
+// 
+// virtual class ConcurrentSmoother {
+//   void print(string s) const;
+//   bool equals(const gtsam::ConcurrentSmoother& rhs, double tol) const;
+// };
+// 
+// // Synchronize function
+// void synchronize(gtsam::ConcurrentFilter& filter, gtsam::ConcurrentSmoother& smoother);
+// 
+// #include <gtsam_unstable/nonlinear/ConcurrentBatchFilter.h>
+// class ConcurrentBatchFilterResult {
+//   size_t getIterations() const;
+//   size_t getLambdas() const;
+//   size_t getNonlinearVariables() const;
+//   size_t getLinearVariables() const;
+//   double getError() const;
+// };
+// 
+// virtual class ConcurrentBatchFilter : gtsam::ConcurrentFilter {
+//   ConcurrentBatchFilter();
+//   ConcurrentBatchFilter(const gtsam::LevenbergMarquardtParams& parameters);
+// 
+//   gtsam::NonlinearFactorGraph getFactors() const;
+//   gtsam::Values getLinearizationPoint() const;
+//   gtsam::Ordering getOrdering() const;
+//   gtsam::VectorValues getDelta() const;
+// 
+//   gtsam::ConcurrentBatchFilterResult update();
+//   gtsam::ConcurrentBatchFilterResult update(const gtsam::NonlinearFactorGraph& newFactors);
+//   gtsam::ConcurrentBatchFilterResult update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta);
+//   gtsam::ConcurrentBatchFilterResult update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::KeyList& keysToMove);
+//   gtsam::Values calculateEstimate() const;
+// };
+// 
+// #include <gtsam_unstable/nonlinear/ConcurrentBatchSmoother.h>
+// class ConcurrentBatchSmootherResult {
+//   size_t getIterations() const;
+//   size_t getLambdas() const;
+//   size_t getNonlinearVariables() const;
+//   size_t getLinearVariables() const;
+//   double getError() const;
+// };
+// 
+// virtual class ConcurrentBatchSmoother : gtsam::ConcurrentSmoother {
+//   ConcurrentBatchSmoother();
+//   ConcurrentBatchSmoother(const gtsam::LevenbergMarquardtParams& parameters);
+// 
+//   gtsam::NonlinearFactorGraph getFactors() const;
+//   gtsam::Values getLinearizationPoint() const;
+//   gtsam::Ordering getOrdering() const;
+//   gtsam::VectorValues getDelta() const;
+// 
+//   gtsam::ConcurrentBatchSmootherResult update();
+//   gtsam::ConcurrentBatchSmootherResult update(const gtsam::NonlinearFactorGraph& newFactors);
+//   gtsam::ConcurrentBatchSmootherResult update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta);
+//   gtsam::Values calculateEstimate() const;
+// };
 
 //*************************************************************************
 // slam
@@ -652,6 +709,34 @@ class AHRS {
   pair<gtsam::Mechanization_bRn2, gtsam::GaussianDensity*> integrate(const gtsam::Mechanization_bRn2& mech, gtsam::GaussianDensity* state, Vector u, double dt);
   pair<gtsam::Mechanization_bRn2, gtsam::GaussianDensity*> aid(const gtsam::Mechanization_bRn2& mech, gtsam::GaussianDensity* state, Vector f, bool Farrel);
   pair<gtsam::Mechanization_bRn2, gtsam::GaussianDensity*> aidGeneral(const gtsam::Mechanization_bRn2& mech, gtsam::GaussianDensity* state, Vector f, Vector f_expected, const gtsam::Rot3& increment);
+  void print(string s) const;
+};
+
+// Tectonic SAM Factors
+
+#include <gtsam_unstable/slam/TSAMFactors.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
+
+//typedef gtsam::NoiseModelFactor2<gtsam::Pose2, gtsam::Point2> NLPosePose;
+virtual class DeltaFactor : gtsam::NoiseModelFactor {
+  DeltaFactor(size_t i, size_t j, const gtsam::Point2& measured,
+      const gtsam::noiseModel::Base* noiseModel);
+  void print(string s) const;
+};
+
+//typedef gtsam::NoiseModelFactor4<gtsam::Pose2, gtsam::Pose2, gtsam::Pose2,
+//    gtsam::Point2> NLPosePosePosePoint;
+virtual class DeltaFactorBase : gtsam::NoiseModelFactor {
+  DeltaFactorBase(size_t b1, size_t i, size_t b2, size_t j,
+      const gtsam::Point2& measured, const gtsam::noiseModel::Base* noiseModel);
+  void print(string s) const;
+};
+
+//typedef gtsam::NoiseModelFactor4<gtsam::Pose2, gtsam::Pose2, gtsam::Pose2,
+//    gtsam::Pose2> NLPosePosePosePose;
+virtual class OdometryFactorBase : gtsam::NoiseModelFactor {
+  OdometryFactorBase(size_t b1, size_t i, size_t b2, size_t j,
+      const gtsam::Pose2& measured, const gtsam::noiseModel::Base* noiseModel);
   void print(string s) const;
 };
 

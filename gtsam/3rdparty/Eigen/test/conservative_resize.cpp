@@ -60,25 +60,37 @@ void run_matrix_tests()
 template <typename Scalar>
 void run_vector_tests()
 {
-  typedef Matrix<Scalar, 1, Eigen::Dynamic> MatrixType;
+  typedef Matrix<Scalar, 1, Eigen::Dynamic> VectorType;
 
-  MatrixType m, n;
+  VectorType m, n;
 
   // boundary cases ...
-  m = n = MatrixType::Random(50);
+  m = n = VectorType::Random(50);
   m.conservativeResize(1);
   VERIFY_IS_APPROX(m, n.segment(0,1));
 
-  m = n = MatrixType::Random(50);
+  m = n = VectorType::Random(50);
   m.conservativeResize(50);
+  VERIFY_IS_APPROX(m, n.segment(0,50));
+  
+  m = n = VectorType::Random(50);
+  m.conservativeResize(m.rows(),1);
+  VERIFY_IS_APPROX(m, n.segment(0,1));
+
+  m = n = VectorType::Random(50);
+  m.conservativeResize(m.rows(),50);
   VERIFY_IS_APPROX(m, n.segment(0,50));
 
   // random shrinking ...
   for (int i=0; i<50; ++i)
   {
     const int size = internal::random<int>(1,50);
-    m = n = MatrixType::Random(50);
+    m = n = VectorType::Random(50);
     m.conservativeResize(size);
+    VERIFY_IS_APPROX(m, n.segment(0,size));
+    
+    m = n = VectorType::Random(50);
+    m.conservativeResize(m.rows(), size);
     VERIFY_IS_APPROX(m, n.segment(0,size));
   }
 
@@ -86,8 +98,13 @@ void run_vector_tests()
   for (int i=0; i<50; ++i)
   {
     const int size = internal::random<int>(50,100);
-    m = n = MatrixType::Random(50);
-    m.conservativeResizeLike(MatrixType::Zero(size));
+    m = n = VectorType::Random(50);
+    m.conservativeResizeLike(VectorType::Zero(size));
+    VERIFY_IS_APPROX(m.segment(0,50), n);
+    VERIFY( size<=50 || m.segment(50,size-50).sum() == Scalar(0) );
+    
+    m = n = VectorType::Random(50);
+    m.conservativeResizeLike(Matrix<Scalar,Dynamic,Dynamic>::Zero(1,size));
     VERIFY_IS_APPROX(m.segment(0,50), n);
     VERIFY( size<=50 || m.segment(50,size-50).sum() == Scalar(0) );
   }

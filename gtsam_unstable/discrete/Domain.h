@@ -67,7 +67,17 @@ namespace gtsam {
 
     // print
     virtual void print(const std::string& s = "",
-        const IndexFormatter& formatter = DefaultIndexFormatter) const;
+        const KeyFormatter& formatter = DefaultKeyFormatter) const;
+
+    /// equals
+    bool equals(const DiscreteFactor& other, double tol) const {
+      if(!dynamic_cast<const Domain*>(&other))
+        return false;
+      else {
+        const Domain& f(static_cast<const Domain&>(other));
+        return (cardinality_==f.cardinality_) && (values_==f.values_);
+      }
+    }
 
     bool contains(size_t value) const {
       return values_.count(value)>0;
@@ -94,7 +104,7 @@ namespace gtsam {
      *  If found, we make this a singleton... Called in AllDiff::ensureArcConsistency
      *  @param keys connected domains through alldiff
      */
-    bool checkAllDiff(const std::vector<Index> keys, std::vector<Domain>& domains);
+    bool checkAllDiff(const std::vector<Key> keys, std::vector<Domain>& domains);
 
     /// Partially apply known values
     virtual Constraint::shared_ptr partiallyApply(

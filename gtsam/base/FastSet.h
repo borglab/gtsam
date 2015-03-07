@@ -18,11 +18,12 @@
 
 #pragma once
 
+#include <gtsam/base/FastDefaultAllocator.h>
+
 #include <set>
 #include <iostream>
 #include <string>
 #include <cmath>
-#include <boost/pool/pool_alloc.hpp>
 #include <boost/mpl/has_xxx.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <boost/serialization/nvp.hpp>
@@ -45,11 +46,11 @@ struct FastSetTestableHelper;
  * @addtogroup base
  */
 template<typename VALUE, class ENABLE = void>
-class FastSet: public std::set<VALUE, std::less<VALUE>, boost::fast_pool_allocator<VALUE> > {
+class FastSet: public std::set<VALUE, std::less<VALUE>, typename internal::FastDefaultAllocator<VALUE>::type> {
 
 public:
 
-  typedef std::set<VALUE, std::less<VALUE>, boost::fast_pool_allocator<VALUE> > Base;
+  typedef std::set<VALUE, std::less<VALUE>, typename internal::FastDefaultAllocator<VALUE>::type> Base;
 
   /** Default constructor */
   FastSet() {
@@ -77,6 +78,7 @@ public:
       Base(x) {
   }
 
+#ifdef GTSAM_ALLOCATOR_BOOSTPOOL
   /** Copy constructor from a standard STL container */
   FastSet(const std::set<VALUE>& x) {
     // This if statement works around a bug in boost pool allocator and/or
@@ -85,17 +87,26 @@ public:
     if(x.size() > 0)
       Base::insert(x.begin(), x.end());
   }
+#endif
 
   /** Conversion to a standard STL container */
   operator std::set<VALUE>() const {
     return std::set<VALUE>(this->begin(), this->end());
   }
 
+  /** Handy 'exists' function */
+  bool exists(const VALUE& e) const { return this->find(e) != this->end(); }
+
   /** Print to implement Testable */
   void print(const std::string& str = "") const { FastSetTestableHelper<VALUE>::print(*this, str); }
 
   /** Check for equality within tolerance to implement Testable */
   bool equals(const FastSet<VALUE>& other, double tol = 1e-9) const { return FastSetTestableHelper<VALUE>::equals(*this, other, tol); }
+
+  /** insert another set: handy for MATLAB access */
+  void merge(const FastSet& other) {
+    Base::insert(other.begin(),other.end());
+  }
 
 private:
   /** Serialization function */

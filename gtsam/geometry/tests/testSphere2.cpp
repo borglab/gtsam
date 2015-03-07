@@ -26,6 +26,7 @@
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/random.hpp>
+#include <boost/thread.hpp>
 #include <boost/assign/std/vector.hpp>
 #include <cmath>
 
@@ -43,7 +44,7 @@ Point3 point3_(const Unit3& p) {
 TEST(Unit3, point3) {
   vector<Point3> ps;
   ps += Point3(1, 0, 0), Point3(0, 1, 0), Point3(0, 0, 1), Point3(1, 1, 0)
-      / sqrt(2);
+      / sqrt(2.0);
   Matrix actualH, expectedH;
   BOOST_FOREACH(Point3 p,ps) {
     Unit3 s(p);
@@ -227,13 +228,13 @@ inline static Vector randomVector(const Vector& minLimits,
 TEST(Unit3, localCoordinates_retract) {
 
   size_t numIterations = 10000;
-  Vector minSphereLimit = Vector_(3, -1.0, -1.0, -1.0), maxSphereLimit =
-      Vector_(3, 1.0, 1.0, 1.0);
-  Vector minXiLimit = Vector_(2, -1.0, -1.0), maxXiLimit = Vector_(2, 1.0, 1.0);
+  Vector minSphereLimit = (Vector(3) << -1.0, -1.0, -1.0), maxSphereLimit =
+      (Vector(3) << 1.0, 1.0, 1.0);
+  Vector minXiLimit = (Vector(2) << -1.0, -1.0), maxXiLimit = (Vector(2) << 1.0, 1.0);
   for (size_t i = 0; i < numIterations; i++) {
 
     // Sleep for the random number generator (TODO?: Better create all of them first).
-    sleep(0);
+    boost::this_thread::sleep(boost::posix_time::milliseconds(0));
 
     // Create the two Unit3s.
     // NOTE: You can not create two totally random Unit3's because you cannot always compute
@@ -257,14 +258,13 @@ TEST(Unit3, localCoordinates_retract) {
 TEST(Unit3, localCoordinates_retract_expmap) {
 
   size_t numIterations = 10000;
-  Vector minSphereLimit = Vector_(3, -1.0, -1.0, -1.0), maxSphereLimit =
-      Vector_(3, 1.0, 1.0, 1.0);
-  Vector minXiLimit = Vector_(2, -M_PI, -M_PI), maxXiLimit = Vector_(2, M_PI,
-      M_PI);
+  Vector minSphereLimit = (Vector(3) << -1.0, -1.0, -1.0), maxSphereLimit =
+      (Vector(3) << 1.0, 1.0, 1.0);
+  Vector minXiLimit = (Vector(2) << -M_PI, -M_PI), maxXiLimit = (Vector(2) << M_PI, M_PI);
   for (size_t i = 0; i < numIterations; i++) {
 
     // Sleep for the random number generator (TODO?: Better create all of them first).
-    sleep(0);
+    boost::this_thread::sleep(boost::posix_time::milliseconds(0));
 
     // Create the two Unit3s.
     // Unlike the above case, we can use any two sphers.
@@ -303,7 +303,7 @@ TEST(Unit3, localCoordinates_retract_expmap) {
 //  EXPECT(assert_equal(expected,actual1));
 //  EXPECT(assert_equal(expected,actual2));
 //
-//  Matrix expectedH1 = Matrix_(3,3,
+//  Matrix expectedH1 = (Matrix(3,3) <<
 //      0.0,-1.0,-2.0,
 //      1.0, 0.0,-2.0,
 //      0.0, 0.0,-1.0
@@ -314,7 +314,7 @@ TEST(Unit3, localCoordinates_retract_expmap) {
 //  // Assert H1 = -AdjointMap(between(p2,p1)) as in doc/math.lyx
 //  EXPECT(assert_equal(-gT2.between(gT1).AdjointMap(),actualH1));
 //
-//  Matrix expectedH2 = Matrix_(3,3,
+//  Matrix expectedH2 = (Matrix(3,3) <<
 //       1.0, 0.0, 0.0,
 //       0.0, 1.0, 0.0,
 //       0.0, 0.0, 1.0
@@ -327,7 +327,7 @@ TEST(Unit3, localCoordinates_retract_expmap) {
 
 //*******************************************************************************
 TEST(Unit3, Random) {
-  boost::random::mt19937 rng(42);
+  boost::mt19937 rng(42);
   // Check that is deterministic given same random seed
   Point3 expected(-0.667578, 0.671447, 0.321713);
   Point3 actual = Unit3::Random(rng).point3();

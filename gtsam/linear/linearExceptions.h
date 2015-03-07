@@ -92,26 +92,55 @@ namespace gtsam {
      ordered in elimination order and occupy scalars in the same way as
      described for Jacobian columns in the previous bullet.
    */
-  class IndeterminantLinearSystemException : public std::exception {
-    Index j_;
-    mutable std::string what_;
+  class GTSAM_EXPORT IndeterminantLinearSystemException : public ThreadsafeException<IndeterminantLinearSystemException> {
+    Key j_;
   public:
-    IndeterminantLinearSystemException(Index j) throw() : j_(j) {}
+    IndeterminantLinearSystemException(Key j) throw() : j_(j) {}
     virtual ~IndeterminantLinearSystemException() throw() {}
-    Index nearbyVariable() const { return j_; }
-    virtual const char* what() const throw() {
-      if(what_.empty())
-        what_ = 
-"\nIndeterminant linear system detected while working near variable with\n"
-"index " + boost::lexical_cast<std::string>(j_) + " in ordering.\n"
-"\n\
-Thrown when a linear system is ill-posed.  The most common cause for this\n\
-error is having underconstrained variables.  Mathematically, the system is\n\
-either underdetermined, or its quadratic error function is concave in some\n\
-directions.  See the GTSAM Doxygen documentation at http://borg.cc.gatech.edu/ \n\
-on gtsam::IndeterminantLinearSystemException for more information.\n";
-      return what_.c_str();
-    }
+    Key nearbyVariable() const { return j_; }
+    virtual const char* what() const throw();
   };
 
-}
+  /* ************************************************************************* */
+  /** An exception indicating that the noise model dimension passed into a
+   * JacobianFactor has a different dimensionality than the factor. */
+  class GTSAM_EXPORT InvalidNoiseModel : public ThreadsafeException<InvalidNoiseModel> {
+  public:
+    const DenseIndex factorDims; ///< The dimensionality of the factor
+    const DenseIndex noiseModelDims; ///< The dimensionality of the noise model
+
+    InvalidNoiseModel(DenseIndex factorDims, DenseIndex noiseModelDims) :
+      factorDims(factorDims), noiseModelDims(noiseModelDims) {}
+    virtual ~InvalidNoiseModel() throw() {}
+
+    virtual const char* what() const throw();
+
+  private:
+    mutable std::string description_;
+  };
+
+  /* ************************************************************************* */
+  /** An exception indicating that a matrix block passed into a
+   * JacobianFactor has a different dimensionality than the factor. */
+  class GTSAM_EXPORT InvalidMatrixBlock : public ThreadsafeException<InvalidMatrixBlock> {
+  public:
+    const DenseIndex factorRows; ///< The dimensionality of the factor
+    const DenseIndex blockRows; ///< The dimensionality of the noise model
+
+    InvalidMatrixBlock(DenseIndex factorRows, DenseIndex blockRows) :
+      factorRows(factorRows), blockRows(blockRows) {}
+    virtual ~InvalidMatrixBlock() throw() {}
+
+    virtual const char* what() const throw();
+
+  private:
+    mutable std::string description_;
+  };
+
+  /* ************************************************************************* */
+  class InvalidDenseElimination : public ThreadsafeException<InvalidDenseElimination> {
+  public:
+    InvalidDenseElimination(const char *message) : ThreadsafeException<InvalidDenseElimination>(message) {}
+  };
+
+ }

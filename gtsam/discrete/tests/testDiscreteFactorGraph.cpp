@@ -17,8 +17,8 @@
 
 #include <gtsam/discrete/DiscreteFactor.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
-#include <gtsam/discrete/DiscreteSequentialSolver.h>
-#include <gtsam/inference/GenericMultifrontalSolver.h>
+#include <gtsam/discrete/DiscreteEliminationTree.h>
+#include <gtsam/discrete/DiscreteBayesTree.h>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -58,9 +58,9 @@ TEST_UNSAFE( DiscreteFactorGraph, debugScheduler) {
 //  result.first->print("BayesNet: ");
 //  result.second->print("New factor: ");
 //
-  DiscreteSequentialSolver solver(graph);
-//  solver.print("solver:");
-  EliminationTree<DiscreteFactor> eliminationTree = solver.eliminationTree();
+  Ordering ordering;
+  ordering += Key(0),Key(1),Key(2),Key(3);
+  DiscreteEliminationTree eliminationTree(graph, ordering);
 //  eliminationTree.print("Elimination tree: ");
   eliminationTree.eliminate(EliminateDiscrete);
 //  solver.optimize();
@@ -127,10 +127,11 @@ TEST( DiscreteFactorGraph, test)
 
   // Test EliminateDiscrete
   // FIXME: apparently Eliminate returns a conditional rather than a net
+  Ordering frontalKeys;
+  frontalKeys += Key(0);
   DiscreteConditional::shared_ptr conditional;
   DecisionTreeFactor::shared_ptr newFactor;
-  boost::tie(conditional, newFactor) =//
-  EliminateDiscrete(graph, 1);
+  boost::tie(conditional, newFactor) = EliminateDiscrete(graph, frontalKeys);
 
   // Check Bayes net
   CHECK(conditional);
@@ -139,34 +140,35 @@ TEST( DiscreteFactorGraph, test)
   // cout << signature << endl;
   DiscreteConditional expectedConditional(signature);
   EXPECT(assert_equal(expectedConditional, *conditional));
-  add(expected, signature);
+  expected.add(signature);
 
   // Check Factor
   CHECK(newFactor);
   DecisionTreeFactor expectedFactor(B & A, "10 6 6 10");
   EXPECT(assert_equal(expectedFactor, *newFactor));
 
-  // Create solver
-  DiscreteSequentialSolver solver(graph);
-
   // add conditionals to complete expected Bayes net
-  add(expected, B | A = "5/3 3/5");
-  add(expected, A % "1/1");
+  expected.add(B | A = "5/3 3/5");
+  expected.add(A % "1/1");
   //  GTSAM_PRINT(expected);
 
   // Test elimination tree
-  const EliminationTree<DiscreteFactor>& etree = solver.eliminationTree();
-  DiscreteBayesNet::shared_ptr actual = etree.eliminate(&EliminateDiscrete);
+  Ordering ordering;
+  ordering += Key(0), Key(1), Key(2);
+  DiscreteEliminationTree etree(graph, ordering);
+  DiscreteBayesNet::shared_ptr actual;
+  DiscreteFactorGraph::shared_ptr remainingGraph;
+  boost::tie(actual, remainingGraph) = etree.eliminate(&EliminateDiscrete);
   EXPECT(assert_equal(expected, *actual));
 
-  // Test solver
-  DiscreteBayesNet::shared_ptr actual2 = solver.eliminate();
-  EXPECT(assert_equal(expected, *actual2));
+//  // Test solver
+//  DiscreteBayesNet::shared_ptr actual2 = solver.eliminate();
+//  EXPECT(assert_equal(expected, *actual2));
 
   // Test optimization
   DiscreteFactor::Values expectedValues;
   insert(expectedValues)(0, 0)(1, 0)(2, 0);
-  DiscreteFactor::sharedValues actualValues = solver.optimize();
+  DiscreteFactor::sharedValues actualValues = graph.optimize();
   EXPECT(assert_equal(expectedValues, *actualValues));
 }
 
@@ -183,8 +185,7 @@ TEST( DiscreteFactorGraph, testMPE)
   //  graph.product().print();
   //  DiscreteSequentialSolver(graph).eliminate()->print();
 
-  DiscreteFactor::sharedValues actualMPE =
-  DiscreteSequentialSolver(graph).optimize();
+  DiscreteFactor::sharedValues actualMPE = graph.optimize();
 
   DiscreteFactor::Values expectedMPE;
   insert(expectedMPE)(0, 0)(1, 1)(2, 1);
@@ -213,24 +214,29 @@ TEST( DiscreteFactorGraph, testMPE_Darwiche09book_p244)
   insert(expectedMPE)(4, 0)(2, 0)(3, 1)(0, 1)(1, 1);
 
   // Use the solver machinery.
-  DiscreteBayesNet::shared_ptr chordal =
-  DiscreteSequentialSolver(graph).eliminate();
-  DiscreteFactor::sharedValues actualMPE = optimize(*chordal);
+  DiscreteBayesNet::shared_ptr chordal = graph.eliminateSequential();
+  DiscreteFactor::sharedValues actualMPE = chordal->optimize();
   EXPECT(assert_equal(expectedMPE, *actualMPE));
 //  DiscreteConditional::shared_ptr root = chordal->back();
 //  EXPECT_DOUBLES_EQUAL(0.4, (*root)(*actualMPE), 1e-9);
 
   // Let us create the Bayes tree here, just for fun, because we don't use it now
-  typedef JunctionTree<DiscreteFactorGraph> JT;
-  GenericMultifrontalSolver<DiscreteFactor, JT> solver(graph);
-  BayesTree<DiscreteConditional>::shared_ptr bayesTree = solver.eliminate(&EliminateDiscrete);
-//  bayesTree->print("Bayes Tree");
+//  typedef JunctionTreeOrdered<DiscreteFactorGraph> JT;
+//  GenericMultifrontalSolver<DiscreteFactor, JT> solver(graph);
+//  BayesTreeOrdered<DiscreteConditional>::shared_ptr bayesTree = solver.eliminate(&EliminateDiscrete);
+////  bayesTree->print("Bayes Tree");
+//  EXPECT_LONGS_EQUAL(2,bayesTree->size());
+
+  Ordering ordering;
+  ordering += Key(0),Key(1),Key(2),Key(3),Key(4);
+  DiscreteBayesTree::shared_ptr bayesTree = graph.eliminateMultifrontal(ordering);
+  //  bayesTree->print("Bayes Tree");
   EXPECT_LONGS_EQUAL(2,bayesTree->size());
 
 #ifdef OLD
 // Create the elimination tree manually
-VariableIndex structure(graph);
-typedef EliminationTree<DiscreteFactor> ETree;
+VariableIndexOrdered structure(graph);
+typedef EliminationTreeOrdered<DiscreteFactor> ETree;
 ETree::shared_ptr eTree = ETree::Create(graph, structure);
 //eTree->print(">>>>>>>>>>> Elimination Tree <<<<<<<<<<<<<<<<<");
 

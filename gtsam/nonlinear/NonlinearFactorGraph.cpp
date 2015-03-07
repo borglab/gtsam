@@ -20,15 +20,25 @@
 #include <cmath>
 #include <limits>
 #include <boost/foreach.hpp>
-#include <gtsam/inference/FactorGraph.h>
-#include <gtsam/inference/inference.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/inference/FactorGraph-inst.h>
+#include <gtsam/symbolic/SymbolicFactorGraph.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+
+#ifdef GTSAM_USE_TBB
+#  include <tbb/parallel_for.h>
+#endif
 
 using namespace std;
 
 namespace gtsam {
+
+// Instantiate base classes
+template class FactorGraph<NonlinearFactor>;
 
 /* ************************************************************************* */
 double NonlinearFactorGraph::probPrime(const Values& c) const {
@@ -43,6 +53,11 @@ void NonlinearFactorGraph::print(const std::string& str, const KeyFormatter& key
     ss << "factor " << i << ": ";
     if (factors_[i] != NULL) factors_[i]->print(ss.str(), keyFormatter);
   }
+}
+
+/* ************************************************************************* */
+bool NonlinearFactorGraph::equals(const NonlinearFactorGraph& other, double tol) const {
+  return Base::equals(other, tol);
 }
 
 /* ************************************************************************* */
@@ -102,6 +117,27 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
       default: throw std::runtime_error("Invalid enum value");
       }
      return Point2(x,y);
+    } else if(const Point3* p = dynamic_cast<const Point3*>(&value)) {
+      double x, y;
+      switch (graphvizFormatting.paperHorizontalAxis) {
+      case GraphvizFormatting::X: x = p->x(); break;
+      case GraphvizFormatting::Y: x = p->y(); break;
+      case GraphvizFormatting::Z: x = p->z(); break;
+      case GraphvizFormatting::NEGX: x = -p->x(); break;
+      case GraphvizFormatting::NEGY: x = -p->y(); break;
+      case GraphvizFormatting::NEGZ: x = -p->z(); break;
+      default: throw std::runtime_error("Invalid enum value");
+      }
+      switch (graphvizFormatting.paperVerticalAxis) {
+      case GraphvizFormatting::X: y = p->x(); break;
+      case GraphvizFormatting::Y: y = p->y(); break;
+      case GraphvizFormatting::Z: y = p->z(); break;
+      case GraphvizFormatting::NEGX: y = -p->x(); break;
+      case GraphvizFormatting::NEGY: y = -p->y(); break;
+      case GraphvizFormatting::NEGZ: y = -p->z(); break;
+      default: throw std::runtime_error("Invalid enum value");
+      }
+      return Point2(x,y);
     } else {
       return boost::none;
     }
@@ -127,6 +163,8 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
   }
 
   // Create nodes for each variable in the graph
+  bool firstTimePoses = true;
+  Key lastKey;
   BOOST_FOREACH(Key key, keys) {
     // Label the node with the label from the KeyFormatter
     stm << "  var" << key << "[label=\"" << keyFormatter(key) << "\"";
@@ -136,8 +174,17 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
         stm << ", pos=\"" << graphvizFormatting.scale*(xy->x() - minX) << "," << graphvizFormatting.scale*(xy->y() - minY) << "!\"";
     }
     stm << "];\n";
+
+    if (firstTimePoses) {
+    	lastKey = key;
+    	firstTimePoses = false;
+    } else {
+    	stm << "  var" << key << "--" << "var" << lastKey << ";\n";
+    	lastKey = key;
+    }
   }
   stm << "\n";
+
 
   if(graphvizFormatting.mergeSimilarFactors) {
     // Remove duplicate factors
@@ -171,13 +218,39 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
   } else {
     // Create factors and variable connections
     for(size_t i = 0; i < this->size(); ++i) {
-      // Make each factor a dot
-      stm << "  factor" << i << "[label=\"\", shape=point];\n";
+      if(graphvizFormatting.plotFactorPoints){
+		// Make each factor a dot
+		stm << "  factor" << i << "[label=\"\", shape=point";
+		{
+		map<size_t, Point2>::const_iterator pos = graphvizFormatting.factorPositions.find(i);
+		if(pos != graphvizFormatting.factorPositions.end())
+		  stm << ", pos=\"" << graphvizFormatting.scale*(pos->second.x() - minX) << "," << graphvizFormatting.scale*(pos->second.y() - minY) << "!\"";
+		}
+		stm << "];\n";
 
-      // Make factor-variable connections
-      if(this->at(i)) {
-        BOOST_FOREACH(Key key, *this->at(i)) {
-          stm << "  var" << key << "--" << "factor" << i << ";\n"; } }
+		// Make factor-variable connections
+		if(graphvizFormatting.connectKeysToFactor && this->at(i)) {
+		  BOOST_FOREACH(Key key, *this->at(i)) {
+		  stm << "  var" << key << "--" << "factor" << i << ";\n";
+		  }
+		}
+
+	  }
+      else {
+    	if(this->at(i)) {
+    	  Key k;
+    	  bool firstTime = true;
+    	  BOOST_FOREACH(Key key, *this->at(i)) {
+    		if(firstTime){
+    		  k = key;
+    		  firstTime = false;
+    		  continue;
+    		}
+    		stm << "  var" << key << "--" << "var" << k << ";\n";
+    		k = key;
+    	  }
+    	}
+      }
     }
   }
 
@@ -207,108 +280,87 @@ FastSet<Key> NonlinearFactorGraph::keys() const {
 }
 
 /* ************************************************************************* */
-Ordering::shared_ptr NonlinearFactorGraph::orderingCOLAMD(
-    const Values& config) const
+Ordering NonlinearFactorGraph::orderingCOLAMD() const
 {
-  gttic(NonlinearFactorGraph_orderingCOLAMD);
-
-  // Create symbolic graph and initial (iterator) ordering
-  SymbolicFactorGraph::shared_ptr symbolic;
-  Ordering::shared_ptr ordering;
-  boost::tie(symbolic, ordering) = this->symbolic(config);
-
-  // Compute the VariableIndex (column-wise index)
-  VariableIndex variableIndex(*symbolic, ordering->size());
-  if (config.size() != variableIndex.size()) throw std::runtime_error(
-      "orderingCOLAMD: some variables in the graph are not constrained!");
-
-  // Compute a fill-reducing ordering with COLAMD
-  Permutation::shared_ptr colamdPerm(inference::PermutationCOLAMD(
-      variableIndex));
-
-  // Permute the Ordering with the COLAMD ordering
-  ordering->permuteInPlace(*colamdPerm);
-  return ordering;
+  return Ordering::COLAMD(*this);
 }
 
 /* ************************************************************************* */
-Ordering::shared_ptr NonlinearFactorGraph::orderingCOLAMDConstrained(const Values& config,
-    const std::map<Key, int>& constraints) const
+Ordering NonlinearFactorGraph::orderingCOLAMDConstrained(const FastMap<Key, int>& constraints) const
 {
-  gttic(NonlinearFactorGraph_orderingCOLAMDConstrained);
-
-  // Create symbolic graph and initial (iterator) ordering
-  SymbolicFactorGraph::shared_ptr symbolic;
-  Ordering::shared_ptr ordering;
-  boost::tie(symbolic, ordering) = this->symbolic(config);
-
-  // Compute the VariableIndex (column-wise index)
-  VariableIndex variableIndex(*symbolic, ordering->size());
-  if (config.size() != variableIndex.size()) throw std::runtime_error(
-      "orderingCOLAMD: some variables in the graph are not constrained!");
-
-  // Create a constraint list with correct indices
-  typedef std::map<Key, int>::value_type constraint_type;
-  std::map<Index, int> index_constraints;
-  BOOST_FOREACH(const constraint_type& p, constraints)
-    index_constraints[ordering->at(p.first)] = p.second;
-
-  // Compute a constrained fill-reducing ordering with COLAMD
-  Permutation::shared_ptr colamdPerm(inference::PermutationCOLAMDGrouped(
-      variableIndex, index_constraints));
-
-  // Permute the Ordering with the COLAMD ordering
-  ordering->permuteInPlace(*colamdPerm);
-  return ordering;
+  return Ordering::COLAMDConstrained(*this, constraints);
 }
 
 /* ************************************************************************* */
-SymbolicFactorGraph::shared_ptr NonlinearFactorGraph::symbolic(const Ordering& ordering) const {
-  gttic(NonlinearFactorGraph_symbolic_from_Ordering);
-
+SymbolicFactorGraph::shared_ptr NonlinearFactorGraph::symbolic() const
+{
   // Generate the symbolic factor graph
-  SymbolicFactorGraph::shared_ptr symbolicfg(new SymbolicFactorGraph);
-  symbolicfg->reserve(this->size());
+  SymbolicFactorGraph::shared_ptr symbolic = boost::make_shared<SymbolicFactorGraph>();
+  symbolic->reserve(this->size());
 
-  BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
+  BOOST_FOREACH(const sharedFactor& factor, *this) {
     if(factor)
-      symbolicfg->push_back(factor->symbolic(ordering));
+      *symbolic += SymbolicFactor(*factor);
     else
-      symbolicfg->push_back(SymbolicFactorGraph::sharedFactor());
+      *symbolic += SymbolicFactorGraph::sharedFactor();
   }
 
-  return symbolicfg;
+  return symbolic;
 }
 
 /* ************************************************************************* */
-pair<SymbolicFactorGraph::shared_ptr, Ordering::shared_ptr> NonlinearFactorGraph::symbolic(
-    const Values& config) const
-{
-  gttic(NonlinearFactorGraph_symbolic_from_Values);
+namespace {
 
-  // Generate an initial key ordering in iterator order
-  Ordering::shared_ptr ordering(config.orderingArbitrary());
-  return make_pair(symbolic(*ordering), ordering);
+#ifdef GTSAM_USE_TBB
+  struct _LinearizeOneFactor {
+    const NonlinearFactorGraph& graph;
+    const Values& linearizationPoint;
+    GaussianFactorGraph& result;
+    _LinearizeOneFactor(const NonlinearFactorGraph& graph, const Values& linearizationPoint, GaussianFactorGraph& result) :
+      graph(graph), linearizationPoint(linearizationPoint), result(result) {}
+    void operator()(const tbb::blocked_range<size_t>& r) const
+    {
+      for(size_t i = r.begin(); i != r.end(); ++i)
+      {
+        if(graph[i])
+          result[i] = graph[i]->linearize(linearizationPoint);
+        else
+          result[i] = GaussianFactor::shared_ptr();
+      }
+    }
+  };
+#endif
+
 }
 
 /* ************************************************************************* */
-GaussianFactorGraph::shared_ptr NonlinearFactorGraph::linearize(
-    const Values& config, const Ordering& ordering) const
+GaussianFactorGraph::shared_ptr NonlinearFactorGraph::linearize(const Values& linearizationPoint) const
 {
   gttic(NonlinearFactorGraph_linearize);
 
   // create an empty linear FG
-  GaussianFactorGraph::shared_ptr linearFG(new GaussianFactorGraph);
+  GaussianFactorGraph::shared_ptr linearFG = boost::make_shared<GaussianFactorGraph>();
+
+#ifdef GTSAM_USE_TBB
+
+  linearFG->resize(this->size());
+  TbbOpenMPMixedScope threadLimiter; // Limits OpenMP threads since we're mixing TBB and OpenMP
+  tbb::parallel_for(tbb::blocked_range<size_t>(0, this->size()),
+    _LinearizeOneFactor(*this, linearizationPoint, *linearFG));
+
+#else
+
   linearFG->reserve(this->size());
 
   // linearize all factors
   BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
     if(factor) {
-      GaussianFactor::shared_ptr lf = factor->linearize(config, ordering);
-      if (lf) linearFG->push_back(lf);
+      (*linearFG) += factor->linearize(linearizationPoint);
     } else
-      linearFG->push_back(GaussianFactor::shared_ptr());
+      (*linearFG) += GaussianFactor::shared_ptr();
   }
+
+#endif
 
   return linearFG;
 }

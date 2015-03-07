@@ -19,7 +19,7 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/nonlinear/Marginals.h>
 

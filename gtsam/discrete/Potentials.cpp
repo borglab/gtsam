@@ -24,8 +24,8 @@ using namespace std;
 namespace gtsam {
 
   // explicit instantiation
-  template class DecisionTree<Index, double> ;
-  template class AlgebraicDecisionTree<Index> ;
+  template class DecisionTree<Key, double> ;
+  template class AlgebraicDecisionTree<Key> ;
 
   /* ************************************************************************* */
   double Potentials::safe_div(const double& a, const double& b) {
@@ -52,46 +52,46 @@ namespace gtsam {
 
   /* ************************************************************************* */
   void Potentials::print(const string& s,
-      const IndexFormatter& formatter) const {
+      const KeyFormatter& formatter) const {
     cout << s << "\n  Cardinalities: ";
     BOOST_FOREACH(const DiscreteKey& key, cardinalities_)
       cout << formatter(key.first) << "=" << formatter(key.second) << " ";
     cout << endl;
     ADT::print(" ");
   }
-
-  /* ************************************************************************* */
-  template<class P>
-  void Potentials::remapIndices(const P& remapping) {
-    // Permute the _cardinalities (TODO: Inefficient Consider Improving)
-    DiscreteKeys keys;
-    map<Index, Index> ordering;
-
-    // Get the original keys from cardinalities_
-    BOOST_FOREACH(const DiscreteKey& key, cardinalities_)
-      keys & key;
-
-    // Perform Permutation
-    BOOST_FOREACH(DiscreteKey& key, keys) {
-      ordering[key.first] = remapping[key.first];
-      key.first = ordering[key.first];
-    }
-
-    // Change *this
-    AlgebraicDecisionTree<Index> permuted((*this), ordering);
-    *this = permuted;
-    cardinalities_ = keys.cardinalities();
-  }
-
-  /* ************************************************************************* */
-  void Potentials::permuteWithInverse(const Permutation& inversePermutation) {
-    remapIndices(inversePermutation);
-  }
-
-  /* ************************************************************************* */
-  void Potentials::reduceWithInverse(const internal::Reduction& inverseReduction) {
-    remapIndices(inverseReduction);
-  }
+//
+//  /* ************************************************************************* */
+//  template<class P>
+//  void Potentials::remapIndices(const P& remapping) {
+//    // Permute the _cardinalities (TODO: Inefficient Consider Improving)
+//    DiscreteKeys keys;
+//    map<Key, Key> ordering;
+//
+//    // Get the original keys from cardinalities_
+//    BOOST_FOREACH(const DiscreteKey& key, cardinalities_)
+//      keys & key;
+//
+//    // Perform Permutation
+//    BOOST_FOREACH(DiscreteKey& key, keys) {
+//      ordering[key.first] = remapping[key.first];
+//      key.first = ordering[key.first];
+//    }
+//
+//    // Change *this
+//    AlgebraicDecisionTree<Key> permuted((*this), ordering);
+//    *this = permuted;
+//    cardinalities_ = keys.cardinalities();
+//  }
+//
+//  /* ************************************************************************* */
+//  void Potentials::permuteWithInverse(const Permutation& inversePermutation) {
+//    remapIndices(inversePermutation);
+//  }
+//
+//  /* ************************************************************************* */
+//  void Potentials::reduceWithInverse(const internal::Reduction& inverseReduction) {
+//    remapIndices(inverseReduction);
+//  }
 
   /* ************************************************************************* */
 

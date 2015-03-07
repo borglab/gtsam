@@ -16,38 +16,71 @@
  * @brief a faster implementation for DSF, which uses vector rather than btree.
  */
 
+#include <gtsam/base/DSFVector.h>
 #include <boost/make_shared.hpp>
 #include <boost/foreach.hpp>
-#include <gtsam/base/DSFVector.h>
+#include <algorithm>
 
 using namespace std;
 
 namespace gtsam {
 
 /* ************************************************************************* */
-DSFVector::DSFVector (const size_t numNodes) {
-  v_ = boost::make_shared<V>(numNodes);
+DSFBase::DSFBase(const size_t numNodes) {
+  v_ = boost::make_shared < V > (numNodes);
   int index = 0;
-  keys_.reserve(numNodes);
-  for(V::iterator it = v_->begin(); it!=v_->end(); it++, index++) {
+  for (V::iterator it = v_->begin(); it != v_->end(); it++, index++)
     *it = index;
-    keys_.push_back(index);
-  }
 }
 
 /* ************************************************************************* */
-DSFVector::DSFVector(const boost::shared_ptr<V>& v_in, const std::vector<size_t>& keys) : keys_(keys) {
+DSFBase::DSFBase(const boost::shared_ptr<V>& v_in) {
   v_ = v_in;
-  BOOST_FOREACH(const size_t key, keys)
-    (*v_)[key] = key;
+  int index = 0;
+  for (V::iterator it = v_->begin(); it != v_->end(); it++, index++)
+    *it = index;
 }
 
 /* ************************************************************************* */
-bool DSFVector::isSingleton(const Label& label) const {
+size_t DSFBase::find(size_t key) const {
+  // follow parent pointers until we reach set representative
+  size_t parent = (*v_)[key];
+  if (parent != key)
+    parent = find(parent); // recursive call
+  (*v_)[key] = parent; // path compression
+  return parent;
+}
+
+/* ************************************************************************* */
+void DSFBase::merge(const size_t& i1, const size_t& i2) {
+  (*v_)[find(i2)] = find(i1);
+}
+
+/* ************************************************************************* */
+DSFVector::DSFVector(const size_t numNodes) :
+    DSFBase(numNodes) {
+  keys_.reserve(numNodes);
+  for (size_t index = 0; index < numNodes; index++)
+    keys_.push_back(index);
+}
+
+/* ************************************************************************* */
+DSFVector::DSFVector(const std::vector<size_t>& keys) :
+    DSFBase(1 + *std::max_element(keys.begin(), keys.end())), keys_(keys) {
+}
+
+/* ************************************************************************* */
+DSFVector::DSFVector(const boost::shared_ptr<V>& v_in,
+    const std::vector<size_t>& keys) :
+    DSFBase(v_in), keys_(keys) {
+  assert(*(std::max_element(keys.begin(), keys.end()))<v_in->size());
+}
+
+/* ************************************************************************* */
+bool DSFVector::isSingleton(const size_t& label) const {
   bool result = false;
-  V::const_iterator it = keys_.begin();
-  for (; it != keys_.end(); ++it) {
-    if(findSet(*it) == label) {
+  BOOST_FOREACH(size_t key,keys_) {
+    if (find(key) == label) {
       if (!result) // find the first occurrence
         result = true;
       else
@@ -58,39 +91,28 @@ bool DSFVector::isSingleton(const Label& label) const {
 }
 
 /* ************************************************************************* */
-std::set<size_t> DSFVector::set(const Label& label) const {
-  std::set<size_t> set;
-  V::const_iterator it = keys_.begin();
-  for (; it != keys_.end(); it++) {
-    if (findSet(*it) == label)
-      set.insert(*it);
-  }
+std::set<size_t> DSFVector::set(const size_t& label) const {
+  std::set < size_t > set;
+  BOOST_FOREACH(size_t key,keys_)
+    if (find(key) == label)
+      set.insert(key);
   return set;
 }
 
 /* ************************************************************************* */
-std::map<DSFVector::Label, std::set<size_t> > DSFVector::sets() const {
-  std::map<Label, std::set<size_t> > sets;
-  V::const_iterator it = keys_.begin();
-  for (; it != keys_.end(); it++) {
-    sets[findSet(*it)].insert(*it);
-  }
+std::map<size_t, std::set<size_t> > DSFVector::sets() const {
+  std::map<size_t, std::set<size_t> > sets;
+  BOOST_FOREACH(size_t key,keys_)
+    sets[find(key)].insert(key);
   return sets;
 }
 
 /* ************************************************************************* */
-std::map<DSFVector::Label, std::vector<size_t> > DSFVector::arrays() const {
-  std::map<Label, std::vector<size_t> > arrays;
-  V::const_iterator it = keys_.begin();
-  for (; it != keys_.end(); it++) {
-    arrays[findSet(*it)].push_back(*it);
-  }
+std::map<size_t, std::vector<size_t> > DSFVector::arrays() const {
+  std::map<size_t, std::vector<size_t> > arrays;
+  BOOST_FOREACH(size_t key,keys_)
+    arrays[find(key)].push_back(key);
   return arrays;
-}
-
-/* ************************************************************************* */
-void DSFVector::makeUnionInPlace(const size_t& i1, const size_t& i2)  {
-  (*v_)[findSet(i2)] = findSet(i1);
 }
 
 } // namespace  gtsam

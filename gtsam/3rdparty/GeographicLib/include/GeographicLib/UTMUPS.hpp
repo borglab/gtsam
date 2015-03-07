@@ -70,7 +70,7 @@ namespace GeographicLib {
     static const int epsg01N = 32601; // EPSG code for UTM 01N
     static const int epsg60N = 32660; // EPSG code for UTM 60N
     static const int epsgN   = 32661; // EPSG code for UPS   N
-    static const int epsg01S = 32701; // EPSG code for UTM 01N
+    static const int epsg01S = 32701; // EPSG code for UTM 01S
     static const int epsg60S = 32760; // EPSG code for UTM 60S
     static const int epsgS   = 32761; // EPSG code for UPS   S
     static real CentralMeridian(int zone) throw()

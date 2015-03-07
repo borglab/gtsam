@@ -18,8 +18,6 @@
 
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/NoiseModel.h>
-#include <gtsam/linear/GaussianSequentialSolver.h>
-#include <gtsam/linear/GaussianMultifrontalSolver.h>
 
 #include <boost/random.hpp>
 #include <boost/timer.hpp>

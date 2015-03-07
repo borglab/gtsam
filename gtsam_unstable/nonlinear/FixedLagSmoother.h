@@ -21,9 +21,9 @@
 #pragma once
 
 #include <gtsam_unstable/base/dllexport.h>
+#include <gtsam/inference/Key.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/nonlinear/Key.h>
 #include <map>
 
 namespace gtsam {
@@ -61,10 +61,10 @@ public:
 
 
   /** default constructor */
-  FixedLagSmoother(double smootherLag = 0.0) : smootherLag_(smootherLag) { };
+  FixedLagSmoother(double smootherLag = 0.0) : smootherLag_(smootherLag) { }
 
   /** destructor */
-  virtual ~FixedLagSmoother() { };
+  virtual ~FixedLagSmoother() { }
 
   /** Print the factor for debugging and testing (implementing Testable) */
   virtual void print(const std::string& s = "FixedLagSmoother:\n", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;

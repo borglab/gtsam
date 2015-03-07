@@ -45,27 +45,6 @@ typedef Eigen::Matrix<double,6,6> Matrix6;
 typedef Eigen::Block<Matrix> SubMatrix;
 typedef Eigen::Block<const Matrix> ConstSubMatrix;
 
-/**
- *  constructor with size and initial data, row order !
- */
-GTSAM_EXPORT Matrix Matrix_(size_t m, size_t n, const double* const data);
-
-/**
- *  constructor with size and vector data, column order !!!
- */
-GTSAM_EXPORT Matrix Matrix_(size_t m, size_t n, const Vector& v);
-
-/**
- *  constructor from Vector yielding v.size()*1 vector
- */
-inline Matrix Matrix_(const Vector& v) { return Matrix_(v.size(),1,v);}
-
-/**
- *  nice constructor, dangerous as number of arguments must be exactly right
- *  and you have to pass doubles !!! always use 0.0 never 0
-*/
-GTSAM_EXPORT Matrix Matrix_(size_t m, size_t n, ...);
-
 // Matlab-like syntax
 
 /**
@@ -195,11 +174,6 @@ inline MATRIX prod(const MATRIX& A, const MATRIX&B) {
   MATRIX result = A * B;
   return result;
 }
-
-/**
- * convert to column vector, column order !!!
- */
-GTSAM_EXPORT Vector Vector_(const Matrix& A);
 
 /**
  * print a matrix
@@ -353,7 +327,7 @@ GTSAM_EXPORT std::list<boost::tuple<Vector, double, double> >
 weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas);
 
 /**
- * Householder tranformation, Householder vectors below diagonal
+ * Householder transformation, Householder vectors below diagonal
  * @param k number of columns to zero out below diagonal
  * @param A matrix
  * @param copy_vectors - true to copy Householder vectors below diagonal
@@ -423,7 +397,8 @@ GTSAM_EXPORT Matrix collect(size_t nrMatrices, ...);
  * scales a matrix row or column by the values in a vector
  * Arguments (Matrix, Vector) scales the columns,
  * (Vector, Matrix) scales the rows
- * @param inf_mask when true, will not scale with a NaN or inf value
+ * @param inf_mask when true, will not scale with a NaN or inf value.
+ * The inplace version also allows v.size()<A.rows() and only scales the first v.size() rows of A.
  */
 GTSAM_EXPORT void vector_scale_inplace(const Vector& v, Matrix& A, bool inf_mask = false); // row
 GTSAM_EXPORT Matrix vector_scale(const Vector& v, const Matrix& A, bool inf_mask = false); // row
@@ -443,7 +418,7 @@ GTSAM_EXPORT Matrix3 skewSymmetric(double wx, double wy, double wz);
 template<class Derived>
 inline Matrix3 skewSymmetric(const Eigen::MatrixBase<Derived>& w) { return skewSymmetric(w(0),w(1),w(2));}
 
-/** Use SVD to calculate inverse square root of a matrix */
+/** Use Cholesky to calculate inverse square root of a matrix */
 GTSAM_EXPORT Matrix inverse_square_root(const Matrix& A);
 
 /** Calculate the LL^t decomposition of a S.P.D matrix */
@@ -496,6 +471,8 @@ Eigen::Matrix<double, N, N> Cayley(const Eigen::Matrix<double, N, N>& A) {
   typedef Eigen::Matrix<double, N, N> FMat;
   return (FMat::Identity() - A)*(FMat::Identity() + A).inverse();
 }
+
+std::string formatMatrixIndented(const std::string& label, const Matrix& matrix, bool makeVectorHorizontal = false);
 
 } // namespace gtsam
 

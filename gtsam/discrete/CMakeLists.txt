@@ -4,21 +4,8 @@ file(GLOB discrete_headers "*.h")
 # FIXME: exclude headers
 install(FILES ${discrete_headers} DESTINATION include/gtsam/discrete)
 
-# Set up library dependencies
-set (discrete_local_libs 
-   discrete
-   inference
-   base
-   ccolamd
-)
-
-# Exclude tests that don't work
-set (discrete_excluded_tests "")
-
 # Add all tests
-if (GTSAM_BUILD_TESTS)
-    gtsam_add_subdir_tests(discrete "${discrete_local_libs}" "${gtsam-default}" "${discrete_excluded_tests}")
-endif()
+add_subdirectory(tests)
 
 # Build timing scripts
 #if (GTSAM_BUILD_TIMING)

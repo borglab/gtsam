@@ -41,7 +41,7 @@ TEST(Point3, Lie) {
   EXPECT(assert_equal(eye(3), H2));
 
   EXPECT(assert_equal(Point3(5, 7, 9), p1.retract((Vector(3) << 4., 5., 6.))));
-  EXPECT(assert_equal(Vector_(3, 3., 3., 3.), p1.localCoordinates(p2)));
+  EXPECT(assert_equal((Vector)(Vector(3) << 3.,3.,3.), p1.localCoordinates(p2)));
 }
 
 /* ************************************************************************* */
@@ -81,7 +81,7 @@ TEST( Point3, stream) {
 TEST (Point3, normalize) {
   Matrix actualH;
   Point3 point(1, -2, 3); // arbitrary point
-  Point3 expected(point / sqrt(14));
+  Point3 expected(point / sqrt(14.0));
   EXPECT(assert_equal(expected, point.normalize(actualH), 1e-8));
   Matrix expectedH = numericalDerivative11<Point3, Point3>(
       boost::bind(&Point3::normalize, _1, boost::none), point);

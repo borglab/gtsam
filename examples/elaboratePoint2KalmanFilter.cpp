@@ -22,9 +22,8 @@
 
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/nonlinear/Ordering.h>
-#include <gtsam/nonlinear/Symbol.h>
-#include <gtsam/linear/GaussianSequentialSolver.h>
+//#include <gtsam/nonlinear/Ordering.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/NoiseModel.h>
@@ -59,7 +58,7 @@ int main() {
   // Initialize state x0 (2D point) at origin by adding a prior factor, i.e., Bayes net P(x0)
   // This is equivalent to x_0 and P_0
   Point2 x_initial(0,0);
-  SharedDiagonal P_initial = noiseModel::Diagonal::Sigmas(Vector_(2, 0.1, 0.1));
+  SharedDiagonal P_initial = noiseModel::Diagonal::Sigmas((Vec(2) << 0.1, 0.1));
   PriorFactor<Point2> factor1(x0, x_initial, P_initial);
   // Linearize the factor and add it to the linear factor graph
   linearizationPoints.insert(x0, x_initial);
@@ -90,7 +89,7 @@ int main() {
   ordering->insert(x1, 1);
 
   Point2 difference(1,0);
-  SharedDiagonal Q = noiseModel::Diagonal::Sigmas(Vector_(2, 0.1, 0.1));
+  SharedDiagonal Q = noiseModel::Diagonal::Sigmas((Vec(2) << 0.1, 0.1));
   BetweenFactor<Point2> factor2(x0, x1, difference, Q);
   // Linearize the factor and add it to the linear factor graph
   linearizationPoints.insert(x1, x_initial);
@@ -168,7 +167,7 @@ int main() {
   //    = (x_{t} - z_{t}) * R^-1 * (x_{t} - z_{t})^T
   // This can be modeled using the PriorFactor, where the mean is z_{t} and the covariance is R.
   Point2 z1(1.0, 0.0);
-  SharedDiagonal R1 = noiseModel::Diagonal::Sigmas(Vector_(2, 0.25, 0.25));
+  SharedDiagonal R1 = noiseModel::Diagonal::Sigmas((Vec(2) << 0.25, 0.25));
   PriorFactor<Point2> factor4(x1, z1, R1);
   // Linearize the factor and add it to the linear factor graph
   linearFactorGraph->push_back(factor4.linearize(linearizationPoints, *ordering));
@@ -220,7 +219,7 @@ int main() {
 
   // Create a nonlinear factor describing the motion model
   difference = Point2(1,0);
-  Q = noiseModel::Diagonal::Sigmas(Vector_(2, 0.1, 0.1));
+  Q = noiseModel::Diagonal::Sigmas((Vec(2) <, 0.1, 0.1));
   BetweenFactor<Point2> factor6(x1, x2, difference, Q);
 
   // Linearize the factor and add it to the linear factor graph
@@ -258,7 +257,7 @@ int main() {
 
   // And update using z2 ...
   Point2 z2(2.0, 0.0);
-  SharedDiagonal R2 = noiseModel::Diagonal::Sigmas(Vector_(2, 0.25, 0.25));
+  SharedDiagonal R2 = noiseModel::Diagonal::Sigmas((Vec(2) << 0.25, 0.25));
   PriorFactor<Point2> factor8(x2, z2, R2);
 
   // Linearize the factor and add it to the linear factor graph
@@ -309,7 +308,7 @@ int main() {
 
   // Create a nonlinear factor describing the motion model
   difference = Point2(1,0);
-  Q = noiseModel::Diagonal::Sigmas(Vector_(2, 0.1, 0.1));
+  Q = noiseModel::Diagonal::Sigmas((Vec(2) << 0.1, 0.1));
   BetweenFactor<Point2> factor10(x2, x3, difference, Q);
 
   // Linearize the factor and add it to the linear factor graph
@@ -347,7 +346,7 @@ int main() {
 
   // And update using z3 ...
   Point2 z3(3.0, 0.0);
-  SharedDiagonal R3 = noiseModel::Diagonal::Sigmas(Vector_(2, 0.25, 0.25));
+  SharedDiagonal R3 = noiseModel::Diagonal::Sigmas((Vec(2) << 0.25, 0.25));
   PriorFactor<Point2> factor12(x3, z3, R3);
 
   // Linearize the factor and add it to the linear factor graph

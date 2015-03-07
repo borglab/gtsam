@@ -19,6 +19,7 @@
 #include <GeographicLib/UTMUPS.hpp>
 #include <GeographicLib/LocalCartesian.hpp>
 
+#include <gtsam/base/types.h>
 #include <CppUnitLite/TestHarness.h>
 
 #include <iostream>

@@ -20,7 +20,6 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Lie.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/linear/GaussianFactor.h>
 
 namespace gtsam {
 

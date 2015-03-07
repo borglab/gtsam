@@ -93,6 +93,16 @@ namespace gtsam {
         v = unwhiten(v);
       }
 
+      /** in-place whiten, override if can be done more efficiently */
+      virtual void whitenInPlace(Eigen::Block<Vector>& v) const {
+        v = whiten(v);
+      }
+
+      /** in-place unwhiten, override if can be done more efficiently */
+      virtual void unwhitenInPlace(Eigen::Block<Vector>& v) const {
+        v = unwhiten(v);
+      }
+
     private:
       /** Serialization function */
       friend class boost::serialization::access;
@@ -187,6 +197,11 @@ namespace gtsam {
       virtual void WhitenInPlace(Matrix& H) const;
 
       /**
+       * In-place version
+       */
+      virtual void WhitenInPlace(Eigen::Block<Matrix> H) const;
+
+      /**
        * Whiten a system, in place as well
        */
       virtual void WhitenSystem(std::vector<Matrix>& A, Vector& b) const ;
@@ -243,10 +258,10 @@ namespace gtsam {
       Vector sigmas_, invsigmas_, precisions_;
 
     protected:
-      /** protected constructor takes sigmas */
+      /** protected constructor - no initializations */
       Diagonal();
 
-      /** constructor to allow for disabling initializaion of invsigmas */
+      /** constructor to allow for disabling initialization of invsigmas */
       Diagonal(const Vector& sigmas);
 
     public:
@@ -257,7 +272,7 @@ namespace gtsam {
 
       /**
        * A diagonal noise model created by specifying a Vector of sigmas, i.e.
-       * standard devations, the diagonal of the square root covariance matrix.
+       * standard deviations, the diagonal of the square root covariance matrix.
        */
       static shared_ptr Sigmas(const Vector& sigmas, bool smart = true);
 
@@ -282,6 +297,7 @@ namespace gtsam {
       virtual Vector unwhiten(const Vector& v) const;
       virtual Matrix Whiten(const Matrix& H) const;
       virtual void WhitenInPlace(Matrix& H) const;
+      virtual void WhitenInPlace(Eigen::Block<Matrix> H) const;
 
       /**
        * Return standard deviations (sqrt of diagonal)
@@ -337,17 +353,22 @@ namespace gtsam {
     protected:
 
       // Sigmas are contained in the base class
+      Vector mu_; ///< Penalty function weight - needs to be large enough to dominate soft constraints
 
-      // Penalty function parameters
-      Vector mu_;
+      /**
+       * protected constructor takes sigmas.
+       * prevents any inf values
+       * from appearing in invsigmas or precisions.
+       * mu set to large default value (1000.0)
+       */
+      Constrained(const Vector& sigmas = zero(1));
 
-      /** protected constructor takes sigmas */
-      Constrained(const Vector& sigmas = zero(1)) :
-        Diagonal(sigmas), mu_(repeat(sigmas.size(), 1000.0)) {}
-
-      // allows for specifying mu
-      Constrained(const Vector& mu, const Vector& sigmas) :
-        Diagonal(sigmas), mu_(mu) {}
+      /**
+       * Constructor that prevents any inf values
+       * from appearing in invsigmas or precisions.
+       * Allows for specifying mu.
+       */
+      Constrained(const Vector& mu, const Vector& sigmas);
 
     public:
 
@@ -435,6 +456,7 @@ namespace gtsam {
       /// with a non-zero sigma.  Other rows remain untouched.
       virtual Matrix Whiten(const Matrix& H) const;
       virtual void WhitenInPlace(Matrix& H) const;
+      virtual void WhitenInPlace(Eigen::Block<Matrix> H) const;
 
       /**
        * Apply QR factorization to the system [A b], taking into account constraints
@@ -450,8 +472,9 @@ namespace gtsam {
       /**
        * Returns a Unit version of a constrained noisemodel in which
        * constrained sigmas remain constrained and the rest are unit scaled
+       * Now support augmented part from the Lagrange multiplier.
        */
-      shared_ptr unit() const;
+      shared_ptr unit(size_t augmentedDim = 0) const;
 
     private:
       /** Serialization function */
@@ -513,6 +536,7 @@ namespace gtsam {
       virtual Vector unwhiten(const Vector& v) const;
       virtual Matrix Whiten(const Matrix& H) const;
       virtual void WhitenInPlace(Matrix& H) const;
+      virtual void WhitenInPlace(Eigen::Block<Matrix> H) const;
 
       /**
        * Return standard deviation
@@ -560,6 +584,11 @@ namespace gtsam {
       virtual Vector unwhiten(const Vector& v) const { return v; }
       virtual Matrix Whiten(const Matrix& H) const { return H; }
       virtual void WhitenInPlace(Matrix& H) const {}
+      virtual void WhitenInPlace(Eigen::Block<Matrix> H) const {}
+      virtual void whitenInPlace(Vector& v) const {}
+      virtual void unwhitenInPlace(Vector& v) const {}
+      virtual void whitenInPlace(Eigen::Block<Vector>& v) const {}
+      virtual void unwhitenInPlace(Eigen::Block<Vector>& v) const {}
 
     private:
       /** Serialization function */
@@ -693,6 +722,35 @@ namespace gtsam {
         }
       };
 
+      /// Cauchy implements the "Cauchy" robust error model (Lee2013IROS).  Contributed by:
+      ///   Dipl.-Inform. Jan Oberl�nder (M.Sc.), FZI Research Center for
+      ///   Information Technology, Karlsruhe, Germany.
+      ///   oberlaender@fzi.de
+      /// Thanks Jan!
+      class GTSAM_EXPORT Cauchy : public Base {
+      public:
+        typedef boost::shared_ptr<Cauchy> shared_ptr;
+
+        virtual ~Cauchy() {}
+        Cauchy(const double k = 0.1, const ReweightScheme reweight = Block);
+        virtual double weight(const double &error) const ;
+        virtual void print(const std::string &s) const ;
+        virtual bool equals(const Base& expected, const double tol=1e-8) const ;
+        static shared_ptr Create(const double k, const ReweightScheme reweight = Block) ;
+
+      protected:
+        double k_;
+
+      private:
+        /** Serialization function */
+        friend class boost::serialization::access;
+        template<class ARCHIVE>
+        void serialize(ARCHIVE & ar, const unsigned int version) {
+          ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+          ar & BOOST_SERIALIZATION_NVP(k_);
+        }
+      };
+
       /// Tukey implements the "Tukey" robust error model (Zhang97ivc)
       class GTSAM_EXPORT Tukey : public Base {
       public:
@@ -700,6 +758,31 @@ namespace gtsam {
 
         Tukey(const double c = 4.6851, const ReweightScheme reweight = Block);
         virtual ~Tukey() {}
+        virtual double weight(const double &error) const ;
+        virtual void print(const std::string &s) const ;
+        virtual bool equals(const Base& expected, const double tol=1e-8) const ;
+        static shared_ptr Create(const double k, const ReweightScheme reweight = Block) ;
+
+      protected:
+        double c_;
+
+      private:
+        /** Serialization function */
+        friend class boost::serialization::access;
+        template<class ARCHIVE>
+        void serialize(ARCHIVE & ar, const unsigned int version) {
+          ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+          ar & BOOST_SERIALIZATION_NVP(c_);
+        }
+      };
+
+      /// Welsh implements the "Welsh" robust error model (Zhang97ivc)
+      class GTSAM_EXPORT Welsh : public Base {
+      public:
+        typedef boost::shared_ptr<Welsh> shared_ptr;
+
+        Welsh(const double c = 2.9846, const ReweightScheme reweight = Block);
+        virtual ~Welsh() {}
         virtual double weight(const double &error) const ;
         virtual void print(const std::string &s) const ;
         virtual bool equals(const Base& expected, const double tol=1e-8) const ;
@@ -790,6 +873,7 @@ namespace gtsam {
   typedef noiseModel::Base::shared_ptr SharedNoiseModel;
   typedef noiseModel::Gaussian::shared_ptr SharedGaussian;
   typedef noiseModel::Diagonal::shared_ptr SharedDiagonal;
+  typedef noiseModel::Constrained::shared_ptr SharedConstrained;
 
 } // namespace gtsam
 

@@ -36,7 +36,9 @@ model4 = noiseModel.Diagonal.Sigmas(sigmas);
 combined = JacobianFactor(x2, Ax2,  l1, Al1, x1, Ax1, b2, model4);
 
 % eliminate the first variable (x2) in the combined factor, destructive !
-actualCG = combined.eliminateFirst();
+ord=Ordering;
+ord.push_back(x2);
+actualCG = combined.eliminate(ord);
 
 % create expected Conditional Gaussian
 R11 = [
@@ -52,7 +54,7 @@ S13 = [
 +0.00,-8.94427
 ];
 d=[2.23607;-1.56525];
-expectedCG = GaussianConditional(x2,d,R11,l1,S12,x1,S13,[1;1]);
+expectedCG = GaussianConditional(x2,d,R11,l1,S12,x1,S13);
 % check if the result matches
 CHECK('actualCG.equals(expectedCG,1e-5)',actualCG.equals(expectedCG,1e-4));
 

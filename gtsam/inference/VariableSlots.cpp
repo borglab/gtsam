@@ -24,6 +24,8 @@ using namespace std;
 
 namespace gtsam {
 
+const size_t VariableSlots::Empty = numeric_limits<size_t>::max();
+
 /** print */
 void VariableSlots::print(const std::string& str) const {
   if(this->empty())
@@ -37,7 +39,7 @@ void VariableSlots::print(const std::string& str) const {
     for(size_t i=0; i<this->begin()->second.size(); ++i) {
       cout << "    \t";
       BOOST_FOREACH(const value_type& slot, *this) {
-        if(slot.second[i] == numeric_limits<Index>::max())
+        if(slot.second[i] == Empty)
           cout << "x" << "\t";
         else
           cout << slot.second[i] << "\t";

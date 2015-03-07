@@ -567,7 +567,7 @@ htmlman: $(HTMLMAN)
 @HAVE_PODPROGS_TRUE@	$(POD2MAN) $^ > $@
 
 @HAVE_PODPROGS_TRUE@.pod.1.html:
-@HAVE_PODPROGS_TRUE@	pod2html --noindex $^ | $(PODFIX) > $@
+@HAVE_PODPROGS_TRUE@	pod2html --noindex --tile "$*(1)" $^ | $(PODFIX) > $@
 
 @HAVE_PODPROGS_FALSE@CartConvert.usage:
 @HAVE_PODPROGS_FALSE@	$(USAGECMD)

@@ -101,8 +101,8 @@ namespace gtsam {
         if (H2) *H2 = zeros(2, point.dim());
         std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2())
                               << " behind Camera " << DefaultKeyFormatter(this->key1()) << std::endl;
+        return zero(2);
       }
-      return zero(2);
     }
 
     /** return the measured */

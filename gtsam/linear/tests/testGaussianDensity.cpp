@@ -25,16 +25,16 @@ using namespace std;
 /* ************************************************************************* */
 TEST(GaussianDensity, constructor)
 {
-  Matrix R = Matrix_(2,2,
+  Matrix R = (Matrix(2,2) <<
       -12.1244,  -5.1962,
             0.,   4.6904);
 
-  Vector d = Vector_(2, 1.0, 2.0), s = Vector_(2, 3.0, 4.0);
-  GaussianConditional conditional(1, d, R, s);
+  Vector d = (Vector(2) << 1.0, 2.0), s = (Vector(2) << 3.0, 4.0);
+  GaussianConditional conditional(1, d, R, noiseModel::Diagonal::Sigmas(s));
 
   GaussianDensity copied(conditional);
   EXPECT(assert_equal(d, copied.get_d()));
-  EXPECT(assert_equal(s, copied.get_sigmas()));
+  EXPECT(assert_equal(s, copied.get_model()->sigmas()));
 }
 
 /* ************************************************************************* */

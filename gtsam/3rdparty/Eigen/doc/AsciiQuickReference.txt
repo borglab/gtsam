@@ -16,8 +16,8 @@ double s;
 // Basic usage
 // Eigen          // Matlab           // comments
 x.size()          // length(x)        // vector size
-C.rows()          // size(C)(1)       // number of rows
-C.cols()          // size(C)(2)       // number of columns
+C.rows()          // size(C,1)        // number of rows
+C.cols()          // size(C,2)        // number of columns
 x(i)              // x(i+1)           // Matlab is 1-based
 C(i,j)            // C(i+1,j+1)       //
 
@@ -51,20 +51,34 @@ v.setLinSpace(size,low,high)        // v = linspace(low,high,size)'
 // Eigen                           // Matlab
 x.head(n)                          // x(1:n)
 x.head<n>()                        // x(1:n)
-x.tail(n)                          // N = rows(x); x(N - n: N)
-x.tail<n>()                        // N = rows(x); x(N - n: N)
+x.tail(n)                          // x(end - n + 1: end)
+x.tail<n>()                        // x(end - n + 1: end)
 x.segment(i, n)                    // x(i+1 : i+n)
 x.segment<n>(i)                    // x(i+1 : i+n)
 P.block(i, j, rows, cols)          // P(i+1 : i+rows, j+1 : j+cols)
 P.block<rows, cols>(i, j)          // P(i+1 : i+rows, j+1 : j+cols)
+P.row(i)                           // P(i+1, :)
+P.col(j)                           // P(:, j+1)
+P.leftCols<cols>()                 // P(:, 1:cols)
+P.leftCols(cols)                   // P(:, 1:cols)
+P.middleCols<cols>(j)              // P(:, j+1:j+cols)
+P.middleCols(j, cols)              // P(:, j+1:j+cols)
+P.rightCols<cols>()                // P(:, end-cols+1:end)
+P.rightCols(cols)                  // P(:, end-cols+1:end)
+P.topRows<rows>()                  // P(1:rows, :)
+P.topRows(rows)                    // P(1:rows, :)
+P.middleRows<rows>(i)              // P(:, i+1:i+rows)
+P.middleRows(i, rows)              // P(:, i+1:i+rows)
+P.bottomRows<rows>()               // P(:, end-rows+1:end)
+P.bottomRows(rows)                 // P(:, end-rows+1:end)
 P.topLeftCorner(rows, cols)        // P(1:rows, 1:cols)
-P.topRightCorner(rows, cols)       // [m n]=size(P); P(1:rows, n-cols+1:n)
-P.bottomLeftCorner(rows, cols)     // [m n]=size(P); P(m-rows+1:m, 1:cols)
-P.bottomRightCorner(rows, cols)    // [m n]=size(P); P(m-rows+1:m, n-cols+1:n)
+P.topRightCorner(rows, cols)       // P(1:rows, end-cols+1:end)
+P.bottomLeftCorner(rows, cols)     // P(end-rows+1:end, 1:cols)
+P.bottomRightCorner(rows, cols)    // P(end-rows+1:end, end-cols+1:end)
 P.topLeftCorner<rows,cols>()       // P(1:rows, 1:cols)
-P.topRightCorner<rows,cols>()      // [m n]=size(P); P(1:rows, n-cols+1:n)
-P.bottomLeftCorner<rows,cols>()    // [m n]=size(P); P(m-rows+1:m, 1:cols)
-P.bottomRightCorner<rows,cols>()   // [m n]=size(P); P(m-rows+1:m, n-cols+1:n)
+P.topRightCorner<rows,cols>()      // P(1:rows, end-cols+1:end)
+P.bottomLeftCorner<rows,cols>()    // P(end-rows+1:end, 1:cols)
+P.bottomRightCorner<rows,cols>()   // P(end-rows+1:end, end-cols+1:end)
 
 // Of particular note is Eigen's swap function which is highly optimized.
 // Eigen                           // Matlab
@@ -125,10 +139,8 @@ int r, c;
 // Eigen                  // Matlab
 R.minCoeff()              // min(R(:))
 R.maxCoeff()              // max(R(:))
-s = R.minCoeff(&r, &c)    // [aa, bb] = min(R); [cc, dd] = min(aa);
-                          // r = bb(dd); c = dd; s = cc
-s = R.maxCoeff(&r, &c)    // [aa, bb] = max(R); [cc, dd] = max(aa);
-                          // row = bb(dd); col = dd; s = cc
+s = R.minCoeff(&r, &c)    // [s, i] = min(R(:)); [r, c] = ind2sub(size(R), i);
+s = R.maxCoeff(&r, &c)    // [s, i] = max(R(:)); [r, c] = ind2sub(size(R), i);
 R.sum()                   // sum(R(:))
 R.colwise().sum()         // sum(R)
 R.rowwise().sum()         // sum(R, 2) or sum(R')'
@@ -150,13 +162,25 @@ x.squaredNorm()           // dot(x, x)   Note the equivalence is not true for co
 x.dot(y)                  // dot(x, y)
 x.cross(y)                // cross(x, y) Requires #include <Eigen/Geometry>
 
+//// Type conversion
+// Eigen                           // Matlab
+A.cast<double>();                  // double(A)
+A.cast<float>();                   // single(A)
+A.cast<int>();                     // int32(A)
+// if the original type equals destination type, no work is done
+
+// Note that for most operations Eigen requires all operands to have the same type:
+MatrixXf F = MatrixXf::Zero(3,3);
+A += F;                // illegal in Eigen. In Matlab A = A+F is allowed
+A += F.cast<double>(); // F converted to double and then added (generally, conversion happens on-the-fly)
+
 // Eigen can map existing memory into Eigen matrices.
 float array[3];
-Map<Vector3f>(array, 3).fill(10);
-int data[4] = 1, 2, 3, 4;
-Matrix2i mat2x2(data);
-MatrixXi mat2x2 = Map<Matrix2i>(data);
-MatrixXi mat2x2 = Map<MatrixXi>(data, 2, 2);
+Vector3f::Map(array).fill(10);            // create a temporary Map over array and sets entries to 10
+int data[4] = {1, 2, 3, 4};
+Matrix2i mat2x2(data);                    // copies data into mat2x2
+Matrix2i::Map(data) = 2*mat2x2;           // overwrite elements of data with 2*mat2x2
+MatrixXi::Map(data, 2, 2) += mat2x2;      // adds mat2x2 to elements of data (alternative syntax if size is not know at compile time)
 
 // Solve Ax = b. Result stored in x. Matlab: x = A \ b.
 x = A.ldlt().solve(b));  // A sym. p.s.d.    #include <Eigen/Cholesky>

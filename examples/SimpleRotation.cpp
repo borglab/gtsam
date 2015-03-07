@@ -28,7 +28,7 @@
 // Each variable in the system (poses) must be identified with a unique key.
 // We can either use simple integer keys (1, 2, 3, ...) or symbols (X1, X2, L1).
 // Here we will use symbols
-#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/inference/Symbol.h>
 
 // In GTSAM, measurement functions are represented as 'factors'. Several common factors
 // have been provided with the library for solving robotics/SLAM/Bundle Adjustment problems.
@@ -90,7 +90,7 @@ int main() {
    * many more factors would be added.
    */
   NonlinearFactorGraph graph;
-  graph.add(factor);
+  graph.push_back(factor);
   graph.print("full graph");
 
   /**

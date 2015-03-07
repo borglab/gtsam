@@ -24,7 +24,7 @@
 
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/linear/Sampler.h>
-#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/slam/dataset.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/BearingRangeFactor.h>
@@ -180,7 +180,7 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
 
       noiseModel::Diagonal::shared_ptr measurementNoise =
           noiseModel::Diagonal::Sigmas((Vector(2) << bearing_std, range_std));
-      graph->add(BearingRangeFactor<Pose2, Point2>(id1, id2, bearing, range, measurementNoise));
+      *graph += BearingRangeFactor<Pose2, Point2>(id1, id2, bearing, range, measurementNoise);
 
       // Insert poses or points if they do not exist yet
       if (!initial->exists(id1))
@@ -223,13 +223,13 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
       }
 
       // Add to graph
-      graph->add(BearingRangeFactor<Pose2, Point2>(id1, L(id2), bearing, range, measurementNoise));
+      *graph += BearingRangeFactor<Pose2, Point2>(id1, L(id2), bearing, range, measurementNoise);
     }
     is.ignore(LINESIZE, '\n');
   }
 
   cout << "load2D read a graph file with " << initial->size()
-                    << " vertices and " << graph->nrFactors() << " factors" << endl;
+                        << " vertices and " << graph->nrFactors() << " factors" << endl;
 
   return make_pair(graph, initial);
 }
@@ -387,7 +387,7 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D_robust(
 
       noiseModel::Diagonal::shared_ptr measurementNoise =
           noiseModel::Diagonal::Sigmas((Vector(2) << bearing_std, range_std));
-      graph->add(BearingRangeFactor<Pose2, Point2>(id1, id2, bearing, range, measurementNoise));
+      *graph += BearingRangeFactor<Pose2, Point2>(id1, id2, bearing, range, measurementNoise);
 
       // Insert poses or points if they do not exist yet
       if (!initial->exists(id1))
@@ -403,7 +403,7 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D_robust(
   }
 
   cout << "load2D read a graph file with " << initial->size()
-                    << " vertices and " << graph->nrFactors() << " factors" << endl;
+                        << " vertices and " << graph->nrFactors() << " factors" << endl;
 
   return make_pair(graph, initial);
 }
@@ -669,52 +669,75 @@ bool writeBAL(const string& filename, SfM_data &data)
   return true;
 }
 
-bool writeBALfromValues(const string& filename, SfM_data &data, Values& values){
+bool writeBALfromValues(const string& filename, const SfM_data &data, Values& values){
 
-  // CHECKS
+  SfM_data dataValues = data;
+
+  // Store poses or cameras in SfM_data
   Values valuesPoses = values.filter<Pose3>();
-  if( valuesPoses.size() != data.number_cameras()){
-    cout << "writeBALfromValues: different number of cameras in SfM_data (#cameras= " << data.number_cameras()
-        <<") and values (#cameras " << valuesPoses.size() << ")!!" << endl;
-    return false;
-  }
-  Values valuesPoints = values.filter<Point3>();
-  if( valuesPoints.size() != data.number_tracks()){
-    cout << "writeBALfromValues: different number of points in SfM_data (#points= " << data.number_tracks()
-        <<") and values (#points " << valuesPoints.size() << ")!!" << endl;
-  }
-  if(valuesPoints.size() + valuesPoses.size() != values.size()){
-    cout << "writeBALfromValues write only poses and points values!!" << endl;
-    return false;
-  }
-  if(valuesPoints.size()==0 || valuesPoses.size()==0){
-    cout << "writeBALfromValues: No point or pose in values!!" << endl;
-    return false;
-  }
-
-  for (size_t i = 0; i < data.number_cameras(); i++){ // for each camera
-    Key poseKey = symbol('x',i);
-    Pose3 pose = values.at<Pose3>(poseKey);
-    Cal3Bundler K = data.cameras[i].calibration();
-    PinholeCamera<Cal3Bundler> camera(pose, K);
-    data.cameras[i] = camera;
-  }
-
-  for (size_t j = 0; j < data.number_tracks(); j++){ // for each point
-    Key pointKey = symbol('l',j);
-    if(values.exists(pointKey)){
-      Point3 point = values.at<Point3>(pointKey);
-      data.tracks[j].p = point;
+  if( valuesPoses.size() == dataValues.number_cameras() ){ // we only estimated camera poses
+    for (size_t i = 0; i < dataValues.number_cameras(); i++){ // for each camera
+      Key poseKey = symbol('x',i);
+      Pose3 pose = values.at<Pose3>(poseKey);
+      Cal3Bundler K = dataValues.cameras[i].calibration();
+      PinholeCamera<Cal3Bundler> camera(pose, K);
+      dataValues.cameras[i] = camera;
+    }
+  } else {
+    Values valuesCameras = values.filter< PinholeCamera<Cal3Bundler> >();
+    if ( valuesCameras.size() == dataValues.number_cameras() ){  // we only estimated camera poses and calibration
+      for (size_t i = 0; i < dataValues.number_cameras(); i++){ // for each camera
+        Key cameraKey = i; // symbol('c',i);
+        PinholeCamera<Cal3Bundler> camera = values.at<PinholeCamera<Cal3Bundler> >(cameraKey);
+        dataValues.cameras[i] = camera;
+      }
     }else{
-      data.tracks[j].r = 1.0;
-      data.tracks[j].g = 0.0;
-      data.tracks[j].b = 0.0;
-      data.tracks[j].p = Point3();
+      cout << "writeBALfromValues: different number of cameras in SfM_dataValues (#cameras= " << dataValues.number_cameras()
+              <<") and values (#cameras " << valuesPoses.size() << ", #poses " << valuesCameras.size() << ")!!" << endl;
+      return false;
     }
   }
 
-  return writeBAL(filename, data);
+  // Store 3D points in SfM_data
+  Values valuesPoints = values.filter<Point3>();
+  if( valuesPoints.size() != dataValues.number_tracks()){
+    cout << "writeBALfromValues: different number of points in SfM_dataValues (#points= " << dataValues.number_tracks()
+            <<") and values (#points " << valuesPoints.size() << ")!!" << endl;
+  }
+
+  for (size_t j = 0; j < dataValues.number_tracks(); j++){ // for each point
+    Key pointKey = symbol('l',j);
+    if(values.exists(pointKey)){
+      Point3 point = values.at<Point3>(pointKey);
+      dataValues.tracks[j].p = point;
+    }else{
+      dataValues.tracks[j].r = 1.0;
+      dataValues.tracks[j].g = 0.0;
+      dataValues.tracks[j].b = 0.0;
+      dataValues.tracks[j].p = Point3();
+    }
+  }
+
+  // Write SfM_data to file
+  return writeBAL(filename, dataValues);
 }
 
+Values initialCamerasEstimate(const SfM_data& db) {
+  Values initial;
+  size_t i = 0; // NO POINTS:  j = 0;
+  BOOST_FOREACH(const SfM_Camera& camera, db.cameras)
+  initial.insert(i++, camera);
+  return initial;
+}
+
+Values initialCamerasAndPointsEstimate(const SfM_data& db) {
+  Values initial;
+  size_t i = 0, j = 0;
+  BOOST_FOREACH(const SfM_Camera& camera, db.cameras)
+  initial.insert((i++), camera);
+  BOOST_FOREACH(const SfM_Track& track, db.tracks)
+  initial.insert(P(j++), track.p);
+  return initial;
+}
 
 } // \namespace gtsam

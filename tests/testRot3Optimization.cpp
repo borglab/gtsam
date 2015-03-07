@@ -24,7 +24,7 @@
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
-#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/PriorFactor.h>
 
@@ -41,11 +41,11 @@ TEST(Rot3, optimize) {
   Values truth;
   Values initial;
   Graph fg;
-  fg.add(Prior(Symbol('r',0), Rot3(), noiseModel::Isotropic::Sigma(3, 0.01)));
+  fg += Prior(Symbol('r',0), Rot3(), noiseModel::Isotropic::Sigma(3, 0.01));
   for(int j=0; j<6; ++j) {
     truth.insert(Symbol('r',j), Rot3::Rz(M_PI/3.0 * double(j)));
     initial.insert(Symbol('r',j), Rot3::Rz(M_PI/3.0 * double(j) + 0.1 * double(j%2)));
-    fg.add(Between(Symbol('r',j), Symbol('r',(j+1)%6), Rot3::Rz(M_PI/3.0), noiseModel::Isotropic::Sigma(3, 0.01)));
+    fg += Between(Symbol('r',j), Symbol('r',(j+1)%6), Rot3::Rz(M_PI/3.0), noiseModel::Isotropic::Sigma(3, 0.01));
   }
 
   Values final = GaussNewtonOptimizer(fg, initial).optimize();

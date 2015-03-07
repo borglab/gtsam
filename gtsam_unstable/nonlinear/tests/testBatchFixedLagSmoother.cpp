@@ -18,28 +18,27 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam_unstable/nonlinear/BatchFixedLagSmoother.h>
-#include <gtsam/slam/PriorFactor.h>
-#include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/nonlinear/Ordering.h>
+#include <gtsam/base/debug.h>
+#include <gtsam/inference/Key.h>
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/geometry/Point2.h>
+#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/nonlinear/Key.h>
-#include <gtsam/linear/GaussianBayesNet.h>
-#include <gtsam/linear/GaussianSequentialSolver.h>
-#include <gtsam/geometry/Point2.h>
-#include <gtsam/base/debug.h>
+#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/slam/BetweenFactor.h>
 
 using namespace std;
 using namespace gtsam;
 
+
 /* ************************************************************************* */
 bool check_smoother(const NonlinearFactorGraph& fullgraph, const Values& fullinit, const BatchFixedLagSmoother& smoother, const Key& key) {
 
-  Ordering ordering = *fullgraph.orderingCOLAMD(fullinit);
-  GaussianFactorGraph linearized = *fullgraph.linearize(fullinit, ordering);
-  GaussianBayesNet gbn = *GaussianSequentialSolver(linearized).eliminate();
-  VectorValues delta = optimize(gbn);
-  Values fullfinal = fullinit.retract(delta, ordering);
+  GaussianFactorGraph linearized = *fullgraph.linearize(fullinit);
+  VectorValues delta = linearized.optimize();
+  Values fullfinal = fullinit.retract(delta);
 
   Point2 expected = fullfinal.at<Point2>(key);
   Point2 actual = smoother.calculateEstimate<Point2>(key);
@@ -48,7 +47,7 @@ bool check_smoother(const NonlinearFactorGraph& fullgraph, const Values& fullini
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE( BatchFixedLagSmoother, Example )
+TEST( BatchFixedLagSmoother, Example )
 {
   // Test the BatchFixedLagSmoother in a pure linear environment. Thus, full optimization and
   // the BatchFixedLagSmoother should be identical (even with the linearized approximations at
@@ -61,8 +60,8 @@ TEST_UNSAFE( BatchFixedLagSmoother, Example )
 //  SETDEBUG("BatchFixedLagSmoother calculateMarginalFactors", true);
 
   // Set up parameters
-  SharedDiagonal odometerNoise = noiseModel::Diagonal::Sigmas(Vector_(2, 0.1, 0.1));
-  SharedDiagonal loopNoise = noiseModel::Diagonal::Sigmas(Vector_(2, 0.1, 0.1));
+  SharedDiagonal odometerNoise = noiseModel::Diagonal::Sigmas((Vector(2) << 0.1, 0.1));
+  SharedDiagonal loopNoise = noiseModel::Diagonal::Sigmas((Vector(2) << 0.1, 0.1));
 
   // Create a Fixed-Lag Smoother
   typedef BatchFixedLagSmoother::KeyTimestampMap Timestamps;
@@ -85,7 +84,7 @@ TEST_UNSAFE( BatchFixedLagSmoother, Example )
     Values newValues;
     Timestamps newTimestamps;
 
-    newFactors.add(PriorFactor<Point2>(key0, Point2(0.0, 0.0), odometerNoise));
+    newFactors.push_back(PriorFactor<Point2>(key0, Point2(0.0, 0.0), odometerNoise));
     newValues.insert(key0, Point2(0.01, 0.01));
     newTimestamps[key0] = 0.0;
 
@@ -110,7 +109,7 @@ TEST_UNSAFE( BatchFixedLagSmoother, Example )
     Values newValues;
     Timestamps newTimestamps;
 
-    newFactors.add(BetweenFactor<Point2>(key1, key2, Point2(1.0, 0.0), odometerNoise));
+    newFactors.push_back(BetweenFactor<Point2>(key1, key2, Point2(1.0, 0.0), odometerNoise));
     newValues.insert(key2, Point2(double(i)+0.1, -0.1));
     newTimestamps[key2] = double(i);
 
@@ -136,8 +135,8 @@ TEST_UNSAFE( BatchFixedLagSmoother, Example )
     Values newValues;
     Timestamps newTimestamps;
 
-    newFactors.add(BetweenFactor<Point2>(key1, key2, Point2(1.0, 0.0), odometerNoise));
-    newFactors.add(BetweenFactor<Point2>(Key(2), Key(5), Point2(3.5, 0.0), loopNoise));
+    newFactors.push_back(BetweenFactor<Point2>(key1, key2, Point2(1.0, 0.0), odometerNoise));
+    newFactors.push_back(BetweenFactor<Point2>(Key(2), Key(5), Point2(3.5, 0.0), loopNoise));
     newValues.insert(key2, Point2(double(i)+0.1, -0.1));
     newTimestamps[key2] = double(i);
 
@@ -162,7 +161,7 @@ TEST_UNSAFE( BatchFixedLagSmoother, Example )
     Values newValues;
     Timestamps newTimestamps;
 
-    newFactors.add(BetweenFactor<Point2>(key1, key2, Point2(1.0, 0.0), odometerNoise));
+    newFactors.push_back(BetweenFactor<Point2>(key1, key2, Point2(1.0, 0.0), odometerNoise));
     newValues.insert(key2, Point2(double(i)+0.1, -0.1));
     newTimestamps[key2] = double(i);
 

@@ -153,12 +153,12 @@ namespace gtsam {
     }
 
     // Linearize is over-written, because base linearization tries to whiten
-    virtual GaussianFactor::shared_ptr linearize(const Values& x, const Ordering& ordering) const {
+    virtual GaussianFactor::shared_ptr linearize(const Values& x) const {
       const T& xj = x.at<T>(this->key());
       Matrix A;
       Vector b = evaluateError(xj, A);
       SharedDiagonal model = noiseModel::Constrained::All(b.size());
-      return GaussianFactor::shared_ptr(new JacobianFactor(ordering[this->key()], A, b, model));
+      return GaussianFactor::shared_ptr(new JacobianFactor(this->key(), A, b, model));
     }
 
     /// @return a deep copy of this factor

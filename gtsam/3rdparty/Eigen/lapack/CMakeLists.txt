@@ -7,6 +7,9 @@ workaround_9220(Fortran EIGEN_Fortran_COMPILER_WORKS)
 
 if(EIGEN_Fortran_COMPILER_WORKS)
   enable_language(Fortran OPTIONAL)
+  if(NOT CMAKE_Fortran_COMPILER)
+    set(EIGEN_Fortran_COMPILER_WORKS OFF)
+  endif()
 endif()
 
 add_custom_target(lapack)

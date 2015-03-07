@@ -83,6 +83,17 @@ TEST( Cal3_S2, assert_equal)
 }
 
 /* ************************************************************************* */
+TEST( Cal3_S2, retract)
+{
+  Cal3_S2 expected(500+1, 500+2, 0.1+3, 640 / 2+4, 480 / 2+5);
+  Vector d(5);
+  d << 1,2,3,4,5;
+  Cal3_S2 actual = K.retract(d);
+  CHECK(assert_equal(expected,actual,1e-7));
+  CHECK(assert_equal(d,K.localCoordinates(actual),1e-7));
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

@@ -27,7 +27,7 @@
 #include <gtsam/geometry/Point2.h>
 
 // Inference and optimization
-#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/DoglegOptimizer.h>
 #include <gtsam/nonlinear/Values.h>
@@ -54,7 +54,7 @@ int main(int argc, char* argv[]) {
 
   // Add a prior on pose x1.
   noiseModel::Diagonal::shared_ptr poseNoise = noiseModel::Diagonal::Sigmas((Vector(6) << Vector3::Constant(0.3), Vector3::Constant(0.1))); // 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
-  graph.add(PriorFactor<Pose3>(Symbol('x', 0), poses[0], poseNoise));
+  graph.push_back(PriorFactor<Pose3>(Symbol('x', 0), poses[0], poseNoise));
 
   // Simulated measurements from each camera pose, adding them to the factor graph
   Cal3_S2 K(50.0, 50.0, 0.0, 50.0, 50.0);
@@ -65,17 +65,17 @@ int main(int argc, char* argv[]) {
       Point2 measurement = camera.project(points[j]);
       // The only real difference with the Visual SLAM example is that here we use a
       // different factor type, that also calculates the Jacobian with respect to calibration
-      graph.add(GeneralSFMFactor2<Cal3_S2>(measurement, measurementNoise, Symbol('x', i), Symbol('l', j), Symbol('K', 0)));
+      graph.push_back(GeneralSFMFactor2<Cal3_S2>(measurement, measurementNoise, Symbol('x', i), Symbol('l', j), Symbol('K', 0)));
     }
   }
 
   // Add a prior on the position of the first landmark.
   noiseModel::Isotropic::shared_ptr pointNoise = noiseModel::Isotropic::Sigma(3, 0.1);
-  graph.add(PriorFactor<Point3>(Symbol('l', 0), points[0], pointNoise)); // add directly to graph
+  graph.push_back(PriorFactor<Point3>(Symbol('l', 0), points[0], pointNoise)); // add directly to graph
 
   // Add a prior on the calibration.
   noiseModel::Diagonal::shared_ptr calNoise = noiseModel::Diagonal::Sigmas((Vector(5) << 500, 500, 0.1, 100, 100));
-  graph.add(PriorFactor<Cal3_S2>(Symbol('K', 0), K, calNoise));
+  graph.push_back(PriorFactor<Cal3_S2>(Symbol('K', 0), K, calNoise));
 
   // Create the initial estimate to the solution
   // now including an estimate on the camera calibration parameters

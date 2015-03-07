@@ -25,7 +25,7 @@ Matrix Z3 = zeros(3, 3);
 
 /* ************************************************************************* */
 AHRS::AHRS(const Matrix& stationaryU, const Matrix& stationaryF, double g_e,
-		bool flat) :
+    bool flat) :
     KF_(9) {
 
   // Initial state
@@ -60,7 +60,7 @@ AHRS::AHRS(const Matrix& stationaryU, const Matrix& stationaryF, double g_e,
   sigmas_v_a_ = esqrt(T * Pa_.diagonal());
 
   // gravity in nav frame
-  n_g_ = Vector_(3, 0.0, 0.0, g_e);
+  n_g_ = (Vector(3) << 0.0, 0.0, g_e);
   n_g_cross_ = skewSymmetric(n_g_);  // nav frame has Z down !!!
 }
 
@@ -70,9 +70,9 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::initialize(double g_e) 
   // Calculate Omega_T, formula 2.80 in Farrell08book
   double cp = cos(mech0_.bRn().inverse().pitch());
   double sp = sin(mech0_.bRn().inverse().pitch());
-  double cy = cos(0);
-  double sy = sin(0);
-  Matrix Omega_T = Matrix_(3, 3, cy * cp, -sy, 0.0, sy * cp, cy, 0.0, -sp, 0.0, 1.0);
+  double cy = cos(0.0);
+  double sy = sin(0.0);
+  Matrix Omega_T = (Matrix(3, 3) << cy * cp, -sy, 0.0, sy * cp, cy, 0.0, -sp, 0.0, 1.0);
 
   // Calculate Jacobian of roll/pitch/yaw wrpt (g1,g2,g3), see doc/ypr.nb
   Vector b_g = mech0_.b_g(g_e);
@@ -82,7 +82,7 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::initialize(double g_e) 
   double g23 = g2 * g2 + g3 * g3;
   double g123 = g1 * g1 + g23;
   double f = 1 / (std::sqrt(g23) * g123);
-  Matrix H_g = Matrix_(3, 3,
+  Matrix H_g = (Matrix(3, 3) <<
       0.0, g3 / g23, -(g2 / g23),                       // roll
       std::sqrt(g23) / g123, -f * (g1 * g2), -f * (g1 * g3), // pitch
       0.0, 0.0, 0.0);                                   // we don't know anything on yaw
@@ -94,17 +94,17 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::initialize(double g_e) 
   Matrix P12 = -Omega_T * H_g * Pa;
 
   Matrix P_plus_k2 = Matrix(9, 9);
-  P_plus_k2.block(0, 0, 3, 3) = P11;
-  P_plus_k2.block(0, 3, 3, 3) = Z3;
-  P_plus_k2.block(0, 6, 3, 3) = P12;
+  P_plus_k2.block<3,3>(0, 0) = P11;
+  P_plus_k2.block<3,3>(0, 3) = Z3;
+  P_plus_k2.block<3,3>(0, 6) = P12;
 
-  P_plus_k2.block(3, 0, 3, 3) = Z3;
-  P_plus_k2.block(3, 3, 3, 3) = Pg_;
-  P_plus_k2.block(3, 6, 3, 3) = Z3;
+  P_plus_k2.block<3,3>(3, 0) = Z3;
+  P_plus_k2.block<3,3>(3, 3) = Pg_;
+  P_plus_k2.block<3,3>(3, 6) = Z3;
 
-  P_plus_k2.block(6, 0, 3, 3) = trans(P12);
-  P_plus_k2.block(6, 3, 3, 3) = Z3;
-  P_plus_k2.block(6, 6, 3, 3) = Pa;
+  P_plus_k2.block<3,3>(6, 0) = trans(P12);
+  P_plus_k2.block<3,3>(6, 3) = Z3;
+  P_plus_k2.block<3,3>(6, 6) = Pa;
 
   Vector dx = zero(9);
   KalmanFilter::State state = KF_.init(dx, P_plus_k2);
@@ -127,19 +127,20 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::integrate(
   Matrix Z3 = zeros(3, 3);
 
   Matrix F_k = zeros(9, 9);
-  F_k.block(0, 3, 3, 3) = -bRn;
-  F_k.block(3, 3, 3, 3) = F_g_;
-  F_k.block(6, 6, 3, 3) = F_a_;
+  F_k.block<3,3>(0, 3) = -bRn;
+  F_k.block<3,3>(3, 3) = F_g_;
+  F_k.block<3,3>(6, 6) = F_a_;
 
   Matrix G_k = zeros(9, 12);
-  G_k.block(0, 0, 3, 3) = -bRn;
-  G_k.block(0, 6, 3, 3) = -bRn;
-  G_k.block(3, 3, 3, 3) = I3;
-  G_k.block(6, 9, 3, 3) = I3;
+  G_k.block<3,3>(0, 0) = -bRn;
+  G_k.block<3,3>(0, 6) = -bRn;
+  G_k.block<3,3>(3, 3) = I3;
+  G_k.block<3,3>(6, 9) = I3;
 
   Matrix Q_k = G_k * var_w_ * trans(G_k);
   Matrix Psi_k = eye(9) + dt * F_k; // +dt*dt*F_k*F_k/2; // transition matrix
 
+  // This implements update in section 10.6
   Matrix B = zeros(9, 9);
   Vector u2 = zero(9);
   KalmanFilter::State newState = KF_.predictQ(state, Psi_k,B,u2,dt*Q_k);
@@ -148,21 +149,21 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::integrate(
 
 /* ************************************************************************* */
 bool AHRS::isAidingAvailable(const Mechanization_bRn2& mech,
-    const gtsam::Vector& f, const gtsam::Vector& u, double ge) {
+    const gtsam::Vector& f, const gtsam::Vector& u, double ge) const {
 
   // Subtract the biases
   Vector f_ = f - mech.x_a();
   Vector u_ = u - mech.x_g();
 
-  double mu_f = f_.norm() - ge;
-  double mu_u = u_.norm();
-  return (fabs(mu_f)<0.5 && mu_u < 5.0 / 180.0 * 3.1415926);
+  double mu_f = f_.norm() - ge; // accelerometer same magnitude as local gravity ?
+  double mu_u = u_.norm(); // gyro says we are not maneuvering ?
+  return (fabs(mu_f)<0.5 && mu_u < 5.0 / 180.0 * M_PI);
 }
 
 /* ************************************************************************* */
 std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::aid(
     const Mechanization_bRn2& mech, KalmanFilter::State state,
-    const Vector& f, bool Farrell) {
+    const Vector& f, bool Farrell) const {
 
   Matrix bRn = mech.bRn().matrix();
 
@@ -182,8 +183,8 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::aid(
     // F(:,k) = mech.x_a + dx_a - bRn*n_g;
     // F(:,k) = mech.x_a + dx_a - bRn*(I+P)*n_g;
     // F(:,k) = mech.x_a + dx_a - b_g - bRn*(rho x n_g); // P = [rho]_x
-	// Hence, the measurement z = b_g - (mech.x_a - F(:,k)) is predicted
-	// from the filter state (dx_a, rho) as  dx_a + bRn*(n_g x rho)
+  // Hence, the measurement z = b_g - (mech.x_a - F(:,k)) is predicted
+  // from the filter state (dx_a, rho) as  dx_a + bRn*(n_g x rho)
     // z = b_g - (mech.x_a - F(:,k)) = dx_a + bRn*(n_g x rho)
     z = bRn * n_g_ - measured_b_g;
     // Now the Jacobian H
@@ -210,7 +211,7 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::aid(
 std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::aidGeneral(
     const Mechanization_bRn2& mech, KalmanFilter::State state,
     const Vector& f, const Vector& f_previous,
-    const Rot3& R_previous) {
+    const Rot3& R_previous) const {
 
   Matrix increment = R_previous.between(mech.bRn()).matrix();
 
@@ -220,8 +221,8 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::aidGeneral(
   Matrix b_g = skewSymmetric(increment* f_previous);
   Matrix H = collect(3, &b_g, &I3, &Z3);
 //  Matrix R = diag(emul(sigmas_v_a_, sigmas_v_a_));
-//  Matrix R = diag(Vector_(3, 1.0, 0.2, 1.0)); // good for L_twice
-  Matrix R = diag(Vector_(3, 0.01, 0.0001, 0.01));
+//  Matrix R = diag((Vector(3) << 1.0, 0.2, 1.0)); // good for L_twice
+  Matrix R = diag((Vector(3) << 0.01, 0.0001, 0.01));
 
 // update the Kalman filter
   KalmanFilter::State updatedState = KF_.updateQ(state, H, z, R);

@@ -8,6 +8,7 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <iostream>
 
 #include <gtsam/slam/serialization.h>
 

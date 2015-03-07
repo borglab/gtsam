@@ -20,11 +20,17 @@
 #include <boost/lexical_cast.hpp>
 
 #include <gtsam/base/types.h>
+#include <gtsam/inference/Symbol.h>
 
 namespace gtsam {
 
-  std::string _defaultIndexFormatter(Index j) {
-    return boost::lexical_cast<std::string>(j);
+  /* ************************************************************************* */
+  std::string _defaultKeyFormatter(Key key) {
+    const Symbol asSymbol(key);
+    if(asSymbol.chr() > 0)
+      return (std::string)asSymbol;
+    else
+      return boost::lexical_cast<std::string>(key);
   }
 
 }

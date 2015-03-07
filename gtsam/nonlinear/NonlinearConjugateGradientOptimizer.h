@@ -31,10 +31,9 @@ class GTSAM_EXPORT NonlinearConjugateGradientOptimizer : public NonlinearOptimiz
 
   protected:
     const NonlinearFactorGraph &graph_;
-    const Ordering &ordering_;
 
   public:
-    System(const NonlinearFactorGraph &graph, const Ordering &ordering): graph_(graph), ordering_(ordering) {}
+    System(const NonlinearFactorGraph &graph): graph_(graph) {}
     double error(const State &state) const ;
     Gradient gradient(const State &state) const ;
     State advance(const State &current, const double alpha, const Gradient &g) const ;
@@ -49,15 +48,12 @@ public:
 protected:
   States state_;
   Parameters params_;
-  Ordering::shared_ptr ordering_;
-  VectorValues::shared_ptr gradient_;
 
 public:
 
   NonlinearConjugateGradientOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues,
                                       const Parameters& params = Parameters())
-    : Base(graph), state_(graph, initialValues), params_(params), ordering_(initialValues.orderingArbitrary()),
-      gradient_(new VectorValues(initialValues.zeroVectors(*ordering_))){}
+    : Base(graph), state_(graph, initialValues), params_(params) {}
 
   virtual ~NonlinearConjugateGradientOptimizer() {}
   virtual void iterate();
@@ -125,11 +121,11 @@ double lineSearch(const S &system, const V currentValues, const W &gradient) {
  * The last parameter is a switch between gradient-descent and conjugate gradient
  */
 template <class S, class V>
-boost::tuple<V, size_t> nonlinearConjugateGradient(const S &system, const V &initial, const NonlinearOptimizerParams &params, const bool singleIteration, const bool gradientDescent = false) {
+boost::tuple<V, int> nonlinearConjugateGradient(const S &system, const V &initial, const NonlinearOptimizerParams &params, const bool singleIteration, const bool gradientDescent = false) {
 
   // GTSAM_CONCEPT_MANIFOLD_TYPE(V);
 
-  Index iteration = 0;
+  int iteration = 0;
 
   // check if we're already close enough
   double currentError = system.error(initial);
@@ -185,9 +181,5 @@ boost::tuple<V, size_t> nonlinearConjugateGradient(const S &system, const V &ini
   return boost::tie(currentValues, iteration);
 }
 
-
-
-
-
-
 }
+

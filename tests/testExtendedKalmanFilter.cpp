@@ -18,7 +18,7 @@
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/ExtendedKalmanFilter-inl.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/geometry/Point2.h>
 
 #include <CppUnitLite/TestHarness.h>
@@ -32,25 +32,25 @@ using symbol_shorthand::L;
 /* ************************************************************************* */
 TEST( ExtendedKalmanFilter, linear ) {
 
-  // Create the Kalman Filter initialization point
-  Point2 x_initial(0.0, 0.0);
-  SharedDiagonal P_initial = noiseModel::Diagonal::Sigmas(Vector_(2, 0.1, 0.1));
-
-  // Create an ExtendedKalmanFilter object
-  ExtendedKalmanFilter<Point2> ekf(x_initial, P_initial);
-
   // Create the TestKeys for our example
   Symbol x0('x',0), x1('x',1), x2('x',2), x3('x',3);
 
+  // Create the Kalman Filter initialization point
+  Point2 x_initial(0.0, 0.0);
+  SharedDiagonal P_initial = noiseModel::Diagonal::Sigmas((Vector(2) << 0.1, 0.1));
+
+  // Create an ExtendedKalmanFilter object
+  ExtendedKalmanFilter<Point2> ekf(x0, x_initial, P_initial);
+
   // Create the controls and measurement properties for our example
   double dt = 1.0;
-  Vector u = Vector_(2, 1.0, 0.0);
+  Vector u = (Vector(2) << 1.0, 0.0);
   Point2 difference(u*dt);
-  SharedDiagonal Q = noiseModel::Diagonal::Sigmas(Vector_(2, 0.1, 0.1), true);
+  SharedDiagonal Q = noiseModel::Diagonal::Sigmas((Vector(2) << 0.1, 0.1), true);
   Point2 z1(1.0, 0.0);
   Point2 z2(2.0, 0.0);
   Point2 z3(3.0, 0.0);
-  SharedDiagonal R = noiseModel::Diagonal::Sigmas(Vector_(2, 0.25, 0.25), true);
+  SharedDiagonal R = noiseModel::Diagonal::Sigmas((Vector(2) << 0.25, 0.25), true);
 
   // Create the set of expected output TestValues
   Point2 expected1(1.0, 0.0);
@@ -107,7 +107,7 @@ public:
   NonlinearMotionModel(){}
 
   NonlinearMotionModel(const Symbol& TestKey1, const Symbol& TestKey2) :
-    Base(noiseModel::Diagonal::Sigmas(Vector_(2, 1.0, 1.0)), TestKey1, TestKey2), Q_(2,2) {
+    Base(noiseModel::Diagonal::Sigmas((Vector(2) << 1.0, 1.0)), TestKey1, TestKey2), Q_(2,2) {
 
     // Initialize motion model parameters:
     // w is vector of motion noise sigmas. The final covariance is calculated as G*w*w'*G'
@@ -192,16 +192,15 @@ public:
    * Ax-b \approx h(x1+dx1,x2+dx2)-z = h(x1,x2) + A2*dx1 + A2*dx2 - z
    * Hence b = z - h(x1,x2) = - error_vector(x)
    */
-  boost::shared_ptr<GaussianFactor> linearize(const Values& c, const Ordering& ordering) const {
+  boost::shared_ptr<GaussianFactor> linearize(const Values& c) const {
     const X1& x1 = c.at<X1>(key1());
     const X2& x2 = c.at<X2>(key2());
     Matrix A1, A2;
     Vector b = -evaluateError(x1, x2, A1, A2);
-    const Index var1 = ordering[key1()], var2 = ordering[key2()];
     SharedDiagonal constrained =
         boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
     if (constrained.get() != NULL) {
-      return JacobianFactor::shared_ptr(new JacobianFactor(var1, A1, var2,
+      return JacobianFactor::shared_ptr(new JacobianFactor(key1(), A1, key2(),
           A2, b, constrained));
     }
     // "Whiten" the system before converting to a Gaussian Factor
@@ -209,7 +208,7 @@ public:
     A1 = Qinvsqrt*A1;
     A2 = Qinvsqrt*A2;
     b = Qinvsqrt*b;
-    return GaussianFactor::shared_ptr(new JacobianFactor(var1, A1, var2,
+    return GaussianFactor::shared_ptr(new JacobianFactor(key1(), A1, key2(),
         A2, b, noiseModel::Unit::Create(b.size())));
   }
 
@@ -256,7 +255,7 @@ public:
   NonlinearMeasurementModel(){}
 
   NonlinearMeasurementModel(const Symbol& TestKey, Vector z) :
-    Base(noiseModel::Diagonal::Sigmas(Vector_(2, 1.0, 1.0)), TestKey), z_(z), R_(1,1) {
+    Base(noiseModel::Unit::Create(z.size()), TestKey), z_(z), R_(1,1) {
 
     // Initialize nonlinear measurement model parameters:
     // z(t) = H*x(t) + v
@@ -329,21 +328,20 @@ public:
    * Ax-b \approx h(x1+dx1)-z = h(x1) + A1*dx1 - z
    * Hence b = z - h(x1) = - error_vector(x)
    */
-  boost::shared_ptr<GaussianFactor> linearize(const Values& c, const Ordering& ordering) const {
+  boost::shared_ptr<GaussianFactor> linearize(const Values& c) const {
     const X& x1 = c.at<X>(key());
     Matrix A1;
     Vector b = -evaluateError(x1, A1);
-    const Index var1 = ordering[key()];
     SharedDiagonal constrained =
         boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
     if (constrained.get() != NULL) {
-      return JacobianFactor::shared_ptr(new JacobianFactor(var1, A1, b, constrained));
+      return JacobianFactor::shared_ptr(new JacobianFactor(key(), A1, b, constrained));
     }
     // "Whiten" the system before converting to a Gaussian Factor
     Matrix Rinvsqrt = RInvSqrt(x1);
     A1 = Rinvsqrt*A1;
     b = Rinvsqrt*b;
-    return GaussianFactor::shared_ptr(new JacobianFactor(var1, A1, b, noiseModel::Unit::Create(b.size())));
+    return GaussianFactor::shared_ptr(new JacobianFactor(key(), A1, b, noiseModel::Unit::Create(b.size())));
   }
 
   /** vector of errors */
@@ -405,10 +403,10 @@ TEST( ExtendedKalmanFilter, nonlinear ) {
 
   // Create the Kalman Filter initialization point
   Point2 x_initial(0.90, 1.10);
-  SharedDiagonal P_initial = noiseModel::Diagonal::Sigmas(Vector_(2, 0.1, 0.1));
+  SharedDiagonal P_initial = noiseModel::Diagonal::Sigmas((Vector(2) << 0.1, 0.1));
 
   // Create an ExtendedKalmanFilter object
-  ExtendedKalmanFilter<Point2> ekf(x_initial, P_initial);
+  ExtendedKalmanFilter<Point2> ekf(X(0), x_initial, P_initial);
 
   // Enter Predict-Update Loop
   Point2 x_predict, x_update;
@@ -418,7 +416,7 @@ TEST( ExtendedKalmanFilter, nonlinear ) {
     x_predict = ekf.predict(motionFactor);
 
     // Create a measurement factor
-    NonlinearMeasurementModel measurementFactor(X(i+1), Vector_(1, z[i]));
+    NonlinearMeasurementModel measurementFactor(X(i+1), (Vector(1) << z[i]));
     x_update = ekf.update(measurementFactor);
 
     EXPECT(assert_equal(expected_predict[i],x_predict, 1e-6));

@@ -11,7 +11,7 @@
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/inference/Symbol.h>
 
 #include <gtsam_unstable/slam/InvDepthFactor3.h>
 
@@ -38,7 +38,7 @@ TEST( InvDepthFactor, optimize) {
   Point2 expected_uv = level_camera.project(landmark);
 
   InvDepthCamera3<Cal3_S2> inv_camera(level_pose, K);
-  LieVector inv_landmark(5, 0., 0., 1., 0., 0.);
+  LieVector inv_landmark((Vector(5) << 0., 0., 1., 0., 0.));
   // initialize inverse depth with "incorrect" depth of 1/4
   // in reality this is 1/5, but initial depth is guessed
   LieScalar inv_depth(1./4);
@@ -49,7 +49,7 @@ TEST( InvDepthFactor, optimize) {
   InverseDepthFactor::shared_ptr factor(new InverseDepthFactor(expected_uv, sigma,
       Symbol('x',1), Symbol('l',1), Symbol('d',1), K));
   graph.push_back(factor);
-  graph.add(PoseConstraint(Symbol('x',1),level_pose));
+  graph += PoseConstraint(Symbol('x',1),level_pose);
   initial.insert(Symbol('x',1), level_pose);
   initial.insert(Symbol('l',1), inv_landmark);
   initial.insert(Symbol('d',1), inv_depth);
@@ -75,7 +75,7 @@ TEST( InvDepthFactor, optimize) {
       Symbol('x',2), Symbol('l',1),Symbol('d',1),K));
   graph.push_back(factor1);
 
-  graph.add(PoseConstraint(Symbol('x',2),right_pose));
+  graph += PoseConstraint(Symbol('x',2),right_pose);
 
   initial.insert(Symbol('x',2), right_pose);
 

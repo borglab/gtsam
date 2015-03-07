@@ -271,6 +271,10 @@ public:
    */
   inline static Point2 project_to_camera(const Point3& P,
       boost::optional<Matrix&> Dpoint = boost::none) {
+#ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
+    if (P.z() <= 0)
+      throw CheiralityException();
+#endif
     if (Dpoint) {
       double d = 1.0 / P.z(), d2 = d * d;
       *Dpoint = (Matrix(2, 3) << d, 0.0, -P.x() * d2, 0.0, d, -P.y() * d2);
@@ -300,40 +304,25 @@ public:
     // Transform to camera coordinates and check cheirality
     const Point3 pc = pose_.transform_to(pw);
 
-#ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
-    if (pc.z() <= 0)
-      throw CheiralityException();
-#endif
-
     // Project to normalized image coordinates
     const Point2 pn = project_to_camera(pc);
 
     if (Dpose || Dpoint) {
-      // optimized version of derivatives, see CalibratedCamera.nb
       const double z = pc.z(), d = 1.0 / z;
-      const double u = pn.x(), v = pn.y();
-      Matrix Dpn_pose(2, 6), Dpn_point(2, 3);
-      if (Dpose) {
-        double uv = u * v, uu = u * u, vv = v * v;
-        Dpn_pose << uv, -1 - uu, v, -d, 0, d * u, 1 + vv, -uv, -u, 0, -d, d * v;
-      }
-      if (Dpoint) {
-        const Matrix R(pose_.rotation().matrix());
-        Dpn_point << //
-            R(0, 0) - u * R(0, 2), R(1, 0) - u * R(1, 2), R(2, 0) - u * R(2, 2), //
-        /**/R(0, 1) - v * R(0, 2), R(1, 1) - v * R(1, 2), R(2, 1) - v * R(2, 2);
-        Dpn_point *= d;
-      }
 
       // uncalibration
-      Matrix Dpi_pn; // 2*2
+      Matrix Dpi_pn(2, 2);
       const Point2 pi = K_.uncalibrate(pn, Dcal, Dpi_pn);
 
       // chain the Jacobian matrices
-      if (Dpose)
-        *Dpose = Dpi_pn * Dpn_pose;
-      if (Dpoint)
-        *Dpoint = Dpi_pn * Dpn_point;
+      if (Dpose) {
+        Dpose->resize(2, 6);
+        calculateDpose(pn, d, Dpi_pn, *Dpose);
+      }
+      if (Dpoint) {
+        Dpoint->resize(2, 3);
+        calculateDpoint(pn, d, pose_.rotation().matrix(), Dpi_pn, *Dpoint);
+      }
       return pi;
     } else
       return K_.uncalibrate(pn, Dcal);
@@ -391,27 +380,29 @@ public:
       boost::optional<Matrix&> Dcamera = boost::none,
       boost::optional<Matrix&> Dpoint = boost::none) const {
 
+    const Point3 pc = pose_.transform_to(pw);
+    const Point2 pn = project_to_camera(pc);
+
     if (!Dcamera && !Dpoint) {
-      const Point3 pc = pose_.transform_to(pw);
-
-#ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
-    if (pc.z() <= 0)
-      throw CheiralityException();
-#endif
-      const Point2 pn = project_to_camera(pc);
       return K_.uncalibrate(pn);
-    }
+    } else {
+      const double z = pc.z(), d = 1.0 / z;
 
-    Matrix Dpose, Dp, Dcal;
-    const Point2 pi = this->project(pw, Dpose, Dp, Dcal);
-    if (Dcamera) {
-      *Dcamera = Matrix(2, this->dim());
-      Dcamera->leftCols(pose().dim()) = Dpose; // Jacobian wrt pose3
-      Dcamera->rightCols(calibration().dim()) = Dcal; // Jacobian wrt calib
+      // uncalibration
+      Matrix Dcal, Dpi_pn(2, 2);
+      const Point2 pi = K_.uncalibrate(pn, Dcal, Dpi_pn);
+
+      if (Dcamera) {
+        Dcamera->resize(2, this->dim());
+        calculateDpose(pn, d, Dpi_pn, Dcamera->leftCols<6>());
+        Dcamera->rightCols(K_.dim()) = Dcal; // Jacobian wrt calib
+      }
+      if (Dpoint) {
+        Dpoint->resize(2, 3);
+        calculateDpoint(pn, d, pose_.rotation().matrix(), Dpi_pn, *Dpoint);
+      }
+      return pi;
     }
-    if (Dpoint)
-      *Dpoint = Dp;
-    return pi;
   }
 
   /// backproject a 2-dimensional point to a 3-dimensional point at given depth
@@ -515,6 +506,50 @@ public:
   }
 
 private:
+
+  /**
+   * Calculate Jacobian with respect to pose
+   * @param pn projection in normalized coordinates
+   * @param d disparity (inverse depth)
+   * @param Dpi_pn derivative of uncalibrate with respect to pn
+   * @param Dpose Output argument, can be matrix or block, assumed right size !
+   * See http://eigen.tuxfamily.org/dox/TopicFunctionTakingEigenTypes.html
+   */
+  template<typename Derived>
+  static void calculateDpose(const Point2& pn, double d, const Matrix& Dpi_pn,
+      Eigen::MatrixBase<Derived> const & Dpose) {
+    // optimized version of derivatives, see CalibratedCamera.nb
+    const double u = pn.x(), v = pn.y();
+    double uv = u * v, uu = u * u, vv = v * v;
+    Eigen::Matrix<double, 2, 6> Dpn_pose;
+    Dpn_pose << uv, -1 - uu, v, -d, 0, d * u, 1 + vv, -uv, -u, 0, -d, d * v;
+    assert(Dpose.rows()==2 && Dpose.cols()==6);
+    const_cast<Eigen::MatrixBase<Derived>&>(Dpose) = //
+        Dpi_pn.block<2, 2>(0, 0) * Dpn_pose;
+  }
+
+  /**
+   * Calculate Jacobian with respect to point
+   * @param pn projection in normalized coordinates
+   * @param d disparity (inverse depth)
+   * @param Dpi_pn derivative of uncalibrate with respect to pn
+   * @param Dpoint Output argument, can be matrix or block, assumed right size !
+   * See http://eigen.tuxfamily.org/dox/TopicFunctionTakingEigenTypes.html
+   */
+  template<typename Derived>
+  static void calculateDpoint(const Point2& pn, double d, const Matrix& R,
+      const Matrix& Dpi_pn, Eigen::MatrixBase<Derived> const & Dpoint) {
+    // optimized version of derivatives, see CalibratedCamera.nb
+    const double u = pn.x(), v = pn.y();
+    Eigen::Matrix<double, 2, 3> Dpn_point;
+    Dpn_point << //
+        R(0, 0) - u * R(0, 2), R(1, 0) - u * R(1, 2), R(2, 0) - u * R(2, 2), //
+    /**/R(0, 1) - v * R(0, 2), R(1, 1) - v * R(1, 2), R(2, 1) - v * R(2, 2);
+    Dpn_point *= d;
+    assert(Dpoint.rows()==2 && Dpoint.cols()==3);
+    const_cast<Eigen::MatrixBase<Derived>&>(Dpoint) = //
+        Dpi_pn.block<2, 2>(0, 0) * Dpn_point;
+  }
 
   /// @}
   /// @name Advanced Interface

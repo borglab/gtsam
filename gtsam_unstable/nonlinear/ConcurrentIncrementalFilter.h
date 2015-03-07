@@ -30,6 +30,7 @@ namespace gtsam {
 class GTSAM_UNSTABLE_EXPORT ConcurrentIncrementalFilter : public virtual ConcurrentFilter {
 
 public:
+
   typedef boost::shared_ptr<ConcurrentIncrementalFilter> shared_ptr;
   typedef ConcurrentFilter Base; ///< typedef for base class
 
@@ -38,7 +39,15 @@ public:
     size_t iterations; ///< The number of optimizer iterations performed
     size_t nonlinearVariables; ///< The number of variables that can be relinearized
     size_t linearVariables; ///< The number of variables that must keep a constant linearization point
-    std::vector<size_t> newFactorsIndices; ///< The indices of the newly-added factors, in 1-to-1 correspondence with the factors passed in
+    size_t variablesReeliminated;
+    size_t variablesRelinearized;
+
+    /** The indices of the newly-added factors, in 1-to-1 correspondence with the
+     * factors passed as \c newFactors update().  These indices may be
+     * used later to refer to the factors in order to remove them.
+     */
+    std::vector<size_t> newFactorsIndices;
+
     double error; ///< The final factor graph error
 
     /// Constructor
@@ -69,13 +78,13 @@ public:
   }
 
   /** Access the current linearization point */
-  const Values& getLinearizationPoint() const {
-    return isam2_.getLinearizationPoint();
+  const ISAM2& getISAM2() const {
+    return isam2_;
   }
 
-  /** Access the current ordering */
-  const Ordering& getOrdering() const {
-    return isam2_.getOrdering();
+  /** Access the current linearization point */
+  const Values& getLinearizationPoint() const {
+    return isam2_.getLinearizationPoint();
   }
 
   /** Access the current set of deltas to the linearization point */
@@ -171,7 +180,7 @@ protected:
 private:
 
   /** Traverse the iSAM2 Bayes Tree, inserting all descendants of the provided index/key into 'additionalKeys' */
-  static void RecursiveMarkAffectedKeys(Index index, const ISAM2Clique::shared_ptr& clique, const Ordering& ordering, std::set<Key>& additionalKeys);
+  static void RecursiveMarkAffectedKeys(const Key& key, const ISAM2Clique::shared_ptr& clique, std::set<Key>& additionalKeys);
 
   /** Find the set of iSAM2 factors adjacent to 'keys' */
   static std::vector<size_t> FindAdjacentFactors(const ISAM2& isam2, const FastList<Key>& keys, const std::vector<size_t>& factorsToIgnore);

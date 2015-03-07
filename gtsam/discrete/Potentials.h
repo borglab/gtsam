@@ -19,7 +19,6 @@
 
 #include <gtsam/discrete/AlgebraicDecisionTree.h>
 #include <gtsam/discrete/DiscreteKey.h>
-#include <gtsam/inference/Permutation.h>
 
 #include <boost/shared_ptr.hpp>
 #include <set>
@@ -29,16 +28,16 @@ namespace gtsam {
   /**
    * A base class for both DiscreteFactor and DiscreteConditional
    */
-  class Potentials: public AlgebraicDecisionTree<Index> {
+  class Potentials: public AlgebraicDecisionTree<Key> {
 
   public:
 
-    typedef AlgebraicDecisionTree<Index> ADT;
+    typedef AlgebraicDecisionTree<Key> ADT;
 
   protected:
 
     /// Cardinality for each key, used in combine
-    std::map<Index,size_t> cardinalities_;
+    std::map<Key,size_t> cardinalities_;
 
     /** Constructor from ColumnIndex, and ADT */
     Potentials(const ADT& potentials) :
@@ -48,9 +47,9 @@ namespace gtsam {
     // Safe division for probabilities
     GTSAM_EXPORT static double safe_div(const double& a, const double& b);
 
-    // Apply either a permutation or a reduction
-    template<class P>
-    void remapIndices(const P& remapping);
+//    // Apply either a permutation or a reduction
+//    template<class P>
+//    void remapIndices(const P& remapping);
 
   public:
 
@@ -69,23 +68,23 @@ namespace gtsam {
     // Testable
     GTSAM_EXPORT bool equals(const Potentials& other, double tol = 1e-9) const;
     GTSAM_EXPORT void print(const std::string& s = "Potentials: ",
-        const IndexFormatter& formatter = DefaultIndexFormatter) const;
+        const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
-    size_t cardinality(Index j) const { return cardinalities_.at(j);}
+    size_t cardinality(Key j) const { return cardinalities_.at(j);}
 
-    /**
-     * @brief Permutes the keys in Potentials
-     *
-     * This permutes the Indices and performs necessary re-ordering of ADD.
-     * This is virtual so that derived types e.g. DecisionTreeFactor can
-     * re-implement it.
-     */
-    GTSAM_EXPORT virtual void permuteWithInverse(const Permutation& inversePermutation);
-
-    /**
-     * Apply a reduction, which is a remapping of variable indices.
-     */
-    GTSAM_EXPORT virtual void reduceWithInverse(const internal::Reduction& inverseReduction);
+//    /**
+//     * @brief Permutes the keys in Potentials
+//     *
+//     * This permutes the Indices and performs necessary re-ordering of ADD.
+//     * This is virtual so that derived types e.g. DecisionTreeFactor can
+//     * re-implement it.
+//     */
+//    GTSAM_EXPORT virtual void permuteWithInverse(const Permutation& inversePermutation);
+//
+//    /**
+//     * Apply a reduction, which is a remapping of variable indices.
+//     */
+//    GTSAM_EXPORT virtual void reduceWithInverse(const internal::Reduction& inverseReduction);
 
   }; // Potentials
 

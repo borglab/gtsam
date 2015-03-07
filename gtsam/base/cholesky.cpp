@@ -120,6 +120,8 @@ pair<size_t,bool> choleskyCareful(Matrix& ATA, int order) {
 /* ************************************************************************* */
 bool choleskyPartial(Matrix& ABC, size_t nFrontal) {
 
+  gttic(choleskyPartial);
+
   const bool debug = ISDEBUG("choleskyPartial");
 
   assert(ABC.rows() == ABC.cols());
@@ -129,8 +131,17 @@ bool choleskyPartial(Matrix& ABC, size_t nFrontal) {
 
   // Compute Cholesky factorization of A, overwrites A.
   gttic(lld);
-  Eigen::LLT<Matrix, Eigen::Upper> llt = ABC.block(0,0,nFrontal,nFrontal).selfadjointView<Eigen::Upper>().llt();
-  ABC.block(0,0,nFrontal,nFrontal).triangularView<Eigen::Upper>() = llt.matrixU();
+  Eigen::ComputationInfo lltResult;
+  if(nFrontal > 0)
+  {
+    Eigen::LLT<Matrix, Eigen::Upper> llt = ABC.block(0, 0, nFrontal, nFrontal).selfadjointView<Eigen::Upper>().llt();
+    ABC.block(0, 0, nFrontal, nFrontal).triangularView<Eigen::Upper>() = llt.matrixU();
+    lltResult = llt.info();
+  }
+  else
+  {
+    lltResult = Eigen::Success;
+  }
   gttoc(lld);
 
   if(debug) cout << "R:\n" << Eigen::MatrixXd(ABC.topLeftCorner(nFrontal,nFrontal).triangularView<Eigen::Upper>()) << endl;
@@ -155,7 +166,7 @@ bool choleskyPartial(Matrix& ABC, size_t nFrontal) {
 
   // Check last diagonal element - Eigen does not check it
   bool ok;
-  if(llt.info() == Eigen::Success) {
+  if(lltResult == Eigen::Success) {
     if(nFrontal >= 2) {
       int exp2, exp1;
       (void)frexp(ABC(nFrontal-2, nFrontal-2), &exp2);

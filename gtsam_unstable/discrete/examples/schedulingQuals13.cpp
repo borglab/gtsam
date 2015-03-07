@@ -208,7 +208,7 @@ void solveStaged(size_t addMutex = 2) {
     gttoc_(eliminate);
 
     // find root node
-    DiscreteConditional::shared_ptr root = *(chordal->rbegin());
+    DiscreteConditional::shared_ptr root = chordal->back();
     if (debug)
       root->print(""/*scheduler.studentName(s)*/);
 
@@ -262,7 +262,7 @@ void sampleSolutions() {
     vector<size_t> stats(nrFaculty, 0);
     vector<Scheduler::sharedValues> samples;
     for (size_t i = 0; i < NRSTUDENTS; i++) {
-      samples.push_back(sample(*samplers[i]));
+      samples.push_back(samplers[i]->sample());
       schedulers[i].accumulateStats(samples[i], stats);
     }
     size_t max = *max_element(stats.begin(), stats.end());

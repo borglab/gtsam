@@ -40,7 +40,13 @@ public:
     size_t lambdas; ///< The number of different L-M lambda factors that were tried during optimization
     size_t nonlinearVariables; ///< The number of variables that can be relinearized
     size_t linearVariables; ///< The number of variables that must keep a constant linearization point
-    std::vector<size_t> newFactorsIndices; ///< The indices of the newly-added factors, in 1-to-1 correspondence with the factors passed in
+
+    /** The indices of the newly-added factors, in 1-to-1 correspondence with the
+     * factors passed as \c newFactors update().  These indices may be
+     * used later to refer to the factors in order to remove them.
+     */
+    std::vector<size_t> newFactorsIndices;
+
     double error; ///< The final factor graph error
 
     /// Constructor
@@ -90,7 +96,7 @@ public:
    * If only a single variable is needed, it may be faster to call calculateEstimate(const KEY&).
    */
   Values calculateEstimate() const {
-    return theta_.retract(delta_, ordering_);
+    return theta_.retract(delta_);
   }
 
   /** Compute the current best estimate of a single variable. This is generally faster than
@@ -100,8 +106,7 @@ public:
    */
   template<class VALUE>
   VALUE calculateEstimate(Key key) const {
-    const Index index = ordering_.at(key);
-    const Vector delta = delta_.at(index);
+    const Vector delta = delta_.at(key);
     return theta_.at<VALUE>(key).retract(delta);
   }
 
@@ -222,17 +227,16 @@ private:
       const std::string& indent = "", const std::string& title = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 
   /** Print just the nonlinear keys in a linear factor */
-  static void PrintLinearFactor(const GaussianFactor::shared_ptr& factor, const Ordering& ordering,
+  static void PrintLinearFactor(const GaussianFactor::shared_ptr& factor,
       const std::string& indent = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 
   /** Print just the nonlinear keys in each linear factor for a whole Gaussian Factor Graph */
-  static void PrintLinearFactorGraph(const GaussianFactorGraph& factors, const Ordering& ordering,
+  static void PrintLinearFactorGraph(const GaussianFactorGraph& factors,
       const std::string& indent = "", const std::string& title = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 
   /** Print just the nonlinear keys contained inside a container */
   template<class Container>
-  static void PrintKeys(const Container& keys, const std::string& indent = "",
-      const std::string& title = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter);
+  static void PrintKeys(const Container& keys, const std::string& indent, const std::string& title, const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 
 }; // ConcurrentBatchFilter
 

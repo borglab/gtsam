@@ -34,14 +34,20 @@ public:
       bRn_(initial_bRn), x_g_(initial_x_g), x_a_(initial_x_a) {
   }
 
-  Vector b_g(double g_e) {
-    Vector n_g = Vector_(3, 0.0, 0.0, g_e);
+  /// Copy constructor
+  Mechanization_bRn2(const Mechanization_bRn2& other) :
+      bRn_(other.bRn_), x_g_(other.x_g_), x_a_(other.x_a_) {
+  }
+
+  /// gravity in the body frame
+  Vector b_g(double g_e) const {
+    Vector n_g = (Vector(3) << 0, 0, g_e);
     return (bRn_ * n_g).vector();
   }
 
-  Rot3 bRn() const {return bRn_; }
-  Vector x_g() const { return x_g_; }
-  Vector x_a() const { return x_a_; }
+  const Rot3& bRn() const {return bRn_; }
+  const Vector& x_g() const { return x_g_; }
+  const Vector& x_a() const { return x_a_; }
 
   /**
    * Initialize the first Mechanization state

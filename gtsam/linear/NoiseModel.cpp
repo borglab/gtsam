@@ -107,15 +107,22 @@ void Gaussian::WhitenInPlace(Matrix& H) const {
 }
 
 /* ************************************************************************* */
+void Gaussian::WhitenInPlace(Eigen::Block<Matrix> H) const {
+  H = thisR() * H;
+}
+
+/* ************************************************************************* */
 // General QR, see also special version in Constrained
 SharedDiagonal Gaussian::QR(Matrix& Ab) const {
+
+  gttic(Gaussian_noise_model_QR);
 
   static const bool debug = false;
 
   // get size(A) and maxRank
   // TODO: really no rank problems ?
-  size_t m = Ab.rows(), n = Ab.cols()-1;
-  size_t maxRank = min(m,n);
+  // size_t m = Ab.rows(), n = Ab.cols()-1;
+  // size_t maxRank = min(m,n);
 
   // pre-whiten everything (cheaply if possible)
   WhitenInPlace(Ab);
@@ -127,9 +134,9 @@ SharedDiagonal Gaussian::QR(Matrix& Ab) const {
 
   // hand-coded householder implementation
   // TODO: necessary to isolate last column?
-//  householder(Ab, maxRank);
+  // householder(Ab, maxRank);
 
-  return Unit::Create(maxRank);
+  return SharedDiagonal();
 }
 
 void Gaussian::WhitenSystem(vector<Matrix>& A, Vector& b) const {
@@ -159,9 +166,11 @@ void Gaussian::WhitenSystem(Matrix& A1, Matrix& A2, Matrix& A3, Vector& b) const
 // Diagonal
 /* ************************************************************************* */
 Diagonal::Diagonal() :
-    Gaussian(1), sigmas_(ones(1)), invsigmas_(ones(1)), precisions_(ones(1)) {
+    Gaussian(1)//, sigmas_(ones(1)), invsigmas_(ones(1)), precisions_(ones(1))
+{
 }
 
+/* ************************************************************************* */
 Diagonal::Diagonal(const Vector& sigmas) :
     Gaussian(sigmas.size()), sigmas_(sigmas), invsigmas_(reciprocal(sigmas)), precisions_(
         emul(invsigmas_, invsigmas_)) {
@@ -171,7 +180,7 @@ Diagonal::Diagonal(const Vector& sigmas) :
 Diagonal::shared_ptr Diagonal::Variances(const Vector& variances, bool smart) {
   if (smart) {
     // check whether all the same entry
-    int j, n = variances.size();
+    DenseIndex j, n = variances.size();
     for (j = 1; j < n; j++)
       if (variances(j) != variances(0)) goto full;
     return Isotropic::Variance(n, variances(0), true);
@@ -216,7 +225,37 @@ void Diagonal::WhitenInPlace(Matrix& H) const {
 }
 
 /* ************************************************************************* */
+void Diagonal::WhitenInPlace(Eigen::Block<Matrix> H) const {
+  H = invsigmas().asDiagonal() * H;
+}
+
+/* ************************************************************************* */
 // Constrained
+/* ************************************************************************* */
+
+/* ************************************************************************* */
+Constrained::Constrained(const Vector& sigmas)
+  : Diagonal(sigmas), mu_(repeat(sigmas.size(), 1000.0)) {
+  for (int i=0; i<sigmas.size(); ++i) {
+    if (!std::isfinite(1./sigmas(i))) {
+      precisions_(i) = 0.0; // Set to finite value
+      invsigmas_(i) = 0.0;
+    }
+  }
+}
+
+/* ************************************************************************* */
+Constrained::Constrained(const Vector& mu, const Vector& sigmas)
+  : Diagonal(sigmas), mu_(mu) {
+//  assert(sigmas.size() == mu.size());
+  for (int i=0; i<sigmas.size(); ++i) {
+    if (!std::isfinite(1./sigmas(i))) {
+      precisions_(i) = 0.0; // Set to finite value
+      invsigmas_(i) = 0.0;
+    }
+  }
+}
+
 /* ************************************************************************* */
 Constrained::shared_ptr Constrained::MixedSigmas(const Vector& mu, const Vector& sigmas, bool smart) {
   // FIXME: can't return a diagonal shared_ptr due to conversion
@@ -243,12 +282,12 @@ Vector Constrained::whiten(const Vector& v) const {
   // a hard constraint, we don't do anything.
   const Vector& a = v;
   const Vector& b = sigmas_;
-  size_t n = a.size();
-  assert (b.size()==a.size());
-  Vector c(n);
-  for( size_t i = 0; i < n; i++ ) {
+  // Now allows for whiten augmented vector with a new additional part coming
+  // from the Lagrange multiplier. So a.size() >= b.size()
+  Vector c = a;
+  for( DenseIndex i = 0; i < b.size(); i++ ) {
     const double& ai = a(i), &bi = b(i);
-    c(i) = (bi==0.0) ? ai : ai/bi; // NOTE: not ediv_()
+    if (bi!=0) c(i) = ai/bi;
   }
   return c;
 }
@@ -257,19 +296,20 @@ Vector Constrained::whiten(const Vector& v) const {
 double Constrained::distance(const Vector& v) const {
   Vector w = Diagonal::whiten(v); // get noisemodel for constrained elements
   // TODO Find a better way of doing these checks
-  for (size_t i=0; i<dim_; ++i) { // add mu weights on constrained variables
-    if (isinf(w[i])) // whiten makes constrained variables infinite
+  for (size_t i=0; i<dim_; ++i)  // add mu weights on constrained variables
+    if (!std::isfinite(1./sigmas_[i])) // whiten makes constrained variables zero
       w[i] = v[i] * sqrt(mu_[i]); // TODO: may want to store sqrt rather than rebuild
-    if (isnan(w[i])) // ensure no other invalid values make it through
-      w[i] = v[i];
-  }
   return w.dot(w);
 }
 
 /* ************************************************************************* */
 Matrix Constrained::Whiten(const Matrix& H) const {
   // selective scaling
-  return vector_scale(invsigmas(), H, true);
+  // Now allow augmented Matrix with a new additional part coming
+  // from the Lagrange multiplier.
+  Matrix M(H.block(0, 0, dim(), H.cols()));
+  Constrained::WhitenInPlace(M);
+  return M;
 }
 
 /* ************************************************************************* */
@@ -278,16 +318,38 @@ void Constrained::WhitenInPlace(Matrix& H) const {
   // Scale row i of H by sigmas[i], basically multiplying H with diag(sigmas)
   // Set inf_mask flag is true so that if invsigmas[i] is inf, i.e. sigmas[i] = 0,
   // indicating a hard constraint, we leave H's row i in place.
-  vector_scale_inplace(invsigmas(), H, true);
+  // Now allow augmented Matrix with a new additional part coming
+  // from the Lagrange multiplier.
+//  Inlined: vector_scale_inplace(invsigmas(), H, true);
+  // vector_scale_inplace(v, A, true);
+  for (DenseIndex i=0; i<(DenseIndex)dim_; ++i) {
+    const double& invsigma = invsigmas_(i);
+    if (std::isfinite(1./sigmas_(i)))
+      H.row(i) *= invsigma;
+  }
 }
 
 /* ************************************************************************* */
-Constrained::shared_ptr Constrained::unit() const {
-  Vector sigmas = ones(dim());
+void Constrained::WhitenInPlace(Eigen::Block<Matrix> H) const {
+  // selective scaling
+  // Scale row i of H by sigmas[i], basically multiplying H with diag(sigmas)
+  // Set inf_mask flag is true so that if invsigmas[i] is inf, i.e. sigmas[i] = 0,
+  // indicating a hard constraint, we leave H's row i in place.
+  const Vector& _invsigmas = invsigmas();
+  for(DenseIndex row = 0; row < _invsigmas.size(); ++row)
+    if(isfinite(_invsigmas(row)))
+      H.row(row) *= _invsigmas(row);
+}
+
+/* ************************************************************************* */
+Constrained::shared_ptr Constrained::unit(size_t augmentedDim) const {
+  Vector sigmas = ones(dim()+augmentedDim);
   for (size_t i=0; i<dim(); ++i)
     if (this->sigmas_(i) == 0.0)
       sigmas(i) = 0.0;
-  return MixedSigmas(mu_, sigmas);
+  Vector augmentedMu = zero(dim()+augmentedDim);
+  subInsert(augmentedMu, mu_, 0);
+  return MixedSigmas(augmentedMu, sigmas);
 }
 
 /* ************************************************************************* */
@@ -308,6 +370,8 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
   list<Triple> Rd;
 
   Vector pseudo(m); // allocate storage for pseudo-inverse
+  Vector invsigmas = reciprocal(sigmas_);
+  Vector weights = emul(invsigmas,invsigmas); // calculate weights once
 
   // We loop over all columns, because the columns that can be eliminated
   // are not necessarily contiguous. For each one, estimate the corresponding
@@ -319,7 +383,7 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
 
     // Calculate weighted pseudo-inverse and corresponding precision
     gttic(constrained_QR_weightedPseudoinverse);
-    double precision = weightedPseudoinverse(a, precisions_, pseudo);
+    double precision = weightedPseudoinverse(a, weights, pseudo);
     gttoc(constrained_QR_weightedPseudoinverse);
 
     // If precision is zero, no information on this column
@@ -413,6 +477,11 @@ Matrix Isotropic::Whiten(const Matrix& H) const {
 
 /* ************************************************************************* */
 void Isotropic::WhitenInPlace(Matrix& H) const {
+  H *= invsigma_;
+}
+
+/* ************************************************************************* */
+void Isotropic::WhitenInPlace(Eigen::Block<Matrix> H) const {
   H *= invsigma_;
 }
 
@@ -596,6 +665,36 @@ Huber::shared_ptr Huber::Create(const double c, const ReweightScheme reweight) {
 }
 
 /* ************************************************************************* */
+// Cauchy
+/* ************************************************************************* */
+
+Cauchy::Cauchy(const double k, const ReweightScheme reweight)
+  : Base(reweight), k_(k) {
+  if ( k_ <= 0 ) {
+    cout << "mEstimator Cauchy takes only positive double in constructor. forced to 1.0" << endl;
+    k_ = 1.0;
+  }
+}
+
+double Cauchy::weight(const double &error) const {
+  return k_*k_ / (k_*k_ + error*error);
+}
+
+void Cauchy::print(const std::string &s="") const {
+  cout << s << "cauchy (" << k_ << ")" << endl;
+}
+
+bool Cauchy::equals(const Base &expected, const double tol) const {
+  const Cauchy* p = dynamic_cast<const Cauchy*>(&expected);
+  if (p == NULL) return false;
+  return fabs(k_ - p->k_) < tol;
+}
+
+Cauchy::shared_ptr Cauchy::Create(const double c, const ReweightScheme reweight) {
+  return shared_ptr(new Cauchy(c, reweight));
+}
+
+/* ************************************************************************* */
 // Tukey
 /* ************************************************************************* */
 Tukey::Tukey(const double c, const ReweightScheme reweight)
@@ -623,6 +722,32 @@ bool Tukey::equals(const Base &expected, const double tol) const {
 
 Tukey::shared_ptr Tukey::Create(const double c, const ReweightScheme reweight) {
   return shared_ptr(new Tukey(c, reweight));
+}
+
+/* ************************************************************************* */
+// Welsh
+/* ************************************************************************* */
+Welsh::Welsh(const double c, const ReweightScheme reweight)
+  : Base(reweight), c_(c) {
+}
+
+double Welsh::weight(const double &error) const {
+  double xc2 = (error/c_)*(error/c_);
+  return std::exp(-xc2);
+}
+
+void Welsh::print(const std::string &s="") const {
+  std::cout << s << ": Welsh (" << c_ << ")" << std::endl;
+}
+
+bool Welsh::equals(const Base &expected, const double tol) const {
+  const Welsh* p = dynamic_cast<const Welsh*>(&expected);
+  if (p == NULL) return false;
+  return fabs(c_ - p->c_) < tol;
+}
+
+Welsh::shared_ptr Welsh::Create(const double c, const ReweightScheme reweight) {
+  return shared_ptr(new Welsh(c, reweight));
 }
 
 } // namespace mEstimator
@@ -671,7 +796,6 @@ Robust::shared_ptr Robust::Create(
   const RobustModel::shared_ptr &robust, const NoiseModel::shared_ptr noise){
   return shared_ptr(new Robust(robust,noise));
 }
-
 
 /* ************************************************************************* */
 

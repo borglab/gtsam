@@ -30,7 +30,7 @@
 // Each variable in the system (poses and landmarks) must be identified with a unique key.
 // We can either use simple integer keys (1, 2, 3, ...) or symbols (X1, X2, L1).
 // Here we will use Symbols
-#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/inference/Symbol.h>
 
 // In GTSAM, measurement functions are represented as 'factors'. Several common factors
 // have been provided with the library for solving robotics/SLAM/Bundle Adjustment problems.
@@ -81,14 +81,14 @@ int main(int argc, char* argv[]) {
 
   // Add a prior on pose x1. This indirectly specifies where the origin is.
   noiseModel::Diagonal::shared_ptr poseNoise = noiseModel::Diagonal::Sigmas((Vector(6) << Vector3::Constant(0.3), Vector3::Constant(0.1))); // 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
-  graph.add(PriorFactor<Pose3>(Symbol('x', 0), poses[0], poseNoise)); // add directly to graph
+  graph.push_back(PriorFactor<Pose3>(Symbol('x', 0), poses[0], poseNoise)); // add directly to graph
 
   // Simulated measurements from each camera pose, adding them to the factor graph
   for (size_t i = 0; i < poses.size(); ++i) {
     for (size_t j = 0; j < points.size(); ++j) {
       SimpleCamera camera(poses[i], *K);
       Point2 measurement = camera.project(points[j]);
-      graph.add(GenericProjectionFactor<Pose3, Point3, Cal3_S2>(measurement, measurementNoise, Symbol('x', i), Symbol('l', j), K));
+      graph.push_back(GenericProjectionFactor<Pose3, Point3, Cal3_S2>(measurement, measurementNoise, Symbol('x', i), Symbol('l', j), K));
     }
   }
 
@@ -96,7 +96,7 @@ int main(int argc, char* argv[]) {
   // Here we add a prior on the position of the first landmark. This fixes the scale by indicating the distance
   // between the first camera and the first landmark. All other landmark positions are interpreted using this scale.
   noiseModel::Isotropic::shared_ptr pointNoise = noiseModel::Isotropic::Sigma(3, 0.1);
-  graph.add(PriorFactor<Point3>(Symbol('l', 0), points[0], pointNoise)); // add directly to graph
+  graph.push_back(PriorFactor<Point3>(Symbol('l', 0), points[0], pointNoise)); // add directly to graph
   graph.print("Factor Graph:\n");
 
   // Create the data structure to hold the initial estimate to the solution

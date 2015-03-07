@@ -44,11 +44,11 @@ namespace gtsam {
  *   matrices and the process\modeling covariance matrix. The IneritalNavFactor converts this into a
  *   discrete form using the supplied delta_t between sub-sequential measurements.
  * - Earth-rate correction:
- * 		+ Currently the user should supply R_ECEF_to_G, which is the rotation from ECEF to the global
- * 		  frame (Local-Level system: ENU or NED, see above).
- * 		+ R_ECEF_to_G can be calculated by approximated values of latitude and longitude of the system.
- *		+ Currently it is assumed that a relatively small distance is traveled w.r.t. to initial pose, since R_ECEF_to_G is constant.
- *		  Otherwise, R_ECEF_to_G should be updated each time using the current lat-lon.
+ *     + Currently the user should supply R_ECEF_to_G, which is the rotation from ECEF to the global
+ *       frame (Local-Level system: ENU or NED, see above).
+ *     + R_ECEF_to_G can be calculated by approximated values of latitude and longitude of the system.
+ *    + Currently it is assumed that a relatively small distance is traveled w.r.t. to initial pose, since R_ECEF_to_G is constant.
+ *      Otherwise, R_ECEF_to_G should be updated each time using the current lat-lon.
  *
  * - Frame Notation:
  *   Quantities are written as {Frame of Representation/Destination Frame}_{Quantity Type}_{Quatity Description/Origination Frame}
@@ -81,70 +81,70 @@ class InertialNavFactor_GlobalVelocity : public NoiseModelFactor5<POSE, VELOCITY
 
 private:
 
-	typedef InertialNavFactor_GlobalVelocity<POSE, VELOCITY, IMUBIAS> This;
-	typedef NoiseModelFactor5<POSE, VELOCITY, IMUBIAS, POSE, VELOCITY> Base;
+  typedef InertialNavFactor_GlobalVelocity<POSE, VELOCITY, IMUBIAS> This;
+  typedef NoiseModelFactor5<POSE, VELOCITY, IMUBIAS, POSE, VELOCITY> Base;
 
-	Vector measurement_acc_;
-	Vector measurement_gyro_;
-	double dt_;
+  Vector measurement_acc_;
+  Vector measurement_gyro_;
+  double dt_;
 
-	Vector world_g_;
-	Vector world_rho_;
+  Vector world_g_;
+  Vector world_rho_;
   Vector world_omega_earth_;
 
   boost::optional<POSE> body_P_sensor_; // The pose of the sensor in the body frame
 
 public:
 
-	// shorthand for a smart pointer to a factor
-	typedef typename boost::shared_ptr<InertialNavFactor_GlobalVelocity> shared_ptr;
+  // shorthand for a smart pointer to a factor
+  typedef typename boost::shared_ptr<InertialNavFactor_GlobalVelocity> shared_ptr;
 
-	/** default constructor - only use for serialization */
-	InertialNavFactor_GlobalVelocity() {}
+  /** default constructor - only use for serialization */
+  InertialNavFactor_GlobalVelocity() {}
 
-	/** Constructor */
-	InertialNavFactor_GlobalVelocity(const Key& Pose1, const Key& Vel1, const Key& IMUBias1, const Key& Pose2, const Key& Vel2,
+  /** Constructor */
+  InertialNavFactor_GlobalVelocity(const Key& Pose1, const Key& Vel1, const Key& IMUBias1, const Key& Pose2, const Key& Vel2,
       const Vector& measurement_acc, const Vector& measurement_gyro, const double measurement_dt, const Vector world_g, const Vector world_rho,
       const Vector& world_omega_earth, const noiseModel::Gaussian::shared_ptr& model_continuous, boost::optional<POSE> body_P_sensor = boost::none) :
         Base(calc_descrete_noise_model(model_continuous, measurement_dt ),
             Pose1, Vel1, IMUBias1, Pose2, Vel2), measurement_acc_(measurement_acc), measurement_gyro_(measurement_gyro),
-            dt_(measurement_dt), world_g_(world_g), world_rho_(world_rho), world_omega_earth_(world_omega_earth), body_P_sensor_(body_P_sensor) {	}
+            dt_(measurement_dt), world_g_(world_g), world_rho_(world_rho), world_omega_earth_(world_omega_earth), body_P_sensor_(body_P_sensor) {  }
 
-	virtual ~InertialNavFactor_GlobalVelocity() {}
+  virtual ~InertialNavFactor_GlobalVelocity() {}
 
-	/** implement functions needed for Testable */
+  /** implement functions needed for Testable */
 
-	/** print */
-	virtual void print(const std::string& s = "InertialNavFactor_GlobalVelocity", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
-		std::cout << s << "("
-				<< keyFormatter(this->key1()) << ","
-				<< keyFormatter(this->key2()) << ","
-				<< keyFormatter(this->key3()) << ","
-				<< keyFormatter(this->key4()) << ","
-				<< keyFormatter(this->key5()) << "\n";
-		std::cout << "acc measurement: " << this->measurement_acc_.transpose() << std::endl;
-		std::cout << "gyro measurement: " << this->measurement_gyro_.transpose() << std::endl;
-		std::cout << "dt: " << this->dt_ << std::endl;
-		std::cout << "gravity (in world frame): " << this->world_g_.transpose() << std::endl;
-		std::cout << "craft rate (in world frame): " << this->world_rho_.transpose() << std::endl;
-		std::cout << "earth's rotation (in world frame): " << this->world_omega_earth_.transpose() << std::endl;
-		if(this->body_P_sensor_)
-		  this->body_P_sensor_->print("  sensor pose in body frame: ");
+  /** print */
+  virtual void print(const std::string& s = "InertialNavFactor_GlobalVelocity", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+    std::cout << s << "("
+        << keyFormatter(this->key1()) << ","
+        << keyFormatter(this->key2()) << ","
+        << keyFormatter(this->key3()) << ","
+        << keyFormatter(this->key4()) << ","
+        << keyFormatter(this->key5()) << "\n";
+    std::cout << "acc measurement: " << this->measurement_acc_.transpose() << std::endl;
+    std::cout << "gyro measurement: " << this->measurement_gyro_.transpose() << std::endl;
+    std::cout << "dt: " << this->dt_ << std::endl;
+    std::cout << "gravity (in world frame): " << this->world_g_.transpose() << std::endl;
+    std::cout << "craft rate (in world frame): " << this->world_rho_.transpose() << std::endl;
+    std::cout << "earth's rotation (in world frame): " << this->world_omega_earth_.transpose() << std::endl;
+    if(this->body_P_sensor_)
+      this->body_P_sensor_->print("  sensor pose in body frame: ");
     this->noiseModel_->print("  noise model");
-	}
+  }
 
-	/** equals */
-	virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
-		const This *e =	dynamic_cast<const This*> (&expected);
-		return e != NULL && Base::equals(*e, tol)
-		  && (measurement_acc_ - e->measurement_acc_).norm() < tol
-		  && (measurement_gyro_ - e->measurement_gyro_).norm() < tol
-		  && (dt_ - e->dt_) < tol
-		  && (world_g_ - e->world_g_).norm() < tol
-		  && (world_rho_ - e->world_rho_).norm() < tol
-		  && (world_omega_earth_ - e->world_omega_earth_).norm() < tol
-		  && ((!body_P_sensor_ && !e->body_P_sensor_) || (body_P_sensor_ && e->body_P_sensor_ && body_P_sensor_->equals(*e->body_P_sensor_)));
-	}
+  /** equals */
+  virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
+    const This *e =  dynamic_cast<const This*> (&expected);
+    return e != NULL && Base::equals(*e, tol)
+      && (measurement_acc_ - e->measurement_acc_).norm() < tol
+      && (measurement_gyro_ - e->measurement_gyro_).norm() < tol
+      && (dt_ - e->dt_) < tol
+      && (world_g_ - e->world_g_).norm() < tol
+      && (world_rho_ - e->world_rho_).norm() < tol
+      && (world_omega_earth_ - e->world_omega_earth_).norm() < tol
+      && ((!body_P_sensor_ && !e->body_P_sensor_) || (body_P_sensor_ && e->body_P_sensor_ && body_P_sensor_->equals(*e->body_P_sensor_)));
+  }
 
   POSE predictPose(const POSE& Pose1, const VELOCITY& Vel1, const IMUBIAS& Bias1) const {
     // Calculate the corrected measurements using the Bias object
@@ -225,12 +225,12 @@ public:
   }
 
   /** implement functions needed to derive from Factor */
-	Vector evaluateError(const POSE& Pose1, const VELOCITY& Vel1, const IMUBIAS& Bias1, const POSE& Pose2, const VELOCITY& Vel2,
-			boost::optional<Matrix&> H1 = boost::none,
-			boost::optional<Matrix&> H2 = boost::none,
-			boost::optional<Matrix&> H3 = boost::none,
-			boost::optional<Matrix&> H4 = boost::none,
-			boost::optional<Matrix&> H5 = boost::none) const {
+  Vector evaluateError(const POSE& Pose1, const VELOCITY& Vel1, const IMUBIAS& Bias1, const POSE& Pose2, const VELOCITY& Vel2,
+      boost::optional<Matrix&> H1 = boost::none,
+      boost::optional<Matrix&> H2 = boost::none,
+      boost::optional<Matrix&> H3 = boost::none,
+      boost::optional<Matrix&> H4 = boost::none,
+      boost::optional<Matrix&> H5 = boost::none) const {
 
     // TODO: Write analytical derivative calculations
     // Jacobian w.r.t. Pose1
@@ -268,34 +268,34 @@ public:
       *H5 = stack(2, &H5_Pose, &H5_Vel);
     }
 
-		Vector ErrPoseVector(POSE::Logmap(evaluatePoseError(Pose1, Vel1, Bias1, Pose2, Vel2)));
-		Vector ErrVelVector(VELOCITY::Logmap(evaluateVelocityError(Pose1, Vel1, Bias1, Pose2, Vel2)));
+    Vector ErrPoseVector(POSE::Logmap(evaluatePoseError(Pose1, Vel1, Bias1, Pose2, Vel2)));
+    Vector ErrVelVector(VELOCITY::Logmap(evaluateVelocityError(Pose1, Vel1, Bias1, Pose2, Vel2)));
 
-		return concatVectors(2, &ErrPoseVector, &ErrVelVector);
-	}
+    return concatVectors(2, &ErrPoseVector, &ErrVelVector);
+  }
 
-	static inline noiseModel::Gaussian::shared_ptr CalcEquivalentNoiseCov(const noiseModel::Gaussian::shared_ptr& gaussian_acc, const noiseModel::Gaussian::shared_ptr& gaussian_gyro,
-			const noiseModel::Gaussian::shared_ptr& gaussian_process){
+  static inline noiseModel::Gaussian::shared_ptr CalcEquivalentNoiseCov(const noiseModel::Gaussian::shared_ptr& gaussian_acc, const noiseModel::Gaussian::shared_ptr& gaussian_gyro,
+      const noiseModel::Gaussian::shared_ptr& gaussian_process){
 
-		Matrix cov_acc = inverse( gaussian_acc->R().transpose() * gaussian_acc->R() );
-		Matrix cov_gyro = inverse( gaussian_gyro->R().transpose() * gaussian_gyro->R() );
-		Matrix cov_process = inverse( gaussian_process->R().transpose() * gaussian_process->R() );
+    Matrix cov_acc = inverse( gaussian_acc->R().transpose() * gaussian_acc->R() );
+    Matrix cov_gyro = inverse( gaussian_gyro->R().transpose() * gaussian_gyro->R() );
+    Matrix cov_process = inverse( gaussian_process->R().transpose() * gaussian_process->R() );
 
-		cov_process.block(0,0, 3,3) += cov_gyro;
-		cov_process.block(6,6, 3,3) += cov_acc;
+    cov_process.block(0,0, 3,3) += cov_gyro;
+    cov_process.block(6,6, 3,3) += cov_acc;
 
-		return noiseModel::Gaussian::Covariance(cov_process);
-	}
+    return noiseModel::Gaussian::Covariance(cov_process);
+  }
 
   static inline void Calc_g_rho_omega_earth_NED(const Vector& Pos_NED, const Vector& Vel_NED, const Vector& LatLonHeight_IC, const Vector& Pos_NED_Initial,
       Vector& g_NED, Vector& rho_NED, Vector& omega_earth_NED) {
 
-    Matrix ENU_to_NED = Matrix_(3, 3,
+    Matrix ENU_to_NED = (Matrix(3, 3) <<
         0.0,  1.0,  0.0,
         1.0,  0.0,  0.0,
         0.0,  0.0, -1.0);
 
-    Matrix NED_to_ENU = Matrix_(3, 3,
+    Matrix NED_to_ENU = (Matrix(3, 3) <<
         0.0,  1.0,  0.0,
         1.0,  0.0,  0.0,
         0.0,  0.0, -1.0);
@@ -317,78 +317,78 @@ public:
     omega_earth_NED = ENU_to_NED * omega_earth_ENU;
   }
 
-	static inline void Calc_g_rho_omega_earth_ENU(const Vector& Pos_ENU, const Vector& Vel_ENU, const Vector& LatLonHeight_IC, const Vector& Pos_ENU_Initial,
-			Vector& g_ENU, Vector& rho_ENU, Vector& omega_earth_ENU){
-		double R0 = 6.378388e6;
-		double e = 1/297;
-		double Re( R0*( 1-e*(sin( LatLonHeight_IC(0) ))*(sin( LatLonHeight_IC(0) )) ) );
+  static inline void Calc_g_rho_omega_earth_ENU(const Vector& Pos_ENU, const Vector& Vel_ENU, const Vector& LatLonHeight_IC, const Vector& Pos_ENU_Initial,
+      Vector& g_ENU, Vector& rho_ENU, Vector& omega_earth_ENU){
+    double R0 = 6.378388e6;
+    double e = 1/297;
+    double Re( R0*( 1-e*(sin( LatLonHeight_IC(0) ))*(sin( LatLonHeight_IC(0) )) ) );
 
-		// Calculate current lat, lon
-		Vector delta_Pos_ENU(Pos_ENU - Pos_ENU_Initial);
-		double delta_lat(delta_Pos_ENU(1)/Re);
-		double delta_lon(delta_Pos_ENU(0)/(Re*cos(LatLonHeight_IC(0))));
-		double lat_new(LatLonHeight_IC(0) + delta_lat);
-		double lon_new(LatLonHeight_IC(1) + delta_lon);
+    // Calculate current lat, lon
+    Vector delta_Pos_ENU(Pos_ENU - Pos_ENU_Initial);
+    double delta_lat(delta_Pos_ENU(1)/Re);
+    double delta_lon(delta_Pos_ENU(0)/(Re*cos(LatLonHeight_IC(0))));
+    double lat_new(LatLonHeight_IC(0) + delta_lat);
+    double lon_new(LatLonHeight_IC(1) + delta_lon);
 
-		// Rotation of lon about z axis
-		Rot3 C1(cos(lon_new), sin(lon_new), 0.0,
-				-sin(lon_new), cos(lon_new), 0.0,
-				0.0, 0.0, 1.0);
+    // Rotation of lon about z axis
+    Rot3 C1(cos(lon_new), sin(lon_new), 0.0,
+        -sin(lon_new), cos(lon_new), 0.0,
+        0.0, 0.0, 1.0);
 
-		// Rotation of lat about y axis
-		Rot3 C2(cos(lat_new), 0.0, sin(lat_new),
-				0.0, 1.0, 0.0,
-				-sin(lat_new), 0.0, cos(lat_new));
+    // Rotation of lat about y axis
+    Rot3 C2(cos(lat_new), 0.0, sin(lat_new),
+        0.0, 1.0, 0.0,
+        -sin(lat_new), 0.0, cos(lat_new));
 
-		Rot3 UEN_to_ENU(0, 1, 0,
-				0, 0, 1,
-				1, 0, 0);
+    Rot3 UEN_to_ENU(0, 1, 0,
+        0, 0, 1,
+        1, 0, 0);
 
-		Rot3 R_ECEF_to_ENU( UEN_to_ENU * C2 * C1 );
+    Rot3 R_ECEF_to_ENU( UEN_to_ENU * C2 * C1 );
 
-		Vector omega_earth_ECEF(Vector_(3, 0.0, 0.0, 7.292115e-5));
-		omega_earth_ENU = R_ECEF_to_ENU.matrix() * omega_earth_ECEF;
+    Vector omega_earth_ECEF((Vector(3) << 0.0, 0.0, 7.292115e-5));
+    omega_earth_ENU = R_ECEF_to_ENU.matrix() * omega_earth_ECEF;
 
-		// Calculating g
-		double height(LatLonHeight_IC(2));
-		double EQUA_RADIUS = 6378137.0;    		// equatorial radius of the earth; WGS-84
-		double ECCENTRICITY = 0.0818191908426;  // eccentricity of the earth ellipsoid
-		double e2( pow(ECCENTRICITY,2) );
-		double den( 1-e2*pow(sin(lat_new),2) );
-		double Rm( (EQUA_RADIUS*(1-e2))/( pow(den,(3/2)) ) );
-		double Rp( EQUA_RADIUS/( sqrt(den) ) );
-		double Ro( sqrt(Rp*Rm) );   				// mean earth radius of curvature
-		double g0( 9.780318*( 1 + 5.3024e-3 * pow(sin(lat_new),2) - 5.9e-6 * pow(sin(2*lat_new),2) ) );
-		double g_calc( g0/( pow(1 + height/Ro, 2) ) );
-		g_ENU = Vector_(3, 0.0, 0.0, -g_calc);
+    // Calculating g
+    double height(LatLonHeight_IC(2));
+    double EQUA_RADIUS = 6378137.0;        // equatorial radius of the earth; WGS-84
+    double ECCENTRICITY = 0.0818191908426;  // eccentricity of the earth ellipsoid
+    double e2( pow(ECCENTRICITY,2) );
+    double den( 1-e2*pow(sin(lat_new),2) );
+    double Rm( (EQUA_RADIUS*(1-e2))/( pow(den,(3/2)) ) );
+    double Rp( EQUA_RADIUS/( sqrt(den) ) );
+    double Ro( sqrt(Rp*Rm) );           // mean earth radius of curvature
+    double g0( 9.780318*( 1 + 5.3024e-3 * pow(sin(lat_new),2) - 5.9e-6 * pow(sin(2*lat_new),2) ) );
+    double g_calc( g0/( pow(1 + height/Ro, 2) ) );
+    g_ENU = (Vector(3) << 0.0, 0.0, -g_calc);
 
 
-		// Calculate rho
-		double Ve( Vel_ENU(0) );
-		double Vn( Vel_ENU(1) );
-		double rho_E = -Vn/(Rm + height);
-		double rho_N = Ve/(Rp + height);
-		double rho_U = Ve*tan(lat_new)/(Rp + height);
-		rho_ENU = Vector_(3, rho_E, rho_N, rho_U);
-	}
+    // Calculate rho
+    double Ve( Vel_ENU(0) );
+    double Vn( Vel_ENU(1) );
+    double rho_E = -Vn/(Rm + height);
+    double rho_N = Ve/(Rp + height);
+    double rho_U = Ve*tan(lat_new)/(Rp + height);
+    rho_ENU = (Vector(3) << rho_E, rho_N, rho_U);
+  }
 
-	static inline noiseModel::Gaussian::shared_ptr calc_descrete_noise_model(const noiseModel::Gaussian::shared_ptr& model, double delta_t){
-	    /* Q_d (approx)= Q * delta_t */
-	    /* In practice, square root of the information matrix is represented, so that:
-	     *  R_d (approx)= R / sqrt(delta_t)
-	     * */
-	    return noiseModel::Gaussian::SqrtInformation(model->R()/std::sqrt(delta_t));
-	}
+  static inline noiseModel::Gaussian::shared_ptr calc_descrete_noise_model(const noiseModel::Gaussian::shared_ptr& model, double delta_t){
+      /* Q_d (approx)= Q * delta_t */
+      /* In practice, square root of the information matrix is represented, so that:
+       *  R_d (approx)= R / sqrt(delta_t)
+       * */
+      return noiseModel::Gaussian::SqrtInformation(model->R()/std::sqrt(delta_t));
+  }
 
 private:
 
-	/** Serialization function */
-	friend class boost::serialization::access;
-	template<class ARCHIVE>
-	void serialize(ARCHIVE & ar, const unsigned int version) {
-		ar & boost::serialization::make_nvp("NonlinearFactor2",
-				boost::serialization::base_object<Base>(*this));
-	}
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int version) {
+    ar & boost::serialization::make_nvp("NonlinearFactor2",
+        boost::serialization::base_object<Base>(*this));
+  }
 
 }; // \class GaussMarkov1stOrderFactor
 

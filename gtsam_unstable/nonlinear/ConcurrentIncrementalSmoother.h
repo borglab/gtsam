@@ -72,11 +72,6 @@ public:
     return isam2_.getLinearizationPoint();
   }
 
-  /** Access the current ordering */
-  const Ordering& getOrdering() const {
-    return isam2_.getOrdering();
-  }
-
   /** Access the current set of deltas to the linearization point */
   const VectorValues& getDelta() const {
     return isam2_.getDelta();
@@ -113,7 +108,8 @@ public:
    * in the smoother).  There must not be any variables here that do not occur in newFactors,
    * and additionally, variables that were already in the system must not be included here.
    */
-  Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(), const Values& newTheta = Values());
+  Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(), const Values& newTheta = Values(),
+      const boost::optional< std::vector<size_t> >& removeFactorIndices = boost::none);
 
   /**
    * Perform any required operations before the synchronization process starts.

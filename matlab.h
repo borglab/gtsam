@@ -84,7 +84,7 @@ namespace gtsam {
       return result;
     }
 
-    /// perturb all Point2 using normally distributed noise
+    /// Perturb all Point2 values using normally distributed noise
     void perturbPoint2(Values& values, double sigma, int32_t seed = 42u) {
       noiseModel::Isotropic::shared_ptr model = noiseModel::Isotropic::Sigma(2,sigma);
       Sampler sampler(model, seed);
@@ -93,7 +93,17 @@ namespace gtsam {
       }
     }
 
-    /// perturb all Point3 using normally distributed noise
+    /// Perturb all Pose2 values using normally distributed noise
+    void perturbPose2(Values& values, double sigmaT, double sigmaR, int32_t seed = 42u) {
+      noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Sigmas(
+          Vector3(sigmaT, sigmaT, sigmaR));
+      Sampler sampler(model, seed);
+      BOOST_FOREACH(const Values::ConstFiltered<Pose2>::KeyValuePair& key_value, values.filter<Pose2>()) {
+        values.update(key_value.key, key_value.value.retract(sampler.sample()));
+      }
+    }
+
+    /// Perturb all Point3 values using normally distributed noise
     void perturbPoint3(Values& values, double sigma, int32_t seed = 42u) {
       noiseModel::Isotropic::shared_ptr model = noiseModel::Isotropic::Sigma(3,sigma);
       Sampler sampler(model, seed);
@@ -102,7 +112,7 @@ namespace gtsam {
       }
     }
 
-    /// insert a number of initial point values by backprojecting
+    /// Insert a number of initial point values by backprojecting
     void insertBackprojections(Values& values, const SimpleCamera& camera, const Vector& J, const Matrix& Z, double depth) {
       if (Z.rows() != 2) throw std::invalid_argument("insertBackProjections: Z must be 2*K");
       if (Z.cols() != J.size()) throw std::invalid_argument("insertBackProjections: J and Z must have same number of entries");
@@ -113,7 +123,7 @@ namespace gtsam {
       }
     }
 
-    /// insert multiple projection factors for a single pose key
+    /// Insert multiple projection factors for a single pose key
     void insertProjectionFactors(NonlinearFactorGraph& graph, Key i, const Vector& J, const Matrix& Z,
         const SharedNoiseModel& model, const Cal3_S2::shared_ptr K, const Pose3& body_P_sensor = Pose3()) {
       if (Z.rows() != 2) throw std::invalid_argument("addMeasurements: Z must be 2*K");
@@ -126,7 +136,7 @@ namespace gtsam {
       }
     }
 
-    /// calculate the errors of all projection factors in a graph
+    /// Calculate the errors of all projection factors in a graph
     Matrix reprojectionErrors(const NonlinearFactorGraph& graph, const Values& values) {
       // first count
       size_t K = 0, k=0;

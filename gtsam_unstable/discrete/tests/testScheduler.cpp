@@ -74,7 +74,7 @@ DiscreteFactorGraph createExpected() {
   expected.addAllDiff(J1 & J2 & J3);
 
   // Mutual exclusion for students
-  expected.addAllDiff(A & J);
+  expected.addAllDiff(A, J);
 
   return expected;
 }

@@ -96,7 +96,7 @@ TEST(Rot2, logmap)
 {
   Rot2 rot0(Rot2::fromAngle(M_PI/2.0));
   Rot2 rot(Rot2::fromAngle(M_PI));
-  Vector expected = Vector_(1, M_PI/2.0);
+  Vector expected = (Vector(1) << M_PI/2.0);
   Vector actual = rot0.localCoordinates(rot);
   CHECK(assert_equal(expected, actual));
 }

@@ -16,7 +16,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   void Domain::print(const string& s,
-      const IndexFormatter& formatter) const {
+      const KeyFormatter& formatter) const {
 //    cout << s << ": Domain on " << formatter(keys_[0]) << " (j=" <<
 //    formatter(keys_[0]) << ") with values";
 //    BOOST_FOREACH (size_t v,values_) cout << " " << v;
@@ -57,12 +57,12 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  bool Domain::checkAllDiff(const vector<Index> keys, vector<Domain>& domains) {
-    Index j = keys_[0];
+  bool Domain::checkAllDiff(const vector<Key> keys, vector<Domain>& domains) {
+    Key j = keys_[0];
     // for all values in this domain
     BOOST_FOREACH(size_t value, values_) {
       // for all connected domains
-      BOOST_FOREACH(Index k, keys)
+      BOOST_FOREACH(Key k, keys)
         // if any domain contains the value we cannot make this domain singleton
         if (k!=j && domains[k].contains(value))
           goto found;

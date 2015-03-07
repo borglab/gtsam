@@ -34,9 +34,19 @@ namespace gtsam {
 
     // print
     virtual void print(const std::string& s = "",
-        const IndexFormatter& formatter = DefaultIndexFormatter) const {
+        const KeyFormatter& formatter = DefaultKeyFormatter) const {
       std::cout << s << "BinaryAllDiff on " << formatter(keys_[0]) << " and "
           << formatter(keys_[1]) << std::endl;
+    }
+
+    /// equals
+    bool equals(const DiscreteFactor& other, double tol) const {
+      if(!dynamic_cast<const BinaryAllDiff*>(&other))
+        return false;
+      else {
+        const BinaryAllDiff& f(static_cast<const BinaryAllDiff&>(other));
+        return (cardinality0_==f.cardinality0_) && (cardinality1_==f.cardinality1_);
+      }
     }
 
     /// Calculate value
