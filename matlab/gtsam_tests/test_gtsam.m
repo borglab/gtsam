@@ -33,5 +33,8 @@ testVisualISAMExample
 display 'Starting: testSerialization'
 testSerialization
 
+display 'Starting: testUtilities'
+testUtilities
+
 % end of tests
 display 'Tests complete!'

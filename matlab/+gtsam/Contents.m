@@ -175,6 +175,9 @@
 %   symbolIndex                       - get index from a symbol key
 %
 %% Wrapped C++ Convenience Functions for use within MATLAB
+%   utilities.createKeyList           - Create KeyList from indices
+%   utilities.createKeyVector         - Create KeyVector from indices
+%   utilities.createKeySet            - Create KeySet from indices
 %   utilities.extractPoint2           - Extract all Point2 values into a single matrix [x y]
 %   utilities.extractPoint3           - Extract all Point3 values into a single matrix [x y z]
 %   utilities.extractPose2            - Extract all Pose2 values into a single matrix [x y theta]
@@ -186,3 +189,4 @@
 %   utilities.insertBackprojections   - Insert a number of initial point values by backprojecting
 %   utilities.insertProjectionFactors - Insert multiple projection factors for a single pose key
 %   utilities.reprojectionErrors      - Calculate the errors of all projection factors in a graph
+%   utilities.localToWorld            - Convert from local to world coordinates

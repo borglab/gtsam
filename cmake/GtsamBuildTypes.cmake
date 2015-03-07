@@ -56,7 +56,7 @@ endif()
 # Clang on Mac uses a template depth that is less than standard and is too small
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 	if(NOT "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS "5.0")
-		add_definitions(-ftemplate-depth=1024)
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-depth=1024")
 	endif()
 endif()
 

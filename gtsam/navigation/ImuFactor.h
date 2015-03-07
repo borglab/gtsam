@@ -33,7 +33,13 @@ namespace gtsam {
   /**
    * 
    * @addtogroup SLAM
-   *    * REFERENCES:
+   *
+   * If you are using the factor, please cite:
+   * L. Carlone, Z. Kira, C. Beall, V. Indelman, F. Dellaert, Eliminating conditionally
+   * independent sets in factor graphs: a unifying perspective based on smart factors,
+   * Int. Conf. on Robotics and Automation (ICRA), 2014.
+   *
+   ** REFERENCES:
    * [1] G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups", Volume 2, 2008.
    * [2] T. Lupton and S.Sukkarieh, "Visual-Inertial-Aided Navigation for High-Dynamic Motion in Built
    * Environments Without Initial Conditions", TRO, 28(1):61-76, 2012.

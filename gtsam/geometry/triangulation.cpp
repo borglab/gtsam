@@ -16,7 +16,7 @@
  * @author Chris Beall
  */
 
-#include <gtsam_unstable/geometry/triangulation.h>
+#include <gtsam/geometry/triangulation.h>
 
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>

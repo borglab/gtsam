@@ -36,7 +36,9 @@ toc
 hold on; plot2DTrajectory(result, 'b-*');
 
 %% Plot Covariance Ellipses
+tic
 marginals = Marginals(graph, result);
+toc
 P={};
 for i=1:result.size()-1
     pose_i = result.at(i);

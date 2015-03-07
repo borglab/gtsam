@@ -502,6 +502,19 @@ void aGlobalFunction_42(int nargout, mxArray *out[], int nargin, const mxArray *
   checkArguments("aGlobalFunction",nargout,nargin,0);
   out[0] = wrap< Vector >(aGlobalFunction());
 }
+void overloadedGlobalFunction_43(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("overloadedGlobalFunction",nargout,nargin,1);
+  int a = unwrap< int >(in[0]);
+  out[0] = wrap< Vector >(overloadedGlobalFunction(a));
+}
+void overloadedGlobalFunction_44(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("overloadedGlobalFunction",nargout,nargin,2);
+  int a = unwrap< int >(in[0]);
+  double b = unwrap< double >(in[1]);
+  out[0] = wrap< Vector >(overloadedGlobalFunction(a,b));
+}
 
 void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
@@ -642,6 +655,12 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
       break;
     case 42:
       aGlobalFunction_42(nargout, out, nargin-1, in+1);
+      break;
+    case 43:
+      overloadedGlobalFunction_43(nargout, out, nargin-1, in+1);
+      break;
+    case 44:
+      overloadedGlobalFunction_44(nargout, out, nargin-1, in+1);
       break;
     }
   } catch(const std::exception& e) {

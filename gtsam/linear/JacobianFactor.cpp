@@ -574,6 +574,11 @@ VectorValues JacobianFactor::gradientAtZero() const {
 }
 
 /* ************************************************************************* */
+void JacobianFactor::gradientAtZero(double* d) const {
+  //throw std::runtime_error("gradientAtZero not implemented for Jacobian factor");
+}
+
+/* ************************************************************************* */
 pair<Matrix, Vector> JacobianFactor::jacobian() const {
   pair<Matrix, Vector> result = jacobianUnweighted();
   // divide in sigma so error is indeed 0.5*|Ax-b|

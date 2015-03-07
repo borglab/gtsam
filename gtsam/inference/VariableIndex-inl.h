@@ -23,43 +23,35 @@ namespace gtsam {
 
 /* ************************************************************************* */
 template<class FG>
-void VariableIndex::augment(const FG& factors, boost::optional<const FastVector<size_t>&> newFactorIndices)
-{
+void VariableIndex::augment(const FG& factors,
+    boost::optional<const FastVector<size_t>&> newFactorIndices) {
   gttic(VariableIndex_augment);
 
   // Augment index for each factor
-  for(size_t i = 0; i < factors.size(); ++i)
-  {
-    if(factors[i])
-    {
+  for (size_t i = 0; i < factors.size(); ++i) {
+    if (factors[i]) {
       const size_t globalI =
-        newFactorIndices ?
-        (*newFactorIndices)[i] :
-        nFactors_;
-      BOOST_FOREACH(const Key key, *factors[i])
-      {
+          newFactorIndices ? (*newFactorIndices)[i] : nFactors_;
+      BOOST_FOREACH(const Key key, *factors[i]) {
         index_[key].push_back(globalI);
-        ++ nEntries_;
+        ++nEntries_;
       }
     }
 
     // Increment factor count even if factors are null, to keep indices consistent
-    if(newFactorIndices)
-    {
-      if((*newFactorIndices)[i] >= nFactors_)
+    if (newFactorIndices) {
+      if ((*newFactorIndices)[i] >= nFactors_)
         nFactors_ = (*newFactorIndices)[i] + 1;
-    }
-    else
-    {
-      ++ nFactors_;
+    } else {
+      ++nFactors_;
     }
   }
 }
 
 /* ************************************************************************* */
 template<typename ITERATOR, class FG>
-void VariableIndex::remove(ITERATOR firstFactor, ITERATOR lastFactor, const FG& factors)
-{
+void VariableIndex::remove(ITERATOR firstFactor, ITERATOR lastFactor,
+    const FG& factors) {
   gttic(VariableIndex_remove);
 
   // NOTE: We intentionally do not decrement nFactors_ because the factor
@@ -68,17 +60,20 @@ void VariableIndex::remove(ITERATOR firstFactor, ITERATOR lastFactor, const FG& 
   // one greater than the highest-numbered factor referenced in a VariableIndex.
   ITERATOR factorIndex = firstFactor;
   size_t i = 0;
-  for( ; factorIndex != lastFactor; ++factorIndex, ++i) {
-    if(i >= factors.size())
-      throw std::invalid_argument("Internal error, requested inconsistent number of factor indices and factors in VariableIndex::remove");
-    if(factors[i]) {
+  for (; factorIndex != lastFactor; ++factorIndex, ++i) {
+    if (i >= factors.size())
+      throw std::invalid_argument(
+          "Internal error, requested inconsistent number of factor indices and factors in VariableIndex::remove");
+    if (factors[i]) {
       BOOST_FOREACH(Key j, *factors[i]) {
         Factors& factorEntries = internalAt(j);
-        Factors::iterator entry = std::find(factorEntries.begin(), factorEntries.end(), *factorIndex);
-        if(entry == factorEntries.end())
-          throw std::invalid_argument("Internal error, indices and factors passed into VariableIndex::remove are not consistent with the existing variable index");
+        Factors::iterator entry = std::find(factorEntries.begin(),
+            factorEntries.end(), *factorIndex);
+        if (entry == factorEntries.end())
+          throw std::invalid_argument(
+              "Internal error, indices and factors passed into VariableIndex::remove are not consistent with the existing variable index");
         factorEntries.erase(entry);
-        -- nEntries_;
+        --nEntries_;
       }
     }
   }
@@ -87,10 +82,11 @@ void VariableIndex::remove(ITERATOR firstFactor, ITERATOR lastFactor, const FG& 
 /* ************************************************************************* */
 template<typename ITERATOR>
 void VariableIndex::removeUnusedVariables(ITERATOR firstKey, ITERATOR lastKey) {
-  for(ITERATOR key = firstKey; key != lastKey; ++key) {
+  for (ITERATOR key = firstKey; key != lastKey; ++key) {
     KeyMap::iterator entry = index_.find(*key);
-    if(!entry->second.empty())
-      throw std::invalid_argument("Asking to remove variables from the variable index that are not unused");
+    if (!entry->second.empty())
+      throw std::invalid_argument(
+          "Asking to remove variables from the variable index that are not unused");
     index_.erase(entry);
   }
 }

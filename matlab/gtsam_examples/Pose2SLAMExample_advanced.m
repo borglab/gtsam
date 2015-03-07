@@ -59,16 +59,16 @@ params.setAbsoluteErrorTol(1e-15);
 params.setRelativeErrorTol(1e-15);
 params.setVerbosity('ERROR');
 params.setVerbosityDL('VERBOSE');
-params.setOrdering(graph.orderingCOLAMD(initialEstimate));
+params.setOrdering(graph.orderingCOLAMD());
 optimizer = DoglegOptimizer(graph, initialEstimate, params);                      
 
 result = optimizer.optimizeSafely();
 result.print('final result');
 
 %% Get the corresponding dense matrix
-ord = graph.orderingCOLAMD(result);
-gfg = graph.linearize(result,ord);
-denseAb = gfg.denseJacobian;
+ord = graph.orderingCOLAMD();
+gfg = graph.linearize(result);
+denseAb = gfg.augmentedJacobian;
 
 %% Get sparse matrix A and RHS b
 IJS = gfg.sparseJacobian_();

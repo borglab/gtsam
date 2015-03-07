@@ -22,6 +22,16 @@
 #include "SmartProjectionFactor.h"
 
 namespace gtsam {
+/**
+ *
+ * @addtogroup SLAM
+ *
+ * If you are using the factor, please cite:
+ * L. Carlone, Z. Kira, C. Beall, V. Indelman, F. Dellaert, Eliminating conditionally
+ * independent sets in factor graphs: a unifying perspective based on smart factors,
+ * Int. Conf. on Robotics and Automation (ICRA), 2014.
+ *
+ */
 
 /**
  * The calibration is known here. The factor only constraints poses (variable dimension is 6)
@@ -31,7 +41,8 @@ template<class POSE, class LANDMARK, class CALIBRATION>
 class SmartProjectionPoseFactor: public SmartProjectionFactor<POSE, LANDMARK, CALIBRATION, 6> {
 protected:
 
-  // Known calibration
+  LinearizationMode linearizeTo_;  ///< How to linearize the factor (HESSIAN, JACOBIAN_SVD, JACOBIAN_Q)
+
   std::vector<boost::shared_ptr<CALIBRATION> > K_all_; ///< shared pointer to calibration object (one for each camera)
 
 public:
@@ -56,8 +67,11 @@ public:
    */
   SmartProjectionPoseFactor(const double rankTol = 1,
       const double linThreshold = -1, const bool manageDegeneracy = false,
-      const bool enableEPI = false, boost::optional<POSE> body_P_sensor = boost::none) :
-        Base(rankTol, linThreshold, manageDegeneracy, enableEPI, body_P_sensor) {}
+      const bool enableEPI = false, boost::optional<POSE> body_P_sensor = boost::none,
+      LinearizationMode linearizeTo = HESSIAN, double landmarkDistanceThreshold = 1e10,
+      double dynamicOutlierRejectionThreshold = -1) :
+        Base(rankTol, linThreshold, manageDegeneracy, enableEPI, body_P_sensor,
+        landmarkDistanceThreshold, dynamicOutlierRejectionThreshold), linearizeTo_(linearizeTo) {}
 
   /** Virtual destructor */
   virtual ~SmartProjectionPoseFactor() {}
@@ -65,7 +79,7 @@ public:
   /**
    * add a new measurement and pose key
    * @param measured is the 2m dimensional location of the projection of a single landmark in the m view (the measurement)
-   * @param poseKey is the index corresponding to the camera observing the same landmark
+   * @param poseKey is key corresponding to the camera observing the same landmark
    * @param noise_i is the measurement noise
    * @param K_i is the (known) camera calibration
    */
@@ -77,8 +91,11 @@ public:
   }
 
   /**
-   * add a new measurements and pose keys
-   * Variant of the previous one in which we include a set of measurements
+   *  Variant of the previous one in which we include a set of measurements
+   * @param measurements vector of the 2m dimensional location of the projection of a single landmark in the m view (the measurement)
+   * @param poseKeys vector of keys corresponding to the camera observing the same landmark
+   * @param noises vector of measurement noises
+   * @param Ks vector of calibration objects
    */
   void add(std::vector<Point2> measurements, std::vector<Key> poseKeys,
       std::vector<SharedNoiseModel> noises,
@@ -90,8 +107,11 @@ public:
   }
 
   /**
-   * add a new measurements and pose keys
    * Variant of the previous one in which we include a set of measurements with the same noise and calibration
+   * @param mmeasurements vector of the 2m dimensional location of the projection of a single landmark in the m view (the measurement)
+   * @param poseKeys vector of keys corresponding to the camera observing the same landmark
+   * @param noise measurement noise (same for all measurements)
+   * @param K the (known) camera calibration (same for all measurements)
    */
   void add(std::vector<Point2> measurements, std::vector<Key> poseKeys,
       const SharedNoiseModel noise, const boost::shared_ptr<CALIBRATION> K) {
@@ -126,7 +146,12 @@ public:
     return 6 * this->keys_.size();
   }
 
-  // Collect all cameras
+  /**
+   * Collect all cameras involved in this factor
+   * @param values Values structure which must contain camera poses corresponding
+   * to keys involved in this factor
+   * @return vector of Values
+   */
   typename Base::Cameras cameras(const Values& values) const {
     typename Base::Cameras cameras;
     size_t i=0;
@@ -139,11 +164,24 @@ public:
   }
 
   /**
-   * linearize returns a Hessian factor contraining the poses
+   * Linearize to Gaussian Factor
+   * @param values Values structure which must contain camera poses for this factor
+   * @return
    */
   virtual boost::shared_ptr<GaussianFactor> linearize(
       const Values& values) const {
-    return this->createHessianFactor(cameras(values));
+    // depending on flag set on construction we may linearize to different linear factors
+    switch(linearizeTo_){
+    case JACOBIAN_SVD :
+      return this->createJacobianSVDFactor(cameras(values), 0.0);
+      break;
+    case JACOBIAN_Q :
+      return this->createJacobianQFactor(cameras(values), 0.0);
+      break;
+    default:
+      return this->createHessianFactor(cameras(values));
+      break;
+    }
   }
 
   /**
@@ -158,7 +196,7 @@ public:
   }
 
   /** return the calibration object */
-  inline const boost::shared_ptr<CALIBRATION> calibration() const {
+  inline const std::vector<boost::shared_ptr<CALIBRATION> > calibration() const {
     return K_all_;
   }
 

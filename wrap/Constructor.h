@@ -18,10 +18,10 @@
 
 #pragma once
 
+#include "Argument.h"
+
 #include <string>
 #include <vector>
-
-#include "Argument.h"
 
 namespace wrap {
 
@@ -34,7 +34,7 @@ struct Constructor {
   }
 
   // Then the instance variables are set directly by the Module constructor
-    std::vector<ArgumentList> args_list;
+  std::vector<ArgumentList> args_list;
   std::string name;
   bool verbose_;
 
@@ -50,21 +50,18 @@ struct Constructor {
    * if nargin == 2, obj.self = new_Pose3_RP(varargin{1},varargin{2}); end
    */
   void proxy_fragment(FileWriter& file, const std::string& wrapperName,
-          bool hasParent, const int id, const ArgumentList args) const;
+      bool hasParent, const int id, const ArgumentList args) const;
 
   /// cpp wrapper
   std::string wrapper_fragment(FileWriter& file,
-       const std::string& cppClassName,
-       const std::string& matlabUniqueName,
-       const std::string& cppBaseClassName,
-       int id,
-       const ArgumentList& al) const;
+      const std::string& cppClassName, const std::string& matlabUniqueName,
+      const std::string& cppBaseClassName, int id,
+      const ArgumentList& al) const;
 
   /// constructor function
   void generate_construct(FileWriter& file, const std::string& cppClassName,
-          std::vector<ArgumentList>& args_list) const;
-  
-};
+      std::vector<ArgumentList>& args_list) const;
 
+};
 
 } // \namespace wrap

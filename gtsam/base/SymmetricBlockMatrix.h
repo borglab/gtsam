@@ -236,6 +236,10 @@ namespace gtsam {
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int version) {
+      // Fill in the lower triangle part of the matrix, so boost::serialization won't
+      // complain about uninitialized data with an input_stream_error exception
+      // http://www.boost.org/doc/libs/1_37_0/libs/serialization/doc/exceptions.html#stream_error
+      matrix_.triangularView<Eigen::Lower>() = matrix_.triangularView<Eigen::Upper>().transpose();
       ar & BOOST_SERIALIZATION_NVP(matrix_);
       ar & BOOST_SERIALIZATION_NVP(variableColOffsets_);
       ar & BOOST_SERIALIZATION_NVP(blockStart_);

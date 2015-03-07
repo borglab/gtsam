@@ -342,6 +342,21 @@ void ns2aGlobalFunction_23(int nargout, mxArray *out[], int nargin, const mxArra
   checkArguments("ns2aGlobalFunction",nargout,nargin,0);
   out[0] = wrap< Vector >(ns2::aGlobalFunction());
 }
+void ns2overloadedGlobalFunction_24(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  typedef boost::shared_ptr<ns1::ClassA> SharedClassA;
+  checkArguments("ns2overloadedGlobalFunction",nargout,nargin,1);
+  ns1::ClassA& a = *unwrap_shared_ptr< ns1::ClassA >(in[0], "ptr_ns1ClassA");
+  out[0] = wrap_shared_ptr(SharedClassA(new ns1::ClassA(ns2::overloadedGlobalFunction(a))),"ns1.ClassA", false);
+}
+void ns2overloadedGlobalFunction_25(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  typedef boost::shared_ptr<ns1::ClassA> SharedClassA;
+  checkArguments("ns2overloadedGlobalFunction",nargout,nargin,2);
+  ns1::ClassA& a = *unwrap_shared_ptr< ns1::ClassA >(in[0], "ptr_ns1ClassA");
+  double b = unwrap< double >(in[1]);
+  out[0] = wrap_shared_ptr(SharedClassA(new ns1::ClassA(ns2::overloadedGlobalFunction(a,b))),"ns1.ClassA", false);
+}
 
 void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
@@ -425,6 +440,12 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
       break;
     case 23:
       ns2aGlobalFunction_23(nargout, out, nargin-1, in+1);
+      break;
+    case 24:
+      ns2overloadedGlobalFunction_24(nargout, out, nargin-1, in+1);
+      break;
+    case 25:
+      ns2overloadedGlobalFunction_25(nargout, out, nargin-1, in+1);
       break;
     }
   } catch(const std::exception& e) {

@@ -16,12 +16,29 @@ if(NOT GTSAM_USE_SYSTEM_EIGEN)
 		endif()
 	endforeach(eigen_dir)
 
+	# do the same for the unsupported eigen folder
+	file(GLOB_RECURSE  unsupported_eigen_headers "${CMAKE_CURRENT_SOURCE_DIR}/Eigen/unsupported/Eigen/*.h")
+	
+	file(GLOB unsupported_eigen_dir_headers_all "Eigen/unsupported/Eigen/*")
+	foreach(unsupported_eigen_dir ${unsupported_eigen_dir_headers_all})
+		get_filename_component(filename ${unsupported_eigen_dir} NAME)
+		if (NOT ((${filename} MATCHES "CMakeLists.txt") OR (${filename} MATCHES "src") OR (${filename} MATCHES ".svn")))
+			list(APPEND unsupported_eigen_headers "${CMAKE_CURRENT_SOURCE_DIR}/Eigen/unsupported/Eigen/${filename}")
+			install(FILES Eigen/unsupported/Eigen/${filename} DESTINATION include/gtsam/3rdparty/Eigen/unsupported/Eigen)
+		endif()
+	endforeach(unsupported_eigen_dir)
+
 	# Add to project source
 	set(eigen_headers ${eigen_headers} PARENT_SCOPE)
+	# set(unsupported_eigen_headers ${unsupported_eigen_headers} PARENT_SCOPE)
 
 	# install Eigen - only the headers in our 3rdparty directory
 	install(DIRECTORY Eigen/Eigen
 		DESTINATION include/gtsam/3rdparty/Eigen
+		FILES_MATCHING PATTERN "*.h")
+	
+	install(DIRECTORY Eigen/unsupported/Eigen
+		DESTINATION include/gtsam/3rdparty/Eigen/unsupported/
 		FILES_MATCHING PATTERN "*.h")
 endif()
 
