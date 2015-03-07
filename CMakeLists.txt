@@ -11,7 +11,7 @@ endif()
 # Set the version number for the library
 set (GTSAM_VERSION_MAJOR 3)
 set (GTSAM_VERSION_MINOR 2)
-set (GTSAM_VERSION_PATCH 0)
+set (GTSAM_VERSION_PATCH 1)
 math (EXPR GTSAM_VERSION_NUMERIC "10000 * ${GTSAM_VERSION_MAJOR} + 100 * ${GTSAM_VERSION_MINOR} + ${GTSAM_VERSION_PATCH}")
 set (GTSAM_VERSION_STRING "${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH}")
 
@@ -129,7 +129,7 @@ else()
 endif()
 
 
-if(${Boost_VERSION} EQUAL 105600)
+if(NOT (${Boost_VERSION} LESS 105600))
 	message("Ignoring Boost restriction on optional lvalue assignment from rvalues")
 	add_definitions(-DBOOST_OPTIONAL_ALLOW_BINDING_TO_RVALUES)
 endif()

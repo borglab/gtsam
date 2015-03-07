@@ -215,7 +215,10 @@ Eigen::Block<const MATRIX> sub(const MATRIX& A, size_t i1, size_t i2, size_t j1,
  * @param i is the row of the upper left corner insert location
  * @param j is the column of the upper left corner insert location
  */
-GTSAM_EXPORT void insertSub(Matrix& fullMatrix, const Matrix& subMatrix, size_t i, size_t j);
+template <typename Derived1, typename Derived2>
+void insertSub(Eigen::MatrixBase<Derived1>& fullMatrix, const Eigen::MatrixBase<Derived2>& subMatrix, size_t i, size_t j) {
+  fullMatrix.block(i, j, subMatrix.rows(), subMatrix.cols()) = subMatrix;
+}
 
 /**
  * Create a matrix with submatrices along its diagonal
