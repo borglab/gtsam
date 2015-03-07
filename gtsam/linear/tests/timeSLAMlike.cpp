@@ -119,7 +119,7 @@ int main(int argc, char *argv[]) {
     timer.restart();
     for(size_t trial=0; trial<nTrials; ++trial) {
 //      cout << "Trial " << trial << endl;
-    	VectorValues soln(*GaussianMultifrontalSolver(blockGfgs[trial]).optimize());
+      VectorValues soln(*GaussianMultifrontalSolver(blockGfgs[trial]).optimize());
     }
     blocksolve = timer.elapsed();
     cout << blocksolve << " s" << endl;

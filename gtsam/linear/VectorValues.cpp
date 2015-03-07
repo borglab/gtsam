@@ -40,17 +40,17 @@ VectorValues& VectorValues::operator=(const VectorValues& rhs) {
 
 /* ************************************************************************* */
 VectorValues VectorValues::Zero(const VectorValues& x) {
-	VectorValues cloned(SameStructure(x));
-	cloned.setZero();
-	return cloned;
+  VectorValues cloned(SameStructure(x));
+  cloned.setZero();
+  return cloned;
 }
 
 /* ************************************************************************* */
 vector<size_t> VectorValues::dims() const {
   std::vector<size_t> result(this->size());
-	for(Index j = 0; j < this->size(); ++j)
-		result[j] = this->dim(j);
-	return result;
+  for(Index j = 0; j < this->size(); ++j)
+    result[j] = this->dim(j);
+  return result;
 }
 
 /* ************************************************************************* */
@@ -88,15 +88,15 @@ void VectorValues::insert(Index j, const Vector& value) {
 
 /* ************************************************************************* */
 void VectorValues::print(const std::string& str, const IndexFormatter& formatter) const {
-	std::cout << str << ": " << size() << " elements\n";
-	for (Index var = 0; var < size(); ++var)
-		std::cout << "  " << formatter(var) << ": \n" << operator[](var) << "\n";
-	std::cout.flush();
+  std::cout << str << ": " << size() << " elements\n";
+  for (Index var = 0; var < size(); ++var)
+    std::cout << "  " << formatter(var) << ": \n" << operator[](var) << "\n";
+  std::cout.flush();
 }
 
 /* ************************************************************************* */
 bool VectorValues::equals(const VectorValues& x, double tol) const {
-	return hasSameStructure(x) && equal_with_abs_tol(values_, x.values_, tol);
+  return hasSameStructure(x) && equal_with_abs_tol(values_, x.values_, tol);
 }
 
 /* ************************************************************************* */
@@ -104,11 +104,11 @@ void VectorValues::resize(Index nVars, size_t varDim) {
   maps_.clear();
   maps_.reserve(nVars);
   values_.resize(nVars * varDim);
-	int varStart = 0;
-	for (Index j = 0; j < nVars; ++j) {
-		maps_.push_back(values_.segment(varStart, varDim));
-		varStart += varDim;
-	}
+  int varStart = 0;
+  for (Index j = 0; j < nVars; ++j) {
+    maps_.push_back(values_.segment(varStart, varDim));
+    varStart += varDim;
+  }
 }
 
 /* ************************************************************************* */
@@ -155,10 +155,10 @@ bool VectorValues::hasSameStructure(const VectorValues& other) const {
 
 /* ************************************************************************* */
 VectorValues VectorValues::operator+(const VectorValues& c) const {
-	assert(this->hasSameStructure(c));
-	VectorValues result(SameStructure(c));
-	result.values_ = this->values_ + c.values_;
-	return result;
+  assert(this->hasSameStructure(c));
+  VectorValues result(SameStructure(c));
+  result.values_ = this->values_ + c.values_;
+  return result;
 }
 
 /* ************************************************************************* */
@@ -171,35 +171,35 @@ VectorValues VectorValues::operator-(const VectorValues& c) const {
 
 /* ************************************************************************* */
 void VectorValues::operator+=(const VectorValues& c) {
-	assert(this->hasSameStructure(c));
-	this->values_ += c.values_;
+  assert(this->hasSameStructure(c));
+  this->values_ += c.values_;
 }
 
 /* ************************************************************************* */
 VectorValues VectorValues::permute(const Permutation& permutation) const {
-	// Create result and allocate space
-	VectorValues lhs;
-	lhs.values_.resize(this->dim());
-	lhs.maps_.reserve(this->size());
+  // Create result and allocate space
+  VectorValues lhs;
+  lhs.values_.resize(this->dim());
+  lhs.maps_.reserve(this->size());
 
-	// Copy values from this VectorValues to the permuted VectorValues
-	size_t lhsPos = 0;
-	for(size_t i = 0; i < this->size(); ++i) {
-		// Map the next LHS subvector to the next slice of the LHS vector
-		lhs.maps_.push_back(SubVector(lhs.values_, lhsPos, this->at(permutation[i]).size()));
-		// Copy the data from the RHS subvector to the LHS subvector
-		lhs.maps_[i] = this->at(permutation[i]);
-		// Increment lhs position
-		lhsPos += lhs.maps_[i].size();
-	}
+  // Copy values from this VectorValues to the permuted VectorValues
+  size_t lhsPos = 0;
+  for(size_t i = 0; i < this->size(); ++i) {
+    // Map the next LHS subvector to the next slice of the LHS vector
+    lhs.maps_.push_back(SubVector(lhs.values_, lhsPos, this->at(permutation[i]).size()));
+    // Copy the data from the RHS subvector to the LHS subvector
+    lhs.maps_[i] = this->at(permutation[i]);
+    // Increment lhs position
+    lhsPos += lhs.maps_[i].size();
+  }
 
-	return lhs;
+  return lhs;
 }
 
 /* ************************************************************************* */
 void VectorValues::swap(VectorValues& other) {
-	this->values_.swap(other.values_);
-	this->maps_.swap(other.maps_);
+  this->values_.swap(other.values_);
+  this->maps_.swap(other.maps_);
 }
 
 }

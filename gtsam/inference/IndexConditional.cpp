@@ -17,7 +17,10 @@
 
 #include <gtsam/base/FastSet.h>
 #include <gtsam/inference/IndexConditional.h>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
 #include <boost/lambda/lambda.hpp>
+#pragma GCC diagnostic pop
 
 namespace gtsam {
 
@@ -67,8 +70,8 @@ namespace gtsam {
 //      }
 //    }
 //  #endif
-		BOOST_FOREACH(Index& key, keys())
-						key = inversePermutation[key];
+    BOOST_FOREACH(Index& key, keys())
+            key = inversePermutation[key];
     assertInvariants();
   }
   /* ************************************************************************* */

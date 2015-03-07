@@ -47,7 +47,7 @@ namespace Eigen {
   * \sa class MatrixFunctionAtomic, class MatrixLogarithmAtomic
   */
 template <typename MatrixType, 
-	  typename AtomicType,  
+    typename AtomicType,  
           int IsComplex = NumTraits<typename internal::traits<MatrixType>::Scalar>::IsComplex>
 class MatrixFunction
 {  
@@ -267,13 +267,13 @@ void MatrixFunction<MatrixType,AtomicType,1>::partitionEigenvalues()
     // Look for other element to add to the set
     for (Index j=i+1; j<rows; ++j) {
       if (internal::abs(diag(j) - diag(i)) <= separation() && std::find(qi->begin(), qi->end(), diag(j)) == qi->end()) {
-	typename ListOfClusters::iterator qj = findCluster(diag(j));
-	if (qj == m_clusters.end()) {
-	  qi->push_back(diag(j));
-	} else {
-	  qi->insert(qi->end(), qj->begin(), qj->end());
-	  m_clusters.erase(qj);
-	}
+  typename ListOfClusters::iterator qj = findCluster(diag(j));
+  if (qj == m_clusters.end()) {
+    qi->push_back(diag(j));
+  } else {
+    qi->insert(qi->end(), qj->begin(), qj->end());
+    m_clusters.erase(qj);
+  }
       }
     }
   }
@@ -412,8 +412,8 @@ void MatrixFunction<MatrixType,AtomicType,1>::computeOffDiagonal()
       DynMatrixType C = block(m_fT, blockIndex, blockIndex) * block(m_T, blockIndex, blockIndex+diagIndex);
       C -= block(m_T, blockIndex, blockIndex+diagIndex) * block(m_fT, blockIndex+diagIndex, blockIndex+diagIndex);
       for (Index k = blockIndex + 1; k < blockIndex + diagIndex; k++) {
-	C += block(m_fT, blockIndex, k) * block(m_T, k, blockIndex+diagIndex);
-	C -= block(m_T, blockIndex, k) * block(m_fT, k, blockIndex+diagIndex);
+  C += block(m_fT, blockIndex, k) * block(m_T, k, blockIndex+diagIndex);
+  C -= block(m_T, blockIndex, k) * block(m_fT, k, blockIndex+diagIndex);
       }
       block(m_fT, blockIndex, blockIndex+diagIndex) = solveTriangularSylvester(A, B, C);
     }
@@ -466,19 +466,19 @@ typename MatrixFunction<MatrixType,AtomicType,1>::DynMatrixType MatrixFunction<M
       // Compute AX = \sum_{k=i+1}^m A_{ik} X_{kj}
       Scalar AX;
       if (i == m - 1) {
-	AX = 0; 
+  AX = 0; 
       } else {
-	Matrix<Scalar,1,1> AXmatrix = A.row(i).tail(m-1-i) * X.col(j).tail(m-1-i);
-	AX = AXmatrix(0,0);
+  Matrix<Scalar,1,1> AXmatrix = A.row(i).tail(m-1-i) * X.col(j).tail(m-1-i);
+  AX = AXmatrix(0,0);
       }
 
       // Compute XB = \sum_{k=1}^{j-1} X_{ik} B_{kj}
       Scalar XB;
       if (j == 0) {
-	XB = 0; 
+  XB = 0; 
       } else {
-	Matrix<Scalar,1,1> XBmatrix = X.row(i).head(j) * B.col(j).head(j);
-	XB = XBmatrix(0,0);
+  Matrix<Scalar,1,1> XBmatrix = X.row(i).head(j) * B.col(j).head(j);
+  XB = XBmatrix(0,0);
       }
 
       X(i,j) = (C(i,j) - AX - XB) / (A(i,i) + B(j,j));

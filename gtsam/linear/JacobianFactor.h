@@ -79,8 +79,8 @@ namespace gtsam {
    */
   class JacobianFactor : public GaussianFactor {
   protected:
-		typedef Matrix AbMatrix;
-		typedef VerticalBlockView<AbMatrix> BlockAb;
+    typedef Matrix AbMatrix;
+    typedef VerticalBlockView<AbMatrix> BlockAb;
 
     noiseModel::Diagonal::shared_ptr model_; // Gaussian noise model with diagonal covariance matrix
     AbMatrix matrix_; // the full matrix corresponding to the factor
@@ -147,7 +147,7 @@ namespace gtsam {
 
     // Implementing Testable interface
     virtual void print(const std::string& s = "",
-    		const IndexFormatter& formatter = DefaultIndexFormatter) const;
+        const IndexFormatter& formatter = DefaultIndexFormatter) const;
     virtual bool equals(const GaussianFactor& lf, double tol = 1e-9) const;
 
     Vector unweighted_error(const VectorValues& c) const; /** (A*x-b) */
@@ -162,7 +162,12 @@ namespace gtsam {
      * augmented information matrix is described in more detail in HessianFactor,
      * which in fact stores an augmented information matrix.
      */
-    virtual Matrix computeInformation() const;
+    virtual Matrix augmentedInformation() const;
+    
+    /** Return the non-augmented information matrix represented by this
+     * GaussianFactor.
+     */
+    virtual Matrix information() const;
 
     /**
      * Construct the corresponding anti-factor to negate information
@@ -278,10 +283,10 @@ namespace gtsam {
 
     /** allocate space */
     void allocate(const VariableSlots& variableSlots,
-				std::vector<size_t>& varDims, size_t m);
+        std::vector<size_t>& varDims, size_t m);
 
     /** set noiseModel correctly */
-  	void setModel(bool anyConstrained, const Vector& sigmas);
+    void setModel(bool anyConstrained, const Vector& sigmas);
 
     /** Assert invariants after elimination */
     void assertInvariants() const;
@@ -317,10 +322,10 @@ namespace gtsam {
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int version) {
-    	ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(GaussianFactor);
-    	ar & BOOST_SERIALIZATION_NVP(Ab_);
-    	ar & BOOST_SERIALIZATION_NVP(model_);
-    	ar & BOOST_SERIALIZATION_NVP(matrix_);
+      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(GaussianFactor);
+      ar & BOOST_SERIALIZATION_NVP(Ab_);
+      ar & BOOST_SERIALIZATION_NVP(model_);
+      ar & BOOST_SERIALIZATION_NVP(matrix_);
     }
   }; // JacobianFactor
 

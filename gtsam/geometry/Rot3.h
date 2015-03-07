@@ -259,28 +259,28 @@ namespace gtsam {
      */
     static Vector3 Logmap(const Rot3& R);
 
-  	/// @}
-  	/// @name Group Action on Point3
-  	/// @{
+    /// @}
+    /// @name Group Action on Point3
+    /// @{
 
     /**
-		 * rotate point from rotated coordinate frame to world \f$ p^w = R_c^w p^c \f$
-		 */
-		Point3 rotate(const Point3& p, boost::optional<Matrix&> H1 = boost::none,
-				boost::optional<Matrix&> H2 = boost::none) const;
+     * rotate point from rotated coordinate frame to world \f$ p^w = R_c^w p^c \f$
+     */
+    Point3 rotate(const Point3& p, boost::optional<Matrix&> H1 = boost::none,
+        boost::optional<Matrix&> H2 = boost::none) const;
 
-		/// rotate point from rotated coordinate frame to world = R*p
-		Point3 operator*(const Point3& p) const;
+    /// rotate point from rotated coordinate frame to world = R*p
+    Point3 operator*(const Point3& p) const;
 
-		/**
-		 * rotate point from world to rotated frame \f$ p^c = (R_c^w)^T p^w \f$
-		 */
-		Point3 unrotate(const Point3& p, boost::optional<Matrix&> H1 = boost::none,
-				boost::optional<Matrix&> H2 = boost::none) const;
+    /**
+     * rotate point from world to rotated frame \f$ p^c = (R_c^w)^T p^w \f$
+     */
+    Point3 unrotate(const Point3& p, boost::optional<Matrix&> H1 = boost::none,
+        boost::optional<Matrix&> H2 = boost::none) const;
 
     /// @}
-  	/// @name Standard Interface
-  	/// @{
+    /// @name Standard Interface
+    /// @{
 
     /** return 3*3 rotation matrix */
     Matrix3 matrix() const;
@@ -336,9 +336,9 @@ namespace gtsam {
      */
     inline double yaw() const   { return ypr()(0); }
 
-  	/// @}
-  	/// @name Advanced Interface
-  	/// @{
+    /// @}
+    /// @name Advanced Interface
+    /// @{
 
     /** Compute the quaternion representation of this rotation.
      * @return The quaternion
@@ -351,10 +351,10 @@ namespace gtsam {
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int version)
     {
-    	 ar & boost::serialization::make_nvp("Rot3",
-    			 boost::serialization::base_object<Value>(*this));
+       ar & boost::serialization::make_nvp("Rot3",
+           boost::serialization::base_object<Value>(*this));
 #ifndef GTSAM_DEFAULT_QUATERNIONS
-    	 ar & boost::serialization::make_nvp("rot11", rot_(0,0));
+       ar & boost::serialization::make_nvp("rot11", rot_(0,0));
        ar & boost::serialization::make_nvp("rot12", rot_(0,1));
        ar & boost::serialization::make_nvp("rot13", rot_(0,2));
        ar & boost::serialization::make_nvp("rot21", rot_(1,0));
@@ -372,7 +372,7 @@ namespace gtsam {
     }
   };
 
-	/// @}
+  /// @}
 
   /**
    * [RQ] receives a 3 by 3 matrix and returns an upper triangular matrix R

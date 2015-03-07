@@ -13,7 +13,7 @@
  * @file    LevenbergMarquardtOptimizer.cpp
  * @brief   
  * @author  Richard Roberts
- * @date	Feb 26, 2012
+ * @date  Feb 26, 2012
  */
 
 #include <cmath>
@@ -71,6 +71,8 @@ void LevenbergMarquardtParams::print(const std::string& str) const {
 /* ************************************************************************* */
 void LevenbergMarquardtOptimizer::iterate() {
 
+  gttic(LM_iterate);
+
   // Linearize graph
   GaussianFactorGraph::shared_ptr linear = graph_.linearize(state_.values, *params_.ordering);
 
@@ -85,6 +87,7 @@ void LevenbergMarquardtOptimizer::iterate() {
 
     // Add prior-factors
     // TODO: replace this dampening with a backsubstitution approach
+    gttic(damp);
     GaussianFactorGraph dampedSystem(*linear);
     {
       double sigma = 1.0 / std::sqrt(state_.lambda);
@@ -99,6 +102,7 @@ void LevenbergMarquardtOptimizer::iterate() {
         dampedSystem.push_back(prior);
       }
     }
+    gttoc(damp);
     if (lmVerbosity >= LevenbergMarquardtParams::DAMPED) dampedSystem.print("damped");
 
     // Try solving
@@ -110,10 +114,14 @@ void LevenbergMarquardtOptimizer::iterate() {
       if (lmVerbosity >= LevenbergMarquardtParams::TRYDELTA) delta.print("delta");
 
       // update values
+      gttic(retract);
       Values newValues = state_.values.retract(delta, *params_.ordering);
+      gttoc(retract);
 
       // create new optimization state with more adventurous lambda
+      gttic(compute_error);
       double error = graph_.error(newValues);
+      gttoc(compute_error);
 
       if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA) cout << "next error = " << error << endl;
 

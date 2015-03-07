@@ -47,20 +47,20 @@ typedef boost::shared_ptr<NonlinearFactor > shared_nlf;
 /* ************************************************************************* */
 TEST( NonlinearFactor, equals )
 {
-	SharedNoiseModel sigma(noiseModel::Isotropic::Sigma(2,1.0));
+  SharedNoiseModel sigma(noiseModel::Isotropic::Sigma(2,1.0));
 
-	// create two nonlinear2 factors
-	Point2 z3(0.,-1.);
-	simulated2D::Measurement f0(z3, sigma, X(1),L(1));
+  // create two nonlinear2 factors
+  Point2 z3(0.,-1.);
+  simulated2D::Measurement f0(z3, sigma, X(1),L(1));
 
-	// measurement between x2 and l1
-	Point2 z4(-1.5, -1.);
-	simulated2D::Measurement f1(z4, sigma, X(2),L(1));
+  // measurement between x2 and l1
+  Point2 z4(-1.5, -1.);
+  simulated2D::Measurement f1(z4, sigma, X(2),L(1));
 
-	CHECK(assert_equal(f0,f0));
-	CHECK(f0.equals(f0));
-	CHECK(!f0.equals(f1));
-	CHECK(!f1.equals(f0));
+  CHECK(assert_equal(f0,f0));
+  CHECK(f0.equals(f0));
+  CHECK(!f0.equals(f1));
+  CHECK(!f1.equals(f0));
 }
 
 /* ************************************************************************* */
@@ -73,8 +73,8 @@ TEST( NonlinearFactor, equals2 )
   Graph::sharedFactor f0 = fg[0], f1 = fg[1];
 
   CHECK(f0->equals(*f0));
-	CHECK(!f0->equals(*f1));
-	CHECK(!f1->equals(*f0));
+  CHECK(!f0->equals(*f1));
+  CHECK(!f1->equals(*f0));
 }
 
 /* ************************************************************************* */
@@ -105,7 +105,7 @@ TEST( NonlinearFactor, NonlinearFactor )
 /* ************************************************************************* */
 TEST( NonlinearFactor, linearize_f1 )
 {
-	Values c = createNoisyValues();
+  Values c = createNoisyValues();
 
   // Grab a non-linear factor
   Graph nfg = createNonlinearFactorGraph();
@@ -121,13 +121,13 @@ TEST( NonlinearFactor, linearize_f1 )
 
   // The error |A*dx-b| approximates (h(x0+dx)-z) = -error_vector
   // Hence i.e., b = approximates z-h(x0) = error_vector(x0)
-	//CHECK(assert_equal(nlf->error_vector(c),actual->get_b()));
+  //CHECK(assert_equal(nlf->error_vector(c),actual->get_b()));
 }
 
 /* ************************************************************************* */
 TEST( NonlinearFactor, linearize_f2 )
 {
-	Values c = createNoisyValues();
+  Values c = createNoisyValues();
 
   // Grab a non-linear factor
   Graph nfg = createNonlinearFactorGraph();
@@ -179,61 +179,61 @@ TEST( NonlinearFactor, linearize_f4 )
 /* ************************************************************************* */
 TEST( NonlinearFactor, size )
 {
-	// create a non linear factor graph
-	Graph fg = createNonlinearFactorGraph();
+  // create a non linear factor graph
+  Graph fg = createNonlinearFactorGraph();
 
-	// create a values structure for the non linear factor graph
-	Values cfg = createNoisyValues();
+  // create a values structure for the non linear factor graph
+  Values cfg = createNoisyValues();
 
-	// get some factors from the graph
-	Graph::sharedFactor factor1 = fg[0], factor2 = fg[1],
-			factor3 = fg[2];
+  // get some factors from the graph
+  Graph::sharedFactor factor1 = fg[0], factor2 = fg[1],
+      factor3 = fg[2];
 
-	CHECK(factor1->size() == 1);
-	CHECK(factor2->size() == 2);
-	CHECK(factor3->size() == 2);
+  CHECK(factor1->size() == 1);
+  CHECK(factor2->size() == 2);
+  CHECK(factor3->size() == 2);
 }
 
 /* ************************************************************************* */
 TEST( NonlinearFactor, linearize_constraint1 )
 {
-	Vector sigmas = Vector_(2, 0.2, 0.0);
-	SharedDiagonal constraint = noiseModel::Constrained::MixedSigmas(sigmas);
+  Vector sigmas = Vector_(2, 0.2, 0.0);
+  SharedDiagonal constraint = noiseModel::Constrained::MixedSigmas(sigmas);
 
-	Point2 mu(1., -1.);
-	Graph::sharedFactor f0(new simulated2D::Prior(mu, constraint, X(1)));
+  Point2 mu(1., -1.);
+  Graph::sharedFactor f0(new simulated2D::Prior(mu, constraint, X(1)));
 
-	Values config;
-	config.insert(X(1), Point2(1.0, 2.0));
-	GaussianFactor::shared_ptr actual = f0->linearize(config, *config.orderingArbitrary());
+  Values config;
+  config.insert(X(1), Point2(1.0, 2.0));
+  GaussianFactor::shared_ptr actual = f0->linearize(config, *config.orderingArbitrary());
 
-	// create expected
-	Ordering ord(*config.orderingArbitrary());
-	Vector b = Vector_(2, 0., -3.);
-	JacobianFactor expected(ord[X(1)], Matrix_(2,2, 5.0, 0.0, 0.0, 1.0), b, constraint);
-	CHECK(assert_equal((const GaussianFactor&)expected, *actual));
+  // create expected
+  Ordering ord(*config.orderingArbitrary());
+  Vector b = Vector_(2, 0., -3.);
+  JacobianFactor expected(ord[X(1)], Matrix_(2,2, 5.0, 0.0, 0.0, 1.0), b, constraint);
+  CHECK(assert_equal((const GaussianFactor&)expected, *actual));
 }
 
 /* ************************************************************************* */
 TEST( NonlinearFactor, linearize_constraint2 )
 {
-	Vector sigmas = Vector_(2, 0.2, 0.0);
-	SharedDiagonal constraint = noiseModel::Constrained::MixedSigmas(sigmas);
+  Vector sigmas = Vector_(2, 0.2, 0.0);
+  SharedDiagonal constraint = noiseModel::Constrained::MixedSigmas(sigmas);
 
-	Point2 z3(1.,-1.);
-	simulated2D::Measurement f0(z3, constraint, X(1),L(1));
+  Point2 z3(1.,-1.);
+  simulated2D::Measurement f0(z3, constraint, X(1),L(1));
 
-	Values config;
-	config.insert(X(1), Point2(1.0, 2.0));
-	config.insert(L(1), Point2(5.0, 4.0));
-	GaussianFactor::shared_ptr actual = f0.linearize(config, *config.orderingArbitrary());
+  Values config;
+  config.insert(X(1), Point2(1.0, 2.0));
+  config.insert(L(1), Point2(5.0, 4.0));
+  GaussianFactor::shared_ptr actual = f0.linearize(config, *config.orderingArbitrary());
 
-	// create expected
-	Ordering ord(*config.orderingArbitrary());
-	Matrix A = Matrix_(2,2, 5.0, 0.0, 0.0, 1.0);
-	Vector b = Vector_(2, -15., -3.);
-	JacobianFactor expected(ord[X(1)], -1*A, ord[L(1)], A, b, constraint);
-	CHECK(assert_equal((const GaussianFactor&)expected, *actual));
+  // create expected
+  Ordering ord(*config.orderingArbitrary());
+  Matrix A = Matrix_(2,2, 5.0, 0.0, 0.0, 1.0);
+  Vector b = Vector_(2, -15., -3.);
+  JacobianFactor expected(ord[X(1)], -1*A, ord[L(1)], A, b, constraint);
+  CHECK(assert_equal((const GaussianFactor&)expected, *actual));
 }
 
 /* ************************************************************************* */
@@ -257,9 +257,9 @@ public:
     return (Vector(1) << x1 + x2 + x3 + x4).finished();
   }
 
-	virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-	  return boost::static_pointer_cast<gtsam::NonlinearFactor>(
-	      gtsam::NonlinearFactor::shared_ptr(new TestFactor4(*this))); }
+  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+        gtsam::NonlinearFactor::shared_ptr(new TestFactor4(*this))); }
 };
 
 /* ************************************ */
@@ -395,7 +395,7 @@ TEST(NonlinearFactor, NoiseModelFactor6) {
 /* ************************************************************************* */
 TEST( NonlinearFactor, clone_rekey )
 {
-	shared_nlf init(new TestFactor4());
+  shared_nlf init(new TestFactor4());
   EXPECT_LONGS_EQUAL(X(1), init->keys()[0]);
   EXPECT_LONGS_EQUAL(X(2), init->keys()[1]);
   EXPECT_LONGS_EQUAL(X(3), init->keys()[2]);

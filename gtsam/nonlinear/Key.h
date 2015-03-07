@@ -40,10 +40,10 @@ namespace gtsam {
   /// and Symbol keys.
   static const KeyFormatter DefaultKeyFormatter = &_defaultKeyFormatter;
 
-	/// Useful typedefs for operations with Values - allow for matlab interfaces
-	typedef FastList<Key> KeyList;
-	typedef FastVector<Key> KeyVector;
-	typedef FastSet<Key> KeySet;
+  /// Useful typedefs for operations with Values - allow for matlab interfaces
+  typedef FastList<Key> KeyList;
+  typedef FastVector<Key> KeyVector;
+  typedef FastSet<Key> KeySet;
 
 }
 

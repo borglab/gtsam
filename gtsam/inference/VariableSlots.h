@@ -57,8 +57,8 @@ public:
 
   typedef FastMap<Index, std::vector<Index> > Base;
 
-	/// @name Standard Constructors
-	/// @{
+  /// @name Standard Constructors
+  /// @{
 
   /**
    * Constructor from a set of factors to be combined.  Sorts the variables
@@ -68,9 +68,9 @@ public:
   template<class FG>
   VariableSlots(const FG& factorGraph);
 
-	/// @}
-	/// @name Testable
-	/// @{
+  /// @}
+  /// @name Testable
+  /// @{
 
   /** print */
   void print(const std::string& str = "VariableSlots: ") const;
@@ -78,7 +78,7 @@ public:
   /** equals */
   bool equals(const VariableSlots& rhs, double tol = 0.0) const;
 
-	/// @}
+  /// @}
 
 };
 

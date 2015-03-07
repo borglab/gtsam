@@ -70,8 +70,8 @@ TEST( GaussianBayesNet, matrix )
   boost::tie(R,d) = matrix(cbn); // find matrix and RHS
 
   Matrix R1 = Matrix_(2,2,
-		      1.0, 1.0,
-		      0.0, 1.0
+          1.0, 1.0,
+          0.0, 1.0
     );
   Vector d1 = Vector_(2, 9.0, 5.0);
 
@@ -96,17 +96,17 @@ TEST( GaussianBayesNet, optimize )
 TEST( GaussianBayesNet, optimize2 )
 {
 
-	// Create empty graph
-	GaussianFactorGraph fg;
-	SharedDiagonal noise = noiseModel::Unit::Create(1);
+  // Create empty graph
+  GaussianFactorGraph fg;
+  SharedDiagonal noise = noiseModel::Unit::Create(1);
 
-	fg.add(_y_, eye(1), 2*ones(1), noise);
+  fg.add(_y_, eye(1), 2*ones(1), noise);
 
-	fg.add(_x_, eye(1),_y_, -eye(1), -ones(1), noise);
+  fg.add(_x_, eye(1),_y_, -eye(1), -ones(1), noise);
 
-	fg.add(_y_, eye(1),_z_, -eye(1), -ones(1), noise);
+  fg.add(_y_, eye(1),_z_, -eye(1), -ones(1), noise);
 
-	fg.add(_x_, -eye(1), _z_, eye(1), 2*ones(1), noise);
+  fg.add(_x_, -eye(1), _z_, eye(1), 2*ones(1), noise);
 
   VectorValues actual = *GaussianSequentialSolver(fg).optimize();
 
@@ -121,10 +121,10 @@ TEST( GaussianBayesNet, optimize2 )
 /* ************************************************************************* */
 TEST( GaussianBayesNet, optimize3 )
 {
-	// y=R*x, x=inv(R)*y
-	// 9 = 1 1   4
-	// 5     1   5
-	// NOTE: we are supplying a new RHS here
+  // y=R*x, x=inv(R)*y
+  // 9 = 1 1   4
+  // 5     1   5
+  // NOTE: we are supplying a new RHS here
   GaussianBayesNet cbn = createSmallGaussianBayesNet();
 
   VectorValues expected(vector<size_t>(2,1)), x(vector<size_t>(2,1));
@@ -143,9 +143,9 @@ TEST( GaussianBayesNet, optimize3 )
 /* ************************************************************************* */
 TEST( GaussianBayesNet, backSubstituteTranspose )
 {
-	// x=R'*y, y=inv(R')*x
-	// 2 = 1    2
-	// 5   1 1  3
+  // x=R'*y, y=inv(R')*x
+  // 2 = 1    2
+  // 5   1 1  3
   GaussianBayesNet cbn = createSmallGaussianBayesNet();
 
   VectorValues y(vector<size_t>(2,1)), x(vector<size_t>(2,1));
@@ -163,23 +163,23 @@ TEST( GaussianBayesNet, backSubstituteTranspose )
 // Tests computing Determinant
 TEST( GaussianBayesNet, DeterminantTest )
 {
-	GaussianBayesNet cbn;
-	cbn += boost::shared_ptr<GaussianConditional>(new GaussianConditional(
-					0, Vector_( 2, 3.0, 4.0 ), Matrix_(2, 2, 1.0, 3.0, 0.0, 4.0 ),
-					1, Matrix_(2, 2, 2.0, 1.0, 2.0, 3.0),
-					ones(2)));
+  GaussianBayesNet cbn;
+  cbn += boost::shared_ptr<GaussianConditional>(new GaussianConditional(
+          0, Vector_( 2, 3.0, 4.0 ), Matrix_(2, 2, 1.0, 3.0, 0.0, 4.0 ),
+          1, Matrix_(2, 2, 2.0, 1.0, 2.0, 3.0),
+          ones(2)));
 
-	cbn += boost::shared_ptr<GaussianConditional>(new GaussianConditional(
-					1, Vector_( 2, 5.0, 6.0 ), Matrix_(2, 2, 1.0, 1.0, 0.0, 3.0 ),
-					2, Matrix_(2, 2, 1.0, 0.0, 5.0, 2.0),
-					ones(2)));
+  cbn += boost::shared_ptr<GaussianConditional>(new GaussianConditional(
+          1, Vector_( 2, 5.0, 6.0 ), Matrix_(2, 2, 1.0, 1.0, 0.0, 3.0 ),
+          2, Matrix_(2, 2, 1.0, 0.0, 5.0, 2.0),
+          ones(2)));
 
-	cbn += boost::shared_ptr<GaussianConditional>(new GaussianConditional(
-			3, Vector_( 2, 7.0, 8.0 ), Matrix_(2, 2, 1.0, 1.0, 0.0, 5.0 ),
-			ones(2)));
+  cbn += boost::shared_ptr<GaussianConditional>(new GaussianConditional(
+      3, Vector_( 2, 7.0, 8.0 ), Matrix_(2, 2, 1.0, 1.0, 0.0, 5.0 ),
+      ones(2)));
 
-	double expectedDeterminant = 60;
-	double actualDeterminant = determinant(cbn);
+  double expectedDeterminant = 60;
+  double actualDeterminant = determinant(cbn);
 
   EXPECT_DOUBLES_EQUAL( expectedDeterminant, actualDeterminant, 1e-9);
 }

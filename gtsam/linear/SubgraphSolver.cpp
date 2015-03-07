@@ -78,6 +78,11 @@ VectorValues SubgraphSolver::optimize() {
   return pc_->x(ybar);
 }
 
+VectorValues SubgraphSolver::optimize(const VectorValues &initial) {
+  // the initial is ignored in this case ...
+  return optimize();
+}
+
 void SubgraphSolver::initialize(const GaussianFactorGraph &jfg)
 {
   GaussianFactorGraph::shared_ptr Ab1 = boost::make_shared<GaussianFactorGraph>(),

@@ -34,73 +34,73 @@ namespace wrap {
 
 class CantOpenFile : public std::exception {
  private:
-	const std::string what_;
+  const std::string what_;
  public:
  CantOpenFile(const std::string& filename) : what_("Can't open file " + filename) {}
   ~CantOpenFile() throw() {}
-	virtual const char* what() const throw() { return what_.c_str(); }
+  virtual const char* what() const throw() { return what_.c_str(); }
 };
 
 class OutputError : public std::exception {
 private:
-	const std::string what_;
+  const std::string what_;
 public:
-	OutputError(const std::string& what) : what_(what) {}
-	~OutputError() throw() {}
-	virtual const char* what() const throw() { return what_.c_str(); }
+  OutputError(const std::string& what) : what_(what) {}
+  ~OutputError() throw() {}
+  virtual const char* what() const throw() { return what_.c_str(); }
 };
 
 class ParseFailed : public std::exception {
  private:
   const std::string what_;
  public:
-	 ParseFailed(int length) : what_((boost::format("Parse failed at character [%d]")%(length-1)).str()) {}
-	 ~ParseFailed() throw() {}
-	 virtual const char* what() const throw() { return what_.c_str(); }
+   ParseFailed(int length) : what_((boost::format("Parse failed at character [%d]")%(length-1)).str()) {}
+   ~ParseFailed() throw() {}
+   virtual const char* what() const throw() { return what_.c_str(); }
 };
 
 class DependencyMissing : public std::exception {
 private:
-	const std::string what_;
+  const std::string what_;
 public:
-	DependencyMissing(const std::string& dep, const std::string& loc) :
-		what_("Missing dependency " + dep + " in " + loc) {}
-	~DependencyMissing() throw() {}
-	virtual const char* what() const throw() { return what_.c_str(); }
+  DependencyMissing(const std::string& dep, const std::string& loc) :
+    what_("Missing dependency " + dep + " in " + loc) {}
+  ~DependencyMissing() throw() {}
+  virtual const char* what() const throw() { return what_.c_str(); }
 };
 
 class DuplicateDefinition : public std::exception {
 private:
-	const std::string what_;
+  const std::string what_;
 public:
-	DuplicateDefinition(const std::string& name) :
-		what_("Duplicate definition of " + name) {}
-	~DuplicateDefinition() throw() {}
-	virtual const char* what() const throw() { return what_.c_str(); }
+  DuplicateDefinition(const std::string& name) :
+    what_("Duplicate definition of " + name) {}
+  ~DuplicateDefinition() throw() {}
+  virtual const char* what() const throw() { return what_.c_str(); }
 };
 
 class AttributeError : public std::exception {
 private:
-	const std::string what_;
+  const std::string what_;
 public:
-	AttributeError(const std::string& name, const std::string& problem) :
-		what_("Class " + name + ": " + problem) {}
-	~AttributeError() throw() {}
-	virtual const char* what() const throw() { return what_.c_str(); }
+  AttributeError(const std::string& name, const std::string& problem) :
+    what_("Class " + name + ": " + problem) {}
+  ~AttributeError() throw() {}
+  virtual const char* what() const throw() { return what_.c_str(); }
 };
-	
+  
 // "Unique" key to signal calling the matlab object constructor with a raw pointer
 // to a shared pointer of the same C++ object type as the MATLAB type.
 // Also present in matlab.h
 static const uint64_t ptr_constructor_key =
-	(uint64_t('G') << 56) |
-	(uint64_t('T') << 48) |
-	(uint64_t('S') << 40) |
-	(uint64_t('A') << 32) |
-	(uint64_t('M') << 24) |
-	(uint64_t('p') << 16) |
-	(uint64_t('t') << 8) |
-	(uint64_t('r'));
+  (uint64_t('G') << 56) |
+  (uint64_t('T') << 48) |
+  (uint64_t('S') << 40) |
+  (uint64_t('A') << 32) |
+  (uint64_t('M') << 24) |
+  (uint64_t('p') << 16) |
+  (uint64_t('t') << 8) |
+  (uint64_t('r'));
 
 /**
  * read contents of a file into a std::string

@@ -30,26 +30,26 @@ using namespace boost::assign;
 /* ************************************************************************* */
 // Create a Kalman smoother for t=1:T and optimize
 double timeKalmanSmoother(int T) {
-	pair<GaussianFactorGraph,Ordering> smoother_ordering = createSmoother(T);
-	GaussianFactorGraph& smoother(smoother_ordering.first);
-	clock_t start = clock();
-	GaussianSequentialSolver(smoother).optimize();
-	clock_t end = clock ();
-	double dif = (double)(end - start) / CLOCKS_PER_SEC;
-	return dif;
+  pair<GaussianFactorGraph,Ordering> smoother_ordering = createSmoother(T);
+  GaussianFactorGraph& smoother(smoother_ordering.first);
+  clock_t start = clock();
+  GaussianSequentialSolver(smoother).optimize();
+  clock_t end = clock ();
+  double dif = (double)(end - start) / CLOCKS_PER_SEC;
+  return dif;
 }
 
 /* ************************************************************************* */
 // Create a planar factor graph and optimize
 // todo: use COLAMD ordering again (removed when linear baked-in ordering added)
 double timePlanarSmoother(int N, bool old = true) {
-	boost::tuple<GaussianFactorGraph, VectorValues> pg = planarGraph(N);
+  boost::tuple<GaussianFactorGraph, VectorValues> pg = planarGraph(N);
   GaussianFactorGraph& fg(pg.get<0>());
-	clock_t start = clock();
-	GaussianSequentialSolver(fg).optimize();
-	clock_t end = clock ();
-	double dif = (double)(end - start) / CLOCKS_PER_SEC;
-	return dif;
+  clock_t start = clock();
+  GaussianSequentialSolver(fg).optimize();
+  clock_t end = clock ();
+  double dif = (double)(end - start) / CLOCKS_PER_SEC;
+  return dif;
 }
 
 /* ************************************************************************* */
@@ -58,84 +58,84 @@ double timePlanarSmoother(int N, bool old = true) {
 double timePlanarSmootherEliminate(int N, bool old = true) {
   boost::tuple<GaussianFactorGraph, VectorValues> pg = planarGraph(N);
   GaussianFactorGraph& fg(pg.get<0>());
-	clock_t start = clock();
-	GaussianSequentialSolver(fg).eliminate();
-	clock_t end = clock ();
-	double dif = (double)(end - start) / CLOCKS_PER_SEC;
-	return dif;
+  clock_t start = clock();
+  GaussianSequentialSolver(fg).eliminate();
+  clock_t end = clock ();
+  double dif = (double)(end - start) / CLOCKS_PER_SEC;
+  return dif;
 }
 
 ///* ************************************************************************* */
 //// Create a planar factor graph and join factors until matrix formation
 //// This variation uses the original join factors approach
 //double timePlanarSmootherJoinAug(int N, size_t reps) {
-//	GaussianFactorGraph fgBase;
-//	VectorValues config;
-//	boost::tie(fgBase,config) = planarGraph(N);
-//	Ordering ordering = fgBase.getOrdering();
-//	Symbol key = ordering.front();
+//  GaussianFactorGraph fgBase;
+//  VectorValues config;
+//  boost::tie(fgBase,config) = planarGraph(N);
+//  Ordering ordering = fgBase.getOrdering();
+//  Symbol key = ordering.front();
 //
-//	clock_t start = clock();
+//  clock_t start = clock();
 //
-//	for (size_t i = 0; i<reps; ++i) {
-//		// setup
-//		GaussianFactorGraph fg(fgBase);
+//  for (size_t i = 0; i<reps; ++i) {
+//    // setup
+//    GaussianFactorGraph fg(fgBase);
 //
-//		// combine some factors
-//		GaussianFactor::shared_ptr joint_factor = removeAndCombineFactors(fg,key);
+//    // combine some factors
+//    GaussianFactor::shared_ptr joint_factor = removeAndCombineFactors(fg,key);
 //
-//		// create an internal ordering to render Ab
-//		Ordering render;
-//		render += key;
-//		BOOST_FOREACH(const Symbol& k, joint_factor->keys())
-//		if (k != key) render += k;
+//    // create an internal ordering to render Ab
+//    Ordering render;
+//    render += key;
+//    BOOST_FOREACH(const Symbol& k, joint_factor->keys())
+//    if (k != key) render += k;
 //
-//		Matrix Ab = joint_factor->matrix_augmented(render,false);
-//	}
+//    Matrix Ab = joint_factor->matrix_augmented(render,false);
+//  }
 //
-//	clock_t end = clock ();
-//	double dif = (double)(end - start) / CLOCKS_PER_SEC;
-//	return dif;
+//  clock_t end = clock ();
+//  double dif = (double)(end - start) / CLOCKS_PER_SEC;
+//  return dif;
 //}
 
 ///* ************************************************************************* */
 //// Create a planar factor graph and join factors until matrix formation
 //// This variation uses the single-allocate version to create the matrix
 //double timePlanarSmootherCombined(int N, size_t reps) {
-//	GaussianFactorGraph fgBase;
-//	VectorValues config;
-//	boost::tie(fgBase,config) = planarGraph(N);
-//	Ordering ordering = fgBase.getOrdering();
-//	Symbol key = ordering.front();
+//  GaussianFactorGraph fgBase;
+//  VectorValues config;
+//  boost::tie(fgBase,config) = planarGraph(N);
+//  Ordering ordering = fgBase.getOrdering();
+//  Symbol key = ordering.front();
 //
-//	clock_t start = clock();
+//  clock_t start = clock();
 //
-//	for (size_t i = 0; i<reps; ++i) {
-//		GaussianFactorGraph fg(fgBase);
-//		fg.eliminateOneMatrixJoin(key);
-//	}
+//  for (size_t i = 0; i<reps; ++i) {
+//    GaussianFactorGraph fg(fgBase);
+//    fg.eliminateOneMatrixJoin(key);
+//  }
 //
-//	clock_t end = clock ();
-//	double dif = (double)(end - start) / CLOCKS_PER_SEC;
-//	return dif;
+//  clock_t end = clock ();
+//  double dif = (double)(end - start) / CLOCKS_PER_SEC;
+//  return dif;
 //}
 
 
 /* ************************************************************************* */
 TEST(timeGaussianFactorGraph, linearTime)
 {
-	// Original T = 1000;
+  // Original T = 1000;
 
-	// Alex's Results
-	// T = 100000
-	// 1907 (init)    : T - 1.65, 2T = 3.28
-	//    int->size_t : T - 1.63, 2T = 3.27
-	// 2100           : T - 1.52, 2T = 2.96
+  // Alex's Results
+  // T = 100000
+  // 1907 (init)    : T - 1.65, 2T = 3.28
+  //    int->size_t : T - 1.63, 2T = 3.27
+  // 2100           : T - 1.52, 2T = 2.96
 
-	int T = 100000;
-	double time1 = timeKalmanSmoother(  T);  cout << "timeKalmanSmoother( T): " << time1;
-	double time2 = timeKalmanSmoother(2*T);  cout << "  (2*T): " << time2 << endl;
-	DOUBLES_EQUAL(2*time1,time2,0.2);
+  int T = 100000;
+  double time1 = timeKalmanSmoother(  T);  cout << "timeKalmanSmoother( T): " << time1;
+  double time2 = timeKalmanSmoother(2*T);  cout << "  (2*T): " << time2 << endl;
+  DOUBLES_EQUAL(2*time1,time2,0.2);
 }
 
 
@@ -149,7 +149,7 @@ TEST(timeGaussianFactorGraph, linearTime)
 // Alex's Machine
 // Initial:
 // 1907 (N = 30)               :  0.14
-//      (N = 100)			   : 16.36
+//      (N = 100)         : 16.36
 // Improved (int->size_t)
 //      (N = 100)              : 15.39
 // Using GSL/BLAS for updateAb : 12.87
@@ -164,56 +164,56 @@ int size = 100;
 /* ************************************************************************* */
 TEST(timeGaussianFactorGraph, planar_old)
 {
-	cout << "Timing planar - original version" << endl;
-	double time = timePlanarSmoother(size);
-	cout << "timeGaussianFactorGraph : " << time << endl;
-	//DOUBLES_EQUAL(5.97,time,0.1);
+  cout << "Timing planar - original version" << endl;
+  double time = timePlanarSmoother(size);
+  cout << "timeGaussianFactorGraph : " << time << endl;
+  //DOUBLES_EQUAL(5.97,time,0.1);
 }
 
 /* ************************************************************************* */
 TEST(timeGaussianFactorGraph, planar_new)
 {
-	cout << "Timing planar - new version" << endl;
-	double time = timePlanarSmoother(size, false);
-	cout << "timeGaussianFactorGraph : " << time << endl;
-	//DOUBLES_EQUAL(5.97,time,0.1);
+  cout << "Timing planar - new version" << endl;
+  double time = timePlanarSmoother(size, false);
+  cout << "timeGaussianFactorGraph : " << time << endl;
+  //DOUBLES_EQUAL(5.97,time,0.1);
 }
 
 /* ************************************************************************* */
 TEST(timeGaussianFactorGraph, planar_eliminate_old)
 {
-	cout << "Timing planar Eliminate - original version" << endl;
-	double time = timePlanarSmootherEliminate(size);
-	cout << "timeGaussianFactorGraph : " << time << endl;
-	//DOUBLES_EQUAL(5.97,time,0.1);
+  cout << "Timing planar Eliminate - original version" << endl;
+  double time = timePlanarSmootherEliminate(size);
+  cout << "timeGaussianFactorGraph : " << time << endl;
+  //DOUBLES_EQUAL(5.97,time,0.1);
 }
 
 /* ************************************************************************* */
 TEST(timeGaussianFactorGraph, planar_eliminate_new)
 {
-	cout << "Timing planar Eliminate - new version" << endl;
-	double time = timePlanarSmootherEliminate(size, false);
-	cout << "timeGaussianFactorGraph : " << time << endl;
-	//DOUBLES_EQUAL(5.97,time,0.1);
+  cout << "Timing planar Eliminate - new version" << endl;
+  double time = timePlanarSmootherEliminate(size, false);
+  cout << "timeGaussianFactorGraph : " << time << endl;
+  //DOUBLES_EQUAL(5.97,time,0.1);
 }
 
 //size_t reps = 1000;
 ///* ************************************************************************* */
 //TEST(timeGaussianFactorGraph, planar_join_old)
 //{
-//	cout << "Timing planar join - old" << endl;
-//	double time = timePlanarSmootherJoinAug(size, reps);
-//	cout << "timePlanarSmootherJoinAug " << size << " : " << time << endl;
-//	//DOUBLES_EQUAL(5.97,time,0.1);
+//  cout << "Timing planar join - old" << endl;
+//  double time = timePlanarSmootherJoinAug(size, reps);
+//  cout << "timePlanarSmootherJoinAug " << size << " : " << time << endl;
+//  //DOUBLES_EQUAL(5.97,time,0.1);
 //}
 //
 ///* ************************************************************************* */
 //TEST(timeGaussianFactorGraph, planar_join_new)
 //{
-//	cout << "Timing planar join - new" << endl;
-//	double time = timePlanarSmootherCombined(size, reps);
-//	cout << "timePlanarSmootherCombined " << size << " : " << time << endl;
-//	//DOUBLES_EQUAL(5.97,time,0.1);
+//  cout << "Timing planar join - new" << endl;
+//  double time = timePlanarSmootherCombined(size, reps);
+//  cout << "timePlanarSmootherCombined " << size << " : " << time << endl;
+//  //DOUBLES_EQUAL(5.97,time,0.1);
 //}
 
 

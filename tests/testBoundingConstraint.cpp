@@ -45,234 +45,234 @@ iq2D::PoseYInequality constraint4(key, 2.0, false, mu);
 
 /* ************************************************************************* */
 TEST( testBoundingConstraint, unary_basics_inactive1 ) {
-	Point2 pt1(2.0, 3.0);
-	Values config;
-	config.insert(key, pt1);
-	EXPECT(!constraint1.active(config));
-	EXPECT(!constraint2.active(config));
-	EXPECT_DOUBLES_EQUAL(1.0, constraint1.threshold(), tol);
-	EXPECT_DOUBLES_EQUAL(2.0, constraint2.threshold(), tol);
-	EXPECT(constraint1.isGreaterThan());
-	EXPECT(constraint2.isGreaterThan());
-	EXPECT(assert_equal(ones(1), constraint1.evaluateError(pt1), tol));
-	EXPECT(assert_equal(ones(1), constraint2.evaluateError(pt1), tol));
-	EXPECT(assert_equal(zero(1), constraint1.unwhitenedError(config), tol));
-	EXPECT(assert_equal(zero(1), constraint2.unwhitenedError(config), tol));
-	EXPECT_DOUBLES_EQUAL(0.0, constraint1.error(config), tol);
-	EXPECT_DOUBLES_EQUAL(0.0, constraint2.error(config), tol);
+  Point2 pt1(2.0, 3.0);
+  Values config;
+  config.insert(key, pt1);
+  EXPECT(!constraint1.active(config));
+  EXPECT(!constraint2.active(config));
+  EXPECT_DOUBLES_EQUAL(1.0, constraint1.threshold(), tol);
+  EXPECT_DOUBLES_EQUAL(2.0, constraint2.threshold(), tol);
+  EXPECT(constraint1.isGreaterThan());
+  EXPECT(constraint2.isGreaterThan());
+  EXPECT(assert_equal(ones(1), constraint1.evaluateError(pt1), tol));
+  EXPECT(assert_equal(ones(1), constraint2.evaluateError(pt1), tol));
+  EXPECT(assert_equal(zero(1), constraint1.unwhitenedError(config), tol));
+  EXPECT(assert_equal(zero(1), constraint2.unwhitenedError(config), tol));
+  EXPECT_DOUBLES_EQUAL(0.0, constraint1.error(config), tol);
+  EXPECT_DOUBLES_EQUAL(0.0, constraint2.error(config), tol);
 }
 
 /* ************************************************************************* */
 TEST( testBoundingConstraint, unary_basics_inactive2 ) {
-	Point2 pt2(-2.0, -3.0);
-	Values config;
-	config.insert(key, pt2);
-	EXPECT(!constraint3.active(config));
-	EXPECT(!constraint4.active(config));
-	EXPECT_DOUBLES_EQUAL(1.0, constraint3.threshold(), tol);
-	EXPECT_DOUBLES_EQUAL(2.0, constraint4.threshold(), tol);
-	EXPECT(!constraint3.isGreaterThan());
-	EXPECT(!constraint4.isGreaterThan());
-	EXPECT(assert_equal(repeat(1, 3.0), constraint3.evaluateError(pt2), tol));
-	EXPECT(assert_equal(repeat(1, 5.0), constraint4.evaluateError(pt2), tol));
-	EXPECT(assert_equal(zero(1), constraint3.unwhitenedError(config), tol));
-	EXPECT(assert_equal(zero(1), constraint4.unwhitenedError(config), tol));
-	EXPECT_DOUBLES_EQUAL(0.0, constraint3.error(config), tol);
-	EXPECT_DOUBLES_EQUAL(0.0, constraint4.error(config), tol);
+  Point2 pt2(-2.0, -3.0);
+  Values config;
+  config.insert(key, pt2);
+  EXPECT(!constraint3.active(config));
+  EXPECT(!constraint4.active(config));
+  EXPECT_DOUBLES_EQUAL(1.0, constraint3.threshold(), tol);
+  EXPECT_DOUBLES_EQUAL(2.0, constraint4.threshold(), tol);
+  EXPECT(!constraint3.isGreaterThan());
+  EXPECT(!constraint4.isGreaterThan());
+  EXPECT(assert_equal(repeat(1, 3.0), constraint3.evaluateError(pt2), tol));
+  EXPECT(assert_equal(repeat(1, 5.0), constraint4.evaluateError(pt2), tol));
+  EXPECT(assert_equal(zero(1), constraint3.unwhitenedError(config), tol));
+  EXPECT(assert_equal(zero(1), constraint4.unwhitenedError(config), tol));
+  EXPECT_DOUBLES_EQUAL(0.0, constraint3.error(config), tol);
+  EXPECT_DOUBLES_EQUAL(0.0, constraint4.error(config), tol);
 }
 
 /* ************************************************************************* */
 TEST( testBoundingConstraint, unary_basics_active1 ) {
-	Point2 pt2(-2.0, -3.0);
-	Values config;
-	config.insert(key, pt2);
-	EXPECT(constraint1.active(config));
-	EXPECT(constraint2.active(config));
-	EXPECT(assert_equal(repeat(1,-3.0), constraint1.evaluateError(pt2), tol));
-	EXPECT(assert_equal(repeat(1,-5.0), constraint2.evaluateError(pt2), tol));
-	EXPECT(assert_equal(repeat(1,-3.0), constraint1.unwhitenedError(config), tol));
-	EXPECT(assert_equal(repeat(1,-5.0), constraint2.unwhitenedError(config), tol));
-	EXPECT_DOUBLES_EQUAL(45.0, constraint1.error(config), tol);
-	EXPECT_DOUBLES_EQUAL(125.0, constraint2.error(config), tol);
+  Point2 pt2(-2.0, -3.0);
+  Values config;
+  config.insert(key, pt2);
+  EXPECT(constraint1.active(config));
+  EXPECT(constraint2.active(config));
+  EXPECT(assert_equal(repeat(1,-3.0), constraint1.evaluateError(pt2), tol));
+  EXPECT(assert_equal(repeat(1,-5.0), constraint2.evaluateError(pt2), tol));
+  EXPECT(assert_equal(repeat(1,-3.0), constraint1.unwhitenedError(config), tol));
+  EXPECT(assert_equal(repeat(1,-5.0), constraint2.unwhitenedError(config), tol));
+  EXPECT_DOUBLES_EQUAL(45.0, constraint1.error(config), tol);
+  EXPECT_DOUBLES_EQUAL(125.0, constraint2.error(config), tol);
 }
 
 /* ************************************************************************* */
 TEST( testBoundingConstraint, unary_basics_active2 ) {
-	Point2 pt1(2.0, 3.0);
-	Values config;
-	config.insert(key, pt1);
-	EXPECT(constraint3.active(config));
-	EXPECT(constraint4.active(config));
-	EXPECT(assert_equal(-1.0 * ones(1), constraint3.evaluateError(pt1), tol));
-	EXPECT(assert_equal(-1.0 * ones(1), constraint4.evaluateError(pt1), tol));
-	EXPECT(assert_equal(-1.0 * ones(1), constraint3.unwhitenedError(config), tol));
-	EXPECT(assert_equal(-1.0 * ones(1), constraint4.unwhitenedError(config), tol));
-	EXPECT_DOUBLES_EQUAL(5.0, constraint3.error(config), tol);
-	EXPECT_DOUBLES_EQUAL(5.0, constraint4.error(config), tol);
+  Point2 pt1(2.0, 3.0);
+  Values config;
+  config.insert(key, pt1);
+  EXPECT(constraint3.active(config));
+  EXPECT(constraint4.active(config));
+  EXPECT(assert_equal(-1.0 * ones(1), constraint3.evaluateError(pt1), tol));
+  EXPECT(assert_equal(-1.0 * ones(1), constraint4.evaluateError(pt1), tol));
+  EXPECT(assert_equal(-1.0 * ones(1), constraint3.unwhitenedError(config), tol));
+  EXPECT(assert_equal(-1.0 * ones(1), constraint4.unwhitenedError(config), tol));
+  EXPECT_DOUBLES_EQUAL(5.0, constraint3.error(config), tol);
+  EXPECT_DOUBLES_EQUAL(5.0, constraint4.error(config), tol);
 }
 
 /* ************************************************************************* */
 TEST( testBoundingConstraint, unary_linearization_inactive) {
-	Point2 pt1(2.0, 3.0);
-	Values config1;
-	config1.insert(key, pt1);
-	Ordering ordering;
-	ordering += key;
-	GaussianFactor::shared_ptr actual1 = constraint1.linearize(config1, ordering);
-	GaussianFactor::shared_ptr actual2 = constraint2.linearize(config1, ordering);
-	EXPECT(!actual1);
-	EXPECT(!actual2);
+  Point2 pt1(2.0, 3.0);
+  Values config1;
+  config1.insert(key, pt1);
+  Ordering ordering;
+  ordering += key;
+  GaussianFactor::shared_ptr actual1 = constraint1.linearize(config1, ordering);
+  GaussianFactor::shared_ptr actual2 = constraint2.linearize(config1, ordering);
+  EXPECT(!actual1);
+  EXPECT(!actual2);
 }
 
 /* ************************************************************************* */
 TEST( testBoundingConstraint, unary_linearization_active) {
-	Point2 pt2(-2.0, -3.0);
-	Values config2;
-	config2.insert(key, pt2);
-	Ordering ordering;
-	ordering += key;
-	GaussianFactor::shared_ptr actual1 = constraint1.linearize(config2, ordering);
-	GaussianFactor::shared_ptr actual2 = constraint2.linearize(config2, ordering);
-	JacobianFactor expected1(ordering[key], Matrix_(1, 2, 1.0, 0.0), repeat(1, 3.0), hard_model1);
-	JacobianFactor expected2(ordering[key], Matrix_(1, 2, 0.0, 1.0), repeat(1, 5.0), hard_model1);
-	EXPECT(assert_equal((const GaussianFactor&)expected1, *actual1, tol));
-	EXPECT(assert_equal((const GaussianFactor&)expected2, *actual2, tol));
+  Point2 pt2(-2.0, -3.0);
+  Values config2;
+  config2.insert(key, pt2);
+  Ordering ordering;
+  ordering += key;
+  GaussianFactor::shared_ptr actual1 = constraint1.linearize(config2, ordering);
+  GaussianFactor::shared_ptr actual2 = constraint2.linearize(config2, ordering);
+  JacobianFactor expected1(ordering[key], Matrix_(1, 2, 1.0, 0.0), repeat(1, 3.0), hard_model1);
+  JacobianFactor expected2(ordering[key], Matrix_(1, 2, 0.0, 1.0), repeat(1, 5.0), hard_model1);
+  EXPECT(assert_equal((const GaussianFactor&)expected1, *actual1, tol));
+  EXPECT(assert_equal((const GaussianFactor&)expected2, *actual2, tol));
 }
 
 /* ************************************************************************* */
 TEST( testBoundingConstraint, unary_simple_optimization1) {
-	// create a single-node graph with a soft and hard constraint to
-	// ensure that the hard constraint overrides the soft constraint
-	Point2 goal_pt(1.0, 2.0);
-	Point2 start_pt(0.0, 1.0);
+  // create a single-node graph with a soft and hard constraint to
+  // ensure that the hard constraint overrides the soft constraint
+  Point2 goal_pt(1.0, 2.0);
+  Point2 start_pt(0.0, 1.0);
 
-	NonlinearFactorGraph graph;
-	Symbol x1('x',1);
-	graph.add(iq2D::PoseXInequality(x1, 1.0, true));
-	graph.add(iq2D::PoseYInequality(x1, 2.0, true));
-	graph.add(simulated2D::Prior(start_pt, soft_model2, x1));
+  NonlinearFactorGraph graph;
+  Symbol x1('x',1);
+  graph.add(iq2D::PoseXInequality(x1, 1.0, true));
+  graph.add(iq2D::PoseYInequality(x1, 2.0, true));
+  graph.add(simulated2D::Prior(start_pt, soft_model2, x1));
 
-	Values initValues;
-	initValues.insert(x1, start_pt);
+  Values initValues;
+  initValues.insert(x1, start_pt);
 
-	Values actual = LevenbergMarquardtOptimizer(graph, initValues).optimize();
-	Values expected;
-	expected.insert(x1, goal_pt);
-	CHECK(assert_equal(expected, actual, tol));
+  Values actual = LevenbergMarquardtOptimizer(graph, initValues).optimize();
+  Values expected;
+  expected.insert(x1, goal_pt);
+  CHECK(assert_equal(expected, actual, tol));
 }
 
 /* ************************************************************************* */
 TEST( testBoundingConstraint, unary_simple_optimization2) {
-	// create a single-node graph with a soft and hard constraint to
-	// ensure that the hard constraint overrides the soft constraint
-	Point2 goal_pt(1.0, 2.0);
-	Point2 start_pt(2.0, 3.0);
+  // create a single-node graph with a soft and hard constraint to
+  // ensure that the hard constraint overrides the soft constraint
+  Point2 goal_pt(1.0, 2.0);
+  Point2 start_pt(2.0, 3.0);
 
-	NonlinearFactorGraph graph;
-	graph.add(iq2D::PoseXInequality(key, 1.0, false));
-	graph.add(iq2D::PoseYInequality(key, 2.0, false));
-	graph.add(simulated2D::Prior(start_pt, soft_model2, key));
+  NonlinearFactorGraph graph;
+  graph.add(iq2D::PoseXInequality(key, 1.0, false));
+  graph.add(iq2D::PoseYInequality(key, 2.0, false));
+  graph.add(simulated2D::Prior(start_pt, soft_model2, key));
 
-	Values initValues;
-	initValues.insert(key, start_pt);
+  Values initValues;
+  initValues.insert(key, start_pt);
 
-	Values actual = LevenbergMarquardtOptimizer(graph, initValues).optimize();
-	Values expected;
-	expected.insert(key, goal_pt);
-	CHECK(assert_equal(expected, actual, tol));
+  Values actual = LevenbergMarquardtOptimizer(graph, initValues).optimize();
+  Values expected;
+  expected.insert(key, goal_pt);
+  CHECK(assert_equal(expected, actual, tol));
 }
 
 /* ************************************************************************* */
 TEST( testBoundingConstraint, MaxDistance_basics) {
-	gtsam::Key key1 = 1, key2 = 2;
-	Point2 pt1, pt2(1.0, 0.0), pt3(2.0, 0.0), pt4(3.0, 0.0);
-	iq2D::PoseMaxDistConstraint rangeBound(key1, key2, 2.0, mu);
-	EXPECT_DOUBLES_EQUAL(2.0, rangeBound.threshold(), tol);
-	EXPECT(!rangeBound.isGreaterThan());
-	EXPECT(rangeBound.dim() == 1);
+  gtsam::Key key1 = 1, key2 = 2;
+  Point2 pt1, pt2(1.0, 0.0), pt3(2.0, 0.0), pt4(3.0, 0.0);
+  iq2D::PoseMaxDistConstraint rangeBound(key1, key2, 2.0, mu);
+  EXPECT_DOUBLES_EQUAL(2.0, rangeBound.threshold(), tol);
+  EXPECT(!rangeBound.isGreaterThan());
+  EXPECT(rangeBound.dim() == 1);
 
-	EXPECT(assert_equal(Vector_(1, 2.0), rangeBound.evaluateError(pt1, pt1)));
-	EXPECT(assert_equal(ones(1), rangeBound.evaluateError(pt1, pt2)));
-	EXPECT(assert_equal(zero(1), rangeBound.evaluateError(pt1, pt3)));
-	EXPECT(assert_equal(-1.0*ones(1), rangeBound.evaluateError(pt1, pt4)));
+  EXPECT(assert_equal(Vector_(1, 2.0), rangeBound.evaluateError(pt1, pt1)));
+  EXPECT(assert_equal(ones(1), rangeBound.evaluateError(pt1, pt2)));
+  EXPECT(assert_equal(zero(1), rangeBound.evaluateError(pt1, pt3)));
+  EXPECT(assert_equal(-1.0*ones(1), rangeBound.evaluateError(pt1, pt4)));
 
-	Values config1;
-	config1.insert(key1, pt1);
-	config1.insert(key2, pt1);
-	Ordering ordering; ordering += key1, key2;
-	EXPECT(!rangeBound.active(config1));
-	EXPECT(assert_equal(zero(1), rangeBound.unwhitenedError(config1)));
-	EXPECT(!rangeBound.linearize(config1, ordering));
-	EXPECT_DOUBLES_EQUAL(0.0, rangeBound.error(config1), tol);
+  Values config1;
+  config1.insert(key1, pt1);
+  config1.insert(key2, pt1);
+  Ordering ordering; ordering += key1, key2;
+  EXPECT(!rangeBound.active(config1));
+  EXPECT(assert_equal(zero(1), rangeBound.unwhitenedError(config1)));
+  EXPECT(!rangeBound.linearize(config1, ordering));
+  EXPECT_DOUBLES_EQUAL(0.0, rangeBound.error(config1), tol);
 
-	config1.update(key2, pt2);
-	EXPECT(!rangeBound.active(config1));
-	EXPECT(assert_equal(zero(1), rangeBound.unwhitenedError(config1)));
-	EXPECT(!rangeBound.linearize(config1, ordering));
-	EXPECT_DOUBLES_EQUAL(0.0, rangeBound.error(config1), tol);
+  config1.update(key2, pt2);
+  EXPECT(!rangeBound.active(config1));
+  EXPECT(assert_equal(zero(1), rangeBound.unwhitenedError(config1)));
+  EXPECT(!rangeBound.linearize(config1, ordering));
+  EXPECT_DOUBLES_EQUAL(0.0, rangeBound.error(config1), tol);
 
-	config1.update(key2, pt3);
-	EXPECT(rangeBound.active(config1));
-	EXPECT(assert_equal(zero(1), rangeBound.unwhitenedError(config1)));
-	EXPECT_DOUBLES_EQUAL(0.0, rangeBound.error(config1), tol);
+  config1.update(key2, pt3);
+  EXPECT(rangeBound.active(config1));
+  EXPECT(assert_equal(zero(1), rangeBound.unwhitenedError(config1)));
+  EXPECT_DOUBLES_EQUAL(0.0, rangeBound.error(config1), tol);
 
-	config1.update(key2, pt4);
-	EXPECT(rangeBound.active(config1));
-	EXPECT(assert_equal(-1.0*ones(1), rangeBound.unwhitenedError(config1)));
-	EXPECT_DOUBLES_EQUAL(0.5*mu, rangeBound.error(config1), tol);
+  config1.update(key2, pt4);
+  EXPECT(rangeBound.active(config1));
+  EXPECT(assert_equal(-1.0*ones(1), rangeBound.unwhitenedError(config1)));
+  EXPECT_DOUBLES_EQUAL(0.5*mu, rangeBound.error(config1), tol);
 }
 
 /* ************************************************************************* */
 TEST( testBoundingConstraint, MaxDistance_simple_optimization) {
 
-	Point2 pt1, pt2_init(5.0, 0.0), pt2_goal(2.0, 0.0);
+  Point2 pt1, pt2_init(5.0, 0.0), pt2_goal(2.0, 0.0);
   Symbol x1('x',1), x2('x',2);
 
-	NonlinearFactorGraph graph;
-	graph.add(simulated2D::equality_constraints::UnaryEqualityConstraint(pt1, x1));
-	graph.add(simulated2D::Prior(pt2_init, soft_model2_alt, x2));
-	graph.add(iq2D::PoseMaxDistConstraint(x1, x2, 2.0));
+  NonlinearFactorGraph graph;
+  graph.add(simulated2D::equality_constraints::UnaryEqualityConstraint(pt1, x1));
+  graph.add(simulated2D::Prior(pt2_init, soft_model2_alt, x2));
+  graph.add(iq2D::PoseMaxDistConstraint(x1, x2, 2.0));
 
-	Values initial_state;
-	initial_state.insert(x1, pt1);
-	initial_state.insert(x2, pt2_init);
+  Values initial_state;
+  initial_state.insert(x1, pt1);
+  initial_state.insert(x2, pt2_init);
 
-	Values expected;
-	expected.insert(x1, pt1);
-	expected.insert(x2, pt2_goal);
+  Values expected;
+  expected.insert(x1, pt1);
+  expected.insert(x2, pt2_goal);
 
-	// FAILS: VectorValues assertion failure
-//	Optimizer::shared_values actual = Optimizer::optimizeLM(graph, initial_state);
-//	EXPECT(assert_equal(expected, *actual, tol));
+  // FAILS: VectorValues assertion failure
+//  Optimizer::shared_values actual = Optimizer::optimizeLM(graph, initial_state);
+//  EXPECT(assert_equal(expected, *actual, tol));
 }
 
 /* ************************************************************************* */
 TEST( testBoundingConstraint, avoid_demo) {
 
   Symbol x1('x',1), x2('x',2), x3('x',3), l1('l',1);
-	double radius = 1.0;
-	Point2 x1_pt, x2_init(2.0, 0.5), x2_goal(2.0, 1.0), x3_pt(4.0, 0.0), l1_pt(2.0, 0.0);
-	Point2 odo(2.0, 0.0);
+  double radius = 1.0;
+  Point2 x1_pt, x2_init(2.0, 0.5), x2_goal(2.0, 1.0), x3_pt(4.0, 0.0), l1_pt(2.0, 0.0);
+  Point2 odo(2.0, 0.0);
 
-	NonlinearFactorGraph graph;
-	graph.add(simulated2D::equality_constraints::UnaryEqualityConstraint(x1_pt, x1));
-	graph.add(simulated2D::Odometry(odo, soft_model2_alt, x1, x2));
-	graph.add(iq2D::LandmarkAvoid(x2, l1, radius));
-	graph.add(simulated2D::equality_constraints::UnaryEqualityPointConstraint(l1_pt, l1));
-	graph.add(simulated2D::Odometry(odo, soft_model2_alt, x2, x3));
-	graph.add(simulated2D::equality_constraints::UnaryEqualityConstraint(x3_pt, x3));
+  NonlinearFactorGraph graph;
+  graph.add(simulated2D::equality_constraints::UnaryEqualityConstraint(x1_pt, x1));
+  graph.add(simulated2D::Odometry(odo, soft_model2_alt, x1, x2));
+  graph.add(iq2D::LandmarkAvoid(x2, l1, radius));
+  graph.add(simulated2D::equality_constraints::UnaryEqualityPointConstraint(l1_pt, l1));
+  graph.add(simulated2D::Odometry(odo, soft_model2_alt, x2, x3));
+  graph.add(simulated2D::equality_constraints::UnaryEqualityConstraint(x3_pt, x3));
 
-	Values init, expected;
-	init.insert(x1, x1_pt);
-	init.insert(x3, x3_pt);
-	init.insert(l1, l1_pt);
-	expected = init;
-	init.insert(x2, x2_init);
-	expected.insert(x2, x2_goal);
+  Values init, expected;
+  init.insert(x1, x1_pt);
+  init.insert(x3, x3_pt);
+  init.insert(l1, l1_pt);
+  expected = init;
+  init.insert(x2, x2_init);
+  expected.insert(x2, x2_goal);
 
-	// FAILS: segfaults on optimization
-//	Optimizer::shared_values actual = Optimizer::optimizeLM(graph, init);
-//	EXPECT(assert_equal(expected, *actual, tol));
+  // FAILS: segfaults on optimization
+//  Optimizer::shared_values actual = Optimizer::optimizeLM(graph, init);
+//  EXPECT(assert_equal(expected, *actual, tol));
 }
 
 /* ************************************************************************* */

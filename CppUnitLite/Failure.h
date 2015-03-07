@@ -29,42 +29,42 @@ class Failure
 {
 
 public:
-	Failure (const std::string&	theTestName,
-					  const std::string&	theFileName,
-			          long	 				theLineNumber,
-			          const std::string&	theCondition)
-	: message (theCondition),
-	  testName (theTestName),
-	  fileName (theFileName),
-	  lineNumber (theLineNumber)
-	{
-	}
+  Failure (const std::string&  theTestName,
+            const std::string&  theFileName,
+                long           theLineNumber,
+                const std::string&  theCondition)
+  : message (theCondition),
+    testName (theTestName),
+    fileName (theFileName),
+    lineNumber (theLineNumber)
+  {
+  }
 
-	Failure (const std::string&	theTestName,
-					  const std::string&	theFileName,
-			          const std::string&	theCondition)
-	: message (theCondition),
-	  testName (theTestName),
-	  fileName (theFileName),
-	  lineNumber (-1)
-	{
-	}
+  Failure (const std::string&  theTestName,
+            const std::string&  theFileName,
+                const std::string&  theCondition)
+  : message (theCondition),
+    testName (theTestName),
+    fileName (theFileName),
+    lineNumber (-1)
+  {
+  }
 
 
-	Failure (const std::string&	theTestName,
-				 	  const std::string&	theFileName,
-					  long					theLineNumber,
-					  const std::string&	expected,
-					  const std::string&	actual)
-	: message("expected " + expected + " but was: " + actual),
-	  testName (theTestName),
-	  fileName (theFileName),
-	  lineNumber (theLineNumber)
-	{
-	}
+  Failure (const std::string&  theTestName,
+             const std::string&  theFileName,
+            long          theLineNumber,
+            const std::string&  expected,
+            const std::string&  actual)
+  : message("expected " + expected + " but was: " + actual),
+    testName (theTestName),
+    fileName (theFileName),
+    lineNumber (theLineNumber)
+  {
+  }
 
-	std::string		message;
-	std::string		testName;
-	std::string		fileName;
-	long				lineNumber;
+  std::string    message;
+  std::string    testName;
+  std::string    fileName;
+  long        lineNumber;
 };

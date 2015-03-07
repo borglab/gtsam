@@ -6,7 +6,7 @@ plot(pose.x,pose.y,[color '*']);
 c = cos(pose.theta);
 s = sin(pose.theta);
 quiver(pose.x,pose.y,c,s,axisLength,color);
-if nargin>2
+if nargin>2 && (~isempty(P))
     pPp = P(1:2,1:2); % covariance matrix in pose coordinate frame    
     gRp = [c -s;s c]; % rotation from pose to global
     gtsam.covarianceEllipse([pose.x;pose.y],gRp*pPp*gRp',color);

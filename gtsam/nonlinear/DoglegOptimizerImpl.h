@@ -61,7 +61,7 @@ struct DoglegOptimizerImpl {
    */
   enum TrustRegionAdaptationMode {
     SEARCH_EACH_ITERATION,
-		SEARCH_REDUCE_ONLY,
+    SEARCH_REDUCE_ONLY,
     ONE_STEP_PER_ITERATION
   };
 
@@ -149,22 +149,22 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
     const F& f, const VALUES& x0, const Ordering& ordering, const double f_error, const bool verbose) {
 
   // Compute steepest descent and Newton's method points
-  tic(0, "optimizeGradientSearch");
-  tic(0, "allocateVectorValues");
+  gttic(optimizeGradientSearch);
+  gttic(allocateVectorValues);
   VectorValues dx_u = *allocateVectorValues(Rd);
-  toc(0, "allocateVectorValues");
-  tic(1, "optimizeGradientSearchInPlace");
+  gttoc(allocateVectorValues);
+  gttic(optimizeGradientSearchInPlace);
   optimizeGradientSearchInPlace(Rd, dx_u);
-  toc(1, "optimizeGradientSearchInPlace");
-  toc(0, "optimizeGradientSearch");
-  tic(1, "optimizeInPlace");
+  gttoc(optimizeGradientSearchInPlace);
+  gttoc(optimizeGradientSearch);
+  gttic(optimizeInPlace);
   VectorValues dx_n(VectorValues::SameStructure(dx_u));
   optimizeInPlace(Rd, dx_n);
-  toc(1, "optimizeInPlace");
-  tic(2, "jfg error");
+  gttoc(optimizeInPlace);
+  gttic(jfg_error);
   const GaussianFactorGraph jfg(Rd);
   const double M_error = jfg.error(VectorValues::Zero(dx_u));
-  toc(2, "jfg error");
+  gttoc(jfg_error);
 
   // Result to return
   IterationResult result;
@@ -172,32 +172,32 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
   bool stay = true;
   enum { NONE, INCREASED_DELTA, DECREASED_DELTA } lastAction = NONE; // Used to prevent alternating between increasing and decreasing in one iteration
   while(stay) {
-    tic(3, "Dog leg point");
+    gttic(Dog_leg_point);
     // Compute dog leg point
     result.dx_d = ComputeDoglegPoint(Delta, dx_u, dx_n, verbose);
-    toc(3, "Dog leg point");
+    gttoc(Dog_leg_point);
 
     if(verbose) std::cout << "Delta = " << Delta << ", dx_d_norm = " << result.dx_d.vector().norm() << std::endl;
 
-    tic(4, "retract");
+    gttic(retract);
     // Compute expmapped solution
     const VALUES x_d(x0.retract(result.dx_d, ordering));
-    toc(4, "retract");
+    gttoc(retract);
 
-    tic(5, "decrease in f");
+    gttic(decrease_in_f);
     // Compute decrease in f
     result.f_error = f.error(x_d);
-    toc(5, "decrease in f");
+    gttoc(decrease_in_f);
 
-    tic(6, "decrease in M");
+    gttic(decrease_in_M);
     // Compute decrease in M
     const double new_M_error = jfg.error(result.dx_d);
-    toc(6, "decrease in M");
+    gttoc(decrease_in_M);
 
     if(verbose) std::cout << std::setprecision(15) << "f error: " << f_error << " -> " << result.f_error << std::endl;
     if(verbose) std::cout << std::setprecision(15) << "M error: " << M_error << " -> " << new_M_error << std::endl;
 
-    tic(7, "adjust Delta");
+    gttic(adjust_Delta);
     // Compute gain ratio.  Here we take advantage of the invariant that the
     // Bayes' net error at zero is equal to the nonlinear error
     const double rho = fabs(f_error - result.f_error) < 1e-15 || fabs(M_error - new_M_error) < 1e-15 ?
@@ -232,14 +232,14 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
     } else if(0.25 > rho && rho >= 0.0) {
       // M does not agree well with f, decrease Delta until it does
       double newDelta;
-			bool hitMinimumDelta;
+      bool hitMinimumDelta;
       if(Delta > 1e-5) {
         newDelta = 0.5 * Delta;
-				hitMinimumDelta = false;
-			} else {
+        hitMinimumDelta = false;
+      } else {
         newDelta = Delta;
-				hitMinimumDelta = true;
-			}
+        hitMinimumDelta = true;
+      }
       if(mode == ONE_STEP_PER_ITERATION || /* mode == SEARCH_EACH_ITERATION && */ lastAction == INCREASED_DELTA || hitMinimumDelta)
         stay = false;   // If not searching, just return with the new smaller delta
       else if(mode == SEARCH_EACH_ITERATION || mode == SEARCH_REDUCE_ONLY) {
@@ -251,9 +251,9 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
       Delta = newDelta; // Update Delta from new Delta
 
     } else {
-			// f actually increased, so keep decreasing Delta until f does not decrease.
-			// NOTE:  NaN and Inf solutions also will fall into this case, so that we
-			// decrease Delta if the solution becomes undetermined.
+      // f actually increased, so keep decreasing Delta until f does not decrease.
+      // NOTE:  NaN and Inf solutions also will fall into this case, so that we
+      // decrease Delta if the solution becomes undetermined.
       assert(0.0 > rho);
       if(Delta > 1e-5) {
         Delta *= 0.5;
@@ -261,12 +261,12 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
         lastAction = DECREASED_DELTA;
       } else {
         if(verbose) std::cout << "Warning:  Dog leg stopping because cannot decrease error with minimum Delta" << std::endl;
-				result.dx_d.setZero(); // Set delta to zero - don't allow error to increase
-				result.f_error = f_error;
+        result.dx_d.setZero(); // Set delta to zero - don't allow error to increase
+        result.f_error = f_error;
         stay = false;
       }
     }
-    toc(7, "adjust Delta");
+    gttoc(adjust_Delta);
   }
 
   // dx_d and f_error have already been filled in during the loop

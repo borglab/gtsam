@@ -47,12 +47,12 @@ TEST(Point3, Lie) {
 TEST( Point3, arithmetic)
 {
   CHECK(P*3==3*P);
-	CHECK(assert_equal( Point3(-1,-5,-6), -Point3(1,5,6) ));
-	CHECK(assert_equal( Point3(2,5,6), Point3(1,4,5)+Point3(1,1,1)));
-	CHECK(assert_equal( Point3(0,3,4), Point3(1,4,5)-Point3(1,1,1)));
-	CHECK(assert_equal( Point3(2,8,6), Point3(1,4,3)*2));
-	CHECK(assert_equal( Point3(2,2,6), 2*Point3(1,1,3)));
-	CHECK(assert_equal( Point3(1,2,3), Point3(2,4,6)/2));
+  CHECK(assert_equal( Point3(-1,-5,-6), -Point3(1,5,6) ));
+  CHECK(assert_equal( Point3(2,5,6), Point3(1,4,5)+Point3(1,1,1)));
+  CHECK(assert_equal( Point3(0,3,4), Point3(1,4,5)-Point3(1,1,1)));
+  CHECK(assert_equal( Point3(2,8,6), Point3(1,4,3)*2));
+  CHECK(assert_equal( Point3(2,2,6), 2*Point3(1,1,3)));
+  CHECK(assert_equal( Point3(1,2,3), Point3(2,4,6)/2));
 }
 
 /* ************************************************************************* */
@@ -66,9 +66,9 @@ TEST( Point3, equals)
 /* ************************************************************************* */
 TEST( Point3, dot)
 {
-	Point3 origin, ones(1,1,1);
-	CHECK(origin.dot(Point3(1,1,0)) == 0);
-	CHECK(ones.dot(Point3(1,1,0)) == 2);
+  Point3 origin, ones(1,1,1);
+  CHECK(origin.dot(Point3(1,1,0)) == 0);
+  CHECK(ones.dot(Point3(1,1,0)) == 2);
 }
 
 /* ************************************************************************* */

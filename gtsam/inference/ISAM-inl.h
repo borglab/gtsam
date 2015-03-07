@@ -32,8 +32,8 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class CONDITIONAL>
-	template<class FG> void ISAM<CONDITIONAL>::update_internal(
-			const FG& newFactors, Cliques& orphans, typename FG::Eliminate function) {
+  template<class FG> void ISAM<CONDITIONAL>::update_internal(
+      const FG& newFactors, Cliques& orphans, typename FG::Eliminate function) {
 
     // Remove the contaminated part of the Bayes tree
     BayesNet<CONDITIONAL> bn;
@@ -57,9 +57,9 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class CONDITIONAL>
-	template<class FG>
-	void ISAM<CONDITIONAL>::update(const FG& newFactors,
-			typename FG::Eliminate function) {
+  template<class FG>
+  void ISAM<CONDITIONAL>::update(const FG& newFactors,
+      typename FG::Eliminate function) {
     Cliques orphans;
     this->update_internal(newFactors, orphans, function);
   }

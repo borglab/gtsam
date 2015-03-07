@@ -118,7 +118,7 @@ void MatrixFunctionAtomic<MatrixType>::computeMu()
 /** \brief Determine whether Taylor series has converged */
 template <typename MatrixType>
 bool MatrixFunctionAtomic<MatrixType>::taylorConverged(Index s, const MatrixType& F,
-						       const MatrixType& Fincr, const MatrixType& P)
+                   const MatrixType& Fincr, const MatrixType& P)
 {
   const Index n = F.rows();
   const RealScalar F_norm = F.cwiseAbs().rowwise().sum().maxCoeff();

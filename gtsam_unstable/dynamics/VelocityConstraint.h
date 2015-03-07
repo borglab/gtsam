@@ -16,9 +16,9 @@ namespace dynamics {
 
 /** controls which model to use for numerical integration to use for constraints */
 typedef enum {
-	TRAPEZOIDAL, // Constant acceleration
-	EULER_START, // Constant velocity, using starting velocity
-	EULER_END    // Constant velocity, using ending velocity
+  TRAPEZOIDAL, // Constant acceleration
+  EULER_START, // Constant velocity, using starting velocity
+  EULER_END    // Constant velocity, using ending velocity
 } IntegrationMode;
 
 }
@@ -32,90 +32,90 @@ typedef enum {
  */
 class VelocityConstraint : public gtsam::NoiseModelFactor2<PoseRTV,PoseRTV> {
 public:
-	typedef gtsam::NoiseModelFactor2<PoseRTV,PoseRTV> Base;
+  typedef gtsam::NoiseModelFactor2<PoseRTV,PoseRTV> Base;
 
 protected:
 
-	double dt_;   /// time difference between frames in seconds
-	dynamics::IntegrationMode integration_mode_;  ///< Numerical integration control
+  double dt_;   /// time difference between frames in seconds
+  dynamics::IntegrationMode integration_mode_;  ///< Numerical integration control
 
 public:
 
-	/**
-	 * Creates a constraint relating the given variables with fully constrained noise model
-	 */
-	VelocityConstraint(Key key1, Key key2, const dynamics::IntegrationMode& mode,
-			double dt, double mu = 1000)
-	: Base(noiseModel::Constrained::All(3, mu), key1, key2), dt_(dt), integration_mode_(mode) {}
+  /**
+   * Creates a constraint relating the given variables with fully constrained noise model
+   */
+  VelocityConstraint(Key key1, Key key2, const dynamics::IntegrationMode& mode,
+      double dt, double mu = 1000)
+  : Base(noiseModel::Constrained::All(3, mu), key1, key2), dt_(dt), integration_mode_(mode) {}
 
-	/**
-		 * Creates a constraint relating the given variables with fully constrained noise model
-		 * Uses the default Trapezoidal integrator
-		 */
-		VelocityConstraint(Key key1, Key key2, double dt, double mu = 1000)
-		: Base(noiseModel::Constrained::All(3, mu), key1, key2),
-		  dt_(dt), integration_mode_(dynamics::TRAPEZOIDAL) {}
+  /**
+     * Creates a constraint relating the given variables with fully constrained noise model
+     * Uses the default Trapezoidal integrator
+     */
+    VelocityConstraint(Key key1, Key key2, double dt, double mu = 1000)
+    : Base(noiseModel::Constrained::All(3, mu), key1, key2),
+      dt_(dt), integration_mode_(dynamics::TRAPEZOIDAL) {}
 
-	/**
-	 * Creates a constraint relating the given variables with arbitrary noise model
-	 */
-	VelocityConstraint(Key key1, Key key2, const dynamics::IntegrationMode& mode,
-			double dt, const gtsam::SharedNoiseModel& model)
-	: Base(model, key1, key2), dt_(dt), integration_mode_(mode) {}
+  /**
+   * Creates a constraint relating the given variables with arbitrary noise model
+   */
+  VelocityConstraint(Key key1, Key key2, const dynamics::IntegrationMode& mode,
+      double dt, const gtsam::SharedNoiseModel& model)
+  : Base(model, key1, key2), dt_(dt), integration_mode_(mode) {}
 
-	/**
-	 * Creates a constraint relating the given variables with arbitrary noise model
-	 * Uses the default Trapezoidal integrator
-	 */
-	VelocityConstraint(Key key1, Key key2, double dt, const gtsam::SharedNoiseModel& model)
-	: Base(model, key1, key2), dt_(dt), integration_mode_(dynamics::TRAPEZOIDAL) {}
+  /**
+   * Creates a constraint relating the given variables with arbitrary noise model
+   * Uses the default Trapezoidal integrator
+   */
+  VelocityConstraint(Key key1, Key key2, double dt, const gtsam::SharedNoiseModel& model)
+  : Base(model, key1, key2), dt_(dt), integration_mode_(dynamics::TRAPEZOIDAL) {}
 
-	virtual ~VelocityConstraint() {}
+  virtual ~VelocityConstraint() {}
 
-	/// @return a deep copy of this factor
-	virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-		return boost::static_pointer_cast<gtsam::NonlinearFactor>(
-				gtsam::NonlinearFactor::shared_ptr(new VelocityConstraint(*this))); }
+  /// @return a deep copy of this factor
+  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+        gtsam::NonlinearFactor::shared_ptr(new VelocityConstraint(*this))); }
 
-	/**
-	 * Calculates the error for trapezoidal model given
-	 */
-	virtual gtsam::Vector evaluateError(const PoseRTV& x1, const PoseRTV& x2,
-			boost::optional<gtsam::Matrix&> H1=boost::none,
-			boost::optional<gtsam::Matrix&> H2=boost::none) const {
-		if (H1) *H1 = gtsam::numericalDerivative21<gtsam::LieVector,PoseRTV,PoseRTV>(
-				boost::bind(VelocityConstraint::evaluateError_, _1, _2, dt_, integration_mode_), x1, x2, 1e-5);
-		if (H2) *H2 = gtsam::numericalDerivative22<gtsam::LieVector,PoseRTV,PoseRTV>(
-				boost::bind(VelocityConstraint::evaluateError_, _1, _2, dt_, integration_mode_), x1, x2, 1e-5);
-		return evaluateError_(x1, x2, dt_, integration_mode_);
-	}
+  /**
+   * Calculates the error for trapezoidal model given
+   */
+  virtual gtsam::Vector evaluateError(const PoseRTV& x1, const PoseRTV& x2,
+      boost::optional<gtsam::Matrix&> H1=boost::none,
+      boost::optional<gtsam::Matrix&> H2=boost::none) const {
+    if (H1) *H1 = gtsam::numericalDerivative21<gtsam::LieVector,PoseRTV,PoseRTV>(
+        boost::bind(VelocityConstraint::evaluateError_, _1, _2, dt_, integration_mode_), x1, x2, 1e-5);
+    if (H2) *H2 = gtsam::numericalDerivative22<gtsam::LieVector,PoseRTV,PoseRTV>(
+        boost::bind(VelocityConstraint::evaluateError_, _1, _2, dt_, integration_mode_), x1, x2, 1e-5);
+    return evaluateError_(x1, x2, dt_, integration_mode_);
+  }
 
-	virtual void print(const std::string& s = "", const gtsam::KeyFormatter& formatter = gtsam::DefaultKeyFormatter) const {
-		std::string a = "VelocityConstraint: " + s;
-		Base::print(a, formatter);
-		switch(integration_mode_) {
-		case dynamics::TRAPEZOIDAL: std::cout << "Integration: Trapezoidal\n"; break;
-		case dynamics::EULER_START: std::cout << "Integration: Euler (start)\n"; break;
-		case dynamics::EULER_END: std::cout << "Integration: Euler (end)\n"; break;
-		default: std::cout << "Integration: Unknown\n" << std::endl; break;
-		}
-		std::cout << "dt: " << dt_ << std::endl;
-	}
+  virtual void print(const std::string& s = "", const gtsam::KeyFormatter& formatter = gtsam::DefaultKeyFormatter) const {
+    std::string a = "VelocityConstraint: " + s;
+    Base::print(a, formatter);
+    switch(integration_mode_) {
+    case dynamics::TRAPEZOIDAL: std::cout << "Integration: Trapezoidal\n"; break;
+    case dynamics::EULER_START: std::cout << "Integration: Euler (start)\n"; break;
+    case dynamics::EULER_END: std::cout << "Integration: Euler (end)\n"; break;
+    default: std::cout << "Integration: Unknown\n" << std::endl; break;
+    }
+    std::cout << "dt: " << dt_ << std::endl;
+  }
 
 private:
-	static gtsam::LieVector evaluateError_(const PoseRTV& x1, const PoseRTV& x2,
-			double dt, const dynamics::IntegrationMode& mode) {
+  static gtsam::LieVector evaluateError_(const PoseRTV& x1, const PoseRTV& x2,
+      double dt, const dynamics::IntegrationMode& mode) {
 
-		const Velocity3& v1 = x1.v(), v2 = x2.v(), p1 = x1.t(), p2 = x2.t();
-		Velocity3 hx;
-		switch(mode) {
-		case dynamics::TRAPEZOIDAL: hx = p1 + (v1 + v2) * dt *0.5; break;
-		case dynamics::EULER_START: hx = p1 + v1 * dt; break;
-		case dynamics::EULER_END  : hx = p1 + v2 * dt; break;
-		default: assert(false); break;
-		}
-		return (p2 - hx).vector();
-	}
+    const Velocity3& v1 = x1.v(), v2 = x2.v(), p1 = x1.t(), p2 = x2.t();
+    Velocity3 hx;
+    switch(mode) {
+    case dynamics::TRAPEZOIDAL: hx = p1 + (v1 + v2) * dt *0.5; break;
+    case dynamics::EULER_START: hx = p1 + v1 * dt; break;
+    case dynamics::EULER_END  : hx = p1 + v2 * dt; break;
+    default: assert(false); break;
+    }
+    return (p2 - hx).vector();
+  }
 };
 
 } // \namespace gtsam

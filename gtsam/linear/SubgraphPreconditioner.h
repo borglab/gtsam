@@ -23,48 +23,48 @@
 
 namespace gtsam {
 
-	/**
-	 * Subgraph conditioner class, as explained in the RSS 2010 submission.
-	 * Starting with a graph A*x=b, we split it in two systems A1*x=b1 and A2*x=b2
-	 * We solve R1*x=c1, and make the substitution y=R1*x-c1.
-	 * To use the class, give the Bayes Net R1*x=c1 and Graph A2*x=b2.
-	 * Then solve for yhat using CG, and solve for xhat = system.x(yhat).
-	 */
-	class SubgraphPreconditioner {
+  /**
+   * Subgraph conditioner class, as explained in the RSS 2010 submission.
+   * Starting with a graph A*x=b, we split it in two systems A1*x=b1 and A2*x=b2
+   * We solve R1*x=c1, and make the substitution y=R1*x-c1.
+   * To use the class, give the Bayes Net R1*x=c1 and Graph A2*x=b2.
+   * Then solve for yhat using CG, and solve for xhat = system.x(yhat).
+   */
+  class SubgraphPreconditioner {
 
-	public:
-	  typedef boost::shared_ptr<SubgraphPreconditioner> shared_ptr;
-		typedef boost::shared_ptr<const GaussianBayesNet> sharedBayesNet;
-		typedef boost::shared_ptr<const GaussianFactorGraph> sharedFG;
-		typedef boost::shared_ptr<const VectorValues> sharedValues;
-		typedef boost::shared_ptr<const Errors> sharedErrors;
+  public:
+    typedef boost::shared_ptr<SubgraphPreconditioner> shared_ptr;
+    typedef boost::shared_ptr<const GaussianBayesNet> sharedBayesNet;
+    typedef boost::shared_ptr<const GaussianFactorGraph> sharedFG;
+    typedef boost::shared_ptr<const VectorValues> sharedValues;
+    typedef boost::shared_ptr<const Errors> sharedErrors;
 
-	private:
-		sharedFG Ab2_;
-		sharedBayesNet Rc1_;
-		sharedValues xbar_;  ///< A1 \ b1
-		sharedErrors b2bar_; ///< A2*xbar - b2
+  private:
+    sharedFG Ab2_;
+    sharedBayesNet Rc1_;
+    sharedValues xbar_;  ///< A1 \ b1
+    sharedErrors b2bar_; ///< A2*xbar - b2
 
-	public:
+  public:
 
-		SubgraphPreconditioner();
+    SubgraphPreconditioner();
 
-		/**
-		 * Constructor
-		 * @param Ab2: the Graph A2*x=b2
-		 * @param Rc1: the Bayes Net R1*x=c1
-		 * @param xbar: the solution to R1*x=c1
-		 */
+    /**
+     * Constructor
+     * @param Ab2: the Graph A2*x=b2
+     * @param Rc1: the Bayes Net R1*x=c1
+     * @param xbar: the solution to R1*x=c1
+     */
     SubgraphPreconditioner(const sharedFG& Ab2, const sharedBayesNet& Rc1, const sharedValues& xbar);
 
-		/** Access Ab2 */
-		const sharedFG& Ab2() const { return Ab2_; }
+    /** Access Ab2 */
+    const sharedFG& Ab2() const { return Ab2_; }
 
-		/** Access Rc1 */
-		const sharedBayesNet& Rc1() const { return Rc1_; }
+    /** Access Rc1 */
+    const sharedBayesNet& Rc1() const { return Rc1_; }
 
-		/** Access b2bar */
-		const sharedErrors b2bar() const { return b2bar_; }
+    /** Access b2bar */
+    const sharedErrors b2bar() const { return b2bar_; }
 
     /**
      * Add zero-mean i.i.d. Gaussian prior terms to each variable
@@ -72,26 +72,26 @@ namespace gtsam {
      */
 //  SubgraphPreconditioner add_priors(double sigma) const;
 
-		/* x = xbar + inv(R1)*y */
-		VectorValues x(const VectorValues& y) const;
+    /* x = xbar + inv(R1)*y */
+    VectorValues x(const VectorValues& y) const;
 
-		/* A zero VectorValues with the structure of xbar */
-		VectorValues zero() const {
-			VectorValues V(VectorValues::Zero(*xbar_));
-			return V ;
-		}
+    /* A zero VectorValues with the structure of xbar */
+    VectorValues zero() const {
+      VectorValues V(VectorValues::Zero(*xbar_));
+      return V ;
+    }
 
-		/**
-		 * Add constraint part of the error only
-		 * y += alpha*inv(R1')*A2'*e2
-		 * Takes a range indicating e2 !!!!
-		 */
-		void transposeMultiplyAdd2(double alpha, Errors::const_iterator begin,
-				Errors::const_iterator end, VectorValues& y) const;
+    /**
+     * Add constraint part of the error only
+     * y += alpha*inv(R1')*A2'*e2
+     * Takes a range indicating e2 !!!!
+     */
+    void transposeMultiplyAdd2(double alpha, Errors::const_iterator begin,
+        Errors::const_iterator end, VectorValues& y) const;
 
-			/** print the object */
-		void print(const std::string& s = "SubgraphPreconditioner") const;
-	};
+      /** print the object */
+    void print(const std::string& s = "SubgraphPreconditioner") const;
+  };
 
   /* error, given y */
   double error(const SubgraphPreconditioner& sp, const VectorValues& y);

@@ -27,13 +27,13 @@
 namespace wrap {
 
 struct TemplateInstantiationTypedef {
-	std::vector<std::string> classNamespaces;
-	std::string className;
-	std::vector<std::string> namespaces;
-	std::string name;
-	std::vector<std::vector<std::string> > typeList;
+  std::vector<std::string> classNamespaces;
+  std::string className;
+  std::vector<std::string> namespaces;
+  std::string name;
+  std::vector<std::vector<std::string> > typeList;
 
-	Class findAndExpand(const std::vector<Class>& classes) const;
+  Class findAndExpand(const std::vector<Class>& classes) const;
 };
 
 }

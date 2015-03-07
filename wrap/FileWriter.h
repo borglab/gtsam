@@ -17,18 +17,18 @@ namespace wrap {
 
 class FileWriter {
 protected:
-	bool verbose_;
-	std::string filename_;
-	std::string comment_str_;
+  bool verbose_;
+  std::string filename_;
+  std::string comment_str_;
 
 public:
-	std::ostringstream oss; ///< Primary stream for operating on the file
+  std::ostringstream oss; ///< Primary stream for operating on the file
 
-	/** Create a writer with a filename and delimiter for the header comment */
-	FileWriter(const std::string& filename, bool verbose, const std::string& comment_str);
+  /** Create a writer with a filename and delimiter for the header comment */
+  FileWriter(const std::string& filename, bool verbose, const std::string& comment_str);
 
-	/** Writes the contents of the stringstream to the file, checking if actually new */
-	void emit(bool add_header, bool force=false) const;
+  /** Writes the contents of the stringstream to the file, checking if actually new */
+  void emit(bool add_header, bool force=false) const;
 
 };
 

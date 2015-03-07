@@ -42,4 +42,4 @@ fi
 make install
 
 # Create package
-tar czf gtsam-toolbox-2.1.0-$platform.tgz -C stage/borg toolbox
+tar czf gtsam-toolbox-2.2.0-$platform.tgz -C stage/borg toolbox

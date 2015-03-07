@@ -13,7 +13,7 @@
  * @file    DoglegOptimizer.h
  * @brief   
  * @author  Richard Roberts
- * @date 	Feb 26, 2012
+ * @date   Feb 26, 2012
  */
 
 #pragma once
@@ -51,15 +51,15 @@ public:
     std::cout.flush();
   }
 
-	double getDeltaInitial() const { return deltaInitial; }
-	std::string getVerbosityDL() const { return verbosityDLTranslator(verbosityDL); }
+  double getDeltaInitial() const { return deltaInitial; }
+  std::string getVerbosityDL() const { return verbosityDLTranslator(verbosityDL); }
 
-	void setDeltaInitial(double deltaInitial) { this->deltaInitial = deltaInitial; }
-	void setVerbosityDL(const std::string& verbosityDL) { this->verbosityDL = verbosityDLTranslator(verbosityDL); }
+  void setDeltaInitial(double deltaInitial) { this->deltaInitial = deltaInitial; }
+  void setVerbosityDL(const std::string& verbosityDL) { this->verbosityDL = verbosityDLTranslator(verbosityDL); }
 
 private:
-	VerbosityDL verbosityDLTranslator(const std::string& verbosityDL) const;
-	std::string verbosityDLTranslator(VerbosityDL verbosityDL) const;
+  VerbosityDL verbosityDLTranslator(const std::string& verbosityDL) const;
+  std::string verbosityDLTranslator(VerbosityDL verbosityDL) const;
 };
 
 /**
@@ -86,8 +86,8 @@ protected:
 class DoglegOptimizer : public NonlinearOptimizer {
 
 protected:
-	DoglegParams params_;
-	DoglegState state_;
+  DoglegParams params_;
+  DoglegState state_;
 
 public:
   typedef boost::shared_ptr<DoglegOptimizer> shared_ptr;

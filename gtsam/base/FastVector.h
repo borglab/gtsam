@@ -88,10 +88,10 @@ public:
       Base::assign(x.begin(), x.end());
   }
 
-	/** Conversion to a standard STL container */
-	operator std::vector<VALUE>() const {
-		return std::vector<VALUE>(this->begin(), this->end());
-	}
+  /** Conversion to a standard STL container */
+  operator std::vector<VALUE>() const {
+    return std::vector<VALUE>(this->begin(), this->end());
+  }
 
 private:
   /** Serialization function */

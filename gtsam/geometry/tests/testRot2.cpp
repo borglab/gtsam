@@ -31,36 +31,36 @@ Point2 P(0.2, 0.7);
 /* ************************************************************************* */
 TEST( Rot2, constructors_and_angle)
 {
-	double c=cos(0.1), s=sin(0.1);
-	DOUBLES_EQUAL(0.1,R.theta(),1e-9);
-	CHECK(assert_equal(R,Rot2(0.1)));
-	CHECK(assert_equal(R,Rot2::fromAngle(0.1)));
-	CHECK(assert_equal(R,Rot2::fromCosSin(c,s)));
-	CHECK(assert_equal(R,Rot2::atan2(s*5,c*5)));
+  double c=cos(0.1), s=sin(0.1);
+  DOUBLES_EQUAL(0.1,R.theta(),1e-9);
+  CHECK(assert_equal(R,Rot2(0.1)));
+  CHECK(assert_equal(R,Rot2::fromAngle(0.1)));
+  CHECK(assert_equal(R,Rot2::fromCosSin(c,s)));
+  CHECK(assert_equal(R,Rot2::atan2(s*5,c*5)));
 }
 
 /* ************************************************************************* */
 TEST( Rot2, unit)
 {
-	EXPECT(assert_equal(Point2(1.0, 0.0), Rot2::fromAngle(0).unit()));
-	EXPECT(assert_equal(Point2(0.0, 1.0), Rot2::fromAngle(M_PI/2.0).unit()));
+  EXPECT(assert_equal(Point2(1.0, 0.0), Rot2::fromAngle(0).unit()));
+  EXPECT(assert_equal(Point2(0.0, 1.0), Rot2::fromAngle(M_PI/2.0).unit()));
 }
 
 /* ************************************************************************* */
 TEST( Rot2, transpose)
 {
-	CHECK(assert_equal(R.inverse().matrix(),R.transpose()));
+  CHECK(assert_equal(R.inverse().matrix(),R.transpose()));
 }
 
 /* ************************************************************************* */
 TEST( Rot2, compose)
 {
-	CHECK(assert_equal(Rot2::fromAngle(0.45), Rot2::fromAngle(0.2)*Rot2::fromAngle(0.25)));
-	CHECK(assert_equal(Rot2::fromAngle(0.45), Rot2::fromAngle(0.25)*Rot2::fromAngle(0.2)));
+  CHECK(assert_equal(Rot2::fromAngle(0.45), Rot2::fromAngle(0.2)*Rot2::fromAngle(0.25)));
+  CHECK(assert_equal(Rot2::fromAngle(0.45), Rot2::fromAngle(0.25)*Rot2::fromAngle(0.2)));
 
-	Matrix H1, H2;
-	(void) Rot2::fromAngle(1.0).compose(Rot2::fromAngle(2.0), H1, H2);
-	EXPECT(assert_equal(eye(1), H1));
+  Matrix H1, H2;
+  (void) Rot2::fromAngle(1.0).compose(Rot2::fromAngle(2.0), H1, H2);
+  EXPECT(assert_equal(eye(1), H1));
   EXPECT(assert_equal(eye(1), H2));
 }
 
@@ -79,26 +79,26 @@ TEST( Rot2, between)
 /* ************************************************************************* */
 TEST( Rot2, equals)
 {
-	CHECK(R.equals(R));
-	Rot2 zero;
-	CHECK(!R.equals(zero));
+  CHECK(R.equals(R));
+  Rot2 zero;
+  CHECK(!R.equals(zero));
 }
 
 /* ************************************************************************* */
 TEST( Rot2, expmap)
 {
-	Vector v = zero(1);
-	CHECK(assert_equal(R.retract(v), R));
+  Vector v = zero(1);
+  CHECK(assert_equal(R.retract(v), R));
 }
 
 /* ************************************************************************* */
 TEST(Rot2, logmap)
 {
-	Rot2 rot0(Rot2::fromAngle(M_PI/2.0));
-	Rot2 rot(Rot2::fromAngle(M_PI));
-	Vector expected = Vector_(1, M_PI/2.0);
-	Vector actual = rot0.localCoordinates(rot);
-	CHECK(assert_equal(expected, actual));
+  Rot2 rot0(Rot2::fromAngle(M_PI/2.0));
+  Rot2 rot(Rot2::fromAngle(M_PI));
+  Vector expected = Vector_(1, M_PI/2.0);
+  Vector actual = rot0.localCoordinates(rot);
+  CHECK(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
@@ -106,13 +106,13 @@ TEST(Rot2, logmap)
 inline Point2 rotate_(const Rot2 & R, const Point2& p) {return R.rotate(p);}
 TEST( Rot2, rotate)
 {
-	Matrix H1, H2;
-	Point2 actual = R.rotate(P, H1, H2);
-	CHECK(assert_equal(actual,R*P));
-	Matrix numerical1 = numericalDerivative21(rotate_, R, P);
-	CHECK(assert_equal(numerical1,H1));
-	Matrix numerical2 = numericalDerivative22(rotate_, R, P);
-	CHECK(assert_equal(numerical2,H2));
+  Matrix H1, H2;
+  Point2 actual = R.rotate(P, H1, H2);
+  CHECK(assert_equal(actual,R*P));
+  Matrix numerical1 = numericalDerivative21(rotate_, R, P);
+  CHECK(assert_equal(numerical1,H1));
+  Matrix numerical2 = numericalDerivative22(rotate_, R, P);
+  CHECK(assert_equal(numerical2,H2));
 }
 
 /* ************************************************************************* */
@@ -120,43 +120,43 @@ TEST( Rot2, rotate)
 inline Point2 unrotate_(const Rot2& R, const Point2& p) {return R.unrotate(p);}
 TEST( Rot2, unrotate)
 {
-	Matrix H1, H2;
-	Point2 w = R * P, actual = R.unrotate(w, H1, H2);
-	CHECK(assert_equal(actual,P));
-	Matrix numerical1 = numericalDerivative21(unrotate_, R, w);
-	CHECK(assert_equal(numerical1,H1));
-	Matrix numerical2 = numericalDerivative22(unrotate_, R, w);
-	CHECK(assert_equal(numerical2,H2));
+  Matrix H1, H2;
+  Point2 w = R * P, actual = R.unrotate(w, H1, H2);
+  CHECK(assert_equal(actual,P));
+  Matrix numerical1 = numericalDerivative21(unrotate_, R, w);
+  CHECK(assert_equal(numerical1,H1));
+  Matrix numerical2 = numericalDerivative22(unrotate_, R, w);
+  CHECK(assert_equal(numerical2,H2));
 }
 
 /* ************************************************************************* */
 inline Rot2 relativeBearing_(const Point2& pt) {return Rot2::relativeBearing(pt); }
 TEST( Rot2, relativeBearing )
 {
-	Point2 l1(1, 0), l2(1, 1);
-	Matrix expectedH, actualH;
+  Point2 l1(1, 0), l2(1, 1);
+  Matrix expectedH, actualH;
 
-	// establish relativeBearing is indeed zero
-	Rot2 actual1 = Rot2::relativeBearing(l1, actualH);
-	CHECK(assert_equal(Rot2(),actual1));
+  // establish relativeBearing is indeed zero
+  Rot2 actual1 = Rot2::relativeBearing(l1, actualH);
+  CHECK(assert_equal(Rot2(),actual1));
 
-	// Check numerical derivative
-	expectedH = numericalDerivative11(relativeBearing_, l1);
-	CHECK(assert_equal(expectedH,actualH));
+  // Check numerical derivative
+  expectedH = numericalDerivative11(relativeBearing_, l1);
+  CHECK(assert_equal(expectedH,actualH));
 
-	// establish relativeBearing is indeed 45 degrees
-	Rot2 actual2 = Rot2::relativeBearing(l2, actualH);
-	CHECK(assert_equal(Rot2::fromAngle(M_PI/4.0),actual2));
+  // establish relativeBearing is indeed 45 degrees
+  Rot2 actual2 = Rot2::relativeBearing(l2, actualH);
+  CHECK(assert_equal(Rot2::fromAngle(M_PI/4.0),actual2));
 
-	// Check numerical derivative
-	expectedH = numericalDerivative11(relativeBearing_, l2);
-	CHECK(assert_equal(expectedH,actualH));
+  // Check numerical derivative
+  expectedH = numericalDerivative11(relativeBearing_, l2);
+  CHECK(assert_equal(expectedH,actualH));
 }
 
 /* ************************************************************************* */
 int main() {
-	TestResult tr;
-	return TestRegistry::runAllTests(tr);
+  TestResult tr;
+  return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
 

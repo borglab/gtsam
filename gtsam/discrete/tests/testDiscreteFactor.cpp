@@ -27,8 +27,8 @@ using namespace gtsam;
 
 /* ************************************************************************* */
 int main() {
-	TestResult tr;
-	return TestRegistry::runAllTests(tr);
+  TestResult tr;
+  return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
 

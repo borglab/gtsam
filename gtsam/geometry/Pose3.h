@@ -28,7 +28,7 @@
 
 namespace gtsam {
 
-	class Pose2; // forward declare
+  class Pose2; // forward declare
 
   /**
    * A 3D pose (R,t) : (Rot3,Point3)
@@ -49,8 +49,8 @@ namespace gtsam {
 
   public:
 
-  	/// @name Standard Constructors
-  	/// @{
+    /// @name Standard Constructors
+    /// @{
 
     /** Default constructor is origin */
     Pose3() {}
@@ -166,9 +166,9 @@ namespace gtsam {
           0.,  0.,  0.,  0.);
     }
 
-  	/// @}
-  	/// @name Group Action on Point3
-  	/// @{
+    /// @}
+    /// @name Group Action on Point3
+    /// @{
 
     /** receives the point in Pose coordinates and transforms it to world coordinates */
     Point3 transform_from(const Point3& p,
@@ -182,8 +182,8 @@ namespace gtsam {
         boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
 
     /// @}
-  	/// @name Standard Interface
-  	/// @{
+    /// @name Standard Interface
+    /// @{
 
     /// get rotation
     const Rot3& rotation() const { return R_; }
@@ -225,34 +225,34 @@ namespace gtsam {
         boost::optional<Matrix&> H2=boost::none) const;
 
     /// @}
-  	/// @name Advanced Interface
-  	/// @{
+    /// @name Advanced Interface
+    /// @{
 
     /**
      * Return the start and end indices (inclusive) of the translation component of the
      * exponential map parameterization
      * @return a pair of [start, end] indices into the tangent space vector
      */
-  	inline static std::pair<size_t, size_t> translationInterval() { return std::make_pair(3, 5); }
+    inline static std::pair<size_t, size_t> translationInterval() { return std::make_pair(3, 5); }
 
-  	/**
-  	 * Return the start and end indices (inclusive) of the rotation component of the
-  	 * exponential map parameterization
-  	 * @return a pair of [start, end] indices into the tangent space vector
-  	 */
-  	static std::pair<size_t, size_t> rotationInterval() { return std::make_pair(0, 2); }
+    /**
+     * Return the start and end indices (inclusive) of the rotation component of the
+     * exponential map parameterization
+     * @return a pair of [start, end] indices into the tangent space vector
+     */
+    static std::pair<size_t, size_t> rotationInterval() { return std::make_pair(0, 2); }
 
   private:
     /** Serialization function */
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version) {
-    	ar & boost::serialization::make_nvp("Pose3",
-    	 			 boost::serialization::base_object<Value>(*this));
+      ar & boost::serialization::make_nvp("Pose3",
+              boost::serialization::base_object<Value>(*this));
       ar & BOOST_SERIALIZATION_NVP(R_);
       ar & BOOST_SERIALIZATION_NVP(t_);
     }
-  	/// @}
+    /// @}
 
   }; // Pose3 class
 

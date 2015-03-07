@@ -32,12 +32,12 @@ typedef ClusterTree<SymbolicFactorGraph> SymbolicClusterTree;
 
 /* ************************************************************************* */
 TEST(ClusterTree, constructor) {
-	SymbolicClusterTree tree;
+  SymbolicClusterTree tree;
 }
 
 /* ************************************************************************* */
 int main() {
-	TestResult tr;
-	return TestRegistry::runAllTests(tr);
+  TestResult tr;
+  return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */

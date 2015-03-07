@@ -35,7 +35,7 @@ namespace simulated2D {
    */
   class Values: public gtsam::Values {
   private:
-  	int nrPoses_, nrPoints_;
+    int nrPoses_, nrPoints_;
 
   public:
     typedef gtsam::Values Base;  ///< base class
@@ -135,10 +135,10 @@ namespace simulated2D {
 
     virtual ~GenericPrior() {}
 
-		/// @return a deep copy of this factor
+    /// @return a deep copy of this factor
     virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-		  return boost::static_pointer_cast<gtsam::NonlinearFactor>(
-		      gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
+      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+          gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
   private:
 
@@ -181,10 +181,10 @@ namespace simulated2D {
 
     virtual ~GenericOdometry() {}
 
-		/// @return a deep copy of this factor
+    /// @return a deep copy of this factor
     virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-		  return boost::static_pointer_cast<gtsam::NonlinearFactor>(
-		      gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
+      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+          gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
   private:
 
@@ -228,10 +228,10 @@ namespace simulated2D {
 
     virtual ~GenericMeasurement() {}
 
-		/// @return a deep copy of this factor
+    /// @return a deep copy of this factor
     virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-		  return boost::static_pointer_cast<gtsam::NonlinearFactor>(
-		      gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
+      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+          gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
   private:
 

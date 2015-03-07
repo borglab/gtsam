@@ -21,11 +21,10 @@
 
 namespace gtsam {
 
-	using namespace std;
+  using namespace std;
 
-	/* ************************************************************************* */
-	GaussianFactor::GaussianFactor(const GaussianConditional& c) :
-		IndexFactor(c) {
-	}
+  /* ************************************************************************* */
+  GaussianFactor::GaussianFactor(const GaussianConditional& c) :
+    IndexFactor(c) {}
 
 }

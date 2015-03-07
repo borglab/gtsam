@@ -69,8 +69,8 @@ TEST( IndexConditional, threeParents )
 /* ************************************************************************* */
 TEST( IndexConditional, fourParents )
 {
-	vector<Index> parents;
-	parents += 1,2,3,4;
+  vector<Index> parents;
+  parents += 1,2,3,4;
   IndexConditional c0(0,parents);
   LONGS_EQUAL(1,c0.nrFrontals())
   LONGS_EQUAL(4,c0.nrParents())
@@ -79,8 +79,8 @@ TEST( IndexConditional, fourParents )
 /* ************************************************************************* */
 TEST( IndexConditional, FromRange )
 {
-	vector<Index> keys;
-	keys += 1,2,3,4,5;
+  vector<Index> keys;
+  keys += 1,2,3,4,5;
   IndexConditional::shared_ptr c0(new IndexConditional(keys,2));
   LONGS_EQUAL(2,c0->nrFrontals())
   LONGS_EQUAL(3,c0->nrParents())
@@ -100,7 +100,7 @@ TEST( IndexConditional, equals )
 
 /* ************************************************************************* */
 int main() {
-	TestResult tr;
-	return TestRegistry::runAllTests(tr);
+  TestResult tr;
+  return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */

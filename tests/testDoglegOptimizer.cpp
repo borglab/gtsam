@@ -26,7 +26,10 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
 #include <boost/bind.hpp>
+#pragma GCC diagnostic pop
 #include <boost/assign/list_of.hpp> // for 'list_of()'
 #include <functional>
 

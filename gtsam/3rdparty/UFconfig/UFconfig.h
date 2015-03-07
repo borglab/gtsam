@@ -75,10 +75,10 @@ extern "C" {
 
 typedef struct UFconfig_struct
 {
-    void *(*malloc_memory) (size_t) ;		/* pointer to malloc */
+    void *(*malloc_memory) (size_t) ;    /* pointer to malloc */
     void *(*realloc_memory) (void *, size_t) ;  /* pointer to realloc */
-    void (*free_memory) (void *) ;		/* pointer to free */
-    void *(*calloc_memory) (size_t, size_t) ;	/* pointer to calloc */
+    void (*free_memory) (void *) ;    /* pointer to free */
+    void *(*calloc_memory) (size_t, size_t) ;  /* pointer to calloc */
 
 } UFconfig ;
 
@@ -111,31 +111,31 @@ void *UFfree                /* always returns NULL */
  *
  * SuiteSparse Version 3.6.1 contains the following packages:
  *
- *  AMD		    version 2.2.2
- *  BTF		    version 1.1.2
- *  CAMD	    version 2.2.2
- *  CCOLAMD	    version 2.7.3
- *  CHOLMOD	    version 1.7.3
- *  COLAMD	    version 2.7.3
- *  CSparse	    version 2.2.5
- *  CSparse3	    version 3.0.1
- *  CXSparse	    version 2.2.5
- *  KLU		    version 1.1.2
- *  LDL		    version 2.0.3
- *  RBio	    version 2.0.1
+ *  AMD        version 2.2.2
+ *  BTF        version 1.1.2
+ *  CAMD      version 2.2.2
+ *  CCOLAMD      version 2.7.3
+ *  CHOLMOD      version 1.7.3
+ *  COLAMD      version 2.7.3
+ *  CSparse      version 2.2.5
+ *  CSparse3      version 3.0.1
+ *  CXSparse      version 2.2.5
+ *  KLU        version 1.1.2
+ *  LDL        version 2.0.3
+ *  RBio      version 2.0.1
  *  SPQR            version 1.2.2 (also called SuiteSparseQR)
  *  UFcollection    version 1.5.0
- *  UFconfig	    version number is the same as SuiteSparse
- *  UMFPACK	    version 5.5.1
+ *  UFconfig      version number is the same as SuiteSparse
+ *  UMFPACK      version 5.5.1
  *  LINFACTOR       version 1.1.0
  *  MESHND          version 1.1.1
  *  SSMULT          version 2.0.2
  *  MATLAB_Tools    no specific version number
  *
  * Other package dependencies:
- *  BLAS	    required by CHOLMOD and UMFPACK
- *  LAPACK	    required by CHOLMOD
- *  METIS 4.0.1	    required by CHOLMOD (optional) and KLU (optional)
+ *  BLAS      required by CHOLMOD and UMFPACK
+ *  LAPACK      required by CHOLMOD
+ *  METIS 4.0.1      required by CHOLMOD (optional) and KLU (optional)
  */
 
 #define SUITESPARSE_DATE "May 10, 2011"

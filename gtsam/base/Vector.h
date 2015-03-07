@@ -98,7 +98,7 @@ inline Vector zero(size_t n) { return Vector::Zero(n);}
  * @param n size
  */
 inline Vector ones(size_t n) { return Vector::Ones(n); }
-	
+  
 /**
  * check if all zero
  */
@@ -277,15 +277,15 @@ double max(const Vector &a);
  */
 template<class V1, class V2>
 inline double dot(const V1 &a, const V2& b) {
-	assert (b.size()==a.size());
-	return a.dot(b);
+  assert (b.size()==a.size());
+  return a.dot(b);
 }
 
 /** compatibility version for ublas' inner_prod() */
 template<class V1, class V2>
 inline double inner_prod(const V1 &a, const V2& b) {
-	assert (b.size()==a.size());
-	return a.dot(b);
+  assert (b.size()==a.size());
+  return a.dot(b);
 }
 
 /**
@@ -300,12 +300,12 @@ inline void scal(double alpha, Vector& x) { x *= alpha; }
  */
 template<class V1, class V2>
 inline void axpy(double alpha, const V1& x, V2& y) {
-	assert (y.size()==x.size());
-	y += alpha * x;
+  assert (y.size()==x.size());
+  y += alpha * x;
 }
 inline void axpy(double alpha, const Vector& x, SubVector y) {
-	assert (y.size()==x.size());
-	y += alpha * x;
+  assert (y.size()==x.size());
+  y += alpha * x;
 }
 
 /**
@@ -360,17 +360,17 @@ namespace serialization {
 template<class Archive>
 void save(Archive & ar, const gtsam::Vector & v, unsigned int version)
 {
-	const size_t n = v.size();
-	std::vector<double> raw_data(n);
-	copy(v.data(), v.data()+n, raw_data.begin());
-	ar << make_nvp("data", raw_data);
+  const size_t n = v.size();
+  std::vector<double> raw_data(n);
+  copy(v.data(), v.data()+n, raw_data.begin());
+  ar << make_nvp("data", raw_data);
 }
 template<class Archive>
 void load(Archive & ar, gtsam::Vector & v, unsigned int version)
 {
-	std::vector<double> raw_data;
-	ar >> make_nvp("data", raw_data);
-	v = gtsam::Vector_(raw_data);
+  std::vector<double> raw_data;
+  ar >> make_nvp("data", raw_data);
+  v = gtsam::Vector_(raw_data);
 }
 
 } // namespace serialization

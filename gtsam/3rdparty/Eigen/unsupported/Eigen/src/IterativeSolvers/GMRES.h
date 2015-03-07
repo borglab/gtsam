@@ -69,74 +69,74 @@ namespace internal {
  */
 template<typename MatrixType, typename Rhs, typename Dest, typename Preconditioner>
 bool gmres(const MatrixType & mat, const Rhs & rhs, Dest & x, const Preconditioner & precond,
-		int &iters, const int &restart, typename Dest::RealScalar & tol_error) {
+    int &iters, const int &restart, typename Dest::RealScalar & tol_error) {
 
-	using std::sqrt;
-	using std::abs;
+  using std::sqrt;
+  using std::abs;
 
-	typedef typename Dest::RealScalar RealScalar;
-	typedef typename Dest::Scalar Scalar;
-	typedef Matrix < RealScalar, Dynamic, 1 > RealVectorType;
-	typedef Matrix < Scalar, Dynamic, 1 > VectorType;
-	typedef Matrix < Scalar, Dynamic, Dynamic > FMatrixType;
+  typedef typename Dest::RealScalar RealScalar;
+  typedef typename Dest::Scalar Scalar;
+  typedef Matrix < RealScalar, Dynamic, 1 > RealVectorType;
+  typedef Matrix < Scalar, Dynamic, 1 > VectorType;
+  typedef Matrix < Scalar, Dynamic, Dynamic > FMatrixType;
 
-	RealScalar tol = tol_error;
-	const int maxIters = iters;
-	iters = 0;
+  RealScalar tol = tol_error;
+  const int maxIters = iters;
+  iters = 0;
 
-	const int m = mat.rows();
+  const int m = mat.rows();
 
-	VectorType p0 = rhs - mat*x;
-	VectorType r0 = precond.solve(p0);
-// 	RealScalar r0_sqnorm = r0.squaredNorm();
+  VectorType p0 = rhs - mat*x;
+  VectorType r0 = precond.solve(p0);
+//   RealScalar r0_sqnorm = r0.squaredNorm();
 
-	VectorType w = VectorType::Zero(restart + 1);
+  VectorType w = VectorType::Zero(restart + 1);
 
-	FMatrixType H = FMatrixType::Zero(m, restart + 1);
-	VectorType tau = VectorType::Zero(restart + 1);
-	std::vector < JacobiRotation < Scalar > > G(restart);
+  FMatrixType H = FMatrixType::Zero(m, restart + 1);
+  VectorType tau = VectorType::Zero(restart + 1);
+  std::vector < JacobiRotation < Scalar > > G(restart);
 
-	// generate first Householder vector
-	VectorType e;
-	RealScalar beta;
-	r0.makeHouseholder(e, tau.coeffRef(0), beta);
-	w(0)=(Scalar) beta;
-	H.bottomLeftCorner(m - 1, 1) = e;
+  // generate first Householder vector
+  VectorType e;
+  RealScalar beta;
+  r0.makeHouseholder(e, tau.coeffRef(0), beta);
+  w(0)=(Scalar) beta;
+  H.bottomLeftCorner(m - 1, 1) = e;
 
-	for (int k = 1; k <= restart; ++k) {
+  for (int k = 1; k <= restart; ++k) {
 
-		++iters;
+    ++iters;
 
-		VectorType v = VectorType::Unit(m, k - 1), workspace(m);
+    VectorType v = VectorType::Unit(m, k - 1), workspace(m);
 
-		// apply Householder reflections H_{1} ... H_{k-1} to v
-		for (int i = k - 1; i >= 0; --i) {
-			v.tail(m - i).applyHouseholderOnTheLeft(H.col(i).tail(m - i - 1), tau.coeffRef(i), workspace.data());
-		}
+    // apply Householder reflections H_{1} ... H_{k-1} to v
+    for (int i = k - 1; i >= 0; --i) {
+      v.tail(m - i).applyHouseholderOnTheLeft(H.col(i).tail(m - i - 1), tau.coeffRef(i), workspace.data());
+    }
 
-		// apply matrix M to v:  v = mat * v;
-		VectorType t=mat*v;
-		v=precond.solve(t);
+    // apply matrix M to v:  v = mat * v;
+    VectorType t=mat*v;
+    v=precond.solve(t);
 
-		// apply Householder reflections H_{k-1} ... H_{1} to v
-		for (int i = 0; i < k; ++i) {
-			v.tail(m - i).applyHouseholderOnTheLeft(H.col(i).tail(m - i - 1), tau.coeffRef(i), workspace.data());
-		}
+    // apply Householder reflections H_{k-1} ... H_{1} to v
+    for (int i = 0; i < k; ++i) {
+      v.tail(m - i).applyHouseholderOnTheLeft(H.col(i).tail(m - i - 1), tau.coeffRef(i), workspace.data());
+    }
 
-		if (v.tail(m - k).norm() != 0.0) {
+    if (v.tail(m - k).norm() != 0.0) {
 
-			if (k <= restart) {
+      if (k <= restart) {
 
-				// generate new Householder vector
+        // generate new Householder vector
                                   VectorType e(m - k - 1);
-				RealScalar beta;
-				v.tail(m - k).makeHouseholder(e, tau.coeffRef(k), beta);
-				H.col(k).tail(m - k - 1) = e;
+        RealScalar beta;
+        v.tail(m - k).makeHouseholder(e, tau.coeffRef(k), beta);
+        H.col(k).tail(m - k - 1) = e;
 
-				// apply Householder reflection H_{k} to v
-				v.tail(m - k).applyHouseholderOnTheLeft(H.col(k).tail(m - k - 1), tau.coeffRef(k), workspace.data());
+        // apply Householder reflection H_{k} to v
+        v.tail(m - k).applyHouseholderOnTheLeft(H.col(k).tail(m - k - 1), tau.coeffRef(k), workspace.data());
 
-			}
+      }
                 }
 
                 if (k > 1) {
@@ -207,9 +207,9 @@ bool gmres(const MatrixType & mat, const Rhs & rhs, Dest & x, const Precondition
 
 
 
-	}
-	
-	return false;
+  }
+  
+  return false;
 
 }
 

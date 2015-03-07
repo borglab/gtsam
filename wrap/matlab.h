@@ -62,14 +62,14 @@ using namespace boost; // not usual, but for conciseness of generated code
 // to a shared pointer of the same C++ object type as the MATLAB type.
 // Also present in utilities.h
 static const uint64_t ptr_constructor_key =
-	(uint64_t('G') << 56) |
-	(uint64_t('T') << 48) |
-	(uint64_t('S') << 40) |
-	(uint64_t('A') << 32) |
-	(uint64_t('M') << 24) |
-	(uint64_t('p') << 16) |
-	(uint64_t('t') << 8) |
-	(uint64_t('r'));
+  (uint64_t('G') << 56) |
+  (uint64_t('T') << 48) |
+  (uint64_t('S') << 40) |
+  (uint64_t('A') << 32) |
+  (uint64_t('M') << 24) |
+  (uint64_t('p') << 16) |
+  (uint64_t('t') << 8) |
+  (uint64_t('r'));
 
 //*****************************************************************************
 // Utilities
@@ -85,25 +85,25 @@ mxArray *scalar(mxClassID classid) {
 }
 
 void checkScalar(const mxArray* array, const char* str) {
-	int m = mxGetM(array), n = mxGetN(array);
-	if (m!=1 || n!=1)
-		mexErrMsgIdAndTxt("wrap: not a scalar in ", str);
+  int m = mxGetM(array), n = mxGetN(array);
+  if (m!=1 || n!=1)
+    mexErrMsgIdAndTxt("wrap: not a scalar in ", str);
 }
 
 // Replacement streambuf for cout that writes to the MATLAB console
 // Thanks to http://stackoverflow.com/a/249008
 class mstream : public std::streambuf {
 protected:
-	virtual std::streamsize xsputn(const char *s, std::streamsize n) {
-		mexPrintf("%.*s",n,s);
-		return n;
-	}
-	virtual int overflow(int c = EOF) {
-		if (c != EOF) {
-			mexPrintf("%.1s",&c);
-		}
-		return 1;
-	}
+  virtual std::streamsize xsputn(const char *s, std::streamsize n) {
+    mexPrintf("%.*s",n,s);
+    return n;
+  }
+  virtual int overflow(int c = EOF) {
+    if (c != EOF) {
+      mexPrintf("%.1s",&c);
+    }
+    return 1;
+  }
 };
 
 //*****************************************************************************
@@ -125,7 +125,7 @@ void checkArguments(const string& name, int nargout, int nargin, int expected) {
 template <typename Class>
 mxArray* wrap(const Class& value) {
   error("wrap internal error: attempted wrap of invalid type");
-	return 0;
+  return 0;
 }
 
 // specialization to string
@@ -207,7 +207,7 @@ mxArray* wrap_Matrix(const gtsam::Matrix& A) {
   double *data = mxGetPr(result);
   // converts from column-major to row-major
   for (int j=0;j<n;j++) for (int i=0;i<m;i++,data++) *data = A(i,j);
-	return result;
+  return result;
 }
 
 // specialization to Eigen MATRIX -> double matrix
@@ -242,56 +242,56 @@ string unwrap<string>(const mxArray* array) {
 // Check for 64-bit, as Mathworks says mxGetScalar only good for 32 bit
 template <typename T>
 T myGetScalar(const mxArray* array) {
-	switch (mxGetClassID(array)) {
-		case mxINT64_CLASS:
-			return (T) *(int64_t*) mxGetData(array);
-		case mxUINT64_CLASS:
-			return (T) *(uint64_t*) mxGetData(array);
-		default:
-			// hope for the best!
-			return (T) mxGetScalar(array);
-	}
+  switch (mxGetClassID(array)) {
+    case mxINT64_CLASS:
+      return (T) *(int64_t*) mxGetData(array);
+    case mxUINT64_CLASS:
+      return (T) *(uint64_t*) mxGetData(array);
+    default:
+      // hope for the best!
+      return (T) mxGetScalar(array);
+  }
 }
 
 // specialization to bool
 template<>
 bool unwrap<bool>(const mxArray* array) {
-	checkScalar(array,"unwrap<bool>");
+  checkScalar(array,"unwrap<bool>");
   return myGetScalar<bool>(array);
 }
 
 // specialization to char
 template<>
 char unwrap<char>(const mxArray* array) {
-	checkScalar(array,"unwrap<char>");
+  checkScalar(array,"unwrap<char>");
   return myGetScalar<char>(array);
 }
 
 // specialization to unsigned char
 template<>
 unsigned char unwrap<unsigned char>(const mxArray* array) {
-	checkScalar(array,"unwrap<unsigned char>");
+  checkScalar(array,"unwrap<unsigned char>");
   return myGetScalar<unsigned char>(array);
 }
 
 // specialization to int
 template<>
 int unwrap<int>(const mxArray* array) {
-	checkScalar(array,"unwrap<int>");
+  checkScalar(array,"unwrap<int>");
   return myGetScalar<int>(array);
 }
 
 // specialization to size_t
 template<>
 size_t unwrap<size_t>(const mxArray* array) {
-	checkScalar(array, "unwrap<size_t>");
+  checkScalar(array, "unwrap<size_t>");
   return myGetScalar<size_t>(array);
 }
 
 // specialization to double
 template<>
 double unwrap<double>(const mxArray* array) {
-	checkScalar(array,"unwrap<double>");
+  checkScalar(array,"unwrap<double>");
   return myGetScalar<double>(array);
 }
 
@@ -307,7 +307,7 @@ gtsam::Vector unwrap< gtsam::Vector >(const mxArray* array) {
   gtsam::Vector v(m);
   for (int i=0;i<m;i++,data++) v(i) = *data;
 #ifdef DEBUG_WRAP
-	gtsam::print(v);
+  gtsam::print(v);
 #endif
   return v;
 }
@@ -325,7 +325,7 @@ gtsam::Matrix unwrap< gtsam::Matrix >(const mxArray* array) {
   // converts from row-major to column-major
   for (int j=0;j<n;j++) for (int i=0;i<m;i++,data++) A(i,j) = *data;
 #ifdef DEBUG_WRAP
-	gtsam::print(A);
+  gtsam::print(A);
 #endif
   return A;
 }
@@ -345,52 +345,52 @@ gtsam::Matrix unwrap< gtsam::Matrix >(const mxArray* array) {
 */
 mxArray* create_object(const std::string& classname, void *pointer, bool isVirtual, const char *rttiName) {
   mxArray *result;
-	mxArray *input[3];
-	int nargin = 2;
-	// First input argument is pointer constructor key
-	input[0] = mxCreateNumericMatrix(1, 1, mxUINT64_CLASS, mxREAL);
-	*reinterpret_cast<uint64_t*>(mxGetData(input[0])) = ptr_constructor_key;
-	// Second input argument is the pointer
+  mxArray *input[3];
+  int nargin = 2;
+  // First input argument is pointer constructor key
+  input[0] = mxCreateNumericMatrix(1, 1, mxUINT64_CLASS, mxREAL);
+  *reinterpret_cast<uint64_t*>(mxGetData(input[0])) = ptr_constructor_key;
+  // Second input argument is the pointer
   input[1] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
-	*reinterpret_cast<void**>(mxGetData(input[1])) = pointer;
-	// If the class is virtual, use the RTTI name to look up the derived matlab type
-	const char *derivedClassName;
-	if(isVirtual) {
-		const mxArray *rttiRegistry = mexGetVariablePtr("global", "gtsamwrap_rttiRegistry");
-		if(!rttiRegistry)
-			mexErrMsgTxt(
-			"gtsam wrap:  RTTI registry is missing - it could have been cleared from the workspace."
-			"  You can issue 'clear all' to completely clear the workspace, and next time a wrapped object is"
-			" created the RTTI registry will be recreated.");
-		const mxArray *derivedNameMx = mxGetField(rttiRegistry, 0, rttiName);
-		if(!derivedNameMx)
-			mexErrMsgTxt((
-			"gtsam wrap:  The derived class type " + string(rttiName) + " was not found in the RTTI registry.  "
-			"Try calling 'clear all' twice consecutively - we have seen things not get unloaded properly the "
-			"first time.  If this does not work, this may indicate an inconsistency in your wrap interface file.  "
-			"The most likely cause for this is that a base class was marked virtual in the wrap interface "
-			"definition header file for gtsam or for your module, but a derived type was returned by a C++ "
-			"function and that derived type was not marked virtual (or was not specified in the wrap interface "
-			"definition header at all).").c_str());
-		size_t strLen = mxGetN(derivedNameMx);
-		char *buf = new char[strLen+1];
-		if(mxGetString(derivedNameMx, buf, strLen+1))
-			mexErrMsgTxt("gtsam wrap:  Internal error reading RTTI table, try 'clear all' to clear your workspace and reinitialize the toolbox.");
-		derivedClassName = buf;
-		input[2] = mxCreateString("void");
-		nargin = 3;
-	} else {
-		derivedClassName = classname.c_str();
-	}
-	// Call special pointer constructor, which sets 'self'
+  *reinterpret_cast<void**>(mxGetData(input[1])) = pointer;
+  // If the class is virtual, use the RTTI name to look up the derived matlab type
+  const char *derivedClassName;
+  if(isVirtual) {
+    const mxArray *rttiRegistry = mexGetVariablePtr("global", "gtsamwrap_rttiRegistry");
+    if(!rttiRegistry)
+      mexErrMsgTxt(
+      "gtsam wrap:  RTTI registry is missing - it could have been cleared from the workspace."
+      "  You can issue 'clear all' to completely clear the workspace, and next time a wrapped object is"
+      " created the RTTI registry will be recreated.");
+    const mxArray *derivedNameMx = mxGetField(rttiRegistry, 0, rttiName);
+    if(!derivedNameMx)
+      mexErrMsgTxt((
+      "gtsam wrap:  The derived class type " + string(rttiName) + " was not found in the RTTI registry.  "
+      "Try calling 'clear all' twice consecutively - we have seen things not get unloaded properly the "
+      "first time.  If this does not work, this may indicate an inconsistency in your wrap interface file.  "
+      "The most likely cause for this is that a base class was marked virtual in the wrap interface "
+      "definition header file for gtsam or for your module, but a derived type was returned by a C++ "
+      "function and that derived type was not marked virtual (or was not specified in the wrap interface "
+      "definition header at all).").c_str());
+    size_t strLen = mxGetN(derivedNameMx);
+    char *buf = new char[strLen+1];
+    if(mxGetString(derivedNameMx, buf, strLen+1))
+      mexErrMsgTxt("gtsam wrap:  Internal error reading RTTI table, try 'clear all' to clear your workspace and reinitialize the toolbox.");
+    derivedClassName = buf;
+    input[2] = mxCreateString("void");
+    nargin = 3;
+  } else {
+    derivedClassName = classname.c_str();
+  }
+  // Call special pointer constructor, which sets 'self'
   mexCallMATLAB(1,&result, nargin, input, derivedClassName);
   // Deallocate our memory
-	mxDestroyArray(input[0]);
-	mxDestroyArray(input[1]);
-	if(isVirtual) {
-		mxDestroyArray(input[2]);
-		delete[] derivedClassName;
-	}
+  mxDestroyArray(input[0]);
+  mxDestroyArray(input[1]);
+  if(isVirtual) {
+    mxDestroyArray(input[2]);
+    delete[] derivedClassName;
+  }
   return result;
 }
 
@@ -401,22 +401,22 @@ mxArray* create_object(const std::string& classname, void *pointer, bool isVirtu
 */
 template <typename Class>
 mxArray* wrap_shared_ptr(boost::shared_ptr< Class > shared_ptr, const std::string& matlabName, bool isVirtual) {
-	// Create actual class object from out pointer
-	mxArray* result;
-	if(isVirtual) {
-		boost::shared_ptr<void> void_ptr(shared_ptr);
-		result = create_object(matlabName, &void_ptr, isVirtual, typeid(*shared_ptr).name());
-	} else {
-		boost::shared_ptr<Class> *heapPtr = new boost::shared_ptr<Class>(shared_ptr);
-		result = create_object(matlabName, heapPtr, isVirtual, "");
-	}
-	return result;
+  // Create actual class object from out pointer
+  mxArray* result;
+  if(isVirtual) {
+    boost::shared_ptr<void> void_ptr(shared_ptr);
+    result = create_object(matlabName, &void_ptr, isVirtual, typeid(*shared_ptr).name());
+  } else {
+    boost::shared_ptr<Class> *heapPtr = new boost::shared_ptr<Class>(shared_ptr);
+    result = create_object(matlabName, heapPtr, isVirtual, "");
+  }
+  return result;
 }
 
 template <typename Class>
 boost::shared_ptr<Class> unwrap_shared_ptr(const mxArray* obj, const string& propertyName) {
 
-	mxArray* mxh = mxGetProperty(obj,0, propertyName.c_str());
+  mxArray* mxh = mxGetProperty(obj,0, propertyName.c_str());
   if (mxGetClassID(mxh) != mxUINT32OR64_CLASS || mxIsComplex(mxh)
     || mxGetM(mxh) != 1 || mxGetN(mxh) != 1) error(
     "Parameter is not an Shared type.");

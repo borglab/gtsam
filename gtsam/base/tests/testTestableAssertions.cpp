@@ -23,12 +23,12 @@ using namespace gtsam;
 
 /* ************************************************************************* */
 TEST( testTestableAssertions, optional ) {
-	typedef boost::optional<LieScalar> OptionalScalar;
-	LieScalar x(1.0);
-	OptionalScalar ox(x), dummy = boost::none;
-	EXPECT(assert_equal(ox, ox));
-	EXPECT(assert_equal(x, ox));
-	EXPECT(assert_equal(dummy, dummy));
+  typedef boost::optional<LieScalar> OptionalScalar;
+  LieScalar x(1.0);
+  OptionalScalar ox(x), dummy = boost::none;
+  EXPECT(assert_equal(ox, ox));
+  EXPECT(assert_equal(x, ox));
+  EXPECT(assert_equal(dummy, dummy));
 }
 
 /* ************************************************************************* */

@@ -1,4 +1,4 @@
-	// comments!
+  // comments!
 
 class VectorNotEigen;
 class ns::OtherClass;
@@ -37,8 +37,8 @@ class Point3 {
 
 class Test {
 
-	/* a comment! */
-	// another comment
+  /* a comment! */
+  // another comment
   Test();
 
   pair<Vector,Matrix> return_pair (Vector v, Matrix A) const; // intentionally the first method

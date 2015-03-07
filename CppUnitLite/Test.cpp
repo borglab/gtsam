@@ -18,58 +18,58 @@
 #include <boost/lexical_cast.hpp>
 
 Test::Test (const std::string& testName)
-	: name_ (testName), next_(0), lineNumber_(-1), safeCheck_(true)
+  : name_ (testName), next_(0), lineNumber_(-1), safeCheck_(true)
 {
-	TestRegistry::addTest (this);
+  TestRegistry::addTest (this);
 }
 
 Test::Test (const std::string& testName, const std::string& filename, long lineNumber, bool safeCheck)
-	: name_(testName), next_(0), filename_(filename), lineNumber_(lineNumber), safeCheck_(safeCheck)
+  : name_(testName), next_(0), filename_(filename), lineNumber_(lineNumber), safeCheck_(safeCheck)
 {
-	TestRegistry::addTest (this);
+  TestRegistry::addTest (this);
 }
 
 
 Test *Test::getNext() const
 {
-	return next_;
+  return next_;
 }
 
 void Test::setNext(Test *test)
-{	
-	next_ = test;
+{  
+  next_ = test;
 }
 
 bool Test::check(long expected, long actual, TestResult& result, const std::string& fileName, long lineNumber)
 {
-	if (expected == actual)
-		return true;
-	result.addFailure (
-		Failure (
-			name_, 
-			boost::lexical_cast<std::string> (__FILE__),
-			__LINE__, 
-			boost::lexical_cast<std::string> (expected),
-			boost::lexical_cast<std::string> (actual)));
+  if (expected == actual)
+    return true;
+  result.addFailure (
+    Failure (
+      name_, 
+      boost::lexical_cast<std::string> (__FILE__),
+      __LINE__, 
+      boost::lexical_cast<std::string> (expected),
+      boost::lexical_cast<std::string> (actual)));
 
-	return false;
+  return false;
 
 }
 
 
 bool Test::check(const std::string& expected, const std::string& actual, TestResult& result, const std::string& fileName, long lineNumber)
 {
-	if (expected == actual)
-		return true;
-	result.addFailure (
-		Failure (
-			name_, 
-			boost::lexical_cast<std::string> (__FILE__),
-			__LINE__, 
-			expected, 
-			actual));
+  if (expected == actual)
+    return true;
+  result.addFailure (
+    Failure (
+      name_, 
+      boost::lexical_cast<std::string> (__FILE__),
+      __LINE__, 
+      expected, 
+      actual));
 
-	return false;
+  return false;
 
 }
 

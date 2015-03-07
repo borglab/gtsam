@@ -27,9 +27,9 @@ namespace gtsam {
 
 /* ************************************************************************* */
 Ordering::Ordering(const std::list<Key> & L):nVars_(0) {
-	int i = 0;
-	BOOST_FOREACH( Key s, L )
-	  insert(s, i++) ;
+  int i = 0;
+  BOOST_FOREACH( Key s, L )
+    insert(s, i++) ;
 }
 
 /* ************************************************************************* */
@@ -42,26 +42,26 @@ void Ordering::permuteWithInverse(const Permutation& inversePermutation) {
 /* ************************************************************************* */
 void Ordering::print(const string& str, const KeyFormatter& keyFormatter) const {
   cout << str;
-	// Print ordering in index order
-	Ordering::InvertedMap inverted = this->invert();
-	// Print the ordering with varsPerLine ordering entries printed on each line,
-	// for compactness.
-	static const size_t varsPerLine = 10;
-	bool endedOnNewline = false;
-	BOOST_FOREACH(const Ordering::InvertedMap::value_type& index_key, inverted) {
-		if(index_key.first % varsPerLine != 0)
-			cout << ", ";
-		cout << index_key.first << ":" << keyFormatter(index_key.second);
-		if(index_key.first % varsPerLine == varsPerLine - 1) {
-			cout << "\n";
-			endedOnNewline = true;
-		} else {
-			endedOnNewline = false;
-		}
-	}
-	if(!endedOnNewline)
-		cout << "\n";
-	cout.flush();
+  // Print ordering in index order
+  Ordering::InvertedMap inverted = this->invert();
+  // Print the ordering with varsPerLine ordering entries printed on each line,
+  // for compactness.
+  static const size_t varsPerLine = 10;
+  bool endedOnNewline = false;
+  BOOST_FOREACH(const Ordering::InvertedMap::value_type& index_key, inverted) {
+    if(index_key.first % varsPerLine != 0)
+      cout << ", ";
+    cout << index_key.first << ":" << keyFormatter(index_key.second);
+    if(index_key.first % varsPerLine == varsPerLine - 1) {
+      cout << "\n";
+      endedOnNewline = true;
+    } else {
+      endedOnNewline = false;
+    }
+  }
+  if(!endedOnNewline)
+    cout << "\n";
+  cout.flush();
 }
 
 /* ************************************************************************* */
@@ -71,16 +71,16 @@ bool Ordering::equals(const Ordering& rhs, double tol) const {
 
 /* ************************************************************************* */
 Ordering::value_type Ordering::pop_back() {
-	// FIXME: is there a way of doing this without searching over the entire structure?
-	for (iterator it=begin(); it!=end(); ++it) {
-		if (it->second == nVars_ - 1) {
-			value_type result = *it;
-			order_.erase(it);
-			--nVars_;
-			return result;
-		}
-	}
-	return value_type();
+  // FIXME: is there a way of doing this without searching over the entire structure?
+  for (iterator it=begin(); it!=end(); ++it) {
+    if (it->second == nVars_ - 1) {
+      value_type result = *it;
+      order_.erase(it);
+      --nVars_;
+      return result;
+    }
+  }
+  return value_type();
 }
 
 /* ************************************************************************* */
@@ -101,10 +101,10 @@ Index Ordering::pop_back(Key key) {
 
 /* ************************************************************************* */
 Ordering::InvertedMap Ordering::invert() const {
-	InvertedMap result;
-	BOOST_FOREACH(const value_type& p, *this)
-		result.insert(make_pair(p.second, p.first));
-	return result;
+  InvertedMap result;
+  BOOST_FOREACH(const value_type& p, *this)
+    result.insert(make_pair(p.second, p.first));
+  return result;
 }
 
 /* ************************************************************************* */

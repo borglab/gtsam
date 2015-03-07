@@ -39,7 +39,7 @@ struct generateTestMatrix<MatrixType,0>
     typename EigenSolver<MatrixType>::EigenvalueType eivals = es.eigenvalues();
     for (typename MatrixType::Index i = 0; i < size; ++i) {
       if (eivals(i).imag() == 0 && eivals(i).real() < 0)
-	eivals(i) = -eivals(i);
+  eivals(i) = -eivals(i);
     }
     result = (es.eigenvectors() * eivals.asDiagonal() * es.eigenvectors().inverse()).real();
   }

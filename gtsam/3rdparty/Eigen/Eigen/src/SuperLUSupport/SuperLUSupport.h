@@ -27,7 +27,7 @@
 
 namespace Eigen { 
 
-#define DECL_GSSVX(PREFIX,FLOATTYPE,KEYTYPE)		\
+#define DECL_GSSVX(PREFIX,FLOATTYPE,KEYTYPE)    \
     extern "C" {                                                                                          \
       typedef struct { FLOATTYPE for_lu; FLOATTYPE total_needed; int expansions; } PREFIX##mem_usage_t;   \
       extern void PREFIX##gssvx(superlu_options_t *, SuperMatrix *, int *, int *, int *,                  \

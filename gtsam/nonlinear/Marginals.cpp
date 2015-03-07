@@ -17,6 +17,7 @@
  */
 
 #include <gtsam/3rdparty/Eigen/Eigen/Dense>
+#include <gtsam/base/timing.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/GaussianMultifrontalSolver.h>
 #include <gtsam/nonlinear/Marginals.h>
@@ -27,6 +28,7 @@ namespace gtsam {
 
 /* ************************************************************************* */
 Marginals::Marginals(const NonlinearFactorGraph& graph, const Values& solution, Factorization factorization) {
+  gttic(MarginalsConstructor);
 
   // Compute COLAMD ordering
   ordering_ = *graph.orderingCOLAMD(solution);
@@ -47,10 +49,10 @@ Marginals::Marginals(const NonlinearFactorGraph& graph, const Values& solution, 
 
 /* ************************************************************************* */
 void Marginals::print(const std::string& str, const KeyFormatter& keyFormatter) const {
-	ordering_.print(str+"Ordering: ", keyFormatter);
-	graph_.print(str+"Graph: ");
-	values_.print(str+"Solution: ", keyFormatter);
-	bayesTree_.print(str+"Bayes Tree: ");
+  ordering_.print(str+"Ordering: ", keyFormatter);
+  graph_.print(str+"Graph: ");
+  values_.print(str+"Solution: ", keyFormatter);
+  bayesTree_.print(str+"Bayes Tree: ");
 }
 
 /* ************************************************************************* */
@@ -60,6 +62,7 @@ Matrix Marginals::marginalCovariance(Key variable) const {
 
 /* ************************************************************************* */
 Matrix Marginals::marginalInformation(Key variable) const {
+  gttic(marginalInformation);
   // Get linear key
   Index index = ordering_[variable];
 
@@ -71,9 +74,8 @@ Matrix Marginals::marginalInformation(Key variable) const {
     marginalFactor = bayesTree_.marginalFactor(index, EliminateQR);
 
   // Get information matrix (only store upper-right triangle)
-  Matrix info = marginalFactor->computeInformation();
-  const int dim = info.rows() - 1;
-  return info.topLeftCorner(dim,dim); // Take the non-augmented part of the information matrix
+  gttic(AsMatrix);
+  return marginalFactor->information();
 }
 
 /* ************************************************************************* */
@@ -132,11 +134,11 @@ JointMarginal Marginals::jointMarginalInformation(const std::vector<Key>& variab
     // which are sorted in index order.
     Ordering variableConversion;
     {
-			// First build map from index to key
+      // First build map from index to key
       FastMap<Index,Key> usedIndices;
       for(size_t i=0; i<variables.size(); ++i)
         usedIndices.insert(make_pair(indices[i], variables[i]));
-			// Next run over indices in sorted order
+      // Next run over indices in sorted order
       size_t slot = 0;
       typedef pair<Index,Key> Index_Key;
       BOOST_FOREACH(const Index_Key& index_key, usedIndices) {
@@ -149,7 +151,7 @@ JointMarginal Marginals::jointMarginalInformation(const std::vector<Key>& variab
     std::vector<size_t> dims(indices.size(), 0);
     BOOST_FOREACH(Key key, variables) {
       dims[variableConversion[key]] = values_.at(key).dim();
-		}
+    }
 
     // Get information matrix
     Matrix augmentedInfo = jointFG.augmentedHessian();
@@ -161,16 +163,16 @@ JointMarginal Marginals::jointMarginalInformation(const std::vector<Key>& variab
 
 /* ************************************************************************* */
 void JointMarginal::print(const std::string& s, const KeyFormatter& formatter) const {
-	cout << s << "Joint marginal on keys ";
-	bool first = true;
-	BOOST_FOREACH(const Ordering::value_type& key_index, indices_) {
-		if(!first)
-			cout << ", ";
-		else
-			first = false;
-		cout << formatter(key_index.first);
-	}
-	cout << ".  Use 'at' or 'operator()' to query matrix blocks." << endl;
+  cout << s << "Joint marginal on keys ";
+  bool first = true;
+  BOOST_FOREACH(const Ordering::value_type& key_index, indices_) {
+    if(!first)
+      cout << ", ";
+    else
+      first = false;
+    cout << formatter(key_index.first);
+  }
+  cout << ".  Use 'at' or 'operator()' to query matrix blocks." << endl;
 }
 
 } /* namespace gtsam */

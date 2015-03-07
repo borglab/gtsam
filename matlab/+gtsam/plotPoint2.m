@@ -5,6 +5,6 @@ if size(color,2)==1
 else
     plot(p.x,p.y,color);
 end
-if exist('P', 'var')
+if exist('P', 'var') && (~isempty(P))
     gtsam.covarianceEllipse([p.x;p.y],P,color(1));
 end

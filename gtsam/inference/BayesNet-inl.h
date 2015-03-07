@@ -32,14 +32,23 @@ using boost::assign::operator+=;
 
 namespace gtsam {
 
-	/* ************************************************************************* */
-	template<class CONDITIONAL>
-	void BayesNet<CONDITIONAL>::print(const std::string& s,
-			const IndexFormatter& formatter) const {
-		std::cout << s;
-		BOOST_REVERSE_FOREACH(sharedConditional conditional, conditionals_)
-			conditional->print("Conditional", formatter);
-	}
+  /* ************************************************************************* */
+  template<class CONDITIONAL>
+  void BayesNet<CONDITIONAL>::print(const std::string& s,
+      const IndexFormatter& formatter) const {
+    std::cout << s;
+    BOOST_REVERSE_FOREACH(sharedConditional conditional, conditionals_)
+      conditional->print("Conditional", formatter);
+  }
+
+  /* ************************************************************************* */
+  template<class CONDITIONAL>
+  bool BayesNet<CONDITIONAL>::equals(const BayesNet& cbn, double tol) const {
+    if (size() != cbn.size())
+      return false;
+    return std::equal(conditionals_.begin(), conditionals_.end(),
+        cbn.conditionals_.begin(), equals_star<CONDITIONAL>(tol));
+  }
 
   /* ************************************************************************* */
   template<class CONDITIONAL>
@@ -60,11 +69,21 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class CONDITIONAL>
-  bool BayesNet<CONDITIONAL>::equals(const BayesNet& cbn, double tol) const {
-    if (size() != cbn.size())
-      return false;
-    return std::equal(conditionals_.begin(), conditionals_.end(),
-        cbn.conditionals_.begin(), equals_star<CONDITIONAL>(tol));
+  void BayesNet<CONDITIONAL>::saveGraph(const std::string &s,
+      const IndexFormatter& indexFormatter) const {
+    std::ofstream of(s.c_str());
+    of << "digraph G{\n";
+
+    BOOST_REVERSE_FOREACH(typename CONDITIONAL::shared_ptr conditional, conditionals_) {
+      typename CONDITIONAL::Frontals frontals = conditional->frontals();
+      Index me = frontals.front();
+      typename CONDITIONAL::Parents parents = conditional->parents();
+      BOOST_FOREACH(Index p, parents)
+        of << p << "->" << me << std::endl;
+    }
+
+    of << "}";
+    of.close();
   }
 
   /* ************************************************************************* */
@@ -112,14 +131,14 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class CONDITIONAL>
-  void BayesNet<CONDITIONAL>::push_back(const BayesNet<CONDITIONAL> bn) {
+  void BayesNet<CONDITIONAL>::push_back(const BayesNet<CONDITIONAL>& bn) {
     BOOST_FOREACH(sharedConditional conditional,bn.conditionals_)
       push_back(conditional);
   }
 
   /* ************************************************************************* */
   template<class CONDITIONAL>
-  void BayesNet<CONDITIONAL>::push_front(const BayesNet<CONDITIONAL> bn) {
+  void BayesNet<CONDITIONAL>::push_front(const BayesNet<CONDITIONAL>& bn) {
     BOOST_FOREACH(sharedConditional conditional,bn.conditionals_)
       push_front(conditional);
   }
@@ -149,20 +168,20 @@ namespace gtsam {
     return ord;
   }
 
-//	/* ************************************************************************* */
-//	template<class CONDITIONAL>
-//	void BayesNet<CONDITIONAL>::saveGraph(const std::string &s) const {
-//		ofstream of(s.c_str());
-//		of<< "digraph G{\n";
-//		BOOST_FOREACH(const_sharedConditional conditional,conditionals_) {
-//			Index child = conditional->key();
-//			BOOST_FOREACH(Index parent, conditional->parents()) {
-//				of << parent << "->" << child << endl;
-//			}
-//		}
-//		of<<"}";
-//		of.close();
-//	}
+//  /* ************************************************************************* */
+//  template<class CONDITIONAL>
+//  void BayesNet<CONDITIONAL>::saveGraph(const std::string &s) const {
+//    ofstream of(s.c_str());
+//    of<< "digraph G{\n";
+//    BOOST_FOREACH(const_sharedConditional conditional,conditionals_) {
+//      Index child = conditional->key();
+//      BOOST_FOREACH(Index parent, conditional->parents()) {
+//        of << parent << "->" << child << endl;
+//      }
+//    }
+//    of<<"}";
+//    of.close();
+//  }
 //
   /* ************************************************************************* */
 

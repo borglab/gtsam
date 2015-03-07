@@ -47,8 +47,8 @@ namespace gtsam {
     typedef IndexFactor FactorType;
     typedef boost::shared_ptr<IndexConditional> shared_ptr;
 
-  	/// @name Standard Constructors
-  	/// @{
+    /// @name Standard Constructors
+    /// @{
 
     /** Empty Constructor to make serialization possible */
     IndexConditional() { assertInvariants(); }
@@ -65,42 +65,48 @@ namespace gtsam {
     /** Three parents */
     IndexConditional(Index j, Index parent1, Index parent2, Index parent3) : Base(j, parent1, parent2, parent3) { assertInvariants(); }
 
-  	/// @}
-  	/// @name Advanced Constructors
-  	/// @{
+    /// @}
+    /// @name Advanced Constructors
+    /// @{
 
     /** Constructor from a frontal variable and a vector of parents */
-		IndexConditional(Index j, const std::vector<Index>& parents) : Base(j, parents) {
-			assertInvariants();
-		}
+    IndexConditional(Index j, const std::vector<Index>& parents) : Base(j, parents) {
+      assertInvariants();
+    }
 
     /** Constructor from keys and nr of frontal variables */
-		IndexConditional(const std::vector<Index>& keys, size_t nrFrontals) :
-			Base(keys, nrFrontals) {
-			assertInvariants();
-		}
+    IndexConditional(const std::vector<Index>& keys, size_t nrFrontals) :
+      Base(keys, nrFrontals) {
+      assertInvariants();
+    }
 
-		/// @}
-		/// @name Standard Interface
-		/// @{
+    /** Constructor from keys and nr of frontal variables */
+    IndexConditional(const std::list<Index>& keys, size_t nrFrontals) :
+      Base(keys, nrFrontals) {
+      assertInvariants();
+    }
 
-		/** Named constructor directly returning a shared pointer */
-		template<class KEYS>
-		static shared_ptr FromKeys(const KEYS& keys, size_t nrFrontals) {
-		  shared_ptr conditional(new IndexConditional());
-		  conditional->keys_.assign(keys.begin(), keys.end());
-		  conditional->nrFrontals_ = nrFrontals;
-		  return conditional;
-		}
+    /// @}
+    /// @name Standard Interface
+    /// @{
+
+    /** Named constructor directly returning a shared pointer */
+    template<class KEYS>
+    static shared_ptr FromKeys(const KEYS& keys, size_t nrFrontals) {
+      shared_ptr conditional(new IndexConditional());
+      conditional->keys_.assign(keys.begin(), keys.end());
+      conditional->nrFrontals_ = nrFrontals;
+      return conditional;
+    }
 
     /** Convert to a factor */
     IndexFactor::shared_ptr toFactor() const {
       return IndexFactor::shared_ptr(new IndexFactor(*this));
     }
 
-  	/// @}
-  	/// @name Advanced Interface
-  	/// @{
+    /// @}
+    /// @name Advanced Interface
+    /// @{
 
     /** Permute the variables when only separator variables need to be permuted.
      * Returns true if any reordered variables appeared in the separator and
@@ -115,14 +121,14 @@ namespace gtsam {
     void permuteWithInverse(const Permutation& inversePermutation);
 
   private:
-  	/** Serialization function */
-  	friend class boost::serialization::access;
-  	template<class Archive>
-  	void serialize(Archive & ar, const unsigned int version) {
-  		ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-  	}
+    /** Serialization function */
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version) {
+      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+    }
 
-  	/// @}
+    /// @}
 
   };
 

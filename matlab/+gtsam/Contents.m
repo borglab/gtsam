@@ -6,26 +6,29 @@
 %   Permutation                       - class Permutation, see Doxygen page for details
 % 
 %% General Inference Classes
-%   IndexConditional                  - class IndexConditional, see Doxygen page for details
 %   IndexFactor                       - class IndexFactor, see Doxygen page for details
-%   SymbolicBayesNet                  - class SymbolicBayesNet, see Doxygen page for details
-%   SymbolicBayesTree                 - class SymbolicBayesTree, see Doxygen page for details
 %   SymbolicFactorGraph               - class SymbolicFactorGraph, see Doxygen page for details
+%   IndexConditional                  - class IndexConditional, see Doxygen page for details
+%   SymbolicBayesNet                  - class SymbolicBayesNet, see Doxygen page for details
+%   SymbolicBayesTreeClique           - class SymbolicBayesTreeClique, see Doxygen page for details
+%   SymbolicBayesTree                 - class SymbolicBayesTree, see Doxygen page for details
 %   SymbolicMultifrontalSolver        - class SymbolicMultifrontalSolver, see Doxygen page for details
 %   SymbolicSequentialSolver          - class SymbolicSequentialSolver, see Doxygen page for details
 %   VariableIndex                     - class VariableIndex, see Doxygen page for details
 % 
-%% Linear-Gaussian Factor Graphs
+%% Linear-Gaussian Graphical Models
 %   Errors                            - class Errors, see Doxygen page for details
-%   GaussianBayesNet                  - class GaussianBayesNet, see Doxygen page for details
-%   GaussianConditional               - class GaussianConditional, see Doxygen page for details
-%   GaussianDensity                   - class GaussianDensity, see Doxygen page for details
+%   VectorValues                      - class VectorValues, see Doxygen page for details
 %   GaussianFactor                    - class GaussianFactor, see Doxygen page for details
-%   GaussianFactorGraph               - class GaussianFactorGraph, see Doxygen page for details
-%   GaussianISAM                      - class GaussianISAM, see Doxygen page for details
 %   HessianFactor                     - class HessianFactor, see Doxygen page for details
 %   JacobianFactor                    - class JacobianFactor, see Doxygen page for details
-%   VectorValues                      - class VectorValues, see Doxygen page for details
+%   GaussianFactorGraph               - class GaussianFactorGraph, see Doxygen page for details
+%   GaussianDensity                   - class GaussianDensity, see Doxygen page for details
+%   GaussianConditional               - class GaussianConditional, see Doxygen page for details
+%   GaussianBayesNet                  - class GaussianBayesNet, see Doxygen page for details
+%   GaussianBayesTreeClique           - class GaussianBayesTreeClique, see Doxygen page for details
+%   GaussianBayesTree                 - class GaussianBayesTree, see Doxygen page for details
+%   GaussianISAM                      - class GaussianISAM, see Doxygen page for details
 % 
 %% Linear Inference
 %   GaussianSequentialSolver          - class GaussianSequentialSolver, see Doxygen page for details
@@ -37,11 +40,14 @@
 %   Sampler                           - class Sampler, see Doxygen page for details
 %
 %% Nonlinear Factor Graphs
-%   NonlinearFactor                   - class NonlinearFactor, see Doxygen page for details
-%   NonlinearFactorGraph              - class NonlinearFactorGraph, see Doxygen page for details
 %   Ordering                          - class Ordering, see Doxygen page for details
 %   Value                             - class Value, see Doxygen page for details
 %   Values                            - class Values, see Doxygen page for details
+%   LieScalar                         - class LieScalar, see Doxygen page for details
+%   LieVector                         - class LieVector, see Doxygen page for details
+%   LieMatrix                         - class LieMatrix, see Doxygen page for details
+%   NonlinearFactor                   - class NonlinearFactor, see Doxygen page for details
+%   NonlinearFactorGraph              - class NonlinearFactorGraph, see Doxygen page for details
 %
 %% Nonlinear Optimization
 %   ConjugateGradientParameters       - class ConjugateGradientParameters, see Doxygen page for details
@@ -49,6 +55,8 @@
 %   DoglegParams                      - class DoglegParams, see Doxygen page for details
 %   GaussNewtonOptimizer              - class GaussNewtonOptimizer, see Doxygen page for details
 %   GaussNewtonParams                 - class GaussNewtonParams, see Doxygen page for details
+%   ISAM2Clique                       - class ISAM2Clique, see Doxygen page for details
+%   ISAM2BayesTree                    - class ISAM2BayesTree, see Doxygen page for details
 %   ISAM2                             - class ISAM2, see Doxygen page for details
 %   ISAM2DoglegParams                 - class ISAM2DoglegParams, see Doxygen page for details
 %   ISAM2GaussNewtonParams            - class ISAM2GaussNewtonParams, see Doxygen page for details

@@ -35,7 +35,7 @@ using namespace gtsam;
 
 int main() {
 
-	// [code below basically does SRIF with Cholesky]
+  // [code below basically does SRIF with Cholesky]
 
   // Create a factor graph to perform the inference
   GaussianFactorGraph::shared_ptr linearFactorGraph(new GaussianFactorGraph);
@@ -46,11 +46,11 @@ int main() {
   // Create a structure to hold the linearization points
   Values linearizationPoints;
 
-	// Ground truth example
-	// Start at origin, move to the right (x-axis): 0,0  0,1  0,2
-	// Motion model is just moving to the right (x'-x)^2
-	// Measurements are GPS like, (x-z)^2, where z is a 2D measurement
-	// i.e., we should get 0,0  0,1  0,2 if there is no noise
+  // Ground truth example
+  // Start at origin, move to the right (x-axis): 0,0  0,1  0,2
+  // Motion model is just moving to the right (x'-x)^2
+  // Measurements are GPS like, (x-z)^2, where z is a 2D measurement
+  // i.e., we should get 0,0  0,1  0,2 if there is no noise
 
   // Create new state variable
   Symbol x0('x',0);

@@ -20,64 +20,64 @@
 
 void TestRegistry::addTest (Test *test) 
 {
-	instance ().add (test);
+  instance ().add (test);
 }
 
 
 int TestRegistry::runAllTests (TestResult& result) 
 {
-	return instance ().run (result);
+  return instance ().run (result);
 }
 
 
 TestRegistry& TestRegistry::instance () 
 {
-	static TestRegistry registry;
-	return registry;
+  static TestRegistry registry;
+  return registry;
 }
 
 
 void TestRegistry::add (Test *test) 
 {
-	if (tests == 0) {
-	  test->setNext(0);
-		tests = test;
-		lastTest = test;
-		return;
-	}
+  if (tests == 0) {
+    test->setNext(0);
+    tests = test;
+    lastTest = test;
+    return;
+  }
 
-	test->setNext (0);
-	lastTest->setNext(test);
-	lastTest = test;
+  test->setNext (0);
+  lastTest->setNext(test);
+  lastTest = test;
 }
 
 
 int TestRegistry::run (TestResult& result) 
 {
-	result.testsStarted ();
+  result.testsStarted ();
 
-	for (Test *test = tests; test != 0; test = test->getNext ()) {
-		if (test->safe()) {
-			try {
-				test->run (result);
-			} catch (std::exception& e) {
-				// catch standard exceptions and derivatives
-				result.addFailure(
-						Failure(test->getName(), test->getFilename(), test->getLineNumber(),
-								std::string("Exception: ") + std::string(e.what())));
-			} catch (...) {
-				// catch all other exceptions
-				result.addFailure(
-						Failure(test->getName(), test->getFilename(), test->getLineNumber(),
-								"ExceptionThrown!"));
-			}
-		}
-		else {
-			test->run (result);
-		}
-	}
-	result.testsEnded ();
-	return result.getFailureCount();
+  for (Test *test = tests; test != 0; test = test->getNext ()) {
+    if (test->safe()) {
+      try {
+        test->run (result);
+      } catch (std::exception& e) {
+        // catch standard exceptions and derivatives
+        result.addFailure(
+            Failure(test->getName(), test->getFilename(), test->getLineNumber(),
+                std::string("Exception: ") + std::string(e.what())));
+      } catch (...) {
+        // catch all other exceptions
+        result.addFailure(
+            Failure(test->getName(), test->getFilename(), test->getLineNumber(),
+                "ExceptionThrown!"));
+      }
+    }
+    else {
+      test->run (result);
+    }
+  }
+  result.testsEnded ();
+  return result.getFailureCount();
 }
 
 

@@ -32,33 +32,41 @@ namespace inference {
 /* ************************************************************************* */
 template<typename CONSTRAINED>
 Permutation::shared_ptr PermutationCOLAMD(
-		const VariableIndex& variableIndex, const CONSTRAINED& constrainLast) {
+    const VariableIndex& variableIndex, const CONSTRAINED& constrainLast, bool forceOrder) {
 
-  std::vector<int> cmember(variableIndex.size(), 0);
+  size_t n = variableIndex.size();
+  std::vector<int> cmember(n, 0);
 
   // If at least some variables are not constrained to be last, constrain the
   // ones that should be constrained.
-  if(constrainLast.size() < variableIndex.size()) {
+  if(constrainLast.size() < n) {
     BOOST_FOREACH(Index var, constrainLast) {
-      assert(var < variableIndex.size());
+      assert(var < n);
       cmember[var] = 1;
     }
   }
 
-  return PermutationCOLAMD_(variableIndex, cmember);
+  Permutation::shared_ptr permutation = PermutationCOLAMD_(variableIndex, cmember);
+  if (forceOrder) {
+    Index j=n;
+    BOOST_REVERSE_FOREACH(Index c, constrainLast)
+      permutation->operator[](--j) = c;
+  }
+  return permutation;
 }
 
 /* ************************************************************************* */
 template<typename CONSTRAINED_MAP>
 Permutation::shared_ptr PermutationCOLAMDGrouped(
-		const VariableIndex& variableIndex, const CONSTRAINED_MAP& constraints) {
-  std::vector<int> cmember(variableIndex.size(), 0);
+    const VariableIndex& variableIndex, const CONSTRAINED_MAP& constraints) {
+  size_t n = variableIndex.size();
+  std::vector<int> cmember(n, 0);
 
-	typedef typename CONSTRAINED_MAP::value_type constraint_pair;
+  typedef typename CONSTRAINED_MAP::value_type constraint_pair;
   BOOST_FOREACH(const constraint_pair& p, constraints) {
-  	assert(p.first < variableIndex.size());
-  	// FIXME: check that no groups are skipped
-  	cmember[p.first] = p.second;
+    assert(p.first < n);
+    // FIXME: check that no groups are skipped
+    cmember[p.first] = p.second;
   }
 
   return PermutationCOLAMD_(variableIndex, cmember);
@@ -66,20 +74,21 @@ Permutation::shared_ptr PermutationCOLAMDGrouped(
 
 /* ************************************************************************* */
 inline Permutation::shared_ptr PermutationCOLAMD(const VariableIndex& variableIndex) {
-  std::vector<int> cmember(variableIndex.size(), 0);
+  size_t n = variableIndex.size();
+  std::vector<int> cmember(n, 0);
   return PermutationCOLAMD_(variableIndex, cmember);
 }
 
 /* ************************************************************************* */
 template<class Graph>
 std::pair<typename Graph::sharedConditional, Graph> eliminate(
-		const Graph& factorGraph,
-		const std::vector<typename Graph::KeyType>& variables,
-		const typename Graph::Eliminate& eliminateFcn,
-		boost::optional<const VariableIndex&> variableIndex_) {
+    const Graph& factorGraph,
+    const std::vector<typename Graph::KeyType>& variables,
+    const typename Graph::Eliminate& eliminateFcn,
+    boost::optional<const VariableIndex&> variableIndex_) {
 
   const VariableIndex& variableIndex =
-					variableIndex_ ? *variableIndex_ : VariableIndex(factorGraph);
+          variableIndex_ ? *variableIndex_ : VariableIndex(factorGraph);
 
   // First find the involved factors
   Graph involvedFactors;
@@ -127,7 +136,7 @@ std::pair<typename Graph::sharedConditional, Graph> eliminate(
 
   // Add the remaining factor if it is not empty.
   if(remainingFactor->size() != 0)
-  	remainingGraph.push_back(remainingFactor);
+    remainingGraph.push_back(remainingFactor);
 
   return std::make_pair(conditional, remainingGraph);
 

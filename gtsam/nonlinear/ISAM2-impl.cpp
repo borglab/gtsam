@@ -30,7 +30,7 @@ namespace gtsam {
 /* ************************************************************************* */
 void ISAM2::Impl::AddVariables(
     const Values& newTheta, Values& theta, VectorValues& delta,
-    VectorValues& deltaNewton, VectorValues& deltaGradSearch, vector<bool>& replacedKeys,
+    VectorValues& deltaNewton, VectorValues& RgProd, vector<bool>& replacedKeys,
     Ordering& ordering, const KeyFormatter& keyFormatter) {
   const bool debug = ISDEBUG("ISAM2 AddVariables");
 
@@ -46,8 +46,8 @@ void ISAM2::Impl::AddVariables(
   delta.vector().segment(originalDim, newDim).operator=(Vector::Zero(newDim));
   deltaNewton.append(dims);
   deltaNewton.vector().segment(originalDim, newDim).operator=(Vector::Zero(newDim));
-  deltaGradSearch.append(dims);
-  deltaGradSearch.vector().segment(originalDim, newDim).operator=(Vector::Zero(newDim));
+  RgProd.append(dims);
+  RgProd.vector().segment(originalDim, newDim).operator=(Vector::Zero(newDim));
   {
     Index nextVar = originalnVars;
     BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, newTheta) {
@@ -63,68 +63,68 @@ void ISAM2::Impl::AddVariables(
 
 /* ************************************************************************* */
 void ISAM2::Impl::RemoveVariables(const FastSet<Key>& unusedKeys, const ISAM2Clique::shared_ptr& root,
-																	Values& theta, VariableIndex& variableIndex,
-																	VectorValues& delta, VectorValues& deltaNewton, VectorValues& deltaGradSearch,
-																	std::vector<bool>& replacedKeys, Ordering& ordering, Base::Nodes& nodes,
-																	GaussianFactorGraph& linearFactors) {
+                                  Values& theta, VariableIndex& variableIndex,
+                                  VectorValues& delta, VectorValues& deltaNewton, VectorValues& RgProd,
+                                  std::vector<bool>& replacedKeys, Ordering& ordering, Base::Nodes& nodes,
+                                  GaussianFactorGraph& linearFactors) {
 
-		 // Get indices of unused keys
-		 vector<Index> unusedIndices;  unusedIndices.reserve(unusedKeys.size());
-		 BOOST_FOREACH(Key key, unusedKeys) { unusedIndices.push_back(ordering[key]); }
+     // Get indices of unused keys
+     vector<Index> unusedIndices;  unusedIndices.reserve(unusedKeys.size());
+     BOOST_FOREACH(Key key, unusedKeys) { unusedIndices.push_back(ordering[key]); }
 
-		 // Create a permutation that shifts the unused variables to the end
-		 Permutation unusedToEnd = Permutation::PushToBack(unusedIndices, delta.size());
-		 Permutation unusedToEndInverse = *unusedToEnd.inverse();
+     // Create a permutation that shifts the unused variables to the end
+     Permutation unusedToEnd = Permutation::PushToBack(unusedIndices, delta.size());
+     Permutation unusedToEndInverse = *unusedToEnd.inverse();
 
-		 // Use the permutation to remove unused variables while shifting all the others to take up the space
-		 variableIndex.permuteInPlace(unusedToEnd);
-		 variableIndex.removeUnusedAtEnd(unusedIndices.size());
-		 {
-			 // Create a vector of variable dimensions with the unused ones removed
-			 // by applying the unusedToEnd permutation to the original vector of
-			 // variable dimensions.  We only allocate space in the shifted dims
-			 // vector for the used variables, so that the unused ones are dropped
-			 // when the permutation is applied.
-			 vector<size_t> originalDims = delta.dims();
-			 vector<size_t> dims(delta.size() - unusedIndices.size());
-			 unusedToEnd.applyToCollection(dims, originalDims);
+     // Use the permutation to remove unused variables while shifting all the others to take up the space
+     variableIndex.permuteInPlace(unusedToEnd);
+     variableIndex.removeUnusedAtEnd(unusedIndices.size());
+     {
+       // Create a vector of variable dimensions with the unused ones removed
+       // by applying the unusedToEnd permutation to the original vector of
+       // variable dimensions.  We only allocate space in the shifted dims
+       // vector for the used variables, so that the unused ones are dropped
+       // when the permutation is applied.
+       vector<size_t> originalDims = delta.dims();
+       vector<size_t> dims(delta.size() - unusedIndices.size());
+       unusedToEnd.applyToCollection(dims, originalDims);
 
-			 // Copy from the old data structures to new ones, only iterating up to
-			 // the number of used variables, and applying the unusedToEnd permutation
-			 // in order to remove the unused variables.
-			 VectorValues newDelta(dims);
-			 VectorValues newDeltaNewton(dims);
-			 VectorValues newDeltaGradSearch(dims);
-			 std::vector<bool> newReplacedKeys(replacedKeys.size() - unusedIndices.size());
-			 Base::Nodes newNodes(replacedKeys.size() - unusedIndices.size());
+       // Copy from the old data structures to new ones, only iterating up to
+       // the number of used variables, and applying the unusedToEnd permutation
+       // in order to remove the unused variables.
+       VectorValues newDelta(dims);
+       VectorValues newDeltaNewton(dims);
+       VectorValues newDeltaGradSearch(dims);
+       std::vector<bool> newReplacedKeys(replacedKeys.size() - unusedIndices.size());
+       Base::Nodes newNodes(replacedKeys.size() - unusedIndices.size());
 
-			 for(size_t j = 0; j < dims.size(); ++j) {
-				 newDelta[j] = delta[unusedToEnd[j]];
-				 newDeltaNewton[j] = deltaNewton[unusedToEnd[j]];
-				 newDeltaGradSearch[j] = deltaGradSearch[unusedToEnd[j]];
-				 newReplacedKeys[j] = replacedKeys[unusedToEnd[j]];
-				 newNodes[j] = nodes[unusedToEnd[j]];
-			 }
+       for(size_t j = 0; j < dims.size(); ++j) {
+         newDelta[j] = delta[unusedToEnd[j]];
+         newDeltaNewton[j] = deltaNewton[unusedToEnd[j]];
+         newDeltaGradSearch[j] = RgProd[unusedToEnd[j]];
+         newReplacedKeys[j] = replacedKeys[unusedToEnd[j]];
+         newNodes[j] = nodes[unusedToEnd[j]];
+       }
 
-			 // Swap the new data structures with the outputs of this function
-			 delta.swap(newDelta);
-			 deltaNewton.swap(newDeltaNewton);
-			 deltaGradSearch.swap(newDeltaGradSearch);
-			 replacedKeys.swap(newReplacedKeys);
-			 nodes.swap(newNodes);
-		 }
+       // Swap the new data structures with the outputs of this function
+       delta.swap(newDelta);
+       deltaNewton.swap(newDeltaNewton);
+       RgProd.swap(newDeltaGradSearch);
+       replacedKeys.swap(newReplacedKeys);
+       nodes.swap(newNodes);
+     }
 
-		 // Reorder and remove from ordering and solution
-		 ordering.permuteWithInverse(unusedToEndInverse);
-		 BOOST_REVERSE_FOREACH(Key key, unusedKeys) {
-		   ordering.pop_back(key);
-			 theta.erase(key);
-		 }
+     // Reorder and remove from ordering and solution
+     ordering.permuteWithInverse(unusedToEndInverse);
+     BOOST_REVERSE_FOREACH(Key key, unusedKeys) {
+       ordering.pop_back(key);
+       theta.erase(key);
+     }
 
-		 // Finally, permute references to variables
-		 if(root)
-			 root->permuteWithInverse(unusedToEndInverse);
-		 linearFactors.permuteWithInverse(unusedToEndInverse);
+     // Finally, permute references to variables
+     if(root)
+       root->permuteWithInverse(unusedToEndInverse);
+     linearFactors.permuteWithInverse(unusedToEndInverse);
 }
 
 /* ************************************************************************* */
@@ -302,7 +302,7 @@ ISAM2::Impl::PartialSolve(GaussianFactorGraph& factors,
 
   PartialSolveResult result;
 
-  tic(1,"select affected variables");
+  gttic(select_affected_variables);
 #ifndef NDEBUG
   // Debug check that all variables involved in the factors to be re-eliminated
   // are in affectedKeys, since we will use it to select a subset of variables.
@@ -326,12 +326,12 @@ ISAM2::Impl::PartialSolve(GaussianFactorGraph& factors,
   if(debug) affectedKeysSelectorInverse.print("affectedKeysSelectorInverse: ");
   factors.permuteWithInverse(affectedKeysSelectorInverse);
   if(debug) factors.print("Factors to reorder/re-eliminate: ");
-  toc(1,"select affected variables");
-  tic(2,"variable index");
+  gttoc(select_affected_variables);
+  gttic(variable_index);
   VariableIndex affectedFactorsIndex(factors); // Create a variable index for the factors to be re-eliminated
   if(debug) affectedFactorsIndex.print("affectedFactorsIndex: ");
-  toc(2,"variable index");
-  tic(3,"ccolamd");
+  gttoc(variable_index);
+  gttic(ccolamd);
   vector<int> cmember(affectedKeysSelector.size(), 0);
   if(reorderingMode.constrain == ReorderingMode::CONSTRAIN_LAST) {
     assert(reorderingMode.constrainedKeys);
@@ -348,8 +348,8 @@ ISAM2::Impl::PartialSolve(GaussianFactorGraph& factors,
     }
   }
   Permutation::shared_ptr affectedColamd(inference::PermutationCOLAMD_(affectedFactorsIndex, cmember));
-  toc(3,"ccolamd");
-  tic(4,"ccolamd permutations");
+  gttoc(ccolamd);
+  gttic(ccolamd_permutations);
   Permutation::shared_ptr affectedColamdInverse(affectedColamd->inverse());
   if(debug) affectedColamd->print("affectedColamd: ");
   if(debug) affectedColamdInverse->print("affectedColamdInverse: ");
@@ -358,15 +358,15 @@ ISAM2::Impl::PartialSolve(GaussianFactorGraph& factors,
   result.fullReorderingInverse =
       *Permutation::Identity(reorderingMode.nFullSystemVars).partialPermutation(affectedKeysSelector, *affectedColamdInverse);
   if(debug) result.fullReordering.print("partialReordering: ");
-  toc(4,"ccolamd permutations");
+  gttoc(ccolamd_permutations);
 
-  tic(5,"permute affected variable index");
+  gttic(permute_affected_variable_index);
   affectedFactorsIndex.permuteInPlace(*affectedColamd);
-  toc(5,"permute affected variable index");
+  gttoc(permute_affected_variable_index);
 
-  tic(6,"permute affected factors");
+  gttic(permute_affected_factors);
   factors.permuteWithInverse(*affectedColamdInverse);
-  toc(6,"permute affected factors");
+  gttoc(permute_affected_factors);
 
   if(debug) factors.print("Colamd-ordered affected factors: ");
 
@@ -376,15 +376,15 @@ ISAM2::Impl::PartialSolve(GaussianFactorGraph& factors,
 #endif
 
   // eliminate into a Bayes net
-  tic(7,"eliminate");
+  gttic(eliminate);
   JunctionTree<GaussianFactorGraph, ISAM2::Clique> jt(factors, affectedFactorsIndex);
   if(!useQR)
     result.bayesTree = jt.eliminate(EliminatePreferCholesky);
   else
     result.bayesTree = jt.eliminate(EliminateQR);
-  toc(7,"eliminate");
+  gttoc(eliminate);
 
-  tic(8,"permute eliminated");
+  gttic(permute_eliminated);
   if(result.bayesTree) result.bayesTree->permuteWithInverse(affectedKeysSelector);
   if(debug && result.bayesTree) {
     cout << "Full var-ordered eliminated BT:\n";
@@ -393,7 +393,7 @@ ISAM2::Impl::PartialSolve(GaussianFactorGraph& factors,
   // Undo permutation on our subset of cached factors, we must later permute *all* of the cached factors
   factors.permuteWithInverse(*affectedColamd);
   factors.permuteWithInverse(affectedKeysSelector);
-  toc(8,"permute eliminated");
+  gttoc(permute_eliminated);
 
   return result;
 }
@@ -438,7 +438,7 @@ size_t ISAM2::Impl::UpdateDelta(const boost::shared_ptr<ISAM2Clique>& root, std:
 
 /* ************************************************************************* */
 namespace internal {
-void updateDoglegDeltas(const boost::shared_ptr<ISAM2Clique>& clique, std::vector<bool>& replacedKeys,
+void updateDoglegDeltas(const boost::shared_ptr<ISAM2Clique>& clique, const std::vector<bool>& replacedKeys,
     const VectorValues& grad, VectorValues& deltaNewton, VectorValues& RgProd, size_t& varsUpdated) {
 
   // Check if any frontal or separator keys were recalculated, if so, we need

@@ -35,7 +35,7 @@ public:
     CHOLMOD,    /* Experimental Flag */
   };
 
-	LinearSolverType linearSolverType; ///< The type of linear solver to use in the nonlinear optimizer
+  LinearSolverType linearSolverType; ///< The type of linear solver to use in the nonlinear optimizer
   boost::optional<Ordering> ordering; ///< The variable elimination ordering, or empty to use COLAMD (default: empty)
   IterativeOptimizationParameters::shared_ptr iterativeParams; ///< The container for iterativeOptimization parameters. used in CG Solvers.
 
@@ -71,33 +71,33 @@ public:
     }
   }
 
-	std::string getLinearSolverType() const { return linearSolverTranslator(linearSolverType); }
+  std::string getLinearSolverType() const { return linearSolverTranslator(linearSolverType); }
 
-	void setLinearSolverType(const std::string& solver) { linearSolverType = linearSolverTranslator(solver); }
+  void setLinearSolverType(const std::string& solver) { linearSolverType = linearSolverTranslator(solver); }
   void setIterativeParams(const SubgraphSolverParameters &params);
-	void setOrdering(const Ordering& ordering) { this->ordering = ordering; }
+  void setOrdering(const Ordering& ordering) { this->ordering = ordering; }
 
 private:
-	std::string linearSolverTranslator(LinearSolverType linearSolverType) const {
-		switch(linearSolverType) {
-		case MULTIFRONTAL_CHOLESKY: return "MULTIFRONTAL_CHOLESKY";
-		case MULTIFRONTAL_QR: return "MULTIFRONTAL_QR";
-		case SEQUENTIAL_CHOLESKY: return "SEQUENTIAL_CHOLESKY";
-		case SEQUENTIAL_QR: return "SEQUENTIAL_QR";
-		case CONJUGATE_GRADIENT: return "CONJUGATE_GRADIENT";
-		case CHOLMOD: return "CHOLMOD";
-		default: throw std::invalid_argument("Unknown linear solver type in SuccessiveLinearizationOptimizer");
-		}
-	}
-	LinearSolverType linearSolverTranslator(const std::string& linearSolverType) const {
-		if(linearSolverType == "MULTIFRONTAL_CHOLESKY") return MULTIFRONTAL_CHOLESKY;
-		if(linearSolverType == "MULTIFRONTAL_QR") return MULTIFRONTAL_QR;
-		if(linearSolverType == "SEQUENTIAL_CHOLESKY") return SEQUENTIAL_CHOLESKY;
-		if(linearSolverType == "SEQUENTIAL_QR") return SEQUENTIAL_QR;
-		if(linearSolverType == "CONJUGATE_GRADIENT") return CONJUGATE_GRADIENT;
-		if(linearSolverType == "CHOLMOD") return CHOLMOD;
-		throw std::invalid_argument("Unknown linear solver type in SuccessiveLinearizationOptimizer");
-	}
+  std::string linearSolverTranslator(LinearSolverType linearSolverType) const {
+    switch(linearSolverType) {
+    case MULTIFRONTAL_CHOLESKY: return "MULTIFRONTAL_CHOLESKY";
+    case MULTIFRONTAL_QR: return "MULTIFRONTAL_QR";
+    case SEQUENTIAL_CHOLESKY: return "SEQUENTIAL_CHOLESKY";
+    case SEQUENTIAL_QR: return "SEQUENTIAL_QR";
+    case CONJUGATE_GRADIENT: return "CONJUGATE_GRADIENT";
+    case CHOLMOD: return "CHOLMOD";
+    default: throw std::invalid_argument("Unknown linear solver type in SuccessiveLinearizationOptimizer");
+    }
+  }
+  LinearSolverType linearSolverTranslator(const std::string& linearSolverType) const {
+    if(linearSolverType == "MULTIFRONTAL_CHOLESKY") return MULTIFRONTAL_CHOLESKY;
+    if(linearSolverType == "MULTIFRONTAL_QR") return MULTIFRONTAL_QR;
+    if(linearSolverType == "SEQUENTIAL_CHOLESKY") return SEQUENTIAL_CHOLESKY;
+    if(linearSolverType == "SEQUENTIAL_QR") return SEQUENTIAL_QR;
+    if(linearSolverType == "CONJUGATE_GRADIENT") return CONJUGATE_GRADIENT;
+    if(linearSolverType == "CHOLMOD") return CHOLMOD;
+    throw std::invalid_argument("Unknown linear solver type in SuccessiveLinearizationOptimizer");
+  }
 };
 
 /* a wrapper for solving a GaussianFactorGraph according to the parameters */

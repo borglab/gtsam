@@ -29,7 +29,7 @@ namespace gtsam {
 
 class GaussianISAM : public ISAM<GaussianConditional> {
 
-	typedef ISAM<GaussianConditional> Super;
+  typedef ISAM<GaussianConditional> Super;
   std::deque<size_t, boost::fast_pool_allocator<size_t> > dims_;
 
 public:
@@ -60,16 +60,16 @@ public:
 
   template<class FACTORGRAPH>
   inline void update_dimensions(const FACTORGRAPH& newFactors) {
-  	BOOST_FOREACH(const typename FACTORGRAPH::sharedFactor& factor, newFactors) {
-  		for(typename FACTORGRAPH::FactorType::const_iterator key = factor->begin(); key != factor->end(); ++key) {
-  			if(*key >= dims_.size())
-  				dims_.resize(*key + 1);
-  			if(dims_[*key] == 0)
-  				dims_[*key] = factor->getDim(key);
-  			else
-  				assert(dims_[*key] == factor->getDim(key));
-  		}
-  	}
+    BOOST_FOREACH(const typename FACTORGRAPH::sharedFactor& factor, newFactors) {
+      for(typename FACTORGRAPH::FactorType::const_iterator key = factor->begin(); key != factor->end(); ++key) {
+        if(*key >= dims_.size())
+          dims_.resize(*key + 1);
+        if(dims_[*key] == 0)
+          dims_[*key] = factor->getDim(key);
+        else
+          assert(dims_[*key] == factor->getDim(key));
+      }
+    }
   }
 
   void clear() {
@@ -83,16 +83,16 @@ public:
 
   friend VectorValues optimize(const GaussianISAM&);
 
-	/** return marginal on any variable as a factor, Bayes net, or mean/cov */
+  /** return marginal on any variable as a factor, Bayes net, or mean/cov */
   GaussianFactor::shared_ptr marginalFactor(Index j) const;
-	BayesNet<GaussianConditional>::shared_ptr marginalBayesNet(Index key) const;
+  BayesNet<GaussianConditional>::shared_ptr marginalBayesNet(Index key) const;
   Matrix marginalCovariance(Index key) const;
 
   /** return joint between two variables, as a Bayes net */
   BayesNet<GaussianConditional>::shared_ptr jointBayesNet(Index key1, Index key2) const;
 
-	/** return the conditional P(S|Root) on the separator given the root */
-	static BayesNet<GaussianConditional> shortcut(sharedClique clique, sharedClique root);
+  /** return the conditional P(S|Root) on the separator given the root */
+  static BayesNet<GaussianConditional> shortcut(sharedClique clique, sharedClique root);
 
 }; // \class GaussianISAM
 

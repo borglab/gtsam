@@ -182,59 +182,59 @@ TEST(Marginals, planarSLAMmarginals) {
 
 /* ************************************************************************* */
 TEST(Marginals, order) {
-	NonlinearFactorGraph fg;
-	fg.add(PriorFactor<Pose2>(0, Pose2(), noiseModel::Unit::Create(3)));
-	fg.add(BetweenFactor<Pose2>(0, 1, Pose2(1,0,0), noiseModel::Unit::Create(3)));
-	fg.add(BetweenFactor<Pose2>(1, 2, Pose2(1,0,0), noiseModel::Unit::Create(3)));
-	fg.add(BetweenFactor<Pose2>(2, 3, Pose2(1,0,0), noiseModel::Unit::Create(3)));
+  NonlinearFactorGraph fg;
+  fg.add(PriorFactor<Pose2>(0, Pose2(), noiseModel::Unit::Create(3)));
+  fg.add(BetweenFactor<Pose2>(0, 1, Pose2(1,0,0), noiseModel::Unit::Create(3)));
+  fg.add(BetweenFactor<Pose2>(1, 2, Pose2(1,0,0), noiseModel::Unit::Create(3)));
+  fg.add(BetweenFactor<Pose2>(2, 3, Pose2(1,0,0), noiseModel::Unit::Create(3)));
 
-	Values vals;
-	vals.insert(0, Pose2());
-	vals.insert(1, Pose2(1,0,0));
-	vals.insert(2, Pose2(2,0,0));
-	vals.insert(3, Pose2(3,0,0));
+  Values vals;
+  vals.insert(0, Pose2());
+  vals.insert(1, Pose2(1,0,0));
+  vals.insert(2, Pose2(2,0,0));
+  vals.insert(3, Pose2(3,0,0));
 
-	vals.insert(100, Point2(0,1));
-	vals.insert(101, Point2(1,1));
+  vals.insert(100, Point2(0,1));
+  vals.insert(101, Point2(1,1));
 
-	fg.add(BearingRangeFactor<Pose2,Point2>(0, 100,
-		vals.at<Pose2>(0).bearing(vals.at<Point2>(100)),
-		vals.at<Pose2>(0).range(vals.at<Point2>(100)), noiseModel::Unit::Create(2)));
-	fg.add(BearingRangeFactor<Pose2,Point2>(0, 101,
-		vals.at<Pose2>(0).bearing(vals.at<Point2>(101)),
-		vals.at<Pose2>(0).range(vals.at<Point2>(101)), noiseModel::Unit::Create(2)));
+  fg.add(BearingRangeFactor<Pose2,Point2>(0, 100,
+    vals.at<Pose2>(0).bearing(vals.at<Point2>(100)),
+    vals.at<Pose2>(0).range(vals.at<Point2>(100)), noiseModel::Unit::Create(2)));
+  fg.add(BearingRangeFactor<Pose2,Point2>(0, 101,
+    vals.at<Pose2>(0).bearing(vals.at<Point2>(101)),
+    vals.at<Pose2>(0).range(vals.at<Point2>(101)), noiseModel::Unit::Create(2)));
 
-	fg.add(BearingRangeFactor<Pose2,Point2>(1, 100,
-		vals.at<Pose2>(1).bearing(vals.at<Point2>(100)),
-		vals.at<Pose2>(1).range(vals.at<Point2>(100)), noiseModel::Unit::Create(2)));
-	fg.add(BearingRangeFactor<Pose2,Point2>(1, 101,
-		vals.at<Pose2>(1).bearing(vals.at<Point2>(101)),
-		vals.at<Pose2>(1).range(vals.at<Point2>(101)), noiseModel::Unit::Create(2)));
+  fg.add(BearingRangeFactor<Pose2,Point2>(1, 100,
+    vals.at<Pose2>(1).bearing(vals.at<Point2>(100)),
+    vals.at<Pose2>(1).range(vals.at<Point2>(100)), noiseModel::Unit::Create(2)));
+  fg.add(BearingRangeFactor<Pose2,Point2>(1, 101,
+    vals.at<Pose2>(1).bearing(vals.at<Point2>(101)),
+    vals.at<Pose2>(1).range(vals.at<Point2>(101)), noiseModel::Unit::Create(2)));
 
-	fg.add(BearingRangeFactor<Pose2,Point2>(2, 100,
-		vals.at<Pose2>(2).bearing(vals.at<Point2>(100)),
-		vals.at<Pose2>(2).range(vals.at<Point2>(100)), noiseModel::Unit::Create(2)));
-	fg.add(BearingRangeFactor<Pose2,Point2>(2, 101,
-		vals.at<Pose2>(2).bearing(vals.at<Point2>(101)),
-		vals.at<Pose2>(2).range(vals.at<Point2>(101)), noiseModel::Unit::Create(2)));
+  fg.add(BearingRangeFactor<Pose2,Point2>(2, 100,
+    vals.at<Pose2>(2).bearing(vals.at<Point2>(100)),
+    vals.at<Pose2>(2).range(vals.at<Point2>(100)), noiseModel::Unit::Create(2)));
+  fg.add(BearingRangeFactor<Pose2,Point2>(2, 101,
+    vals.at<Pose2>(2).bearing(vals.at<Point2>(101)),
+    vals.at<Pose2>(2).range(vals.at<Point2>(101)), noiseModel::Unit::Create(2)));
 
-	fg.add(BearingRangeFactor<Pose2,Point2>(3, 100,
-		vals.at<Pose2>(3).bearing(vals.at<Point2>(100)),
-		vals.at<Pose2>(3).range(vals.at<Point2>(100)), noiseModel::Unit::Create(2)));
-	fg.add(BearingRangeFactor<Pose2,Point2>(3, 101,
-		vals.at<Pose2>(3).bearing(vals.at<Point2>(101)),
-		vals.at<Pose2>(3).range(vals.at<Point2>(101)), noiseModel::Unit::Create(2)));
+  fg.add(BearingRangeFactor<Pose2,Point2>(3, 100,
+    vals.at<Pose2>(3).bearing(vals.at<Point2>(100)),
+    vals.at<Pose2>(3).range(vals.at<Point2>(100)), noiseModel::Unit::Create(2)));
+  fg.add(BearingRangeFactor<Pose2,Point2>(3, 101,
+    vals.at<Pose2>(3).bearing(vals.at<Point2>(101)),
+    vals.at<Pose2>(3).range(vals.at<Point2>(101)), noiseModel::Unit::Create(2)));
 
-	Marginals marginals(fg, vals);
-	FastVector<Key> keys(fg.keys());
-	JointMarginal joint = marginals.jointMarginalCovariance(keys);
+  Marginals marginals(fg, vals);
+  FastVector<Key> keys(fg.keys());
+  JointMarginal joint = marginals.jointMarginalCovariance(keys);
 
-	LONGS_EQUAL(3, joint(0,0).rows());
-	LONGS_EQUAL(3, joint(1,1).rows());
-	LONGS_EQUAL(3, joint(2,2).rows());
-	LONGS_EQUAL(3, joint(3,3).rows());
-	LONGS_EQUAL(2, joint(100,100).rows());
-	LONGS_EQUAL(2, joint(101,101).rows());
+  LONGS_EQUAL(3, joint(0,0).rows());
+  LONGS_EQUAL(3, joint(1,1).rows());
+  LONGS_EQUAL(3, joint(2,2).rows());
+  LONGS_EQUAL(3, joint(3,3).rows());
+  LONGS_EQUAL(2, joint(100,100).rows());
+  LONGS_EQUAL(2, joint(101,101).rows());
 }
 
 /* ************************************************************************* */

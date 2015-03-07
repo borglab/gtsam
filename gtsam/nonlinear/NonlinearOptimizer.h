@@ -197,15 +197,15 @@ public:
    */
   virtual const Values& optimize() { defaultOptimize(); return values(); }
 
-	/**
-	 * Optimize, but return empty result if any uncaught exception is thrown
-	 * Intended for MATLAB. In C++, use above and catch exceptions.
-	 * No message is printed: it is up to the caller to check the result
-	 * @param optimizer a non-linear optimizer
-	 */
-	const Values& optimizeSafely();
+  /**
+   * Optimize, but return empty result if any uncaught exception is thrown
+   * Intended for MATLAB. In C++, use above and catch exceptions.
+   * No message is printed: it is up to the caller to check the result
+   * @param optimizer a non-linear optimizer
+   */
+  const Values& optimizeSafely();
 
-	/// return error
+  /// return error
   double error() const { return _state().error; }
 
   /// return number of iterations
@@ -230,7 +230,7 @@ public:
 
   /// @}
 
-protected:	
+protected:  
   /** A default implementation of the optimization loop, which calls iterate()
    * until checkConvergence returns true.
    */

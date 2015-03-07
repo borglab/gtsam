@@ -79,18 +79,12 @@ TEST(EliminationTree, Create)
 TEST(EliminationTree, eliminate )
 {
   // create expected Chordal bayes Net
-  IndexConditional::shared_ptr c0(new IndexConditional(0, 1, 2));
-  IndexConditional::shared_ptr c1(new IndexConditional(1, 2, 4));
-  IndexConditional::shared_ptr c2(new IndexConditional(2, 4));
-  IndexConditional::shared_ptr c3(new IndexConditional(3, 4));
-  IndexConditional::shared_ptr c4(new IndexConditional(4));
-
   SymbolicBayesNet expected;
-  expected.push_back(c0);
-  expected.push_back(c1);
-  expected.push_back(c2);
-  expected.push_back(c3);
-  expected.push_back(c4);
+  expected.push_front(boost::make_shared<IndexConditional>(4));
+  expected.push_front(boost::make_shared<IndexConditional>(3,4));
+  expected.push_front(boost::make_shared<IndexConditional>(2,4));
+  expected.push_front(boost::make_shared<IndexConditional>(1,2,4));
+  expected.push_front(boost::make_shared<IndexConditional>(0,1,2));
 
   // Create factor graph
   SymbolicFactorGraph fg;

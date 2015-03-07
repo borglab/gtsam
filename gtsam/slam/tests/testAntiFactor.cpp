@@ -97,26 +97,26 @@ TEST( AntiFactor, EquivalentBayesNet)
   Pose3 z(Rot3(), Point3(1, 1, 1));
   SharedNoiseModel sigma(noiseModel::Unit::Create(Pose3::Dim()));
 
-	NonlinearFactorGraph::shared_ptr graph(new NonlinearFactorGraph());
-	graph->add(PriorFactor<Pose3>(1, pose1, sigma));
-	graph->add(BetweenFactor<Pose3>(1, 2, pose1.between(pose2), sigma));
+  NonlinearFactorGraph::shared_ptr graph(new NonlinearFactorGraph());
+  graph->add(PriorFactor<Pose3>(1, pose1, sigma));
+  graph->add(BetweenFactor<Pose3>(1, 2, pose1.between(pose2), sigma));
 
-	// Create a configuration corresponding to the ground truth
-	Values::shared_ptr values(new Values());
-	values->insert(1, pose1);
-	values->insert(2, pose2);
+  // Create a configuration corresponding to the ground truth
+  Values::shared_ptr values(new Values());
+  values->insert(1, pose1);
+  values->insert(2, pose2);
 
-	// Define an elimination ordering
-	Ordering::shared_ptr ordering = graph->orderingCOLAMD(*values);
+  // Define an elimination ordering
+  Ordering::shared_ptr ordering = graph->orderingCOLAMD(*values);
 
-	// Eliminate into a BayesNet
+  // Eliminate into a BayesNet
   GaussianSequentialSolver solver1(*graph->linearize(*values, *ordering));
   GaussianBayesNet::shared_ptr expectedBayesNet = solver1.eliminate();
 
   // Back-substitute to find the optimal deltas
   VectorValues expectedDeltas = optimize(*expectedBayesNet);
 
-	// Add an additional factor between Pose1 and Pose2
+  // Add an additional factor between Pose1 and Pose2
   BetweenFactor<Pose3>::shared_ptr f1(new BetweenFactor<Pose3>(1, 2, z, sigma));
   graph->push_back(f1);
 
@@ -124,18 +124,18 @@ TEST( AntiFactor, EquivalentBayesNet)
   AntiFactor::shared_ptr f2(new AntiFactor(f1));
   graph->push_back(f2);
 
-	// Again, Eliminate into a BayesNet
+  // Again, Eliminate into a BayesNet
   GaussianSequentialSolver solver2(*graph->linearize(*values, *ordering));
   GaussianBayesNet::shared_ptr actualBayesNet = solver2.eliminate();
 
   // Back-substitute to find the optimal deltas
   VectorValues actualDeltas = optimize(*actualBayesNet);
 
-	// Verify the BayesNets are identical
+  // Verify the BayesNets are identical
   CHECK(assert_equal(*expectedBayesNet, *actualBayesNet, 1e-5));
   CHECK(assert_equal(expectedDeltas, actualDeltas, 1e-5));
 }
 
 /* ************************************************************************* */
-	int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
+  int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */

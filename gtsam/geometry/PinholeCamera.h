@@ -44,8 +44,8 @@ namespace gtsam {
 
   public:
 
-	/// @name Standard Constructors
-	/// @{
+  /// @name Standard Constructors
+  /// @{
 
     /** default constructor */
     PinholeCamera() {}
@@ -163,9 +163,9 @@ namespace gtsam {
       return PinholeCamera( pose_.inverse(), K_ ) ;
     }
 
-  	/// @}
-  	/// @name Manifold
-  	/// @{
+    /// @}
+    /// @name Manifold
+    /// @{
 
     /// move a cameras according to d
     PinholeCamera retract(const Vector& d) const {
@@ -377,7 +377,7 @@ private:
       friend class boost::serialization::access;
       template<class Archive>
       void serialize(Archive & ar, const unsigned int version) {
-      	ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Value);
+        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Value);
         ar & BOOST_SERIALIZATION_NVP(pose_);
         ar & BOOST_SERIALIZATION_NVP(K_);
       }

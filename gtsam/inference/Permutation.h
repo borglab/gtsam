@@ -19,14 +19,16 @@
 
 #include <vector>
 #include <string>
+#include <set>
 #include <iostream>
 #include <boost/shared_ptr.hpp>
 
 #include <gtsam/base/types.h>
+#include <gtsam/base/FastMap.h>
 
 namespace gtsam {
 
-	/**
+  /**
  * A permutation reorders variables, for example to reduce fill-in during
  * elimination.  To save computation, the permutation can be applied to
  * the necessary data structures only once, then multiple computations
@@ -50,8 +52,8 @@ public:
   typedef std::vector<Index>::const_iterator const_iterator;
   typedef std::vector<Index>::iterator iterator;
 
-	/// @name Standard Constructors
-	/// @{
+  /// @name Standard Constructors
+  /// @{
 
   /**
    * Create an empty permutation.  This cannot do anything, but you can later
@@ -65,9 +67,9 @@ public:
    */
   Permutation(Index nVars) : rangeIndices_(nVars) {}
 
-	/// @}
-	/// @name Testable
-	/// @{
+  /// @}
+  /// @name Testable
+  /// @{
 
   /** Print */
   void print(const std::string& str = "Permutation: ") const;
@@ -76,9 +78,9 @@ public:
   bool equals(const Permutation& rhs, double tol=0.0) const { return rangeIndices_ == rhs.rangeIndices_; }
 
 
-	/// @}
-	/// @name Standard Interface
-	/// @{
+  /// @}
+  /// @name Standard Interface
+  /// @{
 
   /**
    * Return the new index of the supplied variable after the permutation
@@ -146,24 +148,24 @@ public:
    */
   Permutation::shared_ptr inverse() const;
 
-  const_iterator begin() const { return rangeIndices_.begin(); }	///< Iterate through the indices
-  const_iterator end() const { return rangeIndices_.end(); }			///< Iterate through the indices
+  const_iterator begin() const { return rangeIndices_.begin(); }  ///< Iterate through the indices
+  const_iterator end() const { return rangeIndices_.end(); }      ///< Iterate through the indices
 
-	/** Apply the permutation to a collection, which must have operator[] defined.
-	 * Note that permutable gtsam data structures typically have their own
-	 * permute function to apply a permutation.  Permutation::applyToCollection is
-	 * a generic function, e.g. for STL classes.
-	 * @param input The input collection.
-	 * @param output The preallocated output collection, which is assigned output[i] = input[permutation[i]]
-	 */
-	template<typename INPUT_COLLECTION, typename OUTPUT_COLLECTION>
-	void applyToCollection(OUTPUT_COLLECTION& output, const INPUT_COLLECTION& input) const {
-		for(size_t i = 0; i < output.size(); ++i) output[i] = input[(*this)[i]]; }
+  /** Apply the permutation to a collection, which must have operator[] defined.
+   * Note that permutable gtsam data structures typically have their own
+   * permute function to apply a permutation.  Permutation::applyToCollection is
+   * a generic function, e.g. for STL classes.
+   * @param input The input collection.
+   * @param output The preallocated output collection, which is assigned output[i] = input[permutation[i]]
+   */
+  template<typename INPUT_COLLECTION, typename OUTPUT_COLLECTION>
+  void applyToCollection(OUTPUT_COLLECTION& output, const INPUT_COLLECTION& input) const {
+    for(size_t i = 0; i < output.size(); ++i) output[i] = input[(*this)[i]]; }
 
 
-	/// @}
-	/// @name Advanced Interface
-	/// @{
+  /// @}
+  /// @name Advanced Interface
+  /// @{
 
 
   /**
@@ -173,13 +175,29 @@ public:
    */
   Permutation::shared_ptr partialPermutation(const Permutation& selector, const Permutation& partialPermutation) const;
 
-  iterator begin() { return rangeIndices_.begin(); }	///< Iterate through the indices
-  iterator end() { return rangeIndices_.end(); }			///< Iterate through the indices
+  iterator begin() { return rangeIndices_.begin(); }  ///< Iterate through the indices
+  iterator end() { return rangeIndices_.end(); }      ///< Iterate through the indices
 
 protected:
   void check(Index variable) const { assert(variable < rangeIndices_.size()); }
 
-	/// @}
+  /// @}
 };
+
+
+namespace internal {
+  // An internal class used for storing and applying a permutation from a map
+  class Reduction : public gtsam::FastMap<Index,Index> {
+  public:
+    static Reduction CreateAsInverse(const Permutation& p);
+    void applyInverse(std::vector<Index>& js) const;
+    Permutation inverse() const;
+    Index& operator[](const Index& j);
+    const Index& operator[](const Index& j) const;
+  };
+
+  // Reduce the variable indices so that those in the set are mapped to start at zero
+  Permutation createReducingPermutation(const std::set<Index>& indices);
+}
 
 }

@@ -29,11 +29,11 @@ using namespace gtsam;
 static const Cal3_S2 K(625, 625, 0, 0, 0);
 
 static const Pose3 pose1(Matrix_(3,3,
-				      1., 0., 0.,
-				      0.,-1., 0.,
-				      0., 0.,-1.
-				      ),
-			      Point3(0,0,0.5));
+              1., 0., 0.,
+              0.,-1., 0.,
+              0., 0.,-1.
+              ),
+            Point3(0,0,0.5));
  
 static const SimpleCamera camera(pose1, K);
 
@@ -52,27 +52,27 @@ TEST( SimpleCamera, constructor)
 /* ************************************************************************* */
 TEST( SimpleCamera, level2)
 {
-	// Create a level camera, looking in Y-direction
-	Pose2 pose2(0.4,0.3,M_PI/2.0);
-	SimpleCamera camera = SimpleCamera::Level(K, pose2, 0.1);
+  // Create a level camera, looking in Y-direction
+  Pose2 pose2(0.4,0.3,M_PI/2.0);
+  SimpleCamera camera = SimpleCamera::Level(K, pose2, 0.1);
 
-	// expected
-	Point3 x(1,0,0),y(0,0,-1),z(0,1,0);
-	Rot3 wRc(x,y,z);
-	Pose3 expected(wRc,Point3(0.4,0.3,0.1));
+  // expected
+  Point3 x(1,0,0),y(0,0,-1),z(0,1,0);
+  Rot3 wRc(x,y,z);
+  Pose3 expected(wRc,Point3(0.4,0.3,0.1));
   CHECK(assert_equal( camera.pose(), expected));
 }
 
 /* ************************************************************************* */
 TEST( SimpleCamera, lookat)
 {
-	// Create a level camera, looking in Y-direction
-	Point3 C(10.0,0.0,0.0);
-	SimpleCamera camera = SimpleCamera::Lookat(C, Point3(), Point3(0.0,0.0,1.0));
+  // Create a level camera, looking in Y-direction
+  Point3 C(10.0,0.0,0.0);
+  SimpleCamera camera = SimpleCamera::Lookat(C, Point3(), Point3(0.0,0.0,1.0));
 
-	// expected
-	Point3 xc(0,1,0),yc(0,0,-1),zc(-1,0,0);
-	Pose3 expected(Rot3(xc,yc,zc),C);
+  // expected
+  Point3 xc(0,1,0),yc(0,0,-1),zc(-1,0,0);
+  Pose3 expected(Rot3(xc,yc,zc),C);
   CHECK(assert_equal( camera.pose(), expected));
 
   Point3 C2(30.0,0.0,10.0);
@@ -104,53 +104,53 @@ TEST( SimpleCamera, backproject)
 /* ************************************************************************* */
 TEST( SimpleCamera, backproject2)
 {
-	Point3 origin;
-	Rot3 rot(1., 0., 0., 0., 0., 1., 0., -1., 0.); // a camera looking down
-	SimpleCamera camera(Pose3(rot, origin), K);
+  Point3 origin;
+  Rot3 rot(1., 0., 0., 0., 0., 1., 0., -1., 0.); // a camera looking down
+  SimpleCamera camera(Pose3(rot, origin), K);
 
-	Point3 actual = camera.backproject(Point2(), 1.);
-	Point3 expected(0., 1., 0.);
-	pair<Point2, bool> x = camera.projectSafe(expected);
+  Point3 actual = camera.backproject(Point2(), 1.);
+  Point3 expected(0., 1., 0.);
+  pair<Point2, bool> x = camera.projectSafe(expected);
 
-	CHECK(assert_equal(expected, actual));
-	CHECK(assert_equal(Point2(), x.first));
-	CHECK(x.second);
+  CHECK(assert_equal(expected, actual));
+  CHECK(assert_equal(Point2(), x.first));
+  CHECK(x.second);
 }
 
 /* ************************************************************************* */
 static Point2 project2(const Pose3& pose, const Point3& point) {
-	return SimpleCamera(pose,K).project(point);
+  return SimpleCamera(pose,K).project(point);
 }
 
 TEST( SimpleCamera, Dproject_point_pose)
 {
-	Matrix Dpose, Dpoint;
-	Point2 result = camera.project(point1, Dpose, Dpoint);
-	Matrix numerical_pose  = numericalDerivative21(project2, pose1, point1);
-	Matrix numerical_point = numericalDerivative22(project2, pose1, point1);
-	CHECK(assert_equal(result, Point2(-100,  100) ));
-	CHECK(assert_equal(Dpose,  numerical_pose, 1e-7));
-	CHECK(assert_equal(Dpoint, numerical_point,1e-7));
+  Matrix Dpose, Dpoint;
+  Point2 result = camera.project(point1, Dpose, Dpoint);
+  Matrix numerical_pose  = numericalDerivative21(project2, pose1, point1);
+  Matrix numerical_point = numericalDerivative22(project2, pose1, point1);
+  CHECK(assert_equal(result, Point2(-100,  100) ));
+  CHECK(assert_equal(Dpose,  numerical_pose, 1e-7));
+  CHECK(assert_equal(Dpoint, numerical_point,1e-7));
 }
 
 /* ************************************************************************* */
 TEST( SimpleCamera, simpleCamera)
 {
-	Cal3_S2 K(468.2,427.2,91.2,300,200);
-	Rot3 R(
-			0.41380,0.90915,0.04708,
-			-0.57338,0.22011,0.78917,
-			0.70711,-0.35355,0.61237);
-	Point3 T(1000,2000,1500);
-	SimpleCamera expected(Pose3(R.inverse(),T),K);
-	// H&Z example, 2nd edition, page 163
-	Matrix P = Matrix_(3,4,
-			3.53553e2, 3.39645e2, 2.77744e2, -1.44946e6,
-			-1.03528e2, 2.33212e1, 4.59607e2, -6.32525e5,
-			7.07107e-1, -3.53553e-1,6.12372e-1, -9.18559e2);
-	SimpleCamera actual = simpleCamera(P);
-	// Note precision of numbers given in book
-	CHECK(assert_equal(expected, actual,1e-1));
+  Cal3_S2 K(468.2,427.2,91.2,300,200);
+  Rot3 R(
+      0.41380,0.90915,0.04708,
+      -0.57338,0.22011,0.78917,
+      0.70711,-0.35355,0.61237);
+  Point3 T(1000,2000,1500);
+  SimpleCamera expected(Pose3(R.inverse(),T),K);
+  // H&Z example, 2nd edition, page 163
+  Matrix P = Matrix_(3,4,
+      3.53553e2, 3.39645e2, 2.77744e2, -1.44946e6,
+      -1.03528e2, 2.33212e1, 4.59607e2, -6.32525e5,
+      7.07107e-1, -3.53553e-1,6.12372e-1, -9.18559e2);
+  SimpleCamera actual = simpleCamera(P);
+  // Note precision of numbers given in book
+  CHECK(assert_equal(expected, actual,1e-1));
 }
 
 /* ************************************************************************* */

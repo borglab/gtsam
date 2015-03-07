@@ -107,8 +107,8 @@ namespace gtsam {
     /** Deallocate a raw pointer of this value */
     virtual void deallocate_() const = 0;
 
-		/** Clone this value (normal clone on the heap, delete with 'delete' operator) */
-		virtual boost::shared_ptr<Value> clone() const = 0;
+    /** Clone this value (normal clone on the heap, delete with 'delete' operator) */
+    virtual boost::shared_ptr<Value> clone() const = 0;
 
     /** Compare this Value with another for equality. */
     virtual bool equals_(const Value& other, double tol = 1e-9) const = 0;
@@ -146,39 +146,39 @@ namespace gtsam {
     virtual ~Value() {}
 
   private:
-  	/** Empty serialization function.
-  	 *
-  	 * There are two important things that users need to do to serialize derived objects in Values successfully:
-  	 * (Those derived objects are stored in Values as pointer to this abstract base class Value)
-  	 *
-  	 * 		1. All DERIVED classes derived from Value must put the following line in their serialization function:
-  	 * 			\code
-  	  					ar & boost::serialization::make_nvp("DERIVED", boost::serialization::base_object<Value>(*this));
-						\endcode
-  	 * 			or, alternatively
-  	 * 			\code
-  	  		      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Value);
-  	  		  \endcode
-  	 * 			See: http://www.boost.org/doc/libs/release/libs/serialization/doc/serialization.html#runtimecasting
-  	 *
-  	 * 		2. The source module that includes archive class headers to serialize objects of derived classes
-  	 * 		 (boost/archive/text_oarchive.h, for example) must *export* all derived classes, using either
-  	 * 		 BOOST_CLASS_EXPORT or BOOST_CLASS_EXPORT_GUID macros:
-  	 	 	 	 	 \code
-  	  					BOOST_CLASS_EXPORT(DERIVED_CLASS_1)
-  	  					BOOST_CLASS_EXPORT_GUID(DERIVED_CLASS_2, "DERIVED_CLASS_2_ID_STRING")
-  	 	 	 	 	 \endcode
-  	 * 		  See: 	http://www.boost.org/doc/libs/release/libs/serialization/doc/serialization.html#derivedpointers
-  	 * 		  			http://www.boost.org/doc/libs/release/libs/serialization/doc/serialization.html#export
-  	 * 		  			http://www.boost.org/doc/libs/release/libs/serialization/doc/serialization.html#instantiation\
-  	 * 		  			http://www.boost.org/doc/libs/release/libs/serialization/doc/special.html#export
-  	 * 		  			http://www.boost.org/doc/libs/release/libs/serialization/doc/traits.html#export
-  	 * 		  The last two links explain why these export lines have to be in the same source module that includes
-  	 * 		  any of the archive class headers.
-  	 * */
-  	friend class boost::serialization::access;
-  	template<class ARCHIVE>
-  	void serialize(ARCHIVE & ar, const unsigned int version) {}
+    /** Empty serialization function.
+     *
+     * There are two important things that users need to do to serialize derived objects in Values successfully:
+     * (Those derived objects are stored in Values as pointer to this abstract base class Value)
+     *
+     *     1. All DERIVED classes derived from Value must put the following line in their serialization function:
+     *       \code
+                ar & boost::serialization::make_nvp("DERIVED", boost::serialization::base_object<Value>(*this));
+            \endcode
+     *       or, alternatively
+     *       \code
+                ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Value);
+            \endcode
+     *       See: http://www.boost.org/doc/libs/release/libs/serialization/doc/serialization.html#runtimecasting
+     *
+     *     2. The source module that includes archive class headers to serialize objects of derived classes
+     *      (boost/archive/text_oarchive.h, for example) must *export* all derived classes, using either
+     *      BOOST_CLASS_EXPORT or BOOST_CLASS_EXPORT_GUID macros:
+                 \code
+                BOOST_CLASS_EXPORT(DERIVED_CLASS_1)
+                BOOST_CLASS_EXPORT_GUID(DERIVED_CLASS_2, "DERIVED_CLASS_2_ID_STRING")
+                 \endcode
+     *       See:   http://www.boost.org/doc/libs/release/libs/serialization/doc/serialization.html#derivedpointers
+     *             http://www.boost.org/doc/libs/release/libs/serialization/doc/serialization.html#export
+     *             http://www.boost.org/doc/libs/release/libs/serialization/doc/serialization.html#instantiation\
+     *             http://www.boost.org/doc/libs/release/libs/serialization/doc/special.html#export
+     *             http://www.boost.org/doc/libs/release/libs/serialization/doc/traits.html#export
+     *       The last two links explain why these export lines have to be in the same source module that includes
+     *       any of the archive class headers.
+     * */
+    friend class boost::serialization::access;
+    template<class ARCHIVE>
+    void serialize(ARCHIVE & ar, const unsigned int version) {}
 
   };
 

@@ -4,8 +4,12 @@ cmake_minimum_required(VERSION 2.6)
 
 # Set the version number for the library
 set (GTSAM_VERSION_MAJOR 2)
-set (GTSAM_VERSION_MINOR 1)
+set (GTSAM_VERSION_MINOR 2)
 set (GTSAM_VERSION_PATCH 0)
+
+
+###############################################################################
+# Gather information, perform checks, set defaults
 
 # Set the default install path to home
 #set (CMAKE_INSTALL_PREFIX ${HOME} CACHE PATH "Install prefix for library")
@@ -36,9 +40,13 @@ else()
     set(GTSAM_UNSTABLE_AVAILABLE 0)
 endif()
 
+
+###############################################################################
+# Set up options
+
 # Configurable Options
 option(GTSAM_BUILD_TESTS                 "Enable/Disable building of tests"          ON)
-#option(GTSAM_BUILD_TIMING                "Enable/Disable building of timing scripts" ON) # These do not currently work
+option(GTSAM_BUILD_TIMING                "Enable/Disable building of timing scripts" ON) # These do not currently work
 option(GTSAM_BUILD_EXAMPLES              "Enable/Disable building of examples"       ON)
 if(GTSAM_UNSTABLE_AVAILABLE)
     option(GTSAM_BUILD_UNSTABLE              "Enable/Disable libgtsam_unstable"          ON)
@@ -76,7 +84,6 @@ if(NOT GTSAM_TOOLBOX_INSTALL_PATH)
 	set(GTSAM_TOOLBOX_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/borg/toolbox")
 endif()
 
-
 # Flags for choosing default packaging tools
 set(CPACK_SOURCE_GENERATOR "TGZ" CACHE STRING "CPack Default Source Generator")
 set(CPACK_GENERATOR        "TGZ" CACHE STRING "CPack Default Binary Generator")
@@ -104,12 +111,31 @@ if (GTSAM_BUILD_TESTS)
     include(CTest)
 endif()
 
+###############################################################################
 # Find boost
 if(CYGWIN OR MSVC OR WIN32)
-  set(Boost_USE_STATIC_LIBS 1)
+  set(Boost_USE_STATIC_LIBS 1) # Use static libs on Windows
 endif()
-find_package(Boost 1.43 COMPONENTS serialization system filesystem thread date_time regex REQUIRED)
+
+find_package(Boost 1.43 COMPONENTS serialization system filesystem thread date_time regex timer chrono)
+
+# Required components
+if(NOT Boost_SERIALIZATION_LIBRARY OR NOT Boost_SYSTEM_LIBRARY OR NOT Boost_FILESYSTEM_LIBRARY OR
+    NOT Boost_THREAD_LIBRARY OR NOT Boost_DATE_TIME_LIBRARY OR NOT Boost_REGEX_LIBRARY)
+  message(FATAL_ERROR "Missing required Boost components >= v1.43, please install/upgrade Boost or configure your search paths.")
+endif()
+
+# Allow for not using the timer libraries on boost < 1.48 (GTSAM timing code falls back to old timer library)
 set(GTSAM_BOOST_LIBRARIES ${Boost_SERIALIZATION_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_FILESYSTEM_LIBRARY})
+if(Boost_TIMER_LIBRARY)
+  set(GTSAM_BOOST_LIBRARIES ${GTSAM_BOOST_LIBRARIES} ${Boost_TIMER_LIBRARY} ${Boost_CHRONO_LIBRARY})
+else()
+  message("WARNING:  Boost older than 1.48 was found, GTSAM timing instrumentation will use the older, less accurate, Boost timer library.")
+endif()
+
+
+###############################################################################
+# Global compile options
 
 # General build settings
 include_directories(
@@ -119,6 +145,10 @@ include_directories(
   CppUnitLite
   ${Boost_INCLUDE_DIR})
 link_directories(${Boost_LIBRARY_DIRS})
+
+
+###############################################################################
+# Add components
 
 # Build CppUnitLite
 add_subdirectory(CppUnitLite)
@@ -161,7 +191,9 @@ if (DOXYGEN_FOUND)
     add_subdirectory(doc)
 endif()
 
-## Set up CPack
+
+###############################################################################
+# Set up CPack
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "GTSAM")
 set(CPACK_PACKAGE_VENDOR "Frank Dellaert, Georgia Institute of Technology")
 set(CPACK_PACKAGE_CONTACT "Frank Dellaert, dellaert@cc.gatech.edu")
@@ -183,7 +215,9 @@ set(CPACK_SOURCE_PACKAGE_FILE_NAME "gtsam-${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION
 set(CPACK_DEBIAN_PACKAGE_NAME "libgtsam-dev")
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-dev (>= 1.43)") #Example: "libc6 (>= 2.3.1-6), libgcc1 (>= 1:3.4.2-12)")
 
-# print configuration variables
+
+###############################################################################
+# Print configuration variables
 message(STATUS "===============================================================")
 message(STATUS "================  Configuration Options  ======================")
 message(STATUS "Build flags                                               ")

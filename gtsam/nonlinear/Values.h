@@ -35,7 +35,10 @@
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/iterator/filter_iterator.hpp>
 #include <boost/function.hpp>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
 #include <boost/bind.hpp>
+#pragma GCC diagnostic pop
 #include <boost/ptr_container/serialize_ptr_map.hpp>
 #include <boost/iterator_adaptors.hpp>
 
@@ -355,11 +358,11 @@ namespace gtsam {
     }
 
     /** Serialization function */
-  	friend class boost::serialization::access;
-  	template<class ARCHIVE>
-  	void serialize(ARCHIVE & ar, const unsigned int version) {
-  		ar & BOOST_SERIALIZATION_NVP(values_);
-  	}
+    friend class boost::serialization::access;
+    template<class ARCHIVE>
+    void serialize(ARCHIVE & ar, const unsigned int version) {
+      ar & BOOST_SERIALIZATION_NVP(values_);
+    }
 
     static ConstKeyValuePair make_const_deref_pair(const KeyValueMap::const_iterator::value_type& key_value) {
       return ConstKeyValuePair(key_value.first, *key_value.second); }

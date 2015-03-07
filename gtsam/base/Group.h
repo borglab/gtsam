@@ -28,21 +28,21 @@ namespace gtsam {
 template<class T>
 class GroupConcept {
 private:
-	static T concept_check(const T& t) {
-		/** assignment */
-		T t2 = t;
+  static T concept_check(const T& t) {
+    /** assignment */
+    T t2 = t;
 
-		/** identity */
-		T identity = T::identity();
+    /** identity */
+    T identity = T::identity();
 
-		/** compose with another object */
-		T compose_ret = identity.compose(t2);
+    /** compose with another object */
+    T compose_ret = identity.compose(t2);
 
-		/** invert the object and yield a new one */
-		T inverse_ret = compose_ret.inverse();
+    /** invert the object and yield a new one */
+    T inverse_ret = compose_ret.inverse();
 
-		return inverse_ret;
-	}
+    return inverse_ret;
+  }
 };
 
 } // \namespace gtsam

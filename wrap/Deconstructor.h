@@ -29,32 +29,32 @@ namespace wrap {
 // Deconstructor class
 struct Deconstructor {
 
-	/// Deconstructor creates an empty class
-	Deconstructor(bool verbose = true) :
-			verbose_(verbose) {
-	}
+  /// Deconstructor creates an empty class
+  Deconstructor(bool verbose = true) :
+      verbose_(verbose) {
+  }
 
-	// Then the instance variables are set directly by the Module deconstructor
-	std::string name;
-	bool verbose_;
+  // Then the instance variables are set directly by the Module deconstructor
+  std::string name;
+  bool verbose_;
 
-	// MATLAB code generation
-	// toolboxPath is main toolbox directory, e.g., ../matlab
-	// classFile is class proxy file, e.g., ../matlab/@Point2/Point2.m
+  // MATLAB code generation
+  // toolboxPath is main toolbox directory, e.g., ../matlab
+  // classFile is class proxy file, e.g., ../matlab/@Point2/Point2.m
 
-	/// wrapper name
-	std::string matlab_wrapper_name(const std::string& className) const;
+  /// wrapper name
+  std::string matlab_wrapper_name(const std::string& className) const;
 
-	/// m-file
-	void proxy_fragment(FileWriter& file,
-		const std::string& wrapperName,
-		const std::string& matlabUniqueName, int id) const;
+  /// m-file
+  void proxy_fragment(FileWriter& file,
+    const std::string& wrapperName,
+    const std::string& matlabUniqueName, int id) const;
 
-	/// cpp wrapper
-	std::string wrapper_fragment(FileWriter& file,
-			 const std::string& cppClassName,
-			 const std::string& matlabUniqueName,
-			 int id) const;
+  /// cpp wrapper
+  std::string wrapper_fragment(FileWriter& file,
+       const std::string& cppClassName,
+       const std::string& matlabUniqueName,
+       int id) const;
 };
 
 } // \namespace wrap

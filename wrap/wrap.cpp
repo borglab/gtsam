@@ -30,13 +30,13 @@ using namespace std;
  * @param headerPath is the path to matlab.h
  */
 void generate_matlab_toolbox(
-					 const string& interfacePath,
-			     const string& moduleName,
-			     const string& toolboxPath,
-			     const string& headerPath)
+           const string& interfacePath,
+           const string& moduleName,
+           const string& toolboxPath,
+           const string& headerPath)
 {
   // Parse interface file into class object
-	// This recursively creates Class objects, Method objects, etc...
+  // This recursively creates Class objects, Method objects, etc...
   wrap::Module module(interfacePath, moduleName, false);
 
   // Then emit MATLAB code
@@ -59,11 +59,11 @@ void usage() {
  */
 int main(int argc, const char* argv[]) {
   if (argc != 5) {
-  	cerr << "Invalid arguments:\n";
-  	for (int i=0; i<argc; ++i)
-  		cerr << argv[i] << endl;
-  	cerr << endl;
-  	usage();
+    cerr << "Invalid arguments:\n";
+    for (int i=0; i<argc; ++i)
+      cerr << argv[i] << endl;
+    cerr << endl;
+    usage();
   }
   else
     generate_matlab_toolbox(argv[1],argv[2],argv[3],argv[4]);

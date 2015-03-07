@@ -84,7 +84,7 @@ namespace gtsam {
 
     // Implementing Testable interface
     virtual void print(const std::string& s = "",
-    		const IndexFormatter& formatter = DefaultIndexFormatter) const = 0;
+        const IndexFormatter& formatter = DefaultIndexFormatter) const = 0;
 
     virtual bool equals(const GaussianFactor& lf, double tol = 1e-9) const = 0;
 
@@ -101,7 +101,12 @@ namespace gtsam {
      * augmented information matrix is described in more detail in HessianFactor,
      * which in fact stores an augmented information matrix.
      */
-    virtual Matrix computeInformation() const = 0;
+    virtual Matrix augmentedInformation() const = 0;
+
+    /** Return the non-augmented information matrix represented by this
+     * GaussianFactor.
+     */
+    virtual Matrix information() const = 0;
 
     /** Clone a factor (make a deep copy) */
     virtual GaussianFactor::shared_ptr clone() const = 0;
@@ -112,7 +117,14 @@ namespace gtsam {
      * variable.  The order of the variables within the factor is not changed.
      */
     virtual void permuteWithInverse(const Permutation& inversePermutation) {
-    	IndexFactor::permuteWithInverse(inversePermutation);
+      IndexFactor::permuteWithInverse(inversePermutation);
+    }
+
+    /**
+     * Apply a reduction, which is a remapping of variable indices.
+     */
+    virtual void reduceWithInverse(const internal::Reduction& inverseReduction) {
+      IndexFactor::reduceWithInverse(inverseReduction);
     }
 
     /**
@@ -127,18 +139,18 @@ namespace gtsam {
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int version) {
-    	ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(IndexFactor);
+      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(IndexFactor);
     }
 
   }; // GaussianFactor
 
   /** make keys from list, vector, or map of matrices */
-	template<typename ITERATOR>
-	static std::vector<Index> GetKeys(size_t n, ITERATOR begin, ITERATOR end) {
-		std::vector<Index> keys;
-		keys.reserve(n);
-		for (ITERATOR it=begin;it!=end;++it) keys.push_back(it->first);
-		return keys;
-	}
+  template<typename ITERATOR>
+  static std::vector<Index> GetKeys(size_t n, ITERATOR begin, ITERATOR end) {
+    std::vector<Index> keys;
+    keys.reserve(n);
+    for (ITERATOR it=begin;it!=end;++it) keys.push_back(it->first);
+    return keys;
+  }
 
 } // namespace gtsam

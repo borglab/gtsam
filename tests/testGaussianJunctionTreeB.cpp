@@ -51,81 +51,81 @@ using symbol_shorthand::L;
 
 /* ************************************************************************* *
  Bayes tree for smoother with "nested dissection" ordering:
-	 C1		 x5 x6 x4
-	 C2		  x3 x2 : x4
-	 C3		    x1 : x2
-	 C4		  x7 : x6
+   C1     x5 x6 x4
+   C2      x3 x2 : x4
+   C3        x1 : x2
+   C4      x7 : x6
 */
 TEST( GaussianJunctionTreeB, constructor2 )
 {
-	// create a graph
+  // create a graph
   Ordering ordering; ordering += X(1),X(3),X(5),X(7),X(2),X(6),X(4);
   GaussianFactorGraph fg = createSmoother(7, ordering).first;
 
-	// create an ordering
-	GaussianJunctionTree actual(fg);
+  // create an ordering
+  GaussianJunctionTree actual(fg);
 
-	vector<Index> frontal1; frontal1 += ordering[X(5)], ordering[X(6)], ordering[X(4)];
-	vector<Index> frontal2; frontal2 += ordering[X(3)], ordering[X(2)];
-	vector<Index> frontal3; frontal3 += ordering[X(1)];
-	vector<Index> frontal4; frontal4 += ordering[X(7)];
-	vector<Index> sep1;
-	vector<Index> sep2; sep2 += ordering[X(4)];
-	vector<Index> sep3; sep3 += ordering[X(2)];
-	vector<Index> sep4; sep4 += ordering[X(6)];
-	EXPECT(assert_equal(frontal1, actual.root()->frontal));
-	EXPECT(assert_equal(sep1,     actual.root()->separator));
-	LONGS_EQUAL(5,               actual.root()->size());
-	list<GaussianJunctionTree::sharedClique>::const_iterator child0it = actual.root()->children().begin();
+  vector<Index> frontal1; frontal1 += ordering[X(5)], ordering[X(6)], ordering[X(4)];
+  vector<Index> frontal2; frontal2 += ordering[X(3)], ordering[X(2)];
+  vector<Index> frontal3; frontal3 += ordering[X(1)];
+  vector<Index> frontal4; frontal4 += ordering[X(7)];
+  vector<Index> sep1;
+  vector<Index> sep2; sep2 += ordering[X(4)];
+  vector<Index> sep3; sep3 += ordering[X(2)];
+  vector<Index> sep4; sep4 += ordering[X(6)];
+  EXPECT(assert_equal(frontal1, actual.root()->frontal));
+  EXPECT(assert_equal(sep1,     actual.root()->separator));
+  LONGS_EQUAL(5,               actual.root()->size());
+  list<GaussianJunctionTree::sharedClique>::const_iterator child0it = actual.root()->children().begin();
   list<GaussianJunctionTree::sharedClique>::const_iterator child1it = child0it; ++child1it;
   GaussianJunctionTree::sharedClique child0 = *child0it;
   GaussianJunctionTree::sharedClique child1 = *child1it;
-	EXPECT(assert_equal(frontal2, child0->frontal));
-	EXPECT(assert_equal(sep2,     child0->separator));
-	LONGS_EQUAL(4,               child0->size());
-	EXPECT(assert_equal(frontal3, child0->children().front()->frontal));
-	EXPECT(assert_equal(sep3,     child0->children().front()->separator));
-	LONGS_EQUAL(2,               child0->children().front()->size());
-	EXPECT(assert_equal(frontal4, child1->frontal));
-	EXPECT(assert_equal(sep4,     child1->separator));
-	LONGS_EQUAL(2,               child1->size());
+  EXPECT(assert_equal(frontal2, child0->frontal));
+  EXPECT(assert_equal(sep2,     child0->separator));
+  LONGS_EQUAL(4,               child0->size());
+  EXPECT(assert_equal(frontal3, child0->children().front()->frontal));
+  EXPECT(assert_equal(sep3,     child0->children().front()->separator));
+  LONGS_EQUAL(2,               child0->children().front()->size());
+  EXPECT(assert_equal(frontal4, child1->frontal));
+  EXPECT(assert_equal(sep4,     child1->separator));
+  LONGS_EQUAL(2,               child1->size());
 }
 
 /* ************************************************************************* */
 TEST( GaussianJunctionTreeB, optimizeMultiFrontal )
 {
-	// create a graph
+  // create a graph
   GaussianFactorGraph fg;
   Ordering ordering;
   boost::tie(fg,ordering) = createSmoother(7);
 
-	// optimize the graph
-	GaussianJunctionTree tree(fg);
-	VectorValues actual = tree.optimize(&EliminateQR);
+  // optimize the graph
+  GaussianJunctionTree tree(fg);
+  VectorValues actual = tree.optimize(&EliminateQR);
 
-	// verify
-	VectorValues expected(vector<size_t>(7,2)); // expected solution
-	Vector v = Vector_(2, 0., 0.);
-	for (int i=1; i<=7; i++)
-		expected[ordering[X(i)]] = v;
+  // verify
+  VectorValues expected(vector<size_t>(7,2)); // expected solution
+  Vector v = Vector_(2, 0., 0.);
+  for (int i=1; i<=7; i++)
+    expected[ordering[X(i)]] = v;
   EXPECT(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */
 TEST( GaussianJunctionTreeB, optimizeMultiFrontal2)
 {
-	// create a graph
-	example::Graph nlfg = createNonlinearFactorGraph();
-	Values noisy = createNoisyValues();
+  // create a graph
+  example::Graph nlfg = createNonlinearFactorGraph();
+  Values noisy = createNoisyValues();
   Ordering ordering; ordering += X(1),X(2),L(1);
-	GaussianFactorGraph fg = *nlfg.linearize(noisy, ordering);
+  GaussianFactorGraph fg = *nlfg.linearize(noisy, ordering);
 
-	// optimize the graph
-	GaussianJunctionTree tree(fg);
-	VectorValues actual = tree.optimize(&EliminateQR);
+  // optimize the graph
+  GaussianJunctionTree tree(fg);
+  VectorValues actual = tree.optimize(&EliminateQR);
 
-	// verify
-	VectorValues expected = createCorrectDelta(ordering); // expected solution
+  // verify
+  VectorValues expected = createCorrectDelta(ordering); // expected solution
   EXPECT(assert_equal(expected,actual));
 }
 

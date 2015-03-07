@@ -22,7 +22,7 @@ namespace gtsam {
 
 /* ************************************************************************* */
 Sampler::Sampler(const noiseModel::Diagonal::shared_ptr& model, int32_t seed)
-	: model_(model), generator_(static_cast<unsigned>(seed))
+  : model_(model), generator_(static_cast<unsigned>(seed))
 {
 }
 
@@ -40,36 +40,36 @@ Sampler::Sampler(int32_t seed)
 
 /* ************************************************************************* */
 Vector Sampler::sampleDiagonal(const Vector& sigmas) {
-	size_t d = sigmas.size();
-	Vector result(d);
-	for (size_t i = 0; i < d; i++) {
-		double sigma = sigmas(i);
+  size_t d = sigmas.size();
+  Vector result(d);
+  for (size_t i = 0; i < d; i++) {
+    double sigma = sigmas(i);
 
-		// handle constrained case separately
-		if (sigma == 0.0) {
-			result(i) = 0.0;
-		} else {
-			typedef boost::normal_distribution<double> Normal;
-			Normal dist(0.0, sigma);
-			boost::variate_generator<boost::minstd_rand&, Normal> norm(generator_, dist);
-			result(i) = norm();
-		}
-	}
-	return result;
+    // handle constrained case separately
+    if (sigma == 0.0) {
+      result(i) = 0.0;
+    } else {
+      typedef boost::normal_distribution<double> Normal;
+      Normal dist(0.0, sigma);
+      boost::variate_generator<boost::minstd_rand&, Normal> norm(generator_, dist);
+      result(i) = norm();
+    }
+  }
+  return result;
 }
 
 /* ************************************************************************* */
 Vector Sampler::sample() {
-	assert(model_.get());
-	const Vector& sigmas = model_->sigmas();
-	return sampleDiagonal(sigmas);
+  assert(model_.get());
+  const Vector& sigmas = model_->sigmas();
+  return sampleDiagonal(sigmas);
 }
 
 /* ************************************************************************* */
 Vector Sampler::sampleNewModel(const noiseModel::Diagonal::shared_ptr& model) {
-	assert(model.get());
-	const Vector& sigmas = model->sigmas();
-	return sampleDiagonal(sigmas);
+  assert(model.get());
+  const Vector& sigmas = model->sigmas();
+  return sampleDiagonal(sigmas);
 }
 /* ************************************************************************* */
 

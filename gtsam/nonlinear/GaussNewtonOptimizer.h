@@ -13,7 +13,7 @@
  * @file    GaussNewtonOptimizer.h
  * @brief   
  * @author  Richard Roberts
- * @date 	Feb 26, 2012
+ * @date   Feb 26, 2012
  */
 
 #pragma once
@@ -44,8 +44,8 @@ protected:
 class GaussNewtonOptimizer : public NonlinearOptimizer {
 
 protected:
-	GaussNewtonParams params_;
-	GaussNewtonState state_;
+  GaussNewtonParams params_;
+  GaussNewtonState state_;
 
 public:
   /// @name Standard interface

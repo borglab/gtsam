@@ -23,33 +23,33 @@
 
 namespace gtsam {
 
-	using namespace std;
+  using namespace std;
 
-	DiscreteKeys::DiscreteKeys(const vector<int>& cs) {
-		for (size_t i = 0; i < cs.size(); i++) {
-			string name = boost::str(boost::format("v%1%") % i);
-			push_back(DiscreteKey(i, cs[i]));
-		}
-	}
+  DiscreteKeys::DiscreteKeys(const vector<int>& cs) {
+    for (size_t i = 0; i < cs.size(); i++) {
+      string name = boost::str(boost::format("v%1%") % i);
+      push_back(DiscreteKey(i, cs[i]));
+    }
+  }
 
-	vector<Index> DiscreteKeys::indices() const {
-		vector < Index > js;
-		BOOST_FOREACH(const DiscreteKey& key, *this)
-			js.push_back(key.first);
-		return js;
-	}
+  vector<Index> DiscreteKeys::indices() const {
+    vector < Index > js;
+    BOOST_FOREACH(const DiscreteKey& key, *this)
+      js.push_back(key.first);
+    return js;
+  }
 
-	map<Index,size_t> DiscreteKeys::cardinalities() const {
-		map<Index,size_t> cs;
-		cs.insert(begin(),end());
-//		BOOST_FOREACH(const DiscreteKey& key, *this)
-//			cs.insert(key);
-		return cs;
-	}
+  map<Index,size_t> DiscreteKeys::cardinalities() const {
+    map<Index,size_t> cs;
+    cs.insert(begin(),end());
+//    BOOST_FOREACH(const DiscreteKey& key, *this)
+//      cs.insert(key);
+    return cs;
+  }
 
-	DiscreteKeys operator&(const DiscreteKey& key1, const DiscreteKey& key2) {
-		DiscreteKeys keys(key1);
-		return keys & key2;
-	}
+  DiscreteKeys operator&(const DiscreteKey& key1, const DiscreteKey& key2) {
+    DiscreteKeys keys(key1);
+    return keys & key2;
+  }
 
 }

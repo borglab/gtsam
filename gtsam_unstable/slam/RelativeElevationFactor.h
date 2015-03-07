@@ -27,48 +27,48 @@ namespace gtsam {
 class RelativeElevationFactor: public NoiseModelFactor2<Pose3, Point3> {
 private:
 
-	double measured_; /** measurement */
+  double measured_; /** measurement */
 
-	typedef RelativeElevationFactor This;
-	typedef NoiseModelFactor2<Pose3, Point3> Base;
+  typedef RelativeElevationFactor This;
+  typedef NoiseModelFactor2<Pose3, Point3> Base;
 
 public:
 
-	RelativeElevationFactor() : measured_(0.0) {} /* Default constructor */
+  RelativeElevationFactor() : measured_(0.0) {} /* Default constructor */
 
-	RelativeElevationFactor(Key poseKey, Key pointKey, double measured,
-			const SharedNoiseModel& model);
+  RelativeElevationFactor(Key poseKey, Key pointKey, double measured,
+      const SharedNoiseModel& model);
 
-	virtual ~RelativeElevationFactor() {}
+  virtual ~RelativeElevationFactor() {}
 
-	/// @return a deep copy of this factor
+  /// @return a deep copy of this factor
   virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-	  return boost::static_pointer_cast<gtsam::NonlinearFactor>(
-	      gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
+    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+        gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
-	/** h(x)-z */
-	Vector evaluateError(const Pose3& pose, const Point3& point,
-			boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) const;
+  /** h(x)-z */
+  Vector evaluateError(const Pose3& pose, const Point3& point,
+      boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) const;
 
-	/** return the measured */
-	inline double measured() const { return measured_; }
+  /** return the measured */
+  inline double measured() const { return measured_; }
 
-	/** equals specialized to this factor */
-	virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const;
+  /** equals specialized to this factor */
+  virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const;
 
-	/** print contents */
-	void print(const std::string& s="", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+  /** print contents */
+  void print(const std::string& s="", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
 private:
 
-	/** Serialization function */
-	friend class boost::serialization::access;
-	template<class ARCHIVE>
-	void serialize(ARCHIVE & ar, const unsigned int version) {
-		ar & boost::serialization::make_nvp("NoiseModelFactor2",
-				boost::serialization::base_object<Base>(*this));
-		ar & BOOST_SERIALIZATION_NVP(measured_);
-	}
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int version) {
+    ar & boost::serialization::make_nvp("NoiseModelFactor2",
+        boost::serialization::base_object<Base>(*this));
+    ar & BOOST_SERIALIZATION_NVP(measured_);
+  }
 }; // RelativeElevationFactor
 
 

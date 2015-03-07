@@ -61,6 +61,12 @@ public:
       Base(first, last) {
   }
 
+  /** Constructor from a iterable container, passes through to base class */
+  template<typename INPUTCONTAINER>
+  explicit FastSet(const INPUTCONTAINER& container) :
+      Base(container.begin(), container.end()) {
+  }
+
   /** Copy constructor from another FastSet */
   FastSet(const FastSet<VALUE>& x) :
       Base(x) {
@@ -78,6 +84,11 @@ public:
     // huge amounts of memory.
     if(x.size() > 0)
       Base::insert(x.begin(), x.end());
+  }
+
+  /** Conversion to a standard STL container */
+  operator std::set<VALUE>() const {
+    return std::set<VALUE>(this->begin(), this->end());
   }
 
   /** Print to implement Testable */

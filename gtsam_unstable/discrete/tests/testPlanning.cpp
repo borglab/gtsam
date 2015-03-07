@@ -17,21 +17,21 @@ using namespace gtsam;
 /* ************************************************************************* */
 TEST_UNSAFE(Planner, allInOne)
 {
-	// A small planning problem
-	// First variable is location
-	DiscreteKey location(0,3),
-			haveRock(1,2), haveSoil(2,2), haveImage(3,2),
-			commRock(4,2), commSoil(5,2), commImage(6,2);
+  // A small planning problem
+  // First variable is location
+  DiscreteKey location(0,3),
+      haveRock(1,2), haveSoil(2,2), haveImage(3,2),
+      commRock(4,2), commSoil(5,2), commImage(6,2);
 
-	// There are 3 actions:
-	// Drive, communicate, sample
+  // There are 3 actions:
+  // Drive, communicate, sample
 }
 
 
 /* ************************************************************************* */
 int main() {
-	TestResult tr;
-	return TestRegistry::runAllTests(tr);
+  TestResult tr;
+  return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
 

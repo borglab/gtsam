@@ -29,23 +29,23 @@
 namespace gtsam {
 namespace testing {
 
-	/** binary functions */
-	template<class T>
-	T between(const T& t1, const T& t2) { return t1.between(t2); }
+  /** binary functions */
+  template<class T>
+  T between(const T& t1, const T& t2) { return t1.between(t2); }
 
-	template<class T>
-	T compose(const T& t1, const T& t2) { return t1.compose(t2); }
+  template<class T>
+  T compose(const T& t1, const T& t2) { return t1.compose(t2); }
 
-	/** unary functions */
-	template<class T>
-	T inverse(const T& t) { return t.inverse(); }
+  /** unary functions */
+  template<class T>
+  T inverse(const T& t) { return t.inverse(); }
 
-	/** rotation functions */
-	template<class T, class P>
-	P rotate(const T& r, const P& pt) { return r.rotate(pt); }
+  /** rotation functions */
+  template<class T, class P>
+  P rotate(const T& r, const P& pt) { return r.rotate(pt); }
 
-	template<class T, class P>
-	P unrotate(const T& r, const P& pt) { return r.unrotate(pt); }
+  template<class T, class P>
+  P unrotate(const T& r, const P& pt) { return r.unrotate(pt); }
 
 } // \namespace testing
 } // \namespace gtsam

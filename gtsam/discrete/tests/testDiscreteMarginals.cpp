@@ -18,13 +18,17 @@
  */
 
 #include <gtsam/discrete/DiscreteMarginals.h>
+#include <gtsam/discrete/DiscreteSequentialSolver.h>
+
+#include <boost/assign/std/vector.hpp>
+using namespace boost::assign;
+
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
-
 TEST_UNSAFE( DiscreteMarginals, UGM_small ) {
   size_t nrStates = 2;
   DiscreteKey Cathy(1, nrStates), Heather(2, nrStates), Mark(3, nrStates),
@@ -56,44 +60,144 @@ TEST_UNSAFE( DiscreteMarginals, UGM_small ) {
   EXPECT(assert_equal(Vector_(2, 0.48628, 0.51372), actualCvector, 1e-6));
 }
 
+/* ************************************************************************* */
 TEST_UNSAFE( DiscreteMarginals, UGM_chain ) {
 
-	const int nrNodes = 10;
-	const size_t nrStates = 7;
+  const int nrNodes = 10;
+  const size_t nrStates = 7;
 
-	// define variables
-	vector<DiscreteKey> nodes;
-	for (int i = 0; i < nrNodes; i++) {
-		DiscreteKey dk(i, nrStates);
-		nodes.push_back(dk);
-	}
+  // define variables
+  vector<DiscreteKey> key;
+  for (int i = 0; i < nrNodes; i++) {
+    DiscreteKey key_i(i, nrStates);
+    key.push_back(key_i);
+  }
 
-	// create graph
-	DiscreteFactorGraph graph;
+  // create graph
+  DiscreteFactorGraph graph;
 
-	// add node potentials
-	graph.add(nodes[0], ".3 .6 .1 0 0 0 0");
-	for (int i = 1; i < nrNodes; i++)
-		graph.add(nodes[i], "1 1 1 1 1 1 1");
+  // add node potentials
+  graph.add(key[0], ".3 .6 .1 0 0 0 0");
+  for (int i = 1; i < nrNodes; i++)
+    graph.add(key[i], "1 1 1 1 1 1 1");
 
-	const std::string edgePotential =   ".08 .9 .01 0 0 0 .01 "
-																			".03 .95 .01 0 0 0 .01 "
-																			".06 .06 .75 .05 .05 .02 .01 "
-																			"0 0 0 .3 .6 .09 .01 "
-																			"0 0 0 .02 .95 .02 .01 "
-																			"0 0 0 .01 .01 .97 .01 "
-																			"0 0 0 0 0 0 1";
+  const std::string edgePotential =   ".08 .9 .01 0 0 0 .01 "
+                                      ".03 .95 .01 0 0 0 .01 "
+                                      ".06 .06 .75 .05 .05 .02 .01 "
+                                      "0 0 0 .3 .6 .09 .01 "
+                                      "0 0 0 .02 .95 .02 .01 "
+                                      "0 0 0 .01 .01 .97 .01 "
+                                      "0 0 0 0 0 0 1";
 
-	// add edge potentials
-	for (int i = 0; i < nrNodes - 1; i++)
-		graph.add(nodes[i] & nodes[i + 1], edgePotential);
+  // add edge potentials
+  for (int i = 0; i < nrNodes - 1; i++)
+    graph.add(key[i] & key[i + 1], edgePotential);
 
-	DiscreteMarginals marginals(graph);
-	DiscreteFactor::shared_ptr actualC = marginals(nodes[2].first);
-	DiscreteFactor::Values values;
+  DiscreteMarginals marginals(graph);
+  DiscreteFactor::shared_ptr actualC = marginals(key[2].first);
+  DiscreteFactor::Values values;
 
-	values[nodes[2].first] = 0;
-	EXPECT_DOUBLES_EQUAL( 0.03426, (*actualC)(values), 1e-4);
+  values[key[2].first] = 0;
+  EXPECT_DOUBLES_EQUAL( 0.03426, (*actualC)(values), 1e-4);
+}
+
+/* ************************************************************************* */
+TEST_UNSAFE( DiscreteMarginals, truss ) {
+
+  const int nrNodes = 5;
+  const size_t nrStates = 2;
+
+  // define variables
+  vector<DiscreteKey> key;
+  for (int i = 0; i < nrNodes; i++) {
+    DiscreteKey key_i(i, nrStates);
+    key.push_back(key_i);
+  }
+
+  // create graph and add three truss potentials
+  DiscreteFactorGraph graph;
+  graph.add(key[0] & key[2] & key[4],"2 2 2 2 1 1 1 1");
+  graph.add(key[1] & key[3] & key[4],"1 1 1 1 2 2 2 2");
+  graph.add(key[2] & key[3] & key[4],"1 1 1 1 1 1 1 1");
+  typedef JunctionTree<DiscreteFactorGraph> JT;
+  GenericMultifrontalSolver<DiscreteFactor, JT> solver(graph);
+  BayesTree<DiscreteConditional>::shared_ptr bayesTree = solver.eliminate(&EliminateDiscrete);
+//  bayesTree->print("Bayes Tree");
+  typedef BayesTreeClique<DiscreteConditional> Clique;
+
+  Clique expected0(boost::make_shared<DiscreteConditional>((key[0] | key[2], key[4]) = "2/1 2/1 2/1 2/1"));
+  Clique::shared_ptr actual0 = (*bayesTree)[0];
+//  EXPECT(assert_equal(expected0, *actual0)); // TODO, correct but fails
+
+  Clique expected1(boost::make_shared<DiscreteConditional>((key[1] | key[3], key[4]) = "1/2 1/2 1/2 1/2"));
+  Clique::shared_ptr actual1 = (*bayesTree)[1];
+//  EXPECT(assert_equal(expected1, *actual1)); // TODO, correct but fails
+
+  // Create Marginals instance
+  DiscreteMarginals marginals(graph);
+
+  // test 0
+  DecisionTreeFactor expectedM0(key[0],"0.666667 0.333333");
+  DiscreteFactor::shared_ptr actualM0 = marginals(0);
+  EXPECT(assert_equal(expectedM0, *boost::dynamic_pointer_cast<DecisionTreeFactor>(actualM0),1e-5));
+
+  // test 1
+  DecisionTreeFactor expectedM1(key[1],"0.333333 0.666667");
+  DiscreteFactor::shared_ptr actualM1 = marginals(1);
+  EXPECT(assert_equal(expectedM1, *boost::dynamic_pointer_cast<DecisionTreeFactor>(actualM1),1e-5));
+}
+
+/* ************************************************************************* */
+// Second truss example with non-trivial factors
+TEST_UNSAFE( DiscreteMarginals, truss2 ) {
+
+  const int nrNodes = 5;
+  const size_t nrStates = 2;
+
+  // define variables
+  vector<DiscreteKey> key;
+  for (int i = 0; i < nrNodes; i++) {
+    DiscreteKey key_i(i, nrStates);
+    key.push_back(key_i);
+  }
+
+  // create graph and add three truss potentials
+  DiscreteFactorGraph graph;
+  graph.add(key[0] & key[2] & key[4],"1 2 3 4 5 6 7 8");
+  graph.add(key[1] & key[3] & key[4],"1 2 3 4 5 6 7 8");
+  graph.add(key[2] & key[3] & key[4],"1 2 3 4 5 6 7 8");
+
+  // Calculate the marginals by brute force
+  vector<DiscreteFactor::Values> allPosbValues = cartesianProduct(
+      key[0] & key[1] & key[2] & key[3] & key[4]);
+  Vector T = zero(5), F = zero(5);
+  for (size_t i = 0; i < allPosbValues.size(); ++i) {
+    DiscreteFactor::Values x = allPosbValues[i];
+    double px = graph(x);
+    for (size_t j=0;j<5;j++)
+      if (x[j]) T[j]+=px; else F[j]+=px;
+    // cout << x[0] << " " << x[1] << " "<< x[2] << " " << x[3] << " " << x[4] << " :\t" << px << endl;
+  }
+
+  // Check all marginals given by a sequential solver and Marginals
+  DiscreteSequentialSolver solver(graph);
+  DiscreteMarginals marginals(graph);
+  for (size_t j=0;j<5;j++) {
+    double sum = T[j]+F[j];
+    T[j]/=sum;
+    F[j]/=sum;
+
+    // solver
+    Vector actualV = solver.marginalProbabilities(key[j]);
+    EXPECT(assert_equal(Vector_(2,F[j],T[j]), actualV));
+
+    // Marginals
+    vector<double> table;
+    table += F[j],T[j];
+    DecisionTreeFactor expectedM(key[j],table);
+    DiscreteFactor::shared_ptr actualM = marginals(j);
+    EXPECT(assert_equal(expectedM, *boost::dynamic_pointer_cast<DecisionTreeFactor>(actualM)));
+  }
 }
 
 /* ************************************************************************* */
