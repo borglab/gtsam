@@ -4,8 +4,8 @@ cmake_minimum_required(VERSION 2.6)
 
 # Set the version number for the library
 set (GTSAM_VERSION_MAJOR 2)
-set (GTSAM_VERSION_MINOR 3)
-set (GTSAM_VERSION_PATCH 1)
+set (GTSAM_VERSION_MINOR 4)
+set (GTSAM_VERSION_PATCH 0)
 
 
 ###############################################################################
@@ -130,7 +130,12 @@ endif()
 
 ###############################################################################
 # Option for using system Eigen or GTSAM-bundled Eigen
-option(GTSAM_USE_SYSTEM_EIGEN "Find and use system-installed Eigen. If 'off', use the one bundled with GTSAM" OFF)
+### Disabled until our patches are included in Eigen ###
+### See:  http://eigen.tuxfamily.org/bz/show_bug.cgi?id=704 (Householder QR MKL selection)
+###       http://eigen.tuxfamily.org/bz/show_bug.cgi?id=705 (Fix MKL LLT return code)
+###       http://eigen.tuxfamily.org/bz/show_bug.cgi?id=716 (Improved comma initialization)
+# option(GTSAM_USE_SYSTEM_EIGEN "Find and use system-installed Eigen. If 'off', use the one bundled with GTSAM" OFF)
+set(GTSAM_USE_SYSTEM_EIGEN OFF)
 
 # Switch for using system Eigen or GTSAM-bundled Eigen
 if(GTSAM_USE_SYSTEM_EIGEN)
@@ -153,7 +158,7 @@ endif()
 configure_file(gtsam/3rdparty/gtsam_eigen_includes.h.in gtsam/3rdparty/gtsam_eigen_includes.h)
 
 # Install the configuration file for Eigen
-install(FILES ${CMAKE_BINARY_DIR}/gtsam/3rdparty/gtsam_eigen_includes.h DESTINATION include/gtsam/3rdparty)
+install(FILES ${PROJECT_BINARY_DIR}/gtsam/3rdparty/gtsam_eigen_includes.h DESTINATION include/gtsam/3rdparty)
 
 
 ###############################################################################
@@ -169,8 +174,8 @@ include_directories(BEFORE ${Boost_INCLUDE_DIR})
 include_directories(BEFORE
   gtsam/3rdparty/UFconfig 
   gtsam/3rdparty/CCOLAMD/Include
-  ${CMAKE_SOURCE_DIR}
-  ${CMAKE_BINARY_DIR} # So we can include generated config header files
+  ${PROJECT_SOURCE_DIR}
+  ${PROJECT_BINARY_DIR} # So we can include generated config header files
   CppUnitLite)
 
 if(MSVC)

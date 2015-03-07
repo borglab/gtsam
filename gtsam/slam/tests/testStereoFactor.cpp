@@ -31,7 +31,7 @@
 using namespace std;
 using namespace gtsam;
 
-static Pose3 camera1(Matrix_(3,3,
+static Pose3 camera1((Matrix) (Matrix(3, 3) <<
            1., 0., 0.,
            0.,-1., 0.,
            0., 0.,-1.
@@ -102,7 +102,7 @@ TEST( StereoFactor, Error ) {
   Vector actualError(factor.evaluateError(pose, point));
 
   // The expected error is (-3.0, +2.0, -1.0) pixels / UnitCovariance
-  Vector expectedError = Vector_(3, -3.0, +2.0, -1.0);
+  Vector expectedError = (Vector(3) << -3.0, +2.0, -1.0);
 
   // Verify we get the expected error
   CHECK(assert_equal(expectedError, actualError, 1e-9));
@@ -123,7 +123,7 @@ TEST( StereoFactor, ErrorWithTransform ) {
   Vector actualError(factor.evaluateError(pose, point));
 
   // The expected error is (-3.0, +2.0, -1.0) pixels / UnitCovariance
-  Vector expectedError = Vector_(3, -3.0, +2.0, -1.0);
+  Vector expectedError = (Vector(3) << -3.0, +2.0, -1.0);
 
   // Verify we get the expected error
   CHECK(assert_equal(expectedError, actualError, 1e-9));
@@ -144,10 +144,10 @@ TEST( StereoFactor, Jacobian ) {
   factor.evaluateError(pose, point, H1Actual, H2Actual);
 
   // The expected Jacobians
-  Matrix H1Expected = Matrix_(3, 6, 0.0,  -625.0, 0.0, -100.0,    0.0,  0.0,
+  Matrix H1Expected = (Matrix(3, 6) << 0.0,  -625.0, 0.0, -100.0,    0.0,  0.0,
                                     0.0,  -625.0, 0.0, -100.0,    0.0, -8.0,
                                     625.0,   0.0, 0.0,    0.0, -100.0,  0.0);
-  Matrix H2Expected = Matrix_(3, 3, 100.0,   0.0, 0.0,
+  Matrix H2Expected = (Matrix(3, 3) << 100.0,   0.0, 0.0,
                                     100.0,   0.0, 8.0,
                                     0.0,   100.0, 0.0);
 
@@ -172,10 +172,10 @@ TEST( StereoFactor, JacobianWithTransform ) {
   factor.evaluateError(pose, point, H1Actual, H2Actual);
 
   // The expected Jacobians
-  Matrix H1Expected = Matrix_(3, 6, -100.0,    0.0,  650.0,   0.0,  100.0,    0.0,
+  Matrix H1Expected = (Matrix(3, 6) << -100.0,    0.0,  650.0,   0.0,  100.0,    0.0,
                                     -100.0,   -8.0,  649.2,  -8.0,  100.0,    0.0,
                                      -10.0, -650.0,    0.0,   0.0,    0.0,  100.0);
-  Matrix H2Expected = Matrix_(3, 3,    0.0, -100.0,    0.0,
+  Matrix H2Expected = (Matrix(3, 3) <<    0.0, -100.0,    0.0,
                                        8.0, -100.0,    0.0,
                                        0.0,    0.0, -100.0);
 

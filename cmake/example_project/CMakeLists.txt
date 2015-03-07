@@ -18,7 +18,7 @@ project(myproject CXX C)
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${PROJECT_SOURCE_DIR}/cmake")
 
 # Ensure that local folder is searched before library folders
-include_directories(BEFORE "${CMAKE_SOURCE_DIR}")
+include_directories(BEFORE "${PROJECT_SOURCE_DIR}")
 
 # Load build type flags and default to Debug mode
 include(GtsamBuildTypes)
@@ -115,7 +115,7 @@ install(TARGETS ${PROJECT_NAME}-static ARCHIVE DESTINATION lib )
 # Note the need for a full path
 set(disabled_tests 
     "dummy"
-    #"${CMAKE_SOURCE_DIR}/myproject/geometry/tests/testCovarianceEllipse.cpp"
+    #"${PROJECT_SOURCE_DIR}/myproject/geometry/tests/testCovarianceEllipse.cpp"
 )
 list(REMOVE_ITEM myproject_tests_source ${disabled_tests})
 

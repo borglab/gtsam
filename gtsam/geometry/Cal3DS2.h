@@ -92,12 +92,18 @@ public:
   /// image center in y
   inline double py() const { return v0_;}
 
-  /// Convert ideal point p (in intrinsic coordinates) into pixel coordinates
+  /**
+   * convert intrinsic coordinates xy to image coordinates uv
+   * @param p point in intrinsic coordinates
+   * @param Dcal optional 2*9 Jacobian wrpt Cal3DS2 parameters
+   * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
+   * @return point in image coordinates
+   */
   Point2 uncalibrate(const Point2& p,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const ;
+      boost::optional<Matrix&> Dcal = boost::none,
+      boost::optional<Matrix&> Dp = boost::none) const ;
 
-  /// Conver a pixel coordinate to ideal coordinate
+  /// Convert pixel coordinates to ideal coordinates
   Point2 calibrate(const Point2& p, const double tol=1e-5) const;
 
   /// Derivative of uncalibrate wrpt intrinsic coordinates

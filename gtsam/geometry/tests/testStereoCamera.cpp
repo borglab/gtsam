@@ -74,7 +74,7 @@ TEST( StereoCamera, project)
 
 /* ************************************************************************* */
 
-static Pose3 camera1(Matrix_(3,3,
+static Pose3 camera1((Matrix)(Matrix(3,3) <<
            1., 0., 0.,
            0.,-1., 0.,
            0., 0.,-1.

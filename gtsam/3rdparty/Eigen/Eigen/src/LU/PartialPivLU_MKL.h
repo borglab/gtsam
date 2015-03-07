@@ -33,7 +33,7 @@
 #ifndef EIGEN_PARTIALLU_LAPACK_H
 #define EIGEN_PARTIALLU_LAPACK_H
 
-#include "Eigen/src/Core/util/MKL_support.h"
+#include "../Core/util/MKL_support.h"
 
 namespace Eigen { 
 

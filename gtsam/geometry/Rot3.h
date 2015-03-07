@@ -42,6 +42,7 @@
 #include <gtsam/base/DerivedValue.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/geometry/Point3.h>
+#include <gtsam/geometry/Unit3.h>
 
 namespace gtsam {
 
@@ -78,12 +79,12 @@ namespace gtsam {
     Rot3();
 
     /**
-     * Constructor from columns
+     * Constructor from *columns*
      * @param r1 X-axis of rotated frame
      * @param r2 Y-axis of rotated frame
      * @param r3 Z-axis of rotated frame
      */
-    Rot3(const Point3& r1, const Point3& r2, const Point3& r3);
+    Rot3(const Point3& col1, const Point3& col2, const Point3& col3);
 
     /** constructor from a rotation matrix, as doubles in *row-major* order !!! */
     Rot3(double R11, double R12, double R13,
@@ -96,14 +97,14 @@ namespace gtsam {
     /** constructor from a rotation matrix */
     Rot3(const Matrix& R);
 
-//    /** constructor from a fixed size rotation matrix */
-//    Rot3(const Matrix3& R);
-
     /** Constructor from a quaternion.  This can also be called using a plain
      * Vector, due to implicit conversion from Vector to Quaternion
      * @param q The quaternion
      */
     Rot3(const Quaternion& q);
+
+    /// Random, generates a random axis, then random angle \in [-p,pi]
+    static Rot3 Random(boost::random::mt19937 & rng);
 
     /** Virtual destructor */
     virtual ~Rot3() {}
@@ -149,7 +150,10 @@ namespace gtsam {
     static Rot3 ypr  (double y, double p, double r) { return RzRyRx(r,p,y);}
 
     /** Create from Quaternion coefficients */
-    static Rot3 quaternion(double w, double x, double y, double z) { Quaternion q(w, x, y, z); return Rot3(q); }
+    static Rot3 quaternion(double w, double x, double y, double z) {
+      Quaternion q(w, x, y, z);
+      return Rot3(q);
+    }
 
     /**
      * Rodriguez' formula to compute an incremental rotation matrix
@@ -158,6 +162,22 @@ namespace gtsam {
      * @return incremental rotation matrix
      */
     static Rot3 rodriguez(const Vector& w, double theta);
+
+    /**
+     * Rodriguez' formula to compute an incremental rotation matrix
+     * @param   w is the rotation axis, unit length
+     * @param   theta rotation angle
+     * @return incremental rotation matrix
+     */
+    static Rot3 rodriguez(const Point3& w, double theta);
+
+    /**
+     * Rodriguez' formula to compute an incremental rotation matrix
+     * @param   w is the rotation axis
+     * @param   theta rotation angle
+     * @return incremental rotation matrix
+     */
+    static Rot3 rodriguez(const Unit3& w, double theta);
 
     /**
      * Rodriguez' formula to compute an incremental rotation matrix
@@ -204,6 +224,16 @@ namespace gtsam {
 
     /** compose two rotations */
     Rot3 operator*(const Rot3& R2) const;
+
+    /**
+     * Conjugation: given a rotation acting in frame B, compute rotation c1Rc2 acting in a frame C
+     * @param cRb rotation from B frame to C frame
+     * @return c1Rc2 = cRb * b1Rb2 * cRb'
+     */
+    Rot3 conjugate(const Rot3& cRb) const {
+      // TODO: do more efficiently by using Eigen or quaternion properties
+      return cRb * (*this) * cRb.inverse();
+    }
 
     /**
      * Return relative rotation D s.t. R2=D*R1, i.e. D=R2*R1'
@@ -294,6 +324,21 @@ namespace gtsam {
         boost::optional<Matrix&> H2 = boost::none) const;
 
     /// @}
+    /// @name Group Action on Unit3
+    /// @{
+
+    /// rotate 3D direction from rotated coordinate frame to world frame
+    Unit3 rotate(const Unit3& p, boost::optional<Matrix&> HR = boost::none,
+        boost::optional<Matrix&> Hp = boost::none) const;
+
+    /// unrotate 3D direction from world frame to rotated coordinate frame
+    Unit3 unrotate(const Unit3& p, boost::optional<Matrix&> HR = boost::none,
+        boost::optional<Matrix&> Hp = boost::none) const;
+
+    /// rotate 3D direction from rotated coordinate frame to world frame
+    Unit3 operator*(const Unit3& p) const;
+
+    /// @}
     /// @name Standard Interface
     /// @{
 
@@ -303,11 +348,12 @@ namespace gtsam {
     /** return 3*3 transpose (inverse) rotation matrix   */
     Matrix3 transpose() const;
 
-    /** returns column vector specified by index */
+    /// @deprecated, this is base 1, and was just confusing
     Point3 column(int index) const;
-    Point3 r1() const;
-    Point3 r2() const;
-    Point3 r3() const;
+
+    Point3 r1() const; ///< first column
+    Point3 r2() const; ///< second column
+    Point3 r3() const; ///< third column
 
     /**
      * Use RQ to calculate xyz angle representation

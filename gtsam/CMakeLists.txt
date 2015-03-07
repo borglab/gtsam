@@ -134,7 +134,7 @@ endif(GTSAM_BUILD_SHARED_LIBRARY)
 # Set dataset paths
 set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/slam/dataset.cpp"
     APPEND PROPERTY COMPILE_DEFINITIONS
-	"SOURCE_TREE_DATASET_DIR=\"${CMAKE_SOURCE_DIR}/examples/Data\""
+	"SOURCE_TREE_DATASET_DIR=\"${PROJECT_SOURCE_DIR}/examples/Data\""
 	"INSTALLED_DATASET_DIR=\"${GTSAM_TOOLBOX_INSTALL_PATH}/gtsam_examples/Data\"")
 	
 # Special cases
@@ -145,7 +145,7 @@ endif()
 	
 # Generate and install config file
 configure_file(config.h.in config.h)
-install(FILES ${CMAKE_BINARY_DIR}/gtsam/config.h DESTINATION include/gtsam)
+install(FILES ${PROJECT_BINARY_DIR}/gtsam/config.h DESTINATION include/gtsam)
 
 # Create the matlab toolbox for the gtsam library
 if (GTSAM_INSTALL_MATLAB_TOOLBOX)
@@ -154,11 +154,11 @@ if (GTSAM_INSTALL_MATLAB_TOOLBOX)
     
     # Choose include flags depending on build process
 	set(MEX_INCLUDE_ROOT ${GTSAM_SOURCE_ROOT_DIR})
-	set(MEX_LIB_ROOT ${CMAKE_BINARY_DIR})    # FIXME: is this used?
+	set(MEX_LIB_ROOT ${PROJECT_BINARY_DIR})    # FIXME: is this used?
 	set(GTSAM_LIB_DIR ${MEX_LIB_ROOT}/gtsam) # FIXME: is this used?
     
     # Generate, build and install toolbox
-    set(mexFlags ${GTSAM_BUILD_MEX_BINARY_FLAGS} -I${MEX_INCLUDE_ROOT} -I${Boost_INCLUDE_DIR} -I${CMAKE_BINARY_DIR})
+    set(mexFlags ${GTSAM_BUILD_MEX_BINARY_FLAGS} -I${MEX_INCLUDE_ROOT} -I${Boost_INCLUDE_DIR} -I${PROJECT_BINARY_DIR})
 	if("${gtsam-default}" STREQUAL "gtsam-static")
 		list(APPEND mexFlags -DGTSAM_IMPORT_STATIC)
 	endif()

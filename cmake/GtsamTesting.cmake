@@ -136,7 +136,7 @@ macro(gtsam_add_grouped_scripts group pattern target_prefix pretty_prefix_name l
 				endif()
 				
 				# Add TOPSRCDIR
-				set_property(SOURCE ${script_src} APPEND PROPERTY COMPILE_DEFINITIONS "TOPSRCDIR=\"${CMAKE_SOURCE_DIR}\"")
+				set_property(SOURCE ${script_src} APPEND PROPERTY COMPILE_DEFINITIONS "TOPSRCDIR=\"${PROJECT_SOURCE_DIR}\"")
 
 				# Disable building during make all/install
 				if (GTSAM_DISABLE_TESTS_ON_INSTALL)
@@ -184,7 +184,7 @@ macro(gtsam_add_grouped_scripts group pattern target_prefix pretty_prefix_name l
 		set_property(SOURCE ${rest_script_srcs} APPEND PROPERTY COMPILE_DEFINITIONS "main=static no_main")
 			
 		# Add TOPSRCDIR
-		set_property(SOURCE ${script_srcs} APPEND PROPERTY COMPILE_DEFINITIONS "TOPSRCDIR=\"${CMAKE_SOURCE_DIR}\"")
+		set_property(SOURCE ${script_srcs} APPEND PROPERTY COMPILE_DEFINITIONS "TOPSRCDIR=\"${PROJECT_SOURCE_DIR}\"")
 			
 		# Add test
 		add_dependencies(${target_prefix}.${group} ${script_bin})

@@ -15,4 +15,9 @@ endif()
 # Load exports
 include(${OUR_CMAKE_DIR}/@PACKAGE_NAME@-exports.cmake)
 
-message(STATUS "GTSAM include directory:  ${@CMAKE_PROJECT_NAME@_INCLUDE_DIR}")
+# Load project-specific flags, if present
+if(EXISTS "${OUR_CMAKE_DIR}/@EXTRA_FILE@")
+	include("${OUR_CMAKE_DIR}/@EXTRA_FILE@")
+endif()
+
+message(STATUS "@CMAKE_PROJECT_NAME@ include directory:  ${@CMAKE_PROJECT_NAME@_INCLUDE_DIR}")

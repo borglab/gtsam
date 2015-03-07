@@ -64,21 +64,37 @@ if (WIN32)
     set(_TBB_LIB_MALLOC_DEBUG_NAME "${_TBB_LIB_MALLOC_NAME}_debug")
     if (MSVC71)
         set (_TBB_COMPILER "vc7.1")
+        set (TBB_COMPILER "vc7.1")
     endif(MSVC71)
     if (MSVC80)
         set(_TBB_COMPILER "vc8")
+        set(TBB_COMPILER "vc8")
     endif(MSVC80)
     if (MSVC90)
         set(_TBB_COMPILER "vc9")
+        set(TBB_COMPILER "vc9")
     endif(MSVC90)
     if(MSVC10)
         set(_TBB_COMPILER "vc10")
+        set(TBB_COMPILER "vc10")
     endif(MSVC10)
     if(MSVC11)
         set(_TBB_COMPILER "vc11")
+        set(TBB_COMPILER "vc11")
     endif(MSVC11)
     # Todo: add other Windows compilers such as ICL.
-    set(_TBB_ARCHITECTURE ${TBB_ARCHITECTURE})
+	if(TBB_ARCHITECTURE)
+		set(_TBB_ARCHITECTURE ${TBB_ARCHITECTURE})
+	elseif("$ENV{TBB_ARCH_PLATFORM}" STREQUAL "")
+		# Try to guess the architecture
+		if(CMAKE_CL_64)
+			set(_TBB_ARCHITECTURE intel64)
+			set(TBB_ARCHITECTURE intel64)
+		else()
+			set(_TBB_ARCHITECTURE ia32)
+			set(TBB_ARCHITECTURE ia32)
+		endif()
+	endif()
 endif (WIN32)
 
 if (UNIX)
@@ -159,7 +175,7 @@ if (NOT _TBB_INSTALL_DIR)
 endif (NOT _TBB_INSTALL_DIR)
 # sanity check
 if (NOT _TBB_INSTALL_DIR)
-    message ("ERROR: Unable to find Intel TBB install directory. ${_TBB_INSTALL_DIR}")
+    message (STATUS "TBB: Unable to find Intel TBB install directory. ${_TBB_INSTALL_DIR}")
 else (NOT _TBB_INSTALL_DIR)
 # finally: set the cached CMake variable TBB_INSTALL_DIR
 if (NOT TBB_INSTALL_DIR)
@@ -211,7 +227,10 @@ if ((NOT ${TBB_ARCHITECTURE} STREQUAL "") AND (NOT ${TBB_COMPILER} STREQUAL ""))
     # Jiri: It doesn't hurt to look in more places, so I store the hints from
     #       ENV{TBB_ARCH_PLATFORM} and the TBB_ARCHITECTURE and TBB_COMPILER
     #       variables and search them both.
-    set (_TBB_LIBRARY_DIR "${_TBB_INSTALL_DIR}/${_TBB_ARCHITECTURE}/${_TBB_COMPILER}/lib" ${_TBB_LIBRARY_DIR})
+    set (
+		_TBB_LIBRARY_DIR "${_TBB_INSTALL_DIR}/${_TBB_ARCHITECTURE}/${_TBB_COMPILER}/lib" ${_TBB_LIBRARY_DIR}
+		_TBB_LIBRARY_DIR "${_TBB_INSTALL_DIR}/lib/${_TBB_ARCHITECTURE}/${_TBB_COMPILER}" ${_TBB_LIBRARY_DIR}
+		)
 endif ((NOT ${TBB_ARCHITECTURE} STREQUAL "") AND (NOT ${TBB_COMPILER} STREQUAL ""))
 
 # GvdB: Mac OS X distribution places libraries directly in lib directory.
@@ -269,8 +288,8 @@ if (TBB_INCLUDE_DIR)
 endif (TBB_INCLUDE_DIR)
 
 if (NOT TBB_FOUND)
-    message("ERROR: Intel TBB NOT found!")
-    message(STATUS "Looked for Threading Building Blocks in ${_TBB_INSTALL_DIR}")
+    message(STATUS "TBB: Intel TBB NOT found!")
+    message(STATUS "TBB: Looked for Threading Building Blocks in ${_TBB_INSTALL_DIR}")
     # do only throw fatal, if this pkg is REQUIRED
     if (TBB_FIND_REQUIRED)
         message(FATAL_ERROR "Could NOT find TBB library.")

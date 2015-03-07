@@ -28,7 +28,7 @@ using namespace gtsam;
 
 static const Cal3_S2 K(625, 625, 0, 0, 0);
 
-static const Pose3 pose1(Matrix_(3,3,
+static const Pose3 pose1((Matrix)(Matrix(3,3) <<
               1., 0., 0.,
               0.,-1., 0.,
               0., 0.,-1.
@@ -144,7 +144,7 @@ TEST( SimpleCamera, simpleCamera)
   Point3 T(1000,2000,1500);
   SimpleCamera expected(Pose3(R.inverse(),T),K);
   // H&Z example, 2nd edition, page 163
-  Matrix P = Matrix_(3,4,
+  Matrix P = (Matrix(3,4) <<
       3.53553e2, 3.39645e2, 2.77744e2, -1.44946e6,
       -1.03528e2, 2.33212e1, 4.59607e2, -6.32525e5,
       7.07107e-1, -3.53553e-1,6.12372e-1, -9.18559e2);

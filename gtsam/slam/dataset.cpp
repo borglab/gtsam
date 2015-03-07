@@ -12,7 +12,7 @@
 /**
  * @file dataset.cpp
  * @date Jan 22, 2010
- * @author nikai
+ * @author nikai, Luca Carlone
  * @brief utility functions for loading datasets
  */
 
@@ -50,6 +50,7 @@ string findExampleDataFile(const string& name) {
   namesToSearch.push_back(name);
   namesToSearch.push_back(name + ".graph");
   namesToSearch.push_back(name + ".txt");
+  namesToSearch.push_back(name + ".out");
 
   // Find first name that exists
   BOOST_FOREACH(const fs::path& root, rootsToSearch) {
@@ -61,10 +62,10 @@ string findExampleDataFile(const string& name) {
 
   // If we did not return already, then we did not find the file
   throw std::invalid_argument(
-    "gtsam::findExampleDataFile could not find a matching file in\n"
-    SOURCE_TREE_DATASET_DIR " or\n"
-    INSTALLED_DATASET_DIR " named\n" +
-    name + ", " + name + ".graph, or " + name + ".txt");
+      "gtsam::findExampleDataFile could not find a matching file in\n"
+      SOURCE_TREE_DATASET_DIR " or\n"
+      INSTALLED_DATASET_DIR " named\n" +
+      name + ", " + name + ".graph, or " + name + ".txt");
 }
 #endif
 
@@ -150,7 +151,7 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
 
       // SharedNoiseModel noise = noiseModel::Gaussian::Covariance(m, smart);
       if (!model) {
-        Vector variances = Vector_(3, m(0, 0), m(1, 1), m(2, 2));
+        Vector variances = (Vector(3) << m(0, 0), m(1, 1), m(2, 2));
         model = noiseModel::Diagonal::Variances(variances, smart);
       }
 
@@ -178,7 +179,7 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
         continue;
 
       noiseModel::Diagonal::shared_ptr measurementNoise =
-           noiseModel::Diagonal::Sigmas(Vector_(2, bearing_std, range_std));
+          noiseModel::Diagonal::Sigmas((Vector(2) << bearing_std, range_std));
       graph->add(BearingRangeFactor<Pose2, Point2>(id1, id2, bearing, range, measurementNoise));
 
       // Insert poses or points if they do not exist yet
@@ -210,13 +211,13 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
       {
         double rangeVar = v1;
         double bearingVar = v1 / 10.0;
-        measurementNoise = noiseModel::Diagonal::Sigmas(Vector_(2, bearingVar, rangeVar));
+        measurementNoise = noiseModel::Diagonal::Sigmas((Vector(2) << bearingVar, rangeVar));
       }
       else
       {
         if(!haveLandmark) {
           cout << "Warning: load2D is a very simple dataset loader and is ignoring the\n"
-            "non-uniform covariance on LANDMARK measurements in this file." << endl;
+              "non-uniform covariance on LANDMARK measurements in this file." << endl;
           haveLandmark = true;
         }
       }
@@ -228,7 +229,7 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
   }
 
   cout << "load2D read a graph file with " << initial->size()
-            << " vertices and " << graph->nrFactors() << " factors" << endl;
+                    << " vertices and " << graph->nrFactors() << " factors" << endl;
 
   return make_pair(graph, initial);
 }
@@ -385,7 +386,7 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D_robust(
         continue;
 
       noiseModel::Diagonal::shared_ptr measurementNoise =
-           noiseModel::Diagonal::Sigmas(Vector_(2, bearing_std, range_std));
+          noiseModel::Diagonal::Sigmas((Vector(2) << bearing_std, range_std));
       graph->add(BearingRangeFactor<Pose2, Point2>(id1, id2, bearing, range, measurementNoise));
 
       // Insert poses or points if they do not exist yet
@@ -402,9 +403,318 @@ pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D_robust(
   }
 
   cout << "load2D read a graph file with " << initial->size()
-            << " vertices and " << graph->nrFactors() << " factors" << endl;
+                    << " vertices and " << graph->nrFactors() << " factors" << endl;
 
   return make_pair(graph, initial);
 }
+
+/* ************************************************************************* */
+Rot3 openGLFixedRotation(){ // this is due to different convention for cameras in gtsam and openGL
+  /* R = [ 1   0   0
+   *       0  -1   0
+   *       0   0  -1]
+   */
+  Matrix3  R_mat = Matrix3::Zero(3,3);
+  R_mat(0,0) = 1.0;  R_mat(1,1) = -1.0; R_mat(2,2) = -1.0;
+  return Rot3(R_mat);
+}
+
+/* ************************************************************************* */
+Pose3 openGL2gtsam(const Rot3& R, double tx, double ty, double tz)
+{
+  Rot3 R90 = openGLFixedRotation();
+  Rot3 wRc = (  R.inverse() ).compose(R90);
+
+  // Our camera-to-world translation wTc = -R'*t
+  return Pose3 (wRc, R.unrotate(Point3(-tx,-ty,-tz)));
+}
+
+/* ************************************************************************* */
+Pose3 gtsam2openGL(const Rot3& R, double tx, double ty, double tz)
+{
+  Rot3 R90 = openGLFixedRotation();
+  Rot3 cRw_openGL = R90.compose(  R.inverse() );
+  Point3 t_openGL = cRw_openGL.rotate(Point3(-tx,-ty,-tz));
+  return Pose3(cRw_openGL, t_openGL);
+}
+
+/* ************************************************************************* */
+Pose3 gtsam2openGL(const Pose3& PoseGTSAM)
+{
+  return gtsam2openGL(PoseGTSAM.rotation(), PoseGTSAM.x(), PoseGTSAM.y(), PoseGTSAM.z());
+}
+
+/* ************************************************************************* */
+bool readBundler(const string& filename, SfM_data &data)
+{
+  // Load the data file
+  ifstream is(filename.c_str(),ifstream::in);
+  if(!is)
+  {
+    cout << "Error in readBundler: can not find the file!!" << endl;
+    return false;
+  }
+
+  // Ignore the first line
+  char aux[500];
+  is.getline(aux,500);
+
+  // Get the number of camera poses and 3D points
+  size_t nrPoses, nrPoints;
+  is >> nrPoses >> nrPoints;
+
+  // Get the information for the camera poses
+  for( size_t i = 0; i < nrPoses; i++ )
+  {
+    // Get the focal length and the radial distortion parameters
+    float f, k1, k2;
+    is >> f >> k1 >> k2;
+    Cal3Bundler K(f, k1, k2);
+
+    // Get the rotation matrix
+    float r11, r12, r13;
+    float r21, r22, r23;
+    float r31, r32, r33;
+    is >> r11 >> r12 >> r13
+    >> r21 >> r22 >> r23
+    >> r31 >> r32 >> r33;
+
+    // Bundler-OpenGL rotation matrix
+    Rot3 R(
+        r11, r12, r13,
+        r21, r22, r23,
+        r31, r32, r33);
+
+    // Check for all-zero R, in which case quit
+    if(r11==0 && r12==0 && r13==0)
+    {
+      cout << "Error in readBundler: zero rotation matrix for pose " << i << endl;
+      return false;
+    }
+
+    // Get the translation vector
+    float tx, ty, tz;
+    is >> tx >> ty >> tz;
+
+    Pose3 pose = openGL2gtsam(R,tx,ty,tz);
+
+    data.cameras.push_back(SfM_Camera(pose,K));
+  }
+
+  // Get the information for the 3D points
+  for( size_t j = 0; j < nrPoints; j++ )
+  {
+    SfM_Track track;
+
+    // Get the 3D position
+    float x, y, z;
+    is >> x >> y >> z;
+    track.p = Point3(x,y,z);
+
+    // Get the color information
+    float r, g, b;
+    is >> r >> g >> b;
+    track.r = r/255.f;
+    track.g = g/255.f;
+    track.b = b/255.f;
+
+    // Now get the visibility information
+    size_t nvisible = 0;
+    is >> nvisible;
+
+    for( size_t k = 0; k < nvisible; k++ )
+    {
+      size_t cam_idx = 0, point_idx = 0;
+      float u, v;
+      is >> cam_idx >> point_idx >> u >> v;
+      track.measurements.push_back(make_pair(cam_idx,Point2(u,-v)));
+    }
+
+    data.tracks.push_back(track);
+  }
+
+  is.close();
+  return true;
+}
+
+/* ************************************************************************* */
+bool readBAL(const string& filename, SfM_data &data)
+{
+  // Load the data file
+  ifstream is(filename.c_str(),ifstream::in);
+  if(!is)
+  {
+    cout << "Error in readBAL: can not find the file!!" << endl;
+    return false;
+  }
+
+  // Get the number of camera poses and 3D points
+  size_t nrPoses, nrPoints, nrObservations;
+  is >> nrPoses >> nrPoints >> nrObservations;
+
+  data.tracks.resize(nrPoints);
+
+  // Get the information for the observations
+  for( size_t k = 0; k < nrObservations; k++ )
+  {
+    size_t i = 0, j = 0;
+    float u, v;
+    is >> i >> j >> u >> v;
+    data.tracks[j].measurements.push_back(make_pair(i,Point2(u,-v)));
+  }
+
+  // Get the information for the camera poses
+  for( size_t i = 0; i < nrPoses; i++ )
+  {
+    // Get the rodriguez vector
+    float wx, wy, wz;
+    is >> wx >> wy >> wz;
+    Rot3 R = Rot3::rodriguez(wx, wy, wz);// BAL-OpenGL rotation matrix
+
+    // Get the translation vector
+    float tx, ty, tz;
+    is >> tx >> ty >> tz;
+
+    Pose3 pose = openGL2gtsam(R,tx,ty,tz);
+
+    // Get the focal length and the radial distortion parameters
+    float f, k1, k2;
+    is >> f >> k1 >> k2;
+    Cal3Bundler K(f, k1, k2);
+
+    data.cameras.push_back(SfM_Camera(pose,K));
+  }
+
+  // Get the information for the 3D points
+  for( size_t j = 0; j < nrPoints; j++ )
+  {
+    // Get the 3D position
+    float x, y, z;
+    is >> x >> y >> z;
+    SfM_Track& track = data.tracks[j];
+    track.p = Point3(x,y,z);
+    track.r = 0.4f;
+    track.g = 0.4f;
+    track.b = 0.4f;
+  }
+
+  is.close();
+  return true;
+}
+
+/* ************************************************************************* */
+bool writeBAL(const string& filename, SfM_data &data)
+{
+  // Open the output file
+  ofstream os;
+  os.open(filename.c_str());
+  os.precision(20);
+  if (!os.is_open()) {
+    cout << "Error in writeBAL: can not open the file!!" << endl;
+    return false;
+  }
+
+  // Write the number of camera poses and 3D points
+  size_t nrObservations=0;
+  for (size_t j = 0; j < data.number_tracks(); j++){
+    nrObservations += data.tracks[j].number_measurements();
+  }
+
+  // Write observations
+  os <<  data.number_cameras() << " " << data.number_tracks() << " " << nrObservations << endl;
+  os << endl;
+
+  for (size_t j = 0; j < data.number_tracks(); j++){ // for each 3D point j
+    SfM_Track track = data.tracks[j];
+
+    for(size_t k = 0; k < track.number_measurements(); k++){ // for each observation of the 3D point j
+      size_t i = track.measurements[k].first; // camera id
+      double u0 = data.cameras[i].calibration().u0();
+      double v0 = data.cameras[i].calibration().v0();
+
+      if(u0 != 0 || v0 != 0){cout<< "writeBAL has not been tested for calibration with nonzero (u0,v0)"<< endl;}
+
+      double pixelBALx = track.measurements[k].second.x() - u0; // center of image is the origin
+      double pixelBALy = - (track.measurements[k].second.y() - v0); // center of image is the origin
+      Point2 pixelMeasurement(pixelBALx, pixelBALy);
+      os <<  i /*camera id*/ << " " << j /*point id*/ << " "
+          << pixelMeasurement.x() /*u of the pixel*/ << " " << pixelMeasurement.y() /*v of the pixel*/ << endl;
+    }
+  }
+  os << endl;
+
+  // Write cameras
+  for (size_t i = 0; i < data.number_cameras(); i++){ // for each camera
+    Pose3 poseGTSAM = data.cameras[i].pose();
+    Cal3Bundler cameraCalibration = data.cameras[i].calibration();
+    Pose3 poseOpenGL = gtsam2openGL(poseGTSAM);
+    os <<  Rot3::Logmap(poseOpenGL.rotation()) << endl;
+    os <<  poseOpenGL.translation().vector() << endl;
+    os <<  cameraCalibration.fx() << endl;
+    os <<  cameraCalibration.k1() << endl;
+    os <<  cameraCalibration.k2() << endl;
+    os << endl;
+  }
+
+  // Write the points
+  for (size_t j = 0; j < data.number_tracks(); j++){ // for each 3D point j
+    Point3 point = data.tracks[j].p;
+    os << point.x() << endl;
+    os << point.y() << endl;
+    os << point.z() << endl;
+    os << endl;
+  }
+
+  os.close();
+  return true;
+}
+
+bool writeBALfromValues(const string& filename, SfM_data &data, Values& values){
+
+  // CHECKS
+  Values valuesPoses = values.filter<Pose3>();
+  if( valuesPoses.size() != data.number_cameras()){
+    cout << "writeBALfromValues: different number of cameras in SfM_data (#cameras= " << data.number_cameras()
+        <<") and values (#cameras " << valuesPoses.size() << ")!!" << endl;
+    return false;
+  }
+  Values valuesPoints = values.filter<Point3>();
+  if( valuesPoints.size() != data.number_tracks()){
+    cout << "writeBALfromValues: different number of points in SfM_data (#points= " << data.number_tracks()
+        <<") and values (#points " << valuesPoints.size() << ")!!" << endl;
+  }
+  if(valuesPoints.size() + valuesPoses.size() != values.size()){
+    cout << "writeBALfromValues write only poses and points values!!" << endl;
+    return false;
+  }
+  if(valuesPoints.size()==0 || valuesPoses.size()==0){
+    cout << "writeBALfromValues: No point or pose in values!!" << endl;
+    return false;
+  }
+
+  for (size_t i = 0; i < data.number_cameras(); i++){ // for each camera
+    Key poseKey = symbol('x',i);
+    Pose3 pose = values.at<Pose3>(poseKey);
+    Cal3Bundler K = data.cameras[i].calibration();
+    PinholeCamera<Cal3Bundler> camera(pose, K);
+    data.cameras[i] = camera;
+  }
+
+  for (size_t j = 0; j < data.number_tracks(); j++){ // for each point
+    Key pointKey = symbol('l',j);
+    if(values.exists(pointKey)){
+      Point3 point = values.at<Point3>(pointKey);
+      data.tracks[j].p = point;
+    }else{
+      data.tracks[j].r = 1.0;
+      data.tracks[j].g = 0.0;
+      data.tracks[j].b = 0.0;
+      data.tracks[j].p = Point3();
+    }
+  }
+
+  return writeBAL(filename, data);
+}
+
 
 } // \namespace gtsam

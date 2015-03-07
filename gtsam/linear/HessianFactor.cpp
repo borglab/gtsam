@@ -254,10 +254,10 @@ HessianFactor::HessianFactor(const GaussianFactor& gf) : info_(matrix_) {
     if(jf.model_->isConstrained())
       throw invalid_argument("Cannot construct HessianFactor from JacobianFactor with constrained noise model");
     else {
-      Vector invsigmas = jf.model_->invsigmas().cwiseProduct(jf.model_->invsigmas());
+      const Vector& precisions = jf.model_->precisions();
       info_.copyStructureFrom(jf.Ab_);
       BlockInfo::constBlock A = jf.Ab_.full();
-      matrix_.noalias() = A.transpose() * invsigmas.asDiagonal() * A;
+      matrix_.noalias() = A.transpose() * precisions.asDiagonal() * A;
     }
   } else if(dynamic_cast<const HessianFactor*>(&gf)) {
     const HessianFactor& hf(static_cast<const HessianFactor&>(gf));
@@ -458,8 +458,8 @@ void HessianFactor::updateATA(const JacobianFactor& update, const Scatter& scatt
   } else {
     noiseModel::Diagonal::shared_ptr diagonal(boost::dynamic_pointer_cast<noiseModel::Diagonal>(update.model_));
     if(diagonal) {
-      Vector invsigmas2 = update.model_->invsigmas().cwiseProduct(update.model_->invsigmas());
-      updateInform.noalias() = updateA.transpose() * invsigmas2.asDiagonal() * updateA;
+      const Vector& precisions = diagonal->precisions();
+      updateInform.noalias() = updateA.transpose() * precisions.asDiagonal() * updateA;
     } else
       throw invalid_argument("In HessianFactor::updateATA, JacobianFactor noise model is neither Unit nor Diagonal");
   }

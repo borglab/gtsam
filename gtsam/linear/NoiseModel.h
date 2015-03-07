@@ -235,19 +235,19 @@ namespace gtsam {
     class GTSAM_EXPORT Diagonal : public Gaussian {
     protected:
 
-      /** sigmas and reciprocal */
-      Vector sigmas_;
-
-    private:
-
-      boost::optional<Vector> invsigmas_; ///< optional to allow for constraints
+      /**
+       * Standard deviations (sigmas), their inverse and inverse square (weights/precisions)
+       * These are all computed at construction: the idea is to use one shared model
+       * where computation is done only once, the common use case in many problems.
+       */
+      Vector sigmas_, invsigmas_, precisions_;
 
     protected:
       /** protected constructor takes sigmas */
       Diagonal();
 
       /** constructor to allow for disabling initializaion of invsigmas */
-      Diagonal(const Vector& sigmas, bool initialize_invsigmas=true);
+      Diagonal(const Vector& sigmas);
 
     public:
 
@@ -292,8 +292,14 @@ namespace gtsam {
       /**
        * Return sqrt precisions
        */
-      Vector invsigmas() const;
-      double invsigma(size_t i) const;
+      inline const Vector& invsigmas() const { return invsigmas_; }
+      inline double invsigma(size_t i) const {return invsigmas_(i);}
+
+      /**
+       * Return precisions
+       */
+      inline const Vector& precisions() const { return precisions_; }
+      inline double precision(size_t i) const {return precisions_(i);}
 
       /**
        * Return R itself, but note that Whiten(H) is cheaper than R*H
@@ -336,14 +342,12 @@ namespace gtsam {
       Vector mu_;
 
       /** protected constructor takes sigmas */
-      // Keeps only sigmas and calculates invsigmas when necessary
       Constrained(const Vector& sigmas = zero(1)) :
-        Diagonal(sigmas, false), mu_(repeat(sigmas.size(), 1000.0)) {}
+        Diagonal(sigmas), mu_(repeat(sigmas.size(), 1000.0)) {}
 
-      // Keeps only sigmas and calculates invsigmas when necessary
       // allows for specifying mu
       Constrained(const Vector& mu, const Vector& sigmas) :
-        Diagonal(sigmas, false), mu_(mu) {}
+        Diagonal(sigmas), mu_(mu) {}
 
     public:
 

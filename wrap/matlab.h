@@ -225,6 +225,7 @@ mxArray* wrap<gtsam::Matrix >(const gtsam::Matrix& A) {
 template <typename T>
 T unwrap(const mxArray* array) {
   error("wrap internal error: attempted unwrap of invalid type");
+  return T();
 }
 
 // specialization to string

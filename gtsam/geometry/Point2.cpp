@@ -27,7 +27,7 @@ namespace gtsam {
 /** Explicit instantiation of base class to export members */
 INSTANTIATE_LIE(Point2);
 
-static const Matrix oneOne = Matrix_(1, 2, 1.0, 1.0);
+static const Matrix oneOne = (Matrix(1, 2) <<  1.0, 1.0);
 
 /* ************************************************************************* */
 void Point2::print(const string& s) const {
@@ -45,7 +45,7 @@ double Point2::norm(boost::optional<Matrix&> H) const {
   if (H) {
     Matrix D_result_d;
     if (fabs(r) > 1e-10)
-      D_result_d = Matrix_(1, 2, x_ / r, y_ / r);
+      D_result_d = (Matrix(1, 2) <<  x_ / r, y_ / r);
     else
       D_result_d = oneOne; // TODO: really infinity, why 1 here??
     *H = D_result_d;

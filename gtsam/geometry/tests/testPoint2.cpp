@@ -46,8 +46,8 @@ TEST(Point2, Lie) {
   EXPECT(assert_equal(-eye(2), H1));
   EXPECT(assert_equal(eye(2), H2));
 
-  EXPECT(assert_equal(Point2(5,7), p1.retract(Vector_(2, 4.,5.))));
-  EXPECT(assert_equal(Vector_(2, 3.,3.), p1.localCoordinates(p2)));
+  EXPECT(assert_equal(Point2(5,7), p1.retract((Vector(2) << 4., 5.))));
+  EXPECT(assert_equal((Vector(2) << 3.,3.), p1.localCoordinates(p2)));
 }
 
 /* ************************************************************************* */
@@ -101,11 +101,11 @@ TEST( Point2, norm ) {
   // exception, for (0,0) derivative is [Inf,Inf] but we return [1,1]
   actual = x1.norm(actualH);
   EXPECT_DOUBLES_EQUAL(0, actual, 1e-9);
-  expectedH = Matrix_(1, 2, 1.0, 1.0);
+  expectedH = (Matrix(1, 2) << 1.0, 1.0);
   EXPECT(assert_equal(expectedH,actualH));
 
   actual = x2.norm(actualH);
-  EXPECT_DOUBLES_EQUAL(sqrt(2), actual, 1e-9);
+  EXPECT_DOUBLES_EQUAL(sqrt(2.0), actual, 1e-9);
   expectedH = numericalDerivative11(norm_proxy, x2);
   EXPECT(assert_equal(expectedH,actualH));
 }
