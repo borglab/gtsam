@@ -24,23 +24,6 @@
 
 #include "main.h"
 
-template<typename PermutationVectorType>
-void randomPermutationVector(PermutationVectorType& v, typename PermutationVectorType::Index size)
-{
-  typedef typename PermutationVectorType::Index Index;
-  typedef typename PermutationVectorType::Scalar Scalar;
-  v.resize(size);
-  for(Index i = 0; i < size; ++i) v(i) = Scalar(i);
-  if(size == 1) return;
-  for(Index n = 0; n < 3 * size; ++n)
-  {
-    Index i = internal::random<Index>(0, size-1);
-    Index j;
-    do j = internal::random<Index>(0, size-1); while(j==i);
-    std::swap(v(i), v(j));
-  }
-}
-
 using namespace std;
 template<typename MatrixType> void permutationmatrices(const MatrixType& m)
 {

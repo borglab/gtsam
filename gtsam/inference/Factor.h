@@ -25,6 +25,9 @@
 #include <vector>
 #include <boost/serialization/nvp.hpp>
 #include <boost/foreach.hpp>
+#include <boost/function/function1.hpp>
+#include <boost/lexical_cast.hpp>
+#include <gtsam/base/types.h>
 #include <gtsam/base/FastMap.h>
 
 namespace gtsam {
@@ -36,7 +39,7 @@ template<class KEY> class Conditional;
  * which will be the type used to label variables.  Key types currently in use
  * in gtsam are Index with symbolic (IndexFactor, SymbolicFactorGraph) and
  * Gaussian factors (GaussianFactor, JacobianFactor, HessianFactor, GaussianFactorGraph),
- * and Symbol with nonlinear factors (NonlinearFactor, NonlinearFactorGraph).
+ * and Key with nonlinear factors (NonlinearFactor, NonlinearFactorGraph).
  * though currently only IndexFactor and IndexConditional derive from this
  * class, using Index keys.  This class does not store any data other than its
  * keys.  Derived classes store data such as matrices and probability tables.
@@ -45,7 +48,7 @@ template<class KEY> class Conditional;
  * typedefs to refer to the associated conditional and shared_ptr types of the
  * derived class.  See IndexFactor, JacobianFactor, etc. for examples.
  *
- * This class is \bold{not} virtual for performance reasons - derived symbolic classes,
+ * This class is \b not virtual for performance reasons - derived symbolic classes,
  * IndexFactor and IndexConditional, need to be created and destroyed quickly
  * during symbolic elimination.  GaussianFactor and NonlinearFactor are virtual.
  * \nosubgrouping
@@ -77,15 +80,6 @@ protected:
 
   /// The keys involved in this factor
   std::vector<KeyType> keys_;
-
-  friend class JacobianFactor;
-  friend class HessianFactor;
-
-protected:
-
-  /// Internal consistency check that is run frequently when in debug mode.
-  /// If NDEBUG is defined, this is empty and optimized out.
-  void assertInvariants() const;
 
 public:
 
@@ -190,7 +184,12 @@ public:
 	/// @{
 
   /// print
-  void print(const std::string& s = "Factor") const;
+  void print(const std::string& s = "Factor",
+  		const IndexFormatter& formatter = DefaultIndexFormatter) const;
+
+  /// print only keys
+  void printKeys(const std::string& s = "Factor",
+  		const IndexFormatter& formatter = DefaultIndexFormatter) const;
 
   /// check equality
   bool equals(const This& other, double tol = 1e-9) const;
@@ -208,9 +207,15 @@ public:
   iterator begin() { return keys_.begin(); }	///TODO: comment
   iterator end() { return keys_.end(); }			///TODO: comment
 
+protected:
+	friend class JacobianFactor;
+	friend class HessianFactor;
+
+	/// Internal consistency check that is run frequently when in debug mode.
+	/// If NDEBUG is defined, this is empty and optimized out.
+	void assertInvariants() const;
 
 private:
-
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>

@@ -101,7 +101,7 @@ int main()
   b2(7) = -1;
   
   // time eliminate
-  JacobianFactor combined(_x2_, Ax2,  _l1_, Al1, _x1_, Ax1, b2, sharedSigma(8,1));
+  JacobianFactor combined(_x2_, Ax2,  _l1_, Al1, _x1_, Ax1, b2, noiseModel::Isotropic::Sigma(8,1));
   long timeLog = clock();
   int n = 1000000;
   GaussianConditional::shared_ptr conditional;

@@ -33,7 +33,6 @@ namespace gtsam {
 
   // Forward declarations
   class JacobianFactor;
-  class SharedDiagonal;
   class GaussianConditional;
   template<class C> class BayesNet;
 
@@ -121,20 +120,6 @@ namespace gtsam {
     InfoMatrix matrix_; ///< The full augmented information matrix, s.t. the quadratic error is 0.5*[x -1]'*H*[x -1]
     BlockInfo info_;    ///< The block view of the full information matrix.
 
-    /** Update the factor by adding the information from the JacobianFactor
-     * (used internally during elimination).
-     * @param update The JacobianFactor containing the new information to add
-     * @param scatter A mapping from variable index to slot index in this HessianFactor
-     */
-    void updateATA(const JacobianFactor& update, const Scatter& scatter);
-
-    /** Update the factor by adding the information from the HessianFactor
-     * (used internally during elimination).
-     * @param update The HessianFactor containing the new information to add
-     * @param scatter A mapping from variable index to slot index in this HessianFactor
-     */
-    void updateATA(const HessianFactor& update, const Scatter& scatter);
-
   public:
 
     typedef boost::shared_ptr<HessianFactor> shared_ptr; ///< A shared_ptr to this
@@ -197,10 +182,10 @@ namespace gtsam {
         const std::vector<Vector>& gs, double f);
 
     /** Construct from Conditional Gaussian */
-    HessianFactor(const GaussianConditional& cg);
+    explicit HessianFactor(const GaussianConditional& cg);
 
     /** Convert from a JacobianFactor (computes A^T * A) or HessianFactor */
-    HessianFactor(const GaussianFactor& factor);
+    explicit HessianFactor(const GaussianFactor& factor);
 
     /** Special constructor used in EliminateCholesky which combines the given factors */
     HessianFactor(const FactorGraph<GaussianFactor>& factors,
@@ -219,7 +204,8 @@ namespace gtsam {
 		}
 
     /** Print the factor for debugging and testing (implementing Testable) */
-    virtual void print(const std::string& s = "") const;
+    virtual void print(const std::string& s = "",
+    		const IndexFormatter& formatter = DefaultIndexFormatter) const;
 
     /** Compare to another factor for testing (implementing Testable) */
     virtual bool equals(const GaussianFactor& lf, double tol = 1e-9) const;
@@ -237,7 +223,14 @@ namespace gtsam {
     /** Return the number of columns and rows of the Hessian matrix */
     size_t rows() const { return info_.rows(); }
 
-    /** Return a view of the block at (j1,j2) of the <emph>upper-triangular part</emph> of the
+    /**
+     * Construct the corresponding anti-factor to negate information
+     * stored stored in this factor.
+     * @return a HessianFactor with negated Hessian matrices
+     */
+    virtual GaussianFactor::shared_ptr negate() const;
+
+    /** Return a view of the block at (j1,j2) of the <em>upper-triangular part</em> of the
      * information matrix \f$ H \f$, no data is copied.  See HessianFactor class documentation
      * above to explain that only the upper-triangular part of the information matrix is stored
      * and returned by this function.
@@ -249,16 +242,39 @@ namespace gtsam {
      */
     constBlock info(const_iterator j1, const_iterator j2) const { return info_(j1-begin(), j2-begin()); }
 
-    /** Return the <emph>upper-triangular part</emph> of the full *augmented* information matrix,
+    /** Return a view of the block at (j1,j2) of the <em>upper-triangular part</em> of the
+     * information matrix \f$ H \f$, no data is copied.  See HessianFactor class documentation
+     * above to explain that only the upper-triangular part of the information matrix is stored
+     * and returned by this function.
+     * @param j1 Which block row to get, as an iterator pointing to the slot in this factor.  You can
+     * use, for example, begin() + 2 to get the 3rd variable in this factor.
+     * @param j2 Which block column to get, as an iterator pointing to the slot in this factor.  You can
+     * use, for example, begin() + 2 to get the 3rd variable in this factor.
+     * @return A view of the requested block, not a copy.
+     */
+    Block info(iterator j1, iterator j2) { return info_(j1-begin(), j2-begin()); }
+
+    /** Return the <em>upper-triangular part</em> of the full *augmented* information matrix,
      * as described above.  See HessianFactor class documentation above to explain that only the
      * upper-triangular part of the information matrix is stored and returned by this function.
      */
     constBlock info() const { return info_.full(); }
 
+    /** Return the <em>upper-triangular part</em> of the full *augmented* information matrix,
+     * as described above.  See HessianFactor class documentation above to explain that only the
+     * upper-triangular part of the information matrix is stored and returned by this function.
+     */
+    Block info() { return info_.full(); }
+
     /** Return the constant term \f$ f \f$ as described above
      * @return The constant term \f$ f \f$
      */
-    double constantTerm() const;
+    double constantTerm() const { return info_(this->size(), this->size())(0,0); }
+
+    /** Return the constant term \f$ f \f$ as described above
+     * @return The constant term \f$ f \f$
+     */
+    double& constantTerm() { return info_(this->size(), this->size())(0,0); }
 
     /** Return the part of linear term \f$ g \f$ as described above corresponding to the requested variable.
      * @param j Which block row to get, as an iterator pointing to the slot in this factor.  You can
@@ -266,9 +282,36 @@ namespace gtsam {
      * @return The linear term \f$ g \f$ */
     constColumn linearTerm(const_iterator j) const { return info_.column(j-begin(), size(), 0); }
 
+    /** Return the part of linear term \f$ g \f$ as described above corresponding to the requested variable.
+     * @param j Which block row to get, as an iterator pointing to the slot in this factor.  You can
+     * use, for example, begin() + 2 to get the 3rd variable in this factor.
+     * @return The linear term \f$ g \f$ */
+    Column linearTerm(iterator j) { return info_.column(j-begin(), size(), 0); }
+
     /** Return the complete linear term \f$ g \f$ as described above.
      * @return The linear term \f$ g \f$ */
-    constColumn linearTerm() const;
+    constColumn linearTerm() const { return info_.rangeColumn(0, this->size(), this->size(), 0); }
+
+    /** Return the complete linear term \f$ g \f$ as described above.
+     * @return The linear term \f$ g \f$ */
+    Column linearTerm() { return info_.rangeColumn(0, this->size(), this->size(), 0); }
+    
+    /** Return the augmented information matrix represented by this GaussianFactor.
+     * The augmented information matrix contains the information matrix with an
+     * additional column holding the information vector, and an additional row
+     * holding the transpose of the information vector.  The lower-right entry
+     * contains the constant error term (when \f$ \delta x = 0 \f$).  The
+     * augmented information matrix is described in more detail in HessianFactor,
+     * which in fact stores an augmented information matrix.
+     *
+     * For HessianFactor, this is the same as info() except that this function
+     * returns a complete symmetric matrix whereas info() returns a matrix where
+     * only the upper triangle is valid, but should be interpreted as symmetric.
+     * This is because info() returns only a reference to the internal
+     * representation of the augmented information matrix, which stores only the
+     * upper triangle.
+     */
+    virtual Matrix computeInformation() const;
 
     // Friend unit test classes
     friend class ::ConversionConstructorHessianFactorTest;
@@ -290,6 +333,20 @@ namespace gtsam {
 
     /** split partially eliminated factor */
     boost::shared_ptr<GaussianConditional> splitEliminatedFactor(size_t nrFrontals);
+
+    /** Update the factor by adding the information from the JacobianFactor
+     * (used internally during elimination).
+     * @param update The JacobianFactor containing the new information to add
+     * @param scatter A mapping from variable index to slot index in this HessianFactor
+     */
+    void updateATA(const JacobianFactor& update, const Scatter& scatter);
+
+    /** Update the factor by adding the information from the HessianFactor
+     * (used internally during elimination).
+     * @param update The HessianFactor containing the new information to add
+     * @param scatter A mapping from variable index to slot index in this HessianFactor
+     */
+    void updateATA(const HessianFactor& update, const Scatter& scatter);
 
     /** assert invariants */
     void assertInvariants() const;

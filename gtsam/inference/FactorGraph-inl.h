@@ -23,38 +23,46 @@
 #pragma once
 
 #include <gtsam/inference/BayesTree.h>
+#include <gtsam/inference/VariableIndex.h>
 
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/format.hpp>
-#include <boost/bind.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 
 #include <stdio.h>
 #include <list>
 #include <sstream>
 #include <stdexcept>
-#include <functional>
-
-using namespace std;
 
 namespace gtsam {
 
 	/* ************************************************************************* */
+  template<class FACTOR>
+  template<class CONDITIONAL>
+  FactorGraph<FACTOR>::FactorGraph(const BayesNet<CONDITIONAL>& bayesNet) {
+    factors_.reserve(bayesNet.size());
+    BOOST_FOREACH(const typename CONDITIONAL::shared_ptr& cond, bayesNet) {
+      this->push_back(cond->toFactor());
+    }
+  }
+
+	/* ************************************************************************* */
 	template<class FACTOR>
-	void FactorGraph<FACTOR>::print(const string& s) const {
-		cout << s << endl;
-		cout << "size: " << size() << endl;
+	void FactorGraph<FACTOR>::print(const std::string& s,
+			const IndexFormatter& formatter) const {
+		std::cout << s << std::endl;
+		std::cout << "size: " << size() << std::endl;
 		for (size_t i = 0; i < factors_.size(); i++) {
-			stringstream ss;
+			std::stringstream ss;
 			ss << "factor " << i << ": ";
-			if (factors_[i] != NULL) factors_[i]->print(ss.str());
+			if (factors_[i] != NULL) factors_[i]->print(ss.str(), formatter);
 		}
 	}
 
 	/* ************************************************************************* */
 	template<class FACTOR>
-	bool FactorGraph<FACTOR>::equals(const FactorGraph<FACTOR>& fg, double tol) const {
+	bool FactorGraph<FACTOR>::equals(const This& fg, double tol) const {
 		/** check whether the two factor graphs have the same number of factors_ */
 		if (factors_.size() != fg.size()) return false;
 
@@ -80,8 +88,59 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class FACTOR>
+	std::pair<typename FactorGraph<FACTOR>::sharedConditional, FactorGraph<FACTOR> >
+		FactorGraph<FACTOR>::eliminateFrontals(size_t nFrontals, const Eliminate& eliminate) const
+	{
+		// Build variable index
+		VariableIndex variableIndex(*this);
+
+		// Find first variable
+		Index firstIndex = 0;
+		while(firstIndex < variableIndex.size() && variableIndex[firstIndex].empty())
+			++ firstIndex;
+
+		// Check that number of variables is in bounds
+		if(firstIndex + nFrontals > variableIndex.size())
+			throw std::invalid_argument("Requested to eliminate more frontal variables than exist in the factor graph.");
+
+		// Get set of involved factors
+		FastSet<size_t> involvedFactorIs;
+		for(Index j = firstIndex; j < firstIndex + nFrontals; ++j) {
+			BOOST_FOREACH(size_t i, variableIndex[j]) {
+				involvedFactorIs.insert(i);
+			}
+		}
+
+		// Separate factors into involved and remaining
+		FactorGraph<FactorType> involvedFactors;
+		FactorGraph<FactorType> remainingFactors;
+		FastSet<size_t>::const_iterator involvedFactorIsIt = involvedFactorIs.begin();
+		for(size_t i = 0; i < this->size(); ++i) {
+			if(involvedFactorIsIt != involvedFactorIs.end() && *involvedFactorIsIt == i) {
+				// If the current factor is involved, add it to involved and increment involved iterator
+				involvedFactors.push_back((*this)[i]);
+				++ involvedFactorIsIt;
+			} else {
+				// If not involved, add to remaining
+				remainingFactors.push_back((*this)[i]);
+			}
+		}
+
+		// Do dense elimination on the involved factors
+		typename FactorGraph<FactorType>::EliminationResult eliminationResult =
+			eliminate(involvedFactors, nFrontals);
+
+		// Add the remaining factor back into the factor graph
+		remainingFactors.push_back(eliminationResult.second);
+
+		// Return the eliminated factor and remaining factor graph
+		return std::make_pair(eliminationResult.first, remainingFactors);
+	}
+
+	/* ************************************************************************* */
+	template<class FACTOR>
 	void FactorGraph<FACTOR>::replace(size_t index, sharedFactor factor) {
-		if (index >= factors_.size()) throw invalid_argument(boost::str(
+		if (index >= factors_.size()) throw std::invalid_argument(boost::str(
 				boost::format("Factor graph does not contain a factor with index %d.")
 						% index));
 		// Replace the factor
@@ -101,30 +160,34 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	template<class DERIVED, class KEY>
-	typename DERIVED::shared_ptr Combine(const FactorGraph<DERIVED>& factors,
-			const FastMap<KEY, std::vector<KEY> >& variableSlots) {
-		typedef const pair<const KEY, std::vector<KEY> > KeySlotPair;
-		return typename DERIVED::shared_ptr(new DERIVED(
-		    boost::make_transform_iterator(variableSlots.begin(), boost::bind(&KeySlotPair::first, _1)),
-		    boost::make_transform_iterator(variableSlots.end(), boost::bind(&KeySlotPair::first, _1))));
+	template<class DERIVEDFACTOR, class KEY>
+	typename DERIVEDFACTOR::shared_ptr Combine(const FactorGraph<DERIVEDFACTOR>& factors,
+    const FastMap<KEY, std::vector<KEY> >& variableSlots) {
+
+		typedef const std::pair<const KEY, std::vector<KEY> > KeySlotPair;
+    // Local functional for getting keys out of key-value pairs
+    struct Local { static KEY FirstOf(const KeySlotPair& pr) { return pr.first; } };
+
+		return typename DERIVEDFACTOR::shared_ptr(new DERIVEDFACTOR(
+		    boost::make_transform_iterator(variableSlots.begin(), &Local::FirstOf),
+		    boost::make_transform_iterator(variableSlots.end(), &Local::FirstOf)));
 	}
 
   /* ************************************************************************* */
+	// Recursive function to add factors in cliques to vector of factors_io
 	template<class FACTOR, class CONDITIONAL, class CLIQUE>
 	void _FactorGraph_BayesTree_adder(
-	    vector<typename FactorGraph<FACTOR>::sharedFactor>& factors,
+	    std::vector<typename boost::shared_ptr<FACTOR> >& factors_io,
 	    const typename BayesTree<CONDITIONAL,CLIQUE>::sharedClique& clique) {
 
 	  if(clique) {
 	    // Add factor from this clique
-	    factors.push_back((*clique)->toFactor());
+	  	factors_io.push_back((*clique)->toFactor());
 
 	    // Traverse children
 	    typedef typename BayesTree<CONDITIONAL,CLIQUE>::sharedClique sharedClique;
-	    BOOST_FOREACH(const sharedClique& child, clique->children()) {
-	      _FactorGraph_BayesTree_adder<FACTOR,CONDITIONAL,CLIQUE>(factors, child);
-	    }
+	    BOOST_FOREACH(const sharedClique& child, clique->children())
+	      _FactorGraph_BayesTree_adder<FACTOR,CONDITIONAL,CLIQUE>(factors_io, child);
 	  }
 	}
 

@@ -22,8 +22,6 @@
 
 namespace gtsam {
 
-using namespace std;
-
 struct ISAM2::Impl {
 
   struct PartialSolveResult {
@@ -48,9 +46,17 @@ struct ISAM2::Impl {
    * @param nodes Current BayesTree::Nodes index to be augmented with slots for new variables
    * @param keyFormatter Formatter for printing nonlinear keys during debugging
    */
-  static void AddVariables(const Values& newTheta, Values& theta, Permuted<VectorValues>& delta,
-      Permuted<VectorValues>& deltaNewton, Permuted<VectorValues>& deltaGradSearch, vector<bool>& replacedKeys,
-      Ordering& ordering, Base::Nodes& nodes, const KeyFormatter& keyFormatter = DefaultKeyFormatter);
+  static void AddVariables(const Values& newTheta, Values& theta, VectorValues& delta,
+      VectorValues& deltaNewton, VectorValues& deltaGradSearch, std::vector<bool>& replacedKeys,
+      Ordering& ordering, const KeyFormatter& keyFormatter = DefaultKeyFormatter);
+	  
+  /**
+   * Remove variables from the ISAM2 system.
+   */
+	static void RemoveVariables(const FastSet<Key>& unusedKeys, const ISAM2Clique::shared_ptr& root,
+		Values& theta, VariableIndex& variableIndex, VectorValues& delta, VectorValues& deltaNewton,
+		VectorValues& deltaGradSearch, std::vector<bool>& replacedKeys, Ordering& ordering, Base::Nodes& nodes,
+		GaussianFactorGraph& linearFactors);
 
   /**
    * Extract the set of variable indices from a NonlinearFactorGraph.  For each Symbol
@@ -70,7 +76,21 @@ struct ISAM2::Impl {
    * @return The set of variable indices in delta whose magnitude is greater than or
    * equal to relinearizeThreshold
    */
-  static FastSet<Index> CheckRelinearization(const Permuted<VectorValues>& delta, const Ordering& ordering,
+  static FastSet<Index> CheckRelinearizationFull(const VectorValues& delta, const Ordering& ordering,
+      const ISAM2Params::RelinearizationThreshold& relinearizeThreshold, const KeyFormatter& keyFormatter = DefaultKeyFormatter);
+
+  /**
+   * Find the set of variables to be relinearized according to relinearizeThreshold.
+   * This check is performed recursively, starting at the top of the tree. Once a
+   * variable in the tree does not need to be relinearized, no further checks in
+   * that branch are performed. This is an approximation of the Full version, designed
+   * to save time at the expense of accuracy.
+   * @param delta The linear delta to check against the threshold
+   * @param keyFormatter Formatter for printing nonlinear keys during debugging
+   * @return The set of variable indices in delta whose magnitude is greater than or
+   * equal to relinearizeThreshold
+   */
+  static FastSet<Index> CheckRelinearizationPartial(const ISAM2Clique::shared_ptr& root, const VectorValues& delta, const Ordering& ordering,
       const ISAM2Params::RelinearizationThreshold& relinearizeThreshold, const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 
   /**
@@ -88,12 +108,12 @@ struct ISAM2::Impl {
    *
    * Alternatively could we trace up towards the root for each variable here?
    */
-  static void FindAll(ISAM2Clique::shared_ptr clique, FastSet<Index>& keys, const vector<bool>& markedMask);
+  static void FindAll(ISAM2Clique::shared_ptr clique, FastSet<Index>& keys, const std::vector<bool>& markedMask);
 
   /**
    * Apply expmap to the given values, but only for indices appearing in
    * \c markedRelinMask.  Values are expmapped in-place.
-   * \param [in][out] values The value to expmap in-place
+   * \param [in, out] values The value to expmap in-place
    * \param delta The linear delta with which to expmap
    * \param ordering The ordering
    * \param mask Mask on linear indices, only \c true entries are expmapped
@@ -103,9 +123,9 @@ struct ISAM2::Impl {
    * recalculate its delta.
    * @param keyFormatter Formatter for printing nonlinear keys during debugging
    */
-  static void ExpmapMasked(Values& values, const Permuted<VectorValues>& delta,
+  static void ExpmapMasked(Values& values, const VectorValues& delta,
       const Ordering& ordering, const std::vector<bool>& mask,
-      boost::optional<Permuted<VectorValues>&> invalidateIfDebug = boost::optional<Permuted<VectorValues>&>(),
+      boost::optional<VectorValues&> invalidateIfDebug = boost::none,
       const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 
   /**
@@ -125,10 +145,10 @@ struct ISAM2::Impl {
   static PartialSolveResult PartialSolve(GaussianFactorGraph& factors, const FastSet<Index>& keys,
       const ReorderingMode& reorderingMode, bool useQR);
 
-  static size_t UpdateDelta(const boost::shared_ptr<ISAM2Clique>& root, std::vector<bool>& replacedKeys, Permuted<VectorValues>& delta, double wildfireThreshold);
+  static size_t UpdateDelta(const boost::shared_ptr<ISAM2Clique>& root, std::vector<bool>& replacedKeys, VectorValues& delta, double wildfireThreshold);
 
   static size_t UpdateDoglegDeltas(const ISAM2& isam, double wildfireThreshold, std::vector<bool>& replacedKeys,
-      Permuted<VectorValues>& deltaNewton, Permuted<VectorValues>& RgProd);
+      VectorValues& deltaNewton, VectorValues& RgProd);
 
 };
 

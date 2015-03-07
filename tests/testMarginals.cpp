@@ -51,34 +51,34 @@ TEST(Marginals, planarSLAMmarginals) {
 
   /* add prior  */
   // gaussian for prior
-  SharedDiagonal prior_model = noiseModel::Diagonal::Sigmas(Vector_(3, 0.3, 0.3, 0.1));
-  Pose2 prior_measurement(0.0, 0.0, 0.0); // prior at origin
-  graph.add(PriorFactor<Pose2>(x1, prior_measurement, prior_model));  // add the factor to the graph
+  SharedDiagonal priorNoise = noiseModel::Diagonal::Sigmas(Vector_(3, 0.3, 0.3, 0.1));
+  Pose2 priorMean(0.0, 0.0, 0.0); // prior at origin
+  graph.add(PriorFactor<Pose2>(x1, priorMean, priorNoise));  // add the factor to the graph
 
   /* add odometry */
   // general noisemodel for odometry
-  SharedDiagonal odom_model = noiseModel::Diagonal::Sigmas(Vector_(3, 0.2, 0.2, 0.1));
-  Pose2 odom_measurement(2.0, 0.0, 0.0); // create a measurement for both factors (the same in this case)
+  SharedDiagonal odometryNoise = noiseModel::Diagonal::Sigmas(Vector_(3, 0.2, 0.2, 0.1));
+  Pose2 odometry(2.0, 0.0, 0.0); // create a measurement for both factors (the same in this case)
   // create between factors to represent odometry
-  graph.add(BetweenFactor<Pose2>(x1, x2, odom_measurement, odom_model));
-  graph.add(BetweenFactor<Pose2>(x2, x3, odom_measurement, odom_model));
+  graph.add(BetweenFactor<Pose2>(x1, x2, odometry, odometryNoise));
+  graph.add(BetweenFactor<Pose2>(x2, x3, odometry, odometryNoise));
 
   /* add measurements */
   // general noisemodel for measurements
-  SharedDiagonal meas_model = noiseModel::Diagonal::Sigmas(Vector_(2, 0.1, 0.2));
+  SharedDiagonal measurementNoise = noiseModel::Diagonal::Sigmas(Vector_(2, 0.1, 0.2));
 
   // create the measurement values - indices are (pose id, landmark id)
   Rot2 bearing11 = Rot2::fromDegrees(45),
      bearing21 = Rot2::fromDegrees(90),
      bearing32 = Rot2::fromDegrees(90);
-  double range11 = sqrt(4+4),
+  double range11 = sqrt(4.0+4.0),
        range21 = 2.0,
        range32 = 2.0;
 
   // create bearing/range factors
-  graph.add(BearingRangeFactor<Pose2, Point2>(x1, l1, bearing11, range11, meas_model));
-  graph.add(BearingRangeFactor<Pose2, Point2>(x2, l1, bearing21, range21, meas_model));
-  graph.add(BearingRangeFactor<Pose2, Point2>(x3, l2, bearing32, range32, meas_model));
+  graph.add(BearingRangeFactor<Pose2, Point2>(x1, l1, bearing11, range11, measurementNoise));
+  graph.add(BearingRangeFactor<Pose2, Point2>(x2, l1, bearing21, range21, measurementNoise));
+  graph.add(BearingRangeFactor<Pose2, Point2>(x3, l2, bearing32, range32, measurementNoise));
 
   // linearization point for marginals
   Values soln;
@@ -180,7 +180,62 @@ TEST(Marginals, planarSLAMmarginals) {
   EXPECT(assert_equal(expectedx1, Matrix(joint_l2x1(x1,x1)), 1e-6));
 }
 
+/* ************************************************************************* */
+TEST(Marginals, order) {
+	NonlinearFactorGraph fg;
+	fg.add(PriorFactor<Pose2>(0, Pose2(), noiseModel::Unit::Create(3)));
+	fg.add(BetweenFactor<Pose2>(0, 1, Pose2(1,0,0), noiseModel::Unit::Create(3)));
+	fg.add(BetweenFactor<Pose2>(1, 2, Pose2(1,0,0), noiseModel::Unit::Create(3)));
+	fg.add(BetweenFactor<Pose2>(2, 3, Pose2(1,0,0), noiseModel::Unit::Create(3)));
 
+	Values vals;
+	vals.insert(0, Pose2());
+	vals.insert(1, Pose2(1,0,0));
+	vals.insert(2, Pose2(2,0,0));
+	vals.insert(3, Pose2(3,0,0));
+
+	vals.insert(100, Point2(0,1));
+	vals.insert(101, Point2(1,1));
+
+	fg.add(BearingRangeFactor<Pose2,Point2>(0, 100,
+		vals.at<Pose2>(0).bearing(vals.at<Point2>(100)),
+		vals.at<Pose2>(0).range(vals.at<Point2>(100)), noiseModel::Unit::Create(2)));
+	fg.add(BearingRangeFactor<Pose2,Point2>(0, 101,
+		vals.at<Pose2>(0).bearing(vals.at<Point2>(101)),
+		vals.at<Pose2>(0).range(vals.at<Point2>(101)), noiseModel::Unit::Create(2)));
+
+	fg.add(BearingRangeFactor<Pose2,Point2>(1, 100,
+		vals.at<Pose2>(1).bearing(vals.at<Point2>(100)),
+		vals.at<Pose2>(1).range(vals.at<Point2>(100)), noiseModel::Unit::Create(2)));
+	fg.add(BearingRangeFactor<Pose2,Point2>(1, 101,
+		vals.at<Pose2>(1).bearing(vals.at<Point2>(101)),
+		vals.at<Pose2>(1).range(vals.at<Point2>(101)), noiseModel::Unit::Create(2)));
+
+	fg.add(BearingRangeFactor<Pose2,Point2>(2, 100,
+		vals.at<Pose2>(2).bearing(vals.at<Point2>(100)),
+		vals.at<Pose2>(2).range(vals.at<Point2>(100)), noiseModel::Unit::Create(2)));
+	fg.add(BearingRangeFactor<Pose2,Point2>(2, 101,
+		vals.at<Pose2>(2).bearing(vals.at<Point2>(101)),
+		vals.at<Pose2>(2).range(vals.at<Point2>(101)), noiseModel::Unit::Create(2)));
+
+	fg.add(BearingRangeFactor<Pose2,Point2>(3, 100,
+		vals.at<Pose2>(3).bearing(vals.at<Point2>(100)),
+		vals.at<Pose2>(3).range(vals.at<Point2>(100)), noiseModel::Unit::Create(2)));
+	fg.add(BearingRangeFactor<Pose2,Point2>(3, 101,
+		vals.at<Pose2>(3).bearing(vals.at<Point2>(101)),
+		vals.at<Pose2>(3).range(vals.at<Point2>(101)), noiseModel::Unit::Create(2)));
+
+	Marginals marginals(fg, vals);
+	FastVector<Key> keys(fg.keys());
+	JointMarginal joint = marginals.jointMarginalCovariance(keys);
+
+	LONGS_EQUAL(3, joint(0,0).rows());
+	LONGS_EQUAL(3, joint(1,1).rows());
+	LONGS_EQUAL(3, joint(2,2).rows());
+	LONGS_EQUAL(3, joint(3,3).rows());
+	LONGS_EQUAL(2, joint(100,100).rows());
+	LONGS_EQUAL(2, joint(101,101).rows());
+}
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}

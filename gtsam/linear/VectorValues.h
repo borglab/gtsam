@@ -19,13 +19,17 @@
 
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/types.h>
-#include <gtsam/inference/Permutation.h>
 
+#include <boost/lexical_cast.hpp>
 #include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
 #include <numeric>
+#include <stdexcept>
 
 namespace gtsam {
+
+	// Forward declarations
+	class Permutation;
 
   /**
    * This class represents a collection of vector-valued variables associated
@@ -130,6 +134,9 @@ namespace gtsam {
     /** Return the summed dimensionality of all variables. */
     size_t dim() const { return values_.rows(); }
 
+		/** Return the dimension of each vector in this container */
+		std::vector<size_t> dims() const;
+
     /** Check whether a variable with index \c j exists. */
     bool exists(Index j) const { return j < size() && maps_[j].rows() > 0; }
 
@@ -147,7 +154,7 @@ namespace gtsam {
 
     /** Insert a vector \c value with index \c j.
      * Causes reallocation. Can be used to insert values in any order, but
-     * throws an invalid_argument exception if the index \j is already used.
+     * throws an invalid_argument exception if the index \c j is already used.
      * @param value The vector to be inserted.
      * @param j The index with which the value will be associated.
      */
@@ -158,23 +165,24 @@ namespace gtsam {
 
     iterator begin()                      { chk(); return maps_.begin(); }  ///< Iterator over variables
     const_iterator begin() const          { chk(); return maps_.begin(); }  ///< Iterator over variables
-    iterator end()                        { chk(); return maps_.end(); }    ///< Iterator over variables
+    iterator end()                         { chk(); return maps_.end(); }    ///< Iterator over variables
     const_iterator end() const            { chk(); return maps_.end(); }    ///< Iterator over variables
-    reverse_iterator rbegin()             { chk(); return maps_.rbegin(); } ///< Reverse iterator over variables
+    reverse_iterator rbegin()              { chk(); return maps_.rbegin(); } ///< Reverse iterator over variables
     const_reverse_iterator rbegin() const { chk(); return maps_.rbegin(); } ///< Reverse iterator over variables
-    reverse_iterator rend()               { chk(); return maps_.rend(); }   ///< Reverse iterator over variables
+    reverse_iterator rend()                { chk(); return maps_.rend(); }   ///< Reverse iterator over variables
     const_reverse_iterator rend() const   { chk(); return maps_.rend(); }   ///< Reverse iterator over variables
 
     /** print required by Testable for unit testing */
-    void print(const std::string& str = "VectorValues: ") const;
+    void print(const std::string& str = "VectorValues: ",
+    		const IndexFormatter& formatter =DefaultIndexFormatter) const;
 
     /** equals required by Testable for unit testing */
     bool equals(const VectorValues& x, double tol = 1e-9) const;
 
-    /// @}
+    /// @{
     /// \anchor AdvancedConstructors
     /// @name Advanced Constructors
-    /// @{
+    /// @}
 
     /** Construct from a container of variable dimensions (in variable order), without initializing any values. */
     template<class CONTAINER>
@@ -262,6 +270,11 @@ namespace gtsam {
       return gtsam::dot(this->values_, V.values_);
     }
 
+    /** Vector L2 norm */
+    inline double norm() const {
+      return this->vector().norm();
+    }
+
     /**
      * + operator does element-wise addition.  Both VectorValues must have the
      * same structure (checked when NDEBUG is not defined).
@@ -269,15 +282,27 @@ namespace gtsam {
     VectorValues operator+(const VectorValues& c) const;
 
     /**
+     * + operator does element-wise subtraction.  Both VectorValues must have the
+     * same structure (checked when NDEBUG is not defined).
+     */
+    VectorValues operator-(const VectorValues& c) const;
+
+    /**
      * += operator does element-wise addition.  Both VectorValues must have the
      * same structure (checked when NDEBUG is not defined).
      */
     void operator+=(const VectorValues& c);
 
-    /** Assignment operator from Permuted<VectorValues>, requires the dimensions
-     * of the assignee to already be properly pre-allocated.
-     */
-    VectorValues& operator=(const Permuted<VectorValues>& rhs);
+		/**
+		 * Permute the entries of this VectorValues, returns a new VectorValues as
+		 * the result.
+		 */
+		VectorValues permute(const Permutation& permutation) const;
+
+		/**
+		 * Swap the data in this VectorValues with another.
+		 */
+		void swap(VectorValues& other);
 
     /// @}
 
@@ -296,6 +321,16 @@ namespace gtsam {
     void copyStructureFrom(const VectorValues& other);
 
   public:
+
+    /**
+     * scale a vector by a scalar
+     */
+    friend VectorValues operator*(const double a, const VectorValues &V) {
+      VectorValues result(VectorValues::SameStructure(V));
+      result.values_ = a * V.values_;
+      return result;
+    }
+
     /// TODO: linear algebra interface seems to have been added for SPCG.
     friend size_t dim(const VectorValues& V) {
       return V.dim();
@@ -384,7 +419,7 @@ namespace gtsam {
     maps_.reserve(maps_.size() + dimensions.size());
     BOOST_FOREACH(size_t dim, dimensions) {
       maps_.push_back(values_.segment(varStart, dim));
-      varStart += dim; // varStart is continued from first for loop
+      varStart += (int)dim; // varStart is continued from first for loop
     }
   }
 

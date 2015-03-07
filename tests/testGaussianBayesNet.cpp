@@ -29,7 +29,7 @@ using namespace boost::assign;
 #include <gtsam/inference/BayesNet.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
-#include <gtsam/slam/smallExample.h>
+#include <tests/smallExample.h>
 
 using namespace std;
 using namespace gtsam;

@@ -22,6 +22,7 @@
 #include <gtsam/inference/VariableIndex.h>
 #include <gtsam/inference/SymbolicFactorGraph.h>
 
+using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
@@ -43,7 +44,9 @@ TEST(VariableIndex, augment) {
   VariableIndex actual(fg1);
   actual.augment(fg2);
 
-  CHECK(assert_equal(expected, actual));
+	LONGS_EQUAL(16, actual.nEntries());
+	LONGS_EQUAL(8, actual.nFactors());
+  EXPECT(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */

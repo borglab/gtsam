@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    NoiseModelFactor.h
- * @brief   Non-linear factor class
+ * @file    NonlinearFactor.h
+ * @brief   Non-linear factor base classes
  * @author  Frank Dellaert
  * @author  Richard Roberts
  */
@@ -28,12 +28,20 @@
 
 #include <gtsam/inference/Factor-inl.h>
 #include <gtsam/inference/IndexFactor.h>
-#include <gtsam/linear/SharedNoiseModel.h>
+#include <gtsam/linear/NoiseModel.h>
 #include <gtsam/linear/JacobianFactor.h>
 
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/Ordering.h>
-#include <gtsam/nonlinear/Symbol.h>
+
+/**
+ * Macro to add a standard clone function to a derived factor
+ * @deprecated: will go away shortly - just add the clone function directly
+ */
+#define ADD_CLONE_NONLINEAR_FACTOR(Derived) \
+  virtual gtsam::NonlinearFactor::shared_ptr clone() const { \
+  return boost::static_pointer_cast<gtsam::NonlinearFactor>( \
+      gtsam::NonlinearFactor::shared_ptr(new Derived(*this))); }
 
 namespace gtsam {
 
@@ -91,9 +99,9 @@ public:
 
   /** print */
   virtual void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
-    std::cout << s << "keys = { ";
+    std::cout << s << "  keys = { ";
     BOOST_FOREACH(Key key, this->keys()) { std::cout << keyFormatter(key) << " "; }
-    std::cout << "}" << endl;
+    std::cout << "}" << std::endl;
   }
 
   /** Check if two factors are equal */
@@ -111,7 +119,7 @@ public:
 
   /**
    * Calculate the error of the factor
-   * This is typically equal to log-likelihood, e.g. 0.5(h(x)-z)^2/sigma^2 in case of Gaussian.
+   * This is typically equal to log-likelihood, e.g. \f$ 0.5(h(x)-z)^2/sigma^2 \f$ in case of Gaussian.
    * You can override this for systems with unusual noise models.
    */
   virtual double error(const Values& c) const = 0;
@@ -145,6 +153,45 @@ public:
       indices[j] = ordering[this->keys()[j]];
     return IndexFactor::shared_ptr(new IndexFactor(indices));
   }
+
+  /**
+   * Creates a shared_ptr clone of the factor - needs to be specialized to allow
+   * for subclasses
+   *
+   * By default, throws exception if subclass does not implement the function.
+   */
+  virtual shared_ptr clone() const {
+  	// TODO: choose better exception to throw here
+  	throw std::runtime_error("NonlinearFactor::clone(): Attempting to clone factor with no clone() implemented!");
+  	return shared_ptr();
+  }
+
+  /**
+   * Creates a shared_ptr clone of the factor with different keys using
+   * a map from old->new keys
+   */
+  shared_ptr rekey(const std::map<Key,Key>& rekey_mapping) const {
+  	shared_ptr new_factor = clone();
+  	for (size_t i=0; i<new_factor->size(); ++i) {
+  		Key& cur_key = new_factor->keys()[i];
+  		std::map<Key,Key>::const_iterator mapping = rekey_mapping.find(cur_key);
+  		if (mapping != rekey_mapping.end())
+  			cur_key = mapping->second;
+  	}
+  	return new_factor;
+  }
+
+  /**
+   * Clones a factor and fully replaces its keys
+   * @param new_keys is the full replacement set of keys
+   */
+  shared_ptr rekey(const std::vector<Key>& new_keys) const {
+  	assert(new_keys.size() == this->keys().size());
+  	shared_ptr new_factor = clone();
+  	new_factor->keys() = new_keys;
+  	return new_factor;
+  }
+
 
 }; // \class NonlinearFactor
 
@@ -182,7 +229,6 @@ public:
 
   /**
    * Constructor
-   * @param keys The variables involved in this factor
    */
   template<class ITERATOR>
   NoiseModelFactor(const SharedNoiseModel& noiseModel, ITERATOR beginKeys, ITERATOR endKeys)
@@ -333,14 +379,14 @@ public:
 
   /**
    *  Constructor
-   *  @param z measurement
-   *  @param key by which to look up X value in Values
+   *  @param key1 by which to look up X value in Values
    */
   NoiseModelFactor1(const SharedNoiseModel& noiseModel, Key key1) :
     Base(noiseModel, key1) {}
 
   /** Calls the 1-key specific version of evaluateError, which is pure virtual
-   * so must be implemented in the derived class. */
+   *  so must be implemented in the derived class.
+   */
   virtual Vector unwhitenedError(const Values& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
     if(this->active(x)) {
       const X& x1 = x.at<X>(keys_[0]);

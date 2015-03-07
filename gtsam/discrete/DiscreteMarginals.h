@@ -1,0 +1,78 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file DiscreteMarginals.h
+ * @brief A class for computing marginals in a DiscreteFactorGraph
+ * @author Abhijit Kundu
+ * @author Richard Roberts
+ * @author Frank Dellaert
+ * @date June 4, 2012
+ */
+
+#pragma once
+
+#include <gtsam/discrete/DiscreteFactorGraph.h>
+#include <gtsam/inference/GenericMultifrontalSolver.h>
+#include <gtsam/linear/GaussianBayesTree.h>
+
+namespace gtsam {
+
+  /**
+   * A class for computing marginals of variables in a DiscreteFactorGraph
+   */
+  class DiscreteMarginals {
+
+  protected:
+
+    BayesTree<DiscreteConditional> bayesTree_;
+
+  public:
+
+	/** Construct a marginals class.
+	 * @param graph The factor graph defining the full joint density on all variables.
+	 */
+	DiscreteMarginals(const DiscreteFactorGraph& graph) {
+		typedef JunctionTree<DiscreteFactorGraph> DiscreteJT;
+		GenericMultifrontalSolver<DiscreteFactor, DiscreteJT> solver(graph);
+		bayesTree_ = *solver.eliminate(&EliminateDiscrete);
+	}
+
+	/** Compute the marginal of a single variable */
+	DiscreteFactor::shared_ptr operator()(Index variable) const {
+		// Compute marginal
+		DiscreteFactor::shared_ptr marginalFactor;
+		marginalFactor = bayesTree_.marginalFactor(variable, &EliminateDiscrete);
+		return marginalFactor;
+	}
+
+	/** Compute the marginal of a single variable
+	 * 	@param key DiscreteKey of the Variable
+	 * 	@return Vector of marginal probabilities
+	 */
+	Vector marginalProbabilities(const DiscreteKey& key) const {
+		// Compute marginal
+		DiscreteFactor::shared_ptr marginalFactor;
+		marginalFactor = bayesTree_.marginalFactor(key.first, &EliminateDiscrete);
+
+		//Create result
+		Vector vResult(key.second);
+		for (size_t state = 0; state < key.second ; ++ state) {
+			DiscreteFactor::Values values;
+			values[key.first] = state;
+			vResult(state) = (*marginalFactor)(values);
+		}
+		return vResult;
+	}
+
+  };
+
+} /* namespace gtsam */

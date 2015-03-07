@@ -54,7 +54,8 @@ namespace gtsam {
 		}
 
 		/// print
-		void print(const std::string& = "GaussianDensity") const;
+		void print(const std::string& = "GaussianDensity",
+				const IndexFormatter& formatter =DefaultIndexFormatter) const;
 
 		/// Mean \f$ \mu = R^{-1} d \f$
 		Vector mean() const;

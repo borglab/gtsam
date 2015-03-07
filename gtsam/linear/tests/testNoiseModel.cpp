@@ -25,8 +25,6 @@ using namespace boost::assign;
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/linear/NoiseModel.h>
-#include <gtsam/linear/SharedGaussian.h>
-#include <gtsam/linear/SharedDiagonal.h>
 
 using namespace std;
 using namespace gtsam;
@@ -129,15 +127,6 @@ TEST(NoiseModel, equals)
 
 	EXPECT(assert_equal(*i1,*i1));
 	EXPECT(assert_inequal(*i1,*i2));
-}
-
-/* ************************************************************************* */
-TEST(NoiseModel, sample)
-{
-	Vector s = Vector_(3,1.0,2.0,3.0);
-	SharedDiagonal model = sharedSigmas(s);
-	Vector v = model->sample();
-	// no check as no way yet to set random seed
 }
 
 // TODO enable test once a mechanism for smart constraints exists
@@ -259,18 +248,6 @@ TEST( NoiseModel, QR )
 }
 
 /* ************************************************************************* */
-TEST(NoiseModel, Cholesky)
-{
-  SharedDiagonal expected = noiseModel::Unit::Create(4);
-  Matrix Ab = exampleQR::Ab; // otherwise overwritten !
-  SharedDiagonal actual = exampleQR::diagonal->Cholesky(Ab, 4);
-  EXPECT(assert_equal(*expected,*actual));
-  // Ab was modified in place !!!
-  Matrix actualRd = Ab.block(0, 0, actual->dim(), Ab.cols()).triangularView<Eigen::Upper>();
-  EXPECT(linear_dependent(exampleQR::Rd,actualRd,1e-4));
-}
-
-/* ************************************************************************* */
 TEST(NoiseModel, QRNan )
 {
 	SharedDiagonal constrained = noiseModel::Constrained::All(2);
@@ -288,8 +265,8 @@ TEST(NoiseModel, QRNan )
 TEST(NoiseModel, SmartCovariance )
 {
 	bool smart = true;
-	SharedGaussian expected = Unit::Create(3);
-	SharedGaussian actual = Gaussian::Covariance(eye(3), smart);
+	gtsam::SharedGaussian expected = Unit::Create(3);
+	gtsam::SharedGaussian actual = Gaussian::Covariance(eye(3), smart);
 	EXPECT(assert_equal(*expected,*actual));
 }
 
@@ -306,7 +283,7 @@ TEST(NoiseModel, ScalarOrVector )
 TEST(NoiseModel, WhitenInPlace)
 {
 	Vector sigmas = Vector_(3, 0.1, 0.1, 0.1);
-	SharedDiagonal model(sigmas);
+	SharedDiagonal model = Diagonal::Sigmas(sigmas);
 	Matrix A = eye(3);
 	model->WhitenInPlace(A);
 	Matrix expected = eye(3) * 10;
@@ -346,8 +323,5 @@ TEST(NoiseModel, robustNoise)
 }
 
 /* ************************************************************************* */
-int main() {
-	TestResult tr;
-	return TestRegistry::runAllTests(tr);
-}
+int main() {	TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */

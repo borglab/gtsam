@@ -28,7 +28,7 @@ namespace gtsam {
 	/**
 	 * Rotation matrix
 	 * NOTE: the angle theta is in radians unless explicitly stated
-	 * @ingroup geometry
+	 * @addtogroup geometry
 	 * \nosubgrouping
 	 */
 	class Rot2 : public DerivedValue<Rot2> {
@@ -83,9 +83,9 @@ namespace gtsam {
 		/**
 		 * Named constructor with derivative
 		 * Calculate relative bearing to a landmark in local coordinate frame
-		 * @param point 2D location of landmark
+		 * @param d 2D location of landmark
 		 * @param H optional reference for Jacobian
-		 * @return 2D rotation \in SO(2)
+		 * @return 2D rotation \f$ \in SO(2) \f$
 		 */
 		static Rot2 relativeBearing(const Point2& d, boost::optional<Matrix&> H =
 				boost::none);

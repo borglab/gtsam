@@ -28,11 +28,19 @@
 template<typename Scalar>
 EIGEN_DONT_INLINE Scalar foo(const Scalar& x, const Scalar& y)
 {
+  using namespace std;
 //   return x+std::sin(y);
   EIGEN_ASM_COMMENT("mybegin");
-  return static_cast<Scalar>(x*2 - std::pow(x,2) + 2*std::sqrt(y*y) - 4 * std::sin(x) + 2 * std::cos(y) - std::exp(-0.5*x*x));
+  return static_cast<Scalar>(x*2 - pow(x,2) + 2*sqrt(y*y) - 4 * sin(x) + 2 * cos(y) - exp(-0.5*x*x));
   //return x+2*y*x;//x*2 -std::pow(x,2);//(2*y/x);// - y*2;
   EIGEN_ASM_COMMENT("myend");
+}
+
+template<typename Vector>
+EIGEN_DONT_INLINE typename Vector::Scalar foo(const Vector& p)
+{
+  typedef typename Vector::Scalar Scalar;
+  return (p-Vector(Scalar(-1),Scalar(1.))).norm() + (p.array() * p.array()).sum() + p.dot(p);
 }
 
 template<typename _Scalar, int NX=Dynamic, int NY=Dynamic>
@@ -140,9 +148,23 @@ void test_autodiff_scalar()
   typedef AutoDiffScalar<Vector2f> AD;
   AD ax(1,Vector2f::UnitX());
   AD ay(2,Vector2f::UnitY());
-  foo<AD>(ax,ay);
-  std::cerr << foo<AD>(ax,ay).value() << " <> "
-            << foo<AD>(ax,ay).derivatives().transpose() << "\n\n";
+  AD res = foo<AD>(ax,ay);
+  std::cerr << res.value() << " <> "
+            << res.derivatives().transpose() << "\n\n";
+}
+
+void test_autodiff_vector()
+{
+  std::cerr << foo<Vector2f>(Vector2f(1,2)) << "\n";
+  typedef AutoDiffScalar<Vector2f> AD;
+  typedef Matrix<AD,2,1> VectorAD;
+  VectorAD p(AD(1),AD(-1));
+  p.x().derivatives() = Vector2f::UnitX();
+  p.y().derivatives() = Vector2f::UnitY();
+  
+  AD res = foo<VectorAD>(p);
+  std::cerr << res.value() << " <> "
+            << res.derivatives().transpose() << "\n\n";
 }
 
 void test_autodiff_jacobian()
@@ -159,6 +181,7 @@ void test_autodiff_jacobian()
 void test_autodiff()
 {
     test_autodiff_scalar();
-    test_autodiff_jacobian();
+    test_autodiff_vector();
+//     test_autodiff_jacobian();
 }
 

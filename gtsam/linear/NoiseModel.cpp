@@ -27,9 +27,7 @@
 #include <boost/random/variate_generator.hpp>
 
 #include <gtsam/base/timing.h>
-#include <gtsam/base/cholesky.h>
 #include <gtsam/linear/NoiseModel.h>
-#include <gtsam/linear/SharedDiagonal.h>
 
 static double inf = std::numeric_limits<double>::infinity();
 using namespace std;
@@ -125,42 +123,13 @@ SharedDiagonal Gaussian::QR(Matrix& Ab) const {
 	if(debug) gtsam::print(Ab, "Whitened Ab: ");
 
 	// Eigen QR - much faster than older householder approach
-	inplace_QR(Ab, false);
+	inplace_QR(Ab);
 
 	// hand-coded householder implementation
 	// TODO: necessary to isolate last column?
 //	householder(Ab, maxRank);
 
 	return Unit::Create(maxRank);
-}
-
-/* ************************************************************************* */
-SharedDiagonal Gaussian::Cholesky(Matrix& Ab, size_t nFrontals) const {
-  // get size(A) and maxRank
-  // TODO: really no rank problems ?
-
-  // pre-whiten everything (cheaply if possible)
-  tic("Cholesky: 1 whiten");
-  WhitenInPlace(Ab);
-  toc("Cholesky: 1 whiten");
-
-  // Form A'*A (todo: this is probably less efficient than possible)
-  tic("Cholesky: 2 A' * A");
-  Ab = Ab.transpose() * Ab;
-  toc("Cholesky: 2 A' * A");
-
-  // Use Cholesky to factor Ab
-  tic("Cholesky: 3 careful");
-  size_t maxrank = choleskyCareful(Ab).first;
-  toc("Cholesky: 3 careful");
-
-  // Due to numerical error the rank could appear to be more than the number
-  // of variables.  The important part is that it does not includes the
-  // augmented b column.
-  if(maxrank == (size_t) Ab.cols())
-    -- maxrank;
-
-  return Unit::Create(maxrank);
 }
 
 void Gaussian::WhitenSystem(vector<Matrix>& A, Vector& b) const {
@@ -226,7 +195,7 @@ Diagonal::shared_ptr Diagonal::Sigmas(const Vector& sigmas, bool smart) {
 
 /* ************************************************************************* */
 void Diagonal::print(const string& name) const {
-	gtsam::print(sigmas_, name + ": diagonal sigmas");
+	gtsam::print(sigmas_, name + "diagonal sigmas");
 }
 
 /* ************************************************************************* */
@@ -262,18 +231,6 @@ void Diagonal::WhitenInPlace(Matrix& H) const {
 }
 
 /* ************************************************************************* */
-Vector Diagonal::sample() const {
-	Vector result(dim_);
-	for (size_t i = 0; i < dim_; i++) {
-		typedef boost::normal_distribution<double> Normal;
-		Normal dist(0.0, this->sigmas_(i));
-		boost::variate_generator<boost::minstd_rand&, Normal> norm(generator, dist);
-		result(i) = norm();
-	}
-	return result;
-}
-
-/* ************************************************************************* */
 // Constrained
 /* ************************************************************************* */
 Constrained::shared_ptr Constrained::MixedSigmas(const Vector& mu, const Vector& sigmas, bool smart) {
@@ -290,8 +247,8 @@ Constrained::shared_ptr Constrained::MixedSigmas(const Vector& mu, const Vector&
 
 /* ************************************************************************* */
 void Constrained::print(const std::string& name) const {
-	gtsam::print(sigmas_, name + ": constrained sigmas");
-	gtsam::print(mu_, name + ": constrained mu");
+	gtsam::print(sigmas_, name + "constrained sigmas");
+	gtsam::print(mu_, name + "constrained mu");
 }
 
 /* ************************************************************************* */
@@ -429,6 +386,12 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
 /* ************************************************************************* */
 // Isotropic
 /* ************************************************************************* */
+Isotropic::shared_ptr Isotropic::Sigma(size_t dim, double sigma, bool smart)  {
+	if (smart && fabs(sigma-1.0)<1e-9) return Unit::Create(dim);
+	return shared_ptr(new Isotropic(dim, sigma));
+}
+
+/* ************************************************************************* */
 Isotropic::shared_ptr Isotropic::Variance(size_t dim, double variance, bool smart)  {
 	if (smart && fabs(variance-1.0)<1e-9) return Unit::Create(dim);
 	return shared_ptr(new Isotropic(dim, sqrt(variance)));
@@ -436,7 +399,7 @@ Isotropic::shared_ptr Isotropic::Variance(size_t dim, double variance, bool smar
 
 /* ************************************************************************* */
 void Isotropic::print(const string& name) const {
-	cout << name << ": isotropic sigma " << " " << sigma_ << endl;
+	cout << name << "isotropic sigma " << " " << sigma_ << endl;
 }
 
 /* ************************************************************************* */
@@ -465,22 +428,10 @@ void Isotropic::WhitenInPlace(Matrix& H) const {
 }
 
 /* ************************************************************************* */
-// faster version
-Vector Isotropic::sample() const {
-	typedef boost::normal_distribution<double> Normal;
-	Normal dist(0.0, this->sigma_);
-	boost::variate_generator<boost::minstd_rand&, Normal> norm(generator, dist);
-	Vector result(dim_);
-	for (size_t i = 0; i < dim_; i++)
-		result(i) = norm();
-	return result;
-}
-
-/* ************************************************************************* */
 // Unit
 /* ************************************************************************* */
 void Unit::print(const std::string& name) const {
-	cout << name << ": unit (" << dim_ << ") " << endl;
+	cout << name << "unit (" << dim_ << ") " << endl;
 }
 
 /* ************************************************************************* */
@@ -583,7 +534,7 @@ void Base::reweight(Matrix &A1, Matrix &A2, Matrix &A3, Vector &error) const {
 /* ************************************************************************* */
 
 void Null::print(const std::string &s="") const
-{ cout << s << ": null ()" << endl; }
+{ cout << s << "null ()" << endl; }
 
 Null::shared_ptr Null::Create()
 { return shared_ptr(new Null()); }
@@ -604,7 +555,7 @@ double Fair::weight(const double &error) const
 { return 1.0 / (1.0 + fabs(error)/c_); }
 
 void Fair::print(const std::string &s="") const
-{ cout << s << ": fair (" << c_ << ")" << endl; }
+{ cout << s << "fair (" << c_ << ")" << endl; }
 
 bool Fair::equals(const Base &expected, const double tol) const {
   const Fair* p = dynamic_cast<const Fair*> (&expected);
@@ -632,7 +583,7 @@ double Huber::weight(const double &error) const {
 }
 
 void Huber::print(const std::string &s="") const {
-	cout << s << ": huber (" << k_ << ")" << endl;
+	cout << s << "huber (" << k_ << ")" << endl;
 }
 
 bool Huber::equals(const Base &expected, const double tol) const {

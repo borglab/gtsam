@@ -1,0 +1,5746 @@
+#LyX 2.0 created this file. For more info see http://www.lyx.org/
+\lyxformat 413
+\begin_document
+\begin_header
+\textclass article
+\use_default_options false
+\begin_modules
+eqs-within-sections
+figs-within-sections
+theorems-ams-bytype
+\end_modules
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman times
+\font_sans default
+\font_typewriter default
+\font_default_family rmdefault
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize 12
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry true
+\use_amsmath 1
+\use_esint 0
+\use_mhchem 1
+\use_mathdots 1
+\cite_engine basic
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\use_refstyle 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 1in
+\topmargin 1in
+\rightmargin 1in
+\bottommargin 1in
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Derivatives and Differentials
+\end_layout
+
+\begin_layout Author
+Frank Dellaert
+\end_layout
+
+\begin_layout Standard
+\begin_inset Box Frameless
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+use_makebox 0
+width "100col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status collapsed
+
+\begin_layout Plain Layout
+\begin_inset FormulaMacro
+\newcommand{\SqrMah}[3]{\Vert{#1}-{#2}\Vert_{#3}^{2}}
+{\Vert{#1}-{#2}\Vert_{#3}^{2}}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset FormulaMacro
+\newcommand{\SqrZMah}[2]{\Vert{#1}\Vert_{#2}^{2}}
+{\Vert{#1}\Vert_{#2}^{2}}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset FormulaMacro
+\newcommand{\Rone}{\mathbb{R}}
+{\mathbb{R}}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset FormulaMacro
+\newcommand{\Reals}[1]{\mathbb{R}^{#1}}
+{\mathbb{R}^{#1}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\OneD}[1]{\Reals{#1}\rightarrow\Rone}
+{\Reals{#1}\rightarrow\Rone}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset FormulaMacro
+\newcommand{\Multi}[2]{\Reals{#1}\rightarrow\Reals{#2}}
+{\Reals{#1}\rightarrow\Reals{#2}}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset FormulaMacro
+\newcommand{\Man}{\mathcal{M}}
+{\mathcal{M}}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Note Comment
+status open
+
+\begin_layout Plain Layout
+Derivatives
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset FormulaMacro
+\newcommand{\deriv}[2]{\frac{\partial#1}{\partial#2}}
+{\frac{\partial#1}{\partial#2}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\at}[2]{#1\biggr\rvert_{#2}}
+{#1\biggr\rvert_{#2}}
+\end_inset
+
+ 
+\begin_inset FormulaMacro
+\newcommand{\Jac}[3]{ \at{\deriv{#1}{#2}} {#3} }
+{\at{\deriv{#1}{#2}}{#3}}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Note Comment
+status open
+
+\begin_layout Plain Layout
+Lie Groups
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset FormulaMacro
+\newcommand{\xhat}{\hat{x}}
+{\hat{x}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\yhat}{\hat{y}}
+{\hat{y}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\Ad}[1]{Ad_{#1}}
+{Ad_{#1}}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset FormulaMacro
+\newcommand{\define}{\stackrel{\Delta}{=}}
+{\stackrel{\Delta}{=}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\gg}{\mathfrak{g}}
+{\mathfrak{g}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\Rn}{\mathbb{R}^{n}}
+{\mathbb{R}^{n}}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Note Comment
+status open
+
+\begin_layout Plain Layout
+SO(2)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset FormulaMacro
+\newcommand{\Rtwo}{\mathbb{R}^{2}}
+{\mathbb{R}^{2}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\SOtwo}{SO(2)}
+{SO(2)}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\sotwo}{\mathfrak{so(2)}}
+{\mathfrak{so(2)}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\that}{\hat{\theta}}
+{\hat{\theta}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\skew}[1]{[#1]_{+}}
+{[#1]_{+}}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Note Comment
+status open
+
+\begin_layout Plain Layout
+SE(2)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset FormulaMacro
+\newcommand{\SEtwo}{SE(2)}
+{SE(2)}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\setwo}{\mathfrak{se(2)}}
+{\mathfrak{se(2)}}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Note Comment
+status open
+
+\begin_layout Plain Layout
+SO(3)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset FormulaMacro
+\newcommand{\Rthree}{\mathbb{R}^{3}}
+{\mathbb{R}^{3}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\SOthree}{SO(3)}
+{SO(3)}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\sothree}{\mathfrak{so(3)}}
+{\mathfrak{so(3)}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\what}{\hat{\omega}}
+{\hat{\omega}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\Skew}[1]{[#1]_{\times}}
+{[#1]_{\times}}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Note Comment
+status open
+
+\begin_layout Plain Layout
+SE(3)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset FormulaMacro
+\newcommand{\Rsix}{\mathbb{R}^{6}}
+{\mathbb{R}^{6}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\SEthree}{SE(3)}
+{SE(3)}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\sethree}{\mathfrak{se(3)}}
+{\mathfrak{se(3)}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\xihat}{\hat{\xi}}
+{\hat{\xi}}
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Part
+Theory
+\end_layout
+
+\begin_layout Section
+Optimization
+\end_layout
+
+\begin_layout Standard
+We will be concerned with minimizing a non-linear least squares objective
+ of the form 
+\begin_inset Formula 
+\begin{equation}
+x^{*}=\arg\min_{x}\SqrMah{h(x)}z{\Sigma}\label{eq:objective}
+\end{equation}
+
+\end_inset
+
+where 
+\begin_inset Formula $x\in\Man$
+\end_inset
+
+ is a point on an 
+\begin_inset Formula $n$
+\end_inset
+
+-dimensional manifold (which could be 
+\begin_inset Formula $\Reals n$
+\end_inset
+
+, an n-dimensional Lie group 
+\begin_inset Formula $G$
+\end_inset
+
+, or a general manifold 
+\begin_inset Formula $\Man)$
+\end_inset
+
+, 
+\begin_inset Formula $z\in\Reals m$
+\end_inset
+
+ is an observed measurement, 
+\begin_inset Formula $h:\Man\rightarrow\Reals m$
+\end_inset
+
+ is a measurement function that predicts 
+\begin_inset Formula $z$
+\end_inset
+
+ from 
+\begin_inset Formula $x$
+\end_inset
+
+, and 
+\begin_inset Formula $\SqrZMah e{\Sigma}\define e^{T}\Sigma^{-1}e$
+\end_inset
+
+ is the squared Mahalanobis distance with covariance 
+\begin_inset Formula $\Sigma$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+To minimize 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:objective"
+
+\end_inset
+
+ we need a notion of how the non-linear measurement function 
+\begin_inset Formula $h(x)$
+\end_inset
+
+ behaves in the neighborhood of a linearization point 
+\begin_inset Formula $a$
+\end_inset
+
+.
+ Loosely speaking, we would like to define an 
+\begin_inset Formula $m\times n$
+\end_inset
+
+ Jacobian matrix 
+\begin_inset Formula $H_{a}$
+\end_inset
+
+ such that
+\begin_inset Formula 
+\begin{equation}
+h(a\oplus\xi)\approx h(a)+H_{a}\xi\label{eq:LocalBehavior}
+\end{equation}
+
+\end_inset
+
+with 
+\begin_inset Formula $\xi\in\Reals n$
+\end_inset
+
+, and the operation 
+\begin_inset Formula $\oplus$
+\end_inset
+
+ 
+\begin_inset Quotes eld
+\end_inset
+
+increments
+\begin_inset Quotes erd
+\end_inset
+
+ 
+\begin_inset Formula $a\in\Man$
+\end_inset
+
+.
+ Below we more formally develop this notion, first for functions from 
+\begin_inset Formula $\Multi nm$
+\end_inset
+
+, then for Lie groups, and finally for manifolds.
+\end_layout
+
+\begin_layout Standard
+Once equipped with the approximation 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:LocalBehavior"
+
+\end_inset
+
+, we can minimize the objective function 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:objective"
+
+\end_inset
+
+ with respect to 
+\begin_inset Formula $\delta x$
+\end_inset
+
+ instead:
+\begin_inset Formula 
+\begin{equation}
+\xi^{*}=\arg\min_{\xi}\SqrMah{h(a)+H_{a}\xi}z{\Sigma}\label{eq:ApproximateObjective}
+\end{equation}
+
+\end_inset
+
+This can be done by setting the derivative of 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:ApproximateObjective"
+
+\end_inset
+
+ to zero,
+\begin_inset Note Note
+status collapsed
+
+\begin_layout Plain Layout
+ 
+\begin_inset Formula 
+\[
+\frac{1}{2}H_{a}^{T}(h(a)+H_{a}\xi-z)=0
+\]
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+ yielding the 
+\series bold
+normal equations
+\series default
+,
+\begin_inset Formula 
+\[
+H_{a}^{T}H_{a}\xi=H_{a}^{T}\left(z-h(a)\right)
+\]
+
+\end_inset
+
+which can be solved using Cholesky factorization.
+ Of course, we might have to iterate this multiple times, and use a trust-region
+ method to bound 
+\begin_inset Formula $\xi$
+\end_inset
+
+ when the approximation 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:LocalBehavior"
+
+\end_inset
+
+ is not good.
+\end_layout
+
+\begin_layout Section
+Multivariate Differentiation
+\end_layout
+
+\begin_layout Subsection
+Derivatives
+\end_layout
+
+\begin_layout Standard
+For a vector space 
+\begin_inset Formula $\Reals n$
+\end_inset
+
+, the notion of an increment is just done by vector addition
+\begin_inset Formula 
+\[
+a\oplus\xi\define a+\xi
+\]
+
+\end_inset
+
+and for the approximation 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:LocalBehavior"
+
+\end_inset
+
+ we will use a Taylor expansion using multivariate differentiation.
+ However, loosely following 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Spivak65book"
+
+\end_inset
+
+, we use a perhaps unfamiliar way to define derivatives:
+\end_layout
+
+\begin_layout Definition
+\begin_inset CommandInset label
+LatexCommand label
+name "def:differentiable"
+
+\end_inset
+
+We define a function 
+\begin_inset Formula $f:\Multi nm$
+\end_inset
+
+ to be 
+\series bold
+differentiable
+\series default
+ at 
+\begin_inset Formula $a$
+\end_inset
+
+ if there exists a matrix 
+\begin_inset Formula $f'(a)\in\Reals{m\times n}$
+\end_inset
+
+ such that 
+\begin_inset Formula 
+\[
+\lim_{\delta x\rightarrow0}\frac{\left|f(a)+f'(a)\xi-f(a+\xi)\right|}{\left|\xi\right|}=0
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $\left|e\right|\define\sqrt{e^{T}e}$
+\end_inset
+
+ is the usual norm.
+ If 
+\begin_inset Formula $f$
+\end_inset
+
+ is differentiable, then the matrix 
+\begin_inset Formula $f'(a)$
+\end_inset
+
+ is called the 
+\series bold
+Jacobian matrix
+\series default
+ of 
+\begin_inset Formula $f$
+\end_inset
+
+ at 
+\begin_inset Formula $a$
+\end_inset
+
+, and the linear map 
+\begin_inset Formula $Df_{a}:\xi\mapsto f'(a)\xi$
+\end_inset
+
+ is called the 
+\series bold
+derivative
+\series default
+ of 
+\begin_inset Formula $f$
+\end_inset
+
+ at 
+\begin_inset Formula $a$
+\end_inset
+
+.
+ When no confusion is likely, we use the notation 
+\begin_inset Formula $F_{a}\define f'(a)$
+\end_inset
+
+ to stress that 
+\begin_inset Formula $f'(a)$
+\end_inset
+
+ is a matrix.
+\end_layout
+
+\begin_layout Standard
+The benefit of using this definition is that it generalizes the notion of
+ a scalar derivative 
+\begin_inset Formula $f'(a):\Rone\rightarrow\Rone$
+\end_inset
+
+ to multivariate functions from 
+\begin_inset Formula $\Multi nm$
+\end_inset
+
+.
+ In particular, the derivative 
+\begin_inset Formula $Df_{a}$
+\end_inset
+
+ maps vector increments 
+\begin_inset Formula $\xi$
+\end_inset
+
+ on 
+\begin_inset Formula $a$
+\end_inset
+
+ to increments 
+\begin_inset Formula $f'(a)\xi$
+\end_inset
+
+ on 
+\begin_inset Formula $f(a)$
+\end_inset
+
+, such that this linear map locally approximates 
+\begin_inset Formula $f$
+\end_inset
+
+:
+\begin_inset Formula 
+\[
+f(a+\xi)\approx f(a)+f'(a)\xi
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Example
+\begin_inset CommandInset label
+LatexCommand label
+name "ex:projection"
+
+\end_inset
+
+The function 
+\begin_inset Formula $\pi:(x,y,z)\mapsto(x/z,y/z)$
+\end_inset
+
+ projects a 3D point 
+\begin_inset Formula $(x,y,z)$
+\end_inset
+
+ to the image plane, and has the Jacobian matrix
+\begin_inset Formula 
+\[
+\pi'(x,y,z)=\frac{1}{z}\left[\begin{array}{ccc}
+1 & 0 & -x/z\\
+0 & 1 & -y/z
+\end{array}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Properties of Derivatives
+\end_layout
+
+\begin_layout Standard
+This notion of a multivariate derivative obeys the usual rules:
+\end_layout
+
+\begin_layout Theorem
+(Chain rule) If 
+\begin_inset Formula $f:\Multi np$
+\end_inset
+
+ is differentiable at 
+\begin_inset Formula $a$
+\end_inset
+
+ and 
+\begin_inset Formula $g:\Multi pm$
+\end_inset
+
+ is differentiable at 
+\begin_inset Formula $f(a)$
+\end_inset
+
+,
+\begin_inset Note Note
+status collapsed
+
+\begin_layout Plain Layout
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+ then 
+\begin_inset Formula $D(g\circ f)_{a}=Dg_{f(a)}\circ Df_{a}$
+\end_inset
+
+ and
+\end_layout
+
+\end_inset
+
+ then the Jacobian matrix 
+\begin_inset Formula $H_{a}$
+\end_inset
+
+ of 
+\begin_inset Formula $h=g\circ f$
+\end_inset
+
+ at 
+\begin_inset Formula $a$
+\end_inset
+
+ is the 
+\begin_inset Formula $m\times n$
+\end_inset
+
+ matrix product 
+\begin_inset Formula 
+\[
+H_{a}=G_{f(a)}F_{a}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Proof
+See 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Spivak65book"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Example
+\begin_inset CommandInset label
+LatexCommand label
+name "ex:chain-rule"
+
+\end_inset
+
+If we follow the projection 
+\begin_inset Formula $\pi$
+\end_inset
+
+ by a calibration step 
+\begin_inset Formula $\gamma:(x,y)\mapsto(u_{0}+fx,u_{0}+fy)$
+\end_inset
+
+, with 
+\begin_inset Formula 
+\[
+\gamma'(x,y)=\left[\begin{array}{cc}
+f & 0\\
+0 & f
+\end{array}\right]
+\]
+
+\end_inset
+
+then the combined function 
+\begin_inset Formula $\gamma\circ\pi$
+\end_inset
+
+ has the Jacobian matrix
+\begin_inset Formula 
+\[
+(\gamma\circ\pi)'(x,y)=\frac{f}{z}\left[\begin{array}{ccc}
+1 & 0 & -x/z\\
+0 & 1 & -y/z
+\end{array}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Theorem
+(Inverse) If 
+\begin_inset Formula $f:\Multi nn$
+\end_inset
+
+ is differentiable and has a differentiable inverse 
+\begin_inset Formula $g\define f^{-1}$
+\end_inset
+
+, then its Jacobian matrix 
+\begin_inset Formula $G_{a}$
+\end_inset
+
+ at 
+\begin_inset Formula $a$
+\end_inset
+
+ is just the inverse of that of 
+\begin_inset Formula $f$
+\end_inset
+
+, evaluated at 
+\begin_inset Formula $g(a)$
+\end_inset
+
+:
+\begin_inset Formula 
+\[
+G_{a}=\left[F_{g(a)}\right]^{-1}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Proof
+See 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Spivak65book"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Example
+\begin_inset CommandInset label
+LatexCommand label
+name "ex:inverse"
+
+\end_inset
+
+The function 
+\begin_inset Formula $f:(x,y)\mapsto(x^{2},xy)$
+\end_inset
+
+ has the Jacobian matrix
+\end_layout
+
+\begin_layout Example
+\begin_inset Formula 
+\[
+F_{(x,y)}=\left[\begin{array}{cc}
+2x & 0\\
+y & x
+\end{array}\right]
+\]
+
+\end_inset
+
+and, for 
+\begin_inset Formula $x\geq0$
+\end_inset
+
+, its inverse is the function 
+\begin_inset Formula $g:(x,y)\mapsto(x^{1/2},x^{-1/2}y)$
+\end_inset
+
+ with the Jacobian matrix
+\begin_inset Formula 
+\[
+G_{(x,y)}=\frac{1}{2}\left[\begin{array}{cc}
+x^{-1/2} & 0\\
+-x^{-3/2}y & 2x^{-1/2}
+\end{array}\right]
+\]
+
+\end_inset
+
+It is easily verified that
+\begin_inset Formula 
+\[
+g'(a,b)f'(a^{1/2},a^{-1/2}b)=\frac{1}{2}\left[\begin{array}{cc}
+a^{-1/2} & 0\\
+-a^{-3/2}b & 2a^{-1/2}
+\end{array}\right]\left[\begin{array}{cc}
+2a^{1/2} & 0\\
+a^{-1/2}b & a^{1/2}
+\end{array}\right]=\left[\begin{array}{cc}
+1 & 0\\
+0 & 1
+\end{array}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Problem
+Verify the above for 
+\begin_inset Formula $(a,b)=(4,6)$
+\end_inset
+
+.
+ Sketch the situation graphically to get insight.
+\end_layout
+
+\begin_layout Subsection
+Computing Multivariate Derivatives
+\end_layout
+
+\begin_layout Standard
+Computing derivatives is made easy by defining the concept of a partial
+ derivative:
+\end_layout
+
+\begin_layout Definition
+For 
+\begin_inset Formula $f:\OneD n$
+\end_inset
+
+, the 
+\series bold
+partial derivative
+\series default
+ of 
+\begin_inset Formula $f$
+\end_inset
+
+ at 
+\begin_inset Formula $a$
+\end_inset
+
+,
+\series bold
+ 
+\series default
+
+\begin_inset Formula 
+\[
+D_{j}f(a)\define\lim_{h\rightarrow0}\frac{f\left(a^{1},\ldots,a^{j}+h,\ldots,a^{n}\right)-f\left(a^{1},\ldots,a^{n}\right)}{h}
+\]
+
+\end_inset
+
+which is the ordinary derivative of the scalar function 
+\begin_inset Formula $g(x)\define f\left(a^{1},\ldots,x,\ldots,a^{n}\right)$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+Using this definition, one can show that the Jacobian matrix 
+\begin_inset Formula $F_{a}$
+\end_inset
+
+ of a differentiable 
+\emph on
+multivariate
+\emph default
+ function 
+\begin_inset Formula $f:\Multi nm$
+\end_inset
+
+ consists simply of the 
+\begin_inset Formula $m\times n$
+\end_inset
+
+ partial derivatives 
+\begin_inset Formula $D_{j}f^{i}(a)$
+\end_inset
+
+, evaluated at 
+\begin_inset Formula $a\in\Reals n$
+\end_inset
+
+:
+\begin_inset Formula 
+\[
+F_{a}=\left[\begin{array}{ccc}
+D_{1}f^{1}(a) & \cdots & D_{n}f^{1}(a)\\
+\vdots & \ddots & \vdots\\
+D_{1}f^{m}(a) & \ldots & D_{n}f^{m}(a)
+\end{array}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Problem
+Verify the derivatives in Examples 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "ex:projection"
+
+\end_inset
+
+ to 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "ex:inverse"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Multivariate Functions on Lie Groups
+\end_layout
+
+\begin_layout Subsection
+Lie Groups
+\end_layout
+
+\begin_layout Standard
+Lie groups are not as easy to treat as the vector space 
+\begin_inset Formula $\Reals n$
+\end_inset
+
+ but nevertheless have a lot of structure.
+ To generalize the concept of the total derivative above we just need to
+ replace 
+\begin_inset Formula $a\oplus\xi$
+\end_inset
+
+ in 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:ApproximateObjective"
+
+\end_inset
+
+ with a suitable operation in the Lie group 
+\begin_inset Formula $G$
+\end_inset
+
+.
+ In particular, the notion of an exponential map allows us to define an
+ incremental transformation as tracing out a geodesic curve on the group
+ manifold along a certain 
+\series bold
+tangent vector
+\series default
+ 
+\begin_inset Formula $\xi$
+\end_inset
+
+, 
+\begin_inset Formula 
+\[
+a\oplus\xi\define a\exp\left(\hat{\xi}\right)
+\]
+
+\end_inset
+
+with 
+\begin_inset Formula $\xi\in\Reals n$
+\end_inset
+
+ for an 
+\begin_inset Formula $n$
+\end_inset
+
+-dimensional Lie group, 
+\begin_inset Formula $\hat{\xi}\in\mathfrak{g}$
+\end_inset
+
+ the Lie algebra element corresponding to the vector 
+\begin_inset Formula $\xi$
+\end_inset
+
+, and 
+\begin_inset Formula $\exp\hat{\xi}$
+\end_inset
+
+ the exponential map.
+ Note that if 
+\begin_inset Formula $G$
+\end_inset
+
+ is equal to 
+\begin_inset Formula $\Reals n$
+\end_inset
+
+ then composing with the exponential map 
+\begin_inset Formula $ae^{\xihat}$
+\end_inset
+
+ is just vector addition 
+\begin_inset Formula $a+\xi$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Example
+For the Lie group 
+\begin_inset Formula $\SOthree$
+\end_inset
+
+ of 3D rotations the vector 
+\begin_inset Formula $\xi$
+\end_inset
+
+ is denoted as 
+\begin_inset Formula $\omega$
+\end_inset
+
+ and represents an angular displacement.
+ The Lie algebra element 
+\begin_inset Formula $\xihat$
+\end_inset
+
+ is a skew symmetric matrix denoted as 
+\begin_inset Formula $\Skew{\omega}\in\sothree$
+\end_inset
+
+, and is given by
+\begin_inset Formula 
+\[
+\Skew{\omega}=\left[\begin{array}{ccc}
+0 & -\omega_{z} & \omega_{y}\\
+\omega_{z} & 0 & -\omega_{x}\\
+-\omega_{y} & \omega_{x} & 0
+\end{array}\right]
+\]
+
+\end_inset
+
+Finally, the increment 
+\begin_inset Formula $a\oplus\xi=ae^{\xihat}$
+\end_inset
+
+ corresponds to an incremental rotation 
+\begin_inset Formula $R\oplus\omega=Re^{\Skew{\omega}}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+Derivatives
+\end_layout
+
+\begin_layout Standard
+We can generalize Definition 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "def:differentiable"
+
+\end_inset
+
+ to map exponential coordinates 
+\begin_inset Formula $\xi$
+\end_inset
+
+ to increments 
+\begin_inset Formula $f'(a)\xi$
+\end_inset
+
+ on 
+\begin_inset Formula $f(a)$
+\end_inset
+
+, such that the linear map 
+\begin_inset Formula $Df_{a}$
+\end_inset
+
+ locally approximates a function 
+\begin_inset Formula $f$
+\end_inset
+
+ from 
+\begin_inset Formula $G$
+\end_inset
+
+ to 
+\begin_inset Formula $\Reals m$
+\end_inset
+
+:
+\begin_inset Formula 
+\[
+f(ae^{\xihat})\approx f(a)+f'(a)\xi
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Definition
+We define a function 
+\begin_inset Formula $f:G\rightarrow\Reals m$
+\end_inset
+
+ to be 
+\series bold
+differentiable
+\series default
+ at 
+\begin_inset Formula $a\in G$
+\end_inset
+
+ if there exists a matrix 
+\begin_inset Formula $f'(a)\in\Reals{m\times n}$
+\end_inset
+
+ such that
+\begin_inset Formula 
+\[
+\lim_{\xi\rightarrow0}\frac{\left|f(a)+f'(a)\xi-f(ae^{\hat{\xi}})\right|}{\left|\xi\right|}=0
+\]
+
+\end_inset
+
+If 
+\begin_inset Formula $f$
+\end_inset
+
+ is differentiable, then the matrix 
+\begin_inset Formula $f'(a)$
+\end_inset
+
+ is called the 
+\series bold
+Jacobian matrix
+\series default
+ of 
+\begin_inset Formula $f$
+\end_inset
+
+ at 
+\begin_inset Formula $a$
+\end_inset
+
+, and the linear map 
+\begin_inset Formula $Df_{a}:\xi\mapsto f'(a)\xi$
+\end_inset
+
+ is called the 
+\series bold
+derivative
+\series default
+ of 
+\begin_inset Formula $f$
+\end_inset
+
+ at 
+\begin_inset Formula $a$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Note that the vectors 
+\begin_inset Formula $\xi$
+\end_inset
+
+ can be viewed as lying in the tangent space to 
+\begin_inset Formula $G$
+\end_inset
+
+ at 
+\begin_inset Formula $a$
+\end_inset
+
+, but defining this rigorously would take us on a longer tour of differential
+ geometry.
+ Informally, 
+\begin_inset Formula $\xi$
+\end_inset
+
+ is simply the direction, in a local coordinate frame, that is locally tangent
+ at 
+\begin_inset Formula $a$
+\end_inset
+
+ to a geodesic curve 
+\begin_inset Formula $\gamma:t\mapsto ae^{\widehat{t\xi}}$
+\end_inset
+
+ traced out by the exponential map, with 
+\begin_inset Formula $\gamma(0)=a$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+Derivative of an Action
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Derivatives-of-Actions"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The (usual) action of an 
+\begin_inset Formula $n$
+\end_inset
+
+-dimensional matrix group 
+\begin_inset Formula $G$
+\end_inset
+
+ is matrix-vector multiplication on 
+\begin_inset Formula $\mathbb{R}^{n}$
+\end_inset
+
+, i.e., 
+\begin_inset Formula $f:G\times\Reals n\rightarrow\Reals n$
+\end_inset
+
+ with 
+\begin_inset Formula 
+\[
+f(T,p)=Tp
+\]
+
+\end_inset
+
+Since this is a function defined on the product 
+\begin_inset Formula $G\times\Reals n$
+\end_inset
+
+ the derivative is a linear transformation 
+\begin_inset Formula $Df:\Multi{2n}n$
+\end_inset
+
+ with
+\begin_inset Formula 
+\[
+Df_{(T,p)}\left(\xi,\delta p\right)=D_{1}f_{(T,p)}\left(\xi\right)+D_{2}f_{(T,p)}\left(\delta p\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Theorem
+\begin_inset CommandInset label
+LatexCommand label
+name "th:Action"
+
+\end_inset
+
+The Jacobian matrix of the group action
+\begin_inset Formula $f(T,P)=Tp$
+\end_inset
+
+ at 
+\begin_inset Formula $(T,p)$
+\end_inset
+
+ is given by
+\begin_inset Formula 
+\[
+F_{(T,p)}=\left[\begin{array}{cc}
+TH(p) & T\end{array}\right]=T\left[\begin{array}{cc}
+H(p) & I_{n}\end{array}\right]
+\]
+
+\end_inset
+
+with 
+\begin_inset Formula $H:\Reals n\rightarrow\Reals{n\times n}$
+\end_inset
+
+ a linear mapping that depends on 
+\begin_inset Formula $p$
+\end_inset
+
+, and 
+\begin_inset Formula $I_{n}$
+\end_inset
+
+ the 
+\begin_inset Formula $n\times n$
+\end_inset
+
+ identity matrix.
+\end_layout
+
+\begin_layout Proof
+First, the derivative 
+\begin_inset Formula $D_{2}f$
+\end_inset
+
+ with respect to in 
+\begin_inset Formula $p$
+\end_inset
+
+ is easy, as its matrix is simply T:
+\begin_inset Formula 
+\[
+f(T,p+\delta p)=T(p+\delta p)=Tp+T\delta p=f(T,p)+D_{2}f(\delta p)
+\]
+
+\end_inset
+
+For the derivative 
+\begin_inset Formula $D_{1}f$
+\end_inset
+
+ with respect to a change in the first argument 
+\begin_inset Formula $T$
+\end_inset
+
+, we want
+\end_layout
+
+\begin_layout Proof
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+\begin_inset Formula 
+\[
+f(Te^{\hat{\xi}},p)=Te^{\hat{\xi}}p\approx Tp+D_{1}f(\xi)
+\]
+
+\end_inset
+
+
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+Since the matrix exponential is given by the series 
+\begin_inset Formula $e^{A}=I+A+\frac{A^{2}}{2!}+\frac{A^{3}}{3!}+\ldots$
+\end_inset
+
+ we have, to first order
+\begin_inset Formula 
+\[
+Te^{\hat{\xi}}p\approx T(I+\hat{\xi})p=Tp+T\hat{\xi}p
+\]
+
+\end_inset
+
+
+\begin_inset Note Note
+status collapsed
+
+\begin_layout Plain Layout
+Note also that
+\begin_inset Formula 
+\[
+T\hat{\xi}p=\left(T\hat{\xi}T^{-1}\right)Tp=\left(\Ad T\xihat\right)\left(Tp\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+Hence, we need to show that 
+\begin_inset Formula 
+\begin{equation}
+\xihat p=H(p)\xi\label{eq:Hp}
+\end{equation}
+
+\end_inset
+
+with 
+\begin_inset Formula $H(p)$
+\end_inset
+
+ an 
+\begin_inset Formula $n\times n$
+\end_inset
+
+ matrix that depends on 
+\begin_inset Formula $p$
+\end_inset
+
+.
+ Expressing the map 
+\begin_inset Formula $\xi\rightarrow\hat{\xi}$
+\end_inset
+
+ in terms of the Lie algebra generators 
+\begin_inset Formula $G^{i}$
+\end_inset
+
+, using tensors and Einstein summation, we have 
+\begin_inset Formula $\hat{\xi}_{j}^{i}=G_{jk}^{i}\xi^{k}$
+\end_inset
+
+ allowing us to calculate 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+
+\begin_inset Formula $\hat{\xi}p$
+\end_inset
+
+
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\noun default
+\color inherit
+ as
+\begin_inset Formula 
+\[
+\left(\hat{\xi}p\right)^{i}=\hat{\xi}_{j}^{i}p^{j}=G_{jk}^{i}\xi^{k}p^{j}=\left(G_{jk}^{i}p^{j}\right)\xi^{k}=H_{k}^{i}(p)\xi^{k}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Example
+For 3D rotations 
+\begin_inset Formula $R\in\SOthree$
+\end_inset
+
+, we have 
+\begin_inset Formula $\hat{\omega}=\Skew{\omega}$
+\end_inset
+
+ and 
+\begin_inset Formula 
+\[
+G_{k=1}:\left(\begin{array}{ccc}
+0 & 0 & 0\\
+0 & 0 & -1\\
+0 & 1 & 0
+\end{array}\right)\mbox{}G_{k=2}:\left(\begin{array}{ccc}
+0 & 0 & 1\\
+0 & 0 & 0\\
+-1 & 0 & 0
+\end{array}\right)\mbox{ }G_{k=3}:\left(\begin{array}{ccc}
+0 & -1 & 0\\
+1 & 0 & 0\\
+0 & 0 & 0
+\end{array}\right)
+\]
+
+\end_inset
+
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+The matrices 
+\begin_inset Formula $\left(G_{k}^{i}\right)_{j}$
+\end_inset
+
+ are obtained by assembling the 
+\begin_inset Formula $j^{th}$
+\end_inset
+
+ columns of the generators above, yielding 
+\begin_inset Formula $H(p)$
+\end_inset
+
+ equal to:
+\begin_inset Formula 
+\[
+\left(\begin{array}{ccc}
+0 & 0 & 0\\
+0 & 0 & 1\\
+0 & -1 & 0
+\end{array}\right)p^{1}+\left(\begin{array}{ccc}
+0 & 0 & -1\\
+0 & 0 & 0\\
+1 & 0 & 0
+\end{array}\right)p^{2}+\left(\begin{array}{ccc}
+0 & 1 & 0\\
+-1 & 0 & 0\\
+0 & 0 & 0
+\end{array}\right)p^{3}=\left(\begin{array}{ccc}
+0 & p^{3} & -p^{2}\\
+-p^{3} & 0 & p^{1}\\
+p^{2} & -p^{1} & 0
+\end{array}\right)=\Skew{-p}
+\]
+
+\end_inset
+
+
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\noun default
+\color inherit
+Hence, the Jacobian matrix of 
+\begin_inset Formula $f(R,p)=Rp$
+\end_inset
+
+ is given by
+\begin_inset Formula 
+\[
+F_{(R,p)}=R\left(\begin{array}{cc}
+\Skew{-p} & I_{3}\end{array}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Derivative of an Inverse Action
+\end_layout
+
+\begin_layout Standard
+Applying the action by the inverse of 
+\begin_inset Formula $T\in G$
+\end_inset
+
+ yields a function 
+\begin_inset Formula $g:G\times\Reals n\rightarrow\Reals n$
+\end_inset
+
+ defined by 
+\begin_inset Formula 
+\[
+g(T,p)=T^{-1}p
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Theorem
+\begin_inset CommandInset label
+LatexCommand label
+name "Th:InverseAction"
+
+\end_inset
+
+The Jacobian matrix of the inverse group action 
+\begin_inset Formula $g(T,p)=T^{-1}p$
+\end_inset
+
+ is given by
+\begin_inset Formula 
+\[
+G_{(T,p)}=\left[\begin{array}{cc}
+-H(T^{-1}p) & T^{-1}\end{array}\right]
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $H:\Reals n\rightarrow\Reals{n\times n}$
+\end_inset
+
+ is the same mapping as before.
+\end_layout
+
+\begin_layout Proof
+Again, the derivative 
+\begin_inset Formula $D_{2}g$
+\end_inset
+
+ with respect to in 
+\begin_inset Formula $p$
+\end_inset
+
+ is easy, the matrix of which is simply 
+\begin_inset Formula $T^{-1}$
+\end_inset
+
+:
+\begin_inset Formula 
+\[
+g(T,p+\delta p)=T^{-1}(p+\delta p)=T^{-1}p+T^{-1}\delta p=g(T,p)+D_{2}g(\delta p)
+\]
+
+\end_inset
+
+Conversely, a change in 
+\begin_inset Formula $T$
+\end_inset
+
+ yields
+\begin_inset Formula 
+\[
+g(Te^{\xihat},p)=\left(Te^{\xihat}\right)^{-1}p=e^{-\xihat}T^{-1}p
+\]
+
+\end_inset
+
+Similar to before, if we expand the matrix exponential we get
+\begin_inset Formula 
+\[
+e^{-A}=I-A+\frac{A^{2}}{2!}-\frac{A^{3}}{3!}+\ldots
+\]
+
+\end_inset
+
+so
+\begin_inset Formula 
+\[
+e^{-\xihat}T^{-1}p\approx(I-\xihat)T^{-1}p=g(T,p)-\xihat\left(T^{-1}p\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Example
+For 3D rotations 
+\begin_inset Formula $R\in\SOthree$
+\end_inset
+
+ we have 
+\begin_inset Formula $R^{-1}=R^{T}$
+\end_inset
+
+, 
+\begin_inset Formula $H(p)=-\Skew p$
+\end_inset
+
+, and hence the Jacobian matrix of 
+\begin_inset Formula $g(R,p)=R^{T}p$
+\end_inset
+
+ is given by
+\begin_inset Formula 
+\[
+G_{(R,p)}=\left(\begin{array}{cc}
+\Skew{R^{T}p} & R^{T}\end{array}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Note
+status collapsed
+
+\begin_layout Plain Layout
+My earlier attempt: because the wedge operator is linear, we have
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Formula 
+\begin{eqnarray*}
+f(\xi+x) & = & \exp\widehat{\left(\xi+x\right)}\\
+ & = & \exp\left(\xihat+\hat{x}\right)
+\end{eqnarray*}
+
+\end_inset
+
+However, except for commutative Lie groups, it is not true that 
+\begin_inset Formula $\exp\left(\xihat+\hat{x}\right)=\exp\xihat\exp\hat{x}$
+\end_inset
+
+.
+ However, if we expand the matrix exponential to second order and assume
+ 
+\begin_inset Formula $x\rightarrow0$
+\end_inset
+
+ we do have
+\begin_inset Formula 
+\[
+\exp\left(\xihat+\hat{x}\right)\approx I+\xihat+\hat{x}+\frac{1}{2}\xihat^{2}+\xhat\xihat
+\]
+
+\end_inset
+
+Now, if we ask what 
+\begin_inset Formula $\hat{y}$
+\end_inset
+
+ would effect the same change:
+\begin_inset Formula 
+\begin{eqnarray*}
+\exp\xihat\exp\yhat & = & I+\xihat+\hat{x}+\frac{1}{2}\xihat^{2}+\xhat\xihat\\
+\exp\xihat(I+\yhat) & = & I+\xihat+\hat{x}+\frac{1}{2}\xihat^{2}+\xhat\xihat\\
+\left(\exp\xihat\right)\yhat & = & \xhat+\xhat\xihat
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Instantaneous Velocity
+\end_layout
+
+\begin_layout Standard
+For matrix Lie groups, if we have a matrix 
+\begin_inset Formula $T_{b}^{n}(t)$
+\end_inset
+
+ that depends on a parameter 
+\begin_inset Formula $t$
+\end_inset
+
+, i.e., 
+\begin_inset Formula $T_{b}^{n}(t)$
+\end_inset
+
+ follows a curve on the manifold, then it would be of interest to find the
+ velocity of a point 
+\begin_inset Formula $q^{n}(t)=T_{b}^{n}(t)p^{b}$
+\end_inset
+
+ acted upon by 
+\begin_inset Formula $T_{b}^{n}(t)$
+\end_inset
+
+.
+ We can express the velocity of 
+\begin_inset Formula $q(t)$
+\end_inset
+
+ in both the n-frame and b-frame: 
+\begin_inset Formula 
+\[
+\dot{q}^{n}=\dot{T}_{b}^{n}p^{b}=\dot{T}_{b}^{n}\left(T_{b}^{n}\right)^{-1}p^{n}\mbox{\,\,\,\,\ and\,\,\,\,}\dot{q}^{b}=\left(T_{b}^{n}\right)^{-1}\dot{q}^{n}=\left(T_{b}^{n}\right)^{-1}\dot{T}_{b}^{n}p^{b}
+\]
+
+\end_inset
+
+Both the matrices 
+\begin_inset Formula $\xihat_{nb}^{n}\define\dot{T}_{b}^{n}\left(T_{b}^{n}\right)^{-1}$
+\end_inset
+
+ and 
+\begin_inset Formula $\xihat_{nb}^{b}\define\left(T_{b}^{n}\right)^{-1}\dot{T}_{b}^{n}$
+\end_inset
+
+ are skew-symmetric Lie algebra elements that describe the 
+\series bold
+instantaneous velocity 
+\series default
+
+\begin_inset CommandInset citation
+LatexCommand cite
+after "page 51 for rotations, page 419 for SE(3)"
+key "Murray94book"
+
+\end_inset
+
+.
+ We will revisit this for both rotations and rigid 3D transformations.
+\end_layout
+
+\begin_layout Section
+Differentials: Smooth Mapping between Lie Groups
+\end_layout
+
+\begin_layout Subsection
+Motivation and Definition
+\end_layout
+
+\begin_layout Standard
+The above shows how to compute the derivative of a function 
+\begin_inset Formula $f:G\rightarrow\Reals m$
+\end_inset
+
+.
+ However, what if the argument to 
+\begin_inset Formula $f$
+\end_inset
+
+ is itself the result of a mapping between Lie groups? In other words, 
+\begin_inset Formula $f=g\circ\varphi$
+\end_inset
+
+, with 
+\begin_inset Formula $g:G\rightarrow\Reals m$
+\end_inset
+
+ and where 
+\begin_inset Formula $\varphi:H\rightarrow G$
+\end_inset
+
+ is a smooth mapping from the 
+\begin_inset Formula $n$
+\end_inset
+
+-dimensional Lie group 
+\begin_inset Formula $H$
+\end_inset
+
+ to the 
+\begin_inset Formula $p$
+\end_inset
+
+-dimensional Lie group 
+\begin_inset Formula $G$
+\end_inset
+
+.
+ In this case, one would expect that we can arrive at 
+\begin_inset Formula $Df_{a}$
+\end_inset
+
+ by composing linear maps, as follows:
+\begin_inset Formula 
+\[
+f'(a)=(g\circ\varphi)'(a)=G_{\varphi(a)}\varphi'(a)
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $\varphi'(a)$
+\end_inset
+
+ is an 
+\begin_inset Formula $n\times p$
+\end_inset
+
+ matrix that is the best linear approximation to the map 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula $\varphi:H\rightarrow G$
+\end_inset
+
+.
+ The corresponding linear map 
+\begin_inset Formula $D\varphi_{a}$
+\end_inset
+
+ is called the 
+\family default
+\series bold
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+differential
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+ 
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+or 
+\series bold
+pushforward
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+ of 
+\begin_inset Formula $ $
+\end_inset
+
+the mapping 
+\begin_inset Formula $\varphi$
+\end_inset
+
+ at 
+\begin_inset Formula $a$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+Because a rigorous definition will lead us too far astray, here we only
+ informally define the pushforward of 
+\begin_inset Formula $\varphi$
+\end_inset
+
+ at 
+\begin_inset Formula $a$
+\end_inset
+
+ as the linear map 
+\begin_inset Formula $D\varphi_{a}:\Multi np$
+\end_inset
+
+ such that 
+\begin_inset Formula $D\varphi_{a}\left(\xi\right)\define\varphi'(a)\xi$
+\end_inset
+
+ and
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+
+\begin_inset Formula 
+\begin{equation}
+\varphi\left(ae^{\xihat}\right)\approx\varphi\left(a\right)\exp\left(\widehat{\varphi'(a)\xi}\right)\label{eq:pushforward}
+\end{equation}
+
+\end_inset
+
+with equality for 
+\begin_inset Formula $\xi\rightarrow0$
+\end_inset
+
+.
+ We call 
+\begin_inset Formula $\varphi'(a)$
+\end_inset
+
+ the 
+\series bold
+Jacobian matrix
+\series default
+ of the map 
+\begin_inset Formula $\varphi$
+\end_inset
+
+ at 
+\begin_inset Formula $a$
+\end_inset
+
+.
+ Below we show that even with this informal definition we can deduce the
+ pushforward in a number of useful cases.
+\end_layout
+
+\begin_layout Subsection
+Left Multiplication with a Constant
+\end_layout
+
+\begin_layout Theorem
+Suppose 
+\begin_inset Formula $G$
+\end_inset
+
+ is an 
+\begin_inset Formula $n$
+\end_inset
+
+-dimensional Lie group, and 
+\begin_inset Formula $\varphi:G\rightarrow G$
+\end_inset
+
+ is defined as 
+\begin_inset Formula $\varphi(g)=hg$
+\end_inset
+
+, with 
+\begin_inset Formula $h\in G$
+\end_inset
+
+ a constant.
+ Then 
+\begin_inset Formula $D\varphi_{a}$
+\end_inset
+
+ is the identity mapping and 
+\begin_inset Formula 
+\[
+\varphi'(a)=I_{n}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Proof
+Defining 
+\begin_inset Formula $y=D\varphi_{a}x$
+\end_inset
+
+ as in 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:pushforward"
+
+\end_inset
+
+, we have
+\begin_inset Formula 
+\begin{eqnarray*}
+\varphi(a)e^{\yhat} & = & \varphi(ae^{\xhat})\\
+hae^{\yhat} & = & hae^{\xhat}\\
+y & = & x
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Pushforward of the Inverse Mapping
+\end_layout
+
+\begin_layout Standard
+A well known property of Lie groups is the the fact that applying an incremental
+ change 
+\begin_inset Formula $\xihat$
+\end_inset
+
+ in a different frame 
+\begin_inset Formula $g$
+\end_inset
+
+ can be applied in a single step by applying the change 
+\begin_inset Formula $Ad_{g}\xihat$
+\end_inset
+
+ in the original frame, 
+\begin_inset Formula 
+\begin{equation}
+ge^{\xihat}g^{-1}=\exp\left(Ad_{g}\xihat\right)\label{eq:Adjoint2}
+\end{equation}
+
+\end_inset
+
+where 
+\begin_inset Formula $Ad_{g}:\mathfrak{g}\rightarrow\mathfrak{g}$
+\end_inset
+
+ is the 
+\series bold
+adjoint representation
+\series default
+.
+ This comes in handy in the following:
+\end_layout
+
+\begin_layout Theorem
+Suppose that 
+\begin_inset Formula $\varphi:G\rightarrow G$
+\end_inset
+
+ is defined as the mapping from an element 
+\begin_inset Formula $g$
+\end_inset
+
+ to its 
+\series bold
+inverse
+\series default
+ 
+\begin_inset Formula $g^{-1}$
+\end_inset
+
+, i.e., 
+\begin_inset Formula $\varphi(g)=g^{-1}$
+\end_inset
+
+, then the pushforward 
+\begin_inset Formula $D\varphi_{a}$
+\end_inset
+
+ satisfies
+\begin_inset Formula 
+\begin{align}
+\left(D\varphi_{a}x\right)\hat{} & =-Ad_{a}\xhat\label{eq:Dinverse}
+\end{align}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+noindent
+\end_layout
+
+\end_inset
+
+ In other words, and this is intuitive in hindsight, approximating the inverse
+ is accomplished by negation of 
+\begin_inset Formula $\xihat$
+\end_inset
+
+, along with an adjoint to make sure it is applied in the right frame.
+ 
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+noindent
+\end_layout
+
+\end_inset
+
+ Note, however, that 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:Dinverse"
+
+\end_inset
+
+ does not immediately yield a useful expression for the Jacobian matrix
+ 
+\begin_inset Formula $\varphi'(a)$
+\end_inset
+
+, but in many important cases this will turn out to be easy.
+ 
+\end_layout
+
+\begin_layout Proof
+Defining 
+\begin_inset Formula $y=D\varphi_{a}x$
+\end_inset
+
+ as in 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:pushforward"
+
+\end_inset
+
+, we have
+\begin_inset Formula 
+\begin{eqnarray*}
+\varphi(a)e^{\yhat} & = & \varphi(ae^{\xhat})\\
+a^{-1}e^{\yhat} & = & \left(ae^{\xhat}\right)^{-1}\\
+e^{\yhat} & = & -ae^{\xhat}a^{-1}\\
+\yhat & = & -\Ad a\xhat
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Example
+For 3D rotations 
+\begin_inset Formula $R\in\SOthree$
+\end_inset
+
+ we have
+\begin_inset Formula 
+\[
+Ad_{g}(\hat{\omega})=R\hat{\omega}R^{T}=\Skew{R\omega}
+\]
+
+\end_inset
+
+and hence the pushforward for the inverse mapping 
+\begin_inset Formula $\varphi(R)=R^{T}$
+\end_inset
+
+ has the matrix 
+\begin_inset Formula $\varphi'(R)=-R$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+Right Multiplication with a Constant
+\end_layout
+
+\begin_layout Theorem
+Suppose 
+\begin_inset Formula $\varphi:G\rightarrow G$
+\end_inset
+
+ is defined as 
+\begin_inset Formula $\varphi(g)=gh$
+\end_inset
+
+, with 
+\begin_inset Formula $h\in G$
+\end_inset
+
+ a constant.
+ Then 
+\begin_inset Formula $D\varphi_{a}$
+\end_inset
+
+ satisfies
+\begin_inset Formula 
+\[
+\left(D\varphi_{a}x\right)\hat{}=\Ad{h^{-1}}\xhat
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Proof
+Defining 
+\begin_inset Formula $y=D\varphi_{a}x$
+\end_inset
+
+ as in 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:pushforward"
+
+\end_inset
+
+, we have
+\begin_inset Formula 
+\begin{align*}
+\varphi(a)e^{\yhat} & =\varphi(ae^{\xhat})\\
+ahe & =ae^{\xhat}h\\
+e^{\yhat} & =h^{-1}e^{\xhat}h=\exp\left(\Ad{h^{-1}}\xhat\right)\\
+\yhat & =\Ad{h^{-1}}\xhat
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Example
+In the case of 3D rotations, right multiplication with a constant rotation
+ 
+\begin_inset Formula $R$
+\end_inset
+
+ is done through the mapping 
+\begin_inset Formula $\varphi(A)=AR$
+\end_inset
+
+, and satisfies
+\begin_inset Formula 
+\[
+\Skew{D\varphi_{A}x}=\Ad{R^{T}}\Skew x
+\]
+
+\end_inset
+
+For 3D rotations 
+\begin_inset Formula $R\in\SOthree$
+\end_inset
+
+ we have
+\begin_inset Formula 
+\[
+Ad_{R^{T}}(\hat{\omega})=R^{T}\hat{\omega}R=\Skew{R^{T}\omega}
+\]
+
+\end_inset
+
+and hence the Jacobian matrix of 
+\begin_inset Formula $\varphi$
+\end_inset
+
+ at 
+\begin_inset Formula $A$
+\end_inset
+
+ is 
+\begin_inset Formula $\varphi'(A)=R^{T}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+Pushforward of Compose
+\end_layout
+
+\begin_layout Theorem
+If we define the mapping 
+\begin_inset Formula $\varphi:G\times G\rightarrow G$
+\end_inset
+
+ as the product of two group elements 
+\begin_inset Formula $g,h\in G$
+\end_inset
+
+, i.e., 
+\begin_inset Formula $\varphi(g,h)=gh$
+\end_inset
+
+, then the pushforward will satisfy
+\begin_inset Formula 
+\[
+D\varphi_{(a,b)}(x,y)=D_{1}\varphi_{(a,b)}x+D_{2}\varphi_{(a,b)}y
+\]
+
+\end_inset
+
+with
+\begin_inset Formula 
+\[
+\left(D_{1}\varphi_{(a,b)}x\right)\hat{}=\Ad{b^{-1}}\xhat\mbox{\;\ and\;}D_{2}\varphi_{(a,b)}y=y
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Proof
+Looking at the first argument, the proof is very similar to right multiplication
+ with a constant 
+\begin_inset Formula $b$
+\end_inset
+
+.
+ Indeed, defining 
+\begin_inset Formula $y=D\varphi_{a}x$
+\end_inset
+
+ as in 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:pushforward"
+
+\end_inset
+
+, we have
+\begin_inset Formula 
+\begin{align}
+\varphi(a,b)e^{\yhat} & =\varphi(ae^{\xhat},b)\nonumber \\
+abe^{\yhat} & =ae^{\xhat}b\nonumber \\
+e^{\yhat} & =b^{-1}e^{\xhat}b=\exp\left(\Ad{b^{-1}}\xhat\right)\nonumber \\
+\yhat & =\Ad{b^{-1}}\xhat\label{eq:Dcompose1}
+\end{align}
+
+\end_inset
+
+In other words, to apply an incremental change 
+\begin_inset Formula $\xhat$
+\end_inset
+
+ to 
+\begin_inset Formula $a$
+\end_inset
+
+ we first need to undo 
+\begin_inset Formula $b$
+\end_inset
+
+, then apply 
+\begin_inset Formula $\xhat$
+\end_inset
+
+, and then apply 
+\begin_inset Formula $b$
+\end_inset
+
+ again.
+ Using 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:Adjoint2"
+
+\end_inset
+
+ this can be done in one step by simply applying 
+\begin_inset Formula $\Ad{b^{-1}}\xhat$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Proof
+The second argument is quite a bit easier and simply yields the identity
+ mapping:
+\begin_inset Formula 
+\begin{align}
+\varphi(a,b)e^{\yhat} & =\varphi(a,be^{\xhat})\nonumber \\
+abe^{\yhat} & =abe^{\xhat}\nonumber \\
+y & =x\label{eq:Dcompose2}
+\end{align}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+In summary, the Jacobian matrix of 
+\begin_inset Formula $\varphi(g,h)=gh$
+\end_inset
+
+ at 
+\begin_inset Formula $(a,b)\in G\times G$
+\end_inset
+
+ is given by
+\begin_inset Formula 
+\[
+\varphi'(a,b)=?
+\]
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Example
+For 3D rotations 
+\begin_inset Formula $A,B\in\SOthree$
+\end_inset
+
+ we have 
+\begin_inset Formula $\varphi(A,B)=AB$
+\end_inset
+
+, and 
+\begin_inset Formula $\Ad{B^{T}}\Skew{\omega}=\Skew{B^{T}\omega}$
+\end_inset
+
+, hence the Jacobian matrix 
+\begin_inset Formula $\varphi'(A,B)$
+\end_inset
+
+ of composing two rotations is given by
+\begin_inset Formula 
+\[
+\varphi'(A,B)=\left[\begin{array}{cc}
+B^{T} & I_{3}\end{array}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Pushforward of Between
+\end_layout
+
+\begin_layout Standard
+Finally, let us find the pushforward of 
+\series bold
+between
+\series default
+, defined as 
+\begin_inset Formula $\varphi(g,h)=g^{-1}h$
+\end_inset
+
+.
+ For the first argument we reason as:
+\begin_inset Formula 
+\begin{align}
+\varphi(g,h)e^{\yhat} & =\varphi(ge^{\xhat},h)\nonumber \\
+g^{-1}he^{\yhat} & =\left(ge^{\xhat}\right)^{-1}h=-e^{\xhat}g^{-1}h\nonumber \\
+e^{\yhat} & =-\left(h^{-1}g\right)e^{\xhat}\left(h^{-1}g\right)^{-1}=-\exp\Ad{\left(h^{-1}g\right)}\xhat\nonumber \\
+\yhat & =-\Ad{\left(h^{-1}g\right)}\xhat=-\Ad{\varphi\left(h,g\right)}\xhat\label{eq:Dbetween1}
+\end{align}
+
+\end_inset
+
+The second argument yields the identity mapping.
+\end_layout
+
+\begin_layout Example
+For 3D rotations 
+\begin_inset Formula $A,B\in\SOthree$
+\end_inset
+
+ we have 
+\begin_inset Formula $\varphi(A,B)=A^{T}B$
+\end_inset
+
+, and 
+\begin_inset Formula $\Ad{B^{T}A}\Skew{-\omega}=\Skew{-B^{T}A\omega}$
+\end_inset
+
+, hence the Jacobian matrix 
+\begin_inset Formula $\varphi'(A,B)$
+\end_inset
+
+ of between is given by
+\begin_inset Formula 
+\[
+\varphi'(A,B)=\left[\begin{array}{cc}
+\left(-B^{T}A\right) & I_{3}\end{array}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Numerical PushForward
+\end_layout
+
+\begin_layout Standard
+Let's examine
+\begin_inset Formula 
+\[
+f\left(g\right)e^{\yhat}=f\left(ge^{\xhat}\right)
+\]
+
+\end_inset
+
+and multiply with 
+\begin_inset Formula $f(g)^{-1}$
+\end_inset
+
+ on both sides:
+\begin_inset Formula 
+\[
+e^{\yhat}=f\left(g\right)^{-1}f\left(ge^{\xhat}\right)
+\]
+
+\end_inset
+
+We then take the log (which in our case returns 
+\begin_inset Formula $y$
+\end_inset
+
+, not 
+\begin_inset Formula $\yhat$
+\end_inset
+
+):
+\begin_inset Formula 
+\[
+y(x)=\log\left[f\left(g\right)^{-1}f\left(ge^{\xhat}\right)\right]
+\]
+
+\end_inset
+
+Let us look at 
+\begin_inset Formula $x=0$
+\end_inset
+
+, and perturb in direction 
+\begin_inset Formula $i$
+\end_inset
+
+, 
+\begin_inset Formula $e_{i}=[0,0,1,0,0]$
+\end_inset
+
+.
+ Then take derivative, 
+\begin_inset Formula 
+\[
+\deriv{y(d)}d\define\lim_{d\rightarrow0}\frac{y(d)-y(0)}{d}=\lim_{d\rightarrow0}\frac{1}{d}\log\left[f\left(g\right)^{-1}f\left(ge^{\widehat{de_{i}}}\right)\right]
+\]
+
+\end_inset
+
+which is the basis for a numerical derivative scheme.
+\begin_inset Note Note
+status collapsed
+
+\begin_layout Plain Layout
+Not understood yet: Let us also look at a chain rule.
+ If we know the behavior at the origin 
+\begin_inset Formula $I$
+\end_inset
+
+, we can extrapolate
+\begin_inset Formula 
+\[
+f(ge^{\xhat})=f(ge^{\xhat}g^{-1}g)=f(e^{\Ad g\xhat}g)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Derivative of the Exponential and Logarithm Map
+\end_layout
+
+\begin_layout Theorem
+\begin_inset CommandInset label
+LatexCommand label
+name "D-exp"
+
+\end_inset
+
+The derivative of the function 
+\begin_inset Formula $f:\Reals n\rightarrow G$
+\end_inset
+
+ that applies the wedge operator followed by the exponential map, i.e., 
+\begin_inset Formula $f(\xi)=\exp\xihat$
+\end_inset
+
+, is the identity map for 
+\begin_inset Formula $\xi=0$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Proof
+For 
+\begin_inset Formula $\xi=0$
+\end_inset
+
+, we have
+\begin_inset Formula 
+\begin{eqnarray*}
+f(\xi)e^{\yhat} & = & f(\xi+x)\\
+f(0)e^{\yhat} & = & f(0+x)\\
+e^{\yhat} & = & e^{\xhat}
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Corollary
+The derivative of the inverse 
+\begin_inset Formula $f^{-1}$
+\end_inset
+
+ is the identity as well, i.e., for 
+\begin_inset Formula $T=e$
+\end_inset
+
+, the identity element in 
+\begin_inset Formula $G$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+For 
+\begin_inset Formula $\xi\neq0$
+\end_inset
+
+, things are not simple, see .
+ 
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+http://deltaepsilons.wordpress.com/2009/11/06/helgasons-formula-for-the-differenti
+al-of-the-exponential/
+\end_layout
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+General Manifolds
+\end_layout
+
+\begin_layout Subsection
+Retractions
+\end_layout
+
+\begin_layout Standard
+\begin_inset FormulaMacro
+\newcommand{\retract}{\mathcal{R}}
+{\mathcal{R}}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+General manifolds that are not Lie groups do not have an exponential map,
+ but can still be handled by defining a 
+\series bold
+retraction
+\series default
+ 
+\begin_inset Formula $\retract:\Man\times\Reals n\rightarrow\Man$
+\end_inset
+
+, such that
+\begin_inset Formula 
+\[
+a\oplus\xi\define\retract_{a}\left(\xi\right)
+\]
+
+\end_inset
+
+A retraction 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Absil07book"
+
+\end_inset
+
+ is required to be tangent to geodesics on the manifold 
+\begin_inset Formula $\Man$
+\end_inset
+
+ at 
+\begin_inset Formula $a$
+\end_inset
+
+.
+ We can define many retractions for a manifold 
+\begin_inset Formula $\Man$
+\end_inset
+
+, even for those with more structure.
+ For the vector space 
+\begin_inset Formula $\Reals n$
+\end_inset
+
+ the retraction is just vector addition, and for Lie groups the obvious
+ retraction is simply the exponential map, i.e., 
+\begin_inset Formula $\retract_{a}(\xi)=a\cdot\exp\xihat$
+\end_inset
+
+.
+ However, one can choose other, possibly computationally attractive retractions,
+ as long as around a they agree with the geodesic induced by the exponential
+ map, i.e.,
+\begin_inset Formula 
+\[
+\lim_{\xi\rightarrow0}\frac{\left|a\cdot\exp\xihat-\retract_{a}\left(\xi\right)\right|}{\left|\xi\right|}=0
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Example
+For 
+\begin_inset Formula $\SEthree$
+\end_inset
+
+, instead of using the true exponential map it is computationally more efficient
+ to define the retraction, which uses a first order approximation of the
+ translation update
+\begin_inset Formula 
+\[
+\retract_{T}\left(\left[\begin{array}{c}
+\omega\\
+v
+\end{array}\right]\right)=\left[\begin{array}{cc}
+R & t\\
+0 & 1
+\end{array}\right]\left[\begin{array}{cc}
+e^{\Skew{\omega}} & v\\
+0 & 1
+\end{array}\right]=\left[\begin{array}{cc}
+Re^{\Skew{\omega}} & t+Rv\\
+0 & 1
+\end{array}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Derivatives
+\end_layout
+
+\begin_layout Standard
+Equipped with a retraction, then, we can generalize the notion of a derivative
+ for functions 
+\begin_inset Formula $f$
+\end_inset
+
+ from general a manifold 
+\begin_inset Formula $\Man$
+\end_inset
+
+ to 
+\begin_inset Formula $\Reals m$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Definition
+We define a function 
+\begin_inset Formula $f:\Man\rightarrow\Reals m$
+\end_inset
+
+ to be 
+\series bold
+differentiable
+\series default
+ at 
+\begin_inset Formula $a\in\Man$
+\end_inset
+
+ if there exists a matrix 
+\begin_inset Formula $f'(a)$
+\end_inset
+
+ such that
+\begin_inset Formula 
+\[
+\lim_{\xi\rightarrow0}\frac{\left|f(a)+f'(a)\xi-f\left(\retract_{a}(\xi)\right)\right|}{\left|\xi\right|}=0
+\]
+
+\end_inset
+
+with 
+\begin_inset Formula $\xi\in\Reals n$
+\end_inset
+
+ for an 
+\begin_inset Formula $n$
+\end_inset
+
+-dimensional manifold, and 
+\begin_inset Formula $\retract_{a}:\Reals n\rightarrow\Man$
+\end_inset
+
+ a retraction 
+\begin_inset Formula $\retract$
+\end_inset
+
+ at 
+\begin_inset Formula $a$
+\end_inset
+
+.
+ If 
+\begin_inset Formula $f$
+\end_inset
+
+ is differentiable, then 
+\begin_inset Formula $f'(a)$
+\end_inset
+
+ is called the 
+\series bold
+Jacobian matrix
+\series default
+ of 
+\begin_inset Formula $f$
+\end_inset
+
+ at 
+\begin_inset Formula $a$
+\end_inset
+
+, and the linear transformation 
+\begin_inset Formula $Df_{a}:\xi\mapsto f'(a)\xi$
+\end_inset
+
+ is called the 
+\series bold
+derivative
+\series default
+ of 
+\begin_inset Formula $f$
+\end_inset
+
+ at 
+\begin_inset Formula $a$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Definition
+For manifolds that are also Lie groups, the derivative of any function 
+\begin_inset Formula $f:G\rightarrow\Reals m$
+\end_inset
+
+ will agree no matter what retraction 
+\begin_inset Formula $\retract$
+\end_inset
+
+ is used.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Part
+Practice
+\end_layout
+
+\begin_layout Standard
+Below we apply the results derived in the theory part to the geometric objects
+ we use in GTSAM.
+ Above we preferred the modern notation 
+\begin_inset Formula $D_{1}f$
+\end_inset
+
+ for the partial derivative.
+ Below (because this was written earlier) we use the more classical notation
+ 
+\begin_inset Formula 
+\[
+\deriv{f(x,y)}x
+\]
+
+\end_inset
+
+In addition, for Lie groups we will abuse the notation and take
+\begin_inset Formula 
+\[
+\at{\deriv{\varphi(g)}{\xi}}a
+\]
+
+\end_inset
+
+to be the Jacobian matrix 
+\begin_inset Formula $\varphi'($
+\end_inset
+
+a) of the mapping 
+\begin_inset Formula $\varphi$
+\end_inset
+
+ at 
+\begin_inset Formula $a\in G$
+\end_inset
+
+, associated with the pushforward 
+\begin_inset Formula $D\varphi_{a}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Section
+SLAM Example
+\end_layout
+
+\begin_layout Standard
+Let us examine a visual SLAM example.
+ We have 2D measurements 
+\begin_inset Formula $z_{ij}$
+\end_inset
+
+, where each measurement is predicted by
+\begin_inset Formula 
+\[
+z_{ij}=h(T_{i},p_{j})=\pi(T_{i}^{-1}p_{j})
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $T_{i}$
+\end_inset
+
+ is the 3D pose of the 
+\begin_inset Formula $i^{th}$
+\end_inset
+
+ camera, 
+\begin_inset Formula $p_{j}$
+\end_inset
+
+ is the location of the 
+\begin_inset Formula $j^{th}$
+\end_inset
+
+ point, and 
+\begin_inset Formula $\pi:(x,y,z)\mapsto(x/z,y/z)$
+\end_inset
+
+ is the camera projection function from Example 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "ex:projection"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Section
+BetweenFactor
+\end_layout
+
+\begin_layout Standard
+BetweenFactor is often used to summarize 
+\end_layout
+
+\begin_layout Standard
+Theorem 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "D-exp"
+
+\end_inset
+
+ about the derivative of the exponential map 
+\begin_inset Formula $f:\xi\mapsto\exp\xihat$
+\end_inset
+
+ being identity only at 
+\begin_inset Formula $\xi=0$
+\end_inset
+
+ has implications for GTSAM.
+ Given two elements 
+\begin_inset Formula $T_{1}$
+\end_inset
+
+ and 
+\begin_inset Formula $T_{2}$
+\end_inset
+
+, BetweenFactor evaluates
+\begin_inset Formula 
+\[
+g(T_{1},T_{2};Z)=f^{-1}\left(\mathop{between}(Z,\mathop{between}(T_{1},T_{2})\right)=f^{-1}\left(Z^{-1}\left(T_{1}^{-1}T_{2}\right)\right)
+\]
+
+\end_inset
+
+but because it is assumed that 
+\begin_inset Formula $Z\approx T_{1}^{-1}T_{2}$
+\end_inset
+
+, and hence we have 
+\begin_inset Formula $Z^{-1}T_{1}^{-1}T_{2}\approx e$
+\end_inset
+
+ and the derivative should be good there.
+ Note that the derivative of 
+\emph on
+between
+\emph default
+ is identity in its second argument.
+\end_layout
+
+\begin_layout Section
+Point3
+\end_layout
+
+\begin_layout Standard
+A cross product 
+\begin_inset Formula $a\times b$
+\end_inset
+
+ can be written as a matrix multiplication
+\begin_inset Formula 
+\[
+a\times b=\Skew ab
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $\Skew a$
+\end_inset
+
+ is a skew-symmetric matrix defined as
+\begin_inset Formula 
+\[
+\Skew{x,y,z}=\left[\begin{array}{ccc}
+0 & -z & y\\
+z & 0 & -x\\
+-y & x & 0
+\end{array}\right]
+\]
+
+\end_inset
+
+We also have
+\begin_inset Formula 
+\[
+a^{T}\Skew b=-(\Skew ba)^{T}=-(a\times b)^{T}
+\]
+
+\end_inset
+
+The derivative of a cross product 
+\begin_inset Formula 
+\begin{equation}
+\frac{\partial(a\times b)}{\partial a}=\Skew{-b}\label{eq:Dcross1}
+\end{equation}
+
+\end_inset
+
+
+\begin_inset Formula 
+\begin{equation}
+\frac{\partial(a\times b)}{\partial b}=\Skew a\label{eq:Dcross2}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+2D Rotations
+\end_layout
+
+\begin_layout Subsection
+Rot2 in GTSAM
+\end_layout
+
+\begin_layout Standard
+A rotation is stored as 
+\begin_inset Formula $(\cos\theta,\sin\theta)$
+\end_inset
+
+.
+ An incremental rotation is applied using the trigonometric sum rule:
+\begin_inset Formula 
+\[
+\cos\theta'=\cos\theta\cos\delta-\sin\theta\sin\delta
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\sin\theta'=\sin\theta\cos\delta+\cos\theta\sin\delta
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $\delta$
+\end_inset
+
+ is an incremental rotation angle.
+\end_layout
+
+\begin_layout Subsection
+Derivatives of Actions
+\end_layout
+
+\begin_layout Standard
+In the case of 
+\begin_inset Formula $\SOtwo$
+\end_inset
+
+ the vector space is 
+\begin_inset Formula $\Rtwo$
+\end_inset
+
+, and the group action 
+\begin_inset Formula $f(R,p)$
+\end_inset
+
+ corresponds to rotating the 2D point 
+\begin_inset Formula $p$
+\end_inset
+
+
+\begin_inset Formula 
+\[
+f(R,p)=Rp
+\]
+
+\end_inset
+
+According to Theorem 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "th:Action"
+
+\end_inset
+
+, the Jacobian matrix of 
+\begin_inset Formula $f$
+\end_inset
+
+ is given by
+\begin_inset Formula 
+\[
+f'(R,p)=\left[\begin{array}{cc}
+RH(p) & R\end{array}\right]
+\]
+
+\end_inset
+
+with 
+\begin_inset Formula $H:\Reals 2\rightarrow\Reals{2\times2}$
+\end_inset
+
+ a linear mapping that depends on 
+\begin_inset Formula $p$
+\end_inset
+
+.
+ In the case of 
+\begin_inset Formula $\SOtwo$
+\end_inset
+
+, we can find 
+\begin_inset Formula $H(p)$
+\end_inset
+
+ by equating (as in Equation 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:Hp"
+
+\end_inset
+
+):
+\begin_inset Formula 
+\[
+\skew wp=\left[\begin{array}{cc}
+0 & -\omega\\
+\omega & 0
+\end{array}\right]\left[\begin{array}{c}
+x\\
+y
+\end{array}\right]=\left[\begin{array}{c}
+-y\\
+x
+\end{array}\right]\omega=H(p)\omega
+\]
+
+\end_inset
+
+Note that 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula 
+\[
+H(p)=\left[\begin{array}{c}
+-y\\
+x
+\end{array}\right]=\left[\begin{array}{cc}
+0 & -1\\
+1 & 0
+\end{array}\right]\left[\begin{array}{c}
+x\\
+y
+\end{array}\right]=R_{\pi/2}p
+\]
+
+\end_inset
+
+and since 2D rotations commute, we also have, with 
+\begin_inset Formula $q=Rp$
+\end_inset
+
+
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+:
+\begin_inset Formula 
+\[
+f'(R,p)=\left[\begin{array}{cc}
+R\left(R_{\pi/2}p\right) & R\end{array}\right]=\left[\begin{array}{cc}
+R_{\pi/2}q & R\end{array}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Pushforwards of Mappings
+\end_layout
+
+\begin_layout Standard
+Since 
+\begin_inset Formula $\Ad R\skew{\omega}=\skew{\omega}$
+\end_inset
+
+, we have the derivative of 
+\series bold
+inverse
+\series default
+,
+\begin_inset Formula 
+\[
+\frac{\partial R^{T}}{\partial\omega}=-\Ad R=-1\mbox{ }
+\]
+
+\end_inset
+
+
+\series bold
+compose,
+\series default
+
+\begin_inset Formula 
+\[
+\frac{\partial\left(R_{1}R_{2}\right)}{\partial\omega_{1}}=\Ad{R_{2}^{T}}=1\mbox{ and }\frac{\partial\left(R_{1}R_{2}\right)}{\partial\omega_{2}}=1
+\]
+
+\end_inset
+
+and 
+\series bold
+between:
+\series default
+
+\begin_inset Formula 
+\[
+\frac{\partial\left(R_{1}^{T}R_{2}\right)}{\partial\omega_{1}}=-\Ad{R_{2}^{T}R_{1}}=-1\mbox{ and }\frac{\partial\left(R_{1}^{T}R_{2}\right)}{\partial\omega_{2}}=1
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+2D Rigid Transformations
+\end_layout
+
+\begin_layout Subsection
+The derivatives of Actions
+\end_layout
+
+\begin_layout Standard
+The action of 
+\begin_inset Formula $\SEtwo$
+\end_inset
+
+ on 2D points is done by embedding the points in 
+\begin_inset Formula $\mathbb{R}^{3}$
+\end_inset
+
+ by using homogeneous coordinates
+\begin_inset Formula 
+\[
+f(T,p)=\hat{q}=\left[\begin{array}{c}
+q\\
+1
+\end{array}\right]=\left[\begin{array}{cc}
+R & t\\
+0 & 1
+\end{array}\right]\left[\begin{array}{c}
+p\\
+1
+\end{array}\right]=T\hat{p}
+\]
+
+\end_inset
+
+To find the derivative, we write the quantity 
+\begin_inset Formula $\xihat\hat{p}$
+\end_inset
+
+ as the product of the 
+\begin_inset Formula $3\times3$
+\end_inset
+
+ matrix 
+\begin_inset Formula $H(p)$
+\end_inset
+
+ with 
+\begin_inset Formula $\xi$
+\end_inset
+
+: 
+\begin_inset Formula 
+\begin{equation}
+\xihat\hat{p}=\left[\begin{array}{cc}
+\skew{\omega} & v\\
+0 & 0
+\end{array}\right]\left[\begin{array}{c}
+p\\
+1
+\end{array}\right]=\left[\begin{array}{c}
+\skew{\omega}p+v\\
+0
+\end{array}\right]=\left[\begin{array}{cc}
+I_{2} & R_{\pi/2}p\\
+0 & 0
+\end{array}\right]\left[\begin{array}{c}
+v\\
+\omega
+\end{array}\right]=H(p)\xi\label{eq:HpSE2}
+\end{equation}
+
+\end_inset
+
+Hence, by Theorem 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "th:Action"
+
+\end_inset
+
+ we have
+\begin_inset Formula 
+\begin{equation}
+\deriv{\left(T\hat{p}\right)}{\xi}=TH(p)=\left[\begin{array}{cc}
+R & t\\
+0 & 1
+\end{array}\right]\left[\begin{array}{cc}
+I_{2} & R_{\pi/2}p\\
+0 & 0
+\end{array}\right]=\left[\begin{array}{cc}
+R & RR_{\pi/2}p\\
+0 & 0
+\end{array}\right]=\left[\begin{array}{cc}
+R & R_{\pi/2}q\\
+0 & 0
+\end{array}\right]\label{eq:SE2Action}
+\end{equation}
+
+\end_inset
+
+Note that, looking only at the top rows of 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:HpSE2"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:SE2Action"
+
+\end_inset
+
+, we can recognize the quantity 
+\begin_inset Formula $\skew{\omega}p+v=v+\omega\left(R_{\pi/2}p\right)$
+\end_inset
+
+ as the velocity of 
+\begin_inset Formula $p$
+\end_inset
+
+ in 
+\begin_inset Formula $\Rtwo$
+\end_inset
+
+, and 
+\begin_inset Formula $\left[\begin{array}{cc}
+R & R_{\pi/2}q\end{array}\right]$
+\end_inset
+
+ is the derivative of the action on 
+\begin_inset Formula $\Rtwo$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+The derivative of the inverse action 
+\begin_inset Formula $g(T,p)=T^{-1}\hat{p}$
+\end_inset
+
+ is given by Theorem 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "Th:InverseAction"
+
+\end_inset
+
+ specialized to 
+\begin_inset Formula $\SEtwo$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\deriv{\left(T^{-1}\hat{p}\right)}{\xi}=-H(T^{-1}p)=\left[\begin{array}{cc}
+-I_{2} & -R_{\pi/2}\left(T^{-1}p\right)\\
+0 & 0
+\end{array}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Pushforwards of Mappings
+\end_layout
+
+\begin_layout Standard
+We can just define all derivatives in terms of the adjoint map, which in
+ the case of 
+\begin_inset Formula $\SEtwo$
+\end_inset
+
+, in twist coordinates, is the linear mapping
+\begin_inset Formula 
+\[
+\Ad T\xi=\left[\begin{array}{cc}
+R & -R_{\pi/2}t\\
+0 & 1
+\end{array}\right]\left[\begin{array}{c}
+v\\
+\omega
+\end{array}\right]
+\]
+
+\end_inset
+
+and we have 
+\begin_inset Formula 
+\begin{eqnarray*}
+\frac{\partial T^{^{-1}}}{\partial\xi} & = & -\Ad T
+\end{eqnarray*}
+
+\end_inset
+
+
+\begin_inset Formula 
+\begin{eqnarray*}
+\frac{\partial\left(T_{1}T_{2}\right)}{\partial\xi_{1}} & = & \Ad{T_{2}^{^{-1}}}\mbox{ and }\frac{\partial\left(T_{1}T_{2}\right)}{\partial\xi_{2}}=I_{3}
+\end{eqnarray*}
+
+\end_inset
+
+
+\begin_inset Formula 
+\begin{eqnarray*}
+\frac{\partial\left(T_{1}^{-1}T_{2}\right)}{\partial\xi_{1}} & = & -\Ad{T_{2}^{^{-1}}T_{1}}=-\Ad{between(T_{2},T_{1})}\mbox{ and }\frac{\partial\left(T_{1}^{-1}T_{2}\right)}{\partial\xi_{2}}=I_{3}
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+3D Rotations
+\end_layout
+
+\begin_layout Subsection
+Derivatives of Actions
+\end_layout
+
+\begin_layout Standard
+In the case of 
+\begin_inset Formula $\SOthree$
+\end_inset
+
+ the vector space is  
+\begin_inset Formula $\Rthree$
+\end_inset
+
+, and the group action 
+\begin_inset Formula $f(R,p)$
+\end_inset
+
+ corresponds to rotating a point
+\begin_inset Formula 
+\[
+q=f(R,p)=Rp
+\]
+
+\end_inset
+
+To calculate 
+\begin_inset Formula $H(p)$
+\end_inset
+
+ for use in Theorem 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "th:Action"
+
+\end_inset
+
+ we make use of 
+\begin_inset Formula 
+\[
+\Skew{\omega}p=\omega\times p=-p\times\omega=\Skew{-p}\omega
+\]
+
+\end_inset
+
+so 
+\begin_inset Formula $H(p)\define\Skew{-p}$
+\end_inset
+
+.
+ Hence, the final derivative of an action in its first argument is
+\begin_inset Formula 
+\[
+\deriv{\left(Rp\right)}{\omega}=RH(p)=-R\Skew p
+\]
+
+\end_inset
+
+Likewise, according to Theorem 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "Th:InverseAction"
+
+\end_inset
+
+, the derivative of the inverse action is given by
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\deriv{\left(R^{T}p\right)}{\omega}=-H(R^{T}p)=\Skew{R^{T}p}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:3DAngularVelocities"
+
+\end_inset
+
+Instantaneous Velocity
+\end_layout
+
+\begin_layout Standard
+For 3D rotations 
+\begin_inset Formula $R_{b}^{n}$
+\end_inset
+
+ from a body frame 
+\begin_inset Formula $b$
+\end_inset
+
+ to a navigation frame 
+\begin_inset Formula $n$
+\end_inset
+
+ we have the spatial angular velocity 
+\begin_inset Formula $\omega_{nb}^{n}$
+\end_inset
+
+ measured in the navigation frame,
+\begin_inset Formula 
+\[
+\Skew{\omega_{nb}^{n}}\define\dot{R}_{b}^{n}\left(R_{b}^{n}\right)^{T}=\dot{R}_{b}^{n}R_{n}^{b}
+\]
+
+\end_inset
+
+and the body angular velocity 
+\begin_inset Formula $\omega_{nb}^{b}$
+\end_inset
+
+ measured in the body frame:
+\begin_inset Formula 
+\[
+\Skew{\omega_{nb}^{b}}\define\left(R_{b}^{n}\right)^{T}\dot{R}_{b}^{n}=R_{n}^{b}\dot{R}_{b}^{n}
+\]
+
+\end_inset
+
+These quantities can be used to derive the velocity of a point 
+\begin_inset Formula $p$
+\end_inset
+
+, and we choose between spatial or body angular velocity depending on the
+ frame in which we choose to represent 
+\begin_inset Formula $p$
+\end_inset
+
+:
+\begin_inset Formula 
+\[
+v^{n}=\Skew{\omega_{nb}^{n}}p^{n}=\omega_{nb}^{n}\times p^{n}
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+v^{b}=\Skew{\omega_{nb}^{b}}p^{b}=\omega_{nb}^{b}\times p^{b}
+\]
+
+\end_inset
+
+We can transform these skew-symmetric matrices from navigation to body frame
+ by conjugating, 
+\begin_inset Formula 
+\[
+\Skew{\omega_{nb}^{b}}=R_{n}^{b}\Skew{\omega_{nb}^{n}}R_{b}^{n}
+\]
+
+\end_inset
+
+but because the adjoint representation satisfies
+\begin_inset Formula 
+\[
+Ad_{R}\Skew{\omega}\define R\Skew{\omega}R^{T}=\Skew{R\omega}
+\]
+
+\end_inset
+
+we can even more easily transform between spatial and body angular velocities
+ as 3-vectors:
+\begin_inset Formula 
+\[
+\omega_{nb}^{b}=R_{n}^{b}\omega_{nb}^{n}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Pushforwards of Mappings
+\end_layout
+
+\begin_layout Standard
+For 
+\begin_inset Formula $\SOthree$
+\end_inset
+
+ we have 
+\begin_inset Formula $\Ad R\Skew{\omega}=\Skew{R\omega}$
+\end_inset
+
+ and, in terms of angular velocities: 
+\begin_inset Formula $\Ad R\omega=R\omega$
+\end_inset
+
+.
+ Hence, the Jacobian matrix of the 
+\series bold
+inverse
+\series default
+ mapping is (see Equation 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:Dinverse"
+
+\end_inset
+
+) 
+\begin_inset Formula 
+\[
+\frac{\partial R^{T}}{\partial\omega}=-\Ad R=-R
+\]
+
+\end_inset
+
+for 
+\series bold
+compose
+\series default
+ we have (Equations 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:Dcompose1"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:Dcompose2"
+
+\end_inset
+
+): 
+\begin_inset Formula 
+\[
+\frac{\partial\left(R_{1}R_{2}\right)}{\partial\omega_{1}}=R_{2}^{T}\mbox{ and }\frac{\partial\left(R_{1}R_{2}\right)}{\partial\omega_{2}}=I_{3}
+\]
+
+\end_inset
+
+and 
+\series bold
+between
+\series default
+ (Equation 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:Dbetween1"
+
+\end_inset
+
+):
+\begin_inset Formula 
+\[
+\frac{\partial\left(R_{1}^{T}R_{2}\right)}{\partial\omega_{1}}=-R_{2}^{T}R_{1}=-between(R_{2},R_{1})\mbox{ and }\frac{\partial\left(R_{1}R_{2}\right)}{\partial\omega_{2}}=I_{3}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Retractions
+\end_layout
+
+\begin_layout Standard
+Absil 
+\begin_inset CommandInset citation
+LatexCommand cite
+after "page 58"
+key "Absil07book"
+
+\end_inset
+
+ discusses two possible retractions for 
+\begin_inset Formula $\SOthree$
+\end_inset
+
+ based on the QR decomposition or the polar decomposition of the matrix
+ 
+\begin_inset Formula $R\Skew{\omega}$
+\end_inset
+
+, but they are expensive.
+ Another retraction is based on the Cayley transform 
+\begin_inset Formula $\mathcal{C}:\sothree\rightarrow\SOthree$
+\end_inset
+
+, a mapping from the skew-symmetric matrices to rotation matrices:
+\begin_inset Formula 
+\[
+Q=\mathcal{C}(\Omega)=(I-\Omega)(I+\Omega)^{-1}
+\]
+
+\end_inset
+
+Interestingly, the inverse Cayley transform 
+\begin_inset Formula $\mathcal{C}^{-1}:\SOthree\rightarrow\sothree$
+\end_inset
+
+ has the same form:
+\begin_inset Formula 
+\[
+\Omega=\mathcal{C}^{-1}(Q)=(I-Q)(I+Q)^{-1}
+\]
+
+\end_inset
+
+The retraction needs a factor 
+\begin_inset Formula $-\frac{1}{2}$
+\end_inset
+
+ however, to make it locally align with a geodesic: 
+\begin_inset Formula 
+\[
+R'=\retract_{R}(\omega)=R\mathcal{C}(-\frac{1}{2}\Skew{\omega})
+\]
+
+\end_inset
+
+Note that given 
+\begin_inset Formula $\omega=(x,y,z)$
+\end_inset
+
+ this has the closed-form expression below
+\begin_inset Formula 
+\[
+\frac{1}{4+x^{2}+y^{2}+z^{2}}\left[\begin{array}{ccc}
+4+x^{2}-y^{2}-z^{2} & 2xy-4z & 2xz+4y\\
+2xy+4z & 4-x^{2}+y^{2}-z^{2} & 2yz-4x\\
+2xz-4y & 2yz+4x & 4-x^{2}-y^{2}+z^{2}
+\end{array}\right]
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+=\frac{1}{4+x^{2}+y^{2}+z^{2}}\left\{ 4(I+\Skew{\omega})+\left[\begin{array}{ccc}
+x^{2}-y^{2}-z^{2} & 2xy & 2xz\\
+2xy & -x^{2}+y^{2}-z^{2} & 2yz\\
+2xz & 2yz & -x^{2}-y^{2}+z^{2}
+\end{array}\right]\right\} 
+\]
+
+\end_inset
+
+so it can be seen to be a second-order correction on 
+\begin_inset Formula $(I+\Skew{\omega})$
+\end_inset
+
+.
+ The corresponding approximation to the logarithmic map is:
+\begin_inset Formula 
+\[
+\Skew{\omega}=\retract_{R}^{-1}(R')=-2\mathcal{C}^{-1}\left(R^{T}R'\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+3D Rigid Transformations
+\end_layout
+
+\begin_layout Subsection
+The derivatives of Actions
+\end_layout
+
+\begin_layout Standard
+The action of 
+\begin_inset Formula $\SEthree$
+\end_inset
+
+ on 3D points is done by embedding the points in 
+\begin_inset Formula $\mathbb{R}^{4}$
+\end_inset
+
+ by using homogeneous coordinates
+\begin_inset Formula 
+\[
+\hat{q}=\left[\begin{array}{c}
+q\\
+1
+\end{array}\right]=f(T,p)=\left[\begin{array}{cc}
+R & t\\
+0 & 1
+\end{array}\right]\left[\begin{array}{c}
+p\\
+1
+\end{array}\right]=T\hat{p}
+\]
+
+\end_inset
+
+The quantity 
+\begin_inset Formula $\xihat\hat{p}$
+\end_inset
+
+ corresponds to a velocity in 
+\begin_inset Formula $\mathbb{R}^{4}$
+\end_inset
+
+ (in the local 
+\begin_inset Formula $T$
+\end_inset
+
+ frame), and equating it to 
+\begin_inset Formula $H(p)\xi$
+\end_inset
+
+ as in Equation 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:Hp"
+
+\end_inset
+
+ yields the 
+\begin_inset Formula $4\times6$
+\end_inset
+
+ matrix 
+\begin_inset Formula $H(p)$
+\end_inset
+
+
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+\begin_inset Formula $H(p)$
+\end_inset
+
+ can also be obtained by taking the 
+\begin_inset Formula $j^{th}$
+\end_inset
+
+ column of each of the 6 generators to multiply with components of 
+\begin_inset Formula $\hat{p}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+: 
+\begin_inset Formula 
+\[
+\xihat\hat{p}=\left[\begin{array}{cc}
+\Skew{\omega} & v\\
+0 & 0
+\end{array}\right]\left[\begin{array}{c}
+p\\
+1
+\end{array}\right]=\left[\begin{array}{c}
+\omega\times p+v\\
+0
+\end{array}\right]=\left[\begin{array}{cc}
+\Skew{-p} & I_{3}\\
+0 & 0
+\end{array}\right]\left[\begin{array}{c}
+\omega\\
+v
+\end{array}\right]=H(p)\xi
+\]
+
+\end_inset
+
+Note how velocities are analogous to points at infinity in projective geometry:
+ they correspond to free vectors indicating a direction and magnitude of
+ change.
+ According to Theorem 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "th:Action"
+
+\end_inset
+
+, the derivative of the group action is then 
+\begin_inset Formula 
+\[
+\deriv{\left(T\hat{p}\right)}{\xi}=TH(p)=\left[\begin{array}{cc}
+R & t\\
+0 & 1
+\end{array}\right]\left[\begin{array}{cc}
+\Skew{-p} & I_{3}\\
+0 & 0
+\end{array}\right]=\left[\begin{array}{cc}
+R\Skew{-p} & R\\
+0 & 0
+\end{array}\right]
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\deriv{\left(T\hat{p}\right)}{\hat{p}}=\left[\begin{array}{cc}
+R & t\\
+0 & 1
+\end{array}\right]
+\]
+
+\end_inset
+
+in homogenous coordinates.
+ In 
+\begin_inset Formula $\Rthree$
+\end_inset
+
+ this becomes 
+\begin_inset Formula $R\left[\begin{array}{cc}
+-\Skew p & I_{3}\end{array}\right]$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+The derivative of the inverse action 
+\begin_inset Formula $T^{-1}p$
+\end_inset
+
+ is given by Theorem 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "Th:InverseAction"
+
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+\begin_inset Formula 
+\[
+\deriv{\left(T^{-1}\hat{p}\right)}{\xi}=-H\left(T^{-1}\hat{p}\right)=\left[\begin{array}{cc}
+\Skew{T^{-1}\hat{p}} & -I_{3}\end{array}\right]
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\deriv{\left(T^{-1}\hat{p}\right)}{\hat{p}}=\left[\begin{array}{cc}
+R^{T} & -R^{T}t\\
+0 & 1
+\end{array}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Example
+Let us examine a visual SLAM example.
+ We have 2D measurements 
+\begin_inset Formula $z_{ij}$
+\end_inset
+
+, where each measurement is predicted by
+\begin_inset Formula 
+\[
+z_{ij}=h(T_{i},p_{j})=\pi(T_{i}^{-1}p_{j})=\pi(q)
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $T_{i}$
+\end_inset
+
+ is the 3D pose of the 
+\begin_inset Formula $i^{th}$
+\end_inset
+
+ camera, 
+\begin_inset Formula $p_{j}$
+\end_inset
+
+ is the location of the 
+\begin_inset Formula $j^{th}$
+\end_inset
+
+ point, 
+\begin_inset Formula $q=(x',y',z')=T^{-1}p$
+\end_inset
+
+ is the point in camera coordinates, and 
+\begin_inset Formula $\pi:(x,y,z)\mapsto(x/z,y/z)$
+\end_inset
+
+ is the camera projection function from Example 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "ex:projection"
+
+\end_inset
+
+.
+ By the chain rule, we then have
+\begin_inset Formula 
+\[
+\deriv{h(T,p)}{\xi}=\deriv{\pi(q)}q\deriv{(T^{-1}p)}{\xi}=\frac{1}{z'}\left[\begin{array}{ccc}
+1 & 0 & -x'/z'\\
+0 & 1 & -y'/z'
+\end{array}\right]\left[\begin{array}{cc}
+\Skew q & -I_{3}\end{array}\right]=\left[\begin{array}{cc}
+\pi'(q)\Skew q & -\pi'(q)\end{array}\right]
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\deriv{h(T,p)}p=\pi'(q)R^{T}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Instantaneous Velocity
+\end_layout
+
+\begin_layout Standard
+For rigid 3D transformations 
+\begin_inset Formula $T_{b}^{n}$
+\end_inset
+
+ from a body frame 
+\begin_inset Formula $b$
+\end_inset
+
+ to a navigation frame 
+\begin_inset Formula $n$
+\end_inset
+
+ we have the instantaneous spatial twist 
+\begin_inset Formula $\xi_{nb}^{n}$
+\end_inset
+
+ measured in the navigation frame,
+\begin_inset Formula 
+\[
+\hat{\xi}_{nb}^{n}\define\dot{T}_{b}^{n}\left(T_{b}^{n}\right)^{-1}
+\]
+
+\end_inset
+
+and the instantaneous body twist 
+\begin_inset Formula $\xi_{nb}^{b}$
+\end_inset
+
+ measured in the body frame:
+\begin_inset Formula 
+\[
+\hat{\xi}_{nb}^{b}\define\left(T_{b}^{n}\right)^{T}\dot{T}_{b}^{n}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Pushforwards of Mappings
+\end_layout
+
+\begin_layout Standard
+As we can express the Adjoint representation in terms of twist coordinates,
+ we have
+\begin_inset Formula 
+\[
+\left[\begin{array}{c}
+\omega'\\
+v'
+\end{array}\right]=\left[\begin{array}{cc}
+R & 0\\
+\Skew tR & R
+\end{array}\right]\left[\begin{array}{c}
+\omega\\
+v
+\end{array}\right]
+\]
+
+\end_inset
+
+Hence, as with 
+\begin_inset Formula $\SOthree$
+\end_inset
+
+, we are now in a position to simply posit the derivative of 
+\series bold
+inverse
+\series default
+,
+\begin_inset Formula 
+\[
+\frac{\partial T^{-1}}{\partial\xi}=\Ad T=-\left[\begin{array}{cc}
+R & 0\\
+\Skew tR & R
+\end{array}\right]
+\]
+
+\end_inset
+
+
+\series bold
+compose
+\series default
+ in its first argument,
+\begin_inset Formula 
+\[
+\frac{\partial\left(T_{1}T_{2}\right)}{\partial\xi_{1}}=\Ad{T_{2}^{-1}}
+\]
+
+\end_inset
+
+ in its second argument,
+\begin_inset Formula 
+\[
+\frac{\partial\left(T_{1}T_{2}\right)}{\partial\xi_{2}}=I_{6}
+\]
+
+\end_inset
+
+
+\series bold
+between
+\series default
+ in its first argument,
+\begin_inset Formula 
+\[
+\frac{\partial\left(T_{1}^{^{-1}}T_{2}\right)}{\partial\xi_{1}}=\Ad{T_{2}^{^{-1}}T_{1}}
+\]
+
+\end_inset
+
+and in its second argument,
+\begin_inset Formula 
+\begin{eqnarray*}
+\frac{\partial\left(T_{1}^{^{-1}}T_{2}\right)}{\partial\xi_{1}} & = & I_{6}
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Retractions
+\end_layout
+
+\begin_layout Standard
+For 
+\begin_inset Formula $\SEthree$
+\end_inset
+
+, instead of using the true exponential map it is computationally more efficient
+ to design other retractions.
+ A first-order approximation to the exponential map does not quite cut it,
+ as it yields a 
+\begin_inset Formula $4\times4$
+\end_inset
+
+ matrix which is not in 
+\begin_inset Formula $\SEthree$
+\end_inset
+
+: 
+\begin_inset Formula 
+\begin{eqnarray*}
+T\exp\xihat & \approx & T(I+\xihat)\\
+ & = & T\left(I_{4}+\left[\begin{array}{cc}
+\Skew{\omega} & v\\
+0 & 0
+\end{array}\right]\right)\\
+ & = & \left[\begin{array}{cc}
+R & t\\
+0 & 1
+\end{array}\right]\left[\begin{array}{cc}
+I_{3}+\Skew{\omega} & v\\
+0 & 1
+\end{array}\right]\\
+ & = & \left[\begin{array}{cc}
+R\left(I_{3}+\Skew{\omega}\right) & t+Rv\\
+0 & 1
+\end{array}\right]
+\end{eqnarray*}
+
+\end_inset
+
+However, we can make it into a retraction by using any retraction defined
+ for 
+\begin_inset Formula $\SOthree$
+\end_inset
+
+, including, as below, using the exponential map 
+\begin_inset Formula $Re^{\Skew{\omega}}$
+\end_inset
+
+:
+\begin_inset Formula 
+\[
+\retract_{T}\left(\left[\begin{array}{c}
+\omega\\
+v
+\end{array}\right]\right)=\left[\begin{array}{cc}
+R & t\\
+0 & 1
+\end{array}\right]\left[\begin{array}{cc}
+e^{\Skew{\omega}} & v\\
+0 & 1
+\end{array}\right]=\left[\begin{array}{cc}
+Re^{\Skew{\omega}} & t+Rv\\
+0 & 1
+\end{array}\right]
+\]
+
+\end_inset
+
+Similarly, for a second order approximation we have
+\begin_inset Formula 
+\begin{eqnarray*}
+T\exp\xihat & \approx & T(I+\xihat+\frac{\xihat^{2}}{2})\\
+ & = & T\left(I_{4}+\left[\begin{array}{cc}
+\Skew{\omega} & v\\
+0 & 0
+\end{array}\right]+\frac{1}{2}\left[\begin{array}{cc}
+\Skew{\omega} & v\\
+0 & 0
+\end{array}\right]\left[\begin{array}{cc}
+\Skew{\omega} & v\\
+0 & 0
+\end{array}\right]\right)\\
+ & = & \left[\begin{array}{cc}
+R & t\\
+0 & 1
+\end{array}\right]\left(\left[\begin{array}{cc}
+I_{3}+\Skew{\omega}+\frac{1}{2}\Skew{\omega}^{2} & v+\frac{1}{2}\Skew{\omega}v\\
+0 & 1
+\end{array}\right]\right)\\
+ & = & \left[\begin{array}{cc}
+R\left(I_{3}+\Skew{\omega}+\frac{1}{2}\Skew{\omega}^{2}\right) & t+R\left[v+\left(\omega\times v\right)/2\right]\\
+0 & 1
+\end{array}\right]
+\end{eqnarray*}
+
+\end_inset
+
+inspiring the retraction
+\begin_inset Formula 
+\[
+\retract_{T}\left(\left[\begin{array}{c}
+\omega\\
+v
+\end{array}\right]\right)=\left[\begin{array}{cc}
+R & t\\
+0 & 1
+\end{array}\right]\left[\begin{array}{cc}
+e^{\Skew{\omega}} & v+\left(\omega\times v\right)/2\\
+0 & 1
+\end{array}\right]=\left[\begin{array}{cc}
+Re^{\Skew{\omega}} & t+R\left[v+\left(\omega\times v\right)/2\right]\\
+0 & 1
+\end{array}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+2D Line Segments (Ocaml)
+\end_layout
+
+\begin_layout Standard
+The error between an infinite line 
+\begin_inset Formula $(a,b,c)$
+\end_inset
+
+ and a 2D line segment 
+\begin_inset Formula $((x1,y1),(x2,y2))$
+\end_inset
+
+ is defined in Line3.ml.
+\end_layout
+
+\begin_layout Section
+Line3vd (Ocaml)
+\end_layout
+
+\begin_layout Standard
+One representation of a line is through 2 vectors 
+\begin_inset Formula $(v,d)$
+\end_inset
+
+, where 
+\begin_inset Formula $v$
+\end_inset
+
+ is the direction and the vector 
+\begin_inset Formula $d$
+\end_inset
+
+ points from the orgin to the closest point on the line.
+\end_layout
+
+\begin_layout Standard
+In this representation, transforming a 3D line from a world coordinate frame
+ to a camera at 
+\begin_inset Formula $(R_{w}^{c},t^{w})$
+\end_inset
+
+ is done by
+\begin_inset Formula 
+\[
+v^{c}=R_{w}^{c}v^{w}
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+d^{c}=R_{w}^{c}\left(d^{w}+(t^{w}v^{w})v^{w}-t^{w}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Line3 (Ocaml)
+\end_layout
+
+\begin_layout Standard
+For 3D lines, we use a parameterization due to C.J.
+ Taylor, using a rotation matrix 
+\begin_inset Formula $R$
+\end_inset
+
+ and 2 scalars 
+\begin_inset Formula $a$
+\end_inset
+
+ and 
+\begin_inset Formula $b$
+\end_inset
+
+.
+ The line direction 
+\begin_inset Formula $v$
+\end_inset
+
+ is simply the Z-axis of the rotated frame, i.e., 
+\begin_inset Formula $v=R_{3}$
+\end_inset
+
+, while the vector 
+\begin_inset Formula $d$
+\end_inset
+
+ is given by 
+\begin_inset Formula $d=aR_{1}+bR_{2}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Now, we will 
+\emph on
+not
+\emph default
+ use the incremental rotation scheme we used for rotations: because the
+ matrix R translates from the line coordinate frame to the world frame,
+ we need to apply the incremental rotation on the right-side:
+\begin_inset Formula 
+\[
+R'=R(I+\Omega)
+\]
+
+\end_inset
+
+Projecting a line to 2D can be done easily, as both 
+\begin_inset Formula $v$
+\end_inset
+
+ and 
+\begin_inset Formula $d$
+\end_inset
+
+ are also the 2D homogenous coordinates of two points on the projected line,
+ and hence we have
+\begin_inset Formula 
+\begin{eqnarray*}
+l & = & v\times d\\
+ & = & R_{3}\times\left(aR_{1}+bR_{2}\right)\\
+ & = & a\left(R_{3}\times R_{1}\right)+b\left(R_{3}\times R_{2}\right)\\
+ & = & aR_{2}-bR_{1}
+\end{eqnarray*}
+
+\end_inset
+
+This can be written as a rotation of a point,
+\begin_inset Formula 
+\[
+l=R\left(\begin{array}{c}
+-b\\
+a\\
+0
+\end{array}\right)
+\]
+
+\end_inset
+
+but because the incremental rotation is now done on the right, we need to
+ figure out the derivatives again:
+\begin_inset Formula 
+\begin{equation}
+\frac{\partial(R(I+\Omega)x)}{\partial\omega}=\frac{\partial(R\Omega x)}{\partial\omega}=R\frac{\partial(\Omega x)}{\partial\omega}=R\Skew{-x}\label{eq:rotateRight}
+\end{equation}
+
+\end_inset
+
+and hence the derivative of the projection 
+\begin_inset Formula $l$
+\end_inset
+
+ with respect to the rotation matrix 
+\begin_inset Formula $R$
+\end_inset
+
+of the 3D line is 
+\begin_inset Formula 
+\begin{equation}
+\frac{\partial(l)}{\partial\omega}=R\Skew{\left(\begin{array}{c}
+b\\
+-a\\
+0
+\end{array}\right)}=\left[\begin{array}{ccc}
+aR_{3} & bR_{3} & -(aR_{1}+bR_{2})\end{array}\right]
+\end{equation}
+
+\end_inset
+
+or the 
+\begin_inset Formula $a,b$
+\end_inset
+
+ scalars:
+\begin_inset Formula 
+\[
+\frac{\partial(l)}{\partial a}=R_{2}
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\frac{\partial(l)}{\partial b}=-R_{1}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Transforming a 3D line 
+\begin_inset Formula $(R,(a,b))$
+\end_inset
+
+ from a world coordinate frame to a camera frame 
+\begin_inset Formula $(R_{w}^{c},t^{w})$
+\end_inset
+
+ is done by
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+R'=R_{w}^{c}R
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+a'=a-R_{1}^{T}t^{w}
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+b'=b-R_{2}^{T}t^{w}
+\]
+
+\end_inset
+
+Again, we need to redo the derivatives, as R is incremented from the right.
+ The first argument is incremented from the left, but the result is incremented
+ on the right:
+\begin_inset Formula 
+\begin{eqnarray*}
+R'(I+\Omega')=(AB)(I+\Omega') & = & (I+\Skew{S\omega})AB\\
+I+\Omega' & = & (AB)^{T}(I+\Skew{S\omega})(AB)\\
+\Omega' & = & R'^{T}\Skew{S\omega}R'\\
+\Omega' & = & \Skew{R'^{T}S\omega}\\
+\omega' & = & R'^{T}S\omega
+\end{eqnarray*}
+
+\end_inset
+
+For the second argument 
+\begin_inset Formula $R$
+\end_inset
+
+ we now simply have:
+\begin_inset Formula 
+\begin{eqnarray*}
+AB(I+\Omega') & = & AB(I+\Omega)\\
+\Omega' & = & \Omega\\
+\omega' & = & \omega
+\end{eqnarray*}
+
+\end_inset
+
+The scalar derivatives can be found by realizing that 
+\begin_inset Formula 
+\[
+\left(\begin{array}{c}
+a'\\
+b'\\
+...
+\end{array}\right)=\left(\begin{array}{c}
+a\\
+b\\
+0
+\end{array}\right)-R^{T}t^{w}
+\]
+
+\end_inset
+
+where we don't care about the third row.
+ Hence
+\begin_inset Formula 
+\[
+\frac{\partial(\left(R(I+\Omega_{2})\right)^{T}t^{w})}{\partial\omega}=-\frac{\partial(\Omega_{2}R^{T}t^{w})}{\partial\omega}=-\Skew{R^{T}t^{w}}=\left[\begin{array}{ccc}
+0 & R_{3}^{T}t^{w} & -R_{2}^{T}t^{w}\\
+-R_{3}^{T}t^{w} & 0 & R_{1}^{T}t^{w}\\
+... & ... & 0
+\end{array}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+
+\series bold
+Aligning 3D Scans
+\end_layout
+
+\begin_layout Standard
+Below is the explanaition underlying Pose3.align, i.e.
+ aligning two point clouds using SVD.
+ Inspired but modified from CVOnline...
+\end_layout
+
+\begin_layout Standard
+
+\emph on
+Our
+\emph default
+ model is
+\begin_inset Formula 
+\[
+p^{c}=R\left(p^{w}-t\right)
+\]
+
+\end_inset
+
+i.e., 
+\begin_inset Formula $R$
+\end_inset
+
+ is from camera to world, and 
+\begin_inset Formula $t$
+\end_inset
+
+ is the camera location in world coordinates.
+ The objective function is
+\begin_inset Formula 
+\begin{equation}
+\frac{1}{2}\sum\left(p^{c}-R(p^{w}-t)\right)^{2}=\frac{1}{2}\sum\left(p^{c}-Rp^{w}+Rt\right)^{2}=\frac{1}{2}\sum\left(p^{c}-Rp^{w}-t'\right)^{2}\label{eq:J}
+\end{equation}
+
+\end_inset
+
+where 
+\begin_inset Formula $t'=-Rt$
+\end_inset
+
+ is the location of the origin in the camera frame.
+ Taking the derivative with respect to 
+\begin_inset Formula $t'$
+\end_inset
+
+ and setting to zero we have
+\begin_inset Formula 
+\[
+\sum\left(p^{c}-Rp^{w}-t'\right)=0
+\]
+
+\end_inset
+
+or
+\begin_inset Formula 
+\begin{equation}
+t'=\frac{1}{n}\sum\left(p^{c}-Rp^{w}\right)=\bar{p}^{c}-R\bar{p}^{w}\label{eq:t}
+\end{equation}
+
+\end_inset
+
+here 
+\begin_inset Formula $\bar{p}^{c}$
+\end_inset
+
+ and 
+\begin_inset Formula $\bar{p}^{w}$
+\end_inset
+
+ are the point cloud centroids.
+ Substituting back into 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:J"
+
+\end_inset
+
+, we get
+\begin_inset Formula 
+\[
+\frac{1}{2}\sum\left(p^{c}-R(p^{w}-t)\right)^{2}=\frac{1}{2}\sum\left(\left(p^{c}-\bar{p}^{c}\right)-R\left(p^{w}-\bar{p}^{w}\right)\right)^{2}=\frac{1}{2}\sum\left(\hat{p}^{c}-R\hat{p}^{w}\right)^{2}
+\]
+
+\end_inset
+
+Now, to minimize the above it suffices to maximize (see CVOnline) 
+\begin_inset Formula 
+\[
+\mathop{trace}\left(R^{T}C\right)
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $C=\sum\hat{p}^{c}\left(\hat{p}^{w}\right)^{T}$
+\end_inset
+
+ is the correlation matrix.
+ Intuitively, the cloud of points is rotated to align with the principal
+ axes.
+ This can be achieved by SVD decomposition on 
+\begin_inset Formula $C$
+\end_inset
+
+
+\begin_inset Formula 
+\[
+C=USV^{T}
+\]
+
+\end_inset
+
+and setting 
+\begin_inset Formula 
+\[
+R=UV^{T}
+\]
+
+\end_inset
+
+Clearly, from 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:t"
+
+\end_inset
+
+ we then also recover the optimal 
+\begin_inset Formula $t$
+\end_inset
+
+ as 
+\begin_inset Formula 
+\[
+t=\bar{p}^{w}-R^{T}\bar{p}^{c}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section*
+Appendix
+\end_layout
+
+\begin_layout Subsection*
+Differentiation Rules
+\end_layout
+
+\begin_layout Standard
+Spivak 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Spivak65book"
+
+\end_inset
+
+ also notes some multivariate derivative rules defined component-wise, but
+ they are not that useful in practice:
+\end_layout
+
+\begin_layout Itemize
+Since 
+\begin_inset Formula $f:\Multi nm$
+\end_inset
+
+ is defined in terms of 
+\begin_inset Formula $m$
+\end_inset
+
+ component functions 
+\begin_inset Formula $f^{i}$
+\end_inset
+
+, then 
+\begin_inset Formula $f$
+\end_inset
+
+ is differentiable at 
+\begin_inset Formula $a$
+\end_inset
+
+ iff each 
+\begin_inset Formula $f^{i}$
+\end_inset
+
+ is, and the Jacobian matrix 
+\begin_inset Formula $F_{a}$
+\end_inset
+
+ is the 
+\begin_inset Formula $m\times n$
+\end_inset
+
+ matrix whose 
+\begin_inset Formula $i^{th}$
+\end_inset
+
+ row is 
+\begin_inset Formula $\left(f^{i}\right)'(a)$
+\end_inset
+
+: 
+\begin_inset Formula 
+\[
+F_{a}\define f'(a)=\left[\begin{array}{c}
+\left(f^{1}\right)'(a)\\
+\vdots\\
+\left(f^{m}\right)'(a)
+\end{array}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+Scalar differentiation rules: if 
+\begin_inset Formula $f,g:\OneD n$
+\end_inset
+
+ are differentiable at 
+\begin_inset Formula $a$
+\end_inset
+
+, then
+\begin_inset Formula 
+\[
+(f+g)'(a)=F_{a}+G_{a}
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+(f\cdot g)'(a)=g(a)F_{a}+f(a)G_{a}
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+(f/g)'(a)=\frac{1}{g(a)^{2}}\left[g(a)F_{a}-f(a)G_{a}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection*
+Tangent Spaces and the Tangent Bundle
+\end_layout
+
+\begin_layout Standard
+The following is adapted from Appendix A in 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Murray94book"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+The 
+\series bold
+tangent space
+\series default
+ 
+\begin_inset Formula $T_{p}M$
+\end_inset
+
+ of a manifold 
+\begin_inset Formula $M$
+\end_inset
+
+ at a point 
+\begin_inset Formula $p\in M$
+\end_inset
+
+ is the vector space of 
+\series bold
+tangent vectors
+\series default
+ at 
+\begin_inset Formula $p$
+\end_inset
+
+.
+ The 
+\series bold
+tangent bundle
+\series default
+ 
+\begin_inset Formula $TM$
+\end_inset
+
+ is the set of all tangent vectors
+\begin_inset Formula 
+\[
+TM\define\bigcup_{p\in M}T_{p}M
+\]
+
+\end_inset
+
+A 
+\series bold
+vector field
+\series default
+ 
+\begin_inset Formula $X:M\rightarrow TM$
+\end_inset
+
+ assigns a single tangent vector 
+\begin_inset Formula $x\in T_{p}M$
+\end_inset
+
+ to each point 
+\begin_inset Formula $p$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+If 
+\begin_inset Formula $F:M\rightarrow N$
+\end_inset
+
+ is a smooth map from a manifold 
+\begin_inset Formula $M$
+\end_inset
+
+ to a manifold 
+\begin_inset Formula $N$
+\end_inset
+
+, then we can define the
+\series bold
+ tangent map
+\series default
+ of 
+\begin_inset Formula $F$
+\end_inset
+
+ at 
+\begin_inset Formula $p$
+\end_inset
+
+ as the linear map 
+\begin_inset Formula $F_{*p}:T_{p}M\rightarrow T_{F(p)}N$
+\end_inset
+
+ that maps tangent vectors in 
+\begin_inset Formula $T_{p}M$
+\end_inset
+
+ at 
+\begin_inset Formula $p$
+\end_inset
+
+ to tangent vectors in 
+\begin_inset Formula $T_{F(p)}N$
+\end_inset
+
+ at the image 
+\begin_inset Formula $F(p)$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection*
+Homomorphisms
+\end_layout
+
+\begin_layout Standard
+The following 
+\emph on
+might be
+\emph default
+ relevant 
+\begin_inset CommandInset citation
+LatexCommand cite
+after "page 45"
+key "Hall00book"
+
+\end_inset
+
+: suppose that 
+\begin_inset Formula $\Phi:G\rightarrow H$
+\end_inset
+
+ is a mapping (Lie group homomorphism).
+ Then there exists a unique linear map 
+\begin_inset Formula $\phi:\gg\rightarrow\mathfrak{h}$
+\end_inset
+
+ 
+\begin_inset Formula 
+\[
+\phi(\xhat)\define\lim_{t\rightarrow0}\frac{d}{dt}\Phi\left(e^{t\xhat}\right)
+\]
+
+\end_inset
+
+such that
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\Phi\left(e^{\xhat}\right)=e^{\phi\left(\xhat\right)}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\phi\left(T\xhat T^{-1}\right)=\Phi(T)\phi(\xhat)\Phi(T^{-1})$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\phi\left([\xhat,\yhat]\right)=\left[\phi(\xhat),\phi(\yhat)\right]$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In other words, the map 
+\begin_inset Formula $\phi$
+\end_inset
+
+ is the derivative of 
+\begin_inset Formula $\Phi$
+\end_inset
+
+ at the identity.
+ As an example, suppose 
+\begin_inset Formula $\Phi(g)=g^{-1}$
+\end_inset
+
+, then the corresponding derivative 
+\emph on
+at the identity 
+\emph default
+is
+\begin_inset Formula 
+\[
+\phi(\xhat)\define\lim_{t\rightarrow0}\frac{d}{dt}\left(e^{t\xhat}\right)^{-1}=\lim_{t\rightarrow0}\frac{d}{dt}e^{-t\xhat}=-\xhat\lim_{t\rightarrow0}e^{-t\xhat}=-\xhat
+\]
+
+\end_inset
+
+In general it suffices to compute 
+\begin_inset Formula $\phi$
+\end_inset
+
+ for a basis of 
+\begin_inset Formula $\gg$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Note
+status collapsed
+
+\begin_layout Plain Layout
+Undercooked: What if we want the derivative of 
+\begin_inset Formula $\Phi$
+\end_inset
+
+ at some other element 
+\begin_inset Formula $g$
+\end_inset
+
+? In other words, if we apply 
+\begin_inset Formula $\Phi$
+\end_inset
+
+ at 
+\begin_inset Formula $g$
+\end_inset
+
+ incremented by some Lie algebra element 
+\begin_inset Formula $e^{\xhat}$
+\end_inset
+
+, then we are looking for a 
+\begin_inset Formula $\yhat\in\gg$
+\end_inset
+
+ will yield the same result: 
+\begin_inset Formula 
+\[
+\Phi\left(g\right)\lim_{t\rightarrow0}\frac{d}{dt}e^{t\yhat}=\lim_{t\rightarrow0}\frac{d}{dt}\Phi\left(ge^{t\xhat}\right)
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\lim_{t\rightarrow0}\frac{d}{dt}e^{t\yhat}=\Phi\left(g\right)^{-1}\lim_{t\rightarrow0}\frac{d}{dt}\Phi\left(ge^{t\xhat}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Note
+status collapsed
+
+\begin_layout Plain Layout
+Let us define two mappings
+\begin_inset Formula 
+\[
+\Phi_{1}(A)=AB\mbox{ and }\Phi_{2}(B)=AB
+\]
+
+\end_inset
+
+Then 
+\begin_inset Formula 
+\[
+\phi_{1}(\xhat)=\lim_{t\rightarrow0}\frac{d}{dt}\Phi_{1}\left(e^{t\xhat}B\right)=
+\]
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset bibtex
+LatexCommand bibtex
+bibfiles "/Users/dellaert/papers/refs"
+options "plain"
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document

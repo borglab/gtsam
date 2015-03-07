@@ -28,11 +28,7 @@
 namespace gtsam {
 
 /**
- * @defgroup ISAM2
- */
-
-/**
- * @ingroup ISAM2
+ * @addtogroup ISAM2
  * Parameters for ISAM2 using Gauss-Newton optimization.  Either this class or
  * ISAM2DoglegParams should be specified as the optimizationParams in
  * ISAM2Params, which should in turn be passed to ISAM2(const ISAM2Params&).
@@ -44,10 +40,19 @@ struct ISAM2GaussNewtonParams {
   ISAM2GaussNewtonParams(
       double _wildfireThreshold = 0.001 ///< see ISAM2GaussNewtonParams public variables, ISAM2GaussNewtonParams::wildfireThreshold
   ) : wildfireThreshold(_wildfireThreshold) {}
+
+  void print(const std::string str = "") const {
+    std::cout << str << "type:              ISAM2GaussNewtonParams\n";
+    std::cout << str << "wildfireThreshold: " << wildfireThreshold << "\n";
+    std::cout.flush();
+  }
+
+  double getWildfireThreshold() const { return wildfireThreshold; }
+  void setWildfireThreshold(double wildfireThreshold) { this->wildfireThreshold = wildfireThreshold; }
 };
 
 /**
- * @ingroup ISAM2
+ * @addtogroup ISAM2
  * Parameters for ISAM2 using Dogleg optimization.  Either this class or
  * ISAM2GaussNewtonParams should be specified as the optimizationParams in
  * ISAM2Params, which should in turn be passed to ISAM2(const ISAM2Params&).
@@ -66,12 +71,35 @@ struct ISAM2DoglegParams {
       bool _verbose = false ///< see ISAM2DoglegParams::verbose
   ) : initialDelta(_initialDelta), wildfireThreshold(_wildfireThreshold),
   adaptationMode(_adaptationMode), verbose(_verbose) {}
+
+  void print(const std::string str = "") const {
+    std::cout << str << "type:              ISAM2DoglegParams\n";
+    std::cout << str << "initialDelta:      " << initialDelta << "\n";
+    std::cout << str << "wildfireThreshold: " << wildfireThreshold << "\n";
+    std::cout << str << "adaptationMode:    " << adaptationModeTranslator(adaptationMode) << "\n";
+    std::cout.flush();
+  }
+
+  double getInitialDelta() const { return initialDelta; }
+  double getWildfireThreshold() const { return wildfireThreshold; }
+  std::string getAdaptationMode() const { return adaptationModeTranslator(adaptationMode); };
+  bool isVerbose() const { return verbose; };
+
+  void setInitialDelta(double initialDelta) { this->initialDelta = initialDelta; }
+  void setWildfireThreshold(double wildfireThreshold) { this->wildfireThreshold = wildfireThreshold; }
+  void setAdaptationMode(const std::string& adaptationMode) { this->adaptationMode = adaptationModeTranslator(adaptationMode); }
+  void setVerbose(bool verbose) { this->verbose = verbose; };
+
+  std::string adaptationModeTranslator(const DoglegOptimizerImpl::TrustRegionAdaptationMode& adaptationMode) const;
+  DoglegOptimizerImpl::TrustRegionAdaptationMode adaptationModeTranslator(const std::string& adaptationMode) const;
 };
 
 /**
- * @ingroup ISAM2
+ * @addtogroup ISAM2
  * Parameters for the ISAM2 algorithm.  Default parameter values are listed below.
  */
+typedef FastMap<char,Vector> ISAM2ThresholdMap;
+typedef ISAM2ThresholdMap::value_type ISAM2ThresholdMapValue;
 struct ISAM2Params {
   typedef boost::variant<ISAM2GaussNewtonParams, ISAM2DoglegParams> OptimizationParams; ///< Either ISAM2GaussNewtonParams or ISAM2DoglegParams
   typedef boost::variant<double, FastMap<char,Vector> > RelinearizationThreshold; ///< Either a constant relinearization threshold or a per-variable-type set of thresholds
@@ -94,8 +122,8 @@ struct ISAM2Params {
    * entries would be added with:
    * \code
      FastMap<char,Vector> thresholds;
-     thresholds[PoseKey::chr()] = Vector_(6, 0.1, 0.1, 0.1, 0.5, 0.5, 0.5); // 0.1 rad rotation threshold, 0.5 m translation threshold
-     thresholds[PointKey::chr()] = Vector_(3, 1.0, 1.0, 1.0);               // 1.0 m landmark position threshold
+     thresholds['x'] = Vector_(6, 0.1, 0.1, 0.1, 0.5, 0.5, 0.5); // 0.1 rad rotation threshold, 0.5 m translation threshold
+     thresholds['l'] = Vector_(3, 1.0, 1.0, 1.0);                // 1.0 m landmark position threshold
      params.relinearizeThreshold = thresholds;
      \endcode
    */
@@ -112,7 +140,7 @@ struct ISAM2Params {
    * Cholesky is faster but potentially numerically unstable for poorly-conditioned problems, which can occur when
    * uncertainty is very low in some variables (or dimensions of variables) and very high in others.  QR is
    * slower but more numerically stable in poorly-conditioned problems.  We suggest using the default of Cholesky
-   * unless gtsam sometimes throws NegativeMatrixException when your problem's Hessian is actually positive
+   * unless gtsam sometimes throws IndefiniteLinearSystemException when your problem's Hessian is actually positive
    * definite.  For positive definite problems, numerical error accumulation can cause the problem to become
    * numerically negative or indefinite as solving proceeds, especially when using Cholesky.
    */
@@ -129,6 +157,13 @@ struct ISAM2Params {
 
   bool enableDetailedResults; ///< Whether to compute and return ISAM2Result::detailedResults, this can increase running time (default: false)
 
+  /** Check variables for relinearization in tree-order, stopping the check once a variable does not need to be relinearized (default: false).
+   * This can improve speed by only checking a small part of the top of the tree. However, variables below the check cut-off can accumulate
+   * significant deltas without triggering relinearization. This is particularly useful in exploration scenarios where real-time performance
+   * is desired over correctness. Use with caution.
+   */
+  bool enablePartialRelinearizationCheck;
+
   /** Specify parameters as constructor arguments */
   ISAM2Params(
       OptimizationParams _optimizationParams = ISAM2GaussNewtonParams(), ///< see ISAM2Params::optimizationParams
@@ -143,11 +178,65 @@ struct ISAM2Params {
       relinearizeSkip(_relinearizeSkip), enableRelinearization(_enableRelinearization),
       evaluateNonlinearError(_evaluateNonlinearError), factorization(_factorization),
       cacheLinearizedFactors(_cacheLinearizedFactors), keyFormatter(_keyFormatter),
-      enableDetailedResults(false) {}
+      enableDetailedResults(false), enablePartialRelinearizationCheck(false) {}
+
+  void print(const std::string& str = "") const {
+    std::cout << str << "\n";
+    if(optimizationParams.type() == typeid(ISAM2GaussNewtonParams))
+      boost::get<ISAM2GaussNewtonParams>(optimizationParams).print("optimizationParams:                ");
+    else if(optimizationParams.type() == typeid(ISAM2DoglegParams))
+      boost::get<ISAM2DoglegParams>(optimizationParams).print("optimizationParams:                ");
+    else
+      std::cout << "optimizationParams:                " << "{unknown type}" << "\n";
+    if(relinearizeThreshold.type() == typeid(double))
+      std::cout << "relinearizeThreshold:              " << boost::get<double>(relinearizeThreshold) << "\n";
+    else
+    {
+      std::cout << "relinearizeThreshold:              " << "{mapped}" << "\n";
+      BOOST_FOREACH(const ISAM2ThresholdMapValue& value, boost::get<ISAM2ThresholdMap>(relinearizeThreshold)) {
+        std::cout << "                                   '" << value.first << "' -> [" << value.second.transpose() << " ]\n";
+      }
+    }
+    std::cout << "relinearizeSkip:                   " << relinearizeSkip << "\n";
+    std::cout << "enableRelinearization:             " << enableRelinearization << "\n";
+    std::cout << "evaluateNonlinearError:            " << evaluateNonlinearError << "\n";
+    std::cout << "factorization:                     " << factorizationTranslator(factorization) << "\n";
+    std::cout << "cacheLinearizedFactors:            " << cacheLinearizedFactors << "\n";
+    std::cout << "enableDetailedResults:             " << enableDetailedResults << "\n";
+    std::cout << "enablePartialRelinearizationCheck: " << enablePartialRelinearizationCheck << "\n";
+    std::cout.flush();
+  }
+
+   /** Getters and Setters for all properties */
+  OptimizationParams getOptimizationParams() const { return this->optimizationParams; }
+  RelinearizationThreshold getRelinearizeThreshold() const { return relinearizeThreshold; }
+  int getRelinearizeSkip() const { return relinearizeSkip; }
+  bool isEnableRelinearization() const { return enableRelinearization; }
+  bool isEvaluateNonlinearError() const { return evaluateNonlinearError; }
+  std::string getFactorization() const { return factorizationTranslator(factorization); }
+  bool isCacheLinearizedFactors() const { return cacheLinearizedFactors; }
+  KeyFormatter getKeyFormatter() const { return keyFormatter; }
+  bool isEnableDetailedResults() const { return enableDetailedResults; }
+  bool isEnablePartialRelinearizationCheck() const { return enablePartialRelinearizationCheck; }
+
+  void setOptimizationParams(OptimizationParams optimizationParams) { this->optimizationParams = optimizationParams; }
+  void setRelinearizeThreshold(RelinearizationThreshold relinearizeThreshold) { this->relinearizeThreshold = relinearizeThreshold; }
+  void setRelinearizeSkip(int relinearizeSkip) { this->relinearizeSkip = relinearizeSkip; }
+  void setEnableRelinearization(bool enableRelinearization) { this->enableRelinearization = enableRelinearization; }
+  void setEvaluateNonlinearError(bool evaluateNonlinearError) { this->evaluateNonlinearError = evaluateNonlinearError; }
+  void setFactorization(const std::string& factorization) { this->factorization = factorizationTranslator(factorization); }
+  void setCacheLinearizedFactors(bool cacheLinearizedFactors) { this->cacheLinearizedFactors = cacheLinearizedFactors; }
+  void setKeyFormatter(KeyFormatter keyFormatter) { this->keyFormatter = keyFormatter; }
+  void setEnableDetailedResults(bool enableDetailedResults) { this->enableDetailedResults = enableDetailedResults; }
+  void setEnablePartialRelinearizationCheck(bool enablePartialRelinearizationCheck) { this->enablePartialRelinearizationCheck = enablePartialRelinearizationCheck; }
+
+  Factorization factorizationTranslator(const std::string& str) const;
+  std::string factorizationTranslator(const Factorization& value) const;
 };
 
+
 /**
- * @ingroup ISAM2
+ * @addtogroup ISAM2
  * This struct is returned from ISAM2::update() and contains information about
  * the update that is useful for determining whether the solution is
  * converging, and about how much work was required for the update.  See member
@@ -203,7 +292,7 @@ struct ISAM2Result {
    * factors passed as \c newFactors to ISAM2::update().  These indices may be
    * used later to refer to the factors in order to remove them.
    */
-  FastVector<size_t> newFactorsIndices;
+  std::vector<size_t> newFactorsIndices;
 
   /** A struct holding detailed results, which must be enabled with
    * ISAM2Params::enableDetailedResults.
@@ -234,10 +323,24 @@ struct ISAM2Result {
   /** Detailed results, if enabled by ISAM2Params::enableDetailedResults.  See
    * Detail for information about the results data stored here. */
   boost::optional<DetailedResults> detail;
+
+
+  void print(const std::string str = "") const {
+    std::cout << str << "  Reelimintated: " << variablesReeliminated << "  Relinearized: " << variablesRelinearized << "  Cliques: " << cliques << std::endl;
+  }
+
+  /** Getters and Setters */
+  size_t getVariablesRelinearized() const { return variablesRelinearized; };
+  size_t getVariablesReeliminated() const { return variablesReeliminated; };
+  size_t getCliques() const { return cliques; };
 };
 
-struct ISAM2Clique : public BayesTreeCliqueBase<ISAM2Clique, GaussianConditional> {
-
+/**
+ * Specialized Clique structure for ISAM2, incorporating caching and gradient contribution
+ * TODO: more documentation
+ */
+class ISAM2Clique : public BayesTreeCliqueBase<ISAM2Clique, GaussianConditional> {
+public:
   typedef ISAM2Clique This;
   typedef BayesTreeCliqueBase<This,GaussianConditional> Base;
   typedef boost::shared_ptr<This> shared_ptr;
@@ -250,11 +353,12 @@ struct ISAM2Clique : public BayesTreeCliqueBase<ISAM2Clique, GaussianConditional
 
   /** Construct from a conditional */
   ISAM2Clique(const sharedConditional& conditional) : Base(conditional) {
-    throw runtime_error("ISAM2Clique should always be constructed with the elimination result constructor"); }
+    throw std::runtime_error("ISAM2Clique should always be constructed with the elimination result constructor"); }
 
   /** Construct from an elimination result */
   ISAM2Clique(const std::pair<sharedConditional, boost::shared_ptr<ConditionalType::FactorType> >& result) :
-    Base(result.first), cachedFactor_(result.second), gradientContribution_(result.first->get_R().cols() + result.first->get_S().cols()) {
+    Base(result.first), cachedFactor_(result.second),
+    gradientContribution_(result.first->get_R().cols() + result.first->get_S().cols()) {
     // Compute gradient contribution
     const ConditionalType& conditional(*result.first);
     // Rewrite -(R * P')'*d   as   -(d' * R * P')'   for computational speed reasons
@@ -264,7 +368,7 @@ struct ISAM2Clique : public BayesTreeCliqueBase<ISAM2Clique, GaussianConditional
 
   /** Produce a deep copy, copying the cached factor and gradient contribution */
   shared_ptr clone() const {
-    shared_ptr copy(new ISAM2Clique(make_pair(
+    shared_ptr copy(new ISAM2Clique(std::make_pair(
         sharedConditional(new ConditionalType(*Base::conditional_)),
         cachedFactor_ ? cachedFactor_->clone() : Base::FactorType::shared_ptr())));
     copy->gradientContribution_ = gradientContribution_;
@@ -272,22 +376,26 @@ struct ISAM2Clique : public BayesTreeCliqueBase<ISAM2Clique, GaussianConditional
   }
 
   /** Access the cached factor */
-   Base::FactorType::shared_ptr& cachedFactor() { return cachedFactor_; }
+  Base::FactorType::shared_ptr& cachedFactor() { return cachedFactor_; }
 
   /** Access the gradient contribution */
   const Vector& gradientContribution() const { return gradientContribution_; }
 
   bool equals(const This& other, double tol=1e-9) const {
-    return Base::equals(other) && ((!cachedFactor_ && !other.cachedFactor_) || (cachedFactor_ && other.cachedFactor_ && cachedFactor_->equals(*other.cachedFactor_, tol)));
+    return Base::equals(other) &&
+    		((!cachedFactor_ && !other.cachedFactor_)
+    				|| (cachedFactor_ && other.cachedFactor_
+    						&& cachedFactor_->equals(*other.cachedFactor_, tol)));
   }
 
   /** print this node */
-  void print(const std::string& s = "") const {
-    Base::print(s);
+  void print(const std::string& s = "",
+  		const IndexFormatter& formatter = DefaultIndexFormatter) const {
+    Base::print(s,formatter);
     if(cachedFactor_)
-      cachedFactor_->print(s + "Cached: ");
+      cachedFactor_->print(s + "Cached: ", formatter);
     else
-      cout << s << "Cached empty" << endl;
+      std::cout << s << "Cached empty" << std::endl;
     if(gradientContribution_.rows() != 0)
       gtsam::print(gradientContribution_, "Gradient contribution: ");
   }
@@ -304,6 +412,7 @@ struct ISAM2Clique : public BayesTreeCliqueBase<ISAM2Clique, GaussianConditional
   }
 
 private:
+
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -312,10 +421,10 @@ private:
     ar & BOOST_SERIALIZATION_NVP(cachedFactor_);
     ar & BOOST_SERIALIZATION_NVP(gradientContribution_);
   }
-};
+}; // \struct ISAM2Clique
 
 /**
- * @ingroup ISAM2
+ * @addtogroup ISAM2
  * Implementation of the full ISAM2 algorithm for incremental nonlinear optimization.
  *
  * The typical cycle of using this class to create an instance by providing ISAM2Params
@@ -334,26 +443,16 @@ protected:
   /** VariableIndex lets us look up factors by involved variable and keeps track of dimensions */
   VariableIndex variableIndex_;
 
-  /** The linear delta from the last linear solution, an update to the estimate in theta */
-  VectorValues deltaUnpermuted_;
+  /** The linear delta from the last linear solution, an update to the estimate in theta
+	 *
+	 * This is \c mutable because it is a "cached" variable - it is not updated
+	 * until either requested with getDelta() or calculateEstimate(), or needed
+	 * during update() to evaluate whether to relinearize variables.
+	 */
+  mutable VectorValues delta_;
 
-  /** The permutation through which the deltaUnpermuted_ is
-   * referenced.
-   *
-   * Permuting Vector entries would be slow, so for performance we
-   * instead maintain this permutation through which we access the linear delta
-   * indirectly
-   *
-   * This is \c mutable because it is a "cached" variable - it is not updated
-   * until either requested with getDelta() or calculateEstimate(), or needed
-   * during update() to evaluate whether to relinearize variables.
-   */
-  mutable Permuted<VectorValues> delta_;
-
-  VectorValues deltaNewtonUnpermuted_;
-  mutable Permuted<VectorValues> deltaNewton_;
-  VectorValues RgProdUnpermuted_;
-  mutable Permuted<VectorValues> RgProd_;
+  mutable VectorValues deltaNewton_;
+  mutable VectorValues RgProd_;
   mutable bool deltaDoglegUptodate_;
 
   /** Indicates whether the current delta is up-to-date, only used
@@ -400,11 +499,6 @@ protected:
   /** The inverse ordering, only used for creating ISAM2Result::DetailedResults */
   boost::optional<Ordering::InvertedMap> inverseOrdering_;
 
-private:
-#ifndef NDEBUG
-  std::vector<bool> lastRelinVariables_;
-#endif
-
 public:
 
   typedef ISAM2 This; ///< This class
@@ -446,6 +540,8 @@ public:
    * @param force_relinearize Relinearize any variables whose delta magnitude is sufficiently
    * large (Params::relinearizeThreshold), regardless of the relinearization interval
    * (Params::relinearizeSkip).
+   * @param constrainedKeys is an optional map of keys to group labels, such that a variable can
+   * be constrained to a particular grouping in the BayesTree
    * @return An ISAM2Result struct containing information about the update
    */
   ISAM2Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(), const Values& newTheta = Values(),
@@ -454,7 +550,7 @@ public:
       bool force_relinearize = false);
 
   /** Access the current linearization point */
-  const Values& getLinearizationPoint() const {return theta_;}
+  const Values& getLinearizationPoint() const { return theta_; }
 
   /** Compute an estimate from the incomplete linear delta computed during the last update.
    * This delta is incomplete because it was not updated below wildfire_threshold.  If only
@@ -482,13 +578,16 @@ public:
   Values calculateBestEstimate() const;
 
   /** Access the current delta, computed during the last call to update */
-  const Permuted<VectorValues>& getDelta() const;
+  const VectorValues& getDelta() const;
 
   /** Access the set of nonlinear factors */
   const NonlinearFactorGraph& getFactorsUnsafe() const { return nonlinearFactors_; }
 
   /** Access the current ordering */
   const Ordering& getOrdering() const { return ordering_; }
+
+  /** Access the nonlinear variable index */
+  const VariableIndex& getVariableIndex() const { return variableIndex_; }
 
   size_t lastAffectedVariableCount;
   size_t lastAffectedFactorCount;
@@ -497,7 +596,10 @@ public:
   mutable size_t lastBacksubVariableCount;
   size_t lastNnzTop;
 
-  ISAM2Params params() const { return params_; }
+  const ISAM2Params& params() const { return params_; }
+
+  /** prints out clique statistics */
+  void printStats() const { getCliqueData().getStats().print(); }
 
   //@}
 
@@ -508,8 +610,7 @@ private:
   GaussianFactorGraph getCachedBoundaryFactors(Cliques& orphans);
 
   boost::shared_ptr<FastSet<Index> > recalculate(const FastSet<Index>& markedKeys, const FastSet<Index>& relinKeys,
-      const FastVector<Index>& observedKeys,
-      const boost::optional<FastMap<Index,int> >& constrainKeys, ISAM2Result& result);
+      const FastVector<Index>& observedKeys, const FastSet<Index>& unusedIndices, const boost::optional<FastMap<Index,int> >& constrainKeys, ISAM2Result& result);
   //	void linear_update(const GaussianFactorGraph& newFactors);
   void updateDelta(bool forceFullSolve = false) const;
 
@@ -537,7 +638,7 @@ void optimizeInPlace(const ISAM2& isam, VectorValues& delta);
 /// @return The number of variables that were solved for
 template<class CLIQUE>
 int optimizeWildfire(const boost::shared_ptr<CLIQUE>& root,
-    double threshold, const std::vector<bool>& replaced, Permuted<VectorValues>& delta);
+    double threshold, const std::vector<bool>& replaced, VectorValues& delta);
 
 /**
  * Optimize along the gradient direction, with a closed-form computation to

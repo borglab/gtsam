@@ -20,6 +20,7 @@
 #include <fstream>
 #include <sstream>
 #include <boost/assign/std/vector.hpp>
+#include <boost/filesystem.hpp>
 #include <CppUnitLite/TestHarness.h>
 
 #include <wrap/utilities.h>
@@ -28,6 +29,7 @@
 using namespace std;
 using namespace boost::assign;
 using namespace wrap;
+namespace fs = boost::filesystem;
 static bool enable_verbose = false;
 #ifdef TOPSRCDIR
 static string topdir = TOPSRCDIR;
@@ -36,6 +38,10 @@ static string topdir = "TOPSRCDIR_NOT_CONFIGURED"; // If TOPSRCDIR is not define
 #endif
 
 typedef vector<string> strvec;
+
+// NOTE: as this path is only used to generate makefiles, it is hardcoded here for testing
+// In practice, this path will be an absolute system path, which makes testing it more annoying
+static const std::string headerPath = "/not_really_a_real_path/borg/gtsam/wrap";
 
 /* ************************************************************************* */
 TEST( wrap, ArgumentList ) {
@@ -52,89 +58,105 @@ TEST( wrap, ArgumentList ) {
 }
 
 /* ************************************************************************* */
-TEST( wrap, check_exception ) {
+TEST_UNSAFE( wrap, check_exception ) {
 	THROWS_EXCEPTION(Module("/notarealpath", "geometry",enable_verbose));
 	CHECK_EXCEPTION(Module("/alsonotarealpath", "geometry",enable_verbose), CantOpenFile);
 
 	// clean out previous generated code
-  string cleanCmd = "rm -rf actual_deps";
-  system(cleanCmd.c_str());
+	fs::remove_all("actual_deps");
 
 	string path = topdir + "/wrap/tests";
 	Module module(path.c_str(), "testDependencies",enable_verbose);
-	CHECK_EXCEPTION(module.matlab_code("actual_deps", "mexa64", "-O5"), DependencyMissing);
+	CHECK_EXCEPTION(module.matlab_code("actual_deps", headerPath), DependencyMissing);
 }
 
 /* ************************************************************************* */
-TEST( wrap, parse ) {
-	string header_path = topdir + "/wrap/tests";
-	Module module(header_path.c_str(), "geometry",enable_verbose);
+TEST( wrap, parse_geometry ) {
+	string markup_header_path = topdir + "/wrap/tests";
+	Module module(markup_header_path.c_str(), "geometry",enable_verbose);
 	EXPECT_LONGS_EQUAL(3, module.classes.size());
 
-	// check using declarations
-	strvec exp_using1, exp_using2; exp_using2 += "geometry";
-
 	// forward declarations
-	strvec exp_forward; exp_forward += "VectorNotEigen", "ns::OtherClass";
-	EXPECT(assert_equal(exp_forward, module.forward_declarations));
+	LONGS_EQUAL(2, module.forward_declarations.size());
+	EXPECT(assert_equal("VectorNotEigen", module.forward_declarations[0].name));
+	EXPECT(assert_equal("ns::OtherClass", module.forward_declarations[1].name));
+
+	// includes
+	strvec exp_includes; exp_includes += "folder/path/to/Test.h";
+	EXPECT(assert_equal(exp_includes, module.includes));
+
+	LONGS_EQUAL(3, module.classes.size());
 
 	// check first class, Point2
 	{
 		Class cls = module.classes.at(0);
 		EXPECT(assert_equal("Point2", cls.name));
-		EXPECT_LONGS_EQUAL(2, cls.constructors.size());
+		EXPECT_LONGS_EQUAL(2, cls.constructor.args_list.size());
 		EXPECT_LONGS_EQUAL(7, cls.methods.size());
 		EXPECT_LONGS_EQUAL(0, cls.static_methods.size());
 		EXPECT_LONGS_EQUAL(0, cls.namespaces.size());
-		EXPECT(assert_equal(exp_using1, cls.using_namespaces));
 	}
 
 	// check second class, Point3
 	{
 		Class cls = module.classes.at(1);
 		EXPECT(assert_equal("Point3", cls.name));
-		EXPECT_LONGS_EQUAL(1, cls.constructors.size());
+		EXPECT_LONGS_EQUAL(1, cls.constructor.args_list.size());
 		EXPECT_LONGS_EQUAL(1, cls.methods.size());
 		EXPECT_LONGS_EQUAL(2, cls.static_methods.size());
 		EXPECT_LONGS_EQUAL(0, cls.namespaces.size());
-		EXPECT(assert_equal(exp_using2, cls.using_namespaces));
 
 		// first constructor takes 3 doubles
-		Constructor c1 = cls.constructors.front();
-		EXPECT_LONGS_EQUAL(3, c1.args.size());
+		ArgumentList c1 = cls.constructor.args_list.front();
+		EXPECT_LONGS_EQUAL(3, c1.size());
 
 		// check first double argument
-		Argument a1 = c1.args.front();
+		Argument a1 = c1.front();
 		EXPECT(!a1.is_const);
 		EXPECT(assert_equal("double", a1.type));
 		EXPECT(!a1.is_ref);
 		EXPECT(assert_equal("x", a1.name));
 
 		// check method
-		Method m1 = cls.methods.front();
-		EXPECT(assert_equal("double", m1.returnVal.type1));
+		CHECK(cls.methods.find("norm") != cls.methods.end());
+		Method m1 = cls.methods.find("norm")->second;
+		LONGS_EQUAL(1, m1.returnVals.size());
+		EXPECT(assert_equal("double", m1.returnVals.front().type1));
 		EXPECT(assert_equal("norm", m1.name));
-		EXPECT_LONGS_EQUAL(0, m1.args.size());
+		LONGS_EQUAL(1, m1.argLists.size());
+		EXPECT_LONGS_EQUAL(0, m1.argLists.front().size());
 		EXPECT(m1.is_const_);
 	}
 
 	// Test class is the third one
 	{
-		LONGS_EQUAL(3, module.classes.size());
 		Class testCls = module.classes.at(2);
-		EXPECT_LONGS_EQUAL( 2, testCls.constructors.size());
+		EXPECT_LONGS_EQUAL( 2, testCls.constructor.args_list.size());
 		EXPECT_LONGS_EQUAL(19, testCls.methods.size());
 		EXPECT_LONGS_EQUAL( 0, testCls.static_methods.size());
 		EXPECT_LONGS_EQUAL( 0, testCls.namespaces.size());
-		EXPECT(assert_equal(exp_using2, testCls.using_namespaces));
-		strvec exp_includes; exp_includes += "folder/path/to/Test.h";
-		EXPECT(assert_equal(exp_includes, testCls.includes));
 
 		// function to parse: pair<Vector,Matrix> return_pair (Vector v, Matrix A) const;
-		Method m2 = testCls.methods.front();
-		EXPECT(m2.returnVal.isPair);
-		EXPECT(m2.returnVal.category1 == ReturnValue::EIGEN);
-		EXPECT(m2.returnVal.category2 == ReturnValue::EIGEN);
+		CHECK(testCls.methods.find("return_pair") != testCls.methods.end());
+		Method m2 = testCls.methods.find("return_pair")->second;
+		LONGS_EQUAL(1, m2.returnVals.size());
+		EXPECT(m2.returnVals.front().isPair);
+		EXPECT(m2.returnVals.front().category1 == ReturnValue::EIGEN);
+		EXPECT(m2.returnVals.front().category2 == ReturnValue::EIGEN);
+	}
+
+	// evaluate global functions
+//	Vector aGlobalFunction();
+	LONGS_EQUAL(1, module.global_functions.size());
+	CHECK(module.global_functions.find("aGlobalFunction") != module.global_functions.end());
+	{
+		GlobalFunction gfunc = module.global_functions.at("aGlobalFunction");
+		EXPECT(assert_equal("aGlobalFunction", gfunc.name));
+		LONGS_EQUAL(1, gfunc.returnVals.size());
+		EXPECT(assert_equal("Vector", gfunc.returnVals.front().type1));
+		EXPECT_LONGS_EQUAL(1, gfunc.argLists.size());
+		LONGS_EQUAL(1, gfunc.namespaces.size());
+		EXPECT(gfunc.namespaces.front().empty());
 	}
 }
 
@@ -145,12 +167,20 @@ TEST( wrap, parse_namespaces ) {
 	EXPECT_LONGS_EQUAL(6, module.classes.size());
 
 	{
+		strvec module_exp_includes;
+		module_exp_includes += "path/to/ns1.h";
+		module_exp_includes += "path/to/ns1/ClassB.h";
+		module_exp_includes += "path/to/ns2.h";
+		module_exp_includes += "path/to/ns2/ClassA.h";
+		module_exp_includes += "path/to/ns3.h";
+		EXPECT(assert_equal(module_exp_includes, module.includes));
+	}
+
+	{
 		Class cls = module.classes.at(0);
 		EXPECT(assert_equal("ClassA", cls.name));
 		strvec exp_namespaces; exp_namespaces += "ns1";
 		EXPECT(assert_equal(exp_namespaces, cls.namespaces));
-		strvec exp_includes; exp_includes += "path/to/ns1.h", "";
-		EXPECT(assert_equal(exp_includes, cls.includes));
 	}
 
 	{
@@ -158,8 +188,6 @@ TEST( wrap, parse_namespaces ) {
 		EXPECT(assert_equal("ClassB", cls.name));
 		strvec exp_namespaces; exp_namespaces += "ns1";
 		EXPECT(assert_equal(exp_namespaces, cls.namespaces));
-		strvec exp_includes; exp_includes += "path/to/ns1.h", "path/to/ns1/ClassB.h";
-		EXPECT(assert_equal(exp_includes, cls.includes));
 	}
 
 	{
@@ -167,8 +195,6 @@ TEST( wrap, parse_namespaces ) {
 		EXPECT(assert_equal("ClassA", cls.name));
 		strvec exp_namespaces; exp_namespaces += "ns2";
 		EXPECT(assert_equal(exp_namespaces, cls.namespaces));
-		strvec exp_includes; exp_includes += "path/to/ns2.h", "path/to/ns2/ClassA.h";
-		EXPECT(assert_equal(exp_includes, cls.includes));
 	}
 
 	{
@@ -176,8 +202,6 @@ TEST( wrap, parse_namespaces ) {
 		EXPECT(assert_equal("ClassB", cls.name));
 		strvec exp_namespaces; exp_namespaces += "ns2", "ns3";
 		EXPECT(assert_equal(exp_namespaces, cls.namespaces));
-		strvec exp_includes; exp_includes += "path/to/ns2.h", "path/to/ns3.h", "";
-		EXPECT(assert_equal(exp_includes, cls.includes));
 	}
 
 	{
@@ -185,8 +209,6 @@ TEST( wrap, parse_namespaces ) {
 		EXPECT(assert_equal("ClassC", cls.name));
 		strvec exp_namespaces; exp_namespaces += "ns2";
 		EXPECT(assert_equal(exp_namespaces, cls.namespaces));
-		strvec exp_includes; exp_includes += "path/to/ns2.h", "";
-		EXPECT(assert_equal(exp_includes, cls.includes));
 	}
 
 	{
@@ -194,10 +216,28 @@ TEST( wrap, parse_namespaces ) {
 		EXPECT(assert_equal("ClassD", cls.name));
 		strvec exp_namespaces;
 		EXPECT(assert_equal(exp_namespaces, cls.namespaces));
-		strvec exp_includes; exp_includes += "";
-		EXPECT(assert_equal(exp_includes, cls.includes));
 	}
 
+	// evaluate global functions
+//	Vector ns1::aGlobalFunction();
+//	Vector ns2::aGlobalFunction();
+	LONGS_EQUAL(1, module.global_functions.size());
+	CHECK(module.global_functions.find("aGlobalFunction") != module.global_functions.end());
+	{
+		GlobalFunction gfunc = module.global_functions.at("aGlobalFunction");
+		EXPECT(assert_equal("aGlobalFunction", gfunc.name));
+		LONGS_EQUAL(2, gfunc.returnVals.size());
+		EXPECT(assert_equal("Vector", gfunc.returnVals.front().type1));
+		EXPECT_LONGS_EQUAL(2, gfunc.argLists.size());
+
+		// check namespaces
+		LONGS_EQUAL(2, gfunc.namespaces.size());
+		strvec exp_namespaces1; exp_namespaces1 += "ns1";
+		EXPECT(assert_equal(exp_namespaces1, gfunc.namespaces.at(0)));
+
+		strvec exp_namespaces2; exp_namespaces2 += "ns2";
+		EXPECT(assert_equal(exp_namespaces2, gfunc.namespaces.at(1)));
+	}
 }
 
 /* ************************************************************************* */
@@ -208,95 +248,44 @@ TEST( wrap, matlab_code_namespaces ) {
 	string path = topdir + "/wrap";
 
 	// clean out previous generated code
-  string cleanCmd = "rm -rf actual_namespaces";
-  system(cleanCmd.c_str());
+	fs::remove_all("actual_namespaces");
 
 	// emit MATLAB code
-  string exp_path = path + "/tests/expected_namespaces/";
-  string act_path = "actual_namespaces/";
-	module.matlab_code("actual_namespaces", "mexa64", "-O5");
+	string exp_path = path + "/tests/expected_namespaces/";
+	string act_path = "actual_namespaces/";
+	module.matlab_code("actual_namespaces", headerPath);
 
-	EXPECT(files_equal(exp_path + "new_ClassD_.cpp"              , act_path + "new_ClassD_.cpp"              ));
-	EXPECT(files_equal(exp_path + "new_ClassD_.m"                , act_path + "new_ClassD_.m"                ));
-	EXPECT(files_equal(exp_path + "new_ns1ClassA_.cpp"           , act_path + "new_ns1ClassA_.cpp"           ));
-	EXPECT(files_equal(exp_path + "new_ns1ClassA_.m"             , act_path + "new_ns1ClassA_.m"             ));
-	EXPECT(files_equal(exp_path + "new_ns1ClassB_.cpp"           , act_path + "new_ns1ClassB_.cpp"           ));
-	EXPECT(files_equal(exp_path + "new_ns1ClassB_.m"             , act_path + "new_ns1ClassB_.m"             ));
-	EXPECT(files_equal(exp_path + "new_ns2ClassA_.cpp"           , act_path + "new_ns2ClassA_.cpp"           ));
-	EXPECT(files_equal(exp_path + "new_ns2ClassA_.m"             , act_path + "new_ns2ClassA_.m"             ));
-	EXPECT(files_equal(exp_path + "new_ns2ClassC_.cpp"           , act_path + "new_ns2ClassC_.cpp"           ));
-	EXPECT(files_equal(exp_path + "new_ns2ClassC_.m"             , act_path + "new_ns2ClassC_.m"             ));
-	EXPECT(files_equal(exp_path + "new_ns2ns3ClassB_.cpp"        , act_path + "new_ns2ns3ClassB_.cpp"        ));
-	EXPECT(files_equal(exp_path + "new_ns2ns3ClassB_.m"          , act_path + "new_ns2ns3ClassB_.m"          ));
-	EXPECT(files_equal(exp_path + "delete_ClassD.cpp"              , act_path + "delete_ClassD.cpp"              ));
-	EXPECT(files_equal(exp_path + "delete_ClassD.m"                , act_path + "delete_ClassD.m"                ));
-	EXPECT(files_equal(exp_path + "delete_ns1ClassA.cpp"           , act_path + "delete_ns1ClassA.cpp"           ));
-	EXPECT(files_equal(exp_path + "delete_ns1ClassA.m"             , act_path + "delete_ns1ClassA.m"             ));
-	EXPECT(files_equal(exp_path + "delete_ns1ClassB.cpp"           , act_path + "delete_ns1ClassB.cpp"           ));
-	EXPECT(files_equal(exp_path + "delete_ns1ClassB.m"             , act_path + "delete_ns1ClassB.m"             ));
-	EXPECT(files_equal(exp_path + "delete_ns2ClassA.cpp"           , act_path + "delete_ns2ClassA.cpp"           ));
-	EXPECT(files_equal(exp_path + "delete_ns2ClassA.m"             , act_path + "delete_ns2ClassA.m"             ));
-	EXPECT(files_equal(exp_path + "delete_ns2ClassC.cpp"           , act_path + "delete_ns2ClassC.cpp"           ));
-	EXPECT(files_equal(exp_path + "delete_ns2ClassC.m"             , act_path + "delete_ns2ClassC.m"             ));
-	EXPECT(files_equal(exp_path + "delete_ns2ns3ClassB.cpp"        , act_path + "delete_ns2ns3ClassB.cpp"        ));
-	EXPECT(files_equal(exp_path + "delete_ns2ns3ClassB.m"          , act_path + "delete_ns2ns3ClassB.m"          ));
-	EXPECT(files_equal(exp_path + "ns2ClassA_afunction.cpp"      , act_path + "ns2ClassA_afunction.cpp"      ));
-	EXPECT(files_equal(exp_path + "ns2ClassA_afunction.m"        , act_path + "ns2ClassA_afunction.m"        ));
 
-	EXPECT(files_equal(exp_path + "@ns2ClassA/memberFunction.cpp", act_path + "@ns2ClassA/memberFunction.cpp"));
-	EXPECT(files_equal(exp_path + "@ns2ClassA/memberFunction.m"  , act_path + "@ns2ClassA/memberFunction.m"  ));
-	EXPECT(files_equal(exp_path + "@ns2ClassA/ns2ClassA.m"       , act_path + "@ns2ClassA/ns2ClassA.m"       ));
-	EXPECT(files_equal(exp_path + "@ns2ClassA/nsArg.cpp"         , act_path + "@ns2ClassA/nsArg.cpp"         ));
-	EXPECT(files_equal(exp_path + "@ns2ClassA/nsArg.m"           , act_path + "@ns2ClassA/nsArg.m"           ));
-	EXPECT(files_equal(exp_path + "@ns2ClassA/nsReturn.cpp"      , act_path + "@ns2ClassA/nsReturn.cpp"      ));
-	EXPECT(files_equal(exp_path + "@ns2ClassA/nsReturn.m"        , act_path + "@ns2ClassA/nsReturn.m"        ));
-
-	EXPECT(files_equal(exp_path + "make_testNamespaces.m", act_path + "make_testNamespaces.m"));
-	EXPECT(files_equal(exp_path + "Makefile"       , act_path + "Makefile"       ));
+	EXPECT(files_equal(exp_path + "ClassD.m"                    , act_path + "ClassD.m"                   ));
+	EXPECT(files_equal(exp_path + "+ns1/ClassA.m"               , act_path + "+ns1/ClassA.m"              ));
+	EXPECT(files_equal(exp_path + "+ns1/ClassB.m"               , act_path + "+ns1/ClassB.m"              ));
+	EXPECT(files_equal(exp_path + "+ns2/ClassA.m"               , act_path + "+ns2/ClassA.m"              ));
+	EXPECT(files_equal(exp_path + "+ns2/ClassC.m"               , act_path + "+ns2/ClassC.m"              ));
+	EXPECT(files_equal(exp_path + "+ns2/+ns3/ClassB.m"          , act_path + "+ns2/+ns3/ClassB.m"         ));
+	EXPECT(files_equal(exp_path + "testNamespaces_wrapper.cpp"  , act_path + "testNamespaces_wrapper.cpp" ));
 }
 
 /* ************************************************************************* */
-TEST( wrap, matlab_code ) {
+TEST( wrap, matlab_code_geometry ) {
 	// Parse into class object
 	string header_path = topdir + "/wrap/tests";
 	Module module(header_path,"geometry",enable_verbose);
 	string path = topdir + "/wrap";
 
 	// clean out previous generated code
-  string cleanCmd = "rm -rf actual";
-  system(cleanCmd.c_str());
+	fs::remove_all("actual");
 
 	// emit MATLAB code
 	// make_geometry will not compile, use make testwrap to generate real make
-	module.matlab_code("actual", "mexa64", "-O5");
+	module.matlab_code("actual", headerPath);
+	string epath = path + "/tests/expected/";
+	string apath = "actual/";
 
-	EXPECT(files_equal(path + "/tests/expected/@Point2/Point2.m"  , "actual/@Point2/Point2.m"  ));
-	EXPECT(files_equal(path + "/tests/expected/@Point2/x.cpp"     , "actual/@Point2/x.cpp"     ));
-	EXPECT(files_equal(path + "/tests/expected/@Point3/Point3.m"  , "actual/@Point3/Point3.m"  ));
-	EXPECT(files_equal(path + "/tests/expected/new_Point3_ddd.m"  , "actual/new_Point3_ddd.m"  ));
-	EXPECT(files_equal(path + "/tests/expected/new_Point3_ddd.cpp", "actual/new_Point3_ddd.cpp"));
-	EXPECT(files_equal(path + "/tests/expected/Point3_staticFunction.m"  , "actual/Point3_staticFunction.m"  ));
-	EXPECT(files_equal(path + "/tests/expected/Point3_staticFunction.cpp", "actual/Point3_staticFunction.cpp"));
-	EXPECT(files_equal(path + "/tests/expected/@Point3/norm.m"    , "actual/@Point3/norm.m"    ));
-	EXPECT(files_equal(path + "/tests/expected/@Point3/norm.cpp"  , "actual/@Point3/norm.cpp"  ));
-
-	EXPECT(files_equal(path + "/tests/expected/new_Test_.cpp"           , "actual/new_Test_.cpp"           ));
-	EXPECT(files_equal(path + "/tests/expected/delete_Test.cpp"           , "actual/delete_Test.cpp"           ));
-	EXPECT(files_equal(path + "/tests/expected/delete_Test.m"           , "actual/delete_Test.m"           ));
-	EXPECT(files_equal(path + "/tests/expected/@Test/Test.m"            , "actual/@Test/Test.m"            ));
-	EXPECT(files_equal(path + "/tests/expected/@Test/return_string.cpp" , "actual/@Test/return_string.cpp" ));
-	EXPECT(files_equal(path + "/tests/expected/@Test/return_pair.cpp"   , "actual/@Test/return_pair.cpp"   ));
-	EXPECT(files_equal(path + "/tests/expected/@Test/create_MixedPtrs.cpp", "actual/@Test/create_MixedPtrs.cpp"));
-	EXPECT(files_equal(path + "/tests/expected/@Test/return_field.cpp"  , "actual/@Test/return_field.cpp"  ));
-	EXPECT(files_equal(path + "/tests/expected/@Test/return_TestPtr.cpp", "actual/@Test/return_TestPtr.cpp"));
-	EXPECT(files_equal(path + "/tests/expected/@Test/return_Test.cpp"   , "actual/@Test/return_Test.cpp"   ));
-	EXPECT(files_equal(path + "/tests/expected/@Test/return_Point2Ptr.cpp", "actual/@Test/return_Point2Ptr.cpp"));
-	EXPECT(files_equal(path + "/tests/expected/@Test/return_ptrs.cpp"   , "actual/@Test/return_ptrs.cpp"   ));
-	EXPECT(files_equal(path + "/tests/expected/@Test/print.m"           , "actual/@Test/print.m"           ));
-	EXPECT(files_equal(path + "/tests/expected/@Test/print.cpp"         , "actual/@Test/print.cpp"         ));
-
-	EXPECT(files_equal(path + "/tests/expected/make_geometry.m", "actual/make_geometry.m"));
-	EXPECT(files_equal(path + "/tests/expected/Makefile"       , "actual/Makefile"       ));
+	EXPECT(files_equal(epath + "geometry_wrapper.cpp" , apath + "geometry_wrapper.cpp" ));
+	EXPECT(files_equal(epath + "Point2.m"             , apath + "Point2.m"             ));
+	EXPECT(files_equal(epath + "Point3.m"             , apath + "Point3.m"             ));
+	EXPECT(files_equal(epath + "Test.m"               , apath + "Test.m"               ));
+	EXPECT(files_equal(epath + "aGlobalFunction.m"    , apath + "aGlobalFunction.m"    ));
 }
 
 /* ************************************************************************* */

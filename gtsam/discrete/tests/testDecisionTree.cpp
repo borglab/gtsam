@@ -41,6 +41,9 @@ void dot(const T&f, const string& filename) {
 
 #define DOT(x)(dot(x,#x))
 
+struct Crazy { int a; double b; };
+typedef DecisionTree<string,Crazy> CrazyDecisionTree; // check that DecisionTree is actually generic (as it pretends to be)
+
 /* ******************************************************************************** */
 // Test string labels and int range
 /* ******************************************************************************** */

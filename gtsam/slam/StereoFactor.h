@@ -18,10 +18,15 @@
 
 #pragma once
 
+#include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/geometry/StereoCamera.h>
 
 namespace gtsam {
 
+/**
+ * A Generic Stereo Factor
+ * @addtogroup SLAM
+ */
 template<class POSE, class LANDMARK>
 class GenericStereoFactor: public NoiseModelFactor2<POSE, LANDMARK> {
 private:
@@ -34,6 +39,7 @@ public:
 
 	// shorthand for base class type
 	typedef NoiseModelFactor2<POSE, LANDMARK> Base;		     			///< typedef for base class
+	typedef GenericStereoFactor<POSE, LANDMARK> This;           ///< typedef for this class (with templates)
 	typedef boost::shared_ptr<GenericStereoFactor> shared_ptr;  ///< typedef for shared pointer to this object
 	typedef POSE CamPose;												///< typedef for Pose Lie Value type
 
@@ -56,9 +62,15 @@ public:
 
 	virtual ~GenericStereoFactor() {}  ///< Virtual destructor
 
+	/// @return a deep copy of this factor
+	virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+		return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+				gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
+
 	/**
 	 * print
 	 * @param s optional string naming the factor
+   * @param keyFormatter optional formatter useful for printing Symbols
 	 */
 	void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
 		Base::print(s, keyFormatter);
@@ -68,7 +80,7 @@ public:
 	/**
 	 * equals
 	 */
-	virtual bool equals(const NonlinearFactor& f, double tol) const {
+	virtual bool equals(const NonlinearFactor& f, double tol = 1e-9) const {
 	  const GenericStereoFactor* p = dynamic_cast<const GenericStereoFactor*> (&f);
 		return p && Base::equals(f) && measured_.equals(p->measured_, tol);
 	}
@@ -96,6 +108,8 @@ private:
 	friend class boost::serialization::access;
 	template<class Archive>
 	void serialize(Archive & ar, const unsigned int version) {
+    ar & boost::serialization::make_nvp("NoiseModelFactor2",
+        boost::serialization::base_object<Base>(*this));
 		ar & BOOST_SERIALIZATION_NVP(measured_);
 		ar & BOOST_SERIALIZATION_NVP(K_);
 	}

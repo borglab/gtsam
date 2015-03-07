@@ -30,7 +30,7 @@ namespace gtsam {
 
 /**
  * A 2D pose (Point2,Rot2)
- * @ingroup geometry
+ * @addtogroup geometry
  * \nosubgrouping
  */
 class Pose2 : public DerivedValue<Pose2> {
@@ -158,10 +158,10 @@ public:
 	 * Calculate Adjoint map
 	 * Ad_pose is 3*3 matrix that when applied to twist xi, returns Ad_pose(xi)
 	 */
-	Matrix AdjointMap() const;
-	inline Vector Adjoint(const Vector& xi) const {
+	Matrix adjointMap() const;
+	inline Vector adjoint(const Vector& xi) const {
 		assert(xi.size() == 3);
-		return AdjointMap()*xi;
+		return adjointMap()*xi;
 	}
 
 	/**
@@ -226,7 +226,7 @@ public:
 	/**
 	 * Calculate bearing to a landmark
 	 * @param point 2D location of landmark
-	 * @return 2D rotation \in SO(2)
+	 * @return 2D rotation \f$ \in SO(2) \f$
 	 */
 	Rot2 bearing(const Point2& point,
 			boost::optional<Matrix&> H1=boost::none,
@@ -235,7 +235,7 @@ public:
 	/**
 	 * Calculate bearing to another pose
 	 * @param point SO(2) location of other pose
-	 * @return 2D rotation \in SO(2)
+	 * @return 2D rotation \f$ \in SO(2) \f$
 	 */
 	Rot2 bearing(const Pose2& point,
 			boost::optional<Matrix&> H1=boost::none,
@@ -259,11 +259,25 @@ public:
 			boost::optional<Matrix&> H1=boost::none,
 			boost::optional<Matrix&> H2=boost::none) const;
 
-private:
-
 	/// @}
 	/// @name Advanced Interface
 	/// @{
+
+  /**
+   * Return the start and end indices (inclusive) of the translation component of the
+   * exponential map parameterization
+   * @return a pair of [start, end] indices into the tangent space vector
+   */
+	inline static std::pair<size_t, size_t> translationInterval() { return std::make_pair(0, 1); }
+
+	/**
+	 * Return the start and end indices (inclusive) of the rotation component of the
+	 * exponential map parameterization
+	 * @return a pair of [start, end] indices into the tangent space vector
+	 */
+	static std::pair<size_t, size_t> rotationInterval() { return std::make_pair(2, 2); }
+
+private:
 
 	// Serialization function
 	friend class boost::serialization::access;

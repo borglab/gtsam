@@ -11,6 +11,8 @@
 #include <gtsam/base/Testable.h>
 #include <boost/foreach.hpp>
 
+using namespace std;
+
 namespace gtsam {
 
 	/// Find the best total assignment - can be expensive
@@ -49,8 +51,9 @@ namespace gtsam {
 					// if not already a singleton
 					if (!domains[v].isSingleton()) {
 						// get the constraint and call its ensureArcConsistency method
-						Constraint::shared_ptr factor = (*this)[f];
-						changed[v] = factor->ensureArcConsistency(v,domains) || changed[v];
+						Constraint::shared_ptr constraint = boost::dynamic_pointer_cast<Constraint>((*this)[f]);
+						if (!constraint) throw runtime_error("CSP:runArcConsistency: non-constraint factor");
+						changed[v] = constraint->ensureArcConsistency(v,domains) || changed[v];
 					}
 				} // f
 				if (changed[v]) anyChange = true;
@@ -59,8 +62,8 @@ namespace gtsam {
 			// TODO: Sudoku specific hack
 			if (print) {
 				if (cardinality == 9 && n == 81) {
-					for (size_t i = 0, v = 0; i < sqrt(n); i++) {
-						for (size_t j = 0; j < sqrt(n); j++, v++) {
+					for (size_t i = 0, v = 0; i < (size_t)std::sqrt((double)n); i++) {
+						for (size_t j = 0; j < (size_t)std::sqrt((double)n); j++, v++) {
 							if (changed[v]) cout << "*";
 							domains[v].print();
 							cout << "\t";
@@ -84,8 +87,10 @@ namespace gtsam {
 		// TODO: create a new ordering as we go, to ensure a connected graph
 		// KeyOrdering ordering;
 		// vector<Index> dkeys;
-		BOOST_FOREACH(const Constraint::shared_ptr& factor, factors_) {
-			Constraint::shared_ptr reduced = factor->partiallyApply(domains);
+		BOOST_FOREACH(const DiscreteFactor::shared_ptr& f, factors_) {
+			Constraint::shared_ptr constraint = boost::dynamic_pointer_cast<Constraint>(f);
+			if (!constraint) throw runtime_error("CSP:runArcConsistency: non-constraint factor");
+			Constraint::shared_ptr reduced = constraint->partiallyApply(domains);
 			if (print) reduced->print();
 		}
 #endif

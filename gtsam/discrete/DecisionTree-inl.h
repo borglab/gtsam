@@ -27,6 +27,7 @@
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/assign/std/vector.hpp>
+using boost::assign::operator+=;
 #include <boost/unordered_set.hpp>
 #include <boost/noncopyable.hpp>
 
@@ -36,8 +37,6 @@
 #include <sstream>
 
 namespace gtsam {
-
-	using namespace boost::assign;
 
 	/*********************************************************************************/
 	// Node
@@ -81,7 +80,7 @@ namespace gtsam {
 		bool equals(const Node& q, double tol) const {
 			const Leaf* other = dynamic_cast<const Leaf*> (&q);
 			if (!other) return false;
-			return fabs(this->constant_ - other->constant_) < tol;
+			return fabs(double(this->constant_ - other->constant_)) < tol;
 		}
 
 		/** print */

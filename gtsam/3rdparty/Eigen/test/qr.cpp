@@ -114,8 +114,8 @@ template<typename MatrixType> void qr_verify_assert()
 void test_qr()
 {
   for(int i = 0; i < g_repeat; i++) {
-   CALL_SUBTEST_1( qr(MatrixXf(internal::random<int>(1,200),internal::random<int>(1,200))) );
-   CALL_SUBTEST_2( qr(MatrixXcd(internal::random<int>(1,200),internal::random<int>(1,200))) );
+   CALL_SUBTEST_1( qr(MatrixXf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE),internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
+   CALL_SUBTEST_2( qr(MatrixXcd(internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2),internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2))) );
    CALL_SUBTEST_3(( qr_fixedsize<Matrix<float,3,4>, 2 >() ));
    CALL_SUBTEST_4(( qr_fixedsize<Matrix<double,6,2>, 4 >() ));
    CALL_SUBTEST_5(( qr_fixedsize<Matrix<double,2,5>, 7 >() ));

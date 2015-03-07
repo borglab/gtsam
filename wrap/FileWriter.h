@@ -25,7 +25,7 @@ public:
 	std::ostringstream oss; ///< Primary stream for operating on the file
 
 	/** Create a writer with a filename and delimiter for the header comment */
-	FileWriter(const std::string& filename, bool verbose, const std::string& comment_str="");
+	FileWriter(const std::string& filename, bool verbose, const std::string& comment_str);
 
 	/** Writes the contents of the stringstream to the file, checking if actually new */
 	void emit(bool add_header, bool force=false) const;

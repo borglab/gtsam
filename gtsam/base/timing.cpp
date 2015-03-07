@@ -20,7 +20,6 @@
 #include <stdio.h>
 #include <iostream>
 #include <iomanip>
-#include <sys/time.h>
 #include <stdlib.h>
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
@@ -31,7 +30,9 @@
 boost::shared_ptr<TimingOutline> timingRoot(new TimingOutline("Total"));
 boost::weak_ptr<TimingOutline> timingCurrent(timingRoot);
 
+#ifdef ENABLE_OLD_TIMING
 Timing timing;
+#endif
 std::string timingPrefix;
 
 /* ************************************************************************* */
@@ -48,7 +49,7 @@ void TimingOutline::add(size_t usecs) {
 
 /* ************************************************************************* */
 TimingOutline::TimingOutline(const std::string& label) :
-   t_(0), t2_(0.0), tIt_(0), tMax_(0), tMin_(0), n_(0), label_(label), timerActive_(false) {}
+   t_(0), t2_(0.0), tIt_(0), tMax_(0), tMin_(0), n_(0), label_(label) {}
 
 /* ************************************************************************* */
 size_t TimingOutline::time() const {
@@ -151,18 +152,28 @@ const boost::shared_ptr<TimingOutline>& TimingOutline::child(size_t child, const
 
 /* ************************************************************************* */
 void TimingOutline::tic() {
+#ifdef GTSAM_USING_NEW_BOOST_TIMERS
+	assert(timer_.is_stopped());
+  timer_.start();
+#else
 	assert(!timerActive_);
-	timerActive_ = true;
-	gettimeofday(&t0_, NULL);
+  timer_.restart();
+  *timerActive_ = true;
+#endif
 }
 
 /* ************************************************************************* */
 void TimingOutline::toc() {
-	struct timeval t;
-	gettimeofday(&t, NULL);
-	assert(timerActive_);
-	add(t.tv_sec*1000000 + t.tv_usec - (t0_.tv_sec*1000000 + t0_.tv_usec));
-	timerActive_ = false;
+#ifdef GTSAM_USING_NEW_BOOST_TIMERS
+	assert(!timer_.is_stopped());
+  timer_.stop();
+	add((timer_.elapsed().user + timer_.elapsed().system) / 1000);
+#else
+  assert(timerActive_);
+  double elapsed = timer_.elapsed();
+  add(size_t(elapsed * 1000000.0));
+  *timerActive_ = false;
+#endif
 }
 
 /* ************************************************************************* */
@@ -196,7 +207,7 @@ void toc_(size_t id) {
 		!= current->parent_.lock()->children_.end())
 			std::cout << "gtsam timing:  Incorrect ID passed to toc, expected "
 			<< std::find(current->parent_.lock()->children_.begin(), current->parent_.lock()->children_.end(), current) - current->parent_.lock()->children_.begin()
-			<< ", got " << id << std::endl;
+			<< " \"" << current->label_ << "\", got " << id << std::endl;
 		else
 			std::cout << "gtsam timing:  Incorrect ID passed to toc, id " << id << " does not exist" << std::endl;
 		timingRoot->print();
@@ -231,6 +242,8 @@ void toc_(size_t id, const std::string& label) {
 	toc_(id);
 }
 
+#ifdef ENABLE_OLD_TIMING
+
 /* ************************************************************************* */
 // Timing class implementation
 void Timing::print() {
@@ -260,3 +273,5 @@ void ticPop_(const std::string& prefix, const std::string& id) {
   else
     timingPrefix.resize(timingPrefix.size() - prefix.size() - 1);
 }
+
+#endif

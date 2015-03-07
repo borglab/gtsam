@@ -45,21 +45,28 @@ public:
   Verbosity verbosity; ///< The printing verbosity during optimization (default SILENT)
 
   NonlinearOptimizerParams() :
-    maxIterations(100.0), relativeErrorTol(1e-5), absoluteErrorTol(1e-5),
+    maxIterations(100), relativeErrorTol(1e-5), absoluteErrorTol(1e-5),
     errorTol(0.0), verbosity(SILENT) {}
 
-  virtual void print(const std::string& str = "") const {
-    std::cout << str << "\n";
-    std::cout << "relative decrease threshold: " << relativeErrorTol << "\n";
-    std::cout << "absolute decrease threshold: " << absoluteErrorTol << "\n";
-    std::cout << "      total error threshold: " << errorTol << "\n";
-    std::cout << "         maximum iterations: " << maxIterations << "\n";
-    std::cout << "            verbosity level: " << verbosity << std::endl;
-  }
-
   virtual ~NonlinearOptimizerParams() {}
-};
+  virtual void print(const std::string& str = "") const ;
 
+  size_t getMaxIterations() const { return maxIterations; }
+  double getRelativeErrorTol() const { return relativeErrorTol; }
+  double getAbsoluteErrorTol() const { return absoluteErrorTol; }
+  double getErrorTol() const { return errorTol; }
+  std::string getVerbosity() const { return verbosityTranslator(verbosity); }
+
+  void setMaxIterations(size_t value) { maxIterations = value; }
+  void setRelativeErrorTol(double value) { relativeErrorTol = value; }
+  void setAbsoluteErrorTol(double value) { absoluteErrorTol = value; }
+  void setErrorTol(double value) { errorTol  = value ; }
+  void setVerbosity(const std::string &src) { verbosity = verbosityTranslator(src); }
+
+private:
+  Verbosity verbosityTranslator(const std::string &s) const;
+  std::string verbosityTranslator(Verbosity value) const;
+};
 
 /**
  * Base class for a nonlinear optimization state, including the current estimate
@@ -169,8 +176,10 @@ Values::const_shared_ptr result = DoglegOptimizer(graph, initialValues, params).
  */
 class NonlinearOptimizer {
 
-public:
+protected:
+  NonlinearFactorGraph graph_;
 
+public:
   /** A shared pointer to this class */
   typedef boost::shared_ptr<const NonlinearOptimizer> shared_ptr;
 
@@ -188,10 +197,21 @@ public:
    */
   virtual const Values& optimize() { defaultOptimize(); return values(); }
 
+	/**
+	 * Optimize, but return empty result if any uncaught exception is thrown
+	 * Intended for MATLAB. In C++, use above and catch exceptions.
+	 * No message is printed: it is up to the caller to check the result
+	 * @param optimizer a non-linear optimizer
+	 */
+	const Values& optimizeSafely();
+
+	/// return error
   double error() const { return _state().error; }
 
+  /// return number of iterations
   unsigned int iterations() const { return _state().iterations; }
 
+  /// return values
   const Values& values() const { return _state().values; }
 
   /// @}
@@ -210,10 +230,7 @@ public:
 
   /// @}
 
-protected:
-
-  NonlinearFactorGraph graph_;
-
+protected:	
   /** A default implementation of the optimization loop, which calls iterate()
    * until checkConvergence returns true.
    */
@@ -229,7 +246,7 @@ protected:
 };
 
 /** Check whether the relative error decrease is less than relativeErrorTreshold,
- * the absolute error decrease is less than absoluteErrorTreshold, <emph>or</emph>
+ * the absolute error decrease is less than absoluteErrorTreshold, <em>or</em>
  * the error itself is less than errorThreshold.
  */
 bool checkConvergence(double relativeErrorTreshold,

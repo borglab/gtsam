@@ -21,17 +21,19 @@ using namespace boost::assign;
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/nonlinear/Symbol.h>
-	
+
 using namespace std;
 using namespace gtsam;
 
+Key aKey = gtsam::symbol_shorthand::X(4);
+
 /* ************************************************************************* */
 TEST(Key, KeySymbolConversion) {
-  Symbol expected('j', 4);
-  Key key(expected);
+  Symbol original('j', 4);
+  Key key(original);
+  EXPECT(assert_equal(key, original.key()))
   Symbol actual(key);
-
-  EXPECT(assert_equal(expected, actual))
+  EXPECT(assert_equal(original, actual))
 }
 
 /* ************************************************************************* */

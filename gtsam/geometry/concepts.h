@@ -49,6 +49,14 @@ private:
 	static Translation checkTranslationMemberAccess(const POSE& p) {
 		return p.translation();
 	}
+
+	static std::pair<size_t, size_t> checkTranslationInterval() {
+		return POSE::translationInterval();
+	}
+
+	static std::pair<size_t, size_t> checkRotationInterval() {
+		return POSE::rotationInterval();
+	}
 };
 
 /**

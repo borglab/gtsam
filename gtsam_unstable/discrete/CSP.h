@@ -18,7 +18,7 @@ namespace gtsam {
 	 * A specialization of a DiscreteFactorGraph.
 	 * It knows about CSP-specific constraints and algorithms
 	 */
-	class CSP: public FactorGraph<Constraint> {
+	class CSP: public DiscreteFactorGraph {
 	public:
 
 		/** A map from keys to values */
@@ -27,30 +27,10 @@ namespace gtsam {
 		typedef boost::shared_ptr<Values> sharedValues;
 
 	public:
-		/// Constructor
-		CSP() {
-		}
 
-		template<class SOURCE>
-		void add(const DiscreteKey& j, SOURCE table) {
-			DiscreteKeys keys;
-			keys.push_back(j);
-			push_back(boost::make_shared<DecisionTreeFactor>(keys, table));
-		}
-
-		template<class SOURCE>
-		void add(const DiscreteKey& j1, const DiscreteKey& j2, SOURCE table) {
-			DiscreteKeys keys;
-			keys.push_back(j1);
-			keys.push_back(j2);
-			push_back(boost::make_shared<DecisionTreeFactor>(keys, table));
-		}
-
-		/** add shared discreteFactor immediately from arguments */
-		template<class SOURCE>
-		void add(const DiscreteKeys& keys, SOURCE table) {
-			push_back(boost::make_shared<DecisionTreeFactor>(keys, table));
-		}
+//		/// Constructor
+//		CSP() {
+//		}
 
 		/// Add a unary constraint, allowing only a single value
 		void addSingleValue(const DiscreteKey& dkey, size_t value) {
@@ -71,19 +51,28 @@ namespace gtsam {
 			push_back(factor);
 		}
 
+//		/** return product of all factors as a single factor */
+//		DecisionTreeFactor product() const {
+//			DecisionTreeFactor result;
+//			BOOST_FOREACH(const sharedFactor& factor, *this)
+//				if (factor) result = (*factor) * result;
+//			return result;
+//		}
+
 		/// Find the best total assignment - can be expensive
 		sharedValues optimalAssignment() const;
 
-		/*
-		 * Perform loopy belief propagation
-		 * True belief propagation would check for each value in domain
-		 * whether any satisfying separator assignment can be found.
-		 * This corresponds to hyper-arc consistency in CSP speak.
-		 * This can be done by creating a mini-factor graph and search.
-		 * For a nine-by-nine Sudoku, the search tree will be 8+6+6=20 levels deep.
-		 * It will be very expensive to exclude values that way.
-		 */
-		// void applyBeliefPropagation(size_t nrIterations = 10) const;
+//		/*
+//		 * Perform loopy belief propagation
+//		 * True belief propagation would check for each value in domain
+//		 * whether any satisfying separator assignment can be found.
+//		 * This corresponds to hyper-arc consistency in CSP speak.
+//		 * This can be done by creating a mini-factor graph and search.
+//		 * For a nine-by-nine Sudoku, the search tree will be 8+6+6=20 levels deep.
+//		 * It will be very expensive to exclude values that way.
+//		 */
+//		 void applyBeliefPropagation(size_t nrIterations = 10) const;
+
 		/*
 		 * Apply arc-consistency ~ Approximate loopy belief propagation
 		 * We need to give the domains to a constraint, and it returns
@@ -92,7 +81,7 @@ namespace gtsam {
 		 */
 		void runArcConsistency(size_t cardinality, size_t nrIterations = 10,
 				bool print = false) const;
-	};
+	}; // CSP
 
 } // gtsam
 

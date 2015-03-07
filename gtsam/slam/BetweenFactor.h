@@ -27,6 +27,7 @@ namespace gtsam {
 	/**
 	 * A class for a measurement predicted by "between(config[key1],config[key2])"
 	 * @tparam VALUE the Value type
+	 * @addtogroup SLAM
 	 */
 	template<class VALUE>
 	class BetweenFactor: public NoiseModelFactor2<VALUE, VALUE> {
@@ -62,6 +63,11 @@ namespace gtsam {
 
 		virtual ~BetweenFactor() {}
 
+		/// @return a deep copy of this factor
+    virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+		  return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+		      gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
+
 		/** implement functions needed for Testable */
 
 		/** print */
@@ -69,8 +75,8 @@ namespace gtsam {
 	    std::cout << s << "BetweenFactor("
 	    		<< keyFormatter(this->key1()) << ","
 	    		<< keyFormatter(this->key2()) << ")\n";
-			measured_.print("  measured");
-	    this->noiseModel_->print("  noise model");
+			measured_.print("  measured: ");
+	    this->noiseModel_->print("  noise model: ");
 		}
 
 		/** equals */

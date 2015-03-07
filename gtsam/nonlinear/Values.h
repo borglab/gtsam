@@ -24,8 +24,11 @@
 
 #pragma once
 
-#include <string>
-#include <utility>
+#include <gtsam/base/Value.h>
+#include <gtsam/base/FastMap.h>
+#include <gtsam/linear/VectorValues.h>
+#include <gtsam/nonlinear/Key.h>
+#include <gtsam/nonlinear/Ordering.h>
 
 #include <boost/pool/pool_alloc.hpp>
 #include <boost/ptr_container/ptr_map.hpp>
@@ -35,20 +38,18 @@
 #include <boost/bind.hpp>
 #include <boost/ptr_container/serialize_ptr_map.hpp>
 #include <boost/iterator_adaptors.hpp>
-#include <boost/lambda/lambda.hpp>
 
-#include <gtsam/base/Value.h>
-#include <gtsam/base/FastMap.h>
-#include <gtsam/linear/VectorValues.h>
-#include <gtsam/nonlinear/Ordering.h>
+#include <string>
+#include <utility>
 
 namespace gtsam {
 
-  // Forward declarations
+  // Forward declarations / utilities
   class ValueCloneAllocator;
   class ValueAutomaticCasting;
+  template<typename T> static bool _truePredicate(const T&) { return true; }
 
-/**
+  /**
   * A non-templated config holding any types of Manifold-group elements.  A
   * values structure is a map from keys to values. It is used to specify the
   * value of a bunch of variables in a factor graph. A Values is a values
@@ -122,133 +123,13 @@ namespace gtsam {
 
     typedef KeyValuePair value_type;
 
-  private:
-    template<class ValueType>
-    struct _KeyValuePair {
-      const Key key; ///< The key
-      ValueType& value;  ///< The value
-
-      _KeyValuePair(Key _key, ValueType& _value) : key(_key), value(_value) {}
-    };
-
-    template<class ValueType>
-    struct _ConstKeyValuePair {
-      const Key key; ///< The key
-      const ValueType& value;  ///< The value
-
-      _ConstKeyValuePair(Key _key, const ValueType& _value) : key(_key), value(_value) {}
-      _ConstKeyValuePair(const _KeyValuePair<ValueType>& rhs) : key(rhs.key), value(rhs.value) {}
-    };
-
-  public:
-
+    /** A filtered view of a Values, returned from Values::filter. */
     template<class ValueType = Value>
-    class Filtered {
-    public:
-      /** A key-value pair, with the value a specific derived Value type. */
-      typedef _KeyValuePair<ValueType> KeyValuePair;
-      typedef _ConstKeyValuePair<ValueType> ConstKeyValuePair;
-      typedef KeyValuePair value_type;
+    class Filtered;
 
-      typedef
-          boost::transform_iterator<
-            KeyValuePair(*)(Values::KeyValuePair),
-            boost::filter_iterator<
-              boost::function<bool(const Values::ConstKeyValuePair&)>,
-              Values::iterator> >
-      iterator;
-
-      typedef iterator const_iterator;
-
-      typedef
-          boost::transform_iterator<
-            ConstKeyValuePair(*)(Values::ConstKeyValuePair),
-            boost::filter_iterator<
-              boost::function<bool(const Values::ConstKeyValuePair&)>,
-              Values::const_iterator> >
-      const_const_iterator;
-
-      iterator begin() { return begin_; }
-      iterator end() { return end_; }
-      const_iterator begin() const { return begin_; }
-      const_iterator end() const { return end_; }
-      const_const_iterator beginConst() const { return constBegin_; }
-      const_const_iterator endConst() const { return constEnd_; }
-
-      /** Returns the number of values in this view */
-      size_t size() const {
-        size_t i = 0;
-        for (const_const_iterator it = beginConst(); it != endConst(); ++it)
-          ++i;
-        return i;
-      }
-
-    private:
-      Filtered(const boost::function<bool(const Values::ConstKeyValuePair&)>& filter, Values& values) :
-        begin_(boost::make_transform_iterator(
-            boost::make_filter_iterator(
-                filter, values.begin(), values.end()),
-            &castHelper<ValueType, KeyValuePair, Values::KeyValuePair>)),
-        end_(boost::make_transform_iterator(
-            boost::make_filter_iterator(
-                filter, values.end(), values.end()),
-            &castHelper<ValueType, KeyValuePair, Values::KeyValuePair>)),
-        constBegin_(boost::make_transform_iterator(
-            boost::make_filter_iterator(
-                filter, ((const Values&)values).begin(), ((const Values&)values).end()),
-            &castHelper<const ValueType, ConstKeyValuePair, Values::ConstKeyValuePair>)),
-        constEnd_(boost::make_transform_iterator(
-            boost::make_filter_iterator(
-                filter, ((const Values&)values).end(), ((const Values&)values).end()),
-            &castHelper<const ValueType, ConstKeyValuePair, Values::ConstKeyValuePair>)) {}
-
-      friend class Values;
-      iterator begin_;
-      iterator end_;
-      const_const_iterator constBegin_;
-      const_const_iterator constEnd_;
-    };
-
+    /** A filtered view of a const Values, returned from Values::filter. */
     template<class ValueType = Value>
-    class ConstFiltered {
-    public:
-      /** A const key-value pair, with the value a specific derived Value type. */
-      typedef _ConstKeyValuePair<ValueType> KeyValuePair;
-      typedef KeyValuePair value_type;
-
-      typedef typename Filtered<ValueType>::const_const_iterator iterator;
-      typedef typename Filtered<ValueType>::const_const_iterator const_iterator;
-
-      /** Conversion from Filtered to ConstFiltered */
-      ConstFiltered(const Filtered<ValueType>& rhs) :
-        begin_(rhs.beginConst()),
-        end_(rhs.endConst()) {}
-
-      iterator begin() { return begin_; }
-      iterator end() { return end_; }
-      const_iterator begin() const { return begin_; }
-      const_iterator end() const { return end_; }
-
-      /** Returns the number of values in this view */
-      size_t size() const {
-        size_t i = 0;
-        for (const_iterator it = begin(); it != end(); ++it)
-          ++i;
-        return i;
-      }
-
-    private:
-      friend class Values;
-      const_iterator begin_;
-      const_iterator end_;
-      ConstFiltered(const boost::function<bool(const Values::ConstKeyValuePair&)>& filter, const Values& values) {
-        // We remove the const from values to create a non-const Filtered
-        // view, then pull the const_iterators out of it.
-        const Filtered<ValueType> filtered(filter, const_cast<Values&>(values));
-        begin_ = filtered.beginConst();
-        end_ = filtered.endConst();
-      }
-    };
+    class ConstFiltered;
 
     /** Default constructor creates an empty Values class */
     Values() {}
@@ -258,21 +139,11 @@ namespace gtsam {
 
     /** Constructor from a Filtered view copies out all values */
     template<class ValueType>
-    Values(const Filtered<ValueType>& view) {
-    	BOOST_FOREACH(const typename Filtered<ValueType>::KeyValuePair& key_value, view) {
-        Key key = key_value.key;
-        insert(key, key_value.value);
-      }
-    }
+    Values(const Filtered<ValueType>& view);
 
-    /** Constructor from Const Filtered view */
+    /** Constructor from a Filtered or ConstFiltered view */
     template<class ValueType>
-    Values(const ConstFiltered<ValueType>& view) {
-    	BOOST_FOREACH(const typename ConstFiltered<ValueType>::KeyValuePair& key_value, view) {
-        Key key = key_value.key;
-        insert(key, key_value.value);
-      }
-    }
+    Values(const ConstFiltered<ValueType>& view);
 
     /// @name Testable
     /// @{
@@ -323,13 +194,6 @@ namespace gtsam {
     /** Get a zero VectorValues of the correct structure */
     VectorValues zeroVectors(const Ordering& ordering) const;
 
-  private:
-    static ConstKeyValuePair make_const_deref_pair(const KeyValueMap::const_iterator::value_type& key_value) {
-      return ConstKeyValuePair(key_value.first, *key_value.second); }
-    static KeyValuePair make_deref_pair(const KeyValueMap::iterator::value_type& key_value) {
-      return KeyValuePair(key_value.first, *key_value.second); }
-
-  public:
     const_iterator begin() const { return boost::make_transform_iterator(values_.begin(), &make_const_deref_pair); }
     const_iterator end() const { return boost::make_transform_iterator(values_.end(), &make_const_deref_pair); }
     iterator begin() { return boost::make_transform_iterator(values_.begin(), &make_deref_pair); }
@@ -348,7 +212,7 @@ namespace gtsam {
     /** Get a delta config about a linearization point c0 (*this) */
     VectorValues localCoordinates(const Values& cp, const Ordering& ordering) const;
 
-    /** Get a delta config about a linearization point c0 (*this) */
+    /** Get a delta config about a linearization point c0 (*this) - assumes uninitialized delta */
     void localCoordinates(const Values& cp, const Ordering& ordering, VectorValues& delta) const;
 
     ///@}
@@ -372,7 +236,7 @@ namespace gtsam {
      * Returns a set of keys in the config
      * Note: by construction, the list is ordered
      */
-    FastList<Key> keys() const;
+    KeyList keys() const;
 
     /** Replace all keys and variables */
     Values& operator=(const Values& rhs);
@@ -402,7 +266,7 @@ namespace gtsam {
      * When iterating over the filtered view, only the key-value pairs
      * with a key causing \c filterFcn to return \c true are visited.  Because
      * the object Filtered<Value> returned from filter() is only a
-     * <emph>view</emph> the original Values object must not be deallocated or
+     * <em>view</em> the original Values object must not be deallocated or
      * go out of scope as long as the view is needed.
      * @param filterFcn The function that determines which key-value pairs are
      * included in the filtered view, for which this function returns \c true
@@ -411,9 +275,7 @@ namespace gtsam {
      * the original Values class.
      */
     Filtered<Value>
-    filter(const boost::function<bool(Key)>& filterFcn) {
-      return filter<Value>(filterFcn);
-    }
+    filter(const boost::function<bool(Key)>& filterFcn);
 
     /**
      * Return a filtered view of this Values class, without copying any data.
@@ -421,7 +283,7 @@ namespace gtsam {
      * template argument \c ValueType and whose key causes the function argument
      * \c filterFcn to return true are visited when iterating over the filtered
      * view.  Because the object Filtered<Value> returned from filter() is only
-     * a <emph>view</emph> the original Values object must not be deallocated or
+     * a <em>view</em> the original Values object must not be deallocated or
      * go out of scope as long as the view is needed.
      * @tparam ValueType The type that the value in a key-value pair must match
      * to be included in the filtered view.  Currently, base classes are not
@@ -436,16 +298,14 @@ namespace gtsam {
      */
     template<class ValueType>
     Filtered<ValueType>
-    filter(const boost::function<bool(Key)>& filterFcn = (boost::lambda::_1, true)) {
-      return Filtered<ValueType>(boost::bind(&filterHelper<ValueType>, filterFcn, _1), *this);
-    }
+    filter(const boost::function<bool(Key)>& filterFcn = &_truePredicate<Key>);
 
     /**
      * Return a filtered view of this Values class, without copying any data.
      * When iterating over the filtered view, only the key-value pairs
      * with a key causing \c filterFcn to return \c true are visited.  Because
      * the object Filtered<Value> returned from filter() is only a
-     * <emph>view</emph> the original Values object must not be deallocated or
+     * <em>view</em> the original Values object must not be deallocated or
      * go out of scope as long as the view is needed.
      * @param filterFcn The function that determines which key-value pairs are
      * included in the filtered view, for which this function returns \c true
@@ -454,9 +314,7 @@ namespace gtsam {
      * the original Values class.
      */
     ConstFiltered<Value>
-    filter(const boost::function<bool(Key)>& filterFcn) const {
-      return filter<Value>(filterFcn);
-    }
+    filter(const boost::function<bool(Key)>& filterFcn) const;
 
     /**
      * Return a filtered view of this Values class, without copying any data.
@@ -464,7 +322,7 @@ namespace gtsam {
      * template argument \c ValueType and whose key causes the function argument
      * \c filterFcn to return true are visited when iterating over the filtered
      * view.  Because the object Filtered<Value> returned from filter() is only
-     * a <emph>view</emph> the original Values object must not be deallocated or
+     * a <em>view</em> the original Values object must not be deallocated or
      * go out of scope as long as the view is needed.
      * @tparam ValueType The type that the value in a key-value pair must match
      * to be included in the filtered view.  Currently, base classes are not
@@ -478,9 +336,7 @@ namespace gtsam {
      */
     template<class ValueType>
     ConstFiltered<ValueType>
-    filter(const boost::function<bool(Key)>& filterFcn = (boost::lambda::_1, true)) const {
-      return ConstFiltered<ValueType>(boost::bind(&filterHelper<ValueType>, filterFcn, _1), *this);
-    }
+    filter(const boost::function<bool(Key)>& filterFcn = &_truePredicate<Key>) const;
 
   private:
     // Filters based on ValueType (if not Value) and also based on the user-
@@ -505,6 +361,12 @@ namespace gtsam {
   		ar & BOOST_SERIALIZATION_NVP(values_);
   	}
 
+    static ConstKeyValuePair make_const_deref_pair(const KeyValueMap::const_iterator::value_type& key_value) {
+      return ConstKeyValuePair(key_value.first, *key_value.second); }
+    
+    static KeyValuePair make_deref_pair(const KeyValueMap::iterator::value_type& key_value) {
+      return KeyValuePair(key_value.first, *key_value.second); }
+
   };
 
   /* ************************************************************************* */
@@ -516,13 +378,13 @@ namespace gtsam {
     mutable std::string message_;
 
   public:
-    /// Construct with the key-value pair attemped to be added
+    /// Construct with the key-value pair attempted to be added
     ValuesKeyAlreadyExists(Key key) throw() :
       key_(key) {}
 
     virtual ~ValuesKeyAlreadyExists() throw() {}
 
-    /// The duplicate key that was attemped to be added
+    /// The duplicate key that was attempted to be added
     Key key() const throw() { return key_; }
 
     /// The message to be displayed to the user

@@ -16,9 +16,10 @@ namespace gtsam {
 	using namespace std;
 
 	/* ************************************************************************* */
-	void SingleValue::print(const string& s) const {
-		cout << s << ": SingleValue on " << keys_[0] << " (j=" << keys_[0]
-				<< ") with value " << value_ << endl;
+	void SingleValue::print(const string& s,
+			const IndexFormatter& formatter) const {
+		cout << s << "SingleValue on " << "j=" << formatter(keys_[0])
+				<< " with value " << value_ << endl;
 	}
 
 	/* ************************************************************************* */
@@ -27,7 +28,7 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	SingleValue::operator DecisionTreeFactor() const {
+	DecisionTreeFactor SingleValue::toDecisionTreeFactor() const {
 		DiscreteKeys keys;
 		keys += DiscreteKey(keys_[0],cardinality_);
 		vector<double> table;
@@ -40,7 +41,7 @@ namespace gtsam {
 	/* ************************************************************************* */
 	DecisionTreeFactor SingleValue::operator*(const DecisionTreeFactor& f) const {
 		// TODO: can we do this more efficiently?
-		return DecisionTreeFactor(*this) * f;
+		return toDecisionTreeFactor() * f;
 	}
 
 	/* ************************************************************************* */

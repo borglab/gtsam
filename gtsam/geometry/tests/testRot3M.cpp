@@ -31,9 +31,9 @@
 using namespace std;
 using namespace gtsam;
 
-Rot3 R = Rot3::rodriguez(0.1, 0.4, 0.2);
-Point3 P(0.2, 0.7, -2.0);
-double error = 1e-9, epsilon = 0.001;
+static Rot3 R = Rot3::rodriguez(0.1, 0.4, 0.2);
+static Point3 P(0.2, 0.7, -2.0);
+static double error = 1e-9, epsilon = 0.001;
 static const Matrix I3 = eye(3);
 
 /* ************************************************************************* */
@@ -131,7 +131,7 @@ TEST( Rot3, rodriguez3)
 TEST( Rot3, rodriguez4)
 {
 	Vector axis = Vector_(3,0.,0.,1.); // rotation around Z
-	double angle = M_PI_2;
+	double angle = M_PI/2.0;
 	Rot3 actual = Rot3::rodriguez(axis, angle);
 	double c=cos(angle),s=sin(angle);
 	Rot3 expected(c,-s, 0,

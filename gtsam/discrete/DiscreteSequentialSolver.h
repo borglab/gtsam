@@ -74,7 +74,6 @@ namespace gtsam {
 			return Base::eliminate(&EliminateDiscrete);
 		}
 
-#ifdef BROKEN
 		/**
 		 * Compute the marginal joint over a set of variables, by integrating out
 		 * all of the other variables.  This function returns the result as a factor
@@ -94,7 +93,13 @@ namespace gtsam {
 		DiscreteFactor::shared_ptr marginalFactor(Index j) const {
 			return Base::marginalFactor(j, &EliminateDiscrete);
 		}
-#endif
+
+		/**
+		 * Compute the marginal density over a variable, by integrating out
+		 * all of the other variables. This function returns the result as a
+		 * Vector of the probability values.
+		 */
+		Vector marginalProbabilities(const DiscreteKey& key) const;
 
 		/**
 		 * Compute the MPE solution of the DiscreteFactorGraph.  This

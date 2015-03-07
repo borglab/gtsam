@@ -55,7 +55,7 @@ void test2dRotation(double tol)
   for (int i=0; i<=20; i++)
   {
     angle = static_cast<T>(pow(10, i / 5. - 2));
-    B << cos(angle), sin(angle), -sin(angle), cos(angle);
+    B << std::cos(angle), std::sin(angle), -std::sin(angle), std::cos(angle);
 
     C = (angle*A).matrixFunction(expfn);
     std::cout << "test2dRotation: i = " << i << "   error funm = " << relerr(C, B);
@@ -146,8 +146,10 @@ void test_matrix_exponential()
 {
   CALL_SUBTEST_2(test2dRotation<double>(1e-13));
   CALL_SUBTEST_1(test2dRotation<float>(2e-5));  // was 1e-5, relaxed for clang 2.8 / linux / x86-64
+  CALL_SUBTEST_8(test2dRotation<long double>(1e-13)); 
   CALL_SUBTEST_2(test2dHyperbolicRotation<double>(1e-14));
   CALL_SUBTEST_1(test2dHyperbolicRotation<float>(1e-5));
+  CALL_SUBTEST_8(test2dHyperbolicRotation<long double>(1e-14));
   CALL_SUBTEST_6(testPascal<float>(1e-6));
   CALL_SUBTEST_5(testPascal<double>(1e-15));
   CALL_SUBTEST_2(randomTest(Matrix2d(), 1e-13));
@@ -158,4 +160,5 @@ void test_matrix_exponential()
   CALL_SUBTEST_5(randomTest(Matrix3cf(), 1e-4));
   CALL_SUBTEST_1(randomTest(Matrix4f(), 1e-4));
   CALL_SUBTEST_6(randomTest(MatrixXf(8,8), 1e-4));
+  CALL_SUBTEST_9(randomTest(Matrix<long double,Dynamic,Dynamic>(7,7), 1e-13));
 }

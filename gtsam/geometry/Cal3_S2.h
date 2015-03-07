@@ -16,7 +16,7 @@
  */
 
 /**
- * @defgroup geometry
+ * @addtogroup geometry
  */
 
 #pragma once
@@ -28,7 +28,7 @@ namespace gtsam {
 
 	/**
 	 * @brief The most common 5DOF 3D->2D calibration
-	 * @ingroup geometry
+	 * @addtogroup geometry
 	 * \nosubgrouping
 	 */
 	class Cal3_S2 : public DerivedValue<Cal3_S2> {
@@ -75,9 +75,7 @@ namespace gtsam {
 		/// @{
 
 		/// print with optional string
-		void print(const std::string& s = "") const {
-			gtsam::print(matrix(), s);
-		}
+		void print(const std::string& s = "Cal3_S2") const;
 
 		/// Check if equal up to specified tolerance
 		bool equals(const Cal3_S2& K, double tol = 10e-9) const;
@@ -138,8 +136,8 @@ namespace gtsam {
 		/// convert image coordinates uv to intrinsic coordinates xy
 		Point2 calibrate(const Point2& p) const {
 			const double u = p.x(), v = p.y();
-			return Point2((1 / fx_) * (u - u0_ - (s_ / fy_) * (v - v0_)), (1 / fy_)
-					* (v - v0_));
+			return Point2((1 / fx_) * (u - u0_ - (s_ / fy_) * (v - v0_)),
+			              (1 / fy_)	* (v - v0_));
 		}
 
 		/// @}

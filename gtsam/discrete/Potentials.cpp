@@ -51,12 +51,35 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	void Potentials::print(const string&s) const {
+	void Potentials::print(const string& s,
+			const IndexFormatter& formatter) const {
 		cout << s << "\n  Cardinalities: ";
 		BOOST_FOREACH(const DiscreteKey& key, cardinalities_)
-			cout << key.first << "=" << key.second << " ";
+			cout << formatter(key.first) << "=" << formatter(key.second) << " ";
 		cout << endl;
 		ADT::print(" ");
+	}
+
+	/* ************************************************************************* */
+	void Potentials::permuteWithInverse(const Permutation& permutation) {
+		// Permute the _cardinalities (TODO: Inefficient Consider Improving)
+		DiscreteKeys keys;
+		map<Index, Index> ordering;
+
+		// Get the orginal keys from cardinalities_
+		BOOST_FOREACH(const DiscreteKey& key, cardinalities_)
+			keys & key;
+
+		// Perform Permutation
+		BOOST_FOREACH(DiscreteKey& key, keys) {
+			ordering[key.first] = permutation[key.first];
+			key.first = ordering[key.first];
+		}
+
+		// Change *this
+		AlgebraicDecisionTree<Index> permuted((*this), ordering);
+		*this = permuted;
+		cardinalities_ = keys.cardinalities();
 	}
 
 	/* ************************************************************************* */

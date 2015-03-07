@@ -82,8 +82,10 @@ namespace gtsam {
 		/// @{
 
 		// print
-		virtual void print(const std::string& s = "DiscreteFactor") const {
-			IndexFactor::print(s);
+		virtual void print(const std::string& s = "DiscreteFactor\n",
+				const IndexFormatter& formatter
+				=DefaultIndexFormatter) const {
+			IndexFactor::print(s,formatter);
 		}
 
 		/// @}
@@ -96,7 +98,15 @@ namespace gtsam {
 		/// Multiply in a DecisionTreeFactor and return the result as DecisionTreeFactor
 		virtual DecisionTreeFactor operator*(const DecisionTreeFactor&) const = 0;
 
-		virtual operator DecisionTreeFactor() const = 0;
+		virtual DecisionTreeFactor toDecisionTreeFactor() const = 0;
+
+		/**
+		 * Permutes the factor, but for efficiency requires the permutation
+		 * to already be inverted.
+		 */
+		virtual void permuteWithInverse(const Permutation& inversePermutation){
+			IndexFactor::permuteWithInverse(inversePermutation);
+		}
 
 		/// @}
 	};

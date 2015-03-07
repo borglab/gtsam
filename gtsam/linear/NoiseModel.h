@@ -19,15 +19,17 @@
 #pragma once
 
 #include <boost/serialization/nvp.hpp>
+#include <boost/serialization/shared_ptr.hpp>
+#include <boost/serialization/optional.hpp>
 #include <gtsam/base/Matrix.h>
+#include <cmath>
 
 namespace gtsam {
-
-	class SharedDiagonal; // forward declare
 
 	/// All noise models live in the noiseModel namespace
 	namespace noiseModel {
 
+		// Forward declaration
 		class Gaussian;
 		class Diagonal;
 		class Constrained;
@@ -111,6 +113,8 @@ namespace gtsam {
 		 * as indeed
 		 *   |y|^2 = y'*y = x'*R'*R*x
 		 * Various derived classes are available that are more efficient.
+		 * The named constructors return a shared_ptr because, when the smart flag is true,
+		 * the underlying object might be a derived class such as Diagonal.
 		 */
 		class Gaussian: public Base {
 
@@ -145,7 +149,6 @@ namespace gtsam {
 
 			/**
 			 * A Gaussian noise model created by specifying a square root information matrix.
-			 * @param smart, check if can be simplified to derived class
 			 */
 			static shared_ptr SqrtInformation(const Matrix& R) {
 				return shared_ptr(new Gaussian(R.rows(),R));
@@ -153,9 +156,10 @@ namespace gtsam {
 
 			/**
 			 * A Gaussian noise model created by specifying a covariance matrix.
-			 * @param smart, check if can be simplified to derived class
+			 * @param covariance The square covariance Matrix
+			 * @param smart check if can be simplified to derived class
 			 */
-			static shared_ptr Covariance(const Matrix& covariance, bool smart=false);
+			static shared_ptr Covariance(const Matrix& covariance, bool smart = true);
 
 			virtual void print(const std::string& name) const;
 			virtual bool equals(const Base& expected, double tol=1e-9) const;
@@ -197,13 +201,7 @@ namespace gtsam {
 			 * @param Ab is the m*(n+1) augmented system matrix [A b]
 			 * @return in-place QR factorization [R d]. Below-diagonal is undefined !!!!!
 			 */
-			virtual SharedDiagonal QR(Matrix& Ab) const;
-
-			/**
-			 * Cholesky factorization
-			 * FIXME: this is never used anywhere
-			 */
-			virtual SharedDiagonal Cholesky(Matrix& Ab, size_t nFrontals) const;
+			virtual boost::shared_ptr<Diagonal> QR(Matrix& Ab) const;
 
 			/**
 			 * Return R itself, but note that Whiten(H) is cheaper than R*H
@@ -261,21 +259,22 @@ namespace gtsam {
 			 * A diagonal noise model created by specifying a Vector of sigmas, i.e.
 			 * standard devations, the diagonal of the square root covariance matrix.
 			 */
-			static shared_ptr Sigmas(const Vector& sigmas, bool smart=false);
+			static shared_ptr Sigmas(const Vector& sigmas, bool smart = true);
 
 			/**
 			 * A diagonal noise model created by specifying a Vector of variances, i.e.
 			 * i.e. the diagonal of the covariance matrix.
-			 * @param smart, check if can be simplified to derived class
+			 * @param variances A vector containing the variances of this noise model
+			 * @param smart check if can be simplified to derived class
 			 */
-			static shared_ptr Variances(const Vector& variances, bool smart = false);
+			static shared_ptr Variances(const Vector& variances, bool smart = true);
 
 			/**
 			 * A diagonal noise model created by specifying a Vector of precisions, i.e.
 			 * i.e. the diagonal of the information matrix, i.e., weights
 			 */
-			static shared_ptr Precisions(const Vector& precisions) {
-				return Variances(reciprocal(precisions));
+			static shared_ptr Precisions(const Vector& precisions, bool smart = true) {
+				return Variances(reciprocal(precisions), smart);
 			}
 
 			virtual void print(const std::string& name) const;
@@ -295,11 +294,6 @@ namespace gtsam {
 			 */
 			Vector invsigmas() const;
 			double invsigma(size_t i) const;
-
-			/**
-			 * generate random variate
-			 */
-			virtual Vector sample() const;
 
 			/**
 			 * Return R itself, but note that Whiten(H) is cheaper than R*H
@@ -368,13 +362,13 @@ namespace gtsam {
 			 * standard devations, some of which might be zero
 			 */
 			static shared_ptr MixedSigmas(const Vector& mu, const Vector& sigmas,
-					bool smart = false);
+					bool smart = true);
 
 			/**
 			 * A diagonal noise model created by specifying a Vector of
 			 * standard devations, some of which might be zero
 			 */
-			static shared_ptr MixedSigmas(const Vector& sigmas, bool smart = false) {
+			static shared_ptr MixedSigmas(const Vector& sigmas, bool smart = true) {
 				return MixedSigmas(repeat(sigmas.size(), 1000.0), sigmas, smart);
 			}
 
@@ -383,7 +377,7 @@ namespace gtsam {
 			 * standard devations, some of which might be zero
 			 */
 			static shared_ptr MixedSigmas(double m, const Vector& sigmas,
-					bool smart = false) {
+					bool smart = true) {
 				return MixedSigmas(repeat(sigmas.size(), m), sigmas, smart);
 			}
 
@@ -445,7 +439,7 @@ namespace gtsam {
 			/**
 			 * Apply QR factorization to the system [A b], taking into account constraints
 			 */
-			virtual SharedDiagonal QR(Matrix& Ab) const;
+			virtual Diagonal::shared_ptr QR(Matrix& Ab) const;
 
 			/**
 			 * Check constrained is always true
@@ -496,21 +490,21 @@ namespace gtsam {
 			/**
 			 * An isotropic noise model created by specifying a standard devation sigma
 			 */
-			static shared_ptr Sigma(size_t dim, double sigma) {
-				return shared_ptr(new Isotropic(dim, sigma));
-			}
+			static shared_ptr Sigma(size_t dim, double sigma, bool smart = true);
 
 			/**
 			 * An isotropic noise model created by specifying a variance = sigma^2.
-			 * @param smart, check if can be simplified to derived class
+			 * @param dim The dimension of this noise model
+			 * @param variance The variance of this noise model
+			 * @param smart check if can be simplified to derived class
 			 */
-			static shared_ptr Variance(size_t dim, double variance, bool smart = false);
+			static shared_ptr Variance(size_t dim, double variance, bool smart = true);
 
 			/**
 			 * An isotropic noise model created by specifying a precision
 			 */
-			static shared_ptr Precision(size_t dim, double precision)  {
-				return Variance(dim, 1.0/precision);
+			static shared_ptr Precision(size_t dim, double precision, bool smart = true)  {
+				return Variance(dim, 1.0/precision, smart);
 			}
 
 			virtual void print(const std::string& name) const;
@@ -524,11 +518,6 @@ namespace gtsam {
 			 * Return standard deviation
 			 */
 			inline double sigma() const { return sigma_; }
-
-			/**
-			 * generate random variate
-			 */
-			virtual Vector sample() const;
 
 		private:
 			/** Serialization function */
@@ -609,7 +598,7 @@ namespace gtsam {
 		  virtual bool equals(const Base& expected, const double tol=1e-8) const = 0;
 
 		  inline double sqrtWeight(const double &error) const
-		  { return sqrt(weight(error)); }
+		  { return std::sqrt(weight(error)); }
 
       /** produce a weight vector according to an error vector and the implemented
        * robust function */
@@ -727,6 +716,13 @@ namespace gtsam {
 		};
 
 	} // namespace noiseModel
+
+	/** Note, deliberately not in noiseModel namespace.
+	 * Deprecated. Only for compatibility with previous version.
+	 */
+	typedef noiseModel::Base::shared_ptr SharedNoiseModel;
+	typedef noiseModel::Gaussian::shared_ptr SharedGaussian;
+	typedef noiseModel::Diagonal::shared_ptr SharedDiagonal;
 
 } // namespace gtsam
 

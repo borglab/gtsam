@@ -14,17 +14,29 @@
  * @brief    Typedefs for easier changing of types
  * @author   Richard Roberts
  * @date     Aug 21, 2010
- * @defgroup base
+ * @addtogroup base
  */
 
 #pragma once
 
-#include <unistd.h>
+#include <cstddef>
+
+#include <string>
+#include <boost/function/function1.hpp>
 
 namespace gtsam {
 
 	/// Integer variable index type
 	typedef size_t Index;
+
+  /** A function to convert indices to strings, for example by translating back
+   * to a nonlinear key and then to a Symbol. */
+  typedef boost::function<std::string(Index)> IndexFormatter;
+
+  std::string _defaultIndexFormatter(Index j);
+
+  /** The default IndexFormatter outputs the index */
+  static const IndexFormatter DefaultIndexFormatter = &_defaultIndexFormatter;
 
 	/**
 	 * Helper class that uses templates to select between two types based on
@@ -70,4 +82,36 @@ namespace gtsam {
 	};
 
 }
+
+#ifdef _MSC_VER
+
+// Define some common g++ functions and macros that MSVC does not have
+
+#include <boost/math/special_functions/fpclassify.hpp>
+namespace std {
+  using boost::math::isfinite;
+  using boost::math::isnan;
+  using boost::math::isinf;
+}
+
+#include <boost/math/constants/constants.hpp>
+#ifndef M_PI
+#define M_PI (boost::math::constants::pi<double>())
+#endif
+#ifndef M_PI_2
+#define M_PI_2 (boost::math::constants::pi<double>() / 2.0)
+#endif
+#ifndef M_PI_4
+#define M_PI_4 (boost::math::constants::pi<double>() / 4.0)
+#endif
+
+#endif
+
+#ifdef min
+#undef min
+#endif
+
+#ifdef max
+#undef max
+#endif
 

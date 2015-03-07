@@ -1,10 +1,4 @@
-#include <Eigen/Core>
-#include <Eigen/LU>
-#include <Eigen/QR>
-#include <Eigen/Cholesky>
-#include <Eigen/Geometry>
-#include <Eigen/Jacobi>
-#include <Eigen/Eigenvalues>
+#include <Eigen/Dense>
 #include <iostream>
 
 using namespace Eigen;

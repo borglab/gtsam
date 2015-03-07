@@ -412,8 +412,8 @@ array1 <= array2    array1 >= array2    array1 <= scalar    array1 >= scalar
 array1 == array2    array1 != array2    array1 == scalar    array1 != scalar
 \endcode</td></tr>
 <tr><td>Trigo, power, and \n misc functions \n and the STL variants</td><td>\code
-array1.min(array2)            std::min(array1,array2)
-array1.max(array2)            std::max(array1,array2)
+array1.min(array2)            
+array1.max(array2)            
 array1.abs2()
 array1.abs()                  std::abs(array1)
 array1.sqrt()                 std::sqrt(array1)
@@ -440,10 +440,10 @@ Eigen provides several reduction methods such as:
 \link DenseBase::sum() sum() \endlink, \link DenseBase::prod() prod() \endlink,
 \link MatrixBase::trace() trace() \endlink \matrixworld,
 \link MatrixBase::norm() norm() \endlink \matrixworld, \link MatrixBase::squaredNorm() squaredNorm() \endlink \matrixworld,
-\link DenseBase::all() all() \endlink \redstar,and \link DenseBase::any() any() \endlink \redstar.
+\link DenseBase::all() all() \endlink, and \link DenseBase::any() any() \endlink.
 All reduction operations can be done matrix-wise,
-\link DenseBase::colwise() column-wise \endlink \redstar or
-\link DenseBase::rowwise() row-wise \endlink \redstar. Usage example:
+\link DenseBase::colwise() column-wise \endlink or
+\link DenseBase::rowwise() row-wise \endlink. Usage example:
 <table class="manual">
 <tr><td rowspan="3" style="border-right-style:dashed;vertical-align:middle">\code
       5 3 1
@@ -586,6 +586,9 @@ mat3 = mat1 * diag1.inverse()
 
 TriangularView gives a view on a triangular part of a dense matrix and allows to perform optimized operations on it. The opposite triangular part is never referenced and can be used to store other information.
 
+\note The .triangularView() template member function requires the \c template keyword if it is used on an
+object of a type that depends on a template parameter; see \ref TopicTemplateKeyword for details.
+
 <table class="example">
 <tr><th>Operation</th><th>Code</th></tr>
 <tr><td>
@@ -629,6 +632,9 @@ U1.triangularView<Eigen::Upper>().solveInPlace<OnTheRight>(M4)\endcode
 Just as for triangular matrix, you can reference any triangular part of a square matrix to see it as a selfadjoint
 matrix and perform special and optimized operations. Again the opposite triangular part is never referenced and can be
 used to store other information.
+
+\note The .selfadjointView() template member function requires the \c template keyword if it is used on an
+object of a type that depends on a template parameter; see \ref TopicTemplateKeyword for details.
 
 <table class="example">
 <tr><th>Operation</th><th>Code</th></tr>

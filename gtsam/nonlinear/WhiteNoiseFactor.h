@@ -51,7 +51,7 @@ namespace gtsam {
 
 	public:
 
-		/** @brief negative log likelihood as a function of mean \mu and precision \tau
+		/** @brief negative log likelihood as a function of mean \f$ \mu \f$ and precision \f$ \tau \f$
 		 * @f[
 		 * f(z, \tau, \mu)
 		 * = -\log \left( \frac{\sqrt{\tau}}{\sqrt{2\pi}} \exp(-0.5\tau(z-\mu)^2) \right)
@@ -162,6 +162,11 @@ namespace gtsam {
 			Index j2 = ordering[precisionKey_];
 			return linearize(z_, u, p, j1, j2);
 		}
+
+		/// @return a deep copy of this factor
+    virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+		  return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+		      gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
 		/// @}
 

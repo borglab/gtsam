@@ -10,14 +10,13 @@
  * -------------------------------------------------------------------------- */
 
 /*
- * DerivedValue.h
- *
- *  Created on: Jan 26, 2012
- *      Author: thduynguyen
+ * @file DerivedValue.h
+ * @date Jan 26, 2012
+ * @author Duy Nguyen Ta
  */
 
 #pragma once
-
+#include <boost/make_shared.hpp>
 #include <boost/pool/singleton_pool.hpp>
 #include <gtsam/base/Value.h>
 
@@ -25,9 +24,6 @@ namespace gtsam {
 
 template<class DERIVED>
 class DerivedValue : public Value {
-private:
-	/// Fake Tag struct for singleton pool allocator. In fact, it is never used!
-	struct PoolTag { };
 
 protected:
 	DerivedValue() {}
@@ -38,7 +34,8 @@ public:
 
   /**
    * Create a duplicate object returned as a pointer to the generic Value interface.
-   * For the sake of performance, this function use singleton pool allocator instead of the normal heap allocator
+   * For the sake of performance, this function use singleton pool allocator instead of the normal heap allocator.
+	 * The result must be deleted with Value::deallocate_, not with the 'delete' operator.
    */
   virtual Value* clone_() const {
   	void *place = boost::singleton_pool<PoolTag, sizeof(DERIVED)>::malloc();
@@ -50,9 +47,16 @@ public:
    * Destroy and deallocate this object, only if it was originally allocated using clone_().
    */
   virtual void deallocate_() const {
-    this->~Value();
-  	boost::singleton_pool<PoolTag, sizeof(DERIVED)>::free((void*)this);
+    this->~DerivedValue(); // Virtual destructor cleans up the derived object
+  	boost::singleton_pool<PoolTag, sizeof(DERIVED)>::free((void*)this); // Release memory from pool
   }
+
+	/**
+	 * Clone this value (normal clone on the heap, delete with 'delete' operator)
+	 */
+	virtual boost::shared_ptr<Value> clone() const {
+		return boost::make_shared<DERIVED>(static_cast<const DERIVED&>(*this));
+	}
 
   /// equals implementing generic Value interface
   virtual bool equals_(const Value& p, double tol = 1e-9) const {
@@ -111,6 +115,10 @@ protected:
 	  // Nothing to do, do not call base class assignment operator
 	  return *this;
 	}
+
+private:
+	/// Fake Tag struct for singleton pool allocator. In fact, it is never used!
+	struct PoolTag { };
 
 };
 

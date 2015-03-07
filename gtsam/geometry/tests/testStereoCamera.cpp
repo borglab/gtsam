@@ -74,21 +74,21 @@ TEST( StereoCamera, project)
 
 /* ************************************************************************* */
 
-Pose3 camera1(Matrix_(3,3,
+static Pose3 camera1(Matrix_(3,3,
 		       1., 0., 0.,
 		       0.,-1., 0.,
 		       0., 0.,-1.
 		       ),
 	      Point3(0,0,6.25));
 
-Cal3_S2Stereo::shared_ptr K(new Cal3_S2Stereo(1500, 1500, 0, 320, 240, 0.5));
-StereoCamera stereoCam(Pose3(), K);
+static Cal3_S2Stereo::shared_ptr K(new Cal3_S2Stereo(1500, 1500, 0, 320, 240, 0.5));
+static StereoCamera stereoCam(Pose3(), K);
 
 // point X Y Z in meters
-Point3 p(0, 0, 5);
+static Point3 p(0, 0, 5);
 
 /* ************************************************************************* */
-StereoPoint2 project_(const StereoCamera& cam, const Point3& point) { return cam.project(point); }
+static StereoPoint2 project_(const StereoCamera& cam, const Point3& point) { return cam.project(point); }
 TEST( StereoCamera, Dproject_stereo_pose)
 {
 	Matrix expected = numericalDerivative21<StereoPoint2,StereoCamera,Point3>(project_,stereoCam, p);

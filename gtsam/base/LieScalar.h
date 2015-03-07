@@ -31,12 +31,15 @@ namespace gtsam {
 		LieScalar() : d_(0.0) {}
 
 		/** wrap a double */
-		LieScalar(double d) : d_(d) {}
+		explicit LieScalar(double d) : d_(d) {}
 
 		/** access the underlying value */
 		double value() const { return d_; }
 
-		/** print @param s optional string naming the object */
+		/** Automatic conversion to underlying value */
+		operator double() const { return d_; }
+
+		/** print @param name optional string naming the object */
 		inline void print(const std::string& name="") const {
 	    std::cout << name << ": " << d_ << std::endl;
 		}

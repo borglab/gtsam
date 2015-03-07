@@ -13,6 +13,7 @@ find_path(UMFPACK_INCLUDES
   ${INCLUDE_INSTALL_DIR}
   PATH_SUFFIXES
   suitesparse
+  ufsparse
 )
 
 find_library(UMFPACK_LIBRARIES umfpack PATHS $ENV{UMFPACKDIR} ${LIB_INSTALL_DIR})

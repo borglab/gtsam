@@ -19,7 +19,7 @@
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/Errors.h>
-#include <gtsam/linear/SharedDiagonal.h>
+#include <gtsam/linear/NoiseModel.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/base/blockMatrices.h>
 #include <gtsam/base/types.h>
@@ -78,14 +78,11 @@ namespace gtsam {
    * \f[ E(x) = \frac{1}{2} (A_1 x_{j1} + A_2 x_{j2} - b)^T \Sigma^{-1} (A_1 x_{j1} + A_2 x_{j2} - b) . \f]
    */
   class JacobianFactor : public GaussianFactor {
-  public:
-  	typedef Matrix AbMatrix;
-  	typedef VerticalBlockView<AbMatrix> BlockAb;
-
   protected:
+		typedef Matrix AbMatrix;
+		typedef VerticalBlockView<AbMatrix> BlockAb;
 
-    SharedDiagonal model_; // Gaussian noise model with diagonal covariance matrix
-    std::vector<size_t> firstNonzeroBlocks_;
+    noiseModel::Diagonal::shared_ptr model_; // Gaussian noise model with diagonal covariance matrix
     AbMatrix matrix_; // the full matrix corresponding to the factor
     BlockAb Ab_;      // the block view of the full matrix
     typedef GaussianFactor Base; // typedef to base
@@ -97,10 +94,11 @@ namespace gtsam {
     typedef BlockAb::Column BVector;
     typedef BlockAb::constColumn constBVector;
 
-  public:
-
     /** Copy constructor */
     JacobianFactor(const JacobianFactor& gf);
+
+    /** Convert from other GaussianFactor */
+    JacobianFactor(const GaussianFactor& gf);
 
     /** default constructor for I/O */
     JacobianFactor();
@@ -148,12 +146,30 @@ namespace gtsam {
     }
 
     // Implementing Testable interface
-    virtual void print(const std::string& s = "") const;
+    virtual void print(const std::string& s = "",
+    		const IndexFormatter& formatter = DefaultIndexFormatter) const;
     virtual bool equals(const GaussianFactor& lf, double tol = 1e-9) const;
 
     Vector unweighted_error(const VectorValues& c) const; /** (A*x-b) */
     Vector error_vector(const VectorValues& c) const; /** (A*x-b)/sigma */
     virtual double error(const VectorValues& c) const; /**  0.5*(A*x-b)'*D*(A*x-b) */
+
+    /** Return the augmented information matrix represented by this GaussianFactor.
+     * The augmented information matrix contains the information matrix with an
+     * additional column holding the information vector, and an additional row
+     * holding the transpose of the information vector.  The lower-right entry
+     * contains the constant error term (when \f$ \delta x = 0 \f$).  The
+     * augmented information matrix is described in more detail in HessianFactor,
+     * which in fact stores an augmented information matrix.
+     */
+    virtual Matrix computeInformation() const;
+
+    /**
+     * Construct the corresponding anti-factor to negate information
+     * stored stored in this factor.
+     * @return a HessianFactor with negated Hessian matrices
+     */
+    virtual GaussianFactor::shared_ptr negate() const;
 
     /** Check if the factor contains no information, i.e. zero rows.  This does
      * not necessarily mean that the factor involves no variables (to check for
@@ -224,7 +240,6 @@ namespace gtsam {
     /**
      * Return (dense) matrix associated with factor
      * The returned system is an augmented matrix: [A b]
-     * @param ordering of variables needed for matrix column order
      * @param set weight to use whitening to bake in weights
      */
     Matrix matrix_augmented(bool weight = true) const;
@@ -251,40 +266,42 @@ namespace gtsam {
     /** return a multi-frontal conditional. It's actually a chordal Bayesnet */
     boost::shared_ptr<GaussianConditional> eliminate(size_t nrFrontals = 1);
 
-    /* Used by ::CombineJacobians for sorting */
-    struct _RowSource {
-      size_t firstNonzeroVar;
-      size_t factorI;
-      size_t factorRowI;
-      _RowSource(size_t _firstNonzeroVar, size_t _factorI, size_t _factorRowI) :
-        firstNonzeroVar(_firstNonzeroVar), factorI(_factorI), factorRowI(_factorRowI) {}
-      bool operator<(const _RowSource& o) const {
-      	return firstNonzeroVar < o.firstNonzeroVar;
-      }
-    };
+    /**
+     * splits a pre-factorized factor into a conditional, and changes the current
+     * factor to be the remaining component. Performs same operation as eliminate(),
+     * but without running QR.
+     */
+    boost::shared_ptr<GaussianConditional> splitConditional(size_t nrFrontals = 1);
 
     // following methods all used in CombineJacobians:
     // Many imperative, perhaps all need to be combined in constructor
 
-    /** Collect information on Jacobian rows */
-    void collectInfo(size_t index, std::vector<_RowSource>& rowSources) const;
-
     /** allocate space */
     void allocate(const VariableSlots& variableSlots,
 				std::vector<size_t>& varDims, size_t m);
-
-    /** copy a slot from source */
-    void copyRow(const JacobianFactor& source,
-    		Index sourceRow, size_t sourceSlot, size_t row, Index slot);
-
-    /** copy firstNonzeroBlocks structure */
-    void copyFNZ(size_t m, size_t n, std::vector<_RowSource>& rowSources);
 
     /** set noiseModel correctly */
   	void setModel(bool anyConstrained, const Vector& sigmas);
 
     /** Assert invariants after elimination */
     void assertInvariants() const;
+
+    /** An exception indicating that the noise model dimension passed into the
+     * JacobianFactor has a different dimensionality than the factor. */
+    class InvalidNoiseModel : std::exception {
+    public:
+      const size_t factorDims; ///< The dimensionality of the factor
+      const size_t noiseModelDims; ///< The dimensionality of the noise model
+
+      InvalidNoiseModel(size_t factorDims, size_t noiseModelDims) :
+          factorDims(factorDims), noiseModelDims(noiseModelDims) {}
+      virtual ~InvalidNoiseModel() throw() {}
+
+      virtual const char* what() const throw();
+
+    private:
+      mutable std::string description_;
+    };
 
   private:
 
@@ -301,52 +318,11 @@ namespace gtsam {
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int version) {
     	ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(GaussianFactor);
-    	ar & BOOST_SERIALIZATION_NVP(firstNonzeroBlocks_);
     	ar & BOOST_SERIALIZATION_NVP(Ab_);
     	ar & BOOST_SERIALIZATION_NVP(model_);
     	ar & BOOST_SERIALIZATION_NVP(matrix_);
     }
-
   }; // JacobianFactor
-
-  /** return A*x */
-  Errors operator*(const FactorGraph<JacobianFactor>& fg, const VectorValues& x);
-
-  /* In-place version e <- A*x that overwrites e. */
-  void multiplyInPlace(const FactorGraph<JacobianFactor>& fg, const VectorValues& x, Errors& e);
-
-  /* In-place version e <- A*x that takes an iterator. */
-  void multiplyInPlace(const FactorGraph<JacobianFactor>& fg, const VectorValues& x, const Errors::iterator& e);
-
-  /** x += alpha*A'*e */
-  void transposeMultiplyAdd(const FactorGraph<JacobianFactor>& fg, double alpha, const Errors& e, VectorValues& x);
-
-  /**
-   * Compute the gradient of the energy function,
-   * \f$ \nabla_{x=x_0} \left\Vert \Sigma^{-1} A x - b \right\Vert^2 \f$,
-   * centered around \f$ x = x_0 \f$.
-   * The gradient is \f$ A^T(Ax-b) \f$.
-   * @param fg The Jacobian factor graph $(A,b)$
-   * @param x0 The center about which to compute the gradient
-   * @return The gradient as a VectorValues
-   */
-  VectorValues gradient(const FactorGraph<JacobianFactor>& fg, const VectorValues& x0);
-
-  /**
-   * Compute the gradient of the energy function,
-   * \f$ \nabla_{x=0} \left\Vert \Sigma^{-1} A x - b \right\Vert^2 \f$,
-   * centered around zero.
-   * The gradient is \f$ A^T(Ax-b) \f$.
-   * @param fg The Jacobian factor graph $(A,b)$
-   * @param [output] g A VectorValues to store the gradient, which must be preallocated, see allocateVectorValues
-   * @return The gradient as a VectorValues
-   */
-  void gradientAtZero(const FactorGraph<JacobianFactor>& fg, VectorValues& g);
-
-  // matrix-vector operations
-  void residual(const FactorGraph<JacobianFactor>& fg, const VectorValues &x, VectorValues &r);
-  void multiply(const FactorGraph<JacobianFactor>& fg, const VectorValues &x, VectorValues &r);
-  void transposeMultiply(const FactorGraph<JacobianFactor>& fg, const VectorValues &r, VectorValues &x);
 
 } // gtsam
 

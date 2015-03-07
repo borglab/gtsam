@@ -24,13 +24,6 @@
 namespace gtsam {
 
 /* ************************************************************************* */
-Cal3DS2::Cal3DS2():fx_(1), fy_(1), s_(0), u0_(0), v0_(0), k1_(0), k2_(0), k3_(0), k4_(0){}
-
-/* ************************************************************************* */
-Cal3DS2::Cal3DS2(double fx, double fy, double s, double u0, double v0, double k1, double k2, double k3, double k4) :
-		fx_(fx), fy_(fy), s_(s), u0_(u0), v0_(v0), k1_(k1), k2_(k2), k3_(k3), k4_(k4) {}
-
-/* ************************************************************************* */
 Cal3DS2::Cal3DS2(const Vector &v):
 		fx_(v[0]), fy_(v[1]), s_(v[2]), u0_(v[3]), v0_(v[4]), k1_(v[5]), k2_(v[6]), k3_(v[7]), k4_(v[8]){}
 
@@ -38,13 +31,10 @@ Cal3DS2::Cal3DS2(const Vector &v):
 Matrix Cal3DS2::K() const { return Matrix_(3,3, fx_, s_, u0_, 0.0, fy_, v0_, 0.0, 0.0, 1.0); }
 
 /* ************************************************************************* */
-Vector Cal3DS2::k() const { return Vector_(4, k1_, k2_, k3_, k4_); }
-
-/* ************************************************************************* */
 Vector Cal3DS2::vector() const { return Vector_(9, fx_, fy_, s_, u0_, v0_, k1_, k2_, k3_, k4_) ; }
 
 /* ************************************************************************* */
-void Cal3DS2::print(const std::string& s) const { gtsam::print(K(), s + ".K") ; gtsam::print(k(), s + ".k") ; }
+void Cal3DS2::print(const std::string& s) const { gtsam::print(K(), s + ".K") ; gtsam::print(Vector(k()), s + ".k") ; }
 
 /* ************************************************************************* */
 bool Cal3DS2::equals(const Cal3DS2& K, double tol) const {
@@ -76,6 +66,36 @@ Point2 Cal3DS2::uncalibrate(const Point2& p,
 	if (H2) *H2 = D2d_intrinsic(p) ;
 
 	return Point2(fx_* x2 + s_ * y2 + u0_, fy_ * y2 + v0_) ;
+}
+
+/* ************************************************************************* */
+Point2 Cal3DS2::calibrate(const Point2& pi, const double tol) const {
+  // Use the following fixed point iteration to invert the radial distortion.
+  // pn_{t+1} = (inv(K)*pi - dp(pn_{t})) / g(pn_{t})
+
+  const Point2 invKPi ((1 / fx_) * (pi.x() - u0_ - (s_ / fy_) * (pi.y() - v0_)),
+                       (1 / fy_) * (pi.y() - v0_));
+
+  // initialize by ignoring the distortion at all, might be problematic for pixels around boundary
+  Point2 pn = invKPi;
+
+  // iterate until the uncalibrate is close to the actual pixel coordinate
+  const int maxIterations = 10;
+  int iteration;
+  for ( iteration = 0 ; iteration < maxIterations ; ++iteration ) {
+    if ( uncalibrate(pn).dist(pi) <= tol ) break;
+    const double x = pn.x(), y = pn.y(), xy = x*y, xx = x*x, yy = y*y ;
+    const double r = xx + yy ;
+    const double g = (1+k1_*r+k2_*r*r) ;
+    const double dx = 2*k3_*xy + k4_*(r+2*xx) ;
+    const double dy = 2*k4_*xy + k3_*(r+2*yy) ;
+    pn = (invKPi - Point2(dx,dy))/g ;
+  }
+
+  if ( iteration >= maxIterations )
+    throw std::runtime_error("Cal3DS2::calibrate fails to converge. need a better initialization");
+
+  return pn;
 }
 
 /* ************************************************************************* */

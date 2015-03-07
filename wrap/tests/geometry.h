@@ -15,9 +15,6 @@ class Point2 {
  VectorNotEigen vectorConfusion();
 };
 
-// flag a namespace as in use - only applies *after* the declaration
-using namespace geometry;
-
 class Point3 {
   Point3(double x, double y, double z);
   double norm() const;
@@ -35,7 +32,9 @@ class Point3 {
  * A multi-line comment!
  */
 
+// An include! Can go anywhere outside of a class, in any order
 #include <folder/path/to/Test.h>
+
 class Test {
 
 	/* a comment! */
@@ -79,6 +78,9 @@ class Test {
 
   // even more comments at the end!
 };
+
+
+Vector aGlobalFunction();
 
 // comments at the end!
 

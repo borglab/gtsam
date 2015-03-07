@@ -36,6 +36,9 @@
 #   define EIGEN_BT_UNDEF_WIN32_LEAN_AND_MEAN
 # endif
 # include <windows.h>
+#elif defined(__APPLE__)
+#include <CoreServices/CoreServices.h>
+#include <mach/mach_time.h>
 #else
 # include <unistd.h>
 #endif
@@ -76,6 +79,7 @@ public:
   inline void reset()
   {
     m_bests.fill(1e9);
+    m_worsts.fill(0);
     m_totals.setZero();
   }
   inline void start()
@@ -89,40 +93,52 @@ public:
     m_times[REAL_TIMER] = getRealTime() - m_starts[REAL_TIMER];
     #if EIGEN_VERSION_AT_LEAST(2,90,0)
     m_bests = m_bests.cwiseMin(m_times);
+    m_worsts = m_worsts.cwiseMax(m_times);
     #else
     m_bests(0) = std::min(m_bests(0),m_times(0));
     m_bests(1) = std::min(m_bests(1),m_times(1));
+    m_worsts(0) = std::max(m_worsts(0),m_times(0));
+    m_worsts(1) = std::max(m_worsts(1),m_times(1));
     #endif
     m_totals += m_times;
   }
 
   /** Return the elapsed time in seconds between the last start/stop pair
     */
-  inline double value(int TIMER = CPU_TIMER)
+  inline double value(int TIMER = CPU_TIMER) const
   {
     return m_times[TIMER];
   }
 
   /** Return the best elapsed time in seconds
     */
-  inline double best(int TIMER = CPU_TIMER)
+  inline double best(int TIMER = CPU_TIMER) const
   {
     return m_bests[TIMER];
   }
 
+  /** Return the worst elapsed time in seconds
+    */
+  inline double worst(int TIMER = CPU_TIMER) const
+  {
+    return m_worsts[TIMER];
+  }
+
   /** Return the total elapsed time in seconds.
     */
-  inline double total(int TIMER = CPU_TIMER)
+  inline double total(int TIMER = CPU_TIMER) const
   {
     return m_totals[TIMER];
   }
 
-  inline double getCpuTime()
+  inline double getCpuTime() const
   {
 #ifdef _WIN32
     LARGE_INTEGER query_ticks;
     QueryPerformanceCounter(&query_ticks);
     return query_ticks.QuadPart/m_frequency;
+#elif __APPLE__
+    return double(mach_absolute_time())*1e-9;
 #else
     timespec ts;
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts);
@@ -130,12 +146,14 @@ public:
 #endif
   }
 
-  inline double getRealTime()
+  inline double getRealTime() const
   {
 #ifdef _WIN32
     SYSTEMTIME st;
     GetSystemTime(&st);
     return (double)st.wSecond + 1.e-3 * (double)st.wMilliseconds;
+#elif __APPLE__
+    return double(mach_absolute_time())*1e-9;
 #else
     timespec ts;
     clock_gettime(CLOCK_REALTIME, &ts);
@@ -150,8 +168,11 @@ protected:
   Vector2d m_starts;
   Vector2d m_times;
   Vector2d m_bests;
+  Vector2d m_worsts;
   Vector2d m_totals;
 
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 #define BENCH(TIMER,TRIES,REP,CODE) { \

@@ -21,6 +21,8 @@
 #include <gtsam/linear/GaussianMultifrontalSolver.h>
 #include <gtsam/nonlinear/Marginals.h>
 
+using namespace std;
+
 namespace gtsam {
 
 /* ************************************************************************* */
@@ -44,6 +46,14 @@ Marginals::Marginals(const NonlinearFactorGraph& graph, const Values& solution, 
 }
 
 /* ************************************************************************* */
+void Marginals::print(const std::string& str, const KeyFormatter& keyFormatter) const {
+	ordering_.print(str+"Ordering: ", keyFormatter);
+	graph_.print(str+"Graph: ");
+	values_.print(str+"Solution: ", keyFormatter);
+	bayesTree_.print(str+"Bayes Tree: ");
+}
+
+/* ************************************************************************* */
 Matrix Marginals::marginalCovariance(Key variable) const {
   return marginalInformation(variable).inverse();
 }
@@ -61,16 +71,22 @@ Matrix Marginals::marginalInformation(Key variable) const {
     marginalFactor = bayesTree_.marginalFactor(index, EliminateQR);
 
   // Get information matrix (only store upper-right triangle)
-  if(typeid(*marginalFactor) == typeid(JacobianFactor)) {
-    JacobianFactor::constABlock A = static_cast<const JacobianFactor&>(*marginalFactor).getA();
-    return A.transpose() * A; // Compute A'A
-  } else if(typeid(*marginalFactor) == typeid(HessianFactor)) {
-    const HessianFactor& hessian = static_cast<const HessianFactor&>(*marginalFactor);
-    const size_t dim = hessian.getDim(hessian.begin());
-    return hessian.info().topLeftCorner(dim,dim).selfadjointView<Eigen::Upper>(); // Take the non-augmented part of the information matrix
-  } else {
-    throw runtime_error("Internal error: Marginals::marginalInformation expected either a JacobianFactor or HessianFactor");
-  }
+  Matrix info = marginalFactor->computeInformation();
+  const int dim = info.rows() - 1;
+  return info.topLeftCorner(dim,dim); // Take the non-augmented part of the information matrix
+}
+
+/* ************************************************************************* */
+JointMarginal::JointMarginal(const JointMarginal& other) :
+  blockView_(fullMatrix_) {
+  *this = other;
+}
+
+/* ************************************************************************* */
+JointMarginal& JointMarginal::operator=(const JointMarginal& rhs) {
+  indices_ = rhs.indices_;
+  blockView_.assignNoalias(rhs.blockView_);
+  return *this;
 }
 
 /* ************************************************************************* */
@@ -94,11 +110,11 @@ JointMarginal Marginals::jointMarginalInformation(const std::vector<Key>& variab
     return JointMarginal(info, dims, indices);
 
   } else {
-    // Convert keys to linear indices
+    // Obtain requested variables as ordered indices
     vector<Index> indices(variables.size());
     for(size_t i=0; i<variables.size(); ++i) { indices[i] = ordering_[variables[i]]; }
 
-    // Compute joint factor graph
+    // Compute joint marginal factor graph.
     GaussianFactorGraph jointFG;
     if(variables.size() == 2) {
       if(factorization_ == CHOLESKY)
@@ -112,13 +128,15 @@ JointMarginal Marginals::jointMarginalInformation(const std::vector<Key>& variab
         jointFG = *GaussianSequentialSolver(graph_, true).jointFactorGraph(indices);
     }
 
-    // Conversion from variable keys to position in factor graph variables,
+    // Build map from variable keys to position in factor graph variables,
     // which are sorted in index order.
     Ordering variableConversion;
     {
+			// First build map from index to key
       FastMap<Index,Key> usedIndices;
       for(size_t i=0; i<variables.size(); ++i)
         usedIndices.insert(make_pair(indices[i], variables[i]));
+			// Next run over indices in sorted order
       size_t slot = 0;
       typedef pair<Index,Key> Index_Key;
       BOOST_FOREACH(const Index_Key& index_key, usedIndices) {
@@ -129,15 +147,30 @@ JointMarginal Marginals::jointMarginalInformation(const std::vector<Key>& variab
 
     // Get dimensions from factor graph
     std::vector<size_t> dims(indices.size(), 0);
-    for(size_t i = 0; i < variables.size(); ++i)
-      dims[i] = values_.at(variables[i]).dim();
+    BOOST_FOREACH(Key key, variables) {
+      dims[variableConversion[key]] = values_.at(key).dim();
+		}
 
     // Get information matrix
-    Matrix augmentedInfo = jointFG.denseHessian();
+    Matrix augmentedInfo = jointFG.augmentedHessian();
     Matrix info = augmentedInfo.topLeftCorner(augmentedInfo.rows()-1, augmentedInfo.cols()-1);
 
     return JointMarginal(info, dims, variableConversion);
   }
+}
+
+/* ************************************************************************* */
+void JointMarginal::print(const std::string& s, const KeyFormatter& formatter) const {
+	cout << s << "Joint marginal on keys ";
+	bool first = true;
+	BOOST_FOREACH(const Ordering::value_type& key_index, indices_) {
+		if(!first)
+			cout << ", ";
+		else
+			first = false;
+		cout << formatter(key_index.first);
+	}
+	cout << ".  Use 'at' or 'operator()' to query matrix blocks." << endl;
 }
 
 } /* namespace gtsam */

@@ -21,8 +21,6 @@
 #include <gtsam/inference/JunctionTree.h>
 #include <gtsam/inference/BayesNet-inl.h>
 
-using namespace std;
-
 namespace gtsam {
 
 	/* ************************************************************************* */
@@ -36,28 +34,45 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class F, class JT>
 	GenericMultifrontalSolver<F, JT>::GenericMultifrontalSolver(
-			const typename FactorGraph<F>::shared_ptr& graph,
+			const sharedGraph& graph,
 			const VariableIndex::shared_ptr& variableIndex) :
 			structure_(variableIndex), junctionTree_(new JT(*graph, *structure_)) {
 	}
 
+  /* ************************************************************************* */
+	template<class F, class JT>
+  void GenericMultifrontalSolver<F, JT>::print(const std::string& s) const {
+    this->structure_->print(s + " structure:\n");
+    this->junctionTree_->print(s + " jtree:");
+  }
+
+  /* ************************************************************************* */
+	template<class F, class JT>
+  bool GenericMultifrontalSolver<F, JT>::equals(
+      const GenericMultifrontalSolver& expected, double tol) const {
+    if (!this->structure_->equals(*expected.structure_, tol)) return false;
+    if (!this->junctionTree_->equals(*expected.junctionTree_, tol)) return false;
+    return true;
+  }
+
 	/* ************************************************************************* */
 	template<class F, class JT>
-	void GenericMultifrontalSolver<F, JT>::replaceFactors(
-			const typename FactorGraph<F>::shared_ptr& graph) {
+	void GenericMultifrontalSolver<F, JT>::replaceFactors(const sharedGraph& graph) {
 		junctionTree_.reset(new JT(*graph, *structure_));
 	}
 
 	/* ************************************************************************* */
-	template<class F, class JT>
-	typename BayesTree<typename F::ConditionalType>::shared_ptr GenericMultifrontalSolver<F, JT>::eliminate(
-			typename FactorGraph<F>::Eliminate function) const {
+	template<class FACTOR, class JUNCTIONTREE>
+	typename BayesTree<typename FACTOR::ConditionalType>::shared_ptr
+	GenericMultifrontalSolver<FACTOR, JUNCTIONTREE>::eliminate(Eliminate function) const {
 
 		// eliminate junction tree, returns pointer to root
-		typename BayesTree<typename F::ConditionalType>::sharedClique root = junctionTree_->eliminate(function);
+		typename BayesTree<typename FACTOR::ConditionalType>::sharedClique
+			root = junctionTree_->eliminate(function);
 
 		// create an empty Bayes tree and insert root clique
-		typename BayesTree<typename F::ConditionalType>::shared_ptr bayesTree(new BayesTree<typename F::ConditionalType>);
+		typename BayesTree<typename FACTOR::ConditionalType>::shared_ptr
+			bayesTree(new BayesTree<typename FACTOR::ConditionalType>);
 		bayesTree->insert(root);
 
 		// return the Bayes tree
@@ -69,9 +84,10 @@ namespace gtsam {
 	typename FactorGraph<F>::shared_ptr GenericMultifrontalSolver<F, JT>::jointFactorGraph(
 			const std::vector<Index>& js, Eliminate function) const {
 
-		// We currently have code written only for computing the
+		// FIXME: joint for arbitrary sets of variables not present
+		// TODO: develop and implement theory for shortcuts of more than two variables
 
-		if (js.size() != 2) throw domain_error(
+		if (js.size() != 2) throw std::domain_error(
 				"*MultifrontalSolver::joint(js) currently can only compute joint marginals\n"
 						"for exactly two variables.  You can call marginal to compute the\n"
 						"marginal for one variable.  *SequentialSolver::joint(js) can compute the\n"
@@ -82,7 +98,7 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class F, class JT>
-	typename F::shared_ptr GenericMultifrontalSolver<F, JT>::marginalFactor(
+	typename boost::shared_ptr<F> GenericMultifrontalSolver<F, JT>::marginalFactor(
 			Index j, Eliminate function) const {
 		return eliminate(function)->marginalFactor(j, function);
 	}

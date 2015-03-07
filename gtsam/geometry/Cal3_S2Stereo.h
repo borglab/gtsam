@@ -23,11 +23,13 @@ namespace gtsam {
 
 	/**
 	 * @brief The most common 5DOF 3D->2D calibration, stereo version
-	 * @ingroup geometry
+	 * @addtogroup geometry
 	 * \nosubgrouping
 	 */
-	class Cal3_S2Stereo: public Cal3_S2 {
+	class Cal3_S2Stereo {
 	private:
+
+		Cal3_S2 K_;
 		double b_;
 
 	public:
@@ -39,12 +41,12 @@ namespace gtsam {
 
 		/// default calibration leaves coordinates unchanged
 		Cal3_S2Stereo() :
-			Cal3_S2(1, 1, 0, 0, 0), b_(1.0) {
+			K_(1, 1, 0, 0, 0), b_(1.0) {
 		}
 
 		/// constructor from doubles
 		Cal3_S2Stereo(double fx, double fy, double s, double u0, double v0, double b) :
-			Cal3_S2(fx, fy, s, u0, v0), b_(b) {
+			K_(fx, fy, s, u0, v0), b_(b) {
 		}
 
 		/// @}
@@ -52,23 +54,45 @@ namespace gtsam {
 		/// @{
 
 		void print(const std::string& s = "") const {
-			gtsam::print(matrix(), s);
-			std::cout << "Baseline: " << b_ << std::endl;
+			K_.print(s+"K: ");
+			std::cout << s << "Baseline: " << b_ << std::endl;
 		}
 
-    /// @}
+		/// Check if equal up to specified tolerance
+		bool equals(const Cal3_S2Stereo& other, double tol = 10e-9) const {
+			if (fabs(b_ - other.b_) > tol) return false;
+			return K_.equals(other.K_,tol);
+		}
+
+   /// @}
     /// @name Standard Interface
     /// @{
 
-		//TODO: remove?
-//		/**
-//		 * Check if equal up to specified tolerance
-//		 */
-//		bool equals(const Cal3_S2& K, double tol = 10e-9) const;
+		/// return calibration, same for left and right
+		const Cal3_S2& calibration() const { return K_;}
 
+		/// return calibration matrix K, same for left and right
+		Matrix matrix() const { return K_.matrix();}
 
+		/// focal length x
+		inline double fx() const { return K_.fx();}
 
-		///TODO: comment
+		/// focal length x
+		inline double fy() const { return K_.fy();}
+
+		/// skew
+		inline double skew() const { return K_.skew();}
+
+		/// image center in x
+		inline double px() const { return K_.px();}
+
+		/// image center in y
+		inline double py() const { return K_.py();}
+
+		/// return the principal point
+		Point2 principalPoint() const { return K_.principalPoint();}
+
+		/// return baseline
 		inline double baseline() const { return b_; }
 
     /// @}
@@ -81,10 +105,8 @@ namespace gtsam {
 		template<class Archive>
 		void serialize(Archive & ar, const unsigned int version)
 		{
-			ar & boost::serialization::make_nvp("Cal3_S2Stereo",
-					boost::serialization::base_object<Value>(*this));
+			ar & BOOST_SERIALIZATION_NVP(K_);
 			ar & BOOST_SERIALIZATION_NVP(b_);
-			ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Cal3_S2);
 		}
 		/// @}
 

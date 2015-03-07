@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    BayesTreeCliqueBase
+ * @file    BayesTreeCliqueBase-inl.h
  * @brief   Base class for cliques of a BayesTree
  * @author  Richard Roberts and Frank Dellaert
  */
@@ -50,8 +50,8 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class DERIVED, class CONDITIONAL>
-  void BayesTreeCliqueBase<DERIVED,CONDITIONAL>::print(const std::string& s) const {
-    conditional_->print(s);
+  void BayesTreeCliqueBase<DERIVED,CONDITIONAL>::print(const std::string& s, const IndexFormatter& indexFormatter) const {
+    conditional_->print(s, indexFormatter);
   }
 
   /* ************************************************************************* */
@@ -65,10 +65,10 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class DERIVED, class CONDITIONAL>
-  void BayesTreeCliqueBase<DERIVED,CONDITIONAL>::printTree(const std::string& indent) const {
-    asDerived(this)->print(indent);
+  void BayesTreeCliqueBase<DERIVED,CONDITIONAL>::printTree(const std::string& indent, const IndexFormatter& indexFormatter) const {
+    asDerived(this)->print(indent, indexFormatter);
     BOOST_FOREACH(const derived_ptr& child, children_)
-      child->printTree(indent+"  ");
+      child->printTree(indent+"  ", indexFormatter);
   }
 
   /* ************************************************************************* */
@@ -108,98 +108,106 @@ namespace gtsam {
   // P(Sp|R) as \int P(Fp|Sp) P(Sp|R), where Fp are the frontal nodes in p
   /* ************************************************************************* */
   template<class DERIVED, class CONDITIONAL>
-  BayesNet<CONDITIONAL> BayesTreeCliqueBase<DERIVED,CONDITIONAL>::shortcut(derived_ptr R, Eliminate function) {
+  BayesNet<CONDITIONAL> BayesTreeCliqueBase<DERIVED, CONDITIONAL>::shortcut(
+  		derived_ptr R, Eliminate function) const{
 
-    static const bool debug = false;
+  	static const bool debug = false;
 
-    // A first base case is when this clique or its parent is the root,
-    // in which case we return an empty Bayes net.
+  	BayesNet<ConditionalType> p_S_R;	//shortcut P(S|R) This is empty now
 
-    derived_ptr parent(parent_.lock());
+  	//Check if the ShortCut already exists
+  	if(!cachedShortcut_){
 
-    if (R.get()==this || parent==R) {
-      BayesNet<ConditionalType> empty;
-      return empty;
-    }
+  		// A first base case is when this clique or its parent is the root,
+  		// in which case we return an empty Bayes net.
 
-    // The root conditional
-    FactorGraph<FactorType> p_R(BayesNet<ConditionalType>(R->conditional()));
+  		derived_ptr parent(parent_.lock());
+  		if (R.get() != this && parent != R) {
 
-    // The parent clique has a ConditionalType for each frontal node in Fp
-    // so we can obtain P(Fp|Sp) in factor graph form
-    FactorGraph<FactorType> p_Fp_Sp(BayesNet<ConditionalType>(parent->conditional()));
+  			// The root conditional
+  			FactorGraph<FactorType> p_R(BayesNet<ConditionalType>(R->conditional()));
 
-    // If not the base case, obtain the parent shortcut P(Sp|R) as factors
-    FactorGraph<FactorType> p_Sp_R(parent->shortcut(R, function));
+  			// The parent clique has a ConditionalType for each frontal node in Fp
+  			// so we can obtain P(Fp|Sp) in factor graph form
+  			FactorGraph<FactorType> p_Fp_Sp(BayesNet<ConditionalType>(parent->conditional()));
 
-    // now combine P(Cp|R) = P(Fp|Sp) * P(Sp|R)
-    FactorGraph<FactorType> p_Cp_R;
-    p_Cp_R.push_back(p_R);
-    p_Cp_R.push_back(p_Fp_Sp);
-    p_Cp_R.push_back(p_Sp_R);
+  			// If not the base case, obtain the parent shortcut P(Sp|R) as factors
+  			FactorGraph<FactorType> p_Sp_R(parent->shortcut(R, function));
 
-    // Eliminate into a Bayes net with ordering designed to integrate out
-    // any variables not in *our* separator. Variables to integrate out must be
-    // eliminated first hence the desired ordering is [Cp\S S].
-    // However, an added wrinkle is that Cp might overlap with the root.
-    // Keys corresponding to the root should not be added to the ordering at all.
+  			// now combine P(Cp|R) = P(Fp|Sp) * P(Sp|R)
+  			FactorGraph<FactorType> p_Cp_R;
+  			p_Cp_R.push_back(p_R);
+  			p_Cp_R.push_back(p_Fp_Sp);
+  			p_Cp_R.push_back(p_Sp_R);
 
-    if(debug) {
-      p_R.print("p_R: ");
-      p_Fp_Sp.print("p_Fp_Sp: ");
-      p_Sp_R.print("p_Sp_R: ");
-    }
+  			// Eliminate into a Bayes net with ordering designed to integrate out
+  			// any variables not in *our* separator. Variables to integrate out must be
+  			// eliminated first hence the desired ordering is [Cp\S S].
+  			// However, an added wrinkle is that Cp might overlap with the root.
+  			// Keys corresponding to the root should not be added to the ordering at all.
 
-    // We want to factor into a conditional of the clique variables given the
-    // root and the marginal on the root, integrating out all other variables.
-    // The integrands include any parents of this clique and the variables of
-    // the parent clique.
-    FastSet<Index> variablesAtBack;
-    FastSet<Index> separator;
-    size_t uniqueRootVariables = 0;
-    BOOST_FOREACH(const Index separatorIndex, this->conditional()->parents()) {
-      variablesAtBack.insert(separatorIndex);
-      separator.insert(separatorIndex);
-      if(debug) std::cout << "At back (this): " << separatorIndex << std::endl;
-    }
-    BOOST_FOREACH(const Index key, R->conditional()->keys()) {
-      if(variablesAtBack.insert(key).second)
-        ++ uniqueRootVariables;
-      if(debug) std::cout << "At back (root): " << key << std::endl;
-    }
+  			if(debug) {
+  				p_R.print("p_R: ");
+  				p_Fp_Sp.print("p_Fp_Sp: ");
+  				p_Sp_R.print("p_Sp_R: ");
+  			}
 
-    Permutation toBack = Permutation::PushToBack(
-        std::vector<Index>(variablesAtBack.begin(), variablesAtBack.end()),
-        R->conditional()->lastFrontalKey() + 1);
-    Permutation::shared_ptr toBackInverse(toBack.inverse());
-    BOOST_FOREACH(const typename FactorType::shared_ptr& factor, p_Cp_R) {
-      factor->permuteWithInverse(*toBackInverse); }
-    typename BayesNet<ConditionalType>::shared_ptr eliminated(EliminationTree<
-        FactorType>::Create(p_Cp_R)->eliminate(function));
+  			// We want to factor into a conditional of the clique variables given the
+  			// root and the marginal on the root, integrating out all other variables.
+  			// The integrands include any parents of this clique and the variables of
+  			// the parent clique.
+  			FastSet<Index> variablesAtBack;
+  			FastSet<Index> separator;
+  			size_t uniqueRootVariables = 0;
+  			BOOST_FOREACH(const Index separatorIndex, this->conditional()->parents()) {
+  				variablesAtBack.insert(separatorIndex);
+  				separator.insert(separatorIndex);
+  				if(debug) std::cout << "At back (this): " << separatorIndex << std::endl;
+  			}
+  			BOOST_FOREACH(const Index key, R->conditional()->keys()) {
+  				if(variablesAtBack.insert(key).second)
+  					++ uniqueRootVariables;
+  				if(debug) std::cout << "At back (root): " << key << std::endl;
+  			}
 
-    // Take only the conditionals for p(S|R).  We check for each variable being
-    // in the separator set because if some separator variables overlap with
-    // root variables, we cannot rely on the number of root variables, and also
-    // want to include those variables in the conditional.
-    BayesNet<ConditionalType> p_S_R;
-    BOOST_REVERSE_FOREACH(typename ConditionalType::shared_ptr conditional, *eliminated) {
-      assert(conditional->nrFrontals() == 1);
-      if(separator.find(toBack[conditional->firstFrontalKey()]) != separator.end()) {
-        if(debug)
-          conditional->print("Taking C|R conditional: ");
-        p_S_R.push_front(conditional);
-      }
-      if(p_S_R.size() == separator.size())
-        break;
-    }
+  			Permutation toBack = Permutation::PushToBack(
+  					std::vector<Index>(variablesAtBack.begin(), variablesAtBack.end()),
+  					R->conditional()->lastFrontalKey() + 1);
+  			Permutation::shared_ptr toBackInverse(toBack.inverse());
+  			BOOST_FOREACH(const typename FactorType::shared_ptr& factor, p_Cp_R) {
+  				factor->permuteWithInverse(*toBackInverse); }
+  			typename BayesNet<ConditionalType>::shared_ptr eliminated(EliminationTree<
+  					FactorType>::Create(p_Cp_R)->eliminate(function));
 
-    // Undo the permutation
-    if(debug) toBack.print("toBack: ");
-    p_S_R.permuteWithInverse(toBack);
+  			// Take only the conditionals for p(S|R).  We check for each variable being
+  			// in the separator set because if some separator variables overlap with
+  			// root variables, we cannot rely on the number of root variables, and also
+  			// want to include those variables in the conditional.
+  			BOOST_REVERSE_FOREACH(typename ConditionalType::shared_ptr conditional, *eliminated) {
+  				assert(conditional->nrFrontals() == 1);
+  				if(separator.find(toBack[conditional->firstFrontalKey()]) != separator.end()) {
+  					if(debug)
+  						conditional->print("Taking C|R conditional: ");
+  					p_S_R.push_front(conditional);
+  				}
+  				if(p_S_R.size() == separator.size())
+  					break;
+  			}
 
-    // return the parent shortcut P(Sp|R)
-    assertInvariants();
-    return p_S_R;
+  			// Undo the permutation
+  			if(debug) toBack.print("toBack: ");
+  			p_S_R.permuteWithInverse(toBack);
+  		}
+
+  		cachedShortcut_ = p_S_R;
+  	}
+  	else
+  		p_S_R = *cachedShortcut_;	// return the cached version
+
+  	assertInvariants();
+
+  	// return the shortcut P(S|R)
+  	return p_S_R;
   }
 
   /* ************************************************************************* */
@@ -210,7 +218,7 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class DERIVED, class CONDITIONAL>
   FactorGraph<typename BayesTreeCliqueBase<DERIVED,CONDITIONAL>::FactorType> BayesTreeCliqueBase<DERIVED,CONDITIONAL>::marginal(
-      derived_ptr R, Eliminate function) {
+      derived_ptr R, Eliminate function) const{
     // If we are the root, just return this root
     // NOTE: immediately cast to a factor graph
     BayesNet<ConditionalType> bn(R->conditional());
@@ -231,7 +239,7 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class DERIVED, class CONDITIONAL>
   FactorGraph<typename BayesTreeCliqueBase<DERIVED,CONDITIONAL>::FactorType> BayesTreeCliqueBase<DERIVED,CONDITIONAL>::joint(
-      derived_ptr C2, derived_ptr R, Eliminate function) {
+      derived_ptr C2, derived_ptr R, Eliminate function) const {
     // For now, assume neither is the root
 
     // Combine P(F1|S1), P(S1|R), P(F2|S2), P(S2|R), and P(R)
@@ -256,5 +264,23 @@ namespace gtsam {
     GenericSequentialSolver<FactorType> solver(joint);
     return *solver.jointFactorGraph(keys12vector, function);
   }
+
+	/* ************************************************************************* */
+	template<class DERIVED, class CONDITIONAL>
+	void BayesTreeCliqueBase<DERIVED, CONDITIONAL>::deleteCachedShorcuts() {
+
+	  // When a shortcut is requested, all of the shortcuts between it and the
+	  // root are also generated. So, if this clique's cached shortcut is set,
+	  // recursively call over all child cliques. Otherwise, it is unnecessary.
+	  if(cachedShortcut_) {
+	    BOOST_FOREACH(derived_ptr& child, children_) {
+	      child->deleteCachedShorcuts();
+	    }
+
+	    //Delete CachedShortcut for this clique
+	    this->resetCachedShortcut();
+	  }
+
+	}
 
 }

@@ -45,6 +45,8 @@ namespace gtsam {
     /** subtraction */
     Errors operator-(const Errors& b) const;
 
+    /** negation */
+    Errors operator-() const ;
 
   }; // Errors
 

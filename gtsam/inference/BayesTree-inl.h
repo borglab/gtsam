@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    BayesTree.cpp
+ * @file    BayesTree-inl.h
  * @brief   Bayes Tree is a tree of cliques of a Bayes Chain
  * @author  Frank Dellaert
  * @author  Michael Kaess
@@ -26,21 +26,16 @@
 #include <gtsam/inference/inference.h>
 #include <gtsam/inference/GenericSequentialSolver.h>
 
+#include <fstream>
 #include <iostream>
 #include <algorithm>
 
 #include <boost/foreach.hpp>
 #include <boost/assign/std/list.hpp> // for operator +=
+using boost::assign::operator+=;
 #include <boost/format.hpp>
-#include <boost/lambda/lambda.hpp>
-#include <boost/iterator/transform_iterator.hpp>
-#include <fstream>
-using namespace boost::assign;
-namespace lam = boost::lambda;
 
 namespace gtsam {
-
-	using namespace std;
 
 	/* ************************************************************************* */
 	template<class CONDITIONAL, class CLIQUE>
@@ -51,9 +46,9 @@ namespace gtsam {
 		return data;
 	}
 
+  /* ************************************************************************* */
 	template<class CONDITIONAL, class CLIQUE>
-	void BayesTree<CONDITIONAL,CLIQUE>::getCliqueData(CliqueData& data,
-			BayesTree<CONDITIONAL,CLIQUE>::sharedClique clique) const {
+	void BayesTree<CONDITIONAL,CLIQUE>::getCliqueData(CliqueData& data, sharedClique clique) const {
 		data.conditionalSizes.push_back((*clique)->nrFrontals());
 		data.separatorSizes.push_back((*clique)->nrParents());
 		BOOST_FOREACH(sharedClique c, clique->children_) {
@@ -63,29 +58,28 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class CONDITIONAL, class CLIQUE>
-	void BayesTree<CONDITIONAL,CLIQUE>::saveGraph(const std::string &s) const {
-		if (!root_.get()) throw invalid_argument("the root of bayes tree has not been initialized!");
-		ofstream of(s.c_str());
+	void BayesTree<CONDITIONAL,CLIQUE>::saveGraph(const std::string &s, const IndexFormatter& indexFormatter) const {
+		if (!root_.get()) throw std::invalid_argument("the root of Bayes tree has not been initialized!");
+		std::ofstream of(s.c_str());
 		of<< "digraph G{\n";
-		saveGraph(of, root_);
+		saveGraph(of, root_, indexFormatter);
 		of<<"}";
 		of.close();
 	}
 
+	/* ************************************************************************* */
 	template<class CONDITIONAL, class CLIQUE>
-	void BayesTree<CONDITIONAL,CLIQUE>::saveGraph(ostream &s,
-			BayesTree<CONDITIONAL,CLIQUE>::sharedClique clique,
-			int parentnum) const {
+	void BayesTree<CONDITIONAL,CLIQUE>::saveGraph(std::ostream &s, sharedClique clique, const IndexFormatter& indexFormatter, int parentnum) const {
 		static int num = 0;
 		bool first = true;
 		std::stringstream out;
 		out << num;
-		string parent = out.str();
+		std::string parent = out.str();
 		parent += "[label=\"";
 
-		BOOST_FOREACH(boost::shared_ptr<CONDITIONAL> c, clique->conditionals_) {
+		BOOST_FOREACH(Index index, clique->conditional_->frontals()) {
 			if(!first) parent += ","; first = false;
-			parent += (string(c->key())).c_str();
+			parent += indexFormatter(index);
 		}
 
 		if( clique != root_){
@@ -94,9 +88,9 @@ namespace gtsam {
 		}
 
 		first = true;
-		BOOST_FOREACH(Index sep, clique->separator_) {
+		BOOST_FOREACH(Index sep, clique->conditional_->parents()) {
 			if(!first) parent += ","; first = false;
-			parent += (boost::format("%1%")%sep).str();
+			parent += indexFormatter(sep);
 		}
 		parent += "\"];\n";
 		s << parent;
@@ -104,11 +98,22 @@ namespace gtsam {
 
 		BOOST_FOREACH(sharedClique c, clique->children_) {
 			num++;
-			saveGraph(s, c, parentnum);
+			saveGraph(s, c, indexFormatter, parentnum);
 		}
 	}
 
 
+	/* ************************************************************************* */
+  template<class CONDITIONAL, class CLIQUE>
+  void BayesTree<CONDITIONAL,CLIQUE>::CliqueStats::print(const std::string& s) const {
+    std::cout << s
+              <<"avg Conditional Size: " << avgConditionalSize << std::endl
+              << "max Conditional Size: " << maxConditionalSize << std::endl
+              << "avg Separator Size: " << avgSeparatorSize << std::endl
+              << "max Separator Size: " << maxSeparatorSize << std::endl;
+  }
+
+	/* ************************************************************************* */
 	template<class CONDITIONAL, class CLIQUE>
 	typename BayesTree<CONDITIONAL,CLIQUE>::CliqueStats
 	BayesTree<CONDITIONAL,CLIQUE>::CliqueData::getStats() const {
@@ -137,10 +142,10 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class CONDITIONAL, class CLIQUE>
-	void BayesTree<CONDITIONAL,CLIQUE>::Cliques::print(const std::string& s) const {
-		cout << s << ":\n";
+	void BayesTree<CONDITIONAL,CLIQUE>::Cliques::print(const std::string& s, const IndexFormatter& indexFormatter) const {
+	  std::cout << s << ":\n";
 		BOOST_FOREACH(sharedClique clique, *this)
-				clique->printTree();
+				clique->printTree("", indexFormatter);
 	}
 
 	/* ************************************************************************* */
@@ -162,8 +167,8 @@ namespace gtsam {
   template<class CONDITIONAL, class CLIQUE>
 	void BayesTree<CONDITIONAL,CLIQUE>::addClique(const sharedClique& clique, const sharedClique& parent_clique) {
     nodes_.resize(std::max((*clique)->lastFrontalKey()+1, nodes_.size()));
-    BOOST_FOREACH(Index key, (*clique)->frontals())
-      nodes_[key] = clique;
+    BOOST_FOREACH(Index j, (*clique)->frontals())
+      nodes_[j] = clique;
     if (parent_clique != NULL) {
       clique->parent_ = parent_clique;
       parent_clique->children_.push_back(clique);
@@ -177,11 +182,11 @@ namespace gtsam {
   /* ************************************************************************* */
 	template<class CONDITIONAL, class CLIQUE>
 	typename BayesTree<CONDITIONAL,CLIQUE>::sharedClique BayesTree<CONDITIONAL,CLIQUE>::addClique(
-	    const sharedConditional& conditional, list<sharedClique>& child_cliques) {
+	    const sharedConditional& conditional, std::list<sharedClique>& child_cliques) {
 		sharedClique new_clique(new Clique(conditional));
 		nodes_.resize(std::max(conditional->lastFrontalKey()+1, nodes_.size()));
-		BOOST_FOREACH(Index key, conditional->frontals())
-		  nodes_[key] = new_clique;
+		BOOST_FOREACH(Index j, conditional->frontals())
+		  nodes_[j] = new_clique;
 		new_clique->children_ = child_cliques;
 		BOOST_FOREACH(sharedClique& child, child_cliques)
 			child->parent_ = new_clique;
@@ -205,13 +210,13 @@ namespace gtsam {
 #endif
 	  if(debug) conditional->print("Adding conditional ");
 	  if(debug) clique->print("To clique ");
-	  Index key = conditional->lastFrontalKey();
-	  bayesTree.nodes_.resize(std::max(key+1, bayesTree.nodes_.size()));
-	  bayesTree.nodes_[key] = clique;
-	  FastVector<Index> newKeys((*clique)->size() + 1);
-	  newKeys[0] = key;
-	  std::copy((*clique)->begin(), (*clique)->end(), newKeys.begin()+1);
-	  clique->conditional_ = CONDITIONAL::FromKeys(newKeys, (*clique)->nrFrontals() + 1);
+	  Index j = conditional->lastFrontalKey();
+	  bayesTree.nodes_.resize(std::max(j+1, bayesTree.nodes_.size()));
+	  bayesTree.nodes_[j] = clique;
+	  FastVector<Index> newIndices((*clique)->size() + 1);
+	  newIndices[0] = j;
+	  std::copy((*clique)->begin(), (*clique)->end(), newIndices.begin()+1);
+	  clique->conditional_ = CONDITIONAL::FromKeys(newIndices, (*clique)->nrFrontals() + 1);
 	  if(debug) clique->print("Expanded clique is ");
 	  clique->assertInvariants();
 	}
@@ -229,8 +234,8 @@ namespace gtsam {
 		BOOST_FOREACH(sharedClique child, clique->children_)
 	  	child->parent_ = typename Clique::weak_ptr();
 
-	  BOOST_FOREACH(Index key, (*clique->conditional())) {
-			nodes_[key].reset();
+	  BOOST_FOREACH(Index j, (*clique->conditional())) {
+			nodes_[j].reset();
 	  }
 	}
 
@@ -292,10 +297,10 @@ namespace gtsam {
 	template<class CONDITIONAL, class CLIQUE>
 	BayesTree<CONDITIONAL,CLIQUE>::BayesTree(const BayesNet<CONDITIONAL>& bayesNet, std::list<BayesTree<CONDITIONAL,CLIQUE> > subtrees) {
 		if (bayesNet.size() == 0)
-			throw invalid_argument("BayesTree::insert: empty bayes net!");
+			throw std::invalid_argument("BayesTree::insert: empty bayes net!");
 
 		// get the roots of child subtrees and merge their nodes_
-		list<sharedClique> childRoots;
+		std::list<sharedClique> childRoots;
 		typedef BayesTree<CONDITIONAL,CLIQUE> Tree;
 		BOOST_FOREACH(const Tree& subtree, subtrees) {
 			nodes_.insert(subtree.nodes_.begin(), subtree.nodes_.end());
@@ -331,14 +336,14 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class CONDITIONAL, class CLIQUE>
-	void BayesTree<CONDITIONAL,CLIQUE>::print(const string& s) const {
+	void BayesTree<CONDITIONAL,CLIQUE>::print(const std::string& s, const IndexFormatter& indexFormatter) const {
 		if (root_.use_count() == 0) {
-			printf("WARNING: BayesTree.print encountered a forest...\n");
+            std::cout << "WARNING: BayesTree.print encountered a forest..." << std::endl;
 			return;
 		}
-		cout << s << ": clique size == " << size() << ", node size == " << nodes_.size() <<  endl;
+		std::cout << s << ": clique size == " << size() << ", node size == " << nodes_.size() << std::endl;
 		if (nodes_.empty()) return;
-		root_->printTree("");
+		root_->printTree("", indexFormatter);
 	}
 
 	/* ************************************************************************* */
@@ -374,14 +379,14 @@ namespace gtsam {
 	{
 	  static const bool debug = false;
 
-		// get key and parents
+		// get indices and parents
 		const typename CONDITIONAL::Parents& parents = conditional->parents();
 
 		if(debug) conditional->print("Adding conditional ");
 
 		// if no parents, start a new root clique
 		if (parents.empty()) {
-		  if(debug) cout << "No parents so making root" << endl;
+		  if(debug) std::cout << "No parents so making root" << std::endl;
 		  bayesTree.root_ = bayesTree.addClique(conditional);
 			return;
 		}
@@ -389,15 +394,15 @@ namespace gtsam {
 		// otherwise, find the parent clique by using the index data structure
 		// to find the lowest-ordered parent
 		Index parentRepresentative = bayesTree.findParentClique(parents);
-		if(debug) cout << "First-eliminated parent is " << parentRepresentative << ", have " << bayesTree.nodes_.size() << " nodes." << endl;
+		if(debug) std::cout << "First-eliminated parent is " << parentRepresentative << ", have " << bayesTree.nodes_.size() << " nodes." << std::endl;
 		sharedClique parent_clique = bayesTree[parentRepresentative];
 		if(debug) parent_clique->print("Parent clique is ");
 
 		// if the parents and parent clique have the same size, add to parent clique
 		if ((*parent_clique)->size() == size_t(parents.size())) {
-		  if(debug) cout << "Adding to parent clique" << endl;
+		  if(debug) std::cout << "Adding to parent clique" << std::endl;
 #ifndef NDEBUG
-		  // Debug check that the parent keys of the new conditional match the keys
+		  // Debug check that the parent indices of the new conditional match the indices
 		  // currently in the clique.
 //		  list<Index>::const_iterator parent = parents.begin();
 //		  typename Clique::const_iterator cond = parent_clique->begin();
@@ -410,7 +415,7 @@ namespace gtsam {
 #endif
 		  addToCliqueFront(bayesTree, conditional, parent_clique);
 		} else {
-		  if(debug) cout << "Starting new clique" << endl;
+		  if(debug) std::cout << "Starting new clique" << std::endl;
 		  // otherwise, start a new clique and add it to the tree
 		  bayesTree.addClique(conditional,parent_clique);
 		}
@@ -420,10 +425,10 @@ namespace gtsam {
 	//TODO: remove this function after removing TSAM.cpp
 	template<class CONDITIONAL, class CLIQUE>
 	typename BayesTree<CONDITIONAL,CLIQUE>::sharedClique BayesTree<CONDITIONAL,CLIQUE>::insert(
-	    const sharedConditional& clique, list<sharedClique>& children, bool isRootClique) {
+	    const sharedConditional& clique, std::list<sharedClique>& children, bool isRootClique) {
 
 		if (clique->nrFrontals() == 0)
-			throw invalid_argument("BayesTree::insert: empty clique!");
+			throw std::invalid_argument("BayesTree::insert: empty clique!");
 
 		// create a new clique and add all the conditionals to the clique
 		sharedClique new_clique = addClique(clique, children);
@@ -436,7 +441,7 @@ namespace gtsam {
 	template<class CONDITIONAL, class CLIQUE>
 	void BayesTree<CONDITIONAL,CLIQUE>::fillNodesIndex(const sharedClique& subtree) {
 	  // Add each frontal variable of this root node
-	  BOOST_FOREACH(const Index& key, subtree->conditional()->frontals()) { nodes_[key] = subtree; }
+	  BOOST_FOREACH(const Index& j, subtree->conditional()->frontals()) { nodes_[j] = subtree; }
 	  // Fill index for each child
 	  typedef typename BayesTree<CONDITIONAL,CLIQUE>::sharedClique sharedClique;
 	  BOOST_FOREACH(const sharedClique& child, subtree->children_) {
@@ -475,26 +480,26 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class CONDITIONAL, class CLIQUE>
 	typename CONDITIONAL::FactorType::shared_ptr BayesTree<CONDITIONAL,CLIQUE>::marginalFactor(
-			Index key, Eliminate function) const {
+			Index j, Eliminate function) const {
 
-		// get clique containing key
-		sharedClique clique = (*this)[key];
+		// get clique containing Index j
+		sharedClique clique = (*this)[j];
 
 		// calculate or retrieve its marginal
 		FactorGraph<FactorType> cliqueMarginal = clique->marginal(root_,function);
 
 		return GenericSequentialSolver<FactorType>(cliqueMarginal).marginalFactor(
-				key, function);
+				j, function);
 	}
 
 	/* ************************************************************************* */
 	template<class CONDITIONAL, class CLIQUE>
 	typename BayesNet<CONDITIONAL>::shared_ptr BayesTree<CONDITIONAL,CLIQUE>::marginalBayesNet(
-			Index key, Eliminate function) const {
+			Index j, Eliminate function) const {
 
 	  // calculate marginal as a factor graph
 	  FactorGraph<FactorType> fg;
-	  fg.push_back(this->marginalFactor(key,function));
+	  fg.push_back(this->marginalFactor(j,function));
 
 		// eliminate factor graph marginal to a Bayes net
 		return GenericSequentialSolver<FactorType>(fg).eliminate(function);
@@ -505,28 +510,28 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class CONDITIONAL, class CLIQUE>
 	typename FactorGraph<typename CONDITIONAL::FactorType>::shared_ptr
-	BayesTree<CONDITIONAL,CLIQUE>::joint(Index key1, Index key2, Eliminate function) const {
+	BayesTree<CONDITIONAL,CLIQUE>::joint(Index j1, Index j2, Eliminate function) const {
 
 		// get clique C1 and C2
-		sharedClique C1 = (*this)[key1], C2 = (*this)[key2];
+		sharedClique C1 = (*this)[j1], C2 = (*this)[j2];
 
 		// calculate joint
 		FactorGraph<FactorType> p_C1C2(C1->joint(C2, root_, function));
 
 		// eliminate remaining factor graph to get requested joint
-		vector<Index> key12(2); key12[0] = key1; key12[1] = key2;
+		std::vector<Index> j12(2); j12[0] = j1; j12[1] = j2;
 		GenericSequentialSolver<FactorType> solver(p_C1C2);
-		return solver.jointFactorGraph(key12,function);
+		return solver.jointFactorGraph(j12,function);
 	}
 
 	/* ************************************************************************* */
 	template<class CONDITIONAL, class CLIQUE>
 	typename BayesNet<CONDITIONAL>::shared_ptr BayesTree<CONDITIONAL,CLIQUE>::jointBayesNet(
-			Index key1, Index key2, Eliminate function) const {
+			Index j1, Index j2, Eliminate function) const {
 
 		// eliminate factor graph marginal to a Bayes net
 		return GenericSequentialSolver<FactorType> (
-				*this->joint(key1, key2, function)).eliminate(function);
+				*this->joint(j1, j2, function)).eliminate(function);
 	}
 
 	/* ************************************************************************* */
@@ -564,22 +569,27 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class CONDITIONAL, class CLIQUE>
-  template<class CONTAINER>
-  void BayesTree<CONDITIONAL,CLIQUE>::removeTop(const CONTAINER& keys,
+	template<class CONTAINER>
+	void BayesTree<CONDITIONAL,CLIQUE>::removeTop(const CONTAINER& keys,
   		BayesNet<CONDITIONAL>& bn, typename BayesTree<CONDITIONAL,CLIQUE>::Cliques& orphans) {
 
 		// process each key of the new factor
-	  BOOST_FOREACH(const Index& key, keys) {
+	  BOOST_FOREACH(const Index& j, keys) {
 
 	    // get the clique
-	    if(key < nodes_.size()) {
-	      const sharedClique& clique(nodes_[key]);
+	    if(j < nodes_.size()) {
+	      const sharedClique& clique(nodes_[j]);
 	      if(clique) {
 	        // remove path from clique to root
 	        this->removePath(clique, bn, orphans);
 	      }
 	    }
 	  }
+
+	  // Delete cachedShorcuts for each orphan subtree
+	  //TODO: Consider Improving
+	  BOOST_FOREACH(sharedClique& orphan, orphans)
+	  	orphan->deleteCachedShorcuts();
 	}
 
   /* ************************************************************************* */

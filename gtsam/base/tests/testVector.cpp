@@ -251,7 +251,7 @@ TEST( TestVector, axpy )
 /* ************************************************************************* */
 TEST( TestVector, equals )
 {
-	Vector v1 = Vector_(1, 0.0/0.0); //testing nan
+	Vector v1 = Vector_(1, 0.0/std::numeric_limits<double>::quiet_NaN()); //testing nan
 	Vector v2 = Vector_(1, 1.0);
 	double tol = 1.;
 	EXPECT(!equal_with_abs_tol(v1, v2, tol));
@@ -295,27 +295,6 @@ TEST( TestVector, linear_dependent3 )
 	Vector v1 = Vector_(3, 0.0, 2.0, 0.0);
 	Vector v2 = Vector_(3, 0.1, -4.1, 0.0);
 	EXPECT(!linear_dependent(v1, v2));
-}
-
-/* ************************************************************************* */
-TEST( TestVector, random )
-{
-	// Assumes seed not previously reset during this test
-	seedRNG();
-	Vector v1_42 = rand_vector_norm(5);
-
-	// verify that resetting the RNG produces the same value
-	seedRNG();
-	Vector v2_42 = rand_vector_norm(5);
-
-	EXPECT(assert_equal(v1_42, v2_42, 1e-6));
-
-	// verify that different seed produces a different value
-	seedRNG(41u);
-
-	Vector v3_41 = rand_vector_norm(5);
-
-	EXPECT(assert_inequal(v1_42, v3_41, 1e-6));
 }
 
 /* ************************************************************************* */

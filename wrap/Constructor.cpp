@@ -12,12 +12,16 @@
 /**
  * @file Constructor.ccp
  * @author Frank Dellaert
+ * @author Andrew Melim
+ * @author Richard Roberts
  **/
 
 #include <iostream>
 #include <fstream>
+#include <algorithm>
 
 #include <boost/foreach.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include "utilities.h"
 #include "Constructor.h"
@@ -25,82 +29,80 @@
 using namespace std;
 using namespace wrap;
 
+
 /* ************************************************************************* */
 string Constructor::matlab_wrapper_name(const string& className) const {
-  string str = "new_" + className + "_" + args.signature();
+  string str = "new_" + className;
   return str;
 }
 
 /* ************************************************************************* */
-void Constructor::matlab_proxy_fragment(FileWriter& file, const string& className) const {
+void Constructor::proxy_fragment(FileWriter& file, const std::string& wrapperName,
+        bool hasParent, const int id, const ArgumentList args) const {
 	size_t nrArgs = args.size();
 	// check for number of arguments...
-  file.oss << "      if (nargin == " << nrArgs;
+  file.oss << "      elseif nargin == " << nrArgs;
   if (nrArgs>0) file.oss << " && ";
 	// ...and their types
   bool first = true;
   for(size_t i=0;i<nrArgs;i++) {
     if (!first) file.oss << " && ";
-    file.oss << "isa(varargin{" << i+1 << "},'" << args[i].matlabClass() << "')";
+    file.oss << "isa(varargin{" << i+1 << "},'" << args[i].matlabClass(".") << "')";
     first=false;
   }
   // emit code for calling constructor
-  file.oss << "), obj.self = " << matlab_wrapper_name(className) << "(";
+	if(hasParent)
+		file.oss << "\n        [ my_ptr, base_ptr ] = ";
+	else
+		file.oss << "\n        my_ptr = ";
+  file.oss << wrapperName << "(" << id;
   // emit constructor arguments
-  first = true;
   for(size_t i=0;i<nrArgs;i++) {
-    if (!first) file.oss << ",";
+    file.oss << ", ";
     file.oss << "varargin{" << i+1 << "}";
-    first=false;
   }
-  file.oss << "); end" << endl;
+  file.oss << ");\n";
 }
 
 /* ************************************************************************* */
-void Constructor::matlab_mfile(const string& toolboxPath, const string& qualifiedMatlabName) const {
-
-  string matlabName = matlab_wrapper_name(qualifiedMatlabName);
-
-  // open destination m-file
-  string wrapperFile = toolboxPath + "/" + matlabName + ".m";
-  FileWriter file(wrapperFile, verbose_, "%");
-
-  // generate code
-  file.oss << "function result = " << matlabName << "(obj";
-  if (args.size()) file.oss << "," << args.names();
-  file.oss << ")" << endl;
-  file.oss << "  error('need to compile " << matlabName << ".cpp');" << endl;
-  file.oss << "end" << endl;
-
-  // close file
-  file.emit(true);
-}
-
-/* ************************************************************************* */
-void Constructor::matlab_wrapper(const string& toolboxPath,
+string Constructor::wrapper_fragment(FileWriter& file,
 				 const string& cppClassName,
-				 const string& matlabClassName,
-				 const vector<string>& using_namespaces, const vector<string>& includes) const {
-  string matlabName = matlab_wrapper_name(matlabClassName);
+				 const string& matlabUniqueName,
+				 const string& cppBaseClassName,
+				 int id,
+				 const ArgumentList& al) const {
 
-  // open destination wrapperFile
-  string wrapperFile = toolboxPath + "/" + matlabName + ".cpp";
-  FileWriter file(wrapperFile, verbose_, "//");
+	const string wrapFunctionName = matlabUniqueName + "_constructor_" + boost::lexical_cast<string>(id);
 
-  // generate code
-  generateIncludes(file, name, includes);
-  generateUsingNamespace(file, using_namespaces);
+  file.oss << "void " << wrapFunctionName << "(int nargout, mxArray *out[], int nargin, const mxArray *in[])" << endl;
+  file.oss << "{\n";
+	file.oss << "  mexAtExit(&_deleteAllObjects);\n";
+  //Typedef boost::shared_ptr
+	file.oss << "  typedef boost::shared_ptr<" << cppClassName << "> Shared;\n";
+	file.oss << "\n";
 
-  file.oss << "void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])" << endl;
-  file.oss << "{" << endl;
-  file.oss << "  checkArguments(\"" << matlabName << "\",nargout,nargin," << args.size() << ");" << endl;
-  args.matlab_unwrap(file); // unwrap arguments
-  file.oss << "  " << cppClassName << "* self = new " << cppClassName << "(" << args.names() << ");" << endl; // need qualified name, delim: "::"
-  file.oss << "  out[0] = wrap_constructed(self,\"" << matlabClassName << "\");" << endl; // need matlab qualified name
+	//Check to see if there will be any arguments and remove {} for consiseness
+	if(al.size() > 0)
+		al.matlab_unwrap(file); // unwrap arguments
+	file.oss << "  Shared *self = new Shared(new " << cppClassName << "(" << al.names() << "));" << endl;
+	file.oss << "  collector_" << matlabUniqueName << ".insert(self);\n";
+
+	if(verbose_)
+    file.oss << "  std::cout << \"constructed \" << self << \" << std::endl;" << endl;
+  file.oss << "  out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);" << endl;
+  file.oss << "  *reinterpret_cast<Shared**> (mxGetData(out[0])) = self;" << endl;
+
+	// If we have a base class, return the base class pointer (MATLAB will call the base class collectorInsertAndMakeBase to add this to the collector and recurse the heirarchy)
+	if(!cppBaseClassName.empty()) {
+		file.oss << "\n";
+		file.oss << "  typedef boost::shared_ptr<" << cppBaseClassName << "> SharedBase;\n";
+    file.oss << "  out[1] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);\n";
+		file.oss << "  *reinterpret_cast<SharedBase**>(mxGetData(out[1])) = new SharedBase(*self);\n";
+	}
+
   file.oss << "}" << endl;
 
-  // close file
-  file.emit(true);
+	return wrapFunctionName;
 }
 
 /* ************************************************************************* */

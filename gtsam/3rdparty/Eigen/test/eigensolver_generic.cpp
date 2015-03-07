@@ -27,10 +27,6 @@
 #include <limits>
 #include <Eigen/Eigenvalues>
 
-#ifdef HAS_GSL
-#include "gsl_helper.h"
-#endif
-
 template<typename MatrixType> void eigensolver(const MatrixType& m)
 {
   typedef typename MatrixType::Index Index;
@@ -97,9 +93,11 @@ template<typename MatrixType> void eigensolver_verify_assert(const MatrixType& m
 
 void test_eigensolver_generic()
 {
+  int s;
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1( eigensolver(Matrix4f()) );
-    CALL_SUBTEST_2( eigensolver(MatrixXd(17,17)) );
+    s = internal::random<int>(1,EIGEN_TEST_MAX_SIZE/4);
+    CALL_SUBTEST_2( eigensolver(MatrixXd(s,s)) );
 
     // some trivial but implementation-wise tricky cases
     CALL_SUBTEST_2( eigensolver(MatrixXd(1,1)) );
@@ -109,10 +107,24 @@ void test_eigensolver_generic()
   }
 
   CALL_SUBTEST_1( eigensolver_verify_assert(Matrix4f()) );
-  CALL_SUBTEST_2( eigensolver_verify_assert(MatrixXd(17,17)) );
+  s = internal::random<int>(1,EIGEN_TEST_MAX_SIZE/4);
+  CALL_SUBTEST_2( eigensolver_verify_assert(MatrixXd(s,s)) );
   CALL_SUBTEST_3( eigensolver_verify_assert(Matrix<double,1,1>()) );
   CALL_SUBTEST_4( eigensolver_verify_assert(Matrix2d()) );
 
   // Test problem size constructors
-  CALL_SUBTEST_5(EigenSolver<MatrixXf>(10));
+  CALL_SUBTEST_5(EigenSolver<MatrixXf>(s));
+
+  // regression test for bug 410
+  CALL_SUBTEST_2(
+  {
+     MatrixXd A(1,1);
+     A(0,0) = std::sqrt(-1.);
+     Eigen::EigenSolver<MatrixXd> solver(A);
+     MatrixXd V(1, 1);
+     V(0,0) = solver.eigenvectors()(0,0).real();
+  }
+  );
+  
+  EIGEN_UNUSED_VARIABLE(s)
 }

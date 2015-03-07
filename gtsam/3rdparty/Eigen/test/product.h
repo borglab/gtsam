@@ -54,8 +54,7 @@ template<typename MatrixType> void product(const MatrixType& m)
   // to test it, hence I consider that we will have tested Random.h
   MatrixType m1 = MatrixType::Random(rows, cols),
              m2 = MatrixType::Random(rows, cols),
-             m3(rows, cols),
-             mzero = MatrixType::Zero(rows, cols);
+             m3(rows, cols);
   RowSquareMatrixType
              identity = RowSquareMatrixType::Identity(rows, rows),
              square = RowSquareMatrixType::Random(rows, rows),
@@ -63,9 +62,7 @@ template<typename MatrixType> void product(const MatrixType& m)
   ColSquareMatrixType
              square2 = ColSquareMatrixType::Random(cols, cols),
              res2 = ColSquareMatrixType::Random(cols, cols);
-  RowVectorType v1 = RowVectorType::Random(rows),
-             v2 = RowVectorType::Random(rows),
-             vzero = RowVectorType::Zero(rows);
+  RowVectorType v1 = RowVectorType::Random(rows);
   ColVectorType vc2 = ColVectorType::Random(cols), vcres(cols);
   OtherMajorMatrixType tm1 = m1;
 

@@ -82,8 +82,8 @@ void test_jacobi()
     CALL_SUBTEST_3(( jacobi<Matrix4cf, float>() ));
     CALL_SUBTEST_3(( jacobi<Matrix4cf, std::complex<float> >() ));
 
-    int r = internal::random<int>(2, 20),
-        c = internal::random<int>(2, 20);
+    int r = internal::random<int>(2, internal::random<int>(1,EIGEN_TEST_MAX_SIZE)/2),
+        c = internal::random<int>(2, internal::random<int>(1,EIGEN_TEST_MAX_SIZE)/2);
     CALL_SUBTEST_4(( jacobi<MatrixXf, float>(MatrixXf(r,c)) ));
     CALL_SUBTEST_5(( jacobi<MatrixXcd, double>(MatrixXcd(r,c)) ));
     CALL_SUBTEST_5(( jacobi<MatrixXcd, std::complex<double> >(MatrixXcd(r,c)) ));

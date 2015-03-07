@@ -10,9 +10,10 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file   inference-inl.h
+ * @file   inference.cpp
  * @brief  inference definitions
- * @author Frank Dellaert, Richard Roberts
+ * @author Frank Dellaert
+ * @author Richard Roberts
  */
 
 #include <gtsam/inference/inference.h>
@@ -28,9 +29,9 @@
 using namespace std;
 
 namespace gtsam {
-
 namespace inference {
 
+/* ************************************************************************* */
 Permutation::shared_ptr PermutationCOLAMD_(const VariableIndex& variableIndex, std::vector<int>& cmember) {
   size_t nEntries = variableIndex.nEntries(), nFactors = variableIndex.nFactors(), nVars = variableIndex.size();
   // Convert to compressed column major format colamd wants it in (== MATLAB format!)
@@ -92,6 +93,6 @@ Permutation::shared_ptr PermutationCOLAMD_(const VariableIndex& variableIndex, s
   return permutation;
 }
 
-}
-
-}
+/* ************************************************************************* */
+} // \namespace inference
+} // \namespace gtsam

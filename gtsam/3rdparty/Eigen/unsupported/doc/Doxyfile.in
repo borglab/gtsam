@@ -203,7 +203,6 @@ ALIASES                = "only_for_vectors=This is only for vectors (either row-
                          "svd_module=This is defined in the %SVD module. \code #include <Eigen/SVD> \endcode" \
                          "geometry_module=This is defined in the %Geometry module. \code #include <Eigen/Geometry> \endcode" \
                          "label=\bug" \
-                         "redstar=<a href='#warningarraymodule' style='color:red;text-decoration: none;'>*</a>" \
                          "nonstableyet=\warning This is not considered to be part of the stable public API yet. Changes may happen in future releases. See \ref Experimental \"Experimental parts of Eigen\""
 
 # Set the OPTIMIZE_OUTPUT_FOR_C tag to YES if your project consists of C
@@ -576,13 +575,14 @@ FILE_PATTERNS          = *
 # should be searched for input files as well. Possible values are YES and NO.
 # If left blank NO is used.
 
-RECURSIVE              = NO
+RECURSIVE              = YES
 
 # The EXCLUDE tag can be used to specify files and/or directories that should
 # excluded from the INPUT source files. This way you can easily exclude a
 # subdirectory from a directory tree whose root is specified with the INPUT tag.
 
-EXCLUDE                =
+EXCLUDE                = "${Eigen_SOURCE_DIR}/unsupported/doc/examples" \
+                         "${Eigen_SOURCE_DIR}/unsupported/doc/snippets" 
 
 # The EXCLUDE_SYMLINKS tag can be used select whether or not files or
 # directories that are symbolic links (a Unix filesystem feature) are excluded
@@ -958,7 +958,8 @@ PAPER_TYPE             = a4wide
 # The EXTRA_PACKAGES tag can be to specify one or more names of LaTeX
 # packages that should be included in the LaTeX output.
 
-EXTRA_PACKAGES         = amssymb
+EXTRA_PACKAGES         = amssymb \
+                         amsmath
 
 # The LATEX_HEADER tag can be used to specify a personal LaTeX header for
 # the generated latex document. The header should contain everything until

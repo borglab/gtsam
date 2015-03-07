@@ -20,12 +20,14 @@
 using namespace boost::assign;
 #include <boost/range/adaptors.hpp>
 #include <boost/range/algorithm.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include <gtsam/base/timing.h>
 #include <gtsam/base/debug.h>
 #include <gtsam/linear/GaussianJunctionTree.h>
 #include <gtsam/inference/BayesTree-inl.h>
 #include <gtsam/linear/HessianFactor.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 
 #include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/nonlinear/DoglegOptimizerImpl.h>
@@ -39,8 +41,49 @@ static const bool disableReordering = false;
 static const double batchThreshold = 0.65;
 
 /* ************************************************************************* */
+std::string ISAM2DoglegParams::adaptationModeTranslator(const DoglegOptimizerImpl::TrustRegionAdaptationMode& adaptationMode) const {
+  std::string s;
+  switch (adaptationMode) {
+  case DoglegOptimizerImpl::SEARCH_EACH_ITERATION:   s = "SEARCH_EACH_ITERATION";  break;
+  case DoglegOptimizerImpl::ONE_STEP_PER_ITERATION:  s = "ONE_STEP_PER_ITERATION"; break;
+  default:                                           s = "UNDEFINED";              break;
+  }
+  return s;
+}
+
+/* ************************************************************************* */
+DoglegOptimizerImpl::TrustRegionAdaptationMode ISAM2DoglegParams::adaptationModeTranslator(const std::string& adaptationMode) const {
+  std::string s = adaptationMode;  boost::algorithm::to_upper(s);
+  if (s == "SEARCH_EACH_ITERATION")  return DoglegOptimizerImpl::SEARCH_EACH_ITERATION;
+  if (s == "ONE_STEP_PER_ITERATION") return DoglegOptimizerImpl::ONE_STEP_PER_ITERATION;
+
+  /* default is SEARCH_EACH_ITERATION */
+  return DoglegOptimizerImpl::SEARCH_EACH_ITERATION;
+}
+
+/* ************************************************************************* */
+ISAM2Params::Factorization ISAM2Params::factorizationTranslator(const std::string& str) const {
+  std::string s = str;  boost::algorithm::to_upper(s);
+  if (s == "QR") return ISAM2Params::QR;
+  if (s == "CHOLESKY") return ISAM2Params::CHOLESKY;
+
+  /* default is CHOLESKY */
+  return ISAM2Params::CHOLESKY;
+}
+
+/* ************************************************************************* */
+std::string ISAM2Params::factorizationTranslator(const ISAM2Params::Factorization& value) const {
+  std::string s;
+  switch (value) {
+  case ISAM2Params::QR:         s = "QR"; break;
+  case ISAM2Params::CHOLESKY:   s = "CHOLESKY"; break;
+  default:                      s = "UNDEFINED"; break;
+  }
+  return s;
+}
+
+/* ************************************************************************* */
 ISAM2::ISAM2(const ISAM2Params& params):
-    delta_(deltaUnpermuted_), deltaNewton_(deltaNewtonUnpermuted_), RgProd_(RgProdUnpermuted_),
     deltaDoglegUptodate_(true), deltaUptodate_(true), params_(params) {
   if(params_.optimizationParams.type() == typeid(ISAM2DoglegParams))
     doglegDelta_ = boost::get<ISAM2DoglegParams>(params_.optimizationParams).initialDelta;
@@ -48,15 +91,13 @@ ISAM2::ISAM2(const ISAM2Params& params):
 
 /* ************************************************************************* */
 ISAM2::ISAM2():
-    delta_(deltaUnpermuted_), deltaNewton_(deltaNewtonUnpermuted_), RgProd_(RgProdUnpermuted_),
     deltaDoglegUptodate_(true), deltaUptodate_(true) {
   if(params_.optimizationParams.type() == typeid(ISAM2DoglegParams))
     doglegDelta_ = boost::get<ISAM2DoglegParams>(params_.optimizationParams).initialDelta;
 }
 
 /* ************************************************************************* */
-ISAM2::ISAM2(const ISAM2& other):
-    delta_(deltaUnpermuted_), deltaNewton_(deltaNewtonUnpermuted_), RgProd_(RgProdUnpermuted_) {
+ISAM2::ISAM2(const ISAM2& other) {
   *this = other;
 }
 
@@ -88,9 +129,6 @@ ISAM2& ISAM2::operator=(const ISAM2& rhs) {
   params_ = rhs.params_;
   doglegDelta_ = rhs.doglegDelta_;
 
-#ifndef NDEBUG
-  lastRelinVariables_ = rhs.lastRelinVariables_;
-#endif
   lastAffectedVariableCount = rhs.lastAffectedVariableCount;
   lastAffectedFactorCount = rhs.lastAffectedFactorCount;
   lastAffectedCliqueCount = rhs.lastAffectedCliqueCount;
@@ -205,8 +243,8 @@ GaussianFactorGraph ISAM2::getCachedBoundaryFactors(Cliques& orphans) {
   return cachedBoundary;
 }
 
-boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
-    const FastSet<Index>& markedKeys, const FastSet<Index>& relinKeys, const FastVector<Index>& observedKeys,
+boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(const FastSet<Index>& markedKeys,
+		const FastSet<Index>& relinKeys, const FastVector<Index>& observedKeys, const FastSet<Index>& unusedIndices,
     const boost::optional<FastMap<Index,int> >& constrainKeys, ISAM2Result& result) {
 
   // TODO:  new factors are linearized twice, the newFactors passed in are not used.
@@ -307,12 +345,12 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
 
     // Reorder
     tic(2,"permute global variable index");
-    variableIndex_.permute(*colamd);
+    variableIndex_.permuteInPlace(*colamd);
     toc(2,"permute global variable index");
     tic(3,"permute delta");
-    delta_.permute(*colamd);
-    deltaNewton_.permute(*colamd);
-    RgProd_.permute(*colamd);
+    delta_ = delta_.permute(*colamd);
+    deltaNewton_ = deltaNewton_.permute(*colamd);
+    RgProd_ = RgProd_.permute(*colamd);
     toc(3,"permute delta");
     tic(4,"permute ordering");
     ordering_.permuteWithInverse(*colamdInverse);
@@ -320,11 +358,13 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
     toc(1,"reorder");
 
     tic(2,"linearize");
-    linearFactors_ = *nonlinearFactors_.linearize(theta_, ordering_);
+    GaussianFactorGraph linearized = *nonlinearFactors_.linearize(theta_, ordering_);
+    if(params_.cacheLinearizedFactors)
+      linearFactors_ = linearized;
     toc(2,"linearize");
 
     tic(5,"eliminate");
-    JunctionTree<GaussianFactorGraph, Base::Clique> jt(linearFactors_, variableIndex_);
+    JunctionTree<GaussianFactorGraph, Base::Clique> jt(linearized, variableIndex_);
     sharedClique newRoot;
     if(params_.factorization == ISAM2Params::CHOLESKY)
       newRoot = jt.eliminate(EliminatePreferCholesky);
@@ -343,12 +383,12 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
 
     lastAffectedMarkedCount = markedKeys.size();
     lastAffectedVariableCount = affectedKeysSet->size();
-    lastAffectedFactorCount = linearFactors_.size();
+    lastAffectedFactorCount = linearized.size();
 
     // Reeliminated keys for detailed results
     if(params_.enableDetailedResults) {
       BOOST_FOREACH(Key key, theta_.keys()) {
-      	result.detail->variableStatus[key].isReeliminated = true;
+        result.detail->variableStatus[key].isReeliminated = true;
       }
     }
 
@@ -372,7 +412,7 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
     // Reeliminated keys for detailed results
     if(params_.enableDetailedResults) {
       BOOST_FOREACH(Index index, affectedAndNewKeys) {
-      	result.detail->variableStatus[inverseOrdering_->at(index)].isReeliminated = true;
+        result.detail->variableStatus[inverseOrdering_->at(index)].isReeliminated = true;
       }
     }
 
@@ -419,8 +459,12 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
       reorderingMode.constrainedKeys = FastMap<Index,int>();
       BOOST_FOREACH(Index var, observedKeys) { reorderingMode.constrainedKeys->insert(make_pair(var, 1)); }
     }
+		FastSet<Index> affectedUsedKeys = *affectedKeysSet; // Remove unused keys from the set we pass to PartialSolve
+		BOOST_FOREACH(Index unused, unusedIndices) {
+			affectedUsedKeys.erase(unused);
+		}
     Impl::PartialSolveResult partialSolveResult =
-        Impl::PartialSolve(factors, *affectedKeysSet, reorderingMode, (params_.factorization == ISAM2Params::QR));
+        Impl::PartialSolve(factors, affectedUsedKeys, reorderingMode, (params_.factorization == ISAM2Params::QR));
     toc(2,"PartialSolve");
 
     // We now need to permute everything according this partial reordering: the
@@ -428,12 +472,12 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
     // re-eliminate.  The reordered variables are also mentioned in the
     // orphans and the leftover cached factors.
     tic(3,"permute global variable index");
-    variableIndex_.permute(partialSolveResult.fullReordering);
+    variableIndex_.permuteInPlace(partialSolveResult.fullReordering);
     toc(3,"permute global variable index");
     tic(4,"permute delta");
-    delta_.permute(partialSolveResult.fullReordering);
-    deltaNewton_.permute(partialSolveResult.fullReordering);
-    RgProd_.permute(partialSolveResult.fullReordering);
+    delta_ = delta_.permute(partialSolveResult.fullReordering);
+    deltaNewton_ = deltaNewton_.permute(partialSolveResult.fullReordering);
+    RgProd_ = RgProd_.permute(partialSolveResult.fullReordering);
     toc(4,"permute delta");
     tic(5,"permute ordering");
     ordering_.permuteWithInverse(partialSolveResult.fullReorderingInverse);
@@ -485,7 +529,7 @@ boost::shared_ptr<FastSet<Index> > ISAM2::recalculate(
   // Root clique variables for detailed results
   if(params_.enableDetailedResults) {
     BOOST_FOREACH(Index index, this->root()->conditional()->frontals()) {
-    	result.detail->variableStatus[inverseOrdering_->at(index)].inRootClique = true;
+      result.detail->variableStatus[inverseOrdering_->at(index)].inRootClique = true;
     }
   }
 
@@ -541,15 +585,38 @@ ISAM2Result ISAM2::update(
   BOOST_FOREACH(size_t index, removeFactorIndices) {
     removeFactors.push_back(nonlinearFactors_[index]);
     nonlinearFactors_.remove(index);
+		if(params_.cacheLinearizedFactors)
+			linearFactors_.remove(index);
   }
 
   // Remove removed factors from the variable index so we do not attempt to relinearize them
   variableIndex_.remove(removeFactorIndices, *removeFactors.symbolic(ordering_));
+
+	// Compute unused keys and indices
+	FastSet<Key> unusedKeys;
+	FastSet<Index> unusedIndices;
+	{
+		// Get keys from removed factors and new factors, and compute unused keys,
+		// i.e., keys that are empty now and do not appear in the new factors.
+		FastSet<Key> removedAndEmpty;
+		BOOST_FOREACH(Key key, removeFactors.keys()) {
+			if(variableIndex_[ordering_[key]].empty())
+				removedAndEmpty.insert(removedAndEmpty.end(), key);
+		}
+		FastSet<Key> newFactorSymbKeys = newFactors.keys();
+		std::set_difference(removedAndEmpty.begin(), removedAndEmpty.end(),
+			newFactorSymbKeys.begin(), newFactorSymbKeys.end(), std::inserter(unusedKeys, unusedKeys.end()));
+
+		// Get indices for unused keys
+		BOOST_FOREACH(Key key, unusedKeys) {
+			unusedIndices.insert(unusedIndices.end(), ordering_[key]);
+		}
+	}
   toc(1,"push_back factors");
 
   tic(2,"add new variables");
   // 2. Initialize any new variables \Theta_{new} and add \Theta:=\Theta\cup\Theta_{new}.
-  Impl::AddVariables(newTheta, theta_, delta_, deltaNewton_, RgProd_, deltaReplacedMask_, ordering_, Base::nodes_);
+  Impl::AddVariables(newTheta, theta_, delta_, deltaNewton_, RgProd_, deltaReplacedMask_, ordering_);
   // New keys for detailed results
   if(params_.enableDetailedResults) {
     inverseOrdering_ = ordering_.invert();
@@ -569,16 +636,21 @@ ISAM2Result ISAM2::update(
     FastSet<Index> markedRemoveKeys = Impl::IndicesFromFactors(ordering_, removeFactors); // Get keys involved in removed factors
     markedKeys.insert(markedRemoveKeys.begin(), markedRemoveKeys.end()); // Add to the overall set of marked keys
   }
-  // Observed keys for detailed results
+
+	// Observed keys for detailed results
   if(params_.enableDetailedResults) {
     BOOST_FOREACH(Index index, markedKeys) {
-    	result.detail->variableStatus[inverseOrdering_->at(index)].isObserved = true;
+      result.detail->variableStatus[inverseOrdering_->at(index)].isObserved = true;
     }
   }
   // NOTE: we use assign instead of the iterator constructor here because this
   // is a vector of size_t, so the constructor unintentionally resolves to
   // vector(size_t count, Index value) instead of the iterator constructor.
-  FastVector<Index> observedKeys; observedKeys.assign(markedKeys.begin(), markedKeys.end()); // Make a copy of these, as we'll soon add to them
+  FastVector<Index> observedKeys;  observedKeys.reserve(markedKeys.size());
+	BOOST_FOREACH(Index index, markedKeys) {
+		if(unusedIndices.find(index) == unusedIndices.end()) // Only add if not unused
+			observedKeys.push_back(index); // Make a copy of these, as we'll soon add to them
+	}
   toc(4,"gather involved keys");
 
   // Check relinearization if we're at the nth step, or we are using a looser loop relin threshold
@@ -587,8 +659,11 @@ ISAM2Result ISAM2::update(
     tic(5,"gather relinearize keys");
     vector<bool> markedRelinMask(ordering_.nVars(), false);
     // 4. Mark keys in \Delta above threshold \beta: J=\{\Delta_{j}\in\Delta|\Delta_{j}\geq\beta\}.
-    relinKeys = Impl::CheckRelinearization(delta_, ordering_, params_.relinearizeThreshold);
-    if(disableReordering) relinKeys = Impl::CheckRelinearization(delta_, ordering_, 0.0); // This is used for debugging
+    if(params_.enablePartialRelinearizationCheck)
+      relinKeys = Impl::CheckRelinearizationPartial(root_, delta_, ordering_, params_.relinearizeThreshold);
+    else
+      relinKeys = Impl::CheckRelinearizationFull(delta_, ordering_, params_.relinearizeThreshold);
+    if(disableReordering) relinKeys = Impl::CheckRelinearizationFull(delta_, ordering_, 0.0); // This is used for debugging
 
     // Above relin threshold keys for detailed results
     if(params_.enableDetailedResults) {
@@ -626,15 +701,8 @@ ISAM2Result ISAM2::update(
     toc(7,"expmap");
 
     result.variablesRelinearized = markedKeys.size();
-
-#ifndef NDEBUG
-    lastRelinVariables_ = markedRelinMask;
-#endif
   } else {
     result.variablesRelinearized = 0;
-#ifndef NDEBUG
-    lastRelinVariables_ = vector<bool>(ordering_.nVars(), false);
-#endif
   }
 
   tic(8,"linearize new");
@@ -668,7 +736,7 @@ ISAM2Result ISAM2::update(
   }
   boost::shared_ptr<FastSet<Index> > replacedKeys;
   if(!markedKeys.empty() || !observedKeys.empty())
-    replacedKeys = recalculate(markedKeys, relinKeys, observedKeys, constrainedIndices, result);
+    replacedKeys = recalculate(markedKeys, relinKeys, observedKeys, unusedIndices, constrainedIndices, result);
 
   // Update replaced keys mask (accumulates until back-substitution takes place)
   if(replacedKeys) {
@@ -676,19 +744,23 @@ ISAM2Result ISAM2::update(
       deltaReplacedMask_[var] = true; } }
   toc(9,"recalculate");
 
-  //tic(9,"solve");
-  // 9. Solve
-  if(debug) delta_.print("delta_: ");
-  //toc(9,"solve");
-
+	// After the top of the tree has been redone and may have index gaps from
+	// unused keys, condense the indices to remove gaps by rearranging indices
+	// in all data structures.
+  if(!unusedKeys.empty()) {
+    tic(10,"remove variables");
+    Impl::RemoveVariables(unusedKeys, root_, theta_, variableIndex_, delta_, deltaNewton_, RgProd_,
+        deltaReplacedMask_, ordering_, Base::nodes_, linearFactors_);
+    toc(10,"remove variables");
+  }
   result.cliques = this->nodes().size();
   deltaDoglegUptodate_ = false;
   deltaUptodate_ = false;
 
-  tic(10,"evaluate error after");
+  tic(11,"evaluate error after");
   if(params_.evaluateNonlinearError)
     result.errorAfter.reset(nonlinearFactors_.error(calculateEstimate()));
-  toc(10,"evaluate error after");
+  toc(11,"evaluate error after");
 
   return result;
 }
@@ -719,8 +791,7 @@ void ISAM2::updateDelta(bool forceFullSolve) const {
     tic(2, "Copy dx_d");
     // Update Delta and linear step
     doglegDelta_ = doglegResult.Delta;
-    delta_.permutation() = Permutation::Identity(delta_.size());  // Dogleg solves for the full delta so there is no permutation
-    delta_.container() = doglegResult.dx_d; // Copy the VectorValues containing with the linear solution
+    delta_ = doglegResult.dx_d; // Copy the VectorValues containing with the linear solution
     toc(2, "Copy dx_d");
   }
 
@@ -732,10 +803,10 @@ Values ISAM2::calculateEstimate() const {
   // We use ExpmapMasked here instead of regular expmap because the former
   // handles Permuted<VectorValues>
   tic(1, "Copy Values");
-	Values ret(theta_);
-	toc(1, "Copy Values");
-	tic(2, "getDelta");
-	const Permuted<VectorValues>& delta(getDelta());
+  Values ret(theta_);
+  toc(1, "Copy Values");
+  tic(2, "getDelta");
+  const VectorValues& delta(getDelta());
   toc(2, "getDelta");
   tic(3, "Expmap");
   vector<bool> mask(ordering_.nVars(), true);
@@ -752,7 +823,7 @@ Values ISAM2::calculateBestEstimate() const {
 }
 
 /* ************************************************************************* */
-const Permuted<VectorValues>& ISAM2::getDelta() const {
+const VectorValues& ISAM2::getDelta() const {
   if(!deltaUptodate_)
     updateDelta();
   return delta_;
@@ -825,7 +896,7 @@ void optimizeGradientSearchInPlace(const ISAM2& isam, VectorValues& grad) {
 
   tic(3, "Compute minimizing step size");
   // Compute minimizing step size
-  double RgNormSq = isam.RgProd_.container().vector().squaredNorm();
+  double RgNormSq = isam.RgProd_.vector().squaredNorm();
   double step = -gradientSqNorm / RgNormSq;
   toc(3, "Compute minimizing step size");
 

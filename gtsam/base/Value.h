@@ -101,11 +101,14 @@ namespace gtsam {
   class Value {
   public:
 
-    /** Allocate and construct a clone of this value */
+    /** Clone this value in a special memory pool, must be deleted with Value::deallocate_, *not* with the 'delete' operator. */
     virtual Value* clone_() const = 0;
 
     /** Deallocate a raw pointer of this value */
     virtual void deallocate_() const = 0;
+
+		/** Clone this value (normal clone on the heap, delete with 'delete' operator) */
+		virtual boost::shared_ptr<Value> clone() const = 0;
 
     /** Compare this Value with another for equality. */
     virtual bool equals_(const Value& other, double tol = 1e-9) const = 0;

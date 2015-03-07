@@ -72,7 +72,17 @@ namespace gtsam {
 		GenericMultifrontalSolver(const sharedGraph& factorGraph,
 				const VariableIndex::shared_ptr& variableIndex);
 
-		/// @}
+    /// @}
+    /// @name Testable
+    /// @{
+
+    /** Print to cout */
+    void print(const std::string& name = "GenericMultifrontalSolver: ") const;
+
+    /** Test whether is equal to another */
+    bool equals(const GenericMultifrontalSolver& other, double tol = 1e-9) const;
+
+    /// @}
 		/// @name Standard Interface
 		/// @{
 
@@ -102,7 +112,7 @@ namespace gtsam {
 		 * Compute the marginal density over a variable, by integrating out
 		 * all of the other variables.  This function returns the result as a factor.
 		 */
-		typename FACTOR::shared_ptr marginalFactor(Index j,
+		typename boost::shared_ptr<FACTOR> marginalFactor(Index j,
 				Eliminate function) const;
 
 		/// @}

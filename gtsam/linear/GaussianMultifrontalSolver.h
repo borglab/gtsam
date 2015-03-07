@@ -100,6 +100,8 @@ public:
    * Compute the marginal joint over a set of variables, by integrating out
    * all of the other variables.  This function returns the result as a factor
    * graph.
+   *
+   * NOTE: This function is limited to computing a joint on 2 variables
    */
   GaussianFactorGraph::shared_ptr jointFactorGraph(const std::vector<Index>& js) const;
 
@@ -116,7 +118,7 @@ public:
    * all of the other variables.  This function returns the result as a mean
    * vector and covariance matrix.  Compared to marginalCanonical, which
    * returns a GaussianConditional, this function back-substitutes the R factor
-   * to obtain the mean, then computes \Sigma = (R^T * R)^-1.
+   * to obtain the mean, then computes \f$ \Sigma = (R^T * R)^{-1} \f$.
    */
    Matrix marginalCovariance(Index j) const;
 

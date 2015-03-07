@@ -40,12 +40,25 @@ public:
     QR
   };
 
+protected:
+
+  GaussianFactorGraph graph_;
+  Ordering ordering_;
+  Values values_;
+  Factorization factorization_;
+  GaussianBayesTree bayesTree_;
+
+public:
+
   /** Construct a marginals class.
    * @param graph The factor graph defining the full joint density on all variables.
    * @param solution The linearization point about which to compute Gaussian marginals (usually the MLE as obtained from a NonlinearOptimizer).
    * @param factorization The linear decomposition mode - either Marginals::CHOLESKY (faster and suitable for most problems) or Marginals::QR (slower but more numerically stable for poorly-conditioned problems).
    */
   Marginals(const NonlinearFactorGraph& graph, const Values& solution, Factorization factorization = CHOLESKY);
+
+  /** print */
+  void print(const std::string& str = "Marginals: ", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
   /** Compute the marginal covariance of a single variable */
   Matrix marginalCovariance(Key variable) const;
@@ -60,14 +73,6 @@ public:
 
   /** Compute the joint marginal information of several variables */
   JointMarginal jointMarginalInformation(const std::vector<Key>& variables) const;
-
-protected:
-
-  GaussianFactorGraph graph_;
-  Values values_;
-  Ordering ordering_;
-  Factorization factorization_;
-  GaussianBayesTree bayesTree_;
 };
 
 /**
@@ -76,7 +81,12 @@ protected:
 class JointMarginal {
 
 protected:
-  typedef SymmetricBlockView<Matrix> BlockView;
+
+	typedef SymmetricBlockView<Matrix> BlockView;
+
+  Matrix fullMatrix_;
+  BlockView blockView_;
+  Ordering indices_;
 
 public:
   /** A block view of the joint marginal - this stores a reference to the
@@ -102,15 +112,32 @@ public:
   Block operator()(Key iVariable, Key jVariable) const {
     return blockView_(indices_[iVariable], indices_[jVariable]); }
 
+	/** Synonym for operator() */
+	Block at(Key iVariable, Key jVariable) const {
+		return (*this)(iVariable, jVariable); }
+
+	/** The full, dense covariance/information matrix of the joint marginal. This returns
+	 * a reference to the JointMarginal object, so the JointMarginal object must be kept
+	 * in scope while this view is needed. Otherwise assign this block object to a Matrix
+	 * to store it.
+	 */
+	const Matrix& fullMatrix() const { return fullMatrix_; }
+
+  /** Copy constructor */
+  JointMarginal(const JointMarginal& other);
+
+  /** Assignment operator */
+  JointMarginal& operator=(const JointMarginal& rhs);
+
+	/** Print */
+	void print(const std::string& s = "", const KeyFormatter& formatter = DefaultKeyFormatter) const;
+
 protected:
-  Matrix fullMatrix_;
-  BlockView blockView_;
-  Ordering indices_;
+	JointMarginal(const Matrix& fullMatrix, const std::vector<size_t>& dims, const Ordering& indices) :
+		fullMatrix_(fullMatrix), blockView_(fullMatrix_, dims.begin(), dims.end()), indices_(indices) {}
 
-  JointMarginal(const Matrix& fullMatrix, const std::vector<size_t>& dims, const Ordering& indices) :
-    fullMatrix_(fullMatrix), blockView_(fullMatrix_, dims.begin(), dims.end()), indices_(indices) {}
+	friend class Marginals;
 
-  friend class Marginals;
 };
 
 } /* namespace gtsam */

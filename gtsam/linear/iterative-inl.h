@@ -18,12 +18,9 @@
 
 #pragma once
 
-#include <boost/shared_ptr.hpp>
-
-#include <gtsam/linear/IterativeOptimizationParameters.h>
 #include <gtsam/linear/iterative.h>
-
-using namespace std;
+#include <gtsam/linear/ConjugateGradientSolver.h>
+#include <boost/shared_ptr.hpp>
 
 namespace gtsam {
 
@@ -32,13 +29,13 @@ namespace gtsam {
 	template<class S, class V, class E>
 	struct CGState {
 
-		typedef IterativeOptimizationParameters Parameters;
+		typedef ConjugateGradientParameters Parameters;
 		const Parameters &parameters_;
 
-		int k;
-		bool steepest;
-		V g, d;
-		double gamma, threshold;
+		int k;                     ///< iteration
+		bool steepest;             ///< flag to indicate we are doing steepest descent
+		V g, d;                    ///< gradient g and search direction d for CG
+		double gamma, threshold;   ///< gamma (squared L2 norm of g) and convergence threshold
 		E Ad;
 
 		/* ************************************************************************* */
@@ -53,7 +50,7 @@ namespace gtsam {
 
 			// init gamma and calculate threshold
 			gamma = dot(g,g) ;
-			threshold = ::max(parameters_.epsilon_abs(), parameters_.epsilon() * parameters_.epsilon() * gamma);
+			threshold = std::max(parameters_.epsilon_abs(), parameters_.epsilon() * parameters_.epsilon() * gamma);
 
 			// Allocate and calculate A*d for first iteration
 			if (gamma > parameters_.epsilon_abs()) Ad = Ab * d;
@@ -62,10 +59,10 @@ namespace gtsam {
 		/* ************************************************************************* */
 		// print
 		void print(const V& x) {
-			cout << "iteration = " << k << endl;
+		  std::cout << "iteration = " << k << std::endl;
 			gtsam::print(x,"x");
 			gtsam::print(g, "g");
-			cout << "dotg = " << gamma << endl;
+			std::cout << "dotg = " << gamma << std::endl;
 			gtsam::print(d, "d");
 			gtsam::print(Ad, "Ad");
 		}
@@ -82,6 +79,7 @@ namespace gtsam {
 		/* ************************************************************************* */
 		// take a step, return true if converged
 		bool step(const S& Ab, V& x) {
+
 			if ((++k) >= ((int)parameters_.maxIterations())) return true;
 
 			//---------------------------------->
@@ -94,9 +92,12 @@ namespace gtsam {
 
 			// check for convergence
 			double new_gamma = dot(g, g);
-			if (parameters_.verbosity() != IterativeOptimizationParameters::SILENT)
-				cout << "iteration " << k << ": alpha = " << alpha
-				     << ", dotg = " << new_gamma << endl;
+
+			if (parameters_.verbosity() != ConjugateGradientParameters::SILENT)
+			  std::cout << "iteration " << k << ": alpha = " << alpha
+			            << ", dotg = " << new_gamma
+			            << std::endl;
+
 			if (new_gamma < threshold) return true;
 
 			// calculate new search direction
@@ -121,22 +122,20 @@ namespace gtsam {
 	// conjugate gradient method.
 	// S: linear system, V: step vector, E: errors
 	template<class S, class V, class E>
-	V conjugateGradients(
-			const S& Ab,
-			V x,
-			const IterativeOptimizationParameters &parameters,
-			bool steepest = false) {
+	V conjugateGradients(const S& Ab,	V x, const ConjugateGradientParameters &parameters, bool steepest) {
 
 		CGState<S, V, E> state(Ab, x, parameters, steepest);
-		if (parameters.verbosity() != IterativeOptimizationParameters::SILENT)
-			cout << "CG: epsilon = " << parameters.epsilon()
-				 << ", maxIterations = " << parameters.maxIterations()
-				 << ", ||g0||^2 = " << state.gamma
-				 << ", threshold = " << state.threshold << endl;
+
+		if (parameters.verbosity() != ConjugateGradientParameters::SILENT)
+		  std::cout << "CG: epsilon = " << parameters.epsilon()
+				        << ", maxIterations = " << parameters.maxIterations()
+				        << ", ||g0||^2 = " << state.gamma
+				        << ", threshold = " << state.threshold
+				        << std::endl;
 
 		if ( state.gamma < state.threshold ) {
-			if (parameters.verbosity() != IterativeOptimizationParameters::SILENT)
-				cout << "||g0||^2 < threshold, exiting immediately !" << endl;
+			if (parameters.verbosity() != ConjugateGradientParameters::SILENT)
+			  std::cout << "||g0||^2 < threshold, exiting immediately !" << std::endl;
 
 			return x;
 		}

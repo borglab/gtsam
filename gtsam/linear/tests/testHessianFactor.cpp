@@ -93,7 +93,7 @@ TEST(HessianFactor, ConversionConstructor) {
   vector<pair<Index, Matrix> > meas;
   meas.push_back(make_pair(0, Ax2));
   meas.push_back(make_pair(1, Al1x1));
-  JacobianFactor combined(meas, b2, sigmas);
+  JacobianFactor combined(meas, b2, noiseModel::Diagonal::Sigmas(sigmas));
 
   HessianFactor actual(combined);
 
@@ -414,10 +414,20 @@ TEST_UNSAFE(HessianFactor, CombineAndEliminate)
   // create expected Hessian after elimination
   HessianFactor expectedCholeskyFactor(expectedFactor);
 
-  GaussianFactorGraph::EliminationResult actualCholesky = EliminateCholesky(
-			*gfg.convertCastFactors<FactorGraph<HessianFactor> > (), 1);
-	HessianFactor::shared_ptr actualFactor = boost::dynamic_pointer_cast<
-			HessianFactor>(actualCholesky.second);
+  // Convert all factors to hessians
+  FactorGraph<HessianFactor> hessians;
+  BOOST_FOREACH(const GaussianFactorGraph::sharedFactor& factor, gfg) {
+    if(boost::shared_ptr<HessianFactor> hf = boost::dynamic_pointer_cast<HessianFactor>(factor))
+      hessians.push_back(hf);
+    else if(boost::shared_ptr<JacobianFactor> jf = boost::dynamic_pointer_cast<JacobianFactor>(factor))
+      hessians.push_back(boost::make_shared<HessianFactor>(*jf));
+    else
+      CHECK(false);
+  }
+
+  // Eliminate
+  GaussianFactorGraph::EliminationResult actualCholesky = EliminateCholesky(gfg, 1);
+	HessianFactor::shared_ptr actualFactor = boost::dynamic_pointer_cast<HessianFactor>(actualCholesky.second);
 
 	EXPECT(assert_equal(*expectedBN, *actualCholesky.first, 1e-6));
   EXPECT(assert_equal(expectedCholeskyFactor, *actualFactor, 1e-6));
@@ -458,7 +468,7 @@ TEST(HessianFactor, eliminate2 )
   vector<pair<Index, Matrix> > meas;
   meas.push_back(make_pair(0, Ax2));
   meas.push_back(make_pair(1, Al1x1));
-  JacobianFactor combined(meas, b2, sigmas);
+  JacobianFactor combined(meas, b2, noiseModel::Diagonal::Sigmas(sigmas));
 
   // eliminate the combined factor
   HessianFactor::shared_ptr combinedLF_Chol(new HessianFactor(combined));
@@ -492,7 +502,7 @@ TEST(HessianFactor, eliminate2 )
       0.00, 1.00, +0.00, -1.00
   )/sigma;
   Vector b1 = Vector_(2,0.0,0.894427);
-  JacobianFactor expectedLF(1, Bl1x1, b1, repeat(2,1.0));
+  JacobianFactor expectedLF(1, Bl1x1, b1, noiseModel::Isotropic::Sigma(2,1.0));
   EXPECT(assert_equal(HessianFactor(expectedLF), *actualFactor, 1.5e-3));
 }
 

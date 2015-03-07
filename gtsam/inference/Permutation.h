@@ -26,7 +26,7 @@
 
 namespace gtsam {
 
-/**
+	/**
  * A permutation reorders variables, for example to reduce fill-in during
  * elimination.  To save computation, the permutation can be applied to
  * the necessary data structures only once, then multiple computations
@@ -36,10 +36,9 @@ namespace gtsam {
  * that linearized factor graphs are already correctly ordered and need
  * not be permuted.
  *
- * For convenience, there is also a helper class "Permuted" that transforms
- * arguments supplied through the square-bracket [] operator through the
- * permutation.  Note that this helper class stores a reference to the original
- * container.
+ * Permutations can be considered to a 1-1 mapping from an original set of indices
+ * to a different set of indices.  Permutations can be composed and inverted
+ * in order to create new indexing for a structure.
  * \nosubgrouping
  */
 class Permutation {
@@ -82,10 +81,24 @@ public:
 	/// @{
 
   /**
-   * Permute the given variable, i.e. determine it's new index after the
-   * permutation.
+   * Return the new index of the supplied variable after the permutation
    */
   Index operator[](Index variable) const { check(variable); return rangeIndices_[variable]; }
+
+  /**
+   * Return the new index of the supplied variable after the permutation. This version allows modification.
+   */
+  Index& operator[](Index variable) { check(variable); return rangeIndices_[variable]; }
+
+  /**
+   * Return the new index of the supplied variable after the permutation. Synonym for operator[](Index).
+   */
+  Index at(Index variable) const { return operator[](variable); }
+
+  /**
+   * Return the new index of the supplied variable after the permutation. This version allows modification.   Synonym for operator[](Index).
+   */
+  Index& at(Index variable) { return operator[](variable); }
 
   /**
    * The number of variables in the range of this permutation, i.e. the output
@@ -115,8 +128,8 @@ public:
   static Permutation PullToFront(const std::vector<Index>& toFront, size_t size, bool filterDuplicates = false);
 
   /**
-   * Create a permutation that pulls the given variables to the front while
-   * pushing the rest to the back.
+   * Create a permutation that pushes the given variables to the back while
+   * pulling the rest to the front.
    */
   static Permutation PushToBack(const std::vector<Index>& toBack, size_t size, bool filterDuplicates = false);
 
@@ -133,18 +146,25 @@ public:
    */
   Permutation::shared_ptr inverse() const;
 
-  const_iterator begin() const { return rangeIndices_.begin(); }	///<TODO: comment
-  const_iterator end() const { return rangeIndices_.end(); }			///<TODO: comment
+  const_iterator begin() const { return rangeIndices_.begin(); }	///< Iterate through the indices
+  const_iterator end() const { return rangeIndices_.end(); }			///< Iterate through the indices
+
+	/** Apply the permutation to a collection, which must have operator[] defined.
+	 * Note that permutable gtsam data structures typically have their own
+	 * permute function to apply a permutation.  Permutation::applyToCollection is
+	 * a generic function, e.g. for STL classes.
+	 * @param input The input collection.
+	 * @param output The preallocated output collection, which is assigned output[i] = input[permutation[i]]
+	 */
+	template<typename INPUT_COLLECTION, typename OUTPUT_COLLECTION>
+	void applyToCollection(OUTPUT_COLLECTION& output, const INPUT_COLLECTION& input) const {
+		for(size_t i = 0; i < output.size(); ++i) output[i] = input[(*this)[i]]; }
 
 
 	/// @}
 	/// @name Advanced Interface
 	/// @{
 
-  /**
-   * TODO: comment
-   */
-  Index& operator[](Index variable) { check(variable); return rangeIndices_[variable]; }
 
   /**
    * A partial permutation, reorders the variables selected by selector through
@@ -153,86 +173,13 @@ public:
    */
   Permutation::shared_ptr partialPermutation(const Permutation& selector, const Permutation& partialPermutation) const;
 
-  iterator begin() { return rangeIndices_.begin(); }	///<TODO: comment
-  iterator end() { return rangeIndices_.end(); }			///<TODO: comment
+  iterator begin() { return rangeIndices_.begin(); }	///< Iterate through the indices
+  iterator end() { return rangeIndices_.end(); }			///< Iterate through the indices
 
 protected:
   void check(Index variable) const { assert(variable < rangeIndices_.size()); }
 
 	/// @}
 };
-
-
-/**
- * Syntactic sugar for accessing another container through a permutation.
- * Allows the syntax:
- *   Permuted<Container> permuted(permutation, container);
- *   permuted[index1];
- *   permuted[index2];
- * which is equivalent to:
- *   container[permutation[index1]];
- *   container[permutation[index2]];
- * but more concise.
- */
-template<typename CONTAINER>
-class Permuted {
-  Permutation permutation_;
-  CONTAINER& container_;
-public:
-  typedef typename CONTAINER::iterator::value_type value_type;
-
-  /** Construct as a permuted view on the Container.  The permutation is copied
-   * but only a reference to the container is stored.
-   */
-  Permuted(const Permutation& permutation, CONTAINER& container) : permutation_(permutation), container_(container) {}
-
-  /** Construct as a view on the Container with an identity permutation.  Only
-   * a reference to the container is stored.
-   */
-  Permuted(CONTAINER& container) : permutation_(Permutation::Identity(container.size())), container_(container) {}
-
-  /** Print */
-  void print(const std::string& str = "") const {
-    std::cout << str;
-    permutation_.print("  permutation: ");
-    container_.print("  container: ");
-  }
-
-  /** Access the container through the permutation */
-  value_type& operator[](size_t index) { return container_[permutation_[index]]; }
-
-  /** Access the container through the permutation (const version) */
-  const value_type& operator[](size_t index) const { return container_[permutation_[index]]; }
-
-	/** Assignment operator for cloning in ISAM2 */
-  Permuted<CONTAINER> operator=(const Permuted<CONTAINER>& other) {
-    permutation_ = other.permutation_;
-    container_ = other.container_;
-    return *this;
-  }
-
-  /** Permute this view by applying a permutation to the underlying permutation */
-  void permute(const Permutation& permutation) { assert(permutation.size() == this->size()); permutation_ = *permutation_.permute(permutation); }
-
-  /** Access the underlying container */
-  CONTAINER* operator->() { return &container_; }
-
-  /** Access the underlying container (const version) */
-  const CONTAINER* operator->() const { return &container_; }
-
-  /** Size of the underlying container */
-  size_t size() const { return container_.size(); }
-
-  /** Access to the underlying container */
-  CONTAINER& container() { return container_; }
-
-  /** Access to the underlying container (const version) */
-  const CONTAINER& container() const { return container_; }
-
-  /** Access the underlying permutation */
-  Permutation& permutation() { return permutation_; }
-  const Permutation& permutation() const { return permutation_; }
-};
-
 
 }

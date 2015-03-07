@@ -52,6 +52,24 @@ namespace gtsam {
 
 		return solution;
 	}
+
+	/* ************************************************************************* */
+	Vector DiscreteSequentialSolver::marginalProbabilities(
+			const DiscreteKey& key) const {
+		// Compute marginal
+		DiscreteFactor::shared_ptr marginalFactor;
+		marginalFactor = Base::marginalFactor(key.first, &EliminateDiscrete);
+
+		//Create result
+		Vector vResult(key.second);
+		for (size_t state = 0; state < key.second; ++state) {
+			DiscreteFactor::Values values;
+			values[key.first] = state;
+			vResult(state) = (*marginalFactor)(values);
+		}
+		return vResult;
+	}
+
 /* ************************************************************************* */
 
 }

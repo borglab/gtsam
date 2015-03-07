@@ -48,10 +48,6 @@ namespace gtsam {
  * variable index 3), row-block 2 (also meaning component factor 2), comes from
  * column-block 0 of component factor 2.
  *
- * Note that in the case of GaussianFactor, the rows of the combined factor are
- * further sorted so that the column-block position of the first structural
- * non-zero increases monotonically through the rows.  This additional process
- * is not performed by this class.
  * \nosubgrouping
  */
 

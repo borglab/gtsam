@@ -35,7 +35,6 @@ template<typename MatrixType> void eigen2support(const MatrixType& m)
   Index cols = m.cols();
 
   MatrixType m1 = MatrixType::Random(rows, cols),
-             m2 = MatrixType::Random(rows, cols),
              m3(rows, cols);
 
   Scalar  s1 = internal::random<Scalar>(),

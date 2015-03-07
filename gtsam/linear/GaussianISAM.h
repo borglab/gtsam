@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    GaussianISAM
+ * @file    GaussianISAM.h
  * @brief   Linear ISAM only
  * @author  Michael Kaess
  */
@@ -48,20 +48,8 @@ public:
   /** Override update_internal to also keep track of variable dimensions. */
   template<class FACTORGRAPH>
   void update_internal(const FACTORGRAPH& newFactors, Cliques& orphans) {
-
-    Super::update_internal(newFactors, orphans, &EliminateQR);
-
-    // update dimensions
-    BOOST_FOREACH(const typename FACTORGRAPH::sharedFactor& factor, newFactors) {
-      for(typename FACTORGRAPH::FactorType::const_iterator key = factor->begin(); key != factor->end(); ++key) {
-        if(*key >= dims_.size())
-          dims_.resize(*key + 1);
-        if(dims_[*key] == 0)
-          dims_[*key] = factor->getDim(key);
-        else
-          assert(dims_[*key] == factor->getDim(key));
-      }
-    }
+    Super::update_internal(newFactors, orphans, &EliminateQR); // TODO: why does this force QR?
+    update_dimensions(newFactors);
   }
 
   template<class FACTORGRAPH>
@@ -70,10 +58,28 @@ public:
     this->update_internal(newFactors, orphans);
   }
 
+  template<class FACTORGRAPH>
+  inline void update_dimensions(const FACTORGRAPH& newFactors) {
+  	BOOST_FOREACH(const typename FACTORGRAPH::sharedFactor& factor, newFactors) {
+  		for(typename FACTORGRAPH::FactorType::const_iterator key = factor->begin(); key != factor->end(); ++key) {
+  			if(*key >= dims_.size())
+  				dims_.resize(*key + 1);
+  			if(dims_[*key] == 0)
+  				dims_[*key] = factor->getDim(key);
+  			else
+  				assert(dims_[*key] == factor->getDim(key));
+  		}
+  	}
+  }
+
   void clear() {
     Super::clear();
     dims_.clear();
   }
+
+  // access
+  const Dims& dims() const { return dims_; } ///< Const access to dimensions structure
+  Dims& dims() { return dims_; } ///< non-const access to dimensions structure (advanced interface)
 
   friend VectorValues optimize(const GaussianISAM&);
 

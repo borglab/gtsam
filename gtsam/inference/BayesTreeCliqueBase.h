@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    BayesTreeCliqueBase
+ * @file    BayesTreeCliqueBase.h
  * @brief   Base class for cliques of a BayesTree
  * @author  Richard Roberts and Frank Dellaert
  */
@@ -75,6 +75,9 @@ namespace gtsam {
 
    	/// @}
 
+    /// This stores the Cached Shortcut value
+    mutable boost::optional<BayesNet<ConditionalType> > cachedShortcut_;
+
   public:
     sharedConditional conditional_;
     derived_weak_ptr parent_;
@@ -90,10 +93,10 @@ namespace gtsam {
     }
 
     /** print this node */
-    void print(const std::string& s = "") const;
+    void print(const std::string& s = "", const IndexFormatter& indexFormatter = DefaultIndexFormatter ) const;
 
     /** print this node and entire subtree below it */
-    void printTree(const std::string& indent="") const;
+    void printTree(const std::string& indent="", const IndexFormatter& indexFormatter = DefaultIndexFormatter ) const;
 
   	/// @}
   	/// @name Standard Interface
@@ -111,8 +114,11 @@ namespace gtsam {
     /** The arrow operator accesses the conditional */
     const ConditionalType* operator->() const { return conditional_.get(); }
 
-    ///TODO: comment
+    /** return the const reference of children */
     const std::list<derived_ptr>& children() const { return children_; }
+
+    /** return a shared_ptr to the parent clique */
+    derived_ptr parent() const { return parent_.lock(); }
 
   	/// @}
   	/// @name Advanced Interface
@@ -121,7 +127,7 @@ namespace gtsam {
     /** The arrow operator accesses the conditional */
     ConditionalType* operator->() { return conditional_.get(); }
 
-    /** return the const reference of children */
+    /** return the reference of children non-const version*/
     std::list<derived_ptr>& children() { return children_; }
 
     /** Construct shared_ptr from a conditional, leaving parent and child pointers uninitialized */
@@ -130,7 +136,7 @@ namespace gtsam {
     /** Construct shared_ptr from a FactorGraph<FACTOR>::EliminationResult.  In this class
      * the conditional part is kept and the factor part is ignored, but in derived clique
      * types, such as ISAM2Clique, the factor part is kept as a cached factor.
-     * @param An elimination result, which is a pair<CONDITIONAL,FACTOR>
+     * @param result An elimination result, which is a pair<CONDITIONAL,FACTOR>
      */
      static derived_ptr Create(const std::pair<sharedConditional, boost::shared_ptr<typename ConditionalType::FactorType> >& result) { return boost::make_shared<DerivedType>(result); }
 
@@ -150,14 +156,22 @@ namespace gtsam {
     bool permuteSeparatorWithInverse(const Permutation& inversePermutation);
 
     /** return the conditional P(S|Root) on the separator given the root */
-    // TODO: create a cached version
-    BayesNet<ConditionalType> shortcut(derived_ptr root, Eliminate function);
+    BayesNet<ConditionalType> shortcut(derived_ptr root, Eliminate function) const;
 
     /** return the marginal P(C) of the clique */
-    FactorGraph<FactorType> marginal(derived_ptr root, Eliminate function);
+    FactorGraph<FactorType> marginal(derived_ptr root, Eliminate function) const;
 
     /** return the joint P(C1,C2), where C1==this. TODO: not a method? */
-    FactorGraph<FactorType> joint(derived_ptr C2, derived_ptr root, Eliminate function);
+    FactorGraph<FactorType> joint(derived_ptr C2, derived_ptr root, Eliminate function) const;
+
+    /**
+     * This deletes the cached shortcuts of all cliques (subtree) below this clique.
+     * This is performed when the bayes tree is modified.
+     */
+    void deleteCachedShorcuts();
+
+    /** return cached shortcut of the clique */
+    const boost::optional<BayesNet<ConditionalType> > cachedShortcut() const { return cachedShortcut_; }
 
     friend class BayesTree<ConditionalType, DerivedType>;
 
@@ -165,6 +179,9 @@ namespace gtsam {
 
     ///TODO: comment
     void assertInvariants() const;
+
+    /// Reset the computed shortcut of this clique. Used by friend BayesTree
+    void resetCachedShortcut() { cachedShortcut_ = boost::none; }
 
   private:
 

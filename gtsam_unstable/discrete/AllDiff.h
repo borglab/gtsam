@@ -34,13 +34,14 @@ namespace gtsam {
 		AllDiff(const DiscreteKeys& dkeys);
 
 		// print
-		virtual void print(const std::string& s = "") const;
+		virtual void print(const std::string& s = "",
+				const IndexFormatter& formatter = DefaultIndexFormatter) const;
 
 		/// Calculate value = expensive !
 		virtual double operator()(const Values& values) const;
 
 		/// Convert into a decisiontree, can be *very* expensive !
-		virtual operator DecisionTreeFactor() const;
+		virtual DecisionTreeFactor toDecisionTreeFactor() const;
 
 		/// Multiply into a decisiontree
 		virtual DecisionTreeFactor operator*(const DecisionTreeFactor& f) const;

@@ -69,7 +69,7 @@ int main(int argc, char *argv[]) {
     blockGfgs.reserve(nTrials);
     for(size_t trial=0; trial<nTrials; ++trial) {
       blockGfgs.push_back(GaussianFactorGraph());
-      SharedDiagonal noise = sharedSigma(blockdim, 1.0);
+      SharedDiagonal noise = noiseModel::Isotropic::Sigma(blockdim, 1.0);
       for(int c=0; c<nVars; ++c) {
         for(size_t d=0; d<blocksPerVar; ++d) {
           vector<pair<Index, Matrix> > terms; terms.reserve(varsPerBlock);

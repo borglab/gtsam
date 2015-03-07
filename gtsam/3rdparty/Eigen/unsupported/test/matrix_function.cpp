@@ -121,6 +121,26 @@ void testMatrixExponential(const MatrixType& A)
 }
 
 template<typename MatrixType>
+void testMatrixLogarithm(const MatrixType& A)
+{
+  typedef typename internal::traits<MatrixType>::Scalar Scalar;
+  typedef typename NumTraits<Scalar>::Real RealScalar;
+  typedef std::complex<RealScalar> ComplexScalar;
+
+  MatrixType scaledA;
+  RealScalar maxImagPartOfSpectrum = A.eigenvalues().imag().cwiseAbs().maxCoeff();
+  if (maxImagPartOfSpectrum >= 0.9 * M_PI)
+    scaledA = A * 0.9 * M_PI / maxImagPartOfSpectrum;
+  else
+    scaledA = A;
+
+  // identity X.exp().log() = X only holds if Im(lambda) < pi for all eigenvalues of X
+  MatrixType expA = scaledA.exp();
+  MatrixType logExpA = expA.log();
+  VERIFY_IS_APPROX(logExpA, scaledA);
+}
+
+template<typename MatrixType>
 void testHyperbolicFunctions(const MatrixType& A)
 {
   // Need to use absolute error because of possible cancellation when
@@ -157,6 +177,7 @@ template<typename MatrixType>
 void testMatrix(const MatrixType& A)
 {
   testMatrixExponential(A);
+  testMatrixLogarithm(A);
   testHyperbolicFunctions(A);
   testGonioFunctions(A);
 }

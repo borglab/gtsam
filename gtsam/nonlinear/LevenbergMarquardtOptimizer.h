@@ -13,7 +13,7 @@
  * @file    LevenbergMarquardtOptimizer.h
  * @brief   
  * @author  Richard Roberts
- * @created Feb 26, 2012
+ * @date 	Feb 26, 2012
  */
 
 #pragma once
@@ -30,10 +30,11 @@ class LevenbergMarquardtOptimizer;
  * all of those parameters.
  */
 class LevenbergMarquardtParams : public SuccessiveLinearizationParams {
+
 public:
   /** See LevenbergMarquardtParams::lmVerbosity */
   enum VerbosityLM {
-    SILENT,
+    SILENT = 0,
     LAMBDA,
     TRYLAMBDA,
     TRYCONFIG,
@@ -46,26 +47,32 @@ public:
   double lambdaUpperBound; ///< The maximum lambda to try before assuming the optimization has failed (default: 1e5)
   VerbosityLM verbosityLM; ///< The verbosity level for Levenberg-Marquardt (default: SILENT), see also NonlinearOptimizerParams::verbosity
 
-  LevenbergMarquardtParams() :
-    lambdaInitial(1e-5), lambdaFactor(10.0), lambdaUpperBound(1e5), verbosityLM(SILENT) {}
-
+  LevenbergMarquardtParams() : lambdaInitial(1e-5), lambdaFactor(10.0), lambdaUpperBound(1e5), verbosityLM(SILENT) {}
   virtual ~LevenbergMarquardtParams() {}
 
-  virtual void print(const std::string& str = "") const {
-    SuccessiveLinearizationParams::print(str);
-    std::cout << "              lambdaInitial: " << lambdaInitial << "\n";
-    std::cout << "               lambdaFactor: " << lambdaFactor << "\n";
-    std::cout << "           lambdaUpperBound: " << lambdaUpperBound << "\n";
-    std::cout.flush();
-  }
+  virtual void print(const std::string& str = "") const;
+
+  inline double getlambdaInitial() const { return lambdaInitial; }
+  inline double getlambdaFactor() const { return lambdaFactor; }
+  inline double getlambdaUpperBound() const { return lambdaUpperBound; }
+  inline std::string getVerbosityLM() const { return verbosityLMTranslator(verbosityLM); }
+
+  inline void setlambdaInitial(double value) { lambdaInitial = value; }
+  inline void setlambdaFactor(double value) { lambdaFactor = value; }
+  inline void setlambdaUpperBound(double value) { lambdaUpperBound = value; }
+  inline void setVerbosityLM(const std::string &s) { verbosityLM = verbosityLMTranslator(s); }
+
+private:
+	VerbosityLM verbosityLMTranslator(const std::string &s) const;
+	std::string verbosityLMTranslator(VerbosityLM value) const;
 };
 
 /**
  * State for LevenbergMarquardtOptimizer
  */
 class LevenbergMarquardtState : public NonlinearOptimizerState {
-public:
 
+public:
   double lambda;
 
   LevenbergMarquardtState() {}
@@ -73,10 +80,10 @@ public:
   virtual ~LevenbergMarquardtState() {}
 
 protected:
-  LevenbergMarquardtState(const NonlinearFactorGraph& graph, const Values& initialValues, const LevenbergMarquardtParams& params, unsigned int iterations = 0) :
-    NonlinearOptimizerState(graph, initialValues, iterations), lambda(params.lambdaInitial) {}
+	LevenbergMarquardtState(const NonlinearFactorGraph& graph, const Values& initialValues, const LevenbergMarquardtParams& params, unsigned int iterations = 0) :
+		NonlinearOptimizerState(graph, initialValues, iterations), lambda(params.lambdaInitial) {}
 
-  friend class LevenbergMarquardtOptimizer;
+	friend class LevenbergMarquardtOptimizer;
 };
 
 /**
@@ -84,8 +91,12 @@ protected:
  */
 class LevenbergMarquardtOptimizer : public NonlinearOptimizer {
 
-public:
+protected:
+  LevenbergMarquardtParams params_; ///< LM parameters
+  LevenbergMarquardtState state_;   ///< optimization state
+  std::vector<size_t> dimensions_;  ///< undocumented
 
+public:
   typedef boost::shared_ptr<LevenbergMarquardtOptimizer> shared_ptr;
 
   /// @name Standard interface
@@ -110,15 +121,20 @@ public:
    * copies the objects.
    * @param graph The nonlinear factor graph to optimize
    * @param initialValues The initial variable assignments
-   * @param params The optimization parameters
    */
   LevenbergMarquardtOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues, const Ordering& ordering) :
         NonlinearOptimizer(graph), dimensions_(initialValues.dims(ordering)) {
     params_.ordering = ordering;
     state_ = LevenbergMarquardtState(graph, initialValues, params_); }
 
-  /** Access the current damping value */
+  /// Access the current damping value
   double lambda() const { return state_.lambda; }
+
+  /// print
+  virtual void print(const std::string& str = "") const {
+    std::cout << str << "LevenbergMarquardtOptimizer" << std::endl;
+    this->params_.print("  parameters:\n");
+  }
 
   /// @}
 
@@ -143,23 +159,18 @@ public:
   /// @}
 
 protected:
+	/** Access the parameters (base class version) */
+	virtual const NonlinearOptimizerParams& _params() const { return params_; }
 
-  LevenbergMarquardtParams params_;
-  LevenbergMarquardtState state_;
-  std::vector<size_t> dimensions_;
+	/** Access the state (base class version) */
+	virtual const NonlinearOptimizerState& _state() const { return state_; }
 
-  /** Access the parameters (base class version) */
-  virtual const NonlinearOptimizerParams& _params() const { return params_; }
-
-  /** Access the state (base class version) */
-  virtual const NonlinearOptimizerState& _state() const { return state_; }
-
-  /** Internal function for computing a COLAMD ordering if no ordering is specified */
-  LevenbergMarquardtParams ensureHasOrdering(LevenbergMarquardtParams params, const NonlinearFactorGraph& graph, const Values& values) const {
-    if(!params.ordering)
-      params.ordering = *graph.orderingCOLAMD(values);
-    return params;
-  }
+	/** Internal function for computing a COLAMD ordering if no ordering is specified */
+	LevenbergMarquardtParams ensureHasOrdering(LevenbergMarquardtParams params, const NonlinearFactorGraph& graph, const Values& values) const {
+		if(!params.ordering)
+			params.ordering = *graph.orderingCOLAMD(values);
+		return params;
+	}
 };
 
 }

@@ -77,16 +77,8 @@ public:
 	double operator()(const DiscreteFactor::Values & values) const;
 
 	/// print
-	void print(const std::string& s = "DiscreteFactorGraph") const {
-		std::cout << s << std::endl;
-		std::cout << "size: " << size() << std::endl;
-		for (size_t i = 0; i < factors_.size(); i++) {
-			std::stringstream ss;
-			ss << "factor " << i << ": ";
-			if (factors_[i] != NULL) factors_[i]->print(ss.str());
-		}
-	}
-
+	void print(const std::string& s = "DiscreteFactorGraph",
+			const IndexFormatter& formatter =DefaultIndexFormatter) const;
 };
 // DiscreteFactorGraph
 

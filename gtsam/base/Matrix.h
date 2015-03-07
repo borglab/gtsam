@@ -26,6 +26,7 @@
 #include <gtsam/3rdparty/Eigen/Eigen/QR>
 #include <boost/format.hpp>
 #include <boost/tuple/tuple.hpp>
+#include <boost/math/special_functions/fpclassify.hpp>
 
 /**
  * Matrix is a typedef in the gtsam namespace
@@ -66,11 +67,30 @@ inline Matrix Matrix_(const Vector& v) { return Matrix_(v.size(),1,v);}
 */
 Matrix Matrix_(size_t m, size_t n, ...);
 
+// Matlab-like syntax
+
 /**
- * MATLAB like constructors
+ * Creates an zeros matrix, with matlab-like syntax
+ *
+ * Note: if assigning a block (created from an Eigen block() function) of a matrix to zeros,
+ * don't use this function, instead use ".setZero(m,n)" to avoid an Eigen error.
  */
 Matrix zeros(size_t m, size_t n);
+
+/**
+ * Creates an identity matrix, with matlab-like syntax
+ *
+ * Note: if assigning a block (created from an Eigen block() function) of a matrix to identity,
+ * don't use this function, instead use ".setIdentity(m,n)" to avoid an Eigen error.
+ */
 Matrix eye(size_t m, size_t n);
+
+/**
+ * Creates a square identity matrix, with matlab-like syntax
+ *
+ * Note: if assigning a block (created from an Eigen block() function) of a matrix to identity,
+ * don't use this function, instead use ".setIdentity(m)" to avoid an Eigen error.
+ */
 inline Matrix eye( size_t m ) { return eye(m,m); }
 Matrix diag(const Vector& v);
 
@@ -87,7 +107,7 @@ bool equal_with_abs_tol(const Eigen::DenseBase<MATRIX>& A, const Eigen::DenseBas
 
 	for(size_t i=0; i<m1; i++)
 		for(size_t j=0; j<n1; j++) {
-			if(std::isnan(A(i,j)) xor std::isnan(B(i,j)))
+			if(boost::math::isnan(A(i,j)) ^ boost::math::isnan(B(i,j)))
 				return false;
 			else if(fabs(A(i,j) - B(i,j)) > tol)
 				return false;
@@ -183,6 +203,13 @@ void print(const Matrix& A, const std::string& s = "", std::ostream& stream = st
 void save(const Matrix& A, const std::string &s, const std::string& filename);
 
 /**
+ * Read a matrix from an input stream, such as a file.  Entries can be either
+ * tab-, space-, or comma-separated, similar to the format read by the MATLAB
+ * dlmread command.
+ */
+std::istream& operator>>(std::istream& inputStream, Matrix& destinationMatrix);
+
+/**
  * extract submatrix, slice semantics, i.e. range = [i1,i2[ excluding i2
  * @param A matrix
  * @param i1 first row index
@@ -200,17 +227,17 @@ Eigen::Block<const MATRIX> sub(const MATRIX& A, size_t i1, size_t i2, size_t j1,
 /**
  * insert a submatrix IN PLACE at a specified location in a larger matrix
  * NOTE: there is no size checking
- * @param large matrix to be updated
- * @param small matrix to be inserted
+ * @param fullMatrix matrix to be updated
+ * @param subMatrix matrix to be inserted
  * @param i is the row of the upper left corner insert location
  * @param j is the column of the upper left corner insert location
  */
-void insertSub(Matrix& big, const Matrix& small, size_t i, size_t j);
+void insertSub(Matrix& fullMatrix, const Matrix& subMatrix, size_t i, size_t j);
 
 /**
  * Extracts a column view from a matrix that avoids a copy
- * @param matrix to extract column from
- * @param index of the column
+ * @param A matrix to extract column from
+ * @param j index of the column
  * @return a const view of the matrix
  */
 template<class MATRIX>
@@ -220,8 +247,8 @@ const typename MATRIX::ConstColXpr column(const MATRIX& A, size_t j) {
 
 /**
  * Extracts a row view from a matrix that avoids a copy
- * @param matrix to extract row from
- * @param index of the row
+ * @param A matrix to extract row from
+ * @param j index of the row
  * @return a const view of the matrix
  */
 template<class MATRIX>
@@ -285,7 +312,7 @@ std::pair<Matrix,Matrix> qr(const Matrix& A);
  * @param clear_below_diagonal enables zeroing out below diagonal
  */
 template <class MATRIX>
-void inplace_QR(MATRIX& A, bool clear_below_diagonal=true) {
+void inplace_QR(MATRIX& A) {
 	size_t rows = A.rows();
 	size_t cols = A.cols();
 	size_t size = std::min(rows,cols);
@@ -354,7 +381,7 @@ Vector backSubstituteUpper(const Vector& b, const Matrix& U, bool unit=false);
  * @param unit, set true if unit triangular
  * @return the solution x of L*x=b
  */ 
-Vector backSubstituteLower(const Matrix& L, const Vector& d, bool unit=false);
+Vector backSubstituteLower(const Matrix& L, const Vector& b, bool unit=false);
 
 /**
  * create a matrix by stacking other matrices

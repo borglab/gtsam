@@ -904,3 +904,8 @@ div.eimainmenu {
 h3.version { 
   text-align:     center;
 }
+
+
+td.width20em p.endtd {
+  width:  20em;
+}

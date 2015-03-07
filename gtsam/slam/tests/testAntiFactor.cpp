@@ -17,17 +17,17 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <gtsam/slam/pose3SLAM.h>
 #include <gtsam/slam/AntiFactor.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/Values.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/geometry/Pose3.h>
 
 using namespace std;
 using namespace gtsam;
-
-using pose3SLAM::PoseKey;
 
 /* ************************************************************************* */
 TEST( AntiFactor, NegativeHessian)
@@ -42,17 +42,17 @@ TEST( AntiFactor, NegativeHessian)
 
   // Create a configuration corresponding to the ground truth
   boost::shared_ptr<Values> values(new Values());
-  values->insert(PoseKey(1), pose1);
-  values->insert(PoseKey(2), pose2);
+  values->insert(1, pose1);
+  values->insert(2, pose2);
 
   // Define an elimination ordering
   Ordering::shared_ptr ordering(new Ordering());
-  ordering->insert(PoseKey(1), 0);
-  ordering->insert(PoseKey(2), 1);
+  ordering->insert(1, 0);
+  ordering->insert(2, 1);
 
 
   // Create a "standard" factor
-  BetweenFactor<Pose3>::shared_ptr originalFactor(new BetweenFactor<Pose3>(PoseKey(1), PoseKey(2), z, sigma));
+  BetweenFactor<Pose3>::shared_ptr originalFactor(new BetweenFactor<Pose3>(1, 2, z, sigma));
 
   // Linearize it into a Jacobian Factor
   GaussianFactor::shared_ptr originalJacobian = originalFactor->linearize(*values, *ordering);
@@ -97,14 +97,14 @@ TEST( AntiFactor, EquivalentBayesNet)
   Pose3 z(Rot3(), Point3(1, 1, 1));
   SharedNoiseModel sigma(noiseModel::Unit::Create(Pose3::Dim()));
 
-	boost::shared_ptr<pose3SLAM::Graph> graph(new pose3SLAM::Graph());
-	graph->addPrior(1, pose1, sigma);
-	graph->addConstraint(1, 2, pose1.between(pose2), sigma);
+	NonlinearFactorGraph::shared_ptr graph(new NonlinearFactorGraph());
+	graph->add(PriorFactor<Pose3>(1, pose1, sigma));
+	graph->add(BetweenFactor<Pose3>(1, 2, pose1.between(pose2), sigma));
 
 	// Create a configuration corresponding to the ground truth
-	boost::shared_ptr<Values> values(new Values());
-	values->insert(PoseKey(1), pose1);
-	values->insert(PoseKey(2), pose2);
+	Values::shared_ptr values(new Values());
+	values->insert(1, pose1);
+	values->insert(2, pose2);
 
 	// Define an elimination ordering
 	Ordering::shared_ptr ordering = graph->orderingCOLAMD(*values);
@@ -117,7 +117,7 @@ TEST( AntiFactor, EquivalentBayesNet)
   VectorValues expectedDeltas = optimize(*expectedBayesNet);
 
 	// Add an additional factor between Pose1 and Pose2
-  pose3SLAM::Constraint::shared_ptr f1(new pose3SLAM::Constraint(PoseKey(1), PoseKey(2), z, sigma));
+  BetweenFactor<Pose3>::shared_ptr f1(new BetweenFactor<Pose3>(1, 2, z, sigma));
   graph->push_back(f1);
 
   // Add the corresponding AntiFactor between Pose1 and Pose2

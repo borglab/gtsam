@@ -16,29 +16,26 @@
  * @author  Frank Dellaert
  */
 
-#include <stdarg.h>
+#include <cstdarg>
 #include <limits>
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <iomanip>
 #include <cmath>
+#include <stdexcept>
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
-#include <stdio.h>
-
-#ifdef WIN32
-#include <Windows.h>
-#endif
-
-#include <boost/random/normal_distribution.hpp>
-#include <boost/random/variate_generator.hpp>
+#include <cstdio>
 
 #include <gtsam/base/Vector.h>
+#include <gtsam/base/types.h>
+
+//#ifdef WIN32
+//#include <Windows.h>
+//#endif
 
 using namespace std;
-
-boost::minstd_rand generator(42u);
 
 namespace gtsam {
 
@@ -55,11 +52,11 @@ void odprintf_(const char *format, ostream& stream, ...) {
 #endif
 	va_end(args);
 
-#ifdef WIN32
-	OutputDebugString(buf);
-#else
+//#ifdef WIN32
+//	OutputDebugString(buf);
+//#else
 	stream << buf;
-#endif
+//#endif
 }
 
 /* ************************************************************************* */
@@ -76,11 +73,11 @@ void odprintf(const char *format, ...) {
 #endif
 	va_end(args);
 
-#ifdef WIN32
-	OutputDebugString(buf);
-#else
+//#ifdef WIN32
+//	OutputDebugString(buf);
+//#else
 	cout << buf;
-#endif
+//#endif
 }
 
 /* ************************************************************************* */
@@ -169,7 +166,7 @@ bool equal_with_abs_tol(const Vector& vec1, const Vector& vec2, double tol) {
 	if (vec1.size()!=vec2.size()) return false;
 	size_t m = vec1.size();
 	for(size_t i=0; i<m; ++i) {
-		if(isnan(vec1[i]) xor isnan(vec2[i]))
+		if(isnan(vec1[i]) ^ isnan(vec2[i]))
 			return false;
 		if(fabs(vec1[i] - vec2[i]) > tol)
 			return false;
@@ -182,7 +179,7 @@ bool equal_with_abs_tol(const SubVector& vec1, const SubVector& vec2, double tol
 	if (vec1.size()!=vec2.size()) return false;
 	size_t m = vec1.size();
 	for(size_t i=0; i<m; ++i) {
-		if(isnan(vec1[i]) xor isnan(vec2[i]))
+		if(isnan(vec1[i]) ^ isnan(vec2[i]))
 			return false;
 		if(fabs(vec1[i] - vec2[i]) > tol)
 			return false;
@@ -250,8 +247,8 @@ ConstSubVector sub(const Vector &v, size_t i1, size_t i2) {
 }
 
 /* ************************************************************************* */
-void subInsert(Vector& big, const Vector& small, size_t i) {
-	big.segment(i, small.size()) = small;
+void subInsert(Vector& fullVector, const Vector& subVector, size_t i) {
+	fullVector.segment(i, subVector.size()) = subVector;
 }
 
 /* ************************************************************************* */
@@ -429,19 +426,6 @@ Vector concatVectors(size_t nrVectors, ...)
 	}
 	va_end(ap);
 	return concatVectors(vs);
-}
-
-/* ************************************************************************* */
-Vector rand_vector_norm(size_t dim, double mean, double sigma)
-{
-	boost::normal_distribution<double> norm_dist(mean, sigma);
-	boost::variate_generator<boost::minstd_rand&, boost::normal_distribution<double> > norm(generator, norm_dist);
-
-	Vector v(dim);
-	for(int i = 0; i<v.size(); ++i)
-		v(i) = norm();
-
-	return v;
 }
 
 /* ************************************************************************* */

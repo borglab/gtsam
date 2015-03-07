@@ -23,6 +23,7 @@
 #include <boost/utility.hpp> // for noncopyable
 #include <boost/foreach.hpp>
 #include <boost/range/iterator_range.hpp>
+#include <boost/lexical_cast.hpp>
 #include <boost/serialization/nvp.hpp>
 #include <gtsam/inference/Factor.h>
 
@@ -98,13 +99,16 @@ public:
   Conditional(KeyType key) : FactorType(key), nrFrontals_(1) { assertInvariants(); }
 
   /** Single parent */
-  Conditional(KeyType key, KeyType parent) : FactorType(key, parent), nrFrontals_(1) { assertInvariants(); }
+  Conditional(KeyType key, KeyType parent)
+  : FactorType(key, parent), nrFrontals_(1) { assertInvariants(); }
 
   /** Two parents */
-  Conditional(KeyType key, KeyType parent1, KeyType parent2) : FactorType(key, parent1, parent2), nrFrontals_(1) { assertInvariants(); }
+  Conditional(KeyType key, KeyType parent1, KeyType parent2)
+  : FactorType(key, parent1, parent2), nrFrontals_(1) { assertInvariants(); }
 
   /** Three parents */
-  Conditional(KeyType key, KeyType parent1, KeyType parent2, KeyType parent3) : FactorType(key, parent1, parent2, parent3), nrFrontals_(1) { assertInvariants(); }
+  Conditional(KeyType key, KeyType parent1, KeyType parent2, KeyType parent3)
+  : FactorType(key, parent1, parent2, parent3), nrFrontals_(1) { assertInvariants(); }
 
 	/// @}
 	/// @name Advanced Constructors
@@ -126,8 +130,8 @@ public:
 	/// @name Testable
 	/// @{
 
-  /** print */
-  void print(const std::string& s = "Conditional") const;
+  /** print with optional formatter */
+  void print(const std::string& s = "Conditional", const IndexFormatter& formatter = DefaultIndexFormatter) const;
 
   /** check equality */
   template<class DERIVED>
@@ -196,12 +200,12 @@ private:
 
 /* ************************************************************************* */
 template<typename KEY>
-void Conditional<KEY>::print(const std::string& s) const {
+void Conditional<KEY>::print(const std::string& s, const IndexFormatter& formatter) const {
   std::cout << s << " P(";
-  BOOST_FOREACH(KeyType key, frontals()) std::cout << " " << key;
-  if (nrParents()>0) std::cout << " |";
-  BOOST_FOREACH(KeyType parent, parents()) std::cout << " " << parent;
-  std::cout << ")" << std::endl;
+  BOOST_FOREACH(KeyType key, frontals()) std::cout << " " << formatter(key);
+  	if (nrParents()>0) std::cout << " |";
+  BOOST_FOREACH(KeyType parent, parents()) std::cout << " " << formatter(parent);
+  	std::cout << ")" << std::endl;
 }
 
 } // gtsam

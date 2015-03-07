@@ -24,13 +24,14 @@ namespace gtsam {
 
 	/**
 	 * Binary factor for a bearing measurement
+	 * @addtogroup SLAM
 	 */
-	template<class POSE, class POINT>
+	template<class POSE, class POINT, class ROTATION = typename POSE::Rotation>
 	class BearingFactor: public NoiseModelFactor2<POSE, POINT> {
 	private:
 
 		typedef POSE Pose;
-		typedef typename Pose::Rotation Rot;
+		typedef ROTATION Rot;
 		typedef POINT Point;
 
 		typedef BearingFactor<POSE, POINT> This;
@@ -55,6 +56,11 @@ namespace gtsam {
 
 		virtual ~BearingFactor() {}
 
+		/// @return a deep copy of this factor
+    virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+		  return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+		      gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
+
 		/** h(x)-z -> between(z,h(x)) for Rot2 manifold */
 		Vector evaluateError(const Pose& pose, const Point& point,
 				boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
@@ -72,6 +78,13 @@ namespace gtsam {
 			const This *e =	dynamic_cast<const This*> (&expected);
 			return e != NULL && Base::equals(*e, tol) && this->measured_.equals(e->measured_, tol);
 		}
+
+    /** print contents */
+    void print(const std::string& s="", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+      std::cout << s << "BearingFactor, bearing = ";
+      measured_.print();
+      Base::print("", keyFormatter);
+    }
 
 	private:
 

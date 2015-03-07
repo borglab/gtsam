@@ -21,6 +21,7 @@
 
 #pragma once
 
+#include <cmath>
 #include <boost/serialization/nvp.hpp>
 
 #include <gtsam/base/Matrix.h>
@@ -31,7 +32,7 @@ namespace gtsam {
 
   /**
    * A 3D point
-   * @ingroup geometry
+   * @addtogroup geometry
    * \nosubgrouping
    */
   class Point3 : public DerivedValue<Point3> {
@@ -47,21 +48,24 @@ namespace gtsam {
     /// @name Standard Constructors
   	/// @{
 
-    ///TODO: comment
+    /// Default constructor creates a zero-Point3
     Point3(): x_(0), y_(0), z_(0) {}
 
-    ///TODO: comment
-    Point3(const Point3 &p) : x_(p.x_), y_(p.y_), z_(p.z_) {}
-
-    ///TODO: comment
+    /// Construct from x, y, and z coordinates
     Point3(double x, double y, double z): x_(x), y_(y), z_(z) {}
 
   	/// @}
   	/// @name Advanced Constructors
   	/// @{
 
-    ///TODO: comment
-    Point3(const Vector& v) : x_(v(0)), y_(v(1)), z_(v(2)) {}
+    /// Construct from 3-element vector
+    Point3(const Vector& v) {
+			if(v.size() != 3)
+				throw std::invalid_argument("Point3 constructor from Vector requires that the Vector have dimension 3");
+			x_ = v(0);
+			y_ = v(1);
+			z_ = v(2);
+		}
 
     /// @}
     /// @name Testable
@@ -150,7 +154,7 @@ namespace gtsam {
 
     /** distance between two points */
     double dist(const Point3& p2) const {
-      return sqrt(pow(x()-p2.x(),2.0) + pow(y()-p2.y(),2.0) + pow(z()-p2.z(),2.0));
+      return std::sqrt(pow(x()-p2.x(),2.0) + pow(y()-p2.y(),2.0) + pow(z()-p2.z(),2.0));
     }
 
     /** Distance of the point from the origin */

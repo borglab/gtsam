@@ -7,12 +7,16 @@
 
 #include <gtsam_unstable/discrete/CSP.h>
 #include <CppUnitLite/TestHarness.h>
+#include <boost/assign/std/map.hpp>
+using boost::assign::insert;
 #include <iostream>
 #include <sstream>
 #include <stdarg.h>
 
 using namespace std;
 using namespace gtsam;
+
+#define PRINT false
 
 class Sudoku: public CSP {
 
@@ -73,7 +77,7 @@ public:
 		}
 
 		// add box constraints
-		size_t N = sqrt(n), i0 = 0;
+		size_t N = (size_t)sqrt(double(n)), i0 = 0;
 		for (size_t I = 0; I < N; I++) {
 			size_t j0 = 0;
 			for (size_t J = 0; J < N; J++) {
@@ -119,7 +123,7 @@ TEST_UNSAFE( Sudoku, small)
 			0,1, 0,0);
 
 	// Do BP
-	csp.runArcConsistency(4);
+	csp.runArcConsistency(4,10,PRINT);
 
 	// optimize and check
 	CSP::sharedValues solution = csp.optimalAssignment();
@@ -150,7 +154,7 @@ TEST_UNSAFE( Sudoku, easy)
 			5,0,0, 0,3,0, 7,0,0);
 
 	// Do BP
-	sudoku.runArcConsistency(4);
+	sudoku.runArcConsistency(4,10,PRINT);
 
 	// sudoku.printSolution(); // don't do it
 }
@@ -172,7 +176,7 @@ TEST_UNSAFE( Sudoku, extreme)
 			0,0,0, 2,7,5, 9,0,0);
 
 	// Do BP
-	sudoku.runArcConsistency(9,10,false);
+	sudoku.runArcConsistency(9,10,PRINT);
 
 #ifdef METIS
 	VariableIndex index(sudoku);
@@ -201,7 +205,7 @@ TEST_UNSAFE( Sudoku, AJC_3star_Feb8_2012)
 			0,0,0, 1,0,0, 0,3,7);
 
 	// Do BP
-	sudoku.runArcConsistency(9,10,true);
+	sudoku.runArcConsistency(9,10,PRINT);
 
 	//sudoku.printSolution(); // don't do it
 }

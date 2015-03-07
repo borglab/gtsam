@@ -109,8 +109,8 @@ namespace gtsam {
 		/// @{
 
 		virtual void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
-			std::cout << "Constraint: " << s << " on [" << keyFormatter(this->key()) << "]\n";
-			gtsam::print(feasible_,"Feasible Point");
+			std::cout << s << "Constraint: on [" << keyFormatter(this->key()) << "]\n";
+			gtsam::print(feasible_,"Feasible Point:\n");
 			std::cout << "Variable Dimension: " << feasible_.dim() << std::endl;
 		}
 
@@ -161,6 +161,11 @@ namespace gtsam {
 			return GaussianFactor::shared_ptr(new JacobianFactor(ordering[this->key()], A, b, model));
 		}
 
+		/// @return a deep copy of this factor
+    virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+		  return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+		      gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
+
 		/// @}
 
 	private:
@@ -190,6 +195,7 @@ namespace gtsam {
 
 	protected:
 		typedef NoiseModelFactor1<VALUE> Base;
+		typedef NonlinearEquality1<VALUE> This;
 
 		/** default constructor to allow for serialization */
 		NonlinearEquality1() {}
@@ -208,6 +214,11 @@ namespace gtsam {
 			: Base(noiseModel::Constrained::All(value.dim(), fabs(mu)), key1), value_(value) {}
 
 		virtual ~NonlinearEquality1() {}
+
+		/// @return a deep copy of this factor
+    virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+		  return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+		      gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
 		/** g(x) with optional derivative */
 		Vector evaluateError(const X& x1, boost::optional<Matrix&> H = boost::none) const {
@@ -248,6 +259,7 @@ namespace gtsam {
 
 	protected:
 		typedef NoiseModelFactor2<VALUE, VALUE> Base;
+		typedef NonlinearEquality2<VALUE> This;
 
 		GTSAM_CONCEPT_MANIFOLD_TYPE(X);
 
@@ -262,6 +274,11 @@ namespace gtsam {
 		NonlinearEquality2(Key key1, Key key2, double mu = 1000.0)
 			: Base(noiseModel::Constrained::All(X::Dim(), fabs(mu)), key1, key2) {}
 		virtual ~NonlinearEquality2() {}
+
+		/// @return a deep copy of this factor
+		virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+		  return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+		      gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
 		/** g(x) with optional derivative2 */
 		Vector evaluateError(const X& x1, const X& x2,

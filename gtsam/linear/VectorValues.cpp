@@ -17,10 +17,12 @@
  */
 
 #include <gtsam/base/FastVector.h>
+#include <gtsam/inference/Permutation.h>
 #include <gtsam/linear/VectorValues.h>
 
 using namespace std;
-using namespace gtsam;
+
+namespace gtsam {
 
 /* ************************************************************************* */
 VectorValues::VectorValues(const VectorValues& other) {
@@ -41,6 +43,14 @@ VectorValues VectorValues::Zero(const VectorValues& x) {
 	VectorValues cloned(SameStructure(x));
 	cloned.setZero();
 	return cloned;
+}
+
+/* ************************************************************************* */
+vector<size_t> VectorValues::dims() const {
+  std::vector<size_t> result(this->size());
+	for(Index j = 0; j < this->size(); ++j)
+		result[j] = this->dim(j);
+	return result;
 }
 
 /* ************************************************************************* */
@@ -77,10 +87,10 @@ void VectorValues::insert(Index j, const Vector& value) {
 }
 
 /* ************************************************************************* */
-void VectorValues::print(const std::string& str) const {
+void VectorValues::print(const std::string& str, const IndexFormatter& formatter) const {
 	std::cout << str << ": " << size() << " elements\n";
 	for (Index var = 0; var < size(); ++var)
-		std::cout << "  " << var << ": \n" << operator[](var) << "\n";
+		std::cout << "  " << formatter(var) << ": \n" << operator[](var) << "\n";
 	std::cout.flush();
 }
 
@@ -152,26 +162,44 @@ VectorValues VectorValues::operator+(const VectorValues& c) const {
 }
 
 /* ************************************************************************* */
+VectorValues VectorValues::operator-(const VectorValues& c) const {
+  assert(this->hasSameStructure(c));
+  VectorValues result(SameStructure(c));
+  result.values_ = this->values_ - c.values_;
+  return result;
+}
+
+/* ************************************************************************* */
 void VectorValues::operator+=(const VectorValues& c) {
 	assert(this->hasSameStructure(c));
 	this->values_ += c.values_;
 }
 
 /* ************************************************************************* */
-VectorValues& VectorValues::operator=(const Permuted<VectorValues>& rhs) {
-  if(this->size() != rhs.size())
-    throw std::invalid_argument("VectorValues assignment from Permuted<VectorValues> requires pre-allocation, see documentation.");
-  for(size_t j=0; j<this->size(); ++j) {
-    if(exists(j)) {
-      SubVector& l(this->at(j));
-      const SubVector& r(rhs[j]);
-      if(l.rows() != r.rows())
-        throw std::invalid_argument("VectorValues assignment from Permuted<VectorValues> requires pre-allocation, see documentation.");
-      l = r;
-    } else {
-      if(rhs.container().exists(rhs.permutation()[j]))
-        throw std::invalid_argument("VectorValues assignment from Permuted<VectorValues> requires pre-allocation, see documentation.");
-    }
-  }
-  return *this;
+VectorValues VectorValues::permute(const Permutation& permutation) const {
+	// Create result and allocate space
+	VectorValues lhs;
+	lhs.values_.resize(this->dim());
+	lhs.maps_.reserve(this->size());
+
+	// Copy values from this VectorValues to the permuted VectorValues
+	size_t lhsPos = 0;
+	for(size_t i = 0; i < this->size(); ++i) {
+		// Map the next LHS subvector to the next slice of the LHS vector
+		lhs.maps_.push_back(SubVector(lhs.values_, lhsPos, this->at(permutation[i]).size()));
+		// Copy the data from the RHS subvector to the LHS subvector
+		lhs.maps_[i] = this->at(permutation[i]);
+		// Increment lhs position
+		lhsPos += lhs.maps_[i].size();
+	}
+
+	return lhs;
+}
+
+/* ************************************************************************* */
+void VectorValues::swap(VectorValues& other) {
+	this->values_.swap(other.values_);
+	this->maps_.swap(other.maps_);
+}
+
 }

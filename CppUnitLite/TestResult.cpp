@@ -32,16 +32,16 @@ void TestResult::addFailure (const Failure& failure)
 	if (failure.lineNumber < 0) // allow for no line number
 		fprintf (stdout, "%s%s%s%s\n",
 				"Failure: \"",
-				failure.message.asCharString (),
+				failure.message.c_str (),
 				"\" in ",
-				failure.fileName.asCharString ());
+				failure.fileName.c_str ());
 	else
 		fprintf (stdout, "%s%s%ld%s%s%s\n",
-				failure.fileName.asCharString(),  // Format matches Eclipse error flagging
+				failure.fileName.c_str(),  // Format matches Eclipse error flagging
 				":",
 				failure.lineNumber,
 				": Failure: \"",
-				failure.message.asCharString(),
+				failure.message.c_str(),
 				"\" ");
 
 	failureCount++;

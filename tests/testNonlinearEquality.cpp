@@ -14,15 +14,22 @@
  * @author Alex Cunningham
  */
 
-#include <CppUnitLite/TestHarness.h>
+#include <tests/simulated2DConstraints.h>
 
-#include <gtsam/geometry/Pose2.h>
 #include <gtsam/slam/PriorFactor.h>
-#include <gtsam/slam/simulated2DConstraints.h>
-#include <gtsam/slam/visualSLAM.h>
+#include <gtsam/slam/ProjectionFactor.h>
+#include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/geometry/Point2.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Point3.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/geometry/Cal3_S2.h>
+#include <gtsam/geometry/SimpleCamera.h>
+
+#include <CppUnitLite/TestHarness.h>
 
 using namespace std;
 using namespace gtsam;
@@ -35,7 +42,7 @@ typedef PriorFactor<Pose2> PosePrior;
 typedef NonlinearEquality<Pose2> PoseNLE;
 typedef boost::shared_ptr<PoseNLE> shared_poseNLE;
 
-Symbol key('x',1);
+static Symbol key('x',1);
 
 /* ************************************************************************* */
 TEST ( NonlinearEquality, linearization ) {
@@ -239,8 +246,8 @@ TEST ( NonlinearEquality, allow_error_optimize_with_factors ) {
 }
 
 /* ************************************************************************* */
-SharedDiagonal hard_model = noiseModel::Constrained::All(2);
-SharedDiagonal soft_model = noiseModel::Isotropic::Sigma(2, 1.0);
+static SharedDiagonal hard_model = noiseModel::Constrained::All(2);
+static SharedDiagonal soft_model = noiseModel::Isotropic::Sigma(2, 1.0);
 
 /* ************************************************************************* */
 TEST( testNonlinearEqualityConstraint, unary_basics ) {
@@ -502,13 +509,13 @@ TEST (testNonlinearEqualityConstraint, map_warp ) {
 }
 
 // make a realistic calibration matrix
-double fov = 60; // degrees
-size_t w=640,h=480;
-Cal3_S2 K(fov,w,h);
-boost::shared_ptr<Cal3_S2> shK(new Cal3_S2(K));
+static double fov = 60; // degrees
+static size_t w=640,h=480;
+static Cal3_S2 K(fov,w,h);
+static boost::shared_ptr<Cal3_S2> shK(new Cal3_S2(K));
 
 // typedefs for visual SLAM example
-typedef visualSLAM::Graph VGraph;
+typedef NonlinearFactorGraph VGraph;
 
 // factors for visual slam
 typedef NonlinearEquality2<Point3> Point3Equality;
@@ -522,9 +529,9 @@ TEST (testNonlinearEqualityConstraint, stereo_constrained ) {
 			0.0, 0.0, 1.0,
 			0.0, -1.0, 0.0));
 	Pose3 pose1(faceDownY, Point3()); // origin, left camera
-	SimpleCamera camera1(K, pose1);
+	SimpleCamera camera1(pose1, K);
 	Pose3 pose2(faceDownY, Point3(2.0, 0.0, 0.0)); // 2 units to the left
-	SimpleCamera camera2(K, pose2);
+	SimpleCamera camera2(pose2, K);
 	Point3 landmark(1.0, 5.0, 0.0); //centered between the cameras, 5 units away
 
 	// keys
@@ -535,13 +542,13 @@ TEST (testNonlinearEqualityConstraint, stereo_constrained ) {
 	VGraph graph;
 
 	// create equality constraints for poses
-	graph.addPoseConstraint(1, camera1.pose());
-	graph.addPoseConstraint(2, camera2.pose());
+	graph.add(NonlinearEquality<Pose3>(x1, camera1.pose()));
+	graph.add(NonlinearEquality<Pose3>(x2, camera2.pose()));
 
 	// create  factors
 	SharedDiagonal vmodel = noiseModel::Unit::Create(3);
-	graph.addMeasurement(camera1.project(landmark), vmodel, 1, 1, shK);
-	graph.addMeasurement(camera2.project(landmark), vmodel, 2, 2, shK);
+	graph.add(GenericProjectionFactor<Pose3,Point3,Cal3_S2>(camera1.project(landmark), vmodel, x1, l1, shK));
+	graph.add(GenericProjectionFactor<Pose3,Point3,Cal3_S2>(camera2.project(landmark), vmodel, x2, l2, shK));
 
 	// add equality constraint
 	graph.add(Point3Equality(l1, l2));

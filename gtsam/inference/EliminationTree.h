@@ -52,8 +52,10 @@ public:
 
 	typedef EliminationTree<FACTOR> This; ///< This class
   typedef boost::shared_ptr<This> shared_ptr; ///< Shared pointer to this class
-  typedef typename FACTOR::shared_ptr sharedFactor; ///< Shared pointer to a factor
+	typedef typename boost::shared_ptr<FACTOR> sharedFactor;  ///< Shared pointer to a factor
   typedef gtsam::BayesNet<typename FACTOR::ConditionalType> BayesNet; ///< The BayesNet corresponding to FACTOR
+  typedef FACTOR Factor;
+  typedef typename FACTOR::KeyType KeyType;
 
   /** Typedef for an eliminate subroutine */
   typedef typename FactorGraph<FACTOR>::Eliminate Eliminate;
@@ -67,42 +69,14 @@ private:
   typedef FastList<shared_ptr> SubTrees;
   typedef std::vector<typename FACTOR::ConditionalType::shared_ptr> Conditionals;
 
-  Index key_; ///< index associated with root
+  Index key_; ///< index associated with root // FIXME: doesn't this require that "Index" is the type of keys in the generic factor?
   Factors factors_; ///< factors associated with root
   SubTrees subTrees_; ///< sub-trees
 
+public:
+
 	/// @name Standard Constructors
 	/// @{
-
-  /** default constructor, private, as you should use Create below */
-  EliminationTree(Index key = 0) : key_(key) {}
-
-	/// @}
-	/// @name Advanced Interface
-	/// @{
-
-  /**
-   * Static internal function to build a vector of parent pointers using the
-   * algorithm of Gilbert et al., 2001, BIT.
-   */
-  static std::vector<Index> ComputeParents(const VariableIndex& structure);
-
-  /** add a factor, for Create use only */
-  void add(const sharedFactor& factor) { factors_.push_back(factor); }
-
-  /** add a subtree, for Create use only */
-  void add(const shared_ptr& child) { subTrees_.push_back(child); }
-
-  /**
-   * Recursive routine that eliminates the factors arranged in an elimination tree
-   * @param Conditionals is a vector of shared pointers that will be modified in place
-   */
-  sharedFactor eliminate_(Eliminate function, Conditionals& conditionals) const;
-
-  /// Allow access to constructor and add methods for testing purposes
-  friend class ::EliminationTreeTester;
-
-public:
 
   /**
    * Named constructor to build the elimination tree of a factor graph using
@@ -141,12 +115,39 @@ public:
 	/// @{
 
   /** Print the tree to cout */
-  void print(const std::string& name = "EliminationTree: ") const;
+  void print(const std::string& name = "EliminationTree: ",
+  		const IndexFormatter& formatter = DefaultIndexFormatter) const;
 
   /** Test whether the tree is equal to another */
   bool equals(const EliminationTree& other, double tol = 1e-9) const;
 
 	/// @}
+
+private:
+	
+  /** default constructor, private, as you should use Create below */
+  EliminationTree(Index key = 0) : key_(key) {}
+
+  /**
+   * Static internal function to build a vector of parent pointers using the
+   * algorithm of Gilbert et al., 2001, BIT.
+   */
+  static std::vector<Index> ComputeParents(const VariableIndex& structure);
+
+  /** add a factor, for Create use only */
+  void add(const sharedFactor& factor) { factors_.push_back(factor); }
+
+  /** add a subtree, for Create use only */
+  void add(const shared_ptr& child) { subTrees_.push_back(child); }
+
+  /**
+   * Recursive routine that eliminates the factors arranged in an elimination tree
+   * @param Conditionals is a vector of shared pointers that will be modified in place
+   */
+  sharedFactor eliminate_(Eliminate function, Conditionals& conditionals) const;
+
+  /// Allow access to constructor and add methods for testing purposes
+  friend class ::EliminationTreeTester;
 
 };
 
@@ -157,7 +158,7 @@ public:
  * disconnected graphs, a workaround is to create zero-information factors to
  * bridge the disconnects.  To do this, create any factor type (e.g.
  * BetweenFactor or RangeFactor) with the noise model
- * <tt>\ref sharedPrecision(dim, 0.0)</tt>, where \c dim is the appropriate
+ * <tt>sharedPrecision(dim, 0.0)</tt>, where \c dim is the appropriate
  * dimensionality for that factor.
  */
 struct DisconnectedGraphException : public std::exception {
@@ -166,7 +167,12 @@ struct DisconnectedGraphException : public std::exception {
 
   /// Returns the string "Attempting to eliminate a disconnected graph - this is not currently possible in gtsam."
   virtual const char* what() const throw() {
-    return "Attempting to eliminate a disconnected graph - this is not currently possible in gtsam."; }
+    return
+			"Attempting to eliminate a disconnected graph - this is not currently possible in\n"
+			"GTSAM.  You may add \"empty\" BetweenFactor's to join disconnected graphs, these\n"
+			"will affect the symbolic structure and solving complexity of the graph but not\n"
+			"the solution.  To do this, create BetweenFactor's with zero-precision noise\n"
+			"models, i.e. noiseModel::Isotropic::Precision(n, 0.0);\n"; }
 };
 
 }

@@ -32,7 +32,7 @@ namespace gtsam {
 
   /**
    * A 3D pose (R,t) : (Rot3,Point3)
-   * @ingroup geometry
+   * @addtogroup geometry
    * \nosubgrouping
    */
   class Pose3 : public DerivedValue<Pose3> {
@@ -227,6 +227,20 @@ namespace gtsam {
     /// @}
   	/// @name Advanced Interface
   	/// @{
+
+    /**
+     * Return the start and end indices (inclusive) of the translation component of the
+     * exponential map parameterization
+     * @return a pair of [start, end] indices into the tangent space vector
+     */
+  	inline static std::pair<size_t, size_t> translationInterval() { return std::make_pair(3, 5); }
+
+  	/**
+  	 * Return the start and end indices (inclusive) of the rotation component of the
+  	 * exponential map parameterization
+  	 * @return a pair of [start, end] indices into the tangent space vector
+  	 */
+  	static std::pair<size_t, size_t> rotationInterval() { return std::make_pair(0, 2); }
 
   private:
     /** Serialization function */

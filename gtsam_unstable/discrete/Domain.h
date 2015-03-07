@@ -66,7 +66,8 @@ namespace gtsam {
 		}
 
 		// print
-		virtual void print(const std::string& s = "") const;
+		virtual void print(const std::string& s = "",
+				const IndexFormatter& formatter = DefaultIndexFormatter) const;
 
 		bool contains(size_t value) const {
 			return values_.count(value)>0;
@@ -76,7 +77,7 @@ namespace gtsam {
 		virtual double operator()(const Values& values) const;
 
 		/// Convert into a decisiontree
-		virtual operator DecisionTreeFactor() const;
+		virtual DecisionTreeFactor toDecisionTreeFactor() const;
 
 		/// Multiply into a decisiontree
 		virtual DecisionTreeFactor operator*(const DecisionTreeFactor& f) const;

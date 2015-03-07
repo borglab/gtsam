@@ -13,7 +13,7 @@
  * @file    GaussNewtonOptimizer.h
  * @brief   
  * @author  Richard Roberts
- * @created Feb 26, 2012
+ * @date 	Feb 26, 2012
  */
 
 #pragma once
@@ -43,8 +43,11 @@ protected:
  */
 class GaussNewtonOptimizer : public NonlinearOptimizer {
 
-public:
+protected:
+	GaussNewtonParams params_;
+	GaussNewtonState state_;
 
+public:
   /// @name Standard interface
   /// @{
 
@@ -66,7 +69,6 @@ public:
    * copies the objects.
    * @param graph The nonlinear factor graph to optimize
    * @param initialValues The initial variable assignments
-   * @param params The optimization parameters
    */
   GaussNewtonOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues, const Ordering& ordering) :
         NonlinearOptimizer(graph), state_(graph, initialValues) {
@@ -95,10 +97,6 @@ public:
   /// @}
 
 protected:
-
-  GaussNewtonParams params_;
-  GaussNewtonState state_;
-
   /** Access the parameters (base class version) */
   virtual const NonlinearOptimizerParams& _params() const { return params_; }
 

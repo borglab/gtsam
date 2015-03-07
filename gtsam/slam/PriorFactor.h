@@ -22,6 +22,7 @@ namespace gtsam {
 
 	/**
 	 * A class for a soft prior on any Value type
+	 * @addtogroup SLAM
 	 */
 	template<class VALUE>
 	class PriorFactor: public NoiseModelFactor1<VALUE> {
@@ -56,13 +57,18 @@ namespace gtsam {
 			Base(model, key), prior_(prior) {
 		}
 
+		/// @return a deep copy of this factor
+    virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+		  return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+		      gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
+
 		/** implement functions needed for Testable */
 
 		/** print */
 		virtual void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
-			std::cout << s << "PriorFactor(" << keyFormatter(this->key()) << ")\n";
-			prior_.print("  prior");
-			this->noiseModel_->print("  noise model");
+			std::cout << s << "PriorFactor on " << keyFormatter(this->key()) << "\n";
+			prior_.print("  prior mean: ");
+			this->noiseModel_->print("  noise model: ");
 		}
 
 		/** equals */

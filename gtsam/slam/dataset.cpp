@@ -16,72 +16,74 @@
  * @brief utility functions for loading datasets
  */
 
-
 #include <fstream>
 #include <sstream>
 #include <cstdlib>
 
+#include <boost/filesystem.hpp>
+
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/linear/Sampler.h>
 #include <gtsam/slam/dataset.h>
+#include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/slam/BearingRangeFactor.h>
 
 using namespace std;
-using namespace gtsam;
+namespace fs = boost::filesystem;
 
 #define LINESIZE 81920
 
-typedef boost::shared_ptr<pose2SLAM::Graph> sharedPose2Graph;
-typedef pose2SLAM::Odometry Pose2Factor; ///< Typedef for Constraint class for backwards compatibility
-
 namespace gtsam {
 
+#ifndef MATLAB_MEX_FILE
 /* ************************************************************************* */
-pair<string, boost::optional<SharedDiagonal> > dataset(const string& dataset,  const string& user_path) {
-	string path = user_path, set = dataset;
-	boost::optional<SharedDiagonal> null_model;
-	boost::optional<SharedDiagonal> identity(noiseModel::Unit::Create(3));
-	boost::optional<SharedDiagonal> small(noiseModel::Diagonal::Variances(
-				gtsam::Vector_(3, 0.0001, 0.0001, 0.0003)));
+string findExampleDataFile(const string& name) {
+	// Search source tree and installed location
+	vector<string> rootsToSearch;
+	rootsToSearch.push_back(SOURCE_TREE_DATASET_DIR); // Defined by CMake, see gtsam/gtsam/CMakeLists.txt
+	rootsToSearch.push_back(INSTALLED_DATASET_DIR);   // Defined by CMake, see gtsam/gtsam/CMakeLists.txt
 
-	if (path.empty()) path = string(getenv("HOME")) + "/data";
-	if (set.empty()) set = string(getenv("DATASET"));
+	// Search for filename as given, and with .graph and .txt extensions
+	vector<string> namesToSearch;
+	namesToSearch.push_back(name);
+	namesToSearch.push_back(name + ".graph");
+	namesToSearch.push_back(name + ".txt");
 
-	if (set == "intel") return make_pair(path + "/Intel/intel.graph", null_model);
-	if (set == "intel-gfs") return make_pair(path + "/Intel/intel.gfs.graph", null_model);
-	if (set == "Killian-gfs") return make_pair(path + "/Killian/Killian.gfs.graph", null_model);
-	if (set == "Killian") return make_pair(path + "/Killian/Killian.graph", small);
-	if (set == "Killian-noised") return make_pair(path + "/Killian/Killian-noised.graph", null_model);
-	if (set == "3") return make_pair(path + "/TORO/w3-odom.graph", identity);
-	if (set == "100") return make_pair(path + "/TORO/w100-odom.graph", identity);
-	if (set == "10K") return make_pair(path + "/TORO/w10000-odom.graph", identity);
-	if (set == "10K2") return make_pair(path + "/hogman/data/2D/w10000.graph",
-			noiseModel::Diagonal::Variances(gtsam::Vector_(3, 0.1, 0.1, 0.05)));
-	if (set == "Eiffel100") return make_pair(path + "/TORO/w100-Eiffel.graph", identity);
-	if (set == "Eiffel10K") return make_pair(path + "/TORO/w10000-Eiffel.graph", identity);
-	if (set == "olson") return make_pair(path + "/Olson/olson06icra.graph", null_model);
-	if (set == "victoria") return make_pair(path + "/VictoriaPark/victoria_park.graph", null_model);
-	if (set == "beijing") return make_pair(path + "/Beijing/beijingData_trips.graph", null_model);
+	// Find first name that exists
+	BOOST_FOREACH(const fs::path& root, rootsToSearch) {
+		BOOST_FOREACH(const fs::path& name, namesToSearch) {
+			if(fs::is_regular_file(root / name))
+				return (root / name).string();
+		}
+	}
 
-	return make_pair("unknown", null_model);
+	// If we did not return already, then we did not find the file
+	throw std::invalid_argument(
+		"gtsam::findExampleDataFile could not find a matching file in\n"
+		SOURCE_TREE_DATASET_DIR " or\n"
+		INSTALLED_DATASET_DIR " named\n" +
+		name + ", " + name + ".graph, or " + name + ".txt");
 }
+#endif
 
 /* ************************************************************************* */
-
-pair<sharedPose2Graph, Values::shared_ptr> load2D(
-		pair<string, boost::optional<SharedDiagonal> > dataset,
+pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
+		pair<string, boost::optional<noiseModel::Diagonal::shared_ptr> > dataset,
 		int maxID, bool addNoise, bool smart) {
 	return load2D(dataset.first, dataset.second, maxID, addNoise, smart);
 }
 
-pair<sharedPose2Graph, Values::shared_ptr> load2D(const string& filename,
-		boost::optional<SharedDiagonal> model, int maxID, bool addNoise, bool smart) {
+/* ************************************************************************* */
+pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
+		const string& filename, boost::optional<noiseModel::Diagonal::shared_ptr> model, int maxID,
+		bool addNoise, bool smart) {
 	cout << "Will try to read " << filename << endl;
 	ifstream is(filename.c_str());
-	if (!is) {
-		cout << "load2D: can not find the file!";
-		exit(-1);
-	}
+	if (!is)
+		throw std::invalid_argument("load2D: can not find the file!");
 
-	Values::shared_ptr poses(new Values);
-	sharedPose2Graph graph(new pose2SLAM::Graph);
+	Values::shared_ptr initial(new Values);
+	NonlinearFactorGraph::shared_ptr graph(new NonlinearFactorGraph);
 
 	string tag;
 
@@ -94,83 +96,120 @@ pair<sharedPose2Graph, Values::shared_ptr> load2D(const string& filename,
 			double x, y, yaw;
 			is >> id >> x >> y >> yaw;
 			// optional filter
-			if (maxID && id >= maxID) continue;
-			poses->insert(pose2SLAM::PoseKey(id), Pose2(x, y, yaw));
+			if (maxID && id >= maxID)
+				continue;
+			initial->insert(id, Pose2(x, y, yaw));
 		}
 		is.ignore(LINESIZE, '\n');
 	}
 	is.clear(); /* clears the end-of-file and error flags */
 	is.seekg(0, ios::beg);
 
+	// Create a sampler with random number generator
+	Sampler sampler(42u);
+
 	// load the factors
 	while (is) {
 		is >> tag;
 
-		if ((tag == "EDGE2") || (tag == "EDGE") || (tag == "ODOMETRY")) {
-			int id1, id2;
-			double x, y, yaw;
+    if ((tag == "EDGE2") || (tag == "EDGE") || (tag == "ODOMETRY")) {
+      int id1, id2;
+      double x, y, yaw;
 
-			is >> id1 >> id2 >> x >> y >> yaw;
-			Matrix m = eye(3);
-			is >> m(0, 0) >> m(0, 1) >> m(1, 1) >> m(2, 2) >> m(0, 2) >> m(1, 2);
-			m(2, 0) = m(0, 2);
-			m(2, 1) = m(1, 2);
-			m(1, 0) = m(0, 1);
+      is >> id1 >> id2 >> x >> y >> yaw;
+      Matrix m = eye(3);
+      is >> m(0, 0) >> m(0, 1) >> m(1, 1) >> m(2, 2) >> m(0, 2) >> m(1, 2);
+      m(2, 0) = m(0, 2);
+      m(2, 1) = m(1, 2);
+      m(1, 0) = m(0, 1);
 
-			// optional filter
-			if (maxID && (id1 >= maxID || id2 >= maxID)) continue;
+      // optional filter
+      if (maxID && (id1 >= maxID || id2 >= maxID))
+        continue;
 
-			Pose2 l1Xl2(x, y, yaw);
+      Pose2 l1Xl2(x, y, yaw);
 
-			// SharedNoiseModel noise = noiseModel::Gaussian::Covariance(m, smart);
-			if (!model) {
-				Vector variances = Vector_(3,m(0,0),m(1,1),m(2,2));
-				model = noiseModel::Diagonal::Variances(variances, smart);
-			}
+      // SharedNoiseModel noise = noiseModel::Gaussian::Covariance(m, smart);
+      if (!model) {
+        Vector variances = Vector_(3, m(0, 0), m(1, 1), m(2, 2));
+        model = noiseModel::Diagonal::Variances(variances, smart);
+      }
 
-			if (addNoise)
-				l1Xl2 = l1Xl2.retract((*model)->sample());
+      if (addNoise)
+        l1Xl2 = l1Xl2.retract(sampler.sampleNewModel(*model));
 
-			// Insert vertices if pure odometry file
-			if (!poses->exists(pose2SLAM::PoseKey(id1))) poses->insert(pose2SLAM::PoseKey(id1), Pose2());
-			if (!poses->exists(pose2SLAM::PoseKey(id2))) poses->insert(pose2SLAM::PoseKey(id2), poses->at<Pose2>(pose2SLAM::PoseKey(id1)) * l1Xl2);
+      // Insert vertices if pure odometry file
+      if (!initial->exists(id1))
+        initial->insert(id1, Pose2());
+      if (!initial->exists(id2))
+        initial->insert(id2, initial->at<Pose2>(id1) * l1Xl2);
 
-			pose2SLAM::Graph::sharedFactor factor(new Pose2Factor(pose2SLAM::PoseKey(id1), pose2SLAM::PoseKey(id2), l1Xl2, *model));
-			graph->push_back(factor);
-		}
+      NonlinearFactor::shared_ptr factor(
+          new BetweenFactor<Pose2>(id1, id2, l1Xl2, *model));
+      graph->push_back(factor);
+    }
+    if (tag == "BR") {
+      int id1, id2;
+      double bearing, range, bearing_std, range_std;
+
+      is >> id1 >> id2 >> bearing >> range >> bearing_std >> range_std;
+
+      // optional filter
+      if (maxID && (id1 >= maxID || id2 >= maxID))
+        continue;
+
+      noiseModel::Diagonal::shared_ptr measurementNoise =
+           noiseModel::Diagonal::Sigmas(Vector_(2, bearing_std, range_std));
+      graph->add(BearingRangeFactor<Pose2, Point2>(id1, id2, bearing, range, measurementNoise));
+
+      // Insert poses or points if they do not exist yet
+      if (!initial->exists(id1))
+        initial->insert(id1, Pose2());
+      if (!initial->exists(id2)) {
+        Pose2 pose = initial->at<Pose2>(id1);
+        Point2 local(cos(bearing)*range,sin(bearing)*range);
+        Point2 global = pose.transform_from(local);
+        initial->insert(id2, global);
+      }
+    }
 		is.ignore(LINESIZE, '\n');
 	}
 
-	cout << "load2D read a graph file with " << poses->size() << " vertices and "
-			<< graph->nrFactors() << " factors" << endl;
+	cout << "load2D read a graph file with " << initial->size()
+						<< " vertices and " << graph->nrFactors() << " factors" << endl;
 
-	return make_pair(graph, poses);
+	return make_pair(graph, initial);
 }
 
 /* ************************************************************************* */
-void save2D(const pose2SLAM::Graph& graph, const Values& config, const SharedDiagonal model,
-		const string& filename) {
+void save2D(const NonlinearFactorGraph& graph, const Values& config,
+		const noiseModel::Diagonal::shared_ptr model, const string& filename) {
 
 	fstream stream(filename.c_str(), fstream::out);
 
 	// save poses
-	BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, config) {
-	  const Pose2& pose = dynamic_cast<const Pose2&>(key_value.value);
-		stream << "VERTEX2 " << key_value.key << " " <<  pose.x() << " " << pose.y() << " " << pose.theta() << endl;
+	BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, config)
+	{
+		const Pose2& pose = dynamic_cast<const Pose2&>(key_value.value);
+		stream << "VERTEX2 " << key_value.key << " " << pose.x() << " "
+				<< pose.y() << " " << pose.theta() << endl;
 	}
 
 	// save edges
 	Matrix R = model->R();
-	Matrix RR = trans(R)*R;//prod(trans(R),R);
-	BOOST_FOREACH(boost::shared_ptr<NonlinearFactor> factor_, graph) {
-		boost::shared_ptr<Pose2Factor> factor = boost::dynamic_pointer_cast<Pose2Factor>(factor_);
-		if (!factor) continue;
+	Matrix RR = trans(R) * R; //prod(trans(R),R);
+	BOOST_FOREACH(boost::shared_ptr<NonlinearFactor> factor_, graph)
+	{
+		boost::shared_ptr<BetweenFactor<Pose2> > factor =
+				boost::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor_);
+		if (!factor)
+			continue;
 
 		Pose2 pose = factor->measured().inverse();
-		stream << "EDGE2 " << factor->key2() << " " << factor->key1()
-				<< " " << pose.x() << " " << pose.y() << " " << pose.theta()
-				<< " " << RR(0, 0) << " " << RR(0, 1) << " " << RR(1, 1) << " " << RR(2, 2)
-				<< " " << RR(0, 2) << " " << RR(1, 2) << endl;
+		stream << "EDGE2 " << factor->key2() << " " << factor->key1() << " "
+				<< pose.x() << " " << pose.y() << " " << pose.theta() << " "
+				<< RR(0, 0) << " " << RR(0, 1) << " " << RR(1, 1) << " "
+				<< RR(2, 2) << " " << RR(0, 2) << " " << RR(1, 2) << endl;
 	}
 
 	stream.close();
@@ -179,7 +218,8 @@ void save2D(const pose2SLAM::Graph& graph, const Values& config, const SharedDia
 /* ************************************************************************* */
 bool load3D(const string& filename) {
 	ifstream is(filename.c_str());
-	if (!is) return false;
+	if (!is)
+		return false;
 
 	while (is) {
 		char buf[LINESIZE];
@@ -216,4 +256,6 @@ bool load3D(const string& filename) {
 	}
 	return true;
 }
-}
+/* ************************************************************************* */
+
+} // \namespace gtsam

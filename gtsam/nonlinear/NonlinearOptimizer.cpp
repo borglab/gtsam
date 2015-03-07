@@ -19,10 +19,48 @@
 #include <iostream>
 #include <iomanip>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
-
+#include <boost/algorithm/string.hpp>
 using namespace std;
 
 namespace gtsam {
+
+/* ************************************************************************* */
+NonlinearOptimizerParams::Verbosity NonlinearOptimizerParams::verbosityTranslator(const std::string &src) const {
+  std::string s = src;  boost::algorithm::to_upper(s);
+  if (s == "SILENT") return NonlinearOptimizerParams::SILENT;
+  if (s == "ERROR") return NonlinearOptimizerParams::ERROR;
+  if (s == "VALUES") return NonlinearOptimizerParams::VALUES;
+  if (s == "DELTA") return NonlinearOptimizerParams::DELTA;
+  if (s == "LINEAR") return NonlinearOptimizerParams::LINEAR;
+
+  /* default is silent */
+  return NonlinearOptimizerParams::SILENT;
+}
+
+/* ************************************************************************* */
+std::string NonlinearOptimizerParams::verbosityTranslator(Verbosity value) const {
+  std::string s;
+  switch (value) {
+  case NonlinearOptimizerParams::SILENT:  s = "SILENT"; break;
+  case NonlinearOptimizerParams::ERROR:   s = "ERROR"; break;
+  case NonlinearOptimizerParams::VALUES:  s = "VALUES"; break;
+  case NonlinearOptimizerParams::DELTA:   s = "DELTA"; break;
+  case NonlinearOptimizerParams::LINEAR:  s = "LINEAR"; break;
+  default:                                s = "UNDEFINED"; break;
+  }
+  return s;
+}
+
+/* ************************************************************************* */
+void NonlinearOptimizerParams::print(const std::string& str) const {
+  std::cout << str << "\n";
+  std::cout << "relative decrease threshold: " << relativeErrorTol << "\n";
+  std::cout << "absolute decrease threshold: " << absoluteErrorTol << "\n";
+  std::cout << "      total error threshold: " << errorTol << "\n";
+  std::cout << "         maximum iterations: " << maxIterations << "\n";
+  std::cout << "                  verbosity: " << verbosityTranslator(verbosity) << "\n";
+  std::cout.flush();
+}
 
 /* ************************************************************************* */
 void NonlinearOptimizer::defaultOptimize() {
@@ -65,11 +103,23 @@ void NonlinearOptimizer::defaultOptimize() {
 }
 
 /* ************************************************************************* */
+const Values& NonlinearOptimizer::optimizeSafely() {
+	static const Values empty;
+	try {
+		defaultOptimize();
+		return values();
+	} catch (...) {
+		// uncaught exception, returning empty result
+		return empty;
+	}
+}
+
+/* ************************************************************************* */
 bool checkConvergence(double relativeErrorTreshold, double absoluteErrorTreshold,
     double errorThreshold, double currentError, double newError,
     NonlinearOptimizerParams::Verbosity verbosity) {
 
-	if ( verbosity >= 2 ) {
+	if ( verbosity >= NonlinearOptimizerParams::ERROR ) {
 		if ( newError <= errorThreshold )
 			cout << "errorThreshold: " << newError << " < " << errorThreshold << endl;
 		else
@@ -80,7 +130,7 @@ bool checkConvergence(double relativeErrorTreshold, double absoluteErrorTreshold
 
 	// check if diverges
 	double absoluteDecrease = currentError - newError;
-	if (verbosity >= 2) {
+	if (verbosity >= NonlinearOptimizerParams::ERROR) {
 		if (absoluteDecrease <= absoluteErrorTreshold)
 			cout << "absoluteDecrease: " << setprecision(12) << absoluteDecrease << " < " << absoluteErrorTreshold << endl;
 		else
@@ -89,7 +139,7 @@ bool checkConvergence(double relativeErrorTreshold, double absoluteErrorTreshold
 
 	// calculate relative error decrease and update currentError
 	double relativeDecrease = absoluteDecrease / currentError;
-	if (verbosity >= 2) {
+	if (verbosity >= NonlinearOptimizerParams::ERROR) {
 		if (relativeDecrease <= relativeErrorTreshold)
 			cout << "relativeDecrease: " << setprecision(12) << relativeDecrease << " < " << relativeErrorTreshold << endl;
 		else
@@ -97,7 +147,7 @@ bool checkConvergence(double relativeErrorTreshold, double absoluteErrorTreshold
 	}
 	bool converged = (relativeErrorTreshold && (relativeDecrease <= relativeErrorTreshold))
 			|| (absoluteDecrease <= absoluteErrorTreshold);
-	if (verbosity >= 1 && converged) {
+	if (verbosity >= NonlinearOptimizerParams::ERROR && converged) {
 		if(absoluteDecrease >= 0.0)
 		  cout << "converged" << endl;
 		else
@@ -105,6 +155,7 @@ bool checkConvergence(double relativeErrorTreshold, double absoluteErrorTreshold
 	}
 	return converged;
 }
+/* ************************************************************************* */
 
 
 }

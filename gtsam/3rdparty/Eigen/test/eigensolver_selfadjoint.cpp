@@ -27,10 +27,6 @@
 #include <limits>
 #include <Eigen/Eigenvalues>
 
-#ifdef HAS_GSL
-#include "gsl_helper.h"
-#endif
-
 template<typename MatrixType> void selfadjointeigensolver(const MatrixType& m)
 {
   typedef typename MatrixType::Index Index;
@@ -59,64 +55,25 @@ template<typename MatrixType> void selfadjointeigensolver(const MatrixType& m)
   symmB.template triangularView<StrictlyUpper>().setZero();
 
   SelfAdjointEigenSolver<MatrixType> eiSymm(symmA);
+  SelfAdjointEigenSolver<MatrixType> eiDirect;
+  eiDirect.computeDirect(symmA);
   // generalized eigen pb
   GeneralizedSelfAdjointEigenSolver<MatrixType> eiSymmGen(symmA, symmB);
-
-  #ifdef HAS_GSL
-  if (internal::is_same<RealScalar,double>::value)
-  {
-    // restore symmA and symmB.
-    symmA = MatrixType(symmA.template selfadjointView<Lower>());
-    symmB = MatrixType(symmB.template selfadjointView<Lower>());
-    typedef GslTraits<Scalar> Gsl;
-    typename Gsl::Matrix gEvec=0, gSymmA=0, gSymmB=0;
-    typename GslTraits<RealScalar>::Vector gEval=0;
-    RealVectorType _eval;
-    MatrixType _evec;
-    convert<MatrixType>(symmA, gSymmA);
-    convert<MatrixType>(symmB, gSymmB);
-    convert<MatrixType>(symmA, gEvec);
-    gEval = GslTraits<RealScalar>::createVector(rows);
-
-    Gsl::eigen_symm(gSymmA, gEval, gEvec);
-    convert(gEval, _eval);
-    convert(gEvec, _evec);
-
-    // test gsl itself !
-    VERIFY((symmA * _evec).isApprox(_evec * _eval.asDiagonal(), largerEps));
-
-    // compare with eigen
-    VERIFY_IS_APPROX(_eval, eiSymm.eigenvalues());
-    VERIFY_IS_APPROX(_evec.cwiseAbs(), eiSymm.eigenvectors().cwiseAbs());
-
-    // generalized pb
-    Gsl::eigen_symm_gen(gSymmA, gSymmB, gEval, gEvec);
-    convert(gEval, _eval);
-    convert(gEvec, _evec);
-    // test GSL itself:
-    VERIFY((symmA * _evec).isApprox(symmB * (_evec * _eval.asDiagonal()), largerEps));
-
-    // compare with eigen
-    MatrixType normalized_eivec = eiSymmGen.eigenvectors()*eiSymmGen.eigenvectors().colwise().norm().asDiagonal().inverse();
-    VERIFY_IS_APPROX(_eval, eiSymmGen.eigenvalues());
-    VERIFY_IS_APPROX(_evec.cwiseAbs(), normalized_eivec.cwiseAbs());
-
-    Gsl::free(gSymmA);
-    Gsl::free(gSymmB);
-    GslTraits<RealScalar>::free(gEval);
-    Gsl::free(gEvec);
-  }
-  #endif
 
   VERIFY_IS_EQUAL(eiSymm.info(), Success);
   VERIFY((symmA.template selfadjointView<Lower>() * eiSymm.eigenvectors()).isApprox(
           eiSymm.eigenvectors() * eiSymm.eigenvalues().asDiagonal(), largerEps));
   VERIFY_IS_APPROX(symmA.template selfadjointView<Lower>().eigenvalues(), eiSymm.eigenvalues());
+  
+  VERIFY_IS_EQUAL(eiDirect.info(), Success);
+  VERIFY((symmA.template selfadjointView<Lower>() * eiDirect.eigenvectors()).isApprox(
+          eiDirect.eigenvectors() * eiDirect.eigenvalues().asDiagonal(), largerEps));
+  VERIFY_IS_APPROX(symmA.template selfadjointView<Lower>().eigenvalues(), eiDirect.eigenvalues());
 
   SelfAdjointEigenSolver<MatrixType> eiSymmNoEivecs(symmA, false);
   VERIFY_IS_EQUAL(eiSymmNoEivecs.info(), Success);
   VERIFY_IS_APPROX(eiSymm.eigenvalues(), eiSymmNoEivecs.eigenvalues());
-
+  
   // generalized eigen problem Ax = lBx
   eiSymmGen.compute(symmA, symmB,Ax_lBx);
   VERIFY_IS_EQUAL(eiSymmGen.info(), Success);
@@ -171,15 +128,21 @@ template<typename MatrixType> void selfadjointeigensolver(const MatrixType& m)
 
 void test_eigensolver_selfadjoint()
 {
+  int s;
   for(int i = 0; i < g_repeat; i++) {
-    // very important to test a 3x3 matrix since we provide a special path for it
+    // very important to test 3x3 and 2x2 matrices since we provide special paths for them
+    CALL_SUBTEST_1( selfadjointeigensolver(Matrix2d()) );
     CALL_SUBTEST_1( selfadjointeigensolver(Matrix3f()) );
     CALL_SUBTEST_2( selfadjointeigensolver(Matrix4d()) );
-    CALL_SUBTEST_3( selfadjointeigensolver(MatrixXf(10,10)) );
-    CALL_SUBTEST_4( selfadjointeigensolver(MatrixXd(19,19)) );
-    CALL_SUBTEST_5( selfadjointeigensolver(MatrixXcd(17,17)) );
+    s = internal::random<int>(1,EIGEN_TEST_MAX_SIZE/4);
+    CALL_SUBTEST_3( selfadjointeigensolver(MatrixXf(s,s)) );
+    s = internal::random<int>(1,EIGEN_TEST_MAX_SIZE/4);
+    CALL_SUBTEST_4( selfadjointeigensolver(MatrixXd(s,s)) );
+    s = internal::random<int>(1,EIGEN_TEST_MAX_SIZE/4);
+    CALL_SUBTEST_5( selfadjointeigensolver(MatrixXcd(s,s)) );
     
-    CALL_SUBTEST_9( selfadjointeigensolver(Matrix<std::complex<double>,Dynamic,Dynamic,RowMajor>(17,17)) );
+    s = internal::random<int>(1,EIGEN_TEST_MAX_SIZE/4);
+    CALL_SUBTEST_9( selfadjointeigensolver(Matrix<std::complex<double>,Dynamic,Dynamic,RowMajor>(s,s)) );
 
     // some trivial but implementation-wise tricky cases
     CALL_SUBTEST_4( selfadjointeigensolver(MatrixXd(1,1)) );
@@ -189,7 +152,10 @@ void test_eigensolver_selfadjoint()
   }
 
   // Test problem size constructors
-  CALL_SUBTEST_8(SelfAdjointEigenSolver<MatrixXf>(10));
-  CALL_SUBTEST_8(Tridiagonalization<MatrixXf>(10));
+  s = internal::random<int>(1,EIGEN_TEST_MAX_SIZE/4);
+  CALL_SUBTEST_8(SelfAdjointEigenSolver<MatrixXf>(s));
+  CALL_SUBTEST_8(Tridiagonalization<MatrixXf>(s));
+  
+  EIGEN_UNUSED_VARIABLE(s)
 }
 

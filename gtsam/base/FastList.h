@@ -31,7 +31,7 @@ namespace gtsam {
  * convenience to avoid having lengthy types in the code.  Through timing,
  * we've seen that the fast_pool_allocator can lead to speedups of several
  * percent.
-	 * @ingroup base
+	 * @addtogroup base
  */
 template<typename VALUE>
 class FastList: public std::list<VALUE, boost::fast_pool_allocator<VALUE> > {
@@ -50,8 +50,17 @@ public:
   /** Copy constructor from another FastList */
   FastList(const FastList<VALUE>& x) : Base(x) {}
 
-  /** Copy constructor from the base map class */
+  /** Copy constructor from the base list class */
   FastList(const Base& x) : Base(x) {}
+
+  /** Copy constructor from a standard STL container */
+  FastList(const std::list<VALUE>& x) {
+    // This if statement works around a bug in boost pool allocator and/or
+    // STL vector where if the size is zero, the pool allocator will allocate
+    // huge amounts of memory.
+    if(x.size() > 0)
+      Base::assign(x.begin(), x.end());
+  }
 
 private:
   /** Serialization function */

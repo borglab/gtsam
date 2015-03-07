@@ -23,6 +23,9 @@
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/vector.hpp>
 
+#include <gtsam/base/FastList.h>
+#include <gtsam/base/FastSet.h>
+
 namespace gtsam {
 
 /**
@@ -30,7 +33,7 @@ namespace gtsam {
  * pool_allocator instead of the default STL allocator.  This is just a
  * convenience to avoid having lengthy types in the code.  Through timing,
  * we've seen that the pool_allocator can lead to speedups of several %
- * @ingroup base
+ * @addtogroup base
  */
 template<typename VALUE>
 class FastVector: public std::vector<VALUE, boost::pool_allocator<VALUE> > {
@@ -58,8 +61,20 @@ public:
       Base::assign(first, last);
   }
 
-  /** Copy constructor from another FastSet */
+  /** Copy constructor from another FastVector */
   FastVector(const FastVector<VALUE>& x) : Base(x) {}
+
+  /** Copy constructor from a FastList */
+  FastVector(const FastList<VALUE>& x) {
+    if(x.size() > 0)
+      Base::assign(x.begin(), x.end());
+  }
+
+  /** Copy constructor from a FastSet */
+  FastVector(const FastSet<VALUE>& x) {
+    if(x.size() > 0)
+      Base::assign(x.begin(), x.end());
+  }
 
   /** Copy constructor from the base class */
   FastVector(const Base& x) : Base(x) {}
@@ -72,6 +87,11 @@ public:
     if(x.size() > 0)
       Base::assign(x.begin(), x.end());
   }
+
+	/** Conversion to a standard STL container */
+	operator std::vector<VALUE>() const {
+		return std::vector<VALUE>(this->begin(), this->end());
+	}
 
 private:
   /** Serialization function */

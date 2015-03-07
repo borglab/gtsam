@@ -68,13 +68,15 @@ template<typename MatrixType> void determinant(const MatrixType& m)
 
 void test_determinant()
 {
+  int s;
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1( determinant(Matrix<float, 1, 1>()) );
     CALL_SUBTEST_2( determinant(Matrix<double, 2, 2>()) );
     CALL_SUBTEST_3( determinant(Matrix<double, 3, 3>()) );
     CALL_SUBTEST_4( determinant(Matrix<double, 4, 4>()) );
     CALL_SUBTEST_5( determinant(Matrix<std::complex<double>, 10, 10>()) );
-    CALL_SUBTEST_6( determinant(MatrixXd(20, 20)) );
+    s = internal::random<int>(1,EIGEN_TEST_MAX_SIZE/4);
+    CALL_SUBTEST_6( determinant(MatrixXd(s, s)) );
   }
-  CALL_SUBTEST_6( determinant(MatrixXd(200, 200)) );
+  EIGEN_UNUSED_VARIABLE(s)
 }

@@ -31,26 +31,6 @@
 
 namespace gtsam {
 
-	class SharedDiagonal;
-
-  /** return A*x-b
-   * \todo Make this a member function - affects SubgraphPreconditioner */
-  template<class FACTOR>
-  Errors gaussianErrors(const FactorGraph<FACTOR>& fg, const VectorValues& x) {
-    return *gaussianErrors_(fg, x);
-  }
-
-  /** shared pointer version
-   * \todo Make this a member function - affects SubgraphPreconditioner */
-  template<class FACTOR>
-  boost::shared_ptr<Errors> gaussianErrors_(const FactorGraph<FACTOR>& fg, const VectorValues& x) {
-    boost::shared_ptr<Errors> e(new Errors);
-    BOOST_FOREACH(const typename FACTOR::shared_ptr& factor, fg) {
-      e->push_back(factor->error_vector(x));
-    }
-    return e;
-  }
-
   /**
    * A Linear Factor Graph is a factor graph where all factors are Gaussian, i.e.
    *   Factor == GaussianFactor
@@ -85,32 +65,32 @@ namespace gtsam {
       push_back(fg);
     }
 
-		/** Add a Jacobian factor */
-		void add(const boost::shared_ptr<JacobianFactor>& factor) {
-			factors_.push_back(boost::shared_ptr<GaussianFactor>(factor));
+		/** Add a factor by value - makes a copy */
+		void add(const GaussianFactor& factor) {
+			factors_.push_back(factor.clone());
 		}
 
-		/** Add a Hessian factor */
-		void add(const boost::shared_ptr<HessianFactor>& factor) {
-			factors_.push_back(boost::shared_ptr<GaussianFactor>(factor));
+		/** Add a factor by pointer - stores pointer without copying the factor */
+		void add(const sharedFactor& factor) {
+			factors_.push_back(factor);
 		}
 
     /** Add a null factor */
     void add(const Vector& b) {
-    	add(JacobianFactor::shared_ptr(new JacobianFactor(b)));
+    	add(JacobianFactor(b));
     }
 
     /** Add a unary factor */
     void add(Index key1, const Matrix& A1,
         const Vector& b, const SharedDiagonal& model) {
-    	add(JacobianFactor::shared_ptr(new JacobianFactor(key1,A1,b,model)));
+    	add(JacobianFactor(key1,A1,b,model));
     }
 
     /** Add a binary factor */
     void add(Index key1, const Matrix& A1,
         Index key2, const Matrix& A2,
         const Vector& b, const SharedDiagonal& model) {
-    	add(JacobianFactor::shared_ptr(new JacobianFactor(key1,A1,key2,A2,b,model)));
+    	add(JacobianFactor(key1,A1,key2,A2,b,model));
     }
 
     /** Add a ternary factor */
@@ -118,13 +98,13 @@ namespace gtsam {
         Index key2, const Matrix& A2,
         Index key3, const Matrix& A3,
         const Vector& b, const SharedDiagonal& model) {
-    	add(JacobianFactor::shared_ptr(new JacobianFactor(key1,A1,key2,A2,key3,A3,b,model)));
+    	add(JacobianFactor(key1,A1,key2,A2,key3,A3,b,model));
     }
 
     /** Add an n-ary factor */
     void add(const std::vector<std::pair<Index, Matrix> > &terms,
         const Vector &b, const SharedDiagonal& model) {
-    	add(JacobianFactor::shared_ptr(new JacobianFactor(terms,b,model)));
+    	add(JacobianFactor(terms,b,model));
     }
 
     /**
@@ -133,6 +113,16 @@ namespace gtsam {
      */
     typedef FastSet<Index> Keys;
     Keys keys() const;
+
+				
+		/** Eliminate the first \c n frontal variables, returning the resulting
+		 * conditional and remaining factor graph - this is very inefficient for
+		 * eliminating all variables, to do that use EliminationTree or
+		 * JunctionTree.  Note that this version simply calls
+		 * FactorGraph<GaussianFactor>::eliminateFrontals with EliminateQR as the
+		 * eliminate function argument.
+		 */
+		std::pair<sharedConditional, GaussianFactorGraph> eliminateFrontals(size_t nFrontals) const;
 
     /** Permute the variables in the factors */
     void permuteWithInverse(const Permutation& inversePermutation);
@@ -151,9 +141,9 @@ namespace gtsam {
     }
 
     /**
-     * static function that combines two factor graphs
-     * @param const &lfg1 Linear factor graph
-     * @param const &lfg2 Linear factor graph
+     * Static function that combines two factor graphs.
+     * @param lfg1 Linear factor graph
+     * @param lfg2 Linear factor graph
      * @return a new combined factor graph
      */
     static GaussianFactorGraph combine2(const GaussianFactorGraph& lfg1,
@@ -180,15 +170,43 @@ namespace gtsam {
 		Matrix sparseJacobian_() const;
 
     /**
-     * Return a dense \f$ m \times n \f$ Jacobian matrix, augmented with b
-     * with standard deviations are baked into A and b
+     * Return a dense \f$ [ \;A\;b\; ] \in \mathbb{R}^{m \times n+1} \f$
+		 * Jacobian matrix, augmented with b with the noise models baked
+		 * into A and b.  The negative log-likelihood is
+		 * \f$ \frac{1}{2} \Vert Ax-b \Vert^2 \f$.  See also
+		 * GaussianFactorGraph::jacobian and GaussianFactorGraph::sparseJacobian.
      */
-    Matrix denseJacobian() const;
+    Matrix augmentedJacobian() const;
+
+		/**
+		 * Return the dense Jacobian \f$ A \f$ and right-hand-side \f$ b \f$,
+		 * with the noise models baked into A and b. The negative log-likelihood
+		 * is \f$ \frac{1}{2} \Vert Ax-b \Vert^2 \f$.  See also
+		 * GaussianFactorGraph::augmentedJacobian and
+		 * GaussianFactorGraph::sparseJacobian.
+		 */
+		std::pair<Matrix,Vector> jacobian() const;
 
     /**
-     * Return a dense \f$ n \times n \f$ Hessian matrix, augmented with \f$ A^T b \f$
+     * Return a dense \f$ \Lambda \in \mathbb{R}^{n+1 \times n+1} \f$ Hessian
+		 * matrix, augmented with the information vector \f$ \eta \f$.  The
+		 * augmented Hessian is
+		 \f[ \left[ \begin{array}{ccc}
+		 \Lambda & \eta \\
+		 \eta^T & c
+		 \end{array} \right] \f]
+		 and the negative log-likelihood is
+		 \f$ \frac{1}{2} x^T \Lambda x + \eta^T x + c \f$.
      */
-    Matrix denseHessian() const;
+    Matrix augmentedHessian() const;
+
+		/**
+		 * Return the dense Hessian \f$ \Lambda \f$ and information vector
+		 * \f$ \eta \f$, with the noise models baked in. The negative log-likelihood
+		 * is \frac{1}{2} x^T \Lambda x + \eta^T x + c.  See also
+		 * GaussianFactorGraph::augmentedHessian.
+		 */
+		std::pair<Matrix,Vector> hessian() const;
 
   private:
     /** Serialization function */
@@ -202,7 +220,7 @@ namespace gtsam {
 
   /**
    * Combine and eliminate several factors.
-   * \ingroup LinearSolving
+   * \addtogroup LinearSolving
    */
 	JacobianFactor::shared_ptr CombineJacobians(
 			const FactorGraph<JacobianFactor>& factors,
@@ -223,7 +241,7 @@ namespace gtsam {
 	 * @param nrFrontals Number of frontal variables to eliminate.
 	 * @return The conditional and remaining factor
 
-   * \ingroup LinearSolving
+   * \addtogroup LinearSolving
 	 */
 	GaussianFactorGraph::EliminationResult EliminateJacobians(const FactorGraph<
 			JacobianFactor>& factors, size_t nrFrontals = 1);
@@ -238,7 +256,7 @@ namespace gtsam {
 	 * @param nrFrontals Number of frontal variables to eliminate.
 	 * @return The conditional and remaining factor
 
-   * \ingroup LinearSolving
+   * \addtogroup LinearSolving
 	 */
   GaussianFactorGraph::EliminationResult EliminateQR(const FactorGraph<
 			GaussianFactor>& factors, size_t nrFrontals = 1);
@@ -260,7 +278,7 @@ namespace gtsam {
    * @param nrFrontals Number of frontal variables to eliminate.
    * @return The conditional and remaining factor
 
-   * \ingroup LinearSolving
+   * \addtogroup LinearSolving
    */
   GaussianFactorGraph::EliminationResult EliminatePreferCholesky(const FactorGraph<
 			GaussianFactor>& factors, size_t nrFrontals = 1);
@@ -281,9 +299,59 @@ namespace gtsam {
    * @param nrFrontals Number of frontal variables to eliminate.
    * @return The conditional and remaining factor
 
-   * \ingroup LinearSolving
+   * \addtogroup LinearSolving
    */
   GaussianFactorGraph::EliminationResult EliminateCholesky(const FactorGraph<
 			GaussianFactor>& factors, size_t nrFrontals = 1);
+
+  /****** Linear Algebra Opeations ******/
+
+  /** return A*x */
+  Errors operator*(const GaussianFactorGraph& fg, const VectorValues& x);
+
+  /** In-place version e <- A*x that overwrites e. */
+  void multiplyInPlace(const GaussianFactorGraph& fg, const VectorValues& x, Errors& e);
+
+  /** In-place version e <- A*x that takes an iterator. */
+  void multiplyInPlace(const GaussianFactorGraph& fg, const VectorValues& x, const Errors::iterator& e);
+
+  /** x += alpha*A'*e */
+  void transposeMultiplyAdd(const GaussianFactorGraph& fg, double alpha, const Errors& e, VectorValues& x);
+
+  /**
+   * Compute the gradient of the energy function,
+   * \f$ \nabla_{x=x_0} \left\Vert \Sigma^{-1} A x - b \right\Vert^2 \f$,
+   * centered around \f$ x = x_0 \f$.
+   * The gradient is \f$ A^T(Ax-b) \f$.
+   * @param fg The Jacobian factor graph $(A,b)$
+   * @param x0 The center about which to compute the gradient
+   * @return The gradient as a VectorValues
+   */
+  VectorValues gradient(const GaussianFactorGraph& fg, const VectorValues& x0);
+
+  /**
+   * Compute the gradient of the energy function,
+   * \f$ \nabla_{x=0} \left\Vert \Sigma^{-1} A x - b \right\Vert^2 \f$,
+   * centered around zero.
+   * The gradient is \f$ A^T(Ax-b) \f$.
+   * @param fg The Jacobian factor graph $(A,b)$
+   * @param [output] g A VectorValues to store the gradient, which must be preallocated, see allocateVectorValues
+   * @return The gradient as a VectorValues
+   */
+  void gradientAtZero(const GaussianFactorGraph& fg, VectorValues& g);
+
+  /* matrix-vector operations */
+  void residual(const GaussianFactorGraph& fg, const VectorValues &x, VectorValues &r);
+  void multiply(const GaussianFactorGraph& fg, const VectorValues &x, VectorValues &r);
+  void transposeMultiply(const GaussianFactorGraph& fg, const VectorValues &r, VectorValues &x);
+
+  /** shared pointer version
+   * \todo Make this a member function - affects SubgraphPreconditioner */
+  boost::shared_ptr<Errors> gaussianErrors_(const GaussianFactorGraph& fg, const VectorValues& x);
+
+	/** return A*x-b
+   * \todo Make this a member function - affects SubgraphPreconditioner */
+  inline Errors gaussianErrors(const GaussianFactorGraph& fg, const VectorValues& x) {
+    return *gaussianErrors_(fg, x); }
 
 } // namespace gtsam

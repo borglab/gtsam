@@ -101,8 +101,7 @@ TEST(EliminationTree, eliminate )
   fg.push_factor(3, 4);
 
   // eliminate
-  SymbolicBayesNet actual = *SymbolicSequentialSolver(fg).eliminate(
-			&EliminateSymbolic);
+  SymbolicBayesNet actual = *SymbolicSequentialSolver(fg).eliminate();
 
   CHECK(assert_equal(expected,actual));
 }

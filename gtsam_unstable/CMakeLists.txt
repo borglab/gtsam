@@ -2,19 +2,26 @@
 # and also build tests 
 set (gtsam_unstable_subdirs
     base 
-    discrete 
+    geometry
+    discrete
+#    linear 
     dynamics
-    slam 
+    nonlinear
+    slam
 )
+
+add_custom_target(check.unstable COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure)
 
 # assemble core libaries
 foreach(subdir ${gtsam_unstable_subdirs})
     # Build convenience libraries
     file(GLOB subdir_srcs "${subdir}/*.cpp")
-    set(${subdir}_srcs ${subdir_srcs})
-    if (GTSAM_BUILD_CONVENIENCE_LIBRARIES)
+	file(GLOB subdir_headers "${subdir}/*.h")
+    set(${subdir}_srcs ${subdir_srcs} ${subdir_headers})
+    gtsam_assign_source_folders("${${subdir}_srcs}") # Create MSVC structure
+    if (subdir_srcs AND GTSAM_BUILD_CONVENIENCE_LIBRARIES)
         message(STATUS "Building Convenience Library: ${subdir}_unstable")
-        add_library("${subdir}_unstable" STATIC ${subdir_srcs})
+        add_library("${subdir}_unstable" STATIC ${${subdir}_srcs})
     endif()
 
     # Build local library and tests
@@ -25,12 +32,17 @@ endforeach(subdir)
 # assemble gtsam_unstable components
 set(gtsam_unstable_srcs
     ${base_srcs} 
+    ${geometry_srcs}
     ${discrete_srcs}
     ${dynamics_srcs}
-    ${slam_srcs} 
+    #${linear_srcs}    
+    ${nonlinear_srcs}
+    ${slam_srcs}
 )
 
-option (GTSAM_UNSTABLE_BUILD_SHARED_LIBRARY "Enable/Disable building of a shared version of gtsam_unstable" ON)
+if(NOT MSVC)
+	option (GTSAM_UNSTABLE_BUILD_SHARED_LIBRARY "Enable/Disable building of a shared version of gtsam_unstable" ON)
+endif()
 
 # Versions - same as core gtsam library
 set(gtsam_unstable_version   ${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH})
@@ -47,7 +59,10 @@ set_target_properties(gtsam_unstable-static PROPERTIES
 	VERSION             ${gtsam_unstable_version}
  	SOVERSION           ${gtsam_unstable_soversion})
 target_link_libraries(gtsam_unstable-static gtsam-static)
-install(TARGETS gtsam_unstable-static ARCHIVE DESTINATION lib)
+set(gtsam_unstable-lib "gtsam_unstable-static")
+install(TARGETS gtsam_unstable-static EXPORT GTSAM-exports ARCHIVE DESTINATION lib)
+list(APPEND GTSAM_EXPORTED_TARGETS gtsam_unstable-static)
+set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
 
 if (GTSAM_UNSTABLE_BUILD_SHARED_LIBRARY)
     message(STATUS "Building GTSAM_UNSTABLE - shared")
@@ -58,39 +73,27 @@ if (GTSAM_UNSTABLE_BUILD_SHARED_LIBRARY)
     	VERSION             ${gtsam_unstable_version}
      	SOVERSION           ${gtsam_unstable_soversion})
     target_link_libraries(gtsam_unstable-shared gtsam-shared)
-    install(TARGETS gtsam_unstable-shared LIBRARY DESTINATION lib )
+    install(TARGETS gtsam_unstable-shared EXPORT GTSAM-exports LIBRARY DESTINATION lib ARCHIVE DESTINATION lib RUNTIME DESTINATION bin)
+    list(APPEND GTSAM_EXPORTED_TARGETS gtsam_unstable-shared)
+    set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
 endif(GTSAM_UNSTABLE_BUILD_SHARED_LIBRARY)
 
 # Wrap version for gtsam_unstable
-if (GTSAM_BUILD_WRAP)
+if (GTSAM_INSTALL_MATLAB_TOOLBOX)
     # Set up codegen
     include(GtsamMatlabWrap)
     
-    # Wrap codegen
-    #usage: wrap mexExtension interfacePath moduleName toolboxPath
-    #  mexExtension  : OS/CPU-dependent extension for MEX binaries
-    #  interfacePath : *absolute* path to directory of module interface file
-    #  moduleName    : the name of the module, interface file must be called moduleName.h
-    #  toolboxPath   : the directory in which to generate the wrappers
-    #  [mexFlags]    : extra flags for the mex command
-    
     # TODO: generate these includes programmatically
-    set(mexFlags "-I${Boost_INCLUDE_DIR} -I${CMAKE_INSTALL_PREFIX}/include -I${CMAKE_INSTALL_PREFIX}/include/gtsam_unstable -I${CMAKE_INSTALL_PREFIX}/include/gtsam_unstable/dynamics -I${CMAKE_INSTALL_PREFIX}/include/gtsam_unstable/discrete -L${CMAKE_INSTALL_PREFIX}/lib -lgtsam -lgtsam_unstable")
-    set(toolbox_path ${CMAKE_BINARY_DIR}/wrap/gtsam_unstable)
-    set(moduleName gtsam_unstable)
+    # Choose include flags depending on build process
+	set(MEX_INCLUDE_ROOT ${GTSAM_SOURCE_ROOT_DIR})
+	set(MEX_LIB_ROOT ${CMAKE_BINARY_DIR})
+	set(GTSAM_LIB_DIR ${MEX_LIB_ROOT}/gtsam)
+	set(GTSAM_UNSTABLE_LIB_DIR ${MEX_LIB_ROOT}/gtsam_unstable)
     
-    find_mexextension()
+    # Generate, build and install toolbox
+    set(mexFlags -I${Boost_INCLUDE_DIR} -I${MEX_INCLUDE_ROOT})
     
-    # Code generation command
-    add_custom_target(wrap_gtsam_unstable ALL COMMAND 
-        ${CMAKE_BINARY_DIR}/wrap/wrap ${GTSAM_MEX_BIN_EXTENSION} ${CMAKE_CURRENT_SOURCE_DIR} ${moduleName} ${toolbox_path} "${mexFlags}"
-        DEPENDS wrap)
-    
-    if (GTSAM_INSTALL_MATLAB_TOOLBOX)
-        # Primary toolbox files
-        message(STATUS "Installing Matlab Toolbox to ${GTSAM_TOOLBOX_INSTALL_PATH}")
-        install(DIRECTORY DESTINATION ${GTSAM_TOOLBOX_INSTALL_PATH}) # make an empty folder
-        # exploit need for trailing slash to specify a full folder, rather than just its contents to copy
-        install(DIRECTORY ${toolbox_path} DESTINATION ${GTSAM_TOOLBOX_INSTALL_PATH})
-    endif (GTSAM_INSTALL_MATLAB_TOOLBOX)
-endif(GTSAM_BUILD_WRAP)
+    # Macro to handle details of setting up targets
+    wrap_library(gtsam_unstable "${mexFlags}" "./" gtsam)
+
+endif(GTSAM_INSTALL_MATLAB_TOOLBOX)

@@ -37,7 +37,7 @@ template<typename MatrixType> void lu_non_invertible()
   Index rows, cols, cols2;
   if(MatrixType::RowsAtCompileTime==Dynamic)
   {
-    rows = internal::random<Index>(2,200);
+    rows = internal::random<Index>(2,EIGEN_TEST_MAX_SIZE);
   }
   else
   {
@@ -45,8 +45,8 @@ template<typename MatrixType> void lu_non_invertible()
   }
   if(MatrixType::ColsAtCompileTime==Dynamic)
   {
-    cols = internal::random<Index>(2,200);
-    cols2 = internal::random<int>(2,200);
+    cols = internal::random<Index>(2,EIGEN_TEST_MAX_SIZE);
+    cols2 = internal::random<int>(2,EIGEN_TEST_MAX_SIZE);
   }
   else
   {
@@ -117,7 +117,7 @@ template<typename MatrixType> void lu_invertible()
   */
   typedef typename MatrixType::Scalar Scalar;
   typedef typename NumTraits<typename MatrixType::Scalar>::Real RealScalar;
-  int size = internal::random<int>(1,200);
+  int size = internal::random<int>(1,EIGEN_TEST_MAX_SIZE);
 
   MatrixType m1(size, size), m2(size, size), m3(size, size);
   FullPivLU<MatrixType> lu;

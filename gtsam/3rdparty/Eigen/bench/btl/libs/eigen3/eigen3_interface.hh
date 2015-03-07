@@ -92,12 +92,13 @@ public :
     X.noalias() = A.transpose()*B.transpose();
   }
 
-  static inline void ata_product(const gene_matrix & A, gene_matrix & X, int N){
-    X.noalias() = A.transpose()*A;
-  }
+//   static inline void ata_product(const gene_matrix & A, gene_matrix & X, int N){
+//     X.noalias() = A.transpose()*A;
+//   }
 
   static inline void aat_product(const gene_matrix & A, gene_matrix & X, int N){
-    X.noalias() = A*A.transpose();
+    X.template triangularView<Lower>().setZero();
+    X.template selfadjointView<Lower>().rankUpdate(A);
   }
 
   static inline void matrix_vector_product(const gene_matrix & A, const gene_vector & B, gene_vector & X, int N){
@@ -194,16 +195,16 @@ public :
   }
 
   static inline void trisolve_lower_matrix(const gene_matrix & L, const gene_matrix& B, gene_matrix& X, int N){
-    X = L.template triangularView<Lower>().solve(B);
+    X = L.template triangularView<Upper>().solve(B);
   }
 
   static inline void trmm(const gene_matrix & L, const gene_matrix& B, gene_matrix& X, int N){
-    X = L.template triangularView<Lower>() * B;
+    X.noalias() = L.template triangularView<Lower>() * B;
   }
 
   static inline void cholesky(const gene_matrix & X, gene_matrix & C, int N){
     C = X;
-    internal::llt_inplace<Lower>::blocked(C);
+    internal::llt_inplace<real,Lower>::blocked(C);
     //C = X.llt().matrixL();
 //     C = X;
 //     Cholesky<gene_matrix>::computeInPlace(C);

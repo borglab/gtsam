@@ -46,9 +46,9 @@ namespace gtsam {
 			const DecisionTreeFactor& marginal) :
 			IndexConditional(joint.keys(), joint.size() - marginal.size()), Potentials(
 					ISDEBUG("DiscreteConditional::COUNT") ? joint : joint / marginal) {
-		assert(nrFrontals() == 1);
+//		assert(nrFrontals() == 1);
 		if (ISDEBUG("DiscreteConditional::DiscreteConditional")) cout
-				<< (firstFrontalKey()) << endl;
+				<< (firstFrontalKey()) << endl;	//TODO Print all keys
 	}
 
 	/* ******************************************************************************** */
@@ -66,7 +66,7 @@ namespace gtsam {
 				Index j = (key);
 				size_t value = parentsValues.at(j);
 				pFS = pFS.choose(j, value);
-			} catch (exception& e) {
+			} catch (exception&) {
 				throw runtime_error(
 						"DiscreteConditional::choose: parent value missing");
 			};
@@ -75,10 +75,44 @@ namespace gtsam {
 
 	/* ******************************************************************************** */
 	void DiscreteConditional::solveInPlace(Values& values) const {
-		assert(nrFrontals() == 1);
-		Index j = (firstFrontalKey());
-		size_t mpe = solve(values); // Solve for variable
-		values[j] = mpe; // store result in partial solution
+//		OLD
+//		assert(nrFrontals() == 1);
+//		Index j = (firstFrontalKey());
+//		size_t mpe = solve(values); // Solve for variable
+//		values[j] = mpe; // store result in partial solution
+//		OLD
+
+		// TODO: is this really the fastest way? I think it is.
+
+		//The following is to make make adjustment for nFrontals \neq 1
+		ADT pFS = choose(values); // P(F|S=parentsValues)
+
+		// Initialize
+		Values mpe;
+		double maxP = 0;
+
+		DiscreteKeys keys;
+		BOOST_FOREACH(Index idx, frontals()) {
+			DiscreteKey dk(idx,cardinality(idx));
+			keys & dk;
+		}
+		// Get all Possible Configurations
+		vector<Values> allPosbValues = cartesianProduct(keys);
+
+		// Find the MPE
+		BOOST_FOREACH(Values& frontalVals, allPosbValues) {
+			double pValueS = pFS(frontalVals); // P(F=value|S=parentsValues)
+			// Update MPE solution if better
+			if (pValueS > maxP) {
+				maxP = pValueS;
+				mpe = frontalVals;
+			}
+		}
+
+		//set values (inPlace) to mpe
+		BOOST_FOREACH(Index j, frontals()) {
+			values[j] = mpe[j];
+		}
 	}
 
 	/* ******************************************************************************** */
@@ -155,7 +189,14 @@ namespace gtsam {
 		return sampled;
 
 		return 0;
-		}
+	}
+
+	/* ******************************************************************************** */
+	void DiscreteConditional::permuteWithInverse(const Permutation& inversePermutation){
+		IndexConditional::permuteWithInverse(inversePermutation);
+		Potentials::permuteWithInverse(inversePermutation);
+	}
+
 
 /* ******************************************************************************** */
 

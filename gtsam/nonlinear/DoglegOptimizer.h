@@ -13,7 +13,7 @@
  * @file    DoglegOptimizer.h
  * @brief   
  * @author  Richard Roberts
- * @created Feb 26, 2012
+ * @date 	Feb 26, 2012
  */
 
 #pragma once
@@ -50,6 +50,16 @@ public:
     std::cout << "               deltaInitial: " << deltaInitial << "\n";
     std::cout.flush();
   }
+
+	double getDeltaInitial() const { return deltaInitial; }
+	std::string getVerbosityDL() const { return verbosityDLTranslator(verbosityDL); }
+
+	void setDeltaInitial(double deltaInitial) { this->deltaInitial = deltaInitial; }
+	void setVerbosityDL(const std::string& verbosityDL) { this->verbosityDL = verbosityDLTranslator(verbosityDL); }
+
+private:
+	VerbosityDL verbosityDLTranslator(const std::string& verbosityDL) const;
+	std::string verbosityDLTranslator(VerbosityDL verbosityDL) const;
 };
 
 /**
@@ -57,7 +67,6 @@ public:
  */
 class DoglegState : public NonlinearOptimizerState {
 public:
-
   double Delta;
 
   DoglegState() {}
@@ -76,8 +85,11 @@ protected:
  */
 class DoglegOptimizer : public NonlinearOptimizer {
 
-public:
+protected:
+	DoglegParams params_;
+	DoglegState state_;
 
+public:
   typedef boost::shared_ptr<DoglegOptimizer> shared_ptr;
 
   /// @name Standard interface
@@ -101,7 +113,6 @@ public:
    * copies the objects.
    * @param graph The nonlinear factor graph to optimize
    * @param initialValues The initial variable assignments
-   * @param params The optimization parameters
    */
   DoglegOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues, const Ordering& ordering) :
         NonlinearOptimizer(graph) {
@@ -129,14 +140,11 @@ public:
   const DoglegState& state() const { return state_; }
 
   /** Access the current trust region radius Delta */
-  double Delta() const { return state_.Delta; }
+  double getDelta() const { return state_.Delta; }
 
   /// @}
 
 protected:
-  DoglegParams params_;
-  DoglegState state_;
-
   /** Access the parameters (base class version) */
   virtual const NonlinearOptimizerParams& _params() const { return params_; }
 

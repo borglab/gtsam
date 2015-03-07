@@ -4,14 +4,14 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
-#include <gtsam_unstable/dynamics/imuSystem.h>
+
+#include <gtsam_unstable/dynamics/VelocityConstraint.h>
 
 using namespace gtsam;
-using namespace imu;
 
 const double tol=1e-5;
 
-Key x1 = PoseKey(1), x2 = PoseKey(2);
+const Key x1 = 1, x2 = 2;
 const double dt = 1.0;
 
 PoseRTV origin,

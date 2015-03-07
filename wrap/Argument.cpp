@@ -12,6 +12,8 @@
 /**
  * @file Argument.ccp
  * @author Frank Dellaert
+ * @author Andrew Melim
+ * @author Richard Roberts
  **/
 
 #include <iostream>
@@ -30,10 +32,14 @@ string Argument::matlabClass(const string& delim) const {
 	string result;
 	BOOST_FOREACH(const string& ns, namespaces)
 	result += ns + delim;
-	if (type=="string")
+	if (type=="string" || type=="unsigned char" || type=="char")
 		return result + "char";
-	if (type=="bool" || type=="int" || type=="size_t" || type=="Vector" || type=="Matrix")
-		return result + "double";
+  if (type=="Vector" || type=="Matrix")
+    return result + "double";
+  if (type=="int" || type=="size_t")
+    return result + "numeric";
+  if (type=="bool")
+    return result + "logical";
 	return result + type;
 }
 
@@ -42,11 +48,11 @@ void Argument::matlab_unwrap(FileWriter& file, const string& matlabName) const {
   file.oss << "  ";
 
   string cppType = qualifiedType("::");
-  string matlabType = qualifiedType();
+  string matlabUniqueType = qualifiedType();
 
   if (is_ptr)
 		// A pointer: emit an "unwrap_shared_ptr" call which returns a pointer
-		file.oss << "shared_ptr<" << cppType << "> " << name << " = unwrap_shared_ptr< ";
+		file.oss << "boost::shared_ptr<" << cppType << "> " << name << " = unwrap_shared_ptr< ";
 	else if (is_ref)
 		// A reference: emit an "unwrap_shared_ptr" call and de-reference the pointer
 		file.oss << cppType << "& " << name << " = *unwrap_shared_ptr< ";
@@ -59,7 +65,7 @@ void Argument::matlab_unwrap(FileWriter& file, const string& matlabName) const {
 		file.oss << cppType << " " << name << " = unwrap< ";
 
 	file.oss << cppType << " >(" << matlabName;
-  if (is_ptr || is_ref) file.oss << ", \"" << matlabType << "\"";
+  if (is_ptr || is_ref) file.oss << ", \"ptr_" << matlabUniqueType << "\"";
   file.oss << ");" << endl;
 }
 
@@ -122,3 +128,4 @@ void ArgumentList::matlab_unwrap(FileWriter& file, int start) const {
 }
 
 /* ************************************************************************* */
+

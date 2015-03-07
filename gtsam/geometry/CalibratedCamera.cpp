@@ -47,7 +47,7 @@ Point3 CalibratedCamera::backproject_from_camera(const Point2& p, const double s
 }
 
 /* ************************************************************************* */
-CalibratedCamera CalibratedCamera::level(const Pose2& pose2, double height) {
+CalibratedCamera CalibratedCamera::Level(const Pose2& pose2, double height) {
 	double st = sin(pose2.theta()), ct = cos(pose2.theta());
 	Point3 x(st, -ct, 0), y(0, 0, -1), z(ct, st, 0);
 	Rot3 wRc(x, y, z);

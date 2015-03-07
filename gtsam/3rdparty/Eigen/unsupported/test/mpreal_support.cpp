@@ -2,6 +2,7 @@
 #include <Eigen/MPRealSupport>
 #include <Eigen/LU>
 #include <Eigen/Eigenvalues>
+#include <sstream>
 
 using namespace mpfr;
 using namespace std;
@@ -24,6 +25,15 @@ void test_mpreal_support()
     MatrixXmp B = MatrixXmp::Random(s,s);
     MatrixXmp S = A.adjoint() * A;
     MatrixXmp X;
+    
+    // Basic stuffs
+    VERIFY_IS_APPROX(A.real(), A);
+    VERIFY(Eigen::internal::isApprox(A.array().abs2().sum(), A.squaredNorm()));
+    VERIFY_IS_APPROX(A.array().exp(),         exp(A.array()));
+    VERIFY_IS_APPROX(A.array().abs2().sqrt(), A.array().abs());
+    VERIFY_IS_APPROX(A.array().sin(),         sin(A.array()));
+    VERIFY_IS_APPROX(A.array().cos(),         cos(A.array()));
+    
 
     // Cholesky
     X = S.selfadjointView<Lower>().llt().solve(B);
@@ -38,6 +48,13 @@ void test_mpreal_support()
     VERIFY_IS_EQUAL(eig.info(), Success);
     VERIFY_IS_APPROX((S.selfadjointView<Lower>() * eig.eigenvectors()),
                       eig.eigenvectors() * eig.eigenvalues().asDiagonal());
+  }
+  
+  {
+    MatrixXmp A(8,3); A.setRandom();
+    // test output (interesting things happen in this code)
+    std::stringstream stream;
+    stream << A;
   }
 }
 

@@ -17,6 +17,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+#undef NDEBUG
 #define NDEBUG
 #undef GTSAM_ENABLE_DEBUG
 #include <gtsam/base/debug.h>

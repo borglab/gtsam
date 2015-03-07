@@ -20,7 +20,7 @@
 #include "bench.hh"
 #include "basic_actions.hh"
 #include "action_hessenberg.hh"
-#include "action_lu_decomp.hh"
+#include "action_partial_lu.hh"
 
 BTL_MAIN;
 
@@ -34,13 +34,13 @@ int main()
   bench<Action_atv_product<gmm_interface<REAL_TYPE> > >(MIN_MV,MAX_MV,NB_POINT);
 
   bench<Action_matrix_matrix_product<gmm_interface<REAL_TYPE> > >(MIN_MM,MAX_MM,NB_POINT);
-  bench<Action_ata_product<gmm_interface<REAL_TYPE> > >(MIN_MM,MAX_MM,NB_POINT);
-  bench<Action_aat_product<gmm_interface<REAL_TYPE> > >(MIN_MM,MAX_MM,NB_POINT);
+//   bench<Action_ata_product<gmm_interface<REAL_TYPE> > >(MIN_MM,MAX_MM,NB_POINT);
+//   bench<Action_aat_product<gmm_interface<REAL_TYPE> > >(MIN_MM,MAX_MM,NB_POINT);
 
   bench<Action_trisolve<gmm_interface<REAL_TYPE> > >(MIN_MM,MAX_MM,NB_POINT);
   //bench<Action_lu_solve<blitz_LU_solve_interface<REAL_TYPE> > >(MIN_LU,MAX_LU,NB_POINT);
 
-  bench<Action_lu_decomp<gmm_interface<REAL_TYPE> > >(MIN_MM,MAX_MM,NB_POINT);
+  bench<Action_partial_lu<gmm_interface<REAL_TYPE> > >(MIN_MM,MAX_MM,NB_POINT);
   
   bench<Action_hessenberg<gmm_interface<REAL_TYPE> > >(MIN_MM,MAX_MM,NB_POINT);
   bench<Action_tridiagonalization<gmm_interface<REAL_TYPE> > >(MIN_MM,MAX_MM,NB_POINT);

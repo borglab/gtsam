@@ -28,6 +28,7 @@
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/FastMap.h>
 #include <gtsam/base/cholesky.h>
+#include <gtsam/linear/linearExceptions.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
@@ -47,13 +48,7 @@ string SlotEntry::toString() const {
 
 /* ************************************************************************* */
 void HessianFactor::assertInvariants() const {
-#ifndef NDEBUG
-	// Check for non-finite values
-	for(size_t i=0; i<(size_t) matrix_.rows(); ++i)
-		for(size_t j=i; j<(size_t) matrix_.cols(); ++j)
-			if(!isfinite(matrix_(i,j)))
-				throw invalid_argument("HessianFactor contains non-finite matrix entries.");
-#endif
+	GaussianFactor::assertInvariants(); // The base class checks for unique keys
 }
 
 /* ************************************************************************* */
@@ -188,7 +183,7 @@ HessianFactor::HessianFactor(const std::vector<Index>& js, const std::vector<Mat
   }
 
   // Create the dims vector
-  size_t dims[variable_count+1];
+  size_t* dims = (size_t*)alloca(sizeof(size_t)*(variable_count+1)); // FIXME: alloca is bad, just ask Google.
   size_t total_size = 0;
   for(unsigned int i = 0; i < variable_count; ++i){
     dims[i] = gs[i].size();
@@ -266,12 +261,10 @@ HessianFactor::HessianFactor(const FactorGraph<GaussianFactor>& factors,
 	if (debug) cout << "Combining " << factors.size() << " factors" << endl;
 	BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factors)
 	{
-		shared_ptr hessian(boost::dynamic_pointer_cast<HessianFactor>(factor));
-		if (hessian)
-			updateATA(*hessian, scatter);
-		else {
-			JacobianFactor::shared_ptr jacobianFactor(boost::dynamic_pointer_cast<JacobianFactor>(factor));
-			if (jacobianFactor)
+		if(factor) {
+			if(shared_ptr hessian = boost::dynamic_pointer_cast<HessianFactor>(factor))
+				updateATA(*hessian, scatter);
+			else if(JacobianFactor::shared_ptr jacobianFactor = boost::dynamic_pointer_cast<JacobianFactor>(factor))
 				updateATA(*jacobianFactor, scatter);
 			else
 				throw invalid_argument("GaussianFactor is neither Hessian nor Jacobian");
@@ -292,11 +285,11 @@ HessianFactor& HessianFactor::operator=(const HessianFactor& rhs) {
 }
 
 /* ************************************************************************* */
-void HessianFactor::print(const std::string& s) const {
+void HessianFactor::print(const std::string& s, const IndexFormatter& formatter) const {
 	cout << s << "\n";
 	cout << " keys: ";
 	for(const_iterator key=this->begin(); key!=this->end(); ++key)
-		cout << *key << "(" << this->getDim(key) << ") ";
+		cout << formatter(*key) << "(" << this->getDim(key) << ") ";
 	cout << "\n";
 	gtsam::print(Matrix(info_.range(0,info_.nBlocks(), 0,info_.nBlocks()).selfadjointView<Eigen::Upper>()), "Ab^T * Ab: ");
 }
@@ -315,13 +308,8 @@ bool HessianFactor::equals(const GaussianFactor& lf, double tol) const {
 }
 
 /* ************************************************************************* */
-double HessianFactor::constantTerm() const {
-	return info_(this->size(), this->size())(0,0);
-}
-
-/* ************************************************************************* */
-HessianFactor::constColumn HessianFactor::linearTerm() const {
-	return info_.rangeColumn(0, this->size(), this->size(), 0);
+Matrix HessianFactor::computeInformation() const {
+  return info_.full().selfadjointView<Eigen::Upper>();
 }
 
 /* ************************************************************************* */
@@ -345,7 +333,7 @@ void HessianFactor::updateATA(const HessianFactor& update, const Scatter& scatte
 
 	// First build an array of slots
 	tic(1, "slots");
-	size_t slots[update.size()];
+	size_t* slots = (size_t*)alloca(sizeof(size_t)*update.size()); // FIXME: alloca is bad, just ask Google.
 	size_t slot = 0;
 	BOOST_FOREACH(Index j, update) {
 		slots[slot] = scatter.find(j)->second.slot;
@@ -360,7 +348,6 @@ void HessianFactor::updateATA(const HessianFactor& update, const Scatter& scatte
 
 	// Apply updates to the upper triangle
 	tic(3, "update");
-	assert(this->info_.nBlocks() - 1 == scatter.size());
 	for(size_t j2=0; j2<update.info_.nBlocks(); ++j2) {
 		size_t slot2 = (j2 == update.size()) ? this->info_.nBlocks()-1 : slots[j2];
 		for(size_t j1=0; j1<=j2; ++j1) {
@@ -399,7 +386,7 @@ void HessianFactor::updateATA(const JacobianFactor& update, const Scatter& scatt
 
 	// First build an array of slots
 	tic(1, "slots");
-	size_t slots[update.size()];
+	size_t* slots = (size_t*)alloca(sizeof(size_t)*update.size()); // FIXME: alloca is bad, just ask Google.
 	size_t slot = 0;
 	BOOST_FOREACH(Index j, update) {
 		slots[slot] = scatter.find(j)->second.slot;
@@ -437,7 +424,6 @@ void HessianFactor::updateATA(const JacobianFactor& update, const Scatter& scatt
 
 	// Apply updates to the upper triangle
 	tic(3, "update");
-	assert(this->info_.nBlocks() - 1 == scatter.size());
 	for(size_t j2=0; j2<update.Ab_.nBlocks(); ++j2) {
 		size_t slot2 = (j2 == update.size()) ? this->info_.nBlocks()-1 : slots[j2];
 		for(size_t j1=0; j1<=j2; ++j1) {
@@ -468,7 +454,8 @@ void HessianFactor::updateATA(const JacobianFactor& update, const Scatter& scatt
 
 /* ************************************************************************* */
 void HessianFactor::partialCholesky(size_t nrFrontals) {
-	choleskyPartial(matrix_, info_.offset(nrFrontals));
+	if(!choleskyPartial(matrix_, info_.offset(nrFrontals)))
+		throw IndeterminantLinearSystemException(this->keys().front());
 }
 
 /* ************************************************************************* */
@@ -504,6 +491,26 @@ GaussianConditional::shared_ptr HessianFactor::splitEliminatedFactor(size_t nrFr
   toc(2, "remaining factor");
 
   return conditional;
+}
+
+/* ************************************************************************* */
+GaussianFactor::shared_ptr HessianFactor::negate() const {
+  // Copy Hessian Blocks from Hessian factor and invert
+  std::vector<Index> js;
+  std::vector<Matrix> Gs;
+  std::vector<Vector> gs;
+  double f;
+  js.insert(js.end(), begin(), end());
+  for(size_t i = 0; i < js.size(); ++i){
+    for(size_t j = i; j < js.size(); ++j){
+      Gs.push_back( -info(begin()+i, begin()+j) );
+    }
+    gs.push_back( -linearTerm(begin()+i) );
+  }
+  f = -constantTerm();
+
+  // Create the Anti-Hessian Factor from the negated blocks
+  return HessianFactor::shared_ptr(new HessianFactor(js, Gs, gs, f));
 }
 
 } // gtsam

@@ -108,3 +108,5 @@ namespace gtsam {
 
 
 } // namespace gtsam
+
+#include <gtsam/inference/graph-inl.h>

@@ -42,17 +42,13 @@ template<typename Scalar,int Size> void homogeneous(void)
   typedef Matrix<Scalar,Size+1,Size> T3MatrixType;
 
   VectorType v0 = VectorType::Random(),
-             v1 = VectorType::Random(),
              ones = VectorType::Ones();
 
-  HVectorType hv0 = HVectorType::Random(),
-              hv1 = HVectorType::Random();
+  HVectorType hv0 = HVectorType::Random();
 
-  MatrixType m0 = MatrixType::Random(),
-             m1 = MatrixType::Random();
+  MatrixType m0 = MatrixType::Random();
 
-  HMatrixType hm0 = HMatrixType::Random(),
-              hm1 = HMatrixType::Random();
+  HMatrixType hm0 = HMatrixType::Random();
 
   hv0 << v0, 1;
   VERIFY_IS_APPROX(v0.homogeneous(), hv0);

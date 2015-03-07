@@ -113,7 +113,7 @@ void specificTest1()
     Vector2f m; m << -1.0f, -2.0f;
     Vector2f M; M <<  1.0f,  5.0f;
 
-    typedef AlignedBox<float,2>  BoxType;
+    typedef AlignedBox2f  BoxType;
     BoxType box( m, M );
 
     Vector2f sides = M-m;
@@ -140,7 +140,7 @@ void specificTest2()
     Vector3i m; m << -1, -2, 0;
     Vector3i M; M <<  1,  5, 3;
 
-    typedef AlignedBox<int,3>  BoxType;
+    typedef AlignedBox3i  BoxType;
     BoxType box( m, M );
 
     Vector3i sides = M-m;
@@ -165,21 +165,21 @@ void test_geo_alignedbox()
 {
   for(int i = 0; i < g_repeat; i++)
   {
-    CALL_SUBTEST_1( alignedbox(AlignedBox<float,2>()) );
-    CALL_SUBTEST_2( alignedboxCastTests(AlignedBox<float,2>()) );
+    CALL_SUBTEST_1( alignedbox(AlignedBox2f()) );
+    CALL_SUBTEST_2( alignedboxCastTests(AlignedBox2f()) );
 
-    CALL_SUBTEST_3( alignedbox(AlignedBox<float,3>()) );
-    CALL_SUBTEST_4( alignedboxCastTests(AlignedBox<float,3>()) );
+    CALL_SUBTEST_3( alignedbox(AlignedBox3f()) );
+    CALL_SUBTEST_4( alignedboxCastTests(AlignedBox3f()) );
 
-    CALL_SUBTEST_5( alignedbox(AlignedBox<double,4>()) );
-    CALL_SUBTEST_6( alignedboxCastTests(AlignedBox<double,4>()) );
+    CALL_SUBTEST_5( alignedbox(AlignedBox4d()) );
+    CALL_SUBTEST_6( alignedboxCastTests(AlignedBox4d()) );
 
-    CALL_SUBTEST_7( alignedbox(AlignedBox<double,1>()) );
-    CALL_SUBTEST_8( alignedboxCastTests(AlignedBox<double,1>()) );
+    CALL_SUBTEST_7( alignedbox(AlignedBox1d()) );
+    CALL_SUBTEST_8( alignedboxCastTests(AlignedBox1d()) );
 
-    CALL_SUBTEST_9( alignedbox(AlignedBox<int,1>()) );
-    CALL_SUBTEST_10( alignedbox(AlignedBox<int,2>()) );
-    CALL_SUBTEST_11( alignedbox(AlignedBox<int,3>()) );
+    CALL_SUBTEST_9( alignedbox(AlignedBox1i()) );
+    CALL_SUBTEST_10( alignedbox(AlignedBox2i()) );
+    CALL_SUBTEST_11( alignedbox(AlignedBox3i()) );
   }
   CALL_SUBTEST_12( specificTest1() );
   CALL_SUBTEST_13( specificTest2() );

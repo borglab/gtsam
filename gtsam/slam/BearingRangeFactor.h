@@ -26,13 +26,14 @@ namespace gtsam {
 
 	/**
 	 * Binary factor for a bearing measurement
+	 * @addtogroup SLAM
 	 */
-	template<class POSE, class POINT>
+	template<class POSE, class POINT, class ROTATION = typename POSE::Rotation>
 	class BearingRangeFactor: public NoiseModelFactor2<POSE, POINT> {
 	private:
 
 		typedef POSE Pose;
-		typedef typename POSE::Rotation Rot;
+		typedef ROTATION Rot;
 		typedef POINT Point;
 
 		typedef BearingRangeFactor<POSE, POINT> This;
@@ -57,14 +58,19 @@ namespace gtsam {
 
 		virtual ~BearingRangeFactor() {}
 
+		/// @return a deep copy of this factor
+    virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+		  return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+		      gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
+
 	  /** Print */
 	  virtual void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
-	    std::cout << s << ": BearingRangeFactor("
+	    std::cout << s << "BearingRangeFactor("
 	    		<< keyFormatter(this->key1()) << ","
 	    		<< keyFormatter(this->key2()) << ")\n";
-	    measuredBearing_.print("  measured bearing");
-	    std::cout << "  measured range: " << measuredRange_ << std::endl;
-	    this->noiseModel_->print("  noise model");
+	    measuredBearing_.print("measured bearing: ");
+	    std::cout << "measured range: " << measuredRange_ << std::endl;
+	    this->noiseModel_->print("noise model:\n");
 	  }
 
 		/** equals */

@@ -41,9 +41,9 @@ namespace gtsam {
 
   /* ************************************************************************* */
   void Values::print(const string& str, const KeyFormatter& keyFormatter) const {
-    cout << str << "Values with " << size() << " values:\n" << endl;
+    cout << str << "Values with " << size() << " values:" << endl;
     for(const_iterator key_value = begin(); key_value != end(); ++key_value) {
-      cout << "  " << keyFormatter(key_value->key) << ": ";
+      cout << "Value " << keyFormatter(key_value->key) << ": ";
       key_value->value.print("");
     }
   }
@@ -90,7 +90,15 @@ namespace gtsam {
   /* ************************************************************************* */
   VectorValues Values::localCoordinates(const Values& cp, const Ordering& ordering) const {
     VectorValues result(this->dims(ordering));
-    localCoordinates(cp, ordering, result);
+    if(this->size() != cp.size())
+      throw DynamicValuesMismatched();
+    for(const_iterator it1=this->begin(), it2=cp.begin(); it1!=this->end(); ++it1, ++it2) {
+      if(it1->key != it2->key)
+        throw DynamicValuesMismatched(); // If keys do not match
+      // Will throw a dynamic_cast exception if types do not match
+      // NOTE: this is separate from localCoordinates(cp, ordering, result) due to at() vs. insert
+      result.at(ordering[it1->key]) = it1->value.localCoordinates_(it2->value);
+    }
     return result;
   }
 
@@ -120,7 +128,7 @@ namespace gtsam {
   /* ************************************************************************* */
   void Values::insert(Key j, const Value& val) {
   	Key key = j; // Non-const duplicate to deal with non-const insert argument
-  	std::pair<iterator,bool> insertResult = values_.insert(key, val.clone_());
+  	std::pair<KeyValueMap::iterator,bool> insertResult = values_.insert(key, val.clone_());
   	if(!insertResult.second)
   		throw ValuesKeyAlreadyExists(j);
   }
@@ -165,10 +173,8 @@ namespace gtsam {
   /* ************************************************************************* */
   FastList<Key> Values::keys() const {
     FastList<Key> result;
-    for(const_iterator key_value = begin(); key_value != end(); ++key_value) {
+    for(const_iterator key_value = begin(); key_value != end(); ++key_value)
       result.push_back(key_value->key);
-      cout << result.back() << endl;
-    }
     return result;
   }
 

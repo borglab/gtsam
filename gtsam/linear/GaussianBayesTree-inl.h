@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    GaussianBayesTree.cpp
+ * @file    GaussianBayesTree-inl.h
  * @brief   Gaussian Bayes Tree, the result of eliminating a GaussianJunctionTree
  * @brief   GaussianBayesTree
  * @author  Frank Dellaert

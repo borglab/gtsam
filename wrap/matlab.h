@@ -14,6 +14,9 @@
  * @brief header file to be included in MATLAB wrappers
  * @date 2008
  * @author Frank Dellaert
+ * @author Alex Cunningham
+ * @author Andrew Melim
+ * @author Richard Roberts
  *
  * wrapping and unwrapping is done using specialized templates, see
  * http://www.cplusplus.com/doc/tutorial/templates.html
@@ -31,10 +34,14 @@ extern "C" {
 
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
+#include <boost/foreach.hpp>
 
 #include <list>
 #include <string>
 #include <sstream>
+#include <typeinfo>
+#include <set>
+#include <streambuf>
 
 using namespace std;
 using namespace boost; // not usual, but for conciseness of generated code
@@ -44,12 +51,25 @@ using namespace boost; // not usual, but for conciseness of generated code
 #define GTSAM_MAGIC_GAUSSIAN
 // end GTSAM Specifics /////////////////////////////////////////////////
 
-#ifdef __LP64__
-// 64-bit Mac
+#if defined(__LP64__) || defined(_WIN64)
+// 64-bit
 #define mxUINT32OR64_CLASS mxUINT64_CLASS
 #else
 #define mxUINT32OR64_CLASS mxUINT32_CLASS
 #endif
+
+// "Unique" key to signal calling the matlab object constructor with a raw pointer
+// to a shared pointer of the same C++ object type as the MATLAB type.
+// Also present in utilities.h
+static const uint64_t ptr_constructor_key =
+	(uint64_t('G') << 56) |
+	(uint64_t('T') << 48) |
+	(uint64_t('S') << 40) |
+	(uint64_t('A') << 32) |
+	(uint64_t('M') << 24) |
+	(uint64_t('p') << 16) |
+	(uint64_t('t') << 8) |
+	(uint64_t('r'));
 
 //*****************************************************************************
 // Utilities
@@ -70,6 +90,22 @@ void checkScalar(const mxArray* array, const char* str) {
 		mexErrMsgIdAndTxt("wrap: not a scalar in ", str);
 }
 
+// Replacement streambuf for cout that writes to the MATLAB console
+// Thanks to http://stackoverflow.com/a/249008
+class mstream : public std::streambuf {
+protected:
+	virtual std::streamsize xsputn(const char *s, std::streamsize n) {
+		mexPrintf("%.*s",n,s);
+		return n;
+	}
+	virtual int overflow(int c = EOF) {
+		if (c != EOF) {
+			mexPrintf("%.1s",&c);
+		}
+		return 1;
+	}
+};
+
 //*****************************************************************************
 // Check arguments
 //*****************************************************************************
@@ -87,28 +123,37 @@ void checkArguments(const string& name, int nargout, int nargin, int expected) {
 
 // default wrapping throws an error: only basis types are allowed in wrap
 template <typename Class>
-mxArray* wrap(Class& value) {
+mxArray* wrap(const Class& value) {
   error("wrap internal error: attempted wrap of invalid type");
+	return 0;
 }
 
 // specialization to string
 // wraps into a character array
 template<>
-mxArray* wrap<string>(string& value) {
+mxArray* wrap<string>(const string& value) {
   return mxCreateString(value.c_str());
 }
 
 // specialization to char
 template<>
-mxArray* wrap<char>(char& value) {
+mxArray* wrap<char>(const char& value) {
   mxArray *result = scalar(mxUINT32OR64_CLASS);
   *(char*)mxGetData(result) = value;
   return result;
 }
 
+// specialization to unsigned char
+template<>
+mxArray* wrap<unsigned char>(const unsigned char& value) {
+  mxArray *result = scalar(mxUINT32OR64_CLASS);
+  *(unsigned char*)mxGetData(result) = value;
+  return result;
+}
+
 // specialization to bool
 template<>
-mxArray* wrap<bool>(bool& value) {
+mxArray* wrap<bool>(const bool& value) {
   mxArray *result = scalar(mxUINT32OR64_CLASS);
   *(bool*)mxGetData(result) = value;
   return result;
@@ -116,7 +161,7 @@ mxArray* wrap<bool>(bool& value) {
 
 // specialization to size_t
 template<>
-mxArray* wrap<size_t>(size_t& value) {
+mxArray* wrap<size_t>(const size_t& value) {
   mxArray *result = scalar(mxUINT32OR64_CLASS);
   *(size_t*)mxGetData(result) = value;
   return result;
@@ -124,7 +169,7 @@ mxArray* wrap<size_t>(size_t& value) {
 
 // specialization to int
 template<>
-mxArray* wrap<int>(int& value) {
+mxArray* wrap<int>(const int& value) {
   mxArray *result = scalar(mxUINT32OR64_CLASS);
   *(int*)mxGetData(result) = value;
   return result;
@@ -132,7 +177,7 @@ mxArray* wrap<int>(int& value) {
 
 // specialization to double -> just double
 template<>
-mxArray* wrap<double>(double& value) {
+mxArray* wrap<double>(const double& value) {
   return mxCreateDoubleScalar(value);
 }
 
@@ -147,13 +192,7 @@ mxArray* wrap_Vector(const gtsam::Vector& v) {
 
 // specialization to Eigen vector -> double vector
 template<>
-mxArray* wrap<gtsam::Vector >(gtsam::Vector& v) {
-  return wrap_Vector(v);
-}
-
-// const version
-template<>
-mxArray* wrap<const gtsam::Vector >(const gtsam::Vector& v) {
+mxArray* wrap<gtsam::Vector >(const gtsam::Vector& v) {
   return wrap_Vector(v);
 }
 
@@ -173,13 +212,7 @@ mxArray* wrap_Matrix(const gtsam::Matrix& A) {
 
 // specialization to Eigen MATRIX -> double matrix
 template<>
-mxArray* wrap<gtsam::Matrix >(gtsam::Matrix& A) {
-  return wrap_Matrix(A);
-}
-
-// const version
-template<>
-mxArray* wrap<const gtsam::Matrix >(const gtsam::Matrix& A) {
+mxArray* wrap<gtsam::Matrix >(const gtsam::Matrix& A) {
   return wrap_Matrix(A);
 }
 
@@ -206,39 +239,60 @@ string unwrap<string>(const mxArray* array) {
   return str;
 }
 
+// Check for 64-bit, as Mathworks says mxGetScalar only good for 32 bit
+template <typename T>
+T myGetScalar(const mxArray* array) {
+	switch (mxGetClassID(array)) {
+		case mxINT64_CLASS:
+			return (T) *(int64_t*) mxGetData(array);
+		case mxUINT64_CLASS:
+			return (T) *(uint64_t*) mxGetData(array);
+		default:
+			// hope for the best!
+			return (T) mxGetScalar(array);
+	}
+}
+
 // specialization to bool
 template<>
 bool unwrap<bool>(const mxArray* array) {
 	checkScalar(array,"unwrap<bool>");
-  return mxGetScalar(array) != 0.0;
+  return myGetScalar<bool>(array);
 }
 
-// specialization to bool
+// specialization to char
 template<>
 char unwrap<char>(const mxArray* array) {
 	checkScalar(array,"unwrap<char>");
-  return (char)mxGetScalar(array);
+  return myGetScalar<char>(array);
 }
 
-// specialization to size_t
+// specialization to unsigned char
 template<>
-size_t unwrap<size_t>(const mxArray* array) {
-	checkScalar(array,"unwrap<size_t>");
-  return (size_t)mxGetScalar(array);
+unsigned char unwrap<unsigned char>(const mxArray* array) {
+	checkScalar(array,"unwrap<unsigned char>");
+  return myGetScalar<unsigned char>(array);
 }
 
 // specialization to int
 template<>
 int unwrap<int>(const mxArray* array) {
 	checkScalar(array,"unwrap<int>");
-  return (int)mxGetScalar(array);
+  return myGetScalar<int>(array);
+}
+
+// specialization to size_t
+template<>
+size_t unwrap<size_t>(const mxArray* array) {
+	checkScalar(array, "unwrap<size_t>");
+  return myGetScalar<size_t>(array);
 }
 
 // specialization to double
 template<>
 double unwrap<double>(const mxArray* array) {
 	checkScalar(array,"unwrap<double>");
-  return (double)mxGetScalar(array);
+  return myGetScalar<double>(array);
 }
 
 // specialization to Eigen vector
@@ -276,126 +330,67 @@ gtsam::Matrix unwrap< gtsam::Matrix >(const mxArray* array) {
   return A;
 }
 
-//*****************************************************************************
-// Shared Pointer Handle
-// inspired by mexhandle, but using shared_ptr
-//*****************************************************************************
-
-template<typename T>
-class ObjectHandle {
-private:
-	ObjectHandle* signature; // use 'this' as a unique object signature
-	const std::type_info* type; // type checking information
-	shared_ptr<T> t; // object pointer
-
-public:
-	// Constructor for free-store allocated objects.
-	// Creates shared pointer, will delete if is last one to hold pointer
-	ObjectHandle(T* ptr) :
-		type(&typeid(T)), t(shared_ptr<T> (ptr)) {
-		signature = this;
-	}
-
-	// Constructor for shared pointers
-	// Creates shared pointer, will delete if is last one to hold pointer
-	ObjectHandle(shared_ptr<T> ptr) :
-		/*type(&typeid(T)),*/ t(ptr) {
-		signature = this;
-	}
-
-	~ObjectHandle() {
-		// object is in shared_ptr, will be automatically deleted
-		signature = 0; // destroy signature
-	}
-
-	// Get the actual object contained by handle
-	shared_ptr<T> get_object() const {
-		return t;
-	}
-
-	// Print the mexhandle for debugging
-	void print(const char* str) {
-		mexPrintf("mexhandle %s:\n", str);
-		mexPrintf("  signature = %d:\n", signature);
-		mexPrintf("  pointer   = %d:\n", t.get());
-	}
-
-	// Convert ObjectHandle<T> to a mxArray handle (to pass back from mex-function).
-	// Create a numeric array as handle for an ObjectHandle.
-	// We ASSUME we can store object pointer in the mxUINT32 element of mxArray.
-	mxArray* to_mex_handle() {
-		mxArray* handle = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
-		*reinterpret_cast<ObjectHandle<T>**> (mxGetPr(handle)) = this;
-		return handle;
-	}
-
-	string type_name() const {
-		return type->name();
-	}
-
-	// Convert mxArray (passed to mex-function) to an ObjectHandle<T>.
-	// Import a handle from MatLab as a mxArray of UINT32. Check that
-	// it is actually a pointer to an ObjectHandle<T>.
-	static ObjectHandle* from_mex_handle(const mxArray* handle) {
-		if (mxGetClassID(handle) != mxUINT32OR64_CLASS || mxIsComplex(handle)
-				|| mxGetM(handle) != 1 || mxGetN(handle) != 1) error(
-				"Parameter is not an ObjectHandle type.");
-
-		// We *assume* we can store ObjectHandle<T> pointer in the mxUINT32 of handle
-		ObjectHandle* obj = *reinterpret_cast<ObjectHandle**> (mxGetPr(handle));
-
-		if (!obj) // gross check to see we don't have an invalid pointer
-		error("Parameter is NULL. It does not represent an ObjectHandle object.");
-		// TODO: change this for max-min check for pointer values
-
-		if (obj->signature != obj) // check memory has correct signature
-		error("Parameter does not represent an ObjectHandle object.");
-
-		/*
-		 if (*(obj->type) != typeid(T)) { // check type
-		 mexPrintf("Given: <%s>, Required: <%s>.\n", obj->type_name(), typeid(T).name());
-		 error("Given ObjectHandle does not represent the correct type.");
-		 }
-		 */
-
-		return obj;
-	}
-
-};
-
-//*****************************************************************************
-// wrapping C++ objects in a MATLAB proxy class
-//*****************************************************************************
-
-/* 
- For every C++ class Class, a matlab proxy class @Class/Class.m object
- is created. Its constructor will check which of the C++ constructors
- needs to be called, based on nr of arguments. It then calls the
- corresponding mex function new_Class_signature, which will create a
- C++ object using new, and pass the pointer to wrap_constructed
- (below). This creates a mexhandle and returns it to the proxy class
- constructor, which assigns it to self. Matlab owns this handle now.
-*/
-template <typename Class>
-mxArray* wrap_constructed(Class* pointer, const char *classname) {
-  ObjectHandle<Class>* handle = new ObjectHandle<Class>(pointer);
-  return handle->to_mex_handle();
-}
-
 /*
  [create_object] creates a MATLAB proxy class object with a mexhandle
  in the self property. Matlab does not allow the creation of matlab
  objects from within mex files, hence we resort to an ugly trick: we
- invoke the proxy class constructor by calling MATLAB, and pass 13
- dummy arguments to let the constructor know we want an object without
- the self property initialized. We then assign the mexhandle to self.
+ invoke the proxy class constructor by calling MATLAB with a special
+ uint64 value ptr_constructor_key and the pointer itself.  MATLAB
+ allocates the object.  Then, the special constructor in our wrap code
+ that is activated when the ptr_constructor_key is passed in passes
+ the pointer back into a C++ function to add the pointer to its
+ collector.  We go through this extra "C++ to MATLAB to C++ step" in
+ order to be able to add to the collector could be in a different wrap
+ module.
 */
-// TODO: think about memory
-mxArray* create_object(const char *classname, mxArray* h) {
+mxArray* create_object(const std::string& classname, void *pointer, bool isVirtual, const char *rttiName) {
   mxArray *result;
-  mxArray* dummy[13] = {h,h,h,h,h, h,h,h,h,h, h,h,h};
-  mexCallMATLAB(1,&result,13,dummy,classname);
-  mxSetProperty(result, 0, "self", h);
+	mxArray *input[3];
+	int nargin = 2;
+	// First input argument is pointer constructor key
+	input[0] = mxCreateNumericMatrix(1, 1, mxUINT64_CLASS, mxREAL);
+	*reinterpret_cast<uint64_t*>(mxGetData(input[0])) = ptr_constructor_key;
+	// Second input argument is the pointer
+  input[1] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
+	*reinterpret_cast<void**>(mxGetData(input[1])) = pointer;
+	// If the class is virtual, use the RTTI name to look up the derived matlab type
+	const char *derivedClassName;
+	if(isVirtual) {
+		const mxArray *rttiRegistry = mexGetVariablePtr("global", "gtsamwrap_rttiRegistry");
+		if(!rttiRegistry)
+			mexErrMsgTxt(
+			"gtsam wrap:  RTTI registry is missing - it could have been cleared from the workspace."
+			"  You can issue 'clear all' to completely clear the workspace, and next time a wrapped object is"
+			" created the RTTI registry will be recreated.");
+		const mxArray *derivedNameMx = mxGetField(rttiRegistry, 0, rttiName);
+		if(!derivedNameMx)
+			mexErrMsgTxt((
+			"gtsam wrap:  The derived class type " + string(rttiName) + " was not found in the RTTI registry.  "
+			"Try calling 'clear all' twice consecutively - we have seen things not get unloaded properly the "
+			"first time.  If this does not work, this may indicate an inconsistency in your wrap interface file.  "
+			"The most likely cause for this is that a base class was marked virtual in the wrap interface "
+			"definition header file for gtsam or for your module, but a derived type was returned by a C++ "
+			"function and that derived type was not marked virtual (or was not specified in the wrap interface "
+			"definition header at all).").c_str());
+		size_t strLen = mxGetN(derivedNameMx);
+		char *buf = new char[strLen+1];
+		if(mxGetString(derivedNameMx, buf, strLen+1))
+			mexErrMsgTxt("gtsam wrap:  Internal error reading RTTI table, try 'clear all' to clear your workspace and reinitialize the toolbox.");
+		derivedClassName = buf;
+		input[2] = mxCreateString("void");
+		nargin = 3;
+	} else {
+		derivedClassName = classname.c_str();
+	}
+	// Call special pointer constructor, which sets 'self'
+  mexCallMATLAB(1,&result, nargin, input, derivedClassName);
+  // Deallocate our memory
+	mxDestroyArray(input[0]);
+	mxDestroyArray(input[1]);
+	if(isVirtual) {
+		mxDestroyArray(input[2]);
+		delete[] derivedClassName;
+	}
   return result;
 }
 
@@ -405,52 +400,27 @@ mxArray* create_object(const char *classname, mxArray* h) {
  class to matlab.
 */
 template <typename Class>
-mxArray* wrap_shared_ptr(shared_ptr< Class > shared_ptr, const char *classname) {
-  ObjectHandle<Class>* handle = new ObjectHandle<Class>(shared_ptr);
-  return create_object(classname,handle->to_mex_handle());
-}
-
-//*****************************************************************************
-// unwrapping a MATLAB proxy class to a C++ object reference
-//*****************************************************************************
-
-/*
- Besides the basis types, the only other argument type allowed is a
- shared pointer to a C++ object. In this case, matlab needs to pass a
- proxy class object to the mex function. [unwrap_shared_ptr] extracts
- the ObjectHandle from the self property, and returns a shared pointer
- to the object.
-*/
-template <typename Class>
-shared_ptr<Class> unwrap_shared_ptr(const mxArray* obj, const string& className) {
-    //Why is this here?
-#ifndef UNSAFE_WRAP
-  bool isClass = mxIsClass(obj, className.c_str());
-  if (!isClass) {
-    mexPrintf("Expected %s, got %s\n", className.c_str(), mxGetClassName(obj));
-    error("Argument has wrong type.");
-  }
-#endif
-  mxArray* mxh = mxGetProperty(obj,0,"self");
-  if (mxh==NULL) error("unwrap_reference: invalid wrap object");
-  ObjectHandle<Class>* handle = ObjectHandle<Class>::from_mex_handle(mxh);
-  return handle->get_object();
+mxArray* wrap_shared_ptr(boost::shared_ptr< Class > shared_ptr, const std::string& matlabName, bool isVirtual) {
+	// Create actual class object from out pointer
+	mxArray* result;
+	if(isVirtual) {
+		boost::shared_ptr<void> void_ptr(shared_ptr);
+		result = create_object(matlabName, &void_ptr, isVirtual, typeid(*shared_ptr).name());
+	} else {
+		boost::shared_ptr<Class> *heapPtr = new boost::shared_ptr<Class>(shared_ptr);
+		result = create_object(matlabName, heapPtr, isVirtual, "");
+	}
+	return result;
 }
 
 template <typename Class>
-void delete_shared_ptr(const mxArray* obj, const string& className) {
-    //Why is this here?
-#ifndef UNSAFE_WRAP
-  bool isClass = true;//mxIsClass(obj, className.c_str());
-  if (!isClass) {
-    mexPrintf("Expected %s, got %s\n", className.c_str(), mxGetClassName(obj));
-    error("Argument has wrong type.");
-  }
-#endif
-  mxArray* mxh = mxGetProperty(obj,0,"self");
-  if (mxh==NULL) error("unwrap_reference: invalid wrap object");
-  ObjectHandle<Class>* handle = ObjectHandle<Class>::from_mex_handle(mxh);
-  delete handle;
-}
+boost::shared_ptr<Class> unwrap_shared_ptr(const mxArray* obj, const string& propertyName) {
 
-//*****************************************************************************
+	mxArray* mxh = mxGetProperty(obj,0, propertyName.c_str());
+  if (mxGetClassID(mxh) != mxUINT32OR64_CLASS || mxIsComplex(mxh)
+    || mxGetM(mxh) != 1 || mxGetN(mxh) != 1) error(
+    "Parameter is not an Shared type.");
+
+  boost::shared_ptr<Class>* spp = *reinterpret_cast<boost::shared_ptr<Class>**> (mxGetData(mxh));
+  return *spp;
+}

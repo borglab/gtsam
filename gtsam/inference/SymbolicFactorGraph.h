@@ -23,12 +23,14 @@
 
 namespace gtsam { template<class FACTOR> class EliminationTree; }
 namespace gtsam { template<class CONDITIONAL> class BayesNet; }
+namespace gtsam { template<class CONDITIONAL, class CLIQUE> class BayesTree; }
 namespace gtsam { class IndexConditional; }
 
 namespace gtsam {
 
+  typedef EliminationTree<IndexFactor> SymbolicEliminationTree;
 	typedef BayesNet<IndexConditional> SymbolicBayesNet;
-	typedef EliminationTree<IndexFactor> SymbolicEliminationTree;
+	typedef BayesTree<IndexConditional> SymbolicBayesTree;
 
 	/** Symbolic IndexFactor Graph
 	 *  \nosubgrouping
@@ -45,13 +47,25 @@ namespace gtsam {
 		}
 
 		/** Construct from a BayesNet */
-		SymbolicFactorGraph(const BayesNet<IndexConditional>& bayesNet);
+		SymbolicFactorGraph(const SymbolicBayesNet& bayesNet);
+
+    /** Construct from a BayesTree */
+    SymbolicFactorGraph(const SymbolicBayesTree& bayesTree);
 
 		/**
 		 * Construct from a factor graph of any type
 		 */
 		template<class FACTOR>
 		SymbolicFactorGraph(const FactorGraph<FACTOR>& fg);
+		
+		/** Eliminate the first \c n frontal variables, returning the resulting
+		 * conditional and remaining factor graph - this is very inefficient for
+		 * eliminating all variables, to do that use EliminationTree or
+		 * JunctionTree.  Note that this version simply calls
+		 * FactorGraph<IndexFactor>::eliminateFrontals with EliminateSymbolic
+		 * as the eliminate function argument.
+		 */
+		std::pair<sharedConditional, SymbolicFactorGraph> eliminateFrontals(size_t nFrontals) const;
 
 		/// @}
 		/// @name Standard Interface
@@ -62,6 +76,8 @@ namespace gtsam {
 		 * union).
 		 */
 		FastSet<Index> keys() const;
+
+
 
 		/// @}
 		/// @name Advanced Interface
@@ -82,9 +98,8 @@ namespace gtsam {
 	};
 
 	/** Create a combined joint factor (new style for EliminationTree). */
-	IndexFactor::shared_ptr CombineSymbolic(
-			const FactorGraph<IndexFactor>& factors, const FastMap<Index,
-					std::vector<Index> >& variableSlots);
+	IndexFactor::shared_ptr CombineSymbolic(const FactorGraph<IndexFactor>& factors,
+		const FastMap<Index, std::vector<Index> >& variableSlots);
 
 	/**
 	 * CombineAndEliminate provides symbolic elimination.

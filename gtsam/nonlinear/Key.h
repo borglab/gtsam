@@ -20,6 +20,10 @@
 #include <boost/function.hpp>
 #include <string>
 
+#include <gtsam/base/FastVector.h>
+#include <gtsam/base/FastList.h>
+#include <gtsam/base/FastSet.h>
+
 namespace gtsam {
 
   /// Integer nonlinear key type
@@ -35,6 +39,11 @@ namespace gtsam {
   /// a nonlinear 'print' function.  Automatically detects plain integer keys
   /// and Symbol keys.
   static const KeyFormatter DefaultKeyFormatter = &_defaultKeyFormatter;
+
+	/// Useful typedefs for operations with Values - allow for matlab interfaces
+	typedef FastList<Key> KeyList;
+	typedef FastVector<Key> KeyVector;
+	typedef FastSet<Key> KeySet;
 
 }
 

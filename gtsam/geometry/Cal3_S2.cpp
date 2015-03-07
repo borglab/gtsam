@@ -15,11 +15,11 @@
  * @author Frank Dellaert
  */
 
+#include <gtsam/geometry/Cal3_S2.h>
+
 #include <cmath>
 #include <fstream>
 #include <iostream>
-
-#include <gtsam/geometry/Cal3_S2.h>
 
 namespace gtsam {
 	using namespace std;
@@ -51,7 +51,11 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
+	void Cal3_S2::print(const std::string& s) const {
+		gtsam::print(matrix(), s);
+	}
 
+	/* ************************************************************************* */
 	bool Cal3_S2::equals(const Cal3_S2& K, double tol) const {
 		if (fabs(fx_ - K.fx_) > tol) return false;
 		if (fabs(fy_ - K.fy_) > tol) return false;

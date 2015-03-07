@@ -15,9 +15,10 @@ namespace gtsam {
 	using namespace std;
 
 	/* ************************************************************************* */
-	void Domain::print(const string& s) const {
-//		cout << s << ": Domain on " << keys_[0] << " (j=" << keys_[0]
-//				<< ") with values";
+	void Domain::print(const string& s,
+			const IndexFormatter& formatter) const {
+//		cout << s << ": Domain on " << formatter(keys_[0]) << " (j=" <<
+//		formatter(keys_[0]) << ") with values";
 //		BOOST_FOREACH (size_t v,values_) cout << " " << v;
 //		cout << endl;
 		BOOST_FOREACH (size_t v,values_) cout << v;
@@ -29,7 +30,7 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	Domain::operator DecisionTreeFactor() const {
+	DecisionTreeFactor Domain::toDecisionTreeFactor() const {
 		DiscreteKeys keys;
 		keys += DiscreteKey(keys_[0],cardinality_);
 		vector<double> table;
@@ -42,7 +43,7 @@ namespace gtsam {
 	/* ************************************************************************* */
 	DecisionTreeFactor Domain::operator*(const DecisionTreeFactor& f) const {
 		// TODO: can we do this more efficiently?
-		return DecisionTreeFactor(*this) * f;
+		return toDecisionTreeFactor() * f;
 	}
 
 	/* ************************************************************************* */

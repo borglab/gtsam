@@ -37,7 +37,7 @@ of licensing in LICENSE and as follows:
   - CCOLAMD 2.73: Tim Davis' constrained column approximate minimum degree ordering library
     - http://www.cise.ufl.edu/research/sparse
     - Licenced under LGPL v2.1, provided in gtsam/3rdparty/CCOLAMD/Doc/lesser.txt
-  - Eigen 3.0.5:  General C++ matrix and linear algebra library
+  - Eigen 3.1:  General C++ matrix and linear algebra library
     - Licenced under LGPL v3, provided in gtsam/3rdparty/Eigen/COPYING.LGPL
 
 
@@ -51,17 +51,20 @@ Important Installation Notes
 
 1)
 GTSAM requires the following libraries to be installed on your system:
- - BOOST version 1.40 or greater (install through Linux repositories or MacPorts)
+ - BOOST version 1.43 or greater (install through Linux repositories or MacPorts)
  - Cmake version 2.6 or higher
+ - Support for XCode 4.3 command line tools on Mac requires CMake 2.8.8 or higher
 
 Tested compilers
  - GCC 4.2-4.7
  - Clang 2.9-3.2
  - OSX GCC 4.2
+ - MSVC 2010, 2012
  
 Tested systems:
  - Ubuntu 11.04, 11.10, 12.04
  - MacOS 10.6, 10.7
+ - Windows 7
 
 2)
 GTSAM makes extensive use of debug assertions, and we highly recommend you work
@@ -71,8 +74,8 @@ will run up to 10x faster in Release mode! See the end of this document for
 additional debugging tips.
 
 3)
-GTSAM has Doxygen documentation. To generate, run the the script 
-makedoc.sh.  
+GTSAM has Doxygen documentation. To generate, run 'make doc' from your
+build directory.
 
 4)
 The instructions below install the library to the default system install path and
@@ -146,6 +149,12 @@ To run check on a particular module only, run "make check.[subfolder]", so to ru
 just the geometry tests, run "make check.geometry". Individual tests can be run by
 appending ".run" to the name of the test, for example, to run testMatrix, run 
 "make testMatrix.run". 
+
+MEX_COMMAND: Path to the mex compiler. Defaults to assume the path is included in your 
+shell's PATH environment variable. mex is installed with matlab at 
+$MATLABROOT/bin/mex
+
+$MATLABROOT can be found by executing the command 'matlabroot' in MATLAB
 
 Debugging tips:
 

@@ -36,6 +36,7 @@ set(snippets_targets "")
 add_definitions("-DEIGEN_MAKING_DOCS")
 
 add_subdirectory(examples)
+add_subdirectory(special_examples)
 add_subdirectory(snippets)
 
 add_custom_target(

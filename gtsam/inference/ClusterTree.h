@@ -25,6 +25,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include <gtsam/base/types.h>
 
@@ -32,12 +33,15 @@ namespace gtsam {
 
 	/**
 	 * A cluster-tree is associated with a factor graph and is defined as in Koller-Friedman:
-	 * each node k represents a subset C_k \sub X, and the tree is family preserving, in that
-	 * each factor f_i is associated with a single cluster and scope(f_i) \sub C_k.
+	 * each node k represents a subset \f$ C_k \sub X \f$, and the tree is family preserving, in that
+	 * each factor \f$ f_i \f$ is associated with a single cluster and \f$ scope(f_i) \sub C_k \f$.
 	 * \nosubgrouping
 	 */
 	template <class FG>
 	class ClusterTree {
+	public:
+		// Access to factor types
+		typedef typename FG::KeyType KeyType;
 
 	protected:
 
@@ -74,10 +78,10 @@ namespace gtsam {
       Cluster(FRONTALIT firstFrontal, FRONTALIT lastFrontal, SEPARATORIT firstSeparator, SEPARATORIT lastSeparator);
 
 			/// print
-			void print(const std::string& indent) const;
+			void print(const std::string& indent, const IndexFormatter& formatter = DefaultIndexFormatter) const;
 
 			/// print the enire tree
-			void printTree(const std::string& indent) const;
+			void printTree(const std::string& indent, const IndexFormatter& formatter = DefaultIndexFormatter) const;
 
 			/// check equality
 			bool equals(const Cluster& other) const;
@@ -123,7 +127,7 @@ namespace gtsam {
   	/// @{
 
 		/// print the object
-		void print(const std::string& str="") const;
+		void print(const std::string& str="", const IndexFormatter& formatter = DefaultIndexFormatter) const;
 
 		/** check equality */
 		bool equals(const ClusterTree<FG>& other, double tol = 1e-9) const;

@@ -2,7 +2,7 @@ PROJECT(BTL)
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6.2)
 
-set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake ${Eigen_SOURCE_DIR}/cmake)
 include(MacroOptionalAddSubdirectory)
 
 OPTION(BTL_NOVEC "Disable SSE/Altivec optimizations when possible" OFF)
@@ -90,17 +90,14 @@ endmacro(btl_add_target_property)
 ENABLE_TESTING()
 
 add_subdirectory(libs/eigen3)
-# add_subdirectory(libs/hand_vec)
+add_subdirectory(libs/eigen2)
+add_subdirectory(libs/BLAS)
+add_subdirectory(libs/ublas)
 add_subdirectory(libs/gmm)
 add_subdirectory(libs/mtl4)
-add_subdirectory(libs/ublas)
 add_subdirectory(libs/blitz)
 add_subdirectory(libs/tvmet)
-add_subdirectory(libs/C_BLAS)
-add_subdirectory(libs/f77)
-add_subdirectory(libs/C)
 add_subdirectory(libs/STL)
-add_subdirectory(libs/STL_algo)
 
 add_subdirectory(data)
 

@@ -10,6 +10,7 @@ namespace Eigen {
   - \ref movetotop
   - \ref bugineigen
   - \ref conditional
+  - \ref othersolutions
 
 \section summary Executive Summary
 
@@ -54,6 +55,8 @@ Foo *foo = new Foo;
 \endcode
 
 This macro makes "new Foo" always return an aligned pointer.
+
+If this approach is too intrusive, see also the \ref othersolutions.
 
 \section why Why is this needed?
 
@@ -131,6 +134,64 @@ public:
 Foo<4> *foo4 = new Foo<4>; // foo4 is guaranteed to be 128bit-aligned
 Foo<3> *foo3 = new Foo<3>; // foo3 has only the system default alignment guarantee
 \endcode
+
+
+\section othersolutions Other solutions
+
+In case putting the EIGEN_MAKE_ALIGNED_OPERATOR_NEW macro everywhere is too intrusive, there exists at least two other solutions.
+
+\subsection othersolutions1 Disabling alignment
+
+The first is to disable alignment requirement for the fixed size members:
+\code
+class Foo
+{
+  ...
+  Eigen::Matrix<double,2,1,Eigen::DontAlign> v;
+  ...
+};
+\endcode
+This has for effect to disable vectorization when using \c v.
+If a function of Foo uses it several times, then it still possible to re-enable vectorization by copying it into an aligned temporary vector:
+\code
+void Foo::bar()
+{
+  Eigen::Vector2d av(v);
+  // use av instead of v
+  ...
+  // if av changed, then do:
+  v = av;
+}
+\endcode
+
+\subsection othersolutions2 Private structure
+
+The second consist in storing the fixed-size objects into a private struct which will be dynamically allocated at the construction time of the main object:
+
+\code
+struct Foo_d
+{
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  Vector2d v;
+  ...
+};
+
+
+struct Foo {
+  Foo() { init_d(); }
+  ~Foo() { delete d; }
+  void bar()
+  {
+    // use d->v instead of v
+    ...
+  }
+private:
+  void init_d() { d = new Foo_d; }
+  Foo_d* d;
+};
+\endcode
+
+The clear advantage here is that the class Foo remains unchanged regarding alignment issues. The drawback is that a heap allocation will be required whatsoever.
 
 */
 

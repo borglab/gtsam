@@ -35,7 +35,7 @@ static const Index _C_ = 3;
 static const Index _D_ = 4;
 static const Index _E_ = 5;
 
-IndexConditional::shared_ptr
+static IndexConditional::shared_ptr
 	B(new IndexConditional(_B_)),
 	L(new IndexConditional(_L_, _B_));
 

@@ -24,6 +24,7 @@ namespace gtsam {
 
 	/**
 	 * Binary factor for a range measurement
+	 * @addtogroup SLAM
 	 */
 	template<class POSE, class POINT>
 	class RangeFactor: public NoiseModelFactor2<POSE, POINT> {
@@ -51,6 +52,11 @@ namespace gtsam {
 
 		virtual ~RangeFactor() {}
 
+		/// @return a deep copy of this factor
+    virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+		  return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+		      gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
+
 		/** h(x)-z */
 		Vector evaluateError(const Pose& pose, const Point& point, boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
 			double hx = pose.range(point, H1, H2);
@@ -70,7 +76,8 @@ namespace gtsam {
 
 		/** print contents */
 		void print(const std::string& s="", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
-			Base::print(s + std::string(" range: ") + boost::lexical_cast<std::string>(measured_), keyFormatter);
+      std::cout << s << "RangeFactor, range = " << measured_ << std::endl;
+			Base::print("", keyFormatter);
 		}
 
 	private:

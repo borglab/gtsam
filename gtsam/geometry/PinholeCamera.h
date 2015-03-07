@@ -33,14 +33,14 @@ namespace gtsam {
 
   /**
    * A pinhole camera class that has a Pose3 and a Calibration.
-   * @ingroup geometry
+   * @addtogroup geometry
    * \nosubgrouping
    */
   template <typename Calibration>
   class PinholeCamera : public DerivedValue<PinholeCamera<Calibration> > {
   private:
     Pose3 pose_;
-    Calibration k_;
+    Calibration K_;
 
   public:
 
@@ -54,23 +54,82 @@ namespace gtsam {
     explicit PinholeCamera(const Pose3& pose):pose_(pose){}
 
     /** constructor with pose and calibration */
-    PinholeCamera(const Pose3& pose, const Calibration& k):pose_(pose),k_(k) {}
+    PinholeCamera(const Pose3& pose, const Calibration& K):pose_(pose),K_(K) {}
 
-    /** alternative constructor with pose and calibration */
-    PinholeCamera(const Calibration& k, const Pose3& pose):pose_(pose),k_(k) {}
+    /// @}
+    /// @name Named Constructors
+    /// @{
+
+    /**
+     * Create a level camera at the given 2D pose and height
+     * @param K the calibration
+     * @param pose2 specifies the location and viewing direction
+     * (theta 0 = looking in direction of positive X axis)
+     * @param height camera height
+     */
+    static PinholeCamera Level(const Calibration &K, const Pose2& pose2, double height) {
+      const double st = sin(pose2.theta()), ct = cos(pose2.theta());
+      const Point3 x(st, -ct, 0), y(0, 0, -1), z(ct, st, 0);
+      const Rot3 wRc(x, y, z);
+      const Point3 t(pose2.x(), pose2.y(), height);
+      const Pose3 pose3(wRc, t);
+      return PinholeCamera(pose3, K);
+    }
+
+    /// PinholeCamera::level with default calibration
+    static PinholeCamera Level(const Pose2& pose2, double height) {
+      return PinholeCamera::Level(Calibration(), pose2, height);
+    }
+
+    /**
+     * Create a camera at the given eye position looking at a target point in the scene
+     * with the specified up direction vector.
+     * @param eye specifies the camera position
+     * @param target the point to look at
+     * @param upVector specifies the camera up direction vector,
+     *        doesn't need to be on the image plane nor orthogonal to the viewing axis
+     * @param K optional calibration parameter
+     */
+    static PinholeCamera Lookat(const Point3& eye, const Point3& target, const Point3& upVector, const Calibration& K = Calibration()) {
+      Point3 zc = target-eye;
+      zc = zc/zc.norm();
+      Point3 xc = (-upVector).cross(zc);  // minus upVector since yc is pointing down
+      xc = xc/xc.norm();
+      Point3 yc = zc.cross(xc);
+      Pose3 pose3(Rot3(xc,yc,zc), eye);
+      return PinholeCamera(pose3, K);
+    }
 
     /// @}
     /// @name Advanced Constructors
     /// @{
 
-    explicit PinholeCamera(const Vector &v){
+    explicit PinholeCamera(const Vector &v) {
       pose_ = Pose3::Expmap(v.head(Pose3::Dim()));
-      if ( v.size() > Pose3::Dim()) {
-        k_ = Calibration(v.tail(Calibration::Dim()));
+      if (v.size() > Pose3::Dim()) {
+        K_ = Calibration(v.tail(Calibration::Dim()));
       }
     }
 
-    PinholeCamera(const Vector &v, const Vector &k) : pose_(Pose3::Expmap(v)),k_(k){}
+    PinholeCamera(const Vector &v, const Vector &K) :
+        pose_(Pose3::Expmap(v)), K_(K) {
+    }
+
+    /// @}
+    /// @name Testable
+    /// @{
+
+    /// assert equality up to a tolerance
+    bool equals (const PinholeCamera &camera, double tol = 1e-9) const {
+      return pose_.equals(camera.pose(), tol) &&
+             K_.equals(camera.calibration(), tol) ;
+    }
+
+    /// print
+    void print(const std::string& s = "PinholeCamera") const {
+      pose_.print(s+".pose");
+      K_.print(s+".calibration");
+    }
 
     /// @}
     /// @name Standard Interface
@@ -85,35 +144,23 @@ namespace gtsam {
     inline const Pose3& pose() const {  return pose_; }
 
     /// return calibration
-    inline Calibration& calibration() {  return k_; }
+    inline Calibration& calibration() {  return K_; }
 
     /// return calibration
-    inline const Calibration& calibration() const {  return k_; }
+    inline const Calibration& calibration() const {  return K_; }
 
-    /// compose two cameras
+    /// @}
+    /// @name Group ?? Frank says this might not make sense
+    /// @{
+
+    /// compose two cameras: TODO Frank says this might not make sense
     inline const PinholeCamera compose(const Pose3 &c) const {
-    	return PinholeCamera( pose_ * c, k_ ) ;
+      return PinholeCamera( pose_ * c, K_ ) ;
     }
 
-    /// inverse
+    /// compose two cameras: TODO Frank says this might not make sense
     inline const PinholeCamera inverse() const {
-    	return PinholeCamera( pose_.inverse(), k_ ) ;
-    }
-
-  	/// @}
-  	/// @name Testable
-  	/// @{
-
-    /// assert equality up to a tolerance
-    bool equals (const PinholeCamera &camera, double tol = 1e-9) const {
-    	return pose_.equals(camera.pose(), tol) &&
-    	       k_.equals(camera.calibration(), tol) ;
-    }
-
-    /// print
-    void print(const std::string& s = "") const {
-      pose_.print("pose3");
-      k_.print("calibration");
+      return PinholeCamera( pose_.inverse(), K_ ) ;
     }
 
   	/// @}
@@ -137,39 +184,21 @@ namespace gtsam {
       return d;
     }
 
-    /// Lie group dimensionality
-    inline size_t dim() const { return pose_.dim() + k_.dim(); }
+    /// Manifold dimension
+    inline size_t dim() const { return pose_.dim() + K_.dim(); }
 
-    /// Lie group dimensionality
+    /// Manifold dimension
     inline static size_t Dim() { return Pose3::Dim() + Calibration::Dim(); }
-
-    /**
-     * Create a level camera at the given 2D pose and height
-     * @param pose2 specifies the location and viewing direction
-     * (theta 0 = looking in direction of positive X axis)
-     */
-    static PinholeCamera level(const Pose2& pose2, double height) {
-        return PinholeCamera::level(Calibration(), pose2, height);
-    }
-
-    static PinholeCamera level(const Calibration &K, const Pose2& pose2, double height) {
-        const double st = sin(pose2.theta()), ct = cos(pose2.theta());
-        const Point3 x(st, -ct, 0), y(0, 0, -1), z(ct, st, 0);
-        const Rot3 wRc(x, y, z);
-        const Point3 t(pose2.x(), pose2.y(), height);
-        const Pose3 pose3(wRc, t);
-        return PinholeCamera(pose3, K);
-    }
 
     /// @}
     /// @name Transformations and measurement functions
     /// @{
 
     /**
-    * projects a 3-dimensional point in camera coordinates into the
-    * camera and returns a 2-dimensional point, no calibration applied
-    * With optional 2by3 derivative
-    */
+     * projects a 3-dimensional point in camera coordinates into the
+     * camera and returns a 2-dimensional point, no calibration applied
+     * With optional 2by3 derivative
+     */
     inline static Point2 project_to_camera(const Point3& P,
                              boost::optional<Matrix&> H1 = boost::none){
       if (H1) {
@@ -183,7 +212,7 @@ namespace gtsam {
     inline std::pair<Point2,bool> projectSafe(const Point3& pw) const {
       const Point3 pc = pose_.transform_to(pw) ;
       const Point2 pn = project_to_camera(pc) ;
-      return std::make_pair(k_.uncalibrate(pn), pc.z()>0);
+      return std::make_pair(K_.uncalibrate(pn), pc.z()>0);
     }
 
     /** project a point from world coordinate to the image
@@ -201,7 +230,7 @@ namespace gtsam {
         const Point3 pc = pose_.transform_to(pw) ;
         if ( pc.z() <= 0 ) throw CheiralityException();
         const Point2 pn = project_to_camera(pc) ;
-        return k_.uncalibrate(pn);
+        return K_.uncalibrate(pn);
       }
 
       // world to camera coordinate
@@ -215,7 +244,7 @@ namespace gtsam {
 
       // uncalibration
       Matrix Hk, Hi; // 2*2
-      const Point2 pi = k_.uncalibrate(pn, Hk, Hi);
+      const Point2 pi = K_.uncalibrate(pn, Hk, Hi);
 
       // chain the jacobian matrices
       const Matrix tmp = Hi*Hn ;
@@ -238,7 +267,7 @@ namespace gtsam {
         const Point3 pc = pose_.transform_to(pw) ;
         if ( pc.z() <= 0 ) throw CheiralityException();
         const Point2 pn = project_to_camera(pc) ;
-        return k_.uncalibrate(pn);
+        return K_.uncalibrate(pn);
       }
 
       Matrix Htmp1, Htmp2, Htmp3;
@@ -252,23 +281,18 @@ namespace gtsam {
       return pi;
     }
 
-    /**
-     * backproject a 2-dimensional point to a 3-dimension point
-     */
-
-    inline Point3 backproject(const Point2& pi, const double scale) const {
-      const Point2 pn = k_.calibrate(pi);
-      const Point3 pc(pn.x()*scale, pn.y()*scale, scale);
+    /// backproject a 2-dimensional point to a 3-dimensional point at given depth
+    inline Point3 backproject(const Point2& p, double depth) const {
+      const Point2 pn = K_.calibrate(p);
+      const Point3 pc(pn.x()*depth, pn.y()*depth, depth);
       return pose_.transform_from(pc);
-    }
-
-    inline Point3 backproject_from_camera(const Point2& pi, const double scale) const {
-      return backproject(pi, scale);
     }
 
     /**
      * Calculate range to a landmark
      * @param point 3D location of landmark
+     * @param H1 the optionally computed Jacobian with respect to pose
+     * @param H2 the optionally computed Jacobian with respect to the landmark
      * @return range (double)
      */
     double range(const Point3& point,
@@ -278,8 +302,8 @@ namespace gtsam {
       if(H1) {
         // Add columns of zeros to Jacobian for calibration
         Matrix& H1r(*H1);
-        H1r.conservativeResize(Eigen::NoChange, pose_.dim() + k_.dim());
-        H1r.block(0, pose_.dim(), 1, k_.dim()) = Matrix::Zero(1, k_.dim());
+        H1r.conservativeResize(Eigen::NoChange, pose_.dim() + K_.dim());
+        H1r.block(0, pose_.dim(), 1, K_.dim()) = Matrix::Zero(1, K_.dim());
       }
       return result;
     }
@@ -287,6 +311,8 @@ namespace gtsam {
     /**
      * Calculate range to another pose
      * @param pose Other SO(3) pose
+     * @param H1 the optionally computed Jacobian with respect to pose
+     * @param H2 the optionally computed Jacobian with respect to the landmark
      * @return range (double)
      */
     double range(const Pose3& pose,
@@ -296,8 +322,8 @@ namespace gtsam {
       if(H1) {
         // Add columns of zeros to Jacobian for calibration
         Matrix& H1r(*H1);
-        H1r.conservativeResize(Eigen::NoChange, pose_.dim() + k_.dim());
-        H1r.block(0, pose_.dim(), 1, k_.dim()) = Matrix::Zero(1, k_.dim());
+        H1r.conservativeResize(Eigen::NoChange, pose_.dim() + K_.dim());
+        H1r.block(0, pose_.dim(), 1, K_.dim()) = Matrix::Zero(1, K_.dim());
       }
       return result;
     }
@@ -305,6 +331,8 @@ namespace gtsam {
     /**
      * Calculate range to another camera
      * @param camera Other camera
+     * @param H1 the optionally computed Jacobian with respect to pose
+     * @param H2 the optionally computed Jacobian with respect to the landmark
      * @return range (double)
      */
     template<class CalibrationB>
@@ -315,8 +343,8 @@ namespace gtsam {
       if(H1) {
         // Add columns of zeros to Jacobian for calibration
         Matrix& H1r(*H1);
-        H1r.conservativeResize(Eigen::NoChange, pose_.dim() + k_.dim());
-        H1r.block(0, pose_.dim(), 1, k_.dim()) = Matrix::Zero(1, k_.dim());
+        H1r.conservativeResize(Eigen::NoChange, pose_.dim() + K_.dim());
+        H1r.block(0, pose_.dim(), 1, K_.dim()) = Matrix::Zero(1, K_.dim());
       }
       if(H2) {
         // Add columns of zeros to Jacobian for calibration
@@ -330,6 +358,8 @@ namespace gtsam {
     /**
      * Calculate range to another camera
      * @param camera Other camera
+     * @param H1 the optionally computed Jacobian with respect to pose
+     * @param H2 the optionally computed Jacobian with respect to the landmark
      * @return range (double)
      */
     double range(const CalibratedCamera& camera,
@@ -349,7 +379,7 @@ private:
       void serialize(Archive & ar, const unsigned int version) {
       	ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Value);
         ar & BOOST_SERIALIZATION_NVP(pose_);
-        ar & BOOST_SERIALIZATION_NVP(k_);
+        ar & BOOST_SERIALIZATION_NVP(K_);
       }
       /// @}
   };

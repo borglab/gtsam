@@ -26,7 +26,7 @@ typedef SparseMatrix<Scalar> EigenSparseMatrix;
 
 void fillMatrix(float density, int rows, int cols,  EigenSparseMatrix& dst)
 {
-  dst.reserve(rows*cols*density);
+  dst.reserve(double(rows)*cols*density);
   for(int j = 0; j < cols; j++)
   {
     for(int i = 0; i < rows; i++)
@@ -122,22 +122,24 @@ void eiToCSparse(const EigenSparseMatrix& src, cs* &dst)
 #include <boost/numeric/ublas/matrix_sparse.hpp>
 #include <boost/numeric/ublas/vector_of_vector.hpp>
 #include <boost/numeric/ublas/operation.hpp>
-// #include <boost/numeric/ublas/sparse_prod.hpp>
 
-// using namespace boost;
-// using namespace boost::numeric;
-// using namespace boost::numeric::ublas;
+typedef boost::numeric::ublas::compressed_matrix<Scalar,boost::numeric::ublas::column_major> UBlasSparse;
 
-typedef boost::numeric::ublas::compressed_matrix<Scalar,boost::numeric::ublas::column_major> UblasMatrix;
-
-void eiToUblas(const EigenSparseMatrix& src, UblasMatrix& dst)
+void eiToUblas(const EigenSparseMatrix& src, UBlasSparse& dst)
 {
+  dst.resize(src.rows(), src.cols(), false);
   for (int j=0; j<src.cols(); ++j)
     for (EigenSparseMatrix::InnerIterator it(src.derived(), j); it; ++it)
       dst(it.index(),j) = it.value();
 }
 
-
+template <typename EigenType, typename UblasType>
+void eiToUblasVec(const EigenType& src, UblasType& dst)
+{
+  dst.resize(src.size());
+  for (int j=0; j<src.size(); ++j)
+      dst[j] = src.coeff(j);
+}
 #endif
 
 #ifdef OSKI

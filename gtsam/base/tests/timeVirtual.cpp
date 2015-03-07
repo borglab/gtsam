@@ -87,13 +87,13 @@ int main(int argc, char *argv[]) {
 
   tic_("shared plain alloc, dealloc");
   for(size_t i=0; i<trials; ++i) {
-    shared_ptr<Plain> obj(new Plain(i));
+    boost::shared_ptr<Plain> obj(new Plain(i));
   }
   toc_("shared plain alloc, dealloc");
 
   tic_("shared virtual alloc, dealloc");
   for(size_t i=0; i<trials; ++i) {
-    shared_ptr<Virtual> obj(new Virtual(i));
+    boost::shared_ptr<Virtual> obj(new Virtual(i));
   }
   toc_("shared virtual alloc, dealloc");
 
@@ -130,14 +130,14 @@ int main(int argc, char *argv[]) {
 
   tic_("shared plain alloc, dealloc, call");
   for(size_t i=0; i<trials; ++i) {
-    shared_ptr<Plain> obj(new Plain(i));
+    boost::shared_ptr<Plain> obj(new Plain(i));
     obj->setData(i+1);
   }
   toc_("shared plain alloc, dealloc, call");
 
   tic_("shared virtual alloc, dealloc, call");
   for(size_t i=0; i<trials; ++i) {
-    shared_ptr<Virtual> obj(new Virtual(i));
+    boost::shared_ptr<Virtual> obj(new Virtual(i));
     obj->setData(i+1);
   }
   toc_("shared virtual alloc, dealloc, call");

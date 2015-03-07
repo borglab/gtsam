@@ -108,18 +108,23 @@ template<typename MatrixType> void eigensolver_verify_assert(const MatrixType& m
 
 void test_eigensolver_complex()
 {
+  int s;
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1( eigensolver(Matrix4cf()) );
-    CALL_SUBTEST_2( eigensolver(MatrixXcd(14,14)) );
+    s = internal::random<int>(1,EIGEN_TEST_MAX_SIZE/4);
+    CALL_SUBTEST_2( eigensolver(MatrixXcd(s,s)) );
     CALL_SUBTEST_3( eigensolver(Matrix<std::complex<float>, 1, 1>()) );
     CALL_SUBTEST_4( eigensolver(Matrix3f()) );
   }
 
   CALL_SUBTEST_1( eigensolver_verify_assert(Matrix4cf()) );
-  CALL_SUBTEST_2( eigensolver_verify_assert(MatrixXcd(14,14)) );
+  s = internal::random<int>(1,EIGEN_TEST_MAX_SIZE/4);
+  CALL_SUBTEST_2( eigensolver_verify_assert(MatrixXcd(s,s)) );
   CALL_SUBTEST_3( eigensolver_verify_assert(Matrix<std::complex<float>, 1, 1>()) );
   CALL_SUBTEST_4( eigensolver_verify_assert(Matrix3f()) );
 
   // Test problem size constructors
-  CALL_SUBTEST_5(ComplexEigenSolver<MatrixXf>(10));
+  CALL_SUBTEST_5(ComplexEigenSolver<MatrixXf>(s));
+  
+  EIGEN_UNUSED_VARIABLE(s)
 }

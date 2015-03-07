@@ -98,6 +98,18 @@ namespace gtsam {
 			assertInvariants();
 		}
 
+    /** Construct 5-way factor */
+    IndexFactor(Index j1, Index j2, Index j3, Index j4, Index j5) :
+      Base(j1, j2, j3, j4, j5) {
+      assertInvariants();
+    }
+
+    /** Construct 6-way factor */
+    IndexFactor(Index j1, Index j2, Index j3, Index j4, Index j5, Index j6) :
+      Base(j1, j2, j3, j4, j5, j6) {
+      assertInvariants();
+    }
+
 		/// @}
 		/// @name Advanced Constructors
 		/// @{

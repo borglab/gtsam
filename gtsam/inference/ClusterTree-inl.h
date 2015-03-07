@@ -26,8 +26,6 @@
 
 namespace gtsam {
 
-	using namespace std;
-
 	/* ************************************************************************* *
 	 * Cluster
 	 * ************************************************************************* */
@@ -58,13 +56,13 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class FG>
-	bool ClusterTree<FG>::Cluster::equals(const ClusterTree<FG>::Cluster& other) const {
+	bool ClusterTree<FG>::Cluster::equals(const Cluster& other) const {
 		if (frontal != other.frontal) return false;
 		if (separator != other.separator) return false;
 		if (children_.size() != other.children_.size()) return false;
 
-		typename list<shared_ptr>::const_iterator it1 = children_.begin();
-		typename list<shared_ptr>::const_iterator it2 = other.children_.begin();
+		typename std::list<shared_ptr>::const_iterator it1 = children_.begin();
+		typename std::list<shared_ptr>::const_iterator it2 = other.children_.begin();
 		for (; it1 != children_.end(); it1++, it2++)
 			if (!(*it1)->equals(**it2)) return false;
 
@@ -73,31 +71,34 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class FG>
-	void ClusterTree<FG>::Cluster::print(const string& indent) const {
-		cout << indent;
+	void ClusterTree<FG>::Cluster::print(const std::string& indent,
+			const IndexFormatter& formatter) const {
+		std::cout << indent;
 		BOOST_FOREACH(const Index key, frontal)
-						cout << key << " ";
-		cout << ": ";
+						std::cout << formatter(key) << " ";
+		std::cout << ": ";
 		BOOST_FOREACH(const Index key, separator)
-						cout << key << " ";
-		cout << endl;
+						std::cout << key << " ";
+		std::cout << std::endl;
 	}
 
 	/* ************************************************************************* */
 	template<class FG>
-	void ClusterTree<FG>::Cluster::printTree(const string& indent) const {
-		print(indent);
+	void ClusterTree<FG>::Cluster::printTree(const std::string& indent,
+			const IndexFormatter& formatter) const {
+		print(indent, formatter);
 		BOOST_FOREACH(const shared_ptr& child, children_)
-						child->printTree(indent + "  ");
+						child->printTree(indent + "  ", formatter);
 	}
 
 	/* ************************************************************************* *
 	 * ClusterTree
 	 * ************************************************************************* */
 	template<class FG>
-	void ClusterTree<FG>::print(const string& str) const {
-		cout << str << endl;
-		if (root_) root_->printTree("");
+	void ClusterTree<FG>::print(const std::string& str,
+			const IndexFormatter& formatter) const {
+		std::cout << str << std::endl;
+		if (root_) root_->printTree("", formatter);
 	}
 
 	/* ************************************************************************* */

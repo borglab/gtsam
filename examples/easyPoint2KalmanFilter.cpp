@@ -21,7 +21,8 @@
  * @author Stephen Williams
  */
 
-#include <gtsam/nonlinear/ExtendedKalmanFilter-inl.h>
+#include <gtsam/nonlinear/ExtendedKalmanFilter.h>
+#include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/geometry/Point2.h>

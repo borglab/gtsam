@@ -25,7 +25,7 @@ namespace gtsam {
 
 	/**
 	 * A 2D stereo point, v will be same for rectified images
-	 * @ingroup geometry
+	 * @addtogroup geometry
 	 * \nosubgrouping
 	 */
 	class StereoPoint2 : public DerivedValue<StereoPoint2> {
@@ -119,6 +119,11 @@ namespace gtsam {
 			return p.vector();
 		}
 
+    /** The difference between another point and this point */
+    inline StereoPoint2 between(const StereoPoint2& p2) const {
+      return gtsam::between_default(*this, p2);
+    }
+
 		/// @}
 		/// @name Standard Interface
 		/// @{
@@ -131,11 +136,6 @@ namespace gtsam {
 		/** convenient function to get a Point2 from the left image */
 		inline Point2 point2(){
 			return Point2(uL_, v_);
-		}
-
-		///TODO comment
-		inline StereoPoint2 between(const StereoPoint2& p2) const {
-			return gtsam::between_default(*this, p2);
 		}
 
 	private:

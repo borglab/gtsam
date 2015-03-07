@@ -20,6 +20,7 @@
 
 #include <algorithm>
 #include "BenchTimer.h"
+#include "BenchUtil.h"
 #include "BenchSparseUtil.h"
 
 #ifndef NBTRIES
@@ -228,16 +229,12 @@ int main(int argc, char *argv[])
       eiToCSparse(sm1, m1);
       eiToCSparse(sm2, m2);
 
-//       timer.reset();
-//       timer.start();
-//       for (int k=0; k<REPEAT; ++k)
       BENCH(
       {
         m3 = cs_sorted_multiply(m1, m2);
         if (!m3)
         {
           std::cerr << "cs_multiply failed\n";
-//           break;
         }
 //         cs_print(m3, 0);
         cs_spfree(m3);
@@ -254,16 +251,11 @@ int main(int argc, char *argv[])
     #ifndef NOUBLAS
     {
       std::cout << "ublas\t" << nnzPerCol << "%\n";
-      UblasMatrix m1(rows,cols), m2(rows,cols), m3(rows,cols);
+      UBlasSparse m1(rows,cols), m2(rows,cols), m3(rows,cols);
       eiToUblas(sm1, m1);
       eiToUblas(sm2, m2);
 
       BENCH(boost::numeric::ublas::prod(m1, m2, m3););
-//       timer.reset();
-//       timer.start();
-//       for (int k=0; k<REPEAT; ++k)
-//         gmm::mult(m1, m2, gmmT3);
-//       timer.stop();
       std::cout << "   a * b:\t" << timer.value() << endl;
     }
     #endif
@@ -277,34 +269,18 @@ int main(int argc, char *argv[])
       eiToGmm(sm1, m1);
       eiToGmm(sm2, m2);
 
-      timer.reset();
-      timer.start();
-      for (int k=0; k<REPEAT; ++k)
-        gmm::mult(m1, m2, gmmT3);
-      timer.stop();
+      BENCH(gmm::mult(m1, m2, gmmT3););
       std::cout << "   a * b:\t" << timer.value() << endl;
 
-//       timer.reset();
-//       timer.start();
-//       for (int k=0; k<REPEAT; ++k)
-//         gmm::mult(gmm::transposed(m1), m2, gmmT3);
-//       timer.stop();
+//       BENCH(gmm::mult(gmm::transposed(m1), m2, gmmT3););
 //       std::cout << "   a' * b:\t" << timer.value() << endl;
 //
 //       if (rows<500)
 //       {
-//         timer.reset();
-//         timer.start();
-//         for (int k=0; k<REPEAT; ++k)
-//           gmm::mult(gmm::transposed(m1), gmm::transposed(m2), gmmT3);
-//         timer.stop();
+//         BENCH(gmm::mult(gmm::transposed(m1), gmm::transposed(m2), gmmT3););
 //         std::cout << "   a' * b':\t" << timer.value() << endl;
 //
-//         timer.reset();
-//         timer.start();
-//         for (int k=0; k<REPEAT; ++k)
-//           gmm::mult(m1, gmm::transposed(m2), gmmT3);
-//         timer.stop();
+//         BENCH(gmm::mult(m1, gmm::transposed(m2), gmmT3););
 //         std::cout << "   a * b':\t" << timer.value() << endl;
 //       }
 //       else
@@ -323,32 +299,16 @@ int main(int argc, char *argv[])
       eiToMtl(sm1, m1);
       eiToMtl(sm2, m2);
 
-      timer.reset();
-      timer.start();
-      for (int k=0; k<REPEAT; ++k)
-        m3 = m1 * m2;
-      timer.stop();
+      BENCH(m3 = m1 * m2;);
       std::cout << "   a * b:\t" << timer.value() << endl;
 
-//       timer.reset();
-//       timer.start();
-//       for (int k=0; k<REPEAT; ++k)
-//         m3 = trans(m1) * m2;
-//       timer.stop();
+//       BENCH(m3 = trans(m1) * m2;);
 //       std::cout << "   a' * b:\t" << timer.value() << endl;
 //
-//       timer.reset();
-//       timer.start();
-//       for (int k=0; k<REPEAT; ++k)
-//         m3 = trans(m1) * trans(m2);
-//       timer.stop();
+//       BENCH(m3 = trans(m1) * trans(m2););
 //       std::cout << "  a' * b':\t" << timer.value() << endl;
 //
-//       timer.reset();
-//       timer.start();
-//       for (int k=0; k<REPEAT; ++k)
-//         m3 = m1 * trans(m2);
-//       timer.stop();
+//       BENCH(m3 = m1 * trans(m2););
 //       std::cout << "   a * b' :\t" << timer.value() << endl;
     }
     #endif

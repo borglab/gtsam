@@ -9,44 +9,67 @@
 
  * -------------------------------------------------------------------------- */
 
-/**
- * @file IterativeSolver.h
- * @date Oct 24, 2010
- * @author Yong-Dian Jian
- * @brief Base Class for all iterative solvers of linear systems
- */
-
 #pragma once
 
-#include <boost/shared_ptr.hpp>
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
-#include <gtsam/linear/IterativeOptimizationParameters.h>
+#include <string>
 
 namespace gtsam {
 
-class IterativeSolver {
+  /**
+   * parameters for iterative linear solvers
+   */
+  class IterativeOptimizationParameters {
 
-public:
+  public:
 
-	typedef boost::shared_ptr<IterativeSolver> shared_ptr;
-	typedef IterativeOptimizationParameters Parameters;
+    typedef boost::shared_ptr<IterativeOptimizationParameters> shared_ptr;
+    enum Kernel { CG = 0 } kernel_ ;                                          ///< Iterative Method Kernel
+    enum Verbosity { SILENT = 0, COMPLEXITY, ERROR } verbosity_;
 
-protected:
+  public:
 
-	Parameters::shared_ptr parameters_ ;
+    IterativeOptimizationParameters(const IterativeOptimizationParameters &p)
+      : kernel_(p.kernel_), verbosity_(p.verbosity_) {}
 
-public:
+    IterativeOptimizationParameters(const Kernel kernel = CG, const Verbosity verbosity = SILENT)
+      : kernel_(kernel), verbosity_(verbosity) {}
 
-  IterativeSolver(): parameters_(new Parameters()) {}
-	IterativeSolver(const IterativeSolver &solver) : parameters_(solver.parameters_) {}
-  IterativeSolver(const Parameters::shared_ptr& parameters) : parameters_(parameters) {}
-	IterativeSolver(const Parameters &parameters) :	parameters_(new Parameters(parameters)) {}
+    virtual ~IterativeOptimizationParameters() {}
 
-	virtual ~IterativeSolver() {}
+    /* general interface */
+    inline Kernel kernel() const { return kernel_; }
+    inline Verbosity verbosity() const { return verbosity_; }
 
-	virtual VectorValues::shared_ptr optimize () = 0;
+    /* matlab interface */
+    std::string getKernel() const ;
+    std::string getVerbosity() const;
+    void setKernel(const std::string &s) ;
+    void setVerbosity(const std::string &s) ;
 
-	Parameters::shared_ptr parameters() { return parameters_ ; }
-};
+    void print() const {
+      std::cout << "IterativeOptimizationParameters: "
+                << "kernel = " << kernelTranslator(kernel_)
+                << ", verbosity = " << verbosityTranslator(verbosity_) << std::endl;
+    }
+
+    static Kernel kernelTranslator(const std::string &s);
+    static Verbosity verbosityTranslator(const std::string &s);
+    static std::string kernelTranslator(Kernel k);
+    static std::string verbosityTranslator(Verbosity v);
+  };
+
+  class IterativeSolver {
+  public:
+    typedef boost::shared_ptr<IterativeSolver> shared_ptr;
+    IterativeSolver() {}
+    virtual ~IterativeSolver() {}
+
+    /* interface to the nonlinear optimizer  */
+    virtual VectorValues optimize () = 0;
+    /* update interface to the nonlinear optimizer  */
+    virtual void replaceFactors(const GaussianFactorGraph::shared_ptr &factorGraph, const double lambda) {}
+  };
 
 }

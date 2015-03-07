@@ -31,7 +31,8 @@ namespace inference {
 
 /* ************************************************************************* */
 template<typename CONSTRAINED>
-Permutation::shared_ptr PermutationCOLAMD(const VariableIndex& variableIndex, const CONSTRAINED& constrainLast) {
+Permutation::shared_ptr PermutationCOLAMD(
+		const VariableIndex& variableIndex, const CONSTRAINED& constrainLast) {
 
   std::vector<int> cmember(variableIndex.size(), 0);
 
@@ -48,6 +49,22 @@ Permutation::shared_ptr PermutationCOLAMD(const VariableIndex& variableIndex, co
 }
 
 /* ************************************************************************* */
+template<typename CONSTRAINED_MAP>
+Permutation::shared_ptr PermutationCOLAMDGrouped(
+		const VariableIndex& variableIndex, const CONSTRAINED_MAP& constraints) {
+  std::vector<int> cmember(variableIndex.size(), 0);
+
+	typedef typename CONSTRAINED_MAP::value_type constraint_pair;
+  BOOST_FOREACH(const constraint_pair& p, constraints) {
+  	assert(p.first < variableIndex.size());
+  	// FIXME: check that no groups are skipped
+  	cmember[p.first] = p.second;
+  }
+
+  return PermutationCOLAMD_(variableIndex, cmember);
+}
+
+/* ************************************************************************* */
 inline Permutation::shared_ptr PermutationCOLAMD(const VariableIndex& variableIndex) {
   std::vector<int> cmember(variableIndex.size(), 0);
   return PermutationCOLAMD_(variableIndex, cmember);
@@ -55,10 +72,14 @@ inline Permutation::shared_ptr PermutationCOLAMD(const VariableIndex& variableIn
 
 /* ************************************************************************* */
 template<class Graph>
-typename Graph::FactorizationResult eliminate(const Graph& factorGraph, const std::vector<typename Graph::KeyType>& variables,
-    const typename Graph::Eliminate& eliminateFcn, boost::optional<const VariableIndex&> variableIndex_) {
+std::pair<typename Graph::sharedConditional, Graph> eliminate(
+		const Graph& factorGraph,
+		const std::vector<typename Graph::KeyType>& variables,
+		const typename Graph::Eliminate& eliminateFcn,
+		boost::optional<const VariableIndex&> variableIndex_) {
 
-  const VariableIndex& variableIndex = variableIndex_ ? *variableIndex_ : VariableIndex(factorGraph);
+  const VariableIndex& variableIndex =
+					variableIndex_ ? *variableIndex_ : VariableIndex(factorGraph);
 
   // First find the involved factors
   Graph involvedFactors;
@@ -108,13 +129,11 @@ typename Graph::FactorizationResult eliminate(const Graph& factorGraph, const st
   if(remainingFactor->size() != 0)
   	remainingGraph.push_back(remainingFactor);
 
-  return typename Graph::FactorizationResult(conditional, remainingGraph);
+  return std::make_pair(conditional, remainingGraph);
 
-}
+} // eliminate
 
-
-}
-
-}
+} // namespace inference
+} // namespace gtsam
 
 

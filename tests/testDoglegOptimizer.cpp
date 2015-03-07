@@ -15,15 +15,16 @@
  * @author  Richard Roberts
  */
 
-#include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/numericalDerivative.h>
-#include <gtsam/inference/BayesTree-inl.h>
+#include <tests/smallExample.h>
+#include <gtsam/nonlinear/DoglegOptimizerImpl.h>
+#include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/GaussianBayesTree.h>
-#include <gtsam/nonlinear/DoglegOptimizerImpl.h>
-#include <gtsam/slam/pose2SLAM.h>
-#include <gtsam/slam/smallExample.h>
+#include <gtsam/inference/BayesTree.h>
+#include <gtsam/base/numericalDerivative.h>
+
+#include <CppUnitLite/TestHarness.h>
 
 #include <boost/bind.hpp>
 #include <boost/assign/list_of.hpp> // for 'list_of()'
@@ -31,7 +32,10 @@
 
 using namespace std;
 using namespace gtsam;
-using boost::shared_ptr;
+
+// Convenience for named keys
+using symbol_shorthand::X;
+using symbol_shorthand::L;
 
 /* ************************************************************************* */
 double computeError(const GaussianBayesNet& gbn, const LieVector& values) {
@@ -92,7 +96,7 @@ TEST(DoglegOptimizer, ComputeSteepestDescentPoint) {
   gradientValues.vector() = gradient;
 
   // Compute the gradient using dense matrices
-  Matrix augmentedHessian = GaussianFactorGraph(gbn).denseHessian();
+  Matrix augmentedHessian = GaussianFactorGraph(gbn).augmentedHessian();
   LONGS_EQUAL(11, augmentedHessian.cols());
   VectorValues denseMatrixGradient = *allocateVectorValues(gbn);
   denseMatrixGradient.vector() = -augmentedHessian.col(10).segment(0,10);
@@ -196,7 +200,7 @@ TEST(DoglegOptimizer, BT_BN_equivalency) {
   GaussianFactorGraph expected(gbn);
   GaussianFactorGraph actual(bt);
 
-  EXPECT(assert_equal(expected.denseJacobian(), actual.denseJacobian()));
+  EXPECT(assert_equal(expected.augmentedHessian(), actual.augmentedHessian()));
 }
 
 /* ************************************************************************* */
@@ -272,7 +276,7 @@ TEST(DoglegOptimizer, ComputeSteepestDescentPointBT) {
   gradientValues.vector() = gradient;
 
   // Compute the gradient using dense matrices
-  Matrix augmentedHessian = GaussianFactorGraph(bt).denseHessian();
+  Matrix augmentedHessian = GaussianFactorGraph(bt).augmentedHessian();
   LONGS_EQUAL(11, augmentedHessian.cols());
   VectorValues denseMatrixGradient = *allocateVectorValues(bt);
   denseMatrixGradient.vector() = -augmentedHessian.col(10).segment(0,10);
@@ -381,17 +385,17 @@ TEST(DoglegOptimizer, ComputeDoglegPoint) {
 /* ************************************************************************* */
 TEST(DoglegOptimizer, Iterate) {
   // really non-linear factor graph
-  shared_ptr<example::Graph> fg(new example::Graph(
+  boost::shared_ptr<example::Graph> fg(new example::Graph(
       example::createReallyNonlinearFactorGraph()));
 
   // config far from minimum
   Point2 x0(3,0);
   boost::shared_ptr<Values> config(new Values);
-  config->insert(simulated2D::PoseKey(1), x0);
+  config->insert(X(1), x0);
 
   // ordering
-  shared_ptr<Ordering> ord(new Ordering());
-  ord->push_back(simulated2D::PoseKey(1));
+  boost::shared_ptr<Ordering> ord(new Ordering());
+  ord->push_back(X(1));
 
   double Delta = 1.0;
   for(size_t it=0; it<10; ++it) {

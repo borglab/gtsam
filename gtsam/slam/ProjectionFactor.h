@@ -28,14 +28,15 @@ namespace gtsam {
 	/**
 	 * Non-linear factor for a constraint derived from a 2D measurement. The calibration is known here.
 	 * i.e. the main building block for visual SLAM.
+	 * @addtogroup SLAM
 	 */
-	template<class POSE, class LANDMARK>
+	template<class POSE, class LANDMARK, class CALIBRATION = Cal3_S2>
 	class GenericProjectionFactor: public NoiseModelFactor2<POSE, LANDMARK> {
 	protected:
 
 		// Keep a copy of measurement and calibration for I/O
-		Point2 measured_;					  		///< 2D measurement
-		boost::shared_ptr<Cal3_S2> K_;  ///< shared pointer to calibration object
+		Point2 measured_;					  		    ///< 2D measurement
+		boost::shared_ptr<CALIBRATION> K_;  ///< shared pointer to calibration object
 
 	public:
 
@@ -43,40 +44,46 @@ namespace gtsam {
 		typedef NoiseModelFactor2<POSE, LANDMARK> Base;
 
 		/// shorthand for this class
-		typedef GenericProjectionFactor<POSE, LANDMARK> This;
+		typedef GenericProjectionFactor<POSE, LANDMARK, CALIBRATION> This;
 
 		/// shorthand for a smart pointer to a factor
 		typedef boost::shared_ptr<This> shared_ptr;
 
 		/// Default constructor
-		GenericProjectionFactor() :
-				K_(new Cal3_S2(444, 555, 666, 777, 888)) {
+		GenericProjectionFactor() {
 		}
 
 		/**
 		 * Constructor
 		 * TODO: Mark argument order standard (keys, measurement, parameters)
-		 * @param z is the 2 dimensional location of point in image (the measurement)
+		 * @param measured is the 2 dimensional location of point in image (the measurement)
 		 * @param model is the standard deviation
-		 * @param j_pose is basically the frame number
-		 * @param j_landmark is the index of the landmark
+		 * @param poseKey is the index of the camera
+		 * @param pointKey is the index of the landmark
 		 * @param K shared pointer to the constant calibration
 		 */
 		GenericProjectionFactor(const Point2& measured, const SharedNoiseModel& model,
-				const Key poseKey, Key pointKey, const shared_ptrK& K) :
+				Key poseKey, Key pointKey, const boost::shared_ptr<CALIBRATION>& K) :
 				  Base(model, poseKey, pointKey), measured_(measured), K_(K) {
 		}
 
 		/** Virtual destructor */
 		virtual ~GenericProjectionFactor() {}
 
+		/// @return a deep copy of this factor
+    virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+		  return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+		      gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
+
 		/**
 		 * print
 		 * @param s optional string naming the factor
+	   * @param keyFormatter optional formatter useful for printing Symbols
 		 */
-		void print(const std::string& s = "ProjectionFactor", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
-			Base::print(s, keyFormatter);
-			measured_.print(s + ".z");
+		void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+      std::cout << s << "GenericProjectionFactor, z = ";
+      measured_.print();
+			Base::print("", keyFormatter);
 		}
 
 		/// equals
@@ -89,16 +96,16 @@ namespace gtsam {
 		Vector evaluateError(const Pose3& pose, const Point3& point,
 				boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) const {
 			try {
-	      SimpleCamera camera(*K_, pose);
+	      PinholeCamera<CALIBRATION> camera(pose, *K_);
 			  Point2 reprojectionError(camera.project(point, H1, H2) - measured_);
 	      return reprojectionError.vector();
 			} catch( CheiralityException& e) {
 			  if (H1) *H1 = zeros(2,6);
 			  if (H2) *H2 = zeros(2,3);
-			  cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2()) <<
-			      " moved behind camera " << DefaultKeyFormatter(this->key1()) << endl;
-			  return ones(2) * 2.0 * K_->fx();
+			  std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2()) <<
+			      " moved behind camera " << DefaultKeyFormatter(this->key1()) << std::endl;
 			}
+		  return ones(2) * 2.0 * K_->fx();
 		}
 
     /** return the measurement */
@@ -107,7 +114,7 @@ namespace gtsam {
     }
 
     /** return the calibration object */
-    inline const Cal3_S2::shared_ptr calibration() const {
+    inline const boost::shared_ptr<CALIBRATION> calibration() const {
       return K_;
     }
 

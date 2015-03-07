@@ -1,0 +1,198 @@
+namespace Eigen {
+/** \page SparseQuickRefPage Quick reference guide for sparse matrices
+
+\b Table \b of \b contents
+  - \ref Constructors
+  - \ref SparseMatrixInsertion
+  - \ref SparseBasicInfos
+  - \ref SparseBasicOps
+  - \ref SparseInterops
+  - \ref sparsepermutation
+  - \ref sparsesubmatrices
+  - \ref sparseselfadjointview
+\n 
+
+<hr>
+
+In this page, we give a quick summary of the main operations available for sparse matrices in the class SparseMatrix. First, it is recommended to read first the introductory tutorial at \ref TutorialSparse. The important point to have in mind when working on sparse matrices is how they are stored : 
+i.e either row major or column major. The default is column major. Most arithmetic operations on sparse matrices will assert that they have the same storage order. Moreover, when interacting with external libraries that are not yet supported by Eigen, it is important to know how to send the required matrix pointers. 
+
+\section Constructors Constructors and assignments
+SparseMatrix is the core class to build and manipulate sparse matrices in Eigen. It takes as template parameters the Scalar type and the storage order, either RowMajor or ColumnMajor. The default is ColumnMajor.
+
+\code
+  SparseMatrix<double> sm1(1000,1000);              // 1000x1000 compressed sparse matrix of double. 
+  SparseMatrix<std::complex<double>,RowMajor> sm2; // Compressed row major matrix of complex double.
+\endcode
+The copy constructor and assignment can be used to convert matrices from a storage order to another
+\code 
+  SparseMatrix<double,Colmajor> sm1;
+  // Eventually fill the matrix sm1 ...
+  SparseMatrix<double,Rowmajor> sm2(sm1), sm3;         // Initialize sm2 with sm1.
+  sm3 = sm1; // Assignment and evaluations modify the storage order.
+ \endcode
+
+\section SparseMatrixInsertion  Allocating and inserting values
+resize() and reserve() are used to set the size and allocate space for nonzero elements
+ \code
+    sm1.resize(m,n);      //Change sm to a mxn matrix. 
+    sm1.reserve(nnz);     // Allocate  room for nnz nonzeros elements.   
+  \endcode 
+Note that when calling reserve(), it is not required that nnz is the exact number of nonzero elements in the final matrix. However, an exact estimation will avoid multiple reallocations during the insertion phase. 
+
+Insertions of values in the sparse matrix can be done directly by looping over nonzero elements and use the insert() function
+\code 
+// Direct insertion of the value v_ij; 
+  sm1.insert(i, j) = v_ij;   // It is assumed that v_ij does not already exist in the matrix. 
+\endcode
+
+After insertion, a value at (i,j) can be modified using coeffRef()
+\code
+  // Update the value v_ij
+  sm1.coeffRef(i,j) = v_ij;
+  sm1.coeffRef(i,j) += v_ij;
+  sm1.coeffRef(i,j) -= v_ij;
+  ...
+\endcode
+
+The recommended way to insert values is to build a list of triplets (row, col, val) and then call setFromTriplets(). 
+\code
+  sm1.setFromTriplets(TripletList.begin(), TripletList.end());
+\endcode
+A complete example is available at \ref TutorialSparseFilling.
+
+The following functions can be used to set constant or random values in the matrix.
+\code
+  sm1.setZero(); // Reset the matrix with zero elements
+  ...
+\endcode
+
+\section SparseBasicInfos Matrix properties
+Beyond the functions rows() and cols() that are used to get the number of rows and columns, there are some useful functions that are available to easily get some informations from the matrix. 
+<table class="manual">
+<tr>
+  <td> \code
+  sm1.rows();         // Number of rows
+  sm1.cols();         // Number of columns 
+  sm1.nonZeros();     // Number of non zero values   
+  sm1.outerSize();    // Number of columns (resp. rows) for a column major (resp. row major )
+  sm1.innerSize();    // Number of rows (resp. columns) for a row major (resp. column major)
+  sm1.norm();         // (Euclidian ??) norm of the matrix
+  sm1.squaredNorm();  // 
+  sm1.isVector();     // Check if sm1 is a sparse vector or a sparse matrix
+  ...
+  \endcode </td>
+</tr>
+</table>
+
+\section SparseBasicOps Arithmetic operations
+It is easy to perform arithmetic operations on sparse matrices provided that the dimensions are adequate and that the matrices have the same storage order. Note that the evaluation can always be done in a matrix with a different storage order. 
+<table class="manual">
+<tr><th> Operations </th> <th> Code </th> <th> Notes </th></tr>
+
+<tr>
+  <td> add subtract </td> 
+  <td> \code
+  sm3 = sm1 + sm2; 
+  sm3 = sm1 - sm2;
+  sm2 += sm1; 
+  sm2 -= sm1; \endcode
+  </td>
+  <td> 
+  sm1 and sm2 should have the same storage order
+  </td> 
+</tr>
+
+<tr class="alt"><td>
+  scalar product</td><td>\code
+  sm3 = sm1 * s1;   sm3 *= s1; 
+  sm3 = s1 * sm1 + s2 * sm2; sm3 /= s1;\endcode
+  </td>
+  <td>
+    Many combinations are possible if the dimensions and the storage order agree.
+</tr>
+
+<tr>
+  <td> Product </td>
+  <td> \code
+  sm3 = sm1 * sm2;
+  dm2 = sm1 * dm1;
+  dv2 = sm1 * dv1;
+  \endcode </td>
+  <td>
+  </td>
+</tr> 
+
+<tr class='alt'>
+  <td> transposition, adjoint</td>
+  <td> \code
+  sm2 = sm1.transpose();
+  sm2 = sm1.adjoint();
+  \endcode </td>
+  <td>
+  Note that the transposition change the storage order. There is no support for transposeInPlace().
+  </td>
+</tr> 
+
+<tr>
+  <td>
+  Component-wise ops
+  </td>
+  <td>\code 
+  sm1.cwiseProduct(sm2);
+  sm1.cwiseQuotient(sm2);
+  sm1.cwiseMin(sm2);
+  sm1.cwiseMax(sm2);
+  sm1.cwiseAbs();
+  sm1.cwiseSqrt();
+  \endcode</td>
+  <td>
+  sm1 and sm2 should have the same storage order
+  </td>
+</tr>
+</table>
+
+
+\section SparseInterops Low-level storage
+There are a set of low-levels functions to get the standard compressed storage pointers. The matrix should be in compressed mode which can be checked by calling isCompressed(); makeCompressed() should do the job otherwise. 
+\code
+  // Scalar pointer to the values of the matrix, size nnz
+  sm1.valuePtr();  
+  // Index pointer to get the row indices (resp. column indices) for column major (resp. row major) matrix, size nnz
+  sm1.innerIndexPtr();
+  // Index pointer to the beginning of each row (resp. column) in valuePtr() and innerIndexPtr() for column major (row major). The size is outersize()+1; 
+  sm1.outerIndexPtr();  
+\endcode
+These pointers can therefore be easily used to send the matrix to some external libraries/solvers that are not yet supported by Eigen.
+
+\section sparsepermutation Permutations, submatrices and Selfadjoint Views
+In many cases, it is necessary to reorder the rows and/or the columns of the sparse matrix for several purposes : fill-in reducing during matrix decomposition, better data locality for sparse matrix-vector products... The class PermutationMatrix is available to this end. 
+ \code
+  PermutationMatrix<Dynamic, Dynamic, int> perm;
+  // Reserve and fill the values of perm; 
+  perm.inverse(n); // Compute eventually the inverse permutation
+  sm1.twistedBy(perm) //Apply the permutation on rows and columns 
+  sm2 = sm1 * perm; // ??? Apply the permutation on columns ???; 
+  sm2 = perm * sm1; // ??? Apply the permutation on rows ???; 
+  \endcode
+
+\section sparsesubmatrices Sub-matrices
+The following functions are useful to extract a block of rows (resp. columns) from a row-major (resp. column major) sparse matrix. Note that because of the particular storage, it is not ?? efficient ?? to extract a submatrix comprising a certain number of subrows and subcolumns.
+ \code
+  sm1.innerVector(outer); // Returns the outer -th column (resp. row) of the matrix if sm is col-major (resp. row-major)
+  sm1.innerVectors(outer); // Returns the outer -th column (resp. row) of the matrix if mat is col-major (resp. row-major)
+  sm1.middleRows(start, numRows); // For row major matrices, get a range of numRows rows
+  sm1.middleCols(start, numCols); // For column major matrices, get a range of numCols cols
+ \endcode 
+ Examples : 
+
+\section sparseselfadjointview Sparse triangular and selfadjoint Views
+ \code
+  sm2 = sm1.triangularview<Lower>(); // Get the lower triangular part of the matrix. 
+  dv2 = sm1.triangularView<Upper>().solve(dv1); // Solve the linear system with the uppper triangular part. 
+  sm2 = sm1.selfadjointview<Lower>(); // Build a selfadjoint matrix from the lower part of sm1. 
+  \endcode
+
+
+*/
+}

@@ -24,8 +24,8 @@ using namespace gtsam;
 GTSAM_CONCEPT_TESTABLE_INST(Cal3_S2)
 GTSAM_CONCEPT_MANIFOLD_INST(Cal3_S2)
 
-Cal3_S2 K(500, 500, 0.1, 640 / 2, 480 / 2);
-Point2 p(1, -2);
+static Cal3_S2 K(500, 500, 0.1, 640 / 2, 480 / 2);
+static Point2 p(1, -2);
 
 /* ************************************************************************* */
 TEST( Cal3_S2, easy_constructor)

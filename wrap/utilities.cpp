@@ -12,12 +12,15 @@
 /**
  * @file utilities.ccp
  * @author Frank Dellaert
+ * @author Andrew Melim
+ * @author Richard Roberts
  **/
 
 #include <iostream>
 #include <cstdlib>
 
 #include <boost/foreach.hpp>
+#include <boost/filesystem.hpp>
 
 #include "utilities.h"
 
@@ -103,33 +106,44 @@ bool files_equal(const string& expected, const string& actual, bool skipheader) 
 }
 
 /* ************************************************************************* */
-string maybe_shared_ptr(bool add, const string& type) {
-  string str = add? "shared_ptr<" : "";
-  str += type;
-  if (add) str += ">";
+string maybe_shared_ptr(bool add, const string& qtype, const string& type) {
+  string str = add? "Shared" : "";
+  if (add) str += type; 
+  else str += qtype;
+
+  //if (add) str += ">";
   return str;
 }
 
 /* ************************************************************************* */
-void generateUsingNamespace(FileWriter& file, const vector<string>& using_namespaces) {
-	if (using_namespaces.empty()) return;
-	BOOST_FOREACH(const string& s, using_namespaces)
-		file.oss << "using namespace " << s << ";" << endl;
+string qualifiedName(const string& separator, const vector<string>& names, const string& finalName) {
+	string result;
+	if(!names.empty()) {
+		for(size_t i = 0; i < names.size() - 1; ++i)
+			result += (names[i] + separator);
+		if(finalName.empty())
+			result += names.back();
+		else
+			result += (names.back() + separator + finalName);
+	} else if(!finalName.empty()) {
+		result = finalName;
+	}
+	return result;
 }
 
 /* ************************************************************************* */
-void generateIncludes(FileWriter& file, const string& class_name,
-		const vector<string>& includes) {
-	file.oss << "#include <wrap/matlab.h>" << endl;
-	bool added_include = false;
-	BOOST_FOREACH(const string& s, includes) {
-		if (!s.empty()) {
-			file.oss << "#include <" << s << ">" << endl;
-			added_include = true;
+void createNamespaceStructure(const std::vector<std::string>& namespaces, const std::string& toolboxPath) {
+	using namespace boost::filesystem;
+	path curPath = toolboxPath;
+	BOOST_FOREACH(const string& subdir, namespaces) {
+		curPath /= "+" + subdir;
+		if(!is_directory(curPath)) {
+			if(exists("+" + subdir))
+				throw OutputError("Need to write files to directory " + curPath.string() + ", which already exists as a file but is not a directory");
+			else
+				boost::filesystem::create_directory(curPath);
 		}
 	}
-	if (!added_include) // add default include
-		file.oss << "#include <" << class_name << ".h>" << endl;
 }
 
 /* ************************************************************************* */

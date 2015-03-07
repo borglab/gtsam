@@ -21,37 +21,50 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 
-#ifndef FAILURE_H
-#define FAILURE_H
+#pragma once
 
-#include "SimpleString.h"
-
+#include <string>
 
 class Failure
 {
 
 public:
-	Failure (const SimpleString&		theTestName, 
-			 const SimpleString&		theFileName, 
-			 long	  					theLineNumber,
-			 const SimpleString&		theCondition);
+	Failure (const std::string&	theTestName,
+					  const std::string&	theFileName,
+			          long	 				theLineNumber,
+			          const std::string&	theCondition)
+	: message (theCondition),
+	  testName (theTestName),
+	  fileName (theFileName),
+	  lineNumber (theLineNumber)
+	{
+	}
 
-	Failure (const SimpleString&		theTestName, 
-			 const SimpleString&		theFileName, 
-			 long						theLineNumber,
-			 const SimpleString&		expected,
-			 const SimpleString&		actual);
+	Failure (const std::string&	theTestName,
+					  const std::string&	theFileName,
+			          const std::string&	theCondition)
+	: message (theCondition),
+	  testName (theTestName),
+	  fileName (theFileName),
+	  lineNumber (-1)
+	{
+	}
 
-	Failure (const SimpleString&		theTestName,
-			 const SimpleString&		theFileName,
-			 const SimpleString&		theCondition);
 
+	Failure (const std::string&	theTestName,
+				 	  const std::string&	theFileName,
+					  long					theLineNumber,
+					  const std::string&	expected,
+					  const std::string&	actual)
+	: message("expected " + expected + " but was: " + actual),
+	  testName (theTestName),
+	  fileName (theFileName),
+	  lineNumber (theLineNumber)
+	{
+	}
 
-	SimpleString		message;
-	SimpleString		testName;
-	SimpleString		fileName;
+	std::string		message;
+	std::string		testName;
+	std::string		fileName;
 	long				lineNumber;
 };
-
-
-#endif

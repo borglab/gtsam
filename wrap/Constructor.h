@@ -13,6 +13,7 @@
  * @file Constructor.h
  * @brief class describing a constructor + code generation
  * @author Frank Dellaert
+ * @author Richard Roberts
  **/
 
 #pragma once
@@ -28,12 +29,12 @@ namespace wrap {
 struct Constructor {
 
 	/// Constructor creates an empty class
-	Constructor(bool verbose = true) :
+	Constructor(bool verbose = false) :
 			verbose_(verbose) {
 	}
 
 	// Then the instance variables are set directly by the Module constructor
-	ArgumentList args;
+    std::vector<ArgumentList> args_list;
 	std::string name;
 	bool verbose_;
 
@@ -48,19 +49,22 @@ struct Constructor {
 	 * Create fragment to select constructor in proxy class, e.g.,
 	 * if nargin == 2, obj.self = new_Pose3_RP(varargin{1},varargin{2}); end
 	 */
-	void matlab_proxy_fragment(FileWriter& file, const std::string& className) const;
-
-	/// m-file
-	void matlab_mfile(const std::string& toolboxPath,
-			const std::string& qualifiedMatlabName) const;
+	void proxy_fragment(FileWriter& file, const std::string& wrapperName,
+	        bool hasParent, const int id, const ArgumentList args) const;
 
 	/// cpp wrapper
-	void matlab_wrapper(const std::string& toolboxPath,
+	std::string wrapper_fragment(FileWriter& file,
 			 const std::string& cppClassName,
-			 const std::string& matlabClassName,
-			 const std::vector<std::string>& using_namespaces,
-			 const std::vector<std::string>& includes) const;
+			 const std::string& matlabUniqueName,
+			 const std::string& cppBaseClassName,
+			 int id,
+			 const ArgumentList& al) const;
+
+	/// constructor function
+	void generate_construct(FileWriter& file, const std::string& cppClassName,
+	        std::vector<ArgumentList>& args_list) const;
+	
 };
 
-} // \namespace wrap
 
+} // \namespace wrap

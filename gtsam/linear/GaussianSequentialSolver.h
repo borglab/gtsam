@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    SequentialSolver.h
+ * @file    GaussianSequentialSolver.h
  * @brief   Solves a GaussianFactorGraph (i.e. a sparse linear system) using sequential variable elimination.
  * @author  Richard Roberts
  * @date    Oct 19, 2010
@@ -115,7 +115,7 @@ public:
    * all of the other variables.  This function returns the result as a mean
    * vector and covariance matrix.  Compared to marginalCanonical, which
    * returns a GaussianConditional, this function back-substitutes the R factor
-   * to obtain the mean, then computes \Sigma = (R^T * R)^-1.
+   * to obtain the mean, then computes \f$ \Sigma = (R^T * R)^{-1} \f$.
    */
   Matrix marginalCovariance(Index j) const;
 

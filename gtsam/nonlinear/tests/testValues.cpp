@@ -10,28 +10,54 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file testDynamicValues.cpp
+ * @file testValues.cpp
  * @author Richard Roberts
  */
 
-#include <CppUnitLite/TestHarness.h>
-#include <stdexcept>
-#include <limits>
-#include <boost/assign/std/list.hpp> // for operator +=
-using namespace boost::assign;
-
+#include <gtsam/nonlinear/Values.h>
+#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/LieVector.h>
-#include <gtsam/geometry/Pose2.h>
-#include <gtsam/geometry/Pose3.h>
-#include <gtsam/nonlinear/Values.h>
+
+#include <CppUnitLite/TestHarness.h>
+#include <boost/assign/std/list.hpp> // for operator +=
+using namespace boost::assign;
+#include <stdexcept>
+#include <limits>
 
 using namespace gtsam;
 using namespace std;
 static double inf = std::numeric_limits<double>::infinity();
 
-const Key key1(Symbol('v',1)), key2(Symbol('v',2)), key3(Symbol('v',3)), key4(Symbol('v',4));
+// Convenience for named keys
+using symbol_shorthand::X;
+using symbol_shorthand::L;
+
+const Symbol key1('v',1), key2('v',2), key3('v',3), key4('v',4);
+
+
+class TestValueData {
+public:
+	static int ConstructorCount;
+	static int DestructorCount;
+	TestValueData(const TestValueData& other) { cout << "Copy constructor" << endl; ++ ConstructorCount; }
+	TestValueData() { cout << "Default constructor" << endl; ++ ConstructorCount; }
+	~TestValueData() { cout << "Destructor" << endl; ++ DestructorCount; }
+};
+int TestValueData::ConstructorCount = 0;
+int TestValueData::DestructorCount = 0;
+class TestValue : public DerivedValue<TestValue> {
+	TestValueData data_;
+public:
+	virtual void print(const std::string& str = "") const {}
+	bool equals(const TestValue& other, double tol = 1e-9) const { return true; }
+	virtual size_t dim() const { return 0; }
+	TestValue retract(const Vector&) const { return TestValue(); }
+	Vector localCoordinates(const TestValue&) const { return Vector(); }
+};
 
 /* ************************************************************************* */
 TEST( Values, equals1 )
@@ -209,6 +235,24 @@ TEST(Values, expmap_d)
 }
 
 /* ************************************************************************* */
+TEST(Values, localCoordinates)
+{
+	Values valuesA;
+	valuesA.insert(key1, LieVector(3, 1.0, 2.0, 3.0));
+	valuesA.insert(key2, LieVector(3, 5.0, 6.0, 7.0));
+
+	Ordering ordering = *valuesA.orderingArbitrary();
+
+	VectorValues expDelta = valuesA.zeroVectors(ordering);
+//	expDelta.at(ordering[key1]) = Vector_(3, 0.1, 0.2, 0.3);
+//	expDelta.at(ordering[key2]) = Vector_(3, 0.4, 0.5, 0.6);
+
+	Values valuesB = valuesA.retract(expDelta, ordering);
+
+	EXPECT(assert_equal(expDelta, valuesA.localCoordinates(valuesB, ordering)));
+}
+
+/* ************************************************************************* */
 TEST(Values, extract_keys)
 {
 	Values config;
@@ -332,9 +376,9 @@ TEST(Values, Symbol_filter) {
   Pose3 pose3(Pose2(0.3, 0.7, 0.9));
 
   Values values;
-  values.insert(Symbol('x',0), pose0);
+  values.insert(X(0), pose0);
   values.insert(Symbol('y',1), pose1);
-  values.insert(Symbol('x',2), pose2);
+  values.insert(X(2), pose2);
   values.insert(Symbol('y',3), pose3);
 
   int i = 0;
@@ -351,6 +395,26 @@ TEST(Values, Symbol_filter) {
     ++ i;
   }
   LONGS_EQUAL(2, i);
+}
+
+/* ************************************************************************* */
+TEST(Values, Destructors) {
+	// Check that Value destructors are called when Values container is deleted
+	{
+		Values values;
+		{
+			TestValue value1;
+			TestValue value2;
+			LONGS_EQUAL(2, TestValueData::ConstructorCount);
+			LONGS_EQUAL(0, TestValueData::DestructorCount);
+			values.insert(0, value1);
+			values.insert(1, value2);
+		}
+		LONGS_EQUAL(4, TestValueData::ConstructorCount);
+		LONGS_EQUAL(2, TestValueData::DestructorCount);
+	}
+	LONGS_EQUAL(4, TestValueData::ConstructorCount);
+	LONGS_EQUAL(4, TestValueData::DestructorCount);
 }
 
 /* ************************************************************************* */

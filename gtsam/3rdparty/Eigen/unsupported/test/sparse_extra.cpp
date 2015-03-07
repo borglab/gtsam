@@ -22,7 +22,11 @@
 // License and a copy of the GNU General Public License along with
 // Eigen. If not, see <http://www.gnu.org/licenses/>.
 
-#include "sparse.h"
+
+// import basic and product tests for deprectaed DynamicSparseMatrix
+#define EIGEN_NO_DEPRECATED_WARNING
+#include "sparse_basic.cpp"
+#include "sparse_product.cpp"
 #include <Eigen/SparseExtra>
 
 template<typename SetterType,typename DenseType, typename Scalar, int Options>
@@ -145,10 +149,16 @@ template<typename SparseMatrixType> void sparse_extra(const SparseMatrixType& re
 void test_sparse_extra()
 {
   for(int i = 0; i < g_repeat; i++) {
+    int s = Eigen::internal::random<int>(1,50);
     CALL_SUBTEST_1( sparse_extra(SparseMatrix<double>(8, 8)) );
-    CALL_SUBTEST_2( sparse_extra(SparseMatrix<std::complex<double> >(16, 16)) );
-    CALL_SUBTEST_1( sparse_extra(SparseMatrix<double>(33, 33)) );
+    CALL_SUBTEST_2( sparse_extra(SparseMatrix<std::complex<double> >(s, s)) );
+    CALL_SUBTEST_1( sparse_extra(SparseMatrix<double>(s, s)) );
 
-    CALL_SUBTEST_3( sparse_extra(DynamicSparseMatrix<double>(8, 8)) );
+    CALL_SUBTEST_3( sparse_extra(DynamicSparseMatrix<double>(s, s)) );
+//    CALL_SUBTEST_3(( sparse_basic(DynamicSparseMatrix<double>(s, s)) ));
+//    CALL_SUBTEST_3(( sparse_basic(DynamicSparseMatrix<double,ColMajor,long int>(s, s)) ));
+
+    CALL_SUBTEST_3( (sparse_product<DynamicSparseMatrix<float, ColMajor> >()) );
+    CALL_SUBTEST_3( (sparse_product<DynamicSparseMatrix<float, RowMajor> >()) );
   }
 }

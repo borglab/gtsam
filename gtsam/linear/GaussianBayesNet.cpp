@@ -15,19 +15,19 @@
  * @author Frank Dellaert
  */
 
-#include <stdarg.h>
+#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/VectorValues.h>
+#include <gtsam/inference/BayesNet-inl.h>
+
 #include <boost/foreach.hpp>
+#include <boost/shared_ptr.hpp>
 #include <boost/tuple/tuple.hpp>
 
-#include <gtsam/linear/JacobianFactor.h>
-#include <gtsam/linear/GaussianBayesNet.h>
-#include <gtsam/linear/VectorValues.h>
-
-#include <gtsam/inference/BayesNet-inl.h>
+#include <stdarg.h>
 
 using namespace std;
 using namespace gtsam;
-
 
 // trick from some reading group
 #define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL) 
@@ -98,6 +98,24 @@ void optimizeInPlace(const GaussianBayesNet& bn, VectorValues& x) {
 		cg->solveInPlace(x);
 	}
 }
+
+/* ************************************************************************* */
+VectorValues backSubstitute(const GaussianBayesNet& bn, const VectorValues& input) {
+  VectorValues output = input;
+  BOOST_REVERSE_FOREACH(const boost::shared_ptr<const GaussianConditional> cg, bn) {
+    const Index key = *(cg->beginFrontals());
+    Vector xS = internal::extractVectorValuesSlices(output, cg->beginParents(), cg->endParents());
+    xS = input[key] - cg->get_S() * xS;
+    output[key] = cg->get_R().triangularView<Eigen::Upper>().solve(xS);
+  }
+
+  BOOST_FOREACH(const boost::shared_ptr<const GaussianConditional> cg, bn) {
+    cg->scaleFrontalsBySigma(output);
+  }
+
+  return output;
+}
+
 
 /* ************************************************************************* */
 // gy=inv(L)*gx by solving L*gy=gx.
@@ -224,12 +242,12 @@ double determinant(const GaussianBayesNet& bayesNet) {
 
 /* ************************************************************************* */
 VectorValues gradient(const GaussianBayesNet& bayesNet, const VectorValues& x0) {
-  return gradient(FactorGraph<JacobianFactor>(bayesNet), x0);
+  return gradient(GaussianFactorGraph(bayesNet), x0);
 }
 
 /* ************************************************************************* */
 void gradientAtZero(const GaussianBayesNet& bayesNet, VectorValues& g) {
-  gradientAtZero(FactorGraph<JacobianFactor>(bayesNet), g);
+  gradientAtZero(GaussianFactorGraph(bayesNet), g);
 }
 
 /* ************************************************************************* */

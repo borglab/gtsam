@@ -17,14 +17,14 @@
 
 #pragma once
 
-#include <set>
-#include <gtsam/base/FastMap.h>
+#include <gtsam/nonlinear/Key.h>
 #include <gtsam/inference/inference.h>
-#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/base/FastMap.h>
 
 #include <boost/foreach.hpp>
 #include <boost/assign/list_inserter.hpp>
 #include <boost/pool/pool_alloc.hpp>
+#include <set>
 
 namespace gtsam {
 
@@ -93,7 +93,8 @@ public:
   /// behavior of std::map)
   Index& operator[](Key key) {
     iterator i=order_.find(key);
-    if(i == order_.end())  throw std::out_of_range(std::string("Attempting to access a key from an ordering that does not contain that key"));
+    if(i == order_.end())  throw std::out_of_range(
+    		std::string("Attempting to access a key from an ordering that does not contain that key:") + DefaultKeyFormatter(key));
     else                   return i->second; }
 
   /// Access the index for the requested key, throws std::out_of_range if the
@@ -101,7 +102,8 @@ public:
   /// behavior of std::map)
   Index operator[](Key key) const {
     const_iterator i=order_.find(key);
-    if(i == order_.end())  throw std::out_of_range(std::string("Attempting to access a key from an ordering that does not contain that key"));
+    if(i == order_.end())  throw std::out_of_range(
+    		std::string("Attempting to access a key from an ordering that does not contain that key:") + DefaultKeyFormatter(key));
     else                   return i->second; }
 
   /** Returns an iterator pointing to the symbol/index pair with the requested,
@@ -153,7 +155,7 @@ public:
   iterator end() { return order_.end(); }
 
   /// Test if the key exists in the ordering.
-  bool exists(Key key) const { return order_.count(key); }
+  bool exists(Key key) const { return order_.count(key) > 0; }
 
   ///TODO: comment
   std::pair<iterator,bool> tryInsert(Key key, Index order) { return tryInsert(std::make_pair(key,order)); }
@@ -215,7 +217,7 @@ public:
 	/// @{
 
   /** print (from Testable) for testing and debugging */
-  void print(const std::string& str = "Ordering:", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+  void print(const std::string& str = "Ordering:\n", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
   /** equals (from Testable) for testing and debugging */
   bool equals(const Ordering& rhs, double tol = 0.0) const;
@@ -231,7 +233,10 @@ private:
 		ar & BOOST_SERIALIZATION_NVP(order_);
 		ar & BOOST_SERIALIZATION_NVP(nVars_);
 	}
-};
+}; // \class Ordering
+
+// typedef for use with matlab
+typedef Ordering::InvertedMap InvertedOrdering;
 
 /**
  * @class Unordered
@@ -256,5 +261,17 @@ public:
   bool equals(const Unordered &t, double tol=0) const;
 };
 
-}
+// Create an index formatter that looks up the Key in an inverse ordering, then
+// formats the key using the provided key formatter, used in saveGraph.
+struct OrderingIndexFormatter {
+  Ordering::InvertedMap inverseOrdering;
+  const KeyFormatter& keyFormatter;
+  OrderingIndexFormatter(const Ordering& ordering, const KeyFormatter& keyFormatter) :
+      inverseOrdering(ordering.invert()), keyFormatter(keyFormatter) {}
+  std::string operator()(Index index) {
+    return keyFormatter(inverseOrdering.at(index));
+  }
+};
+
+} // \namespace gtsam
 

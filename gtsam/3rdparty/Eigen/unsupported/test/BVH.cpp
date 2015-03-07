@@ -24,9 +24,15 @@
 
 #include "main.h"
 #include <Eigen/StdVector>
+#include <Eigen/Geometry>
 #include <unsupported/Eigen/BVH>
 
-inline double SQR(double x) { return x * x; }
+namespace Eigen {
+
+template<typename Scalar, int Dim> AlignedBox<Scalar, Dim> bounding_box(const Matrix<Scalar, Dim, 1> &v) { return AlignedBox<Scalar, Dim>(v); }
+
+}
+
 
 template<int Dim>
 struct Ball
@@ -41,16 +47,10 @@ EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF_VECTORIZABLE_FIXED_SIZE(double, Dim)
   VectorType center;
   double radius;
 };
-
-namespace Eigen {
-namespace internal {
-
-template<typename Scalar, int Dim> AlignedBox<Scalar, Dim> bounding_box(const Matrix<Scalar, Dim, 1> &v) { return AlignedBox<Scalar, Dim>(v); }
 template<int Dim> AlignedBox<double, Dim> bounding_box(const Ball<Dim> &b)
 { return AlignedBox<double, Dim>(b.center.array() - b.radius, b.center.array() + b.radius); }
 
-} // end namespace internal
-}
+inline double SQR(double x) { return x * x; }
 
 template<int Dim>
 struct BallPointStuff //this class provides functions to be both an intersector and a minimizer, both for a ball and a point and for two trees

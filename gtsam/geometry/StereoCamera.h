@@ -28,15 +28,19 @@ namespace gtsam {
 
 /**
  * A stereo camera class, parameterize by left camera pose and stereo calibration
- * @ingroup geometry
+ * @addtogroup geometry
  */
-class StereoCamera {
+class StereoCamera  : public DerivedValue<StereoCamera> {
 
 private:
 	Pose3 leftCamPose_;
 	Cal3_S2Stereo::shared_ptr K_;
 
 public:
+
+	/// @name Standard Constructors
+	/// @{
+
 	StereoCamera() {
 	}
 
@@ -45,6 +49,54 @@ public:
 	const Cal3_S2Stereo::shared_ptr calibration() const {
 		return K_;
 	}
+
+  /// @}
+  /// @name Testable
+  /// @{
+
+	void print(const std::string& s = "") const {
+		leftCamPose_.print(s + ".camera.");
+		K_->print(s + ".calibration.");
+	}
+
+	bool equals(const StereoCamera &camera, double tol = 1e-9) const {
+		return leftCamPose_.equals(camera.leftCamPose_, tol) && K_->equals(
+				*camera.K_, tol);
+	}
+
+  /// @}
+  /// @name Manifold
+  /// @{
+
+	/** Dimensionality of the tangent space */
+	inline size_t dim() const {
+		return 6;
+	}
+
+	/** Dimensionality of the tangent space */
+	static inline size_t Dim() {
+		return 6;
+	}
+
+	/// Updates a with tangent space delta
+	inline StereoCamera retract(const Vector& v) const {
+		return StereoCamera(pose().retract(v), K_);
+	}
+
+	/// Local coordinates of manifold neighborhood around current value
+	inline Vector localCoordinates(const StereoCamera& t2) const {
+		return Vector(leftCamPose_.localCoordinates(t2.leftCamPose_));
+	}
+
+	Pose3 between(const StereoCamera &camera,
+			boost::optional<Matrix&> H1=boost::none,
+			boost::optional<Matrix&> H2=boost::none) const {
+		return leftCamPose_.between(camera.pose(), H1, H2);
+	}
+
+  /// @}
+	/// @name Standard Interface
+	/// @{
 
 	const Pose3& pose() const {
 		return leftCamPose_;
@@ -71,16 +123,6 @@ public:
 		return project(point, H1, H2);
 	}
 
-	/*
-	 * backproject using left camera calibration, up to scale only
-	 * i.e. does not rely on baseline
-	 */
-	Point3 backproject(const Point2& projection, const double scale) const {
-		Point2 intrinsic = K_->calibrate(projection);
-		Point3 cameraPoint = Point3(intrinsic.x() * scale, intrinsic.y() * scale, scale);;
-		return pose().transform_from(cameraPoint);
-	}
-
 	Point3 backproject(const StereoPoint2& z) const {
 		Vector measured = z.vector();
 		double Z = K_->baseline()*K_->fx()/(measured[0]-measured[1]);
@@ -90,40 +132,7 @@ public:
 		return world_point;
 	}
 
-	/** Dimensionality of the tangent space */
-	inline size_t dim() const {
-		return 6;
-	}
-
-	/** Dimensionality of the tangent space */
-	static inline size_t Dim() {
-		return 6;
-	}
-
-	bool equals(const StereoCamera &camera, double tol = 1e-9) const {
-		return leftCamPose_.equals(camera.leftCamPose_, tol) && K_->equals(
-				*camera.K_, tol);
-	}
-
-	// Manifold requirements - use existing expmap/logmap
-	inline StereoCamera retract(const Vector& v) const {
-		return StereoCamera(pose().retract(v), K_);
-	}
-
-	inline Vector localCoordinates(const StereoCamera& t2) const {
-		return Vector(leftCamPose_.localCoordinates(t2.leftCamPose_));
-	}
-
-	Pose3 between(const StereoCamera &camera,
-			boost::optional<Matrix&> H1=boost::none,
-			boost::optional<Matrix&> H2=boost::none) const {
-		return leftCamPose_.between(camera.pose(), H1, H2);
-	}
-
-	void print(const std::string& s = "") const {
-		leftCamPose_.print(s + ".camera.");
-		K_->print(s + ".calibration.");
-	}
+	/// @}
 
 private:
 	/** utility functions */
@@ -132,7 +141,9 @@ private:
 	friend class boost::serialization::access;
 	template<class Archive>
 	void serialize(Archive & ar, const unsigned int version) {
-		ar & BOOST_SERIALIZATION_NVP(leftCamPose_);
+    ar & boost::serialization::make_nvp("StereoCamera",
+       boost::serialization::base_object<Value>(*this));
+	  ar & BOOST_SERIALIZATION_NVP(leftCamPose_);
 		ar & BOOST_SERIALIZATION_NVP(K_);
 	}
 

@@ -41,7 +41,7 @@ namespace gtsam {
 	template<class FACTOR>
 	GenericSequentialSolver<FACTOR>::GenericSequentialSolver(
 			const sharedFactorGraph& factorGraph,
-			const VariableIndex::shared_ptr& variableIndex) :
+			const boost::shared_ptr<VariableIndex>& variableIndex) :
 			factors_(factorGraph), structure_(variableIndex),
 			eliminationTree_(EliminationTree<FACTOR>::Create(*factors_, *structure_)) {
 	}
@@ -88,43 +88,43 @@ namespace gtsam {
 	GenericSequentialSolver<FACTOR>::jointFactorGraph(
 			const std::vector<Index>& js, Eliminate function) const {
 
-		// Compute a COLAMD permutation with the marginal variable constrained to the end.
+		// Compute a COLAMD permutation with the marginal variables constrained to the end.
 		Permutation::shared_ptr permutation(inference::PermutationCOLAMD(*structure_, js));
 		Permutation::shared_ptr permutationInverse(permutation->inverse());
 
 		// Permute the factors - NOTE that this permutes the original factors, not
 		// copies.  Other parts of the code may hold shared_ptr's to these factors so
 		// we must undo the permutation before returning.
-		BOOST_FOREACH(const typename FACTOR::shared_ptr& factor, *factors_)
-						if (factor) factor->permuteWithInverse(*permutationInverse);
+		BOOST_FOREACH(const typename boost::shared_ptr<FACTOR>& factor, *factors_)
+			if (factor) factor->permuteWithInverse(*permutationInverse);
 
 		// Eliminate all variables
 		typename BayesNet<typename FACTOR::ConditionalType>::shared_ptr
 			bayesNet(EliminationTree<FACTOR>::Create(*factors_)->eliminate(function));
 
 		// Undo the permuation on the original factors and on the structure.
-		BOOST_FOREACH(const typename FACTOR::shared_ptr& factor, *factors_)
-					if (factor) factor->permuteWithInverse(*permutation);
+		BOOST_FOREACH(const typename boost::shared_ptr<FACTOR>& factor, *factors_)
+			if (factor) factor->permuteWithInverse(*permutation);
 
 		// Take the joint marginal from the Bayes net.
 		sharedFactorGraph joint(new FactorGraph<FACTOR> );
 		joint->reserve(js.size());
 		typename BayesNet<typename FACTOR::ConditionalType>::const_reverse_iterator
-				conditional = bayesNet->rbegin();
+			conditional = bayesNet->rbegin();
 
 		for (size_t i = 0; i < js.size(); ++i)
 			joint->push_back((*(conditional++))->toFactor());
 
 		// Undo the permutation on the eliminated joint marginal factors
-		BOOST_FOREACH(const typename FACTOR::shared_ptr& factor, *joint)
-						factor->permuteWithInverse(*permutation);
+		BOOST_FOREACH(const typename boost::shared_ptr<FACTOR>& factor, *joint)
+			factor->permuteWithInverse(*permutation);
 
 		return joint;
 	}
 
 	/* ************************************************************************* */
 	template<class FACTOR>
-	typename FACTOR::shared_ptr //
+	typename boost::shared_ptr<FACTOR> //
 	GenericSequentialSolver<FACTOR>::marginalFactor(Index j, Eliminate function) const {
 		// Create a container for the one variable index
 		std::vector<Index> js(1);

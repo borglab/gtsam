@@ -20,6 +20,8 @@
 #include <gtsam/base/Testable.h>
 #include <boost/foreach.hpp>
 #include <cmath>
+#include <iostream>
+#include <iomanip>
 
 using namespace std;
 
@@ -44,7 +46,7 @@ Matrix Pose2::matrix() const {
 
 /* ************************************************************************* */
 void Pose2::print(const string& s) const {
-	cout << s << "(" << t_.x() << ", " << t_.y() << ", " << r_.theta() << ")" << endl;
+	cout << s << setprecision(2) << "(" << t_.x() << ", " << t_.y() << ", " << r_.theta() << ")" << endl;
 }
 
 /* ************************************************************************* */
@@ -106,7 +108,7 @@ Vector Pose2::localCoordinates(const Pose2& p2) const {
 /* ************************************************************************* */
 // Calculate Adjoint map
 // Ad_pose is 3*3 matrix that when applied to twist xi, returns Ad_pose(xi)
-Matrix Pose2::AdjointMap() const {
+Matrix Pose2::adjointMap() const {
 	double c = r_.c(), s = r_.s(), x = t_.x(), y = t_.y();
 	return Matrix_(3,3,
 			c,  -s,   y,
@@ -117,7 +119,7 @@ Matrix Pose2::AdjointMap() const {
 
 /* ************************************************************************* */
 Pose2 Pose2::inverse(boost::optional<Matrix&> H1) const {
-	if (H1) *H1 = -AdjointMap();
+	if (H1) *H1 = -adjointMap();
 	return Pose2(r_.inverse(), r_.unrotate(Point2(-t_.x(), -t_.y())));
 }
 
@@ -140,7 +142,7 @@ Point2 Pose2::transform_to(const Point2& point,
 Pose2 Pose2::compose(const Pose2& p2, boost::optional<Matrix&> H1,
 		boost::optional<Matrix&> H2) const {
 	// TODO: inline and reuse?
-	if(H1) *H1 = p2.inverse().AdjointMap();
+	if(H1) *H1 = p2.inverse().adjointMap();
 	if(H2) *H2 = I3;
 	return (*this)*p2;
 }

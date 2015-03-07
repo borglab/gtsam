@@ -10,26 +10,23 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file testKalmanFilter.cpp
- *
- * Simple linear Kalman filter.
- * Implemented using factor graphs, i.e., does Cholesky-based SRIF, really.
- *
+ * @file KalmanFilter.h
+ * @brief Simple linear Kalman filter. Implemented using factor graphs, i.e., does Cholesky-based SRIF, really.
  * @date Sep 3, 2011
  * @author Stephen Williams
  * @author Frank Dellaert
  */
 
+#pragma once
+
 #include <gtsam/linear/GaussianDensity.h>
+#include <gtsam/linear/NoiseModel.h>
 
 #ifndef KALMANFILTER_DEFAULT_FACTORIZATION
 #define KALMANFILTER_DEFAULT_FACTORIZATION QR
 #endif
 
 namespace gtsam {
-
-	class SharedDiagonal;
-	class SharedGaussian;
 
 	/**
 	 * Kalman Filter class

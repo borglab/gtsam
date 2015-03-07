@@ -72,7 +72,8 @@ namespace gtsam {
 		bool equals(const DecisionTreeFactor& other, double tol = 1e-9) const;
 
 		// print
-		void print(const std::string& s = "DecisionTreeFactor: ") const;
+		virtual void print(const std::string& s = "DecisionTreeFactor:\n",
+				const IndexFormatter& formatter = DefaultIndexFormatter) const;
 
 		/// @}
 		/// @name Standard Interface
@@ -94,7 +95,7 @@ namespace gtsam {
 		}
 
 		/// Convert into a decisiontree
-		virtual operator DecisionTreeFactor() const {
+		virtual DecisionTreeFactor toDecisionTreeFactor() const {
 			return *this;
 		}
 
@@ -126,6 +127,18 @@ namespace gtsam {
 		 * @return shared pointer to newly created DecisionTreeFactor
 		 */
 		shared_ptr combine(size_t nrFrontals, ADT::Binary op) const;
+
+		/**
+		 * @brief Permutes the keys in Potentials and DiscreteFactor
+		 *
+		 * This re-implements the permuteWithInverse() in both Potentials
+		 * and DiscreteFactor by doing both of them together.
+		 */
+
+		void permuteWithInverse(const Permutation& inversePermutation){
+			DiscreteFactor::permuteWithInverse(inversePermutation);
+			Potentials::permuteWithInverse(inversePermutation);
+		}
 
 		/// @}
 	};

@@ -21,80 +21,43 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/assign/std/set.hpp> // for operator +=
+#include <boost/assign/std/vector.hpp>
 using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 
+#include <gtsam/inference/IndexConditional.h>
 #include <gtsam/inference/SymbolicFactorGraph.h>
 
 using namespace std;
 using namespace gtsam;
 
-typedef boost::shared_ptr<SymbolicFactorGraph> shared;
-
-///* ************************************************************************* */
-// SL-FIX TEST( FactorGraph, splitMinimumSpanningTree )
-//{
-//	SymbolicFactorGraph G;
-//	G.push_factor("x1", "x2");
-//	G.push_factor("x1", "x3");
-//	G.push_factor("x1", "x4");
-//	G.push_factor("x2", "x3");
-//	G.push_factor("x2", "x4");
-//	G.push_factor("x3", "x4");
-//
-//	SymbolicFactorGraph T, C;
-//	boost::tie(T, C) = G.splitMinimumSpanningTree();
-//
-//	SymbolicFactorGraph expectedT, expectedC;
-//	expectedT.push_factor("x1", "x2");
-//	expectedT.push_factor("x1", "x3");
-//	expectedT.push_factor("x1", "x4");
-//	expectedC.push_factor("x2", "x3");
-//	expectedC.push_factor("x2", "x4");
-//	expectedC.push_factor("x3", "x4");
-//	CHECK(assert_equal(expectedT,T));
-//	CHECK(assert_equal(expectedC,C));
-//}
-
-///* ************************************************************************* */
-///**
-// *  x1 - x2 - x3 - x4 - x5
-// *       |    |  / |
-// *       l1   l2   l3
-// */
-// SL-FIX TEST( FactorGraph, removeSingletons )
-//{
-//	SymbolicFactorGraph G;
-//	G.push_factor("x1", "x2");
-//	G.push_factor("x2", "x3");
-//	G.push_factor("x3", "x4");
-//	G.push_factor("x4", "x5");
-//	G.push_factor("x2", "l1");
-//	G.push_factor("x3", "l2");
-//	G.push_factor("x4", "l2");
-//	G.push_factor("x4", "l3");
-//
-//	SymbolicFactorGraph singletonGraph;
-//	set<Symbol> singletons;
-//	boost::tie(singletonGraph, singletons) = G.removeSingletons();
-//
-//	set<Symbol> singletons_excepted; singletons_excepted += "x1", "x2", "x5", "l1", "l3";
-//	CHECK(singletons_excepted == singletons);
-//
-//	SymbolicFactorGraph singletonGraph_excepted;
-//	singletonGraph_excepted.push_factor("x2", "l1");
-//	singletonGraph_excepted.push_factor("x4", "l3");
-//	singletonGraph_excepted.push_factor("x1", "x2");
-//	singletonGraph_excepted.push_factor("x4", "x5");
-//	singletonGraph_excepted.push_factor("x2", "x3");
-//	CHECK(singletonGraph_excepted.equals(singletonGraph));
-//}
-
 /* ************************************************************************* */
-TEST(FactorGraph, dynamic_factor_cast) {
-  FactorGraph<IndexFactor> fg;
-  fg.dynamicCastFactors<FactorGraph<IndexFactor> >();
+TEST(FactorGraph, eliminateFrontals) {
+
+	SymbolicFactorGraph sfgOrig;
+	sfgOrig.push_factor(0,1);
+	sfgOrig.push_factor(0,2);
+	sfgOrig.push_factor(1,3);
+	sfgOrig.push_factor(1,4);
+	sfgOrig.push_factor(2,3);
+	sfgOrig.push_factor(4,5);
+
+	IndexConditional::shared_ptr actualCond;
+	SymbolicFactorGraph actualSfg;
+	boost::tie(actualCond, actualSfg) = sfgOrig.eliminateFrontals(2);
+
+	vector<Index> condIndices;
+	condIndices += 0,1,2,3,4;
+	IndexConditional expectedCond(condIndices, 2);
+
+	SymbolicFactorGraph expectedSfg;
+	expectedSfg.push_factor(2,3);
+	expectedSfg.push_factor(4,5);
+	expectedSfg.push_factor(2,3,4);
+
+	EXPECT(assert_equal(expectedSfg, actualSfg));
+	EXPECT(assert_equal(expectedCond, *actualCond));
 }
 
 /* ************************************************************************* */

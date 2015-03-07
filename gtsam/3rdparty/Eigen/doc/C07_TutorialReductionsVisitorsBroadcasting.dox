@@ -191,12 +191,27 @@ This can be accomplished with:
 \verbinclude Tutorial_ReductionsVisitorsBroadcasting_broadcast_simple.out
 </td></tr></table>
 
+We can interpret the instruction <tt>mat.colwise() += v</tt> in two equivalent ways. It adds the vector \c v
+to every column of the matrix. Alternatively, it can be interpreted as repeating the vector \c v four times to
+form a four-by-two matrix which is then added to \c mat:
+\f[
+\begin{bmatrix} 1 & 2 & 6 & 9 \\ 3 & 1 & 7 & 2 \end{bmatrix}
++ \begin{bmatrix} 0 & 0 & 0 & 0 \\ 1 & 1 & 1 & 1 \end{bmatrix}
+= \begin{bmatrix} 1 & 2 & 6 & 9 \\ 4 & 2 & 8 & 3 \end{bmatrix}.
+\f]
+The operators <tt>-=</tt>, <tt>+</tt> and <tt>-</tt> can also be used column-wise and row-wise. On arrays, we 
+can also use the operators <tt>*=</tt>, <tt>/=</tt>, <tt>*</tt> and <tt>/</tt> to perform coefficient-wise 
+multiplication and division column-wise or row-wise. These operators are not available on matrices because it
+is not clear what they would do. If you want multiply column 0 of a matrix \c mat with \c v(0), column 1 with 
+\c v(1), and so on, then use <tt>mat = mat * v.asDiagonal()</tt>.
+
 It is important to point out that the vector to be added column-wise or row-wise must be of type Vector,
 and cannot be a Matrix. If this is not met then you will get compile-time error. This also means that
 broadcasting operations can only be applied with an object of type Vector, when operating with Matrix.
-The same applies for the Array class, where the equivalent for VectorXf is ArrayXf.
+The same applies for the Array class, where the equivalent for VectorXf is ArrayXf. As always, you should
+not mix arrays and matrices in the same expression.
 
-Therefore, to perform the same operation row-wise we can do:
+To perform the same operation row-wise we can do:
 
 <table class="example">
 <tr><th>Example:</th><th>Output:</th></tr>

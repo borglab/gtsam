@@ -27,19 +27,19 @@ using namespace gtsam;
 
 GTSAM_CONCEPT_MANIFOLD_INST(CalibratedCamera)
 
-const Pose3 pose1(Matrix_(3,3,
+static const Pose3 pose1(Matrix_(3,3,
 				      1., 0., 0.,
 				      0.,-1., 0.,
 				      0., 0.,-1.
 				      ),
 			      Point3(0,0,0.5));
  
-const CalibratedCamera camera(pose1);
+static const CalibratedCamera camera(pose1);
 
-const Point3 point1(-0.08,-0.08, 0.0);
-const Point3 point2(-0.08, 0.08, 0.0);
-const Point3 point3( 0.08, 0.08, 0.0);
-const Point3 point4( 0.08,-0.08, 0.0);
+static const Point3 point1(-0.08,-0.08, 0.0);
+static const Point3 point2(-0.08, 0.08, 0.0);
+static const Point3 point3( 0.08, 0.08, 0.0);
+static const Point3 point4( 0.08,-0.08, 0.0);
 
 /* ************************************************************************* */
 TEST( CalibratedCamera, constructor)
@@ -52,7 +52,7 @@ TEST( CalibratedCamera, level1)
 {
 	// Create a level camera, looking in X-direction
 	Pose2 pose2(0.1,0.2,0);
-	CalibratedCamera camera = CalibratedCamera::level(pose2, 0.3);
+	CalibratedCamera camera = CalibratedCamera::Level(pose2, 0.3);
 
 	// expected
 	Point3 x(0,-1,0),y(0,0,-1),z(1,0,0);
@@ -65,8 +65,8 @@ TEST( CalibratedCamera, level1)
 TEST( CalibratedCamera, level2)
 {
 	// Create a level camera, looking in Y-direction
-	Pose2 pose2(0.4,0.3,M_PI_2);
-	CalibratedCamera camera = CalibratedCamera::level(pose2, 0.1);
+	Pose2 pose2(0.4,0.3,M_PI/2.0);
+	CalibratedCamera camera = CalibratedCamera::Level(pose2, 0.1);
 
 	// expected
 	Point3 x(1,0,0),y(0,0,-1),z(0,1,0);
@@ -95,7 +95,7 @@ TEST( CalibratedCamera, Dproject_to_camera1) {
 }
 
 /* ************************************************************************* */
-Point2 project2(const Pose3& pose, const Point3& point) {
+static Point2 project2(const Pose3& pose, const Point3& point) {
 	return CalibratedCamera(pose).project(point);
 }
 

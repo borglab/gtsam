@@ -19,64 +19,88 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
+#include <gtsam/linear/SubgraphSolver.h>
 
 namespace gtsam {
 
 class SuccessiveLinearizationParams : public NonlinearOptimizerParams {
 public:
-  /** See SuccessiveLinearizationParams::elimination */
-  enum Elimination {
-    MULTIFRONTAL,
-    SEQUENTIAL
+  /** See SuccessiveLinearizationParams::linearSolverType */
+  enum LinearSolverType {
+    MULTIFRONTAL_CHOLESKY,
+    MULTIFRONTAL_QR,
+    SEQUENTIAL_CHOLESKY,
+    SEQUENTIAL_QR,
+    CONJUGATE_GRADIENT,         /* Experimental Flag */
+    CHOLMOD,    /* Experimental Flag */
   };
 
-  /** See SuccessiveLinearizationParams::factorization */
-  enum Factorization {
-    CHOLESKY,
-    QR,
-  };
-
-  Elimination elimination; ///< The elimination algorithm to use (default: MULTIFRONTAL)
-  Factorization factorization; ///< The numerical factorization (default: Cholesky)
+	LinearSolverType linearSolverType; ///< The type of linear solver to use in the nonlinear optimizer
   boost::optional<Ordering> ordering; ///< The variable elimination ordering, or empty to use COLAMD (default: empty)
+  IterativeOptimizationParameters::shared_ptr iterativeParams; ///< The container for iterativeOptimization parameters. used in CG Solvers.
 
-  SuccessiveLinearizationParams() :
-    elimination(MULTIFRONTAL), factorization(CHOLESKY) {}
-
+  SuccessiveLinearizationParams() : linearSolverType(MULTIFRONTAL_CHOLESKY) {}
   virtual ~SuccessiveLinearizationParams() {}
 
-  virtual void print(const std::string& str = "") const {
-    NonlinearOptimizerParams::print(str);
-    if(elimination == MULTIFRONTAL)
-      std::cout << "         elimination method: MULTIFRONTAL\n";
-    else if(elimination == SEQUENTIAL)
-      std::cout << "         elimination method: SEQUENTIAL\n";
-    else
-      std::cout << "         elimination method: (invalid)\n";
+    inline bool isMultifrontal() const {
+    return (linearSolverType == MULTIFRONTAL_CHOLESKY) || (linearSolverType == MULTIFRONTAL_QR); }
 
-    if(factorization == CHOLESKY)
-      std::cout << "       factorization method: CHOLESKY\n";
-    else if(factorization == QR)
-      std::cout << "       factorization method: QR\n";
-    else
-      std::cout << "       factorization method: (invalid)\n";
+  inline bool isSequential() const {
+    return (linearSolverType == SEQUENTIAL_CHOLESKY) || (linearSolverType == SEQUENTIAL_QR); }
 
-    if(ordering)
-      std::cout << "                   ordering: custom\n";
-    else
-      std::cout << "                   ordering: COLAMD\n";
+  inline bool isCholmod() const { return (linearSolverType == CHOLMOD); }
 
-    std::cout.flush();
-  }
+  inline bool isCG() const { return (linearSolverType == CONJUGATE_GRADIENT); }
+
+  virtual void print(const std::string& str) const;
 
   GaussianFactorGraph::Eliminate getEliminationFunction() const {
-    if(factorization == SuccessiveLinearizationParams::CHOLESKY)
+    switch (linearSolverType) {
+    case MULTIFRONTAL_CHOLESKY:
+    case SEQUENTIAL_CHOLESKY:
       return EliminatePreferCholesky;
-    else if(factorization == SuccessiveLinearizationParams::QR)
+
+    case MULTIFRONTAL_QR:
+    case SEQUENTIAL_QR:
       return EliminateQR;
-    else
-      throw runtime_error("Nonlinear optimization parameter \"factorization\" is invalid");
+
+    default:
+      throw std::runtime_error("Nonlinear optimization parameter \"factorization\" is invalid");
+      return EliminateQR;
+      break;
+    }
   }
+
+	std::string getLinearSolverType() const { return linearSolverTranslator(linearSolverType); }
+
+	void setLinearSolverType(const std::string& solver) { linearSolverType = linearSolverTranslator(solver); }
+  void setIterativeParams(const SubgraphSolverParameters &params);
+	void setOrdering(const Ordering& ordering) { this->ordering = ordering; }
+
+private:
+	std::string linearSolverTranslator(LinearSolverType linearSolverType) const {
+		switch(linearSolverType) {
+		case MULTIFRONTAL_CHOLESKY: return "MULTIFRONTAL_CHOLESKY";
+		case MULTIFRONTAL_QR: return "MULTIFRONTAL_QR";
+		case SEQUENTIAL_CHOLESKY: return "SEQUENTIAL_CHOLESKY";
+		case SEQUENTIAL_QR: return "SEQUENTIAL_QR";
+		case CONJUGATE_GRADIENT: return "CONJUGATE_GRADIENT";
+		case CHOLMOD: return "CHOLMOD";
+		default: throw std::invalid_argument("Unknown linear solver type in SuccessiveLinearizationOptimizer");
+		}
+	}
+	LinearSolverType linearSolverTranslator(const std::string& linearSolverType) const {
+		if(linearSolverType == "MULTIFRONTAL_CHOLESKY") return MULTIFRONTAL_CHOLESKY;
+		if(linearSolverType == "MULTIFRONTAL_QR") return MULTIFRONTAL_QR;
+		if(linearSolverType == "SEQUENTIAL_CHOLESKY") return SEQUENTIAL_CHOLESKY;
+		if(linearSolverType == "SEQUENTIAL_QR") return SEQUENTIAL_QR;
+		if(linearSolverType == "CONJUGATE_GRADIENT") return CONJUGATE_GRADIENT;
+		if(linearSolverType == "CHOLMOD") return CHOLMOD;
+		throw std::invalid_argument("Unknown linear solver type in SuccessiveLinearizationOptimizer");
+	}
 };
+
+/* a wrapper for solving a GaussianFactorGraph according to the parameters */
+VectorValues solveGaussianFactorGraph(const GaussianFactorGraph &gfg, const SuccessiveLinearizationParams &params) ;
 
 } /* namespace gtsam */

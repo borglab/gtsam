@@ -35,7 +35,7 @@ namespace gtsam {
 	 * create a BayesTree<GaussianConditional>. In both cases, you need to provide a basic
 	 * GaussianFactorGraph::Eliminate function that will be used to
 	 *
-	 * \ingroup Multifrontal
+	 * \addtogroup Multifrontal
 	 */
 	class GaussianJunctionTree: public JunctionTree<GaussianFactorGraph> {
 

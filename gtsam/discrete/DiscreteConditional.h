@@ -63,9 +63,11 @@ namespace gtsam {
 		/// @{
 
 		/** GTSAM-style print */
-		void print(const std::string& s = "Discrete Conditional: ") const {
+		void print(const std::string& s = "Discrete Conditional: ",
+				const IndexFormatter& formatter
+				=DefaultIndexFormatter) const {
 			std::cout << s << std::endl;
-			IndexConditional::print(s);
+			IndexConditional::print(s, formatter);
 			Potentials::print(s);
 		}
 
@@ -89,14 +91,14 @@ namespace gtsam {
 
 		/**
 		 * solve a conditional
-		 * @param parentsAssignment Known values of the parents
+		 * @param parentsValues Known values of the parents
 		 * @return MPE value of the child (1 frontal variable).
 		 */
 		size_t solve(const Values& parentsValues) const;
 
 		/**
 		 * sample
-		 * @param parentsAssignment Known values of the parents
+		 * @param parentsValues Known values of the parents
 		 * @return sample from conditional
 		 */
 		size_t sample(const Values& parentsValues) const;
@@ -110,6 +112,11 @@ namespace gtsam {
 
 		/// sample in place, stores result in partial solution
 		void sampleInPlace(Values& parentsValues) const;
+
+		/**
+		 * Permutes both IndexConditional and Potentials.
+		 */
+		void permuteWithInverse(const Permutation& inversePermutation);
 
 		/// @}
 

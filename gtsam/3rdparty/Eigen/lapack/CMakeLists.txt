@@ -1,26 +1,22 @@
 
 project(EigenLapack CXX)
 
-if( NOT DEFINED EIGEN_Fortran_COMPILER_WORKS OR EIGEN_Fortran_COMPILER_WORKS)
+include("../cmake/language_support.cmake")
 
+workaround_9220(Fortran EIGEN_Fortran_COMPILER_WORKS)
+
+if(EIGEN_Fortran_COMPILER_WORKS)
   enable_language(Fortran OPTIONAL)
-
-  if(CMAKE_Fortran_COMPILER_WORKS)
-    set(EIGEN_Fortran_COMPILER_WORKS TRUE CACHE INTERNAL "workaround cmake's enable_language issue")
-  else()
-    set(EIGEN_Fortran_COMPILER_WORKS FALSE CACHE INTERNAL "workaround cmake's enable_language issue")
-  endif()
-  
 endif()
-
-if(CMAKE_Fortran_COMPILER_WORKS)
 
 add_custom_target(lapack)
 include_directories(../blas)
 
 set(EigenLapack_SRCS
-single.cpp double.cpp complex_single.cpp complex_double.cpp
+single.cpp double.cpp complex_single.cpp complex_double.cpp ../blas/xerbla.cpp
 )
+
+if(EIGEN_Fortran_COMPILER_WORKS)
 
 get_filename_component(eigen_full_path_to_reference_to_reference_lapack "./reference/" ABSOLUTE)
 if(EXISTS ${eigen_full_path_to_reference_to_reference_lapack})
@@ -357,6 +353,8 @@ reference/ctbcon.f               reference/dormhr.f               reference/sla_
 )
 endif()
 
+endif(EIGEN_Fortran_COMPILER_WORKS)
+
 add_library(eigen_lapack_static ${EigenLapack_SRCS})
 add_library(eigen_lapack SHARED ${EigenLapack_SRCS})
 
@@ -365,14 +363,12 @@ if(EIGEN_STANDARD_LIBRARIES_TO_LINK_TO)
   target_link_libraries(eigen_lapack        ${EIGEN_STANDARD_LIBRARIES_TO_LINK_TO})
 endif()
 
-# add_dependencies(lapack eigen_lapack eigen_lapack_static)
-add_dependencies(lapack eigen_lapack_static)
+add_dependencies(lapack eigen_lapack eigen_lapack_static)
 
-# install(TARGETS eigen_lapack
-#         RUNTIME DESTINATION bin
-#         LIBRARY DESTINATION lib
-#         ARCHIVE DESTINATION lib)
-
+install(TARGETS eigen_lapack eigen_lapack_static
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib)
 
 #   add_subdirectory(testing)
-endif(CMAKE_Fortran_COMPILER_WORKS)
+

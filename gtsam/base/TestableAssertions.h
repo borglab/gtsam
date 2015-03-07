@@ -30,7 +30,7 @@ namespace gtsam {
 /**
  * Equals testing for basic types
  */
-bool assert_equal(const Index& expected, const Index& actual, double tol = 0.0) {
+inline bool assert_equal(const Index& expected, const Index& actual, double tol = 0.0) {
   if(expected != actual) {
     std::cout << "Not equal:\nexpected: " << expected << "\nactual: " << actual << std::endl;
     return false;
@@ -81,7 +81,7 @@ bool assert_equal(const V& expected, const boost::optional<const V&>& actual, do
 
 /**
  * Version of assert_equals to work with vectors
- * @DEPRECIATED: use container equals instead
+ * \deprecated: use container equals instead
  */
 template<class V>
 bool assert_equal(const std::vector<V>& expected, const std::vector<V>& actual, double tol = 1e-9) {
@@ -327,7 +327,7 @@ bool assert_container_equality(const V& expected, const V& actual) {
 /**
  * Compare strings for unit tests
  */
-bool assert_equal(const std::string& expected, const std::string& actual) {
+inline bool assert_equal(const std::string& expected, const std::string& actual) {
 	if (expected == actual)
 		return true;
 	printf("Not equal:\n");
