@@ -65,6 +65,10 @@ namespace gtsam {
           noiseModel::Diagonal::shared_ptr>(), int maxID = 0, bool addNoise = false,
       bool smart = true);
 
+  GTSAM_EXPORT std::pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D_robust(
+      const std::string& filename,
+      gtsam::noiseModel::Base::shared_ptr& model, int maxID = 0);
+
   /** save 2d graph */
   GTSAM_EXPORT void save2D(const NonlinearFactorGraph& graph, const Values& config,
       const noiseModel::Diagonal::shared_ptr model, const std::string& filename);

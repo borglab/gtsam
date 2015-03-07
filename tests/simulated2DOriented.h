@@ -62,7 +62,10 @@ namespace simulated2DOriented {
   }
 
   /// Prior on a single pose, optional derivative version
-  Pose2 prior(const Pose2& x, boost::optional<Matrix&> H = boost::none);
+  Pose2 prior(const Pose2& x, boost::optional<Matrix&> H = boost::none) {
+    if (H) *H = gtsam::eye(3);
+    return x;
+  }
 
   /// odometry between two poses
   inline Pose2 odo(const Pose2& x1, const Pose2& x2) {
@@ -71,7 +74,9 @@ namespace simulated2DOriented {
 
   /// odometry between two poses, optional derivative version
   Pose2 odo(const Pose2& x1, const Pose2& x2, boost::optional<Matrix&> H1 =
-      boost::none, boost::optional<Matrix&> H2 = boost::none);
+      boost::none, boost::optional<Matrix&> H2 = boost::none) {
+    return x1.between(x2, H1, H2);
+  }
 
   /// Unary factor encoding a soft prior on a vector
   template<class VALUE = Pose2>

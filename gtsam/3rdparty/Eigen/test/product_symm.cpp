@@ -11,8 +11,6 @@
 
 template<typename Scalar, int Size, int OtherSize> void symm(int size = Size, int othersize = OtherSize)
 {
-  typedef typename NumTraits<Scalar>::Real RealScalar;
-
   typedef Matrix<Scalar, Size, Size> MatrixType;
   typedef Matrix<Scalar, Size, OtherSize> Rhs1;
   typedef Matrix<Scalar, OtherSize, Size> Rhs2;

@@ -19,6 +19,7 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/slam/BearingRangeFactor.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/nonlinear/Marginals.h>
@@ -36,6 +37,7 @@ typedef Pose2 Pose;
 
 typedef NoiseModelFactor1<Pose> NM1;
 typedef NoiseModelFactor2<Pose,Pose> NM2;
+typedef BearingRangeFactor<Pose,Point2> BR;
 
 BOOST_CLASS_EXPORT(Value);
 BOOST_CLASS_EXPORT(Pose);
@@ -45,6 +47,7 @@ BOOST_CLASS_EXPORT(NM1);
 BOOST_CLASS_EXPORT(NM2);
 BOOST_CLASS_EXPORT(BetweenFactor<Pose>);
 BOOST_CLASS_EXPORT(PriorFactor<Pose>);
+BOOST_CLASS_EXPORT(BR);
 BOOST_CLASS_EXPORT(noiseModel::Base);
 BOOST_CLASS_EXPORT(noiseModel::Isotropic);
 BOOST_CLASS_EXPORT(noiseModel::Gaussian);
@@ -69,7 +72,8 @@ int main(int argc, char *argv[]) {
   cout << "Loading data..." << endl;
 
   gttic_(Find_datafile);
-  string datasetFile = findExampleDataFile("w10000-odom");
+  //string datasetFile = findExampleDataFile("w10000-odom");
+  string datasetFile = findExampleDataFile("victoria_park");
   std::pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> data =
     load2D(datasetFile);
   gttoc_(Find_datafile);
@@ -131,7 +135,31 @@ int main(int argc, char *argv[]) {
           }
           //        cout << "Initializing " << step << endl;
         }
-      } else {
+      }
+      else if(BearingRangeFactor<Pose, Point2>::shared_ptr measurement =
+        boost::dynamic_pointer_cast<BearingRangeFactor<Pose, Point2> >(measurementf))
+      {
+        Key poseKey = measurement->keys()[0], lmKey = measurement->keys()[1];
+
+        // Stop collecting measurements that are for future steps
+        if(poseKey > step)
+          throw runtime_error("Problem in data file, out-of-sequence measurements");
+
+        // Add new factor
+        newFactors.push_back(measurement);
+
+        // Initialize new landmark
+        if(!isam2.getLinearizationPoint().exists(lmKey))
+        {
+          Pose pose = isam2.calculateEstimate<Pose>(poseKey);
+          Rot2 measuredBearing = measurement->measured().first;
+          double measuredRange = measurement->measured().second;
+          newVariables.insert(lmKey, 
+            pose.transform_from(measuredBearing.rotate(Point2(measuredRange, 0.0))));
+        }
+      }
+      else
+      {
         throw std::runtime_error("Unknown factor type read from data file");
       }
       ++ nextMeasurement;

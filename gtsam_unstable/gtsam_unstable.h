@@ -13,6 +13,8 @@ virtual class gtsam::Point3;
 virtual class gtsam::Rot3;
 virtual class gtsam::Pose3;
 virtual class gtsam::noiseModel::Base;
+virtual class gtsam::noiseModel::Gaussian;
+virtual class gtsam::imuBias::ConstantBias;
 virtual class gtsam::NonlinearFactor;
 virtual class gtsam::GaussianFactor;
 virtual class gtsam::HessianFactor;
@@ -28,6 +30,7 @@ class gtsam::KeySet;
 class gtsam::KeyVector;
 class gtsam::LevenbergMarquardtParams;
 class gtsam::ISAM2Params;
+class gtsam::GaussianDensity;
 
 namespace gtsam {
 
@@ -85,6 +88,8 @@ virtual class PoseRTV : gtsam::Value {
   Vector imuPrediction(const gtsam::PoseRTV& x2, double dt) const;
   gtsam::Point3 translationIntegration(const gtsam::PoseRTV& x2, double dt) const;
   Vector translationIntegrationVec(const gtsam::PoseRTV& x2, double dt) const;
+
+  void serializable() const; // enabling serialization functionality
 };
 
 #include <gtsam_unstable/geometry/Pose3Upright.h>
@@ -121,6 +126,8 @@ virtual class Pose3Upright : gtsam::Value {
 
   static gtsam::Pose3Upright Expmap(Vector xi);
   static Vector Logmap(const gtsam::Pose3Upright& p);
+
+  void serializable() const; // enabling serialization functionality
 }; // \class Pose3Upright
 
 #include <gtsam_unstable/geometry/BearingS2.h>
@@ -141,11 +148,17 @@ virtual class BearingS2 : gtsam::Value {
   size_t dim() const;
   gtsam::BearingS2 retract(Vector v) const;
   Vector localCoordinates(const gtsam::BearingS2& p2) const;
+
+  void serializable() const; // enabling serialization functionality
 };
 
 // std::vector<gtsam::Point2>
 class Point2Vector
 {
+  // Constructors
+  Point2Vector();
+  Point2Vector(const gtsam::Point2Vector& v);
+
   //Capacity
   size_t size() const;
   size_t max_size() const;
@@ -283,6 +296,8 @@ class SimPolygon2D {
 template<T = {gtsam::PoseRTV}>
 virtual class PriorFactor : gtsam::NonlinearFactor {
   PriorFactor(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
+
+  void serializable() const; // enabling serialization functionality
 };
 
 
@@ -290,13 +305,30 @@ virtual class PriorFactor : gtsam::NonlinearFactor {
 template<T = {gtsam::PoseRTV}>
 virtual class BetweenFactor : gtsam::NonlinearFactor {
   BetweenFactor(size_t key1, size_t key2, const T& relativePose, const gtsam::noiseModel::Base* noiseModel);
+
+  void serializable() const; // enabling serialization functionality
 };
 
+#include <gtsam_unstable/slam/BetweenFactorEM.h>
+template<T = {gtsam::Pose2}>
+virtual class BetweenFactorEM : gtsam::NonlinearFactor {
+  BetweenFactorEM(size_t key1, size_t key2, const T& relativePose,
+      const gtsam::noiseModel::Gaussian* model_inlier, const gtsam::noiseModel::Gaussian* model_outlier,
+      double prior_inlier, double prior_outlier);
+
+  Vector whitenedError(const gtsam::Values& x);
+  Vector unwhitenedError(const gtsam::Values& x);
+  Vector calcIndicatorProb(const gtsam::Values& x);
+
+  void serializable() const; // enabling serialization functionality
+};
 
 #include <gtsam/slam/RangeFactor.h>
 template<POSE, POINT>
 virtual class RangeFactor : gtsam::NonlinearFactor {
   RangeFactor(size_t key1, size_t key2, double measured, const gtsam::noiseModel::Base* noiseModel);
+
+  void serializable() const; // enabling serialization functionality
 };
 
 typedef gtsam::RangeFactor<gtsam::PoseRTV, gtsam::PoseRTV> RangeFactorRTV;
@@ -309,6 +341,8 @@ virtual class NonlinearEquality : gtsam::NonlinearFactor {
   NonlinearEquality(size_t j, const T& feasible);
   // Constructor - allows inexact evaluation
   NonlinearEquality(size_t j, const T& feasible, double error_gain);
+
+  void serializable() const; // enabling serialization functionality
 };
 
 #include <gtsam_unstable/dynamics/IMUFactor.h>
@@ -432,7 +466,7 @@ virtual class DiscreteEulerPoincareHelicopter : gtsam::NonlinearFactor {
 //*************************************************************************
 // nonlinear
 //*************************************************************************
-#include <gtsam_unstable/nonlinear/summarization.h>
+#include <gtsam_unstable/nonlinear/sequentialSummarization.h>
 gtsam::GaussianFactorGraph* summarizeGraphSequential(
     const gtsam::GaussianFactorGraph& full_graph, const gtsam::KeyVector& indices);
 gtsam::GaussianFactorGraph* summarizeGraphSequential(
@@ -593,6 +627,32 @@ virtual class InvDepthFactorVariant3a : gtsam::NonlinearFactor {
 };
 virtual class InvDepthFactorVariant3b : gtsam::NonlinearFactor {
   InvDepthFactorVariant3b(size_t poseKey1, size_t poseKey2, size_t landmarkKey, const gtsam::Point2& measured, const gtsam::Cal3_S2* K, const gtsam::noiseModel::Base* model);
+};
+
+
+#include <gtsam_unstable/slam/Mechanization_bRn2.h>
+class Mechanization_bRn2 {
+  Mechanization_bRn2();
+  Mechanization_bRn2(gtsam::Rot3& initial_bRn, Vector initial_x_g,
+      Vector initial_x_a);
+  Vector b_g(double g_e);
+  gtsam::Rot3 bRn();
+  Vector x_g();
+  Vector x_a();
+  static gtsam::Mechanization_bRn2 initialize(Matrix U, Matrix F, double g_e);
+  gtsam::Mechanization_bRn2 correct(Vector dx) const;
+  gtsam::Mechanization_bRn2 integrate(Vector u, double dt) const;
+  void print(string s) const;
+};
+
+#include <gtsam_unstable/slam/AHRS.h>
+class AHRS {
+  AHRS(Matrix U, Matrix F, double g_e);
+  pair<gtsam::Mechanization_bRn2, gtsam::GaussianDensity*> initialize(double g_e);
+  pair<gtsam::Mechanization_bRn2, gtsam::GaussianDensity*> integrate(const gtsam::Mechanization_bRn2& mech, gtsam::GaussianDensity* state, Vector u, double dt);
+  pair<gtsam::Mechanization_bRn2, gtsam::GaussianDensity*> aid(const gtsam::Mechanization_bRn2& mech, gtsam::GaussianDensity* state, Vector f, bool Farrel);
+  pair<gtsam::Mechanization_bRn2, gtsam::GaussianDensity*> aidGeneral(const gtsam::Mechanization_bRn2& mech, gtsam::GaussianDensity* state, Vector f, Vector f_expected, const gtsam::Rot3& increment);
+  void print(string s) const;
 };
 
 } //\namespace gtsam

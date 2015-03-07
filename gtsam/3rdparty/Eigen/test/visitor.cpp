@@ -72,8 +72,8 @@ template<typename VectorType> void vectorVisitor(const VectorType& w)
       while(v(i) == v(i2)) // yes, ==
         v(i) = internal::random<Scalar>();
   
-  Scalar minc = Scalar(1000), maxc = Scalar(-1000);
-  Index minidx=0,maxidx=0;
+  Scalar minc = v(0), maxc = v(0);
+  Index minidx=0, maxidx=0;
   for(Index i = 0; i < size; i++)
   {
     if(v(i) < minc)
@@ -97,6 +97,17 @@ template<typename VectorType> void vectorVisitor(const VectorType& w)
   VERIFY_IS_APPROX(maxc, eigen_maxc);
   VERIFY_IS_APPROX(minc, v.minCoeff());
   VERIFY_IS_APPROX(maxc, v.maxCoeff());
+  
+  Index idx0 = internal::random<Index>(0,size-1);
+  Index idx1 = eigen_minidx;
+  Index idx2 = eigen_maxidx;
+  VectorType v1(v), v2(v);
+  v1(idx0) = v1(idx1);
+  v2(idx0) = v2(idx2);
+  v1.minCoeff(&eigen_minidx);
+  v2.maxCoeff(&eigen_maxidx);
+  VERIFY(eigen_minidx == (std::min)(idx0,idx1));
+  VERIFY(eigen_maxidx == (std::min)(idx0,idx2));
 }
 
 void test_visitor()
@@ -111,6 +122,7 @@ void test_visitor()
   }
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_7( vectorVisitor(Vector4f()) );
+    CALL_SUBTEST_7( vectorVisitor(Matrix<int,12,1>()) );
     CALL_SUBTEST_8( vectorVisitor(VectorXd(10)) );
     CALL_SUBTEST_9( vectorVisitor(RowVectorXd(10)) );
     CALL_SUBTEST_10( vectorVisitor(VectorXf(33)) );

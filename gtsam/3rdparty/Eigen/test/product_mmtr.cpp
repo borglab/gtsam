@@ -19,8 +19,6 @@
 
 template<typename Scalar> void mmtr(int size)
 {
-  typedef typename NumTraits<Scalar>::Real RealScalar;
-
   typedef Matrix<Scalar,Dynamic,Dynamic,ColMajor> MatrixColMaj;
   typedef Matrix<Scalar,Dynamic,Dynamic,RowMajor> MatrixRowMaj;
 

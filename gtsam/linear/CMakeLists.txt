@@ -22,6 +22,11 @@ if (GTSAM_BUILD_TESTS)
     gtsam_add_subdir_tests(linear "${linear_local_libs}" "${gtsam-default}" "${linear_excluded_files}") 
 endif(GTSAM_BUILD_TESTS)
 
+if(MSVC)
+	set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/tests/testSerializationLinear.cpp"
+		APPEND PROPERTY COMPILE_FLAGS "/bigobj")
+endif()
+
 # Build timing scripts
 if (GTSAM_BUILD_TIMING)
     gtsam_add_subdir_timing(linear "${linear_local_libs}" "${gtsam-default}" "${linear_excluded_files}") 

@@ -5,7 +5,6 @@ void bench_printhelp()
     cout<< " \nbenchsolver : performs a benchmark of all the solvers available in Eigen \n\n";
     cout<< " MATRIX FOLDER : \n";
     cout<< " The matrices for the benchmark should be collected in a folder specified with an environment variable EIGEN_MATRIXDIR \n";
-    cout<< " This folder should contain the subfolders real/ and complex/ : \n";
     cout<< " The matrices are stored using the matrix market coordinate format \n";
     cout<< " The matrix and associated right-hand side (rhs) files are named respectively \n";
     cout<< " as MatrixName.mtx and MatrixName_b.mtx. If the rhs does not exist, a random one is generated. \n";
@@ -15,7 +14,7 @@ void bench_printhelp()
     cout<< " OPTIONS : \n"; 
     cout<< " -h or --help \n    print this help and return\n\n";
     cout<< " -d matrixdir \n    Use matrixdir as the matrix folder instead of the one specified in the environment variable EIGEN_MATRIXDIR\n\n"; 
-    cout<< " -o outputfile.html \n    Output the statistics to a html file \n\n";
+    cout<< " -o outputfile.xml \n    Output the statistics to a xml file \n\n";
     cout<< " --eps <RelErr> Sets the relative tolerance for iterative solvers (default 1e-08) \n\n";
     cout<< " --maxits <MaxIts> Sets the maximum number of iterations (default 1000) \n\n";
     
@@ -68,18 +67,16 @@ int main(int argc, char ** args)
     maxiters = atoi(inval.c_str()); 
   
   string current_dir; 
-  // Test the matrices in %EIGEN_MATRIXDIR/real
-  current_dir = matrix_dir + "/real"; 
-  Browse_Matrices<double>(current_dir, statFileExists, statFile,maxiters, tol);
+  // Test the real-arithmetics matrices
+  Browse_Matrices<double>(matrix_dir, statFileExists, statFile,maxiters, tol);
   
-  // Test the matrices in %EIGEN_MATRIXDIR/complex
-  current_dir = matrix_dir + "/complex"; 
-  Browse_Matrices<std::complex<double> >(current_dir, statFileExists, statFile, maxiters, tol); 
+  // Test the complex-arithmetics matrices
+  Browse_Matrices<std::complex<double> >(matrix_dir, statFileExists, statFile, maxiters, tol); 
   
   if(statFileExists)
   {
     statbuf.open(statFile.c_str(), std::ios::app); 
-    statbuf << "</TABLE> \n";
+    statbuf << "</BENCH> \n";
     cout << "\n Output written in " << statFile << " ...\n";
     statbuf.close();
   }

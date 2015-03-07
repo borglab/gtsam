@@ -48,6 +48,7 @@ namespace gtsam {
     protected:
       size_t myId_;
       size_t t_;
+      size_t tWall_;
       double t2_ ; /* cache the \sum t_i^2 */
       size_t tIt_;
       size_t tMax_;
@@ -65,7 +66,7 @@ namespace gtsam {
       boost::timer timer_;
       gtsam::ValueWithDefault<bool,false> timerActive_;
 #endif
-      void add(size_t usecs);
+      void add(size_t usecs, size_t usecsWall);
     public:
       TimingOutline(const std::string& label, size_t myId);
       size_t time() const;

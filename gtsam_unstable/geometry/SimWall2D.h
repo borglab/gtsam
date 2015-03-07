@@ -43,7 +43,7 @@ namespace gtsam {
     SimWall2D scale(double s) const { return SimWall2D(s*a_, s*b_); }
 
     /** geometry */
-    double length() const { return a_.dist(b_); }
+    double length() const { return a_.distance(b_); }
     Point2 midpoint() const;
 
     /**

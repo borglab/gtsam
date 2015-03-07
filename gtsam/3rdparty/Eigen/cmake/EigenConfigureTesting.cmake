@@ -24,17 +24,19 @@ set(CMAKE_MAKE_PROGRAM "@EIGEN_MAKECOMMAND_PLACEHOLDER@")
 # This call activates testing and generates the DartConfiguration.tcl
 include(CTest)
 
+set(EIGEN_TEST_BUILD_FLAGS " " CACHE STRING "Options passed to the build command of unit tests")
+
 # overwrite default DartConfiguration.tcl
 # The worarounds are different for each version of the MSVC IDE
 if(MSVC_IDE)
-  if(MSVC_VERSION EQUAL 1600) # MSVC 2010
-    set(EIGEN_MAKECOMMAND_PLACEHOLDER "${CMAKE_MAKE_PROGRAM_SAVE} buildtests.vcxproj /p:Configuration=\${CTEST_CONFIGURATION_TYPE} \n# ")
-  else() # MSVC 2008 (TODO check MSVC 2005)
-    set(EIGEN_MAKECOMMAND_PLACEHOLDER "${CMAKE_MAKE_PROGRAM_SAVE} Eigen.sln /build \"Release\" /project buildtests \n# ")
+  if(CMAKE_MAKE_PROGRAM_SAVE MATCHES "devenv") # devenv
+    set(EIGEN_MAKECOMMAND_PLACEHOLDER "${CMAKE_MAKE_PROGRAM_SAVE} Eigen.sln /build \"Release\" /project buildtests ${EIGEN_TEST_BUILD_FLAGS} \n# ")    
+  else() # msbuild
+    set(EIGEN_MAKECOMMAND_PLACEHOLDER "${CMAKE_MAKE_PROGRAM_SAVE} buildtests.vcxproj /p:Configuration=\${CTEST_CONFIGURATION_TYPE}  ${EIGEN_TEST_BUILD_FLAGS}\n# ")
   endif()
 else()
   # for make and nmake
-  set(EIGEN_MAKECOMMAND_PLACEHOLDER "${CMAKE_MAKE_PROGRAM_SAVE} buildtests")
+  set(EIGEN_MAKECOMMAND_PLACEHOLDER "${CMAKE_MAKE_PROGRAM_SAVE} buildtests ${EIGEN_TEST_BUILD_FLAGS}")
 endif()
 
 # copy ctest properties, which currently

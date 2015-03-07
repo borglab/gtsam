@@ -378,13 +378,28 @@ void Module::parseMarkup(const std::string& data) {
     throw ParseFailed((int)info.length);
   }
 
-  //Explicitly add methods to the classes from parents so it shows in documentation
+  // Post-process classes for serialization markers
+  BOOST_FOREACH(Class& cls, classes) {
+    Class::Methods::iterator serializable_it = cls.methods.find("serializable");
+    if (serializable_it != cls.methods.end()) {
+      cls.isSerializable = true;
+      cls.methods.erase(serializable_it);
+    }
+
+    Class::Methods::iterator serialize_it = cls.methods.find("serialize");
+    if (serialize_it != cls.methods.end()) {
+      cls.isSerializable = true;
+      cls.hasSerialization= true;
+      cls.methods.erase(serialize_it);
+    }
+  }
+
+  // Explicitly add methods to the classes from parents so it shows in documentation
   BOOST_FOREACH(Class& cls, classes)
   {
     map<string, Method> inhereted = appendInheretedMethods(cls, classes);
     cls.methods.insert(inhereted.begin(), inhereted.end());
   }
-
 } 
  
 /* ************************************************************************* */ 
@@ -440,16 +455,6 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
 
   fs::create_directories(toolboxPath);
 
-  // create the unified .cpp switch file
-  const string wrapperName = name + "_wrapper";
-  string wrapperFileName = toolboxPath + "/" + wrapperName + ".cpp";
-  FileWriter wrapperFile(wrapperFileName, verbose, "//");
-  vector<string> functionNames; // Function names stored by index for switch
-  wrapperFile.oss << "#include <wrap/matlab.h>\n";
-  wrapperFile.oss << "#include <map>\n";
-  wrapperFile.oss << "#include <boost/foreach.hpp>\n";
-  wrapperFile.oss << "\n";
-
   // Expand templates - This is done first so that template instantiations are
   // counted in the list of valid types, have their attributes and dependencies
   // checked, etc.
@@ -462,7 +467,9 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
   verifyArguments<GlobalFunction>(validTypes, global_functions);
   verifyReturnTypes<GlobalFunction>(validTypes, global_functions);
 
+  bool hasSerialiable = false;
   BOOST_FOREACH(const Class& cls, expandedClasses) {
+    hasSerialiable |= cls.isSerializable;
     // verify all of the function arguments
     //TODO:verifyArguments<ArgumentList>(validTypes, cls.constructor.args_list);
     verifyArguments<StaticMethod>(validTypes, cls.static_methods);
@@ -475,7 +482,6 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
     // verify parents
     if(!cls.qualifiedParent.empty() && std::find(validTypes.begin(), validTypes.end(), wrap::qualifiedName("::", cls.qualifiedParent)) == validTypes.end())
       throw DependencyMissing(wrap::qualifiedName("::", cls.qualifiedParent), cls.qualifiedName("::"));
-
   }
 
   // Create type attributes table and check validity
@@ -483,6 +489,22 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
   typeAttributes.addClasses(expandedClasses);
   typeAttributes.addForwardDeclarations(forward_declarations);
   typeAttributes.checkValidity(expandedClasses);
+
+  // create the unified .cpp switch file
+  const string wrapperName = name + "_wrapper";
+  string wrapperFileName = toolboxPath + "/" + wrapperName + ".cpp";
+  FileWriter wrapperFile(wrapperFileName, verbose, "//");
+  wrapperFile.oss << "#include <wrap/matlab.h>\n";
+  wrapperFile.oss << "#include <map>\n";
+  wrapperFile.oss << "#include <boost/foreach.hpp>\n";
+  wrapperFile.oss << "\n";
+
+  // Include boost.serialization archive headers before other class headers
+  if (hasSerialiable) {
+    wrapperFile.oss << "#include <boost/serialization/export.hpp>\n";
+    wrapperFile.oss << "#include <boost/archive/text_iarchive.hpp>\n";
+    wrapperFile.oss << "#include <boost/archive/text_oarchive.hpp>\n\n";
+  }
 
   // Generate includes while avoiding redundant includes
   generateIncludes(wrapperFile);
@@ -494,11 +516,22 @@ void Module::matlab_code(const string& toolboxPath, const string& headerPath) co
   }
   wrapperFile.oss << "\n";
 
+  // Generate boost.serialization export flags (needs typedefs from above)
+  if (hasSerialiable) {
+    BOOST_FOREACH(const Class& cls, expandedClasses) {
+      if(cls.isSerializable)
+        wrapperFile.oss << cls.getSerializationExport() << "\n";
+    }
+    wrapperFile.oss << "\n";
+  }
+
   // Generate collectors and cleanup function to be called from mexAtExit
   WriteCollectorsAndCleanupFcn(wrapperFile, name, expandedClasses);
 
   // generate RTTI registry (for returning derived-most types)
   WriteRTTIRegistry(wrapperFile, name, expandedClasses);
+
+  vector<string> functionNames; // Function names stored by index for switch
 
   // create proxy class and wrapper code
   BOOST_FOREACH(const Class& cls, expandedClasses) {

@@ -18,18 +18,13 @@ std::pair<GaussianFactorGraph,Ordering>
 summarize(const NonlinearFactorGraph& graph, const Values& values,
     const KeySet& saved_keys, SummarizationMode mode) {
   const size_t nrEliminatedKeys = values.size() - saved_keys.size();
-  //  // compute a new ordering with non-saved keys first
-  //  Ordering ordering;
-  //  KeySet eliminatedKeys;
-  //  BOOST_FOREACH(const Key& key, values.keys()) {
-  //    if (!saved_keys.count(key)) {
-  //      eliminatedKeys.insert(key);
-  //      ordering += key;
-  //    }
-  //  }
-  //
-  //  BOOST_FOREACH(const Key& key, saved_keys)
-  //    ordering += key;
+
+  // If we aren't eliminating anything, linearize and return
+  if (!nrEliminatedKeys || saved_keys.empty()) {
+    Ordering ordering = *values.orderingArbitrary();
+    GaussianFactorGraph linear_graph = *graph.linearize(values, ordering);
+    return make_pair(linear_graph, ordering);
+  }
 
   // Compute a constrained ordering with variables grouped to end
   std::map<gtsam::Key, int> ordering_constraints;

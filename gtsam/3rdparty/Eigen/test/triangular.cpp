@@ -65,7 +65,7 @@ template<typename MatrixType> void triangular_square(const MatrixType& m)
 
   m1 = MatrixType::Random(rows, cols);
   for (int i=0; i<rows; ++i)
-    while (internal::abs2(m1(i,i))<1e-1) m1(i,i) = internal::random<Scalar>();
+    while (numext::abs2(m1(i,i))<1e-1) m1(i,i) = internal::random<Scalar>();
 
   Transpose<MatrixType> trm4(m4);
   // test back and forward subsitution with a vector as the rhs
@@ -123,9 +123,6 @@ template<typename MatrixType> void triangular_rect(const MatrixType& m)
   typedef typename MatrixType::Scalar Scalar;
   typedef typename NumTraits<Scalar>::Real RealScalar;
   enum { Rows =  MatrixType::RowsAtCompileTime, Cols =  MatrixType::ColsAtCompileTime };
-  typedef Matrix<Scalar, Rows, 1> VectorType;
-  typedef Matrix<Scalar, Rows, Rows> RMatrixType;
-  
 
   Index rows = m.rows();
   Index cols = m.cols();
@@ -214,8 +211,8 @@ void test_triangular()
   int maxsize = (std::min)(EIGEN_TEST_MAX_SIZE,20);
   for(int i = 0; i < g_repeat ; i++)
   {
-    int r = internal::random<int>(2,maxsize); EIGEN_UNUSED_VARIABLE(r);
-    int c = internal::random<int>(2,maxsize); EIGEN_UNUSED_VARIABLE(c);
+    int r = internal::random<int>(2,maxsize); TEST_SET_BUT_UNUSED_VARIABLE(r)
+    int c = internal::random<int>(2,maxsize); TEST_SET_BUT_UNUSED_VARIABLE(c)
 
     CALL_SUBTEST_1( triangular_square(Matrix<float, 1, 1>()) );
     CALL_SUBTEST_2( triangular_square(Matrix<float, 2, 2>()) );

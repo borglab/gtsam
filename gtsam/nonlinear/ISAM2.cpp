@@ -125,7 +125,7 @@ ISAM2& ISAM2::operator=(const ISAM2& rhs) {
   linearFactors_ = GaussianFactorGraph();
   linearFactors_.reserve(rhs.linearFactors_.size());
   BOOST_FOREACH(const GaussianFactor::shared_ptr& linearFactor, rhs.linearFactors_) {
-    linearFactors_.push_back(linearFactor->clone()); }
+    linearFactors_.push_back(linearFactor ? linearFactor->clone() : GaussianFactor::shared_ptr()); }
 
   ordering_ = rhs.ordering_;
   params_ = rhs.params_;
@@ -201,14 +201,18 @@ ISAM2::relinearizeAffectedFactors(const FastList<Index>& affectedKeys, const Fas
     }
     if(inside) {
       if(useCachedLinear) {
+#ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
         assert(linearFactors_[idx]);
-        linearized->push_back(linearFactors_[idx]);
         assert(linearFactors_[idx]->keys() == nonlinearFactors_[idx]->symbolic(ordering_)->keys());
+#endif
+        linearized->push_back(linearFactors_[idx]);
       } else {
         GaussianFactor::shared_ptr linearFactor = nonlinearFactors_[idx]->linearize(theta_, ordering_);
         linearized->push_back(linearFactor);
         if(params_.cacheLinearizedFactors) {
+#ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
           assert(linearFactors_[idx]->keys() == linearFactor->keys());
+#endif
           linearFactors_[idx] = linearFactor;
         }
       }
@@ -230,13 +234,6 @@ GaussianFactorGraph ISAM2::getCachedBoundaryFactors(Cliques& orphans) {
   BOOST_FOREACH(sharedClique orphan, orphans) {
     // find the last variable that was eliminated
     Index key = (*orphan)->frontals().back();
-#ifndef NDEBUG
-//    typename BayesNet<CONDITIONAL>::const_iterator it = orphan->end();
-//    const CONDITIONAL& lastCONDITIONAL = **(--it);
-//    typename CONDITIONAL::const_iterator keyit = lastCONDITIONAL.endParents();
-//    const Index lastKey = *(--keyit);
-//    assert(key == lastKey);
-#endif
     // retrieve the cached factor and add to boundary
     cachedBoundary.push_back(orphan->cachedFactor());
     if(debug) { cout << "Cached factor for variable " << key; orphan->cachedFactor()->print(""); }
@@ -795,7 +792,8 @@ ISAM2Result ISAM2::update(
 }
 
 /* ************************************************************************* */
-void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeys)
+void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeys, boost::optional<std::vector<size_t>&> marginalFactorsIndices,
+    boost::optional<std::vector<size_t>&> deletedFactorsIndices)
 {
   // Convert set of keys into a set of indices
   FastSet<Index> indices;
@@ -940,14 +938,18 @@ void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeys)
   GaussianFactorGraph factorsToAdd;
   typedef pair<sharedClique, GaussianFactor::shared_ptr> Clique_Factor;
   BOOST_FOREACH(const Clique_Factor& clique_factor, marginalFactors) {
-    if(clique_factor.second)
+    if(clique_factor.second) {
       factorsToAdd.push_back(clique_factor.second);
-    nonlinearFactors_.push_back(boost::make_shared<LinearContainerFactor>(
-      clique_factor.second, ordering_));
-    if(params_.cacheLinearizedFactors)
-      linearFactors_.push_back(clique_factor.second);
-    BOOST_FOREACH(Index factorIndex, *clique_factor.second) {
-      fixedVariables_.insert(ordering_.key(factorIndex)); }
+      if(marginalFactorsIndices) marginalFactorsIndices->push_back(nonlinearFactors_.size());
+      nonlinearFactors_.push_back(boost::make_shared<LinearContainerFactor>(
+        clique_factor.second, ordering_));
+      if(params_.cacheLinearizedFactors) {
+        linearFactors_.push_back(clique_factor.second);
+      }
+      BOOST_FOREACH(Index factorIndex, *clique_factor.second) {
+        fixedVariables_.insert(ordering_.key(factorIndex)); 
+      }
+    }
   }
   variableIndex_.augment(factorsToAdd); // Augment the variable index
 
@@ -955,16 +957,17 @@ void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeys)
   FastSet<size_t> factorIndicesToRemove;
   BOOST_FOREACH(Index j, indices) {
     factorIndicesToRemove.insert(variableIndex_[j].begin(), variableIndex_[j].end()); }
-  vector<size_t> removedFactorIndices;
+  vector<size_t> removedFactorsIndices;
   SymbolicFactorGraph removedFactors;
   BOOST_FOREACH(size_t i, factorIndicesToRemove) {
-    removedFactorIndices.push_back(i);
+    if(deletedFactorsIndices) deletedFactorsIndices->push_back(i);
+    removedFactorsIndices.push_back(i);
     removedFactors.push_back(nonlinearFactors_[i]->symbolic(ordering_));
     nonlinearFactors_.remove(i);
     if(params_.cacheLinearizedFactors)
       linearFactors_.remove(i);
   }
-  variableIndex_.remove(removedFactorIndices, removedFactors);
+  variableIndex_.remove(removedFactorsIndices, removedFactors);
 
   // Remove the marginalized variables
   Impl::RemoveVariables(FastSet<Key>(leafKeys.begin(), leafKeys.end()), root_, theta_, variableIndex_, delta_, deltaNewton_, RgProd_,
@@ -1022,10 +1025,24 @@ Values ISAM2::calculateEstimate() const {
 }
 
 /* ************************************************************************* */
+const Value& ISAM2::calculateEstimate(Key key) const {
+  const Index index = getOrdering()[key];
+  const Vector& delta = getDelta()[index];
+  return *theta_.at(key).retract_(delta);
+}
+
+/* ************************************************************************* */
 Values ISAM2::calculateBestEstimate() const {
   VectorValues delta(theta_.dims(ordering_));
   internal::optimizeInPlace<Base>(this->root(), delta);
   return theta_.retract(delta, ordering_);
+}
+
+/* ************************************************************************* */
+Matrix ISAM2::marginalCovariance(Index key) const {
+  return marginalFactor(ordering_[key],
+    params_.factorization == ISAM2Params::QR ? EliminateQR : EliminatePreferCholesky)
+    ->information().inverse();
 }
 
 /* ************************************************************************* */
@@ -1046,7 +1063,7 @@ VectorValues optimize(const ISAM2& isam) {
 
 /* ************************************************************************* */
 void optimizeInPlace(const ISAM2& isam, VectorValues& delta) {
-  // We may need to update the solution calcaulations
+  // We may need to update the solution calculations
   if(!isam.deltaDoglegUptodate_) {
     gttic(UpdateDoglegDeltas);
     double wildfireThreshold = 0.0;

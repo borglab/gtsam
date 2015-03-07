@@ -38,21 +38,32 @@ namespace simulated3D {
 /**
  * Prior on a single pose
  */
-Point3 prior(const Point3& x, boost::optional<Matrix&> H = boost::none);
+Point3 prior(const Point3& x, boost::optional<Matrix&> H = boost::none) {
+  if (H) *H = eye(3);
+  return x;
+}
 
 /**
  * odometry between two poses
  */
 Point3 odo(const Point3& x1, const Point3& x2,
     boost::optional<Matrix&> H1 = boost::none,
-    boost::optional<Matrix&> H2 = boost::none);
+    boost::optional<Matrix&> H2 = boost::none) {
+  if (H1) *H1 = -1 * eye(3);
+  if (H2) *H2 = eye(3);
+  return x2 - x1;
+}
 
 /**
  *  measurement between landmark and pose
  */
 Point3 mea(const Point3& x, const Point3& l,
     boost::optional<Matrix&> H1 = boost::none,
-    boost::optional<Matrix&> H2 = boost::none);
+    boost::optional<Matrix&> H2 = boost::none) {
+  if (H1) *H1 = -1 * eye(3);
+  if (H2) *H2 = eye(3);
+  return l - x;
+}
 
 /**
  * A prior factor on a single linear robot pose

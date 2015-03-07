@@ -62,6 +62,16 @@ template<typename MatrixType, int CRows, int CCols, int SRows, int SCols> void c
   VERIFY_IS_EQUAL((matrix.template bottomLeftCorner<r,c>()), (matrix.template block<r,c>(rows-r,0)));
   VERIFY_IS_EQUAL((matrix.template bottomRightCorner<r,c>()), (matrix.template block<r,c>(rows-r,cols-c)));
 
+  VERIFY_IS_EQUAL((matrix.template topLeftCorner<r,c>()), (matrix.template topLeftCorner<r,Dynamic>(r,c)));
+  VERIFY_IS_EQUAL((matrix.template topRightCorner<r,c>()), (matrix.template topRightCorner<r,Dynamic>(r,c)));
+  VERIFY_IS_EQUAL((matrix.template bottomLeftCorner<r,c>()), (matrix.template bottomLeftCorner<r,Dynamic>(r,c)));
+  VERIFY_IS_EQUAL((matrix.template bottomRightCorner<r,c>()), (matrix.template bottomRightCorner<r,Dynamic>(r,c)));
+
+  VERIFY_IS_EQUAL((matrix.template topLeftCorner<r,c>()), (matrix.template topLeftCorner<Dynamic,c>(r,c)));
+  VERIFY_IS_EQUAL((matrix.template topRightCorner<r,c>()), (matrix.template topRightCorner<Dynamic,c>(r,c)));
+  VERIFY_IS_EQUAL((matrix.template bottomLeftCorner<r,c>()), (matrix.template bottomLeftCorner<Dynamic,c>(r,c)));
+  VERIFY_IS_EQUAL((matrix.template bottomRightCorner<r,c>()), (matrix.template bottomRightCorner<Dynamic,c>(r,c)));
+
   VERIFY_IS_EQUAL((matrix.template topRows<r>()), (matrix.template block<r,cols>(0,0)));
   VERIFY_IS_EQUAL((matrix.template middleRows<r>(sr)), (matrix.template block<r,cols>(sr,0)));
   VERIFY_IS_EQUAL((matrix.template bottomRows<r>()), (matrix.template block<r,cols>(rows-r,0)));
@@ -73,6 +83,16 @@ template<typename MatrixType, int CRows, int CCols, int SRows, int SCols> void c
   VERIFY_IS_EQUAL((const_matrix.template topRightCorner<r,c>()), (const_matrix.template block<r,c>(0,cols-c)));
   VERIFY_IS_EQUAL((const_matrix.template bottomLeftCorner<r,c>()), (const_matrix.template block<r,c>(rows-r,0)));
   VERIFY_IS_EQUAL((const_matrix.template bottomRightCorner<r,c>()), (const_matrix.template block<r,c>(rows-r,cols-c)));
+
+  VERIFY_IS_EQUAL((const_matrix.template topLeftCorner<r,c>()), (const_matrix.template topLeftCorner<r,Dynamic>(r,c)));
+  VERIFY_IS_EQUAL((const_matrix.template topRightCorner<r,c>()), (const_matrix.template topRightCorner<r,Dynamic>(r,c)));
+  VERIFY_IS_EQUAL((const_matrix.template bottomLeftCorner<r,c>()), (const_matrix.template bottomLeftCorner<r,Dynamic>(r,c)));
+  VERIFY_IS_EQUAL((const_matrix.template bottomRightCorner<r,c>()), (const_matrix.template bottomRightCorner<r,Dynamic>(r,c)));
+
+  VERIFY_IS_EQUAL((const_matrix.template topLeftCorner<r,c>()), (const_matrix.template topLeftCorner<Dynamic,c>(r,c)));
+  VERIFY_IS_EQUAL((const_matrix.template topRightCorner<r,c>()), (const_matrix.template topRightCorner<Dynamic,c>(r,c)));
+  VERIFY_IS_EQUAL((const_matrix.template bottomLeftCorner<r,c>()), (const_matrix.template bottomLeftCorner<Dynamic,c>(r,c)));
+  VERIFY_IS_EQUAL((const_matrix.template bottomRightCorner<r,c>()), (const_matrix.template bottomRightCorner<Dynamic,c>(r,c)));
 
   VERIFY_IS_EQUAL((const_matrix.template topRows<r>()), (const_matrix.template block<r,cols>(0,0)));
   VERIFY_IS_EQUAL((const_matrix.template middleRows<r>(sr)), (const_matrix.template block<r,cols>(sr,0)));

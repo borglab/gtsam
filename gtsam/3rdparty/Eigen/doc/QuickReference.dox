@@ -1,18 +1,8 @@
 namespace Eigen {
 
-/** \page QuickRefPage Quick reference guide
+/** \eigenManualPage QuickRefPage Quick reference guide
 
-\b Table \b of \b contents
-  - \ref QuickRef_Headers
-  - \ref QuickRef_Types
-  - \ref QuickRef_Map
-  - \ref QuickRef_ArithmeticOperators
-  - \ref QuickRef_Coeffwise
-  - \ref QuickRef_Reductions
-  - \ref QuickRef_Blocks
-  - \ref QuickRef_Misc
-  - \ref QuickRef_DiagTriSymm
-\n
+\eigenAutoToc
 
 <hr>
 
@@ -31,7 +21,7 @@ The Eigen library is divided in a Core module and several additional modules. Ea
 <tr><td>\link SVD_Module SVD \endlink</td><td>\code#include <Eigen/SVD>\endcode</td><td>SVD decomposition with least-squares solver (JacobiSVD)</td></tr>
 <tr class="alt"><td>\link QR_Module QR \endlink</td><td>\code#include <Eigen/QR>\endcode</td><td>QR decomposition with solver (HouseholderQR, ColPivHouseholderQR, FullPivHouseholderQR)</td></tr>
 <tr><td>\link Eigenvalues_Module Eigenvalues \endlink</td><td>\code#include <Eigen/Eigenvalues>\endcode</td><td>Eigenvalue, eigenvector decompositions (EigenSolver, SelfAdjointEigenSolver, ComplexEigenSolver)</td></tr>
-<tr class="alt"><td>\link Sparse_Module Sparse \endlink</td><td>\code#include <Eigen/Sparse>\endcode</td><td>%Sparse matrix storage and related basic linear algebra (SparseMatrix, DynamicSparseMatrix, SparseVector)</td></tr>
+<tr class="alt"><td>\link Sparse_modules Sparse \endlink</td><td>\code#include <Eigen/Sparse>\endcode</td><td>%Sparse matrix storage and related basic linear algebra (SparseMatrix, DynamicSparseMatrix, SparseVector)</td></tr>
 <tr><td></td><td>\code#include <Eigen/Dense>\endcode</td><td>Includes Core, Geometry, LU, Cholesky, SVD, QR, and Eigenvalues header files</td></tr>
 <tr class="alt"><td></td><td>\code#include <Eigen/Eigen>\endcode</td><td>Includes %Dense and %Sparse header files (the whole Eigen library)</td></tr>
 </table>
@@ -55,7 +45,7 @@ All combinations are allowed: you can have a matrix with a fixed number of rows 
 Matrix<double, 6, Dynamic>                  // Dynamic number of columns (heap allocation)
 Matrix<double, Dynamic, 2>                  // Dynamic number of rows (heap allocation)
 Matrix<double, Dynamic, Dynamic, RowMajor>  // Fully dynamic, row major (heap allocation)
-Matrix<double, 13, 3>                       // Fully fixed (static allocation)
+Matrix<double, 13, 3>                       // Fully fixed (usually allocated on stack)
 \endcode
 
 In most cases, you can simply use one of the convenience typedefs for \ref matrixtypedefs "matrices" and \ref arraytypedefs "arrays". Some examples:
@@ -89,8 +79,8 @@ MatrixWrapper<Array44f> a1m(a1);
 \endcode
 
 In the rest of this document we will use the following symbols to emphasize the features which are specifics to a given kind of object:
-\li <a name="matrixonly"><a/>\matrixworld linear algebra matrix and vector only
-\li <a name="arrayonly"><a/>\arrayworld array objects only
+\li <a name="matrixonly"></a>\matrixworld linear algebra matrix and vector only
+\li <a name="arrayonly"></a>\arrayworld array objects only
 
 \subsection QuickRef_Basics Basic matrix manipulation
 
@@ -458,7 +448,7 @@ mat = 2 7 8
 \endcode</td></tr>
 </table>
 
-Special versions of \link DenseBase::minCoeff(Index*,Index*) minCoeff \endlink and \link DenseBase::maxCoeff(Index*,Index*) maxCoeff \endlink:
+Special versions of \link DenseBase::minCoeff(IndexType*,IndexType*) const minCoeff \endlink and \link DenseBase::maxCoeff(IndexType*,IndexType*) const maxCoeff \endlink:
 \code
 int i, j;
 s = vector.minCoeff(&i);        // s == vector[i]

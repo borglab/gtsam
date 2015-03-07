@@ -82,6 +82,7 @@ class MyClassA
 template<typename T> void check_dynaligned()
 {
   T* obj = new T;
+  VERIFY(T::NeedsToAlign==1);
   VERIFY(size_t(obj)%ALIGNMENT==0);
   delete obj;
 }

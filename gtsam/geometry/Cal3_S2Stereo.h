@@ -49,6 +49,9 @@ namespace gtsam {
       K_(fx, fy, s, u0, v0), b_(b) {
     }
 
+    /// constructor from vector
+    Cal3_S2Stereo(const Vector &d): K_(d(0), d(1), d(2), d(3), d(4)), b_(d(5)){}
+
     /// @}
     /// @name Testable
     /// @{

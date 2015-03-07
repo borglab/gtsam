@@ -15,7 +15,6 @@ template<typename ArrayType> void vectorwiseop_array(const ArrayType& m)
 {
   typedef typename ArrayType::Index Index;
   typedef typename ArrayType::Scalar Scalar;
-  typedef typename NumTraits<Scalar>::Real RealScalar;
   typedef Array<Scalar, ArrayType::RowsAtCompileTime, 1> ColVectorType;
   typedef Array<Scalar, 1, ArrayType::ColsAtCompileTime> RowVectorType;
 
@@ -111,6 +110,8 @@ template<typename MatrixType> void vectorwiseop_matrix(const MatrixType& m)
   typedef typename NumTraits<Scalar>::Real RealScalar;
   typedef Matrix<Scalar, MatrixType::RowsAtCompileTime, 1> ColVectorType;
   typedef Matrix<Scalar, 1, MatrixType::ColsAtCompileTime> RowVectorType;
+  typedef Matrix<RealScalar, MatrixType::RowsAtCompileTime, 1> RealColVectorType;
+  typedef Matrix<RealScalar, 1, MatrixType::ColsAtCompileTime> RealRowVectorType;
 
   Index rows = m.rows();
   Index cols = m.cols();
@@ -123,6 +124,8 @@ template<typename MatrixType> void vectorwiseop_matrix(const MatrixType& m)
 
   ColVectorType colvec = ColVectorType::Random(rows);
   RowVectorType rowvec = RowVectorType::Random(cols);
+  RealColVectorType rcres;
+  RealRowVectorType rrres;
 
   // test addition
 
@@ -159,6 +162,26 @@ template<typename MatrixType> void vectorwiseop_matrix(const MatrixType& m)
 
   VERIFY_RAISES_ASSERT(m2.rowwise() -= rowvec.transpose());
   VERIFY_RAISES_ASSERT(m1.rowwise() - rowvec.transpose());
+  
+  // test norm
+  rrres = m1.colwise().norm();
+  VERIFY_IS_APPROX(rrres(c), m1.col(c).norm());
+  rcres = m1.rowwise().norm();
+  VERIFY_IS_APPROX(rcres(r), m1.row(r).norm());
+  
+  // test normalized
+  m2 = m1.colwise().normalized();
+  VERIFY_IS_APPROX(m2.col(c), m1.col(c).normalized());
+  m2 = m1.rowwise().normalized();
+  VERIFY_IS_APPROX(m2.row(r), m1.row(r).normalized());
+  
+  // test normalize
+  m2 = m1;
+  m2.colwise().normalize();
+  VERIFY_IS_APPROX(m2.col(c), m1.col(c).normalized());
+  m2 = m1;
+  m2.rowwise().normalize();
+  VERIFY_IS_APPROX(m2.row(r), m1.row(r).normalized());
 }
 
 void test_vectorwiseop()

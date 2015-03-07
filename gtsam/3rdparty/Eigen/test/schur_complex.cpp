@@ -1,7 +1,7 @@
 // This file is part of Eigen, a lightweight C++ template library
 // for linear algebra.
 //
-// Copyright (C) 2010 Jitse Niesen <jitse@maths.leeds.ac.uk>
+// Copyright (C) 2010,2012 Jitse Niesen <jitse@maths.leeds.ac.uk>
 //
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
@@ -46,6 +46,23 @@ template<typename MatrixType> void schur(int size = MatrixType::ColsAtCompileTim
   VERIFY_IS_EQUAL(cs2.info(), Success);
   VERIFY_IS_EQUAL(cs1.matrixT(), cs2.matrixT());
   VERIFY_IS_EQUAL(cs1.matrixU(), cs2.matrixU());
+
+  // Test maximum number of iterations
+  ComplexSchur<MatrixType> cs3;
+  cs3.setMaxIterations(ComplexSchur<MatrixType>::m_maxIterationsPerRow * size).compute(A);
+  VERIFY_IS_EQUAL(cs3.info(), Success);
+  VERIFY_IS_EQUAL(cs3.matrixT(), cs1.matrixT());
+  VERIFY_IS_EQUAL(cs3.matrixU(), cs1.matrixU());
+  cs3.setMaxIterations(1).compute(A);
+  VERIFY_IS_EQUAL(cs3.info(), size > 1 ? NoConvergence : Success);
+  VERIFY_IS_EQUAL(cs3.getMaxIterations(), 1);
+
+  MatrixType Atriangular = A;
+  Atriangular.template triangularView<StrictlyLower>().setZero(); 
+  cs3.setMaxIterations(1).compute(Atriangular); // triangular matrices do not need any iterations
+  VERIFY_IS_EQUAL(cs3.info(), Success);
+  VERIFY_IS_EQUAL(cs3.matrixT(), Atriangular.template cast<ComplexScalar>());
+  VERIFY_IS_EQUAL(cs3.matrixU(), ComplexMatrixType::Identity(size, size));
 
   // Test computation of only T, not U
   ComplexSchur<MatrixType> csOnlyT(A, false);

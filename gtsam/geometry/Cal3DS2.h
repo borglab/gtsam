@@ -37,9 +37,9 @@ private:
   double k3_, k4_ ; // tangential distortion
 
   // K = [ fx s u0 ; 0 fy v0 ; 0 0 1 ]
-  // r = Pn.x^2 + Pn.y^2
-  // \hat{pn} = (1 + k1*r + k2*r^2 ) pn + [ 2*k3 pn.x pn.y + k4 (r + 2 Pn.x^2) ;
-  //                      k3 (r + 2 Pn.y^2) + 2*k4 pn.x pn.y  ]
+  // rr = Pn.x^2 + Pn.y^2
+  // \hat{pn} = (1 + k1*rr + k2*rr^2 ) pn + [ 2*k3 pn.x pn.y + k4 (rr + 2 Pn.x^2) ;
+  //                      k3 (rr + 2 Pn.y^2) + 2*k4 pn.x pn.y  ]
   // pi = K*pn
 
 public:

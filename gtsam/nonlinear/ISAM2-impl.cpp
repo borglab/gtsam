@@ -303,7 +303,7 @@ ISAM2::Impl::PartialSolve(GaussianFactorGraph& factors,
   PartialSolveResult result;
 
   gttic(select_affected_variables);
-#ifndef NDEBUG
+#ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
   // Debug check that all variables involved in the factors to be re-eliminated
   // are in affectedKeys, since we will use it to select a subset of variables.
   BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factors) {
@@ -368,7 +368,7 @@ ISAM2::Impl::PartialSolve(GaussianFactorGraph& factors,
 
   if(debug) factors.print("Colamd-ordered affected factors: ");
 
-#ifndef NDEBUG
+#ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
     VariableIndex fromScratchIndex(factors);
     assert(assert_equal(fromScratchIndex, affectedFactorsIndex));
 #endif
@@ -422,7 +422,7 @@ size_t ISAM2::Impl::UpdateDelta(const boost::shared_ptr<ISAM2Clique>& root, std:
     // Optimize with wildfire
     lastBacksubVariableCount = optimizeWildfireNonRecursive(root, wildfireThreshold, replacedKeys, delta); // modifies delta_
 
-#ifndef NDEBUG
+#ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
     for(size_t j=0; j<delta.size(); ++j)
       assert(delta[j].unaryExpr(ptr_fun(isfinite<double>)).all());
 #endif
@@ -486,20 +486,6 @@ size_t ISAM2::Impl::UpdateDoglegDeltas(const ISAM2& isam, double wildfireThresho
   size_t varsUpdated = 0;
   internal::updateDoglegDeltas(isam.root(), replacedKeys, grad, deltaNewton, RgProd, varsUpdated);
   optimizeWildfireNonRecursive(isam.root(), wildfireThreshold, replacedKeys, deltaNewton);
-
-#if 0
-  VectorValues expected = *allocateVectorValues(isam);
-  internal::optimizeInPlace<ISAM2>(isam.root(), expected);
-  for(size_t j = 0; j<expected.size(); ++j)
-    assert(equal_with_abs_tol(expected[j], deltaNewton[j], 1e-2));
-
-  FactorGraph<JacobianFactor> Rd_jfg(isam);
-  Errors Rg = Rd_jfg * grad;
-  double RgMagExpected = dot(Rg, Rg);
-  double RgMagActual = RgProd.container().vector().squaredNorm();
-  cout << fabs(RgMagExpected - RgMagActual) << endl;
-  assert(fabs(RgMagExpected - RgMagActual) < (1e-8 * RgMagActual + 1e-4));
-#endif
 
   replacedKeys.assign(replacedKeys.size(), false);
 

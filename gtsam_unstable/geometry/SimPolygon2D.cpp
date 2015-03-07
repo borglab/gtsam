@@ -152,7 +152,7 @@ SimPolygon2D SimPolygon2D::randomTriangle(
     Pose2 xC = xB.retract(delta(3, 0, dBC));
 
     // use triangle equality to verify non-degenerate triangle
-    double dAC = xA.t().dist(xC.t());
+    double dAC = xA.t().distance(xC.t());
 
     // form a triangle and test if it meets requirements
     SimPolygon2D test_tri = SimPolygon2D::createTriangle(xA.t(), xB.t(), xC.t());
@@ -165,7 +165,7 @@ SimPolygon2D SimPolygon2D::randomTriangle(
         insideBox(side_len, test_tri.landmark(0)) &&
         insideBox(side_len, test_tri.landmark(1)) &&
         insideBox(side_len, test_tri.landmark(2)) &&
-        test_tri.landmark(1).dist(test_tri.landmark(2)) > min_side_len &&
+        test_tri.landmark(1).distance(test_tri.landmark(2)) > min_side_len &&
         !nearExisting(lms, test_tri.landmark(0), min_vertex_dist) &&
         !nearExisting(lms, test_tri.landmark(1), min_vertex_dist) &&
         !nearExisting(lms, test_tri.landmark(2), min_vertex_dist) &&
@@ -321,7 +321,7 @@ bool SimPolygon2D::insideBox(double s, const Point2& p) {
 bool SimPolygon2D::nearExisting(const std::vector<Point2>& S,
     const Point2& p, double threshold) {
   BOOST_FOREACH(const Point2& Sp, S)
-    if (Sp.dist(p) < threshold)
+    if (Sp.distance(p) < threshold)
       return true;
   return false;
 }

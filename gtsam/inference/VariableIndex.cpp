@@ -92,7 +92,7 @@ void VariableIndex::permuteInPlace(const Permutation& selector, const Permutatio
 
 /* ************************************************************************* */
 void VariableIndex::removeUnusedAtEnd(size_t nToRemove) {
-#ifndef NDEBUG
+#ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
   for(size_t i = this->size() - nToRemove; i < this->size(); ++i)
     if(!(*this)[i].empty())
       throw std::invalid_argument("Attempting to remove non-empty variables with VariableIndex::removeUnusedAtEnd()");

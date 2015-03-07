@@ -152,7 +152,7 @@ int EIGEN_BLAS_FUNC(trsm)(char *side, char *uplo, char *opa, char *diag, int *m,
 int EIGEN_BLAS_FUNC(trmm)(char *side, char *uplo, char *opa, char *diag, int *m, int *n, RealScalar *palpha,  RealScalar *pa, int *lda, RealScalar *pb, int *ldb)
 {
 //   std::cerr << "in trmm " << *side << " " << *uplo << " " << *opa << " " << *diag << " " << *m << " " << *n << " " << *lda << " " << *ldb << " " << *palpha << "\n";
-  typedef void (*functype)(DenseIndex, DenseIndex, DenseIndex, const Scalar *, DenseIndex, const Scalar *, DenseIndex, Scalar *, DenseIndex, Scalar, internal::level3_blocking<Scalar,Scalar>&);
+  typedef void (*functype)(DenseIndex, DenseIndex, DenseIndex, const Scalar *, DenseIndex, const Scalar *, DenseIndex, Scalar *, DenseIndex, const Scalar&, internal::level3_blocking<Scalar,Scalar>&);
   static functype func[32];
   static bool init = false;
   if(!init)
@@ -305,7 +305,8 @@ int EIGEN_BLAS_FUNC(symm)(char *side, char *uplo, int *m, int *n, RealScalar *pa
 int EIGEN_BLAS_FUNC(syrk)(char *uplo, char *op, int *n, int *k, RealScalar *palpha, RealScalar *pa, int *lda, RealScalar *pbeta, RealScalar *pc, int *ldc)
 {
 //   std::cerr << "in syrk " << *uplo << " " << *op << " " << *n << " " << *k << " " << *palpha << " " << *lda << " " << *pbeta << " " << *ldc << "\n";
-  typedef void (*functype)(DenseIndex, DenseIndex, const Scalar *, DenseIndex, const Scalar *, DenseIndex, Scalar *, DenseIndex, Scalar);
+  #if !ISCOMPLEX
+  typedef void (*functype)(DenseIndex, DenseIndex, const Scalar *, DenseIndex, const Scalar *, DenseIndex, Scalar *, DenseIndex, const Scalar&);
   static functype func[8];
 
   static bool init = false;
@@ -324,6 +325,7 @@ int EIGEN_BLAS_FUNC(syrk)(char *uplo, char *op, int *n, int *k, RealScalar *palp
 
     init = true;
   }
+  #endif
 
   Scalar* a = reinterpret_cast<Scalar*>(pa);
   Scalar* c = reinterpret_cast<Scalar*>(pc);
@@ -498,7 +500,7 @@ int EIGEN_BLAS_FUNC(hemm)(char *side, char *uplo, int *m, int *n, RealScalar *pa
 // c = alpha*conj(a')*a + beta*c  for op  = 'C'or'c'
 int EIGEN_BLAS_FUNC(herk)(char *uplo, char *op, int *n, int *k, RealScalar *palpha, RealScalar *pa, int *lda, RealScalar *pbeta, RealScalar *pc, int *ldc)
 {
-  typedef void (*functype)(DenseIndex, DenseIndex, const Scalar *, DenseIndex, const Scalar *, DenseIndex, Scalar *, DenseIndex, Scalar);
+  typedef void (*functype)(DenseIndex, DenseIndex, const Scalar *, DenseIndex, const Scalar *, DenseIndex, Scalar *, DenseIndex, const Scalar&);
   static functype func[8];
 
   static bool init = false;
@@ -606,24 +608,24 @@ int EIGEN_BLAS_FUNC(her2k)(char *uplo, char *op, int *n, int *k, RealScalar *pal
     if(UPLO(*uplo)==UP)
     {
       matrix(c, *n, *n, *ldc).triangularView<Upper>()
-        +=         alpha *matrix(a, *n, *k, *lda)*matrix(b, *n, *k, *ldb).adjoint()
-        +  internal::conj(alpha)*matrix(b, *n, *k, *ldb)*matrix(a, *n, *k, *lda).adjoint();
+        +=            alpha *matrix(a, *n, *k, *lda)*matrix(b, *n, *k, *ldb).adjoint()
+        +  numext::conj(alpha)*matrix(b, *n, *k, *ldb)*matrix(a, *n, *k, *lda).adjoint();
     }
     else if(UPLO(*uplo)==LO)
       matrix(c, *n, *n, *ldc).triangularView<Lower>()
         += alpha*matrix(a, *n, *k, *lda)*matrix(b, *n, *k, *ldb).adjoint()
-        +  internal::conj(alpha)*matrix(b, *n, *k, *ldb)*matrix(a, *n, *k, *lda).adjoint();
+        +  numext::conj(alpha)*matrix(b, *n, *k, *ldb)*matrix(a, *n, *k, *lda).adjoint();
   }
   else if(OP(*op)==ADJ)
   {
     if(UPLO(*uplo)==UP)
       matrix(c, *n, *n, *ldc).triangularView<Upper>()
-        += alpha*matrix(a, *k, *n, *lda).adjoint()*matrix(b, *k, *n, *ldb)
-        +  internal::conj(alpha)*matrix(b, *k, *n, *ldb).adjoint()*matrix(a, *k, *n, *lda);
+        +=             alpha*matrix(a, *k, *n, *lda).adjoint()*matrix(b, *k, *n, *ldb)
+        +  numext::conj(alpha)*matrix(b, *k, *n, *ldb).adjoint()*matrix(a, *k, *n, *lda);
     else if(UPLO(*uplo)==LO)
       matrix(c, *n, *n, *ldc).triangularView<Lower>()
-        += alpha*matrix(a, *k, *n, *lda).adjoint()*matrix(b, *k, *n, *ldb)
-        +  internal::conj(alpha)*matrix(b, *k, *n, *ldb).adjoint()*matrix(a, *k, *n, *lda);
+        +=             alpha*matrix(a, *k, *n, *lda).adjoint()*matrix(b, *k, *n, *ldb)
+        +  numext::conj(alpha)*matrix(b, *k, *n, *ldb).adjoint()*matrix(a, *k, *n, *lda);
   }
 
   return 1;

@@ -73,6 +73,14 @@ macro(ei_add_test_internal testname testname_with_suffix)
   else()
     add_test(${testname_with_suffix} "${targetname}")
   endif()
+  
+  # Specify target and test labels accoirding to EIGEN_CURRENT_SUBPROJECT
+  get_property(current_subproject GLOBAL PROPERTY EIGEN_CURRENT_SUBPROJECT)  
+  if ((current_subproject) AND (NOT (current_subproject STREQUAL "")))
+    set_property(TARGET ${targetname} PROPERTY LABELS "Build${current_subproject}")
+    add_dependencies("Build${current_subproject}" ${targetname})
+    set_property(TEST ${testname_with_suffix} PROPERTY LABELS "${current_subproject}")
+  endif()
 
 endmacro(ei_add_test_internal)
 
@@ -263,6 +271,7 @@ macro(ei_testing_print_summary)
 endmacro(ei_testing_print_summary)
 
 macro(ei_init_testing)
+  define_property(GLOBAL PROPERTY EIGEN_CURRENT_SUBPROJECT BRIEF_DOCS " " FULL_DOCS " ")
   define_property(GLOBAL PROPERTY EIGEN_TESTED_BACKENDS BRIEF_DOCS " " FULL_DOCS " ")
   define_property(GLOBAL PROPERTY EIGEN_MISSING_BACKENDS BRIEF_DOCS " " FULL_DOCS " ")
   define_property(GLOBAL PROPERTY EIGEN_TESTING_SUMMARY BRIEF_DOCS " " FULL_DOCS " ")
@@ -303,8 +312,8 @@ endmacro(ei_set_sitename)
 macro(ei_get_compilerver VAR)
   if(MSVC)
     # on windows system, we use a modified CMake script  
-    include(CMakeDetermineVSServicePack)
-    DetermineVSServicePack( my_service_pack )
+    include(EigenDetermineVSServicePack)
+    EigenDetermineVSServicePack( my_service_pack )
 
     if( my_service_pack )
       set(${VAR} ${my_service_pack})
@@ -313,13 +322,21 @@ macro(ei_get_compilerver VAR)
     endif()
   else()
     # on all other system we rely on ${CMAKE_CXX_COMPILER}
-    # supporting a "--version" flag    
-    execute_process(COMMAND ${CMAKE_CXX_COMPILER} --version
-                    COMMAND head -n 1
-                    OUTPUT_VARIABLE eigen_cxx_compiler_version_string OUTPUT_STRIP_TRAILING_WHITESPACE)
+    # supporting a "--version" flag
     
-    ei_get_compilerver_from_cxx_version_string(${eigen_cxx_compiler_version_string} CNAME CVER)
+    # check whether the head command exists
+    find_program(HEAD_EXE head NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_PATH NO_CMAKE_SYSTEM_PATH)
+    if(HEAD_EXE)
+      execute_process(COMMAND ${CMAKE_CXX_COMPILER} --version
+                      COMMAND head -n 1
+                      OUTPUT_VARIABLE eigen_cxx_compiler_version_string OUTPUT_STRIP_TRAILING_WHITESPACE)
+    else()
+      execute_process(COMMAND ${CMAKE_CXX_COMPILER} --version
+                      OUTPUT_VARIABLE eigen_cxx_compiler_version_string OUTPUT_STRIP_TRAILING_WHITESPACE)
+      string(REGEX REPLACE "[\n\r].*"  ""  eigen_cxx_compiler_version_string  ${eigen_cxx_compiler_version_string})
+    endif()
     
+    ei_get_compilerver_from_cxx_version_string("${eigen_cxx_compiler_version_string}" CNAME CVER)
     set(${VAR} "${CNAME}-${CVER}")
   endif()
 endmacro(ei_get_compilerver)
@@ -425,6 +442,10 @@ macro(ei_set_build_string)
     set(TMP_BUILD_STRING ${TMP_BUILD_STRING}-32bit)
   else()
     set(TMP_BUILD_STRING ${TMP_BUILD_STRING}-64bit)
+  endif()
+  
+  if(EIGEN_BUILD_STRING_SUFFIX)
+    set(TMP_BUILD_STRING ${TMP_BUILD_STRING}-${EIGEN_BUILD_STRING_SUFFIX})
   endif()
 
   string(TOLOWER ${TMP_BUILD_STRING} BUILDNAME)

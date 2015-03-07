@@ -25,13 +25,18 @@
 
 // You can override the default coordinate mode using this flag
 #ifndef ROT3_DEFAULT_COORDINATES_MODE
-#ifdef GTSAM_USE_QUATERNIONS
-// Exponential map is very cheap for quaternions
-#define ROT3_DEFAULT_COORDINATES_MODE Rot3::EXPMAP
-#else
-// For rotation matrices, the Cayley transform is a fast retract alternative
-#define ROT3_DEFAULT_COORDINATES_MODE Rot3::CAYLEY
-#endif
+  #ifdef GTSAM_USE_QUATERNIONS
+    // Exponential map is very cheap for quaternions
+    #define ROT3_DEFAULT_COORDINATES_MODE Rot3::EXPMAP
+  #else
+    // If user doesn't require GTSAM_ROT3_EXPMAP in cmake when building
+    #ifndef GTSAM_ROT3_EXPMAP
+      // For rotation matrices, the Cayley transform is a fast retract alternative
+      #define ROT3_DEFAULT_COORDINATES_MODE Rot3::CAYLEY
+    #else
+      #define ROT3_DEFAULT_COORDINATES_MODE Rot3::EXPMAP
+    #endif
+  #endif
 #endif
 
 #include <gtsam/base/DerivedValue.h>
@@ -176,7 +181,7 @@ namespace gtsam {
     /// @{
 
     /** print */
-    void print(const std::string& s="R") const { gtsam::print((Matrix)matrix(), s);}
+    void print(const std::string& s="R") const;
 
     /** equals with an tolerance */
     bool equals(const Rot3& p, double tol = 1e-9) const;
@@ -262,6 +267,12 @@ namespace gtsam {
      * Log map at identity - return the canonical coordinates \f$ [R_x,R_y,R_z] \f$ of this rotation
      */
     static Vector3 Logmap(const Rot3& R);
+
+    /// Left-trivialized derivative of the exponential map
+    static Matrix3 dexpL(const Vector3& v);
+
+    /// Left-trivialized derivative inverse of the exponential map
+    static Matrix3 dexpInvL(const Vector3& v);
 
     /// @}
     /// @name Group Action on Point3
@@ -354,6 +365,9 @@ namespace gtsam {
      * In format: w x y z
      */
     Vector quaternion() const;
+
+    /// Output stream operator
+    GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os, const Rot3& p);
 
   private:
     /** Serialization function */

@@ -11,11 +11,54 @@
 
 #include "main.h"
 
+template<bool IsInteger> struct adjoint_specific;
+
+template<> struct adjoint_specific<true> {
+  template<typename Vec, typename Mat, typename Scalar>
+  static void run(const Vec& v1, const Vec& v2, Vec& v3, const Mat& square, Scalar s1, Scalar s2) {
+    VERIFY(test_isApproxWithRef((s1 * v1 + s2 * v2).dot(v3),     numext::conj(s1) * v1.dot(v3) + numext::conj(s2) * v2.dot(v3), 0));
+    VERIFY(test_isApproxWithRef(v3.dot(s1 * v1 + s2 * v2),       s1*v3.dot(v1)+s2*v3.dot(v2), 0));
+    
+    // check compatibility of dot and adjoint
+    VERIFY(test_isApproxWithRef(v1.dot(square * v2), (square.adjoint() * v1).dot(v2), 0));
+  }
+};
+
+template<> struct adjoint_specific<false> {
+  template<typename Vec, typename Mat, typename Scalar>
+  static void run(const Vec& v1, const Vec& v2, Vec& v3, const Mat& square, Scalar s1, Scalar s2) {
+    typedef typename NumTraits<Scalar>::Real RealScalar;
+    using std::abs;
+    
+    RealScalar ref = NumTraits<Scalar>::IsInteger ? RealScalar(0) : (std::max)((s1 * v1 + s2 * v2).norm(),v3.norm());
+    VERIFY(test_isApproxWithRef((s1 * v1 + s2 * v2).dot(v3),     numext::conj(s1) * v1.dot(v3) + numext::conj(s2) * v2.dot(v3), ref));
+    VERIFY(test_isApproxWithRef(v3.dot(s1 * v1 + s2 * v2),       s1*v3.dot(v1)+s2*v3.dot(v2), ref));
+  
+    VERIFY_IS_APPROX(v1.squaredNorm(),                v1.norm() * v1.norm());
+    // check normalized() and normalize()
+    VERIFY_IS_APPROX(v1, v1.norm() * v1.normalized());
+    v3 = v1;
+    v3.normalize();
+    VERIFY_IS_APPROX(v1, v1.norm() * v3);
+    VERIFY_IS_APPROX(v3, v1.normalized());
+    VERIFY_IS_APPROX(v3.norm(), RealScalar(1));
+    
+    // check compatibility of dot and adjoint
+    ref = NumTraits<Scalar>::IsInteger ? 0 : (std::max)((std::max)(v1.norm(),v2.norm()),(std::max)((square * v2).norm(),(square.adjoint() * v1).norm()));
+    VERIFY(internal::isMuchSmallerThan(abs(v1.dot(square * v2) - (square.adjoint() * v1).dot(v2)), ref, test_precision<Scalar>()));
+    
+    // check that Random().normalized() works: tricky as the random xpr must be evaluated by
+    // normalized() in order to produce a consistent result.
+    VERIFY_IS_APPROX(Vec::Random(v1.size()).normalized().norm(), RealScalar(1));
+  }
+};
+
 template<typename MatrixType> void adjoint(const MatrixType& m)
 {
   /* this test covers the following files:
      Transpose.h Conjugate.h Dot.h
   */
+  using std::abs;
   typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
   typedef typename NumTraits<Scalar>::Real RealScalar;
@@ -43,45 +86,21 @@ template<typename MatrixType> void adjoint(const MatrixType& m)
 
   // check multiplicative behavior
   VERIFY_IS_APPROX((m1.adjoint() * m2).adjoint(),           m2.adjoint() * m1);
-  VERIFY_IS_APPROX((s1 * m1).adjoint(),                     internal::conj(s1) * m1.adjoint());
+  VERIFY_IS_APPROX((s1 * m1).adjoint(),                     numext::conj(s1) * m1.adjoint());
 
-  // check basic properties of dot, norm, norm2
-  typedef typename NumTraits<Scalar>::Real RealScalar;
+  // check basic properties of dot, squaredNorm
+  VERIFY_IS_APPROX(numext::conj(v1.dot(v2)),               v2.dot(v1));
+  VERIFY_IS_APPROX(numext::real(v1.dot(v1)),               v1.squaredNorm());
   
-  RealScalar ref = NumTraits<Scalar>::IsInteger ? RealScalar(0) : (std::max)((s1 * v1 + s2 * v2).norm(),v3.norm());
-  VERIFY(test_isApproxWithRef((s1 * v1 + s2 * v2).dot(v3),     internal::conj(s1) * v1.dot(v3) + internal::conj(s2) * v2.dot(v3), ref));
-  VERIFY(test_isApproxWithRef(v3.dot(s1 * v1 + s2 * v2),       s1*v3.dot(v1)+s2*v3.dot(v2), ref));
-  VERIFY_IS_APPROX(internal::conj(v1.dot(v2)),               v2.dot(v1));
-  VERIFY_IS_APPROX(internal::real(v1.dot(v1)),                v1.squaredNorm());
-  if(!NumTraits<Scalar>::IsInteger) {
-    VERIFY_IS_APPROX(v1.squaredNorm(),                v1.norm() * v1.norm());
-    // check normalized() and normalize()
-    VERIFY_IS_APPROX(v1, v1.norm() * v1.normalized());
-    v3 = v1;
-    v3.normalize();
-    VERIFY_IS_APPROX(v1, v1.norm() * v3);
-    VERIFY_IS_APPROX(v3, v1.normalized());
-    VERIFY_IS_APPROX(v3.norm(), RealScalar(1));
-  }
-  VERIFY_IS_MUCH_SMALLER_THAN(internal::abs(vzero.dot(v1)),  static_cast<RealScalar>(1));
+  adjoint_specific<NumTraits<Scalar>::IsInteger>::run(v1, v2, v3, square, s1, s2);
   
-  // check compatibility of dot and adjoint
+  VERIFY_IS_MUCH_SMALLER_THAN(abs(vzero.dot(v1)),  static_cast<RealScalar>(1));
   
-  ref = NumTraits<Scalar>::IsInteger ? 0 : (std::max)((std::max)(v1.norm(),v2.norm()),(std::max)((square * v2).norm(),(square.adjoint() * v1).norm()));
-  VERIFY(test_isApproxWithRef(v1.dot(square * v2), (square.adjoint() * v1).dot(v2), ref));
-
   // like in testBasicStuff, test operator() to check const-qualification
   Index r = internal::random<Index>(0, rows-1),
       c = internal::random<Index>(0, cols-1);
-  VERIFY_IS_APPROX(m1.conjugate()(r,c), internal::conj(m1(r,c)));
-  VERIFY_IS_APPROX(m1.adjoint()(c,r), internal::conj(m1(r,c)));
-
-  if(!NumTraits<Scalar>::IsInteger)
-  {
-    // check that Random().normalized() works: tricky as the random xpr must be evaluated by
-    // normalized() in order to produce a consistent result.
-    VERIFY_IS_APPROX(VectorType::Random(rows).normalized().norm(), RealScalar(1));
-  }
+  VERIFY_IS_APPROX(m1.conjugate()(r,c), numext::conj(m1(r,c)));
+  VERIFY_IS_APPROX(m1.adjoint()(c,r), numext::conj(m1(r,c)));
 
   // check inplace transpose
   m3 = m1;

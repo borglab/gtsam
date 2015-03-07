@@ -25,8 +25,6 @@
 
 #include <stdarg.h>
 
-using namespace std;
-
 namespace gtsam {
 
 /* ************************************************************************* */
@@ -47,7 +45,7 @@ double logDeterminant(const typename BAYESTREE::sharedClique& clique) {
   double result = 0.0;
 
   // this clique
-  result += clique->conditional()->get_R().diagonal().unaryExpr(ptr_fun<double,double>(log)).sum();
+  result += clique->conditional()->get_R().diagonal().unaryExpr(std::ptr_fun<double,double>(log)).sum();
 
   // sum of children
   BOOST_FOREACH(const typename BAYESTREE::sharedClique& child, clique->children_)

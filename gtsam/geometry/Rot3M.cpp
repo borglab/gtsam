@@ -70,6 +70,11 @@ Rot3::Rot3(const Matrix& R) {
 Rot3::Rot3(const Quaternion& q) : rot_(q.toRotationMatrix()) {}
 
 /* ************************************************************************* */
+void Rot3::print(const std::string& s) const {
+  gtsam::print((Matrix)matrix(), s);
+}
+
+/* ************************************************************************* */
 Rot3 Rot3::Rx(double t) {
   double st = sin(t), ct = cos(t);
   return Rot3(
@@ -304,6 +309,32 @@ Vector3 Rot3::localCoordinates(const Rot3& T, Rot3::CoordinatesMode mode) const 
 }
 
 /* ************************************************************************* */
+/// Follow Iserles05an, B10, pg 147, with a sign change in the second term (left version)
+Matrix3 Rot3::dexpL(const Vector3& v) {
+  if(zero(v)) return eye(3);
+  Matrix x = skewSymmetric(v);
+  Matrix x2 = x*x;
+  double theta = v.norm(), vi = theta/2.0;
+  double s1 = sin(vi)/vi;
+  double s2 = (theta - sin(theta))/(theta*theta*theta);
+  Matrix res = eye(3) - 0.5*s1*s1*x + s2*x2;
+  return res;
+}
+
+/* ************************************************************************* */
+/// Follow Iserles05an, B10, pg 147, with a sign change in the second term (left version)
+Matrix3 Rot3::dexpInvL(const Vector3& v) {
+  if(zero(v)) return eye(3);
+  Matrix x = skewSymmetric(v);
+  Matrix x2 = x*x;
+  double theta = v.norm(), vi = theta/2.0;
+  double s2 = (theta*tan(M_PI_2-vi) - 2)/(2*theta*theta);
+  Matrix res = eye(3) + 0.5*x - s2*x2;
+  return res;
+}
+
+
+/* ************************************************************************* */
 Matrix3 Rot3::matrix() const {
   return rot_;
 }
@@ -378,6 +409,15 @@ pair<Matrix3, Vector3> RQ(const Matrix3& A) {
 
   Vector xyz = Vector3(x, y, z);
   return make_pair(R, xyz);
+}
+
+/* ************************************************************************* */
+ostream &operator<<(ostream &os, const Rot3& R) {
+  os << "\n";
+  os << '|' << R.r1().x() << ", " << R.r2().x() << ", " << R.r3().x() << "|\n";
+  os << '|' << R.r1().y() << ", " << R.r2().y() << ", " << R.r3().y() << "|\n";
+  os << '|' << R.r1().z() << ", " << R.r2().z() << ", " << R.r3().z() << "|\n";
+  return os;
 }
 
 /* ************************************************************************* */

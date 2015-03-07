@@ -139,7 +139,7 @@ std::pair<Pose2, bool> moveWithBounce(const Pose2& cur_pose, double step_size,
     Point2 cur_intersection;
     if (wall.intersects(traj,cur_intersection)) {
       collision = true;
-      if (cur_pose.t().dist(cur_intersection) < cur_pose.t().dist(intersection)) {
+      if (cur_pose.t().distance(cur_intersection) < cur_pose.t().distance(intersection)) {
         intersection = cur_intersection;
         closest_wall = wall;
       }
@@ -155,7 +155,7 @@ std::pair<Pose2, bool> moveWithBounce(const Pose2& cur_pose, double step_size,
     norm = norm / norm.norm();
 
     // Simple check to make sure norm is on side closest robot
-    if (cur_pose.t().dist(intersection + norm) > cur_pose.t().dist(intersection - norm))
+    if (cur_pose.t().distance(intersection + norm) > cur_pose.t().distance(intersection - norm))
       norm = norm.inverse();
 
     // using the reflection

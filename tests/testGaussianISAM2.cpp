@@ -18,6 +18,7 @@
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/ISAM2.h>
+#include <gtsam/nonlinear/Marginals.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/BearingRangeFactor.h>
@@ -1025,6 +1026,18 @@ TEST_UNSAFE(ISAM2, marginalizeLeaves5)
   FastList<Key> marginalizeKeys;
   marginalizeKeys.push_back(isam.getOrdering().key(0));
   EXPECT(checkMarginalizeLeaves(isam, marginalizeKeys));
+}
+
+/* ************************************************************************* */
+TEST(ISAM2, marginalCovariance)
+{
+  // Create isam2
+  ISAM2 isam = createSlamlikeISAM2();
+
+  // Check marginal
+  Matrix expected = Marginals(isam.getFactorsUnsafe(), isam.getLinearizationPoint()).marginalCovariance(5);
+  Matrix actual = isam.marginalCovariance(5);
+  EXPECT(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */

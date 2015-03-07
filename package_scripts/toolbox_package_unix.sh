@@ -18,7 +18,7 @@ fi
 
 echo "Platform is ${platform}"
 
-# Check for empty directory
+# Check for empty diectory
 if [ ! -z "`ls`" ]; then
 	echo "Please run this script from an empty build directory"
 	exit 1
@@ -54,7 +54,7 @@ if [ ! $? ]; then
 fi
 
 # Compile
-make -j4 install
+make -j2 install
 
 # Create package
-tar czf gtsam-toolbox-2.3.0-$platform.tgz -C stage/borg toolbox
+tar czf gtsam-toolbox-2.3.1-$platform.tgz -C stage/borg toolbox

@@ -73,6 +73,11 @@ Matrix zeros( size_t m, size_t n ) {
 }
 
 /* ************************************************************************* */
+Matrix ones( size_t m, size_t n ) {
+  return Matrix::Ones(m,n);
+}
+
+/* ************************************************************************* */
 Matrix eye( size_t m, size_t n) {
   return Matrix::Identity(m, n);
 }
@@ -278,6 +283,23 @@ istream& operator>>(istream& inputStream, Matrix& destinationMatrix) {
 /* ************************************************************************* */
 void insertSub(Matrix& fullMatrix, const Matrix& subMatrix, size_t i, size_t j) {
   fullMatrix.block(i, j, subMatrix.rows(), subMatrix.cols()) = subMatrix;
+}
+
+/* ************************************************************************* */
+Matrix diag(const std::vector<Matrix>& Hs) {
+  size_t rows = 0, cols = 0;
+  for (size_t i = 0; i<Hs.size(); ++i) {
+    rows+= Hs[i].rows();
+    cols+= Hs[i].cols();
+  }
+  Matrix results = zeros(rows,cols);
+  size_t r = 0, c = 0;
+  for (size_t i = 0; i<Hs.size(); ++i) {
+    insertSub(results, Hs[i], r, c);
+    r+=Hs[i].rows();
+    c+=Hs[i].cols();
+  }
+  return results;
 }
 
 /* ************************************************************************* */
@@ -499,6 +521,25 @@ Matrix stack(size_t nrMatrices, ...)
   }
 
   return A;
+}
+
+/* ************************************************************************* */
+Matrix stack(const std::vector<Matrix>& blocks) {
+  if (blocks.size() == 1) return blocks.at(0);
+  int nrows = 0, ncols = blocks.at(0).cols();
+  BOOST_FOREACH(const Matrix& mat, blocks) {
+    nrows += mat.rows();
+    if (ncols != mat.cols())
+      throw invalid_argument("Matrix::stack(): column size mismatch!");
+  }
+  Matrix result(nrows, ncols);
+
+  int cur_row = 0;
+  BOOST_FOREACH(const Matrix& mat, blocks) {
+    result.middleRows(cur_row, mat.rows()) = mat;
+    cur_row += mat.rows();
+  }
+  return result;
 }
 
 /* ************************************************************************* */

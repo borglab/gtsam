@@ -116,7 +116,7 @@ template<int Alignment,typename MatrixType> void map_class_matrix(const MatrixTy
 void test_mapstride()
 {
   for(int i = 0; i < g_repeat; i++) {
-    EIGEN_UNUSED int maxn = 30;
+    int maxn = 30;
     CALL_SUBTEST_1( map_class_vector<Aligned>(Matrix<float, 1, 1>()) );
     CALL_SUBTEST_1( map_class_vector<Unaligned>(Matrix<float, 1, 1>()) );
     CALL_SUBTEST_2( map_class_vector<Aligned>(Vector4d()) );
@@ -142,5 +142,7 @@ void test_mapstride()
     CALL_SUBTEST_5( map_class_matrix<Unaligned>(MatrixXi(internal::random<int>(1,maxn),internal::random<int>(1,maxn))) );
     CALL_SUBTEST_6( map_class_matrix<Aligned>(MatrixXcd(internal::random<int>(1,maxn),internal::random<int>(1,maxn))) );
     CALL_SUBTEST_6( map_class_matrix<Unaligned>(MatrixXcd(internal::random<int>(1,maxn),internal::random<int>(1,maxn))) );
+    
+    TEST_SET_BUT_UNUSED_VARIABLE(maxn);
   }
 }

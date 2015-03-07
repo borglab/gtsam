@@ -17,7 +17,6 @@ template<typename MatrixType> void miscMatrices(const MatrixType& m)
   typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
   typedef Matrix<Scalar, MatrixType::RowsAtCompileTime, 1> VectorType;
-  typedef Matrix<Scalar, 1, MatrixType::ColsAtCompileTime> RowVectorType;
   Index rows = m.rows();
   Index cols = m.cols();
 

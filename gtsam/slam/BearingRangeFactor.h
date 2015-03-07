@@ -29,15 +29,17 @@ namespace gtsam {
    * @addtogroup SLAM
    */
   template<class POSE, class POINT, class ROTATION = typename POSE::Rotation>
-  class BearingRangeFactor: public NoiseModelFactor2<POSE, POINT> {
-  private:
+  class BearingRangeFactor: public NoiseModelFactor2<POSE, POINT>
+  {
+  public:
+    typedef BearingRangeFactor<POSE, POINT> This;
+    typedef NoiseModelFactor2<POSE, POINT> Base;
+    typedef boost::shared_ptr<This> shared_ptr;
 
+  private:
     typedef POSE Pose;
     typedef ROTATION Rot;
     typedef POINT Point;
-
-    typedef BearingRangeFactor<POSE, POINT> This;
-    typedef NoiseModelFactor2<POSE, POINT> Base;
 
     // the measurement
     Rot measuredBearing_;

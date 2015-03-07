@@ -18,7 +18,7 @@ foreach(example_src ${example_srcs} )
         set_target_properties(${example_bin} PROPERTIES EXCLUDE_FROM_ALL ON)
     endif()
     
-    target_link_libraries(${example_bin} ${gtsam-default})
+    target_link_libraries(${example_bin} ${gtsam-default} ${Boost_PROGRAM_OPTIONS_LIBRARY})
 	if(NOT MSVC)
       add_custom_target(${example_bin}.run ${EXECUTABLE_OUTPUT_PATH}${example_bin} ${ARGN})
 	endif()

@@ -102,6 +102,16 @@ GTSAM_EXPORT void gradientAtZero(const GaussianBayesTree& bayesTree, VectorValue
  */
 GTSAM_EXPORT double determinant(const GaussianBayesTree& bayesTree);
 
+/**
+ * Computes the log determinant of a GassianBayesTree
+ * A GassianBayesTree is an upper triangular matrix and for an upper triangular matrix
+ * determinant is the product of the diagonal elements. Instead of actually multiplying
+ * we add the logarithms of the diagonal elements because this is more numerically stable.
+ * @param bayesTree The input GassianBayesTree
+ * @return The log determinant
+ */
+GTSAM_EXPORT double logDeterminant(const GaussianBayesTree& bayesTree);
+
 
 namespace internal {
 template<class BAYESTREE>

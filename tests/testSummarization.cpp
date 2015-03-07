@@ -34,16 +34,15 @@ typedef gtsam::PriorFactor<gtsam::Pose2> PosePrior;
 typedef gtsam::BetweenFactor<gtsam::Pose2> PoseBetween;
 typedef gtsam::BearingRangeFactor<gtsam::Pose2, gtsam::Point2> PosePointBearingRange;
 
+gtsam::noiseModel::Base::shared_ptr model2 = noiseModel::Unit::Create(2);
+gtsam::noiseModel::Base::shared_ptr model3 = noiseModel::Unit::Create(3);
+
 /* ************************************************************************* */
 TEST( testSummarization, example_from_ddf1 ) {
-
   Key xA0 = LabeledSymbol('x', 'A', 0),
       xA1 = LabeledSymbol('x', 'A', 1),
       xA2 = LabeledSymbol('x', 'A', 2);
   Key lA3 = LabeledSymbol('l', 'A', 3), lA5 = LabeledSymbol('l', 'A', 5);
-
-  gtsam::noiseModel::Base::shared_ptr model2 = noiseModel::Unit::Create(2);
-  gtsam::noiseModel::Base::shared_ptr model3 = noiseModel::Unit::Create(3);
 
   SharedDiagonal diagmodel2 = noiseModel::Unit::Create(2);
   SharedDiagonal diagmodel4 = noiseModel::Unit::Create(4);
@@ -216,6 +215,26 @@ TEST( testSummarization, example_from_ddf1 ) {
 
     EXPECT(assert_equal(expContainerGraph, actContainerGraph, tol));
   }
+}
+
+/* ************************************************************************* */
+TEST( testSummarization, no_summarize_case ) {
+  // Checks a corner case in which no variables are being eliminated
+  gtsam::Key key = 7;
+  gtsam::KeySet saved_keys; saved_keys.insert(key);
+  NonlinearFactorGraph graph;
+  graph.add(PosePrior(key, Pose2(1.0, 2.0, 0.3), model3));
+  graph.add(PosePrior(key, Pose2(2.0, 3.0, 0.4), model3));
+  Values values;
+  values.insert(key, Pose2(0.0, 0.0, 0.1));
+
+  SummarizationMode mode = SEQUENTIAL_CHOLESKY;
+  GaussianFactorGraph actLinGraph; Ordering actOrdering;
+  boost::tie(actLinGraph, actOrdering) = summarize(graph, values, saved_keys, mode);
+  Ordering expOrdering; expOrdering += key;
+  GaussianFactorGraph expLinGraph = *graph.linearize(values, expOrdering);
+  EXPECT(assert_equal(expOrdering, actOrdering));
+  EXPECT(assert_equal(expLinGraph, actLinGraph));
 }
 
 /* ************************************************************************* */

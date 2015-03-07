@@ -19,3 +19,8 @@ set (navigation_excluded_tests "")
 if (GTSAM_BUILD_TESTS)
 	gtsam_add_subdir_tests(navigation "${navigation_local_libs}" "${gtsam-default}" "${navigation_excluded_tests}") 
 endif()
+
+# Build timing scripts
+if (GTSAM_BUILD_TIMING)
+    gtsam_add_subdir_timing(navigation "${navigation_local_libs}" "${gtsam-default}" "${navigation_excluded_files}") 
+endif(GTSAM_BUILD_TIMING)

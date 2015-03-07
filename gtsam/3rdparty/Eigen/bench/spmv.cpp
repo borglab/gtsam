@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
       SPMV_BENCH(res = dm * sm);
       std::cout << "Dense       " << t.value()/repeats << "\t";
 
-      SPMV_BENCHres = dm.transpose() * sm);
+      SPMV_BENCH(res = dm.transpose() * sm);
       std::cout << t.value()/repeats << endl;
     }
     #endif

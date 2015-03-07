@@ -43,9 +43,12 @@ template<typename SparseMatrixType> void sparse_product()
   typedef typename SparseMatrixType::Scalar Scalar;
   enum { Flags = SparseMatrixType::Flags };
 
-  double density = (std::max)(8./(rows*cols), 0.01);
+  double density = (std::max)(8./(rows*cols), 0.1);
   typedef Matrix<Scalar,Dynamic,Dynamic> DenseMatrix;
   typedef Matrix<Scalar,Dynamic,1> DenseVector;
+  typedef Matrix<Scalar,1,Dynamic> RowDenseVector;
+  typedef SparseVector<Scalar,0,Index> ColSpVector;
+  typedef SparseVector<Scalar,RowMajor,Index> RowSpVector;
 
   Scalar s1 = internal::random<Scalar>();
   Scalar s2 = internal::random<Scalar>();
@@ -117,21 +120,54 @@ template<typename SparseMatrixType> void sparse_product()
     test_outer<SparseMatrixType,DenseMatrix>::run(m2,m4,refMat2,refMat4);
 
     VERIFY_IS_APPROX(m6=m6*m6, refMat6=refMat6*refMat6);
+    
+    // sparse matrix * sparse vector
+    ColSpVector cv0(cols), cv1;
+    DenseVector dcv0(cols), dcv1;
+    initSparse(2*density,dcv0, cv0);
+    
+    RowSpVector rv0(depth), rv1;
+    RowDenseVector drv0(depth), drv1(rv1);
+    initSparse(2*density,drv0, rv0);
+    
+    VERIFY_IS_APPROX(cv1=rv0*m3, dcv1=drv0*refMat3);
+    VERIFY_IS_APPROX(rv1=rv0*m3, drv1=drv0*refMat3);
+    VERIFY_IS_APPROX(cv1=m3*cv0, dcv1=refMat3*dcv0);
+    VERIFY_IS_APPROX(cv1=m3t.adjoint()*cv0, dcv1=refMat3t.adjoint()*dcv0);
+    VERIFY_IS_APPROX(rv1=m3*cv0, drv1=refMat3*dcv0);
   }
-
+  
   // test matrix - diagonal product
   {
-    DenseMatrix refM2 = DenseMatrix::Zero(rows, rows);
-    DenseMatrix refM3 = DenseMatrix::Zero(rows, rows);
-    DiagonalMatrix<Scalar,Dynamic> d1(DenseVector::Random(rows));
-    SparseMatrixType m2(rows, rows);
-    SparseMatrixType m3(rows, rows);
+    DenseMatrix refM2 = DenseMatrix::Zero(rows, cols);
+    DenseMatrix refM3 = DenseMatrix::Zero(rows, cols);
+    DenseMatrix d3 = DenseMatrix::Zero(rows, cols);
+    DiagonalMatrix<Scalar,Dynamic> d1(DenseVector::Random(cols));
+    DiagonalMatrix<Scalar,Dynamic> d2(DenseVector::Random(rows));
+    SparseMatrixType m2(rows, cols);
+    SparseMatrixType m3(rows, cols);
     initSparse<Scalar>(density, refM2, m2);
     initSparse<Scalar>(density, refM3, m3);
     VERIFY_IS_APPROX(m3=m2*d1, refM3=refM2*d1);
-    VERIFY_IS_APPROX(m3=m2.transpose()*d1, refM3=refM2.transpose()*d1);
-    VERIFY_IS_APPROX(m3=d1*m2, refM3=d1*refM2);
-    VERIFY_IS_APPROX(m3=d1*m2.transpose(), refM3=d1 * refM2.transpose());
+    VERIFY_IS_APPROX(m3=m2.transpose()*d2, refM3=refM2.transpose()*d2);
+    VERIFY_IS_APPROX(m3=d2*m2, refM3=d2*refM2);
+    VERIFY_IS_APPROX(m3=d1*m2.transpose(), refM3=d1*refM2.transpose());
+    
+    // also check with a SparseWrapper:
+    DenseVector v1 = DenseVector::Random(cols);
+    DenseVector v2 = DenseVector::Random(rows);
+    VERIFY_IS_APPROX(m3=m2*v1.asDiagonal(), refM3=refM2*v1.asDiagonal());
+    VERIFY_IS_APPROX(m3=m2.transpose()*v2.asDiagonal(), refM3=refM2.transpose()*v2.asDiagonal());
+    VERIFY_IS_APPROX(m3=v2.asDiagonal()*m2, refM3=v2.asDiagonal()*refM2);
+    VERIFY_IS_APPROX(m3=v1.asDiagonal()*m2.transpose(), refM3=v1.asDiagonal()*refM2.transpose());
+    
+    VERIFY_IS_APPROX(m3=v2.asDiagonal()*m2*v1.asDiagonal(), refM3=v2.asDiagonal()*refM2*v1.asDiagonal());
+    
+    // evaluate to a dense matrix to check the .row() and .col() iterator functions
+    VERIFY_IS_APPROX(d3=m2*d1, refM3=refM2*d1);
+    VERIFY_IS_APPROX(d3=m2.transpose()*d2, refM3=refM2.transpose()*d2);
+    VERIFY_IS_APPROX(d3=d2*m2, refM3=d2*refM2);
+    VERIFY_IS_APPROX(d3=d1*m2.transpose(), refM3=d1*refM2.transpose());
   }
 
   // test self adjoint products
@@ -167,7 +203,16 @@ template<typename SparseMatrixType> void sparse_product()
     VERIFY_IS_APPROX(x=mUp.template selfadjointView<Upper>()*b, refX=refS*b);
     VERIFY_IS_APPROX(x=mLo.template selfadjointView<Lower>()*b, refX=refS*b);
     VERIFY_IS_APPROX(x=mS.template selfadjointView<Upper|Lower>()*b, refX=refS*b);
+    
+    // sparse selfadjointView * sparse 
+    SparseMatrixType mSres(rows,rows);
+    VERIFY_IS_APPROX(mSres = mLo.template selfadjointView<Lower>()*mS,
+                     refX = refLo.template selfadjointView<Lower>()*refS);
+    // sparse * sparse selfadjointview
+    VERIFY_IS_APPROX(mSres = mS * mLo.template selfadjointView<Lower>(),
+                     refX = refS * refLo.template selfadjointView<Lower>());
   }
+  
 }
 
 // New test for Bug in SparseTimeDenseProduct

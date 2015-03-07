@@ -475,6 +475,15 @@ TEST(Rot3, quaternion) {
   EXPECT(assert_equal(expected2, actual2));
 }
 
+/* ************************************************************************* */
+TEST( Rot3, stream)
+{
+  Rot3 R;
+  std::ostringstream os;
+  os << R;
+  EXPECT(os.str() == "\n|1, 0, 0|\n|0, 1, 0|\n|0, 0, 1|\n");
+}
+
 #endif
 
 /* ************************************************************************* */

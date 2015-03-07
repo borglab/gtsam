@@ -2,16 +2,16 @@ function [noiseModels,isam,result,nextPoseIndex] = VisualISAMInitialize(data,tru
 % VisualISAMInitialize initializes visualSLAM::iSAM object and noise parameters
 % Authors: Duy Nguyen Ta, Frank Dellaert and Alex Cunningham
 
-%% Initialize iSAM
 import gtsam.*
+
+%% Initialize iSAM
 params = gtsam.ISAM2Params;
 if options.alwaysRelinearize
     params.setRelinearizeSkip(1);
 end
-isam = ISAM2;
+isam = ISAM2(params);
 
 %% Set Noise parameters
-import gtsam.*
 noiseModels.pose = noiseModel.Diagonal.Sigmas([0.001 0.001 0.001 0.1 0.1 0.1]');
 %noiseModels.odometry = noiseModel.Diagonal.Sigmas([0.001 0.001 0.001 0.1 0.1 0.1]');
 noiseModels.odometry = noiseModel.Diagonal.Sigmas([0.05 0.05 0.05 0.2 0.2 0.2]');
@@ -20,7 +20,6 @@ noiseModels.measurement = noiseModel.Isotropic.Sigma(2, 1.0);
 
 %% Add constraints/priors
 % TODO: should not be from ground truth!
-import gtsam.*
 newFactors = NonlinearFactorGraph;
 initialEstimates = Values;
 for i=1:2
@@ -38,7 +37,6 @@ end
 nextPoseIndex = 3;
 
 %% Add visual measurement factors from two first poses and initialize observed landmarks
-import gtsam.*
 for i=1:2
     ii = symbol('x',i);
     for k=1:length(data.Z{i})
@@ -56,11 +54,9 @@ for i=1:2
 end
 
 %% Add odometry between frames 1 and 2
-import gtsam.*
 newFactors.add(BetweenFactorPose3(symbol('x',1), symbol('x',2), data.odometry{1}, noiseModels.odometry));
 
 %% Update ISAM
-import gtsam.*
 if options.batchInitialization % Do a full optimize for first two poses
     batchOptimizer = LevenbergMarquardtOptimizer(newFactors, initialEstimates);
     fullyOptimized = batchOptimizer.optimize();

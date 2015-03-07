@@ -237,6 +237,15 @@ namespace gtsam {
     return make_pair(R, xyz);
   }
 
+  /* ************************************************************************* */
+  ostream &operator<<(ostream &os, const Rot3& R) {
+    os << "\n";
+    os << '|' << R.r1().x() << ", " << R.r2().x() << ", " << R.r3().x() << "|\n";
+    os << '|' << R.r1().y() << ", " << R.r2().y() << ", " << R.r3().y() << "|\n";
+    os << '|' << R.r1().z() << ", " << R.r2().z() << ", " << R.r3().z() << "|\n";
+    return os;
+  }
+
 } // namespace gtsam
 
 #endif

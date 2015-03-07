@@ -2,10 +2,7 @@ namespace Eigen {
 
 /** \page Experimental Experimental parts of Eigen
 
-\b Table \b of \b contents
-  - \ref summary
-  - \ref modules
-  - \ref core
+\eigenAutoToc
 
 \section summary Summary
 

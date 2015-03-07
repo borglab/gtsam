@@ -27,9 +27,9 @@
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/Symbol.h>
 #include <gtsam/nonlinear/Key.h>
-#include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/inference/JunctionTree.h>
 #include <gtsam/geometry/Pose3.h>
+#include <gtsam/base/TestableAssertions.h>
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
@@ -47,773 +47,1044 @@ const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
 const SharedDiagonal noiseOdometery = noiseModel::Diagonal::Sigmas(Vector_(6, 0.1, 0.1, 0.1, 0.5, 0.5, 0.5));
 const SharedDiagonal noiseLoop = noiseModel::Diagonal::Sigmas(Vector_(6, 0.25, 0.25, 0.25, 1.0, 1.0, 1.0));
 
-// Create a derived class to allow testing protected member functions
-class ConcurrentBatchFilterTester : public ConcurrentBatchFilter {
-public:
-  ConcurrentBatchFilterTester(const LevenbergMarquardtParams& parameters) : ConcurrentBatchFilter(parameters) { };
-  virtual ~ConcurrentBatchFilterTester() { };
-
-  // Add accessors to the protected members
-  void presync() { ConcurrentBatchFilter::presync(); };
-  void getSummarizedFactors(NonlinearFactorGraph& summarizedFactors, Values& rootValues) { ConcurrentBatchFilter::getSummarizedFactors(summarizedFactors, rootValues); };
-  void getSmootherFactors(NonlinearFactorGraph& smootherFactors, Values& smootherValues) { ConcurrentBatchFilter::getSmootherFactors(smootherFactors, smootherValues); };
-  void synchronize(const NonlinearFactorGraph& summarizedFactors, const Values& separatorValues) { ConcurrentBatchFilter::synchronize(summarizedFactors, separatorValues); };
-  void postsync() { ConcurrentBatchFilter::postsync(); };
-};
-
 /* ************************************************************************* */
-bool hessian_equal(const NonlinearFactorGraph& expected, const NonlinearFactorGraph& actual, const Values& theta, double tol = 1e-9) {
-
-  // Verify the set of keys in both graphs are the same
-  FastSet<Key> expectedKeys = expected.keys();
-  FastSet<Key> actualKeys = actual.keys();
-  bool keys_equal = (expectedKeys.size() == actualKeys.size()) && std::equal(expectedKeys.begin(), expectedKeys.end(), actualKeys.begin());
-  if(!keys_equal) {
-    std::cout << "Hessian Keys not equal:" << std::endl;
-
-    std::cout << "Expected Keys: ";
-    BOOST_FOREACH(Key key, expectedKeys) {
-      std::cout << DefaultKeyFormatter(key) << " ";
-    }
-    std::cout << std::endl;
-
-    std::cout << "Actual Keys: ";
-    BOOST_FOREACH(Key key, actualKeys) {
-      std::cout << DefaultKeyFormatter(key) << " ";
-    }
-    std::cout << std::endl;
-
-    return false;
-  }
-
-  // Create an ordering
-  Ordering ordering;
-  BOOST_FOREACH(Key key, expectedKeys) {
-    ordering.push_back(key);
-  }
-
-  // Linearize each factor graph
-  GaussianFactorGraph expectedGaussian;
-  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, expected) {
-    if(factor)
-      expectedGaussian.push_back( factor->linearize(theta, ordering) );
-  }
-  GaussianFactorGraph actualGaussian;
-  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, actual) {
-    if(factor)
-      actualGaussian.push_back( factor->linearize(theta, ordering) );
-  }
-
-  // Convert linear factor graph into a dense Hessian
-  Matrix expectedHessian = expectedGaussian.augmentedHessian();
-  Matrix actualHessian = actualGaussian.augmentedHessian();
-
-  // Zero out the lower-right entry. This corresponds to a constant in the optimization,
-  // which does not affect the result. Further, in conversions between Jacobians and Hessians,
-  // this term is ignored.
-  expectedHessian(expectedHessian.rows()-1, expectedHessian.cols()-1) = 0.0;
-  actualHessian(actualHessian.rows()-1, actualHessian.cols()-1) = 0.0;
-
-  // Compare Hessians
-  return assert_equal(expectedHessian, actualHessian, tol);
-}
-
-///* ************************************************************************* */
-void CreateFactors(NonlinearFactorGraph& graph, Values& theta, size_t index1 = 0, size_t index2 = 1) {
-
-  // Calculate all poses
-  Pose3 poses[20];
-  poses[0] = poseInitial;
-  for(size_t index = 1; index < 20; ++index) {
-    poses[index] = poses[index-1].compose(poseOdometry);
-  }
-
-  // Create all keys
-  Key keys[20];
-  for(size_t index = 0; index < 20; ++index) {
-    keys[index] = Symbol('X', index);
-  }
-
-  // Create factors that will form a specific tree structure
-  // Loop over the included timestamps
-  for(size_t index = index1; index < index2; ++index) {
-
-    switch(index) {
-      case 0:
-      {
-        graph.add(PriorFactor<Pose3>(keys[0], poses[0], noisePrior));
-        // Add new variables
-        theta.insert(keys[0], poses[0].compose(poseError));
-        break;
-      }
-      case 1:
-      {
-        // Add odometry factor between 0 and 1
-        Pose3 poseDelta = poses[0].between(poses[1]);
-        graph.add(BetweenFactor<Pose3>(keys[0], keys[1], poseDelta, noiseOdometery));
-        // Add new variables
-        theta.insert(keys[1], poses[1].compose(poseError));
-        break;
-      }
-      case 2:
-      {
-        break;
-      }
-      case 3:
-      {
-        // Add odometry factor between 1 and 3
-        Pose3 poseDelta = poses[1].between(poses[3]);
-        graph.add(BetweenFactor<Pose3>(keys[1], keys[3], poseDelta, noiseOdometery));
-        // Add odometry factor between 2 and 3
-        poseDelta = poses[2].between(poses[3]);
-        graph.add(BetweenFactor<Pose3>(keys[2], keys[3], poseDelta, noiseOdometery));
-        // Add new variables
-        theta.insert(keys[2], poses[2].compose(poseError));
-        theta.insert(keys[3], poses[3].compose(poseError));
-        break;
-      }
-      case 4:
-      {
-        break;
-      }
-      case 5:
-      {
-        // Add odometry factor between 3 and 5
-        Pose3 poseDelta = poses[3].between(poses[5]);
-        graph.add(BetweenFactor<Pose3>(keys[3], keys[5], poseDelta, noiseOdometery));
-        // Add new variables
-        theta.insert(keys[5], poses[5].compose(poseError));
-        break;
-      }
-      case 6:
-      {
-        // Add odometry factor between 3 and 6
-        Pose3 poseDelta = poses[3].between(poses[6]);
-        graph.add(BetweenFactor<Pose3>(keys[3], keys[6], poseDelta, noiseOdometery));
-        // Add odometry factor between 5 and 6
-        poseDelta = poses[5].between(poses[6]);
-        graph.add(BetweenFactor<Pose3>(keys[5], keys[6], poseDelta, noiseOdometery));
-        // Add new variables
-        theta.insert(keys[6], poses[6].compose(poseError));
-        break;
-      }
-      case 7:
-      {
-        // Add odometry factor between 4 and 7
-        Pose3 poseDelta = poses[4].between(poses[7]);
-        graph.add(BetweenFactor<Pose3>(keys[4], keys[7], poseDelta, noiseOdometery));
-        // Add odometry factor between 6 and 7
-        poseDelta = poses[6].between(poses[7]);
-        graph.add(BetweenFactor<Pose3>(keys[6], keys[7], poseDelta, noiseOdometery));
-        // Add new variables
-        theta.insert(keys[4], poses[4].compose(poseError));
-        theta.insert(keys[7], poses[7].compose(poseError));
-        break;
-      }
-      case 8:
-        break;
-
-      case 9:
-      {
-        // Add odometry factor between 6 and 9
-        Pose3 poseDelta = poses[6].between(poses[9]);
-        graph.add(BetweenFactor<Pose3>(keys[6], keys[9], poseDelta, noiseOdometery));
-        // Add odometry factor between 7 and 9
-        poseDelta = poses[7].between(poses[9]);
-        graph.add(BetweenFactor<Pose3>(keys[7], keys[9], poseDelta, noiseOdometery));
-        // Add odometry factor between 8 and 9
-        poseDelta = poses[8].between(poses[9]);
-        graph.add(BetweenFactor<Pose3>(keys[8], keys[9], poseDelta, noiseOdometery));
-        // Add new variables
-        theta.insert(keys[8], poses[8].compose(poseError));
-        theta.insert(keys[9], poses[9].compose(poseError));
-        break;
-      }
-      case 10:
-      {
-        // Add odometry factor between 9 and 10
-        Pose3 poseDelta = poses[9].between(poses[10]);
-        graph.add(BetweenFactor<Pose3>(keys[9], keys[10], poseDelta, noiseOdometery));
-        // Add new variables
-        theta.insert(keys[10], poses[10].compose(poseError));
-        break;
-      }
-      case 11:
-      {
-        // Add odometry factor between 10 and 11
-        Pose3 poseDelta = poses[10].between(poses[11]);
-        graph.add(BetweenFactor<Pose3>(keys[10], keys[11], poseDelta, noiseOdometery));
-        // Add new variables
-        theta.insert(keys[11], poses[11].compose(poseError));
-        break;
-      }
-      case 12:
-      {
-        // Add odometry factor between 7 and 12
-        Pose3 poseDelta = poses[7].between(poses[12]);
-        graph.add(BetweenFactor<Pose3>(keys[7], keys[12], poseDelta, noiseOdometery));
-        // Add odometry factor between 9 and 12
-        poseDelta = poses[9].between(poses[12]);
-        graph.add(BetweenFactor<Pose3>(keys[9], keys[12], poseDelta, noiseOdometery));
-        // Add new variables
-        theta.insert(keys[12], poses[12].compose(poseError));
-        break;
-      }
-
-
-
-
-
-      case 13:
-      {
-        // Add odometry factor between 10 and 13
-        Pose3 poseDelta = poses[10].between(poses[13]);
-        graph.add(BetweenFactor<Pose3>(keys[10], keys[13], poseDelta, noiseOdometery));
-        // Add odometry factor between 12 and 13
-        poseDelta = poses[12].between(poses[13]);
-        graph.add(BetweenFactor<Pose3>(keys[12], keys[13], poseDelta, noiseOdometery));
-        // Add new variables
-        theta.insert(keys[13], poses[13].compose(poseError));
-        break;
-      }
-      case 14:
-      {
-        // Add odometry factor between 11 and 14
-        Pose3 poseDelta = poses[11].between(poses[14]);
-        graph.add(BetweenFactor<Pose3>(keys[11], keys[14], poseDelta, noiseOdometery));
-        // Add odometry factor between 13 and 14
-        poseDelta = poses[13].between(poses[14]);
-        graph.add(BetweenFactor<Pose3>(keys[13], keys[14], poseDelta, noiseOdometery));
-        // Add new variables
-        theta.insert(keys[14], poses[14].compose(poseError));
-        break;
-      }
-      case 15:
-        break;
-
-      case 16:
-      {
-        // Add odometry factor between 13 and 16
-        Pose3 poseDelta = poses[13].between(poses[16]);
-        graph.add(BetweenFactor<Pose3>(keys[13], keys[16], poseDelta, noiseOdometery));
-        // Add odometry factor between 14 and 16
-        poseDelta = poses[14].between(poses[16]);
-        graph.add(BetweenFactor<Pose3>(keys[14], keys[16], poseDelta, noiseOdometery));
-        // Add odometry factor between 15 and 16
-        poseDelta = poses[15].between(poses[16]);
-        graph.add(BetweenFactor<Pose3>(keys[15], keys[16], poseDelta, noiseOdometery));
-        // Add new variables
-        theta.insert(keys[15], poses[15].compose(poseError));
-        theta.insert(keys[16], poses[16].compose(poseError));
-        break;
-      }
-      case 17:
-      {
-        // Add odometry factor between 16 and 17
-        Pose3 poseDelta = poses[16].between(poses[17]);
-        graph.add(BetweenFactor<Pose3>(keys[16], keys[17], poseDelta, noiseOdometery));
-        // Add new variables
-        theta.insert(keys[17], poses[17].compose(poseError));
-        break;
-      }
-      case 18:
-      {
-        // Add odometry factor between 17 and 18
-        Pose3 poseDelta = poses[17].between(poses[18]);
-        graph.add(BetweenFactor<Pose3>(keys[17], keys[18], poseDelta, noiseOdometery));
-        // Add new variables
-        theta.insert(keys[18], poses[18].compose(poseError));
-        break;
-      }
-      case 19:
-      {
-        // Add odometry factor between 14 and 19
-        Pose3 poseDelta = poses[14].between(poses[19]);
-        graph.add(BetweenFactor<Pose3>(keys[14], keys[19], poseDelta, noiseOdometery));
-        // Add odometry factor between 16 and 19
-        poseDelta = poses[16].between(poses[19]);
-        graph.add(BetweenFactor<Pose3>(keys[16], keys[19], poseDelta, noiseOdometery));
-        // Add new variables
-        theta.insert(keys[19], poses[19].compose(poseError));
-        break;
-      }
-
-    }
-  }
-
-  return;
-}
-
-/* ************************************************************************* */
-Values BatchOptimize(const NonlinearFactorGraph& graph, const Values& theta, const Values& separatorValues = Values()) {
+Values BatchOptimize(const NonlinearFactorGraph& graph, const Values& theta, int maxIter = 100) {
 
   // Create an L-M optimizer
   LevenbergMarquardtParams parameters;
-  parameters.linearSolverType = SuccessiveLinearizationParams::MULTIFRONTAL_QR;
+  parameters.maxIterations = maxIter;
 
   LevenbergMarquardtOptimizer optimizer(graph, theta, parameters);
-
-  // Use a custom optimization loop so the linearization points can be controlled
-  double currentError;
-  do {
-    // Force variables associated with root keys to keep the same linearization point
-    if(separatorValues.size() > 0) {
-      // Put the old values of the root keys back into the optimizer state
-      optimizer.state().values.update(separatorValues);
-      // Update the error value with the new theta
-      optimizer.state().error = graph.error(optimizer.state().values);
-    }
-
-    // Do next iteration
-    currentError = optimizer.error();
-    optimizer.iterate();
-
-  } while(optimizer.iterations() < parameters.maxIterations &&
-      !checkConvergence(parameters.relativeErrorTol, parameters.absoluteErrorTol,
-          parameters.errorTol, currentError, optimizer.error(), parameters.verbosity));
-
-  // return the final optimized values
-  return optimizer.values();
+  Values result = optimizer.optimize();
+  return result;
 }
 
 /* ************************************************************************* */
-NonlinearFactorGraph MarginalFactors(const NonlinearFactorGraph& factors, const Values& values, const std::set<Key>& remainingKeys) {
+NonlinearFactorGraph CalculateMarginals(const NonlinearFactorGraph& factorGraph, const Values& linPoint, const FastList<Key>& keysToMarginalize){
 
-  // Create an ordering with the remaining variable last
-  std::map<Key, int> constraints;
-  BOOST_FOREACH(Key key, remainingKeys) {
-    constraints[key] = 1;
+
+  std::set<Key> KeysToKeep;
+  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, linPoint) { // we cycle over all the keys of factorGraph
+    KeysToKeep.insert(key_value.key);
+  } // so far we are keeping all keys, but we want to delete the ones that we are going to marginalize
+  BOOST_FOREACH(Key key, keysToMarginalize) {
+    KeysToKeep.erase(key);
+  } // we removed the keys that we have to marginalize
+
+  Ordering ordering;
+  BOOST_FOREACH(Key key, keysToMarginalize) {
+    ordering.push_back(key);
+  } // the keys that we marginalize should be at the beginning in the ordering
+  BOOST_FOREACH(Key key, KeysToKeep) {
+    ordering.push_back(key);
   }
-  Ordering ordering = *factors.orderingCOLAMDConstrained(values, constraints);
 
-  // Convert the remaining keys into indices
-  std::vector<Index> remainingIndices;
-  BOOST_FOREACH(Key key, remainingKeys) {
-    remainingIndices.push_back(ordering.at(key));
+  GaussianFactorGraph linearGraph = *factorGraph.linearize(linPoint, ordering);
+
+  // Create the set of marginalizable variables
+  std::vector<Index> linearIndices;
+  BOOST_FOREACH(Key key, keysToMarginalize) {
+    linearIndices.push_back(ordering.at(key));
   }
 
-  // Solve for the Gaussian marginal factors
-  GaussianSequentialSolver gss(*factors.linearize(values, ordering), true);
-  GaussianFactorGraph linearMarginals = *gss.jointFactorGraph(remainingIndices);
+  std::pair<GaussianConditional::shared_ptr, GaussianFactorGraph> marginal = linearGraph.eliminate(linearIndices, EliminateCholesky);
 
-  // Convert to LinearContainFactors
-  return LinearContainerFactor::convertLinearGraph(linearMarginals, ordering, values);
+  NonlinearFactorGraph LinearContainerForGaussianMarginals;
+  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, marginal.second) {
+    LinearContainerForGaussianMarginals.add(LinearContainerFactor(factor, ordering, linPoint));
+  }
+  return LinearContainerForGaussianMarginals;
 }
+
+
+} // end namespace
+
+
 
 /* ************************************************************************* */
-template<class CONTAINER>
-void FindFactorsWithAny(const CONTAINER& keys, const NonlinearFactorGraph& sourceFactors, NonlinearFactorGraph& destinationFactors) {
-
-  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, sourceFactors) {
-    NonlinearFactor::const_iterator key = factor->begin();
-    while((key != factor->end()) && (!std::binary_search(keys.begin(), keys.end(), *key))) {
-      ++key;
-    }
-    if(key != factor->end()) {
-      destinationFactors.push_back(factor);
-    }
-  }
-
-}
-
-/* ************************************************************************* */
-template<class CONTAINER>
-void FindFactorsWithOnly(const CONTAINER& keys, const NonlinearFactorGraph& sourceFactors, NonlinearFactorGraph& destinationFactors) {
-
-  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, sourceFactors) {
-    NonlinearFactor::const_iterator key = factor->begin();
-    while((key != factor->end()) && (std::binary_search(keys.begin(), keys.end(), *key))) {
-      ++key;
-    }
-    if(key == factor->end()) {
-      destinationFactors.push_back(factor);
-    }
-  }
-
-}
-
-}
-
-/* ************************************************************************* */
-TEST( ConcurrentBatchFilter, update_batch )
+TEST( ConcurrentBatchFilter, equals )
 {
-  // Test the 'update' function of the ConcurrentBatchFilter in a nonlinear environment.
-  // Thus, a full L-M optimization and the ConcurrentBatchFilter results should be identical
-  // This tests adds all of the factors to the filter at once (i.e. batch)
+  // TODO: Test 'equals' more vigorously
 
+  // Create a Concurrent Batch Filter
+  LevenbergMarquardtParams parameters1;
+  ConcurrentBatchFilter filter1(parameters1);
+
+  // Create an identical Concurrent Batch Filter
+  LevenbergMarquardtParams parameters2;
+  ConcurrentBatchFilter filter2(parameters2);
+
+  // Create a different Concurrent Batch Filter
+  LevenbergMarquardtParams parameters3;
+  parameters3.maxIterations = 1;
+  ConcurrentBatchFilter filter3(parameters3);
+
+  CHECK(assert_equal(filter1, filter1));
+  CHECK(assert_equal(filter1, filter2));
+//  CHECK(assert_inequal(filter1, filter3));
+}
+
+/* ************************************************************************* */
+TEST( ConcurrentBatchFilter, getFactors )
+{
+  // Create a Concurrent Batch Filter
+  LevenbergMarquardtParams parameters;
+  ConcurrentBatchFilter filter(parameters);
+
+  // Expected graph is empty
+  NonlinearFactorGraph expected1;
+  // Get actual graph
+  NonlinearFactorGraph actual1 = filter.getFactors();
+  // Check
+  CHECK(assert_equal(expected1, actual1));
+
+  // Add some factors to the filter
+  NonlinearFactorGraph newFactors1;
+  newFactors1.add(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors1.add(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  Values newValues1;
+  newValues1.insert(1, Pose3());
+  newValues1.insert(2, newValues1.at<Pose3>(1).compose(poseOdometry));
+  filter.update(newFactors1, newValues1);
+
+  // Expected graph
+  NonlinearFactorGraph expected2;
+  expected2.push_back(newFactors1);
+  // Get actual graph
+  NonlinearFactorGraph actual2 = filter.getFactors();
+  // Check
+  CHECK(assert_equal(expected2, actual2));
+
+  // Add some more factors to the filter
+  NonlinearFactorGraph newFactors2;
+  newFactors2.add(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+  newFactors2.add(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
+  Values newValues2;
+  newValues2.insert(3, newValues1.at<Pose3>(2).compose(poseOdometry));
+  newValues2.insert(4, newValues2.at<Pose3>(3).compose(poseOdometry));
+  filter.update(newFactors2, newValues2);
+
+  // Expected graph
+  NonlinearFactorGraph expected3;
+  expected3.push_back(newFactors1);
+  expected3.push_back(newFactors2);
+  // Get actual graph
+  NonlinearFactorGraph actual3 = filter.getFactors();
+  // Check
+  CHECK(assert_equal(expected3, actual3));
+}
+
+/* ************************************************************************* */
+TEST( ConcurrentBatchFilter, getLinearizationPoint )
+{
+  // Create a Concurrent Batch Filter
+  LevenbergMarquardtParams parameters;
+  ConcurrentBatchFilter filter(parameters);
+
+  // Expected values is empty
+  Values expected1;
+  // Get Linearization Point
+  Values actual1 = filter.getLinearizationPoint();
+  // Check
+  CHECK(assert_equal(expected1, actual1));
+
+  // Add some factors to the filter
+  NonlinearFactorGraph newFactors1;
+  newFactors1.add(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors1.add(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  Values newValues1;
+  newValues1.insert(1, Pose3());
+  newValues1.insert(2, newValues1.at<Pose3>(1).compose(poseOdometry));
+  filter.update(newFactors1, newValues1);
+
+  // Expected values is equivalent to the provided values only because the provided linearization points were optimal
+  Values expected2;
+  expected2.insert(newValues1);
+  // Get actual linearization point
+  Values actual2 = filter.getLinearizationPoint();
+  // Check
+  CHECK(assert_equal(expected2, actual2));
+
+  // Add some more factors to the filter
+  NonlinearFactorGraph newFactors2;
+  newFactors2.add(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+  newFactors2.add(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
+  Values newValues2;
+  newValues2.insert(3, newValues1.at<Pose3>(2).compose(poseOdometry));
+  newValues2.insert(4, newValues2.at<Pose3>(3).compose(poseOdometry));
+  filter.update(newFactors2, newValues2);
+
+  // Expected values is equivalent to the provided values only because the provided linearization points were optimal
+  Values expected3;
+  expected3.insert(newValues1);
+  expected3.insert(newValues2);
+  // Get actual linearization point
+  Values actual3 = filter.getLinearizationPoint();
+  // Check
+  CHECK(assert_equal(expected3, actual3));
+}
+
+/* ************************************************************************* */
+TEST( ConcurrentBatchFilter, getOrdering )
+{
+  // TODO: Think about how to check ordering...
+}
+
+/* ************************************************************************* */
+TEST( ConcurrentBatchFilter, getDelta )
+{
+  // TODO: Think about how to check delta...
+}
+
+/* ************************************************************************* */
+TEST( ConcurrentBatchFilter, calculateEstimate )
+{
+  // Create a Concurrent Batch Filter
+  LevenbergMarquardtParams parameters;
+  ConcurrentBatchFilter filter(parameters);
+
+  // Expected values is empty
+  Values expected1;
+  // Get Linearization Point
+  Values actual1 = filter.calculateEstimate();
+  // Check
+  CHECK(assert_equal(expected1, actual1));
+
+  // Add some factors to the filter
+  NonlinearFactorGraph newFactors2;
+  newFactors2.add(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors2.add(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  Values newValues2;
+  newValues2.insert(1, Pose3().compose(poseError));
+  newValues2.insert(2, newValues2.at<Pose3>(1).compose(poseOdometry).compose(poseError));
+  filter.update(newFactors2, newValues2);
+
+  // Expected values from full batch optimization
+  NonlinearFactorGraph allFactors2;
+  allFactors2.push_back(newFactors2);
+  Values allValues2;
+  allValues2.insert(newValues2);
+  Values expected2 = BatchOptimize(allFactors2, allValues2);
+  // Get actual linearization point
+  Values actual2 = filter.calculateEstimate();
+  // Check
+  CHECK(assert_equal(expected2, actual2, 1e-6));
+
+  // Add some more factors to the filter
+  NonlinearFactorGraph newFactors3;
+  newFactors3.add(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+  newFactors3.add(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
+  Values newValues3;
+  newValues3.insert(3, newValues2.at<Pose3>(2).compose(poseOdometry).compose(poseError));
+  newValues3.insert(4, newValues3.at<Pose3>(3).compose(poseOdometry).compose(poseError));
+  filter.update(newFactors3, newValues3);
+
+  // Expected values from full batch optimization
+  NonlinearFactorGraph allFactors3;
+  allFactors3.push_back(newFactors2);
+  allFactors3.push_back(newFactors3);
+  Values allValues3;
+  allValues3.insert(newValues2);
+  allValues3.insert(newValues3);
+  Values expected3 = BatchOptimize(allFactors3, allValues3);
+  // Get actual linearization point
+  Values actual3 = filter.calculateEstimate();
+  // Check
+  CHECK(assert_equal(expected3, actual3, 1e-6));
+
+  // Also check the single-variable version
+  Pose3 expectedPose1 = expected3.at<Pose3>(1);
+  Pose3 expectedPose2 = expected3.at<Pose3>(2);
+  Pose3 expectedPose3 = expected3.at<Pose3>(3);
+  Pose3 expectedPose4 = expected3.at<Pose3>(4);
+  // Also check the single-variable version
+  Pose3 actualPose1 = filter.calculateEstimate<Pose3>(1);
+  Pose3 actualPose2 = filter.calculateEstimate<Pose3>(2);
+  Pose3 actualPose3 = filter.calculateEstimate<Pose3>(3);
+  Pose3 actualPose4 = filter.calculateEstimate<Pose3>(4);
+  // Check
+  CHECK(assert_equal(expectedPose1, actualPose1, 1e-6));
+  CHECK(assert_equal(expectedPose2, actualPose2, 1e-6));
+  CHECK(assert_equal(expectedPose3, actualPose3, 1e-6));
+  CHECK(assert_equal(expectedPose4, actualPose4, 1e-6));
+}
+
+/* ************************************************************************* */
+TEST( ConcurrentBatchFilter, update_empty )
+{
+  // Create a set of optimizer parameters
+  LevenbergMarquardtParams parameters;
+  ConcurrentBatchFilter filter(parameters);
+
+  // Call update
+  filter.update();
+}
+
+/* ************************************************************************* */
+TEST( ConcurrentBatchFilter, update_multiple )
+{
+  // Create a Concurrent Batch Filter
+  LevenbergMarquardtParams parameters;
+  ConcurrentBatchFilter filter(parameters);
+
+  // Expected values is empty
+  Values expected1;
+  // Get Linearization Point
+  Values actual1 = filter.calculateEstimate();
+  // Check
+  CHECK(assert_equal(expected1, actual1));
+
+  // Add some factors to the filter
+  NonlinearFactorGraph newFactors2;
+  newFactors2.add(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors2.add(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  Values newValues2;
+  newValues2.insert(1, Pose3().compose(poseError));
+  newValues2.insert(2, newValues2.at<Pose3>(1).compose(poseOdometry).compose(poseError));
+  filter.update(newFactors2, newValues2);
+
+  // Expected values from full batch optimization
+  NonlinearFactorGraph allFactors2;
+  allFactors2.push_back(newFactors2);
+  Values allValues2;
+  allValues2.insert(newValues2);
+  Values expected2 = BatchOptimize(allFactors2, allValues2);
+  // Get actual linearization point
+  Values actual2 = filter.calculateEstimate();
+  // Check
+  CHECK(assert_equal(expected2, actual2, 1e-6));
+
+  // Add some more factors to the filter
+  NonlinearFactorGraph newFactors3;
+  newFactors3.add(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+  newFactors3.add(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
+  Values newValues3;
+  newValues3.insert(3, newValues2.at<Pose3>(2).compose(poseOdometry).compose(poseError));
+  newValues3.insert(4, newValues3.at<Pose3>(3).compose(poseOdometry).compose(poseError));
+  filter.update(newFactors3, newValues3);
+
+  // Expected values from full batch optimization
+  NonlinearFactorGraph allFactors3;
+  allFactors3.push_back(newFactors2);
+  allFactors3.push_back(newFactors3);
+  Values allValues3;
+  allValues3.insert(newValues2);
+  allValues3.insert(newValues3);
+  Values expected3 = BatchOptimize(allFactors3, allValues3);
+  // Get actual linearization point
+  Values actual3 = filter.calculateEstimate();
+  // Check
+  CHECK(assert_equal(expected3, actual3, 1e-6));
+}
+
+/* ************************************************************************* */
+TEST( ConcurrentBatchFilter, update_and_marginalize )
+{
+  // Create a set of optimizer parameters
+  LevenbergMarquardtParams parameters;
+  ConcurrentBatchFilter filter(parameters);
+
+  // Add some factors to the filter
+  NonlinearFactorGraph newFactors;
+  newFactors.add(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors.add(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  newFactors.add(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+  newFactors.add(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
+  Values newValues;
+  newValues.insert(1, Pose3().compose(poseError));
+  newValues.insert(2, newValues.at<Pose3>(1).compose(poseOdometry).compose(poseError));
+  newValues.insert(3, newValues.at<Pose3>(2).compose(poseOdometry).compose(poseError));
+  newValues.insert(4, newValues.at<Pose3>(3).compose(poseOdometry).compose(poseError));
+
+  // Specify a subset of variables to marginalize/move to the smoother
+  FastList<Key> keysToMove;
+  keysToMove.push_back(1);
+  keysToMove.push_back(2);
+
+  // Update the filter
+  filter.update(newFactors, newValues, keysToMove);
+
+  // Calculate expected factor graph and values
+  Values optimalValues = BatchOptimize(newFactors, newValues);
+
+
+  NonlinearFactorGraph partialGraph;
+  partialGraph.add(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  partialGraph.add(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  partialGraph.add(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+
+  Values partialValues;
+  partialValues.insert(1, optimalValues.at<Pose3>(1));
+  partialValues.insert(2, optimalValues.at<Pose3>(2));
+  partialValues.insert(3, optimalValues.at<Pose3>(3));
+
+  // Create an ordering
+  Ordering ordering;
+  ordering.push_back(1);
+  ordering.push_back(2);
+  ordering.push_back(3);
+
+  // Create the set of marginalizable variables
+  std::vector<Index> linearIndices;
+  linearIndices.push_back(ordering.at(1));
+  linearIndices.push_back(ordering.at(2));
+
+  GaussianFactorGraph linearPartialGraph = *partialGraph.linearize(partialValues, ordering);
+  std::pair<GaussianConditional::shared_ptr, GaussianFactorGraph> result = linearPartialGraph.eliminate(linearIndices, EliminateCholesky);
+
+
+  NonlinearFactorGraph expectedGraph;
+
+  // These three lines create three empty factors in expectedGraph:
+  // this is done since the equal function in NonlinearFactorGraph also cares about the ordering of the factors
+  // and in the actualGraph produced by the HMF we first insert 5 nonlinear factors, then we delete 3 of them, by
+  // substituting them with a linear marginal
+  expectedGraph.push_back(NonlinearFactor::shared_ptr());
+  expectedGraph.push_back(NonlinearFactor::shared_ptr());
+  expectedGraph.push_back(NonlinearFactor::shared_ptr());
+  // ==========================================================
+  expectedGraph.add(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
+
+  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, result.second) {
+    expectedGraph.add(LinearContainerFactor(factor, ordering, partialValues));
+  }
+
+
+  // Get the actual factor graph and optimal point
+  NonlinearFactorGraph actualGraph = filter.getFactors();
+  Values actualValues = filter.calculateEstimate();
+
+  Values expectedValues = optimalValues;
+
+  // Check
+  BOOST_FOREACH(Key key, keysToMove) {
+    expectedValues.erase(key);
+  }
+
+
+  CHECK(assert_equal(expectedValues, actualValues, 1e-6));
+  CHECK(assert_equal(expectedGraph, actualGraph, 1e-6));
+}
+
+/* ************************************************************************* */
+TEST( ConcurrentBatchFilter, synchronize_0 )
+{
   // Create a set of optimizer parameters
   LevenbergMarquardtParams parameters;
 
   // Create a Concurrent Batch Filter
   ConcurrentBatchFilter filter(parameters);
 
-  // Create containers to keep the full graph
-  Values fullTheta;
-  NonlinearFactorGraph fullGraph;
-
-  // Create all factors
-  CreateFactors(fullGraph, fullTheta, 0, 20);
-
-  // Optimize with Concurrent Batch Filter
-  filter.update(fullGraph, fullTheta, boost::none);
-  Values actual = filter.calculateEstimate();
-
-
-  // Optimize with L-M
-  Values expected = BatchOptimize(fullGraph, fullTheta);
-
-  // Check smoother versus batch
-  CHECK(assert_equal(expected, actual, 1e-4));
-}
-
-/* ************************************************************************* */
-TEST( ConcurrentBatchFilter, update_batch_with_marginalization )
-{
-  // Test the 'update' function of the ConcurrentBatchFilter in a nonlinear environment.
-  // Thus, a full L-M optimization and the ConcurrentBatchFilter results should be identical
-  // This tests adds all of the factors to the filter at once (i.e. batch)
-
-  // Create a set of optimizer parameters
-  LevenbergMarquardtParams parameters;
-
-  // Create a Concurrent Batch Filter
-  ConcurrentBatchFilter filter(parameters);
-
-  // Create containers to keep the full graph
-  Values fullTheta;
-  NonlinearFactorGraph fullGraph;
-
-  // Create all factors
-  CreateFactors(fullGraph, fullTheta, 0, 20);
-
-  // Create the set of key to marginalize out
-  FastList<Key> marginalizeKeys;
-  for(size_t j = 0; j < 15; ++j) {
-    marginalizeKeys.push_back(Symbol('X', j));
-  }
-
-  // Optimize with Concurrent Batch Filter
-  filter.update(fullGraph, fullTheta, marginalizeKeys);
-  Values actual = filter.calculateEstimate();
-
-
-  // Optimize with L-M
-  Values expected = BatchOptimize(fullGraph, fullTheta);
-  // Remove the marginalized keys
-  for(size_t j = 0; j < 15; ++j) {
-    expected.erase(Symbol('X', j));
-  }
-
-  // Check smoother versus batch
-  CHECK(assert_equal(expected, actual, 1e-4));
-}
-
-/* ************************************************************************* */
-TEST( ConcurrentBatchFilter, update_incremental )
-{
-  // Test the 'update' function of the ConcurrentBatchFilter in a nonlinear environment.
-  // Thus, a full L-M optimization and the ConcurrentBatchFilter results should be identical
-  // This tests adds the factors to the filter as they are created (i.e. incrementally)
-
-  // Create a set of optimizer parameters
-  LevenbergMarquardtParams parameters;
-
-  // Create a Concurrent Batch Filter
-  ConcurrentBatchFilter filter(parameters);
-
-  // Create containers to keep the full graph
-  Values fullTheta;
-  NonlinearFactorGraph fullGraph;
-
-  // Add odometry from time 0 to time 10
-  for(size_t i = 0; i < 20; ++i) {
-    // Create containers to keep the new factors
-    Values newTheta;
-    NonlinearFactorGraph newGraph;
-
-    // Create factors
-    CreateFactors(newGraph, newTheta, i, i+1);
-
-    // Add these entries to the filter
-    filter.update(newGraph, newTheta, boost::none);
-    Values actual = filter.calculateEstimate();
-
-    // Add these entries to the full batch version
-    fullGraph.push_back(newGraph);
-    fullTheta.insert(newTheta);
-    Values expected = BatchOptimize(fullGraph, fullTheta);
-    fullTheta = expected;
-
-    // Compare filter solution with full batch
-    CHECK(assert_equal(expected, actual, 1e-4));
-  }
-
-}
-
-/* ************************************************************************* */
-TEST( ConcurrentBatchFilter, update_incremental_with_marginalization )
-{
-  // Test the 'update' function of the ConcurrentBatchFilter in a nonlinear environment.
-  // Thus, a full L-M optimization and the ConcurrentBatchFilter results should be identical
-  // This tests adds the factors to the filter as they are created (i.e. incrementally)
-
-  // Create a set of optimizer parameters
-  LevenbergMarquardtParams parameters;
-
-  // Create a Concurrent Batch Filter
-  ConcurrentBatchFilter filter(parameters);
-
-  // Create containers to keep the full graph
-  Values fullTheta;
-  NonlinearFactorGraph fullGraph;
-
-  // Add odometry from time 0 to time 10
-  for(size_t i = 0; i < 20; ++i) {
-
-    // Create containers to keep the new factors
-    Values newTheta;
-    NonlinearFactorGraph newGraph;
-
-    // Create factors
-    CreateFactors(newGraph, newTheta, i, i+1);
-
-    // Create the set of factors to marginalize
-    FastList<Key> marginalizeKeys;
-    if(i >= 5) {
-      marginalizeKeys.push_back(Symbol('X', i-5));
-    }
-
-    // Add these entries to the filter
-    filter.update(newGraph, newTheta, marginalizeKeys);
-    Values actual = filter.calculateEstimate();
-
-    // Add these entries to the full batch version
-    fullGraph.push_back(newGraph);
-    fullTheta.insert(newTheta);
-    Values expected = BatchOptimize(fullGraph, fullTheta);
-    fullTheta = expected;
-    // Remove marginalized keys
-    for(int j = (int)i - 5; j >= 0; --j) {
-      expected.erase(Symbol('X', j));
-    }
-
-    // Compare filter solution with full batch
-    CHECK(assert_equal(expected, actual, 1e-4));
-  }
-
-}
-
-/* ************************************************************************* */
-TEST_UNSAFE( ConcurrentBatchFilter, synchronize )
-{
-  // Test the 'synchronize' function of the ConcurrentBatchFilter in a nonlinear environment.
-  // The filter is operating on a known tree structure, so the factors and summarization can
-  // be predicted for testing purposes
-
-  // Create a set of optimizer parameters
-  LevenbergMarquardtParams parameters;
-
-  // Create a Concurrent Batch Filter
-  ConcurrentBatchFilterTester filter(parameters);
-
-  // Create containers to keep the full graph
-  Values newTheta, fullTheta;
-  NonlinearFactorGraph newGraph, fullGraph;
-
-  // Create factors from t=0 to t=12
-  //  BAYES TREE:
-  //    P( X7 X9 X12 )
-  //      P( X10 | X9 )
-  //        P( X11 | X10 )
-  //      P( X8 | X9 )
-  //      P( X6 | X7 X9 )
-  //        P( X3 X5 | X6 )
-  //          P( X2 | X3 )
-  //          P( X1 | X3 )
-  //            P( X0 | X1 )
-  //      P( X4 | X7 )
-  CreateFactors(newGraph, newTheta, 0, 13);
-  fullTheta.insert(newTheta);
-  fullGraph.push_back(newGraph);
-  Values optimalTheta = BatchOptimize(fullGraph, fullTheta);
-
-  // Optimize with Concurrent Batch Filter
-  FastList<Key> marginalizeKeys;
-  marginalizeKeys.push_back(Symbol('X',  0));
-  marginalizeKeys.push_back(Symbol('X',  1));
-  marginalizeKeys.push_back(Symbol('X',  2));
-  marginalizeKeys.push_back(Symbol('X',  3));
-  marginalizeKeys.push_back(Symbol('X',  4));
-  marginalizeKeys.push_back(Symbol('X',  5));
-  marginalizeKeys.push_back(Symbol('X',  6));
-  filter.update(newGraph, newTheta, marginalizeKeys);
-
-  // Extract the nonlinear factors that should be sent to the smoother
-  NonlinearFactorGraph expectedSmootherFactors;
-  FindFactorsWithAny(marginalizeKeys, fullGraph, expectedSmootherFactors);
-
-  // Extract smoother values
-  Values expectedSmootherValues;
-  BOOST_FOREACH(Key key, marginalizeKeys) {
-    expectedSmootherValues.insert(key, optimalTheta.at(key));
-  }
-
-  // Extract the filter summarized factors on the separator
-  // ( as defined by the smoother branch separators {X7,X9} and {X7} )
-  std::set<Key> separatorKeys;
-  separatorKeys.insert(Symbol('X',  7));
-  separatorKeys.insert(Symbol('X',  9));
-
-  // Marginal factors remaining after marginalizing out all non-separator keys from the filter factors
-  std::set<Key> filterKeys;
-  filterKeys.insert(Symbol('X',  7));
-  filterKeys.insert(Symbol('X',  8));
-  filterKeys.insert(Symbol('X',  9));
-  filterKeys.insert(Symbol('X', 10));
-  filterKeys.insert(Symbol('X', 11));
-  filterKeys.insert(Symbol('X', 12));
-  NonlinearFactorGraph filterFactors;
-  FindFactorsWithOnly(filterKeys, fullGraph, filterFactors);
-  Values filterValues;
-  BOOST_FOREACH(Key key, filterKeys) {
-    filterValues.insert(key, optimalTheta.at(key));
-  }
-  NonlinearFactorGraph expectedFilterSumarization = MarginalFactors(filterFactors, filterValues, separatorKeys);
-
-  // Extract the new separator values
-  Values expectedSeparatorValues;
-  BOOST_FOREACH(Key key, separatorKeys) {
-    expectedSeparatorValues.insert(key, optimalTheta.at(key));
-  }
-
-  // Start the synchronization process
-  NonlinearFactorGraph actualSmootherFactors, actualFilterSumarization, smootherSummarization;
-  Values actualSmootherValues, actualSeparatorValues, smootherSeparatorValues;
-  filter.presync();
-  filter.synchronize(smootherSummarization, smootherSeparatorValues);  // Supplying an empty factor graph here
-  filter.getSmootherFactors(actualSmootherFactors, actualSmootherValues);
-  filter.getSummarizedFactors(actualFilterSumarization, actualSeparatorValues);
-  filter.postsync();
-
-  // Compare filter sync variables versus the expected
-  CHECK(hessian_equal(expectedSmootherFactors, actualSmootherFactors, optimalTheta, 1e-8));
-  CHECK(assert_equal(expectedSmootherValues, actualSmootherValues, 1e-4));
-  CHECK(hessian_equal(expectedFilterSumarization, actualFilterSumarization, optimalTheta, 1e-9));
-  CHECK(assert_equal(expectedSeparatorValues, actualSeparatorValues, 1e-4));
-
-
-
-
-
-  // Calculate the quantities that would be coming from the smoother for the next iteration
-  expectedSmootherValues.insert(expectedSeparatorValues);
-  smootherSummarization = MarginalFactors(expectedSmootherFactors, expectedSmootherValues, separatorKeys);
-  smootherSeparatorValues = expectedSeparatorValues;
-
-  // Now add additional factors to the filter and re-sync
-  //  BAYES TREE:
-  //    P( X14 X16 X19 )
-  //      P( X17 | X16 )
-  //        P( X18 | X17 )
-  //      P( X15 | X16 )
-  //      P( X13 | X14 X16 )
-  //        P( X11 | X13 X14 )
-  //          P( X10 | X11 X13 )
-  //            P( X12 | X10 X13 )
-  //              P( X9 | X12 X10 )
-  //                P( X7 | X9 X12 )
-  //                  P( X6 | X7 X9 )
-  //                    P( X3 X5 | X6 )
-  //                      P( X2 | X3 )
-  //                      P( X1 | X3 )
-  //                        P( X0 | X1 )
-  //                  P( X4 | X7 )
-  //                P( X8 | X9 )
-  newGraph.resize(0);  newTheta.clear();
-  CreateFactors(newGraph, newTheta, 13, 20);
-  fullTheta.insert(newTheta);
-  fullGraph.push_back(newGraph);
-  optimalTheta = BatchOptimize(fullGraph, fullTheta);
-
-  // Optimize with Concurrent Batch Filter
-  marginalizeKeys.clear();
-  marginalizeKeys.push_back(Symbol('X',  7));
-  marginalizeKeys.push_back(Symbol('X',  8));
-  marginalizeKeys.push_back(Symbol('X',  9));
-  marginalizeKeys.push_back(Symbol('X', 10));
-  marginalizeKeys.push_back(Symbol('X', 11));
-  marginalizeKeys.push_back(Symbol('X', 12));
-  marginalizeKeys.push_back(Symbol('X', 13));
-  filter.update(newGraph, newTheta, marginalizeKeys);
-
-  // Extract the nonlinear factors that should be sent to the smoother
-  NonlinearFactorGraph newSmootherFactors;
-  FindFactorsWithAny(marginalizeKeys, fullGraph, newSmootherFactors);
-  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, expectedSmootherFactors) {
-    NonlinearFactorGraph::iterator iter = std::find(newSmootherFactors.begin(), newSmootherFactors.end(), factor);
-    if(iter != newSmootherFactors.end()) {
-      newSmootherFactors.remove(iter - newSmootherFactors.begin());
-    }
-  }
-  expectedSmootherFactors.resize(0);
-  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, newSmootherFactors) {
-    if(factor) {
-      expectedSmootherFactors.push_back(factor);
-    }
-  }
-
-  // Extract smoother values
-  expectedSmootherValues.clear();
-  BOOST_FOREACH(Key key, marginalizeKeys) {
-    expectedSmootherValues.insert(key, optimalTheta.at(key));
-  }
-
-  // Extract the filter summarized factors on the separator
-  // ( as defined by the smoother branch separators {X14,X16} )
-  separatorKeys.clear();
-  separatorKeys.insert(Symbol('X', 14));
-  separatorKeys.insert(Symbol('X', 16));
-
-  // Marginal factors remaining after marginalizing out all non-separator keys from the filter factors
-  filterKeys.clear();
-  filterKeys.insert(Symbol('X', 14));
-  filterKeys.insert(Symbol('X', 15));
-  filterKeys.insert(Symbol('X', 16));
-  filterKeys.insert(Symbol('X', 17));
-  filterKeys.insert(Symbol('X', 18));
-  filterKeys.insert(Symbol('X', 19));
-  filterFactors.resize(0);
-  FindFactorsWithOnly(filterKeys, fullGraph, filterFactors);
-  filterValues.clear();
-  BOOST_FOREACH(Key key, filterKeys) {
-    filterValues.insert(key, optimalTheta.at(key));
-  }
-  expectedFilterSumarization = MarginalFactors(filterFactors, filterValues, separatorKeys);
-
-  // Extract the new separator values
-  expectedSeparatorValues.clear();
-  BOOST_FOREACH(Key key, separatorKeys) {
-    expectedSeparatorValues.insert(key, optimalTheta.at(key));
-  }
-
-
-  // Start the synchronization process
-  actualSmootherFactors.resize(0); actualFilterSumarization.resize(0);
-  actualSmootherValues.clear(); actualSeparatorValues.clear();
-  smootherSeparatorValues = expectedSeparatorValues;
+  // Create empty containers *from* the smoother
+  NonlinearFactorGraph smootherSummarization;
+  Values smootherSeparatorValues;
+
+  // Create expected values from the filter. For the case where the filter is empty, the expected values are also empty
+  NonlinearFactorGraph expectedSmootherFactors, expectedFilterSummarization;
+  Values expectedSmootherValues, expectedFilterSeparatorValues;
+
+  // Synchronize
+  NonlinearFactorGraph actualSmootherFactors, actualFilterSummarization;
+  Values actualSmootherValues, actualFilterSeparatorValues;
   filter.presync();
   filter.synchronize(smootherSummarization, smootherSeparatorValues);
   filter.getSmootherFactors(actualSmootherFactors, actualSmootherValues);
-  filter.getSummarizedFactors(actualFilterSumarization, actualSeparatorValues);
+  filter.getSummarizedFactors(actualFilterSummarization, actualFilterSeparatorValues);
+  filter.postsync();
+
+  // Check
+  CHECK(assert_equal(expectedSmootherFactors, actualSmootherFactors, 1e-6));
+  CHECK(assert_equal(expectedSmootherValues, actualSmootherValues, 1e-6));
+  CHECK(assert_equal(expectedFilterSummarization, actualFilterSummarization, 1e-6));
+  CHECK(assert_equal(expectedFilterSeparatorValues, actualFilterSeparatorValues, 1e-6));
+}
+
+/* ************************************************************************* */
+TEST( ConcurrentBatchFilter, synchronize_1 )
+{
+  // Create a set of optimizer parameters
+  LevenbergMarquardtParams parameters;
+  parameters.maxIterations = 1;
+
+  // Create a Concurrent Batch Filter
+  ConcurrentBatchFilter filter(parameters);
+
+  // Insert factors into the filter, but do not marginalize out any variables.
+  // The synchronization should still be empty
+  NonlinearFactorGraph newFactors;
+  newFactors.add(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors.add(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  Values newValues;
+  newValues.insert(1, Pose3().compose(poseError));
+  newValues.insert(2, newValues.at<Pose3>(1).compose(poseOdometry).compose(poseError));
+  filter.update(newFactors, newValues);
+
+  // Create empty containers *from* the smoother
+  NonlinearFactorGraph smootherSummarization;
+  Values smootherSeparatorValues;
+
+  // Create expected values from the filter. For the case when nothing has been marginalized from the filter, the expected values are empty
+  NonlinearFactorGraph expectedSmootherFactors, expectedFilterSummarization;
+  Values expectedSmootherValues, expectedFilterSeparatorValues;
+
+  // Synchronize
+  NonlinearFactorGraph actualSmootherFactors, actualFilterSummarization;
+  Values actualSmootherValues, actualFilterSeparatorValues;
+  filter.presync();
+  filter.synchronize(smootherSummarization, smootherSeparatorValues);
+  filter.getSmootherFactors(actualSmootherFactors, actualSmootherValues);
+  filter.getSummarizedFactors(actualFilterSummarization, actualFilterSeparatorValues);
+  filter.postsync();
+
+  // Check
+  CHECK(assert_equal(expectedSmootherFactors, actualSmootherFactors, 1e-6));
+  CHECK(assert_equal(expectedSmootherValues, actualSmootherValues, 1e-6));
+  CHECK(assert_equal(expectedFilterSummarization, actualFilterSummarization, 1e-6));
+  CHECK(assert_equal(expectedFilterSeparatorValues, actualFilterSeparatorValues, 1e-6));
+}
+
+/* ************************************************************************* */
+TEST( ConcurrentBatchFilter, synchronize_2 )
+{
+  // Create a set of optimizer parameters
+  LevenbergMarquardtParams parameters;
+  //parameters.maxIterations = 1;
+
+  // Create a Concurrent Batch Filter
+  ConcurrentBatchFilter filter(parameters);
+
+  // Insert factors into the filter, and marginalize out one variable.
+  // There should not be information transmitted to the smoother from the filter
+  NonlinearFactorGraph newFactors;
+  NonlinearFactor::shared_ptr factor1(new PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  NonlinearFactor::shared_ptr factor2(new BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  newFactors.push_back(factor1);
+  newFactors.push_back(factor2);
+  Values newValues;
+  Pose3 value1 = Pose3().compose(poseError);
+  Pose3 value2 = value1.compose(poseOdometry).compose(poseError);
+  newValues.insert(1, value1);
+  newValues.insert(2, value2);
+  FastList<Key> keysToMove;
+  keysToMove.push_back(1);
+  filter.update(newFactors, newValues, keysToMove);
+  // this will not work, as in the filter only remains node 2, while 1 was marginalized out
+  // Values optimalValues = filter.calculateEstimate();
+
+  Values optimalValues = BatchOptimize(newFactors, newValues);
+
+  // Create empty containers *from* the smoother
+  NonlinearFactorGraph smootherSummarization;
+  Values smootherSeparatorValues;
+
+
+  // Create expected values from the filter.
+  // The smoother factors include any factor adjacent to a marginalized variable
+  NonlinearFactorGraph expectedSmootherFactors;
+  expectedSmootherFactors.push_back(factor1);
+  expectedSmootherFactors.push_back(factor2);
+  Values expectedSmootherValues;
+  // We only pass linearization points for the marginalized variables
+  expectedSmootherValues.insert(1, optimalValues.at<Pose3>(1));
+
+  // The filter summarization is the remaining factors from marginalizing out the requested variable
+  // In the current example, after marginalizing out 1, the filter only contains the separator (2), with
+  // no nonlinear factor attached to it, therefore no filter summarization needs to be passed to the smoother
+  NonlinearFactorGraph expectedFilterSummarization;
+  Values expectedFilterSeparatorValues;
+  expectedFilterSeparatorValues.insert(2, optimalValues.at<Pose3>(2));
+
+  // Synchronize
+  NonlinearFactorGraph actualSmootherFactors, actualFilterSummarization;
+  Values actualSmootherValues, actualFilterSeparatorValues;
+  filter.presync();
+  filter.synchronize(smootherSummarization, smootherSeparatorValues);
+  filter.getSmootherFactors(actualSmootherFactors, actualSmootherValues);
+  filter.getSummarizedFactors(actualFilterSummarization, actualFilterSeparatorValues);
+  filter.postsync();
+
+  // Check
+  CHECK(assert_equal(expectedSmootherFactors, actualSmootherFactors, 1e-6));
+  CHECK(assert_equal(expectedSmootherValues, actualSmootherValues, 1e-6));
+  CHECK(assert_equal(expectedFilterSummarization, actualFilterSummarization, 1e-6));
+  CHECK(assert_equal(expectedFilterSeparatorValues, actualFilterSeparatorValues, 1e-6));
+}
+
+/* ************************************************************************* */
+TEST( ConcurrentBatchFilter, synchronize_3 )
+{
+  // Create a set of optimizer parameters
+  LevenbergMarquardtParams parameters;
+  //parameters.maxIterations = 1;
+
+  // Create a Concurrent Batch Filter
+  ConcurrentBatchFilter filter(parameters);
+
+  // Insert factors into the filter, and marginalize out one variable.
+  // There should not be information transmitted to the smoother from the filter
+  NonlinearFactorGraph newFactors;
+  NonlinearFactor::shared_ptr factor1(new PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  NonlinearFactor::shared_ptr factor2(new BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  NonlinearFactor::shared_ptr factor3(new BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+  newFactors.push_back(factor1);
+  newFactors.push_back(factor2);
+  newFactors.push_back(factor3);
+
+  Values newValues;
+  Pose3 value1 = Pose3().compose(poseError);
+  Pose3 value2 = value1.compose(poseOdometry).compose(poseError);
+  Pose3 value3 = value2.compose(poseOdometry).compose(poseError);
+  newValues.insert(1, value1);
+  newValues.insert(2, value2);
+  newValues.insert(3, value3);
+
+  FastList<Key> keysToMove;
+  keysToMove.push_back(1);
+  // we add factors to the filter while marginalizing node 1
+  filter.update(newFactors, newValues, keysToMove);
+
+  Values optimalValues = BatchOptimize(newFactors, newValues);
+
+  // In this example the smoother is empty
+  // Create empty containers *from* the smoother
+  NonlinearFactorGraph smootherSummarization;
+  Values smootherSeparatorValues;
+
+  // Create expected values from the filter.
+  // The smoother factors include any factor adjacent to a marginalized variable
+  NonlinearFactorGraph expectedSmootherFactors;
+  expectedSmootherFactors.push_back(factor1);
+  expectedSmootherFactors.push_back(factor2);
+  Values expectedSmootherValues;
+  // We only pass linearization points for the marginalized variables
+  expectedSmootherValues.insert(1, optimalValues.at<Pose3>(1));
+
+  // In the current example, after marginalizing out 1, the filter contains the separator 2 and node 3, with
+  // a nonlinear factor attached to them
+  // Why there is no summarization from filter ????
+  NonlinearFactorGraph expectedFilterSummarization;
+  Values expectedFilterSeparatorValues;
+  expectedFilterSeparatorValues.insert(2, optimalValues.at<Pose3>(2));
+  // ------------------------------------------------------------------------------
+  NonlinearFactorGraph partialGraph;
+  partialGraph.add(factor3);
+
+  Values partialValues;
+  partialValues.insert(2, optimalValues.at<Pose3>(2));
+  partialValues.insert(3, optimalValues.at<Pose3>(3));
+
+  FastList<Key> keysToMarginalize;
+  keysToMarginalize.push_back(3);
+
+  expectedFilterSummarization = CalculateMarginals(partialGraph, partialValues, keysToMarginalize);
+  // ------------------------------------------------------------------------------
+  // Synchronize
+  NonlinearFactorGraph actualSmootherFactors, actualFilterSummarization;
+  Values actualSmootherValues, actualFilterSeparatorValues;
+  filter.presync();
+  filter.synchronize(smootherSummarization, smootherSeparatorValues);
+  filter.getSmootherFactors(actualSmootherFactors, actualSmootherValues);
+  filter.getSummarizedFactors(actualFilterSummarization, actualFilterSeparatorValues);
+  filter.postsync();
+
+  // Check
+  CHECK(assert_equal(expectedSmootherFactors, actualSmootherFactors, 1e-6));
+  CHECK(assert_equal(expectedSmootherValues, actualSmootherValues, 1e-6));
+  CHECK(assert_equal(expectedFilterSummarization, actualFilterSummarization, 1e-6));
+  CHECK(assert_equal(expectedFilterSeparatorValues, actualFilterSeparatorValues, 1e-6));
+}
+
+/* ************************************************************************* */
+TEST( ConcurrentBatchFilter, synchronize_4 )
+{
+  // Create a set of optimizer parameters
+  LevenbergMarquardtParams parameters;
+  parameters.maxIterations = 1;
+
+  // Create a Concurrent Batch Filter
+  ConcurrentBatchFilter filter(parameters);
+
+  // Insert factors into the filter, and marginalize out one variable.
+  // There should not be information transmitted to the smoother from the filter
+  NonlinearFactorGraph newFactors;
+  NonlinearFactor::shared_ptr factor1(new PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  NonlinearFactor::shared_ptr factor2(new BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  NonlinearFactor::shared_ptr factor3(new BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+  newFactors.push_back(factor1);
+  newFactors.push_back(factor2);
+  newFactors.push_back(factor3);
+
+  Values newValues;
+  Pose3 value1 = Pose3().compose(poseError);
+  Pose3 value2 = value1.compose(poseOdometry).compose(poseError);
+  Pose3 value3 = value2.compose(poseOdometry).compose(poseError);
+  newValues.insert(1, value1);
+  newValues.insert(2, value2);
+  newValues.insert(3, value3);
+
+  FastList<Key> keysToMove;
+  keysToMove.push_back(1);
+  // we add factors to the filter while marginalizing node 1
+  filter.update(newFactors, newValues, keysToMove);
+
+  Values optimalValuesFilter = BatchOptimize(newFactors, newValues,1);
+
+  // In this example the smoother contains a between factor and a prior factor
+  // COMPUTE SUMMARIZATION ON THE SMOOTHER SIDE
+  NonlinearFactorGraph smootherSummarization;
+  Values smootherSeparatorValues;
+
+  // Create expected values from the filter.
+  // The smoother factors include any factor adjacent to a marginalized variable
+  NonlinearFactorGraph expectedSmootherFactors;
+  expectedSmootherFactors.push_back(factor1);
+  expectedSmootherFactors.push_back(factor2);
+  Values expectedSmootherValues;
+  // We only pass linearization points for the marginalized variables
+  expectedSmootherValues.insert(1, optimalValuesFilter.at<Pose3>(1));
+
+  // COMPUTE SUMMARIZATION ON THE FILTER SIDE
+  // In the current example, after marginalizing out 1, the filter contains the separator 2 and node 3, with
+  // a nonlinear factor attached to them
+  // Why there is no summarization from filter ????
+  NonlinearFactorGraph expectedFilterSummarization;
+  Values expectedFilterSeparatorValues;
+  expectedFilterSeparatorValues.insert(2, optimalValuesFilter.at<Pose3>(2));
+  // ------------------------------------------------------------------------------
+  NonlinearFactorGraph partialGraphFilter;
+  partialGraphFilter.add(factor3);
+
+  Values partialValuesFilter;
+  partialValuesFilter.insert(2, optimalValuesFilter.at<Pose3>(2));
+  partialValuesFilter.insert(3, optimalValuesFilter.at<Pose3>(3));
+
+  // Create an ordering
+  Ordering orderingFilter;
+  orderingFilter.push_back(3);
+  orderingFilter.push_back(2);
+
+  FastList<Key> keysToMarginalize;
+  keysToMarginalize.push_back(3);
+
+  expectedFilterSummarization = CalculateMarginals(partialGraphFilter, partialValuesFilter, keysToMarginalize);
+  // ------------------------------------------------------------------------------
+  // Synchronize
+  // This is only an information compression/exchange: to actually incorporate the info we should call update
+  NonlinearFactorGraph actualSmootherFactors, actualFilterSummarization;
+  Values actualSmootherValues, actualFilterSeparatorValues;
+  filter.presync();
+  filter.synchronize(smootherSummarization, smootherSeparatorValues);
+  filter.getSmootherFactors(actualSmootherFactors, actualSmootherValues);
+  filter.getSummarizedFactors(actualFilterSummarization, actualFilterSeparatorValues);
   filter.postsync();
 
 
+  // Check
+  CHECK(assert_equal(expectedSmootherFactors, actualSmootherFactors, 1e-6));
+  CHECK(assert_equal(expectedSmootherValues, actualSmootherValues, 1e-6));
+  CHECK(assert_equal(expectedFilterSummarization, actualFilterSummarization, 1e-6));
+  CHECK(assert_equal(expectedFilterSeparatorValues, actualFilterSeparatorValues, 1e-6));
+}
 
-  // Compare filter sync variables versus the expected
-  CHECK(hessian_equal(expectedSmootherFactors, actualSmootherFactors, optimalTheta, 1e-8));
-  CHECK(assert_equal(expectedSmootherValues, actualSmootherValues, 1e-3));
-  CHECK(hessian_equal(expectedFilterSumarization, actualFilterSumarization, optimalTheta, 1e-8));
-  CHECK(assert_equal(expectedSeparatorValues, actualSeparatorValues, 1e-4));
+
+/* ************************************************************************* */
+TEST( ConcurrentBatchFilter, synchronize_5 )
+{
+  // Create a set of optimizer parameters
+  LevenbergMarquardtParams parameters;
+  parameters.maxIterations = 1;
+
+  // Create a Concurrent Batch Filter
+  ConcurrentBatchFilter filter(parameters);
+
+  // Insert factors into the filter, and marginalize out one variable.
+  // There should not be information transmitted to the smoother from the filter
+  NonlinearFactorGraph newFactors;
+  NonlinearFactor::shared_ptr factor1(new PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  NonlinearFactor::shared_ptr factor2(new BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  NonlinearFactor::shared_ptr factor3(new PriorFactor<Pose3>(2, poseInitial, noisePrior));
+  NonlinearFactor::shared_ptr factor4(new BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+  NonlinearFactor::shared_ptr factor5(new BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
+  newFactors.push_back(factor1);
+  newFactors.push_back(factor2);
+  newFactors.push_back(factor3);
+  newFactors.push_back(factor4);
+  newFactors.push_back(factor5);
+
+  Values newValues;
+  Pose3 value1 = Pose3().compose(poseError);
+  Pose3 value2 = value1.compose(poseOdometry).compose(poseError);
+  Pose3 value3 = value2.compose(poseOdometry).compose(poseError);
+  Pose3 value4 = value3.compose(poseOdometry).compose(poseError);
+
+  newValues.insert(1, value1);
+  newValues.insert(2, value2);
+  newValues.insert(3, value3);
+  newValues.insert(4, value4);
+
+  FastList<Key> keysToMove;
+  keysToMove.push_back(1);
+  // we add factors to the filter while marginalizing node 1
+  filter.update(newFactors, newValues, keysToMove);
+
+  // At the beginning the smoother is empty
+  NonlinearFactorGraph smootherSummarization;
+  Values smootherSeparatorValues;
+
+  // Synchronize
+  // This is only an information compression/exchange: to actually incorporate the info we should call update
+  NonlinearFactorGraph actualSmootherFactors, actualFilterSummarization;
+  Values actualSmootherValues, actualFilterSeparatorValues;
+  filter.presync();
+  filter.synchronize(smootherSummarization, smootherSeparatorValues);
+  filter.getSmootherFactors(actualSmootherFactors, actualSmootherValues);
+  filter.getSummarizedFactors(actualFilterSummarization, actualFilterSeparatorValues);
+  filter.postsync();
+
+  NonlinearFactorGraph expectedSmootherFactors;
+  expectedSmootherFactors.add(factor1);
+  expectedSmootherFactors.add(factor2);
+
+  Values optimalValues = BatchOptimize(newFactors, newValues, 1);
+  Values expectedSmootherValues;
+  // Pose3 cast is useless in this case (but we still put it as an example): values and graphs can handle generic
+  // geometric objects. You really need the <Pose3> when you need to fill in a Pose3 object with the .at()
+  expectedSmootherValues.insert(1,optimalValues.at<Pose3>(1));
+
+  // Check
+  CHECK(assert_equal(expectedSmootherFactors, actualSmootherFactors, 1e-6));
+  CHECK(assert_equal(expectedSmootherValues, actualSmootherValues, 1e-6));
+
+  // at this point the filter contains: nodes 2 3 4 and factors 3 4 5 + marginal on 2
+  Values optimalValues2 = BatchOptimize(filter.getFactors(),filter.getLinearizationPoint(),1);
+
+  FastList<Key> keysToMove2;
+  keysToMove2.push_back(2);
+  newFactors.resize(0);
+  newValues.clear();
+  // we add factors to the filter while marginalizing node 1
+  filter.update(newFactors, newValues, keysToMove2);
+
+
+  // At the beginning the smoother is empty
+  NonlinearFactorGraph smootherSummarization2;
+  Values smootherSeparatorValues2;
+
+  // ------------------------------------------------------------------------------
+  // We fake the computation of the smoother separator
+  // currently the smoother contains factor 1 and 2 and node 1 and 2
+
+  NonlinearFactorGraph partialGraph;
+  partialGraph.add(factor1);
+  partialGraph.add(factor2);
+
+  // we also assume that the smoother received an extra factor (e.g., a prior on 1)
+  partialGraph.add(factor1);
+
+  Values partialValues;
+  // Batch optimization updates all linearization points but the ones of the separator
+  // In this case, we start with no separator (everything is in the filter), therefore,
+  // we update all linearization point
+  partialValues.insert(2, optimalValues.at(2)); //<-- does not actually exist
+  //The linearization point of 1 is controlled by the smoother and
+  // we are artificially setting that to something different to what was in the filter
+  partialValues.insert(1, Pose3().compose(poseError.inverse()));
+
+  FastList<Key> keysToMarginalize;
+  keysToMarginalize.push_back(1);
+
+  smootherSummarization2 = CalculateMarginals(partialGraph, partialValues, keysToMarginalize);
+  smootherSeparatorValues2.insert(2, partialValues.at(2));
+
+  // ------------------------------------------------------------------------------
+  // Synchronize
+  // This is only an information compression/exchange: to actually incorporate the info we should call update
+  NonlinearFactorGraph actualSmootherFactors2, actualFilterSummarization2;
+  Values actualSmootherValues2, actualFilterSeparatorValues2;
+  filter.presync();
+  filter.synchronize(smootherSummarization2, smootherSeparatorValues2);
+  filter.getSmootherFactors(actualSmootherFactors2, actualSmootherValues2);
+  filter.getSummarizedFactors(actualFilterSummarization2, actualFilterSeparatorValues2);
+  filter.postsync();
+
+  NonlinearFactorGraph expectedSmootherFactors2;
+  expectedSmootherFactors2.add(factor3);
+  expectedSmootherFactors2.add(factor4);
+
+  Values expectedSmootherValues2;
+  expectedSmootherValues2.insert(2, optimalValues.at(2));
+
+  // Check
+  CHECK(assert_equal(expectedSmootherFactors2, actualSmootherFactors2, 1e-6));
+  CHECK(assert_equal(expectedSmootherValues2, actualSmootherValues2, 1e-6));
+
+
+  //   In this example the smoother contains a between factor and a prior factor
+  //   COMPUTE SUMMARIZATION ON THE FILTER SIDE
+  // ------------------------------------------------------------------------------
+  // This cannot be nonempty for the first call to synchronize
+  NonlinearFactorGraph partialGraphFilter;
+  partialGraphFilter.add(factor5);
+
+
+  Values partialValuesFilter;
+  partialValuesFilter.insert(3, optimalValues2.at(3));
+  partialValuesFilter.insert(4, optimalValues2.at(4));
+
+  FastList<Key> keysToMarginalize2;
+  keysToMarginalize2.push_back(4);
+
+  NonlinearFactorGraph expectedFilterSummarization2 = CalculateMarginals(partialGraphFilter, partialValuesFilter, keysToMarginalize2);
+  Values expectedFilterSeparatorValues2;
+  expectedFilterSeparatorValues2.insert(3, optimalValues2.at(3));
+
+  CHECK(assert_equal(expectedFilterSummarization2, actualFilterSummarization2, 1e-6));
+  CHECK(assert_equal(expectedFilterSeparatorValues2, actualFilterSeparatorValues2, 1e-6));
+
+  // Now we should check that the smooother summarization on the old separator is correctly propagated
+  // on the new separator by the filter
+  NonlinearFactorGraph partialGraphTransition;
+  partialGraphTransition.add(factor3);
+  partialGraphTransition.add(factor4);
+  partialGraphTransition.push_back(smootherSummarization2);
+
+  Values partialValuesTransition;
+  partialValuesTransition.insert(2,optimalValues.at(2));
+  partialValuesTransition.insert(3,optimalValues2.at(3));
+
+  FastList<Key> keysToMarginalize3;
+  keysToMarginalize3.push_back(2);
+
+  NonlinearFactorGraph expectedFilterGraph;
+
+  // The assert equal will check if the expected and the actual graphs are the same, taking into account
+  // orders of the factors, and empty factors:
+  // in the filter we originally had 5 factors, and by marginalizing 1 and 2 we got rid of factors 1 2 3 4,
+  // therefore in the expected Factor we should include 4 empty factors.
+  // Note that the unit test will fail also if we change the order of the factors, due to the definition of assert_equal
+  NonlinearFactor::shared_ptr factorEmpty;
+  expectedFilterGraph.push_back(factorEmpty);
+  expectedFilterGraph.push_back(factorEmpty);
+  expectedFilterGraph.push_back(factorEmpty);
+  expectedFilterGraph.push_back(factorEmpty);
+  expectedFilterGraph.add(factor5);
+  expectedFilterGraph.push_back(CalculateMarginals(partialGraphTransition, partialValuesTransition, keysToMarginalize3));
+
+  NonlinearFactorGraph actualFilterGraph;
+  actualFilterGraph = filter.getFactors();
+
+  CHECK(assert_equal(expectedFilterGraph, actualFilterGraph, 1e-6));
+}
+
+
+///* ************************************************************************* */
+TEST( ConcurrentBatchFilter, CalculateMarginals_1 )
+{
+  // We compare the manual computation of the linear marginals from a factor graph, with the function CalculateMarginals
+  NonlinearFactor::shared_ptr factor1(new PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  NonlinearFactor::shared_ptr factor2(new BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  NonlinearFactor::shared_ptr factor3(new PriorFactor<Pose3>(2, poseInitial, noisePrior));
+  NonlinearFactor::shared_ptr factor4(new BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+
+  NonlinearFactorGraph factorGraph;
+  factorGraph.add(factor1);
+  factorGraph.add(factor2);
+  factorGraph.add(factor3);
+  factorGraph.add(factor4);
+
+  Values newValues;
+  Pose3 value1 = Pose3().compose(poseError);
+  Pose3 value2 = value1.compose(poseOdometry).compose(poseError);
+  Pose3 value3 = value2.compose(poseOdometry).compose(poseError);
+
+  newValues.insert(1, value1);
+  newValues.insert(2, value2);
+  newValues.insert(3, value3);
+
+  // We first manually
+  // Create an ordering
+  Ordering ordering;
+  ordering.push_back(1);
+  ordering.push_back(2);
+  ordering.push_back(3);
+
+  GaussianFactorGraph linearFactorGraph = *factorGraph.linearize(newValues, ordering);
+
+  // Create the set of marginalizable variables
+  std::vector<Index> linearIndices;
+  linearIndices.push_back(ordering.at(1));
+
+  std::pair<GaussianConditional::shared_ptr, GaussianFactorGraph> result = linearFactorGraph.eliminate(linearIndices, EliminateCholesky);
+
+  NonlinearFactorGraph expectedMarginals;
+  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, result.second) {
+    expectedMarginals.add(LinearContainerFactor(factor, ordering, newValues));
+
+  }
+
+  FastList<Key> keysToMarginalize;
+  keysToMarginalize.push_back(1);
+  NonlinearFactorGraph actualMarginals;
+  actualMarginals = CalculateMarginals(factorGraph, newValues, keysToMarginalize);
+
+  // Check
+  CHECK(assert_equal(expectedMarginals, actualMarginals, 1e-6));
+}
+
+///* ************************************************************************* */
+TEST( ConcurrentBatchFilter, CalculateMarginals_2 )
+{
+  // We compare the manual computation of the linear marginals from a factor graph, with the function CalculateMarginals
+  NonlinearFactor::shared_ptr factor1(new PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  NonlinearFactor::shared_ptr factor2(new BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  NonlinearFactor::shared_ptr factor3(new PriorFactor<Pose3>(2, poseInitial, noisePrior));
+  NonlinearFactor::shared_ptr factor4(new BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+
+  NonlinearFactorGraph factorGraph;
+  factorGraph.add(factor1);
+  factorGraph.add(factor2);
+  factorGraph.add(factor3);
+  factorGraph.add(factor4);
+
+  Values newValues;
+  Pose3 value1 = Pose3().compose(poseError);
+  Pose3 value2 = value1.compose(poseOdometry).compose(poseError);
+  Pose3 value3 = value2.compose(poseOdometry).compose(poseError);
+
+  newValues.insert(1, value1);
+  newValues.insert(2, value2);
+  newValues.insert(3, value3);
+
+  // We first manually
+  // Create an ordering
+  Ordering ordering;
+  ordering.push_back(1);
+  ordering.push_back(2);
+  ordering.push_back(3);
+
+  GaussianFactorGraph linearFactorGraph = *factorGraph.linearize(newValues, ordering);
+
+  // Create the set of marginalizable variables
+  std::vector<Index> linearIndices;
+  linearIndices.push_back(ordering.at(1));
+  linearIndices.push_back(ordering.at(2));
+
+  std::pair<GaussianConditional::shared_ptr, GaussianFactorGraph> result = linearFactorGraph.eliminate(linearIndices, EliminateCholesky);
+
+  NonlinearFactorGraph expectedMarginals;
+  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, result.second) {
+    expectedMarginals.add(LinearContainerFactor(factor, ordering, newValues));
+
+  }
+
+  FastList<Key> keysToMarginalize;
+  keysToMarginalize.push_back(1);
+  keysToMarginalize.push_back(2);
+  NonlinearFactorGraph actualMarginals;
+  actualMarginals = CalculateMarginals(factorGraph, newValues, keysToMarginalize);
+
+  // Check
+  CHECK(assert_equal(expectedMarginals, actualMarginals, 1e-6));
 }
 
 /* ************************************************************************* */

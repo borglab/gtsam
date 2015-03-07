@@ -24,6 +24,8 @@ function(workaround_9220 language language_works)
   set(text
     "project(test NONE)
     cmake_minimum_required(VERSION 2.6.0)
+    set (CMAKE_Fortran_FLAGS \"${CMAKE_Fortran_FLAGS}\")
+    set (CMAKE_EXE_LINKER_FLAGS \"${CMAKE_EXE_LINKER_FLAGS}\")
     enable_language(${language} OPTIONAL)
   ")
   file(REMOVE_RECURSE ${CMAKE_BINARY_DIR}/language_tests/${language})

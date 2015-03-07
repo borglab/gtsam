@@ -49,7 +49,8 @@ int EIGEN_BLAS_FUNC(gemv)(char *opa, int *m, int *n, RealScalar *palpha, RealSca
 
   int actual_m = *m;
   int actual_n = *n;
-  if(OP(*opa)!=NOTR)
+  int code = OP(*opa);
+  if(code!=NOTR)
     std::swap(actual_m,actual_n);
 
   Scalar* actual_b = get_compact_vector(b,actual_n,*incb);
@@ -61,7 +62,9 @@ int EIGEN_BLAS_FUNC(gemv)(char *opa, int *m, int *n, RealScalar *palpha, RealSca
     else                vector(actual_c, actual_m) *= beta;
   }
 
-  int code = OP(*opa);
+  if(code>=4 || func[code]==0)
+    return 0;
+
   func[code](actual_m, actual_n, a, *lda, actual_b, 1, actual_c, 1, alpha);
 
   if(actual_b!=b) delete[] actual_b;
@@ -127,7 +130,7 @@ int EIGEN_BLAS_FUNC(trsv)(char *uplo, char *opa, char *diag, int *n, RealScalar 
 
 int EIGEN_BLAS_FUNC(trmv)(char *uplo, char *opa, char *diag, int *n, RealScalar *pa, int *lda, RealScalar *pb, int *incb)
 {
-  typedef void (*functype)(int, int, const Scalar *, int, const Scalar *, int, Scalar *, int, Scalar);
+  typedef void (*functype)(int, int, const Scalar *, int, const Scalar *, int, Scalar *, int, const Scalar&);
   static functype func[16];
 
   static bool init = false;
@@ -184,7 +187,7 @@ int EIGEN_BLAS_FUNC(trmv)(char *uplo, char *opa, char *diag, int *n, RealScalar 
   copy_back(res.data(),b,*n,*incb);
   if(actual_b!=b) delete[] actual_b;
 
-  return 0;
+  return 1;
 }
 
 /**  GBMV  performs one of the matrix-vector operations
@@ -396,10 +399,66 @@ int EIGEN_BLAS_FUNC(tbsv)(char *uplo, char *op, char *diag, int *n, int *k, Real
   *  where x is an n element vector and  A is an n by n unit, or non-unit,
   *  upper or lower triangular matrix, supplied in packed form.
   */
-// int EIGEN_BLAS_FUNC(tpmv)(char *uplo, char *trans, char *diag, int *n, RealScalar *ap, RealScalar *x, int *incx)
-// {
-//   return 1;
-// }
+int EIGEN_BLAS_FUNC(tpmv)(char *uplo, char *opa, char *diag, int *n, RealScalar *pap, RealScalar *px, int *incx)
+{
+  typedef void (*functype)(int, const Scalar*, const Scalar*, Scalar*, Scalar);
+  static functype func[16];
+
+  static bool init = false;
+  if(!init)
+  {
+    for(int k=0; k<16; ++k)
+      func[k] = 0;
+
+    func[NOTR  | (UP << 2) | (NUNIT << 3)] = (internal::packed_triangular_matrix_vector_product<int,Upper|0,       Scalar,false,Scalar,false,ColMajor>::run);
+    func[TR    | (UP << 2) | (NUNIT << 3)] = (internal::packed_triangular_matrix_vector_product<int,Lower|0,       Scalar,false,Scalar,false,RowMajor>::run);
+    func[ADJ   | (UP << 2) | (NUNIT << 3)] = (internal::packed_triangular_matrix_vector_product<int,Lower|0,       Scalar,Conj, Scalar,false,RowMajor>::run);
+
+    func[NOTR  | (LO << 2) | (NUNIT << 3)] = (internal::packed_triangular_matrix_vector_product<int,Lower|0,       Scalar,false,Scalar,false,ColMajor>::run);
+    func[TR    | (LO << 2) | (NUNIT << 3)] = (internal::packed_triangular_matrix_vector_product<int,Upper|0,       Scalar,false,Scalar,false,RowMajor>::run);
+    func[ADJ   | (LO << 2) | (NUNIT << 3)] = (internal::packed_triangular_matrix_vector_product<int,Upper|0,       Scalar,Conj, Scalar,false,RowMajor>::run);
+
+    func[NOTR  | (UP << 2) | (UNIT  << 3)] = (internal::packed_triangular_matrix_vector_product<int,Upper|UnitDiag,Scalar,false,Scalar,false,ColMajor>::run);
+    func[TR    | (UP << 2) | (UNIT  << 3)] = (internal::packed_triangular_matrix_vector_product<int,Lower|UnitDiag,Scalar,false,Scalar,false,RowMajor>::run);
+    func[ADJ   | (UP << 2) | (UNIT  << 3)] = (internal::packed_triangular_matrix_vector_product<int,Lower|UnitDiag,Scalar,Conj, Scalar,false,RowMajor>::run);
+
+    func[NOTR  | (LO << 2) | (UNIT  << 3)] = (internal::packed_triangular_matrix_vector_product<int,Lower|UnitDiag,Scalar,false,Scalar,false,ColMajor>::run);
+    func[TR    | (LO << 2) | (UNIT  << 3)] = (internal::packed_triangular_matrix_vector_product<int,Upper|UnitDiag,Scalar,false,Scalar,false,RowMajor>::run);
+    func[ADJ   | (LO << 2) | (UNIT  << 3)] = (internal::packed_triangular_matrix_vector_product<int,Upper|UnitDiag,Scalar,Conj, Scalar,false,RowMajor>::run);
+
+    init = true;
+  }
+
+  Scalar* ap = reinterpret_cast<Scalar*>(pap);
+  Scalar* x = reinterpret_cast<Scalar*>(px);
+
+  int info = 0;
+  if(UPLO(*uplo)==INVALID)                                            info = 1;
+  else if(OP(*opa)==INVALID)                                          info = 2;
+  else if(DIAG(*diag)==INVALID)                                       info = 3;
+  else if(*n<0)                                                       info = 4;
+  else if(*incx==0)                                                   info = 7;
+  if(info)
+    return xerbla_(SCALAR_SUFFIX_UP"TPMV ",&info,6);
+
+  if(*n==0)
+    return 1;
+
+  Scalar* actual_x = get_compact_vector(x,*n,*incx);
+  Matrix<Scalar,Dynamic,1> res(*n);
+  res.setZero();
+
+  int code = OP(*opa) | (UPLO(*uplo) << 2) | (DIAG(*diag) << 3);
+  if(code>=16 || func[code]==0)
+    return 0;
+
+  func[code](*n, ap, actual_x, res.data(), Scalar(1));
+
+  copy_back(res.data(),x,*n,*incx);
+  if(actual_x!=x) delete[] actual_x;
+
+  return 1;
+}
 
 /**  DTPSV  solves one of the systems of equations
   *
@@ -411,47 +470,55 @@ int EIGEN_BLAS_FUNC(tbsv)(char *uplo, char *op, char *diag, int *n, int *k, Real
   *  No test for singularity or near-singularity is included in this
   *  routine. Such tests must be performed before calling this routine.
   */
-// int EIGEN_BLAS_FUNC(tpsv)(char *uplo, char *trans, char *diag, int *n, RealScalar *ap, RealScalar *x, int *incx)
-// {
-//   return 1;
-// }
-
-/**  DGER   performs the rank 1 operation
-  *
-  *     A := alpha*x*y' + A,
-  *
-  *  where alpha is a scalar, x is an m element vector, y is an n element
-  *  vector and A is an m by n matrix.
-  */
-int EIGEN_BLAS_FUNC(ger)(int *m, int *n, Scalar *palpha, Scalar *px, int *incx, Scalar *py, int *incy, Scalar *pa, int *lda)
+int EIGEN_BLAS_FUNC(tpsv)(char *uplo, char *opa, char *diag, int *n, RealScalar *pap, RealScalar *px, int *incx)
 {
+  typedef void (*functype)(int, const Scalar*, Scalar*);
+  static functype func[16];
+
+  static bool init = false;
+  if(!init)
+  {
+    for(int k=0; k<16; ++k)
+      func[k] = 0;
+
+    func[NOTR  | (UP << 2) | (NUNIT << 3)] = (internal::packed_triangular_solve_vector<Scalar,Scalar,int,OnTheLeft, Upper|0,       false,ColMajor>::run);
+    func[TR    | (UP << 2) | (NUNIT << 3)] = (internal::packed_triangular_solve_vector<Scalar,Scalar,int,OnTheLeft, Lower|0,       false,RowMajor>::run);
+    func[ADJ   | (UP << 2) | (NUNIT << 3)] = (internal::packed_triangular_solve_vector<Scalar,Scalar,int,OnTheLeft, Lower|0,       Conj, RowMajor>::run);
+
+    func[NOTR  | (LO << 2) | (NUNIT << 3)] = (internal::packed_triangular_solve_vector<Scalar,Scalar,int,OnTheLeft, Lower|0,       false,ColMajor>::run);
+    func[TR    | (LO << 2) | (NUNIT << 3)] = (internal::packed_triangular_solve_vector<Scalar,Scalar,int,OnTheLeft, Upper|0,       false,RowMajor>::run);
+    func[ADJ   | (LO << 2) | (NUNIT << 3)] = (internal::packed_triangular_solve_vector<Scalar,Scalar,int,OnTheLeft, Upper|0,       Conj, RowMajor>::run);
+
+    func[NOTR  | (UP << 2) | (UNIT  << 3)] = (internal::packed_triangular_solve_vector<Scalar,Scalar,int,OnTheLeft, Upper|UnitDiag,false,ColMajor>::run);
+    func[TR    | (UP << 2) | (UNIT  << 3)] = (internal::packed_triangular_solve_vector<Scalar,Scalar,int,OnTheLeft, Lower|UnitDiag,false,RowMajor>::run);
+    func[ADJ   | (UP << 2) | (UNIT  << 3)] = (internal::packed_triangular_solve_vector<Scalar,Scalar,int,OnTheLeft, Lower|UnitDiag,Conj, RowMajor>::run);
+
+    func[NOTR  | (LO << 2) | (UNIT  << 3)] = (internal::packed_triangular_solve_vector<Scalar,Scalar,int,OnTheLeft, Lower|UnitDiag,false,ColMajor>::run);
+    func[TR    | (LO << 2) | (UNIT  << 3)] = (internal::packed_triangular_solve_vector<Scalar,Scalar,int,OnTheLeft, Upper|UnitDiag,false,RowMajor>::run);
+    func[ADJ   | (LO << 2) | (UNIT  << 3)] = (internal::packed_triangular_solve_vector<Scalar,Scalar,int,OnTheLeft, Upper|UnitDiag,Conj, RowMajor>::run);
+
+    init = true;
+  }
+
+  Scalar* ap = reinterpret_cast<Scalar*>(pap);
   Scalar* x = reinterpret_cast<Scalar*>(px);
-  Scalar* y = reinterpret_cast<Scalar*>(py);
-  Scalar* a = reinterpret_cast<Scalar*>(pa);
-  Scalar alpha = *reinterpret_cast<Scalar*>(palpha);
 
   int info = 0;
-       if(*m<0)                                                       info = 1;
-  else if(*n<0)                                                       info = 2;
-  else if(*incx==0)                                                   info = 5;
-  else if(*incy==0)                                                   info = 7;
-  else if(*lda<std::max(1,*m))                                        info = 9;
+  if(UPLO(*uplo)==INVALID)                                            info = 1;
+  else if(OP(*opa)==INVALID)                                          info = 2;
+  else if(DIAG(*diag)==INVALID)                                       info = 3;
+  else if(*n<0)                                                       info = 4;
+  else if(*incx==0)                                                   info = 7;
   if(info)
-    return xerbla_(SCALAR_SUFFIX_UP"GER  ",&info,6);
+    return xerbla_(SCALAR_SUFFIX_UP"TPSV ",&info,6);
 
-  if(alpha==Scalar(0))
-    return 1;
+  Scalar* actual_x = get_compact_vector(x,*n,*incx);
 
-  Scalar* x_cpy = get_compact_vector(x,*m,*incx);
-  Scalar* y_cpy = get_compact_vector(y,*n,*incy);
+  int code = OP(*opa) | (UPLO(*uplo) << 2) | (DIAG(*diag) << 3);
+  func[code](*n, ap, actual_x);
 
-  // TODO perform direct calls to underlying implementation
-  matrix(a,*m,*n,*lda) += alpha * vector(x_cpy,*m) * vector(y_cpy,*n).adjoint();
-
-  if(x_cpy!=x)  delete[] x_cpy;
-  if(y_cpy!=y)  delete[] y_cpy;
+  if(actual_x!=x) delete[] copy_back(actual_x,x,*n,*incx);
 
   return 1;
 }
-
 

@@ -562,10 +562,18 @@ public:
    * requested to be marginalized.  Marginalization leaves a linear
    * approximation of the marginal in the system, and the linearization points
    * of any variables involved in this linear marginal become fixed.  The set
-   * fixed variables will include any involved with the marginalized variables
+   * fixed variables will include any key involved with the marginalized variables
    * in the original factors, and possibly additional ones due to fill-in.
+   *
+   * If provided, 'marginalFactorsIndices' will be augmented with the factor graph
+   * indices of the marginal factors added during the 'marginalizeLeaves' call
+   *
+   * If provided, 'deletedFactorsIndices' will be augmented with the factor graph
+   * indices of any factor that was removed during the 'marginalizeLeaves' call
    */
-  GTSAM_EXPORT void marginalizeLeaves(const FastList<Key>& leafKeys);
+  GTSAM_EXPORT void marginalizeLeaves(const FastList<Key>& leafKeys,
+      boost::optional<std::vector<size_t>&> marginalFactorsIndices = boost::none,
+      boost::optional<std::vector<size_t>&> deletedFactorsIndices = boost::none);
 
   /** Access the current linearization point */
   const Values& getLinearizationPoint() const { return theta_; }
@@ -585,8 +593,20 @@ public:
   template<class VALUE>
   VALUE calculateEstimate(Key key) const;
 
+  /** Compute an estimate for a single variable using its incomplete linear delta computed
+   * during the last update.  This is faster than calling the no-argument version of
+   * calculateEstimate, which operates on all variables.  This is a non-templated version
+   * that returns a Value base class for use with the MATLAB wrapper.
+   * @param key
+   * @return
+   */
+  GTSAM_EXPORT const Value& calculateEstimate(Key key) const;
+
+  /** Return marginal on any variable as a covariance matrix */
+  GTSAM_EXPORT Matrix marginalCovariance(Index key) const;
+
   /// @name Public members for non-typical usage
-  //@{
+  /// @{
 
   /** Internal implementation functions */
   struct Impl;
@@ -607,6 +627,9 @@ public:
   /** Access the nonlinear variable index */
   GTSAM_EXPORT const VariableIndex& getVariableIndex() const { return variableIndex_; }
 
+  /** Access the nonlinear variable index */
+  GTSAM_EXPORT const FastSet<Key>& getFixedVariables() const { return fixedVariables_; }
+
   size_t lastAffectedVariableCount;
   size_t lastAffectedFactorCount;
   size_t lastAffectedCliqueCount;
@@ -619,7 +642,7 @@ public:
   /** prints out clique statistics */
   GTSAM_EXPORT void printStats() const { getCliqueData().getStats().print(); }
 
-  //@}
+  /// @}
 
 private:
 

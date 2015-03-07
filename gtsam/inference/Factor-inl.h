@@ -43,7 +43,7 @@ namespace gtsam {
   /* ************************************************************************* */
   template<typename KEY>
   void Factor<KEY>::assertInvariants() const {
-#ifndef NDEBUG
+#ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
     // Check that keys are all unique
     std::multiset<KeyType> nonunique(keys_.begin(), keys_.end());
     std::set<KeyType> unique(keys_.begin(), keys_.end());

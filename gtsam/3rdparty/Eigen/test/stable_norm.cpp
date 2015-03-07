@@ -32,6 +32,8 @@ template<typename MatrixType> void stable_norm(const MatrixType& m)
   /* this test covers the following files:
      StableNorm.h
   */
+  using std::sqrt;
+  using std::abs;
   typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
   typedef typename NumTraits<Scalar>::Real RealScalar;
@@ -73,21 +75,21 @@ template<typename MatrixType> void stable_norm(const MatrixType& m)
 
   // test isFinite
   VERIFY(!isFinite( std::numeric_limits<RealScalar>::infinity()));
-  VERIFY(!isFinite(internal::sqrt(-internal::abs(big))));
+  VERIFY(!isFinite(sqrt(-abs(big))));
 
   // test overflow
-  VERIFY(isFinite(internal::sqrt(size)*internal::abs(big)));
-  VERIFY_IS_NOT_APPROX(internal::sqrt(copy(vbig.squaredNorm())),   internal::abs(internal::sqrt(size)*big)); // here the default norm must fail
-  VERIFY_IS_APPROX(vbig.stableNorm(), internal::sqrt(size)*internal::abs(big));
-  VERIFY_IS_APPROX(vbig.blueNorm(),   internal::sqrt(size)*internal::abs(big));
-  VERIFY_IS_APPROX(vbig.hypotNorm(),  internal::sqrt(size)*internal::abs(big));
+  VERIFY(isFinite(sqrt(size)*abs(big)));
+  VERIFY_IS_NOT_APPROX(sqrt(copy(vbig.squaredNorm())), abs(sqrt(size)*big)); // here the default norm must fail
+  VERIFY_IS_APPROX(vbig.stableNorm(), sqrt(size)*abs(big));
+  VERIFY_IS_APPROX(vbig.blueNorm(),   sqrt(size)*abs(big));
+  VERIFY_IS_APPROX(vbig.hypotNorm(),  sqrt(size)*abs(big));
 
   // test underflow
-  VERIFY(isFinite(internal::sqrt(size)*internal::abs(small)));
-  VERIFY_IS_NOT_APPROX(internal::sqrt(copy(vsmall.squaredNorm())),   internal::abs(internal::sqrt(size)*small)); // here the default norm must fail
-  VERIFY_IS_APPROX(vsmall.stableNorm(), internal::sqrt(size)*internal::abs(small));
-  VERIFY_IS_APPROX(vsmall.blueNorm(),   internal::sqrt(size)*internal::abs(small));
-  VERIFY_IS_APPROX(vsmall.hypotNorm(),  internal::sqrt(size)*internal::abs(small));
+  VERIFY(isFinite(sqrt(size)*abs(small)));
+  VERIFY_IS_NOT_APPROX(sqrt(copy(vsmall.squaredNorm())),   abs(sqrt(size)*small)); // here the default norm must fail
+  VERIFY_IS_APPROX(vsmall.stableNorm(), sqrt(size)*abs(small));
+  VERIFY_IS_APPROX(vsmall.blueNorm(),   sqrt(size)*abs(small));
+  VERIFY_IS_APPROX(vsmall.hypotNorm(),  sqrt(size)*abs(small));
 
 // Test compilation of cwise() version
   VERIFY_IS_APPROX(vrand.colwise().stableNorm(),      vrand.colwise().norm());

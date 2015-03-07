@@ -24,7 +24,7 @@ typedef Matrix<RealScalar,Dynamic,Dynamic> M;
 #ifdef HAVE_BLAS
 
 extern "C" {
-  #include <bench/btl/libs/C_BLAS/blas.h>
+  #include <Eigen/src/misc/blas.h>
 }
 
 static float fone = 1;

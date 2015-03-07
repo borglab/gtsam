@@ -1,59 +1,27 @@
 namespace Eigen {
 
-o /** \mainpage Eigen
-
-<div class="eimainmenu">
-    \ref GettingStarted       "Getting started"
-  | \ref TutorialMatrixClass  "Tutorial"
-  | \ref QuickRefPage         "Short reference"
-</div>
+/** \mainpage notitle
 
 This is the API documentation for Eigen3. You can <a href="eigen-doc.tgz">download</a> it as a tgz archive for offline reading.
 
-Eigen2 users: here is a \ref Eigen2ToEigen3 guide to help porting your application.
+You're already an Eigen2 user? Here is a \link Eigen2ToEigen3 Eigen2 to Eigen3 guide \endlink to help porting your application.
 
-For a first contact with Eigen, the best place is to have a look at the \ref GettingStarted "tutorial". The \ref QuickRefPage "short reference" page gives you a quite complete description of the API in a very condensed format that is specially useful to recall the syntax of a particular feature, or to have a quick look at the API. For Matlab users, there is also a <a href="AsciiQuickReference.txt">ASCII quick reference</a> with Matlab translations. The \e Modules and \e Classes tabs at the top of this page give you access to the API documentation of individual classes and functions.
+For a first contact with Eigen, the best place is to have a look at the \link GettingStarted getting started \endlink page that show you how to write and compile your first program with Eigen.
 
-\b Table \b of \b contents
-  - \ref Eigen2ToEigen3
-  - \ref GettingStarted
-  - \b Tutorial
-    - \ref TutorialMatrixClass
-    - \ref TutorialMatrixArithmetic
-    - \ref TutorialArrayClass
-    - \ref TutorialBlockOperations
-    - \ref TutorialAdvancedInitialization
-    - \ref TutorialLinearAlgebra
-    - \ref TutorialReductionsVisitorsBroadcasting
-    - \ref TutorialGeometry
-    - \ref TutorialSparse
-    - \ref TutorialMapClass
-  - \ref QuickRefPage
-  - <b>Advanced topics</b>
-    - \ref TopicAliasing
-    - \ref TopicLazyEvaluation
-    - \ref TopicLinearAlgebraDecompositions
-    - \ref TopicCustomizingEigen
-    - \ref TopicMultiThreading
-    - \ref TopicPreprocessorDirectives
-    - \ref TopicStorageOrders
-    - \ref TopicInsideEigenExample
-    - \ref TopicWritingEfficientProductExpression
-    - \ref TopicClassHierarchy
-    - \ref TopicFunctionTakingEigenTypes
-    - \ref TopicTemplateKeyword
-    - \ref TopicUsingIntelMKL
-  - <b>Topics related to alignment issues</b>
-    - \ref TopicUnalignedArrayAssert
-    - \ref TopicFixedSizeVectorizable
-    - \ref TopicStlContainers
-    - \ref TopicStructHavingEigenMembers
-    - \ref TopicPassingByValue
-    - \ref TopicWrongStackAlignment
+Then, the \b quick \b reference \b pages give you a quite complete description of the API in a very condensed format that is specially useful to recall the syntax of a particular feature, or to have a quick look at the API. They currently cover the two following feature sets, and more will come in the future:
+  - \link QuickRefPage [QuickRef] Dense matrix and array manipulations \endlink
+  - \link SparseQuickRefPage [QuickRef] Sparse linear algebra \endlink
+
+You're a MatLab user? There is also a <a href="AsciiQuickReference.txt">short ASCII reference</a> with Matlab translations.
   
-   
+The \b main \b documentation is organized into \em chapters covering different domains of features.
+They are themselves composed of \em user \em manual pages describing the different features in a comprehensive way, and \em reference pages that gives you access to the API documentation through the related Eigen's \em modules and \em classes.
 
-Want more? Checkout the \ref Unsupported_modules "unsupported modules" <a href="unsupported/index.html">documentation</a>.
+Under the  \subpage UserManual_Generalities section, you will find documentation on more general topics such as preprocessor directives, controlling assertions, multi-threading, MKL support, some Eigen's internal insights, and much more...
+
+Finally, do not miss the search engine, useful to quickly get to the documentation of a given class or function.
+
+Want more? Checkout the <a href="unsupported/index.html">\em unsupported \em modules </a> documentation.
 
 */
 

@@ -5,28 +5,11 @@ namespace Eigen {
 This page lists the most important API changes between Eigen2 and Eigen3,
 and gives tips to help porting your application from Eigen2 to Eigen3.
 
-\b Table \b of \b contents
-  - \ref CompatibilitySupport
-  - \ref Using
-  - \ref ComplexDot
-  - \ref VectorBlocks
-  - \ref Corners
-  - \ref CoefficientWiseOperations
-  - \ref PartAndExtract
-  - \ref TriangularSolveInPlace
-  - \ref Decompositions
-  - \ref LinearSolvers
-  - \ref GeometryModule
-  - \ref Transform
-  - \ref LazyVsNoalias
-  - \ref AlignMacros
-  - \ref AlignedMap
-  - \ref StdContainers
-  - \ref eiPrefix
+\eigenAutoToc
 
 \section CompatibilitySupport Eigen2 compatibility support
 
-In order to ease the switch from Eigen2 to Eigen3, Eigen3 features \ref Eigen2SupportModes "Eigen2 support modes".
+In order to ease the switch from Eigen2 to Eigen3, Eigen3 features \subpage Eigen2SupportModes "Eigen2 support modes".
 
 The quick way to enable this is to define the \c EIGEN2_SUPPORT preprocessor token \b before including any Eigen header (typically it should be set in your project options).
 
@@ -298,7 +281,7 @@ result = Vector4f::MapAligned(some_aligned_array);
 
 \section StdContainers STL Containers
 
-In Eigen2, #include<Eigen/StdVector> tweaked std::vector to automatically align elements. The problem was that that was quite invasive. In Eigen3, we only override standard behavior if you use Eigen::aligned_allocator<T> as your allocator type. So for example, if you use std::vector<Matrix4f>, you need to do the following change (note that aligned_allocator is under namespace Eigen):
+In Eigen2, <tt>#include<Eigen/StdVector></tt> tweaked std::vector to automatically align elements. The problem was that that was quite invasive. In Eigen3, we only override standard behavior if you use Eigen::aligned_allocator<T> as your allocator type. So for example, if you use std::vector<Matrix4f>, you need to do the following change (note that aligned_allocator is under namespace Eigen):
 
 <table class="manual">
 <tr><th>Eigen 2</th><th>Eigen 3</th></tr>

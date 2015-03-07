@@ -118,7 +118,7 @@ int main(int argc, char** argv) {
     newFactors.add(BetweenFactor<Pose2>(previousKey, currentKey, odometryMeasurement2, odometryNoise2));
 
     // Unlike the fixed-lag versions, the concurrent filter implementation
-    // requires the user to supply the specify which keys to marginalize
+    // requires the user to supply the specify which keys to move to the smoother
     FastList<Key> oldKeys;
     if(time >= lag+deltaT) {
       oldKeys.push_back(1000 * (time-lag-deltaT));
@@ -132,6 +132,7 @@ int main(int argc, char** argv) {
     // Manually synchronize the Concurrent Filter and Smoother every 1.0 s
     if(fmod(time, 1.0) < 0.01) {
       // Synchronize the Filter and Smoother
+      concurrentSmoother.update();
       synchronize(concurrentFilter, concurrentSmoother);
     }
 
@@ -210,6 +211,7 @@ int main(int argc, char** argv) {
     // Manually synchronize the Concurrent Filter and Smoother every 1.0 s
     if(fmod(time, 1.0) < 0.01) {
       // Synchronize the Filter and Smoother
+      concurrentSmoother.update();
       synchronize(concurrentFilter, concurrentSmoother);
     }
 
@@ -282,6 +284,7 @@ int main(int argc, char** argv) {
     // Manually synchronize the Concurrent Filter and Smoother every 1.0 s
     if(fmod(time, 1.0) < 0.01) {
       // Synchronize the Filter and Smoother
+      concurrentSmoother.update();
       synchronize(concurrentFilter, concurrentSmoother);
       cout << "******************************************************************" << endl;
       cout << "Syncing Concurrent Filter and Smoother." << endl;

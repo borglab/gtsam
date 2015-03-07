@@ -133,6 +133,13 @@ BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Diagonal, "gtsam_noiseModel_Diagonal"
 BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Gaussian, "gtsam_noiseModel_Gaussian");
 BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Unit, "gtsam_noiseModel_Unit");
 BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Isotropic, "gtsam_noiseModel_Isotropic");
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Robust, "gtsam_noiseModel_Robust");
+
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::mEstimator::Base , "gtsam_noiseModel_mEstimator_Base");
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::mEstimator::Null , "gtsam_noiseModel_mEstimator_Null");
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::mEstimator::Fair , "gtsam_noiseModel_mEstimator_Fair");
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::mEstimator::Huber, "gtsam_noiseModel_mEstimator_Huber");
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::mEstimator::Tukey, "gtsam_noiseModel_mEstimator_Tukey");
 
 BOOST_CLASS_EXPORT_GUID(gtsam::SharedNoiseModel, "gtsam_SharedNoiseModel");
 BOOST_CLASS_EXPORT_GUID(gtsam::SharedDiagonal, "gtsam_SharedDiagonal");
@@ -154,7 +161,6 @@ BOOST_CLASS_EXPORT(gtsam::Cal3_S2Stereo);
 BOOST_CLASS_EXPORT(gtsam::CalibratedCamera);
 BOOST_CLASS_EXPORT(gtsam::SimpleCamera);
 BOOST_CLASS_EXPORT(gtsam::StereoCamera);
-
 
 /* Create GUIDs for factors */
 /* ************************************************************************* */
@@ -225,7 +231,7 @@ BOOST_CLASS_EXPORT_GUID(GenericStereoFactor3D, "gtsam::GenericStereoFactor3D");
 
 
 /* ************************************************************************* */
-TEST (Serialization, smallExample_linear) {
+TEST (testSerializationSLAM, smallExample_linear) {
   using namespace example;
 
   Ordering ordering; ordering += X(1),X(2),L(1);
@@ -245,7 +251,7 @@ TEST (Serialization, smallExample_linear) {
 }
 
 /* ************************************************************************* */
-TEST (Serialization, gaussianISAM) {
+TEST (testSerializationSLAM, gaussianISAM) {
   using namespace example;
   Ordering ordering;
   GaussianFactorGraph smoother;
@@ -265,7 +271,7 @@ BOOST_CLASS_EXPORT_GUID(simulated2D::Odometry,    "gtsam::simulated2D::Odometry"
 BOOST_CLASS_EXPORT_GUID(simulated2D::Measurement, "gtsam::simulated2D::Measurement")
 
 /* ************************************************************************* */
-TEST (Serialization, smallExample_nonlinear) {
+TEST (testSerializationSLAM, smallExample_nonlinear) {
   using namespace example;
   NonlinearFactorGraph nfg = createNonlinearFactorGraph();
   Values c1 = createValues();
@@ -279,7 +285,7 @@ TEST (Serialization, smallExample_nonlinear) {
 }
 
 /* ************************************************************************* */
-TEST (Serialization, factors) {
+TEST (testSerializationSLAM, factors) {
 
   LieVector lieVector(4, 1.0, 2.0, 3.0, 4.0);
   LieMatrix lieMatrix(2, 3, 1.0, 2.0, 3.0, 4.0, 5.0 ,6.0);
@@ -331,7 +337,13 @@ TEST (Serialization, factors) {
   SharedNoiseModel model9 = noiseModel::Isotropic::Sigma(9, 0.3);
   SharedNoiseModel model11 = noiseModel::Isotropic::Sigma(11, 0.3);
 
+  SharedNoiseModel robust1 = noiseModel::Robust::Create(
+      noiseModel::mEstimator::Huber::Create(10.0, noiseModel::mEstimator::Huber::Scalar),
+      noiseModel::Unit::Create(2));
 
+  EXPECT(equalsDereferenced(robust1));
+  EXPECT(equalsDereferencedXML(robust1));
+  EXPECT(equalsDereferencedBinary(robust1));
 
   PriorFactorLieVector priorFactorLieVector(a01, lieVector, model4);
   PriorFactorLieMatrix priorFactorLieMatrix(a02, lieMatrix, model6);
@@ -660,10 +672,7 @@ TEST (Serialization, factors) {
   EXPECT(equalsBinary<GeneralSFMFactor2Cal3_S2>(generalSFMFactor2Cal3_S2));
 
   EXPECT(equalsBinary<GenericStereoFactor3D>(genericStereoFactor3D));
-
 }
-
-
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }

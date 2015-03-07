@@ -13,7 +13,7 @@ template<typename MatrixType> void verifySizeOf(const MatrixType&)
 {
   typedef typename MatrixType::Scalar Scalar;
   if (MatrixType::RowsAtCompileTime!=Dynamic && MatrixType::ColsAtCompileTime!=Dynamic)
-    VERIFY(sizeof(MatrixType)==sizeof(Scalar)*size_t(MatrixType::SizeAtCompileTime));
+    VERIFY(std::ptrdiff_t(sizeof(MatrixType))==std::ptrdiff_t(sizeof(Scalar))*std::ptrdiff_t(MatrixType::SizeAtCompileTime));
   else
     VERIFY(sizeof(MatrixType)==sizeof(Scalar*) + 2 * sizeof(typename MatrixType::Index));
 }

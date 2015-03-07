@@ -24,14 +24,6 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class DERIVED, class CONDITIONAL>
   void BayesTreeCliqueBase<DERIVED, CONDITIONAL>::assertInvariants() const {
-#ifndef NDEBUG
-    // We rely on the keys being sorted
-//    FastVector<Index> sortedUniqueKeys(conditional_->begin(), conditional_->end());
-//    std::sort(sortedUniqueKeys.begin(), sortedUniqueKeys.end());
-//    std::unique(sortedUniqueKeys.begin(), sortedUniqueKeys.end());
-//    assert(sortedUniqueKeys.size() == conditional_->size() &&
-//        std::equal(sortedUniqueKeys.begin(), sortedUniqueKeys.end(), conditional_->begin()));
-#endif
   }
 
   /* ************************************************************************* */
@@ -138,7 +130,7 @@ namespace gtsam {
     const internal::Reduction& inverseReduction)
   {
     bool changed = conditional_->reduceSeparatorWithInverse(inverseReduction);
-#ifndef NDEBUG
+#ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
     if(!changed) {
       BOOST_FOREACH(const derived_ptr& child, children_) {
         assert(child->reduceSeparatorWithInverse(inverseReduction) == false); }

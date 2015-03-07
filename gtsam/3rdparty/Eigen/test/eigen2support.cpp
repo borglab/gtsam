@@ -43,7 +43,9 @@ template<typename MatrixType> void eigen2support(const MatrixType& m)
   VERIFY_IS_EQUAL((m1.col(0).end(1)), (m1.col(0).segment(rows-1,1)));
   VERIFY_IS_EQUAL((m1.col(0).template end<1>()), (m1.col(0).segment(rows-1,1)));
   
-  using namespace internal;
+  using std::cos;
+  using numext::real;
+  using numext::abs2;
   VERIFY_IS_EQUAL(ei_cos(s1), cos(s1));
   VERIFY_IS_EQUAL(ei_real(s1), real(s1));
   VERIFY_IS_EQUAL(ei_abs2(s1), abs2(s1));

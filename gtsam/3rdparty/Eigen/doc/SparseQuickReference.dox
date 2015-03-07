@@ -1,74 +1,87 @@
 namespace Eigen {
-/** \page SparseQuickRefPage Quick reference guide for sparse matrices
-
-\b Table \b of \b contents
-  - \ref Constructors
-  - \ref SparseMatrixInsertion
-  - \ref SparseBasicInfos
-  - \ref SparseBasicOps
-  - \ref SparseInterops
-  - \ref sparsepermutation
-  - \ref sparsesubmatrices
-  - \ref sparseselfadjointview
-\n 
+/** \eigenManualPage SparseQuickRefPage Quick reference guide for sparse matrices
+\eigenAutoToc
 
 <hr>
 
-In this page, we give a quick summary of the main operations available for sparse matrices in the class SparseMatrix. First, it is recommended to read first the introductory tutorial at \ref TutorialSparse. The important point to have in mind when working on sparse matrices is how they are stored : 
-i.e either row major or column major. The default is column major. Most arithmetic operations on sparse matrices will assert that they have the same storage order. Moreover, when interacting with external libraries that are not yet supported by Eigen, it is important to know how to send the required matrix pointers. 
+In this page, we give a quick summary of the main operations available for sparse matrices in the class SparseMatrix. First, it is recommended to read  the introductory tutorial at \ref TutorialSparse. The important point to have in mind when working on sparse matrices is how they are stored : 
+i.e either row major or column major. The default is column major. Most arithmetic operations on sparse matrices will assert that they have the same storage order. 
 
-\section Constructors Constructors and assignments
-SparseMatrix is the core class to build and manipulate sparse matrices in Eigen. It takes as template parameters the Scalar type and the storage order, either RowMajor or ColumnMajor. The default is ColumnMajor.
-
+\section SparseMatrixInit Sparse Matrix Initialization
+<table class="manual">
+<tr><th> Category </th> <th> Operations</th> <th>Notes</th></tr>
+<tr><td>Constructor</td>
+<td>
 \code
-  SparseMatrix<double> sm1(1000,1000);              // 1000x1000 compressed sparse matrix of double. 
-  SparseMatrix<std::complex<double>,RowMajor> sm2; // Compressed row major matrix of complex double.
+  SparseMatrix<double> sm1(1000,1000); 
+  SparseMatrix<std::complex<double>,RowMajor> sm2;
 \endcode
-The copy constructor and assignment can be used to convert matrices from a storage order to another
+</td> <td> Default is ColMajor</td> </tr>
+<tr class="alt">
+<td> Resize/Reserve</td>
+<td> 
+ \code
+    sm1.resize(m,n);      //Change sm1 to a m x n matrix. 
+    sm1.reserve(nnz);     // Allocate room for nnz nonzeros elements.   
+  \endcode 
+</td>
+<td> Note that when calling reserve(), it is not required that nnz is the exact number of nonzero elements in the final matrix. However, an exact estimation will avoid multiple reallocations during the insertion phase. </td>
+</tr>
+<tr> 
+<td> Assignment </td>
+<td> 
 \code 
   SparseMatrix<double,Colmajor> sm1;
-  // Eventually fill the matrix sm1 ...
-  SparseMatrix<double,Rowmajor> sm2(sm1), sm3;         // Initialize sm2 with sm1.
-  sm3 = sm1; // Assignment and evaluations modify the storage order.
+ // Initialize sm2 with sm1.
+  SparseMatrix<double,Rowmajor> sm2(sm1), sm3;        
+  // Assignment and evaluations modify the storage order.
+  sm3 = sm1; 
  \endcode
-
-\section SparseMatrixInsertion  Allocating and inserting values
-resize() and reserve() are used to set the size and allocate space for nonzero elements
- \code
-    sm1.resize(m,n);      //Change sm to a mxn matrix. 
-    sm1.reserve(nnz);     // Allocate  room for nnz nonzeros elements.   
-  \endcode 
-Note that when calling reserve(), it is not required that nnz is the exact number of nonzero elements in the final matrix. However, an exact estimation will avoid multiple reallocations during the insertion phase. 
-
-Insertions of values in the sparse matrix can be done directly by looping over nonzero elements and use the insert() function
+</td>
+<td> The copy constructor can be used to convert from a storage order to another</td>
+</tr>
+<tr class="alt">
+<td> Element-wise Insertion</td>
+<td>
 \code 
-// Direct insertion of the value v_ij; 
-  sm1.insert(i, j) = v_ij;   // It is assumed that v_ij does not already exist in the matrix. 
-\endcode
+// Insert a new element; 
+ sm1.insert(i, j) = v_ij;  
 
-After insertion, a value at (i,j) can be modified using coeffRef()
-\code
-  // Update the value v_ij
-  sm1.coeffRef(i,j) = v_ij;
-  sm1.coeffRef(i,j) += v_ij;
-  sm1.coeffRef(i,j) -= v_ij;
-  ...
+// Update the value v_ij
+ sm1.coeffRef(i,j) = v_ij;
+ sm1.coeffRef(i,j) += v_ij;
+ sm1.coeffRef(i,j) -= v_ij;
 \endcode
-
-The recommended way to insert values is to build a list of triplets (row, col, val) and then call setFromTriplets(). 
+</td>
+<td> insert() assumes that the element does not already exist; otherwise, use coeffRef()</td>
+</tr>
+<tr> 
+<td> Batch insertion</td>
+<td>
 \code
+  std::vector< Eigen::Triplet<double> > tripletList;
+  tripletList.reserve(estimation_of_entries);
+  // -- Fill tripletList with nonzero elements...
   sm1.setFromTriplets(TripletList.begin(), TripletList.end());
 \endcode
-A complete example is available at \ref TutorialSparseFilling.
-
-The following functions can be used to set constant or random values in the matrix.
+</td>
+<td>A complete example is available at \link TutorialSparseFilling Triplet Insertion \endlink.</td>
+</tr>
+<tr class="alt"> 
+<td> Constant or Random Insertion</td>
+<td>
 \code
-  sm1.setZero(); // Reset the matrix with zero elements
-  ...
+sm1.setZero(); // Set the matrix with zero elements
+sm1.setConstant(val); //Replace all the nonzero values with val
 \endcode
+</td>
+<td> The matrix sm1 should have been created before ???</td>
+</tr>
+</table>
+
 
 \section SparseBasicInfos Matrix properties
-Beyond the functions rows() and cols() that are used to get the number of rows and columns, there are some useful functions that are available to easily get some informations from the matrix. 
+Beyond the basic functions rows() and cols(), there are some useful functions that are available to easily get some informations from the matrix. 
 <table class="manual">
 <tr>
   <td> \code
@@ -77,16 +90,18 @@ Beyond the functions rows() and cols() that are used to get the number of rows a
   sm1.nonZeros();     // Number of non zero values   
   sm1.outerSize();    // Number of columns (resp. rows) for a column major (resp. row major )
   sm1.innerSize();    // Number of rows (resp. columns) for a row major (resp. column major)
-  sm1.norm();         // (Euclidian ??) norm of the matrix
-  sm1.squaredNorm();  // 
+  sm1.norm();         // Euclidian norm of the matrix
+  sm1.squaredNorm();  // Squared norm of the matrix
+  sm1.blueNorm();
   sm1.isVector();     // Check if sm1 is a sparse vector or a sparse matrix
+  sm1.isCompressed(); // Check if sm1 is in compressed form
   ...
   \endcode </td>
 </tr>
 </table>
 
 \section SparseBasicOps Arithmetic operations
-It is easy to perform arithmetic operations on sparse matrices provided that the dimensions are adequate and that the matrices have the same storage order. Note that the evaluation can always be done in a matrix with a different storage order. 
+It is easy to perform arithmetic operations on sparse matrices provided that the dimensions are adequate and that the matrices have the same storage order. Note that the evaluation can always be done in a matrix with a different storage order. In the following, \b sm denotes a sparse matrix, \b dm a dense matrix and \b dv a dense vector.
 <table class="manual">
 <tr><th> Operations </th> <th> Code </th> <th> Notes </th></tr>
 
@@ -113,7 +128,7 @@ It is easy to perform arithmetic operations on sparse matrices provided that the
 </tr>
 
 <tr>
-  <td> Product </td>
+  <td> %Sparse %Product </td>
   <td> \code
   sm3 = sm1 * sm2;
   dm2 = sm1 * dm1;
@@ -133,7 +148,20 @@ It is easy to perform arithmetic operations on sparse matrices provided that the
   Note that the transposition change the storage order. There is no support for transposeInPlace().
   </td>
 </tr> 
+<tr>
+<td> Permutation </td>
+<td> 
+\code 
+perm.indices(); // Reference to the vector of indices
+sm1.twistedBy(perm); // Permute rows and columns
+sm2 = sm1 * perm; //Permute the columns
+sm2 = perm * sm1; // Permute the columns
+\endcode 
+</td>
+<td> 
 
+</td>
+</tr>
 <tr>
   <td>
   Component-wise ops
@@ -152,47 +180,70 @@ It is easy to perform arithmetic operations on sparse matrices provided that the
 </tr>
 </table>
 
-
-\section SparseInterops Low-level storage
-There are a set of low-levels functions to get the standard compressed storage pointers. The matrix should be in compressed mode which can be checked by calling isCompressed(); makeCompressed() should do the job otherwise. 
-\code
-  // Scalar pointer to the values of the matrix, size nnz
-  sm1.valuePtr();  
-  // Index pointer to get the row indices (resp. column indices) for column major (resp. row major) matrix, size nnz
-  sm1.innerIndexPtr();
-  // Index pointer to the beginning of each row (resp. column) in valuePtr() and innerIndexPtr() for column major (row major). The size is outersize()+1; 
-  sm1.outerIndexPtr();  
+\section sparseotherops Other supported operations
+<table class="manual">
+<tr><th>Operations</th> <th> Code </th> <th> Notes</th> </tr>
+<tr>
+<td>Sub-matrices</td> 
+<td> 
+\code 
+  sm1.block(startRow, startCol, rows, cols); 
+  sm1.block(startRow, startCol); 
+  sm1.topLeftCorner(rows, cols); 
+  sm1.topRightCorner(rows, cols);
+  sm1.bottomLeftCorner( rows, cols);
+  sm1.bottomRightCorner( rows, cols);
+  \endcode
+</td> <td>  </td>
+</tr>
+<tr> 
+<td> Range </td>
+<td> 
+\code 
+  sm1.innerVector(outer); 
+  sm1.innerVectors(start, size);
+  sm1.leftCols(size);
+  sm2.rightCols(size);
+  sm1.middleRows(start, numRows);
+  sm1.middleCols(start, numCols);
+  sm1.col(j);
 \endcode
-These pointers can therefore be easily used to send the matrix to some external libraries/solvers that are not yet supported by Eigen.
-
-\section sparsepermutation Permutations, submatrices and Selfadjoint Views
-In many cases, it is necessary to reorder the rows and/or the columns of the sparse matrix for several purposes : fill-in reducing during matrix decomposition, better data locality for sparse matrix-vector products... The class PermutationMatrix is available to this end. 
- \code
-  PermutationMatrix<Dynamic, Dynamic, int> perm;
-  // Reserve and fill the values of perm; 
-  perm.inverse(n); // Compute eventually the inverse permutation
-  sm1.twistedBy(perm) //Apply the permutation on rows and columns 
-  sm2 = sm1 * perm; // ??? Apply the permutation on columns ???; 
-  sm2 = perm * sm1; // ??? Apply the permutation on rows ???; 
-  \endcode
-
-\section sparsesubmatrices Sub-matrices
-The following functions are useful to extract a block of rows (resp. columns) from a row-major (resp. column major) sparse matrix. Note that because of the particular storage, it is not ?? efficient ?? to extract a submatrix comprising a certain number of subrows and subcolumns.
- \code
-  sm1.innerVector(outer); // Returns the outer -th column (resp. row) of the matrix if sm is col-major (resp. row-major)
-  sm1.innerVectors(outer); // Returns the outer -th column (resp. row) of the matrix if mat is col-major (resp. row-major)
-  sm1.middleRows(start, numRows); // For row major matrices, get a range of numRows rows
-  sm1.middleCols(start, numCols); // For column major matrices, get a range of numCols cols
- \endcode 
- Examples : 
-
-\section sparseselfadjointview Sparse triangular and selfadjoint Views
- \code
-  sm2 = sm1.triangularview<Lower>(); // Get the lower triangular part of the matrix. 
-  dv2 = sm1.triangularView<Upper>().solve(dv1); // Solve the linear system with the uppper triangular part. 
-  sm2 = sm1.selfadjointview<Lower>(); // Build a selfadjoint matrix from the lower part of sm1. 
-  \endcode
-
-
+</td>
+<td>A inner vector is either a row (for row-major) or a column (for column-major). As stated earlier, the evaluation can be done in a matrix with different storage order </td>
+</tr>
+<tr>
+<td> Triangular and selfadjoint views</td>
+<td> 
+\code
+  sm2 = sm1.triangularview<Lower>();
+  sm2 = sm1.selfadjointview<Lower>();
+\endcode
+</td>
+<td> Several combination between triangular views and blocks views are possible
+\code 
+  \endcode </td>
+</tr>
+<tr> 
+<td>Triangular solve </td>
+<td> 
+\code 
+ dv2 = sm1.triangularView<Upper>().solve(dv1);
+ dv2 = sm1.topLeftCorner(size, size).triangularView<Lower>().solve(dv1);
+\endcode 
+</td>
+<td> For general sparse solve, Use any suitable module described at \ref TopicSparseSystems </td>
+</tr>
+<tr>
+<td> Low-level API</td>
+<td>
+\code
+sm1.valuePtr(); // Pointer to the values
+sm1.innerIndextr(); // Pointer to the indices.
+sm1.outerIndexPtr(); //Pointer to the beginning of each inner vector
+\endcode
+</td>
+<td> If the matrix is not in compressed form, makeCompressed() should be called before. Note that these functions are mostly provided for interoperability purposes with external libraries. A better access to the values of the matrix is done by using the InnerIterator class as described in \link TutorialSparse the Tutorial Sparse \endlink section</td>
+</tr>
+</table>
 */
 }

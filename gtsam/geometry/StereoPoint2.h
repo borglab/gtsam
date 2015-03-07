@@ -128,9 +128,18 @@ namespace gtsam {
     /// @name Standard Interface
     /// @{
 
+    /// get uL
+    inline double uL() const {return uL_;}
+
+    /// get uR
+    inline double uR() const {return uR_;}
+
+    /// get v
+    inline double v() const {return v_;}
+
     /** convert to vector */
-    Vector vector() const {
-      return Vector_(3, uL_, uR_, v_);
+    Vector3 vector() const {
+      return Vector3(uL_, uR_, v_);
     }
 
     /** convenient function to get a Point2 from the left image */

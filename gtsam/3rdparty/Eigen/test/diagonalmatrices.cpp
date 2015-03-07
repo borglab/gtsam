@@ -13,7 +13,6 @@ template<typename MatrixType> void diagonalmatrices(const MatrixType& m)
 {
   typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
-  typedef typename MatrixType::RealScalar RealScalar;
   enum { Rows = MatrixType::RowsAtCompileTime, Cols = MatrixType::ColsAtCompileTime };
   typedef Matrix<Scalar, Rows, 1> VectorType;
   typedef Matrix<Scalar, 1, Cols> RowVectorType;

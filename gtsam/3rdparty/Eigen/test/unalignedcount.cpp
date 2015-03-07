@@ -40,5 +40,7 @@ void test_unalignedcount()
   #else
   // The following line is to eliminate "variable not used" warnings
   nb_load = nb_loadu = nb_store = nb_storeu = 0;
+  int a(0), b(0);
+  VERIFY(a==b);
   #endif
 }

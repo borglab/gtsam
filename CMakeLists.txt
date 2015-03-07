@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 2.6)
 # Set the version number for the library
 set (GTSAM_VERSION_MAJOR 2)
 set (GTSAM_VERSION_MINOR 3)
-set (GTSAM_VERSION_PATCH 0)
+set (GTSAM_VERSION_PATCH 1)
 
 
 ###############################################################################
@@ -53,11 +53,13 @@ if(GTSAM_UNSTABLE_AVAILABLE)
 endif()
 option(GTSAM_BUILD_SHARED_LIBRARY        "Enable/Disable building of a shared version of gtsam" ON)
 option(GTSAM_BUILD_STATIC_LIBRARY        "Enable/Disable building of a static version of gtsam" OFF)
-option(GTSAM_USE_QUATERNIONS             "Enable/Disable using an internal Quaternion representation for rotations instead of rotation matrices" OFF)
+option(GTSAM_USE_QUATERNIONS             "Enable/Disable using an internal Quaternion representation for rotations instead of rotation matrices. If enable, Rot3::EXPMAP is enforced by default." OFF)
 if(NOT MSVC)
   option(GTSAM_BUILD_CONVENIENCE_LIBRARIES "Enable/Disable use of convenience libraries for faster development rebuilds, but slower install" OFF)
 endif()
 option(GTSAM_POSE3_EXPMAP 			 	 "Enable/Disable using Pose3::EXPMAP as the default mode. If disabled, Pose3::FIRST_ORDER will be used." OFF)
+option(GTSAM_ROT3_EXPMAP 			 	 "Ignore if GTSAM_USE_QUATERNIONS is OFF (Rot3::EXPMAP by default). Otherwise, enable Rot3::EXPMAP, or if disabled, use Rot3::CAYLEY." OFF)
+option(GTSAM_ENABLE_CONSISTENCY_CHECKS   "Enable/Disable expensive consistency checks"       OFF) 
 
 # Options relating to MATLAB wrapper
 # TODO: Check for matlab mex binary before handling building of binaries
@@ -99,11 +101,11 @@ endif()
 # Find boost
 
 # If using Boost shared libs, set up auto linking for shared libs
-if(NOT Boost_USE_STATIC_LIBS)
+if(MSVC AND NOT Boost_USE_STATIC_LIBS)
 	add_definitions(-DBOOST_ALL_DYN_LINK)
 endif()
 
-find_package(Boost 1.43 COMPONENTS serialization system filesystem thread date_time regex timer chrono)
+find_package(Boost 1.43 COMPONENTS serialization system filesystem thread program_options date_time regex timer chrono)
 
 # Required components
 if(NOT Boost_SERIALIZATION_LIBRARY OR NOT Boost_SYSTEM_LIBRARY OR NOT Boost_FILESYSTEM_LIBRARY OR
@@ -113,13 +115,13 @@ endif()
 
 option(GTSAM_DISABLE_NEW_TIMERS "Disables using Boost.chrono for timing" OFF)
 # Allow for not using the timer libraries on boost < 1.48 (GTSAM timing code falls back to old timer library)
-set(GTSAM_BOOST_LIBRARIES ${Boost_SERIALIZATION_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_FILESYSTEM_LIBRARY})
+set(GTSAM_BOOST_LIBRARIES ${Boost_SERIALIZATION_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_FILESYSTEM_LIBRARY} ${Boost_THREAD_LIBRARY} ${Boost_DATE_TIME_LIBRARY} ${Boost_REGEX_LIBRARY})
 if (GTSAM_DISABLE_NEW_TIMERS)
     message("WARNING:  GTSAM timing instrumentation manually disabled")
     add_definitions(-DGTSAM_DISABLE_NEW_TIMERS)
 else()
     if(Boost_TIMER_LIBRARY)
-      list(APPEND GTSAM_BOOST_LIBRARIES ${GTSAM_BOOST_LIBRARIES} ${Boost_TIMER_LIBRARY} ${Boost_CHRONO_LIBRARY})
+      list(APPEND GTSAM_BOOST_LIBRARIES ${Boost_TIMER_LIBRARY} ${Boost_CHRONO_LIBRARY})
     else()
       message("WARNING:  Boost older than 1.48 was found, GTSAM timing instrumentation will use the older, less accurate, Boost timer library.")
     endif()
@@ -157,21 +159,28 @@ install(FILES ${CMAKE_BINARY_DIR}/gtsam/3rdparty/gtsam_eigen_includes.h DESTINAT
 ###############################################################################
 # Global compile options
 
-# General build settings
+# Include boost - use 'BEFORE' so that a specific boost specified to CMake
+# takes precedence over a system-installed one.
+include_directories(BEFORE ${Boost_INCLUDE_DIR})
+
+# Add includes for source directories 'BEFORE' boost and any system include
+# paths so that the compiler uses GTSAM headers in our source directory instead
+# of any previously installed GTSAM headers.
 include_directories(BEFORE
   gtsam/3rdparty/UFconfig 
   gtsam/3rdparty/CCOLAMD/Include
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_BINARY_DIR} # So we can include generated config header files
-  CppUnitLite
-  ${Boost_INCLUDE_DIR})
-link_directories(${Boost_LIBRARY_DIRS})
+  CppUnitLite)
 
 if(MSVC)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
 	add_definitions(/wd4251 /wd4275 /wd4251) # Disable non-DLL-exported base class warnings
 endif()
 
+if(GTSAM_ENABLE_CONSISTENCY_CHECKS)
+  add_definitions(-DGTSAM_EXTRA_CONSISTENCY_CHECKS)
+endif()   
 
 ###############################################################################
 # Add components
@@ -266,9 +275,9 @@ print_config_flag(${GTSAM_BUILD_TESTS}                 "Build Tests             
 if (DOXYGEN_FOUND)
     print_config_flag(${GTSAM_BUILD_DOCS}                  "Build Docs                     ")
 endif()
+print_config_flag(${GTSAM_BUILD_SHARED_LIBRARY}        "Build shared GTSAM Library     ")
+print_config_flag(${GTSAM_BUILD_STATIC_LIBRARY}        "Build static GTSAM Library     ")
 if(NOT MSVC)
-	print_config_flag(${GTSAM_BUILD_SHARED_LIBRARY}        "Build shared GTSAM Library     ")
-	print_config_flag(${GTSAM_BUILD_STATIC_LIBRARY}        "Build static GTSAM Library     ")
 	print_config_flag(${GTSAM_BUILD_CONVENIENCE_LIBRARIES} "Build Convenience Libraries    ")
 endif()
 print_config_flag(${GTSAM_BUILD_TYPE_POSTFIXES}        "Put build-type in library name ")
@@ -287,7 +296,9 @@ message(STATUS                                       "  CPack Source Generator  
 message(STATUS                                       "  CPack Generator            : ${CPACK_GENERATOR}")
 
 message(STATUS "GTSAM flags                                               ")
-print_config_flag(${GTSAM_USE_QUATERNIONS}             "Quaternions as default Rot3")
+print_config_flag(${GTSAM_USE_QUATERNIONS}             "Quaternions as default Rot3                   ")
+print_config_flag(${GTSAM_ENABLE_CONSISTENCY_CHECKS}   "Runtime consistency checking                  ")
+print_config_flag(${GTSAM_POSE3_EXPMAP}                "Using full expmap as defaul retract for Pose3 ")
 
 message(STATUS "MATLAB toolbox flags                                      ")
 print_config_flag(${GTSAM_INSTALL_MATLAB_TOOLBOX}      "Install matlab toolbox     ")

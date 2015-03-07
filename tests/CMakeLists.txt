@@ -1,15 +1,5 @@
-# Build a library of example domains, just for tests
-file(GLOB test_lib_srcs "*.cpp")
-file(GLOB test_srcs "test*.cpp")
-file(GLOB time_srcs "time*.cpp")
-list(REMOVE_ITEM test_lib_srcs ${test_srcs})
-list(REMOVE_ITEM test_lib_srcs ${time_srcs})
-add_library(test_lib STATIC ${test_lib_srcs})
-target_link_libraries(test_lib ${gtsam-default})
-
 # Assemble local libraries
 set(tests_local_libs
-   test_lib
    slam
    nonlinear
    linear
@@ -26,8 +16,9 @@ set (tests_exclude
     #"${CMAKE_CURRENT_SOURCE_DIR}/testOccupancyGrid.cpp"
 )
 
-if(MSVC)
-  add_definitions("/bigobj") # testSerializationSLAM needs this
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang") # might not be best test - Richard & Jason & Frank
+	# clang linker segfaults on large testSerializationSLAM 
+	list (APPEND tests_exclude "${CMAKE_CURRENT_SOURCE_DIR}/testSerializationSLAM.cpp") 
 endif()
 
 # Build tests
@@ -38,8 +29,8 @@ if (GTSAM_BUILD_TESTS)
 
     # Build grouped tests
     gtsam_add_grouped_scripts("tests"               # Use subdirectory as group label
-    "test*.cpp" check "Test"                      # Standard for all tests
-    "${tests_local_libs}" "${gtsam-default};CppUnitLite;test_lib" "${tests_exclude}"  # Pass in linking and exclusion lists
+    "test*.cpp;*.h" check "Test"                      # Standard for all tests
+    "${tests_local_libs}" "${gtsam-default};CppUnitLite" "${tests_exclude}"  # Pass in linking and exclusion lists
     ${is_test})                                         # Set all as tests
 endif (GTSAM_BUILD_TESTS)
 
@@ -52,6 +43,11 @@ if (GTSAM_BUILD_TIMING)
     # Build grouped benchmarks
     gtsam_add_grouped_scripts("tests"               # Use subdirectory as group label
     "time*.cpp" timing "Timing Benchmark"         # Standard for all timing scripts
-    "${tests_local_libs}" "${gtsam-default};CppUnitLite;test_lib" "${tests_exclude}"   # Pass in linking and exclusion lists
+    "${tests_local_libs}" "${gtsam-default};CppUnitLite" "${tests_exclude}"   # Pass in linking and exclusion lists
     ${is_test})
 endif (GTSAM_BUILD_TIMING)
+
+if(MSVC)
+	set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/testSerializationSLAM.cpp"
+		APPEND PROPERTY COMPILE_FLAGS "/bigobj")
+endif()

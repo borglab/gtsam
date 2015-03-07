@@ -348,4 +348,11 @@ namespace gtsam {
     Point3 t = Point3(cq) - R * Point3(cp);
     return Pose3(R, t);
   }
+
+  /* ************************************************************************* */
+  std::ostream &operator<<(std::ostream &os, const Pose3& pose) {
+    os << pose.rotation() << "\n" << pose.translation() << endl;
+    return os;
+  }
+
 } // namespace gtsam

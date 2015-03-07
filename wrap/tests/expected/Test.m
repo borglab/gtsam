@@ -34,11 +34,11 @@ classdef Test < handle
     function obj = Test(varargin)
       if nargin == 2 && isa(varargin{1}, 'uint64') && varargin{1} == uint64(5139824614673773682)
         my_ptr = varargin{2};
-        geometry_wrapper(17, my_ptr);
+        geometry_wrapper(19, my_ptr);
       elseif nargin == 0
-        my_ptr = geometry_wrapper(18);
+        my_ptr = geometry_wrapper(20);
       elseif nargin == 2 && isa(varargin{1},'double') && isa(varargin{2},'double')
-        my_ptr = geometry_wrapper(19, varargin{1}, varargin{2});
+        my_ptr = geometry_wrapper(21, varargin{1}, varargin{2});
       else
         error('Arguments do not match any overload of Test constructor');
       end
@@ -46,7 +46,7 @@ classdef Test < handle
     end
 
     function delete(obj)
-      geometry_wrapper(20, obj.ptr_Test);
+      geometry_wrapper(22, obj.ptr_Test);
     end
 
     function display(obj), obj.print(''); end
@@ -60,7 +60,7 @@ classdef Test < handle
       % Method Overloads
       % arg_EigenConstRef(Matrix value)
       if length(varargin) == 1 && isa(varargin{1},'double')
-        geometry_wrapper(21, this, varargin{:});
+        geometry_wrapper(23, this, varargin{:});
       else
         error('Arguments do not match any overload of function Test.arg_EigenConstRef');
       end
@@ -73,7 +73,7 @@ classdef Test < handle
       % Method Overloads
       % create_MixedPtrs()
       if length(varargin) == 0
-        [ varargout{1} varargout{2} ] = geometry_wrapper(22, this, varargin{:});
+        [ varargout{1} varargout{2} ] = geometry_wrapper(24, this, varargin{:});
       else
         error('Arguments do not match any overload of function Test.create_MixedPtrs');
       end
@@ -86,7 +86,7 @@ classdef Test < handle
       % Method Overloads
       % create_ptrs()
       if length(varargin) == 0
-        [ varargout{1} varargout{2} ] = geometry_wrapper(23, this, varargin{:});
+        [ varargout{1} varargout{2} ] = geometry_wrapper(25, this, varargin{:});
       else
         error('Arguments do not match any overload of function Test.create_ptrs');
       end
@@ -99,7 +99,7 @@ classdef Test < handle
       % Method Overloads
       % print()
       if length(varargin) == 0
-        geometry_wrapper(24, this, varargin{:});
+        geometry_wrapper(26, this, varargin{:});
       else
         error('Arguments do not match any overload of function Test.print');
       end
@@ -112,7 +112,7 @@ classdef Test < handle
       % Method Overloads
       % return_Point2Ptr(bool value)
       if length(varargin) == 1 && isa(varargin{1},'logical')
-        varargout{1} = geometry_wrapper(25, this, varargin{:});
+        varargout{1} = geometry_wrapper(27, this, varargin{:});
       else
         error('Arguments do not match any overload of function Test.return_Point2Ptr');
       end
@@ -125,7 +125,7 @@ classdef Test < handle
       % Method Overloads
       % return_Test(Test value)
       if length(varargin) == 1 && isa(varargin{1},'Test')
-        varargout{1} = geometry_wrapper(26, this, varargin{:});
+        varargout{1} = geometry_wrapper(28, this, varargin{:});
       else
         error('Arguments do not match any overload of function Test.return_Test');
       end
@@ -138,7 +138,7 @@ classdef Test < handle
       % Method Overloads
       % return_TestPtr(Test value)
       if length(varargin) == 1 && isa(varargin{1},'Test')
-        varargout{1} = geometry_wrapper(27, this, varargin{:});
+        varargout{1} = geometry_wrapper(29, this, varargin{:});
       else
         error('Arguments do not match any overload of function Test.return_TestPtr');
       end
@@ -151,7 +151,7 @@ classdef Test < handle
       % Method Overloads
       % return_bool(bool value)
       if length(varargin) == 1 && isa(varargin{1},'logical')
-        varargout{1} = geometry_wrapper(28, this, varargin{:});
+        varargout{1} = geometry_wrapper(30, this, varargin{:});
       else
         error('Arguments do not match any overload of function Test.return_bool');
       end
@@ -164,7 +164,7 @@ classdef Test < handle
       % Method Overloads
       % return_double(double value)
       if length(varargin) == 1 && isa(varargin{1},'double')
-        varargout{1} = geometry_wrapper(29, this, varargin{:});
+        varargout{1} = geometry_wrapper(31, this, varargin{:});
       else
         error('Arguments do not match any overload of function Test.return_double');
       end
@@ -177,7 +177,7 @@ classdef Test < handle
       % Method Overloads
       % return_field(Test t)
       if length(varargin) == 1 && isa(varargin{1},'Test')
-        varargout{1} = geometry_wrapper(30, this, varargin{:});
+        varargout{1} = geometry_wrapper(32, this, varargin{:});
       else
         error('Arguments do not match any overload of function Test.return_field');
       end
@@ -190,7 +190,7 @@ classdef Test < handle
       % Method Overloads
       % return_int(int value)
       if length(varargin) == 1 && isa(varargin{1},'numeric')
-        varargout{1} = geometry_wrapper(31, this, varargin{:});
+        varargout{1} = geometry_wrapper(33, this, varargin{:});
       else
         error('Arguments do not match any overload of function Test.return_int');
       end
@@ -203,7 +203,7 @@ classdef Test < handle
       % Method Overloads
       % return_matrix1(Matrix value)
       if length(varargin) == 1 && isa(varargin{1},'double')
-        varargout{1} = geometry_wrapper(32, this, varargin{:});
+        varargout{1} = geometry_wrapper(34, this, varargin{:});
       else
         error('Arguments do not match any overload of function Test.return_matrix1');
       end
@@ -216,7 +216,7 @@ classdef Test < handle
       % Method Overloads
       % return_matrix2(Matrix value)
       if length(varargin) == 1 && isa(varargin{1},'double')
-        varargout{1} = geometry_wrapper(33, this, varargin{:});
+        varargout{1} = geometry_wrapper(35, this, varargin{:});
       else
         error('Arguments do not match any overload of function Test.return_matrix2');
       end
@@ -229,7 +229,7 @@ classdef Test < handle
       % Method Overloads
       % return_pair(Vector v, Matrix A)
       if length(varargin) == 2 && isa(varargin{1},'double') && isa(varargin{2},'double')
-        [ varargout{1} varargout{2} ] = geometry_wrapper(34, this, varargin{:});
+        [ varargout{1} varargout{2} ] = geometry_wrapper(36, this, varargin{:});
       else
         error('Arguments do not match any overload of function Test.return_pair');
       end
@@ -242,7 +242,7 @@ classdef Test < handle
       % Method Overloads
       % return_ptrs(Test p1, Test p2)
       if length(varargin) == 2 && isa(varargin{1},'Test') && isa(varargin{2},'Test')
-        [ varargout{1} varargout{2} ] = geometry_wrapper(35, this, varargin{:});
+        [ varargout{1} varargout{2} ] = geometry_wrapper(37, this, varargin{:});
       else
         error('Arguments do not match any overload of function Test.return_ptrs');
       end
@@ -255,7 +255,7 @@ classdef Test < handle
       % Method Overloads
       % return_size_t(size_t value)
       if length(varargin) == 1 && isa(varargin{1},'numeric')
-        varargout{1} = geometry_wrapper(36, this, varargin{:});
+        varargout{1} = geometry_wrapper(38, this, varargin{:});
       else
         error('Arguments do not match any overload of function Test.return_size_t');
       end
@@ -268,7 +268,7 @@ classdef Test < handle
       % Method Overloads
       % return_string(string value)
       if length(varargin) == 1 && isa(varargin{1},'char')
-        varargout{1} = geometry_wrapper(37, this, varargin{:});
+        varargout{1} = geometry_wrapper(39, this, varargin{:});
       else
         error('Arguments do not match any overload of function Test.return_string');
       end
@@ -281,7 +281,7 @@ classdef Test < handle
       % Method Overloads
       % return_vector1(Vector value)
       if length(varargin) == 1 && isa(varargin{1},'double')
-        varargout{1} = geometry_wrapper(38, this, varargin{:});
+        varargout{1} = geometry_wrapper(40, this, varargin{:});
       else
         error('Arguments do not match any overload of function Test.return_vector1');
       end
@@ -294,7 +294,7 @@ classdef Test < handle
       % Method Overloads
       % return_vector2(Vector value)
       if length(varargin) == 1 && isa(varargin{1},'double')
-        varargout{1} = geometry_wrapper(39, this, varargin{:});
+        varargout{1} = geometry_wrapper(41, this, varargin{:});
       else
         error('Arguments do not match any overload of function Test.return_vector2');
       end

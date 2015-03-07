@@ -46,8 +46,6 @@ public:
       boost::optional<Matrix&> H2 = boost::none,
       boost::optional<Matrix&> H3 = boost::none) const {
 
-    static const bool debug = false;
-
     Matrix D_gkxi_gk, D_gkxi_exphxi;
     Pose3 gkxi = gk.compose(Pose3::Expmap(h_*xik), D_gkxi_gk, D_gkxi_exphxi);
 
@@ -114,8 +112,6 @@ public:
       boost::optional<Matrix&> H1 = boost::none,
       boost::optional<Matrix&> H2 = boost::none,
       boost::optional<Matrix&> H3 = boost::none) const {
-
-    static const bool debug = false;
 
     Vector muk = Inertia_*xik;
     Vector muk_1 = Inertia_*xik_1;

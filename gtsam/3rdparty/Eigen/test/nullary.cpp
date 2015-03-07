@@ -91,6 +91,12 @@ void testVectorType(const VectorType& base)
   scalar.setLinSpaced(1,low,high);
   VERIFY_IS_APPROX( scalar, ScalarMatrix::Constant(high) );
   VERIFY_IS_APPROX( ScalarMatrix::LinSpaced(1,low,high), ScalarMatrix::Constant(high) );
+
+  // regression test for bug 526 (linear vectorized transversal)
+  if (size > 1) {
+    m.tail(size-1).setLinSpaced(low, high);
+    VERIFY_IS_APPROX(m(size-1), high);
+  }
 }
 
 template<typename MatrixType>
