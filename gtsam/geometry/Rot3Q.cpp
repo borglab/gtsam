@@ -21,6 +21,7 @@
 
 #include <boost/math/constants/constants.hpp>
 #include <gtsam/geometry/Rot3.h>
+#include <cmath>
 
 using namespace std;
 
@@ -120,14 +121,31 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  // Log map at identity - return the canonical coordinates of this rotation
   Vector3 Rot3::Logmap(const Rot3& R) {
-    Eigen::AngleAxisd angleAxis(R.quaternion_);
-    if(angleAxis.angle() > M_PI)      // Important:  use the smallest possible
-      angleAxis.angle() -= 2.0*M_PI;  // angle, e.g. no more than PI, to keep
-    if(angleAxis.angle() < -M_PI)     // error continuous.
-      angleAxis.angle() += 2.0*M_PI;
-    return angleAxis.axis() * angleAxis.angle();
+    using std::acos;
+    using std::sqrt;
+    static const double twoPi = 2.0 * M_PI,
+    // define these compile time constants to avoid std::abs:
+        NearlyOne = 1.0 - 1e-10, NearlyNegativeOne = -1.0 + 1e-10;
+
+    const Quaternion& q = R.quaternion_;
+    const double qw = q.w();
+    if (qw > NearlyOne) {
+      // Taylor expansion of (angle / s) at 1
+      return (2 - 2 * (qw - 1) / 3) * q.vec();
+    } else if (qw < NearlyNegativeOne) {
+      // Angle is zero, return zero vector
+      return Vector3::Zero();
+    } else {
+      // Normal, away from zero case
+      double angle = 2 * acos(qw), s = sqrt(1 - qw * qw);
+      // Important:  convert to [-pi,pi] to keep error continuous
+      if (angle > M_PI)
+        angle -= twoPi;
+      else if (angle < -M_PI)
+        angle += twoPi;
+      return (angle / s) * q.vec();
+    }
   }
 
   /* ************************************************************************* */

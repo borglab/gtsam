@@ -26,7 +26,7 @@
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/random.hpp>
-#include <boost/thread.hpp>
+//#include <boost/thread.hpp>
 #include <boost/assign/std/vector.hpp>
 #include <cmath>
 
@@ -234,7 +234,7 @@ TEST(Unit3, localCoordinates_retract) {
   for (size_t i = 0; i < numIterations; i++) {
 
     // Sleep for the random number generator (TODO?: Better create all of them first).
-    boost::this_thread::sleep(boost::posix_time::milliseconds(0));
+//    boost::this_thread::sleep(boost::posix_time::milliseconds(0));
 
     // Create the two Unit3s.
     // NOTE: You can not create two totally random Unit3's because you cannot always compute
@@ -264,10 +264,10 @@ TEST(Unit3, localCoordinates_retract_expmap) {
   for (size_t i = 0; i < numIterations; i++) {
 
     // Sleep for the random number generator (TODO?: Better create all of them first).
-    boost::this_thread::sleep(boost::posix_time::milliseconds(0));
+//    boost::this_thread::sleep(boost::posix_time::milliseconds(0));
 
     // Create the two Unit3s.
-    // Unlike the above case, we can use any two sphers.
+    // Unlike the above case, we can use any two Unit3's.
     Unit3 s1(Point3(randomVector(minSphereLimit, maxSphereLimit)));
 //      Unit3 s2 (Point3(randomVector(minSphereLimit, maxSphereLimit)));
     Vector v12 = randomVector(minXiLimit, maxXiLimit);
@@ -328,10 +328,6 @@ TEST(Unit3, localCoordinates_retract_expmap) {
 //*******************************************************************************
 TEST(Unit3, Random) {
   boost::mt19937 rng(42);
-  // Check that is deterministic given same random seed
-  Point3 expected(-0.667578, 0.671447, 0.321713);
-  Point3 actual = Unit3::Random(rng).point3();
-  EXPECT(assert_equal(expected,actual,1e-5));
   // Check that means are all zero at least
   Point3 expectedMean, actualMean;
   for (size_t i = 0; i < 100; i++)

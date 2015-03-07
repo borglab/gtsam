@@ -25,6 +25,7 @@
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Cal3DS2.h>
 #include <gtsam/geometry/Cal3Bundler.h>
+#include <gtsam/geometry/Cal3Unified.h>
 #include <gtsam/geometry/StereoCamera.h>
 #include <gtsam/geometry/StereoPoint2.h>
 
@@ -46,6 +47,7 @@ static Cal3Bundler cal3(1.0, 2.0, 3.0);
 static Cal3_S2Stereo cal4(1.0, 2.0, 3.0, 4.0, 5.0, 6.0);
 static Cal3_S2Stereo::shared_ptr cal4ptr(new Cal3_S2Stereo(cal4));
 static CalibratedCamera cal5(Pose3(rt3, pt3));
+static Cal3Unified cal6(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0);
 
 static PinholeCamera<Cal3_S2> cam1(pose3, cal1);
 static StereoCamera cam2(pose3, cal4ptr);
@@ -66,6 +68,7 @@ TEST (Serialization, text_geometry) {
   EXPECT(equalsObj(cal3));
   EXPECT(equalsObj(cal4));
   EXPECT(equalsObj(cal5));
+  EXPECT(equalsObj(cal6));
 
   EXPECT(equalsObj(cam1));
   EXPECT(equalsObj(cam2));

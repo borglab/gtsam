@@ -112,6 +112,16 @@ public:
     return E_;
   }
 
+  /// Return epipole in image_a , as Unit3 to allow for infinity
+  inline const Unit3& epipole_a() const {
+    return aTb_; // == direction()
+  }
+
+  /// Return epipole in image_b, as Unit3 to allow for infinity
+  inline Unit3 epipole_b() const {
+    return aRb_.unrotate(aTb_); // == rotation.unrotate(direction())
+  }
+
   /**
    * @brief takes point in world coordinates and transforms it to pose with |t|==1
    * @param p point in world coordinates

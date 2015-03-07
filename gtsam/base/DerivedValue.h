@@ -16,8 +16,9 @@
  */
 
 #pragma once
-#include <boost/make_shared.hpp>
+
 #include <gtsam/base/Value.h>
+#include <boost/make_shared.hpp>
 
 //////////////////
 // The following includes windows.h in some MSVC versions, so we undef min, max, and ERROR

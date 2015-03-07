@@ -538,7 +538,7 @@ void HessianFactor::multiplyHessianAdd(double alpha, const VectorValues& x,
 
   // copy to yvalues
   for(DenseIndex i = 0; i < (DenseIndex)size(); ++i) {
-	bool didNotExist;
+  bool didNotExist;
     VectorValues::iterator it;
     boost::tie(it, didNotExist) = yvalues.tryInsert(keys_[i], Vector());
     if (didNotExist)
@@ -635,10 +635,11 @@ EliminateCholesky(const GaussianFactorGraph& factors, const Ordering& keys)
   // Do dense elimination
   GaussianConditional::shared_ptr conditional;
   try {
-    VerticalBlockMatrix Ab = jointFactor->info_.choleskyPartial(keys.size());
-    conditional = boost::make_shared<GaussianConditional>(jointFactor->keys(), keys.size(), Ab);
+    size_t numberOfKeysToEliminate = keys.size();
+    VerticalBlockMatrix Ab = jointFactor->info_.choleskyPartial(numberOfKeysToEliminate);
+    conditional = boost::make_shared<GaussianConditional>(jointFactor->keys(), numberOfKeysToEliminate, Ab);
     // Erase the eliminated keys in the remaining factor
-    jointFactor->keys_.erase(jointFactor->begin(), jointFactor->begin() + keys.size());
+    jointFactor->keys_.erase(jointFactor->begin(), jointFactor->begin() + numberOfKeysToEliminate);
   } catch(CholeskyFailed&) {
     throw IndeterminantLinearSystemException(keys.front());
   }

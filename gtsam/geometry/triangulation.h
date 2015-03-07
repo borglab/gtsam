@@ -174,7 +174,7 @@ Point3 triangulateNonlinear(
  * @param poses A vector of camera poses
  * @param sharedCal shared pointer to single calibration object
  * @param measurements A vector of camera measurements
- * @param rank tolerance, default 1e-9
+ * @param rank_tol rank tolerance, default 1e-9
  * @param optimize Flag to turn on nonlinear refinement of triangulation
  * @return Returns a Point3
  */
@@ -222,7 +222,7 @@ Point3 triangulatePoint3(const std::vector<Pose3>& poses,
  * no other checks to verify the quality of the triangulation.
  * @param cameras pinhole cameras
  * @param measurements A vector of camera measurements
- * @param rank tolerance, default 1e-9
+ * @param rank_tol rank tolerance, default 1e-9
  * @param optimize Flag to turn on nonlinear refinement of triangulation
  * @return Returns a Point3
  */

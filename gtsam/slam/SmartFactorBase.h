@@ -572,7 +572,7 @@ public:
 
     FastMap<Key,size_t> KeySlotMap;
     for (size_t slot=0; slot < allKeys.size(); slot++)
-      KeySlotMap.insert(std::make_pair<Key,size_t>(allKeys[slot],slot));
+      KeySlotMap.insert(std::make_pair(allKeys[slot],slot));
 
     // a single point is observed in numKeys cameras
     size_t numKeys = this->keys_.size(); // cameras observing current point

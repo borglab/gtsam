@@ -85,7 +85,6 @@ string createRewrittenFileName(const string& name) {
   return newpath.string();
 }
 /* ************************************************************************* */
-
 #endif
 
 /* ************************************************************************* */
@@ -102,6 +101,25 @@ static SharedNoiseModel readNoiseModel(ifstream& is, bool smart,
     NoiseFormat noiseFormat, KernelFunctionType kernelFunctionType) {
   double v1, v2, v3, v4, v5, v6;
   is >> v1 >> v2 >> v3 >> v4 >> v5 >> v6;
+
+   if (noiseFormat == NoiseFormatAUTO)
+   {
+     // Try to guess covariance matrix layout
+     if(v1 != 0.0 && v2 == 0.0 && v3 != 0.0 && v4 != 0.0 && v5 == 0.0 && v6 == 0.0)
+     {
+       // NoiseFormatGRAPH
+       noiseFormat = NoiseFormatGRAPH;
+     }
+     else if(v1 != 0.0 && v2 == 0.0 && v3 == 0.0 && v4 != 0.0 && v5 == 0.0 && v6 != 0.0)
+     {
+       // NoiseFormatCOV
+       noiseFormat = NoiseFormatCOV;
+     }
+     else
+     {
+       throw std::invalid_argument("load2D: unrecognized covariance matrix format in dataset file. Please specify the noise format.");
+     }
+  }
 
   // Read matrix and check that diagonal entries are non-zero
   Matrix M(3, 3);
@@ -164,7 +182,7 @@ static SharedNoiseModel readNoiseModel(ifstream& is, bool smart,
 }
 
 /* ************************************************************************* */
-GraphAndValues load2D(const string& filename, SharedNoiseModel model, int maxID,
+GraphAndValues load2D(const string& filename, SharedNoiseModel model, Key maxID,
     bool addNoise, bool smart, NoiseFormat noiseFormat,
     KernelFunctionType kernelFunctionType) {
 
@@ -178,12 +196,12 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, int maxID,
   string tag;
 
   // load the poses
-  while (is) {
+  while (!is.eof()) {
     if (!(is >> tag))
       break;
 
     if ((tag == "VERTEX2") || (tag == "VERTEX_SE2") || (tag == "VERTEX")) {
-      int id;
+      Key id;
       double x, y, yaw;
       is >> id >> x >> y >> yaw;
 
@@ -212,9 +230,9 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, int maxID,
   }
 
   // Parse the pose constraints
-  int id1, id2;
+  Key id1, id2;
   bool haveLandmark = false;
-  while (is) {
+  while (!is.eof()) {
     if (!(is >> tag))
       break;
 
@@ -250,7 +268,6 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, int maxID,
           new BetweenFactor<Pose2>(id1, id2, l1Xl2, model));
       graph->push_back(factor);
     }
-
     // Parse measurements
     double bearing, range, bearing_std, range_std;
 
@@ -358,12 +375,16 @@ void save2D(const NonlinearFactorGraph& graph, const Values& config,
 }
 
 /* ************************************************************************* */
-GraphAndValues readG2o(const string& g2oFile,
+GraphAndValues readG2o(const string& g2oFile, const bool is3D,
     KernelFunctionType kernelFunctionType) {
   // just call load2D
   int maxID = 0;
   bool addNoise = false;
   bool smart = true;
+
+  if(is3D)
+    return load3D(g2oFile);
+
   return load2D(g2oFile, SharedNoiseModel(), maxID, addNoise, smart,
       NoiseFormatG2O, kernelFunctionType);
 }
@@ -374,44 +395,97 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
 
   fstream stream(filename.c_str(), fstream::out);
 
-  // save poses
+  // save 2D & 3D poses
   BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, estimate) {
-    const Pose2& pose = dynamic_cast<const Pose2&>(key_value.value);
-    stream << "VERTEX_SE2 " << key_value.key << " " << pose.x() << " "
-        << pose.y() << " " << pose.theta() << endl;
+
+    const Pose2* pose2D = dynamic_cast<const Pose2*>(&key_value.value);
+    if(pose2D){
+    stream << "VERTEX_SE2 " << key_value.key << " " << pose2D->x() << " "
+        << pose2D->y() << " " << pose2D->theta() << endl;
+    }
+    const Pose3* pose3D = dynamic_cast<const Pose3*>(&key_value.value);
+    if(pose3D){
+      Point3 p = pose3D->translation();
+      Rot3 R = pose3D->rotation();
+      stream << "VERTEX_SE3:QUAT " << key_value.key << " " << p.x() << " "  << p.y() << " " << p.z()
+        << " " << R.toQuaternion().x() << " " << R.toQuaternion().y() << " " << R.toQuaternion().z()
+        << " " << R.toQuaternion().w() << endl;
+    }
   }
 
-  // save edges
+  // save edges (2D or 3D)
   BOOST_FOREACH(boost::shared_ptr<NonlinearFactor> factor_, graph) {
     boost::shared_ptr<BetweenFactor<Pose2> > factor =
         boost::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor_);
-    if (!factor)
-      continue;
+    if (factor){
+      SharedNoiseModel model = factor->get_noiseModel();
+      boost::shared_ptr<noiseModel::Gaussian> gaussianModel =
+          boost::dynamic_pointer_cast<noiseModel::Gaussian>(model);
+      if (!gaussianModel){
+        model->print("model\n");
+        throw invalid_argument("writeG2o: invalid noise model!");
+      }
+      Matrix Info = gaussianModel->R().transpose() * gaussianModel->R();
+      Pose2 pose = factor->measured(); //.inverse();
+      stream << "EDGE_SE2 " << factor->key1() << " " << factor->key2() << " "
+          << pose.x() << " " << pose.y() << " " << pose.theta();
+      for (int i = 0; i < 3; i++){
+        for (int j = i; j < 3; j++){
+          stream << " " << Info(i, j);
+        }
+      }
+      stream << endl;
+    }
 
-    SharedNoiseModel model = factor->get_noiseModel();
-    boost::shared_ptr<noiseModel::Diagonal> diagonalModel =
-        boost::dynamic_pointer_cast<noiseModel::Diagonal>(model);
-    if (!diagonalModel)
-      throw invalid_argument(
-          "writeG2o: invalid noise model (current version assumes diagonal noise model)!");
+    boost::shared_ptr< BetweenFactor<Pose3> > factor3D =
+        boost::dynamic_pointer_cast< BetweenFactor<Pose3> >(factor_);
 
-    Pose2 pose = factor->measured(); //.inverse();
-    stream << "EDGE_SE2 " << factor->key1() << " " << factor->key2() << " "
-        << pose.x() << " " << pose.y() << " " << pose.theta() << " "
-        << diagonalModel->precision(0) << " " << 0.0 << " " << 0.0 << " "
-        << diagonalModel->precision(1) << " " << 0.0 << " "
-        << diagonalModel->precision(2) << endl;
+    if (factor3D){
+      SharedNoiseModel model = factor3D->get_noiseModel();
+
+      boost::shared_ptr<noiseModel::Gaussian> gaussianModel =
+          boost::dynamic_pointer_cast<noiseModel::Gaussian>(model);
+      if (!gaussianModel){
+        model->print("model\n");
+        throw invalid_argument("writeG2o: invalid noise model!");
+      }
+      Matrix Info = gaussianModel->R().transpose() * gaussianModel->R();
+      Pose3 pose3D = factor3D->measured();
+      Point3 p = pose3D.translation();
+      Rot3 R = pose3D.rotation();
+
+      stream << "EDGE_SE3:QUAT " << factor3D->key1() << " " << factor3D->key2() << " "
+          << p.x() << " "  << p.y() << " " << p.z()  << " " << R.toQuaternion().x()
+          << " " << R.toQuaternion().y() << " " << R.toQuaternion().z()  << " " << R.toQuaternion().w();
+
+      Matrix InfoG2o = eye(6);
+      InfoG2o.block(0,0,3,3) = Info.block(3,3,3,3); // cov translation
+      InfoG2o.block(3,3,3,3) = Info.block(0,0,3,3); // cov rotation
+      InfoG2o.block(0,3,3,3) = Info.block(0,3,3,3); // off diagonal
+      InfoG2o.block(3,0,3,3) = Info.block(3,0,3,3); // off diagonal
+
+      for (int i = 0; i < 6; i++){
+        for (int j = i; j < 6; j++){
+          stream << " " << InfoG2o(i, j);
+        }
+      }
+      stream << endl;
+    }
   }
   stream.close();
 }
 
 /* ************************************************************************* */
-bool load3D(const string& filename) {
+GraphAndValues load3D(const string& filename) {
+
   ifstream is(filename.c_str());
   if (!is)
-    return false;
+    throw invalid_argument("load3D: can not find file " + filename);
 
-  while (is) {
+  Values::shared_ptr initial(new Values);
+  NonlinearFactorGraph::shared_ptr graph(new NonlinearFactorGraph);
+
+  while (!is.eof()) {
     char buf[LINESIZE];
     is.getline(buf, LINESIZE);
     istringstream ls(buf);
@@ -419,15 +493,26 @@ bool load3D(const string& filename) {
     ls >> tag;
 
     if (tag == "VERTEX3") {
-      int id;
+      Key id;
       double x, y, z, roll, pitch, yaw;
       ls >> id >> x >> y >> z >> roll >> pitch >> yaw;
+      Rot3 R = Rot3::ypr(yaw,pitch,roll);
+      Point3 t = Point3(x, y, z);
+      initial->insert(id, Pose3(R,t));
+    }
+    if (tag == "VERTEX_SE3:QUAT") {
+      Key id;
+      double x, y, z, qx, qy, qz, qw;
+      ls >> id >> x >> y >> z >> qx >> qy >> qz >> qw;
+      Rot3 R = Rot3::quaternion(qw, qx, qy, qz);
+      Point3 t = Point3(x, y, z);
+      initial->insert(id, Pose3(R,t));
     }
   }
   is.clear(); /* clears the end-of-file and error flags */
   is.seekg(0, ios::beg);
 
-  while (is) {
+  while (!is.eof()) {
     char buf[LINESIZE];
     is.getline(buf, LINESIZE);
     istringstream ls(buf);
@@ -435,16 +520,46 @@ bool load3D(const string& filename) {
     ls >> tag;
 
     if (tag == "EDGE3") {
-      int id1, id2;
+      Key id1, id2;
       double x, y, z, roll, pitch, yaw;
       ls >> id1 >> id2 >> x >> y >> z >> roll >> pitch >> yaw;
+      Rot3 R = Rot3::ypr(yaw,pitch,roll);
+      Point3 t = Point3(x, y, z);
       Matrix m = eye(6);
       for (int i = 0; i < 6; i++)
         for (int j = i; j < 6; j++)
           ls >> m(i, j);
+      SharedNoiseModel model = noiseModel::Gaussian::Information(m);
+      NonlinearFactor::shared_ptr factor(
+          new BetweenFactor<Pose3>(id1, id2, Pose3(R,t), model));
+      graph->push_back(factor);
+    }
+    if (tag == "EDGE_SE3:QUAT") {
+      Matrix m = eye(6);
+      Key id1, id2;
+      double x, y, z, qx, qy, qz, qw;
+      ls >> id1 >> id2 >> x >> y >> z >> qx >> qy >> qz >> qw;
+      Rot3 R = Rot3::quaternion(qw, qx, qy, qz);
+      Point3 t = Point3(x, y, z);
+      for (int i = 0; i < 6; i++){
+        for (int j = i; j < 6; j++){
+          double mij;
+          ls >> mij;
+          m(i, j) = mij;
+          m(j, i) = mij;
+        }
+      }
+      Matrix mgtsam = eye(6);
+      mgtsam.block(0,0,3,3) = m.block(3,3,3,3); // cov rotation
+      mgtsam.block(3,3,3,3) = m.block(0,0,3,3); // cov translation
+      mgtsam.block(0,3,3,3) = m.block(0,3,3,3); // off diagonal
+      mgtsam.block(3,0,3,3) = m.block(3,0,3,3); // off diagonal
+      SharedNoiseModel model = noiseModel::Gaussian::Information(mgtsam);
+      NonlinearFactor::shared_ptr factor(new BetweenFactor<Pose3>(id1, id2, Pose3(R,t), model));
+      graph->push_back(factor);
     }
   }
-  return true;
+  return make_pair(graph, initial);
 }
 
 /* ************************************************************************* */

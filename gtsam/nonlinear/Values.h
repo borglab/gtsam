@@ -52,9 +52,16 @@ namespace gtsam {
 
   // Forward declarations / utilities
   class VectorValues;
-  class ValueCloneAllocator;
   class ValueAutomaticCasting;
   template<typename T> static bool _truePredicate(const T&) { return true; }
+
+  /* ************************************************************************* */
+  class GTSAM_EXPORT ValueCloneAllocator {
+  public:
+    static Value* allocate_clone(const Value& a) { return a.clone_(); }
+    static void deallocate_clone(const Value* a) { a->deallocate_(); }
+    ValueCloneAllocator() {}
+  };
 
   /**
   * A non-templated config holding any types of Manifold-group elements.  A

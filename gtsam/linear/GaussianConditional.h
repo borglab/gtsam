@@ -111,7 +111,7 @@ namespace gtsam {
     * assumed to have already been solved in and their values are read from \c x.
     * This function works for multiple frontal variables.
     *
-    * Given the Gaussian conditional with log likelihood \f$ |R x_f - (d - S x_s)|^2,
+    * Given the Gaussian conditional with log likelihood \f$ |R x_f - (d - S x_s)|^2 \f$,
     * where \f$ f \f$ are the frontal variables and \f$ s \f$ are the separator
     * variables of this conditional, this solve function computes
     * \f$ x_f = R^{-1} (d - S x_s) \f$ using back-substitution.

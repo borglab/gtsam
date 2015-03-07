@@ -17,6 +17,10 @@
 
 #pragma once
 
+#ifndef MKL_BLAS
+#define MKL_BLAS MKL_DOMAIN_BLAS
+#endif
+
 #cmakedefine EIGEN_USE_MKL_ALL // This is also defined in config.h
 #include <@GTSAM_EIGEN_INCLUDE_PREFIX@Eigen/Dense>
 #include <@GTSAM_EIGEN_INCLUDE_PREFIX@Eigen/QR>

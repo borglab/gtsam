@@ -33,10 +33,13 @@ struct LieVector : public Vector, public DerivedValue<LieVector> {
 
   /** initialize from a normal vector */
   LieVector(const Vector& v) : Vector(v) {}
-
+  
+// Currently TMP constructor causes ICE on MSVS 2013
+#if (_MSC_VER < 1800)
   /** initialize from a fixed size normal vector */
   template<int N>
   LieVector(const Eigen::Matrix<double, N, 1>& v) : Vector(v) {}
+#endif
 
   /** wrap a double */
   LieVector(double d) : Vector((Vector(1) << d)) {}

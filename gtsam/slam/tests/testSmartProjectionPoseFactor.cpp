@@ -288,7 +288,7 @@ TEST( SmartProjectionPoseFactor, 3poses_smart_projection_factor ){
 
   // result.print("results of 3 camera, 3 landmark optimization \n");
   if(isDebugTest) result.at<Pose3>(x3).print("Smart: Pose3 after optimization: ");
-  EXPECT(assert_equal(pose3,result.at<Pose3>(x3)));
+  EXPECT(assert_equal(pose3,result.at<Pose3>(x3),1e-8));
   if(isDebugTest) tictoc_print_();
 }
 
@@ -365,7 +365,7 @@ TEST( SmartProjectionPoseFactor, 3poses_iterative_smart_projection_factor ){
 
   // result.print("results of 3 camera, 3 landmark optimization \n");
   if(isDebugTest) result.at<Pose3>(x3).print("Smart: Pose3 after optimization: ");
-  EXPECT(assert_equal(pose3,result.at<Pose3>(x3)));
+  EXPECT(assert_equal(pose3,result.at<Pose3>(x3), 1e-7));
   if(isDebugTest) tictoc_print_();
 }
 
@@ -428,7 +428,7 @@ TEST( SmartProjectionPoseFactor, jacobianSVD ){
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
-  EXPECT(assert_equal(pose3,result.at<Pose3>(x3)));
+  EXPECT(assert_equal(pose3,result.at<Pose3>(x3), 1e-8));
 }
 
 /* *************************************************************************/
@@ -631,7 +631,7 @@ TEST( SmartProjectionPoseFactor, jacobianQ ){
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
-  EXPECT(assert_equal(pose3,result.at<Pose3>(x3)));
+  EXPECT(assert_equal(pose3,result.at<Pose3>(x3), 1e-8));
 }
 
 /* *************************************************************************/
@@ -697,7 +697,7 @@ TEST( SmartProjectionPoseFactor, 3poses_projection_factor ){
   Values result = optimizer.optimize();
 
   if(isDebugTest)  result.at<Pose3>(x3).print("Pose3 after optimization: ");
-  EXPECT(assert_equal(pose3,result.at<Pose3>(x3)));
+  EXPECT(assert_equal(pose3,result.at<Pose3>(x3), 1e-7));
 }
 
 /* *************************************************************************/

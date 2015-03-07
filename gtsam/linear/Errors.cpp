@@ -38,7 +38,7 @@ Errors::Errors(const VectorValues& V) {
 
 /* ************************************************************************* */
 void Errors::print(const std::string& s) const {
-  odprintf("%s:\n", s.c_str());
+  cout << s << endl;
   BOOST_FOREACH(const Vector& v, *this)
     gtsam::print(v);
 }

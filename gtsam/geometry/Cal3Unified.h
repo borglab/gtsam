@@ -22,8 +22,8 @@
 
 #pragma once
 
-#include <gtsam/geometry/Cal3DS2.h>
-#include <gtsam/geometry/Point2.h>
+#include <gtsam/geometry/Cal3DS2_Base.h>
+#include <gtsam/base/DerivedValue.h>
 
 namespace gtsam {
 
@@ -31,22 +31,23 @@ namespace gtsam {
  * @brief Calibration of a omni-directional camera with mirror + lens radial distortion
  * @addtogroup geometry
  * \nosubgrouping
+ *
+ * Similar to Cal3DS2, does distortion but has additional mirror parameter xi
+ * K = [ fx s u0 ; 0 fy v0 ; 0 0 1 ]
+ * Pn = [ P.x / (1 + xi * \sqrt{P.x^2 + P.y^2 + 1}), P.y / (1 + xi * \sqrt{P.x^2 + P.y^2 + 1})]
+ * rr = Pn.x^2 + Pn.y^2
+ * \hat{pn} = (1 + k1*rr + k2*rr^2 ) pn + [ 2*k3 pn.x pn.y + k4 (rr + 2 Pn.x^2) ;
+ *                      k3 (rr + 2 Pn.y^2) + 2*k4 pn.x pn.y  ]
+ * pi = K*pn
  */
-class GTSAM_EXPORT Cal3Unified : public Cal3DS2 {
+class GTSAM_EXPORT Cal3Unified : public Cal3DS2_Base, public DerivedValue<Cal3Unified> {
 
   typedef Cal3Unified This;
-  typedef Cal3DS2 Base;
+  typedef Cal3DS2_Base Base;
 
 private:
 
   double xi_;  // mirror parameter
-
-  // K = [ fx s u0 ; 0 fy v0 ; 0 0 1 ]
-  // Pn = [ P.x / (1 + xi * \sqrt{P.x^2 + P.y^2 + 1}), P.y / (1 + xi * \sqrt{P.x^2 + P.y^2 + 1})]
-  // rr = Pn.x^2 + Pn.y^2
-  // \hat{pn} = (1 + k1*rr + k2*rr^2 ) pn + [ 2*k3 pn.x pn.y + k4 (rr + 2 Pn.x^2) ;
-  //                      k3 (rr + 2 Pn.y^2) + 2*k4 pn.x pn.y  ]
-  // pi = K*pn
 
 public:
   //Matrix K() const ;
@@ -60,8 +61,8 @@ public:
   Cal3Unified() : Base(), xi_(0) {}
 
   Cal3Unified(double fx, double fy, double s, double u0, double v0,
-      double k1, double k2, double k3 = 0.0, double k4 = 0.0, double xi = 0.0) :
-        Base(fx, fy, s, u0, v0, k1, k2, k3, k4), xi_(xi) {}
+      double k1, double k2, double p1 = 0.0, double p2 = 0.0, double xi = 0.0) :
+        Base(fx, fy, s, u0, v0, k1, k2, p1, p2), xi_(xi) {}
 
   /// @}
   /// @name Advanced Constructors
@@ -89,7 +90,7 @@ public:
   /**
    * convert intrinsic coordinates xy to image coordinates uv
    * @param p point in intrinsic coordinates
-   * @param Dcal optional 2*9 Jacobian wrpt Cal3DS2 parameters
+   * @param Dcal optional 2*10 Jacobian wrpt Cal3Unified parameters
    * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
    * @return point in image coordinates
    */
@@ -134,7 +135,9 @@ private:
   void serialize(Archive & ar, const unsigned int version)
   {
     ar & boost::serialization::make_nvp("Cal3Unified",
-        boost::serialization::base_object<Cal3DS2>(*this));
+        boost::serialization::base_object<Value>(*this));
+    ar & boost::serialization::make_nvp("Cal3Unified",
+        boost::serialization::base_object<Cal3DS2_Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(xi_);
   }
 
