@@ -27,10 +27,14 @@
 #include <list>
 
 #include <boost/foreach.hpp>
+#ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
+#endif
 #include <boost/bind.hpp>
+#ifdef __GNUC__
 #pragma GCC diagnostic pop
+#endif
 #include <boost/iterator/transform_iterator.hpp>
 
 using namespace std;
@@ -81,7 +85,7 @@ namespace gtsam {
     Values result;
 
     for(const_iterator key_value = begin(); key_value != end(); ++key_value) {
-      const SubVector& singleDelta = delta[ordering[key_value->key]]; // Delta for this value
+      const Vector& singleDelta = delta[ordering[key_value->key]]; // Delta for this value
       Key key = key_value->key;  // Non-const duplicate to deal with non-const insert argument
       Value* retractedValue(key_value->value.retract_(singleDelta)); // Retract
       result.values_.insert(key, retractedValue); // Add retracted result directly to result values
@@ -190,6 +194,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   vector<size_t> Values::dims(const Ordering& ordering) const {
+    assert(ordering.size() == this->size()); // reads off of end of array if difference in size
     vector<size_t> result(values_.size());
     BOOST_FOREACH(const ConstKeyValuePair& key_value, *this) {
       result[ordering[key_value.key]] = key_value.value.dim();

@@ -20,7 +20,7 @@ namespace gtsam {
   /**
    * parameters for iterative linear solvers
    */
-  class IterativeOptimizationParameters {
+  class GTSAM_EXPORT IterativeOptimizationParameters {
 
   public:
 
@@ -48,10 +48,10 @@ namespace gtsam {
     void setKernel(const std::string &s) ;
     void setVerbosity(const std::string &s) ;
 
-    void print() const {
-      std::cout << "IterativeOptimizationParameters: "
-                << "kernel = " << kernelTranslator(kernel_)
-                << ", verbosity = " << verbosityTranslator(verbosity_) << std::endl;
+    virtual void print() const {
+      std::cout << "IterativeOptimizationParameters" << std::endl
+                << "kernel:        " << kernelTranslator(kernel_) << std::endl
+                << "verbosity:     " << verbosityTranslator(verbosity_) << std::endl;
     }
 
     static Kernel kernelTranslator(const std::string &s);
@@ -60,7 +60,7 @@ namespace gtsam {
     static std::string verbosityTranslator(Verbosity v);
   };
 
-  class IterativeSolver {
+  class GTSAM_EXPORT IterativeSolver {
   public:
     typedef boost::shared_ptr<IterativeSolver> shared_ptr;
     IterativeSolver() {}

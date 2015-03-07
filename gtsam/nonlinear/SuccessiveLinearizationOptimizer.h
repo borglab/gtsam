@@ -23,7 +23,7 @@
 
 namespace gtsam {
 
-class SuccessiveLinearizationParams : public NonlinearOptimizerParams {
+class GTSAM_EXPORT SuccessiveLinearizationParams : public NonlinearOptimizerParams {
 public:
   /** See SuccessiveLinearizationParams::linearSolverType */
   enum LinearSolverType {
@@ -101,6 +101,6 @@ private:
 };
 
 /* a wrapper for solving a GaussianFactorGraph according to the parameters */
-VectorValues solveGaussianFactorGraph(const GaussianFactorGraph &gfg, const SuccessiveLinearizationParams &params) ;
+GTSAM_EXPORT VectorValues solveGaussianFactorGraph(const GaussianFactorGraph &gfg, const SuccessiveLinearizationParams &params) ;
 
 } /* namespace gtsam */

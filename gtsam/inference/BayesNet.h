@@ -25,7 +25,7 @@
 #include <boost/assign/list_inserter.hpp>
 #include <boost/lexical_cast.hpp>
 
-#include <gtsam/base/types.h>
+#include <gtsam/global_includes.h>
 #include <gtsam/base/FastList.h>
 #include <gtsam/inference/Permutation.h>
 
@@ -103,6 +103,11 @@ public:
   /** size is the number of nodes */
   size_t size() const {
     return conditionals_.size();
+  }
+
+  /** @return true if there are no conditionals/nodes */
+  bool empty() const {
+    return conditionals_.empty();
   }
 
   /** print statistics */
@@ -214,13 +219,6 @@ public:
 
   /** Permute the variables in the BayesNet */
   void permuteWithInverse(const Permutation& inversePermutation);
-
-  /**
-   * Permute the variables when only separator variables need to be permuted.
-   * Returns true if any reordered variables appeared in the separator and
-   * false if not.
-   */
-  bool permuteSeparatorWithInverse(const Permutation& inversePermutation);
 
   iterator begin()          {return conditionals_.begin();}    ///<TODO: comment
   iterator end()            {return conditionals_.end();}      ///<TODO: comment

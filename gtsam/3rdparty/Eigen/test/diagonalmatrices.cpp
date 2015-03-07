@@ -3,24 +3,9 @@
 //
 // Copyright (C) 2009 Benoit Jacob <jacob.benoit.1@gmail.com>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include "main.h"
 using namespace std;
@@ -47,6 +32,8 @@ template<typename MatrixType> void diagonalmatrices(const MatrixType& m)
              rv2 = RowVectorType::Random(cols);
   LeftDiagonalMatrix ldm1(v1), ldm2(v2);
   RightDiagonalMatrix rdm1(rv1), rdm2(rv2);
+  
+  Scalar s1 = internal::random<Scalar>();
 
   SquareMatrixType sq_m1 (v1.asDiagonal());
   VERIFY_IS_APPROX(sq_m1, v1.asDiagonal().toDenseMatrix());
@@ -91,6 +78,13 @@ template<typename MatrixType> void diagonalmatrices(const MatrixType& m)
   big.block(i,j,rows,cols) = big.block(i,j,rows,cols) * rv1.asDiagonal();
   VERIFY_IS_APPROX((big.block(i,j,rows,cols)) , m1 * rv1.asDiagonal() );
   
+  
+  // scalar multiple
+  VERIFY_IS_APPROX(LeftDiagonalMatrix(ldm1*s1).diagonal(), ldm1.diagonal() * s1);
+  VERIFY_IS_APPROX(LeftDiagonalMatrix(s1*ldm1).diagonal(), s1 * ldm1.diagonal());
+  
+  VERIFY_IS_APPROX(m1 * (rdm1 * s1), (m1 * rdm1) * s1);
+  VERIFY_IS_APPROX(m1 * (s1 * rdm1), (m1 * rdm1) * s1);
 }
 
 void test_diagonalmatrices()

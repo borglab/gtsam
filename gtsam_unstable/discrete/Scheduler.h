@@ -18,7 +18,7 @@ namespace gtsam {
    * The "student" variable will determine when the student takes the qual.
    * The "area" variables determine which faculty are on his/her committee.
    */
-  class Scheduler : public CSP {
+  class GTSAM_UNSTABLE_EXPORT Scheduler : public CSP {
 
   private:
 

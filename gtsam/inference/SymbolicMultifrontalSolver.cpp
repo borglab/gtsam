@@ -20,6 +20,6 @@
 
 namespace gtsam {
 
-template class GenericMultifrontalSolver<IndexFactor, JunctionTree<FactorGraph<IndexFactor> > >;
+//template class GenericMultifrontalSolver<IndexFactor, JunctionTree<FactorGraph<IndexFactor> > >;
 
 }

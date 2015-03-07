@@ -17,7 +17,7 @@
  */
 
 #include <gtsam/base/FastMap.h>
-#include <gtsam/base/types.h>
+#include <gtsam/global_includes.h>
 #include <string>
 
 
@@ -42,7 +42,7 @@
 #endif
 
 namespace gtsam {
-  extern FastMap<std::string, ValueWithDefault<bool,false> > debugFlags;
+  GTSAM_EXTERN_EXPORT FastMap<std::string, ValueWithDefault<bool,false> > debugFlags;
 }
 
 #undef ISDEBUG

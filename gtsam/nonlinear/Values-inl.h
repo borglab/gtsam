@@ -32,7 +32,7 @@
 namespace gtsam {
 
   /* ************************************************************************* */
-  class ValueCloneAllocator {
+  class GTSAM_EXPORT ValueCloneAllocator {
   public:
     static Value* allocate_clone(const Value& a) { return a.clone_(); }
     static void deallocate_clone(const Value* a) { a->deallocate_(); }

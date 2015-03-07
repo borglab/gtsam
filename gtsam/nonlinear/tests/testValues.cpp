@@ -43,9 +43,9 @@ class TestValueData {
 public:
   static int ConstructorCount;
   static int DestructorCount;
-  TestValueData(const TestValueData& other) { cout << "Copy constructor" << endl; ++ ConstructorCount; }
-  TestValueData() { cout << "Default constructor" << endl; ++ ConstructorCount; }
-  ~TestValueData() { cout << "Destructor" << endl; ++ DestructorCount; }
+  TestValueData(const TestValueData& other) { /*cout << "Copy constructor" << endl;*/ ++ ConstructorCount; }
+  TestValueData() { /*cout << "Default constructor" << endl;*/ ++ ConstructorCount; }
+  ~TestValueData() { /*cout << "Destructor" << endl;*/ ++ DestructorCount; }
 };
 int TestValueData::ConstructorCount = 0;
 int TestValueData::DestructorCount = 0;

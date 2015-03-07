@@ -15,7 +15,9 @@
  * @author  Richard Roberts
  */
 
-#ifdef GTSAM_DEFAULT_QUATERNIONS
+#include <gtsam/config.h> // Get GTSAM_USE_QUATERNIONS macro
+
+#ifdef GTSAM_USE_QUATERNIONS
 
 #include <boost/math/constants/constants.hpp>
 #include <gtsam/geometry/Rot3.h>
@@ -46,8 +48,12 @@ namespace gtsam {
             R31, R32, R33).finished()) {}
 
   /* ************************************************************************* */
+  Rot3::Rot3(const Matrix3& R) :
+      quaternion_(R) {}
+
+  /* ************************************************************************* */
   Rot3::Rot3(const Matrix& R) :
-      quaternion_(Eigen::Matrix3d(R)) {}
+      quaternion_(Matrix3(R)) {}
 
 //  /* ************************************************************************* */
 //   Rot3::Rot3(const Matrix3& R) :

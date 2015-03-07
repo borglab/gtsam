@@ -42,11 +42,147 @@ static boost::shared_ptr<Cal3_S2Stereo> K(new Cal3_S2Stereo(625, 625, 0, 320, 24
 
 // point X Y Z in meters
 static Point3 p(0, 0, 5);
-static SharedNoiseModel sigma(noiseModel::Unit::Create(3));
+static SharedNoiseModel model(noiseModel::Unit::Create(3));
 
 // Convenience for named keys
 using symbol_shorthand::X;
 using symbol_shorthand::L;
+
+typedef GenericStereoFactor<Pose3, Point3> TestStereoFactor;
+
+/* ************************************************************************* */
+TEST( StereoFactor, Constructor) {
+  StereoPoint2 measurement(323, 318-50, 241);
+
+  TestStereoFactor factor(measurement, model, X(1), L(1), K);
+}
+
+/* ************************************************************************* */
+TEST( StereoFactor, ConstructorWithTransform) {
+  StereoPoint2 measurement(323, 318-50, 241);
+  Pose3 body_P_sensor(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));
+
+  TestStereoFactor factor(measurement, model, X(1), L(1), K, body_P_sensor);
+}
+
+/* ************************************************************************* */
+TEST( StereoFactor, Equals ) {
+  // Create two identical factors and make sure they're equal
+  StereoPoint2 measurement(323, 318-50, 241);
+
+  TestStereoFactor factor1(measurement, model, X(1), L(1), K);
+  TestStereoFactor factor2(measurement, model, X(1), L(1), K);
+
+  CHECK(assert_equal(factor1, factor2));
+}
+
+/* ************************************************************************* */
+TEST( StereoFactor, EqualsWithTransform ) {
+  // Create two identical factors and make sure they're equal
+  StereoPoint2 measurement(323, 318-50, 241);
+  Pose3 body_P_sensor(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));
+
+  TestStereoFactor factor1(measurement, model, X(1), L(1), K, body_P_sensor);
+  TestStereoFactor factor2(measurement, model, X(1), L(1), K, body_P_sensor);
+
+  CHECK(assert_equal(factor1, factor2));
+}
+
+/* ************************************************************************* */
+TEST( StereoFactor, Error ) {
+  // Create the factor with a measurement that is 3 pixels off in x
+  StereoPoint2 measurement(323, 318-50, 241);
+  TestStereoFactor factor(measurement, model, X(1), L(1), K);
+
+  // Set the linearization point
+  Pose3 pose(Rot3(), Point3(0.0, 0.0, -6.25));
+  Point3 point(0.0, 0.0, 0.0);
+
+  // Use the factor to calculate the error
+  Vector actualError(factor.evaluateError(pose, point));
+
+  // The expected error is (-3.0, +2.0, -1.0) pixels / UnitCovariance
+  Vector expectedError = Vector_(3, -3.0, +2.0, -1.0);
+
+  // Verify we get the expected error
+  CHECK(assert_equal(expectedError, actualError, 1e-9));
+}
+
+/* ************************************************************************* */
+TEST( StereoFactor, ErrorWithTransform ) {
+  // Create the factor with a measurement that is 3 pixels off in x
+  StereoPoint2 measurement(323, 318-50, 241);
+  Pose3 body_P_sensor(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));
+  TestStereoFactor factor(measurement, model, X(1), L(1), K, body_P_sensor);
+
+  // Set the linearization point. The vehicle pose has been selected to put the camera at (-6, 0, 0)
+  Pose3 pose(Rot3(), Point3(-6.50, 0.10 , -1.0));
+  Point3 point(0.0, 0.0, 0.0);
+
+  // Use the factor to calculate the error
+  Vector actualError(factor.evaluateError(pose, point));
+
+  // The expected error is (-3.0, +2.0, -1.0) pixels / UnitCovariance
+  Vector expectedError = Vector_(3, -3.0, +2.0, -1.0);
+
+  // Verify we get the expected error
+  CHECK(assert_equal(expectedError, actualError, 1e-9));
+}
+
+/* ************************************************************************* */
+TEST( StereoFactor, Jacobian ) {
+  // Create the factor with a measurement that is 3 pixels off in x
+  StereoPoint2 measurement(323, 318-50, 241);
+  TestStereoFactor factor(measurement, model, X(1), L(1), K);
+
+  // Set the linearization point
+  Pose3 pose(Rot3(), Point3(0.0, 0.0, -6.25));
+  Point3 point(0.0, 0.0, 0.0);
+
+  // Use the factor to calculate the Jacobians
+  Matrix H1Actual, H2Actual;
+  factor.evaluateError(pose, point, H1Actual, H2Actual);
+
+  // The expected Jacobians
+  Matrix H1Expected = Matrix_(3, 6, 0.0,  -625.0, 0.0, -100.0,    0.0,  0.0,
+                                    0.0,  -625.0, 0.0, -100.0,    0.0, -8.0,
+                                    625.0,   0.0, 0.0,    0.0, -100.0,  0.0);
+  Matrix H2Expected = Matrix_(3, 3, 100.0,   0.0, 0.0,
+                                    100.0,   0.0, 8.0,
+                                    0.0,   100.0, 0.0);
+
+  // Verify the Jacobians are correct
+  CHECK(assert_equal(H1Expected, H1Actual, 1e-3));
+  CHECK(assert_equal(H2Expected, H2Actual, 1e-3));
+}
+
+/* ************************************************************************* */
+TEST( StereoFactor, JacobianWithTransform ) {
+  // Create the factor with a measurement that is 3 pixels off in x
+  StereoPoint2 measurement(323, 318-50, 241);
+  Pose3 body_P_sensor(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));
+  TestStereoFactor factor(measurement, model, X(1), L(1), K, body_P_sensor);
+
+  // Set the linearization point. The vehicle pose has been selected to put the camera at (-6, 0, 0)
+  Pose3 pose(Rot3(), Point3(-6.50, 0.10 , -1.0));
+  Point3 point(0.0, 0.0, 0.0);
+
+  // Use the factor to calculate the Jacobians
+  Matrix H1Actual, H2Actual;
+  factor.evaluateError(pose, point, H1Actual, H2Actual);
+
+  // The expected Jacobians
+  Matrix H1Expected = Matrix_(3, 6, -100.0,    0.0,  650.0,   0.0,  100.0,    0.0,
+                                    -100.0,   -8.0,  649.2,  -8.0,  100.0,    0.0,
+                                     -10.0, -650.0,    0.0,   0.0,    0.0,  100.0);
+  Matrix H2Expected = Matrix_(3, 3,    0.0, -100.0,    0.0,
+                                       8.0, -100.0,    0.0,
+                                       0.0,    0.0, -100.0);
+
+  // Verify the Jacobians are correct
+  CHECK(assert_equal(H1Expected, H1Actual, 1e-3));
+  CHECK(assert_equal(H2Expected, H2Actual, 1e-3));
+}
 
 /* ************************************************************************* */
 TEST( StereoFactor, singlePoint)
@@ -55,9 +191,9 @@ TEST( StereoFactor, singlePoint)
 
   graph.add(NonlinearEquality<Pose3>(X(1), camera1));
 
-  StereoPoint2 z14(320, 320.0-50, 240);
+  StereoPoint2 measurement(320, 320.0-50, 240);
   // arguments: measurement, sigma, cam#, measurement #, K, baseline (m)
-  graph.add(GenericStereoFactor<Pose3, Point3>(z14, sigma, X(1), L(1), K));
+  graph.add(GenericStereoFactor<Pose3, Point3>(measurement, model, X(1), L(1), K));
 
   // Create a configuration corresponding to the ground truth
   Values values;

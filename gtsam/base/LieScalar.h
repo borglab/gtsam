@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <gtsam/dllexport.h>
 #include <gtsam/base/DerivedValue.h>
 #include <gtsam/base/Lie.h>
 
@@ -25,7 +26,7 @@ namespace gtsam {
   /**
    * LieScalar is a wrapper around double to allow it to be a Lie type
    */
-  struct LieScalar : public DerivedValue<LieScalar> {
+  struct GTSAM_EXPORT LieScalar : public DerivedValue<LieScalar> {
 
     /** default constructor */
     LieScalar() : d_(0.0) {}
@@ -40,41 +41,39 @@ namespace gtsam {
     operator double() const { return d_; }
 
     /** print @param name optional string naming the object */
-    inline void print(const std::string& name="") const {
-      std::cout << name << ": " << d_ << std::endl;
-    }
+    void print(const std::string& name="") const;
 
     /** equality up to tolerance */
-    inline bool equals(const LieScalar& expected, double tol=1e-5) const {
+    bool equals(const LieScalar& expected, double tol=1e-5) const {
       return fabs(expected.d_ - d_) <= tol;
     }
 
     // Manifold requirements
 
     /** Returns dimensionality of the tangent space */
-    inline size_t dim() const { return 1; }
-    inline static size_t Dim() { return 1; }
+    size_t dim() const { return 1; }
+    static size_t Dim() { return 1; }
 
     /** Update the LieScalar with a tangent space update */
-    inline LieScalar retract(const Vector& v) const { return LieScalar(value() + v(0)); }
+    LieScalar retract(const Vector& v) const { return LieScalar(value() + v(0)); }
 
     /** @return the local coordinates of another object */
-    inline Vector localCoordinates(const LieScalar& t2) const { return Vector_(1,(t2.value() - value())); }
+    Vector localCoordinates(const LieScalar& t2) const { return Vector_(1,(t2.value() - value())); }
 
     // Group requirements
 
     /** identity */
-    inline static LieScalar identity() {
+    static LieScalar identity() {
       return LieScalar();
     }
 
     /** compose with another object */
-    inline LieScalar compose(const LieScalar& p) const {
+    LieScalar compose(const LieScalar& p) const {
       return LieScalar(d_ + p.d_);
     }
 
     /** between operation */
-    inline LieScalar between(const LieScalar& l2,
+    LieScalar between(const LieScalar& l2,
         boost::optional<Matrix&> H1=boost::none,
         boost::optional<Matrix&> H2=boost::none) const {
       if(H1) *H1 = -eye(1);
@@ -83,17 +82,17 @@ namespace gtsam {
     }
 
     /** invert the object and yield a new one */
-    inline LieScalar inverse() const {
+    LieScalar inverse() const {
       return LieScalar(-1.0 * value());
     }
 
     // Lie functions
 
     /** Expmap around identity */
-    static inline LieScalar Expmap(const Vector& v) { return LieScalar(v(0)); }
+    static LieScalar Expmap(const Vector& v) { return LieScalar(v(0)); }
 
     /** Logmap around identity - just returns with default cast back */
-    static inline Vector Logmap(const LieScalar& p) { return Vector_(1,p.value()); }
+    static Vector Logmap(const LieScalar& p) { return Vector_(1,p.value()); }
 
   private:
       double d_;

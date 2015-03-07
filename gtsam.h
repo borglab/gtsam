@@ -10,7 +10,7 @@
  *   Only one Method/Constructor per line, though methods/constructors can extend across multiple lines
  *   Methods can return
  *     - Eigen types:       Matrix, Vector
- *     - C/C++ basic types: string, bool, size_t, size_t, double, char, unsigned char
+ *     - C/C++ basic types: string, bool, size_t, int, double, char, unsigned char
  *     - void
  *     - Any class with which be copied with boost::make_shared()
  *     - boost::shared_ptr of any object type
@@ -20,7 +20,7 @@
  *   Methods
  *     - Constness has no effect
  *     - Specify by-value (not reference) return types, even if C++ method returns reference
- *     - Must start with a lowercase letter
+ *     - Must start with a letter (upper or lowercase)
  *     - Overloads are supported
  *   Static methods
  *     - Must start with a letter (upper or lowercase) and use the "static" keyword
@@ -84,37 +84,43 @@
  *  - TODO: Handle gtsam::Rot3M conversions to quaternions
  */
 
-/*namespace std {
+namespace std {
+    #include <vector>
     template<T>
-    //Module.cpp needs to be changed to allow lowercase classnames
     class vector
     {
+        //Do we need these?
         //Capacity
-        size_t size() const;
+        /*size_t size() const;
         size_t max_size() const;
-        void resize(size_t sz, T c = T());
+        //void resize(size_t sz);
         size_t capacity() const;
         bool empty() const;
         void reserve(size_t n);
 
         //Element acces
-        T& at(size_t n);
-        const T& at(size_t n) const;
-        T& front();
-        const T& front() const;
-        T& back();
-        const T& back() const;
+        T* at(size_t n);
+        T* front();
+        T* back();
 
         //Modifiers
         void assign(size_t n, const T& u);
         void push_back(const T& x);
-        void pop_back();
+        void pop_back();*/
     };
-}*/
+    //typedef std::vector
+  
+    #include<list>
+    template<T>
+    class list
+    {
+    
+    
+    };
+
+}
 
 namespace gtsam {
-
-//typedef std::vector<Index> IndexVector;
 
 //*************************************************************************
 // base
@@ -255,6 +261,7 @@ virtual class Point2 : gtsam::Value {
   double y() const;
   Vector vector() const;
   double dist(const gtsam::Point2& p2) const;
+  double norm() const;
 };
 
 virtual class StereoPoint2 : gtsam::Value {
@@ -368,7 +375,7 @@ virtual class Rot3 : gtsam::Value {
   static gtsam::Rot3 Rx(double t);
   static gtsam::Rot3 Ry(double t);
   static gtsam::Rot3 Rz(double t);
-  static gtsam::Rot3 RzRyRx(double x, double y, double z); // FIXME: overloaded functions don't work yet
+  static gtsam::Rot3 RzRyRx(double x, double y, double z);
   static gtsam::Rot3 RzRyRx(Vector xyz);
   static gtsam::Rot3 yaw(double t); // positive yaw is to right (as in aircraft heading)
   static gtsam::Rot3 pitch(double t); // positive pitch is up (increasing aircraft altitude)
@@ -383,7 +390,7 @@ virtual class Rot3 : gtsam::Value {
 
   // Group
   static gtsam::Rot3 identity();
-  gtsam::Rot3 inverse() const;
+    gtsam::Rot3 inverse() const;
   gtsam::Rot3 compose(const gtsam::Rot3& p2) const;
   gtsam::Rot3 between(const gtsam::Rot3& p2) const;
 
@@ -411,6 +418,7 @@ virtual class Rot3 : gtsam::Value {
   double pitch() const;
   double yaw() const;
 //  Vector toQuaternion() const;  // FIXME: Can't cast to Vector properly
+  Vector quaternion() const;
 };
 
 virtual class Pose2 : gtsam::Value {
@@ -440,8 +448,8 @@ virtual class Pose2 : gtsam::Value {
   // Lie Group
   static gtsam::Pose2 Expmap(Vector v);
   static Vector Logmap(const gtsam::Pose2& p);
-  Matrix adjointMap() const;
-  Vector adjoint(const Vector& xi) const;
+  Matrix AdjointMap() const;
+  Vector Adjoint(const Vector& xi) const;
   static Matrix wedge(double vx, double vy, double w);
 
   // Group Actions on Point2
@@ -487,8 +495,8 @@ virtual class Pose3 : gtsam::Value {
   // Lie Group
   static gtsam::Pose3 Expmap(Vector v);
   static Vector Logmap(const gtsam::Pose3& p);
-  Matrix adjointMap() const;
-  Vector adjoint(const Vector& xi) const;
+  Matrix AdjointMap() const;
+  Vector Adjoint(Vector xi) const;
   static Matrix wedge(double wx, double wy, double wz, double vx, double vy, double vz);
 
   // Group Action on Point3
@@ -558,6 +566,8 @@ virtual class Cal3DS2 : gtsam::Value {
   Vector localCoordinates(const gtsam::Cal3DS2& c) const;
 
   // Action on Point2
+  gtsam::Point2 calibrate(const gtsam::Point2& p, double tol) const;
+  gtsam::Point2 calibrate(const gtsam::Point2& p) const;
   gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
   // TODO: D2d functions that start with an uppercase letter
 
@@ -628,7 +638,7 @@ virtual class SimpleCamera : gtsam::Value {
   SimpleCamera(const gtsam::Pose3& pose, const gtsam::Cal3_S2& K);
   static gtsam::SimpleCamera Level(const gtsam::Cal3_S2& K,
       const gtsam::Pose2& pose, double height);
-  static gtsam::SimpleCamera Level(const gtsam::Pose2& pose, double height); // FIXME overload
+  static gtsam::SimpleCamera Level(const gtsam::Pose2& pose, double height);
   static gtsam::SimpleCamera Lookat(const gtsam::Point3& eye,
       const gtsam::Point3& target, const gtsam::Point3& upVector,
       const gtsam::Cal3_S2& K);
@@ -653,45 +663,44 @@ virtual class SimpleCamera : gtsam::Value {
   gtsam::Point2 project(const gtsam::Point3& point);
   gtsam::Point3 backproject(const gtsam::Point2& p, double depth) const;
   double range(const gtsam::Point3& point);
-  double range(const gtsam::Pose3& point); // FIXME, overload
+  double range(const gtsam::Pose3& point);
 };
 
-// TODO: Add this back in when Cal3DS2 has a calibrate function
-//template<CALIBRATION = {gtsam::Cal3DS2}>
-//virtual class PinholeCamera : gtsam::Value {
-//  // Standard Constructors and Named Constructors
-//  PinholeCamera();
-//  PinholeCamera(const gtsam::Pose3& pose);
-//  PinholeCamera(const gtsam::Pose3& pose, const gtsam::Cal3DS2& K);
-//  static This Level(const gtsam::Cal3DS2& K,
-//    const gtsam::Pose2& pose, double height);
-//  static This Level(const gtsam::Pose2& pose, double height); // FIXME overload
-//  static This Lookat(const gtsam::Point3& eye,
-//    const gtsam::Point3& target, const gtsam::Point3& upVector,
-//    const gtsam::Cal3DS2& K);
-//
-//  // Testable
-//  void print(string s) const;
-//  bool equals(const This& camera, double tol) const;
-//
-//  // Standard Interface
-//  gtsam::Pose3 pose() const;
-//  CALIBRATION calibration() const;
-//
-//  // Manifold
-//  This retract(const Vector& d) const;
-//  Vector localCoordinates(const This& T2) const;
-//  size_t dim() const;
-//  static size_t Dim();
-//
-//  // Transformations and measurement functions
-//  static gtsam::Point2 project_to_camera(const gtsam::Point3& cameraPoint);
-//  pair<gtsam::Point2,bool> projectSafe(const gtsam::Point3& pw) const;
-//  gtsam::Point2 project(const gtsam::Point3& point);
-//  gtsam::Point3 backproject(const gtsam::Point2& p, double depth) const;
-//  double range(const gtsam::Point3& point);
-//  double range(const gtsam::Pose3& point); // FIXME, overload
-//};
+template<CALIBRATION = {gtsam::Cal3DS2}>
+virtual class PinholeCamera : gtsam::Value {
+  // Standard Constructors and Named Constructors
+  PinholeCamera();
+  PinholeCamera(const gtsam::Pose3& pose);
+  PinholeCamera(const gtsam::Pose3& pose, const gtsam::Cal3DS2& K);
+  static This Level(const gtsam::Cal3DS2& K,
+    const gtsam::Pose2& pose, double height);
+  static This Level(const gtsam::Pose2& pose, double height);
+  static This Lookat(const gtsam::Point3& eye,
+    const gtsam::Point3& target, const gtsam::Point3& upVector,
+    const gtsam::Cal3DS2& K);
+
+  // Testable
+  void print(string s) const;
+  bool equals(const This& camera, double tol) const;
+
+  // Standard Interface
+  gtsam::Pose3 pose() const;
+  CALIBRATION calibration() const;
+
+  // Manifold
+  This retract(const Vector& d) const;
+  Vector localCoordinates(const This& T2) const;
+  size_t dim() const;
+  static size_t Dim();
+
+  // Transformations and measurement functions
+  static gtsam::Point2 project_to_camera(const gtsam::Point3& cameraPoint);
+  pair<gtsam::Point2,bool> projectSafe(const gtsam::Point3& pw) const;
+  gtsam::Point2 project(const gtsam::Point3& point);
+  gtsam::Point3 backproject(const gtsam::Point2& p, double depth) const;
+  double range(const gtsam::Point3& point);
+  double range(const gtsam::Pose3& point);
+};
 
 //*************************************************************************
 // inference
@@ -717,7 +726,6 @@ class Permutation {
   // FIXME: Cannot currently wrap std::vector
   //static gtsam::Permutation PullToFront(const vector<size_t>& toFront, size_t size, bool filterDuplicates);
   //static gtsam::Permutation PushToBack(const vector<size_t>& toBack, size_t size, bool filterDuplicates = false);
-    gtsam::Permutation* partialPermutation(const gtsam::Permutation& selector, const gtsam::Permutation& partialPermutation) const;
 };
 
 class IndexFactor {
@@ -765,7 +773,6 @@ class IndexConditional {
   gtsam::IndexFactor* toFactor() const;
 
   //Advanced interface
-  bool permuteSeparatorWithInverse(const gtsam::Permutation& inversePermutation);
   void permuteWithInverse(const gtsam::Permutation& inversePermutation);
 };
 
@@ -779,7 +786,7 @@ virtual class BayesNet {
   // Standard interface
   size_t size() const;
   void printStats(string s) const;
-  void saveGraph(string s) const;
+    void saveGraph(string s) const;
   CONDITIONAL* front() const;
   CONDITIONAL* back() const;
   void push_back(CONDITIONAL* conditional);
@@ -788,7 +795,6 @@ virtual class BayesNet {
   void push_front(This& conditional);
   void pop_front();
   void permuteWithInverse(const gtsam::Permutation& inversePermutation);
-  bool permuteSeparatorWithInverse(const gtsam::Permutation& inversePermutation);
 };
 
 #include <gtsam/inference/BayesTree.h>
@@ -810,8 +816,8 @@ virtual class BayesTree {
     void clear();
     void deleteCachedShortcuts();
     void insert(const CLIQUE* subtree);
-    size_t numCachedShortcuts() const;
     size_t numCachedSeparatorMarginals() const;
+    CLIQUE* clique(size_t j) const;
 };
 
 template<CONDITIONAL>
@@ -824,7 +830,6 @@ virtual class BayesTreeClique {
   void print(string s) const;
   void printTree() const; // Default indent of ""
   void printTree(string indent) const;
-  size_t numCachedShortcuts() const;
   size_t numCachedSeparatorMarginals() const;
 
   CONDITIONAL* conditional() const;
@@ -834,7 +839,6 @@ virtual class BayesTreeClique {
 //  derived_ptr parent() const { return parent_.lock(); }
 
   void permuteWithInverse(const gtsam::Permutation& inversePermutation);
-  bool permuteSeparatorWithInverse(const gtsam::Permutation& inversePermutation);
 
   // FIXME: need wrapped versions graphs, BayesNet
 //  BayesNet<ConditionalType> shortcut(derived_ptr root, Eliminate function) const;
@@ -846,6 +850,7 @@ virtual class BayesTreeClique {
 
 #include <gtsam/inference/SymbolicFactorGraph.h>
 typedef gtsam::BayesNet<gtsam::IndexConditional> SymbolicBayesNetBase;
+
 virtual class SymbolicBayesNet  : gtsam::SymbolicBayesNetBase {
   // Standard Constructors and Named Constructors
   SymbolicBayesNet();
@@ -861,10 +866,8 @@ virtual class SymbolicBayesNet  : gtsam::SymbolicBayesNetBase {
   //Advanced Interface
   void pop_front();
   void permuteWithInverse(const gtsam::Permutation& inversePermutation);
-  bool permuteSeparatorWithInverse(const gtsam::Permutation& inversePermutation);
 };
 
-#include <gtsam/inference/SymbolicFactorGraph.h>
 typedef gtsam::BayesTreeClique<gtsam::IndexConditional> SymbolicBayesTreeClique;
 typedef gtsam::BayesTree<gtsam::IndexConditional, gtsam::SymbolicBayesTreeClique> SymbolicBayesTreeBase;
 virtual class SymbolicBayesTree : gtsam::SymbolicBayesTreeBase {
@@ -903,6 +906,7 @@ class SymbolicFactorGraph {
   void push_factor(size_t key1, size_t key2, size_t key3, size_t key4);
 
   pair<gtsam::IndexConditional*, gtsam::SymbolicFactorGraph> eliminateFrontals(size_t nFrontals) const;
+  pair<gtsam::IndexConditional*, gtsam::SymbolicFactorGraph> eliminateOne(size_t j);
 };
 
 #include <gtsam/inference/SymbolicSequentialSolver.h>
@@ -996,7 +1000,7 @@ virtual class Constrained : gtsam::noiseModel::Diagonal {
     static gtsam::noiseModel::Constrained* MixedPrecisions(const Vector& precisions);
 
     static gtsam::noiseModel::Constrained* All(size_t dim);
-    static gtsam::noiseModel::Constrained* All(size_t dim, double m);
+    static gtsam::noiseModel::Constrained* All(size_t dim, double mu);
 
     gtsam::noiseModel::Constrained* unit() const;
 };
@@ -1012,6 +1016,43 @@ virtual class Unit : gtsam::noiseModel::Isotropic {
   static gtsam::noiseModel::Unit* Create(size_t dim);
   void print(string s) const;
 };
+
+namespace mEstimator {
+virtual class Base {
+};
+
+virtual class Null: gtsam::noiseModel::mEstimator::Base {
+  Null();
+  void print(string s) const;
+  static gtsam::noiseModel::mEstimator::Null* Create();
+};
+
+virtual class Fair: gtsam::noiseModel::mEstimator::Base {
+  Fair(double c);
+  void print(string s) const;
+  static gtsam::noiseModel::mEstimator::Fair* Create(double c);
+};
+
+virtual class Huber: gtsam::noiseModel::mEstimator::Base {
+  Huber(double k);
+  void print(string s) const;
+  static gtsam::noiseModel::mEstimator::Huber* Create(double k);
+};
+
+virtual class Tukey: gtsam::noiseModel::mEstimator::Base {
+  Tukey(double k);
+  void print(string s) const;
+  static gtsam::noiseModel::mEstimator::Tukey* Create(double k);
+};
+
+}///\namespace mEstimator
+
+virtual class Robust : gtsam::noiseModel::Base {
+  Robust(const gtsam::noiseModel::mEstimator::Base* robust, const gtsam::noiseModel::Base* noise);
+  static gtsam::noiseModel::Robust* Create(const gtsam::noiseModel::mEstimator::Base* robust, const gtsam::noiseModel::Base* noise);
+  void print(string s) const;
+};
+
 }///\namespace noiseModel
 
 #include <gtsam/linear/Sampler.h>
@@ -1043,18 +1084,20 @@ class VectorValues {
   //Standard Interface
   size_t size() const;
   size_t dim(size_t j) const;
-  size_t dim() const;
   bool exists(size_t j) const;
   void print(string s) const;
   bool equals(const gtsam::VectorValues& expected, double tol) const;
   void insert(size_t j, Vector value);
-  Vector vector() const;
+  Vector asVector() const;
   Vector at(size_t j) const;
 
   //Advanced Interface
   void resizeLike(const gtsam::VectorValues& other);
   void resize(size_t nVars, size_t varDim);
   void setZero();
+
+  gtsam::VectorValues add(const gtsam::VectorValues& c) const;
+  gtsam::VectorValues scale(double a, const gtsam::VectorValues& c) const;
 
     //FIXME: Parse errors with vector()
   //const Vector& vector() const;
@@ -1106,21 +1149,21 @@ virtual class GaussianBayesNet  : gtsam::GaussianBayesNetBase {
 
 //Non-Class methods found in GaussianBayesNet.h
 //FIXME: No MATLAB documentation for these functions!
-/*gtsam::GaussianBayesNet scalarGaussian(size_t key, double mu, double sigma);
-gtsam::GaussianBayesNet simpleGaussian(size_t key, const Vector& mu, double sigma);
-void push_front(gtsam::GaussianBayesNet& bn, size_t key, Vector d, Matrix R, size_t name1, Matrix S, Vector sigmas);
-void push_front(gtsam::GaussianBayesNet& bn, size_t key, Vector d, Matrix R, size_t name1, Matrix S, size_t name2, Matrix T, Vector sigmas);
-gtsam::VectorValues* allocateVectorValues(const gtsam::GaussianBayesNet& bn);
-gtsam::VectorValues optimize(const gtsam::GaussianBayesNet& bn);
-void optimizeInPlace(const gtsam::GaussianBayesNet& bn, gtsam::VectorValues& x);
-gtsam::VectorValues optimizeGradientSearch(const gtsam::GaussianBayesNet& bn);
-void optimizeGradientSearchInPlace(const gtsam::GaussianBayesNet& bn, gtsam::VectorValues& grad);
-gtsam::VectorValues backSubstitute(const gtsam::GaussianBayesNet& bn, const gtsam::VectorValues& gx);
-gtsam::VectorValues backSubstituteTranspose(const gtsam::GaussianBayesNet& bn, const gtsam::VectorValues& gx);
-pair<Matrix, Vector> matrix(const gtsam::GaussianBayesNet& bn);
+//gtsam::GaussianBayesNet scalarGaussian(size_t key, double mu, double sigma);
+//gtsam::GaussianBayesNet simpleGaussian(size_t key, const Vector& mu, double sigma);
+//void push_front(gtsam::GaussianBayesNet& bn, size_t key, Vector d, Matrix R, size_t name1, Matrix S, Vector sigmas);
+//void push_front(gtsam::GaussianBayesNet& bn, size_t key, Vector d, Matrix R, size_t name1, Matrix S, size_t name2, Matrix T, Vector sigmas);
+//gtsam::VectorValues* allocateVectorValues(const gtsam::GaussianBayesNet& bn);
+//gtsam::VectorValues optimize(const gtsam::GaussianBayesNet& bn);
+//void optimizeInPlace(const gtsam::GaussianBayesNet& bn, gtsam::VectorValues& x);
+//gtsam::VectorValues optimizeGradientSearch(const gtsam::GaussianBayesNet& bn);
+//void optimizeGradientSearchInPlace(const gtsam::GaussianBayesNet& bn, gtsam::VectorValues& grad);
+//gtsam::VectorValues backSubstitute(const gtsam::GaussianBayesNet& bn, const gtsam::VectorValues& gx);
+//gtsam::VectorValues backSubstituteTranspose(const gtsam::GaussianBayesNet& bn, const gtsam::VectorValues& gx);
+//pair<Matrix, Vector> matrix(const gtsam::GaussianBayesNet& bn);
 double determinant(const gtsam::GaussianBayesNet& bayesNet);
-gtsam::VectorValues gradient(const gtsam::GaussianBayesNet& bayesNet, const gtsam::VectorValues& x0);
-void gradientAtZero(const gtsam::GaussianBayesNet& bayesNet, const gtsam::VectorValues& g);*/
+//gtsam::VectorValues gradient(const gtsam::GaussianBayesNet& bayesNet, const gtsam::VectorValues& x0);
+//void gradientAtZero(const gtsam::GaussianBayesNet& bayesNet, const gtsam::VectorValues& g);
 
 #include <gtsam/linear/GaussianBayesTree.h>
 typedef gtsam::BayesTreeClique<gtsam::GaussianConditional> GaussianBayesTreeClique;
@@ -1131,6 +1174,13 @@ virtual class GaussianBayesTree : gtsam::GaussianBayesTreeBase {
   GaussianBayesTree(const gtsam::GaussianBayesNet& bn);
   GaussianBayesTree(const gtsam::GaussianBayesNet& other);
 };
+
+// namespace functions for GaussianBayesTree
+gtsam::VectorValues optimize(const gtsam::GaussianBayesTree& bayesTree);
+gtsam::VectorValues optimizeGradientSearch(const gtsam::GaussianBayesTree& bayesTree);
+gtsam::VectorValues gradient(const gtsam::GaussianBayesTree& bayesTree, const gtsam::VectorValues& x0);
+gtsam::VectorValues* allocateVectorValues(const gtsam::GaussianBayesTree& bt);
+double determinant(const gtsam::GaussianBayesTree& bayesTree);
 
 virtual class GaussianFactor {
   void print(string s) const;
@@ -1234,6 +1284,7 @@ class GaussianFactorGraph {
 
   // Inference
   pair<gtsam::GaussianConditional*, gtsam::GaussianFactorGraph> eliminateFrontals(size_t nFrontals) const;
+  pair<gtsam::GaussianConditional*, gtsam::GaussianFactorGraph> eliminateOne(size_t j) const;
 
   // Building the graph
   void push_back(gtsam::GaussianFactor* factor);
@@ -1314,6 +1365,20 @@ class GaussianSequentialSolver {
   Matrix marginalCovariance(size_t j) const;
 };
 
+#include <gtsam/linear/GaussianMultifrontalSolver.h>
+class GaussianMultifrontalSolver {
+  //Constructors
+  GaussianMultifrontalSolver(const gtsam::GaussianFactorGraph& graph,
+    bool useQR);
+
+  //Standard Interface
+  void replaceFactors(const gtsam::GaussianFactorGraph* factorGraph);
+  gtsam::GaussianBayesTree* eliminate() const;
+  gtsam::VectorValues* optimize() const;
+  gtsam::GaussianFactor* marginalFactor(size_t j) const;
+  Matrix marginalCovariance(size_t j) const;
+};
+
 #include <gtsam/linear/IterativeSolver.h>
 virtual class IterativeOptimizationParameters {
   string getKernel() const ;
@@ -1342,13 +1407,13 @@ virtual class ConjugateGradientParameters : gtsam::IterativeOptimizationParamete
   void setReset(size_t value);
   void setEpsilon_rel(double value);
   void setEpsilon_abs(double value);
-  void print(string s);
+  void print();
 };
 
 #include <gtsam/linear/SubgraphSolver.h>
 virtual class SubgraphSolverParameters : gtsam::ConjugateGradientParameters {
   SubgraphSolverParameters();
-  void print(string s) const;
+  void print() const;
 };
 
 class SubgraphSolver  {
@@ -1385,6 +1450,37 @@ size_t symbol(char chr, size_t index);
 char symbolChr(size_t key);
 size_t symbolIndex(size_t key);
 
+// Key utilities
+gtsam::KeySet keyIntersection(const gtsam::KeySet& keysA, const gtsam::KeySet& keysB);
+gtsam::KeySet keyDifference(const gtsam::KeySet& keysA, const gtsam::KeySet& keysB);
+bool hasKeyIntersection(const gtsam::KeySet& keysA, const gtsam::KeySet& keysB);
+
+// Default keyformatter
+void printKeySet(const gtsam::KeySet& keys);
+void printKeySet(const gtsam::KeySet& keys, string s);
+
+#include <gtsam/nonlinear/LabeledSymbol.h>
+class LabeledSymbol {
+  LabeledSymbol(size_t full_key);
+  LabeledSymbol(const gtsam::LabeledSymbol& key);
+  LabeledSymbol(unsigned char valType, unsigned char label, size_t j);
+
+  size_t key() const;
+  unsigned char label() const;
+  unsigned char chr() const;
+  size_t index() const;
+
+  gtsam::LabeledSymbol upper() const;
+  gtsam::LabeledSymbol lower() const;
+
+  void print(string s) const;
+};
+
+size_t mrsymbol(unsigned char c, unsigned char label, size_t j);
+unsigned char mrsymbolChr(size_t key);
+unsigned char mrsymbolLabel(size_t key);
+size_t mrsymbolIndex(size_t key);
+
 #include <gtsam/nonlinear/Ordering.h>
 class Ordering {
   // Standard Constructors and Named Constructors
@@ -1395,26 +1491,14 @@ class Ordering {
   bool equals(const gtsam::Ordering& ord, double tol) const;
 
   // Standard interface
-  size_t nVars() const;
   size_t size() const;
   size_t at(size_t key) const;
+  size_t key(size_t index) const;
   bool exists(size_t key) const;
   void insert(size_t key, size_t order);
   void push_back(size_t key);
-  void permuteWithInverse(const gtsam::Permutation& inversePermutation);
-  gtsam::InvertedOrdering invert() const;
-};
-
-class InvertedOrdering {
-  InvertedOrdering();
-
-  // FIXME: add bracket operator overload
-
-  bool empty() const;
-  size_t size() const;
-  bool count(size_t index) const; // Use as a boolean function with implicit cast
-
-  void clear();
+  void permuteInPlace(const gtsam::Permutation& permutation);
+  void permuteInPlace(const gtsam::Permutation& selector, const gtsam::Permutation& permutation);
 };
 
 class NonlinearFactorGraph {
@@ -1507,6 +1591,8 @@ class KeyList {
   size_t back() const;
   void push_back(size_t key);
   void push_front(size_t key);
+  void pop_back();
+  void pop_front();
   void sort();
   void remove(size_t key);
 };
@@ -1573,6 +1659,47 @@ class JointMarginal {
   void print(string s) const;
   void print() const;
 };
+
+#include <gtsam/nonlinear/LinearContainerFactor.h>
+virtual class LinearContainerFactor : gtsam::NonlinearFactor {
+
+  LinearContainerFactor(gtsam::GaussianFactor* factor, const gtsam::Ordering& ordering,
+      const gtsam::Values& linearizationPoint);
+  LinearContainerFactor(gtsam::GaussianFactor* factor,  const gtsam::Values& linearizationPoint);
+
+  LinearContainerFactor(gtsam::GaussianFactor* factor, const gtsam::Ordering& ordering);
+  LinearContainerFactor(gtsam::GaussianFactor* factor);
+
+  gtsam::GaussianFactor* factor() const;
+//  const boost::optional<Values>& linearizationPoint() const;
+
+  gtsam::GaussianFactor* order(const gtsam::Ordering& ordering) const;
+  gtsam::GaussianFactor* negate(const gtsam::Ordering& ordering) const;
+  gtsam::NonlinearFactor* negate() const;
+
+  bool isJacobian() const;
+  gtsam::JacobianFactor* toJacobian() const;
+  gtsam::HessianFactor* toHessian() const;
+
+  static gtsam::NonlinearFactorGraph convertLinearGraph(const gtsam::GaussianFactorGraph& linear_graph,
+      const gtsam::Ordering& ordering, const gtsam::Values& linearizationPoint);
+
+  static gtsam::NonlinearFactorGraph convertLinearGraph(const gtsam::GaussianFactorGraph& linear_graph,
+      const gtsam::Ordering& ordering);
+
+}; // \class LinearContainerFactor
+
+// Summarization functionality
+#include <gtsam/nonlinear/summarization.h>
+
+// Uses partial QR approach by default
+pair<gtsam::GaussianFactorGraph,gtsam::Ordering> summarize(
+    const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& values,
+    const gtsam::KeySet& saved_keys);
+
+gtsam::NonlinearFactorGraph summarizeAsNonlinearContainer(
+    const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& values,
+    const gtsam::KeySet& saved_keys);
 
 //*************************************************************************
 // Nonlinear optimizers
@@ -1754,7 +1881,6 @@ virtual class ISAM2Clique {
     void print(string s);
 
     void permuteWithInverse(const gtsam::Permutation& inversePermutation);
-    bool permuteSeparatorWithInverse(const gtsam::Permutation& inversePermutation);
 };
 
 class ISAM2Result {
@@ -1772,6 +1898,7 @@ typedef gtsam::BayesTree<gtsam::GaussianConditional, gtsam::ISAM2Clique> ISAM2Ba
 virtual class ISAM2  : gtsam::ISAM2BayesTree {
   ISAM2();
   ISAM2(const gtsam::ISAM2Params& params);
+  ISAM2(const gtsam::ISAM2& other);
 
   bool equals(const gtsam::ISAM2& other, double tol) const;
   void print(string s) const;
@@ -1891,12 +2018,22 @@ template<POSE, LANDMARK, CALIBRATION>
 virtual class GenericProjectionFactor : gtsam::NonlinearFactor {
   GenericProjectionFactor(const gtsam::Point2& measured, const gtsam::noiseModel::Base* noiseModel,
     size_t poseKey, size_t pointKey, const CALIBRATION* k);
+  GenericProjectionFactor(const gtsam::Point2& measured, const gtsam::noiseModel::Base* noiseModel,
+    size_t poseKey, size_t pointKey, const CALIBRATION* k, const POSE& body_P_sensor);
+
+  GenericProjectionFactor(const gtsam::Point2& measured, const gtsam::noiseModel::Base* noiseModel,
+      size_t poseKey, size_t pointKey, const CALIBRATION* k, bool throwCheirality, bool verboseCheirality);
+    GenericProjectionFactor(const gtsam::Point2& measured, const gtsam::noiseModel::Base* noiseModel,
+      size_t poseKey, size_t pointKey, const CALIBRATION* k, bool throwCheirality, bool verboseCheirality,
+      const POSE& body_P_sensor);
+
   gtsam::Point2 measured() const;
   CALIBRATION* calibration() const;
+  bool verboseCheirality() const;
+  bool throwCheirality() const;
 };
 typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2> GenericProjectionFactorCal3_S2;
-// FIXME: Add Cal3DS2 when it has a 'calibrate' function
-//typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3DS2> GenericProjectionFactorCal3DS2;
+typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3, gtsam::Cal3DS2> GenericProjectionFactorCal3DS2;
 
 
 #include <gtsam/slam/GeneralSFMFactor.h>
@@ -1906,10 +2043,8 @@ virtual class GeneralSFMFactor : gtsam::NonlinearFactor {
   gtsam::Point2 measured() const;
 };
 typedef gtsam::GeneralSFMFactor<gtsam::SimpleCamera, gtsam::Point3> GeneralSFMFactorCal3_S2;
-// FIXME: Add Cal3DS2 when it has a 'calibrate' function
-//typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3DS2, gtsam::Point3> GeneralSFMFactorCal3DS2;
+typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3DS2, gtsam::Point3> GeneralSFMFactorCal3DS2;
 
-// FIXME: Add Cal3DS2 when it has a 'calibrate' function
 template<CALIBRATION = {gtsam::Cal3_S2}>
 virtual class GeneralSFMFactor2 : gtsam::NonlinearFactor {
   GeneralSFMFactor2(const gtsam::Point2& measured, const gtsam::noiseModel::Base* model, size_t poseKey, size_t landmarkKey, size_t calibKey);
@@ -1926,6 +2061,24 @@ virtual class GenericStereoFactor : gtsam::NonlinearFactor {
   gtsam::Cal3_S2Stereo* calibration() const;
 };
 typedef gtsam::GenericStereoFactor<gtsam::Pose3, gtsam::Point3> GenericStereoFactor3D;
+
+#include <gtsam/slam/PoseTranslationPrior.h>
+template<POSE>
+virtual class PoseTranslationPrior : gtsam::NonlinearFactor {
+  PoseTranslationPrior(size_t key, const POSE& pose_z, const gtsam::noiseModel::Base* noiseModel);
+};
+
+typedef gtsam::PoseTranslationPrior<gtsam::Pose2> PoseTranslationPrior2D;
+typedef gtsam::PoseTranslationPrior<gtsam::Pose3> PoseTranslationPrior3D;
+
+#include <gtsam/slam/PoseRotationPrior.h>
+template<POSE>
+virtual class PoseRotationPrior : gtsam::NonlinearFactor {
+  PoseRotationPrior(size_t key, const POSE& pose_z, const gtsam::noiseModel::Base* noiseModel);
+};
+
+typedef gtsam::PoseRotationPrior<gtsam::Pose2> PoseRotationPrior2D;
+typedef gtsam::PoseRotationPrior<gtsam::Pose3> PoseRotationPrior3D;
 
 #include <gtsam/slam/dataset.h>
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename,
@@ -1948,11 +2101,13 @@ namespace utilities {
   Matrix extractPoint2(const gtsam::Values& values);
   Matrix extractPoint3(const gtsam::Values& values);
   Matrix extractPose2(const gtsam::Values& values);
+  gtsam::Values allPose3s(gtsam::Values& values);
   Matrix extractPose3(const gtsam::Values& values);
   void perturbPoint2(gtsam::Values& values, double sigma, int seed);
   void perturbPoint3(gtsam::Values& values, double sigma, int seed);
   void insertBackprojections(gtsam::Values& values, const gtsam::SimpleCamera& c, Vector J, Matrix Z, double depth);
   void insertProjectionFactors(gtsam::NonlinearFactorGraph& graph, size_t i, Vector J, Matrix Z, const gtsam::noiseModel::Base* model, const gtsam::Cal3_S2* K);
+  void insertProjectionFactors(gtsam::NonlinearFactorGraph& graph, size_t i, Vector J, Matrix Z, const gtsam::noiseModel::Base* model, const gtsam::Cal3_S2* K, const gtsam::Pose3& body_P_sensor);
   Matrix reprojectionErrors(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& values);
 
 } //\namespace utilities

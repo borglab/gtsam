@@ -15,14 +15,11 @@
  * @author Christian Potthast
  */
 
-#include <gtsam/base/types.h>
+#include <gtsam/global_includes.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/timing.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/FastList.h>
-
-#include <gtsam/3rdparty/Eigen/Eigen/Dense>
-#include <gtsam/3rdparty/Eigen/Eigen/SVD>
 
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -102,6 +99,15 @@ bool assert_equal(const Matrix& expected, const Matrix& actual, double tol) {
     Matrix diff = actual-expected;
     print(diff, "actual - expected = ");
   }
+  return false;
+}
+
+/* ************************************************************************* */
+bool assert_inequal(const Matrix& A, const Matrix& B, double tol) {
+  if (!equal_with_abs_tol(A,B,tol)) return true;
+  cout << "Erroneously equal:" << endl;
+  print(A, "A = ");
+  print(B, "B = ");
   return false;
 }
 
@@ -682,7 +688,7 @@ void svd(const Matrix& A, Matrix& U, Vector& S, Matrix& V) {
 boost::tuple<int, double, Vector> DLT(const Matrix& A, double rank_tol) {
 
   // Check size of A
-  int n = A.rows(), p = A.cols(), m = min(n,p);
+  size_t n = A.rows(), p = A.cols(), m = min(n,p);
 
   // Do SVD on A
   Eigen::JacobiSVD<Matrix> svd(A, Eigen::ComputeFullV);
@@ -690,20 +696,20 @@ boost::tuple<int, double, Vector> DLT(const Matrix& A, double rank_tol) {
   Matrix V = svd.matrixV();
 
   // Find rank
-  int rank = 0;
-  for (int j = 0; j < m; j++)
+  size_t rank = 0;
+  for (size_t j = 0; j < m; j++)
     if (s(j) > rank_tol) rank++;
 
   // Return rank, error, and corresponding column of V
   double error = m<p ? 0 : s(m-1);
-  return boost::tuple<int, double, Vector>(rank, error, Vector(column(V, p-1)));
+  return boost::tuple<int, double, Vector>((int)rank, error, Vector(column(V, p-1)));
 }
 
 /* ************************************************************************* */
 Matrix expm(const Matrix& A, size_t K) {
   Matrix E = eye(A.rows()), A_k = eye(A.rows());
   for(size_t k=1;k<=K;k++) {
-    A_k = A_k*A/k;
+    A_k = A_k*A/double(k);
     E = E + A_k;
   }
   return E;
@@ -711,7 +717,7 @@ Matrix expm(const Matrix& A, size_t K) {
 
 /* ************************************************************************* */
 Matrix Cayley(const Matrix& A) {
-  int n = A.cols();
+  size_t n = A.cols();
   assert(A.rows() == n);
 
   // original

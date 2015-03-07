@@ -20,10 +20,14 @@
 #pragma once
 
 #include <boost/function.hpp>
+#ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
+#endif
 #include <boost/bind.hpp>
+#ifdef __GNUC__
 #pragma GCC diagnostic pop
+#endif
 
 #include <gtsam/base/LieVector.h>
 #include <gtsam/base/Matrix.h>
@@ -114,11 +118,11 @@ namespace gtsam {
     return numericalDerivative11<Y,X>(boost::bind(h, _1), x, delta);
   }
 
-  /** remapping for double valued functions */
-  template<class X>
-  Matrix numericalDerivative11(boost::function<double(const X&)> h, const X& x, double delta=1e-5) {
-    return numericalDerivative11<LieVector, X>(boost::bind(makeLieVectorD, boost::bind(h, _1)), x, delta);
-  }
+//  /** remapping for double valued functions */
+//  template<class X>
+//  Matrix numericalDerivative11(boost::function<double(const X&)> h, const X& x, double delta=1e-5) {
+//    return numericalDerivative11<LieVector, X>(boost::bind(makeLieVectorD, boost::bind(h, _1)), x, delta);
+//  }
 
   template<class X>
   Matrix numericalDerivative11(double (*h)(const X&), const X& x, double delta=1e-5) {

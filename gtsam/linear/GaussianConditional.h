@@ -21,7 +21,7 @@
 
 #include <boost/utility.hpp>
 
-#include <gtsam/base/types.h>
+#include <gtsam/global_includes.h>
 #include <gtsam/base/blockMatrices.h>
 #include <gtsam/inference/IndexConditional.h>
 #include <gtsam/linear/VectorValues.h>
@@ -45,7 +45,7 @@ class JacobianFactor;
  * It has a set of parents y,z, etc. and implements a probability density on x.
  * The negative log-probability is given by \f$ \frac{1}{2} |Rx - (d - Sy - Tz - ...)|^2 \f$
  */
-class GaussianConditional : public IndexConditional {
+class GTSAM_EXPORT GaussianConditional : public IndexConditional {
 
 public:
   typedef GaussianFactor FactorType;
@@ -144,8 +144,11 @@ public:
   /** equals function */
   bool equals(const GaussianConditional &cg, double tol = 1e-9) const;
 
-  /** dimension of multivariate variable */
+  /** dimension of multivariate variable (same as rows()) */
   size_t dim() const { return rsd_.rows(); }
+
+  /** dimension of multivariate variable (same as dim()) */
+  size_t rows() const { return dim(); }
 
   /** Compute the augmented information matrix as
    * \f$ [ R S d ]^T [ R S d ] \f$

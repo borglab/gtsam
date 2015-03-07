@@ -38,9 +38,9 @@ struct Module {
   typedef std::map<std::string, Method> Methods;
 
   std::string name;         ///< module name
+  bool verbose;            ///< verbose flag
   std::vector<Class> classes; ///< list of classes
   std::vector<TemplateInstantiationTypedef> templateInstantiationTypedefs; ///< list of template instantiations
-  bool verbose;            ///< verbose flag
   std::vector<ForwardDeclaration> forward_declarations;
   std::vector<std::string> includes;        ///< Include statements
   GlobalFunctions global_functions;
@@ -50,17 +50,24 @@ struct Module {
    const std::string& moduleName,
    bool enable_verbose=true);
 
+  /// Dummy constructor that does no parsing - use only for testing
+  Module(const std::string& moduleName, bool enable_verbose=true);
+
   //Recursive method to append all methods inhereted from parent classes
   std::map<std::string, Method> appendInheretedMethods(const Class& cls, const std::vector<Class>& classes);
 
   /// MATLAB code generation:
   void matlab_code(
        const std::string& path,
-       const std::string& headerPath) const;
+       const std::string& headerPath) const; // FIXME: headerPath not actually used?
 
   void finish_wrapper(FileWriter& file, const std::vector<std::string>& functionNames) const;
 
   void generateIncludes(FileWriter& file) const;
+
+  /// non-const function that performs parsing - typically called by constructor
+  /// Throws exception on failure
+  void parseMarkup(const std::string& data);
 
 private:
   static std::vector<Class> ExpandTypedefInstantiations(const std::vector<Class>& classes, const std::vector<TemplateInstantiationTypedef> instantiations);

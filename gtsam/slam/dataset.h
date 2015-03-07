@@ -37,7 +37,7 @@ namespace gtsam {
    * @throw std::invalid_argument if no matching file could be found using the
    * search process described above.
    */
-  std::string findExampleDataFile(const std::string& name);
+  GTSAM_EXPORT std::string findExampleDataFile(const std::string& name);
 #endif
 
   /**
@@ -47,7 +47,7 @@ namespace gtsam {
    * @param addNoise add noise to the edges
    * @param smart try to reduce complexity of covariance to cheapest model
    */
-  std::pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
+  GTSAM_EXPORT std::pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
       std::pair<std::string, boost::optional<noiseModel::Diagonal::shared_ptr> > dataset,
       int maxID = 0, bool addNoise = false, bool smart = true);
 
@@ -59,19 +59,19 @@ namespace gtsam {
    * @param addNoise add noise to the edges
    * @param smart try to reduce complexity of covariance to cheapest model
    */
-  std::pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
+  GTSAM_EXPORT std::pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> load2D(
       const std::string& filename,
       boost::optional<gtsam::SharedDiagonal> model = boost::optional<
           noiseModel::Diagonal::shared_ptr>(), int maxID = 0, bool addNoise = false,
       bool smart = true);
 
   /** save 2d graph */
-  void save2D(const NonlinearFactorGraph& graph, const Values& config,
+  GTSAM_EXPORT void save2D(const NonlinearFactorGraph& graph, const Values& config,
       const noiseModel::Diagonal::shared_ptr model, const std::string& filename);
 
   /**
    * Load TORO 3D Graph
    */
-  bool load3D(const std::string& filename);
+  GTSAM_EXPORT bool load3D(const std::string& filename);
 
 } // namespace gtsam

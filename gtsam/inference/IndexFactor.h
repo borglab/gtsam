@@ -42,7 +42,7 @@ namespace gtsam {
     /// @{
 
     /// Internal function for checking class invariants (unique keys for this factor)
-    void assertInvariants() const;
+    GTSAM_EXPORT void assertInvariants() const;
 
     /// @}
 
@@ -67,7 +67,7 @@ namespace gtsam {
     }
 
     /** Construct from derived type */
-    IndexFactor(const IndexConditional& c);
+    GTSAM_EXPORT IndexFactor(const IndexConditional& c);
 
     /** Default constructor for I/O */
     IndexFactor() {
@@ -140,10 +140,10 @@ namespace gtsam {
      * eliminate the first variable involved in this factor
      * @return a conditional on the eliminated variable
      */
-    boost::shared_ptr<ConditionalType> eliminateFirst();
+    GTSAM_EXPORT boost::shared_ptr<ConditionalType> eliminateFirst();
 
     /** eliminate the first nrFrontals frontal variables.*/
-    boost::shared_ptr<BayesNet<ConditionalType> > eliminate(size_t nrFrontals =
+    GTSAM_EXPORT boost::shared_ptr<BayesNet<ConditionalType> > eliminate(size_t nrFrontals =
         1);
 #endif
 
@@ -154,12 +154,12 @@ namespace gtsam {
      * Permutes the factor, but for efficiency requires the permutation
      * to already be inverted.
      */
-    void permuteWithInverse(const Permutation& inversePermutation);
+    GTSAM_EXPORT void permuteWithInverse(const Permutation& inversePermutation);
 
     /**
      * Apply a reduction, which is a remapping of variable indices.
      */
-    void reduceWithInverse(const internal::Reduction& inverseReduction);
+    GTSAM_EXPORT void reduceWithInverse(const internal::Reduction& inverseReduction);
 
     virtual ~IndexFactor() {
     }

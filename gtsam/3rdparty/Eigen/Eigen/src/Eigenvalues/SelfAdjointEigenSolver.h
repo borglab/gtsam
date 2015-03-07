@@ -4,24 +4,9 @@
 // Copyright (C) 2008-2010 Gael Guennebaud <gael.guennebaud@inria.fr>
 // Copyright (C) 2010 Jitse Niesen <jitse@maths.leeds.ac.uk>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #ifndef EIGEN_SELFADJOINTEIGENSOLVER_H
 #define EIGEN_SELFADJOINTEIGENSOLVER_H
@@ -751,15 +736,24 @@ namespace internal {
 template<int StorageOrder,typename RealScalar, typename Scalar, typename Index>
 static void tridiagonal_qr_step(RealScalar* diag, RealScalar* subdiag, Index start, Index end, Scalar* matrixQ, Index n)
 {
-  // NOTE this version avoids over & underflow, however since the matrix is prescaled, overflow cannot occur,
-  // and underflows should be meaningless anyway. So I don't any reason to enable this version, but I keep
-  // it here for reference:
-//   RealScalar td = (diag[end-1] - diag[end])*RealScalar(0.5);
-//   RealScalar e = subdiag[end-1];
-//   RealScalar mu = diag[end] - (e / (td + (td>0 ? 1 : -1))) * (e / hypot(td,e));
   RealScalar td = (diag[end-1] - diag[end])*RealScalar(0.5);
-  RealScalar e2 = abs2(subdiag[end-1]);
-  RealScalar mu = diag[end] - e2 / (td + (td>0 ? 1 : -1) * sqrt(td*td + e2));
+  RealScalar e = subdiag[end-1];
+  // Note that thanks to scaling, e^2 or td^2 cannot overflow, however they can still
+  // underflow thus leading to inf/NaN values when using the following commented code:
+//   RealScalar e2 = abs2(subdiag[end-1]);
+//   RealScalar mu = diag[end] - e2 / (td + (td>0 ? 1 : -1) * sqrt(td*td + e2));
+  // This explain the following, somewhat more complicated, version:
+  RealScalar mu = diag[end];
+  if(td==0)
+    mu -= abs(e);
+  else
+  {
+    RealScalar e2 = abs2(subdiag[end-1]);
+    RealScalar h = hypot(td,e);
+    if(e2==0)  mu -= (e / (td + (td>0 ? 1 : -1))) * (e / h);
+    else       mu -= e2 / (td + (td>0 ? h : -h));
+  }
+  
   RealScalar x = diag[start] - mu;
   RealScalar z = subdiag[start];
   for (Index k = start; k < end; ++k)

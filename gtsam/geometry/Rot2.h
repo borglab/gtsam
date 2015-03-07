@@ -31,7 +31,7 @@ namespace gtsam {
    * @addtogroup geometry
    * \nosubgrouping
    */
-  class Rot2 : public DerivedValue<Rot2> {
+  class GTSAM_EXPORT Rot2 : public DerivedValue<Rot2> {
 
   public:
     /** get the dimension by the type */

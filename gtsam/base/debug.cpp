@@ -20,6 +20,6 @@
 
 namespace gtsam {
 
-  FastMap<std::string, ValueWithDefault<bool,false> > debugFlags;
+  GTSAM_EXPORT FastMap<std::string, ValueWithDefault<bool,false> > debugFlags;
 
 }

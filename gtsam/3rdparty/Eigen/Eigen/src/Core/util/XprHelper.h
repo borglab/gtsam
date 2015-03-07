@@ -4,24 +4,9 @@
 // Copyright (C) 2008 Gael Guennebaud <gael.guennebaud@inria.fr>
 // Copyright (C) 2006-2008 Benoit Jacob <jacob.benoit.1@gmail.com>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #ifndef EIGEN_XPRHELPER_H
 #define EIGEN_XPRHELPER_H
@@ -316,9 +301,9 @@ template<typename T, int n=1, typename PlainObject = typename eval<T>::type> str
     // it's important that this value can still be squared without integer overflowing.
     DynamicAsInteger = 10000,
     ScalarReadCost = NumTraits<typename traits<T>::Scalar>::ReadCost,
-    ScalarReadCostAsInteger = ScalarReadCost == Dynamic ? DynamicAsInteger : ScalarReadCost,
+    ScalarReadCostAsInteger = ScalarReadCost == Dynamic ? int(DynamicAsInteger) : int(ScalarReadCost),
     CoeffReadCost = traits<T>::CoeffReadCost,
-    CoeffReadCostAsInteger = CoeffReadCost == Dynamic ? DynamicAsInteger : CoeffReadCost,
+    CoeffReadCostAsInteger = CoeffReadCost == Dynamic ? int(DynamicAsInteger) : int(CoeffReadCost),
     NAsInteger = n == Dynamic ? int(DynamicAsInteger) : n,
     CostEvalAsInteger   = (NAsInteger+1) * ScalarReadCostAsInteger + CoeffReadCostAsInteger,
     CostNoEvalAsInteger = NAsInteger * CoeffReadCostAsInteger

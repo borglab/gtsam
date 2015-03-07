@@ -33,8 +33,8 @@ namespace gtsam {
 /* ************************************************************************* */
 namespace internal {
 
-boost::shared_ptr<TimingOutline> timingRoot(new TimingOutline("Total", getTicTocID("Total")));
-boost::weak_ptr<TimingOutline> timingCurrent(timingRoot);
+GTSAM_EXPORT boost::shared_ptr<TimingOutline> timingRoot(new TimingOutline("Total", getTicTocID("Total")));
+GTSAM_EXPORT boost::weak_ptr<TimingOutline> timingCurrent(timingRoot);
 
 /* ************************************************************************* */
 // Implementation of TimingOutline

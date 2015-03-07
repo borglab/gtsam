@@ -88,7 +88,7 @@ string Constructor::wrapper_fragment(FileWriter& file,
   file.oss << "  collector_" << matlabUniqueName << ".insert(self);\n";
 
   if(verbose_)
-    file.oss << "  std::cout << \"constructed \" << self << \" << std::endl;" << endl;
+    file.oss << "  std::cout << \"constructed \" << self << std::endl;" << endl;
   file.oss << "  out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);" << endl;
   file.oss << "  *reinterpret_cast<Shared**> (mxGetData(out[0])) = self;" << endl;
 

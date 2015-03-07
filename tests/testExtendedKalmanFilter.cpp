@@ -199,7 +199,7 @@ public:
     Vector b = -evaluateError(x1, x2, A1, A2);
     const Index var1 = ordering[key1()], var2 = ordering[key2()];
     SharedDiagonal constrained =
-        boost::shared_dynamic_cast<noiseModel::Constrained>(this->noiseModel_);
+        boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
     if (constrained.get() != NULL) {
       return JacobianFactor::shared_ptr(new JacobianFactor(var1, A1, var2,
           A2, b, constrained));
@@ -335,7 +335,7 @@ public:
     Vector b = -evaluateError(x1, A1);
     const Index var1 = ordering[key()];
     SharedDiagonal constrained =
-        boost::shared_dynamic_cast<noiseModel::Constrained>(this->noiseModel_);
+        boost::dynamic_pointer_cast<noiseModel::Constrained>(this->noiseModel_);
     if (constrained.get() != NULL) {
       return JacobianFactor::shared_ptr(new JacobianFactor(var1, A1, b, constrained));
     }

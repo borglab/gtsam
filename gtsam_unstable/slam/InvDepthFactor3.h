@@ -1,7 +1,14 @@
 
 /**
  * @file InvDepthFactor3.h
- * @brief Inverse Depth Factor
+ * @brief Inverse Depth Factor based on Civera09tro, Montiel06rss.
+ * Landmarks are initialized from the first camera observation with
+ * (x,y,z,theta,phi,inv_depth), where x,y,z are the coordinates of
+ * the camera. InvDepthCamera provides methods to initialize inverse
+ * depth landmarks (backproject), and to convert inverse depth
+ * landmarks to cartesian coordinates (Point3) for visualization, etc.
+ * The inverse depth parameterization is split into (x,y,z,theta,phi),
+ * (inv_depth) to make it easy to add a prior on inverse depth alone
  * @author Chris Beall
  */
 
@@ -49,7 +56,7 @@ public:
    * @param K shared pointer to the constant calibration
    */
   InvDepthFactor3(const gtsam::Point2& measured, const gtsam::SharedNoiseModel& model,
-      const gtsam::Key poseKey, gtsam::Key pointKey, gtsam::Key invDepthKey, const gtsam::shared_ptrK& K) :
+      const gtsam::Key poseKey, gtsam::Key pointKey, gtsam::Key invDepthKey, const Cal3_S2::shared_ptr& K) :
         Base(model, poseKey, pointKey, invDepthKey), measured_(measured), K_(K) {}
 
   /** Virtual destructor */

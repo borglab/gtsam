@@ -1,20 +1,28 @@
-find_package(Qt4 REQUIRED)
-find_package(OpenGL REQUIRED)
+find_package(Qt4)
+find_package(OpenGL)
 
-set(QT_USE_QTOPENGL TRUE)
-include(${QT_USE_FILE})
+if(QT4_FOUND AND OPENGL_FOUND)
 
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
+  set(QT_USE_QTOPENGL TRUE)
+  include(${QT_USE_FILE})
 
-include_directories( ${QT_INCLUDE_DIR} )
+  set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-set(quaternion_demo_SRCS  gpuhelper.cpp icosphere.cpp camera.cpp trackball.cpp quaternion_demo.cpp)
+  include_directories( ${QT_INCLUDE_DIR} )
 
-qt4_automoc(${quaternion_demo_SRCS})
+  set(quaternion_demo_SRCS  gpuhelper.cpp icosphere.cpp camera.cpp trackball.cpp quaternion_demo.cpp)
 
-add_executable(quaternion_demo ${quaternion_demo_SRCS})
-add_dependencies(demos quaternion_demo)
+  qt4_automoc(${quaternion_demo_SRCS})
 
-target_link_libraries(quaternion_demo
-  ${QT_QTCORE_LIBRARY}    ${QT_QTGUI_LIBRARY}
-  ${QT_QTOPENGL_LIBRARY}  ${OPENGL_LIBRARIES} )
+  add_executable(quaternion_demo ${quaternion_demo_SRCS})
+  add_dependencies(demos quaternion_demo)
+
+  target_link_libraries(quaternion_demo
+    ${QT_QTCORE_LIBRARY}    ${QT_QTGUI_LIBRARY}
+    ${QT_QTOPENGL_LIBRARY}  ${OPENGL_LIBRARIES} )
+
+else()
+
+  message(STATUS "OpenGL demo disabled because Qt4 and/or OpenGL have not been found.")
+
+endif()

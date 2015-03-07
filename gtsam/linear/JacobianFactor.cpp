@@ -30,17 +30,20 @@
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 #include <boost/make_shared.hpp>
+#ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
+#endif
 #include <boost/bind.hpp>
+#ifdef __GNUC__
 #pragma GCC diagnostic pop
+#endif
 
 #include <cmath>
 #include <sstream>
 #include <stdexcept>
 
 using namespace std;
-//using namespace boost::lambda;
 
 namespace gtsam {
 
@@ -207,6 +210,22 @@ namespace gtsam {
     model_ = noiseModel::Unit::Create(maxrank);
 
     assertInvariants();
+  }
+
+  /* ************************************************************************* */
+  JacobianFactor::JacobianFactor(const GaussianFactorGraph& gfg) : Ab_(matrix_) {
+    // Cast or convert to Jacobians
+    FactorGraph<JacobianFactor> jacobians;
+    BOOST_FOREACH(const GaussianFactorGraph::sharedFactor& factor, gfg) {
+      if(factor) {
+        if(JacobianFactor::shared_ptr jf = boost::dynamic_pointer_cast<JacobianFactor>(factor))
+          jacobians.push_back(jf);
+        else
+          jacobians.push_back(boost::make_shared<JacobianFactor>(*factor));
+      }
+    }
+
+    *this = *CombineJacobians(jacobians, VariableSlots(jacobians));
   }
 
   /* ************************************************************************* */

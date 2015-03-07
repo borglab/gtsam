@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <gtsam/base/FastSet.h>
 #include <gtsam/inference/BayesTree.h>
 #include <gtsam/inference/VariableIndex.h>
 
@@ -149,6 +150,78 @@ namespace gtsam {
     return std::make_pair(eliminationResult.first, remainingFactors);
   }
 
+  /* ************************************************************************* */
+  template<class FACTOR>
+  std::pair<typename FactorGraph<FACTOR>::sharedConditional, FactorGraph<FACTOR> >
+    FactorGraph<FACTOR>::eliminate(const std::vector<KeyType>& variables, const Eliminate& eliminateFcn,
+    boost::optional<const VariableIndex&> variableIndex_) const
+  {
+      const VariableIndex& variableIndex =
+        variableIndex_ ? *variableIndex_ : VariableIndex(*this);
+
+      // First find the involved factors
+      FactorGraph<FACTOR> involvedFactors;
+      Index highestInvolvedVariable = 0; // Largest index of the variables in the involved factors
+
+      // First get the indices of the involved factors, but uniquely in a set
+      FastSet<size_t> involvedFactorIndices;
+      BOOST_FOREACH(Index variable, variables) {
+        involvedFactorIndices.insert(variableIndex[variable].begin(), variableIndex[variable].end()); }
+
+      // Add the factors themselves to involvedFactors and update largest index
+      involvedFactors.reserve(involvedFactorIndices.size());
+      BOOST_FOREACH(size_t factorIndex, involvedFactorIndices) {
+        const sharedFactor factor = this->at(factorIndex);
+        involvedFactors.push_back(factor); // Add involved factor
+        highestInvolvedVariable = std::max( // Updated largest index
+          highestInvolvedVariable,
+          *std::max_element(factor->begin(), factor->end()));
+      }
+
+      sharedConditional conditional;
+      sharedFactor remainingFactor;
+      if(involvedFactors.size() > 0) {
+        // Now permute the variables to be eliminated to the front of the ordering
+        Permutation toFront = Permutation::PullToFront(variables, highestInvolvedVariable+1);
+        Permutation toFrontInverse = *toFront.inverse();
+        BOOST_FOREACH(const sharedFactor& factor, involvedFactors) {
+          factor->permuteWithInverse(toFrontInverse); }
+
+        // Eliminate into conditional and remaining factor
+        EliminationResult eliminated = eliminateFcn(involvedFactors, variables.size());
+        conditional = eliminated.first;
+        remainingFactor = eliminated.second;
+
+        // Undo the permutation
+        BOOST_FOREACH(const sharedFactor& factor, involvedFactors) {
+          factor->permuteWithInverse(toFront); }
+        conditional->permuteWithInverse(toFront);
+        remainingFactor->permuteWithInverse(toFront);
+      } else {
+        // Eliminate 0 variables
+        EliminationResult eliminated = eliminateFcn(involvedFactors, 0);
+        conditional = eliminated.first;
+        remainingFactor = eliminated.second;
+      }
+
+      // Build the remaining graph, without the removed factors
+      FactorGraph<FACTOR> remainingGraph;
+      remainingGraph.reserve(this->size() - involvedFactors.size() + 1);
+      FastSet<size_t>::const_iterator involvedFactorIndexIt = involvedFactorIndices.begin();
+      for(size_t i = 0; i < this->size(); ++i) {
+        if(involvedFactorIndexIt != involvedFactorIndices.end() && *involvedFactorIndexIt == i)
+          ++ involvedFactorIndexIt;
+        else
+          remainingGraph.push_back(this->at(i));
+      }
+
+      // Add the remaining factor if it is not empty.
+      if(remainingFactor->size() != 0)
+        remainingGraph.push_back(remainingFactor);
+
+      return std::make_pair(conditional, remainingGraph);
+
+  }
   /* ************************************************************************* */
   template<class FACTOR>
   void FactorGraph<FACTOR>::replace(size_t index, sharedFactor factor) {

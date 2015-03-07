@@ -27,7 +27,7 @@ class NonlinearOptimizer;
 /** The common parameters for Nonlinear optimizers.  Most optimizers
  * deriving from NonlinearOptimizer also subclass the parameters.
  */
-class NonlinearOptimizerParams {
+class GTSAM_EXPORT NonlinearOptimizerParams {
 public:
   /** See NonlinearOptimizerParams::verbosity */
   enum Verbosity {
@@ -75,7 +75,7 @@ private:
  * additional state specific to the algorithm (for example, Dogleg state
  * contains the current trust region radius).
  */
-class NonlinearOptimizerState {
+class GTSAM_EXPORT NonlinearOptimizerState {
 public:
 
   /** The current estimate of the variable values. */
@@ -174,7 +174,7 @@ Values::const_shared_ptr result = DoglegOptimizer(graph, initialValues, params).
  * For more flexibility, since all functions are virtual, you may override them
  * in your own derived class.
  */
-class NonlinearOptimizer {
+class GTSAM_EXPORT NonlinearOptimizer {
 
 protected:
   NonlinearFactorGraph graph_;
@@ -249,7 +249,7 @@ protected:
  * the absolute error decrease is less than absoluteErrorTreshold, <em>or</em>
  * the error itself is less than errorThreshold.
  */
-bool checkConvergence(double relativeErrorTreshold,
+GTSAM_EXPORT bool checkConvergence(double relativeErrorTreshold,
     double absoluteErrorTreshold, double errorThreshold,
     double currentError, double newError, NonlinearOptimizerParams::Verbosity verbosity);
 

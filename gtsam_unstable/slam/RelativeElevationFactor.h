@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <gtsam_unstable/base/dllexport.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
@@ -24,7 +25,7 @@ namespace gtsam {
  *
  * TODO: enable use of a Pose3 for the target as well
  */
-class RelativeElevationFactor: public NoiseModelFactor2<Pose3, Point3> {
+class GTSAM_UNSTABLE_EXPORT RelativeElevationFactor: public NoiseModelFactor2<Pose3, Point3> {
 private:
 
   double measured_; /** measurement */

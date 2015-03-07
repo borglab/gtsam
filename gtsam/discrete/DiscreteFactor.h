@@ -30,7 +30,7 @@ namespace gtsam {
    * Base class for discrete probabilistic factors
    * The most general one is the derived DecisionTreeFactor
    */
-  class DiscreteFactor: public IndexFactor {
+  class GTSAM_EXPORT DiscreteFactor: public IndexFactor {
 
   public:
 

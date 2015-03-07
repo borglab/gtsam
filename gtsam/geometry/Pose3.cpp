@@ -18,6 +18,7 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/concepts.h>
 #include <gtsam/base/Lie-inl.h>
+#include <boost/foreach.hpp>
 #include <iostream>
 #include <cmath>
 
@@ -44,13 +45,67 @@ namespace gtsam {
   // Calculate Adjoint map
   // Ad_pose is 6*6 matrix that when applied to twist xi, returns Ad_pose(xi)
   // Experimental - unit tests of derivatives based on it do not check out yet
-  Matrix6 Pose3::adjointMap() const {
+  Matrix6 Pose3::AdjointMap() const {
     const Matrix3 R = R_.matrix();
     const Vector3 t = t_.vector();
     Matrix3 A = skewSymmetric(t)*R;
     Matrix6 adj;
     adj << R, Z3, A, R;
     return adj;
+  }
+
+  /* ************************************************************************* */
+  Matrix6 Pose3::adjointMap(const Vector& xi) {
+    Matrix3 w_hat = skewSymmetric(xi(0), xi(1), xi(2));
+    Matrix3 v_hat = skewSymmetric(xi(3), xi(4), xi(5));
+    Matrix6 adj;
+    adj << w_hat, Z3, v_hat, w_hat;
+
+    return adj;
+  }
+
+  /* ************************************************************************* */
+  Vector Pose3::adjoint(const Vector& xi, const Vector& y, boost::optional<Matrix&> H) {
+    if (H) {
+      *H = zeros(6,6);
+      for (int i = 0; i<6; ++i) {
+        Vector dxi = zero(6); dxi(i) = 1.0;
+        Matrix Gi = adjointMap(dxi);
+        (*H).col(i) = Gi*y;
+      }
+    }
+    return adjointMap(xi)*y;
+  }
+
+  /* ************************************************************************* */
+  Vector Pose3::adjointTranspose(const Vector& xi, const Vector& y, boost::optional<Matrix&> H) {
+    if (H) {
+      *H = zeros(6,6);
+      for (int i = 0; i<6; ++i) {
+        Vector dxi = zero(6); dxi(i) = 1.0;
+        Matrix GTi = adjointMap(dxi).transpose();
+        (*H).col(i) = GTi*y;
+      }
+    }
+    Matrix adjT = adjointMap(xi).transpose();
+    return adjointMap(xi).transpose() * y;
+  }
+
+  /* ************************************************************************* */
+  Matrix6 Pose3::dExpInv_exp(const Vector& xi) {
+    // Bernoulli numbers, from Wikipedia
+    static const Vector B = Vector_(9, 1.0, -1.0/2.0, 1./6., 0.0, -1.0/30.0, 0.0, 1.0/42.0, 0.0, -1.0/30);
+    static const int N = 5; // order of approximation
+    Matrix res = I6;
+    Matrix6 ad_i = I6;
+    Matrix6 ad_xi = adjointMap(xi);
+    double fac = 1.0;
+    for (int i = 1 ; i<N; ++i) {
+      ad_i = ad_xi * ad_i;
+      fac = fac*i;
+      res = res + B(i)/fac*ad_i;
+    }
+    return res;
   }
 
   /* ************************************************************************* */
@@ -210,14 +265,14 @@ namespace gtsam {
   /* ************************************************************************* */
   Pose3 Pose3::compose(const Pose3& p2,
         boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
-    if (H1) *H1 = p2.inverse().adjointMap();
+    if (H1) *H1 = p2.inverse().AdjointMap();
     if (H2) *H2 = I6;
     return (*this) * p2;
   }
 
   /* ************************************************************************* */
   Pose3 Pose3::inverse(boost::optional<Matrix&> H1) const {
-    if (H1) *H1 = -adjointMap();
+    if (H1) *H1 = -AdjointMap();
     Rot3 Rt = R_.inverse();
     return Pose3(Rt, Rt*(-t_));
   }
@@ -226,11 +281,9 @@ namespace gtsam {
   // between = compose(p2,inverse(p1));
   Pose3 Pose3::between(const Pose3& p2, boost::optional<Matrix&> H1,
       boost::optional<Matrix&> H2) const {
-      Matrix invH;
-    Pose3 invp1 = inverse(invH);
-    Matrix composeH1;
-    Pose3 result = invp1.compose(p2, composeH1, H2);
-    if (H1) *H1 = composeH1 * invH;
+    Pose3 result = inverse()*p2;
+    if (H1) *H1 = -result.inverse().AdjointMap();
+    if (H2) *H2 = I6;
     return result;
   }
 
@@ -258,5 +311,41 @@ namespace gtsam {
        insertSub(*H2, H2_, 0, 3);
      }
      return r;
+  }
+
+  /* ************************************************************************* */
+  boost::optional<Pose3> align(const vector<Point3Pair>& pairs) {
+    const size_t n = pairs.size();
+    if (n<3) return boost::none; // we need at least three pairs
+
+    // calculate centroids
+    Vector cp = zero(3),cq = zero(3);
+    BOOST_FOREACH(const Point3Pair& pair, pairs) {
+      cp += pair.first.vector();
+      cq += pair.second.vector();
+    }
+    double f = 1.0/n;
+    cp *= f; cq *= f;
+
+    // Add to form H matrix
+    Matrix H = zeros(3,3);
+    BOOST_FOREACH(const Point3Pair& pair, pairs) {
+      Vector dp = pair.first.vector()  - cp;
+      Vector dq = pair.second.vector() - cq;
+      H += dp * dq.transpose();
+    }
+
+    // Compute SVD
+    Matrix U,V;
+    Vector S;
+    svd(H,U,S,V);
+
+    // Recover transform with correction from Eggert97machinevisionandapplications
+    Matrix UVtranspose = U * V.transpose();
+    Matrix detWeighting = eye(3,3);
+    detWeighting(2,2) = UVtranspose.determinant();
+    Rot3 R(Matrix(V * detWeighting * U.transpose()));
+    Point3 t = Point3(cq) - R * Point3(cp);
+    return Pose3(R, t);
   }
 } // namespace gtsam

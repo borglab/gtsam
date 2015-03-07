@@ -94,5 +94,26 @@ TEST (Serialization, xml_geometry) {
 }
 
 /* ************************************************************************* */
+TEST (Serialization, binary_geometry) {
+  EXPECT(equalsBinary<gtsam::Point2>(Point2(1.0, 2.0)));
+  EXPECT(equalsBinary<gtsam::Pose2>(Pose2(1.0, 2.0, 0.3)));
+  EXPECT(equalsBinary<gtsam::Rot2>(Rot2::fromDegrees(30.0)));
+
+  EXPECT(equalsBinary<gtsam::Point3>(pt3));
+  EXPECT(equalsBinary<gtsam::Rot3>(rt3));
+  EXPECT(equalsBinary<gtsam::Pose3>(Pose3(rt3, pt3)));
+
+  EXPECT(equalsBinary(cal1));
+  EXPECT(equalsBinary(cal2));
+  EXPECT(equalsBinary(cal3));
+  EXPECT(equalsBinary(cal4));
+  EXPECT(equalsBinary(cal5));
+
+  EXPECT(equalsBinary(cam1));
+  EXPECT(equalsBinary(cam2));
+  EXPECT(equalsBinary(spt));
+}
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */

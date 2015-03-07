@@ -33,20 +33,26 @@ private:
 
   // Keep a copy of measurement and calibration for I/O
   StereoPoint2 measured_;                      ///< the measurement
-  boost::shared_ptr<Cal3_S2Stereo> K_;  ///< shared pointer to calibration
+  Cal3_S2Stereo::shared_ptr K_;                ///< shared pointer to calibration
+  boost::optional<POSE> body_P_sensor_;        ///< The pose of the sensor in the body frame
+
+  // verbosity handling for Cheirality Exceptions
+  bool throwCheirality_;                       ///< If true, rethrows Cheirality exceptions (default: false)
+  bool verboseCheirality_;                     ///< If true, prints text for Cheirality exceptions (default: false)
 
 public:
 
   // shorthand for base class type
-  typedef NoiseModelFactor2<POSE, LANDMARK> Base;               ///< typedef for base class
+  typedef NoiseModelFactor2<POSE, LANDMARK> Base;             ///< typedef for base class
   typedef GenericStereoFactor<POSE, LANDMARK> This;           ///< typedef for this class (with templates)
   typedef boost::shared_ptr<GenericStereoFactor> shared_ptr;  ///< typedef for shared pointer to this object
-  typedef POSE CamPose;                        ///< typedef for Pose Lie Value type
+  typedef POSE CamPose;                                       ///< typedef for Pose Lie Value type
 
   /**
    * Default constructor
    */
-  GenericStereoFactor() : K_(new Cal3_S2Stereo(444, 555, 666, 777, 888, 1.0)) {}
+  GenericStereoFactor() : K_(new Cal3_S2Stereo(444, 555, 666, 777, 888, 1.0)),
+      throwCheirality_(false), verboseCheirality_(false) {}
 
   /**
    * Constructor
@@ -55,12 +61,34 @@ public:
    * @param poseKey the pose variable key
    * @param landmarkKey the landmark variable key
    * @param K the constant calibration
+   * @param body_P_sensor is the transform from body to sensor frame (default identity)
    */
-  GenericStereoFactor(const StereoPoint2& measured, const SharedNoiseModel& model, Key poseKey, Key landmarkKey, const shared_ptrKStereo& K) :
-    Base(model, poseKey, landmarkKey), measured_(measured), K_(K) {
-  }
+  GenericStereoFactor(const StereoPoint2& measured, const SharedNoiseModel& model,
+      Key poseKey, Key landmarkKey, const Cal3_S2Stereo::shared_ptr& K,
+      boost::optional<POSE> body_P_sensor = boost::none) :
+    Base(model, poseKey, landmarkKey), measured_(measured), K_(K), body_P_sensor_(body_P_sensor),
+    throwCheirality_(false), verboseCheirality_(false) {}
 
-  virtual ~GenericStereoFactor() {}  ///< Virtual destructor
+  /**
+   * Constructor with exception-handling flags
+   * @param measured is the Stereo Point measurement (u_l, u_r, v). v will be identical for left & right for rectified stereo pair
+   * @param model is the noise model in on the measurement
+   * @param poseKey the pose variable key
+   * @param landmarkKey the landmark variable key
+   * @param K the constant calibration
+   * @param throwCheirality determines whether Cheirality exceptions are rethrown
+   * @param verboseCheirality determines whether exceptions are printed for Cheirality
+   * @param body_P_sensor is the transform from body to sensor frame  (default identity)
+   */
+  GenericStereoFactor(const StereoPoint2& measured, const SharedNoiseModel& model,
+      Key poseKey, Key landmarkKey, const Cal3_S2Stereo::shared_ptr& K,
+      bool throwCheirality, bool verboseCheirality,
+      boost::optional<POSE> body_P_sensor = boost::none) :
+    Base(model, poseKey, landmarkKey), measured_(measured), K_(K), body_P_sensor_(body_P_sensor),
+    throwCheirality_(throwCheirality), verboseCheirality_(verboseCheirality) {}
+
+  /** Virtual destructor */
+  virtual ~GenericStereoFactor() {}
 
   /// @return a deep copy of this factor
   virtual gtsam::NonlinearFactor::shared_ptr clone() const {
@@ -75,27 +103,48 @@ public:
   void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
     Base::print(s, keyFormatter);
     measured_.print(s + ".z");
+    if(this->body_P_sensor_)
+      this->body_P_sensor_->print("  sensor pose in body frame: ");
   }
 
   /**
    * equals
    */
   virtual bool equals(const NonlinearFactor& f, double tol = 1e-9) const {
-    const GenericStereoFactor* p = dynamic_cast<const GenericStereoFactor*> (&f);
-    return p && Base::equals(f) && measured_.equals(p->measured_, tol);
+    const GenericStereoFactor* e = dynamic_cast<const GenericStereoFactor*> (&f);
+    return e
+        && Base::equals(f)
+        && measured_.equals(e->measured_, tol)
+        && ((!body_P_sensor_ && !e->body_P_sensor_) || (body_P_sensor_ && e->body_P_sensor_ && body_P_sensor_->equals(*e->body_P_sensor_)));
   }
 
   /** h(x)-z */
   Vector evaluateError(const Pose3& pose, const Point3& point,
-      boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
+      boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) const {
     try {
-      StereoCamera stereoCam(pose, K_);
-      return (stereoCam.project(point, H1, H2) - measured_).vector();
+      if(body_P_sensor_) {
+        if(H1) {
+          gtsam::Matrix H0;
+          StereoCamera stereoCam(pose.compose(*body_P_sensor_, H0), K_);
+          StereoPoint2 reprojectionError(stereoCam.project(point, H1, H2) - measured_);
+          *H1 = *H1 * H0;
+          return reprojectionError.vector();
+        } else {
+          StereoCamera stereoCam(pose.compose(*body_P_sensor_), K_);
+          return (stereoCam.project(point, H1, H2) - measured_).vector();
+        }
+      } else {
+        StereoCamera stereoCam(pose, K_);
+        return (stereoCam.project(point, H1, H2) - measured_).vector();
+      }
     } catch(StereoCheiralityException& e) {
       if (H1) *H1 = zeros(3,6);
       if (H2) *H2 = zeros(3,3);
+      if (verboseCheirality_)
       std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2()) <<
           " moved behind camera " << DefaultKeyFormatter(this->key1()) << std::endl;
+      if (throwCheirality_)
+        throw e;
     }
     return ones(3) * 2.0 * K_->fx();
   }
@@ -110,6 +159,12 @@ public:
     return K_;
   }
 
+  /** return verbosity */
+  inline bool verboseCheirality() const { return verboseCheirality_; }
+
+  /** return flag for throwing cheirality exceptions */
+  inline bool throwCheirality() const { return throwCheirality_; }
+
 private:
   /** Serialization function */
   friend class boost::serialization::access;
@@ -119,6 +174,9 @@ private:
         boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(measured_);
     ar & BOOST_SERIALIZATION_NVP(K_);
+    ar & BOOST_SERIALIZATION_NVP(body_P_sensor_);
+    ar & BOOST_SERIALIZATION_NVP(throwCheirality_);
+    ar & BOOST_SERIALIZATION_NVP(verboseCheirality_);
   }
 };
 

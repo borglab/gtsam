@@ -302,7 +302,7 @@ TYPEDEF_HIDES_STRUCT   = NO
 # Private class members and static file members will be hidden unless
 # the EXTRACT_PRIVATE and EXTRACT_STATIC tags are set to YES
 
-EXTRACT_ALL            = YES
+EXTRACT_ALL            = NO
 
 # If the EXTRACT_PRIVATE tag is set to YES all private members of a class
 # will be included in the documentation.
@@ -797,9 +797,7 @@ HTML_HEADER             = "${Eigen_BINARY_DIR}/doc/eigendoxy_header.html"
 # each generated HTML page. If it is left blank doxygen will generate a
 # standard footer.
 
-# the footer has not been customized yet, so let's use the default one
-# ${Eigen_BINARY_DIR}/doc/eigendoxy_footer.html
-HTML_FOOTER             =
+HTML_FOOTER             = "${Eigen_BINARY_DIR}/doc/eigendoxy_footer.html"
 
 # The HTML_STYLESHEET tag can be used to specify a user-defined cascading
 # style sheet that is used by each HTML page. It can be used to

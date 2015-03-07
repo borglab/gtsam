@@ -29,7 +29,7 @@ class LevenbergMarquardtOptimizer;
  * common to all nonlinear optimization algorithms.  This class also contains
  * all of those parameters.
  */
-class LevenbergMarquardtParams : public SuccessiveLinearizationParams {
+class GTSAM_EXPORT LevenbergMarquardtParams : public SuccessiveLinearizationParams {
 
 public:
   /** See LevenbergMarquardtParams::lmVerbosity */
@@ -70,7 +70,7 @@ private:
 /**
  * State for LevenbergMarquardtOptimizer
  */
-class LevenbergMarquardtState : public NonlinearOptimizerState {
+class GTSAM_EXPORT LevenbergMarquardtState : public NonlinearOptimizerState {
 
 public:
   double lambda;
@@ -89,7 +89,7 @@ protected:
 /**
  * This class performs Levenberg-Marquardt nonlinear optimization
  */
-class LevenbergMarquardtOptimizer : public NonlinearOptimizer {
+class GTSAM_EXPORT LevenbergMarquardtOptimizer : public NonlinearOptimizer {
 
 protected:
   LevenbergMarquardtParams params_; ///< LM parameters
@@ -150,11 +150,17 @@ public:
    */
   virtual void iterate();
 
-  /** Access the parameters */
+  /** Read-only access the parameters */
   const LevenbergMarquardtParams& params() const { return params_; }
 
-  /** Access the last state */
+  /** Read/write access the parameters */
+  LevenbergMarquardtParams& params() { return params_; }
+
+  /** Read-only access the last state */
   const LevenbergMarquardtState& state() const { return state_; }
+
+  /** Read/write access the last state. When modifying the state, the error, etc. must be consistent before calling iterate() */
+  LevenbergMarquardtState& state() { return state_; }
 
   /// @}
 

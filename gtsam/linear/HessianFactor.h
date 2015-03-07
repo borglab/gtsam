@@ -39,14 +39,21 @@ namespace gtsam {
   // Definition of Scatter, which is an intermediate data structure used when
   // building a HessianFactor incrementally, to get the keys in the right
   // order.
-  struct SlotEntry {
+  // The "scatter" is a map from global variable indices to slot indices in the
+  // union of involved variables.  We also include the dimensionality of the
+  // variable.
+  struct GTSAM_EXPORT SlotEntry {
     size_t slot;
     size_t dimension;
     SlotEntry(size_t _slot, size_t _dimension)
     : slot(_slot), dimension(_dimension) {}
     std::string toString() const;
   };
-  typedef FastMap<Index, SlotEntry> Scatter;
+  class Scatter : public FastMap<Index, SlotEntry> {
+  public:
+    Scatter() {}
+    Scatter(const FactorGraph<GaussianFactor>& gfg);
+  };
 
   /**
    * @brief A Gaussian factor using the canonical parameters (information form)
@@ -111,7 +118,7 @@ namespace gtsam {
      .......
      \endcode
    */
-  class HessianFactor : public GaussianFactor {
+  class GTSAM_EXPORT HessianFactor : public GaussianFactor {
   protected:
     typedef Matrix InfoMatrix; ///< The full augmented Hessian
     typedef SymmetricBlockView<InfoMatrix> BlockInfo; ///< A blockwise view of the Hessian
@@ -187,9 +194,8 @@ namespace gtsam {
     /** Convert from a JacobianFactor (computes A^T * A) or HessianFactor */
     explicit HessianFactor(const GaussianFactor& factor);
 
-    /** Special constructor used in EliminateCholesky which combines the given factors */
-    HessianFactor(const FactorGraph<GaussianFactor>& factors,
-        const std::vector<size_t>& dimensions, const Scatter& scatter);
+    /** Combine a set of factors into a single dense HessianFactor */
+    HessianFactor(const FactorGraph<GaussianFactor>& factors);
 
     /** Destructor */
     virtual ~HessianFactor() {}

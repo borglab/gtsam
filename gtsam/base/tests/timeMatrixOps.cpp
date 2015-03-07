@@ -38,8 +38,8 @@ using namespace boost::lambda;
 static boost::variate_generator<boost::mt19937, boost::uniform_real<> > rng(boost::mt19937(), boost::uniform_real<>(-1.0, 0.0));
 //typedef ublas::matrix<double> matrix;
 //typedef ublas::matrix_range<matrix> matrix_range;
-typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> matrix;
-typedef Eigen::Block<matrix> matrix_block;
+//typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> matrix;
+//typedef Eigen::Block<matrix> matrix_block;
 
 //using ublas::range;
 //using ublas::triangular_matrix;
@@ -57,10 +57,10 @@ int main(int argc, char* argv[]) {
     assert(m > n);
     boost::variate_generator<boost::mt19937, boost::uniform_int<size_t> > rni(boost::mt19937(), boost::uniform_int<size_t>(0,m-1));
     boost::variate_generator<boost::mt19937, boost::uniform_int<size_t> > rnj(boost::mt19937(), boost::uniform_int<size_t>(0,n-1));
-    matrix mat(m,n);
-    matrix_block full = mat.block(0, 0, m, n);
-    matrix_block top = mat.block(0, 0, n, n);
-    matrix_block block = mat.block(m/4, n/4, m-m/2, n-n/2);
+    gtsam::Matrix mat((int)m,(int)n);
+    gtsam::SubMatrix full = mat.block(0, 0, m, n);
+    gtsam::SubMatrix top = mat.block(0, 0, n, n);
+    gtsam::SubMatrix block = mat.block(m/4, n/4, m-m/2, n-n/2);
 
     cout << format("  Basic: %1%x%2%\n") % m % n;
     cout << format("  Full:  mat(%1%:%2%, %3%:%4%)\n") % 0 % m % 0 % n;

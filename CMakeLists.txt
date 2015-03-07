@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 2.6)
 
 # Set the version number for the library
 set (GTSAM_VERSION_MAJOR 2)
-set (GTSAM_VERSION_MINOR 2)
+set (GTSAM_VERSION_MINOR 3)
 set (GTSAM_VERSION_PATCH 0)
 
 
@@ -46,31 +46,24 @@ endif()
 
 # Configurable Options
 option(GTSAM_BUILD_TESTS                 "Enable/Disable building of tests"          ON)
-option(GTSAM_BUILD_TIMING                "Enable/Disable building of timing scripts" ON) # These do not currently work
+option(GTSAM_BUILD_TIMING                "Enable/Disable building of timing scripts" OFF) # These do not currently work
 option(GTSAM_BUILD_EXAMPLES              "Enable/Disable building of examples"       ON)
 if(GTSAM_UNSTABLE_AVAILABLE)
     option(GTSAM_BUILD_UNSTABLE              "Enable/Disable libgtsam_unstable"          ON)
 endif()
-if(NOT MSVC)
-  option(GTSAM_BUILD_SHARED_LIBRARY        "Enable/Disable building of a shared version of gtsam" ON)
-  option(GTSAM_BUILD_STATIC_LIBRARY        "Enable/Disable building of a static version of gtsam" ON)
-else()
-  set(GTSAM_BUILD_STATIC_LIBRARY ON)
-endif()
+option(GTSAM_BUILD_SHARED_LIBRARY        "Enable/Disable building of a shared version of gtsam" ON)
+option(GTSAM_BUILD_STATIC_LIBRARY        "Enable/Disable building of a static version of gtsam" OFF)
 option(GTSAM_USE_QUATERNIONS             "Enable/Disable using an internal Quaternion representation for rotations instead of rotation matrices" OFF)
 if(NOT MSVC)
-  option(GTSAM_BUILD_CONVENIENCE_LIBRARIES "Enable/Disable use of convenience libraries for faster development rebuilds, but slower install" ON)
+  option(GTSAM_BUILD_CONVENIENCE_LIBRARIES "Enable/Disable use of convenience libraries for faster development rebuilds, but slower install" OFF)
 endif()
-
+option(GTSAM_POSE3_EXPMAP 			 	 "Enable/Disable using Pose3::EXPMAP as the default mode. If disabled, Pose3::FIRST_ORDER will be used." OFF)
 
 # Options relating to MATLAB wrapper
 # TODO: Check for matlab mex binary before handling building of binaries
 option(GTSAM_INSTALL_MATLAB_TOOLBOX      "Enable/Disable installation of matlab toolbox"  OFF)
 option(GTSAM_BUILD_WRAP                  "Enable/Disable building of matlab wrap utility (necessary for matlab interface)" ON)
 option(GTSAM_INSTALL_WRAP                "Enable/Disable installation of wrap utility for wrapping other libraries"    ON)
-set(GTSAM_TOOLBOX_INSTALL_PATH "" CACHE PATH "Matlab toolbox destination, blank defaults to CMAKE_INSTALL_PREFIX/borg/toolbox")
-set(GTSAM_BUILD_MEX_BINARY_FLAGS "" CACHE STRING "Extra flags for running Matlab MEX compilation")
-set(MEX_COMMAND "mex" CACHE FILEPATH "Command to use for executing mex (if on path, 'mex' will work)")
 
 # Check / set dependent variables for MATLAB wrapper
 set(GTSAM_WRAP_HEADER_PATH "${PROJECT_SOURCE_DIR}/wrap")
@@ -79,9 +72,6 @@ if(GTSAM_INSTALL_MATLAB_TOOLBOX AND NOT GTSAM_BUILD_WRAP)
 endif()
 if(GTSAM_INSTALL_WRAP AND NOT GTSAM_BUILD_WRAP)
 	message(FATAL_ERROR "GTSAM_INSTALL_WRAP is enabled, please also enable GTSAM_BUILD_WRAP")
-endif()
-if(NOT GTSAM_TOOLBOX_INSTALL_PATH)
-	set(GTSAM_TOOLBOX_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/borg/toolbox")
 endif()
 
 # Flags for choosing default packaging tools
@@ -92,12 +82,6 @@ set(CPACK_GENERATOR        "TGZ" CACHE STRING "CPack Default Binary Generator")
 if (NOT GTSAM_BUILD_SHARED_LIBRARY AND NOT GTSAM_BUILD_STATIC_LIBRARY)
     message(FATAL_ERROR "Both shared and static version of GTSAM library disabled - need to choose at least one!")
 endif()
-
-# Add the Quaternion Build Flag if requested
-if (GTSAM_USE_QUATERNIONS)
-  set(CMAKE_C_FLAGS            "${CMAKE_C_FLAGS} -DGTSAM_DEFAULT_QUATERNIONS")
-  set(CMAKE_CXX_FLAGS          "${CMAKE_CXX_FLAGS} -DGTSAM_DEFAULT_QUATERNIONS")
-endif(GTSAM_USE_QUATERNIONS)
 
 # Flags to determine whether tests and examples are build during 'make install'
 # Note that these remove the targets from the 'all'
@@ -113,8 +97,10 @@ endif()
 
 ###############################################################################
 # Find boost
-if(CYGWIN OR MSVC OR WIN32)
-  set(Boost_USE_STATIC_LIBS 1) # Use static libs on Windows
+
+# If using Boost shared libs, set up auto linking for shared libs
+if(NOT Boost_USE_STATIC_LIBS)
+	add_definitions(-DBOOST_ALL_DYN_LINK)
 endif()
 
 find_package(Boost 1.43 COMPONENTS serialization system filesystem thread date_time regex timer chrono)
@@ -125,30 +111,83 @@ if(NOT Boost_SERIALIZATION_LIBRARY OR NOT Boost_SYSTEM_LIBRARY OR NOT Boost_FILE
   message(FATAL_ERROR "Missing required Boost components >= v1.43, please install/upgrade Boost or configure your search paths.")
 endif()
 
+option(GTSAM_DISABLE_NEW_TIMERS "Disables using Boost.chrono for timing" OFF)
 # Allow for not using the timer libraries on boost < 1.48 (GTSAM timing code falls back to old timer library)
 set(GTSAM_BOOST_LIBRARIES ${Boost_SERIALIZATION_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_FILESYSTEM_LIBRARY})
-if(Boost_TIMER_LIBRARY)
-  set(GTSAM_BOOST_LIBRARIES ${GTSAM_BOOST_LIBRARIES} ${Boost_TIMER_LIBRARY} ${Boost_CHRONO_LIBRARY})
+if (GTSAM_DISABLE_NEW_TIMERS)
+    message("WARNING:  GTSAM timing instrumentation manually disabled")
+    add_definitions(-DGTSAM_DISABLE_NEW_TIMERS)
 else()
-  message("WARNING:  Boost older than 1.48 was found, GTSAM timing instrumentation will use the older, less accurate, Boost timer library.")
+    if(Boost_TIMER_LIBRARY)
+      list(APPEND GTSAM_BOOST_LIBRARIES ${GTSAM_BOOST_LIBRARIES} ${Boost_TIMER_LIBRARY} ${Boost_CHRONO_LIBRARY})
+    else()
+      message("WARNING:  Boost older than 1.48 was found, GTSAM timing instrumentation will use the older, less accurate, Boost timer library.")
+    endif()
 endif()
+
+
+###############################################################################
+# Option for using system Eigen or GTSAM-bundled Eigen
+option(GTSAM_USE_SYSTEM_EIGEN "Find and use system-installed Eigen. If 'off', use the one bundled with GTSAM" OFF)
+
+# Switch for using system Eigen or GTSAM-bundled Eigen
+if(GTSAM_USE_SYSTEM_EIGEN)
+	# Use generic Eigen include paths e.g. <Eigen/Core>
+	set(GTSAM_EIGEN_INCLUDE_PREFIX "")
+	
+	find_package(Eigen3 REQUIRED)
+	include_directories(AFTER "${EIGEN3_INCLUDE_DIR}")
+else()
+	# Use bundled Eigen include paths e.g. <gtsam/3rdparty/Eigen/Eigen/Core>
+	set(GTSAM_EIGEN_INCLUDE_PREFIX "gtsam/3rdparty/Eigen/")
+	
+	# Clear any variables set by FindEigen3
+	if(EIGEN3_INCLUDE_DIR)
+		set(EIGEN3_INCLUDE_DIR NOTFOUND CACHE STRING "" FORCE)
+	endif()
+endif()
+
+# Write Eigen include file with the paths for either the system Eigen or the GTSAM-bundled Eigen
+configure_file(gtsam/3rdparty/gtsam_eigen_includes.h.in gtsam/3rdparty/gtsam_eigen_includes.h)
+
+# Install the configuration file for Eigen
+install(FILES ${CMAKE_BINARY_DIR}/gtsam/3rdparty/gtsam_eigen_includes.h DESTINATION include/gtsam/3rdparty)
 
 
 ###############################################################################
 # Global compile options
 
 # General build settings
-include_directories(
+include_directories(BEFORE
   gtsam/3rdparty/UFconfig 
   gtsam/3rdparty/CCOLAMD/Include
   ${CMAKE_SOURCE_DIR}
+  ${CMAKE_BINARY_DIR} # So we can include generated config header files
   CppUnitLite
   ${Boost_INCLUDE_DIR})
 link_directories(${Boost_LIBRARY_DIRS})
 
+if(MSVC)
+	add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
+	add_definitions(/wd4251 /wd4275 /wd4251) # Disable non-DLL-exported base class warnings
+endif()
+
 
 ###############################################################################
 # Add components
+
+# Set default library - static or shared, before adding subdirectories
+if(GTSAM_BUILD_SHARED_LIBRARY)
+	set(gtsam-default gtsam-shared)
+	if(GTSAM_BUILD_UNSTABLE)
+		set(gtsam_unstable-default gtsam_unstable-shared)
+	endif()
+else()
+	set(gtsam-default gtsam-static)
+	if(GTSAM_BUILD_UNSTABLE)
+		set(gtsam_unstable-default gtsam_unstable-static)
+	endif()
+endif()
 
 # Build CppUnitLite
 add_subdirectory(CppUnitLite)

@@ -63,6 +63,7 @@ TEST (Serialization, TemplatedValues) {
   values.insert(Symbol('a',5),  PinholeCal3S2(pose3, cal1));
   EXPECT(equalsObj(values));
   EXPECT(equalsXML(values));
+  EXPECT(equalsBinary(values));
 }
 
 /* ************************************************************************* */

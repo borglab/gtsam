@@ -16,8 +16,11 @@ namespace gtsam {
 
 /**
  * Dummy version of a generic linear factor to be injected into a nonlinear factor graph
+ *
+ * This factor does have the ability to perform relinearization under small-angle and
+ * linearity assumptions if a linearization point is added.
  */
-class LinearContainerFactor : public NonlinearFactor {
+class GTSAM_EXPORT LinearContainerFactor : public NonlinearFactor {
 protected:
 
   GaussianFactor::shared_ptr factor_;
@@ -45,21 +48,6 @@ public:
   LinearContainerFactor(const GaussianFactor::shared_ptr& factor,
       const Values& linearizationPoint = Values());
 
-  /** Alternate constructor: store a linear factor and decode keys with inverted ordering*/
-  LinearContainerFactor(const JacobianFactor& factor,
-      const Ordering::InvertedMap& inverted_ordering,
-      const Values& linearizationPoint = Values());
-
-  /** Alternate constructor: store a linear factor and decode keys with inverted ordering*/
-  LinearContainerFactor(const HessianFactor& factor,
-      const Ordering::InvertedMap& inverted_ordering,
-      const Values& linearizationPoint = Values());
-
-  /** Constructor from shared_ptr with inverted ordering*/
-  LinearContainerFactor(const GaussianFactor::shared_ptr& factor,
-      const Ordering::InvertedMap& ordering,
-      const Values& linearizationPoint = Values());
-
   // Access
 
   const GaussianFactor::shared_ptr& factor() const { return factor_; }
@@ -75,7 +63,12 @@ public:
   // NonlinearFactor
 
   /**
-   * Calculate the error of the factor: uses the underlying linear factor to compute ordering
+   * Calculate the nonlinear error for the factor, where the error is computed
+   * by passing the delta between linearization point and c, where
+   * delta = linearizationPoint_.localCoordinates(c), into the error function
+   * of the stored linear factor.
+   *
+   * @return nonlinear error if linearizationPoint present, zero otherwise
    */
   double error(const Values& c) const;
 
@@ -88,7 +81,23 @@ public:
   /** Apply the ordering to a graph - same as linearize(), but without needing a linearization point */
   GaussianFactor::shared_ptr order(const Ordering& ordering) const;
 
-  /** linearize to a GaussianFactor: values has no effect, just clones/rekeys underlying factor */
+  /**
+   * Linearize to a GaussianFactor, with method depending on the presence of a linearizationPoint
+   *  - With no linearization point, returns a reordered, but numerically identical,
+   *  version of the existing stored linear factor
+   *  - With a linearization point provided, returns a reordered and relinearized version of
+   *  the linearized factor.
+   *
+   * The relinearization approach used computes a linear delta between the original linearization
+   * point and the new values c, where delta = linearizationPoint_.localCoordinates(c), and
+   * substitutes this change into the system.  This substitution is only really valid for
+   * linear variable manifolds, and for any variables based on a non-commutative
+   * manifold (such as Pose2, Pose3), the relinearized version will be effective
+   * for only small angles.
+   *
+   * TODO: better approximation of relinearization
+   * TODO: switchable modes for approximation technique
+   */
   GaussianFactor::shared_ptr linearize(const Values& c, const Ordering& ordering) const;
 
   /**
@@ -114,10 +123,13 @@ public:
 
   // casting syntactic sugar
 
+  inline bool hasLinearizationPoint() const { return linearizationPoint_; }
+
   /**
-   * Simple check whether this is a Jacobian or Hessian factor
+   * Simple checks whether this is a Jacobian or Hessian factor
    */
   bool isJacobian() const;
+  bool isHessian() const;
 
   /** Casts to JacobianFactor */
   JacobianFactor::shared_ptr toJacobian() const;
@@ -127,19 +139,13 @@ public:
 
   /**
    * Utility function for converting linear graphs to nonlinear graphs
-   * consisting of LinearContainerFactors.  Two versions are available, using
-   * either the ordering the linear graph was linearized around, or the inverse ordering.
-   * If the inverse ordering is present, it will be faster.
+   * consisting of LinearContainerFactors.
    */
   static NonlinearFactorGraph convertLinearGraph(const GaussianFactorGraph& linear_graph,
       const Ordering& ordering, const Values& linearizationPoint = Values());
 
-  static NonlinearFactorGraph convertLinearGraph(const GaussianFactorGraph& linear_graph,
-      const InvertedOrdering& invOrdering, const Values& linearizationPoint = Values());
-
 protected:
   void rekeyFactor(const Ordering& ordering);
-  void rekeyFactor(const Ordering::InvertedMap& invOrdering);
   void initializeLinearizationPoint(const Values& linearizationPoint);
 
 }; // \class LinearContainerFactor

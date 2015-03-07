@@ -4,9 +4,13 @@
 
 // specify the classes from gtsam we are using
 virtual class gtsam::Value;
+virtual class gtsam::LieScalar;
+virtual class gtsam::LieVector;
+virtual class gtsam::Point2;
+virtual class gtsam::Rot2;
+virtual class gtsam::Pose2;
 virtual class gtsam::Point3;
 virtual class gtsam::Rot3;
-virtual class gtsam::Pose2;
 virtual class gtsam::Pose3;
 virtual class gtsam::noiseModel::Base;
 virtual class gtsam::NonlinearFactor;
@@ -17,7 +21,13 @@ class gtsam::GaussianFactorGraph;
 class gtsam::NonlinearFactorGraph;
 class gtsam::Ordering;
 class gtsam::Values;
-class gtsam::InvertedOrdering;
+class gtsam::Key;
+class gtsam::VectorValues;
+class gtsam::KeyList;
+class gtsam::KeySet;
+class gtsam::KeyVector;
+class gtsam::LevenbergMarquardtParams;
+class gtsam::ISAM2Params;
 
 namespace gtsam {
 
@@ -77,6 +87,196 @@ virtual class PoseRTV : gtsam::Value {
   Vector translationIntegrationVec(const gtsam::PoseRTV& x2, double dt) const;
 };
 
+#include <gtsam_unstable/geometry/Pose3Upright.h>
+virtual class Pose3Upright : gtsam::Value {
+  Pose3Upright();
+  Pose3Upright(const gtsam::Pose3Upright& x);
+  Pose3Upright(const gtsam::Rot2& bearing, const gtsam::Point3& t);
+  Pose3Upright(double x, double y, double z, double theta);
+  Pose3Upright(const gtsam::Pose2& pose, double z);
+
+  void print(string s) const;
+  bool equals(const gtsam::Pose3Upright& pose, double tol) const;
+
+  double x() const;
+  double y() const;
+  double z() const;
+  double theta() const;
+
+  gtsam::Point2 translation2() const;
+  gtsam::Point3 translation() const;
+  gtsam::Rot2 rotation2() const;
+  gtsam::Rot3 rotation() const;
+  gtsam::Pose2 pose2() const;
+  gtsam::Pose3 pose() const;
+
+  size_t dim() const;
+  gtsam::Pose3Upright retract(Vector v) const;
+  Vector localCoordinates(const gtsam::Pose3Upright& p2) const;
+
+  static gtsam::Pose3Upright identity();
+  gtsam::Pose3Upright inverse() const;
+  gtsam::Pose3Upright compose(const gtsam::Pose3Upright& p2) const;
+  gtsam::Pose3Upright between(const gtsam::Pose3Upright& p2) const;
+
+  static gtsam::Pose3Upright Expmap(Vector xi);
+  static Vector Logmap(const gtsam::Pose3Upright& p);
+}; // \class Pose3Upright
+
+#include <gtsam_unstable/geometry/BearingS2.h>
+virtual class BearingS2 : gtsam::Value {
+  BearingS2();
+  BearingS2(double azimuth, double elevation);
+  BearingS2(const gtsam::Rot2& azimuth, const gtsam::Rot2& elevation);
+
+  gtsam::Rot2 azimuth() const;
+  gtsam::Rot2 elevation() const;
+
+  static gtsam::BearingS2 fromDownwardsObservation(const gtsam::Pose3& A, const gtsam::Point3& B);
+  static gtsam::BearingS2 fromForwardObservation(const gtsam::Pose3& A, const gtsam::Point3& B);
+
+  void print(string s) const;
+  bool equals(const gtsam::BearingS2& x, double tol) const;
+
+  size_t dim() const;
+  gtsam::BearingS2 retract(Vector v) const;
+  Vector localCoordinates(const gtsam::BearingS2& p2) const;
+};
+
+// std::vector<gtsam::Point2>
+class Point2Vector
+{
+  //Capacity
+  size_t size() const;
+  size_t max_size() const;
+  void resize(size_t sz);
+  size_t capacity() const;
+  bool empty() const;
+  void reserve(size_t n);
+
+  //Element access
+  gtsam::Point2 at(size_t n) const;
+  gtsam::Point2 front() const;
+  gtsam::Point2 back() const;
+
+  //Modifiers
+  void assign(size_t n, const gtsam::Point2& u);
+  void push_back(const gtsam::Point2& x);
+  void pop_back();
+};
+
+#include <gtsam_unstable/geometry/SimWall2D.h>
+class SimWall2D {
+  SimWall2D();
+  SimWall2D(const gtsam::Point2& a, const gtsam::Point2& b);
+  SimWall2D(double ax, double ay, double bx, double by);
+
+  void print(string s) const;
+  bool equals(const gtsam::SimWall2D& other, double tol) const;
+
+  gtsam::Point2 a() const;
+  gtsam::Point2 b() const;
+
+  gtsam::SimWall2D scale(double s) const;
+  double length() const;
+  gtsam::Point2 midpoint() const;
+
+  bool intersects(const gtsam::SimWall2D& wall) const;
+  //   bool intersects(const gtsam::SimWall2D& wall, boost::optional<gtsam::Point2&> pt=boost::none) const;
+
+  gtsam::Point2 norm() const;
+  gtsam::Rot2 reflection(const gtsam::Point2& init, const gtsam::Point2& intersection) const;
+};
+
+#include <gtsam_unstable/geometry/SimPolygon2D.h>
+class SimPolygon2D {
+   static void seedGenerator(size_t seed);
+   static gtsam::SimPolygon2D createTriangle(const gtsam::Point2& pA, const gtsam::Point2& pB, const gtsam::Point2& pC);
+   static gtsam::SimPolygon2D createRectangle(const gtsam::Point2& p, double height, double width);
+
+   static gtsam::SimPolygon2D randomTriangle(double side_len, double mean_side_len, double sigma_side_len,
+       double min_vertex_dist, double min_side_len, const gtsam::SimPolygon2DVector& existing_polys);
+   static gtsam::SimPolygon2D randomRectangle(double side_len, double mean_side_len, double sigma_side_len,
+       double min_vertex_dist, double min_side_len, const gtsam::SimPolygon2DVector& existing_polys);
+
+   gtsam::Point2 landmark(size_t i) const;
+   size_t size() const;
+   gtsam::Point2Vector vertices() const;
+
+   bool equals(const gtsam::SimPolygon2D& p, double tol) const;
+   void print(string s) const;
+
+   gtsam::SimWall2DVector walls() const;
+   bool contains(const gtsam::Point2& p) const;
+   bool overlaps(const gtsam::SimPolygon2D& p) const;
+
+   static bool anyContains(const gtsam::Point2& p, const gtsam::SimPolygon2DVector& obstacles);
+   static bool anyOverlaps(const gtsam::SimPolygon2D& p, const gtsam::SimPolygon2DVector& obstacles);
+   static bool insideBox(double s, const gtsam::Point2& p);
+   static bool nearExisting(const gtsam::Point2Vector& S,
+       const gtsam::Point2& p, double threshold);
+
+   static gtsam::Point2 randomPoint2(double s);
+   static gtsam::Rot2 randomAngle();
+   static double randomDistance(double mu, double sigma);
+   static double randomDistance(double mu, double sigma, double min_dist);
+   static gtsam::Point2 randomBoundedPoint2(double boundary_size,
+       const gtsam::Point2Vector& landmarks, double min_landmark_dist);
+   static gtsam::Point2 randomBoundedPoint2(double boundary_size,
+       const gtsam::Point2Vector& landmarks,
+       const gtsam::SimPolygon2DVector& obstacles, double min_landmark_dist);
+   static gtsam::Point2 randomBoundedPoint2(double boundary_size,
+       const gtsam::SimPolygon2DVector& obstacles);
+   static gtsam::Point2 randomBoundedPoint2(
+       const gtsam::Point2& LL_corner, const gtsam::Point2& UR_corner,
+       const gtsam::Point2Vector& landmarks,
+       const gtsam::SimPolygon2DVector& obstacles, double min_landmark_dist);
+   static gtsam::Pose2 randomFreePose(double boundary_size, const gtsam::SimPolygon2DVector& obstacles);
+ };
+
+ // std::vector<gtsam::SimWall2D>
+ class SimWall2DVector
+ {
+   //Capacity
+   size_t size() const;
+   size_t max_size() const;
+   void resize(size_t sz);
+   size_t capacity() const;
+   bool empty() const;
+   void reserve(size_t n);
+
+   //Element access
+   gtsam::SimWall2D at(size_t n) const;
+   gtsam::SimWall2D front() const;
+   gtsam::SimWall2D back() const;
+
+   //Modifiers
+   void assign(size_t n, const gtsam::SimWall2D& u);
+   void push_back(const gtsam::SimWall2D& x);
+   void pop_back();
+ };
+
+ // std::vector<gtsam::SimPolygon2D>
+ class SimPolygon2DVector
+ {
+   //Capacity
+   size_t size() const;
+   size_t max_size() const;
+   void resize(size_t sz);
+   size_t capacity() const;
+   bool empty() const;
+   void reserve(size_t n);
+
+   //Element access
+   gtsam::SimPolygon2D at(size_t n) const;
+   gtsam::SimPolygon2D front() const;
+   gtsam::SimPolygon2D back() const;
+
+   //Modifiers
+   void assign(size_t n, const gtsam::SimPolygon2D& u);
+   void push_back(const gtsam::SimPolygon2D& x);
+   void pop_back();
+ };
 
 // Nonlinear factors from gtsam, for our Value types
 #include <gtsam/slam/PriorFactor.h>
@@ -174,68 +374,194 @@ virtual class DGroundConstraint : gtsam::NonlinearFactor {
   DGroundConstraint(size_t key, Vector constraint, const gtsam::noiseModel::Base* model);
 };
 
+#include <gtsam/base/LieScalar.h>
+
+#include <gtsam_unstable/dynamics/VelocityConstraint3.h>
+virtual class VelocityConstraint3 : gtsam::NonlinearFactor {
+  /** Standard constructor */
+  VelocityConstraint3(size_t key1, size_t key2, size_t velKey, double dt);
+
+  Vector evaluateError(const gtsam::LieScalar& x1, const gtsam::LieScalar& x2, const gtsam::LieScalar& v) const;
+};
+
+#include <gtsam_unstable/dynamics/Pendulum.h>
+virtual class PendulumFactor1 : gtsam::NonlinearFactor {
+  /** Standard constructor */
+  PendulumFactor1(size_t k1, size_t k, size_t velKey, double dt);
+
+  Vector evaluateError(const gtsam::LieScalar& qk1, const gtsam::LieScalar& qk, const gtsam::LieScalar& v) const;
+};
+
+virtual class PendulumFactor2 : gtsam::NonlinearFactor {
+  /** Standard constructor */
+  PendulumFactor2(size_t vk1, size_t vk, size_t qKey, double dt, double L, double g);
+
+  Vector evaluateError(const gtsam::LieScalar& vk1, const gtsam::LieScalar& vk, const gtsam::LieScalar& q) const;
+};
+
+virtual class PendulumFactorPk : gtsam::NonlinearFactor {
+  /** Standard constructor */
+  PendulumFactorPk(size_t pk, size_t qk, size_t qk1, double h, double m, double r, double g, double alpha);
+
+  Vector evaluateError(const gtsam::LieScalar& pk, const gtsam::LieScalar& qk, const gtsam::LieScalar& qk1) const;
+};
+
+virtual class PendulumFactorPk1 : gtsam::NonlinearFactor {
+  /** Standard constructor */
+  PendulumFactorPk1(size_t pk1, size_t qk, size_t qk1, double h, double m, double r, double g, double alpha);
+
+  Vector evaluateError(const gtsam::LieScalar& pk1, const gtsam::LieScalar& qk, const gtsam::LieScalar& qk1) const;
+};
+
+#include <gtsam/base/LieVector.h>
+#include <gtsam_unstable/dynamics/SimpleHelicopter.h>
+
+virtual class Reconstruction : gtsam::NonlinearFactor {
+  Reconstruction(size_t gKey1, size_t gKey, size_t xiKey, double h);
+
+  Vector evaluateError(const gtsam::Pose3& gK1, const gtsam::Pose3& gK, const gtsam::LieVector& xiK) const;
+};
+
+virtual class DiscreteEulerPoincareHelicopter : gtsam::NonlinearFactor {
+  DiscreteEulerPoincareHelicopter(size_t xiKey, size_t xiKey_1, size_t gKey,
+      double h, Matrix Inertia, Vector Fu, double m);
+
+  Vector evaluateError(const gtsam::LieVector& xiK, const gtsam::LieVector& xiK_1, const gtsam::Pose3& gK) const;
+};
+
 //*************************************************************************
 // nonlinear
 //*************************************************************************
-#include <gtsam_unstable/nonlinear/LinearContainerFactor.h>
-virtual class LinearContainerFactor : gtsam::NonlinearFactor {
+#include <gtsam_unstable/nonlinear/summarization.h>
+gtsam::GaussianFactorGraph* summarizeGraphSequential(
+    const gtsam::GaussianFactorGraph& full_graph, const gtsam::KeyVector& indices);
+gtsam::GaussianFactorGraph* summarizeGraphSequential(
+    const gtsam::GaussianFactorGraph& full_graph, const gtsam::Ordering& ordering, const gtsam::KeySet& saved_keys);
 
-  LinearContainerFactor(gtsam::GaussianFactor* factor, const gtsam::Ordering& ordering,
-      const gtsam::Values& linearizationPoint);
-  LinearContainerFactor(gtsam::GaussianFactor* factor,  const gtsam::Values& linearizationPoint);
-  LinearContainerFactor(gtsam::GaussianFactor* factor, const gtsam::InvertedOrdering& ordering,
-      const gtsam::Values& linearizationPoint);
+#include <gtsam_unstable/nonlinear/FixedLagSmoother.h>
+class FixedLagSmootherKeyTimestampMapValue {
+  FixedLagSmootherKeyTimestampMapValue(const gtsam::Key& key, double timestamp);
+  FixedLagSmootherKeyTimestampMapValue(const gtsam::FixedLagSmootherKeyTimestampMapValue& other);
+};
 
-  LinearContainerFactor(gtsam::GaussianFactor* factor, const gtsam::Ordering& ordering);
-  LinearContainerFactor(gtsam::GaussianFactor* factor);
-  LinearContainerFactor(gtsam::GaussianFactor* factor, const gtsam::InvertedOrdering& ordering);
+class FixedLagSmootherKeyTimestampMap {
+  FixedLagSmootherKeyTimestampMap();
+  FixedLagSmootherKeyTimestampMap(const gtsam::FixedLagSmootherKeyTimestampMap& other);
 
-  gtsam::GaussianFactor* factor() const;
-//  const boost::optional<Values>& linearizationPoint() const;
+  // Note: no print function
 
-  gtsam::GaussianFactor* order(const gtsam::Ordering& ordering) const;
-  gtsam::GaussianFactor* negate(const gtsam::Ordering& ordering) const;
-  gtsam::NonlinearFactor* negate() const;
+  // common STL methods
+  size_t size() const;
+  bool empty() const;
+  void clear();
 
-  bool isJacobian() const;
-  gtsam::JacobianFactor* toJacobian() const;
-  gtsam::HessianFactor* toHessian() const;
+  double at(const gtsam::Key& key) const;
+  void insert(const gtsam::FixedLagSmootherKeyTimestampMapValue& value);
+};
 
-  static gtsam::NonlinearFactorGraph convertLinearGraph(const gtsam::GaussianFactorGraph& linear_graph,
-      const gtsam::Ordering& ordering, const gtsam::Values& linearizationPoint);
-  static gtsam::NonlinearFactorGraph convertLinearGraph(const gtsam::GaussianFactorGraph& linear_graph,
-      const gtsam::InvertedOrdering& invOrdering, const gtsam::Values& linearizationPoint);
+class FixedLagSmootherResult {
+  size_t getIterations() const;
+  size_t getNonlinearVariables() const;
+  size_t getLinearVariables() const;
+  double getError() const;
+};
 
-  static gtsam::NonlinearFactorGraph convertLinearGraph(const gtsam::GaussianFactorGraph& linear_graph,
-      const gtsam::Ordering& ordering);
-  static gtsam::NonlinearFactorGraph convertLinearGraph(const gtsam::GaussianFactorGraph& linear_graph,
-      const gtsam::InvertedOrdering& invOrdering);
+#include <gtsam_unstable/nonlinear/FixedLagSmoother.h>
+virtual class FixedLagSmoother {
+  void print(string s) const;
+  bool equals(const gtsam::FixedLagSmoother& rhs, double tol) const;
 
-}; // \class LinearContainerFactor
+  gtsam::FixedLagSmootherKeyTimestampMap timestamps() const;
+  double smootherLag() const;
+
+  gtsam::FixedLagSmootherResult update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::FixedLagSmootherKeyTimestampMap& timestamps);
+  gtsam::Values calculateEstimate() const;
+};
+
+#include <gtsam_unstable/nonlinear/BatchFixedLagSmoother.h>
+virtual class BatchFixedLagSmoother : gtsam::FixedLagSmoother {
+  BatchFixedLagSmoother();
+  BatchFixedLagSmoother(double smootherLag);
+  BatchFixedLagSmoother(double smootherLag, const gtsam::LevenbergMarquardtParams& params);
+
+  gtsam::LevenbergMarquardtParams params() const;
+};
+
+#include <gtsam_unstable/nonlinear/IncrementalFixedLagSmoother.h>
+virtual class IncrementalFixedLagSmoother : gtsam::FixedLagSmoother {
+  IncrementalFixedLagSmoother();
+  IncrementalFixedLagSmoother(double smootherLag);
+  IncrementalFixedLagSmoother(double smootherLag, const gtsam::ISAM2Params& params);
+
+  gtsam::ISAM2Params params() const;
+};
+
+#include <gtsam_unstable/nonlinear/ConcurrentFilteringAndSmoothing.h>
+virtual class ConcurrentFilter {
+  void print(string s) const;
+  bool equals(const gtsam::ConcurrentFilter& rhs, double tol) const;
+};
+
+virtual class ConcurrentSmoother {
+  void print(string s) const;
+  bool equals(const gtsam::ConcurrentSmoother& rhs, double tol) const;
+};
+
+// Synchronize function
+void synchronize(gtsam::ConcurrentFilter& filter, gtsam::ConcurrentSmoother& smoother);
+
+#include <gtsam_unstable/nonlinear/ConcurrentBatchFilter.h>
+class ConcurrentBatchFilterResult {
+  size_t getIterations() const;
+  size_t getLambdas() const;
+  size_t getNonlinearVariables() const;
+  size_t getLinearVariables() const;
+  double getError() const;
+};
+
+virtual class ConcurrentBatchFilter : gtsam::ConcurrentFilter {
+  ConcurrentBatchFilter();
+  ConcurrentBatchFilter(const gtsam::LevenbergMarquardtParams& parameters);
+
+  gtsam::NonlinearFactorGraph getFactors() const;
+  gtsam::Values getLinearizationPoint() const;
+  gtsam::Ordering getOrdering() const;
+  gtsam::VectorValues getDelta() const;
+
+  gtsam::ConcurrentBatchFilterResult update();
+  gtsam::ConcurrentBatchFilterResult update(const gtsam::NonlinearFactorGraph& newFactors);
+  gtsam::ConcurrentBatchFilterResult update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta);
+  gtsam::ConcurrentBatchFilterResult update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::KeyList& keysToMove);
+  gtsam::Values calculateEstimate() const;
+};
+
+#include <gtsam_unstable/nonlinear/ConcurrentBatchSmoother.h>
+class ConcurrentBatchSmootherResult {
+  size_t getIterations() const;
+  size_t getLambdas() const;
+  size_t getNonlinearVariables() const;
+  size_t getLinearVariables() const;
+  double getError() const;
+};
+
+virtual class ConcurrentBatchSmoother : gtsam::ConcurrentSmoother {
+  ConcurrentBatchSmoother();
+  ConcurrentBatchSmoother(const gtsam::LevenbergMarquardtParams& parameters);
+
+  gtsam::NonlinearFactorGraph getFactors() const;
+  gtsam::Values getLinearizationPoint() const;
+  gtsam::Ordering getOrdering() const;
+  gtsam::VectorValues getDelta() const;
+
+  gtsam::ConcurrentBatchSmootherResult update();
+  gtsam::ConcurrentBatchSmootherResult update(const gtsam::NonlinearFactorGraph& newFactors);
+  gtsam::ConcurrentBatchSmootherResult update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta);
+  gtsam::Values calculateEstimate() const;
+};
 
 //*************************************************************************
 // slam
 //*************************************************************************
-#include <gtsam/geometry/Pose2.h>
-
-#include <gtsam_unstable/slam/PoseTranslationPrior.h>
-template<POSE>
-virtual class PoseTranslationPrior : gtsam::NonlinearFactor {
-  PoseTranslationPrior(size_t key, const POSE& pose_z, const gtsam::noiseModel::Base* noiseModel);
-};
-
-typedef gtsam::PoseTranslationPrior<gtsam::Pose2> PoseTranslationPrior2D;
-typedef gtsam::PoseTranslationPrior<gtsam::Pose3> PoseTranslationPrior3D;
-
-#include <gtsam_unstable/slam/PoseRotationPrior.h>
-template<POSE>
-virtual class PoseRotationPrior : gtsam::NonlinearFactor {
-  PoseRotationPrior(size_t key, const POSE& pose_z, const gtsam::noiseModel::Base* noiseModel);
-};
-
-typedef gtsam::PoseRotationPrior<gtsam::Pose2> PoseRotationPrior2D;
-typedef gtsam::PoseRotationPrior<gtsam::Pose3> PoseRotationPrior3D;
-
 #include <gtsam_unstable/slam/RelativeElevationFactor.h>
 virtual class RelativeElevationFactor: gtsam::NonlinearFactor {
   RelativeElevationFactor();
@@ -249,6 +575,24 @@ virtual class RelativeElevationFactor: gtsam::NonlinearFactor {
 #include <gtsam_unstable/slam/DummyFactor.h>
 virtual class DummyFactor : gtsam::NonlinearFactor {
   DummyFactor(size_t key1, size_t dim1, size_t key2, size_t dim2);
+};
+
+#include <gtsam_unstable/slam/InvDepthFactorVariant1.h>
+virtual class InvDepthFactorVariant1 : gtsam::NonlinearFactor {
+  InvDepthFactorVariant1(size_t poseKey, size_t landmarkKey, const gtsam::Point2& measured, const gtsam::Cal3_S2* K, const gtsam::noiseModel::Base* model);
+};
+
+#include <gtsam_unstable/slam/InvDepthFactorVariant2.h>
+virtual class InvDepthFactorVariant2 : gtsam::NonlinearFactor {
+  InvDepthFactorVariant2(size_t poseKey, size_t landmarkKey, const gtsam::Point2& measured, const gtsam::Cal3_S2* K, const gtsam::Point3& referencePoint, const gtsam::noiseModel::Base* model);
+};
+
+#include <gtsam_unstable/slam/InvDepthFactorVariant3.h>
+virtual class InvDepthFactorVariant3a : gtsam::NonlinearFactor {
+  InvDepthFactorVariant3a(size_t poseKey, size_t landmarkKey, const gtsam::Point2& measured, const gtsam::Cal3_S2* K, const gtsam::noiseModel::Base* model);
+};
+virtual class InvDepthFactorVariant3b : gtsam::NonlinearFactor {
+  InvDepthFactorVariant3b(size_t poseKey1, size_t poseKey2, size_t landmarkKey, const gtsam::Point2& measured, const gtsam::Cal3_S2* K, const gtsam::noiseModel::Base* model);
 };
 
 } //\namespace gtsam

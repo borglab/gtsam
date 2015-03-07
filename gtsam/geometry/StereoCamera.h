@@ -26,7 +26,7 @@
 
 namespace gtsam {
 
-class StereoCheiralityException: public std::runtime_error {
+class GTSAM_EXPORT StereoCheiralityException: public std::runtime_error {
 public:
   StereoCheiralityException() : std::runtime_error("Stereo Cheirality Exception") {}
 };
@@ -36,7 +36,7 @@ public:
  * A stereo camera class, parameterize by left camera pose and stereo calibration
  * @addtogroup geometry
  */
-class StereoCamera  : public DerivedValue<StereoCamera> {
+class GTSAM_EXPORT StereoCamera  : public DerivedValue<StereoCamera> {
 
 private:
   Pose3 leftCamPose_;

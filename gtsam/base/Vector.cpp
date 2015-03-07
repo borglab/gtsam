@@ -29,7 +29,6 @@
 #include <cstdio>
 
 #include <gtsam/base/Vector.h>
-#include <gtsam/base/types.h>
 
 //#ifdef WIN32
 //#include <Windows.h>

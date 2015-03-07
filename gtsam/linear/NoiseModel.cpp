@@ -438,7 +438,7 @@ void Unit::print(const std::string& name) const {
 // M-Estimator
 /* ************************************************************************* */
 
-namespace MEstimator {
+namespace mEstimator {
 
 /** produce a weight vector according to an error vector and the implemented
  * robust function */
@@ -552,7 +552,7 @@ Null::shared_ptr Null::Create()
 Fair::Fair(const double c, const ReweightScheme reweight)
   : Base(reweight), c_(c) {
   if ( c_ <= 0 ) {
-    cout << "MEstimator Fair takes only positive double in constructor. forced to 1.0" << endl;
+    cout << "mEstimator Fair takes only positive double in constructor. forced to 1.0" << endl;
     c_ = 1.0;
   }
 }
@@ -583,7 +583,7 @@ Fair::shared_ptr Fair::Create(const double c, const ReweightScheme reweight)
 Huber::Huber(const double k, const ReweightScheme reweight)
   : Base(reweight), k_(k) {
   if ( k_ <= 0 ) {
-    cout << "MEstimator Huber takes only positive double in constructor. forced to 1.0" << endl;
+    cout << "mEstimator Huber takes only positive double in constructor. forced to 1.0" << endl;
     k_ = 1.0;
   }
 }
@@ -606,7 +606,37 @@ Huber::shared_ptr Huber::Create(const double c, const ReweightScheme reweight) {
   return shared_ptr(new Huber(c, reweight));
 }
 
-} // namespace MEstimator
+/* ************************************************************************* */
+// Tukey
+/* ************************************************************************* */
+Tukey::Tukey(const double c, const ReweightScheme reweight)
+  : Base(reweight), c_(c) {
+}
+
+double Tukey::weight(const double &error) const {
+  if (fabs(error) <= c_) {
+    double xc2 = (error/c_)*(error/c_);
+    double one_xc22 = (1.0-xc2)*(1.0-xc2);
+    return one_xc22;
+  }
+  return 0.0;
+}
+
+void Tukey::print(const std::string &s="") const {
+  std::cout << s << ": Tukey (" << c_ << ")" << std::endl;
+}
+
+bool Tukey::equals(const Base &expected, const double tol) const {
+  const Tukey* p = dynamic_cast<const Tukey*>(&expected);
+  if (p == NULL) return false;
+  return fabs(c_ - p->c_) < tol;
+}
+
+Tukey::shared_ptr Tukey::Create(const double c, const ReweightScheme reweight) {
+  return shared_ptr(new Tukey(c, reweight));
+}
+
+} // namespace mEstimator
 
 /* ************************************************************************* */
 // Robust

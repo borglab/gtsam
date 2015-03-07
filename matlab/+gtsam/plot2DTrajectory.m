@@ -32,18 +32,25 @@ for i = 0:keys.size-1
             if haveMarginals
                 P = marginals.marginalCovariance(lastKey);
                 gtsam.plotPose2(lastPose, 'g', P);
+            else
+                gtsam.plotPose2(lastPose, 'g', []);
             end
+            
         end
         lastIndex = i;
     end
 end
 
 % Draw final covariance ellipse
-if ~isempty(lastIndex) && haveMarginals
+if ~isempty(lastIndex)
     lastKey = keys.at(lastIndex);
     lastPose = values.at(lastKey);
-    P = marginals.marginalCovariance(lastKey);
-    gtsam.plotPose2(lastPose, 'g', P);
+    if haveMarginals
+        P = marginals.marginalCovariance(lastKey);
+        gtsam.plotPose2(lastPose, 'g', P);
+    else
+        gtsam.plotPose2(lastPose, 'g', []);
+    end
 end
 
 if ~holdstate

@@ -21,9 +21,11 @@
 
 #pragma once
 
+#include <gtsam/config.h> // Get GTSAM_USE_QUATERNIONS macro
+
 // You can override the default coordinate mode using this flag
 #ifndef ROT3_DEFAULT_COORDINATES_MODE
-#ifdef GTSAM_DEFAULT_QUATERNIONS
+#ifdef GTSAM_USE_QUATERNIONS
 // Exponential map is very cheap for quaternions
 #define ROT3_DEFAULT_COORDINATES_MODE Rot3::EXPMAP
 #else
@@ -35,7 +37,6 @@
 #include <gtsam/base/DerivedValue.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/geometry/Point3.h>
-#include <gtsam/3rdparty/Eigen/Eigen/Geometry>
 
 namespace gtsam {
 
@@ -46,17 +47,17 @@ namespace gtsam {
 
   /**
    * @brief A 3D rotation represented as a rotation matrix if the preprocessor
-   * symbol GTSAM_DEFAULT_QUATERNIONS is not defined, or as a quaternion if it
+   * symbol GTSAM_USE_QUATERNIONS is not defined, or as a quaternion if it
    * is defined.
    * @addtogroup geometry
    * \nosubgrouping
    */
-  class Rot3 : public DerivedValue<Rot3> {
+  class GTSAM_EXPORT Rot3 : public DerivedValue<Rot3> {
   public:
     static const size_t dimension = 3;
 
   private:
-#ifdef GTSAM_DEFAULT_QUATERNIONS
+#ifdef GTSAM_USE_QUATERNIONS
     /** Internal Eigen Quaternion */
     Quaternion quaternion_;
 #else
@@ -83,6 +84,9 @@ namespace gtsam {
     Rot3(double R11, double R12, double R13,
         double R21, double R22, double R23,
         double R31, double R32, double R33);
+
+    /** constructor from a rotation matrix */
+    Rot3(const Matrix3& R);
 
     /** constructor from a rotation matrix */
     Rot3(const Matrix& R);
@@ -219,26 +223,26 @@ namespace gtsam {
      * exponential map, but this can be expensive to compute. The following Enum is used
      * to indicate which method should be used.  The default
      * is determined by ROT3_DEFAULT_COORDINATES_MODE, which may be set at compile time,
-     * and itself defaults to Rot3::CAYLEY, or if GTSAM_DEFAULT_QUATERNIONS is defined,
+     * and itself defaults to Rot3::CAYLEY, or if GTSAM_USE_QUATERNIONS is defined,
      * to Rot3::EXPMAP.
      */
     enum CoordinatesMode {
       EXPMAP, ///< Use the Lie group exponential map to retract
-#ifndef GTSAM_DEFAULT_QUATERNIONS
+#ifndef GTSAM_USE_QUATERNIONS
       CAYLEY, ///< Retract and localCoordinates using the Cayley transform.
       SLOW_CAYLEY ///< Slow matrix implementation of Cayley transform (for tests only).
 #endif
       };
 
-#ifndef GTSAM_DEFAULT_QUATERNIONS
+#ifndef GTSAM_USE_QUATERNIONS
     /// Retraction from R^3 to Rot3 manifold using the Cayley transform
     Rot3 retractCayley(const Vector& omega) const;
 #endif
 
-    /// Retraction from R^3 to Rot3 manifold neighborhood around current rotation
+    /// Retraction from R^3 \f$ [R_x,R_y,R_z] \f$ to Rot3 manifold neighborhood around current rotation
     Rot3 retract(const Vector& omega, Rot3::CoordinatesMode mode = ROT3_DEFAULT_COORDINATES_MODE) const;
 
-    /// Returns local retract coordinates in neighborhood around current rotation
+    /// Returns local retract coordinates \f$ [R_x,R_y,R_z] \f$ in neighborhood around current rotation
     Vector3 localCoordinates(const Rot3& t2, Rot3::CoordinatesMode mode = ROT3_DEFAULT_COORDINATES_MODE) const;
 
     /// @}
@@ -247,7 +251,7 @@ namespace gtsam {
 
     /**
      * Exponential map at identity - create a rotation from canonical coordinates
-     * using Rodriguez' formula
+     * \f$ [R_x,R_y,R_z] \f$ using Rodriguez' formula
      */
     static Rot3 Expmap(const Vector& v)  {
       if(zero(v)) return Rot3();
@@ -255,7 +259,7 @@ namespace gtsam {
     }
 
     /**
-     * Log map at identity - return the canonical coordinates of this rotation
+     * Log map at identity - return the canonical coordinates \f$ [R_x,R_y,R_z] \f$ of this rotation
      */
     static Vector3 Logmap(const Rot3& R);
 
@@ -345,6 +349,12 @@ namespace gtsam {
      */
     Quaternion toQuaternion() const;
 
+    /**
+     * Converts to a generic matrix to allow for use with matlab
+     * In format: w x y z
+     */
+    Vector quaternion() const;
+
   private:
     /** Serialization function */
     friend class boost::serialization::access;
@@ -353,7 +363,7 @@ namespace gtsam {
     {
        ar & boost::serialization::make_nvp("Rot3",
            boost::serialization::base_object<Value>(*this));
-#ifndef GTSAM_DEFAULT_QUATERNIONS
+#ifndef GTSAM_USE_QUATERNIONS
        ar & boost::serialization::make_nvp("rot11", rot_(0,0));
        ar & boost::serialization::make_nvp("rot12", rot_(0,1));
        ar & boost::serialization::make_nvp("rot13", rot_(0,2));
@@ -384,5 +394,5 @@ namespace gtsam {
    * @return an upper triangular matrix R
    * @return a vector [thetax, thetay, thetaz] in radians.
    */
-  std::pair<Matrix3,Vector3> RQ(const Matrix3& A);
+  GTSAM_EXPORT std::pair<Matrix3,Vector3> RQ(const Matrix3& A);
 }

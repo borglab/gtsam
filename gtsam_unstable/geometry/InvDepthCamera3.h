@@ -1,7 +1,10 @@
 
 /**
  * @file InvDepthCamera3.h
- * @brief
+ * @brief Inverse Depth Camera based on Civera09tro, Montiel06rss.
+ * Landmarks are initialized from the first camera observation with
+ * (x,y,z,theta,phi,inv_depth), where x,y,z are the coordinates of
+ * the camera
  * @author Chris Beall
  * @date Apr 14, 2012
  */
@@ -29,8 +32,8 @@ namespace gtsam {
 template <class CALIBRATION>
 class InvDepthCamera3 {
 private:
-  Pose3 pose_;
-  boost::shared_ptr<CALIBRATION> k_;
+  Pose3 pose_;                        ///< The camera pose
+  boost::shared_ptr<CALIBRATION> k_;  ///< The fixed camera calibration
 
 public:
 
@@ -62,6 +65,12 @@ public:
     k_.print("calibration");
   }
 
+  /**
+   * Convert an inverse depth landmark to cartesian Point3
+   * @param pw first five parameters (x,y,z,theta,phi) of inv depth landmark
+   * @param inv inverse depth
+   * @return Point3
+   */
   static gtsam::Point3 invDepthTo3D(const gtsam::LieVector& pw, const gtsam::LieScalar& inv) {
     gtsam::Point3 ray_base(pw.vector().segment(0,3));
     double theta = pw(3), phi = pw(4);

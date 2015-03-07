@@ -17,11 +17,13 @@
  * @date June 14, 2012
  */
 
+#include <gtsam/global_includes.h>
+#include <gtsam_unstable/base/dllexport.h>
 #include <string>
 
 namespace gtsam {
 
-  struct Dummy {
+  struct GTSAM_UNSTABLE_EXPORT Dummy {
     size_t id;
     Dummy();
     ~Dummy();

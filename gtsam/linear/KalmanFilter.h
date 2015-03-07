@@ -37,7 +37,7 @@ namespace gtsam {
    * The filter is functional, in that it does not have state: you call init() to create
    * an initial state, then predict() and update() that create new states out of old.
    */
-  class KalmanFilter {
+  class GTSAM_EXPORT KalmanFilter {
 
   public:
 

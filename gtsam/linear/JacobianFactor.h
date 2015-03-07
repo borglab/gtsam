@@ -22,7 +22,7 @@
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/base/blockMatrices.h>
-#include <gtsam/base/types.h>
+#include <gtsam/global_includes.h>
 
 #include <boost/tuple/tuple.hpp>
 
@@ -37,6 +37,7 @@ namespace gtsam {
   class HessianFactor;
   class VariableSlots;
   template<class C> class BayesNet;
+  class GaussianFactorGraph;
 
   /**
    * A Gaussian factor in the squared-error form.
@@ -77,7 +78,7 @@ namespace gtsam {
    * and the negative log-likelihood represented by this factor would be
    * \f[ E(x) = \frac{1}{2} (A_1 x_{j1} + A_2 x_{j2} - b)^T \Sigma^{-1} (A_1 x_{j1} + A_2 x_{j2} - b) . \f]
    */
-  class JacobianFactor : public GaussianFactor {
+  class GTSAM_EXPORT JacobianFactor : public GaussianFactor {
   protected:
     typedef Matrix AbMatrix;
     typedef VerticalBlockView<AbMatrix> BlockAb;
@@ -132,6 +133,9 @@ namespace gtsam {
 
     /** Convert from a HessianFactor (does Cholesky) */
     JacobianFactor(const HessianFactor& factor);
+
+    /** Build a dense joint factor from all the factors in a factor graph. */
+    JacobianFactor(const GaussianFactorGraph& gfg);
 
     /** Virtual destructor */
     virtual ~JacobianFactor() {}
@@ -263,12 +267,10 @@ namespace gtsam {
      * model. */
     JacobianFactor whiten() const;
 
-    /**
-     * eliminate the first variable
-     */
+    /** Eliminate the first variable, modifying the factor in place to contain the remaining marginal. */
     boost::shared_ptr<GaussianConditional> eliminateFirst();
 
-    /** return a multi-frontal conditional. It's actually a chordal Bayesnet */
+    /** Eliminate the requested number of frontal variables, modifying the factor in place to contain the remaining marginal. */
     boost::shared_ptr<GaussianConditional> eliminate(size_t nrFrontals = 1);
 
     /**
@@ -293,7 +295,7 @@ namespace gtsam {
 
     /** An exception indicating that the noise model dimension passed into the
      * JacobianFactor has a different dimensionality than the factor. */
-    class InvalidNoiseModel : std::exception {
+    class InvalidNoiseModel : public std::exception {
     public:
       const size_t factorDims; ///< The dimensionality of the factor
       const size_t noiseModelDims; ///< The dimensionality of the noise model

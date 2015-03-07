@@ -35,7 +35,7 @@ namespace gtsam {
   /**
    * A discrete probabilistic factor
    */
-  class DecisionTreeFactor: public DiscreteFactor, public Potentials {
+  class GTSAM_EXPORT DecisionTreeFactor: public DiscreteFactor, public Potentials {
 
   public:
 

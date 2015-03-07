@@ -27,7 +27,7 @@
 #include <boost/weak_ptr.hpp>
 #include <boost/lexical_cast.hpp>
 
-#include <gtsam/base/types.h>
+#include <gtsam/global_includes.h>
 
 namespace gtsam {
 

@@ -25,30 +25,30 @@
 /* --- To print date and time of compilation of current source on stdout --- */
 
 # if defined ( __GNUC__ )
-# define COMPILER    "g++" ;
+# define COMPILER		"g++" ;
 # elif defined ( __sun )
-# define COMPILER    "CC" ;
+# define COMPILER		"CC" ;
 # elif defined ( __KCC )
-# define COMPILER    "KCC" ;
+# define COMPILER		"KCC" ;
 # elif defined ( __PGI )
-# define COMPILER    "pgCC" ;
+# define COMPILER		"pgCC" ;
 # else
-# define COMPILER    "undefined" ;
+# define COMPILER		"undefined" ;
 # endif
 
 # ifdef INFOS_COMPILATION
 # error INFOS_COMPILATION already defined
 # endif
-# define INFOS_COMPILATION  {\
-          cerr << flush;\
-          cout << __FILE__ ;\
-          cout << " [" << __LINE__ << "] : " ;\
-          cout << "COMPILED with " << COMPILER ;\
-          cout << ", " << __DATE__ ; \
-          cout << " at " << __TIME__ << endl ;\
-          cout << "\n\n" ;\
-          cout << flush ;\
-        }
+# define INFOS_COMPILATION	{\
+					cerr << flush;\
+					cout << __FILE__ ;\
+					cout << " [" << __LINE__ << "] : " ;\
+					cout << "COMPILED with " << COMPILER ;\
+					cout << ", " << __DATE__ ; \
+					cout << " at " << __TIME__ << endl ;\
+					cout << "\n\n" ;\
+					cout << flush ;\
+				}
 
 # ifdef _DEBUG_
 

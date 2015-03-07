@@ -16,7 +16,6 @@
  * @date May 14, 2012
  */
 
-#include <gtsam/3rdparty/Eigen/Eigen/Dense>
 #include <gtsam/base/timing.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/GaussianMultifrontalSolver.h>

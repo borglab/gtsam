@@ -64,7 +64,7 @@ public:
 
   /**
    * Create vector initialized to a constant value
-   * @param constant value
+   * @param value constant value
    */
   inline static FixedVector repeat(double value) {
     return FixedVector(Base::Constant(value));
@@ -73,7 +73,7 @@ public:
   /**
    * Create basis vector of
    * with a constant in spot i
-   * @param index of the one
+   * @param i index of the one
    * @param value is the value to insert into the vector
    * @return delta vector
    */
@@ -84,7 +84,7 @@ public:
   /**
    * Create basis vector,
    * with one in spot i
-   * @param index of the one
+   * @param i index of the one
    * @return basis vector
    */
   inline static FixedVector basis(size_t i) { return FixedVector(Base::Unit(i)); }

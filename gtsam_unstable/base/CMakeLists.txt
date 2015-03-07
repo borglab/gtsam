@@ -8,8 +8,8 @@ set(base_local_libs
     base_unstable)
 
 set (base_full_libs
-    gtsam-static
-    gtsam_unstable-static)
+    ${gtsam-default}
+    ${gtsam_unstable-default})
 
 # Exclude tests that don't work
 set (base_excluded_tests "")

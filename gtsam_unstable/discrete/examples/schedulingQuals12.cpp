@@ -255,8 +255,8 @@ void sampleSolutions() {
 
 /* ************************************************************************* */
 int main() {
-  runLargeExample();
-//  solveStaged(3);
+//  runLargeExample();
+  solveStaged(3);
 //  sampleSolutions();
   return 0;
 }

@@ -71,6 +71,20 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  std::pair<SymbolicFactorGraph::sharedConditional, SymbolicFactorGraph>
+    SymbolicFactorGraph::eliminate(const std::vector<Index>& variables) const
+  {
+    return FactorGraph<IndexFactor>::eliminate(variables, EliminateSymbolic);
+  }
+
+  /* ************************************************************************* */
+  std::pair<SymbolicFactorGraph::sharedConditional, SymbolicFactorGraph>
+    SymbolicFactorGraph::eliminateOne(Index variable) const
+  {
+    return FactorGraph<IndexFactor>::eliminateOne(variable, EliminateSymbolic);
+  }
+
+  /* ************************************************************************* */
   void SymbolicFactorGraph::permuteWithInverse(
     const Permutation& inversePermutation) {
       BOOST_FOREACH(const sharedFactor& factor, factors_) {
@@ -103,15 +117,15 @@ namespace gtsam {
 
     FastSet<Index> keys;
     BOOST_FOREACH(const IndexFactor::shared_ptr& factor, factors)
-            BOOST_FOREACH(Index var, *factor)
-                    keys.insert(var);
+      BOOST_FOREACH(Index var, *factor)
+      keys.insert(var);
 
-    if (keys.size() < 1) throw invalid_argument(
-        "IndexFactor::CombineAndEliminate called on factors with no variables.");
+    if (keys.size() < nrFrontals) throw invalid_argument(
+      "EliminateSymbolic requested to eliminate more variables than exist in graph.");
 
     vector<Index> newKeys(keys.begin(), keys.end());
     return make_pair(boost::make_shared<IndexConditional>(newKeys, nrFrontals),
-        boost::make_shared<IndexFactor>(newKeys.begin() + nrFrontals, newKeys.end()));
+      boost::make_shared<IndexFactor>(newKeys.begin() + nrFrontals, newKeys.end()));
   }
 
   /* ************************************************************************* */

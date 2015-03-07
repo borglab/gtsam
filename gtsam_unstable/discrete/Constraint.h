@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <gtsam_unstable/base/dllexport.h>
 #include <gtsam/discrete/DiscreteFactor.h>
 
 namespace gtsam {

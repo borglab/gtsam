@@ -14,14 +14,14 @@
 namespace gtsam {
 
 /**  An implementation of the nonlinear cg method using the template below */
-class NonlinearConjugateGradientState : public NonlinearOptimizerState {
+class GTSAM_EXPORT NonlinearConjugateGradientState : public NonlinearOptimizerState {
 public:
   typedef NonlinearOptimizerState Base;
   NonlinearConjugateGradientState(const NonlinearFactorGraph& graph, const Values& values)
     : Base(graph, values) {}
 };
 
-class NonlinearConjugateGradientOptimizer : public NonlinearOptimizer {
+class GTSAM_EXPORT NonlinearConjugateGradientOptimizer : public NonlinearOptimizer {
   /* a class for the nonlinearConjugateGradient template */
   class System {
   public:

@@ -28,7 +28,7 @@ namespace gtsam {
  * @addtogroup geometry
  * \nosubgrouping
  */
-class Cal3Bundler : public DerivedValue<Cal3Bundler> {
+class GTSAM_EXPORT Cal3Bundler : public DerivedValue<Cal3Bundler> {
 
 private:
   double f_, k1_, k2_ ;

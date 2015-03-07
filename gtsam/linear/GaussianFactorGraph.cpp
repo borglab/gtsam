@@ -25,7 +25,7 @@
 #include <gtsam/base/FastVector.h>
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/inference/BayesTree-inl.h>
+#include <gtsam/inference/BayesTree.h>
 #include <gtsam/inference/VariableSlots.h>
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
@@ -45,13 +45,6 @@ namespace gtsam {
     BOOST_FOREACH(const sharedFactor& factor, *this)
     if (factor) keys.insert(factor->begin(), factor->end());
     return keys;
-  }
-
-  /* ************************************************************************* */
-  std::pair<GaussianFactorGraph::sharedConditional, GaussianFactorGraph>
-    GaussianFactorGraph::eliminateFrontals(size_t nFrontals) const
-  {
-    return FactorGraph<GaussianFactor>::eliminateFrontals(nFrontals, EliminateQR);
   }
 
   /* ************************************************************************* */
@@ -167,8 +160,8 @@ namespace gtsam {
     Matrix IJS(3,nzmax);
     for (size_t k = 0; k < result.size(); k++) {
       const triplet& entry = result[k];
-      IJS(0,k) = entry.get<0>() + 1;
-      IJS(1,k) = entry.get<1>() + 1;
+      IJS(0,k) = double(entry.get<0>() + 1);
+      IJS(1,k) = double(entry.get<1>() + 1);
       IJS(2,k) = entry.get<2>();
     }
     return IJS;
@@ -334,48 +327,9 @@ break;
   }
 
   /* ************************************************************************* */
-  static FastMap<Index, SlotEntry> findScatterAndDims(const FactorGraph<GaussianFactor>& factors) {
-
-    const bool debug = ISDEBUG("findScatterAndDims");
-
-    // The "scatter" is a map from global variable indices to slot indices in the
-    // union of involved variables.  We also include the dimensionality of the
-    // variable.
-
-    Scatter scatter;
-
-    // First do the set union.
-    BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factors) {
-      for(GaussianFactor::const_iterator variable = factor->begin(); variable != factor->end(); ++variable) {
-        scatter.insert(make_pair(*variable, SlotEntry(0, factor->getDim(variable))));
-      }
-    }
-
-    // Next fill in the slot indices (we can only get these after doing the set
-    // union.
-    size_t slot = 0;
-    BOOST_FOREACH(Scatter::value_type& var_slot, scatter) {
-      var_slot.second.slot = (slot ++);
-      if(debug)
-        cout << "scatter[" << var_slot.first << "] = (slot " << var_slot.second.slot << ", dim " << var_slot.second.dimension << ")" << endl;
-    }
-
-    return scatter;
-  }
-
-  /* ************************************************************************* */
   Matrix GaussianFactorGraph::augmentedHessian() const {
-
-    Scatter scatter = findScatterAndDims(*this);
-
-    vector<size_t> dims; dims.reserve(scatter.size() + 1);
-    BOOST_FOREACH(const Scatter::value_type& index_entry, scatter) {
-      dims.push_back(index_entry.second.dimension);
-    }
-    dims.push_back(1);
-
     // combine all factors and get upper-triangular part of Hessian
-    HessianFactor combined(*this, dims, scatter);
+    HessianFactor combined(*this);
     Matrix result = combined.info();
     // Fill in lower-triangular part of Hessian
     result.triangularView<Eigen::StrictlyLower>() = result.transpose();
@@ -396,24 +350,9 @@ break;
 
     const bool debug = ISDEBUG("EliminateCholesky");
 
-    // Find the scatter and variable dimensions
-    gttic(find_scatter);
-    Scatter scatter(findScatterAndDims(factors));
-    gttoc(find_scatter);
-
-    // Pull out keys and dimensions
-    gttic(keys);
-    vector<size_t> dimensions(scatter.size() + 1);
-    BOOST_FOREACH(const Scatter::value_type& var_slot, scatter) {
-      dimensions[var_slot.second.slot] = var_slot.second.dimension;
-    }
-    // This is for the r.h.s. vector
-    dimensions.back() = 1;
-    gttoc(keys);
-
     // Form Ab' * Ab
     gttic(combine);
-    HessianFactor::shared_ptr combinedFactor(new HessianFactor(factors, dimensions, scatter));
+    HessianFactor::shared_ptr combinedFactor(new HessianFactor(factors));
     gttoc(combine);
 
     // Do Cholesky, note that after this, the lower triangle still contains
@@ -510,9 +449,6 @@ break;
   /* ************************************************************************* */
   GaussianFactorGraph::EliminationResult EliminatePreferCholesky(
       const FactorGraph<GaussianFactor>& factors, size_t nrFrontals) {
-
-    typedef JacobianFactor J;
-    typedef HessianFactor H;
 
     // If any JacobianFactors have constrained noise models, we have to convert
     // all factors to JacobianFactors.  Otherwise, we can convert all factors
@@ -617,11 +553,11 @@ break;
 
   /* ************************************************************************* */
   void multiply(const GaussianFactorGraph& fg, const VectorValues &x, VectorValues &r) {
-    r.vector() = Vector::Zero(r.dim());
+    r.setZero();
     Index i = 0;
     BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, fg) {
       JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
-      SubVector &y = r[i];
+      Vector &y = r[i];
       for(JacobianFactor::const_iterator j = Ai->begin(); j != Ai->end(); ++j) {
         y += Ai->getA(j) * x[*j];
       }
@@ -631,7 +567,7 @@ break;
 
   /* ************************************************************************* */
   void transposeMultiply(const GaussianFactorGraph& fg, const VectorValues &r, VectorValues &x) {
-    x.vector() = Vector::Zero(x.dim());
+    x.setZero();
     Index i = 0;
     BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, fg) {
       JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);

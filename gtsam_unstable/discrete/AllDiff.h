@@ -19,7 +19,7 @@ namespace gtsam {
    * for each variable we have a Index and an Index. In this factor, we
    * keep the Indices locally, and the Indices are stored in IndexFactor.
    */
-  class AllDiff: public Constraint {
+  class GTSAM_UNSTABLE_EXPORT AllDiff: public Constraint {
 
     std::map<Index,size_t> cardinalities_;
 

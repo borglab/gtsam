@@ -109,30 +109,33 @@ TEST(Pose2, expmap3) {
 }
 
 /* ************************************************************************* */
-TEST(Pose2, expmap0) {
-  Pose2 pose(M_PI/2.0, Point2(1, 2));
-//#ifdef SLOW_BUT_CORRECT_EXPMAP
-  Pose2 expected(1.01491, 2.01013, 1.5888);
-//#else
-//  Pose2 expected(M_PI/2.0+0.018, Point2(1.015, 2.01));
-//#endif
-  Pose2 actual = pose * (Pose2::Expmap(Vector_(3, 0.01, -0.015, 0.018)));
+TEST(Pose2, expmap0a) {
+  Pose2 expected(0.0101345, -0.0149092, 0.018);
+  Pose2 actual = Pose2::Expmap(Vector_(3, 0.01, -0.015, 0.018));
   EXPECT(assert_equal(expected, actual, 1e-5));
 }
 
 /* ************************************************************************* */
-TEST(Pose2, expmap0_full) {
-  Pose2 pose(M_PI/2.0, Point2(1, 2));
-  Pose2 expected(1.01491, 2.01013, 1.5888);
-  Pose2 actual = pose * Pose2::Expmap(Vector_(3, 0.01, -0.015, 0.018));
+TEST(Pose2, expmap0b) {
+  // a quarter turn
+  Pose2 expected(1.0, 1.0, M_PI/2);
+  Pose2 actual = Pose2::Expmap(Vector_(3, M_PI/2, 0.0, M_PI/2));
   EXPECT(assert_equal(expected, actual, 1e-5));
 }
 
 /* ************************************************************************* */
-TEST(Pose2, expmap0_full2) {
-  Pose2 pose(M_PI/2.0, Point2(1, 2));
-  Pose2 expected(1.01491, 2.01013, 1.5888);
-  Pose2 actual = pose * Pose2::Expmap(Vector_(3, 0.01, -0.015, 0.018));
+TEST(Pose2, expmap0c) {
+  // a half turn
+  Pose2 expected(0.0, 2.0, M_PI);
+  Pose2 actual = Pose2::Expmap(Vector_(3, M_PI, 0.0, M_PI));
+  EXPECT(assert_equal(expected, actual, 1e-5));
+}
+
+/* ************************************************************************* */
+TEST(Pose2, expmap0d) {
+  // a full turn
+  Pose2 expected(0, 0, 0);
+  Pose2 actual = Pose2::Expmap(Vector_(3, 2*M_PI, 0.0, 2*M_PI));
   EXPECT(assert_equal(expected, actual, 1e-5));
 }
 
@@ -426,7 +429,7 @@ TEST( Pose2, between )
   EXPECT(assert_equal(expectedH1,actualH1));
   EXPECT(assert_equal(numericalH1,actualH1));
   // Assert H1 = -AdjointMap(between(p2,p1)) as in doc/math.lyx
-  EXPECT(assert_equal(-gT2.between(gT1).adjointMap(),actualH1));
+  EXPECT(assert_equal(-gT2.between(gT1).AdjointMap(),actualH1));
 
   Matrix expectedH2 = Matrix_(3,3,
        1.0, 0.0, 0.0,
@@ -445,6 +448,21 @@ TEST( Pose2, between2 )
 {
   Pose2 p2(M_PI/2.0, Point2(1,2)); // robot at (1,2) looking towards y
   Pose2 p1(M_PI, Point2(-1,4));  // robot at (-1,4) loooking at negative x
+
+  Matrix actualH1,actualH2;
+  p1.between(p2,actualH1,actualH2);
+  Matrix numericalH1 = numericalDerivative21<Pose2,Pose2,Pose2>(testing::between, p1, p2);
+  EXPECT(assert_equal(numericalH1,actualH1));
+  Matrix numericalH2 = numericalDerivative22<Pose2,Pose2,Pose2>(testing::between, p1, p2);
+  EXPECT(assert_equal(numericalH2,actualH2));
+}
+
+/* ************************************************************************* */
+// arbitrary, non perpendicular angles to be extra safe
+TEST( Pose2, between3 )
+{
+  Pose2 p2(M_PI/3.0, Point2(1,2));
+  Pose2 p1(M_PI/6.0, Point2(-1,4));
 
   Matrix actualH1,actualH2;
   p1.between(p2,actualH1,actualH2);

@@ -80,7 +80,16 @@ void gradientAtZero(const GaussianBayesTree& bayesTree, VectorValues& g) {
   gradientAtZero(FactorGraph<JacobianFactor>(bayesTree), g);
 }
 
+/* ************************************************************************* */
+double determinant(const GaussianBayesTree& bayesTree) {
+  if (!bayesTree.root())
+    return 0.0;
+
+  return exp(internal::logDeterminant<GaussianBayesTree>(bayesTree.root()));
 }
+/* ************************************************************************* */
+
+} // \namespace gtsam
 
 
 

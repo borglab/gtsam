@@ -5,7 +5,7 @@
  * @author Alex Cunningham
  */
 
-#include <gtsam_unstable/nonlinear/LinearContainerFactor.h>
+#include <gtsam/nonlinear/LinearContainerFactor.h>
 
 #include <boost/foreach.hpp>
 
@@ -13,14 +13,8 @@ namespace gtsam {
 
 /* ************************************************************************* */
 void LinearContainerFactor::rekeyFactor(const Ordering& ordering) {
-  Ordering::InvertedMap invOrdering = ordering.invert(); // TODO: inefficient - make more selective ordering invert
-  rekeyFactor(invOrdering);
-}
-
-/* ************************************************************************* */
-void LinearContainerFactor::rekeyFactor(const Ordering::InvertedMap& invOrdering) {
   BOOST_FOREACH(Index& idx, factor_->keys()) {
-    Key fullKey = invOrdering.find(idx)->second;
+    Key fullKey = ordering.key(idx);
     idx = fullKey;
     keys_.push_back(fullKey);
   }
@@ -87,34 +81,6 @@ LinearContainerFactor::LinearContainerFactor(
 }
 
 /* ************************************************************************* */
-LinearContainerFactor::LinearContainerFactor(const JacobianFactor& factor,
-    const Ordering::InvertedMap& inverted_ordering,
-    const Values& linearizationPoint)
-: factor_(factor.clone()) {
-  rekeyFactor(inverted_ordering);
-  initializeLinearizationPoint(linearizationPoint);
-}
-
-/* ************************************************************************* */
-LinearContainerFactor::LinearContainerFactor(const HessianFactor& factor,
-    const Ordering::InvertedMap& inverted_ordering,
-    const Values& linearizationPoint)
-: factor_(factor.clone()) {
-  rekeyFactor(inverted_ordering);
-  initializeLinearizationPoint(linearizationPoint);
-}
-
-/* ************************************************************************* */
-LinearContainerFactor::LinearContainerFactor(
-    const GaussianFactor::shared_ptr& factor,
-    const Ordering::InvertedMap& ordering,
-    const Values& linearizationPoint)
-: factor_(factor->clone()) {
-  rekeyFactor(ordering);
-  initializeLinearizationPoint(linearizationPoint);
-}
-
-/* ************************************************************************* */
 void LinearContainerFactor::print(const std::string& s, const KeyFormatter& keyFormatter) const {
   Base::print(s+"LinearContainerFactor", keyFormatter);
   if (factor_)
@@ -140,7 +106,7 @@ double LinearContainerFactor::error(const Values& c) const {
   if (!linearizationPoint_)
     return 0;
 
-  // Extract subset of values for comparision
+  // Extract subset of values for comparison
   Values csub;
   BOOST_FOREACH(const gtsam::Key& key, keys())
     csub.insert(key, c.at(key));
@@ -185,22 +151,59 @@ GaussianFactor::shared_ptr LinearContainerFactor::order(const Ordering& ordering
 /* ************************************************************************* */
 GaussianFactor::shared_ptr LinearContainerFactor::linearize(
     const Values& c, const Ordering& ordering) const {
-  return order(ordering);
+  if (!hasLinearizationPoint())
+    return order(ordering);
+
+  // Extract subset of values
+  Values subsetC;
+  BOOST_FOREACH(const gtsam::Key& key, this->keys())
+    subsetC.insert(key, c.at(key));
+
+  // Create a temp ordering for this factor
+  Ordering localOrdering = *subsetC.orderingArbitrary();
+
+  // Determine delta between linearization points using new ordering
+  VectorValues delta = linearizationPoint_->localCoordinates(subsetC, localOrdering);
+
+  // clone and reorder linear factor to final ordering
+  GaussianFactor::shared_ptr linFactor = order(localOrdering);
+  if (isJacobian()) {
+    JacobianFactor::shared_ptr jacFactor = boost::dynamic_pointer_cast<JacobianFactor>(linFactor);
+    jacFactor->getb() = -jacFactor->unweighted_error(delta);
+  } else {
+    HessianFactor::shared_ptr hesFactor = boost::dynamic_pointer_cast<HessianFactor>(linFactor);
+    size_t dim = hesFactor->linearTerm().size();
+    Eigen::Block<HessianFactor::Block> Gview = hesFactor->info().block(0, 0, dim, dim);
+    Vector deltaVector = delta.asVector();
+    Vector G_delta = Gview.selfadjointView<Eigen::Upper>() * deltaVector;
+    hesFactor->constantTerm() += deltaVector.dot(G_delta) - 2.0 * deltaVector.dot(hesFactor->linearTerm());
+    hesFactor->linearTerm() -= G_delta;
+  }
+
+  // reset ordering
+  BOOST_FOREACH(Index& idx, linFactor->keys())
+    idx = ordering[localOrdering.key(idx)];
+  return linFactor;
 }
 
 /* ************************************************************************* */
 bool LinearContainerFactor::isJacobian() const {
-  return boost::shared_dynamic_cast<JacobianFactor>(factor_);
+  return boost::dynamic_pointer_cast<JacobianFactor>(factor_);
+}
+
+/* ************************************************************************* */
+bool LinearContainerFactor::isHessian() const {
+  return boost::dynamic_pointer_cast<HessianFactor>(factor_);
 }
 
 /* ************************************************************************* */
 JacobianFactor::shared_ptr LinearContainerFactor::toJacobian() const {
-  return boost::shared_dynamic_cast<JacobianFactor>(factor_);
+  return boost::dynamic_pointer_cast<JacobianFactor>(factor_);
 }
 
 /* ************************************************************************* */
 HessianFactor::shared_ptr LinearContainerFactor::toHessian() const {
-  return boost::shared_dynamic_cast<HessianFactor>(factor_);
+  return boost::dynamic_pointer_cast<HessianFactor>(factor_);
 }
 
 /* ************************************************************************* */
@@ -221,18 +224,11 @@ NonlinearFactor::shared_ptr LinearContainerFactor::negate() const {
 NonlinearFactorGraph LinearContainerFactor::convertLinearGraph(
     const GaussianFactorGraph& linear_graph,  const Ordering& ordering,
     const Values& linearizationPoint) {
-  return convertLinearGraph(linear_graph, ordering.invert());
-}
-
-/* ************************************************************************* */
-NonlinearFactorGraph LinearContainerFactor::convertLinearGraph(
-    const GaussianFactorGraph& linear_graph,  const InvertedOrdering& invOrdering,
-    const Values& linearizationPoint) {
   NonlinearFactorGraph result;
   BOOST_FOREACH(const GaussianFactor::shared_ptr& f, linear_graph)
     if (f)
       result.push_back(NonlinearFactorGraph::sharedFactor(
-          new LinearContainerFactor(f, invOrdering, linearizationPoint)));
+          new LinearContainerFactor(f, ordering, linearizationPoint)));
   return result;
 }
 

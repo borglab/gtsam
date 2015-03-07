@@ -18,7 +18,9 @@
  * @author  Richard Roberts
  */
 
-#ifndef GTSAM_DEFAULT_QUATERNIONS
+#include <gtsam/config.h> // Get GTSAM_USE_QUATERNIONS macro
+
+#ifndef GTSAM_USE_QUATERNIONS
 
 #include <gtsam/geometry/Rot3.h>
 #include <boost/math/constants/constants.hpp>
@@ -47,6 +49,11 @@ Rot3::Rot3(double R11, double R12, double R13,
     rot_ << R11, R12, R13,
         R21, R22, R23,
         R31, R32, R33;
+}
+
+/* ************************************************************************* */
+Rot3::Rot3(const Matrix3& R) {
+  rot_ = R;
 }
 
 /* ************************************************************************* */
@@ -162,7 +169,7 @@ Point3 Rot3::operator*(const Point3& p) const { return rotate(p); }
 /* ************************************************************************* */
 Rot3 Rot3::inverse(boost::optional<Matrix&> H1) const {
   if (H1) *H1 = -rot_;
-  return Rot3(rot_.transpose());
+  return Rot3(Matrix3(rot_.transpose()));
 }
 
 /* ************************************************************************* */
@@ -170,13 +177,13 @@ Rot3 Rot3::between (const Rot3& R2,
     boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
   if (H1) *H1 = -(R2.transpose()*rot_);
   if (H2) *H2 = I3;
-  return Rot3(rot_.transpose()*R2.rot_);
+  return Rot3(Matrix3(rot_.transpose()*R2.rot_));
   //return between_default(*this, R2);
 }
 
 /* ************************************************************************* */
 Rot3 Rot3::operator*(const Rot3& R2) const {
-  return Rot3(rot_*R2.rot_);
+  return Rot3(Matrix3(rot_*R2.rot_));
 }
 
 /* ************************************************************************* */
@@ -288,7 +295,7 @@ Vector3 Rot3::localCoordinates(const Rot3& T, Rot3::CoordinatesMode mode) const 
     // Create a fixed-size matrix
     Eigen::Matrix3d A(between(T).matrix());
     // using templated version of Cayley
-    Matrix Omega = Cayley<3>(A);
+    Eigen::Matrix3d Omega = Cayley<3>(A);
     return -2*Vector3(Omega(2,1),Omega(0,2),Omega(1,0));
   } else {
     assert(false);
@@ -341,6 +348,17 @@ Vector3 Rot3::rpy() const {
 /* ************************************************************************* */
 Quaternion Rot3::toQuaternion() const {
   return Quaternion(rot_);
+}
+
+/* ************************************************************************* */
+Vector Rot3::quaternion() const {
+  Quaternion q = toQuaternion();
+  Vector v(4);
+  v(0) = q.w();
+  v(1) = q.x();
+  v(2) = q.y();
+  v(3) = q.z();
+  return v;
 }
 
 /* ************************************************************************* */

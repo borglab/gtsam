@@ -32,15 +32,15 @@ using symbol_shorthand::X;
 class ResectioningFactor: public NoiseModelFactor1<Pose3> {
   typedef NoiseModelFactor1<Pose3> Base;
 
-  shared_ptrK K_; // camera's intrinsic parameters
-  Point3 P_; // 3D point on the calibration rig
-  Point2 p_; // 2D measurement of the 3D point
+  Cal3_S2::shared_ptr K_; ///< camera's intrinsic parameters
+  Point3 P_;              ///< 3D point on the calibration rig
+  Point2 p_;              ///< 2D measurement of the 3D point
 
 public:
 
   /// Construct factor given known point P and its projection p
   ResectioningFactor(const SharedNoiseModel& model, const Key& key,
-      const shared_ptrK& calib, const Point2& p, const Point3& P) :
+      const Cal3_S2::shared_ptr& calib, const Point2& p, const Point3& P) :
       Base(model, key), K_(calib), P_(P), p_(p) {
   }
 
@@ -63,7 +63,7 @@ public:
  *******************************************************************************/
 int main(int argc, char* argv[]) {
   /* read camera intrinsic parameters */
-  shared_ptrK calib(new Cal3_S2(1, 1, 0, 50, 50));
+  Cal3_S2::shared_ptr calib(new Cal3_S2(1, 1, 0, 50, 50));
 
   /* 1. create graph */
   NonlinearFactorGraph graph;

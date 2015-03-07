@@ -1,69 +1,316 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /**
- * @file testLinearizedFactor
- * @author Alex Cunningham
+ * @file    testRFID.cpp
+ * @brief   Unit tests for the RFID factor
+ * @author  Stephen Williams (swilliams8@gatech.edu)
+ * @date    Jan 16, 2012
  */
 
-#include <boost/assign/std/vector.hpp>
-#include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/TestableAssertions.h>
-#include <gtsam/geometry/Point2.h>
-#include <gtsam/nonlinear/Values.h>
-
 #include <gtsam_unstable/nonlinear/LinearizedFactor.h>
+#include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/geometry/Point3.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/Values.h>
+#include <gtsam/nonlinear/Key.h>
+#include <gtsam/base/numericalDerivative.h>
+#include <CppUnitLite/TestHarness.h>
 
-using namespace std;
-using namespace boost::assign;
 using namespace gtsam;
 
-static const double tol = 1e-5;
-
 /* ************************************************************************* */
-TEST( testLinearizedFactor, creation ) {
-  // Create a set of local keys (No robot label)
-  Key  l1 = 11, l2 = 12,
-      l3 = 13, l4 = 14,
-      l5 = 15, l6 = 16,
-      l7 = 17, l8 = 18;
-
-  // creating an ordering to decode the linearized factor
+TEST( LinearizedFactor, equals_jacobian )
+{
+  // Create a Between Factor from a Point3. This is actually a linear factor.
+  Key x1(1);
+  Key x2(2);
   Ordering ordering;
-  ordering += l1,l2,l3,l4,l5,l6,l7,l8;
+  ordering.push_back(x1);
+  ordering.push_back(x2);
+  Values values;
+  values.insert(x1, Point3(-22.4,  +8.5,  +2.4));
+  values.insert(x2, Point3(-21.0,  +5.0, +21.0));
 
-  // create a decoder for only the relevant variables
-  LinearizedFactor::KeyLookup decoder;
-  decoder[2] = l3;
-  decoder[4] = l5;
+  Point3 measured(1.0, -2.5, 17.8);
+  SharedNoiseModel model = noiseModel::Isotropic::Sigma(3, 0.1);
+  BetweenFactor<Point3> betweenFactor(x1, x2, measured, model);
 
-  // create a linear factor
-  SharedDiagonal model = noiseModel::Unit::Create(2);
-  JacobianFactor::shared_ptr linear_factor(new JacobianFactor(
-      ordering[l3], eye(2,2), ordering[l5], 2.0 * eye(2,2), zero(2), model));
 
-  // create a set of values - build with full set of values
-  gtsam::Values full_values, exp_values;
-  full_values.insert(l3, Point2(1.0, 2.0));
-  full_values.insert(l5, Point2(4.0, 3.0));
-  exp_values = full_values;
-  full_values.insert(l1, Point2(3.0, 7.0));
+  // Create two identical factors and make sure they're equal
+  JacobianFactor::shared_ptr jf = boost::static_pointer_cast<JacobianFactor>(betweenFactor.linearize(values, ordering));
+  LinearizedJacobianFactor jacobian1(jf, ordering, values);
+  LinearizedJacobianFactor jacobian2(jf, ordering, values);
 
-  // create the test LinearizedFactor
-  // This is called in the constructor of DDFSlot for each linear factor
-  LinearizedFactor actual1(linear_factor, decoder, full_values);
-  LinearizedFactor actual2(linear_factor, ordering, full_values);
-
-  EXPECT(assert_equal(actual1, actual2, tol));
-
-  // Verify the keys
-  vector<gtsam::Key> expKeys;
-  expKeys += l3, l5;
-  EXPECT(assert_container_equality(expKeys, actual1.keys()));
-  EXPECT(assert_container_equality(expKeys, actual2.keys()));
-
-  // Verify subset of linearization points
-  EXPECT(assert_equal(exp_values, actual1.linearizationPoint(), tol));
-  EXPECT(assert_equal(exp_values, actual2.linearizationPoint(), tol));
+  CHECK(assert_equal(jacobian1, jacobian2));
 }
 
 /* ************************************************************************* */
-int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
+TEST( LinearizedFactor, clone_jacobian )
+{
+  // Create a Between Factor from a Point3. This is actually a linear factor.
+  Key x1(1);
+  Key x2(2);
+  Ordering ordering;
+  ordering.push_back(x1);
+  ordering.push_back(x2);
+  Values values;
+  values.insert(x1, Point3(-22.4,  +8.5,  +2.4));
+  values.insert(x2, Point3(-21.0,  +5.0, +21.0));
+
+  Point3 measured(1.0, -2.5, 17.8);
+  SharedNoiseModel model = noiseModel::Isotropic::Sigma(3, 0.1);
+  BetweenFactor<Point3> betweenFactor(x1, x2, measured, model);
+
+  // Create one factor that is a clone of the other and make sure they're equal
+  JacobianFactor::shared_ptr jf = boost::static_pointer_cast<JacobianFactor>(betweenFactor.linearize(values, ordering));
+  LinearizedJacobianFactor jacobian1(jf, ordering, values);
+  LinearizedJacobianFactor::shared_ptr jacobian2 = boost::static_pointer_cast<LinearizedJacobianFactor>(jacobian1.clone());
+  CHECK(assert_equal(jacobian1, *jacobian2));
+
+  JacobianFactor::shared_ptr jf1 = boost::static_pointer_cast<JacobianFactor>(jacobian1.linearize(values, ordering));
+  JacobianFactor::shared_ptr jf2 = boost::static_pointer_cast<JacobianFactor>(jacobian2->linearize(values, ordering));
+  CHECK(assert_equal(*jf1, *jf2));
+
+  Matrix information1 = jf1->augmentedInformation();
+  Matrix information2 = jf2->augmentedInformation();
+  CHECK(assert_equal(information1, information2));
+}
+
 /* ************************************************************************* */
+TEST( LinearizedFactor, add_jacobian )
+{
+  // Create a Between Factor from a Point3. This is actually a linear factor.
+  Key x1(1);
+  Key x2(2);
+  Ordering ordering;
+  ordering.push_back(x1);
+  ordering.push_back(x2);
+  Values values;
+  values.insert(x1, Point3(-22.4,  +8.5,  +2.4));
+  values.insert(x2, Point3(-21.0,  +5.0, +21.0));
+
+  Point3 measured(1.0, -2.5, 17.8);
+  SharedNoiseModel model = noiseModel::Isotropic::Sigma(3, 0.1);
+  BetweenFactor<Point3> betweenFactor(x1, x2, measured, model);
+
+  // Create two factor graphs, one using 'push_back' and one using 'add' and make sure they're equal
+  JacobianFactor::shared_ptr jf = boost::static_pointer_cast<JacobianFactor>(betweenFactor.linearize(values, ordering));
+  LinearizedJacobianFactor::shared_ptr jacobian(new LinearizedJacobianFactor(jf, ordering, values));
+  NonlinearFactorGraph graph1; graph1.push_back(jacobian);
+  NonlinearFactorGraph graph2; graph2.add(*jacobian);
+
+  // TODO: When creating a Jacobian from a cached factor, I experienced a problem in the 'add' version
+  // However, I am currently unable to reproduce the error in this unit test.
+  // I don't know if this affects the Hessian version as well.
+  CHECK(assert_equal(graph1, graph2));
+}
+
+///* ************************************************************************* */
+//TEST( LinearizedFactor, error_jacobian )
+//{
+//  // Create a Between Factor from a Point3. This is actually a linear factor.
+//  Key key1(1);
+//  Key key2(2);
+//  Ordering ordering;
+//  ordering.push_back(key1);
+//  ordering.push_back(key2);
+//  Values values;
+//  values.insert(key1, Point3(-22.4,  +8.5,  +2.4));
+//  values.insert(key2, Point3(-21.0,  +5.0, +21.0));
+//
+//  Point3 measured(1.0, -2.5, 17.8);
+//  SharedNoiseModel model = noiseModel::Isotropic::Sigma(3, 0.1);
+//  BetweenFactor<Point3> betweenFactor(key1, key2, measured, model);
+//
+//
+//  // Create a linearized jacobian factors
+//  JacobianFactor::shared_ptr jf = boost::static_pointer_cast<JacobianFactor>(betweenFactor.linearize(values, ordering));
+//  LinearizedJacobianFactor jacobian(jf, ordering, values);
+//
+//
+//  for(double x1 = -10; x1 < 10; x1 += 2.0) {
+//    for(double y1 = -10; y1 < 10; y1 += 2.0) {
+//      for(double z1 = -10; z1 < 10; z1 += 2.0) {
+//
+//        for(double x2 = -10; x2 < 10; x2 += 2.0) {
+//          for(double y2 = -10; y2 < 10; y2 += 2.0) {
+//            for(double z2 = -10; z2 < 10; z2 += 2.0) {
+//
+//              Values linpoint;
+//              linpoint.insert(key1, Point3(x1, y1, z1));
+//              linpoint.insert(key2, Point3(x2, y2, z2));
+//
+//              // Check that the error of the Linearized Jacobian and the original factor match
+//              // This only works because a BetweenFactor on a Point3 is actually a linear system
+//              double expected_error = betweenFactor.error(linpoint);
+//              double actual_error = jacobian.error(linpoint);
+//              EXPECT_DOUBLES_EQUAL(expected_error, actual_error, 1e-9 );
+//
+//              // Check that the linearized factors are identical
+//              GaussianFactor::shared_ptr expected_factor = betweenFactor.linearize(linpoint, ordering);
+//              GaussianFactor::shared_ptr actual_factor   = jacobian.linearize(linpoint, ordering);
+//              CHECK(assert_equal(*expected_factor, *actual_factor));
+//            }
+//          }
+//        }
+//
+//      }
+//    }
+//  }
+//
+//}
+
+/* ************************************************************************* */
+TEST( LinearizedFactor, equals_hessian )
+{
+  // Create a Between Factor from a Point3. This is actually a linear factor.
+  Key x1(1);
+  Key x2(2);
+  Ordering ordering;
+  ordering.push_back(x1);
+  ordering.push_back(x2);
+  Values values;
+  values.insert(x1, Point3(-22.4,  +8.5,  +2.4));
+  values.insert(x2, Point3(-21.0,  +5.0, +21.0));
+
+  Point3 measured(1.0, -2.5, 17.8);
+  SharedNoiseModel model = noiseModel::Isotropic::Sigma(3, 0.1);
+  BetweenFactor<Point3> betweenFactor(x1, x2, measured, model);
+
+
+  // Create two identical factors and make sure they're equal
+  JacobianFactor::shared_ptr jf = boost::static_pointer_cast<JacobianFactor>(betweenFactor.linearize(values, ordering));
+  HessianFactor::shared_ptr hf(new HessianFactor(*jf));
+  LinearizedHessianFactor hessian1(hf, ordering, values);
+  LinearizedHessianFactor hessian2(hf, ordering, values);
+
+  CHECK(assert_equal(hessian1, hessian2));
+}
+
+/* ************************************************************************* */
+TEST( LinearizedFactor, clone_hessian )
+{
+  // Create a Between Factor from a Point3. This is actually a linear factor.
+  Key x1(1);
+  Key x2(2);
+  Ordering ordering;
+  ordering.push_back(x1);
+  ordering.push_back(x2);
+  Values values;
+  values.insert(x1, Point3(-22.4,  +8.5,  +2.4));
+  values.insert(x2, Point3(-21.0,  +5.0, +21.0));
+
+  Point3 measured(1.0, -2.5, 17.8);
+  SharedNoiseModel model = noiseModel::Isotropic::Sigma(3, 0.1);
+  BetweenFactor<Point3> betweenFactor(x1, x2, measured, model);
+
+
+  // Create two identical factors and make sure they're equal
+  JacobianFactor::shared_ptr jf = boost::static_pointer_cast<JacobianFactor>(betweenFactor.linearize(values, ordering));
+  HessianFactor::shared_ptr hf(new HessianFactor(*jf));
+  LinearizedHessianFactor hessian1(hf, ordering, values);
+  LinearizedHessianFactor::shared_ptr hessian2 = boost::static_pointer_cast<LinearizedHessianFactor>(hessian1.clone());
+
+  CHECK(assert_equal(hessian1, *hessian2));
+}
+
+/* ************************************************************************* */
+TEST( LinearizedFactor, add_hessian )
+{
+  // Create a Between Factor from a Point3. This is actually a linear factor.
+  Key x1(1);
+  Key x2(2);
+  Ordering ordering;
+  ordering.push_back(x1);
+  ordering.push_back(x2);
+  Values values;
+  values.insert(x1, Point3(-22.4,  +8.5,  +2.4));
+  values.insert(x2, Point3(-21.0,  +5.0, +21.0));
+
+  Point3 measured(1.0, -2.5, 17.8);
+  SharedNoiseModel model = noiseModel::Isotropic::Sigma(3, 0.1);
+  BetweenFactor<Point3> betweenFactor(x1, x2, measured, model);
+
+
+  // Create two identical factors and make sure they're equal
+  JacobianFactor::shared_ptr jf = boost::static_pointer_cast<JacobianFactor>(betweenFactor.linearize(values, ordering));
+  HessianFactor::shared_ptr hf(new HessianFactor(*jf));
+  LinearizedHessianFactor::shared_ptr hessian(new LinearizedHessianFactor(hf, ordering, values));
+  NonlinearFactorGraph graph1; graph1.push_back(hessian);
+  NonlinearFactorGraph graph2; graph2.add(*hessian);
+
+  CHECK(assert_equal(graph1, graph2));
+}
+
+///* ************************************************************************* */
+//TEST( LinearizedFactor, error_hessian )
+//{
+//  // Create a Between Factor from a Point3. This is actually a linear factor.
+//  Key key1(1);
+//  Key key2(2);
+//  Ordering ordering;
+//  ordering.push_back(key1);
+//  ordering.push_back(key2);
+//  Values values;
+//  values.insert(key1, Point3(-22.4,  +8.5,  +2.4));
+//  values.insert(key2, Point3(-21.0,  +5.0, +21.0));
+//
+//  Point3 measured(1.0, -2.5, 17.8);
+//  SharedNoiseModel model = noiseModel::Isotropic::Sigma(3, 0.1);
+//  BetweenFactor<Point3> betweenFactor(key1, key2, measured, model);
+//
+//
+//  // Create a linearized hessian factor
+//  JacobianFactor::shared_ptr jf = boost::static_pointer_cast<JacobianFactor>(betweenFactor.linearize(values, ordering));
+//  HessianFactor::shared_ptr hf(new HessianFactor(*jf));
+//  LinearizedHessianFactor hessian(hf, ordering, values);
+//
+//
+//  for(double x1 = -10; x1 < 10; x1 += 2.0) {
+//    for(double y1 = -10; y1 < 10; y1 += 2.0) {
+//      for(double z1 = -10; z1 < 10; z1 += 2.0) {
+//
+//        for(double x2 = -10; x2 < 10; x2 += 2.0) {
+//          for(double y2 = -10; y2 < 10; y2 += 2.0) {
+//            for(double z2 = -10; z2 < 10; z2 += 2.0) {
+//
+//              Values linpoint;
+//              linpoint.insert(key1, Point3(x1, y1, z1));
+//              linpoint.insert(key2, Point3(x2, y2, z2));
+//
+//              // Check that the error of the Linearized Hessian and the original factor match
+//              // This only works because a BetweenFactor on a Point3 is actually a linear system
+//              double expected_error = betweenFactor.error(linpoint);
+//              double actual_error = hessian.error(linpoint);
+//              EXPECT_DOUBLES_EQUAL(expected_error, actual_error, 1e-9 );
+//
+//              // Check that the linearized factors are identical
+//              GaussianFactor::shared_ptr expected_factor = HessianFactor::shared_ptr(new HessianFactor(*betweenFactor.linearize(linpoint, ordering)));
+//              GaussianFactor::shared_ptr actual_factor   = hessian.linearize(linpoint, ordering);
+//              CHECK(assert_equal(*expected_factor, *actual_factor));
+//            }
+//          }
+//        }
+//
+//      }
+//    }
+//  }
+//
+//}
+
+/* ************************************************************************* */
+int main()
+{
+    TestResult tr; return TestRegistry::runAllTests(tr);
+}
+/* ************************************************************************* */
+

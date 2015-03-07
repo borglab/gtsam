@@ -35,10 +35,14 @@
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/iterator/filter_iterator.hpp>
 #include <boost/function.hpp>
+#ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
+#endif
 #include <boost/bind.hpp>
+#ifdef __GNUC__
 #pragma GCC diagnostic pop
+#endif
 #include <boost/ptr_container/serialize_ptr_map.hpp>
 #include <boost/iterator_adaptors.hpp>
 
@@ -61,7 +65,7 @@ namespace gtsam {
   * manifold element, and hence supports operations dim, retract, and
   * localCoordinates.
   */
-  class Values {
+  class GTSAM_EXPORT Values {
 
   private:
 
@@ -92,7 +96,7 @@ namespace gtsam {
     typedef boost::shared_ptr<const Values> const_shared_ptr;
 
     /// A key-value pair, which you get by dereferencing iterators
-    struct KeyValuePair {
+    struct GTSAM_EXPORT KeyValuePair {
       const Key key; ///< The key
       Value& value;  ///< The value
 
@@ -100,7 +104,7 @@ namespace gtsam {
     };
 
     /// A key-value pair, which you get by dereferencing iterators
-    struct ConstKeyValuePair {
+    struct GTSAM_EXPORT ConstKeyValuePair {
       const Key key; ///< The key
       const Value& value;  ///< The value
 
@@ -187,6 +191,14 @@ namespace gtsam {
      * requested key does not match the stored value type. */
     template<typename ValueType>
     boost::optional<const ValueType&> exists(Key j) const;
+
+    /** Find an element by key, returning an iterator, or end() if the key was
+     * not found. */
+    iterator find(Key j) { return boost::make_transform_iterator(values_.find(j), &make_deref_pair); }
+
+    /** Find an element by key, returning an iterator, or end() if the key was
+     * not found. */
+    const_iterator find(Key j) const { return boost::make_transform_iterator(values_.find(j), &make_const_deref_pair); }
 
     /** The number of variables in this config */
     size_t size() const { return values_.size(); }
@@ -373,7 +385,7 @@ namespace gtsam {
   };
 
   /* ************************************************************************* */
-  class ValuesKeyAlreadyExists : public std::exception {
+  class GTSAM_EXPORT ValuesKeyAlreadyExists : public std::exception {
   protected:
     const Key key_; ///< The key that already existed
 
@@ -395,7 +407,7 @@ namespace gtsam {
   };
 
   /* ************************************************************************* */
-  class ValuesKeyDoesNotExist : public std::exception {
+  class GTSAM_EXPORT ValuesKeyDoesNotExist : public std::exception {
   protected:
     const char* operation_; ///< The operation that attempted to access the key
     const Key key_; ///< The key that does not exist
@@ -418,7 +430,7 @@ namespace gtsam {
   };
 
   /* ************************************************************************* */
-  class ValuesIncorrectType : public std::exception {
+  class GTSAM_EXPORT ValuesIncorrectType : public std::exception {
   protected:
     const Key key_; ///< The key requested
     const std::type_info& storedTypeId_;
@@ -449,7 +461,7 @@ namespace gtsam {
   };
 
   /* ************************************************************************* */
-  class DynamicValuesMismatched : public std::exception {
+  class GTSAM_EXPORT DynamicValuesMismatched : public std::exception {
 
   public:
     DynamicValuesMismatched() throw() {}

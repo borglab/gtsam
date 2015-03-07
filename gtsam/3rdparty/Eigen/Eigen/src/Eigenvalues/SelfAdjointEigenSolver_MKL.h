@@ -40,7 +40,7 @@ namespace Eigen {
 /** \internal Specialization for the data types supported by MKL */
 
 #define EIGEN_MKL_EIG_SELFADJ(EIGTYPE, MKLTYPE, MKLRTYPE, MKLNAME, EIGCOLROW, MKLCOLROW ) \
-template<> \
+template<> inline \
 SelfAdjointEigenSolver<Matrix<EIGTYPE, Dynamic, Dynamic, EIGCOLROW> >& \
 SelfAdjointEigenSolver<Matrix<EIGTYPE, Dynamic, Dynamic, EIGCOLROW> >::compute(const Matrix<EIGTYPE, Dynamic, Dynamic, EIGCOLROW>& matrix, int options) \
 { \

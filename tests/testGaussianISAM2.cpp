@@ -6,6 +6,7 @@
 
 #include <gtsam/base/debug.h>
 #include <gtsam/base/TestableAssertions.h>
+#include <gtsam/base/LieVector.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/inference/SymbolicFactorGraph.h>
@@ -207,6 +208,7 @@ TEST_UNSAFE(ISAM2, ImplAddVariables) {
   EXPECT(assert_container_equality(replacedKeysExpected, replacedKeys));
   EXPECT(assert_equal(orderingExpected, ordering));
 }
+
 /* ************************************************************************* */
 TEST_UNSAFE(ISAM2, ImplRemoveVariables) {
 
@@ -285,8 +287,9 @@ TEST_UNSAFE(ISAM2, ImplRemoveVariables) {
   SymbolicFactorGraph removedFactors; removedFactors.push_back(sfg[1]);
   variableIndex.remove(removedFactorsI, removedFactors);
   GaussianFactorGraph linearFactors;
+  FastSet<Key> fixedVariables;
   ISAM2::Impl::RemoveVariables(unusedKeys, ISAM2::sharedClique(), theta, variableIndex, delta, deltaNewton, deltaRg,
-    replacedKeys, ordering, nodes, linearFactors);
+    replacedKeys, ordering, nodes, linearFactors, fixedVariables);
 
   EXPECT(assert_equal(thetaExpected, theta));
   EXPECT(assert_equal(variableIndexExpected, variableIndex));
@@ -819,7 +822,6 @@ TEST(ISAM2, constrained_ordering)
 /* ************************************************************************* */
 TEST(ISAM2, slamlike_solution_partial_relinearization_check)
 {
-
   // These variables will be reused and accumulate factors and values
   Values fullinit;
   NonlinearFactorGraph fullgraph;
@@ -829,6 +831,200 @@ TEST(ISAM2, slamlike_solution_partial_relinearization_check)
 
   // Compare solutions
   CHECK(isam_check(fullgraph, fullinit, isam, *this, result_));
+}
+
+namespace {
+  bool checkMarginalizeLeaves(ISAM2& isam, const FastList<Key>& leafKeys) {
+    Matrix expectedAugmentedHessian, expected3AugmentedHessian;
+    vector<Index> toKeep;
+    const Index lastVar = isam.getOrdering().size() - 1;
+    for(Index i=0; i<=lastVar; ++i)
+      if(find(leafKeys.begin(), leafKeys.end(), isam.getOrdering().key(i)) == leafKeys.end())
+        toKeep.push_back(i);
+
+    // Calculate expected marginal from iSAM2 tree
+    GaussianFactorGraph isamAsGraph(isam);
+    GaussianSequentialSolver solver(isamAsGraph);
+    GaussianFactorGraph marginalgfg = *solver.jointFactorGraph(toKeep);
+    expectedAugmentedHessian = marginalgfg.augmentedHessian();
+
+    //// Calculate expected marginal from cached linear factors
+    //assert(isam.params().cacheLinearizedFactors);
+    //GaussianSequentialSolver solver2(isam.linearFactors_, isam.params().factorization == ISAM2Params::QR);
+    //expected2AugmentedHessian = solver2.jointFactorGraph(toKeep)->augmentedHessian();
+
+    // Calculate expected marginal from original nonlinear factors
+    GaussianSequentialSolver solver3(
+      *isam.getFactorsUnsafe().linearize(isam.getLinearizationPoint(), isam.getOrdering()),
+      isam.params().factorization == ISAM2Params::QR);
+    expected3AugmentedHessian = solver3.jointFactorGraph(toKeep)->augmentedHessian();
+
+    // Do marginalization
+    isam.marginalizeLeaves(leafKeys);
+
+    // Check
+    GaussianFactorGraph actualMarginalGraph(isam);
+    Matrix actualAugmentedHessian = actualMarginalGraph.augmentedHessian();
+    //Matrix actual2AugmentedHessian = linearFactors_.augmentedHessian();
+    Matrix actual3AugmentedHessian = isam.getFactorsUnsafe().linearize(
+      isam.getLinearizationPoint(), isam.getOrdering())->augmentedHessian();
+    assert(actualAugmentedHessian.unaryExpr(std::ptr_fun(&std::isfinite<double>)).all());
+
+    // Check full marginalization
+    //cout << "treeEqual" << endl;
+    bool treeEqual = assert_equal(expectedAugmentedHessian, actualAugmentedHessian, 1e-6);
+    //bool linEqual = assert_equal(expected2AugmentedHessian, actualAugmentedHessian, 1e-6);
+    //cout << "nonlinEqual" << endl;
+    bool nonlinEqual = assert_equal(expected3AugmentedHessian, actualAugmentedHessian, 1e-6);
+    //bool linCorrect = assert_equal(expected3AugmentedHessian, expected2AugmentedHessian, 1e-6);
+    //actual2AugmentedHessian.bottomRightCorner(1,1) = expected3AugmentedHessian.bottomRightCorner(1,1); bool afterLinCorrect = assert_equal(expected3AugmentedHessian, actual2AugmentedHessian, 1e-6);
+    //cout << "nonlinCorrect" << endl;
+    actual3AugmentedHessian.bottomRightCorner(1,1) = expected3AugmentedHessian.bottomRightCorner(1,1); bool afterNonlinCorrect = assert_equal(expected3AugmentedHessian, actual3AugmentedHessian, 1e-6);
+
+    bool ok = treeEqual && /*linEqual &&*/ nonlinEqual && /*linCorrect &&*/ /*afterLinCorrect &&*/ afterNonlinCorrect;
+    return ok;
+  }
+}
+
+/* ************************************************************************* */
+TEST_UNSAFE(ISAM2, marginalizeLeaves1)
+{
+  ISAM2 isam;
+
+  NonlinearFactorGraph factors;
+  factors.add(PriorFactor<LieVector>(0, LieVector(0.0), noiseModel::Unit::Create(1)));
+
+  factors.add(BetweenFactor<LieVector>(0, 1, LieVector(0.0), noiseModel::Unit::Create(1)));
+  factors.add(BetweenFactor<LieVector>(1, 2, LieVector(0.0), noiseModel::Unit::Create(1)));
+  factors.add(BetweenFactor<LieVector>(0, 2, LieVector(0.0), noiseModel::Unit::Create(1)));
+
+  Values values;
+  values.insert(0, LieVector(0.0));
+  values.insert(1, LieVector(0.0));
+  values.insert(2, LieVector(0.0));
+
+  FastMap<Key,int> constrainedKeys;
+  constrainedKeys.insert(make_pair(0,0));
+  constrainedKeys.insert(make_pair(1,1));
+  constrainedKeys.insert(make_pair(2,2));
+
+  isam.update(factors, values, FastVector<size_t>(), constrainedKeys);
+
+  FastList<Key> leafKeys;
+  leafKeys.push_back(isam.getOrdering().key(0));
+  EXPECT(checkMarginalizeLeaves(isam, leafKeys));
+}
+
+/* ************************************************************************* */
+TEST_UNSAFE(ISAM2, marginalizeLeaves2)
+{
+  ISAM2 isam;
+
+  NonlinearFactorGraph factors;
+  factors.add(PriorFactor<LieVector>(0, LieVector(0.0), noiseModel::Unit::Create(1)));
+
+  factors.add(BetweenFactor<LieVector>(0, 1, LieVector(0.0), noiseModel::Unit::Create(1)));
+  factors.add(BetweenFactor<LieVector>(1, 2, LieVector(0.0), noiseModel::Unit::Create(1)));
+  factors.add(BetweenFactor<LieVector>(0, 2, LieVector(0.0), noiseModel::Unit::Create(1)));
+  factors.add(BetweenFactor<LieVector>(2, 3, LieVector(0.0), noiseModel::Unit::Create(1)));
+
+  Values values;
+  values.insert(0, LieVector(0.0));
+  values.insert(1, LieVector(0.0));
+  values.insert(2, LieVector(0.0));
+  values.insert(3, LieVector(0.0));
+
+  FastMap<Key,int> constrainedKeys;
+  constrainedKeys.insert(make_pair(0,0));
+  constrainedKeys.insert(make_pair(1,1));
+  constrainedKeys.insert(make_pair(2,2));
+  constrainedKeys.insert(make_pair(3,3));
+
+  isam.update(factors, values, FastVector<size_t>(), constrainedKeys);
+
+  FastList<Key> leafKeys;
+  leafKeys.push_back(isam.getOrdering().key(0));
+  EXPECT(checkMarginalizeLeaves(isam, leafKeys));
+}
+
+/* ************************************************************************* */
+TEST_UNSAFE(ISAM2, marginalizeLeaves3)
+{
+  ISAM2 isam;
+
+  NonlinearFactorGraph factors;
+  factors.add(PriorFactor<LieVector>(0, LieVector(0.0), noiseModel::Unit::Create(1)));
+
+  factors.add(BetweenFactor<LieVector>(0, 1, LieVector(0.0), noiseModel::Unit::Create(1)));
+  factors.add(BetweenFactor<LieVector>(1, 2, LieVector(0.0), noiseModel::Unit::Create(1)));
+  factors.add(BetweenFactor<LieVector>(0, 2, LieVector(0.0), noiseModel::Unit::Create(1)));
+
+  factors.add(BetweenFactor<LieVector>(2, 3, LieVector(0.0), noiseModel::Unit::Create(1)));
+
+  factors.add(BetweenFactor<LieVector>(3, 4, LieVector(0.0), noiseModel::Unit::Create(1)));
+  factors.add(BetweenFactor<LieVector>(4, 5, LieVector(0.0), noiseModel::Unit::Create(1)));
+  factors.add(BetweenFactor<LieVector>(3, 5, LieVector(0.0), noiseModel::Unit::Create(1)));
+
+  Values values;
+  values.insert(0, LieVector(0.0));
+  values.insert(1, LieVector(0.0));
+  values.insert(2, LieVector(0.0));
+  values.insert(3, LieVector(0.0));
+  values.insert(4, LieVector(0.0));
+  values.insert(5, LieVector(0.0));
+
+  FastMap<Key,int> constrainedKeys;
+  constrainedKeys.insert(make_pair(0,0));
+  constrainedKeys.insert(make_pair(1,1));
+  constrainedKeys.insert(make_pair(2,2));
+  constrainedKeys.insert(make_pair(3,3));
+  constrainedKeys.insert(make_pair(4,4));
+  constrainedKeys.insert(make_pair(5,5));
+
+  isam.update(factors, values, FastVector<size_t>(), constrainedKeys);
+
+  FastList<Key> leafKeys;
+  leafKeys.push_back(isam.getOrdering().key(0));
+  EXPECT(checkMarginalizeLeaves(isam, leafKeys));
+}
+
+/* ************************************************************************* */
+TEST_UNSAFE(ISAM2, marginalizeLeaves4)
+{
+  ISAM2 isam;
+
+  NonlinearFactorGraph factors;
+  factors.add(PriorFactor<LieVector>(0, LieVector(0.0), noiseModel::Unit::Create(1)));
+  factors.add(BetweenFactor<LieVector>(0, 2, LieVector(0.0), noiseModel::Unit::Create(1)));
+  factors.add(BetweenFactor<LieVector>(1, 2, LieVector(0.0), noiseModel::Unit::Create(1)));
+
+  Values values;
+  values.insert(0, LieVector(0.0));
+  values.insert(1, LieVector(0.0));
+  values.insert(2, LieVector(0.0));
+
+  FastMap<Key,int> constrainedKeys;
+  constrainedKeys.insert(make_pair(0,0));
+  constrainedKeys.insert(make_pair(1,1));
+  constrainedKeys.insert(make_pair(2,2));
+
+  isam.update(factors, values, FastVector<size_t>(), constrainedKeys);
+
+  FastList<Key> leafKeys;
+  leafKeys.push_back(isam.getOrdering().key(1));
+  EXPECT(checkMarginalizeLeaves(isam, leafKeys));
+}
+
+/* ************************************************************************* */
+TEST_UNSAFE(ISAM2, marginalizeLeaves5)
+{
+  // Create isam2
+  ISAM2 isam = createSlamlikeISAM2();
+
+  // Marginalize
+  FastList<Key> marginalizeKeys;
+  marginalizeKeys.push_back(isam.getOrdering().key(0));
+  EXPECT(checkMarginalizeLeaves(isam, marginalizeKeys));
 }
 
 /* ************************************************************************* */

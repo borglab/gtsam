@@ -197,6 +197,14 @@ TEST(HessianFactor, Constructor2)
   EXPECT(assert_equal(G11, factor.info(factor.begin(), factor.begin())));
   EXPECT(assert_equal(G12, factor.info(factor.begin(), factor.begin()+1)));
   EXPECT(assert_equal(G22, factor.info(factor.begin()+1, factor.begin()+1)));
+
+  // Check case when vector values is larger than factor
+  dims.push_back(2);
+  VectorValues dxLarge(dims);
+  dxLarge[0] = dx0;
+  dxLarge[1] = dx1;
+  dxLarge[2] = Vector_(2, 0.1, 0.2);
+  EXPECT_DOUBLES_EQUAL(expected, factor.error(dxLarge), 1e-10);
 }
 
 /* ************************************************************************* */
@@ -607,16 +615,8 @@ TEST(HessianFactor, combine) {
   FactorGraph<GaussianFactor> factors;
   factors.push_back(f);
 
-  vector<size_t> dimensions;
-  dimensions += 2, 2, 2, 1;
-
-  Scatter scatter;
-  scatter += make_pair(0, SlotEntry(0, 2));
-  scatter += make_pair(1, SlotEntry(1, 2));
-  scatter += make_pair(2, SlotEntry(2, 2));
-
   // Form Ab' * Ab
-  HessianFactor actual(factors, dimensions, scatter);
+  HessianFactor actual(factors);
 
   Matrix expected = Matrix_(7, 7,
   125.0000,       0.0,  -25.0000,       0.0, -100.0000,       0.0,   25.0000,

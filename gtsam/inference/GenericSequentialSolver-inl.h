@@ -32,6 +32,7 @@ namespace gtsam {
   template<class FACTOR>
   GenericSequentialSolver<FACTOR>::GenericSequentialSolver(const FactorGraph<FACTOR>& factorGraph) {
     gttic(GenericSequentialSolver_constructor1);
+    assert(factorGraph.size());
     factors_.reset(new FactorGraph<FACTOR>(factorGraph));
     structure_.reset(new VariableIndex(factorGraph));
     eliminationTree_ = EliminationTree<FACTOR>::Create(*factors_, *structure_);
@@ -144,7 +145,7 @@ namespace gtsam {
     size_t nrToEliminate = nrMarginalized + nrFrontals;
     sharedBayesNet bayesNet = eliminate(*permutation, function, nrToEliminate);
     // Get rid of conditionals on variables that we want to marginalize out
-    for (int i = 0; i < nrMarginalized; i++)
+    for (size_t i = 0; i < nrMarginalized; i++)
       bayesNet->pop_front();
 
     return bayesNet;

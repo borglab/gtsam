@@ -28,7 +28,7 @@ using namespace boost::assign;
 #include <gtsam/linear/GaussianJunctionTree.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/GaussianMultifrontalSolver.h>
-#include <gtsam/inference/BayesTree-inl.h>
+#include <gtsam/inference/BayesTree.h>
 
 using namespace std;
 using namespace gtsam;

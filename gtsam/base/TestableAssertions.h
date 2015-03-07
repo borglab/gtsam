@@ -22,7 +22,7 @@
 #include <iostream>
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
-#include <gtsam/base/types.h>
+#include <gtsam/global_includes.h>
 #include <gtsam/base/Testable.h>
 
 namespace gtsam {

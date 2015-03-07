@@ -31,7 +31,7 @@ namespace gtsam {
    * @addtogroup geometry
    * \nosubgrouping
    */
-  class Cal3_S2 : public DerivedValue<Cal3_S2> {
+  class GTSAM_EXPORT Cal3_S2 : public DerivedValue<Cal3_S2> {
   private:
     double fx_, fy_, s_, u0_, v0_;
 
@@ -187,8 +187,4 @@ namespace gtsam {
 
   };
 
-
-
-  typedef boost::shared_ptr<Cal3_S2> shared_ptrK;  ///< shared pointer to calibration object
-
-} // gtsam
+} // \ namespace gtsam

@@ -13,7 +13,7 @@ mkdir build -p
 
 #step 2 : upload
 # (the '/' at the end of path is very important, see rsync documentation)
-rsync -az --no-p --delete build/doc/html/ $USER@ssh.tuxfamily.org:eigen/eigen.tuxfamily.org-web/htdocs/dox-devel/ || { echo "upload failed"; exit 1; }
+rsync -az --no-p --delete build/doc/html/ $USER@ssh.tuxfamily.org:eigen/eigen.tuxfamily.org-web/htdocs/dox/ || { echo "upload failed"; exit 1; }
 
 #step 3 : fix the perm
 ssh $USER@ssh.tuxfamily.org 'chmod -R g+w /home/eigen/eigen.tuxfamily.org-web/htdocs/dox-devel' || { echo "perm failed"; exit 1; }

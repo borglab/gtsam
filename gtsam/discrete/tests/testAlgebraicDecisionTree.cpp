@@ -40,9 +40,6 @@ using namespace gtsam;
 /* ******************************************************************************** */
 typedef AlgebraicDecisionTree<Index> ADT;
 
-template class DecisionTree<Index,double>;
-template class AlgebraicDecisionTree<Index>;
-
 #define DISABLE_DOT
 
 template<typename T>

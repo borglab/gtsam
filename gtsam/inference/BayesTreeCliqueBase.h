@@ -21,7 +21,7 @@
 #include <boost/make_shared.hpp>
 #include <boost/weak_ptr.hpp>
 
-#include <gtsam/base/types.h>
+#include <gtsam/global_includes.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/BayesNet.h>
 
@@ -79,16 +79,13 @@ namespace gtsam {
 
     /// @}
 
-    /// This stores the Cached Shortcut value
-    mutable boost::optional<BayesNet<ConditionalType> > cachedShortcut_;
-
     /// This stores the Cached separator margnal P(S)
     mutable boost::optional<FactorGraph<FactorType> > cachedSeparatorMarginal_;
 
   public:
     sharedConditional conditional_;
     derived_weak_ptr parent_;
-    std::list<derived_ptr> children_;
+    FastList<derived_ptr> children_;
 
     /// @name Testable
     /// @{
@@ -124,9 +121,6 @@ namespace gtsam {
     /** The size of subtree rooted at this clique, i.e., nr of Cliques */
     size_t treeSize() const;
 
-    /** Collect number of cliques with cached shortcuts in subtree */
-    size_t numCachedShortcuts() const;
-
     /** Collect number of cliques with cached separator marginals */
     size_t numCachedSeparatorMarginals() const;
 
@@ -155,7 +149,7 @@ namespace gtsam {
     }
 
     /** return the reference of children non-const version*/
-    std::list<derived_ptr>& children() {
+    FastList<derived_ptr>& children() {
       return children_;
     }
 
@@ -189,13 +183,10 @@ namespace gtsam {
      * traversing the whole tree.  Returns whether any separator variables in
      * this subtree were reordered.
      */
-    bool permuteSeparatorWithInverse(const Permutation& inversePermutation);
+    bool reduceSeparatorWithInverse(const internal::Reduction& inverseReduction);
 
     /** return the conditional P(S|Root) on the separator given the root */
     BayesNet<ConditionalType> shortcut(derived_ptr root, Eliminate function) const;
-
-    /** return the marginal P(C) of the clique */
-    FactorGraph<FactorType> marginal(derived_ptr root, Eliminate function) const;
 
     /** return the marginal P(S) on the separator */
     FactorGraph<FactorType> separatorMarginal(derived_ptr root, Eliminate function) const;
@@ -203,28 +194,14 @@ namespace gtsam {
     /** return the marginal P(C) of the clique, using marginal caching */
     FactorGraph<FactorType> marginal2(derived_ptr root, Eliminate function) const;
 
-#ifdef SHORTCUT_JOINTS
-    /**
-     * return the joint P(C1,C2), where C1==this. TODO: not a method?
-     * Limitation: can only calculate joint if cliques are disjoint or one of them is root
-     */
-    FactorGraph<FactorType> joint(derived_ptr C2, derived_ptr root, Eliminate function) const;
-#endif
-
     /**
      * This deletes the cached shortcuts of all cliques (subtree) below this clique.
      * This is performed when the bayes tree is modified.
      */
     void deleteCachedShortcuts();
 
-    /** return cached shortcut of the clique */
-    const boost::optional<BayesNet<ConditionalType> >& cachedShortcut() const {
-      return cachedShortcut_;
-    }
-
     const boost::optional<FactorGraph<FactorType> >& cachedSeparatorMarginal() const {
-      return cachedSeparatorMarginal_;
-    }
+      return cachedSeparatorMarginal_; }
 
     friend class BayesTree<ConditionalType, DerivedType> ;
 
@@ -247,11 +224,8 @@ namespace gtsam {
     std::vector<Index> shortcut_indices(derived_ptr B,
         const FactorGraph<FactorType>& p_Cp_B) const;
 
-    /// Reset the computed shortcut of this clique. Used by friend BayesTree
-    void resetCachedShortcut() {
-      cachedSeparatorMarginal_ = boost::none;
-      cachedShortcut_ = boost::none;
-    }
+    /** Non-recursive delete cached shortcuts and marginals - internal only. */
+    void deleteCachedShortcutsNonRecursive() { cachedSeparatorMarginal_ = boost::none; }
 
   private:
 

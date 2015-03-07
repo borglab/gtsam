@@ -56,20 +56,25 @@ static noiseModel::Unit::shared_ptr unit3 = noiseModel::Unit::Create(3);
 /* ************************************************************************* */
 TEST (Serialization, noiseModels) {
   // tests using pointers to the derived class
-  EXPECT(   equalsDereferenced<noiseModel::Diagonal::shared_ptr>(diag3));
+  EXPECT(equalsDereferenced<noiseModel::Diagonal::shared_ptr>(diag3));
   EXPECT(equalsDereferencedXML<noiseModel::Diagonal::shared_ptr>(diag3));
+  EXPECT(equalsDereferencedBinary<noiseModel::Diagonal::shared_ptr>(diag3));
 
-  EXPECT(   equalsDereferenced<noiseModel::Gaussian::shared_ptr>(gaussian3));
+  EXPECT(equalsDereferenced<noiseModel::Gaussian::shared_ptr>(gaussian3));
   EXPECT(equalsDereferencedXML<noiseModel::Gaussian::shared_ptr>(gaussian3));
+  EXPECT(equalsDereferencedBinary<noiseModel::Gaussian::shared_ptr>(gaussian3));
 
-  EXPECT(   equalsDereferenced<noiseModel::Isotropic::shared_ptr>(iso3));
+  EXPECT(equalsDereferenced<noiseModel::Isotropic::shared_ptr>(iso3));
   EXPECT(equalsDereferencedXML<noiseModel::Isotropic::shared_ptr>(iso3));
+  EXPECT(equalsDereferencedBinary<noiseModel::Isotropic::shared_ptr>(iso3));
 
-  EXPECT(   equalsDereferenced<noiseModel::Constrained::shared_ptr>(constrained3));
+  EXPECT(equalsDereferenced<noiseModel::Constrained::shared_ptr>(constrained3));
   EXPECT(equalsDereferencedXML<noiseModel::Constrained::shared_ptr>(constrained3));
+  EXPECT(equalsDereferencedBinary<noiseModel::Constrained::shared_ptr>(constrained3));
 
-  EXPECT(   equalsDereferenced<noiseModel::Unit::shared_ptr>(unit3));
+  EXPECT(equalsDereferenced<noiseModel::Unit::shared_ptr>(unit3));
   EXPECT(equalsDereferencedXML<noiseModel::Unit::shared_ptr>(unit3));
+  EXPECT(equalsDereferencedBinary<noiseModel::Unit::shared_ptr>(unit3));
 }
 
 /* ************************************************************************* */
@@ -77,36 +82,46 @@ TEST (Serialization, SharedNoiseModel_noiseModels) {
   SharedNoiseModel diag3_sg = diag3;
   EXPECT(equalsDereferenced<SharedNoiseModel>(diag3_sg));
   EXPECT(equalsDereferencedXML<SharedNoiseModel>(diag3_sg));
+  EXPECT(equalsDereferencedBinary<SharedNoiseModel>(diag3_sg));
 
   EXPECT(equalsDereferenced<SharedNoiseModel>(diag3));
   EXPECT(equalsDereferencedXML<SharedNoiseModel>(diag3));
+  EXPECT(equalsDereferencedBinary<SharedNoiseModel>(diag3));
 
   EXPECT(equalsDereferenced<SharedNoiseModel>(iso3));
   EXPECT(equalsDereferencedXML<SharedNoiseModel>(iso3));
+  EXPECT(equalsDereferencedBinary<SharedNoiseModel>(iso3));
 
   EXPECT(equalsDereferenced<SharedNoiseModel>(gaussian3));
   EXPECT(equalsDereferencedXML<SharedNoiseModel>(gaussian3));
+  EXPECT(equalsDereferencedBinary<SharedNoiseModel>(gaussian3));
 
   EXPECT(equalsDereferenced<SharedNoiseModel>(unit3));
   EXPECT(equalsDereferencedXML<SharedNoiseModel>(unit3));
+  EXPECT(equalsDereferencedBinary<SharedNoiseModel>(unit3));
 
   EXPECT(equalsDereferenced<SharedNoiseModel>(constrained3));
   EXPECT(equalsDereferencedXML<SharedNoiseModel>(constrained3));
+  EXPECT(equalsDereferencedBinary<SharedNoiseModel>(constrained3));
 }
 
 /* ************************************************************************* */
 TEST (Serialization, SharedDiagonal_noiseModels) {
   EXPECT(equalsDereferenced<SharedDiagonal>(diag3));
   EXPECT(equalsDereferencedXML<SharedDiagonal>(diag3));
+  EXPECT(equalsDereferencedBinary<SharedDiagonal>(diag3));
 
   EXPECT(equalsDereferenced<SharedDiagonal>(iso3));
   EXPECT(equalsDereferencedXML<SharedDiagonal>(iso3));
+  EXPECT(equalsDereferencedBinary<SharedDiagonal>(iso3));
 
   EXPECT(equalsDereferenced<SharedDiagonal>(unit3));
   EXPECT(equalsDereferencedXML<SharedDiagonal>(unit3));
+  EXPECT(equalsDereferencedBinary<SharedDiagonal>(unit3));
 
   EXPECT(equalsDereferenced<SharedDiagonal>(constrained3));
   EXPECT(equalsDereferencedXML<SharedDiagonal>(constrained3));
+  EXPECT(equalsDereferencedBinary<SharedDiagonal>(constrained3));
 }
 
 /* ************************************************************************* */
@@ -126,6 +141,7 @@ TEST (Serialization, linear_factors) {
   values.insert(2, Vector_(2, 4.0,5.0));
   EXPECT(equalsObj<VectorValues>(values));
   EXPECT(equalsXML<VectorValues>(values));
+  EXPECT(equalsBinary<VectorValues>(values));
 
   Index i1 = 4, i2 = 7;
   Matrix A1 = eye(3), A2 = -1.0 * eye(3);
@@ -134,10 +150,12 @@ TEST (Serialization, linear_factors) {
   JacobianFactor jacobianfactor(i1, A1, i2, A2, b, model);
   EXPECT(equalsObj(jacobianfactor));
   EXPECT(equalsXML(jacobianfactor));
+  EXPECT(equalsBinary(jacobianfactor));
 
   HessianFactor hessianfactor(jacobianfactor);
   EXPECT(equalsObj(hessianfactor));
   EXPECT(equalsXML(hessianfactor));
+  EXPECT(equalsBinary(hessianfactor));
 }
 
 /* ************************************************************************* */
@@ -150,6 +168,7 @@ TEST (Serialization, gaussian_conditional) {
 
   EXPECT(equalsObj(cg));
   EXPECT(equalsXML(cg));
+  EXPECT(equalsBinary(cg));
 }
 
 

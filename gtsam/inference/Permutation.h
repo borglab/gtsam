@@ -23,7 +23,7 @@
 #include <iostream>
 #include <boost/shared_ptr.hpp>
 
-#include <gtsam/base/types.h>
+#include <gtsam/global_includes.h>
 #include <gtsam/base/FastMap.h>
 
 namespace gtsam {
@@ -38,12 +38,23 @@ namespace gtsam {
  * that linearized factor graphs are already correctly ordered and need
  * not be permuted.
  *
- * Permutations can be considered to a 1-1 mapping from an original set of indices
- * to a different set of indices.  Permutations can be composed and inverted
+ * Consistent with their mathematical definition, permutations are functions
+ * that accept the destination index and return the source index.  For example,
+ * to permute data structure A into a new data structure B using permutation P,
+ * the mapping is B[i] = A[P[i]].  This is the behavior implemented by
+ * B = A.permute(P).
+ *
+ * For some data structures in GTSAM, for efficiency it is necessary to have
+ * the inverse of the desired permutation.  In this case, the data structure
+ * will implement permuteWithInverse(P) instead of permute(P).  You may already
+ * have the inverse permutation by construction, or may instead compute it with
+ * Pinv = P.inverse().
+ *
+ * Permutations can be composed and inverted
  * in order to create new indexing for a structure.
  * \nosubgrouping
  */
-class Permutation {
+class GTSAM_EXPORT Permutation {
 protected:
   std::vector<Index> rangeIndices_;
 
@@ -83,28 +94,28 @@ public:
   /// @{
 
   /**
-   * Return the new index of the supplied variable after the permutation
+   * Return the source index of the supplied destination index.
    */
   Index operator[](Index variable) const { check(variable); return rangeIndices_[variable]; }
 
   /**
-   * Return the new index of the supplied variable after the permutation. This version allows modification.
+   * Return the source index of the supplied destination index. This version allows modification.
    */
   Index& operator[](Index variable) { check(variable); return rangeIndices_[variable]; }
 
   /**
-   * Return the new index of the supplied variable after the permutation. Synonym for operator[](Index).
+   * Return the source index of the supplied destination index. Synonym for operator[](Index).
    */
   Index at(Index variable) const { return operator[](variable); }
 
   /**
-   * Return the new index of the supplied variable after the permutation. This version allows modification.   Synonym for operator[](Index).
+   * Return the source index of the supplied destination index. This version allows modification.   Synonym for operator[](Index).
    */
   Index& at(Index variable) { return operator[](variable); }
 
   /**
-   * The number of variables in the range of this permutation, i.e. the output
-   * space.
+   * The number of variables in the range of this permutation, i.e. the
+   * destination space.
    */
   Index size() const { return rangeIndices_.size(); }
 
@@ -143,8 +154,8 @@ public:
 
   /**
    * Return the inverse permutation.  This is only possible if this is a non-
-   * reducing permutation, that is, (*this)[i] < this->size() for all i<size().
-   * If NDEBUG is not defined, this conditional will be checked.
+   * reducing permutation, that is, (*this)[i] < this->size() for all
+   * i < size().  If NDEBUG is not defined, this conditional will be checked.
    */
   Permutation::shared_ptr inverse() const;
 
@@ -167,14 +178,6 @@ public:
   /// @name Advanced Interface
   /// @{
 
-
-  /**
-   * A partial permutation, reorders the variables selected by selector through
-   * partialPermutation.  selector and partialPermutation should have the same
-   * size, this is checked if NDEBUG is not defined.
-   */
-  Permutation::shared_ptr partialPermutation(const Permutation& selector, const Permutation& partialPermutation) const;
-
   iterator begin() { return rangeIndices_.begin(); }  ///< Iterate through the indices
   iterator end() { return rangeIndices_.end(); }      ///< Iterate through the indices
 
@@ -186,18 +189,27 @@ protected:
 
 
 namespace internal {
-  // An internal class used for storing and applying a permutation from a map
+  /**
+   * An internal class used for storing and applying a permutation from a map
+   */
   class Reduction : public gtsam::FastMap<Index,Index> {
   public:
-    static Reduction CreateAsInverse(const Permutation& p);
-    void applyInverse(std::vector<Index>& js) const;
-    Permutation inverse() const;
-    Index& operator[](const Index& j);
-    const Index& operator[](const Index& j) const;
+    typedef gtsam::FastMap<Index,Index> Base;
+
+    GTSAM_EXPORT static Reduction CreateAsInverse(const Permutation& p);
+    GTSAM_EXPORT static Reduction CreateFromPartialPermutation(const Permutation& selector, const Permutation& p);
+    GTSAM_EXPORT void applyInverse(std::vector<Index>& js) const;
+    GTSAM_EXPORT Permutation inverse() const;
+    GTSAM_EXPORT const Index& operator[](const Index& j);
+    GTSAM_EXPORT const Index& operator[](const Index& j) const;
+
+    GTSAM_EXPORT void print(const std::string& s="") const;
+    GTSAM_EXPORT bool equals(const Reduction& other, double tol = 1e-9) const;
   };
 
-  // Reduce the variable indices so that those in the set are mapped to start at zero
-  Permutation createReducingPermutation(const std::set<Index>& indices);
-}
-
-}
+  /**
+   * Reduce the variable indices so that those in the set are mapped to start at zero
+   */
+  GTSAM_EXPORT Permutation createReducingPermutation(const std::set<Index>& indices);
+} // \namespace internal
+} // \namespace gtsam

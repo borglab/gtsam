@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include <gtsam/base/types.h>
+#include <gtsam/global_includes.h>
 #include <gtsam/base/FastMap.h>
 
 #include <iostream>
@@ -73,10 +73,10 @@ public:
   /// @{
 
   /** print */
-  void print(const std::string& str = "VariableSlots: ") const;
+  GTSAM_EXPORT void print(const std::string& str = "VariableSlots: ") const;
 
   /** equals */
-  bool equals(const VariableSlots& rhs, double tol = 0.0) const;
+  GTSAM_EXPORT bool equals(const VariableSlots& rhs, double tol = 0.0) const;
 
   /// @}
 

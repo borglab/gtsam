@@ -71,6 +71,83 @@ TEST_UNSAFE( wrap, check_exception ) {
 }
 
 /* ************************************************************************* */
+TEST( wrap, small_parse ) {
+  string moduleName("gtsam");
+  Module module(moduleName, true);
+
+  string markup(
+      string("class Point2 {                \n") +
+      string(" double x() const;            \n") +   // Method 1
+      string(" Matrix returnMatrix() const;   \n") + // Method 2
+      string(" Point2 returnPoint2() const; \n") +   // Method 3
+      string(" static Vector returnVector(); \n") +  // Static Method 1
+      string("};\n"));
+  module.parseMarkup(markup);
+
+  // check return types
+  LONGS_EQUAL(1, module.classes.size());
+  Class cls = module.classes.front();
+  EXPECT(assert_equal("Point2", cls.name));
+  EXPECT(!cls.isVirtual);
+  EXPECT(cls.namespaces.empty());
+  LONGS_EQUAL(3, cls.methods.size());
+  LONGS_EQUAL(1, cls.static_methods.size());
+
+  // Method 1
+  Method m1 = cls.methods.at("x");
+  EXPECT(assert_equal("x", m1.name));
+  EXPECT(m1.is_const_);
+  LONGS_EQUAL(1, m1.argLists.size());
+  LONGS_EQUAL(1, m1.returnVals.size());
+
+  ReturnValue rv1 = m1.returnVals.front();
+  EXPECT(!rv1.isPair);
+  EXPECT(!rv1.isPtr1);
+  EXPECT(assert_equal("double", rv1.type1));
+  EXPECT_LONGS_EQUAL(ReturnValue::BASIS, rv1.category1);
+
+  // Method 2
+  Method m2 = cls.methods.at("returnMatrix");
+  EXPECT(assert_equal("returnMatrix", m2.name));
+  EXPECT(m2.is_const_);
+  LONGS_EQUAL(1, m2.argLists.size());
+  LONGS_EQUAL(1, m2.returnVals.size());
+
+  ReturnValue rv2 = m2.returnVals.front();
+  EXPECT(!rv2.isPair);
+  EXPECT(!rv2.isPtr1);
+  EXPECT(assert_equal("Matrix", rv2.type1));
+  EXPECT_LONGS_EQUAL(ReturnValue::EIGEN, rv2.category1);
+
+  // Method 3
+  Method m3 = cls.methods.at("returnPoint2");
+  EXPECT(assert_equal("returnPoint2", m3.name));
+  EXPECT(m3.is_const_);
+  LONGS_EQUAL(1, m3.argLists.size());
+  LONGS_EQUAL(1, m3.returnVals.size());
+
+  ReturnValue rv3 = m3.returnVals.front();
+  EXPECT(!rv3.isPair);
+  EXPECT(!rv3.isPtr1);
+  EXPECT(assert_equal("Point2", rv3.type1));
+  EXPECT_LONGS_EQUAL(ReturnValue::CLASS, rv3.category1);
+
+  // Static Method 1
+  // static Vector returnVector();
+  StaticMethod sm1 = cls.static_methods.at("returnVector");
+  EXPECT(assert_equal("returnVector", sm1.name));
+  LONGS_EQUAL(1, sm1.argLists.size());
+  LONGS_EQUAL(1, sm1.returnVals.size());
+
+  ReturnValue rv4 = sm1.returnVals.front();
+  EXPECT(!rv4.isPair);
+  EXPECT(!rv4.isPtr1);
+  EXPECT(assert_equal("Vector", rv4.type1));
+  EXPECT_LONGS_EQUAL(ReturnValue::EIGEN, rv4.category1);
+
+}
+
+/* ************************************************************************* */
 TEST( wrap, parse_geometry ) {
   string markup_header_path = topdir + "/wrap/tests";
   Module module(markup_header_path.c_str(), "geometry",enable_verbose);
@@ -87,12 +164,59 @@ TEST( wrap, parse_geometry ) {
 
   LONGS_EQUAL(3, module.classes.size());
 
-  // check first class, Point2
+  // Key for ReturnValue::return_category
+//  CLASS = 1,
+//  EIGEN = 2,
+//  BASIS = 3,
+//  VOID  = 4,
+
   {
+    // check first class
+    //  class Point2 {
+    //   Point2();
+    //   Point2(double x, double y);
+    //   double x() const;
+    //   double y() const;
+    //   int dim() const;
+    //   char returnChar() const;
+    //   void argChar(char a) const;
+    //   void argUChar(unsigned char a) const;
+    //   VectorNotEigen vectorConfusion();
+    //  };
+
     Class cls = module.classes.at(0);
     EXPECT(assert_equal("Point2", cls.name));
     EXPECT_LONGS_EQUAL(2, cls.constructor.args_list.size());
     EXPECT_LONGS_EQUAL(7, cls.methods.size());
+
+    {
+      //   char returnChar() const;
+      CHECK(cls.methods.find("returnChar") != cls.methods.end());
+      Method m1 = cls.methods.find("returnChar")->second;
+      LONGS_EQUAL(1, m1.returnVals.size());
+      EXPECT(assert_equal("char", m1.returnVals.front().type1));
+      EXPECT_LONGS_EQUAL(ReturnValue::BASIS, m1.returnVals.front().category1);
+      EXPECT(!m1.returnVals.front().isPair);
+      EXPECT(assert_equal("returnChar", m1.name));
+      LONGS_EQUAL(1, m1.argLists.size());
+      EXPECT_LONGS_EQUAL(0, m1.argLists.front().size());
+      EXPECT(m1.is_const_);
+    }
+
+    {
+      //   VectorNotEigen vectorConfusion();
+      CHECK(cls.methods.find("vectorConfusion") != cls.methods.end());
+      Method m1 = cls.methods.find("vectorConfusion")->second;
+      LONGS_EQUAL(1, m1.returnVals.size());
+      EXPECT(assert_equal("VectorNotEigen", m1.returnVals.front().type1));
+      EXPECT_LONGS_EQUAL(ReturnValue::CLASS, m1.returnVals.front().category1);
+      EXPECT(!m1.returnVals.front().isPair);
+      EXPECT(assert_equal("vectorConfusion", m1.name));
+      LONGS_EQUAL(1, m1.argLists.size());
+      EXPECT_LONGS_EQUAL(0, m1.argLists.front().size());
+      EXPECT(!m1.is_const_);
+    }
+
     EXPECT_LONGS_EQUAL(0, cls.static_methods.size());
     EXPECT_LONGS_EQUAL(0, cls.namespaces.size());
   }
@@ -122,6 +246,7 @@ TEST( wrap, parse_geometry ) {
     Method m1 = cls.methods.find("norm")->second;
     LONGS_EQUAL(1, m1.returnVals.size());
     EXPECT(assert_equal("double", m1.returnVals.front().type1));
+    EXPECT_LONGS_EQUAL(ReturnValue::BASIS, m1.returnVals.front().category1);
     EXPECT(assert_equal("norm", m1.name));
     LONGS_EQUAL(1, m1.argLists.size());
     EXPECT_LONGS_EQUAL(0, m1.argLists.front().size());
@@ -141,8 +266,34 @@ TEST( wrap, parse_geometry ) {
     Method m2 = testCls.methods.find("return_pair")->second;
     LONGS_EQUAL(1, m2.returnVals.size());
     EXPECT(m2.returnVals.front().isPair);
-    EXPECT(m2.returnVals.front().category1 == ReturnValue::EIGEN);
-    EXPECT(m2.returnVals.front().category2 == ReturnValue::EIGEN);
+    EXPECT_LONGS_EQUAL(ReturnValue::EIGEN, m2.returnVals.front().category1);
+    EXPECT(assert_equal("Vector", m2.returnVals.front().type1));
+    EXPECT_LONGS_EQUAL(ReturnValue::EIGEN, m2.returnVals.front().category2);
+    EXPECT(assert_equal("Matrix", m2.returnVals.front().type2));
+
+    // checking pointer args and return values
+//    pair<Test*,Test*> return_ptrs (Test* p1, Test* p2) const;
+    CHECK(testCls.methods.find("return_ptrs") != testCls.methods.end());
+    Method m3 = testCls.methods.find("return_ptrs")->second;
+    LONGS_EQUAL(1, m3.argLists.size());
+    ArgumentList args = m3.argLists.front();
+    LONGS_EQUAL(2, args.size());
+
+    Argument arg1 = args.at(0);
+    EXPECT(arg1.is_ptr);
+    EXPECT(!arg1.is_const);
+    EXPECT(!arg1.is_ref);
+    EXPECT(assert_equal("Test", arg1.type));
+    EXPECT(assert_equal("p1", arg1.name));
+    EXPECT(arg1.namespaces.empty());
+
+    Argument arg2 = args.at(1);
+    EXPECT(arg2.is_ptr);
+    EXPECT(!arg2.is_const);
+    EXPECT(!arg2.is_ref);
+    EXPECT(assert_equal("Test", arg2.type));
+    EXPECT(assert_equal("p2", arg2.name));
+    EXPECT(arg2.namespaces.empty());
   }
 
   // evaluate global functions

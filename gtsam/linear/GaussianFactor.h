@@ -42,7 +42,7 @@ namespace gtsam {
    * GaussianFactor is non-mutable (all methods const!).
    * The factor value is exp(-0.5*||Ax-b||^2)
    */
-  class GaussianFactor: public IndexFactor {
+  class GTSAM_EXPORT GaussianFactor: public IndexFactor {
 
   protected:
 

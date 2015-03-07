@@ -27,8 +27,8 @@
 #include <boost/make_shared.hpp>
 #include <boost/lexical_cast.hpp>
 
-#include <gtsam/base/types.h>
-#include <gtsam/base/FastVector.h>
+#include <gtsam/global_includes.h>
+#include <gtsam/base/FastList.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/BayesTreeCliqueBase.h>
@@ -69,7 +69,7 @@ namespace gtsam {
     typedef boost::shared_ptr<Clique> sharedClique;
 
     // A convenience class for a list of shared cliques
-    struct Cliques : public std::list<sharedClique> {
+    struct Cliques : public FastList<sharedClique> {
       void print(const std::string& s = "Cliques",
           const IndexFormatter& indexFormatter = DefaultIndexFormatter) const;
       bool equals(const Cliques& other, double tol = 1e-9) const;
@@ -92,7 +92,7 @@ namespace gtsam {
     };
 
     /** Map from indices to Clique */
-    typedef std::deque<sharedClique> Nodes;
+    typedef std::vector<sharedClique> Nodes;
 
   protected:
 
@@ -162,6 +162,11 @@ namespace gtsam {
         return 0;
     }
 
+    /** Check if there are any cliques in the tree */
+    inline bool empty() const {
+      return nodes_.empty();
+    }
+
     /** return nodes */
     const Nodes& nodes() const { return nodes_; }
 
@@ -169,15 +174,17 @@ namespace gtsam {
     const sharedClique& root() const { return root_;  }
 
     /** find the clique that contains the variable with Index j */
-    sharedClique operator[](Index j) const {
+    inline sharedClique operator[](Index j) const {
+      return nodes_.at(j);
+    }
+
+    /** alternate syntax for matlab: find the clique that contains the variable with Index j */
+    inline sharedClique clique(Index j) const {
       return nodes_.at(j);
     }
 
     /** Gather data on all cliques */
     CliqueData getCliqueData() const;
-
-    /** Collect number of cliques with cached shortcuts */
-    size_t numCachedShortcuts() const;
 
     /** Collect number of cliques with cached separator marginals */
     size_t numCachedSeparatorMarginals() const;
@@ -225,14 +232,12 @@ namespace gtsam {
     void clear();
 
     /** Clear all shortcut caches - use before timing on marginal calculation to avoid residual cache data */
-    inline void deleteCachedShortcuts() {
+    void deleteCachedShortcuts() {
       root_->deleteCachedShortcuts();
     }
 
-    /** Apply a permutation to all cliques */
-    void permuteWithInverse(const Permutation& inversePermutation) {
-      root_->permuteWithInverse(inversePermutation);
-    }
+    /** Apply a permutation to the full tree - also updates the nodes structure */
+    void permuteWithInverse(const Permutation& inversePermutation);
 
     /**
      * Remove path from clique to root and return that path as factors
@@ -246,6 +251,10 @@ namespace gtsam {
      */
     template<class CONTAINER>
     void removeTop(const CONTAINER& indices, BayesNet<CONDITIONAL>& bn, Cliques& orphans);
+
+    /**
+     * Remove the requested subtree. */
+    Cliques removeSubtree(const sharedClique& subtree);
 
     /**
      * Hang a new subtree off of the existing tree.  This finds the appropriate

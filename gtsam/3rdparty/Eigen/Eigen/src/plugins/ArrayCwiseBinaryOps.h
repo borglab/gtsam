@@ -33,7 +33,8 @@ EIGEN_MAKE_CWISE_BINARY_OP(min,internal::scalar_min_op)
   *
   * \sa max()
   */
-EIGEN_STRONG_INLINE const CwiseBinaryOp<internal::scalar_min_op<Scalar>, const Derived, const ConstantReturnType>
+EIGEN_STRONG_INLINE const CwiseBinaryOp<internal::scalar_min_op<Scalar>, const Derived,
+                                        const CwiseNullaryOp<internal::scalar_constant_op<Scalar>, PlainObject> >
 (min)(const Scalar &other) const
 {
   return (min)(Derived::PlainObject::Constant(rows(), cols(), other));
@@ -52,7 +53,8 @@ EIGEN_MAKE_CWISE_BINARY_OP(max,internal::scalar_max_op)
   *
   * \sa min()
   */
-EIGEN_STRONG_INLINE const CwiseBinaryOp<internal::scalar_max_op<Scalar>, const Derived, const ConstantReturnType>
+EIGEN_STRONG_INLINE const CwiseBinaryOp<internal::scalar_max_op<Scalar>, const Derived,
+                                        const CwiseNullaryOp<internal::scalar_constant_op<Scalar>, PlainObject> >
 (max)(const Scalar &other) const
 {
   return (max)(Derived::PlainObject::Constant(rows(), cols(), other));

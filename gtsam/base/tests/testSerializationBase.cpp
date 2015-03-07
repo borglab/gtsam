@@ -43,6 +43,7 @@ TEST (Serialization, FastList) {
 
   EXPECT(equality(list));
   EXPECT(equalityXML(list));
+  EXPECT(equalityBinary(list));
 }
 
 /* ************************************************************************* */
@@ -54,6 +55,7 @@ TEST (Serialization, FastMap) {
 
   EXPECT(equality(map));
   EXPECT(equalityXML(map));
+  EXPECT(equalityBinary(map));
 }
 
 /* ************************************************************************* */
@@ -65,6 +67,7 @@ TEST (Serialization, FastSet) {
 
   EXPECT(equality(set));
   EXPECT(equalityXML(set));
+  EXPECT(equalityBinary(set));
 }
 
 /* ************************************************************************* */
@@ -76,6 +79,7 @@ TEST (Serialization, FastVector) {
 
   EXPECT(equality(vector));
   EXPECT(equalityXML(vector));
+  EXPECT(equalityBinary(vector));
 }
 
 /* ************************************************************************* */
@@ -85,6 +89,9 @@ TEST (Serialization, matrix_vector) {
 
   EXPECT(equalityXML<Vector>(Vector_(4, 1.0, 2.0, 3.0, 4.0)));
   EXPECT(equalityXML<Matrix>(Matrix_(2, 2, 1.0, 2.0, 3.0, 4.0)));
+
+  EXPECT(equalityBinary<Vector>(Vector_(4, 1.0, 2.0, 3.0, 4.0)));
+  EXPECT(equalityBinary<Matrix>(Matrix_(2, 2, 1.0, 2.0, 3.0, 4.0)));
 }
 
 /* ************************************************************************* */

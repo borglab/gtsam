@@ -18,8 +18,12 @@
 
 #pragma once
 
-#ifndef POSE3_DEFAULT_COORDINATES_MODE
+#include <gtsam/config.h>
+
+#ifndef GTSAM_POSE3_EXPMAP
 #define POSE3_DEFAULT_COORDINATES_MODE Pose3::FIRST_ORDER
+#else
+#define POSE3_DEFAULT_COORDINATES_MODE Pose3::EXPMAP
 #endif
 
 #include <gtsam/base/DerivedValue.h>
@@ -35,7 +39,7 @@ namespace gtsam {
    * @addtogroup geometry
    * \nosubgrouping
    */
-  class Pose3 : public DerivedValue<Pose3> {
+  class GTSAM_EXPORT Pose3 : public DerivedValue<Pose3> {
   public:
     static const size_t dimension = 6;
 
@@ -125,31 +129,75 @@ namespace gtsam {
     /// Dimensionality of the tangent space = 6 DOF
     size_t dim() const { return dimension; }
 
-    /// Retraction with fast first-order approximation to the exponential map
+    /// Retraction from R^6 \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$ from R^ with fast first-order approximation to the exponential map
     Pose3 retractFirstOrder(const Vector& d) const;
 
-    /// Retraction from R^6 to Pose3 manifold neighborhood around current pose
+    /// Retraction from R^6 \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$ to Pose3 manifold neighborhood around current pose
     Pose3 retract(const Vector& d, Pose3::CoordinatesMode mode = POSE3_DEFAULT_COORDINATES_MODE) const;
 
-    /// Local 6D coordinates of Pose3 manifold neighborhood around current pose
+    /// Local 6D coordinates \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$ of Pose3 manifold neighborhood around current pose
     Vector6 localCoordinates(const Pose3& T2, Pose3::CoordinatesMode mode = POSE3_DEFAULT_COORDINATES_MODE) const;
 
     /// @}
     /// @name Lie Group
     /// @{
 
-    /// Exponential map at identity - create a rotation from canonical coordinates
+    /// Exponential map at identity - create a rotation from canonical coordinates \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$
     static Pose3 Expmap(const Vector& xi);
 
-    /// Log map at identity - return the canonical coordinates of this rotation
+    /// Log map at identity - return the canonical coordinates \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$ of this rotation
     static Vector6 Logmap(const Pose3& p);
 
     /**
-     * Calculate Adjoint map
-     * Ad_pose is 6*6 matrix that when applied to twist xi, returns Ad_pose(xi)
+     * Calculate Adjoint map, transforming a twist in the this pose's (i.e, body) frame to the world spatial frame
+     * Ad_pose is 6*6 matrix that when applied to twist xi \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$, returns Ad_pose(xi)
      */
-    Matrix6 adjointMap() const; /// FIXME Not tested - marked as incorrect
-    Vector adjoint(const Vector& xi) const {return adjointMap()*xi; } /// FIXME Not tested - marked as incorrect
+    Matrix6 AdjointMap() const; /// FIXME Not tested - marked as incorrect
+
+    /**
+     * Apply this pose's AdjointMap Ad_g to a twist \f$ \xi_b \f$, i.e. a body-fixed velocity, transforming it to the spatial frame
+     * \f$ \xi^s = g*\xi^b*g^{-1} = Ad_g * \xi^b \f$
+     */
+    Vector Adjoint(const Vector& xi_b) const {return AdjointMap()*xi_b; } /// FIXME Not tested - marked as incorrect
+
+    /**
+     * Compute the [ad(w,v)] operator as defined in [Kobilarov09siggraph], pg 11
+     * [ad(w,v)] = [w^, zero3; v^, w^]
+     * Note that this is the matrix representation of the adjoint operator for se3 Lie algebra,
+     * aka the Lie bracket, and also the derivative of Adjoint map for the Lie group SE3.
+     *
+     * Let \f$ \hat{\xi}_i \f$ be the se3 Lie algebra, and \f$ \hat{\xi}_i^\vee = \xi_i = [\omega_i,v_i] \in \mathbb{R}^6\f$ be its
+     * vector representation.
+     * We have the following relationship:
+     * \f$ [\hat{\xi}_1,\hat{\xi}_2]^\vee = ad_{\xi_1}(\xi_2) = [ad_{(\omega_1,v_1)}]*\xi_2 \f$
+     *
+     * We use this to compute the discrete version of the inverse right-trivialized tangent map,
+     * and its inverse transpose in the discrete Euler Poincare' (DEP) operator.
+     *
+     */
+    static Matrix6 adjointMap(const Vector& xi);
+
+    /**
+     * Action of the adjointMap on a Lie-algebra vector y, with optional derivatives
+     */
+    static Vector adjoint(const Vector& xi, const Vector& y, boost::optional<Matrix&> H = boost::none);
+
+    /**
+     * The dual version of adjoint action, acting on the dual space of the Lie-algebra vector space.
+     */
+    static Vector adjointTranspose(const Vector& xi, const Vector& y, boost::optional<Matrix&> H = boost::none);
+
+    /**
+     * Compute the inverse right-trivialized tangent (derivative) map of the exponential map,
+     * as detailed in [Kobilarov09siggraph] eq. (15)
+     * The full formula is documented in [Celledoni99cmame]
+     *    Elena Celledoni and Brynjulf Owren. Lie group methods for rigid body dynamics and
+     *    time integration on manifolds. Comput. meth. in Appl. Mech. and Eng., 19(3,4):421� 438, 2003.
+     * and in [Hairer06book] in formula (4.5), pg. 84, Lemma 4.2
+     *    Ernst Hairer, et al., Geometric Numerical Integration,
+     *      Structure-Preserving Algorithms for Ordinary Differential Equations, 2nd edition, Springer-Verlag, 2006.
+     */
+    static Matrix6 dExpInv_exp(const Vector&  xi);
 
     /**
      * wedge for Pose3:
@@ -267,5 +315,12 @@ namespace gtsam {
   inline Matrix wedge<Pose3>(const Vector& xi) {
     return Pose3::wedge(xi(0),xi(1),xi(2),xi(3),xi(4),xi(5));
   }
+
+  /**
+   * Calculate pose between a vector of 3D point correspondences (p,q)
+   * where q = Pose3::transform_from(p) = t + R*p
+   */
+  typedef std::pair<Point3,Point3> Point3Pair;
+  GTSAM_EXPORT boost::optional<Pose3> align(const std::vector<Point3Pair>& pairs);
 
 } // namespace gtsam

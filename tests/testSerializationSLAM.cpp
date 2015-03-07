@@ -232,13 +232,16 @@ TEST (Serialization, smallExample_linear) {
   GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
   EXPECT(equalsObj(ordering));
   EXPECT(equalsXML(ordering));
+  EXPECT(equalsBinary(ordering));
 
   EXPECT(equalsObj(fg));
   EXPECT(equalsXML(fg));
+  EXPECT(equalsBinary(fg));
 
   GaussianBayesNet cbn = createSmallGaussianBayesNet();
   EXPECT(equalsObj(cbn));
   EXPECT(equalsXML(cbn));
+  EXPECT(equalsBinary(cbn));
 }
 
 /* ************************************************************************* */
@@ -252,6 +255,7 @@ TEST (Serialization, gaussianISAM) {
 
   EXPECT(equalsObj(isam));
   EXPECT(equalsXML(isam));
+  EXPECT(equalsBinary(isam));
 }
 
 /* ************************************************************************* */
@@ -267,9 +271,11 @@ TEST (Serialization, smallExample_nonlinear) {
   Values c1 = createValues();
   EXPECT(equalsObj(nfg));
   EXPECT(equalsXML(nfg));
+  EXPECT(equalsBinary(nfg));
 
   EXPECT(equalsObj(c1));
   EXPECT(equalsXML(c1));
+  EXPECT(equalsBinary(c1));
 }
 
 /* ************************************************************************* */
@@ -586,7 +592,77 @@ TEST (Serialization, factors) {
   EXPECT(equalsXML<GeneralSFMFactor2Cal3_S2>(generalSFMFactor2Cal3_S2));
 
   EXPECT(equalsXML<GenericStereoFactor3D>(genericStereoFactor3D));
+
+
+  // binary
+  EXPECT(equalsBinary<Symbol>(a01));
+  EXPECT(equalsBinary<Symbol>(b02));
+  EXPECT(equalsBinary<Values>(values));
+  EXPECT(equalsBinary<NonlinearFactorGraph>(graph));
+
+  EXPECT(equalsBinary<PriorFactorLieVector>(priorFactorLieVector));
+  EXPECT(equalsBinary<PriorFactorLieMatrix>(priorFactorLieMatrix));
+  EXPECT(equalsBinary<PriorFactorPoint2>(priorFactorPoint2));
+  EXPECT(equalsBinary<PriorFactorStereoPoint2>(priorFactorStereoPoint2));
+  EXPECT(equalsBinary<PriorFactorPoint3>(priorFactorPoint3));
+  EXPECT(equalsBinary<PriorFactorRot2>(priorFactorRot2));
+  EXPECT(equalsBinary<PriorFactorRot3>(priorFactorRot3));
+  EXPECT(equalsBinary<PriorFactorPose2>(priorFactorPose2));
+  EXPECT(equalsBinary<PriorFactorPose3>(priorFactorPose3));
+  EXPECT(equalsBinary<PriorFactorCal3_S2>(priorFactorCal3_S2));
+  EXPECT(equalsBinary<PriorFactorCal3DS2>(priorFactorCal3DS2));
+  EXPECT(equalsBinary<PriorFactorCalibratedCamera>(priorFactorCalibratedCamera));
+  EXPECT(equalsBinary<PriorFactorSimpleCamera>(priorFactorSimpleCamera));
+  EXPECT(equalsBinary<PriorFactorStereoCamera>(priorFactorStereoCamera));
+
+  EXPECT(equalsBinary<BetweenFactorLieVector>(betweenFactorLieVector));
+  EXPECT(equalsBinary<BetweenFactorLieMatrix>(betweenFactorLieMatrix));
+  EXPECT(equalsBinary<BetweenFactorPoint2>(betweenFactorPoint2));
+  EXPECT(equalsBinary<BetweenFactorPoint3>(betweenFactorPoint3));
+  EXPECT(equalsBinary<BetweenFactorRot2>(betweenFactorRot2));
+  EXPECT(equalsBinary<BetweenFactorRot3>(betweenFactorRot3));
+  EXPECT(equalsBinary<BetweenFactorPose2>(betweenFactorPose2));
+  EXPECT(equalsBinary<BetweenFactorPose3>(betweenFactorPose3));
+
+  EXPECT(equalsBinary<NonlinearEqualityLieVector>(nonlinearEqualityLieVector));
+  EXPECT(equalsBinary<NonlinearEqualityLieMatrix>(nonlinearEqualityLieMatrix));
+  EXPECT(equalsBinary<NonlinearEqualityPoint2>(nonlinearEqualityPoint2));
+  EXPECT(equalsBinary<NonlinearEqualityStereoPoint2>(nonlinearEqualityStereoPoint2));
+  EXPECT(equalsBinary<NonlinearEqualityPoint3>(nonlinearEqualityPoint3));
+  EXPECT(equalsBinary<NonlinearEqualityRot2>(nonlinearEqualityRot2));
+  EXPECT(equalsBinary<NonlinearEqualityRot3>(nonlinearEqualityRot3));
+  EXPECT(equalsBinary<NonlinearEqualityPose2>(nonlinearEqualityPose2));
+  EXPECT(equalsBinary<NonlinearEqualityPose3>(nonlinearEqualityPose3));
+  EXPECT(equalsBinary<NonlinearEqualityCal3_S2>(nonlinearEqualityCal3_S2));
+  EXPECT(equalsBinary<NonlinearEqualityCal3DS2>(nonlinearEqualityCal3DS2));
+  EXPECT(equalsBinary<NonlinearEqualityCalibratedCamera>(nonlinearEqualityCalibratedCamera));
+  EXPECT(equalsBinary<NonlinearEqualitySimpleCamera>(nonlinearEqualitySimpleCamera));
+  EXPECT(equalsBinary<NonlinearEqualityStereoCamera>(nonlinearEqualityStereoCamera));
+
+  EXPECT(equalsBinary<RangeFactorPosePoint2>(rangeFactorPosePoint2));
+  EXPECT(equalsBinary<RangeFactorPosePoint3>(rangeFactorPosePoint3));
+  EXPECT(equalsBinary<RangeFactorPose2>(rangeFactorPose2));
+  EXPECT(equalsBinary<RangeFactorPose3>(rangeFactorPose3));
+  EXPECT(equalsBinary<RangeFactorCalibratedCameraPoint>(rangeFactorCalibratedCameraPoint));
+  EXPECT(equalsBinary<RangeFactorSimpleCameraPoint>(rangeFactorSimpleCameraPoint));
+  EXPECT(equalsBinary<RangeFactorCalibratedCamera>(rangeFactorCalibratedCamera));
+  EXPECT(equalsBinary<RangeFactorSimpleCamera>(rangeFactorSimpleCamera));
+
+  EXPECT(equalsBinary<BearingFactor2D>(bearingFactor2D));
+
+  EXPECT(equalsBinary<BearingRangeFactor2D>(bearingRangeFactor2D));
+
+  EXPECT(equalsBinary<GenericProjectionFactorCal3_S2>(genericProjectionFactorCal3_S2));
+  EXPECT(equalsBinary<GenericProjectionFactorCal3DS2>(genericProjectionFactorCal3DS2));
+
+  EXPECT(equalsBinary<GeneralSFMFactorCal3_S2>(generalSFMFactorCal3_S2));
+
+  EXPECT(equalsBinary<GeneralSFMFactor2Cal3_S2>(generalSFMFactor2Cal3_S2));
+
+  EXPECT(equalsBinary<GenericStereoFactor3D>(genericStereoFactor3D));
+
 }
+
 
 
 /* ************************************************************************* */

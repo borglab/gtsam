@@ -21,10 +21,14 @@
 #include <boost/format.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/tuple/tuple.hpp>
+#ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
+#endif
 #include <boost/bind.hpp>
+#ifdef __GNUC__
 #pragma GCC diagnostic pop
+#endif
 
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
@@ -47,6 +51,25 @@ string SlotEntry::toString() const {
   ostringstream oss;
   oss << "SlotEntry: slot=" << slot << ", dim=" << dimension;
   return oss.str();
+}
+
+/* ************************************************************************* */
+Scatter::Scatter(const FactorGraph<GaussianFactor>& gfg) {
+  // First do the set union.
+  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, gfg) {
+    if(factor) {
+      for(GaussianFactor::const_iterator variable = factor->begin(); variable != factor->end(); ++variable) {
+        this->insert(make_pair(*variable, SlotEntry(0, factor->getDim(variable))));
+      }
+    }
+  }
+
+  // Next fill in the slot indices (we can only get these after doing the set
+  // union.
+  size_t slot = 0;
+  BOOST_FOREACH(value_type& var_slot, *this) {
+    var_slot.second.slot = (slot ++);
+  }
 }
 
 /* ************************************************************************* */
@@ -245,9 +268,19 @@ HessianFactor::HessianFactor(const GaussianFactor& gf) : info_(matrix_) {
 }
 
 /* ************************************************************************* */
-HessianFactor::HessianFactor(const FactorGraph<GaussianFactor>& factors,
-    const vector<size_t>& dimensions, const Scatter& scatter) :
-    info_(matrix_) {
+HessianFactor::HessianFactor(const FactorGraph<GaussianFactor>& factors) : info_(matrix_)
+{
+  Scatter scatter(factors);
+
+  // Pull out keys and dimensions
+  gttic(keys);
+  vector<size_t> dimensions(scatter.size() + 1);
+  BOOST_FOREACH(const Scatter::value_type& var_slot, scatter) {
+    dimensions[var_slot.second.slot] = var_slot.second.dimension;
+  }
+  // This is for the r.h.s. vector
+  dimensions.back() = 1;
+  gttoc(keys);
 
   const bool debug = ISDEBUG("EliminateCholesky");
   // Form Ab' * Ab
@@ -324,9 +357,12 @@ Matrix HessianFactor::information() const {
 double HessianFactor::error(const VectorValues& c) const {
   // error 0.5*(f - 2*x'*g + x'*G*x)
   const double f = constantTerm();
-  const double xtg = c.vector().dot(linearTerm());
-  const double xGx = c.vector().transpose() * info_.range(0, this->size(), 0, this->size()).selfadjointView<Eigen::Upper>() *  c.vector();
-
+  double xtg = 0, xGx = 0;
+  // extract the relevant subset of the VectorValues
+  // NOTE may not be as efficient
+  const Vector x = c.vector(this->keys());
+  xtg = x.dot(linearTerm());
+  xGx = x.transpose() * info_.range(0, this->size(), 0, this->size()).selfadjointView<Eigen::Upper>() *  x;
   return 0.5 * (f - 2.0 * xtg +  xGx);
 }
 

@@ -1,5 +1,7 @@
 # Install matlab components
 
+include(GtsamMatlabWrap)
+
 # Tests
 message(STATUS "Installing Matlab Toolbox Tests")
 install(DIRECTORY "${GTSAM_SOURCE_ROOT_DIR}/matlab/gtsam_tests" DESTINATION "${GTSAM_TOOLBOX_INSTALL_PATH}" FILES_MATCHING PATTERN "*.m" PATTERN ".svn" EXCLUDE)

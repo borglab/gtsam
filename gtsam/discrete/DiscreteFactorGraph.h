@@ -35,7 +35,7 @@ public:
   typedef boost::shared_ptr<Values> sharedValues;
 
   /** Construct empty factor graph */
-  DiscreteFactorGraph();
+  GTSAM_EXPORT DiscreteFactorGraph();
 
   /** Constructor from a factor graph of GaussianFactor or a derived type */
   template<class DERIVEDFACTOR>
@@ -44,7 +44,7 @@ public:
   }
 
   /** construct from a BayesNet */
-  DiscreteFactorGraph(const BayesNet<DiscreteConditional>& bayesNet);
+  GTSAM_EXPORT DiscreteFactorGraph(const BayesNet<DiscreteConditional>& bayesNet);
 
   template<class SOURCE>
   void add(const DiscreteKey& j, SOURCE table) {
@@ -68,28 +68,28 @@ public:
   }
 
   /** Return the set of variables involved in the factors (set union) */
-  FastSet<Index> keys() const;
+  GTSAM_EXPORT FastSet<Index> keys() const;
 
   /** return product of all factors as a single factor */
-  DecisionTreeFactor product() const;
+  GTSAM_EXPORT DecisionTreeFactor product() const;
 
   /** Evaluates the factor graph given values, returns the joint probability of the factor graph given specific instantiation of values*/
-  double operator()(const DiscreteFactor::Values & values) const;
+  GTSAM_EXPORT double operator()(const DiscreteFactor::Values & values) const;
 
   /// print
-  void print(const std::string& s = "DiscreteFactorGraph",
+  GTSAM_EXPORT void print(const std::string& s = "DiscreteFactorGraph",
       const IndexFormatter& formatter =DefaultIndexFormatter) const;
 
   /** Permute the variables in the factors */
-  void permuteWithInverse(const Permutation& inversePermutation);
+  GTSAM_EXPORT void permuteWithInverse(const Permutation& inversePermutation);
 
   /** Apply a reduction, which is a remapping of variable indices. */
-  void reduceWithInverse(const internal::Reduction& inverseReduction);
+  GTSAM_EXPORT void reduceWithInverse(const internal::Reduction& inverseReduction);
 };
 // DiscreteFactorGraph
 
 /** Main elimination function for DiscreteFactorGraph */
-std::pair<boost::shared_ptr<DiscreteConditional>, DecisionTreeFactor::shared_ptr>
+GTSAM_EXPORT std::pair<boost::shared_ptr<DiscreteConditional>, DecisionTreeFactor::shared_ptr>
 EliminateDiscrete(const FactorGraph<DiscreteFactor>& factors,
     size_t nrFrontals = 1);
 

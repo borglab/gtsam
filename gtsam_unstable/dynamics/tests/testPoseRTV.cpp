@@ -88,8 +88,8 @@ TEST( testPoseRTV, Lie ) {
   Point3 pt2 = pt + rot * Point3(0.2, 0.3, 0.4);
   Velocity3 vel2 = vel + rot * Velocity3(-0.1,-0.2,-0.3);
   PoseRTV state2(pt2, rot2, vel2);
-  EXPECT(assert_equal(state2, state1.retract(delta), tol));
-  EXPECT(assert_equal(delta, state1.localCoordinates(state2), tol));
+  EXPECT(assert_equal(state2, state1.retract(delta), 1e-1));
+  EXPECT(assert_equal(delta, state1.localCoordinates(state2), 1e-1));
   EXPECT(assert_equal(-delta, state2.localCoordinates(state1), 1e-1)); // loose tolerance due to retract approximation
 }
 

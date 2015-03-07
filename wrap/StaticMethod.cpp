@@ -97,7 +97,7 @@ void StaticMethod::proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wr
     const ReturnValue& returnVal = returnVals[overload];
     size_t nrArgs = args.size();
 
-    const int id = functionNames.size();
+    const int id = (int)functionNames.size();
 
     // Output proxy matlab code
 
@@ -126,7 +126,7 @@ void StaticMethod::proxy_wrapper_fragments(FileWriter& proxyFile, FileWriter& wr
     // Output C++ wrapper code
     
     const string wrapFunctionName = wrapper_fragment(
-      wrapperFile, cppClassName, matlabUniqueName, overload, id, typeAttributes);
+      wrapperFile, cppClassName, matlabUniqueName, (int)overload, id, typeAttributes);
 
     // Add to function list
     functionNames.push_back(wrapFunctionName);

@@ -3,24 +3,9 @@
 //
 // Copyright (C) 2009-2011 Jitse Niesen <jitse@maths.leeds.ac.uk>
 //
-// Eigen is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Lesser General Public
-// License as published by the Free Software Foundation; either
-// version 3 of the License, or (at your option) any later version.
-//
-// Alternatively, you can redistribute it and/or
-// modify it under the terms of the GNU General Public License as
-// published by the Free Software Foundation; either version 2 of
-// the License, or (at your option) any later version.
-//
-// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
-// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public
-// License and a copy of the GNU General Public License along with
-// Eigen. If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla
+// Public License v. 2.0. If a copy of the MPL was not distributed
+// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #ifndef EIGEN_MATRIX_FUNCTION
 #define EIGEN_MATRIX_FUNCTION
@@ -47,7 +32,7 @@ namespace Eigen {
   * \sa class MatrixFunctionAtomic, class MatrixLogarithmAtomic
   */
 template <typename MatrixType, 
-    typename AtomicType,  
+	  typename AtomicType,  
           int IsComplex = NumTraits<typename internal::traits<MatrixType>::Scalar>::IsComplex>
 class MatrixFunction
 {  
@@ -267,13 +252,13 @@ void MatrixFunction<MatrixType,AtomicType,1>::partitionEigenvalues()
     // Look for other element to add to the set
     for (Index j=i+1; j<rows; ++j) {
       if (internal::abs(diag(j) - diag(i)) <= separation() && std::find(qi->begin(), qi->end(), diag(j)) == qi->end()) {
-  typename ListOfClusters::iterator qj = findCluster(diag(j));
-  if (qj == m_clusters.end()) {
-    qi->push_back(diag(j));
-  } else {
-    qi->insert(qi->end(), qj->begin(), qj->end());
-    m_clusters.erase(qj);
-  }
+	typename ListOfClusters::iterator qj = findCluster(diag(j));
+	if (qj == m_clusters.end()) {
+	  qi->push_back(diag(j));
+	} else {
+	  qi->insert(qi->end(), qj->begin(), qj->end());
+	  m_clusters.erase(qj);
+	}
       }
     }
   }
@@ -412,8 +397,8 @@ void MatrixFunction<MatrixType,AtomicType,1>::computeOffDiagonal()
       DynMatrixType C = block(m_fT, blockIndex, blockIndex) * block(m_T, blockIndex, blockIndex+diagIndex);
       C -= block(m_T, blockIndex, blockIndex+diagIndex) * block(m_fT, blockIndex+diagIndex, blockIndex+diagIndex);
       for (Index k = blockIndex + 1; k < blockIndex + diagIndex; k++) {
-  C += block(m_fT, blockIndex, k) * block(m_T, k, blockIndex+diagIndex);
-  C -= block(m_T, blockIndex, k) * block(m_fT, k, blockIndex+diagIndex);
+	C += block(m_fT, blockIndex, k) * block(m_T, k, blockIndex+diagIndex);
+	C -= block(m_T, blockIndex, k) * block(m_fT, k, blockIndex+diagIndex);
       }
       block(m_fT, blockIndex, blockIndex+diagIndex) = solveTriangularSylvester(A, B, C);
     }
@@ -466,19 +451,19 @@ typename MatrixFunction<MatrixType,AtomicType,1>::DynMatrixType MatrixFunction<M
       // Compute AX = \sum_{k=i+1}^m A_{ik} X_{kj}
       Scalar AX;
       if (i == m - 1) {
-  AX = 0; 
+	AX = 0; 
       } else {
-  Matrix<Scalar,1,1> AXmatrix = A.row(i).tail(m-1-i) * X.col(j).tail(m-1-i);
-  AX = AXmatrix(0,0);
+	Matrix<Scalar,1,1> AXmatrix = A.row(i).tail(m-1-i) * X.col(j).tail(m-1-i);
+	AX = AXmatrix(0,0);
       }
 
       // Compute XB = \sum_{k=1}^{j-1} X_{ik} B_{kj}
       Scalar XB;
       if (j == 0) {
-  XB = 0; 
+	XB = 0; 
       } else {
-  Matrix<Scalar,1,1> XBmatrix = X.row(i).head(j) * B.col(j).head(j);
-  XB = XBmatrix(0,0);
+	Matrix<Scalar,1,1> XBmatrix = X.row(i).head(j) * B.col(j).head(j);
+	XB = XBmatrix(0,0);
       }
 
       X(i,j) = (C(i,j) - AX - XB) / (A(i,i) + B(j,j));

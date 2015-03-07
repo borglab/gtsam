@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include <gtsam/base/FastList.h>
 #include <gtsam/base/FastSet.h>
 #include <gtsam/base/FastVector.h>
 #include <gtsam/inference/BayesTree.h>
@@ -54,12 +55,6 @@ namespace gtsam {
     BOOST_FOREACH(sharedClique c, clique->children_) {
       getCliqueData(data, c);
     }
-  }
-
-  /* ************************************************************************* */
-  template<class CONDITIONAL, class CLIQUE>
-  size_t BayesTree<CONDITIONAL,CLIQUE>::numCachedShortcuts() const {
-    return (root_) ? root_->numCachedShortcuts() : 0;
   }
 
   /* ************************************************************************* */
@@ -208,6 +203,25 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class CONDITIONAL, class CLIQUE>
+  void BayesTree<CONDITIONAL,CLIQUE>::permuteWithInverse(const Permutation& inversePermutation) {
+    // recursively permute the cliques and internal conditionals
+    if (root_)
+      root_->permuteWithInverse(inversePermutation);
+
+    // need to know what the largest key is to get the right number of cliques
+    Index maxIndex = *std::max_element(inversePermutation.begin(), inversePermutation.end());
+
+    // Update the nodes structure
+    typename BayesTree<CONDITIONAL,CLIQUE>::Nodes newNodes(maxIndex+1);
+//    inversePermutation.applyToCollection(newNodes, nodes_); // Uses the forward, rather than inverse permutation
+    for(size_t i = 0; i < nodes_.size(); ++i)
+      newNodes[inversePermutation[i]] = nodes_[i];
+
+    nodes_ = newNodes;
+  }
+
+  /* ************************************************************************* */
+  template<class CONDITIONAL, class CLIQUE>
   inline void BayesTree<CONDITIONAL,CLIQUE>::addToCliqueFront(BayesTree<CONDITIONAL,CLIQUE>& bayesTree, const sharedConditional& conditional, const sharedClique& clique) {
     static const bool debug = false;
 #ifndef NDEBUG
@@ -239,14 +253,18 @@ namespace gtsam {
 
     if (clique->isRoot())
       root_.reset();
-    else // detach clique from parent
-      clique->parent_.lock()->children_.remove(clique);
+    else { // detach clique from parent
+      sharedClique parent = clique->parent_.lock();
+      typename FastList<typename CLIQUE::shared_ptr>::iterator child = std::find(parent->children().begin(), parent->children().end(), clique);
+      assert(child != parent->children().end());
+      parent->children().erase(child);
+    }
 
     // orphan my children
     BOOST_FOREACH(sharedClique child, clique->children_)
       child->parent_ = typename Clique::weak_ptr();
 
-    BOOST_FOREACH(Index j, (*clique->conditional())) {
+    BOOST_FOREACH(Index j, clique->conditional()->frontals()) {
       nodes_[j].reset();
     }
   }
@@ -315,7 +333,7 @@ namespace gtsam {
     std::list<sharedClique> childRoots;
     typedef BayesTree<CONDITIONAL,CLIQUE> Tree;
     BOOST_FOREACH(const Tree& subtree, subtrees) {
-      nodes_.insert(subtree.nodes_.begin(), subtree.nodes_.end());
+      nodes_.assign(subtree.nodes_.begin(), subtree.nodes_.end());
       childRoots.push_back(subtree.root());
     }
 
@@ -564,25 +582,110 @@ namespace gtsam {
   template<class CONDITIONAL, class CLIQUE>
   typename FactorGraph<typename CONDITIONAL::FactorType>::shared_ptr
   BayesTree<CONDITIONAL,CLIQUE>::joint(Index j1, Index j2, Eliminate function) const {
+    gttic(BayesTree_joint);
 
-#ifdef SHORTCUT_JOINTS
     // get clique C1 and C2
     sharedClique C1 = (*this)[j1], C2 = (*this)[j2];
 
-    // calculate joint
-    FactorGraph<FactorType> p_C1C2(C1->joint(C2, root_, function));
+    gttic(Lowest_common_ancestor);
+    // Find lowest common ancestor clique
+    sharedClique B; {
+      // Build two paths to the root
+      FastList<sharedClique> path1, path2; {
+        sharedClique p = C1;
+        while(p) {
+          path1.push_front(p);
+          p = p->parent();
+        }
+      } {
+        sharedClique p = C2;
+        while(p) {
+          path2.push_front(p);
+          p = p->parent();
+        }
+      }
+      // Find the path intersection
+      B = this->root();
+      typename FastList<sharedClique>::const_iterator p1 = path1.begin(), p2 = path2.begin();
+      while(p1 != path1.end() && p2 != path2.end() && *p1 == *p2) {
+        B = *p1;
+        ++p1;
+        ++p2;
+      }
+    }
+    gttoc(Lowest_common_ancestor);
 
-    // eliminate remaining factor graph to get requested joint
-    std::vector<Index> j12(2); j12[0] = j1; j12[1] = j2;
-    GenericSequentialSolver<FactorType> solver(p_C1C2);
-    return solver.jointFactorGraph(j12,function);
-#else
-    std::vector<Index> indices(2);
-    indices[0] = j1;
-    indices[1] = j2;
-    GenericSequentialSolver<FactorType> solver(FactorGraph<FactorType>(*this));
-    return solver.jointFactorGraph(indices, function);
-#endif
+    // Compute marginal on lowest common ancestor clique
+    gttic(LCA_marginal);
+    FactorGraph<FactorType> p_B = B->marginal2(this->root(), function);
+    gttoc(LCA_marginal);
+
+    // Compute shortcuts of the requested cliques given the lowest common ancestor
+    gttic(Clique_shortcuts);
+    BayesNet<CONDITIONAL> p_C1_Bred = C1->shortcut(B, function);
+    BayesNet<CONDITIONAL> p_C2_Bred = C2->shortcut(B, function);
+    gttoc(Clique_shortcuts);
+
+    // Factor the shortcuts to be conditioned on the full root
+    // Get the set of variables to eliminate, which is C1\B.
+    gttic(Full_root_factoring);
+    sharedConditional p_C1_B; {
+      std::vector<Index> C1_minus_B; {
+        FastSet<Index> C1_minus_B_set(C1->conditional()->beginParents(), C1->conditional()->endParents());
+        BOOST_FOREACH(const Index j, *B->conditional()) {
+          C1_minus_B_set.erase(j); }
+        C1_minus_B.assign(C1_minus_B_set.begin(), C1_minus_B_set.end());
+      }
+      // Factor into C1\B | B.
+      FactorGraph<FactorType> temp_remaining;
+      boost::tie(p_C1_B, temp_remaining) = FactorGraph<FactorType>(p_C1_Bred).eliminate(C1_minus_B, function);
+    }
+    sharedConditional p_C2_B; {
+      std::vector<Index> C2_minus_B; {
+        FastSet<Index> C2_minus_B_set(C2->conditional()->beginParents(), C2->conditional()->endParents());
+        BOOST_FOREACH(const Index j, *B->conditional()) {
+          C2_minus_B_set.erase(j); }
+        C2_minus_B.assign(C2_minus_B_set.begin(), C2_minus_B_set.end());
+      }
+      // Factor into C2\B | B.
+      FactorGraph<FactorType> temp_remaining;
+      boost::tie(p_C2_B, temp_remaining) = FactorGraph<FactorType>(p_C2_Bred).eliminate(C2_minus_B, function);
+    }
+    gttoc(Full_root_factoring);
+
+    gttic(Variable_joint);
+    // Build joint on all involved variables
+    FactorGraph<FactorType> p_BC1C2;
+    p_BC1C2.push_back(p_B);
+    p_BC1C2.push_back(p_C1_B->toFactor());
+    p_BC1C2.push_back(p_C2_B->toFactor());
+    if(C1 != B)
+      p_BC1C2.push_back(C1->conditional()->toFactor());
+    if(C2 != B)
+      p_BC1C2.push_back(C2->conditional()->toFactor());
+
+    // Reduce the variable indices to start at zero
+    gttic(Reduce);
+    const Permutation reduction = internal::createReducingPermutation(p_BC1C2.keys());
+    internal::Reduction inverseReduction = internal::Reduction::CreateAsInverse(reduction);
+    BOOST_FOREACH(const boost::shared_ptr<FactorType>& factor, p_BC1C2) {
+      if(factor) factor->reduceWithInverse(inverseReduction); }
+    std::vector<Index> js; js.push_back(inverseReduction[j1]); js.push_back(inverseReduction[j2]);
+    gttoc(Reduce);
+
+    // now, marginalize out everything that is not variable j
+    GenericSequentialSolver<FactorType> solver(p_BC1C2);
+    boost::shared_ptr<FactorGraph<FactorType> > result = solver.jointFactorGraph(js, function);
+
+    // Undo the reduction
+    gttic(Undo_Reduce);
+    BOOST_FOREACH(const boost::shared_ptr<FactorType>& factor, *result) {
+      if(factor) factor->permuteWithInverse(reduction); }
+    BOOST_FOREACH(const boost::shared_ptr<FactorType>& factor, p_BC1C2) {
+      if(factor) factor->permuteWithInverse(reduction); }
+    gttoc(Undo_Reduce);
+    return result;
+
   }
 
   /* ************************************************************************* */
@@ -621,7 +724,7 @@ namespace gtsam {
       this->removePath(typename Clique::shared_ptr(clique->parent_.lock()), bn, orphans);
 
       // add children to list of orphans (splice also removed them from clique->children_)
-      orphans.splice (orphans.begin(), clique->children_);
+      orphans.splice(orphans.begin(), clique->children_);
 
       bn.push_back(clique->conditional());
 
@@ -651,6 +754,43 @@ namespace gtsam {
     //TODO: Consider Improving
     BOOST_FOREACH(sharedClique& orphan, orphans)
       orphan->deleteCachedShortcuts();
+  }
+
+  /* ************************************************************************* */
+  template<class CONDITIONAL, class CLIQUE>
+  typename BayesTree<CONDITIONAL,CLIQUE>::Cliques BayesTree<CONDITIONAL,CLIQUE>::removeSubtree(
+    const sharedClique& subtree)
+  {
+    // Result clique list
+    Cliques cliques;
+    cliques.push_back(subtree);
+
+    // Remove the first clique from its parents
+    if(!subtree->isRoot())
+      subtree->parent()->children().remove(subtree);
+    else
+      root_.reset();
+
+    // Add all subtree cliques and erase the children and parent of each
+    for(typename Cliques::iterator clique = cliques.begin(); clique != cliques.end(); ++clique)
+    {
+      // Add children
+      BOOST_FOREACH(const sharedClique& child, (*clique)->children()) {
+        cliques.push_back(child); }
+
+      // Delete cached shortcuts
+      (*clique)->deleteCachedShortcutsNonRecursive();
+
+      // Remove this node from the nodes index
+      BOOST_FOREACH(Index j, (*clique)->conditional()->frontals()) {
+        nodes_[j].reset(); }
+
+      // Erase the parent and children pointers
+      (*clique)->parent_.reset();
+      (*clique)->children_.clear();
+    }
+
+    return cliques;
   }
 
   /* ************************************************************************* */

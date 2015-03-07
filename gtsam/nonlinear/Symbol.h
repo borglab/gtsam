@@ -29,7 +29,7 @@ namespace gtsam {
  * keys when linearizing a nonlinear factor graph.  This key is not type
  * safe, so cannot be used with any Nonlinear* classes.
  */
-class Symbol {
+class GTSAM_EXPORT Symbol {
 protected:
   unsigned char c_;
   size_t j_;

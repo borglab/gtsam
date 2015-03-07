@@ -41,7 +41,7 @@ namespace gtsam {
    * Helper class encapsulating the combined system |Ax-b_|^2
    * Needed to run Conjugate Gradients on matrices
    * */
-  class System {
+  class GTSAM_EXPORT System {
 
   private:
     const Matrix& A_;
@@ -93,7 +93,7 @@ namespace gtsam {
   /**
    * Method of steepest gradients, System version
    */
-  Vector steepestDescent(
+  GTSAM_EXPORT Vector steepestDescent(
       const System& Ab,
       const Vector& x,
       const IterativeOptimizationParameters & parameters);
@@ -101,7 +101,7 @@ namespace gtsam {
   /**
    * Method of conjugate gradients (CG), System version
    */
-  Vector conjugateGradientDescent(
+  GTSAM_EXPORT Vector conjugateGradientDescent(
       const System& Ab,
       const Vector& x,
       const ConjugateGradientParameters & parameters);
@@ -111,7 +111,7 @@ namespace gtsam {
   /**
    * Method of steepest gradients, Matrix version
    */
-  Vector steepestDescent(
+  GTSAM_EXPORT Vector steepestDescent(
       const Matrix& A,
       const Vector& b,
       const Vector& x,
@@ -120,7 +120,7 @@ namespace gtsam {
   /**
    * Method of conjugate gradients (CG), Matrix version
    */
-  Vector conjugateGradientDescent(
+  GTSAM_EXPORT Vector conjugateGradientDescent(
       const Matrix& A,
       const Vector& b,
       const Vector& x,
@@ -129,7 +129,7 @@ namespace gtsam {
   /**
    * Method of steepest gradients, Gaussian Factor Graph version
    */
-  VectorValues steepestDescent(
+  GTSAM_EXPORT VectorValues steepestDescent(
       const GaussianFactorGraph& fg,
       const VectorValues& x,
       const ConjugateGradientParameters & parameters);
@@ -137,7 +137,7 @@ namespace gtsam {
   /**
    * Method of conjugate gradients (CG), Gaussian Factor Graph version
    */
-  VectorValues conjugateGradientDescent(
+  GTSAM_EXPORT VectorValues conjugateGradientDescent(
       const GaussianFactorGraph& fg,
       const VectorValues& x,
       const ConjugateGradientParameters & parameters);

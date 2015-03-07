@@ -63,21 +63,21 @@ public:
    * Construct the solver for a factor graph.  This builds the elimination
    * tree, which already does some of the work of elimination.
    */
-  GaussianSequentialSolver(const FactorGraph<GaussianFactor>& factorGraph, bool useQR = false);
+  GTSAM_EXPORT GaussianSequentialSolver(const FactorGraph<GaussianFactor>& factorGraph, bool useQR = false);
 
   /**
    * Construct the solver with a shared pointer to a factor graph and to a
    * VariableIndex.  The solver will store these pointers, so this constructor
    * is the fastest.
    */
-  GaussianSequentialSolver(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph,
+  GTSAM_EXPORT GaussianSequentialSolver(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph,
       const VariableIndex::shared_ptr& variableIndex, bool useQR = false);
 
   /**
    * Named constructor to return a shared_ptr.  This builds the elimination
    * tree, which already does some of the symbolic work of elimination.
    */
-  static shared_ptr Create(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph,
+  GTSAM_EXPORT static shared_ptr Create(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph,
       const VariableIndex::shared_ptr& variableIndex, bool useQR = false);
 
   /**
@@ -87,20 +87,20 @@ public:
    * used in cases where the numerical values of the linear problem change,
    * e.g. during iterative nonlinear optimization.
    */
-  void replaceFactors(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph);
+  GTSAM_EXPORT void replaceFactors(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph);
 
   /**
    * Eliminate the factor graph sequentially.  Uses a column elimination tree
    * to recursively eliminate.
    */
-  GaussianBayesNet::shared_ptr eliminate() const;
+  GTSAM_EXPORT GaussianBayesNet::shared_ptr eliminate() const;
 
   /**
    * Compute the least-squares solution of the GaussianFactorGraph.  This
    * eliminates to create a BayesNet and then back-substitutes this BayesNet to
    * obtain the solution.
    */
-  VectorValues::shared_ptr optimize() const;
+  GTSAM_EXPORT VectorValues::shared_ptr optimize() const;
 
   /**
    * Compute the marginal Gaussian density over a variable, by integrating out
@@ -108,7 +108,7 @@ public:
    * triangular R factor and right-hand-side, i.e. a GaussianConditional with
    * R*x = d.  To get a mean and covariance matrix, use marginalStandard(...)
    */
-  GaussianFactor::shared_ptr marginalFactor(Index j) const;
+  GTSAM_EXPORT GaussianFactor::shared_ptr marginalFactor(Index j) const;
 
   /**
    * Compute the marginal Gaussian density over a variable, by integrating out
@@ -117,7 +117,7 @@ public:
    * returns a GaussianConditional, this function back-substitutes the R factor
    * to obtain the mean, then computes \f$ \Sigma = (R^T * R)^{-1} \f$.
    */
-  Matrix marginalCovariance(Index j) const;
+  GTSAM_EXPORT Matrix marginalCovariance(Index j) const;
 
   /**
    * Compute the marginal joint over a set of variables, by integrating out
@@ -125,7 +125,7 @@ public:
    * triangular R factor and right-hand-side, i.e. a GaussianBayesNet with
    * R*x = d.  To get a mean and covariance matrix, use jointStandard(...)
    */
-  GaussianFactorGraph::shared_ptr jointFactorGraph(const std::vector<Index>& js) const;
+  GTSAM_EXPORT GaussianFactorGraph::shared_ptr jointFactorGraph(const std::vector<Index>& js) const;
 
 };
 

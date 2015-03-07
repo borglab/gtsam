@@ -30,7 +30,7 @@ namespace gtsam {
    * The negative log-probability is given by \f$ |Rx - d|^2 \f$
    * with \f$ \Lambda = \Sigma^{-1} = R^T R \f$ and \f$ \mu = R^{-1} d \f$
    */
-  class GaussianDensity: public GaussianConditional {
+  class GTSAM_EXPORT GaussianDensity: public GaussianConditional {
 
   public:
 

@@ -23,7 +23,7 @@
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Rot3.h>
 
-#ifdef GTSAM_DEFAULT_QUATERNIONS
+#ifdef GTSAM_USE_QUATERNIONS
 
 using namespace gtsam;
 
