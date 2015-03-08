@@ -199,48 +199,48 @@ public:
 
   /// Predict state at time j
   //------------------------------------------------------------------------------
-  static PoseVelocityBias predict(const PreintegrationBase& PIB, const Pose3& pose_i, const Vector3& vel_i,
+  PoseVelocityBias Predict(const Pose3& pose_i, const Vector3& vel_i,
       const imuBias::ConstantBias& bias_i, const Vector3& gravity,
       const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis = false,
       boost::optional<Vector3&> deltaPij_biascorrected_out = boost::none,
-      boost::optional<Vector3&> deltaVij_biascorrected_out = boost::none) {
+      boost::optional<Vector3&> deltaVij_biascorrected_out = boost::none) const {
 
-    const Vector3 biasAccIncr = bias_i.accelerometer() - PIB.biasHat().accelerometer();
-    const Vector3 biasOmegaIncr = bias_i.gyroscope() - PIB.biasHat().gyroscope();
+    const Vector3 biasAccIncr = bias_i.accelerometer() - biasHat().accelerometer();
+    const Vector3 biasOmegaIncr = bias_i.gyroscope() - biasHat().gyroscope();
 
     const Rot3& Rot_i = pose_i.rotation();
     const Vector3& pos_i = pose_i.translation().vector();
 
     // Predict state at time j
     /* ---------------------------------------------------------------------------------------------------- */
-    Vector3 deltaPij_biascorrected = PIB.deltaPij() + PIB.delPdelBiasAcc() * biasAccIncr + PIB.delPdelBiasOmega() * biasOmegaIncr;
+    Vector3 deltaPij_biascorrected = deltaPij() + delPdelBiasAcc() * biasAccIncr + delPdelBiasOmega() * biasOmegaIncr;
     if(deltaPij_biascorrected_out)// if desired, store this
       *deltaPij_biascorrected_out = deltaPij_biascorrected;
 
     Vector3 pos_j =  pos_i + Rot_i.matrix() * deltaPij_biascorrected
-        + vel_i * PIB.deltaTij()
-        - omegaCoriolis.cross(vel_i) * PIB.deltaTij()*PIB.deltaTij()  // Coriolis term - we got rid of the 2 wrt ins paper
-        + 0.5 * gravity * PIB.deltaTij()*PIB.deltaTij();
+        + vel_i * deltaTij()
+        - omegaCoriolis.cross(vel_i) * deltaTij()*deltaTij()  // Coriolis term - we got rid of the 2 wrt ins paper
+        + 0.5 * gravity * deltaTij()*deltaTij();
 
-    Vector3 deltaVij_biascorrected = PIB.deltaVij() + PIB.delVdelBiasAcc() * biasAccIncr + PIB.delVdelBiasOmega() * biasOmegaIncr;
+    Vector3 deltaVij_biascorrected = deltaVij() + delVdelBiasAcc() * biasAccIncr + delVdelBiasOmega() * biasOmegaIncr;
     if(deltaVij_biascorrected_out)// if desired, store this
       *deltaVij_biascorrected_out = deltaVij_biascorrected;
 
     Vector3 vel_j = Vector3(vel_i + Rot_i.matrix() * deltaVij_biascorrected
-        - 2 * omegaCoriolis.cross(vel_i) * PIB.deltaTij()  // Coriolis term
-        + gravity * PIB.deltaTij());
+        - 2 * omegaCoriolis.cross(vel_i) * deltaTij()  // Coriolis term
+        + gravity * deltaTij());
 
     if(use2ndOrderCoriolis){
-      pos_j += - 0.5 * omegaCoriolis.cross(omegaCoriolis.cross(pos_i)) * PIB.deltaTij()*PIB.deltaTij();  // 2nd order coriolis term for position
-      vel_j += - omegaCoriolis.cross(omegaCoriolis.cross(pos_i)) * PIB.deltaTij(); // 2nd order term for velocity
+      pos_j += - 0.5 * omegaCoriolis.cross(omegaCoriolis.cross(pos_i)) * deltaTij()*deltaTij();  // 2nd order coriolis term for position
+      vel_j += - omegaCoriolis.cross(omegaCoriolis.cross(pos_i)) * deltaTij(); // 2nd order term for velocity
     }
 
-    const Rot3 deltaRij_biascorrected = PIB.biascorrectedDeltaRij(biasOmegaIncr);
+    const Rot3 deltaRij_biascorrected = biascorrectedDeltaRij(biasOmegaIncr);
     // deltaRij_biascorrected = deltaRij * expmap(delRdelBiasOmega * biasOmegaIncr)
 
     Vector3 biascorrectedOmega = Rot3::Logmap(deltaRij_biascorrected);
     Vector3 correctedOmega = biascorrectedOmega  -
-        Rot_i.inverse().matrix() * omegaCoriolis * PIB.deltaTij(); // Coriolis term
+        Rot_i.inverse().matrix() * omegaCoriolis * deltaTij(); // Coriolis term
     const Rot3 correctedDeltaRij =
         Rot3::Expmap( correctedOmega );
     const Rot3 Rot_j = Rot_i.compose( correctedDeltaRij  );
@@ -273,7 +273,7 @@ public:
     // Evaluate residual error, according to [3]
     /* ---------------------------------------------------------------------------------------------------- */
     Vector3 deltaPij_biascorrected, deltaVij_biascorrected;
-    PoseVelocityBias predictedState_j = PreintegrationBase::predict(*this, pose_i, vel_i, bias_i, gravity,
+    PoseVelocityBias predictedState_j = Predict(pose_i, vel_i, bias_i, gravity,
         omegaCoriolis, use2ndOrderCoriolis, deltaPij_biascorrected, deltaVij_biascorrected);
 
     // Ri.transpose() is important here to preserve a model with *additive* Gaussian noise of correct covariance
