@@ -935,7 +935,7 @@ TEST(ImuFactor, CheckBiasCorrection) {
   // Measurements. Body frame and nav frame are both z-up
   Vector3 measuredOmega; measuredOmega << 0, 0.3, 0.0;
   Vector3 measuredAcc; measuredAcc << 0, 0, g;
-  Vector3 n_gravity; n_gravity << 0, 0, -g;
+  Vector3 gravity; gravity << 0, 0, -g;
 
   // Set up noise and other test params
   imuBias::ConstantBias zeroBias(Vector3(0, 0, 0), Vector3(0.0, 0, 0)); // Biases (acc, rot)
@@ -975,7 +975,7 @@ TEST(ImuFactor, CheckBiasCorrection) {
     for (int j = 0; j< numSamplesPreint; ++j)   pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
     // Create and add factor
-    ImuFactor factor(X(i-1), V(i-1), X(i), V(i), B(i-1), pre_int_data, n_gravity, omegaCoriolis);
+    ImuFactor factor(X(i-1), V(i-1), X(i), V(i), B(i-1), pre_int_data, gravity, omegaCoriolis);
     graph.add(factor);
     graph.add(BetweenFactor<imuBias::ConstantBias>(B(i-1), B(i), zeroBias, biasNoiseModel));
 
