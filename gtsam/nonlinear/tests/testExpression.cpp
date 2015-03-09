@@ -21,7 +21,6 @@
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/base/Testable.h>
-#include <gtsam/base/LieScalar.h>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -34,8 +33,8 @@ using namespace gtsam;
 
 /* ************************************************************************* */
 template<class CAL>
-Point2 uncalibrate(const CAL& K, const Point2& p,
-    boost::optional<Matrix25&> Dcal, boost::optional<Matrix2&> Dp) {
+Point2 uncalibrate(const CAL& K, const Point2& p, OptionalJacobian<2, 5> Dcal,
+    OptionalJacobian<2, 2> Dp) {
   return K.uncalibrate(p, Dcal, Dp);
 }
 
@@ -75,13 +74,10 @@ TEST(Expression, Leaves) {
 /* ************************************************************************* */
 // Unary(Leaf)
 namespace unary {
-Point2 f0(const Point3& p, boost::optional<Matrix23&> H) {
+Point2 f0(const Point3& p, OptionalJacobian<2,3> H) {
   return Point2();
 }
-LieScalar f1(const Point3& p, boost::optional<Eigen::Matrix<double, 1, 3>&> H) {
-  return LieScalar(0.0);
-}
-double f2(const Point3& p, boost::optional<Eigen::Matrix<double, 1, 3>&> H) {
+double f2(const Point3& p, OptionalJacobian<1, 3> H) {
   return 0.0;
 }
 Expression<Point3> p(1);
@@ -90,11 +86,6 @@ set<Key> expected = list_of(1);
 TEST(Expression, Unary0) {
   using namespace unary;
   Expression<Point2> e(f0, p);
-  EXPECT(expected == e.keys());
-}
-TEST(Expression, Unary1) {
-  using namespace unary;
-  Expression<double> e(f1, p);
   EXPECT(expected == e.keys());
 }
 TEST(Expression, Unary2) {
@@ -117,7 +108,7 @@ TEST(Expression, NullaryMethod) {
   // Check dims as map
   std::map<Key, int> map;
   norm.dims(map);
-  LONGS_EQUAL(1,map.size());
+  LONGS_EQUAL(1, map.size());
 
   // Get value and Jacobians
   std::vector<Matrix> H(1);
@@ -133,9 +124,8 @@ TEST(Expression, NullaryMethod) {
 // Binary(Leaf,Leaf)
 namespace binary {
 // Create leaves
-double doubleF(const Pose3& pose, const Point3& point,
-    boost::optional<Eigen::Matrix<double, 1, 6>&> H1,
-    boost::optional<Eigen::Matrix<double, 1, 3>&> H2) {
+double doubleF(const Pose3& pose, //
+    const Point3& point, OptionalJacobian<1, 6> H1, OptionalJacobian<1, 3> H2) {
   return 0.0;
 }
 Expression<Pose3> x(1);
@@ -244,8 +234,7 @@ TEST(Expression, compose3) {
 /* ************************************************************************* */
 // Test with ternary function
 Rot3 composeThree(const Rot3& R1, const Rot3& R2, const Rot3& R3,
-    boost::optional<Matrix3&> H1, boost::optional<Matrix3&> H2,
-    boost::optional<Matrix3&> H3) {
+    OptionalJacobian<3, 3> H1, OptionalJacobian<3, 3> H2, OptionalJacobian<3, 3> H3) {
   // return dummy derivatives (not correct, but that's ok for testing here)
   if (H1)
     *H1 = eye(3);

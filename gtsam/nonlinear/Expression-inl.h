@@ -19,10 +19,9 @@
 
 #pragma once
 
-#include <gtsam_unstable/nonlinear/CallRecord.h>
+#include <gtsam/nonlinear/CallRecord.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/Manifold.h>
+#include <gtsam/base/Lie.h>
 
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -33,6 +32,7 @@
 #include <boost/mpl/fold.hpp>
 namespace MPL = boost::mpl::placeholders;
 
+#include <typeinfo>       // operator typeid
 #include <map>
 
 class ExpressionFactorBinaryTest;
@@ -42,21 +42,21 @@ namespace gtsam {
 
 const unsigned TraceAlignment = 16;
 
-template <typename T>
-T & upAlign(T & value, unsigned requiredAlignment = TraceAlignment){
+template<typename T>
+T & upAlign(T & value, unsigned requiredAlignment = TraceAlignment) {
   // right now only word sized types are supported.
   // Easy to extend if needed,
   //   by somehow inferring the unsigned integer of same size
   BOOST_STATIC_ASSERT(sizeof(T) == sizeof(size_t));
   size_t & uiValue = reinterpret_cast<size_t &>(value);
   size_t misAlignment = uiValue % requiredAlignment;
-  if(misAlignment) {
+  if (misAlignment) {
     uiValue += requiredAlignment - misAlignment;
   }
   return value;
 }
-template <typename T>
-T upAligned(T value, unsigned requiredAlignment = TraceAlignment){
+template<typename T>
+T upAligned(T value, unsigned requiredAlignment = TraceAlignment) {
   return upAlign(value, requiredAlignment);
 }
 
@@ -88,19 +88,21 @@ public:
 
 namespace internal {
 
-template <bool UseBlock, typename Derived>
+template<bool UseBlock, typename Derived>
 struct UseBlockIf {
   static void addToJacobian(const Eigen::MatrixBase<Derived>& dTdA,
-                            JacobianMap& jacobians, Key key){
+      JacobianMap& jacobians, Key key) {
     // block makes HUGE difference
-    jacobians(key).block<Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>(0, 0) += dTdA;
-  };
+    jacobians(key).block<Derived::RowsAtCompileTime, Derived::ColsAtCompileTime>(
+        0, 0) += dTdA;
+  }
+  ;
 };
 /// Handle Leaf Case for Dynamic Matrix type (slower)
-template <typename Derived>
+template<typename Derived>
 struct UseBlockIf<false, Derived> {
   static void addToJacobian(const Eigen::MatrixBase<Derived>& dTdA,
-                            JacobianMap& jacobians, Key key) {
+      JacobianMap& jacobians, Key key) {
     jacobians(key) += dTdA;
   }
 };
@@ -111,10 +113,9 @@ template<typename Derived>
 void handleLeafCase(const Eigen::MatrixBase<Derived>& dTdA,
     JacobianMap& jacobians, Key key) {
   internal::UseBlockIf<
-      Derived::RowsAtCompileTime != Eigen::Dynamic &&
-      Derived::ColsAtCompileTime != Eigen::Dynamic,
-      Derived>
-    ::addToJacobian(dTdA, jacobians, key);
+      Derived::RowsAtCompileTime != Eigen::Dynamic
+          && Derived::ColsAtCompileTime != Eigen::Dynamic, Derived>::addToJacobian(
+      dTdA, jacobians, key);
 }
 
 //-----------------------------------------------------------------------------
@@ -141,7 +142,7 @@ void handleLeafCase(const Eigen::MatrixBase<Derived>& dTdA,
  */
 template<class T>
 class ExecutionTrace {
-  static const int Dim = traits::dimension<T>::value;
+  static const int Dim = traits<T>::dimension;
   enum {
     Constant, Leaf, Function
   } kind;
@@ -245,6 +246,15 @@ public:
   virtual ~ExpressionNode() {
   }
 
+  /// Streaming
+  GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os,
+      const ExpressionNode& node) {
+    os << "Expression of type " << typeid(T).name();
+    if (node.traceSize_>0) os << ", trace size = " << node.traceSize_;
+    os << "\n";
+    return os;
+  }
+
   /// Return keys that play in this expression as a set
   virtual std::set<Key> keys() const {
     std::set<Key> keys;
@@ -265,7 +275,7 @@ public:
 
   /// Construct an execution trace for reverse AD
   virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-     ExecutionTraceStorage* traceStorage) const = 0;
+      ExecutionTraceStorage* traceStorage) const = 0;
 };
 
 //-----------------------------------------------------------------------------
@@ -297,57 +307,11 @@ public:
   }
 };
 
-//-----------------------------------------------------------------------------
-/// Leaf Expression
-template<class T, class Chart = DefaultChart<T> >
-class LeafExpression: public ExpressionNode<T> {
-  typedef ChartValue<T, Chart> value_type; // perhaps this can be something else like a std::pair<T,Chart> ??
-
-  /// The key into values
-  Key key_;
-
-  /// Constructor with a single key
-  LeafExpression(Key key) :
-      key_(key) {
-  }
-  // todo: do we need a virtual destructor here too?
-
-  friend class Expression<value_type> ;
-
-public:
-
-  /// Return keys that play in this expression
-  virtual std::set<Key> keys() const {
-    std::set<Key> keys;
-    keys.insert(key_);
-    return keys;
-  }
-
-  /// Return dimensions for each argument
-  virtual void dims(std::map<Key, int>& map) const {
-    // get dimension from the chart; only works for fixed dimension charts
-    map[key_] = traits::dimension<Chart>::value;
-  }
-
-  /// Return value
-  virtual const value_type& value(const Values& values) const {
-    return dynamic_cast<const value_type&>(values.at(key_));
-  }
-
-  /// Construct an execution trace for reverse AD
-  virtual const value_type& traceExecution(const Values& values,
-      ExecutionTrace<value_type>& trace, 
-      ExecutionTraceStorage* traceStorage) const {
-    trace.setLeaf(key_);
-    return dynamic_cast<const value_type&>(values.at(key_));
-  }
-
-};
 
 //-----------------------------------------------------------------------------
 /// Leaf Expression, if no chart is given, assume default chart and value_type is just the plain value
 template<typename T>
-class LeafExpression<T, DefaultChart<T> > : public ExpressionNode<T> {
+class LeafExpression : public ExpressionNode<T> {
   typedef T value_type;
 
   /// The key into values
@@ -372,7 +336,7 @@ public:
 
   /// Return dimensions for each argument
   virtual void dims(std::map<Key, int>& map) const {
-    map[key_] = traits::dimension<T>::value;
+    map[key_] = traits<T>::dimension;
   }
 
   /// Return value
@@ -448,16 +412,15 @@ public:
 /// meta-function to generate fixed-size JacobianTA type
 template<class T, class A>
 struct Jacobian {
-  typedef Eigen::Matrix<double, traits::dimension<T>::value,
-      traits::dimension<A>::value> type;
+  typedef Eigen::Matrix<double, traits<T>::dimension,
+      traits<A>::dimension> type;
 };
 
 /// meta-function to generate JacobianTA optional reference
 template<class T, class A>
-struct OptionalJacobian {
-  typedef Eigen::Matrix<double, traits::dimension<T>::value,
-      traits::dimension<A>::value> Jacobian;
-  typedef boost::optional<Jacobian&> type;
+struct MakeOptionalJacobian {
+  typedef OptionalJacobian<traits<T>::dimension,
+      traits<A>::dimension> type;
 };
 
 /**
@@ -560,8 +523,8 @@ struct GenerateFunctionalNode: Argument<T, A, Base::N + 1>, Base {
 
     /// Given df/dT, multiply in dT/dA and continue reverse AD process
     // Cols is always known at compile time
-    template<int Rows, int Cols>
-    void reverseAD4(const Eigen::Matrix<double, Rows, Cols> & dFdT,
+    template<typename SomeMatrix>
+    void reverseAD4(const SomeMatrix & dFdT,
         JacobianMap& jacobians) const {
       Base::Record::reverseAD4(dFdT, jacobians);
       This::trace.reverseAD1(dFdT * This::dTdA, jacobians);
@@ -569,7 +532,7 @@ struct GenerateFunctionalNode: Argument<T, A, Base::N + 1>, Base {
   };
 
   /// Construct an execution trace for reverse AD
-  void trace(const Values& values, Record* record, 
+  void trace(const Values& values, Record* record,
       ExecutionTraceStorage*& traceStorage) const {
     Base::trace(values, record, traceStorage); // recurse
     // Write an Expression<A> execution trace in record->trace
@@ -623,7 +586,7 @@ struct FunctionalNode {
     /// Provide convenience access to Record storage and implement
     /// the virtual function based interface of CallRecord using the CallRecordImplementor
     struct Record: public internal::CallRecordImplementor<Record,
-        traits::dimension<T>::value>, public Base::Record {
+        traits<T>::dimension>, public Base::Record {
       using Base::Record::print;
       using Base::Record::startReverseAD4;
       using Base::Record::reverseAD4;
@@ -645,7 +608,7 @@ struct FunctionalNode {
     };
 
     /// Construct an execution trace for reverse AD
-    Record* trace(const Values& values, 
+    Record* trace(const Values& values,
         ExecutionTraceStorage* traceStorage) const {
       assert(reinterpret_cast<size_t>(traceStorage) % TraceAlignment == 0);
 
@@ -668,9 +631,11 @@ struct FunctionalNode {
 template<class T, class A1>
 class UnaryExpression: public FunctionalNode<T, boost::mpl::vector<A1> >::type {
 
+  typedef typename MakeOptionalJacobian<T, A1>::type OJ1;
+
 public:
 
-  typedef boost::function<T(const A1&, typename OptionalJacobian<T, A1>::type)> Function;
+  typedef boost::function<T(const A1&, OJ1)> Function;
   typedef typename FunctionalNode<T, boost::mpl::vector<A1> >::type Base;
   typedef typename Base::Record Record;
 
@@ -710,13 +675,15 @@ public:
 /// Binary Expression
 
 template<class T, class A1, class A2>
-class BinaryExpression: public FunctionalNode<T, boost::mpl::vector<A1, A2> >::type {
+class BinaryExpression:
+    public FunctionalNode<T, boost::mpl::vector<A1, A2> >::type {
+
+  typedef typename MakeOptionalJacobian<T, A1>::type OJ1;
+  typedef typename MakeOptionalJacobian<T, A2>::type OJ2;
 
 public:
 
-  typedef boost::function<
-      T(const A1&, const A2&, typename OptionalJacobian<T, A1>::type,
-          typename OptionalJacobian<T, A2>::type)> Function;
+  typedef boost::function<T(const A1&, const A2&, OJ1, OJ2)> Function;
   typedef typename FunctionalNode<T, boost::mpl::vector<A1, A2> >::type Base;
   typedef typename Base::Record Record;
 
@@ -764,14 +731,16 @@ public:
 /// Ternary Expression
 
 template<class T, class A1, class A2, class A3>
-class TernaryExpression: public FunctionalNode<T, boost::mpl::vector<A1, A2, A3> >::type {
+class TernaryExpression:
+    public FunctionalNode<T, boost::mpl::vector<A1, A2, A3> >::type {
+
+  typedef typename MakeOptionalJacobian<T, A1>::type OJ1;
+  typedef typename MakeOptionalJacobian<T, A2>::type OJ2;
+  typedef typename MakeOptionalJacobian<T, A3>::type OJ3;
 
 public:
 
-  typedef boost::function<
-      T(const A1&, const A2&, const A3&, typename OptionalJacobian<T, A1>::type,
-          typename OptionalJacobian<T, A2>::type,
-          typename OptionalJacobian<T, A3>::type)> Function;
+  typedef boost::function<T(const A1&, const A2&, const A3&, OJ1, OJ2, OJ3)> Function;
   typedef typename FunctionalNode<T, boost::mpl::vector<A1, A2, A3> >::type Base;
   typedef typename Base::Record Record;
 
@@ -787,7 +756,8 @@ private:
     this->template reset<A2, 2>(e2.root());
     this->template reset<A3, 3>(e3.root());
     ExpressionNode<T>::traceSize_ = //
-        upAligned(sizeof(Record)) + e1.traceSize() + e2.traceSize() + e3.traceSize();
+        upAligned(sizeof(Record)) + e1.traceSize() + e2.traceSize()
+            + e3.traceSize();
   }
 
   friend class Expression<T> ;

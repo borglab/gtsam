@@ -20,8 +20,8 @@
 #pragma once
 
 #include <gtsam/nonlinear/Expression-inl.h>
-#include <gtsam/base/FastVector.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/base/FastVector.h>
 
 #include <boost/bind.hpp>
 #include <boost/range/adaptor/map.hpp>
@@ -52,6 +52,11 @@ private:
 
 public:
 
+  /// Print
+  void print(const std::string& s) const {
+    std::cout << s << *root_ << std::endl;
+  }
+
   // Construct a constant expression
   Expression(const T& value) :
       root_(new ConstantExpression<T>(value)) {
@@ -75,7 +80,7 @@ public:
   /// Construct a nullary method expression
   template<typename A>
   Expression(const Expression<A>& expression,
-      T (A::*method)(typename OptionalJacobian<T, A>::type) const) :
+      T (A::*method)(typename MakeOptionalJacobian<T, A>::type) const) :
       root_(new UnaryExpression<T, A>(boost::bind(method, _1, _2), expression)) {
   }
 
@@ -89,8 +94,8 @@ public:
   /// Construct a unary method expression
   template<typename A1, typename A2>
   Expression(const Expression<A1>& expression1,
-      T (A1::*method)(const A2&, typename OptionalJacobian<T, A1>::type,
-          typename OptionalJacobian<T, A2>::type) const,
+      T (A1::*method)(const A2&, typename MakeOptionalJacobian<T, A1>::type,
+          typename MakeOptionalJacobian<T, A2>::type) const,
       const Expression<A2>& expression2) :
       root_(
           new BinaryExpression<T, A1, A2>(boost::bind(method, _1, _2, _3, _4),
@@ -102,6 +107,20 @@ public:
   Expression(typename BinaryExpression<T, A1, A2>::Function function,
       const Expression<A1>& expression1, const Expression<A2>& expression2) :
       root_(new BinaryExpression<T, A1, A2>(function, expression1, expression2)) {
+  }
+
+  /// Construct a binary method expression
+  template<typename A1, typename A2, typename A3>
+  Expression(const Expression<A1>& expression1,
+      T (A1::*method)(const A2&, const A3&,
+          typename TernaryExpression<T, A1, A2, A3>::OJ1,
+          typename TernaryExpression<T, A1, A2, A3>::OJ2,
+          typename TernaryExpression<T, A1, A2, A3>::OJ3) const,
+      const Expression<A2>& expression2, const Expression<A3>& expression3) :
+      root_(
+          new TernaryExpression<T, A1, A2, A3>(
+              boost::bind(method, _1, _2, _3, _4, _5, _6), expression1,
+              expression2, expression3)) {
   }
 
   /// Construct a ternary function expression
@@ -151,6 +170,15 @@ public:
       return root_->value(values);
   }
 
+  /**
+   *  @return a "deep" copy of this Expression
+   *  "deep" is in quotes because the ExpressionNode hierarchy is *not* cloned.
+   *  The intent is for derived classes to be copied using only a Base pointer.
+   */
+  virtual boost::shared_ptr<Expression> clone() const {
+    return boost::make_shared<Expression>(*this);
+  }
+
 private:
 
   /// Vaguely unsafe keys and dimensions in same order
@@ -173,7 +201,7 @@ private:
     assert(H.size()==keys.size());
 
     // Pre-allocate and zero VerticalBlockMatrix
-    static const int Dim = traits::dimension<T>::value;
+    static const int Dim = traits<T>::dimension;
     VerticalBlockMatrix Ab(dims, Dim);
     Ab.matrix().setZero();
     JacobianMap jacobianMap(keys, Ab);
@@ -206,10 +234,24 @@ private:
     // with an execution trace, made up entirely of "Record" structs, see
     // the FunctionalNode class in expression-inl.h
     size_t size = traceSize();
+
+    // Windows does not support variable length arrays, so memory must be dynamically
+    // allocated on Visual Studio. For more information see the issue below
+    // https://bitbucket.org/gtborg/gtsam/issue/178/vlas-unsupported-in-visual-studio
+#ifdef _MSC_VER
+    ExecutionTraceStorage* traceStorage = new ExecutionTraceStorage[size];
+#else
     ExecutionTraceStorage traceStorage[size];
+#endif
+
     ExecutionTrace<T> trace;
     T value(traceExecution(values, trace, traceStorage));
     trace.startReverseAD1(jacobians);
+
+#ifdef _MSC_VER
+    delete[] traceStorage;
+#endif
+
     return value;
   }
 
@@ -223,10 +265,9 @@ private:
 template<class T>
 struct apply_compose {
   typedef T result_type;
-  static const int Dim = traits::dimension<T>::value;
-  typedef Eigen::Matrix<double, Dim, Dim> Jacobian;
-  T operator()(const T& x, const T& y, boost::optional<Jacobian&> H1,
-      boost::optional<Jacobian&> H2) const {
+  static const int Dim = traits<T>::dimension;
+  T operator()(const T& x, const T& y, OptionalJacobian<Dim, Dim> H1 =
+      boost::none, OptionalJacobian<Dim, Dim> H2 = boost::none) const {
     return x.compose(y, H1, H2);
   }
 };

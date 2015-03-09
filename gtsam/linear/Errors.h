@@ -21,6 +21,7 @@
 
 #include <gtsam/base/FastList.h>
 #include <gtsam/base/Vector.h>
+#include <gtsam/base/Testable.h>
 
 #include <string>
 
@@ -70,4 +71,9 @@ namespace gtsam {
   /** print with optional string */
   GTSAM_EXPORT void print(const Errors& a, const std::string& s = "Error");
 
-} // gtsam
+  /// traits
+  template<>
+  struct traits<Errors> : public Testable<Errors> {
+  };
+
+} //\ namespace gtsam

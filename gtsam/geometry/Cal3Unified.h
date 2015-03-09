@@ -51,7 +51,7 @@ private:
 
 public:
 
-    Vector vector() const ;
+  enum { dimension = 10 };
 
   /// @name Standard Constructors
   /// @{
@@ -76,7 +76,7 @@ public:
   /// @{
 
   /// print with optional string
-  void print(const std::string& s = "") const ;
+  virtual void print(const std::string& s = "") const ;
 
   /// assert equality up to a tolerance
   bool equals(const Cal3Unified& K, double tol = 10e-9) const;
@@ -96,8 +96,8 @@ public:
    * @return point in image coordinates
    */
   Point2 uncalibrate(const Point2& p,
-      boost::optional<Matrix&> Dcal = boost::none,
-      boost::optional<Matrix&> Dp = boost::none) const ;
+      OptionalJacobian<2,10> Dcal = boost::none,
+      OptionalJacobian<2,2> Dp = boost::none) const ;
 
   /// Conver a pixel coordinate to ideal coordinate
   Point2 calibrate(const Point2& p, const double tol=1e-5) const;
@@ -116,13 +116,18 @@ public:
   Cal3Unified retract(const Vector& d) const ;
 
   /// Given a different calibration, calculate update to obtain it
-  Vector localCoordinates(const Cal3Unified& T2) const ;
+  Vector10 localCoordinates(const Cal3Unified& T2) const ;
 
   /// Return dimensions of calibration manifold object
   virtual size_t dim() const { return 10 ; } //TODO: make a final dimension variable (also, usually size_t in other classes e.g. Pose2)
 
   /// Return dimensions of calibration manifold object
   static size_t Dim() { return 10; }  //TODO: make a final dimension variable
+
+  /// Return all parameters as a vector
+  Vector10 vector() const ;
+
+  /// @}
 
 private:
 
@@ -138,23 +143,11 @@ private:
 
 };
 
-// Define GTSAM traits
-namespace traits {
+template<>
+struct traits<Cal3Unified> : public internal::Manifold<Cal3Unified> {};
 
 template<>
-struct GTSAM_EXPORT is_manifold<Cal3Unified> : public boost::true_type{
-};
-
-template<>
-struct GTSAM_EXPORT dimension<Cal3Unified> : public boost::integral_constant<int, 10>{
-};
-
-template<>
-struct GTSAM_EXPORT zero<Cal3Unified> {
-  static Cal3Unified value() { return Cal3Unified();}
-};
-
-}
+struct traits<const Cal3Unified> : public internal::Manifold<Cal3Unified> {};
 
 }
 

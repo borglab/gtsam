@@ -15,13 +15,13 @@
  * @brief test SimpleCamera class
  */
 
-#include <cmath>
-#include <iostream>
-
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/geometry/SimpleCamera.h>
+#include <gtsam/geometry/Pose2.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam/geometry/SimpleCamera.h>
+#include <CppUnitLite/TestHarness.h>
+#include <cmath>
+#include <iostream>
 
 using namespace std;
 using namespace gtsam;

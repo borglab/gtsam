@@ -19,7 +19,6 @@
 #include <gtsam/navigation/MagFactor.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam/base/LieScalar.h>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -73,7 +72,7 @@ TEST( MagFactor, Factors ) {
   // MagFactor
   MagFactor f(1, measured, s, dir, bias, model);
   EXPECT( assert_equal(zero(3),f.evaluateError(theta,H1),1e-5));
-  EXPECT( assert_equal(numericalDerivative11<Vector,Rot2> //
+  EXPECT( assert_equal((Matrix)numericalDerivative11<Vector,Rot2> //
       (boost::bind(&MagFactor::evaluateError, &f, _1, none), theta), H1, 1e-7));
 
 // MagFactor1
@@ -95,7 +94,7 @@ TEST( MagFactor, Factors ) {
 // MagFactor2
   MagFactor3 f3(1, 2, 3, measured, nRb, model);
   EXPECT(assert_equal(zero(3),f3.evaluateError(s,dir,bias,H1,H2,H3),1e-5));
-  EXPECT(assert_equal(numericalDerivative11<Vector,double> //
+  EXPECT(assert_equal((Matrix)numericalDerivative11<Vector,double> //
       (boost::bind(&MagFactor3::evaluateError, &f3, _1, dir, bias, none, none, none), s),//
       H1, 1e-7));
   EXPECT(assert_equal(numericalDerivative11<Vector,Unit3> //

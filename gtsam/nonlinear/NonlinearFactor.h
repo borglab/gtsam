@@ -20,14 +20,14 @@
 
 #pragma once
 
-#include <boost/serialization/base_object.hpp>
-#include <boost/assign/list_of.hpp>
-
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/inference/Factor.h>
+#include <gtsam/base/OptionalJacobian.h>
 
+#include <boost/serialization/base_object.hpp>
+#include <boost/assign/list_of.hpp>
 
 /**
  * Macro to add a standard clone function to a derived factor
@@ -143,6 +143,10 @@ public:
   shared_ptr rekey(const std::vector<Key>& new_keys) const;
 
 }; // \class NonlinearFactor
+
+/// traits
+template<> struct traits<NonlinearFactor> : public Testable<NonlinearFactor> {
+};
 
 /* ************************************************************************* */
 /**

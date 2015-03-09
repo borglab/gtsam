@@ -21,7 +21,7 @@ Pose3 g1(Rot3(), Point3(100.0, 0.0, 300.0));
 //Vector6 v1((Vector(6) << 0.1, 0.05, 0.02, 10.0, 20.0, 30.0).finished());
 Vector6 V1_w((Vector(6) << 0.0, 0.0, M_PI/3, 0.0, 0.0, 30.0).finished());
 Vector6 V1_g1 = g1.inverse().Adjoint(V1_w);
-Pose3 g2(g1.retract(h*V1_g1, Pose3::EXPMAP));
+Pose3 g2(g1.expmap(h*V1_g1));
 //Vector6 v2 = Pose3::Logmap(g1.between(g2));
 
 double mass = 100.0;
@@ -46,51 +46,29 @@ Vector computeFu(const Vector& gamma, const Vector& control) {
 }
 
 /* ************************************************************************* */
-Vector testExpmapDeriv(const Vector6& v) {
-  return Pose3::Logmap(Pose3::Expmap(-h*V1_g1)*Pose3::Expmap(h*V1_g1+v));
-}
-
-TEST(Reconstruction, ExpmapInvDeriv) {
-  Matrix numericalExpmap = numericalDerivative11(
-      boost::function<Vector(const Vector6&)>(
-          boost::bind(testExpmapDeriv,  _1)
-          ),
-      Vector6(Vector::Zero(6)), 1e-5
-      );
-  Matrix dExpInv = Pose3::dExpInv_exp(h*V1_g1);
-  EXPECT(assert_equal(numericalExpmap, dExpInv, 1e-2));
-}
-
-/* ************************************************************************* */
 TEST( Reconstruction, evaluateError) {
   // hard constraints don't need a noise model
   Reconstruction constraint(G(2), G(1), V(1), h);
 
   // verify error function
   Matrix H1, H2, H3;
-  EXPECT(assert_equal(zero(6), constraint.evaluateError(g2, g1, V1_g1, H1, H2, H3), tol));
-
+  EXPECT(
+      assert_equal(zero(6), constraint.evaluateError(g2, g1, V1_g1, H1, H2, H3), tol));
 
   Matrix numericalH1 = numericalDerivative31(
       boost::function<Vector(const Pose3&, const Pose3&, const Vector6&)>(
-          boost::bind(&Reconstruction::evaluateError, constraint, _1, _2, _3, boost::none, boost::none, boost::none)
-          ),
-      g2, g1, V1_g1, 1e-5
-      );
+          boost::bind(&Reconstruction::evaluateError, constraint, _1, _2, _3,
+              boost::none, boost::none, boost::none)), g2, g1, V1_g1, 1e-5);
 
   Matrix numericalH2 = numericalDerivative32(
       boost::function<Vector(const Pose3&, const Pose3&, const Vector6&)>(
-          boost::bind(&Reconstruction::evaluateError, constraint, _1, _2, _3, boost::none, boost::none, boost::none)
-          ),
-      g2, g1, V1_g1, 1e-5
-      );
+          boost::bind(&Reconstruction::evaluateError, constraint, _1, _2, _3,
+              boost::none, boost::none, boost::none)), g2, g1, V1_g1, 1e-5);
 
   Matrix numericalH3 = numericalDerivative33(
       boost::function<Vector(const Pose3&, const Pose3&, const Vector6&)>(
-          boost::bind(&Reconstruction::evaluateError, constraint, _1, _2, _3, boost::none, boost::none, boost::none)
-          ),
-      g2, g1, V1_g1, 1e-5
-      );
+          boost::bind(&Reconstruction::evaluateError, constraint, _1, _2, _3,
+              boost::none, boost::none, boost::none)), g2, g1, V1_g1, 1e-5);
 
   EXPECT(assert_equal(numericalH1,H1,1e-5));
   EXPECT(assert_equal(numericalH2,H2,1e-5));

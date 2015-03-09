@@ -43,6 +43,8 @@ class GTSAM_EXPORT Cal3DS2 : public Cal3DS2_Base {
 
 public:
 
+  enum { dimension = 9 };
+
   /// @name Standard Constructors
   /// @{
 
@@ -66,7 +68,7 @@ public:
   /// @{
 
   /// print with optional string
-  void print(const std::string& s = "") const ;
+  virtual void print(const std::string& s = "") const ;
 
   /// assert equality up to a tolerance
   bool equals(const Cal3DS2& K, double tol = 10e-9) const;
@@ -87,10 +89,20 @@ public:
   /// Return dimensions of calibration manifold object
   static size_t Dim() { return 9; }  //TODO: make a final dimension variable
 
+  /// @}
+  /// @name Clone
+  /// @{
+
+  /// @return a deep copy of this object
+  virtual boost::shared_ptr<Base> clone() const {
+    return boost::shared_ptr<Base>(new Cal3DS2(*this));
+  }
+
+  /// @}
+
 
 private:
 
-  /// @}
   /// @name Advanced Interface
   /// @{
 
@@ -107,18 +119,11 @@ private:
 
 };
 
-// Define GTSAM traits
-namespace traits {
+template<>
+struct traits<Cal3DS2> : public internal::Manifold<Cal3DS2> {};
 
 template<>
-struct GTSAM_EXPORT is_manifold<Cal3DS2> : public boost::true_type{
-};
-
-template<>
-struct GTSAM_EXPORT dimension<Cal3DS2> : public boost::integral_constant<int, 9>{
-};
-
-}
+struct traits<const Cal3DS2> : public internal::Manifold<Cal3DS2> {};
 
 }
 

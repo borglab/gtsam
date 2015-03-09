@@ -23,6 +23,7 @@
 
 #include <limits>
 #include <iostream>
+#include <cmath>
 
 namespace gtsam {
 
@@ -92,8 +93,9 @@ public:
    */
   NonlinearEquality(Key j, const T& feasible,
       bool (*_compare)(const T&, const T&) = compare<T>) :
-      Base(noiseModel::Constrained::All(feasible.dim()), j), feasible_(
-          feasible), allow_error_(false), error_gain_(0.0), compare_(_compare) {
+      Base(noiseModel::Constrained::All(traits<T>::GetDimension(feasible)),
+          j), feasible_(feasible), allow_error_(false), error_gain_(0.0), //
+      compare_(_compare) {
   }
 
   /**
@@ -101,9 +103,9 @@ public:
    */
   NonlinearEquality(Key j, const T& feasible, double error_gain,
       bool (*_compare)(const T&, const T&) = compare<T>) :
-      Base(noiseModel::Constrained::All(feasible.dim()), j), feasible_(
-          feasible), allow_error_(true), error_gain_(error_gain), compare_(
-          _compare) {
+      Base(noiseModel::Constrained::All(traits<T>::GetDimension(feasible)),
+          j), feasible_(feasible), allow_error_(true), error_gain_(error_gain), //
+      compare_(_compare) {
   }
 
   /// @}
@@ -113,15 +115,15 @@ public:
   virtual void print(const std::string& s = "",
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
     std::cout << s << "Constraint: on [" << keyFormatter(this->key()) << "]\n";
-    gtsam::print(feasible_, "Feasible Point:\n");
-    std::cout << "Variable Dimension: " << feasible_.dim() << std::endl;
+    traits<VALUE>::Print(feasible_, "Feasible Point:\n");
+    std::cout << "Variable Dimension: " << traits<T>::GetDimension(feasible_) << std::endl;
   }
 
   /** Check if two factors are equal */
   virtual bool equals(const NonlinearFactor& f, double tol = 1e-9) const {
     const This* e = dynamic_cast<const This*>(&f);
     return e && Base::equals(f) && feasible_.equals(e->feasible_, tol)
-        && fabs(error_gain_ - e->error_gain_) < tol;
+        && std::abs(error_gain_ - e->error_gain_) < tol;
   }
 
   /// @}
@@ -142,11 +144,11 @@ public:
   /** error function */
   Vector evaluateError(const T& xj,
       boost::optional<Matrix&> H = boost::none) const {
-    size_t nj = feasible_.dim();
+    const size_t nj = traits<T>::GetDimension(feasible_);
     if (allow_error_) {
       if (H)
         *H = eye(nj); // FIXME: this is not the right linearization for nonlinear compare
-      return xj.localCoordinates(feasible_);
+      return traits<T>::Local(xj,feasible_);
     } else if (compare_(feasible_, xj)) {
       if (H)
         *H = eye(nj);
@@ -195,6 +197,10 @@ private:
 };
 // \class NonlinearEquality
 
+template<typename VALUE>
+struct traits<NonlinearEquality<VALUE> > : Testable<NonlinearEquality<VALUE> > {
+};
+
 /* ************************************************************************* */
 /**
  * Simple unary equality constraint - fixes a value for a variable
@@ -231,8 +237,8 @@ public:
    *
    */
   NonlinearEquality1(const X& value, Key key, double mu = 1000.0) :
-      Base(noiseModel::Constrained::All(value.dim(), fabs(mu)), key), value_(
-          value) {
+      Base( noiseModel::Constrained::All(traits<X>::GetDimension(value),
+              std::abs(mu)), key), value_(value) {
   }
 
   virtual ~NonlinearEquality1() {
@@ -248,9 +254,9 @@ public:
   Vector evaluateError(const X& x1,
       boost::optional<Matrix&> H = boost::none) const {
     if (H)
-      (*H) = eye(x1.dim());
+      (*H) = eye(traits<X>::GetDimension(x1));
     // manifold equivalent of h(x)-z -> log(z,h(x))
-    return value_.localCoordinates(x1);
+    return traits<X>::Local(value_,x1);
   }
 
   /** Print */
@@ -275,6 +281,10 @@ private:
   }
 };
 // \NonlinearEquality1
+
+template<typename VALUE>
+struct traits<NonlinearEquality1<VALUE> > : Testable<NonlinearEquality1<VALUE> > {
+};
 
 /* ************************************************************************* */
 /**
@@ -302,7 +312,7 @@ public:
 
   ///TODO: comment
   NonlinearEquality2(Key key1, Key key2, double mu = 1000.0) :
-      Base(noiseModel::Constrained::All(X::Dim(), fabs(mu)), key1, key2) {
+      Base(noiseModel::Constrained::All(traits<X>::dimension, std::abs(mu)), key1, key2) {
   }
   virtual ~NonlinearEquality2() {
   }
@@ -316,12 +326,10 @@ public:
   /** g(x) with optional derivative2 */
   Vector evaluateError(const X& x1, const X& x2, boost::optional<Matrix&> H1 =
       boost::none, boost::optional<Matrix&> H2 = boost::none) const {
-    const size_t p = X::Dim();
-    if (H1)
-      *H1 = -eye(p);
-    if (H2)
-      *H2 = eye(p);
-    return x1.localCoordinates(x2);
+    static const size_t p = traits<X>::dimension;
+    if (H1) *H1 = -eye(p);
+    if (H2) *H2 =  eye(p);
+    return traits<X>::Local(x1,x2);
   }
 
 private:
@@ -336,6 +344,11 @@ private:
   }
 };
 // \NonlinearEquality2
+
+template<typename VALUE>
+struct traits<NonlinearEquality2<VALUE> > : Testable<NonlinearEquality2<VALUE> > {
+};
+
 
 }// namespace gtsam
 

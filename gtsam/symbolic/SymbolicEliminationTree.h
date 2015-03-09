@@ -59,4 +59,9 @@ namespace gtsam {
 
   };
 
-}
+/// traits
+template<>
+struct traits<SymbolicEliminationTree> : public Testable<SymbolicEliminationTree> {
+};
+
+} //\ namespace gtsam

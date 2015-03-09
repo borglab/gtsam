@@ -121,7 +121,7 @@ namespace gtsam {
 
     /** The difference between another point and this point */
     inline StereoPoint2 between(const StereoPoint2& p2) const {
-      return gtsam::between_default(*this, p2);
+      return p2 - *this;
     }
 
     /// @}
@@ -174,20 +174,9 @@ namespace gtsam {
 
   };
 
-  // Define GTSAM traits
-  namespace traits {
+  template<>
+  struct traits<StereoPoint2> : public internal::Manifold<StereoPoint2> {};
 
   template<>
-  struct is_group<StereoPoint2> : public boost::true_type {
-  };
-
-  template<>
-  struct is_manifold<StereoPoint2> : public boost::true_type {
-  };
-
-  template<>
-  struct dimension<StereoPoint2> : public boost::integral_constant<int, 3> {
-  };
-
-  }
+  struct traits<const StereoPoint2> : public internal::Manifold<StereoPoint2> {};
 }

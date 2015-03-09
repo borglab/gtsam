@@ -21,11 +21,14 @@
 // \callgraph
 
 #pragma once
-
 #include <gtsam/base/Vector.h>
+#include <boost/math/special_functions/fpclassify.hpp>
+#include <gtsam/3rdparty/Eigen/Eigen/Core>
+#include <gtsam/3rdparty/Eigen/Eigen/Cholesky>
+#include <gtsam/3rdparty/Eigen/Eigen/LU>
 #include <boost/format.hpp>
 #include <boost/tuple/tuple.hpp>
-#include <boost/math/special_functions/fpclassify.hpp>
+
 
 /**
  * Matrix is a typedef in the gtsam namespace
@@ -37,35 +40,35 @@ namespace gtsam {
 typedef Eigen::MatrixXd Matrix;
 typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> MatrixRowMajor;
 
-typedef Eigen::Matrix2d Matrix2;
-typedef Eigen::Matrix3d Matrix3;
-typedef Eigen::Matrix4d Matrix4;
-typedef Eigen::Matrix<double,5,5> Matrix5;
-typedef Eigen::Matrix<double,6,6> Matrix6;
+// Create handy typedefs and constants for square-size matrices
+// MatrixMN, MatrixN = MatrixNN, I_NxN, and Z_NxN, for M,N=1..9
+#define GTSAM_MAKE_TYPEDEFS(SIZE, SUFFIX)   \
+typedef Eigen::Matrix<double, SIZE, SIZE> Matrix##SUFFIX;  \
+typedef Eigen::Matrix<double, 1, SIZE> Matrix1##SUFFIX;  \
+typedef Eigen::Matrix<double, 2, SIZE> Matrix2##SUFFIX;  \
+typedef Eigen::Matrix<double, 3, SIZE> Matrix3##SUFFIX;  \
+typedef Eigen::Matrix<double, 4, SIZE> Matrix4##SUFFIX;  \
+typedef Eigen::Matrix<double, 5, SIZE> Matrix5##SUFFIX;  \
+typedef Eigen::Matrix<double, 6, SIZE> Matrix6##SUFFIX;  \
+typedef Eigen::Matrix<double, 7, SIZE> Matrix7##SUFFIX;  \
+typedef Eigen::Matrix<double, 8, SIZE> Matrix8##SUFFIX;  \
+typedef Eigen::Matrix<double, 9, SIZE> Matrix9##SUFFIX;  \
+static const Eigen::MatrixBase<Matrix##SUFFIX>::IdentityReturnType I_##SUFFIX##x##SUFFIX = Matrix##SUFFIX::Identity(); \
+static const Eigen::MatrixBase<Matrix##SUFFIX>::ConstantReturnType Z_##SUFFIX##x##SUFFIX = Matrix##SUFFIX::Zero();
 
-typedef Eigen::Matrix<double,2,3> Matrix23;
-typedef Eigen::Matrix<double,2,4> Matrix24;
-typedef Eigen::Matrix<double,2,5> Matrix25;
-typedef Eigen::Matrix<double,2,6> Matrix26;
-typedef Eigen::Matrix<double,2,7> Matrix27;
-typedef Eigen::Matrix<double,2,8> Matrix28;
-typedef Eigen::Matrix<double,2,9> Matrix29;
-
-typedef Eigen::Matrix<double,3,2> Matrix32;
-typedef Eigen::Matrix<double,3,4> Matrix34;
-typedef Eigen::Matrix<double,3,5> Matrix35;
-typedef Eigen::Matrix<double,3,6> Matrix36;
-typedef Eigen::Matrix<double,3,7> Matrix37;
-typedef Eigen::Matrix<double,3,8> Matrix38;
-typedef Eigen::Matrix<double,3,9> Matrix39;
+GTSAM_MAKE_TYPEDEFS(1,1);
+GTSAM_MAKE_TYPEDEFS(2,2);
+GTSAM_MAKE_TYPEDEFS(3,3);
+GTSAM_MAKE_TYPEDEFS(4,4);
+GTSAM_MAKE_TYPEDEFS(5,5);
+GTSAM_MAKE_TYPEDEFS(6,6);
+GTSAM_MAKE_TYPEDEFS(7,7);
+GTSAM_MAKE_TYPEDEFS(8,8);
+GTSAM_MAKE_TYPEDEFS(9,9);
 
 // Matrix expressions for accessing parts of matrices
 typedef Eigen::Block<Matrix> SubMatrix;
 typedef Eigen::Block<const Matrix> ConstSubMatrix;
-
-// Two very commonly used matrices:
-const Matrix3 Z_3x3 = Matrix3::Zero();
-const Matrix3 I_3x3 = Matrix3::Identity();
 
 // Matlab-like syntax
 
@@ -198,9 +201,14 @@ inline MATRIX prod(const MATRIX& A, const MATRIX&B) {
 }
 
 /**
- * print a matrix
+ * print without optional string, must specify cout yourself
  */
-GTSAM_EXPORT void print(const Matrix& A, const std::string& s = "", std::ostream& stream = std::cout);
+GTSAM_EXPORT void print(const Matrix& A, const std::string& s, std::ostream& stream);
+
+/**
+ * print with optional string to cout
+ */
+GTSAM_EXPORT void print(const Matrix& A, const std::string& s = "");
 
 /**
  * save a matrix to file, which can be loaded by matlab
@@ -237,7 +245,10 @@ Eigen::Block<const MATRIX> sub(const MATRIX& A, size_t i1, size_t i2, size_t j1,
  * @param i is the row of the upper left corner insert location
  * @param j is the column of the upper left corner insert location
  */
-GTSAM_EXPORT void insertSub(Matrix& fullMatrix, const Matrix& subMatrix, size_t i, size_t j);
+template <typename Derived1, typename Derived2>
+void insertSub(Eigen::MatrixBase<Derived1>& fullMatrix, const Eigen::MatrixBase<Derived2>& subMatrix, size_t i, size_t j) {
+  fullMatrix.block(i, j, subMatrix.rows(), subMatrix.cols()) = subMatrix;
+}
 
 /**
  * Create a matrix with submatrices along its diagonal
@@ -364,21 +375,7 @@ GTSAM_EXPORT std::pair<Matrix,Matrix> qr(const Matrix& A);
  * @param A is the input matrix, and is the output
  * @param clear_below_diagonal enables zeroing out below diagonal
  */
-template <class MATRIX>
-void inplace_QR(MATRIX& A) {
-  size_t rows = A.rows();
-  size_t cols = A.cols();
-  size_t size = std::min(rows,cols);
-
-  typedef Eigen::internal::plain_diag_type<Matrix>::type HCoeffsType;
-  typedef Eigen::internal::plain_row_type<Matrix>::type RowVectorType;
-  HCoeffsType hCoeffs(size);
-  RowVectorType temp(cols);
-
-  Eigen::internal::householder_qr_inplace_blocked<MATRIX, HCoeffsType>::run(A, hCoeffs, 48, temp.data());
-
-  zeroBelowDiagonal(A);
-}
+void inplace_QR(Matrix& A);
 
 /**
  * Imperative algorithm for in-place full elimination with
@@ -525,17 +522,6 @@ DLT(const Matrix& A, double rank_tol = 1e-9);
  */
 GTSAM_EXPORT Matrix expm(const Matrix& A, size_t K=7);
 
-/// Cayley transform
-GTSAM_EXPORT Matrix Cayley(const Matrix& A);
-
-/// Implementation of Cayley transform using fixed size matrices to let
-/// Eigen do more optimization
-template<int N>
-Eigen::Matrix<double, N, N> CayleyFixed(const Eigen::Matrix<double, N, N>& A) {
-  typedef Eigen::Matrix<double, N, N> FMat;
-  return (FMat::Identity() - A)*(FMat::Identity() + A).inverse();
-}
-
 std::string formatMatrixIndented(const std::string& label, const Matrix& matrix, bool makeVectorHorizontal = false);
 
 } // namespace gtsam
@@ -568,4 +554,5 @@ namespace boost {
   } // namespace serialization
 } // namespace boost
 
-BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Matrix)
+BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Matrix);
+

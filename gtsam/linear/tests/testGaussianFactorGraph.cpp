@@ -316,30 +316,6 @@ TEST( GaussianFactorGraph, multiplyHessianAdd2 )
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, multiplyHessianAdd3 )
-{
-  GaussianFactorGraph gfg = createGaussianFactorGraphWithHessianFactor();
-
-  // brute force
-  Matrix AtA; Vector eta; boost::tie(AtA,eta) = gfg.hessian();
-  Vector X(6); X<<1,2,3,4,5,6;
-  Vector Y(6); Y<<-450, -450, 300, 400, 2950, 3450;
-  EXPECT(assert_equal(Y,AtA*X));
-
-    double* x = &X[0];
-
-    Vector fast_y = gtsam::zero(6);
-    gfg.multiplyHessianAdd(1.0, x, fast_y.data());
-    EXPECT(assert_equal(Y, fast_y));
-
-    // now, do it with non-zero y
-    gfg.multiplyHessianAdd(1.0, x, fast_y.data());
-    EXPECT(assert_equal(2*Y, fast_y));
-
-}
-
-
-/* ************************************************************************* */
 TEST( GaussianFactorGraph, matricesMixed )
 {
   GaussianFactorGraph gfg = createGaussianFactorGraphWithHessianFactor();
@@ -350,7 +326,6 @@ TEST( GaussianFactorGraph, matricesMixed )
   EXPECT(assert_equal(expected, eta));
   EXPECT(assert_equal(A.transpose()*b, eta));
 }
-
 
 /* ************************************************************************* */
 TEST( GaussianFactorGraph, gradientAtZero )

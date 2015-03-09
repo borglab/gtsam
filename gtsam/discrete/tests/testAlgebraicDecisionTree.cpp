@@ -40,6 +40,11 @@ using namespace gtsam;
 /* ******************************************************************************** */
 typedef AlgebraicDecisionTree<Key> ADT;
 
+// traits
+namespace gtsam {
+template<> struct traits<ADT> : public Testable<ADT> {};
+}
+
 #define DISABLE_DOT
 
 template<typename T>

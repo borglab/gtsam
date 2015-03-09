@@ -18,19 +18,8 @@
 
 #include <gtsam/inference/Symbol.h>
 
-#include <boost/mpl/char.hpp>
 #include <boost/format.hpp>
-#include <boost/function.hpp>
-#include <boost/lambda/construct.hpp>
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-variable"
-#endif
-#include <boost/lambda/bind.hpp>
-#include <boost/lambda/lambda.hpp>
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
+#include <boost/bind.hpp>
 
 #include <limits.h>
 #include <list>
@@ -71,10 +60,10 @@ Symbol::operator std::string() const {
   return str(boost::format("%c%d") % c_ % j_);
 }
 
+static Symbol make(gtsam::Key key) { return Symbol(key);}
+
 boost::function<bool(Key)> Symbol::ChrTest(unsigned char c) {
-  namespace bl = boost::lambda;
-  return bl::bind(&Symbol::chr, bl::bind(bl::constructor<Symbol>(), bl::_1))
-  == c;
+  return bind(&Symbol::chr, bind(make, _1)) == c;
 }
 
 } // namespace gtsam

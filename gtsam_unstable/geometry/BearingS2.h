@@ -99,4 +99,7 @@ private:
 
 };
 
+/// traits
+template<> struct traits<BearingS2> : public Testable<BearingS2> {};
+
 } // \namespace gtsam

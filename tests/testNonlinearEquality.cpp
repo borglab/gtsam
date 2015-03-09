@@ -408,8 +408,7 @@ TEST( testNonlinearEqualityConstraint, odo_simple_optimize ) {
 
   // odometry constraint
   eq2D::OdoEqualityConstraint::shared_ptr constraint2(
-      new eq2D::OdoEqualityConstraint(truth_pt1.between(truth_pt2), key1,
-          key2));
+      new eq2D::OdoEqualityConstraint(truth_pt2-truth_pt1, key1, key2));
 
   NonlinearFactorGraph graph;
   graph.push_back(constraint1);

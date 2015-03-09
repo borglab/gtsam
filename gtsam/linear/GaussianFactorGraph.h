@@ -310,10 +310,6 @@ namespace gtsam {
     void multiplyHessianAdd(double alpha, const VectorValues& x,
         VectorValues& y) const;
 
-    ///** y += alpha*A'A*x */
-    void multiplyHessianAdd(double alpha, const double* x,
-        double* y) const;
-
     ///** In-place version e <- A*x that overwrites e. */
     void multiplyInPlace(const VectorValues& x, Errors& e) const;
 
@@ -344,4 +340,9 @@ namespace gtsam {
   //GTSAM_EXPORT void residual(const GaussianFactorGraph& fg, const VectorValues &x, VectorValues &r);
   //GTSAM_EXPORT void multiply(const GaussianFactorGraph& fg, const VectorValues &x, VectorValues &r);
 
-} // namespace gtsam
+/// traits
+template<>
+struct traits<GaussianFactorGraph> : public Testable<GaussianFactorGraph> {
+};
+
+} // \ namespace gtsam

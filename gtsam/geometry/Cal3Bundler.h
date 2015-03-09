@@ -37,6 +37,8 @@ private:
 
 public:
 
+  enum { dimension = 3 };
+
   /// @name Standard Constructors
   /// @{
 
@@ -69,8 +71,8 @@ public:
   /// @name Standard Interface
   /// @{
 
-  Matrix K() const; ///< Standard 3*3 calibration matrix
-  Vector k() const; ///< Radial distortion parameters (4 of them, 2 0)
+  Matrix3 K() const; ///< Standard 3*3 calibration matrix
+  Vector4 k() const; ///< Radial distortion parameters (4 of them, 2 0)
 
   Vector3 vector() const;
 
@@ -106,43 +108,27 @@ public:
 
 
   /**
-   * convert intrinsic coordinates xy to image coordinates uv
-   * @param p point in intrinsic coordinates
-   * @return point in image coordinates
-   */
-  Point2 uncalibrate(const Point2& p) const;
-
-  /**
-   * Version of uncalibrate with fixed derivatives
+   * @brief: convert intrinsic coordinates xy to image coordinates uv
+   * Version of uncalibrate with derivatives
    * @param p point in intrinsic coordinates
    * @param Dcal optional 2*3 Jacobian wrpt CalBundler parameters
    * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
    * @return point in image coordinates
    */
-  Point2 uncalibrate(const Point2& p, boost::optional<Matrix23&> Dcal,
-      boost::optional<Matrix2&> Dp) const;
-
-  /**
-   * Version of uncalibrate with dynamic derivatives
-   * @param p point in intrinsic coordinates
-   * @param Dcal optional 2*3 Jacobian wrpt CalBundler parameters
-   * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
-   * @return point in image coordinates
-   */
-  Point2 uncalibrate(const Point2& p, boost::optional<Matrix&> Dcal,
-      boost::optional<Matrix&> Dp) const;
+  Point2 uncalibrate(const Point2& p, OptionalJacobian<2, 3> Dcal = boost::none,
+      OptionalJacobian<2, 2> Dp = boost::none) const;
 
   /// Conver a pixel coordinate to ideal coordinate
   Point2 calibrate(const Point2& pi, const double tol = 1e-5) const;
 
   /// @deprecated might be removed in next release, use uncalibrate
-  Matrix D2d_intrinsic(const Point2& p) const;
+  Matrix2 D2d_intrinsic(const Point2& p) const;
 
   /// @deprecated might be removed in next release, use uncalibrate
-  Matrix D2d_calibration(const Point2& p) const;
+  Matrix23 D2d_calibration(const Point2& p) const;
 
   /// @deprecated might be removed in next release, use uncalibrate
-  Matrix D2d_intrinsic_calibration(const Point2& p) const;
+  Matrix25 D2d_intrinsic_calibration(const Point2& p) const;
 
   /// @}
   /// @name Manifold
@@ -185,24 +171,10 @@ private:
 
 };
 
-// Define GTSAM traits
-namespace traits {
+template<>
+struct traits<Cal3Bundler> : public internal::Manifold<Cal3Bundler> {};
 
 template<>
-struct GTSAM_EXPORT is_manifold<Cal3Bundler> : public boost::true_type{
-};
-
-template<>
-struct GTSAM_EXPORT dimension<Cal3Bundler> : public boost::integral_constant<int, 3>{
-};
-
-template<>
-struct GTSAM_EXPORT zero<Cal3Bundler> {
-  static Cal3Bundler value() {
-    return Cal3Bundler(0, 0, 0);
-  }
-};
-
-}
+struct traits<const Cal3Bundler> : public internal::Manifold<Cal3Bundler> {};
 
 } // namespace gtsam

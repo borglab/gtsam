@@ -88,4 +88,9 @@ namespace gtsam {
 
   }; // Potentials
 
+// traits
+template<> struct traits<Potentials> : public Testable<Potentials> {};
+template<> struct traits<Potentials::ADT> : public Testable<Potentials::ADT> {};
+
+
 } // namespace gtsam

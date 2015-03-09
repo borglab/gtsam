@@ -88,7 +88,7 @@ namespace gtsam {
         // manifold equivalent of h(x)-z -> log(z,h(x))
         return prior_.localCoordinates(p.compose(*body_P_sensor_, H));
       } else {
-        if(H) (*H) = eye(p.dim());
+        if(H) (*H) = I_6x6;
         // manifold equivalent of h(x)-z -> log(z,h(x))
         return prior_.localCoordinates(p);
       }

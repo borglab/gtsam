@@ -17,21 +17,11 @@
  */
 
 #include <tests/smallExample.h>
-#include <gtsam/slam/PriorFactor.h>
-#include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/Values.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/GaussNewtonOptimizer.h>
-#include <gtsam/nonlinear/DoglegOptimizer.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/PCGSolver.h>
-#include <gtsam/linear/Preconditioner.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>
-#include <gtsam/linear/NoiseModel.h>
 #include <gtsam/inference/Symbol.h>
-#include <gtsam/geometry/Pose2.h>
 #include <gtsam/base/Matrix.h>
 
 #include <CppUnitLite/TestHarness.h>
@@ -89,6 +79,49 @@ TEST( PCGSolver, llt ) {
   xhat = Radapter.transpose().triangularView<Eigen::Upper>().solve(b);
   EXPECT(assert_equal(x, xhat, 1e-5));
 
+}
+
+/* ************************************************************************* */
+// Test GaussianFactorGraphSystem::multiply and getb
+TEST( GaussianFactorGraphSystem, multiply_getb)
+{
+  // Create a Gaussian Factor Graph
+  GaussianFactorGraph simpleGFG;
+  SharedDiagonal unit2 = noiseModel::Diagonal::Sigmas(Vector2(0.5, 0.3));
+  simpleGFG += JacobianFactor(2, (Matrix(2,2)<< 10, 0, 0, 10).finished(), (Vector(2) << -1, -1).finished(), unit2);
+  simpleGFG += JacobianFactor(2, (Matrix(2,2)<< -10, 0, 0, -10).finished(), 0, (Matrix(2,2)<< 10, 0, 0, 10).finished(), (Vector(2) << 2, -1).finished(), unit2);
+  simpleGFG += JacobianFactor(2, (Matrix(2,2)<< -5, 0, 0, -5).finished(), 1, (Matrix(2,2)<< 5, 0, 0, 5).finished(), (Vector(2) << 0, 1).finished(), unit2);
+  simpleGFG += JacobianFactor(0, (Matrix(2,2)<< -5, 0, 0, -5).finished(), 1, (Matrix(2,2)<< 5, 0, 0, 5).finished(), (Vector(2) << -1, 1.5).finished(), unit2);
+  simpleGFG += JacobianFactor(0, (Matrix(2,2)<< 1, 0, 0, 1).finished(), (Vector(2) << 0, 0).finished(), unit2);
+  simpleGFG += JacobianFactor(1, (Matrix(2,2)<< 1, 0, 0, 1).finished(), (Vector(2) << 0, 0).finished(), unit2);
+  simpleGFG += JacobianFactor(2, (Matrix(2,2)<< 1, 0, 0, 1).finished(), (Vector(2) << 0, 0).finished(), unit2);
+
+  // Create a dummy-preconditioner and a GaussianFactorGraphSystem
+  DummyPreconditioner dummyPreconditioner;
+  KeyInfo keyInfo(simpleGFG);
+  std::map<Key,Vector> lambda;
+  dummyPreconditioner.build(simpleGFG, keyInfo, lambda);
+  GaussianFactorGraphSystem gfgs(simpleGFG, dummyPreconditioner, keyInfo, lambda);
+
+  // Prepare container for each variable
+  Vector initial, residual, preconditionedResidual, p, actualAp;
+  initial = (Vector(6) << 0., 0., 0., 0., 0., 0.).finished();
+
+  // Calculate values using GaussianFactorGraphSystem same as inside of PCGSolver
+  gfgs.residual(initial, residual);                         /* r = b-Ax */
+  gfgs.leftPrecondition(residual, preconditionedResidual);  /* pr = L^{-1} (b-Ax) */
+  gfgs.rightPrecondition(preconditionedResidual, p);        /* p = L^{-T} pr */
+  gfgs.multiply(p, actualAp);                                     /* A p */
+
+  // Expected value of Ap for the first iteration of this example problem
+  Vector expectedAp = (Vector(6) << 100400, -249074.074, -2080, 148148.148, -146480, 37962.963).finished();
+  EXPECT(assert_equal(expectedAp, actualAp, 1e-3));
+
+  // Expected value of getb
+  Vector expectedb = (Vector(6) << 100.0, -194.444, -20.0, 138.889, -120.0, -55.556).finished();
+  Vector actualb;
+  gfgs.getb(actualb);
+  EXPECT(assert_equal(expectedb, actualb, 1e-3));
 }
 
 /* ************************************************************************* */

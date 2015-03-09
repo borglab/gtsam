@@ -90,11 +90,11 @@ namespace simulated2D {
       virtual double value(const Point& x, boost::optional<Matrix&> H =
           boost::none) const {
         if (H) {
-          Matrix D = zeros(1, x.dim());
+          Matrix D = zeros(1, traits<Point>::GetDimension(x));
           D(0, IDX) = 1.0;
           *H = D;
         }
-        return Point::Logmap(x)(IDX);
+        return traits<Point>::Logmap(x)(IDX);
       }
     };
 

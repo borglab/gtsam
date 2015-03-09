@@ -155,5 +155,7 @@ private:
 
 }; // \class LinearContainerFactor
 
+template<> struct traits<LinearContainerFactor> : public Testable<LinearContainerFactor> {};
+
 } // \namespace gtsam
 

@@ -340,7 +340,7 @@ namespace gtsam {
     /// Return the diagonal of the Hessian for this factor
     virtual VectorValues hessianDiagonal() const;
 
-    /* ************************************************************************* */
+    /// Raw memory access version of hessianDiagonal
     virtual void hessianDiagonal(double* d) const;
 
     /// Return the block diagonal of the Hessian for this factor
@@ -380,14 +380,17 @@ namespace gtsam {
     /** y += alpha * A'*A*x */
     void multiplyHessianAdd(double alpha, const VectorValues& x, VectorValues& y) const;
 
-    void multiplyHessianAdd(double alpha, const double* x, double* y, std::vector<size_t> keys) const;
-
-    void multiplyHessianAdd(double alpha, const double* x, double* y) const {};
-
     /// eta for Hessian
     VectorValues gradientAtZero() const;
 
+    /// Raw memory access version of gradientAtZero
     virtual void gradientAtZero(double* d) const;
+
+    /**
+     * Compute the gradient at a key:
+     *      \grad f(x_i) = \sum_j G_ij*x_j - g_i
+     */
+    Vector gradient(Key key, const VectorValues& x) const;
 
     /**
     *   Densely partially eliminate with Cholesky factorization.  JacobianFactors are
@@ -437,6 +440,11 @@ namespace gtsam {
     }
   };
 
-}
+/// traits
+template<>
+struct traits<HessianFactor> : public Testable<HessianFactor> {};
+
+} // \ namespace gtsam
+
 
 #include <gtsam/linear/HessianFactor-inl.h>

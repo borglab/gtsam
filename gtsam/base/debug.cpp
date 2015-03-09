@@ -17,9 +17,32 @@
  */
 
 #include <gtsam/base/debug.h>
+#ifdef GTSAM_USE_TBB
+#include <tbb/mutex.h>
+#endif
 
 namespace gtsam {
 
-  GTSAM_EXPORT FastMap<std::string, ValueWithDefault<bool,false> > debugFlags;
+GTSAM_EXPORT FastMap<std::string, ValueWithDefault<bool, false> > debugFlags;
+
+#ifdef GTSAM_USE_TBB
+tbb::mutex debugFlagsMutex;
+#endif
+
+/* ************************************************************************* */
+bool guardedIsDebug(const std::string& s) {
+#ifdef GTSAM_USE_TBB
+  tbb::mutex::scoped_lock lock(debugFlagsMutex);
+#endif
+  return gtsam::debugFlags[s];
+}
+
+/* ************************************************************************* */
+void guardedSetDebug(const std::string& s, const bool v) {
+#ifdef GTSAM_USE_TBB
+  tbb::mutex::scoped_lock lock(debugFlagsMutex);
+#endif
+  gtsam::debugFlags[s] = v;
+}
 
 }

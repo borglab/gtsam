@@ -20,8 +20,9 @@
 
 #pragma once
 
-#include <gtsam/base/Matrix.h>
 #include <gtsam/inference/Factor.h>
+#include <gtsam/base/Matrix.h>
+#include <gtsam/base/Testable.h>
 
 namespace gtsam {
 
@@ -99,7 +100,7 @@ namespace gtsam {
     /// Return the diagonal of the Hessian for this factor
     virtual VectorValues hessianDiagonal() const = 0;
 
-    /// Return the diagonal of the Hessian for this factor (raw memory version)
+    /// Raw memory access version of hessianDiagonal
     virtual void hessianDiagonal(double* d) const = 0;
 
     /// Return the block diagonal of the Hessian for this factor
@@ -121,17 +122,14 @@ namespace gtsam {
     /// y += alpha * A'*A*x
     virtual void multiplyHessianAdd(double alpha, const VectorValues& x, VectorValues& y) const = 0;
 
-    /// y += alpha * A'*A*x
-    virtual void multiplyHessianAdd(double alpha, const double* x, double* y, std::vector<size_t> keys) const = 0;
-
-    /// y += alpha * A'*A*x
-    virtual void multiplyHessianAdd(double alpha, const double* x, double* y) const = 0;
-
     /// A'*b for Jacobian, eta for Hessian
     virtual VectorValues gradientAtZero() const = 0;
 
-    /// A'*b for Jacobian, eta for Hessian (raw memory version)
+    /// Raw memory access version of gradientAtZero
     virtual void gradientAtZero(double* d) const = 0;
+
+    /// Gradient wrt a key at any values
+    virtual Vector gradient(Key key, const VectorValues& x) const = 0;
 
   private:
     /** Serialization function */
@@ -143,4 +141,9 @@ namespace gtsam {
 
   }; // GaussianFactor
   
-} // namespace gtsam
+/// traits
+template<>
+struct traits<GaussianFactor> : public Testable<GaussianFactor> {
+};
+
+} // \ namespace gtsam
