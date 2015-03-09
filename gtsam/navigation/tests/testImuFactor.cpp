@@ -913,13 +913,14 @@ TEST(ImuFactor, PredictRotation) {
     ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pre_int_data, gravity, omegaCoriolis);
 
     // Predict
-    Pose3 x1;
-    Vector3 v1(0, 0.0, 0.0);
-    PoseVelocityBias poseVelocity = pre_int_data.predict(x1, v1, bias, gravity, omegaCoriolis);
+    Pose3 x1, x2;
+    Vector3 v1 = Vector3(0, 0.0, 0.0);
+    Vector3 v2;
+    ImuFactor::Predict(x1, v1, x2, v2, bias, factor.preintegratedMeasurements(), gravity, omegaCoriolis);
     Pose3 expectedPose(Rot3().ypr(M_PI/10, 0, 0), Point3(0, 0, 0));
     Vector3 expectedVelocity; expectedVelocity<<0,0,0;
-    EXPECT(assert_equal(expectedPose, poseVelocity.pose));
-    EXPECT(assert_equal(Vector(expectedVelocity), Vector(poseVelocity.velocity)));
+    EXPECT(assert_equal(expectedPose, x2));
+    EXPECT(assert_equal(Vector(expectedVelocity), Vector(v2)));
 }
 
 /* ************************************************************************* */

@@ -320,11 +320,11 @@ TEST(CombinedImuFactor, PredictRotation) {
       Combined_pre_int_data, gravity, omegaCoriolis);
 
   // Predict
-  Pose3 x(Rot3().ypr(0,0, 0), Point3(0,0,0));
-  Vector3 v(0,0,0);
-  PoseVelocityBias poseVelocityBias = Combined_pre_int_data.predict(x,v,bias, gravity, omegaCoriolis);
+  Pose3 x(Rot3().ypr(0,0, 0), Point3(0,0,0)), x2;
+  Vector3 v(0,0,0), v2;
+  CombinedImuFactor::Predict(x, v, x2, v2, bias, Combinedfactor.preintegratedMeasurements(), gravity, omegaCoriolis);
   Pose3 expectedPose(Rot3().ypr(M_PI/10, 0,0), Point3(0,0,0));
-  EXPECT(assert_equal(expectedPose, poseVelocityBias.pose, tol));
+  EXPECT(assert_equal(expectedPose, x2, tol));
 }
 
 /* ************************************************************************* */
