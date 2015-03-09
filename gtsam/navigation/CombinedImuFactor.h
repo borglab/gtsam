@@ -218,7 +218,7 @@ public:
       const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis = false,
       boost::optional<Vector3&> deltaPij_biascorrected_out = boost::none,
       boost::optional<Vector3&> deltaVij_biascorrected_out = boost::none) {
-	  PoseVelocityBias PVB(PIM.Predict(pose_i, vel_i, bias_i, gravity, omegaCoriolis, use2ndOrderCoriolis, deltaPij_biascorrected_out, deltaVij_biascorrected_out));
+	  PoseVelocityBias PVB(PIM.predict(pose_i, vel_i, bias_i, gravity, omegaCoriolis, use2ndOrderCoriolis, deltaPij_biascorrected_out, deltaVij_biascorrected_out));
 	  pose_j = PVB.pose;
 	  vel_j = PVB.velocity;
   }

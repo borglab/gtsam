@@ -883,7 +883,7 @@ TEST(ImuFactor, PredictPositionAndVelocity){
     // Predict
     Pose3 x1;
     Vector3 v1(0, 0.0, 0.0);
-    PoseVelocityBias poseVelocity = pre_int_data.Predict(x1, v1, bias, gravity, omegaCoriolis);
+    PoseVelocityBias poseVelocity = pre_int_data.predict(x1, v1, bias, gravity, omegaCoriolis);
     Pose3 expectedPose(Rot3(), Point3(0, 0.5, 0));
     Vector3 expectedVelocity; expectedVelocity<<0,1,0;
     EXPECT(assert_equal(expectedPose, poseVelocity.pose));

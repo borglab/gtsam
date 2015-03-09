@@ -199,7 +199,7 @@ public:
 
   /// Predict state at time j
   //------------------------------------------------------------------------------
-  PoseVelocityBias Predict(const Pose3& pose_i, const Vector3& vel_i,
+  PoseVelocityBias predict(const Pose3& pose_i, const Vector3& vel_i,
       const imuBias::ConstantBias& bias_i, const Vector3& gravity,
       const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis = false,
       boost::optional<Vector3&> deltaPij_biascorrected_out = boost::none,
@@ -273,7 +273,7 @@ public:
     // Evaluate residual error, according to [3]
     /* ---------------------------------------------------------------------------------------------------- */
     Vector3 deltaPij_biascorrected, deltaVij_biascorrected;
-    PoseVelocityBias predictedState_j = Predict(pose_i, vel_i, bias_i, gravity,
+    PoseVelocityBias predictedState_j = predict(pose_i, vel_i, bias_i, gravity,
         omegaCoriolis, use2ndOrderCoriolis, deltaPij_biascorrected, deltaVij_biascorrected);
 
     // Ri.transpose() is important here to preserve a model with *additive* Gaussian noise of correct covariance
