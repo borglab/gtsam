@@ -213,12 +213,14 @@ public:
       boost::optional<Matrix&> H6 = boost::none) const;
 
   /** @deprecated The following function has been deprecated, use PreintegrationBase::predict with the same signature instead */
-  static PoseVelocityBias Predict(const Pose3& pose_i, const Vector3& vel_i,
+  static void Predict(const Pose3& pose_i, const Vector3& vel_i, Pose3& pose_j, Vector3& vel_j,
       const imuBias::ConstantBias& bias_i, const CombinedPreintegratedMeasurements& PIM, const Vector3& gravity,
       const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis = false,
       boost::optional<Vector3&> deltaPij_biascorrected_out = boost::none,
       boost::optional<Vector3&> deltaVij_biascorrected_out = boost::none) {
-	  return PIM.Predict(pose_i, vel_i, bias_i, gravity, omegaCoriolis, use2ndOrderCoriolis, deltaPij_biascorrected_out, deltaVij_biascorrected_out);
+	  PoseVelocityBias PVB(PIM.Predict(pose_i, vel_i, bias_i, gravity, omegaCoriolis, use2ndOrderCoriolis, deltaPij_biascorrected_out, deltaVij_biascorrected_out));
+	  pose_j = PVB.pose;
+	  vel_j = PVB.velocity;
   }
 
 
