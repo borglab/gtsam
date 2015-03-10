@@ -205,8 +205,9 @@ public:
       boost::optional<Vector3&> deltaPij_biascorrected_out = boost::none,
       boost::optional<Vector3&> deltaVij_biascorrected_out = boost::none) const {
 
-    const Vector3 biasAccIncr = bias_i.accelerometer() - biasHat().accelerometer();
-    const Vector3 biasOmegaIncr = bias_i.gyroscope() - biasHat().gyroscope();
+    const imuBias::ConstantBias biasIncr = bias_i - biasHat();
+    const Vector3& biasAccIncr = biasIncr.accelerometer();
+    const Vector3& biasOmegaIncr = biasIncr.gyroscope();
 
     const Rot3& Rot_i = pose_i.rotation();
     const Vector3& pos_i = pose_i.translation().vector();
@@ -262,7 +263,6 @@ public:
       OptionalJacobian<9, 6> H5 = boost::none) const {
 
     // We need the mismatch w.r.t. the biases used for preintegration
-    // const Vector3 biasAccIncr = bias_i.accelerometer() - biasHat().accelerometer(); // this is not necessary
     const Vector3 biasOmegaIncr = bias_i.gyroscope() - biasHat().gyroscope();
 
     // we give some shorter name to rotations and translations
@@ -284,7 +284,6 @@ public:
 
     // fR will be computed later. Note: it is the same as: fR = (predictedState_j.pose.translation()).between(Rot_j)
 
-    // Jacobian computation
     /* ---------------------------------------------------------------------------------------------------- */
     // Get Get so<3> version of bias corrected rotation
     // If H5 is asked for, we will need the Jacobian, which we store in H5
@@ -293,15 +292,15 @@ public:
     Vector3 biascorrectedOmega = biascorrectedThetaRij(biasOmegaIncr, H5 ? &D_cThetaRij_biasOmegaIncr : 0);
 
     // Coriolis term, note inconsistent with AHRS, where coriolisHat is *after* integration
-    const Matrix3 Ritranspose_omegaCoriolisHat = Ri.transpose() * skewSymmetric(omegaCoriolis);
     const Vector3 coriolis = integrateCoriolis(Ri, omegaCoriolis);
     Vector3 correctedOmega = biascorrectedOmega  - coriolis;
 
-    Rot3 correctedDeltaRij, fRrot;
+    // Calculate Jacobians, matrices below needed only for some Jacobians...
     Vector3 fR;
+    Rot3 correctedDeltaRij, fRrot;
+    Matrix3 D_cDeltaRij_cOmega, D_coriolis, D_fR_fRrot, Ritranspose_omegaCoriolisHat;
 
-    // Accessory matrix, used to build the jacobians
-    Matrix3 D_cDeltaRij_cOmega, D_coriolis, D_fR_fRrot;
+    if (H1 || H2) Ritranspose_omegaCoriolisHat = Ri.transpose() * skewSymmetric(omegaCoriolis);
 
     // This is done to save computation: we ask for the jacobians only when they are needed
     if(H1 || H2 || H3 || H4 || H5){
