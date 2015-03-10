@@ -160,7 +160,7 @@ TEST( SmartProjectionCameraFactor, noisy ) {
 
   // Check whitened errors
   Vector expected(4);
-  expected << 7, -235, -58, 242;
+  expected << -7, 235, 58, -242;
   SmartFactor::Cameras cameras1 = factor1->cameras(values);
   Point3 point1 = *factor1->point();
   Vector actual = factor1->whitenedError(cameras1, point1);
