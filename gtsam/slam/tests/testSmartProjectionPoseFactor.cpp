@@ -31,7 +31,6 @@
 using namespace boost::assign;
 
 static const double rankTol = 1.0;
-static const double linThreshold = -1.0;
 static const bool manageDegeneracy = true;
 
 // Create a noise model for the pixel error
@@ -62,7 +61,7 @@ TEST( SmartProjectionPoseFactor, Constructor) {
 /* ************************************************************************* */
 TEST( SmartProjectionPoseFactor, Constructor2) {
   using namespace vanillaPose;
-  SmartFactor factor1(SmartFactor::HESSIAN, rankTol, linThreshold);
+  SmartFactor factor1(SmartFactor::HESSIAN, rankTol);
 }
 
 /* ************************************************************************* */
@@ -75,7 +74,7 @@ TEST( SmartProjectionPoseFactor, Constructor3) {
 /* ************************************************************************* */
 TEST( SmartProjectionPoseFactor, Constructor4) {
   using namespace vanillaPose;
-  SmartFactor factor1(SmartFactor::HESSIAN, rankTol, linThreshold);
+  SmartFactor factor1(SmartFactor::HESSIAN, rankTol);
   factor1.add(measurement1, x1, model);
 }
 
@@ -248,7 +247,6 @@ TEST( SmartProjectionPoseFactor, 3poses_smart_projection_factor ) {
               Point3(0.1, -0.1, 1.9)), values.at<Camera>(x3).pose()));
 
   Values result;
-  params.verbosityLM = LevenbergMarquardtParams::SUMMARY;
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
 
@@ -458,7 +456,6 @@ TEST( SmartProjectionPoseFactor, 3poses_iterative_smart_projection_factor ) {
           values.at<Camera>(x3).pose()));
 
   Values result;
-  params.verbosityLM = LevenbergMarquardtParams::SUMMARY;
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
 
@@ -513,7 +510,6 @@ TEST( SmartProjectionPoseFactor, jacobianSVD ) {
   values.insert(x3, Camera(pose_above * noise_pose, sharedK));
 
   Values result;
-  params.verbosityLM = LevenbergMarquardtParams::SUMMARY;
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
   EXPECT(assert_equal(pose_above, result.at<Camera>(x3).pose(), 1e-8));
@@ -604,22 +600,22 @@ TEST( SmartProjectionPoseFactor, dynamicOutlierRejection ) {
   measurements_cam4.at(0) = measurements_cam4.at(0) + Point2(10, 10); // add outlier
 
   SmartFactor::shared_ptr smartFactor1(
-      new SmartFactor(SmartFactor::JACOBIAN_SVD, 1, -1, false, false,
+      new SmartFactor(SmartFactor::JACOBIAN_SVD, 1, false, false,
           excludeLandmarksFutherThanDist, dynamicOutlierRejectionThreshold));
   smartFactor1->add(measurements_cam1, views, model);
 
   SmartFactor::shared_ptr smartFactor2(
-      new SmartFactor(SmartFactor::JACOBIAN_SVD, 1, -1, false, false,
+      new SmartFactor(SmartFactor::JACOBIAN_SVD, 1, false, false,
           excludeLandmarksFutherThanDist, dynamicOutlierRejectionThreshold));
   smartFactor2->add(measurements_cam2, views, model);
 
   SmartFactor::shared_ptr smartFactor3(
-      new SmartFactor(SmartFactor::JACOBIAN_SVD, 1, -1, false, false,
+      new SmartFactor(SmartFactor::JACOBIAN_SVD, 1, false, false,
           excludeLandmarksFutherThanDist, dynamicOutlierRejectionThreshold));
   smartFactor3->add(measurements_cam3, views, model);
 
   SmartFactor::shared_ptr smartFactor4(
-      new SmartFactor(SmartFactor::JACOBIAN_SVD, 1, -1, false, false,
+      new SmartFactor(SmartFactor::JACOBIAN_SVD, 1, false, false,
           excludeLandmarksFutherThanDist, dynamicOutlierRejectionThreshold));
   smartFactor4->add(measurements_cam4, views, model);
 
@@ -663,15 +659,15 @@ TEST( SmartProjectionPoseFactor, jacobianQ ) {
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
 
   SmartFactor::shared_ptr smartFactor1(
-      new SmartFactor(SmartFactor::JACOBIAN_Q, 1, -1, false, false));
+      new SmartFactor(SmartFactor::JACOBIAN_Q, 1, false, false));
   smartFactor1->add(measurements_cam1, views, model);
 
   SmartFactor::shared_ptr smartFactor2(
-      new SmartFactor(SmartFactor::JACOBIAN_Q, 1, -1, false, false));
+      new SmartFactor(SmartFactor::JACOBIAN_Q, 1, false, false));
   smartFactor2->add(measurements_cam2, views, model);
 
   SmartFactor::shared_ptr smartFactor3(
-      new SmartFactor(SmartFactor::JACOBIAN_Q, 1, -1, false, false));
+      new SmartFactor(SmartFactor::JACOBIAN_Q, 1, false, false));
   smartFactor3->add(measurements_cam3, views, model);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
@@ -749,7 +745,6 @@ TEST( SmartProjectionPoseFactor, 3poses_projection_factor ) {
   DOUBLES_EQUAL(48406055, graph.error(values), 1);
 
   cout << "SUCCEEDS : ==============================================" << endl;
-  params.verbosityLM = LevenbergMarquardtParams::SUMMARY;
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   Values result = optimizer.optimize();
   cout << "=========================================================" << endl;
@@ -869,13 +864,11 @@ TEST( SmartProjectionPoseFactor, 3poses_2land_rotation_only_smart_projection_fac
 
   double rankTol = 50;
   SmartFactor::shared_ptr smartFactor1(
-      new SmartFactor(SmartFactor::HESSIAN, rankTol, linThreshold,
-          manageDegeneracy));
+      new SmartFactor(SmartFactor::HESSIAN, rankTol, manageDegeneracy));
   smartFactor1->add(measurements_cam1, views, model);
 
   SmartFactor::shared_ptr smartFactor2(
-      new SmartFactor(SmartFactor::HESSIAN, rankTol, linThreshold,
-          manageDegeneracy));
+      new SmartFactor(SmartFactor::HESSIAN, rankTol, manageDegeneracy));
   smartFactor2->add(measurements_cam2, views, model);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
@@ -950,18 +943,15 @@ TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) 
   double rankTol = 10;
 
   SmartFactor::shared_ptr smartFactor1(
-      new SmartFactor(SmartFactor::HESSIAN, rankTol, linThreshold,
-          manageDegeneracy));
+      new SmartFactor(SmartFactor::HESSIAN, rankTol, manageDegeneracy));
   smartFactor1->add(measurements_cam1, views, model);
 
   SmartFactor::shared_ptr smartFactor2(
-      new SmartFactor(SmartFactor::HESSIAN, rankTol, linThreshold,
-          manageDegeneracy));
+      new SmartFactor(SmartFactor::HESSIAN, rankTol, manageDegeneracy));
   smartFactor2->add(measurements_cam2, views, model);
 
   SmartFactor::shared_ptr smartFactor3(
-      new SmartFactor(SmartFactor::HESSIAN, rankTol, linThreshold,
-          manageDegeneracy));
+      new SmartFactor(SmartFactor::HESSIAN, rankTol, manageDegeneracy));
   smartFactor3->add(measurements_cam3, views, model);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
@@ -1159,7 +1149,7 @@ TEST( SmartProjectionPoseFactor, HessianWithRotationDegenerate ) {
 /* ************************************************************************* */
 TEST( SmartProjectionPoseFactor, ConstructorWithCal3Bundler) {
   using namespace bundlerPose;
-  SmartFactor factor(SmartFactor::HESSIAN, rankTol, linThreshold);
+  SmartFactor factor(SmartFactor::HESSIAN, rankTol);
   factor.add(measurement1, x1, model);
 }
 
@@ -1218,7 +1208,6 @@ TEST( SmartProjectionPoseFactor, Cal3Bundler ) {
               Point3(0.1, -0.1, 1.9)), values.at<Camera>(x3).pose()));
 
   Values result;
-  params.verbosityLM = LevenbergMarquardtParams::SUMMARY;
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
 
@@ -1255,18 +1244,15 @@ TEST( SmartProjectionPoseFactor, Cal3BundlerRotationOnly ) {
   double rankTol = 10;
 
   SmartFactor::shared_ptr smartFactor1(
-      new SmartFactor(SmartFactor::HESSIAN, rankTol, linThreshold,
-          manageDegeneracy));
+      new SmartFactor(SmartFactor::HESSIAN, rankTol, manageDegeneracy));
   smartFactor1->add(measurements_cam1, views, model);
 
   SmartFactor::shared_ptr smartFactor2(
-      new SmartFactor(SmartFactor::HESSIAN, rankTol, linThreshold,
-          manageDegeneracy));
+      new SmartFactor(SmartFactor::HESSIAN, rankTol, manageDegeneracy));
   smartFactor2->add(measurements_cam2, views, model);
 
   SmartFactor::shared_ptr smartFactor3(
-      new SmartFactor(SmartFactor::HESSIAN, rankTol, linThreshold,
-          manageDegeneracy));
+      new SmartFactor(SmartFactor::HESSIAN, rankTol, manageDegeneracy));
   smartFactor3->add(measurements_cam3, views, model);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
