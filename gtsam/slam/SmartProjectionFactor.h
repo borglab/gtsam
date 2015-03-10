@@ -135,6 +135,7 @@ public:
   void print(const std::string& s = "", const KeyFormatter& keyFormatter =
       DefaultKeyFormatter) const {
     std::cout << s << "SmartProjectionFactor\n";
+    std::cout << "linearizationMode:\n" << linearizeTo_ << std::endl;
     std::cout << "triangulationParameters:\n" << parameters_ << std::endl;
     std::cout << "result:\n" << result_ << std::endl;
     Base::print("", keyFormatter);
@@ -143,7 +144,7 @@ public:
   /// equals
   virtual bool equals(const NonlinearFactor& p, double tol = 1e-9) const {
     const This *e = dynamic_cast<const This*>(&p);
-    return e && Base::equals(p, tol);
+    return e && linearizeTo_==e->linearizeTo_ && Base::equals(p, tol);
   }
 
   /// Check if the new linearization point is the same as the one used for previous triangulation
