@@ -20,8 +20,8 @@
 #include <gtsam/base/timing.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/FastList.h>
-#include <gtsam/3rdparty/Eigen/Eigen/SVD>  
-#include <gtsam/3rdparty/Eigen/Eigen/LU>
+#include <Eigen/SVD>
+#include <Eigen/LU>
 
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>

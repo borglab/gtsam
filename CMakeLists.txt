@@ -196,8 +196,7 @@ endif()
 ### See:  http://eigen.tuxfamily.org/bz/show_bug.cgi?id=704 (Householder QR MKL selection)
 ###       http://eigen.tuxfamily.org/bz/show_bug.cgi?id=705 (Fix MKL LLT return code)
 ###       http://eigen.tuxfamily.org/bz/show_bug.cgi?id=716 (Improved comma initialization)
-# option(GTSAM_USE_SYSTEM_EIGEN "Find and use system-installed Eigen. If 'off', use the one bundled with GTSAM" OFF)
-set(GTSAM_USE_SYSTEM_EIGEN OFF)
+option(GTSAM_USE_SYSTEM_EIGEN "Find and use system-installed Eigen. If 'off', use the one bundled with GTSAM" OFF)
 
 # Switch for using system Eigen or GTSAM-bundled Eigen
 if(GTSAM_USE_SYSTEM_EIGEN)
@@ -207,13 +206,16 @@ if(GTSAM_USE_SYSTEM_EIGEN)
 	find_package(Eigen3 REQUIRED)
 	include_directories(AFTER "${EIGEN3_INCLUDE_DIR}")
 else()
-	# Use bundled Eigen include paths e.g. <gtsam/3rdparty/Eigen/Eigen/Core>
+	# Use bundled Eigen include path. 
 	set(GTSAM_EIGEN_INCLUDE_PREFIX "gtsam/3rdparty/Eigen/")
 
 	# Clear any variables set by FindEigen3
 	if(EIGEN3_INCLUDE_DIR)
 		set(EIGEN3_INCLUDE_DIR NOTFOUND CACHE STRING "" FORCE)
 	endif()
+	# Add the bundled version of eigen to the include path so that it can still be included
+	# with  #include <Eigen/Core>
+	include_directories(BEFORE ${GTSAM_EIGEN_INCLUDE_PREFIX})
 endif()
 
 # Write Eigen include file with the paths for either the system Eigen or the GTSAM-bundled Eigen
@@ -388,6 +390,11 @@ if(NOT MSVC AND NOT XCODE_VERSION)
     message(STATUS "  Build type                     : ${CMAKE_BUILD_TYPE}")
     message(STATUS "  C compilation flags            : ${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_${cmake_build_type_toupper}}")
     message(STATUS "  C++ compilation flags          : ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${cmake_build_type_toupper}}")
+endif()
+if(GTSAM_USE_SYSTEM_EIGEN)
+    message(STATUS "  Use System Eigen               : Yes")
+else()
+    message(STATUS "  Use System Eigen               : No")
 endif()
 if(GTSAM_USE_TBB)
 	message(STATUS "  Use Intel TBB                  : Yes")
