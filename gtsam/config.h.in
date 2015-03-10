@@ -42,6 +42,9 @@
 // Whether we are using TBB (if TBB was found and GTSAM_WITH_TBB is enabled in CMake)
 #cmakedefine GTSAM_USE_TBB
 
+// Whether we are using system-Eigen or our own patched version
+#cmakedefine GTSAM_USE_SYSTEM_EIGEN
+
 // Whether Eigen will use MKL (if MKL was found and GTSAM_WITH_EIGEN_MKL is enabled in CMake)
 #cmakedefine GTSAM_USE_EIGEN_MKL
 #cmakedefine EIGEN_USE_MKL_ALL // This is also defined in gtsam_eigen_includes.h
