@@ -202,7 +202,7 @@ public:
         areMeasurementsEqual = false;
       break;
     }
-    return e && equals(p, tol) && areMeasurementsEqual;
+    return e && Base::equals(p, tol) && areMeasurementsEqual;
   }
 
   ///Compute reprojection errors [h(x)-z] = [cameras.project(p)-z] and derivatives
