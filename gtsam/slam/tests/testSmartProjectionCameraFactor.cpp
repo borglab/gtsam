@@ -242,9 +242,11 @@ TEST( SmartProjectionCameraFactor, perturbPoseAndOptimize ) {
 
   // Check whitened errors
   Vector expected(6);
-  expected << -256, -29, 26, -29, 206, 202;
-  SmartFactor::Cameras cameras1 = smartFactor1->cameras(initial);
+  expected << 256, 29, -26, 29, -206, -202;
   Point3 point1 = *smartFactor1->point();
+  SmartFactor::Cameras cameras1 = smartFactor1->cameras(initial);
+  Vector reprojectionError = cameras1.reprojectionError(point1, measurements_cam1);
+  EXPECT(assert_equal(expected, reprojectionError, 1));
   Vector actual = smartFactor1->whitenedError(cameras1, point1);
   EXPECT(assert_equal(expected, actual, 1));
 
