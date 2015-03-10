@@ -106,8 +106,8 @@ public:
     Ab(size()).col(0) = - traits<T>::Local(measurement_, hx); // - unwhitenedError(x_bar)
 
     // Whiten the corresponding system, Ab already contains RHS
-    Vector dummy(Dim);
-    noiseModel_->WhitenSystem(Ab.matrix(), dummy);
+    Vector b = Ab(size()).col(0); // need b to be valid for Robust noise models
+    noiseModel_->WhitenSystem(Ab.matrix(), b);
 
     return factor;
   }

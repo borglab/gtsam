@@ -25,7 +25,7 @@ set(matlab_examples_data ${matlab_examples_data_graph} ${matlab_examples_data_ma
 if(GTSAM_BUILD_TYPE_POSTFIXES)
 	foreach(build_type ${CMAKE_CONFIGURATION_TYPES})
 		string(TOUPPER "${build_type}" build_type_upper)
-		if("${build_type_upper}" STREQUAL "RELEASE")
+		if(${build_type_upper} STREQUAL "RELEASE")
 			set(build_type_tag "") # Don't create release mode tag on installed directory
 		else()
 			set(build_type_tag "${build_type}")

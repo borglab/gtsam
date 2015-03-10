@@ -973,7 +973,7 @@ TEST( SmartStereoProjectionPoseFactor, HessianWithRotation ) {
   // Hessian is invariant to rotations and translations in the nondegenerate case
   EXPECT(
       assert_equal(hessianFactor->information(),
-          hessianFactorRotTran->information(), 1e-7));
+          hessianFactorRotTran->information(), 1e-6));
 }
 
 /* *************************************************************************/

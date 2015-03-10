@@ -26,6 +26,12 @@ ei_add_failtest("block_on_const_type_actually_const_1")
 ei_add_failtest("transpose_on_const_type_actually_const")
 ei_add_failtest("diagonal_on_const_type_actually_const")
 
+ei_add_failtest("ref_1")
+ei_add_failtest("ref_2")
+ei_add_failtest("ref_3")
+ei_add_failtest("ref_4")
+ei_add_failtest("ref_5")
+
 if (EIGEN_FAILTEST_FAILURE_COUNT)
   message(FATAL_ERROR
           "${EIGEN_FAILTEST_FAILURE_COUNT} out of ${EIGEN_FAILTEST_COUNT} failtests FAILED. "
