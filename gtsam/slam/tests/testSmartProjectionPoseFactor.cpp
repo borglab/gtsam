@@ -121,7 +121,7 @@ TEST_UNSAFE( SmartProjectionPoseFactor, noiseless ) {
 
   // Calculate expected derivative for point (easiest to check)
   boost::function<Vector(Point3)> f = //
-      boost::bind(&SmartFactor::whitenedErrors, factor, cameras, _1);
+      boost::bind(&SmartFactor::whitenedError<Point3>, factor, cameras, _1);
 
   // Calculate using computeEP
   Matrix actualE;
@@ -138,7 +138,7 @@ TEST_UNSAFE( SmartProjectionPoseFactor, noiseless ) {
   // Calculate using reprojectionError
   SmartFactor::Cameras::FBlocks F;
   Matrix E;
-  Vector actualErrors = factor.reprojectionError(cameras, *point, F, E);
+  Vector actualErrors = factor.unwhitenedError(cameras, *point, F, E);
   EXPECT(assert_equal(expectedE, E, 1e-7));
 
   EXPECT(assert_equal(zero(4), actualErrors, 1e-7));
@@ -146,7 +146,8 @@ TEST_UNSAFE( SmartProjectionPoseFactor, noiseless ) {
   // Calculate using computeJacobians
   Vector b;
   vector<SmartFactor::MatrixZD> Fblocks;
-  double actualError3 = factor.computeJacobians(Fblocks, E, b, cameras, *point);
+  factor.computeJacobians(Fblocks, E, b, cameras, *point);
+  double actualError3 = b.squaredNorm();
   EXPECT(assert_equal(expectedE, E, 1e-7));
   EXPECT_DOUBLES_EQUAL(expectedError, actualError3, 1e-8);
 }
