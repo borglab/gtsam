@@ -270,13 +270,13 @@ TEST( CombinedImuFactor, FirstOrderPreIntegratedMeasurements )
 
 /* ************************************************************************* */
 TEST(CombinedImuFactor, PredictPositionAndVelocity){
-  imuBias::ConstantBias bias(Vector3(0, 0, 0), Vector3(0, 0, 0)); // Biases (acc, rot)
+  imuBias::ConstantBias bias(Vector3(0, 0.1, 0), Vector3(0, 0.1, 0)); // Biases (acc, rot)
 
   // Measurements
   Vector3 gravity; gravity << 0, 0, 9.81;
   Vector3 omegaCoriolis; omegaCoriolis << 0, 0, 0;
-  Vector3 measuredOmega; measuredOmega << 0, 0, 0;//M_PI/10.0+0.3;
-  Vector3 measuredAcc; measuredAcc << 0,1,-9.81;
+  Vector3 measuredOmega; measuredOmega << 0, 0.1, 0;//M_PI/10.0+0.3;
+  Vector3 measuredAcc; measuredAcc << 0,1.1,-9.81;
   double deltaT = 0.001;
 
   Matrix I6x6(6,6);
