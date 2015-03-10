@@ -46,21 +46,26 @@ struct SmartProjectionFactorState {
   double f;
 };
 
-enum LinearizationMode {
-  HESSIAN, JACOBIAN_SVD, JACOBIAN_Q
-};
-
 /**
  * SmartProjectionFactor: triangulates point and keeps an estimate of it around.
  */
 template<class CAMERA>
 class SmartProjectionFactor: public SmartFactorBase<CAMERA> {
 
+public:
+
+  /// Linearization mode: what factor to linearize to
+  enum LinearizationMode {
+    HESSIAN, IMPLICIT_SCHUR, JACOBIAN_Q, JACOBIAN_SVD
+  };
+
 private:
   typedef SmartFactorBase<CAMERA> Base;
   typedef SmartProjectionFactor<CAMERA> This;
 
 protected:
+
+  LinearizationMode linearizeTo_; ///< How to linearize the factor
 
   /// @name Caching triangulation
   /// @{
@@ -104,16 +109,16 @@ public:
    * otherwise the factor is simply neglected
    * @param enableEPI if set to true linear triangulation is refined with embedded LM iterations
    */
-  SmartProjectionFactor(const double rankTolerance, const double linThreshold,
-      const bool manageDegeneracy, const bool enableEPI,
+  SmartProjectionFactor(LinearizationMode linearizationMode = HESSIAN,
+      double rankTolerance = 1, double linThreshold = -1,
+      bool manageDegeneracy = false, bool enableEPI = false,
       double landmarkDistanceThreshold = 1e10,
       double dynamicOutlierRejectionThreshold = -1, SmartFactorStatePtr state =
           SmartFactorStatePtr(new SmartProjectionFactorState())) :
-      parameters_(rankTolerance, enableEPI, landmarkDistanceThreshold,
-          dynamicOutlierRejectionThreshold), //
+      linearizeTo_(linearizationMode), parameters_(rankTolerance, enableEPI,
+          landmarkDistanceThreshold, dynamicOutlierRejectionThreshold), //
       result_(TriangulationResult::Degenerate()), //
-      retriangulationThreshold_(1e-5), //
-      manageDegeneracy_(manageDegeneracy), //
+      retriangulationThreshold_(1e-5), manageDegeneracy_(manageDegeneracy), //
       throwCheirality_(false), verboseCheirality_(false), //
       state_(state), linearizationThreshold_(linThreshold) {
   }
@@ -133,6 +138,12 @@ public:
     std::cout << "triangulationParameters:\n" << parameters_ << std::endl;
     std::cout << "result:\n" << result_ << std::endl;
     Base::print("", keyFormatter);
+  }
+
+  /// equals
+  virtual bool equals(const NonlinearFactor& p, double tol = 1e-9) const {
+    const This *e = dynamic_cast<const This*>(&p);
+    return e && Base::equals(p, tol);
   }
 
   /// Check if the new linearization point is the same as the one used for previous triangulation
@@ -358,6 +369,53 @@ public:
       return boost::make_shared<JacobianFactorSVD<Base::Dim, 2> >(this->keys_);
   }
 
+  /// linearize to a Hessianfactor
+  virtual boost::shared_ptr<RegularHessianFactor<Base::Dim> > linearizeToHessian(
+      const Values& values, double lambda = 0.0) const {
+    return createHessianFactor(this->cameras(values), lambda);
+  }
+
+  /// linearize to an Implicit Schur factor
+  virtual boost::shared_ptr<RegularImplicitSchurFactor<CAMERA> > linearizeToImplicit(
+      const Values& values, double lambda = 0.0) const {
+    return createRegularImplicitSchurFactor(this->cameras(values), lambda);
+  }
+
+  /// linearize to a JacobianfactorQ
+  virtual boost::shared_ptr<JacobianFactorQ<Base::Dim, 2> > linearizeToJacobian(
+      const Values& values, double lambda = 0.0) const {
+    return createJacobianQFactor(this->cameras(values), lambda);
+  }
+
+  /**
+   * Linearize to Gaussian Factor
+   * @param values Values structure which must contain camera poses for this factor
+   * @return a Gaussian factor
+   */
+  boost::shared_ptr<GaussianFactor> linearizeDamped(const Values& values,
+      const double lambda = 0.0) const {
+    // depending on flag set on construction we may linearize to different linear factors
+    Cameras cameras = this->cameras(values);
+    switch (linearizeTo_) {
+    case HESSIAN:
+      return createHessianFactor(cameras, lambda);
+    case IMPLICIT_SCHUR:
+      return createRegularImplicitSchurFactor(cameras, lambda);
+    case JACOBIAN_SVD:
+      return createJacobianSVDFactor(cameras, lambda);
+    case JACOBIAN_Q:
+      return createJacobianQFactor(cameras, lambda);
+    default:
+      throw std::runtime_error("SmartFactorlinearize: unknown mode");
+    }
+  }
+
+  /// linearize
+  virtual boost::shared_ptr<GaussianFactor> linearize(
+      const Values& values) const {
+    return linearizeDamped(values);
+  }
+
   /**
    * Triangulate and compute derivative of error with respect to point
    * @return whether triangulation worked
@@ -380,7 +438,8 @@ public:
     if (!result_) {
       // Handle degeneracy
       // TODO check flag whether we should do this
-      Unit3 backProjected = cameras[0].backprojectPointAtInfinity(this->measured_.at(0));
+      Unit3 backProjected = cameras[0].backprojectPointAtInfinity(
+          this->measured_.at(0));
       Base::computeJacobians(Fblocks, E, b, cameras, backProjected);
     } else {
       // valid result: just return Base version
@@ -447,6 +506,15 @@ public:
       return 0.0;
   }
 
+  /// Calculate total reprojection error
+  virtual double error(const Values& values) const {
+    if (this->active(values)) {
+      return totalReprojectionError(Base::cameras(values));
+    } else { // else of active flag
+      return 0.0;
+    }
+  }
+
   /** return the landmark */
   TriangulationResult point() const {
     return result_;
@@ -493,6 +561,12 @@ private:
     ar & BOOST_SERIALIZATION_NVP(throwCheirality_);
     ar & BOOST_SERIALIZATION_NVP(verboseCheirality_);
   }
+};
+
+/// traits
+template<class CAMERA>
+struct traits<SmartProjectionFactor<CAMERA> > : public Testable<
+    SmartProjectionFactor<CAMERA> > {
 };
 
 } // \ namespace gtsam

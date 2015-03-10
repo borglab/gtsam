@@ -189,7 +189,7 @@ public:
       std::cout << "measurement, p = " << measured_[k] << "\t";
       noiseModel_->print("noise model = ");
     }
-    Base::print("", keyFormatter);
+    print("", keyFormatter);
   }
 
   /// equals
@@ -202,12 +202,10 @@ public:
         areMeasurementsEqual = false;
       break;
     }
-    return e && Base::equals(p, tol) && areMeasurementsEqual;
+    return e && equals(p, tol) && areMeasurementsEqual;
   }
 
-  /**
-   *  Compute reprojection errors [h(x)-z] = [cameras.project(p)-z] and derivatives
-   */
+  ///Compute reprojection errors [h(x)-z] = [cameras.project(p)-z] and derivatives
   template<class POINT>
   Vector unwhitenedError(const Cameras& cameras, const POINT& point,
       boost::optional<typename Cameras::FBlocks&> Fs = boost::none, //
@@ -294,9 +292,7 @@ public:
     Enull = svd.matrixU().block(0, N, ZDim * m, ZDim * m - N); // last ZDim*m-N columns
   }
 
-  /**
-   * Linearize to a Hessianfactor
-   */
+  /// Linearize to a Hessianfactor
   boost::shared_ptr<RegularHessianFactor<Dim> > createHessianFactor(
       const Cameras& cameras, const Point3& point, const double lambda = 0.0,
       bool diagonalDamping = false) const {
@@ -341,9 +337,7 @@ public:
       F[i] = noiseModel_->Whiten(F[i]);
   }
 
-  /**
-   * Return Jacobians as RegularImplicitSchurFactor with raw access
-   */
+  /// Return Jacobians as RegularImplicitSchurFactor with raw access
   boost::shared_ptr<RegularImplicitSchurFactor<CAMERA> > //
   createRegularImplicitSchurFactor(const Cameras& cameras, const Point3& point,
       double lambda = 0.0, bool diagonalDamping = false) const {
@@ -374,7 +368,7 @@ public:
   }
 
   /**
-   * Return Jacobians as JacobianFactor
+   * Return Jacobians as JacobianFactorSVD
    * TODO lambda is currently ignored
    */
   boost::shared_ptr<JacobianFactor> createJacobianSVDFactor(

@@ -20,7 +20,7 @@
  */
 
 #include "smartFactorScenarios.h"
-#include <gtsam/slam/SmartProjectionCameraFactor.h>
+#include <gtsam/slam/SmartProjectionFactor.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <CppUnitLite/TestHarness.h>
 #include <boost/assign/std/map.hpp>
@@ -42,9 +42,6 @@ Symbol l1('l', 1), l2('l', 2), l3('l', 3);
 Key c1 = 1, c2 = 2, c3 = 3;
 
 static Point2 measurement1(323.0, 240.0);
-
-typedef SmartProjectionCameraFactor<Cal3_S2> SmartFactor;
-typedef SmartProjectionCameraFactor<Cal3Bundler> SmartFactorBundler;
 
 template<class CALIBRATION>
 PinholeCamera<CALIBRATION> perturbCameraPoseAndCalibration(
@@ -82,7 +79,7 @@ TEST( SmartProjectionCameraFactor, Constructor) {
 /* ************************************************************************* */
 TEST( SmartProjectionCameraFactor, Constructor2) {
   using namespace vanilla;
-  SmartFactor factor1(rankTol, linThreshold);
+  SmartFactor factor1(SmartFactor::HESSIAN, rankTol, linThreshold);
 }
 
 /* ************************************************************************* */
@@ -95,7 +92,7 @@ TEST( SmartProjectionCameraFactor, Constructor3) {
 /* ************************************************************************* */
 TEST( SmartProjectionCameraFactor, Constructor4) {
   using namespace vanilla;
-  SmartFactor factor1(rankTol, linThreshold);
+  SmartFactor factor1(SmartFactor::HESSIAN, rankTol, linThreshold);
   factor1.add(measurement1, x1, unit2);
 }
 
@@ -457,19 +454,19 @@ TEST( SmartProjectionCameraFactor, Cal3Bundler ) {
   views.push_back(c2);
   views.push_back(c3);
 
-  SmartFactorBundler::shared_ptr smartFactor1(new SmartFactorBundler());
+  SmartFactor::shared_ptr smartFactor1(new SmartFactor());
   smartFactor1->add(measurements_cam1, views, unit2);
 
-  SmartFactorBundler::shared_ptr smartFactor2(new SmartFactorBundler());
+  SmartFactor::shared_ptr smartFactor2(new SmartFactor());
   smartFactor2->add(measurements_cam2, views, unit2);
 
-  SmartFactorBundler::shared_ptr smartFactor3(new SmartFactorBundler());
+  SmartFactor::shared_ptr smartFactor3(new SmartFactor());
   smartFactor3->add(measurements_cam3, views, unit2);
 
-  SmartFactorBundler::shared_ptr smartFactor4(new SmartFactorBundler());
+  SmartFactor::shared_ptr smartFactor4(new SmartFactor());
   smartFactor4->add(measurements_cam4, views, unit2);
 
-  SmartFactorBundler::shared_ptr smartFactor5(new SmartFactorBundler());
+  SmartFactor::shared_ptr smartFactor5(new SmartFactor());
   smartFactor5->add(measurements_cam5, views, unit2);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(9, 1e-6);
@@ -533,19 +530,19 @@ TEST( SmartProjectionCameraFactor, Cal3Bundler2 ) {
   views.push_back(c2);
   views.push_back(c3);
 
-  SmartFactorBundler::shared_ptr smartFactor1(new SmartFactorBundler());
+  SmartFactor::shared_ptr smartFactor1(new SmartFactor());
   smartFactor1->add(measurements_cam1, views, unit2);
 
-  SmartFactorBundler::shared_ptr smartFactor2(new SmartFactorBundler());
+  SmartFactor::shared_ptr smartFactor2(new SmartFactor());
   smartFactor2->add(measurements_cam2, views, unit2);
 
-  SmartFactorBundler::shared_ptr smartFactor3(new SmartFactorBundler());
+  SmartFactor::shared_ptr smartFactor3(new SmartFactor());
   smartFactor3->add(measurements_cam3, views, unit2);
 
-  SmartFactorBundler::shared_ptr smartFactor4(new SmartFactorBundler());
+  SmartFactor::shared_ptr smartFactor4(new SmartFactor());
   smartFactor4->add(measurements_cam4, views, unit2);
 
-  SmartFactorBundler::shared_ptr smartFactor5(new SmartFactorBundler());
+  SmartFactor::shared_ptr smartFactor5(new SmartFactor());
   smartFactor5->add(measurements_cam5, views, unit2);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(9, 1e-6);
@@ -597,7 +594,7 @@ TEST( SmartProjectionCameraFactor, noiselessBundler ) {
   values.insert(c1, level_camera);
   values.insert(c2, level_camera_right);
 
-  SmartFactorBundler::shared_ptr factor1(new SmartFactorBundler());
+  SmartFactor::shared_ptr factor1(new SmartFactor());
   factor1->add(level_uv, c1, unit2);
   factor1->add(level_uv_right, c2, unit2);
 
@@ -626,7 +623,7 @@ TEST( SmartProjectionCameraFactor, comparisonGeneralSfMFactor ) {
   values.insert(c2, level_camera_right);
 
   NonlinearFactorGraph smartGraph;
-  SmartFactorBundler::shared_ptr factor1(new SmartFactorBundler());
+  SmartFactor::shared_ptr factor1(new SmartFactor());
   factor1->add(level_uv, c1, unit2);
   factor1->add(level_uv_right, c2, unit2);
   smartGraph.push_back(factor1);
@@ -667,7 +664,7 @@ TEST( SmartProjectionCameraFactor, comparisonGeneralSfMFactor1 ) {
   values.insert(c2, level_camera_right);
 
   NonlinearFactorGraph smartGraph;
-  SmartFactorBundler::shared_ptr factor1(new SmartFactorBundler());
+  SmartFactor::shared_ptr factor1(new SmartFactor());
   factor1->add(level_uv, c1, unit2);
   factor1->add(level_uv_right, c2, unit2);
   smartGraph.push_back(factor1);
@@ -710,7 +707,7 @@ TEST( SmartProjectionCameraFactor, comparisonGeneralSfMFactor1 ) {
 //  values.insert(c2, level_camera_right);
 //
 //  NonlinearFactorGraph smartGraph;
-//  SmartFactorBundler::shared_ptr factor1(new SmartFactorBundler());
+//  SmartFactor::shared_ptr factor1(new SmartFactor());
 //  factor1->add(level_uv, c1, unit2);
 //  factor1->add(level_uv_right, c2, unit2);
 //  smartGraph.push_back(factor1);
@@ -758,7 +755,7 @@ TEST( SmartProjectionCameraFactor, computeImplicitJacobian ) {
   values.insert(c1, level_camera);
   values.insert(c2, level_camera_right);
 
-  SmartFactorBundler::shared_ptr factor1(new SmartFactorBundler());
+  SmartFactor::shared_ptr factor1(new SmartFactor());
   factor1->add(level_uv, c1, unit2);
   factor1->add(level_uv_right, c2, unit2);
   Matrix expectedE;
@@ -803,8 +800,8 @@ TEST( SmartProjectionCameraFactor, implicitJacobianFactor ) {
   bool isImplicit = false;
 
   // Hessian version
-  SmartFactorBundler::shared_ptr explicitFactor(
-      new SmartFactorBundler(rankTol, linThreshold, manageDegeneracy, useEPI,
+  SmartFactor::shared_ptr explicitFactor(
+      new SmartFactor(SmartFactor::HESSIAN, rankTol, linThreshold, manageDegeneracy, useEPI,
           isImplicit));
   explicitFactor->add(level_uv, c1, unit2);
   explicitFactor->add(level_uv_right, c2, unit2);
@@ -816,8 +813,8 @@ TEST( SmartProjectionCameraFactor, implicitJacobianFactor ) {
 
   // Implicit Schur version
   isImplicit = true;
-  SmartFactorBundler::shared_ptr implicitFactor(
-      new SmartFactorBundler(rankTol, linThreshold, manageDegeneracy, useEPI,
+  SmartFactor::shared_ptr implicitFactor(
+      new SmartFactor(SmartFactor::IMPLICIT_SCHUR, rankTol, linThreshold, manageDegeneracy, useEPI,
           isImplicit));
   implicitFactor->add(level_uv, c1, unit2);
   implicitFactor->add(level_uv_right, c2, unit2);
