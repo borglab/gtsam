@@ -442,6 +442,7 @@ LDLT<MatrixType,_UpLo>& LDLT<MatrixType,_UpLo>::compute(const MatrixType& a)
   m_transpositions.resize(size);
   m_isInitialized = false;
   m_temporary.resize(size);
+  m_sign = internal::ZeroSign;
 
   internal::ldlt_inplace<UpLo>::unblocked(m_matrix, m_transpositions, m_temporary, m_sign);
 
@@ -502,7 +503,6 @@ struct solve_retval<LDLT<_MatrixType,_UpLo>, Rhs>
     using std::abs;
     using std::max;
     typedef typename LDLTType::MatrixType MatrixType;
-    typedef typename LDLTType::Scalar Scalar;
     typedef typename LDLTType::RealScalar RealScalar;
     const typename Diagonal<const MatrixType>::RealReturnType vectorD(dec().vectorD());
     // In some previous versions, tolerance was set to the max of 1/highest and the maximal diagonal entry * epsilon

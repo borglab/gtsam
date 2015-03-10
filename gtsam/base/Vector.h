@@ -18,13 +18,17 @@
 
 // \callgraph
 
+
 #pragma once
 
-#include <list>
-#include <vector>
-#include <iostream>
+#ifndef MKL_BLAS
+#define MKL_BLAS MKL_DOMAIN_BLAS
+#endif
+
 #include <gtsam/global_includes.h>
-#include <gtsam/3rdparty/gtsam_eigen_includes.h>
+#include <gtsam/3rdparty/Eigen/Eigen/Core>
+#include <iosfwd>
+#include <list>
 
 namespace gtsam {
 
@@ -97,9 +101,14 @@ GTSAM_EXPORT bool zero(const Vector& v);
 inline size_t dim(const Vector& v) { return v.size(); }
 
 /**
- * print with optional string
+ * print without optional string, must specify cout yourself
  */
-GTSAM_EXPORT void print(const Vector& v, const std::string& s = "", std::ostream& stream = std::cout);
+GTSAM_EXPORT void print(const Vector& v, const std::string& s, std::ostream& stream);
+
+/**
+ * print with optional string to cout
+ */
+GTSAM_EXPORT void print(const Vector& v, const std::string& s = "");
 
 /**
  * save a vector to file, which can be loaded by matlab

@@ -20,6 +20,8 @@
 #include <gtsam/base/timing.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/FastList.h>
+#include <gtsam/3rdparty/Eigen/Eigen/SVD>  
+#include <gtsam/3rdparty/Eigen/Eigen/LU>
 
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -180,6 +182,7 @@ void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, SubVec
 }
 
 /* ************************************************************************* */
+//3 argument call
 void print(const Matrix& A, const string &s, ostream& stream) {
   size_t m = A.rows(), n = A.cols();
 
@@ -196,6 +199,12 @@ void print(const Matrix& A, const string &s, ostream& stream) {
     stream << endl;
   }
   stream << "];" << endl;
+}
+
+/* ************************************************************************* */
+//1 or 2 argument call
+void print(const Matrix& A, const string &s){
+  print(A, s, cout);
 }
 
 /* ************************************************************************* */
@@ -697,6 +706,19 @@ std::string formatMatrixIndented(const std::string& label, const Matrix& matrix,
   return ss.str();
 }
 
+void inplace_QR(Matrix& A){
+  size_t rows = A.rows();
+  size_t cols = A.cols();
+  size_t size = std::min(rows,cols);
 
+  typedef Eigen::internal::plain_diag_type<Matrix>::type HCoeffsType;
+  typedef Eigen::internal::plain_row_type<Matrix>::type RowVectorType;
+  HCoeffsType hCoeffs(size);
+  RowVectorType temp(cols);
+
+  Eigen::internal::householder_qr_inplace_blocked<Matrix, HCoeffsType>::run(A, hCoeffs, 48, temp.data());
+
+  zeroBelowDiagonal(A);
+}
 
 } // namespace gtsam
