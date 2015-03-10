@@ -246,7 +246,7 @@ public:
     g = traits<T>::Between(g, h, Hg, Hh);
     g = traits<T>::Inverse(g, Hg);
     // log and exp map without Jacobians
-    g = traits<T>::Expmap(v, boost::none);
+    g = traits<T>::Expmap(v);
     v = traits<T>::Logmap(g);
     // log and exponential map with Jacobians
     g = traits<T>::Expmap(v, Hg);
