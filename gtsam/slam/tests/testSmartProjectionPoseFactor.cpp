@@ -501,15 +501,15 @@ TEST( SmartProjectionPoseFactor, jacobianSVD ) {
   projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
 
   SmartFactor::shared_ptr smartFactor1(
-      new SmartFactor(SmartFactor::JACOBIAN_SVD, 1, -1, false, false));
+      new SmartFactor(SmartFactor::JACOBIAN_SVD, 1, false, false));
   smartFactor1->add(measurements_cam1, views, model);
 
   SmartFactor::shared_ptr smartFactor2(
-      new SmartFactor(SmartFactor::JACOBIAN_SVD, 1, -1, false, false));
+      new SmartFactor(SmartFactor::JACOBIAN_SVD, 1, false, false));
   smartFactor2->add(measurements_cam2, views, model);
 
   SmartFactor::shared_ptr smartFactor3(
-      new SmartFactor(SmartFactor::JACOBIAN_SVD, 1, -1, false, false));
+      new SmartFactor(SmartFactor::JACOBIAN_SVD, 1, false, false));
   smartFactor3->add(measurements_cam3, views, model);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
@@ -530,6 +530,7 @@ TEST( SmartProjectionPoseFactor, jacobianSVD ) {
   values.insert(x3, Camera(pose_above * noise_pose, sharedK));
 
   Values result;
+  params.verbosityLM = LevenbergMarquardtParams::SUMMARY;
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
   EXPECT(assert_equal(pose_above, result.at<Camera>(x3).pose(), 1e-8));
