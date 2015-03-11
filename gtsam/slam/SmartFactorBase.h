@@ -243,22 +243,6 @@ public:
     return (E.transpose() * E).inverse();
   }
 
-  /// Computes Point Covariance P, with lambda parameter
-  static Matrix PointCov(Matrix& E, double lambda,
-      bool diagonalDamping = false) {
-
-    Matrix EtE = E.transpose() * E;
-
-    if (diagonalDamping) { // diagonal of the hessian
-      EtE.diagonal() += lambda * EtE.diagonal();
-    } else {
-      DenseIndex n = E.cols();
-      EtE += lambda * Eigen::MatrixXd::Identity(n, n);
-    }
-
-    return (EtE).inverse();
-  }
-
   /**
    *  Compute F, E, and b (called below in both vanilla and SVD versions), where
    *  F is a vector of derivatives wrpt the cameras, and E the stacked derivatives
@@ -301,11 +285,10 @@ public:
     Matrix E;
     Vector b;
     computeJacobians(Fblocks, E, b, cameras, point);
-    Matrix P = PointCov(E, lambda, diagonalDamping);
 
     // build augmented hessian
-    SymmetricBlockMatrix augmentedHessian = CameraSet<CAMERA>::SchurComplement(
-        Fblocks, E, P, b);
+    SymmetricBlockMatrix augmentedHessian = Cameras::SchurComplement(Fblocks, E,
+        b);
 
     return boost::make_shared<RegularHessianFactor<Dim> >(keys_,
         augmentedHessian);
@@ -324,8 +307,7 @@ public:
     Vector b;
     std::vector<MatrixZD> Fblocks;
     computeJacobians(Fblocks, E, b, cameras, point);
-    Matrix P = PointCov(E, lambda, diagonalDamping);
-    CameraSet<CAMERA>::UpdateSchurComplement(Fblocks, E, P, b, allKeys, keys_,
+    Cameras::UpdateSchurComplement(Fblocks, E, b, allKeys, keys_,
         augmentedHessian);
   }
 
@@ -346,7 +328,7 @@ public:
     std::vector<MatrixZD> F;
     computeJacobians(F, E, b, cameras, point);
     whitenJacobians(F, E, b);
-    Matrix P = PointCov(E, lambda, diagonalDamping);
+    Matrix P = Cameras::PointCov(E, lambda, diagonalDamping);
     return boost::make_shared<RegularImplicitSchurFactor<CAMERA> >(keys_, F, E,
         P, b);
   }
@@ -362,7 +344,7 @@ public:
     std::vector<MatrixZD> F;
     computeJacobians(F, E, b, cameras, point);
     const size_t M = b.size();
-    Matrix P = PointCov(E, lambda, diagonalDamping);
+    Matrix P = Cameras::PointCov(E, lambda, diagonalDamping);
     SharedIsotropic n = noiseModel::Isotropic::Sigma(M, noiseModel_->sigma());
     return boost::make_shared<JacobianFactorQ<Dim, ZDim> >(keys_, F, E, P, b, n);
   }
