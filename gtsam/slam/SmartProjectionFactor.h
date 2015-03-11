@@ -204,10 +204,14 @@ public:
           Gs, gs, 0.0);
     }
 
+    // Jacobian could be 3D Point3 OR 2D Unit3, difference is E.cols().
     std::vector<typename Base::MatrixZD> Fblocks;
     Matrix E;
     Vector b;
     computeJacobiansWithTriangulatedPoint(Fblocks, E, b, cameras);
+
+    // Whiten using noise model
+    Base::whitenJacobians(Fblocks, E, b);
 
     // build augmented hessian
     SymmetricBlockMatrix augmentedHessian = //
