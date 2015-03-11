@@ -297,6 +297,18 @@ TEST( SmartProjectionPoseFactor, Factors ) {
   CHECK(p);
   EXPECT(assert_equal(landmark1, *p));
 
+  VectorValues zeroDelta;
+  Vector6 delta;
+  delta.setZero();
+  zeroDelta.insert(x1, delta);
+  zeroDelta.insert(x2, delta);
+
+  VectorValues perturbedDelta;
+  delta.setOnes();
+  perturbedDelta.insert(x1, delta);
+  perturbedDelta.insert(x2, delta);
+  double expectedError = 2500;
+
   // After eliminating the point, A1 and A2 contain 2-rank information on cameras:
   Matrix16 A1, A2;
   A1 << -10, 0, 0, 0, 1, 0;
@@ -324,6 +336,8 @@ TEST( SmartProjectionPoseFactor, Factors ) {
         smartFactor1->createHessianFactor(cameras, 0.0);
     EXPECT(assert_equal(expectedInformation, actual->information(), 1e-8));
     EXPECT(assert_equal(expected, *actual, 1e-8));
+    EXPECT_DOUBLES_EQUAL(0, actual->error(zeroDelta), 1e-8);
+    EXPECT_DOUBLES_EQUAL(expectedError, actual->error(perturbedDelta), 1e-8);
   }
 
   {
@@ -368,6 +382,8 @@ TEST( SmartProjectionPoseFactor, Factors ) {
     CHECK(actualQ);
     EXPECT(assert_equal(expectedInformation, actualQ->information(), 1e-8));
     EXPECT(assert_equal(expectedQ, *actualQ));
+    EXPECT_DOUBLES_EQUAL(0, actualQ->error(zeroDelta), 1e-8);
+    EXPECT_DOUBLES_EQUAL(expectedError, actualQ->error(perturbedDelta), 1e-8);
 
     // Whiten for RegularImplicitSchurFactor (does not have noise model)
     model->WhitenSystem(E, b);
@@ -384,6 +400,8 @@ TEST( SmartProjectionPoseFactor, Factors ) {
     EXPECT(assert_equal(expectedInformation, expected.information(), 1e-8));
     EXPECT(assert_equal(expectedInformation, actual->information(), 1e-8));
     EXPECT(assert_equal(expected, *actual));
+    EXPECT_DOUBLES_EQUAL(0, actual->error(zeroDelta), 1e-8);
+    EXPECT_DOUBLES_EQUAL(expectedError, actual->error(perturbedDelta), 1e-8);
   }
 
   {
@@ -400,6 +418,8 @@ TEST( SmartProjectionPoseFactor, Factors ) {
     CHECK(actual);
     EXPECT(assert_equal(expectedInformation, actual->information(), 1e-8));
     EXPECT(assert_equal(expected, *actual));
+    EXPECT_DOUBLES_EQUAL(0, actual->error(zeroDelta), 1e-8);
+    EXPECT_DOUBLES_EQUAL(expectedError, actual->error(perturbedDelta), 1e-8);
   }
 }
 
