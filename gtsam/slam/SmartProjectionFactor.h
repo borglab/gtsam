@@ -208,11 +208,10 @@ public:
     Matrix E;
     Vector b;
     computeJacobiansWithTriangulatedPoint(Fblocks, E, b, cameras);
-    Matrix P = Base::PointCov(E, lambda, diagonalDamping);
 
     // build augmented hessian
-    SymmetricBlockMatrix augmentedHessian = CameraSet<CAMERA>::SchurComplement(
-        Fblocks, E, P, b);
+    SymmetricBlockMatrix augmentedHessian = //
+        Cameras::SchurComplement(Fblocks, E, b, lambda, diagonalDamping);
 
     return boost::make_shared<RegularHessianFactor<Base::Dim> >(this->keys_,
         augmentedHessian);
