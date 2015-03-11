@@ -38,7 +38,7 @@ protected:
   typedef Eigen::Matrix<double, D, D> MatrixDD; ///< camera hessian
 
   const std::vector<MatrixZD> FBlocks_; ///< All ZDim*D F blocks (one for each camera)
-  const Matrix3 PointCovariance_; ///< the 3*3 matrix P = inv(E'E) (ZDim*ZDim if degenerate)
+  const Matrix PointCovariance_; ///< the 3*3 matrix P = inv(E'E) (2*2 if degenerate)
   const Matrix E_; ///< The 2m*3 E Jacobian with respect to the point
   const Vector b_; ///< 2m-dimensional RHS vector
 
@@ -50,7 +50,7 @@ public:
 
   /// Construct from blocks of F, E, inv(E'*E), and RHS vector b
   RegularImplicitSchurFactor(const FastVector<Key>& keys,
-      const std::vector<MatrixZD>& FBlocks, const Matrix& E, const Matrix3& P,
+      const std::vector<MatrixZD>& FBlocks, const Matrix& E, const Matrix& P,
       const Vector& b) :
       GaussianFactor(keys), FBlocks_(FBlocks), PointCovariance_(P), E_(E), b_(b) {
   }
@@ -71,7 +71,7 @@ public:
     return b_;
   }
 
-  const Matrix3& getPointCovariance() const {
+  const Matrix& getPointCovariance() const {
     return PointCovariance_;
   }
 
@@ -124,8 +124,8 @@ public:
   virtual Matrix augmentedInformation() const {
 
     // Do the Schur complement
-    SymmetricBlockMatrix augmentedHessian = Set::SchurComplement(FBlocks_, E_,
-        PointCovariance_, b_);
+    SymmetricBlockMatrix augmentedHessian = //
+        Set::SchurComplement(FBlocks_, E_, b_);
     return augmentedHessian.matrix();
   }
 
@@ -436,7 +436,7 @@ public:
     VectorValues g;
     for (size_t k = 0; k < size(); ++k) {
       Key key = keys_[k];
-      g.insert(key, - FBlocks_[k].transpose() * e2[k]);
+      g.insert(key, -FBlocks_[k].transpose() * e2[k]);
     }
 
     // return it
