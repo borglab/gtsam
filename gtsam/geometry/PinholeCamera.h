@@ -145,7 +145,7 @@ public:
   const Pose3& getPose(OptionalJacobian<6, dimension> H) const {
     if (H) {
       H->setZero();
-      H->block(0, 0, 6, 6) = I_6x6;
+      H->template block<6,6>(0, 0) = I_6x6;
     }
     return Base::pose();
   }
@@ -176,16 +176,15 @@ public:
     if ((size_t) d.size() == 6)
       return PinholeCamera(this->pose().retract(d), calibration());
     else
-      return PinholeCamera(this->pose().retract(d.head(6)),
+      return PinholeCamera(this->pose().retract(d.head<6>()),
           calibration().retract(d.tail(calibration().dim())));
   }
 
   /// return canonical coordinate
   VectorK6 localCoordinates(const PinholeCamera& T2) const {
     VectorK6 d;
-    // TODO: why does d.head<6>() not compile??
-    d.head(6) = this->pose().localCoordinates(T2.pose());
-    d.tail(DimK) = calibration().localCoordinates(T2.calibration());
+    d.template head<6>() = this->pose().localCoordinates(T2.pose());
+    d.template tail<DimK>() = calibration().localCoordinates(T2.calibration());
     return d;
   }
 
@@ -265,7 +264,7 @@ public:
     if (Dother) {
       Dother->resize(1, 6 + CalibrationB::dimension);
       Dother->setZero();
-      Dother->block(0, 0, 1, 6) = Dother_;
+      Dother->block<1,6>(0, 0) = Dother_;
     }
     return result;
   }
