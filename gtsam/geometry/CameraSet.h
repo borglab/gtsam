@@ -57,7 +57,7 @@ protected:
     Vector b(ZDim * m);
     for (size_t i = 0, row = 0; i < m; i++, row += ZDim) {
       Z e = predicted[i] - measured[i];
-      b.segment < ZDim > (row) = e.vector();
+      b.segment<ZDim>(row) = e.vector();
     }
     return b;
   }
@@ -141,9 +141,11 @@ public:
    * Do Schur complement, given Jacobian as Fs,E,P, return SymmetricBlockMatrix
    * G = F' * F - F' * E * P * E' * F
    * g = F' * (b - E * P * E' * b)
+   * Fixed size version
    */
+  template<int N> // N = 2 or 3
   static SymmetricBlockMatrix SchurComplement(const FBlocks& Fs,
-      const Matrix& E, const Matrix3& P, const Vector& b) {
+      const Matrix& E, const Eigen::Matrix<double, N, N>& P, const Vector& b) {
 
     // a single point is observed in m cameras
     int m = Fs.size();
@@ -159,15 +161,16 @@ public:
     for (size_t i = 0; i < m; i++) { // for each camera
 
       const MatrixZD& Fi = Fs[i];
-      const Matrix23 Ei_P = E.block<ZDim, 3>(ZDim * i, 0) * P;
+      const Eigen::Matrix<double, 2, N> Ei_P = //
+          E.block(ZDim * i, 0, ZDim, N) * P;
 
       // D = (Dx2) * ZDim
-      augmentedHessian(i, m) = Fi.transpose() * b.segment < ZDim > (ZDim * i) // F' * b
-      - Fi.transpose() * (Ei_P * (E.transpose() * b)); // D = (DxZDim) * (ZDimx3) * (3*ZDimm) * (ZDimm x 1)
+      augmentedHessian(i, m) = Fi.transpose() * b.segment<ZDim>(ZDim * i) // F' * b
+      - Fi.transpose() * (Ei_P * (E.transpose() * b)); // D = (DxZDim) * (ZDimx3) * (N*ZDimm) * (ZDimm x 1)
 
       // (DxD) = (DxZDim) * ( (ZDimxD) - (ZDimx3) * (3xZDim) * (ZDimxD) )
       augmentedHessian(i, i) = Fi.transpose()
-          * (Fi - Ei_P * E.block<ZDim, 3>(ZDim * i, 0).transpose() * Fi);
+          * (Fi - Ei_P * E.block(ZDim * i, 0, ZDim, N).transpose() * Fi);
 
       // upper triangular part of the hessian
       for (size_t j = i + 1; j < m; j++) { // for each camera
@@ -175,7 +178,7 @@ public:
 
         // (DxD) = (Dx2) * ( (2x2) * (2xD) )
         augmentedHessian(i, j) = -Fi.transpose()
-            * (Ei_P * E.block<ZDim, 3>(ZDim * j, 0).transpose() * Fj);
+            * (Ei_P * E.block(ZDim * j, 0, ZDim, N).transpose() * Fj);
       }
     } // end of for over cameras
 
@@ -183,12 +186,64 @@ public:
     return augmentedHessian;
   }
 
+  /// Computes Point Covariance P, with lambda parameter
+  template<int N> // N = 2 or 3
+  static void ComputePointCovariance(Eigen::Matrix<double, N, N>& P,
+      const Matrix& E, double lambda, bool diagonalDamping = false) {
+
+    Matrix EtE = E.transpose() * E;
+
+    if (diagonalDamping) { // diagonal of the hessian
+      EtE.diagonal() += lambda * EtE.diagonal();
+    } else {
+      DenseIndex n = E.cols();
+      EtE += lambda * Eigen::MatrixXd::Identity(n, n);
+    }
+
+    P = (EtE).inverse();
+  }
+
+  /// Computes Point Covariance P, with lambda parameter, dynamic version
+  static Matrix PointCov(const Matrix& E, const double lambda = 0.0,
+      bool diagonalDamping = false) {
+    if (E.cols() == 2) {
+      Matrix2 P2;
+      ComputePointCovariance(P2, E, lambda, diagonalDamping);
+      return P2;
+    } else {
+      Matrix3 P3;
+      ComputePointCovariance(P3, E, lambda, diagonalDamping);
+      return P3;
+    }
+  }
+
+  /**
+   * Do Schur complement, given Jacobian as Fs,E,P, return SymmetricBlockMatrix
+   * Dynamic version
+   */
+  static SymmetricBlockMatrix SchurComplement(const FBlocks& Fblocks,
+      const Matrix& E, const Vector& b, const double lambda = 0.0,
+      bool diagonalDamping = false) {
+    SymmetricBlockMatrix augmentedHessian;
+    if (E.cols() == 2) {
+      Matrix2 P;
+      ComputePointCovariance(P, E, lambda, diagonalDamping);
+      augmentedHessian = SchurComplement(Fblocks, E, P, b);
+    } else {
+      Matrix3 P;
+      ComputePointCovariance(P, E, lambda, diagonalDamping);
+      augmentedHessian = SchurComplement(Fblocks, E, P, b);
+    }
+    return augmentedHessian;
+  }
+
   /**
    * Applies Schur complement (exploiting block structure) to get a smart factor on cameras,
    * and adds the contribution of the smart factor to a pre-allocated augmented Hessian.
    */
+  template<int N> // N = 2 or 3
   static void UpdateSchurComplement(const FBlocks& Fs, const Matrix& E,
-      const Matrix3& P /*Point Covariance*/, const Vector& b,
+      const Eigen::Matrix<double, N, N>& P, const Vector& b,
       const FastVector<Key>& allKeys, const FastVector<Key>& keys,
       /*output ->*/SymmetricBlockMatrix& augmentedHessian) {
 
@@ -215,7 +270,8 @@ public:
     for (size_t i = 0; i < m; i++) { // for each camera in the current factor
 
       const MatrixZD& Fi = Fs[i];
-      const Matrix23 Ei_P = E.block<ZDim, 3>(ZDim * i, 0) * P;
+      const Eigen::Matrix<double, 2, N> Ei_P = E.template block<ZDim, N>(
+          ZDim * i, 0) * P;
 
       // D = (DxZDim) * (ZDim)
       // allKeys are the list of all camera keys in the group, e.g, (1,3,4,5,7)
@@ -227,8 +283,8 @@ public:
       // vectorBlock = augmentedHessian(aug_i, aug_m).knownOffDiagonal();
       // add contribution of current factor
       augmentedHessian(aug_i, M) = augmentedHessian(aug_i, M).knownOffDiagonal()
-          + Fi.transpose() * b.segment < ZDim > (ZDim * i) // F' * b
-      - Fi.transpose() * (Ei_P * (E.transpose() * b)); // D = (DxZDim) * (ZDimx3) * (3*ZDimm) * (ZDimm x 1)
+          + Fi.transpose() * b.segment<ZDim>(ZDim * i) // F' * b
+      - Fi.transpose() * (Ei_P * (E.transpose() * b)); // D = (DxZDim) * (ZDimx3) * (N*ZDimm) * (ZDimm x 1)
 
       // (DxD) = (DxZDim) * ( (ZDimxD) - (ZDimx3) * (3xZDim) * (ZDimxD) )
       // main block diagonal - store previous block
@@ -236,7 +292,7 @@ public:
       // add contribution of current factor
       augmentedHessian(aug_i, aug_i) = matrixBlock
           + (Fi.transpose()
-              * (Fi - Ei_P * E.block<ZDim, 3>(ZDim * i, 0).transpose() * Fi));
+              * (Fi - Ei_P * E.template block<ZDim, N>(ZDim * i, 0).transpose() * Fi));
 
       // upper triangular part of the hessian
       for (size_t j = i + 1; j < m; j++) { // for each camera
@@ -251,7 +307,7 @@ public:
         augmentedHessian(aug_i, aug_j) =
             augmentedHessian(aug_i, aug_j).knownOffDiagonal()
                 - Fi.transpose()
-                    * (Ei_P * E.block<ZDim, 3>(ZDim * j, 0).transpose() * Fj);
+                    * (Ei_P * E.template block<ZDim, N>(ZDim * j, 0).transpose() * Fj);
       }
     } // end of for over cameras
 
