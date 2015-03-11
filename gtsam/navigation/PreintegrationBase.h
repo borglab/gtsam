@@ -133,21 +133,19 @@ public:
   }
 
   /// Needed for testable
-  bool equals(const PreintegrationBase& expected, double tol) const {
-    return PreintegratedRotation::equals(expected, tol)
-        && biasHat_.equals(expected.biasHat_, tol)
-        && equal_with_abs_tol(deltaPij_, expected.deltaPij_, tol)
-        && equal_with_abs_tol(deltaVij_, expected.deltaVij_, tol)
-        && equal_with_abs_tol(delPdelBiasAcc_, expected.delPdelBiasAcc_, tol)
-        && equal_with_abs_tol(delPdelBiasOmega_, expected.delPdelBiasOmega_,
-            tol)
-        && equal_with_abs_tol(delVdelBiasAcc_, expected.delVdelBiasAcc_, tol)
-        && equal_with_abs_tol(delVdelBiasOmega_, expected.delVdelBiasOmega_,
-            tol)
+  bool equals(const PreintegrationBase& other, double tol) const {
+    return PreintegratedRotation::equals(other, tol)
+        && biasHat_.equals(other.biasHat_, tol)
+        && equal_with_abs_tol(deltaPij_, other.deltaPij_, tol)
+        && equal_with_abs_tol(deltaVij_, other.deltaVij_, tol)
+        && equal_with_abs_tol(delPdelBiasAcc_, other.delPdelBiasAcc_, tol)
+        && equal_with_abs_tol(delPdelBiasOmega_, other.delPdelBiasOmega_, tol)
+        && equal_with_abs_tol(delVdelBiasAcc_, other.delVdelBiasAcc_, tol)
+        && equal_with_abs_tol(delVdelBiasOmega_, other.delVdelBiasOmega_, tol)
         && equal_with_abs_tol(accelerometerCovariance_,
-            expected.accelerometerCovariance_, tol)
+            other.accelerometerCovariance_, tol)
         && equal_with_abs_tol(integrationCovariance_,
-            expected.integrationCovariance_, tol);
+            other.integrationCovariance_, tol);
   }
 
   /// Re-initialize PreintegratedMeasurements
@@ -188,7 +186,8 @@ public:
         F_pos_angles = Z_3x3;
 
       //    pos          vel              angle
-      *F << I_3x3, I_3x3 * deltaT, F_pos_angles, // pos
+      *F << //
+          I_3x3, I_3x3 * deltaT, F_pos_angles, // pos
       Z_3x3, I_3x3, F_vel_angles, // vel
       Z_3x3, Z_3x3, F_angles_angles; // angle
     }

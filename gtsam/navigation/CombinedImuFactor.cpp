@@ -151,7 +151,12 @@ void CombinedImuFactor::CombinedPreintegratedMeasurements::integrateMeasurement(
     G_test->resize(15, 21);
     // This is for testing & documentation
     ///< measurementCovariance_ : cov[integrationError measuredAcc measuredOmega biasAccRandomWalk biasOmegaRandomWalk biasAccInit biasOmegaInit] in R^(21 x 21)
-    (*G_test) << I_3x3 * deltaT, Z_3x3, Z_3x3, Z_3x3, Z_3x3, Z_3x3, Z_3x3, Z_3x3, -H_vel_biasacc, Z_3x3, Z_3x3, Z_3x3, H_vel_biasacc, Z_3x3, Z_3x3, Z_3x3, -H_angles_biasomega, Z_3x3, Z_3x3, Z_3x3, H_angles_biasomega, Z_3x3, Z_3x3, Z_3x3, I_3x3, Z_3x3, Z_3x3, Z_3x3, Z_3x3, Z_3x3, Z_3x3, Z_3x3, I_3x3, Z_3x3, Z_3x3;
+    (*G_test) << //
+        I_3x3 * deltaT, Z_3x3, Z_3x3, Z_3x3, Z_3x3, Z_3x3, Z_3x3, //
+    Z_3x3, -H_vel_biasacc, Z_3x3, Z_3x3, Z_3x3, H_vel_biasacc, Z_3x3, //
+    Z_3x3, Z_3x3, -H_angles_biasomega, Z_3x3, Z_3x3, Z_3x3, H_angles_biasomega, //
+    Z_3x3, Z_3x3, Z_3x3, I_3x3, Z_3x3, Z_3x3, Z_3x3, //
+    Z_3x3, Z_3x3, Z_3x3, Z_3x3, I_3x3, Z_3x3, Z_3x3;
   }
 }
 
