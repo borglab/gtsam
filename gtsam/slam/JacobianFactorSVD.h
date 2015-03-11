@@ -65,7 +65,7 @@ public:
           KeyMatrix(key,
               (Enull.transpose()).block(0, ZDim * k, m2, ZDim) * Fblocks[k]));
     }
-    JacobianFactor::fillTerms(QF, -Enull.transpose() * b, model);
+    JacobianFactor::fillTerms(QF, Enull.transpose() * b, model);
   }
 };
 
