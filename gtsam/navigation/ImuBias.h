@@ -36,57 +36,63 @@ namespace gtsam {
 /// All bias models live in the imuBias namespace
 namespace imuBias {
 
-  class ConstantBias {
-  private:
-    Vector3 biasAcc_;
-    Vector3 biasGyro_;
+class ConstantBias {
+private:
+  Vector3 biasAcc_;
+  Vector3 biasGyro_;
 
-  public:
-    /// dimension of the variable - used to autodetect sizes
-    static const size_t dimension = 6;
+public:
+  /// dimension of the variable - used to autodetect sizes
+  static const size_t dimension = 6;
 
-    ConstantBias():
-      biasAcc_(0.0, 0.0, 0.0),  biasGyro_(0.0, 0.0, 0.0) {
-    }
+  ConstantBias() :
+      biasAcc_(0.0, 0.0, 0.0), biasGyro_(0.0, 0.0, 0.0) {
+  }
 
-    ConstantBias(const Vector3& biasAcc, const Vector3& biasGyro):
+  ConstantBias(const Vector3& biasAcc, const Vector3& biasGyro) :
       biasAcc_(biasAcc), biasGyro_(biasGyro) {
-    }
+  }
 
-    ConstantBias(const Vector6& v):
+  ConstantBias(const Vector6& v) :
       biasAcc_(v.head<3>()), biasGyro_(v.tail<3>()) {
+  }
+
+  /** return the accelerometer and gyro biases in a single vector */
+  Vector6 vector() const {
+    Vector6 v;
+    v << biasAcc_, biasGyro_;
+    return v;
+  }
+
+  /** get accelerometer bias */
+  const Vector3& accelerometer() const {
+    return biasAcc_;
+  }
+
+  /** get gyroscope bias */
+  const Vector3& gyroscope() const {
+    return biasGyro_;
+  }
+
+  /** Correct an accelerometer measurement using this bias model, and optionally compute Jacobians */
+  Vector3 correctAccelerometer(const Vector3& measurement,
+      boost::optional<Matrix&> H = boost::none) const {
+    if (H) {
+      H->resize(3, 6);
+      (*H) << -Matrix3::Identity(), Matrix3::Zero();
     }
+    return measurement - biasAcc_;
+  }
 
-    /** return the accelerometer and gyro biases in a single vector */
-    Vector6 vector() const {
-      Vector6 v;
-      v << biasAcc_, biasGyro_;
-      return v;
+  /** Correct a gyroscope measurement using this bias model, and optionally compute Jacobians */
+  Vector3 correctGyroscope(const Vector3& measurement,
+      boost::optional<Matrix&> H = boost::none) const {
+    if (H) {
+      H->resize(3, 6);
+      (*H) << Matrix3::Zero(), -Matrix3::Identity();
     }
-
-    /** get accelerometer bias */
-    const Vector3& accelerometer() const { return biasAcc_; }
-
-    /** get gyroscope bias */
-    const Vector3& gyroscope() const { return biasGyro_; }
-
-    /** Correct an accelerometer measurement using this bias model, and optionally compute Jacobians */
-    Vector3 correctAccelerometer(const Vector3& measurement, boost::optional<Matrix&> H=boost::none) const {
-      if (H) {
-        H->resize(3, 6);
-        (*H) << -Matrix3::Identity(), Matrix3::Zero();
-      }
-      return measurement - biasAcc_;
-    }
-
-    /** Correct a gyroscope measurement using this bias model, and optionally compute Jacobians */
-    Vector3 correctGyroscope(const Vector3& measurement, boost::optional<Matrix&> H=boost::none) const {
-      if (H) {
-        H->resize(3, 6);
-        (*H) << Matrix3::Zero(), -Matrix3::Identity();
-      }
-      return measurement - biasGyro_;
-    }
+    return measurement - biasGyro_;
+  }
 
 //    // H1: Jacobian w.r.t. IMUBias
 //    // H2: Jacobian w.r.t. pose
@@ -118,77 +124,93 @@ namespace imuBias {
 ////      return measurement - bias_gyro_temp - R_G_to_I * w_earth_rate_G;
 //    }
 
-    /// @}
-    /// @name Testable
-    /// @{
+/// @}
+/// @name Testable
+/// @{
 
-    /// print with optional string
-    void print(const std::string& s = "") const {
-      // explicit printing for now.
-      std::cout << s + ".biasAcc [" << biasAcc_.transpose() << "]" << std::endl;
-      std::cout << s + ".biasGyro [" << biasGyro_.transpose() << "]" << std::endl;
-    }
+/// print with optional string
+  void print(const std::string& s = "") const {
+    // explicit printing for now.
+    std::cout << s + ".biasAcc [" << biasAcc_.transpose() << "]" << std::endl;
+    std::cout << s + ".biasGyro [" << biasGyro_.transpose() << "]" << std::endl;
+  }
 
-    /** equality up to tolerance */
-    inline bool equals(const ConstantBias& expected, double tol=1e-5) const {
-      return equal_with_abs_tol(biasAcc_, expected.biasAcc_, tol)
-          && equal_with_abs_tol(biasGyro_, expected.biasGyro_, tol);
-    }
+  /** equality up to tolerance */
+  inline bool equals(const ConstantBias& expected, double tol = 1e-5) const {
+    return equal_with_abs_tol(biasAcc_, expected.biasAcc_, tol)
+        && equal_with_abs_tol(biasGyro_, expected.biasGyro_, tol);
+  }
 
-    /// @}
-    /// @name Group
-    /// @{
+  /// @}
+  /// @name Group
+  /// @{
 
-    /** identity for group operation */
-    static ConstantBias identity() { return ConstantBias(); }
+  /** identity for group operation */
+  static ConstantBias identity() {
+    return ConstantBias();
+  }
 
-    /** inverse */
-    inline ConstantBias operator-() const {
-      return ConstantBias(-biasAcc_, -biasGyro_);
-    }
+  /** inverse */
+  inline ConstantBias operator-() const {
+    return ConstantBias(-biasAcc_, -biasGyro_);
+  }
 
-    /** addition */
-    ConstantBias operator+(const ConstantBias& b) const {
-      return ConstantBias(biasAcc_ + b.biasAcc_, biasGyro_ + b.biasGyro_);
-    }
+  /** addition */
+  ConstantBias operator+(const ConstantBias& b) const {
+    return ConstantBias(biasAcc_ + b.biasAcc_, biasGyro_ + b.biasGyro_);
+  }
 
-    /** subtraction */
-    ConstantBias operator-(const ConstantBias& b) const {
-      return ConstantBias(biasAcc_ - b.biasAcc_, biasGyro_ - b.biasGyro_);
-    }
+  /** subtraction */
+  ConstantBias operator-(const ConstantBias& b) const {
+    return ConstantBias(biasAcc_ - b.biasAcc_, biasGyro_ - b.biasGyro_);
+  }
 
-    /// @}
+  /// @}
 
-    /// @name Deprecated
-    /// @{
-    ConstantBias inverse() { return -(*this);}
-    ConstantBias compose(const ConstantBias& q) { return (*this)+q;}
-    ConstantBias between(const ConstantBias& q) { return q-(*this);}
-    Vector6 localCoordinates(const ConstantBias& q) { return between(q).vector();}
-    ConstantBias retract(const Vector6& v) {return compose(ConstantBias(v));}
-    static Vector6 Logmap(const ConstantBias& p) {return p.vector();}
-    static ConstantBias Expmap(const Vector6& v) { return ConstantBias(v);}
-    /// @}
+  /// @name Deprecated
+  /// @{
+  ConstantBias inverse() {
+    return -(*this);
+  }
+  ConstantBias compose(const ConstantBias& q) {
+    return (*this) + q;
+  }
+  ConstantBias between(const ConstantBias& q) {
+    return q - (*this);
+  }
+  Vector6 localCoordinates(const ConstantBias& q) {
+    return between(q).vector();
+  }
+  ConstantBias retract(const Vector6& v) {
+    return compose(ConstantBias(v));
+  }
+  static Vector6 Logmap(const ConstantBias& p) {
+    return p.vector();
+  }
+  static ConstantBias Expmap(const Vector6& v) {
+    return ConstantBias(v);
+  }
+  /// @}
 
-  private:
+private:
 
-    /// @name Advanced Interface
-    /// @{
+  /// @name Advanced Interface
+  /// @{
 
-    /** Serialization function */
-    friend class boost::serialization::access;
-    template<class ARCHIVE>
-      void serialize(ARCHIVE & ar, const unsigned int version)
-    {
-      ar & boost::serialization::make_nvp("imuBias::ConstantBias",*this);
-      ar & BOOST_SERIALIZATION_NVP(biasAcc_);
-      ar & BOOST_SERIALIZATION_NVP(biasGyro_);
-    }
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int version) {
+    ar & boost::serialization::make_nvp("imuBias::ConstantBias", *this);
+    ar & BOOST_SERIALIZATION_NVP(biasAcc_);
+    ar & BOOST_SERIALIZATION_NVP(biasGyro_);
+  }
 
-    /// @}
+  /// @}
 
-  }; // ConstantBias class
-} // namespace imuBias
+};
+// ConstantBias class
+}// namespace imuBias
 
 template<>
 struct traits<imuBias::ConstantBias> : public internal::VectorSpace<
@@ -196,5 +218,4 @@ struct traits<imuBias::ConstantBias> : public internal::VectorSpace<
 };
 
 } // namespace gtsam
-
 
