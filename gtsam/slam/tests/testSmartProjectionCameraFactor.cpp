@@ -822,6 +822,7 @@ TEST( SmartProjectionCameraFactor, implicitJacobianFactor ) {
   implicitFactor->add(level_uv_right, c2, unit2);
   GaussianFactor::shared_ptr gaussianImplicitSchurFactor =
       implicitFactor->linearize(values);
+  CHECK(gaussianImplicitSchurFactor);
   typedef RegularImplicitSchurFactor<Camera> Implicit9;
   Implicit9& implicitSchurFactor =
       dynamic_cast<Implicit9&>(*gaussianImplicitSchurFactor);

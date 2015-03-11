@@ -171,7 +171,7 @@ public:
   /// triangulate
   bool triangulateForLinearize(const Cameras& cameras) const {
     triangulateSafe(cameras); // imperative, might reset result_
-    return (manageDegeneracy_ || result_);
+    return (result_);
   }
 
   /// linearize returns a Hessianfactor that is an approximation of error(p)
