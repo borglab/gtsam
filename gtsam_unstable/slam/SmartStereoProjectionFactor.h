@@ -426,7 +426,7 @@ public:
 
     Matrix3 P = Cameras::PointCov(E, lambda);
     H.noalias() = F.transpose() * (F - (E * (P * (E.transpose() * F))));
-    gs_vector.noalias() = - F.transpose() * (b - (E * (P * (E.transpose() * b))));
+    gs_vector.noalias() = F.transpose() * (b - (E * (P * (E.transpose() * b))));
 
     if (isDebug)
       std::cout << "gs_vector size " << gs_vector.size() << std::endl;
