@@ -53,7 +53,7 @@ public:
   /** Conversion from JacobianFactor */
   explicit LinearInequality(const JacobianFactor& jf, Key dualKey) : Base(jf), dualKey_(dualKey), active_(true) {
     if (!jf.isConstrained()) {
-      throw std::runtime_error("Cannot convert an unconstrained JacobianFactor to LinearEquality");
+      throw std::runtime_error("Cannot convert an unconstrained JacobianFactor to LinearInequality");
     }
 
     if (jf.get_model()->dim() != 1) {
