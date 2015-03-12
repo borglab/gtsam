@@ -90,7 +90,6 @@ TEST( SmartProjectionPoseFactor, Equals ) {
 
 /* *************************************************************************/
 TEST_UNSAFE( SmartProjectionPoseFactor, noiseless ) {
-  // cout << " ************************ SmartProjectionPoseFactor: noisy ****************************" << endl;
 
   using namespace vanillaPose;
 
@@ -149,7 +148,6 @@ TEST_UNSAFE( SmartProjectionPoseFactor, noiseless ) {
 
 /* *************************************************************************/
 TEST( SmartProjectionPoseFactor, noisy ) {
-  // cout << " ************************ SmartProjectionPoseFactor: noisy ****************************" << endl;
 
   using namespace vanillaPose;
 
@@ -190,7 +188,6 @@ TEST( SmartProjectionPoseFactor, noisy ) {
 
 /* *************************************************************************/
 TEST( SmartProjectionPoseFactor, 3poses_smart_projection_factor ) {
-  // cout << " ************************ SmartProjectionPoseFactor: 3 cams + 3 landmarks **********************" << endl;
 
   using namespace vanillaPose2;
   vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
@@ -423,7 +420,6 @@ TEST( SmartProjectionPoseFactor, Factors ) {
 
 /* *************************************************************************/
 TEST( SmartProjectionPoseFactor, 3poses_iterative_smart_projection_factor ) {
-  // cout << " ************************ SmartProjectionPoseFactor: 3 cams + 3 landmarks **********************" << endl;
 
   using namespace vanillaPose;
 
@@ -719,7 +715,6 @@ TEST( SmartProjectionPoseFactor, jacobianQ ) {
 
 /* *************************************************************************/
 TEST( SmartProjectionPoseFactor, 3poses_projection_factor ) {
-  //  cout << " ************************ Normal ProjectionFactor: 3 cams + 3 landmarks **********************" << endl;
 
   using namespace vanillaPose2;
 
@@ -769,10 +764,8 @@ TEST( SmartProjectionPoseFactor, 3poses_projection_factor ) {
 
   DOUBLES_EQUAL(48406055, graph.error(values), 1);
 
-  cout << "SUCCEEDS : ==============================================" << endl;
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   Values result = optimizer.optimize();
-  cout << "=========================================================" << endl;
 
   DOUBLES_EQUAL(0, graph.error(result), 1e-9);
 
@@ -866,8 +859,6 @@ TEST( SmartProjectionPoseFactor, CheckHessian) {
 
 /* *************************************************************************/
 TEST( SmartProjectionPoseFactor, 3poses_2land_rotation_only_smart_projection_factor ) {
-  // cout << " ************************ SmartProjectionPoseFactor: 3 cams + 2 landmarks: Rotation Only**********************" << endl;
-
   using namespace vanillaPose2;
 
   vector<Key> views;
@@ -890,12 +881,12 @@ TEST( SmartProjectionPoseFactor, 3poses_2land_rotation_only_smart_projection_fac
   double rankTol = 50;
   SmartFactor::shared_ptr smartFactor1(
       new SmartFactor(SmartFactor::HESSIAN, rankTol,
-          SmartFactor::ZERO_ON_DEGENERACY));
+          SmartFactor::HANDLE_INFINITY));
   smartFactor1->add(measurements_cam1, views, model);
 
   SmartFactor::shared_ptr smartFactor2(
       new SmartFactor(SmartFactor::HESSIAN, rankTol,
-          SmartFactor::ZERO_ON_DEGENERACY));
+          SmartFactor::HANDLE_INFINITY));
   smartFactor2->add(measurements_cam2, views, model);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
@@ -945,7 +936,6 @@ TEST( SmartProjectionPoseFactor, 3poses_2land_rotation_only_smart_projection_fac
 
 /* *************************************************************************/
 TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) {
-  // cout << " ************************ SmartProjectionPoseFactor: 3 cams + 3 landmarks: Rotation Only**********************" << endl;
 
   using namespace vanillaPose;
 
@@ -1033,7 +1023,6 @@ TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) 
 
 /* *************************************************************************/
 TEST( SmartProjectionPoseFactor, Hessian ) {
-  // cout << " ************************ SmartProjectionPoseFactor: Hessian **********************" << endl;
 
   using namespace vanillaPose2;
 
@@ -1122,7 +1111,6 @@ TEST( SmartProjectionPoseFactor, HessianWithRotation ) {
 
 /* *************************************************************************/
 TEST( SmartProjectionPoseFactor, HessianWithRotationDegenerate ) {
-  // cout << " ************************ SmartProjectionPoseFactor: rotated Hessian (degenerate) **********************" << endl;
 
   using namespace vanillaPose2;
 
@@ -1159,7 +1147,7 @@ TEST( SmartProjectionPoseFactor, HessianWithRotationDegenerate ) {
       smartFactor->linearize(rotValues);
 
   // Hessian is invariant to rotations in the nondegenerate case
-  EXPECT(assert_equal(factor->information(), factorRot->information(), 1e-8));
+  EXPECT(assert_equal(factor->information(), factorRot->information(), 1e-7));
 
   Pose3 poseDrift2 = Pose3(Rot3::ypr(-M_PI / 2, -M_PI / 3, -M_PI / 2),
       Point3(10, -4, 5));
@@ -1174,7 +1162,7 @@ TEST( SmartProjectionPoseFactor, HessianWithRotationDegenerate ) {
 
   // Hessian is invariant to rotations and translations in the nondegenerate case
   EXPECT(
-      assert_equal(factor->information(), factorRotTran->information(), 1e-8));
+      assert_equal(factor->information(), factorRotTran->information(), 1e-7));
 }
 
 /* ************************************************************************* */
@@ -1186,7 +1174,6 @@ TEST( SmartProjectionPoseFactor, ConstructorWithCal3Bundler) {
 
 /* *************************************************************************/
 TEST( SmartProjectionPoseFactor, Cal3Bundler ) {
-  // cout << " ************************ SmartProjectionPoseFactor: Cal3Bundler **********************" << endl;
 
   using namespace bundlerPose;
 
