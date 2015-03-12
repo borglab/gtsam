@@ -424,7 +424,7 @@ public:
     Matrix H(D * numKeys, D * numKeys);
     Vector gs_vector;
 
-    Matrix3 P = Base::PointCov(E, lambda);
+    Matrix3 P = Cameras::PointCov(E, lambda);
     H.noalias() = F.transpose() * (F - (E * (P * (E.transpose() * F))));
     gs_vector.noalias() = - F.transpose() * (b - (E * (P * (E.transpose() * b))));
 
