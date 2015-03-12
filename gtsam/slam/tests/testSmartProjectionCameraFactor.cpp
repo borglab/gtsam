@@ -31,7 +31,6 @@ using namespace boost::assign;
 static bool isDebugTest = false;
 
 static double rankTol = 1.0;
-static double linThreshold = -1.0;
 
 // Convenience for named keys
 using symbol_shorthand::X;
@@ -79,7 +78,7 @@ TEST( SmartProjectionCameraFactor, Constructor) {
 /* ************************************************************************* */
 TEST( SmartProjectionCameraFactor, Constructor2) {
   using namespace vanilla;
-  SmartFactor factor1(SmartFactor::HESSIAN, rankTol, linThreshold);
+  SmartFactor factor1(SmartFactor::HESSIAN, rankTol);
 }
 
 /* ************************************************************************* */
@@ -92,7 +91,7 @@ TEST( SmartProjectionCameraFactor, Constructor3) {
 /* ************************************************************************* */
 TEST( SmartProjectionCameraFactor, Constructor4) {
   using namespace vanilla;
-  SmartFactor factor1(SmartFactor::HESSIAN, rankTol, linThreshold);
+  SmartFactor factor1(SmartFactor::HESSIAN, rankTol);
   factor1.add(measurement1, x1, unit2);
 }
 
@@ -108,7 +107,6 @@ TEST( SmartProjectionCameraFactor, Equals ) {
 
 /* *************************************************************************/
 TEST( SmartProjectionCameraFactor, noiseless ) {
-  // cout << " ************************ SmartProjectionCameraFactor: noisy ****************************" << endl;
   using namespace vanilla;
 
   Values values;
@@ -153,7 +151,8 @@ TEST( SmartProjectionCameraFactor, noisy ) {
 
   // Check triangulated point
   CHECK(factor1->point());
-  EXPECT(assert_equal(Point3(13.7587, 1.43851, -1.14274),*factor1->point(), 1e-4));
+  EXPECT(
+      assert_equal(Point3(13.7587, 1.43851, -1.14274), *factor1->point(), 1e-4));
 
   // Check whitened errors
   Vector expected(4);
@@ -236,16 +235,23 @@ TEST( SmartProjectionCameraFactor, perturbPoseAndOptimize ) {
   CHECK(smartFactor2->point());
   CHECK(smartFactor3->point());
 
-  EXPECT(assert_equal(Point3(2.57696, -0.182566, 1.04085),*smartFactor1->point(), 1e-4));
-  EXPECT(assert_equal(Point3(2.80114, -0.702153, 1.06594),*smartFactor2->point(), 1e-4));
-  EXPECT(assert_equal(Point3(1.82593, -0.289569, 2.13438),*smartFactor3->point(), 1e-4));
+  EXPECT(
+      assert_equal(Point3(2.57696, -0.182566, 1.04085), *smartFactor1->point(),
+          1e-4));
+  EXPECT(
+      assert_equal(Point3(2.80114, -0.702153, 1.06594), *smartFactor2->point(),
+          1e-4));
+  EXPECT(
+      assert_equal(Point3(1.82593, -0.289569, 2.13438), *smartFactor3->point(),
+          1e-4));
 
   // Check whitened errors
   Vector expected(6);
   expected << 256, 29, -26, 29, -206, -202;
   Point3 point1 = *smartFactor1->point();
   SmartFactor::Cameras cameras1 = smartFactor1->cameras(initial);
-  Vector reprojectionError = cameras1.reprojectionError(point1, measurements_cam1);
+  Vector reprojectionError = cameras1.reprojectionError(point1,
+      measurements_cam1);
   EXPECT(assert_equal(expected, reprojectionError, 1));
   Vector actual = smartFactor1->whitenedError(cameras1, point1);
   EXPECT(assert_equal(expected, actual, 1));
@@ -259,9 +265,9 @@ TEST( SmartProjectionCameraFactor, perturbPoseAndOptimize ) {
   LevenbergMarquardtOptimizer optimizer(graph, initial, params);
   Values result = optimizer.optimize();
 
-  EXPECT(assert_equal(landmark1,*smartFactor1->point(), 1e-7));
-  EXPECT(assert_equal(landmark2,*smartFactor2->point(), 1e-7));
-  EXPECT(assert_equal(landmark3,*smartFactor3->point(), 1e-7));
+  EXPECT(assert_equal(landmark1, *smartFactor1->point(), 1e-7));
+  EXPECT(assert_equal(landmark2, *smartFactor2->point(), 1e-7));
+  EXPECT(assert_equal(landmark3, *smartFactor3->point(), 1e-7));
 
   //  GaussianFactorGraph::shared_ptr GFG = graph.linearize(initial);
   //  VectorValues delta = GFG->optimize();
@@ -796,15 +802,12 @@ TEST( SmartProjectionCameraFactor, implicitJacobianFactor ) {
   values.insert(c1, level_camera);
   values.insert(c2, level_camera_right);
   double rankTol = 1;
-  double linThreshold = -1;
-  bool manageDegeneracy = false;
   bool useEPI = false;
-  bool isImplicit = false;
 
   // Hessian version
   SmartFactor::shared_ptr explicitFactor(
-      new SmartFactor(SmartFactor::HESSIAN, rankTol, linThreshold, manageDegeneracy, useEPI,
-          isImplicit));
+      new SmartFactor(SmartFactor::HESSIAN, rankTol,
+          SmartFactor::IGNORE_DEGENERACY, useEPI));
   explicitFactor->add(level_uv, c1, unit2);
   explicitFactor->add(level_uv_right, c2, unit2);
 
@@ -814,10 +817,9 @@ TEST( SmartProjectionCameraFactor, implicitJacobianFactor ) {
       dynamic_cast<HessianFactor&>(*gaussianHessianFactor);
 
   // Implicit Schur version
-  isImplicit = true;
   SmartFactor::shared_ptr implicitFactor(
-      new SmartFactor(SmartFactor::IMPLICIT_SCHUR, rankTol, linThreshold, manageDegeneracy, useEPI,
-          isImplicit));
+      new SmartFactor(SmartFactor::IMPLICIT_SCHUR, rankTol,
+          SmartFactor::IGNORE_DEGENERACY, useEPI));
   implicitFactor->add(level_uv, c1, unit2);
   implicitFactor->add(level_uv_right, c2, unit2);
   GaussianFactor::shared_ptr gaussianImplicitSchurFactor =

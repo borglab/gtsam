@@ -44,13 +44,19 @@ public:
     HESSIAN, IMPLICIT_SCHUR, JACOBIAN_Q, JACOBIAN_SVD
   };
 
+  /// How to manage degeneracy
+  enum DegeneracyMode {
+    IGNORE_DEGENERACY, ZERO_ON_DEGENERACY, HANDLE_INFINITY
+  };
+
 private:
   typedef SmartFactorBase<CAMERA> Base;
   typedef SmartProjectionFactor<CAMERA> This;
 
 protected:
 
-  LinearizationMode linearizeTo_; ///< How to linearize the factor
+  LinearizationMode linearizationMode_; ///< How to linearize the factor
+  DegeneracyMode degeneracyMode_; ///< How to linearize the factor
 
   /// @name Caching triangulation
   /// @{
@@ -63,7 +69,6 @@ protected:
 
   /// @name Parameters governing how triangulation result is treated
   /// @{
-  const bool manageDegeneracy_; ///< if set to true will use the rotation-only version for degenerate cases
   const bool throwCheirality_; ///< If true, rethrows Cheirality exceptions (default: false)
   const bool verboseCheirality_; ///< If true, prints text for Cheirality exceptions (default: false)
   /// @}
@@ -85,13 +90,16 @@ public:
    * @param enableEPI if set to true linear triangulation is refined with embedded LM iterations
    */
   SmartProjectionFactor(LinearizationMode linearizationMode = HESSIAN,
-      double rankTolerance = 1, bool manageDegeneracy = false, bool enableEPI =
-          false, double landmarkDistanceThreshold = 1e10,
+      double rankTolerance = 1, DegeneracyMode degeneracyMode =
+          IGNORE_DEGENERACY, bool enableEPI = false,
+      double landmarkDistanceThreshold = 1e10,
       double dynamicOutlierRejectionThreshold = -1) :
-      linearizeTo_(linearizationMode), parameters_(rankTolerance, enableEPI,
-          landmarkDistanceThreshold, dynamicOutlierRejectionThreshold), //
+      linearizationMode_(linearizationMode), //
+      degeneracyMode_(degeneracyMode), //
+      parameters_(rankTolerance, enableEPI, landmarkDistanceThreshold,
+          dynamicOutlierRejectionThreshold), //
       result_(TriangulationResult::Degenerate()), //
-      retriangulationThreshold_(1e-5), manageDegeneracy_(manageDegeneracy), //
+      retriangulationThreshold_(1e-5), //
       throwCheirality_(false), verboseCheirality_(false) {
   }
 
@@ -107,7 +115,7 @@ public:
   void print(const std::string& s = "", const KeyFormatter& keyFormatter =
       DefaultKeyFormatter) const {
     std::cout << s << "SmartProjectionFactor\n";
-    std::cout << "linearizationMode:\n" << linearizeTo_ << std::endl;
+    std::cout << "linearizationMode:\n" << linearizationMode_ << std::endl;
     std::cout << "triangulationParameters:\n" << parameters_ << std::endl;
     std::cout << "result:\n" << result_ << std::endl;
     Base::print("", keyFormatter);
@@ -116,7 +124,8 @@ public:
   /// equals
   virtual bool equals(const NonlinearFactor& p, double tol = 1e-9) const {
     const This *e = dynamic_cast<const This*>(&p);
-    return e && linearizeTo_ == e->linearizeTo_ && Base::equals(p, tol);
+    return e && linearizationMode_ == e->linearizationMode_
+        && Base::equals(p, tol);
   }
 
   /// Check if the new linearization point is the same as the one used for previous triangulation
@@ -194,7 +203,7 @@ public:
 
     triangulateSafe(cameras);
 
-    if (!manageDegeneracy_ && !result_) {
+    if (degeneracyMode_ == ZERO_ON_DEGENERACY && !result_) {
       // put in "empty" Hessian
       BOOST_FOREACH(Matrix& m, Gs)
         m = zeros(Base::Dim, Base::Dim);
@@ -281,7 +290,7 @@ public:
       const double lambda = 0.0) const {
     // depending on flag set on construction we may linearize to different linear factors
     Cameras cameras = this->cameras(values);
-    switch (linearizeTo_) {
+    switch (linearizationMode_) {
     case HESSIAN:
       return createHessianFactor(cameras, lambda);
     case IMPLICIT_SCHUR:
@@ -381,7 +390,7 @@ public:
     if (result_)
       // All good, just use version in base class
       return Base::totalReprojectionError(cameras, *result_);
-    else if (manageDegeneracy_) {
+    else if (degeneracyMode_ == HANDLE_INFINITY) {
       // Otherwise, manage the exceptions with rotation-only factors
       const Point2& z0 = this->measured_.at(0);
       Unit3 backprojected = cameras.front().backprojectPointAtInfinity(z0);
