@@ -50,6 +50,7 @@ Point2 z1 = camera1.project(landmark);
 Point2 z2 = camera2.project(landmark);
 
 //******************************************************************************
+// Simple test with a well-behaved two camera situation
 TEST( triangulation, twoPoses) {
 
   vector<Pose3> poses;
@@ -58,24 +59,36 @@ TEST( triangulation, twoPoses) {
   poses += pose1, pose2;
   measurements += z1, z2;
 
-  bool optimize = true;
   double rank_tol = 1e-9;
 
-  boost::optional<Point3> triangulated_landmark = triangulatePoint3(poses,
-      sharedCal, measurements, rank_tol, optimize);
-  EXPECT(assert_equal(landmark, *triangulated_landmark, 1e-2));
+  // 1. Test simple DLT, perfect in no noise situation
+  bool optimize = false;
+  boost::optional<Point3> actual1 = triangulatePoint3(poses, sharedCal,
+      measurements, rank_tol, optimize);
+  EXPECT(assert_equal(landmark, *actual1, 1e-7));
 
-  // 2. Add some noise and try again: result should be ~ (4.995, 0.499167, 1.19814)
+  // 2. test with optimization on, same answer
+  optimize = true;
+  boost::optional<Point3> actual2 = triangulatePoint3(poses, sharedCal,
+      measurements, rank_tol, optimize);
+  EXPECT(assert_equal(landmark, *actual2, 1e-7));
+
+  // 3. Add some noise and try again: result should be ~ (4.995, 0.499167, 1.19814)
   measurements.at(0) += Point2(0.1, 0.5);
   measurements.at(1) += Point2(-0.2, 0.3);
+  optimize = false;
+  boost::optional<Point3> actual3 = triangulatePoint3(poses, sharedCal,
+      measurements, rank_tol, optimize);
+  EXPECT(assert_equal(Point3(4.995, 0.499167, 1.19814), *actual3, 1e-4));
 
-  boost::optional<Point3> triangulated_landmark_noise = triangulatePoint3(poses,
-      sharedCal, measurements, rank_tol, optimize);
-  EXPECT(assert_equal(landmark, *triangulated_landmark_noise, 1e-2));
+  // 3. Add some noise and try again: result should be ~ (4.995, 0.499167, 1.19814)
+  optimize = true;
+  boost::optional<Point3> actual4 = triangulatePoint3(poses, sharedCal,
+      measurements, rank_tol, optimize);
+  EXPECT(assert_equal(Point3(4.995, 0.499167, 1.19814), *actual4, 1e-4));
 }
 
 //******************************************************************************
-
 TEST( triangulation, twoPosesBundler) {
 
   boost::shared_ptr<Cal3Bundler> bundlerCal = //
@@ -151,7 +164,8 @@ TEST( triangulation, fourPoses) {
   SimpleCamera camera4(pose4, *sharedCal);
 
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
-  CHECK_EXCEPTION(camera4.project(landmark);, CheiralityException);
+  CHECK_EXCEPTION(camera4.project(landmark)
+  ;, CheiralityException);
 
   poses += pose4;
   measurements += Point2(400, 400);
@@ -217,7 +231,8 @@ TEST( triangulation, fourPoses_distinct_Ks) {
   SimpleCamera camera4(pose4, K4);
 
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
-  CHECK_EXCEPTION(camera4.project(landmark);, CheiralityException);
+  CHECK_EXCEPTION(camera4.project(landmark)
+  ;, CheiralityException);
 
   cameras += camera4;
   measurements += Point2(400, 400);
