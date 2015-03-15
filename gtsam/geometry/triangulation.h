@@ -208,20 +208,20 @@ Point3 triangulatePoint3(const std::vector<Pose3>& poses,
     projection_matrices.push_back(
         sharedCal->K() * (pose.inverse().matrix()).block<3, 4>(0, 0));
   }
-  // Triangulate linearly
+  // Do DLT: throws TriangulationUnderconstrainedException if rank<3
   Point3 point = triangulateDLT(projection_matrices, measurements, rank_tol);
 
-  // The n refine using non-linear optimization
+  // Then refine using non-linear optimization
   if (optimize)
     point = triangulateNonlinear<CALIBRATION> //
         (poses, sharedCal, measurements, point);
 
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
-  // verify that the triangulated point lies infront of all cameras
+  // verify that the triangulated point lies in front of all cameras
   BOOST_FOREACH(const Pose3& pose, poses) {
     const Point3& p_local = pose.transform_to(point);
     if (p_local.z() <= 0)
-    throw(TriangulationCheiralityException());
+      throw(TriangulationCheiralityException());
   }
 #endif
 
@@ -258,6 +258,7 @@ Point3 triangulatePoint3(const std::vector<CAMERA>& cameras,
     projection_matrices.push_back(
         camera.calibration().K() * (P_.block<3, 4>(0, 0)));
   }
+  // Do DLT: throws TriangulationUnderconstrainedException if rank<3
   Point3 point = triangulateDLT(projection_matrices, measurements, rank_tol);
 
   // The n refine using non-linear optimization
@@ -265,11 +266,11 @@ Point3 triangulatePoint3(const std::vector<CAMERA>& cameras,
     point = triangulateNonlinear<CAMERA>(cameras, measurements, point);
 
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
-  // verify that the triangulated point lies infront of all cameras
+  // verify that the triangulated point lies in front of all cameras
   BOOST_FOREACH(const CAMERA& camera, cameras) {
     const Point3& p_local = camera.pose().transform_to(point);
     if (p_local.z() <= 0)
-    throw(TriangulationCheiralityException());
+      throw(TriangulationCheiralityException());
   }
 #endif
 
@@ -307,14 +308,17 @@ struct TriangulationParameters {
   /**
    * Constructor
    * @param rankTol tolerance used to check if point triangulation is degenerate
-   * @param enableEPI if set to true linear triangulation is refined with embedded LM iterations
+   * @param enableEPI if true refine triangulation with embedded LM iterations
+   * @param landmarkDistanceThreshold flag as degenerate if point further than this
+   * @param dynamicOutlierRejectionThreshold or if average error larger than this
+   *
    */
   TriangulationParameters(const double _rankTolerance = 1.0,
-      const bool _enableEPI = false, double _landmarkDistanceThreshold = 1e10,
+      const bool _enableEPI = false, double _landmarkDistanceThreshold = -1,
       double _dynamicOutlierRejectionThreshold = -1) :
-      rankTolerance(_rankTolerance), enableEPI(_enableEPI), landmarkDistanceThreshold(
-          _landmarkDistanceThreshold), dynamicOutlierRejectionThreshold(
-          _dynamicOutlierRejectionThreshold) {
+      rankTolerance(_rankTolerance), enableEPI(_enableEPI), //
+      landmarkDistanceThreshold(_landmarkDistanceThreshold), //
+      dynamicOutlierRejectionThreshold(_dynamicOutlierRejectionThreshold) {
   }
 
   // stream to output
@@ -386,25 +390,31 @@ TriangulationResult triangulateSafe(const std::vector<CAMERA>& cameras,
       Point3 point = triangulatePoint3<CAMERA>(cameras, measured,
           params.rankTolerance, params.enableEPI);
 
-      // Check landmark distance and reprojection errors to avoid outliers
+      // Check landmark distance and re-projection errors to avoid outliers
       size_t i = 0;
       double totalReprojError = 0.0;
       BOOST_FOREACH(const CAMERA& camera, cameras) {
-        // we discard smart factors corresponding to points that are far away
-        Point3 cameraTranslation = camera.pose().translation();
-        if (cameraTranslation.distance(point) > params.landmarkDistanceThreshold)
-        return TriangulationResult::Degenerate();
-        // Also flag if point is behind any of the cameras
-        try {
+        const Pose3& pose = camera.pose();
+        if (params.landmarkDistanceThreshold > 0
+            && pose.translation().distance(point)
+                > params.landmarkDistanceThreshold)
+          return TriangulationResult::Degenerate();
+#ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
+        // verify that the triangulated point lies in front of all cameras
+        // Only needed if this was not yet handled by exception
+        const Point3& p_local = pose.transform_to(point);
+        if (p_local.z() <= 0)
+          return TriangulationResult::BehindCamera();
+#endif
+        // Check reprojection error
+        if (params.dynamicOutlierRejectionThreshold > 0) {
           const Point2& zi = measured.at(i);
           Point2 reprojectionError(camera.project(point) - zi);
           totalReprojError += reprojectionError.vector().norm();
-        } catch (CheiralityException) {
-          return TriangulationResult::BehindCamera();
         }
         i += 1;
       }
-      // we discard smart factors that have large reprojection error
+      // Flag as degenerate if average reprojection error is too large
       if (params.dynamicOutlierRejectionThreshold > 0
           && totalReprojError / m > params.dynamicOutlierRejectionThreshold)
         return TriangulationResult::Degenerate();
@@ -412,14 +422,12 @@ TriangulationResult triangulateSafe(const std::vector<CAMERA>& cameras,
       // all good!
       return TriangulationResult(point);
     } catch (TriangulationUnderconstrainedException&) {
-      // if TriangulationUnderconstrainedException can be
+      // This exception is thrown if
       // 1) There is a single pose for triangulation - this should not happen because we checked the number of poses before
       // 2) The rank of the matrix used for triangulation is < 3: rotation-only, parallel cameras (or motion towards the landmark)
-      // in the second case we want to use a rotation-only smart factor
       return TriangulationResult::Degenerate();
     } catch (TriangulationCheiralityException&) {
       // point is behind one of the cameras: can be the case of close-to-parallel cameras or may depend on outliers
-      // we manage this case by either discarding the smart factor, or imposing a rotation-only constraint
       return TriangulationResult::BehindCamera();
     }
 }

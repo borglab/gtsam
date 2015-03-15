@@ -52,7 +52,6 @@ Point3 triangulateDLT(const std::vector<Matrix34>& projection_matrices,
   double error;
   Vector v;
   boost::tie(rank, error, v) = DLT(A, rank_tol);
-  //  std::cout << "s " << s.transpose() << std:endl;
 
   if (rank < 3)
     throw(TriangulationUnderconstrainedException());

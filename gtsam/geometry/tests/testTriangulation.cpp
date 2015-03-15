@@ -231,8 +231,7 @@ TEST( triangulation, fourPoses_distinct_Ks) {
   SimpleCamera camera4(pose4, K4);
 
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
-  CHECK_EXCEPTION(camera4.project(landmark)
-  ;, CheiralityException);
+  CHECK_EXCEPTION(camera4.project(landmark), CheiralityException);
 
   cameras += camera4;
   measurements += Point2(400, 400);
