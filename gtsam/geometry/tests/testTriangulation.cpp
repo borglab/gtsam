@@ -63,32 +63,33 @@ TEST( triangulation, twoPoses) {
 
   // 1. Test simple DLT, perfect in no noise situation
   bool optimize = false;
-  boost::optional<Point3> actual1 = triangulatePoint3(poses, sharedCal,
-      measurements, rank_tol, optimize);
+  boost::optional<Point3> actual1 = //
+      triangulatePoint3(poses, sharedCal, measurements, rank_tol, optimize);
   EXPECT(assert_equal(landmark, *actual1, 1e-7));
 
   // 2. test with optimization on, same answer
   optimize = true;
-  boost::optional<Point3> actual2 = triangulatePoint3(poses, sharedCal,
-      measurements, rank_tol, optimize);
+  boost::optional<Point3> actual2 = //
+      triangulatePoint3(poses, sharedCal, measurements, rank_tol, optimize);
   EXPECT(assert_equal(landmark, *actual2, 1e-7));
 
   // 3. Add some noise and try again: result should be ~ (4.995, 0.499167, 1.19814)
   measurements.at(0) += Point2(0.1, 0.5);
   measurements.at(1) += Point2(-0.2, 0.3);
   optimize = false;
-  boost::optional<Point3> actual3 = triangulatePoint3(poses, sharedCal,
-      measurements, rank_tol, optimize);
+  boost::optional<Point3> actual3 = //
+      triangulatePoint3(poses, sharedCal, measurements, rank_tol, optimize);
   EXPECT(assert_equal(Point3(4.995, 0.499167, 1.19814), *actual3, 1e-4));
 
-  // 3. Add some noise and try again: result should be ~ (4.995, 0.499167, 1.19814)
+  // 4. Now with optimization on
   optimize = true;
-  boost::optional<Point3> actual4 = triangulatePoint3(poses, sharedCal,
-      measurements, rank_tol, optimize);
+  boost::optional<Point3> actual4 = //
+      triangulatePoint3(poses, sharedCal, measurements, rank_tol, optimize);
   EXPECT(assert_equal(Point3(4.995, 0.499167, 1.19814), *actual4, 1e-4));
 }
 
 //******************************************************************************
+// Similar, but now with Bundler calibration
 TEST( triangulation, twoPosesBundler) {
 
   boost::shared_ptr<Cal3Bundler> bundlerCal = //
@@ -109,17 +110,17 @@ TEST( triangulation, twoPosesBundler) {
   bool optimize = true;
   double rank_tol = 1e-9;
 
-  boost::optional<Point3> triangulated_landmark = triangulatePoint3(poses,
-      bundlerCal, measurements, rank_tol, optimize);
-  EXPECT(assert_equal(landmark, *triangulated_landmark, 1e-2));
+  boost::optional<Point3> actual = //
+      triangulatePoint3(poses, bundlerCal, measurements, rank_tol, optimize);
+  EXPECT(assert_equal(landmark, *actual, 1e-7));
 
-  // 2. Add some noise and try again: result should be ~ (4.995, 0.499167, 1.19814)
+  // Add some noise and try again
   measurements.at(0) += Point2(0.1, 0.5);
   measurements.at(1) += Point2(-0.2, 0.3);
 
-  boost::optional<Point3> triangulated_landmark_noise = triangulatePoint3(poses,
-      bundlerCal, measurements, rank_tol, optimize);
-  EXPECT(assert_equal(landmark, *triangulated_landmark_noise, 1e-2));
+  boost::optional<Point3> actual2 = //
+      triangulatePoint3(poses, bundlerCal, measurements, rank_tol, optimize);
+  EXPECT(assert_equal(Point3(4.995, 0.499167, 1.19847), *actual2, 1e-4));
 }
 
 //******************************************************************************
@@ -130,17 +131,17 @@ TEST( triangulation, fourPoses) {
   poses += pose1, pose2;
   measurements += z1, z2;
 
-  boost::optional<Point3> triangulated_landmark = triangulatePoint3(poses,
-      sharedCal, measurements);
-  EXPECT(assert_equal(landmark, *triangulated_landmark, 1e-2));
+  boost::optional<Point3> actual = triangulatePoint3(poses, sharedCal,
+      measurements);
+  EXPECT(assert_equal(landmark, *actual, 1e-2));
 
   // 2. Add some noise and try again: result should be ~ (4.995, 0.499167, 1.19814)
   measurements.at(0) += Point2(0.1, 0.5);
   measurements.at(1) += Point2(-0.2, 0.3);
 
-  boost::optional<Point3> triangulated_landmark_noise = //
+  boost::optional<Point3> actual2 = //
       triangulatePoint3(poses, sharedCal, measurements);
-  EXPECT(assert_equal(landmark, *triangulated_landmark_noise, 1e-2));
+  EXPECT(assert_equal(landmark, *actual2, 1e-2));
 
   // 3. Add a slightly rotated third camera above, again with measurement noise
   Pose3 pose3 = pose1 * Pose3(Rot3::ypr(0.1, 0.2, 0.1), Point3(0.1, -2, -.1));
@@ -164,8 +165,7 @@ TEST( triangulation, fourPoses) {
   SimpleCamera camera4(pose4, *sharedCal);
 
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
-  CHECK_EXCEPTION(camera4.project(landmark)
-  ;, CheiralityException);
+  CHECK_EXCEPTION(camera4.project(landmark), CheiralityException);
 
   poses += pose4;
   measurements += Point2(400, 400);
@@ -195,17 +195,17 @@ TEST( triangulation, fourPoses_distinct_Ks) {
   cameras += camera1, camera2;
   measurements += z1, z2;
 
-  boost::optional<Point3> triangulated_landmark = //
+  boost::optional<Point3> actual = //
       triangulatePoint3(cameras, measurements);
-  EXPECT(assert_equal(landmark, *triangulated_landmark, 1e-2));
+  EXPECT(assert_equal(landmark, *actual, 1e-2));
 
   // 2. Add some noise and try again: result should be ~ (4.995, 0.499167, 1.19814)
   measurements.at(0) += Point2(0.1, 0.5);
   measurements.at(1) += Point2(-0.2, 0.3);
 
-  boost::optional<Point3> triangulated_landmark_noise = //
+  boost::optional<Point3> actual2 = //
       triangulatePoint3(cameras, measurements);
-  EXPECT(assert_equal(landmark, *triangulated_landmark_noise, 1e-2));
+  EXPECT(assert_equal(landmark, *actual2, 1e-2));
 
   // 3. Add a slightly rotated third camera above, again with measurement noise
   Pose3 pose3 = pose1 * Pose3(Rot3::ypr(0.1, 0.2, 0.1), Point3(0.1, -2, -.1));
@@ -260,23 +260,19 @@ TEST( triangulation, twoIdenticalPoses) {
 }
 
 //******************************************************************************
-/*
- TEST( triangulation, onePose) {
- // we expect this test to fail with a TriangulationUnderconstrainedException
- // because there's only one camera observation
+TEST( triangulation, onePose) {
+  // we expect this test to fail with a TriangulationUnderconstrainedException
+  // because there's only one camera observation
 
- Cal3_S2 *sharedCal(1500, 1200, 0, 640, 480);
+  vector<Pose3> poses;
+  vector<Point2> measurements;
 
- vector<Pose3> poses;
- vector<Point2> measurements;
+  poses += Pose3();
+  measurements += Point2();
 
- poses += Pose3();
- measurements += Point2();
-
- CHECK_EXCEPTION(triangulatePoint3(poses, measurements, *sharedCal),
- TriangulationUnderconstrainedException);
- }
- */
+  CHECK_EXCEPTION(triangulatePoint3(poses, sharedCal, measurements),
+      TriangulationUnderconstrainedException);
+}
 
 //******************************************************************************
 int main() {
