@@ -245,6 +245,7 @@ public:
     const Vector3& biasOmegaIncr = biasIncr.gyroscope();
 
     const Rot3& Rot_i = pose_i.rotation();
+    const Matrix3& Rot_i_matrix = Rot_i.matrix();
     const Vector3& pos_i = pose_i.translation().vector();
 
     // Predict state at time j
@@ -254,7 +255,7 @@ public:
     if (deltaPij_biascorrected_out) // if desired, store this
       *deltaPij_biascorrected_out = deltaPij_biascorrected;
 
-    Vector3 pos_j = pos_i + Rot_i.matrix() * deltaPij_biascorrected
+    Vector3 pos_j = pos_i + Rot_i_matrix * deltaPij_biascorrected
         + vel_i * deltaTij()
         - omegaCoriolis.cross(vel_i) * deltaTij() * deltaTij() // Coriolis term - we got rid of the 2 wrt ins paper
     + 0.5 * gravity * deltaTij() * deltaTij();
@@ -265,7 +266,7 @@ public:
       *deltaVij_biascorrected_out = deltaVij_biascorrected;
 
     Vector3 vel_j = Vector3(
-        vel_i + Rot_i.matrix() * deltaVij_biascorrected
+        vel_i + Rot_i_matrix * deltaVij_biascorrected
             - 2 * omegaCoriolis.cross(vel_i) * deltaTij() // Coriolis term
         + gravity * deltaTij());
 
@@ -280,7 +281,7 @@ public:
 
     Vector3 biascorrectedOmega = Rot3::Logmap(deltaRij_biascorrected);
     Vector3 correctedOmega = biascorrectedOmega
-        - Rot_i.inverse().matrix() * omegaCoriolis * deltaTij(); // Coriolis term
+        - Rot_i_matrix.transpose() * omegaCoriolis * deltaTij(); // Coriolis term
     const Rot3 correctedDeltaRij = Rot3::Expmap(correctedOmega);
     const Rot3 Rot_j = Rot_i.compose(correctedDeltaRij);
 
@@ -304,7 +305,11 @@ public:
 
     // we give some shorter name to rotations and translations
     const Rot3& Ri = pose_i.rotation();
+    const Rot3& Ri_transpose = Ri.transpose();
+    const Matrix& Ri_transpose_matrix = Ri_transpose.matrix();
+
     const Rot3& Rj = pose_j.rotation();
+
     const Vector3& pos_j = pose_j.translation().vector();
 
     // Evaluate residual error, according to [3]
@@ -315,11 +320,11 @@ public:
         deltaVij_biascorrected);
 
     // Ri.transpose() is important here to preserve a model with *additive* Gaussian noise of correct covariance
-    const Vector3 fp = Ri.transpose()
+    const Vector3 fp = Ri_transpose_matrix
         * (pos_j - predictedState_j.pose.translation().vector());
 
     // Ri.transpose() is important here to preserve a model with *additive* Gaussian noise of correct covariance
-    const Vector3 fv = Ri.transpose() * (vel_j - predictedState_j.velocity);
+    const Vector3 fv = Ri_transpose_matrix * (vel_j - predictedState_j.velocity);
 
     // fR will be computed later. Note: it is the same as: fR = (predictedState_j.pose.translation()).between(Rot_j)
 
@@ -342,20 +347,21 @@ public:
         Ritranspose_omegaCoriolisHat;
 
     if (H1 || H2)
-      Ritranspose_omegaCoriolisHat = Ri.transpose()
+      Ritranspose_omegaCoriolisHat = Ri_transpose_matrix
           * skewSymmetric(omegaCoriolis);
 
     // This is done to save computation: we ask for the jacobians only when they are needed
+    Rot3 RiBetweenRj = Ri_transpose*Rj;
     if (H1 || H2 || H3 || H4 || H5) {
       correctedDeltaRij = Rot3::Expmap(correctedOmega, D_cDeltaRij_cOmega);
       // Residual rotation error
-      fRrot = correctedDeltaRij.between(Ri.between(Rj));
+      fRrot = correctedDeltaRij.between(RiBetweenRj);
       fR = Rot3::Logmap(fRrot, D_fR_fRrot);
       D_coriolis = -D_cDeltaRij_cOmega * skewSymmetric(coriolis);
     } else {
       correctedDeltaRij = Rot3::Expmap(correctedOmega);
       // Residual rotation error
-      fRrot = correctedDeltaRij.between(Ri.between(Rj));
+      fRrot = correctedDeltaRij.between(RiBetweenRj);
       fR = Rot3::Logmap(fRrot);
     }
     if (H1) {
@@ -388,10 +394,10 @@ public:
       H2->resize(9, 3);
       (*H2) <<
       // dfP/dVi
-          -Ri.transpose() * deltaTij()
+          - Ri_transpose_matrix * deltaTij()
               + Ritranspose_omegaCoriolisHat * deltaTij() * deltaTij(), // Coriolis term - we got rid of the 2 wrt ins paper
                   // dfV/dVi
-      -Ri.transpose() + 2 * Ritranspose_omegaCoriolisHat * deltaTij(), // Coriolis term
+      - Ri_transpose_matrix + 2 * Ritranspose_omegaCoriolisHat * deltaTij(), // Coriolis term
           // dfR/dVi
       Z_3x3;
     }
@@ -399,7 +405,7 @@ public:
       H3->resize(9, 6);
       (*H3) <<
       // dfP/dPosej
-          Z_3x3, Ri.transpose() * Rj.matrix(),
+          Z_3x3, Ri_transpose_matrix * Rj.matrix(),
       // dfV/dPosej
       Matrix::Zero(3, 6),
       // dfR/dPosej
@@ -411,7 +417,7 @@ public:
       // dfP/dVj
           Z_3x3,
       // dfV/dVj
-      Ri.transpose(),
+		  Ri_transpose_matrix,
       // dfR/dVj
       Z_3x3;
     }
