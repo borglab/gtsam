@@ -31,7 +31,7 @@ class TriangulationFactor: public NoiseModelFactor1<Point3> {
 
 public:
 
-  /// Camera type
+  /// CAMERA type
   typedef CAMERA Camera;
 
 protected:
@@ -43,7 +43,7 @@ protected:
   typedef TriangulationFactor<CAMERA> This;
 
   // Keep a copy of measurement and calibration for I/O
-  const Camera camera_; ///< Camera in which this landmark was seen
+  const CAMERA camera_; ///< CAMERA in which this landmark was seen
   const Point2 measured_; ///< 2D measurement
 
   // verbosity handling for Cheirality Exceptions
@@ -69,7 +69,7 @@ public:
    * @param throwCheirality determines whether Cheirality exceptions are rethrown
    * @param verboseCheirality determines whether exceptions are printed for Cheirality
    */
-  TriangulationFactor(const Camera& camera, const Point2& measured,
+  TriangulationFactor(const CAMERA& camera, const Point2& measured,
       const SharedNoiseModel& model, Key pointKey, bool throwCheirality = false,
       bool verboseCheirality = false) :
       Base(model, pointKey), camera_(camera), measured_(measured), throwCheirality_(
