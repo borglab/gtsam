@@ -87,12 +87,8 @@ public:
    *  @param pw is a point in the world coordinates
    */
   Point2 project(const Point3& pw) const {
-
-    // project to normalized coordinates
-    const Point2 pn = PinholeBase::project2(pw);
-
-    // uncalibrate to pixel coordinates
-    return calibration().uncalibrate(pn);
+    const Point2 pn = PinholeBase::project2(pw); // project to normalized coordinates
+    return calibration().uncalibrate(pn); // uncalibrate to pixel coordinates
   }
 
   /** project a point from world coordinate to the image
@@ -100,20 +96,20 @@ public:
    */
   Point2 project(const Unit3& pw) const {
     const Unit3 pc = pose().rotation().unrotate(pw); // convert to camera frame
-    const Point2 pn = PinholeBase::Project(pc);
-    return calibration().uncalibrate(pn);
+    const Point2 pn = PinholeBase::Project(pc); // project to normalized coordinates
+    return calibration().uncalibrate(pn);  // uncalibrate to pixel coordinates
   }
 
-  /** project a point (possibly at infinity) from world coordinate to the image
-   *  @param pw is a point in world coordinates
+  /** Templated projection of a point (possibly at infinity) from world coordinate to the image
+   *  @param pw is a 3D point or aUnit3 (point at infinity) in world coordinates
    *  @param Dpose is the Jacobian w.r.t. pose3
    *  @param Dpoint is the Jacobian w.r.t. point3
    *  @param Dcal is the Jacobian w.r.t. calibration
    */
   template <class POINT>
-  Point2 project(const POINT& pw, OptionalJacobian<2, 6> Dpose,
-      OptionalJacobian<2, FixedDimension<POINT>::value> Dpoint = boost::none,
-      OptionalJacobian<2, DimK> Dcal = boost::none) const {
+  Point2 _project(const POINT& pw, OptionalJacobian<2, 6> Dpose,
+      OptionalJacobian<2, FixedDimension<POINT>::value> Dpoint,
+      OptionalJacobian<2, DimK> Dcal) const {
 
     // project to normalized coordinates
     const Point2 pn = PinholeBase::project2(pw, Dpose, Dpoint);
@@ -130,6 +126,20 @@ public:
     *Dpoint = Dpi_pn * *Dpoint;
 
     return pi;
+  }
+
+  /// project a 3D point from world coordinates into the image
+  Point2 project(const Point3& pw, OptionalJacobian<2, 6> Dpose,
+      OptionalJacobian<2, 3> Dpoint = boost::none,
+      OptionalJacobian<2, DimK> Dcal = boost::none) const {
+    return _project(pw, Dpose, Dpoint, Dcal);
+  }
+
+  /// project a point at infinity from world coordinates into the image
+  Point2 project(const Unit3& pw, OptionalJacobian<2, 6> Dpose,
+      OptionalJacobian<2, 2> Dpoint = boost::none,
+      OptionalJacobian<2, DimK> Dcal = boost::none) const {
+    return _project(pw, Dpose, Dpoint, Dcal);
   }
 
   /// backproject a 2-dimensional point to a 3-dimensional point at given depth
@@ -318,15 +328,19 @@ public:
     return *K_;
   }
 
-  /** project a point (possibly at infinity) from world coordinate to the image, 2 derivatives only
+  /** project a point from world coordinate to the image, 2 derivatives only
    *  @param pw is a point in world coordinates
-   *  @param Dpose is the Jacobian w.r.t. the whole camera (realy only the pose)
+   *  @param Dpose is the Jacobian w.r.t. the whole camera (really only the pose)
    *  @param Dpoint is the Jacobian w.r.t. point3
-   *  TODO should use Unit3
    */
-  template<class POINT>
-  Point2 project2(const POINT& pw, OptionalJacobian<2, 6> Dpose = boost::none,
-      OptionalJacobian<2, FixedDimension<POINT>::value> Dpoint = boost::none) const {
+  Point2 project2(const Point3& pw, OptionalJacobian<2, 6> Dpose = boost::none,
+      OptionalJacobian<2, 3> Dpoint = boost::none) const {
+    return Base::project(pw, Dpose, Dpoint);
+  }
+
+  /// project2 version for point at infinity
+  Point2 project2(const Unit3& pw, OptionalJacobian<2, 6> Dpose = boost::none,
+      OptionalJacobian<2, 2> Dpoint = boost::none) const {
     return Base::project(pw, Dpose, Dpoint);
   }
 

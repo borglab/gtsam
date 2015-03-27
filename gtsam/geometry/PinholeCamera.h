@@ -145,7 +145,7 @@ public:
   const Pose3& getPose(OptionalJacobian<6, dimension> H) const {
     if (H) {
       H->setZero();
-      H->template block<6,6>(0, 0) = I_6x6;
+      H->template block<6, 6>(0, 0) = I_6x6;
     }
     return Base::pose();
   }
@@ -199,14 +199,12 @@ public:
 
   typedef Eigen::Matrix<double, 2, DimK> Matrix2K;
 
-  /** project a point from world coordinate to the image (possibly a Unit3)
-   *  @param pw is a point in the world coordinate
+  /** Templated projection of a 3D point or a point at infinity into the image
+   *  @param pw either a Point3 or a Unit3, in world coordinates
    */
   template<class POINT>
-  Point2 project2(
-      const POINT& pw, //
-      OptionalJacobian<2, dimension> Dcamera = boost::none,
-      OptionalJacobian<2, FixedDimension<POINT>::value> Dpoint = boost::none) const {
+  Point2 _project2(const POINT& pw, OptionalJacobian<2, dimension> Dcamera,
+      OptionalJacobian<2, FixedDimension<POINT>::value> Dpoint) const {
     // We just call 3-derivative version in Base
     Matrix26 Dpose;
     Eigen::Matrix<double, 2, DimK> Dcal;
@@ -215,6 +213,18 @@ public:
     if (Dcamera)
       *Dcamera << Dpose, Dcal;
     return pi;
+  }
+
+  /// project a 3D point from world coordinates into the image
+  Point2 project2(const Point3& pw, OptionalJacobian<2, dimension> Dcamera =
+      boost::none, OptionalJacobian<2, 3> Dpoint = boost::none) const {
+    return _project2(pw, Dcamera, Dpoint);
+  }
+
+  /// project a point at infinity from world coordinates into the image
+  Point2 project2(const Unit3& pw, OptionalJacobian<2, dimension> Dcamera =
+      boost::none, OptionalJacobian<2, 2> Dpoint = boost::none) const {
+    return _project2(pw, Dcamera, Dpoint);
   }
 
   /**
@@ -264,7 +274,7 @@ public:
     if (Dother) {
       Dother->resize(1, 6 + CalibrationB::dimension);
       Dother->setZero();
-      Dother->block<1,6>(0, 0) = Dother_;
+      Dother->block<1, 6>(0, 0) = Dother_;
     }
     return result;
   }
