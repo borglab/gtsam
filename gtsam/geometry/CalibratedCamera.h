@@ -182,8 +182,7 @@ public:
   /// Project a point into the image and check depth
   std::pair<Point2, bool> projectSafe(const Point3& pw) const;
 
-  /**
-   * Project point into the image
+  /** Project point into the image
    * Throws a CheiralityException if point behind image plane iff GTSAM_THROW_CHEIRALITY_EXCEPTION
    * @param point 3D point in world coordinates
    * @return the intrinsic coordinates of the projected point
@@ -191,8 +190,7 @@ public:
   Point2 project2(const Point3& point, OptionalJacobian<2, 6> Dpose =
       boost::none, OptionalJacobian<2, 3> Dpoint = boost::none) const;
 
-  /**
-   * Project point at infinity into the image
+  /** Project point at infinity into the image
    * Throws a CheiralityException if point behind image plane iff GTSAM_THROW_CHEIRALITY_EXCEPTION
    * @param point 3D point in world coordinates
    * @return the intrinsic coordinates of the projected point
