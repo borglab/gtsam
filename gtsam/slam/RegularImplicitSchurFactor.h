@@ -152,7 +152,7 @@ public:
           * E_.block<ZDim, 3>(ZDim * k, 0);
 
       Eigen::Matrix<double, D, 1> dj;
-      for (size_t k = 0; k < D; ++k) { // for each diagonal element of the camera hessian
+      for (int k = 0; k < D; ++k) { // for each diagonal element of the camera hessian
         // Vector column_k_Fj = Fj.col(k);
         dj(k) = Fj.col(k).squaredNorm(); // dot(column_k_Fj, column_k_Fj);
         // Vector column_k_FtE = FtE.row(k);
@@ -184,7 +184,7 @@ public:
           * E_.block<ZDim, 3>(ZDim * pos, 0);
 
       DVector dj;
-      for (size_t k = 0; k < D; ++k) { // for each diagonal element of the camera hessian
+      for (int k = 0; k < D; ++k) { // for each diagonal element of the camera hessian
         dj(k) = Fj.col(k).squaredNorm();
         // (1 x 1) = (1 x 3) * (3 * 3) * (3 x 1)
         dj(k) -= FtE.row(k) * PointCovariance_ * FtE.row(k).transpose();

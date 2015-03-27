@@ -93,7 +93,7 @@ public:
   }
 
   /**
-   * Project a point (posibly Unit3 at infinity), with derivatives
+   * Project a point (possibly Unit3 at infinity), with derivatives
    * Note that F is a sparse block-diagonal matrix, so instead of a large dense
    * matrix this function returns the diagonal blocks.
    * throws CheiralityException
@@ -148,7 +148,7 @@ public:
       const Matrix& E, const Eigen::Matrix<double, N, N>& P, const Vector& b) {
 
     // a single point is observed in m cameras
-    int m = Fs.size();
+    size_t m = Fs.size();
 
     // Create a SymmetricBlockMatrix
     size_t M1 = D * m + 1;
