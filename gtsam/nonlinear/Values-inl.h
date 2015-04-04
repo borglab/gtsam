@@ -281,7 +281,7 @@ namespace gtsam {
         }
       }
     };
-
+/*
     // Handle dynamic matrices
     template<int N>
     struct handle<Eigen::Matrix<double, -1, N> > {
@@ -295,6 +295,8 @@ namespace gtsam {
         }
       }
     };
+
+    */
 
     // Request for a fixed vector
     template<int M>
@@ -329,6 +331,8 @@ namespace gtsam {
         }
       }
     };
+
+
     } // internal
 
    /* ************************************************************************* */

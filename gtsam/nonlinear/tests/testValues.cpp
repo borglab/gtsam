@@ -476,16 +476,40 @@ TEST(Values, Destructors) {
 }
 
 /* ************************************************************************* */
-TEST(Values, FixedVector) {
+TEST(Values, VectorDynamicInsertFixedRead) {
   Values values;
   Vector v(3); v << 5.0, 6.0, 7.0;
   values.insert(key1, v);
   Vector3 expected(5.0, 6.0, 7.0);
-  CHECK(assert_equal((Vector)expected, values.at<Vector3>(key1)));
+  Vector3 actual = values.at<Vector3>(key1);
+  CHECK(assert_equal(expected, actual));
   CHECK_EXCEPTION(values.at<Vector7>(key1), exception);
 }
+
 /* ************************************************************************* */
-TEST(Values, FixedMatrix) {
+TEST(Values, VectorFixedInsertDynamicRead) {
+  Values values;
+  Vector3 v; v << 5.0, 6.0, 7.0;
+  values.insert(key1, v);
+  Vector expected(3); expected << 5.0, 6.0, 7.0;
+  Vector actual(3); actual = values.at<Vector>(key1);
+  //CHECK(assert_equal(expected, actual));
+  CHECK_EXCEPTION(values.at<Vector7>(key1), exception);
+}
+
+/* ************************************************************************* */
+TEST(Values, VectorFixedInsertFixedRead) {
+  Values values;
+  Vector3 v; v << 5.0, 6.0, 7.0;
+  values.insert(key1, v);
+  Vector3 expected; expected << 5.0, 6.0, 7.0;
+  Vector3 actual = values.at<Vector3>(key1);
+  //CHECK(assert_equal(expected, actual));
+  CHECK_EXCEPTION(values.at<Vector7>(key1), exception);
+}
+
+/* ************************************************************************* */
+TEST(Values, MatrixDynamicInsertFixedRead) {
   Values values;
   Matrix v(1,3); v << 5.0, 6.0, 7.0;
   values.insert(key1, v);
