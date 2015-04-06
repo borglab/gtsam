@@ -173,8 +173,9 @@ namespace gtsam {
     /** Retrieve a variable by key \c j.  The type of the value associated with
      * this key is supplied as a template argument to this function.
      * @param j Retrieve the value associated with this key
-     * @tparam Value The type of the value stored with this key, this method
-     * throws DynamicValuesIncorrectType if this requested type is not correct.
+     * @tparam ValueType The type of the value stored with this key, this method
+     * Throws DynamicValuesIncorrectType if this requested type is not correct.
+     * Dynamic matrices/vectors can be retrieved as fixed-size, but not vice-versa.
      * @return The stored value
      */
     template<typename ValueType>

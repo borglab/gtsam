@@ -261,6 +261,7 @@ namespace gtsam {
     struct handle {
       ValueType operator()(Key j, const gtsam::Value * const pointer) {
         try {
+          // value returns a const ValueType&, and the return makes a copy !!!!!
           return dynamic_cast<const GenericValue<ValueType>&>(*pointer).value();
         } catch (std::bad_cast &) {
           throw ValuesIncorrectType(j, typeid(*pointer), typeid(ValueType));
@@ -274,42 +275,49 @@ namespace gtsam {
        Eigen::Matrix<double, -1, 1> operator()(Key j,
           const gtsam::Value * const pointer) {
         try {
+          // value returns a const Vector&, and the return makes a copy !!!!!
           return dynamic_cast<const GenericValue<Eigen::Matrix<double, -1, 1> >&>(*pointer).value();
         } catch (std::bad_cast &) {
+          // If a fixed vector was stored, we end up here as well.
           throw ValuesIncorrectType(j, typeid(*pointer),
               typeid(Eigen::Matrix<double, -1, 1>));
         }
       }
     };
-/*
+
     // Handle dynamic matrices
     template<int N>
     struct handle<Eigen::Matrix<double, -1, N> > {
        Eigen::Matrix<double, -1, N> operator()(Key j,
           const gtsam::Value * const pointer) {
         try {
+          // value returns a const Matrix&, and the return makes a copy !!!!!
           return dynamic_cast<const GenericValue<Eigen::Matrix<double, -1, N> >&>(*pointer).value();
         } catch (std::bad_cast &) {
+          // If a fixed matrix was stored, we end up here as well.
           throw ValuesIncorrectType(j, typeid(*pointer),
               typeid(Eigen::Matrix<double, -1, N>));
         }
       }
     };
 
-    */
-
     // Request for a fixed vector
+    // TODO(jing): is this piece of code really needed ???
     template<int M>
     struct handle<Eigen::Matrix<double, M, 1> > {
       Eigen::Matrix<double, M, 1> operator()(Key j,
           const gtsam::Value * const pointer) {
         try {
+          // value returns a const VectorM&, and the return makes a copy !!!!!
           return dynamic_cast<const GenericValue<Eigen::Matrix<double, M, 1> >&>(*pointer).value();
         } catch (std::bad_cast &) {
-          Matrix A = handle<Eigen::VectorXd>()(j, pointer);
+          // Check if a dynamic vector was stored
+          Matrix A = handle<Eigen::VectorXd>()(j, pointer); // will throw if not....
+          // Yes: check size, and throw if not a match
           if (A.rows() != M || A.cols() != 1)
             throw NoMatchFoundForFixed(M, 1, A.rows(), A.cols());
           else
+            // This is not a copy because of RVO
             return A;
         }
       }
@@ -321,12 +329,16 @@ namespace gtsam {
       Eigen::Matrix<double, M, N> operator()(Key j,
           const gtsam::Value * const pointer) {
         try {
+          // value returns a const MatrixMN&, and the return makes a copy !!!!!
           return dynamic_cast<const GenericValue<Eigen::Matrix<double, M, N> >&>(*pointer).value();
         } catch (std::bad_cast &) {
-          Matrix A = handle<Eigen::MatrixXd>()(j, pointer);
+          // Check if a dynamic matrix was stored
+          Matrix A = handle<Eigen::MatrixXd>()(j, pointer); // will throw if not....
+          // Yes: check size, and throw if not a match
           if (A.rows() != M || A.cols() != N)
             throw NoMatchFoundForFixed(M, N, A.rows(), A.cols());
           else
+            // This is not a copy because of RVO
             return A;
         }
       }
