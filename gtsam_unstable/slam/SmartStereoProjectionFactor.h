@@ -63,7 +63,7 @@ enum LinearizationMode {
 /**
  * SmartStereoProjectionFactor: triangulates point
  */
-template<class CALIBRATION, size_t D>
+template<class CALIBRATION>
 class SmartStereoProjectionFactor: public SmartFactorBase<StereoCamera> {
 protected:
 
@@ -104,7 +104,7 @@ protected:
   // and the factor is disregarded if the error is large
 
   /// shorthand for this class
-  typedef SmartStereoProjectionFactor<CALIBRATION, D> This;
+  typedef SmartStereoProjectionFactor<CALIBRATION> This;
 
   enum {
     ZDim = 3
@@ -347,7 +347,7 @@ public:
   }
 
   /// linearize returns a Hessianfactor that is an approximation of error(p)
-  boost::shared_ptr<RegularHessianFactor<D> > createHessianFactor(
+  boost::shared_ptr<RegularHessianFactor<Base::Dim> > createHessianFactor(
       const Cameras& cameras, const double lambda = 0.0) const {
 
     bool isDebug = false;
@@ -374,10 +374,10 @@ public:
       if (isDebug)
         std::cout << "In linearize: exception" << std::endl;
       BOOST_FOREACH(Matrix& m, Gs)
-        m = zeros(D, D);
+        m = zeros(Base::Dim, Base::Dim);
       BOOST_FOREACH(Vector& v, gs)
-        v = zero(D);
-      return boost::make_shared<RegularHessianFactor<D> >(this->keys_, Gs, gs,
+        v = zero(Base::Dim);
+      return boost::make_shared<RegularHessianFactor<Base::Dim> >(this->keys_, Gs, gs,
           0.0);
     }
 
@@ -407,7 +407,7 @@ public:
           << "something wrong in SmartProjectionHessianFactor: selective relinearization should be disabled"
           << std::endl;
       exit(1);
-      return boost::make_shared<RegularHessianFactor<D> >(this->keys_,
+      return boost::make_shared<RegularHessianFactor<Base::Dim> >(this->keys_,
           this->state_->Gs, this->state_->gs, this->state_->f);
     }
 
@@ -421,7 +421,7 @@ public:
     // Schur complement trick
     // Frank says: should be possible to do this more efficiently?
     // And we care, as in grouped factors this is called repeatedly
-    Matrix H(D * numKeys, D * numKeys);
+    Matrix H(Base::Dim * numKeys, Base::Dim * numKeys);
     Vector gs_vector;
 
     Matrix3 P = Cameras::PointCov(E, lambda);
@@ -436,11 +436,11 @@ public:
     // Populate Gs and gs
     int GsCount2 = 0;
     for (DenseIndex i1 = 0; i1 < (DenseIndex) numKeys; i1++) { // for each camera
-      DenseIndex i1D = i1 * D;
-      gs.at(i1) = gs_vector.segment<D>(i1D);
+      DenseIndex i1D = i1 * Base::Dim;
+      gs.at(i1) = gs_vector.segment<Base::Dim>(i1D);
       for (DenseIndex i2 = 0; i2 < (DenseIndex) numKeys; i2++) {
         if (i2 >= i1) {
-          Gs.at(GsCount2) = H.block<D, D>(i1D, i2 * D);
+          Gs.at(GsCount2) = H.block<Base::Dim, Base::Dim>(i1D, i2 * Base::Dim);
           GsCount2++;
         }
       }
@@ -452,29 +452,29 @@ public:
       this->state_->gs = gs;
       this->state_->f = f;
     }
-    return boost::make_shared<RegularHessianFactor<D> >(this->keys_, Gs, gs, f);
+    return boost::make_shared<RegularHessianFactor<Base::Dim> >(this->keys_, Gs, gs, f);
   }
 
 //  // create factor
-//  boost::shared_ptr<ImplicitSchurFactor<D> > createImplicitSchurFactor(
+//  boost::shared_ptr<ImplicitSchurFactor<Base::Dim> > createImplicitSchurFactor(
 //      const Cameras& cameras, double lambda) const {
 //    if (triangulateForLinearize(cameras))
 //      return Base::createImplicitSchurFactor(cameras, point_, lambda);
 //    else
-//      return boost::shared_ptr<ImplicitSchurFactor<D> >();
+//      return boost::shared_ptr<ImplicitSchurFactor<Base::Dim> >();
 //  }
 //
 //  /// create factor
-//  boost::shared_ptr<JacobianFactorQ<D> > createJacobianQFactor(
+//  boost::shared_ptr<JacobianFactorQ<Base::Dim> > createJacobianQFactor(
 //      const Cameras& cameras, double lambda) const {
 //    if (triangulateForLinearize(cameras))
 //      return Base::createJacobianQFactor(cameras, point_, lambda);
 //    else
-//      return boost::make_shared< JacobianFactorQ<D> >(this->keys_);
+//      return boost::make_shared< JacobianFactorQ<Base::Dim> >(this->keys_);
 //  }
 //
 //  /// Create a factor, takes values
-//  boost::shared_ptr<JacobianFactorQ<D> > createJacobianQFactor(
+//  boost::shared_ptr<JacobianFactorQ<Base::Dim> > createJacobianQFactor(
 //      const Values& values, double lambda) const {
 //    Cameras cameras;
 //    // TODO triangulate twice ??
@@ -482,7 +482,7 @@ public:
 //    if (nonDegenerate)
 //      return createJacobianQFactor(cameras, lambda);
 //    else
-//      return boost::make_shared< JacobianFactorQ<D> >(this->keys_);
+//      return boost::make_shared< JacobianFactorQ<Base::Dim> >(this->keys_);
 //  }
 //
   /// different (faster) way to compute Jacobian factor
@@ -491,7 +491,7 @@ public:
     if (triangulateForLinearize(cameras))
       return Base::createJacobianSVDFactor(cameras, point_, lambda);
     else
-      return boost::make_shared<JacobianFactorSVD<D, ZDim> >(this->keys_);
+      return boost::make_shared<JacobianFactorSVD<Base::Dim, ZDim> >(this->keys_);
   }
 
   /// Returns true if nonDegenerate
@@ -717,9 +717,9 @@ private:
 };
 
 /// traits
-template<class CALIBRATION, size_t D>
-struct traits<SmartStereoProjectionFactor<CALIBRATION, D> > : public Testable<
-    SmartStereoProjectionFactor<CALIBRATION, D> > {
+template<class CALIBRATION>
+struct traits<SmartStereoProjectionFactor<CALIBRATION> > : public Testable<
+    SmartStereoProjectionFactor<CALIBRATION> > {
 };
 
 } // \ namespace gtsam
