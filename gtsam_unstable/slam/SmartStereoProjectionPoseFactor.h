@@ -40,6 +40,13 @@ namespace gtsam {
  */
 template<class CALIBRATION>
 class SmartStereoProjectionPoseFactor: public SmartStereoProjectionFactor<CALIBRATION> {
+
+public:
+  /// Linearization mode: what factor to linearize to
+   enum LinearizationMode {
+     HESSIAN, IMPLICIT_SCHUR, JACOBIAN_Q, JACOBIAN_SVD
+   };
+
 protected:
 
   LinearizationMode linearizeTo_;  ///< How to linearize the factor (HESSIAN, JACOBIAN_SVD, JACOBIAN_Q)

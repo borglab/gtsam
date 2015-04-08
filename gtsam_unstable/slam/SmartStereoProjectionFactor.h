@@ -34,33 +34,6 @@
 namespace gtsam {
 
 /**
- * Structure for storing some state memory, used to speed up optimization
- * @addtogroup SLAM
- */
-class SmartStereoProjectionFactorState {
-
-protected:
-
-public:
-
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
-  SmartStereoProjectionFactorState() {
-  }
-  // Hessian representation (after Schur complement)
-  bool calculatedHessian;
-  Matrix H;
-  Vector gs_vector;
-  std::vector<Matrix> Gs;
-  std::vector<Vector> gs;
-  double f;
-};
-
-enum LinearizationMode {
-  HESSIAN, JACOBIAN_SVD, JACOBIAN_Q
-};
-
-/**
  * SmartStereoProjectionFactor: triangulates point
  */
 template<class CALIBRATION>
@@ -84,14 +57,6 @@ protected:
   mutable bool degenerate_;
   mutable bool cheiralityException_;
 
-  // verbosity handling for Cheirality Exceptions
-  const bool throwCheirality_; ///< If true, rethrows Cheirality exceptions (default: false)
-  const bool verboseCheirality_; ///< If true, prints text for Cheirality exceptions (default: false)
-
-  boost::shared_ptr<SmartStereoProjectionFactorState> state_;
-
-  /// shorthand for smart projection factor state variable
-  typedef boost::shared_ptr<SmartStereoProjectionFactorState> SmartFactorStatePtr;
 
   /// shorthand for base class type
   typedef SmartFactorBase<StereoCamera> Base;
@@ -109,6 +74,12 @@ protected:
   enum {
     ZDim = 3
   }; ///< Dimension trait of measurement type
+
+  /// @name Parameters governing how triangulation result is treated
+  /// @{
+   const bool throwCheirality_; ///< If true, rethrows Cheirality exceptions (default: false)
+   const bool verboseCheirality_; ///< If true, prints text for Cheirality exceptions (default: false)
+   /// @}
 
 public:
 
@@ -133,12 +104,11 @@ public:
   SmartStereoProjectionFactor(const double rankTol, const double linThreshold,
       const bool manageDegeneracy, const bool enableEPI,
       double landmarkDistanceThreshold = 1e10,
-      double dynamicOutlierRejectionThreshold = -1, SmartFactorStatePtr state =
-          SmartFactorStatePtr(new SmartStereoProjectionFactorState())) :
+      double dynamicOutlierRejectionThreshold = -1) :
       rankTolerance_(rankTol), retriangulationThreshold_(1e-5), manageDegeneracy_(
           manageDegeneracy), enableEPI_(enableEPI), linearizationThreshold_(
           linThreshold), degenerate_(false), cheiralityException_(false), throwCheirality_(
-          false), verboseCheirality_(false), state_(state), landmarkDistanceThreshold_(
+          false), verboseCheirality_(false), landmarkDistanceThreshold_(
           landmarkDistanceThreshold), dynamicOutlierRejectionThreshold_(
           dynamicOutlierRejectionThreshold) {
   }
@@ -197,40 +167,6 @@ public:
     }
 
     return retriangulate; // if we arrive to this point_ all poses are the same and we don't need re-triangulation
-  }
-
-  /// This function checks if the new linearization point_ is 'close'  to the previous one used for linearization
-  bool decideIfLinearize(const Cameras& cameras) const {
-    // "selective linearization"
-    // The function evaluates how close are the old and the new poses, transformed in the ref frame of the first pose
-    // (we only care about the "rigidity" of the poses, not about their absolute pose)
-
-    if (this->linearizationThreshold_ < 0) //by convention if linearizationThreshold is negative we always relinearize
-      return true;
-
-    // if we do not have a previous linearization point_ or the new linearization point_ includes more poses
-    if (cameraPosesLinearization_.empty()
-        || (cameras.size() != cameraPosesLinearization_.size()))
-      return true;
-
-    Pose3 firstCameraPose, firstCameraPoseOld;
-    for (size_t i = 0; i < cameras.size(); i++) {
-
-      if (i == 0) { // we store the initial pose, this is useful for selective re-linearization
-        firstCameraPose = cameras[i].pose();
-        firstCameraPoseOld = cameraPosesLinearization_[i];
-        continue;
-      }
-
-      // we compare the poses in the frame of the first pose
-      Pose3 localCameraPose = firstCameraPose.between(cameras[i].pose());
-      Pose3 localCameraPoseOld = firstCameraPoseOld.between(
-          cameraPosesLinearization_[i]);
-      if (!localCameraPose.equals(localCameraPoseOld,
-          this->linearizationThreshold_))
-        return true; // at least two "relative" poses are different, hence we re-linearize
-    }
-    return false; // if we arrive to this point_ all poses are the same and we don't need re-linearize
   }
 
   /// triangulateSafe
@@ -364,7 +300,7 @@ public:
       exit(1);
     }
 
-    this->triangulateSafe(cameras);
+    triangulateSafe(cameras);
     if (isDebug)
       std::cout << "point_ = " << point_ << std::endl;
 
@@ -388,28 +324,9 @@ public:
         std::cout << "degenerate_ = true" << std::endl;
     }
 
-    bool doLinearize = this->decideIfLinearize(cameras);
-
-    if (isDebug)
-      std::cout << "doLinearize = " << doLinearize << std::endl;
-
-    if (this->linearizationThreshold_ >= 0 && doLinearize) // if we apply selective relinearization and we need to relinearize
+    if (this->linearizationThreshold_ >= 0) // if we apply selective relinearization and we need to relinearize
       for (size_t i = 0; i < cameras.size(); i++)
         this->cameraPosesLinearization_[i] = cameras[i].pose();
-
-    if (!doLinearize) { // return the previous Hessian factor
-      std::cout << "=============================" << std::endl;
-      std::cout << "doLinearize " << doLinearize << std::endl;
-      std::cout << "this->linearizationThreshold_ "
-          << this->linearizationThreshold_ << std::endl;
-      std::cout << "this->degenerate_ " << this->degenerate_ << std::endl;
-      std::cout
-          << "something wrong in SmartProjectionHessianFactor: selective relinearization should be disabled"
-          << std::endl;
-      exit(1);
-      return boost::make_shared<RegularHessianFactor<Base::Dim> >(this->keys_,
-          this->state_->Gs, this->state_->gs, this->state_->f);
-    }
 
     // ==================================================================
     std::vector<typename Base::MatrixZD> Fblocks;
@@ -447,11 +364,6 @@ public:
     }
     // ==================================================================
     double f = b.squaredNorm();
-    if (this->linearizationThreshold_ >= 0) { // if we do not use selective relinearization we don't need to store these variables
-      this->state_->Gs = Gs;
-      this->state_->gs = gs;
-      this->state_->f = f;
-    }
     return boost::make_shared<RegularHessianFactor<Base::Dim> >(this->keys_, Gs, gs, f);
   }
 
