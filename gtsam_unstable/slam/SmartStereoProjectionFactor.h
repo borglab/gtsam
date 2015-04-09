@@ -40,14 +40,17 @@ template<class CALIBRATION>
 class SmartStereoProjectionFactor: public SmartFactorBase<StereoCamera> {
 protected:
 
-  // Some triangulation parameters
-  const double rankTolerance_; ///< threshold to decide whether triangulation is degenerate_
+  /// @name Caching triangulation
+  /// @{
+  const TriangulationParameters parameters_;
+  // TODO:
+//  mutable TriangulationResult result_; ///< result from triangulateSafe
+
   const double retriangulationThreshold_; ///< threshold to decide whether to re-triangulate
   mutable std::vector<Pose3> cameraPosesTriangulation_; ///< current triangulation poses
+  /// @}
 
   const bool manageDegeneracy_; ///< if set to true will use the rotation-only version for degenerate cases
-
-  const bool enableEPI_; ///< if set to true, will refine triangulation using LM
 
   const double linearizationThreshold_; ///< threshold to decide whether to re-linearize
   mutable std::vector<Pose3> cameraPosesLinearization_; ///< current linearization poses
@@ -60,13 +63,6 @@ protected:
 
   /// shorthand for base class type
   typedef SmartFactorBase<StereoCamera> Base;
-
-  double landmarkDistanceThreshold_; // if the landmark is triangulated at a
-  // distance larger than that the factor is considered degenerate
-
-  double dynamicOutlierRejectionThreshold_; // if this is nonnegative the factor will check if the
-  // average reprojection error is smaller than this threshold after triangulation,
-  // and the factor is disregarded if the error is large
 
   /// shorthand for this class
   typedef SmartStereoProjectionFactor<CALIBRATION> This;
@@ -101,16 +97,15 @@ public:
    * @param enableEPI if set to true linear triangulation is refined with embedded LM iterations
    * @param body_P_sensor is the transform from body to sensor frame (default identity)
    */
-  SmartStereoProjectionFactor(const double rankTol, const double linThreshold,
-      const bool manageDegeneracy, const bool enableEPI,
-      double landmarkDistanceThreshold = 1e10,
+  SmartStereoProjectionFactor(const double rankTolerance,
+      const double linThreshold, const bool manageDegeneracy,
+      const bool enableEPI, double landmarkDistanceThreshold = 1e10,
       double dynamicOutlierRejectionThreshold = -1) :
-      rankTolerance_(rankTol), retriangulationThreshold_(1e-5), manageDegeneracy_(
-          manageDegeneracy), enableEPI_(enableEPI), linearizationThreshold_(
+      parameters_(rankTolerance, enableEPI, landmarkDistanceThreshold,
+          dynamicOutlierRejectionThreshold), //
+      retriangulationThreshold_(1e-5), manageDegeneracy_(manageDegeneracy), linearizationThreshold_(
           linThreshold), degenerate_(false), cheiralityException_(false), throwCheirality_(
-          false), verboseCheirality_(false), landmarkDistanceThreshold_(
-          landmarkDistanceThreshold), dynamicOutlierRejectionThreshold_(
-          dynamicOutlierRejectionThreshold) {
+          false), verboseCheirality_(false) {
   }
 
   /** Virtual destructor */
@@ -124,8 +119,8 @@ public:
    */
   void print(const std::string& s = "", const KeyFormatter& keyFormatter =
       DefaultKeyFormatter) const {
-    std::cout << s << "SmartStereoProjectionFactor, z = \n";
-    std::cout << "rankTolerance_ = " << rankTolerance_ << std::endl;
+    std::cout << s << "SmartStereoProjectionFactor\n";
+    std::cout << "triangulationParameters:\n" << parameters_ << std::endl;
     std::cout << "degenerate_ = " << degenerate_ << std::endl;
     std::cout << "cheiralityException_ = " << cheiralityException_ << std::endl;
     std::cout << "linearizationThreshold_ = " << linearizationThreshold_
@@ -206,7 +201,7 @@ public:
           mono_cameras.push_back(PinholeCamera<Cal3_S2>(pose, K));
         }
         point_ = triangulatePoint3<Cal3_S2>(mono_cameras, mono_measurements,
-            rankTolerance_, enableEPI_);
+            parameters_.rankTolerance, parameters_.enableEPI);
 
         // // // End temporary hack
 
@@ -223,7 +218,7 @@ public:
         BOOST_FOREACH(const Camera& camera, cameras) {
           Point3 cameraTranslation = camera.pose().translation();
           // we discard smart factors corresponding to points that are far away
-          if (cameraTranslation.distance(point_) > landmarkDistanceThreshold_) {
+          if (cameraTranslation.distance(point_) > parameters_.landmarkDistanceThreshold) {
             degenerate_ = true;
             break;
           }
@@ -238,8 +233,8 @@ public:
         }
         //std::cout << "totalReprojError error: " << totalReprojError << std::endl;
         // we discard smart factors that have large reprojection error
-        if (dynamicOutlierRejectionThreshold_ > 0
-            && totalReprojError / m > dynamicOutlierRejectionThreshold_)
+        if (parameters_.dynamicOutlierRejectionThreshold > 0
+            && totalReprojError / m > parameters_.dynamicOutlierRejectionThreshold)
           degenerate_ = true;
 
       } catch (TriangulationUnderconstrainedException&) {
