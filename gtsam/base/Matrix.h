@@ -23,9 +23,9 @@
 #pragma once
 #include <gtsam/base/Vector.h>
 #include <boost/math/special_functions/fpclassify.hpp>
-#include <gtsam/3rdparty/Eigen/Eigen/Core>
-#include <gtsam/3rdparty/Eigen/Eigen/Cholesky>
-#include <gtsam/3rdparty/Eigen/Eigen/LU>
+#include <Eigen/Core>
+#include <Eigen/Cholesky>
+#include <Eigen/LU>
 #include <boost/format.hpp>
 #include <boost/tuple/tuple.hpp>
 

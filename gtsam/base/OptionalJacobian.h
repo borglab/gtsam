@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include <gtsam/3rdparty/Eigen/Eigen/Dense>
+#include <Eigen/Dense>
 
 #ifndef OPTIONALJACOBIAN_NOBOOST
 #include <boost/optional.hpp>
