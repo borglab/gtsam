@@ -670,6 +670,7 @@ bool readBundler(const string& filename, SfM_data &data) {
       float u, v;
       is >> cam_idx >> point_idx >> u >> v;
       track.measurements.push_back(make_pair(cam_idx, Point2(u, -v)));
+      track.siftIndices.push_back(make_pair(cam_idx, point_idx));
     }
 
     data.tracks.push_back(track);
