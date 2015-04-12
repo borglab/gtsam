@@ -70,6 +70,8 @@ public:
   /// Print with optional string
   void print(const std::string& s) const;
 
+  GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os, const Similarity3& p);
+
   /// @}
   /// @name Group
   /// @{
