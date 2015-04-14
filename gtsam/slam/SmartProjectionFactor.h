@@ -52,6 +52,7 @@ public:
 private:
   typedef SmartFactorBase<CAMERA> Base;
   typedef SmartProjectionFactor<CAMERA> This;
+  typedef SmartProjectionFactor<CAMERA> SmartProjectionCameraFactor;
 
 protected:
 
