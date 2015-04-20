@@ -428,7 +428,7 @@ namespace gtsam {
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version)
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/)
     {
 #ifndef GTSAM_USE_QUATERNIONS
        ar & boost::serialization::make_nvp("rot11", rot_(0,0));

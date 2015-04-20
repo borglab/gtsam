@@ -53,11 +53,12 @@ if(NOT FIRST_PASS_DONE)
   endif()
 endif()
 
-# Clang on Mac uses a template depth that is less than standard and is too small
+# Clang uses a template depth that is less than standard and is too small
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-	if(NOT "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS "5.0")
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-depth=1024")
-	endif()
+    # Apple Clang before 5.0 does not support -ftemplate-depth.
+    if(NOT (APPLE AND "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS "5.0"))
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-depth=1024")
+    endif()
 endif()
 
 # Set up build type library postfixes

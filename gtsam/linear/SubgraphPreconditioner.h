@@ -44,7 +44,7 @@ namespace gtsam {
   private:
     friend class boost::serialization::access;
     template<class Archive>
-    void serialize(Archive & ar, const unsigned int version) {
+    void serialize(Archive & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_NVP(index_);
       ar & BOOST_SERIALIZATION_NVP(weight_);
     }
@@ -85,7 +85,7 @@ namespace gtsam {
   private:
     friend class boost::serialization::access;
     template<class Archive>
-    void serialize(Archive & ar, const unsigned int version) {
+    void serialize(Archive & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_NVP(edges_);
     }
   };

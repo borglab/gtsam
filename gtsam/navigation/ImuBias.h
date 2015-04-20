@@ -200,7 +200,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & boost::serialization::make_nvp("imuBias::ConstantBias", *this);
     ar & BOOST_SERIALIZATION_NVP(biasAcc_);
     ar & BOOST_SERIALIZATION_NVP(biasGyro_);
@@ -208,9 +208,8 @@ private:
 
   /// @}
 
-};
-// ConstantBias class
-}// namespace imuBias
+}; // ConstantBias class
+} // namespace imuBias
 
 template<>
 struct traits<imuBias::ConstantBias> : public internal::VectorSpace<

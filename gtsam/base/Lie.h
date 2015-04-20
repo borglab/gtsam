@@ -248,7 +248,7 @@ public:
     // log and exp map without Jacobians
     g = traits<T>::Expmap(v);
     v = traits<T>::Logmap(g);
-    // log and expnential map with Jacobians
+    // log and exponential map with Jacobians
     g = traits<T>::Expmap(v, Hg);
     v = traits<T>::Logmap(g, Hg);
   }
