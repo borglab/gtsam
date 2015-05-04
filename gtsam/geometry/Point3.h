@@ -194,6 +194,9 @@ namespace gtsam {
 /// Syntactic sugar for multiplying coordinates by a scalar s*p
 inline Point3 operator*(double s, const Point3& p) { return p*s;}
 
+// For MATLAB wrapper
+typedef boost::optional<Point3> OptionalPoint3;
+
 template<>
 struct traits<Point3> : public internal::VectorSpace<Point3> {};
 
