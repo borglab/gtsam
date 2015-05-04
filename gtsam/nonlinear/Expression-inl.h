@@ -40,7 +40,9 @@ class ExpressionFactorBinaryTest;
 
 namespace gtsam {
 
-const unsigned TraceAlignment = 16;
+//-----------------------------------------------------------------------------
+// ExecutionTrace.h
+//-----------------------------------------------------------------------------
 
 template<typename T>
 T & upAlign(T & value, unsigned requiredAlignment = TraceAlignment) {
@@ -59,30 +61,6 @@ template<typename T>
 T upAligned(T value, unsigned requiredAlignment = TraceAlignment) {
   return upAlign(value, requiredAlignment);
 }
-
-template<typename T>
-class Expression;
-
-/**
- * Expressions are designed to write their derivatives into an already allocated
- * Jacobian of the correct size, of type VerticalBlockMatrix.
- * The JacobianMap provides a mapping from keys to the underlying blocks.
- */
-class JacobianMap {
-  const FastVector<Key>& keys_;
-  VerticalBlockMatrix& Ab_;
-public:
-  JacobianMap(const FastVector<Key>& keys, VerticalBlockMatrix& Ab) :
-      keys_(keys), Ab_(Ab) {
-  }
-  /// Access via key
-  VerticalBlockMatrix::Block operator()(Key key) {
-    FastVector<Key>::const_iterator it = std::find(keys_.begin(), keys_.end(),
-        key);
-    DenseIndex block = it - keys_.begin();
-    return Ab_(block);
-  }
-};
 
 //-----------------------------------------------------------------------------
 
@@ -215,12 +193,10 @@ public:
   typedef ExecutionTrace<T> type;
 };
 
-/// Storage type for the execution trace.
-/// It enforces the proper alignment in a portable way.
-/// Provide a traceSize() sized array of this type to traceExecution as traceStorage.
-typedef boost::aligned_storage<1, TraceAlignment>::type ExecutionTraceStorage;
-
 //-----------------------------------------------------------------------------
+// ExpressionNode.h
+//-----------------------------------------------------------------------------
+
 /**
  * Expression node. The superclass for objects that do the heavy lifting
  * An Expression<T> has a pointer to an ExpressionNode<T> underneath
@@ -247,10 +223,12 @@ public:
   }
 
   /// Streaming
-  GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os,
+  GTSAM_EXPORT
+  friend std::ostream &operator<<(std::ostream &os,
       const ExpressionNode& node) {
     os << "Expression of type " << typeid(T).name();
-    if (node.traceSize_>0) os << ", trace size = " << node.traceSize_;
+    if (node.traceSize_ > 0)
+      os << ", trace size = " << node.traceSize_;
     os << "\n";
     return os;
   }
@@ -307,11 +285,10 @@ public:
   }
 };
 
-
 //-----------------------------------------------------------------------------
 /// Leaf Expression, if no chart is given, assume default chart and value_type is just the plain value
 template<typename T>
-class LeafExpression : public ExpressionNode<T> {
+class LeafExpression: public ExpressionNode<T> {
   typedef T value_type;
 
   /// The key into values
@@ -412,15 +389,7 @@ public:
 /// meta-function to generate fixed-size JacobianTA type
 template<class T, class A>
 struct Jacobian {
-  typedef Eigen::Matrix<double, traits<T>::dimension,
-      traits<A>::dimension> type;
-};
-
-/// meta-function to generate JacobianTA optional reference
-template<class T, class A>
-struct MakeOptionalJacobian {
-  typedef OptionalJacobian<traits<T>::dimension,
-      traits<A>::dimension> type;
+  typedef Eigen::Matrix<double, traits<T>::dimension, traits<A>::dimension> type;
 };
 
 /**
@@ -524,8 +493,7 @@ struct GenerateFunctionalNode: Argument<T, A, Base::N + 1>, Base {
     /// Given df/dT, multiply in dT/dA and continue reverse AD process
     // Cols is always known at compile time
     template<typename SomeMatrix>
-    void reverseAD4(const SomeMatrix & dFdT,
-        JacobianMap& jacobians) const {
+    void reverseAD4(const SomeMatrix & dFdT, JacobianMap& jacobians) const {
       Base::Record::reverseAD4(dFdT, jacobians);
       This::trace.reverseAD1(dFdT * This::dTdA, jacobians);
     }
@@ -629,16 +597,9 @@ struct FunctionalNode {
 
 /// Unary Function Expression
 template<class T, class A1>
-class UnaryExpression : public ExpressionNode<T> {
+class UnaryExpression: public ExpressionNode<T> {
 
-  typedef typename MakeOptionalJacobian<T, A1>::type OJ1;
-
-public:
-
-  typedef boost::function<T(const A1&, OJ1)> Function;
-
-private:
-
+  typedef typename UnaryFunction<T,A1>::type Function;
   Function function_;
   boost::shared_ptr<ExpressionNode<A1> > expression1_;
 
@@ -658,6 +619,20 @@ public:
   /// Return value
   virtual T value(const Values& values) const {
     return function_(this->expression1_->value(values), boost::none);
+  }
+
+  /// Return keys that play in this expression
+  virtual std::set<Key> keys() const {
+    std::set<Key> keys; // = Base::keys();
+    std::set<Key> myKeys = this->expression1_->keys();
+    keys.insert(myKeys.begin(), myKeys.end());
+    return keys;
+  }
+
+  /// Return dimensions for each argument
+  virtual void dims(std::map<Key, int>& map) const {
+    // Base::dims(map);
+    this->expression1_->dims(map);
   }
 
   // Inner Record Class
@@ -706,8 +681,7 @@ public:
     /// Given df/dT, multiply in dT/dA and continue reverse AD process
     // Cols is always known at compile time
     template<typename SomeMatrix>
-    void reverseAD4(const SomeMatrix & dFdT,
-        JacobianMap& jacobians) const {
+    void reverseAD4(const SomeMatrix & dFdT, JacobianMap& jacobians) const {
       This::trace.reverseAD1(dFdT * This::dTdA, jacobians);
     }
   };
@@ -748,7 +722,6 @@ public:
       ExecutionTraceStorage* traceStorage) const {
 
     Record* record = this->trace(values, traceStorage);
-    record->print("record: ");
     trace.setFunction(record);
 
     return function_(record->template value<A1, 1>(),
@@ -760,20 +733,15 @@ public:
 /// Binary Expression
 
 template<class T, class A1, class A2>
-class BinaryExpression:
-    public FunctionalNode<T, boost::mpl::vector<A1, A2> >::type {
-
-  typedef typename MakeOptionalJacobian<T, A1>::type OJ1;
-  typedef typename MakeOptionalJacobian<T, A2>::type OJ2;
+class BinaryExpression: public FunctionalNode<T, boost::mpl::vector<A1, A2> >::type {
+  typedef typename FunctionalNode<T, boost::mpl::vector<A1, A2> >::type Base;
 
 public:
-
-  typedef boost::function<T(const A1&, const A2&, OJ1, OJ2)> Function;
-  typedef typename FunctionalNode<T, boost::mpl::vector<A1, A2> >::type Base;
   typedef typename Base::Record Record;
 
 private:
 
+  typedef typename BinaryFunction<T,A1,A2>::type Function;
   Function function_;
 
   /// Constructor with a ternary function f, and three input arguments
@@ -801,14 +769,14 @@ public:
 
   /// Construct an execution trace for reverse AD
   virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-      ExecutionTraceStorage* traceStorage) const {
+  ExecutionTraceStorage* traceStorage) const {
 
     Record* record = Base::trace(values, traceStorage);
     trace.setFunction(record);
 
     return function_(record->template value<A1, 1>(),
-        record->template value<A2,2>(), record->template jacobian<A1, 1>(),
-        record->template jacobian<A2, 2>());
+    record->template value<A2,2>(), record->template jacobian<A1, 1>(),
+    record->template jacobian<A2, 2>());
   }
 };
 
@@ -816,21 +784,14 @@ public:
 /// Ternary Expression
 
 template<class T, class A1, class A2, class A3>
-class TernaryExpression:
-    public FunctionalNode<T, boost::mpl::vector<A1, A2, A3> >::type {
+class TernaryExpression: public FunctionalNode<T, boost::mpl::vector<A1, A2, A3> >::type {
 
-  typedef typename MakeOptionalJacobian<T, A1>::type OJ1;
-  typedef typename MakeOptionalJacobian<T, A2>::type OJ2;
-  typedef typename MakeOptionalJacobian<T, A3>::type OJ3;
-
-public:
-
-  typedef boost::function<T(const A1&, const A2&, const A3&, OJ1, OJ2, OJ3)> Function;
   typedef typename FunctionalNode<T, boost::mpl::vector<A1, A2, A3> >::type Base;
   typedef typename Base::Record Record;
 
 private:
 
+  typedef typename TernaryFunction<T,A1,A2,A3>::type Function;
   Function function_;
 
   /// Constructor with a ternary function f, and three input arguments
@@ -860,17 +821,187 @@ public:
 
   /// Construct an execution trace for reverse AD
   virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-      ExecutionTraceStorage* traceStorage) const {
+  ExecutionTraceStorage* traceStorage) const {
 
     Record* record = Base::trace(values, traceStorage);
     trace.setFunction(record);
 
     return function_(
-        record->template value<A1, 1>(), record->template value<A2, 2>(),
-        record->template value<A3, 3>(), record->template jacobian<A1, 1>(),
-        record->template jacobian<A2, 2>(), record->template jacobian<A3, 3>());
+    record->template value<A1, 1>(), record->template value<A2, 2>(),
+    record->template value<A3, 3>(), record->template jacobian<A1, 1>(),
+    record->template jacobian<A2, 2>(), record->template jacobian<A3, 3>());
   }
 
 };
+
 //-----------------------------------------------------------------------------
+// Esxpression-inl.h
+//-----------------------------------------------------------------------------
+
+/// Print
+template<typename T>
+void Expression<T>::print(const std::string& s) const {
+  std::cout << s << *root_ << std::endl;
+}
+
+// Construct a constant expression
+template<typename T>
+Expression<T>::Expression(const T& value) :
+    root_(new ConstantExpression<T>(value)) {
+}
+
+// Construct a leaf expression, with Key
+template<typename T>
+Expression<T>::Expression(const Key& key) :
+    root_(new LeafExpression<T>(key)) {
+}
+
+// Construct a leaf expression, with Symbol
+template<typename T>
+Expression<T>::Expression(const Symbol& symbol) :
+    root_(new LeafExpression<T>(symbol)) {
+}
+
+// Construct a leaf expression, creating Symbol
+template<typename T>
+Expression<T>::Expression(unsigned char c, size_t j) :
+    root_(new LeafExpression<T>(Symbol(c, j))) {
+}
+
+/// Construct a nullary method expression
+template<typename T>
+template<typename A>
+Expression<T>::Expression(const Expression<A>& expression,
+    T (A::*method)(typename MakeOptionalJacobian<T, A>::type) const) :
+    root_(new UnaryExpression<T, A>(boost::bind(method, _1, _2), expression)) {
+}
+
+/// Construct a unary function expression
+template<typename T>
+template<typename A>
+Expression<T>::Expression(typename UnaryFunction<T, A>::type function,
+    const Expression<A>& expression) :
+    root_(new UnaryExpression<T, A>(function, expression)) {
+}
+
+/// Construct a unary method expression
+template<typename T>
+template<typename A1, typename A2>
+Expression<T>::Expression(const Expression<A1>& expression1,
+    T (A1::*method)(const A2&, typename MakeOptionalJacobian<T, A1>::type,
+        typename MakeOptionalJacobian<T, A2>::type) const,
+    const Expression<A2>& expression2) :
+    root_(
+        new BinaryExpression<T, A1, A2>(boost::bind(method, _1, _2, _3, _4),
+            expression1, expression2)) {
+}
+
+/// Construct a binary function expression
+template<typename T>
+template<typename A1, typename A2>
+Expression<T>::Expression(typename BinaryFunction<T, A1, A2>::type function,
+    const Expression<A1>& expression1, const Expression<A2>& expression2) :
+    root_(new BinaryExpression<T, A1, A2>(function, expression1, expression2)) {
+}
+
+/// Construct a binary method expression
+template<typename T>
+template<typename A1, typename A2, typename A3>
+Expression<T>::Expression(const Expression<A1>& expression1,
+    T (A1::*method)(const A2&, const A3&,
+        typename MakeOptionalJacobian<T, A1>::type,
+        typename MakeOptionalJacobian<T, A2>::type,
+        typename MakeOptionalJacobian<T, A3>::type) const,
+    const Expression<A2>& expression2, const Expression<A3>& expression3) :
+    root_(
+        new TernaryExpression<T, A1, A2, A3>(
+            boost::bind(method, _1, _2, _3, _4, _5, _6), expression1,
+            expression2, expression3)) {
+}
+
+/// Construct a ternary function expression
+template<typename T>
+template<typename A1, typename A2, typename A3>
+Expression<T>::Expression(
+    typename TernaryFunction<T, A1, A2, A3>::type function,
+    const Expression<A1>& expression1, const Expression<A2>& expression2,
+    const Expression<A3>& expression3) :
+    root_(
+        new TernaryExpression<T, A1, A2, A3>(function, expression1, expression2,
+            expression3)) {
+}
+
+/// private version that takes keys and dimensions, returns derivatives
+template<typename T>
+T Expression<T>::value(const Values& values, const FastVector<Key>& keys,
+    const FastVector<int>& dims, std::vector<Matrix>& H) const {
+
+  // H should be pre-allocated
+  assert(H.size()==keys.size());
+
+  // Pre-allocate and zero VerticalBlockMatrix
+  static const int Dim = traits<T>::dimension;
+  VerticalBlockMatrix Ab(dims, Dim);
+  Ab.matrix().setZero();
+  JacobianMap jacobianMap(keys, Ab);
+
+  // Call unsafe version
+  T result = value(values, jacobianMap);
+
+  // Copy blocks into the vector of jacobians passed in
+  for (DenseIndex i = 0; i < static_cast<DenseIndex>(keys.size()); i++)
+    H[i] = Ab(i);
+
+  return result;
+}
+
+template<typename T>
+T Expression<T>::traceExecution(const Values& values, ExecutionTrace<T>& trace,
+    ExecutionTraceStorage* traceStorage) const {
+  return root_->traceExecution(values, trace, traceStorage);
+}
+
+template<typename T>
+T Expression<T>::value(const Values& values, JacobianMap& jacobians) const {
+  // The following piece of code is absolutely crucial for performance.
+  // We allocate a block of memory on the stack, which can be done at runtime
+  // with modern C++ compilers. The traceExecution then fills this memory
+  // with an execution trace, made up entirely of "Record" structs, see
+  // the FunctionalNode class in expression-inl.h
+  size_t size = traceSize();
+
+  // Windows does not support variable length arrays, so memory must be dynamically
+  // allocated on Visual Studio. For more information see the issue below
+  // https://bitbucket.org/gtborg/gtsam/issue/178/vlas-unsupported-in-visual-studio
+#ifdef _MSC_VER
+  ExecutionTraceStorage* traceStorage = new ExecutionTraceStorage[size];
+#else
+  ExecutionTraceStorage traceStorage[size];
+#endif
+
+  ExecutionTrace<T> trace;
+  T value(this->traceExecution(values, trace, traceStorage));
+  trace.startReverseAD1(jacobians);
+
+#ifdef _MSC_VER
+  delete[] traceStorage;
+#endif
+
+  return value;
+}
+
+// JacobianMap:
+JacobianMap::JacobianMap(const FastVector<Key>& keys, VerticalBlockMatrix& Ab) :
+    keys_(keys), Ab_(Ab) {
+}
+
+VerticalBlockMatrix::Block JacobianMap::operator()(Key key) {
+  FastVector<Key>::const_iterator it = std::find(keys_.begin(), keys_.end(),
+      key);
+  DenseIndex block = it - keys_.begin();
+  return Ab_(block);
+}
+
+//-----------------------------------------------------------------------------
+
 }

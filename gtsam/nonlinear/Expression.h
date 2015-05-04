@@ -19,9 +19,10 @@
 
 #pragma once
 
-#include <gtsam/nonlinear/Expression-inl.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/FastVector.h>
+#include <gtsam/base/VerticalBlockMatrix.h>
 
 #include <boost/bind.hpp>
 #include <boost/range/adaptor/map.hpp>
@@ -31,8 +32,45 @@ class ExpressionFactorShallowTest;
 
 namespace gtsam {
 
-// Forward declare
+// Forward declares
+class Values;
+template<typename T> class ExecutionTrace;
+template<typename T> class ExpressionNode;
 template<typename T> class ExpressionFactor;
+
+// A JacobianMap is the primary mechanism by which derivatives are returned.
+// For clarity, it is forward declared here but implemented at the end of this header.
+class JacobianMap;
+
+// Expressions wrap trees of functions that can evaluate their own derivatives.
+// The meta-functions below provide a handy to specify the type of those functions
+template<class T, class A1>
+struct UnaryFunction {
+  typedef boost::function<
+      T(const A1&, typename MakeOptionalJacobian<T, A1>::type)> type;
+};
+
+template<class T, class A1, class A2>
+struct BinaryFunction {
+  typedef boost::function<
+      T(const A1&, const A2&, typename MakeOptionalJacobian<T, A1>::type,
+          typename MakeOptionalJacobian<T, A2>::type)> type;
+};
+
+template<class T, class A1, class A2, class A3>
+struct TernaryFunction {
+  typedef boost::function<
+      T(const A1&, const A2&, const A3&,
+          typename MakeOptionalJacobian<T, A1>::type,
+          typename MakeOptionalJacobian<T, A2>::type,
+          typename MakeOptionalJacobian<T, A3>::type)> type;
+};
+
+/// Storage type for the execution trace.
+/// It enforces the proper alignment in a portable way.
+/// Provide a traceSize() sized array of this type to traceExecution as traceStorage.
+const unsigned TraceAlignment = 16;
+typedef boost::aligned_storage<1, TraceAlignment>::type ExecutionTraceStorage;
 
 /**
  * Expression class that supports automatic differentiation
@@ -53,85 +91,56 @@ private:
 public:
 
   /// Print
-  void print(const std::string& s) const {
-    std::cout << s << *root_ << std::endl;
-  }
+  void print(const std::string& s) const;
 
-  // Construct a constant expression
-  Expression(const T& value) :
-      root_(new ConstantExpression<T>(value)) {
-  }
+  /// Construct a constant expression
+  Expression(const T& value);
 
-  // Construct a leaf expression, with Key
-  Expression(const Key& key) :
-      root_(new LeafExpression<T>(key)) {
-  }
+  /// Construct a leaf expression, with Key
+  Expression(const Key& key);
 
-  // Construct a leaf expression, with Symbol
-  Expression(const Symbol& symbol) :
-      root_(new LeafExpression<T>(symbol)) {
-  }
+  /// Construct a leaf expression, with Symbol
+  Expression(const Symbol& symbol);
 
-  // Construct a leaf expression, creating Symbol
-  Expression(unsigned char c, size_t j) :
-      root_(new LeafExpression<T>(Symbol(c, j))) {
-  }
+  /// Construct a leaf expression, creating Symbol
+  Expression(unsigned char c, size_t j);
 
   /// Construct a nullary method expression
   template<typename A>
   Expression(const Expression<A>& expression,
-      T (A::*method)(typename MakeOptionalJacobian<T, A>::type) const) :
-      root_(new UnaryExpression<T, A>(boost::bind(method, _1, _2), expression)) {
-  }
+      T (A::*method)(typename MakeOptionalJacobian<T, A>::type) const);
 
   /// Construct a unary function expression
   template<typename A>
-  Expression(typename UnaryExpression<T, A>::Function function,
-      const Expression<A>& expression) :
-      root_(new UnaryExpression<T, A>(function, expression)) {
-  }
+  Expression(typename UnaryFunction<T, A>::type function,
+      const Expression<A>& expression);
 
   /// Construct a unary method expression
   template<typename A1, typename A2>
   Expression(const Expression<A1>& expression1,
       T (A1::*method)(const A2&, typename MakeOptionalJacobian<T, A1>::type,
           typename MakeOptionalJacobian<T, A2>::type) const,
-      const Expression<A2>& expression2) :
-      root_(
-          new BinaryExpression<T, A1, A2>(boost::bind(method, _1, _2, _3, _4),
-              expression1, expression2)) {
-  }
+      const Expression<A2>& expression2);
 
   /// Construct a binary function expression
   template<typename A1, typename A2>
-  Expression(typename BinaryExpression<T, A1, A2>::Function function,
-      const Expression<A1>& expression1, const Expression<A2>& expression2) :
-      root_(new BinaryExpression<T, A1, A2>(function, expression1, expression2)) {
-  }
+  Expression(typename BinaryFunction<T, A1, A2>::type function,
+      const Expression<A1>& expression1, const Expression<A2>& expression2);
 
   /// Construct a binary method expression
   template<typename A1, typename A2, typename A3>
   Expression(const Expression<A1>& expression1,
       T (A1::*method)(const A2&, const A3&,
-          typename TernaryExpression<T, A1, A2, A3>::OJ1,
-          typename TernaryExpression<T, A1, A2, A3>::OJ2,
-          typename TernaryExpression<T, A1, A2, A3>::OJ3) const,
-      const Expression<A2>& expression2, const Expression<A3>& expression3) :
-      root_(
-          new TernaryExpression<T, A1, A2, A3>(
-              boost::bind(method, _1, _2, _3, _4, _5, _6), expression1,
-              expression2, expression3)) {
-  }
+          typename MakeOptionalJacobian<T, A1>::type,
+          typename MakeOptionalJacobian<T, A2>::type,
+          typename MakeOptionalJacobian<T, A3>::type) const,
+      const Expression<A2>& expression2, const Expression<A3>& expression3);
 
   /// Construct a ternary function expression
   template<typename A1, typename A2, typename A3>
-  Expression(typename TernaryExpression<T, A1, A2, A3>::Function function,
+  Expression(typename TernaryFunction<T, A1, A2, A3>::type function,
       const Expression<A1>& expression1, const Expression<A2>& expression2,
-      const Expression<A3>& expression3) :
-      root_(
-          new TernaryExpression<T, A1, A2, A3>(function, expression1,
-              expression2, expression3)) {
-  }
+      const Expression<A3>& expression3);
 
   /// Return root
   const boost::shared_ptr<ExpressionNode<T> >& root() const {
@@ -195,70 +204,39 @@ private:
 
   /// private version that takes keys and dimensions, returns derivatives
   T value(const Values& values, const FastVector<Key>& keys,
-      const FastVector<int>& dims, std::vector<Matrix>& H) const {
-
-    // H should be pre-allocated
-    assert(H.size()==keys.size());
-
-    // Pre-allocate and zero VerticalBlockMatrix
-    static const int Dim = traits<T>::dimension;
-    VerticalBlockMatrix Ab(dims, Dim);
-    Ab.matrix().setZero();
-    JacobianMap jacobianMap(keys, Ab);
-
-    // Call unsafe version
-    T result = value(values, jacobianMap);
-
-    // Copy blocks into the vector of jacobians passed in
-    for (DenseIndex i = 0; i < static_cast<DenseIndex>(keys.size()); i++)
-      H[i] = Ab(i);
-
-    return result;
-  }
+      const FastVector<int>& dims, std::vector<Matrix>& H) const;
 
   /// trace execution, very unsafe
   T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-      ExecutionTraceStorage* traceStorage) const {
-    return root_->traceExecution(values, trace, traceStorage);
-  }
+      ExecutionTraceStorage* traceStorage) const;
 
   /**
    * @brief Return value and derivatives, reverse AD version
    * This very unsafe method needs a JacobianMap with correctly allocated
    * and initialized VerticalBlockMatrix, hence is declared private.
    */
-  T value(const Values& values, JacobianMap& jacobians) const {
-    // The following piece of code is absolutely crucial for performance.
-    // We allocate a block of memory on the stack, which can be done at runtime
-    // with modern C++ compilers. The traceExecution then fills this memory
-    // with an execution trace, made up entirely of "Record" structs, see
-    // the FunctionalNode class in expression-inl.h
-    size_t size = traceSize();
-
-    // Windows does not support variable length arrays, so memory must be dynamically
-    // allocated on Visual Studio. For more information see the issue below
-    // https://bitbucket.org/gtborg/gtsam/issue/178/vlas-unsupported-in-visual-studio
-#ifdef _MSC_VER
-    ExecutionTraceStorage* traceStorage = new ExecutionTraceStorage[size];
-#else
-    ExecutionTraceStorage traceStorage[size];
-#endif
-
-    ExecutionTrace<T> trace;
-    T value(traceExecution(values, trace, traceStorage));
-    trace.startReverseAD1(jacobians);
-
-#ifdef _MSC_VER
-    delete[] traceStorage;
-#endif
-
-    return value;
-  }
+  T value(const Values& values, JacobianMap& jacobians) const;
 
   // be very selective on who can access these private methods:
   friend class ExpressionFactor<T> ;
   friend class ::ExpressionFactorShallowTest;
 
+};
+
+// Expressions are designed to write their derivatives into an already allocated
+// Jacobian of the correct size, of type VerticalBlockMatrix.
+// The JacobianMap provides a mapping from keys to the underlying blocks.
+class JacobianMap {
+private:
+  const FastVector<Key>& keys_;
+  VerticalBlockMatrix& Ab_;
+
+public:
+  /// Construct a JacobianMap for writing into a VerticalBlockMatrix Ab
+  JacobianMap(const FastVector<Key>& keys, VerticalBlockMatrix& Ab);
+
+  /// Access blocks of via key
+  VerticalBlockMatrix::Block operator()(Key key);
 };
 
 // http://stackoverflow.com/questions/16260445/boost-bind-to-operator
@@ -291,4 +269,6 @@ std::vector<Expression<T> > createUnknowns(size_t n, char c, size_t start = 0) {
 }
 
 }
+
+#include <gtsam/nonlinear/Expression-inl.h>
 
