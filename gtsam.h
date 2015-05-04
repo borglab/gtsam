@@ -901,6 +901,16 @@ class StereoCamera {
   void serialize() const;
 };
 
+#include <gtsam/geometry/triangulation.h>
+
+// Templates appear not yet supported for free functions
+gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
+    gtsam::Cal3_S2* sharedCal, const gtsam::Point2Vector& measurements,
+    double rank_tol, bool optimize);
+gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
+    gtsam::Cal3Bundler* sharedCal, const gtsam::Point2Vector& measurements,
+    double rank_tol, bool optimize);
+
 //*************************************************************************
 // Symbolic
 //*************************************************************************
