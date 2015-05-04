@@ -74,24 +74,33 @@ TEST(Expression, Leaves) {
 /* ************************************************************************* */
 // Unary(Leaf)
 namespace unary {
-Point2 f0(const Point3& p, OptionalJacobian<2,3> H) {
+Point2 f1(const Point3& p, OptionalJacobian<2,3> H) {
   return Point2();
 }
 double f2(const Point3& p, OptionalJacobian<1, 3> H) {
   return 0.0;
 }
+Vector f3(const Point3& p, OptionalJacobian<Eigen::Dynamic,3> H) {
+  return p.vector();
+}
 Expression<Point3> p(1);
 set<Key> expected = list_of(1);
 }
-TEST(Expression, Unary0) {
+TEST(Expression, Unary1) {
   using namespace unary;
-  Expression<Point2> e(f0, p);
+  Expression<Point2> e(f1, p);
   EXPECT(expected == e.keys());
 }
 TEST(Expression, Unary2) {
   using namespace unary;
   Expression<double> e(f2, p);
   EXPECT(expected == e.keys());
+}
+/* ************************************************************************* */
+// Unary(Leaf), dynamic
+TEST(Expression, Unary3) {
+  using namespace unary;
+//  Expression<Vector> e(f3, p);
 }
 /* ************************************************************************* */
 //Nullary Method
