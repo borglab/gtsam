@@ -683,9 +683,11 @@ public:
 
     /// Print to std::cout
     void print(const std::string& indent) const {
+      std::cout << indent << "UnaryExpression::Record {" << std::endl;
       static const Eigen::IOFormat matlab(0, 1, " ", "; ", "", "", "[", "]");
-      std::cout << This::dTdA.format(matlab) << std::endl;
+      std::cout << indent << This::dTdA.format(matlab) << std::endl;
       This::trace.print(indent);
+      std::cout << indent << "}" << std::endl;
     }
 
     /// Start the reverse AD process
