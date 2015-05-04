@@ -189,15 +189,14 @@ namespace gtsam {
     }
 
     /// @}
-
   };
 
-  /// Syntactic sugar for multiplying coordinates by a scalar s*p
-  inline Point3 operator*(double s, const Point3& p) { return p*s;}
+/// Syntactic sugar for multiplying coordinates by a scalar s*p
+inline Point3 operator*(double s, const Point3& p) { return p*s;}
 
-  template<>
-  struct traits<Point3> : public internal::VectorSpace<Point3> {};
+template<>
+struct traits<Point3> : public internal::VectorSpace<Point3> {};
 
- template<>
-  struct traits<const Point3> : public internal::VectorSpace<Point3> {};
+template<>
+struct traits<const Point3> : public internal::VectorSpace<Point3> {};
 }
