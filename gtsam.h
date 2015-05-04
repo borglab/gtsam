@@ -829,56 +829,16 @@ class CalibratedCamera {
   void serialize() const;
 };
 
-class SimpleCamera {
-  // Standard Constructors and Named Constructors
-  SimpleCamera();
-  SimpleCamera(const gtsam::Pose3& pose);
-  SimpleCamera(const gtsam::Pose3& pose, const gtsam::Cal3_S2& K);
-  static gtsam::SimpleCamera Level(const gtsam::Cal3_S2& K,
-      const gtsam::Pose2& pose, double height);
-  static gtsam::SimpleCamera Level(const gtsam::Pose2& pose, double height);
-  static gtsam::SimpleCamera Lookat(const gtsam::Point3& eye,
-      const gtsam::Point3& target, const gtsam::Point3& upVector,
-      const gtsam::Cal3_S2& K);
-
-  // Testable
-  void print(string s) const;
-  bool equals(const gtsam::SimpleCamera& camera, double tol) const;
-
-  // Standard Interface
-  gtsam::Pose3 pose() const;
-  gtsam::Cal3_S2 calibration();
-
-  // Manifold
-  gtsam::SimpleCamera retract(const Vector& d) const;
-  Vector localCoordinates(const gtsam::SimpleCamera& T2) const;
-  size_t dim() const;
-  static size_t Dim();
-
-  // Transformations and measurement functions
-  static gtsam::Point2 project_to_camera(const gtsam::Point3& cameraPoint);
-  pair<gtsam::Point2,bool> projectSafe(const gtsam::Point3& pw) const;
-  gtsam::Point2 project(const gtsam::Point3& point);
-  gtsam::Point3 backproject(const gtsam::Point2& p, double depth) const;
-  double range(const gtsam::Point3& point);
-  double range(const gtsam::Pose3& point);
-
-  // enabling serialization functionality
-  void serialize() const;
-};
-
-template<CALIBRATION = {gtsam::Cal3DS2}>
+template<CALIBRATION>
 class PinholeCamera {
   // Standard Constructors and Named Constructors
   PinholeCamera();
   PinholeCamera(const gtsam::Pose3& pose);
-  PinholeCamera(const gtsam::Pose3& pose, const gtsam::Cal3DS2& K);
-  static This Level(const gtsam::Cal3DS2& K,
-    const gtsam::Pose2& pose, double height);
+  PinholeCamera(const gtsam::Pose3& pose, const CALIBRATION& K);
+  static This Level(const CALIBRATION& K, const gtsam::Pose2& pose, double height);
   static This Level(const gtsam::Pose2& pose, double height);
-  static This Lookat(const gtsam::Point3& eye,
-    const gtsam::Point3& target, const gtsam::Point3& upVector,
-    const gtsam::Cal3DS2& K);
+  static This Lookat(const gtsam::Point3& eye, const gtsam::Point3& target,
+      const gtsam::Point3& upVector, const CALIBRATION& K);
 
   // Testable
   void print(string s) const;
@@ -905,6 +865,13 @@ class PinholeCamera {
   // enabling serialization functionality
   void serialize() const;
 };
+
+// Do typedefs here so we can also define SimpleCamera
+typedef gtsam::PinholeCamera<gtsam::Cal3_S2> SimpleCamera;
+typedef gtsam::PinholeCamera<gtsam::Cal3_S2> PinholeCameraCal3_S2;
+typedef gtsam::PinholeCamera<gtsam::Cal3DS2> PinholeCameraCal3DS2;
+typedef gtsam::PinholeCamera<gtsam::Cal3Unified> PinholeCameraCal3Unified;
+typedef gtsam::PinholeCamera<gtsam::Cal3Bundler> PinholeCameraCal3Bundler;
 
 class StereoCamera {
   // Standard Constructors and Named Constructors
@@ -2217,9 +2184,6 @@ class NonlinearISAM {
 //*************************************************************************
 // Nonlinear factor types
 //*************************************************************************
-#include <gtsam/geometry/Cal3_S2.h>
-#include <gtsam/geometry/Cal3DS2.h>
-#include <gtsam/geometry/Cal3_S2Stereo.h>
 #include <gtsam/geometry/SimpleCamera.h>
 #include <gtsam/geometry/CalibratedCamera.h>
 #include <gtsam/geometry/StereoPoint2.h>
