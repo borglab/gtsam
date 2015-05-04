@@ -89,11 +89,13 @@ set<Key> expected = list_of(1);
 TEST(Expression, Unary1) {
   using namespace unary;
   Expression<Point2> e(f1, p);
+  EXPECT_LONGS_EQUAL(112,e.traceSize());
   EXPECT(expected == e.keys());
 }
 TEST(Expression, Unary2) {
   using namespace unary;
   Expression<double> e(f2, p);
+  EXPECT_LONGS_EQUAL(80,e.traceSize());
   EXPECT(expected == e.keys());
 }
 /* ************************************************************************* */
