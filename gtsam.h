@@ -576,6 +576,16 @@ class Pose3 {
   void serialize() const;
 };
 
+// std::vector<gtsam::Pose3>
+class Pose3Vector
+{
+  Pose3Vector();
+  size_t size() const;
+  bool empty() const;
+  gtsam::Pose3 at(size_t n) const;
+  void push_back(const gtsam::Pose3& x);
+};
+
 #include <gtsam/geometry/Unit3.h>
 class Unit3 {
   // Standard Constructors
