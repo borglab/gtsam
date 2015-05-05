@@ -62,7 +62,7 @@ public:
     d_ = d;
   }
 
-  /// The print fuction
+  /// The print function
   void print(const std::string& s = std::string()) const;
 
   /// The equals function with tolerance

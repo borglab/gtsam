@@ -322,6 +322,9 @@ inline Matrix wedge<Pose3>(const Vector& xi) {
 typedef std::pair<Point3, Point3> Point3Pair;
 GTSAM_EXPORT boost::optional<Pose3> align(const std::vector<Point3Pair>& pairs);
 
+// For MATLAB wrapper
+typedef std::vector<Pose3> Pose3Vector;
+
 template<>
 struct traits<Pose3> : public internal::LieGroupTraits<Pose3> {};
 
