@@ -383,11 +383,6 @@ class Point3 {
   void serialize() const;
 };
 
-class OptionalPoint3 {
-  bool is_initialized() const;
-  gtsam::Point3 value();
-};
-
 class Rot2 {
   // Standard Constructors and Named Constructors
   Rot2();
