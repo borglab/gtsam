@@ -931,6 +931,48 @@ Expression<T>::Expression(
             expression3)) {
 }
 
+
+/// Return root
+template<typename T>
+const boost::shared_ptr<ExpressionNode<T> >& Expression<T>::root() const {
+  return root_;
+}
+
+// Return size needed for memory buffer in traceExecution
+template<typename T>
+size_t Expression<T>::traceSize() const {
+  return root_->traceSize();
+}
+
+/// Return keys that play in this expression
+template<typename T>
+std::set<Key> Expression<T>::keys() const {
+  return root_->keys();
+}
+
+/// Return dimensions for each argument, as a map
+template<typename T>
+void Expression<T>::dims(std::map<Key, int>& map) const {
+  root_->dims(map);
+}
+
+/**
+ * @brief Return value and optional derivatives, reverse AD version
+ * Notes: this is not terribly efficient, and H should have correct size.
+ * The order of the Jacobians is same as keys in either keys() or dims()
+ */
+template<typename T>
+T Expression<T>::value(const Values& values, boost::optional<std::vector<Matrix>&> H) const {
+
+  if (H) {
+    // Call private version that returns derivatives in H
+    KeysAndDims pair = keysAndDims();
+    return value(values, pair.first, pair.second, *H);
+  } else
+    // no derivatives needed, just return value
+    return root_->value(values);
+}
+
 /// private version that takes keys and dimensions, returns derivatives
 template<typename T>
 T Expression<T>::value(const Values& values, const FastVector<Key>& keys,

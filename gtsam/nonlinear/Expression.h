@@ -144,24 +144,16 @@ public:
       const Expression<A3>& expression3);
 
   /// Return root
-  const boost::shared_ptr<ExpressionNode<T> >& root() const {
-    return root_;
-  }
+  const boost::shared_ptr<ExpressionNode<T> >& root() const;
 
   // Return size needed for memory buffer in traceExecution
-  size_t traceSize() const {
-    return root_->traceSize();
-  }
+  size_t traceSize() const;
 
   /// Return keys that play in this expression
-  std::set<Key> keys() const {
-    return root_->keys();
-  }
+  std::set<Key> keys() const;
 
   /// Return dimensions for each argument, as a map
-  void dims(std::map<Key, int>& map) const {
-    root_->dims(map);
-  }
+  void dims(std::map<Key, int>& map) const;
 
   /**
    * @brief Return value and optional derivatives, reverse AD version
@@ -169,16 +161,7 @@ public:
    * The order of the Jacobians is same as keys in either keys() or dims()
    */
   T value(const Values& values, boost::optional<std::vector<Matrix>&> H =
-      boost::none) const {
-
-    if (H) {
-      // Call private version that returns derivatives in H
-      KeysAndDims pair = keysAndDims();
-      return value(values, pair.first, pair.second, *H);
-    } else
-      // no derivatives needed, just return value
-      return root_->value(values);
-  }
+      boost::none) const;
 
   /**
    *  @return a "deep" copy of this Expression
