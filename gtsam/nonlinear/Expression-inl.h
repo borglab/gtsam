@@ -537,7 +537,7 @@ struct FunctionalNode {
 template<class T, class A1>
 class UnaryExpression: public ExpressionNode<T> {
 
-  typedef typename UnaryFunction<T,A1>::type Function;
+  typedef typename Expression<T>::template UnaryFunction<A1>::type Function;
   Function function_;
   boost::shared_ptr<ExpressionNode<A1> > expression1_;
 
@@ -679,7 +679,7 @@ public:
 
 private:
 
-  typedef typename BinaryFunction<T,A1,A2>::type Function;
+  typedef typename Expression<T>::template BinaryFunction<A1,A2>::type Function;
   Function function_;
 
   /// Constructor with a ternary function f, and three input arguments
@@ -729,7 +729,7 @@ class TernaryExpression: public FunctionalNode<T, boost::mpl::vector<A1, A2, A3>
 
 private:
 
-  typedef typename TernaryFunction<T,A1,A2,A3>::type Function;
+  typedef typename Expression<T>::template TernaryFunction<A1,A2,A3>::type Function;
   Function function_;
 
   /// Constructor with a ternary function f, and three input arguments
@@ -817,7 +817,7 @@ Expression<T>::Expression(const Expression<A>& expression,
 /// Construct a unary function expression
 template<typename T>
 template<typename A>
-Expression<T>::Expression(typename UnaryFunction<T, A>::type function,
+Expression<T>::Expression(typename UnaryFunction<A>::type function,
     const Expression<A>& expression) :
     root_(new UnaryExpression<T, A>(function, expression)) {
 }
@@ -837,7 +837,7 @@ Expression<T>::Expression(const Expression<A1>& expression1,
 /// Construct a binary function expression
 template<typename T>
 template<typename A1, typename A2>
-Expression<T>::Expression(typename BinaryFunction<T, A1, A2>::type function,
+Expression<T>::Expression(typename BinaryFunction<A1, A2>::type function,
     const Expression<A1>& expression1, const Expression<A2>& expression2) :
     root_(new BinaryExpression<T, A1, A2>(function, expression1, expression2)) {
 }
@@ -861,7 +861,7 @@ Expression<T>::Expression(const Expression<A1>& expression1,
 template<typename T>
 template<typename A1, typename A2, typename A3>
 Expression<T>::Expression(
-    typename TernaryFunction<T, A1, A2, A3>::type function,
+    typename TernaryFunction<A1, A2, A3>::type function,
     const Expression<A1>& expression1, const Expression<A2>& expression2,
     const Expression<A3>& expression3) :
     root_(

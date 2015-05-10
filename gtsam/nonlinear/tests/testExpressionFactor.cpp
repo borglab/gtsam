@@ -327,7 +327,7 @@ TEST(ExpressionFactor, tree) {
   boost::shared_ptr<GaussianFactor> gf2 = f2.linearize(values);
   EXPECT( assert_equal(*expected, *gf2, 1e-9));
 
-  TernaryFunction<Point2, Pose3, Point3, Cal3_S2>::type fff = project6;
+  Expression<Point2>::TernaryFunction<Pose3, Point3, Cal3_S2>::type fff = project6;
 
   // Try ternary version
   ExpressionFactor<Point2> f3(model, measured, project3(x, p, K));

@@ -43,30 +43,6 @@ template<typename T> class ExpressionFactor;
 // For clarity, it is forward declared here but implemented at the end of this header.
 class JacobianMap;
 
-// Expressions wrap trees of functions that can evaluate their own derivatives.
-// The meta-functions below provide a handy to specify the type of those functions
-template<class T, class A1>
-struct UnaryFunction {
-  typedef boost::function<
-      T(const A1&, typename MakeOptionalJacobian<T, A1>::type)> type;
-};
-
-template<class T, class A1, class A2>
-struct BinaryFunction {
-  typedef boost::function<
-      T(const A1&, const A2&, typename MakeOptionalJacobian<T, A1>::type,
-          typename MakeOptionalJacobian<T, A2>::type)> type;
-};
-
-template<class T, class A1, class A2, class A3>
-struct TernaryFunction {
-  typedef boost::function<
-      T(const A1&, const A2&, const A3&,
-          typename MakeOptionalJacobian<T, A1>::type,
-          typename MakeOptionalJacobian<T, A2>::type,
-          typename MakeOptionalJacobian<T, A3>::type)> type;
-};
-
 /// Storage type for the execution trace.
 /// It enforces the proper alignment in a portable way.
 /// Provide a traceSize() sized array of this type to traceExecution as traceStorage.
@@ -91,6 +67,30 @@ private:
 
 public:
 
+  // Expressions wrap trees of functions that can evaluate their own derivatives.
+  // The meta-functions below provide a handy to specify the type of those functions
+  template<class A1>
+  struct UnaryFunction {
+    typedef boost::function<
+        T(const A1&, typename MakeOptionalJacobian<T, A1>::type)> type;
+  };
+
+  template<class A1, class A2>
+  struct BinaryFunction {
+    typedef boost::function<
+        T(const A1&, const A2&, typename MakeOptionalJacobian<T, A1>::type,
+            typename MakeOptionalJacobian<T, A2>::type)> type;
+  };
+
+  template<class A1, class A2, class A3>
+  struct TernaryFunction {
+    typedef boost::function<
+        T(const A1&, const A2&, const A3&,
+            typename MakeOptionalJacobian<T, A1>::type,
+            typename MakeOptionalJacobian<T, A2>::type,
+            typename MakeOptionalJacobian<T, A3>::type)> type;
+  };
+
   /// Print
   void print(const std::string& s) const;
 
@@ -113,7 +113,7 @@ public:
 
   /// Construct a unary function expression
   template<typename A>
-  Expression(typename UnaryFunction<T, A>::type function,
+  Expression(typename UnaryFunction<A>::type function,
       const Expression<A>& expression);
 
   /// Construct a unary method expression
@@ -125,7 +125,7 @@ public:
 
   /// Construct a binary function expression
   template<typename A1, typename A2>
-  Expression(typename BinaryFunction<T, A1, A2>::type function,
+  Expression(typename BinaryFunction<A1, A2>::type function,
       const Expression<A1>& expression1, const Expression<A2>& expression2);
 
   /// Construct a binary method expression
@@ -139,7 +139,7 @@ public:
 
   /// Construct a ternary function expression
   template<typename A1, typename A2, typename A3>
-  Expression(typename TernaryFunction<T, A1, A2, A3>::type function,
+  Expression(typename TernaryFunction<A1, A2, A3>::type function,
       const Expression<A1>& expression1, const Expression<A2>& expression2,
       const Expression<A3>& expression3);
 
