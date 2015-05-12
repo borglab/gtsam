@@ -17,6 +17,7 @@
  */
 
 #include <gtsam/nonlinear/ExecutionTrace.h>
+#include <gtsam/geometry/Point2.h>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -26,7 +27,7 @@ using namespace gtsam;
 /* ************************************************************************* */
 // Constant
 TEST(ExecutionTrace, construct) {
-  ExecutionTrace trace;
+  ExecutionTrace<Point2> trace;
 }
 
 /* ************************************************************************* */

@@ -19,16 +19,11 @@
 
 #pragma once
 
-#include <gtsam/nonlinear/ExecutionTrace.h>
 #include <gtsam/nonlinear/ExpressionNode.h>
-#include <gtsam/base/Lie.h>
 
-#include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
-#include <boost/bind.hpp>
-#include <boost/type_traits/aligned_storage.hpp>
-
-#include <map>
+#include <boost/range/adaptor/map.hpp>
+#include <boost/range/algorithm.hpp>
 
 namespace gtsam {
 
@@ -116,15 +111,13 @@ Expression<T>::Expression(const Expression<A1>& expression1,
 /// Construct a ternary function expression
 template<typename T>
 template<typename A1, typename A2, typename A3>
-Expression<T>::Expression(
-    typename TernaryFunction<A1, A2, A3>::type function,
+Expression<T>::Expression(typename TernaryFunction<A1, A2, A3>::type function,
     const Expression<A1>& expression1, const Expression<A2>& expression2,
     const Expression<A3>& expression3) :
     root_(
         new TernaryExpression<T, A1, A2, A3>(function, expression1, expression2,
             expression3)) {
 }
-
 
 /// Return root
 template<typename T>
@@ -156,7 +149,8 @@ void Expression<T>::dims(std::map<Key, int>& map) const {
  * The order of the Jacobians is same as keys in either keys() or dims()
  */
 template<typename T>
-T Expression<T>::value(const Values& values, boost::optional<std::vector<Matrix>&> H) const {
+T Expression<T>::value(const Values& values,
+    boost::optional<std::vector<Matrix>&> H) const {
 
   if (H) {
     // Call private version that returns derivatives in H
@@ -193,8 +187,9 @@ T Expression<T>::value(const Values& values, const FastVector<Key>& keys,
 
 template<typename T>
 T Expression<T>::traceExecution(const Values& values, ExecutionTrace<T>& trace,
-    ExecutionTraceStorage* traceStorage) const {
-  return root_->traceExecution(values, trace, traceStorage);
+    void* traceStorage) const {
+  return root_->traceExecution(values, trace,
+      static_cast<ExecutionTraceStorage*>(traceStorage));
 }
 
 template<typename T>
@@ -226,16 +221,15 @@ T Expression<T>::value(const Values& values, JacobianMap& jacobians) const {
   return value;
 }
 
-// JacobianMap:
-JacobianMap::JacobianMap(const FastVector<Key>& keys, VerticalBlockMatrix& Ab) :
-    keys_(keys), Ab_(Ab) {
-}
-
-VerticalBlockMatrix::Block JacobianMap::operator()(Key key) {
-  FastVector<Key>::const_iterator it = std::find(keys_.begin(), keys_.end(),
-      key);
-  DenseIndex block = it - keys_.begin();
-  return Ab_(block);
+template<typename T>
+typename Expression<T>::KeysAndDims Expression<T>::keysAndDims() const {
+  std::map<Key, int> map;
+  dims(map);
+  size_t n = map.size();
+  KeysAndDims pair = std::make_pair(FastVector < Key > (n), FastVector<int>(n));
+  boost::copy(map | boost::adaptors::map_keys, pair.first.begin());
+  boost::copy(map | boost::adaptors::map_values, pair.second.begin());
+  return pair;
 }
 
 } // namespace gtsam

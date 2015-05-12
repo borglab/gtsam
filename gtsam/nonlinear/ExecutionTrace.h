@@ -11,29 +11,30 @@
 
 /**
  * @file ExecutionTrace.h
- * @date September 18, 2014
+ * @date May 11, 2015
  * @author Frank Dellaert
- * @brief Used in Expression.h, not for general consumption
+ * @brief Execution trace for expressions
  */
 
 #pragma once
 
-#include <Eigen/Core>
+#include <gtsam/nonlinear/JacobianMap.h>
 #include <gtsam/inference/Key.h>
-//#include <gtsam/base/Matrix.h>
-//#include <gtsam/nonlinear/ExpressionNode.h>
-//#include <gtsam/base/Lie.h>
-//
-//#include <boost/foreach.hpp>
-//#include <boost/tuple/tuple.hpp>
-//#include <boost/bind.hpp>
-//#include <boost/type_traits/aligned_storage.hpp>
-//
-//#include <map>
+#include <gtsam/base/Manifold.h>
+
+#include <boost/type_traits/aligned_storage.hpp>
+
+#include <Eigen/Core>
 
 namespace gtsam {
 
 template<int T> struct CallRecord;
+
+/// Storage type for the execution trace.
+/// It enforces the proper alignment in a portable way.
+/// Provide a traceSize() sized array of this type to traceExecution as traceStorage.
+static const unsigned TraceAlignment = 16;
+typedef boost::aligned_storage<1, TraceAlignment>::type ExecutionTraceStorage;
 
 namespace internal {
 

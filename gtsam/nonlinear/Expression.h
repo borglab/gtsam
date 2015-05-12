@@ -19,15 +19,12 @@
 
 #pragma once
 
+#include <gtsam/nonlinear/JacobianMap.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/base/OptionalJacobian.h>
-#include <gtsam/base/FastVector.h>
-#include <gtsam/base/VerticalBlockMatrix.h>
 
 #include <boost/bind.hpp>
-#include <boost/range/adaptor/map.hpp>
-#include <boost/range/algorithm.hpp>
-#include <boost/make_shared.hpp>
+#include <map>
 
 class ExpressionFactorShallowTest;
 
@@ -38,16 +35,6 @@ class Values;
 template<typename T> class ExecutionTrace;
 template<typename T> class ExpressionNode;
 template<typename T> class ExpressionFactor;
-
-// A JacobianMap is the primary mechanism by which derivatives are returned.
-// For clarity, it is forward declared here but implemented at the end of this header.
-class JacobianMap;
-
-/// Storage type for the execution trace.
-/// It enforces the proper alignment in a portable way.
-/// Provide a traceSize() sized array of this type to traceExecution as traceStorage.
-const unsigned TraceAlignment = 16;
-typedef boost::aligned_storage<1, TraceAlignment>::type ExecutionTraceStorage;
 
 /**
  * Expression class that supports automatic differentiation
@@ -176,15 +163,7 @@ private:
 
   /// Vaguely unsafe keys and dimensions in same order
   typedef std::pair<FastVector<Key>, FastVector<int> > KeysAndDims;
-  KeysAndDims keysAndDims() const {
-    std::map<Key, int> map;
-    dims(map);
-    size_t n = map.size();
-    KeysAndDims pair = std::make_pair(FastVector<Key>(n), FastVector<int>(n));
-    boost::copy(map | boost::adaptors::map_keys, pair.first.begin());
-    boost::copy(map | boost::adaptors::map_values, pair.second.begin());
-    return pair;
-  }
+  KeysAndDims keysAndDims() const;
 
   /// private version that takes keys and dimensions, returns derivatives
   T value(const Values& values, const FastVector<Key>& keys,
@@ -192,7 +171,7 @@ private:
 
   /// trace execution, very unsafe
   T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-      ExecutionTraceStorage* traceStorage) const;
+      void* traceStorage) const;
 
   /**
    * @brief Return value and derivatives, reverse AD version
@@ -204,23 +183,6 @@ private:
   // be very selective on who can access these private methods:
   friend class ExpressionFactor<T> ;
   friend class ::ExpressionFactorShallowTest;
-
-};
-
-// Expressions are designed to write their derivatives into an already allocated
-// Jacobian of the correct size, of type VerticalBlockMatrix.
-// The JacobianMap provides a mapping from keys to the underlying blocks.
-class JacobianMap {
-private:
-  const FastVector<Key>& keys_;
-  VerticalBlockMatrix& Ab_;
-
-public:
-  /// Construct a JacobianMap for writing into a VerticalBlockMatrix Ab
-  JacobianMap(const FastVector<Key>& keys, VerticalBlockMatrix& Ab);
-
-  /// Access blocks of via key
-  VerticalBlockMatrix::Block operator()(Key key);
 };
 
 // http://stackoverflow.com/questions/16260445/boost-bind-to-operator
@@ -252,7 +214,7 @@ std::vector<Expression<T> > createUnknowns(size_t n, char c, size_t start = 0) {
   return unknowns;
 }
 
-}
+} // namespace gtsam
 
 #include <gtsam/nonlinear/Expression-inl.h>
 

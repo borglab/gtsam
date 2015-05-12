@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <gtsam/nonlinear/ExecutionTrace.h>
 #include <gtsam/nonlinear/CallRecord.h>
 #include <gtsam/nonlinear/Values.h>
 
