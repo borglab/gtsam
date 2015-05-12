@@ -21,7 +21,6 @@
 #pragma once
 
 #include <gtsam/nonlinear/internal/JacobianMap.h>
-#include <boost/mpl/transform.hpp>
 
 namespace gtsam {
 namespace internal {
