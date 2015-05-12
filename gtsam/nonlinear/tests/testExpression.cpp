@@ -42,7 +42,7 @@ static const Rot3 someR = Rot3::RzRyRx(1, 2, 3);
 
 /* ************************************************************************* */
 // Constant
-TEST(Expression, constant) {
+TEST(Expression, Constant) {
   Expression<Rot3> R(someR);
   Values values;
   Rot3 actual = R.value(values);
@@ -89,13 +89,11 @@ set<Key> expected = list_of(1);
 TEST(Expression, Unary1) {
   using namespace unary;
   Expression<Point2> e(f1, p);
-  EXPECT_LONGS_EQUAL(112,e.traceSize());
   EXPECT(expected == e.keys());
 }
 TEST(Expression, Unary2) {
   using namespace unary;
   Expression<double> e(f2, p);
-  EXPECT_LONGS_EQUAL(80,e.traceSize());
   EXPECT(expected == e.keys());
 }
 /* ************************************************************************* */
