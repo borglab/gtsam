@@ -170,7 +170,7 @@ private:
   KeysAndDims keysAndDims() const;
 
   /// private version that takes keys and dimensions, returns derivatives
-  T value(const Values& values, const FastVector<Key>& keys,
+  T valueAndDerivatives(const Values& values, const FastVector<Key>& keys,
       const FastVector<int>& dims, std::vector<Matrix>& H) const;
 
   /// trace execution, very unsafe
@@ -178,10 +178,11 @@ private:
       void* traceStorage) const;
 
   /// brief Return value and derivatives, reverse AD version
-  T value(const Values& values, internal::JacobianMap& jacobians) const;
+  T valueAndJacobianMap(const Values& values,
+      internal::JacobianMap& jacobians) const;
 
   // be very selective on who can access these private methods:
-  friend class ExpressionFactor<T>;
+  friend class ExpressionFactor<T> ;
   friend class internal::ExpressionNode<T>;
 
   // and add tests

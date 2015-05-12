@@ -135,7 +135,7 @@ T Expression<T>::value(const Values& values,
   if (H) {
     // Call private version that returns derivatives in H
     KeysAndDims pair = keysAndDims();
-    return value(values, pair.first, pair.second, *H);
+    return valueAndDerivatives(values, pair.first, pair.second, *H);
   } else
     // no derivatives needed, just return value
     return root_->value(values);
@@ -154,8 +154,9 @@ size_t Expression<T>::traceSize() const {
 // Private methods:
 
 template<typename T>
-T Expression<T>::value(const Values& values, const FastVector<Key>& keys,
-    const FastVector<int>& dims, std::vector<Matrix>& H) const {
+T Expression<T>::valueAndDerivatives(const Values& values,
+    const FastVector<Key>& keys, const FastVector<int>& dims,
+    std::vector<Matrix>& H) const {
 
   // H should be pre-allocated
   assert(H.size()==keys.size());
@@ -167,7 +168,7 @@ T Expression<T>::value(const Values& values, const FastVector<Key>& keys,
   internal::JacobianMap jacobianMap(keys, Ab);
 
   // Call unsafe version
-  T result = value(values, jacobianMap);
+  T result = valueAndJacobianMap(values, jacobianMap);
 
   // Copy blocks into the vector of jacobians passed in
   for (DenseIndex i = 0; i < static_cast<DenseIndex>(keys.size()); i++)
@@ -184,7 +185,8 @@ T Expression<T>::traceExecution(const Values& values,
 }
 
 template<typename T>
-T Expression<T>::value(const Values& values, internal::JacobianMap& jacobians) const {
+T Expression<T>::valueAndJacobianMap(const Values& values,
+    internal::JacobianMap& jacobians) const {
   // The following piece of code is absolutely crucial for performance.
   // We allocate a block of memory on the stack, which can be done at runtime
   // with modern C++ compilers. The traceExecution then fills this memory
