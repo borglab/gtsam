@@ -102,9 +102,6 @@ private:
   virtual void _print(const std::string& indent) const = 0;
   virtual void _startReverseAD3(JacobianMap& jacobians) const = 0;
 
-  virtual void _reverseAD3(const Matrix & dFdT,
-      JacobianMap& jacobians) const = 0;
-
   virtual void _reverseAD3(
       const Eigen::Matrix<double, Eigen::Dynamic, Cols> & dFdT,
       JacobianMap& jacobians) const = 0;
@@ -146,10 +143,6 @@ private:
 
   virtual void _startReverseAD3(JacobianMap& jacobians) const {
     derived().startReverseAD4(jacobians);
-  }
-
-  virtual void _reverseAD3(const Matrix & dFdT, JacobianMap& jacobians) const {
-    derived().reverseAD4(dFdT, jacobians);
   }
 
   virtual void _reverseAD3(

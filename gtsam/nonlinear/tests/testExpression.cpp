@@ -276,6 +276,21 @@ TEST(Expression, ternary) {
 }
 
 /* ************************************************************************* */
+// Dynamically sized unary function
+namespace dynamic {
+Vector f1(const Vector& p, OptionalJacobian<-1, -1> H) {
+  return Vector(2);
+}
+Expression<Vector> p(1);
+set<Key> expected = list_of(1);
+}
+TEST(Expression, dynamic) {
+  using namespace dynamic;
+  Expression<Vector> e(f1, p);
+  EXPECT(expected == e.keys());
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
