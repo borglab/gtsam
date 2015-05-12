@@ -31,28 +31,29 @@
 *
 */
 
-#include <gtsam/base/timing.h>
-#include <gtsam/base/treeTraversal-inst.h>
-#include <gtsam/slam/dataset.h>
-#include <gtsam/geometry/Pose2.h>
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/BearingRangeFactor.h>
-#include <gtsam/inference/Symbol.h>
-#include <gtsam/linear/GaussianJunctionTree.h>
-#include <gtsam/linear/GaussianEliminationTree.h>
+#include <gtsam/slam/dataset.h>
+#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/geometry/Pose2.h>
 #include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/nonlinear/Marginals.h>
+#include <gtsam/linear/GaussianJunctionTree.h>
+#include <gtsam/linear/GaussianEliminationTree.h>
+#include <gtsam/inference/Symbol.h>
+#include <gtsam/base/timing.h>
+#include <gtsam/base/treeTraversal-inst.h>
 
-#include <fstream>
-#include <iostream>
-#include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
-#include <boost/serialization/export.hpp>
+#include <boost/archive/binary_oarchive.hpp>
 #include <boost/program_options.hpp>
 #include <boost/range/algorithm/set_algorithm.hpp>
 #include <boost/random.hpp>
+#include <boost/serialization/export.hpp>
+
+#include <fstream>
+#include <iostream>
 
 #ifdef GTSAM_USE_TBB
 #include <tbb/tbb.h>
@@ -71,23 +72,6 @@ typedef Pose2 Pose;
 typedef NoiseModelFactor1<Pose> NM1;
 typedef NoiseModelFactor2<Pose,Pose> NM2;
 typedef BearingRangeFactor<Pose,Point2> BR;
-
-//GTSAM_VALUE_EXPORT(Value);
-//GTSAM_VALUE_EXPORT(Pose);
-//GTSAM_VALUE_EXPORT(Rot2);
-//GTSAM_VALUE_EXPORT(Point2);
-//GTSAM_VALUE_EXPORT(NonlinearFactor);
-//GTSAM_VALUE_EXPORT(NoiseModelFactor);
-//GTSAM_VALUE_EXPORT(NM1);
-//GTSAM_VALUE_EXPORT(NM2);
-//GTSAM_VALUE_EXPORT(BetweenFactor<Pose>);
-//GTSAM_VALUE_EXPORT(PriorFactor<Pose>);
-//GTSAM_VALUE_EXPORT(BR);
-//GTSAM_VALUE_EXPORT(noiseModel::Base);
-//GTSAM_VALUE_EXPORT(noiseModel::Isotropic);
-//GTSAM_VALUE_EXPORT(noiseModel::Gaussian);
-//GTSAM_VALUE_EXPORT(noiseModel::Diagonal);
-//GTSAM_VALUE_EXPORT(noiseModel::Unit);
 
 double chi2_red(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& config) {
   // Compute degrees of freedom (observations - variables)
@@ -269,12 +253,12 @@ void runIncremental()
       boost::dynamic_pointer_cast<BetweenFactor<Pose> >(datasetMeasurements[nextMeasurement]))
     {
       Key key1 = measurement->key1(), key2 = measurement->key2();
-      if((key1 >= firstStep && key1 < key2) || (key2 >= firstStep && key2 < key1)) {
+      if(((int)key1 >= firstStep && key1 < key2) || (key2 >= firstStep && key2 < key1)) {
         // We found an odometry starting at firstStep
         firstPose = std::min(key1, key2);
         break;
       }
-      if((key2 >= firstStep && key1 < key2) || (key1 >= firstStep && key2 < key1)) {
+      if(((int)key2 >= firstStep && key1 < key2) || (key1 >= firstStep && key2 < key1)) {
         // We found an odometry joining firstStep with a previous pose
         havePreviousPose = true;
         firstPose = std::max(key1, key2);
@@ -303,7 +287,9 @@ void runIncremental()
 
   cout << "Playing forward time steps..." << endl;
 
-  for(size_t step = firstPose; nextMeasurement < datasetMeasurements.size() && (lastStep == -1 || step <= lastStep); ++step)
+  for (size_t step = firstPose;
+      nextMeasurement < datasetMeasurements.size() && (lastStep == -1 || (int)step <= lastStep);
+      ++step)
   {
     Values newVariables;
     NonlinearFactorGraph newFactors;
