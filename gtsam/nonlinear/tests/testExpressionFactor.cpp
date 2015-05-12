@@ -253,10 +253,10 @@ TEST(ExpressionFactor, Shallow) {
   typedef internal::UnaryExpression<Point2, Point3> Unary;
   typedef internal::BinaryExpression<Point3, Pose3, Point3> Binary;
   size_t expectedTraceSize = sizeof(Unary::Record) + sizeof(Binary::Record);
-  EXPECT_LONGS_EQUAL(112, sizeof(Unary::Record));
+  EXPECT_LONGS_EQUAL(96, sizeof(Unary::Record));
 #ifdef GTSAM_USE_QUATERNIONS
   EXPECT_LONGS_EQUAL(352, sizeof(Binary::Record));
-  LONGS_EQUAL(112+352, expectedTraceSize);
+  LONGS_EQUAL(96+352, expectedTraceSize);
 #else
   EXPECT_LONGS_EQUAL(400, sizeof(Binary::Record));
   LONGS_EQUAL(112+400, expectedTraceSize);
@@ -277,7 +277,7 @@ TEST(ExpressionFactor, Shallow) {
   // Check matrices
   boost::optional<Unary::Record*> r = trace.record<Unary::Record>();
   CHECK(r);
-  EXPECT(assert_equal(expected23, (Matrix)(*r)->jacobian<Point3, 1>(), 1e-9));
+  EXPECT(assert_equal(expected23, (Matrix)(*r)->dTdA1, 1e-9));
 
   // Linearization
   ExpressionFactor<Point2> f2(model, measured, expression);

@@ -325,7 +325,6 @@ struct GenerateFunctionalNode: Argument<T, A, Base::N + 1>, Base {
   // case to this unique signature to retrieve the value/trace at any level
   struct Record: JacobianTrace<T, A, N>, Base::Record {
 
-    typedef T return_type;
     typedef JacobianTrace<T, A, N> This;
 
     /// Print to std::cout
@@ -460,21 +459,17 @@ template<class T, class A1>
 class UnaryExpression: public ExpressionNode<T> {
 
   typedef typename Expression<T>::template UnaryFunction<A1>::type Function;
-  Function function_;
   boost::shared_ptr<ExpressionNode<A1> > expression1_;
+  Function function_;
 
-  typedef Argument<T, A1, 1> This; ///< The storage we have direct access to
+public:
 
-  /// Constructor with a unary function f, and input argument e
+  /// Constructor with a unary function f, and input argument e1
   UnaryExpression(Function f, const Expression<A1>& e1) :
       function_(f) {
     this->expression1_ = e1.root();
     ExpressionNode<T>::traceSize_ = upAligned(sizeof(Record)) + e1.traceSize();
   }
-
-  friend class Expression<T> ;
-
-public:
 
   /// Return value
   virtual T value(const Values& values) const {
@@ -483,45 +478,27 @@ public:
 
   /// Return keys that play in this expression
   virtual std::set<Key> keys() const {
-    std::set<Key> keys; // = Base::keys();
-    std::set<Key> myKeys = this->expression1_->keys();
-    keys.insert(myKeys.begin(), myKeys.end());
-    return keys;
+    return this->expression1_->keys();
   }
 
   /// Return dimensions for each argument
   virtual void dims(std::map<Key, int>& map) const {
-    // Base::dims(map);
     this->expression1_->dims(map);
   }
 
   // Inner Record Class
-  // The reason we inherit from JacobianTrace<T, A, N> is because we can then
-  // case to this unique signature to retrieve the value/trace at any level
-  struct Record: public CallRecordImplementor<Record, traits<T>::dimension>,
-      JacobianTrace<T, A1, 1> {
+  struct Record: public CallRecordImplementor<Record, traits<T>::dimension> {
 
-    typedef T return_type;
-    typedef JacobianTrace<T, A1, 1> This;
-
-    /// Access Jacobian
-    template<class A, size_t N>
-    typename Jacobian<T, A1>::type& jacobian() {
-      return static_cast<JacobianTrace<T, A, N>&>(*this).dTdA;
-    }
-
-    /// Access Value
-    template<class A, size_t N>
-    const A& value() const {
-      return static_cast<JacobianTrace<T, A, N> const &>(*this).value;
-    }
+    A1 value1;
+    ExecutionTrace<A1> trace1;
+    typename Jacobian<T, A1>::type dTdA1;
 
     /// Print to std::cout
     void print(const std::string& indent) const {
       std::cout << indent << "UnaryExpression::Record {" << std::endl;
       static const Eigen::IOFormat matlab(0, 1, " ", "; ", "", "", "[", "]");
-      std::cout << indent << This::dTdA.format(matlab) << std::endl;
-      This::trace.print(indent);
+      std::cout << indent << dTdA1.format(matlab) << std::endl;
+      trace1.print(indent);
       std::cout << indent << "}" << std::endl;
     }
 
@@ -535,57 +512,40 @@ public:
       // ExecutionTrace::reverseAD1 just passes this on to CallRecord::reverseAD2
       // which calls the correctly sized CallRecord::reverseAD3, which in turn
       // calls reverseAD4 below.
-      This::trace.reverseAD1(This::dTdA, jacobians);
+      trace1.reverseAD1(dTdA1, jacobians);
     }
 
     /// Given df/dT, multiply in dT/dA and continue reverse AD process
     // Cols is always known at compile time
     template<typename SomeMatrix>
     void reverseAD4(const SomeMatrix & dFdT, JacobianMap& jacobians) const {
-      This::trace.reverseAD1(dFdT * This::dTdA, jacobians);
+      trace1.reverseAD1(dFdT * dTdA1, jacobians);
     }
   };
 
   /// Construct an execution trace for reverse AD
-  void trace(const Values& values, Record* record,
-      ExecutionTraceStorage*& traceStorage) const {
+  virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
+      ExecutionTraceStorage* ptr) const {
+    assert(reinterpret_cast<size_t>(ptr) % TraceAlignment == 0);
+
+    // Create the record at the start of the traceStorage and advance the pointer
+    Record* record = new (ptr) Record();
+    ptr += upAligned(sizeof(Record));
+
+    // Record the traces for all arguments
+    // After this, the traceStorage pointer is set to after what was written
     // Write an Expression<A> execution trace in record->trace
     // Iff Constant or Leaf, this will not write to traceStorage, only to trace.
     // Iff the expression is functional, write all Records in traceStorage buffer
     // Return value of type T is recorded in record->value
-    record->Record::This::value = this->expression1_->traceExecution(values,
-        record->Record::This::trace, traceStorage);
-    // traceStorage is never modified by traceExecution, but if traceExecution has
+    record->value1 = expression1_->traceExecution(values, record->trace1, ptr);
+
+    // ptr is never modified by traceExecution, but if traceExecution has
     // written in the buffer, the next caller expects we advance the pointer
-    traceStorage += this->expression1_->traceSize();
-  }
-
-  /// Construct an execution trace for reverse AD
-  Record* trace(const Values& values,
-      ExecutionTraceStorage* traceStorage) const {
-    assert(reinterpret_cast<size_t>(traceStorage) % TraceAlignment == 0);
-
-    // Create the record and advance the pointer
-    Record* record = new (traceStorage) Record();
-    traceStorage += upAligned(sizeof(Record));
-
-    // Record the traces for all arguments
-    // After this, the traceStorage pointer is set to after what was written
-    this->trace(values, record, traceStorage);
-
-    // Return the record for this function evaluation
-    return record;
-  }
-
-  /// Construct an execution trace for reverse AD
-  virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-      ExecutionTraceStorage* traceStorage) const {
-
-    Record* record = this->trace(values, traceStorage);
+    ptr += expression1_->traceSize();
     trace.setFunction(record);
 
-    return function_(record->template value<A1, 1>(),
-        record->template jacobian<A1, 1>());
+    return function_(record->value1, record->dTdA1);
   }
 };
 
