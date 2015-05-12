@@ -23,6 +23,7 @@
 #include <gtsam/base/VerticalBlockMatrix.h>
 
 namespace gtsam {
+namespace internal {
 
 // A JacobianMap is the primary mechanism by which derivatives are returned.
 // Expressions are designed to write their derivatives into an already allocated
@@ -48,5 +49,6 @@ public:
   }
 };
 
+} // namespace internal
 } // namespace gtsam
 

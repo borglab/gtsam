@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include <gtsam/nonlinear/JacobianMap.h>
+#include <gtsam/nonlinear/internal/JacobianMap.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/base/Manifold.h>
 

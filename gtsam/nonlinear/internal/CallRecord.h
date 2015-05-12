@@ -20,7 +20,7 @@
 
 #pragma once
 
-#include <gtsam/nonlinear/JacobianMap.h>
+#include <gtsam/nonlinear/internal/JacobianMap.h>
 #include <boost/mpl/transform.hpp>
 
 namespace gtsam {

@@ -80,13 +80,13 @@ struct Record: public internal::CallRecordImplementor<Record, Cols> {
   }
   void print(const std::string& indent) const {
   }
-  void startReverseAD4(JacobianMap& jacobians) const {
+  void startReverseAD4(internal::JacobianMap& jacobians) const {
   }
 
   mutable CallConfig cc;
  private:
   template<typename SomeMatrix>
-  void reverseAD4(const SomeMatrix & dFdT, JacobianMap& jacobians) const {
+  void reverseAD4(const SomeMatrix & dFdT, internal::JacobianMap& jacobians) const {
     cc.compTimeRows = SomeMatrix::RowsAtCompileTime;
     cc.compTimeCols = SomeMatrix::ColsAtCompileTime;
     cc.runTimeRows = dFdT.rows();
@@ -97,7 +97,7 @@ struct Record: public internal::CallRecordImplementor<Record, Cols> {
   friend struct internal::CallRecordImplementor;
 };
 
-JacobianMap & NJM= *static_cast<JacobianMap *>(NULL);
+internal::JacobianMap & NJM= *static_cast<internal::JacobianMap *>(NULL);
 
 /* ************************************************************************* */
 typedef Eigen::Matrix<double, Eigen::Dynamic, Cols> DynRowMat;

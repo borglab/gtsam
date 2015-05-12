@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include <gtsam/nonlinear/JacobianMap.h>
+#include <gtsam/nonlinear/internal/JacobianMap.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/base/OptionalJacobian.h>
 
@@ -178,7 +178,7 @@ private:
       void* traceStorage) const;
 
   /// brief Return value and derivatives, reverse AD version
-  T value(const Values& values, JacobianMap& jacobians) const;
+  T value(const Values& values, internal::JacobianMap& jacobians) const;
 
   // be very selective on who can access these private methods:
   friend class ExpressionFactor<T>;

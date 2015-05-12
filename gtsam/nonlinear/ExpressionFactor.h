@@ -89,7 +89,7 @@ public:
 
     // Wrap keys and VerticalBlockMatrix into structure passed to expression_
     VerticalBlockMatrix& Ab = factor->matrixObject();
-    JacobianMap jacobianMap(keys_, Ab);
+    internal::JacobianMap jacobianMap(keys_, Ab);
 
     // Zero out Jacobian so we can simply add to it
     Ab.matrix().setZero();

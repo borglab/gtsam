@@ -164,7 +164,7 @@ T Expression<T>::value(const Values& values, const FastVector<Key>& keys,
   static const int Dim = traits<T>::dimension;
   VerticalBlockMatrix Ab(dims, Dim);
   Ab.matrix().setZero();
-  JacobianMap jacobianMap(keys, Ab);
+  internal::JacobianMap jacobianMap(keys, Ab);
 
   // Call unsafe version
   T result = value(values, jacobianMap);
@@ -184,7 +184,7 @@ T Expression<T>::traceExecution(const Values& values,
 }
 
 template<typename T>
-T Expression<T>::value(const Values& values, JacobianMap& jacobians) const {
+T Expression<T>::value(const Values& values, internal::JacobianMap& jacobians) const {
   // The following piece of code is absolutely crucial for performance.
   // We allocate a block of memory on the stack, which can be done at runtime
   // with modern C++ compilers. The traceExecution then fills this memory
