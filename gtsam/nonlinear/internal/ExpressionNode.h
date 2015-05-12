@@ -454,6 +454,9 @@ struct FunctionalNode {
 };
 //-----------------------------------------------------------------------------
 
+// Eigen format for printing Jacobians
+static const Eigen::IOFormat kMatlabFormat(0, 1, " ", "; ", "", "", "[", "]");
+
 /// Unary Function Expression
 template<class T, class A1>
 class UnaryExpression: public ExpressionNode<T> {
@@ -466,24 +469,24 @@ public:
 
   /// Constructor with a unary function f, and input argument e1
   UnaryExpression(Function f, const Expression<A1>& e1) :
-      function_(f) {
-    this->expression1_ = e1.root();
+      expression1_(e1.root()), function_(f) {
     ExpressionNode<T>::traceSize_ = upAligned(sizeof(Record)) + e1.traceSize();
   }
 
   /// Return value
   virtual T value(const Values& values) const {
-    return function_(this->expression1_->value(values), boost::none);
+    using boost::none;
+    return function_(expression1_->value(values), none);
   }
 
   /// Return keys that play in this expression
   virtual std::set<Key> keys() const {
-    return this->expression1_->keys();
+    return expression1_->keys();
   }
 
   /// Return dimensions for each argument
   virtual void dims(std::map<Key, int>& map) const {
-    this->expression1_->dims(map);
+    expression1_->dims(map);
   }
 
   // Inner Record Class
@@ -496,8 +499,7 @@ public:
     /// Print to std::cout
     void print(const std::string& indent) const {
       std::cout << indent << "UnaryExpression::Record {" << std::endl;
-      static const Eigen::IOFormat matlab(0, 1, " ", "; ", "", "", "[", "]");
-      std::cout << indent << dTdA1.format(matlab) << std::endl;
+      std::cout << indent << dTdA1.format(kMatlabFormat) << std::endl;
       trace1.print(indent);
       std::cout << indent << "}" << std::endl;
     }
@@ -516,7 +518,6 @@ public:
     }
 
     /// Given df/dT, multiply in dT/dA and continue reverse AD process
-    // Cols is always known at compile time
     template<typename SomeMatrix>
     void reverseAD4(const SomeMatrix & dFdT, JacobianMap& jacobians) const {
       trace1.reverseAD1(dFdT * dTdA1, jacobians);
@@ -553,50 +554,93 @@ public:
 /// Binary Expression
 
 template<class T, class A1, class A2>
-class BinaryExpression: public FunctionalNode<T, boost::mpl::vector<A1, A2> >::type {
-  typedef typename FunctionalNode<T, boost::mpl::vector<A1, A2> >::type Base;
-
-public:
-  typedef typename Base::Record Record;
-
-private:
+class BinaryExpression: public ExpressionNode<T> {
 
   typedef typename Expression<T>::template BinaryFunction<A1, A2>::type Function;
+  boost::shared_ptr<ExpressionNode<A1> > expression1_;
+  boost::shared_ptr<ExpressionNode<A2> > expression2_;
   Function function_;
 
-  /// Constructor with a ternary function f, and three input arguments
+public:
+
+  /// Constructor with a binary function f, and two input arguments
   BinaryExpression(Function f, const Expression<A1>& e1,
       const Expression<A2>& e2) :
-      function_(f) {
-    this->template reset<A1, 1>(e1.root());
-    this->template reset<A2, 2>(e2.root());
+      expression1_(e1.root()), expression2_(e2.root()), function_(f) {
     ExpressionNode<T>::traceSize_ = //
         upAligned(sizeof(Record)) + e1.traceSize() + e2.traceSize();
   }
 
-  friend class Expression<T> ;
   friend class ::ExpressionFactorBinaryTest;
-
-public:
 
   /// Return value
   virtual T value(const Values& values) const {
     using boost::none;
-    return function_(this->template expression<A1, 1>()->value(values),
-    this->template expression<A2, 2>()->value(values),
-    none, none);
+    return function_(expression1_->value(values), expression2_->value(values),
+        none, none);
   }
 
-  /// Construct an execution trace for reverse AD
+  /// Return keys that play in this expression
+  virtual std::set<Key> keys() const {
+    std::set<Key> keys = expression1_->keys();
+    std::set<Key> myKeys = expression2_->keys();
+    keys.insert(myKeys.begin(), myKeys.end());
+    return keys;
+  }
+
+  /// Return dimensions for each argument
+  virtual void dims(std::map<Key, int>& map) const {
+    expression1_->dims(map);
+    expression2_->dims(map);
+  }
+
+  // Inner Record Class
+  struct Record: public CallRecordImplementor<Record, traits<T>::dimension> {
+
+    A1 value1;
+    ExecutionTrace<A1> trace1;
+    typename Jacobian<T, A1>::type dTdA1;
+
+    A2 value2;
+    ExecutionTrace<A2> trace2;
+    typename Jacobian<T, A2>::type dTdA2;
+
+    /// Print to std::cout
+    void print(const std::string& indent) const {
+      std::cout << indent << "BinaryExpression::Record {" << std::endl;
+      std::cout << indent << dTdA1.format(kMatlabFormat) << std::endl;
+      trace1.print(indent);
+      std::cout << indent << dTdA2.format(kMatlabFormat) << std::endl;
+      trace2.print(indent);
+      std::cout << indent << "}" << std::endl;
+    }
+
+    /// Start the reverse AD process, see comments in Base
+    void startReverseAD4(JacobianMap& jacobians) const {
+      trace1.reverseAD1(dTdA1, jacobians);
+      trace2.reverseAD1(dTdA2, jacobians);
+    }
+
+    /// Given df/dT, multiply in dT/dA and continue reverse AD process
+    template<typename SomeMatrix>
+    void reverseAD4(const SomeMatrix & dFdT, JacobianMap& jacobians) const {
+      trace1.reverseAD1(dFdT * dTdA1, jacobians);
+      trace2.reverseAD1(dFdT * dTdA2, jacobians);
+    }
+  };
+
+  /// Construct an execution trace for reverse AD, see UnaryExpression for explanation
   virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-  ExecutionTraceStorage* traceStorage) const {
-
-    Record* record = Base::trace(values, traceStorage);
+      ExecutionTraceStorage* ptr) const {
+    assert(reinterpret_cast<size_t>(ptr) % TraceAlignment == 0);
+    Record* record = new (ptr) Record();
+    ptr += upAligned(sizeof(Record));
+    record->value1 = expression1_->traceExecution(values, record->trace1, ptr);
+    record->value2 = expression2_->traceExecution(values, record->trace2, ptr);
+    ptr += expression1_->traceSize() + expression2_->traceSize();
     trace.setFunction(record);
-
-    return function_(record->template value<A1, 1>(),
-    record->template value<A2,2>(), record->template jacobian<A1, 1>(),
-    record->template jacobian<A2, 2>());
+    return function_(record->value1, record->value2, record->dTdA1,
+        record->dTdA2);
   }
 };
 

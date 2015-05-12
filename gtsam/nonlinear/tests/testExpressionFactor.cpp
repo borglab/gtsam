@@ -188,7 +188,11 @@ TEST(ExpressionFactor, Binary) {
   EXPECT_LONGS_EQUAL(16, sizeof(internal::ExecutionTrace<Cal3_S2>));
   EXPECT_LONGS_EQUAL(2*5*8, sizeof(internal::Jacobian<Point2,Cal3_S2>::type));
   EXPECT_LONGS_EQUAL(2*2*8, sizeof(internal::Jacobian<Point2,Point2>::type));
-  size_t expectedRecordSize = 16 + 16 + 40 + 2 * 16 + 80 + 32;
+  size_t expectedRecordSize = sizeof(Cal3_S2)
+      + sizeof(internal::ExecutionTrace<Cal3_S2>)
+      + +sizeof(internal::Jacobian<Point2, Cal3_S2>::type) + sizeof(Point2)
+      + sizeof(internal::ExecutionTrace<Point2>)
+      + sizeof(internal::Jacobian<Point2, Point2>::type);
   EXPECT_LONGS_EQUAL(expectedRecordSize + 8, sizeof(Binary::Record));
 
   // Check size
@@ -212,9 +216,8 @@ TEST(ExpressionFactor, Binary) {
   // Check matrices
   boost::optional<Binary::Record*> r = trace.record<Binary::Record>();
   CHECK(r);
-  EXPECT(
-      assert_equal(expected25, (Matrix) (*r)-> jacobian<Cal3_S2, 1>(), 1e-9));
-  EXPECT( assert_equal(expected22, (Matrix) (*r)->jacobian<Point2, 2>(), 1e-9));
+  EXPECT(assert_equal(expected25, (Matrix ) (*r)->dTdA1, 1e-9));
+  EXPECT(assert_equal(expected22, (Matrix ) (*r)->dTdA2, 1e-9));
 }
 /* ************************************************************************* */
 // Unary(Binary(Leaf,Leaf))
