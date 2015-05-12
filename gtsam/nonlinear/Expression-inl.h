@@ -232,4 +232,33 @@ typename Expression<T>::KeysAndDims Expression<T>::keysAndDims() const {
   return pair;
 }
 
+// http://stackoverflow.com/questions/16260445/boost-bind-to-operator
+template<class T>
+struct apply_compose {
+  typedef T result_type;
+  static const int Dim = traits<T>::dimension;
+  T operator()(const T& x, const T& y, OptionalJacobian<Dim, Dim> H1 =
+      boost::none, OptionalJacobian<Dim, Dim> H2 = boost::none) const {
+    return x.compose(y, H1, H2);
+  }
+};
+
+/// Construct a product expression, assumes T::compose(T) -> T
+template<typename T>
+Expression<T> operator*(const Expression<T>& expression1,
+    const Expression<T>& expression2) {
+  return Expression<T>(boost::bind(apply_compose<T>(), _1, _2, _3, _4),
+      expression1, expression2);
+}
+
+/// Construct an array of leaves
+template<typename T>
+std::vector<Expression<T> > createUnknowns(size_t n, char c, size_t start) {
+  std::vector<Expression<T> > unknowns;
+  unknowns.reserve(n);
+  for (size_t i = start; i < start + n; i++)
+    unknowns.push_back(Expression<T>(c, i));
+  return unknowns;
+}
+
 } // namespace gtsam

@@ -185,34 +185,21 @@ private:
   friend class ::ExpressionFactorShallowTest;
 };
 
-// http://stackoverflow.com/questions/16260445/boost-bind-to-operator
-template<class T>
-struct apply_compose {
-  typedef T result_type;
-  static const int Dim = traits<T>::dimension;
-  T operator()(const T& x, const T& y, OptionalJacobian<Dim, Dim> H1 =
-      boost::none, OptionalJacobian<Dim, Dim> H2 = boost::none) const {
-    return x.compose(y, H1, H2);
-  }
-};
-
-/// Construct a product expression, assumes T::compose(T) -> T
+/**
+ *  Construct a product expression, assumes T::compose(T) -> T
+ *  Example:
+ *    Expression<Point2> a(0), b(1), c = a*b;
+ */
 template<typename T>
-Expression<T> operator*(const Expression<T>& expression1,
-    const Expression<T>& expression2) {
-  return Expression<T>(boost::bind(apply_compose<T>(), _1, _2, _3, _4),
-      expression1, expression2);
-}
+Expression<T> operator*(const Expression<T>& e1, const Expression<T>& e2);
 
-/// Construct an array of leaves
+/**
+ *  Construct an array of unknown expressions with successive symbol keys
+ *  Example:
+ *    createUnknowns<Pose2>(3,'x') creates unknown expressions for x0,x1,x2
+ */
 template<typename T>
-std::vector<Expression<T> > createUnknowns(size_t n, char c, size_t start = 0) {
-  std::vector<Expression<T> > unknowns;
-  unknowns.reserve(n);
-  for (size_t i = start; i < start + n; i++)
-    unknowns.push_back(Expression<T>(c, i));
-  return unknowns;
-}
+std::vector<Expression<T> > createUnknowns(size_t n, char c, size_t start = 0);
 
 } // namespace gtsam
 
