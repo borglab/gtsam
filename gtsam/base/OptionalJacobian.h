@@ -168,7 +168,7 @@ public:
   Jacobian* operator->(){ return pointer_; }
 };
 
-// forward declate
+// forward declare
 template <typename T> struct traits;
 
 /**
