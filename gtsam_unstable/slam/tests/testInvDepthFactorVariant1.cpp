@@ -73,9 +73,7 @@ TEST( InvDepthFactorVariant1, optimize) {
   // Optimize the graph to recover the actual landmark position
   LevenbergMarquardtParams params;
   Values result = LevenbergMarquardtOptimizer(graph, values, params).optimize();
-  Vector6 actual = result.at<Vector6>(landmarkKey);
-  
-
+//  Vector6 actual = result.at<Vector6>(landmarkKey);
 //  values.at<Pose3>(poseKey1).print("Pose1 Before:\n");
 //  result.at<Pose3>(poseKey1).print("Pose1 After:\n");
 //  pose1.print("Pose1 Truth:\n");
