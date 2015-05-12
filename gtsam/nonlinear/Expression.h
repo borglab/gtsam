@@ -24,6 +24,7 @@
 #include <gtsam/base/OptionalJacobian.h>
 
 #include <boost/bind.hpp>
+#include <boost/make_shared.hpp>
 #include <map>
 
 // Forward declare tests
