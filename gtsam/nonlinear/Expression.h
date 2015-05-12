@@ -26,6 +26,7 @@
 #include <boost/bind.hpp>
 #include <map>
 
+// Forward declare tests
 class ExpressionFactorShallowTest;
 
 namespace gtsam {
@@ -96,15 +97,26 @@ public:
   /// Construct a leaf expression, creating Symbol
   Expression(unsigned char c, size_t j);
 
-  /// Construct a nullary method expression
-  template<typename A>
-  Expression(const Expression<A>& expression,
-      T (A::*method)(typename MakeOptionalJacobian<T, A>::type) const);
-
   /// Construct a unary function expression
   template<typename A>
   Expression(typename UnaryFunction<A>::type function,
       const Expression<A>& expression);
+
+  /// Construct a binary function expression
+  template<typename A1, typename A2>
+  Expression(typename BinaryFunction<A1, A2>::type function,
+      const Expression<A1>& expression1, const Expression<A2>& expression2);
+
+  /// Construct a ternary function expression
+  template<typename A1, typename A2, typename A3>
+  Expression(typename TernaryFunction<A1, A2, A3>::type function,
+      const Expression<A1>& expression1, const Expression<A2>& expression2,
+      const Expression<A3>& expression3);
+
+  /// Construct a nullary method expression
+  template<typename A>
+  Expression(const Expression<A>& expression,
+      T (A::*method)(typename MakeOptionalJacobian<T, A>::type) const);
 
   /// Construct a unary method expression
   template<typename A1, typename A2>
@@ -112,11 +124,6 @@ public:
       T (A1::*method)(const A2&, typename MakeOptionalJacobian<T, A1>::type,
           typename MakeOptionalJacobian<T, A2>::type) const,
       const Expression<A2>& expression2);
-
-  /// Construct a binary function expression
-  template<typename A1, typename A2>
-  Expression(typename BinaryFunction<A1, A2>::type function,
-      const Expression<A1>& expression1, const Expression<A2>& expression2);
 
   /// Construct a binary method expression
   template<typename A1, typename A2, typename A3>
@@ -126,18 +133,6 @@ public:
           typename MakeOptionalJacobian<T, A2>::type,
           typename MakeOptionalJacobian<T, A3>::type) const,
       const Expression<A2>& expression2, const Expression<A3>& expression3);
-
-  /// Construct a ternary function expression
-  template<typename A1, typename A2, typename A3>
-  Expression(typename TernaryFunction<A1, A2, A3>::type function,
-      const Expression<A1>& expression1, const Expression<A2>& expression2,
-      const Expression<A3>& expression3);
-
-  /// Return root
-  const boost::shared_ptr<internal::ExpressionNode<T> >& root() const;
-
-  // Return size needed for memory buffer in traceExecution
-  size_t traceSize() const;
 
   /// Return keys that play in this expression
   std::set<Key> keys() const;
@@ -162,9 +157,15 @@ public:
     return boost::make_shared<Expression>(*this);
   }
 
+  /// Return root
+  const boost::shared_ptr<internal::ExpressionNode<T> >& root() const;
+
+  /// Return size needed for memory buffer in traceExecution
+  size_t traceSize() const;
+
 private:
 
-  /// Vaguely unsafe keys and dimensions in same order
+  /// Keys and dimensions in same order
   typedef std::pair<FastVector<Key>, FastVector<int> > KeysAndDims;
   KeysAndDims keysAndDims() const;
 
@@ -176,15 +177,14 @@ private:
   T traceExecution(const Values& values, internal::ExecutionTrace<T>& trace,
       void* traceStorage) const;
 
-  /**
-   * @brief Return value and derivatives, reverse AD version
-   * This very unsafe method needs a JacobianMap with correctly allocated
-   * and initialized VerticalBlockMatrix, hence is declared private.
-   */
+  /// brief Return value and derivatives, reverse AD version
   T value(const Values& values, JacobianMap& jacobians) const;
 
   // be very selective on who can access these private methods:
-  friend class ExpressionFactor<T> ;
+  friend class ExpressionFactor<T>;
+  friend class internal::ExpressionNode<T>;
+
+  // and add tests
   friend class ::ExpressionFactorShallowTest;
 };
 

@@ -27,34 +27,58 @@
 
 namespace gtsam {
 
-/// Print
 template<typename T>
 void Expression<T>::print(const std::string& s) const {
   std::cout << s << *root_ << std::endl;
 }
 
-// Construct a constant expression
 template<typename T>
 Expression<T>::Expression(const T& value) :
     root_(new internal::ConstantExpression<T>(value)) {
 }
 
-// Construct a leaf expression, with Key
 template<typename T>
 Expression<T>::Expression(const Key& key) :
     root_(new internal::LeafExpression<T>(key)) {
 }
 
-// Construct a leaf expression, with Symbol
 template<typename T>
 Expression<T>::Expression(const Symbol& symbol) :
     root_(new internal::LeafExpression<T>(symbol)) {
 }
 
-// Construct a leaf expression, creating Symbol
 template<typename T>
 Expression<T>::Expression(unsigned char c, size_t j) :
     root_(new internal::LeafExpression<T>(Symbol(c, j))) {
+}
+
+/// Construct a unary function expression
+template<typename T>
+template<typename A>
+Expression<T>::Expression(typename UnaryFunction<A>::type function,
+    const Expression<A>& expression) :
+    root_(new internal::UnaryExpression<T, A>(function, expression)) {
+}
+
+/// Construct a binary function expression
+template<typename T>
+template<typename A1, typename A2>
+Expression<T>::Expression(typename BinaryFunction<A1, A2>::type function,
+    const Expression<A1>& expression1, const Expression<A2>& expression2) :
+    root_(
+        new internal::BinaryExpression<T, A1, A2>(function, expression1,
+            expression2)) {
+}
+
+/// Construct a ternary function expression
+template<typename T>
+template<typename A1, typename A2, typename A3>
+Expression<T>::Expression(typename TernaryFunction<A1, A2, A3>::type function,
+    const Expression<A1>& expression1, const Expression<A2>& expression2,
+    const Expression<A3>& expression3) :
+    root_(
+        new internal::TernaryExpression<T, A1, A2, A3>(function, expression1,
+            expression2, expression3)) {
 }
 
 /// Construct a nullary method expression
@@ -67,14 +91,6 @@ Expression<T>::Expression(const Expression<A>& expression,
             expression)) {
 }
 
-/// Construct a unary function expression
-template<typename T>
-template<typename A>
-Expression<T>::Expression(typename UnaryFunction<A>::type function,
-    const Expression<A>& expression) :
-    root_(new internal::UnaryExpression<T, A>(function, expression)) {
-}
-
 /// Construct a unary method expression
 template<typename T>
 template<typename A1, typename A2>
@@ -85,16 +101,6 @@ Expression<T>::Expression(const Expression<A1>& expression1,
     root_(
         new internal::BinaryExpression<T, A1, A2>(
             boost::bind(method, _1, _2, _3, _4), expression1, expression2)) {
-}
-
-/// Construct a binary function expression
-template<typename T>
-template<typename A1, typename A2>
-Expression<T>::Expression(typename BinaryFunction<A1, A2>::type function,
-    const Expression<A1>& expression1, const Expression<A2>& expression2) :
-    root_(
-        new internal::BinaryExpression<T, A1, A2>(function, expression1,
-            expression2)) {
 }
 
 /// Construct a binary method expression
@@ -112,46 +118,16 @@ Expression<T>::Expression(const Expression<A1>& expression1,
             expression2, expression3)) {
 }
 
-/// Construct a ternary function expression
-template<typename T>
-template<typename A1, typename A2, typename A3>
-Expression<T>::Expression(typename TernaryFunction<A1, A2, A3>::type function,
-    const Expression<A1>& expression1, const Expression<A2>& expression2,
-    const Expression<A3>& expression3) :
-    root_(
-        new internal::TernaryExpression<T, A1, A2, A3>(function, expression1,
-            expression2, expression3)) {
-}
-
-/// Return root
-template<typename T>
-const boost::shared_ptr<internal::ExpressionNode<T> >& Expression<T>::root() const {
-  return root_;
-}
-
-// Return size needed for memory buffer in traceExecution
-template<typename T>
-size_t Expression<T>::traceSize() const {
-  return root_->traceSize();
-}
-
-/// Return keys that play in this expression
 template<typename T>
 std::set<Key> Expression<T>::keys() const {
   return root_->keys();
 }
 
-/// Return dimensions for each argument, as a map
 template<typename T>
 void Expression<T>::dims(std::map<Key, int>& map) const {
   root_->dims(map);
 }
 
-/**
- * @brief Return value and optional derivatives, reverse AD version
- * Notes: this is not terribly efficient, and H should have correct size.
- * The order of the Jacobians is same as keys in either keys() or dims()
- */
 template<typename T>
 T Expression<T>::value(const Values& values,
     boost::optional<std::vector<Matrix>&> H) const {
@@ -165,7 +141,18 @@ T Expression<T>::value(const Values& values,
     return root_->value(values);
 }
 
-/// private version that takes keys and dimensions, returns derivatives
+template<typename T>
+const boost::shared_ptr<internal::ExpressionNode<T> >& Expression<T>::root() const {
+  return root_;
+}
+
+template<typename T>
+size_t Expression<T>::traceSize() const {
+  return root_->traceSize();
+}
+
+// Private methods:
+
 template<typename T>
 T Expression<T>::value(const Values& values, const FastVector<Key>& keys,
     const FastVector<int>& dims, std::vector<Matrix>& H) const {
@@ -236,6 +223,7 @@ typename Expression<T>::KeysAndDims Expression<T>::keysAndDims() const {
   return pair;
 }
 
+namespace internal {
 // http://stackoverflow.com/questions/16260445/boost-bind-to-operator
 template<class T>
 struct apply_compose {
@@ -246,13 +234,17 @@ struct apply_compose {
     return x.compose(y, H1, H2);
   }
 };
+}
+
+// Global methods:
 
 /// Construct a product expression, assumes T::compose(T) -> T
 template<typename T>
 Expression<T> operator*(const Expression<T>& expression1,
     const Expression<T>& expression2) {
-  return Expression<T>(boost::bind(apply_compose<T>(), _1, _2, _3, _4),
-      expression1, expression2);
+  return Expression<T>(
+      boost::bind(internal::apply_compose<T>(), _1, _2, _3, _4), expression1,
+      expression2);
 }
 
 /// Construct an array of leaves
