@@ -35,6 +35,7 @@ class ExpressionFactorBinaryTest;
 // Forward declare for testing
 
 namespace gtsam {
+namespace internal {
 
 template<typename T>
 T & upAlign(T & value, unsigned requiredAlignment = TraceAlignment) {
@@ -412,8 +413,8 @@ struct FunctionalNode {
 
     /// Provide convenience access to Record storage and implement
     /// the virtual function based interface of CallRecord using the CallRecordImplementor
-    struct Record: public internal::CallRecordImplementor<Record,
-        traits<T>::dimension>, public Base::Record {
+    struct Record: public CallRecordImplementor<Record, traits<T>::dimension>,
+        public Base::Record {
       using Base::Record::print;
       using Base::Record::startReverseAD4;
       using Base::Record::reverseAD4;
@@ -497,8 +498,8 @@ public:
   // Inner Record Class
   // The reason we inherit from JacobianTrace<T, A, N> is because we can then
   // case to this unique signature to retrieve the value/trace at any level
-  struct Record: public internal::CallRecordImplementor<Record,
-      traits<T>::dimension>, JacobianTrace<T, A1, 1> {
+  struct Record: public CallRecordImplementor<Record, traits<T>::dimension>,
+      JacobianTrace<T, A1, 1> {
 
     typedef T return_type;
     typedef JacobianTrace<T, A1, 1> This;
@@ -600,7 +601,7 @@ public:
 
 private:
 
-  typedef typename Expression<T>::template BinaryFunction<A1,A2>::type Function;
+  typedef typename Expression<T>::template BinaryFunction<A1, A2>::type Function;
   Function function_;
 
   /// Constructor with a ternary function f, and three input arguments
@@ -650,7 +651,7 @@ class TernaryExpression: public FunctionalNode<T, boost::mpl::vector<A1, A2, A3>
 
 private:
 
-  typedef typename Expression<T>::template TernaryFunction<A1,A2,A3>::type Function;
+  typedef typename Expression<T>::template TernaryFunction<A1, A2, A3>::type Function;
   Function function_;
 
   /// Constructor with a ternary function f, and three input arguments
@@ -693,4 +694,6 @@ public:
 
 };
 
-}  // namespace gtsam
+}
+ // namespace internal
+}// namespace gtsam

@@ -88,7 +88,7 @@ void testFactorJacobians(TestResult& result_, const std::string& name_,
 
   // Check cast result and then equality
   CHECK(actual);
-  EXPECT( assert_equal(expected, *actual, tolerance));
+  EXPECT(assert_equal(expected, *actual, tolerance));
 }
 }
 
@@ -112,7 +112,7 @@ void testExpressionJacobians(TestResult& result_, const std::string& name_,
       expression.value(values), expression);
   testFactorJacobians(result_, name_, f, values, nd_step, tolerance);
 }
-}
+} // namespace internal
 } // namespace gtsam
 
 /// \brief Check the Jacobians produced by an expression against finite differences.

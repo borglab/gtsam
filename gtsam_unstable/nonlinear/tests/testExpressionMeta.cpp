@@ -26,6 +26,7 @@
 
 using namespace std;
 using namespace gtsam;
+using namespace gtsam::internal;
 
 /* ************************************************************************* */
 namespace mpl = boost::mpl;

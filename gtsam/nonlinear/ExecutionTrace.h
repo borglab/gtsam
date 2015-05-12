@@ -27,6 +27,7 @@
 #include <Eigen/Core>
 
 namespace gtsam {
+namespace internal {
 
 template<int T> struct CallRecord;
 
@@ -35,8 +36,6 @@ template<int T> struct CallRecord;
 /// Provide a traceSize() sized array of this type to traceExecution as traceStorage.
 static const unsigned TraceAlignment = 16;
 typedef boost::aligned_storage<1, TraceAlignment>::type ExecutionTraceStorage;
-
-namespace internal {
 
 template<bool UseBlock, typename Derived>
 struct UseBlockIf {
@@ -56,13 +55,12 @@ struct UseBlockIf<false, Derived> {
     jacobians(key) += dTdA;
   }
 };
-}
 
 /// Handle Leaf Case: reverse AD ends here, by writing a matrix into Jacobians
 template<typename Derived>
 void handleLeafCase(const Eigen::MatrixBase<Derived>& dTdA,
     JacobianMap& jacobians, Key key) {
-  internal::UseBlockIf<
+  UseBlockIf<
       Derived::RowsAtCompileTime != Eigen::Dynamic
           && Derived::ColsAtCompileTime != Eigen::Dynamic, Derived>::addToJacobian(
       dTdA, jacobians, key);
@@ -164,4 +162,5 @@ public:
   typedef ExecutionTrace<T> type;
 };
 
+} // namespace internal
 } // namespace gtsam

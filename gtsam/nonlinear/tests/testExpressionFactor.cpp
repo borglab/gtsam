@@ -169,7 +169,7 @@ static Point2 myUncal(const Cal3_S2& K, const Point2& p,
 // Binary(Leaf,Leaf)
 TEST(ExpressionFactor, Binary) {
 
-  typedef BinaryExpression<Point2, Cal3_S2, Point2> Binary;
+  typedef internal::BinaryExpression<Point2, Cal3_S2, Point2> Binary;
 
   Cal3_S2_ K_(1);
   Point2_ p_(2);
@@ -184,10 +184,10 @@ TEST(ExpressionFactor, Binary) {
   EXPECT_LONGS_EQUAL(8, sizeof(double));
   EXPECT_LONGS_EQUAL(16, sizeof(Point2));
   EXPECT_LONGS_EQUAL(40, sizeof(Cal3_S2));
-  EXPECT_LONGS_EQUAL(16, sizeof(ExecutionTrace<Point2>));
-  EXPECT_LONGS_EQUAL(16, sizeof(ExecutionTrace<Cal3_S2>));
-  EXPECT_LONGS_EQUAL(2*5*8, sizeof(Jacobian<Point2,Cal3_S2>::type));
-  EXPECT_LONGS_EQUAL(2*2*8, sizeof(Jacobian<Point2,Point2>::type));
+  EXPECT_LONGS_EQUAL(16, sizeof(internal::ExecutionTrace<Point2>));
+  EXPECT_LONGS_EQUAL(16, sizeof(internal::ExecutionTrace<Cal3_S2>));
+  EXPECT_LONGS_EQUAL(2*5*8, sizeof(internal::Jacobian<Point2,Cal3_S2>::type));
+  EXPECT_LONGS_EQUAL(2*2*8, sizeof(internal::Jacobian<Point2,Point2>::type));
   size_t expectedRecordSize = 16 + 16 + 40 + 2 * 16 + 80 + 32;
   EXPECT_LONGS_EQUAL(expectedRecordSize + 8, sizeof(Binary::Record));
 
@@ -197,8 +197,8 @@ TEST(ExpressionFactor, Binary) {
   EXPECT_LONGS_EQUAL(expectedRecordSize + 8, size);
   // Use Variable Length Array, allocated on stack by gcc
   // Note unclear for Clang: http://clang.llvm.org/compatibility.html#vla
-  ExecutionTraceStorage traceStorage[size];
-  ExecutionTrace<Point2> trace;
+  internal::ExecutionTraceStorage traceStorage[size];
+  internal::ExecutionTrace<Point2> trace;
   Point2 value = binary.traceExecution(values, trace, traceStorage);
   EXPECT(assert_equal(Point2(),value, 1e-9));
   // trace.print();
@@ -250,8 +250,8 @@ TEST(ExpressionFactor, Shallow) {
   LONGS_EQUAL(3,dims[1]);
 
   // traceExecution of shallow tree
-  typedef UnaryExpression<Point2, Point3> Unary;
-  typedef BinaryExpression<Point3, Pose3, Point3> Binary;
+  typedef internal::UnaryExpression<Point2, Point3> Unary;
+  typedef internal::BinaryExpression<Point3, Pose3, Point3> Binary;
   size_t expectedTraceSize = sizeof(Unary::Record) + sizeof(Binary::Record);
   EXPECT_LONGS_EQUAL(112, sizeof(Unary::Record));
 #ifdef GTSAM_USE_QUATERNIONS
@@ -264,8 +264,8 @@ TEST(ExpressionFactor, Shallow) {
   size_t size = expression.traceSize();
   CHECK(size);
   EXPECT_LONGS_EQUAL(expectedTraceSize, size);
-  ExecutionTraceStorage traceStorage[size];
-  ExecutionTrace<Point2> trace;
+  internal::ExecutionTraceStorage traceStorage[size];
+  internal::ExecutionTrace<Point2> trace;
   Point2 value = expression.traceExecution(values, trace, traceStorage);
   EXPECT(assert_equal(Point2(),value, 1e-9));
   // trace.print();

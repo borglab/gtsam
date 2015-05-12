@@ -27,7 +27,7 @@ using namespace gtsam;
 /* ************************************************************************* */
 // Constant
 TEST(ExecutionTrace, construct) {
-  ExecutionTrace<Point2> trace;
+  internal::ExecutionTrace<Point2> trace;
 }
 
 /* ************************************************************************* */

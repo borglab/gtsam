@@ -36,25 +36,25 @@ void Expression<T>::print(const std::string& s) const {
 // Construct a constant expression
 template<typename T>
 Expression<T>::Expression(const T& value) :
-    root_(new ConstantExpression<T>(value)) {
+    root_(new internal::ConstantExpression<T>(value)) {
 }
 
 // Construct a leaf expression, with Key
 template<typename T>
 Expression<T>::Expression(const Key& key) :
-    root_(new LeafExpression<T>(key)) {
+    root_(new internal::LeafExpression<T>(key)) {
 }
 
 // Construct a leaf expression, with Symbol
 template<typename T>
 Expression<T>::Expression(const Symbol& symbol) :
-    root_(new LeafExpression<T>(symbol)) {
+    root_(new internal::LeafExpression<T>(symbol)) {
 }
 
 // Construct a leaf expression, creating Symbol
 template<typename T>
 Expression<T>::Expression(unsigned char c, size_t j) :
-    root_(new LeafExpression<T>(Symbol(c, j))) {
+    root_(new internal::LeafExpression<T>(Symbol(c, j))) {
 }
 
 /// Construct a nullary method expression
@@ -62,7 +62,9 @@ template<typename T>
 template<typename A>
 Expression<T>::Expression(const Expression<A>& expression,
     T (A::*method)(typename MakeOptionalJacobian<T, A>::type) const) :
-    root_(new UnaryExpression<T, A>(boost::bind(method, _1, _2), expression)) {
+    root_(
+        new internal::UnaryExpression<T, A>(boost::bind(method, _1, _2),
+            expression)) {
 }
 
 /// Construct a unary function expression
@@ -70,7 +72,7 @@ template<typename T>
 template<typename A>
 Expression<T>::Expression(typename UnaryFunction<A>::type function,
     const Expression<A>& expression) :
-    root_(new UnaryExpression<T, A>(function, expression)) {
+    root_(new internal::UnaryExpression<T, A>(function, expression)) {
 }
 
 /// Construct a unary method expression
@@ -81,8 +83,8 @@ Expression<T>::Expression(const Expression<A1>& expression1,
         typename MakeOptionalJacobian<T, A2>::type) const,
     const Expression<A2>& expression2) :
     root_(
-        new BinaryExpression<T, A1, A2>(boost::bind(method, _1, _2, _3, _4),
-            expression1, expression2)) {
+        new internal::BinaryExpression<T, A1, A2>(
+            boost::bind(method, _1, _2, _3, _4), expression1, expression2)) {
 }
 
 /// Construct a binary function expression
@@ -90,7 +92,9 @@ template<typename T>
 template<typename A1, typename A2>
 Expression<T>::Expression(typename BinaryFunction<A1, A2>::type function,
     const Expression<A1>& expression1, const Expression<A2>& expression2) :
-    root_(new BinaryExpression<T, A1, A2>(function, expression1, expression2)) {
+    root_(
+        new internal::BinaryExpression<T, A1, A2>(function, expression1,
+            expression2)) {
 }
 
 /// Construct a binary method expression
@@ -103,7 +107,7 @@ Expression<T>::Expression(const Expression<A1>& expression1,
         typename MakeOptionalJacobian<T, A3>::type) const,
     const Expression<A2>& expression2, const Expression<A3>& expression3) :
     root_(
-        new TernaryExpression<T, A1, A2, A3>(
+        new internal::TernaryExpression<T, A1, A2, A3>(
             boost::bind(method, _1, _2, _3, _4, _5, _6), expression1,
             expression2, expression3)) {
 }
@@ -115,13 +119,13 @@ Expression<T>::Expression(typename TernaryFunction<A1, A2, A3>::type function,
     const Expression<A1>& expression1, const Expression<A2>& expression2,
     const Expression<A3>& expression3) :
     root_(
-        new TernaryExpression<T, A1, A2, A3>(function, expression1, expression2,
-            expression3)) {
+        new internal::TernaryExpression<T, A1, A2, A3>(function, expression1,
+            expression2, expression3)) {
 }
 
 /// Return root
 template<typename T>
-const boost::shared_ptr<ExpressionNode<T> >& Expression<T>::root() const {
+const boost::shared_ptr<internal::ExpressionNode<T> >& Expression<T>::root() const {
   return root_;
 }
 
@@ -186,10 +190,10 @@ T Expression<T>::value(const Values& values, const FastVector<Key>& keys,
 }
 
 template<typename T>
-T Expression<T>::traceExecution(const Values& values, ExecutionTrace<T>& trace,
-    void* traceStorage) const {
+T Expression<T>::traceExecution(const Values& values,
+    internal::ExecutionTrace<T>& trace, void* traceStorage) const {
   return root_->traceExecution(values, trace,
-      static_cast<ExecutionTraceStorage*>(traceStorage));
+      static_cast<internal::ExecutionTraceStorage*>(traceStorage));
 }
 
 template<typename T>
@@ -205,12 +209,12 @@ T Expression<T>::value(const Values& values, JacobianMap& jacobians) const {
   // allocated on Visual Studio. For more information see the issue below
   // https://bitbucket.org/gtborg/gtsam/issue/178/vlas-unsupported-in-visual-studio
 #ifdef _MSC_VER
-  ExecutionTraceStorage* traceStorage = new ExecutionTraceStorage[size];
+  internal::ExecutionTraceStorage* traceStorage = new internal::ExecutionTraceStorage[size];
 #else
-  ExecutionTraceStorage traceStorage[size];
+  internal::ExecutionTraceStorage traceStorage[size];
 #endif
 
-  ExecutionTrace<T> trace;
+  internal::ExecutionTrace<T> trace;
   T value(this->traceExecution(values, trace, traceStorage));
   trace.startReverseAD1(jacobians);
 
@@ -226,7 +230,7 @@ typename Expression<T>::KeysAndDims Expression<T>::keysAndDims() const {
   std::map<Key, int> map;
   dims(map);
   size_t n = map.size();
-  KeysAndDims pair = std::make_pair(FastVector < Key > (n), FastVector<int>(n));
+  KeysAndDims pair = std::make_pair(FastVector<Key>(n), FastVector<int>(n));
   boost::copy(map | boost::adaptors::map_keys, pair.first.begin());
   boost::copy(map | boost::adaptors::map_values, pair.second.begin());
   return pair;

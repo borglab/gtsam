@@ -32,9 +32,12 @@ namespace gtsam {
 
 // Forward declares
 class Values;
+template<typename T> class ExpressionFactor;
+
+namespace internal {
 template<typename T> class ExecutionTrace;
 template<typename T> class ExpressionNode;
-template<typename T> class ExpressionFactor;
+}
 
 /**
  * Expression class that supports automatic differentiation
@@ -50,7 +53,7 @@ public:
 private:
 
   // Paul's trick shared pointer, polymorphic root of entire expression tree
-  boost::shared_ptr<ExpressionNode<T> > root_;
+  boost::shared_ptr<internal::ExpressionNode<T> > root_;
 
 public:
 
@@ -131,7 +134,7 @@ public:
       const Expression<A3>& expression3);
 
   /// Return root
-  const boost::shared_ptr<ExpressionNode<T> >& root() const;
+  const boost::shared_ptr<internal::ExpressionNode<T> >& root() const;
 
   // Return size needed for memory buffer in traceExecution
   size_t traceSize() const;
@@ -170,7 +173,7 @@ private:
       const FastVector<int>& dims, std::vector<Matrix>& H) const;
 
   /// trace execution, very unsafe
-  T traceExecution(const Values& values, ExecutionTrace<T>& trace,
+  T traceExecution(const Values& values, internal::ExecutionTrace<T>& trace,
       void* traceStorage) const;
 
   /**

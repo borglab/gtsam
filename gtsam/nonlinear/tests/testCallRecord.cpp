@@ -32,7 +32,7 @@ static const int Cols = 3;
 
 
 int dynamicIfAboveMax(int i){
-  if(i > CallRecordMaxVirtualStaticRows){
+  if(i > internal::CallRecordMaxVirtualStaticRows){
     return Eigen::Dynamic;
   }
   else return i;
