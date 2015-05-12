@@ -205,7 +205,7 @@ public:
     triangulateSafe(cameras);
 
     if (degeneracyMode_ == ZERO_ON_DEGENERACY && !result_) {
-      // put in "empty" Hessian
+      // failed: return"empty" Hessian
       BOOST_FOREACH(Matrix& m, Gs)
         m = zeros(Base::Dim, Base::Dim);
       BOOST_FOREACH(Vector& v, gs)
@@ -237,6 +237,7 @@ public:
     if (triangulateForLinearize(cameras))
       return Base::createRegularImplicitSchurFactor(cameras, *result_, lambda);
     else
+      // failed: return empty
       return boost::shared_ptr<RegularImplicitSchurFactor<CAMERA> >();
   }
 
@@ -246,6 +247,7 @@ public:
     if (triangulateForLinearize(cameras))
       return Base::createJacobianQFactor(cameras, *result_, lambda);
     else
+      // failed: return empty
       return boost::make_shared<JacobianFactorQ<Base::Dim, 2> >(this->keys_);
   }
 
@@ -261,6 +263,7 @@ public:
     if (triangulateForLinearize(cameras))
       return Base::createJacobianSVDFactor(cameras, *result_, lambda);
     else
+      // failed: return empty
       return boost::make_shared<JacobianFactorSVD<Base::Dim, 2> >(this->keys_);
   }
 
