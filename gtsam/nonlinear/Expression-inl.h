@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include <gtsam/nonlinear/ExpressionNode.h>
+#include <gtsam/nonlinear/internal/ExpressionNode.h>
 
 #include <boost/tuple/tuple.hpp>
 #include <boost/range/adaptor/map.hpp>

@@ -16,7 +16,7 @@
  * @brief unit tests for Expression internals
  */
 
-#include <gtsam/nonlinear/ExecutionTrace.h>
+#include <gtsam/nonlinear/internal/ExecutionTrace.h>
 #include <gtsam/geometry/Point2.h>
 
 #include <CppUnitLite/TestHarness.h>

@@ -19,8 +19,8 @@
 
 #pragma once
 
-#include <gtsam/nonlinear/ExecutionTrace.h>
-#include <gtsam/nonlinear/CallRecord.h>
+#include <gtsam/nonlinear/internal/ExecutionTrace.h>
+#include <gtsam/nonlinear/internal/CallRecord.h>
 #include <gtsam/nonlinear/Values.h>
 
 // template meta-programming headers
