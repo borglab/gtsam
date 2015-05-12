@@ -253,12 +253,12 @@ void runIncremental()
       boost::dynamic_pointer_cast<BetweenFactor<Pose> >(datasetMeasurements[nextMeasurement]))
     {
       Key key1 = measurement->key1(), key2 = measurement->key2();
-      if(((int)key1 >= firstStep && key1 < key2) || (key2 >= firstStep && key2 < key1)) {
+      if(((int)key1 >= firstStep && key1 < key2) || ((int)key2 >= firstStep && key2 < key1)) {
         // We found an odometry starting at firstStep
         firstPose = std::min(key1, key2);
         break;
       }
-      if(((int)key2 >= firstStep && key1 < key2) || (key1 >= firstStep && key2 < key1)) {
+      if(((int)key2 >= firstStep && key1 < key2) || ((int)key1 >= firstStep && key2 < key1)) {
         // We found an odometry joining firstStep with a previous pose
         havePreviousPose = true;
         firstPose = std::max(key1, key2);
