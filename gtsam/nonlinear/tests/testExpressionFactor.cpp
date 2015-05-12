@@ -261,8 +261,8 @@ TEST(ExpressionFactor, Shallow) {
   EXPECT_LONGS_EQUAL(352, sizeof(Binary::Record));
   LONGS_EQUAL(96+352, expectedTraceSize);
 #else
-  EXPECT_LONGS_EQUAL(400, sizeof(Binary::Record));
-  LONGS_EQUAL(112+400, expectedTraceSize);
+  EXPECT_LONGS_EQUAL(384, sizeof(Binary::Record));
+  LONGS_EQUAL(96+384, expectedTraceSize);
 #endif
   size_t size = expression.traceSize();
   CHECK(size);
