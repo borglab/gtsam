@@ -168,5 +168,20 @@ public:
   Jacobian* operator->(){ return pointer_; }
 };
 
+// forward declare
+template <typename T> struct traits;
+
+/**
+ * @brief: meta-function to generate JacobianTA optional reference
+ * Used mainly by Expressions
+ * @param T return type
+ * @param A argument type
+ */
+template<class T, class A>
+struct MakeOptionalJacobian {
+  typedef OptionalJacobian<traits<T>::dimension,
+      traits<A>::dimension> type;
+};
+
 } // namespace gtsam
 

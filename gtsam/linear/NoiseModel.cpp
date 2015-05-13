@@ -293,7 +293,7 @@ namespace internal {
 // switch precisions and invsigmas to finite value
 // TODO: why?? And, why not just ask s==0.0 below ?
 static void fix(const Vector& sigmas, Vector& precisions, Vector& invsigmas) {
-  for (size_t i = 0; i < sigmas.size(); ++i)
+  for (Vector::Index i = 0; i < sigmas.size(); ++i)
     if (!std::isfinite(1. / sigmas[i])) {
       precisions[i] = 0.0;
       invsigmas[i] = 0.0;

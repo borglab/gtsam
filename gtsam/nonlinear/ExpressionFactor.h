@@ -65,8 +65,8 @@ public:
    */
   virtual Vector unwhitenedError(const Values& x,
       boost::optional<std::vector<Matrix>&> H = boost::none) const {
-     if (H) {
-      const T value = expression_.value(x, keys_, dims_, *H);
+    if (H) {
+      const T value = expression_.valueAndDerivatives(x, keys_, dims_, *H);
       return traits<T>::Local(measurement_, value);
     } else {
       const T value = expression_.value(x);
@@ -89,13 +89,13 @@ public:
 
     // Wrap keys and VerticalBlockMatrix into structure passed to expression_
     VerticalBlockMatrix& Ab = factor->matrixObject();
-    JacobianMap jacobianMap(keys_, Ab);
+    internal::JacobianMap jacobianMap(keys_, Ab);
 
     // Zero out Jacobian so we can simply add to it
     Ab.matrix().setZero();
 
     // Get value and Jacobians, writing directly into JacobianFactor
-    T value = expression_.value(x, jacobianMap); // <<< Reverse AD happens here !
+    T value = expression_.valueAndJacobianMap(x, jacobianMap); // <<< Reverse AD happens here !
 
     // Evaluate error and set RHS vector b
     Ab(size()).col(0) = -traits<T>::Local(measurement_, value);
@@ -109,5 +109,5 @@ public:
 };
 // ExpressionFactor
 
-} // \ namespace gtsam
+}// \ namespace gtsam
 
