@@ -51,7 +51,7 @@ public:
       n_(s), d_(d) {
   }
 
-  OrientedPlane3(Vector3 vec) :
+  OrientedPlane3(const Vector4& vec) :
       n_(vec(0), vec(1), vec(2)), d_(vec(3)) {
   }
 
