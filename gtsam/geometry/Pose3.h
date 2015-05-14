@@ -223,9 +223,7 @@ public:
   }
 
   /// get translation
-  const Point3& translation() const {
-    return t_;
-  }
+  const Point3& translation(OptionalJacobian<3, 6> H = boost::none) const;
 
   /// get x
   double x() const {

@@ -90,11 +90,11 @@ TEST( CalibratedCamera, project)
 /* ************************************************************************* */
 TEST( CalibratedCamera, Dproject_to_camera1) {
   Point3 pp(155,233,131);
-  Matrix test1;
-  CalibratedCamera::project_to_camera(pp, test1);
-  Matrix test2 = numericalDerivative11<Point2,Point3>(
+  Matrix actual;
+  CalibratedCamera::project_to_camera(pp, actual);
+  Matrix expected_numerical = numericalDerivative11<Point2,Point3>(
       boost::bind(CalibratedCamera::project_to_camera, _1, boost::none), pp);
-  CHECK(assert_equal(test1, test2));
+  CHECK(assert_equal(expected_numerical, actual));
 }
 
 /* ************************************************************************* */

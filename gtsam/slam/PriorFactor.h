@@ -57,6 +57,11 @@ namespace gtsam {
       Base(model, key), prior_(prior) {
     }
 
+    /** Convenience constructor that takes a full covariance argument */
+    PriorFactor(Key key, const VALUE& prior, const Matrix& covariance) :
+      Base(noiseModel::Gaussian::Covariance(covariance), key), prior_(prior) {
+    }
+
     /// @return a deep copy of this factor
     virtual gtsam::NonlinearFactor::shared_ptr clone() const {
       return boost::static_pointer_cast<gtsam::NonlinearFactor>(

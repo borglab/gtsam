@@ -51,7 +51,7 @@ public:
       n_(s), d_(d) {
   }
 
-  OrientedPlane3(Vector vec) :
+  OrientedPlane3(Vector3 vec) :
       n_(vec(0), vec(1), vec(2)), d_(vec(3)) {
   }
 
@@ -89,7 +89,7 @@ public:
   }
 
   /// The retract function
-  OrientedPlane3 retract(const Vector& v) const;
+  OrientedPlane3 retract(const Vector3& v) const;
 
   /// The local coordinates function
   Vector3 localCoordinates(const OrientedPlane3& s) const;

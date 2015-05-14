@@ -32,7 +32,9 @@ namespace gtsam {
 template<class T>
 class ExpressionFactor: public NoiseModelFactor {
 
-protected:
+ protected:
+
+  typedef ExpressionFactor<T> This;
 
   T measurement_; ///< the measurement to be compared with the expression
   Expression<T> expression_; ///< the expression that is AD enabled
@@ -40,7 +42,9 @@ protected:
 
   static const int Dim = traits<T>::dimension;
 
-public:
+ public:
+
+  typedef boost::shared_ptr<ExpressionFactor<T> > shared_ptr;
 
   /// Constructor
   ExpressionFactor(const SharedNoiseModel& noiseModel, //
@@ -106,6 +110,11 @@ public:
 
     return factor;
   }
+
+  /// @return a deep copy of this factor
+  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+        gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 };
 // ExpressionFactor
 

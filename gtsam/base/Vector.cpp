@@ -222,11 +222,7 @@ double norm_2(const Vector& v) {
 
 /* ************************************************************************* */
 Vector reciprocal(const Vector &a) {
-  size_t n = a.size();
-  Vector b(n);
-  for( size_t i = 0; i < n; i++ )
-    b(i) = 1.0/a(i);
-  return b;
+  return a.array().inverse();
 }
 
 /* ************************************************************************* */
