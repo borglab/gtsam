@@ -23,7 +23,8 @@
 
 namespace gtsam {
 
-Vector4 triangulateHomogeneousDLT(const std::vector<Matrix34>& projection_matrices,
+Vector4 triangulateHomogeneousDLT(
+    const std::vector<Matrix34>& projection_matrices,
     const std::vector<Point2>& measurements, double rank_tol) {
 
   // number of cameras
@@ -54,9 +55,10 @@ Vector4 triangulateHomogeneousDLT(const std::vector<Matrix34>& projection_matric
 }
 
 Point3 triangulateDLT(const std::vector<Matrix34>& projection_matrices,
-                      const std::vector<Point2>& measurements, double rank_tol) {
+    const std::vector<Point2>& measurements, double rank_tol) {
 
-  Vector4 v = triangulateHomogeneousDLT(projection_matrices, measurements, rank_tol);
+  Vector4 v = triangulateHomogeneousDLT(projection_matrices, measurements,
+      rank_tol);
 
   // Create 3D point from homogeneous coordinates
   return Point3(sub((v / v(3)), 0, 3));
@@ -89,7 +91,6 @@ Point3 optimize(const NonlinearFactorGraph& graph, const Values& values,
 
   return result.at<Point3>(landmarkKey);
 }
-
 
 } // \namespace gtsam
 

@@ -25,11 +25,12 @@
 namespace gtsam {
 
 /* ************************************************************************* */
-void recursiveMarkAffectedKeys(const Key& key, const ISAM2Clique::shared_ptr& clique,
-                               std::set<Key>& additionalKeys) {
+void recursiveMarkAffectedKeys(const Key& key,
+    const ISAM2Clique::shared_ptr& clique, std::set<Key>& additionalKeys) {
 
   // Check if the separator keys of the current clique contain the specified key
-  if (std::find(clique->conditional()->beginParents(), clique->conditional()->endParents(), key)
+  if (std::find(clique->conditional()->beginParents(),
+      clique->conditional()->endParents(), key)
       != clique->conditional()->endParents()) {
 
     // Mark the frontal keys of the current clique
@@ -47,21 +48,24 @@ void recursiveMarkAffectedKeys(const Key& key, const ISAM2Clique::shared_ptr& cl
 
 /* ************************************************************************* */
 void IncrementalFixedLagSmoother::print(const std::string& s,
-                                        const KeyFormatter& keyFormatter) const {
+    const KeyFormatter& keyFormatter) const {
   FixedLagSmoother::print(s, keyFormatter);
   // TODO: What else to print?
 }
 
 /* ************************************************************************* */
-bool IncrementalFixedLagSmoother::equals(const FixedLagSmoother& rhs, double tol) const {
-  const IncrementalFixedLagSmoother* e = dynamic_cast<const IncrementalFixedLagSmoother*>(&rhs);
-  return e != NULL && FixedLagSmoother::equals(*e, tol) && isam_.equals(e->isam_, tol);
+bool IncrementalFixedLagSmoother::equals(const FixedLagSmoother& rhs,
+    double tol) const {
+  const IncrementalFixedLagSmoother* e =
+      dynamic_cast<const IncrementalFixedLagSmoother*>(&rhs);
+  return e != NULL && FixedLagSmoother::equals(*e, tol)
+      && isam_.equals(e->isam_, tol);
 }
 
 /* ************************************************************************* */
-FixedLagSmoother::Result IncrementalFixedLagSmoother::update(const NonlinearFactorGraph& newFactors,
-                                                             const Values& newTheta,
-                                                             const KeyTimestampMap& timestamps) {
+FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
+    const NonlinearFactorGraph& newFactors, const Values& newTheta,
+    const KeyTimestampMap& timestamps) {
 
   const bool debug = ISDEBUG("IncrementalFixedLagSmoother update");
 
@@ -84,7 +88,8 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(const NonlinearFact
     std::cout << "Current Timestamp: " << current_timestamp << std::endl;
 
   // Find the set of variables to be marginalized out
-  std::set<Key> marginalizableKeys = findKeysBefore(current_timestamp - smootherLag_);
+  std::set<Key> marginalizableKeys = findKeysBefore(
+      current_timestamp - smootherLag_);
 
   if (debug) {
     std::cout << "Marginalizable Keys: ";
@@ -102,7 +107,8 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(const NonlinearFact
     if (constrainedKeys) {
       for (FastMap<Key, int>::const_iterator iter = constrainedKeys->begin();
           iter != constrainedKeys->end(); ++iter) {
-        std::cout << DefaultKeyFormatter(iter->first) << "(" << iter->second << ")  ";
+        std::cout << DefaultKeyFormatter(iter->first) << "(" << iter->second
+            << ")  ";
       }
     }
     std::cout << std::endl;
@@ -119,17 +125,19 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(const NonlinearFact
   KeyList additionalMarkedKeys(additionalKeys.begin(), additionalKeys.end());
 
   // Update iSAM2
-  ISAM2Result isamResult = isam_.update(newFactors, newTheta, FastVector<size_t>(), constrainedKeys,
-                                        boost::none, additionalMarkedKeys);
+  ISAM2Result isamResult = isam_.update(newFactors, newTheta,
+      FastVector<size_t>(), constrainedKeys, boost::none, additionalMarkedKeys);
 
   if (debug) {
-    PrintSymbolicTree(isam_, "Bayes Tree After Update, Before Marginalization:");
+    PrintSymbolicTree(isam_,
+        "Bayes Tree After Update, Before Marginalization:");
     std::cout << "END" << std::endl;
   }
 
   // Marginalize out any needed variables
   if (marginalizableKeys.size() > 0) {
-    FastList<Key> leafKeys(marginalizableKeys.begin(), marginalizableKeys.end());
+    FastList<Key> leafKeys(marginalizableKeys.begin(),
+        marginalizableKeys.end());
     isam_.marginalizeLeaves(leafKeys);
   }
 
@@ -183,7 +191,8 @@ void IncrementalFixedLagSmoother::createOrderingConstraints(
 }
 
 /* ************************************************************************* */
-void IncrementalFixedLagSmoother::PrintKeySet(const std::set<Key>& keys, const std::string& label) {
+void IncrementalFixedLagSmoother::PrintKeySet(const std::set<Key>& keys,
+    const std::string& label) {
   std::cout << label;
   BOOST_FOREACH(gtsam::Key key, keys) {
     std::cout << " " << gtsam::DefaultKeyFormatter(key);
@@ -192,7 +201,8 @@ void IncrementalFixedLagSmoother::PrintKeySet(const std::set<Key>& keys, const s
 }
 
 /* ************************************************************************* */
-void IncrementalFixedLagSmoother::PrintSymbolicFactor(const GaussianFactor::shared_ptr& factor) {
+void IncrementalFixedLagSmoother::PrintSymbolicFactor(
+    const GaussianFactor::shared_ptr& factor) {
   std::cout << "f(";
   BOOST_FOREACH(gtsam::Key key, factor->keys()) {
     std::cout << " " << gtsam::DefaultKeyFormatter(key);
@@ -201,8 +211,8 @@ void IncrementalFixedLagSmoother::PrintSymbolicFactor(const GaussianFactor::shar
 }
 
 /* ************************************************************************* */
-void IncrementalFixedLagSmoother::PrintSymbolicGraph(const GaussianFactorGraph& graph,
-                                                     const std::string& label) {
+void IncrementalFixedLagSmoother::PrintSymbolicGraph(
+    const GaussianFactorGraph& graph, const std::string& label) {
   std::cout << label << std::endl;
   BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, graph) {
     PrintSymbolicFactor(factor);
@@ -211,7 +221,7 @@ void IncrementalFixedLagSmoother::PrintSymbolicGraph(const GaussianFactorGraph& 
 
 /* ************************************************************************* */
 void IncrementalFixedLagSmoother::PrintSymbolicTree(const gtsam::ISAM2& isam,
-                                                    const std::string& label) {
+    const std::string& label) {
   std::cout << label << std::endl;
   if (!isam.roots().empty()) {
     BOOST_FOREACH(const ISAM2::sharedClique& root, isam.roots()) {
@@ -244,4 +254,4 @@ void IncrementalFixedLagSmoother::PrintSymbolicTreeHelper(
 }
 
 /* ************************************************************************* */
-}  /// namespace gtsam
+} /// namespace gtsam

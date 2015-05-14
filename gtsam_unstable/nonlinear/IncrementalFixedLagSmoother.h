@@ -30,18 +30,17 @@ namespace gtsam {
  * such that the active states are placed in/near the root. This base class implements a function
  * to calculate the ordering, and an update function to incorporate new factors into the HMF.
  */
-class GTSAM_UNSTABLE_EXPORT IncrementalFixedLagSmoother : public FixedLagSmoother {
+class GTSAM_UNSTABLE_EXPORT IncrementalFixedLagSmoother: public FixedLagSmoother {
 
- public:
+public:
 
   /// Typedef for a shared pointer to an Incremental Fixed-Lag Smoother
   typedef boost::shared_ptr<IncrementalFixedLagSmoother> shared_ptr;
 
   /** default constructor */
-  IncrementalFixedLagSmoother(double smootherLag = 0.0, const ISAM2Params& parameters =
-                                  ISAM2Params())
-      : FixedLagSmoother(smootherLag),
-        isam_(parameters) {
+  IncrementalFixedLagSmoother(double smootherLag = 0.0,
+      const ISAM2Params& parameters = ISAM2Params()) :
+      FixedLagSmoother(smootherLag), isam_(parameters) {
   }
 
   /** destructor */
@@ -50,7 +49,7 @@ class GTSAM_UNSTABLE_EXPORT IncrementalFixedLagSmoother : public FixedLagSmoothe
 
   /** Print the factor for debugging and testing (implementing Testable) */
   virtual void print(const std::string& s = "IncrementalFixedLagSmoother:\n",
-                     const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
   /** Check if two IncrementalFixedLagSmoother Objects are equal */
   virtual bool equals(const FixedLagSmoother& rhs, double tol = 1e-9) const;
@@ -62,8 +61,8 @@ class GTSAM_UNSTABLE_EXPORT IncrementalFixedLagSmoother : public FixedLagSmoothe
    * @param timestamps an (optional) map from keys to real time stamps
    */
   Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(),
-                const Values& newTheta = Values(),  //
-                const KeyTimestampMap& timestamps = KeyTimestampMap());
+      const Values& newTheta = Values(), //
+      const KeyTimestampMap& timestamps = KeyTimestampMap());
 
   /** Compute an estimate from the incomplete linear delta computed during the last update.
    * This delta is incomplete because it was not updated below wildfire_threshold.  If only
@@ -109,7 +108,7 @@ class GTSAM_UNSTABLE_EXPORT IncrementalFixedLagSmoother : public FixedLagSmoothe
     return isam_.marginalCovariance(key);
   }
 
- protected:
+protected:
   /** An iSAM2 object used to perform inference. The smoother lag is controlled
    * by what factors are removed each iteration */
   ISAM2 isam_;
@@ -119,17 +118,20 @@ class GTSAM_UNSTABLE_EXPORT IncrementalFixedLagSmoother : public FixedLagSmoothe
 
   /** Fill in an iSAM2 ConstrainedKeys structure such that the provided keys are eliminated before all others */
   void createOrderingConstraints(const std::set<Key>& marginalizableKeys,
-                                 boost::optional<FastMap<Key, int> >& constrainedKeys) const;
+      boost::optional<FastMap<Key, int> >& constrainedKeys) const;
 
- private:
+private:
   /** Private methods for printing debug information */
-  static void PrintKeySet(const std::set<Key>& keys, const std::string& label = "Keys:");
+  static void PrintKeySet(const std::set<Key>& keys, const std::string& label =
+      "Keys:");
   static void PrintSymbolicFactor(const GaussianFactor::shared_ptr& factor);
-  static void PrintSymbolicGraph(const GaussianFactorGraph& graph, const std::string& label =
-                                     "Factor Graph:");
-  static void PrintSymbolicTree(const gtsam::ISAM2& isam, const std::string& label = "Bayes Tree:");
-  static void PrintSymbolicTreeHelper(const gtsam::ISAM2Clique::shared_ptr& clique,
-                                      const std::string indent = "");
+  static void PrintSymbolicGraph(const GaussianFactorGraph& graph,
+      const std::string& label = "Factor Graph:");
+  static void PrintSymbolicTree(const gtsam::ISAM2& isam,
+      const std::string& label = "Bayes Tree:");
+  static void PrintSymbolicTreeHelper(
+      const gtsam::ISAM2Clique::shared_ptr& clique, const std::string indent =
+          "");
 
 };
 // IncrementalFixedLagSmoother

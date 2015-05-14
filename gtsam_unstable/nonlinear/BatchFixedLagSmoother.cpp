@@ -28,27 +28,31 @@
 namespace gtsam {
 
 /* ************************************************************************* */
-void BatchFixedLagSmoother::print(const std::string& s, const KeyFormatter& keyFormatter) const {
+void BatchFixedLagSmoother::print(const std::string& s,
+    const KeyFormatter& keyFormatter) const {
   FixedLagSmoother::print(s, keyFormatter);
   // TODO: What else to print?
 }
 
 /* ************************************************************************* */
-bool BatchFixedLagSmoother::equals(const FixedLagSmoother& rhs, double tol) const {
-  const BatchFixedLagSmoother* e = dynamic_cast<const BatchFixedLagSmoother*>(&rhs);
-  return e != NULL && FixedLagSmoother::equals(*e, tol) && factors_.equals(e->factors_, tol)
-      && theta_.equals(e->theta_, tol);
+bool BatchFixedLagSmoother::equals(const FixedLagSmoother& rhs,
+    double tol) const {
+  const BatchFixedLagSmoother* e =
+      dynamic_cast<const BatchFixedLagSmoother*>(&rhs);
+  return e != NULL && FixedLagSmoother::equals(*e, tol)
+      && factors_.equals(e->factors_, tol) && theta_.equals(e->theta_, tol);
 }
 
 /* ************************************************************************* */
 Matrix BatchFixedLagSmoother::marginalCovariance(Key key) const {
-  throw std::runtime_error("BatchFixedLagSmoother::marginalCovariance not implemented");
+  throw std::runtime_error(
+      "BatchFixedLagSmoother::marginalCovariance not implemented");
 }
 
 /* ************************************************************************* */
-FixedLagSmoother::Result BatchFixedLagSmoother::update(const NonlinearFactorGraph& newFactors,
-                                                       const Values& newTheta,
-                                                       const KeyTimestampMap& timestamps) {
+FixedLagSmoother::Result BatchFixedLagSmoother::update(
+    const NonlinearFactorGraph& newFactors, const Values& newTheta,
+    const KeyTimestampMap& timestamps) {
 
   const bool debug = ISDEBUG("BatchFixedLagSmoother update");
   if (debug) {
@@ -79,7 +83,8 @@ FixedLagSmoother::Result BatchFixedLagSmoother::update(const NonlinearFactorGrap
     std::cout << "Current Timestamp: " << current_timestamp << std::endl;
 
   // Find the set of variables to be marginalized out
-  std::set<Key> marginalizableKeys = findKeysBefore(current_timestamp - smootherLag_);
+  std::set<Key> marginalizableKeys = findKeysBefore(
+      current_timestamp - smootherLag_);
   if (debug) {
     std::cout << "Marginalizable Keys: ";
     BOOST_FOREACH(Key key, marginalizableKeys) {
@@ -116,7 +121,8 @@ FixedLagSmoother::Result BatchFixedLagSmoother::update(const NonlinearFactorGrap
 }
 
 /* ************************************************************************* */
-void BatchFixedLagSmoother::insertFactors(const NonlinearFactorGraph& newFactors) {
+void BatchFixedLagSmoother::insertFactors(
+    const NonlinearFactorGraph& newFactors) {
   BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, newFactors) {
     Key index;
     // Insert the factor into an existing hole in the factor graph, if possible
@@ -136,7 +142,8 @@ void BatchFixedLagSmoother::insertFactors(const NonlinearFactorGraph& newFactors
 }
 
 /* ************************************************************************* */
-void BatchFixedLagSmoother::removeFactors(const std::set<size_t>& deleteFactors) {
+void BatchFixedLagSmoother::removeFactors(
+    const std::set<size_t>& deleteFactors) {
   BOOST_FOREACH(size_t slot, deleteFactors) {
     if (factors_.at(slot)) {
       // Remove references to this factor from the FactorIndex
@@ -149,8 +156,8 @@ void BatchFixedLagSmoother::removeFactors(const std::set<size_t>& deleteFactors)
       availableSlots_.push(slot);
     } else {
       // TODO: Throw an error??
-      std::cout << "Attempting to remove a factor from slot " << slot << ", but it is already NULL."
-          << std::endl;
+      std::cout << "Attempting to remove a factor from slot " << slot
+          << ", but it is already NULL." << std::endl;
     }
   }
 }
@@ -198,8 +205,8 @@ void BatchFixedLagSmoother::reorder(const std::set<Key>& marginalizeKeys) {
   }
 
   // COLAMD groups will be used to place marginalize keys in Group 0, and everything else in Group 1
-  ordering_ = Ordering::colamdConstrainedFirst(
-      factors_, std::vector<Key>(marginalizeKeys.begin(), marginalizeKeys.end()));
+  ordering_ = Ordering::colamdConstrainedFirst(factors_,
+      std::vector<Key>(marginalizeKeys.begin(), marginalizeKeys.end()));
 
   if (debug) {
     ordering_.print("New Ordering: ");
@@ -241,16 +248,17 @@ FixedLagSmoother::Result BatchFixedLagSmoother::optimize() {
   // check if we're already close enough
   if (result.error <= errorTol) {
     if (debug) {
-      std::cout << "BatchFixedLagSmoother::optimize  Exiting, as error = " << result.error << " < "
-                << errorTol << std::endl;
+      std::cout << "BatchFixedLagSmoother::optimize  Exiting, as error = "
+          << result.error << " < " << errorTol << std::endl;
     }
     return result;
   }
 
   if (debug) {
-    std::cout << "BatchFixedLagSmoother::optimize  linearValues: " << linearKeys_.size()
-        << std::endl;
-    std::cout << "BatchFixedLagSmoother::optimize  Initial error: " << result.error << std::endl;
+    std::cout << "BatchFixedLagSmoother::optimize  linearValues: "
+        << linearKeys_.size() << std::endl;
+    std::cout << "BatchFixedLagSmoother::optimize  Initial error: "
+        << result.error << std::endl;
   }
 
   // Use a custom optimization loop so the linearization points can be controlled
@@ -269,7 +277,8 @@ FixedLagSmoother::Result BatchFixedLagSmoother::optimize() {
       while (true) {
 
         if (debug) {
-          std::cout << "BatchFixedLagSmoother::optimize  trying lambda = " << lambda << std::endl;
+          std::cout << "BatchFixedLagSmoother::optimize  trying lambda = "
+              << lambda << std::endl;
         }
 
         // Add prior factors at the current solution
@@ -284,7 +293,8 @@ FixedLagSmoother::Result BatchFixedLagSmoother::optimize() {
             Matrix A = Matrix::Identity(dim, dim);
             Vector b = key_value.second;
             SharedDiagonal model = noiseModel::Isotropic::Sigma(dim, sigma);
-            GaussianFactor::shared_ptr prior(new JacobianFactor(key_value.first, A, b, model));
+            GaussianFactor::shared_ptr prior(
+                new JacobianFactor(key_value.first, A, b, model));
             dampedFactorGraph.push_back(prior);
           }
         }
@@ -293,7 +303,8 @@ FixedLagSmoother::Result BatchFixedLagSmoother::optimize() {
 
         gttic(solve);
         // Solve Damped Gaussian Factor Graph
-        newDelta = dampedFactorGraph.optimize(ordering_, parameters_.getEliminationFunction());
+        newDelta = dampedFactorGraph.optimize(ordering_,
+            parameters_.getEliminationFunction());
         // update the evalpoint with the new delta
         evalpoint = theta_.retract(newDelta);
         gttoc(solve);
@@ -304,9 +315,10 @@ FixedLagSmoother::Result BatchFixedLagSmoother::optimize() {
         gttoc(compute_error);
 
         if (debug) {
-          std::cout << "BatchFixedLagSmoother::optimize  linear delta norm = " << newDelta.norm()
-                    << std::endl;
-          std::cout << "BatchFixedLagSmoother::optimize  next error = " << error << std::endl;
+          std::cout << "BatchFixedLagSmoother::optimize  linear delta norm = "
+              << newDelta.norm() << std::endl;
+          std::cout << "BatchFixedLagSmoother::optimize  next error = " << error
+              << std::endl;
         }
 
         if (error < result.error) {
@@ -344,21 +356,23 @@ FixedLagSmoother::Result BatchFixedLagSmoother::optimize() {
             lambda *= lambdaFactor;
           }
         }
-      }  // end while
+      } // end while
     }
     gttoc(optimizer_iteration);
 
     if (debug) {
-      std::cout << "BatchFixedLagSmoother::optimize  using lambda = " << lambda << std::endl;
+      std::cout << "BatchFixedLagSmoother::optimize  using lambda = " << lambda
+          << std::endl;
     }
 
     result.iterations++;
   } while (result.iterations < maxIterations
-      && !checkConvergence(relativeErrorTol, absoluteErrorTol, errorTol, previousError,
-                           result.error, NonlinearOptimizerParams::SILENT));
+      && !checkConvergence(relativeErrorTol, absoluteErrorTol, errorTol,
+          previousError, result.error, NonlinearOptimizerParams::SILENT));
 
   if (debug) {
-    std::cout << "BatchFixedLagSmoother::optimize  newError: " << result.error << std::endl;
+    std::cout << "BatchFixedLagSmoother::optimize  newError: " << result.error
+        << std::endl;
   }
 
   if (debug) {
@@ -414,15 +428,18 @@ void BatchFixedLagSmoother::marginalize(const std::set<Key>& marginalizeKeys) {
   }
 
   if (debug) {
-    PrintSymbolicGraph(removedFactors, "BatchFixedLagSmoother::marginalize  Removed Factors: ");
+    PrintSymbolicGraph(removedFactors,
+        "BatchFixedLagSmoother::marginalize  Removed Factors: ");
   }
 
   // Calculate marginal factors on the remaining keys
   NonlinearFactorGraph marginalFactors = calculateMarginalFactors(
-      removedFactors, theta_, marginalizeKeys, parameters_.getEliminationFunction());
+      removedFactors, theta_, marginalizeKeys,
+      parameters_.getEliminationFunction());
 
   if (debug) {
-    PrintSymbolicGraph(removedFactors, "BatchFixedLagSmoother::marginalize  Marginal Factors: ");
+    PrintSymbolicGraph(removedFactors,
+        "BatchFixedLagSmoother::marginalize  Marginal Factors: ");
   }
 
   // Remove marginalized factors from the factor graph
@@ -436,7 +453,8 @@ void BatchFixedLagSmoother::marginalize(const std::set<Key>& marginalizeKeys) {
 }
 
 /* ************************************************************************* */
-void BatchFixedLagSmoother::PrintKeySet(const std::set<Key>& keys, const std::string& label) {
+void BatchFixedLagSmoother::PrintKeySet(const std::set<Key>& keys,
+    const std::string& label) {
   std::cout << label;
   BOOST_FOREACH(gtsam::Key key, keys) {
     std::cout << " " << gtsam::DefaultKeyFormatter(key);
@@ -445,7 +463,8 @@ void BatchFixedLagSmoother::PrintKeySet(const std::set<Key>& keys, const std::st
 }
 
 /* ************************************************************************* */
-void BatchFixedLagSmoother::PrintKeySet(const gtsam::FastSet<Key>& keys, const std::string& label) {
+void BatchFixedLagSmoother::PrintKeySet(const gtsam::FastSet<Key>& keys,
+    const std::string& label) {
   std::cout << label;
   BOOST_FOREACH(gtsam::Key key, keys) {
     std::cout << " " << gtsam::DefaultKeyFormatter(key);
@@ -454,7 +473,8 @@ void BatchFixedLagSmoother::PrintKeySet(const gtsam::FastSet<Key>& keys, const s
 }
 
 /* ************************************************************************* */
-void BatchFixedLagSmoother::PrintSymbolicFactor(const NonlinearFactor::shared_ptr& factor) {
+void BatchFixedLagSmoother::PrintSymbolicFactor(
+    const NonlinearFactor::shared_ptr& factor) {
   std::cout << "f(";
   if (factor) {
     BOOST_FOREACH(Key key, factor->keys()) {
@@ -467,7 +487,8 @@ void BatchFixedLagSmoother::PrintSymbolicFactor(const NonlinearFactor::shared_pt
 }
 
 /* ************************************************************************* */
-void BatchFixedLagSmoother::PrintSymbolicFactor(const GaussianFactor::shared_ptr& factor) {
+void BatchFixedLagSmoother::PrintSymbolicFactor(
+    const GaussianFactor::shared_ptr& factor) {
   std::cout << "f(";
   BOOST_FOREACH(Key key, factor->keys()) {
     std::cout << " " << gtsam::DefaultKeyFormatter(key);
@@ -476,8 +497,8 @@ void BatchFixedLagSmoother::PrintSymbolicFactor(const GaussianFactor::shared_ptr
 }
 
 /* ************************************************************************* */
-void BatchFixedLagSmoother::PrintSymbolicGraph(const NonlinearFactorGraph& graph,
-                                               const std::string& label) {
+void BatchFixedLagSmoother::PrintSymbolicGraph(
+    const NonlinearFactorGraph& graph, const std::string& label) {
   std::cout << label << std::endl;
   BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, graph) {
     PrintSymbolicFactor(factor);
@@ -486,7 +507,7 @@ void BatchFixedLagSmoother::PrintSymbolicGraph(const NonlinearFactorGraph& graph
 
 /* ************************************************************************* */
 void BatchFixedLagSmoother::PrintSymbolicGraph(const GaussianFactorGraph& graph,
-                                               const std::string& label) {
+    const std::string& label) {
   std::cout << label << std::endl;
   BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, graph) {
     PrintSymbolicFactor(factor);
@@ -495,64 +516,73 @@ void BatchFixedLagSmoother::PrintSymbolicGraph(const GaussianFactorGraph& graph,
 
 /* ************************************************************************* */
 NonlinearFactorGraph BatchFixedLagSmoother::calculateMarginalFactors(
-    const NonlinearFactorGraph& graph, const Values& theta, const std::set<Key>& marginalizeKeys,
+    const NonlinearFactorGraph& graph, const Values& theta,
+    const std::set<Key>& marginalizeKeys,
     const GaussianFactorGraph::Eliminate& eliminateFunction) {
 
   const bool debug = ISDEBUG("BatchFixedLagSmoother calculateMarginalFactors");
 
   if (debug)
-    std::cout << "BatchFixedLagSmoother::calculateMarginalFactors START" << std::endl;
+    std::cout << "BatchFixedLagSmoother::calculateMarginalFactors START"
+        << std::endl;
 
   if (debug)
     PrintKeySet(marginalizeKeys,
-                "BatchFixedLagSmoother::calculateMarginalFactors  Marginalize Keys: ");
+        "BatchFixedLagSmoother::calculateMarginalFactors  Marginalize Keys: ");
 
   // Get the set of all keys involved in the factor graph
   FastSet<Key> allKeys(graph.keys());
   if (debug)
-    PrintKeySet(allKeys, "BatchFixedLagSmoother::calculateMarginalFactors  All Keys: ");
+    PrintKeySet(allKeys,
+        "BatchFixedLagSmoother::calculateMarginalFactors  All Keys: ");
 
   // Calculate the set of RemainingKeys = AllKeys \Intersect marginalizeKeys
   FastSet<Key> remainingKeys;
   std::set_difference(allKeys.begin(), allKeys.end(), marginalizeKeys.begin(),
-                      marginalizeKeys.end(), std::inserter(remainingKeys, remainingKeys.end()));
+      marginalizeKeys.end(), std::inserter(remainingKeys, remainingKeys.end()));
   if (debug)
-    PrintKeySet(remainingKeys, "BatchFixedLagSmoother::calculateMarginalFactors  Remaining Keys: ");
+    PrintKeySet(remainingKeys,
+        "BatchFixedLagSmoother::calculateMarginalFactors  Remaining Keys: ");
 
   if (marginalizeKeys.size() == 0) {
     // There are no keys to marginalize. Simply return the input factors
     if (debug)
-      std::cout << "BatchFixedLagSmoother::calculateMarginalFactors FINISH" << std::endl;
+      std::cout << "BatchFixedLagSmoother::calculateMarginalFactors FINISH"
+          << std::endl;
     return graph;
   } else {
 
     // Create the linear factor graph
     GaussianFactorGraph linearFactorGraph = *graph.linearize(theta);
     // .first is the eliminated Bayes tree, while .second is the remaining factor graph
-    GaussianFactorGraph marginalLinearFactors = *linearFactorGraph.eliminatePartialMultifrontal(
-        std::vector<Key>(marginalizeKeys.begin(), marginalizeKeys.end())).second;
+    GaussianFactorGraph marginalLinearFactors =
+        *linearFactorGraph.eliminatePartialMultifrontal(
+            std::vector<Key>(marginalizeKeys.begin(), marginalizeKeys.end())).second;
 
     // Wrap in nonlinear container factors
     NonlinearFactorGraph marginalFactors;
     marginalFactors.reserve(marginalLinearFactors.size());
     BOOST_FOREACH(const GaussianFactor::shared_ptr& gaussianFactor, marginalLinearFactors) {
-      marginalFactors += boost::make_shared<LinearContainerFactor>(gaussianFactor, theta);
+      marginalFactors += boost::make_shared<LinearContainerFactor>(
+          gaussianFactor, theta);
       if (debug) {
-        std::cout << "BatchFixedLagSmoother::calculateMarginalFactors  Marginal Factor: ";
+        std::cout
+            << "BatchFixedLagSmoother::calculateMarginalFactors  Marginal Factor: ";
         PrintSymbolicFactor(marginalFactors.back());
       }
     }
 
     if (debug)
       PrintSymbolicGraph(marginalFactors,
-                         "BatchFixedLagSmoother::calculateMarginalFactors  All Marginal Factors: ");
+          "BatchFixedLagSmoother::calculateMarginalFactors  All Marginal Factors: ");
 
     if (debug)
-      std::cout << "BatchFixedLagSmoother::calculateMarginalFactors FINISH" << std::endl;
+      std::cout << "BatchFixedLagSmoother::calculateMarginalFactors FINISH"
+          << std::endl;
 
     return marginalFactors;
   }
 }
 
 /* ************************************************************************* */
-}  /// namespace gtsam
+} /// namespace gtsam
