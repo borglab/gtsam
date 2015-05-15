@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file TEST_DISABLEDQPSolver.cpp
- * @brief TEST_DISABLED simple QP solver for a linear inequality constraint
+ * @file testQPSolver.cpp
+ * @brief Test simple QP solver for a linear inequality constraint
  * @date Apr 10, 2014
  * @author Duy-Nguyen Ta
  */
@@ -196,7 +196,7 @@ public:
 
   //******************************************************************************
   LPState iterate(const LPState& state) const {
-    static bool debug = true;
+    static bool debug = false;
 
     // Solve with the current working set
     // LP: project the objective neggradient to the constraint's null space
@@ -250,7 +250,7 @@ public:
       int factorIx;
       VectorValues p = newValues - state.values;
       boost::tie(alpha, factorIx) = // using 16.41
-          compuTEST_DISABLEDepSize(state.workingSet, state.values, p);
+          computeStepSize(state.workingSet, state.values, p);
       if (debug) cout << "alpha, factorIx: " << alpha << " " << factorIx << " "
           << endl;
 
@@ -384,7 +384,7 @@ public:
   }
 
   //******************************************************************************
-  std::pair<double, int> compuTEST_DISABLEDepSize(
+  std::pair<double, int> computeStepSize(
       const InequalityFactorGraph& workingSet, const VectorValues& xk,
       const VectorValues& p) const {
     static bool debug = false;
@@ -706,12 +706,12 @@ TEST(LPInitSolverMatlab, initialization) {
 
 /* ************************************************************************* */
 /**
- * TEST_DISABLED gtsam solver with an over-constrained system
+ * TEST gtsam solver with an over-constrained system
  *  x + y = 1
  *  x - y = 5
  *  x + 2y = 6
  */
-TEST_DISABLED(LPSolver, overConstrainedLinearSystem) {
+TEST(LPSolver, overConstrainedLinearSystem) {
   GaussianFactorGraph graph;
   Matrix A1 = (Matrix(3,1) <<1,1,1).finished();
   Matrix A2 = (Matrix(3,1) <<1,-1,2).finished();
@@ -724,7 +724,7 @@ TEST_DISABLED(LPSolver, overConstrainedLinearSystem) {
   CHECK(factor.error(x) != 0.0);
 }
 
-TEST_DISABLED(LPSolver, overConstrainedLinearSystem2) {
+TEST(LPSolver, overConstrainedLinearSystem2) {
   GaussianFactorGraph graph;
   graph.push_back(JacobianFactor(1, ones(1, 1), 2, ones(1, 1), ones(1), noiseModel::Constrained::All(1)));
   graph.push_back(JacobianFactor(1, ones(1, 1), 2, -ones(1, 1), 5*ones(1), noiseModel::Constrained::All(1)));
@@ -735,7 +735,7 @@ TEST_DISABLED(LPSolver, overConstrainedLinearSystem2) {
 }
 
 /* ************************************************************************* */
-TEST_DISABLED(LPSolver, simpleTest1) {
+TEST(LPSolver, simpleTest1) {
   LP lp = simpleLP1();
 
   LPSolver lpSolver(lp);
@@ -744,7 +744,9 @@ TEST_DISABLED(LPSolver, simpleTest1) {
 
   VectorValues x1 = lpSolver.solveWithCurrentWorkingSet(init,
       InequalityFactorGraph());
-  x1.print("x1: ");
+  VectorValues expected_x1;
+  expected_x1.insert(1, (Vector(2) << 1, 1).finished());
+  CHECK(assert_equal(expected_x1, x1, 1e-10));
 
   VectorValues result, duals;
   boost::tie(result, duals) = lpSolver.optimize(init);
@@ -754,13 +756,13 @@ TEST_DISABLED(LPSolver, simpleTest1) {
 }
 
 /**
- * TODO: More TEST_DISABLED cases:
+ * TODO: More TEST cases:
  * - Infeasible
  * - Unbounded
  * - Underdetermined
  */
 /* ************************************************************************* */
-TEST_DISABLED(LPSolver, LinearCost) {
+TEST(LPSolver, LinearCost) {
   LinearCost cost(1, (Vector(3) << 2., 4., 6.).finished());
   VectorValues x;
   x.insert(1, (Vector(3) << 1., 3., 5.).finished());
