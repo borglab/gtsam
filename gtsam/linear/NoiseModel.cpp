@@ -141,7 +141,7 @@ bool Gaussian::equals(const Base& expected, double tol) const {
 /* ************************************************************************* */
 Vector Gaussian::sigmas() const {
   // TODO(frank): can this be done faster?
-  return (thisR().transpose() * thisR()).inverse().diagonal().array().sqrt();
+  return Vector((thisR().transpose() * thisR()).inverse().diagonal()).cwiseSqrt();
 }
 
 /* ************************************************************************* */
