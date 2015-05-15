@@ -25,8 +25,8 @@ namespace gtsam {
 typedef Eigen::RowVectorXd RowVector;
 
 /**
- * This class defines a linear inequality constraint g(x)<=0,
- * inheriting JacobianFactor with the special Constrained noise model
+ * This class defines a linear cost function c'x
+ * which is a JacobianFactor with only one row
  */
 class LinearCost: public JacobianFactor {
 public:

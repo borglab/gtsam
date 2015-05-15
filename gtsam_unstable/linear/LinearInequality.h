@@ -83,7 +83,8 @@ public:
 
   /** Construct an n-ary factor
    * @tparam TERMS A container whose value type is std::pair<Key, Matrix>, specifying the
-   *         collection of keys and matrices making up the factor. */
+   *         collection of keys and matrices making up the factor.
+   *         In this inequality factor, each matrix must have only one row!! */
   template<typename TERMS>
   LinearInequality(const TERMS& terms, double b, Key dualKey) :
       Base(terms, (Vector(1) << b).finished(), noiseModel::Constrained::All(1)), dualKey_(
