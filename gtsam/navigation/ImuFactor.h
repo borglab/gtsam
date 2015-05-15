@@ -110,7 +110,7 @@ public:
      * Add a single IMU measurement to the preintegration.
      * @param measuredAcc Measured acceleration (in body frame, as given by the sensor)
      * @param measuredOmega Measured angular velocity (as given by the sensor)
-     * @param deltaT Time interval between two consecutive IMU measurements
+     * @param deltaT Time interval between this and the last IMU measurement
      * @param body_P_sensor Optional sensor frame (pose of the IMU in the body frame)
      * @param Fout, Gout Jacobians used internally (only needed for testing)
      */

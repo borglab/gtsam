@@ -64,8 +64,8 @@ string findExampleDataFile(const string& name) {
   throw
 invalid_argument(
     "gtsam::findExampleDataFile could not find a matching file in\n"
-    SOURCE_TREE_DATASET_DIR " or\n"
-    INSTALLED_DATASET_DIR " named\n" +
+    GTSAM_SOURCE_TREE_DATASET_DIR " or\n"
+    GTSAM_INSTALLED_DATASET_DIR " named\n" +
     name + ", " + name + ".graph, or " + name + ".txt");
 }
 

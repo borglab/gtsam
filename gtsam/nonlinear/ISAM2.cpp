@@ -98,7 +98,7 @@ DoglegOptimizerImpl::TrustRegionAdaptationMode ISAM2DoglegParams::adaptationMode
 }
 
 /* ************************************************************************* */
-ISAM2Params::Factorization ISAM2Params::factorizationTranslator(const std::string& str) const {
+ISAM2Params::Factorization ISAM2Params::factorizationTranslator(const std::string& str) {
   std::string s = str;  boost::algorithm::to_upper(s);
   if (s == "QR") return ISAM2Params::QR;
   if (s == "CHOLESKY") return ISAM2Params::CHOLESKY;
@@ -108,7 +108,7 @@ ISAM2Params::Factorization ISAM2Params::factorizationTranslator(const std::strin
 }
 
 /* ************************************************************************* */
-std::string ISAM2Params::factorizationTranslator(const ISAM2Params::Factorization& value) const {
+std::string ISAM2Params::factorizationTranslator(const ISAM2Params::Factorization& value) {
   std::string s;
   switch (value) {
   case ISAM2Params::QR:         s = "QR"; break;

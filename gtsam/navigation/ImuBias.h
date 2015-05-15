@@ -17,8 +17,10 @@
 
 #pragma once
 
+#include <gtsam/base/Matrix.h>
+#include <gtsam/base/Vector.h>
+#include <gtsam/base/VectorSpace.h>
 #include <boost/serialization/nvp.hpp>
-#include <gtsam/geometry/Pose3.h>
 
 /*
  * NOTES:
@@ -131,8 +133,8 @@ public:
 /// print with optional string
   void print(const std::string& s = "") const {
     // explicit printing for now.
-    std::cout << s + ".biasAcc [" << biasAcc_.transpose() << "]" << std::endl;
-    std::cout << s + ".biasGyro [" << biasGyro_.transpose() << "]" << std::endl;
+    std::cout << s + ".Acc  [" << biasAcc_.transpose() << "]" << std::endl;
+    std::cout << s + ".Gyro [" << biasGyro_.transpose() << "]" << std::endl;
   }
 
   /** equality up to tolerance */

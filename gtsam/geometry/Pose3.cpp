@@ -112,7 +112,9 @@ bool Pose3::equals(const Pose3& pose, double tol) const {
 /* ************************************************************************* */
 /** Modified from Murray94book version (which assumes w and v normalized?) */
 Pose3 Pose3::Expmap(const Vector& xi, OptionalJacobian<6, 6> H) {
-  if (H) *H = ExpmapDerivative(xi);
+  if (H) {
+    *H = ExpmapDerivative(xi);
+  }
 
   // get angular velocity omega and translational velocity v from twist xi
   Point3 w(xi(0), xi(1), xi(2)), v(xi(3), xi(4), xi(5));
@@ -255,6 +257,14 @@ Matrix6 Pose3::LogmapDerivative(const Pose3& pose) {
 }
 
 /* ************************************************************************* */
+const Point3& Pose3::translation(OptionalJacobian<3, 6> H) const {
+  if (H) {
+    *H << Z_3x3, rotation().matrix();
+  }
+  return t_;
+}
+
+/* ************************************************************************* */
 Matrix4 Pose3::matrix() const {
   const Matrix3 R = R_.matrix();
   const Vector3 T = t_.vector();
@@ -280,8 +290,9 @@ Point3 Pose3::transform_from(const Point3& p, OptionalJacobian<3,6> Dpose,
     Matrix3 DR = R * skewSymmetric(-p.x(), -p.y(), -p.z());
     (*Dpose) << DR, R;
   }
-  if (Dpoint)
+  if (Dpoint) {
     *Dpoint = R_.matrix();
+  }
   return R_ * p + t_;
 }
 
@@ -299,17 +310,18 @@ Point3 Pose3::transform_to(const Point3& p, OptionalJacobian<3,6> Dpose,
         +wz, 0.0, -wx, 0.0,-1.0, 0.0,
         -wy, +wx, 0.0, 0.0, 0.0,-1.0;
   }
-  if (Dpoint)
+  if (Dpoint) {
     *Dpoint = Rt;
+  }
   return q;
 }
 
 /* ************************************************************************* */
 double Pose3::range(const Point3& point, OptionalJacobian<1, 6> H1,
     OptionalJacobian<1, 3> H2) const {
-  if (!H1 && !H2)
+  if (!H1 && !H2) {
     return transform_to(point).norm();
-  else {
+  } else {
     Matrix36 D1;
     Matrix3 D2;
     Point3 d = transform_to(point, H1 ? &D1 : 0, H2 ? &D2 : 0);

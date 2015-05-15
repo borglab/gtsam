@@ -26,7 +26,6 @@
 #include <boost/serialization/singleton.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/optional.hpp>
-#include <cmath>
 
 namespace gtsam {
 
@@ -59,7 +58,7 @@ namespace gtsam {
 
     public:
 
-      /** primary constructor @param dim is the dimension of the model */
+      /// primary constructor @param dim is the dimension of the model
       Base(size_t dim = 1):dim_(dim) {}
       virtual ~Base() {}
 
@@ -75,14 +74,13 @@ namespace gtsam {
 
       virtual bool equals(const Base& expected, double tol=1e-9) const = 0;
 
-      /**
-       * Whiten an error vector.
-       */
+      /// Calculate standard deviations
+      virtual Vector sigmas() const;
+
+      /// Whiten an error vector.
       virtual Vector whiten(const Vector& v) const = 0;
 
-      /**
-       * Unwhiten an error vector.
-       */
+      /// Unwhiten an error vector.
       virtual Vector unwhiten(const Vector& v) const = 0;
 
       virtual double distance(const Vector& v) const = 0;
@@ -189,6 +187,7 @@ namespace gtsam {
 
       virtual void print(const std::string& name) const;
       virtual bool equals(const Base& expected, double tol=1e-9) const;
+      virtual Vector sigmas() const;
       virtual Vector whiten(const Vector& v) const;
       virtual Vector unwhiten(const Vector& v) const;
 
@@ -220,9 +219,9 @@ namespace gtsam {
       /**
        * Whiten a system, in place as well
        */
-      virtual void WhitenSystem(std::vector<Matrix>& A, Vector& b) const ;
-      virtual void WhitenSystem(Matrix& A, Vector& b) const ;
-      virtual void WhitenSystem(Matrix& A1, Matrix& A2, Vector& b) const ;
+      virtual void WhitenSystem(std::vector<Matrix>& A, Vector& b) const;
+      virtual void WhitenSystem(Matrix& A, Vector& b) const;
+      virtual void WhitenSystem(Matrix& A1, Matrix& A2, Vector& b) const;
       virtual void WhitenSystem(Matrix& A1, Matrix& A2, Matrix& A3, Vector& b) const;
 
       /**
@@ -234,10 +233,14 @@ namespace gtsam {
        */
       virtual boost::shared_ptr<Diagonal> QR(Matrix& Ab) const;
 
-      /**
-       * Return R itself, but note that Whiten(H) is cheaper than R*H
-       */
+      /// Return R itself, but note that Whiten(H) is cheaper than R*H
       virtual Matrix R() const { return thisR();}
+
+      /// Compute information matrix
+      virtual Matrix information() const { return thisR().transpose() * thisR(); }
+
+      /// Compute covariance matrix
+      virtual Matrix covariance() const { return information().inverse(); }
 
     private:
       /** Serialization function */
@@ -303,6 +306,7 @@ namespace gtsam {
       }
 
       virtual void print(const std::string& name) const;
+      virtual Vector sigmas() const { return sigmas_; }
       virtual Vector whiten(const Vector& v) const;
       virtual Vector unwhiten(const Vector& v) const;
       virtual Matrix Whiten(const Matrix& H) const;
@@ -312,7 +316,6 @@ namespace gtsam {
       /**
        * Return standard deviations (sqrt of diagonal)
        */
-      inline const Vector& sigmas() const { return sigmas_; }
       inline double sigma(size_t i) const { return sigmas_(i); }
 
       /**
@@ -629,20 +632,23 @@ namespace gtsam {
         virtual ~Base() {}
 
         /// robust error function to implement
-        virtual double weight(const double &error) const = 0;
+        virtual double weight(double error) const = 0;
 
         virtual void print(const std::string &s) const = 0;
-        virtual bool equals(const Base& expected, const double tol=1e-8) const = 0;
+        virtual bool equals(const Base& expected, double tol=1e-8) const = 0;
 
-        inline double sqrtWeight(const double &error) const
-        { return std::sqrt(weight(error)); }
+        double sqrtWeight(double error) const {
+          return std::sqrt(weight(error));
+        }
 
         /** produce a weight vector according to an error vector and the implemented
         * robust function */
         Vector weight(const Vector &error) const;
 
         /** square root version of the weight function */
-        Vector sqrtWeight(const Vector &error) const;
+        Vector sqrtWeight(const Vector &error) const {
+          return weight(error).cwiseSqrt();
+        }
 
         /** reweight block matrices and a vector according to their weight implementation */
         void reweight(Vector &error) const;
@@ -667,9 +673,9 @@ namespace gtsam {
 
         Null(const ReweightScheme reweight = Block) : Base(reweight) {}
         virtual ~Null() {}
-        virtual double weight(const double& /*error*/) const { return 1.0; }
+        virtual double weight(double /*error*/) const { return 1.0; }
         virtual void print(const std::string &s) const;
-        virtual bool equals(const Base& /*expected*/, const double /*tol*/) const { return true; }
+        virtual bool equals(const Base& /*expected*/, double /*tol*/) const { return true; }
         static shared_ptr Create() ;
 
       private:
@@ -686,12 +692,12 @@ namespace gtsam {
       public:
         typedef boost::shared_ptr<Fair> shared_ptr;
 
-        Fair(const double c = 1.3998, const ReweightScheme reweight = Block);
+        Fair(double c = 1.3998, const ReweightScheme reweight = Block);
         virtual ~Fair() {}
-        virtual double weight(const double &error) const ;
-        virtual void print(const std::string &s) const ;
-        virtual bool equals(const Base& expected, const double tol=1e-8) const ;
-        static shared_ptr Create(const double c, const ReweightScheme reweight = Block) ;
+        virtual double weight(double error) const;
+        virtual void print(const std::string &s) const;
+        virtual bool equals(const Base& expected, double tol=1e-8) const;
+        static shared_ptr Create(double c, const ReweightScheme reweight = Block) ;
 
       protected:
         double c_;
@@ -712,11 +718,11 @@ namespace gtsam {
         typedef boost::shared_ptr<Huber> shared_ptr;
 
         virtual ~Huber() {}
-        Huber(const double k = 1.345, const ReweightScheme reweight = Block);
-        virtual double weight(const double &error) const ;
-        virtual void print(const std::string &s) const ;
-        virtual bool equals(const Base& expected, const double tol=1e-8) const ;
-        static shared_ptr Create(const double k, const ReweightScheme reweight = Block) ;
+        Huber(double k = 1.345, const ReweightScheme reweight = Block);
+        virtual double weight(double error) const;
+        virtual void print(const std::string &s) const;
+        virtual bool equals(const Base& expected, double tol=1e-8) const;
+        static shared_ptr Create(double k, const ReweightScheme reweight = Block) ;
 
       protected:
         double k_;
@@ -741,11 +747,11 @@ namespace gtsam {
         typedef boost::shared_ptr<Cauchy> shared_ptr;
 
         virtual ~Cauchy() {}
-        Cauchy(const double k = 0.1, const ReweightScheme reweight = Block);
-        virtual double weight(const double &error) const ;
-        virtual void print(const std::string &s) const ;
-        virtual bool equals(const Base& expected, const double tol=1e-8) const ;
-        static shared_ptr Create(const double k, const ReweightScheme reweight = Block) ;
+        Cauchy(double k = 0.1, const ReweightScheme reweight = Block);
+        virtual double weight(double error) const;
+        virtual void print(const std::string &s) const;
+        virtual bool equals(const Base& expected, double tol=1e-8) const;
+        static shared_ptr Create(double k, const ReweightScheme reweight = Block) ;
 
       protected:
         double k_;
@@ -765,12 +771,12 @@ namespace gtsam {
       public:
         typedef boost::shared_ptr<Tukey> shared_ptr;
 
-        Tukey(const double c = 4.6851, const ReweightScheme reweight = Block);
+        Tukey(double c = 4.6851, const ReweightScheme reweight = Block);
         virtual ~Tukey() {}
-        virtual double weight(const double &error) const ;
-        virtual void print(const std::string &s) const ;
-        virtual bool equals(const Base& expected, const double tol=1e-8) const ;
-        static shared_ptr Create(const double k, const ReweightScheme reweight = Block) ;
+        virtual double weight(double error) const;
+        virtual void print(const std::string &s) const;
+        virtual bool equals(const Base& expected, double tol=1e-8) const;
+        static shared_ptr Create(double k, const ReweightScheme reweight = Block) ;
 
       protected:
         double c_;
@@ -790,12 +796,12 @@ namespace gtsam {
       public:
         typedef boost::shared_ptr<Welsh> shared_ptr;
 
-        Welsh(const double c = 2.9846, const ReweightScheme reweight = Block);
+        Welsh(double c = 2.9846, const ReweightScheme reweight = Block);
         virtual ~Welsh() {}
-        virtual double weight(const double &error) const ;
-        virtual void print(const std::string &s) const ;
-        virtual bool equals(const Base& expected, const double tol=1e-8) const ;
-        static shared_ptr Create(const double k, const ReweightScheme reweight = Block) ;
+        virtual double weight(double error) const;
+        virtual void print(const std::string &s) const;
+        virtual bool equals(const Base& expected, double tol=1e-8) const;
+        static shared_ptr Create(double k, const ReweightScheme reweight = Block) ;
 
       protected:
         double c_;
