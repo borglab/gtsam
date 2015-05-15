@@ -69,11 +69,8 @@ public:
   /// Needed for testable
   void print(const std::string& s) const {
     std::cout << s << std::endl;
-    std::cout << "deltaTij [" << deltaTij_ << "]" << std::endl;
-    deltaRij_.print("  deltaRij ");
-    std::cout << "delRdelBiasOmega [" << delRdelBiasOmega_ << "]" << std::endl;
-    std::cout << "gyroscopeCovariance [" << gyroscopeCovariance_ << "]"
-        << std::endl;
+    std::cout << "    deltaTij [" << deltaTij_ << "]" << std::endl;
+    std::cout << "    deltaRij.ypr = (" << deltaRij_.ypr().transpose() << ")" << std::endl;
   }
 
   /// Needed for testable

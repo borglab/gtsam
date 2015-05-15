@@ -24,13 +24,6 @@ namespace internal {
 template<class Class, int N>
 struct VectorSpaceImpl {
 
-  /// @name Group
-  /// @{
-  static Class Compose(const Class& v1, const Class& v2) { return v1+v2;}
-  static Class Between(const Class& v1, const Class& v2) { return v2-v1;}
-  static Class Inverse(const Class& m) { return -m;}
-  /// @}
-
   /// @name Manifold
   /// @{
   typedef Eigen::Matrix<double, N, 1> TangentVector;
@@ -68,21 +61,21 @@ struct VectorSpaceImpl {
     return Class(v);
   }
 
-  static Class Compose(const Class& v1, const Class& v2, ChartJacobian H1,
-      ChartJacobian H2) {
+  static Class Compose(const Class& v1, const Class& v2, ChartJacobian H1 = boost::none,
+      ChartJacobian H2 = boost::none) {
     if (H1) *H1 = Jacobian::Identity();
     if (H2) *H2 = Jacobian::Identity();
     return v1 + v2;
   }
 
-  static Class Between(const Class& v1, const Class& v2, ChartJacobian H1,
-      ChartJacobian H2) {
+  static Class Between(const Class& v1, const Class& v2, ChartJacobian H1 = boost::none,
+      ChartJacobian H2 = boost::none) {
     if (H1) *H1 = - Jacobian::Identity();
     if (H2) *H2 =   Jacobian::Identity();
     return v2 - v1;
   }
 
-  static Class Inverse(const Class& v, ChartJacobian H) {
+  static Class Inverse(const Class& v, ChartJacobian H = boost::none) {
     if (H) *H = - Jacobian::Identity();
     return -v;
   }

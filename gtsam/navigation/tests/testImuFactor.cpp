@@ -17,6 +17,7 @@
 
 #include <gtsam/navigation/ImuFactor.h>
 #include <gtsam/nonlinear/Values.h>
+#include <gtsam/nonlinear/factorTesting.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/navigation/ImuBias.h>
 #include <gtsam/geometry/Pose3.h>
@@ -81,19 +82,27 @@ Rot3 updatePreintegratedRot(const Rot3& deltaRij_old,
   return deltaRij_new;
 }
 
-// Auxiliary functions to test preintegrated Jacobians
-// delPdelBiasAcc_ delPdelBiasOmega_ delVdelBiasAcc_ delVdelBiasOmega_ delRdelBiasOmega_
+// Define covariance matrices
 /* ************************************************************************* */
 double accNoiseVar = 0.01;
 double omegaNoiseVar = 0.03;
 double intNoiseVar = 0.0001;
+const Matrix3 kMeasuredAccCovariance = accNoiseVar * Matrix3::Identity();
+const Matrix3 kMeasuredOmegaCovariance = omegaNoiseVar * Matrix3::Identity();
+const Matrix3 kIntegrationErrorCovariance = intNoiseVar * Matrix3::Identity();
+
+// Auxiliary functions to test preintegrated Jacobians
+// delPdelBiasAcc_ delPdelBiasOmega_ delVdelBiasAcc_ delVdelBiasOmega_ delRdelBiasOmega_
+/* ************************************************************************* */
 ImuFactor::PreintegratedMeasurements evaluatePreintegratedMeasurements(
     const imuBias::ConstantBias& bias, const list<Vector3>& measuredAccs,
     const list<Vector3>& measuredOmegas, const list<double>& deltaTs,
     const bool use2ndOrderIntegration = false) {
   ImuFactor::PreintegratedMeasurements result(bias,
-      accNoiseVar * Matrix3::Identity(), omegaNoiseVar * Matrix3::Identity(),
-      intNoiseVar * Matrix3::Identity(), use2ndOrderIntegration);
+                                              kMeasuredAccCovariance,
+                                              kMeasuredOmegaCovariance,
+                                              kIntegrationErrorCovariance,
+                                              use2ndOrderIntegration);
 
   list<Vector3>::const_iterator itAcc = measuredAccs.begin();
   list<Vector3>::const_iterator itOmega = measuredOmegas.begin();
@@ -156,8 +165,11 @@ TEST( ImuFactor, PreintegratedMeasurements ) {
 
   bool use2ndOrderIntegration = true;
   // Actual preintegrated values
-  ImuFactor::PreintegratedMeasurements actual1(bias, Matrix3::Zero(),
-      Matrix3::Zero(), Matrix3::Zero(), use2ndOrderIntegration);
+  ImuFactor::PreintegratedMeasurements actual1(bias,
+                                               kMeasuredAccCovariance,
+                                               kMeasuredOmegaCovariance,
+                                               kIntegrationErrorCovariance,
+                                               use2ndOrderIntegration);
   actual1.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   EXPECT(
@@ -208,8 +220,11 @@ TEST( ImuFactor, ErrorAndJacobians ) {
   Vector3 measuredAcc = x1.rotation().unrotate(-Point3(gravity)).vector();
   double deltaT = 1.0;
   bool use2ndOrderIntegration = true;
-  ImuFactor::PreintegratedMeasurements pre_int_data(bias, Matrix3::Zero(),
-      Matrix3::Zero(), Matrix3::Zero(), use2ndOrderIntegration);
+  ImuFactor::PreintegratedMeasurements pre_int_data(bias,
+                                                    kMeasuredAccCovariance,
+                                                    kMeasuredOmegaCovariance,
+                                                    kIntegrationErrorCovariance,
+                                                    use2ndOrderIntegration);
   pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   // Create factor
@@ -260,6 +275,40 @@ TEST( ImuFactor, ErrorAndJacobians ) {
   Matrix H5e = numericalDerivative11<Vector, imuBias::ConstantBias>(
       boost::bind(&callEvaluateError, factor, x1, v1, x2, v2, _1), bias);
   EXPECT(assert_equal(H5e, H5a));
+
+  ////////////////////////////////////////////////////////////////////////////
+  // Evaluate error with wrong values
+  Vector3 v2_wrong = v2 + Vector3(0.1, 0.1, 0.1);
+  errorActual = factor.evaluateError(x1, v1, x2, v2_wrong, bias);
+  errorExpected << 0, 0, 0, 0.0724744871, 0.040715657, 0.151952901, 0, 0, 0;
+  EXPECT(assert_equal(errorExpected, errorActual, 1e-6));
+
+  Values values;
+  values.insert(X(1), x1);
+  values.insert(V(1), v1);
+  values.insert(X(2), x2);
+  values.insert(V(2), v2_wrong);
+  values.insert(B(1), bias);
+  errorExpected << 0, 0, 0, 0.0724744871, 0.040715657, 0.151952901, 0, 0, 0;
+  EXPECT(assert_equal(factor.unwhitenedError(values), errorActual, 1e-6));
+
+  // Make sure the whitening is done correctly
+  Matrix cov = pre_int_data.preintMeasCov();
+  Matrix R = RtR(cov.inverse());
+  Vector whitened = R * errorActual;
+  EXPECT(assert_equal(0.5 * whitened.squaredNorm(), factor.error(values), 1e-6));
+
+  ///////////////////////////////////////////////////////////////////////////////
+  // Make sure linearization is correct
+  // Create expected value by numerical differentiation
+  JacobianFactor expected = linearizeNumerically(factor, values, 1e-8);
+
+  // Create actual value by linearize
+  GaussianFactor::shared_ptr linearized = factor.linearize(values);
+  JacobianFactor* actual = dynamic_cast<JacobianFactor*>(linearized.get());
+
+  // Check cast result and then equality
+  EXPECT(assert_equal(expected, *actual, 1e-4));
 }
 
 /* ************************************************************************* */
@@ -284,8 +333,8 @@ TEST( ImuFactor, ErrorAndJacobianWithBiases ) {
   double deltaT = 1.0;
 
   ImuFactor::PreintegratedMeasurements pre_int_data(
-      imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.1)),
-      Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero());
+      imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.1)), kMeasuredAccCovariance,
+      kMeasuredOmegaCovariance, kIntegrationErrorCovariance);
   pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   // Create factor
@@ -354,8 +403,8 @@ TEST( ImuFactor, ErrorAndJacobianWith2ndOrderCoriolis ) {
   double deltaT = 1.0;
 
   ImuFactor::PreintegratedMeasurements pre_int_data(
-      imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.1)),
-      Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero());
+      imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.1)), kMeasuredAccCovariance,
+      kMeasuredOmegaCovariance, kIntegrationErrorCovariance);
   pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   // Create factor
@@ -874,8 +923,8 @@ TEST( ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement ) {
       Point3(1, 0, 0));
 
   ImuFactor::PreintegratedMeasurements pre_int_data(
-      imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0)),
-      Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero());
+      imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0)), kMeasuredAccCovariance,
+      kMeasuredOmegaCovariance, kIntegrationErrorCovariance);
 
   pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
@@ -933,8 +982,8 @@ TEST(ImuFactor, PredictPositionAndVelocity) {
   I6x6 = Matrix::Identity(6, 6);
 
   ImuFactor::PreintegratedMeasurements pre_int_data(
-      imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0)),
-      Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), true);
+      imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0)), kMeasuredAccCovariance,
+      kMeasuredOmegaCovariance, kIntegrationErrorCovariance, true);
 
   for (int i = 0; i < 1000; ++i)
     pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
@@ -974,8 +1023,8 @@ TEST(ImuFactor, PredictRotation) {
   I6x6 = Matrix::Identity(6, 6);
 
   ImuFactor::PreintegratedMeasurements pre_int_data(
-      imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0)),
-      Matrix3::Zero(), Matrix3::Zero(), Matrix3::Zero(), true);
+      imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0)), kMeasuredAccCovariance,
+      kMeasuredOmegaCovariance, kIntegrationErrorCovariance, true);
 
   for (int i = 0; i < 1000; ++i)
     pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);

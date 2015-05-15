@@ -42,7 +42,7 @@ static const Rot3 someR = Rot3::RzRyRx(1, 2, 3);
 
 /* ************************************************************************* */
 // Constant
-TEST(Expression, constant) {
+TEST(Expression, Constant) {
   Expression<Rot3> R(someR);
   Values values;
   Rot3 actual = R.value(values);
@@ -68,30 +68,39 @@ TEST(Expression, Leaves) {
   Point3 somePoint(1, 2, 3);
   values.insert(Symbol('p', 10), somePoint);
   std::vector<Expression<Point3> > points = createUnknowns<Point3>(10, 'p', 1);
-  EXPECT(assert_equal(somePoint,points.back().value(values)));
+  EXPECT(assert_equal(somePoint, points.back().value(values)));
 }
 
 /* ************************************************************************* */
 // Unary(Leaf)
 namespace unary {
-Point2 f0(const Point3& p, OptionalJacobian<2,3> H) {
+Point2 f1(const Point3& p, OptionalJacobian<2, 3> H) {
   return Point2();
 }
 double f2(const Point3& p, OptionalJacobian<1, 3> H) {
   return 0.0;
 }
+Vector f3(const Point3& p, OptionalJacobian<Eigen::Dynamic, 3> H) {
+  return p.vector();
+}
 Expression<Point3> p(1);
 set<Key> expected = list_of(1);
 }
-TEST(Expression, Unary0) {
+TEST(Expression, Unary1) {
   using namespace unary;
-  Expression<Point2> e(f0, p);
+  Expression<Point2> e(f1, p);
   EXPECT(expected == e.keys());
 }
 TEST(Expression, Unary2) {
   using namespace unary;
   Expression<double> e(f2, p);
   EXPECT(expected == e.keys());
+}
+/* ************************************************************************* */
+// Unary(Leaf), dynamic
+TEST(Expression, Unary3) {
+  using namespace unary;
+//  Expression<Vector> e(f3, p);
 }
 /* ************************************************************************* */
 //Nullary Method
@@ -118,7 +127,7 @@ TEST(Expression, NullaryMethod) {
   EXPECT(actual == sqrt(50));
   Matrix expected(1, 3);
   expected << 3.0 / sqrt(50.0), 4.0 / sqrt(50.0), 5.0 / sqrt(50.0);
-  EXPECT(assert_equal(expected,H[0]));
+  EXPECT(assert_equal(expected, H[0]));
 }
 /* ************************************************************************* */
 // Binary(Leaf,Leaf)
@@ -149,12 +158,12 @@ TEST(Expression, BinaryKeys) {
 TEST(Expression, BinaryDimensions) {
   map<Key, int> actual, expected = map_list_of<Key, int>(1, 6)(2, 3);
   binary::p_cam.dims(actual);
-  EXPECT(actual==expected);
+  EXPECT(actual == expected);
 }
 /* ************************************************************************* */
 // dimensions
 TEST(Expression, BinaryTraceSize) {
-  typedef BinaryExpression<Point3, Pose3, Point3> Binary;
+  typedef internal::BinaryExpression<Point3, Pose3, Point3> Binary;
   size_t expectedTraceSize = sizeof(Binary::Record);
   EXPECT_LONGS_EQUAL(expectedTraceSize, binary::p_cam.traceSize());
 }
@@ -180,17 +189,26 @@ TEST(Expression, TreeKeys) {
 TEST(Expression, TreeDimensions) {
   map<Key, int> actual, expected = map_list_of<Key, int>(1, 6)(2, 3)(3, 5);
   tree::uv_hat.dims(actual);
-  EXPECT(actual==expected);
+  EXPECT(actual == expected);
 }
 /* ************************************************************************* */
 // TraceSize
 TEST(Expression, TreeTraceSize) {
-  typedef UnaryExpression<Point2, Point3> Unary;
-  typedef BinaryExpression<Point3, Pose3, Point3> Binary1;
-  typedef BinaryExpression<Point2, Point2, Cal3_S2> Binary2;
-  size_t expectedTraceSize = sizeof(Unary::Record) + sizeof(Binary1::Record)
-      + sizeof(Binary2::Record);
-  EXPECT_LONGS_EQUAL(expectedTraceSize, tree::uv_hat.traceSize());
+  typedef internal::BinaryExpression<Point3, Pose3, Point3> Binary1;
+  EXPECT_LONGS_EQUAL(internal::upAligned(sizeof(Binary1::Record)),
+      tree::p_cam.traceSize());
+
+  typedef internal::UnaryExpression<Point2, Point3> Unary;
+  EXPECT_LONGS_EQUAL(
+      internal::upAligned(sizeof(Unary::Record)) + tree::p_cam.traceSize(),
+      tree::projection.traceSize());
+
+  EXPECT_LONGS_EQUAL(0, tree::K.traceSize());
+
+  typedef internal::BinaryExpression<Point2, Cal3_S2, Point2> Binary2;
+  EXPECT_LONGS_EQUAL(
+      internal::upAligned(sizeof(Binary2::Record)) + tree::K.traceSize()
+          + tree::projection.traceSize(), tree::uv_hat.traceSize());
 }
 /* ************************************************************************* */
 
@@ -234,7 +252,8 @@ TEST(Expression, compose3) {
 /* ************************************************************************* */
 // Test with ternary function
 Rot3 composeThree(const Rot3& R1, const Rot3& R2, const Rot3& R3,
-    OptionalJacobian<3, 3> H1, OptionalJacobian<3, 3> H2, OptionalJacobian<3, 3> H3) {
+    OptionalJacobian<3, 3> H1, OptionalJacobian<3, 3> H2,
+    OptionalJacobian<3, 3> H3) {
   // return dummy derivatives (not correct, but that's ok for testing here)
   if (H1)
     *H1 = eye(3);

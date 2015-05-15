@@ -467,7 +467,7 @@ namespace gtsam {
 
     // find highest label among branches
     boost::optional<L> highestLabel;
-    boost::optional<size_t> nrChoices;
+    size_t nrChoices = 0;
     for (Iterator it = begin; it != end; it++) {
       if (it->root_->isLeaf())
         continue;
@@ -475,22 +475,21 @@ namespace gtsam {
           boost::dynamic_pointer_cast<const Choice>(it->root_);
       if (!highestLabel || c->label() > *highestLabel) {
         highestLabel.reset(c->label());
-        nrChoices.reset(c->nrChoices());
+        nrChoices = c->nrChoices();
       }
     }
 
     // if label is already in correct order, just put together a choice on label
-    if (!highestLabel || !nrChoices || label > *highestLabel) {
+    if (!nrChoices || !highestLabel || label > *highestLabel) {
       boost::shared_ptr<Choice> choiceOnLabel(new Choice(label, end - begin));
       for (Iterator it = begin; it != end; it++)
         choiceOnLabel->push_back(it->root_);
       return Choice::Unique(choiceOnLabel);
     } else {
       // Set up a new choice on the highest label
-      boost::shared_ptr<Choice> choiceOnHighestLabel(
-          new Choice(*highestLabel, *nrChoices));
+      boost::shared_ptr<Choice> choiceOnHighestLabel(new Choice(*highestLabel, nrChoices));
       // now, for all possible values of highestLabel
-      for (size_t index = 0; index < *nrChoices; index++) {
+      for (size_t index = 0; index < nrChoices; index++) {
         // make a new set of functions for composing by iterating over the given
         // functions, and selecting the appropriate branch.
         std::vector<DecisionTree> functions;

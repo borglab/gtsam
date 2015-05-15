@@ -44,7 +44,6 @@ ImuFactor::PreintegratedMeasurements::PreintegratedMeasurements(
 //------------------------------------------------------------------------------
 void ImuFactor::PreintegratedMeasurements::print(const string& s) const {
   PreintegrationBase::print(s);
-  cout << "  preintMeasCov = \n [ " << preintMeasCov_ << " ]" << endl;
 }
 
 //------------------------------------------------------------------------------
@@ -75,8 +74,7 @@ void ImuFactor::PreintegratedMeasurements::integrateMeasurement(
   const Rot3 Rincr = Rot3::Expmap(integratedOmega, D_Rincr_integratedOmega); // rotation increment computed from the current rotation rate measurement
 
   // Update Jacobians
-  updatePreintegratedJacobians(correctedAcc, D_Rincr_integratedOmega, Rincr,
-      deltaT);
+  updatePreintegratedJacobians(correctedAcc, D_Rincr_integratedOmega, Rincr, deltaT);
 
   // Update preintegrated measurements (also get Jacobian)
   const Matrix3 R_i = deltaRij(); // store this, which is useful to compute G_test
@@ -89,8 +87,8 @@ void ImuFactor::PreintegratedMeasurements::integrateMeasurement(
   // preintMeasCov = F * preintMeasCov * F.transpose() + G * (1/deltaT) * measurementCovariance * G.transpose();
   // NOTE 1: (1/deltaT) allows to pass from continuous time noise to discrete time noise
   // measurementCovariance_discrete = measurementCovariance_contTime * (1/deltaT)
-  // NOTE 2: the computation of G * (1/deltaT) * measurementCovariance * G.transpose() is done blockwise,
-  // as G and measurementCovariance are blockdiagonal matrices
+  // NOTE 2: the computation of G * (1/deltaT) * measurementCovariance * G.transpose() is done block-wise,
+  // as G and measurementCovariance are block-diagonal matrices
   preintMeasCov_ = F * preintMeasCov_ * F.transpose();
   preintMeasCov_.block<3, 3>(0, 0) += integrationCovariance() * deltaT;
   preintMeasCov_.block<3, 3>(3, 3) += R_i * accelerometerCovariance()
@@ -156,7 +154,8 @@ void ImuFactor::print(const string& s, const KeyFormatter& keyFormatter) const {
       << ")\n";
   ImuFactorBase::print("");
   _PIM_.print("  preintegrated measurements:");
-  this->noiseModel_->print("  noise model: ");
+  // Print standard deviations on covariance only
+  cout << "  noise model sigmas: " << this->noiseModel_->sigmas().transpose() << endl;
 }
 
 //------------------------------------------------------------------------------

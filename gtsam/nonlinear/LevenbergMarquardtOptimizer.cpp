@@ -25,9 +25,10 @@
 
 #include <boost/algorithm/string.hpp>
 #include <boost/range/adaptor/map.hpp>
+#include <fstream>
+#include <limits>
 #include <string>
 #include <cmath>
-#include <fstream>
 
 using namespace std;
 
@@ -178,7 +179,7 @@ GaussianFactorGraph::shared_ptr LevenbergMarquardtOptimizer::buildDampedSystem(
         SharedDiagonal model = noiseModel::Isotropic::Sigma(dim, sigma);
         damped += boost::make_shared<JacobianFactor>(key_vector.first, A, b,
             model);
-      } catch (std::exception e) {
+      } catch (const std::exception& e) {
         // Don't attempt any damping if no key found in diagonal
         continue;
       }
@@ -247,7 +248,7 @@ void LevenbergMarquardtOptimizer::iterate() {
     double modelFidelity = 0.0;
     bool step_is_successful = false;
     bool stopSearchingLambda = false;
-    double newError;
+    double newError = numeric_limits<double>::infinity();
     Values newValues;
     VectorValues delta;
 
@@ -255,7 +256,7 @@ void LevenbergMarquardtOptimizer::iterate() {
     try {
       delta = solve(dampedSystem, state_.values, params_);
       systemSolvedSuccessfully = true;
-    } catch (IndeterminantLinearSystemException) {
+    } catch (const IndeterminantLinearSystemException& e) {
       systemSolvedSuccessfully = false;
     }
 

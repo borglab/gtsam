@@ -98,7 +98,8 @@ if(    NOT cmake_build_type_tolower STREQUAL ""
    AND NOT cmake_build_type_tolower STREQUAL "release"
    AND NOT cmake_build_type_tolower STREQUAL "timing"
    AND NOT cmake_build_type_tolower STREQUAL "profiling"
-   AND NOT cmake_build_type_tolower STREQUAL "relwithdebinfo")
+   AND NOT cmake_build_type_tolower STREQUAL "relwithdebinfo"
+   AND NOT cmake_build_type_tolower STREQUAL "minsizerel")
   message(FATAL_ERROR "Unknown build type \"${CMAKE_BUILD_TYPE}\". Allowed values are None, Debug, Release, Timing, Profiling, RelWithDebInfo (case-insensitive).")
 endif()
 

@@ -270,7 +270,10 @@ public:
   /// print
   void print(const std::string& s = "PinholePose") const {
     Base::print(s);
-    K_->print(s + ".calibration");
+    if (!K_)
+      std::cout << "s No calibration given" << std::endl;
+    else
+      K_->print(s + ".calibration");
   }
 
   /// @}
