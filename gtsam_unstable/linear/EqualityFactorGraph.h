@@ -26,6 +26,19 @@ namespace gtsam {
 class EqualityFactorGraph : public FactorGraph<LinearEquality> {
 public:
   typedef boost::shared_ptr<EqualityFactorGraph> shared_ptr;
+
+  /** compute error of a guess.
+   * TODO: This code is duplicated in GaussianFactorGraph and NonlinearFactorGraph!!
+   * Remove it!
+   */
+  double error(const VectorValues& x) const {
+    double total_error = 0.;
+    BOOST_FOREACH(const sharedFactor& factor, *this){
+      if(factor)
+        total_error += factor->error(x);
+    }
+    return total_error;
+  }
 };
 
 /// traits

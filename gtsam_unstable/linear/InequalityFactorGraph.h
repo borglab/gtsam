@@ -41,6 +41,18 @@ public:
       double tol = 1e-9) const {
     return Base::equals(other, tol);
   }
+
+  /**
+   * Compute error of a guess.
+   * Infinity error if it violates an inequality; zero otherwise. */
+  double error(const VectorValues& x) const {
+    BOOST_FOREACH(const sharedFactor& factor, *this){
+      if(factor)
+        if (factor->error(x) > 0)
+          return std::numeric_limits<double>::infinity();
+    }
+    return 0.0;
+  }
 };
 
 /// traits
