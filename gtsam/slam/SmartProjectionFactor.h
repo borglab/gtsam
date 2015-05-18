@@ -243,7 +243,7 @@ public:
       // We triangulate the 3D position of the landmark
       try {
         // std::cout << "triangulatePoint3 i \n" << rankTolerance << std::endl;
-        point_ = triangulatePoint3<CALIBRATION>(cameras, this->measured_,
+        point_ = triangulatePoint3<Camera>(cameras, this->measured_,
             rankTolerance_, enableEPI_);
         degenerate_ = false;
         cheiralityException_ = false;

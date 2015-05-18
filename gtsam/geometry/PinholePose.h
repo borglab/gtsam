@@ -37,6 +37,8 @@ class GTSAM_EXPORT PinholeBaseK: public PinholeBase {
 
 public  :
 
+  typedef Calibration CalibrationType;
+
   /// @name Standard Constructors
   /// @{
 

@@ -102,9 +102,9 @@ std::pair<NonlinearFactorGraph, Values> triangulationGraph(
  * @param initialEstimate
  * @return graph and initial values
  */
-template<class CALIBRATION>
+template<class CAMERA>
 std::pair<NonlinearFactorGraph, Values> triangulationGraph(
-    const std::vector<PinholeCamera<CALIBRATION> >& cameras,
+    const std::vector<CAMERA>& cameras,
     const std::vector<Point2>& measurements, Key landmarkKey,
     const Point3& initialEstimate) {
   Values values;
@@ -113,8 +113,8 @@ std::pair<NonlinearFactorGraph, Values> triangulationGraph(
   static SharedNoiseModel unit2(noiseModel::Unit::Create(2));
   static SharedNoiseModel prior_model(noiseModel::Isotropic::Sigma(6, 1e-6));
   for (size_t i = 0; i < measurements.size(); i++) {
-    const PinholeCamera<CALIBRATION>& camera_i = cameras[i];
-    graph.push_back(TriangulationFactor<CALIBRATION> //
+    const CAMERA& camera_i = cameras[i];
+    graph.push_back(TriangulationFactor<typename CAMERA::CalibrationType> //
         (camera_i, measurements[i], unit2, landmarkKey));
   }
   return std::make_pair(graph, values);
@@ -160,9 +160,9 @@ Point3 triangulateNonlinear(const std::vector<Pose3>& poses,
  * @param initialEstimate
  * @return refined Point3
  */
-template<class CALIBRATION>
+template<class CAMERA>
 Point3 triangulateNonlinear(
-    const std::vector<PinholeCamera<CALIBRATION> >& cameras,
+    const std::vector<CAMERA>& cameras,
     const std::vector<Point2>& measurements, const Point3& initialEstimate) {
 
   // Create a factor graph and initial values
@@ -252,9 +252,9 @@ Point3 triangulatePoint3(const std::vector<Pose3>& poses,
  * @param optimize Flag to turn on nonlinear refinement of triangulation
  * @return Returns a Point3
  */
-template<class CALIBRATION>
+template<class CAMERA>
 Point3 triangulatePoint3(
-    const std::vector<PinholeCamera<CALIBRATION> >& cameras,
+    const std::vector<CAMERA>& cameras,
     const std::vector<Point2>& measurements, double rank_tol = 1e-9,
     bool optimize = false) {
 
@@ -265,11 +265,11 @@ Point3 triangulatePoint3(
     throw(TriangulationUnderconstrainedException());
 
   // construct projection matrices from poses & calibration
-  typedef PinholeCamera<CALIBRATION> Camera;
+  typedef PinholeCamera<typename CAMERA::CalibrationType> Camera;
   std::vector<Matrix34> projection_matrices;
   BOOST_FOREACH(const Camera& camera, cameras)
     projection_matrices.push_back(
-        CameraProjectionMatrix<CALIBRATION>(camera.calibration())(
+        CameraProjectionMatrix<typename CAMERA::CalibrationType>(camera.calibration())(
             camera.pose()));
   Point3 point = triangulateDLT(projection_matrices, measurements, rank_tol);
 
