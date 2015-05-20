@@ -24,10 +24,16 @@
 namespace gtsam {
 
   /// A simple camera class with a Cal3_S2 calibration
-//  typedef PinholeCamera<Cal3_S2> SimpleCamera;
-class SimpleCamera : public PinholeCamera<Cal3_S2> {
+typedef gtsam::PinholeCamera<gtsam::Cal3_S2> PinholeCameraCal3_S2;
+
+/**
+ * @deprecated: SimpleCamera for backwards compatability with GTSAM 3.x
+ * Use PinholeCameraCal3_S2 instead
+ */
+class SimpleCamera : public PinholeCameraCal3_S2 {
 
   typedef PinholeCamera<Cal3_S2> Base;
+  typedef boost::shared_ptr<SimpleCamera> shared_ptr;
 
 public:
 
@@ -97,6 +103,10 @@ public:
    SimpleCamera(const Vector &v, const Vector &K) :
        Base(v, K) {
    }
+
+   /// Copy this object as its actual derived type.
+   SimpleCamera::shared_ptr clone() const { return boost::make_shared<SimpleCamera>(*this); }
+
 
    /// @}
    /// @name Manifold

@@ -861,7 +861,7 @@ class PinholeCamera {
   void serialize() const;
 };
 
-class SimpleCamera {
+virtual class SimpleCamera {
   // Standard Constructors and Named Constructors
   SimpleCamera();
   SimpleCamera(const gtsam::Pose3& pose);
@@ -898,7 +898,8 @@ class SimpleCamera {
 
 };
 
-// Do typedefs here so we can also define SimpleCamera
+// Some typedefs for common camera types
+// PinholeCameraCal3_S2 is the same as SimpleCamera above
 typedef gtsam::PinholeCamera<gtsam::Cal3_S2> PinholeCameraCal3_S2;
 typedef gtsam::PinholeCamera<gtsam::Cal3DS2> PinholeCameraCal3DS2;
 typedef gtsam::PinholeCamera<gtsam::Cal3Unified> PinholeCameraCal3Unified;
