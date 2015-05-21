@@ -383,11 +383,6 @@ class Point3 {
   void serialize() const;
 };
 
-class OptionalPoint3 {
-  bool is_initialized() const;
-  gtsam::Point3 value();
-};
-
 class Rot2 {
   // Standard Constructors and Named Constructors
   Rot2();
@@ -866,8 +861,45 @@ class PinholeCamera {
   void serialize() const;
 };
 
-// Do typedefs here so we can also define SimpleCamera
-typedef gtsam::PinholeCamera<gtsam::Cal3_S2> SimpleCamera;
+virtual class SimpleCamera {
+  // Standard Constructors and Named Constructors
+  SimpleCamera();
+  SimpleCamera(const gtsam::Pose3& pose);
+  SimpleCamera(const gtsam::Pose3& pose, const gtsam::Cal3_S2& K);
+  static gtsam::SimpleCamera Level(const gtsam::Cal3_S2& K, const gtsam::Pose2& pose, double height);
+  static gtsam::SimpleCamera Level(const gtsam::Pose2& pose, double height);
+  static gtsam::SimpleCamera Lookat(const gtsam::Point3& eye, const gtsam::Point3& target,
+      const gtsam::Point3& upVector, const gtsam::Cal3_S2& K);
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::SimpleCamera& camera, double tol) const;
+
+  // Standard Interface
+  gtsam::Pose3 pose() const;
+  gtsam::Cal3_S2 calibration() const;
+
+  // Manifold
+  gtsam::SimpleCamera retract(const Vector& d) const;
+  Vector localCoordinates(const gtsam::SimpleCamera& T2) const;
+  size_t dim() const;
+  static size_t Dim();
+
+  // Transformations and measurement functions
+  static gtsam::Point2 project_to_camera(const gtsam::Point3& cameraPoint);
+  pair<gtsam::Point2,bool> projectSafe(const gtsam::Point3& pw) const;
+  gtsam::Point2 project(const gtsam::Point3& point);
+  gtsam::Point3 backproject(const gtsam::Point2& p, double depth) const;
+  double range(const gtsam::Point3& point);
+  double range(const gtsam::Pose3& point);
+
+  // enabling serialization functionality
+  void serialize() const;
+
+};
+
+// Some typedefs for common camera types
+// PinholeCameraCal3_S2 is the same as SimpleCamera above
 typedef gtsam::PinholeCamera<gtsam::Cal3_S2> PinholeCameraCal3_S2;
 typedef gtsam::PinholeCamera<gtsam::Cal3DS2> PinholeCameraCal3DS2;
 typedef gtsam::PinholeCamera<gtsam::Cal3Unified> PinholeCameraCal3Unified;
