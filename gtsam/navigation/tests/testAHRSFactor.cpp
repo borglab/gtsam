@@ -132,7 +132,7 @@ TEST(AHRSFactor, Error) {
   pre_int_data.integrateMeasurement(measuredOmega, deltaT);
 
   // Create factor
-  AHRSFactor factor(X(1), X(2), B(1), pre_int_data, omegaCoriolis, false);
+  AHRSFactor factor(X(1), X(2), B(1), pre_int_data, omegaCoriolis, boost::none);
 
   Vector3 errorActual = factor.evaluateError(x1, x2, bias);
 
