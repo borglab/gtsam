@@ -85,60 +85,21 @@ TEST(Cyclic , Invariants) {
 }
 
 //******************************************************************************
+// The Direct sum of Cyclic<2> and Cyclic<2> is *not* Cyclic<4>, but the
+// smallest non-cyclic group called the Klein four-group:
+typedef DirectSum<Cyclic<2>, Cyclic<2> > K4;
+
 namespace gtsam {
 
-template<typename G, typename H>
-class DirectSum: public std::pair<G, H> {
-  BOOST_CONCEPT_ASSERT((IsGroup<G>));  // TODO(frank): check additive
-  BOOST_CONCEPT_ASSERT((IsGroup<H>));  // TODO(frank): check additive
-  BOOST_CONCEPT_ASSERT((IsTestable<G>));
-  BOOST_CONCEPT_ASSERT((IsTestable<H>));
-
-  const G& g() const { return this->first; }
-  const H& h() const { return this->second;}
-
-public:
-  // Construct from two subgroup elements
-  DirectSum(const G& g, const H& h):std::pair<G,H>(g,h) {}
-
-  /// Default constructor yields identity
-  DirectSum():std::pair<G,H>(G::Identity(),H::Identity()) {
+/// Define K4 to be a model of the Additive Group concept, and provide Testable
+template<>
+struct traits<K4> : internal::AdditiveGroupTraits<K4> {
+  static void Print(const K4& m, const string& s = "") {
+    cout << s << "(" << m.first << "," << m.second << ")" << endl;
   }
-
-  /// Identity element
-  static DirectSum Identity() {
-    return DirectSum();
+  static bool Equals(const K4& m1, const K4& m2, double tol = 1e-8) {
+    return m1 == m2;
   }
-  /// Addition
-  DirectSum operator+(const DirectSum& other) const {
-    return DirectSum(g()+other.g(), h()+other.h());
-  }
-  /// Subtraction
-  DirectSum operator-(const DirectSum& other) const {
-    return DirectSum(g()-other.g(), h()-other.h());
-  }
-  /// Inverse
-  DirectSum operator-() const {
-    return DirectSum(- g(), - h());
-  }
-  /// print with optional string
-  void print(const std::string& s = "") const {
-    std::cout << s << "(\n";
-    traits<G>::Print(g());
-    std::cout << ",\n";
-    traits<H>::Print(h());
-    std::cout << ")" << std::endl;
-  }
-  /// equals with an tolerance, prints out message if unequal
-  bool equals(const DirectSum& other, double tol = 1e-9) const {
-    return *this == other; // uses std::pair operator
-  }
-};
-
-/// Define direct sums to be a model of the Additive Group concept
-template<typename G, typename H>
-struct traits<DirectSum<G, H> > : internal::AdditiveGroupTraits<DirectSum<G, H> >, //
-    Testable<DirectSum<G, H> > {
 };
 
 }  // namespace gtsam
@@ -146,16 +107,30 @@ struct traits<DirectSum<G, H> > : internal::AdditiveGroupTraits<DirectSum<G, H> 
 TEST(Cyclic , DirectSum) {
   // The Direct sum of Cyclic<2> and Cyclic<2> is *not* Cyclic<4>, but the
   // smallest non-cyclic group called the Klein four-group:
-  typedef DirectSum<Cyclic<2>, Cyclic<2> > K;
-  BOOST_CONCEPT_ASSERT((IsGroup<K>));
-  BOOST_CONCEPT_ASSERT((IsTestable<K>));
+  typedef DirectSum<Cyclic<2>, Cyclic<2> > K4;
+  BOOST_CONCEPT_ASSERT((IsGroup<K4>));
+  BOOST_CONCEPT_ASSERT((IsTestable<K4>));
 
-  K g(0, 1), h(1, 1);
-  EXPECT(assert_equal(K(0, 1), - g));
-  EXPECT(assert_equal(K(), g + g));
-  EXPECT(assert_equal(K(1, 0), g + h));
-  EXPECT(assert_equal(K(1, 0), g - h));
-  check_group_invariants(g, h);
+  // Refer to http://en.wikipedia.org/wiki/Klein_four-group
+  K4 e(0,0), a(0, 1), b(1, 0), c(1, 1);
+  EXPECT(assert_equal(a, - a));
+  EXPECT(assert_equal(b, - b));
+  EXPECT(assert_equal(c, - c));
+  EXPECT(assert_equal(a, a + e));
+  EXPECT(assert_equal(b, b + e));
+  EXPECT(assert_equal(c, c + e));
+  EXPECT(assert_equal(e, a + a));
+  EXPECT(assert_equal(e, b + b));
+  EXPECT(assert_equal(e, c + c));
+  EXPECT(assert_equal(c, a + b));
+  EXPECT(assert_equal(b, a + c));
+  EXPECT(assert_equal(a, b + c));
+  EXPECT(assert_equal(c, a - b));
+  EXPECT(assert_equal(a, b - c));
+  EXPECT(assert_equal(b, c - a));
+  check_group_invariants(a, b);
+  check_group_invariants(b, c);
+  check_group_invariants(c, a);
 }
 
 //******************************************************************************

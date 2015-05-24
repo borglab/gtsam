@@ -24,6 +24,7 @@
 #include <boost/concept/requires.hpp>
 #include <boost/type_traits/is_base_of.hpp>
 #include <boost/static_assert.hpp>
+#include <utility>
 
 namespace gtsam {
 
@@ -111,6 +112,41 @@ struct MultiplicativeGroupTraits : GroupTraits<Class> {
     static Class Inverse(const Class &g) { return g.inverse();}
 };
 }  // namespace internal
+
+/// Template to construct the direct sum of two additive groups
+template<typename G, typename H>
+class DirectSum: public std::pair<G, H> {
+  BOOST_CONCEPT_ASSERT((IsGroup<G>));  // TODO(frank): check additive
+  BOOST_CONCEPT_ASSERT((IsGroup<H>));  // TODO(frank): check additive
+
+  const G& g() const { return this->first; }
+  const H& h() const { return this->second;}
+
+public:
+  // Construct from two subgroup elements
+  DirectSum(const G& g, const H& h):std::pair<G,H>(g,h) {
+  }
+  /// Default constructor yields identity
+  DirectSum():std::pair<G,H>(G::Identity(),H::Identity()) {
+  }
+  static DirectSum Identity() {
+    return DirectSum();
+  }
+  DirectSum operator+(const DirectSum& other) const {
+    return DirectSum(g()+other.g(), h()+other.h());
+  }
+  DirectSum operator-(const DirectSum& other) const {
+    return DirectSum(g()-other.g(), h()-other.h());
+  }
+  DirectSum operator-() const {
+    return DirectSum(- g(), - h());
+  }
+};
+
+// Define direct sums to be a model of the Additive Group concept
+template<typename G, typename H>
+struct traits<DirectSum<G, H> > : internal::AdditiveGroupTraits<DirectSum<G, H> > {};
+
 }  // namespace gtsam
 
 /**
