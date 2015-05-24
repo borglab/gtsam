@@ -95,6 +95,16 @@ struct GroupTraits {
   static Class Identity() { return Class(); }
 };
 
+/// A helper class that implements the traits interface for multiplicative groups.
+/// Assumes existence of operator* and inverse method
+template<class Class>
+struct MultiplicativeGroupTraits : GroupTraits<Class> {
+    typedef multiplicative_group_tag group_flavor; \
+    static Class Compose(const Class &g, const Class & h) { return g * h;} \
+    static Class Between(const Class &g, const Class & h) { return g.inverse() * h;} \
+    static Class Inverse(const Class &g) { return g.inverse();}
+};
+
 /// A helper class that implements the traits interface for additive groups.
 /// Assumes existence of three additive operators
 template<class Class>
@@ -105,16 +115,53 @@ struct AdditiveGroupTraits : GroupTraits<Class> {
     static Class Inverse(const Class &g) { return -g;}
 };
 
-/// A helper class that implements the traits interface for multiplicative groups.
-/// Assumes existence of operators * and /, as well as inverse method
-template<class Class>
-struct MultiplicativeGroupTraits : GroupTraits<Class> {
-    typedef multiplicative_group_tag group_flavor; \
-    static Class Compose(const Class &g, const Class & h) { return g * h;} \
-    static Class Between(const Class &g, const Class & h) { return g.inverse() * h;} \
-    static Class Inverse(const Class &g) { return g.inverse();}
-};
 }  // namespace internal
+
+/// compose multiple times
+template<typename G>
+BOOST_CONCEPT_REQUIRES(((IsGroup<G>)),(G)) //
+compose_pow(const G& g, size_t n) {
+  if (n == 0)
+  return traits<G>::Identity();
+  else if (n == 1)
+  return g;
+  else
+  return traits<G>::Compose(compose_pow(g, n - 1), g);
+}
+
+/// Template to construct the direct product of two arbitrary groups
+/// Assumes nothing except group structure from G and H
+template<typename G, typename H>
+class DirectProduct: public std::pair<G, H> {
+  BOOST_CONCEPT_ASSERT((IsGroup<G>));
+  BOOST_CONCEPT_ASSERT((IsGroup<H>));
+
+  const G& g() const {return this->first;}
+  const H& h() const {return this->second;}
+
+public:
+  // Construct from two subgroup elements
+  DirectProduct(const G& g, const H& h):std::pair<G,H>(g,h) {
+  }
+  /// Default constructor yields identity
+  DirectProduct():std::pair<G,H>(traits<G>::Identity(),traits<H>::Identity()) {
+  }
+  static DirectProduct Identity() {
+    return DirectProduct();
+  }
+  DirectProduct operator*(const DirectProduct& other) const {
+    return DirectProduct(traits<G>::Compose(g(),other.g()), traits<H>::Compose(h(),other.h()));
+  }
+  DirectProduct inverse() const {
+    return DirectProduct(g().inverse(), h().inverse());
+  }
+};
+
+// Define any direct product group to be a model of the multiplicative Group concept
+template<typename G, typename H>
+struct traits<DirectProduct<G, H> > : internal::MultiplicativeGroupTraits<
+    DirectProduct<G, H> > {
+};
 
 /// Template to construct the direct sum of two additive groups
 /// Assumes existence of three additive operators for both groups
