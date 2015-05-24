@@ -22,6 +22,10 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/base/numericalDerivative.h>
 
+#include <CppUnitLite/TestResult.h>
+#include <CppUnitLite/Test.h>
+#include <CppUnitLite/Failure.h>
+
 namespace gtsam {
 
 /**
@@ -30,9 +34,8 @@ namespace gtsam {
  * involved to evaluate the factor. If all the machinery of gtsam is working
  * correctly, we should get the correct numerical derivatives out the other side.
  */
-JacobianFactor linearizeNumerically(const NoiseModelFactor& factor,
-    const Values& values, double delta = 1e-5) {
-
+JacobianFactor linearizeNumerically(const NoiseModelFactor& factor, const Values& values,
+                                    double delta = 1e-5) {
   // We will fill a vector of key/Jacobians pairs (a map would sort)
   std::vector<std::pair<Key, Matrix> > jacobians;
 
@@ -58,11 +61,42 @@ JacobianFactor linearizeNumerically(const NoiseModelFactor& factor,
       Eigen::VectorXd right = factor.whitenedError(eval_values);
       J.col(col) = (left - right) * (1.0 / (2.0 * delta));
     }
-    jacobians.push_back(std::make_pair(key,J));
+    jacobians.push_back(std::make_pair(key, J));
   }
 
   // Next step...return JacobianFactor
   return JacobianFactor(jacobians, -e);
 }
 
-} // namespace gtsam
+namespace internal {
+
+// CPPUnitLite-style test for linearization of a factor
+void testFactorJacobians(TestResult& result_, const std::string& name_,
+                         const NoiseModelFactor& factor, const gtsam::Values& values, double delta,
+                         double tolerance) {
+  // Create expected value by numerical differentiation
+  JacobianFactor expected = linearizeNumerically(factor, values, delta);
+
+  // Create actual value by linearize
+  boost::shared_ptr<JacobianFactor> actual =  //
+      boost::dynamic_pointer_cast<JacobianFactor>(factor.linearize(values));
+
+  // Check cast result and then equality
+  CHECK(actual);
+  EXPECT(assert_equal(expected, *actual, tolerance));
+}
+
+}  // namespace internal
+}  // namespace gtsam
+
+/// \brief Check the Jacobians produced by a factor against finite differences.
+/// \param factor The factor to test.
+/// \param values Values filled in for testing the Jacobians.
+/// \param numerical_derivative_step The step to use when computing the numerical derivative
+/// Jacobians
+/// \param tolerance The numerical tolerance to use when comparing Jacobians.
+#define EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, numerical_derivative_step, tolerance) \
+  {                                                                                           \
+    gtsam::internal::testFactorJacobians(result_, name_, factor, values,                      \
+                                         numerical_derivative_step, tolerance);               \
+  }
