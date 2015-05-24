@@ -16,10 +16,8 @@
  **/
 
 #include <gtsam/base/Group.h>
-#include <cstddef>
-#include <string>
-#include <iostream>
-#include <assert.h>
+#include <gtsam/base/Testable.h>
+#include <iostream> // for cout :-(
 
 namespace gtsam {
 
@@ -33,7 +31,7 @@ public:
       i_(i) {
     assert(i < N);
   }
-  /// Idenity element
+  /// Identity element
   static Cyclic Identity() {
     return Cyclic(0);
   }
@@ -63,20 +61,10 @@ public:
   }
 };
 
-/// Define cyclic group traits to be a model of the Group concept
+/// Define cyclic group traits to be a model of the Additive Group concept
 template<size_t N>
-struct traits<Cyclic<N> > {
-  typedef group_tag structure_category;GTSAM_ADDITIVE_GROUP(Cyclic<N>)
-  static Cyclic<N> Identity() {
-    return Cyclic<N>::Identity();
-  }
-  static bool Equals(const Cyclic<N>& a, const Cyclic<N>& b,
-      double tol = 1e-9) {
-    return a.equals(b, tol);
-  }
-  static void Print(const Cyclic<N>& c, const std::string &s = "") {
-    c.print(s);
-  }
+struct traits<Cyclic<N> > : internal::AdditiveGroupTraits<Cyclic<N> >, //
+    Testable<Cyclic<N> > {
 };
 
 } // \namespace gtsam

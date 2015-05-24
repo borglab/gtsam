@@ -13,8 +13,9 @@
  * @file Group.h
  *
  * @brief Concept check class for variable types with Group properties
- * @date Nov 5, 2011
+ * @date November, 2011
  * @author Alex Cunningham
+ * @author Frank Dellaert
  */
 
 #pragma once
@@ -83,21 +84,34 @@ check_group_invariants(const G& a, const G& b, double tol = 1e-9) {
       && traits<G>::Equals(traits<G>::Compose(a, traits<G>::Between(a, b)), b, tol);
 }
 
-/// Macro to add group traits, additive flavor
-#define GTSAM_ADDITIVE_GROUP(GROUP) \
-    typedef additive_group_tag group_flavor; \
-    static GROUP Compose(const GROUP &g, const GROUP & h) { return g + h;} \
-    static GROUP Between(const GROUP &g, const GROUP & h) { return h - g;} \
-    static GROUP Inverse(const GROUP &g) { return -g;}
+namespace internal {
 
-/// Macro to add group traits, multiplicative flavor
-#define GTSAM_MULTIPLICATIVE_GROUP(GROUP) \
-    typedef additive_group_tag group_flavor; \
-    static GROUP Compose(const GROUP &g, const GROUP & h) { return g * h;} \
-    static GROUP Between(const GROUP &g, const GROUP & h) { return g.inverse() * h;} \
-    static GROUP Inverse(const GROUP &g) { return g.inverse();}
+/// A helper class that implements the traits interface for groups.
+template<class Class>
+struct GroupTraits {
+  typedef group_tag structure_category;
+  static Class Identity() { return Class::Identity(); }
+};
 
-} // \ namespace gtsam
+/// A helper class that implements the traits interface for additive groups.
+template<class Class>
+struct AdditiveGroupTraits : GroupTraits<Class> {
+    typedef additive_group_tag group_flavor; \
+    static Class Compose(const Class &g, const Class & h) { return g + h;} \
+    static Class Between(const Class &g, const Class & h) { return h - g;} \
+    static Class Inverse(const Class &g) { return -g;}
+};
+
+/// A helper class that implements the traits interface for multiplicative groups.
+template<class Class>
+struct MultiplicativeGroupTraits : GroupTraits<Class> {
+    typedef additive_group_tag group_flavor; \
+    static Class Compose(const Class &g, const Class & h) { return g * h;} \
+    static Class Between(const Class &g, const Class & h) { return g.inverse() * h;} \
+    static Class Inverse(const Class &g) { return g.inverse();}
+};
+}  // namespace internal
+}  // namespace gtsam
 
 /**
  * Macros for using the IsGroup
