@@ -95,6 +95,21 @@ TEST( testPoseRTV, Lie ) {
 }
 
 /* ************************************************************************* */
+TEST(testPoseRTV, localCoordinates) {
+  Point3 i1(0, 1, 0), j1(-1, 0, 0), k1(0, 0, 1);
+  Pose3 x1(Rot3(i1, j1, k1), Point3(5.0, 1.0, 0.0));
+  Vector3 v1(Vector3(0.5, 0.0, 0.0));
+
+  Pose3 x2(Rot3(i1, j1, k1).expmap(Vector3(0.1, 0.2, 0.3)), Point3(5.5, 1.0, 6.0));
+  Vector3 v2(Vector3(0.5, 4.0, 3.0));
+
+  PoseRTV rtv1(x1,v1), rtv2(x2,v2);
+  Vector9 expected, actual = rtv1.localCoordinates(rtv2);
+  expected << 0.1, 0.2, 0.3, 0.0, -0.5, 6.0, 4.0, 0.0, 3.0;
+  EXPECT(assert_equal(expected, actual, 1e-9));
+}
+
+/* ************************************************************************* */
 TEST( testPoseRTV, dynamics_identities ) {
   // general dynamics should produce the same measurements as the imuPrediction function
   PoseRTV x0, x1, x2, x3, x4;
