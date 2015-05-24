@@ -7,6 +7,55 @@
 
 #pragma once
 
+#include <gtsam/base/Manifold.h>
+
+namespace gtsam {
+
+/// CRTP to construct the product manifold of two other manifolds, M1 and M2
+/// Assumes manifold structure from M1 and M2, and binary constructor
+template<class Derived, typename M1, typename M2>
+class ProductManifold: public std::pair<M1, M2> {
+  BOOST_CONCEPT_ASSERT((IsManifold<M1>));
+  BOOST_CONCEPT_ASSERT((IsManifold<M2>));
+
+private:
+  const M1& g() const {return this->first;}
+  const M2& h() const {return this->second;}
+
+public:
+  // Dimension of the manifold
+  enum { dimension = M1::dimension + M2::dimension };
+
+  typedef Eigen::Matrix<double, dimension, 1> TangentVector;
+
+  /// Default constructor yields identity
+  ProductManifold():std::pair<M1,M2>(traits<M1>::Identity(),traits<M2>::Identity()) {}
+
+  // Construct from two subgroup elements
+  ProductManifold(const M1& g, const M2& h):std::pair<M1,M2>(g,h) {}
+
+  /// Retract delta to manifold
+  Derived retract(const TangentVector& xi) const {
+    return Derived(traits<M1>::Retract(g(),xi.head(M1::dimension)),
+        traits<M2>::Retract(h(),xi.tail(M2::dimension)));
+  }
+
+  /// Compute the coordinates in the tangent space
+  TangentVector localCoordinates(const Derived& other) const {
+    TangentVector xi;
+    xi << traits<M1>::Local(g(),other.g()), traits<M2>::Local(h(),other.h());
+    return xi;
+  }
+};
+
+// Define any direct product group to be a model of the multiplicative Group concept
+template<class Derived, typename M1, typename M2>
+struct traits<ProductManifold<Derived, M1, M2> > : internal::Manifold<
+    ProductManifold<Derived, M1, M2> > {
+};
+
+}  // namespace gtsam
+
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/geometry/Point2.h>
@@ -20,17 +69,14 @@ namespace gtsam {
  * but here we choose instead to parameterize it as a (Rot3,Unit3) pair.
  * We can then non-linearly optimize immediately on this 5-dimensional manifold.
  */
-class GTSAM_EXPORT EssentialMatrix {
+class GTSAM_EXPORT EssentialMatrix : public ProductManifold<EssentialMatrix, Rot3, Unit3> {
 
 private:
 
-  Rot3 aRb_; ///< Rotation between a and b
-  Unit3 aTb_; ///< translation direction from a to b
+  typedef ProductManifold<EssentialMatrix, Rot3, Unit3> Base;
   Matrix3 E_; ///< Essential matrix
 
 public:
-
-  enum { dimension = 5 };
 
   /// Static function to convert Point2 to homogeneous coordinates
   static Vector3 Homogeneous(const Point2& p) {
@@ -42,12 +88,12 @@ public:
 
   /// Default constructor
   EssentialMatrix() :
-      aTb_(1, 0, 0), E_(aTb_.skew()) {
+      Base(Rot3(), Unit3(1, 0, 0)), E_(direction().skew()) {
   }
 
   /// Construct from rotation and translation
   EssentialMatrix(const Rot3& aRb, const Unit3& aTb) :
-      aRb_(aRb), aTb_(aTb), E_(aTb_.skew() * aRb_.matrix()) {
+      Base(aRb, aTb), E_(direction().skew() * rotation().matrix()) {
   }
 
   /// Named constructor converting a Pose3 with scale to EssentialMatrix (no scale)
@@ -72,29 +118,9 @@ public:
 
   /// assert equality up to a tolerance
   bool equals(const EssentialMatrix& other, double tol = 1e-8) const {
-    return aRb_.equals(other.aRb_, tol) && aTb_.equals(other.aTb_, tol);
+    return rotation().equals(other.rotation(), tol)
+        && direction().equals(other.direction(), tol);
   }
-
-  /// @}
-
-  /// @name Manifold
-  /// @{
-
-  /// Dimensionality of tangent space = 5 DOF
-  inline static size_t Dim() {
-    return 5;
-  }
-
-  /// Return the dimensionality of the tangent space
-  size_t dim() const {
-    return 5;
-  }
-
-  /// Retract delta to manifold
-  EssentialMatrix retract(const Vector& xi) const;
-
-  /// Compute the coordinates in the tangent space
-  Vector5 localCoordinates(const EssentialMatrix& other) const;
 
   /// @}
 
@@ -103,12 +129,12 @@ public:
 
   /// Rotation
   inline const Rot3& rotation() const {
-    return aRb_;
+    return this->first;
   }
 
   /// Direction
   inline const Unit3& direction() const {
-    return aTb_;
+    return this->second;
   }
 
   /// Return 3*3 matrix representation
@@ -118,12 +144,12 @@ public:
 
   /// Return epipole in image_a , as Unit3 to allow for infinity
   inline const Unit3& epipole_a() const {
-    return aTb_; // == direction()
+    return direction();
   }
 
   /// Return epipole in image_b, as Unit3 to allow for infinity
   inline Unit3 epipole_b() const {
-    return aRb_.unrotate(aTb_); // == rotation.unrotate(direction())
+    return rotation().unrotate(direction());
   }
 
   /**
@@ -180,8 +206,8 @@ private:
   friend class boost::serialization::access;
   template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-      ar & BOOST_SERIALIZATION_NVP(aRb_);
-      ar & BOOST_SERIALIZATION_NVP(aTb_);
+      ar & BOOST_SERIALIZATION_NVP(rotation());
+      ar & BOOST_SERIALIZATION_NVP(direction());
 
       ar & boost::serialization::make_nvp("E11", E_(0,0));
       ar & boost::serialization::make_nvp("E12", E_(0,1));
@@ -195,7 +221,6 @@ private:
     }
 
   /// @}
-
 };
 
 template<>
