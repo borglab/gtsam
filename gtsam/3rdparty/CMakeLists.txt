@@ -58,10 +58,10 @@ add_subdirectory(ceres)
 include(GeographicLib/cmake/FindGeographicLib.cmake)
 
 # Set up the option to install GeographicLib
-if(GEOGRAPHICLIB_FOUND)
-  set(install_geographiclib_default OFF)
-else()
+if(GEOGRAPHICLIB-NOTFOUND)
   set(install_geographiclib_default ON)
+else()
+  set(install_geographiclib_default OFF)
 endif()
 option(GTSAM_INSTALL_GEOGRAPHICLIB "Build and install the 3rd-party library GeographicLib" ${install_geographiclib_default})
 
