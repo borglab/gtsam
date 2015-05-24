@@ -90,7 +90,7 @@ struct ManifoldImpl<Class, Eigen::Dynamic> {
 
 /// A helper that implements the traits interface for GTSAM manifolds.
 /// To use this for your class type, define:
-/// template<> struct traits<Class> : public Manifold<Class> { };
+/// template<> struct traits<Class> : public internal::Manifold<Class> { };
 template<class Class>
 struct Manifold: Testable<Class>, ManifoldImpl<Class, Class::dimension> {
 

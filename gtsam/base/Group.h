@@ -121,12 +121,9 @@ struct AdditiveGroupTraits : GroupTraits<Class> {
 template<typename G>
 BOOST_CONCEPT_REQUIRES(((IsGroup<G>)),(G)) //
 compose_pow(const G& g, size_t n) {
-  if (n == 0)
-  return traits<G>::Identity();
-  else if (n == 1)
-  return g;
-  else
-  return traits<G>::Compose(compose_pow(g, n - 1), g);
+  if (n == 0) return traits<G>::Identity();
+  else if (n == 1) return g;
+  else return traits<G>::Compose(compose_pow(g, n - 1), g);
 }
 
 /// Template to construct the direct product of two arbitrary groups
@@ -140,15 +137,12 @@ class DirectProduct: public std::pair<G, H> {
   const H& h() const {return this->second;}
 
 public:
-  // Construct from two subgroup elements
-  DirectProduct(const G& g, const H& h):std::pair<G,H>(g,h) {
-  }
   /// Default constructor yields identity
-  DirectProduct():std::pair<G,H>(traits<G>::Identity(),traits<H>::Identity()) {
-  }
-  static DirectProduct Identity() {
-    return DirectProduct();
-  }
+  DirectProduct():std::pair<G,H>(traits<G>::Identity(),traits<H>::Identity()) {}
+
+  // Construct from two subgroup elements
+  DirectProduct(const G& g, const H& h):std::pair<G,H>(g,h) {}
+
   DirectProduct operator*(const DirectProduct& other) const {
     return DirectProduct(traits<G>::Compose(g(),other.g()), traits<H>::Compose(h(),other.h()));
   }
@@ -174,15 +168,12 @@ class DirectSum: public std::pair<G, H> {
   const H& h() const { return this->second;}
 
 public:
-  // Construct from two subgroup elements
-  DirectSum(const G& g, const H& h):std::pair<G,H>(g,h) {
-  }
   /// Default constructor yields identity
-  DirectSum():std::pair<G,H>(traits<G>::Identity(),traits<H>::Identity()) {
-  }
-  static DirectSum Identity() {
-    return DirectSum();
-  }
+  DirectSum():std::pair<G,H>(traits<G>::Identity(),traits<H>::Identity()) {}
+
+  // Construct from two subgroup elements
+  DirectSum(const G& g, const H& h):std::pair<G,H>(g,h) {}
+
   DirectSum operator+(const DirectSum& other) const {
     return DirectSum(g()+other.g(), h()+other.h());
   }
