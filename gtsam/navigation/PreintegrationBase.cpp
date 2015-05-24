@@ -41,6 +41,17 @@ PreintegrationBase::PreintegrationBase(const imuBias::ConstantBias& bias,
       integrationCovariance_(integrationErrorCovariance) {
 }
 
+/// Re-initialize PreintegratedMeasurements
+void PreintegrationBase::resetIntegration() {
+  PreintegratedRotation::resetIntegration();
+  deltaPij_ = Vector3::Zero();
+  deltaVij_ = Vector3::Zero();
+  delPdelBiasAcc_ = Z_3x3;
+  delPdelBiasOmega_ = Z_3x3;
+  delVdelBiasAcc_ = Z_3x3;
+  delVdelBiasOmega_ = Z_3x3;
+}
+
 /// Needed for testable
 void PreintegrationBase::print(const std::string& s) const {
   PreintegratedRotation::print(s);
@@ -60,17 +71,6 @@ bool PreintegrationBase::equals(const PreintegrationBase& other, double tol) con
       && equal_with_abs_tol(delVdelBiasOmega_, other.delVdelBiasOmega_, tol)
       && equal_with_abs_tol(accelerometerCovariance_, other.accelerometerCovariance_, tol)
       && equal_with_abs_tol(integrationCovariance_, other.integrationCovariance_, tol);
-}
-
-/// Re-initialize PreintegratedMeasurements
-void PreintegrationBase::resetIntegration() {
-  PreintegratedRotation::resetIntegration();
-  deltaPij_ = Vector3::Zero();
-  deltaVij_ = Vector3::Zero();
-  delPdelBiasAcc_ = Z_3x3;
-  delPdelBiasOmega_ = Z_3x3;
-  delVdelBiasAcc_ = Z_3x3;
-  delVdelBiasOmega_ = Z_3x3;
 }
 
 /// Update preintegrated measurements
@@ -161,7 +161,7 @@ PoseVelocityBias PreintegrationBase::predict(
   const Vector3 pos_i = pose_i.translation().vector();
 
   // Predict state at time j
-  /* ---------------------------------------------------------------------------------------------------- */
+  /* ---------------------------------------------------------------------------------------------*/
   const Vector3 deltaPij_biascorrected = deltaPij() + delPdelBiasAcc() * biasAccIncr
       + delPdelBiasOmega() * biasOmegaIncr;
   if (deltaPij_biascorrected_out)  // if desired, store this
@@ -177,13 +177,13 @@ PoseVelocityBias PreintegrationBase::predict(
   if (deltaVij_biascorrected_out)  // if desired, store this
     *deltaVij_biascorrected_out = deltaVij_biascorrected;
 
-  Vector3 vel_j = Vector3(
-      vel_i + Rot_i_matrix * deltaVij_biascorrected - 2 * omegaCoriolis.cross(vel_i) * dt  // Coriolis term
-      + gravity * dt);
+  Vector3 vel_j = Vector3(vel_i + Rot_i_matrix * deltaVij_biascorrected -
+                          2 * omegaCoriolis.cross(vel_i) * dt  // Coriolis term
+                          + gravity * dt);
 
   if (use2ndOrderCoriolis) {
-    pos_j += -0.5 * omegaCoriolis.cross(omegaCoriolis.cross(pos_i)) * dt2;  // 2nd order coriolis term for position
-    vel_j += -omegaCoriolis.cross(omegaCoriolis.cross(pos_i)) * dt;  // 2nd order term for velocity
+    pos_j += -0.5 * omegaCoriolis.cross(omegaCoriolis.cross(pos_i)) * dt2;  // for position
+    vel_j += -omegaCoriolis.cross(omegaCoriolis.cross(pos_i)) * dt;  // for velocity
   }
 
   const Rot3 deltaRij_biascorrected = biascorrectedDeltaRij(biasOmegaIncr);

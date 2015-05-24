@@ -52,8 +52,8 @@ struct PoseVelocityBias {
  */
 class PreintegrationBase : public PreintegratedRotation {
 
-  imuBias::ConstantBias biasHat_;  ///< Acceleration and angular rate bias values used during preintegration
-  bool use2ndOrderIntegration_;  ///< Controls the order of integration
+  const imuBias::ConstantBias biasHat_;  ///< Acceleration and gyro bias used for preintegration
+  const bool use2ndOrderIntegration_;  ///< Controls the order of integration
 
   Vector3 deltaPij_;  ///< Preintegrated relative position (does not take into account velocity at time i, see deltap+, in [2]) (in frame i)
   Vector3 deltaVij_;  ///< Preintegrated relative velocity (in global frame)
@@ -78,6 +78,9 @@ class PreintegrationBase : public PreintegratedRotation {
   PreintegrationBase(const imuBias::ConstantBias& bias, const Matrix3& measuredAccCovariance,
                      const Matrix3& measuredOmegaCovariance,
                      const Matrix3&integrationErrorCovariance, const bool use2ndOrderIntegration);
+
+  /// Re-initialize PreintegratedMeasurements
+  void resetIntegration();
 
   /// methods to access class variables
   bool use2ndOrderIntegration() const {
@@ -120,9 +123,6 @@ class PreintegrationBase : public PreintegratedRotation {
 
   /// check equality
   bool equals(const PreintegrationBase& other, double tol) const;
-
-  /// Re-initialize PreintegratedMeasurements
-  void resetIntegration();
 
   /// Update preintegrated measurements
   void updatePreintegratedMeasurements(const Vector3& correctedAcc, const Rot3& incrR,

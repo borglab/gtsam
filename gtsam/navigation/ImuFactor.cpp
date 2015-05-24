@@ -69,25 +69,27 @@ void ImuFactor::PreintegratedMeasurements::integrateMeasurement(
   correctMeasurementsByBiasAndSensorPose(measuredAcc, measuredOmega,
       correctedAcc, correctedOmega, body_P_sensor);
 
-  const Vector3 integratedOmega = correctedOmega * deltaT; // rotation vector describing rotation increment computed from the current rotation rate measurement
-  Matrix3 D_Rincr_integratedOmega; // Right jacobian computed at theta_incr
-  const Rot3 Rincr = Rot3::Expmap(integratedOmega, D_Rincr_integratedOmega); // rotation increment computed from the current rotation rate measurement
+  // rotation increment computed from the current rotation rate measurement
+  const Vector3 integratedOmega = correctedOmega * deltaT;
+  Matrix3 D_Rincr_integratedOmega;  // Right jacobian computed at theta_incr
+  // rotation increment computed from the current rotation rate measurement
+  const Rot3 Rincr = Rot3::Expmap(integratedOmega, D_Rincr_integratedOmega);
 
   // Update Jacobians
   updatePreintegratedJacobians(correctedAcc, D_Rincr_integratedOmega, Rincr, deltaT);
 
   // Update preintegrated measurements (also get Jacobian)
-  const Matrix3 R_i = deltaRij(); // store this, which is useful to compute G_test
-  Matrix9 F; // overall Jacobian wrt preintegrated measurements (df/dx)
+  const Matrix3 R_i = deltaRij();  // store this, which is useful to compute G_test
+  Matrix9 F;  // overall Jacobian wrt preintegrated measurements (df/dx)
   updatePreintegratedMeasurements(correctedAcc, Rincr, deltaT, F);
 
   // first order covariance propagation:
-  // as in [2] we consider a first order propagation that can be seen as a prediction phase in an EKF framework
-  /* ----------------------------------------------------------------------------------------------------------------------- */
-  // preintMeasCov = F * preintMeasCov * F.transpose() + G * (1/deltaT) * measurementCovariance * G.transpose();
+  // as in [2] we consider a first order propagation that can be seen as a prediction phase in EKF
+  /* --------------------------------------------------------------------------------------------*/
+  // preintMeasCov = F * preintMeasCov * F.transpose() + G * (1/deltaT) * measurementCovariance * G'
   // NOTE 1: (1/deltaT) allows to pass from continuous time noise to discrete time noise
   // measurementCovariance_discrete = measurementCovariance_contTime * (1/deltaT)
-  // NOTE 2: the computation of G * (1/deltaT) * measurementCovariance * G.transpose() is done block-wise,
+  // NOTE 2: computation of G * (1/deltaT) * measurementCovariance * G.transpose() done block-wise,
   // as G and measurementCovariance are block-diagonal matrices
   preintMeasCov_ = F * preintMeasCov_ * F.transpose();
   preintMeasCov_.block<3, 3>(0, 0) += integrationCovariance() * deltaT;
@@ -101,23 +103,24 @@ void ImuFactor::PreintegratedMeasurements::integrateMeasurement(
     F_pos_noiseacc = 0.5 * R_i * deltaT * deltaT;
     preintMeasCov_.block<3, 3>(0, 0) += (1 / deltaT) * F_pos_noiseacc
         * accelerometerCovariance() * F_pos_noiseacc.transpose();
-    Matrix3 temp = F_pos_noiseacc * accelerometerCovariance() * R_i.transpose(); // already includes 1/deltaT
+    Matrix3 temp = F_pos_noiseacc * accelerometerCovariance() * R_i.transpose();  // has 1/deltaT
     preintMeasCov_.block<3, 3>(0, 3) += temp;
     preintMeasCov_.block<3, 3>(3, 0) += temp.transpose();
   }
 
   // F_test and G_test are given as output for testing purposes and are not needed by the factor
-  if (F_test) { // This in only for testing
+  if (F_test) {
     (*F_test) << F;
   }
-  if (G_test) { // This in only for testing & documentation, while the actual computation is done block-wise
+  if (G_test) {
+    // This in only for testing & documentation, while the actual computation is done block-wise
     if (!use2ndOrderIntegration())
       F_pos_noiseacc = Z_3x3;
 
     //           intNoise          accNoise           omegaNoise
-    (*G_test) << I_3x3 * deltaT, F_pos_noiseacc, Z_3x3, // pos
-    Z_3x3, R_i * deltaT, Z_3x3, // vel
-    Z_3x3, Z_3x3, D_Rincr_integratedOmega * deltaT; // angle
+    (*G_test) << I_3x3 * deltaT, F_pos_noiseacc, Z_3x3,  // pos
+        Z_3x3, R_i * deltaT, Z_3x3,                      // vel
+        Z_3x3, Z_3x3, D_Rincr_integratedOmega * deltaT;  // angle
   }
 }
 
@@ -176,4 +179,4 @@ Vector ImuFactor::evaluateError(const Pose3& pose_i, const Vector3& vel_i,
       gravity_, omegaCoriolis_, use2ndOrderCoriolis_, H1, H2, H3, H4, H5);
 }
 
-} /// namespace gtsam
+}  // namespace gtsam
