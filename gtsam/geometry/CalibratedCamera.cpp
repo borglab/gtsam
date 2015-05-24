@@ -23,7 +23,6 @@ using namespace std;
 
 namespace gtsam {
 
-#ifndef PINHOLEBASE_LINKING_FIX
 /* ************************************************************************* */
 Matrix26 PinholeBase::Dpose(const Point2& pn, double d) {
   // optimized version of derivatives, see CalibratedCamera.nb
@@ -129,8 +128,6 @@ Point3 PinholeBase::backproject_from_camera(const Point2& p,
     const double depth) {
   return Point3(p.x() * depth, p.y() * depth, depth);
 }
-
-#endif
 
 /* ************************************************************************* */
 CalibratedCamera CalibratedCamera::Level(const Pose2& pose2, double height) {
