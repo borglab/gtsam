@@ -31,9 +31,8 @@ public:
       i_(i) {
     assert(i < N);
   }
-  /// Identity element
-  static Cyclic Identity() {
-    return Cyclic(0);
+  /// Default constructor yields identity
+  Cyclic():i_(0) {
   }
   /// Cast to size_t
   operator size_t() const {
@@ -61,7 +60,7 @@ public:
   }
 };
 
-/// Define cyclic group traits to be a model of the Additive Group concept
+/// Define cyclic group to be a model of the Additive Group concept
 template<size_t N>
 struct traits<Cyclic<N> > : internal::AdditiveGroupTraits<Cyclic<N> >, //
     Testable<Cyclic<N> > {

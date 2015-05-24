@@ -88,13 +88,15 @@ check_group_invariants(const G& a, const G& b, double tol = 1e-9) {
 namespace internal {
 
 /// A helper class that implements the traits interface for groups.
+/// Assumes that constructor yields identity
 template<class Class>
 struct GroupTraits {
   typedef group_tag structure_category;
-  static Class Identity() { return Class::Identity(); }
+  static Class Identity() { return Class(); }
 };
 
 /// A helper class that implements the traits interface for additive groups.
+/// Assumes existence of three additive operators
 template<class Class>
 struct AdditiveGroupTraits : GroupTraits<Class> {
     typedef additive_group_tag group_flavor; \
@@ -104,9 +106,10 @@ struct AdditiveGroupTraits : GroupTraits<Class> {
 };
 
 /// A helper class that implements the traits interface for multiplicative groups.
+/// Assumes existence of operators * and /, as well as inverse method
 template<class Class>
 struct MultiplicativeGroupTraits : GroupTraits<Class> {
-    typedef additive_group_tag group_flavor; \
+    typedef multiplicative_group_tag group_flavor; \
     static Class Compose(const Class &g, const Class & h) { return g * h;} \
     static Class Between(const Class &g, const Class & h) { return g.inverse() * h;} \
     static Class Inverse(const Class &g) { return g.inverse();}
@@ -114,6 +117,7 @@ struct MultiplicativeGroupTraits : GroupTraits<Class> {
 }  // namespace internal
 
 /// Template to construct the direct sum of two additive groups
+/// Assumes existence of three additive operators for both groups
 template<typename G, typename H>
 class DirectSum: public std::pair<G, H> {
   BOOST_CONCEPT_ASSERT((IsGroup<G>));  // TODO(frank): check additive
@@ -127,7 +131,7 @@ public:
   DirectSum(const G& g, const H& h):std::pair<G,H>(g,h) {
   }
   /// Default constructor yields identity
-  DirectSum():std::pair<G,H>(G::Identity(),H::Identity()) {
+  DirectSum():std::pair<G,H>(traits<G>::Identity(),traits<H>::Identity()) {
   }
   static DirectSum Identity() {
     return DirectSum();

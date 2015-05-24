@@ -81,7 +81,7 @@ TEST(Cyclic, Negation2) {
 //******************************************************************************
 TEST(Cyclic , Invariants) {
   G g(2), h(1);
- check_group_invariants(g,h);
+  EXPECT(check_group_invariants(g,h));
 }
 
 //******************************************************************************
@@ -128,9 +128,9 @@ TEST(Cyclic , DirectSum) {
   EXPECT(assert_equal(c, a - b));
   EXPECT(assert_equal(a, b - c));
   EXPECT(assert_equal(b, c - a));
-  check_group_invariants(a, b);
-  check_group_invariants(b, c);
-  check_group_invariants(c, a);
+  EXPECT(check_group_invariants(a, b));
+  EXPECT(check_group_invariants(b, c));
+  EXPECT(check_group_invariants(c, a));
 }
 
 //******************************************************************************
