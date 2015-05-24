@@ -760,15 +760,15 @@ TEST( Pose3, stream)
 TEST(Pose3 , Invariants) {
   Pose3 id;
 
-  check_group_invariants(id,id);
-  check_group_invariants(id,T3);
-  check_group_invariants(T2,id);
-  check_group_invariants(T2,T3);
+  EXPECT(check_group_invariants(id,id));
+  EXPECT(check_group_invariants(id,T3));
+  EXPECT(check_group_invariants(T2,id));
+  EXPECT(check_group_invariants(T2,T3));
 
-  check_manifold_invariants(id,id);
-  check_manifold_invariants(id,T3);
-  check_manifold_invariants(T2,id);
-  check_manifold_invariants(T2,T3);
+  EXPECT(check_manifold_invariants(id,id));
+  EXPECT(check_manifold_invariants(id,T3));
+  EXPECT(check_manifold_invariants(T2,id));
+  EXPECT(check_manifold_invariants(T2,T3));
 }
 
 //******************************************************************************
