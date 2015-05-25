@@ -206,8 +206,8 @@ private:
   friend class boost::serialization::access;
   template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-      ar & BOOST_SERIALIZATION_NVP(rotation());
-      ar & BOOST_SERIALIZATION_NVP(direction());
+      ar & BOOST_SERIALIZATION_NVP(first);
+      ar & BOOST_SERIALIZATION_NVP(second);
 
       ar & boost::serialization::make_nvp("E11", E_(0,0));
       ar & boost::serialization::make_nvp("E12", E_(0,1));
