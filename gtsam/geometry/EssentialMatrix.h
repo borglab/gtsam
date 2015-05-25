@@ -7,58 +7,10 @@
 
 #pragma once
 
-#include <gtsam/base/Manifold.h>
-
-namespace gtsam {
-
-/// CRTP to construct the product manifold of two other manifolds, M1 and M2
-/// Assumes manifold structure from M1 and M2, and binary constructor
-template<class Derived, typename M1, typename M2>
-class ProductManifold: public std::pair<M1, M2> {
-  BOOST_CONCEPT_ASSERT((IsManifold<M1>));
-  BOOST_CONCEPT_ASSERT((IsManifold<M2>));
-
-private:
-  const M1& g() const {return this->first;}
-  const M2& h() const {return this->second;}
-
-public:
-  // Dimension of the manifold
-  enum { dimension = M1::dimension + M2::dimension };
-
-  typedef Eigen::Matrix<double, dimension, 1> TangentVector;
-
-  /// Default constructor yields identity
-  ProductManifold():std::pair<M1,M2>(traits<M1>::Identity(),traits<M2>::Identity()) {}
-
-  // Construct from two subgroup elements
-  ProductManifold(const M1& g, const M2& h):std::pair<M1,M2>(g,h) {}
-
-  /// Retract delta to manifold
-  Derived retract(const TangentVector& xi) const {
-    return Derived(traits<M1>::Retract(g(),xi.head(M1::dimension)),
-        traits<M2>::Retract(h(),xi.tail(M2::dimension)));
-  }
-
-  /// Compute the coordinates in the tangent space
-  TangentVector localCoordinates(const Derived& other) const {
-    TangentVector xi;
-    xi << traits<M1>::Local(g(),other.g()), traits<M2>::Local(h(),other.h());
-    return xi;
-  }
-};
-
-// Define any direct product group to be a model of the multiplicative Group concept
-template<class Derived, typename M1, typename M2>
-struct traits<ProductManifold<Derived, M1, M2> > : internal::Manifold<
-    ProductManifold<Derived, M1, M2> > {
-};
-
-}  // namespace gtsam
-
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/geometry/Point2.h>
+#include <gtsam/base/Manifold.h>
 #include <iosfwd>
 
 namespace gtsam {
@@ -69,10 +21,10 @@ namespace gtsam {
  * but here we choose instead to parameterize it as a (Rot3,Unit3) pair.
  * We can then non-linearly optimize immediately on this 5-dimensional manifold.
  */
-class GTSAM_EXPORT EssentialMatrix : public ProductManifold<EssentialMatrix, Rot3, Unit3> {
+class GTSAM_EXPORT EssentialMatrix : private ProductManifold<EssentialMatrix, Rot3, Unit3> {
 
 private:
-
+  friend class ProductManifold<EssentialMatrix, Rot3, Unit3>;
   typedef ProductManifold<EssentialMatrix, Rot3, Unit3> Base;
   Matrix3 E_; ///< Essential matrix
 
@@ -121,6 +73,22 @@ public:
     return rotation().equals(other.rotation(), tol)
         && direction().equals(other.direction(), tol);
   }
+
+  /// @}
+
+  /// @name Manifold
+  /// @{
+
+  using Base::dimension;
+  using Base::dim;
+  using Base::Dim;
+  using Base::retract;
+  using Base::localCoordinates;
+
+  /// Retract delta to manifold
+  // EssentialMatrix retract(const Vector& xi) const;
+  /// Compute the coordinates in the tangent space
+  // Vector5 localCoordinates(const EssentialMatrix& other) const;
 
   /// @}
 
