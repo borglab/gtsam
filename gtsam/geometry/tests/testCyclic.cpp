@@ -22,72 +22,77 @@
 using namespace std;
 using namespace gtsam;
 
-typedef Cyclic<3> G; // Let's use the cyclic group of order 3
+typedef Cyclic<3> Z3; // Let's use the cyclic group of order 3
+typedef Cyclic<2> Z2;
 
 //******************************************************************************
 TEST(Cyclic, Concept) {
-  BOOST_CONCEPT_ASSERT((IsGroup<G>));
-  EXPECT_LONGS_EQUAL(0, traits<G>::Identity());
+  BOOST_CONCEPT_ASSERT((IsGroup<Z3>));
+  EXPECT_LONGS_EQUAL(0, traits<Z3>::Identity());
 }
 
 //******************************************************************************
 TEST(Cyclic, Constructor) {
-  G g(0);
+  Z3 g(0);
 }
 
 //******************************************************************************
 TEST(Cyclic, Compose) {
-  EXPECT_LONGS_EQUAL(0, traits<G>::Compose(G(0),G(0)));
-  EXPECT_LONGS_EQUAL(1, traits<G>::Compose(G(0),G(1)));
-  EXPECT_LONGS_EQUAL(2, traits<G>::Compose(G(0),G(2)));
+  EXPECT_LONGS_EQUAL(0, traits<Z3>::Compose(Z3(0),Z3(0)));
+  EXPECT_LONGS_EQUAL(1, traits<Z3>::Compose(Z3(0),Z3(1)));
+  EXPECT_LONGS_EQUAL(2, traits<Z3>::Compose(Z3(0),Z3(2)));
 
-  EXPECT_LONGS_EQUAL(2, traits<G>::Compose(G(2),G(0)));
-  EXPECT_LONGS_EQUAL(0, traits<G>::Compose(G(2),G(1)));
-  EXPECT_LONGS_EQUAL(1, traits<G>::Compose(G(2),G(2)));
+  EXPECT_LONGS_EQUAL(2, traits<Z3>::Compose(Z3(2),Z3(0)));
+  EXPECT_LONGS_EQUAL(0, traits<Z3>::Compose(Z3(2),Z3(1)));
+  EXPECT_LONGS_EQUAL(1, traits<Z3>::Compose(Z3(2),Z3(2)));
 }
 
 //******************************************************************************
 TEST(Cyclic, Between) {
-  EXPECT_LONGS_EQUAL(0, traits<G>::Between(G(0),G(0)));
-  EXPECT_LONGS_EQUAL(1, traits<G>::Between(G(0),G(1)));
-  EXPECT_LONGS_EQUAL(2, traits<G>::Between(G(0),G(2)));
+  EXPECT_LONGS_EQUAL(0, traits<Z3>::Between(Z3(0),Z3(0)));
+  EXPECT_LONGS_EQUAL(1, traits<Z3>::Between(Z3(0),Z3(1)));
+  EXPECT_LONGS_EQUAL(2, traits<Z3>::Between(Z3(0),Z3(2)));
 
-  EXPECT_LONGS_EQUAL(1, traits<G>::Between(G(2),G(0)));
-  EXPECT_LONGS_EQUAL(2, traits<G>::Between(G(2),G(1)));
-  EXPECT_LONGS_EQUAL(0, traits<G>::Between(G(2),G(2)));
+  EXPECT_LONGS_EQUAL(1, traits<Z3>::Between(Z3(2),Z3(0)));
+  EXPECT_LONGS_EQUAL(2, traits<Z3>::Between(Z3(2),Z3(1)));
+  EXPECT_LONGS_EQUAL(0, traits<Z3>::Between(Z3(2),Z3(2)));
 }
 
 //******************************************************************************
 TEST(Cyclic, Inverse) {
-  EXPECT_LONGS_EQUAL(0, traits<G>::Inverse(G(0)));
-  EXPECT_LONGS_EQUAL(2, traits<G>::Inverse(G(1)));
-  EXPECT_LONGS_EQUAL(1, traits<G>::Inverse(G(2)));
+  EXPECT_LONGS_EQUAL(0, traits<Z3>::Inverse(Z3(0)));
+  EXPECT_LONGS_EQUAL(2, traits<Z3>::Inverse(Z3(1)));
+  EXPECT_LONGS_EQUAL(1, traits<Z3>::Inverse(Z3(2)));
 }
 
 //******************************************************************************
 TEST(Cyclic, Negation) {
-  EXPECT_LONGS_EQUAL(0, -G(0));
-  EXPECT_LONGS_EQUAL(2, -G(1));
-  EXPECT_LONGS_EQUAL(1, -G(2));
+  EXPECT_LONGS_EQUAL(0, -Z3(0));
+  EXPECT_LONGS_EQUAL(2, -Z3(1));
+  EXPECT_LONGS_EQUAL(1, -Z3(2));
 }
 
 //******************************************************************************
 TEST(Cyclic, Negation2) {
-  typedef Cyclic<2> Z2;
   EXPECT_LONGS_EQUAL(0, -Z2(0));
   EXPECT_LONGS_EQUAL(1, -Z2(1));
 }
 
 //******************************************************************************
 TEST(Cyclic , Invariants) {
-  G g(2), h(1);
+  Z3 g(2), h(1);
   EXPECT(check_group_invariants(g,h));
 }
 
 //******************************************************************************
-// The Direct sum of Cyclic<2> and Cyclic<2> is *not* Cyclic<4>, but the
+// The Direct sum of Z2 and Z2 is *not* Cyclic<4>, but the
 // smallest non-cyclic group called the Klein four-group:
-typedef DirectSum<Cyclic<2>, Cyclic<2> > K4;
+struct K4: DirectSum<K4, Z2, Z2> {
+  typedef DirectSum<K4, Z2, Z2> Base;
+  K4(const Z2& g, const Z2& h):Base(g,h) {}
+  K4(const Base& base):Base(base) {}
+  K4() {}
+};
 
 namespace gtsam {
 
@@ -105,9 +110,8 @@ struct traits<K4> : internal::AdditiveGroupTraits<K4> {
 }  // namespace gtsam
 
 TEST(Cyclic , DirectSum) {
-  // The Direct sum of Cyclic<2> and Cyclic<2> is *not* Cyclic<4>, but the
+  // The Direct sum of Z2 and Z2 is *not* Cyclic<4>, but the
   // smallest non-cyclic group called the Klein four-group:
-  typedef DirectSum<Cyclic<2>, Cyclic<2> > K4;
   BOOST_CONCEPT_ASSERT((IsGroup<K4>));
   BOOST_CONCEPT_ASSERT((IsTestable<K4>));
 
