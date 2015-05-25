@@ -128,7 +128,7 @@ compose_pow(const G& g, size_t n) {
 
 /// Template to construct the direct product of two arbitrary groups
 /// Assumes nothing except group structure from G and H
-template<typename G, typename H>
+template<class Derived, typename G, typename H>
 class DirectProduct: public std::pair<G, H> {
   BOOST_CONCEPT_ASSERT((IsGroup<G>));
   BOOST_CONCEPT_ASSERT((IsGroup<H>));
@@ -143,23 +143,22 @@ public:
   // Construct from two subgroup elements
   DirectProduct(const G& g, const H& h):std::pair<G,H>(g,h) {}
 
-  DirectProduct operator*(const DirectProduct& other) const {
-    return DirectProduct(traits<G>::Compose(g(),other.g()), traits<H>::Compose(h(),other.h()));
+  Derived operator*(const Derived& other) const {
+    return Derived(traits<G>::Compose(g(),other.g()), traits<H>::Compose(h(),other.h()));
   }
-  DirectProduct inverse() const {
-    return DirectProduct(g().inverse(), h().inverse());
+  Derived inverse() const {
+    return Derived(g().inverse(), h().inverse());
   }
 };
 
 // Define any direct product group to be a model of the multiplicative Group concept
-template<typename G, typename H>
-struct traits<DirectProduct<G, H> > : internal::MultiplicativeGroupTraits<
-    DirectProduct<G, H> > {
-};
+template<class Derived, typename G, typename H>
+struct traits<DirectProduct<Derived, G, H> > :
+  internal::MultiplicativeGroupTraits<DirectProduct<Derived, G, H> > {};
 
 /// Template to construct the direct sum of two additive groups
 /// Assumes existence of three additive operators for both groups
-template<typename G, typename H>
+template<class Derived, typename G, typename H>
 class DirectSum: public std::pair<G, H> {
   BOOST_CONCEPT_ASSERT((IsGroup<G>));  // TODO(frank): check additive
   BOOST_CONCEPT_ASSERT((IsGroup<H>));  // TODO(frank): check additive
@@ -174,20 +173,21 @@ public:
   // Construct from two subgroup elements
   DirectSum(const G& g, const H& h):std::pair<G,H>(g,h) {}
 
-  DirectSum operator+(const DirectSum& other) const {
+  Derived operator+(const Derived& other) const {
     return DirectSum(g()+other.g(), h()+other.h());
   }
-  DirectSum operator-(const DirectSum& other) const {
-    return DirectSum(g()-other.g(), h()-other.h());
+  Derived operator-(const Derived& other) const {
+    return Derived(g()-other.g(), h()-other.h());
   }
-  DirectSum operator-() const {
-    return DirectSum(- g(), - h());
+  Derived operator-() const {
+    return Derived(- g(), - h());
   }
 };
 
 // Define direct sums to be a model of the Additive Group concept
-template<typename G, typename H>
-struct traits<DirectSum<G, H> > : internal::AdditiveGroupTraits<DirectSum<G, H> > {};
+template<class Derived, typename G, typename H>
+struct traits<DirectSum<Derived, G, H> > :
+  internal::AdditiveGroupTraits<DirectSum<Derived, G, H> > {};
 
 }  // namespace gtsam
 
