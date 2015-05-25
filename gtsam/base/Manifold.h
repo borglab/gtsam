@@ -165,6 +165,50 @@ struct FixedDimension {
       "FixedDimension instantiated for dymanically-sized type.");
 };
 
+/// CRTP to construct the product manifold of two other manifolds, M1 and M2
+/// Assumes manifold structure from M1 and M2, and binary constructor
+template<class Derived, typename M1, typename M2>
+class ProductManifold: public std::pair<M1, M2> {
+  BOOST_CONCEPT_ASSERT((IsManifold<M1>));
+  BOOST_CONCEPT_ASSERT((IsManifold<M2>));
+
+private:
+  const M1& g() const {return this->first;}
+  const M2& h() const {return this->second;}
+
+public:
+  enum { dimension = M1::dimension + M2::dimension };
+  inline static size_t Dim() { return dimension;}
+  inline size_t dim() const { return dimension;}
+
+  typedef Eigen::Matrix<double, dimension, 1> TangentVector;
+
+  /// Default constructor yields identity
+  ProductManifold():std::pair<M1,M2>(traits<M1>::Identity(),traits<M2>::Identity()) {}
+
+  // Construct from two subgroup elements
+  ProductManifold(const M1& g, const M2& h):std::pair<M1,M2>(g,h) {}
+
+  /// Retract delta to manifold
+  Derived retract(const TangentVector& xi) const {
+    return Derived(traits<M1>::Retract(g(),xi.head(M1::dimension)),
+        traits<M2>::Retract(h(),xi.tail(M2::dimension)));
+  }
+
+  /// Compute the coordinates in the tangent space
+  TangentVector localCoordinates(const Derived& other) const {
+    TangentVector xi;
+    xi << traits<M1>::Local(g(),other.g()), traits<M2>::Local(h(),other.h());
+    return xi;
+  }
+};
+
+// Define any direct product group to be a model of the multiplicative Group concept
+template<class Derived, typename M1, typename M2>
+struct traits<ProductManifold<Derived, M1, M2> > : internal::Manifold<
+    ProductManifold<Derived, M1, M2> > {
+};
+
 } // \ namespace gtsam
 
 ///**
