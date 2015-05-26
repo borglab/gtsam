@@ -133,9 +133,6 @@ class DirectProduct: public std::pair<G, H> {
   BOOST_CONCEPT_ASSERT((IsGroup<G>));
   BOOST_CONCEPT_ASSERT((IsGroup<H>));
 
-  const G& g() const {return this->first;}
-  const H& h() const {return this->second;}
-
 public:
   /// Default constructor yields identity
   DirectProduct():std::pair<G,H>(traits<G>::Identity(),traits<H>::Identity()) {}
@@ -144,10 +141,11 @@ public:
   DirectProduct(const G& g, const H& h):std::pair<G,H>(g,h) {}
 
   Derived operator*(const Derived& other) const {
-    return Derived(traits<G>::Compose(g(),other.g()), traits<H>::Compose(h(),other.h()));
+    return Derived(traits<G>::Compose(this->first, other.first),
+        traits<H>::Compose(this->second, other.second));
   }
   Derived inverse() const {
-    return Derived(g().inverse(), h().inverse());
+    return Derived(this->first.inverse(), this->second.inverse());
   }
 };
 
