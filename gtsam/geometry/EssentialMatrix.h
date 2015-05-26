@@ -85,11 +85,6 @@ public:
   using Base::retract;
   using Base::localCoordinates;
 
-  /// Retract delta to manifold
-  // EssentialMatrix retract(const Vector& xi) const;
-  /// Compute the coordinates in the tangent space
-  // Vector5 localCoordinates(const EssentialMatrix& other) const;
-
   /// @}
 
   /// @name Essential matrix methods
