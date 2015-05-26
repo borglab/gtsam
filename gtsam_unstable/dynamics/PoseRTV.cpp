@@ -14,7 +14,7 @@ namespace gtsam {
 
 using namespace std;
 
-static const Vector g = delta(3, 2, 9.81);
+static const Vector kGravity = delta(3, 2, 9.81);
 
 /* ************************************************************************* */
 double bound(double a, double min, double max) {
@@ -24,28 +24,30 @@ double bound(double a, double min, double max) {
 }
 
 /* ************************************************************************* */
-PoseRTV::PoseRTV(double roll, double pitch, double yaw, double x, double y, double z,
-    double vx, double vy, double vz)
-: Rt_(Rot3::RzRyRx(roll, pitch, yaw), Point3(x, y, z)), v_(vx, vy, vz) {}
+PoseRTV::PoseRTV(double roll, double pitch, double yaw, double x, double y,
+    double z, double vx, double vy, double vz) :
+    Base(Pose3(Rot3::RzRyRx(roll, pitch, yaw), Point3(x, y, z)),
+        Velocity3(vx, vy, vz)) {
+}
 
 /* ************************************************************************* */
-PoseRTV::PoseRTV(const Vector& rtv)
-: Rt_(Rot3::RzRyRx(rtv.head(3)), Point3(rtv.segment(3, 3))), v_(rtv.tail(3))
-{
+PoseRTV::PoseRTV(const Vector& rtv) :
+    Base(Pose3(Rot3::RzRyRx(rtv.head(3)), Point3(rtv.segment(3, 3))),
+        Velocity3(rtv.tail(3))) {
 }
 
 /* ************************************************************************* */
 Vector PoseRTV::vector() const {
   Vector rtv(9);
-  rtv.head(3) = Rt_.rotation().xyz();
-  rtv.segment(3,3) = Rt_.translation().vector();
-  rtv.tail(3) = v_.vector();
+  rtv.head(3) = rotation().xyz();
+  rtv.segment(3,3) = translation().vector();
+  rtv.tail(3) = velocity().vector();
   return rtv;
 }
 
 /* ************************************************************************* */
 bool PoseRTV::equals(const PoseRTV& other, double tol) const {
-  return Rt_.equals(other.Rt_, tol) && v_.equals(other.v_, tol);
+  return pose().equals(other.pose(), tol) && velocity().equals(other.velocity(), tol);
 }
 
 /* ************************************************************************* */
@@ -53,7 +55,7 @@ void PoseRTV::print(const string& s) const {
   cout << s << ":" << endl;
   gtsam::print((Vector)R().xyz(), "  R:rpy");
   t().print("  T");
-  v_.print("  V");
+  velocity().print("  V");
 }
 
 /* ************************************************************************* */
@@ -67,8 +69,8 @@ PoseRTV PoseRTV::Expmap(const Vector9& v, ChartJacobian H) {
 /* ************************************************************************* */
 Vector9 PoseRTV::Logmap(const PoseRTV& p, ChartJacobian H) {
   if (H) CONCEPT_NOT_IMPLEMENTED;
-  Vector6 Lx = Pose3::Logmap(p.Rt_);
-  Vector3 Lv = p.v_.vector();
+  Vector6 Lx = Pose3::Logmap(p.pose());
+  Vector3 Lv = p.velocity().vector();
   return (Vector9() << Lx, Lv).finished();
 }
 
@@ -79,8 +81,8 @@ PoseRTV PoseRTV::retract(const Vector& v,
   if (Horigin || Hv) CONCEPT_NOT_IMPLEMENTED;
   assert(v.size() == 9);
   // First order approximation
-  Pose3 newPose = Rt_.retract(sub(v, 0, 6));
-  Velocity3 newVel = v_ + Rt_.rotation() * Point3(sub(v, 6, 9));
+  Pose3 newPose = pose().retract(sub(v, 0, 6));
+  Velocity3 newVel = velocity() + rotation() * Point3(sub(v, 6, 9));
   return PoseRTV(newPose, newVel);
 }
 
@@ -92,7 +94,7 @@ Vector PoseRTV::localCoordinates(const PoseRTV& p1,
   const Pose3& x0 = pose(), &x1 = p1.pose();
   // First order approximation
   Vector6 poseLogmap = x0.localCoordinates(x1);
-  Vector3 lv = rotation().unrotate(p1.velocity() - v_).vector();
+  Vector3 lv = rotation().unrotate(p1.velocity() - velocity()).vector();
   return (Vector(9) << poseLogmap, lv).finished();
 }
 
@@ -100,7 +102,7 @@ Vector PoseRTV::localCoordinates(const PoseRTV& p1,
 PoseRTV inverse_(const PoseRTV& p) { return p.inverse(); }
 PoseRTV PoseRTV::inverse(ChartJacobian H1) const {
   if (H1) *H1 = numericalDerivative11<PoseRTV,PoseRTV>(inverse_, *this, 1e-5);
-  return PoseRTV(Rt_.inverse(), - v_);
+  return PoseRTV(pose().inverse(), - velocity());
 }
 
 /* ************************************************************************* */
@@ -109,7 +111,7 @@ PoseRTV PoseRTV::compose(const PoseRTV& p, ChartJacobian H1,
     ChartJacobian H2) const {
   if (H1) *H1 = numericalDerivative21(compose_, *this, p, 1e-5);
   if (H2) *H2 = numericalDerivative22(compose_, *this, p, 1e-5);
-  return PoseRTV(Rt_.compose(p.Rt_), v_+p.v_);
+  return PoseRTV(pose().compose(p.pose()), velocity()+p.velocity());
 }
 
 /* ************************************************************************* */
@@ -187,7 +189,7 @@ PoseRTV PoseRTV::generalDynamics(
   Rot3 r2 = rotation().retract(gyro * dt);
 
   //  Integrate Velocity Equations
-  Velocity3 v2 = v_ + (Velocity3(dt * (r2.matrix() * accel + g)));
+  Velocity3 v2 = velocity() + Velocity3(dt * (r2.matrix() * accel + kGravity));
 
   //  Integrate Position Equations
   Point3 t2 = translationIntegration(r2, v2, dt);
@@ -205,7 +207,7 @@ Vector6 PoseRTV::imuPrediction(const PoseRTV& x2, double dt) const {
 
   // acceleration
   Vector3 accel = (v2-v1).vector() / dt;
-  imu.head<3>() = r2.transpose() * (accel - g);
+  imu.head<3>() = r2.transpose() * (accel - kGravity);
 
   // rotation rates
   // just using euler angles based on matlab code
@@ -249,7 +251,7 @@ PoseRTV PoseRTV::transformed_from(const Pose3& trans, ChartJacobian Dglobal,
     OptionalJacobian<9, 6> Dtrans) const {
   // Note that we rotate the velocity
   Matrix DVr, DTt;
-  Velocity3 newvel = trans.rotation().rotate(v_, DVr, DTt);
+  Velocity3 newvel = trans.rotation().rotate(velocity(), DVr, DTt);
   if (!Dglobal && !Dtrans)
     return PoseRTV(trans.compose(pose()), newvel);
 
@@ -273,7 +275,7 @@ PoseRTV PoseRTV::transformed_from(const Pose3& trans, ChartJacobian Dglobal,
     //    insertSub(*Dtrans, DTc, 0, 0); // correct in tests
     //
     //    // rotating the velocity
-    //    Matrix vRhat = skewSymmetric(-v_.x(), -v_.y(), -v_.z());
+    //    Matrix vRhat = skewSymmetric(-velocity().x(), -velocity().y(), -velocity().z());
     //    trans.rotation().print("Transform rotation");
     //    gtsam::print(vRhat, "vRhat");
     //    gtsam::print(DVr, "DVr");

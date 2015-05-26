@@ -7,10 +7,45 @@
 #pragma once
 
 #include <gtsam_unstable/base/dllexport.h>
-#include <gtsam/base/DerivedValue.h>
 #include <gtsam/geometry/Pose3.h>
+#include <gtsam/base/Lie.h>
 
 namespace gtsam {
+
+/// CRTP to construct the product Lie group of two other Lie groups, G and H
+/// Assumes manifold structure from G and H, and binary constructor
+template<class Derived, typename G, typename H>
+class ProductLieGroup: public ProductManifold<Derived, G, H> {
+  BOOST_CONCEPT_ASSERT((IsLieGroup<G>));
+  BOOST_CONCEPT_ASSERT((IsLieGroup<H>));
+  typedef ProductManifold<Derived, G, H> Base;
+
+public:
+  enum {dimension = G::dimension + H::dimension};
+  inline static size_t Dim() {return dimension;}
+  inline size_t dim() const {return dimension;}
+
+  typedef Eigen::Matrix<double, dimension, 1> TangentVector;
+
+  /// Default constructor yields identity
+  ProductLieGroup():Base(traits<G>::Identity(),traits<H>::Identity()) {}
+
+  // Construct from two subgroup elements
+  ProductLieGroup(const G& g, const H& h):Base(g,h) {}
+
+  ProductLieGroup operator*(const Derived& other) const {
+    return Derived(traits<G>::Compose(this->g(),other.g()), traits<H>::Compose(this->h(),other.h()));
+  }
+  ProductLieGroup inverse() const {
+    return Derived(this->g().inverse(), this->h().inverse());
+  }
+};
+
+// Define any direct product group to be a model of the multiplicative Group concept
+template<class Derived, typename G, typename H>
+struct traits<ProductLieGroup<Derived, G, H> > : internal::LieGroupTraits<
+    ProductLieGroup<Derived, G, H> > {
+};
 
 /// Syntactic sugar to clarify components
 typedef Point3 Velocity3;
@@ -19,12 +54,10 @@ typedef Point3 Velocity3;
  * Robot state for use with IMU measurements
  * - contains translation, translational velocity and rotation
  */
-class GTSAM_UNSTABLE_EXPORT PoseRTV {
+class GTSAM_UNSTABLE_EXPORT PoseRTV : private ProductLieGroup<PoseRTV,Pose3,Velocity3> {
 protected:
 
-  Pose3 Rt_;
-  Velocity3 v_;
-
+  typedef ProductLieGroup<PoseRTV,Pose3,Velocity3> Base;
   typedef OptionalJacobian<9, 9> ChartJacobian;
 
 public:
@@ -32,16 +65,16 @@ public:
 
   // constructors - with partial versions
   PoseRTV() {}
-  PoseRTV(const Point3& pt, const Rot3& rot, const Velocity3& vel)
-  : Rt_(rot, pt), v_(vel) {}
-  PoseRTV(const Rot3& rot, const Point3& pt, const Velocity3& vel)
-  : Rt_(rot, pt), v_(vel) {}
-  explicit PoseRTV(const Point3& pt)
-  : Rt_(Rot3::identity(), pt) {}
+  PoseRTV(const Point3& t, const Rot3& rot, const Velocity3& vel)
+  : Base(Pose3(rot, t), vel) {}
+  PoseRTV(const Rot3& rot, const Point3& t, const Velocity3& vel)
+  : Base(Pose3(rot, t), vel) {}
+  explicit PoseRTV(const Point3& t)
+  : Base(Pose3(Rot3(), t),Velocity3()) {}
   PoseRTV(const Pose3& pose, const Velocity3& vel)
-  : Rt_(pose), v_(vel) {}
+  : Base(pose, vel) {}
   explicit PoseRTV(const Pose3& pose)
-  : Rt_(pose) {}
+  : Base(pose,Velocity3()) {}
 
   /** build from components - useful for data files */
   PoseRTV(double roll, double pitch, double yaw, double x, double y, double z,
@@ -51,21 +84,21 @@ public:
   explicit PoseRTV(const Vector& v);
 
   // access
-  const Point3& t() const { return Rt_.translation(); }
-  const Rot3& R() const { return Rt_.rotation(); }
-  const Velocity3& v() const { return v_; }
-  const Pose3& pose() const { return Rt_; }
+  const Pose3& pose() const { return first; }
+  const Velocity3& v() const { return second; }
+  const Point3& t() const { return pose().translation(); }
+  const Rot3& R() const { return pose().rotation(); }
 
   // longer function names
-  const Point3& translation() const { return Rt_.translation(); }
-  const Rot3& rotation() const { return Rt_.rotation(); }
-  const Velocity3& velocity() const { return v_; }
+  const Point3& translation() const { return pose().translation(); }
+  const Rot3& rotation() const { return pose().rotation(); }
+  const Velocity3& velocity() const { return second; }
 
   // Access to vector for ease of use with Matlab
   // and avoidance of Point3
   Vector vector() const;
-  Vector translationVec() const { return Rt_.translation().vector(); }
-  Vector velocityVec() const { return v_.vector(); }
+  Vector translationVec() const { return pose().translation().vector(); }
+  Vector velocityVec() const { return velocity().vector(); }
 
   // testable
   bool equals(const PoseRTV& other, double tol=1e-6) const;
@@ -183,8 +216,8 @@ private:
   friend class boost::serialization::access;
   template<class Archive>
   void serialize(Archive & ar, const unsigned int /*version*/) {
-    ar & BOOST_SERIALIZATION_NVP(Rt_);
-    ar & BOOST_SERIALIZATION_NVP(v_);
+    ar & BOOST_SERIALIZATION_NVP(first);
+    ar & BOOST_SERIALIZATION_NVP(second);
   }
 };
 
