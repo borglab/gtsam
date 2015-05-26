@@ -87,12 +87,7 @@ TEST(Cyclic , Invariants) {
 //******************************************************************************
 // The Direct sum of Z2 and Z2 is *not* Cyclic<4>, but the
 // smallest non-cyclic group called the Klein four-group:
-struct K4: DirectSum<K4, Z2, Z2> {
-  typedef DirectSum<K4, Z2, Z2> Base;
-  K4(const Z2& g, const Z2& h):Base(g,h) {}
-  K4(const Base& base):Base(base) {}
-  K4() {}
-};
+typedef DirectSum<Z2, Z2> K4;
 
 namespace gtsam {
 

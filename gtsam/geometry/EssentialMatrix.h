@@ -21,12 +21,16 @@ namespace gtsam {
  * but here we choose instead to parameterize it as a (Rot3,Unit3) pair.
  * We can then non-linearly optimize immediately on this 5-dimensional manifold.
  */
-class GTSAM_EXPORT EssentialMatrix : private ProductManifold<EssentialMatrix, Rot3, Unit3> {
+class GTSAM_EXPORT EssentialMatrix : private ProductManifold<Rot3, Unit3> {
 
 private:
-  friend class ProductManifold<EssentialMatrix, Rot3, Unit3>;
-  typedef ProductManifold<EssentialMatrix, Rot3, Unit3> Base;
+  typedef ProductManifold<Rot3, Unit3> Base;
   Matrix3 E_; ///< Essential matrix
+
+  /// Construct from Base
+  EssentialMatrix(const Base& base) :
+      Base(base), E_(direction().skew() * rotation().matrix()) {
+  }
 
 public:
 
@@ -82,9 +86,16 @@ public:
   using Base::dimension;
   using Base::dim;
   using Base::Dim;
-  using Base::retract;
-  using Base::localCoordinates;
 
+  /// Retract delta to manifold
+  EssentialMatrix retract(const TangentVector& v) const {
+    return Base::retract(v);
+  }
+
+  /// Compute the coordinates in the tangent space
+  TangentVector localCoordinates(const EssentialMatrix& other) const {
+    return Base::localCoordinates(other);
+  }
   /// @}
 
   /// @name Essential matrix methods

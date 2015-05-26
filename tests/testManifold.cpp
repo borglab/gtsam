@@ -10,13 +10,14 @@
  * -------------------------------1------------------------------------------- */
 
 /**
- * @file testExpression.cpp
+ * @file testManifold.cpp
  * @date September 18, 2014
  * @author Frank Dellaert
  * @author Paul Furgale
- * @brief unit tests for Block Automatic Differentiation
+ * @brief unit tests for Manifold type machinery
  */
 
+#include <gtsam/base/Manifold.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Cal3_S2.h>
@@ -149,12 +150,7 @@ TEST(Manifold, DefaultChart) {
 }
 
 //******************************************************************************
-struct MyPoint2Pair : public ProductManifold<MyPoint2Pair,Point2,Point2> {
-  typedef ProductManifold<MyPoint2Pair,Point2,Point2> Base;
-  MyPoint2Pair(const Point2& p1, const Point2& p2):Base(p1,p2) {}
-  MyPoint2Pair(const Base& base):Base(base) {}
-  MyPoint2Pair() {}
-};
+typedef ProductManifold<Point2,Point2> MyPoint2Pair;
 
 // Define any direct product group to be a model of the multiplicative Group concept
 namespace gtsam {

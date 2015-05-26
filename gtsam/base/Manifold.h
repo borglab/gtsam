@@ -170,14 +170,14 @@ struct FixedDimension {
       "FixedDimension instantiated for dymanically-sized type.");
 };
 
-/// CRTP to construct the product manifold of two other manifolds, M1 and M2
-/// Assumes manifold structure from M1 and M2, and binary constructor
-template<class Derived, typename M1, typename M2>
+/// Helper class to construct the product manifold of two other manifolds, M1 and M2
+/// Assumes nothing except manifold structure from M1 and M2
+template<typename M1, typename M2>
 class ProductManifold: public std::pair<M1, M2> {
   BOOST_CONCEPT_ASSERT((IsManifold<M1>));
   BOOST_CONCEPT_ASSERT((IsManifold<M2>));
 
-private:
+protected:
   enum { dimension1 = traits<M1>::dimension };
   enum { dimension2 = traits<M2>::dimension };
 
@@ -196,14 +196,14 @@ public:
   ProductManifold(const M1& m1, const M2& m2):std::pair<M1,M2>(m1,m2) {}
 
   /// Retract delta to manifold
-  Derived retract(const TangentVector& xi) const {
+  ProductManifold retract(const TangentVector& xi) const {
     M1 m1 = traits<M1>::Retract(this->first,  xi.template head<dimension1>());
     M2 m2 = traits<M2>::Retract(this->second, xi.template tail<dimension2>());
-    return Derived(m1,m2);
+    return ProductManifold(m1,m2);
   }
 
   /// Compute the coordinates in the tangent space
-  TangentVector localCoordinates(const Derived& other) const {
+  TangentVector localCoordinates(const ProductManifold& other) const {
     typename traits<M1>::TangentVector v1 = traits<M1>::Local(this->first,  other.first);
     typename traits<M2>::TangentVector v2 = traits<M2>::Local(this->second, other.second);
     TangentVector v;
@@ -213,9 +213,8 @@ public:
 };
 
 // Define any direct product group to be a model of the multiplicative Group concept
-template<class Derived, typename M1, typename M2>
-struct traits<ProductManifold<Derived, M1, M2> > : internal::Manifold<
-    ProductManifold<Derived, M1, M2> > {
+template<typename M1, typename M2>
+struct traits<ProductManifold<M1, M2> > : internal::Manifold<ProductManifold<M1, M2> > {
 };
 
 } // \ namespace gtsam

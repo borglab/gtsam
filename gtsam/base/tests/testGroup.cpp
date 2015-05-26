@@ -103,11 +103,7 @@ TEST(Group, S3) {
 //******************************************************************************
 // The direct product of S2=Z2 and S3 is the symmetry group of a hexagon,
 // i.e., the dihedral group of order 12 (denoted Dih6 because 6-sided polygon)
-struct Dih6 : DirectProduct<Dih6, S2, S3> {
-  typedef DirectProduct<Dih6, S2, S3> Base;
-  Dih6(const S2& g, const S3& h):Base(g,h) {}
-  Dih6() {}
-};
+typedef DirectProduct<S2, S3> Dih6;
 
 std::ostream &operator<<(std::ostream &os, const Dih6& m) {
   os << "( " << m.first << ", " << m.second << ")";
