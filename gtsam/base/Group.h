@@ -20,6 +20,8 @@
 
 #pragma once
 
+#include <gtsam/base/Testable.h>
+
 #include <boost/concept_check.hpp>
 #include <boost/concept/requires.hpp>
 #include <boost/type_traits/is_base_of.hpp>
@@ -87,33 +89,37 @@ check_group_invariants(const G& a, const G& b, double tol = 1e-9) {
 
 namespace internal {
 
-/// A helper class that implements the traits interface for groups.
-/// Assumes that constructor yields identity
+/// A helper class that implements the traits interface for multiplicative groups.
+/// Assumes existence of identity, operator* and inverse method
 template<class Class>
-struct GroupTraits {
+struct MultiplicativeGroupTraits {
   typedef group_tag structure_category;
-  static Class Identity() { return Class(); }
+  typedef multiplicative_group_tag group_flavor;
+  static Class Identity() { return Class::identity(); }
+  static Class Compose(const Class &g, const Class & h) { return g * h;}
+  static Class Between(const Class &g, const Class & h) { return g.inverse() * h;}
+  static Class Inverse(const Class &g) { return g.inverse();}
 };
 
-/// A helper class that implements the traits interface for multiplicative groups.
-/// Assumes existence of operator* and inverse method
+/// Both multiplicative group traits and Testable
 template<class Class>
-struct MultiplicativeGroupTraits : GroupTraits<Class> {
-    typedef multiplicative_group_tag group_flavor; \
-    static Class Compose(const Class &g, const Class & h) { return g * h;} \
-    static Class Between(const Class &g, const Class & h) { return g.inverse() * h;} \
-    static Class Inverse(const Class &g) { return g.inverse();}
-};
+struct MultiplicativeGroup : MultiplicativeGroupTraits<Class>, Testable<Class> {};
 
 /// A helper class that implements the traits interface for additive groups.
-/// Assumes existence of three additive operators
+/// Assumes existence of identity and three additive operators
 template<class Class>
-struct AdditiveGroupTraits : GroupTraits<Class> {
-    typedef additive_group_tag group_flavor; \
-    static Class Compose(const Class &g, const Class & h) { return g + h;} \
-    static Class Between(const Class &g, const Class & h) { return h - g;} \
-    static Class Inverse(const Class &g) { return -g;}
+struct AdditiveGroupTraits {
+  typedef group_tag structure_category;
+  typedef additive_group_tag group_flavor;
+  static Class Identity() { return Class::identity(); }
+  static Class Compose(const Class &g, const Class & h) { return g + h;}
+  static Class Between(const Class &g, const Class & h) { return h - g;}
+  static Class Inverse(const Class &g) { return -g;}
 };
+
+/// Both additive group traits and Testable
+template<class Class>
+struct AdditiveGroup : AdditiveGroupTraits<Class>, Testable<Class> {};
 
 }  // namespace internal
 
@@ -127,7 +133,7 @@ compose_pow(const G& g, size_t n) {
 }
 
 /// Template to construct the direct product of two arbitrary groups
-/// Assumes nothing except group structure from G and H
+/// Assumes nothing except group structure and Testable from G and H
 template<typename G, typename H>
 class DirectProduct: public std::pair<G, H> {
   BOOST_CONCEPT_ASSERT((IsGroup<G>));
@@ -139,6 +145,9 @@ public:
 
   // Construct from two subgroup elements
   DirectProduct(const G& g, const H& h):std::pair<G,H>(g,h) {}
+
+  // identity
+  static DirectProduct identity() { return DirectProduct(); }
 
   DirectProduct operator*(const DirectProduct& other) const {
     return DirectProduct(traits<G>::Compose(this->first, other.first),
@@ -170,6 +179,9 @@ public:
 
   // Construct from two subgroup elements
   DirectSum(const G& g, const H& h):std::pair<G,H>(g,h) {}
+
+  // identity
+  static DirectSum identity() { return DirectSum(); }
 
   DirectSum operator+(const DirectSum& other) const {
     return DirectSum(g()+other.g(), h()+other.h());

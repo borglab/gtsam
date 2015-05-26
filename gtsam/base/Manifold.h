@@ -116,10 +116,8 @@ struct ManifoldTraits: ManifoldImpl<Class, Class::dimension> {
   }
 };
 
-/// Implement both manifold and testable traits at the same time
-template<class Class>
-struct Manifold: Testable<Class>, ManifoldTraits<Class> {
-};
+/// Both ManifoldTraits and Testable
+template<class Class> struct Manifold: ManifoldTraits<Class>, Testable<Class> {};
 
 } // \ namespace internal
 
