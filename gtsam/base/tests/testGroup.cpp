@@ -30,6 +30,7 @@ class Symmetric: private Eigen::PermutationMatrix<N> {
       Eigen::PermutationMatrix<N>(P) {
   }
 public:
+  static Symmetric identity() { return Symmetric(); }
   Symmetric() {
     Eigen::PermutationMatrix<N>::setIdentity();
   }
