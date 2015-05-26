@@ -223,6 +223,6 @@ private:
 
 
 template<>
-struct traits<PoseRTV> : public internal::LieGroupTraits<PoseRTV> {};
+struct traits<PoseRTV> : public internal::LieGroup<PoseRTV> {};
 
 } // \namespace gtsam

@@ -75,30 +75,6 @@ Vector9 PoseRTV::Logmap(const PoseRTV& p, ChartJacobian H) {
 }
 
 /* ************************************************************************* */
-PoseRTV PoseRTV::retract(const Vector& v,
-                         ChartJacobian Horigin,
-                         ChartJacobian Hv) const {
-  if (Horigin || Hv) CONCEPT_NOT_IMPLEMENTED;
-  assert(v.size() == 9);
-  // First order approximation
-  Pose3 newPose = pose().retract(sub(v, 0, 6));
-  Velocity3 newVel = velocity() + rotation() * Point3(sub(v, 6, 9));
-  return PoseRTV(newPose, newVel);
-}
-
-/* ************************************************************************* */
-Vector PoseRTV::localCoordinates(const PoseRTV& p1,
-                                 ChartJacobian Horigin,
-                                 ChartJacobian Hp) const {
-  if (Horigin || Hp) CONCEPT_NOT_IMPLEMENTED;
-  const Pose3& x0 = pose(), &x1 = p1.pose();
-  // First order approximation
-  Vector6 poseLogmap = x0.localCoordinates(x1);
-  Vector3 lv = rotation().unrotate(p1.velocity() - velocity()).vector();
-  return (Vector(9) << poseLogmap, lv).finished();
-}
-
-/* ************************************************************************* */
 PoseRTV inverse_(const PoseRTV& p) { return p.inverse(); }
 PoseRTV PoseRTV::inverse(ChartJacobian H1) const {
   if (H1) *H1 = numericalDerivative11<PoseRTV,PoseRTV>(inverse_, *this, 1e-5);
