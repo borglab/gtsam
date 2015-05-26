@@ -104,7 +104,7 @@ TEST(Pose2, expmap3) {
   Matrix A2 = A*A/2.0, A3 = A2*A/3.0, A4=A3*A/4.0;
   Matrix expected = eye(3) + A + A2 + A3 + A4;
 
-  Vector3 v(0.01, -0.015, 0.99);
+  Vector v = Vector3(0.01, -0.015, 0.99);
   Pose2 pose = Pose2::Expmap(v);
   Pose2 pose2(v);
   EXPECT(assert_equal(pose, pose2));
