@@ -23,11 +23,10 @@
 
 namespace gtsam {
 
-/// Template to construct the product Lie group of two other Lie groups, G and H
-/// Assumes manifold structure from G and H, and binary constructor
+/// Template to construct the product Lie group of two other Lie groups
+/// Assumes Lie group structure for G and H
 template<typename G, typename H>
-class ProductLieGroup: public std::pair<G, H>, public LieGroup<
-    ProductLieGroup<G, H>, traits<G>::dimension + traits<H>::dimension> {
+class ProductLieGroup: public std::pair<G, H> {
   BOOST_CONCEPT_ASSERT((IsLieGroup<G>));
   BOOST_CONCEPT_ASSERT((IsLieGroup<H>));
   typedef std::pair<G, H> Base;
@@ -58,9 +57,15 @@ public:
   ProductLieGroup inverse() const {
     return ProductLieGroup(this->first.inverse(), this->second.inverse());
   }
+  ProductLieGroup compose(const ProductLieGroup& g) const {
+    return (*this) * g;
+  }
+  ProductLieGroup between(const ProductLieGroup& g) const {
+    return this->inverse() * g;
+  }
   /// @}
 
-  /// @name Manifold (but with derivatives)
+  /// @name Manifold
   /// @{
   enum {dimension = dimension1 + dimension2};
   inline static size_t Dim() {return dimension;}
@@ -68,26 +73,74 @@ public:
 
   typedef Eigen::Matrix<double, dimension, 1> TangentVector;
   typedef OptionalJacobian<dimension, dimension> ChartJacobian;
+
+  static ProductLieGroup Retract(const TangentVector& v) {
+    return ProductLieGroup::ChartAtOrigin::Retract(v);
+  }
+  static TangentVector LocalCoordinates(const ProductLieGroup& g) {
+    return ProductLieGroup::ChartAtOrigin::Local(g);
+  }
+  ProductLieGroup retract(const TangentVector& v) const {
+    return compose(ProductLieGroup::ChartAtOrigin::Retract(v));
+  }
+  TangentVector localCoordinates(const ProductLieGroup& g) const {
+    return ProductLieGroup::ChartAtOrigin::Local(between(g));
+  }
   /// @}
 
   /// @name Lie Group
   /// @{
-  Eigen::Matrix<double,dimension,dimension> AdjointMap() const {
-    Eigen::Matrix<double,dimension,dimension> A;
-    A.setIdentity();
-    throw std::runtime_error("ProductLieGroup::derivatives not implemented yet");
-    //    A.template topLeftCorner<dimension1, dimension1>() = this->first.AdjointMap();
-    //    A.template bottomRightCorner<dimension2, dimension2>() = this->second.AdjointMap();
-    return A;
+protected:
+  typedef Eigen::Matrix<double, dimension, dimension> Jacobian;
+  typedef Eigen::Matrix<double, dimension1, dimension1> Jacobian1;
+  typedef Eigen::Matrix<double, dimension2, dimension2> Jacobian2;
+
+public:
+  ProductLieGroup compose(const ProductLieGroup& other, ChartJacobian H1,
+      ChartJacobian H2 = boost::none) const {
+    Jacobian1 D_g_first; Jacobian2 D_h_second;
+    G g = traits<G>::Compose(this->first,other.first, H1 ? &D_g_first : 0);
+    H h = traits<H>::Compose(this->second,other.second, H1 ? &D_h_second : 0);
+    if (H1) {
+      H1->setZero();
+      H1->template topLeftCorner<dimension1,dimension1>() = D_g_first;
+      H1->template bottomRightCorner<dimension2,dimension2>() = D_h_second;
+    }
+    if (H2) *H2 = Jacobian::Identity();
+    return ProductLieGroup(g,h);
+  }
+  ProductLieGroup between(const ProductLieGroup& other, ChartJacobian H1,
+      ChartJacobian H2 = boost::none) const {
+    Jacobian1 D_g_first; Jacobian2 D_h_second;
+    G g = traits<G>::Between(this->first,other.first, H1 ? &D_g_first : 0);
+    H h = traits<H>::Between(this->second,other.second, H1 ? &D_h_second : 0);
+    if (H1) {
+      H1->setZero();
+      H1->template topLeftCorner<dimension1,dimension1>() = D_g_first;
+      H1->template bottomRightCorner<dimension2,dimension2>() = D_h_second;
+    }
+    if (H2) *H2 = Jacobian::Identity();
+    return ProductLieGroup(g,h);
+  }
+  ProductLieGroup inverse(ChartJacobian D) const {
+    Jacobian1 D_g_first; Jacobian2 D_h_second;
+    G g = traits<G>::Inverse(this->first, D ? &D_g_first : 0);
+    H h = traits<H>::Inverse(this->second, D ? &D_h_second : 0);
+    if (D) {
+      D->setZero();
+      D->template topLeftCorner<dimension1,dimension1>() = D_g_first;
+      D->template bottomRightCorner<dimension2,dimension2>() = D_h_second;
+    }
+    return ProductLieGroup(g,h);
   }
   static ProductLieGroup Expmap(const TangentVector& v, ChartJacobian Hv = boost::none) {
-    if (Hv) throw std::runtime_error("ProductLieGroup::derivatives not implemented yet");
+    if (Hv) throw std::runtime_error("ProductLieGroup::Expmap derivatives not implemented yet");
     G g = traits<G>::Expmap(v.template head<dimension1>());
     H h = traits<H>::Expmap(v.template tail<dimension2>());
     return ProductLieGroup(g,h);
   }
   static TangentVector Logmap(const ProductLieGroup& p, ChartJacobian Hp = boost::none) {
-    if (Hp) throw std::runtime_error("ProductLieGroup::derivatives not implemented yet");
+    if (Hp) throw std::runtime_error("ProductLieGroup::Logmap derivatives not implemented yet");
     typename traits<G>::TangentVector v1 = traits<G>::Logmap(p.first);
     typename traits<H>::TangentVector v2 = traits<H>::Logmap(p.second);
     TangentVector v;
@@ -102,8 +155,37 @@ public:
       return Expmap(v, Hv);
     }
   };
-  using LieGroup<ProductLieGroup,dimension>::inverse; // with derivative
+  ProductLieGroup expmap(const TangentVector& v) const {
+    return compose(ProductLieGroup::Expmap(v));
+  }
+  TangentVector logmap(const ProductLieGroup& g) const {
+    return ProductLieGroup::Logmap(between(g));
+  }
+  static ProductLieGroup Retract(const TangentVector& v, ChartJacobian H1) {
+    return ProductLieGroup::ChartAtOrigin::Retract(v,H1);
+  }
+  static TangentVector LocalCoordinates(const ProductLieGroup& g, ChartJacobian H1) {
+    return ProductLieGroup::ChartAtOrigin::Local(g,H1);
+  }
+  ProductLieGroup retract(const TangentVector& v, //
+      ChartJacobian H1, ChartJacobian H2 = boost::none) const {
+    Jacobian D_g_v;
+    ProductLieGroup g = ProductLieGroup::ChartAtOrigin::Retract(v,H2 ? &D_g_v : 0);
+    ProductLieGroup h = compose(g,H1,H2);
+    if (H2) *H2 = (*H2) * D_g_v;
+    return h;
+  }
+  TangentVector localCoordinates(const ProductLieGroup& g, //
+      ChartJacobian H1, ChartJacobian H2 = boost::none) const {
+    ProductLieGroup h = between(g,H1,H2);
+    Jacobian D_v_h;
+    TangentVector v = ProductLieGroup::ChartAtOrigin::Local(h, (H1 || H2) ? &D_v_h : 0);
+    if (H1) *H1 = D_v_h * (*H1);
+    if (H2) *H2 = D_v_h * (*H2);
+    return v;
+  }
   /// @}
+
 };
 
 // Define any direct product group to be a model of the multiplicative Group concept

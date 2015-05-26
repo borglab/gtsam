@@ -121,6 +121,43 @@ TEST( testPoseRTV, dynamics_identities ) {
 
 
 /* ************************************************************************* */
+PoseRTV compose_proxy(const PoseRTV& A, const PoseRTV& B) { return A.compose(B); }
+TEST( testPoseRTV, compose ) {
+  PoseRTV state1(pt, rot, vel), state2 = state1;
+
+  Matrix actH1, actH2;
+  state1.compose(state2, actH1, actH2);
+  Matrix numericH1 = numericalDerivative21(compose_proxy, state1, state2);
+  Matrix numericH2 = numericalDerivative22(compose_proxy, state1, state2);
+  EXPECT(assert_equal(numericH1, actH1, tol));
+  EXPECT(assert_equal(numericH2, actH2, tol));
+}
+
+/* ************************************************************************* */
+PoseRTV between_proxy(const PoseRTV& A, const PoseRTV& B) { return A.between(B); }
+TEST( testPoseRTV, between ) {
+  PoseRTV state1(pt, rot, vel), state2 = state1;
+
+  Matrix actH1, actH2;
+  state1.between(state2, actH1, actH2);
+  Matrix numericH1 = numericalDerivative21(between_proxy, state1, state2);
+  Matrix numericH2 = numericalDerivative22(between_proxy, state1, state2);
+  EXPECT(assert_equal(numericH1, actH1, tol));
+  EXPECT(assert_equal(numericH2, actH2, tol));
+}
+
+/* ************************************************************************* */
+PoseRTV inverse_proxy(const PoseRTV& A) { return A.inverse(); }
+TEST( testPoseRTV, inverse ) {
+  PoseRTV state1(pt, rot, vel);
+
+  Matrix actH1;
+  state1.inverse(actH1);
+  Matrix numericH1 = numericalDerivative11(inverse_proxy, state1);
+  EXPECT(assert_equal(numericH1, actH1, tol));
+}
+
+/* ************************************************************************* */
 double range_proxy(const PoseRTV& A, const PoseRTV& B) { return A.range(B); }
 TEST( testPoseRTV, range ) {
   Point3 tA(1.0, 2.0, 3.0), tB(3.0, 2.0, 3.0);
