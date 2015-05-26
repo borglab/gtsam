@@ -46,7 +46,7 @@ struct manifold_tag {};
  * There may be multiple possible retractions for a given manifold, which can be chosen
  * between depending on the computational complexity.  The important criteria for
  * the creation for the retract and localCoordinates functions is that they be
- * inverse operations. The new notion of a Chart guarantees that.
+ * inverse operations.
  *
  */
 
@@ -90,9 +90,9 @@ struct ManifoldImpl<Class, Eigen::Dynamic> {
 
 /// A helper that implements the traits interface for GTSAM manifolds.
 /// To use this for your class type, define:
-/// template<> struct traits<Class> : public internal::Manifold<Class> { };
+/// template<> struct traits<Class> : public internal::ManifoldTraits<Class> { };
 template<class Class>
-struct Manifold: Testable<Class>, ManifoldImpl<Class, Class::dimension> {
+struct ManifoldTraits: ManifoldImpl<Class, Class::dimension> {
 
   // Check that Class has the necessary machinery
   BOOST_CONCEPT_ASSERT((HasManifoldPrereqs<Class>));
@@ -114,6 +114,11 @@ struct Manifold: Testable<Class>, ManifoldImpl<Class, Class::dimension> {
   static Class Retract(const Class& origin, const TangentVector& v) {
     return origin.retract(v);
   }
+};
+
+/// Implement both manifold and testable traits at the same time
+template<class Class>
+struct Manifold: Testable<Class>, ManifoldTraits<Class> {
 };
 
 } // \ namespace internal
@@ -173,33 +178,37 @@ class ProductManifold: public std::pair<M1, M2> {
   BOOST_CONCEPT_ASSERT((IsManifold<M2>));
 
 private:
-  const M1& g() const {return this->first;}
-  const M2& h() const {return this->second;}
+  enum { dimension1 = traits<M1>::dimension };
+  enum { dimension2 = traits<M2>::dimension };
 
 public:
-  enum { dimension = M1::dimension + M2::dimension };
+  enum { dimension = dimension1 + dimension2 };
   inline static size_t Dim() { return dimension;}
   inline size_t dim() const { return dimension;}
 
   typedef Eigen::Matrix<double, dimension, 1> TangentVector;
+  typedef OptionalJacobian<dimension, dimension> ChartJacobian;
 
   /// Default constructor yields identity
   ProductManifold():std::pair<M1,M2>(traits<M1>::Identity(),traits<M2>::Identity()) {}
 
-  // Construct from two subgroup elements
-  ProductManifold(const M1& g, const M2& h):std::pair<M1,M2>(g,h) {}
+  // Construct from two original manifold values
+  ProductManifold(const M1& m1, const M2& m2):std::pair<M1,M2>(m1,m2) {}
 
   /// Retract delta to manifold
   Derived retract(const TangentVector& xi) const {
-    return Derived(traits<M1>::Retract(g(),xi.head(M1::dimension)),
-        traits<M2>::Retract(h(),xi.tail(M2::dimension)));
+    M1 m1 = traits<M1>::Retract(this->first,  xi.template head<dimension1>());
+    M2 m2 = traits<M2>::Retract(this->second, xi.template tail<dimension2>());
+    return Derived(m1,m2);
   }
 
   /// Compute the coordinates in the tangent space
   TangentVector localCoordinates(const Derived& other) const {
-    TangentVector xi;
-    xi << traits<M1>::Local(g(),other.g()), traits<M2>::Local(h(),other.h());
-    return xi;
+    typename traits<M1>::TangentVector v1 = traits<M1>::Local(this->first,  other.first);
+    typename traits<M2>::TangentVector v2 = traits<M2>::Local(this->second, other.second);
+    TangentVector v;
+    v << v1, v2;
+    return v;
   }
 };
 

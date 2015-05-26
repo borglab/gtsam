@@ -149,6 +149,37 @@ TEST(Manifold, DefaultChart) {
 }
 
 //******************************************************************************
+struct MyPoint2Pair : public ProductManifold<MyPoint2Pair,Point2,Point2> {
+  typedef ProductManifold<MyPoint2Pair,Point2,Point2> Base;
+  MyPoint2Pair(const Point2& p1, const Point2& p2):Base(p1,p2) {}
+  MyPoint2Pair(const Base& base):Base(base) {}
+  MyPoint2Pair() {}
+};
+
+// Define any direct product group to be a model of the multiplicative Group concept
+namespace gtsam {
+template<> struct traits<MyPoint2Pair> : internal::ManifoldTraits<MyPoint2Pair> {
+  static void Print(const MyPoint2Pair& m, const string& s = "") {
+    cout << s << "(" << m.first << "," << m.second << ")" << endl;
+  }
+  static bool Equals(const MyPoint2Pair& m1, const MyPoint2Pair& m2, double tol = 1e-8) {
+    return m1 == m2;
+  }
+};
+}
+
+TEST(Manifold, ProductManifold) {
+  BOOST_CONCEPT_ASSERT((IsManifold<MyPoint2Pair>));
+  MyPoint2Pair pair1;
+  Vector4 d;
+  d << 1,2,3,4;
+  MyPoint2Pair expected(Point2(1,2),Point2(3,4));
+  MyPoint2Pair pair2 = pair1.retract(d);
+  EXPECT(assert_equal(expected,pair2,1e-9));
+  EXPECT(assert_equal(d, pair1.localCoordinates(pair2),1e-9));
+}
+
+//******************************************************************************
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
