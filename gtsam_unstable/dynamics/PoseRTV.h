@@ -8,44 +8,9 @@
 
 #include <gtsam_unstable/base/dllexport.h>
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/base/Lie.h>
+#include <gtsam/base/ProductLieGroup.h>
 
 namespace gtsam {
-
-/// CRTP to construct the product Lie group of two other Lie groups, G and H
-/// Assumes manifold structure from G and H, and binary constructor
-template<class Derived, typename G, typename H>
-class ProductLieGroup: public ProductManifold<Derived, G, H> {
-  BOOST_CONCEPT_ASSERT((IsLieGroup<G>));
-  BOOST_CONCEPT_ASSERT((IsLieGroup<H>));
-  typedef ProductManifold<Derived, G, H> Base;
-
-public:
-  enum {dimension = G::dimension + H::dimension};
-  inline static size_t Dim() {return dimension;}
-  inline size_t dim() const {return dimension;}
-
-  typedef Eigen::Matrix<double, dimension, 1> TangentVector;
-
-  /// Default constructor yields identity
-  ProductLieGroup():Base(traits<G>::Identity(),traits<H>::Identity()) {}
-
-  // Construct from two subgroup elements
-  ProductLieGroup(const G& g, const H& h):Base(g,h) {}
-
-  ProductLieGroup operator*(const Derived& other) const {
-    return Derived(traits<G>::Compose(this->g(),other.g()), traits<H>::Compose(this->h(),other.h()));
-  }
-  ProductLieGroup inverse() const {
-    return Derived(this->g().inverse(), this->h().inverse());
-  }
-};
-
-// Define any direct product group to be a model of the multiplicative Group concept
-template<class Derived, typename G, typename H>
-struct traits<ProductLieGroup<Derived, G, H> > : internal::LieGroupTraits<
-    ProductLieGroup<Derived, G, H> > {
-};
 
 /// Syntactic sugar to clarify components
 typedef Point3 Velocity3;
@@ -54,14 +19,13 @@ typedef Point3 Velocity3;
  * Robot state for use with IMU measurements
  * - contains translation, translational velocity and rotation
  */
-class GTSAM_UNSTABLE_EXPORT PoseRTV : private ProductLieGroup<PoseRTV,Pose3,Velocity3> {
+class GTSAM_UNSTABLE_EXPORT PoseRTV : public ProductLieGroup<Pose3,Velocity3> {
 protected:
 
-  typedef ProductLieGroup<PoseRTV,Pose3,Velocity3> Base;
+  typedef ProductLieGroup<Pose3,Velocity3> Base;
   typedef OptionalJacobian<9, 9> ChartJacobian;
 
 public:
-  enum { dimension = 9 };
 
   // constructors - with partial versions
   PoseRTV() {}
@@ -75,6 +39,10 @@ public:
   : Base(pose, vel) {}
   explicit PoseRTV(const Pose3& pose)
   : Base(pose,Velocity3()) {}
+
+  // Construct from Base
+  PoseRTV(const Base& base)
+  : Base(base) {}
 
   /** build from components - useful for data files */
   PoseRTV(double roll, double pitch, double yaw, double x, double y, double z,
@@ -104,52 +72,26 @@ public:
   bool equals(const PoseRTV& other, double tol=1e-6) const;
   void print(const std::string& s="") const;
 
-  // Manifold
-  static size_t Dim() { return 9; }
-  size_t dim() const { return Dim(); }
+  /// @name Manifold
+  /// @{
+  using Base::dimension;
+  using Base::dim;
+  using Base::Dim;
+  using Base::retract;
+  using Base::localCoordinates;
+  /// @}
 
-  /**
-   * retract/unretract assume independence of components
-   * Tangent space parameterization:
-   *    - v(0-2): Rot3 (roll, pitch, yaw)
-   *    - v(3-5): Point3
-   *    - v(6-8): Translational velocity
-   */
-  PoseRTV retract(const Vector& v, ChartJacobian Horigin=boost::none, ChartJacobian Hv=boost::none) const;
-  Vector localCoordinates(const PoseRTV& p, ChartJacobian Horigin=boost::none,ChartJacobian Hp=boost::none) const;
+  /// @name measurement functions
+  /// @{
 
-  // Lie TODO IS this a Lie group or just a Manifold????
-  /**
-   * expmap/logmap are poor approximations that assume independence of components
-   * Currently implemented using the poor retract/unretract approximations
-   */
-  static PoseRTV Expmap(const Vector9& v, ChartJacobian H = boost::none);
-  static Vector9 Logmap(const PoseRTV& p, ChartJacobian H = boost::none);
-
-  static PoseRTV identity() { return PoseRTV(); }
-
-  /** Derivatives calculated numerically */
-  PoseRTV inverse(ChartJacobian H1=boost::none) const;
-
-  /** Derivatives calculated numerically */
-  PoseRTV compose(const PoseRTV& p,
-      ChartJacobian H1=boost::none,
-      ChartJacobian H2=boost::none) const;
-
-  PoseRTV operator*(const PoseRTV& p) const { return compose(p); }
-
-  /** Derivatives calculated numerically */
-  PoseRTV between(const PoseRTV& p,
-                  ChartJacobian H1=boost::none,
-                  ChartJacobian H2=boost::none) const;
-
-  // measurement functions
-  /** Derivatives calculated numerically */
+  /** range between translations */
   double range(const PoseRTV& other,
                OptionalJacobian<1,9> H1=boost::none,
                OptionalJacobian<1,9> H2=boost::none) const;
+  /// @}
 
-  // IMU-specific
+  /// @name IMU-specific
+  /// @{
 
   /// Dynamics integrator for ground robots
   /// Always move from time 1 to time 2
@@ -197,7 +139,9 @@ public:
       ChartJacobian Dglobal = boost::none,
       OptionalJacobian<9, 6> Dtrans = boost::none) const;
 
-  // Utility functions
+  /// @}
+  /// @name Utility functions
+  /// @{
 
   /// RRTMbn - Function computes the rotation rate transformation matrix from
   /// body axis rates to euler angle (global) rates
@@ -210,6 +154,7 @@ public:
   static Matrix RRTMnb(const Vector& euler);
 
   static Matrix RRTMnb(const Rot3& att);
+  /// @}
 
 private:
   /** Serialization function */

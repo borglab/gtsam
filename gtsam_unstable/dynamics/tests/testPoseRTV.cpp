@@ -76,11 +76,12 @@ TEST( testPoseRTV, equals ) {
 /* ************************************************************************* */
 TEST( testPoseRTV, Lie ) {
   // origin and zero deltas
-  EXPECT(assert_equal(PoseRTV(), PoseRTV().retract(zero(9)), tol));
-  EXPECT(assert_equal(zero(9), PoseRTV().localCoordinates(PoseRTV()), tol));
+  PoseRTV identity;
+  EXPECT(assert_equal(identity, (PoseRTV)identity.retract(zero(9)), tol));
+  EXPECT(assert_equal(zero(9), identity.localCoordinates(identity), tol));
 
   PoseRTV state1(pt, rot, vel);
-  EXPECT(assert_equal(state1, state1.retract(zero(9)), tol));
+  EXPECT(assert_equal(state1, (PoseRTV)state1.retract(zero(9)), tol));
   EXPECT(assert_equal(zero(9), state1.localCoordinates(state1), tol));
 
   Vector delta = (Vector(9) << 0.1, 0.1, 0.1, 0.2, 0.3, 0.4,-0.1,-0.2,-0.3).finished();
@@ -88,9 +89,9 @@ TEST( testPoseRTV, Lie ) {
   Point3 pt2 = pt + rot * Point3(0.2, 0.3, 0.4);
   Velocity3 vel2 = vel + rot * Velocity3(-0.1,-0.2,-0.3);
   PoseRTV state2(pt2, rot2, vel2);
-  EXPECT(assert_equal(state2, state1.retract(delta), 1e-1));
+  EXPECT(assert_equal(state2, (PoseRTV)state1.retract(delta), 1e-1));
   EXPECT(assert_equal(delta, state1.localCoordinates(state2), 1e-1));
-  EXPECT(assert_equal(-delta, state2.localCoordinates(state1), 1e-1)); // loose tolerance due to retract approximation
+  EXPECT(assert_equal(delta, -state2.localCoordinates(state1), 1e-1));
 }
 
 /* ************************************************************************* */

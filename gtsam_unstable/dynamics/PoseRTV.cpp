@@ -3,12 +3,9 @@
  * @author Alex Cunningham
  */
 
-#include <gtsam/base/numericalDerivative.h>
-#include <gtsam/base/Vector.h>
-
-#include <gtsam/geometry/Pose2.h>
-
 #include <gtsam_unstable/dynamics/PoseRTV.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/base/Vector.h>
 
 namespace gtsam {
 
@@ -56,48 +53,6 @@ void PoseRTV::print(const string& s) const {
   gtsam::print((Vector)R().xyz(), "  R:rpy");
   t().print("  T");
   velocity().print("  V");
-}
-
-/* ************************************************************************* */
-PoseRTV PoseRTV::Expmap(const Vector9& v, ChartJacobian H) {
-  if (H) CONCEPT_NOT_IMPLEMENTED;
-  Pose3 newPose = Pose3::Expmap(v.head<6>());
-  Velocity3 newVel = Velocity3(v.tail<3>());
-  return PoseRTV(newPose, newVel);
-}
-
-/* ************************************************************************* */
-Vector9 PoseRTV::Logmap(const PoseRTV& p, ChartJacobian H) {
-  if (H) CONCEPT_NOT_IMPLEMENTED;
-  Vector6 Lx = Pose3::Logmap(p.pose());
-  Vector3 Lv = p.velocity().vector();
-  return (Vector9() << Lx, Lv).finished();
-}
-
-/* ************************************************************************* */
-PoseRTV inverse_(const PoseRTV& p) { return p.inverse(); }
-PoseRTV PoseRTV::inverse(ChartJacobian H1) const {
-  if (H1) *H1 = numericalDerivative11<PoseRTV,PoseRTV>(inverse_, *this, 1e-5);
-  return PoseRTV(pose().inverse(), - velocity());
-}
-
-/* ************************************************************************* */
-PoseRTV compose_(const PoseRTV& p1, const PoseRTV& p2) { return p1.compose(p2); }
-PoseRTV PoseRTV::compose(const PoseRTV& p, ChartJacobian H1,
-    ChartJacobian H2) const {
-  if (H1) *H1 = numericalDerivative21(compose_, *this, p, 1e-5);
-  if (H2) *H2 = numericalDerivative22(compose_, *this, p, 1e-5);
-  return PoseRTV(pose().compose(p.pose()), velocity()+p.velocity());
-}
-
-/* ************************************************************************* */
-PoseRTV between_(const PoseRTV& p1, const PoseRTV& p2) { return p1.between(p2); }
-PoseRTV PoseRTV::between(const PoseRTV& p,
-    ChartJacobian H1,
-    ChartJacobian H2) const {
-  if (H1) *H1 = numericalDerivative21(between_, *this, p, 1e-5);
-  if (H2) *H2 = numericalDerivative22(between_, *this, p, 1e-5);
-  return inverse().compose(p);
 }
 
 /* ************************************************************************* */
@@ -210,54 +165,40 @@ Point3 PoseRTV::translationIntegration(const Rot3& r2, const Velocity3& v2, doub
 }
 
 /* ************************************************************************* */
-double range_(const PoseRTV& A, const PoseRTV& B) { return A.range(B); }
 double PoseRTV::range(const PoseRTV& other,
     OptionalJacobian<1,9> H1, OptionalJacobian<1,9> H2) const {
-  if (H1) *H1 = numericalDerivative21(range_, *this, other, 1e-5);
-  if (H2) *H2 = numericalDerivative22(range_, *this, other, 1e-5);
-  return t().distance(other.t());
+  Matrix36 D_t1_pose, D_t2_other;
+  const Point3 t1 = pose().translation(H1 ? &D_t1_pose : 0);
+  const Point3 t2 = other.pose().translation(H2 ? &D_t2_other : 0);
+  Matrix13 D_d_t1, D_d_t2;
+  double d = t1.distance(t2, H1 ? &D_d_t1 : 0, H2 ? &D_d_t2 : 0);
+  if (H1) *H1 << D_d_t1 * D_t1_pose, 0,0,0;
+  if (H2) *H2 << D_d_t2 * D_t2_other, 0,0,0;
+  return d;
 }
 
 /* ************************************************************************* */
-PoseRTV transformed_from_(const PoseRTV& global, const Pose3& transform) {
-  return global.transformed_from(transform);
-}
-
 PoseRTV PoseRTV::transformed_from(const Pose3& trans, ChartJacobian Dglobal,
     OptionalJacobian<9, 6> Dtrans) const {
-  // Note that we rotate the velocity
-  Matrix DVr, DTt;
-  Velocity3 newvel = trans.rotation().rotate(velocity(), DVr, DTt);
-  if (!Dglobal && !Dtrans)
-    return PoseRTV(trans.compose(pose()), newvel);
 
   // Pose3 transform is just compose
-  Matrix DTc, DGc;
-  Pose3 newpose = trans.compose(pose(), DTc, DGc);
+  Matrix6 D_newpose_trans, D_newpose_pose;
+  Pose3 newpose = trans.compose(pose(), D_newpose_trans, D_newpose_pose);
+
+  // Note that we rotate the velocity
+  Matrix3 D_newvel_R, D_newvel_v;
+  Velocity3 newvel = trans.rotation().rotate(velocity(), D_newvel_R, D_newvel_v);
 
   if (Dglobal) {
-    *Dglobal = zeros(9,9);
-    insertSub(*Dglobal, DGc, 0, 0);
-
-    // Rotate velocity
-    insertSub(*Dglobal, eye(3,3), 6, 6); // FIXME: should this actually be an identity matrix?
+    Dglobal->setZero();
+    Dglobal->topLeftCorner<6,6>() = D_newpose_pose;
+    Dglobal->bottomRightCorner<3,3>() = D_newvel_v;
   }
 
   if (Dtrans) {
-    *Dtrans = numericalDerivative22(transformed_from_, *this, trans, 1e-8);
-    //
-    //    *Dtrans = zeros(9,6);
-    //    // directly affecting the pose
-    //    insertSub(*Dtrans, DTc, 0, 0); // correct in tests
-    //
-    //    // rotating the velocity
-    //    Matrix vRhat = skewSymmetric(-velocity().x(), -velocity().y(), -velocity().z());
-    //    trans.rotation().print("Transform rotation");
-    //    gtsam::print(vRhat, "vRhat");
-    //    gtsam::print(DVr, "DVr");
-    //    // FIXME: find analytic derivative
-    ////    insertSub(*Dtrans, vRhat, 6, 0); // works if PoseRTV.rotation() = I
-    ////    insertSub(*Dtrans, trans.rotation().matrix() * vRhat, 6, 0); // FAIL: both tests fail
+    Dtrans->setZero();
+    Dtrans->topLeftCorner<6,6>() = D_newpose_trans;
+    Dtrans->bottomLeftCorner<3,3>() = D_newvel_R;
   }
   return PoseRTV(newpose, newvel);
 }
