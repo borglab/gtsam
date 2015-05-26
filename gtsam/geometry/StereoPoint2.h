@@ -18,8 +18,8 @@
 
 #pragma once
 
-#include <gtsam/base/VectorSpace.h>
 #include <gtsam/geometry/Point2.h>
+#include <gtsam/base/VectorSpace.h>
 #include <boost/serialization/nvp.hpp>
 
 namespace gtsam {
@@ -89,12 +89,6 @@ public:
   inline StereoPoint2 operator -(const StereoPoint2& b) const {
     return StereoPoint2(uL_ - b.uL_, uR_ - b.uR_, v_ - b.v_);
   }
-
-  /// @}
-  /// @name Vector Space
-  /// @{
-
-  // unit, norm, and distance don't really make sense for StereoPoint2
 
   /// @}
   /// @name Standard Interface
