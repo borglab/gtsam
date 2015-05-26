@@ -110,7 +110,7 @@ public:
   /// @{
 
   /// Exponential map at identity - create a rotation from canonical coordinates \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$
-  static Pose3 Expmap(const Vector& xi, OptionalJacobian<6, 6> H = boost::none);
+  static Pose3 Expmap(const Vector6& xi, OptionalJacobian<6, 6> H = boost::none);
 
   /// Log map at identity - return the canonical coordinates \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$ of this rotation
   static Vector6 Logmap(const Pose3& p, OptionalJacobian<6, 6> H = boost::none);
@@ -125,7 +125,7 @@ public:
    * Apply this pose's AdjointMap Ad_g to a twist \f$ \xi_b \f$, i.e. a body-fixed velocity, transforming it to the spatial frame
    * \f$ \xi^s = g*\xi^b*g^{-1} = Ad_g * \xi^b \f$
    */
-  Vector Adjoint(const Vector& xi_b) const {
+  Vector6 Adjoint(const Vector6& xi_b) const {
     return AdjointMap() * xi_b;
   } /// FIXME Not tested - marked as incorrect
 

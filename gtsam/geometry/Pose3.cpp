@@ -111,7 +111,7 @@ bool Pose3::equals(const Pose3& pose, double tol) const {
 
 /* ************************************************************************* */
 /** Modified from Murray94book version (which assumes w and v normalized?) */
-Pose3 Pose3::Expmap(const Vector& xi, OptionalJacobian<6, 6> H) {
+Pose3 Pose3::Expmap(const Vector6& xi, OptionalJacobian<6, 6> H) {
   if (H) {
     *H = ExpmapDerivative(xi);
   }
@@ -354,25 +354,25 @@ boost::optional<Pose3> align(const vector<Point3Pair>& pairs) {
     return boost::none; // we need at least three pairs
 
   // calculate centroids
-  Vector cp = zero(3), cq = zero(3);
-  BOOST_FOREACH(const Point3Pair& pair, pairs){
-  cp += pair.first.vector();
-  cq += pair.second.vector();
-}
+  Vector3 cp = Vector3::Zero(), cq = Vector3::Zero();
+  BOOST_FOREACH(const Point3Pair& pair, pairs) {
+    cp += pair.first.vector();
+    cq += pair.second.vector();
+  }
   double f = 1.0 / n;
   cp *= f;
   cq *= f;
 
   // Add to form H matrix
-  Matrix3 H = Eigen::Matrix3d::Zero();
-  BOOST_FOREACH(const Point3Pair& pair, pairs){
-  Vector dp = pair.first.vector() - cp;
-  Vector dq = pair.second.vector() - cq;
-  H += dp * dq.transpose();
-}
+  Matrix3 H = Z_3x3;
+  BOOST_FOREACH(const Point3Pair& pair, pairs) {
+    Vector3 dp = pair.first.vector() - cp;
+    Vector3 dq = pair.second.vector() - cq;
+    H += dp * dq.transpose();
+  }
 
 // Compute SVD
-  Matrix U,V;
+  Matrix U, V;
   Vector S;
   svd(H, U, S, V);
 
