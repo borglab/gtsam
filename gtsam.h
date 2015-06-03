@@ -330,8 +330,6 @@ class StereoPoint2 {
   gtsam::StereoPoint2 between(const gtsam::StereoPoint2& p2) const;
 
   // Manifold
-  static size_t Dim();
-  size_t dim() const;
   gtsam::StereoPoint2 retract(Vector v) const;
   Vector localCoordinates(const gtsam::StereoPoint2& p) const;
 
