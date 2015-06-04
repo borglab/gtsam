@@ -10,6 +10,7 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/geometry/Point2.h>
+#include <gtsam/base/Manifold.h>
 #include <iosfwd>
 
 namespace gtsam {
@@ -20,17 +21,18 @@ namespace gtsam {
  * but here we choose instead to parameterize it as a (Rot3,Unit3) pair.
  * We can then non-linearly optimize immediately on this 5-dimensional manifold.
  */
-class GTSAM_EXPORT EssentialMatrix {
+class GTSAM_EXPORT EssentialMatrix : private ProductManifold<Rot3, Unit3> {
 
 private:
-
-  Rot3 aRb_; ///< Rotation between a and b
-  Unit3 aTb_; ///< translation direction from a to b
+  typedef ProductManifold<Rot3, Unit3> Base;
   Matrix3 E_; ///< Essential matrix
 
-public:
+  /// Construct from Base
+  EssentialMatrix(const Base& base) :
+      Base(base), E_(direction().skew() * rotation().matrix()) {
+  }
 
-  enum { dimension = 5 };
+public:
 
   /// Static function to convert Point2 to homogeneous coordinates
   static Vector3 Homogeneous(const Point2& p) {
@@ -42,12 +44,12 @@ public:
 
   /// Default constructor
   EssentialMatrix() :
-      aTb_(1, 0, 0), E_(aTb_.skew()) {
+      Base(Rot3(), Unit3(1, 0, 0)), E_(direction().skew()) {
   }
 
   /// Construct from rotation and translation
   EssentialMatrix(const Rot3& aRb, const Unit3& aTb) :
-      aRb_(aRb), aTb_(aTb), E_(aTb_.skew() * aRb_.matrix()) {
+      Base(aRb, aTb), E_(direction().skew() * rotation().matrix()) {
   }
 
   /// Named constructor converting a Pose3 with scale to EssentialMatrix (no scale)
@@ -72,7 +74,8 @@ public:
 
   /// assert equality up to a tolerance
   bool equals(const EssentialMatrix& other, double tol = 1e-8) const {
-    return aRb_.equals(other.aRb_, tol) && aTb_.equals(other.aTb_, tol);
+    return rotation().equals(other.rotation(), tol)
+        && direction().equals(other.direction(), tol);
   }
 
   /// @}
@@ -80,22 +83,19 @@ public:
   /// @name Manifold
   /// @{
 
-  /// Dimensionality of tangent space = 5 DOF
-  inline static size_t Dim() {
-    return 5;
-  }
-
-  /// Return the dimensionality of the tangent space
-  size_t dim() const {
-    return 5;
-  }
+  using Base::dimension;
+  using Base::dim;
+  using Base::Dim;
 
   /// Retract delta to manifold
-  EssentialMatrix retract(const Vector& xi) const;
+  EssentialMatrix retract(const TangentVector& v) const {
+    return Base::retract(v);
+  }
 
   /// Compute the coordinates in the tangent space
-  Vector5 localCoordinates(const EssentialMatrix& other) const;
-
+  TangentVector localCoordinates(const EssentialMatrix& other) const {
+    return Base::localCoordinates(other);
+  }
   /// @}
 
   /// @name Essential matrix methods
@@ -103,12 +103,12 @@ public:
 
   /// Rotation
   inline const Rot3& rotation() const {
-    return aRb_;
+    return this->first;
   }
 
   /// Direction
   inline const Unit3& direction() const {
-    return aTb_;
+    return this->second;
   }
 
   /// Return 3*3 matrix representation
@@ -118,12 +118,12 @@ public:
 
   /// Return epipole in image_a , as Unit3 to allow for infinity
   inline const Unit3& epipole_a() const {
-    return aTb_; // == direction()
+    return direction();
   }
 
   /// Return epipole in image_b, as Unit3 to allow for infinity
   inline Unit3 epipole_b() const {
-    return aRb_.unrotate(aTb_); // == rotation.unrotate(direction())
+    return rotation().unrotate(direction());
   }
 
   /**
@@ -180,8 +180,8 @@ private:
   friend class boost::serialization::access;
   template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-      ar & BOOST_SERIALIZATION_NVP(aRb_);
-      ar & BOOST_SERIALIZATION_NVP(aTb_);
+      ar & BOOST_SERIALIZATION_NVP(first);
+      ar & BOOST_SERIALIZATION_NVP(second);
 
       ar & boost::serialization::make_nvp("E11", E_(0,0));
       ar & boost::serialization::make_nvp("E12", E_(0,1));
@@ -195,7 +195,6 @@ private:
     }
 
   /// @}
-
 };
 
 template<>

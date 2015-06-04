@@ -659,17 +659,17 @@ Rot3 T2(Rot3::rodriguez(Vector3(0, 1, 0), 2));
 TEST(Rot3 , Invariants) {
   Rot3 id;
 
-  check_group_invariants(id,id);
-  check_group_invariants(id,T1);
-  check_group_invariants(T2,id);
-  check_group_invariants(T2,T1);
-  check_group_invariants(T1,T2);
+  EXPECT(check_group_invariants(id,id));
+  EXPECT(check_group_invariants(id,T1));
+  EXPECT(check_group_invariants(T2,id));
+  EXPECT(check_group_invariants(T2,T1));
+  EXPECT(check_group_invariants(T1,T2));
 
-  check_manifold_invariants(id,id);
-  check_manifold_invariants(id,T1);
-  check_manifold_invariants(T2,id);
-  check_manifold_invariants(T2,T1);
-  check_manifold_invariants(T1,T2);
+  EXPECT(check_manifold_invariants(id,id));
+  EXPECT(check_manifold_invariants(id,T1));
+  EXPECT(check_manifold_invariants(T2,id));
+  EXPECT(check_manifold_invariants(T2,T1));
+  EXPECT(check_manifold_invariants(T1,T2));
 }
 
 //******************************************************************************
