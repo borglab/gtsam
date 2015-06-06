@@ -22,6 +22,7 @@
 #include <gtsam/slam/ProjectionFactor.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/nonlinear/ExpressionFactor.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/expressionTesting.h>
 #include <gtsam/base/Testable.h>
 
@@ -261,8 +262,8 @@ TEST(ExpressionFactor, Shallow) {
   EXPECT_LONGS_EQUAL(352, sizeof(Binary::Record));
   LONGS_EQUAL(96+352, expectedTraceSize);
 #else
-  EXPECT_LONGS_EQUAL(400, sizeof(Binary::Record));
-  LONGS_EQUAL(112+400, expectedTraceSize);
+  EXPECT_LONGS_EQUAL(384, sizeof(Binary::Record));
+  LONGS_EQUAL(96+384, expectedTraceSize);
 #endif
   size_t size = expression.traceSize();
   CHECK(size);
@@ -494,6 +495,11 @@ TEST(ExpressionFactor, tree_finite_differences) {
   const double fd_step = 1e-5;
   const double tolerance = 1e-5;
   EXPECT_CORRECT_EXPRESSION_JACOBIANS(uv_hat, values, fd_step, tolerance);
+}
+
+TEST(ExpressionFactor, push_back) {
+  NonlinearFactorGraph graph;
+  graph.addExpressionFactor(model, Point2(0, 0), leaf::p);
 }
 
 /* ************************************************************************* */

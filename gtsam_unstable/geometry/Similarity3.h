@@ -148,5 +148,5 @@ public:
 };
 
 template<>
-struct traits<Similarity3> : public internal::LieGroupTraits<Similarity3> {};
+struct traits<Similarity3> : public internal::LieGroup<Similarity3> {};
 }

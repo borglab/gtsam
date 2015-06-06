@@ -365,32 +365,50 @@ void JacobianFactor::print(const string& s,
 /* ************************************************************************* */
 // Check if two linear factors are equal
 bool JacobianFactor::equals(const GaussianFactor& f_, double tol) const {
-  if (!dynamic_cast<const JacobianFactor*>(&f_))
+  static const bool verbose = false;
+  if (!dynamic_cast<const JacobianFactor*>(&f_)) {
+    if (verbose)
+      cout << "JacobianFactor::equals: Incorrect type" << endl;
     return false;
-  else {
+  } else {
     const JacobianFactor& f(static_cast<const JacobianFactor&>(f_));
 
     // Check keys
-    if (keys() != f.keys())
+    if (keys() != f.keys()) {
+      if (verbose)
+        cout << "JacobianFactor::equals: keys do not match" << endl;
       return false;
+    }
 
     // Check noise model
-    if ((model_ && !f.model_) || (!model_ && f.model_))
+    if ((model_ && !f.model_) || (!model_ && f.model_)) {
+      if (verbose)
+        cout << "JacobianFactor::equals: noise model mismatch" << endl;
       return false;
-    if (model_ && f.model_ && !model_->equals(*f.model_, tol))
+    }
+    if (model_ && f.model_ && !model_->equals(*f.model_, tol)) {
+      if (verbose)
+        cout << "JacobianFactor::equals: noise modesl are not equal" << endl;
       return false;
+    }
 
     // Check matrix sizes
-    if (!(Ab_.rows() == f.Ab_.rows() && Ab_.cols() == f.Ab_.cols()))
+    if (!(Ab_.rows() == f.Ab_.rows() && Ab_.cols() == f.Ab_.cols())) {
+      if (verbose)
+        cout << "JacobianFactor::equals: augmented size mismatch" << endl;
       return false;
+    }
 
     // Check matrix contents
     constABlock Ab1(Ab_.range(0, Ab_.nBlocks()));
     constABlock Ab2(f.Ab_.range(0, f.Ab_.nBlocks()));
     for (size_t row = 0; row < (size_t) Ab1.rows(); ++row)
       if (!equal_with_abs_tol(Ab1.row(row), Ab2.row(row), tol)
-          && !equal_with_abs_tol(-Ab1.row(row), Ab2.row(row), tol))
+          && !equal_with_abs_tol(-Ab1.row(row), Ab2.row(row), tol)) {
+        if (verbose)
+          cout << "JacobianFactor::equals: matrix mismatch at row " << row << endl;
         return false;
+      }
 
     return true;
   }

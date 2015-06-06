@@ -36,8 +36,8 @@ TEST(Point3 , Concept) {
 //******************************************************************************
 TEST(Point3 , Invariants) {
   Point3 p1(1, 2, 3), p2(4, 5, 6);
-  check_group_invariants(p1, p2);
-  check_manifold_invariants(p1, p2);
+  EXPECT(check_group_invariants(p1, p2));
+  EXPECT(check_manifold_invariants(p1, p2));
 }
 
 /* ************************************************************************* */

@@ -70,7 +70,7 @@ namespace gtsam {
     Subgraph(const std::vector<size_t> &indices) ;
 
     inline const Edges& edges() const { return edges_; }
-    inline const size_t size() const { return edges_.size(); }
+    inline size_t size() const { return edges_.size(); }
     EdgeIndices edgeIndices() const;
 
     iterator begin() { return edges_.begin(); }

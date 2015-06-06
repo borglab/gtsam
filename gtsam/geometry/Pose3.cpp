@@ -111,8 +111,10 @@ bool Pose3::equals(const Pose3& pose, double tol) const {
 
 /* ************************************************************************* */
 /** Modified from Murray94book version (which assumes w and v normalized?) */
-Pose3 Pose3::Expmap(const Vector& xi, OptionalJacobian<6, 6> H) {
-  if (H) *H = ExpmapDerivative(xi);
+Pose3 Pose3::Expmap(const Vector6& xi, OptionalJacobian<6, 6> H) {
+  if (H) {
+    *H = ExpmapDerivative(xi);
+  }
 
   // get angular velocity omega and translational velocity v from twist xi
   Point3 w(xi(0), xi(1), xi(2)), v(xi(3), xi(4), xi(5));
@@ -255,6 +257,14 @@ Matrix6 Pose3::LogmapDerivative(const Pose3& pose) {
 }
 
 /* ************************************************************************* */
+const Point3& Pose3::translation(OptionalJacobian<3, 6> H) const {
+  if (H) {
+    *H << Z_3x3, rotation().matrix();
+  }
+  return t_;
+}
+
+/* ************************************************************************* */
 Matrix4 Pose3::matrix() const {
   const Matrix3 R = R_.matrix();
   const Vector3 T = t_.vector();
@@ -280,8 +290,9 @@ Point3 Pose3::transform_from(const Point3& p, OptionalJacobian<3,6> Dpose,
     Matrix3 DR = R * skewSymmetric(-p.x(), -p.y(), -p.z());
     (*Dpose) << DR, R;
   }
-  if (Dpoint)
+  if (Dpoint) {
     *Dpoint = R_.matrix();
+  }
   return R_ * p + t_;
 }
 
@@ -299,17 +310,18 @@ Point3 Pose3::transform_to(const Point3& p, OptionalJacobian<3,6> Dpose,
         +wz, 0.0, -wx, 0.0,-1.0, 0.0,
         -wy, +wx, 0.0, 0.0, 0.0,-1.0;
   }
-  if (Dpoint)
+  if (Dpoint) {
     *Dpoint = Rt;
+  }
   return q;
 }
 
 /* ************************************************************************* */
 double Pose3::range(const Point3& point, OptionalJacobian<1, 6> H1,
     OptionalJacobian<1, 3> H2) const {
-  if (!H1 && !H2)
+  if (!H1 && !H2) {
     return transform_to(point).norm();
-  else {
+  } else {
     Matrix36 D1;
     Matrix3 D2;
     Point3 d = transform_to(point, H1 ? &D1 : 0, H2 ? &D2 : 0);
@@ -342,25 +354,25 @@ boost::optional<Pose3> align(const vector<Point3Pair>& pairs) {
     return boost::none; // we need at least three pairs
 
   // calculate centroids
-  Vector cp = zero(3), cq = zero(3);
-  BOOST_FOREACH(const Point3Pair& pair, pairs){
-  cp += pair.first.vector();
-  cq += pair.second.vector();
-}
+  Vector3 cp = Vector3::Zero(), cq = Vector3::Zero();
+  BOOST_FOREACH(const Point3Pair& pair, pairs) {
+    cp += pair.first.vector();
+    cq += pair.second.vector();
+  }
   double f = 1.0 / n;
   cp *= f;
   cq *= f;
 
   // Add to form H matrix
-  Matrix3 H = Eigen::Matrix3d::Zero();
-  BOOST_FOREACH(const Point3Pair& pair, pairs){
-  Vector dp = pair.first.vector() - cp;
-  Vector dq = pair.second.vector() - cq;
-  H += dp * dq.transpose();
-}
+  Matrix3 H = Z_3x3;
+  BOOST_FOREACH(const Point3Pair& pair, pairs) {
+    Vector3 dp = pair.first.vector() - cp;
+    Vector3 dq = pair.second.vector() - cq;
+    H += dp * dq.transpose();
+  }
 
 // Compute SVD
-  Matrix U,V;
+  Matrix U, V;
   Vector S;
   svd(H, U, S, V);
 

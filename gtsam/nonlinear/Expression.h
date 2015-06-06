@@ -24,6 +24,7 @@
 #include <gtsam/base/OptionalJacobian.h>
 
 #include <boost/bind.hpp>
+#include <boost/make_shared.hpp>
 #include <map>
 
 // Forward declare tests
@@ -59,7 +60,9 @@ private:
 public:
 
   // Expressions wrap trees of functions that can evaluate their own derivatives.
-  // The meta-functions below provide a handy to specify the type of those functions
+  // The meta-functions below are useful to specify the type of those functions.
+  // Example, a function taking a camera and a 3D point and yielding a 2D point:
+  //   Expression<Point2>::BinaryFunction<SimpleCamera,Point3>::type
   template<class A1>
   struct UnaryFunction {
     typedef boost::function<
@@ -133,6 +136,10 @@ public:
           typename MakeOptionalJacobian<T, A2>::type,
           typename MakeOptionalJacobian<T, A3>::type) const,
       const Expression<A2>& expression2, const Expression<A3>& expression3);
+
+  /// Destructor
+  virtual ~Expression() {
+  }
 
   /// Return keys that play in this expression
   std::set<Key> keys() const;

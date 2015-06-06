@@ -15,10 +15,10 @@
  * @author  Richard Roberts
  */
 
-#include <iostream>
 
+#include <gtsam/geometry/Pose2.h>
 #include <gtsam/base/timing.h>
-#include <gtsam/geometry/Rot2.h>
+#include <iostream>
 
 using namespace std;
 using namespace gtsam;

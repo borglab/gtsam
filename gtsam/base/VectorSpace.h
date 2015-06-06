@@ -20,16 +20,9 @@ template<typename T> struct traits;
 
 namespace internal {
 
-/// VectorSpace Implementation for Fixed sizes
+/// VectorSpaceTraits Implementation for Fixed sizes
 template<class Class, int N>
 struct VectorSpaceImpl {
-
-  /// @name Group
-  /// @{
-  static Class Compose(const Class& v1, const Class& v2) { return v1+v2;}
-  static Class Between(const Class& v1, const Class& v2) { return v2-v1;}
-  static Class Inverse(const Class& m) { return -m;}
-  /// @}
 
   /// @name Manifold
   /// @{
@@ -68,21 +61,21 @@ struct VectorSpaceImpl {
     return Class(v);
   }
 
-  static Class Compose(const Class& v1, const Class& v2, ChartJacobian H1,
-      ChartJacobian H2) {
+  static Class Compose(const Class& v1, const Class& v2, ChartJacobian H1 = boost::none,
+      ChartJacobian H2 = boost::none) {
     if (H1) *H1 = Jacobian::Identity();
     if (H2) *H2 = Jacobian::Identity();
     return v1 + v2;
   }
 
-  static Class Between(const Class& v1, const Class& v2, ChartJacobian H1,
-      ChartJacobian H2) {
+  static Class Between(const Class& v1, const Class& v2, ChartJacobian H1 = boost::none,
+      ChartJacobian H2 = boost::none) {
     if (H1) *H1 = - Jacobian::Identity();
     if (H2) *H2 =   Jacobian::Identity();
     return v2 - v1;
   }
 
-  static Class Inverse(const Class& v, ChartJacobian H) {
+  static Class Inverse(const Class& v, ChartJacobian H = boost::none) {
     if (H) *H = - Jacobian::Identity();
     return -v;
   }
@@ -90,7 +83,7 @@ struct VectorSpaceImpl {
   /// @}
 };
 
-/// VectorSpace implementation for dynamic types.
+/// VectorSpaceTraits implementation for dynamic types.
 template<class Class>
 struct VectorSpaceImpl<Class,Eigen::Dynamic> {
 
@@ -166,11 +159,11 @@ struct VectorSpaceImpl<Class,Eigen::Dynamic> {
   /// @}
 };
 
-/// A helper that implements the traits interface for GTSAM lie groups.
+/// A helper that implements the traits interface for GTSAM vector space types.
 /// To use this for your gtsam type, define:
-/// template<> struct traits<Type> : public VectorSpace<Type> { };
+/// template<> struct traits<Type> : public VectorSpaceTraits<Type> { };
 template<class Class>
-struct VectorSpace: Testable<Class>, VectorSpaceImpl<Class, Class::dimension> {
+struct VectorSpaceTraits: VectorSpaceImpl<Class, Class::dimension> {
 
   typedef vector_space_tag structure_category;
 
@@ -185,8 +178,11 @@ struct VectorSpace: Testable<Class>, VectorSpaceImpl<Class, Class::dimension> {
   enum { dimension = Class::dimension};
   typedef Class ManifoldType;
   /// @}
-
 };
+
+/// Both VectorSpaceTRaits and Testable
+template<class Class>
+struct VectorSpace: Testable<Class>, VectorSpaceTraits<Class> {};
 
 /// A helper that implements the traits interface for GTSAM lie groups.
 /// To use this for your gtsam type, define:

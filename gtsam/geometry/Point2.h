@@ -148,7 +148,7 @@ public:
   /// @{
 
   /// equality
-  inline bool operator ==(const Point2& q) const {return x_==q.x_ && q.y_==q.y_;}
+  inline bool operator ==(const Point2& q) const {return x_==q.x_ && y_==q.y_;}
 
   /// get x
   double x() const {return x_;}
@@ -192,8 +192,10 @@ private:
   }
 
   /// @}
-
 };
+
+// For MATLAB wrapper
+typedef std::vector<Point2> Point2Vector;
 
 /// multiply with scalar
 inline Point2 operator*(double s, const Point2& p) {return p*s;}

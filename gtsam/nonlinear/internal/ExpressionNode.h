@@ -129,6 +129,10 @@ class ConstantExpression: public ExpressionNode<T> {
 
 public:
 
+  /// Destructor
+  virtual ~ConstantExpression() {
+  }
+
   /// Return value
   virtual T value(const Values& values) const {
     return constant_;
@@ -154,11 +158,14 @@ class LeafExpression: public ExpressionNode<T> {
   LeafExpression(Key key) :
       key_(key) {
   }
-  // todo: do we need a virtual destructor here too?
 
   friend class Expression<T> ;
 
 public:
+
+  /// Destructor
+  virtual ~LeafExpression() {
+  }
 
   /// Return keys that play in this expression
   virtual std::set<Key> keys() const {
@@ -205,18 +212,23 @@ class UnaryExpression: public ExpressionNode<T> {
   boost::shared_ptr<ExpressionNode<A1> > expression1_;
   Function function_;
 
-public:
-
   /// Constructor with a unary function f, and input argument e1
   UnaryExpression(Function f, const Expression<A1>& e1) :
       expression1_(e1.root()), function_(f) {
     ExpressionNode<T>::traceSize_ = upAligned(sizeof(Record)) + e1.traceSize();
   }
 
+  friend class Expression<T> ;
+
+public:
+
+  /// Destructor
+  virtual ~UnaryExpression() {
+  }
+
   /// Return value
   virtual T value(const Values& values) const {
-    using boost::none;
-    return function_(expression1_->value(values), none);
+    return function_(expression1_->value(values), boost::none);
   }
 
   /// Return keys that play in this expression
@@ -300,8 +312,6 @@ class BinaryExpression: public ExpressionNode<T> {
   boost::shared_ptr<ExpressionNode<A2> > expression2_;
   Function function_;
 
-public:
-
   /// Constructor with a binary function f, and two input arguments
   BinaryExpression(Function f, const Expression<A1>& e1,
       const Expression<A2>& e2) :
@@ -310,7 +320,14 @@ public:
         upAligned(sizeof(Record)) + e1.traceSize() + e2.traceSize();
   }
 
+  friend class Expression<T> ;
   friend class ::ExpressionFactorBinaryTest;
+
+public:
+
+  /// Destructor
+  virtual ~BinaryExpression() {
+  }
 
   /// Return value
   virtual T value(const Values& values) const {
@@ -394,8 +411,6 @@ class TernaryExpression: public ExpressionNode<T> {
   boost::shared_ptr<ExpressionNode<A3> > expression3_;
   Function function_;
 
-public:
-
   /// Constructor with a ternary function f, and two input arguments
   TernaryExpression(Function f, const Expression<A1>& e1,
       const Expression<A2>& e2, const Expression<A3>& e3) :
@@ -403,6 +418,14 @@ public:
       function_(f) {
     ExpressionNode<T>::traceSize_ = upAligned(sizeof(Record)) + //
         e1.traceSize() + e2.traceSize() + e3.traceSize();
+  }
+
+  friend class Expression<T> ;
+
+public:
+
+  /// Destructor
+  virtual ~TernaryExpression() {
   }
 
   /// Return value

@@ -267,7 +267,8 @@ TEST(AdaptAutoDiff, Snavely) {
 #ifdef GTSAM_USE_QUATERNIONS
   EXPECT_LONGS_EQUAL(384,expression.traceSize()); // Todo, should be zero
 #else
-  EXPECT_LONGS_EQUAL(416,expression.traceSize()); // Todo, should be zero
+  EXPECT_LONGS_EQUAL(sizeof(internal::BinaryExpression<Point2, Camera, Point3>::Record),
+                     expression.traceSize());  // Todo, should be zero
 #endif
   set<Key> expected = list_of(1)(2);
   EXPECT(expected == expression.keys());

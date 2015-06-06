@@ -37,8 +37,8 @@ TEST(LieScalar , Concept) {
 //******************************************************************************
 TEST(LieScalar , Invariants) {
   LieScalar lie1(2), lie2(3);
-  check_group_invariants(lie1, lie2);
-  check_manifold_invariants(lie1, lie2);
+  CHECK(check_group_invariants(lie1, lie2));
+  CHECK(check_manifold_invariants(lie1, lie2));
 }
 
 /* ************************************************************************* */

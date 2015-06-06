@@ -51,7 +51,7 @@ public:
       n_(s), d_(d) {
   }
 
-  OrientedPlane3(Vector vec) :
+  OrientedPlane3(const Vector4& vec) :
       n_(vec(0), vec(1), vec(2)), d_(vec(3)) {
   }
 
@@ -62,7 +62,7 @@ public:
     d_ = d;
   }
 
-  /// The print fuction
+  /// The print function
   void print(const std::string& s = std::string()) const;
 
   /// The equals function with tolerance
@@ -89,7 +89,7 @@ public:
   }
 
   /// The retract function
-  OrientedPlane3 retract(const Vector& v) const;
+  OrientedPlane3 retract(const Vector3& v) const;
 
   /// The local coordinates function
   Vector3 localCoordinates(const OrientedPlane3& s) const;
