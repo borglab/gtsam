@@ -104,6 +104,7 @@ TEST(Group, S3) {
 //******************************************************************************
 // The direct product of S2=Z2 and S3 is the symmetry group of a hexagon,
 // i.e., the dihedral group of order 12 (denoted Dih6 because 6-sided polygon)
+namespace gtsam {
 typedef DirectProduct<S2, S3> Dih6;
 
 std::ostream &operator<<(std::ostream &os, const Dih6& m) {
@@ -112,7 +113,7 @@ std::ostream &operator<<(std::ostream &os, const Dih6& m) {
 }
 
 // Provide traits with Testable
-namespace gtsam {
+
 template<>
 struct traits<Dih6> : internal::MultiplicativeGroupTraits<Dih6> {
   static void Print(const Dih6& m, const string& s = "") {
