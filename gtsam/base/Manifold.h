@@ -138,7 +138,7 @@ class IsManifold {
 public:
 
   typedef typename traits<T>::structure_category structure_category_tag;
-  static const size_t dim = traits<T>::dimension;
+  static const int dim = traits<T>::dimension;
   typedef typename traits<T>::ManifoldType ManifoldType;
   typedef typename traits<T>::TangentVector TangentVector;
 
