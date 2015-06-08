@@ -17,11 +17,8 @@
 
 #pragma once
 
+#include <gtsam/base/VectorSpace.h>
 #include <boost/serialization/nvp.hpp>
-
-#include <gtsam/base/DerivedValue.h>
-#include <gtsam/base/Matrix.h>
-#include <gtsam/base/Lie.h>
 
 namespace gtsam {
 
@@ -33,13 +30,12 @@ namespace gtsam {
  * \nosubgrouping
  */
 class GTSAM_EXPORT Point2 {
-
 private:
 
   double x_, y_;
 
 public:
-
+  enum { dimension = 2 };
   /// @name Standard Constructors
   /// @{
 
@@ -54,9 +50,7 @@ public:
   /// @{
 
   /// construct from 2D vector
-  Point2(const Vector& v) {
-    if(v.size() != 2)
-      throw std::invalid_argument("Point2 constructor from Vector requires that the Vector have dimension 2");
+  Point2(const Vector2& v) {
     x_ = v(0);
     y_ = v(1);
   }
@@ -113,65 +107,16 @@ public:
   /// @{
 
   /// identity
-  inline static Point2 identity() {
-    return Point2();
-  }
+  inline static Point2 identity() {return Point2();}
 
-  /// "Inverse" - negates each coordinate such that compose(p,inverse(p)) == identity()
-  inline Point2 inverse() const { return Point2(-x_, -y_); }
-
-  /// syntactic sugar for inverse, i.e., -p == inverse(p)
+  /// inverse
   inline Point2 operator- () const {return Point2(-x_,-y_);}
 
-  /// "Compose", just adds the coordinates of two points. With optional derivatives
-  inline Point2 compose(const Point2& q,
-      boost::optional<Matrix&> H1=boost::none,
-      boost::optional<Matrix&> H2=boost::none) const {
-    if(H1) *H1 = eye(2);
-    if(H2) *H2 = eye(2);
-    return *this + q;
-  }
-
-  /// syntactic sugar for adding two points, i.e., p+q == compose(p,q)
+  /// add
   inline Point2 operator + (const Point2& q) const {return Point2(x_+q.x_,y_+q.y_);}
 
-  /// "Between", subtracts point coordinates. between(p,q) == compose(inverse(p),q)
-  inline Point2 between(const Point2& q,
-      boost::optional<Matrix&> H1=boost::none,
-      boost::optional<Matrix&> H2=boost::none) const {
-    if(H1) *H1 = -eye(2);
-    if(H2) *H2 = eye(2);
-    return q - (*this);
-  }
-
-  /// syntactic sugar for subtracting points, i.e., q-p == between(p,q)
+  /// subtract
   inline Point2 operator - (const Point2& q) const {return Point2(x_-q.x_,y_-q.y_);}
-
-  /// @}
-  /// @name Manifold
-  /// @{
-
-  /// dimension of the variable - used to autodetect sizes
-  inline static size_t Dim() { return 2; }
-
-  /// Dimensionality of tangent space = 2 DOF
-  inline size_t dim() const { return 2; }
-
-  /// Updates a with tangent space delta
-  inline Point2 retract(const Vector& v) const { return *this + Point2(v); }
-
-  /// Local coordinates of manifold neighborhood around current value
-  inline Vector localCoordinates(const Point2& t2) const { return Logmap(between(t2)); }
-
-  /// @}
-  /// @name Lie Group
-  /// @{
-
-  /// Exponential map around identity - just create a Point2 from a vector
-  static inline Point2 Expmap(const Vector& v) { return Point2(v); }
-
-  /// Log map around identity - just return the Point2 as a vector
-  static inline Vector Logmap(const Point2& dp) { return (Vector(2) << dp.x(), dp.y()).finished(); }
 
   /// @}
   /// @name Vector Space
@@ -180,15 +125,12 @@ public:
   /** creates a unit vector */
   Point2 unit() const { return *this/norm(); }
 
-  /** norm of point */
-  double norm() const;
-
   /** norm of point, with derivative */
-  double norm(boost::optional<Matrix&> H) const;
+  double norm(OptionalJacobian<1,2> H = boost::none) const;
 
   /** distance between two points */
-  double distance(const Point2& p2, boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const;
+  double distance(const Point2& p2, OptionalJacobian<1,2> H1 = boost::none,
+      OptionalJacobian<1,2> H2 = boost::none) const;
 
   /** @deprecated The following function has been deprecated, use distance above */
   inline double dist(const Point2& p2) const {
@@ -206,7 +148,7 @@ public:
   /// @{
 
   /// equality
-  inline bool operator ==(const Point2& q) const {return x_==q.x_ && q.y_==q.y_;}
+  inline bool operator ==(const Point2& q) const {return x_==q.x_ && y_==q.y_;}
 
   /// get x
   double x() const {return x_;}
@@ -218,10 +160,18 @@ public:
   Vector2 vector() const { return Vector2(x_, y_); }
 
   /// @}
-  /// @name Deprecated (non-const, non-functional style. Do not use).
+
+  /// @name Deprecated
   /// @{
   inline void operator += (const Point2& q) {x_+=q.x_;y_+=q.y_;}
   inline void operator *= (double s) {x_*=s;y_*=s;}
+  Point2 inverse() const { return -(*this);}
+  Point2 compose(const Point2& q) const { return (*this)+q;}
+  Point2 between(const Point2& q) const { return q-(*this);}
+  Vector2 localCoordinates(const Point2& q) const { return between(q).vector();}
+  Point2 retract(const Vector2& v) const { return compose(Point2(v));}
+  static Vector2 Logmap(const Point2& p) { return p.vector();}
+  static Point2 Expmap(const Vector2& v) { return Point2(v);}
   /// @}
 
   /// Streaming
@@ -235,35 +185,23 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version)
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/)
   {
     ar & BOOST_SERIALIZATION_NVP(x_);
     ar & BOOST_SERIALIZATION_NVP(y_);
   }
 
   /// @}
-
 };
+
+// For MATLAB wrapper
+typedef std::vector<Point2> Point2Vector;
 
 /// multiply with scalar
 inline Point2 operator*(double s, const Point2& p) {return p*s;}
 
-// Define GTSAM traits
-namespace traits {
-
 template<>
-struct GTSAM_EXPORT is_group<Point2> : public boost::true_type{
-};
+struct traits<Point2> : public internal::VectorSpace<Point2> {};
 
-template<>
-struct GTSAM_EXPORT is_manifold<Point2> : public boost::true_type{
-};
-
-template<>
-struct GTSAM_EXPORT dimension<Point2> : public boost::integral_constant<int, 2>{
-};
-
-}
-
-}
+} // \ namespace gtsam
 

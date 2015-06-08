@@ -18,13 +18,17 @@
 
 // \callgraph
 
+
 #pragma once
 
-#include <list>
-#include <vector>
-#include <iostream>
+#ifndef MKL_BLAS
+#define MKL_BLAS MKL_DOMAIN_BLAS
+#endif
+
 #include <gtsam/global_includes.h>
-#include <gtsam/3rdparty/gtsam_eigen_includes.h>
+#include <Eigen/Core>
+#include <iosfwd>
+#include <list>
 
 namespace gtsam {
 
@@ -34,6 +38,7 @@ namespace gtsam {
 typedef Eigen::VectorXd Vector;
 
 // Commonly used fixed size vectors
+typedef Eigen::Matrix<double, 1, 1> Vector1;
 typedef Eigen::Vector2d Vector2;
 typedef Eigen::Vector3d Vector3;
 typedef Eigen::Matrix<double, 4, 1> Vector4;
@@ -42,6 +47,7 @@ typedef Eigen::Matrix<double, 6, 1> Vector6;
 typedef Eigen::Matrix<double, 7, 1> Vector7;
 typedef Eigen::Matrix<double, 8, 1> Vector8;
 typedef Eigen::Matrix<double, 9, 1> Vector9;
+typedef Eigen::Matrix<double, 10, 1> Vector10;
 
 typedef Eigen::VectorBlock<Vector> SubVector;
 typedef Eigen::VectorBlock<const Vector> ConstSubVector;
@@ -95,9 +101,14 @@ GTSAM_EXPORT bool zero(const Vector& v);
 inline size_t dim(const Vector& v) { return v.size(); }
 
 /**
- * print with optional string
+ * print without optional string, must specify cout yourself
  */
-GTSAM_EXPORT void print(const Vector& v, const std::string& s = "", std::ostream& stream = std::cout);
+GTSAM_EXPORT void print(const Vector& v, const std::string& s, std::ostream& stream);
+
+/**
+ * print with optional string to cout
+ */
+GTSAM_EXPORT void print(const Vector& v, const std::string& s = "");
 
 /**
  * save a vector to file, which can be loaded by matlab
@@ -344,14 +355,14 @@ namespace boost {
 
     // split version - copies into an STL vector for serialization
     template<class Archive>
-    void save(Archive & ar, const gtsam::Vector & v, unsigned int version) {
+    void save(Archive & ar, const gtsam::Vector & v, unsigned int /*version*/) {
       const size_t size = v.size();
       ar << BOOST_SERIALIZATION_NVP(size);
       ar << make_nvp("data", make_array(v.data(), v.size()));
     }
 
     template<class Archive>
-    void load(Archive & ar, gtsam::Vector & v, unsigned int version) {
+    void load(Archive & ar, gtsam::Vector & v, unsigned int /*version*/) {
       size_t size;
       ar >> BOOST_SERIALIZATION_NVP(size);
       v.resize(size);
@@ -360,12 +371,12 @@ namespace boost {
 
     // split version - copies into an STL vector for serialization
     template<class Archive, int D>
-    void save(Archive & ar, const Eigen::Matrix<double,D,1> & v, unsigned int version) {
+    void save(Archive & ar, const Eigen::Matrix<double,D,1> & v, unsigned int /*version*/) {
       ar << make_nvp("data", make_array(v.data(), v.RowsAtCompileTime));
     }
 
     template<class Archive, int D>
-    void load(Archive & ar, Eigen::Matrix<double,D,1> & v, unsigned int version) {
+    void load(Archive & ar, Eigen::Matrix<double,D,1> & v, unsigned int /*version*/) {
       ar >> make_nvp("data", make_array(v.data(), v.RowsAtCompileTime));
     }
 

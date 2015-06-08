@@ -18,13 +18,14 @@
 
 #pragma once
 
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/Matrix.h>
+
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/extended_type_info.hpp>
 #include <boost/serialization/singleton.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/optional.hpp>
-#include <gtsam/base/Matrix.h>
-#include <cmath>
 
 namespace gtsam {
 
@@ -57,13 +58,13 @@ namespace gtsam {
 
     public:
 
-      /** primary constructor @param dim is the dimension of the model */
+      /// primary constructor @param dim is the dimension of the model
       Base(size_t dim = 1):dim_(dim) {}
       virtual ~Base() {}
 
-      /** true if a constrained noise mode, saves slow/clumsy dynamic casting */
-      virtual bool is_constrained() const {
-        return false;
+      /// true if a constrained noise mode, saves slow/clumsy dynamic casting
+      virtual bool isConstrained() const {
+        return false; // default false
       }
 
       /// Dimensionality
@@ -73,14 +74,13 @@ namespace gtsam {
 
       virtual bool equals(const Base& expected, double tol=1e-9) const = 0;
 
-      /**
-       * Whiten an error vector.
-       */
+      /// Calculate standard deviations
+      virtual Vector sigmas() const;
+
+      /// Whiten an error vector.
       virtual Vector whiten(const Vector& v) const = 0;
 
-      /**
-       * Unwhiten an error vector.
-       */
+      /// Unwhiten an error vector.
       virtual Vector unwhiten(const Vector& v) const = 0;
 
       virtual double distance(const Vector& v) const = 0;
@@ -114,7 +114,7 @@ namespace gtsam {
       /** Serialization function */
       friend class boost::serialization::access;
       template<class ARCHIVE>
-      void serialize(ARCHIVE & ar, const unsigned int version) {
+      void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
         ar & BOOST_SERIALIZATION_NVP(dim_);
       }
     };
@@ -187,6 +187,7 @@ namespace gtsam {
 
       virtual void print(const std::string& name) const;
       virtual bool equals(const Base& expected, double tol=1e-9) const;
+      virtual Vector sigmas() const;
       virtual Vector whiten(const Vector& v) const;
       virtual Vector unwhiten(const Vector& v) const;
 
@@ -218,9 +219,9 @@ namespace gtsam {
       /**
        * Whiten a system, in place as well
        */
-      virtual void WhitenSystem(std::vector<Matrix>& A, Vector& b) const ;
-      virtual void WhitenSystem(Matrix& A, Vector& b) const ;
-      virtual void WhitenSystem(Matrix& A1, Matrix& A2, Vector& b) const ;
+      virtual void WhitenSystem(std::vector<Matrix>& A, Vector& b) const;
+      virtual void WhitenSystem(Matrix& A, Vector& b) const;
+      virtual void WhitenSystem(Matrix& A1, Matrix& A2, Vector& b) const;
       virtual void WhitenSystem(Matrix& A1, Matrix& A2, Matrix& A3, Vector& b) const;
 
       /**
@@ -232,22 +233,20 @@ namespace gtsam {
        */
       virtual boost::shared_ptr<Diagonal> QR(Matrix& Ab) const;
 
-      /**
-       * Return R itself, but note that Whiten(H) is cheaper than R*H
-       */
+      /// Return R itself, but note that Whiten(H) is cheaper than R*H
       virtual Matrix R() const { return thisR();}
 
-      /**
-       * Simple check for constrained-ness
-       * FIXME Find a better way of handling this
-       */
-      virtual bool isConstrained() const {return false;}
+      /// Compute information matrix
+      virtual Matrix information() const { return thisR().transpose() * thisR(); }
+
+      /// Compute covariance matrix
+      virtual Matrix covariance() const { return information().inverse(); }
 
     private:
       /** Serialization function */
       friend class boost::serialization::access;
       template<class ARCHIVE>
-      void serialize(ARCHIVE & ar, const unsigned int version) {
+      void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
         ar & BOOST_SERIALIZATION_NVP(sqrt_information_);
       }
@@ -307,6 +306,7 @@ namespace gtsam {
       }
 
       virtual void print(const std::string& name) const;
+      virtual Vector sigmas() const { return sigmas_; }
       virtual Vector whiten(const Vector& v) const;
       virtual Vector unwhiten(const Vector& v) const;
       virtual Matrix Whiten(const Matrix& H) const;
@@ -316,7 +316,6 @@ namespace gtsam {
       /**
        * Return standard deviations (sqrt of diagonal)
        */
-      inline const Vector& sigmas() const { return sigmas_; }
       inline double sigma(size_t i) const { return sigmas_(i); }
 
       /**
@@ -342,7 +341,7 @@ namespace gtsam {
       /** Serialization function */
       friend class boost::serialization::access;
       template<class ARCHIVE>
-      void serialize(ARCHIVE & ar, const unsigned int version) {
+      void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Gaussian);
         ar & BOOST_SERIALIZATION_NVP(sigmas_);
         ar & BOOST_SERIALIZATION_NVP(invsigmas_);
@@ -390,10 +389,13 @@ namespace gtsam {
 
       virtual ~Constrained() {}
 
-      /** true if a constrained noise mode, saves slow/clumsy dynamic casting */
-      virtual bool is_constrained() const {
+      /// true if a constrained noise mode, saves slow/clumsy dynamic casting
+      virtual bool isConstrained() const {
         return true;
       }
+
+      /// Return true if a particular dimension is free or constrained
+      bool constrained(size_t i) const;
 
       /// Access mu as a vector
       const Vector& mu() const { return mu_; }
@@ -402,24 +404,22 @@ namespace gtsam {
        * A diagonal noise model created by specifying a Vector of
        * standard devations, some of which might be zero
        */
-      static shared_ptr MixedSigmas(const Vector& mu, const Vector& sigmas,
-          bool smart = true);
+      static shared_ptr MixedSigmas(const Vector& mu, const Vector& sigmas);
 
       /**
        * A diagonal noise model created by specifying a Vector of
        * standard devations, some of which might be zero
        */
-      static shared_ptr MixedSigmas(const Vector& sigmas, bool smart = true) {
-        return MixedSigmas(repeat(sigmas.size(), 1000.0), sigmas, smart);
+      static shared_ptr MixedSigmas(const Vector& sigmas) {
+        return MixedSigmas(repeat(sigmas.size(), 1000.0), sigmas);
       }
 
       /**
        * A diagonal noise model created by specifying a Vector of
        * standard devations, some of which might be zero
        */
-      static shared_ptr MixedSigmas(double m, const Vector& sigmas,
-          bool smart = true) {
-        return MixedSigmas(repeat(sigmas.size(), m), sigmas, smart);
+      static shared_ptr MixedSigmas(double m, const Vector& sigmas) {
+        return MixedSigmas(repeat(sigmas.size(), m), sigmas);
       }
 
       /**
@@ -483,12 +483,6 @@ namespace gtsam {
       virtual Diagonal::shared_ptr QR(Matrix& Ab) const;
 
       /**
-       * Check constrained is always true
-       * FIXME Find a better way of handling this
-       */
-      virtual bool isConstrained() const { return true; }
-
-      /**
        * Returns a Unit version of a constrained noisemodel in which
        * constrained sigmas remain constrained and the rest are unit scaled
        */
@@ -498,7 +492,7 @@ namespace gtsam {
       /** Serialization function */
       friend class boost::serialization::access;
       template<class ARCHIVE>
-      void serialize(ARCHIVE & ar, const unsigned int version) {
+      void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Diagonal);
         ar & BOOST_SERIALIZATION_NVP(mu_);
       }
@@ -565,7 +559,7 @@ namespace gtsam {
       /** Serialization function */
       friend class boost::serialization::access;
       template<class ARCHIVE>
-      void serialize(ARCHIVE & ar, const unsigned int version) {
+      void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Diagonal);
         ar & BOOST_SERIALIZATION_NVP(sigma_);
         ar & BOOST_SERIALIZATION_NVP(invsigma_);
@@ -601,18 +595,18 @@ namespace gtsam {
       virtual Vector whiten(const Vector& v) const { return v; }
       virtual Vector unwhiten(const Vector& v) const { return v; }
       virtual Matrix Whiten(const Matrix& H) const { return H; }
-      virtual void WhitenInPlace(Matrix& H) const {}
-      virtual void WhitenInPlace(Eigen::Block<Matrix> H) const {}
-      virtual void whitenInPlace(Vector& v) const {}
-      virtual void unwhitenInPlace(Vector& v) const {}
-      virtual void whitenInPlace(Eigen::Block<Vector>& v) const {}
-      virtual void unwhitenInPlace(Eigen::Block<Vector>& v) const {}
+      virtual void WhitenInPlace(Matrix& /*H*/) const {}
+      virtual void WhitenInPlace(Eigen::Block<Matrix> /*H*/) const {}
+      virtual void whitenInPlace(Vector& /*v*/) const {}
+      virtual void unwhitenInPlace(Vector& /*v*/) const {}
+      virtual void whitenInPlace(Eigen::Block<Vector>& /*v*/) const {}
+      virtual void unwhitenInPlace(Eigen::Block<Vector>& /*v*/) const {}
 
     private:
       /** Serialization function */
       friend class boost::serialization::access;
       template<class ARCHIVE>
-      void serialize(ARCHIVE & ar, const unsigned int version) {
+      void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Isotropic);
       }
     };
@@ -638,20 +632,23 @@ namespace gtsam {
         virtual ~Base() {}
 
         /// robust error function to implement
-        virtual double weight(const double &error) const = 0;
+        virtual double weight(double error) const = 0;
 
         virtual void print(const std::string &s) const = 0;
-        virtual bool equals(const Base& expected, const double tol=1e-8) const = 0;
+        virtual bool equals(const Base& expected, double tol=1e-8) const = 0;
 
-        inline double sqrtWeight(const double &error) const
-        { return std::sqrt(weight(error)); }
+        double sqrtWeight(double error) const {
+          return std::sqrt(weight(error));
+        }
 
         /** produce a weight vector according to an error vector and the implemented
         * robust function */
         Vector weight(const Vector &error) const;
 
         /** square root version of the weight function */
-        Vector sqrtWeight(const Vector &error) const;
+        Vector sqrtWeight(const Vector &error) const {
+          return weight(error).cwiseSqrt();
+        }
 
         /** reweight block matrices and a vector according to their weight implementation */
         void reweight(Vector &error) const;
@@ -664,7 +661,7 @@ namespace gtsam {
         /** Serialization function */
         friend class boost::serialization::access;
         template<class ARCHIVE>
-        void serialize(ARCHIVE & ar, const unsigned int version) {
+        void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
           ar & BOOST_SERIALIZATION_NVP(reweight_);
         }
       };
@@ -676,16 +673,16 @@ namespace gtsam {
 
         Null(const ReweightScheme reweight = Block) : Base(reweight) {}
         virtual ~Null() {}
-        virtual double weight(const double &error) const { return 1.0; }
+        virtual double weight(double /*error*/) const { return 1.0; }
         virtual void print(const std::string &s) const;
-        virtual bool equals(const Base& expected, const double tol=1e-8) const { return true; }
+        virtual bool equals(const Base& /*expected*/, double /*tol*/) const { return true; }
         static shared_ptr Create() ;
 
       private:
         /** Serialization function */
         friend class boost::serialization::access;
         template<class ARCHIVE>
-        void serialize(ARCHIVE & ar, const unsigned int version) {
+        void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
           ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
         }
       };
@@ -695,12 +692,12 @@ namespace gtsam {
       public:
         typedef boost::shared_ptr<Fair> shared_ptr;
 
-        Fair(const double c = 1.3998, const ReweightScheme reweight = Block);
+        Fair(double c = 1.3998, const ReweightScheme reweight = Block);
         virtual ~Fair() {}
-        virtual double weight(const double &error) const ;
-        virtual void print(const std::string &s) const ;
-        virtual bool equals(const Base& expected, const double tol=1e-8) const ;
-        static shared_ptr Create(const double c, const ReweightScheme reweight = Block) ;
+        virtual double weight(double error) const;
+        virtual void print(const std::string &s) const;
+        virtual bool equals(const Base& expected, double tol=1e-8) const;
+        static shared_ptr Create(double c, const ReweightScheme reweight = Block) ;
 
       protected:
         double c_;
@@ -709,7 +706,7 @@ namespace gtsam {
         /** Serialization function */
         friend class boost::serialization::access;
         template<class ARCHIVE>
-        void serialize(ARCHIVE & ar, const unsigned int version) {
+        void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
           ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
           ar & BOOST_SERIALIZATION_NVP(c_);
         }
@@ -721,11 +718,11 @@ namespace gtsam {
         typedef boost::shared_ptr<Huber> shared_ptr;
 
         virtual ~Huber() {}
-        Huber(const double k = 1.345, const ReweightScheme reweight = Block);
-        virtual double weight(const double &error) const ;
-        virtual void print(const std::string &s) const ;
-        virtual bool equals(const Base& expected, const double tol=1e-8) const ;
-        static shared_ptr Create(const double k, const ReweightScheme reweight = Block) ;
+        Huber(double k = 1.345, const ReweightScheme reweight = Block);
+        virtual double weight(double error) const;
+        virtual void print(const std::string &s) const;
+        virtual bool equals(const Base& expected, double tol=1e-8) const;
+        static shared_ptr Create(double k, const ReweightScheme reweight = Block) ;
 
       protected:
         double k_;
@@ -734,7 +731,7 @@ namespace gtsam {
         /** Serialization function */
         friend class boost::serialization::access;
         template<class ARCHIVE>
-        void serialize(ARCHIVE & ar, const unsigned int version) {
+        void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
           ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
           ar & BOOST_SERIALIZATION_NVP(k_);
         }
@@ -750,11 +747,11 @@ namespace gtsam {
         typedef boost::shared_ptr<Cauchy> shared_ptr;
 
         virtual ~Cauchy() {}
-        Cauchy(const double k = 0.1, const ReweightScheme reweight = Block);
-        virtual double weight(const double &error) const ;
-        virtual void print(const std::string &s) const ;
-        virtual bool equals(const Base& expected, const double tol=1e-8) const ;
-        static shared_ptr Create(const double k, const ReweightScheme reweight = Block) ;
+        Cauchy(double k = 0.1, const ReweightScheme reweight = Block);
+        virtual double weight(double error) const;
+        virtual void print(const std::string &s) const;
+        virtual bool equals(const Base& expected, double tol=1e-8) const;
+        static shared_ptr Create(double k, const ReweightScheme reweight = Block) ;
 
       protected:
         double k_;
@@ -763,7 +760,7 @@ namespace gtsam {
         /** Serialization function */
         friend class boost::serialization::access;
         template<class ARCHIVE>
-        void serialize(ARCHIVE & ar, const unsigned int version) {
+        void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
           ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
           ar & BOOST_SERIALIZATION_NVP(k_);
         }
@@ -774,12 +771,12 @@ namespace gtsam {
       public:
         typedef boost::shared_ptr<Tukey> shared_ptr;
 
-        Tukey(const double c = 4.6851, const ReweightScheme reweight = Block);
+        Tukey(double c = 4.6851, const ReweightScheme reweight = Block);
         virtual ~Tukey() {}
-        virtual double weight(const double &error) const ;
-        virtual void print(const std::string &s) const ;
-        virtual bool equals(const Base& expected, const double tol=1e-8) const ;
-        static shared_ptr Create(const double k, const ReweightScheme reweight = Block) ;
+        virtual double weight(double error) const;
+        virtual void print(const std::string &s) const;
+        virtual bool equals(const Base& expected, double tol=1e-8) const;
+        static shared_ptr Create(double k, const ReweightScheme reweight = Block) ;
 
       protected:
         double c_;
@@ -788,7 +785,7 @@ namespace gtsam {
         /** Serialization function */
         friend class boost::serialization::access;
         template<class ARCHIVE>
-        void serialize(ARCHIVE & ar, const unsigned int version) {
+        void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
           ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
           ar & BOOST_SERIALIZATION_NVP(c_);
         }
@@ -799,12 +796,12 @@ namespace gtsam {
       public:
         typedef boost::shared_ptr<Welsh> shared_ptr;
 
-        Welsh(const double c = 2.9846, const ReweightScheme reweight = Block);
+        Welsh(double c = 2.9846, const ReweightScheme reweight = Block);
         virtual ~Welsh() {}
-        virtual double weight(const double &error) const ;
-        virtual void print(const std::string &s) const ;
-        virtual bool equals(const Base& expected, const double tol=1e-8) const ;
-        static shared_ptr Create(const double k, const ReweightScheme reweight = Block) ;
+        virtual double weight(double error) const;
+        virtual void print(const std::string &s) const;
+        virtual bool equals(const Base& expected, double tol=1e-8) const;
+        static shared_ptr Create(double k, const ReweightScheme reweight = Block) ;
 
       protected:
         double c_;
@@ -813,7 +810,7 @@ namespace gtsam {
         /** Serialization function */
         friend class boost::serialization::access;
         template<class ARCHIVE>
-        void serialize(ARCHIVE & ar, const unsigned int version) {
+        void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
           ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
           ar & BOOST_SERIALIZATION_NVP(c_);
         }
@@ -857,7 +854,7 @@ namespace gtsam {
       // TODO: functions below are dummy but necessary for the noiseModel::Base
       inline virtual Vector whiten(const Vector& v) const
       { Vector r = v; this->WhitenSystem(r); return r; }
-      inline virtual Vector unwhiten(const Vector& v) const
+      inline virtual Vector unwhiten(const Vector& /*v*/) const
       { throw std::invalid_argument("unwhiten is not currently supported for robust noise models."); }
       inline virtual double distance(const Vector& v) const
       { return this->whiten(v).squaredNorm(); }
@@ -876,7 +873,7 @@ namespace gtsam {
       /** Serialization function */
       friend class boost::serialization::access;
       template<class ARCHIVE>
-      void serialize(ARCHIVE & ar, const unsigned int version) {
+      void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
         ar & boost::serialization::make_nvp("robust_", const_cast<RobustModel::shared_ptr&>(robust_));
         ar & boost::serialization::make_nvp("noise_", const_cast<NoiseModel::shared_ptr&>(noise_));
@@ -895,7 +892,15 @@ namespace gtsam {
   typedef noiseModel::Gaussian::shared_ptr SharedGaussian;
   typedef noiseModel::Diagonal::shared_ptr SharedDiagonal;
   typedef noiseModel::Constrained::shared_ptr SharedConstrained;
+  typedef noiseModel::Isotropic::shared_ptr SharedIsotropic;
 
-} // namespace gtsam
+  /// traits
+  template<> struct traits<noiseModel::Gaussian> : public Testable<noiseModel::Gaussian> {};
+  template<> struct traits<noiseModel::Diagonal> : public Testable<noiseModel::Diagonal> {};
+  template<> struct traits<noiseModel::Constrained> : public Testable<noiseModel::Constrained> {};
+  template<> struct traits<noiseModel::Isotropic> : public Testable<noiseModel::Isotropic> {};
+  template<> struct traits<noiseModel::Unit> : public Testable<noiseModel::Unit> {};
+
+} //\ namespace gtsam
 
 

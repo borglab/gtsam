@@ -92,11 +92,14 @@ private:
   // Serialization function
   friend class boost::serialization::access;
   template<class Archive>
-  void serialize(Archive & ar, const unsigned int version) {
+  void serialize(Archive & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_NVP(azimuth_);
     ar & BOOST_SERIALIZATION_NVP(elevation_);
   }
 
 };
+
+/// traits
+template<> struct traits<BearingS2> : public Testable<BearingS2> {};
 
 } // \namespace gtsam

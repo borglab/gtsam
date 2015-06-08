@@ -15,10 +15,10 @@
  * @author  Richard Roberts
  */
 
-#include <iostream>
 
+#include <gtsam/geometry/Pose2.h>
 #include <gtsam/base/timing.h>
-#include <gtsam/geometry/Rot2.h>
+#include <iostream>
 
 using namespace std;
 using namespace gtsam;
@@ -32,7 +32,7 @@ using namespace gtsam;
 
 /* ************************************************************************* */
 Rot2 Rot2betweenDefault(const Rot2& r1, const Rot2& r2) {
-  return between_default(r1, r2);
+  return r1.inverse() * r2;
 }
 
 /* ************************************************************************* */

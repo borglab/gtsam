@@ -17,52 +17,22 @@
  * @author  Frank Dellaert
  */
 
-/**
- * A structure-from-motion example with landmarks
- *  - The landmarks form a 10 meter cube
- *  - The robot rotates around the landmarks, always facing towards the cube
- */
-
-// For loading the data
-#include "SFMdata.h"
-
-// Camera observations of landmarks (i.e. pixel coordinates) will be stored as Point2 (x, y).
-#include <gtsam/geometry/Point2.h>
-
 // In GTSAM, measurement functions are represented as 'factors'.
-// The factor we used here is SmartProjectionPoseFactor. Every smart factor represent a single landmark,
-// The SmartProjectionPoseFactor only optimize the pose of camera, not the calibration,
-// The calibration should be known.
+// The factor we used here is SmartProjectionPoseFactor.
+// Every smart factor represent a single landmark, seen from multiple cameras.
+// The SmartProjectionPoseFactor only optimizes for the poses of a camera,
+// not the calibration, which is assumed known.
 #include <gtsam/slam/SmartProjectionPoseFactor.h>
 
-// Also, we will initialize the robot at some location using a Prior factor.
-#include <gtsam/slam/PriorFactor.h>
-
-// When the factors are created, we will add them to a Factor Graph. As the factors we are using
-// are nonlinear factors, we will need a Nonlinear Factor Graph.
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-
-// Finally, once all of the factors have been added to our factor graph, we will want to
-// solve/optimize to graph to find the best (Maximum A Posteriori) set of variable values.
-// GTSAM includes several nonlinear optimizers to perform this step. Here we will use a
-// trust-region method known as Powell's Degleg
-#include <gtsam/nonlinear/DoglegOptimizer.h>
-
-// The nonlinear solvers within GTSAM are iterative solvers, meaning they linearize the
-// nonlinear functions around an initial linearization point, then solve the linear system
-// to update the linearization point. This happens repeatedly until the solver converges
-// to a consistent set of variable values. This requires us to specify an initial guess
-// for each variable, held in a Values container.
-#include <gtsam/nonlinear/Values.h>
-
-#include <vector>
+// For an explanation of these headers, see SFMExample.cpp
+#include "SFMdata.h"
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 
 using namespace std;
 using namespace gtsam;
 
 // Make the typename short so it looks much cleaner
-typedef gtsam::SmartProjectionPoseFactor<gtsam::Pose3, gtsam::Point3,
-    gtsam::Cal3_S2> SmartFactor;
+typedef SmartProjectionPoseFactor<Cal3_S2> SmartFactor;
 
 /* ************************************************************************* */
 int main(int argc, char* argv[]) {
@@ -128,7 +98,8 @@ int main(int argc, char* argv[]) {
   initialEstimate.print("Initial Estimates:\n");
 
   // Optimize the graph and print results
-  Values result = DoglegOptimizer(graph, initialEstimate).optimize();
+  LevenbergMarquardtOptimizer optimizer(graph, initialEstimate);
+  Values result = optimizer.optimize();
   result.print("Final results:\n");
 
   // A smart factor represent the 3D point inside the factor, not as a variable.
@@ -137,20 +108,20 @@ int main(int argc, char* argv[]) {
   Values landmark_result;
   for (size_t j = 0; j < points.size(); ++j) {
 
-    // The output of point() is in boost::optional<gtsam::Point3>, as sometimes
-    // the triangulation operation inside smart factor will encounter degeneracy.
-    boost::optional<Point3> point;
-
     // The graph stores Factor shared_ptrs, so we cast back to a SmartFactor first
     SmartFactor::shared_ptr smart = boost::dynamic_pointer_cast<SmartFactor>(graph[j]);
     if (smart) {
-      point = smart->point(result);
+      // The output of point() is in boost::optional<Point3>, as sometimes
+      // the triangulation operation inside smart factor will encounter degeneracy.
+      boost::optional<Point3> point = smart->point(result);
       if (point) // ignore if boost::optional return NULL
         landmark_result.insert(j, *point);
     }
   }
 
   landmark_result.print("Landmark results:\n");
+  cout << "final error: " << graph.error(result) << endl;
+  cout << "number of iterations: " << optimizer.iterations() << endl;
 
   return 0;
 }

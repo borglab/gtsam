@@ -84,7 +84,7 @@ public:
    * each degree of freedom.
    */
   ReferenceFrameFactor(Key globalKey, Key transKey, Key localKey, double sigma = 1e-2)
-  : Base(noiseModel::Isotropic::Sigma(POINT().dim(), sigma),
+  : Base(noiseModel::Isotropic::Sigma(POINT::dimension, sigma),
       globalKey, transKey, localKey) {}
 
   virtual ~ReferenceFrameFactor(){}
@@ -99,11 +99,9 @@ public:
         boost::optional<Matrix&> Dtrans = boost::none,
         boost::optional<Matrix&> Dlocal = boost::none) const  {
     Point newlocal = transform_point<Transform,Point>(trans, global, Dtrans, Dforeign);
-    if (Dlocal) {
-      Point dummy;
-      *Dlocal = -1* gtsam::eye(dummy.dim());
-    }
-    return local.localCoordinates(newlocal);
+    if (Dlocal)
+      *Dlocal = -1* gtsam::eye(Point::dimension);
+    return traits<Point>::Local(local,newlocal);
   }
 
   virtual void print(const std::string& s="",
@@ -124,10 +122,14 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & boost::serialization::make_nvp("NonlinearFactor3",
         boost::serialization::base_object<Base>(*this));
   }
 };
+
+/// traits
+template<class T1, class T2>
+struct traits<ReferenceFrameFactor<T1, T2> > : public Testable<ReferenceFrameFactor<T1, T2> > {};
 
 } // \namespace gtsam

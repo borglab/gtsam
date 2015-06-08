@@ -18,8 +18,8 @@ class GTSAM_UNSTABLE_EXPORT Mechanization_bRn2 {
 
 private:
   Rot3 bRn_;  ///<   rotation from nav to body
-  Vector x_g_; ///<  gyroscope bias
-  Vector x_a_; ///<  accelerometer bias
+  Vector3 x_g_; ///<  gyroscope bias
+  Vector3 x_a_; ///<  accelerometer bias
 
 public:
 
@@ -30,7 +30,7 @@ public:
    * @param r3 Z-axis of rotated frame
    */
   Mechanization_bRn2(const Rot3& initial_bRn = Rot3(),
-      const Vector& initial_x_g = zero(3), const Vector& initial_x_a = zero(3)) :
+      const Vector3& initial_x_g = zero(3), const Vector3& initial_x_a = zero(3)) :
       bRn_(initial_bRn), x_g_(initial_x_g), x_a_(initial_x_a) {
   }
 
@@ -40,14 +40,14 @@ public:
   }
 
   /// gravity in the body frame
-  Vector b_g(double g_e) const {
-    Vector n_g = (Vector(3) << 0, 0, g_e).finished();
+  Vector3 b_g(double g_e) const {
+    Vector3 n_g(0, 0, g_e);
     return (bRn_ * n_g).vector();
   }
 
   const Rot3& bRn() const {return bRn_; }
-  const Vector& x_g() const { return x_g_; }
-  const Vector& x_a() const { return x_a_; }
+  const Vector3& x_g() const { return x_g_; }
+  const Vector3& x_a() const { return x_a_; }
 
   /**
    * Initialize the first Mechanization state
@@ -68,7 +68,7 @@ public:
    * @param obj The current state
    * @param dx The error used to correct and return a new state
    */
-  Mechanization_bRn2 correct(const Vector& dx) const;
+  Mechanization_bRn2 correct(const Vector3& dx) const;
 
   /**
    * Integrate to get new state
@@ -76,14 +76,14 @@ public:
    * @param u gyro measurement to integrate
    * @param dt time elapsed since previous state in seconds
    */
-  Mechanization_bRn2 integrate(const Vector& u, const double dt) const;
+  Mechanization_bRn2 integrate(const Vector3& u, const double dt) const;
 
   /// print
   void print(const std::string& s = "") const {
     bRn_.print(s + ".R");
 
-    gtsam::print(x_g_, s + ".x_g");
-    gtsam::print(x_a_, s + ".x_a");
+    std::cout << s + ".x_g" << x_g_ << std::endl;
+    std::cout << s + ".x_a" << x_a_ << std::endl;
   }
 
 };

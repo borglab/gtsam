@@ -24,12 +24,11 @@
 
 #pragma once
 
-#include <boost/optional.hpp>
-#include <boost/pool/pool_alloc.hpp>
-#include <boost/ptr_container/ptr_map.hpp>
+#include <gtsam/base/GenericValue.h>
+#include <gtsam/base/VectorSpace.h>
+#include <gtsam/inference/Key.h>
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/iterator/filter_iterator.hpp>
-#include <boost/function.hpp>
 #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -39,14 +38,9 @@
 #pragma GCC diagnostic pop
 #endif
 #include <boost/ptr_container/serialize_ptr_map.hpp>
-#include <boost/iterator_adaptors.hpp>
 
 #include <string>
 #include <utility>
-
-#include <gtsam/base/ChartValue.h>
-#include <gtsam/base/FastMap.h>
-#include <gtsam/inference/Key.h>
 
 namespace gtsam {
 
@@ -180,6 +174,13 @@ namespace gtsam {
     template<typename ValueType>
     const ValueType& at(Key j) const;
 
+    /// Special version for small fixed size vectors, for matlab/python
+    /// throws truntime error if n<1 || n>9
+    Vector atFixed(Key j, size_t n);
+
+    /// version for double
+    double atDouble(size_t key) const { return at<double>(key);}
+
     /** Retrieve a variable by key \c j.  This version returns a reference
      * to the base Value class, and needs to be casted before use.
      * @param j Retrieve the value associated with this key
@@ -253,19 +254,16 @@ namespace gtsam {
 
     /** Templated version to add a variable with the given j,
      * throws KeyAlreadyExists<J> if j is already present
-     * if no chart is specified, the DefaultChart<ValueType> is used
      */
     template <typename ValueType>
     void insert(Key j, const ValueType& val);
 
-    /// overloaded insert version that also specifies a chart
-    template <typename ValueType, typename Chart>
-    void insert(Key j, const ValueType& val);
+    /// Special version for small fixed size vectors, for matlab/python
+    /// throws truntime error if n<1 || n>9
+    void insertFixed(Key j, const Vector& v, size_t n);
 
-    /// overloaded insert version that also specifies a chart initializer
-    template <typename ValueType, typename Chart, typename ChartInit>
-    void insert(Key j, const ValueType& val, ChartInit chart);
-
+    /// version for double
+    void insertDouble(Key j, double c) { insert<double>(j,c); }
 
     /** insert that mimics the STL map insert - if the value already exists, the map is not modified
      *  and an iterator to the existing value is returned, along with 'false'.  If the value did not
@@ -282,14 +280,6 @@ namespace gtsam {
       */
     template <typename T>
     void update(Key j, const T& val);
-
-    /// overloaded insert version that also specifies a chart
-    template <typename T, typename Chart>
-    void update(Key j, const T& val);
-
-    /// overloaded insert version that also specifies a chart initializer
-    template <typename T, typename Chart, typename ChartInit>
-    void update(Key j, const T& val, ChartInit chart);
 
     /** update the current available values without adding new ones */
     void update(const Values& values);
@@ -408,7 +398,7 @@ namespace gtsam {
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version) {
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_NVP(values_);
     }
 
@@ -509,6 +499,12 @@ namespace gtsam {
     }
   };
 
-}
+  /// traits
+  template<>
+  struct traits<Values> : public Testable<Values> {
+  };
+
+} //\ namespace gtsam
+
 
 #include <gtsam/nonlinear/Values-inl.h>

@@ -19,6 +19,7 @@
  */
 
 #include <gtsam/geometry/Rot3.h>
+#include <gtsam/geometry/SO3.h>
 #include <boost/math/constants/constants.hpp>
 #include <boost/random.hpp>
 #include <cmath>
@@ -26,8 +27,6 @@
 using namespace std;
 
 namespace gtsam {
-
-static const Matrix3 I3 = Matrix3::Identity();
 
 /* ************************************************************************* */
 void Rot3::print(const std::string& s) const {
@@ -54,7 +53,7 @@ Rot3 Rot3::Random(boost::mt19937 & rng) {
 }
 
 /* ************************************************************************* */
-Rot3 Rot3::rodriguez(const Vector& w) {
+Rot3 Rot3::rodriguez(const Vector3& w) {
   double t = w.norm();
   if (t < 1e-10) return Rot3();
   return rodriguez(w/t, t);
@@ -72,23 +71,21 @@ Point3 Rot3::operator*(const Point3& p) const {
 
 /* ************************************************************************* */
 Unit3 Rot3::rotate(const Unit3& p,
-    boost::optional<Matrix&> HR, boost::optional<Matrix&> Hp) const {
-  Unit3 q = Unit3(rotate(p.point3(Hp)));
-  if (Hp)
-    (*Hp) = q.basis().transpose() * matrix() * (*Hp);
-  if (HR)
-    (*HR) = -q.basis().transpose() * matrix() * p.skew();
+    OptionalJacobian<2,3> HR, OptionalJacobian<2,2> Hp) const {
+  Matrix32 Dp;
+  Unit3 q = Unit3(rotate(p.point3(Hp ? &Dp : 0)));
+  if (Hp) *Hp = q.basis().transpose() * matrix() * Dp;
+  if (HR) *HR = -q.basis().transpose() * matrix() * p.skew();
   return q;
 }
 
 /* ************************************************************************* */
 Unit3 Rot3::unrotate(const Unit3& p,
-    boost::optional<Matrix&> HR, boost::optional<Matrix&> Hp) const {
-  Unit3 q = Unit3(unrotate(p.point3(Hp)));
-  if (Hp)
-    (*Hp) = q.basis().transpose() * matrix().transpose () * (*Hp);
-  if (HR)
-    (*HR) = q.basis().transpose() * q.skew();
+    OptionalJacobian<2,3> HR, OptionalJacobian<2,2> Hp) const {
+  Matrix32 Dp;
+  Unit3 q = Unit3(unrotate(p.point3(Dp)));
+  if (Hp) *Hp = q.basis().transpose() * matrix().transpose () * Dp;
+  if (HR) *HR = q.basis().transpose() * q.skew();
   return q;
 }
 
@@ -99,8 +96,8 @@ Unit3 Rot3::operator*(const Unit3& p) const {
 
 /* ************************************************************************* */
 // see doc/math.lyx, SO(3) section
-Point3 Rot3::unrotate(const Point3& p, boost::optional<Matrix3&> H1,
-    boost::optional<Matrix3&> H2) const {
+Point3 Rot3::unrotate(const Point3& p, OptionalJacobian<3,3> H1,
+    OptionalJacobian<3,3> H2) const {
   const Matrix3& Rt = transpose();
   Point3 q(Rt * p.vector()); // q = Rt*p
   const double wx = q.x(), wy = q.y(), wz = q.z();
@@ -110,48 +107,6 @@ Point3 Rot3::unrotate(const Point3& p, boost::optional<Matrix3&> H1,
     *H2 = Rt;
   return q;
 }
-
-/* ************************************************************************* */
-// see doc/math.lyx, SO(3) section
-Point3 Rot3::unrotate(const Point3& p,
-    boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
-  const Matrix3& Rt = transpose();
-  Point3 q(Rt * p.vector()); // q = Rt*p
-  const double wx = q.x(), wy = q.y(), wz = q.z();
-  if (H1) {
-    H1->resize(3,3);
-    *H1 << 0.0, -wz, +wy, +wz, 0.0, -wx, -wy, +wx, 0.0;
-  }
-  if (H2)
-    *H2 = Rt;
-  return q;
-}
-
-/* ************************************************************************* */
-/// Follow Iserles05an, B10, pg 147, with a sign change in the second term (left version)
-Matrix3 Rot3::dexpL(const Vector3& v) {
-  if(zero(v)) return eye(3);
-  Matrix x = skewSymmetric(v);
-  Matrix x2 = x*x;
-  double theta = v.norm(), vi = theta/2.0;
-  double s1 = sin(vi)/vi;
-  double s2 = (theta - sin(theta))/(theta*theta*theta);
-  Matrix res = eye(3) - 0.5*s1*s1*x + s2*x2;
-  return res;
-}
-
-/* ************************************************************************* */
-/// Follow Iserles05an, B11, pg 147, with a sign change in the second term (left version)
-Matrix3 Rot3::dexpInvL(const Vector3& v) {
-  if(zero(v)) return eye(3);
-  Matrix x = skewSymmetric(v);
-  Matrix x2 = x*x;
-  double theta = v.norm(), vi = theta/2.0;
-  double s2 = (theta*tan(M_PI_2-vi) - 2)/(2*theta*theta);
-  Matrix res = eye(3) + 0.5*x - s2*x2;
-  return res;
-}
-
 
 /* ************************************************************************* */
 Point3 Rot3::column(int index) const{
@@ -167,7 +122,7 @@ Point3 Rot3::column(int index) const{
 
 /* ************************************************************************* */
 Vector3 Rot3::xyz() const {
-  Matrix I;Vector3 q;
+  Matrix3 I;Vector3 q;
   boost::tie(I,q)=RQ(matrix());
   return q;
 }
@@ -195,36 +150,13 @@ Vector Rot3::quaternion() const {
 }
 
 /* ************************************************************************* */
-Matrix3 Rot3::rightJacobianExpMapSO3(const Vector3& x)    {
-  // x is the axis-angle representation (exponential coordinates) for a rotation
-  double normx = norm_2(x); // rotation angle
-  Matrix3 Jr;
-  if (normx < 10e-8){
-    Jr = Matrix3::Identity();
-  }
-  else{
-    const Matrix3 X = skewSymmetric(x); // element of Lie algebra so(3): X = x^
-    Jr = Matrix3::Identity() - ((1-cos(normx))/(normx*normx)) * X +
-        ((normx-sin(normx))/(normx*normx*normx)) * X * X; // right Jacobian
-  }
-  return Jr;
+Matrix3 Rot3::ExpmapDerivative(const Vector3& x) {
+  return SO3::ExpmapDerivative(x);
 }
 
 /* ************************************************************************* */
-Matrix3 Rot3::rightJacobianExpMapSO3inverse(const Vector3& x)    {
-  // x is the axis-angle representation (exponential coordinates) for a rotation
-  double normx = norm_2(x); // rotation angle
-  Matrix3 Jrinv;
-
-  if (normx < 10e-8){
-    Jrinv = Matrix3::Identity();
-  }
-  else{
-    const Matrix3 X = skewSymmetric(x); // element of Lie algebra so(3): X = x^
-    Jrinv = Matrix3::Identity() +
-        0.5 * X + (1/(normx*normx) - (1+cos(normx))/(2*normx * sin(normx))   ) * X * X;
-  }
-  return Jrinv;
+Matrix3 Rot3::LogmapDerivative(const Vector3& x)    {
+  return SO3::LogmapDerivative(x);
 }
 
 /* ************************************************************************* */
@@ -256,17 +188,11 @@ ostream &operator<<(ostream &os, const Rot3& R) {
 }
 
 /* ************************************************************************* */
-Point3 Rot3::unrotate(const Point3& p) const {
-  // Eigen expression
-  return Point3(transpose()*p.vector()); // q = Rt*p
-}
-
-/* ************************************************************************* */
 Rot3 Rot3::slerp(double t, const Rot3& other) const {
   // amazingly simple in GTSAM :-)
   assert(t>=0 && t<=1);
-  Vector3 omega = localCoordinates(other, Rot3::EXPMAP);
-  return retract(t * omega, Rot3::EXPMAP);
+  Vector3 omega = Logmap(between(other));
+  return compose(Expmap(t * omega));
 }
 
 /* ************************************************************************* */

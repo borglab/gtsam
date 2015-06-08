@@ -3,18 +3,15 @@
  * @author Alex Cunningham
  */
 
-#include <gtsam/base/numericalDerivative.h>
-#include <gtsam/base/Vector.h>
-#include <gtsam/base/Lie-inl.h>
-#include <gtsam/geometry/Pose2.h>
-
 #include <gtsam_unstable/dynamics/PoseRTV.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/base/Vector.h>
 
 namespace gtsam {
 
 using namespace std;
 
-static const Vector g = delta(3, 2, 9.81);
+static const Vector kGravity = delta(3, 2, 9.81);
 
 /* ************************************************************************* */
 double bound(double a, double min, double max) {
@@ -24,28 +21,30 @@ double bound(double a, double min, double max) {
 }
 
 /* ************************************************************************* */
-PoseRTV::PoseRTV(double roll, double pitch, double yaw, double x, double y, double z,
-    double vx, double vy, double vz)
-: Rt_(Rot3::RzRyRx(roll, pitch, yaw), Point3(x, y, z)), v_(vx, vy, vz) {}
+PoseRTV::PoseRTV(double roll, double pitch, double yaw, double x, double y,
+    double z, double vx, double vy, double vz) :
+    Base(Pose3(Rot3::RzRyRx(roll, pitch, yaw), Point3(x, y, z)),
+        Velocity3(vx, vy, vz)) {
+}
 
 /* ************************************************************************* */
-PoseRTV::PoseRTV(const Vector& rtv)
-: Rt_(Rot3::RzRyRx(rtv.head(3)), Point3(rtv.segment(3, 3))), v_(rtv.tail(3))
-{
+PoseRTV::PoseRTV(const Vector& rtv) :
+    Base(Pose3(Rot3::RzRyRx(rtv.head(3)), Point3(rtv.segment(3, 3))),
+        Velocity3(rtv.tail(3))) {
 }
 
 /* ************************************************************************* */
 Vector PoseRTV::vector() const {
   Vector rtv(9);
-  rtv.head(3) = Rt_.rotation().xyz();
-  rtv.segment(3,3) = Rt_.translation().vector();
-  rtv.tail(3) = v_.vector();
+  rtv.head(3) = rotation().xyz();
+  rtv.segment(3,3) = translation().vector();
+  rtv.tail(3) = velocity().vector();
   return rtv;
 }
 
 /* ************************************************************************* */
 bool PoseRTV::equals(const PoseRTV& other, double tol) const {
-  return Rt_.equals(other.Rt_, tol) && v_.equals(other.v_, tol);
+  return pose().equals(other.pose(), tol) && velocity().equals(other.velocity(), tol);
 }
 
 /* ************************************************************************* */
@@ -53,66 +52,7 @@ void PoseRTV::print(const string& s) const {
   cout << s << ":" << endl;
   gtsam::print((Vector)R().xyz(), "  R:rpy");
   t().print("  T");
-  v_.print("  V");
-}
-
-/* ************************************************************************* */
-PoseRTV PoseRTV::Expmap(const Vector9& v) {
-  Pose3 newPose = Pose3::Expmap(v.head<6>());
-  Velocity3 newVel = Velocity3::Expmap(v.tail<3>());
-  return PoseRTV(newPose, newVel);
-}
-
-/* ************************************************************************* */
-Vector9 PoseRTV::Logmap(const PoseRTV& p) {
-  Vector6 Lx = Pose3::Logmap(p.Rt_);
-  Vector3 Lv = Velocity3::Logmap(p.v_);
-  return (Vector9() << Lx, Lv).finished();
-}
-
-/* ************************************************************************* */
-PoseRTV PoseRTV::retract(const Vector& v) const {
-  assert(v.size() == 9);
-  // First order approximation
-  Pose3 newPose = Rt_.retract(sub(v, 0, 6));
-  Velocity3 newVel = v_ + Rt_.rotation() * Point3(sub(v, 6, 9));
-  return PoseRTV(newPose, newVel);
-}
-
-/* ************************************************************************* */
-Vector PoseRTV::localCoordinates(const PoseRTV& p1) const {
-  const Pose3& x0 = pose(), &x1 = p1.pose();
-  // First order approximation
-  Vector6 poseLogmap = x0.localCoordinates(x1);
-  Vector3 lv = rotation().unrotate(p1.velocity() - v_).vector();
-  return (Vector(9) << poseLogmap, lv).finished();
-}
-
-/* ************************************************************************* */
-PoseRTV inverse_(const PoseRTV& p) { return p.inverse(); }
-PoseRTV PoseRTV::inverse(boost::optional<Matrix&> H1) const {
-  if (H1) *H1 = numericalDerivative11<PoseRTV,PoseRTV>(inverse_, *this, 1e-5);
-  return PoseRTV(Rt_.inverse(), v_.inverse());
-}
-
-/* ************************************************************************* */
-PoseRTV compose_(const PoseRTV& p1, const PoseRTV& p2) { return p1.compose(p2); }
-PoseRTV PoseRTV::compose(const PoseRTV& p,
-    boost::optional<Matrix&> H1,
-    boost::optional<Matrix&> H2) const {
-  if (H1) *H1 = numericalDerivative21(compose_, *this, p, 1e-5);
-  if (H2) *H2 = numericalDerivative22(compose_, *this, p, 1e-5);
-  return PoseRTV(Rt_.compose(p.Rt_), v_.compose(p.v_));
-}
-
-/* ************************************************************************* */
-PoseRTV between_(const PoseRTV& p1, const PoseRTV& p2) { return p1.between(p2); }
-PoseRTV PoseRTV::between(const PoseRTV& p,
-    boost::optional<Matrix&> H1,
-    boost::optional<Matrix&> H2) const {
-  if (H1) *H1 = numericalDerivative21(between_, *this, p, 1e-5);
-  if (H2) *H2 = numericalDerivative22(between_, *this, p, 1e-5);
-  return inverse().compose(p);
+  velocity().print("  V");
 }
 
 /* ************************************************************************* */
@@ -180,7 +120,7 @@ PoseRTV PoseRTV::generalDynamics(
   Rot3 r2 = rotation().retract(gyro * dt);
 
   //  Integrate Velocity Equations
-  Velocity3 v2 = v_.compose(Velocity3(dt * (r2.matrix() * accel + g)));
+  Velocity3 v2 = velocity() + Velocity3(dt * (r2.matrix() * accel + kGravity));
 
   //  Integrate Position Equations
   Point3 t2 = translationIntegration(r2, v2, dt);
@@ -197,15 +137,15 @@ Vector6 PoseRTV::imuPrediction(const PoseRTV& x2, double dt) const {
   Vector6 imu;
 
   // acceleration
-  Vector accel = v1.localCoordinates(v2) / dt;
-  imu.head<3>() = r2.transpose() * (accel - g);
+  Vector3 accel = (v2-v1).vector() / dt;
+  imu.head<3>() = r2.transpose() * (accel - kGravity);
 
   // rotation rates
   // just using euler angles based on matlab code
   // FIXME: this is silly - we shouldn't use differences in Euler angles
   Matrix Enb = RRTMnb(r1);
-  Vector euler1 = r1.xyz(), euler2 = r2.xyz();
-  Vector dR = euler2 - euler1;
+  Vector3 euler1 = r1.xyz(), euler2 = r2.xyz();
+  Vector3 dR = euler2 - euler1;
 
   // normalize yaw in difference (as per Mitch's code)
   dR(2) = Rot2::fromAngle(dR(2)).theta();
@@ -225,55 +165,40 @@ Point3 PoseRTV::translationIntegration(const Rot3& r2, const Velocity3& v2, doub
 }
 
 /* ************************************************************************* */
-double range_(const PoseRTV& A, const PoseRTV& B) { return A.range(B); }
 double PoseRTV::range(const PoseRTV& other,
-    boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
-  if (H1) *H1 = numericalDerivative21(range_, *this, other, 1e-5);
-  if (H2) *H2 = numericalDerivative22(range_, *this, other, 1e-5);
-  return t().distance(other.t());
+    OptionalJacobian<1,9> H1, OptionalJacobian<1,9> H2) const {
+  Matrix36 D_t1_pose, D_t2_other;
+  const Point3 t1 = pose().translation(H1 ? &D_t1_pose : 0);
+  const Point3 t2 = other.pose().translation(H2 ? &D_t2_other : 0);
+  Matrix13 D_d_t1, D_d_t2;
+  double d = t1.distance(t2, H1 ? &D_d_t1 : 0, H2 ? &D_d_t2 : 0);
+  if (H1) *H1 << D_d_t1 * D_t1_pose, 0,0,0;
+  if (H2) *H2 << D_d_t2 * D_t2_other, 0,0,0;
+  return d;
 }
 
 /* ************************************************************************* */
-PoseRTV transformed_from_(const PoseRTV& global, const Pose3& transform) {
-  return global.transformed_from(transform);
-}
-
-PoseRTV PoseRTV::transformed_from(const Pose3& trans,
-    boost::optional<Matrix&> Dglobal,
-    boost::optional<Matrix&> Dtrans) const {
-  // Note that we rotate the velocity
-  Matrix DVr, DTt;
-  Velocity3 newvel = trans.rotation().rotate(v_, DVr, DTt);
-  if (!Dglobal && !Dtrans)
-    return PoseRTV(trans.compose(pose()), newvel);
+PoseRTV PoseRTV::transformed_from(const Pose3& trans, ChartJacobian Dglobal,
+    OptionalJacobian<9, 6> Dtrans) const {
 
   // Pose3 transform is just compose
-  Matrix DTc, DGc;
-  Pose3 newpose = trans.compose(pose(), DTc, DGc);
+  Matrix6 D_newpose_trans, D_newpose_pose;
+  Pose3 newpose = trans.compose(pose(), D_newpose_trans, D_newpose_pose);
+
+  // Note that we rotate the velocity
+  Matrix3 D_newvel_R, D_newvel_v;
+  Velocity3 newvel = trans.rotation().rotate(velocity(), D_newvel_R, D_newvel_v);
 
   if (Dglobal) {
-    *Dglobal = zeros(9,9);
-    insertSub(*Dglobal, DGc, 0, 0);
-
-    // Rotate velocity
-    insertSub(*Dglobal, eye(3,3), 6, 6); // FIXME: should this actually be an identity matrix?
+    Dglobal->setZero();
+    Dglobal->topLeftCorner<6,6>() = D_newpose_pose;
+    Dglobal->bottomRightCorner<3,3>() = D_newvel_v;
   }
 
   if (Dtrans) {
-    *Dtrans = numericalDerivative22(transformed_from_, *this, trans, 1e-8);
-    //
-    //    *Dtrans = zeros(9,6);
-    //    // directly affecting the pose
-    //    insertSub(*Dtrans, DTc, 0, 0); // correct in tests
-    //
-    //    // rotating the velocity
-    //    Matrix vRhat = skewSymmetric(-v_.x(), -v_.y(), -v_.z());
-    //    trans.rotation().print("Transform rotation");
-    //    gtsam::print(vRhat, "vRhat");
-    //    gtsam::print(DVr, "DVr");
-    //    // FIXME: find analytic derivative
-    ////    insertSub(*Dtrans, vRhat, 6, 0); // works if PoseRTV.rotation() = I
-    ////    insertSub(*Dtrans, trans.rotation().matrix() * vRhat, 6, 0); // FAIL: both tests fail
+    Dtrans->setZero();
+    Dtrans->topLeftCorner<6,6>() = D_newpose_trans;
+    Dtrans->bottomLeftCorner<3,3>() = D_newvel_R;
   }
   return PoseRTV(newpose, newvel);
 }

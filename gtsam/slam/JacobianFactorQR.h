@@ -6,41 +6,48 @@
  */
 
 #pragma once
-#include <gtsam/slam/JacobianSchurFactor.h>
+#include <gtsam/slam/RegularJacobianFactor.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/inference/Symbol.h>
 
 namespace gtsam {
+
+class GaussianBayesNet;
+
 /**
  * JacobianFactor for Schur complement that uses Q noise model
  */
-template<size_t D>
-class JacobianFactorQR: public JacobianSchurFactor<D> {
+template<size_t D, size_t ZDim>
+class JacobianFactorQR: public RegularJacobianFactor<D> {
 
-  typedef JacobianSchurFactor<D> Base;
+  typedef RegularJacobianFactor<D> Base;
+  typedef Eigen::Matrix<double, ZDim, D> MatrixZD;
+  typedef std::pair<Key, MatrixZD> KeyMatrixZD;
 
 public:
 
   /**
    * Constructor
    */
-  JacobianFactorQR(const std::vector<typename Base::KeyMatrix2D>& Fblocks,
-      const Matrix& E, const Matrix3& P, const Vector& b,
+  JacobianFactorQR(const std::vector<KeyMatrixZD>& Fblocks, const Matrix& E,
+      const Matrix3& P, const Vector& b, //
       const SharedDiagonal& model = SharedDiagonal()) :
-      JacobianSchurFactor<D>() {
+      Base() {
     // Create a number of Jacobian factors in a factor graph
     GaussianFactorGraph gfg;
     Symbol pointKey('p', 0);
     size_t i = 0;
-    BOOST_FOREACH(const typename Base::KeyMatrix2D& it, Fblocks) {
-      gfg.add(pointKey, E.block<2, 3>(2 * i, 0), it.first, it.second,
-          b.segment<2>(2 * i), model);
+    BOOST_FOREACH(const KeyMatrixZD& it, Fblocks) {
+      gfg.add(pointKey, E.block<ZDim, 3>(ZDim * i, 0), it.first, it.second,
+          b.segment<ZDim>(ZDim * i), model);
       i += 1;
     }
     //gfg.print("gfg");
 
     // eliminate the point
-    GaussianBayesNet::shared_ptr bn;
+    boost::shared_ptr<GaussianBayesNet> bn;
     GaussianFactorGraph::shared_ptr fg;
-    std::vector < Key > variables;
+    std::vector<Key> variables;
     variables.push_back(pointKey);
     boost::tie(bn, fg) = gfg.eliminatePartialSequential(variables, EliminateQR);
     //fg->print("fg");
@@ -48,6 +55,6 @@ public:
     JacobianFactor::operator=(JacobianFactor(*fg));
   }
 };
-// class
+// end class JacobianFactorQR
 
-}// gtsam
+}// end namespace gtsam

@@ -16,16 +16,12 @@
  */
 
 #include <gtsam/geometry/Point2.h>
-#include <gtsam/base/Lie-inl.h>
 #include <boost/foreach.hpp>
 #include <cmath>
 
 using namespace std;
 
 namespace gtsam {
-
-/** Explicit instantiation of base class to export members */
-INSTANTIATE_LIE(Point2);
 
 /* ************************************************************************* */
 void Point2::print(const string& s) const {
@@ -38,15 +34,9 @@ bool Point2::equals(const Point2& q, double tol) const {
 }
 
 /* ************************************************************************* */
-double Point2::norm() const {
-  return sqrt(x_ * x_ + y_ * y_);
-}
-
-/* ************************************************************************* */
-double Point2::norm(boost::optional<Matrix&> H) const {
-  double r = norm();
+double Point2::norm(OptionalJacobian<1,2> H) const {
+  double r = sqrt(x_ * x_ + y_ * y_);
   if (H) {
-    H->resize(1,2);
     if (fabs(r) > 1e-10)
       *H << x_ / r, y_ / r;
     else
@@ -56,12 +46,11 @@ double Point2::norm(boost::optional<Matrix&> H) const {
 }
 
 /* ************************************************************************* */
-static const Matrix I2 = eye(2);
-double Point2::distance(const Point2& point, boost::optional<Matrix&> H1,
-    boost::optional<Matrix&> H2) const {
+double Point2::distance(const Point2& point, OptionalJacobian<1,2> H1,
+    OptionalJacobian<1,2> H2) const {
   Point2 d = point - *this;
   if (H1 || H2) {
-    Matrix H;
+    Matrix12 H;
     double r = d.norm(H);
     if (H1) *H1 = -H;
     if (H2) *H2 =  H;

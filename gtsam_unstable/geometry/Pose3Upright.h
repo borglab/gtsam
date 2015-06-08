@@ -133,25 +133,15 @@ private:
   // Serialization function
   friend class boost::serialization::access;
   template<class Archive>
-  void serialize(Archive & ar, const unsigned int version) {
+  void serialize(Archive & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_NVP(T_);
     ar & BOOST_SERIALIZATION_NVP(z_);
   }
 
 }; // \class Pose3Upright
 
-// Define GTSAM traits
-namespace traits {
-
 template<>
-struct is_manifold<Pose3Upright> : public boost::true_type {
-};
-
-template<>
-struct dimension<Pose3Upright> : public boost::integral_constant<int, 4> {
-};
-
-}
+struct traits<Pose3Upright> : public internal::Manifold<Pose3Upright> {};
 
 
 } // \namespace gtsam

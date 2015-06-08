@@ -44,7 +44,7 @@ namespace gtsam {
   private:
     friend class boost::serialization::access;
     template<class Archive>
-    void serialize(Archive & ar, const unsigned int version) {
+    void serialize(Archive & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_NVP(index_);
       ar & BOOST_SERIALIZATION_NVP(weight_);
     }
@@ -70,7 +70,7 @@ namespace gtsam {
     Subgraph(const std::vector<size_t> &indices) ;
 
     inline const Edges& edges() const { return edges_; }
-    inline const size_t size() const { return edges_.size(); }
+    inline size_t size() const { return edges_.size(); }
     EdgeIndices edgeIndices() const;
 
     iterator begin() { return edges_.begin(); }
@@ -85,7 +85,7 @@ namespace gtsam {
   private:
     friend class boost::serialization::access;
     template<class Archive>
-    void serialize(Archive & ar, const unsigned int version) {
+    void serialize(Archive & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_NVP(edges_);
     }
   };

@@ -1,16 +1,24 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /**
- * @file    testImplicitSchurFactor.cpp
+ * @file    testRegularImplicitSchurFactor.cpp
  * @brief   unit test implicit jacobian factors
  * @author  Frank Dellaert
  * @date    Oct 20, 2013
  */
 
-//#include <gtsam_unstable/slam/ImplicitSchurFactor.h>
-#include <gtsam/slam/RegularImplicitSchurFactor.h>
-//#include <gtsam_unstable/slam/JacobianFactorQ.h>
 #include <gtsam/slam/JacobianFactorQ.h>
-//#include "gtsam_unstable/slam/JacobianFactorQR.h"
-#include "gtsam/slam/JacobianFactorQR.h"
+#include <gtsam/slam/JacobianFactorQR.h>
+#include <gtsam/slam/RegularImplicitSchurFactor.h>
 
 #include <gtsam/base/timing.h>
 #include <gtsam/linear/VectorValues.h>
@@ -114,7 +122,7 @@ TEST( regularImplicitSchurFactor, addHessianMultiply ) {
 
   // Create JacobianFactor with same error
   const SharedDiagonal model;
-  JacobianFactorQ<6> jf(Fblocks, E, P, b, model);
+  JacobianFactorQ<6, 2> jf(Fblocks, E, P, b, model);
 
   { // error
     double expectedError = jf.error(xvalues);
@@ -164,7 +172,7 @@ TEST( regularImplicitSchurFactor, addHessianMultiply ) {
   }
 
   // Create JacobianFactorQR
-  JacobianFactorQR<6> jfq(Fblocks, E, P, b, model);
+  JacobianFactorQR<6, 2> jfq(Fblocks, E, P, b, model);
   {
     const SharedDiagonal model;
     VectorValues yActual = zero;

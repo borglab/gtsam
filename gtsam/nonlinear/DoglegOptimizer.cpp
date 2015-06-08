@@ -96,7 +96,7 @@ void DoglegOptimizer::iterate(void) {
 /* ************************************************************************* */
 DoglegParams DoglegOptimizer::ensureHasOrdering(DoglegParams params, const NonlinearFactorGraph& graph) const {
   if(!params.ordering)
-    params.ordering = Ordering::COLAMD(graph);
+    params.ordering = Ordering::colamd(graph);
   return params;
 }
 

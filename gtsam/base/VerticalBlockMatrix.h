@@ -199,6 +199,7 @@ namespace gtsam {
     }
 
     void checkBlock(DenseIndex block) const {
+      static_cast<void>(block); //Disable unused varibale warnings.
       assert(matrix_.cols() == variableColOffsets_.back());
       assert(block < (DenseIndex)variableColOffsets_.size() - 1);
       assert(variableColOffsets_[block] < matrix_.cols() && variableColOffsets_[block+1] <= matrix_.cols());
@@ -220,7 +221,7 @@ namespace gtsam {
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version) {
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_NVP(matrix_);
       ar & BOOST_SERIALIZATION_NVP(variableColOffsets_);
       ar & BOOST_SERIALIZATION_NVP(rowStart_);

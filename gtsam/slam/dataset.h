@@ -137,11 +137,15 @@ GTSAM_EXPORT GraphAndValues load3D(const std::string& filename);
 /// A measurement with its camera index
 typedef std::pair<size_t, Point2> SfM_Measurement;
 
+/// SfM_Track
+typedef std::pair<size_t, size_t> SIFT_Index;
+
 /// Define the structure for the 3D points
 struct SfM_Track {
   Point3 p; ///< 3D position of the point
   float r, g, b; ///< RGB color of the 3D point
   std::vector<SfM_Measurement> measurements; ///< The 2D image projections (id,(u,v))
+  std::vector<SIFT_Index> siftIndices;
   size_t number_measurements() const {
     return measurements.size();
   }

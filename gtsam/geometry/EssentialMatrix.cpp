@@ -13,64 +13,46 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-EssentialMatrix EssentialMatrix::FromPose3(const Pose3& _1P2_,
-    boost::optional<Matrix&> H) {
-  const Rot3& _1R2_ = _1P2_.rotation();
-  const Point3& _1T2_ = _1P2_.translation();
+EssentialMatrix EssentialMatrix::FromPose3(const Pose3& aPb,
+    OptionalJacobian<5, 6> H) {
+  const Rot3& aRb = aPb.rotation();
+  const Point3& aTb = aPb.translation();
   if (!H) {
     // just make a direction out of translation and create E
-    Unit3 direction(_1T2_);
-    return EssentialMatrix(_1R2_, direction);
+    Unit3 direction(aTb);
+    return EssentialMatrix(aRb, direction);
   } else {
     // Calculate the 5*6 Jacobian H = D_E_1P2
     // D_E_1P2 = [D_E_1R2 D_E_1T2], 5*3 wrpt rotation, 5*3 wrpt translation
     // First get 2*3 derivative from Unit3::FromPoint3
-    Matrix D_direction_1T2;
-    Unit3 direction = Unit3::FromPoint3(_1T2_, D_direction_1T2);
-    H->resize(5, 6);
-    H->block<3, 3>(0, 0) << Matrix::Identity(3, 3); // upper left
-    H->block<2, 3>(3, 0) << Matrix::Zero(2, 3); // lower left
-    H->block<3, 3>(0, 3) << Matrix::Zero(3, 3); // upper right
-    H->block<2, 3>(3, 3) << D_direction_1T2 * _1R2_.matrix(); // lower right
-    return EssentialMatrix(_1R2_, direction);
+    Matrix23 D_direction_1T2;
+    Unit3 direction = Unit3::FromPoint3(aTb, D_direction_1T2);
+    *H << I_3x3, Z_3x3, //
+    Matrix23::Zero(), D_direction_1T2 * aRb.matrix();
+    return EssentialMatrix(aRb, direction);
   }
 }
 
 /* ************************************************************************* */
 void EssentialMatrix::print(const string& s) const {
   cout << s;
-  aRb_.print("R:\n");
-  aTb_.print("d: ");
+  rotation().print("R:\n");
+  direction().print("d: ");
 }
 
 /* ************************************************************************* */
-EssentialMatrix EssentialMatrix::retract(const Vector& xi) const {
-  assert(xi.size() == 5);
-  Vector3 omega(sub(xi, 0, 3));
-  Vector2 z(sub(xi, 3, 5));
-  Rot3 R = aRb_.retract(omega);
-  Unit3 t = aTb_.retract(z);
-  return EssentialMatrix(R, t);
-}
-
-/* ************************************************************************* */
-Vector EssentialMatrix::localCoordinates(const EssentialMatrix& other) const {
-  return (Vector(5) <<
-      aRb_.localCoordinates(other.aRb_), aTb_.localCoordinates(other.aTb_)).finished();
-}
-
-/* ************************************************************************* */
-Point3 EssentialMatrix::transform_to(const Point3& p,
-    boost::optional<Matrix&> DE, boost::optional<Matrix&> Dpoint) const {
-  Pose3 pose(aRb_, aTb_.point3());
-  Point3 q = pose.transform_to(p, DE, Dpoint);
+Point3 EssentialMatrix::transform_to(const Point3& p, OptionalJacobian<3, 5> DE,
+    OptionalJacobian<3, 3> Dpoint) const {
+  Pose3 pose(rotation(), direction().point3());
+  Matrix36 DE_;
+  Point3 q = pose.transform_to(p, DE ? &DE_ : 0, Dpoint);
   if (DE) {
     // DE returned by pose.transform_to is 3*6, but we need it to be 3*5
     // The last 3 columns are derivative with respect to change in translation
-    // The derivative of translation with respect to a 2D sphere delta is 3*2 aTb_.basis()
+    // The derivative of translation with respect to a 2D sphere delta is 3*2 direction().basis()
     // Duy made an educated guess that this needs to be rotated to the local frame
-    Matrix H(3, 5);
-    H << DE->block<3, 3>(0, 0), -aRb_.transpose() * aTb_.basis();
+    Matrix35 H;
+    H << DE_.block < 3, 3 > (0, 0), -rotation().transpose() * direction().basis();
     *DE = H;
   }
   return q;
@@ -78,29 +60,27 @@ Point3 EssentialMatrix::transform_to(const Point3& p,
 
 /* ************************************************************************* */
 EssentialMatrix EssentialMatrix::rotate(const Rot3& cRb,
-    boost::optional<Matrix&> HE, boost::optional<Matrix&> HR) const {
+    OptionalJacobian<5, 5> HE, OptionalJacobian<5, 3> HR) const {
 
   // The rotation must be conjugated to act in the camera frame
-  Rot3 c1Rc2 = aRb_.conjugate(cRb);
+  Rot3 c1Rc2 = rotation().conjugate(cRb);
 
   if (!HE && !HR) {
     // Rotate translation direction and return
-    Unit3 c1Tc2 = cRb * aTb_;
+    Unit3 c1Tc2 = cRb * direction();
     return EssentialMatrix(c1Rc2, c1Tc2);
   } else {
     // Calculate derivatives
-    Matrix D_c1Tc2_cRb, D_c1Tc2_aTb; // 2*3 and 2*2
-    Unit3 c1Tc2 = cRb.rotate(aTb_, D_c1Tc2_cRb, D_c1Tc2_aTb);
-    if (HE) {
-      *HE = zeros(5, 5);
-      HE->block<3, 3>(0, 0) << cRb.matrix(); // a change in aRb_ will yield a rotated change in c1Rc2
-      HE->block<2, 2>(3, 3) << D_c1Tc2_aTb; // (2*2)
-    }
+    Matrix23 D_c1Tc2_cRb; // 2*3
+    Matrix2 D_c1Tc2_aTb; // 2*2
+    Unit3 c1Tc2 = cRb.rotate(direction(), D_c1Tc2_cRb, D_c1Tc2_aTb);
+    if (HE)
+      *HE << cRb.matrix(), Matrix32::Zero(), //
+      Matrix23::Zero(), D_c1Tc2_aTb;
     if (HR) {
       throw runtime_error(
           "EssentialMatrix::rotate: derivative HR not implemented yet");
       /*
-       HR->resize(5, 3);
        HR->block<3, 3>(0, 0) << zeros(3, 3); // a change in the rotation yields ?
        HR->block<2, 3>(3, 0) << zeros(2, 3); // (2*3) * (3*3) ?
        */
@@ -110,14 +90,13 @@ EssentialMatrix EssentialMatrix::rotate(const Rot3& cRb,
 }
 
 /* ************************************************************************* */
-double EssentialMatrix::error(const Vector& vA, const Vector& vB, //
-    boost::optional<Matrix&> H) const {
+double EssentialMatrix::error(const Vector3& vA, const Vector3& vB, //
+    OptionalJacobian<1, 5> H) const {
   if (H) {
-    H->resize(1, 5);
     // See math.lyx
-    Matrix HR = vA.transpose() * E_ * skewSymmetric(-vB);
-    Matrix HD = vA.transpose() * skewSymmetric(-aRb_.matrix() * vB)
-        * aTb_.basis();
+    Matrix13 HR = vA.transpose() * E_ * skewSymmetric(-vB);
+    Matrix12 HD = vA.transpose() * skewSymmetric(-rotation().matrix() * vB)
+        * direction().basis();
     *H << HR, HD;
   }
   return dot(vA, E_ * vB);

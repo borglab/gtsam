@@ -16,13 +16,13 @@
  **/
 #pragma once
 
-#include <ostream>
-
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/Lie.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/NoiseModel.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/Lie.h>
+
+#include <ostream>
 
 namespace gtsam {
 
@@ -91,8 +91,8 @@ public:
       boost::optional<Matrix&> H1 = boost::none,
       boost::optional<Matrix&> H2 = boost::none) const {
 
-    Vector v1( VALUE::Logmap(p1) );
-    Vector v2( VALUE::Logmap(p2) );
+    Vector v1( traits<VALUE>::Logmap(p1) );
+    Vector v2( traits<VALUE>::Logmap(p2) );
 
     Vector alpha(tau_.size());
     Vector alpha_v1(tau_.size());
@@ -114,7 +114,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar & BOOST_SERIALIZATION_NVP(dt_);
     ar & BOOST_SERIALIZATION_NVP(tau_);
@@ -131,5 +131,10 @@ private:
   }
 
 }; // \class GaussMarkov1stOrderFactor
+
+/// traits
+template<class VALUE> struct traits<GaussMarkov1stOrderFactor<VALUE> > :
+    public Testable<GaussMarkov1stOrderFactor<VALUE> > {
+};
 
 } /// namespace gtsam

@@ -21,18 +21,18 @@
 
 #include <gtsam/dllexport.h>
 #include <gtsam/config.h>
-
-#include <cstddef>
-#include <string>
-#include <iostream>
 #include <boost/function/function1.hpp>
 #include <boost/range/concepts.hpp>
 #include <boost/optional.hpp>
+#include <cstddef>
+#include <string>
+#include <ostream>
 
 #ifdef GTSAM_USE_TBB
 #include <tbb/task_scheduler_init.h>
 #include <tbb/tbb_exception.h>
 #include <tbb/scalable_allocator.h>
+#include <iostream>
 #endif
 
 #ifdef GTSAM_USE_EIGEN_MKL_OPENMP

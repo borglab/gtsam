@@ -86,7 +86,7 @@ static const SharedNoiseModel sigma1(noiseModel::Unit::Create(2));
 TEST( GeneralSFMFactor_Cal3Bundler, equals )
 {
   // Create two identical factors and make sure they're equal
-  Vector z = Vector2(323.,240.);
+  Point2 z(323.,240.);
   const Symbol cameraFrameNumber('x',1), landmarkNumber('l',1);
   const SharedNoiseModel sigma(noiseModel::Unit::Create(1));
   boost::shared_ptr<Projection>

@@ -16,11 +16,15 @@
  * @author  Christian Potthast
  * @author  Frank Dellaert
  * @author  Richard Roberts
+ * @author  Luca Carlone
  */
 // \callgraph
 
 #pragma once
 
+#include <gtsam/geometry/Quaternion.h>
+#include <gtsam/geometry/Unit3.h>
+#include <gtsam/base/concepts.h>
 #include <gtsam/config.h> // Get GTSAM_USE_QUATERNIONS macro
 
 // You can override the default coordinate mode using this flag
@@ -39,17 +43,7 @@
   #endif
 #endif
 
-#include <gtsam/base/DerivedValue.h>
-#include <gtsam/base/Matrix.h>
-#include <gtsam/geometry/Point3.h>
-#include <gtsam/geometry/Unit3.h>
-
 namespace gtsam {
-
-  /// Typedef to an Eigen Quaternion<double>, we disable alignment because
-  /// geometry objects are stored in boost pool allocators, in Values
-  /// containers, and and these pool allocators do not support alignment.
-  typedef Eigen::Quaternion<double, Eigen::DontAlign> Quaternion;
 
   /**
    * @brief A 3D rotation represented as a rotation matrix if the preprocessor
@@ -58,7 +52,7 @@ namespace gtsam {
    * @addtogroup geometry
    * \nosubgrouping
    */
-  class GTSAM_EXPORT Rot3 {
+  class GTSAM_EXPORT Rot3 : public LieGroup<Rot3,3> {
 
   private:
 
@@ -160,7 +154,7 @@ namespace gtsam {
      * @param   theta rotation angle
      * @return incremental rotation matrix
      */
-    static Rot3 rodriguez(const Vector& w, double theta);
+    static Rot3 rodriguez(const Vector3& w, double theta);
 
     /**
      * Rodriguez' formula to compute an incremental rotation matrix
@@ -183,7 +177,7 @@ namespace gtsam {
      * @param v a vector of incremental roll,pitch,yaw
      * @return incremental rotation matrix
      */
-    static Rot3 rodriguez(const Vector& v);
+    static Rot3 rodriguez(const Vector3& v);
 
     /**
      * Rodriguez' formula to compute an incremental rotation matrix
@@ -193,7 +187,7 @@ namespace gtsam {
      * @return incremental rotation matrix
      */
     static Rot3 rodriguez(double wx, double wy, double wz)
-      { return rodriguez((Vector(3) << wx, wy, wz).finished());}
+      { return rodriguez(Vector3(wx, wy, wz));}
 
     /// @}
     /// @name Testable
@@ -214,22 +208,13 @@ namespace gtsam {
       return Rot3();
     }
 
-    /// derivative of inverse rotation R^T s.t. inverse(R)*R = identity
-    Rot3 inverse(boost::optional<Matrix&> H1=boost::none) const;
-
-    /// Compose two rotations i.e., R= (*this) * R2
-    Rot3 compose(const Rot3& R2) const;
-
-    /// Compose two rotations i.e., R= (*this) * R2
-    Rot3 compose(const Rot3& R2, boost::optional<Matrix3&> H1,
-        boost::optional<Matrix3&> H2) const;
-
-    /// Compose two rotations i.e., R= (*this) * R2
-    Rot3 compose(const Rot3& R2, boost::optional<Matrix&> H1,
-        boost::optional<Matrix&> H2) const;
-
-    /** compose two rotations */
+    /// Syntatic sugar for composing two rotations
     Rot3 operator*(const Rot3& R2) const;
+
+    /// inverse of a rotation, TODO should be different for M/Q
+    Rot3 inverse() const {
+      return Rot3(Matrix3(transpose()));
+    }
 
     /**
      * Conjugation: given a rotation acting in frame B, compute rotation c1Rc2 acting in a frame C
@@ -241,22 +226,9 @@ namespace gtsam {
       return cRb * (*this) * cRb.inverse();
     }
 
-    /**
-     * Return relative rotation D s.t. R2=D*R1, i.e. D=R2*R1'
-     */
-    Rot3 between(const Rot3& R2,
-        boost::optional<Matrix&> H1=boost::none,
-        boost::optional<Matrix&> H2=boost::none) const;
-
     /// @}
     /// @name Manifold
     /// @{
-
-    /// dimension of the variable - used to autodetect sizes
-    static size_t Dim() { return 3; }
-
-    /// return dimensionality of tangent space, DOF = 3
-    size_t dim() const { return 3; }
 
     /**
      * The method retract() is used to map from the tangent space back to the manifold.
@@ -271,20 +243,28 @@ namespace gtsam {
       EXPMAP, ///< Use the Lie group exponential map to retract
 #ifndef GTSAM_USE_QUATERNIONS
       CAYLEY, ///< Retract and localCoordinates using the Cayley transform.
-      SLOW_CAYLEY ///< Slow matrix implementation of Cayley transform (for tests only).
 #endif
       };
 
 #ifndef GTSAM_USE_QUATERNIONS
+
+    // Cayley chart around origin
+    struct CayleyChart {
+    static Rot3 Retract(const Vector3& v, OptionalJacobian<3, 3> H = boost::none);
+    static Vector3 Local(const Rot3& r, OptionalJacobian<3, 3> H = boost::none);
+    };
+
     /// Retraction from R^3 to Rot3 manifold using the Cayley transform
-    Rot3 retractCayley(const Vector& omega) const;
+    Rot3 retractCayley(const Vector& omega) const {
+      return compose(CayleyChart::Retract(omega));
+    }
+
+    /// Inverse of retractCayley
+    Vector3 localCayley(const Rot3& other) const {
+      return CayleyChart::Local(between(other));
+    }
+
 #endif
-
-    /// Retraction from R^3 \f$ [R_x,R_y,R_z] \f$ to Rot3 manifold neighborhood around current rotation
-    Rot3 retract(const Vector& omega, Rot3::CoordinatesMode mode = ROT3_DEFAULT_COORDINATES_MODE) const;
-
-    /// Returns local retract coordinates \f$ [R_x,R_y,R_z] \f$ in neighborhood around current rotation
-    Vector3 localCoordinates(const Rot3& t2, Rot3::CoordinatesMode mode = ROT3_DEFAULT_COORDINATES_MODE) const;
 
     /// @}
     /// @name Lie Group
@@ -294,32 +274,33 @@ namespace gtsam {
      * Exponential map at identity - create a rotation from canonical coordinates
      * \f$ [R_x,R_y,R_z] \f$ using Rodriguez' formula
      */
-    static Rot3 Expmap(const Vector& v)  {
-      if(zero(v)) return Rot3();
-      else return rodriguez(v);
+    static Rot3 Expmap(const Vector& v, OptionalJacobian<3,3> H = boost::none) {
+      if(H) *H = Rot3::ExpmapDerivative(v);
+      if (zero(v)) return Rot3(); else return rodriguez(v);
     }
 
     /**
-     * Log map at identity - return the canonical coordinates \f$ [R_x,R_y,R_z] \f$ of this rotation
+     * Log map at identity - returns the canonical coordinates
+     * \f$ [R_x,R_y,R_z] \f$ of this rotation
      */
-    static Vector3 Logmap(const Rot3& R);
+    static Vector3 Logmap(const Rot3& R, OptionalJacobian<3,3> H = boost::none);
 
-    /// Left-trivialized derivative of the exponential map
-    static Matrix3 dexpL(const Vector3& v);
+    /// Derivative of Expmap
+    static Matrix3 ExpmapDerivative(const Vector3& x);
 
-    /// Left-trivialized derivative inverse of the exponential map
-    static Matrix3 dexpInvL(const Vector3& v);
+    /// Derivative of Logmap
+    static Matrix3 LogmapDerivative(const Vector3& x);
 
-    /**
-     * Right Jacobian for Exponential map in SO(3) - equation (10.86) and following equations in
-     * G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups", Volume 2, 2008.
-     */
-    static Matrix3 rightJacobianExpMapSO3(const Vector3& x);
+    /** Calculate Adjoint map */
+    Matrix3 AdjointMap() const { return matrix(); }
 
-    /** Right Jacobian for Log map in SO(3) - equation (10.86) and following equations in
-     * G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups", Volume 2, 2008.
-     */
-    static Matrix3 rightJacobianExpMapSO3inverse(const Vector3& x);
+    // Chart at origin, depends on compile-time flag ROT3_DEFAULT_COORDINATES_MODE
+    struct ChartAtOrigin {
+      static Rot3 Retract(const Vector3& v, ChartJacobian H = boost::none);
+      static Vector3 Local(const Rot3& r, ChartJacobian H = boost::none);
+    };
+
+    using LieGroup<Rot3, 3>::inverse; // version with derivative
 
     /// @}
     /// @name Group Action on Point3
@@ -328,34 +309,27 @@ namespace gtsam {
     /**
      * rotate point from rotated coordinate frame to world \f$ p^w = R_c^w p^c \f$
      */
-    Point3 rotate(const Point3& p, boost::optional<Matrix&> H1 = boost::none,
-        boost::optional<Matrix&> H2 = boost::none) const;
+    Point3 rotate(const Point3& p, OptionalJacobian<3,3> H1 = boost::none,
+        OptionalJacobian<3,3> H2 = boost::none) const;
 
     /// rotate point from rotated coordinate frame to world = R*p
     Point3 operator*(const Point3& p) const;
 
     /// rotate point from world to rotated frame \f$ p^c = (R_c^w)^T p^w \f$
-    Point3 unrotate(const Point3& p) const;
-
-    /// rotate point from world to rotated frame \f$ p^c = (R_c^w)^T p^w \f$
-    Point3 unrotate(const Point3& p, boost::optional<Matrix3&> H1,
-        boost::optional<Matrix3&> H2) const;
-
-    /// rotate point from world to rotated frame \f$ p^c = (R_c^w)^T p^w \f$
-    Point3 unrotate(const Point3& p, boost::optional<Matrix&> H1,
-        boost::optional<Matrix&> H2) const;
+    Point3 unrotate(const Point3& p, OptionalJacobian<3,3> H1 = boost::none,
+        OptionalJacobian<3,3> H2=boost::none) const;
 
     /// @}
     /// @name Group Action on Unit3
     /// @{
 
     /// rotate 3D direction from rotated coordinate frame to world frame
-    Unit3 rotate(const Unit3& p, boost::optional<Matrix&> HR = boost::none,
-        boost::optional<Matrix&> Hp = boost::none) const;
+    Unit3 rotate(const Unit3& p, OptionalJacobian<2,3> HR = boost::none,
+        OptionalJacobian<2,2> Hp = boost::none) const;
 
     /// unrotate 3D direction from world frame to rotated coordinate frame
-    Unit3 unrotate(const Unit3& p, boost::optional<Matrix&> HR = boost::none,
-        boost::optional<Matrix&> Hp = boost::none) const;
+    Unit3 unrotate(const Unit3& p, OptionalJacobian<2,3> HR = boost::none,
+        OptionalJacobian<2,2> Hp = boost::none) const;
 
     /// rotate 3D direction from rotated coordinate frame to world frame
     Unit3 operator*(const Unit3& p) const;
@@ -454,7 +428,7 @@ namespace gtsam {
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version)
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/)
     {
 #ifndef GTSAM_USE_QUATERNIONS
        ar & boost::serialization::make_nvp("rot11", rot_(0,0));
@@ -488,20 +462,10 @@ namespace gtsam {
    */
   GTSAM_EXPORT std::pair<Matrix3,Vector3> RQ(const Matrix3& A);
 
-  // Define GTSAM traits
-  namespace traits {
-
   template<>
-  struct GTSAM_EXPORT is_group<Rot3> : public boost::true_type{
-  };
-
+  struct traits<Rot3> : public internal::LieGroup<Rot3> {};
+  
   template<>
-  struct GTSAM_EXPORT is_manifold<Rot3> : public boost::true_type{
-  };
-
-  template<>
-  struct GTSAM_EXPORT dimension<Rot3> : public boost::integral_constant<int, 3>{
-  };
-
-  }
+  struct traits<const Rot3> : public internal::LieGroup<Rot3> {};
 }
+

@@ -18,14 +18,14 @@
 
 #pragma once
 
-#include <string>
-#include <vector>
-#include <map>
-
 #include "Class.h"
 #include "GlobalFunction.h"
 #include "TemplateInstantiationTypedef.h"
 #include "ForwardDeclaration.h"
+
+#include <string>
+#include <vector>
+#include <map>
 
 namespace wrap {
 
@@ -33,9 +33,6 @@ namespace wrap {
  * A module just has a name and a list of classes
  */
 struct Module {
-
-  typedef std::map<std::string, GlobalFunction> GlobalFunctions;
-  typedef std::map<std::string, Method> Methods;
 
   // Filled during parsing:
   std::string name; ///< module name

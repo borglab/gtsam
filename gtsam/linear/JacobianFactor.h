@@ -230,7 +230,9 @@ namespace gtsam {
     virtual bool empty() const { return size() == 0 /*|| rows() == 0*/; }
 
     /** is noise model constrained ? */
-    bool isConstrained() const { return model_->isConstrained(); }
+    bool isConstrained() const {
+      return model_ && model_->isConstrained();
+    }
 
     /** Return the dimension of the variable pointed to by the given key iterator
      * todo: Remove this in favor of keeping track of dimensions with variables?
@@ -281,15 +283,14 @@ namespace gtsam {
     /** y += alpha * A'*A*x */
     void multiplyHessianAdd(double alpha, const VectorValues& x, VectorValues& y) const;
 
-    void multiplyHessianAdd(double alpha, const double* x, double* y, std::vector<size_t> keys) const;
-
-    void multiplyHessianAdd(double alpha, const double* x, double* y) const {};
-
     /// A'*b for Jacobian
     VectorValues gradientAtZero() const;
 
-    /* ************************************************************************* */
+    /// A'*b for Jacobian (raw memory version)
     virtual void gradientAtZero(double* d) const;
+
+    /// Compute the gradient wrt a key at any values
+    Vector gradient(Key key, const VectorValues& x) const;
 
     /** Return a whitened version of the factor, i.e. with unit diagonal noise model. */
     JacobianFactor whiten() const;
@@ -348,14 +349,19 @@ namespace gtsam {
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version) {
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
       ar & BOOST_SERIALIZATION_NVP(Ab_);
       ar & BOOST_SERIALIZATION_NVP(model_);
     }
   }; // JacobianFactor
 
-} // gtsam
+/// traits
+template<>
+struct traits<JacobianFactor> : public Testable<JacobianFactor> {
+};
+
+} // \ namespace gtsam
 
 #include <gtsam/linear/JacobianFactor-inl.h>
 

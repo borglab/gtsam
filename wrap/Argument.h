@@ -28,11 +28,21 @@ namespace wrap {
 /// Argument class
 struct Argument {
   Qualified type;
-  bool is_const, is_ref, is_ptr;
   std::string name;
+  bool is_const, is_ref, is_ptr;
 
   Argument() :
       is_const(false), is_ref(false), is_ptr(false) {
+  }
+
+  Argument(const Qualified& t, const std::string& n) :
+      type(t), name(n), is_const(false), is_ref(false), is_ptr(false) {
+  }
+
+  bool operator==(const Argument& other) const {
+    return type == other.type && name == other.name
+        && is_const == other.is_const && is_ref == other.is_ref
+        && is_ptr == other.is_ptr;
   }
 
   Argument expandTemplate(const TemplateSubstitution& ts) const;
@@ -45,6 +55,12 @@ struct Argument {
 
   /// MATLAB code generation, MATLAB to C++
   void matlab_unwrap(FileWriter& file, const std::string& matlabName) const;
+
+  /**
+   * emit checking argument to MATLAB proxy
+   * @param proxyFile output stream
+   */
+  void proxy_check(FileWriter& proxyFile, const std::string& s) const;
 
   friend std::ostream& operator<<(std::ostream& os, const Argument& arg) {
     os << (arg.is_const ? "const " : "") << arg.type << (arg.is_ptr ? "*" : "")
@@ -88,26 +104,12 @@ struct ArgumentList: public std::vector<Argument> {
   void emit_prototype(FileWriter& file, const std::string& name) const;
 
   /**
-   * emit emit MATLAB call to proxy
+   * emit checking arguments to MATLAB proxy
    * @param proxyFile output stream
-   * @param returnVal the return value
-   * @param wrapperName of method or function
-   * @param staticMethod flag to emit "this" in call
    */
-  void emit_call(FileWriter& proxyFile, const ReturnValue& returnVal,
-      const std::string& wrapperName, int id, bool staticMethod = false) const;
+  void proxy_check(FileWriter& proxyFile) const;
 
-  /**
-   * emit conditional MATLAB call to proxy (checking arguments first)
-   * @param proxyFile output stream
-   * @param returnVal the return value
-   * @param wrapperName of method or function
-   * @param staticMethod flag to emit "this" in call
-   */
-  void emit_conditional_call(FileWriter& proxyFile,
-      const ReturnValue& returnVal, const std::string& wrapperName, int id,
-      bool staticMethod = false) const;
-
+  /// Output stream operator
   friend std::ostream& operator<<(std::ostream& os,
       const ArgumentList& argList) {
     os << "(";
@@ -122,5 +124,88 @@ struct ArgumentList: public std::vector<Argument> {
 
 };
 
-} // \namespace wrap
+/* ************************************************************************* */
+// http://boost-spirit.com/distrib/spirit_1_8_2/libs/spirit/doc/grammar.html
+struct ArgumentGrammar: public classic::grammar<ArgumentGrammar> {
+
+  wrap::Argument& result_; ///< successful parse will be placed in here
+  TypeGrammar argument_type_g; ///< Type parser for Argument::type
+
+  /// Construct type grammar and specify where result is placed
+  ArgumentGrammar(wrap::Argument& result) :
+      result_(result), argument_type_g(result.type) {
+  }
+
+  /// Definition of type grammar
+  template<typename ScannerT>
+  struct definition: BasicRules<ScannerT> {
+
+    typedef classic::rule<ScannerT> Rule;
+
+    Rule argument_p;
+
+    definition(ArgumentGrammar const& self) {
+      using namespace classic;
+
+      // NOTE: allows for pointers to all types
+      // Slightly more permissive than before on basis/eigen type qualification
+      // Also, currently parses Point2*&, can't make it work otherwise :-(
+      argument_p = !str_p("const")[assign_a(self.result_.is_const, T)] //
+          >> self.argument_type_g //
+          >> !ch_p('*')[assign_a(self.result_.is_ptr, T)]
+          >> !ch_p('&')[assign_a(self.result_.is_ref, T)]
+          >> BasicRules<ScannerT>::name_p[assign_a(self.result_.name)];
+    }
+
+    Rule const& start() const {
+      return argument_p;
+    }
+
+  };
+};
+// ArgumentGrammar
+
+/* ************************************************************************* */
+// http://boost-spirit.com/distrib/spirit_1_8_2/libs/spirit/doc/grammar.html
+struct ArgumentListGrammar: public classic::grammar<ArgumentListGrammar> {
+
+  wrap::ArgumentList& result_; ///< successful parse will be placed in here
+
+  /// Construct type grammar and specify where result is placed
+  ArgumentListGrammar(wrap::ArgumentList& result) :
+      result_(result) {
+  }
+
+  /// Definition of type grammar
+  template<typename ScannerT>
+  struct definition {
+
+    const Argument arg0; ///< used to reset arg
+    Argument arg; ///< temporary argument for use during parsing
+    ArgumentGrammar argument_g; ///< single Argument parser
+
+    classic::rule<ScannerT> argument_p, argumentList_p;
+
+    definition(ArgumentListGrammar const& self) :
+        argument_g(arg) {
+      using namespace classic;
+
+      argument_p = argument_g //
+          [classic::push_back_a(self.result_, arg)] //
+          [assign_a(arg, arg0)];
+
+      argumentList_p = '(' >> !argument_p >> *(',' >> argument_p) >> ')';
+    }
+
+    classic::rule<ScannerT> const& start() const {
+      return argumentList_p;
+    }
+
+  };
+};
+// ArgumentListGrammar
+
+/* ************************************************************************* */
+
+}// \namespace wrap
 

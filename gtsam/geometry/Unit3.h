@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include <gtsam/base/Manifold.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/base/DerivedValue.h>
 #include <boost/random/mersenne_twister.hpp>
@@ -28,16 +29,18 @@
 namespace gtsam {
 
 /// Represents a 3D point on a unit sphere.
-class GTSAM_EXPORT Unit3{
+class GTSAM_EXPORT Unit3 {
 
 private:
-
-  typedef Eigen::Matrix<double,3,2> Matrix32;
 
   Point3 p_; ///< The location of the point on the unit sphere
   mutable boost::optional<Matrix32> B_; ///< Cached basis
 
 public:
+
+  enum {
+    dimension = 2
+  };
 
   /// @name Constructors
   /// @{
@@ -52,6 +55,11 @@ public:
       p_(p / p.norm()) {
   }
 
+  /// Construct from a vector3
+  explicit Unit3(const Vector3& p) :
+      p_(p / p.norm()) {
+  }
+
   /// Construct from x,y,z
   Unit3(double x, double y, double z) :
       p_(x, y, z) {
@@ -59,8 +67,8 @@ public:
   }
 
   /// Named constructor from Point3 with optional Jacobian
-  static Unit3 FromPoint3(const Point3& point, boost::optional<Matrix&> H =
-      boost::none);
+  static Unit3 FromPoint3(const Point3& point, //
+      OptionalJacobian<2, 3> H = boost::none);
 
   /// Random direction, using boost::uniform_on_sphere
   static Unit3 Random(boost::mt19937 & rng);
@@ -90,13 +98,20 @@ public:
   const Matrix32& basis() const;
 
   /// Return skew-symmetric associated with 3D point on unit sphere
-  Matrix skew() const;
+  Matrix3 skew() const;
 
   /// Return unit-norm Point3
-  const Point3& point3(boost::optional<Matrix&> H = boost::none) const {
+  const Point3& point3(OptionalJacobian<3, 2> H = boost::none) const {
     if (H)
       *H = basis();
     return p_;
+  }
+
+  /// Return unit-norm Vector
+  Vector3 unitVector(boost::optional<Matrix&> H = boost::none) const {
+    if (H)
+      *H = basis();
+    return (p_.vector());
   }
 
   /// Return scaled direction as Point3
@@ -105,12 +120,10 @@ public:
   }
 
   /// Signed, vector-valued error between two directions
-  Vector error(const Unit3& q,
-      boost::optional<Matrix&> H = boost::none) const;
+  Vector2 error(const Unit3& q, OptionalJacobian<2, 2> H = boost::none) const;
 
   /// Distance between two directions
-  double distance(const Unit3& q,
-      boost::optional<Matrix&> H = boost::none) const;
+  double distance(const Unit3& q, OptionalJacobian<1, 2> H = boost::none) const;
 
   /// @}
 
@@ -133,10 +146,10 @@ public:
   };
 
   /// The retract function
-  Unit3 retract(const Vector& v) const;
+  Unit3 retract(const Vector2& v) const;
 
   /// The local coordinates function
-  Vector localCoordinates(const Unit3& s) const;
+  Vector2 localCoordinates(const Unit3& s) const;
 
   /// @}
 
@@ -144,38 +157,30 @@ private:
 
   /// @name Advanced Interface
   /// @{
-
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version) {
-      ar & BOOST_SERIALIZATION_NVP(p_);
-      ar & BOOST_SERIALIZATION_NVP(B_);
-    }
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+    ar & BOOST_SERIALIZATION_NVP(p_);
+    // homebrew serialize Eigen Matrix
+    ar & boost::serialization::make_nvp("B11", (*B_)(0, 0));
+    ar & boost::serialization::make_nvp("B12", (*B_)(0, 1));
+    ar & boost::serialization::make_nvp("B21", (*B_)(1, 0));
+    ar & boost::serialization::make_nvp("B22", (*B_)(1, 1));
+    ar & boost::serialization::make_nvp("B31", (*B_)(2, 0));
+    ar & boost::serialization::make_nvp("B32", (*B_)(2, 1));
+  }
 
   /// @}
 
 };
 
 // Define GTSAM traits
-namespace traits {
-
-template<>
-struct GTSAM_EXPORT is_manifold<Unit3> : public boost::true_type{
+template<> struct traits<Unit3> : public internal::Manifold<Unit3> {
 };
 
-template<>
-struct GTSAM_EXPORT dimension<Unit3> : public boost::integral_constant<int, 2>{
+template<> struct traits<const Unit3> : public internal::Manifold<Unit3> {
 };
-
-template<>
-struct GTSAM_EXPORT zero<Unit3> {
-  static Unit3 value() {
-    return Unit3();
-  }
-};
-
-}
 
 } // namespace gtsam
 

@@ -132,10 +132,11 @@ boost::shared_ptr<GaussianFactor> NoiseModelFactor::linearize(
   }
 
   // TODO pass unwhitened + noise model to Gaussian factor
-  if (noiseModel_ && noiseModel_->is_constrained())
+  using noiseModel::Constrained;
+  if (noiseModel_ && noiseModel_->isConstrained())
     return GaussianFactor::shared_ptr(
         new JacobianFactor(terms, b,
-            boost::static_pointer_cast<noiseModel::Constrained>(noiseModel_)->unit()));
+            boost::static_pointer_cast<Constrained>(noiseModel_)->unit()));
   else
     return GaussianFactor::shared_ptr(new JacobianFactor(terms, b));
 }

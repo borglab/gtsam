@@ -18,9 +18,9 @@ using namespace std;
 /* ************************************************************************* */
 void GlobalFunction::addOverload(const Qualified& overload,
     const ArgumentList& args, const ReturnValue& retVal,
-    const Qualified& instName, bool verbose) {
-  string name(overload.name);
-  FullyOverloadedFunction::addOverload(name, args, retVal, instName, verbose);
+    boost::optional<const Qualified> instName, bool verbose) {
+  FullyOverloadedFunction::addOverload(overload.name(), args, retVal, instName,
+      verbose);
   overloads.push_back(overload);
 }
 
@@ -37,7 +37,7 @@ void GlobalFunction::matlab_proxy(const string& toolboxPath,
   for (size_t i = 0; i < overloads.size(); ++i) {
     Qualified overload = overloads.at(i);
     // use concatenated namespaces as key
-    string str_ns = qualifiedName("", overload.namespaces);
+    string str_ns = qualifiedName("", overload.namespaces());
     const ReturnValue& ret = returnValue(i);
     const ArgumentList& args = argumentList(i);
     grouped_functions[str_ns].addOverload(overload, args, ret);
@@ -59,7 +59,7 @@ void GlobalFunction::generateSingleFunction(const string& toolboxPath,
 
   // create the folder for the namespace
   const Qualified& overload1 = overloads.front();
-  createNamespaceStructure(overload1.namespaces, toolboxPath);
+  createNamespaceStructure(overload1.namespaces(), toolboxPath);
 
   // open destination mfunctionFileName
   string mfunctionFileName = overload1.matlabName(toolboxPath);
@@ -80,7 +80,7 @@ void GlobalFunction::generateSingleFunction(const string& toolboxPath,
 
     // Output proxy matlab code
     mfunctionFile.oss << "      " << (i == 0 ? "" : "else");
-    args.emit_conditional_call(mfunctionFile, returnVal, wrapperName, id, true); // true omits "this"
+    emit_conditional_call(mfunctionFile, returnVal, args, wrapperName, id);
 
     // Output C++ wrapper code
 
@@ -104,7 +104,7 @@ void GlobalFunction::generateSingleFunction(const string& toolboxPath,
     args.matlab_unwrap(file, 0); // We start at 0 because there is no self object
 
     // call method with default type and wrap result
-    if (returnVal.type1.name != "void")
+    if (returnVal.type1.name() != "void")
       returnVal.wrap_result(cppName + "(" + args.names() + ")", file,
           typeAttributes);
     else

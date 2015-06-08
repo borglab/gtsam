@@ -34,6 +34,7 @@ namespace gtsam {
 
   public:
 
+    enum { dimension = 6 };
     typedef boost::shared_ptr<Cal3_S2Stereo> shared_ptr;  ///< shared pointer to stereo calibration object
 
     /// @name Standard Constructors
@@ -51,6 +52,11 @@ namespace gtsam {
 
     /// constructor from vector
     Cal3_S2Stereo(const Vector &d): K_(d(0), d(1), d(2), d(3), d(4)), b_(d(5)){}
+
+    /// easy constructor; field-of-view in degrees, assumes zero skew
+    Cal3_S2Stereo(double fov, int w, int h, double b) :
+      K_(fov, w, h), b_(b) {
+    }
 
     /// @}
     /// @name Testable
@@ -98,6 +104,38 @@ namespace gtsam {
     /// return baseline
     inline double baseline() const { return b_; }
 
+    /// vectorized form (column-wise)
+    Vector6 vector() const {
+      Vector6 v;
+      v << K_.vector(), b_;
+      return v;
+    }
+
+    /// @}
+    /// @name Manifold
+    /// @{
+
+    /// return DOF, dimensionality of tangent space
+    inline size_t dim() const {
+      return 6;
+    }
+
+    /// return DOF, dimensionality of tangent space
+    static size_t Dim() {
+      return 6;
+    }
+
+    /// Given 6-dim tangent vector, create new calibration
+    inline Cal3_S2Stereo retract(const Vector& d) const {
+      return Cal3_S2Stereo(K_.fx() + d(0), K_.fy() + d(1), K_.skew() + d(2), K_.px() + d(3), K_.py() + d(4), b_ + d(5));
+    }
+
+    /// Unretraction for the calibration
+    Vector6 localCoordinates(const Cal3_S2Stereo& T2) const {
+      return T2.vector() - vector();
+    }
+
+
     /// @}
     /// @name Advanced Interface
     /// @{
@@ -106,7 +144,7 @@ namespace gtsam {
     /** Serialization function */
     friend class boost::serialization::access;
     template<class Archive>
-    void serialize(Archive & ar, const unsigned int version)
+    void serialize(Archive & ar, const unsigned int /*version*/)
     {
       ar & BOOST_SERIALIZATION_NVP(K_);
       ar & BOOST_SERIALIZATION_NVP(b_);
@@ -114,4 +152,14 @@ namespace gtsam {
     /// @}
 
   };
+
+  // Define GTSAM traits
+  template<>
+  struct traits<Cal3_S2Stereo> : public internal::Manifold<Cal3_S2Stereo> {
+  };
+
+  template<>
+  struct traits<const Cal3_S2Stereo> : public internal::Manifold<Cal3_S2Stereo> {
+  };
+
 } // \ namespace gtsam

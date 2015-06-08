@@ -15,8 +15,8 @@
  * @author Alex Cunningham
  */
 
+#include <gtsam/base/LieVector_Deprecated.h>
 #include <cstdarg>
-#include <gtsam/base/LieVector.h>
 
 using namespace std;
 
@@ -35,4 +35,6 @@ void LieVector::print(const std::string& name) const {
   gtsam::print(vector(), name);
 }
 
+// Does not compile because LieVector is not fixed size.
+// GTSAM_CONCEPT_LIE_INST(LieVector)
 } // \namespace gtsam

@@ -116,7 +116,7 @@ TEST( AHRSFactor, PreintegratedMeasurements ) {
 /* ************************************************************************* */
 TEST(AHRSFactor, Error) {
   // Linearization point
-  Vector3 bias; // Bias
+  Vector3 bias(0.,0.,0.); // Bias
   Rot3 x1(Rot3::RzRyRx(M_PI / 12.0, M_PI / 6.0, M_PI / 4.0));
   Rot3 x2(Rot3::RzRyRx(M_PI / 12.0 + M_PI / 100.0, M_PI / 6.0, M_PI / 4.0));
 
@@ -132,21 +132,21 @@ TEST(AHRSFactor, Error) {
   pre_int_data.integrateMeasurement(measuredOmega, deltaT);
 
   // Create factor
-  AHRSFactor factor(X(1), X(2), B(1), pre_int_data, omegaCoriolis, false);
+  AHRSFactor factor(X(1), X(2), B(1), pre_int_data, omegaCoriolis, boost::none);
 
-  Vector errorActual = factor.evaluateError(x1, x2, bias);
+  Vector3 errorActual = factor.evaluateError(x1, x2, bias);
 
   // Expected error
-  Vector errorExpected(3);
+  Vector3 errorExpected(3);
   errorExpected << 0, 0, 0;
-  EXPECT(assert_equal(errorExpected, errorActual, 1e-6));
+  EXPECT(assert_equal(Vector(errorExpected), Vector(errorActual), 1e-6));
 
   // Expected Jacobians
-  Matrix H1e = numericalDerivative11<Vector, Rot3>(
+  Matrix H1e = numericalDerivative11<Vector3, Rot3>(
       boost::bind(&callEvaluateError, factor, _1, x2, bias), x1);
-  Matrix H2e = numericalDerivative11<Vector, Rot3>(
+  Matrix H2e = numericalDerivative11<Vector3, Rot3>(
       boost::bind(&callEvaluateError, factor, x1, _1, bias), x2);
-  Matrix H3e = numericalDerivative11<Vector, Vector3>(
+  Matrix H3e = numericalDerivative11<Vector3, Vector3>(
       boost::bind(&callEvaluateError, factor, x1, x2, _1), bias);
 
   // Check rotation Jacobians
@@ -241,7 +241,7 @@ TEST( AHRSFactor, PartialDerivativeExpmap ) {
   Matrix expectedDelRdelBiasOmega = numericalDerivative11<Rot3, Vector3>(
       boost::bind(&evaluateRotation, measuredOmega, _1, deltaT), biasOmega);
 
-  const Matrix3 Jr = Rot3::rightJacobianExpMapSO3(
+  const Matrix3 Jr = Rot3::ExpmapDerivative(
       (measuredOmega - biasOmega) * deltaT);
 
   Matrix3 actualdelRdelBiasOmega = -Jr * deltaT; // the delta bias appears with the minus sign
@@ -293,7 +293,7 @@ TEST( AHRSFactor, fistOrderExponential ) {
   Vector3 deltabiasOmega;
   deltabiasOmega << alpha, alpha, alpha;
 
-  const Matrix3 Jr = Rot3::rightJacobianExpMapSO3(
+  const Matrix3 Jr = Rot3::ExpmapDerivative(
       (measuredOmega - biasOmega) * deltaT);
 
   Matrix3 delRdelBiasOmega = -Jr * deltaT; // the delta bias appears with the minus sign

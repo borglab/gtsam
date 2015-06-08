@@ -19,6 +19,7 @@
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/BearingRangeFactor.h>
 #include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Pose3.h>
 #include <gtsam/linear/Sampler.h>
 #include <gtsam/inference/Symbol.h>
 
@@ -63,8 +64,8 @@ string findExampleDataFile(const string& name) {
   throw
 invalid_argument(
     "gtsam::findExampleDataFile could not find a matching file in\n"
-    SOURCE_TREE_DATASET_DIR " or\n"
-    INSTALLED_DATASET_DIR " named\n" +
+    GTSAM_SOURCE_TREE_DATASET_DIR " or\n"
+    GTSAM_INSTALLED_DATASET_DIR " named\n" +
     name + ", " + name + ".graph, or " + name + ".txt");
 }
 
@@ -669,6 +670,7 @@ bool readBundler(const string& filename, SfM_data &data) {
       float u, v;
       is >> cam_idx >> point_idx >> u >> v;
       track.measurements.push_back(make_pair(cam_idx, Point2(u, -v)));
+      track.siftIndices.push_back(make_pair(cam_idx, point_idx));
     }
 
     data.tracks.push_back(track);

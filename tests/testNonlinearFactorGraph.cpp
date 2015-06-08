@@ -79,14 +79,14 @@ TEST( NonlinearFactorGraph, GET_ORDERING)
 {
   Ordering expected; expected += L(1), X(2), X(1); // For starting with l1,x1,x2
   NonlinearFactorGraph nlfg = createNonlinearFactorGraph();
-  Ordering actual = Ordering::COLAMD(nlfg);
+  Ordering actual = Ordering::colamd(nlfg);
   EXPECT(assert_equal(expected,actual));
 
   // Constrained ordering - put x2 at the end
   Ordering expectedConstrained; expectedConstrained += L(1), X(1), X(2);
   FastMap<Key, int> constraints;
   constraints[X(2)] = 1;
-  Ordering actualConstrained = Ordering::COLAMDConstrained(nlfg, constraints);
+  Ordering actualConstrained = Ordering::colamdConstrained(nlfg, constraints);
   EXPECT(assert_equal(expectedConstrained, actualConstrained));
 }
 

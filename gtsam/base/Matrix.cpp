@@ -20,6 +20,8 @@
 #include <gtsam/base/timing.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/FastList.h>
+#include <Eigen/SVD>
+#include <Eigen/LU>
 
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -180,6 +182,7 @@ void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, SubVec
 }
 
 /* ************************************************************************* */
+//3 argument call
 void print(const Matrix& A, const string &s, ostream& stream) {
   size_t m = A.rows(), n = A.cols();
 
@@ -196,6 +199,12 @@ void print(const Matrix& A, const string &s, ostream& stream) {
     stream << endl;
   }
   stream << "];" << endl;
+}
+
+/* ************************************************************************* */
+//1 or 2 argument call
+void print(const Matrix& A, const string &s){
+  print(A, s, cout);
 }
 
 /* ************************************************************************* */
@@ -236,11 +245,6 @@ istream& operator>>(istream& inputStream, Matrix& destinationMatrix) {
   }
 
   return inputStream;
-}
-
-/* ************************************************************************* */
-void insertSub(Matrix& fullMatrix, const Matrix& subMatrix, size_t i, size_t j) {
-  fullMatrix.block(i, j, subMatrix.rows(), subMatrix.cols()) = subMatrix;
 }
 
 /* ************************************************************************* */
@@ -666,19 +670,6 @@ Matrix expm(const Matrix& A, size_t K) {
 }
 
 /* ************************************************************************* */
-Matrix Cayley(const Matrix& A) {
-  Matrix::Index n = A.cols();
-  assert(A.rows() == n);
-
-  // original
-//  const Matrix I = eye(n);
-//  return (I-A)*inverse(I+A);
-
-  // inlined to let Eigen do more optimization
-  return (Matrix::Identity(n, n) - A)*(Matrix::Identity(n, n) + A).inverse();
-}
-
-/* ************************************************************************* */
 std::string formatMatrixIndented(const std::string& label, const Matrix& matrix, bool makeVectorHorizontal)
 {
   stringstream ss;
@@ -715,6 +706,26 @@ std::string formatMatrixIndented(const std::string& label, const Matrix& matrix,
   return ss.str();
 }
 
+/* ************************************************************************* */
+void inplace_QR(Matrix& A){
+  size_t rows = A.rows();
+  size_t cols = A.cols();
+  size_t size = std::min(rows,cols);
 
+  typedef Eigen::internal::plain_diag_type<Matrix>::type HCoeffsType;
+  typedef Eigen::internal::plain_row_type<Matrix>::type RowVectorType;
+  HCoeffsType hCoeffs(size);
+  RowVectorType temp(cols);
+
+#ifdef GTSAM_USE_SYSTEM_EIGEN
+  // System-Eigen is used, and MKL is off
+  Eigen::internal::householder_qr_inplace_blocked<Matrix, HCoeffsType>(A, hCoeffs, 48, temp.data());
+#else
+  // Patched Eigen is used, and MKL is either on or off
+  Eigen::internal::householder_qr_inplace_blocked<Matrix, HCoeffsType>::run(A, hCoeffs, 48, temp.data());
+#endif
+
+  zeroBelowDiagonal(A);
+}
 
 } // namespace gtsam

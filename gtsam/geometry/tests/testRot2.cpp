@@ -15,10 +15,10 @@
  * @author  Frank Dellaert
  */
 
-#include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Rot2.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/testLie.h>
+#include <CppUnitLite/TestHarness.h>
 
 using namespace gtsam;
 
@@ -49,7 +49,9 @@ TEST( Rot2, unit)
 /* ************************************************************************* */
 TEST( Rot2, transpose)
 {
-  CHECK(assert_equal(R.inverse().matrix(),R.transpose()));
+  Matrix expected = R.inverse().matrix();
+  Matrix actual = R.transpose();
+  CHECK(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */
@@ -151,6 +153,47 @@ TEST( Rot2, relativeBearing )
   // Check numerical derivative
   expectedH = numericalDerivative11(relativeBearing_, l2);
   CHECK(assert_equal(expectedH,actualH));
+}
+
+//******************************************************************************
+Rot2 T1(0.1);
+Rot2 T2(0.2);
+
+//******************************************************************************
+TEST(Rot2 , Invariants) {
+  Rot2 id;
+
+  EXPECT(check_group_invariants(id,id));
+  EXPECT(check_group_invariants(id,T1));
+  EXPECT(check_group_invariants(T2,id));
+  EXPECT(check_group_invariants(T2,T1));
+
+  EXPECT(check_manifold_invariants(id,id));
+  EXPECT(check_manifold_invariants(id,T1));
+  EXPECT(check_manifold_invariants(T2,id));
+  EXPECT(check_manifold_invariants(T2,T1));
+
+}
+
+//******************************************************************************
+TEST(Rot2 , LieGroupDerivatives) {
+  Rot2 id;
+
+  CHECK_LIE_GROUP_DERIVATIVES(id,id);
+  CHECK_LIE_GROUP_DERIVATIVES(id,T2);
+  CHECK_LIE_GROUP_DERIVATIVES(T2,id);
+  CHECK_LIE_GROUP_DERIVATIVES(T2,T1);
+
+}
+
+//******************************************************************************
+TEST(Rot2 , ChartDerivatives) {
+  Rot2 id;
+
+  CHECK_CHART_DERIVATIVES(id,id);
+  CHECK_CHART_DERIVATIVES(id,T2);
+  CHECK_CHART_DERIVATIVES(T2,id);
+  CHECK_CHART_DERIVATIVES(T2,T1);
 }
 
 /* ************************************************************************* */

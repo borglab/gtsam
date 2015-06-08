@@ -90,7 +90,7 @@ public:
       boost::optional<Matrix&> H1 = boost::none,
       boost::optional<Matrix&> H2 = boost::none) const {
     assert(false); // no corresponding factor here
-    return zero(x1.dim());
+    return Vector6::Zero();
   }
 
 private:

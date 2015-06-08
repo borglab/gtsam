@@ -34,14 +34,30 @@ static SharedNoiseModel model(noiseModel::Unit::Create(1));
 
 typedef RangeFactor<Pose2, Point2> RangeFactor2D;
 typedef RangeFactor<Pose3, Point3> RangeFactor3D;
+typedef RangeFactorWithTransform<Pose2, Point2> RangeFactorWithTransform2D;
+typedef RangeFactorWithTransform<Pose3, Point3> RangeFactorWithTransform3D;
 
 /* ************************************************************************* */
-Vector factorError2D(const Pose2& pose, const Point2& point, const RangeFactor2D& factor) {
+Vector factorError2D(const Pose2& pose, const Point2& point,
+    const RangeFactor2D& factor) {
   return factor.evaluateError(pose, point);
 }
 
 /* ************************************************************************* */
-Vector factorError3D(const Pose3& pose, const Point3& point, const RangeFactor3D& factor) {
+Vector factorError3D(const Pose3& pose, const Point3& point,
+    const RangeFactor3D& factor) {
+  return factor.evaluateError(pose, point);
+}
+
+/* ************************************************************************* */
+Vector factorErrorWithTransform2D(const Pose2& pose, const Point2& point,
+    const RangeFactorWithTransform2D& factor) {
+  return factor.evaluateError(pose, point);
+}
+
+/* ************************************************************************* */
+Vector factorErrorWithTransform3D(const Pose3& pose, const Point3& point,
+    const RangeFactorWithTransform3D& factor) {
   return factor.evaluateError(pose, point);
 }
 
@@ -61,10 +77,13 @@ TEST( RangeFactor, ConstructorWithTransform) {
   Key pointKey(2);
   double measurement(10.0);
   Pose2 body_P_sensor_2D(0.25, -0.10, -M_PI_2);
-  Pose3 body_P_sensor_3D(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));
+  Pose3 body_P_sensor_3D(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2),
+      Point3(0.25, -0.10, 1.0));
 
-  RangeFactor2D factor2D(poseKey, pointKey, measurement, model, body_P_sensor_2D);
-  RangeFactor3D factor3D(poseKey, pointKey, measurement, model, body_P_sensor_3D);
+  RangeFactorWithTransform2D factor2D(poseKey, pointKey, measurement, model,
+      body_P_sensor_2D);
+  RangeFactorWithTransform3D factor3D(poseKey, pointKey, measurement, model,
+      body_P_sensor_3D);
 }
 
 /* ************************************************************************* */
@@ -90,14 +109,19 @@ TEST( RangeFactor, EqualsWithTransform ) {
   Key pointKey(2);
   double measurement(10.0);
   Pose2 body_P_sensor_2D(0.25, -0.10, -M_PI_2);
-  Pose3 body_P_sensor_3D(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));
+  Pose3 body_P_sensor_3D(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2),
+      Point3(0.25, -0.10, 1.0));
 
-  RangeFactor2D factor2D_1(poseKey, pointKey, measurement, model, body_P_sensor_2D);
-  RangeFactor2D factor2D_2(poseKey, pointKey, measurement, model, body_P_sensor_2D);
+  RangeFactorWithTransform2D factor2D_1(poseKey, pointKey, measurement, model,
+      body_P_sensor_2D);
+  RangeFactorWithTransform2D factor2D_2(poseKey, pointKey, measurement, model,
+      body_P_sensor_2D);
   CHECK(assert_equal(factor2D_1, factor2D_2));
 
-  RangeFactor3D factor3D_1(poseKey, pointKey, measurement, model, body_P_sensor_3D);
-  RangeFactor3D factor3D_2(poseKey, pointKey, measurement, model, body_P_sensor_3D);
+  RangeFactorWithTransform3D factor3D_1(poseKey, pointKey, measurement, model,
+      body_P_sensor_3D);
+  RangeFactorWithTransform3D factor3D_2(poseKey, pointKey, measurement, model,
+      body_P_sensor_3D);
   CHECK(assert_equal(factor3D_1, factor3D_2));
 }
 
@@ -130,7 +154,8 @@ TEST( RangeFactor, Error2DWithTransform ) {
   Key pointKey(2);
   double measurement(10.0);
   Pose2 body_P_sensor(0.25, -0.10, -M_PI_2);
-  RangeFactor2D factor(poseKey, pointKey, measurement, model, body_P_sensor);
+  RangeFactorWithTransform2D factor(poseKey, pointKey, measurement, model,
+      body_P_sensor);
 
   // Set the linearization point
   Rot2 R(0.57);
@@ -176,8 +201,10 @@ TEST( RangeFactor, Error3DWithTransform ) {
   Key poseKey(1);
   Key pointKey(2);
   double measurement(10.0);
-  Pose3 body_P_sensor(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));
-  RangeFactor3D factor(poseKey, pointKey, measurement, model, body_P_sensor);
+  Pose3 body_P_sensor(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2),
+      Point3(0.25, -0.10, 1.0));
+  RangeFactorWithTransform3D factor(poseKey, pointKey, measurement, model,
+      body_P_sensor);
 
   // Set the linearization point
   Rot3 R = Rot3::RzRyRx(0.2, -0.3, 1.75);
@@ -213,8 +240,10 @@ TEST( RangeFactor, Jacobian2D ) {
 
   // Use numerical derivatives to calculate the Jacobians
   Matrix H1Expected, H2Expected;
-  H1Expected = numericalDerivative11<Vector, Pose2>(boost::bind(&factorError2D, _1, point, factor), pose);
-  H2Expected = numericalDerivative11<Vector, Point2>(boost::bind(&factorError2D, pose, _1, factor), point);
+  H1Expected = numericalDerivative11<Vector, Pose2>(
+      boost::bind(&factorError2D, _1, point, factor), pose);
+  H2Expected = numericalDerivative11<Vector, Point2>(
+      boost::bind(&factorError2D, pose, _1, factor), point);
 
   // Verify the Jacobians are correct
   CHECK(assert_equal(H1Expected, H1Actual, 1e-9));
@@ -228,7 +257,8 @@ TEST( RangeFactor, Jacobian2DWithTransform ) {
   Key pointKey(2);
   double measurement(10.0);
   Pose2 body_P_sensor(0.25, -0.10, -M_PI_2);
-  RangeFactor2D factor(poseKey, pointKey, measurement, model, body_P_sensor);
+  RangeFactorWithTransform2D factor(poseKey, pointKey, measurement, model,
+      body_P_sensor);
 
   // Set the linearization point
   Rot2 R(0.57);
@@ -242,8 +272,10 @@ TEST( RangeFactor, Jacobian2DWithTransform ) {
 
   // Use numerical derivatives to calculate the Jacobians
   Matrix H1Expected, H2Expected;
-  H1Expected = numericalDerivative11<Vector, Pose2>(boost::bind(&factorError2D, _1, point, factor), pose);
-  H2Expected = numericalDerivative11<Vector, Point2>(boost::bind(&factorError2D, pose, _1, factor), point);
+  H1Expected = numericalDerivative11<Vector, Pose2>(
+      boost::bind(&factorErrorWithTransform2D, _1, point, factor), pose);
+  H2Expected = numericalDerivative11<Vector, Point2>(
+      boost::bind(&factorErrorWithTransform2D, pose, _1, factor), point);
 
   // Verify the Jacobians are correct
   CHECK(assert_equal(H1Expected, H1Actual, 1e-9));
@@ -268,8 +300,10 @@ TEST( RangeFactor, Jacobian3D ) {
 
   // Use numerical derivatives to calculate the Jacobians
   Matrix H1Expected, H2Expected;
-  H1Expected = numericalDerivative11<Vector, Pose3>(boost::bind(&factorError3D, _1, point, factor), pose);
-  H2Expected = numericalDerivative11<Vector, Point3>(boost::bind(&factorError3D, pose, _1, factor), point);
+  H1Expected = numericalDerivative11<Vector, Pose3>(
+      boost::bind(&factorError3D, _1, point, factor), pose);
+  H2Expected = numericalDerivative11<Vector, Point3>(
+      boost::bind(&factorError3D, pose, _1, factor), point);
 
   // Verify the Jacobians are correct
   CHECK(assert_equal(H1Expected, H1Actual, 1e-9));
@@ -282,8 +316,10 @@ TEST( RangeFactor, Jacobian3DWithTransform ) {
   Key poseKey(1);
   Key pointKey(2);
   double measurement(10.0);
-  Pose3 body_P_sensor(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2), Point3(0.25, -0.10, 1.0));
-  RangeFactor3D factor(poseKey, pointKey, measurement, model, body_P_sensor);
+  Pose3 body_P_sensor(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2),
+      Point3(0.25, -0.10, 1.0));
+  RangeFactorWithTransform3D factor(poseKey, pointKey, measurement, model,
+      body_P_sensor);
 
   // Set the linearization point
   Rot3 R = Rot3::RzRyRx(0.2, -0.3, 1.75);
@@ -297,8 +333,10 @@ TEST( RangeFactor, Jacobian3DWithTransform ) {
 
   // Use numerical derivatives to calculate the Jacobians
   Matrix H1Expected, H2Expected;
-  H1Expected = numericalDerivative11<Vector, Pose3>(boost::bind(&factorError3D, _1, point, factor), pose);
-  H2Expected = numericalDerivative11<Vector, Point3>(boost::bind(&factorError3D, pose, _1, factor), point);
+  H1Expected = numericalDerivative11<Vector, Pose3>(
+      boost::bind(&factorErrorWithTransform3D, _1, point, factor), pose);
+  H2Expected = numericalDerivative11<Vector, Point3>(
+      boost::bind(&factorErrorWithTransform3D, pose, _1, factor), point);
 
   // Verify the Jacobians are correct
   CHECK(assert_equal(H1Expected, H1Actual, 1e-9));
@@ -306,6 +344,9 @@ TEST( RangeFactor, Jacobian3DWithTransform ) {
 }
 
 /* ************************************************************************* */
-int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
+int main() {
+  TestResult tr;
+  return TestRegistry::runAllTests(tr);
+}
 /* ************************************************************************* */
 

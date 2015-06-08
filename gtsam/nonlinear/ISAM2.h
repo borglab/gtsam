@@ -186,6 +186,7 @@ struct GTSAM_EXPORT ISAM2Params {
       enableDetailedResults(false), enablePartialRelinearizationCheck(false),
       findUnusedFactorSlots(false) {}
 
+  /// print iSAM2 parameters
   void print(const std::string& str = "") const {
     std::cout << str << "\n";
     if(optimizationParams.type() == typeid(ISAM2GaussNewtonParams))
@@ -214,7 +215,9 @@ struct GTSAM_EXPORT ISAM2Params {
     std::cout.flush();
   }
 
-   /** Getters and Setters for all properties */
+  /// @name Getters and Setters for all properties
+  /// @{
+
   OptimizationParams getOptimizationParams() const { return this->optimizationParams; }
   RelinearizationThreshold getRelinearizeThreshold() const { return relinearizeThreshold; }
   int getRelinearizeSkip() const { return relinearizeSkip; }
@@ -237,14 +240,21 @@ struct GTSAM_EXPORT ISAM2Params {
   void setEnableDetailedResults(bool enableDetailedResults) { this->enableDetailedResults = enableDetailedResults; }
   void setEnablePartialRelinearizationCheck(bool enablePartialRelinearizationCheck) { this->enablePartialRelinearizationCheck = enablePartialRelinearizationCheck; }
 
-  Factorization factorizationTranslator(const std::string& str) const;
-  std::string factorizationTranslator(const Factorization& value) const;
-
   GaussianFactorGraph::Eliminate getEliminationFunction() const {
     return factorization == CHOLESKY
       ? (GaussianFactorGraph::Eliminate)EliminatePreferCholesky
       : (GaussianFactorGraph::Eliminate)EliminateQR;
   }
+
+  /// @}
+
+  /// @name Some utilities
+  /// @{
+
+  static Factorization factorizationTranslator(const std::string& str);
+  static std::string factorizationTranslator(const Factorization& value);
+
+  /// @}
 };
 
 
@@ -404,7 +414,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar & BOOST_SERIALIZATION_NVP(cachedFactor_);
     ar & BOOST_SERIALIZATION_NVP(gradientContribution_);
@@ -544,8 +554,15 @@ public:
     boost::optional<std::vector<size_t>&> marginalFactorsIndices = boost::none,
     boost::optional<std::vector<size_t>&> deletedFactorsIndices = boost::none);
 
-  /** Access the current linearization point */
-  const Values& getLinearizationPoint() const { return theta_; }
+  /// Access the current linearization point
+  const Values& getLinearizationPoint() const {
+    return theta_;
+  }
+
+  /// Check whether variable with given key exists in linearization point
+  bool valueExists(Key key) const {
+    return theta_.exists(key);
+  }
 
   /** Compute an estimate from the incomplete linear delta computed during the last update.
    * This delta is incomplete because it was not updated below wildfire_threshold.  If only
@@ -632,6 +649,9 @@ protected:
   void updateDelta(bool forceFullSolve = false) const;
 
 }; // ISAM2
+
+/// traits
+template<> struct traits<ISAM2> : public Testable<ISAM2> {};
 
 /// Optimize the BayesTree, starting from the root.
 /// @param replaced Needs to contain

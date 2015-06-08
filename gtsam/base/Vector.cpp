@@ -16,20 +16,18 @@
  * @author  Frank Dellaert
  */
 
+#include <gtsam/base/Vector.h>
+#include <boost/foreach.hpp>
+#include <boost/optional.hpp>
+#include <stdexcept>
 #include <cstdarg>
 #include <limits>
-#include <iostream>
 #include <fstream>
 #include <sstream>
 #include <iomanip>
 #include <cmath>
-#include <stdexcept>
-#include <boost/foreach.hpp>
-#include <boost/optional.hpp>
 #include <cstdio>
-
-#include <gtsam/base/Vector.h>
-
+#include <vector>
 
 using namespace std;
 
@@ -55,6 +53,7 @@ Vector delta(size_t n, size_t i, double value) {
 }
 
 /* ************************************************************************* */
+//3 argument call
 void print(const Vector& v, const string& s, ostream& stream) {
   size_t n = v.size();
 
@@ -63,6 +62,12 @@ void print(const Vector& v, const string& s, ostream& stream) {
       stream << setprecision(9) << v(i) << (i<n-1 ? "; " : "");
   }
   stream << "];" << endl;
+}
+
+/* ************************************************************************* */
+//1 or 2 argument call
+void print(const Vector& v, const string& s) {
+    print(v, s, cout);
 }
 
 /* ************************************************************************* */
@@ -217,11 +222,7 @@ double norm_2(const Vector& v) {
 
 /* ************************************************************************* */
 Vector reciprocal(const Vector &a) {
-  size_t n = a.size();
-  Vector b(n);
-  for( size_t i = 0; i < n; i++ )
-    b(i) = 1.0/a(i);
-  return b;
+  return a.array().inverse();
 }
 
 /* ************************************************************************* */
@@ -286,11 +287,15 @@ double weightedPseudoinverse(const Vector& a, const Vector& weights,
   for (size_t i = 0; i < m; ++i) isZero.push_back(fabs(a[i]) < 1e-9);
 
   // If there is a valid (a!=0) constraint (sigma==0) return the first one
-  for (size_t i = 0; i < m; ++i)
+  for (size_t i = 0; i < m; ++i) {
     if (weights[i] == inf && !isZero[i]) {
+      // Basically, instead of doing a normal QR step with the weighted
+      // pseudoinverse, we enforce the constraint by turning
+      // ax + AS = b into x + (A/a)S = b/a, for the first row where a!=0
       pseudo = delta(m, i, 1 / a[i]);
       return inf;
     }
+  }
 
   // Form psuedo-inverse inv(a'inv(Sigma)a)a'inv(Sigma)
   // For diagonal Sigma, inv(Sigma) = diag(precisions)

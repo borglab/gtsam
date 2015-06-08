@@ -26,8 +26,15 @@ using namespace std;
 using namespace gtsam;
 
 GTSAM_CONCEPT_TESTABLE_INST(StereoPoint2)
-GTSAM_CONCEPT_LIE_INST(StereoPoint2)
+//GTSAM_CONCEPT_LIE_INST(StereoPoint2)
 
+
+//******************************************************************************
+TEST(StereoPoint2 , Concept) {
+  BOOST_CONCEPT_ASSERT((IsGroup<StereoPoint2>));
+  BOOST_CONCEPT_ASSERT((IsManifold<StereoPoint2 >));
+  BOOST_CONCEPT_ASSERT((IsVectorSpace<StereoPoint2>));
+}
 
 /* ************************************************************************* */
 TEST(StereoPoint2, constructor) {
@@ -49,7 +56,7 @@ TEST(StereoPoint2, Lie) {
 }
 
 /* ************************************************************************* */
-TEST( StereoPoint2, expmap) {
+TEST( StereoPoint2, retract) {
   Vector d(3);
   d(0) = 1;
   d(1) = -1;

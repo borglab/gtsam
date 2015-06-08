@@ -70,7 +70,7 @@ namespace gtsam {
 
     /** Single Element Constructor: acts on a single parameter specified by idx */
     PartialPriorFactor(Key key, size_t idx, double prior, const SharedNoiseModel& model) :
-      Base(model, key), prior_((Vector(1) << prior).finished()), mask_(1, idx), H_(zeros(1, T::Dim())) {
+      Base(model, key), prior_((Vector(1) << prior).finished()), mask_(1, idx), H_(zeros(1, T::dimension)) {
       assert(model->dim() == 1);
       this->fillH();
     }
@@ -78,7 +78,7 @@ namespace gtsam {
     /** Indices Constructor: specify the mask with a set of indices */
     PartialPriorFactor(Key key, const std::vector<size_t>& mask, const Vector& prior,
         const SharedNoiseModel& model) :
-      Base(model, key), prior_(prior), mask_(mask), H_(zeros(mask.size(), T::Dim())) {
+      Base(model, key), prior_(prior), mask_(mask), H_(zeros(mask.size(), T::dimension)) {
       assert((size_t)prior_.size() == mask.size());
       assert(model->dim() == (size_t) prior.size());
       this->fillH();
@@ -136,7 +136,7 @@ namespace gtsam {
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version) {
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & boost::serialization::make_nvp("NoiseModelFactor1",
           boost::serialization::base_object<Base>(*this));
       ar & BOOST_SERIALIZATION_NVP(prior_);
