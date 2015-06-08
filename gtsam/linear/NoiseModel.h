@@ -62,10 +62,11 @@ namespace gtsam {
       Base(size_t dim = 1):dim_(dim) {}
       virtual ~Base() {}
 
-      /// true if a constrained noise mode, saves slow/clumsy dynamic casting
-      virtual bool isConstrained() const {
-        return false; // default false
-      }
+      /// true if a constrained noise model, saves slow/clumsy dynamic casting
+      virtual bool isConstrained() const { return false; } // default false
+
+      /// true if a unit noise model, saves slow/clumsy dynamic casting
+      virtual bool isUnit() const { return false; }  // default false
 
       /// Dimensionality
       inline size_t dim() const { return dim_;}
@@ -390,9 +391,7 @@ namespace gtsam {
       virtual ~Constrained() {}
 
       /// true if a constrained noise mode, saves slow/clumsy dynamic casting
-      virtual bool isConstrained() const {
-        return true;
-      }
+      virtual bool isConstrained() const { return true; }
 
       /// Return true if a particular dimension is free or constrained
       bool constrained(size_t i) const;
@@ -589,6 +588,9 @@ namespace gtsam {
       static shared_ptr Create(size_t dim) {
         return shared_ptr(new Unit(dim));
       }
+
+      /// true if a unit noise model, saves slow/clumsy dynamic casting
+      virtual bool isUnit() const { return true; }
 
       virtual void print(const std::string& name) const;
       virtual double Mahalanobis(const Vector& v) const {return v.dot(v); }
