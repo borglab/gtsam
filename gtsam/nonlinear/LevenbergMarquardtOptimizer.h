@@ -60,7 +60,7 @@ public:
   double max_diagonal_; ///< when using diagonal damping saturates the maximum diagonal entries (default: 1e32)
 
   LevenbergMarquardtParams() :
-      lambdaInitial(1e-5), lambdaFactor(10.0), lambdaUpperBound(1e5), lambdaLowerBound(
+      lambdaInitial(1e-4), lambdaFactor(2.0), lambdaUpperBound(1e5), lambdaLowerBound(
           0.0), verbosityLM(SILENT), minModelFidelity(1e-3),
           diagonalDamping(false), reuse_diagonal_(false), useFixedLambdaFactor_(true),
           min_diagonal_(1e-6), max_diagonal_(1e32) {
