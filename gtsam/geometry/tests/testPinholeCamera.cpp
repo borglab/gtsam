@@ -21,6 +21,10 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
+#include <gtsam/slam/dataset.h>
+#include <gtsam/slam/GeneralSFMFactor.h>
+#include <gtsam/inference/Symbol.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -319,6 +323,34 @@ TEST( PinholeCamera, range3) {
   EXPECT_DOUBLES_EQUAL(1, result, 1e-9);
   EXPECT(assert_equal(Hexpected1, D1, 1e-7));
   EXPECT(assert_equal(Hexpected2, D2, 1e-7));
+}
+
+/* ************************************************************************* */
+typedef GeneralSFMFactor<Camera2, Point3> sfmFactor;
+using symbol_shorthand::P;
+
+/* ************************************************************************* */
+TEST( PinholeCamera, BAL) {
+  string filename = findExampleDataFile("dubrovnik-3-7-pre");
+  SfM_data db;
+  bool success = readBAL(filename, db);
+  if (!success) throw runtime_error("Could not access file!");
+
+  SharedNoiseModel unit2 = noiseModel::Unit::Create(2);
+  NonlinearFactorGraph graph;
+
+  for (size_t j = 0; j < db.number_tracks(); j++) {
+      BOOST_FOREACH(const SfM_Measurement& m, db.tracks[j].measurements)
+              graph.push_back(sfmFactor(m.second, unit2, m.first, P(j)));
+  }
+
+  Values initial = initialCamerasAndPointsEstimate(db);
+
+  LevenbergMarquardtOptimizer lm(graph, initial);
+
+  Values actual = lm.optimize();
+  double actualError = graph.error(actual);
+  EXPECT_DOUBLES_EQUAL(0.0199833, actualError, 1e-7);
 }
 
 /* ************************************************************************* */
