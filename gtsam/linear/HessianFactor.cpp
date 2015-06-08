@@ -15,17 +15,17 @@
  * @date    Dec 8, 2010
  */
 
-#include <gtsam/base/debug.h>
-#include <gtsam/base/timing.h>
-#include <gtsam/base/Matrix.h>
-#include <gtsam/base/FastMap.h>
-#include <gtsam/base/cholesky.h>
 #include <gtsam/linear/linearExceptions.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/base/debug.h>
+#include <gtsam/base/timing.h>
+#include <gtsam/base/Matrix.h>
+#include <gtsam/base/FastMap.h>
+#include <gtsam/base/cholesky.h>
 
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
@@ -405,7 +405,7 @@ double HessianFactor::error(const VectorValues& c) const {
 /* ************************************************************************* */
 void HessianFactor::updateATA(const HessianFactor& update, const Scatter& scatter)
 {
-  gttic(updateATA);
+  gttic(updateATA_HessianFactor);
   // This function updates 'combined' with the information in 'update'. 'scatter' maps variables in
   // the update factor to slots in the combined factor.
 
@@ -440,15 +440,16 @@ void HessianFactor::updateATA(const JacobianFactor& update,
   // 'scatter' maps variables in the update factor to slots in the combined
   // factor.
 
-  gttic(updateATA);
+  gttic(updateATA_JacobianFactor);
 
   if (update.rows() > 0) {
     gttic(whiten);
     // Whiten the factor if it has a noise model
     boost::optional<JacobianFactor> _whitenedFactor;
     const JacobianFactor* whitenedFactor = &update;
-    if (update.get_model()) {
-      if (update.get_model()->isConstrained())
+    const SharedDiagonal& model = update.get_model();
+    if (model && !model->isUnit()) {
+      if (model->isConstrained())
         throw invalid_argument(
             "Cannot update HessianFactor from JacobianFactor with constrained noise model");
       _whitenedFactor = update.whiten();
@@ -457,10 +458,10 @@ void HessianFactor::updateATA(const JacobianFactor& update,
     gttoc(whiten);
 
     // A is the whitened Jacobian matrix A, and we are going to perform I += A'*A below
-    const VerticalBlockMatrix& A = whitenedFactor->matrixObject();
+    const VerticalBlockMatrix& Ab = whitenedFactor->matrixObject();
 
     // N is number of variables in HessianFactor, n in JacobianFactor
-    DenseIndex N = this->info_.nBlocks() - 1, n = A.nBlocks() - 1;
+    DenseIndex N = this->info_.nBlocks() - 1, n = Ab.nBlocks() - 1;
 
     // First build an array of slots
     gttic(slots);
@@ -479,10 +480,10 @@ void HessianFactor::updateATA(const JacobianFactor& update,
       // Fill off-diagonal blocks with Ai'*Aj
       for (DenseIndex i = 0; i < j; ++i) {
         DenseIndex I = slots[i]; // get block in Hessian
-        info_(I, J).knownOffDiagonal() += A(i).transpose() * A(j);
+        info_(I, J).knownOffDiagonal() += Ab(i).transpose() * Ab(j);
       }
       // Fill diagonal block with Aj'*Aj
-      info_(J, J).selfadjointView().rankUpdate(A(j).transpose());
+      info_(J, J).selfadjointView().rankUpdate(Ab(j).transpose());
     }
     gttoc(update);
   }
