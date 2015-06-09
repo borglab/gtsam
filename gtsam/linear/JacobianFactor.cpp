@@ -534,6 +534,51 @@ void JacobianFactor::multiplyHessianAdd(double alpha, const VectorValues& x,
 }
 
 /* ************************************************************************* */
+/** Raw memory access version of multiplyHessianAdd y += alpha * A'*A*x
+ * Note: this is not assuming a fixed dimension for the variables,
+ * but requires the vector accumulatedDims to tell the dimension of
+ * each variable: e.g.: x0 has dim 3, x2 has dim 6, x3 has dim 2,
+ * then accumulatedDims is [0 3 9 11 13]
+ * NOTE: size of accumulatedDims is size of keys + 1!!
+ * TODO Frank asks: why is this here if not regular ????
+ */
+void JacobianFactor::multiplyHessianAdd(double alpha, const double* x, double* y,
+    const std::vector<size_t>& accumulatedDims) const {
+
+  /// Use Eigen magic to access raw memory
+  typedef Eigen::Map<Vector> VectorMap;
+  typedef Eigen::Map<const Vector> ConstVectorMap;
+
+  if (empty())
+    return;
+  Vector Ax = zero(Ab_.rows());
+
+  /// Just iterate over all A matrices and multiply in correct config part (looping over keys)
+  /// E.g.: Jacobian A = [A0 A1 A2] multiplies x = [x0 x1 x2]'
+  /// Hence: Ax = A0 x0 + A1 x1 + A2 x2 (hence we loop over the keys and accumulate)
+  for (size_t pos = 0; pos < size(); ++pos) {
+    size_t offset = accumulatedDims[keys_[pos]];
+    size_t dim = accumulatedDims[keys_[pos] + 1] - offset;
+    Ax += Ab_(pos) * ConstVectorMap(x + offset, dim);
+  }
+  /// Deal with noise properly, need to Double* whiten as we are dividing by variance
+  if (model_) {
+    model_->whitenInPlace(Ax);
+    model_->whitenInPlace(Ax);
+  }
+
+  /// multiply with alpha
+  Ax *= alpha;
+
+  /// Again iterate over all A matrices and insert Ai^T into y
+  for (size_t pos = 0; pos < size(); ++pos) {
+    size_t offset = accumulatedDims[keys_[pos]];
+    size_t dim = accumulatedDims[keys_[pos] + 1] - offset;
+    VectorMap(y + offset, dim) += Ab_(pos).transpose() * Ax;
+  }
+}
+
+/* ************************************************************************* */
 VectorValues JacobianFactor::gradientAtZero() const {
   VectorValues g;
   Vector b = getb();
