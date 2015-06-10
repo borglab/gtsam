@@ -81,6 +81,9 @@ namespace gtsam {
       /// Whiten an error vector.
       virtual Vector whiten(const Vector& v) const = 0;
 
+      /// Whiten a matrix.
+      virtual Matrix Whiten(const Matrix& H) const = 0;
+
       /// Unwhiten an error vector.
       virtual Vector unwhiten(const Vector& v) const = 0;
 
@@ -856,6 +859,8 @@ namespace gtsam {
       // TODO: functions below are dummy but necessary for the noiseModel::Base
       inline virtual Vector whiten(const Vector& v) const
       { Vector r = v; this->WhitenSystem(r); return r; }
+      inline virtual Matrix Whiten(const Matrix& A) const
+      { Vector b; Matrix B=A; this->WhitenSystem(B,b); return B; }
       inline virtual Vector unwhiten(const Vector& /*v*/) const
       { throw std::invalid_argument("unwhiten is not currently supported for robust noise models."); }
       inline virtual double distance(const Vector& v) const

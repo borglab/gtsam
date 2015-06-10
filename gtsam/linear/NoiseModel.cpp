@@ -376,8 +376,11 @@ double Constrained::distance(const Vector& v) const {
 
 /* ************************************************************************* */
 Matrix Constrained::Whiten(const Matrix& H) const {
-  // selective scaling
-  return vector_scale(invsigmas(), H, true);
+  Matrix A = H;
+  for (DenseIndex i=0; i<(DenseIndex)dim_; ++i)
+    if (!constrained(i)) // if constrained, leave row of A as is
+      A.row(i) *= invsigmas_(i);
+  return A;
 }
 
 /* ************************************************************************* */
