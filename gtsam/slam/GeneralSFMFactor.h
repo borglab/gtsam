@@ -116,7 +116,6 @@ namespace gtsam {
     /** h(x)-z */
     Vector evaluateError(const CAMERA& camera, const LANDMARK& point,
         boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const {
-
       try {
         Point2 reprojError(camera.project2(point,H1,H2) - measured_);
         return reprojError.vector();
@@ -124,9 +123,47 @@ namespace gtsam {
       catch( CheiralityException& e) {
         if (H1) *H1 = zeros(2, DimC);
         if (H2) *H2 = zeros(2, DimL);
-        std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2())
-                              << " behind Camera " << DefaultKeyFormatter(this->key1()) << std::endl;
+        // TODO warn if verbose output asked for
         return zero(2);
+      }
+    }
+
+    /// Linearize using fixed-size matrices
+    boost::shared_ptr<GaussianFactor> linearize(const Values& values) {
+      // Only linearize if the factor is active
+      if (!this->active(values)) return boost::shared_ptr<JacobianFactor>();
+
+      const Key key1 = this->key1(), key2 = this->key2();
+      Eigen::Matrix<double, 2, DimC> H1;
+      Eigen::Matrix<double, 2, DimL> H2;
+      Vector2 b;
+      try {
+        const CAMERA& camera = values.at<CAMERA>(key1);
+        const LANDMARK& point = values.at<LANDMARK>(key2);
+        Point2 reprojError(camera.project2(point, H1, H2) - measured());
+        b = -reprojError.vector();
+      } catch (CheiralityException& e) {
+        // TODO warn if verbose output asked for
+        return boost::make_shared<JacobianFactor>();
+      }
+
+      // Whiten the system if needed
+      const SharedNoiseModel& noiseModel = this->get_noiseModel();
+      if (noiseModel && !noiseModel->isUnit()) {
+        // TODO: implement WhitenSystem for fixed size matrices and include
+        // above
+        H1 = noiseModel->Whiten(H1);
+        H2 = noiseModel->Whiten(H2);
+        b = noiseModel->Whiten(b);
+      }
+
+      if (noiseModel && noiseModel->isConstrained()) {
+        using noiseModel::Constrained;
+        return boost::make_shared<JacobianFactor>(
+            key1, H1, key2, H2, b,
+            boost::static_pointer_cast<Constrained>(noiseModel)->unit());
+      } else {
+        return boost::make_shared<JacobianFactor>(key1, H1, key2, H2, b);
       }
     }
 

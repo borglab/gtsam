@@ -431,49 +431,6 @@ TEST(GeneralSFMFactor, CalibratedCameraPoseRange) {
 }
 
 /* ************************************************************************* */
-
-static const int DimC = 11, DimL = 3;
-
-/// Linearize using fixed-size matrices
-boost::shared_ptr<GaussianFactor> linearize(const Projection& factor,
-                                            const Values& values) {
-  // Only linearize if the factor is active
-  if (!factor.active(values)) return boost::shared_ptr<JacobianFactor>();
-
-  const Key key1 = factor.key1(), key2 = factor.key2();
-  Eigen::Matrix<double, 2, DimC> H1;
-  Eigen::Matrix<double, 2, DimL> H2;
-  Vector2 b;
-  try {
-    const GeneralCamera& camera = values.at<GeneralCamera>(key1);
-    const Point3& point = values.at<Point3>(key2);
-    Point2 reprojError(camera.project2(point, H1, H2) - factor.measured());
-    b = -reprojError.vector();
-  } catch (CheiralityException& e) {
-    // TODO warn if verbose output asked for
-    return boost::make_shared<JacobianFactor>();
-  }
-
-  // Whiten the system if needed
-  const SharedNoiseModel& noiseModel = factor.get_noiseModel();
-  if (noiseModel && !noiseModel->isUnit()) {
-    // TODO: implement WhitenSystem for fixed size matrices and include above
-    H1 = noiseModel->Whiten(H1);
-    H2 = noiseModel->Whiten(H2);
-    b = noiseModel->Whiten(b);
-  }
-
-  if (noiseModel && noiseModel->isConstrained()) {
-    using noiseModel::Constrained;
-    return boost::make_shared<JacobianFactor>(
-        key1, H1, key2, H2, b,
-        boost::static_pointer_cast<Constrained>(noiseModel)->unit());
-  } else {
-    return boost::make_shared<JacobianFactor>(key1, H1, key2, H2, b);
-  }
-}
-
-/* ************************************************************************* */
 TEST(GeneralSFMFactor, Linearize) {
   Point2 z(3.,0.);
 
@@ -490,31 +447,31 @@ TEST(GeneralSFMFactor, Linearize) {
   const SharedNoiseModel model;
   Projection factor(z, model, X(1), L(1));
   GaussianFactor::shared_ptr expected = factor.NoiseModelFactor::linearize(values);
-  GaussianFactor::shared_ptr actual = linearize(factor, values);
+  GaussianFactor::shared_ptr actual = factor.linearize(values);
   EXPECT(assert_equal(*expected,*actual,1e-9));
   }
   // Test with Unit Model
   {
   const SharedNoiseModel model(noiseModel::Unit::Create(2));
   Projection factor(z, model, X(1), L(1));
-  GaussianFactor::shared_ptr expected = factor.linearize(values);
-  GaussianFactor::shared_ptr actual = linearize(factor, values);
+  GaussianFactor::shared_ptr expected = factor.NoiseModelFactor::linearize(values);
+  GaussianFactor::shared_ptr actual = factor.linearize(values);
   EXPECT(assert_equal(*expected,*actual,1e-9));
   }
   // Test with Isotropic noise
   {
   const SharedNoiseModel model(noiseModel::Isotropic::Sigma(2,0.5));
   Projection factor(z, model, X(1), L(1));
-  GaussianFactor::shared_ptr expected = factor.linearize(values);
-  GaussianFactor::shared_ptr actual = linearize(factor, values);
+  GaussianFactor::shared_ptr expected = factor.NoiseModelFactor::linearize(values);
+  GaussianFactor::shared_ptr actual = factor.linearize(values);
   EXPECT(assert_equal(*expected,*actual,1e-9));
   }
   // Test with Constrained Model
   {
   const SharedNoiseModel model(noiseModel::Constrained::All(2));
   Projection factor(z, model, X(1), L(1));
-  GaussianFactor::shared_ptr expected = factor.linearize(values);
-  GaussianFactor::shared_ptr actual = linearize(factor, values);
+  GaussianFactor::shared_ptr expected = factor.NoiseModelFactor::linearize(values);
+  GaussianFactor::shared_ptr actual = factor.linearize(values);
   EXPECT(assert_equal(*expected,*actual,1e-9));
   }
 }
