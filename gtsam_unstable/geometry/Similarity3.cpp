@@ -99,33 +99,85 @@ Matrix7 Similarity3::AdjointMap() const {
 }
 
 Vector7 Similarity3::Logmap(const Similarity3& s, OptionalJacobian<7, 7> Hm) {
-  return Vector7();
+  // To get the logmap, calculate w and lambda, then solve for u as show at ethaneade.org
+  // www.ethaneade.org/latex2html/lie/node29.html
+  Vector3 w = Rot3::Logmap(s.R_);
+  double lambda = log(s.s_);
+
+  Matrix33 wx = skewSymmetric(w[0], w[1], w[2]);
+  double lambdasquared = lambda * lambda;
+  double thetasquared = w.transpose() * w;
+  double theta = sqrt(thetasquared);
+  double X = sin(theta)/theta;
+  double Y = (1-cos(theta))/thetasquared;
+  double Z = (1-X)/thetasquared;
+  double W = (0.5-Y)/thetasquared;
+  double alpha = lambdasquared / (lambdasquared * thetasquared);
+  double beta = (exp(-lambda)-1+lambda)/lambdasquared;
+  double gama = Y - (lambda * Z);
+  double mu = (1-lambda+(0.5*lambdasquared)-exp(-lambda))/(lambdasquared*lambda);
+  double upsilon = Z-(lambda*W);
+  double A = (1-exp(-lambda))/lambda;
+  double B = alpha*(beta-gama)+gama;
+  double C = alpha*(mu-upsilon)+upsilon;
+  Matrix33 V = A*Matrix33::Identity() + B*wx + C*wx*wx;
+  Vector3 u = V.inverse()*s.t_.vector();
+
+  Vector7 result;
+  result << w, u, lambda;
+  return result;
 }
 
 Similarity3 Similarity3::Expmap(const Vector7& v, OptionalJacobian<7, 7> Hm) {
-  return Similarity3();
+  Matrix31 w(v.head<3>());
+  Matrix33 wx = skewSymmetric(w[0], w[1], w[2]);
+  double lambda = v[6];
+  double lambdasquared = lambda * lambda;
+  Matrix31 u(v.segment<3>(3));
+  double thetasquared = w.transpose() * w;
+  double theta = sqrt(thetasquared);
+  double X = sin(theta)/theta;
+  double Y = (1-cos(theta))/thetasquared;
+  double Z = (1-X)/thetasquared;
+  double W = (0.5-Y)/thetasquared;
+  double alpha = lambdasquared / (lambdasquared * thetasquared);
+  double beta = (exp(-lambda)-1+lambda)/lambdasquared;
+  double gama = Y - (lambda * Z);
+  double mu = (1-lambda+(0.5*lambdasquared)-exp(-lambda))/(lambdasquared*lambda);
+  double upsilon = Z-(lambda*W);
+  double A = (1-exp(-lambda))/lambda;
+  double B = alpha*(beta-gama)+gama;
+  double C = alpha*(mu-upsilon)+upsilon;
+  Matrix33 V = A*Matrix33::Identity() + B*wx + C*wx*wx;
+  return Similarity3(Rot3::Expmap(w), Point3(V*u), 1.0/exp(-lambda));
 }
 
 Similarity3 Similarity3::ChartAtOrigin::Retract(const Vector7& v,
     ChartJacobian H) {
   // Will retracting or localCoordinating R work if R is not a unit rotation?
   // Also, how do we actually get s out?  Seems like we need to store it somewhere.
-  Rot3 r; //Create a zero rotation to do our retraction.
-  return Similarity3( //
-      r.retract(v.head<3>()), // retract rotation using v[0,1,2]
-      Point3(v.segment<3>(3)), // Retract the translation
-      1.0 + v[6]); //finally, update scale using v[6]
+//  Rot3 r; //Create a zero rotation to do our retraction.
+//  return Similarity3( //
+//      r.retract(v.head<3>()), // retract rotation using v[0,1,2]
+//      Point3(v.segment<3>(3)), // Retract the translation
+//      1.0 + v[6]); //finally, update scale using v[6]
+
+  // Use the Expmap
+  return Similarity3::Expmap(v);
 }
 
 Vector7 Similarity3::ChartAtOrigin::Local(const Similarity3& other,
     ChartJacobian H) {
-  Rot3 r; //Create a zero rotation to do the retraction
-  Vector7 v;
-  v.head<3>() = r.localCoordinates(other.R_);
-  v.segment<3>(3) = other.t_.vector();
-  //v.segment<3>(3) = translation().localCoordinates(other.translation());
-  v[6] = other.s_ - 1.0;
-  return v;
+//  Rot3 r; //Create a zero rotation to do the retraction
+//  Vector7 v;
+//  v.head<3>() = r.localCoordinates(other.R_);
+//  v.segment<3>(3) = other.t_.vector();
+//  //v.segment<3>(3) = translation().localCoordinates(other.translation());
+//  v[6] = other.s_ - 1.0;
+//  return v;
+
+  // Use the Logmap
+  return Similarity3::Logmap(other);
 }
 
 const Matrix4 Similarity3::matrix() const {

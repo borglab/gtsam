@@ -173,6 +173,24 @@ TEST(Similarity3, Matrix) {
   Matrix4 actual = T4.matrix();
   EXPECT(assert_equal(expected, actual));
 }
+
+//*****************************************************************************
+// Exponential and log maps
+TEST(Similarity3, ExpLogMap) {
+  Vector7 expected;
+  expected << 0.1,0.2,0.3,0.4,0.5,0.6,0.7;
+  Vector7 actual = Similarity3::Logmap(Similarity3::Expmap(expected));
+  EXPECT(assert_equal(expected, actual));
+
+  Vector7 zeros;
+  zeros << 0,0,0,0,0,0,0;
+  Vector7 logIdentity = Similarity3::Logmap(Similarity3::identity());
+  EXPECT(assert_equal(zeros, logIdentity));
+
+  Similarity3 expZero = Similarity3::Expmap(zeros);
+  Similarity3 ident = Similarity3::identity();
+  EXPECT(assert_equal(expZero, ident));
+}
 //******************************************************************************
 // Group action on Point3 (with simpler transform)
 TEST(Similarity3, GroupAction) {
