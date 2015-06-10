@@ -159,6 +159,15 @@ public:
   }
 
   /// @}
+  /// @name Helper functions
+  /// @{
+
+  /// Calculate expmap and logmap coefficients.
+private:
+  static Matrix33 GetV(Vector3 w, double lambda);
+
+  /// @}
+
 };
 
 template<>
