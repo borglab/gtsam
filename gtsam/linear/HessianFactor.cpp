@@ -75,7 +75,7 @@ Scatter::Scatter(const GaussianFactorGraph& gfg,
         const JacobianFactor* asJacobian =
             dynamic_cast<const JacobianFactor*>(factor.get());
         if (!asJacobian || asJacobian->cols() > 1)
-          this->insert(
+          insert(
               make_pair(*variable, SlotEntry(none, factor->getDim(variable))));
       }
     }
@@ -296,16 +296,8 @@ HessianFactor::HessianFactor(const GaussianFactorGraph& factors,
   // Form A' * A
   gttic(update);
   BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factors)
-  {
-    if(factor) {
-      if(const HessianFactor* hessian = dynamic_cast<const HessianFactor*>(factor.get()))
-        updateATA(*hessian, *scatter);
-      else if(const JacobianFactor* jacobian = dynamic_cast<const JacobianFactor*>(factor.get()))
-        updateATA(*jacobian, *scatter);
-      else
-        throw invalid_argument("GaussianFactor is neither Hessian nor Jacobian");
-    }
-  }
+    if(factor)
+      factor->updateATA(*scatter, &info_);
   gttoc(update);
 }
 
@@ -313,8 +305,8 @@ HessianFactor::HessianFactor(const GaussianFactorGraph& factors,
 void HessianFactor::print(const std::string& s, const KeyFormatter& formatter) const {
   cout << s << "\n";
   cout << " keys: ";
-  for(const_iterator key=this->begin(); key!=this->end(); ++key)
-    cout << formatter(*key) << "(" << this->getDim(key) << ") ";
+  for(const_iterator key=begin(); key!=end(); ++key)
+    cout << formatter(*key) << "(" << getDim(key) << ") ";
   cout << "\n";
   gtsam::print(Matrix(info_.full().selfadjointView()), "Augmented information matrix: ");
 }
@@ -326,7 +318,7 @@ bool HessianFactor::equals(const GaussianFactor& lf, double tol) const {
   else {
     if(!Factor::equals(lf, tol))
       return false;
-    Matrix thisMatrix = this->info_.full().selfadjointView();
+    Matrix thisMatrix = info_.full().selfadjointView();
     thisMatrix(thisMatrix.rows()-1, thisMatrix.cols()-1) = 0.0;
     Matrix rhsMatrix = static_cast<const HessianFactor&>(lf).info_.full().selfadjointView();
     rhsMatrix(rhsMatrix.rows()-1, rhsMatrix.cols()-1) = 0.0;
@@ -343,7 +335,7 @@ Matrix HessianFactor::augmentedInformation() const
 /* ************************************************************************* */
 Matrix HessianFactor::information() const
 {
-  return info_.range(0, this->size(), 0, this->size()).selfadjointView();
+  return info_.range(0, size(), 0, size()).selfadjointView();
 }
 
 /* ************************************************************************* */
@@ -396,96 +388,33 @@ double HessianFactor::error(const VectorValues& c) const {
   double xtg = 0, xGx = 0;
   // extract the relevant subset of the VectorValues
   // NOTE may not be as efficient
-  const Vector x = c.vector(this->keys());
+  const Vector x = c.vector(keys());
   xtg = x.dot(linearTerm());
-  xGx = x.transpose() * info_.range(0, this->size(), 0, this->size()).selfadjointView() *  x;
+  xGx = x.transpose() * info_.range(0, size(), 0, size()).selfadjointView() *  x;
   return 0.5 * (f - 2.0 * xtg +  xGx);
 }
 
 /* ************************************************************************* */
-void HessianFactor::updateATA(const HessianFactor& update, const Scatter& scatter)
-{
+void HessianFactor::updateATA(const Scatter& scatter,
+                              SymmetricBlockMatrix* info) const {
   gttic(updateATA_HessianFactor);
-  // This function updates 'combined' with the information in 'update'. 'scatter' maps variables in
-  // the update factor to slots in the combined factor.
+  // N is number of variables in information matrix, n in HessianFactor
+  DenseIndex N = info->nBlocks() - 1, n = size();
 
   // First build an array of slots
-  gttic(slots);
-  FastVector<DenseIndex> slots(update.size());
+  FastVector<DenseIndex> slots(n + 1);
   DenseIndex slot = 0;
-  BOOST_FOREACH(Key j, update) {
-    slots[slot] = scatter.at(j).slot;
-    ++ slot;
-  }
-  gttoc(slots);
+  BOOST_FOREACH (Key key, *this)
+    slots[slot++] = scatter.at(key).slot;
+  slots[n] = N;
 
   // Apply updates to the upper triangle
-  gttic(update);
-  size_t nrInfoBlocks = this->info_.nBlocks();
-  for(DenseIndex j2=0; j2<update.info_.nBlocks(); ++j2) {
-    DenseIndex slot2 = (j2 == (DenseIndex)update.size()) ? nrInfoBlocks-1 : slots[j2];
-    for(DenseIndex j1=0; j1<=j2; ++j1) {
-      DenseIndex slot1 = (j1 == (DenseIndex)update.size()) ? nrInfoBlocks-1 : slots[j1];
-      info_(slot1, slot2) += update.info_(j1, j2);
+  for (DenseIndex j = 0; j <= n; ++j) {
+    DenseIndex J = slots[j];
+    for (DenseIndex i = 0; i <= j; ++i) {
+      DenseIndex I = slots[i];
+      (*info)(I, J) += info_(i, j);
     }
-  }
-  gttoc(update);
-}
-
-/* ************************************************************************* */
-void HessianFactor::updateATA(const JacobianFactor& update,
-    const Scatter& scatter) {
-
-  // This function updates 'combined' with the information in 'update'.
-  // 'scatter' maps variables in the update factor to slots in the combined
-  // factor.
-
-  gttic(updateATA_JacobianFactor);
-
-  if (update.rows() > 0) {
-    gttic(whiten);
-    // Whiten the factor if it has a noise model
-    boost::optional<JacobianFactor> _whitenedFactor;
-    const JacobianFactor* whitenedFactor = &update;
-    const SharedDiagonal& model = update.get_model();
-    if (model && !model->isUnit()) {
-      if (model->isConstrained())
-        throw invalid_argument(
-            "Cannot update HessianFactor from JacobianFactor with constrained noise model");
-      _whitenedFactor = update.whiten();
-      whitenedFactor = &(*_whitenedFactor);
-    }
-    gttoc(whiten);
-
-    // A is the whitened Jacobian matrix A, and we are going to perform I += A'*A below
-    const VerticalBlockMatrix& Ab = whitenedFactor->matrixObject();
-
-    // N is number of variables in HessianFactor, n in JacobianFactor
-    DenseIndex N = this->info_.nBlocks() - 1, n = Ab.nBlocks() - 1;
-
-    // First build an array of slots
-    gttic(slots);
-    FastVector<DenseIndex> slots(n + 1);
-    DenseIndex slot = 0;
-    BOOST_FOREACH(Key j, update)
-      slots[slot++] = scatter.at(j).slot;
-    slots[n] = N;
-    gttoc(slots);
-
-    // Apply updates to the upper triangle
-    gttic(update);
-    // Loop over blocks of A, including RHS with j==n
-    for (DenseIndex j = 0; j <= n; ++j) {
-      DenseIndex J = slots[j]; // get block in Hessian
-      // Fill off-diagonal blocks with Ai'*Aj
-      for (DenseIndex i = 0; i < j; ++i) {
-        DenseIndex I = slots[i]; // get block in Hessian
-        info_(I, J).knownOffDiagonal() += Ab(i).transpose() * Ab(j);
-      }
-      // Fill diagonal block with Aj'*Aj
-      info_(J, J).selfadjointView().rankUpdate(Ab(j).transpose());
-    }
-    gttoc(update);
   }
 }
 

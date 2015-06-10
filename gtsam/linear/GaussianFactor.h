@@ -28,6 +28,8 @@ namespace gtsam {
 
   // Forward declarations
   class VectorValues;
+  class Scatter;
+  class SymmetricBlockMatrix;
 
   /**
    * An abstract virtual base class for JacobianFactor and HessianFactor. A GaussianFactor has a
@@ -118,6 +120,14 @@ namespace gtsam {
      * @return a HessianFactor with negated Hessian matrices
      */
     virtual GaussianFactor::shared_ptr negate() const = 0;
+
+    /** Update an information matrix by adding the information corresponding to this factor
+     * (used internally during elimination).
+     * @param scatter A mapping from variable index to slot index in this HessianFactor
+     * @param info The information matrix to be updated
+     */
+    virtual void updateATA(const Scatter& scatter,
+                           SymmetricBlockMatrix* info) const = 0;
 
     /// y += alpha * A'*A*x
     virtual void multiplyHessianAdd(double alpha, const VectorValues& x, VectorValues& y) const = 0;

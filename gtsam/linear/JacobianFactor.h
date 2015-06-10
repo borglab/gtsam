@@ -273,6 +273,13 @@ namespace gtsam {
     /** Get a view of the A matrix */
     ABlock getA() { return Ab_.range(0, size()); }
 
+    /** Update an information matrix by adding the information corresponding to this factor
+     * (used internally during elimination).
+     * @param scatter A mapping from variable index to slot index in this HessianFactor
+     * @param info The information matrix to be updated
+     */
+    void updateATA(const Scatter& scatter, SymmetricBlockMatrix* info) const;
+
     /** Return A*x */
     Vector operator*(const VectorValues& x) const;
 

@@ -498,6 +498,49 @@ map<Key, Matrix> JacobianFactor::hessianBlockDiagonal() const {
 }
 
 /* ************************************************************************* */
+void JacobianFactor::updateATA(const Scatter& scatter,
+                               SymmetricBlockMatrix* info) const {
+  gttic(updateATA_JacobianFactor);
+
+  if (rows() == 0) return;
+
+  // Whiten the factor if it has a noise model
+  const SharedDiagonal& model = get_model();
+  if (model && !model->isUnit()) {
+    if (model->isConstrained())
+      throw invalid_argument(
+          "JacobianFactor::updateATA: cannot update information with "
+          "constrained noise model");
+    JacobianFactor whitenedFactor = whiten();
+    whitenedFactor.updateATA(scatter, info);
+  } else {
+    // Ab_ is the augmented Jacobian matrix A, and we perform I += A'*A below
+    // N is number of variables in information matrix, n in JacobianFactor
+    DenseIndex N = info->nBlocks() - 1, n = Ab_.nBlocks() - 1;
+
+    // First build an array of slots
+    FastVector<DenseIndex> slots(n + 1);
+    DenseIndex slot = 0;
+    BOOST_FOREACH (Key key, *this)
+      slots[slot++] = scatter.at(key).slot;
+    slots[n] = N;
+
+    // Apply updates to the upper triangle
+    // Loop over blocks of A, including RHS with j==n
+    for (DenseIndex j = 0; j <= n; ++j) {
+      DenseIndex J = slots[j];
+      // Fill off-diagonal blocks with Ai'*Aj
+      for (DenseIndex i = 0; i < j; ++i) {
+        DenseIndex I = slots[i];
+        (*info)(I, J).knownOffDiagonal() += Ab_(i).transpose() * Ab_(j);
+      }
+      // Fill diagonal block with Aj'*Aj
+      (*info)(J, J).selfadjointView().rankUpdate(Ab_(j).transpose());
+    }
+  }
+}
+
+/* ************************************************************************* */
 Vector JacobianFactor::operator*(const VectorValues& x) const {
   Vector Ax = zero(Ab_.rows());
   if (empty())

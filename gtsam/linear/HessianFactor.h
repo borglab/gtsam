@@ -363,19 +363,12 @@ namespace gtsam {
     /** Return the full augmented Hessian matrix of this factor as a SymmetricBlockMatrix object. */
     const SymmetricBlockMatrix& matrixObject() const { return info_; }
 
-    /** Update the factor by adding the information from the JacobianFactor
+    /** Update an information matrix by adding the information corresponding to this factor
      * (used internally during elimination).
-     * @param update The JacobianFactor containing the new information to add
      * @param scatter A mapping from variable index to slot index in this HessianFactor
+     * @param info The information matrix to be updated
      */
-    void updateATA(const JacobianFactor& update, const Scatter& scatter);
-
-    /** Update the factor by adding the information from the HessianFactor
-     * (used internally during elimination).
-     * @param update The HessianFactor containing the new information to add
-     * @param scatter A mapping from variable index to slot index in this HessianFactor
-     */
-    void updateATA(const HessianFactor& update, const Scatter& scatter);
+    void updateATA(const Scatter& scatter, SymmetricBlockMatrix* info) const;
 
     /** y += alpha * A'*A*x */
     void multiplyHessianAdd(double alpha, const VectorValues& x, VectorValues& y) const;
