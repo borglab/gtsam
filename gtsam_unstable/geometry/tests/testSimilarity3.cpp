@@ -212,6 +212,25 @@ TEST(Similarity3, GroupAction) {
   ph << 3, 1, 0, 1;
   EXPECT(assert_equal((Vector )ph, T4.matrix() * qh));
 
+  Similarity3 Ta(Rot3(), Point3(1, 2, 3), 1.0);
+  Similarity3 Tb(Rot3(), Point3(1, 2, 3), 2.0);
+
+  Point3 pa = Point3(1, 0, 0);
+  Point3 pTa = Point3(2, 2, 3);
+  Point3 pTb = Point3(3, 2, 3);
+
+  EXPECT(assert_equal(pTa, Ta.transform_from(pa)));
+  EXPECT(assert_equal(pTb, Tb.transform_from(pa)));
+
+  Similarity3 Tc(Rot3::Rz(M_PI/2.0), Point3(1, 2, 3), 1.0);
+  Similarity3 Td(Rot3::Rz(M_PI/2.0), Point3(1, 2, 3), 2.0);
+
+  Point3 pTc = Point3(1, 3, 3);
+  Point3 pTd = Point3(1, 4, 3);
+
+  EXPECT(assert_equal(pTc, Tc.transform_from(pa)));
+  EXPECT(assert_equal(pTd, Td.transform_from(pa)));
+
   // Test derivative
   boost::function<Point3(Similarity3, Point3)> f = boost::bind(
       &Similarity3::transform_from, _1, _2, boost::none, boost::none);
