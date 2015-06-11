@@ -283,6 +283,17 @@ namespace gtsam {
     /** y += alpha * A'*A*x */
     void multiplyHessianAdd(double alpha, const VectorValues& x, VectorValues& y) const;
 
+    /**
+     * Raw memory access version of multiplyHessianAdd y += alpha * A'*A*x
+     * Requires the vector accumulatedDims to tell the dimension of
+     * each variable: e.g.: x0 has dim 3, x2 has dim 6, x3 has dim 2,
+     * then accumulatedDims is [0 3 9 11 13]
+     * NOTE: size of accumulatedDims is size of keys + 1!!
+     * TODO(frank): we should probably kill this if no longer needed
+     */
+    void multiplyHessianAdd(double alpha, const double* x, double* y,
+        const std::vector<size_t>& accumulatedDims) const;
+
     /// A'*b for Jacobian
     VectorValues gradientAtZero() const;
 
@@ -349,7 +360,7 @@ namespace gtsam {
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version) {
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
       ar & BOOST_SERIALIZATION_NVP(Ab_);
       ar & BOOST_SERIALIZATION_NVP(model_);

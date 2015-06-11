@@ -108,7 +108,7 @@ public:
   }
 
   /// Return unit-norm Vector
-  Vector unitVector(boost::optional<Matrix&> H = boost::none) const {
+  Vector3 unitVector(boost::optional<Matrix&> H = boost::none) const {
     if (H)
       *H = basis();
     return (p_.vector());
@@ -120,7 +120,7 @@ public:
   }
 
   /// Signed, vector-valued error between two directions
-  Vector error(const Unit3& q, OptionalJacobian<2, 2> H = boost::none) const;
+  Vector2 error(const Unit3& q, OptionalJacobian<2, 2> H = boost::none) const;
 
   /// Distance between two directions
   double distance(const Unit3& q, OptionalJacobian<1, 2> H = boost::none) const;
@@ -160,7 +160,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_NVP(p_);
     // homebrew serialize Eigen Matrix
     ar & boost::serialization::make_nvp("B11", (*B_)(0, 0));

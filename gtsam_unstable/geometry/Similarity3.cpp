@@ -74,6 +74,7 @@ Point3 Similarity3::transform_from(const Point3& p, //
     const Matrix3 R = R_.matrix();
     Matrix3 DR = s_ * R * skewSymmetric(-p.x(), -p.y(), -p.z());
     *H1 << DR, R, R * p.vector();
+    print("From Derivative");
   }
   if (H2)
     *H2 = s_ * R_.matrix(); // just 3*3 sub-block of matrix()
@@ -88,6 +89,8 @@ Point3 Similarity3::operator*(const Point3& p) const {
 }
 
 Matrix7 Similarity3::AdjointMap() const {
+//  ToDo:  This adjoint might not be correct, it is based on delta = [u, w, lambda]
+//  However, we use the convention delta = [w, u, lambda]
   const Matrix3 R = R_.matrix();
   const Vector3 t = t_.vector();
   Matrix3 A = s_ * skewSymmetric(t) * R;
@@ -217,8 +220,14 @@ Similarity3 Similarity3::Expmap(const Vector7& v, OptionalJacobian<7, 7> Hm) {
   return Similarity3(Rot3::Expmap(w), Point3(V*u), 1.0/exp(-lambda));
 }
 
-Similarity3 Similarity3::ChartAtOrigin::Retract(const Vector7& v,
-    ChartJacobian H) {
+
+std::ostream &operator<<(std::ostream &os, const Similarity3& p) {
+  os << "[" << p.rotation().xyz().transpose() << " " << p.translation().vector().transpose() << " " <<
+      p.scale() << "]\';";
+  return os;
+}
+
+Similarity3 Similarity3::ChartAtOrigin::Retract(const Vector7& v,  ChartJacobian H) {
   // Will retracting or localCoordinating R work if R is not a unit rotation?
   // Also, how do we actually get s out?  Seems like we need to store it somewhere.
 //  Rot3 r; //Create a zero rotation to do our retraction.

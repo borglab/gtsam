@@ -93,7 +93,7 @@ namespace gtsam
 
     /// Create a SymmetricBlockMatrixBlockExpr from the specified range of blocks of a
     /// SymmetricBlockMatrix.
-    SymmetricBlockMatrixBlockExpr(SymmetricBlockMatrixType& blockMatrix, Index firstBlock, Index blocks, char dummy) :
+    SymmetricBlockMatrixBlockExpr(SymmetricBlockMatrixType& blockMatrix, Index firstBlock, Index blocks, char /*dummy*/) :
       xpr_(blockMatrix), myBlock_(blockMatrix.matrix_.block(0, 0, 0, 0))
     {
       initIndices(firstBlock, firstBlock, blocks, blocks);

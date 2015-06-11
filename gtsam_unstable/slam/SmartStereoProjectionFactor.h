@@ -267,7 +267,7 @@ public:
           const Cal3_S2& K = camera.calibration()->calibration();
           mono_cameras.push_back(PinholeCamera<Cal3_S2>(pose, K));
         }
-        point_ = triangulatePoint3<Cal3_S2>(mono_cameras, mono_measurements,
+        point_ = triangulatePoint3<PinholeCamera<Cal3_S2> >(mono_cameras, mono_measurements,
             rankTolerance_, enableEPI_);
 
         // // // End temporary hack
@@ -736,7 +736,7 @@ private:
   /// Serialization function
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar & BOOST_SERIALIZATION_NVP(throwCheirality_);
     ar & BOOST_SERIALIZATION_NVP(verboseCheirality_);

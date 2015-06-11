@@ -16,20 +16,18 @@
  * @author  Frank Dellaert
  */
 
+#include <gtsam/base/Vector.h>
+#include <boost/foreach.hpp>
+#include <boost/optional.hpp>
+#include <stdexcept>
 #include <cstdarg>
 #include <limits>
-#include <iostream>
 #include <fstream>
 #include <sstream>
 #include <iomanip>
 #include <cmath>
-#include <stdexcept>
-#include <boost/foreach.hpp>
-#include <boost/optional.hpp>
 #include <cstdio>
-
-#include <gtsam/base/Vector.h>
-
+#include <vector>
 
 using namespace std;
 
@@ -55,6 +53,7 @@ Vector delta(size_t n, size_t i, double value) {
 }
 
 /* ************************************************************************* */
+//3 argument call
 void print(const Vector& v, const string& s, ostream& stream) {
   size_t n = v.size();
 
@@ -63,6 +62,12 @@ void print(const Vector& v, const string& s, ostream& stream) {
       stream << setprecision(9) << v(i) << (i<n-1 ? "; " : "");
   }
   stream << "];" << endl;
+}
+
+/* ************************************************************************* */
+//1 or 2 argument call
+void print(const Vector& v, const string& s) {
+    print(v, s, cout);
 }
 
 /* ************************************************************************* */
@@ -217,11 +222,7 @@ double norm_2(const Vector& v) {
 
 /* ************************************************************************* */
 Vector reciprocal(const Vector &a) {
-  size_t n = a.size();
-  Vector b(n);
-  for( size_t i = 0; i < n; i++ )
-    b(i) = 1.0/a(i);
-  return b;
+  return a.array().inverse();
 }
 
 /* ************************************************************************* */

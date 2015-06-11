@@ -159,7 +159,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
-  void serialize(Archive & ar, const unsigned int version) {
+  void serialize(Archive & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_NVP(f_);
     ar & BOOST_SERIALIZATION_NVP(k1_);
     ar & BOOST_SERIALIZATION_NVP(k2_);

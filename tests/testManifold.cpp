@@ -10,13 +10,14 @@
  * -------------------------------1------------------------------------------- */
 
 /**
- * @file testExpression.cpp
+ * @file testManifold.cpp
  * @date September 18, 2014
  * @author Frank Dellaert
  * @author Paul Furgale
- * @brief unit tests for Block Automatic Differentiation
+ * @brief unit tests for Manifold type machinery
  */
 
+#include <gtsam/base/Manifold.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Cal3_S2.h>
@@ -146,6 +147,32 @@ TEST(Manifold, DefaultChart) {
   // Check zero vector
   //DefaultChart<Rot3> chart6;
   EXPECT(assert_equal(zero(3), traits<Rot3>::Local(R, R)));
+}
+
+//******************************************************************************
+typedef ProductManifold<Point2,Point2> MyPoint2Pair;
+
+// Define any direct product group to be a model of the multiplicative Group concept
+namespace gtsam {
+template<> struct traits<MyPoint2Pair> : internal::ManifoldTraits<MyPoint2Pair> {
+  static void Print(const MyPoint2Pair& m, const string& s = "") {
+    cout << s << "(" << m.first << "," << m.second << ")" << endl;
+  }
+  static bool Equals(const MyPoint2Pair& m1, const MyPoint2Pair& m2, double tol = 1e-8) {
+    return m1 == m2;
+  }
+};
+}
+
+TEST(Manifold, ProductManifold) {
+  BOOST_CONCEPT_ASSERT((IsManifold<MyPoint2Pair>));
+  MyPoint2Pair pair1;
+  Vector4 d;
+  d << 1,2,3,4;
+  MyPoint2Pair expected(Point2(1,2),Point2(3,4));
+  MyPoint2Pair pair2 = pair1.retract(d);
+  EXPECT(assert_equal(expected,pair2,1e-9));
+  EXPECT(assert_equal(d, pair1.localCoordinates(pair2),1e-9));
 }
 
 //******************************************************************************

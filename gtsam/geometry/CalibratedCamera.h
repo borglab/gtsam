@@ -19,10 +19,7 @@
 #pragma once
 
 #include <gtsam/geometry/Pose3.h>
-#define PINHOLEBASE_LINKING_FIX
-#ifdef PINHOLEBASE_LINKING_FIX
-#include <gtsam/geometry/Pose2.h>
-#endif
+
 namespace gtsam {
 
 class Point2;
@@ -45,8 +42,6 @@ class GTSAM_EXPORT PinholeBase {
 private:
 
   Pose3 pose_; ///< 3D pose of camera
-
-#ifndef PINHOLEBASE_LINKING_FIX
 
 protected:
 
@@ -165,139 +160,12 @@ public:
   /// backproject a 2-dimensional point to a 3-dimensional point at given depth
   static Point3 backproject_from_camera(const Point2& p, const double depth);
 
-#else
-
-public:
-
-  PinholeBase() {
-  }
-
-  explicit PinholeBase(const Pose3& pose) :
-      pose_(pose) {
-  }
-
-  explicit PinholeBase(const Vector &v) :
-      pose_(Pose3::Expmap(v)) {
-  }
-
-  const Pose3& pose() const {
-    return pose_;
-  }
-
-  /* ************************************************************************* */
-  static Matrix26 Dpose(const Point2& pn, double d) {
-    // optimized version of derivatives, see CalibratedCamera.nb
-    const double u = pn.x(), v = pn.y();
-    double uv = u * v, uu = u * u, vv = v * v;
-    Matrix26 Dpn_pose;
-    Dpn_pose << uv, -1 - uu, v, -d, 0, d * u, 1 + vv, -uv, -u, 0, -d, d * v;
-    return Dpn_pose;
-  }
-
-  /* ************************************************************************* */
-  static Matrix23 Dpoint(const Point2& pn, double d, const Matrix3& Rt) {
-    // optimized version of derivatives, see CalibratedCamera.nb
-    const double u = pn.x(), v = pn.y();
-    Matrix23 Dpn_point;
-    Dpn_point << //
-        Rt(0, 0) - u * Rt(2, 0), Rt(0, 1) - u * Rt(2, 1), Rt(0, 2) - u * Rt(2, 2), //
-    /**/Rt(1, 0) - v * Rt(2, 0), Rt(1, 1) - v * Rt(2, 1), Rt(1, 2) - v * Rt(2, 2);
-    Dpn_point *= d;
-    return Dpn_point;
-  }
-
-  /* ************************************************************************* */
-  static Pose3 LevelPose(const Pose2& pose2, double height) {
-    const double st = sin(pose2.theta()), ct = cos(pose2.theta());
-    const Point3 x(st, -ct, 0), y(0, 0, -1), z(ct, st, 0);
-    const Rot3 wRc(x, y, z);
-    const Point3 t(pose2.x(), pose2.y(), height);
-    return Pose3(wRc, t);
-  }
-
-  /* ************************************************************************* */
-  static Pose3 LookatPose(const Point3& eye, const Point3& target,
-      const Point3& upVector) {
-    Point3 zc = target - eye;
-    zc = zc / zc.norm();
-    Point3 xc = (-upVector).cross(zc); // minus upVector since yc is pointing down
-    xc = xc / xc.norm();
-    Point3 yc = zc.cross(xc);
-    return Pose3(Rot3(xc, yc, zc), eye);
-  }
-
-  /* ************************************************************************* */
-  bool equals(const PinholeBase &camera, double tol=1e-9) const {
-    return pose_.equals(camera.pose(), tol);
-  }
-
-  /* ************************************************************************* */
-  void print(const std::string& s) const {
-    pose_.print(s + ".pose");
-  }
-
-  /* ************************************************************************* */
-  const Pose3& getPose(OptionalJacobian<6, 6> H) const {
-    if (H) {
-      H->setZero();
-      H->block(0, 0, 6, 6) = I_6x6;
-    }
-    return pose_;
-  }
-
-  /* ************************************************************************* */
-  static Point2 project_to_camera(const Point3& pc,
-      OptionalJacobian<2, 3> Dpoint = boost::none) {
-    double d = 1.0 / pc.z();
-    const double u = pc.x() * d, v = pc.y() * d;
-    if (Dpoint)
-      *Dpoint << d, 0.0, -u * d, 0.0, d, -v * d;
-    return Point2(u, v);
-  }
-
-  /* ************************************************************************* */
-  std::pair<Point2, bool> projectSafe(const Point3& pw) const {
-    const Point3 pc = pose().transform_to(pw);
-    const Point2 pn = project_to_camera(pc);
-    return std::make_pair(pn, pc.z() > 0);
-  }
-
-  /* ************************************************************************* */
-  Point2 project2(const Point3& point, OptionalJacobian<2, 6> Dpose,
-      OptionalJacobian<2, 3> Dpoint) const {
-
-    Matrix3 Rt; // calculated by transform_to if needed
-    const Point3 q = pose().transform_to(point, boost::none, Dpoint ? &Rt : 0);
-  #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
-    if (q.z() <= 0)
-    throw CheiralityException();
-  #endif
-    const Point2 pn = project_to_camera(q);
-
-    if (Dpose || Dpoint) {
-      const double d = 1.0 / q.z();
-      if (Dpose)
-        *Dpose = PinholeBase::Dpose(pn, d);
-      if (Dpoint)
-        *Dpoint = PinholeBase::Dpoint(pn, d, Rt);
-    }
-    return pn;
-  }
-
-  /* ************************************************************************* */
-  static Point3 backproject_from_camera(const Point2& p,
-      const double depth) {
-    return Point3(p.x() * depth, p.y() * depth, depth);
-  }
-
-#endif
-
 private:
 
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
-  void serialize(Archive & ar, const unsigned int version) {
+  void serialize(Archive & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_NVP(pose_);
   }
 
@@ -449,7 +317,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
-  void serialize(Archive & ar, const unsigned int version) {
+  void serialize(Archive & ar, const unsigned int /*version*/) {
     ar
         & boost::serialization::make_nvp("PinholeBase",
             boost::serialization::base_object<PinholeBase>(*this));

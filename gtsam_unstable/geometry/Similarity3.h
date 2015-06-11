@@ -73,6 +73,8 @@ public:
   /// Print with optional string
   void print(const std::string& s) const;
 
+  GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os, const Similarity3& p);
+
   /// @}
   /// @name Group
   /// @{
@@ -171,6 +173,6 @@ private:
 };
 
 template<>
-struct traits<Similarity3> : public internal::LieGroupTraits<Similarity3> {
+struct traits<Similarity3> : public internal::LieGroup<Similarity3> {
 };
 }

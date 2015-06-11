@@ -20,12 +20,31 @@
 
 #pragma once
 
-#include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/geometry/CalibratedCamera.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Point3.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/linear/NoiseModel.h>
+#include <gtsam/base/concepts.h>
+#include <gtsam/base/Manifold.h>
+#include <gtsam/base/Matrix.h>
+#include <gtsam/base/types.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/Vector.h>
+
+#include <boost/none.hpp>
+#include <boost/optional/optional.hpp>
+#include <boost/serialization/nvp.hpp>
+#include <boost/smart_ptr/shared_ptr.hpp>
 #include <iostream>
+#include <string>
+
+namespace boost {
+namespace serialization {
+class access;
+} /* namespace serialization */
+} /* namespace boost */
 
 namespace gtsam {
 
@@ -120,7 +139,7 @@ namespace gtsam {
     /** Serialization function */
     friend class boost::serialization::access;
     template<class Archive>
-    void serialize(Archive & ar, const unsigned int version) {
+    void serialize(Archive & ar, const unsigned int /*version*/) {
       ar & boost::serialization::make_nvp("NoiseModelFactor2",
           boost::serialization::base_object<Base>(*this));
       ar & BOOST_SERIALIZATION_NVP(measured_);
@@ -222,7 +241,7 @@ namespace gtsam {
     /** Serialization function */
     friend class boost::serialization::access;
     template<class Archive>
-    void serialize(Archive & ar, const unsigned int version) {
+    void serialize(Archive & ar, const unsigned int /*version*/) {
       ar & boost::serialization::make_nvp("NoiseModelFactor3",
           boost::serialization::base_object<Base>(*this));
       ar & BOOST_SERIALIZATION_NVP(measured_);

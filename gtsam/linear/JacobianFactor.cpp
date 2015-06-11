@@ -365,32 +365,50 @@ void JacobianFactor::print(const string& s,
 /* ************************************************************************* */
 // Check if two linear factors are equal
 bool JacobianFactor::equals(const GaussianFactor& f_, double tol) const {
-  if (!dynamic_cast<const JacobianFactor*>(&f_))
+  static const bool verbose = false;
+  if (!dynamic_cast<const JacobianFactor*>(&f_)) {
+    if (verbose)
+      cout << "JacobianFactor::equals: Incorrect type" << endl;
     return false;
-  else {
+  } else {
     const JacobianFactor& f(static_cast<const JacobianFactor&>(f_));
 
     // Check keys
-    if (keys() != f.keys())
+    if (keys() != f.keys()) {
+      if (verbose)
+        cout << "JacobianFactor::equals: keys do not match" << endl;
       return false;
+    }
 
     // Check noise model
-    if ((model_ && !f.model_) || (!model_ && f.model_))
+    if ((model_ && !f.model_) || (!model_ && f.model_)) {
+      if (verbose)
+        cout << "JacobianFactor::equals: noise model mismatch" << endl;
       return false;
-    if (model_ && f.model_ && !model_->equals(*f.model_, tol))
+    }
+    if (model_ && f.model_ && !model_->equals(*f.model_, tol)) {
+      if (verbose)
+        cout << "JacobianFactor::equals: noise modesl are not equal" << endl;
       return false;
+    }
 
     // Check matrix sizes
-    if (!(Ab_.rows() == f.Ab_.rows() && Ab_.cols() == f.Ab_.cols()))
+    if (!(Ab_.rows() == f.Ab_.rows() && Ab_.cols() == f.Ab_.cols())) {
+      if (verbose)
+        cout << "JacobianFactor::equals: augmented size mismatch" << endl;
       return false;
+    }
 
     // Check matrix contents
     constABlock Ab1(Ab_.range(0, Ab_.nBlocks()));
     constABlock Ab2(f.Ab_.range(0, f.Ab_.nBlocks()));
     for (size_t row = 0; row < (size_t) Ab1.rows(); ++row)
       if (!equal_with_abs_tol(Ab1.row(row), Ab2.row(row), tol)
-          && !equal_with_abs_tol(-Ab1.row(row), Ab2.row(row), tol))
+          && !equal_with_abs_tol(-Ab1.row(row), Ab2.row(row), tol)) {
+        if (verbose)
+          cout << "JacobianFactor::equals: matrix mismatch at row " << row << endl;
         return false;
+      }
 
     return true;
   }
@@ -513,6 +531,51 @@ void JacobianFactor::multiplyHessianAdd(double alpha, const VectorValues& x,
     VectorValues& y) const {
   Vector Ax = (*this) * x;
   transposeMultiplyAdd(alpha, Ax, y);
+}
+
+/* ************************************************************************* */
+/** Raw memory access version of multiplyHessianAdd y += alpha * A'*A*x
+ * Note: this is not assuming a fixed dimension for the variables,
+ * but requires the vector accumulatedDims to tell the dimension of
+ * each variable: e.g.: x0 has dim 3, x2 has dim 6, x3 has dim 2,
+ * then accumulatedDims is [0 3 9 11 13]
+ * NOTE: size of accumulatedDims is size of keys + 1!!
+ * TODO Frank asks: why is this here if not regular ????
+ */
+void JacobianFactor::multiplyHessianAdd(double alpha, const double* x, double* y,
+    const std::vector<size_t>& accumulatedDims) const {
+
+  /// Use Eigen magic to access raw memory
+  typedef Eigen::Map<Vector> VectorMap;
+  typedef Eigen::Map<const Vector> ConstVectorMap;
+
+  if (empty())
+    return;
+  Vector Ax = zero(Ab_.rows());
+
+  /// Just iterate over all A matrices and multiply in correct config part (looping over keys)
+  /// E.g.: Jacobian A = [A0 A1 A2] multiplies x = [x0 x1 x2]'
+  /// Hence: Ax = A0 x0 + A1 x1 + A2 x2 (hence we loop over the keys and accumulate)
+  for (size_t pos = 0; pos < size(); ++pos) {
+    size_t offset = accumulatedDims[keys_[pos]];
+    size_t dim = accumulatedDims[keys_[pos] + 1] - offset;
+    Ax += Ab_(pos) * ConstVectorMap(x + offset, dim);
+  }
+  /// Deal with noise properly, need to Double* whiten as we are dividing by variance
+  if (model_) {
+    model_->whitenInPlace(Ax);
+    model_->whitenInPlace(Ax);
+  }
+
+  /// multiply with alpha
+  Ax *= alpha;
+
+  /// Again iterate over all A matrices and insert Ai^T into y
+  for (size_t pos = 0; pos < size(); ++pos) {
+    size_t offset = accumulatedDims[keys_[pos]];
+    size_t dim = accumulatedDims[keys_[pos] + 1] - offset;
+    VectorMap(y + offset, dim) += Ab_(pos).transpose() * Ax;
+  }
 }
 
 /* ************************************************************************* */

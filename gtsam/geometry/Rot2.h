@@ -118,12 +118,12 @@ namespace gtsam {
     Matrix1 AdjointMap() const { return I_1x1; }
 
     /// Left-trivialized derivative of the exponential map
-    static Matrix ExpmapDerivative(const Vector& v) {
+    static Matrix ExpmapDerivative(const Vector& /*v*/) {
       return ones(1);
     }
 
     /// Left-trivialized derivative inverse of the exponential map
-    static Matrix LogmapDerivative(const Vector& v) {
+    static Matrix LogmapDerivative(const Vector& /*v*/) {
       return ones(1);
     }
 
@@ -200,7 +200,7 @@ namespace gtsam {
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version) {
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_NVP(c_);
       ar & BOOST_SERIALIZATION_NVP(s_);
     }
@@ -208,9 +208,9 @@ namespace gtsam {
   };
 
   template<>
-  struct traits<Rot2> : public internal::LieGroupTraits<Rot2> {};
+  struct traits<Rot2> : public internal::LieGroup<Rot2> {};
 
   template<>
-  struct traits<const Rot2> : public internal::LieGroupTraits<Rot2> {};
+  struct traits<const Rot2> : public internal::LieGroup<Rot2> {};
 
 } // gtsam

@@ -452,20 +452,12 @@ macro(ei_set_build_string)
 endmacro(ei_set_build_string)
 
 macro(ei_is_64bit_env VAR)
-
-  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/is64.cpp"
-      "int main() { return (sizeof(int*) == 8 ? 1 : 0); }
-      ")
-  try_run(run_res compile_res
-         ${CMAKE_CURRENT_BINARY_DIR} "${CMAKE_CURRENT_BINARY_DIR}/is64.cpp"
-          RUN_OUTPUT_VARIABLE run_output)
-
-  if(compile_res AND run_res)
-    set(${VAR} ${run_res})
-  elseif(CMAKE_CL_64)
+  if(CMAKE_SIZEOF_VOID_P EQUAL 8)
     set(${VAR} 1)
-  elseif("$ENV{Platform}" STREQUAL "X64") # nmake 64 bit
-    set(${VAR} 1)
+  elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
+    set(${VAR} 0)
+  else()
+    message(WARNING "Unsupported pointer size. Please contact the authors.")
   endif()
 endmacro(ei_is_64bit_env)
 

@@ -100,6 +100,12 @@ public:
     return delta_;
   }
 
+  /// Calculate marginal covariance on given variable
+  Matrix marginalCovariance(Key key) const;
+
+  static NonlinearFactorGraph calculateMarginalFactors(const NonlinearFactorGraph& graph, const Values& theta,
+      const std::set<Key>& marginalizeKeys, const GaussianFactorGraph::Eliminate& eliminateFunction);
+
 protected:
 
   /** A typedef defining an Key-Factor mapping **/
@@ -134,8 +140,6 @@ protected:
   /** A cross-reference structure to allow efficient factor lookups by key **/
   FactorIndex factorIndex_;
 
-
-
   /** Augment the list of factors with a set of new factors */
   void insertFactors(const NonlinearFactorGraph& newFactors);
 
@@ -153,9 +157,6 @@ protected:
 
   /** Marginalize out selected variables */
   void marginalize(const std::set<Key>& marginalizableKeys);
-
-  static NonlinearFactorGraph calculateMarginalFactors(const NonlinearFactorGraph& graph, const Values& theta,
-      const std::set<Key>& marginalizeKeys, const GaussianFactorGraph::Eliminate& eliminateFunction);
 
 private:
   /** Private methods for printing debug information */

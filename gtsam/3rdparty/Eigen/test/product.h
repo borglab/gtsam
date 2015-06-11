@@ -139,4 +139,12 @@ template<typename MatrixType> void product(const MatrixType& m)
   // inner product
   Scalar x = square2.row(c) * square2.col(c2);
   VERIFY_IS_APPROX(x, square2.row(c).transpose().cwiseProduct(square2.col(c2)).sum());
+  
+  // outer product
+  VERIFY_IS_APPROX(m1.col(c) * m1.row(r), m1.block(0,c,rows,1) * m1.block(r,0,1,cols));
+  VERIFY_IS_APPROX(m1.row(r).transpose() * m1.col(c).transpose(), m1.block(r,0,1,cols).transpose() * m1.block(0,c,rows,1).transpose());
+  VERIFY_IS_APPROX(m1.block(0,c,rows,1) * m1.row(r), m1.block(0,c,rows,1) * m1.block(r,0,1,cols));
+  VERIFY_IS_APPROX(m1.col(c) * m1.block(r,0,1,cols), m1.block(0,c,rows,1) * m1.block(r,0,1,cols));
+  VERIFY_IS_APPROX(m1.leftCols(1) * m1.row(r), m1.block(0,0,rows,1) * m1.block(r,0,1,cols));
+  VERIFY_IS_APPROX(m1.col(c) * m1.topRows(1), m1.block(0,c,rows,1) * m1.block(0,0,1,cols));  
 }
