@@ -25,13 +25,16 @@
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/base/concepts.h>
 #include <gtsam/base/Manifold.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/SymmetricBlockMatrix.h>
 #include <gtsam/base/types.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Vector.h>
+#include <gtsam/base/timing.h>
 
 #include <boost/none.hpp>
 #include <boost/optional/optional.hpp>
@@ -61,6 +64,8 @@ namespace gtsam {
 
     static const int DimC = FixedDimension<CAMERA>::value;
     static const int DimL = FixedDimension<LANDMARK>::value;
+    typedef Eigen::Matrix<double, 2, DimC> JacobianC;
+    typedef Eigen::Matrix<double, 2, DimL> JacobianL;
 
   protected:
 
@@ -121,21 +126,69 @@ namespace gtsam {
         return reprojError.vector();
       }
       catch( CheiralityException& e) {
-        if (H1) *H1 = zeros(2, DimC);
-        if (H2) *H2 = zeros(2, DimL);
+        if (H1) *H1 = JacobianC::Zero();
+        if (H2) *H2 = JacobianL::Zero();
         // TODO warn if verbose output asked for
         return zero(2);
       }
     }
 
+    class LinearizedFactor : public JacobianFactor {
+      // Fixed size matrices
+      // TODO: implement generic BinaryJacobianFactor<N,M1,M2> next to
+      // JacobianFactor
+      JacobianC AC_;
+      JacobianL AL_;
+      Vector2 b_;
+
+     public:
+      /// Constructor
+      LinearizedFactor(Key i1, const JacobianC& A1, Key i2, const JacobianL& A2,
+                       const Vector2& b,
+                       const SharedDiagonal& model = SharedDiagonal())
+          : JacobianFactor(i1, A1, i2, A2, b, model), AC_(A1), AL_(A2), b_(b) {}
+
+      // Fixed-size matrix update
+      void updateATA(const Scatter& scatter, SymmetricBlockMatrix* info) const {
+        gttic(updateATA_LinearizedFactor);
+
+        // Whiten the factor if it has a noise model
+        const SharedDiagonal& model = get_model();
+        if (model && !model->isUnit()) {
+          if (model->isConstrained())
+            throw std::invalid_argument(
+                "JacobianFactor::updateATA: cannot update information with "
+                "constrained noise model");
+          JacobianFactor whitenedFactor = whiten();
+          whitenedFactor.updateATA(scatter, info);
+        } else {
+          // N is number of variables in information matrix
+          DenseIndex N = info->nBlocks() - 1;
+
+          // First build an array of slots
+          DenseIndex slotC = scatter.at(this->keys().front()).slot;
+          DenseIndex slotL = scatter.at(this->keys().back()).slot;
+          DenseIndex slotB = N;
+
+          // We perform I += A'*A to the upper triangle
+          (*info)(slotC, slotC).knownOffDiagonal() += AC_.transpose() * AC_;
+          (*info)(slotC, slotL).knownOffDiagonal() += AC_.transpose() * AL_;
+          (*info)(slotC, slotB).knownOffDiagonal() += AC_.transpose() * b_;
+          (*info)(slotL, slotL).knownOffDiagonal() += AL_.transpose() * AL_;
+          (*info)(slotL, slotB).knownOffDiagonal() += AL_.transpose() * b_;
+          (*info)(slotB, slotB).knownOffDiagonal() += b_.transpose() * b_;
+        }
+      }
+    };
+
     /// Linearize using fixed-size matrices
-    boost::shared_ptr<GaussianFactor> linearize(const Values& values) {
+    boost::shared_ptr<GaussianFactor> linearize(const Values& values) const {
       // Only linearize if the factor is active
-      if (!this->active(values)) return boost::shared_ptr<JacobianFactor>();
+      if (!this->active(values)) return boost::shared_ptr<LinearizedFactor>();
 
       const Key key1 = this->key1(), key2 = this->key2();
-      Eigen::Matrix<double, 2, DimC> H1;
-      Eigen::Matrix<double, 2, DimL> H2;
+      JacobianC H1;
+      JacobianL H2;
       Vector2 b;
       try {
         const CAMERA& camera = values.at<CAMERA>(key1);
@@ -159,11 +212,11 @@ namespace gtsam {
 
       if (noiseModel && noiseModel->isConstrained()) {
         using noiseModel::Constrained;
-        return boost::make_shared<JacobianFactor>(
+        return boost::make_shared<LinearizedFactor>(
             key1, H1, key2, H2, b,
             boost::static_pointer_cast<Constrained>(noiseModel)->unit());
       } else {
-        return boost::make_shared<JacobianFactor>(key1, H1, key2, H2, b);
+        return boost::make_shared<LinearizedFactor>(key1, H1, key2, H2, b);
       }
     }
 
