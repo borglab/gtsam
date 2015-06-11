@@ -190,6 +190,15 @@ TEST(Similarity3, ExpLogMap) {
   Similarity3 expZero = Similarity3::Expmap(zeros);
   Similarity3 ident = Similarity3::identity();
   EXPECT(assert_equal(expZero, ident));
+
+  // Compare to matrix exponential calculated using matlab expm
+  Rot3 Rexpm(0.9358,   -0.2832,    0.2102,
+             0.3029,    0.9506,   -0.0680,
+            -0.1805,    0.1273,    0.9753);
+  Point3 texpm(0.2724, 0.3825, 0.4213);
+  Similarity3 Sexpm(Rexpm, texpm, 2.0138);
+  Similarity3 Scalc = Similarity3::Expmap(expected);
+  EXPECT(assert_equal(Sexpm, Scalc, 1e-3));
 }
 //******************************************************************************
 // Group action on Point3 (with simpler transform)
