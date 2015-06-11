@@ -101,18 +101,32 @@ namespace gtsam {
     const Cal3_S2Stereo& K = *K_;
     const double fx = K.fx(), fy = K.fy(), cx = K.cx(), cy = K.cy(), b = K.baseline();
 
-    Vector measured = z.vector();
+    Vector3 measured = z.vector();   // u_L, u_R, v
+    double d = measured[0] - measured[1]; // disparity
+
     double Z = b * fx / (measured[0] - measured[1]);
     double X = Z * (measured[0] - cx) / fx;
     double Y = Z * (measured[2] - cy) / fy;
 
     if(H1 || H2) {
       if(H1) {
-        // do something here
+        // do something here, w.r.t pose
       }
       if(H2) {
-
+        double d_2 = d*d;
+        double z_partial_x = -fx*b/d_2, z_partial_y = fx*b/d_2;
+        *H2 << z_partial_x * X/Z + Z/fx, z_partial_y *X/Z, 0,
+            z_partial_x * Y/Z, z_partial_y *Y/Z, Z/fy,
+            z_partial_x, z_partial_y, 0;
       }
+
+      Matrix point_H1, point_H2;
+      const Point3 point = leftCamPose_.transform_from(Point3(X,Y,Z), point_H1, point_H2);
+
+      *H1 = point_H1 * (*H1);
+      *H2 = point_H2 * (*H2);
+
+      return point;
     }
 
     return leftCamPose_.transform_from(Point3(X, Y, Z));
