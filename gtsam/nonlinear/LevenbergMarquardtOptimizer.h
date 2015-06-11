@@ -46,7 +46,7 @@ public:
 
 public:
 
-  double lambdaInitial; ///< The initial Levenberg-Marquardt damping term (default: 1e-5)
+  double lambdaInitial; ///< The initial Levenberg-Marquardt damping term (default: 1e-4)
   double lambdaFactor; ///< The amount by which to multiply or divide lambda when adjusting lambda (default: 10.0)
   double lambdaUpperBound; ///< The maximum lambda to try before assuming the optimization has failed (default: 1e5)
   double lambdaLowerBound; ///< The minimum lambda used in LM (default: 0)
@@ -54,7 +54,7 @@ public:
   double minModelFidelity; ///< Lower bound for the modelFidelity to accept the result of an LM iteration
   std::string logFile; ///< an optional CSV log file, with [iteration, time, error, labda]
   bool diagonalDamping; ///< if true, use diagonal of Hessian
-  bool reuse_diagonal_; ///< an additional option in Ceres for diagonalDamping (related to efficiency)
+  bool reuse_diagonal_; ///< an additional option in Ceres for diagonalDamping (TODO: should be in state?)
   bool useFixedLambdaFactor_; ///< if true applies constant increase (or decrease) to lambda according to lambdaFactor
   double min_diagonal_; ///< when using diagonal damping saturates the minimum diagonal entries (default: 1e-6)
   double max_diagonal_; ///< when using diagonal damping saturates the maximum diagonal entries (default: 1e32)
