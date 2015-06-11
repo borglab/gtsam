@@ -59,14 +59,22 @@ int main(int argc, char* argv[]) {
 
   Values initial = initialCamerasAndPointsEstimate(db);
 
-  // Create Schur-complement ordering
+// Create Schur-complement ordering
+#ifdef CCOLAMD
   vector<Key> pointKeys;
   for (size_t j = 0; j < db.number_tracks(); j++) pointKeys.push_back(P(j));
-  Ordering schurOrdering = Ordering::colamdConstrainedFirst(graph, pointKeys, true);
+  Ordering ordering = Ordering::colamdConstrainedFirst(graph, pointKeys, true);
+#else
+  Ordering ordering;
+  for (size_t j = 0; j < db.number_tracks(); j++) ordering.push_back(P(j));
+  for (size_t i = 0; i < db.number_cameras(); i++) ordering.push_back(i);
+#endif
 
   // Optimize
   LevenbergMarquardtParams params;
-  params.setOrdering(schurOrdering);
+  params.setOrdering(ordering);
+  params.setVerbosity("ERROR");
+  params.setVerbosityLM("TRYLAMBDA");
   LevenbergMarquardtOptimizer lm(graph, initial, params);
   Values actual = lm.optimize();
 
