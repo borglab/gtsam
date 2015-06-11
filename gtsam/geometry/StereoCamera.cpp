@@ -95,4 +95,27 @@ namespace gtsam {
     return world_point;
   }
 
+  /* ************************************************************************* */
+  Point3 StereoCamera::backproject2(const StereoPoint2& z, OptionalJacobian<3, 6> H1,
+                                    OptionalJacobian<3, 3> H2) {
+    const Cal3_S2Stereo& K = *K_;
+    const double fx = K.fx(), fy = K.fy(), cx = K.cx(), cy = K.cy(), b = K.baseline();
+
+    Vector measured = z.vector();
+    double Z = b * fx / (measured[0] - measured[1]);
+    double X = Z * (measured[0] - cx) / fx;
+    double Y = Z * (measured[2] - cy) / fy;
+
+    if(H1 || H2) {
+      if(H1) {
+        // do something here
+      }
+      if(H2) {
+
+      }
+    }
+
+    return leftCamPose_.transform_from(Point3(X, Y, Z));
+  }
+
 }
