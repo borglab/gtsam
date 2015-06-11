@@ -196,8 +196,10 @@ namespace gtsam {
         Point2 reprojError(camera.project2(point, H1, H2) - measured());
         b = -reprojError.vector();
       } catch (CheiralityException& e) {
+        H1.setZero();
+        H2.setZero();
+        b.setZero();
         // TODO warn if verbose output asked for
-        return boost::make_shared<JacobianFactor>();
       }
 
       // Whiten the system if needed
