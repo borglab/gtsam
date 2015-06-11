@@ -62,7 +62,7 @@ public:
   LevenbergMarquardtParams() :
       lambdaInitial(1e-4), lambdaFactor(2.0), lambdaUpperBound(1e5), lambdaLowerBound(
           0.0), verbosityLM(SILENT), minModelFidelity(1e-3),
-          diagonalDamping(false), reuse_diagonal_(false), useFixedLambdaFactor_(true),
+          diagonalDamping(true), reuse_diagonal_(false), useFixedLambdaFactor_(true),
           min_diagonal_(1e-6), max_diagonal_(1e32) {
   }
   virtual ~LevenbergMarquardtParams() {
