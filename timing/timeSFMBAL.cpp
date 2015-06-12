@@ -71,10 +71,14 @@ int main(int argc, char* argv[]) {
 #endif
 
   // Optimize
+  // Set parameters to be similar to ceres
   LevenbergMarquardtParams params;
   params.setOrdering(ordering);
   params.setVerbosity("ERROR");
   params.setVerbosityLM("TRYLAMBDA");
+  params.setDiagonalDamping(true);
+  params.setlambdaInitial(1e-4);
+  params.setlambdaFactor(2.0);
   LevenbergMarquardtOptimizer lm(graph, initial, params);
   Values actual = lm.optimize();
 
