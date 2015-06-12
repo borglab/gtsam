@@ -172,10 +172,10 @@ TEST( StereoCamera, backproject2_case2)
   StereoPoint2 actual = camera.project(l);
   CHECK(assert_equal(z, actual, 1e-3));
 
-  Matrix expected_jacobian_to_pose = numericalDerivative31(backproject3, camera, z, *K);
+  Matrix expected_jacobian_to_pose = numericalDerivative31(backproject3, Pose3(R,t), z, *K);
   CHECK(assert_equal(expected_jacobian_to_pose, actual_jacobian_1, 1e-3));
 
-  Matrix expected_jacobian_to_point = numericalDerivative32(backproject3, camera, z, *K);
+  Matrix expected_jacobian_to_point = numericalDerivative32(backproject3, Pose3(R,t), z, *K);
   CHECK(assert_equal(expected_jacobian_to_point, actual_jacobian_2, 1e-3));
 }
 
