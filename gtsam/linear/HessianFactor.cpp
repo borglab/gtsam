@@ -347,19 +347,13 @@ double HessianFactor::error(const VectorValues& c) const {
 
 /* ************************************************************************* */
 void HessianFactor::updateHessian(const Scatter& scatter,
-                              SymmetricBlockMatrix* info) const {
+                                  SymmetricBlockMatrix* info) const {
   gttic(updateHessian_HessianFactor);
-  // N is number of variables in information matrix, n in HessianFactor
-  DenseIndex N = info->nBlocks() - 1, n = size();
-
   // First build an array of slots
-  FastVector<DenseIndex> slots(n + 1);
-  DenseIndex slot = 0;
-  BOOST_FOREACH (Key key, *this)
-    slots[slot++] = scatter.at(key).slot;
-  slots[n] = N;
+  FastVector<DenseIndex> slots = scatter.getSlotsForKeys(keys_);
 
   // Apply updates to the upper triangle
+  DenseIndex n = size();
   for (DenseIndex j = 0; j <= n; ++j) {
     DenseIndex J = slots[j];
     for (DenseIndex i = 0; i <= j; ++i) {
