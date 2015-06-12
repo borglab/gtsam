@@ -68,6 +68,8 @@ public:
       JacobianFactor(keys, augmentedMatrix, sigmas) {
   }
 
+  using JacobianFactor::multiplyHessianAdd;
+
   /** y += alpha * A'*A*x */
   virtual void multiplyHessianAdd(double alpha, const VectorValues& x,
       VectorValues& y) const {
