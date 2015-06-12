@@ -115,6 +115,11 @@ public:
     return D;
   }
 
+  virtual void updateATA(const Scatter& scatter,
+                         SymmetricBlockMatrix* info) const {
+    throw std::runtime_error(
+        "RegularImplicitSchurFactor::updateATA non implemented");
+  }
   virtual Matrix augmentedJacobian() const {
     throw std::runtime_error(
         "RegularImplicitSchurFactor::augmentedJacobian non implemented");
