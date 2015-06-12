@@ -22,17 +22,18 @@
 #include <vector>
 #include <boost/assign/list_inserter.hpp>
 
-#include <gtsam/base/FastSet.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/inference/VariableIndex.h>
 #include <gtsam/inference/MetisIndex.h>
 #include <gtsam/inference/FactorGraph.h>
+#include <gtsam/base/FastSet.h>
+#include <gtsam/base/FastVector.h>
 
 namespace gtsam {
 
-  class Ordering : public std::vector<Key> {
+  class Ordering : public FastVector<Key> {
   protected:
-    typedef std::vector<Key> Base;
+    typedef FastVector<Key> Base;
 
   public:
 
