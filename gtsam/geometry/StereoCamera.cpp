@@ -101,37 +101,35 @@ namespace gtsam {
     const Cal3_S2Stereo& K = *K_;
     const double fx = K.fx(), fy = K.fy(), cx = K.px(), cy = K.py(), b = K.baseline();
 
-    Vector3 measured = z.vector();   // u_L, u_R, v
-    double d = measured[0] - measured[1]; // disparity
+    double uL = z.uL(), uR = z.uR(), v = z.v();
+    double disparity = uL - uR;
 
-    double Z = b * fx / (measured[0] - measured[1]);
-    double X = Z * (measured[0] - cx) / fx;
-    double Y = Z * (measured[2] - cy) / fy;
+    double local_z = b * fx / disparity;
+    const Point3 local_point(local_z * (uL - cx)/ fx, local_z * (v - cy) / fy, local_z);
 
     if(H1 || H2) {
 
-      double d_2 = d*d;
+      double d_2 = disparity*disparity;
       double z_partial_x = -fx*b/d_2, z_partial_y = fx*b/d_2;
-      Matrix3 partial_to_point;
-      partial_to_point << z_partial_x * X/Z + Z/fx, z_partial_y *X/Z, 0,
-          z_partial_x * Y/Z, z_partial_y *Y/Z, Z/fy,
+      double x_over_z = local_point.x() / local_point.z(),
+          y_over_z = local_point.y() / local_point.z();
+
+      Matrix3 D_local_z;
+      D_local_z << z_partial_x * x_over_z + local_point.z()/fx, z_partial_y * x_over_z, 0,
+          z_partial_x * y_over_z, z_partial_y * y_over_z, local_point.z()/fy,
           z_partial_x, z_partial_y, 0;
 
-      Eigen::Matrix<double, 3, 6> point_H1;
-      Eigen::Matrix<double, 3, 3> point_H2;
-      const Point3 point = leftCamPose_.transform_from(Point3(X,Y,Z), point_H1, point_H2);
+      Matrix3 D_point_local;
+      const Point3 world_point = leftCamPose_.transform_from(local_point, H1, D_point_local);
 
-      if(H1) {
-        *H1 = point_H1;
-      }
       if(H2) {
-        *H2 = point_H2 * partial_to_point;
+        *H2 = D_point_local * D_local_z;
       }
 
-      return point;
+      return world_point;
     }
 
-    return leftCamPose_.transform_from(Point3(X, Y, Z));
+    return leftCamPose_.transform_from(local_point);
   }
 
 }
