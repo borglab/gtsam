@@ -91,8 +91,8 @@ namespace gtsam {
     double Z = K_->baseline() * K_->fx() / (measured[0] - measured[1]);
     double X = Z * (measured[0] - K_->px()) / K_->fx();
     double Y = Z * (measured[2] - K_->py()) / K_->fy();
-    Point3 world = leftCamPose_.transform_from(Point3(X, Y, Z));
-    return world;
+    Point3 point = leftCamPose_.transform_from(Point3(X, Y, Z));
+    return point;
   }
 
   /* ************************************************************************* */
@@ -117,13 +117,13 @@ namespace gtsam {
           -z_partial_uR, z_partial_uR, 0;
 
       Matrix3 D_point_local;
-      const Point3 world = leftCamPose_.transform_from(local, H1, D_point_local);
+      const Point3 point = leftCamPose_.transform_from(local, H1, D_point_local);
 
       if(H2) {
         *H2 = D_point_local * D_local_z;
       }
 
-      return world;
+      return point;
     }
 
     return leftCamPose_.transform_from(local);
