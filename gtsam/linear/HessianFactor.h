@@ -344,7 +344,7 @@ namespace gtsam {
      * @param scatter A mapping from variable index to slot index in this HessianFactor
      * @param info The information matrix to be updated
      */
-    void updateATA(const Scatter& scatter, SymmetricBlockMatrix* info) const;
+    void updateHessian(const Scatter& scatter, SymmetricBlockMatrix* info) const;
 
     /** y += alpha * A'*A*x */
     void multiplyHessianAdd(double alpha, const VectorValues& x, VectorValues& y) const;

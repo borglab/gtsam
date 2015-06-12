@@ -248,7 +248,7 @@ HessianFactor::HessianFactor(const GaussianFactorGraph& factors,
   gttic(update);
   BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factors)
     if(factor)
-      factor->updateATA(*scatter, &info_);
+      factor->updateHessian(*scatter, &info_);
   gttoc(update);
 }
 
@@ -346,7 +346,7 @@ double HessianFactor::error(const VectorValues& c) const {
 }
 
 /* ************************************************************************* */
-void HessianFactor::updateATA(const Scatter& scatter,
+void HessianFactor::updateHessian(const Scatter& scatter,
                               SymmetricBlockMatrix* info) const {
   gttic(updateATA_HessianFactor);
   // N is number of variables in information matrix, n in HessianFactor

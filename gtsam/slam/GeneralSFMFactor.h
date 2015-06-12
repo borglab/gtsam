@@ -149,7 +149,7 @@ namespace gtsam {
           : JacobianFactor(i1, A1, i2, A2, b, model), AC_(A1), AL_(A2), b_(b) {}
 
       // Fixed-size matrix update
-      void updateATA(const Scatter& scatter, SymmetricBlockMatrix* info) const {
+      void updateHessian(const Scatter& scatter, SymmetricBlockMatrix* info) const {
         gttic(updateATA_LinearizedFactor);
 
         // Whiten the factor if it has a noise model
@@ -157,10 +157,10 @@ namespace gtsam {
         if (model && !model->isUnit()) {
           if (model->isConstrained())
             throw std::invalid_argument(
-                "JacobianFactor::updateATA: cannot update information with "
+                "JacobianFactor::updateHessian: cannot update information with "
                 "constrained noise model");
           JacobianFactor whitenedFactor = whiten();
-          whitenedFactor.updateATA(scatter, info);
+          whitenedFactor.updateHessian(scatter, info);
         } else {
           // N is number of variables in information matrix
           DenseIndex N = info->nBlocks() - 1;

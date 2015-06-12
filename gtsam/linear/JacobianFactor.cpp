@@ -498,7 +498,7 @@ map<Key, Matrix> JacobianFactor::hessianBlockDiagonal() const {
 }
 
 /* ************************************************************************* */
-void JacobianFactor::updateATA(const Scatter& scatter,
+void JacobianFactor::updateHessian(const Scatter& scatter,
                                SymmetricBlockMatrix* info) const {
   gttic(updateATA_JacobianFactor);
 
@@ -509,10 +509,10 @@ void JacobianFactor::updateATA(const Scatter& scatter,
   if (model && !model->isUnit()) {
     if (model->isConstrained())
       throw invalid_argument(
-          "JacobianFactor::updateATA: cannot update information with "
+          "JacobianFactor::updateHessian: cannot update information with "
           "constrained noise model");
     JacobianFactor whitenedFactor = whiten();
-    whitenedFactor.updateATA(scatter, info);
+    whitenedFactor.updateHessian(scatter, info);
   } else {
     // Ab_ is the augmented Jacobian matrix A, and we perform I += A'*A below
     // N is number of variables in information matrix, n in JacobianFactor
