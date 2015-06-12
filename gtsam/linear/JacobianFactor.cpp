@@ -500,7 +500,7 @@ map<Key, Matrix> JacobianFactor::hessianBlockDiagonal() const {
 /* ************************************************************************* */
 void JacobianFactor::updateHessian(const Scatter& scatter,
                                SymmetricBlockMatrix* info) const {
-  gttic(updateATA_JacobianFactor);
+  gttic(updateHessian_JacobianFactor);
 
   if (rows() == 0) return;
 

@@ -150,7 +150,7 @@ namespace gtsam {
 
       // Fixed-size matrix update
       void updateHessian(const Scatter& scatter, SymmetricBlockMatrix* info) const {
-        gttic(updateATA_LinearizedFactor);
+        gttic(updateHessian_LinearizedFactor);
 
         // Whiten the factor if it has a noise model
         const SharedDiagonal& model = get_model();

@@ -348,7 +348,7 @@ double HessianFactor::error(const VectorValues& c) const {
 /* ************************************************************************* */
 void HessianFactor::updateHessian(const Scatter& scatter,
                               SymmetricBlockMatrix* info) const {
-  gttic(updateATA_HessianFactor);
+  gttic(updateHessian_HessianFactor);
   // N is number of variables in information matrix, n in HessianFactor
   DenseIndex N = info->nBlocks() - 1, n = size();
 
