@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    testCholeskyFactor.cpp
+ * @file    testHessianFactor.cpp
  * @author  Richard Roberts
  * @date    Dec 15, 2010
  */
