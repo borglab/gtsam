@@ -108,16 +108,13 @@ namespace gtsam {
     const Point3 local_point(local_z * (uL - cx)/ fx, local_z * (v - cy) / fy, local_z);
 
     if(H1 || H2) {
-
-      double d_2 = disparity*disparity;
-      double z_partial_x = -fx*b/d_2, z_partial_y = fx*b/d_2;
-      double x_over_z = local_point.x() / local_point.z(),
-          y_over_z = local_point.y() / local_point.z();
-
+      double z_partial_uR = local_z/disparity;
+      double x_partial_uR = local_point.x()/disparity;
+      double y_partial_uR = local_point.y()/disparity;
       Matrix3 D_local_z;
-      D_local_z << z_partial_x * x_over_z + local_point.z()/fx, z_partial_y * x_over_z, 0,
-          z_partial_x * y_over_z, z_partial_y * y_over_z, local_point.z()/fy,
-          z_partial_x, z_partial_y, 0;
+      D_local_z << -x_partial_uR + local_point.z()/fx, x_partial_uR, 0,
+          -y_partial_uR, y_partial_uR, local_point.z() / fy,
+          -z_partial_uR, z_partial_uR, 0;
 
       Matrix3 D_point_local;
       const Point3 world_point = leftCamPose_.transform_from(local_point, H1, D_point_local);
