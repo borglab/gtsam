@@ -109,22 +109,24 @@ namespace gtsam {
     double Y = Z * (measured[2] - cy) / fy;
 
     if(H1 || H2) {
-      if(H1) {
 
-      }
-      if(H2) {
-        double d_2 = d*d;
-        double z_partial_x = -fx*b/d_2, z_partial_y = fx*b/d_2;
-        *H2 << z_partial_x * X/Z + Z/fx, z_partial_y *X/Z, 0,
-            z_partial_x * Y/Z, z_partial_y *Y/Z, Z/fy,
-            z_partial_x, z_partial_y, 0;
-      }
+      double d_2 = d*d;
+      double z_partial_x = -fx*b/d_2, z_partial_y = fx*b/d_2;
+      Matrix3 partial_to_point;
+      partial_to_point << z_partial_x * X/Z + Z/fx, z_partial_y *X/Z, 0,
+          z_partial_x * Y/Z, z_partial_y *Y/Z, Z/fy,
+          z_partial_x, z_partial_y, 0;
 
-      Matrix point_H1, point_H2;
+      Eigen::Matrix<double, 3, 6> point_H1;
+      Eigen::Matrix<double, 3, 3> point_H2;
       const Point3 point = leftCamPose_.transform_from(Point3(X,Y,Z), point_H1, point_H2);
 
-      *H1 = point_H1 * (*H1);
-      *H2 = point_H2 * (*H2);
+      if(H1) {
+        *H1 = point_H1;
+      }
+      if(H2) {
+        *H2 = point_H2 * partial_to_point;
+      }
 
       return point;
     }
