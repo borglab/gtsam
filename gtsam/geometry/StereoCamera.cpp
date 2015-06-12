@@ -97,9 +97,9 @@ namespace gtsam {
 
   /* ************************************************************************* */
   Point3 StereoCamera::backproject2(const StereoPoint2& z, OptionalJacobian<3, 6> H1,
-                                    OptionalJacobian<3, 3> H2) {
+                                    OptionalJacobian<3, 3> H2)  const {
     const Cal3_S2Stereo& K = *K_;
-    const double fx = K.fx(), fy = K.fy(), cx = K.cx(), cy = K.cy(), b = K.baseline();
+    const double fx = K.fx(), fy = K.fy(), cx = K.px(), cy = K.py(), b = K.baseline();
 
     Vector3 measured = z.vector();   // u_L, u_R, v
     double d = measured[0] - measured[1]; // disparity
@@ -110,7 +110,7 @@ namespace gtsam {
 
     if(H1 || H2) {
       if(H1) {
-        // do something here, w.r.t pose
+
       }
       if(H2) {
         double d_2 = d*d;
