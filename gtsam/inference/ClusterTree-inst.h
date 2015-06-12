@@ -99,7 +99,7 @@ namespace gtsam
 
         // Do dense elimination step
         std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<FactorType> > eliminationResult =
-          eliminationFunction(gatheredFactors, Ordering(node->orderedFrontalKeys));
+          eliminationFunction(gatheredFactors, node->orderedFrontalKeys);
 
         // Store conditional in BayesTree clique, and in the case of ISAM2Clique also store the remaining factor
         myData.bayesTreeNode->setEliminationResult(eliminationResult);
