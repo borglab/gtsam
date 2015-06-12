@@ -150,10 +150,10 @@ TEST( StereoCamera, backproject2_case1)
   CHECK(assert_equal(expected_point, actual_point, 1e-8));
 
   Matrix expected_jacobian_to_pose = numericalDerivative31(backproject3, Pose3(), stereo_point, *K2);
-  CHECK(assert_equal(expected_jacobian_to_pose, actual_jacobian_1, 1e-3));
+  CHECK(assert_equal(expected_jacobian_to_pose, actual_jacobian_1, 1e-6));
 
   Matrix expected_jacobian_to_point = numericalDerivative32(backproject3, Pose3(), stereo_point, *K2);
-  CHECK(assert_equal(expected_jacobian_to_point, actual_jacobian_2, 1e-3));
+  CHECK(assert_equal(expected_jacobian_to_point, actual_jacobian_2, 1e-6));
 }
 
 TEST( StereoCamera, backproject2_case2)
@@ -173,10 +173,10 @@ TEST( StereoCamera, backproject2_case2)
   CHECK(assert_equal(z, actual, 1e-3));
 
   Matrix expected_jacobian_to_pose = numericalDerivative31(backproject3, Pose3(R,t), z, *K);
-  CHECK(assert_equal(expected_jacobian_to_pose, actual_jacobian_1, 1e-3));
+  CHECK(assert_equal(expected_jacobian_to_pose, actual_jacobian_1, 1e-6));
 
   Matrix expected_jacobian_to_point = numericalDerivative32(backproject3, Pose3(R,t), z, *K);
-  CHECK(assert_equal(expected_jacobian_to_point, actual_jacobian_2, 1e-3));
+  CHECK(assert_equal(expected_jacobian_to_point, actual_jacobian_2, 1e-6));
 }
 
 /* ************************************************************************* */
