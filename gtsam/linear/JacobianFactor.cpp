@@ -519,11 +519,13 @@ void JacobianFactor::updateHessian(const FastVector<Key>& infoKeys,
 
     // Apply updates to the upper triangle
     // Loop over blocks of A, including RHS with j==n
+    vector<DenseIndex> slots(n+1);
     for (DenseIndex j = 0; j <= n; ++j) {
-      const DenseIndex J = (j==n) ? N : Slot(infoKeys, keys_[j]);
+      const DenseIndex J = (j == n) ? N : Slot(infoKeys, keys_[j]);
+      slots[j] = J;
       // Fill off-diagonal blocks with Ai'*Aj
       for (DenseIndex i = 0; i < j; ++i) {
-        const DenseIndex I = Slot(infoKeys, keys_[i]);
+        const DenseIndex I = slots[i];  // because i<j, slots[i] is valid.
         (*info)(I, J).knownOffDiagonal() += Ab_(i).transpose() * Ab_(j);
       }
       // Fill diagonal block with Aj'*Aj

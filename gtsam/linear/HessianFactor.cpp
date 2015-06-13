@@ -350,11 +350,13 @@ void HessianFactor::updateHessian(const FastVector<Key>& infoKeys,
                                   SymmetricBlockMatrix* info) const {
   gttic(updateHessian_HessianFactor);
   // Apply updates to the upper triangle
-  DenseIndex n = size(), N = info->nBlocks()-1;
+  DenseIndex n = size(), N = info->nBlocks() - 1;
+  vector<DenseIndex> slots(n + 1);
   for (DenseIndex j = 0; j <= n; ++j) {
-    const DenseIndex J = (j==n) ? N :  Slot(infoKeys, keys_[j]);
+    const DenseIndex J = (j == n) ? N : Slot(infoKeys, keys_[j]);
+    slots[j] = J;
     for (DenseIndex i = 0; i <= j; ++i) {
-      const DenseIndex I = (i==n) ? N : Slot(infoKeys, keys_[i]);
+      const DenseIndex I = slots[i];  // because i<=j, slots[i] is valid.
       (*info)(I, J) += info_(i, j);
     }
   }
