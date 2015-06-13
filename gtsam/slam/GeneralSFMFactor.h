@@ -166,8 +166,8 @@ namespace gtsam {
           DenseIndex N = info->nBlocks() - 1;
 
           // First build an array of slots
-          DenseIndex slotC = scatter.at(this->keys().front()).slot;
-          DenseIndex slotL = scatter.at(this->keys().back()).slot;
+          DenseIndex slotC = scatter.slot(keys_.front());
+          DenseIndex slotL = scatter.slot(keys_.back());
           DenseIndex slotB = N;
 
           // We perform I += A'*A to the upper triangle

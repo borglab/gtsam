@@ -499,7 +499,7 @@ map<Key, Matrix> JacobianFactor::hessianBlockDiagonal() const {
 
 /* ************************************************************************* */
 void JacobianFactor::updateHessian(const Scatter& scatter,
-                               SymmetricBlockMatrix* info) const {
+                                   SymmetricBlockMatrix* info) const {
   gttic(updateHessian_JacobianFactor);
 
   if (rows() == 0) return;
@@ -515,23 +515,15 @@ void JacobianFactor::updateHessian(const Scatter& scatter,
     whitenedFactor.updateHessian(scatter, info);
   } else {
     // Ab_ is the augmented Jacobian matrix A, and we perform I += A'*A below
-    // N is number of variables in information matrix, n in JacobianFactor
-    DenseIndex N = info->nBlocks() - 1, n = Ab_.nBlocks() - 1;
-
-    // First build an array of slots
-    FastVector<DenseIndex> slots(n + 1);
-    DenseIndex slot = 0;
-    BOOST_FOREACH (Key key, *this)
-      slots[slot++] = scatter.at(key).slot;
-    slots[n] = N;
+    DenseIndex n = Ab_.nBlocks() - 1, N = info->nBlocks() - 1;
 
     // Apply updates to the upper triangle
     // Loop over blocks of A, including RHS with j==n
     for (DenseIndex j = 0; j <= n; ++j) {
-      DenseIndex J = slots[j];
+      const DenseIndex J = j==n ? N : scatter.slot(keys_[j]);
       // Fill off-diagonal blocks with Ai'*Aj
       for (DenseIndex i = 0; i < j; ++i) {
-        DenseIndex I = slots[i];
+        const DenseIndex I = scatter.slot(keys_[i]);
         (*info)(I, J).knownOffDiagonal() += Ab_(i).transpose() * Ab_(j);
       }
       // Fill diagonal block with Aj'*Aj
