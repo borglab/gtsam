@@ -498,7 +498,7 @@ map<Key, Matrix> JacobianFactor::hessianBlockDiagonal() const {
 }
 
 /* ************************************************************************* */
-void JacobianFactor::updateHessian(const Scatter& scatter,
+void JacobianFactor::updateHessian(const FastVector<Key>& infoKeys,
                                    SymmetricBlockMatrix* info) const {
   gttic(updateHessian_JacobianFactor);
 
@@ -512,18 +512,20 @@ void JacobianFactor::updateHessian(const Scatter& scatter,
           "JacobianFactor::updateHessian: cannot update information with "
           "constrained noise model");
     JacobianFactor whitenedFactor = whiten();
-    whitenedFactor.updateHessian(scatter, info);
+    whitenedFactor.updateHessian(infoKeys, info);
   } else {
     // Ab_ is the augmented Jacobian matrix A, and we perform I += A'*A below
     DenseIndex n = Ab_.nBlocks() - 1, N = info->nBlocks() - 1;
 
     // Apply updates to the upper triangle
     // Loop over blocks of A, including RHS with j==n
+    vector<DenseIndex> slots(n+1);
     for (DenseIndex j = 0; j <= n; ++j) {
-      const DenseIndex J = j==n ? N : scatter.slot(keys_[j]);
+      const DenseIndex J = (j == n) ? N : Slot(infoKeys, keys_[j]);
+      slots[j] = J;
       // Fill off-diagonal blocks with Ai'*Aj
       for (DenseIndex i = 0; i < j; ++i) {
-        const DenseIndex I = scatter.slot(keys_[i]);
+        const DenseIndex I = slots[i];  // because i<j, slots[i] is valid.
         (*info)(I, J).knownOffDiagonal() += Ab_(i).transpose() * Ab_(j);
       }
       // Fill diagonal block with Aj'*Aj

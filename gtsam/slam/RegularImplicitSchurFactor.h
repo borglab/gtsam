@@ -115,7 +115,7 @@ public:
     return D;
   }
 
-  virtual void updateHessian(const Scatter& scatter,
+  virtual void updateHessian(const FastVector<Key>& keys,
                          SymmetricBlockMatrix* info) const {
     throw std::runtime_error(
         "RegularImplicitSchurFactor::updateHessian non implemented");

@@ -149,7 +149,7 @@ namespace gtsam {
           : JacobianFactor(i1, A1, i2, A2, b, model), AC_(A1), AL_(A2), b_(b) {}
 
       // Fixed-size matrix update
-      void updateHessian(const Scatter& scatter, SymmetricBlockMatrix* info) const {
+      void updateHessian(const FastVector<Key>& infoKeys, SymmetricBlockMatrix* info) const {
         gttic(updateHessian_LinearizedFactor);
 
         // Whiten the factor if it has a noise model
@@ -160,15 +160,12 @@ namespace gtsam {
                 "JacobianFactor::updateHessian: cannot update information with "
                 "constrained noise model");
           JacobianFactor whitenedFactor = whiten();
-          whitenedFactor.updateHessian(scatter, info);
+          whitenedFactor.updateHessian(infoKeys, info);
         } else {
-          // N is number of variables in information matrix
-          DenseIndex N = info->nBlocks() - 1;
-
           // First build an array of slots
-          DenseIndex slotC = scatter.slot(keys_.front());
-          DenseIndex slotL = scatter.slot(keys_.back());
-          DenseIndex slotB = N;
+          DenseIndex slotC = Slot(infoKeys, keys_.front());
+          DenseIndex slotL = Slot(infoKeys, keys_.back());
+          DenseIndex slotB = info->nBlocks() - 1;
 
           // We perform I += A'*A to the upper triangle
           (*info)(slotC, slotC).knownOffDiagonal() += AC_.transpose() * AC_;
