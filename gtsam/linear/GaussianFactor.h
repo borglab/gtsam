@@ -126,7 +126,7 @@ namespace gtsam {
      * @param scatter A mapping from variable index to slot index in this HessianFactor
      * @param info The information matrix to be updated
      */
-    virtual void updateHessian(const Scatter& scatter,
+    virtual void updateHessian(const FastVector<Key>& keys,
                            SymmetricBlockMatrix* info) const = 0;
 
     /// y += alpha * A'*A*x
@@ -141,6 +141,12 @@ namespace gtsam {
     /// Gradient wrt a key at any values
     virtual Vector gradient(Key key, const VectorValues& x) const = 0;
 
+    // Determine position of a given key
+    template <typename CONTAINER>
+    static DenseIndex Slot(const CONTAINER& keys, Key key) {
+      return std::find(keys.begin(), keys.end(), key) - keys.begin();
+    }
+
   private:
     /** Serialization function */
     friend class boost::serialization::access;
@@ -150,7 +156,7 @@ namespace gtsam {
     }
 
   }; // GaussianFactor
-  
+
 /// traits
 template<>
 struct traits<GaussianFactor> : public Testable<GaussianFactor> {
