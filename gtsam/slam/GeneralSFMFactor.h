@@ -166,7 +166,6 @@ namespace gtsam {
           DenseIndex N = info->nBlocks() - 1;
 
           // First build an array of slots
-          FastVector<DenseIndex> slots = scatter.getSlotsForKeys(keys_);
           DenseIndex slotC = scatter.slot(keys_.front());
           DenseIndex slotL = scatter.slot(keys_.back());
           DenseIndex slotB = N;
