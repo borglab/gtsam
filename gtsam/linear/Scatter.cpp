@@ -76,17 +76,5 @@ Scatter::Scatter(const GaussianFactorGraph& gfg,
 }
 
 /* ************************************************************************* */
-FastVector<DenseIndex> Scatter::getSlotsForKeys(
-    const FastVector<Key>& keys) const {
-  gttic(getSlotsForKeys);
-  FastVector<DenseIndex> slots(keys.size() + 1);
-  DenseIndex slot = 0;
-  BOOST_FOREACH (Key key, keys)
-    slots[slot++] = at(key).slot;
-  slots.back() = size();
-  return slots;
-}
-
-/* ************************************************************************* */
 
 }  // gtsam

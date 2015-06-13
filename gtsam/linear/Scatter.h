@@ -30,7 +30,7 @@ namespace gtsam {
 class GaussianFactorGraph;
 class Ordering;
 
-/// One SlotEntry stores the slot index for a variable, as well its dimension.
+/// One SlotEntry stores the slot index for a variable, as well its dim.
 struct GTSAM_EXPORT SlotEntry {
   DenseIndex slot;
   size_t dimension;
@@ -47,16 +47,15 @@ struct GTSAM_EXPORT SlotEntry {
  */
 class Scatter : public FastMap<Key, SlotEntry> {
  public:
+  /// Constructor
   Scatter(const GaussianFactorGraph& gfg,
           boost::optional<const Ordering&> ordering = boost::none);
 
+  /// Get the slot corresponding to the given key
   DenseIndex slot(Key key) const { return at(key).slot; }
 
-  /**
-   * For the subset of keys given, return the slots in the same order,
-   * terminated by the a RHS slot equal to N, the size of the Scatter
-   */
-  FastVector<DenseIndex> getSlotsForKeys(const FastVector<Key>& keys) const;
+  /// Get the dimension corresponding to the given key
+  DenseIndex dim(Key key) const { return at(key).dimension; }
 };
 
 }  // \ namespace gtsam
