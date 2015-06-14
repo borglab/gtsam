@@ -25,7 +25,7 @@
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/linear/HessianFactor.h>
+#include <gtsam/linear/BinaryJacobianFactor.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/base/concepts.h>
 #include <gtsam/base/Manifold.h>
@@ -133,56 +133,10 @@ public:
     }
   }
 
-  class BinaryJacobianFactor : public JacobianFactor {
-    // Fixed size matrices
-    // TODO(frank): implement generic BinaryJacobianFactor<N,M1,M2> next to
-    // JacobianFactor
-
-  public:
-    /// Constructor
-    BinaryJacobianFactor(Key key1, const JacobianC& A1, Key key2, const JacobianL& A2,
-        const Vector2& b,
-        const SharedDiagonal& model = SharedDiagonal())
-    : JacobianFactor(key1, A1, key2, A2, b, model) {}
-
-    // Fixed-size matrix update
-    void updateHessian(const FastVector<Key>& infoKeys, SymmetricBlockMatrix* info) const {
-      gttic(updateHessian_BinaryJacobianFactor);
-      // Whiten the factor if it has a noise model
-      const SharedDiagonal& model = get_model();
-      if (model && !model->isUnit()) {
-        if (model->isConstrained())
-        throw std::invalid_argument(
-            "BinaryJacobianFactor::updateHessian: cannot update information with "
-            "constrained noise model");
-        JacobianFactor whitenedFactor = whiten(); // TODO: make BinaryJacobianFactor
-        whitenedFactor.updateHessian(infoKeys, info);
-      } else {
-        // First build an array of slots
-        DenseIndex slot1 = Slot(infoKeys, keys_.front());
-        DenseIndex slot2 = Slot(infoKeys, keys_.back());
-        DenseIndex slotB = info->nBlocks() - 1;
-
-        const Matrix& Ab = Ab_.matrix();
-        Eigen::Block<const Matrix,2,DimC> A1(Ab, 0, 0);
-        Eigen::Block<const Matrix,2,DimL> A2(Ab, 0, DimC);
-        Eigen::Block<const Matrix,2,1> b(Ab, 0, DimC + DimL);
-
-        // We perform I += A'*A to the upper triangle
-        (*info)(slot1, slot1).selfadjointView().rankUpdate(A1.transpose());
-        (*info)(slot1, slot2).knownOffDiagonal() += A1.transpose() * A2;
-        (*info)(slot1, slotB).knownOffDiagonal() += A1.transpose() * b;
-        (*info)(slot2, slot2).selfadjointView().rankUpdate(A2.transpose());
-        (*info)(slot2, slotB).knownOffDiagonal() += A2.transpose() * b;
-        (*info)(slotB, slotB)(0,0) += b.transpose() * b;
-      }
-    }
-  };
-
   /// Linearize using fixed-size matrices
   boost::shared_ptr<GaussianFactor> linearize(const Values& values) const {
     // Only linearize if the factor is active
-    if (!this->active(values)) return boost::shared_ptr<BinaryJacobianFactor>();
+    if (!this->active(values)) return boost::shared_ptr<JacobianFactor>();
 
     const Key key1 = this->key1(), key2 = this->key2();
     JacobianC H1;
@@ -210,14 +164,13 @@ public:
       b = noiseModel->Whiten(b);
     }
 
+    // Create new (unit) noiseModel, preserving constraints if applicable
+    SharedDiagonal model;
     if (noiseModel && noiseModel->isConstrained()) {
-      using noiseModel::Constrained;
-      return boost::make_shared<BinaryJacobianFactor>(
-          key1, H1, key2, H2, b,
-          boost::static_pointer_cast<Constrained>(noiseModel)->unit());
-    } else {
-      return boost::make_shared<BinaryJacobianFactor>(key1, H1, key2, H2, b);
+      model = boost::static_pointer_cast<noiseModel::Constrained>(noiseModel)->unit();
     }
+
+    return boost::make_shared<BinaryJacobianFactor<2, DimC, DimL> >(key1, H1, key2, H2, b, model);
   }
 
   /** return the measured */

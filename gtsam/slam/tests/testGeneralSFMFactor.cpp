@@ -135,11 +135,11 @@ TEST( GeneralSFMFactor, equals ) {
   const Symbol cameraFrameNumber('x', 1), landmarkNumber('l', 1);
   const SharedNoiseModel sigma(noiseModel::Unit::Create(1));
   boost::shared_ptr<Projection> factor1(
-                                        new Projection(z, sigma, cameraFrameNumber, landmarkNumber));
-  
+      new Projection(z, sigma, cameraFrameNumber, landmarkNumber));
+
   boost::shared_ptr<Projection> factor2(
-                                        new Projection(z, sigma, cameraFrameNumber, landmarkNumber));
-  
+      new Projection(z, sigma, cameraFrameNumber, landmarkNumber));
+
   EXPECT(assert_equal(*factor1, *factor2));
 }
 
@@ -157,8 +157,8 @@ TEST( GeneralSFMFactor, error ) {
   Point3 l1;
   values.insert(L(1), l1);
   EXPECT(
-         assert_equal(((Vector ) Vector2(-3., 0.)),
-                      factor.unwhitenedError(values)));
+      assert_equal(((Vector ) Vector2(-3., 0.)),
+          factor.unwhitenedError(values)));
 }
 
 /* ************************************************************************* */
