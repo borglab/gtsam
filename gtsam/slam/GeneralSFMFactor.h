@@ -174,7 +174,7 @@ public:
         (*info)(slot1, slotB).knownOffDiagonal() += A1.transpose() * b;
         (*info)(slot2, slot2).selfadjointView().rankUpdate(A2.transpose());
         (*info)(slot2, slotB).knownOffDiagonal() += A2.transpose() * b;
-        (*info)(slotB, slotB)(0,0) = b.transpose() * b;
+        (*info)(slotB, slotB)(0,0) += b.transpose() * b;
       }
     }
   };
