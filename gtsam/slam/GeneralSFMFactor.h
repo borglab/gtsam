@@ -135,23 +135,19 @@ public:
 
   class LinearizedFactor : public JacobianFactor {
     // Fixed size matrices
-    // TODO: implement generic BinaryJacobianFactor<N,M1,M2> next to
+    // TODO(frank): implement generic BinaryJacobianFactor<N,M1,M2> next to
     // JacobianFactor
-    JacobianC AC_;
-    JacobianL AL_;
-    Vector2 b_;
 
   public:
     /// Constructor
     LinearizedFactor(Key i1, const JacobianC& A1, Key i2, const JacobianL& A2,
         const Vector2& b,
         const SharedDiagonal& model = SharedDiagonal())
-    : JacobianFactor(i1, A1, i2, A2, b, model), AC_(A1), AL_(A2), b_(b) {}
+    : JacobianFactor(i1, A1, i2, A2, b, model) {}
 
     // Fixed-size matrix update
     void updateHessian(const FastVector<Key>& infoKeys, SymmetricBlockMatrix* info) const {
       gttic(updateHessian_LinearizedFactor);
-
       // Whiten the factor if it has a noise model
       const SharedDiagonal& model = get_model();
       if (model && !model->isUnit()) {
@@ -163,17 +159,22 @@ public:
         whitenedFactor.updateHessian(infoKeys, info);
       } else {
         // First build an array of slots
-        DenseIndex slotC = Slot(infoKeys, keys_.front());
-        DenseIndex slotL = Slot(infoKeys, keys_.back());
+        DenseIndex slot0 = Slot(infoKeys, keys_.front());
+        DenseIndex slot1 = Slot(infoKeys, keys_.back());
         DenseIndex slotB = info->nBlocks() - 1;
 
+        const Matrix& Ab = Ab_.matrix();
+        Eigen::Block<const Matrix,2,DimC> A0 = Ab.template block<2,DimC>(0,0);
+        Eigen::Block<const Matrix,2,DimL> A1 = Ab.template block<2,DimL>(0,DimC);
+        Eigen::Block<const Matrix,2,1> b = Ab.template block<2,1>(0,DimC+DimL);
+
         // We perform I += A'*A to the upper triangle
-        (*info)(slotC, slotC).selfadjointView().rankUpdate(AC_.transpose());
-        (*info)(slotC, slotL).knownOffDiagonal() += AC_.transpose() * AL_;
-        (*info)(slotC, slotB).knownOffDiagonal() += AC_.transpose() * b_;
-        (*info)(slotL, slotL).selfadjointView().rankUpdate(AL_.transpose());
-        (*info)(slotL, slotB).knownOffDiagonal() += AL_.transpose() * b_;
-        (*info)(slotB, slotB).selfadjointView().rankUpdate(b_.transpose());
+        (*info)(slot0, slot0).selfadjointView().rankUpdate(A0.transpose());
+        (*info)(slot0, slot1).knownOffDiagonal() += A0.transpose() * A1;
+        (*info)(slot0, slotB).knownOffDiagonal() += A0.transpose() * b;
+        (*info)(slot1, slot1).selfadjointView().rankUpdate(A1.transpose());
+        (*info)(slot1, slotB).knownOffDiagonal() += A1.transpose() * b;
+        (*info)(slotB, slotB).selfadjointView().rankUpdate(b.transpose());
       }
     }
   };
