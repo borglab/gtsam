@@ -82,40 +82,6 @@ static double getGaussian() {
 }
 
 static const SharedNoiseModel sigma1(noiseModel::Unit::Create(2));
-
-/* ************************************************************************* */
-TEST( GeneralSFMFactor, equals ) {
-  // Create two identical factors and make sure they're equal
-  Point2 z(323., 240.);
-  const Symbol cameraFrameNumber('x', 1), landmarkNumber('l', 1);
-  const SharedNoiseModel sigma(noiseModel::Unit::Create(1));
-  boost::shared_ptr<Projection> factor1(
-      new Projection(z, sigma, cameraFrameNumber, landmarkNumber));
-
-  boost::shared_ptr<Projection> factor2(
-      new Projection(z, sigma, cameraFrameNumber, landmarkNumber));
-
-  EXPECT(assert_equal(*factor1, *factor2));
-}
-
-/* ************************************************************************* */
-TEST( GeneralSFMFactor, error ) {
-  Point2 z(3., 0.);
-  const SharedNoiseModel sigma(noiseModel::Unit::Create(2));
-  Projection factor(z, sigma, X(1), L(1));
-  // For the following configuration, the factor predicts 320,240
-  Values values;
-  Rot3 R;
-  Point3 t1(0, 0, -6);
-  Pose3 x1(R, t1);
-  values.insert(X(1), GeneralCamera(x1));
-  Point3 l1;
-  values.insert(L(1), l1);
-  EXPECT(
-      assert_equal(((Vector ) Vector2(-3., 0.)),
-          factor.unwhitenedError(values)));
-}
-
 static const double baseline = 5.;
 
 /* ************************************************************************* */
@@ -160,6 +126,39 @@ static boost::shared_ptr<Ordering> getOrdering(
   for (size_t i = 0; i < cameras.size(); ++i)
     ordering->push_back(X(i));
   return ordering;
+}
+
+/* ************************************************************************* */
+TEST( GeneralSFMFactor, equals ) {
+  // Create two identical factors and make sure they're equal
+  Point2 z(323., 240.);
+  const Symbol cameraFrameNumber('x', 1), landmarkNumber('l', 1);
+  const SharedNoiseModel sigma(noiseModel::Unit::Create(1));
+  boost::shared_ptr<Projection> factor1(
+                                        new Projection(z, sigma, cameraFrameNumber, landmarkNumber));
+  
+  boost::shared_ptr<Projection> factor2(
+                                        new Projection(z, sigma, cameraFrameNumber, landmarkNumber));
+  
+  EXPECT(assert_equal(*factor1, *factor2));
+}
+
+/* ************************************************************************* */
+TEST( GeneralSFMFactor, error ) {
+  Point2 z(3., 0.);
+  const SharedNoiseModel sigma(noiseModel::Unit::Create(2));
+  Projection factor(z, sigma, X(1), L(1));
+  // For the following configuration, the factor predicts 320,240
+  Values values;
+  Rot3 R;
+  Point3 t1(0, 0, -6);
+  Pose3 x1(R, t1);
+  values.insert(X(1), GeneralCamera(x1));
+  Point3 l1;
+  values.insert(L(1), l1);
+  EXPECT(
+         assert_equal(((Vector ) Vector2(-3., 0.)),
+                      factor.unwhitenedError(values)));
 }
 
 /* ************************************************************************* */
@@ -252,10 +251,10 @@ TEST( GeneralSFMFactor, optimize_varK_FixCameras ) {
   // add measurement with noise
   const double noise = baseline * 0.1;
   Graph graph;
-  for (size_t j = 0; j < cameras.size(); ++j) {
-    for (size_t i = 0; i < landmarks.size(); ++i) {
-      Point2 pt = cameras[j].project(landmarks[i]);
-      graph.addMeasurement(j, i, pt, sigma1);
+  for (size_t i = 0; i < cameras.size(); ++i) {
+    for (size_t j = 0; j < landmarks.size(); ++j) {
+      Point2 z = cameras[i].project(landmarks[j]);
+      graph.addMeasurement(i, j, z, sigma1);
     }
   }
 
@@ -265,12 +264,11 @@ TEST( GeneralSFMFactor, optimize_varK_FixCameras ) {
   for (size_t i = 0; i < cameras.size(); ++i)
     values.insert(X(i), cameras[i]);
 
-  for (size_t i = 0; i < landmarks.size(); ++i) {
-    Point3 pt(landmarks[i].x() + noise * getGaussian(),
-        landmarks[i].y() + noise * getGaussian(),
-        landmarks[i].z() + noise * getGaussian());
-    //Point3 pt(landmarks[i].x(), landmarks[i].y(), landmarks[i].z());
-    values.insert(L(i), pt);
+  for (size_t j = 0; j < landmarks.size(); ++j) {
+    Point3 pt(landmarks[j].x() + noise * getGaussian(),
+        landmarks[j].y() + noise * getGaussian(),
+        landmarks[j].z() + noise * getGaussian());
+    values.insert(L(j), pt);
   }
 
   for (size_t i = 0; i < cameras.size(); ++i)
@@ -444,8 +442,8 @@ TEST(GeneralSFMFactor, CalibratedCameraPoseRange) {
 
 /* ************************************************************************* */
 // Frank created these tests after switching to a custom LinearizedFactor
-TEST(GeneralSFMFactor, LinearizedFactor) {
-  Point2 z(3., 0.);
+TEST(GeneralSFMFactor, BinaryJacobianFactor) {
+  Point2 measurement(3., -1.);
 
   // Create Values
   Values values;
@@ -468,7 +466,7 @@ TEST(GeneralSFMFactor, LinearizedFactor) {
 
   // Now loop over all these noise models
   BOOST_FOREACH(SharedNoiseModel model, models) {
-    Projection factor(z, model, X(1), L(1));
+    Projection factor(measurement, model, X(1), L(1));
 
     // Test linearize
     GaussianFactor::shared_ptr expected = //
@@ -482,6 +480,14 @@ TEST(GeneralSFMFactor, LinearizedFactor) {
       HessianFactor expectedHessian(*expected), actualHessian(*actual);
       EXPECT(assert_equal(expectedHessian, actualHessian, 1e-9));
 
+      // Convert back
+      JacobianFactor actualJacobian(actualHessian);
+      // Note we do not expect the actualJacobian to match *expected
+      // Just that they have the same information on the variable.
+      EXPECT(
+          assert_equal(expected->augmentedInformation(),
+              actualJacobian.augmentedInformation(), 1e-9));
+
       // Construct from GaussianFactorGraph
       GaussianFactorGraph gfg1;
       gfg1 += expected;
@@ -492,6 +498,35 @@ TEST(GeneralSFMFactor, LinearizedFactor) {
     }
   }
 }
+
+/* ************************************************************************* */
+// Do a thorough test of BinaryJacobianFactor
+TEST( GeneralSFMFactor, BinaryJacobianFactor2 ) {
+
+  vector<Point3> landmarks = genPoint3();
+  vector<GeneralCamera> cameras = genCameraVariableCalibration();
+
+  Values values;
+  for (size_t i = 0; i < cameras.size(); ++i)
+    values.insert(X(i), cameras[i]);
+  for (size_t j = 0; j < landmarks.size(); ++j)
+    values.insert(L(j), landmarks[j]);
+
+  for (size_t i = 0; i < cameras.size(); ++i) {
+    for (size_t j = 0; j < landmarks.size(); ++j) {
+      Point2 z = cameras[i].project(landmarks[j]);
+      Projection::shared_ptr nonlinear = //
+          boost::make_shared<Projection>(z, sigma1, X(i), L(j));
+      GaussianFactor::shared_ptr factor = nonlinear->linearize(values);
+      HessianFactor hessian(*factor);
+      JacobianFactor jacobian(hessian);
+      EXPECT(
+          assert_equal(factor->augmentedInformation(),
+              jacobian.augmentedInformation(), 1e-9));
+    }
+  }
+}
+
 /* ************************************************************************* */
 int main() {
   TestResult tr;
