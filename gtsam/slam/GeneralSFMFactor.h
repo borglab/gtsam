@@ -168,12 +168,12 @@ namespace gtsam {
           DenseIndex slotB = info->nBlocks() - 1;
 
           // We perform I += A'*A to the upper triangle
-          (*info)(slotC, slotC).knownOffDiagonal() += AC_.transpose() * AC_;
+          (*info)(slotC, slotC).selfadjointView().rankUpdate(AC_.transpose());
           (*info)(slotC, slotL).knownOffDiagonal() += AC_.transpose() * AL_;
           (*info)(slotC, slotB).knownOffDiagonal() += AC_.transpose() * b_;
-          (*info)(slotL, slotL).knownOffDiagonal() += AL_.transpose() * AL_;
+          (*info)(slotL, slotL).selfadjointView().rankUpdate(AL_.transpose());
           (*info)(slotL, slotB).knownOffDiagonal() += AL_.transpose() * b_;
-          (*info)(slotB, slotB).knownOffDiagonal() += b_.transpose() * b_;
+          (*info)(slotB, slotB).selfadjointView().rankUpdate(b_.transpose());
         }
       }
     };
