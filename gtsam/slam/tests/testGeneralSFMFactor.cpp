@@ -20,6 +20,7 @@
 #include <gtsam/slam/RangeFactor.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/geometry/Cal3_S2.h>
+#include <gtsam/geometry/Rot2.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -28,9 +29,10 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/base/Testable.h>
 
+#include <boost/assign/std/vector.hpp>
 #include <boost/shared_ptr.hpp>
 #include <CppUnitLite/TestHarness.h>
-using namespace boost;
+using namespace boost::assign;
 
 #include <iostream>
 #include <vector>
@@ -441,7 +443,8 @@ TEST(GeneralSFMFactor, CalibratedCameraPoseRange) {
 }
 
 /* ************************************************************************* */
-TEST(GeneralSFMFactor, Linearize) {
+// Frank created these tests after switching to a custom LinearizedFactor
+TEST(GeneralSFMFactor, LinearizedFactor) {
   Point2 z(3., 0.);
 
   // Create Values
@@ -453,44 +456,42 @@ TEST(GeneralSFMFactor, Linearize) {
   Point3 l1;
   values.insert(L(1), l1);
 
-  // Test with Empty Model
+  vector<SharedNoiseModel> models;
   {
-    const SharedNoiseModel model;
-    Projection factor(z, model, X(1), L(1));
-    GaussianFactor::shared_ptr expected = factor.NoiseModelFactor::linearize(
-        values);
-    GaussianFactor::shared_ptr actual = factor.linearize(values);
-    EXPECT(assert_equal(*expected, *actual, 1e-9));
+    // Create various noise-models to test all cases
+    using namespace noiseModel;
+    Rot2 R = Rot2::fromAngle(0.3);
+    Matrix2 cov = R.matrix() * R.matrix().transpose();
+    models += SharedNoiseModel(), Unit::Create(2), //
+    Isotropic::Sigma(2, 0.5), Constrained::All(2), Gaussian::Covariance(cov);
   }
-  // Test with Unit Model
-  {
-    const SharedNoiseModel model(noiseModel::Unit::Create(2));
+
+  // Now loop over all these noise models
+  BOOST_FOREACH(SharedNoiseModel model, models) {
     Projection factor(z, model, X(1), L(1));
-    GaussianFactor::shared_ptr expected = factor.NoiseModelFactor::linearize(
-        values);
+
+    // Test linearize
+    GaussianFactor::shared_ptr expected = //
+        factor.NoiseModelFactor::linearize(values);
     GaussianFactor::shared_ptr actual = factor.linearize(values);
     EXPECT(assert_equal(*expected, *actual, 1e-9));
-  }
-  // Test with Isotropic noise
-  {
-    const SharedNoiseModel model(noiseModel::Isotropic::Sigma(2, 0.5));
-    Projection factor(z, model, X(1), L(1));
-    GaussianFactor::shared_ptr expected = factor.NoiseModelFactor::linearize(
-        values);
-    GaussianFactor::shared_ptr actual = factor.linearize(values);
-    EXPECT(assert_equal(*expected, *actual, 1e-9));
-  }
-  // Test with Constrained Model
-  {
-    const SharedNoiseModel model(noiseModel::Constrained::All(2));
-    Projection factor(z, model, X(1), L(1));
-    GaussianFactor::shared_ptr expected = factor.NoiseModelFactor::linearize(
-        values);
-    GaussianFactor::shared_ptr actual = factor.linearize(values);
-    EXPECT(assert_equal(*expected, *actual, 1e-9));
+
+    // Test methods that rely on updateHessian
+    if (model && !model->isConstrained()) {
+      // Construct HessianFactor from single JacobianFactor
+      HessianFactor expectedHessian(*expected), actualHessian(*actual);
+      EXPECT(assert_equal(expectedHessian, actualHessian, 1e-9));
+
+      // Construct from GaussianFactorGraph
+      GaussianFactorGraph gfg1;
+      gfg1 += expected;
+      GaussianFactorGraph gfg2;
+      gfg2 += actual;
+      HessianFactor hessian1(gfg1), hessian2(gfg2);
+      EXPECT(assert_equal(hessian1, hessian2, 1e-9));
+    }
   }
 }
-
 /* ************************************************************************* */
 int main() {
   TestResult tr;
