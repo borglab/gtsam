@@ -159,21 +159,21 @@ public:
         whitenedFactor.updateHessian(infoKeys, info);
       } else {
         // First build an array of slots
-        DenseIndex slot0 = Slot(infoKeys, keys_.front());
-        DenseIndex slot1 = Slot(infoKeys, keys_.back());
+        DenseIndex slot1 = Slot(infoKeys, keys_.front());
+        DenseIndex slot2 = Slot(infoKeys, keys_.back());
         DenseIndex slotB = info->nBlocks() - 1;
 
         const Matrix& Ab = Ab_.matrix();
-        Eigen::Block<const Matrix,2,DimC> A0 = Ab.template block<2,DimC>(0,0);
-        Eigen::Block<const Matrix,2,DimL> A1 = Ab.template block<2,DimL>(0,DimC);
-        Eigen::Block<const Matrix,2,1> b = Ab.template block<2,1>(0,DimC+DimL);
+        Eigen::Block<const Matrix,2,DimC> A1(Ab,0,0);
+        Eigen::Block<const Matrix,2,DimL> A2(Ab,0,DimC);
+        Eigen::Block<const Matrix,2,1> b(Ab,0,DimC+DimL);
 
         // We perform I += A'*A to the upper triangle
-        (*info)(slot0, slot0).selfadjointView().rankUpdate(A0.transpose());
-        (*info)(slot0, slot1).knownOffDiagonal() += A0.transpose() * A1;
-        (*info)(slot0, slotB).knownOffDiagonal() += A0.transpose() * b;
         (*info)(slot1, slot1).selfadjointView().rankUpdate(A1.transpose());
+        (*info)(slot1, slot2).knownOffDiagonal() += A1.transpose() * A2;
         (*info)(slot1, slotB).knownOffDiagonal() += A1.transpose() * b;
+        (*info)(slot2, slot2).selfadjointView().rankUpdate(A2.transpose());
+        (*info)(slot2, slotB).knownOffDiagonal() += A2.transpose() * b;
         (*info)(slotB, slotB).selfadjointView().rankUpdate(b.transpose());
       }
     }
