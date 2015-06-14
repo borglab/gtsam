@@ -23,7 +23,6 @@
 #include <gtsam/inference/MetisIndex.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/base/FastSet.h>
-#include <gtsam/base/FastVector.h>
 
 #include <boost/assign/list_inserter.hpp>
 #include <algorithm>
@@ -31,9 +30,9 @@
 
 namespace gtsam {
 
-  class Ordering : public FastVector<Key> {
+  class Ordering : public std::vector<Key> {
   protected:
-    typedef FastVector<Key> Base;
+    typedef std::vector<Key> Base;
 
   public:
 
