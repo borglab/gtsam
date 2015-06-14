@@ -66,10 +66,10 @@ JacobianFactor::JacobianFactor() :
 /* ************************************************************************* */
 JacobianFactor::JacobianFactor(const GaussianFactor& gf) {
   // Copy the matrix data depending on what type of factor we're copying from
-  if (const JacobianFactor* rhs = dynamic_cast<const JacobianFactor*>(&gf))
-    *this = JacobianFactor(*rhs);
-  else if (const HessianFactor* rhs = dynamic_cast<const HessianFactor*>(&gf))
-    *this = JacobianFactor(*rhs);
+  if (const JacobianFactor* asJacobian = dynamic_cast<const JacobianFactor*>(&gf))
+    *this = JacobianFactor(*asJacobian);
+  else if (const HessianFactor* asHessian = dynamic_cast<const HessianFactor*>(&gf))
+    *this = JacobianFactor(*asHessian);
   else
     throw std::invalid_argument(
         "In JacobianFactor(const GaussianFactor& rhs), rhs is neither a JacobianFactor nor a HessianFactor");

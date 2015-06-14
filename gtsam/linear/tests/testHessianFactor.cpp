@@ -286,8 +286,8 @@ TEST(HessianFactor, CombineAndEliminate)
       1.0, 0.0, 0.0,
       0.0, 1.0, 0.0,
       0.0, 0.0, 1.0).finished();
-  Vector3 b0(1.5, 1.5, 1.5);
-  Vector3 s0(1.6, 1.6, 1.6);
+  Vector3 b0(1,0,0);//(1.5, 1.5, 1.5);
+  Vector3 s0=Vector3::Ones();//(1.6, 1.6, 1.6);
 
   Matrix A10 = (Matrix(3,3) <<
       2.0, 0.0, 0.0,
@@ -297,15 +297,15 @@ TEST(HessianFactor, CombineAndEliminate)
       -2.0, 0.0, 0.0,
       0.0, -2.0, 0.0,
       0.0, 0.0, -2.0).finished();
-  Vector3 b1(2.5, 2.5, 2.5);
-  Vector3 s1(2.6, 2.6, 2.6);
+  Vector3 b1 = Vector3::Zero();//(2.5, 2.5, 2.5);
+  Vector3 s1=Vector3::Ones();//(2.6, 2.6, 2.6);
 
   Matrix A21 = (Matrix(3,3) <<
       3.0, 0.0, 0.0,
       0.0, 3.0, 0.0,
       0.0, 0.0, 3.0).finished();
-  Vector3 b2(3.5, 3.5, 3.5);
-  Vector3 s2(3.6, 3.6, 3.6);
+  Vector3 b2 = Vector3::Zero();//(3.5, 3.5, 3.5);
+  Vector3 s2=Vector3::Ones();//(3.6, 3.6, 3.6);
 
   GaussianFactorGraph gfg;
   gfg.add(1, A01, b0, noiseModel::Diagonal::Sigmas(s0, true));
@@ -334,6 +334,8 @@ TEST(HessianFactor, CombineAndEliminate)
   boost::tie(actualConditional, actualCholeskyFactor) = EliminateCholesky(gfg, Ordering(list_of(0)));
 
   EXPECT(assert_equal(*expectedConditional, *actualConditional, 1e-6));
+  VectorValues vv; vv.insert(1, Vector3(1,2,3));
+  EXPECT_DOUBLES_EQUAL(expectedRemainingFactor->error(vv), actualCholeskyFactor->error(vv), 1e-9);
   EXPECT(assert_equal(HessianFactor(*expectedRemainingFactor), *actualCholeskyFactor, 1e-6));
 }
 
