@@ -17,12 +17,15 @@
  */
 #pragma once
 
-#include <string>
-#include <boost/shared_ptr.hpp>
-#include <boost/weak_ptr.hpp>
-#include <boost/version.hpp>
-#include <gtsam/global_includes.h>
 #include <gtsam/base/FastMap.h>
+#include <gtsam/dllexport.h>
+
+#include <boost/smart_ptr/shared_ptr.hpp>
+#include <boost/smart_ptr/weak_ptr.hpp>
+#include <boost/version.hpp>
+
+#include <cstddef>
+#include <string>
 
 // This file contains the GTSAM timing instrumentation library, a low-overhead method for
 // learning at a medium-fine level how much time various components of an algorithm take

@@ -16,17 +16,21 @@
  * @date     Oct 5, 2010
  */
 
-#include <math.h>
-#include <stdio.h>
-#include <iostream>
-#include <iomanip>
-#include <stdlib.h>
-#include <boost/foreach.hpp>
-#include <boost/format.hpp>
-#include <boost/algorithm/string.hpp>
-
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
+
+#include <boost/algorithm/string/replace.hpp>
+#include <boost/foreach.hpp>
+#include <boost/format.hpp>
+
+#include <cmath>
+#include <cstddef>
+#include <cassert>
+#include <iomanip>
+#include <iostream>
+#include <map>
+#include <stdexcept>
+#include <utility>
 
 namespace gtsam {
 namespace internal {
