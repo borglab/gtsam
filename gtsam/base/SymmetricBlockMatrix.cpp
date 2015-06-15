@@ -61,13 +61,13 @@ VerticalBlockMatrix SymmetricBlockMatrix::choleskyPartial(
 
   // Split conditional
 
-    // Create one big conditionals with many frontal variables.
-    gttic(Construct_conditional);
-    const size_t varDim = offset(nFrontals);
-    VerticalBlockMatrix Ab = VerticalBlockMatrix::LikeActiveViewOf(*this, varDim);
-    Ab.full() = matrix_.topRows(varDim);
-    Ab.full().triangularView<Eigen::StrictlyLower>().setZero();
-    gttoc(Construct_conditional);
+  // Create one big conditionals with many frontal variables.
+  gttic(Construct_conditional);
+  const size_t varDim = offset(nFrontals);
+  VerticalBlockMatrix Ab = VerticalBlockMatrix::LikeActiveViewOf(*this, varDim);
+  Ab.full() = matrix_.topRows(varDim);
+  Ab.full().triangularView<Eigen::StrictlyLower>().setZero();
+  gttoc(Construct_conditional);
 
   gttic(Remaining_factor);
   // Take lower-right block of Ab_ to get the remaining factor
