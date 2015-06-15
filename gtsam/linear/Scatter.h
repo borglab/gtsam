@@ -14,7 +14,7 @@
  * @brief   Maps global variable indices to slot indices
  * @author  Richard Roberts
  * @author  Frank Dellaert
- * @date    Dec 8, 2010
+ * @date    June 2015
  */
 
 #pragma once

@@ -46,7 +46,7 @@ public:
 
 public:
 
-  double lambdaInitial; ///< The initial Levenberg-Marquardt damping term (default: 1e-4)
+  double lambdaInitial; ///< The initial Levenberg-Marquardt damping term (default: 1e-5)
   double lambdaFactor; ///< The amount by which to multiply or divide lambda when adjusting lambda (default: 10.0)
   double lambdaUpperBound; ///< The maximum lambda to try before assuming the optimization has failed (default: 1e5)
   double lambdaLowerBound; ///< The minimum lambda used in LM (default: 0)
