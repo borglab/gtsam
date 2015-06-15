@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    testCholeskyFactor.cpp
+ * @file    testHessianFactor.cpp
  * @author  Richard Roberts
  * @date    Dec 15, 2010
  */
@@ -37,6 +37,16 @@ using namespace std;
 using namespace gtsam;
 
 const double tol = 1e-5;
+
+/* ************************************************************************* */
+TEST(HessianFactor, Slot)
+{
+  FastVector<Key> keys = list_of(2)(4)(1);
+  EXPECT_LONGS_EQUAL(0, GaussianFactor::Slot(keys,2));
+  EXPECT_LONGS_EQUAL(1, GaussianFactor::Slot(keys,4));
+  EXPECT_LONGS_EQUAL(2, GaussianFactor::Slot(keys,1));
+  EXPECT_LONGS_EQUAL(3, GaussianFactor::Slot(keys,5)); // does not exist
+}
 
 /* ************************************************************************* */
 TEST(HessianFactor, emptyConstructor)
@@ -302,14 +312,16 @@ TEST(HessianFactor, CombineAndEliminate)
   gfg.add(0, A10, 1, A11, b1, noiseModel::Diagonal::Sigmas(s1, true));
   gfg.add(1, A21, b2, noiseModel::Diagonal::Sigmas(s2, true));
 
-  Matrix zero3x3 = zeros(3,3);
-  Matrix A0 = gtsam::stack(3, &A10, &zero3x3, &zero3x3);
-  Matrix A1 = gtsam::stack(3, &A11, &A01, &A21);
+  Matrix93 A0; A0 << A10, Z_3x3, Z_3x3;
+  Matrix93 A1; A1 << A11, A01, A21;
   Vector9 b; b << b1, b0, b2;
   Vector9 sigmas; sigmas << s1, s0, s2;
 
   // create a full, uneliminated version of the factor
   JacobianFactor expectedFactor(0, A0, 1, A1, b, noiseModel::Diagonal::Sigmas(sigmas, true));
+
+  // Make sure combining works
+  EXPECT(assert_equal(HessianFactor(expectedFactor), HessianFactor(gfg), 1e-6));
 
   // perform elimination on jacobian
   GaussianConditional::shared_ptr expectedConditional;

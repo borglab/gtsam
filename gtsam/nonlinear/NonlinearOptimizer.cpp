@@ -68,6 +68,7 @@ void NonlinearOptimizer::defaultOptimize() {
     // Do next iteration
     currentError = this->error();
     this->iterate();
+    tictoc_finishedIteration();
 
     // Maybe show output
     if(params.verbosity >= NonlinearOptimizerParams::VALUES) this->values().print("newValues");

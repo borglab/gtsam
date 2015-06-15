@@ -20,7 +20,7 @@
 #include <gtsam/linear/linearExceptions.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/JacobianFactor.h>
-#include <gtsam/linear/HessianFactor.h>
+#include <gtsam/linear/Scatter.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/inference/VariableSlots.h>
@@ -495,6 +495,43 @@ map<Key, Matrix> JacobianFactor::hessianBlockDiagonal() const {
     blocks.insert(make_pair(j, Aj.transpose() * Aj));
   }
   return blocks;
+}
+
+/* ************************************************************************* */
+void JacobianFactor::updateHessian(const FastVector<Key>& infoKeys,
+                                   SymmetricBlockMatrix* info) const {
+  gttic(updateHessian_JacobianFactor);
+
+  if (rows() == 0) return;
+
+  // Whiten the factor if it has a noise model
+  const SharedDiagonal& model = get_model();
+  if (model && !model->isUnit()) {
+    if (model->isConstrained())
+      throw invalid_argument(
+          "JacobianFactor::updateHessian: cannot update information with "
+          "constrained noise model");
+    JacobianFactor whitenedFactor = whiten();
+    whitenedFactor.updateHessian(infoKeys, info);
+  } else {
+    // Ab_ is the augmented Jacobian matrix A, and we perform I += A'*A below
+    DenseIndex n = Ab_.nBlocks() - 1, N = info->nBlocks() - 1;
+
+    // Apply updates to the upper triangle
+    // Loop over blocks of A, including RHS with j==n
+    vector<DenseIndex> slots(n+1);
+    for (DenseIndex j = 0; j <= n; ++j) {
+      const DenseIndex J = (j == n) ? N : Slot(infoKeys, keys_[j]);
+      slots[j] = J;
+      // Fill off-diagonal blocks with Ai'*Aj
+      for (DenseIndex i = 0; i < j; ++i) {
+        const DenseIndex I = slots[i];  // because i<j, slots[i] is valid.
+        (*info)(I, J).knownOffDiagonal() += Ab_(i).transpose() * Ab_(j);
+      }
+      // Fill diagonal block with Aj'*Aj
+      (*info)(J, J).selfadjointView().rankUpdate(Ab_(j).transpose());
+    }
+  }
 }
 
 /* ************************************************************************* */
