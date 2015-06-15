@@ -432,8 +432,6 @@ Vector JacobianFactor::error_vector(const VectorValues& c) const {
 
 /* ************************************************************************* */
 double JacobianFactor::error(const VectorValues& c) const {
-  if (empty())
-    return 0;
   Vector weighted = error_vector(c);
   return 0.5 * weighted.dot(weighted);
 }
@@ -684,8 +682,8 @@ std::pair<boost::shared_ptr<GaussianConditional>,
   jointFactor->Ab_.matrix().triangularView<Eigen::StrictlyLower>().setZero();
 
   // Split elimination result into conditional and remaining factor
-  GaussianConditional::shared_ptr conditional = jointFactor->splitConditional(
-      keys.size());
+  GaussianConditional::shared_ptr conditional = //
+      jointFactor->splitConditional(keys.size());
 
   return make_pair(conditional, jointFactor);
 }
@@ -714,11 +712,11 @@ GaussianConditional::shared_ptr JacobianFactor::splitConditional(
   }
   GaussianConditional::shared_ptr conditional = boost::make_shared<
       GaussianConditional>(Base::keys_, nrFrontals, Ab_, conditionalNoiseModel);
-  const DenseIndex maxRemainingRows = std::min(Ab_.cols() - 1, originalRowEnd)
+  const DenseIndex maxRemainingRows = std::min(Ab_.cols(), originalRowEnd)
       - Ab_.rowStart() - frontalDim;
   const DenseIndex remainingRows =
-      model_ ?
-          std::min(model_->sigmas().size() - frontalDim, maxRemainingRows) :
+      model_ ? std::min(model_->sigmas().size() - frontalDim,
+          maxRemainingRows) :
           maxRemainingRows;
   Ab_.rowStart() += frontalDim;
   Ab_.rowEnd() = Ab_.rowStart() + remainingRows;
