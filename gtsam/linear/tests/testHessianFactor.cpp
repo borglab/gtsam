@@ -280,63 +280,113 @@ TEST(HessianFactor, ConstructorNWay)
 }
 
 /* ************************************************************************* */
-TEST(HessianFactor, CombineAndEliminate)
-{
-  Matrix A01 = (Matrix(3,3) <<
-      1.0, 0.0, 0.0,
-      0.0, 1.0, 0.0,
-      0.0, 0.0, 1.0).finished();
-  Vector3 b0(1,0,0);//(1.5, 1.5, 1.5);
-  Vector3 s0=Vector3::Ones();//(1.6, 1.6, 1.6);
+namespace example {
+Matrix A01 = (Matrix(3,3) <<
+    1.0, 0.0, 0.0,
+    0.0, 1.0, 0.0,
+    0.0, 0.0, 1.0).finished();
+Vector3 b0(1,0,0);//(1.5, 1.5, 1.5);
+Vector3 s0=Vector3::Ones();//(1.6, 1.6, 1.6);
 
-  Matrix A10 = (Matrix(3,3) <<
-      2.0, 0.0, 0.0,
-      0.0, 2.0, 0.0,
-      0.0, 0.0, 2.0).finished();
-  Matrix A11 = (Matrix(3,3) <<
-      -2.0, 0.0, 0.0,
-      0.0, -2.0, 0.0,
-      0.0, 0.0, -2.0).finished();
-  Vector3 b1 = Vector3::Zero();//(2.5, 2.5, 2.5);
-  Vector3 s1=Vector3::Ones();//(2.6, 2.6, 2.6);
+Matrix A10 = (Matrix(3,3) <<
+    2.0, 0.0, 0.0,
+    0.0, 2.0, 0.0,
+    0.0, 0.0, 2.0).finished();
+Matrix A11 = (Matrix(3,3) <<
+    -2.0, 0.0, 0.0,
+    0.0, -2.0, 0.0,
+    0.0, 0.0, -2.0).finished();
+Vector3 b1 = Vector3::Zero();//(2.5, 2.5, 2.5);
+Vector3 s1=Vector3::Ones();//(2.6, 2.6, 2.6);
 
-  Matrix A21 = (Matrix(3,3) <<
-      3.0, 0.0, 0.0,
-      0.0, 3.0, 0.0,
-      0.0, 0.0, 3.0).finished();
-  Vector3 b2 = Vector3::Zero();//(3.5, 3.5, 3.5);
-  Vector3 s2=Vector3::Ones();//(3.6, 3.6, 3.6);
+Matrix A21 = (Matrix(3,3) <<
+    3.0, 0.0, 0.0,
+    0.0, 3.0, 0.0,
+    0.0, 0.0, 3.0).finished();
+Vector3 b2 = Vector3::Zero();//(3.5, 3.5, 3.5);
+Vector3 s2=Vector3::Ones();//(3.6, 3.6, 3.6);
+}
 
+/* ************************************************************************* */
+TEST(HessianFactor, CombineAndEliminate1) {
+  using namespace example;
   GaussianFactorGraph gfg;
   gfg.add(1, A01, b0, noiseModel::Diagonal::Sigmas(s0, true));
-  gfg.add(0, A10, 1, A11, b1, noiseModel::Diagonal::Sigmas(s1, true));
   gfg.add(1, A21, b2, noiseModel::Diagonal::Sigmas(s2, true));
 
-  Matrix93 A0; A0 << A10, Z_3x3, Z_3x3;
-  Matrix93 A1; A1 << A11, A01, A21;
-  Vector9 b; b << b1, b0, b2;
-  Vector9 sigmas; sigmas << s1, s0, s2;
+  Matrix63 A1;
+  A1 << A11, A21;
+  Vector6 b, sigmas;
+  b << b0, b2;
+  sigmas << s0, s2;
 
   // create a full, uneliminated version of the factor
-  JacobianFactor expectedFactor(0, A0, 1, A1, b, noiseModel::Diagonal::Sigmas(sigmas, true));
+  JacobianFactor expectedFactor(1, A1, b,
+      noiseModel::Diagonal::Sigmas(sigmas, true));
 
   // Make sure combining works
   EXPECT(assert_equal(HessianFactor(expectedFactor), HessianFactor(gfg), 1e-6));
 
   // perform elimination on jacobian
+  Ordering ordering = list_of(1);
   GaussianConditional::shared_ptr expectedConditional;
-  JacobianFactor::shared_ptr expectedRemainingFactor;
-  boost::tie(expectedConditional, expectedRemainingFactor) = expectedFactor.eliminate(Ordering(list_of(0)));
+  JacobianFactor::shared_ptr expectedRemaining;
+  boost::tie(expectedConditional, expectedRemaining) = //
+      expectedFactor.eliminate(ordering);
 
   // Eliminate
   GaussianConditional::shared_ptr actualConditional;
-  HessianFactor::shared_ptr actualCholeskyFactor;
-  boost::tie(actualConditional, actualCholeskyFactor) = EliminateCholesky(gfg, Ordering(list_of(0)));
+  HessianFactor::shared_ptr actualHessian;
+  boost::tie(actualConditional, actualHessian) = //
+      EliminateCholesky(gfg, ordering);
 
   EXPECT(assert_equal(*expectedConditional, *actualConditional, 1e-6));
-  VectorValues vv; vv.insert(1, Vector3(1,2,3));
-  EXPECT_DOUBLES_EQUAL(expectedRemainingFactor->error(vv), actualCholeskyFactor->error(vv), 1e-9);
-  EXPECT(assert_equal(HessianFactor(*expectedRemainingFactor), *actualCholeskyFactor, 1e-6));
+  VectorValues vv;
+  vv.insert(1, Vector3(1, 2, 3));
+  DOUBLES_EQUAL(expectedRemaining->error(vv), actualHessian->error(vv), 1e-9);
+  EXPECT(assert_equal(HessianFactor(*expectedRemaining), *actualHessian, 1e-6));
+}
+
+/* ************************************************************************* */
+TEST(HessianFactor, CombineAndEliminate2) {
+  using namespace example;
+  GaussianFactorGraph gfg;
+  gfg.add(1, A01, b0, noiseModel::Diagonal::Sigmas(s0, true));
+  gfg.add(0, A10, 1, A11, b1, noiseModel::Diagonal::Sigmas(s1, true));
+  gfg.add(1, A21, b2, noiseModel::Diagonal::Sigmas(s2, true));
+
+  Matrix93 A0, A1;
+  A0 << A10, Z_3x3, Z_3x3;
+  A1 << A11, A01, A21;
+  Vector9 b, sigmas;
+  b << b1, b0, b2;
+  sigmas << s1, s0, s2;
+
+  // create a full, uneliminated version of the factor
+  JacobianFactor expectedFactor(0, A0, 1, A1, b,
+      noiseModel::Diagonal::Sigmas(sigmas, true));
+
+  // Make sure combining works
+  EXPECT(assert_equal(HessianFactor(expectedFactor), HessianFactor(gfg), 1e-6));
+
+  // perform elimination on jacobian
+  Ordering ordering = list_of(0);
+  GaussianConditional::shared_ptr expectedConditional;
+  JacobianFactor::shared_ptr expectedRemaining;
+  boost::tie(expectedConditional, expectedRemaining) = //
+      expectedFactor.eliminate(ordering);
+
+  // Eliminate
+  GaussianConditional::shared_ptr actualConditional;
+  HessianFactor::shared_ptr actualHessian;
+  boost::tie(actualConditional, actualHessian) = //
+      EliminateCholesky(gfg, ordering);
+
+  EXPECT(assert_equal(*expectedConditional, *actualConditional, 1e-6));
+  VectorValues vv;
+  vv.insert(1, Vector3(1, 2, 3));
+  DOUBLES_EQUAL(expectedRemaining->error(vv), actualHessian->error(vv), 1e-9);
+  EXPECT(assert_equal(HessianFactor(*expectedRemaining), *actualHessian, 1e-6));
 }
 
 /* ************************************************************************* */
