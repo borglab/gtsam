@@ -10,9 +10,10 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    HessianFactor.cpp
+ * @file    Scatter.cpp
  * @author  Richard Roberts
- * @date    Dec 8, 2010
+ * @author  Frank Dellaert
+ * @date    June 2015
  */
 
 #include <gtsam/linear/GaussianFactorGraph.h>
