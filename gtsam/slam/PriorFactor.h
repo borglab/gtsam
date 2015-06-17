@@ -57,6 +57,11 @@ namespace gtsam {
       Base(model, key), prior_(prior) {
     }
 
+    /** Convenience constructor that takes a full covariance argument */
+    PriorFactor(Key key, const VALUE& prior, const Matrix& covariance) :
+      Base(noiseModel::Gaussian::Covariance(covariance), key), prior_(prior) {
+    }
+
     /// @return a deep copy of this factor
     virtual gtsam::NonlinearFactor::shared_ptr clone() const {
       return boost::static_pointer_cast<gtsam::NonlinearFactor>(
@@ -94,7 +99,7 @@ namespace gtsam {
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version) {
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & boost::serialization::make_nvp("NoiseModelFactor1",
           boost::serialization::base_object<Base>(*this));
       ar & BOOST_SERIALIZATION_NVP(prior_);

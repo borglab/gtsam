@@ -243,7 +243,7 @@ public:
       // We triangulate the 3D position of the landmark
       try {
         // std::cout << "triangulatePoint3 i \n" << rankTolerance << std::endl;
-        point_ = triangulatePoint3<CALIBRATION>(cameras, this->measured_,
+        point_ = triangulatePoint3<Camera>(cameras, this->measured_,
             rankTolerance_, enableEPI_);
         degenerate_ = false;
         cheiralityException_ = false;
@@ -687,7 +687,7 @@ private:
   /// Serialization function
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar & BOOST_SERIALIZATION_NVP(throwCheirality_);
     ar & BOOST_SERIALIZATION_NVP(verboseCheirality_);

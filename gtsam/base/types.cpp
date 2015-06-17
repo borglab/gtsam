@@ -17,10 +17,9 @@
  * @addtogroup base
  */
 
-#include <boost/lexical_cast.hpp>
-
 #include <gtsam/base/types.h>
 #include <gtsam/inference/Symbol.h>
+#include <boost/lexical_cast.hpp>
 
 namespace gtsam {
 

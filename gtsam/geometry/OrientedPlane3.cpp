@@ -73,7 +73,7 @@ Vector3 OrientedPlane3::error(const gtsam::OrientedPlane3& plane) const {
 }
 
 /* ************************************************************************* */
-OrientedPlane3 OrientedPlane3::retract(const Vector& v) const {
+OrientedPlane3 OrientedPlane3::retract(const Vector3& v) const {
   // Retract the Unit3
   Vector2 n_v(v(0), v(1));
   Unit3 n_retracted = n_.retract(n_v);
@@ -83,7 +83,7 @@ OrientedPlane3 OrientedPlane3::retract(const Vector& v) const {
 
 /* ************************************************************************* */
 Vector3 OrientedPlane3::localCoordinates(const OrientedPlane3& y) const {
-  Vector n_local = n_.localCoordinates(y.n_);
+  Vector2 n_local = n_.localCoordinates(y.n_);
   double d_local = d_ - y.d_;
   Vector3 e;
   e << n_local(0), n_local(1), -d_local;

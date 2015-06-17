@@ -28,6 +28,8 @@ namespace gtsam {
 
   // Forward declarations
   class VectorValues;
+  class Scatter;
+  class SymmetricBlockMatrix;
 
   /**
    * An abstract virtual base class for JacobianFactor and HessianFactor. A GaussianFactor has a
@@ -119,6 +121,14 @@ namespace gtsam {
      */
     virtual GaussianFactor::shared_ptr negate() const = 0;
 
+    /** Update an information matrix by adding the information corresponding to this factor
+     * (used internally during elimination).
+     * @param scatter A mapping from variable index to slot index in this HessianFactor
+     * @param info The information matrix to be updated
+     */
+    virtual void updateHessian(const FastVector<Key>& keys,
+                           SymmetricBlockMatrix* info) const = 0;
+
     /// y += alpha * A'*A*x
     virtual void multiplyHessianAdd(double alpha, const VectorValues& x, VectorValues& y) const = 0;
 
@@ -131,16 +141,22 @@ namespace gtsam {
     /// Gradient wrt a key at any values
     virtual Vector gradient(Key key, const VectorValues& x) const = 0;
 
+    // Determine position of a given key
+    template <typename CONTAINER>
+    static DenseIndex Slot(const CONTAINER& keys, Key key) {
+      return std::find(keys.begin(), keys.end(), key) - keys.begin();
+    }
+
   private:
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version) {
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     }
 
   }; // GaussianFactor
-  
+
 /// traits
 template<>
 struct traits<GaussianFactor> : public Testable<GaussianFactor> {

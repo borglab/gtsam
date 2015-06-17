@@ -8,6 +8,7 @@ class gtsam::Vector6;
 class gtsam::LieScalar;
 class gtsam::LieVector;
 class gtsam::Point2;
+class gtsam::Point2Vector;
 class gtsam::Rot2;
 class gtsam::Pose2;
 class gtsam::Point3;
@@ -157,32 +158,6 @@ class BearingS2 {
   Vector localCoordinates(const gtsam::BearingS2& p2) const;
 
   void serializable() const; // enabling serialization functionality
-};
-
-// std::vector<gtsam::Point2>
-class Point2Vector
-{
-  // Constructors
-  Point2Vector();
-  Point2Vector(const gtsam::Point2Vector& v);
-
-  //Capacity
-  size_t size() const;
-  size_t max_size() const;
-  void resize(size_t sz);
-  size_t capacity() const;
-  bool empty() const;
-  void reserve(size_t n);
-
-  //Element access
-  gtsam::Point2 at(size_t n) const;
-  gtsam::Point2 front() const;
-  gtsam::Point2 back() const;
-
-  //Modifiers
-  void assign(size_t n, const gtsam::Point2& u);
-  void push_back(const gtsam::Point2& x);
-  void pop_back();
 };
 
 #include <gtsam_unstable/geometry/SimWall2D.h>

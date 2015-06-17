@@ -37,6 +37,8 @@ class GTSAM_EXPORT PinholeBaseK: public PinholeBase {
 
 public  :
 
+  typedef Calibration CalibrationType;
+
   /// @name Standard Constructors
   /// @{
 
@@ -160,7 +162,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
-  void serialize(Archive & ar, const unsigned int version) {
+  void serialize(Archive & ar, const unsigned int /*version*/) {
     ar
     & boost::serialization::make_nvp("PinholeBase",
         boost::serialization::base_object<PinholeBase>(*this));
@@ -270,7 +272,10 @@ public:
   /// print
   void print(const std::string& s = "PinholePose") const {
     Base::print(s);
-    K_->print(s + ".calibration");
+    if (!K_)
+      std::cout << "s No calibration given" << std::endl;
+    else
+      K_->print(s + ".calibration");
   }
 
   /// @}
@@ -321,7 +326,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
-  void serialize(Archive & ar, const unsigned int version) {
+  void serialize(Archive & ar, const unsigned int /*version*/) {
     ar
         & boost::serialization::make_nvp("PinholeBaseK",
             boost::serialization::base_object<Base>(*this));

@@ -11,7 +11,7 @@
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/FastVector.h>
-#include <gtsam/inference/Key.h>
+#include <gtsam/inference/Ordering.h>
 
 namespace gtsam
 {
@@ -37,11 +37,11 @@ namespace gtsam
     typedef typename FactorGraphType::Eliminate Eliminate; ///< Typedef for an eliminate subroutine
 
     struct Cluster {
-      typedef FastVector<Key> Keys;
+      typedef Ordering Keys;
       typedef FastVector<sharedFactor> Factors;
       typedef FastVector<boost::shared_ptr<Cluster> > Children;
 
-      Keys keys; ///< Frontal keys of this node
+      Keys orderedFrontalKeys; ///< Frontal keys of this node
       Factors factors; ///< Factors associated with this node
       Children children; ///< sub-trees
       int problemSize_;

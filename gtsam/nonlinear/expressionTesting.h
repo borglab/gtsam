@@ -21,9 +21,9 @@
 
 #include <gtsam/nonlinear/ExpressionFactor.h>
 #include <gtsam/nonlinear/Expression.h>
+#include <gtsam/nonlinear/factorTesting.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Testable.h>
-#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/linear/VectorValues.h>
 
 #include <CppUnitLite/TestResult.h>
@@ -31,47 +31,6 @@
 #include <CppUnitLite/Failure.h>
 
 namespace gtsam {
-
-/**
- * Linearize a nonlinear factor using numerical differentiation
- * The benefit of this method is that it does not need to know what types are
- * involved to evaluate the factor. If all the machinery of gtsam is working
- * correctly, we should get the correct numerical derivatives out the other side.
- */
-JacobianFactor linearizeNumerically(const NoiseModelFactor& factor,
-    const Values& values, double delta = 1e-5) {
-
-  // We will fill a map of Jacobians
-  std::map<Key, Matrix> jacobians;
-
-  // Get size
-  Eigen::VectorXd e = factor.whitenedError(values);
-  const size_t rows = e.size();
-
-  // Loop over all variables
-  VectorValues dX = values.zeroVectors();
-  BOOST_FOREACH(Key key, factor) {
-    // Compute central differences using the values struct.
-    const size_t cols = dX.dim(key);
-    Matrix J = Matrix::Zero(rows, cols);
-    for (size_t col = 0; col < cols; ++col) {
-      Eigen::VectorXd dx = Eigen::VectorXd::Zero(cols);
-      dx[col] = delta;
-      dX[key] = dx;
-      Values eval_values = values.retract(dX);
-      Eigen::VectorXd left = factor.whitenedError(eval_values);
-      dx[col] = -delta;
-      dX[key] = dx;
-      eval_values = values.retract(dX);
-      Eigen::VectorXd right = factor.whitenedError(eval_values);
-      J.col(col) = (left - right) * (1.0 / (2.0 * delta));
-    }
-    jacobians[key] = J;
-  }
-
-  // Next step...return JacobianFactor
-  return JacobianFactor(jacobians, -e);
-}
 
 namespace internal {
 // CPPUnitLite-style test for linearization of a factor
@@ -88,7 +47,7 @@ void testFactorJacobians(TestResult& result_, const std::string& name_,
 
   // Check cast result and then equality
   CHECK(actual);
-  EXPECT( assert_equal(expected, *actual, tolerance));
+  EXPECT(assert_equal(expected, *actual, tolerance));
 }
 }
 
@@ -112,7 +71,7 @@ void testExpressionJacobians(TestResult& result_, const std::string& name_,
       expression.value(values), expression);
   testFactorJacobians(result_, name_, f, values, nd_step, tolerance);
 }
-}
+} // namespace internal
 } // namespace gtsam
 
 /// \brief Check the Jacobians produced by an expression against finite differences.

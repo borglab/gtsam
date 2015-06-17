@@ -100,6 +100,12 @@ void Similarity3::print(const std::string& s) const {
   std::cout << "s: " << scale() << std::endl;
 }
 
+std::ostream &operator<<(std::ostream &os, const Similarity3& p) {
+  os << "[" << p.rotation().xyz().transpose() << " " << p.translation().vector().transpose() << " " <<
+      p.scale() << "]\';";
+  return os;
+}
+
 Similarity3 Similarity3::ChartAtOrigin::Retract(const Vector7& v,  ChartJacobian H) {
   // Will retracting or localCoordinating R work if R is not a unit rotation?
   // Also, how do we actually get s out?  Seems like we need to store it somewhere.

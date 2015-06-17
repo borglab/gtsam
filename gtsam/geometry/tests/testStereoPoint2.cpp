@@ -31,7 +31,9 @@ GTSAM_CONCEPT_TESTABLE_INST(StereoPoint2)
 
 //******************************************************************************
 TEST(StereoPoint2 , Concept) {
+  BOOST_CONCEPT_ASSERT((IsGroup<StereoPoint2>));
   BOOST_CONCEPT_ASSERT((IsManifold<StereoPoint2 >));
+  BOOST_CONCEPT_ASSERT((IsVectorSpace<StereoPoint2>));
 }
 
 /* ************************************************************************* */

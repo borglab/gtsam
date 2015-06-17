@@ -321,16 +321,23 @@ void jacobisvd_inf_nan()
   VERIFY(sub(some_inf, some_inf) != sub(some_inf, some_inf));
   svd.compute(MatrixType::Constant(10,10,some_inf), ComputeFullU | ComputeFullV);
 
-  Scalar some_nan = zero<Scalar>() / zero<Scalar>();
-  VERIFY(some_nan != some_nan);
-  svd.compute(MatrixType::Constant(10,10,some_nan), ComputeFullU | ComputeFullV);
+  Scalar nan = std::numeric_limits<Scalar>::quiet_NaN();
+  VERIFY(nan != nan);
+  svd.compute(MatrixType::Constant(10,10,nan), ComputeFullU | ComputeFullV);
 
   MatrixType m = MatrixType::Zero(10,10);
   m(internal::random<int>(0,9), internal::random<int>(0,9)) = some_inf;
   svd.compute(m, ComputeFullU | ComputeFullV);
 
   m = MatrixType::Zero(10,10);
-  m(internal::random<int>(0,9), internal::random<int>(0,9)) = some_nan;
+  m(internal::random<int>(0,9), internal::random<int>(0,9)) = nan;
+  svd.compute(m, ComputeFullU | ComputeFullV);
+  
+  // regression test for bug 791
+  m.resize(3,3);
+  m << 0,    2*NumTraits<Scalar>::epsilon(),  0.5,
+       0,   -0.5,                             0,
+       nan,  0,                               0;
   svd.compute(m, ComputeFullU | ComputeFullV);
 }
 
@@ -434,6 +441,7 @@ void test_jacobisvd()
 
     // Test on inf/nan matrix
     CALL_SUBTEST_7( jacobisvd_inf_nan<MatrixXf>() );
+    CALL_SUBTEST_10( jacobisvd_inf_nan<MatrixXd>() );
   }
 
   CALL_SUBTEST_7(( jacobisvd<MatrixXf>(MatrixXf(internal::random<int>(EIGEN_TEST_MAX_SIZE/4, EIGEN_TEST_MAX_SIZE/2), internal::random<int>(EIGEN_TEST_MAX_SIZE/4, EIGEN_TEST_MAX_SIZE/2))) ));
