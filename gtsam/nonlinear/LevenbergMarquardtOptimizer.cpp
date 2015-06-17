@@ -125,7 +125,7 @@ void LevenbergMarquardtOptimizer::increaseLambda() {
     state_.lambda *= params_.lambdaFactor;
     params_.lambdaFactor *= 2.0;
   }
-  params_.reuse_diagonal_ = true;
+  state_.reuseDiagonal = true;
 }
 
 /* ************************************************************************* */
@@ -139,7 +139,7 @@ void LevenbergMarquardtOptimizer::decreaseLambda(double stepQuality) {
     params_.lambdaFactor = 2.0;
   }
   state_.lambda = std::max(params_.lambdaLowerBound, state_.lambda);
-  params_.reuse_diagonal_ = false;
+  state_.reuseDiagonal = false;
 
 }
 
@@ -152,7 +152,7 @@ GaussianFactorGraph::shared_ptr LevenbergMarquardtOptimizer::buildDampedSystem(
     cout << "building damped system with lambda " << state_.lambda << endl;
 
   // Only retrieve diagonal vector when reuse_diagonal = false
-  if (params_.diagonalDamping && params_.reuse_diagonal_ == false) {
+  if (params_.diagonalDamping && state_.reuseDiagonal == false) {
     state_.hessianDiagonal = linear.hessianDiagonal();
     BOOST_FOREACH(Vector& v, state_.hessianDiagonal | map_values) {
       for (int aa = 0; aa < v.size(); aa++) {
@@ -263,7 +263,7 @@ void LevenbergMarquardtOptimizer::iterate() {
     double linearizedCostChange = 0,
            newlinearizedError = 0;
     if (systemSolvedSuccessfully) {
-      params_.reuse_diagonal_ = true;
+      state_.reuseDiagonal = true;
 
       if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA)
         cout << "linear delta norm = " << delta.norm() << endl;

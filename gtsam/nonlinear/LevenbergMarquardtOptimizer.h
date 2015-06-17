@@ -54,7 +54,6 @@ public:
   double minModelFidelity; ///< Lower bound for the modelFidelity to accept the result of an LM iteration
   std::string logFile; ///< an optional CSV log file, with [iteration, time, error, labda]
   bool diagonalDamping; ///< if true, use diagonal of Hessian
-  bool reuse_diagonal_; ///< an additional option in Ceres for diagonalDamping (TODO: should be in state?)
   bool useFixedLambdaFactor; ///< if true applies constant increase (or decrease) to lambda according to lambdaFactor
   double min_diagonal; ///< when using diagonal damping saturates the minimum diagonal entries (default: 1e-6)
   double max_diagonal; ///< when using diagonal damping saturates the maximum diagonal entries (default: 1e32)
@@ -67,7 +66,6 @@ public:
         verbosityLM(SILENT),
         minModelFidelity(1e-3),
         diagonalDamping(false),
-        reuse_diagonal_(false),
         useFixedLambdaFactor(true),
         min_diagonal(1e-6),
         max_diagonal(1e32) {}
@@ -79,23 +77,23 @@ public:
     p.maxIterations = 50;
 
     // Termination condition, turn off because no corresponding option in CERES
-    p.absoluteErrorTol = 0;  // Frank thinks this is not tolerance (was 1e-6)
+    p.absoluteErrorTol = 0; // Frank thinks this is not tolerance (was 1e-6)
 
     // Termination condition, turn off because no corresponding option in CERES
-    p.errorTol = 0;  // 1e-6;
+    p.errorTol = 0; // 1e-6;
 
     // Termination condition, same as options.function_tolerance
-    p.relativeErrorTol = 1e-6;  // This is function_tolerance (was 1e-03)
+    p.relativeErrorTol = 1e-6; // This is function_tolerance (was 1e-03)
 
     // Change lambda parameters to be the same as Ceres
     p.lambdaUpperBound = 1e32;
     p.lambdaLowerBound = 1e-16;
     p.lambdaInitial = 1e-04;
     p.lambdaFactor = 2.0;
-    p.useFixedLambdaFactor = false;  // Luca says this is important
+    p.useFixedLambdaFactor = false; // Luca says this is important
 
     p.diagonalDamping = true;
-    p.minModelFidelity = 1e-3;  // options.min_relative_decrease in CERES
+    p.minModelFidelity = 1e-3; // options.min_relative_decrease in CERES
 
     return p;
   }
@@ -133,11 +131,13 @@ class GTSAM_EXPORT LevenbergMarquardtState: public NonlinearOptimizerState {
 
 public:
   double lambda;
-  int totalNumberInnerIterations; // The total number of inner iterations in the optimization (for each iteration, LM may try multiple iterations with different lambdas)
   boost::posix_time::ptime startTime;
-  VectorValues hessianDiagonal; //only update hessianDiagonal when reuse_diagonal_ = false
+  int totalNumberInnerIterations; //< The total number of inner iterations in the optimization (for each iteration, LM may try multiple iterations with different lambdas)
+  VectorValues hessianDiagonal; //< we only update hessianDiagonal when reuseDiagonal = false
+  bool reuseDiagonal; ///< an additional option in Ceres for diagonalDamping
 
-  LevenbergMarquardtState() {
+  LevenbergMarquardtState() :
+      reuseDiagonal(false) {
     initTime();
   }
 
