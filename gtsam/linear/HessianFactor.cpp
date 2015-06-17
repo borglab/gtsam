@@ -268,18 +268,11 @@ void HessianFactor::print(const std::string& s,
 
 /* ************************************************************************* */
 bool HessianFactor::equals(const GaussianFactor& lf, double tol) const {
-  if (!dynamic_cast<const HessianFactor*>(&lf))
+  const HessianFactor* rhs = dynamic_cast<const HessianFactor*>(&lf);
+  if (!rhs || !Factor::equals(lf, tol))
     return false;
-  else {
-    if (!Factor::equals(lf, tol))
-      return false;
-    Matrix thisMatrix = info_.full().selfadjointView();
-    thisMatrix(thisMatrix.rows() - 1, thisMatrix.cols() - 1) = 0.0;
-    Matrix rhsMatrix =
-        static_cast<const HessianFactor&>(lf).info_.full().selfadjointView();
-    rhsMatrix(rhsMatrix.rows() - 1, rhsMatrix.cols() - 1) = 0.0;
-    return equal_with_abs_tol(thisMatrix, rhsMatrix, tol);
-  }
+  return equal_with_abs_tol(augmentedInformation(), rhs->augmentedInformation(),
+      tol);
 }
 
 /* ************************************************************************* */

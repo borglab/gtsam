@@ -280,30 +280,69 @@ TEST(HessianFactor, ConstructorNWay)
 }
 
 /* ************************************************************************* */
-TEST(HessianFactor, CombineAndEliminate)
-{
-  Matrix A01 = (Matrix(3,3) <<
-      1.0, 0.0, 0.0,
-      0.0, 1.0, 0.0,
-      0.0, 0.0, 1.0).finished();
+TEST(HessianFactor, CombineAndEliminate1) {
+  Matrix3 A01 = 3.0 * I_3x3;
+  Vector3 b0(1, 0, 0);
+
+  Matrix3 A21 = 4.0 * I_3x3;
+  Vector3 b2 = Vector3::Zero();
+
+  GaussianFactorGraph gfg;
+  gfg.add(1, A01, b0);
+  gfg.add(1, A21, b2);
+
+  Matrix63 A1;
+  A1 << A01, A21;
+  Vector6 b;
+  b << b0, b2;
+
+  // create a full, uneliminated version of the factor
+  JacobianFactor jacobian(1, A1, b);
+
+  // Make sure combining works
+  HessianFactor hessian(gfg);
+  VectorValues v;
+  v.insert(1, Vector3(1, 0, 0));
+  EXPECT_DOUBLES_EQUAL(jacobian.error(v), hessian.error(v), 1e-9);
+  EXPECT(assert_equal(HessianFactor(jacobian), hessian, 1e-6));
+  EXPECT(assert_equal(25.0 * I_3x3, hessian.information(), 1e-9));
+  EXPECT(
+      assert_equal(jacobian.augmentedInformation(),
+          hessian.augmentedInformation(), 1e-9));
+
+  // perform elimination on jacobian
+  Ordering ordering = list_of(1);
+  GaussianConditional::shared_ptr expectedConditional;
+  JacobianFactor::shared_ptr expectedFactor;
+  boost::tie(expectedConditional, expectedFactor) = //
+      jacobian.eliminate(ordering);
+
+  // Eliminate
+  GaussianConditional::shared_ptr actualConditional;
+  HessianFactor::shared_ptr actualHessian;
+  boost::tie(actualConditional, actualHessian) = //
+      EliminateCholesky(gfg, ordering);
+
+  EXPECT(assert_equal(*expectedConditional, *actualConditional, 1e-6));
+  EXPECT_DOUBLES_EQUAL(expectedFactor->error(v), actualHessian->error(v), 1e-9);
+  EXPECT(
+      assert_equal(expectedFactor->augmentedInformation(),
+          actualHessian->augmentedInformation(), 1e-9));
+  EXPECT(assert_equal(HessianFactor(*expectedFactor), *actualHessian, 1e-6));
+}
+
+/* ************************************************************************* */
+TEST(HessianFactor, CombineAndEliminate2) {
+  Matrix A01 = I_3x3;
   Vector3 b0(1.5, 1.5, 1.5);
   Vector3 s0(1.6, 1.6, 1.6);
 
-  Matrix A10 = (Matrix(3,3) <<
-      2.0, 0.0, 0.0,
-      0.0, 2.0, 0.0,
-      0.0, 0.0, 2.0).finished();
-  Matrix A11 = (Matrix(3,3) <<
-      -2.0, 0.0, 0.0,
-      0.0, -2.0, 0.0,
-      0.0, 0.0, -2.0).finished();
+  Matrix A10 = 2.0 * I_3x3;
+  Matrix A11 = -2.0 * I_3x3;
   Vector3 b1(2.5, 2.5, 2.5);
   Vector3 s1(2.6, 2.6, 2.6);
 
-  Matrix A21 = (Matrix(3,3) <<
-      3.0, 0.0, 0.0,
-      0.0, 3.0, 0.0,
-      0.0, 0.0, 3.0).finished();
+  Matrix A21 = 3.0 * I_3x3;
   Vector3 b2(3.5, 3.5, 3.5);
   Vector3 s2(3.6, 3.6, 3.6);
 
@@ -312,29 +351,45 @@ TEST(HessianFactor, CombineAndEliminate)
   gfg.add(0, A10, 1, A11, b1, noiseModel::Diagonal::Sigmas(s1, true));
   gfg.add(1, A21, b2, noiseModel::Diagonal::Sigmas(s2, true));
 
-  Matrix93 A0; A0 << A10, Z_3x3, Z_3x3;
-  Matrix93 A1; A1 << A11, A01, A21;
-  Vector9 b; b << b1, b0, b2;
-  Vector9 sigmas; sigmas << s1, s0, s2;
+  Matrix93 A0, A1;
+  A0 << A10, Z_3x3, Z_3x3;
+  A1 << A11, A01, A21;
+  Vector9 b, sigmas;
+  b << b1, b0, b2;
+  sigmas << s1, s0, s2;
 
   // create a full, uneliminated version of the factor
-  JacobianFactor expectedFactor(0, A0, 1, A1, b, noiseModel::Diagonal::Sigmas(sigmas, true));
+  JacobianFactor jacobian(0, A0, 1, A1, b,
+      noiseModel::Diagonal::Sigmas(sigmas, true));
 
   // Make sure combining works
-  EXPECT(assert_equal(HessianFactor(expectedFactor), HessianFactor(gfg), 1e-6));
+  HessianFactor hessian(gfg);
+  EXPECT(assert_equal(HessianFactor(jacobian), hessian, 1e-6));
+  EXPECT(
+      assert_equal(jacobian.augmentedInformation(),
+          hessian.augmentedInformation(), 1e-9));
 
   // perform elimination on jacobian
+  Ordering ordering = list_of(0);
   GaussianConditional::shared_ptr expectedConditional;
-  JacobianFactor::shared_ptr expectedRemainingFactor;
-  boost::tie(expectedConditional, expectedRemainingFactor) = expectedFactor.eliminate(Ordering(list_of(0)));
+  JacobianFactor::shared_ptr expectedFactor;
+  boost::tie(expectedConditional, expectedFactor) = //
+      jacobian.eliminate(ordering);
 
   // Eliminate
   GaussianConditional::shared_ptr actualConditional;
-  HessianFactor::shared_ptr actualCholeskyFactor;
-  boost::tie(actualConditional, actualCholeskyFactor) = EliminateCholesky(gfg, Ordering(list_of(0)));
+  HessianFactor::shared_ptr actualHessian;
+  boost::tie(actualConditional, actualHessian) = //
+      EliminateCholesky(gfg, ordering);
 
   EXPECT(assert_equal(*expectedConditional, *actualConditional, 1e-6));
-  EXPECT(assert_equal(HessianFactor(*expectedRemainingFactor), *actualCholeskyFactor, 1e-6));
+  VectorValues v;
+  v.insert(1, Vector3(1, 2, 3));
+  EXPECT_DOUBLES_EQUAL(expectedFactor->error(v), actualHessian->error(v), 1e-9);
+  EXPECT(
+      assert_equal(expectedFactor->augmentedInformation(),
+          actualHessian->augmentedInformation(), 1e-9));
+  EXPECT(assert_equal(HessianFactor(*expectedFactor), *actualHessian, 1e-6));
 }
 
 /* ************************************************************************* */

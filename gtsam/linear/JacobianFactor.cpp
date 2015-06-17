@@ -66,10 +66,10 @@ JacobianFactor::JacobianFactor() :
 /* ************************************************************************* */
 JacobianFactor::JacobianFactor(const GaussianFactor& gf) {
   // Copy the matrix data depending on what type of factor we're copying from
-  if (const JacobianFactor* rhs = dynamic_cast<const JacobianFactor*>(&gf))
-    *this = JacobianFactor(*rhs);
-  else if (const HessianFactor* rhs = dynamic_cast<const HessianFactor*>(&gf))
-    *this = JacobianFactor(*rhs);
+  if (const JacobianFactor* asJacobian = dynamic_cast<const JacobianFactor*>(&gf))
+    *this = JacobianFactor(*asJacobian);
+  else if (const HessianFactor* asHessian = dynamic_cast<const HessianFactor*>(&gf))
+    *this = JacobianFactor(*asHessian);
   else
     throw std::invalid_argument(
         "In JacobianFactor(const GaussianFactor& rhs), rhs is neither a JacobianFactor nor a HessianFactor");
@@ -432,8 +432,6 @@ Vector JacobianFactor::error_vector(const VectorValues& c) const {
 
 /* ************************************************************************* */
 double JacobianFactor::error(const VectorValues& c) const {
-  if (empty())
-    return 0;
   Vector weighted = error_vector(c);
   return 0.5 * weighted.dot(weighted);
 }
@@ -729,8 +727,8 @@ std::pair<boost::shared_ptr<GaussianConditional>,
   jointFactor->Ab_.matrix().triangularView<Eigen::StrictlyLower>().setZero();
 
   // Split elimination result into conditional and remaining factor
-  GaussianConditional::shared_ptr conditional = jointFactor->splitConditional(
-      keys.size());
+  GaussianConditional::shared_ptr conditional = //
+      jointFactor->splitConditional(keys.size());
 
   return make_pair(conditional, jointFactor);
 }
@@ -759,11 +757,11 @@ GaussianConditional::shared_ptr JacobianFactor::splitConditional(
   }
   GaussianConditional::shared_ptr conditional = boost::make_shared<
       GaussianConditional>(Base::keys_, nrFrontals, Ab_, conditionalNoiseModel);
-  const DenseIndex maxRemainingRows = std::min(Ab_.cols() - 1, originalRowEnd)
+  const DenseIndex maxRemainingRows = std::min(Ab_.cols(), originalRowEnd)
       - Ab_.rowStart() - frontalDim;
   const DenseIndex remainingRows =
-      model_ ?
-          std::min(model_->sigmas().size() - frontalDim, maxRemainingRows) :
+      model_ ? std::min(model_->sigmas().size() - frontalDim,
+          maxRemainingRows) :
           maxRemainingRows;
   Ab_.rowStart() += frontalDim;
   Ab_.rowEnd() = Ab_.rowStart() + remainingRows;
