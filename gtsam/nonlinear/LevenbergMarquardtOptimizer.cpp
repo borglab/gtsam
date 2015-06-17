@@ -105,8 +105,8 @@ void LevenbergMarquardtParams::print(const std::string& str) const {
   std::cout << "           lambdaLowerBound: " << lambdaLowerBound << "\n";
   std::cout << "           minModelFidelity: " << minModelFidelity << "\n";
   std::cout << "            diagonalDamping: " << diagonalDamping << "\n";
-  std::cout << "               min_diagonal: " << min_diagonal << "\n";
-  std::cout << "               max_diagonal: " << max_diagonal << "\n";
+  std::cout << "                minDiagonal: " << minDiagonal << "\n";
+  std::cout << "                maxDiagonal: " << maxDiagonal << "\n";
   std::cout << "                verbosityLM: "
       << verbosityLMTranslator(verbosityLM) << "\n";
   std::cout.flush();
@@ -156,8 +156,8 @@ GaussianFactorGraph::shared_ptr LevenbergMarquardtOptimizer::buildDampedSystem(
     state_.hessianDiagonal = linear.hessianDiagonal();
     BOOST_FOREACH(Vector& v, state_.hessianDiagonal | map_values) {
       for (int aa = 0; aa < v.size(); aa++) {
-        v(aa) = std::min(std::max(v(aa), params_.min_diagonal),
-            params_.max_diagonal);
+        v(aa) = std::min(std::max(v(aa), params_.minDiagonal),
+            params_.maxDiagonal);
         v(aa) = sqrt(v(aa));
       }
     }

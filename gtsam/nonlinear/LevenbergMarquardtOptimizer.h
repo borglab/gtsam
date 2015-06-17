@@ -55,8 +55,8 @@ public:
   std::string logFile; ///< an optional CSV log file, with [iteration, time, error, labda]
   bool diagonalDamping; ///< if true, use diagonal of Hessian
   bool useFixedLambdaFactor; ///< if true applies constant increase (or decrease) to lambda according to lambdaFactor
-  double min_diagonal; ///< when using diagonal damping saturates the minimum diagonal entries (default: 1e-6)
-  double max_diagonal; ///< when using diagonal damping saturates the maximum diagonal entries (default: 1e32)
+  double minDiagonal; ///< when using diagonal damping saturates the minimum diagonal entries (default: 1e-6)
+  double maxDiagonal; ///< when using diagonal damping saturates the maximum diagonal entries (default: 1e32)
 
   LevenbergMarquardtParams()
       : lambdaInitial(1e-5),
@@ -67,8 +67,8 @@ public:
         minModelFidelity(1e-3),
         diagonalDamping(false),
         useFixedLambdaFactor(true),
-        min_diagonal(1e-6),
-        max_diagonal(1e32) {}
+        minDiagonal(1e-6),
+        maxDiagonal(1e32) {}
 
   static LevenbergMarquardtParams CeresDefaults() {
     LevenbergMarquardtParams p;
