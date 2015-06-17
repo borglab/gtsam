@@ -105,8 +105,8 @@ void LevenbergMarquardtParams::print(const std::string& str) const {
   std::cout << "           lambdaLowerBound: " << lambdaLowerBound << "\n";
   std::cout << "           minModelFidelity: " << minModelFidelity << "\n";
   std::cout << "            diagonalDamping: " << diagonalDamping << "\n";
-  std::cout << "               min_diagonal: " << min_diagonal_ << "\n";
-  std::cout << "               max_diagonal: " << max_diagonal_ << "\n";
+  std::cout << "               min_diagonal: " << min_diagonal << "\n";
+  std::cout << "               max_diagonal: " << max_diagonal << "\n";
   std::cout << "                verbosityLM: "
       << verbosityLMTranslator(verbosityLM) << "\n";
   std::cout.flush();
@@ -119,7 +119,7 @@ GaussianFactorGraph::shared_ptr LevenbergMarquardtOptimizer::linearize() const {
 
 /* ************************************************************************* */
 void LevenbergMarquardtOptimizer::increaseLambda() {
-  if (params_.useFixedLambdaFactor_) {
+  if (params_.useFixedLambdaFactor) {
     state_.lambda *= params_.lambdaFactor;
   } else {
     state_.lambda *= params_.lambdaFactor;
@@ -131,7 +131,7 @@ void LevenbergMarquardtOptimizer::increaseLambda() {
 /* ************************************************************************* */
 void LevenbergMarquardtOptimizer::decreaseLambda(double stepQuality) {
 
-  if (params_.useFixedLambdaFactor_) {
+  if (params_.useFixedLambdaFactor) {
     state_.lambda /= params_.lambdaFactor;
   } else {
     // CHECK_GT(step_quality, 0.0);
@@ -156,8 +156,8 @@ GaussianFactorGraph::shared_ptr LevenbergMarquardtOptimizer::buildDampedSystem(
     state_.hessianDiagonal = linear.hessianDiagonal();
     BOOST_FOREACH(Vector& v, state_.hessianDiagonal | map_values) {
       for (int aa = 0; aa < v.size(); aa++) {
-        v(aa) = std::min(std::max(v(aa), params_.min_diagonal_),
-            params_.max_diagonal_);
+        v(aa) = std::min(std::max(v(aa), params_.min_diagonal),
+            params_.max_diagonal);
         v(aa) = sqrt(v(aa));
       }
     }
