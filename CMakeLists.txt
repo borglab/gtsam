@@ -158,6 +158,12 @@ else()
 	set(GTSAM_USE_TBB 0)  # This will go into config.h
 endif()
 
+###############################################################################
+# Prohibit Timing build mode in combination with TBB
+if(GTSAM_USE_TBB AND (CMAKE_BUILD_TYPE  STREQUAL "Timing"))
+      message(FATAL_ERROR "Timing build mode cannot be used together with TBB. Use a sampling profiler such as Instruments or Intel VTune Amplifier instead.")
+endif()
+
 
 ###############################################################################
 # Find Google perftools
