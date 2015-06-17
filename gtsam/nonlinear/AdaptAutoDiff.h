@@ -65,7 +65,12 @@ struct Canonical {
   }
 };
 
-/// Adapt ceres-style autodiff
+/**
+ * The AdaptAutoDiff class uses ceres-style autodiff to adapt a ceres-style
+ * Function evaluation, i.e., a function F that defines an operator
+ *   template<typename T> bool operator()(const T* const, const T* const, T* predicted) const;
+ * For now only binary operators are supported.
+ */
 template<typename F, typename T, typename A1, typename A2>
 class AdaptAutoDiff {
 
