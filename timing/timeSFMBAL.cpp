@@ -143,7 +143,8 @@ int main(int argc, char* argv[]) {
 
   // Optimize
   // Set parameters to be similar to ceres
-  LevenbergMarquardtParams params;// = LevenbergMarquardtParams::CeresDefaults();
+  LevenbergMarquardtParams params;
+  SetCeresDefaults(&params);
   params.setOrdering(ordering);
   params.setVerbosity("ERROR");
   params.setVerbosityLM("TRYLAMBDA");
