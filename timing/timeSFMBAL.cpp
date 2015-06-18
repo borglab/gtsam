@@ -16,14 +16,8 @@
  * @date    June 6, 2015
  */
 
-#include <gtsam/3rdparty/ceres/example.h>
 #include <gtsam/slam/dataset.h>
-#include <gtsam/slam/GeneralSFMFactor.h>
-#include <gtsam/geometry/Cal3Bundler.h>
-#include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Point3.h>
-#include <gtsam/nonlinear/ExpressionFactor.h>
-#include <gtsam/nonlinear/AdaptAutoDiff.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
@@ -40,8 +34,17 @@
 using namespace std;
 using namespace gtsam;
 
-//#define TERNARY
-
+#define USE_GTSAM_FACTOR
+#ifdef USE_GTSAM_FACTOR
+#include <gtsam/slam/GeneralSFMFactor.h>
+#include <gtsam/geometry/Cal3Bundler.h>
+#include <gtsam/geometry/PinholeCamera.h>
+typedef PinholeCamera<Cal3Bundler> Camera;
+typedef GeneralSFMFactor<Camera, Point3> SfmFactor;
+#else
+#include <gtsam/3rdparty/ceres/example.h>
+#include <gtsam/nonlinear/ExpressionFactor.h>
+#include <gtsam/nonlinear/AdaptAutoDiff.h>
 // Special version of Cal3Bundler so that default constructor = 0,0,0
 struct CeresCalibration: public Cal3Bundler {
   CeresCalibration(double f = 0, double k1 = 0, double k2 = 0, double u0 = 0,
@@ -66,10 +69,10 @@ struct traits<CeresCalibration> : public internal::Manifold<CeresCalibration> {
 }
 
 // With that, camera below behaves like Snavely's 9-dim vector
-typedef PinholeCamera<CeresCalibration> CeresCamera;
+typedef PinholeCamera<CeresCalibration> Camera;
+#endif
 
 int main(int argc, char* argv[]) {
-  typedef GeneralSFMFactor<PinholeCamera<Cal3Bundler>, Point3> sfmFactor;
   using symbol_shorthand::P;
 
   // Load BAL file (default is tiny)
@@ -79,7 +82,9 @@ int main(int argc, char* argv[]) {
   if (!success)
     throw runtime_error("Could not access file!");
 
-  typedef AdaptAutoDiff<SnavelyProjection, Point2, CeresCamera, Point3> Adaptor;
+#ifndef USE_GTSAM_FACTOR
+  AdaptAutoDiff<SnavelyProjection, Point2, Camera, Point3> snavely;
+#endif
 
   // Build graph
   SharedNoiseModel unit2 = noiseModel::Unit::Create(2);
@@ -89,12 +94,12 @@ int main(int argc, char* argv[]) {
       size_t i = m.first;
       Point2 measurement = m.second;
 #ifdef USE_GTSAM_FACTOR
-      graph.push_back(sfmFactor(measurement, unit2, i, P(j)));
+      graph.push_back(SfmFactor(measurement, unit2, i, P(j)));
 #else
-      Expression<CeresCamera> camera_(i);
+      Expression<Camera> camera_(i);
       Expression<Point3> point_(P(j));
       graph.addExpressionFactor(unit2, measurement,
-          Expression<Point2>(Adaptor(), camera_, point_));
+          Expression<Point2>(snavely, camera_, point_));
 #endif
     }
   }
@@ -105,14 +110,25 @@ int main(int argc, char* argv[]) {
 #ifdef USE_GTSAM_FACTOR
     initial.insert((i++), camera);
 #else
-    CeresCamera ceresCamera(camera.pose(), camera.calibration());
+    Camera ceresCamera(camera.pose(), camera.calibration());
     initial.insert((i++), ceresCamera);
 #endif
   }
   BOOST_FOREACH(const SfM_Track& track, db.tracks)
     initial.insert(P(j++), track.p);
 
-// Create Schur-complement ordering
+  // Check projection
+  Point2 expected = db.tracks.front().measurements.front().second;
+  Camera camera = initial.at<Camera>(0);
+  Point3 point = initial.at<Point3>(P(0));
+#ifdef USE_GTSAM_FACTOR
+  Point2 actual = camera.project(point);
+#else
+  Point2 actual = snavely(camera, point);
+#endif
+  assert_equal(expected,actual,10);
+
+  // Create Schur-complement ordering
 #ifdef CCOLAMD
   vector<Key> pointKeys;
   for (size_t j = 0; j < db.number_tracks(); j++) pointKeys.push_back(P(j));
@@ -127,12 +143,12 @@ int main(int argc, char* argv[]) {
 
   // Optimize
   // Set parameters to be similar to ceres
-  LevenbergMarquardtParams params = LevenbergMarquardtParams::CeresDefaults();
+  LevenbergMarquardtParams params;// = LevenbergMarquardtParams::CeresDefaults();
   params.setOrdering(ordering);
   params.setVerbosity("ERROR");
   params.setVerbosityLM("TRYLAMBDA");
   LevenbergMarquardtOptimizer lm(graph, initial, params);
-  Values actual = lm.optimize();
+  Values result = lm.optimize();
 
   tictoc_finishedIteration_();
   tictoc_print_();
