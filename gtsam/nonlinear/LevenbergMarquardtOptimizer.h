@@ -52,76 +52,84 @@ public:
   double lambdaLowerBound; ///< The minimum lambda used in LM (default: 0)
   VerbosityLM verbosityLM; ///< The verbosity level for Levenberg-Marquardt (default: SILENT), see also NonlinearOptimizerParams::verbosity
   double minModelFidelity; ///< Lower bound for the modelFidelity to accept the result of an LM iteration
-  std::string logFile; ///< an optional CSV log file, with [iteration, time, error, labda]
+  std::string logFile; ///< an optional CSV log file, with [iteration, time, error, lambda]
   bool diagonalDamping; ///< if true, use diagonal of Hessian
   bool useFixedLambdaFactor; ///< if true applies constant increase (or decrease) to lambda according to lambdaFactor
   double minDiagonal; ///< when using diagonal damping saturates the minimum diagonal entries (default: 1e-6)
   double maxDiagonal; ///< when using diagonal damping saturates the maximum diagonal entries (default: 1e32)
 
   LevenbergMarquardtParams()
-      : lambdaInitial(1e-5),
-        lambdaFactor(10.0),
-        lambdaUpperBound(1e5),
-        lambdaLowerBound(0.0),
-        verbosityLM(SILENT),
-        minModelFidelity(1e-3),
+      : verbosityLM(SILENT),
         diagonalDamping(false),
-        useFixedLambdaFactor(true),
         minDiagonal(1e-6),
-        maxDiagonal(1e32) {}
+        maxDiagonal(1e32) {
+    SetLegacyDefaults(this);
+  }
+
+  static void SetLegacyDefaults(LevenbergMarquardtParams* p) {
+    // Relevant NonlinearOptimizerParams:
+    p->maxIterations = 100;
+    p->relativeErrorTol = 1e-5;
+    p->absoluteErrorTol = 1e-5;
+    // LM-specific:
+    p->lambdaInitial = 1e-5;
+    p->lambdaFactor = 10.0;
+    p->lambdaUpperBound = 1e5;
+    p->lambdaLowerBound = 0.0;
+    p->minModelFidelity = 1e-3;
+    p->diagonalDamping = false;
+    p->useFixedLambdaFactor = true;
+  }
+
+  // these do seem to work better for SFM
+  static void SetCeresDefaults(LevenbergMarquardtParams* p) {
+    // Relevant NonlinearOptimizerParams:
+    p->maxIterations = 50;
+    p->absoluteErrorTol = 0;     // No corresponding option in CERES
+    p->relativeErrorTol = 1e-6;  // This is function_tolerance
+    // LM-specific:
+    p->lambdaUpperBound = 1e32;
+    p->lambdaLowerBound = 1e-16;
+    p->lambdaInitial = 1e-04;
+    p->lambdaFactor = 2.0;
+    p->minModelFidelity = 1e-3;  // options.min_relative_decrease in CERES
+    p->diagonalDamping = true;
+    p->useFixedLambdaFactor = false;  // This is important
+  }
+
+  static LevenbergMarquardtParams LegacyDefaults() {
+    LevenbergMarquardtParams p;
+    SetLegacyDefaults(&p);
+    return p;
+  }
 
   static LevenbergMarquardtParams CeresDefaults() {
     LevenbergMarquardtParams p;
-
-    // Termination condition, same as options.max_num_iterations
-    p.maxIterations = 50;
-
-    // Termination condition, turn off because no corresponding option in CERES
-    p.absoluteErrorTol = 0; // Frank thinks this is not tolerance (was 1e-6)
-
-    // Termination condition, turn off because no corresponding option in CERES
-    p.errorTol = 0; // 1e-6;
-
-    // Termination condition, same as options.function_tolerance
-    p.relativeErrorTol = 1e-6; // This is function_tolerance (was 1e-03)
-
-    // Change lambda parameters to be the same as Ceres
-    p.lambdaUpperBound = 1e32;
-    p.lambdaLowerBound = 1e-16;
-    p.lambdaInitial = 1e-04;
-    p.lambdaFactor = 2.0;
-    p.useFixedLambdaFactor = false; // Luca says this is important
-
-    p.diagonalDamping = true;
-    p.minModelFidelity = 1e-3; // options.min_relative_decrease in CERES
-
+    SetCeresDefaults(&p);
     return p;
   }
 
   virtual ~LevenbergMarquardtParams() {}
   virtual void print(const std::string& str = "") const;
-  inline double getlambdaInitial() const { return lambdaInitial; }
-  inline double getlambdaFactor() const { return lambdaFactor; }
-  inline double getlambdaUpperBound() const { return lambdaUpperBound; }
-  inline double getlambdaLowerBound() const { return lambdaLowerBound; }
-  inline std::string getVerbosityLM() const {
-    return verbosityLMTranslator(verbosityLM);
-  }
-  inline std::string getLogFile() const { return logFile; }
-  inline bool getDiagonalDamping() const { return diagonalDamping; }
+  std::string getVerbosityLM() const { return verbosityLMTranslator(verbosityLM);}
+  void setVerbosityLM(const std::string& s) { verbosityLM = verbosityLMTranslator(s);}
 
-  inline void setlambdaInitial(double value) { lambdaInitial = value; }
-  inline void setlambdaFactor(double value) { lambdaFactor = value; }
-  inline void setlambdaUpperBound(double value) { lambdaUpperBound = value; }
-  inline void setlambdaLowerBound(double value) { lambdaLowerBound = value; }
-  inline void setVerbosityLM(const std::string& s) {
-    verbosityLM = verbosityLMTranslator(s);
-  }
-  inline void setLogFile(const std::string& s) { logFile = s; }
-  inline void setDiagonalDamping(bool flag) { diagonalDamping = flag; }
-  inline void setUseFixedLambdaFactor(bool flag) {
-    useFixedLambdaFactor = flag;
-  }
+  // @deprecated (just use fields)
+#ifdef GTSAM_ALLOW_DEPRECATED
+  bool getDiagonalDamping() const { return diagonalDamping; }
+  double getlambdaFactor() const { return lambdaFactor; }
+  double getlambdaInitial() const { return lambdaInitial; }
+  double getlambdaLowerBound() const { return lambdaLowerBound; }
+  double getlambdaUpperBound() const { return lambdaUpperBound; }
+  std::string getLogFile() const { return logFile; }
+  void setDiagonalDamping(bool flag) { diagonalDamping = flag; }
+  void setlambdaFactor(double value) { lambdaFactor = value; }
+  void setlambdaInitial(double value) { lambdaInitial = value; }
+  void setlambdaLowerBound(double value) { lambdaLowerBound = value; }
+  void setlambdaUpperBound(double value) { lambdaUpperBound = value; }
+  void setLogFile(const std::string& s) { logFile = s; }
+  void setUseFixedLambdaFactor(bool flag) { useFixedLambdaFactor = flag;}
+#endif
 };
 
 /**
@@ -180,12 +188,12 @@ public:
    * @param initialValues The initial variable assignments
    * @param params The optimization parameters
    */
-  LevenbergMarquardtOptimizer(const NonlinearFactorGraph& graph,
-      const Values& initialValues, const LevenbergMarquardtParams& params =
-          LevenbergMarquardtParams()) :
-      NonlinearOptimizer(graph), params_(ensureHasOrdering(params, graph)), state_(
-          graph, initialValues, params_) {
-  }
+  LevenbergMarquardtOptimizer(
+      const NonlinearFactorGraph& graph, const Values& initialValues,
+      const LevenbergMarquardtParams& params = LevenbergMarquardtParams())
+      : NonlinearOptimizer(graph),
+        params_(ensureHasOrdering(params, graph)),
+        state_(graph, initialValues, params_) {}
 
   /** Standard constructor, requires a nonlinear factor graph, initial
    * variable assignments, and optimization parameters.  For convenience this
@@ -194,9 +202,11 @@ public:
    * @param graph The nonlinear factor graph to optimize
    * @param initialValues The initial variable assignments
    */
-  LevenbergMarquardtOptimizer(const NonlinearFactorGraph& graph,
-      const Values& initialValues, const Ordering& ordering) :
-      NonlinearOptimizer(graph) {
+  LevenbergMarquardtOptimizer(
+      const NonlinearFactorGraph& graph, const Values& initialValues,
+      const Ordering& ordering,
+      const LevenbergMarquardtParams& params = LevenbergMarquardtParams())
+      : NonlinearOptimizer(graph), params_(params) {
     params_.ordering = ordering;
     state_ = LevenbergMarquardtState(graph, initialValues, params_);
   }
