@@ -136,10 +136,7 @@ public:
   VectorValues hessianDiagonal; //< we only update hessianDiagonal when reuseDiagonal = false
   bool reuseDiagonal; ///< an additional option in Ceres for diagonalDamping
 
-  LevenbergMarquardtState() :
-      reuseDiagonal(false) {
-    initTime();
-  }
+  LevenbergMarquardtState() {} // used in LM constructor but immediately overwritten
 
   void initTime() {
     startTime = boost::posix_time::microsec_clock::universal_time();
@@ -153,7 +150,7 @@ protected:
       const Values& initialValues, const LevenbergMarquardtParams& params,
       unsigned int iterations = 0) :
       NonlinearOptimizerState(graph, initialValues, iterations), lambda(
-          params.lambdaInitial), totalNumberInnerIterations(0) {
+          params.lambdaInitial), totalNumberInnerIterations(0),reuseDiagonal(false) {
     initTime();
   }
 
