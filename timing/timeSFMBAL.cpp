@@ -34,7 +34,7 @@
 using namespace std;
 using namespace gtsam;
 
-#define USE_GTSAM_FACTOR
+//#define USE_GTSAM_FACTOR
 #ifdef USE_GTSAM_FACTOR
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/geometry/Cal3Bundler.h>
@@ -144,7 +144,7 @@ int main(int argc, char* argv[]) {
   // Optimize
   // Set parameters to be similar to ceres
   LevenbergMarquardtParams params;
-  SetCeresDefaults(&params);
+  LevenbergMarquardtParams::SetCeresDefaults(&params);
   params.setOrdering(ordering);
   params.setVerbosity("ERROR");
   params.setVerbosityLM("TRYLAMBDA");
