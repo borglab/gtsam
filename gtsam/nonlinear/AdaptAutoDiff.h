@@ -33,7 +33,7 @@ namespace detail {
 template<typename T, typename structure_category>
 struct Origin { T operator()() { return traits<T>::Identity();} };
 
-// but dimple manifolds don't have one, so we just use the default constructor
+// but simple manifolds don't have one, so we just use the default constructor
 template<typename T>
 struct Origin<T, manifold_tag> { T operator()() { return T();} };
 
@@ -109,7 +109,7 @@ public:
 
       // Get derivatives with AutoDiff
       double *parameters[] = { v1.data(), v2.data() };
-      double rowMajor1[N * M1], rowMajor2[N * M2]; // om the stack
+      double rowMajor1[N * M1], rowMajor2[N * M2]; // on the stack
       double *jacobians[] = { rowMajor1, rowMajor2 };
       success = AutoDiff<F, double, 9, 3>::Differentiate(f, parameters, 2,
           result.data(), jacobians);
