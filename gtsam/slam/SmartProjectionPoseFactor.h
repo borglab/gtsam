@@ -48,8 +48,8 @@ private:
 
 protected:
 
+  boost::shared_ptr<CALIBRATION> K_; ///< calibration object (one for all cameras)
   boost::optional<Pose3> body_P_sensor_; ///< Pose of the camera in the body frame
-  std::vector<boost::shared_ptr<CALIBRATION> > sharedKs_; ///< shared pointer to calibration object (one for each camera)
 
 public:
 
@@ -65,13 +65,13 @@ public:
    * @param enableEPI if set to true linear triangulation is refined with embedded LM iterations
    * @param body_P_sensor is the transform from sensor to body frame (default identity)
    */
-  SmartProjectionPoseFactor(const double rankTol = 1,
+  SmartProjectionPoseFactor(const boost::shared_ptr<CALIBRATION> K, const double rankTol = 1,
       const double linThreshold = -1, const DegeneracyMode manageDegeneracy = IGNORE_DEGENERACY,
       const bool enableEPI = false, boost::optional<Pose3> body_P_sensor = boost::none,
       LinearizationMode linearizeTo = HESSIAN, double landmarkDistanceThreshold = 1e10,
       double dynamicOutlierRejectionThreshold = -1) :
-        Base(linearizeTo, rankTol, manageDegeneracy, enableEPI,
-            landmarkDistanceThreshold, dynamicOutlierRejectionThreshold), body_P_sensor_(body_P_sensor) {}
+        Base(linearizeTo, rankTol, manageDegeneracy, enableEPI, landmarkDistanceThreshold,
+            dynamicOutlierRejectionThreshold), K_(K),  body_P_sensor_(body_P_sensor) {}
 
   /** Virtual destructor */
   virtual ~SmartProjectionPoseFactor() {}
@@ -128,8 +128,8 @@ public:
   }
 
   /** return calibration shared pointers */
-  inline const std::vector<boost::shared_ptr<CALIBRATION> > calibration() const {
-    return sharedKs_;
+  inline const boost::shared_ptr<CALIBRATION> calibration() const {
+    return K_;
   }
 
   Pose3 body_P_sensor() const{
@@ -146,7 +146,7 @@ private:
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int version) {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-    ar & BOOST_SERIALIZATION_NVP(sharedKs_);
+    ar & BOOST_SERIALIZATION_NVP(K_);
   }
 
 }; // end of class declaration
