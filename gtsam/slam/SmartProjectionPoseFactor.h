@@ -98,22 +98,19 @@ public:
   /**
    * Linearize to Gaussian Factor
    * @param values Values structure which must contain camera poses for this factor
-   * @return
+   * @return a Gaussian factor
    */
+  boost::shared_ptr<GaussianFactor> linearizeDamped(const Values& values,
+      const double lambda = 0.0) const {
+    // depending on flag set on construction we may linearize to different linear factors
+    typename Base::Cameras cameras = this->cameras(values);
+    return Base::linearizeDamped(cameras, lambda);
+  }
+
+  /// linearize
   virtual boost::shared_ptr<GaussianFactor> linearize(
       const Values& values) const {
-    // depending on flag set on construction we may linearize to different linear factors
-//    switch(linearizeTo_){
-//    case JACOBIAN_SVD :
-//      return this->createJacobianSVDFactor(Base::cameras(values), 0.0);
-//      break;
-//    case JACOBIAN_Q :
-//      return this->createJacobianQFactor(Base::cameras(values), 0.0);
-//      break;
-//    default:
-      return this->createHessianFactor(Base::cameras(values));
-//      break;
-//    }
+    return linearizeDamped(values);
   }
 
   /**
@@ -121,7 +118,7 @@ public:
    */
   virtual double error(const Values& values) const {
     if (this->active(values)) {
-      return this->totalReprojectionError(Base::cameras(values));
+      return this->totalReprojectionError(cameras(values));
     } else { // else of active flag
       return 0.0;
     }
@@ -137,6 +134,34 @@ public:
       return *body_P_sensor_;
     else
       return Pose3(); // if unspecified, the transformation is the identity
+  }
+
+  /**
+   * Collect all cameras involved in this factor
+   * @param values Values structure which must contain camera poses corresponding
+   * to keys involved in this factor
+   * @return vector of Values
+   */
+  typename Base::Cameras cameras(const Values& values) const {
+    typename Base::Cameras cameras;
+    BOOST_FOREACH(const Key& k, this->keys_) {
+      Pose3 pose = values.at<Pose3>(k);
+      if(body_P_sensor_)
+        pose = pose.compose(*(body_P_sensor_));
+
+      Camera camera(pose, K_);
+      cameras.push_back(camera);
+    }
+    return cameras;
+  }
+
+  /**
+   * Triangulate and compute derivative of error with respect to point
+   * @return whether triangulation worked
+   */
+  bool triangulateAndComputeE(Matrix& E, const Values& values) const {
+    typename Base::Cameras cameras = this->cameras(values);
+    return Base::triangulateAndComputeE(E, cameras);
   }
 
 private:

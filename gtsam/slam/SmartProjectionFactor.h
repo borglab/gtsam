@@ -290,10 +290,9 @@ public:
    * @param values Values structure which must contain camera poses for this factor
    * @return a Gaussian factor
    */
-  boost::shared_ptr<GaussianFactor> linearizeDamped(const Values& values,
+  boost::shared_ptr<GaussianFactor> linearizeDamped(const Cameras& cameras,
       const double lambda = 0.0) const {
     // depending on flag set on construction we may linearize to different linear factors
-    Cameras cameras = this->cameras(values);
     switch (linearizationMode_) {
     case HESSIAN:
       return createHessianFactor(cameras, lambda);
@@ -308,6 +307,18 @@ public:
     }
   }
 
+  /**
+   * Linearize to Gaussian Factor
+   * @param values Values structure which must contain camera poses for this factor
+   * @return a Gaussian factor
+   */
+  boost::shared_ptr<GaussianFactor> linearizeDamped(const Values& values,
+      const double lambda = 0.0) const {
+    // depending on flag set on construction we may linearize to different linear factors
+    Cameras cameras = this->cameras(values);
+    return linearizeDamped(cameras, lambda);
+  }
+
   /// linearize
   virtual boost::shared_ptr<GaussianFactor> linearize(
       const Values& values) const {
@@ -318,12 +329,20 @@ public:
    * Triangulate and compute derivative of error with respect to point
    * @return whether triangulation worked
    */
-  bool triangulateAndComputeE(Matrix& E, const Values& values) const {
-    Cameras cameras = this->cameras(values);
+  bool triangulateAndComputeE(Matrix& E, const Cameras& cameras) const {
     bool nonDegenerate = triangulateForLinearize(cameras);
     if (nonDegenerate)
       cameras.project2(*result_, boost::none, E);
     return nonDegenerate;
+  }
+
+  /**
+   * Triangulate and compute derivative of error with respect to point
+   * @return whether triangulation worked
+   */
+  bool triangulateAndComputeE(Matrix& E, const Values& values) const {
+    Cameras cameras = this->cameras(values);
+    return triangulateAndComputeE(E, cameras);
   }
 
   /// Compute F, E only (called below in both vanilla and SVD versions)
