@@ -31,6 +31,16 @@
 
 namespace gtsam {
 
+/// Linearization mode: what factor to linearize to
+enum LinearizationMode {
+  HESSIAN, IMPLICIT_SCHUR, JACOBIAN_Q, JACOBIAN_SVD
+};
+
+/// How to manage degeneracy
+enum DegeneracyMode {
+  IGNORE_DEGENERACY, ZERO_ON_DEGENERACY, HANDLE_INFINITY
+};
+
 /**
  * SmartProjectionFactor: triangulates point and keeps an estimate of it around.
  */
@@ -38,16 +48,6 @@ template<class CAMERA>
 class SmartProjectionFactor: public SmartFactorBase<CAMERA> {
 
 public:
-
-  /// Linearization mode: what factor to linearize to
-  enum LinearizationMode {
-    HESSIAN, IMPLICIT_SCHUR, JACOBIAN_Q, JACOBIAN_SVD
-  };
-
-  /// How to manage degeneracy
-  enum DegeneracyMode {
-    IGNORE_DEGENERACY, ZERO_ON_DEGENERACY, HANDLE_INFINITY
-  };
 
 private:
   typedef SmartFactorBase<CAMERA> Base;
