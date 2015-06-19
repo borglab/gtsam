@@ -12,6 +12,10 @@
 /**
  * @file   Similarity3.cpp
  * @brief  Implementation of Similarity3 transform
+ * This version uses the formulation of Hauke Strasdat
+ * T = [sR t] instead of [R   t ]
+ *     [0  1]            [0  1/s]
+ * This formulation makes the expmap and logmap simpler to code
  * @author Paul Drews
  */
 
@@ -59,10 +63,12 @@ Similarity3 Similarity3::identity() {
   return Similarity3();
 }
 Similarity3 Similarity3::operator*(const Similarity3& T) const {
+  // TODO: Wrong
   return Similarity3(R_ * T.R_, ((1.0 / T.s_) * t_) + R_ * T.t_, s_ * T.s_);
 }
 
 Similarity3 Similarity3::inverse() const {
+  // TODO: Wrong
   Rot3 Rt = R_.inverse();
   Point3 sRt = R_.inverse() * (-s_ * t_);
   return Similarity3(Rt, sRt, 1.0 / s_);
@@ -71,12 +77,14 @@ Similarity3 Similarity3::inverse() const {
 Point3 Similarity3::transform_from(const Point3& p, //
     OptionalJacobian<3, 7> H1, OptionalJacobian<3, 3> H2) const {
   if (H1) {
+    // TODO: Wrong
     const Matrix3 R = R_.matrix();
     Matrix3 DR = s_ * R * skewSymmetric(-p.x(), -p.y(), -p.z());
     *H1 << DR, R, R * p.vector();
     print("From Derivative");
   }
   if (H2)
+    // TODO: Wrong
     *H2 = s_ * R_.matrix(); // just 3*3 sub-block of matrix()
   return R_ * (s_ * p) + t_;
   // TODO: Effect of scale change is this, right?
@@ -89,135 +97,42 @@ Point3 Similarity3::operator*(const Point3& p) const {
 }
 
 Matrix7 Similarity3::AdjointMap() const {
-//  ToDo:  This adjoint might not be correct, it is based on delta = [u, w, lambda]
-//  However, we use the convention delta = [w, u, lambda]
-  const Matrix3 R = R_.matrix();
-  const Vector3 t = t_.vector();
-  Matrix3 A = s_ * skewSymmetric(t) * R;
-  Matrix7 adj;
-  adj << s_ * R, A, -s_ * t, // 3*7
-  Z_3x3, R, Matrix31::Zero(), // 3*7
-  Matrix16::Zero(), 1; // 1*7
-  return adj;
-}
-
-Matrix33 Similarity3::GetV(Vector3 w, double lambda){
-  Matrix33 wx = skewSymmetric(w[0], w[1], w[2]);
-  double lambdasquared = lambda * lambda;
-  double thetasquared = w.transpose() * w;
-  double theta = sqrt(thetasquared);
-  double X, Y, Z, W, alpha, beta, gama, mu, upsilon, A, B, C;
-  if (thetasquared > 1e-9 && lambdasquared > 1e-9) {
-    X = sin(theta) / theta;
-    Y = (1 - cos(theta)) / thetasquared;
-    Z = (1 - X) / thetasquared;
-    W = (0.5 - Y) / thetasquared;
-    alpha = lambdasquared / (lambdasquared + thetasquared);
-    beta = (exp(-lambda) - 1 + lambda) / lambdasquared;
-    gama = Y - (lambda * Z);
-    mu = (1 - lambda + (0.5 * lambdasquared) - exp(-lambda))
-        / (lambdasquared * lambda);
-    upsilon = Z - (lambda * W);
-    A = (1 - exp(-lambda)) / lambda;
-    B = alpha * (beta - gama) + gama;
-    C = alpha * (mu - upsilon) + upsilon;
-  }
-  else if(thetasquared <= 1e-9 && lambdasquared > 1e-9) {
-    //Taylor series expansions
-    X = 1;
-    Y = 0.5-thetasquared/24.0;
-    Z = 1.0/6.0 - thetasquared/120.0;
-    W = 1.0/24.0 - thetasquared/720.0;
-    alpha = lambdasquared / (lambdasquared + thetasquared);
-    beta = (exp(-lambda) - 1 + lambda) / lambdasquared;
-    gama = Y - (lambda * Z);
-    mu = (1 - lambda + (0.5 * lambdasquared) - exp(-lambda))
-        / (lambdasquared * lambda);
-    upsilon = Z - (lambda * W);
-    A = (1 - exp(-lambda)) / lambda;
-    B = alpha * (beta - gama) + gama;
-    C = alpha * (mu - upsilon) + upsilon;
-  }
-  else if(thetasquared > 1e-9 && lambdasquared <= 1e-9) {
-    X = sin(theta) / theta;
-    Y = (1 - cos(theta)) / thetasquared;
-    Z = (1 - X) / thetasquared;
-    W = (0.5 - Y) / thetasquared;
-    alpha = lambdasquared / (lambdasquared + thetasquared);
-    beta = 0.5 - lambda / 6.0 + lambdasquared / 24.0
-        - (lambda * lambdasquared) / 120;
-    gama = Y - (lambda * Z);
-    mu = 1.0 / 6.0 - lambda / 24 + lambdasquared / 120
-        - (lambda * lambdasquared) / 720;
-    upsilon = Z - (lambda * W);
-    if (lambda < 1e-9) {
-      A = 1 - lambda / 2.0 + lambdasquared / 6.0;
-    } else {
-      A = (1 - exp(-lambda)) / lambda;
-    }
-    B = alpha * (beta - gama) + gama;
-    C = alpha * (mu - upsilon) + upsilon;
-  }
-  else {
-    X = 1;
-    Y = 0.5-thetasquared/24.0;
-    Z = 1.0 / 6.0 - thetasquared / 120.0;
-    W = 1.0 / 24.0 - thetasquared / 720.0;
-    alpha = lambdasquared / (lambdasquared + thetasquared);
-    beta = 0.5 - lambda / 6.0 + lambdasquared / 24.0
-        - (lambda * lambdasquared) / 120;
-    gama = Y - (lambda * Z);
-    mu = 1.0 / 6.0 - lambda / 24 + lambdasquared / 120
-        - (lambda * lambdasquared) / 720;
-    upsilon = Z - (lambda * W);
-    if (lambda < 1e-9) {
-      A = 1 - lambda / 2.0 + lambdasquared / 6.0;
-    } else {
-      A = (1 - exp(-lambda)) / lambda;
-    }
-    B = gama;
-    C = upsilon;
-  }
-  return A * Matrix33::Identity() + B * wx + C * wx * wx;
+  // TODO: Wrong
+//  const Matrix3 R = R_.matrix();
+//  const Vector3 t = t_.vector();
+//  Matrix3 A = s_ * skewSymmetric(t) * R;
+//  Matrix7 adj;
+//  adj << s_ * R, A, -s_ * t, // 3*7
+//  Z_3x3, R, Matrix31::Zero(), // 3*7
+//  Matrix16::Zero(), 1; // 1*7
+  return Matrix7::Zero();
 }
 
 Vector7 Similarity3::Logmap(const Similarity3& s, OptionalJacobian<7, 7> Hm) {
   // To get the logmap, calculate w and lambda, then solve for u as show at ethaneade.org
   // www.ethaneade.org/latex2html/lie/node29.html
   Vector3 w = Rot3::Logmap(s.R_);
-  double lambda = log(s.s_);
-  Matrix33 V = GetV(w, lambda);
-  Vector3 u = V.inverse() * s.t_.vector();
+  double sigma = log(s.s_);
+  double theta = w.norm();
+  Matrix33 W = s.s_ * Rot3::rodriguez(w, theta).matrix();
+  Vector3 v = W.inverse() * s.t_.vector();
 
   Vector7 result;
-  result << w, u, lambda;
+  result << w, theta, v;
   return result;
 }
 
 Similarity3 Similarity3::Expmap(const Vector7& v, OptionalJacobian<7, 7> Hm) {
+  // Much simpler than the ethan eade formulation...
   Matrix31 w(v.head<3>());
-  double lambda = v[6];
+  double sigma = v[6];
   Matrix31 u(v.segment<3>(3));
 
-  Matrix33 V = GetV(w, lambda);
-//  Matrix33 wx = skewSymmetric(w[0], w[1], w[2]);
-//  double lambdasquared = lambda * lambda;
-//  double thetasquared = w.transpose() * w;
-//  double theta = sqrt(thetasquared);
-//  double X = sin(theta)/theta;
-//  double Y = (1-cos(theta))/thetasquared;
-//  double Z = (1-X)/thetasquared;
-//  double W = (0.5-Y)/thetasquared;
-//  double alpha = lambdasquared / (lambdasquared + thetasquared);
-//  double beta = (exp(-lambda)-1+lambda)/lambdasquared;
-//  double gama = Y - (lambda * Z);
-//  double mu = (1-lambda+(0.5*lambdasquared)-exp(-lambda))/(lambdasquared*lambda);
-//  double upsilon = Z-(lambda*W);
-//  double A = (1-exp(-lambda))/lambda;
-//  double B = alpha*(beta-gama)+gama;
-//  double C = alpha*(mu-upsilon)+upsilon;
-//  Matrix33 V = A*Matrix33::Identity() + B*wx + C*wx*wx;
-  return Similarity3(Rot3::Expmap(w), Point3(V*u), 1.0/exp(-lambda));
+  double theta = w.norm();
+  double s = exp(sigma);
+  Vector3 t = s * Rot3::rodriguez(w, theta).matrix() * u;
+
+  return Similarity3(Rot3::Expmap(w), Point3(t), s);
 }
 
 

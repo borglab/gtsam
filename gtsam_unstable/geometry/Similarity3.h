@@ -34,8 +34,8 @@ class Similarity3: public LieGroup<Similarity3, 7> {
 
   /// @name Pose Concept
   /// @{
-  typedef Rot3 Rotation;
-  typedef Point3 Translation;
+//  typedef Rot3 Rotation;
+//  typedef Point3 Translation;
   /// @}
 
 private:
