@@ -57,31 +57,14 @@ public:
 
   /**
    * Constructor
-   * @param rankTol tolerance used to check if point triangulation is degenerate
-   * @param linThreshold threshold on relative pose changes used to decide whether to relinearize (selective relinearization)
-   * @param manageDegeneracy is true, in presence of degenerate triangulation, the factor is converted to a rotation-only constraint,
-   * otherwise the factor is simply neglected (this functionality is deprecated)
-   * @param enableEPI if set to true linear triangulation is refined with embedded LM iterations
-   * @param body_P_sensor is the transform from sensor to body frame (default identity)
-   */
-  SmartProjectionPoseFactor(const boost::shared_ptr<CALIBRATION> K, const double rankTol = 1,
-      const double linThreshold = -1, const DegeneracyMode manageDegeneracy = IGNORE_DEGENERACY,
-      const bool enableEPI = false, boost::optional<Pose3> body_P_sensor = boost::none,
-      LinearizationMode linearizeTo = HESSIAN, double landmarkDistanceThreshold = 1e10,
-      double dynamicOutlierRejectionThreshold = -1) :
-        Base(linearizeTo, rankTol, manageDegeneracy, enableEPI, landmarkDistanceThreshold,
-            dynamicOutlierRejectionThreshold, body_P_sensor), K_(K) {}
-
-  /**
-   * Constructor
    * @param K (fixed) calibration, assumed to be the same for all cameras
    * @param  body_P_sensor pose of the camera in the body frame
    * @param params internal parameters of the smart factors
    */
-//  SmartProjectionPoseFactor(const boost::shared_ptr<CALIBRATION> K,
-//          const boost::optional<Pose3> body_P_sensor = boost::none,
-//          const SmartProjectionParams params = SmartProjectionParams()) :
-//              Base(body_P_sensor, params), K_(K) {}
+  SmartProjectionPoseFactor(const boost::shared_ptr<CALIBRATION> K,
+      const boost::optional<Pose3> body_P_sensor = boost::none,
+      const SmartProjectionParams params = SmartProjectionParams()) :
+        Base(body_P_sensor, params), K_(K) {}
 
   /** Virtual destructor */
   virtual ~SmartProjectionPoseFactor() {}

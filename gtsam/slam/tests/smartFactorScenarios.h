@@ -61,6 +61,7 @@ Camera cam1(level_pose, K2);
 Camera cam2(pose_right, K2);
 Camera cam3(pose_above, K2);
 typedef GeneralSFMFactor<Camera, Point3> SFMFactor;
+SmartProjectionParams params;
 }
 
 /* ************************************************************************* */

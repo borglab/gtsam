@@ -48,12 +48,12 @@ class GTSAM_EXPORT SmartProjectionParams {
 
 public:
 
-  const LinearizationMode linearizationMode; ///< How to linearize the factor
-  const DegeneracyMode degeneracyMode; ///< How to linearize the factor
+  LinearizationMode linearizationMode; ///< How to linearize the factor
+  DegeneracyMode degeneracyMode; ///< How to linearize the factor
 
   /// @name Parameters governing the triangulation
   /// @{
-  const TriangulationParameters triangulationParameters;
+  mutable TriangulationParameters triangulationParameters;
   const double retriangulationThreshold; ///< threshold to decide whether to re-triangulate
   /// @}
 
@@ -64,10 +64,10 @@ public:
   /// @}
 
   // Constructor
-  SmartProjectionParams(LinearizationMode linMode = HESSIAN,
-      DegeneracyMode degMode = IGNORE_DEGENERACY, double rankTol = 1,
-      bool enableEPI = false, double landmarkDistanceThreshold = 1e10,
-      double dynamicOutlierRejectionThreshold = -1):
+  SmartProjectionParams(const LinearizationMode linMode = HESSIAN,
+      const DegeneracyMode degMode = IGNORE_DEGENERACY, const double rankTol = 1,
+      const bool enableEPI = false, const double landmarkDistanceThreshold = 1e10,
+      const double dynamicOutlierRejectionThreshold = -1):
     linearizationMode(linMode), degeneracyMode(degMode),
     triangulationParameters(rankTol, enableEPI,
         landmarkDistanceThreshold, dynamicOutlierRejectionThreshold),
@@ -89,15 +89,36 @@ public:
   inline LinearizationMode getLinearizationMode() const {
     return linearizationMode;
   }
-  /** return cheirality verbosity */
+  inline DegeneracyMode getDegeneracyMode() const {
+    return degeneracyMode;
+  }
+  inline TriangulationParameters getTriangulationParameters() const {
+    return triangulationParameters;
+  }
   inline bool getVerboseCheirality() const {
     return verboseCheirality;
   }
-  /** return flag for throwing cheirality exceptions */
   inline bool getThrowCheirality() const {
     return throwCheirality;
   }
-
+  inline void setLinearizationMode(LinearizationMode linMode) {
+    linearizationMode = linMode;
+  }
+  inline void setDegeneracyMode(DegeneracyMode degMode) {
+    degeneracyMode = degMode;
+  }
+  inline void setRankTolerance(double rankTol) {
+    triangulationParameters.rankTolerance = rankTol;
+  }
+  inline void setEnableEPI(bool enableEPI) {
+    triangulationParameters.enableEPI = enableEPI;
+  }
+  inline void setLandmarkDistanceThreshold(bool landmarkDistanceThreshold) {
+    triangulationParameters.landmarkDistanceThreshold = landmarkDistanceThreshold;
+  }
+  inline void setDynamicOutlierRejectionThreshold(bool dynOutRejectionThreshold) {
+    triangulationParameters.dynamicOutlierRejectionThreshold = dynOutRejectionThreshold;
+  }
 };
 
 /**
@@ -136,34 +157,14 @@ public:
 
   /**
    * Constructor
-   * @param rankTol tolerance used to check if point triangulation is degenerate
-   * @param linThreshold threshold on relative pose changes used to decide whether to relinearize (selective relinearization)
-   * @param manageDegeneracy is true, in presence of degenerate triangulation, the factor is converted to a rotation-only constraint,
-   * otherwise the factor is simply neglected
-   * @param enableEPI if set to true linear triangulation is refined with embedded LM iterations
-   */
-  SmartProjectionFactor(LinearizationMode linearizationMode = HESSIAN,
-      double rankTolerance = 1, DegeneracyMode degeneracyMode =
-          IGNORE_DEGENERACY, bool enableEPI = false,
-      double landmarkDistanceThreshold = 1e10,
-      double dynamicOutlierRejectionThreshold = -1,
-      boost::optional<Pose3> body_P_sensor = boost::none) :
-        Base(body_P_sensor),
-        params_(linearizationMode, degeneracyMode,
-              rankTolerance, enableEPI, landmarkDistanceThreshold,
-              dynamicOutlierRejectionThreshold), //
-      result_(TriangulationResult::Degenerate()) {}
-
-  /**
-   * Constructor
    * @param body_P_sensor pose of the camera in the body frame
    * @param params internal parameters of the smart factors
    */
-//  SmartProjectionFactor(const boost::optional<Pose3> body_P_sensor = boost::none,
-//      const SmartProjectionParams params = SmartProjectionParams()) :
-//        Base(body_P_sensor),
-//        params_(params), //
-//        result_(TriangulationResult::Degenerate()) {}
+  SmartProjectionFactor(const boost::optional<Pose3> body_P_sensor = boost::none,
+      const SmartProjectionParams params = SmartProjectionParams()) :
+        Base(body_P_sensor),
+        params_(params), //
+        result_(TriangulationResult::Degenerate()) {}
 
   /** Virtual destructor */
   virtual ~SmartProjectionFactor() {

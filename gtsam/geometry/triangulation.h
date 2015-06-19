@@ -320,21 +320,21 @@ Point3 triangulatePoint3(
 
 struct TriangulationParameters {
 
-  const double rankTolerance; ///< threshold to decide whether triangulation is result.degenerate
-  const bool enableEPI; ///< if set to true, will refine triangulation using LM
+  double rankTolerance; ///< threshold to decide whether triangulation is result.degenerate
+  bool enableEPI; ///< if set to true, will refine triangulation using LM
 
   /**
    * if the landmark is triangulated at distance larger than this,
    * result is flagged as degenerate.
    */
-  const double landmarkDistanceThreshold; //
+  double landmarkDistanceThreshold; //
 
   /**
    * If this is nonnegative the we will check if the average reprojection error
    * is smaller than this threshold after triangulation, otherwise result is
    * flagged as degenerate.
    */
-  const double dynamicOutlierRejectionThreshold;
+  double dynamicOutlierRejectionThreshold;
 
   /**
    * Constructor

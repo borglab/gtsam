@@ -30,8 +30,6 @@ using namespace boost::assign;
 
 static bool isDebugTest = false;
 
-static double rankTol = 1.0;
-
 // Convenience for named keys
 using symbol_shorthand::X;
 using symbol_shorthand::L;
@@ -41,6 +39,8 @@ Symbol l1('l', 1), l2('l', 2), l3('l', 3);
 Key c1 = 1, c2 = 2, c3 = 3;
 
 static Point2 measurement1(323.0, 240.0);
+
+static double rankTol = 1.0;
 
 template<class CALIBRATION>
 PinholeCamera<CALIBRATION> perturbCameraPoseAndCalibration(
@@ -78,7 +78,8 @@ TEST( SmartProjectionCameraFactor, Constructor) {
 /* ************************************************************************* */
 TEST( SmartProjectionCameraFactor, Constructor2) {
   using namespace vanilla;
-  SmartFactor factor1(gtsam::HESSIAN, rankTol);
+  params.setRankTolerance(rankTol);
+  SmartFactor factor1(boost::none, params);
 }
 
 /* ************************************************************************* */
@@ -91,7 +92,8 @@ TEST( SmartProjectionCameraFactor, Constructor3) {
 /* ************************************************************************* */
 TEST( SmartProjectionCameraFactor, Constructor4) {
   using namespace vanilla;
-  SmartFactor factor1(gtsam::HESSIAN, rankTol);
+  params.setRankTolerance(rankTol);
+  SmartFactor factor1(boost::none, params);
   factor1.add(measurement1, x1, unit2);
 }
 
@@ -257,12 +259,12 @@ TEST( SmartProjectionCameraFactor, perturbPoseAndOptimize ) {
   EXPECT(assert_equal(expected, actual, 1));
 
   // Optimize
-  LevenbergMarquardtParams params;
+  LevenbergMarquardtParams lmParams;
   if (isDebugTest) {
-    params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
-    params.verbosity = NonlinearOptimizerParams::ERROR;
+    lmParams.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
+    lmParams.verbosity = NonlinearOptimizerParams::ERROR;
   }
-  LevenbergMarquardtOptimizer optimizer(graph, initial, params);
+  LevenbergMarquardtOptimizer optimizer(graph, initial, lmParams);
   Values result = optimizer.optimize();
 
   EXPECT(assert_equal(landmark1, *smartFactor1->point(), 1e-7));
@@ -338,14 +340,14 @@ TEST( SmartProjectionCameraFactor, perturbPoseAndOptimizeFromSfM_tracks ) {
   if (isDebugTest)
     values.at<Camera>(c3).print("Smart: Pose3 before optimization: ");
 
-  LevenbergMarquardtParams params;
+  LevenbergMarquardtParams lmParams;
   if (isDebugTest)
-    params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
+    lmParams.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
   if (isDebugTest)
-    params.verbosity = NonlinearOptimizerParams::ERROR;
+    lmParams.verbosity = NonlinearOptimizerParams::ERROR;
 
   Values result;
-  LevenbergMarquardtOptimizer optimizer(graph, values, params);
+  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
   result = optimizer.optimize();
 
   //  GaussianFactorGraph::shared_ptr GFG = graph.linearize(values);
@@ -415,17 +417,17 @@ TEST( SmartProjectionCameraFactor, perturbCamerasAndOptimize ) {
   if (isDebugTest)
     values.at<Camera>(c3).print("Smart: Pose3 before optimization: ");
 
-  LevenbergMarquardtParams params;
-  params.relativeErrorTol = 1e-8;
-  params.absoluteErrorTol = 0;
-  params.maxIterations = 20;
+  LevenbergMarquardtParams lmParams;
+  lmParams.relativeErrorTol = 1e-8;
+  lmParams.absoluteErrorTol = 0;
+  lmParams.maxIterations = 20;
   if (isDebugTest)
-    params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
+    lmParams.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
   if (isDebugTest)
-    params.verbosity = NonlinearOptimizerParams::ERROR;
+    lmParams.verbosity = NonlinearOptimizerParams::ERROR;
 
   Values result;
-  LevenbergMarquardtOptimizer optimizer(graph, values, params);
+  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
   result = optimizer.optimize();
 
   //  GaussianFactorGraph::shared_ptr GFG = graph.linearize(values);
@@ -494,17 +496,17 @@ TEST( SmartProjectionCameraFactor, Cal3Bundler ) {
   if (isDebugTest)
     values.at<Camera>(c3).print("Smart: Pose3 before optimization: ");
 
-  LevenbergMarquardtParams params;
-  params.relativeErrorTol = 1e-8;
-  params.absoluteErrorTol = 0;
-  params.maxIterations = 20;
+  LevenbergMarquardtParams lmParams;
+  lmParams.relativeErrorTol = 1e-8;
+  lmParams.absoluteErrorTol = 0;
+  lmParams.maxIterations = 20;
   if (isDebugTest)
-    params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
+    lmParams.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
   if (isDebugTest)
-    params.verbosity = NonlinearOptimizerParams::ERROR;
+    lmParams.verbosity = NonlinearOptimizerParams::ERROR;
 
   Values result;
-  LevenbergMarquardtOptimizer optimizer(graph, values, params);
+  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
   result = optimizer.optimize();
 
   if (isDebugTest)
@@ -570,17 +572,17 @@ TEST( SmartProjectionCameraFactor, Cal3Bundler2 ) {
   if (isDebugTest)
     values.at<Camera>(c3).print("Smart: Pose3 before optimization: ");
 
-  LevenbergMarquardtParams params;
-  params.relativeErrorTol = 1e-8;
-  params.absoluteErrorTol = 0;
-  params.maxIterations = 20;
+  LevenbergMarquardtParams lmParams;
+  lmParams.relativeErrorTol = 1e-8;
+  lmParams.absoluteErrorTol = 0;
+  lmParams.maxIterations = 20;
   if (isDebugTest)
-    params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
+    lmParams.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
   if (isDebugTest)
-    params.verbosity = NonlinearOptimizerParams::ERROR;
+    lmParams.verbosity = NonlinearOptimizerParams::ERROR;
 
   Values result;
-  LevenbergMarquardtOptimizer optimizer(graph, values, params);
+  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
   result = optimizer.optimize();
 
   if (isDebugTest)
@@ -805,9 +807,14 @@ TEST( SmartProjectionCameraFactor, implicitJacobianFactor ) {
   bool useEPI = false;
 
   // Hessian version
+  SmartProjectionParams params;
+  params.setRankTolerance(rankTol);
+  params.setLinearizationMode(gtsam::HESSIAN);
+  params.setDegeneracyMode(gtsam::IGNORE_DEGENERACY);
+  params.setEnableEPI(useEPI);
+
   SmartFactor::shared_ptr explicitFactor(
-      new SmartFactor(gtsam::HESSIAN, rankTol,
-          gtsam::IGNORE_DEGENERACY, useEPI));
+      new SmartFactor(boost::none, params));
   explicitFactor->add(level_uv, c1, unit2);
   explicitFactor->add(level_uv_right, c2, unit2);
 
@@ -817,9 +824,9 @@ TEST( SmartProjectionCameraFactor, implicitJacobianFactor ) {
       dynamic_cast<HessianFactor&>(*gaussianHessianFactor);
 
   // Implicit Schur version
+  params.setLinearizationMode(gtsam::IMPLICIT_SCHUR);
   SmartFactor::shared_ptr implicitFactor(
-      new SmartFactor(gtsam::IMPLICIT_SCHUR, rankTol,
-          gtsam::IGNORE_DEGENERACY, useEPI));
+      new SmartFactor(boost::none, params));
   implicitFactor->add(level_uv, c1, unit2);
   implicitFactor->add(level_uv_right, c2, unit2);
   GaussianFactor::shared_ptr gaussianImplicitSchurFactor =
