@@ -49,7 +49,7 @@ namespace gtsam {
       // structure with its own JT node, and create a child pointer in its parent.
       ConstructorTraversalData<BAYESTREE,GRAPH> myData = ConstructorTraversalData<BAYESTREE,GRAPH>(&parentData);
       myData.myJTNode = boost::make_shared<typename JunctionTree<BAYESTREE,GRAPH>::Node>();
-      myData.myJTNode->keys.push_back(node->key);
+      myData.myJTNode->orderedFrontalKeys.push_back(node->key);
       myData.myJTNode->factors.insert(myData.myJTNode->factors.begin(), node->factors.begin(), node->factors.end());
       parentData.myJTNode->children.push_back(myData.myJTNode);
       return myData;
@@ -101,13 +101,20 @@ namespace gtsam {
           const typename JunctionTree<BAYESTREE, GRAPH>::Node& childToMerge =
             *myData.myJTNode->children[child - nrMergedChildren];
           // Merge keys, factors, and children.
-          myData.myJTNode->keys.insert(myData.myJTNode->keys.begin(), childToMerge.keys.begin(), childToMerge.keys.end());
-          myData.myJTNode->factors.insert(myData.myJTNode->factors.end(), childToMerge.factors.begin(), childToMerge.factors.end());
-          myData.myJTNode->children.insert(myData.myJTNode->children.end(), childToMerge.children.begin(), childToMerge.children.end());
+          myData.myJTNode->orderedFrontalKeys.insert(
+              myData.myJTNode->orderedFrontalKeys.begin(),
+              childToMerge.orderedFrontalKeys.begin(),
+              childToMerge.orderedFrontalKeys.end());
+          myData.myJTNode->factors.insert(myData.myJTNode->factors.end(),
+                                          childToMerge.factors.begin(),
+                                          childToMerge.factors.end());
+          myData.myJTNode->children.insert(myData.myJTNode->children.end(),
+                                           childToMerge.children.begin(),
+                                           childToMerge.children.end());
           // Increment problem size
           combinedProblemSize = std::max(combinedProblemSize, childToMerge.problemSize_);
           // Increment number of frontal variables
-          myNrFrontals += childToMerge.keys.size();
+          myNrFrontals += childToMerge.orderedFrontalKeys.size();
           // Remove child from list.
           myData.myJTNode->children.erase(myData.myJTNode->children.begin() + (child - nrMergedChildren));
           // Increment number of merged children

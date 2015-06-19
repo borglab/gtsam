@@ -73,9 +73,8 @@ TEST( InvDepthFactorVariant1, optimize) {
   // Optimize the graph to recover the actual landmark position
   LevenbergMarquardtParams params;
   Values result = LevenbergMarquardtOptimizer(graph, values, params).optimize();
-  Vector6 actual = result.at<Vector6>(landmarkKey);
-  
 
+//  Vector6 actual = result.at<Vector6>(landmarkKey);
 //  values.at<Pose3>(poseKey1).print("Pose1 Before:\n");
 //  result.at<Pose3>(poseKey1).print("Pose1 After:\n");
 //  pose1.print("Pose1 Truth:\n");
@@ -116,8 +115,11 @@ TEST( InvDepthFactorVariant1, optimize) {
   // However, since this is an over-parameterization, there can be
   // many 6D landmark values that equate to the same 3D world position
   // Instead, directly test the recovered 3D landmark position
-  //EXPECT(assert_equal(expected, actual, 1e-9));
   EXPECT(assert_equal(landmark, world_landmarkAfter, 1e-9));
+
+  // Frank asks: why commented out?
+  //Vector6 actual = result.at<Vector6>(landmarkKey);
+  //EXPECT(assert_equal(expected, actual, 1e-9));
 }
 
 

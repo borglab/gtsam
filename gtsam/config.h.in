@@ -25,7 +25,7 @@
 #define GTSAM_VERSION_STRING "@GTSAM_VERSION_STRING@"
 
 // Paths to example datasets distributed with GTSAM
-#define GTSAM_SOURCE_TREE_DATASET_DIR "@CMAKE_SOURCE_DIR@/examples/Data"
+#define GTSAM_SOURCE_TREE_DATASET_DIR "@PROJECT_SOURCE_DIR@/examples/Data"
 #define GTSAM_INSTALLED_DATASET_DIR "@GTSAM_TOOLBOX_INSTALL_PATH@/gtsam_examples/Data"
 
 // Whether GTSAM is compiled to use quaternions for Rot3 (otherwise uses rotation matrices)
@@ -41,6 +41,9 @@
 
 // Whether we are using TBB (if TBB was found and GTSAM_WITH_TBB is enabled in CMake)
 #cmakedefine GTSAM_USE_TBB
+
+// Whether we are using system-Eigen or our own patched version
+#cmakedefine GTSAM_USE_SYSTEM_EIGEN
 
 // Whether Eigen will use MKL (if MKL was found and GTSAM_WITH_EIGEN_MKL is enabled in CMake)
 #cmakedefine GTSAM_USE_EIGEN_MKL

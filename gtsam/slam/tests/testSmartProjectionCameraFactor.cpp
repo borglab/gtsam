@@ -78,7 +78,7 @@ TEST( SmartProjectionCameraFactor, Constructor) {
 /* ************************************************************************* */
 TEST( SmartProjectionCameraFactor, Constructor2) {
   using namespace vanilla;
-  SmartFactor factor1(SmartFactor::HESSIAN, rankTol);
+  SmartFactor factor1(gtsam::HESSIAN, rankTol);
 }
 
 /* ************************************************************************* */
@@ -91,7 +91,7 @@ TEST( SmartProjectionCameraFactor, Constructor3) {
 /* ************************************************************************* */
 TEST( SmartProjectionCameraFactor, Constructor4) {
   using namespace vanilla;
-  SmartFactor factor1(SmartFactor::HESSIAN, rankTol);
+  SmartFactor factor1(gtsam::HESSIAN, rankTol);
   factor1.add(measurement1, x1, unit2);
 }
 
@@ -806,8 +806,8 @@ TEST( SmartProjectionCameraFactor, implicitJacobianFactor ) {
 
   // Hessian version
   SmartFactor::shared_ptr explicitFactor(
-      new SmartFactor(SmartFactor::HESSIAN, rankTol,
-          SmartFactor::IGNORE_DEGENERACY, useEPI));
+      new SmartFactor(gtsam::HESSIAN, rankTol,
+          gtsam::IGNORE_DEGENERACY, useEPI));
   explicitFactor->add(level_uv, c1, unit2);
   explicitFactor->add(level_uv_right, c2, unit2);
 
@@ -818,8 +818,8 @@ TEST( SmartProjectionCameraFactor, implicitJacobianFactor ) {
 
   // Implicit Schur version
   SmartFactor::shared_ptr implicitFactor(
-      new SmartFactor(SmartFactor::IMPLICIT_SCHUR, rankTol,
-          SmartFactor::IGNORE_DEGENERACY, useEPI));
+      new SmartFactor(gtsam::IMPLICIT_SCHUR, rankTol,
+          gtsam::IGNORE_DEGENERACY, useEPI));
   implicitFactor->add(level_uv, c1, unit2);
   implicitFactor->add(level_uv_right, c2, unit2);
   GaussianFactor::shared_ptr gaussianImplicitSchurFactor =

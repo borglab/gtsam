@@ -91,8 +91,42 @@ namespace gtsam {
     double Z = K_->baseline() * K_->fx() / (measured[0] - measured[1]);
     double X = Z * (measured[0] - K_->px()) / K_->fx();
     double Y = Z * (measured[2] - K_->py()) / K_->fy();
-    Point3 world_point = leftCamPose_.transform_from(Point3(X, Y, Z));
-    return world_point;
+    Point3 point = leftCamPose_.transform_from(Point3(X, Y, Z));
+    return point;
+  }
+
+  /* ************************************************************************* */
+  Point3 StereoCamera::backproject2(const StereoPoint2& z, OptionalJacobian<3, 6> H1,
+                                    OptionalJacobian<3, 3> H2)  const {
+    const Cal3_S2Stereo& K = *K_;
+    const double fx = K.fx(), fy = K.fy(), cx = K.px(), cy = K.py(), b = K.baseline();
+
+    double uL = z.uL(), uR = z.uR(), v = z.v();
+    double disparity = uL - uR;
+
+    double local_z = b * fx / disparity;
+    const Point3 local(local_z * (uL - cx)/ fx, local_z * (v - cy) / fy, local_z);
+
+    if(H1 || H2) {
+      double z_partial_uR = local_z/disparity;
+      double x_partial_uR = local.x()/disparity;
+      double y_partial_uR = local.y()/disparity;
+      Matrix3 D_local_z;
+      D_local_z << -x_partial_uR + local.z()/fx, x_partial_uR, 0,
+          -y_partial_uR, y_partial_uR, local.z() / fy,
+          -z_partial_uR, z_partial_uR, 0;
+
+      Matrix3 D_point_local;
+      const Point3 point = leftCamPose_.transform_from(local, H1, D_point_local);
+
+      if(H2) {
+        *H2 = D_point_local * D_local_z;
+      }
+
+      return point;
+    }
+
+    return leftCamPose_.transform_from(local);
   }
 
 }

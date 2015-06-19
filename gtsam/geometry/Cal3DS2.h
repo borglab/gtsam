@@ -109,7 +109,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
-  void serialize(Archive & ar, const unsigned int version)
+  void serialize(Archive & ar, const unsigned int /*version*/)
   {
     ar & boost::serialization::make_nvp("Cal3DS2",
         boost::serialization::base_object<Cal3DS2_Base>(*this));

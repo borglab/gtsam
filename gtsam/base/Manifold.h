@@ -46,7 +46,7 @@ struct manifold_tag {};
  * There may be multiple possible retractions for a given manifold, which can be chosen
  * between depending on the computational complexity.  The important criteria for
  * the creation for the retract and localCoordinates functions is that they be
- * inverse operations. The new notion of a Chart guarantees that.
+ * inverse operations.
  *
  */
 
@@ -90,9 +90,9 @@ struct ManifoldImpl<Class, Eigen::Dynamic> {
 
 /// A helper that implements the traits interface for GTSAM manifolds.
 /// To use this for your class type, define:
-/// template<> struct traits<Class> : public Manifold<Class> { };
+/// template<> struct traits<Class> : public internal::ManifoldTraits<Class> { };
 template<class Class>
-struct Manifold: Testable<Class>, ManifoldImpl<Class, Class::dimension> {
+struct ManifoldTraits: ManifoldImpl<Class, Class::dimension> {
 
   // Check that Class has the necessary machinery
   BOOST_CONCEPT_ASSERT((HasManifoldPrereqs<Class>));
@@ -116,6 +116,9 @@ struct Manifold: Testable<Class>, ManifoldImpl<Class, Class::dimension> {
   }
 };
 
+/// Both ManifoldTraits and Testable
+template<class Class> struct Manifold: ManifoldTraits<Class>, Testable<Class> {};
+
 } // \ namespace internal
 
 /// Check invariants for Manifold type
@@ -135,7 +138,7 @@ class IsManifold {
 public:
 
   typedef typename traits<T>::structure_category structure_category_tag;
-  static const size_t dim = traits<T>::dimension;
+  static const int dim = traits<T>::dimension;
   typedef typename traits<T>::ManifoldType ManifoldType;
   typedef typename traits<T>::TangentVector TangentVector;
 
@@ -163,6 +166,53 @@ struct FixedDimension {
   static const int value = traits<T>::dimension;
   BOOST_STATIC_ASSERT_MSG(value != Eigen::Dynamic,
       "FixedDimension instantiated for dymanically-sized type.");
+};
+
+/// Helper class to construct the product manifold of two other manifolds, M1 and M2
+/// Assumes nothing except manifold structure from M1 and M2
+template<typename M1, typename M2>
+class ProductManifold: public std::pair<M1, M2> {
+  BOOST_CONCEPT_ASSERT((IsManifold<M1>));
+  BOOST_CONCEPT_ASSERT((IsManifold<M2>));
+
+protected:
+  enum { dimension1 = traits<M1>::dimension };
+  enum { dimension2 = traits<M2>::dimension };
+
+public:
+  enum { dimension = dimension1 + dimension2 };
+  inline static size_t Dim() { return dimension;}
+  inline size_t dim() const { return dimension;}
+
+  typedef Eigen::Matrix<double, dimension, 1> TangentVector;
+  typedef OptionalJacobian<dimension, dimension> ChartJacobian;
+
+  /// Default constructor yields identity
+  ProductManifold():std::pair<M1,M2>(traits<M1>::Identity(),traits<M2>::Identity()) {}
+
+  // Construct from two original manifold values
+  ProductManifold(const M1& m1, const M2& m2):std::pair<M1,M2>(m1,m2) {}
+
+  /// Retract delta to manifold
+  ProductManifold retract(const TangentVector& xi) const {
+    M1 m1 = traits<M1>::Retract(this->first,  xi.template head<dimension1>());
+    M2 m2 = traits<M2>::Retract(this->second, xi.template tail<dimension2>());
+    return ProductManifold(m1,m2);
+  }
+
+  /// Compute the coordinates in the tangent space
+  TangentVector localCoordinates(const ProductManifold& other) const {
+    typename traits<M1>::TangentVector v1 = traits<M1>::Local(this->first,  other.first);
+    typename traits<M2>::TangentVector v2 = traits<M2>::Local(this->second, other.second);
+    TangentVector v;
+    v << v1, v2;
+    return v;
+  }
+};
+
+// Define any direct product group to be a model of the multiplicative Group concept
+template<typename M1, typename M2>
+struct traits<ProductManifold<M1, M2> > : internal::Manifold<ProductManifold<M1, M2> > {
 };
 
 } // \ namespace gtsam

@@ -23,9 +23,9 @@
 #pragma once
 #include <gtsam/base/Vector.h>
 #include <boost/math/special_functions/fpclassify.hpp>
-#include <gtsam/3rdparty/Eigen/Eigen/Core>
-#include <gtsam/3rdparty/Eigen/Eigen/Cholesky>
-#include <gtsam/3rdparty/Eigen/Eigen/LU>
+#include <Eigen/Core>
+#include <Eigen/Cholesky>
+#include <Eigen/LU>
 #include <boost/format.hpp>
 #include <boost/tuple/tuple.hpp>
 
@@ -535,7 +535,7 @@ namespace boost {
 
     // split version - sends sizes ahead
     template<class Archive>
-    void save(Archive & ar, const gtsam::Matrix & m, unsigned int version) {
+    void save(Archive & ar, const gtsam::Matrix & m, unsigned int /*version*/) {
       const size_t rows = m.rows(), cols = m.cols();
       ar << BOOST_SERIALIZATION_NVP(rows);
       ar << BOOST_SERIALIZATION_NVP(cols);
@@ -543,7 +543,7 @@ namespace boost {
     }
 
     template<class Archive>
-    void load(Archive & ar, gtsam::Matrix & m, unsigned int version) {
+    void load(Archive & ar, gtsam::Matrix & m, unsigned int /*version*/) {
       size_t rows, cols;
       ar >> BOOST_SERIALIZATION_NVP(rows);
       ar >> BOOST_SERIALIZATION_NVP(cols);

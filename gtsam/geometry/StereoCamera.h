@@ -137,6 +137,14 @@ public:
   /// back-project a measurement
   Point3 backproject(const StereoPoint2& z) const;
 
+  /** Back-project the 2D point and compute optional derivatives
+   * @param H1 derivative with respect to pose
+   * @param H2 derivative with respect to point
+   */
+  Point3 backproject2(const StereoPoint2& z,
+                      OptionalJacobian<3, 6> H1 = boost::none,
+                      OptionalJacobian<3, 3> H2 = boost::none) const;
+
   /// @}
   /// @name Deprecated
   /// @{
@@ -157,7 +165,7 @@ private:
 
   friend class boost::serialization::access;
   template<class Archive>
-  void serialize(Archive & ar, const unsigned int version) {
+  void serialize(Archive & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_NVP(leftCamPose_);
     ar & BOOST_SERIALIZATION_NVP(K_);
   }

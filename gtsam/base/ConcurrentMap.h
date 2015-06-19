@@ -95,7 +95,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
-  void save(Archive& ar, const unsigned int version) const
+  void save(Archive& ar, const unsigned int /*version*/) const
   {
     // Copy to an STL container and serialize that
     FastVector<std::pair<KEY, VALUE> > map(this->size());
@@ -103,7 +103,7 @@ private:
     ar & BOOST_SERIALIZATION_NVP(map);
   }
   template<class Archive>
-  void load(Archive& ar, const unsigned int version)
+  void load(Archive& ar, const unsigned int /*version*/)
   {
     // Load into STL container and then fill our map
     FastVector<std::pair<KEY, VALUE> > map;

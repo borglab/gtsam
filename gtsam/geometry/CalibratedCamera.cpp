@@ -94,12 +94,6 @@ Point2 PinholeBase::Project(const Point3& pc, OptionalJacobian<2, 3> Dpoint) {
 }
 
 /* ************************************************************************* */
-Point2 PinholeBase::project_to_camera_old(const Point3& pc,
-    OptionalJacobian<2, 3> Dpoint) {
-  return Project(pc);
-}
-
-/* ************************************************************************* */
 Point2 PinholeBase::Project(const Unit3& pc, OptionalJacobian<2, 2> Dpoint) {
   if (Dpoint) {
     Matrix32 Dpoint3_pc;

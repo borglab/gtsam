@@ -32,7 +32,9 @@ namespace gtsam {
 template<class T>
 class ExpressionFactor: public NoiseModelFactor {
 
-protected:
+ protected:
+
+  typedef ExpressionFactor<T> This;
 
   T measurement_; ///< the measurement to be compared with the expression
   Expression<T> expression_; ///< the expression that is AD enabled
@@ -40,7 +42,9 @@ protected:
 
   static const int Dim = traits<T>::dimension;
 
-public:
+ public:
+
+  typedef boost::shared_ptr<ExpressionFactor<T> > shared_ptr;
 
   /// Constructor
   ExpressionFactor(const SharedNoiseModel& noiseModel, //
@@ -65,24 +69,21 @@ public:
    */
   virtual Vector unwhitenedError(const Values& x,
       boost::optional<std::vector<Matrix>&> H = boost::none) const {
-     if (H) {
-      const T hx = expression_.value(x, keys_, dims_, *H); // h(x)
-      return traits<T>::Local(measurement_, hx); // h(x) - z
+    if (H) {
+      const T value = expression_.valueAndDerivatives(x, keys_, dims_, *H);
+      return traits<T>::Local(measurement_, value);
     } else {
-      const T hx = expression_.value(x); // h(x)
-      return traits<T>::Local(measurement_, hx); // h(x) - z
+      const T value = expression_.value(x);
+      return traits<T>::Local(measurement_, value);
     }
   }
 
-  /**
-   * Linearize the factor into a JacobianFactor
-   */
-  virtual boost::shared_ptr<GaussianFactor> linearize(const Values& x_bar) const {
+  virtual boost::shared_ptr<GaussianFactor> linearize(const Values& x) const {
     // Only linearize if the factor is active
-    if (!active(x_bar))
+    if (!active(x))
       return boost::shared_ptr<JacobianFactor>();
 
-    // Create a writable JacobianFactor in advance
+    // Create a writeable JacobianFactor in advance
     // In case noise model is constrained, we need to provide a noise model
     bool constrained = noiseModel_->isConstrained();
     boost::shared_ptr<JacobianFactor> factor(
@@ -91,19 +92,17 @@ public:
             new JacobianFactor(keys_, dims_, Dim));
 
     // Wrap keys and VerticalBlockMatrix into structure passed to expression_
-    VerticalBlockMatrix& Ab = factor->matrixObject(); // reference, no malloc !
-    JacobianMap jacobianMap(keys_, Ab);
+    VerticalBlockMatrix& Ab = factor->matrixObject();
+    internal::JacobianMap jacobianMap(keys_, Ab);
 
     // Zero out Jacobian so we can simply add to it
     Ab.matrix().setZero();
 
     // Get value and Jacobians, writing directly into JacobianFactor
-    T hx = expression_.value(x_bar, jacobianMap); // <<< Reverse AD happens here !
+    T value = expression_.valueAndJacobianMap(x, jacobianMap); // <<< Reverse AD happens here !
 
-    // Evaluate error and set RHS vector b = - (h(x_bar) - z) = z-h(x_bar)
-    // Indeed, nonlinear error |h(x_bar+dx)-z| ~ |h(x_bar) + A*dx - z|
-    //                                         = |A*dx - (z-h(x_bar))|
-    Ab(size()).col(0) = - traits<T>::Local(measurement_, hx); // - unwhitenedError(x_bar)
+    // Evaluate error and set RHS vector b
+    Ab(size()).col(0) = -traits<T>::Local(measurement_, value);
 
     // Whiten the corresponding system, Ab already contains RHS
     Vector b = Ab(size()).col(0); // need b to be valid for Robust noise models
@@ -111,8 +110,13 @@ public:
 
     return factor;
   }
+
+  /// @return a deep copy of this factor
+  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+        gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 };
 // ExpressionFactor
 
-} // \ namespace gtsam
+}// \ namespace gtsam
 

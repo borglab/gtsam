@@ -167,10 +167,6 @@ public:
   static Point2 Project(const Point3& pc, //
       OptionalJacobian<2, 3> Dpoint = boost::none);
 
-  /// @deprecated not correct naming for static function, use Project above
-  static Point2 project_to_camera_old(const Point3& pc, //
-      OptionalJacobian<2, 3> Dpoint = boost::none);
-
   /**
    * Project from 3D point at infinity in camera coordinates into image
    * Does *not* throw a CheiralityException, even if pc behind image plane
@@ -222,7 +218,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
-  void serialize(Archive & ar, const unsigned int version) {
+  void serialize(Archive & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_NVP(pose_);
   }
 
@@ -374,7 +370,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
-  void serialize(Archive & ar, const unsigned int version) {
+  void serialize(Archive & ar, const unsigned int /*version*/) {
     ar
         & boost::serialization::make_nvp("PinholeBase",
             boost::serialization::base_object<PinholeBase>(*this));

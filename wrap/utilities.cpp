@@ -91,7 +91,8 @@ bool files_equal(const string& expected, const string& actual, bool skipheader) 
       cerr << "<<< DIFF OUTPUT (if none, white-space differences only):\n";
       stringstream command;
       command << "diff --ignore-all-space " << expected << " " << actual << endl;
-      system(command.str().c_str());
+      if (system(command.str().c_str())<0)
+        throw "command '" + command.str() + "' failed";
       cerr << ">>>\n";
     }
     return equal;

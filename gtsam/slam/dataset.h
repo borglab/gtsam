@@ -18,16 +18,21 @@
 
 #pragma once
 
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/linear/NoiseModel.h>
-#include <gtsam/geometry/Point2.h>
-#include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/geometry/Point2.h>
+#include <gtsam/geometry/Point3.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/geometry/Rot3.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/Values.h>
+#include <gtsam/linear/NoiseModel.h>
+#include <gtsam/base/types.h>
 
-#include <vector>
-#include <utility> // for pair
+#include <boost/smart_ptr/shared_ptr.hpp>
 #include <string>
+#include <utility> // for pair
+#include <vector>
 
 namespace gtsam {
 
@@ -137,11 +142,15 @@ GTSAM_EXPORT GraphAndValues load3D(const std::string& filename);
 /// A measurement with its camera index
 typedef std::pair<size_t, Point2> SfM_Measurement;
 
+/// SfM_Track
+typedef std::pair<size_t, size_t> SIFT_Index;
+
 /// Define the structure for the 3D points
 struct SfM_Track {
   Point3 p; ///< 3D position of the point
   float r, g, b; ///< RGB color of the 3D point
   std::vector<SfM_Measurement> measurements; ///< The 2D image projections (id,(u,v))
+  std::vector<SIFT_Index> siftIndices;
   size_t number_measurements() const {
     return measurements.size();
   }

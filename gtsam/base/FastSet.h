@@ -21,6 +21,7 @@
 #include <gtsam/base/FastDefaultAllocator.h>
 #include <boost/mpl/has_xxx.hpp>
 #include <boost/utility/enable_if.hpp>
+#include <boost/serialization/serialization.hpp>
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/set.hpp>
 #include <set>
@@ -111,7 +112,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
   }
 };

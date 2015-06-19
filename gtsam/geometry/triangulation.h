@@ -48,11 +48,22 @@ public:
  * @param projection_matrices Projection matrices (K*P^-1)
  * @param measurements 2D measurements
  * @param rank_tol SVD rank tolerance
+ * @return Triangulated point, in homogeneous coordinates
+ */
+GTSAM_EXPORT Vector4 triangulateHomogeneousDLT(
+    const std::vector<Matrix34>& projection_matrices,
+    const std::vector<Point2>& measurements, double rank_tol = 1e-9);
+
+/**
+ * DLT triangulation: See Hartley and Zisserman, 2nd Ed., page 312
+ * @param projection_matrices Projection matrices (K*P^-1)
+ * @param measurements 2D measurements
+ * @param rank_tol SVD rank tolerance
  * @return Triangulated Point3
  */
 GTSAM_EXPORT Point3 triangulateDLT(
     const std::vector<Matrix34>& projection_matrices,
-    const std::vector<Point2>& measurements, double rank_tol);
+    const std::vector<Point2>& measurements, double rank_tol = 1e-9);
 
 /**
  * Create a factor graph with projection factors from poses and one calibration
@@ -94,8 +105,9 @@ std::pair<NonlinearFactorGraph, Values> triangulationGraph(
  */
 template<class CAMERA>
 std::pair<NonlinearFactorGraph, Values> triangulationGraph(
-    const std::vector<CAMERA>& cameras, const std::vector<Point2>& measurements,
-    Key landmarkKey, const Point3& initialEstimate) {
+    const std::vector<CAMERA>& cameras,
+    const std::vector<Point2>& measurements, Key landmarkKey,
+    const Point3& initialEstimate) {
   Values values;
   values.insert(landmarkKey, initialEstimate); // Initial landmark value
   NonlinearFactorGraph graph;
@@ -159,7 +171,8 @@ Point3 triangulateNonlinear(const std::vector<Pose3>& poses,
  * @return refined Point3
  */
 template<class CAMERA>
-Point3 triangulateNonlinear(const std::vector<CAMERA>& cameras,
+Point3 triangulateNonlinear(
+    const std::vector<CAMERA>& cameras,
     const std::vector<Point2>& measurements, const Point3& initialEstimate) {
 
   // Create a factor graph and initial values
@@ -179,6 +192,25 @@ Point3 triangulateNonlinear(
   return triangulateNonlinear<PinholeCamera<CALIBRATION> > //
   (cameras, measurements, initialEstimate);
 }
+
+/**
+ * Create a 3*4 camera projection matrix from calibration and pose.
+ * Functor for partial application on calibration
+ * @param pose The camera pose
+ * @param cal  The calibration
+ * @return Returns a Matrix34
+ */
+template<class CALIBRATION>
+struct CameraProjectionMatrix {
+  CameraProjectionMatrix(const CALIBRATION& calibration) :
+      K_(calibration.K()) {
+  }
+  Matrix34 operator()(const Pose3& pose) const {
+    return K_ * (pose.inverse().matrix()).block<3, 4>(0, 0);
+  }
+private:
+  const Matrix3 K_;
+};
 
 /**
  * Function to triangulate 3D landmark point from an arbitrary number
@@ -204,11 +236,11 @@ Point3 triangulatePoint3(const std::vector<Pose3>& poses,
 
   // construct projection matrices from poses & calibration
   std::vector<Matrix34> projection_matrices;
-  BOOST_FOREACH(const Pose3& pose, poses) {
-    projection_matrices.push_back(
-        sharedCal->K() * (pose.inverse().matrix()).block<3, 4>(0, 0));
-  }
-  // Do DLT: throws TriangulationUnderconstrainedException if rank<3
+  CameraProjectionMatrix<CALIBRATION> createP(*sharedCal); // partially apply
+  BOOST_FOREACH(const Pose3& pose, poses)
+    projection_matrices.push_back(createP(pose));
+
+  // Triangulate linearly
   Point3 point = triangulateDLT(projection_matrices, measurements, rank_tol);
 
   // Then refine using non-linear optimization
@@ -241,24 +273,23 @@ Point3 triangulatePoint3(const std::vector<Pose3>& poses,
  * @return Returns a Point3
  */
 template<class CAMERA>
-Point3 triangulatePoint3(const std::vector<CAMERA>& cameras,
+Point3 triangulatePoint3(
+    const std::vector<CAMERA>& cameras,
     const std::vector<Point2>& measurements, double rank_tol = 1e-9,
     bool optimize = false) {
 
   size_t m = cameras.size();
-  assert(measurements.size()==m);
+  assert(measurements.size() == m);
 
   if (m < 2)
     throw(TriangulationUnderconstrainedException());
 
   // construct projection matrices from poses & calibration
   std::vector<Matrix34> projection_matrices;
-  BOOST_FOREACH(const CAMERA& camera, cameras) {
-    Matrix P_ = (camera.pose().inverse().matrix());
+  BOOST_FOREACH(const CAMERA& camera, cameras)
     projection_matrices.push_back(
-        camera.calibration().K() * (P_.block<3, 4>(0, 0)));
-  }
-  // Do DLT: throws TriangulationUnderconstrainedException if rank<3
+        CameraProjectionMatrix<typename CAMERA::CalibrationType>(camera.calibration())(
+            camera.pose()));
   Point3 point = triangulateDLT(projection_matrices, measurements, rank_tol);
 
   // The n refine using non-linear optimization

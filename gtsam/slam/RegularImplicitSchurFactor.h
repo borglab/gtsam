@@ -109,6 +109,11 @@ public:
     return D;
   }
 
+  virtual void updateHessian(const FastVector<Key>& keys,
+                         SymmetricBlockMatrix* info) const {
+    throw std::runtime_error(
+        "RegularImplicitSchurFactor::updateHessian non implemented");
+  }
   virtual Matrix augmentedJacobian() const {
     throw std::runtime_error(
         "RegularImplicitSchurFactor::augmentedJacobian non implemented");

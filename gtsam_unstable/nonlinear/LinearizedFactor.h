@@ -62,7 +62,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & boost::serialization::make_nvp("LinearizedGaussianFactor",
         boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(lin_points_);
@@ -149,7 +149,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & boost::serialization::make_nvp("LinearizedJacobianFactor",
         boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(Ab_);
@@ -264,7 +264,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & boost::serialization::make_nvp("LinearizedHessianFactor",
         boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(info_);

@@ -148,7 +148,7 @@ public:
   /// @{
 
   /// equality
-  inline bool operator ==(const Point2& q) const {return x_==q.x_ && q.y_==q.y_;}
+  inline bool operator ==(const Point2& q) const {return x_==q.x_ && y_==q.y_;}
 
   /// get x
   double x() const {return x_;}
@@ -185,15 +185,17 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version)
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/)
   {
     ar & BOOST_SERIALIZATION_NVP(x_);
     ar & BOOST_SERIALIZATION_NVP(y_);
   }
 
   /// @}
-
 };
+
+// For MATLAB wrapper
+typedef std::vector<Point2> Point2Vector;
 
 /// multiply with scalar
 inline Point2 operator*(double s, const Point2& p) {return p*s;}

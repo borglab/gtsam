@@ -20,8 +20,8 @@
 #include <gtsam/base/timing.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/FastList.h>
-#include <gtsam/3rdparty/Eigen/Eigen/SVD>  
-#include <gtsam/3rdparty/Eigen/Eigen/LU>
+#include <Eigen/SVD>
+#include <Eigen/LU>
 
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -706,6 +706,7 @@ std::string formatMatrixIndented(const std::string& label, const Matrix& matrix,
   return ss.str();
 }
 
+/* ************************************************************************* */
 void inplace_QR(Matrix& A){
   size_t rows = A.rows();
   size_t cols = A.cols();
@@ -716,7 +717,13 @@ void inplace_QR(Matrix& A){
   HCoeffsType hCoeffs(size);
   RowVectorType temp(cols);
 
+#ifdef GTSAM_USE_SYSTEM_EIGEN
+  // System-Eigen is used, and MKL is off
+  Eigen::internal::householder_qr_inplace_blocked<Matrix, HCoeffsType>(A, hCoeffs, 48, temp.data());
+#else
+  // Patched Eigen is used, and MKL is either on or off
   Eigen::internal::householder_qr_inplace_blocked<Matrix, HCoeffsType>::run(A, hCoeffs, 48, temp.data());
+#endif
 
   zeroBelowDiagonal(A);
 }

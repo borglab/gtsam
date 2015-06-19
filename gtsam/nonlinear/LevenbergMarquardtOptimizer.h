@@ -54,65 +54,45 @@ public:
   double minModelFidelity; ///< Lower bound for the modelFidelity to accept the result of an LM iteration
   std::string logFile; ///< an optional CSV log file, with [iteration, time, error, labda]
   bool diagonalDamping; ///< if true, use diagonal of Hessian
-  bool reuse_diagonal_; ///< an additional option in Ceres for diagonalDamping (related to efficiency)
+  bool reuse_diagonal_; ///< an additional option in Ceres for diagonalDamping (TODO: should be in state?)
   bool useFixedLambdaFactor_; ///< if true applies constant increase (or decrease) to lambda according to lambdaFactor
   double min_diagonal_; ///< when using diagonal damping saturates the minimum diagonal entries (default: 1e-6)
   double max_diagonal_; ///< when using diagonal damping saturates the maximum diagonal entries (default: 1e32)
 
-  LevenbergMarquardtParams() :
-      lambdaInitial(1e-5), lambdaFactor(10.0), lambdaUpperBound(1e5), lambdaLowerBound(
-          0.0), verbosityLM(SILENT), minModelFidelity(1e-3),
-          diagonalDamping(false), reuse_diagonal_(false), useFixedLambdaFactor_(true),
-          min_diagonal_(1e-6), max_diagonal_(1e32) {
-  }
-  virtual ~LevenbergMarquardtParams() {
-  }
+  LevenbergMarquardtParams()
+      : lambdaInitial(1e-5),
+        lambdaFactor(10.0),
+        lambdaUpperBound(1e5),
+        lambdaLowerBound(0.0),
+        verbosityLM(SILENT),
+        minModelFidelity(1e-3),
+        diagonalDamping(false),
+        reuse_diagonal_(false),
+        useFixedLambdaFactor_(true),
+        min_diagonal_(1e-6),
+        max_diagonal_(1e32) {}
 
+  virtual ~LevenbergMarquardtParams() {}
   virtual void print(const std::string& str = "") const;
-
-  inline double getlambdaInitial() const {
-    return lambdaInitial;
-  }
-  inline double getlambdaFactor() const {
-    return lambdaFactor;
-  }
-  inline double getlambdaUpperBound() const {
-    return lambdaUpperBound;
-  }
-  inline double getlambdaLowerBound() const {
-    return lambdaLowerBound;
-  }
+  inline double getlambdaInitial() const { return lambdaInitial; }
+  inline double getlambdaFactor() const { return lambdaFactor; }
+  inline double getlambdaUpperBound() const { return lambdaUpperBound; }
+  inline double getlambdaLowerBound() const { return lambdaLowerBound; }
   inline std::string getVerbosityLM() const {
     return verbosityLMTranslator(verbosityLM);
   }
-  inline std::string getLogFile() const {
-    return logFile;
-  }
-  inline bool getDiagonalDamping() const {
-    return diagonalDamping;
-  }
+  inline std::string getLogFile() const { return logFile; }
+  inline bool getDiagonalDamping() const { return diagonalDamping; }
 
-  inline void setlambdaInitial(double value) {
-    lambdaInitial = value;
-  }
-  inline void setlambdaFactor(double value) {
-    lambdaFactor = value;
-  }
-  inline void setlambdaUpperBound(double value) {
-    lambdaUpperBound = value;
-  }
-  inline void setlambdaLowerBound(double value) {
-    lambdaLowerBound = value;
-  }
-  inline void setVerbosityLM(const std::string &s) {
+  inline void setlambdaInitial(double value) { lambdaInitial = value; }
+  inline void setlambdaFactor(double value) { lambdaFactor = value; }
+  inline void setlambdaUpperBound(double value) { lambdaUpperBound = value; }
+  inline void setlambdaLowerBound(double value) { lambdaLowerBound = value; }
+  inline void setVerbosityLM(const std::string& s) {
     verbosityLM = verbosityLMTranslator(s);
   }
-  inline void setLogFile(const std::string &s) {
-    logFile = s;
-  }
-  inline void setDiagonalDamping(bool flag) {
-    diagonalDamping = flag;
-  }
+  inline void setLogFile(const std::string& s) { logFile = s; }
+  inline void setDiagonalDamping(bool flag) { diagonalDamping = flag; }
   inline void setUseFixedLambdaFactor(bool flag) {
     useFixedLambdaFactor_ = flag;
   }

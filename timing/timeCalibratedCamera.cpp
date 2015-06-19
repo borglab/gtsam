@@ -15,10 +15,10 @@
  * @author  Frank Dellaert
  */
 
-#include <time.h>
-#include <iostream>
-
+#include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/CalibratedCamera.h>
+#include <ctime>
+#include <iostream>
 
 using namespace std;
 using namespace gtsam;

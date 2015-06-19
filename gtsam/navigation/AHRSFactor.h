@@ -97,7 +97,7 @@ public:
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version) {
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegratedRotation);
       ar & BOOST_SERIALIZATION_NVP(biasHat_);
     }
@@ -179,7 +179,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar
         & boost::serialization::make_nvp("NoiseModelFactor3",
             boost::serialization::base_object<Base>(*this));
