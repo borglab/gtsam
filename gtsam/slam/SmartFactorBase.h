@@ -142,7 +142,7 @@ public:
   }
 
   /**
-   * Add a bunch of measurements and uses the same noise model for all of them
+   * Add a bunch of measurements and use the same noise model for all of them
    */
   void add(std::vector<Z>& measurements, std::vector<Key>& cameraKeys,
       const SharedNoiseModel& noise) {
@@ -177,7 +177,7 @@ public:
   }
 
   /// Collect all cameras: important that in key order
-  Cameras cameras(const Values& values) const {
+  virtual Cameras cameras(const Values& values) const {
     Cameras cameras;
     BOOST_FOREACH(const Key& k, this->keys_)
       cameras.push_back(values.at<CAMERA>(k));
@@ -214,7 +214,7 @@ public:
     return e && Base::equals(p, tol) && areMeasurementsEqual;
   }
 
-  ///Compute reprojection errors [h(x)-z] = [cameras.project(p)-z] and derivatives
+  /// Compute reprojection errors [h(x)-z] = [cameras.project(p)-z] and derivatives
   template<class POINT>
   Vector unwhitenedError(const Cameras& cameras, const POINT& point,
       boost::optional<typename Cameras::FBlocks&> Fs = boost::none, //

@@ -104,24 +104,6 @@ public:
   }
 
   /**
-   * Linearize to Gaussian Factor
-   * @param values Values structure which must contain camera poses for this factor
-   * @return a Gaussian factor
-   */
-  boost::shared_ptr<GaussianFactor> linearizeDamped(const Values& values,
-      const double lambda = 0.0) const {
-    // depending on flag set on construction we may linearize to different linear factors
-    typename Base::Cameras cameras = this->cameras(values);
-    return Base::linearizeDamped(cameras, lambda);
-  }
-
-  /// linearize
-  virtual boost::shared_ptr<GaussianFactor> linearize(
-      const Values& values) const {
-    return linearizeDamped(values);
-  }
-
-  /**
    * error calculates the error of the factor.
    */
   virtual double error(const Values& values) const {
@@ -154,15 +136,6 @@ public:
       cameras.push_back(camera);
     }
     return cameras;
-  }
-
-  /**
-   * Triangulate and compute derivative of error with respect to point
-   * @return whether triangulation worked
-   */
-  bool triangulateAndComputeE(Matrix& E, const Values& values) const {
-    typename Base::Cameras cameras = this->cameras(values);
-    return Base::triangulateAndComputeE(E, cameras);
   }
 
 private:
