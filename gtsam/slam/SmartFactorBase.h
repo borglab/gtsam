@@ -58,13 +58,16 @@ private:
   SharedIsotropic noiseModel_;
 
 protected:
-
   /**
    * 2D measurement and noise model for each of the m views
    * We keep a copy of measurements for I/O and computing the error.
    * The order is kept the same as the keys that we use to create the factor.
    */
   std::vector<Z> measured_;
+
+  /// @name Pose of the camera in the body frame
+  const boost::optional<Pose3> body_P_sensor_; ///< Pose of the camera in the body frame
+  /// @}
 
   static const int Dim = traits<CAMERA>::dimension; ///< Camera dimension
   static const int ZDim = traits<Z>::dimension; ///< Measurement dimension
@@ -104,6 +107,10 @@ public:
 
   /// We use the new CameraSte data structure to refer to a set of cameras
   typedef CameraSet<CAMERA> Cameras;
+
+  /// Constructor
+  SmartFactorBase(boost::optional<Pose3> body_P_sensor = boost::none) :
+          body_P_sensor_(body_P_sensor){}
 
   /// Virtual destructor, subclasses from NonlinearFactor
   virtual ~SmartFactorBase() {
@@ -189,6 +196,8 @@ public:
       std::cout << "measurement, p = " << measured_[k] << "\t";
       noiseModel_->print("noise model = ");
     }
+    if(body_P_sensor_)
+      body_P_sensor_->print("body_P_sensor_:\n");
     print("", keyFormatter);
   }
 
@@ -210,7 +219,16 @@ public:
   Vector unwhitenedError(const Cameras& cameras, const POINT& point,
       boost::optional<typename Cameras::FBlocks&> Fs = boost::none, //
       boost::optional<Matrix&> E = boost::none) const {
-    return cameras.reprojectionError(point, measured_, Fs, E);
+    Vector ue = cameras.reprojectionError(point, measured_, Fs, E);
+    if(body_P_sensor_){
+      for(size_t i=0; i < Fs->size(); i++){
+        Pose3 w_Pose_body = (cameras[i].pose()).compose(body_P_sensor_->inverse());
+        Matrix J(6, 6);
+        Pose3 world_P_body = w_Pose_body.compose(*body_P_sensor_, J);
+        Fs->at(i) = Fs->at(i) * J;
+      }
+    }
+    return ue;
   }
 
   /**
@@ -373,6 +391,14 @@ public:
     F.setZero();
     for (size_t i = 0; i < m; ++i)
       F.block<ZDim, Dim>(ZDim * i, Dim * i) = Fblocks.at(i);
+  }
+
+
+  Pose3 body_P_sensor() const{
+    if(body_P_sensor_)
+      return *body_P_sensor_;
+    else
+      return Pose3(); // if unspecified, the transformation is the identity
   }
 
 private:
