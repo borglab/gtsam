@@ -41,6 +41,65 @@ enum DegeneracyMode {
   IGNORE_DEGENERACY, ZERO_ON_DEGENERACY, HANDLE_INFINITY
 };
 
+/*
+ *  Parameters for the smart projection factors
+ */
+class GTSAM_EXPORT SmartProjectionFactorParams {
+
+public:
+
+  const LinearizationMode linearizationMode; ///< How to linearize the factor
+  const DegeneracyMode degeneracyMode; ///< How to linearize the factor
+
+  /// @name Parameters governing the triangulation
+  /// @{
+  const TriangulationParameters triangulationParameters;
+  const double retriangulationThreshold; ///< threshold to decide whether to re-triangulate
+  /// @}
+
+  /// @name Parameters governing how triangulation result is treated
+  /// @{
+  const bool throwCheirality; ///< If true, re-throws Cheirality exceptions (default: false)
+  const bool verboseCheirality; ///< If true, prints text for Cheirality exceptions (default: false)
+  /// @}
+
+  // Constructor
+  SmartProjectionFactorParams(LinearizationMode linMode = HESSIAN,
+      DegeneracyMode degMode = IGNORE_DEGENERACY, double rankTol = 1,
+      bool enableEPI = false, double landmarkDistanceThreshold = 1e10,
+      double dynamicOutlierRejectionThreshold = -1):
+    linearizationMode(linMode), degeneracyMode(degMode),
+    triangulationParameters(rankTol, enableEPI,
+        landmarkDistanceThreshold, dynamicOutlierRejectionThreshold),
+        retriangulationThreshold(1e-5),
+        throwCheirality(false), verboseCheirality(false) {}
+
+  virtual ~SmartProjectionFactorParams() {}
+
+  void print(const std::string& str) const {
+    std::cout << "         linearizationMode: " << linearizationMode << "\n";
+    std::cout << "            degeneracyMode: " << degeneracyMode << "\n";
+    std::cout << "             rankTolerance: " << triangulationParameters.rankTolerance << "\n";
+    std::cout << "                 enableEPI: " << triangulationParameters.enableEPI << "\n";
+    std::cout << " landmarkDistanceThreshold: " << triangulationParameters.landmarkDistanceThreshold << "\n";
+    std::cout << " OutlierRejectionThreshold: " << triangulationParameters.dynamicOutlierRejectionThreshold << "\n";
+    std::cout.flush();
+  }
+
+  inline LinearizationMode getLinearizationMode() const {
+    return linearizationMode;
+  }
+  /** return cheirality verbosity */
+  inline bool getVerboseCheirality() const {
+    return verboseCheirality;
+  }
+  /** return flag for throwing cheirality exceptions */
+  inline bool getThrowCheirality() const {
+    return throwCheirality;
+  }
+
+};
+
 /**
  * SmartProjectionFactor: triangulates point and keeps an estimate of it around.
  */
@@ -56,22 +115,15 @@ private:
 
 protected:
 
-  LinearizationMode linearizationMode_; ///< How to linearize the factor
-  DegeneracyMode degeneracyMode_; ///< How to linearize the factor
+  /// @name Parameters
+  /// @{
+  const SmartProjectionFactorParams params_;
+  /// @}
 
   /// @name Caching triangulation
   /// @{
-  const TriangulationParameters parameters_;
   mutable TriangulationResult result_; ///< result from triangulateSafe
-
-  const double retriangulationThreshold_; ///< threshold to decide whether to re-triangulate
   mutable std::vector<Pose3> cameraPosesTriangulation_; ///< current triangulation poses
-  /// @}
-
-  /// @name Parameters governing how triangulation result is treated
-  /// @{
-  const bool throwCheirality_; ///< If true, rethrows Cheirality exceptions (default: false)
-  const bool verboseCheirality_; ///< If true, prints text for Cheirality exceptions (default: false)
   /// @}
 
 public:
@@ -97,13 +149,10 @@ public:
       double dynamicOutlierRejectionThreshold = -1,
       boost::optional<Pose3> body_P_sensor = boost::none) :
         Base(body_P_sensor),
-      linearizationMode_(linearizationMode), //
-      degeneracyMode_(degeneracyMode), //
-      parameters_(rankTolerance, enableEPI, landmarkDistanceThreshold,
-          dynamicOutlierRejectionThreshold), //
-      result_(TriangulationResult::Degenerate()), //
-      retriangulationThreshold_(1e-5), //
-      throwCheirality_(false), verboseCheirality_(false) {}
+        params_(linearizationMode, degeneracyMode,
+              rankTolerance, enableEPI, landmarkDistanceThreshold,
+              dynamicOutlierRejectionThreshold), //
+      result_(TriangulationResult::Degenerate()) {}
 
   /** Virtual destructor */
   virtual ~SmartProjectionFactor() {
@@ -117,8 +166,8 @@ public:
   void print(const std::string& s = "", const KeyFormatter& keyFormatter =
       DefaultKeyFormatter) const {
     std::cout << s << "SmartProjectionFactor\n";
-    std::cout << "linearizationMode:\n" << linearizationMode_ << std::endl;
-    std::cout << "triangulationParameters:\n" << parameters_ << std::endl;
+    std::cout << "linearizationMode:\n" << params_.linearizationMode << std::endl;
+    std::cout << "triangulationParameters:\n" << params_.triangulationParameters << std::endl;
     std::cout << "result:\n" << result_ << std::endl;
     Base::print("", keyFormatter);
   }
@@ -126,7 +175,7 @@ public:
   /// equals
   virtual bool equals(const NonlinearFactor& p, double tol = 1e-9) const {
     const This *e = dynamic_cast<const This*>(&p);
-    return e && linearizationMode_ == e->linearizationMode_
+    return e && params_.linearizationMode == e->params_.linearizationMode
         && Base::equals(p, tol);
   }
 
@@ -148,7 +197,7 @@ public:
     if (!retriangulate) {
       for (size_t i = 0; i < cameras.size(); i++) {
         if (!cameras[i].pose().equals(cameraPosesTriangulation_[i],
-            retriangulationThreshold_)) {
+            params_.retriangulationThreshold)) {
           retriangulate = true; // at least two poses are different, hence we retriangulate
           break;
         }
@@ -175,7 +224,7 @@ public:
 
     bool retriangulate = decideIfTriangulate(cameras);
     if (retriangulate)
-      result_ = gtsam::triangulateSafe(cameras, this->measured_, parameters_);
+      result_ = gtsam::triangulateSafe(cameras, this->measured_, params_.triangulationParameters);
     return result_;
   }
 
@@ -205,7 +254,7 @@ public:
 
     triangulateSafe(cameras);
 
-    if (degeneracyMode_ == ZERO_ON_DEGENERACY && !result_) {
+    if (params_.degeneracyMode == ZERO_ON_DEGENERACY && !result_) {
       // failed: return"empty" Hessian
       BOOST_FOREACH(Matrix& m, Gs)
         m = zeros(Base::Dim, Base::Dim);
@@ -294,7 +343,7 @@ public:
   boost::shared_ptr<GaussianFactor> linearizeDamped(const Cameras& cameras,
       const double lambda = 0.0) const {
     // depending on flag set on construction we may linearize to different linear factors
-    switch (linearizationMode_) {
+    switch (params_.linearizationMode) {
     case HESSIAN:
       return createHessianFactor(cameras, lambda);
     case IMPLICIT_SCHUR:
@@ -414,7 +463,7 @@ public:
     if (result_)
       // All good, just use version in base class
       return Base::totalReprojectionError(cameras, *result_);
-    else if (degeneracyMode_ == HANDLE_INFINITY) {
+    else if (params_.degeneracyMode == HANDLE_INFINITY) {
       // Otherwise, manage the exceptions with rotation-only factors
       const Point2& z0 = this->measured_.at(0);
       Unit3 backprojected = cameras.front().backprojectPointAtInfinity(z0);
@@ -459,16 +508,6 @@ public:
     return result_.behindCamera();
   }
 
-  /** return cheirality verbosity */
-  inline bool verboseCheirality() const {
-    return verboseCheirality_;
-  }
-
-  /** return flag for throwing cheirality exceptions */
-  inline bool throwCheirality() const {
-    return throwCheirality_;
-  }
-
 private:
 
   /// Serialization function
@@ -476,8 +515,8 @@ private:
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int version) {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-    ar & BOOST_SERIALIZATION_NVP(throwCheirality_);
-    ar & BOOST_SERIALIZATION_NVP(verboseCheirality_);
+    ar & BOOST_SERIALIZATION_NVP(params_.throwCheirality);
+    ar & BOOST_SERIALIZATION_NVP(params_.verboseCheirality);
   }
 }
 ;
