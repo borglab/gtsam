@@ -74,6 +74,10 @@ protected:
   const bool verboseCheirality_; ///< If true, prints text for Cheirality exceptions (default: false)
   /// @}
 
+  /// @name Pose of the camera in the body frame
+  const boost::optional<Pose3> body_P_sensor_; ///< Pose of the camera in the body frame
+  /// @}
+
 public:
 
   /// shorthand for a smart pointer to a factor
@@ -94,14 +98,16 @@ public:
       double rankTolerance = 1, DegeneracyMode degeneracyMode =
           IGNORE_DEGENERACY, bool enableEPI = false,
       double landmarkDistanceThreshold = 1e10,
-      double dynamicOutlierRejectionThreshold = -1) :
+      double dynamicOutlierRejectionThreshold = -1,
+      boost::optional<Pose3> body_P_sensor = boost::none) :
       linearizationMode_(linearizationMode), //
       degeneracyMode_(degeneracyMode), //
       parameters_(rankTolerance, enableEPI, landmarkDistanceThreshold,
           dynamicOutlierRejectionThreshold), //
       result_(TriangulationResult::Degenerate()), //
       retriangulationThreshold_(1e-5), //
-      throwCheirality_(false), verboseCheirality_(false) {
+      throwCheirality_(false), verboseCheirality_(false),
+      body_P_sensor_(body_P_sensor){
   }
 
   /** Virtual destructor */
@@ -119,6 +125,8 @@ public:
     std::cout << "linearizationMode:\n" << linearizationMode_ << std::endl;
     std::cout << "triangulationParameters:\n" << parameters_ << std::endl;
     std::cout << "result:\n" << result_ << std::endl;
+    if(body_P_sensor_)
+      body_P_sensor_->print("body_P_sensor_:\n");
     Base::print("", keyFormatter);
   }
 
@@ -466,6 +474,13 @@ public:
   /** return flag for throwing cheirality exceptions */
   inline bool throwCheirality() const {
     return throwCheirality_;
+  }
+
+  Pose3 body_P_sensor() const{
+    if(body_P_sensor_)
+      return *body_P_sensor_;
+    else
+      return Pose3(); // if unspecified, the transformation is the identity
   }
 
 private:

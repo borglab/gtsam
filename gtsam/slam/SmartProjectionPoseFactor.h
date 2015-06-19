@@ -49,7 +49,6 @@ private:
 protected:
 
   boost::shared_ptr<CALIBRATION> K_; ///< calibration object (one for all cameras)
-  boost::optional<Pose3> body_P_sensor_; ///< Pose of the camera in the body frame
 
 public:
 
@@ -71,7 +70,7 @@ public:
       LinearizationMode linearizeTo = HESSIAN, double landmarkDistanceThreshold = 1e10,
       double dynamicOutlierRejectionThreshold = -1) :
         Base(linearizeTo, rankTol, manageDegeneracy, enableEPI, landmarkDistanceThreshold,
-            dynamicOutlierRejectionThreshold), K_(K),  body_P_sensor_(body_P_sensor) {}
+            dynamicOutlierRejectionThreshold, body_P_sensor), K_(K) {}
 
   /** Virtual destructor */
   virtual ~SmartProjectionPoseFactor() {}
@@ -84,8 +83,6 @@ public:
   void print(const std::string& s = "", const KeyFormatter& keyFormatter =
       DefaultKeyFormatter) const {
     std::cout << s << "SmartProjectionPoseFactor, z = \n ";
-    if(body_P_sensor_)
-      body_P_sensor_->print("body_P_sensor_:\n");
     Base::print("", keyFormatter);
   }
 
@@ -129,13 +126,6 @@ public:
     return K_;
   }
 
-  Pose3 body_P_sensor() const{
-    if(body_P_sensor_)
-      return *body_P_sensor_;
-    else
-      return Pose3(); // if unspecified, the transformation is the identity
-  }
-
   /**
    * Collect all cameras involved in this factor
    * @param values Values structure which must contain camera poses corresponding
@@ -146,8 +136,8 @@ public:
     typename Base::Cameras cameras;
     BOOST_FOREACH(const Key& k, this->keys_) {
       Pose3 pose = values.at<Pose3>(k);
-      if(body_P_sensor_)
-        pose = pose.compose(*(body_P_sensor_));
+      if(Base::body_P_sensor_)
+        pose = pose.compose(*(Base::body_P_sensor_));
 
       Camera camera(pose, K_);
       cameras.push_back(camera);
