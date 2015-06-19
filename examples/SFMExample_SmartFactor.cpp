@@ -58,7 +58,7 @@ int main(int argc, char* argv[]) {
   for (size_t j = 0; j < points.size(); ++j) {
 
     // every landmark represent a single landmark, we use shared pointer to init the factor, and then insert measurements.
-    SmartFactor::shared_ptr smartfactor(new SmartFactor());
+    SmartFactor::shared_ptr smartfactor(new SmartFactor(K));
 
     for (size_t i = 0; i < poses.size(); ++i) {
 
