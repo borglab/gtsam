@@ -932,7 +932,7 @@ TEST( SmartProjectionPoseFactor, CheckHessian) {
   EXPECT(assert_equal(InfoVector, GaussianGraph->hessian().second, 1e-8));
 }
 
-/* *************************************************************************
+/* *************************************************************************/
 TEST( SmartProjectionPoseFactor, 3poses_2land_rotation_only_smart_projection_factor ) {
   using namespace vanillaPose2;
 
@@ -941,13 +941,13 @@ TEST( SmartProjectionPoseFactor, 3poses_2land_rotation_only_smart_projection_fac
   views.push_back(x2);
   views.push_back(x3);
 
-  // Two different cameras
+  // Two different cameras, at the same position, but different rotations
   Pose3 pose2 = level_pose * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3());
   Pose3 pose3 = pose2 * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3());
   Camera cam2(pose2, sharedK2);
   Camera cam3(pose3, sharedK2);
 
-  vector<Point2> measurements_cam1, measurements_cam2, measurements_cam3;
+  vector<Point2> measurements_cam1, measurements_cam2;
 
   // Project three landmarks into three cameras
   projectToMultipleCameras(cam1, cam2, cam3, landmark1, measurements_cam1);
@@ -975,38 +975,20 @@ TEST( SmartProjectionPoseFactor, 3poses_2land_rotation_only_smart_projection_fac
   graph.push_back(
       PoseTranslationPrior<Pose3>(x3, positionPrior, noisePriorTranslation));
 
-  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 10, 0., -M_PI / 10),
+  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
   Values values;
   values.insert(x1, cam1.pose());
   values.insert(x2, pose2 * noise_pose);
-  // initialize third pose with some noise, we expect it to move back to original pose_above
-  values.insert(x3, pose3 * noise_pose * noise_pose);
-  EXPECT(
-      assert_equal(
-          Pose3(
-              Rot3(0.154256096, -0.632754061, 0.75883289, -0.753276814,
-                  -0.572308662, -0.324093872, 0.639358349, -0.521617766,
-                  -0.564921063),
-              Point3(0.145118171, -0.252907438, 0.819956033)),
-          values.at<Pose3>(x3)));
+  values.insert(x3, pose3 * noise_pose);
 
-  Values result;
-  params.verbosityLM = LevenbergMarquardtParams::SUMMARY;
+  // params.verbosityLM = LevenbergMarquardtParams::SUMMARY;
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
-  result = optimizer.optimize();
-
-  EXPECT(
-      assert_equal(
-          Pose3(
-              Rot3(0.154256096, -0.632754061, 0.75883289, -0.753276814,
-                  -0.572308662, -0.324093872, 0.639358349, -0.521617766,
-                  -0.564921063),
-              Point3(0.145118171, -0.252907438, 0.819956033)),
-          result.at<Pose3>(x3)));
+  Values result = optimizer.optimize();
+  EXPECT(assert_equal(pose3, result.at<Pose3>(x3)));
 }
 
-/* *************************************************************************
+/* *************************************************************************/
 TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) {
 
   using namespace vanillaPose;
@@ -1016,7 +998,7 @@ TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) 
   views.push_back(x2);
   views.push_back(x3);
 
-  // Two different cameras
+  // Two different cameras, at the same position, but different rotations
   Pose3 pose2 = level_pose
       * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
   Pose3 pose3 = pose2 * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0, 0, 0));
@@ -1065,7 +1047,6 @@ TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) 
   Values values;
   values.insert(x1, cam1.pose());
   values.insert(x2, cam2.pose());
-  // initialize third pose with some noise, we expect it to move back to original pose_above
   values.insert(x3, pose3 * noise_pose);
   EXPECT(
       assert_equal(
@@ -1080,14 +1061,10 @@ TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) 
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
 
-  EXPECT(
-      assert_equal(
-          Pose3(
-              Rot3(0.00563056869, -0.130848107, 0.991386438, -0.991390265,
-                  -0.130426831, -0.0115837907, 0.130819108, -0.98278564,
-                  -0.130455917),
-              Point3(0.0897734171, -0.110201006, 0.901022872)),
-          result.at<Pose3>(x3)));
+  // Since we do not do anything on degenerate instances (ZERO_ON_DEGENERACY)
+  // rotation remains the same as the initial guess, but position is fixed by PoseTranslationPrior
+  EXPECT(assert_equal(Pose3(values.at<Pose3>(x3).rotation(),
+      Point3(0,0,1)), result.at<Pose3>(x3)));
 }
 
 /* *************************************************************************/

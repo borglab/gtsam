@@ -73,7 +73,7 @@ int main(int argc, char** argv){
   while (pose_file >> i) {
     for (int i = 0; i < 16; i++)
       pose_file >> m.data()[i];
-    initial_estimate.insert(i, Camera(Pose3(m),K));
+    initial_estimate.insert(i, Pose3(m));
   }
   
   // landmark keys
@@ -87,24 +87,24 @@ int main(int argc, char** argv){
 
   //read stereo measurements and construct smart factors
 
-  SmartFactor::shared_ptr factor(new SmartFactor());
+  SmartFactor::shared_ptr factor(new SmartFactor(K));
   size_t current_l = 3;   // hardcoded landmark ID from first measurement
 
   while (factor_file >> i >> l >> uL >> uR >> v >> X >> Y >> Z) {
 
     if(current_l != l) {
       graph.push_back(factor);
-      factor = SmartFactor::shared_ptr(new SmartFactor());
+      factor = SmartFactor::shared_ptr(new SmartFactor(K));
       current_l = l;
     }
     factor->add(Point2(uL,v), i, model);
   }
 
-  Camera firstCamera = initial_estimate.at<Camera>(1);
+  Pose3 firstPose = initial_estimate.at<Pose3>(1);
   //constrain the first pose such that it cannot change from its original value during optimization
   // NOTE: NonlinearEquality forces the optimizer to use QR rather than Cholesky
   // QR is much slower than Cholesky, but numerically more stable
-  graph.push_back(NonlinearEquality<Camera>(1,firstCamera));
+  graph.push_back(NonlinearEquality<Pose3>(1,firstPose));
 
   LevenbergMarquardtParams params;
   params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
@@ -116,7 +116,7 @@ int main(int argc, char** argv){
   Values result = optimizer.optimize();
 
   cout << "Final result sample:" << endl;
-  Values pose_values = result.filter<Camera>();
+  Values pose_values = result.filter<Pose3>();
   pose_values.print("Final camera poses:\n");
 
   return 0;
