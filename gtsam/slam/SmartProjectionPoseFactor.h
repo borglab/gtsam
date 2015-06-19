@@ -72,6 +72,17 @@ public:
         Base(linearizeTo, rankTol, manageDegeneracy, enableEPI, landmarkDistanceThreshold,
             dynamicOutlierRejectionThreshold, body_P_sensor), K_(K) {}
 
+  /**
+   * Constructor
+   * @param K (fixed) calibration, assumed to be the same for all cameras
+   * @param  body_P_sensor pose of the camera in the body frame
+   * @param params internal parameters of the smart factors
+   */
+//  SmartProjectionPoseFactor(const boost::shared_ptr<CALIBRATION> K,
+//          const boost::optional<Pose3> body_P_sensor = boost::none,
+//          const SmartProjectionParams params = SmartProjectionParams()) :
+//              Base(body_P_sensor, params), K_(K) {}
+
   /** Virtual destructor */
   virtual ~SmartProjectionPoseFactor() {}
 

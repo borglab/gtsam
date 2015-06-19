@@ -44,7 +44,7 @@ enum DegeneracyMode {
 /*
  *  Parameters for the smart projection factors
  */
-class GTSAM_EXPORT SmartProjectionFactorParams {
+class GTSAM_EXPORT SmartProjectionParams {
 
 public:
 
@@ -64,7 +64,7 @@ public:
   /// @}
 
   // Constructor
-  SmartProjectionFactorParams(LinearizationMode linMode = HESSIAN,
+  SmartProjectionParams(LinearizationMode linMode = HESSIAN,
       DegeneracyMode degMode = IGNORE_DEGENERACY, double rankTol = 1,
       bool enableEPI = false, double landmarkDistanceThreshold = 1e10,
       double dynamicOutlierRejectionThreshold = -1):
@@ -74,7 +74,7 @@ public:
         retriangulationThreshold(1e-5),
         throwCheirality(false), verboseCheirality(false) {}
 
-  virtual ~SmartProjectionFactorParams() {}
+  virtual ~SmartProjectionParams() {}
 
   void print(const std::string& str) const {
     std::cout << "         linearizationMode: " << linearizationMode << "\n";
@@ -117,7 +117,7 @@ protected:
 
   /// @name Parameters
   /// @{
-  const SmartProjectionFactorParams params_;
+  const SmartProjectionParams params_;
   /// @}
 
   /// @name Caching triangulation
@@ -153,6 +153,17 @@ public:
               rankTolerance, enableEPI, landmarkDistanceThreshold,
               dynamicOutlierRejectionThreshold), //
       result_(TriangulationResult::Degenerate()) {}
+
+  /**
+   * Constructor
+   * @param body_P_sensor pose of the camera in the body frame
+   * @param params internal parameters of the smart factors
+   */
+//  SmartProjectionFactor(const boost::optional<Pose3> body_P_sensor = boost::none,
+//      const SmartProjectionParams params = SmartProjectionParams()) :
+//        Base(body_P_sensor),
+//        params_(params), //
+//        result_(TriangulationResult::Degenerate()) {}
 
   /** Virtual destructor */
   virtual ~SmartProjectionFactor() {
