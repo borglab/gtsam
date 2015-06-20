@@ -643,7 +643,6 @@ public:
     // gs = F' * (b - E * P * E' * b)
 
     MatrixDD matrixBlock;
-    typedef SymmetricBlockMatrix::Block Block; ///< A block from the Hessian matrix
 
     FastMap<Key, size_t> KeySlotMap;
     for (size_t slot = 0; slot < allKeys.size(); slot++)
