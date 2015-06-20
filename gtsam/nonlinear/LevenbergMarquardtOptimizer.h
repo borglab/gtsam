@@ -111,17 +111,16 @@ public:
 
   virtual ~LevenbergMarquardtParams() {}
   virtual void print(const std::string& str = "") const;
-  std::string getVerbosityLM() const { return verbosityLMTranslator(verbosityLM);}
-  void setVerbosityLM(const std::string& s) { verbosityLM = verbosityLMTranslator(s);}
 
-  // @deprecated (just use fields)
-#ifdef GTSAM_ALLOW_DEPRECATED
+  /// @name Getters/Setters, mainly for MATLAB. Use fields above in C++.
+  /// @{
   bool getDiagonalDamping() const { return diagonalDamping; }
   double getlambdaFactor() const { return lambdaFactor; }
   double getlambdaInitial() const { return lambdaInitial; }
   double getlambdaLowerBound() const { return lambdaLowerBound; }
   double getlambdaUpperBound() const { return lambdaUpperBound; }
   std::string getLogFile() const { return logFile; }
+  std::string getVerbosityLM() const { return verbosityLMTranslator(verbosityLM);}
   void setDiagonalDamping(bool flag) { diagonalDamping = flag; }
   void setlambdaFactor(double value) { lambdaFactor = value; }
   void setlambdaInitial(double value) { lambdaInitial = value; }
@@ -129,7 +128,8 @@ public:
   void setlambdaUpperBound(double value) { lambdaUpperBound = value; }
   void setLogFile(const std::string& s) { logFile = s; }
   void setUseFixedLambdaFactor(bool flag) { useFixedLambdaFactor = flag;}
-#endif
+  void setVerbosityLM(const std::string& s) { verbosityLM = verbosityLMTranslator(s);}
+  // @}
 };
 
 /**
