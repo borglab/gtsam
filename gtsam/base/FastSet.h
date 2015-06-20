@@ -19,15 +19,18 @@
 #pragma once
 
 #include <gtsam/base/FastDefaultAllocator.h>
+
 #include <boost/mpl/has_xxx.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/set.hpp>
-#include <set>
-#include <iostream>
-#include <string>
+
 #include <cmath>
+#include <iosfwd>
+#include <iostream>
+#include <set>
+#include <string>
 
 BOOST_MPL_HAS_XXX_TRAIT_DEF(print)
 

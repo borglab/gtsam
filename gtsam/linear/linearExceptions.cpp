@@ -19,6 +19,7 @@
 #include <gtsam/linear/linearExceptions.h>
 #include <gtsam/inference/Symbol.h>
 #include <boost/format.hpp>
+#include <boost/lexical_cast.hpp>
 
 namespace gtsam {
 

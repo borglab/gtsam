@@ -15,17 +15,19 @@
  * @date    Dec 8, 2010
  */
 
-#include <gtsam/linear/linearExceptions.h>
+#include <gtsam/linear/HessianFactor.h>
+
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/GaussianFactor.h>
-#include <gtsam/linear/HessianFactor.h>
-#include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/base/debug.h>
-#include <gtsam/base/timing.h>
-#include <gtsam/base/Matrix.h>
-#include <gtsam/base/FastMap.h>
+#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/linearExceptions.h>
 #include <gtsam/base/cholesky.h>
+#include <gtsam/base/debug.h>
+#include <gtsam/base/FastMap.h>
+#include <gtsam/base/Matrix.h>
+#include <gtsam/base/ThreadsafeException.h>
+#include <gtsam/base/timing.h>
 
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
@@ -469,7 +471,7 @@ std::pair<boost::shared_ptr<GaussianConditional>,
     // Erase the eliminated keys in the remaining factor
     jointFactor->keys_.erase(jointFactor->begin(),
         jointFactor->begin() + numberOfKeysToEliminate);
-  } catch (CholeskyFailed&) {
+  } catch (const CholeskyFailed& e) {
     throw IndeterminantLinearSystemException(keys.front());
   }
 
