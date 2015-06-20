@@ -33,6 +33,7 @@ using namespace boost::assign;
 TEST(RegularHessianFactor, Constructors)
 {
   // First construct a regular JacobianFactor
+  // 0.5*|x0 + x1 + x3 - [1;2]|^2 = 0.5*|A*x-b|^2, with A=[I I I]
   Matrix A1 = I_2x2, A2 = I_2x2, A3 = I_2x2;
   Vector2 b(1,2);
   vector<pair<Key, Matrix> > terms;
@@ -42,6 +43,9 @@ TEST(RegularHessianFactor, Constructors)
   // Test conversion from JacobianFactor
   RegularHessianFactor<2> factor(jf);
 
+  // 0.5*|A*x-b|^2 = 0.5*(Ax-b)'*(Ax-b) = 0.5*x'*A'A*x - x'*A'b + 0.5*b'*b
+  // Compare with comment in HessianFactor: E(x) = 0.5 x^T G x - x^T g + 0.5 f
+  // Hence G = I6, g A'*b = [b;b;b], and f = b'*b = 1+4 = 5
   Matrix G11 = I_2x2;
   Matrix G12 = I_2x2;
   Matrix G13 = I_2x2;
@@ -53,7 +57,7 @@ TEST(RegularHessianFactor, Constructors)
 
   Vector2 g1 = b, g2 = b, g3 = b;
 
-  double f = 10;
+  double f = 5;
 
   // Test ternary constructor
   RegularHessianFactor<2> factor2(0, 1, 3, G11, G12, G13, g1, G22, G23, g2, G33, g3, f);
