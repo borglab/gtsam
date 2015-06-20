@@ -15,17 +15,19 @@
  * @date    Dec 8, 2010
  */
 
-#include <gtsam/linear/linearExceptions.h>
+#include <gtsam/linear/HessianFactor.h>
+
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/GaussianFactor.h>
-#include <gtsam/linear/HessianFactor.h>
-#include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/base/debug.h>
-#include <gtsam/base/timing.h>
-#include <gtsam/base/Matrix.h>
-#include <gtsam/base/FastMap.h>
+#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/linearExceptions.h>
 #include <gtsam/base/cholesky.h>
+#include <gtsam/base/debug.h>
+#include <gtsam/base/FastMap.h>
+#include <gtsam/base/Matrix.h>
+#include <gtsam/base/ThreadsafeException.h>
+#include <gtsam/base/timing.h>
 
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
@@ -268,18 +270,11 @@ void HessianFactor::print(const std::string& s,
 
 /* ************************************************************************* */
 bool HessianFactor::equals(const GaussianFactor& lf, double tol) const {
-  if (!dynamic_cast<const HessianFactor*>(&lf))
+  const HessianFactor* rhs = dynamic_cast<const HessianFactor*>(&lf);
+  if (!rhs || !Factor::equals(lf, tol))
     return false;
-  else {
-    if (!Factor::equals(lf, tol))
-      return false;
-    Matrix thisMatrix = info_.full().selfadjointView();
-    thisMatrix(thisMatrix.rows() - 1, thisMatrix.cols() - 1) = 0.0;
-    Matrix rhsMatrix =
-        static_cast<const HessianFactor&>(lf).info_.full().selfadjointView();
-    rhsMatrix(rhsMatrix.rows() - 1, rhsMatrix.cols() - 1) = 0.0;
-    return equal_with_abs_tol(thisMatrix, rhsMatrix, tol);
-  }
+  return equal_with_abs_tol(augmentedInformation(), rhs->augmentedInformation(),
+      tol);
 }
 
 /* ************************************************************************* */
@@ -476,7 +471,7 @@ std::pair<boost::shared_ptr<GaussianConditional>,
     // Erase the eliminated keys in the remaining factor
     jointFactor->keys_.erase(jointFactor->begin(),
         jointFactor->begin() + numberOfKeysToEliminate);
-  } catch (CholeskyFailed&) {
+  } catch (const CholeskyFailed& e) {
     throw IndeterminantLinearSystemException(keys.front());
   }
 
