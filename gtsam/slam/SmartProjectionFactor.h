@@ -53,7 +53,7 @@ public:
 
   /// @name Parameters governing the triangulation
   /// @{
-  mutable TriangulationParameters triangulationParameters;
+  mutable TriangulationParameters triangulation;
   const double retriangulationThreshold; ///< threshold to decide whether to re-triangulate
   /// @}
 
@@ -65,13 +65,11 @@ public:
 
   // Constructor
   SmartProjectionParams(LinearizationMode linMode = HESSIAN,
-      DegeneracyMode degMode = IGNORE_DEGENERACY, double rankTol = 1,
-      bool enableEPI = false, double landmarkDistanceThreshold = 1e10,
-      double dynamicOutlierRejectionThreshold = -1) :
-      linearizationMode(linMode), degeneracyMode(degMode), triangulationParameters(
-          rankTol, enableEPI, landmarkDistanceThreshold,
-          dynamicOutlierRejectionThreshold), retriangulationThreshold(1e-5), throwCheirality(
-          false), verboseCheirality(false) {
+      DegeneracyMode degMode = IGNORE_DEGENERACY, bool throwCheirality = false,
+      bool verboseCheirality = false) :
+      linearizationMode(linMode), degeneracyMode(degMode), retriangulationThreshold(
+          1e-5), throwCheirality(throwCheirality), verboseCheirality(
+          verboseCheirality) {
   }
 
   virtual ~SmartProjectionParams() {
@@ -80,14 +78,14 @@ public:
   void print(const std::string& str) const {
     std::cout << "         linearizationMode: " << linearizationMode << "\n";
     std::cout << "            degeneracyMode: " << degeneracyMode << "\n";
-    std::cout << "             rankTolerance: "
-        << triangulationParameters.rankTolerance << "\n";
-    std::cout << "                 enableEPI: "
-        << triangulationParameters.enableEPI << "\n";
+    std::cout << "             rankTolerance: " << triangulation.rankTolerance
+        << "\n";
+    std::cout << "                 enableEPI: " << triangulation.enableEPI
+        << "\n";
     std::cout << " landmarkDistanceThreshold: "
-        << triangulationParameters.landmarkDistanceThreshold << "\n";
+        << triangulation.landmarkDistanceThreshold << "\n";
     std::cout << " OutlierRejectionThreshold: "
-        << triangulationParameters.dynamicOutlierRejectionThreshold << "\n";
+        << triangulation.dynamicOutlierRejectionThreshold << "\n";
     std::cout.flush();
   }
 
@@ -98,7 +96,7 @@ public:
     return degeneracyMode;
   }
   TriangulationParameters getTriangulationParameters() const {
-    return triangulationParameters;
+    return triangulation;
   }
   bool getVerboseCheirality() const {
     return verboseCheirality;
@@ -113,18 +111,16 @@ public:
     degeneracyMode = degMode;
   }
   void setRankTolerance(double rankTol) {
-    triangulationParameters.rankTolerance = rankTol;
+    triangulation.rankTolerance = rankTol;
   }
   void setEnableEPI(bool enableEPI) {
-    triangulationParameters.enableEPI = enableEPI;
+    triangulation.enableEPI = enableEPI;
   }
   void setLandmarkDistanceThreshold(bool landmarkDistanceThreshold) {
-    triangulationParameters.landmarkDistanceThreshold =
-        landmarkDistanceThreshold;
+    triangulation.landmarkDistanceThreshold = landmarkDistanceThreshold;
   }
   void setDynamicOutlierRejectionThreshold(bool dynOutRejectionThreshold) {
-    triangulationParameters.dynamicOutlierRejectionThreshold =
-        dynOutRejectionThreshold;
+    triangulation.dynamicOutlierRejectionThreshold = dynOutRejectionThreshold;
   }
 };
 
@@ -188,7 +184,7 @@ public:
     std::cout << s << "SmartProjectionFactor\n";
     std::cout << "linearizationMode:\n" << params_.linearizationMode
         << std::endl;
-    std::cout << "triangulationParameters:\n" << params_.triangulationParameters
+    std::cout << "triangulationParameters:\n" << params_.triangulation
         << std::endl;
     std::cout << "result:\n" << result_ << std::endl;
     Base::print("", keyFormatter);
@@ -247,7 +243,7 @@ public:
     bool retriangulate = decideIfTriangulate(cameras);
     if (retriangulate)
       result_ = gtsam::triangulateSafe(cameras, this->measured_,
-          params_.triangulationParameters);
+          params_.triangulation);
     return result_;
   }
 
