@@ -34,7 +34,6 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
-#include <sys/_types/_size_t.h>
 
 #include <algorithm>
 #include <cmath>
