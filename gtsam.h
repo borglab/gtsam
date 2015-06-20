@@ -2354,18 +2354,31 @@ virtual class GeneralSFMFactor2 : gtsam::NoiseModelFactor {
   void serialize() const;
 };
 
+#include <gtsam/slam/SmartProjectionFactor.h>
+class SmartProjectionParams {
+  SmartProjectionParams();
+  // TODO(frank): make these work:
+  //  void setLinearizationMode(LinearizationMode linMode);
+  //  void setDegeneracyMode(DegeneracyMode degMode);
+  void setRankTolerance(double rankTol);
+  void setEnableEPI(bool enableEPI);
+  void setLandmarkDistanceThreshold(bool landmarkDistanceThreshold);
+  void setDynamicOutlierRejectionThreshold(bool dynOutRejectionThreshold);
+};
+
 #include <gtsam/slam/SmartProjectionPoseFactor.h>
 template<CALIBRATION>
-virtual class SmartProjectionPoseFactor : gtsam::NonlinearFactor {
+virtual class SmartProjectionPoseFactor: gtsam::NonlinearFactor {
 
-  SmartProjectionPoseFactor(double rankTol, double linThreshold,
-      bool manageDegeneracy, bool enableEPI, const gtsam::Pose3& body_P_sensor);
-
-  SmartProjectionPoseFactor(double rankTol);
-  SmartProjectionPoseFactor();
+  SmartProjectionPoseFactor(const CALIBRATION* K);
+  SmartProjectionPoseFactor(const CALIBRATION* K,
+      const gtsam::Pose3& body_P_sensor);
+  SmartProjectionPoseFactor(const CALIBRATION* K,
+      const gtsam::Pose3& body_P_sensor,
+      const gtsam::SmartProjectionParams& params);
 
   void add(const gtsam::Point2& measured_i, size_t poseKey_i,
-      const gtsam::noiseModel::Base* noise_i, const CALIBRATION* K_i);
+      const gtsam::noiseModel::Base* noise_i);
 
   // enabling serialization functionality
   //void serialize() const;
