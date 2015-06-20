@@ -63,11 +63,13 @@ public:
    */
   SmartProjectionPoseFactor(const boost::shared_ptr<CALIBRATION> K,
       const boost::optional<Pose3> body_P_sensor = boost::none,
-      const SmartProjectionParams params = SmartProjectionParams()) :
-        Base(body_P_sensor, params), K_(K) {}
+      const SmartProjectionParams& params = SmartProjectionParams()) :
+      Base(body_P_sensor, params), K_(K) {
+  }
 
   /** Virtual destructor */
-  virtual ~SmartProjectionPoseFactor() {}
+  virtual ~SmartProjectionPoseFactor() {
+  }
 
   /**
    * print
@@ -112,7 +114,7 @@ public:
     typename Base::Cameras cameras;
     BOOST_FOREACH(const Key& k, this->keys_) {
       Pose3 pose = values.at<Pose3>(k);
-      if(Base::body_P_sensor_)
+      if (Base::body_P_sensor_)
         pose = pose.compose(*(Base::body_P_sensor_));
 
       Camera camera(pose, K_);
@@ -131,7 +133,8 @@ private:
     ar & BOOST_SERIALIZATION_NVP(K_);
   }
 
-}; // end of class declaration
+};
+// end of class declaration
 
 /// traits
 template<class CALIBRATION>

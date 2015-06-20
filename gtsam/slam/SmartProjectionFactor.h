@@ -64,25 +64,30 @@ public:
   /// @}
 
   // Constructor
-  SmartProjectionParams(const LinearizationMode linMode = HESSIAN,
-      const DegeneracyMode degMode = IGNORE_DEGENERACY, const double rankTol = 1,
-      const bool enableEPI = false, const double landmarkDistanceThreshold = 1e10,
-      const double dynamicOutlierRejectionThreshold = -1):
-    linearizationMode(linMode), degeneracyMode(degMode),
-    triangulationParameters(rankTol, enableEPI,
-        landmarkDistanceThreshold, dynamicOutlierRejectionThreshold),
-        retriangulationThreshold(1e-5),
-        throwCheirality(false), verboseCheirality(false) {}
+  SmartProjectionParams(LinearizationMode linMode = HESSIAN,
+      DegeneracyMode degMode = IGNORE_DEGENERACY, double rankTol = 1,
+      bool enableEPI = false, double landmarkDistanceThreshold = 1e10,
+      double dynamicOutlierRejectionThreshold = -1) :
+      linearizationMode(linMode), degeneracyMode(degMode), triangulationParameters(
+          rankTol, enableEPI, landmarkDistanceThreshold,
+          dynamicOutlierRejectionThreshold), retriangulationThreshold(1e-5), throwCheirality(
+          false), verboseCheirality(false) {
+  }
 
-  virtual ~SmartProjectionParams() {}
+  virtual ~SmartProjectionParams() {
+  }
 
   void print(const std::string& str) const {
     std::cout << "         linearizationMode: " << linearizationMode << "\n";
     std::cout << "            degeneracyMode: " << degeneracyMode << "\n";
-    std::cout << "             rankTolerance: " << triangulationParameters.rankTolerance << "\n";
-    std::cout << "                 enableEPI: " << triangulationParameters.enableEPI << "\n";
-    std::cout << " landmarkDistanceThreshold: " << triangulationParameters.landmarkDistanceThreshold << "\n";
-    std::cout << " OutlierRejectionThreshold: " << triangulationParameters.dynamicOutlierRejectionThreshold << "\n";
+    std::cout << "             rankTolerance: "
+        << triangulationParameters.rankTolerance << "\n";
+    std::cout << "                 enableEPI: "
+        << triangulationParameters.enableEPI << "\n";
+    std::cout << " landmarkDistanceThreshold: "
+        << triangulationParameters.landmarkDistanceThreshold << "\n";
+    std::cout << " OutlierRejectionThreshold: "
+        << triangulationParameters.dynamicOutlierRejectionThreshold << "\n";
     std::cout.flush();
   }
 
@@ -114,10 +119,13 @@ public:
     triangulationParameters.enableEPI = enableEPI;
   }
   inline void setLandmarkDistanceThreshold(bool landmarkDistanceThreshold) {
-    triangulationParameters.landmarkDistanceThreshold = landmarkDistanceThreshold;
+    triangulationParameters.landmarkDistanceThreshold =
+        landmarkDistanceThreshold;
   }
-  inline void setDynamicOutlierRejectionThreshold(bool dynOutRejectionThreshold) {
-    triangulationParameters.dynamicOutlierRejectionThreshold = dynOutRejectionThreshold;
+  inline void setDynamicOutlierRejectionThreshold(
+      bool dynOutRejectionThreshold) {
+    triangulationParameters.dynamicOutlierRejectionThreshold =
+        dynOutRejectionThreshold;
   }
 };
 
@@ -160,11 +168,12 @@ public:
    * @param body_P_sensor pose of the camera in the body frame
    * @param params internal parameters of the smart factors
    */
-  SmartProjectionFactor(const boost::optional<Pose3> body_P_sensor = boost::none,
-      const SmartProjectionParams params = SmartProjectionParams()) :
-        Base(body_P_sensor),
-        params_(params), //
-        result_(TriangulationResult::Degenerate()) {}
+  SmartProjectionFactor(
+      const boost::optional<Pose3> body_P_sensor = boost::none,
+      const SmartProjectionParams& params = SmartProjectionParams()) :
+      Base(body_P_sensor), params_(params), //
+      result_(TriangulationResult::Degenerate()) {
+  }
 
   /** Virtual destructor */
   virtual ~SmartProjectionFactor() {
@@ -178,8 +187,10 @@ public:
   void print(const std::string& s = "", const KeyFormatter& keyFormatter =
       DefaultKeyFormatter) const {
     std::cout << s << "SmartProjectionFactor\n";
-    std::cout << "linearizationMode:\n" << params_.linearizationMode << std::endl;
-    std::cout << "triangulationParameters:\n" << params_.triangulationParameters << std::endl;
+    std::cout << "linearizationMode:\n" << params_.linearizationMode
+        << std::endl;
+    std::cout << "triangulationParameters:\n" << params_.triangulationParameters
+        << std::endl;
     std::cout << "result:\n" << result_ << std::endl;
     Base::print("", keyFormatter);
   }
@@ -236,7 +247,8 @@ public:
 
     bool retriangulate = decideIfTriangulate(cameras);
     if (retriangulate)
-      result_ = gtsam::triangulateSafe(cameras, this->measured_, params_.triangulationParameters);
+      result_ = gtsam::triangulateSafe(cameras, this->measured_,
+          params_.triangulationParameters);
     return result_;
   }
 
