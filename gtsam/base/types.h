@@ -23,7 +23,6 @@
 #include <boost/concept/assert.hpp>
 #include <boost/function.hpp>
 #include <boost/range/concepts.hpp>
-#include <sys/_types/_ptrdiff_t.h>
 #include <cstddef>
 
 #ifdef GTSAM_USE_TBB
