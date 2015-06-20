@@ -91,39 +91,38 @@ public:
     std::cout.flush();
   }
 
-  inline LinearizationMode getLinearizationMode() const {
+  LinearizationMode getLinearizationMode() const {
     return linearizationMode;
   }
-  inline DegeneracyMode getDegeneracyMode() const {
+  DegeneracyMode getDegeneracyMode() const {
     return degeneracyMode;
   }
-  inline TriangulationParameters getTriangulationParameters() const {
+  TriangulationParameters getTriangulationParameters() const {
     return triangulationParameters;
   }
-  inline bool getVerboseCheirality() const {
+  bool getVerboseCheirality() const {
     return verboseCheirality;
   }
-  inline bool getThrowCheirality() const {
+  bool getThrowCheirality() const {
     return throwCheirality;
   }
-  inline void setLinearizationMode(LinearizationMode linMode) {
+  void setLinearizationMode(LinearizationMode linMode) {
     linearizationMode = linMode;
   }
-  inline void setDegeneracyMode(DegeneracyMode degMode) {
+  void setDegeneracyMode(DegeneracyMode degMode) {
     degeneracyMode = degMode;
   }
-  inline void setRankTolerance(double rankTol) {
+  void setRankTolerance(double rankTol) {
     triangulationParameters.rankTolerance = rankTol;
   }
-  inline void setEnableEPI(bool enableEPI) {
+  void setEnableEPI(bool enableEPI) {
     triangulationParameters.enableEPI = enableEPI;
   }
-  inline void setLandmarkDistanceThreshold(bool landmarkDistanceThreshold) {
+  void setLandmarkDistanceThreshold(bool landmarkDistanceThreshold) {
     triangulationParameters.landmarkDistanceThreshold =
         landmarkDistanceThreshold;
   }
-  inline void setDynamicOutlierRejectionThreshold(
-      bool dynOutRejectionThreshold) {
+  void setDynamicOutlierRejectionThreshold(bool dynOutRejectionThreshold) {
     triangulationParameters.dynamicOutlierRejectionThreshold =
         dynOutRejectionThreshold;
   }
@@ -518,17 +517,17 @@ public:
   }
 
   /// Is result valid?
-  inline bool isValid() const {
+  bool isValid() const {
     return result_;
   }
 
   /** return the degenerate state */
-  inline bool isDegenerate() const {
+  bool isDegenerate() const {
     return result_.degenerate();
   }
 
   /** return the cheirality status flag */
-  inline bool isPointBehindCamera() const {
+  bool isPointBehindCamera() const {
     return result_.behindCamera();
   }
 
