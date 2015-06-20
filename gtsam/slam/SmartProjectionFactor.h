@@ -76,17 +76,9 @@ public:
   }
 
   void print(const std::string& str) const {
-    std::cout << "         linearizationMode: " << linearizationMode << "\n";
-    std::cout << "            degeneracyMode: " << degeneracyMode << "\n";
-    std::cout << "             rankTolerance: " << triangulation.rankTolerance
-        << "\n";
-    std::cout << "                 enableEPI: " << triangulation.enableEPI
-        << "\n";
-    std::cout << " landmarkDistanceThreshold: "
-        << triangulation.landmarkDistanceThreshold << "\n";
-    std::cout << " OutlierRejectionThreshold: "
-        << triangulation.dynamicOutlierRejectionThreshold << "\n";
-    std::cout.flush();
+    std::cout << "linearizationMode: " << linearizationMode << "\n";
+    std::cout << "   degeneracyMode: " << degeneracyMode << "\n";
+    std::cout << triangulation << std::endl;
   }
 
   LinearizationMode getLinearizationMode() const {
