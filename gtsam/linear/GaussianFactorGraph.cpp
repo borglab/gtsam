@@ -47,7 +47,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   GaussianFactorGraph::Keys GaussianFactorGraph::keys() const {
-    FastSet<Key> keys;
+    KeySet keys;
     BOOST_FOREACH(const sharedFactor& factor, *this)
     if (factor)
       keys.insert(factor->begin(), factor->end());

@@ -70,7 +70,7 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
   stm << "  size=\"" << formatting.figureWidthInches << "," <<
     formatting.figureHeightInches << "\";\n\n";
 
-  FastSet<Key> keys = this->keys();
+  KeySet keys = this->keys();
 
   // Local utility function to extract x and y coordinates
   struct { boost::optional<Point2> operator()(
@@ -144,7 +144,7 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
 
   if (formatting.mergeSimilarFactors) {
     // Remove duplicate factors
-    FastSet<vector<Key> > structure;
+    std::set<vector<Key> > structure;
     BOOST_FOREACH(const sharedFactor& factor, *this){
       if(factor) {
         vector<Key> factorKeys = factor->keys();
@@ -234,8 +234,8 @@ double NonlinearFactorGraph::error(const Values& c) const {
 }
 
 /* ************************************************************************* */
-FastSet<Key> NonlinearFactorGraph::keys() const {
-  FastSet<Key> keys;
+KeySet NonlinearFactorGraph::keys() const {
+  KeySet keys;
   BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
     if(factor)
       keys.insert(factor->begin(), factor->end());
