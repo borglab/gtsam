@@ -106,8 +106,8 @@ TEST( GaussianJunctionTreeB, constructor2 ) {
 
   GaussianJunctionTree::sharedNode x324 = actual.roots().front();
   LONGS_EQUAL(2, x324->children.size());
-  GaussianJunctionTree::sharedNode x1 = x324->children[0];
-  GaussianJunctionTree::sharedNode x56 = x324->children[1];
+  GaussianJunctionTree::sharedNode x1 = x324->children.front();
+  GaussianJunctionTree::sharedNode x56 = x324->children.back();
   if (x1->children.size() > 0)
     x1.swap(x56); // makes it work with different tie-breakers
 
