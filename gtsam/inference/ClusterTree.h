@@ -37,7 +37,7 @@ public:
   struct Cluster {
     typedef Ordering Keys;
     typedef FastVector<sharedFactor> Factors;
-    typedef FastList<boost::shared_ptr<Cluster> > Children;
+    typedef FastVector<boost::shared_ptr<Cluster> > Children;
 
     Cluster() {
     }
