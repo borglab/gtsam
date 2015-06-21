@@ -122,10 +122,8 @@ namespace gtsam
   void ClusterTree<BAYESTREE,GRAPH>::Cluster::print(
     const std::string& s, const KeyFormatter& keyFormatter) const
   {
-    std::cout << s;
-    BOOST_FOREACH(Key j, orderedFrontalKeys)
-      std::cout << j << "  ";
-    std::cout << "problemSize = " << problemSize_ << std::endl;
+    std::cout << s << " (" << problemSize_ << ")" ;
+    PrintKeyVector(orderedFrontalKeys);
   }
 
   /* ************************************************************************* */
