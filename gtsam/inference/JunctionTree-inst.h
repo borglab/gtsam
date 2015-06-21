@@ -111,9 +111,6 @@ struct ConstructorTraversalData {
                                         child.orderedFrontalKeys.rbegin(),
                                         child.orderedFrontalKeys.rend());
         // Merge keys, factors, and children.
-        node->orderedFrontalKeys.insert(node->orderedFrontalKeys.begin(),
-                                        child.orderedFrontalKeys.begin(),
-                                        child.orderedFrontalKeys.end());
         node->factors.insert(node->factors.end(), child.factors.begin(), child.factors.end());
         node->children.insert(node->children.end(), child.children.begin(), child.children.end());
         // Increment problem size
