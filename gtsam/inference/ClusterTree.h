@@ -41,6 +41,11 @@ namespace gtsam
       typedef FastVector<sharedFactor> Factors;
       typedef FastVector<boost::shared_ptr<Cluster> > Children;
 
+      Cluster() {}
+      Cluster(Key key, const Factors& factors) : factors(factors) {
+        orderedFrontalKeys.push_back(key);
+      }
+
       Keys orderedFrontalKeys; ///< Frontal keys of this node
       Factors factors; ///< Factors associated with this node
       Children children; ///< sub-trees
