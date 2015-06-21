@@ -103,15 +103,15 @@ TEST( GaussianJunctionTreeB, constructor2 )
   GaussianJunctionTree::sharedNode x324 = actual.roots().front();
   LONGS_EQUAL(2, x324->children.size());
 #if defined(__APPLE__) // tie-breaking seems different :-(
-  GaussianJunctionTree::sharedNode x1 = x324->children[0];
-  GaussianJunctionTree::sharedNode x56 = x324->children[1];
+  GaussianJunctionTree::sharedNode x1 = x324->children.front();
+  GaussianJunctionTree::sharedNode x56 = x324->children.back();
 #else
-  GaussianJunctionTree::sharedNode x1 = x324->children[1];
-  GaussianJunctionTree::sharedNode x56 = x324->children[0];
+  GaussianJunctionTree::sharedNode x1 = x324->children.back();
+  GaussianJunctionTree::sharedNode x56 = x324->children.front();
 #endif
   LONGS_EQUAL(0, x1->children.size());
   LONGS_EQUAL(1, x56->children.size());
-  GaussianJunctionTree::sharedNode x7 = x56->children[0];
+  GaussianJunctionTree::sharedNode x7 = x56->children.front();
   LONGS_EQUAL(0, x7->children.size());
 
   EXPECT(assert_equal(o324, x324->orderedFrontalKeys));

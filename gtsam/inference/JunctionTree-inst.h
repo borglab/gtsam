@@ -104,15 +104,15 @@ struct ConstructorTraversalData {
 
     // decide which children to merge, as index into children
     std::vector<bool> merge(nrChildren, false);
-    size_t myNrFrontals = 1;
-    for (size_t i = 0; i < nrChildren; ++i) {
+    size_t myNrFrontals = 1, i = 0;
+    BOOST_FOREACH(const sharedNode& child, node->children) {
       // Check if we should merge the i^th child
       if (myNrParents + myNrFrontals == childConditionals[i]->nrParents()) {
-        sharedNode child = node->children[i];
         // Increment number of frontal variables
         myNrFrontals += child->orderedFrontalKeys.size();
         merge[i] = true;
       }
+      ++i;
     }
 
     // now really merge
@@ -145,7 +145,10 @@ JunctionTree<BAYESTREE, GRAPH>::JunctionTree(
       Data::ConstructorTraversalVisitorPostAlg2);
 
   // Assign roots from the dummy node
-  Base::roots_ = rootData.myJTNode->children;
+  typedef typename JunctionTree<BAYESTREE, GRAPH>::Node Node;
+  const typename Node::Children& children = rootData.myJTNode->children;
+  Base::roots_.reserve(children.size());
+  Base::roots_.insert(Base::roots_.begin(), children.begin(), children.end());
 
   // Transfer remaining factors from elimination tree
   Base::remainingFactors_ = eliminationTree.remainingFactors();
