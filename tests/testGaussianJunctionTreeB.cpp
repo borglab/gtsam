@@ -85,12 +85,14 @@ TEST( GaussianJunctionTreeB, constructor2 )
   // create an ordering
   GaussianEliminationTree etree(*fg, ordering);
   SymbolicEliminationTree stree(*symbolic,ordering);
+  GTSAM_PRINT(stree);
   GaussianJunctionTree actual(etree);
+  GTSAM_PRINT(actual);
 
-  Ordering frontal1; frontal1 += X(3), X(2), X(4);
-  Ordering frontal2; frontal2 += X(5), X(6);
-  Ordering frontal3; frontal3 += X(7);
-  Ordering frontal4; frontal4 += X(1);
+  Ordering o324; o324 += X(3), X(2), X(4);
+  Ordering o56; o56 += X(5), X(6);
+  Ordering o7; o7 += X(7);
+  Ordering o1; o1 += X(1);
 
   // Can no longer test these:
 //  Ordering sep1;
@@ -98,20 +100,28 @@ TEST( GaussianJunctionTreeB, constructor2 )
 //  Ordering sep3; sep3 += X(6);
 //  Ordering sep4; sep4 += X(2);
 
-  GaussianJunctionTree::sharedNode root = actual.roots().front();
-  FastVector<GaussianJunctionTree::sharedNode>::const_iterator child0it = root->children.begin();
-  FastVector<GaussianJunctionTree::sharedNode>::const_iterator child1it = child0it; ++child1it;
-  GaussianJunctionTree::sharedNode child0 = *child0it;
-  GaussianJunctionTree::sharedNode child1 = *child1it;
+  GaussianJunctionTree::sharedNode x324 = actual.roots().front();
+  LONGS_EQUAL(2, x324->children.size());
+#if defined(__APPLE__) // tie-breaking seems different :-(
+  GaussianJunctionTree::sharedNode x1 = x324->children[0];
+  GaussianJunctionTree::sharedNode x56 = x324->children[1];
+#else
+  GaussianJunctionTree::sharedNode x1 = x324->children[1];
+  GaussianJunctionTree::sharedNode x56 = x324->children[0];
+#endif
+  LONGS_EQUAL(0, x1->children.size());
+  LONGS_EQUAL(1, x56->children.size());
+  GaussianJunctionTree::sharedNode x7 = x56->children[0];
+  LONGS_EQUAL(0, x7->children.size());
 
-  EXPECT(assert_equal(frontal1, root->orderedFrontalKeys));
-  LONGS_EQUAL(5,                root->factors.size());
-  EXPECT(assert_equal(frontal2, child0->orderedFrontalKeys));
-  LONGS_EQUAL(4,                child0->factors.size());
-  EXPECT(assert_equal(frontal3, child0->children.front()->orderedFrontalKeys));
-  LONGS_EQUAL(2,                child0->children.front()->factors.size());
-  EXPECT(assert_equal(frontal4, child1->orderedFrontalKeys));
-  LONGS_EQUAL(2,                child1->factors.size());
+  EXPECT(assert_equal(o324, x324->orderedFrontalKeys));
+  EXPECT_LONGS_EQUAL (5,    x324->factors.size());
+  EXPECT(assert_equal(o56,  x56->orderedFrontalKeys));
+  EXPECT_LONGS_EQUAL (4,    x56->factors.size());
+  EXPECT(assert_equal(o7,   x7->orderedFrontalKeys));
+  EXPECT_LONGS_EQUAL (2,    x7->factors.size());
+  EXPECT(assert_equal(o1,   x1->orderedFrontalKeys));
+  EXPECT_LONGS_EQUAL (2,    x1->factors.size());
 }
 
 ///* ************************************************************************* */
