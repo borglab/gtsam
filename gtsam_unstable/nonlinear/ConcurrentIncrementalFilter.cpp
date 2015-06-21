@@ -291,7 +291,7 @@ std::vector<size_t> ConcurrentIncrementalFilter::FindAdjacentFactors(const ISAM2
   std::vector<size_t> removedFactorSlots;
   const VariableIndex& variableIndex = isam2.getVariableIndex();
   BOOST_FOREACH(Key key, keys) {
-    const FastList<size_t>& slots = variableIndex[key];
+    const FastVector<size_t>& slots = variableIndex[key];
     removedFactorSlots.insert(removedFactorSlots.end(), slots.begin(), slots.end());
   }
 
