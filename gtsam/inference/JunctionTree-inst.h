@@ -98,6 +98,7 @@ struct ConstructorTraversalData {
     // Loop over children
     int combinedProblemSize =
         (int)(symbolicElimResult.first->size() * symbolicFactors.size());
+    gttic(merge_children);
     for (size_t i = 0; i < myData.childSymbolicConditionals.size(); ++i) {
       // Check if we should merge the i^th child
       if (myNrParents + myNrFrontals ==
@@ -105,6 +106,10 @@ struct ConstructorTraversalData {
         // Get a reference to the i, adjusting the index to account for children
         // previously merged and removed from the i list.
         const Node& child = *node->children[i - nrMergedChildren];
+        // Merge keys. For efficiency, we add keys in reverse order at end, calling reverse after..
+        node->orderedFrontalKeys.insert(node->orderedFrontalKeys.end(),
+                                        child.orderedFrontalKeys.rbegin(),
+                                        child.orderedFrontalKeys.rend());
         // Merge keys, factors, and children.
         node->orderedFrontalKeys.insert(node->orderedFrontalKeys.begin(),
                                         child.orderedFrontalKeys.begin(),
@@ -121,6 +126,8 @@ struct ConstructorTraversalData {
         ++nrMergedChildren;
       }
     }
+    std::reverse(node->orderedFrontalKeys.begin(), node->orderedFrontalKeys.end());
+    gttoc(merge_children);
     node->problemSize_ = combinedProblemSize;
   }
 };
