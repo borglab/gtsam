@@ -125,6 +125,62 @@ void ClusterTree<BAYESTREE, GRAPH>::Cluster::print(const std::string& s,
 
 /* ************************************************************************* */
 template<class BAYESTREE, class GRAPH>
+void ClusterTree<BAYESTREE, GRAPH>::Cluster::mergeChildren(
+    const std::vector<bool>& merge) {
+  gttic(Cluster::mergeChildren);
+  size_t nrChildren = children.size();
+
+  // Count how many keys, factors and children we'll end up with
+  size_t nrKeys = orderedFrontalKeys.size();
+  size_t nrFactors = factors.size();
+  size_t nrNewChildren = 0;
+  // Loop over children
+  for (size_t i = 0; i < nrChildren; ++i) {
+    if (merge[i]) {
+      // Get a reference to the i, adjusting the index to account for children
+      // previously merged and removed from the i list.
+      sharedNode child = children[i];
+      nrKeys += child->orderedFrontalKeys.size();
+      nrFactors += child->factors.size();
+      nrNewChildren += child->children.size();
+    } else {
+      nrNewChildren += 1; // we keep the child
+    }
+  }
+
+  // now reserve space, and really merge
+  orderedFrontalKeys.reserve(nrKeys);
+  factors.reserve(nrFactors);
+  typename Node::Children newChildren;
+  newChildren.reserve(nrNewChildren);
+  // Loop over newChildren
+  for (size_t i = 0; i < nrChildren; ++i) {
+    // Check if we should merge the i^th child
+    sharedNode child = children[i];
+    if (merge[i]) {
+      // Get a reference to the i, adjusting the index to account for newChildren
+      // previously merged and removed from the i list.
+      // Merge keys. For efficiency, we add keys in reverse order at end, calling reverse after..
+      orderedFrontalKeys.insert(orderedFrontalKeys.end(),
+          child->orderedFrontalKeys.rbegin(), child->orderedFrontalKeys.rend());
+      // Merge keys, factors, and children.
+      factors.insert(factors.end(), child->factors.begin(),
+          child->factors.end());
+      newChildren.insert(newChildren.end(), child->children.begin(),
+          child->children.end());
+      // Increment problem size
+      problemSize_ = std::max(problemSize_, child->problemSize_);
+      // Increment number of frontal variables
+    } else {
+      newChildren.push_back(child); // we keep the child
+    }
+  }
+  children = newChildren;
+  std::reverse(orderedFrontalKeys.begin(), orderedFrontalKeys.end());
+}
+
+/* ************************************************************************* */
+template<class BAYESTREE, class GRAPH>
 void ClusterTree<BAYESTREE, GRAPH>::print(const std::string& s,
     const KeyFormatter& keyFormatter) const {
   treeTraversal::PrintForest(*this, s, keyFormatter);
