@@ -94,6 +94,7 @@ struct ConstructorTraversalData {
     sharedNode node = myData.myJTNode;
     const FastVector<SymbolicConditional::shared_ptr>& childConditionals =
         myData.childSymbolicConditionals;
+    node->problemSize_ = (int) (myConditional->size() * symbolicFactors.size());
 
     // Merge our children if they are in our clique - if our conditional has
     // exactly one fewer parent than our child's conditional.
@@ -105,76 +106,21 @@ struct ConstructorTraversalData {
 
     // decide which children to merge, as index into children
     std::vector<bool> merge(nrChildren, false);
-    {
-      size_t myNrFrontals = 1;
-      for (size_t i = 0; i < nrChildren; ++i) {
-        // Check if we should merge the i^th child
-        if (myNrParents + myNrFrontals == childConditionals[i]->nrParents()) {
-          sharedNode child = node->children[i];
-          // Increment number of frontal variables
-          myNrFrontals += child->orderedFrontalKeys.size();
-          merge[i] = true;
-        }
-      }
-    }
-
-    // Count how many keys, factors and children we'll end up with
-    size_t nrKeys = node->orderedFrontalKeys.size();
-    size_t nrFactors = node->factors.size();
-    size_t nrNewChildren = 0;
-    // Loop over children
-    for (size_t i = 0; i < nrChildren; ++i) {
-      if (merge[i]) {
-        // Get a reference to the i, adjusting the index to account for children
-        // previously merged and removed from the i list.
-        sharedNode child = node->children[i];
-        nrKeys += child->orderedFrontalKeys.size();
-        nrFactors += child->factors.size();
-        nrNewChildren += child->children.size();
-      } else {
-        nrNewChildren += 1; // we keep the child
-      }
-    }
-
-    // now reserve space, and really merge
-    node->orderedFrontalKeys.reserve(nrKeys);
-    node->factors.reserve(nrFactors);
-    typename Node::Children newChildren;
-    newChildren.reserve(nrNewChildren);
-    int combinedProblemSize = (int) (myConditional->size()
-        * symbolicFactors.size());
-    // Loop over newChildren
+    size_t myNrFrontals = 1;
     for (size_t i = 0; i < nrChildren; ++i) {
       // Check if we should merge the i^th child
-      sharedNode child = node->children[i];
-      if (merge[i]) {
-        // Get a reference to the i, adjusting the index to account for newChildren
-        // previously merged and removed from the i list.
-        // Merge keys. For efficiency, we add keys in reverse order at end, calling reverse after..
-        node->orderedFrontalKeys.insert(node->orderedFrontalKeys.end(),
-            child->orderedFrontalKeys.rbegin(),
-            child->orderedFrontalKeys.rend());
-        // Merge keys, factors, and children.
-        node->factors.insert(node->factors.end(), child->factors.begin(),
-            child->factors.end());
-        newChildren.insert(newChildren.end(), child->children.begin(),
-            child->children.end());
-        // Increment problem size
-        combinedProblemSize = std::max(combinedProblemSize,
-            child->problemSize_);
+      if (myNrParents + myNrFrontals == childConditionals[i]->nrParents()) {
+        sharedNode child = node->children[i];
         // Increment number of frontal variables
-      } else {
-        newChildren.push_back(child); // we keep the child
+        myNrFrontals += child->orderedFrontalKeys.size();
+        merge[i] = true;
       }
     }
-    node->children = newChildren;
-    std::reverse(node->orderedFrontalKeys.begin(),
-        node->orderedFrontalKeys.end());
-    gttoc(merge_children);
-    node->problemSize_ = combinedProblemSize;
+
+    // now really merge
+    node->mergeChildren(merge);
   }
-}
-;
+};
 
 /* ************************************************************************* */
 template<class BAYESTREE, class GRAPH>
