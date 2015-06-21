@@ -63,14 +63,19 @@ struct EliminationData {
 
   // Elimination post-order visitor - combine the child factors with our own factors, add the
   // resulting conditional to the BayesTree, and add the remaining factor to the parent.
-  struct EliminationPostOrderVisitor {
-    const typename CLUSTERTREE::Eliminate& eliminationFunction;
-    typename CLUSTERTREE::BayesTreeType::Nodes& nodesIndex;
+  class EliminationPostOrderVisitor {
+    const typename CLUSTERTREE::Eliminate& eliminationFunction_;
+    typename CLUSTERTREE::BayesTreeType::Nodes& nodesIndex_;
+
+  public:
+    // Construct functor
     EliminationPostOrderVisitor(
         const typename CLUSTERTREE::Eliminate& eliminationFunction,
         typename CLUSTERTREE::BayesTreeType::Nodes& nodesIndex) :
-        eliminationFunction(eliminationFunction), nodesIndex(nodesIndex) {
+        eliminationFunction_(eliminationFunction), nodesIndex_(nodesIndex) {
     }
+
+    // Function that does the HEAVY lifting
     void operator()(const typename CLUSTERTREE::sharedNode& node,
         EliminationData& myData) {
       assert(node);
@@ -90,10 +95,11 @@ struct EliminationData {
         }
       }
 
-      // Do dense elimination step
+      // >>>>>>>>>>>>>> Do dense elimination step >>>>>>>>>>>>>>>>>>>>>>>>>>>>>
       std::pair<boost::shared_ptr<ConditionalType>,
           boost::shared_ptr<FactorType> > eliminationResult =
-          eliminationFunction(gatheredFactors, node->orderedFrontalKeys);
+          eliminationFunction_(gatheredFactors, node->orderedFrontalKeys);
+      // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
       // Store conditional in BayesTree clique, and in the case of ISAM2Clique also store the remaining factor
       myData.bayesTreeNode->setEliminationResult(eliminationResult);
@@ -102,7 +108,7 @@ struct EliminationData {
       // putting orphan subtrees in the index - they'll already be in the index of the ISAM2
       // object they're added to.
       BOOST_FOREACH(const Key& j, myData.bayesTreeNode->conditional()->frontals())
-        nodesIndex.insert(std::make_pair(j, myData.bayesTreeNode));
+        nodesIndex_.insert(std::make_pair(j, myData.bayesTreeNode));
 
       // Store remaining factor in parent's gathered factors
       if (!eliminationResult.second->empty())
