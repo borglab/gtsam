@@ -102,8 +102,6 @@ struct ConstructorTraversalData {
     const size_t nrChildren = node->children.size();
     assert(childConditionals.size() == nrChildren);
 
-    gttic(merge_children);
-
     // decide which children to merge, as index into children
     std::vector<bool> merge(nrChildren, false);
     size_t myNrFrontals = 1;
