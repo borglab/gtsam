@@ -66,9 +66,9 @@ TEST( NonlinearFactorGraph, error )
 TEST( NonlinearFactorGraph, keys )
 {
   NonlinearFactorGraph fg = createNonlinearFactorGraph();
-  FastSet<Key> actual = fg.keys();
+  KeySet actual = fg.keys();
   LONGS_EQUAL(3, (long)actual.size());
-  FastSet<Key>::const_iterator it = actual.begin();
+  KeySet::const_iterator it = actual.begin();
   LONGS_EQUAL((long)L(1), (long)*(it++));
   LONGS_EQUAL((long)X(1), (long)*(it++));
   LONGS_EQUAL((long)X(2), (long)*(it++));

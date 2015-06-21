@@ -193,7 +193,7 @@ private:
 
       // add the belief factor for each neighbor variable to this star graph
       // also record the factor index for later modification
-      FastSet<Key> neighbors = star->keys();
+      KeySet neighbors = star->keys();
       neighbors.erase(key);
       CorrectedBeliefIndices correctedBeliefIndices;
       BOOST_FOREACH(Key neighbor, neighbors) {

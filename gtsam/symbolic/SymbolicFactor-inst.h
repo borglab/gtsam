@@ -38,7 +38,7 @@ namespace gtsam
       EliminateSymbolic(const FactorGraph<FACTOR>& factors, const Ordering& keys)
     {
       // Gather all keys
-      FastSet<Key> allKeys;
+      KeySet allKeys;
       BOOST_FOREACH(const boost::shared_ptr<FACTOR>& factor, factors) {
         allKeys.insert(factor->begin(), factor->end());
       }
@@ -50,7 +50,7 @@ namespace gtsam
       }
 
       // Sort frontal keys
-      FastSet<Key> frontals(keys);
+      KeySet frontals(keys);
       const size_t nFrontals = keys.size();
 
       // Build a key vector with the frontals followed by the separator

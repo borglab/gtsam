@@ -17,14 +17,11 @@
 
 #pragma once
 
-#include <gtsam/base/FastList.h>
+#include <gtsam/inference/Key.h>
 #include <gtsam/base/FastMap.h>
 #include <gtsam/base/FastVector.h>
-#include <gtsam/base/types.h>
-#include <gtsam/base/Testable.h>
 #include <gtsam/dllexport.h>
 
-#include <boost/none.hpp>
 #include <boost/optional/optional.hpp>
 #include <boost/smart_ptr/shared_ptr.hpp>
 
