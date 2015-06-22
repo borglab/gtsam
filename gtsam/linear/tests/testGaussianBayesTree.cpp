@@ -84,14 +84,11 @@ TEST( GaussianBayesTree, eliminate )
   GaussianBayesTree bt = *chain.eliminateMultifrontal(chainOrdering);
 
   Scatter scatter(chain);
-  BOOST_FOREACH(const Scatter::value_type& entry, scatter)
-    cout << entry.first << " " << entry.second.toString() << endl;
-
   EXPECT_LONGS_EQUAL(4, scatter.size());
-  EXPECT_LONGS_EQUAL(0, scatter.at(x1).slot);
-  EXPECT_LONGS_EQUAL(1, scatter.at(x2).slot);
-  EXPECT_LONGS_EQUAL(2, scatter.at(x3).slot);
-  EXPECT_LONGS_EQUAL(3, scatter.at(x4).slot);
+  EXPECT_LONGS_EQUAL(1, scatter.at(0).key);
+  EXPECT_LONGS_EQUAL(2, scatter.at(1).key);
+  EXPECT_LONGS_EQUAL(3, scatter.at(2).key);
+  EXPECT_LONGS_EQUAL(4, scatter.at(3).key);
 
   Matrix two = (Matrix(1, 1) << 2.).finished();
   Matrix one = (Matrix(1, 1) << 1.).finished();
