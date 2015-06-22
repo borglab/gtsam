@@ -324,7 +324,7 @@ GaussianFactorGraph::shared_ptr NonlinearFactorGraph::linearize(const Values& li
   // linearize all factors
   BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
     if(factor) {
-      (*linearFG) += factor->linearize(linearizationPoint_);
+      (*linearFG) += factor->linearize(linearizationPoint);
     } else
     (*linearFG) += GaussianFactor::shared_ptr();
   }

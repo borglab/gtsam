@@ -130,7 +130,7 @@ void ClusterTree<BAYESTREE, GRAPH>::Cluster::print(const std::string& s,
 template<class BAYESTREE, class GRAPH>
 void ClusterTree<BAYESTREE, GRAPH>::Cluster::mergeChildren(
     const std::vector<bool>& merge) {
-  gttic(Cluster::mergeChildren);
+  gttic(Cluster_mergeChildren);
 
   // Count how many keys, factors and children we'll end up with
   size_t nrKeys = orderedFrontalKeys.size();
