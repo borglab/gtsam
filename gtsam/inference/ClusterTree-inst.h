@@ -19,9 +19,9 @@
 namespace gtsam {
 
 /* ************************************************************************* */
-// Elimination traversal data - stores a pointer to the parent data and collects the factors
-// resulting from elimination of the children.  Also sets up BayesTree cliques with parent and
-// child pointers.
+// Elimination traversal data - stores a pointer to the parent data and collects
+// the factors resulting from elimination of the children.  Also sets up BayesTree
+// cliques with parent and child pointers.
 template<class CLUSTERTREE>
 struct EliminationData {
   // Typedefs
