@@ -17,6 +17,8 @@
  */
 
 #include <gtsam/base/debug.h>
+#include <gtsam/config.h> // for GTSAM_USE_TBB
+
 #ifdef GTSAM_USE_TBB
 #include <tbb/mutex.h>
 #endif

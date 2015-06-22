@@ -22,6 +22,7 @@
 #include <gtsam/base/FastList.h>
 #include <gtsam/base/FastVector.h>
 #include <gtsam/inference/Key.h>
+#include <gtsam/config.h> // for GTSAM_USE_TBB
 
 #include <stack>
 #include <vector>

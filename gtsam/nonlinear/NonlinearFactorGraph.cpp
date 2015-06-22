@@ -17,21 +17,23 @@
  * @author  Christian Potthast
  */
 
-#include <cmath>
-#include <limits>
-#include <boost/foreach.hpp>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/inference/Ordering.h>
-#include <gtsam/inference/FactorGraph-inst.h>
 #include <gtsam/symbolic/SymbolicFactorGraph.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/inference/FactorGraph-inst.h>
+#include <gtsam/config.h> // for GTSAM_USE_TBB
 
 #ifdef GTSAM_USE_TBB
 #  include <tbb/parallel_for.h>
 #endif
+
+#include <boost/foreach.hpp>
+#include <cmath>
+#include <limits>
 
 using namespace std;
 
