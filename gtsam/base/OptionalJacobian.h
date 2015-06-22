@@ -18,7 +18,7 @@
  */
 
 #pragma once
-
+#include <gtsam/config.h>      // Configuration from CMake
 #include <Eigen/Dense>
 
 #ifndef OPTIONALJACOBIAN_NOBOOST

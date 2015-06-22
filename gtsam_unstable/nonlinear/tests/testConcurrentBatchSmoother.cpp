@@ -559,7 +559,7 @@ TEST( ConcurrentBatchSmoother, synchronize_3 )
   ordering = smoother.getOrdering();  // I'm really hoping this is an acceptable ordering...
   GaussianFactorGraph::shared_ptr linearFactors = allFactors.linearize(allValues);
 
-  FastSet<Key> eliminateKeys = linearFactors->keys();
+  KeySet eliminateKeys = linearFactors->keys();
   BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, filterSeparatorValues) {
     eliminateKeys.erase(key_value.key);
   }

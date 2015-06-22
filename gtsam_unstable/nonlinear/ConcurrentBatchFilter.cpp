@@ -221,7 +221,7 @@ void ConcurrentBatchFilter::synchronize(const NonlinearFactorGraph& smootherSumm
   if(debug) { PrintNonlinearFactorGraph(smootherSummarization_, "ConcurrentBatchFilter::synchronize  ", "Updated Smoother Summarization:", DefaultKeyFormatter); }
 
   // Find the set of new separator keys
-  FastSet<Key> newSeparatorKeys;
+  KeySet newSeparatorKeys;
   BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, separatorValues_) {
     newSeparatorKeys.insert(key_value.key);
   }
@@ -573,7 +573,7 @@ void ConcurrentBatchFilter::moveSeparator(const FastList<Key>& keysToMove) {
   }
 
   // Calculate the set of new separator keys: AffectedKeys + PreviousSeparatorKeys - KeysToMove
-  FastSet<Key> newSeparatorKeys = removedFactors.keys();
+  KeySet newSeparatorKeys = removedFactors.keys();
   BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, separatorValues_) {
     newSeparatorKeys.insert(key_value.key);
   }
@@ -584,7 +584,7 @@ void ConcurrentBatchFilter::moveSeparator(const FastList<Key>& keysToMove) {
   if(debug) { PrintKeys(newSeparatorKeys, "ConcurrentBatchFilter::synchronize  ", "New Separator Keys:", DefaultKeyFormatter); }
 
   // Calculate the set of shortcut keys: NewSeparatorKeys + OldSeparatorKeys
-  FastSet<Key> shortcutKeys = newSeparatorKeys;
+  KeySet shortcutKeys = newSeparatorKeys;
   BOOST_FOREACH(Key key, smootherSummarization_.keys()) {
     shortcutKeys.insert(key);
   }

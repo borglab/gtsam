@@ -460,7 +460,7 @@ protected:
    * This is \c mutable because it is used internally to not update delta_
    * until it is needed.
    */
-  mutable FastSet<Key> deltaReplacedMask_; // TODO: Make sure accessed in the right way
+  mutable KeySet deltaReplacedMask_; // TODO: Make sure accessed in the right way
 
   /** All original nonlinear factors are stored here to use during relinearization */
   NonlinearFactorGraph nonlinearFactors_;
@@ -476,7 +476,7 @@ protected:
 
   /** Set of variables that are involved with linear factors from marginalized
    * variables and thus cannot have their linearization points changed. */
-  FastSet<Key> fixedVariables_;
+  KeySet fixedVariables_;
 
   int update_count_; ///< Counter incremented every update(), used to determine periodic relinearization
 
@@ -614,7 +614,7 @@ public:
   const VariableIndex& getVariableIndex() const { return variableIndex_; }
 
   /** Access the nonlinear variable index */
-  const FastSet<Key>& getFixedVariables() const { return fixedVariables_; }
+  const KeySet& getFixedVariables() const { return fixedVariables_; }
 
   size_t lastAffectedVariableCount;
   size_t lastAffectedFactorCount;
@@ -641,11 +641,11 @@ public:
 protected:
 
   FastSet<size_t> getAffectedFactors(const FastList<Key>& keys) const;
-  GaussianFactorGraph::shared_ptr relinearizeAffectedFactors(const FastList<Key>& affectedKeys, const FastSet<Key>& relinKeys) const;
+  GaussianFactorGraph::shared_ptr relinearizeAffectedFactors(const FastList<Key>& affectedKeys, const KeySet& relinKeys) const;
   GaussianFactorGraph getCachedBoundaryFactors(Cliques& orphans);
 
-  virtual boost::shared_ptr<FastSet<Key> > recalculate(const FastSet<Key>& markedKeys, const FastSet<Key>& relinKeys,
-      const std::vector<Key>& observedKeys, const FastSet<Key>& unusedIndices, const boost::optional<FastMap<Key,int> >& constrainKeys, ISAM2Result& result);
+  virtual boost::shared_ptr<KeySet > recalculate(const KeySet& markedKeys, const KeySet& relinKeys,
+      const std::vector<Key>& observedKeys, const KeySet& unusedIndices, const boost::optional<FastMap<Key,int> >& constrainKeys, ISAM2Result& result);
   void updateDelta(bool forceFullSolve = false) const;
 
 }; // ISAM2
@@ -666,11 +666,11 @@ template<> struct traits<ISAM2> : public Testable<ISAM2> {};
 /// @return The number of variables that were solved for
 template<class CLIQUE>
 size_t optimizeWildfire(const boost::shared_ptr<CLIQUE>& root,
-    double threshold, const FastSet<Key>& replaced, VectorValues& delta);
+    double threshold, const KeySet& replaced, VectorValues& delta);
 
 template<class CLIQUE>
 size_t optimizeWildfireNonRecursive(const boost::shared_ptr<CLIQUE>& root,
-    double threshold, const FastSet<Key>& replaced, VectorValues& delta);
+    double threshold, const KeySet& replaced, VectorValues& delta);
 
 /// calculate the number of non-zero entries for the tree starting at clique (use root for complete matrix)
 template<class CLIQUE>

@@ -106,7 +106,7 @@ namespace gtsam {
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
     /** return keys as an ordered set - ordering is by key value */
-    FastSet<Key> keys() const;
+    KeySet keys() const;
 
     /** unnormalized error, \f$ 0.5 \sum_i (h_i(X_i)-z)^2/\sigma^2 \f$ in the most common case */
     double error(const Values& c) const;
