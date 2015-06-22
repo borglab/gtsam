@@ -46,8 +46,6 @@ Scatter::Scatter(const GaussianFactorGraph& gfg,
     }
   }
 
-  iterator first = end(); // remember position
-
   // Now, find dimensions of variables and/or extend
   BOOST_FOREACH (const GaussianFactor::shared_ptr& factor, gfg) {
     if (!factor) continue;
@@ -68,11 +66,13 @@ Scatter::Scatter(const GaussianFactorGraph& gfg,
     }
   }
 
+  // To keep the same behavior as before, sort the keys after the ordering
+  iterator first = begin();
+  if (ordering) first += ordering->size();
+  if (first != end()) std::sort(first, end());
+
   // Filter out keys with zero dimensions (if ordering had more keys)
   erase(std::remove_if(begin(), end(), SlotEntry::Zero), end());
-
-  // To keep the same behavior as before, sort the keys after the ordering
-  if (first != end()) std::sort(begin(), end());
 }
 
 /* ************************************************************************* */

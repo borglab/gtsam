@@ -51,8 +51,8 @@ TEST(HessianFactor, CombineAndEliminate) {
 
   Scatter scatter(gfg);
   EXPECT_LONGS_EQUAL(2, scatter.size());
-  EXPECT(assert_equal(X(1), scatter.at(0).key));
-  EXPECT(assert_equal(X(0), scatter.at(1).key));
+  EXPECT(assert_equal(X(0), scatter.at(0).key));
+  EXPECT(assert_equal(X(1), scatter.at(1).key));
   EXPECT_LONGS_EQUAL(n, scatter.at(0).dimension);
   EXPECT_LONGS_EQUAL(n, scatter.at(1).dimension);
 }
