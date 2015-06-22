@@ -17,7 +17,6 @@
 
 #include <gtsam/global_includes.h>
 #include <gtsam/base/Matrix.h>
-#include <gtsam/config.h> // for GTSAM_USE_TBB
 
 #include <boost/assign/list_of.hpp>
 #include <boost/foreach.hpp>
