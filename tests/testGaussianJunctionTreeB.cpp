@@ -85,9 +85,7 @@ TEST( GaussianJunctionTreeB, constructor2 ) {
   // create an ordering
   GaussianEliminationTree etree(*fg, ordering);
   SymbolicEliminationTree stree(*symbolic, ordering);
-  GTSAM_PRINT(stree);
   GaussianJunctionTree actual(etree);
-  GTSAM_PRINT(actual);
 
   Ordering o324;
   o324 += X(3), X(2), X(4);
