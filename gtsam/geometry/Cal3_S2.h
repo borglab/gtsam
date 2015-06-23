@@ -156,9 +156,12 @@ public:
   /**
    * convert image coordinates uv to intrinsic coordinates xy
    * @param p point in image coordinates
+   * @param Dcal optional 2*5 Jacobian wrpt Cal3_S2 parameters
+   * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
    * @return point in intrinsic coordinates
    */
-  Point2 calibrate(const Point2& p) const;
+  Point2 calibrate(const Point2& p, OptionalJacobian<2,5> Dcal = boost::none,
+                   OptionalJacobian<2,2> Dp = boost::none) const;
 
   /**
    * convert homogeneous image coordinates to intrinsic coordinates
