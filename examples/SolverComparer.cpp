@@ -44,6 +44,7 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/base/timing.h>
 #include <gtsam/base/treeTraversal-inst.h>
+#include <gtsam/config.h> // for GTSAM_USE_TBB
 
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>

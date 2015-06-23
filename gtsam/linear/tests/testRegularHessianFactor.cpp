@@ -16,6 +16,7 @@
  */
 
 #include <gtsam/linear/RegularHessianFactor.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
 
 #include <CppUnitLite/TestHarness.h>
@@ -29,30 +30,62 @@ using namespace gtsam;
 using namespace boost::assign;
 
 /* ************************************************************************* */
-TEST(RegularHessianFactor, ConstructorNWay)
+TEST(RegularHessianFactor, Constructors)
 {
-  Matrix G11 = (Matrix(2,2) << 111, 112, 113, 114).finished();
-  Matrix G12 = (Matrix(2,2) << 121, 122, 123, 124).finished();
-  Matrix G13 = (Matrix(2,2) << 131, 132, 133, 134).finished();
+  // First construct a regular JacobianFactor
+  // 0.5*|x0 + x1 + x3 - [1;2]|^2 = 0.5*|A*x-b|^2, with A=[I I I]
+  Matrix A1 = I_2x2, A2 = I_2x2, A3 = I_2x2;
+  Vector2 b(1,2);
+  vector<pair<Key, Matrix> > terms;
+  terms += make_pair(0, A1), make_pair(1, A2), make_pair(3, A3);
+  RegularJacobianFactor<2> jf(terms, b);
 
-  Matrix G22 = (Matrix(2,2) << 221, 222, 222, 224).finished();
-  Matrix G23 = (Matrix(2,2) << 231, 232, 233, 234).finished();
+  // Test conversion from JacobianFactor
+  RegularHessianFactor<2> factor(jf);
 
-  Matrix G33 = (Matrix(2,2) << 331, 332, 332, 334).finished();
+  // 0.5*|A*x-b|^2 = 0.5*(Ax-b)'*(Ax-b) = 0.5*x'*A'A*x - x'*A'b + 0.5*b'*b
+  // Compare with comment in HessianFactor: E(x) = 0.5 x^T G x - x^T g + 0.5 f
+  // Hence G = I6, g A'*b = [b;b;b], and f = b'*b = 1+4 = 5
+  Matrix G11 = I_2x2;
+  Matrix G12 = I_2x2;
+  Matrix G13 = I_2x2;
 
-  Vector g1 = (Vector(2) << -7, -9).finished();
-  Vector g2 = (Vector(2) << -9,  1).finished();
-  Vector g3 = (Vector(2) <<  2,  3).finished();
+  Matrix G22 = I_2x2;
+  Matrix G23 = I_2x2;
 
-  double f = 10;
+  Matrix G33 = I_2x2;
 
-  std::vector<Key> js;
-  js.push_back(0); js.push_back(1); js.push_back(3);
-  std::vector<Matrix> Gs;
-  Gs.push_back(G11); Gs.push_back(G12); Gs.push_back(G13); Gs.push_back(G22); Gs.push_back(G23); Gs.push_back(G33);
-  std::vector<Vector> gs;
-  gs.push_back(g1); gs.push_back(g2); gs.push_back(g3);
-  RegularHessianFactor<2> factor(js, Gs, gs, f);
+  Vector2 g1 = b, g2 = b, g3 = b;
+
+  double f = 5;
+
+  // Test ternary constructor
+  RegularHessianFactor<2> factor2(0, 1, 3, G11, G12, G13, g1, G22, G23, g2, G33, g3, f);
+  EXPECT(assert_equal(factor,factor2));
+
+  // Test n-way constructor
+  vector<Key> keys; keys += 0, 1, 3;
+  vector<Matrix> Gs; Gs += G11, G12, G13, G22, G23, G33;
+  vector<Vector> gs; gs += g1, g2, g3;
+  RegularHessianFactor<2> factor3(keys, Gs, gs, f);
+  EXPECT(assert_equal(factor, factor3));
+
+  // Test constructor from Gaussian Factor Graph
+  GaussianFactorGraph gfg;
+  gfg += jf;
+  RegularHessianFactor<2> factor4(gfg);
+  EXPECT(assert_equal(factor, factor4));
+  GaussianFactorGraph gfg2;
+  gfg2 += factor;
+  RegularHessianFactor<2> factor5(gfg);
+  EXPECT(assert_equal(factor, factor5));
+
+  // Test constructor from Information matrix
+  Matrix info = factor.augmentedInformation();
+  vector<size_t> dims; dims += 2, 2, 2;
+  SymmetricBlockMatrix sym(dims, info, true);
+  RegularHessianFactor<2> factor6(keys, sym);
+  EXPECT(assert_equal(factor, factor6));
 
   // multiplyHessianAdd:
   {
@@ -61,13 +94,13 @@ TEST(RegularHessianFactor, ConstructorNWay)
   HessianFactor::const_iterator i1 = factor.begin();
   HessianFactor::const_iterator i2 = i1 + 1;
   Vector X(6); X << 1,2,3,4,5,6;
-  Vector Y(6); Y << 2633, 2674, 4465, 4501, 5669, 5696;
+  Vector Y(6); Y << 9, 12, 9, 12, 9, 12;
   EXPECT(assert_equal(Y,AtA*X));
 
   VectorValues x = map_list_of<Key, Vector>
-    (0, (Vector(2) << 1,2).finished())
-    (1, (Vector(2) << 3,4).finished())
-    (3, (Vector(2) << 5,6).finished());
+    (0, Vector2(1,2))
+    (1, Vector2(3,4))
+    (3, Vector2(5,6));
 
   VectorValues expected;
   expected.insert(0, Y.segment<2>(0));
@@ -77,15 +110,15 @@ TEST(RegularHessianFactor, ConstructorNWay)
   // VectorValues version
   double alpha = 1.0;
   VectorValues actualVV;
-  actualVV.insert(0, zero(2));
-  actualVV.insert(1, zero(2));
-  actualVV.insert(3, zero(2));
+  actualVV.insert(0, Vector2::Zero());
+  actualVV.insert(1, Vector2::Zero());
+  actualVV.insert(3, Vector2::Zero());
   factor.multiplyHessianAdd(alpha, x, actualVV);
   EXPECT(assert_equal(expected, actualVV));
 
   // RAW ACCESS
-  Vector expected_y(8); expected_y << 2633, 2674, 4465, 4501, 0, 0, 5669, 5696;
-  Vector fast_y = gtsam::zero(8);
+  Vector expected_y(8); expected_y << 9, 12, 9, 12, 0, 0, 9, 12;
+  Vector fast_y = Vector8::Zero();
   double xvalues[8] = {1,2,3,4,0,0,5,6};
   factor.multiplyHessianAdd(alpha, xvalues, fast_y.data());
   EXPECT(assert_equal(expected_y, fast_y));

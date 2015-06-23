@@ -24,6 +24,7 @@
 
 #ifdef GTSAM_USE_TBB
 #  include <tbb/tbb.h>
+#  include <tbb/scalable_allocator.h>
 #  undef max // TBB seems to include windows.h and we don't want these macros
 #  undef min
 #  undef ERROR

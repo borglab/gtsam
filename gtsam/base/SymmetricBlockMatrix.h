@@ -17,9 +17,21 @@
 */
 #pragma once
 
-#include <gtsam/base/Matrix.h>
 #include <gtsam/base/FastVector.h>
+#include <gtsam/base/Matrix.h>
 #include <gtsam/base/SymmetricBlockMatrixBlockExpr.h>
+#include <gtsam/base/types.h>
+#include <gtsam/dllexport.h>
+#include <boost/serialization/nvp.hpp>
+#include <cassert>
+#include <stdexcept>
+#include <vector>
+
+namespace boost {
+namespace serialization {
+class access;
+} /* namespace serialization */
+} /* namespace boost */
 
 namespace gtsam {
 
@@ -247,13 +259,8 @@ namespace gtsam {
     }
   };
 
-  /* ************************************************************************* */
-  class CholeskyFailed : public gtsam::ThreadsafeException<CholeskyFailed>
-  {
-  public:
-    CholeskyFailed() throw() {}
-    virtual ~CholeskyFailed() throw() {}
-  };
+  /// Foward declare exception class
+  class CholeskyFailed;
 
 }
 

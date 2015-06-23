@@ -149,7 +149,7 @@ namespace gtsam {
     /// Return a natural Ordering. Typically used by iterative solvers
     template <class FACTOR>
     static Ordering Natural(const FactorGraph<FACTOR> &fg) {
-      FastSet<Key> src = fg.keys();
+      KeySet src = fg.keys();
       std::vector<Key> keys(src.begin(), src.end());
       std::stable_sort(keys.begin(), keys.end());
       return Ordering(keys);

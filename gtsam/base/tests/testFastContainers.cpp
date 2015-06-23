@@ -7,13 +7,14 @@
  * @author Alex Cunningham
  */
 
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/inference/Key.h>
+#include <gtsam/base/FastSet.h>
+#include <gtsam/base/FastVector.h>
 
 #include <boost/assign/std/vector.hpp>
 #include <boost/assign/std/set.hpp>
 
-#include <gtsam/base/FastSet.h>
-#include <gtsam/base/FastVector.h>
+#include <CppUnitLite/TestHarness.h>
 
 using namespace boost::assign;
 using namespace gtsam;
@@ -21,7 +22,7 @@ using namespace gtsam;
 /* ************************************************************************* */
 TEST( testFastContainers, KeySet ) {
 
-  FastVector<size_t> init_vector;
+  FastVector<Key> init_vector;
   init_vector += 2, 3, 4, 5;
 
   FastSet<size_t> actSet(init_vector);

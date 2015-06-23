@@ -226,7 +226,8 @@ TEST(Marginals, order) {
     vals.at<Pose2>(3).range(vals.at<Point2>(101)), noiseModel::Unit::Create(2));
 
   Marginals marginals(fg, vals);
-  FastVector<Key> keys(fg.keys());
+  KeySet set = fg.keys();
+  FastVector<Key> keys(set.begin(), set.end());
   JointMarginal joint = marginals.jointMarginalCovariance(keys);
 
   LONGS_EQUAL(3, (long)joint(0,0).rows());

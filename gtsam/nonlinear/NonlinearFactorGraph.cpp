@@ -17,21 +17,23 @@
  * @author  Christian Potthast
  */
 
-#include <cmath>
-#include <limits>
-#include <boost/foreach.hpp>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/inference/Ordering.h>
-#include <gtsam/inference/FactorGraph-inst.h>
 #include <gtsam/symbolic/SymbolicFactorGraph.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/inference/FactorGraph-inst.h>
+#include <gtsam/config.h> // for GTSAM_USE_TBB
 
 #ifdef GTSAM_USE_TBB
 #  include <tbb/parallel_for.h>
 #endif
+
+#include <boost/foreach.hpp>
+#include <cmath>
+#include <limits>
 
 using namespace std;
 
@@ -70,7 +72,7 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
   stm << "  size=\"" << formatting.figureWidthInches << "," <<
     formatting.figureHeightInches << "\";\n\n";
 
-  FastSet<Key> keys = this->keys();
+  KeySet keys = this->keys();
 
   // Local utility function to extract x and y coordinates
   struct { boost::optional<Point2> operator()(
@@ -144,7 +146,7 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
 
   if (formatting.mergeSimilarFactors) {
     // Remove duplicate factors
-    FastSet<vector<Key> > structure;
+    std::set<vector<Key> > structure;
     BOOST_FOREACH(const sharedFactor& factor, *this){
       if(factor) {
         vector<Key> factorKeys = factor->keys();
@@ -234,8 +236,8 @@ double NonlinearFactorGraph::error(const Values& c) const {
 }
 
 /* ************************************************************************* */
-FastSet<Key> NonlinearFactorGraph::keys() const {
-  FastSet<Key> keys;
+KeySet NonlinearFactorGraph::keys() const {
+  KeySet keys;
   BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
     if(factor)
       keys.insert(factor->begin(), factor->end());

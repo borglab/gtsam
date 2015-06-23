@@ -161,7 +161,7 @@ protected:
 private:
   /** Private methods for printing debug information */
   static void PrintKeySet(const std::set<Key>& keys, const std::string& label);
-  static void PrintKeySet(const gtsam::FastSet<Key>& keys, const std::string& label);
+  static void PrintKeySet(const gtsam::KeySet& keys, const std::string& label);
   static void PrintSymbolicFactor(const NonlinearFactor::shared_ptr& factor);
   static void PrintSymbolicFactor(const GaussianFactor::shared_ptr& factor);
   static void PrintSymbolicGraph(const NonlinearFactorGraph& graph, const std::string& label);
