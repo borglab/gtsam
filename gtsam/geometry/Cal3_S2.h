@@ -167,7 +167,7 @@ public:
    * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
    * @return point in intrinsic coordinates
    */
-  Point2 calibrate(const Point2& p, OptionalJacobian<2,5> Dcal = boost::none,
+  Point2 calibrate2(const Point2& p, OptionalJacobian<2,5> Dcal = boost::none,
                    OptionalJacobian<2,2> Dp = boost::none) const;
 
   /**
