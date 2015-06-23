@@ -90,22 +90,21 @@ Point2 Cal3_S2::calibrate(const Point2& p) const {
 }
 
 /* ************************************************************************* */
-Point2 Cal3_S2::calibrate(const Point2& p, OptionalJacobian<2,5> Dcal = boost::none,
-                          OptionalJacobian<2,2> Dp = boost::none) const {
+Point2 Cal3_S2::calibrate(const Point2& p, OptionalJacobian<2,5> Dcal,
+                          OptionalJacobian<2,2> Dp) const {
     const double u = p.x(), v = p.y();
     double delta_u = u - u0_, delta_v = v - v0_;
     double inv_fx = 1/ fx_, inv_fy = 1/fy_;
     if(Dcal)
-       *Dcal << - inv_fx * inv_fx * (delta_u - s_  * inv_fy * delta_v)
-             << inv_fx * (s_ * inv_fy * inv_fy) * delta_v << -inv_fx * inv_fy * delta_v
-             << -inv_fx << inv_fx * s_ * inv_fy
-             << 0 << -inv_fy * inv_fy * delta_v << 0 << 0 << -inv_fy;
+       *Dcal << - inv_fx * inv_fx * (delta_u - s_  * inv_fy * delta_v) ,
+            inv_fx * (s_ * inv_fy * inv_fy) * delta_v, -inv_fx * inv_fy * delta_v,
+            -inv_fx,  inv_fx * s_ * inv_fy,
+            0, -inv_fy * inv_fy * delta_v, 0,  0, -inv_fy;
     if(Dp)
-        *Dp << inv_fx << -inv_fx * s_ * inv_fy << 0 << inv_fy;
+        *Dp << inv_fx, -inv_fx * s_ * inv_fy, 0, inv_fy;
     return Point2(inv_fx * (delta_u - s_ * inv_fy * delta_v),
         inv_fy * delta_v);
 }
-
 
 /* ************************************************************************* */
 Vector3 Cal3_S2::calibrate(const Vector3& p) const {
