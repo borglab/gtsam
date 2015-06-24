@@ -91,9 +91,9 @@ Vector3 OrientedPlane3::localCoordinates(const OrientedPlane3& y) const {
 }
 
 /* ************************************************************************* */
-Vector3 OrientedPlane3::planeCoefficients() const {
+Vector4 OrientedPlane3::planeCoefficients() const {
   Vector unit_vec = n_.unitVector();
-  Vector3 a;
+  Vector4 a;
   a << unit_vec[0], unit_vec[1], unit_vec[2], d_;
   return a;
 }

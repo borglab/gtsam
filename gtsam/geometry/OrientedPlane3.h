@@ -108,7 +108,7 @@ public:
   Vector3 localCoordinates(const OrientedPlane3& s) const;
 
   /// Returns the plane coefficients
-  Vector3 planeCoefficients() const;
+  Vector4 planeCoefficients() const;
 
   inline Unit3 normal() const {
     return n_;

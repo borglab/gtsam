@@ -30,6 +30,18 @@ GTSAM_CONCEPT_TESTABLE_INST(OrientedPlane3)
 GTSAM_CONCEPT_MANIFOLD_INST(OrientedPlane3)
 
 //*******************************************************************************
+TEST (OrientedPlane3, get) {
+  Vector4 c;
+  c << -1, 0, 0, 5;
+  OrientedPlane3 plane1(c);
+  OrientedPlane3 plane2(c[0], c[1], c[2], c[3]);
+  Vector coefficient1 = plane1.planeCoefficients();
+  EXPECT(assert_equal(coefficient1, c, 1e-8));
+  Vector coefficient2 = plane2.planeCoefficients();
+  EXPECT(assert_equal(coefficient2, c, 1e-8));
+}
+
+//*******************************************************************************
 TEST (OrientedPlane3, transform) {
   // Test transforming a plane to a pose
   gtsam::Pose3 pose(gtsam::Rot3::ypr(-M_PI / 4.0, 0.0, 0.0),
