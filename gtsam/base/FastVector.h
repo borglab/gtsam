@@ -20,6 +20,7 @@
 
 #include <gtsam/base/FastDefaultAllocator.h>
 #include <boost/serialization/nvp.hpp>
+#include <boost/serialization/vector.hpp>
 #include <vector>
 
 namespace gtsam {
