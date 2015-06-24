@@ -291,7 +291,7 @@ namespace gtsam {
      * Returns a set of keys in the config
      * Note: by construction, the list is ordered
      */
-    KeyList keys() const;
+    KeyVector keys() const;
 
     /** Replace all keys and variables */
     Values& operator=(const Values& rhs);

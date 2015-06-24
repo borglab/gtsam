@@ -237,11 +237,14 @@ HessianFactor::HessianFactor(const GaussianFactorGraph& factors,
   // Allocate and copy keys
   gttic(allocate);
   // Allocate with dimensions for each variable plus 1 at the end for the information vector
-  keys_.resize(scatter->size());
-  FastVector<DenseIndex> dims(scatter->size() + 1);
-  BOOST_FOREACH(const Scatter::value_type& key_slotentry, *scatter) {
-    keys_[key_slotentry.second.slot] = key_slotentry.first;
-    dims[key_slotentry.second.slot] = key_slotentry.second.dimension;
+  const size_t n = scatter->size();
+  keys_.resize(n);
+  FastVector<DenseIndex> dims(n + 1);
+  DenseIndex slot = 0;
+  BOOST_FOREACH(const SlotEntry& slotentry, *scatter) {
+    keys_[slot] = slotentry.key;
+    dims[slot] = slotentry.dimension;
+    ++slot;
   }
   dims.back() = 1;
   info_ = SymmetricBlockMatrix(dims);

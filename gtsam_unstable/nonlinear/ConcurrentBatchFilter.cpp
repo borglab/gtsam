@@ -536,7 +536,7 @@ void ConcurrentBatchFilter::moveSeparator(const FastList<Key>& keysToMove) {
   std::vector<size_t> removedFactorSlots;
   VariableIndex variableIndex(factors_);
   BOOST_FOREACH(Key key, keysToMove) {
-    const FastList<size_t>& slots = variableIndex[key];
+    const FastVector<size_t>& slots = variableIndex[key];
     removedFactorSlots.insert(removedFactorSlots.end(), slots.begin(), slots.end());
   }
 

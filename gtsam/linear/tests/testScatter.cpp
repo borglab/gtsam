@@ -17,10 +17,12 @@
 
 #include <gtsam/linear/Scatter.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/inference/Symbol.h>
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
 using namespace gtsam;
+using symbol_shorthand::X;
 
 /* ************************************************************************* */
 TEST(HessianFactor, CombineAndEliminate) {
@@ -43,14 +45,14 @@ TEST(HessianFactor, CombineAndEliminate) {
   Vector3 s2(3.6, 3.6, 3.6);
 
   GaussianFactorGraph gfg;
-  gfg.add(1, A01, b0, noiseModel::Diagonal::Sigmas(s0, true));
-  gfg.add(0, A10, 1, A11, b1, noiseModel::Diagonal::Sigmas(s1, true));
-  gfg.add(1, A21, b2, noiseModel::Diagonal::Sigmas(s2, true));
+  gfg.add(X(1), A01, b0, noiseModel::Diagonal::Sigmas(s0, true));
+  gfg.add(X(0), A10, X(1), A11, b1, noiseModel::Diagonal::Sigmas(s1, true));
+  gfg.add(X(1), A21, b2, noiseModel::Diagonal::Sigmas(s2, true));
 
   Scatter scatter(gfg);
   EXPECT_LONGS_EQUAL(2, scatter.size());
-  EXPECT_LONGS_EQUAL(0, scatter.at(0).slot);
-  EXPECT_LONGS_EQUAL(1, scatter.at(1).slot);
+  EXPECT(assert_equal(X(0), scatter.at(0).key));
+  EXPECT(assert_equal(X(1), scatter.at(1).key));
   EXPECT_LONGS_EQUAL(n, scatter.at(0).dimension);
   EXPECT_LONGS_EQUAL(n, scatter.at(1).dimension);
 }

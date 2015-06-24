@@ -33,7 +33,7 @@ namespace detail {
 template<typename T, typename structure_category>
 struct Origin { T operator()() { return traits<T>::Identity();} };
 
-// but dimple manifolds don't have one, so we just use the default constructor
+// but simple manifolds don't have one, so we just use the default constructor
 template<typename T>
 struct Origin<T, manifold_tag> { T operator()() { return T();} };
 
@@ -65,7 +65,12 @@ struct Canonical {
   }
 };
 
-/// Adapt ceres-style autodiff
+/**
+ * The AdaptAutoDiff class uses ceres-style autodiff to adapt a ceres-style
+ * Function evaluation, i.e., a function F that defines an operator
+ *   template<typename T> bool operator()(const T* const, const T* const, T* predicted) const;
+ * For now only binary operators are supported.
+ */
 template<typename F, typename T, typename A1, typename A2>
 class AdaptAutoDiff {
 
@@ -104,7 +109,7 @@ public:
 
       // Get derivatives with AutoDiff
       double *parameters[] = { v1.data(), v2.data() };
-      double rowMajor1[N * M1], rowMajor2[N * M2]; // om the stack
+      double rowMajor1[N * M1], rowMajor2[N * M2]; // on the stack
       double *jacobians[] = { rowMajor1, rowMajor2 };
       success = AutoDiff<F, double, 9, 3>::Differentiate(f, parameters, 2,
           result.data(), jacobians);

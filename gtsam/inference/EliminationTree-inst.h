@@ -101,10 +101,12 @@ namespace gtsam {
       {
         // Retrieve the factors involving this variable and create the current node
         const VariableIndex::Factors& factors = structure[order[j]];
-        nodes[j] = boost::make_shared<Node>();
-        nodes[j]->key = order[j];
+        const sharedNode node = boost::make_shared<Node>();
+        node->key = order[j];
 
         // for row i \in Struct[A*j] do
+        node->children.reserve(factors.size());
+        node->factors.reserve(factors.size());
         BOOST_FOREACH(const size_t i, factors) {
           // If we already hit a variable in this factor, make the subtree containing the previous
           // variable in this factor a child of the current node.  This means that the variables
@@ -123,16 +125,16 @@ namespace gtsam {
             if (r != j) {
               // Now that we found the root, hook up parent and child pointers in the nodes.
               parents[r] = j;
-              nodes[j]->children.push_back(nodes[r]);
+              node->children.push_back(nodes[r]);
             }
           } else {
-            // Add the current factor to the current node since we are at the first variable in this
-            // factor.
-            nodes[j]->factors.push_back(graph[i]);
+            // Add the factor to the current node since we are at the first variable in this factor.
+            node->factors.push_back(graph[i]);
             factorUsed[i] = true;
           }
           prevCol[i] = j;
         }
+        nodes[j] = node;
       }
     } catch(std::invalid_argument& e) {
       // If this is thrown from structure[order[j]] above, it means that it was requested to

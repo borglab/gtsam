@@ -230,7 +230,7 @@ void ConcurrentBatchSmoother::reorder() {
   // Recalculate the variable index
   variableIndex_ = VariableIndex(factors_);
 
-  FastList<Key> separatorKeys = separatorValues_.keys();
+  KeyVector separatorKeys = separatorValues_.keys();
   ordering_ = Ordering::colamdConstrainedLast(variableIndex_, std::vector<Key>(separatorKeys.begin(), separatorKeys.end()));
 
 }
