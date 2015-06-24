@@ -90,14 +90,4 @@ Vector3 OrientedPlane3::localCoordinates(const OrientedPlane3& y) const {
   return e;
 }
 
-/* ************************************************************************* */
-Vector4 OrientedPlane3::planeCoefficients() const {
-  Vector unit_vec = n_.unitVector();
-  Vector4 a;
-  a << unit_vec[0], unit_vec[1], unit_vec[2], d_;
-  return a;
-}
-
-/* ************************************************************************* */
-
 }

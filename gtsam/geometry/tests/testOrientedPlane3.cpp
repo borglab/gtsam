@@ -35,10 +35,14 @@ TEST (OrientedPlane3, get) {
   c << -1, 0, 0, 5;
   OrientedPlane3 plane1(c);
   OrientedPlane3 plane2(c[0], c[1], c[2], c[3]);
-  Vector coefficient1 = plane1.planeCoefficients();
+  Vector4 coefficient1 = plane1.planeCoefficients();
+  double distance1 = plane1.distance();
   EXPECT(assert_equal(coefficient1, c, 1e-8));
-  Vector coefficient2 = plane2.planeCoefficients();
+  EXPECT_DOUBLES_EQUAL(distance1, 5, 1e-8);
+  Vector4 coefficient2 = plane2.planeCoefficients();
+  double distance2 = plane2.distance();
   EXPECT(assert_equal(coefficient2, c, 1e-8));
+  EXPECT_DOUBLES_EQUAL(distance2, 5, 1e-8);
 }
 
 //*******************************************************************************

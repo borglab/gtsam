@@ -108,10 +108,19 @@ public:
   Vector3 localCoordinates(const OrientedPlane3& s) const;
 
   /// Returns the plane coefficients
-  Vector4 planeCoefficients() const;
+  inline Vector4 planeCoefficients() const {
+    Vector3 unit_vec = n_.unitVector();
+    return Vector4(unit_vec[0], unit_vec[1], unit_vec[2], d_);
+  }
 
+  /// Return the normal
   inline Unit3 normal() const {
     return n_;
+  }
+
+  /// Return the perpendicular distance to the origin
+  inline double distance() const {
+    return d_;
   }
 
   /// @}
