@@ -39,8 +39,8 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  FastSet<Key> DiscreteFactorGraph::keys() const {
-    FastSet<Key> keys;
+  KeySet DiscreteFactorGraph::keys() const {
+    KeySet keys;
     BOOST_FOREACH(const sharedFactor& factor, *this)
     if (factor) keys.insert(factor->begin(), factor->end());
     return keys;

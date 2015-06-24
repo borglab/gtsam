@@ -16,6 +16,8 @@
  * @date Feb 7, 2012
  */
 
+#include <gtsam/inference/Key.h>
+
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/FastList.h>
@@ -60,10 +62,10 @@ TEST (Serialization, FastMap) {
 
 /* ************************************************************************* */
 TEST (Serialization, FastSet) {
-  FastSet<double> set;
-  set.insert(1.0);
-  set.insert(2.0);
-  set.insert(3.0);
+  KeySet set;
+  set.insert(1);
+  set.insert(2);
+  set.insert(3);
 
   EXPECT(equality(set));
   EXPECT(equalityXML(set));

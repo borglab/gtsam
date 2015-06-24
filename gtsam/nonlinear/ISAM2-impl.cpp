@@ -19,6 +19,8 @@
 #include <gtsam/nonlinear/ISAM2-impl.h>
 #include <gtsam/inference/Symbol.h> // for selective linearization thresholds
 #include <gtsam/base/debug.h>
+#include <gtsam/config.h> // for GTSAM_USE_TBB
+
 #include <functional>
 #include <boost/range/adaptors.hpp>
 
@@ -84,11 +86,11 @@ void ISAM2::Impl::AddFactorsStep1(const NonlinearFactorGraph& newFactors, bool u
 }
 
 /* ************************************************************************* */
-void ISAM2::Impl::RemoveVariables(const FastSet<Key>& unusedKeys, const FastVector<ISAM2::sharedClique>& roots,
+void ISAM2::Impl::RemoveVariables(const KeySet& unusedKeys, const FastVector<ISAM2::sharedClique>& roots,
                                   Values& theta, VariableIndex& variableIndex,
                                   VectorValues& delta, VectorValues& deltaNewton, VectorValues& RgProd,
-                                  FastSet<Key>& replacedKeys, Base::Nodes& nodes,
-                                  FastSet<Key>& fixedVariables)
+                                  KeySet& replacedKeys, Base::Nodes& nodes,
+                                  KeySet& fixedVariables)
 {
   variableIndex.removeUnusedVariables(unusedKeys.begin(), unusedKeys.end());
   BOOST_FOREACH(Key key, unusedKeys) {
@@ -103,10 +105,10 @@ void ISAM2::Impl::RemoveVariables(const FastSet<Key>& unusedKeys, const FastVect
 }
 
 /* ************************************************************************* */
-FastSet<Key> ISAM2::Impl::CheckRelinearizationFull(const VectorValues& delta,
+KeySet ISAM2::Impl::CheckRelinearizationFull(const VectorValues& delta,
     const ISAM2Params::RelinearizationThreshold& relinearizeThreshold)
 {
-  FastSet<Key> relinKeys;
+  KeySet relinKeys;
 
   if(const double* threshold = boost::get<double>(&relinearizeThreshold))
   {
@@ -131,7 +133,7 @@ FastSet<Key> ISAM2::Impl::CheckRelinearizationFull(const VectorValues& delta,
 }
 
 /* ************************************************************************* */
-void CheckRelinearizationRecursiveDouble(FastSet<Key>& relinKeys, double threshold,
+void CheckRelinearizationRecursiveDouble(KeySet& relinKeys, double threshold,
                                          const VectorValues& delta, const ISAM2Clique::shared_ptr& clique)
 {
   // Check the current clique for relinearization
@@ -153,7 +155,7 @@ void CheckRelinearizationRecursiveDouble(FastSet<Key>& relinKeys, double thresho
 }
 
 /* ************************************************************************* */
-void CheckRelinearizationRecursiveMap(FastSet<Key>& relinKeys, const FastMap<char,Vector>& thresholds,
+void CheckRelinearizationRecursiveMap(KeySet& relinKeys, const FastMap<char,Vector>& thresholds,
                                       const VectorValues& delta,
                                       const ISAM2Clique::shared_ptr& clique)
 {
@@ -185,11 +187,11 @@ void CheckRelinearizationRecursiveMap(FastSet<Key>& relinKeys, const FastMap<cha
 }
 
 /* ************************************************************************* */
-FastSet<Key> ISAM2::Impl::CheckRelinearizationPartial(const FastVector<ISAM2::sharedClique>& roots,
+KeySet ISAM2::Impl::CheckRelinearizationPartial(const FastVector<ISAM2::sharedClique>& roots,
                                                         const VectorValues& delta,
                                                         const ISAM2Params::RelinearizationThreshold& relinearizeThreshold)
 {
-  FastSet<Key> relinKeys;
+  KeySet relinKeys;
   BOOST_FOREACH(const ISAM2::sharedClique& root, roots) {
     if(relinearizeThreshold.type() == typeid(double))
       CheckRelinearizationRecursiveDouble(relinKeys, boost::get<double>(relinearizeThreshold), delta, root);
@@ -200,7 +202,7 @@ FastSet<Key> ISAM2::Impl::CheckRelinearizationPartial(const FastVector<ISAM2::sh
 }
 
 /* ************************************************************************* */
-void ISAM2::Impl::FindAll(ISAM2Clique::shared_ptr clique, FastSet<Key>& keys, const FastSet<Key>& markedMask)
+void ISAM2::Impl::FindAll(ISAM2Clique::shared_ptr clique, KeySet& keys, const KeySet& markedMask)
 {
   static const bool debug = false;
   // does the separator contain any of the variables?
@@ -224,7 +226,7 @@ void ISAM2::Impl::FindAll(ISAM2Clique::shared_ptr clique, FastSet<Key>& keys, co
 
 /* ************************************************************************* */
 void ISAM2::Impl::ExpmapMasked(Values& values, const VectorValues& delta,
-    const FastSet<Key>& mask, boost::optional<VectorValues&> invalidateIfDebug, const KeyFormatter& keyFormatter)
+    const KeySet& mask, boost::optional<VectorValues&> invalidateIfDebug, const KeyFormatter& keyFormatter)
 {
   // If debugging, invalidate if requested, otherwise do not invalidate.
   // Invalidating means setting expmapped entries to Inf, to trigger assertions
@@ -272,7 +274,7 @@ inline static void optimizeInPlace(const boost::shared_ptr<ISAM2Clique>& clique,
 
 /* ************************************************************************* */
 size_t ISAM2::Impl::UpdateGaussNewtonDelta(const FastVector<ISAM2::sharedClique>& roots,
-    const FastSet<Key>& replacedKeys, VectorValues& delta, double wildfireThreshold) {
+    const KeySet& replacedKeys, VectorValues& delta, double wildfireThreshold) {
 
   size_t lastBacksubVariableCount;
 
@@ -300,7 +302,7 @@ size_t ISAM2::Impl::UpdateGaussNewtonDelta(const FastVector<ISAM2::sharedClique>
 
 /* ************************************************************************* */
 namespace internal {
-void updateRgProd(const boost::shared_ptr<ISAM2Clique>& clique, const FastSet<Key>& replacedKeys,
+void updateRgProd(const boost::shared_ptr<ISAM2Clique>& clique, const KeySet& replacedKeys,
     const VectorValues& grad, VectorValues& RgProd, size_t& varsUpdated) {
 
   // Check if any frontal or separator keys were recalculated, if so, we need
@@ -344,7 +346,7 @@ void updateRgProd(const boost::shared_ptr<ISAM2Clique>& clique, const FastSet<Ke
 }
 
 /* ************************************************************************* */
-size_t ISAM2::Impl::UpdateRgProd(const ISAM2::Roots& roots, const FastSet<Key>& replacedKeys,
+size_t ISAM2::Impl::UpdateRgProd(const ISAM2::Roots& roots, const KeySet& replacedKeys,
     const VectorValues& gradAtZero, VectorValues& RgProd) {
 
   // Update variables

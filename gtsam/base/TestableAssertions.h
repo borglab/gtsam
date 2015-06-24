@@ -17,13 +17,14 @@
 
 #pragma once
 
-#include <vector>
-#include <map>
-#include <iostream>
+#include <gtsam/base/Testable.h>
+#include <gtsam/global_includes.h>
+
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
-#include <gtsam/global_includes.h>
-#include <gtsam/base/Testable.h>
+#include <map>
+#include <iostream>
+#include <vector>
 
 namespace gtsam {
 

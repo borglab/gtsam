@@ -22,6 +22,8 @@
 
 #pragma once
 #include <gtsam/base/Vector.h>
+#include <gtsam/config.h>      // Configuration from CMake
+
 #include <boost/math/special_functions/fpclassify.hpp>
 #include <Eigen/Core>
 #include <Eigen/Cholesky>

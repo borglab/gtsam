@@ -371,7 +371,7 @@ void ConcurrentBatchSmoother::updateSmootherSummarization() {
   }
 
   // Get the set of separator keys
-  gtsam::FastSet<Key> separatorKeys;
+  gtsam::KeySet separatorKeys;
   BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, separatorValues_) {
     separatorKeys.insert(key_value.key);
   }
