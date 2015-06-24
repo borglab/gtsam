@@ -21,6 +21,7 @@
 #include <gtsam/inference/Ordering.h>
 
 #include <boost/foreach.hpp>
+#include <algorithm>
 
 using namespace std;
 
@@ -29,53 +30,62 @@ namespace gtsam {
 /* ************************************************************************* */
 string SlotEntry::toString() const {
   ostringstream oss;
-  oss << "SlotEntry: slot=" << slot << ", dim=" << dimension;
+  oss << "SlotEntry: key=" << key << ", dim=" << dimension;
   return oss.str();
 }
 
 /* ************************************************************************* */
 Scatter::Scatter(const GaussianFactorGraph& gfg,
-                 boost::optional<const Ordering&> ordering) {
+    boost::optional<const Ordering&> ordering) {
   gttic(Scatter_Constructor);
-  static const DenseIndex none = std::numeric_limits<size_t>::max();
-
-  // First do the set union.
-  BOOST_FOREACH (const GaussianFactor::shared_ptr& factor, gfg) {
-    if (factor) {
-      for (GaussianFactor::const_iterator variable = factor->begin();
-           variable != factor->end(); ++variable) {
-        // TODO: Fix this hack to cope with zero-row Jacobians that come from
-        // BayesTreeOrphanWrappers
-        const JacobianFactor* asJacobian =
-            dynamic_cast<const JacobianFactor*>(factor.get());
-        if (!asJacobian || asJacobian->cols() > 1)
-          insert(
-              make_pair(*variable, SlotEntry(none, factor->getDim(variable))));
-      }
-    }
-  }
 
   // If we have an ordering, pre-fill the ordered variables first
-  size_t slot = 0;
   if (ordering) {
     BOOST_FOREACH (Key key, *ordering) {
-      const_iterator entry = find(key);
-      if (entry == end())
-        throw std::invalid_argument(
-            "The ordering provided to the HessianFactor Scatter constructor\n"
-            "contained extra variables that did not appear in the factors to "
-            "combine.");
-      at(key).slot = (slot++);
+      push_back(SlotEntry(key, 0));
     }
   }
 
-  // Next fill in the slot indices (we can only get these after doing the set
-  // union.
-  BOOST_FOREACH (value_type& var_slot, *this) {
-    if (var_slot.second.slot == none) var_slot.second.slot = (slot++);
+  // Now, find dimensions of variables and/or extend
+  BOOST_FOREACH (const GaussianFactor::shared_ptr& factor, gfg) {
+    if (!factor) continue;
+
+    // TODO: Fix this hack to cope with zero-row Jacobians that come from BayesTreeOrphanWrappers
+    const JacobianFactor* asJacobian = dynamic_cast<const JacobianFactor*>(factor.get());
+    if (asJacobian && asJacobian->cols() <= 1) continue;
+
+    // loop over variables
+    for (GaussianFactor::const_iterator variable = factor->begin();
+         variable != factor->end(); ++variable) {
+      const Key key = *variable;
+      iterator it = find(key); // theoretically expensive, yet cache friendly
+      if (it!=end())
+        it->dimension = factor->getDim(variable);
+      else
+        push_back(SlotEntry(key, factor->getDim(variable)));
+    }
   }
+
+  // To keep the same behavior as before, sort the keys after the ordering
+  iterator first = begin();
+  if (ordering) first += ordering->size();
+  if (first != end()) std::sort(first, end());
+
+  // Filter out keys with zero dimensions (if ordering had more keys)
+  erase(std::remove_if(begin(), end(), SlotEntry::Zero), end());
+}
+
+/* ************************************************************************* */
+FastVector<SlotEntry>::iterator Scatter::find(Key key) {
+  iterator it = begin();
+  while(it != end()) {
+    if (it->key == key)
+      return it;
+    ++it;
+  }
+  return it; // end()
 }
 
 /* ************************************************************************* */
 
-}  // gtsam
+} // gtsam

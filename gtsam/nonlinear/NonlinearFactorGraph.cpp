@@ -278,23 +278,26 @@ SymbolicFactorGraph::shared_ptr NonlinearFactorGraph::symbolic() const
 namespace {
 
 #ifdef GTSAM_USE_TBB
-  struct _LinearizeOneFactor {
-    const NonlinearFactorGraph& graph;
-    const Values& linearizationPoint;
-    GaussianFactorGraph& result;
-    _LinearizeOneFactor(const NonlinearFactorGraph& graph, const Values& linearizationPoint, GaussianFactorGraph& result) :
-      graph(graph), linearizationPoint(linearizationPoint), result(result) {}
-    void operator()(const tbb::blocked_range<size_t>& r) const
-    {
-      for(size_t i = r.begin(); i != r.end(); ++i)
-      {
-        if(graph[i])
-          result[i] = graph[i]->linearize(linearizationPoint);
-        else
-          result[i] = GaussianFactor::shared_ptr();
-      }
+class _LinearizeOneFactor {
+  const NonlinearFactorGraph& nonlinearGraph_;
+  const Values& linearizationPoint_;
+  GaussianFactorGraph& result_;
+public:
+  // Create functor with constant parameters
+  _LinearizeOneFactor(const NonlinearFactorGraph& graph,
+      const Values& linearizationPoint, GaussianFactorGraph& result) :
+      nonlinearGraph_(graph), linearizationPoint_(linearizationPoint), result_(result) {
+  }
+  // Operator that linearizes a given range of the factors
+  void operator()(const tbb::blocked_range<size_t>& blocked_range) const {
+    for (size_t i = blocked_range.begin(); i != blocked_range.end(); ++i) {
+      if (nonlinearGraph_[i])
+        result_[i] = nonlinearGraph_[i]->linearize(linearizationPoint_);
+      else
+        result_[i] = GaussianFactor::shared_ptr();
     }
-  };
+  }
+};
 #endif
 
 }
@@ -323,7 +326,7 @@ GaussianFactorGraph::shared_ptr NonlinearFactorGraph::linearize(const Values& li
     if(factor) {
       (*linearFG) += factor->linearize(linearizationPoint);
     } else
-      (*linearFG) += GaussianFactor::shared_ptr();
+    (*linearFG) += GaussianFactor::shared_ptr();
   }
 
 #endif
