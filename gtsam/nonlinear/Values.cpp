@@ -210,8 +210,9 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  FastList<Key> Values::keys() const {
-    FastList<Key> result;
+  KeyVector Values::keys() const {
+    KeyVector result;
+    result.reserve(size());
     for(const_iterator key_value = begin(); key_value != end(); ++key_value)
       result.push_back(key_value->key);
     return result;

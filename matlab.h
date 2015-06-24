@@ -229,7 +229,7 @@ Values localToWorld(const Values& local, const Pose2& base,
   // if no keys given, get all keys from local values
   FastVector<Key> keys(user_keys);
   if (keys.size()==0)
-    keys = FastVector<Key>(local.keys());
+    keys = local.keys();
 
   // Loop over all keys
   BOOST_FOREACH(Key key, keys) {
