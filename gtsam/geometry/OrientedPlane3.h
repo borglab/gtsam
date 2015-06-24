@@ -27,12 +27,12 @@
 namespace gtsam {
 
 /// Represents an infinite plane in 3D.
-class OrientedPlane3: public DerivedValue<OrientedPlane3> {
+class GTSAM_EXPORT OrientedPlane3 {
 
 private:
 
-  Unit3 n_; /// The direction of the planar normal
-  double d_; /// The perpendicular distance to this plane
+  Unit3 n_;     ///< The direction of the planar normal
+  double d_;    ///< The perpendicular distance to this plane
 
 public:
   enum {
@@ -51,16 +51,21 @@ public:
       n_(s), d_(d) {
   }
 
+  /// Construct from a vector of plane coefficients
   OrientedPlane3(const Vector4& vec) :
       n_(vec(0), vec(1), vec(2)), d_(vec(3)) {
   }
 
-  /// Construct from a, b, c, d
+  /// Construct from four numbers of plane coeffcients (a, b, c, d)
   OrientedPlane3(double a, double b, double c, double d) {
     Point3 p(a, b, c);
     n_ = Unit3(p);
     d_ = d;
   }
+
+  /// @}
+  /// @name Testable
+  /// @{
 
   /// The print function
   void print(const std::string& s = std::string()) const;
@@ -70,12 +75,20 @@ public:
     return (n_.equals(s.n_, tol) && (fabs(d_ - s.d_) < tol));
   }
 
-  /// Transforms a plane to the specified pose
+  /** Transforms a plane to the specified pose
+   * @param The raw plane
+   * @param A transformation in current coordiante
+   * @param Hr optional jacobian wrpt incremental Pose
+   * @param Hp optional Jacobian wrpt the destination plane
+   */
   static OrientedPlane3 Transform(const gtsam::OrientedPlane3& plane,
       const gtsam::Pose3& xr, OptionalJacobian<3, 6> Hr = boost::none,
       OptionalJacobian<3, 3> Hp = boost::none);
 
-  /// Computes the error between two poses
+  /** Computes the error between two poses.
+   *  The error is a norm 1 difference in tangent space.
+   * @param the other plane
+   */
   Vector3 error(const gtsam::OrientedPlane3& plane) const;
 
   /// Dimensionality of tangent space = 3 DOF
@@ -94,7 +107,7 @@ public:
   /// The local coordinates function
   Vector3 localCoordinates(const OrientedPlane3& s) const;
 
-  /// Returns the plane coefficients (a, b, c, d)
+  /// Returns the plane coefficients
   Vector3 planeCoefficients() const;
 
   inline Unit3 normal() const {
