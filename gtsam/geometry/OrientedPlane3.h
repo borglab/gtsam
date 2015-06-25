@@ -99,7 +99,9 @@ public:
    */
   static OrientedPlane3 Transform(const OrientedPlane3& plane,
       const Pose3& xr, OptionalJacobian<3, 6> Hr = boost::none,
-      OptionalJacobian<3, 3> Hp = boost::none);
+      OptionalJacobian<3, 3> Hp = boost::none) {
+      return plane.transform(xr, Hp, Hr);
+  }
 
   /** Computes the error between two planes.
    *  The error is a norm 1 difference in tangent space.
