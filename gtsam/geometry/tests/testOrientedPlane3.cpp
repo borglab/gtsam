@@ -13,6 +13,7 @@
  * @file testOrientedPlane3.cpp
  * @date Dec 19, 2012
  * @author Alex Trevor
+ * @author Zhaoyang Lv
  * @brief Tests the OrientedPlane3 class
  */
 

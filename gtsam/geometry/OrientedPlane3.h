@@ -14,6 +14,7 @@
  * @date Dec 19, 2013
  * @author Alex Trevor
  * @author Frank Dellaert
+ * @author Zhaoyang Lv
  * @brief An infinite plane, represented by a normal direction and perpendicular distance
  */
 
@@ -37,6 +38,7 @@ public:
   enum {
     dimension = 3
   };
+
   /// @name Constructors
   /// @{
 
@@ -74,10 +76,12 @@ public:
     return (n_.equals(s.n_, tol) && (fabs(d_ - s.d_) < tol));
   }
 
+  /// @}
+
   /** Transforms a plane to the specified pose
    * @param The raw plane
    * @param A transformation in current coordiante
-   * @param Hr optional jacobian wrpt incremental Pose
+   * @param Hr optional jacobian wrpt the pose transformation
    * @param Hp optional Jacobian wrpt the destination plane
    */
   static OrientedPlane3 Transform(const OrientedPlane3& plane,
