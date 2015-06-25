@@ -19,7 +19,7 @@
 #pragma once
 
 #include <gtsam/linear/HessianFactor.h>
-#include <gtsam/slam/RegularJacobianFactor.h>
+#include <gtsam/linear/RegularJacobianFactor.h>
 #include <boost/foreach.hpp>
 #include <vector>
 

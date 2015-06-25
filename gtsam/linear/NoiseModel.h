@@ -550,6 +550,7 @@ namespace gtsam {
       virtual Vector unwhiten(const Vector& v) const;
       virtual Matrix Whiten(const Matrix& H) const;
       virtual void WhitenInPlace(Matrix& H) const;
+      virtual void whitenInPlace(Vector& v) const;
       virtual void WhitenInPlace(Eigen::Block<Matrix> H) const;
 
       /**

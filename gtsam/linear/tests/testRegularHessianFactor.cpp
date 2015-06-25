@@ -15,7 +15,7 @@
  * @date    March 4, 2014
  */
 
-#include <gtsam/slam/RegularHessianFactor.h>
+#include <gtsam/linear/RegularHessianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
 

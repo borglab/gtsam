@@ -31,43 +31,105 @@ using namespace gtsam;
 #include <gtsam/geometry/Cal3Bundler.h>
 TEST(CameraSet, Pinhole) {
   typedef PinholeCamera<Cal3Bundler> Camera;
+  typedef CameraSet<Camera> Set;
   typedef vector<Point2> ZZ;
-  CameraSet<Camera> set;
+  Set set;
   Camera camera;
   set.push_back(camera);
   set.push_back(camera);
   Point3 p(0, 0, 1);
-  CHECK(assert_equal(set, set));
-  CameraSet<Camera> set2 = set;
+  EXPECT(assert_equal(set, set));
+  Set set2 = set;
   set2.push_back(camera);
-  CHECK(!set.equals(set2));
+  EXPECT(!set.equals(set2));
 
   // Check measurements
   Point2 expected;
-  ZZ z = set.project(p);
-  CHECK(assert_equal(expected, z[0]));
-  CHECK(assert_equal(expected, z[1]));
+  ZZ z = set.project2(p);
+  EXPECT(assert_equal(expected, z[0]));
+  EXPECT(assert_equal(expected, z[1]));
 
   // Calculate expected derivatives using Pinhole
-  Matrix46 actualF;
-  Matrix43 actualE;
-  Matrix43 actualH;
+  Matrix actualE;
+  Matrix29 F1;
   {
-    Matrix26 F1;
     Matrix23 E1;
-    Matrix23 H1;
-    camera.project(p, F1, E1, H1);
+    camera.project2(p, F1, E1);
+    actualE.resize(4,3);
     actualE << E1, E1;
-    actualF << F1, F1;
-    actualH << H1, H1;
   }
 
   // Check computed derivatives
-  Matrix F, E, H;
-  set.project(p, F, E, H);
-  CHECK(assert_equal(actualF, F));
-  CHECK(assert_equal(actualE, E));
-  CHECK(assert_equal(actualH, H));
+  Set::FBlocks Fs;
+  Matrix E;
+  set.project2(p, Fs, E);
+  LONGS_EQUAL(2, Fs.size());
+  EXPECT(assert_equal(F1, Fs[0]));
+  EXPECT(assert_equal(F1, Fs[1]));
+  EXPECT(assert_equal(actualE, E));
+
+  // Check errors
+  ZZ measured;
+  measured.push_back(Point2(1, 2));
+  measured.push_back(Point2(3, 4));
+  Vector4 expectedV;
+
+  // reprojectionError
+  expectedV << -1, -2, -3, -4;
+  Vector actualV = set.reprojectionError(p, measured);
+  EXPECT(assert_equal(expectedV, actualV));
+
+  // Check Schur complement
+  Matrix F(4, 18);
+  F << F1, Matrix29::Zero(), Matrix29::Zero(), F1;
+  Matrix Ft = F.transpose();
+  Matrix34 Et = E.transpose();
+  Matrix3 P = Et * E;
+  Matrix schur(19, 19);
+  Vector4 b = actualV;
+  Vector v = Ft * (b - E * P * Et * b);
+  schur << Ft * F - Ft * E * P * Et * F, v, v.transpose(), 30;
+  SymmetricBlockMatrix actualReduced = Set::SchurComplement(Fs, E, P, b);
+  EXPECT(assert_equal(schur, actualReduced.matrix()));
+
+  // Check Schur complement update, same order, should just double
+  FastVector<Key> allKeys, keys;
+  allKeys.push_back(1);
+  allKeys.push_back(2);
+  keys.push_back(1);
+  keys.push_back(2);
+  Set::UpdateSchurComplement(Fs, E, P, b, allKeys, keys, actualReduced);
+  EXPECT(assert_equal((Matrix )(2.0 * schur), actualReduced.matrix()));
+
+  // Check Schur complement update, keys reversed
+  FastVector<Key> keys2;
+  keys2.push_back(2);
+  keys2.push_back(1);
+  Set::UpdateSchurComplement(Fs, E, P, b, allKeys, keys2, actualReduced);
+  Vector4 reverse_b;
+  reverse_b << b.tail<2>(), b.head<2>();
+  Vector reverse_v = Ft * (reverse_b - E * P * Et * reverse_b);
+  Matrix A(19, 19);
+  A << Ft * F - Ft * E * P * Et * F, reverse_v, reverse_v.transpose(), 30;
+  EXPECT(assert_equal((Matrix )(2.0 * schur + A), actualReduced.matrix()));
+
+  // reprojectionErrorAtInfinity
+  Unit3 pointAtInfinity(0, 0, 1000);
+  EXPECT(
+      assert_equal(pointAtInfinity,
+          camera.backprojectPointAtInfinity(Point2())));
+  actualV = set.reprojectionError(pointAtInfinity, measured, Fs, E);
+  EXPECT(assert_equal(expectedV, actualV));
+  LONGS_EQUAL(2, Fs.size());
+  {
+    Matrix22 E1;
+    camera.project2(pointAtInfinity, F1, E1);
+    actualE.resize(4,2);
+    actualE << E1, E1;
+  }
+  EXPECT(assert_equal(F1, Fs[0]));
+  EXPECT(assert_equal(F1, Fs[1]));
+  EXPECT(assert_equal(actualE, E));
 }
 
 /* ************************************************************************* */
@@ -83,26 +145,27 @@ TEST(CameraSet, Stereo) {
 
   // Check measurements
   StereoPoint2 expected(0, -1, 0);
-  ZZ z = set.project(p);
-  CHECK(assert_equal(expected, z[0]));
-  CHECK(assert_equal(expected, z[1]));
+  ZZ z = set.project2(p);
+  EXPECT(assert_equal(expected, z[0]));
+  EXPECT(assert_equal(expected, z[1]));
 
   // Calculate expected derivatives using Pinhole
-  Matrix66 actualF;
   Matrix63 actualE;
+  Matrix F1;
   {
-    Matrix36 F1;
     Matrix33 E1;
-    camera.project(p, F1, E1);
+    camera.project2(p, F1, E1);
     actualE << E1, E1;
-    actualF << F1, F1;
   }
 
   // Check computed derivatives
-  Matrix F, E;
-  set.project(p, F, E);
-  CHECK(assert_equal(actualF, F));
-  CHECK(assert_equal(actualE, E));
+  CameraSet<StereoCamera>::FBlocks Fs;
+  Matrix E;
+  set.project2(p, Fs, E);
+  LONGS_EQUAL(2, Fs.size());
+  EXPECT(assert_equal(F1, Fs[0]));
+  EXPECT(assert_equal(F1, Fs[1]));
+  EXPECT(assert_equal(actualE, E));
 }
 
 /* ************************************************************************* */

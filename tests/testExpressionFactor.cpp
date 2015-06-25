@@ -37,6 +37,10 @@ using namespace gtsam;
 Point2 measured(-17, 30);
 SharedNoiseModel model = noiseModel::Unit::Create(2);
 
+// This deals with the overload problem and makes the expressions factor
+// understand that we work on Point3
+Point2 (*Project)(const Point3&, OptionalJacobian<2, 3>) = &PinholeBase::Project;
+
 namespace leaf {
 // Create some values
 struct MyValues: public Values {
@@ -313,7 +317,7 @@ TEST(ExpressionFactor, tree) {
 
   // Create expression tree
   Point3_ p_cam(x, &Pose3::transform_to, p);
-  Point2_ xy_hat(PinholeCamera<Cal3_S2>::project_to_camera, p_cam);
+  Point2_ xy_hat(Project, p_cam);
   Point2_ uv_hat(K, &Cal3_S2::uncalibrate, xy_hat);
 
   // Create factor and check value, dimension, linearization
@@ -330,8 +334,6 @@ TEST(ExpressionFactor, tree) {
   EXPECT_LONGS_EQUAL(2, f2.dim());
   boost::shared_ptr<GaussianFactor> gf2 = f2.linearize(values);
   EXPECT( assert_equal(*expected, *gf2, 1e-9));
-
-  Expression<Point2>::TernaryFunction<Pose3, Point3, Cal3_S2>::type fff = project6;
 
   // Try ternary version
   ExpressionFactor<Point2> f3(model, measured, project3(x, p, K));
@@ -489,7 +491,7 @@ TEST(ExpressionFactor, tree_finite_differences) {
 
   // Create expression tree
   Point3_ p_cam(x, &Pose3::transform_to, p);
-  Point2_ xy_hat(PinholeCamera<Cal3_S2>::project_to_camera, p_cam);
+  Point2_ xy_hat(Project, p_cam);
   Point2_ uv_hat(K, &Cal3_S2::uncalibrate, xy_hat);
 
   const double fd_step = 1e-5;
