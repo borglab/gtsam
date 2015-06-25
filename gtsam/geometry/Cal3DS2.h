@@ -18,7 +18,6 @@
 
 #pragma once
 
-#include <gtsam/base/DerivedValue.h>
 #include <gtsam/geometry/Cal3DS2_Base.h>
 
 namespace gtsam {
