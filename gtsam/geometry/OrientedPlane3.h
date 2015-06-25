@@ -26,7 +26,12 @@
 
 namespace gtsam {
 
-/// Represents an infinite plane in 3D.
+/**
+ * @brief Represents an infinite plane in 3D, which is composed of a planar normal and its
+ *  perpendicular distance to the origin.
+ * Currently it provides a transform of the plane, and a norm 1 differencing of two planes.
+ * Refer to Trevor12iros for more math details.
+ */
 class GTSAM_EXPORT OrientedPlane3 {
 
 private:
@@ -89,7 +94,7 @@ public:
       OptionalJacobian<3, 6> Hr = boost::none) const;
 
   /**
-   * @ deprecated the static method has wrong Jacobian order,
+   * @deprecated the static method has wrong Jacobian order,
    *    please use the member method transform()
    * @param The raw plane
    * @param xr a transformation in current coordiante
