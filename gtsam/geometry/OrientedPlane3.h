@@ -79,16 +79,29 @@ public:
   /// @}
 
   /** Transforms a plane to the specified pose
+   * @param xr a transformation in current coordiante
+   * @param Hp optional Jacobian wrpt the destination plane
+   * @param Hr optional jacobian wrpt the pose transformation
+   * @return the transformed plane
+   */
+  OrientedPlane3 transform(const Pose3& xr,
+                           OptionalJacobian<3, 3> Hp = boost::none,
+                           OptionalJacobian<3, 6> Hr = boost::none) const;
+
+  /**
+   * @ deprecated the static method has wrong Jacobian order,
+   *    please use the member method transform()
    * @param The raw plane
-   * @param A transformation in current coordiante
+   * @param xr a transformation in current coordiante
    * @param Hr optional jacobian wrpt the pose transformation
    * @param Hp optional Jacobian wrpt the destination plane
+   * @return the transformed plane
    */
   static OrientedPlane3 Transform(const OrientedPlane3& plane,
       const Pose3& xr, OptionalJacobian<3, 6> Hr = boost::none,
       OptionalJacobian<3, 3> Hp = boost::none);
 
-  /** Computes the error between two poses.
+  /** Computes the error between two planes.
    *  The error is a norm 1 difference in tangent space.
    * @param the other plane
    */

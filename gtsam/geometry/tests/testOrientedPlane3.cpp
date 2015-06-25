@@ -48,36 +48,46 @@ TEST (OrientedPlane3, getMethods) {
   EXPECT(assert_equal(Unit3(-1,0,0).unitVector(), plane2.normal().unitVector()));
 }
 
+
 //*******************************************************************************
+OrientedPlane3 Transform_(const OrientedPlane3& plane,  const Pose3& xr) {
+    return OrientedPlane3::Transform(plane, xr);
+}
+
+OrientedPlane3 transform_(const OrientedPlane3& plane,  const Pose3& xr) {
+   return plane.transform(xr);
+}
+
 TEST (OrientedPlane3, transform) {
-  // Test transforming a plane to a pose
   gtsam::Pose3 pose(gtsam::Rot3::ypr(-M_PI / 4.0, 0.0, 0.0),
       gtsam::Point3(2.0, 3.0, 4.0));
   OrientedPlane3 plane(-1, 0, 0, 5);
-  OrientedPlane3 expected_meas(-sqrt(2.0) / 2.0, -sqrt(2.0) / 2.0, 0.0, 3);
-  OrientedPlane3 transformed_plane = OrientedPlane3::Transform(plane, pose,
+  OrientedPlane3 expectedPlane(-sqrt(2.0) / 2.0, -sqrt(2.0) / 2.0, 0.0, 3);
+  OrientedPlane3 transformedPlane1 = OrientedPlane3::Transform(plane, pose,
       none, none);
-  EXPECT(assert_equal(expected_meas, transformed_plane, 1e-9));
+  OrientedPlane3 transformedPlane2 = plane.transform(pose, none, none);
+  EXPECT(assert_equal(expectedPlane, transformedPlane1, 1e-9));
+  EXPECT(assert_equal(expectedPlane, transformedPlane2, 1e-9));
 
   // Test the jacobians of transform
   Matrix actualH1, expectedH1, actualH2, expectedH2;
   {
-    expectedH1 = numericalDerivative11<OrientedPlane3, Pose3>(
-        boost::bind(&OrientedPlane3::Transform, plane, _1, none, none), pose);
-
-    OrientedPlane3 tformed = OrientedPlane3::Transform(plane, pose, actualH1,
-        none);
-    EXPECT(assert_equal(expectedH1, actualH1, 1e-9));
+      OrientedPlane3::Transform(plane, pose, actualH1, none);
+      // because the Transform class uses a wrong order of Jacobians in interface
+      expectedH1 = numericalDerivative22(Transform_, plane, pose);
+      EXPECT(assert_equal(expectedH1, actualH1, 1e-9));
+      OrientedPlane3::Transform(plane, pose, none, actualH2);
+      expectedH2 = numericalDerivative21(Transform_, plane, pose);
+      EXPECT(assert_equal(expectedH2, actualH2, 1e-9));
   }
   {
-    expectedH2 = numericalDerivative11<OrientedPlane3, OrientedPlane3>(
-        boost::bind(&OrientedPlane3::Transform, _1, pose, none, none), plane);
-
-    OrientedPlane3 tformed = OrientedPlane3::Transform(plane, pose, none,
-        actualH2);
-    EXPECT(assert_equal(expectedH2, actualH2, 1e-9));
+      plane.transform(pose, actualH1, none);
+      expectedH1 = numericalDerivative21(transform_, plane, pose);
+      EXPECT(assert_equal(expectedH1, actualH1, 1e-9));
+      plane.transform(pose, none, actualH2);
+      expectedH2 = numericalDerivative22(Transform_, plane, pose);
+      EXPECT(assert_equal(expectedH2, actualH2, 1e-9));
   }
-
 }
 
 //*******************************************************************************
