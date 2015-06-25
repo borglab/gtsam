@@ -22,7 +22,7 @@
 
 #include <gtsam/base/Manifold.h>
 #include <gtsam/geometry/Point3.h>
-#include <gtsam/base/DerivedValue.h>
+
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/optional.hpp>
 

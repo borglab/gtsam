@@ -35,15 +35,13 @@ void OrientedPlane3::print(const string& s) const {
 OrientedPlane3 OrientedPlane3::Transform(const OrientedPlane3& plane,
     const Pose3& xr, OptionalJacobian<3, 6> Hr,
     OptionalJacobian<3, 3> Hp) {
-  Matrix n_hr;
-  Matrix n_hp;
+  Matrix23 n_hr;
+  Matrix22 n_hp;
   Unit3 n_rotated = xr.rotation().unrotate(plane.n_, n_hr, n_hp);
 
   Vector3 n_unit = plane.n_.unitVector();
   Vector3 unit_vec = n_rotated.unitVector();
   double pred_d = n_unit.dot(xr.translation().vector()) + plane.d_;
-  OrientedPlane3 transformed_plane(unit_vec(0), unit_vec(1), unit_vec(2),
-      pred_d);
 
   if (Hr) {
     *Hr = zeros(3, 6);
@@ -51,16 +49,16 @@ OrientedPlane3 OrientedPlane3::Transform(const OrientedPlane3& plane,
     (*Hr).block<1, 3>(2, 3) = unit_vec;
   }
   if (Hp) {
-    Vector xrp = xr.translation().vector();
-    Matrix n_basis = plane.n_.basis();
-    Vector hpp = n_basis.transpose() * xrp;
+    Vector3 xrp = xr.translation().vector();
+    Matrix32 n_basis = plane.n_.basis();
+    Vector2 hpp = n_basis.transpose() * xrp;
     *Hp = zeros(3, 3);
     (*Hp).block<2, 2>(0, 0) = n_hp;
     (*Hp).block<1, 2>(2, 0) = hpp;
     (*Hp)(2, 2) = 1;
   }
 
-  return (transformed_plane);
+  return OrientedPlane3(unit_vec(0), unit_vec(1), unit_vec(2), pred_d);
 }
 
 /* ************************************************************************* */
