@@ -35,22 +35,22 @@ void OrientedPlane3::print(const string& s) const {
 OrientedPlane3 OrientedPlane3::Transform(const OrientedPlane3& plane,
     const Pose3& xr, OptionalJacobian<3, 6> Hr,
     OptionalJacobian<3, 3> Hp) {
-  Matrix23 n_hr;
-  Matrix22 n_hp;
-  Unit3 n_rotated = xr.rotation().unrotate(plane.n_, n_hr, n_hp);
+  Matrix23 D_rotated_plane;
+  Matrix22 D_rotated_pose;
+  Unit3 n_rotated = xr.rotation().unrotate(plane.n_, D_rotated_plane, D_rotated_pose);
 
   Vector3 unit_vec = n_rotated.unitVector();
   double pred_d = plane.n_.unitVector().dot(xr.translation().vector()) + plane.d_;
 
   if (Hr) {
     *Hr = zeros(3, 6);
-    Hr->block<2, 3>(0, 0) = n_hr;
+    Hr->block<2, 3>(0, 0) = D_rotated_plane;
     Hr->block<1, 3>(2, 3) = unit_vec;
   }
   if (Hp) {
     Vector2 hpp = plane.n_.basis().transpose() * xr.translation().vector();
     *Hp = Z_3x3;
-    Hp->block<2, 2>(0, 0) = n_hp;
+    Hp->block<2, 2>(0, 0) = D_rotated_pose;
     Hp->block<1, 2>(2, 0) = hpp;
     (*Hp)(2, 2) = 1;
   }
@@ -61,22 +61,22 @@ OrientedPlane3 OrientedPlane3::Transform(const OrientedPlane3& plane,
 /* ************************************************************************* */
 OrientedPlane3 OrientedPlane3::transform(const Pose3& xr, OptionalJacobian<3, 3> Hp,
     OptionalJacobian<3, 6> Hr) const {
-  Matrix23 n_hr;
-  Matrix22 n_hp;
-  Unit3 n_rotated = xr.rotation().unrotate(n_, n_hr, n_hp);
+  Matrix23 D_rotated_plane;
+  Matrix22 D_rotated_pose;
+  Unit3 n_rotated = xr.rotation().unrotate(n_, D_rotated_plane, D_rotated_pose);
 
   Vector3 unit_vec = n_rotated.unitVector();
   double pred_d = n_.unitVector().dot(xr.translation().vector()) + d_;
 
   if (Hr) {
     *Hr = zeros(3, 6);
-    Hr->block<2, 3>(0, 0) = n_hr;
+    Hr->block<2, 3>(0, 0) = D_rotated_plane;
     Hr->block<1, 3>(2, 3) = unit_vec;
   }
   if (Hp) {
     Vector2 hpp = n_.basis().transpose() * xr.translation().vector();
     *Hp = Z_3x3;
-    Hp->block<2, 2>(0, 0) = n_hp;
+    Hp->block<2, 2>(0, 0) = D_rotated_pose;
     Hp->block<1, 2>(2, 0) = hpp;
     (*Hp)(2, 2) = 1;
   }
