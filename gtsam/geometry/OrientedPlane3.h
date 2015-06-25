@@ -44,17 +44,17 @@ public:
 
   /// Default constructor
   OrientedPlane3() :
-      n_(), d_(0.0) {
+    n_(), d_(0.0) {
   }
 
   /// Construct from a Unit3 and a distance
   OrientedPlane3(const Unit3& s, double d) :
-      n_(s), d_(d) {
+    n_(s), d_(d) {
   }
 
   /// Construct from a vector of plane coefficients
   OrientedPlane3(const Vector4& vec) :
-      n_(vec(0), vec(1), vec(2)), d_(vec(3)) {
+    n_(vec(0), vec(1), vec(2)), d_(vec(3)) {
   }
 
   /// Construct from four numbers of plane coeffcients (a, b, c, d)
@@ -85,8 +85,8 @@ public:
    * @return the transformed plane
    */
   OrientedPlane3 transform(const Pose3& xr,
-                           OptionalJacobian<3, 3> Hp = boost::none,
-                           OptionalJacobian<3, 6> Hr = boost::none) const;
+      OptionalJacobian<3, 3> Hp = boost::none,
+      OptionalJacobian<3, 6> Hr = boost::none) const;
 
   /**
    * @ deprecated the static method has wrong Jacobian order,
@@ -143,11 +143,11 @@ public:
 };
 
 template<> struct traits<OrientedPlane3> : public internal::Manifold<
-    OrientedPlane3> {
+OrientedPlane3> {
 };
 
 template<> struct traits<const OrientedPlane3> : public internal::Manifold<
-    OrientedPlane3> {
+OrientedPlane3> {
 };
 
 } // namespace gtsam

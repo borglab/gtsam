@@ -51,11 +51,11 @@ TEST (OrientedPlane3, getMethods) {
 
 //*******************************************************************************
 OrientedPlane3 Transform_(const OrientedPlane3& plane,  const Pose3& xr) {
-    return OrientedPlane3::Transform(plane, xr);
+  return OrientedPlane3::Transform(plane, xr);
 }
 
 OrientedPlane3 transform_(const OrientedPlane3& plane,  const Pose3& xr) {
-   return plane.transform(xr);
+  return plane.transform(xr);
 }
 
 TEST (OrientedPlane3, transform) {
@@ -72,26 +72,26 @@ TEST (OrientedPlane3, transform) {
   // Test the jacobians of transform
   Matrix actualH1, expectedH1, actualH2, expectedH2;
   {
-      OrientedPlane3::Transform(plane, pose, actualH1, none);
-      // because the Transform class uses a wrong order of Jacobians in interface
-      expectedH1 = numericalDerivative22(Transform_, plane, pose);
-      EXPECT(assert_equal(expectedH1, actualH1, 1e-9));
-      OrientedPlane3::Transform(plane, pose, none, actualH2);
-      expectedH2 = numericalDerivative21(Transform_, plane, pose);
-      EXPECT(assert_equal(expectedH2, actualH2, 1e-9));
+    // because the Transform class uses a wrong order of Jacobians in interface
+    OrientedPlane3::Transform(plane, pose, actualH1, none);
+    expectedH1 = numericalDerivative22(Transform_, plane, pose);
+    EXPECT(assert_equal(expectedH1, actualH1, 1e-9));
+    OrientedPlane3::Transform(plane, pose, none, actualH2);
+    expectedH2 = numericalDerivative21(Transform_, plane, pose);
+    EXPECT(assert_equal(expectedH2, actualH2, 1e-9));
   }
   {
-      plane.transform(pose, actualH1, none);
-      expectedH1 = numericalDerivative21(transform_, plane, pose);
-      EXPECT(assert_equal(expectedH1, actualH1, 1e-9));
-      plane.transform(pose, none, actualH2);
-      expectedH2 = numericalDerivative22(Transform_, plane, pose);
-      EXPECT(assert_equal(expectedH2, actualH2, 1e-9));
+    plane.transform(pose, actualH1, none);
+    expectedH1 = numericalDerivative21(transform_, plane, pose);
+    EXPECT(assert_equal(expectedH1, actualH1, 1e-9));
+    plane.transform(pose, none, actualH2);
+    expectedH2 = numericalDerivative22(Transform_, plane, pose);
+    EXPECT(assert_equal(expectedH2, actualH2, 1e-9));
   }
 }
 
 //*******************************************************************************
-// Returns a random vector -- copied from testUnit3.cpp
+// Returns a any size random vector
 inline static Vector randomVector(const Vector& minLimits,
     const Vector& maxLimits) {
 
