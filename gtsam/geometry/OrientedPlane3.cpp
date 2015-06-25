@@ -26,27 +26,27 @@ namespace gtsam {
 
 /* ************************************************************************* */
 /// The print fuction
-void OrientedPlane3::print(const std::string& s) const {
-  Vector coeffs = planeCoefficients();
+void OrientedPlane3::print(const string& s) const {
+  Vector4 coeffs = planeCoefficients();
   cout << s << " : " << coeffs << endl;
 }
 
 /* ************************************************************************* */
-OrientedPlane3 OrientedPlane3::Transform(const gtsam::OrientedPlane3& plane,
-    const gtsam::Pose3& xr, OptionalJacobian<3, 6> Hr,
+OrientedPlane3 OrientedPlane3::Transform(const OrientedPlane3& plane,
+    const Pose3& xr, OptionalJacobian<3, 6> Hr,
     OptionalJacobian<3, 3> Hp) {
   Matrix n_hr;
   Matrix n_hp;
   Unit3 n_rotated = xr.rotation().unrotate(plane.n_, n_hr, n_hp);
 
-  Vector n_unit = plane.n_.unitVector();
-  Vector unit_vec = n_rotated.unitVector();
+  Vector3 n_unit = plane.n_.unitVector();
+  Vector3 unit_vec = n_rotated.unitVector();
   double pred_d = n_unit.dot(xr.translation().vector()) + plane.d_;
   OrientedPlane3 transformed_plane(unit_vec(0), unit_vec(1), unit_vec(2),
       pred_d);
 
   if (Hr) {
-    *Hr = gtsam::zeros(3, 6);
+    *Hr = zeros(3, 6);
     (*Hr).block<2, 3>(0, 0) = n_hr;
     (*Hr).block<1, 3>(2, 3) = unit_vec;
   }
@@ -54,7 +54,7 @@ OrientedPlane3 OrientedPlane3::Transform(const gtsam::OrientedPlane3& plane,
     Vector xrp = xr.translation().vector();
     Matrix n_basis = plane.n_.basis();
     Vector hpp = n_basis.transpose() * xrp;
-    *Hp = gtsam::zeros(3, 3);
+    *Hp = zeros(3, 3);
     (*Hp).block<2, 2>(0, 0) = n_hp;
     (*Hp).block<1, 2>(2, 0) = hpp;
     (*Hp)(2, 2) = 1;
@@ -64,7 +64,7 @@ OrientedPlane3 OrientedPlane3::Transform(const gtsam::OrientedPlane3& plane,
 }
 
 /* ************************************************************************* */
-Vector3 OrientedPlane3::error(const gtsam::OrientedPlane3& plane) const {
+Vector3 OrientedPlane3::error(const OrientedPlane3& plane) const {
   Vector2 n_error = -n_.localCoordinates(plane.n_);
   double d_error = d_ - plane.d_;
   Vector3 e;

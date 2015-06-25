@@ -22,7 +22,6 @@
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/base/DerivedValue.h>
 
 namespace gtsam {
 
@@ -81,15 +80,15 @@ public:
    * @param Hr optional jacobian wrpt incremental Pose
    * @param Hp optional Jacobian wrpt the destination plane
    */
-  static OrientedPlane3 Transform(const gtsam::OrientedPlane3& plane,
-      const gtsam::Pose3& xr, OptionalJacobian<3, 6> Hr = boost::none,
+  static OrientedPlane3 Transform(const OrientedPlane3& plane,
+      const Pose3& xr, OptionalJacobian<3, 6> Hr = boost::none,
       OptionalJacobian<3, 3> Hp = boost::none);
 
   /** Computes the error between two poses.
    *  The error is a norm 1 difference in tangent space.
    * @param the other plane
    */
-  Vector3 error(const gtsam::OrientedPlane3& plane) const;
+  Vector3 error(const OrientedPlane3& plane) const;
 
   /// Dimensionality of tangent space = 3 DOF
   inline static size_t Dim() {
