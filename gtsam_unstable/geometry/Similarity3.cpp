@@ -44,7 +44,7 @@ bool Similarity3::equals(const Similarity3& sim, double tol) const {
 }
 
 bool Similarity3::operator==(const Similarity3& other) const {
-  return (R_.equals(other.R_)) && (t_ == other.t_) && (s_ == other.s_);
+  return equals(other, 1e-9);
 }
 
 void Similarity3::print(const std::string& s) const {

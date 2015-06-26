@@ -179,4 +179,9 @@ private:
 template<>
 struct traits<Similarity3> : public internal::LieGroup<Similarity3> {
 };
+
+template<>
+struct traits<const Similarity3> : public internal::LieGroup<Similarity3> {
+};
+
 }
