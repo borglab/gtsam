@@ -103,21 +103,25 @@ public:
   /// @name Lie Group
   /// @{
 
-  /// Not currently implemented, required because this is a lie group
+  /** Log map at the identity
+   * \f$ [R_x,R_y,R_z, t_x, t_y, t_z, \lambda] \f$
+   */
   static Vector7 Logmap(const Similarity3& s, //
       OptionalJacobian<7, 7> Hm = boost::none);
 
-  /// Not currently implemented, required because this is a lie group
+  /** Exponential map at the identity
+   */
   static Similarity3 Expmap(const Vector7& v, //
       OptionalJacobian<7, 7> Hm = boost::none);
 
-  /// Update Similarity transform via 7-dim vector in tangent space
+  /// Chart at the origin
   struct ChartAtOrigin {
-    static Similarity3 Retract(const Vector7& v, ChartJacobian H = boost::none);
-
-    /// 7-dimensional vector v in tangent space that makes other = this->retract(v)
-    static Vector7 Local(const Similarity3& other,
-        ChartJacobian H = boost::none);
+    static Similarity3 Retract(const Vector7& v, ChartJacobian H = boost::none) {
+      return Similarity3::Expmap(v);
+    }
+    static Vector7 Local(const Similarity3& other, ChartJacobian H = boost::none) {
+      return Similarity3::Logmap(other);
+    }
   };
 
   /// Project from one tangent space to another

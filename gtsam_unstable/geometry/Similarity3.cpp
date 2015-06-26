@@ -80,6 +80,7 @@ Point3 Similarity3::transform_from(const Point3& p, //
     *H2 = s_ * R_.matrix(); // just 3*3 sub-block of matrix()
   return R_ * (s_ * p) + t_;
   // TODO: Effect of scale change is this, right?
+  // No, this is incorrect. Zhaoyang Lv
   // sR t * (1+v)I 0 * p = s(1+v)R t * p = s(1+v)Rp + t = sRp + vRp + t
   // 0001   000    1   1   000     1   1
 }
@@ -186,38 +187,15 @@ Vector7 Similarity3::Logmap(const Similarity3& s, OptionalJacobian<7, 7> Hm) {
   // www.ethaneade.org/latex2html/lie/node29.html
   Vector3 w = Rot3::Logmap(s.R_);
   double lambda = log(s.s_);
-  Matrix33 V = GetV(w, lambda);
-  Vector3 u = V.inverse() * s.t_.vector();
-
   Vector7 result;
-  result << w, u, lambda;
+  result << w, GetV(w, lambda).inverse() * s.t_.vector(), lambda;
   return result;
 }
 
 Similarity3 Similarity3::Expmap(const Vector7& v, OptionalJacobian<7, 7> Hm) {
-  Matrix31 w(v.head<3>());
+  Vector3 w(v.head<3>());
   double lambda = v[6];
-  Matrix31 u(v.segment<3>(3));
-
-  Matrix33 V = GetV(w, lambda);
-//  Matrix33 wx = skewSymmetric(w[0], w[1], w[2]);
-//  double lambdasquared = lambda * lambda;
-//  double thetasquared = w.transpose() * w;
-//  double theta = sqrt(thetasquared);
-//  double X = sin(theta)/theta;
-//  double Y = (1-cos(theta))/thetasquared;
-//  double Z = (1-X)/thetasquared;
-//  double W = (0.5-Y)/thetasquared;
-//  double alpha = lambdasquared / (lambdasquared + thetasquared);
-//  double beta = (exp(-lambda)-1+lambda)/lambdasquared;
-//  double gama = Y - (lambda * Z);
-//  double mu = (1-lambda+(0.5*lambdasquared)-exp(-lambda))/(lambdasquared*lambda);
-//  double upsilon = Z-(lambda*W);
-//  double A = (1-exp(-lambda))/lambda;
-//  double B = alpha*(beta-gama)+gama;
-//  double C = alpha*(mu-upsilon)+upsilon;
-//  Matrix33 V = A*Matrix33::Identity() + B*wx + C*wx*wx;
-  return Similarity3(Rot3::Expmap(w), Point3(V*u), 1.0/exp(-lambda));
+  return Similarity3(Rot3::Expmap(w), Point3(GetV(w, lambda)*v.segment<3>(3)), 1.0/exp(-lambda));
 }
 
 
@@ -225,33 +203,6 @@ std::ostream &operator<<(std::ostream &os, const Similarity3& p) {
   os << "[" << p.rotation().xyz().transpose() << " " << p.translation().vector().transpose() << " " <<
       p.scale() << "]\';";
   return os;
-}
-
-Similarity3 Similarity3::ChartAtOrigin::Retract(const Vector7& v,  ChartJacobian H) {
-  // Will retracting or localCoordinating R work if R is not a unit rotation?
-  // Also, how do we actually get s out?  Seems like we need to store it somewhere.
-//  Rot3 r; //Create a zero rotation to do our retraction.
-//  return Similarity3( //
-//      r.retract(v.head<3>()), // retract rotation using v[0,1,2]
-//      Point3(v.segment<3>(3)), // Retract the translation
-//      1.0 + v[6]); //finally, update scale using v[6]
-
-  // Use the Expmap
-  return Similarity3::Expmap(v);
-}
-
-Vector7 Similarity3::ChartAtOrigin::Local(const Similarity3& other,
-    ChartJacobian H) {
-//  Rot3 r; //Create a zero rotation to do the retraction
-//  Vector7 v;
-//  v.head<3>() = r.localCoordinates(other.R_);
-//  v.segment<3>(3) = other.t_.vector();
-//  //v.segment<3>(3) = translation().localCoordinates(other.translation());
-//  v[6] = other.s_ - 1.0;
-//  return v;
-
-  // Use the Logmap
-  return Similarity3::Logmap(other);
 }
 
 const Matrix4 Similarity3::matrix() const {

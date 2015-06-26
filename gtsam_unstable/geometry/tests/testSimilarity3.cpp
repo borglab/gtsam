@@ -13,6 +13,7 @@
  * @file   testSimilarity3.cpp
  * @brief  Unit tests for Similarity3 class
  * @author Paul Drews
+ * @author Zhaoyang Lv
  */
 
 #include <gtsam_unstable/geometry/Similarity3.h>
@@ -73,18 +74,30 @@ TEST(Similarity3, Getters2) {
 TEST(Similarity3, AdjointMap) {
   Similarity3 test(Rot3::ypr(1, 2, 3).inverse(), Point3(4, 5, 6), 7);
   Matrix7 result;
-  result << -1.5739, -2.4512, -6.3651, -50.7671, -11.2503, 16.8859, -28.0000, 6.3167, -2.9884, -0.4111, 0.8502, 8.6373, -49.7260, -35.0000, -2.5734, -5.8362, 2.8839, 33.1363, 0.3024, 30.1811, -42.0000, 0, 0, 0, -0.2248, -0.3502, -0.9093, 0, 0, 0, 0, 0.9024, -0.4269, -0.0587, 0, 0, 0, 0, -0.3676, -0.8337, 0.4120, 0, 0, 0, 0, 0, 0, 0, 1.0000;
+  result << -1.5739, -2.4512, -6.3651, -50.7671, -11.2503, 16.8859, -28.0000,
+      6.3167, -2.9884, -0.4111, 0.8502, 8.6373, -49.7260, -35.0000,
+      -2.5734, -5.8362, 2.8839, 33.1363, 0.3024, 30.1811, -42.0000,
+      0, 0, 0, -0.2248, -0.3502, -0.9093, 0,
+      0, 0, 0, 0.9024, -0.4269, -0.0587, 0,
+      0, 0, 0, -0.3676, -0.8337, 0.4120, 0,
+      0, 0, 0, 0, 0, 0, 1.0000;
   EXPECT(assert_equal(result, test.AdjointMap(), 1e-3));
 }
 
 //******************************************************************************
 TEST(Similarity3, inverse) {
-  Similarity3 test(Rot3::ypr(1, 2, 3).inverse(), Point3(4, 5, 6), 7);
-  Matrix3 Re;
+  Similarity3 sim3(Rot3::ypr(1, 2, 3).inverse(), Point3(4, 5, 6), 7);
+  Matrix3 Re; // some values from matlab
   Re << -0.2248, 0.9024, -0.3676, -0.3502, -0.4269, -0.8337, -0.9093, -0.0587, 0.4120;
   Vector3 te(-9.8472, 59.7640, 10.2125);
   Similarity3 expected(Re, te, 1.0 / 7.0);
-  EXPECT(assert_equal(expected, test.inverse(), 1e-3));
+  EXPECT(assert_equal(expected, sim3.inverse(), 1e-4));
+  EXPECT(assert_equal(sim3, sim3.inverse().inverse(), 1e-8));
+
+  // test lie group inverse
+  Matrix H1, H2;
+  EXPECT(assert_equal(expected, sim3.inverse(H1), 1e-4));
+  EXPECT(assert_equal(sim3, sim3.inverse().inverse(H2), 1e-8));
 }
 
 //******************************************************************************
@@ -169,7 +182,10 @@ TEST(Similarity3, manifold_first_order) {
 // Return as a 4*4 Matrix
 TEST(Similarity3, Matrix) {
   Matrix4 expected;
-  expected << 2, 0, 0, 1, 0, 2, 0, 1, 0, 0, 2, 0, 0, 0, 0, 1;
+  expected << 2, 0, 0, 1,
+      0, 2, 0, 1,
+      0, 0, 2, 0,
+      0, 0, 0, 1;
   Matrix4 actual = T4.matrix();
   EXPECT(assert_equal(expected, actual));
 }
@@ -200,6 +216,7 @@ TEST(Similarity3, ExpLogMap) {
   Similarity3 Scalc = Similarity3::Expmap(expected);
   EXPECT(assert_equal(Sexpm, Scalc, 1e-3));
 }
+
 //******************************************************************************
 // Group action on Point3 (with simpler transform)
 TEST(Similarity3, GroupAction) {
