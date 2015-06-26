@@ -189,12 +189,19 @@ Vector7 Similarity3::Logmap(const Similarity3& s, OptionalJacobian<7, 7> Hm) {
   double lambda = log(s.s_);
   Vector7 result;
   result << w, GetV(w, lambda).inverse() * s.t_.vector(), lambda;
+  if (Hm) {
+    // incomplete
+  }
   return result;
 }
 
 Similarity3 Similarity3::Expmap(const Vector7& v, OptionalJacobian<7, 7> Hm) {
   Vector3 w(v.head<3>());
   double lambda = v[6];
+  if (Hm) {
+    Matrix6 J_pose = Pose3::ExpmapDerivative(v.head<6>());
+    // incomplete
+  }
   return Similarity3(Rot3::Expmap(w), Point3(GetV(w, lambda)*v.segment<3>(3)), 1.0/exp(-lambda));
 }
 

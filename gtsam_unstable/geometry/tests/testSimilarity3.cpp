@@ -50,6 +50,13 @@ static Similarity3 T3(Rot3::rodriguez(-90, 0, 0), Point3(1, 2, 3), 1);
 Similarity3 T4(Rot3(), Point3(1, 1, 0), 2);
 
 //******************************************************************************
+TEST(Similarity3, concepts) {
+  BOOST_CONCEPT_ASSERT((IsGroup<Similarity3 >));
+  BOOST_CONCEPT_ASSERT((IsManifold<Similarity3 >));
+  BOOST_CONCEPT_ASSERT((IsLieGroup<Similarity3 >));
+}
+
+//******************************************************************************
 TEST(Similarity3, Constructors) {
   Similarity3 test;
 }
