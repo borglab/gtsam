@@ -148,12 +148,11 @@ Unit3 Unit3::retract(const Vector2& v) const {
 
   // Compute the 3D xi_hat vector
   Vector3 xi_hat = v(0) * B.col(0) + v(1) * B.col(1);
-
   double xi_hat_norm = xi_hat.norm();
 
   // Avoid nan
-  if (xi_hat_norm == 0.0) {
-    if (v.norm() == 0.0)
+  if (xi_hat_norm < 1e-16) {
+    if (v.norm() < 1e-16)
       return Unit3(point3());
     else
       return Unit3(-point3());
@@ -162,13 +161,12 @@ Unit3 Unit3::retract(const Vector2& v) const {
   Vector3 exp_p_xi_hat = cos(xi_hat_norm) * p
       + sin(xi_hat_norm) * (xi_hat / xi_hat_norm);
   return Unit3(exp_p_xi_hat);
-
 }
 
 /* ************************************************************************* */
 Vector2 Unit3::localCoordinates(const Unit3& y) const {
 
-  Vector3 p = p_.vector(), q = y.p_.vector();
+  Vector3 p = p_.vector(), q = y.unitVector();
   double dot = p.dot(q);
 
   // Check for special cases
