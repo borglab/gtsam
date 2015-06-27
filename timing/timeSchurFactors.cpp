@@ -11,6 +11,8 @@
 #include <gtsam/slam/JacobianFactorQ.h>
 #include "gtsam/slam/JacobianFactorQR.h"
 #include <gtsam/slam/RegularImplicitSchurFactor.h>
+#include <gtsam/geometry/Cal3Bundler.h>
+#include <gtsam/geometry/PinholePose.h>
 
 #include <boost/assign/list_of.hpp>
 #include <boost/assign/std/vector.hpp>
@@ -29,17 +31,20 @@ using namespace gtsam;
 ofstream os("timeSchurFactors.csv");
 
 /*************************************************************************************/
-template<size_t D>
+template<typename CAMERA>
 void timeAll(size_t m, size_t N) {
 
   cout << m << endl;
 
   // create F
+  static const int D = CAMERA::dimension;
   typedef Eigen::Matrix<double, 2, D> Matrix2D;
-  typedef pair<Key, Matrix2D> KeyMatrix2D;
-  vector < pair<Key, Matrix2D> > Fblocks;
-  for (size_t i = 0; i < m; i++)
-    Fblocks.push_back(KeyMatrix2D(i, (i + 1) * Matrix::Ones(2, D)));
+  FastVector<Key> keys;
+  vector <Matrix2D> Fblocks;
+  for (size_t i = 0; i < m; i++) {
+    keys.push_back(i);
+    Fblocks.push_back((i + 1) * Matrix::Ones(2, D));
+  }
 
   // create E
   Matrix E(2 * m, 3);
@@ -60,11 +65,11 @@ void timeAll(size_t m, size_t N) {
     xvalues.insert(i, gtsam::repeat(D, 2));
 
   // Implicit
-  RegularImplicitSchurFactor<D> implicitFactor(Fblocks, E, P, b);
+  RegularImplicitSchurFactor<CAMERA> implicitFactor(keys, Fblocks, E, P, b);
   // JacobianFactor with same error
-  JacobianFactorQ<D, 2> jf(Fblocks, E, P, b, model);
+  JacobianFactorQ<D, 2> jf(keys, Fblocks, E, P, b, model);
   // JacobianFactorQR with same error
-  JacobianFactorQR<D, 2> jqr(Fblocks, E, P, b, model);
+  JacobianFactorQR<D, 2> jqr(keys, Fblocks, E, P, b, model);
   // Hessian
   HessianFactor hessianFactor(jqr);
 
@@ -146,7 +151,7 @@ int main(void) {
   //for (size_t m=10;m<=100;m+=10) ms += m;
   // loop over number of images
   BOOST_FOREACH(size_t m,ms)
-    timeAll<6>(m, NUM_ITERATIONS);
+    timeAll<PinholePose<Cal3Bundler> >(m, NUM_ITERATIONS);
 }
 
 //*************************************************************************************
