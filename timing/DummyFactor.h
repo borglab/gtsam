@@ -13,20 +13,20 @@ namespace gtsam {
 /**
  * DummyFactor
  */
-template<size_t D> //
-class DummyFactor: public RegularImplicitSchurFactor<D> {
+template<typename CAMERA> //
+class DummyFactor: public RegularImplicitSchurFactor<CAMERA> {
 
 public:
 
-  typedef Eigen::Matrix<double, 2, D> Matrix2D;
+  typedef Eigen::Matrix<double, 2, CAMERA::dimension> Matrix2D;
   typedef std::pair<Key, Matrix2D> KeyMatrix2D;
 
   DummyFactor() {
   }
 
   DummyFactor(const std::vector<KeyMatrix2D>& Fblocks, const Matrix& E,
-      const Matrix3& P, const Vector& b) :RegularImplicitSchurFactor<D>(Fblocks,E,P,b)
-       {
+      const Matrix3& P, const Vector& b) :
+      RegularImplicitSchurFactor<CAMERA>(Fblocks, E, P, b) {
   }
 
   virtual ~DummyFactor() {
