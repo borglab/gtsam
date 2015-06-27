@@ -66,7 +66,7 @@ TEST(Unit3, rotate) {
   Unit3 actual = R * p;
   EXPECT(assert_equal(expected, actual, 1e-8));
   Matrix actualH, expectedH;
-  // Use numerical derivatives to calculate the expected Jacobian
+
   {
     expectedH = numericalDerivative21(rotate_, R, p);
     R.rotate(p, actualH, boost::none);
@@ -90,8 +90,8 @@ TEST(Unit3, unrotate) {
   Unit3 expected = Unit3(1, 1, 0);
   Unit3 actual = R.unrotate(p);
   EXPECT(assert_equal(expected, actual, 1e-8));
+
   Matrix actualH, expectedH;
-  // Use numerical derivatives to calculate the expected Jacobian
   {
     expectedH = numericalDerivative21(unrotate_, R, p);
     R.unrotate(p, actualH, boost::none);
@@ -113,7 +113,6 @@ TEST(Unit3, error) {
   EXPECT(assert_equal((Vector)(Vector2(0.717356, 0)), p.error(r), 1e-5));
 
   Matrix actual, expected;
-  // Use numerical derivatives to calculate the expected Jacobian
   {
     expected = numericalDerivative11<Vector2,Unit3>(
         boost::bind(&Unit3::error, &p, _1, boost::none), q);
@@ -153,31 +152,29 @@ TEST(Unit3, distance) {
 }
 
 //*******************************************************************************
-TEST(Unit3, localCoordinates0) {
-  Unit3 p;
-  Vector actual = p.localCoordinates(p);
-  EXPECT(assert_equal(zero(2), actual, 1e-8));
-}
-
-//*******************************************************************************
-TEST(Unit3, localCoordinates1) {
-  Unit3 p, q(1, 6.12385e-21, 0);
-  Vector actual = p.localCoordinates(q);
-  CHECK(assert_equal(zero(2), actual, 1e-8));
-}
-
-//*******************************************************************************
-TEST(Unit3, localCoordinates2) {
-  Unit3 p, q(-1, 0, 0);
-  Vector expected = (Vector(2) << M_PI, 0).finished();
-  Vector actual = p.localCoordinates(q);
-  CHECK(assert_equal(expected, actual, 1e-8));
+TEST(Unit3, localCoordinates) {
+  {
+    Unit3 p;
+    Vector2 actual = p.localCoordinates(p);
+    EXPECT(assert_equal(zero(2), actual, 1e-8));
+  }
+  {
+    Unit3 p, q(1, 6.12385e-21, 0);
+    Vector2 actual = p.localCoordinates(q);
+    CHECK(assert_equal(zero(2), actual, 1e-8));
+  }
+  {
+    Unit3 p, q(-1, 0, 0);
+    Vector2 expected(M_PI, 0);
+    Vector2 actual = p.localCoordinates(q);
+    CHECK(assert_equal(expected, actual, 1e-8));
+  }
 }
 
 //*******************************************************************************
 TEST(Unit3, basis) {
   Unit3 p;
-  Matrix expected(3, 2);
+  Matrix32 expected;
   expected << 0, 0, 0, -1, 1, 0;
   Matrix actual = p.basis();
   EXPECT(assert_equal(expected, actual, 1e-8));
@@ -185,20 +182,27 @@ TEST(Unit3, basis) {
 
 //*******************************************************************************
 TEST(Unit3, retract) {
-  Unit3 p;
-  Vector v(2);
-  v << 0.5, 0;
-  Unit3 expected(0.877583, 0, 0.479426);
-  Unit3 actual = p.retract(v);
-  EXPECT(assert_equal(expected, actual, 1e-6));
-  EXPECT(assert_equal(v, p.localCoordinates(actual), 1e-8));
+  {
+    Unit3 p;
+    Vector2 v(0.5, 0);
+    Unit3 expected(0.877583, 0, 0.479426);
+    Unit3 actual = p.retract(v);
+    EXPECT(assert_equal(expected, actual, 1e-6));
+    EXPECT(assert_equal(v, p.localCoordinates(actual), 1e-8));
+  }
+  {
+    Unit3 p;
+    Vector2 v(0, 0);
+    Unit3 actual = p.retract(v);
+    EXPECT(assert_equal(p, actual, 1e-6));
+    EXPECT(assert_equal(v, p.localCoordinates(actual), 1e-8));
+  }
 }
 
 //*******************************************************************************
 TEST(Unit3, retract_expmap) {
   Unit3 p;
-  Vector v(2);
-  v << (M_PI / 2.0), 0;
+  Vector2 v((M_PI / 2.0), 0);
   Unit3 expected(Point3(0, 0, 1));
   Unit3 actual = p.retract(v);
   EXPECT(assert_equal(expected, actual, 1e-8));
@@ -228,9 +232,11 @@ inline static Vector randomVector(const Vector& minLimits,
 TEST(Unit3, localCoordinates_retract) {
 
   size_t numIterations = 10000;
-  Vector minSphereLimit = Vector3(-1.0, -1.0, -1.0), maxSphereLimit =
-      Vector3(1.0, 1.0, 1.0);
-  Vector minXiLimit = Vector2(-1.0, -1.0), maxXiLimit = Vector2(1.0, 1.0);
+  Vector3 minSphereLimit(-1.0, -1.0, -1.0);
+  Vector3 maxSphereLimit(1.0, 1.0, 1.0);
+  Vector2 minXiLimit(-1.0, -1.0);
+  Vector2 maxXiLimit(1.0, 1.0);
+
   for (size_t i = 0; i < numIterations; i++) {
 
     // Sleep for the random number generator (TODO?: Better create all of them first).
@@ -246,9 +252,9 @@ TEST(Unit3, localCoordinates_retract) {
 
     // Check if the local coordinates and retract return the same results.
     Vector actual_v12 = s1.localCoordinates(s2);
-    EXPECT(assert_equal(v12, actual_v12, 1e-3));
+    EXPECT(assert_equal(v12, actual_v12, 1e-6));
     Unit3 actual_s2 = s1.retract(actual_v12);
-    EXPECT(assert_equal(s2, actual_s2, 1e-3));
+    EXPECT(assert_equal(s2, actual_s2, 1e-6));
   }
 }
 
@@ -258,30 +264,26 @@ TEST(Unit3, localCoordinates_retract) {
 TEST(Unit3, localCoordinates_retract_expmap) {
 
   size_t numIterations = 10000;
-  Vector minSphereLimit = Vector3(-1.0, -1.0, -1.0), maxSphereLimit =
-      Vector3(1.0, 1.0, 1.0);
-  Vector minXiLimit = (Vector(2) << -M_PI, -M_PI).finished(), maxXiLimit = (Vector(2) << M_PI, M_PI).finished();
+  Vector3 minSphereLimit = Vector3(-1.0, -1.0, -1.0);
+  Vector3 maxSphereLimit = Vector3(1.0, 1.0, 1.0);
+  Vector2 minXiLimit = Vector2(-M_PI, -M_PI);
+  Vector2 maxXiLimit = Vector2(M_PI, M_PI);
+
   for (size_t i = 0; i < numIterations; i++) {
 
     // Sleep for the random number generator (TODO?: Better create all of them first).
 //    boost::this_thread::sleep(boost::posix_time::milliseconds(0));
-
-    // Create the two Unit3s.
-    // Unlike the above case, we can use any two Unit3's.
     Unit3 s1(Point3(randomVector(minSphereLimit, maxSphereLimit)));
 //      Unit3 s2 (Point3(randomVector(minSphereLimit, maxSphereLimit)));
-    Vector v12 = randomVector(minXiLimit, maxXiLimit);
+    Vector v = randomVector(minXiLimit, maxXiLimit);
 
     // Magnitude of the rotation can be at most pi
-    if (v12.norm() > M_PI)
-      v12 = v12 / M_PI;
-    Unit3 s2 = s1.retract(v12);
+    if (v.norm() > M_PI)
+      v = v / M_PI;
+    Unit3 s2 = s1.retract(v);
 
-    // Check if the local coordinates and retract return the same results.
-    Vector actual_v12 = s1.localCoordinates(s2);
-    EXPECT(assert_equal(v12, actual_v12, 1e-3));
-    Unit3 actual_s2 = s1.retract(actual_v12);
-    EXPECT(assert_equal(s2, actual_s2, 1e-3));
+    EXPECT(assert_equal(v, s1.localCoordinates(s1.retract(v)), 1e-6));
+    EXPECT(assert_equal(s2, s1.retract(s1.localCoordinates(s2)), 1e-6));
   }
 }
 
