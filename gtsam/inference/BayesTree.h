@@ -19,12 +19,12 @@
 
 #pragma once
 
-#include <string>
-
-#include <gtsam/base/types.h>
+#include <gtsam/inference/Key.h>
 #include <gtsam/base/FastList.h>
 #include <gtsam/base/ConcurrentMap.h>
 #include <gtsam/base/FastVector.h>
+
+#include <string>
 
 namespace gtsam {
 
@@ -253,7 +253,7 @@ namespace gtsam {
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version) {
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_NVP(nodes_);
       ar & BOOST_SERIALIZATION_NVP(roots_);
     }

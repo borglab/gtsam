@@ -187,6 +187,17 @@ TEST(Pose3, expmaps_galore_full)
 }
 
 /* ************************************************************************* */
+// Check translation and its pushforward
+TEST(Pose3, translation) {
+  Matrix actualH;
+  EXPECT(assert_equal(Point3(3.5, -8.2, 4.2), T.translation(actualH), 1e-8));
+
+  Matrix numericalH = numericalDerivative11<Point3, Pose3>(
+      boost::bind(&Pose3::translation, _1, boost::none), T);
+  EXPECT(assert_equal(numericalH, actualH, 1e-6));
+}
+
+/* ************************************************************************* */
 TEST(Pose3, Adjoint_compose_full)
 {
   // To debug derivatives of compose, assert that
@@ -749,15 +760,15 @@ TEST( Pose3, stream)
 TEST(Pose3 , Invariants) {
   Pose3 id;
 
-  check_group_invariants(id,id);
-  check_group_invariants(id,T3);
-  check_group_invariants(T2,id);
-  check_group_invariants(T2,T3);
+  EXPECT(check_group_invariants(id,id));
+  EXPECT(check_group_invariants(id,T3));
+  EXPECT(check_group_invariants(T2,id));
+  EXPECT(check_group_invariants(T2,T3));
 
-  check_manifold_invariants(id,id);
-  check_manifold_invariants(id,T3);
-  check_manifold_invariants(T2,id);
-  check_manifold_invariants(T2,T3);
+  EXPECT(check_manifold_invariants(id,id));
+  EXPECT(check_manifold_invariants(id,T3));
+  EXPECT(check_manifold_invariants(T2,id));
+  EXPECT(check_manifold_invariants(T2,T3));
 }
 
 //******************************************************************************

@@ -181,7 +181,7 @@ namespace gtsam {
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
-      void serialize(ARCHIVE & ar, const unsigned int version)
+      void serialize(ARCHIVE & ar, const unsigned int /*version*/)
     {
       ar & BOOST_SERIALIZATION_NVP(x_);
       ar & BOOST_SERIALIZATION_NVP(y_);
@@ -189,15 +189,14 @@ namespace gtsam {
     }
 
     /// @}
-
   };
 
-  /// Syntactic sugar for multiplying coordinates by a scalar s*p
-  inline Point3 operator*(double s, const Point3& p) { return p*s;}
+/// Syntactic sugar for multiplying coordinates by a scalar s*p
+inline Point3 operator*(double s, const Point3& p) { return p*s;}
 
-  template<>
-  struct traits<Point3> : public internal::VectorSpace<Point3> {};
+template<>
+struct traits<Point3> : public internal::VectorSpace<Point3> {};
 
- template<>
-  struct traits<const Point3> : public internal::VectorSpace<Point3> {};
+template<>
+struct traits<const Point3> : public internal::VectorSpace<Point3> {};
 }

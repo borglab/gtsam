@@ -160,7 +160,7 @@ TEST (EssentialMatrixFactor2, factor) {
 
     // Check evaluation
     Point3 P1 = data.tracks[i].p, P2 = data.cameras[1].pose().transform_to(P1);
-    const Point2 pi = SimpleCamera::project_to_camera(P2);
+    const Point2 pi = PinholeBase::Project(P2);
     Point2 reprojectionError(pi - pB(i));
     Vector expected = reprojectionError.vector();
 

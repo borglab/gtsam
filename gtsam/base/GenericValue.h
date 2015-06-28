@@ -26,7 +26,7 @@
 #include <boost/pool/pool_alloc.hpp>
 
 #include <cmath>
-#include <iostream>
+#include <iosfwd>
 #include <typeinfo> // operator typeid
 
 namespace gtsam {
@@ -183,7 +183,7 @@ public:
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version) {
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & boost::serialization::make_nvp("GenericValue",
               boost::serialization::base_object<Value>(*this));
       ar & boost::serialization::make_nvp("value", value_);

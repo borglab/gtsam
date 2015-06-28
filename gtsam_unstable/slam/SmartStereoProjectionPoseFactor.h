@@ -15,6 +15,7 @@
  * @author Luca Carlone
  * @author Chris Beall
  * @author Zsolt Kira
+ * @author Frank Dellaert
  */
 
 #pragma once
@@ -37,8 +38,15 @@ namespace gtsam {
  * The calibration is known here. The factor only constraints poses (variable dimension is 6)
  * @addtogroup SLAM
  */
-template<class POSE, class LANDMARK, class CALIBRATION>
-class SmartStereoProjectionPoseFactor: public SmartStereoProjectionFactor<POSE, LANDMARK, CALIBRATION, 6> {
+template<class CALIBRATION>
+class SmartStereoProjectionPoseFactor: public SmartStereoProjectionFactor<CALIBRATION> {
+
+public:
+  /// Linearization mode: what factor to linearize to
+   enum LinearizationMode {
+     HESSIAN, IMPLICIT_SCHUR, JACOBIAN_Q, JACOBIAN_SVD
+   };
+
 protected:
 
   LinearizationMode linearizeTo_;  ///< How to linearize the factor (HESSIAN, JACOBIAN_SVD, JACOBIAN_Q)
@@ -50,10 +58,10 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   /// shorthand for base class type
-  typedef SmartStereoProjectionFactor<POSE, LANDMARK, CALIBRATION, 6> Base;
+  typedef SmartStereoProjectionFactor<CALIBRATION> Base;
 
   /// shorthand for this class
-  typedef SmartStereoProjectionPoseFactor<POSE, LANDMARK, CALIBRATION> This;
+  typedef SmartStereoProjectionPoseFactor<CALIBRATION> This;
 
   /// shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<This> shared_ptr;
@@ -65,15 +73,16 @@ public:
    * @param manageDegeneracy is true, in presence of degenerate triangulation, the factor is converted to a rotation-only constraint,
    * otherwise the factor is simply neglected
    * @param enableEPI if set to true linear triangulation is refined with embedded LM iterations
-   * @param body_P_sensor is the transform from body to sensor frame (default identity)
    */
   SmartStereoProjectionPoseFactor(const double rankTol = 1,
       const double linThreshold = -1, const bool manageDegeneracy = false,
-      const bool enableEPI = false, boost::optional<POSE> body_P_sensor = boost::none,
-      LinearizationMode linearizeTo = HESSIAN, double landmarkDistanceThreshold = 1e10,
+      const bool enableEPI = false, LinearizationMode linearizeTo = HESSIAN,
+      double landmarkDistanceThreshold = 1e10,
       double dynamicOutlierRejectionThreshold = -1) :
-        Base(rankTol, linThreshold, manageDegeneracy, enableEPI, body_P_sensor,
-        landmarkDistanceThreshold, dynamicOutlierRejectionThreshold), linearizeTo_(linearizeTo) {}
+      Base(rankTol, linThreshold, manageDegeneracy, enableEPI,
+          landmarkDistanceThreshold, dynamicOutlierRejectionThreshold), linearizeTo_(
+          linearizeTo) {
+  }
 
   /** Virtual destructor */
   virtual ~SmartStereoProjectionPoseFactor() {}
@@ -143,11 +152,6 @@ public:
     return e && Base::equals(p, tol);
   }
 
-  /// get the dimension of the factor
-  virtual size_t dim() const {
-    return 6 * this->keys_.size();
-  }
-
   /**
    * Collect all cameras involved in this factor
    * @param values Values structure which must contain camera poses corresponding
@@ -208,7 +212,7 @@ private:
   /// Serialization function
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar & BOOST_SERIALIZATION_NVP(K_all_);
   }
@@ -216,9 +220,9 @@ private:
 }; // end of class declaration
 
 /// traits
-template<class POSE, class LANDMARK, class CALIBRATION>
-struct traits<SmartStereoProjectionPoseFactor<POSE, LANDMARK, CALIBRATION> > :
-    public Testable<SmartStereoProjectionPoseFactor<POSE, LANDMARK, CALIBRATION> > {
+template<class CALIBRATION>
+struct traits<SmartStereoProjectionPoseFactor<CALIBRATION> > : public Testable<
+    SmartStereoProjectionPoseFactor<CALIBRATION> > {
 };
 
 } // \ namespace gtsam

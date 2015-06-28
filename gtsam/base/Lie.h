@@ -136,8 +136,10 @@ namespace internal {
 /// A helper class that implements the traits interface for GTSAM lie groups.
 /// To use this for your gtsam type, define:
 /// template<> struct traits<Class> : public internal::LieGroupTraits<Class> {};
+/// Assumes existence of: identity, dimension, localCoordinates, retract,
+/// and additionally Logmap, Expmap, compose, between, and inverse
 template<class Class>
-struct LieGroupTraits : Testable<Class> {
+struct LieGroupTraits {
   typedef lie_group_tag structure_category;
 
   /// @name Group
@@ -167,12 +169,10 @@ struct LieGroupTraits : Testable<Class> {
       ChartJacobian Horigin = boost::none, ChartJacobian Hv = boost::none) {
     return origin.retract(v, Horigin, Hv);
   }
-
   /// @}
 
   /// @name Lie Group
   /// @{
-
   static TangentVector Logmap(const Class& m, ChartJacobian Hm = boost::none) {
     return Class::Logmap(m, Hm);
   }
@@ -195,10 +195,11 @@ struct LieGroupTraits : Testable<Class> {
       ChartJacobian H = boost::none) {
     return m.inverse(H);
   }
-
   /// @}
-
 };
+
+/// Both LieGroupTraits and Testable
+template<class Class> struct LieGroup: LieGroupTraits<Class>, Testable<Class> {};
 
 } // \ namepsace internal
 
@@ -248,7 +249,7 @@ public:
     // log and exp map without Jacobians
     g = traits<T>::Expmap(v);
     v = traits<T>::Logmap(g);
-    // log and expnential map with Jacobians
+    // log and exponential map with Jacobians
     g = traits<T>::Expmap(v, Hg);
     v = traits<T>::Logmap(g, Hg);
   }

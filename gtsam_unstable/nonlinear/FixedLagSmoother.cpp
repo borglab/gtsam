@@ -37,7 +37,7 @@ bool FixedLagSmoother::equals(const FixedLagSmoother& rhs, double tol) const {
 void FixedLagSmoother::updateKeyTimestampMap(const KeyTimestampMap& timestamps) {
   // Loop through each key and add/update it in the map
   BOOST_FOREACH(const KeyTimestampMap::value_type& key_timestamp, timestamps) {
-    // Check to see if this key already exists inthe database
+    // Check to see if this key already exists in the database
     KeyTimestampMap::iterator keyIter = keyTimestampMap_.find(key_timestamp.first);
 
     // If the key already exists

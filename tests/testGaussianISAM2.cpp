@@ -23,10 +23,9 @@
 #include <gtsam/base/debug.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/treeTraversal-inst.h>
-#include <gtsam/base/LieScalar.h>
-
 #include <boost/foreach.hpp>
 #include <boost/assign/list_of.hpp>
+#include <gtsam/base/LieScalar_Deprecated.h>
 using namespace boost::assign;
 #include <boost/range/adaptor/map.hpp>
 namespace br { using namespace boost::adaptors; using namespace boost::range; }
@@ -187,12 +186,12 @@ done:
 //  Permuted<VectorValues> permuted(permutation, values);
 //
 //  // After permutation, the indices above the threshold are 2 and 2
-//  FastSet<Key> expected;
+//  KeySet expected;
 //  expected.insert(2);
 //  expected.insert(3);
 //
 //  // Indices checked by CheckRelinearization
-//  FastSet<Key> actual = Impl::CheckRelinearization(permuted, 0.1);
+//  KeySet actual = Impl::CheckRelinearization(permuted, 0.1);
 //
 //  EXPECT(assert_equal(expected, actual));
 //}

@@ -540,9 +540,9 @@ TEST(JacobianFactor, EliminateQR)
   EXPECT(assert_equal(size_t(2), actualJF.keys().size()));
   EXPECT(assert_equal(Key(9), actualJF.keys()[0]));
   EXPECT(assert_equal(Key(11), actualJF.keys()[1]));
-  EXPECT(assert_equal(Matrix(R.block(6, 6, 4, 2)), actualJF.getA(actualJF.begin()), 0.001));
-  EXPECT(assert_equal(Matrix(R.block(6, 8, 4, 2)), actualJF.getA(actualJF.begin()+1), 0.001));
-  EXPECT(assert_equal(Vector(R.col(10).segment(6, 4)), actualJF.getb(), 0.001));
+  EXPECT(assert_equal(Matrix(R.block(6, 6, 5, 2)), actualJF.getA(actualJF.begin()), 0.001));
+  EXPECT(assert_equal(Matrix(R.block(6, 8, 5, 2)), actualJF.getA(actualJF.begin()+1), 0.001));
+  EXPECT(assert_equal(Vector(R.col(10).segment(6, 5)), actualJF.getb(), 0.001));
   EXPECT(!actualJF.get_model());
 }
 

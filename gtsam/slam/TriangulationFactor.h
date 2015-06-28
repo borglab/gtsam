@@ -16,8 +16,7 @@
  */
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/geometry/SimpleCamera.h>
-#include <boost/optional.hpp>
+#include <gtsam/geometry/CalibratedCamera.h>
 #include <boost/make_shared.hpp>
 
 namespace gtsam {
@@ -27,18 +26,24 @@ namespace gtsam {
  * The calibration and pose are assumed known.
  * @addtogroup SLAM
  */
-template<class CALIBRATION = Cal3_S2>
+template<class CAMERA>
 class TriangulationFactor: public NoiseModelFactor1<Point3> {
 
 public:
 
-  /// Camera type
-  typedef PinholeCamera<CALIBRATION> Camera;
+  /// CAMERA type
+  typedef CAMERA Camera;
 
 protected:
 
+  /// shorthand for base class type
+  typedef NoiseModelFactor1<Point3> Base;
+
+  /// shorthand for this class
+  typedef TriangulationFactor<CAMERA> This;
+
   // Keep a copy of measurement and calibration for I/O
-  const Camera camera_; ///< Camera in which this landmark was seen
+  const CAMERA camera_; ///< CAMERA in which this landmark was seen
   const Point2 measured_; ///< 2D measurement
 
   // verbosity handling for Cheirality Exceptions
@@ -46,12 +51,6 @@ protected:
   const bool verboseCheirality_; ///< If true, prints text for Cheirality exceptions (default: false)
 
 public:
-
-  /// shorthand for base class type
-  typedef NoiseModelFactor1<Point3> Base;
-
-  /// shorthand for this class
-  typedef TriangulationFactor<CALIBRATION> This;
 
   /// shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<This> shared_ptr;
@@ -70,7 +69,7 @@ public:
    * @param throwCheirality determines whether Cheirality exceptions are rethrown
    * @param verboseCheirality determines whether exceptions are printed for Cheirality
    */
-  TriangulationFactor(const Camera& camera, const Point2& measured,
+  TriangulationFactor(const CAMERA& camera, const Point2& measured,
       const SharedNoiseModel& model, Key pointKey, bool throwCheirality = false,
       bool verboseCheirality = false) :
       Base(model, pointKey), camera_(camera), measured_(measured), throwCheirality_(
@@ -114,7 +113,7 @@ public:
   Vector evaluateError(const Point3& point, boost::optional<Matrix&> H2 =
       boost::none) const {
     try {
-      Point2 error(camera_.project(point, boost::none, H2, boost::none) - measured_);
+      Point2 error(camera_.project2(point, boost::none, H2) - measured_);
       return error.vector();
     } catch (CheiralityException& e) {
       if (H2)
@@ -154,7 +153,7 @@ public:
 
     // Would be even better if we could pass blocks to project
     const Point3& point = x.at<Point3>(key());
-    b = -(camera_.project(point, boost::none, A, boost::none) - measured_).vector();
+    b = -(camera_.project2(point, boost::none, A) - measured_).vector();
     if (noiseModel_)
       this->noiseModel_->WhitenSystem(A, b);
 
@@ -184,7 +183,7 @@ private:
   /// Serialization function
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar & BOOST_SERIALIZATION_NVP(camera_);
     ar & BOOST_SERIALIZATION_NVP(measured_);

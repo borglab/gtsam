@@ -25,9 +25,10 @@
 
 #include <boost/algorithm/string.hpp>
 #include <boost/range/adaptor/map.hpp>
+#include <fstream>
+#include <limits>
 #include <string>
 #include <cmath>
-#include <fstream>
 
 using namespace std;
 
@@ -42,6 +43,8 @@ LevenbergMarquardtParams::VerbosityLM LevenbergMarquardtParams::verbosityLMTrans
   boost::algorithm::to_upper(s);
   if (s == "SILENT")
     return LevenbergMarquardtParams::SILENT;
+  if (s == "SUMMARY")
+    return LevenbergMarquardtParams::SUMMARY;
   if (s == "LAMBDA")
     return LevenbergMarquardtParams::LAMBDA;
   if (s == "TRYLAMBDA")
@@ -64,6 +67,9 @@ std::string LevenbergMarquardtParams::verbosityLMTranslator(
   switch (value) {
   case LevenbergMarquardtParams::SILENT:
     s = "SILENT";
+    break;
+  case LevenbergMarquardtParams::SUMMARY:
+    s = "SUMMARY";
     break;
   case LevenbergMarquardtParams::TERMINATION:
     s = "TERMINATION";
@@ -99,8 +105,8 @@ void LevenbergMarquardtParams::print(const std::string& str) const {
   std::cout << "           lambdaLowerBound: " << lambdaLowerBound << "\n";
   std::cout << "           minModelFidelity: " << minModelFidelity << "\n";
   std::cout << "            diagonalDamping: " << diagonalDamping << "\n";
-  std::cout << "               min_diagonal: " << min_diagonal_ << "\n";
-  std::cout << "               max_diagonal: " << max_diagonal_ << "\n";
+  std::cout << "                minDiagonal: " << minDiagonal << "\n";
+  std::cout << "                maxDiagonal: " << maxDiagonal << "\n";
   std::cout << "                verbosityLM: "
       << verbosityLMTranslator(verbosityLM) << "\n";
   std::cout.flush();
@@ -113,19 +119,19 @@ GaussianFactorGraph::shared_ptr LevenbergMarquardtOptimizer::linearize() const {
 
 /* ************************************************************************* */
 void LevenbergMarquardtOptimizer::increaseLambda() {
-  if (params_.useFixedLambdaFactor_) {
+  if (params_.useFixedLambdaFactor) {
     state_.lambda *= params_.lambdaFactor;
   } else {
     state_.lambda *= params_.lambdaFactor;
     params_.lambdaFactor *= 2.0;
   }
-  params_.reuse_diagonal_ = true;
+  state_.reuseDiagonal = true;
 }
 
 /* ************************************************************************* */
 void LevenbergMarquardtOptimizer::decreaseLambda(double stepQuality) {
 
-  if (params_.useFixedLambdaFactor_) {
+  if (params_.useFixedLambdaFactor) {
     state_.lambda /= params_.lambdaFactor;
   } else {
     // CHECK_GT(step_quality, 0.0);
@@ -133,7 +139,7 @@ void LevenbergMarquardtOptimizer::decreaseLambda(double stepQuality) {
     params_.lambdaFactor = 2.0;
   }
   state_.lambda = std::max(params_.lambdaLowerBound, state_.lambda);
-  params_.reuse_diagonal_ = false;
+  state_.reuseDiagonal = false;
 
 }
 
@@ -146,12 +152,12 @@ GaussianFactorGraph::shared_ptr LevenbergMarquardtOptimizer::buildDampedSystem(
     cout << "building damped system with lambda " << state_.lambda << endl;
 
   // Only retrieve diagonal vector when reuse_diagonal = false
-  if (params_.diagonalDamping && params_.reuse_diagonal_ == false) {
+  if (params_.diagonalDamping && state_.reuseDiagonal == false) {
     state_.hessianDiagonal = linear.hessianDiagonal();
     BOOST_FOREACH(Vector& v, state_.hessianDiagonal | map_values) {
       for (int aa = 0; aa < v.size(); aa++) {
-        v(aa) = std::min(std::max(v(aa), params_.min_diagonal_),
-            params_.max_diagonal_);
+        v(aa) = std::min(std::max(v(aa), params_.minDiagonal),
+            params_.maxDiagonal);
         v(aa) = sqrt(v(aa));
       }
     }
@@ -173,7 +179,7 @@ GaussianFactorGraph::shared_ptr LevenbergMarquardtOptimizer::buildDampedSystem(
         SharedDiagonal model = noiseModel::Isotropic::Sigma(dim, sigma);
         damped += boost::make_shared<JacobianFactor>(key_vector.first, A, b,
             model);
-      } catch (std::exception e) {
+      } catch (const std::exception& e) {
         // Don't attempt any damping if no key found in diagonal
         continue;
       }
@@ -219,8 +225,14 @@ void LevenbergMarquardtOptimizer::iterate() {
     cout << "linearizing = " << endl;
   GaussianFactorGraph::shared_ptr linear = linearize();
 
-  if(state_.totalNumberInnerIterations==0) // write initial error
+  if(state_.totalNumberInnerIterations==0) { // write initial error
     writeLogFile(state_.error);
+
+    if (lmVerbosity == LevenbergMarquardtParams::SUMMARY) {
+      cout << "Initial error: " << state_.error << ", values: " << state_.values.size()
+           << std::endl;
+    }
+  }
 
   // Keep increasing lambda until we make make progress
   while (true) {
@@ -236,7 +248,7 @@ void LevenbergMarquardtOptimizer::iterate() {
     double modelFidelity = 0.0;
     bool step_is_successful = false;
     bool stopSearchingLambda = false;
-    double newError;
+    double newError = numeric_limits<double>::infinity();
     Values newValues;
     VectorValues delta;
 
@@ -245,13 +257,14 @@ void LevenbergMarquardtOptimizer::iterate() {
       // ============ Solve is where most computation happens !! =================
       delta = solve(dampedSystem, state_.values, params_);
       systemSolvedSuccessfully = true;
-      // =========================================================================
-    } catch (IndeterminantLinearSystemException) {
+    } catch (const IndeterminantLinearSystemException& e) {
       systemSolvedSuccessfully = false;
     }
 
+    double linearizedCostChange = 0,
+           newlinearizedError = 0;
     if (systemSolvedSuccessfully) {
-      params_.reuse_diagonal_ = true;
+      state_.reuseDiagonal = true;
 
       if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA)
         cout << "linear delta norm = " << delta.norm() << endl;
@@ -259,9 +272,9 @@ void LevenbergMarquardtOptimizer::iterate() {
         delta.print("delta");
 
       // cost change in the linearized system (old - new)
-      double newlinearizedError = linear->error(delta);
+      newlinearizedError = linear->error(delta);
 
-      double linearizedCostChange = state_.error - newlinearizedError;
+      linearizedCostChange = state_.error - newlinearizedError;
       if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA)
               cout << "newlinearizedError = " << newlinearizedError <<
               "  linearizedCostChange = " << linearizedCostChange << endl;
@@ -308,6 +321,12 @@ void LevenbergMarquardtOptimizer::iterate() {
       }
     }
 
+    if (lmVerbosity == LevenbergMarquardtParams::SUMMARY) {
+      cout << "[" << state_.iterations << "]: " << "new error = " << newlinearizedError
+           << ", delta = " << linearizedCostChange << ", lambda = " << state_.lambda
+           << ", success = " << systemSolvedSuccessfully << std::endl;
+    }
+
     ++state_.totalNumberInnerIterations;
 
     if (step_is_successful) { // we have successfully decreased the cost and we have good modelFidelity
@@ -324,7 +343,8 @@ void LevenbergMarquardtOptimizer::iterate() {
 
       // check if lambda is too big
       if (state_.lambda >= params_.lambdaUpperBound) {
-        if (nloVerbosity >= NonlinearOptimizerParams::TERMINATION)
+        if (nloVerbosity >= NonlinearOptimizerParams::TERMINATION ||
+            lmVerbosity == LevenbergMarquardtParams::SUMMARY)
           cout << "Warning:  Levenberg-Marquardt giving up because "
               "cannot decrease error with maximum lambda" << endl;
         break;

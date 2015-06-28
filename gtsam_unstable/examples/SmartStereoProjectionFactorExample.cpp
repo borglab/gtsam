@@ -46,7 +46,7 @@ using namespace gtsam;
 
 int main(int argc, char** argv){
 
-  typedef SmartStereoProjectionPoseFactor<Pose3, Point3, Cal3_S2Stereo> SmartFactor;
+  typedef SmartStereoProjectionPoseFactor<Cal3_S2Stereo> SmartFactor;
 
   bool output_poses = true;
   string poseOutput("../../../examples/data/optimized_poses.txt");
@@ -88,11 +88,13 @@ int main(int argc, char** argv){
   }
 
   Values initial_pose_values = initial_estimate.filter<Pose3>();
-  if(output_poses){
-    init_pose3Out.open(init_poseOutput.c_str(),ios::out);
-    for(int i = 1; i<=initial_pose_values.size(); i++){
-      init_pose3Out << i << " " << initial_pose_values.at<Pose3>(Symbol('x',i)).matrix().format(Eigen::IOFormat(Eigen::StreamPrecision, 0,
-        " ", " ")) << endl;
+  if (output_poses) {
+    init_pose3Out.open(init_poseOutput.c_str(), ios::out);
+    for (size_t i = 1; i <= initial_pose_values.size(); i++) {
+      init_pose3Out
+          << i << " "
+          << initial_pose_values.at<Pose3>(Symbol('x', i)).matrix().format(
+              Eigen::IOFormat(Eigen::StreamPrecision, 0, " ", " ")) << endl;
     }
   }
   
@@ -141,7 +143,7 @@ int main(int argc, char** argv){
 
   if(output_poses){
     pose3Out.open(poseOutput.c_str(),ios::out);
-    for(int i = 1; i<=pose_values.size(); i++){
+    for(size_t i = 1; i<=pose_values.size(); i++){
       pose3Out << i << " " << pose_values.at<Pose3>(Symbol('x',i)).matrix().format(Eigen::IOFormat(Eigen::StreamPrecision, 0,
         " ", " ")) << endl;
     }

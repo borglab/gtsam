@@ -156,7 +156,7 @@ virtual class Value {
   size_t dim() const;
 };
 
-#include <gtsam/base/LieScalar.h>
+#include <gtsam/base/LieScalar_Deprecated.h>
 class LieScalar {
   // Standard constructors
   LieScalar();
@@ -185,7 +185,7 @@ class LieScalar {
   static Vector Logmap(const gtsam::LieScalar& p);
 };
 
-#include <gtsam/base/LieVector.h>
+#include <gtsam/base/LieVector_Deprecated.h>
 class LieVector {
   // Standard constructors
   LieVector();
@@ -217,7 +217,7 @@ class LieVector {
   void serialize() const;
 };
 
-#include <gtsam/base/LieMatrix.h>
+#include <gtsam/base/LieMatrix_Deprecated.h>
 class LieMatrix {
   // Standard constructors
   LieMatrix();
@@ -288,6 +288,32 @@ class Point2 {
   void serialize() const;
 };
 
+// std::vector<gtsam::Point2>
+class Point2Vector
+{
+  // Constructors
+  Point2Vector();
+  Point2Vector(const gtsam::Point2Vector& v);
+
+  //Capacity
+  size_t size() const;
+  size_t max_size() const;
+  void resize(size_t sz);
+  size_t capacity() const;
+  bool empty() const;
+  void reserve(size_t n);
+
+  //Element access
+  gtsam::Point2 at(size_t n) const;
+  gtsam::Point2 front() const;
+  gtsam::Point2 back() const;
+
+  //Modifiers
+  void assign(size_t n, const gtsam::Point2& u);
+  void push_back(const gtsam::Point2& x);
+  void pop_back();
+};
+
 class StereoPoint2 {
   // Standard Constructors
   StereoPoint2();
@@ -304,8 +330,6 @@ class StereoPoint2 {
   gtsam::StereoPoint2 between(const gtsam::StereoPoint2& p2) const;
 
   // Manifold
-  static size_t Dim();
-  size_t dim() const;
   gtsam::StereoPoint2 retract(Vector v) const;
   Vector localCoordinates(const gtsam::StereoPoint2& p) const;
 
@@ -550,6 +574,16 @@ class Pose3 {
   void serialize() const;
 };
 
+// std::vector<gtsam::Pose3>
+class Pose3Vector
+{
+  Pose3Vector();
+  size_t size() const;
+  bool empty() const;
+  gtsam::Pose3 at(size_t n) const;
+  void push_back(const gtsam::Pose3& x);
+};
+
 #include <gtsam/geometry/Unit3.h>
 class Unit3 {
   // Standard Constructors
@@ -778,7 +812,7 @@ class CalibratedCamera {
 
   // Action on Point3
   gtsam::Point2 project(const gtsam::Point3& point) const;
-  static gtsam::Point2 project_to_camera(const gtsam::Point3& cameraPoint);
+  static gtsam::Point2 Project(const gtsam::Point3& cameraPoint);
 
   // Standard Interface
   gtsam::Pose3 pose() const;
@@ -788,56 +822,16 @@ class CalibratedCamera {
   void serialize() const;
 };
 
-class SimpleCamera {
-  // Standard Constructors and Named Constructors
-  SimpleCamera();
-  SimpleCamera(const gtsam::Pose3& pose);
-  SimpleCamera(const gtsam::Pose3& pose, const gtsam::Cal3_S2& K);
-  static gtsam::SimpleCamera Level(const gtsam::Cal3_S2& K,
-      const gtsam::Pose2& pose, double height);
-  static gtsam::SimpleCamera Level(const gtsam::Pose2& pose, double height);
-  static gtsam::SimpleCamera Lookat(const gtsam::Point3& eye,
-      const gtsam::Point3& target, const gtsam::Point3& upVector,
-      const gtsam::Cal3_S2& K);
-
-  // Testable
-  void print(string s) const;
-  bool equals(const gtsam::SimpleCamera& camera, double tol) const;
-
-  // Standard Interface
-  gtsam::Pose3 pose() const;
-  gtsam::Cal3_S2 calibration();
-
-  // Manifold
-  gtsam::SimpleCamera retract(const Vector& d) const;
-  Vector localCoordinates(const gtsam::SimpleCamera& T2) const;
-  size_t dim() const;
-  static size_t Dim();
-
-  // Transformations and measurement functions
-  static gtsam::Point2 project_to_camera(const gtsam::Point3& cameraPoint);
-  pair<gtsam::Point2,bool> projectSafe(const gtsam::Point3& pw) const;
-  gtsam::Point2 project(const gtsam::Point3& point);
-  gtsam::Point3 backproject(const gtsam::Point2& p, double depth) const;
-  double range(const gtsam::Point3& point);
-  double range(const gtsam::Pose3& point);
-
-  // enabling serialization functionality
-  void serialize() const;
-};
-
-template<CALIBRATION = {gtsam::Cal3DS2}>
+template<CALIBRATION>
 class PinholeCamera {
   // Standard Constructors and Named Constructors
   PinholeCamera();
   PinholeCamera(const gtsam::Pose3& pose);
-  PinholeCamera(const gtsam::Pose3& pose, const gtsam::Cal3DS2& K);
-  static This Level(const gtsam::Cal3DS2& K,
-    const gtsam::Pose2& pose, double height);
+  PinholeCamera(const gtsam::Pose3& pose, const CALIBRATION& K);
+  static This Level(const CALIBRATION& K, const gtsam::Pose2& pose, double height);
   static This Level(const gtsam::Pose2& pose, double height);
-  static This Lookat(const gtsam::Point3& eye,
-    const gtsam::Point3& target, const gtsam::Point3& upVector,
-    const gtsam::Cal3DS2& K);
+  static This Lookat(const gtsam::Point3& eye, const gtsam::Point3& target,
+      const gtsam::Point3& upVector, const CALIBRATION& K);
 
   // Testable
   void print(string s) const;
@@ -854,7 +848,7 @@ class PinholeCamera {
   static size_t Dim();
 
   // Transformations and measurement functions
-  static gtsam::Point2 project_to_camera(const gtsam::Point3& cameraPoint);
+  static gtsam::Point2 Project(const gtsam::Point3& cameraPoint);
   pair<gtsam::Point2,bool> projectSafe(const gtsam::Point3& pw) const;
   gtsam::Point2 project(const gtsam::Point3& point);
   gtsam::Point3 backproject(const gtsam::Point2& p, double depth) const;
@@ -864,6 +858,50 @@ class PinholeCamera {
   // enabling serialization functionality
   void serialize() const;
 };
+
+virtual class SimpleCamera {
+  // Standard Constructors and Named Constructors
+  SimpleCamera();
+  SimpleCamera(const gtsam::Pose3& pose);
+  SimpleCamera(const gtsam::Pose3& pose, const gtsam::Cal3_S2& K);
+  static gtsam::SimpleCamera Level(const gtsam::Cal3_S2& K, const gtsam::Pose2& pose, double height);
+  static gtsam::SimpleCamera Level(const gtsam::Pose2& pose, double height);
+  static gtsam::SimpleCamera Lookat(const gtsam::Point3& eye, const gtsam::Point3& target,
+      const gtsam::Point3& upVector, const gtsam::Cal3_S2& K);
+
+  // Testable
+  void print(string s) const;
+  bool equals(const gtsam::SimpleCamera& camera, double tol) const;
+
+  // Standard Interface
+  gtsam::Pose3 pose() const;
+  gtsam::Cal3_S2 calibration() const;
+
+  // Manifold
+  gtsam::SimpleCamera retract(const Vector& d) const;
+  Vector localCoordinates(const gtsam::SimpleCamera& T2) const;
+  size_t dim() const;
+  static size_t Dim();
+
+  // Transformations and measurement functions
+  static gtsam::Point2 Project(const gtsam::Point3& cameraPoint);
+  pair<gtsam::Point2,bool> projectSafe(const gtsam::Point3& pw) const;
+  gtsam::Point2 project(const gtsam::Point3& point);
+  gtsam::Point3 backproject(const gtsam::Point2& p, double depth) const;
+  double range(const gtsam::Point3& point);
+  double range(const gtsam::Pose3& point);
+
+  // enabling serialization functionality
+  void serialize() const;
+
+};
+
+// Some typedefs for common camera types
+// PinholeCameraCal3_S2 is the same as SimpleCamera above
+typedef gtsam::PinholeCamera<gtsam::Cal3_S2> PinholeCameraCal3_S2;
+typedef gtsam::PinholeCamera<gtsam::Cal3DS2> PinholeCameraCal3DS2;
+typedef gtsam::PinholeCamera<gtsam::Cal3Unified> PinholeCameraCal3Unified;
+typedef gtsam::PinholeCamera<gtsam::Cal3Bundler> PinholeCameraCal3Bundler;
 
 class StereoCamera {
   // Standard Constructors and Named Constructors
@@ -892,6 +930,16 @@ class StereoCamera {
   // enabling serialization functionality
   void serialize() const;
 };
+
+#include <gtsam/geometry/triangulation.h>
+
+// Templates appear not yet supported for free functions
+gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
+    gtsam::Cal3_S2* sharedCal, const gtsam::Point2Vector& measurements,
+    double rank_tol, bool optimize);
+gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
+    gtsam::Cal3Bundler* sharedCal, const gtsam::Point2Vector& measurements,
+    double rank_tol, bool optimize);
 
 //*************************************************************************
 // Symbolic
@@ -1606,12 +1654,12 @@ char symbolChr(size_t key);
 size_t symbolIndex(size_t key);
 
 // Default keyformatter
-void printKeyList  (const gtsam::KeyList& keys);
-void printKeyList  (const gtsam::KeyList& keys, string s);
-void printKeyVector(const gtsam::KeyVector& keys);
-void printKeyVector(const gtsam::KeyVector& keys, string s);
-void printKeySet   (const gtsam::KeySet& keys);
-void printKeySet   (const gtsam::KeySet& keys, string s);
+void PrintKeyList  (const gtsam::KeyList& keys);
+void PrintKeyList  (const gtsam::KeyList& keys, string s);
+void PrintKeyVector(const gtsam::KeyVector& keys);
+void PrintKeyVector(const gtsam::KeyVector& keys, string s);
+void PrintKeySet   (const gtsam::KeySet& keys);
+void PrintKeySet   (const gtsam::KeySet& keys, string s);
 
 #include <gtsam/inference/LabeledSymbol.h>
 class LabeledSymbol {
@@ -1728,7 +1776,7 @@ class Values {
   void swap(gtsam::Values& values);
 
   bool exists(size_t j) const;
-  gtsam::KeyList keys() const;
+  gtsam::KeyVector keys() const;
 
   gtsam::VectorValues zeroVectors() const;
 
@@ -1845,8 +1893,6 @@ class KeySet {
 class KeyVector {
   KeyVector();
   KeyVector(const gtsam::KeyVector& other);
-  KeyVector(const gtsam::KeySet& other);
-  KeyVector(const gtsam::KeyList& other);
 
   // Note: no print function
 
@@ -2176,9 +2222,6 @@ class NonlinearISAM {
 //*************************************************************************
 // Nonlinear factor types
 //*************************************************************************
-#include <gtsam/geometry/Cal3_S2.h>
-#include <gtsam/geometry/Cal3DS2.h>
-#include <gtsam/geometry/Cal3_S2Stereo.h>
 #include <gtsam/geometry/SimpleCamera.h>
 #include <gtsam/geometry/CalibratedCamera.h>
 #include <gtsam/geometry/StereoPoint2.h>
@@ -2309,24 +2352,37 @@ virtual class GeneralSFMFactor2 : gtsam::NoiseModelFactor {
   void serialize() const;
 };
 
+#include <gtsam/slam/SmartProjectionFactor.h>
+class SmartProjectionParams {
+  SmartProjectionParams();
+  // TODO(frank): make these work:
+  //  void setLinearizationMode(LinearizationMode linMode);
+  //  void setDegeneracyMode(DegeneracyMode degMode);
+  void setRankTolerance(double rankTol);
+  void setEnableEPI(bool enableEPI);
+  void setLandmarkDistanceThreshold(bool landmarkDistanceThreshold);
+  void setDynamicOutlierRejectionThreshold(bool dynOutRejectionThreshold);
+};
+
 #include <gtsam/slam/SmartProjectionPoseFactor.h>
-template<POSE, CALIBRATION>
-virtual class SmartProjectionPoseFactor : gtsam::NonlinearFactor {
+template<CALIBRATION>
+virtual class SmartProjectionPoseFactor: gtsam::NonlinearFactor {
 
-  SmartProjectionPoseFactor(double rankTol, double linThreshold,
-      bool manageDegeneracy, bool enableEPI, const POSE& body_P_sensor);
+  SmartProjectionPoseFactor(const CALIBRATION* K);
+  SmartProjectionPoseFactor(const CALIBRATION* K,
+      const gtsam::Pose3& body_P_sensor);
+  SmartProjectionPoseFactor(const CALIBRATION* K,
+      const gtsam::Pose3& body_P_sensor,
+      const gtsam::SmartProjectionParams& params);
 
-  SmartProjectionPoseFactor(double rankTol);
-  SmartProjectionPoseFactor();
-
-  void add(const gtsam::Point2& measured_i, size_t poseKey_i, const gtsam::noiseModel::Base* noise_i,
-      const CALIBRATION* K_i);
+  void add(const gtsam::Point2& measured_i, size_t poseKey_i,
+      const gtsam::noiseModel::Base* noise_i);
 
   // enabling serialization functionality
   //void serialize() const;
 };
 
-typedef gtsam::SmartProjectionPoseFactor<gtsam::Pose3, gtsam::Cal3_S2> SmartProjectionPose3Factor;
+typedef gtsam::SmartProjectionPoseFactor<gtsam::Cal3_S2> SmartProjectionPose3Factor;
 
 
 #include <gtsam/slam/StereoFactor.h>

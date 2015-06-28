@@ -120,7 +120,7 @@ public:
   }
 
   /** Return the set of variables involved in the factors (set union) */
-  FastSet<Key> keys() const;
+  KeySet keys() const;
 
   /** return product of all factors as a single factor */
   DecisionTreeFactor product() const;

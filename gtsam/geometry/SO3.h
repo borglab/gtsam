@@ -129,11 +129,11 @@ public:
 };
 
 template<>
-struct traits<SO3> : public internal::LieGroupTraits<SO3> {
+struct traits<SO3> : public internal::LieGroup<SO3> {
 };
 
 template<>
-struct traits<const SO3> : public internal::LieGroupTraits<SO3> {
+struct traits<const SO3> : public internal::LieGroup<SO3> {
 };
 } // end namespace gtsam
 

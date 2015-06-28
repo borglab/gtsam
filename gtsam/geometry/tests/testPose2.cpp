@@ -775,15 +775,15 @@ Pose2 T2(M_PI / 2.0, Point2(0.0, 2.0));
 TEST(Pose2 , Invariants) {
   Pose2 id;
 
-  check_group_invariants(id,id);
-  check_group_invariants(id,T1);
-  check_group_invariants(T2,id);
-  check_group_invariants(T2,T1);
+  EXPECT(check_group_invariants(id,id));
+  EXPECT(check_group_invariants(id,T1));
+  EXPECT(check_group_invariants(T2,id));
+  EXPECT(check_group_invariants(T2,T1));
 
-  check_manifold_invariants(id,id);
-  check_manifold_invariants(id,T1);
-  check_manifold_invariants(T2,id);
-  check_manifold_invariants(T2,T1);
+  EXPECT(check_manifold_invariants(id,id));
+  EXPECT(check_manifold_invariants(id,T1));
+  EXPECT(check_manifold_invariants(T2,id));
+  EXPECT(check_manifold_invariants(T2,T1));
 
 }
 
