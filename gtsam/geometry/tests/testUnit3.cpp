@@ -41,6 +41,7 @@ GTSAM_CONCEPT_MANIFOLD_INST(Unit3)
 Point3 point3_(const Unit3& p) {
   return p.point3();
 }
+
 TEST(Unit3, point3) {
   vector<Point3> ps;
   ps += Point3(1, 0, 0), Point3(0, 1, 0), Point3(0, 0, 1), Point3(1, 1, 0)
@@ -152,6 +153,7 @@ TEST(Unit3, distance) {
 }
 
 //*******************************************************************************
+
 TEST(Unit3, localCoordinates) {
   {
     Unit3 p;
@@ -168,6 +170,20 @@ TEST(Unit3, localCoordinates) {
     Vector2 expected(M_PI, 0);
     Vector2 actual = p.localCoordinates(q);
     CHECK(assert_equal(expected, actual, 1e-8));
+  }
+
+  double twist = 1e-4;
+  {
+    Unit3 p(0, 1, 0), q(0 - twist, -1 + twist, 0);
+    Vector2 actual = p.localCoordinates(q);
+    EXPECT(actual(0) < 1e-2);
+    EXPECT(actual(1) > M_PI - 1e-2)
+  }
+  {
+    Unit3 p(0, 1, 0), q(0 + twist, -1 - twist, 0);
+    Vector2 actual = p.localCoordinates(q);
+    EXPECT(actual(0) < 1e-2);
+    EXPECT(actual(1) < -M_PI + 1e-2)
   }
 }
 
@@ -252,9 +268,9 @@ TEST(Unit3, localCoordinates_retract) {
 
     // Check if the local coordinates and retract return the same results.
     Vector actual_v12 = s1.localCoordinates(s2);
-    EXPECT(assert_equal(v12, actual_v12, 1e-6));
+    EXPECT(assert_equal(v12, actual_v12, 1e-8));
     Unit3 actual_s2 = s1.retract(actual_v12);
-    EXPECT(assert_equal(s2, actual_s2, 1e-6));
+    EXPECT(assert_equal(s2, actual_s2, 1e-8));
   }
 }
 
