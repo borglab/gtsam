@@ -150,12 +150,9 @@ Unit3 Unit3::retract(const Vector2& v) const {
   Vector3 xi_hat = v(0) * B.col(0) + v(1) * B.col(1);
   double xi_hat_norm = xi_hat.norm();
 
-  // Avoid nan
-  if (xi_hat_norm < 1e-16) {
-    if (v.norm() < 1e-16)
-      return Unit3(point3());
-    else
-      return Unit3(-point3());
+  // When v is the so small and approximate as a direction
+  if (xi_hat_norm < 1e-8) {
+    return Unit3(cos(xi_hat_norm) * p + xi_hat);
   }
 
   Vector3 exp_p_xi_hat = cos(xi_hat_norm) * p
