@@ -120,10 +120,9 @@ Matrix3 Unit3::skew() const {
 /* ************************************************************************* */
 Vector2 Unit3::error(const Unit3& q, OptionalJacobian<2,2> H) const {
   // 2D error is equal to B'*q, as B is 3x2 matrix and q is 3x1
-  Matrix23 Bt = basis().transpose();
-  Vector2 xi = Bt * q.p_.vector();
+  Vector2 xi = basis().transpose() * q.p_.vector();
   if (H)
-    *H = Bt * q.basis();
+    *H = basis().transpose() * q.basis();
   return xi;
 }
 
@@ -142,10 +141,9 @@ Unit3 Unit3::retract(const Vector2& v) const {
 
   // Get the vector form of the point and the basis matrix
   Vector3 p = p_.vector();
-  Matrix32 B = basis();
 
   // Compute the 3D xi_hat vector
-  Vector3 xi_hat = v(0) * B.col(0) + v(1) * B.col(1);
+  Vector3 xi_hat = basis() * v;
   double xi_hat_norm = xi_hat.norm();
 
   // When v is the so small and approximate as a direction
