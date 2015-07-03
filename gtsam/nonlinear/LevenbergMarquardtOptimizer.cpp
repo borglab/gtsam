@@ -254,6 +254,7 @@ void LevenbergMarquardtOptimizer::iterate() {
 
     bool systemSolvedSuccessfully;
     try {
+      // ============ Solve is where most computation happens !! =================
       delta = solve(dampedSystem, state_.values, params_);
       systemSolvedSuccessfully = true;
     } catch (const IndeterminantLinearSystemException& e) {
@@ -281,7 +282,9 @@ void LevenbergMarquardtOptimizer::iterate() {
       if (linearizedCostChange >= 0) { // step is valid
         // update values
         gttic(retract);
+        // ============ This is where the solution is updated ====================
         newValues = state_.values.retract(delta);
+        // =======================================================================
         gttoc(retract);
 
         // compute new error
@@ -361,12 +364,8 @@ void LevenbergMarquardtOptimizer::iterate() {
 /* ************************************************************************* */
 LevenbergMarquardtParams LevenbergMarquardtOptimizer::ensureHasOrdering(
     LevenbergMarquardtParams params, const NonlinearFactorGraph& graph) const {
-  if (!params.ordering){
-    if (params.orderingType == Ordering::METIS)
-      params.ordering = Ordering::metis(graph);
-    else
-      params.ordering = Ordering::colamd(graph);
-  }
+  if (!params.ordering)
+    params.ordering = Ordering::Create(params.orderingType, graph);
   return params;
 }
 
