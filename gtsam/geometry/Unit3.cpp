@@ -62,12 +62,10 @@ Unit3 Unit3::Random(boost::mt19937 & rng) {
   boost::uniform_on_sphere<double> randomDirection(3);
   // This variate_generator object is required for versions of boost somewhere
   // around 1.46, instead of drawing directly using boost::uniform_on_sphere(rng).
-  boost::variate_generator<boost::mt19937&, boost::uniform_on_sphere<double> >
-      generator(rng, randomDirection);
+  boost::variate_generator<boost::mt19937&, boost::uniform_on_sphere<double> > generator(
+      rng, randomDirection);
   vector<double> d = generator();
-  Unit3 result;
-  result.p_ = Point3(d[0], d[1], d[2]);
-  return result;
+  return Unit3(d[0], d[1], d[2]);
 }
 
 #ifdef GTSAM_USE_TBB
@@ -97,8 +95,8 @@ const Matrix32& Unit3::basis() const {
     assert(false);
 
   // Create the two basis vectors
-  Vector3 b1 = p_.vector().cross(axis).normalized();
-  Vector3 b2 = p_.vector().cross(b1).normalized();
+  Vector3 b1 = p_.cross(axis).normalized();
+  Vector3 b2 = p_.cross(b1).normalized();
 
   // Create the basis matrix
   B_.reset(Matrix32());
@@ -120,7 +118,7 @@ Matrix3 Unit3::skew() const {
 /* ************************************************************************* */
 Vector2 Unit3::error(const Unit3& q, OptionalJacobian<2,2> H) const {
   // 2D error is equal to B'*q, as B is 3x2 matrix and q is 3x1
-  Vector2 xi = basis().transpose() * q.p_.vector();
+  Vector2 xi = basis().transpose() * q.p_;
   if (H)
     *H = basis().transpose() * q.basis();
   return xi;
@@ -139,19 +137,16 @@ double Unit3::distance(const Unit3& q, OptionalJacobian<1,2> H) const {
 /* ************************************************************************* */
 Unit3 Unit3::retract(const Vector2& v) const {
 
-  // Get the vector form of the point and the basis matrix
-  Vector3 p = p_.vector();
-
   // Compute the 3D xi_hat vector
   Vector3 xi_hat = basis() * v;
   double xi_hat_norm = xi_hat.norm();
 
   // When v is the so small and approximate as a direction
   if (xi_hat_norm < 1e-8) {
-    return Unit3(cos(xi_hat_norm) * p + xi_hat);
+    return Unit3(cos(xi_hat_norm) * p_ + xi_hat);
   }
 
-  Vector3 exp_p_xi_hat = cos(xi_hat_norm) * p
+  Vector3 exp_p_xi_hat = cos(xi_hat_norm) * p_
       + sin(xi_hat_norm) * (xi_hat / xi_hat_norm);
   return Unit3(exp_p_xi_hat);
 }
@@ -159,18 +154,17 @@ Unit3 Unit3::retract(const Vector2& v) const {
 /* ************************************************************************* */
 Vector2 Unit3::localCoordinates(const Unit3& y) const {
 
-  Vector3 p = p_.vector(), q = y.unitVector();
-  double dot = p.dot(q);
+  double dot = p_.dot(y.p_);
 
   // Check for special cases
   if (std::abs(dot - 1.0) < 1e-16)
-    return Vector2(0, 0);
+    return Vector2(0.0, 0.0);
   else if (std::abs(dot + 1.0) < 1e-16)
-    return Vector2(M_PI, 0);
+    return Vector2(M_PI, 0.0);
   else {
     // no special case
-    double theta = acos(dot);
-    Vector3 result_hat = (theta / sin(theta)) * (q - p * dot);
+    const double theta = acos(dot);
+    Vector3 result_hat = (theta / sin(theta)) * (y.p_ - p_ * dot);
     return basis().transpose() * result_hat;
   }
 }
