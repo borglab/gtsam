@@ -15,12 +15,12 @@
  * @author Can Erdogan
  * @author Frank Dellaert
  * @author Alex Trevor
+ * @author Zhaoyang Lv
  * @brief The Unit3 class - basically a point on a unit sphere
  */
 
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/geometry/Point2.h>
-#include <boost/random/mersenne_twister.hpp>
 #include <gtsam/config.h> // for GTSAM_USE_TBB
 
 #ifdef __clang__
@@ -85,26 +85,24 @@ const Matrix32& Unit3::basis() const {
     return *B_;
 
   // Get the axis of rotation with the minimum projected length of the point
-  Point3 axis;
+  Vector3 axis;
   double mx = fabs(p_.x()), my = fabs(p_.y()), mz = fabs(p_.z());
   if ((mx <= my) && (mx <= mz))
-    axis = Point3(1.0, 0.0, 0.0);
+    axis = Vector3(1.0, 0.0, 0.0);
   else if ((my <= mx) && (my <= mz))
-    axis = Point3(0.0, 1.0, 0.0);
+    axis = Vector3(0.0, 1.0, 0.0);
   else if ((mz <= mx) && (mz <= my))
-    axis = Point3(0.0, 0.0, 1.0);
+    axis = Vector3(0.0, 0.0, 1.0);
   else
     assert(false);
 
   // Create the two basis vectors
-  Point3 b1 = p_.cross(axis);
-  b1 = b1 / b1.norm();
-  Point3 b2 = p_.cross(b1);
-  b2 = b2 / b2.norm();
+  Vector3 b1 = p_.vector().cross(axis).normalized();
+  Vector3 b2 = p_.vector().cross(b1).normalized();
 
   // Create the basis matrix
   B_.reset(Matrix32());
-  (*B_) << b1.x(), b2.x(), b1.y(), b2.y(), b1.z(), b2.z();
+  (*B_) << b1, b2;
   return *B_;
 }
 
