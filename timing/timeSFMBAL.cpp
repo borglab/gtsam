@@ -34,7 +34,7 @@
 using namespace std;
 using namespace gtsam;
 
-#define USE_GTSAM_FACTOR
+//#define USE_GTSAM_FACTOR
 #ifdef USE_GTSAM_FACTOR
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/geometry/Cal3Bundler.h>
@@ -92,14 +92,15 @@ int main(int argc, char* argv[]) {
   for (size_t j = 0; j < db.number_tracks(); j++) {
     BOOST_FOREACH (const SfM_Measurement& m, db.tracks[j].measurements) {
       size_t i = m.first;
-      Point2 measurement = m.second;
+      Point2 z = m.second;
 #ifdef USE_GTSAM_FACTOR
-      graph.push_back(SfmFactor(measurement, unit2, i, P(j)));
+      graph.push_back(SfmFactor(z, unit2, i, P(j)));
 #else
       Expression<Camera> camera_(i);
       Expression<Point3> point_(P(j));
-      graph.addExpressionFactor(unit2, measurement,
-          Expression<Point2>(snavely, camera_, point_));
+      // Snavely expects measurements in OpenGL format, with y increasing upwards
+      graph.addExpressionFactor(unit2, Point2(z.x(), -z.y()),
+                                Expression<Point2>(snavely, camera_, point_));
 #endif
     }
   }
@@ -110,21 +111,23 @@ int main(int argc, char* argv[]) {
 #ifdef USE_GTSAM_FACTOR
     initial.insert((i++), camera);
 #else
-    Camera ceresCamera(camera.pose(), camera.calibration());
+    // readBAL converts to GTSAM format, so we need to convert back !
+    Camera ceresCamera(gtsam2openGL(camera.pose()), camera.calibration());
     initial.insert((i++), ceresCamera);
 #endif
   }
   BOOST_FOREACH(const SfM_Track& track, db.tracks)
     initial.insert(P(j++), track.p);
 
-  // Check projection
+  // Check projection of first point in first camera
   Point2 expected = db.tracks.front().measurements.front().second;
   Camera camera = initial.at<Camera>(0);
   Point3 point = initial.at<Point3>(P(0));
 #ifdef USE_GTSAM_FACTOR
   Point2 actual = camera.project(point);
 #else
-  Point2 actual = snavely(camera, point);
+  Point2 opengl = snavely(camera, point);
+  Point2 actual(opengl.x(), -opengl.y());
 #endif
   assert_equal(expected,actual,10);
 
