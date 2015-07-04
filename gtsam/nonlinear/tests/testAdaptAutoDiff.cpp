@@ -71,48 +71,48 @@ TEST(AdaptAutoDiff, Rotation) {
 
 /* ************************************************************************* */
 // Canonical<T> sets up Local/Retract around the default-constructed value
-// The tests below check this for all types that play a role i SFM
+// The tests below check this for all types that play a role in SFM
 TEST(AdaptAutoDiff, Canonical) {
 
-  Canonical<Point2> chart1;
-  EXPECT(chart1.Local(Point2(1, 0))==Vector2(1, 0));
-  EXPECT(chart1.Retract(Vector2(1, 0))==Point2(1, 0));
+  typedef Canonical<Point2> Chart1;
+  EXPECT(Chart1::Local(Point2(1, 0))==Vector2(1, 0));
+  EXPECT(Chart1::Retract(Vector2(1, 0))==Point2(1, 0));
 
   Vector2 v2(1, 0);
-  Canonical<Vector2> chart2;
-  EXPECT(assert_equal(v2, chart2.Local(Vector2(1, 0))));
-  EXPECT(chart2.Retract(v2)==Vector2(1, 0));
+  typedef Canonical<Vector2> Chart2;
+  EXPECT(assert_equal(v2, Chart2::Local(Vector2(1, 0))));
+  EXPECT(Chart2::Retract(v2)==Vector2(1, 0));
 
-  Canonical<double> chart3;
+  typedef Canonical<double> Chart3;
   Eigen::Matrix<double, 1, 1> v1;
   v1 << 1;
-  EXPECT(chart3.Local(1)==v1);
-  EXPECT_DOUBLES_EQUAL(chart3.Retract(v1), 1, 1e-9);
+  EXPECT(Chart3::Local(1)==v1);
+  EXPECT_DOUBLES_EQUAL(Chart3::Retract(v1), 1, 1e-9);
 
-  Canonical<Point3> chart4;
+  typedef Canonical<Point3> Chart4;
   Point3 point(1, 2, 3);
   Vector3 v3(1, 2, 3);
-  EXPECT(assert_equal(v3, chart4.Local(point)));
-  EXPECT(assert_equal(chart4.Retract(v3), point));
+  EXPECT(assert_equal(v3, Chart4::Local(point)));
+  EXPECT(assert_equal(Chart4::Retract(v3), point));
 
-  Canonical<Pose3> chart5;
+  typedef Canonical<Pose3> Chart5;
   Pose3 pose(Rot3::identity(), point);
   Vector v6(6);
   v6 << 0, 0, 0, 1, 2, 3;
-  EXPECT(assert_equal(v6, chart5.Local(pose)));
-  EXPECT(assert_equal(chart5.Retract(v6), pose));
+  EXPECT(assert_equal(v6, Chart5::Local(pose)));
+  EXPECT(assert_equal(Chart5::Retract(v6), pose));
 
-  Canonical<Cal3Bundler0> chart6;
+  typedef Canonical<Cal3Bundler0> Chart6;
   Cal3Bundler0 cal0;
   Vector z3 = Vector3::Zero();
-  EXPECT(assert_equal(z3, chart6.Local(cal0)));
-  EXPECT(assert_equal(chart6.Retract(z3), cal0));
+  EXPECT(assert_equal(z3, Chart6::Local(cal0)));
+  EXPECT(assert_equal(Chart6::Retract(z3), cal0));
 
-  Canonical<Camera> chart7;
+  typedef Canonical<Camera> Chart7;
   Camera camera(Pose3(), cal0);
   Vector z9 = Vector9::Zero();
-  EXPECT(assert_equal(z9, chart7.Local(camera)));
-  EXPECT(assert_equal(chart7.Retract(z9), camera));
+  EXPECT(assert_equal(z9, Chart7::Local(camera)));
+  EXPECT(assert_equal(Chart7::Retract(z9), camera));
 }
 
 /* ************************************************************************* */
@@ -208,9 +208,20 @@ Vector2 adapted(const Vector9& P, const Vector3& X) {
 
 /* ************************************************************************* */
 namespace example {
-// zero rotation, (0,5,0) translation, focal length 1
-Vector9 P = (Vector9() << 0, 0, 0, 0, 5, 0, 1, 0, 0).finished();
-Vector3 X(10, 0, -5);  // negative Z-axis convention of Snavely!
+Camera camera(Pose3(Rot3(), Point3(0, 5, 0)), Cal3Bundler0(1, 0, 0));
+Point3 point(10, 0, -5);  // negative Z-axis convention of Snavely!
+Vector9 P = Canonical<Camera>::Local(camera);
+Vector3 X = Canonical<Point3>::Local(point);
+}
+
+/* ************************************************************************* */
+// Check that Local worked as expected
+TEST(AdaptAutoDiff, Local) {
+  using namespace example;
+  Vector9 expectedP = (Vector9() << 0, 0, 0, 0, 5, 0, 1, 0, 0).finished();
+  EXPECT(equal_with_abs_tol(expectedP, P));
+  Vector3 expectedX(10, 0, -5);  // negative Z-axis convention of Snavely!
+  EXPECT(equal_with_abs_tol(expectedX, X));
 }
 
 /* ************************************************************************* */
@@ -244,26 +255,24 @@ TEST(AdaptAutoDiff, AutoDiff2) {
 /* ************************************************************************* */
 // Test AutoDiff wrapper Snavely
 TEST(AdaptAutoDiff, AutoDiff3) {
-  // Make arguments
-  Camera P(Pose3(Rot3(), Point3(0, 5, 0)), Cal3Bundler0(1, 0, 0));
-  Point3 X(10, 0, -5); // negative Z-axis convention of Snavely!
+  using namespace example;
 
   typedef AdaptAutoDiff<SnavelyProjection, Point2, Camera, Point3> Adaptor;
   Adaptor snavely;
 
   // Apply the mapping, to get image point b_x.
   Point2 expected(2, 1);
-  Point2 actual = snavely(P, X);
+  Point2 actual = snavely(camera, point);
   EXPECT(assert_equal(expected,actual,1e-9));
 
 //  // Get expected derivatives
-  Matrix E1 = numericalDerivative21<Point2, Camera, Point3>(Adaptor(), P, X);
-  Matrix E2 = numericalDerivative22<Point2, Camera, Point3>(Adaptor(), P, X);
+  Matrix E1 = numericalDerivative21<Point2, Camera, Point3>(Adaptor(), camera, point);
+  Matrix E2 = numericalDerivative22<Point2, Camera, Point3>(Adaptor(), camera, point);
 
   // Get derivatives with AutoDiff, not gives RowMajor results!
   Matrix29 H1;
   Matrix23 H2;
-  Point2 actual2 = snavely(P, X, H1, H2);
+  Point2 actual2 = snavely(camera, point, H1, H2);
   EXPECT(assert_equal(expected,actual2,1e-9));
   EXPECT(assert_equal(E1,H1,1e-8));
   EXPECT(assert_equal(E2,H2,1e-8));
