@@ -32,18 +32,23 @@ SO3 SO3::Rodrigues(const Vector3& axis, double theta) {
   // get components of axis \omega
   double wx = axis(0), wy = axis(1), wz = axis(2);
 
-  double c = cos(theta), s = sin(theta), c_1 = 1 - c;
-  double wwTxx = wx * wx, wwTyy = wy * wy, wwTzz = wz * wz;
-  double swx = wx * s, swy = wy * s, swz = wz * s;
+  double costheta = cos(theta), sintheta = sin(theta), c_1 = 1 - costheta;
+  double wx_sintheta = wx * sintheta, wy_sintheta = wy * sintheta, wz_sintheta = wz * sintheta;
 
-  double C00 = c_1 * wwTxx, C01 = c_1 * wx * wy, C02 = c_1 * wx * wz;
-  double C11 = c_1 * wwTyy, C12 = c_1 * wy * wz;
-  double C22 = c_1 * wwTzz;
+  double C00 = c_1 * wx * wx, C01 = c_1 * wx * wy, C02 = c_1 * wx * wz;
+  double C11 = c_1 * wy * wy, C12 = c_1 * wy * wz;
+  double C22 = c_1 * wz * wz;
 
   Matrix3 R;
-  R << c + C00, -swz + C01, swy + C02, //
-  swz + C01, c + C11, -swx + C12, //
-  -swy + C02, swx + C12, c + C22;
+  R(0, 0) =     costheta + C00;
+  R(1, 0) =  wz_sintheta + C01;
+  R(2, 0) = -wy_sintheta + C02;
+  R(0, 1) = -wz_sintheta + C01;
+  R(1, 1) =     costheta + C11;
+  R(2, 1) =  wx_sintheta + C12;
+  R(0, 2) =  wy_sintheta + C02;
+  R(1, 2) = -wx_sintheta + C12;
+  R(2, 2) =     costheta + C22;
 
   return R;
 }
