@@ -208,31 +208,33 @@ Vector2 adapted(const Vector9& P, const Vector3& X) {
 
 /* ************************************************************************* */
 namespace example {
-Camera camera(Pose3(Rot3(), Point3(0, 5, 0)), Cal3Bundler0(1, 0, 0));
+Camera camera(Pose3(Rot3::rodriguez(0.1, 0.2, 0.3), Point3(0, 5, 0)),
+              Cal3Bundler0(1, 0, 0));
 Point3 point(10, 0, -5);  // negative Z-axis convention of Snavely!
 Vector9 P = Canonical<Camera>::Local(camera);
 Vector3 X = Canonical<Point3>::Local(point);
+Point2 expectedMeasurement(1.2431567, 1.2525694);
 }
 
 /* ************************************************************************* */
 // Check that Local worked as expected
 TEST(AdaptAutoDiff, Local) {
   using namespace example;
-  Vector9 expectedP = (Vector9() << 0, 0, 0, 0, 5, 0, 1, 0, 0).finished();
+  Vector9 expectedP = (Vector9() << 0.1, 0.2, 0.3, 0, 5, 0, 1, 0, 0).finished();
   EXPECT(equal_with_abs_tol(expectedP, P));
   Vector3 expectedX(10, 0, -5);  // negative Z-axis convention of Snavely!
   EXPECT(equal_with_abs_tol(expectedX, X));
 }
 
 /* ************************************************************************* */
+// Test Ceres AutoDiff
 TEST(AdaptAutoDiff, AutoDiff2) {
   using namespace example;
   using ceres::internal::AutoDiff;
 
   // Apply the mapping, to get image point b_x.
-  Vector expected = Vector2(2, 1);
   Vector2 actual = adapted(P, X);
-  EXPECT(assert_equal(expected,actual,1e-9));
+  EXPECT(assert_equal(expectedMeasurement.vector(), actual, 1e-6));
 
   // Get expected derivatives
   Matrix E1 = numericalDerivative21<Vector2, Vector9, Vector3>(adapted, P, X);
@@ -244,28 +246,27 @@ TEST(AdaptAutoDiff, AutoDiff2) {
   // Get derivatives with AutoDiff
   Vector2 actual2;
   MatrixRowMajor H1(2, 9), H2(2, 3);
-  double *parameters[] = { P.data(), X.data() };
-  double *jacobians[] = { H1.data(), H2.data() };
-  CHECK(
-      (AutoDiff<SnavelyProjection, double, 9, 3>::Differentiate( snavely, parameters, 2, actual2.data(), jacobians)));
-  EXPECT(assert_equal(E1,H1,1e-8));
-  EXPECT(assert_equal(E2,H2,1e-8));
+  double* parameters[] = {P.data(), X.data()};
+  double* jacobians[] = {H1.data(), H2.data()};
+  CHECK((AutoDiff<SnavelyProjection, double, 9, 3>::Differentiate(
+      snavely, parameters, 2, actual2.data(), jacobians)));
+  EXPECT(assert_equal(E1, H1, 1e-8));
+  EXPECT(assert_equal(E2, H2, 1e-8));
 }
 
 /* ************************************************************************* */
 // Test AutoDiff wrapper Snavely
-TEST(AdaptAutoDiff, AutoDiff3) {
+TEST(AdaptAutoDiff, AdaptAutoDiff) {
   using namespace example;
 
   typedef AdaptAutoDiff<SnavelyProjection, Point2, Camera, Point3> Adaptor;
   Adaptor snavely;
 
   // Apply the mapping, to get image point b_x.
-  Point2 expected(2, 1);
   Point2 actual = snavely(camera, point);
-  EXPECT(assert_equal(expected,actual,1e-9));
+  EXPECT(assert_equal(expectedMeasurement, actual, 1e-6));
 
-//  // Get expected derivatives
+  //  // Get expected derivatives
   Matrix E1 = numericalDerivative21<Point2, Camera, Point3>(Adaptor(), camera, point);
   Matrix E2 = numericalDerivative22<Point2, Camera, Point3>(Adaptor(), camera, point);
 
@@ -273,9 +274,9 @@ TEST(AdaptAutoDiff, AutoDiff3) {
   Matrix29 H1;
   Matrix23 H2;
   Point2 actual2 = snavely(camera, point, H1, H2);
-  EXPECT(assert_equal(expected,actual2,1e-9));
-  EXPECT(assert_equal(E1,H1,1e-8));
-  EXPECT(assert_equal(E2,H2,1e-8));
+  EXPECT(assert_equal(expectedMeasurement, actual2, 1e-6));
+  EXPECT(assert_equal(E1, H1, 1e-8));
+  EXPECT(assert_equal(E2, H2, 1e-8));
 }
 
 /* ************************************************************************* */
@@ -286,10 +287,10 @@ TEST(AdaptAutoDiff, SnavelyExpression) {
   typedef AdaptAutoDiff<SnavelyProjection, Point2, Camera, Point3> Adaptor;
   Expression<Point2> expression(Adaptor(), P, X);
 #ifdef GTSAM_USE_QUATERNIONS
-  EXPECT_LONGS_EQUAL(384,expression.traceSize()); // Todo, should be zero
+  EXPECT_LONGS_EQUAL(384,expression.traceSize()); // TODO(frank): should be zero
 #else
   EXPECT_LONGS_EQUAL(sizeof(internal::BinaryExpression<Point2, Camera, Point3>::Record),
-                     expression.traceSize());  // Todo, should be zero
+                     expression.traceSize());  // TODO(frank): should be zero
 #endif
   set<Key> expected = list_of(1)(2);
   EXPECT(expected == expression.keys());
