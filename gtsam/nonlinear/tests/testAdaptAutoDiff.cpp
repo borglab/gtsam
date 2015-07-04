@@ -36,23 +36,23 @@ using boost::assign::map_list_of;
 namespace gtsam {
 
 // Special version of Cal3Bundler so that default constructor = 0,0,0
-struct Cal: public Cal3Bundler {
-  Cal(double f = 0, double k1 = 0, double k2 = 0, double u0 = 0, double v0 = 0) :
+struct Cal3Bundler0: public Cal3Bundler {
+  Cal3Bundler0(double f = 0, double k1 = 0, double k2 = 0, double u0 = 0, double v0 = 0) :
       Cal3Bundler(f, k1, k2, u0, v0) {
   }
-  Cal retract(const Vector& d) const {
-    return Cal(fx() + d(0), k1() + d(1), k2() + d(2), u0(), v0());
+  Cal3Bundler0 retract(const Vector& d) const {
+    return Cal3Bundler0(fx() + d(0), k1() + d(1), k2() + d(2), u0(), v0());
   }
-  Vector3 localCoordinates(const Cal& T2) const {
+  Vector3 localCoordinates(const Cal3Bundler0& T2) const {
     return T2.vector() - vector();
   }
 };
 
 template<>
-struct traits<Cal> : public internal::Manifold<Cal> {};
+struct traits<Cal3Bundler0> : public internal::Manifold<Cal3Bundler0> {};
 
 // With that, camera below behaves like Snavely's 9-dim vector
-typedef PinholeCamera<Cal> Camera;
+typedef PinholeCamera<Cal3Bundler0> Camera;
 
 }
 
@@ -60,7 +60,7 @@ using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
-// Make sure rotation convention is the same
+// Check that ceres rotation convention is the same
 TEST(AdaptAutoDiff, Rotation) {
   Vector3 axisAngle(0.1,0.2,0.3);
   Matrix3 expected = Rot3::rodriguez(axisAngle).matrix();
@@ -70,15 +70,15 @@ TEST(AdaptAutoDiff, Rotation) {
 }
 
 /* ************************************************************************* */
-// charts
+// Canonical<T> sets up Local/Retract around the default-constructed value
+// The tests below check this for all types that play a role i SFM
 TEST(AdaptAutoDiff, Canonical) {
 
   Canonical<Point2> chart1;
   EXPECT(chart1.Local(Point2(1, 0))==Vector2(1, 0));
   EXPECT(chart1.Retract(Vector2(1, 0))==Point2(1, 0));
 
-  Vector v2(2);
-  v2 << 1, 0;
+  Vector2 v2(1, 0);
   Canonical<Vector2> chart2;
   EXPECT(assert_equal(v2, chart2.Local(Vector2(1, 0))));
   EXPECT(chart2.Retract(v2)==Vector2(1, 0));
@@ -91,8 +91,7 @@ TEST(AdaptAutoDiff, Canonical) {
 
   Canonical<Point3> chart4;
   Point3 point(1, 2, 3);
-  Vector v3(3);
-  v3 << 1, 2, 3;
+  Vector3 v3(1, 2, 3);
   EXPECT(assert_equal(v3, chart4.Local(point)));
   EXPECT(assert_equal(chart4.Retract(v3), point));
 
@@ -103,8 +102,8 @@ TEST(AdaptAutoDiff, Canonical) {
   EXPECT(assert_equal(v6, chart5.Local(pose)));
   EXPECT(assert_equal(chart5.Retract(v6), pose));
 
-  Canonical<Cal> chart6;
-  Cal cal0;
+  Canonical<Cal3Bundler0> chart6;
+  Cal3Bundler0 cal0;
   Vector z3 = Vector3::Zero();
   EXPECT(assert_equal(z3, chart6.Local(cal0)));
   EXPECT(assert_equal(chart6.Retract(z3), cal0));
@@ -207,16 +206,17 @@ Vector2 adapted(const Vector9& P, const Vector3& X) {
     throw std::runtime_error("Snavely fail");
 }
 
+/* ************************************************************************* */
+namespace example {
+// zero rotation, (0,5,0) translation, focal length 1
+Vector9 P = (Vector9() << 0, 0, 0, 0, 5, 0, 1, 0, 0).finished();
+Vector3 X(10, 0, -5);  // negative Z-axis convention of Snavely!
+}
+
+/* ************************************************************************* */
 TEST(AdaptAutoDiff, AutoDiff2) {
+  using namespace example;
   using ceres::internal::AutoDiff;
-
-  // Instantiate function
-  SnavelyProjection snavely;
-
-  // Make arguments
-  Vector9 P; // zero rotation, (0,5,0) translation, focal length 1
-  P << 0, 0, 0, 0, 5, 0, 1, 0, 0;
-  Vector3 X(10, 0, -5); // negative Z-axis convention of Snavely!
 
   // Apply the mapping, to get image point b_x.
   Vector expected = Vector2(2, 1);
@@ -226,6 +226,9 @@ TEST(AdaptAutoDiff, AutoDiff2) {
   // Get expected derivatives
   Matrix E1 = numericalDerivative21<Vector2, Vector9, Vector3>(adapted, P, X);
   Matrix E2 = numericalDerivative22<Vector2, Vector9, Vector3>(adapted, P, X);
+
+  // Instantiate function
+  SnavelyProjection snavely;
 
   // Get derivatives with AutoDiff
   Vector2 actual2;
@@ -241,9 +244,8 @@ TEST(AdaptAutoDiff, AutoDiff2) {
 /* ************************************************************************* */
 // Test AutoDiff wrapper Snavely
 TEST(AdaptAutoDiff, AutoDiff3) {
-
   // Make arguments
-  Camera P(Pose3(Rot3(), Point3(0, 5, 0)), Cal(1, 0, 0));
+  Camera P(Pose3(Rot3(), Point3(0, 5, 0)), Cal3Bundler0(1, 0, 0));
   Point3 X(10, 0, -5); // negative Z-axis convention of Snavely!
 
   typedef AdaptAutoDiff<SnavelyProjection, Point2, Camera, Point3> Adaptor;
@@ -269,7 +271,7 @@ TEST(AdaptAutoDiff, AutoDiff3) {
 
 /* ************************************************************************* */
 // Test AutoDiff wrapper in an expression
-TEST(AdaptAutoDiff, Snavely) {
+TEST(AdaptAutoDiff, SnavelyExpression) {
   Expression<Camera> P(1);
   Expression<Point3> X(2);
   typedef AdaptAutoDiff<SnavelyProjection, Point2, Camera, Point3> Adaptor;
