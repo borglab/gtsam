@@ -60,6 +60,16 @@ using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
+// Make sure rotation convention is the same
+TEST(AdaptAutoDiff, Rotation) {
+  Vector3 axisAngle(0.1,0.2,0.3);
+  Matrix3 expected = Rot3::rodriguez(axisAngle).matrix();
+  Matrix3 actual;
+  ceres::AngleAxisToRotationMatrix(axisAngle.data(), actual.data());
+  EXPECT(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
 // charts
 TEST(AdaptAutoDiff, Canonical) {
 
