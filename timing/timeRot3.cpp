@@ -42,7 +42,7 @@ int main()
   Vector v = (Vector(3) << x, y, z).finished();
   Rot3 R = Rot3::Rodrigues(0.1, 0.4, 0.2), R2 = R.retract(v);
 
-  TEST("Rodriguez formula given axis angle", Rot3::Rodrigues(v,0.001))
+  TEST("Rodriguez formula given axis angle", Rot3::AxisAngle(v,0.001))
   TEST("Rodriguez formula given canonical coordinates", Rot3::Rodrigues(v))
   TEST("Expmap", R*Rot3::Expmap(v))
   TEST("Retract", R.retract(v))

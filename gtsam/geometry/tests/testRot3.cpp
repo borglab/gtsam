@@ -95,7 +95,7 @@ TEST( Rot3, equals)
 
 /* ************************************************************************* */
 // Notice this uses J^2 whereas fast uses w*w', and has cos(t)*I + ....
-Rot3 slow_but_correct_rodriguez(const Vector& w) {
+Rot3 slow_but_correct_Rodrigues(const Vector& w) {
   double t = norm_2(w);
   Matrix J = skewSymmetric(w / t);
   if (t < 1e-5) return Rot3();
@@ -108,16 +108,16 @@ TEST( Rot3, Rodrigues)
 {
   Rot3 R1 = Rot3::Rodrigues(epsilon, 0, 0);
   Vector w = (Vector(3) << epsilon, 0., 0.).finished();
-  Rot3 R2 = slow_but_correct_rodriguez(w);
+  Rot3 R2 = slow_but_correct_Rodrigues(w);
   CHECK(assert_equal(R2,R1));
 }
 
 /* ************************************************************************* */
-TEST( Rot3, rodriguez2)
+TEST( Rot3, Rodrigues2)
 {
   Vector axis = Vector3(0., 1., 0.); // rotation around Y
   double angle = 3.14 / 4.0;
-  Rot3 actual = Rot3::Rodrigues(axis, angle);
+  Rot3 actual = Rot3::AxisAngle(axis, angle);
   Rot3 expected(0.707388, 0, 0.706825,
                        0, 1,        0,
                -0.706825, 0, 0.707388);
@@ -125,26 +125,26 @@ TEST( Rot3, rodriguez2)
 }
 
 /* ************************************************************************* */
-TEST( Rot3, rodriguez3)
+TEST( Rot3, Rodrigues3)
 {
   Vector w = Vector3(0.1, 0.2, 0.3);
-  Rot3 R1 = Rot3::Rodrigues(w / norm_2(w), norm_2(w));
-  Rot3 R2 = slow_but_correct_rodriguez(w);
+  Rot3 R1 = Rot3::AxisAngle(w / norm_2(w), norm_2(w));
+  Rot3 R2 = slow_but_correct_Rodrigues(w);
   CHECK(assert_equal(R2,R1));
 }
 
 /* ************************************************************************* */
-TEST( Rot3, rodriguez4)
+TEST( Rot3, Rodrigues4)
 {
   Vector axis = Vector3(0., 0., 1.); // rotation around Z
   double angle = M_PI/2.0;
-  Rot3 actual = Rot3::Rodrigues(axis, angle);
+  Rot3 actual = Rot3::AxisAngle(axis, angle);
   double c=cos(angle),s=sin(angle);
   Rot3 expected(c,-s, 0,
                 s, c, 0,
                 0, 0, 1);
   CHECK(assert_equal(expected,actual));
-  CHECK(assert_equal(slow_but_correct_rodriguez(axis*angle),actual));
+  CHECK(assert_equal(slow_but_correct_Rodrigues(axis*angle),actual));
 }
 
 /* ************************************************************************* */
@@ -652,8 +652,8 @@ TEST( Rot3, slerp)
 }
 
 //******************************************************************************
-Rot3 T1(Rot3::Rodrigues(Vector3(0, 0, 1), 1));
-Rot3 T2(Rot3::Rodrigues(Vector3(0, 1, 0), 2));
+Rot3 T1(Rot3::AxisAngle(Vector3(0, 0, 1), 1));
+Rot3 T2(Rot3::AxisAngle(Vector3(0, 1, 0), 2));
 
 //******************************************************************************
 TEST(Rot3 , Invariants) {

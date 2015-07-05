@@ -141,7 +141,7 @@ namespace gtsam {
      * as described in http://www.sedris.org/wg8home/Documents/WG80462.pdf.
      * Assumes vehicle coordinate frame X forward, Y right, Z down.
      */
-    static Rot3 ypr  (double y, double p, double r) { return RzRyRx(r,p,y);}
+    static Rot3 ypr(double y, double p, double r) { return RzRyRx(r,p,y);}
 
     /** Create from Quaternion coefficients */
     static Rot3 quaternion(double w, double x, double y, double z) {
@@ -150,54 +150,54 @@ namespace gtsam {
     }
 
     /**
-     * Rodrigues' formula to compute an incremental rotation matrix
-     * @param   w is the rotation axis, unit length
+     * Convert from axis/angle representation
+     * @param   axis is the rotation axis, unit length
      * @param   angle rotation angle
-     * @return incremental rotation matrix
+     * @return incremental rotation
      */
-    static Rot3 Rodrigues(const Vector3& axis, double angle) {
+    static Rot3 AxisAngle(const Vector3& axis, double angle) {
 #ifdef GTSAM_USE_QUATERNIONS
       return Quaternion(Eigen::AngleAxis<double>(angle, axis));
 #else
-      return SO3::Rodrigues(axis,angle);
+      return SO3::AxisAngle(axis,angle);
 #endif
       }
 
     /**
-     * Rodrigues' formula to compute an incremental rotation matrix
-     * @param   w is the rotation axis, unit length
+     * Convert from axis/angle representation
+     * @param  axisw is the rotation axis, unit length
      * @param   angle rotation angle
-     * @return incremental rotation matrix
+     * @return incremental rotation
      */
-    static Rot3 Rodrigues(const Point3& axis, double angle) {
-      return Rodrigues(axis.vector(),angle);
+    static Rot3 AxisAngle(const Point3& axis, double angle) {
+      return AxisAngle(axis.vector(),angle);
     }
 
     /**
-     * Rodrigues' formula to compute an incremental rotation matrix
-     * @param   w is the rotation axis
+     * Convert from axis/angle representation
+     * @param   axis is the rotation axis
      * @param   angle rotation angle
-     * @return incremental rotation matrix
+     * @return incremental rotation
      */
-    static Rot3 Rodrigues(const Unit3& axis, double angle) {
-      return Rodrigues(axis.unitVector(),angle);
+    static Rot3 AxisAngle(const Unit3& axis, double angle) {
+      return AxisAngle(axis.unitVector(),angle);
     }
 
     /**
-     * Rodrigues' formula to compute an incremental rotation matrix
+     * Rodrigues' formula to compute an incremental rotation
      * @param w a vector of incremental roll,pitch,yaw
-     * @return incremental rotation matrix
+     * @return incremental rotation
      */
     static Rot3 Rodrigues(const Vector3& w) {
       return Rot3::Expmap(w);
     }
 
     /**
-     * Rodrigues' formula to compute an incremental rotation matrix
+     * Rodrigues' formula to compute an incremental rotation
      * @param wx Incremental roll (about X)
      * @param wy Incremental pitch (about Y)
      * @param wz Incremental yaw (about Z)
-     * @return incremental rotation matrix
+     * @return incremental rotation
      */
     static Rot3 Rodrigues(double wx, double wy, double wz) {
       return Rodrigues(Vector3(wx, wy, wz));
@@ -442,9 +442,9 @@ namespace gtsam {
     /// @}
     /// @name Deprecated
     /// @{
-    static Rot3 rodriguez(const Vector3& axis, double angle) { return Rodrigues(axis, angle); }
-    static Rot3 rodriguez(const Point3&  axis, double angle) { return Rodrigues(axis, angle); }
-    static Rot3 rodriguez(const Unit3&   axis, double angle) { return Rodrigues(axis, angle); }
+    static Rot3 rodriguez(const Vector3& axis, double angle) { return AxisAngle(axis, angle); }
+    static Rot3 rodriguez(const Point3&  axis, double angle) { return AxisAngle(axis, angle); }
+    static Rot3 rodriguez(const Unit3&   axis, double angle) { return AxisAngle(axis, angle); }
     static Rot3 rodriguez(const Vector3& w)                  { return Rodrigues(w); }
     static Rot3 rodriguez(double wx, double wy, double wz)   { return Rodrigues(wx, wy, wz); }
     /// @}

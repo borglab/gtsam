@@ -39,7 +39,7 @@ static SO3 FirstOrder(const Vector3& omega) {
   return R;
 }
 
-SO3 SO3::Rodrigues(const Vector3& axis, double theta) {
+SO3 SO3::AxisAngle(const Vector3& axis, double theta) {
   if (theta*theta > std::numeric_limits<double>::epsilon()) {
     using std::cos;
     using std::sin;
@@ -79,7 +79,7 @@ SO3 SO3::Expmap(const Vector3& omega, ChartJacobian H) {
   double theta2 = omega.dot(omega);
   if (theta2 > std::numeric_limits<double>::epsilon()) {
     double theta = std::sqrt(theta2);
-    return Rodrigues(omega / theta, theta);
+    return AxisAngle(omega / theta, theta);
   } else {
     return FirstOrder(omega);
   }

@@ -74,7 +74,7 @@ struct traits<QUATERNION_TYPE> {
     return g.inverse();
   }
 
-  /// Exponential map, using the inlined code from Eigen's converseion from axis/angle
+  /// Exponential map, using the inlined code from Eigen's conversion from axis/angle
   static Q Expmap(const Eigen::Ref<const TangentVector>& omega,
                   ChartJacobian H = boost::none) {
     using std::cos;

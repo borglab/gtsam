@@ -34,12 +34,12 @@ void Rot3::print(const std::string& s) const {
 }
 
 /* ************************************************************************* */
-Rot3 Rot3::Random(boost::mt19937 & rng) {
+Rot3 Rot3::Random(boost::mt19937& rng) {
   // TODO allow any engine without including all of boost :-(
-  Unit3 w = Unit3::Random(rng);
-  boost::uniform_real<double> randomAngle(-M_PI,M_PI);
+  Unit3 axis = Unit3::Random(rng);
+  boost::uniform_real<double> randomAngle(-M_PI, M_PI);
   double angle = randomAngle(rng);
-  return Rodrigues(w,angle);
+  return AxisAngle(axis, angle);
 }
 
 /* ************************************************************************* */

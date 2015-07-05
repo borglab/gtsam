@@ -59,7 +59,7 @@ public:
   }
 
   /// Static, named constructor TODO think about relation with above
-  static SO3 Rodrigues(const Vector3& axis, double theta);
+  static SO3 AxisAngle(const Vector3& axis, double theta);
 
   /// @}
   /// @name Testable
