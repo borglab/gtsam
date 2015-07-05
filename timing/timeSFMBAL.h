@@ -41,7 +41,7 @@ static SharedNoiseModel gNoiseModel = noiseModel::Unit::Create(2);
 SfM_data preamble(int argc, char* argv[]) {
   // primitive argument parsing:
   if (argc > 2) {
-    if (string(argv[1]) == "--colamd")
+    if (strcmp(argv[1], "--colamd"))
       gUseSchur = false;
     else
       throw runtime_error("Usage: timeSFMBALxxx [--colamd] [BALfile]");
@@ -50,14 +50,14 @@ SfM_data preamble(int argc, char* argv[]) {
   // Load BAL file
   SfM_data db;
   string defaultFilename = findExampleDataFile("dubrovnik-16-22106-pre");
-  bool success = readBAL(argc > 1 ? argv[argc] : defaultFilename, db);
+  bool success = readBAL(argc > 1 ? argv[argc - 1] : defaultFilename, db);
   if (!success) throw runtime_error("Could not access file!");
   return db;
 }
 
 // Create ordering and optimize
 int optimize(const SfM_data& db, const NonlinearFactorGraph& graph,
-             const Values& initial) {
+             const Values& initial, bool separateCalibration = false) {
   using symbol_shorthand::P;
 
   // Set parameters to be similar to ceres
@@ -69,7 +69,10 @@ int optimize(const SfM_data& db, const NonlinearFactorGraph& graph,
     // Create Schur-complement ordering
     Ordering ordering;
     for (size_t j = 0; j < db.number_tracks(); j++) ordering.push_back(P(j));
-    for (size_t i = 0; i < db.number_cameras(); i++) ordering.push_back(C(i));
+    for (size_t i = 0; i < db.number_cameras(); i++) {
+      ordering.push_back(C(i));
+      if (separateCalibration) ordering.push_back(K(i));
+    }
     params.setOrdering(ordering);
   }
 
