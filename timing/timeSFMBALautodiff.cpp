@@ -31,29 +31,11 @@ using namespace std;
 using namespace gtsam;
 
 // See http://www.cs.cornell.edu/~snavely/bundler/bundler-v0.3-manual.html
-// Special version of Cal3Bundler so that default constructor = 0,0,0
-// This is only used in localCoordinates below
-struct CeresCalibration : public Cal3Bundler {
-  CeresCalibration(double f = 0, double k1 = 0, double k2 = 0, double u0 = 0,
-                   double v0 = 0)
-      : Cal3Bundler(f, k1, k2, u0, v0) {}
-  CeresCalibration(const Cal3Bundler& cal) : Cal3Bundler(cal) {}
-  CeresCalibration retract(const Vector& d) const {
-    return CeresCalibration(fx() + d(0), k1() + d(1), k2() + d(2), u0(), v0());
-  }
-  Vector3 localCoordinates(const CeresCalibration& T2) const {
-    return T2.vector() - vector();
-  }
-};
+// as to why so much gymnastics is needed to massage the initial estimates and
+// measurements: basically, Snavely does not use computer vision conventions
+// but OpenGL conventions :-(
 
-namespace gtsam {
-template <>
-struct traits<CeresCalibration> : public internal::Manifold<CeresCalibration> {
-};
-}
-
-// With that, camera below behaves like Snavely's 9-dim vector
-typedef PinholeCamera<CeresCalibration> Camera;
+typedef PinholeCamera<Cal3Bundler> Camera;
 
 int main(int argc, char* argv[]) {
   // parse options and read BAL file
@@ -79,8 +61,8 @@ int main(int argc, char* argv[]) {
   size_t i = 0, j = 0;
   BOOST_FOREACH (const SfM_Camera& camera, db.cameras) {
     // readBAL converts to GTSAM format, so we need to convert back !
-    Camera ceresCamera(gtsam2openGL(camera.pose()), camera.calibration());
-    Vector9 v9 = Camera().localCoordinates(ceresCamera);
+    Pose3 openGLpose = gtsam2openGL(camera.pose());
+    Vector9 v9; v9 << Pose3::Logmap(openGLpose), camera.calibration().vector();
     initial.insert(C(i++), v9);
   }
   BOOST_FOREACH (const SfM_Track& track, db.tracks) {
