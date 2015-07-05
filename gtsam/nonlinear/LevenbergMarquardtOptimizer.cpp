@@ -25,6 +25,9 @@
 
 #include <boost/algorithm/string.hpp>
 #include <boost/range/adaptor/map.hpp>
+#include <boost/format.hpp>
+#include <boost/timer/timer.hpp>
+
 #include <fstream>
 #include <limits>
 #include <string>
@@ -236,7 +239,7 @@ void LevenbergMarquardtOptimizer::iterate() {
 
   // Keep increasing lambda until we make make progress
   while (true) {
-
+    boost::timer::cpu_timer timer;
     if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA)
       cout << "trying lambda = " << state_.lambda << endl;
 
@@ -248,7 +251,7 @@ void LevenbergMarquardtOptimizer::iterate() {
     double modelFidelity = 0.0;
     bool step_is_successful = false;
     bool stopSearchingLambda = false;
-    double newError = numeric_limits<double>::infinity();
+    double newError = numeric_limits<double>::infinity(), costChange;
     Values newValues;
     VectorValues delta;
 
@@ -261,8 +264,6 @@ void LevenbergMarquardtOptimizer::iterate() {
       systemSolvedSuccessfully = false;
     }
 
-    double linearizedCostChange = 0,
-           newlinearizedError = 0;
     if (systemSolvedSuccessfully) {
       state_.reuseDiagonal = true;
 
@@ -272,9 +273,9 @@ void LevenbergMarquardtOptimizer::iterate() {
         delta.print("delta");
 
       // cost change in the linearized system (old - new)
-      newlinearizedError = linear->error(delta);
+      double newlinearizedError = linear->error(delta);
 
-      linearizedCostChange = state_.error - newlinearizedError;
+      double linearizedCostChange = state_.error - newlinearizedError;
       if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA)
               cout << "newlinearizedError = " << newlinearizedError <<
               "  linearizedCostChange = " << linearizedCostChange << endl;
@@ -299,7 +300,7 @@ void LevenbergMarquardtOptimizer::iterate() {
               << ") new (tentative) error (" << newError << ")" << endl;
 
         // cost change in the original, nonlinear system (old - new)
-        double costChange = state_.error - newError;
+        costChange = state_.error - newError;
 
         if (linearizedCostChange > 1e-20) { // the (linear) error has to decrease to satisfy this condition
           // fidelity of linearized model VS original system between
@@ -322,9 +323,13 @@ void LevenbergMarquardtOptimizer::iterate() {
     }
 
     if (lmVerbosity == LevenbergMarquardtParams::SUMMARY) {
-      cout << "[" << state_.iterations << "]: " << "new error = " << newlinearizedError
-           << ", delta = " << linearizedCostChange << ", lambda = " << state_.lambda
-           << ", success = " << systemSolvedSuccessfully << std::endl;
+      // do timing
+      double iterationTime = 1e-9 * timer.elapsed().wall;
+      if (state_.iterations == 0)
+        cout << "iter      cost      cost_change    lambda  success iter_time" << endl;
+      cout << boost::format("% 4d % 8e   % 3.2e   % 3.2e  % 4d   % 3.2e") %
+                  state_.iterations % newError % costChange % state_.lambda %
+                  systemSolvedSuccessfully % iterationTime << endl;
     }
 
     ++state_.totalNumberInnerIterations;
