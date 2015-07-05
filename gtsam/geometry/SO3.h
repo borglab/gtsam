@@ -93,7 +93,7 @@ public:
 
   /**
    * Exponential map at identity - create a rotation from canonical coordinates
-   * \f$ [R_x,R_y,R_z] \f$ using Rodriguez' formula
+   * \f$ [R_x,R_y,R_z] \f$ using Rodrigues' formula
    */
   static SO3 Expmap(const Vector3& omega, ChartJacobian H = boost::none);
 
