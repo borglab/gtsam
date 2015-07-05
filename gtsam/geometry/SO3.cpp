@@ -133,8 +133,9 @@ Matrix3 SO3::ExpmapDerivative(const Vector3& omega)    {
   using std::cos;
   using std::sin;
 
-  if(zero(omega)) return I_3x3;
-  double theta = omega.norm();  // rotation angle
+  double theta2 = omega.dot(omega);
+  if (theta2 <= std::numeric_limits<double>::epsilon()) return I_3x3;
+  double theta = std::sqrt(theta2);  // rotation angle
 #ifdef DUY_VERSION
   /// Follow Iserles05an, B10, pg 147, with a sign change in the second term (left version)
   Matrix3 X = skewSymmetric(omega);
@@ -164,8 +165,9 @@ Matrix3 SO3::LogmapDerivative(const Vector3& omega)    {
   using std::cos;
   using std::sin;
 
-  if(zero(omega)) return I_3x3;
-  double theta = omega.norm();
+  double theta2 = omega.dot(omega);
+  if (theta2 <= std::numeric_limits<double>::epsilon()) return I_3x3;
+  double theta = std::sqrt(theta2);  // rotation angle
 #ifdef DUY_VERSION
   /// Follow Iserles05an, B11, pg 147, with a sign change in the second term (left version)
   Matrix3 X = skewSymmetric(omega);
