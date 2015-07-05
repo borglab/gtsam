@@ -95,7 +95,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Intentionally initialize the variables off from the ground truth
-    Pose3 noise(Rot3::rodriguez(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20));
+    Pose3 noise(Rot3::Rodrigues(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20));
     Pose3 initial_xi = poses[i].compose(noise);
 
     // Add an initial guess for the current pose

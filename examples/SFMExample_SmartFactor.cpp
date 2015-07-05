@@ -95,7 +95,7 @@ int main(int argc, char* argv[]) {
   // Create the initial estimate to the solution
   // Intentionally initialize the variables off from the ground truth
   Values initialEstimate;
-  Pose3 delta(Rot3::rodriguez(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20));
+  Pose3 delta(Rot3::Rodrigues(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20));
   for (size_t i = 0; i < poses.size(); ++i)
     initialEstimate.insert(i, Camera(poses[i].compose(delta), K));
   initialEstimate.print("Initial Estimates:\n");

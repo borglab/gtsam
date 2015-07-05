@@ -33,7 +33,7 @@ using namespace gtsam;
 GTSAM_CONCEPT_TESTABLE_INST(Rot3)
 GTSAM_CONCEPT_LIE_INST(Rot3)
 
-static Rot3 R = Rot3::rodriguez(0.1, 0.4, 0.2);
+static Rot3 R = Rot3::Rodrigues(0.1, 0.4, 0.2);
 static Point3 P(0.2, 0.7, -2.0);
 static double error = 1e-9, epsilon = 0.001;
 
@@ -104,9 +104,9 @@ Rot3 slow_but_correct_rodriguez(const Vector& w) {
 }
 
 /* ************************************************************************* */
-TEST( Rot3, rodriguez)
+TEST( Rot3, Rodrigues)
 {
-  Rot3 R1 = Rot3::rodriguez(epsilon, 0, 0);
+  Rot3 R1 = Rot3::Rodrigues(epsilon, 0, 0);
   Vector w = (Vector(3) << epsilon, 0., 0.).finished();
   Rot3 R2 = slow_but_correct_rodriguez(w);
   CHECK(assert_equal(R2,R1));
@@ -117,7 +117,7 @@ TEST( Rot3, rodriguez2)
 {
   Vector axis = Vector3(0., 1., 0.); // rotation around Y
   double angle = 3.14 / 4.0;
-  Rot3 actual = Rot3::rodriguez(axis, angle);
+  Rot3 actual = Rot3::Rodrigues(axis, angle);
   Rot3 expected(0.707388, 0, 0.706825,
                        0, 1,        0,
                -0.706825, 0, 0.707388);
@@ -128,7 +128,7 @@ TEST( Rot3, rodriguez2)
 TEST( Rot3, rodriguez3)
 {
   Vector w = Vector3(0.1, 0.2, 0.3);
-  Rot3 R1 = Rot3::rodriguez(w / norm_2(w), norm_2(w));
+  Rot3 R1 = Rot3::Rodrigues(w / norm_2(w), norm_2(w));
   Rot3 R2 = slow_but_correct_rodriguez(w);
   CHECK(assert_equal(R2,R1));
 }
@@ -138,7 +138,7 @@ TEST( Rot3, rodriguez4)
 {
   Vector axis = Vector3(0., 0., 1.); // rotation around Z
   double angle = M_PI/2.0;
-  Rot3 actual = Rot3::rodriguez(axis, angle);
+  Rot3 actual = Rot3::Rodrigues(axis, angle);
   double c=cos(angle),s=sin(angle);
   Rot3 expected(c,-s, 0,
                 s, c, 0,
@@ -168,7 +168,7 @@ TEST(Rot3, log)
 
 #define CHECK_OMEGA(X,Y,Z) \
   w = (Vector(3) << (double)X, (double)Y, double(Z)).finished(); \
-  R = Rot3::rodriguez(w); \
+  R = Rot3::Rodrigues(w); \
   EXPECT(assert_equal(w, Rot3::Logmap(R),1e-12));
 
   // Check zero
@@ -201,7 +201,7 @@ TEST(Rot3, log)
   // Windows and Linux have flipped sign in quaternion mode
 #if !defined(__APPLE__) && defined (GTSAM_USE_QUATERNIONS)
   w = (Vector(3) << x*PI, y*PI, z*PI).finished();
-  R = Rot3::rodriguez(w); 
+  R = Rot3::Rodrigues(w); 
   EXPECT(assert_equal(Vector(-w), Rot3::Logmap(R),1e-12));
 #else
   CHECK_OMEGA(x*PI,y*PI,z*PI)
@@ -210,7 +210,7 @@ TEST(Rot3, log)
   // Check 360 degree rotations
 #define CHECK_OMEGA_ZERO(X,Y,Z) \
   w = (Vector(3) << (double)X, (double)Y, double(Z)).finished(); \
-  R = Rot3::rodriguez(w); \
+  R = Rot3::Rodrigues(w); \
   EXPECT(assert_equal(zero(3), Rot3::Logmap(R)));
 
   CHECK_OMEGA_ZERO( 2.0*PI,      0,      0)
@@ -312,8 +312,8 @@ TEST( Rot3, jacobianLogmap )
 /* ************************************************************************* */
 TEST(Rot3, manifold_expmap)
 {
-  Rot3 gR1 = Rot3::rodriguez(0.1, 0.4, 0.2);
-  Rot3 gR2 = Rot3::rodriguez(0.3, 0.1, 0.7);
+  Rot3 gR1 = Rot3::Rodrigues(0.1, 0.4, 0.2);
+  Rot3 gR2 = Rot3::Rodrigues(0.3, 0.1, 0.7);
   Rot3 origin;
 
   // log behaves correctly
@@ -399,8 +399,8 @@ TEST( Rot3, unrotate)
 /* ************************************************************************* */
 TEST( Rot3, compose )
 {
-  Rot3 R1 = Rot3::rodriguez(0.1, 0.2, 0.3);
-  Rot3 R2 = Rot3::rodriguez(0.2, 0.3, 0.5);
+  Rot3 R1 = Rot3::Rodrigues(0.1, 0.2, 0.3);
+  Rot3 R2 = Rot3::Rodrigues(0.2, 0.3, 0.5);
 
   Rot3 expected = R1 * R2;
   Matrix actualH1, actualH2;
@@ -419,7 +419,7 @@ TEST( Rot3, compose )
 /* ************************************************************************* */
 TEST( Rot3, inverse )
 {
-  Rot3 R = Rot3::rodriguez(0.1, 0.2, 0.3);
+  Rot3 R = Rot3::Rodrigues(0.1, 0.2, 0.3);
 
   Rot3 I;
   Matrix3 actualH;
@@ -444,13 +444,13 @@ TEST( Rot3, between )
       0.0, 0.0, 1.0).finished();
   EXPECT(assert_equal(expectedr1, r1.matrix()));
 
-  Rot3 R = Rot3::rodriguez(0.1, 0.4, 0.2);
+  Rot3 R = Rot3::Rodrigues(0.1, 0.4, 0.2);
   Rot3 origin;
   EXPECT(assert_equal(R, origin.between(R)));
   EXPECT(assert_equal(R.inverse(), R.between(origin)));
 
-  Rot3 R1 = Rot3::rodriguez(0.1, 0.2, 0.3);
-  Rot3 R2 = Rot3::rodriguez(0.2, 0.3, 0.5);
+  Rot3 R1 = Rot3::Rodrigues(0.1, 0.2, 0.3);
+  Rot3 R2 = Rot3::Rodrigues(0.2, 0.3, 0.5);
 
   Rot3 expected = R1.inverse() * R2;
   Matrix actualH1, actualH2;
@@ -652,8 +652,8 @@ TEST( Rot3, slerp)
 }
 
 //******************************************************************************
-Rot3 T1(Rot3::rodriguez(Vector3(0, 0, 1), 1));
-Rot3 T2(Rot3::rodriguez(Vector3(0, 1, 0), 2));
+Rot3 T1(Rot3::Rodrigues(Vector3(0, 0, 1), 1));
+Rot3 T2(Rot3::Rodrigues(Vector3(0, 1, 0), 2));
 
 //******************************************************************************
 TEST(Rot3 , Invariants) {
