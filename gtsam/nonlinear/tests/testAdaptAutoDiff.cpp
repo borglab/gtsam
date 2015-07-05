@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -36,10 +36,10 @@ using boost::assign::map_list_of;
 namespace gtsam {
 
 // Special version of Cal3Bundler so that default constructor = 0,0,0
-struct Cal3Bundler0: public Cal3Bundler {
-  Cal3Bundler0(double f = 0, double k1 = 0, double k2 = 0, double u0 = 0, double v0 = 0) :
-      Cal3Bundler(f, k1, k2, u0, v0) {
-  }
+struct Cal3Bundler0 : public Cal3Bundler {
+  Cal3Bundler0(double f = 0, double k1 = 0, double k2 = 0, double u0 = 0,
+               double v0 = 0)
+      : Cal3Bundler(f, k1, k2, u0, v0) {}
   Cal3Bundler0 retract(const Vector& d) const {
     return Cal3Bundler0(fx() + d(0), k1() + d(1), k2() + d(2), u0(), v0());
   }
@@ -48,12 +48,11 @@ struct Cal3Bundler0: public Cal3Bundler {
   }
 };
 
-template<>
+template <>
 struct traits<Cal3Bundler0> : public internal::Manifold<Cal3Bundler0> {};
 
 // With that, camera below behaves like Snavely's 9-dim vector
 typedef PinholeCamera<Cal3Bundler0> Camera;
-
 }
 
 using namespace std;
@@ -62,7 +61,7 @@ using namespace gtsam;
 /* ************************************************************************* */
 // Check that ceres rotation convention is the same
 TEST(AdaptAutoDiff, Rotation) {
-  Vector3 axisAngle(0.1,0.2,0.3);
+  Vector3 axisAngle(0.1, 0.2, 0.3);
   Matrix3 expected = Rot3::rodriguez(axisAngle).matrix();
   Matrix3 actual;
   ceres::AngleAxisToRotationMatrix(axisAngle.data(), actual.data());
@@ -70,56 +69,10 @@ TEST(AdaptAutoDiff, Rotation) {
 }
 
 /* ************************************************************************* */
-// Canonical<T> sets up Local/Retract around the default-constructed value
-// The tests below check this for all types that play a role in SFM
-TEST(AdaptAutoDiff, Canonical) {
-
-  typedef Canonical<Point2> Chart1;
-  EXPECT(Chart1::Local(Point2(1, 0))==Vector2(1, 0));
-  EXPECT(Chart1::Retract(Vector2(1, 0))==Point2(1, 0));
-
-  Vector2 v2(1, 0);
-  typedef Canonical<Vector2> Chart2;
-  EXPECT(assert_equal(v2, Chart2::Local(Vector2(1, 0))));
-  EXPECT(Chart2::Retract(v2)==Vector2(1, 0));
-
-  typedef Canonical<double> Chart3;
-  Eigen::Matrix<double, 1, 1> v1;
-  v1 << 1;
-  EXPECT(Chart3::Local(1)==v1);
-  EXPECT_DOUBLES_EQUAL(Chart3::Retract(v1), 1, 1e-9);
-
-  typedef Canonical<Point3> Chart4;
-  Point3 point(1, 2, 3);
-  Vector3 v3(1, 2, 3);
-  EXPECT(assert_equal(v3, Chart4::Local(point)));
-  EXPECT(assert_equal(Chart4::Retract(v3), point));
-
-  typedef Canonical<Pose3> Chart5;
-  Pose3 pose(Rot3::identity(), point);
-  Vector v6(6);
-  v6 << 0, 0, 0, 1, 2, 3;
-  EXPECT(assert_equal(v6, Chart5::Local(pose)));
-  EXPECT(assert_equal(Chart5::Retract(v6), pose));
-
-  typedef Canonical<Cal3Bundler0> Chart6;
-  Cal3Bundler0 cal0;
-  Vector z3 = Vector3::Zero();
-  EXPECT(assert_equal(z3, Chart6::Local(cal0)));
-  EXPECT(assert_equal(Chart6::Retract(z3), cal0));
-
-  typedef Canonical<Camera> Chart7;
-  Camera camera(Pose3(), cal0);
-  Vector z9 = Vector9::Zero();
-  EXPECT(assert_equal(z9, Chart7::Local(camera)));
-  EXPECT(assert_equal(Chart7::Retract(z9), camera));
-}
-
-/* ************************************************************************* */
 // Some Ceres Snippets copied for testing
 // Copyright 2010, 2011, 2012 Google Inc. All rights reserved.
-template<typename T> inline T &RowMajorAccess(T *base, int rows, int cols,
-    int i, int j) {
+template <typename T>
+inline T& RowMajorAccess(T* base, int rows, int cols, int i, int j) {
   return base[cols * i + j];
 }
 
@@ -133,14 +86,14 @@ inline double RandDouble() {
 struct Projective {
   // Function that takes P and X as separate vectors:
   //   P, X -> x
-  template<typename A>
+  template <typename A>
   bool operator()(A const P[12], A const X[4], A x[2]) const {
     A PX[3];
     for (int i = 0; i < 3; ++i) {
-      PX[i] = RowMajorAccess(P, 3, 4, i, 0) * X[0]
-          + RowMajorAccess(P, 3, 4, i, 1) * X[1]
-          + RowMajorAccess(P, 3, 4, i, 2) * X[2]
-          + RowMajorAccess(P, 3, 4, i, 3) * X[3];
+      PX[i] = RowMajorAccess(P, 3, 4, i, 0) * X[0] +
+              RowMajorAccess(P, 3, 4, i, 1) * X[1] +
+              RowMajorAccess(P, 3, 4, i, 2) * X[2] +
+              RowMajorAccess(P, 3, 4, i, 3) * X[3];
     }
     if (PX[2] != 0.0) {
       x[0] = PX[0] / PX[2];
@@ -169,29 +122,31 @@ TEST(AdaptAutoDiff, AutoDiff) {
   Projective projective;
 
   // Make arguments
-  typedef Eigen::Matrix<double, 3, 4, Eigen::RowMajor> M;
-  M P;
+  typedef Eigen::Matrix<double, 3, 4, Eigen::RowMajor> RowMajorMatrix34;
+  RowMajorMatrix34 P;
   P << 1, 0, 0, 0, 0, 1, 0, 5, 0, 0, 1, 0;
   Vector4 X(10, 0, 5, 1);
 
   // Apply the mapping, to get image point b_x.
   Vector expected = Vector2(2, 1);
   Vector2 actual = projective(P, X);
-  EXPECT(assert_equal(expected,actual,1e-9));
+  EXPECT(assert_equal(expected, actual, 1e-9));
 
   // Get expected derivatives
-  Matrix E1 = numericalDerivative21<Vector2, M, Vector4>(Projective(), P, X);
-  Matrix E2 = numericalDerivative22<Vector2, M, Vector4>(Projective(), P, X);
+  Matrix E1 = numericalDerivative21<Vector2, RowMajorMatrix34, Vector4>(
+      Projective(), P, X);
+  Matrix E2 = numericalDerivative22<Vector2, RowMajorMatrix34, Vector4>(
+      Projective(), P, X);
 
   // Get derivatives with AutoDiff
   Vector2 actual2;
   MatrixRowMajor H1(2, 12), H2(2, 4);
-  double *parameters[] = { P.data(), X.data() };
-  double *jacobians[] = { H1.data(), H2.data() };
-  CHECK(
-      (AutoDiff<Projective, double, 12, 4>::Differentiate( projective, parameters, 2, actual2.data(), jacobians)));
-  EXPECT(assert_equal(E1,H1,1e-8));
-  EXPECT(assert_equal(E2,H2,1e-8));
+  double* parameters[] = {P.data(), X.data()};
+  double* jacobians[] = {H1.data(), H2.data()};
+  CHECK((AutoDiff<Projective, double, 12, 4>::Differentiate(
+      projective, parameters, 2, actual2.data(), jacobians)));
+  EXPECT(assert_equal(E1, H1, 1e-8));
+  EXPECT(assert_equal(E2, H2, 1e-8));
 }
 
 /* ************************************************************************* */
@@ -211,9 +166,11 @@ namespace example {
 Camera camera(Pose3(Rot3::rodriguez(0.1, 0.2, 0.3), Point3(0, 5, 0)),
               Cal3Bundler0(1, 0, 0));
 Point3 point(10, 0, -5);  // negative Z-axis convention of Snavely!
-Vector9 P = Canonical<Camera>::Local(camera);
-Vector3 X = Canonical<Point3>::Local(point);
-Point2 expectedMeasurement(1.2431567, 1.2525694);
+Vector9 P = Camera().localCoordinates(camera);
+Vector3 X = Point3::Logmap(point);
+Vector2 expectedMeasurement(1.2431567, 1.2525694);
+Matrix E1 = numericalDerivative21<Vector2, Vector9, Vector3>(adapted, P, X);
+Matrix E2 = numericalDerivative22<Vector2, Vector9, Vector3>(adapted, P, X);
 }
 
 /* ************************************************************************* */
@@ -234,11 +191,7 @@ TEST(AdaptAutoDiff, AutoDiff2) {
 
   // Apply the mapping, to get image point b_x.
   Vector2 actual = adapted(P, X);
-  EXPECT(assert_equal(expectedMeasurement.vector(), actual, 1e-6));
-
-  // Get expected derivatives
-  Matrix E1 = numericalDerivative21<Vector2, Vector9, Vector3>(adapted, P, X);
-  Matrix E2 = numericalDerivative22<Vector2, Vector9, Vector3>(adapted, P, X);
+  EXPECT(assert_equal(expectedMeasurement, actual, 1e-6));
 
   // Instantiate function
   SnavelyProjection snavely;
@@ -259,21 +212,17 @@ TEST(AdaptAutoDiff, AutoDiff2) {
 TEST(AdaptAutoDiff, AdaptAutoDiff) {
   using namespace example;
 
-  typedef AdaptAutoDiff<SnavelyProjection, Point2, Camera, Point3> Adaptor;
+  typedef AdaptAutoDiff<SnavelyProjection, 2, 9, 3> Adaptor;
   Adaptor snavely;
 
   // Apply the mapping, to get image point b_x.
-  Point2 actual = snavely(camera, point);
+  Vector2 actual = snavely(P, X);
   EXPECT(assert_equal(expectedMeasurement, actual, 1e-6));
-
-  //  // Get expected derivatives
-  Matrix E1 = numericalDerivative21<Point2, Camera, Point3>(Adaptor(), camera, point);
-  Matrix E2 = numericalDerivative22<Point2, Camera, Point3>(Adaptor(), camera, point);
 
   // Get derivatives with AutoDiff, not gives RowMajor results!
   Matrix29 H1;
   Matrix23 H2;
-  Point2 actual2 = snavely(camera, point, H1, H2);
+  Vector2 actual2 = snavely(P, X, H1, H2);
   EXPECT(assert_equal(expectedMeasurement, actual2, 1e-6));
   EXPECT(assert_equal(E1, H1, 1e-8));
   EXPECT(assert_equal(E2, H2, 1e-8));
@@ -282,15 +231,15 @@ TEST(AdaptAutoDiff, AdaptAutoDiff) {
 /* ************************************************************************* */
 // Test AutoDiff wrapper in an expression
 TEST(AdaptAutoDiff, SnavelyExpression) {
-  Expression<Camera> P(1);
-  Expression<Point3> X(2);
-  typedef AdaptAutoDiff<SnavelyProjection, Point2, Camera, Point3> Adaptor;
-  Expression<Point2> expression(Adaptor(), P, X);
+  Expression<Vector9> P(1);
+  Expression<Vector3> X(2);
+  typedef AdaptAutoDiff<SnavelyProjection, 2, 9, 3> Adaptor;
+  Expression<Vector2> expression(Adaptor(), P, X);
+  EXPECT_LONGS_EQUAL(
+      sizeof(internal::BinaryExpression<Vector2, Vector9, Vector3>::Record),
+      expression.traceSize());
 #ifdef GTSAM_USE_QUATERNIONS
-  EXPECT_LONGS_EQUAL(384,expression.traceSize()); // TODO(frank): should be zero
-#else
-  EXPECT_LONGS_EQUAL(sizeof(internal::BinaryExpression<Point2, Camera, Point3>::Record),
-                     expression.traceSize());  // TODO(frank): should be zero
+  EXPECT_LONGS_EQUAL(336, expression.traceSize());
 #endif
   set<Key> expected = list_of(1)(2);
   EXPECT(expected == expression.keys());
@@ -302,4 +251,3 @@ int main() {
   return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
-
