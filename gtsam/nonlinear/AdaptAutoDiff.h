@@ -65,8 +65,8 @@ class AdaptAutoDiff {
       // Convert from row-major to columnn-major
       // TODO: if this is a bottleneck (probably not!) fix Autodiff to be
       // Column-Major
-      *H1 = Eigen::Map<RowMajor1>(rowMajor1);
-      *H2 = Eigen::Map<RowMajor2>(rowMajor2);
+      if (H1) *H1 = Eigen::Map<RowMajor1>(rowMajor1);
+      if (H2) *H2 = Eigen::Map<RowMajor2>(rowMajor2);
 
     } else {
       // Apply the mapping, to get result
