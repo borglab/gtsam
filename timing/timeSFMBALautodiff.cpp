@@ -11,7 +11,7 @@
 
 /**
  * @file    timeSFMBALautodiff.cpp
- * @brief   time structure from motion with BAL file, Ceres autodiff version
+ * @brief   time SFM with BAL file, Ceres autodiff version
  * @author  Frank Dellaert
  * @date    July 5, 2015
  */
@@ -62,7 +62,8 @@ int main(int argc, char* argv[]) {
   BOOST_FOREACH (const SfM_Camera& camera, db.cameras) {
     // readBAL converts to GTSAM format, so we need to convert back !
     Pose3 openGLpose = gtsam2openGL(camera.pose());
-    Vector9 v9; v9 << Pose3::Logmap(openGLpose), camera.calibration().vector();
+    Vector9 v9;
+    v9 << Pose3::Logmap(openGLpose), camera.calibration().vector();
     initial.insert(C(i++), v9);
   }
   BOOST_FOREACH (const SfM_Track& track, db.tracks) {

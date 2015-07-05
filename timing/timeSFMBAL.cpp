@@ -11,7 +11,7 @@
 
 /**
  * @file    timeSFMBAL.cpp
- * @brief   time structure from motion with BAL file,  conventional GeneralSFMFactor
+ * @brief   time SFM with BAL file,  conventional GeneralSFMFactor
  * @author  Frank Dellaert
  * @date    June 6, 2015
  */
