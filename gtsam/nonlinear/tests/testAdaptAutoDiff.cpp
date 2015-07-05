@@ -163,7 +163,7 @@ Vector2 adapted(const Vector9& P, const Vector3& X) {
 
 /* ************************************************************************* */
 namespace example {
-Camera camera(Pose3(Rot3::rodriguez(0.1, 0.2, 0.3), Point3(0, 5, 0)),
+Camera camera(Pose3(Rot3().retract(Vector3(0.1, 0.2, 0.3)), Point3(0, 5, 0)),
               Cal3Bundler0(1, 0, 0));
 Point3 point(10, 0, -5);  // negative Z-axis convention of Snavely!
 Vector9 P = Camera().localCoordinates(camera);
