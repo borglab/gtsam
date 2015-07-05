@@ -118,11 +118,6 @@ Rot3 Rot3::RzRyRx(double x, double y, double z) {
 }
 
 /* ************************************************************************* */
-Rot3 Rot3::rodriguez(const Vector3& w, double theta) {
-  return SO3::Rodrigues(w,theta);
-}
-
-/* ************************************************************************* */
 Rot3 Rot3::operator*(const Rot3& R2) const {
   return Rot3(Matrix3(rot_*R2.rot_));
 }

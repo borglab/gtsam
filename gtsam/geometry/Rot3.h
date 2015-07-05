@@ -22,8 +22,9 @@
 
 #pragma once
 
-#include <gtsam/geometry/Quaternion.h>
 #include <gtsam/geometry/Unit3.h>
+#include <gtsam/geometry/Quaternion.h>
+#include <gtsam/geometry/SO3.h>
 #include <gtsam/base/concepts.h>
 #include <gtsam/config.h> // Get GTSAM_USE_QUATERNIONS macro
 
@@ -149,45 +150,58 @@ namespace gtsam {
     }
 
     /**
-     * Rodriguez' formula to compute an incremental rotation matrix
+     * Rodrigues' formula to compute an incremental rotation matrix
      * @param   w is the rotation axis, unit length
-     * @param   theta rotation angle
+     * @param   angle rotation angle
      * @return incremental rotation matrix
      */
-    static Rot3 rodriguez(const Vector3& w, double theta);
+    static Rot3 Rodrigues(const Vector3& axis, double angle) {
+#ifdef GTSAM_USE_QUATERNIONS
+      return Quaternion(Eigen::AngleAxis<double>(angle, axis));
+#else
+      return SO3::Rodrigues(axis,angle);
+#endif
+      }
 
     /**
-     * Rodriguez' formula to compute an incremental rotation matrix
+     * Rodrigues' formula to compute an incremental rotation matrix
      * @param   w is the rotation axis, unit length
-     * @param   theta rotation angle
+     * @param   angle rotation angle
      * @return incremental rotation matrix
      */
-    static Rot3 rodriguez(const Point3& w, double theta);
+    static Rot3 Rodrigues(const Point3& axis, double angle) {
+      return Rodrigues(axis.vector(),angle);
+    }
 
     /**
-     * Rodriguez' formula to compute an incremental rotation matrix
+     * Rodrigues' formula to compute an incremental rotation matrix
      * @param   w is the rotation axis
-     * @param   theta rotation angle
+     * @param   angle rotation angle
      * @return incremental rotation matrix
      */
-    static Rot3 rodriguez(const Unit3& w, double theta);
+    static Rot3 Rodrigues(const Unit3& axis, double angle) {
+      return Rodrigues(axis.unitVector(),angle);
+    }
 
     /**
-     * Rodriguez' formula to compute an incremental rotation matrix
-     * @param v a vector of incremental roll,pitch,yaw
+     * Rodrigues' formula to compute an incremental rotation matrix
+     * @param w a vector of incremental roll,pitch,yaw
      * @return incremental rotation matrix
      */
-    static Rot3 rodriguez(const Vector3& v);
+    static Rot3 Rodrigues(const Vector3& w) {
+      return Rot3::Expmap(w);
+    }
 
     /**
-     * Rodriguez' formula to compute an incremental rotation matrix
+     * Rodrigues' formula to compute an incremental rotation matrix
      * @param wx Incremental roll (about X)
      * @param wy Incremental pitch (about Y)
      * @param wz Incremental yaw (about Z)
      * @return incremental rotation matrix
      */
-    static Rot3 rodriguez(double wx, double wy, double wz)
-      { return rodriguez(Vector3(wx, wy, wz));}
+    static Rot3 Rodrigues(double wx, double wy, double wz) {
+      return Rodrigues(Vector3(wx, wy, wz));
+    }
 
     /// @}
     /// @name Testable
@@ -272,11 +286,15 @@ namespace gtsam {
 
     /**
      * Exponential map at identity - create a rotation from canonical coordinates
-     * \f$ [R_x,R_y,R_z] \f$ using Rodriguez' formula
+     * \f$ [R_x,R_y,R_z] \f$ using Rodrigues' formula
      */
     static Rot3 Expmap(const Vector& v, OptionalJacobian<3,3> H = boost::none) {
       if(H) *H = Rot3::ExpmapDerivative(v);
-      if (zero(v)) return Rot3(); else return rodriguez(v);
+#ifdef GTSAM_USE_QUATERNIONS
+      return traits<Quaternion>::Expmap(v);
+#else
+      return traits<SO3>::Expmap(v);
+#endif
     }
 
     /**
@@ -421,6 +439,14 @@ namespace gtsam {
     /// Output stream operator
     GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os, const Rot3& p);
 
+    /// @}
+    /// @name Deprecated
+    /// @{
+    static Rot3 rodriguez(const Vector3& axis, double angle) { return Rodrigues(axis, angle); }
+    static Rot3 rodriguez(const Point3&  axis, double angle) { return Rodrigues(axis, angle); }
+    static Rot3 rodriguez(const Unit3&   axis, double angle) { return Rodrigues(axis, angle); }
+    static Rot3 rodriguez(const Vector3& w)                  { return Rodrigues(w); }
+    static Rot3 rodriguez(double wx, double wy, double wz)   { return Rodrigues(wx, wy, wz); }
     /// @}
 
   private:
