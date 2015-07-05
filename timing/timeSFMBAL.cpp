@@ -34,7 +34,7 @@
 using namespace std;
 using namespace gtsam;
 
-#define USE_GTSAM_FACTOR
+//#define USE_GTSAM_FACTOR
 #ifdef USE_GTSAM_FACTOR
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/geometry/Cal3Bundler.h>
@@ -45,6 +45,7 @@ typedef GeneralSFMFactor<Camera, Point3> SfmFactor;
 #include <gtsam/3rdparty/ceres/example.h>
 #include <gtsam/nonlinear/ExpressionFactor.h>
 #include <gtsam/nonlinear/AdaptAutoDiff.h>
+// See http://www.cs.cornell.edu/~snavely/bundler/bundler-v0.3-manual.html for conventions
 // Special version of Cal3Bundler so that default constructor = 0,0,0
 struct CeresCalibration: public Cal3Bundler {
   CeresCalibration(double f = 0, double k1 = 0, double k2 = 0, double u0 = 0,
@@ -76,14 +77,15 @@ int main(int argc, char* argv[]) {
   using symbol_shorthand::P;
 
   // Load BAL file (default is tiny)
-  string defaultFilename = findExampleDataFile("dubrovnik-3-7-pre");
+  //string defaultFilename = findExampleDataFile("dubrovnik-3-7-pre");
+  string defaultFilename = "/home/frank/problem-16-22106-pre.txt";
   SfM_data db;
   bool success = readBAL(argc > 1 ? argv[1] : defaultFilename, db);
   if (!success)
     throw runtime_error("Could not access file!");
 
 #ifndef USE_GTSAM_FACTOR
-  AdaptAutoDiff<SnavelyProjection, Point2, Camera, Point3> snavely;
+  AdaptAutoDiff<SnavelyProjection, 2, 9, 3> snavely;
 #endif
 
   // Build graph
@@ -92,14 +94,15 @@ int main(int argc, char* argv[]) {
   for (size_t j = 0; j < db.number_tracks(); j++) {
     BOOST_FOREACH (const SfM_Measurement& m, db.tracks[j].measurements) {
       size_t i = m.first;
-      Point2 measurement = m.second;
+      Point2 z = m.second;
 #ifdef USE_GTSAM_FACTOR
-      graph.push_back(SfmFactor(measurement, unit2, i, P(j)));
+      graph.push_back(SfmFactor(z, unit2, i, P(j)));
 #else
-      Expression<Camera> camera_(i);
-      Expression<Point3> point_(P(j));
-      graph.addExpressionFactor(unit2, measurement,
-          Expression<Point2>(snavely, camera_, point_));
+      Expression<Vector9> camera_(i);
+      Expression<Vector3> point_(P(j));
+      // Snavely expects measurements in OpenGL format, with y increasing upwards
+      graph.addExpressionFactor(unit2, Vector2(z.x(), -z.y()),
+                                Expression<Vector2>(snavely, camera_, point_));
 #endif
     }
   }
@@ -110,21 +113,33 @@ int main(int argc, char* argv[]) {
 #ifdef USE_GTSAM_FACTOR
     initial.insert((i++), camera);
 #else
-    Camera ceresCamera(camera.pose(), camera.calibration());
-    initial.insert((i++), ceresCamera);
+    // readBAL converts to GTSAM format, so we need to convert back !
+    Camera ceresCamera(gtsam2openGL(camera.pose()), camera.calibration());
+    Vector9 v9 = Camera().localCoordinates(ceresCamera);
+    initial.insert((i++), v9);
 #endif
   }
-  BOOST_FOREACH(const SfM_Track& track, db.tracks)
+  BOOST_FOREACH(const SfM_Track& track, db.tracks) {
+#ifdef USE_GTSAM_FACTOR
     initial.insert(P(j++), track.p);
+#else
+    Vector3 v3 = track.p.vector();
+    initial.insert(P(j++), v3);
+#endif
+  }
 
-  // Check projection
+  // Check projection of first point in first camera
   Point2 expected = db.tracks.front().measurements.front().second;
+#ifdef USE_GTSAM_FACTOR
   Camera camera = initial.at<Camera>(0);
   Point3 point = initial.at<Point3>(P(0));
-#ifdef USE_GTSAM_FACTOR
   Point2 actual = camera.project(point);
 #else
-  Point2 actual = snavely(camera, point);
+  Vector9 camera = initial.at<Vector9>(0);
+  Vector3 point = initial.at<Vector3>(P(0));
+  Point2 z = snavely(camera, point);
+  // Again: fix y to increase upwards
+  Point2 actual(z.x(), -z.y());
 #endif
   assert_equal(expected,actual,10);
 
@@ -146,8 +161,7 @@ int main(int argc, char* argv[]) {
   LevenbergMarquardtParams params;
   LevenbergMarquardtParams::SetCeresDefaults(&params);
   params.setOrdering(ordering);
-  params.setVerbosity("ERROR");
-  params.setVerbosityLM("TRYLAMBDA");
+  params.setVerbosityLM("SUMMARY");
   LevenbergMarquardtOptimizer lm(graph, initial, params);
   Values result = lm.optimize();
 

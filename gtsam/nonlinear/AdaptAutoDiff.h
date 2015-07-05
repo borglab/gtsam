@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -27,97 +27,46 @@
 
 namespace gtsam {
 
-namespace detail {
-
-// By default, we assume an Identity element
-template<typename T, typename structure_category>
-struct Origin { T operator()() { return traits<T>::Identity();} };
-
-// but simple manifolds don't have one, so we just use the default constructor
-template<typename T>
-struct Origin<T, manifold_tag> { T operator()() { return T();} };
-
-} // \ detail
-
-/**
- * Canonical is a template that creates canonical coordinates for a given type.
- * A simple manifold type (i.e., not a Lie Group) has no concept of identity,
- * hence in that case we use the value given by the default constructor T() as
- * the origin of a "canonical coordinate" parameterization.
- */
-template<typename T>
-struct Canonical {
-
-  GTSAM_CONCEPT_MANIFOLD_TYPE(T)
-
-  typedef traits<T> Traits;
-  enum { dimension = Traits::dimension };
-  typedef typename Traits::TangentVector TangentVector;
-  typedef typename Traits::structure_category Category;
-  typedef detail::Origin<T, Category> Origin;
-
-  static TangentVector Local(const T& other) {
-    return Traits::Local(Origin()(), other);
-  }
-
-  static T Retract(const TangentVector& v) {
-    return Traits::Retract(Origin()(), v);
-  }
-};
-
 /**
  * The AdaptAutoDiff class uses ceres-style autodiff to adapt a ceres-style
- * Function evaluation, i.e., a function F that defines an operator
- *   template<typename T> bool operator()(const T* const, const T* const, T* predicted) const;
+ * Function evaluation, i.e., a function FUNCTOR that defines an operator
+ *   template<typename T> bool operator()(const T* const, const T* const, T*
+ * predicted) const;
  * For now only binary operators are supported.
  */
-template<typename F, typename T, typename A1, typename A2>
+template <typename FUNCTOR, int M, int N1, int N2>
 class AdaptAutoDiff {
+  typedef Eigen::Matrix<double, M, N1, Eigen::RowMajor> RowMajor1;
+  typedef Eigen::Matrix<double, M, N2, Eigen::RowMajor> RowMajor2;
 
-  static const int N = traits<T>::dimension;
-  static const int M1 = traits<A1>::dimension;
-  static const int M2 = traits<A2>::dimension;
+  typedef Eigen::Matrix<double, M, 1> VectorT;
+  typedef Eigen::Matrix<double, N1, 1> Vector1;
+  typedef Eigen::Matrix<double, N2, 1> Vector2;
 
-  typedef Eigen::Matrix<double, N, M1, Eigen::RowMajor> RowMajor1;
-  typedef Eigen::Matrix<double, N, M2, Eigen::RowMajor> RowMajor2;
+  FUNCTOR f;
 
-  typedef Canonical<T> CanonicalT;
-  typedef Canonical<A1> Canonical1;
-  typedef Canonical<A2> Canonical2;
-
-  typedef typename CanonicalT::TangentVector VectorT;
-  typedef typename Canonical1::TangentVector Vector1;
-  typedef typename Canonical2::TangentVector Vector2;
-
-  F f;
-
-public:
-
-  T operator()(const A1& a1, const A2& a2, OptionalJacobian<N, M1> H1 = boost::none,
-      OptionalJacobian<N, M2> H2 = boost::none) {
-
+ public:
+  VectorT operator()(const Vector1& v1, const Vector2& v2,
+                     OptionalJacobian<M, N1> H1 = boost::none,
+                     OptionalJacobian<M, N2> H2 = boost::none) {
     using ceres::internal::AutoDiff;
-
-    // Make arguments
-    Vector1 v1 = Canonical1::Local(a1);
-    Vector2 v2 = Canonical2::Local(a2);
 
     bool success;
     VectorT result;
 
     if (H1 || H2) {
-
       // Get derivatives with AutoDiff
-      double *parameters[] = { v1.data(), v2.data() };
-      double rowMajor1[N * M1], rowMajor2[N * M2]; // on the stack
-      double *jacobians[] = { rowMajor1, rowMajor2 };
-      success = AutoDiff<F, double, 9, 3>::Differentiate(f, parameters, 2,
-          result.data(), jacobians);
+      const double* parameters[] = {v1.data(), v2.data()};
+      double rowMajor1[M * N1], rowMajor2[M * N2];  // on the stack
+      double* jacobians[] = {rowMajor1, rowMajor2};
+      success = AutoDiff<FUNCTOR, double, N1, N2>::Differentiate(
+          f, parameters, M, result.data(), jacobians);
 
       // Convert from row-major to columnn-major
-      // TODO: if this is a bottleneck (probably not!) fix Autodiff to be Column-Major
-      *H1 = Eigen::Map<RowMajor1>(rowMajor1);
-      *H2 = Eigen::Map<RowMajor2>(rowMajor2);
+      // TODO: if this is a bottleneck (probably not!) fix Autodiff to be
+      // Column-Major
+      if (H1) *H1 = Eigen::Map<RowMajor1>(rowMajor1);
+      if (H2) *H2 = Eigen::Map<RowMajor2>(rowMajor2);
 
     } else {
       // Apply the mapping, to get result
@@ -126,9 +75,8 @@ public:
     if (!success)
       throw std::runtime_error(
           "AdaptAutoDiff: function call resulted in failure");
-    return CanonicalT::Retract(result);
+    return result;
   }
-
 };
 
-}
+}  // namespace gtsam
