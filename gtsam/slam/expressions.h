@@ -36,6 +36,10 @@ inline Point3_ transform_to(const Pose3_& x, const Point3_& p) {
   return Point3_(x, &Pose3::transform_to, p);
 }
 
+inline Point3_ transform_from(const Pose3_& x, const Point3_& p) {
+  return Point3_(x, &Pose3::transform_from, p);
+}
+
 // Projection
 
 typedef Expression<Cal3_S2> Cal3_S2_;
