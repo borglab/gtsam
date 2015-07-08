@@ -36,10 +36,10 @@ using symbol_shorthand::X;
 GTSAM_CONCEPT_TESTABLE_INST(Similarity3)
 
 static Point3 P(0.2,0.7,-2);
-static Rot3 R = Rot3::rodriguez(0.3,0,0);
+static Rot3 R = Rot3::Rodrigues(0.3,0,0);
 static Similarity3 T(R,Point3(3.5,-8.2,4.2),1);
-static Similarity3 T2(Rot3::rodriguez(0.3,0.2,0.1),Point3(3.5,-8.2,4.2),1);
-static Similarity3 T3(Rot3::rodriguez(-90, 0, 0), Point3(1, 2, 3), 1);
+static Similarity3 T2(Rot3::Rodrigues(0.3,0.2,0.1),Point3(3.5,-8.2,4.2),1);
+static Similarity3 T3(Rot3::Rodrigues(-90, 0, 0), Point3(1, 2, 3), 1);
 
 //******************************************************************************
 TEST(Similarity3, Constructors) {
@@ -125,7 +125,7 @@ TEST(Similarity3, Manifold) {
   EXPECT(assert_equal(sim.retract(vlocal), other, 1e-2));
 
   Similarity3 other2 = Similarity3(Rot3::ypr(0.3, 0, 0),Point3(4,5,6),1);
-  Rot3 R = Rot3::rodriguez(0.3,0,0);
+  Rot3 R = Rot3::Rodrigues(0.3,0,0);
 
   Vector vlocal2 = sim.localCoordinates(other2);
 

@@ -21,7 +21,7 @@ using symbol_shorthand::B;
 
 TEST(BiasedGPSFactor, errorNoiseless) {
 
-  Rot3 R = Rot3::rodriguez(0.1, 0.2, 0.3);
+  Rot3 R = Rot3::Rodrigues(0.1, 0.2, 0.3);
   Point3 t(1.0, 0.5, 0.2);
   Pose3 pose(R,t);
   Point3 bias(0.0,0.0,0.0);
@@ -36,7 +36,7 @@ TEST(BiasedGPSFactor, errorNoiseless) {
 
 TEST(BiasedGPSFactor, errorNoisy) {
 
-  Rot3 R = Rot3::rodriguez(0.1, 0.2, 0.3);
+  Rot3 R = Rot3::Rodrigues(0.1, 0.2, 0.3);
   Point3 t(1.0, 0.5, 0.2);
   Pose3 pose(R,t);
   Point3 bias(0.0,0.0,0.0);
@@ -51,7 +51,7 @@ TEST(BiasedGPSFactor, errorNoisy) {
 
 TEST(BiasedGPSFactor, jacobian) {
 
-  Rot3 R = Rot3::rodriguez(0.1, 0.2, 0.3);
+  Rot3 R = Rot3::Rodrigues(0.1, 0.2, 0.3);
   Point3 t(1.0, 0.5, 0.2);
   Pose3 pose(R,t);
   Point3 bias(0.0,0.0,0.0);

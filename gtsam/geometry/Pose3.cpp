@@ -32,7 +32,7 @@ GTSAM_CONCEPT_POSE_INST(Pose3);
 
 /* ************************************************************************* */
 Pose3::Pose3(const Pose2& pose2) :
-    R_(Rot3::rodriguez(0, 0, pose2.theta())), t_(
+    R_(Rot3::Rodrigues(0, 0, pose2.theta())), t_(
         Point3(pose2.x(), pose2.y(), 0)) {
 }
 
@@ -112,24 +112,20 @@ bool Pose3::equals(const Pose3& pose, double tol) const {
 /* ************************************************************************* */
 /** Modified from Murray94book version (which assumes w and v normalized?) */
 Pose3 Pose3::Expmap(const Vector6& xi, OptionalJacobian<6, 6> H) {
-  if (H) {
-    *H = ExpmapDerivative(xi);
-  }
+  if (H) *H = ExpmapDerivative(xi);
 
   // get angular velocity omega and translational velocity v from twist xi
-  Point3 w(xi(0), xi(1), xi(2)), v(xi(3), xi(4), xi(5));
+  Point3 omega(xi(0), xi(1), xi(2)), v(xi(3), xi(4), xi(5));
 
-  double theta = w.norm();
-  if (theta < 1e-10) {
-    static const Rot3 I;
-    return Pose3(I, v);
-  } else {
-    Point3 n(w / theta); // axis unit vector
-    Rot3 R = Rot3::rodriguez(n.vector(), theta);
-    double vn = n.dot(v); // translation parallel to n
-    Point3 n_cross_v = n.cross(v); // points towards axis
-    Point3 t = (n_cross_v - R * n_cross_v) / theta + vn * n;
+  Rot3 R = Rot3::Expmap(omega.vector());
+  double theta2 = omega.dot(omega);
+  if (theta2 > std::numeric_limits<double>::epsilon()) {
+    double omega_v = omega.dot(v);          // translation parallel to axis
+    Point3 omega_cross_v = omega.cross(v);  // points towards axis
+    Point3 t = (omega_cross_v - R * omega_cross_v + omega_v * omega) / theta2;
     return Pose3(R, t);
+  } else {
+    return Pose3(R, v);
   }
 }
 

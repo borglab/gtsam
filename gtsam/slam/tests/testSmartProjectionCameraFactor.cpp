@@ -267,9 +267,9 @@ TEST( SmartProjectionCameraFactor, perturbPoseAndOptimize ) {
   LevenbergMarquardtOptimizer optimizer(graph, initial, lmParams);
   Values result = optimizer.optimize();
 
-  EXPECT(assert_equal(landmark1, *smartFactor1->point(), 1e-7));
-  EXPECT(assert_equal(landmark2, *smartFactor2->point(), 1e-7));
-  EXPECT(assert_equal(landmark3, *smartFactor3->point(), 1e-7));
+  EXPECT(assert_equal(landmark1, *smartFactor1->point(), 1e-5));
+  EXPECT(assert_equal(landmark2, *smartFactor2->point(), 1e-5));
+  EXPECT(assert_equal(landmark3, *smartFactor3->point(), 1e-5));
 
   //  GaussianFactorGraph::shared_ptr GFG = graph.linearize(initial);
   //  VectorValues delta = GFG->optimize();

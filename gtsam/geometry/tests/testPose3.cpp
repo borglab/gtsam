@@ -32,10 +32,10 @@ GTSAM_CONCEPT_TESTABLE_INST(Pose3)
 GTSAM_CONCEPT_LIE_INST(Pose3)
 
 static Point3 P(0.2,0.7,-2);
-static Rot3 R = Rot3::rodriguez(0.3,0,0);
+static Rot3 R = Rot3::Rodrigues(0.3,0,0);
 static Pose3 T(R,Point3(3.5,-8.2,4.2));
-static Pose3 T2(Rot3::rodriguez(0.3,0.2,0.1),Point3(3.5,-8.2,4.2));
-static Pose3 T3(Rot3::rodriguez(-90, 0, 0), Point3(1, 2, 3));
+static Pose3 T2(Rot3::Rodrigues(0.3,0.2,0.1),Point3(3.5,-8.2,4.2));
+static Pose3 T3(Rot3::Rodrigues(-90, 0, 0), Point3(1, 2, 3));
 const double tol=1e-5;
 
 /* ************************************************************************* */
@@ -50,7 +50,7 @@ TEST( Pose3, equals)
 /* ************************************************************************* */
 TEST( Pose3, constructors)
 {
-  Pose3 expected(Rot3::rodriguez(0,0,3),Point3(1,2,0));
+  Pose3 expected(Rot3::Rodrigues(0,0,3),Point3(1,2,0));
   Pose2 pose2(1,2,3);
   EXPECT(assert_equal(expected,Pose3(pose2)));
 }
@@ -103,7 +103,7 @@ TEST(Pose3, expmap_b)
 {
   Pose3 p1(Rot3(), Point3(100, 0, 0));
   Pose3 p2 = p1.retract((Vector(6) << 0.0, 0.0, 0.1, 0.0, 0.0, 0.0).finished());
-  Pose3 expected(Rot3::rodriguez(0.0, 0.0, 0.1), Point3(100.0, 0.0, 0.0));
+  Pose3 expected(Rot3::Rodrigues(0.0, 0.0, 0.1), Point3(100.0, 0.0, 0.0));
   EXPECT(assert_equal(expected, p2,1e-2));
 }
 
@@ -266,7 +266,7 @@ TEST( Pose3, inverse)
 /* ************************************************************************* */
 TEST( Pose3, inverseDerivatives2)
 {
-  Rot3 R = Rot3::rodriguez(0.3,0.4,-0.5);
+  Rot3 R = Rot3::Rodrigues(0.3,0.4,-0.5);
   Point3 t(3.5,-8.2,4.2);
   Pose3 T(R,t);
 
@@ -388,7 +388,7 @@ TEST( Pose3, transform_to_translate)
 /* ************************************************************************* */
 TEST( Pose3, transform_to_rotate)
 {
-    Pose3 transform(Rot3::rodriguez(0,0,-1.570796), Point3());
+    Pose3 transform(Rot3::Rodrigues(0,0,-1.570796), Point3());
     Point3 actual = transform.transform_to(Point3(2,1,10));
     Point3 expected(-1,2,10);
     EXPECT(assert_equal(expected, actual, 0.001));
@@ -397,7 +397,7 @@ TEST( Pose3, transform_to_rotate)
 /* ************************************************************************* */
 TEST( Pose3, transform_to)
 {
-    Pose3 transform(Rot3::rodriguez(0,0,-1.570796), Point3(2,4, 0));
+    Pose3 transform(Rot3::Rodrigues(0,0,-1.570796), Point3(2,4, 0));
     Point3 actual = transform.transform_to(Point3(3,2,10));
     Point3 expected(2,1,10);
     EXPECT(assert_equal(expected, actual, 0.001));
@@ -439,7 +439,7 @@ TEST( Pose3, transformPose_to_itself)
 TEST( Pose3, transformPose_to_translation)
 {
     // transform translation only
-    Rot3 r = Rot3::rodriguez(-1.570796,0,0);
+    Rot3 r = Rot3::Rodrigues(-1.570796,0,0);
     Pose3 pose2(r, Point3(21.,32.,13.));
     Pose3 actual = pose2.transform_to(Pose3(Rot3(), Point3(1,2,3)));
     Pose3 expected(r, Point3(20.,30.,10.));
@@ -450,7 +450,7 @@ TEST( Pose3, transformPose_to_translation)
 TEST( Pose3, transformPose_to_simple_rotate)
 {
     // transform translation only
-    Rot3 r = Rot3::rodriguez(0,0,-1.570796);
+    Rot3 r = Rot3::Rodrigues(0,0,-1.570796);
     Pose3 pose2(r, Point3(21.,32.,13.));
     Pose3 transform(r, Point3(1,2,3));
     Pose3 actual = pose2.transform_to(transform);
@@ -462,12 +462,12 @@ TEST( Pose3, transformPose_to_simple_rotate)
 TEST( Pose3, transformPose_to)
 {
     // transform to
-    Rot3 r = Rot3::rodriguez(0,0,-1.570796); //-90 degree yaw
-    Rot3 r2 = Rot3::rodriguez(0,0,0.698131701); //40 degree yaw
+    Rot3 r = Rot3::Rodrigues(0,0,-1.570796); //-90 degree yaw
+    Rot3 r2 = Rot3::Rodrigues(0,0,0.698131701); //40 degree yaw
     Pose3 pose2(r2, Point3(21.,32.,13.));
     Pose3 transform(r, Point3(1,2,3));
     Pose3 actual = pose2.transform_to(transform);
-    Pose3 expected(Rot3::rodriguez(0,0,2.26892803), Point3(-30.,20.,10.));
+    Pose3 expected(Rot3::Rodrigues(0,0,2.26892803), Point3(-30.,20.,10.));
     EXPECT(assert_equal(expected, actual, 0.001));
 }
 

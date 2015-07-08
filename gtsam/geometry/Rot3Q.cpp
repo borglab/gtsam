@@ -84,10 +84,6 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Rot3 Rot3::rodriguez(const Vector3& w, double theta) {
-    return Quaternion(Eigen::AngleAxis<double>(theta, w));
-  }
-  /* ************************************************************************* */
   Rot3 Rot3::operator*(const Rot3& R2) const {
     return Rot3(quaternion_ * R2.quaternion_);
   }
