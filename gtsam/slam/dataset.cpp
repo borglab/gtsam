@@ -720,10 +720,10 @@ bool readBAL(const string& filename, SfM_data &data) {
 
   // Get the information for the camera poses
   for (size_t i = 0; i < nrPoses; i++) {
-    // Get the rodriguez vector
+    // Get the Rodrigues vector
     float wx, wy, wz;
     is >> wx >> wy >> wz;
-    Rot3 R = Rot3::rodriguez(wx, wy, wz); // BAL-OpenGL rotation matrix
+    Rot3 R = Rot3::Rodrigues(wx, wy, wz); // BAL-OpenGL rotation matrix
 
     // Get the translation vector
     float tx, ty, tz;

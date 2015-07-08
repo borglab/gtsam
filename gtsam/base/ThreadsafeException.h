@@ -22,13 +22,13 @@
 #include <gtsam/config.h> // for GTSAM_USE_TBB
 
 #include <boost/optional/optional.hpp>
-#include <tbb/scalable_allocator.h>
 #include <string>
 #include <typeinfo>
 
 #ifdef GTSAM_USE_TBB
 #include <tbb/tbb_allocator.h>
 #include <tbb/tbb_exception.h>
+#include <tbb/scalable_allocator.h>
 #include <iostream>
 #endif
 

@@ -179,7 +179,7 @@ PoseRTV transformed_from_proxy(const PoseRTV& a, const Pose3& trans) {
   return a.transformed_from(trans);
 }
 TEST( testPoseRTV, transformed_from_1 ) {
-  Rot3 R = Rot3::rodriguez(0.1, 0.2, 0.3);
+  Rot3 R = Rot3::Rodrigues(0.1, 0.2, 0.3);
   Point3 T(1.0, 2.0, 3.0);
   Velocity3 V(2.0, 3.0, 4.0);
   PoseRTV start(R, T, V);
