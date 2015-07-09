@@ -21,6 +21,7 @@
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/slam/ProjectionFactor.h>
 #include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/expressionTesting.h>
 #include <gtsam/nonlinear/ExpressionFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/expressionTesting.h>
@@ -502,6 +503,60 @@ TEST(ExpressionFactor, tree_finite_differences) {
 TEST(ExpressionFactor, push_back) {
   NonlinearFactorGraph graph;
   graph.addExpressionFactor(model, Point2(0, 0), leaf::p);
+}
+
+/* ************************************************************************* */
+// Test with multiple compositions on duplicate keys
+static double doubleSum(const double& v1, const double& v2,
+    OptionalJacobian<1, 1> H1, OptionalJacobian<1, 1> H2) {
+  if (H1) {
+    H1->setIdentity();
+  }
+  if (H2) {
+    H2->setIdentity();
+  }
+  return v1 + v2;
+}
+
+TEST(Expression, testMultipleCompositions) {
+  const double tolerance = 1e-5;
+  const double fd_step = 1e-9;
+
+  double v1 = 0;
+  double v2 = 1;
+
+  Values values;
+  values.insert(1, v1);
+  values.insert(2, v2);
+
+  Expression<double> v1_(Key(1));
+  Expression<double> v2_(Key(2));
+
+  // binary(doubleSum)
+  //  - leaf 1
+  //  - leaf 2
+  Expression<double> sum_(doubleSum, v1_, v2_);
+  EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum_, values, fd_step, tolerance);
+
+  // binary(doubleSum)
+  //  - sum_
+  //    - leaf 1
+  //    - leaf 2
+  //  - leaf 1
+  Expression<double> sum2_(doubleSum, sum_, v1_);
+  EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum2_, values, fd_step, tolerance);
+
+  // binary(doubleSum)
+  //   sum2_
+  //    - sum_
+  //      - leaf 1
+  //      - leaf 2
+  //    - leaf 1
+  //  - sum_
+  //    - leaf 1
+  //    - leaf 2
+  Expression<double> sum3_(doubleSum, sum2_, sum_);
+  EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum3_, values, fd_step, tolerance);
 }
 
 /* ************************************************************************* */
