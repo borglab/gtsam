@@ -211,8 +211,16 @@ struct Jacobian {
   typedef Eigen::Matrix<double, traits<T>::dimension, traits<A>::dimension> type;
 };
 
-// Eigen format for printing Jacobians
-static const Eigen::IOFormat kMatlabFormat(0, 1, " ", "; ", "", "", "[", "]");
+// Helper function for printing Jacobians with compact Eigen format, and trace
+template <class T, class A>
+static void PrintJacobianAndTrace(const std::string& indent,
+                                  const typename Jacobian<T, A>::type& dTdA,
+                                  const ExecutionTrace<A> trace) {
+  static const Eigen::IOFormat kMatlabFormat(0, 1, " ", "; ", "", "", "[", "]");
+  std::cout << indent << "d(" << typeid(T).name() << ")/d(" << typeid(A).name()
+            << ") = " << dTdA.format(kMatlabFormat) << std::endl;
+  trace.print(indent);
+}
 
 //-----------------------------------------------------------------------------
 /// Unary Function Expression
@@ -268,8 +276,7 @@ public:
     /// Print to std::cout
     void print(const std::string& indent) const {
       std::cout << indent << "UnaryExpression::Record {" << std::endl;
-      std::cout << indent << dTdA1.format(kMatlabFormat) << std::endl;
-      trace1.print(indent);
+      PrintJacobianAndTrace<T,A1>(indent, dTdA1, trace1);
       std::cout << indent << "}" << std::endl;
     }
 
@@ -388,10 +395,8 @@ public:
     /// Print to std::cout
     void print(const std::string& indent) const {
       std::cout << indent << "BinaryExpression::Record {" << std::endl;
-      std::cout << indent << dTdA1.format(kMatlabFormat) << std::endl;
-      trace1.print(indent);
-      std::cout << indent << dTdA2.format(kMatlabFormat) << std::endl;
-      trace2.print(indent);
+      PrintJacobianAndTrace<T,A1>(indent, dTdA1, trace1);
+      PrintJacobianAndTrace<T,A2>(indent, dTdA2, trace2);
       std::cout << indent << "}" << std::endl;
     }
 
@@ -502,12 +507,9 @@ public:
     /// Print to std::cout
     void print(const std::string& indent) const {
       std::cout << indent << "TernaryExpression::Record {" << std::endl;
-      std::cout << indent << dTdA1.format(kMatlabFormat) << std::endl;
-      trace1.print(indent);
-      std::cout << indent << dTdA2.format(kMatlabFormat) << std::endl;
-      trace2.print(indent);
-      std::cout << indent << dTdA3.format(kMatlabFormat) << std::endl;
-      trace3.print(indent);
+      PrintJacobianAndTrace<T,A1>(indent, dTdA1, trace1);
+      PrintJacobianAndTrace<T,A2>(indent, dTdA2, trace2);
+      PrintJacobianAndTrace<T,A3>(indent, dTdA3, trace3);
       std::cout << indent << "}" << std::endl;
     }
 
