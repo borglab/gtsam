@@ -60,8 +60,9 @@ struct LieMatrix : public Matrix {
   /// @{
 
   /** print @param s optional string naming the object */
-  GTSAM_EXPORT void print(const std::string& name="") const;
-
+  GTSAM_EXPORT void print(const std::string& name = "") const {
+    gtsam::print(matrix(), name);
+  }
   /** equality up to tolerance */
   inline bool equals(const LieMatrix& expected, double tol=1e-5) const {
     return gtsam::equal_with_abs_tol(matrix(), expected.matrix(), tol);

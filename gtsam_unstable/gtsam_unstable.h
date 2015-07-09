@@ -452,7 +452,7 @@ virtual class DGroundConstraint : gtsam::NonlinearFactor {
   DGroundConstraint(size_t key, Vector constraint, const gtsam::noiseModel::Base* model);
 };
 
-#include <gtsam/base/LieScalar_Deprecated.h>
+#include <gtsam/base/deprecated/LieScalar.h>
 
 #include <gtsam_unstable/dynamics/VelocityConstraint3.h>
 virtual class VelocityConstraint3 : gtsam::NonlinearFactor {

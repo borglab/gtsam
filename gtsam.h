@@ -156,7 +156,7 @@ virtual class Value {
   size_t dim() const;
 };
 
-#include <gtsam/base/LieScalar_Deprecated.h>
+#include <gtsam/base/deprecated/LieScalar.h>
 class LieScalar {
   // Standard constructors
   LieScalar();
@@ -185,7 +185,7 @@ class LieScalar {
   static Vector Logmap(const gtsam::LieScalar& p);
 };
 
-#include <gtsam/base/LieVector_Deprecated.h>
+#include <gtsam/base/deprecated/LieVector.h>
 class LieVector {
   // Standard constructors
   LieVector();
@@ -217,7 +217,7 @@ class LieVector {
   void serialize() const;
 };
 
-#include <gtsam/base/LieMatrix_Deprecated.h>
+#include <gtsam/base/deprecated/LieMatrix.h>
 class LieMatrix {
   // Standard constructors
   LieMatrix();

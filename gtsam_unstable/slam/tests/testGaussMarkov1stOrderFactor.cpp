@@ -21,7 +21,7 @@
 #include <gtsam/inference/Key.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/deprecated/LieVector_Deprecated.h>
+#include <gtsam/base/deprecated/LieVector.h>
 
 using namespace std;
 using namespace gtsam;

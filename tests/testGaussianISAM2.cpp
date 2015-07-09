@@ -25,7 +25,7 @@
 #include <gtsam/base/treeTraversal-inst.h>
 #include <boost/foreach.hpp>
 #include <boost/assign/list_of.hpp>
-#include <gtsam/base/deprecated/LieScalar_Deprecated.h>
+#include <gtsam/base/deprecated/LieScalar.h>
 using namespace boost::assign;
 #include <boost/range/adaptor/map.hpp>
 namespace br { using namespace boost::adaptors; using namespace boost::range; }

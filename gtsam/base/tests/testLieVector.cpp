@@ -15,7 +15,7 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/deprecated/LieVector_Deprecated.h>
+#include <gtsam/base/deprecated/LieVector.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Manifold.h>
 
