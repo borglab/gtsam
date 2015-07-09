@@ -2282,7 +2282,7 @@ typedef gtsam::RangeFactor<gtsam::Pose3, gtsam::Pose3> RangeFactorPose3;
 //typedef gtsam::RangeFactor<gtsam::SimpleCamera, gtsam::SimpleCamera> RangeFactorSimpleCamera;
 
 
-#include <gtsam/slam/BearingFactor.h>
+#include <gtsam/sam/BearingFactor.h>
 template<POSE, POINT, ROTATION>
 virtual class BearingFactor : gtsam::NoiseModelFactor {
   BearingFactor(size_t key1, size_t key2, const ROTATION& measured, const gtsam::noiseModel::Base* noiseModel);
