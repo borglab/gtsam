@@ -217,7 +217,7 @@ static void PrintJacobianAndTrace(const std::string& indent,
                                   const typename Jacobian<T, A>::type& dTdA,
                                   const ExecutionTrace<A> trace) {
   static const Eigen::IOFormat kMatlabFormat(0, 1, " ", "; ", "", "", "[", "]");
-  std::cout << indent << "d(" << typeid(T).name() << ")/d(" << typeid(A).name()
+  std::cout << indent << "D(" << typeid(T).name() << ")/D(" << typeid(A).name()
             << ") = " << dTdA.format(kMatlabFormat) << std::endl;
   trace.print(indent);
 }
@@ -317,11 +317,11 @@ public:
     // Return value of type T is recorded in record->value
     record->value1 = expression1_->traceExecution(values, record->trace1, ptr);
 
-    // ptr is never modified by traceExecution, but if traceExecution has
-    // written in the buffer, the next caller expects we advance the pointer
+    //  We have written in the buffer, the next caller expects we advance the pointer
     ptr += expression1_->traceSize();
     trace.setFunction(record);
 
+    // Finally, the function call fills in the Jacobian dTdA1
     return function_(record->value1, record->dTdA1);
   }
 };
@@ -421,11 +421,11 @@ public:
     Record* record = new (ptr) Record();
     ptr += upAligned(sizeof(Record));
     record->value1 = expression1_->traceExecution(values, record->trace1, ptr);
+    ptr += expression1_->traceSize();
     record->value2 = expression2_->traceExecution(values, record->trace2, ptr);
-    ptr += expression1_->traceSize() + expression2_->traceSize();
+    ptr += expression2_->traceSize();
     trace.setFunction(record);
-    return function_(record->value1, record->value2, record->dTdA1,
-        record->dTdA2);
+    return function_(record->value1, record->value2, record->dTdA1, record->dTdA2);
   }
 };
 
@@ -536,10 +536,11 @@ public:
     Record* record = new (ptr) Record();
     ptr += upAligned(sizeof(Record));
     record->value1 = expression1_->traceExecution(values, record->trace1, ptr);
+    ptr += expression1_->traceSize();
     record->value2 = expression2_->traceExecution(values, record->trace2, ptr);
+    ptr += expression2_->traceSize();
     record->value3 = expression3_->traceExecution(values, record->trace3, ptr);
-    ptr += expression1_->traceSize() + expression2_->traceSize()
-        + expression3_->traceSize();
+    ptr += expression3_->traceSize();
     trace.setFunction(record);
     return function_(record->value1, record->value2, record->value3,
         record->dTdA1, record->dTdA2, record->dTdA3);
