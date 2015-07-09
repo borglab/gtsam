@@ -78,13 +78,14 @@ public:
   virtual ~ExpressionNode() {
   }
 
+  /// Print
+  virtual void print(const std::string& indent = "") const = 0;
+
   /// Streaming
   GTSAM_EXPORT
-  friend std::ostream &operator<<(std::ostream &os,
-      const ExpressionNode& node) {
+  friend std::ostream& operator<<(std::ostream& os, const ExpressionNode& node) {
     os << "Expression of type " << typeid(T).name();
-    if (node.traceSize_ > 0)
-      os << ", trace size = " << node.traceSize_;
+    if (node.traceSize_ > 0) os << ", trace size = " << node.traceSize_;
     os << "\n";
     return os;
   }
@@ -133,6 +134,11 @@ public:
   virtual ~ConstantExpression() {
   }
 
+  /// Print
+  virtual void print(const std::string& indent = "") const {
+    std::cout << indent << "Constant" << std::endl;
+  }
+
   /// Return value
   virtual T value(const Values& values) const {
     return constant_;
@@ -159,12 +165,17 @@ class LeafExpression: public ExpressionNode<T> {
       key_(key) {
   }
 
-  friend class Expression<T> ;
+  friend class Expression<T>;
 
 public:
 
   /// Destructor
   virtual ~LeafExpression() {
+  }
+
+  /// Print
+  virtual void print(const std::string& indent = "") const {
+    std::cout << indent << "Leaf, key = " << key_ << std::endl;
   }
 
   /// Return keys that play in this expression
@@ -218,12 +229,18 @@ class UnaryExpression: public ExpressionNode<T> {
     ExpressionNode<T>::traceSize_ = upAligned(sizeof(Record)) + e1.traceSize();
   }
 
-  friend class Expression<T> ;
+  friend class Expression<T>;
 
 public:
 
   /// Destructor
   virtual ~UnaryExpression() {
+  }
+
+  /// Print
+  virtual void print(const std::string& indent = "") const {
+    std::cout << indent << "UnaryExpression" << std::endl;
+    expression1_->print(indent + "  ");
   }
 
   /// Return value
@@ -320,13 +337,20 @@ class BinaryExpression: public ExpressionNode<T> {
         upAligned(sizeof(Record)) + e1.traceSize() + e2.traceSize();
   }
 
-  friend class Expression<T> ;
+  friend class Expression<T>;
   friend class ::ExpressionFactorBinaryTest;
 
 public:
 
   /// Destructor
   virtual ~BinaryExpression() {
+  }
+
+  /// Print
+  virtual void print(const std::string& indent = "") const {
+    std::cout << indent << "BinaryExpression" << std::endl;
+    expression1_->print(indent + "  ");
+    expression2_->print(indent + "  ");
   }
 
   /// Return value
@@ -420,12 +444,20 @@ class TernaryExpression: public ExpressionNode<T> {
         e1.traceSize() + e2.traceSize() + e3.traceSize();
   }
 
-  friend class Expression<T> ;
+  friend class Expression<T>;
 
 public:
 
   /// Destructor
   virtual ~TernaryExpression() {
+  }
+
+  /// Print
+  virtual void print(const std::string& indent = "") const {
+    std::cout << indent << "TernaryExpression" << std::endl;
+    expression1_->print(indent + "  ");
+    expression2_->print(indent + "  ");
+    expression3_->print(indent + "  ");
   }
 
   /// Return value
