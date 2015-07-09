@@ -507,23 +507,19 @@ TEST(ExpressionFactor, push_back) {
 
 /* ************************************************************************* */
 // Test with multiple compositions on duplicate keys
-static double doubleSum(const double& v1, const double& v2,
+static double specialSum(const double& v1, const double& v2,
     OptionalJacobian<1, 1> H1, OptionalJacobian<1, 1> H2) {
-  if (H1) {
-    H1->setIdentity();
-  }
-  if (H2) {
-    H2->setIdentity();
-  }
-  return v1 + v2;
+  if (H1) (*H1) << 1.0;
+  if (H2) (*H2) << 2.0;
+  return v1 + 2.0 * v2;
 }
 
 TEST(Expression, testMultipleCompositions) {
   const double tolerance = 1e-5;
   const double fd_step = 1e-9;
 
-  double v1 = 0;
-  double v2 = 1;
+  double v1 = 2;
+  double v2 = 3;
 
   Values values;
   values.insert(1, v1);
@@ -532,30 +528,33 @@ TEST(Expression, testMultipleCompositions) {
   Expression<double> v1_(Key(1));
   Expression<double> v2_(Key(2));
 
-  // binary(doubleSum)
-  //  - leaf 1
-  //  - leaf 2
-  Expression<double> sum_(doubleSum, v1_, v2_);
-  EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum_, values, fd_step, tolerance);
+  // BinaryExpression
+  //   Leaf, key = 1
+  //   Leaf, key = 2
+  Expression<double> sum1_(specialSum, v1_, v2_);
+  GTSAM_PRINT(sum1_);
+  EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum1_, values, fd_step, tolerance);
 
-  // binary(doubleSum)
-  //  - sum_
-  //    - leaf 1
-  //    - leaf 2
-  //  - leaf 1
-  Expression<double> sum2_(doubleSum, sum_, v1_);
+  // BinaryExpression
+  //   BinaryExpression
+  //     Leaf, key = 1
+  //     Leaf, key = 2
+  //   Leaf, key = 1
+  Expression<double> sum2_(specialSum, sum1_, v1_);
+  GTSAM_PRINT(sum2_);
   EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum2_, values, fd_step, tolerance);
 
-  // binary(doubleSum)
-  //   sum2_
-  //    - sum_
-  //      - leaf 1
-  //      - leaf 2
-  //    - leaf 1
-  //  - sum_
-  //    - leaf 1
-  //    - leaf 2
-  Expression<double> sum3_(doubleSum, sum2_, sum_);
+  // BinaryExpression
+  //   BinaryExpression
+  //     BinaryExpression
+  //       Leaf, key = 1
+  //       Leaf, key = 2
+  //     Leaf, key = 1
+  //   BinaryExpression
+  //     Leaf, key = 1
+  //     Leaf, key = 2
+  Expression<double> sum3_(specialSum, sum2_, sum1_);
+  GTSAM_PRINT(sum3_);
   EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum3_, values, fd_step, tolerance);
 }
 
