@@ -18,6 +18,7 @@
  */
 
 #include <gtsam/nonlinear/Expression.h>
+#include <gtsam/nonlinear/expressionTesting.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/base/Testable.h>
@@ -281,95 +282,15 @@ TEST(Expression, ternary) {
 
 /* ************************************************************************* */
 // Test with multiple compositions on duplicate keys
-
-bool checkMatricesNear(const Eigen::MatrixXd& lhs, const Eigen::MatrixXd& rhs,
-                       double tolerance) {
-  bool near = true;
-  for (int i = 0; i < lhs.rows(); ++i) {
-    for (int j = 0; j < lhs.cols(); ++j) {
-      const double& lij = lhs(i, j);
-      const double& rij = rhs(i, j);
-      const double& diff = std::abs(lij - rij);
-      if (!std::isfinite(lij) ||
-          !std::isfinite(rij) ||
-          diff > tolerance) {
-        near = false;
-
-        std::cout << "\nposition " << i << "," << j << " evaluates to "
-            << lij << " and " << rij << std::endl;
-      }
-    }
-  }
-  return near;
-}
-
-
-// Compute finite difference Jacobians for an expression factor.
-template<typename T>
-JacobianFactor computeFiniteDifferenceJacobians(ExpressionFactor<T> expression_factor,
-                                                const Values& values,
-                                                double fd_step) {
-  Eigen::VectorXd e = expression_factor.unwhitenedError(values);
-  const size_t rows = e.size();
-
-  std::map<Key, Eigen::MatrixXd> jacobians;
-  typename ExpressionFactor<T>::const_iterator key_it = expression_factor.begin();
-  VectorValues dX = values.zeroVectors();
-  for(; key_it != expression_factor.end(); ++key_it) {
-    size_t key = *key_it;
-    // Compute central differences using the values struct.
-    const size_t cols = dX.dim(key);
-    Eigen::MatrixXd J = Eigen::MatrixXd::Zero(rows, cols);
-    for(size_t col = 0; col < cols; ++col) {
-      Eigen::VectorXd dx = Eigen::VectorXd::Zero(cols);
-      dx[col] = fd_step;
-      dX[key] = dx;
-      Values eval_values = values.retract(dX);
-      Eigen::VectorXd left = expression_factor.unwhitenedError(eval_values);
-      dx[col] = -fd_step;
-      dX[key] = dx;
-      eval_values = values.retract(dX);
-      Eigen::VectorXd right = expression_factor.unwhitenedError(eval_values);
-      J.col(col) = (left - right) * (1.0/(2.0 * fd_step));
-    }
-    jacobians[key] = J;
-  }
-
-  // Next step...return JacobianFactor
-  return JacobianFactor(jacobians, -e);
-}
-
-template<typename T>
-bool testExpressionJacobians(Expression<T> expression,
-                             const Values& values,
-                             double fd_step,
-                             double tolerance) {
-  // Create factor
-  size_t size = traits<T>::dimension;
-  ExpressionFactor<T> f(noiseModel::Unit::Create(size), expression.value(values), expression);
-
-  // Check linearization
-  JacobianFactor expected = computeFiniteDifferenceJacobians(f, values, fd_step);
-  boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
-  boost::shared_ptr<JacobianFactor> jf = //
-      boost::dynamic_pointer_cast<JacobianFactor>(gf);
-
-  typedef std::pair<Eigen::MatrixXd, Eigen::VectorXd> Jacobian;
-  Jacobian evalJ = jf->jacobianUnweighted();
-  Jacobian estJ = expected.jacobianUnweighted();
-
-  return checkMatricesNear(evalJ.first, estJ.first, tolerance);
-}
-
-double doubleSumImplementation(const double& v1, const double& v2,
-                               OptionalJacobian<1, 1> H1, OptionalJacobian<1, 1> H2) {
+static double doubleSum(const double& v1, const double& v2,
+    OptionalJacobian<1, 1> H1, OptionalJacobian<1, 1> H2) {
   if (H1) {
     H1->setIdentity();
   }
   if (H2) {
     H2->setIdentity();
   }
-  return v1+v2;
+  return v1 + v2;
 }
 
 TEST(Expression, testMultipleCompositions) {
@@ -383,19 +304,34 @@ TEST(Expression, testMultipleCompositions) {
   values.insert(1, v1);
   values.insert(2, v2);
 
-  Expression<double> ev1(Key(1));
-  Expression<double> ev2(Key(2));
+  Expression<double> v1_(Key(1));
+  Expression<double> v2_(Key(2));
 
-  Expression<double> sum(doubleSumImplementation, ev1, ev2);
-  Expression<double> sum2(doubleSumImplementation, sum, ev1);
-  Expression<double> sum3(doubleSumImplementation, sum2, sum);
+  // binary(doubleSum)
+  //  - leaf 1
+  //  - leaf 2
+  Expression<double> sum_(doubleSum, v1_, v2_);
+  EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum_, values, fd_step, tolerance);
 
-  std::cout << "Testing sum " << std::endl;
-  EXPECT(testExpressionJacobians(sum, values, fd_step, tolerance));
-  std::cout << "Testing sum2 " << std::endl;
-  EXPECT(testExpressionJacobians(sum2, values, fd_step, tolerance));
-  std::cout << "Testing sum3 " << std::endl;
-  EXPECT(testExpressionJacobians(sum3, values, fd_step, tolerance));
+  // binary(doubleSum)
+  //  - sum_
+  //    - leaf 1
+  //    - leaf 2
+  //  - leaf 1
+  Expression<double> sum2_(doubleSum, sum_, v1_);
+  EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum2_, values, fd_step, tolerance);
+
+  // binary(doubleSum)
+  //   sum2_
+  //    - sum_
+  //      - leaf 1
+  //      - leaf 2
+  //    - leaf 1
+  //  - sum_
+  //    - leaf 1
+  //    - leaf 2
+  Expression<double> sum3_(doubleSum, sum2_, sum_);
+  EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum3_, values, fd_step, tolerance);
 }
 
 /* ************************************************************************* */
