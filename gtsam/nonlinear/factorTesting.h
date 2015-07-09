@@ -22,6 +22,10 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/base/numericalDerivative.h>
 
+#include <CppUnitLite/TestResult.h>
+#include <CppUnitLite/Test.h>
+#include <CppUnitLite/Failure.h>
+
 namespace gtsam {
 
 /**
@@ -64,5 +68,31 @@ JacobianFactor linearizeNumerically(const NoiseModelFactor& factor,
   // Next step...return JacobianFactor
   return JacobianFactor(jacobians, -e);
 }
+
+namespace internal {
+// CPPUnitLite-style test for linearization of a factor
+bool testFactorJacobians(TestResult& result_, const std::string& name_,
+    const NoiseModelFactor& factor, const gtsam::Values& values, double delta,
+    double tolerance) {
+
+  // Create expected value by numerical differentiation
+  JacobianFactor expected = linearizeNumerically(factor, values, delta);
+
+  // Create actual value by linearize
+  boost::shared_ptr<JacobianFactor> actual = //
+      boost::dynamic_pointer_cast<JacobianFactor>(factor.linearize(values));
+
+  // Check cast result and then equality
+  return actual && assert_equal(expected, *actual, tolerance);
+}
+}
+
+/// \brief Check the Jacobians produced by a factor against finite differences.
+/// \param factor The factor to test.
+/// \param values Values filled in for testing the Jacobians.
+/// \param numerical_derivative_step The step to use when computing the numerical derivative Jacobians
+/// \param tolerance The numerical tolerance to use when comparing Jacobians.
+#define EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, numerical_derivative_step, tolerance) \
+    { EXPECT(gtsam::internal::testFactorJacobians(result_, name_, factor, values, numerical_derivative_step, tolerance)); }
 
 } // namespace gtsam
