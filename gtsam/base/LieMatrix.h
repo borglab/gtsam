@@ -11,7 +11,7 @@
 
 /**
  * @file LieMatrix.h
- * @brief External deprecation warning, see LieMatrix_Deprecated.h for details
+ * @brief External deprecation warning, see deprecated/LieMatrix.h for details
  * @author Paul Drews
  */
 
@@ -23,4 +23,4 @@
 #warning "LieMatrix.h is deprecated. Please use Eigen::Matrix instead."
 #endif
 
-#include "gtsam/base/LieMatrix_Deprecated.h"
+#include "gtsam/base/deprecated/LieMatrix.h"
