@@ -507,12 +507,16 @@ TEST(ExpressionFactor, push_back) {
 
 /* ************************************************************************* */
 // Test with multiple compositions on duplicate keys
-static double specialSum(const double& v1, const double& v2,
-    OptionalJacobian<1, 1> H1, OptionalJacobian<1, 1> H2) {
-  if (H1) (*H1) << 1.0;
-  if (H2) (*H2) << 2.0;
-  return v1 + 2.0 * v2;
-}
+struct Combine {
+  double a, b;
+  Combine(double a, double b) : a(a), b(b) {}
+  double operator()(const double& x, const double& y, OptionalJacobian<1, 1> H1,
+                    OptionalJacobian<1, 1> H2) {
+    if (H1) (*H1) << a;
+    if (H2) (*H2) << b;
+    return a * x + b * y;
+  }
+};
 
 TEST(Expression, testMultipleCompositions) {
   const double tolerance = 1e-5;
@@ -528,33 +532,36 @@ TEST(Expression, testMultipleCompositions) {
   Expression<double> v1_(Key(1));
   Expression<double> v2_(Key(2));
 
-  // BinaryExpression
+  // BinaryExpression(1,2)
   //   Leaf, key = 1
   //   Leaf, key = 2
-  Expression<double> sum1_(specialSum, v1_, v2_);
+  Expression<double> sum1_(Combine(1, 2), v1_, v2_);
   GTSAM_PRINT(sum1_);
+  EXPECT(sum1_.keys() == list_of(1)(2));
   EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum1_, values, fd_step, tolerance);
 
-  // BinaryExpression
-  //   BinaryExpression
+  // BinaryExpression(3,4)
+  //   BinaryExpression(1,2)
   //     Leaf, key = 1
   //     Leaf, key = 2
   //   Leaf, key = 1
-  Expression<double> sum2_(specialSum, sum1_, v1_);
+  Expression<double> sum2_(Combine(3, 4), sum1_, v1_);
   GTSAM_PRINT(sum2_);
+  EXPECT(sum2_.keys() == list_of(1)(2));
   EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum2_, values, fd_step, tolerance);
 
-  // BinaryExpression
-  //   BinaryExpression
-  //     BinaryExpression
+  // BinaryExpression(5,6)
+  //   BinaryExpression(3,4)
+  //     BinaryExpression(1,2)
   //       Leaf, key = 1
   //       Leaf, key = 2
   //     Leaf, key = 1
-  //   BinaryExpression
+  //   BinaryExpression(1,2)
   //     Leaf, key = 1
   //     Leaf, key = 2
-  Expression<double> sum3_(specialSum, sum2_, sum1_);
+  Expression<double> sum3_(Combine(5, 6), sum1_, sum2_);
   GTSAM_PRINT(sum3_);
+  EXPECT(sum3_.keys() == list_of(1)(2));
   EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum3_, values, fd_step, tolerance);
 }
 
