@@ -31,19 +31,18 @@ namespace internal {
 // The JacobianMap provides a mapping from keys to the underlying blocks.
 class JacobianMap {
 private:
-  typedef FastVector<Key> Keys;
-  const FastVector<Key>& keys_;
+  const KeyVector& keys_;
   VerticalBlockMatrix& Ab_;
 
 public:
   /// Construct a JacobianMap for writing into a VerticalBlockMatrix Ab
-  JacobianMap(const Keys& keys, VerticalBlockMatrix& Ab) :
+  JacobianMap(const KeyVector& keys, VerticalBlockMatrix& Ab) :
       keys_(keys), Ab_(Ab) {
   }
 
   /// Access blocks of via key
   VerticalBlockMatrix::Block operator()(Key key) {
-    Keys::const_iterator it = std::find(keys_.begin(), keys_.end(), key);
+    KeyVector::const_iterator it = std::find(keys_.begin(), keys_.end(), key);
     DenseIndex block = it - keys_.begin();
     return Ab_(block);
   }

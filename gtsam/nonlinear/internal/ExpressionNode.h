@@ -78,13 +78,14 @@ public:
   virtual ~ExpressionNode() {
   }
 
+  /// Print
+  virtual void print(const std::string& indent = "") const = 0;
+
   /// Streaming
   GTSAM_EXPORT
-  friend std::ostream &operator<<(std::ostream &os,
-      const ExpressionNode& node) {
+  friend std::ostream& operator<<(std::ostream& os, const ExpressionNode& node) {
     os << "Expression of type " << typeid(T).name();
-    if (node.traceSize_ > 0)
-      os << ", trace size = " << node.traceSize_;
+    if (node.traceSize_ > 0) os << ", trace size = " << node.traceSize_;
     os << "\n";
     return os;
   }
@@ -133,6 +134,11 @@ public:
   virtual ~ConstantExpression() {
   }
 
+  /// Print
+  virtual void print(const std::string& indent = "") const {
+    std::cout << indent << "Constant" << std::endl;
+  }
+
   /// Return value
   virtual T value(const Values& values) const {
     return constant_;
@@ -159,12 +165,17 @@ class LeafExpression: public ExpressionNode<T> {
       key_(key) {
   }
 
-  friend class Expression<T> ;
+  friend class Expression<T>;
 
 public:
 
   /// Destructor
   virtual ~LeafExpression() {
+  }
+
+  /// Print
+  virtual void print(const std::string& indent = "") const {
+    std::cout << indent << "Leaf, key = " << key_ << std::endl;
   }
 
   /// Return keys that play in this expression
@@ -200,8 +211,16 @@ struct Jacobian {
   typedef Eigen::Matrix<double, traits<T>::dimension, traits<A>::dimension> type;
 };
 
-// Eigen format for printing Jacobians
-static const Eigen::IOFormat kMatlabFormat(0, 1, " ", "; ", "", "", "[", "]");
+// Helper function for printing Jacobians with compact Eigen format, and trace
+template <class T, class A>
+static void PrintJacobianAndTrace(const std::string& indent,
+                                  const typename Jacobian<T, A>::type& dTdA,
+                                  const ExecutionTrace<A> trace) {
+  static const Eigen::IOFormat kMatlabFormat(0, 1, " ", "; ", "", "", "[", "]");
+  std::cout << indent << "D(" << typeid(T).name() << ")/D(" << typeid(A).name()
+            << ") = " << dTdA.format(kMatlabFormat) << std::endl;
+  trace.print(indent);
+}
 
 //-----------------------------------------------------------------------------
 /// Unary Function Expression
@@ -218,12 +237,18 @@ class UnaryExpression: public ExpressionNode<T> {
     ExpressionNode<T>::traceSize_ = upAligned(sizeof(Record)) + e1.traceSize();
   }
 
-  friend class Expression<T> ;
+  friend class Expression<T>;
 
 public:
 
   /// Destructor
   virtual ~UnaryExpression() {
+  }
+
+  /// Print
+  virtual void print(const std::string& indent = "") const {
+    std::cout << indent << "UnaryExpression" << std::endl;
+    expression1_->print(indent + "  ");
   }
 
   /// Return value
@@ -251,8 +276,7 @@ public:
     /// Print to std::cout
     void print(const std::string& indent) const {
       std::cout << indent << "UnaryExpression::Record {" << std::endl;
-      std::cout << indent << dTdA1.format(kMatlabFormat) << std::endl;
-      trace1.print(indent);
+      PrintJacobianAndTrace<T,A1>(indent, dTdA1, trace1);
       std::cout << indent << "}" << std::endl;
     }
 
@@ -293,11 +317,11 @@ public:
     // Return value of type T is recorded in record->value
     record->value1 = expression1_->traceExecution(values, record->trace1, ptr);
 
-    // ptr is never modified by traceExecution, but if traceExecution has
-    // written in the buffer, the next caller expects we advance the pointer
+    //  We have written in the buffer, the next caller expects we advance the pointer
     ptr += expression1_->traceSize();
     trace.setFunction(record);
 
+    // Finally, the function call fills in the Jacobian dTdA1
     return function_(record->value1, record->dTdA1);
   }
 };
@@ -320,13 +344,20 @@ class BinaryExpression: public ExpressionNode<T> {
         upAligned(sizeof(Record)) + e1.traceSize() + e2.traceSize();
   }
 
-  friend class Expression<T> ;
+  friend class Expression<T>;
   friend class ::ExpressionFactorBinaryTest;
 
 public:
 
   /// Destructor
   virtual ~BinaryExpression() {
+  }
+
+  /// Print
+  virtual void print(const std::string& indent = "") const {
+    std::cout << indent << "BinaryExpression" << std::endl;
+    expression1_->print(indent + "  ");
+    expression2_->print(indent + "  ");
   }
 
   /// Return value
@@ -364,10 +395,8 @@ public:
     /// Print to std::cout
     void print(const std::string& indent) const {
       std::cout << indent << "BinaryExpression::Record {" << std::endl;
-      std::cout << indent << dTdA1.format(kMatlabFormat) << std::endl;
-      trace1.print(indent);
-      std::cout << indent << dTdA2.format(kMatlabFormat) << std::endl;
-      trace2.print(indent);
+      PrintJacobianAndTrace<T,A1>(indent, dTdA1, trace1);
+      PrintJacobianAndTrace<T,A2>(indent, dTdA2, trace2);
       std::cout << indent << "}" << std::endl;
     }
 
@@ -392,11 +421,11 @@ public:
     Record* record = new (ptr) Record();
     ptr += upAligned(sizeof(Record));
     record->value1 = expression1_->traceExecution(values, record->trace1, ptr);
+    ptr += expression1_->traceSize();
     record->value2 = expression2_->traceExecution(values, record->trace2, ptr);
-    ptr += expression1_->traceSize() + expression2_->traceSize();
+    ptr += expression2_->traceSize();
     trace.setFunction(record);
-    return function_(record->value1, record->value2, record->dTdA1,
-        record->dTdA2);
+    return function_(record->value1, record->value2, record->dTdA1, record->dTdA2);
   }
 };
 
@@ -420,12 +449,20 @@ class TernaryExpression: public ExpressionNode<T> {
         e1.traceSize() + e2.traceSize() + e3.traceSize();
   }
 
-  friend class Expression<T> ;
+  friend class Expression<T>;
 
 public:
 
   /// Destructor
   virtual ~TernaryExpression() {
+  }
+
+  /// Print
+  virtual void print(const std::string& indent = "") const {
+    std::cout << indent << "TernaryExpression" << std::endl;
+    expression1_->print(indent + "  ");
+    expression2_->print(indent + "  ");
+    expression3_->print(indent + "  ");
   }
 
   /// Return value
@@ -470,12 +507,9 @@ public:
     /// Print to std::cout
     void print(const std::string& indent) const {
       std::cout << indent << "TernaryExpression::Record {" << std::endl;
-      std::cout << indent << dTdA1.format(kMatlabFormat) << std::endl;
-      trace1.print(indent);
-      std::cout << indent << dTdA2.format(kMatlabFormat) << std::endl;
-      trace2.print(indent);
-      std::cout << indent << dTdA3.format(kMatlabFormat) << std::endl;
-      trace3.print(indent);
+      PrintJacobianAndTrace<T,A1>(indent, dTdA1, trace1);
+      PrintJacobianAndTrace<T,A2>(indent, dTdA2, trace2);
+      PrintJacobianAndTrace<T,A3>(indent, dTdA3, trace3);
       std::cout << indent << "}" << std::endl;
     }
 
@@ -502,10 +536,11 @@ public:
     Record* record = new (ptr) Record();
     ptr += upAligned(sizeof(Record));
     record->value1 = expression1_->traceExecution(values, record->trace1, ptr);
+    ptr += expression1_->traceSize();
     record->value2 = expression2_->traceExecution(values, record->trace2, ptr);
+    ptr += expression2_->traceSize();
     record->value3 = expression3_->traceExecution(values, record->trace3, ptr);
-    ptr += expression1_->traceSize() + expression2_->traceSize()
-        + expression3_->traceSize();
+    ptr += expression3_->traceSize();
     trace.setFunction(record);
     return function_(record->value1, record->value2, record->value3,
         record->dTdA1, record->dTdA2, record->dTdA3);

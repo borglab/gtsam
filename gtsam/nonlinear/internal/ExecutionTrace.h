@@ -119,7 +119,6 @@ public:
     else if (kind == Leaf)
       std::cout << indent << "Leaf, key = " << content.key << std::endl;
     else if (kind == Function) {
-      std::cout << indent << "Function" << std::endl;
       content.ptr->print(indent + "  ");
     }
   }
