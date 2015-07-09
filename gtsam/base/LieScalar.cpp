@@ -8,7 +8,7 @@
 
 
 
-#include <gtsam/base/LieScalar_Deprecated.h>
+#include <gtsam/base/deprecated/LieScalar_Deprecated.h>
 
 namespace gtsam {
   void LieScalar::print(const std::string& name) const {

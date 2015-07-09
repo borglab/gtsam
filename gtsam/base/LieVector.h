@@ -23,4 +23,4 @@
 #warning "LieVector.h is deprecated. Please use Eigen::Vector instead."
 #endif
 
-#include <gtsam/base/LieVector_Deprecated.h>
+#include <gtsam/base/deprecated/LieVector_Deprecated.h>

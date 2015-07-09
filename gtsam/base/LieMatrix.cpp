@@ -15,7 +15,7 @@
  * @author Richard Roberts and Alex Cunningham
  */
 
-#include <gtsam/base/LieMatrix_Deprecated.h>
+#include <gtsam/base/deprecated/LieMatrix_Deprecated.h>
 
 namespace gtsam {
 

@@ -15,8 +15,7 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/LieScalar_Deprecated.h>
-
+#include <gtsam/base/deprecated/LieScalar_Deprecated.h>
 #include <gtsam/base/TestableAssertions.h>
 
 using namespace gtsam;

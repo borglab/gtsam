@@ -15,8 +15,7 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/LieMatrix_Deprecated.h>
-
+#include <gtsam/base/deprecated/LieMatrix_Deprecated.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Manifold.h>
 

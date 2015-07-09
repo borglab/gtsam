@@ -5,8 +5,8 @@
  * @author Alex Cunningham
  */
 
-#include <gtsam/base/LieMatrix_Deprecated.h>
-#include <gtsam/base/LieVector_Deprecated.h>
+#include <gtsam/base/deprecated/LieMatrix_Deprecated.h>
+#include <gtsam/base/deprecated/LieVector_Deprecated.h>
 #include <gtsam/slam/serialization.h>
 #include <gtsam/base/serialization.h>
 
