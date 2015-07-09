@@ -416,8 +416,9 @@ public:
     Record* record = new (ptr) Record();
     ptr += upAligned(sizeof(Record));
     record->value1 = expression1_->traceExecution(values, record->trace1, ptr);
+    ptr += expression1_->traceSize();
     record->value2 = expression2_->traceExecution(values, record->trace2, ptr);
-    ptr += expression1_->traceSize() + expression2_->traceSize();
+    ptr += expression2_->traceSize();
     trace.setFunction(record);
     return function_(record->value1, record->value2, record->dTdA1,
         record->dTdA2);
@@ -534,10 +535,11 @@ public:
     Record* record = new (ptr) Record();
     ptr += upAligned(sizeof(Record));
     record->value1 = expression1_->traceExecution(values, record->trace1, ptr);
+    ptr += expression1_->traceSize();
     record->value2 = expression2_->traceExecution(values, record->trace2, ptr);
+    ptr += expression2_->traceSize();
     record->value3 = expression3_->traceExecution(values, record->trace3, ptr);
-    ptr += expression1_->traceSize() + expression2_->traceSize()
-        + expression3_->traceSize();
+    ptr += expression3_->traceSize();
     trace.setFunction(record);
     return function_(record->value1, record->value2, record->value3,
         record->dTdA1, record->dTdA2, record->dTdA3);
