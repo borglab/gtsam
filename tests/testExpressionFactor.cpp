@@ -520,14 +520,11 @@ struct Combine {
 
 TEST(Expression, testMultipleCompositions) {
   const double tolerance = 1e-5;
-  const double fd_step = 1e-9;
-
-  double v1 = 2;
-  double v2 = 3;
+  const double fd_step = 1e-5;
 
   Values values;
-  values.insert(1, v1);
-  values.insert(2, v2);
+  values.insert(1, 10.0);
+  values.insert(2, 20.0);
 
   Expression<double> v1_(Key(1));
   Expression<double> v2_(Key(2));
@@ -560,6 +557,47 @@ TEST(Expression, testMultipleCompositions) {
   Expression<double> sum3_(Combine(5, 6), sum1_, sum2_);
   EXPECT(sum3_.keys() == list_of(1)(2));
   EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum3_, values, fd_step, tolerance);
+}
+
+/* ************************************************************************* */
+// Another test, with Ternary Expressions
+static double combine3(const double& x, const double& y, const double& z,
+                        OptionalJacobian<1, 1> H1, OptionalJacobian<1, 1> H2,
+                        OptionalJacobian<1, 1> H3) {
+  if (H1) (*H1) << 1.0;
+  if (H2) (*H2) << 2.0;
+  if (H3) (*H3) << 3.0;
+  return x + 2.0 * y + 3.0 * z;
+}
+
+TEST(Expression, testMultipleCompositions2) {
+  const double tolerance = 1e-5;
+  const double fd_step = 1e-5;
+
+  Values values;
+  values.insert(1, 10.0);
+  values.insert(2, 20.0);
+  values.insert(3, 30.0);
+
+  Expression<double> v1_(Key(1));
+  Expression<double> v2_(Key(2));
+  Expression<double> v3_(Key(3));
+
+  Expression<double> sum1_(Combine(4,5), v1_, v2_);
+  EXPECT(sum1_.keys() == list_of(1)(2));
+  EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum1_, values, fd_step, tolerance);
+
+  Expression<double> sum2_(combine3, v1_, v2_, v3_);
+  EXPECT(sum2_.keys() == list_of(1)(2)(3));
+  EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum2_, values, fd_step, tolerance);
+
+  Expression<double> sum3_(combine3, v3_, v2_, v1_);
+  EXPECT(sum3_.keys() == list_of(1)(2)(3));
+  EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum3_, values, fd_step, tolerance);
+
+  Expression<double> sum4_(combine3, sum1_, sum2_, sum3_);
+  EXPECT(sum4_.keys() == list_of(1)(2)(3));
+  EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum4_, values, fd_step, tolerance);
 }
 
 /* ************************************************************************* */
