@@ -55,9 +55,9 @@ namespace gtsam {
       // have a VariableIndex already here because we computed one if needed in the previous 'else'
       // block.
       if (orderingType == Ordering::METIS)
-	      return eliminateSequential(Ordering::metis(asDerived()), function, variableIndex, orderingType);
-	    else
-		    return eliminateSequential(Ordering::colamd(*variableIndex), function, variableIndex, orderingType);
+        return eliminateSequential(Ordering::Metis(asDerived()), function, variableIndex, orderingType);
+      else
+        return eliminateSequential(Ordering::Colamd(*variableIndex), function, variableIndex, orderingType);
     }
   }
 
@@ -93,9 +93,9 @@ namespace gtsam {
       // have a VariableIndex already here because we computed one if needed in the previous 'else'
       // block.
 	    if (orderingType == Ordering::METIS)
-		    return eliminateMultifrontal(Ordering::metis(asDerived()), function, variableIndex, orderingType);
+		    return eliminateMultifrontal(Ordering::Metis(asDerived()), function, variableIndex, orderingType);
 	    else
-		    return eliminateMultifrontal(Ordering::colamd(*variableIndex), function, variableIndex, orderingType);
+		    return eliminateMultifrontal(Ordering::Colamd(*variableIndex), function, variableIndex, orderingType);
     }
   }
 
@@ -125,7 +125,7 @@ namespace gtsam {
     if(variableIndex) {
       gttic(eliminatePartialSequential);
       // Compute full ordering
-      Ordering fullOrdering = Ordering::colamdConstrainedFirst(*variableIndex, variables);
+      Ordering fullOrdering = Ordering::ColamdConstrainedFirst(*variableIndex, variables);
 
       // Split off the part of the ordering for the variables being eliminated
       Ordering ordering(fullOrdering.begin(), fullOrdering.begin() + variables.size());
@@ -163,7 +163,7 @@ namespace gtsam {
     if(variableIndex) {
       gttic(eliminatePartialMultifrontal);
       // Compute full ordering
-      Ordering fullOrdering = Ordering::colamdConstrainedFirst(*variableIndex, variables);
+      Ordering fullOrdering = Ordering::ColamdConstrainedFirst(*variableIndex, variables);
 
       // Split off the part of the ordering for the variables being eliminated
       Ordering ordering(fullOrdering.begin(), fullOrdering.begin() + variables.size());
@@ -216,7 +216,7 @@ namespace gtsam {
           boost::get<const Ordering&>(&variables) : boost::get<const std::vector<Key>&>(&variables);
 
         Ordering totalOrdering =
-          Ordering::colamdConstrainedLast(*variableIndex, *variablesOrOrdering, unmarginalizedAreOrdered);
+          Ordering::ColamdConstrainedLast(*variableIndex, *variablesOrOrdering, unmarginalizedAreOrdered);
 
         // Split up ordering
         const size_t nVars = variablesOrOrdering->size();
@@ -275,7 +275,7 @@ namespace gtsam {
           boost::get<const Ordering&>(&variables) : boost::get<const std::vector<Key>&>(&variables);
 
         Ordering totalOrdering =
-          Ordering::colamdConstrainedLast(*variableIndex, *variablesOrOrdering, unmarginalizedAreOrdered);
+          Ordering::ColamdConstrainedLast(*variableIndex, *variablesOrOrdering, unmarginalizedAreOrdered);
 
         // Split up ordering
         const size_t nVars = variablesOrOrdering->size();
@@ -301,7 +301,7 @@ namespace gtsam {
     if(variableIndex)
     {
       // Compute a total ordering for all variables
-      Ordering totalOrdering = Ordering::colamdConstrainedLast(*variableIndex, variables);
+      Ordering totalOrdering = Ordering::ColamdConstrainedLast(*variableIndex, variables);
 
       // Split out the part for the marginalized variables
       Ordering marginalizationOrdering(totalOrdering.begin(), totalOrdering.end() - variables.size());

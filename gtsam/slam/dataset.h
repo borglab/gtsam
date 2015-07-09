@@ -18,16 +18,21 @@
 
 #pragma once
 
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/linear/NoiseModel.h>
-#include <gtsam/geometry/Point2.h>
-#include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/geometry/Point2.h>
+#include <gtsam/geometry/Point3.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/geometry/Rot3.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/Values.h>
+#include <gtsam/linear/NoiseModel.h>
+#include <gtsam/base/types.h>
 
-#include <vector>
-#include <utility> // for pair
+#include <boost/smart_ptr/shared_ptr.hpp>
 #include <string>
+#include <utility> // for pair
+#include <vector>
 
 namespace gtsam {
 

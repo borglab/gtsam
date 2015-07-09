@@ -34,7 +34,7 @@ namespace gtsam {
 
 namespace internal {
 // CPPUnitLite-style test for linearization of a factor
-void testFactorJacobians(TestResult& result_, const std::string& name_,
+bool testFactorJacobians(TestResult& result_, const std::string& name_,
     const NoiseModelFactor& factor, const gtsam::Values& values, double delta,
     double tolerance) {
 
@@ -46,8 +46,7 @@ void testFactorJacobians(TestResult& result_, const std::string& name_,
       boost::dynamic_pointer_cast<JacobianFactor>(factor.linearize(values));
 
   // Check cast result and then equality
-  CHECK(actual);
-  EXPECT(assert_equal(expected, *actual, tolerance));
+  return actual && assert_equal(expected, *actual, tolerance);
 }
 }
 
@@ -57,19 +56,19 @@ void testFactorJacobians(TestResult& result_, const std::string& name_,
 /// \param numerical_derivative_step The step to use when computing the numerical derivative Jacobians
 /// \param tolerance The numerical tolerance to use when comparing Jacobians.
 #define EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, numerical_derivative_step, tolerance) \
-    { gtsam::internal::testFactorJacobians(result_, name_, factor, values, numerical_derivative_step, tolerance); }
+    { EXPECT(gtsam::internal::testFactorJacobians(result_, name_, factor, values, numerical_derivative_step, tolerance)); }
 
 namespace internal {
 // CPPUnitLite-style test for linearization of an ExpressionFactor
 template<typename T>
-void testExpressionJacobians(TestResult& result_, const std::string& name_,
+bool testExpressionJacobians(TestResult& result_, const std::string& name_,
     const gtsam::Expression<T>& expression, const gtsam::Values& values,
     double nd_step, double tolerance) {
   // Create factor
   size_t size = traits<T>::dimension;
   ExpressionFactor<T> f(noiseModel::Unit::Create(size),
       expression.value(values), expression);
-  testFactorJacobians(result_, name_, f, values, nd_step, tolerance);
+  return testFactorJacobians(result_, name_, f, values, nd_step, tolerance);
 }
 } // namespace internal
 } // namespace gtsam
@@ -80,4 +79,4 @@ void testExpressionJacobians(TestResult& result_, const std::string& name_,
 /// \param numerical_derivative_step The step to use when computing the finite difference Jacobians
 /// \param tolerance The numerical tolerance to use when comparing Jacobians.
 #define EXPECT_CORRECT_EXPRESSION_JACOBIANS(expression, values, numerical_derivative_step, tolerance) \
-    { gtsam::internal::testExpressionJacobians(result_, name_, expression, values, numerical_derivative_step, tolerance); }
+    { EXPECT(gtsam::internal::testExpressionJacobians(result_, name_, expression, values, numerical_derivative_step, tolerance)); }

@@ -21,6 +21,7 @@
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/geometry/Point2.h>
 #include <boost/random/mersenne_twister.hpp>
+#include <gtsam/config.h> // for GTSAM_USE_TBB
 
 #ifdef __clang__
 #  pragma clang diagnostic push

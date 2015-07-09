@@ -31,14 +31,6 @@ namespace gtsam {
 template<typename Calibration>
 class GTSAM_EXPORT PinholeCamera: public PinholeBaseK<Calibration> {
 
-public:
-
-  /**
-   *  Some classes template on either PinholeCamera or StereoCamera,
-   *  and this typedef informs those classes what "project" returns.
-   */
-  typedef Point2 Measurement;
-
 private:
 
   typedef PinholeBaseK<Calibration> Base; ///< base class has 3D pose as private member
@@ -153,7 +145,7 @@ public:
   const Pose3& getPose(OptionalJacobian<6, dimension> H) const {
     if (H) {
       H->setZero();
-      H->block(0, 0, 6, 6) = I_6x6;
+      H->template block<6, 6>(0, 0) = I_6x6;
     }
     return Base::pose();
   }
@@ -184,16 +176,15 @@ public:
     if ((size_t) d.size() == 6)
       return PinholeCamera(this->pose().retract(d), calibration());
     else
-      return PinholeCamera(this->pose().retract(d.head(6)),
+      return PinholeCamera(this->pose().retract(d.head<6>()),
           calibration().retract(d.tail(calibration().dim())));
   }
 
   /// return canonical coordinate
   VectorK6 localCoordinates(const PinholeCamera& T2) const {
     VectorK6 d;
-    // TODO: why does d.head<6>() not compile??
-    d.head(6) = this->pose().localCoordinates(T2.pose());
-    d.tail(DimK) = calibration().localCoordinates(T2.calibration());
+    d.template head<6>() = this->pose().localCoordinates(T2.pose());
+    d.template tail<DimK>() = calibration().localCoordinates(T2.calibration());
     return d;
   }
 
@@ -208,99 +199,32 @@ public:
 
   typedef Eigen::Matrix<double, 2, DimK> Matrix2K;
 
-  /** project a point from world coordinate to the image
-   *  @param pw is a point in world coordinates
-   *  @param Dpose is the Jacobian w.r.t. pose3
-   *  @param Dpoint is the Jacobian w.r.t. point3
-   *  @param Dcal is the Jacobian w.r.t. calibration
+  /** Templated projection of a 3D point or a point at infinity into the image
+   *  @param pw either a Point3 or a Unit3, in world coordinates
    */
-  Point2 project(const Point3& pw, OptionalJacobian<2, 6> Dpose = boost::none,
-      OptionalJacobian<2, 3> Dpoint = boost::none,
-      OptionalJacobian<2, DimK> Dcal = boost::none) const {
-
-    // project to normalized coordinates
-    const Point2 pn = PinholeBase::project2(pw, Dpose, Dpoint);
-
-    // uncalibrate to pixel coordinates
-    Matrix2 Dpi_pn;
-    const Point2 pi = calibration().uncalibrate(pn, Dcal,
-        Dpose || Dpoint ? &Dpi_pn : 0);
-
-    // If needed, apply chain rule
-    if (Dpose)
-      *Dpose = Dpi_pn * *Dpose;
-    if (Dpoint)
-      *Dpoint = Dpi_pn * *Dpoint;
-
-    return pi;
-  }
-
-  /** project a point at infinity from world coordinate to the image
-   *  @param pw is a point in the world coordinate (it is pw = lambda*[pw_x  pw_y  pw_z] with lambda->inf)
-   *  @param Dpose is the Jacobian w.r.t. pose3
-   *  @param Dpoint is the Jacobian w.r.t. point3
-   *  @param Dcal is the Jacobian w.r.t. calibration
-   */
-  Point2 projectPointAtInfinity(const Point3& pw, OptionalJacobian<2, 6> Dpose =
-      boost::none, OptionalJacobian<2, 2> Dpoint = boost::none,
-      OptionalJacobian<2, DimK> Dcal = boost::none) const {
-
-    if (!Dpose && !Dpoint && !Dcal) {
-      const Point3 pc = this->pose().rotation().unrotate(pw); // get direction in camera frame (translation does not matter)
-      const Point2 pn = Base::project_to_camera(pc); // project the point to the camera
-      return K_.uncalibrate(pn);
-    }
-
-    // world to camera coordinate
-    Matrix3 Dpc_rot, Dpc_point;
-    const Point3 pc = this->pose().rotation().unrotate(pw, Dpc_rot, Dpc_point);
-
-    Matrix36 Dpc_pose;
-    Dpc_pose.setZero();
-    Dpc_pose.leftCols<3>() = Dpc_rot;
-
-    // camera to normalized image coordinate
-    Matrix23 Dpn_pc; // 2*3
-    const Point2 pn = Base::project_to_camera(pc, Dpn_pc);
-
-    // uncalibration
-    Matrix2 Dpi_pn; // 2*2
-    const Point2 pi = K_.uncalibrate(pn, Dcal, Dpi_pn);
-
-    // chain the Jacobian matrices
-    const Matrix23 Dpi_pc = Dpi_pn * Dpn_pc;
-    if (Dpose)
-      *Dpose = Dpi_pc * Dpc_pose;
-    if (Dpoint)
-      *Dpoint = (Dpi_pc * Dpc_point).leftCols<2>(); // only 2dof are important for the point (direction-only)
-    return pi;
-  }
-
-  /** project a point from world coordinate to the image, fixed Jacobians
-   *  @param pw is a point in the world coordinate
-   */
-  Point2 project2(
-      const Point3& pw, //
-      OptionalJacobian<2, dimension> Dcamera = boost::none,
-      OptionalJacobian<2, 3> Dpoint = boost::none) const {
-
-    // project to normalized coordinates
+  template<class POINT>
+  Point2 _project2(const POINT& pw, OptionalJacobian<2, dimension> Dcamera,
+      OptionalJacobian<2, FixedDimension<POINT>::value> Dpoint) const {
+    // We just call 3-derivative version in Base
     Matrix26 Dpose;
-    const Point2 pn = PinholeBase::project2(pw, Dpose, Dpoint);
-
-    // uncalibrate to pixel coordinates
-    Matrix2K Dcal;
-    Matrix2 Dpi_pn;
-    const Point2 pi = calibration().uncalibrate(pn, Dcamera ? &Dcal : 0,
-        Dcamera || Dpoint ? &Dpi_pn : 0);
-
-    // If needed, calculate derivatives
+    Eigen::Matrix<double, 2, DimK> Dcal;
+    Point2 pi = Base::project(pw, Dcamera ? &Dpose : 0, Dpoint,
+        Dcamera ? &Dcal : 0);
     if (Dcamera)
-      *Dcamera << Dpi_pn * Dpose, Dcal;
-    if (Dpoint)
-      *Dpoint = Dpi_pn * (*Dpoint);
-
+      *Dcamera << Dpose, Dcal;
     return pi;
+  }
+
+  /// project a 3D point from world coordinates into the image
+  Point2 project2(const Point3& pw, OptionalJacobian<2, dimension> Dcamera =
+      boost::none, OptionalJacobian<2, 3> Dpoint = boost::none) const {
+    return _project2(pw, Dcamera, Dpoint);
+  }
+
+  /// project a point at infinity from world coordinates into the image
+  Point2 project2(const Unit3& pw, OptionalJacobian<2, dimension> Dcamera =
+      boost::none, OptionalJacobian<2, 2> Dpoint = boost::none) const {
+    return _project2(pw, Dcamera, Dpoint);
   }
 
   /**
@@ -350,7 +274,7 @@ public:
     if (Dother) {
       Dother->resize(1, 6 + CalibrationB::dimension);
       Dother->setZero();
-      Dother->block(0, 0, 1, 6) = Dother_;
+      Dother->block<1, 6>(0, 0) = Dother_;
     }
     return result;
   }

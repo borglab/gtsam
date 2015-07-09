@@ -71,16 +71,16 @@ FastVector<Key> createKeyVector(string s, const Vector& I) {
 }
 
 // Create a KeySet from indices
-FastSet<Key> createKeySet(const Vector& I) {
-  FastSet<Key> set;
+KeySet createKeySet(const Vector& I) {
+  KeySet set;
   for (int i = 0; i < I.size(); i++)
     set.insert(I[i]);
   return set;
 }
 
 // Create a KeySet from indices using symbol
-FastSet<Key> createKeySet(string s, const Vector& I) {
-  FastSet<Key> set;
+KeySet createKeySet(string s, const Vector& I) {
+  KeySet set;
   char c = s[0];
   for (int i = 0; i < I.size(); i++)
     set.insert(symbol(c, I[i]));
@@ -229,7 +229,7 @@ Values localToWorld(const Values& local, const Pose2& base,
   // if no keys given, get all keys from local values
   FastVector<Key> keys(user_keys);
   if (keys.size()==0)
-    keys = FastVector<Key>(local.keys());
+    keys = local.keys();
 
   // Loop over all keys
   BOOST_FOREACH(Key key, keys) {

@@ -29,7 +29,7 @@ namespace gtsam {
     // Remove the contaminated part of the Bayes tree
     BayesNetType bn;
     if (!this->empty()) {
-      const FastSet<Key> newFactorKeys = newFactors.keys();
+      const KeySet newFactorKeys = newFactors.keys();
       this->removeTop(std::vector<Key>(newFactorKeys.begin(), newFactorKeys.end()), bn, orphans);
     }
 
@@ -44,9 +44,9 @@ namespace gtsam {
 
     // eliminate into a Bayes net
     const VariableIndex varIndex(factors);
-    const FastSet<Key> newFactorKeys = newFactors.keys();
+    const KeySet newFactorKeys = newFactors.keys();
     const Ordering constrainedOrdering =
-      Ordering::colamdConstrainedLast(varIndex, std::vector<Key>(newFactorKeys.begin(), newFactorKeys.end()));
+      Ordering::ColamdConstrainedLast(varIndex, std::vector<Key>(newFactorKeys.begin(), newFactorKeys.end()));
     Base bayesTree = *factors.eliminateMultifrontal(constrainedOrdering, function, varIndex);
     this->roots_.insert(this->roots_.end(), bayesTree.roots().begin(), bayesTree.roots().end());
     this->nodes_.insert(bayesTree.nodes().begin(), bayesTree.nodes().end());

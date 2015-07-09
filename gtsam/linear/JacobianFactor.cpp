@@ -20,7 +20,7 @@
 #include <gtsam/linear/linearExceptions.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/JacobianFactor.h>
-#include <gtsam/linear/HessianFactor.h>
+#include <gtsam/linear/Scatter.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/inference/VariableSlots.h>
@@ -66,10 +66,10 @@ JacobianFactor::JacobianFactor() :
 /* ************************************************************************* */
 JacobianFactor::JacobianFactor(const GaussianFactor& gf) {
   // Copy the matrix data depending on what type of factor we're copying from
-  if (const JacobianFactor* rhs = dynamic_cast<const JacobianFactor*>(&gf))
-    *this = JacobianFactor(*rhs);
-  else if (const HessianFactor* rhs = dynamic_cast<const HessianFactor*>(&gf))
-    *this = JacobianFactor(*rhs);
+  if (const JacobianFactor* asJacobian = dynamic_cast<const JacobianFactor*>(&gf))
+    *this = JacobianFactor(*asJacobian);
+  else if (const HessianFactor* asHessian = dynamic_cast<const HessianFactor*>(&gf))
+    *this = JacobianFactor(*asHessian);
   else
     throw std::invalid_argument(
         "In JacobianFactor(const GaussianFactor& rhs), rhs is neither a JacobianFactor nor a HessianFactor");
@@ -432,8 +432,6 @@ Vector JacobianFactor::error_vector(const VectorValues& c) const {
 
 /* ************************************************************************* */
 double JacobianFactor::error(const VectorValues& c) const {
-  if (empty())
-    return 0;
   Vector weighted = error_vector(c);
   return 0.5 * weighted.dot(weighted);
 }
@@ -498,6 +496,43 @@ map<Key, Matrix> JacobianFactor::hessianBlockDiagonal() const {
 }
 
 /* ************************************************************************* */
+void JacobianFactor::updateHessian(const FastVector<Key>& infoKeys,
+                                   SymmetricBlockMatrix* info) const {
+  gttic(updateHessian_JacobianFactor);
+
+  if (rows() == 0) return;
+
+  // Whiten the factor if it has a noise model
+  const SharedDiagonal& model = get_model();
+  if (model && !model->isUnit()) {
+    if (model->isConstrained())
+      throw invalid_argument(
+          "JacobianFactor::updateHessian: cannot update information with "
+          "constrained noise model");
+    JacobianFactor whitenedFactor = whiten();
+    whitenedFactor.updateHessian(infoKeys, info);
+  } else {
+    // Ab_ is the augmented Jacobian matrix A, and we perform I += A'*A below
+    DenseIndex n = Ab_.nBlocks() - 1, N = info->nBlocks() - 1;
+
+    // Apply updates to the upper triangle
+    // Loop over blocks of A, including RHS with j==n
+    vector<DenseIndex> slots(n+1);
+    for (DenseIndex j = 0; j <= n; ++j) {
+      const DenseIndex J = (j == n) ? N : Slot(infoKeys, keys_[j]);
+      slots[j] = J;
+      // Fill off-diagonal blocks with Ai'*Aj
+      for (DenseIndex i = 0; i < j; ++i) {
+        const DenseIndex I = slots[i];  // because i<j, slots[i] is valid.
+        (*info)(I, J).knownOffDiagonal() += Ab_(i).transpose() * Ab_(j);
+      }
+      // Fill diagonal block with Aj'*Aj
+      (*info)(J, J).selfadjointView().rankUpdate(Ab_(j).transpose());
+    }
+  }
+}
+
+/* ************************************************************************* */
 Vector JacobianFactor::operator*(const VectorValues& x) const {
   Vector Ax = zero(Ab_.rows());
   if (empty())
@@ -531,6 +566,51 @@ void JacobianFactor::multiplyHessianAdd(double alpha, const VectorValues& x,
     VectorValues& y) const {
   Vector Ax = (*this) * x;
   transposeMultiplyAdd(alpha, Ax, y);
+}
+
+/* ************************************************************************* */
+/** Raw memory access version of multiplyHessianAdd y += alpha * A'*A*x
+ * Note: this is not assuming a fixed dimension for the variables,
+ * but requires the vector accumulatedDims to tell the dimension of
+ * each variable: e.g.: x0 has dim 3, x2 has dim 6, x3 has dim 2,
+ * then accumulatedDims is [0 3 9 11 13]
+ * NOTE: size of accumulatedDims is size of keys + 1!!
+ * TODO Frank asks: why is this here if not regular ????
+ */
+void JacobianFactor::multiplyHessianAdd(double alpha, const double* x, double* y,
+    const std::vector<size_t>& accumulatedDims) const {
+
+  /// Use Eigen magic to access raw memory
+  typedef Eigen::Map<Vector> VectorMap;
+  typedef Eigen::Map<const Vector> ConstVectorMap;
+
+  if (empty())
+    return;
+  Vector Ax = zero(Ab_.rows());
+
+  /// Just iterate over all A matrices and multiply in correct config part (looping over keys)
+  /// E.g.: Jacobian A = [A0 A1 A2] multiplies x = [x0 x1 x2]'
+  /// Hence: Ax = A0 x0 + A1 x1 + A2 x2 (hence we loop over the keys and accumulate)
+  for (size_t pos = 0; pos < size(); ++pos) {
+    size_t offset = accumulatedDims[keys_[pos]];
+    size_t dim = accumulatedDims[keys_[pos] + 1] - offset;
+    Ax += Ab_(pos) * ConstVectorMap(x + offset, dim);
+  }
+  /// Deal with noise properly, need to Double* whiten as we are dividing by variance
+  if (model_) {
+    model_->whitenInPlace(Ax);
+    model_->whitenInPlace(Ax);
+  }
+
+  /// multiply with alpha
+  Ax *= alpha;
+
+  /// Again iterate over all A matrices and insert Ai^T into y
+  for (size_t pos = 0; pos < size(); ++pos) {
+    size_t offset = accumulatedDims[keys_[pos]];
+    size_t dim = accumulatedDims[keys_[pos] + 1] - offset;
+    VectorMap(y + offset, dim) += Ab_(pos).transpose() * Ax;
+  }
 }
 
 /* ************************************************************************* */
@@ -647,8 +727,8 @@ std::pair<boost::shared_ptr<GaussianConditional>,
   jointFactor->Ab_.matrix().triangularView<Eigen::StrictlyLower>().setZero();
 
   // Split elimination result into conditional and remaining factor
-  GaussianConditional::shared_ptr conditional = jointFactor->splitConditional(
-      keys.size());
+  GaussianConditional::shared_ptr conditional = //
+      jointFactor->splitConditional(keys.size());
 
   return make_pair(conditional, jointFactor);
 }
@@ -677,11 +757,11 @@ GaussianConditional::shared_ptr JacobianFactor::splitConditional(
   }
   GaussianConditional::shared_ptr conditional = boost::make_shared<
       GaussianConditional>(Base::keys_, nrFrontals, Ab_, conditionalNoiseModel);
-  const DenseIndex maxRemainingRows = std::min(Ab_.cols() - 1, originalRowEnd)
+  const DenseIndex maxRemainingRows = std::min(Ab_.cols(), originalRowEnd)
       - Ab_.rowStart() - frontalDim;
   const DenseIndex remainingRows =
-      model_ ?
-          std::min(model_->sigmas().size() - frontalDim, maxRemainingRows) :
+      model_ ? std::min(model_->sigmas().size() - frontalDim,
+          maxRemainingRows) :
           maxRemainingRows;
   Ab_.rowStart() += frontalDim;
   Ab_.rowEnd() = Ab_.rowStart() + remainingRows;

@@ -17,57 +17,72 @@
  * @date Feb 20, 2012
  */
 
-#include <iostream>
-
-#include <boost/lexical_cast.hpp>
-#include <boost/foreach.hpp>
-
 #include <gtsam/inference/Key.h>
 #include <gtsam/inference/LabeledSymbol.h>
+
+#include <boost/foreach.hpp>
+#include <boost/lexical_cast.hpp>
+#include <iostream>
+
+using namespace std;
 
 namespace gtsam {
 
 /* ************************************************************************* */
-std::string _multirobotKeyFormatter(Key key) {
+string _defaultKeyFormatter(Key key) {
+  const Symbol asSymbol(key);
+  if (asSymbol.chr() > 0)
+    return (string) asSymbol;
+  else
+    return boost::lexical_cast<string>(key);
+}
+
+/* ************************************************************************* */
+void PrintKey(Key key, const string& s, const KeyFormatter& keyFormatter) {
+  cout << s << keyFormatter(key);
+}
+
+/* ************************************************************************* */
+string _multirobotKeyFormatter(Key key) {
   const LabeledSymbol asLabeledSymbol(key);
   if (asLabeledSymbol.chr() > 0 && asLabeledSymbol.label() > 0)
-    return (std::string) asLabeledSymbol;
+    return (string) asLabeledSymbol;
 
   const Symbol asSymbol(key);
   if (asLabeledSymbol.chr() > 0)
-    return (std::string) asSymbol;
+    return (string) asSymbol;
   else
-    return boost::lexical_cast<std::string>(key);
+    return boost::lexical_cast<string>(key);
 }
 
 /* ************************************************************************* */
 template<class CONTAINER>
-static void print(const CONTAINER& keys, const std::string& s,
+static void Print(const CONTAINER& keys, const string& s,
     const KeyFormatter& keyFormatter) {
-  std::cout << s << " ";
+  cout << s << " ";
   if (keys.empty())
-    std::cout << "(none)" << std::endl;
+    cout << "(none)" << endl;
   else {
     BOOST_FOREACH(const Key& key, keys)
-      std::cout << keyFormatter(key) << " ";
-    std::cout << std::endl;
+      cout << keyFormatter(key) << " ";
+    cout << endl;
   }
 }
 
 /* ************************************************************************* */
-void printKeyList(const KeyList& keys, const std::string& s,
+void PrintKeyList(const KeyList& keys, const string& s,
     const KeyFormatter& keyFormatter) {
-  print(keys, s, keyFormatter);
+  Print(keys, s, keyFormatter);
 }
 /* ************************************************************************* */
-void printKeyVector(const KeyVector& keys, const std::string& s,
+void PrintKeyVector(const KeyVector& keys, const string& s,
     const KeyFormatter& keyFormatter) {
-  print(keys, s, keyFormatter);
+  Print(keys, s, keyFormatter);
 }
 /* ************************************************************************* */
-void printKeySet(const KeySet& keys, const std::string& s,
+void PrintKeySet(const KeySet& keys, const string& s,
     const KeyFormatter& keyFormatter) {
-  print(keys, s, keyFormatter);
+  Print(keys, s, keyFormatter);
 }
 /* ************************************************************************* */
 

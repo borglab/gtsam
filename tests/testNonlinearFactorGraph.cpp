@@ -66,9 +66,9 @@ TEST( NonlinearFactorGraph, error )
 TEST( NonlinearFactorGraph, keys )
 {
   NonlinearFactorGraph fg = createNonlinearFactorGraph();
-  FastSet<Key> actual = fg.keys();
+  KeySet actual = fg.keys();
   LONGS_EQUAL(3, (long)actual.size());
-  FastSet<Key>::const_iterator it = actual.begin();
+  KeySet::const_iterator it = actual.begin();
   LONGS_EQUAL((long)L(1), (long)*(it++));
   LONGS_EQUAL((long)X(1), (long)*(it++));
   LONGS_EQUAL((long)X(2), (long)*(it++));
@@ -79,14 +79,14 @@ TEST( NonlinearFactorGraph, GET_ORDERING)
 {
   Ordering expected; expected += L(1), X(2), X(1); // For starting with l1,x1,x2
   NonlinearFactorGraph nlfg = createNonlinearFactorGraph();
-  Ordering actual = Ordering::colamd(nlfg);
+  Ordering actual = Ordering::Colamd(nlfg);
   EXPECT(assert_equal(expected,actual));
 
   // Constrained ordering - put x2 at the end
   Ordering expectedConstrained; expectedConstrained += L(1), X(1), X(2);
   FastMap<Key, int> constraints;
   constraints[X(2)] = 1;
-  Ordering actualConstrained = Ordering::colamdConstrained(nlfg, constraints);
+  Ordering actualConstrained = Ordering::ColamdConstrained(nlfg, constraints);
   EXPECT(assert_equal(expectedConstrained, actualConstrained));
 }
 

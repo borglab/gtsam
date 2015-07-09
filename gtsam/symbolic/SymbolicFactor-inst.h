@@ -17,15 +17,17 @@
 
 #pragma once
 
-#include <utility>
+#include <gtsam/symbolic/SymbolicFactor.h>
+#include <gtsam/symbolic/SymbolicConditional.h>
+#include <gtsam/inference/Factor.h>
+#include <gtsam/inference/Key.h>
+#include <gtsam/base/timing.h>
+
 #include <boost/shared_ptr.hpp>
 #include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
 
-#include <gtsam/inference/Factor.h>
-#include <gtsam/inference/Key.h>
-#include <gtsam/symbolic/SymbolicFactor.h>
-#include <gtsam/symbolic/SymbolicConditional.h>
+#include <utility>
 
 namespace gtsam
 {
@@ -37,8 +39,10 @@ namespace gtsam
     std::pair<boost::shared_ptr<SymbolicConditional>, boost::shared_ptr<SymbolicFactor> >
       EliminateSymbolic(const FactorGraph<FACTOR>& factors, const Ordering& keys)
     {
+      gttic(EliminateSymbolic);
+
       // Gather all keys
-      FastSet<Key> allKeys;
+      KeySet allKeys;
       BOOST_FOREACH(const boost::shared_ptr<FACTOR>& factor, factors) {
         allKeys.insert(factor->begin(), factor->end());
       }
@@ -50,7 +54,7 @@ namespace gtsam
       }
 
       // Sort frontal keys
-      FastSet<Key> frontals(keys);
+      KeySet frontals(keys);
       const size_t nFrontals = keys.size();
 
       // Build a key vector with the frontals followed by the separator

@@ -17,7 +17,7 @@
  */
 
 #pragma once
-
+#include <gtsam/config.h>      // Configuration from CMake
 #include <gtsam/nonlinear/internal/JacobianMap.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/base/Manifold.h>
@@ -119,7 +119,6 @@ public:
     else if (kind == Leaf)
       std::cout << indent << "Leaf, key = " << content.key << std::endl;
     else if (kind == Function) {
-      std::cout << indent << "Function" << std::endl;
       content.ptr->print(indent + "  ");
     }
   }

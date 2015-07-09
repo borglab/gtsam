@@ -32,7 +32,7 @@ namespace gtsam {
 template<class T>
 class ExpressionFactor: public NoiseModelFactor {
 
- protected:
+protected:
 
   typedef ExpressionFactor<T> This;
 
@@ -42,7 +42,7 @@ class ExpressionFactor: public NoiseModelFactor {
 
   static const int Dim = traits<T>::dimension;
 
- public:
+public:
 
   typedef boost::shared_ptr<ExpressionFactor<T> > shared_ptr;
 
@@ -83,13 +83,16 @@ class ExpressionFactor: public NoiseModelFactor {
     if (!active(x))
       return boost::shared_ptr<JacobianFactor>();
 
-    // Create a writeable JacobianFactor in advance
     // In case noise model is constrained, we need to provide a noise model
-    bool constrained = noiseModel_->isConstrained();
+    SharedDiagonal noiseModel;
+    if (noiseModel_->isConstrained()) {
+      noiseModel = boost::static_pointer_cast<noiseModel::Constrained>(
+          noiseModel_)->unit();
+    }
+
+    // Create a writeable JacobianFactor in advance
     boost::shared_ptr<JacobianFactor> factor(
-        constrained ? new JacobianFactor(keys_, dims_, Dim,
-            boost::static_pointer_cast<noiseModel::Constrained>(noiseModel_)->unit()) :
-            new JacobianFactor(keys_, dims_, Dim));
+        new JacobianFactor(keys_, dims_, Dim, noiseModel));
 
     // Wrap keys and VerticalBlockMatrix into structure passed to expression_
     VerticalBlockMatrix& Ab = factor->matrixObject();
@@ -114,7 +117,8 @@ class ExpressionFactor: public NoiseModelFactor {
   /// @return a deep copy of this factor
   virtual gtsam::NonlinearFactor::shared_ptr clone() const {
     return boost::static_pointer_cast<gtsam::NonlinearFactor>(
-        gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
+        gtsam::NonlinearFactor::shared_ptr(new This(*this)));
+  }
 };
 // ExpressionFactor
 

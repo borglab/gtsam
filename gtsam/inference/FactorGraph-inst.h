@@ -28,6 +28,7 @@
 
 #include <stdio.h>
 #include <sstream>
+#include <iostream> // for cout :-(
 
 namespace gtsam {
 
@@ -72,8 +73,8 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class FACTOR>
-  FastSet<Key> FactorGraph<FACTOR>::keys() const {
-    FastSet<Key> allKeys;
+  KeySet FactorGraph<FACTOR>::keys() const {
+    KeySet allKeys;
     BOOST_FOREACH(const sharedFactor& factor, factors_)
       if (factor)
         allKeys.insert(factor->begin(), factor->end());

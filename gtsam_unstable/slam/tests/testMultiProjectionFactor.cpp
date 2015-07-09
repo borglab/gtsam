@@ -69,7 +69,7 @@ TEST( MultiProjectionFactor, create ){
   n_measPixel << 10, 10, 10, 10, 10, 10;
   const SharedDiagonal noiseProjection = noiseModel::Isotropic::Sigma(2, 1);
 
-  FastSet<Key> views;
+  KeySet views;
   views.insert(x1);
   views.insert(x2);
   views.insert(x3);

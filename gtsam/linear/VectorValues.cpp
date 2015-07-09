@@ -67,6 +67,18 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  VectorValues::iterator VectorValues::insert(const std::pair<Key, Vector>& key_value) {
+    // Note that here we accept a pair with a reference to the Vector, but the Vector is copied as
+    // it is inserted into the values_ map.
+    std::pair<iterator, bool> result = values_.insert(key_value);
+    if(!result.second)
+      throw std::invalid_argument(
+      "Requested to insert variable '" + DefaultKeyFormatter(key_value.first)
+      + "' already in this VectorValues.");
+    return result.first;
+  }
+
+  /* ************************************************************************* */
   void VectorValues::update(const VectorValues& values)
   {
     iterator hint = begin();

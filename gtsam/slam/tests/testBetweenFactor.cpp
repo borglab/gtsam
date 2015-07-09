@@ -19,9 +19,9 @@ using namespace gtsam::noiseModel;
  * This TEST should fail. If you want it to pass, change noise to 0.
  */
 TEST(BetweenFactor, Rot3) {
-  Rot3 R1 = Rot3::rodriguez(0.1, 0.2, 0.3);
-  Rot3 R2 = Rot3::rodriguez(0.4, 0.5, 0.6);
-  Rot3 noise = Rot3(); // Rot3::rodriguez(0.01, 0.01, 0.01); // Uncomment to make unit test fail
+  Rot3 R1 = Rot3::Rodrigues(0.1, 0.2, 0.3);
+  Rot3 R2 = Rot3::Rodrigues(0.4, 0.5, 0.6);
+  Rot3 noise = Rot3(); // Rot3::Rodrigues(0.01, 0.01, 0.01); // Uncomment to make unit test fail
   Rot3 measured = R1.between(R2)*noise  ;
 
   BetweenFactor<Rot3> factor(R(1), R(2), measured, Isotropic::Sigma(3, 0.05));

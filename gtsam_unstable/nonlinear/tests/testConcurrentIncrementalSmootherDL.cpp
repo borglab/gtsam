@@ -579,7 +579,7 @@ TEST( ConcurrentIncrementalSmootherDL, synchronize_3 )
 //  GaussianSequentialSolver GSS = GaussianSequentialSolver(*LinFactorGraph);
 //  GaussianBayesNet::shared_ptr GBNsptr = GSS.eliminate();
 
-  FastSet<Key> allkeys = LinFactorGraph->keys();
+  KeySet allkeys = LinFactorGraph->keys();
   BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, filterSeparatorValues) {
     allkeys.erase(key_value.key);
   }

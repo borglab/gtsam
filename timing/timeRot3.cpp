@@ -40,10 +40,10 @@ int main()
   double norm=sqrt(1.0+16.0+4.0);
   double x=1.0/norm, y=4.0/norm, z=2.0/norm;
   Vector v = (Vector(3) << x, y, z).finished();
-  Rot3 R = Rot3::rodriguez(0.1, 0.4, 0.2), R2 = R.retract(v);
+  Rot3 R = Rot3::Rodrigues(0.1, 0.4, 0.2), R2 = R.retract(v);
 
-  TEST("Rodriguez formula given axis angle", Rot3::rodriguez(v,0.001))
-  TEST("Rodriguez formula given canonical coordinates", Rot3::rodriguez(v))
+  TEST("Rodriguez formula given axis angle", Rot3::AxisAngle(v,0.001))
+  TEST("Rodriguez formula given canonical coordinates", Rot3::Rodrigues(v))
   TEST("Expmap", R*Rot3::Expmap(v))
   TEST("Retract", R.retract(v))
   TEST("Logmap", Rot3::Logmap(R.between(R2)))

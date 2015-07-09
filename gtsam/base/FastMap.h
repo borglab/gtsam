@@ -19,9 +19,9 @@
 #pragma once
 
 #include <gtsam/base/FastDefaultAllocator.h>
-#include <map>
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/map.hpp>
+#include <map>
 
 namespace gtsam {
 
