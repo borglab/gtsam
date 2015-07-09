@@ -205,7 +205,6 @@ T Expression<T>::valueAndJacobianMap(const Values& values,
 
   internal::ExecutionTrace<T> trace;
   T value(this->traceExecution(values, trace, traceStorage));
-  GTSAM_PRINT(trace);
   trace.startReverseAD1(jacobians);
 
 #ifdef _MSC_VER

@@ -536,7 +536,6 @@ TEST(Expression, testMultipleCompositions) {
   //   Leaf, key = 1
   //   Leaf, key = 2
   Expression<double> sum1_(Combine(1, 2), v1_, v2_);
-  GTSAM_PRINT(sum1_);
   EXPECT(sum1_.keys() == list_of(1)(2));
   EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum1_, values, fd_step, tolerance);
 
@@ -546,7 +545,6 @@ TEST(Expression, testMultipleCompositions) {
   //     Leaf, key = 2
   //   Leaf, key = 1
   Expression<double> sum2_(Combine(3, 4), sum1_, v1_);
-  GTSAM_PRINT(sum2_);
   EXPECT(sum2_.keys() == list_of(1)(2));
   EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum2_, values, fd_step, tolerance);
 
@@ -560,7 +558,6 @@ TEST(Expression, testMultipleCompositions) {
   //     Leaf, key = 1
   //     Leaf, key = 2
   Expression<double> sum3_(Combine(5, 6), sum1_, sum2_);
-  GTSAM_PRINT(sum3_);
   EXPECT(sum3_.keys() == list_of(1)(2));
   EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum3_, values, fd_step, tolerance);
 }
