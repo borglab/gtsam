@@ -28,18 +28,18 @@
 using namespace std;
 using namespace gtsam;
 
-// Create a noise model for the pixel error
-static SharedNoiseModel model(noiseModel::Isotropic::Sigma(1, 0.5));
-
 Key poseKey(1);
 Key pointKey(2);
 
 typedef BearingFactor<Pose2, Point2, Rot2> BearingFactor2D;
 double measurement2D(10.0);
-BearingFactor2D factor2D(poseKey, pointKey, measurement2D, model);
-GTSAM_CONCEPT_TESTABLE_INST(BearingFactor2D)
+static SharedNoiseModel model2D(noiseModel::Isotropic::Sigma(1, 0.5));
+BearingFactor2D factor2D(poseKey, pointKey, measurement2D, model2D);
 
 typedef BearingFactor<Pose3, Point3, Unit3> BearingFactor3D;
+Unit3 measurement3D(1,2,3);
+static SharedNoiseModel model3D(noiseModel::Isotropic::Sigma(2, 0.5));
+BearingFactor3D factor3D(poseKey, pointKey, measurement3D, model3D);
 
 /* ************************************************************************* */
 // Export Noisemodels
@@ -74,21 +74,28 @@ TEST(BearingFactor, 2D) {
 }
 
 /* ************************************************************************* */
-// TODO(frank): this is broken: (non-existing) Pose3::bearing should yield a
-// Unit3
-// TEST(BearingFactor, 3D) {
-//  // Create a factor
-//  Rot3 measurement;
-//  BearingFactor<Pose3, Point3> factor(poseKey, pointKey, measurement, model);
-//
-//  // Set the linearization point
-//  Values values;
-//  values.insert(poseKey, Pose3(Rot3::RzRyRx(0.2, -0.3, 1.75), Point3(1.0, 2.0,
-//  -3.0)));
-//  values.insert(pointKey, Point3(-2.0, 11.0, 1.0));
-//
-//  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-5, 1e-5);
-//}
+TEST(BearingFactor, Serialization3D) {
+  EXPECT(serializationTestHelpers::equalsObj<BearingFactor3D>(factor3D));
+  EXPECT(serializationTestHelpers::equalsXML<BearingFactor3D>(factor3D));
+  EXPECT(serializationTestHelpers::equalsBinary<BearingFactor3D>(factor3D));
+}
+
+/* ************************************************************************* */
+TEST(BearingFactor, 3D) {
+  // Serialize the factor
+  std::string serialized = serializeXML(factor3D);
+
+  // And de-serialize it
+  BearingFactor3D factor;
+  deserializeXML(serialized, factor);
+
+  // Set the linearization point
+  Values values;
+  values.insert(poseKey, Pose3(Rot3::RzRyRx(0.2, -0.3, 1.75), Point3(1.0, 2.0,-3.0)));
+  values.insert(pointKey, Point3(-2.0, 11.0, 1.0));
+
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-5, 1e-5);
+}
 
 /* ************************************************************************* */
 int main() {
