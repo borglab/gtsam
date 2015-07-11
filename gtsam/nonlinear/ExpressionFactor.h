@@ -46,19 +46,10 @@ public:
   typedef boost::shared_ptr<ExpressionFactor<T> > shared_ptr;
 
   /// Constructor
-  ExpressionFactor(const SharedNoiseModel& noiseModel, //
-      const T& measurement, const Expression<T>& expression) :
-      measurement_(measurement), expression_(expression) {
-    if (!noiseModel)
-      throw std::invalid_argument("ExpressionFactor: no NoiseModel.");
-    if (noiseModel->dim() != Dim)
-      throw std::invalid_argument(
-          "ExpressionFactor was created with a NoiseModel of incorrect dimension.");
-    noiseModel_ = noiseModel;
-
-    // Get keys and dimensions for Jacobian matrices
-    // An Expression is assumed unmutable, so we do this now
-    boost::tie(keys_, dims_) = expression_.keysAndDims();
+  ExpressionFactor(const SharedNoiseModel& noiseModel,  //
+                   const T& measurement, const Expression<T>& expression)
+      : NoiseModelFactor(noiseModel), measurement_(measurement) {
+    initialize(expression);
   }
 
   /// print relies on Testable traits being defined for T
@@ -71,7 +62,8 @@ public:
   bool equals(const NonlinearFactor& f, double tol) const {
     const ExpressionFactor* p = dynamic_cast<const ExpressionFactor*>(&f);
     return p && NoiseModelFactor::equals(f, tol) &&
-           traits<T>::Equals(measurement_, p->measurement_, tol);
+           traits<T>::Equals(measurement_, p->measurement_, tol) &&
+           dims_ == p->dims_;
   }
 
   /**
@@ -132,12 +124,83 @@ public:
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
- protected:
-  /// Default constructor, for serialization
-  ExpressionFactor() {}
+protected:
+ /// Default constructor, for serialization
+ ExpressionFactor() {}
 
+ /// Constructor for use by SerializableExpressionFactor
+ ExpressionFactor(const SharedNoiseModel& noiseModel, const T& measurement)
+     : NoiseModelFactor(noiseModel), measurement_(measurement) {
+   // Not properly initialized yet, need to call initialize
+ }
+
+ /// Initialize with constructor arguments
+ void initialize(const Expression<T>& expression) {
+   if (!noiseModel_)
+     throw std::invalid_argument("ExpressionFactor: no NoiseModel.");
+   if (noiseModel_->dim() != Dim)
+     throw std::invalid_argument(
+         "ExpressionFactor was created with a NoiseModel of incorrect dimension.");
+   expression_ = expression;
+
+   // Get keys and dimensions for Jacobian matrices
+   // An Expression is assumed unmutable, so we do this now
+   boost::tie(keys_, dims_) = expression_.keysAndDims();
+ }
+
+private:
+ /// Serialization function
+ template <class ARCHIVE>
+ void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+   ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(NoiseModelFactor);
+   ar& boost::serialization::make_nvp("measurement_", this->measurement_);
+ }
+
+ friend class boost::serialization::access;
 };
 // ExpressionFactor
+
+
+/**
+ * ExpressionFactor variant that supports serialization
+ * Simply overload the pure virtual method [expression] to construct an expression from keys_
+ */
+template <typename T>
+class SerializableExpressionFactor : public ExpressionFactor<T> {
+ public:
+  /// Constructor takes only two arguments, still need to call initialize
+  SerializableExpressionFactor(const SharedNoiseModel& noiseModel, const T& measurement)
+      : ExpressionFactor<T>(noiseModel, measurement) {
+  }
+
+ protected:
+
+  /// Return an expression that predicts the measurement given Values
+  virtual Expression<T> expression() const = 0;
+
+  /// Default constructor, for serialization
+  SerializableExpressionFactor() {}
+
+  /// Save to an archive: just saves the base class
+  template <class Archive>
+  void save(Archive& ar, const unsigned int /*version*/) const {
+    ar << boost::serialization::make_nvp(
+              "ExpressionFactor", boost::serialization::base_object<ExpressionFactor<T> >(*this));
+  }
+
+  /// Load from an archive, creating a valid expression using the overloaded [expression] method
+  template <class Archive>
+  void load(Archive& ar, const unsigned int /*version*/) {
+    ar >> boost::serialization::make_nvp(
+              "ExpressionFactor", boost::serialization::base_object<ExpressionFactor<T> >(*this));
+    this->initialize(expression());
+  }
+
+  // Indicate that we implement save/load separately, and be friendly to boost
+  BOOST_SERIALIZATION_SPLIT_MEMBER()
+  friend class boost::serialization::access;
+};
+// SerializableExpressionFactor
 
 /// traits
 template <typename T>

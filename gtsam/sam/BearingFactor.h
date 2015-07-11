@@ -27,16 +27,6 @@ template <class T, class Archive>
 void serialize(Archive& ar, gtsam::NonlinearFactor& factor,
                const unsigned int version) {}
 
-// template <class T, class Archive>
-// void serialize(Archive& ar, gtsam::ExpressionFactor<T>& factor,
-//               const unsigned int version) {
-//  ar& BOOST_SERIALIZATION_NVP(factor.measurement_);
-//}
-
-// template <class Factor, class Archive>
-// void serialize(Archive& ar, Factor& factor, const unsigned int version) {
-//}
-
 }  // namespace serialization
 }  // namespace boost
 
@@ -47,10 +37,10 @@ namespace gtsam {
  * @addtogroup SAM
  */
 template <class Pose, class Point, class Measured = typename Pose::Rotation>
-class BearingFactor : public ExpressionFactor<Measured> {
+class BearingFactor : public SerializableExpressionFactor<Measured> {
  private:
   typedef BearingFactor<Pose, Point> This;
-  typedef ExpressionFactor<Measured> Base;
+  typedef SerializableExpressionFactor<Measured> Base;
 
   /** concept check by type */
   GTSAM_CONCEPT_TESTABLE_TYPE(Measured)
@@ -61,37 +51,28 @@ class BearingFactor : public ExpressionFactor<Measured> {
   BearingFactor() {}
 
   /// primary constructor
-  BearingFactor(Key poseKey, Key pointKey, const Measured& measured,
-                const SharedNoiseModel& model)
-      : Base(model, measured,
-             Expression<Measured>(Expression<Pose>(poseKey), &Pose::bearing,
-                                  Expression<Point>(pointKey))) {}
+  BearingFactor(Key poseKey, Key pointKey, const Measured& measured, const SharedNoiseModel& model)
+      : Base(model, measured) {
+    this->keys_.push_back(poseKey);
+    this->keys_.push_back(pointKey);
+    this->initialize(expression());
+  }
 
   virtual ~BearingFactor() {}
 
   /** print contents */
   void print(const std::string& s = "",
              const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
-    std::cout << s << "BearingFactor, bearing = ";
-    this->measurement_.print();
-    Base::print("", keyFormatter);
+    std::cout << s << "BearingFactor" << std::endl;
+    Base::print(s, keyFormatter);
   }
 
  private:
-  /** Serialization function */
-  friend class boost::serialization::access;
-  template <class ARCHIVE>
-  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& boost::serialization::make_nvp(
-        "NoiseModelFactor",
-        boost::serialization::base_object<NoiseModelFactor>(*this));
-    ar& boost::serialization::make_nvp("measurement_", this->measurement_);
+  // Return an expression
+  virtual Expression<Measured> expression() const {
+    return Expression<Measured>(Expression<Pose>(this->keys_[0]), &Pose::bearing,
+                                Expression<Point>(this->keys_[1]));
   }
-
-  template <class Archive>
-  friend void boost::serialization::serialize(Archive& ar, Base& factor,
-                                              const unsigned int version);
-
 };  // BearingFactor
 
 /// traits
