@@ -20,6 +20,7 @@
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/dllexport.h>
 
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/extended_type_info.hpp>
@@ -241,7 +242,7 @@ namespace gtsam {
       virtual Matrix R() const { return thisR();}
 
       /// Compute information matrix
-      virtual Matrix information() const { return thisR().transpose() * thisR(); }
+      virtual Matrix information() const { return R().transpose() * R(); }
 
       /// Compute covariance matrix
       virtual Matrix covariance() const { return information().inverse(); }
