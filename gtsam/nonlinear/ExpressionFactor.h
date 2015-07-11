@@ -29,18 +29,17 @@ namespace gtsam {
 /**
  * Factor that supports arbitrary expressions via AD
  */
-template<class T>
+template<typename T>
 class ExpressionFactor: public NoiseModelFactor {
 
 protected:
 
   typedef ExpressionFactor<T> This;
-
-  T measurement_; ///< the measurement to be compared with the expression
-  Expression<T> expression_; ///< the expression that is AD enabled
-  FastVector<int> dims_; ///< dimensions of the Jacobian matrices
-
   static const int Dim = traits<T>::dimension;
+
+  T measurement_;  ///< the measurement to be compared with the expression
+  Expression<T> expression_;  ///< the expression that is AD enabled
+  FastVector<int> dims_;      ///< dimensions of the Jacobian matrices
 
 public:
 
@@ -60,6 +59,19 @@ public:
     // Get keys and dimensions for Jacobian matrices
     // An Expression is assumed unmutable, so we do this now
     boost::tie(keys_, dims_) = expression_.keysAndDims();
+  }
+
+  /// print relies on Testable traits being defined for T
+  void print(const std::string& s, const KeyFormatter& keyFormatter) const {
+    NoiseModelFactor::print(s, keyFormatter);
+    traits<T>::Print(measurement_, s + ".measurement_");
+  }
+
+  /// equals relies on Testable traits being defined for T
+  bool equals(const NonlinearFactor& f, double tol) const {
+    const ExpressionFactor* p = dynamic_cast<const ExpressionFactor*>(&f);
+    return p && NoiseModelFactor::equals(f, tol) &&
+           traits<T>::Equals(measurement_, p->measurement_, tol);
   }
 
   /**
@@ -119,8 +131,17 @@ public:
     return boost::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
+
+ protected:
+  /// Default constructor, for serialization
+  ExpressionFactor() {}
+
 };
 // ExpressionFactor
+
+/// traits
+template <typename T>
+struct traits<ExpressionFactor<T> > : public Testable<ExpressionFactor<T> > {};
 
 }// \ namespace gtsam
 
