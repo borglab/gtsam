@@ -31,6 +31,7 @@ namespace gtsam {
  */
 template<typename T>
 class ExpressionFactor: public NoiseModelFactor {
+  BOOST_CONCEPT_ASSERT((IsTestable<T>));
 
 protected:
 
