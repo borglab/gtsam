@@ -16,19 +16,9 @@
 
 #pragma once
 
-#include <gtsam/nonlinear/ExpressionFactor.h>
+#include <gtsam/nonlinear/SerializableExpressionFactor.h>
 #include <gtsam/geometry/concepts.h>
 #include <gtsam/base/Testable.h>
-
-namespace boost {
-namespace serialization {
-
-template <class T, class Archive>
-void serialize(Archive& ar, gtsam::NonlinearFactor& factor,
-               const unsigned int version) {}
-
-}  // namespace serialization
-}  // namespace boost
 
 namespace gtsam {
 
@@ -39,39 +29,35 @@ namespace gtsam {
 template <class Pose, class Point, class Measured = typename Pose::Rotation>
 class BearingFactor : public SerializableExpressionFactor<Measured> {
  private:
-  typedef BearingFactor<Pose, Point> This;
-  typedef SerializableExpressionFactor<Measured> Base;
-
-  /** concept check by type */
   GTSAM_CONCEPT_TESTABLE_TYPE(Measured)
   GTSAM_CONCEPT_POSE_TYPE(Pose)
 
+  // Return measurement expression
+  virtual Expression<Measured> expression() const {
+    return Expression<Measured>(Expression<Pose>(this->keys_[0]), &Pose::bearing,
+                                Expression<Point>(this->keys_[1]));
+  }
+
  public:
-  /// Default constructor
+  /// default constructor
   BearingFactor() {}
 
   /// primary constructor
-  BearingFactor(Key poseKey, Key pointKey, const Measured& measured, const SharedNoiseModel& model)
-      : Base(model, measured) {
+  BearingFactor(Key poseKey, Key pointKey, const Measured& measured,
+                const SharedNoiseModel& model)
+      : SerializableExpressionFactor<Measured>(model, measured) {
     this->keys_.push_back(poseKey);
     this->keys_.push_back(pointKey);
     this->initialize(expression());
   }
 
+  /// desructor
   virtual ~BearingFactor() {}
 
-  /** print contents */
-  void print(const std::string& s = "",
-             const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+  /// print
+  void print(const std::string& s = "", const KeyFormatter& kf = DefaultKeyFormatter) const {
     std::cout << s << "BearingFactor" << std::endl;
-    Base::print(s, keyFormatter);
-  }
-
- private:
-  // Return an expression
-  virtual Expression<Measured> expression() const {
-    return Expression<Measured>(Expression<Pose>(this->keys_[0]), &Pose::bearing,
-                                Expression<Point>(this->keys_[1]));
+    SerializableExpressionFactor<Measured>::print(s, kf);
   }
 };  // BearingFactor
 
