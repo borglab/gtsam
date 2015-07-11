@@ -21,6 +21,7 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/factorTesting.h>
 #include <gtsam/base/serialization.h>
+#include <gtsam/base/serializationTestHelpers.h>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -31,18 +32,27 @@ using namespace gtsam;
 static SharedNoiseModel model(noiseModel::Unit::Create(1));
 
 typedef BearingFactor<Pose2, Point2> BearingFactor2D;
-typedef BearingFactor<Pose3, Point3> BearingFactor3D;
+typedef BearingFactor<Pose3, Point3, Unit3> BearingFactor3D;
 
 Key poseKey(1);
 Key pointKey(2);
+
+GTSAM_CONCEPT_TESTABLE_INST(BearingFactor2D)
+
+/* ************************************************************************* */
+// Export Noisemodels
+// See http://www.boost.org/doc/libs/1_32_0/libs/serialization/doc/special.html
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Unit, "gtsam_noiseModel_Unit");
 
 /* ************************************************************************* */
 TEST(BearingFactor, 2D) {
   // Create a factor
   double measurement(10.0);
-  BearingFactor<Pose2, Point2> factor(poseKey, pointKey, measurement, model);
+  BearingFactor2D factor(poseKey, pointKey, measurement, model);
   std::string serialized = serializeXML(factor);
   cout << serialized << endl;
+
+  EXPECT(serializationTestHelpers::equalsObj<BearingFactor2D>(factor));
 
   // Set the linearization point
   Values values;

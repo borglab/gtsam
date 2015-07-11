@@ -56,10 +56,10 @@ class BearingFactor : public ExpressionFactor<Measured> {
   GTSAM_CONCEPT_TESTABLE_TYPE(Measured)
   GTSAM_CONCEPT_POSE_TYPE(Pose)
 
+ public:
   /// Default constructor
   BearingFactor() {}
 
- public:
   /// primary constructor
   BearingFactor(Key poseKey, Key pointKey, const Measured& measured,
                 const SharedNoiseModel& model)
@@ -83,9 +83,9 @@ class BearingFactor : public ExpressionFactor<Measured> {
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
     ar& boost::serialization::make_nvp(
-        "Factor", boost::serialization::base_object<Factor>(*this));
-    //    ar& BOOST_SERIALIZATION_NVP(this->noiseModel_);
-    //    ar& BOOST_SERIALIZATION_NVP(measurement_);
+        "NoiseModelFactor",
+        boost::serialization::base_object<NoiseModelFactor>(*this));
+    ar& boost::serialization::make_nvp("measurement_", this->measurement_);
   }
 
   template <class Archive>
@@ -93,5 +93,10 @@ class BearingFactor : public ExpressionFactor<Measured> {
                                               const unsigned int version);
 
 };  // BearingFactor
+
+/// traits
+template <class Pose, class Point, class Measured>
+struct traits<BearingFactor<Pose, Point, Measured> >
+    : public Testable<BearingFactor<Pose, Point, Measured> > {};
 
 }  // namespace gtsam
