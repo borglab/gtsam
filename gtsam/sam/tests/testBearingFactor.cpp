@@ -34,7 +34,7 @@ static SharedNoiseModel model(noiseModel::Isotropic::Sigma(1, 0.5));
 Key poseKey(1);
 Key pointKey(2);
 
-typedef BearingFactor<Pose2, Point2> BearingFactor2D;
+typedef BearingFactor<Pose2, Point2, Rot2> BearingFactor2D;
 double measurement2D(10.0);
 BearingFactor2D factor2D(poseKey, pointKey, measurement2D, model);
 GTSAM_CONCEPT_TESTABLE_INST(BearingFactor2D)

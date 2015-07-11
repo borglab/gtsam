@@ -10,7 +10,9 @@
  * -------------------------------------------------------------------------- */
 
 /**
- *  @file  BearingFactor.H
+ *  @file  BearingFactor.h
+ *  @brief Serializable factor induced by a bearing measurement on a point from a pose
+ *  @date July 2015
  *  @author Frank Dellaert
  **/
 
@@ -26,33 +28,26 @@ namespace gtsam {
  * Binary factor for a bearing measurement
  * @addtogroup SAM
  */
-template <class Pose, class Point, class Measured = typename Pose::Rotation>
-class BearingFactor : public SerializableExpressionFactor<Measured> {
- private:
-  GTSAM_CONCEPT_TESTABLE_TYPE(Measured)
+template <typename Pose, typename Point, typename Measured>
+struct BearingFactor : public SerializableExpressionFactor<Measured> {
   GTSAM_CONCEPT_POSE_TYPE(Pose)
 
-  // Return measurement expression
-  virtual Expression<Measured> expression() const {
-    return Expression<Measured>(Expression<Pose>(this->keys_[0]), &Pose::bearing,
-                                Expression<Point>(this->keys_[1]));
-  }
-
- public:
   /// default constructor
   BearingFactor() {}
 
   /// primary constructor
-  BearingFactor(Key poseKey, Key pointKey, const Measured& measured,
-                const SharedNoiseModel& model)
+  BearingFactor(Key poseKey, Key pointKey, const Measured& measured, const SharedNoiseModel& model)
       : SerializableExpressionFactor<Measured>(model, measured) {
     this->keys_.push_back(poseKey);
     this->keys_.push_back(pointKey);
     this->initialize(expression());
   }
 
-  /// desructor
-  virtual ~BearingFactor() {}
+  // Return measurement expression
+  virtual Expression<Measured> expression() const {
+    return Expression<Measured>(Expression<Pose>(this->keys_[0]), &Pose::bearing,
+                                Expression<Point>(this->keys_[1]));
+  }
 
   /// print
   void print(const std::string& s = "", const KeyFormatter& kf = DefaultKeyFormatter) const {
