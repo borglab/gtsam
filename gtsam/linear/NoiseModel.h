@@ -20,6 +20,7 @@
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/dllexport.h>
 
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/extended_type_info.hpp>
