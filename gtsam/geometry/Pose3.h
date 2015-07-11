@@ -262,6 +262,14 @@ public:
   double range(const Pose3& pose, OptionalJacobian<1, 6> H1 = boost::none,
       OptionalJacobian<1, 6> H2 = boost::none) const;
 
+  /**
+   * Calculate bearing to a landmark
+   * @param point 3D location of landmark
+   * @return bearing (Unit3)
+   */
+  Unit3 bearing(const Point3& point, OptionalJacobian<2, 6> H1 = boost::none,
+      OptionalJacobian<2, 3> H2 = boost::none) const;
+
   /// @}
   /// @name Advanced Interface
   /// @{
