@@ -20,6 +20,26 @@
 #include <gtsam/geometry/concepts.h>
 #include <gtsam/base/Testable.h>
 
+namespace boost {
+namespace serialization {
+
+template <class T, class Archive>
+void serialize(Archive& ar, gtsam::NonlinearFactor& factor,
+               const unsigned int version) {}
+
+// template <class T, class Archive>
+// void serialize(Archive& ar, gtsam::ExpressionFactor<T>& factor,
+//               const unsigned int version) {
+//  ar& BOOST_SERIALIZATION_NVP(factor.measurement_);
+//}
+
+// template <class Factor, class Archive>
+// void serialize(Archive& ar, Factor& factor, const unsigned int version) {
+//}
+
+}  // namespace serialization
+}  // namespace boost
+
 namespace gtsam {
 
 /**
@@ -36,8 +56,11 @@ class BearingFactor : public ExpressionFactor<Measured> {
   GTSAM_CONCEPT_TESTABLE_TYPE(Measured)
   GTSAM_CONCEPT_POSE_TYPE(Pose)
 
+  /// Default constructor
+  BearingFactor() {}
+
  public:
-  /** primary constructor */
+  /// primary constructor
   BearingFactor(Key poseKey, Key pointKey, const Measured& measured,
                 const SharedNoiseModel& model)
       : Base(model, measured,
@@ -53,6 +76,22 @@ class BearingFactor : public ExpressionFactor<Measured> {
     this->measurement_.print();
     Base::print("", keyFormatter);
   }
+
+ private:
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    ar& boost::serialization::make_nvp(
+        "Factor", boost::serialization::base_object<Factor>(*this));
+    //    ar& BOOST_SERIALIZATION_NVP(this->noiseModel_);
+    //    ar& BOOST_SERIALIZATION_NVP(measurement_);
+  }
+
+  template <class Archive>
+  friend void boost::serialization::serialize(Archive& ar, Base& factor,
+                                              const unsigned int version);
+
 };  // BearingFactor
 
 }  // namespace gtsam

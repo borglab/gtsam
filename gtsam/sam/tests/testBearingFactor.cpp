@@ -20,6 +20,7 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/factorTesting.h>
+#include <gtsam/base/serialization.h>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -40,6 +41,8 @@ TEST(BearingFactor, 2D) {
   // Create a factor
   double measurement(10.0);
   BearingFactor<Pose2, Point2> factor(poseKey, pointKey, measurement, model);
+  std::string serialized = serializeXML(factor);
+  cout << serialized << endl;
 
   // Set the linearization point
   Values values;
