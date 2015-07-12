@@ -22,11 +22,13 @@
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
+#include <gtsam/base/serializationTestHelpers.h>
+
 #include <CppUnitLite/TestHarness.h>
+
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/random.hpp>
-//#include <boost/thread.hpp>
 #include <boost/assign/std/vector.hpp>
 #include <cmath>
 
@@ -363,6 +365,14 @@ TEST (Unit3, FromPoint3) {
   Matrix expectedH = numericalDerivative11<Unit3, Point3>(
       boost::bind(Unit3::FromPoint3, _1, boost::none), point);
   EXPECT(assert_equal(expectedH, actualH, 1e-8));
+}
+
+/* ************************************************************************* */
+TEST(actualH, Serialization) {
+  Unit3 p(0, 1, 0);
+  EXPECT(serializationTestHelpers::equalsObj(p));
+  EXPECT(serializationTestHelpers::equalsXML(p));
+  EXPECT(serializationTestHelpers::equalsBinary(p));
 }
 
 /* ************************************************************************* */
