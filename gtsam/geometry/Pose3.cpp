@@ -315,16 +315,16 @@ Point3 Pose3::transform_to(const Point3& p, OptionalJacobian<3,6> Dpose,
 /* ************************************************************************* */
 double Pose3::range(const Point3& point, OptionalJacobian<1, 6> H1,
                     OptionalJacobian<1, 3> H2) const {
-  Matrix36 D1;
-  Matrix3 D2;
-  Point3 local = transform_to(point, H1 ? &D1 : 0, H2 ? &D2 : 0);
+  Matrix36 D_local_pose;
+  Matrix3 D_local_point;
+  Point3 local = transform_to(point, H1 ? &D_local_pose : 0, H2 ? &D_local_point : 0);
   if (!H1 && !H2) {
     return local.norm();
   } else {
     Matrix13 D_r_local;
     const double r = local.norm(D_r_local);
-    if (H1) *H1 = D_r_local * D1;
-    if (H2) *H2 = D_r_local * D2;
+    if (H1) *H1 = D_r_local * D_local_pose;
+    if (H2) *H2 = D_r_local * D_local_point;
     return r;
   }
 }
@@ -332,25 +332,25 @@ double Pose3::range(const Point3& point, OptionalJacobian<1, 6> H1,
 /* ************************************************************************* */
 double Pose3::range(const Pose3& pose, OptionalJacobian<1, 6> H1,
                     OptionalJacobian<1, 6> H2) const {
-  Matrix13 D2;
-  double r = range(pose.translation(), H1, H2 ? &D2 : 0);
-  if (H2) *H2 << Matrix13::Zero(), D2 * pose.rotation().matrix();
+  Matrix13 D_local_point;
+  double r = range(pose.translation(), H1, H2 ? &D_local_point : 0);
+  if (H2) *H2 << Matrix13::Zero(), D_local_point * pose.rotation().matrix();
   return r;
 }
 
 /* ************************************************************************* */
 Unit3 Pose3::bearing(const Point3& point, OptionalJacobian<2, 6> H1,
                      OptionalJacobian<2, 3> H2) const {
-  Matrix36 D1;
-  Matrix3 D2;
-  Point3 local = transform_to(point, H1 ? &D1 : 0, H2 ? &D2 : 0);
+  Matrix36 D_local_pose;
+  Matrix3 D_local_point;
+  Point3 local = transform_to(point, H1 ? &D_local_pose : 0, H2 ? &D_local_point : 0);
   if (!H1 && !H2) {
     return Unit3(local);
   } else {
     Matrix23 D_b_local;
     Unit3 b = Unit3::FromPoint3(local, D_b_local);
-    if (H1)* H1 = D_b_local * D1;
-    if (H2) *H2 = D_b_local * D2;
+    if (H1) *H1 = D_b_local * D_local_pose;
+    if (H2) *H2 = D_b_local * D_local_point;
     return b;
   }
 }
