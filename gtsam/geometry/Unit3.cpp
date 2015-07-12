@@ -38,6 +38,7 @@
 
 #include <boost/random/variate_generator.hpp>
 #include <iostream>
+#include <limits>
 
 using namespace std;
 
@@ -79,8 +80,7 @@ const Matrix32& Unit3::basis() const {
 #endif
 
   // Return cached version if exists
-  if (B_)
-    return *B_;
+  if (B_) return *B_;
 
   // Get the axis of rotation with the minimum projected length of the point
   Vector3 axis;
@@ -136,37 +136,39 @@ double Unit3::distance(const Unit3& q, OptionalJacobian<1,2> H) const {
 
 /* ************************************************************************* */
 Unit3 Unit3::retract(const Vector2& v) const {
-
   // Compute the 3D xi_hat vector
   Vector3 xi_hat = basis() * v;
-  double xi_hat_norm = xi_hat.norm();
+  double theta = xi_hat.norm();
 
-  // When v is the so small and approximate as a direction
-  if (xi_hat_norm < 1e-8) {
-    return Unit3(cos(xi_hat_norm) * p_ + xi_hat);
+  // Treat case of very small v differently
+  if (theta < std::numeric_limits<double>::epsilon()) {
+    return Unit3(cos(theta) * p_ + xi_hat);
   }
 
-  Vector3 exp_p_xi_hat = cos(xi_hat_norm) * p_
-      + sin(xi_hat_norm) * (xi_hat / xi_hat_norm);
+  Vector3 exp_p_xi_hat =
+      cos(theta) * p_ + xi_hat * (sin(theta) / theta);
   return Unit3(exp_p_xi_hat);
 }
 
 /* ************************************************************************* */
-Vector2 Unit3::localCoordinates(const Unit3& y) const {
-
-  double dot = p_.dot(y.p_);
-
-  // Check for special cases
-  if (std::abs(dot - 1.0) < 1e-16)
-    return Vector2(0.0, 0.0);
-  else if (std::abs(dot + 1.0) < 1e-16)
-    return Vector2(M_PI, 0.0);
-  else {
+Vector2 Unit3::localCoordinates(const Unit3& other) const {
+  const double x = p_.dot(other.p_);
+  // Crucial quantitity here is y = theta/sin(theta) with theta=acos(x)
+  // Now, y = acos(x) / sin(acos(x)) = acos(x)/sqrt(1-x^2)
+  // We treat the special caes 1 and -1 below
+  const double x2 = x * x;
+  const double z = 1 - x2;
+  double y;
+  if (z < std::numeric_limits<double>::epsilon()) {
+    if (x > 0)  // expand at x=1
+      y = 1.0 - (x - 1.0) / 3.0;
+    else  // cop out
+      return Vector2(M_PI, 0.0);
+  } else {
     // no special case
-    const double theta = acos(dot);
-    Vector3 result_hat = (theta / sin(theta)) * (y.p_ - p_ * dot);
-    return basis().transpose() * result_hat;
+    y = acos(x) / sqrt(z);
   }
+  return basis().transpose() * y * (other.p_ - x * p_);
 }
 /* ************************************************************************* */
 
