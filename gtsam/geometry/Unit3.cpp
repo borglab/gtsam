@@ -76,7 +76,7 @@ static tbb::mutex unit3BasisMutex;
 /* ************************************************************************* */
 const Matrix32& Unit3::basis() const {
 #ifdef GTSAM_USE_TBB
-    tbb::mutex::scoped_lock lock(unit3BasisMutex);
+  tbb::mutex::scoped_lock lock(unit3BasisMutex);
 #endif
 
   // Return cached version if exists
