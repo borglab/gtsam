@@ -33,6 +33,10 @@ namespace gtsam {
  * The benefit of this method is that it does not need to know what types are
  * involved to evaluate the factor. If all the machinery of gtsam is working
  * correctly, we should get the correct numerical derivatives out the other side.
+ * NOTE(frank): factor that have non vector-space measurements use between or LocalCoordinates
+ * to evaluate the error, and their derivatives will only be correct for near-zero errors.
+ * This is fixable but expensive, and does not matter in practice as most factors will sit near
+ * zero errors anyway. However, it means that below will only be exact for the correct measurement.
  */
 JacobianFactor linearizeNumerically(const NoiseModelFactor& factor,
     const Values& values, double delta = 1e-5) {
