@@ -2283,9 +2283,9 @@ typedef gtsam::RangeFactor<gtsam::Pose3, gtsam::Pose3> RangeFactorPose3;
 
 
 #include <gtsam/sam/BearingFactor.h>
-template<POSE, POINT, ROTATION>
+template<POSE, POINT, MEASURED>
 virtual class BearingFactor : gtsam::NoiseModelFactor {
-  BearingFactor(size_t key1, size_t key2, const ROTATION& measured, const gtsam::noiseModel::Base* noiseModel);
+  BearingFactor(size_t key1, size_t key2, const MEASURED& measured, const gtsam::noiseModel::Base* noiseModel);
 
   // enabling serialization functionality
   void serialize() const;
@@ -2295,11 +2295,11 @@ typedef gtsam::BearingFactor<gtsam::Pose2, gtsam::Point2, gtsam::Rot2> BearingFa
 
 
 #include <gtsam/slam/BearingRangeFactor.h>
-template<POSE, POINT, ROTATION>
+template<POSE, POINT, MEASURED>
 virtual class BearingRangeFactor : gtsam::NoiseModelFactor {
-  BearingRangeFactor(size_t poseKey, size_t pointKey, const ROTATION& measuredBearing, double measuredRange, const gtsam::noiseModel::Base* noiseModel);
+  BearingRangeFactor(size_t poseKey, size_t pointKey, const MEASURED& measuredBearing, double measuredRange, const gtsam::noiseModel::Base* noiseModel);
 
-  pair<ROTATION, double> measured() const;
+  pair<MEASURED, double> measured() const;
 
   // enabling serialization functionality
   void serialize() const;

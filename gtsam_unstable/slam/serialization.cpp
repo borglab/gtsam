@@ -11,7 +11,6 @@
 #include <gtsam/base/serialization.h>
 
 //#include <gtsam/slam/AntiFactor.h>
-#include <gtsam/slam/BearingFactor.h>
 #include <gtsam/slam/BearingRangeFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 //#include <gtsam/slam/BoundingConstraint.h>
@@ -79,9 +78,6 @@ typedef RangeFactor<CalibratedCamera, Point3>           RangeFactorCalibratedCam
 typedef RangeFactor<SimpleCamera, Point3>               RangeFactorSimpleCameraPoint;
 typedef RangeFactor<CalibratedCamera, CalibratedCamera> RangeFactorCalibratedCamera;
 typedef RangeFactor<SimpleCamera, SimpleCamera>         RangeFactorSimpleCamera;
-
-typedef BearingFactor<Pose2, Point2, Rot2> BearingFactor2D;
-typedef BearingFactor<Pose3, Point3, Rot3> BearingFactor3D;
 
 typedef BearingRangeFactor<Pose2, Point2>  BearingRangeFactor2D;
 typedef BearingRangeFactor<Pose3, Point3>  BearingRangeFactor3D;
@@ -184,8 +180,6 @@ BOOST_CLASS_EXPORT_GUID(RangeFactorCalibratedCameraPoint, "gtsam::RangeFactorCal
 BOOST_CLASS_EXPORT_GUID(RangeFactorSimpleCameraPoint, "gtsam::RangeFactorSimpleCameraPoint");
 BOOST_CLASS_EXPORT_GUID(RangeFactorCalibratedCamera, "gtsam::RangeFactorCalibratedCamera");
 BOOST_CLASS_EXPORT_GUID(RangeFactorSimpleCamera, "gtsam::RangeFactorSimpleCamera");
-
-BOOST_CLASS_EXPORT_GUID(BearingFactor2D, "gtsam::BearingFactor2D");
 
 BOOST_CLASS_EXPORT_GUID(BearingRangeFactor2D, "gtsam::BearingRangeFactor2D");
 
