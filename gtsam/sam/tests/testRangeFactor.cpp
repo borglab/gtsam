@@ -16,14 +16,15 @@
  *  @date Oct 2012
  */
 
-#include <CppUnitLite/TestHarness.h>
-#include <gtsam/slam/RangeFactor.h>
+#include <gtsam/sam/RangeFactor.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/TestableAssertions.h>
+
+#include <CppUnitLite/TestHarness.h>
 #include <boost/bind.hpp>
 
 using namespace std;
