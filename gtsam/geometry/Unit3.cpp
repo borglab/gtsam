@@ -69,18 +69,13 @@ Unit3 Unit3::Random(boost::mt19937 & rng) {
 }
 
 #ifdef GTSAM_USE_TBB
-tbb::mutex unit3BasisMutex;
+static tbb::mutex unit3BasisMutex;
 #endif
 
 /* ************************************************************************* */
 const Matrix32& Unit3::basis() const {
-#ifdef GTSAM_USE_TBB
-  tbb::mutex::scoped_lock lock(unit3BasisMutex);
-#endif
-
   // Return cached version if exists
-  if (B_)
-    return *B_;
+  if (B_) return *B_;
 
   // Get the axis of rotation with the minimum projected length of the point
   Vector3 axis;
@@ -99,8 +94,13 @@ const Matrix32& Unit3::basis() const {
   Vector3 b2 = p_.cross(b1).normalized();
 
   // Create the basis matrix
-  B_.reset(Matrix32());
-  (*B_) << b1, b2;
+  {
+#ifdef GTSAM_USE_TBB
+    tbb::mutex::scoped_lock lock(unit3BasisMutex);
+#endif
+    B_.reset(Matrix32());
+    (*B_) << b1, b2;
+  }
   return *B_;
 }
 
