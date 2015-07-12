@@ -11,7 +11,8 @@
 
 /**
  *  @file  BearingFactor.h
- *  @brief Serializable factor induced by a bearing measurement of a point from a given pose
+ *  @brief Serializable factor induced by a bearing measurement of a point from
+ *a given pose
  *  @date July 2015
  *  @author Frank Dellaert
  **/
@@ -28,34 +29,36 @@ namespace gtsam {
  * @addtogroup SAM
  */
 template <typename POSE, typename POINT, typename T>
-struct BearingFactor : public SerializableExpressionFactor<T> {
+struct BearingFactor : public SerializableExpressionFactor2<T, POSE, POINT> {
+  typedef SerializableExpressionFactor2<T, POSE, POINT> Base;
 
   /// default constructor
   BearingFactor() {}
 
   /// primary constructor
-  BearingFactor(Key poseKey, Key pointKey, const T& measured, const SharedNoiseModel& model)
-      : SerializableExpressionFactor<T>(model, measured) {
-    this->keys_.push_back(poseKey);
-    this->keys_.push_back(pointKey);
-    this->initialize(expression());
+  BearingFactor(Key key1, Key key2, const T& measured,
+                const SharedNoiseModel& model)
+      : Base(key1, key2, model, measured) {
+    this->initialize(expression(key1, key2));
   }
 
   // Return measurement expression
-  virtual Expression<T> expression() const {
-    return Expression<T>(Expression<POSE>(this->keys_[0]), &POSE::bearing,
-                         Expression<POINT>(this->keys_[1]));
+  virtual Expression<T> expression(Key key1, Key key2) const {
+    return Expression<T>(Expression<POSE>(key1), &POSE::bearing,
+                         Expression<POINT>(key2));
   }
 
   /// print
-  void print(const std::string& s = "", const KeyFormatter& kf = DefaultKeyFormatter) const {
+  void print(const std::string& s = "",
+             const KeyFormatter& kf = DefaultKeyFormatter) const {
     std::cout << s << "BearingFactor" << std::endl;
-    SerializableExpressionFactor<T>::print(s, kf);
+    Base::print(s, kf);
   }
 };  // BearingFactor
 
 /// traits
 template <class POSE, class POINT, class T>
-struct traits<BearingFactor<POSE, POINT, T> > : public Testable<BearingFactor<POSE, POINT, T> > {};
+struct traits<BearingFactor<POSE, POINT, T> >
+    : public Testable<BearingFactor<POSE, POINT, T> > {};
 
 }  // namespace gtsam

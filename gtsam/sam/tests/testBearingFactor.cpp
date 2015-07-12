@@ -38,7 +38,7 @@ static SharedNoiseModel model2D(noiseModel::Isotropic::Sigma(1, 0.5));
 BearingFactor2D factor2D(poseKey, pointKey, measurement2D, model2D);
 
 typedef BearingFactor<Pose3, Point3, Unit3> BearingFactor3D;
-Unit3 measurement3D = Pose3().bearing(Point3(1,0,0)); // has to match values!
+Unit3 measurement3D = Pose3().bearing(Point3(1, 0, 0));  // has to match values!
 static SharedNoiseModel model3D(noiseModel::Isotropic::Sigma(2, 0.5));
 BearingFactor3D factor3D(poseKey, pointKey, measurement3D, model3D);
 
@@ -68,7 +68,8 @@ TEST(BearingFactor, 2D) {
   values.insert(poseKey, Pose2(1.0, 2.0, 0.57));
   values.insert(pointKey, Point2(-4.0, 11.0));
 
-  EXPECT_CORRECT_EXPRESSION_JACOBIANS(factor.expression(), values, 1e-7,1e-5);
+  EXPECT_CORRECT_EXPRESSION_JACOBIANS(factor.expression(poseKey, pointKey),
+                                      values, 1e-7, 1e-5);
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
 }
 
@@ -91,9 +92,10 @@ TEST(BearingFactor, 3D) {
   // Set the linearization point
   Values values;
   values.insert(poseKey, Pose3());
-  values.insert(pointKey, Point3(1,0,0));
+  values.insert(pointKey, Point3(1, 0, 0));
 
-  EXPECT_CORRECT_EXPRESSION_JACOBIANS(factor.expression(), values, 1e-7,1e-5);
+  EXPECT_CORRECT_EXPRESSION_JACOBIANS(factor.expression(poseKey, pointKey),
+                                      values, 1e-7, 1e-5);
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
 }
 
