@@ -69,13 +69,13 @@ Unit3 Unit3::Random(boost::mt19937 & rng) {
 }
 
 #ifdef GTSAM_USE_TBB
-static tbb::mutex unit3BasisMutex;
+tbb::mutex unit3BasisMutex;
 #endif
 
 /* ************************************************************************* */
 const Matrix32& Unit3::basis() const {
 #ifdef GTSAM_USE_TBB
-    tbb::mutex::scoped_lock lock(unit3BasisMutex);
+  tbb::mutex::scoped_lock lock(unit3BasisMutex);
 #endif
 
   // Return cached version if exists
