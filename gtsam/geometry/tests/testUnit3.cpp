@@ -158,20 +158,39 @@ TEST(Unit3, distance) {
 
 TEST(Unit3, localCoordinates) {
   {
-    Unit3 p;
-    Vector2 actual = p.localCoordinates(p);
+    Unit3 p, q;
+    Vector2 expected = Vector2::Zero();
+    Vector2 actual = p.localCoordinates(q);
     EXPECT(assert_equal(zero(2), actual, 1e-8));
+    EXPECT(assert_equal(q, p.retract(expected), 1e-8));
   }
   {
     Unit3 p, q(1, 6.12385e-21, 0);
+    Vector2 expected = Vector2::Zero();
     Vector2 actual = p.localCoordinates(q);
-    CHECK(assert_equal(zero(2), actual, 1e-8));
+    EXPECT(assert_equal(zero(2), actual, 1e-8));
+    EXPECT(assert_equal(q, p.retract(expected), 1e-8));
   }
   {
     Unit3 p, q(-1, 0, 0);
     Vector2 expected(M_PI, 0);
     Vector2 actual = p.localCoordinates(q);
-    CHECK(assert_equal(expected, actual, 1e-8));
+    EXPECT(assert_equal(expected, actual, 1e-8));
+    EXPECT(assert_equal(q, p.retract(expected), 1e-8));
+  }
+  {
+    Unit3 p, q(0, 1, 0);
+    Vector2 expected(0,-M_PI_2);
+    Vector2 actual = p.localCoordinates(q);
+    EXPECT(assert_equal(expected, actual, 1e-8));
+    EXPECT(assert_equal(q, p.retract(expected), 1e-8));
+  }
+  {
+    Unit3 p, q(0, -1, 0);
+    Vector2 expected(0, M_PI_2);
+    Vector2 actual = p.localCoordinates(q);
+    EXPECT(assert_equal(expected, actual, 1e-8));
+    EXPECT(assert_equal(q, p.retract(expected), 1e-8));
   }
 
   double twist = 1e-4;
