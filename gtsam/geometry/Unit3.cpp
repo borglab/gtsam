@@ -74,6 +74,10 @@ static tbb::mutex unit3BasisMutex;
 
 /* ************************************************************************* */
 const Matrix32& Unit3::basis() const {
+#ifdef GTSAM_USE_TBB
+    tbb::mutex::scoped_lock lock(unit3BasisMutex);
+#endif
+
   // Return cached version if exists
   if (B_) return *B_;
 
@@ -94,13 +98,8 @@ const Matrix32& Unit3::basis() const {
   Vector3 b2 = p_.cross(b1).normalized();
 
   // Create the basis matrix
-  {
-#ifdef GTSAM_USE_TBB
-    tbb::mutex::scoped_lock lock(unit3BasisMutex);
-#endif
-    B_.reset(Matrix32());
-    (*B_) << b1, b2;
-  }
+  B_.reset(Matrix32());
+  (*B_) << b1, b2;
   return *B_;
 }
 
