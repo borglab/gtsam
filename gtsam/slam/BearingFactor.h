@@ -9,17 +9,12 @@
 
  * -------------------------------------------------------------------------- */
 
-/**
- *  @file  BearingFactor.H
- *  @author Frank Dellaert
- **/
-
 #pragma once
 
 #ifdef _MSC_VER
-#pragma message("BearingFactor is now an ExpressionFactor in sam")
+#pragma message("BearingFactor is now an ExpressionFactor in SAM directory")
 #else
-#warning "BearingFactor is now an ExpressionFactor in sam"
+#warning "BearingFactor is now an ExpressionFactor in SAM directory"
 #endif
 
 
