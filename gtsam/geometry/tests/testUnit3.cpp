@@ -192,6 +192,16 @@ TEST(Unit3, localCoordinates) {
     EXPECT(assert_equal(expected, actual, 1e-8));
     EXPECT(assert_equal(q, p.retract(expected), 1e-8));
   }
+  {
+    Unit3 p(0,1,0), q(0,-1,0);
+    Vector2 actual = p.localCoordinates(q);
+    EXPECT(assert_equal(q, p.retract(actual), 1e-8));
+  }
+  {
+    Unit3 p(0,0,1), q(0,0,-1);
+    Vector2 actual = p.localCoordinates(q);
+    EXPECT(assert_equal(q, p.retract(actual), 1e-8));
+  }
 
   double twist = 1e-4;
   {
