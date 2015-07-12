@@ -38,7 +38,7 @@ protected:
   typedef ExpressionFactor<T> This;
   static const int Dim = traits<T>::dimension;
 
-  T measurement_;  ///< the measurement to be compared with the expression
+  T measured_;  ///< the measurement to be compared with the expression
   Expression<T> expression_;  ///< the expression that is AD enabled
   FastVector<int> dims_;      ///< dimensions of the Jacobian matrices
 
@@ -49,24 +49,27 @@ public:
   /// Constructor
   ExpressionFactor(const SharedNoiseModel& noiseModel,  //
                    const T& measurement, const Expression<T>& expression)
-      : NoiseModelFactor(noiseModel), measurement_(measurement) {
+      : NoiseModelFactor(noiseModel), measured_(measurement) {
     initialize(expression);
   }
 
   /// Destructor
   virtual ~ExpressionFactor() {}
 
+  /** return the measured */
+  double measured() const { return measured_; }
+
   /// print relies on Testable traits being defined for T
   void print(const std::string& s, const KeyFormatter& keyFormatter) const {
     NoiseModelFactor::print(s, keyFormatter);
-    traits<T>::Print(measurement_, s + ".measurement_");
+    traits<T>::Print(measured_, s + ".measured_");
   }
 
   /// equals relies on Testable traits being defined for T
   bool equals(const NonlinearFactor& f, double tol) const {
     const ExpressionFactor* p = dynamic_cast<const ExpressionFactor*>(&f);
     return p && NoiseModelFactor::equals(f, tol) &&
-           traits<T>::Equals(measurement_, p->measurement_, tol) &&
+           traits<T>::Equals(measured_, p->measured_, tol) &&
            dims_ == p->dims_;
   }
 
@@ -79,10 +82,10 @@ public:
       boost::optional<std::vector<Matrix>&> H = boost::none) const {
     if (H) {
       const T value = expression_.valueAndDerivatives(x, keys_, dims_, *H);
-      return traits<T>::Local(measurement_, value);
+      return traits<T>::Local(measured_, value);
     } else {
       const T value = expression_.value(x);
-      return traits<T>::Local(measurement_, value);
+      return traits<T>::Local(measured_, value);
     }
   }
 
@@ -113,7 +116,7 @@ public:
     T value = expression_.valueAndJacobianMap(x, jacobianMap); // <<< Reverse AD happens here !
 
     // Evaluate error and set RHS vector b
-    Ab(size()).col(0) = -traits<T>::Local(measurement_, value);
+    Ab(size()).col(0) = -traits<T>::Local(measured_, value);
 
     // Whiten the corresponding system, Ab already contains RHS
     Vector b = Ab(size()).col(0); // need b to be valid for Robust noise models
@@ -134,7 +137,7 @@ protected:
 
  /// Constructor for use by SerializableExpressionFactor
  ExpressionFactor(const SharedNoiseModel& noiseModel, const T& measurement)
-     : NoiseModelFactor(noiseModel), measurement_(measurement) {
+     : NoiseModelFactor(noiseModel), measured_(measurement) {
    // Not properly initialized yet, need to call initialize
  }
 
@@ -157,7 +160,7 @@ private:
  template <class ARCHIVE>
  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(NoiseModelFactor);
-   ar& boost::serialization::make_nvp("measurement_", this->measurement_);
+   ar& boost::serialization::make_nvp("measured_", this->measured_);
  }
 
  friend class boost::serialization::access;
