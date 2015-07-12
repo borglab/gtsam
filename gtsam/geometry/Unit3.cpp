@@ -70,7 +70,7 @@ Unit3 Unit3::Random(boost::mt19937 & rng) {
 }
 
 #ifdef GTSAM_USE_TBB
-static tbb::mutex unit3BasisMutex;
+tbb::mutex unit3BasisMutex;
 #endif
 
 /* ************************************************************************* */
