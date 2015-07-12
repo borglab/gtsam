@@ -2272,20 +2272,16 @@ typedef gtsam::RangeFactor<gtsam::Pose2, gtsam::Point2> RangeFactorPosePoint2;
 typedef gtsam::RangeFactor<gtsam::Pose3, gtsam::Point3> RangeFactorPosePoint3;
 typedef gtsam::RangeFactor<gtsam::Pose2, gtsam::Pose2> RangeFactorPose2;
 typedef gtsam::RangeFactor<gtsam::Pose3, gtsam::Pose3> RangeFactorPose3;
-
-// Commented out by Frank Dec 2014: not poses!
-// If needed, we need a RangeFactor that takes a camera, extracts the pose
-// Should be easy with Expressions
-//typedef gtsam::RangeFactor<gtsam::CalibratedCamera, gtsam::Point3> RangeFactorCalibratedCameraPoint;
-//typedef gtsam::RangeFactor<gtsam::SimpleCamera, gtsam::Point3> RangeFactorSimpleCameraPoint;
-//typedef gtsam::RangeFactor<gtsam::CalibratedCamera, gtsam::CalibratedCamera> RangeFactorCalibratedCamera;
-//typedef gtsam::RangeFactor<gtsam::SimpleCamera, gtsam::SimpleCamera> RangeFactorSimpleCamera;
+typedef gtsam::RangeFactor<gtsam::CalibratedCamera, gtsam::Point3> RangeFactorCalibratedCameraPoint;
+typedef gtsam::RangeFactor<gtsam::SimpleCamera, gtsam::Point3> RangeFactorSimpleCameraPoint;
+typedef gtsam::RangeFactor<gtsam::CalibratedCamera, gtsam::CalibratedCamera> RangeFactorCalibratedCamera;
+typedef gtsam::RangeFactor<gtsam::SimpleCamera, gtsam::SimpleCamera> RangeFactorSimpleCamera;
 
 
 #include <gtsam/sam/BearingFactor.h>
-template<POSE, POINT, MEASURED>
+template<POSE, POINT, BEARING>
 virtual class BearingFactor : gtsam::NoiseModelFactor {
-  BearingFactor(size_t key1, size_t key2, const MEASURED& measured, const gtsam::noiseModel::Base* noiseModel);
+  BearingFactor(size_t key1, size_t key2, const BEARING& measured, const gtsam::noiseModel::Base* noiseModel);
 
   // enabling serialization functionality
   void serialize() const;
@@ -2295,9 +2291,9 @@ typedef gtsam::BearingFactor<gtsam::Pose2, gtsam::Point2, gtsam::Rot2> BearingFa
 
 
 #include <gtsam/slam/BearingRangeFactor.h>
-template<POSE, POINT, MEASURED>
+template<POSE, POINT, BEARING>
 virtual class BearingRangeFactor : gtsam::NoiseModelFactor {
-  BearingRangeFactor(size_t poseKey, size_t pointKey, const MEASURED& measuredBearing, double measuredRange, const gtsam::noiseModel::Base* noiseModel);
+  BearingRangeFactor(size_t poseKey, size_t pointKey, const BEARING& measuredBearing, double measuredRange, const gtsam::noiseModel::Base* noiseModel);
 
   pair<MEASURED, double> measured() const;
 

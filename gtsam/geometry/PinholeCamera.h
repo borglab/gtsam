@@ -263,24 +263,22 @@ public:
   template<class CalibrationB>
   double range(const PinholeCamera<CalibrationB>& camera,
       OptionalJacobian<1, dimension> Dcamera = boost::none,
-      boost::optional<Matrix&> Dother = boost::none) const {
+      OptionalJacobian<1, 6 + CalibrationB::dimension> Dother = boost::none) const {
     Matrix16 Dcamera_, Dother_;
     double result = this->pose().range(camera.pose(), Dcamera ? &Dcamera_ : 0,
         Dother ? &Dother_ : 0);
     if (Dcamera) {
-      Dcamera->resize(1, 6 + DimK);
       *Dcamera << Dcamera_, Eigen::Matrix<double, 1, DimK>::Zero();
     }
     if (Dother) {
-      Dother->resize(1, 6 + CalibrationB::dimension);
       Dother->setZero();
-      Dother->block<1, 6>(0, 0) = Dother_;
+      Dother->template block<1, 6>(0, 0) = Dother_;
     }
     return result;
   }
 
   /**
-   * Calculate range to another camera
+   * Calculate range to a calibrated camera
    * @param camera Other camera
    * @return range (double)
    */
@@ -314,4 +312,52 @@ struct traits<const PinholeCamera<Calibration> > : public internal::Manifold<
     PinholeCamera<Calibration> > {
 };
 
-} // \ gtsam
+// Define Range functor specializations that are used in RangeFactor
+template <typename A1, typename A2> struct Range;
+
+template <typename Calibration>
+struct Range<PinholeCamera<Calibration>, Point3> {
+  typedef double result_type;
+  typedef PinholeCamera<Calibration> Camera;
+  double operator()(const Camera& camera, const Point3& point,
+                    OptionalJacobian<1, Camera::dimension> H1 = boost::none,
+                    OptionalJacobian<1, 3> H2 = boost::none) {
+    return camera.range(point, H1, H2);
+  }
+};
+
+template <typename Calibration>
+struct Range<PinholeCamera<Calibration>, Pose3> {
+  typedef double result_type;
+  typedef PinholeCamera<Calibration> Camera;
+  double operator()(const Camera& camera, const Pose3& pose,
+                    OptionalJacobian<1, Camera::dimension> H1 = boost::none,
+                    OptionalJacobian<1, 6> H2 = boost::none) {
+    return camera.range(pose, H1, H2);
+  }
+};
+
+template <typename CalibrationA, typename CalibrationB>
+struct Range<PinholeCamera<CalibrationA>, PinholeCamera<CalibrationB> > {
+  typedef double result_type;
+  typedef PinholeCamera<CalibrationA> CameraA;
+  typedef PinholeCamera<CalibrationB> CameraB;
+  double operator()(const CameraA& camera1, const CameraB& camera2,
+                    OptionalJacobian<1, CameraA::dimension> H1 = boost::none,
+                    OptionalJacobian<1, CameraB::dimension> H2 = boost::none) {
+    return camera1.range(camera2, H1, H2);
+  }
+};
+
+template <typename Calibration>
+struct Range<PinholeCamera<Calibration>, CalibratedCamera> {
+  typedef double result_type;
+  typedef PinholeCamera<Calibration> Camera;
+  double operator()(const Camera& camera, const CalibratedCamera& cc,
+                    OptionalJacobian<1, Camera::dimension> H1 = boost::none,
+                    OptionalJacobian<1, 6> H2 = boost::none) {
+    return camera.range(cc, H1, H2);
+  }
+};
+
+}  // \ gtsam

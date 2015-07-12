@@ -331,11 +331,46 @@ GTSAM_EXPORT boost::optional<Pose3> align(const std::vector<Point3Pair>& pairs);
 // For MATLAB wrapper
 typedef std::vector<Pose3> Pose3Vector;
 
-template<>
+template <>
 struct traits<Pose3> : public internal::LieGroup<Pose3> {};
 
-template<>
+template <>
 struct traits<const Pose3> : public internal::LieGroup<Pose3> {};
 
+// Define Bearing functor specializations that are used in BearingFactor
+template <typename A1, typename A2> struct Bearing;
 
-} // namespace gtsam
+template <>
+struct Bearing<Pose3, Point3> {
+  typedef Unit3 result_type;
+  Unit3 operator()(const Pose3& pose, const Point3& point,
+                   OptionalJacobian<2, 6> H1 = boost::none,
+                   OptionalJacobian<2, 3> H2 = boost::none) {
+    return pose.bearing(point, H1, H2);
+  }
+};
+
+// Define Range functor specializations that are used in RangeFactor
+template <typename A1, typename A2> struct Range;
+
+template <>
+struct Range<Pose3, Point3> {
+  typedef double result_type;
+  double operator()(const Pose3& pose, const Point3& point,
+                    OptionalJacobian<1, 6> H1 = boost::none,
+                    OptionalJacobian<1, 3> H2 = boost::none) {
+    return pose.range(point, H1, H2);
+  }
+};
+
+template <>
+struct Range<Pose3, Pose3> {
+  typedef double result_type;
+  double operator()(const Pose3& pose1, const Pose3& pose2,
+                    OptionalJacobian<1, 6> H1 = boost::none,
+                    OptionalJacobian<1, 6> H2 = boost::none) {
+    return pose1.range(pose2, H1, H2);
+  }
+};
+
+}  // namespace gtsam

@@ -11,8 +11,7 @@
 
 /**
  *  @file  BearingFactor.h
- *  @brief Serializable factor induced by a bearing measurement of a point from
- *a given pose
+ *  @brief Serializable factor induced by a bearing measurement
  *  @date July 2015
  *  @author Frank Dellaert
  **/
@@ -20,17 +19,23 @@
 #pragma once
 
 #include <gtsam/nonlinear/SerializableExpressionFactor.h>
-#include <gtsam/geometry/concepts.h>
 
 namespace gtsam {
 
+// forward declaration of Bearing functor, assumed partially specified
+template <typename A1, typename A2>
+struct Bearing;
+
 /**
  * Binary factor for a bearing measurement
+ * Works for any two types A1,A2 for which the functor Bearing<A1,A2>() is
+ * defined
  * @addtogroup SAM
  */
-template <typename POSE, typename POINT, typename T>
-struct BearingFactor : public SerializableExpressionFactor2<T, POSE, POINT> {
-  typedef SerializableExpressionFactor2<T, POSE, POINT> Base;
+template <typename A1, typename A2,
+          typename T = typename Bearing<A1, A2>::result_type>
+struct BearingFactor : public SerializableExpressionFactor2<T, A1, A2> {
+  typedef SerializableExpressionFactor2<T, A1, A2> Base;
 
   /// default constructor
   BearingFactor() {}
@@ -44,8 +49,9 @@ struct BearingFactor : public SerializableExpressionFactor2<T, POSE, POINT> {
 
   // Return measurement expression
   virtual Expression<T> expression(Key key1, Key key2) const {
-    return Expression<T>(Expression<POSE>(key1), &POSE::bearing,
-                         Expression<POINT>(key2));
+    Expression<A1> a1_(key1);
+    Expression<A2> a2_(key2);
+    return Expression<T>(Bearing<A1, A2>(), a1_, a2_);
   }
 
   /// print
@@ -57,8 +63,8 @@ struct BearingFactor : public SerializableExpressionFactor2<T, POSE, POINT> {
 };  // BearingFactor
 
 /// traits
-template <class POSE, class POINT, class T>
-struct traits<BearingFactor<POSE, POINT, T> >
-    : public Testable<BearingFactor<POSE, POINT, T> > {};
+template <typename A1, typename A2, typename T>
+struct traits<BearingFactor<A1, A2, T> >
+    : public Testable<BearingFactor<A1, A2, T> > {};
 
 }  // namespace gtsam

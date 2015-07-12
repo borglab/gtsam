@@ -23,6 +23,7 @@
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/base/Lie.h>
+#include <gtsam/dllexport.h>
 
 namespace gtsam {
 
@@ -294,6 +295,52 @@ struct traits<Pose2> : public internal::LieGroup<Pose2> {};
 
 template<>
 struct traits<const Pose2> : public internal::LieGroup<Pose2> {};
+
+// Define Bearing functor specializations that are used in BearingFactor
+template <typename A1, typename A2> struct Bearing;
+
+template <>
+struct Bearing<Pose2, Point2> {
+  typedef Rot2 result_type;
+  Rot2 operator()(const Pose2& pose, const Point2& point,
+                  OptionalJacobian<1, 3> H1 = boost::none,
+                  OptionalJacobian<1, 2> H2 = boost::none) {
+    return pose.bearing(point, H1, H2);
+  }
+};
+
+template <>
+struct Bearing<Pose2, Pose2> {
+  typedef Rot2 result_type;
+  Rot2 operator()(const Pose2& pose1, const Pose2& pose2,
+                  OptionalJacobian<1, 3> H1 = boost::none,
+                  OptionalJacobian<1, 3> H2 = boost::none) {
+    return pose1.bearing(pose2, H1, H2);
+  }
+};
+
+// Define Range functor specializations that are used in RangeFactor
+template <typename A1, typename A2> struct Range;
+
+template <>
+struct Range<Pose2, Point2> {
+  typedef double result_type;
+  double operator()(const Pose2& pose, const Point2& point,
+                    OptionalJacobian<1, 3> H1 = boost::none,
+                    OptionalJacobian<1, 2> H2 = boost::none) {
+    return pose.range(point, H1, H2);
+  }
+};
+
+template <>
+struct Range<Pose2, Pose2> {
+  typedef double result_type;
+  double operator()(const Pose2& pose1, const Pose2& pose2,
+                    OptionalJacobian<1, 3> H1 = boost::none,
+                    OptionalJacobian<1, 3> H2 = boost::none) {
+    return pose1.range(pose2, H1, H2);
+  }
+};
 
 } // namespace gtsam
 

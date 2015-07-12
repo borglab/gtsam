@@ -32,12 +32,12 @@ using namespace gtsam;
 Key poseKey(1);
 Key pointKey(2);
 
-typedef BearingFactor<Pose2, Point2, Rot2> BearingFactor2D;
+typedef BearingFactor<Pose2, Point2> BearingFactor2D;
 double measurement2D(10.0);
 static SharedNoiseModel model2D(noiseModel::Isotropic::Sigma(1, 0.5));
 BearingFactor2D factor2D(poseKey, pointKey, measurement2D, model2D);
 
-typedef BearingFactor<Pose3, Point3, Unit3> BearingFactor3D;
+typedef BearingFactor<Pose3, Point3> BearingFactor3D;
 Unit3 measurement3D = Pose3().bearing(Point3(1, 0, 0));  // has to match values!
 static SharedNoiseModel model3D(noiseModel::Isotropic::Sigma(2, 0.5));
 BearingFactor3D factor3D(poseKey, pointKey, measurement3D, model3D);

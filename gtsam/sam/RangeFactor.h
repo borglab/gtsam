@@ -11,8 +11,7 @@
 
 /**
  *  @file  RangeFactor.h
- *  @brief Serializable factor induced by a range measurement between two points
- *and/or poses
+ *  @brief Serializable factor induced by a range measurement
  *  @date July 2015
  *  @author Frank Dellaert
  **/
@@ -20,30 +19,30 @@
 #pragma once
 
 #include <gtsam/nonlinear/SerializableExpressionFactor.h>
-#include <gtsam/geometry/concepts.h>
-#include <boost/lexical_cast.hpp>
 
 namespace gtsam {
 
+// forward declaration of Range functor, assumed partially specified
+template <typename A1, typename A2>
+struct Range;
+
 /**
  * Binary factor for a range measurement
+ * Works for any two types A1,A2 for which the functor Range<A1,A2>() is defined
  * @addtogroup SAM
  */
-template <class A1, class A2 = A1>
-struct RangeFactor : public SerializableExpressionFactor2<double, A1, A2> {
+template <typename A1, typename A2 = A1,
+          typename T = typename Range<A1, A2>::result_type>
+class RangeFactor : public SerializableExpressionFactor2<T, A1, A2> {
  private:
   typedef RangeFactor<A1, A2> This;
-  typedef SerializableExpressionFactor2<double, A1, A2> Base;
-
-  // Concept requirements for this factor
-  GTSAM_CONCEPT_RANGE_MEASUREMENT_TYPE(A1, A2)
+  typedef SerializableExpressionFactor2<T, A1, A2> Base;
 
  public:
   /// default constructor
   RangeFactor() {}
 
-  RangeFactor(Key key1, Key key2, double measured,
-              const SharedNoiseModel& model)
+  RangeFactor(Key key1, Key key2, T measured, const SharedNoiseModel& model)
       : Base(key1, key2, model, measured) {
     this->initialize(expression(key1, key2));
   }
@@ -55,10 +54,10 @@ struct RangeFactor : public SerializableExpressionFactor2<double, A1, A2> {
   }
 
   // Return measurement expression
-  virtual Expression<double> expression(Key key1, Key key2) const {
-    Expression<A1> t1_(key1);
-    Expression<A2> t2_(key2);
-    return Expression<double>(t1_, &A1::range, t2_);
+  virtual Expression<T> expression(Key key1, Key key2) const {
+    Expression<A1> a1_(key1);
+    Expression<A2> a2_(key2);
+    return Expression<T>(Range<A1, A2>(), a1_, a2_);
   }
 
   /// print
@@ -70,30 +69,29 @@ struct RangeFactor : public SerializableExpressionFactor2<double, A1, A2> {
 };  // \ RangeFactor
 
 /// traits
-template <class A1, class A2>
-struct traits<RangeFactor<A1, A2> > : public Testable<RangeFactor<A1, A2> > {};
+template <typename A1, typename A2, typename T>
+struct traits<RangeFactor<A1, A2, T> >
+    : public Testable<RangeFactor<A1, A2, T> > {};
 
 /**
  * Binary factor for a range measurement, with a transform applied
  * @addtogroup SAM
  */
-template <class A1, class A2 = A1>
+template <typename A1, typename A2 = A1,
+          typename T = typename Range<A1, A2>::result_type>
 class RangeFactorWithTransform
-    : public SerializableExpressionFactor2<double, A1, A2> {
+    : public SerializableExpressionFactor2<T, A1, A2> {
  private:
   typedef RangeFactorWithTransform<A1, A2> This;
-  typedef SerializableExpressionFactor2<double, A1, A2> Base;
+  typedef SerializableExpressionFactor2<T, A1, A2> Base;
 
   A1 body_T_sensor_;  ///< The pose of the sensor in the body frame
-
-  // Concept requirements for this factor
-  GTSAM_CONCEPT_RANGE_MEASUREMENT_TYPE(A1, A2)
 
  public:
   //// Default constructor
   RangeFactorWithTransform() {}
 
-  RangeFactorWithTransform(Key key1, Key key2, double measured,
+  RangeFactorWithTransform(Key key1, Key key2, T measured,
                            const SharedNoiseModel& model,
                            const A1& body_T_sensor)
       : Base(key1, key2, model, measured), body_T_sensor_(body_T_sensor) {
@@ -109,13 +107,13 @@ class RangeFactorWithTransform
   }
 
   // Return measurement expression
-  virtual Expression<double> expression(Key key1, Key key2) const {
+  virtual Expression<T> expression(Key key1, Key key2) const {
     Expression<A1> body_T_sensor__(body_T_sensor_);
     Expression<A1> nav_T_body_(key1);
     Expression<A1> nav_T_sensor_(traits<A1>::Compose, nav_T_body_,
                                  body_T_sensor__);
-    Expression<A2> t2_(key2);
-    return Expression<double>(nav_T_sensor_, &A1::range, t2_);
+    Expression<A2> a2_(key2);
+    return Expression<T>(Range<A1, A2>(), nav_T_sensor_, a2_);
   }
 
   /** print contents */
@@ -128,8 +126,8 @@ class RangeFactorWithTransform
 
  private:
   /** Serialization function */
-  friend class boost::serialization::access;
-  template <class ARCHIVE>
+  friend typename boost::serialization::access;
+  template <typename ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
     ar& boost::serialization::make_nvp(
         "Base", boost::serialization::base_object<Base>(*this));
@@ -138,8 +136,8 @@ class RangeFactorWithTransform
 };  // \ RangeFactorWithTransform
 
 /// traits
-template <class A1, class A2>
-struct traits<RangeFactorWithTransform<A1, A2> >
-    : public Testable<RangeFactorWithTransform<A1, A2> > {};
+template <typename A1, typename A2, typename T>
+struct traits<RangeFactorWithTransform<A1, A2, T> >
+    : public Testable<RangeFactorWithTransform<A1, A2, T> > {};
 
 }  // \ namespace gtsam

@@ -345,6 +345,58 @@ TEST( RangeFactor, Jacobian3DWithTransform ) {
 }
 
 /* ************************************************************************* */
+// Do a test with Point3
+TEST(RangeFactor, Point3) {
+  // Create a factor
+  Key poseKey(1);
+  Key pointKey(2);
+  double measurement(10.0);
+  RangeFactor<Point3> factor(poseKey, pointKey, measurement, model);
+
+  // Set the linearization point
+  Point3 pose(1.0, 2.0, 00);
+  Point3 point(-4.0, 11.0, 0);
+
+  // The expected error is ||(5.0, 9.0)|| - 10.0 = 0.295630141 meter / UnitCovariance
+  Vector expectedError = (Vector(1) << 0.295630141).finished();
+
+  // Verify we get the expected error
+  CHECK(assert_equal(expectedError, factor.evaluateError(pose, point), 1e-9));
+}
+
+/* ************************************************************************* */
+// Do a test with non GTSAM types
+
+namespace gtsam{
+template <>
+struct Range<Vector3, Vector3> {
+  typedef double result_type;
+  double operator()(const Vector3& v1, const Vector3& v2,
+                    OptionalJacobian<1, 3> H1, OptionalJacobian<1, 3> H2) {
+    return (v2 - v1).norm();
+  }
+};
+}
+
+TEST(RangeFactor, NonGTSAM) {
+  // Create a factor
+  Key poseKey(1);
+  Key pointKey(2);
+  double measurement(10.0);
+  RangeFactor<Vector3> factor(poseKey, pointKey, measurement, model);
+
+  // Set the linearization point
+  Vector3 pose(1.0, 2.0, 00);
+  Vector3 point(-4.0, 11.0, 0);
+
+  // The expected error is ||(5.0, 9.0)|| - 10.0 = 0.295630141 meter / UnitCovariance
+  Vector expectedError = (Vector(1) << 0.295630141).finished();
+
+  // Verify we get the expected error
+  CHECK(assert_equal(expectedError, factor.evaluateError(pose, point), 1e-9));
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

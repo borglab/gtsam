@@ -318,7 +318,7 @@ public:
   }
 
   /// @}
-  /// @name Transformations and mesaurement functions
+  /// @name Transformations and measurement functions
   /// @{
 
   /**
@@ -393,5 +393,38 @@ struct traits<const CalibratedCamera> : public internal::Manifold<
     CalibratedCamera> {
 };
 
+// Define Range functor specializations that are used in RangeFactor
+template <typename A1, typename A2> struct Range;
+
+template <>
+struct Range<CalibratedCamera, Point3> {
+  typedef double result_type;
+  double operator()(const CalibratedCamera& camera, const Point3& point,
+                    OptionalJacobian<1, 6> H1 = boost::none,
+                    OptionalJacobian<1, 3> H2 = boost::none) {
+    return camera.range(point, H1, H2);
+  }
+};
+
+template <>
+struct Range<CalibratedCamera, Pose3> {
+  typedef double result_type;
+  double operator()(const CalibratedCamera& camera, const Pose3& pose,
+                    OptionalJacobian<1, 6> H1 = boost::none,
+                    OptionalJacobian<1, 6> H2 = boost::none) {
+    return camera.range(pose, H1, H2);
+  }
+};
+
+template <>
+struct Range<CalibratedCamera, CalibratedCamera> {
+  typedef double result_type;
+  double operator()(const CalibratedCamera& camera1,
+                    const CalibratedCamera& camera2,
+                    OptionalJacobian<1, 6> H1 = boost::none,
+                    OptionalJacobian<1, 6> H2 = boost::none) {
+    return camera1.range(camera2, H1, H2);
+  }
+};
 }
 
