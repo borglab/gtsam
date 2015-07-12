@@ -153,14 +153,14 @@ Unit3 Unit3::retract(const Vector2& v) const {
 /* ************************************************************************* */
 Vector2 Unit3::localCoordinates(const Unit3& other) const {
   const double x = p_.dot(other.p_);
-  // Crucial quantitity here is y = theta/sin(theta) with theta=acos(x)
+  // Crucial quantity here is y = theta/sin(theta) with theta=acos(x)
   // Now, y = acos(x) / sin(acos(x)) = acos(x)/sqrt(1-x^2)
-  // We treat the special caes 1 and -1 below
+  // We treat the special case 1 and -1 below
   const double x2 = x * x;
   const double z = 1 - x2;
   double y;
   if (z < std::numeric_limits<double>::epsilon()) {
-    if (x > 0)  // expand at x=1
+    if (x > 0)  // first order expansion at x=1
       y = 1.0 - (x - 1.0) / 3.0;
     else  // cop out
       return Vector2(M_PI, 0.0);
