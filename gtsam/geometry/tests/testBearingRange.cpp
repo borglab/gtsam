@@ -33,6 +33,14 @@ BearingRange2D br2D(1, 2);
 typedef BearingRange<Pose3, Point3> BearingRange3D;
 BearingRange3D br3D(Pose3().bearing(Point3(1, 0, 0)), 1);
 
+//******************************************************************************
+TEST(BearingRange2D, Concept) {
+  BOOST_CONCEPT_ASSERT((IsManifold<BearingRange2D>));
+}
+
+/* ************************************************************************* */
+TEST(BearingRange, 2D) {}
+
 /* ************************************************************************* */
 TEST(BearingRange, Serialization2D) {
   EXPECT(equalsObj<BearingRange2D>(br2D));
@@ -40,8 +48,13 @@ TEST(BearingRange, Serialization2D) {
   EXPECT(equalsBinary<BearingRange2D>(br2D));
 }
 
+//******************************************************************************
+TEST(BearingRange3D, Concept) {
+  BOOST_CONCEPT_ASSERT((IsManifold<BearingRange3D>));
+}
+
 /* ************************************************************************* */
-TEST(BearingRange, 2D) {}
+TEST(BearingRange, 3D) {}
 
 /* ************************************************************************* */
 TEST(BearingRange, Serialization3D) {
@@ -49,9 +62,6 @@ TEST(BearingRange, Serialization3D) {
   EXPECT(equalsXML<BearingRange3D>(br3D));
   EXPECT(equalsBinary<BearingRange3D>(br3D));
 }
-
-/* ************************************************************************* */
-TEST(BearingRange, 3D) {}
 
 /* ************************************************************************* */
 int main() {

@@ -20,6 +20,7 @@
 
 #include <gtsam/base/Manifold.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/OptionalJacobian.h>
 #include <boost/concept/assert.hpp>
 
 namespace gtsam {
@@ -63,7 +64,7 @@ struct BearingRange
   //    if (H2) *H2 << HB2, HR2;
   //    return BearingRange(b, r);
   //  }
-  //
+
   void print(const std::string& str = "") const {
     traits<B>::Print(this->first, str);
     traits<R>::Print(this->second, str);
@@ -86,8 +87,7 @@ struct BearingRange
 
 template <typename A1, typename A2>
 struct traits<BearingRange<A1, A2> >
-    : Testable<BearingRange<A1, A2> >
-      //    : internal::ManifoldTraits<BearingRange<A1, A2> >
-      {};
+    : Testable<BearingRange<A1, A2> >,
+      internal::ManifoldTraits<BearingRange<A1, A2> > {};
 
 }  // namespace gtsam
