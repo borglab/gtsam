@@ -2290,7 +2290,7 @@ virtual class BearingFactor : gtsam::NoiseModelFactor {
 typedef gtsam::BearingFactor<gtsam::Pose2, gtsam::Point2, gtsam::Rot2> BearingFactor2D;
 
 
-#include <gtsam/slam/BearingRangeFactor.h>
+#include <gtsam/sam/BearingRangeFactor.h>
 template<POSE, POINT, BEARING>
 virtual class BearingRangeFactor : gtsam::NoiseModelFactor {
   BearingRangeFactor(size_t poseKey, size_t pointKey, const BEARING& measuredBearing, double measuredRange, const gtsam::noiseModel::Base* noiseModel);

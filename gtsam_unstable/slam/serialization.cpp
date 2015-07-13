@@ -11,7 +11,7 @@
 #include <gtsam/base/serialization.h>
 
 //#include <gtsam/slam/AntiFactor.h>
-#include <gtsam/slam/BearingRangeFactor.h>
+#include <gtsam/sam/BearingRangeFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 //#include <gtsam/slam/BoundingConstraint.h>
 #include <gtsam/slam/GeneralSFMFactor.h>

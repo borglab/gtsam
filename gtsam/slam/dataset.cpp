@@ -15,7 +15,7 @@
  * @brief utility functions for loading datasets
  */
 
-#include <gtsam/slam/BearingRangeFactor.h>
+#include <gtsam/sam/BearingRangeFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/dataset.h>
 #include <gtsam/geometry/Point3.h>
