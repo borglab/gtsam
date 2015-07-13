@@ -56,8 +56,8 @@ public:
   /// Destructor
   virtual ~ExpressionFactor() {}
 
-  /** return the measured */
-  double measured() const { return measured_; }
+  /** return the measurement */
+  const T& measured() const { return measured_; }
 
   /// print relies on Testable traits being defined for T
   void print(const std::string& s, const KeyFormatter& keyFormatter) const {
