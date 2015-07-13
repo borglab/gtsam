@@ -39,7 +39,11 @@ TEST(BearingRange2D, Concept) {
 }
 
 /* ************************************************************************* */
-TEST(BearingRange, 2D) {}
+TEST(BearingRange, 2D) {
+  BearingRange2D expected(0, 1);
+  BearingRange2D actual = BearingRange2D::Measure(Pose2(), Point2(1, 0));
+  EXPECT(assert_equal(expected, actual));
+}
 
 /* ************************************************************************* */
 TEST(BearingRange, Serialization2D) {
@@ -54,7 +58,11 @@ TEST(BearingRange3D, Concept) {
 }
 
 /* ************************************************************************* */
-TEST(BearingRange, 3D) {}
+TEST(BearingRange, 3D) {
+  BearingRange3D expected(Unit3(), 1);
+  BearingRange3D actual = BearingRange3D::Measure(Pose3(), Point3(1, 0, 0));
+  EXPECT(assert_equal(expected, actual));
+}
 
 /* ************************************************************************* */
 TEST(BearingRange, Serialization3D) {

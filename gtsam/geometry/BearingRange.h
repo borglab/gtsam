@@ -42,32 +42,35 @@ struct BearingRange
                              typename Range<A1, A2>::result_type> {
   typedef typename Bearing<A1, A2>::result_type B;
   typedef typename Range<A1, A2>::result_type R;
+  typedef ProductManifold<B, R> Base;
 
   BearingRange() {}
-  BearingRange(const ProductManifold<B, R>& br) : ProductManifold<B, R>(br) {}
-  BearingRange(const B& b, const R& r) : ProductManifold<B, R>(b, r) {}
+  BearingRange(const ProductManifold<B, R>& br) : Base(br) {}
+  BearingRange(const B& b, const R& r) : Base(b, r) {}
 
   /// Prediction function that stacks measurements
-  //  BearingRange operator()(
-  //      const A1& a1, const A2& a2,
-  //      typename MakeOptionalJacobian<BearingRange, A1>::type H1,
-  //      typename MakeOptionalJacobian<BearingRange, A2>::type H2) {
-  //    typename MakeJacobian<B, A1>::type HB1;
-  //    typename MakeJacobian<B, A2>::type HB2;
-  //    typename MakeJacobian<R, A1>::type HR1;
-  //    typename MakeJacobian<R, A2>::type HR2;
-  //
-  //    B b = Bearing<A1, A2>()(a1, a2, H1 ? &HB1 : 0, H2 ? &HB2 : 0);
-  //    R r = Range<A1, A2>()(a1, a2, H1 ? &HR1 : 0, H2 ? &HR2 : 0);
-  //
-  //    if (H1) *H1 << HB1, HR1;
-  //    if (H2) *H2 << HB2, HR2;
-  //    return BearingRange(b, r);
-  //  }
+  static BearingRange Measure(
+      const A1& a1, const A2& a2,
+      OptionalJacobian<Base::dimension, traits<A1>::dimension> H1 = boost::none,
+      OptionalJacobian<Base::dimension, traits<A2>::dimension> H2 =
+          boost::none) {
+    typename MakeJacobian<B, A1>::type HB1;
+    typename MakeJacobian<B, A2>::type HB2;
+    typename MakeJacobian<R, A1>::type HR1;
+    typename MakeJacobian<R, A2>::type HR2;
+
+    B b = Bearing<A1, A2>()(a1, a2, H1 ? &HB1 : 0, H2 ? &HB2 : 0);
+    R r = Range<A1, A2>()(a1, a2, H1 ? &HR1 : 0, H2 ? &HR2 : 0);
+
+    if (H1) *H1 << HB1, HR1;
+    if (H2) *H2 << HB2, HR2;
+    return BearingRange(b, r);
+  }
 
   void print(const std::string& str = "") const {
-    traits<B>::Print(this->first, str);
-    traits<R>::Print(this->second, str);
+    std::cout << str;
+    traits<B>::Print(this->first, "bearing ");
+    traits<R>::Print(this->second, "range ");
   }
   bool equals(const BearingRange<A1, A2>& m2, double tol = 1e-8) const {
     return traits<B>::Equals(this->first, m2.first, tol) &&
