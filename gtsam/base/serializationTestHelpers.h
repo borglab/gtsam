@@ -54,7 +54,7 @@ template<class T>
 bool equalsObj(const T& input = T()) {
   T output;
   roundtrip<T>(input,output);
-  return traits<T>::Equals(input, output);
+  return assert_equal(input, output);
 }
 
 // De-referenced version for pointers, requires equals method
@@ -89,7 +89,7 @@ template<class T>
 bool equalsXML(const T& input = T()) {
   T output;
   roundtripXML<T>(input,output);
-  return traits<T>::Equals(input, output);
+  return assert_equal(input, output);
 }
 
 // This version is for pointers, requires equals method
@@ -124,7 +124,7 @@ template<class T>
 bool equalsBinary(const T& input = T()) {
   T output;
   roundtripBinary<T>(input,output);
-  return traits<T>::Equals(input, output);
+  return assert_equal(input, output);
 }
 
 // This version is for pointers, requires equals method
