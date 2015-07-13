@@ -64,6 +64,15 @@ struct BearingRange
   //    return BearingRange(b, r);
   //  }
   //
+  void print(const std::string& str = "") const {
+    traits<B>::Print(this->first, str);
+    traits<R>::Print(this->second, str);
+  }
+  bool equals(const BearingRange<A1, A2>& m2, double tol = 1e-8) const {
+    return traits<B>::Equals(this->first, m2.first, tol) &&
+           traits<R>::Equals(this->second, m2.second, tol);
+  }
+
  private:
   /// Serialization function
   template <class ARCHIVE>
@@ -77,21 +86,8 @@ struct BearingRange
 
 template <typename A1, typename A2>
 struct traits<BearingRange<A1, A2> >
-    //    : internal::ManifoldTraits<BearingRange<A1, A2> >
-    {
-  typedef typename Bearing<A1, A2>::result_type B;
-  typedef typename Range<A1, A2>::result_type R;
-
-  static void Print(const BearingRange<A1, A2>& m,
-                    const std::string& str = "") {
-    traits<B>::Print(m.first, str);
-    traits<R>::Print(m.second, str);
-  }
-  static bool Equals(const BearingRange<A1, A2>& m1,
-                     const BearingRange<A1, A2>& m2, double tol = 1e-8) {
-    return traits<B>::Equals(m1.first, m2.first, tol) &&
-           traits<R>::Equals(m1.second, m2.second, tol);
-  }
-};
+    : Testable<BearingRange<A1, A2> >
+      //    : internal::ManifoldTraits<BearingRange<A1, A2> >
+      {};
 
 }  // namespace gtsam
