@@ -34,12 +34,10 @@ Key poseKey(1);
 Key pointKey(2);
 
 typedef BearingRangeFactor<Pose2, Point2> BearingRangeFactor2D;
-BearingRangeFactor2D::T measurement2D(1, 2);
 static SharedNoiseModel model2D(noiseModel::Isotropic::Sigma(2, 0.5));
 BearingRangeFactor2D factor2D(poseKey, pointKey, 1, 2, model2D);
 
 typedef BearingRangeFactor<Pose3, Point3> BearingRangeFactor3D;
-BearingRangeFactor3D::T measurement3D(Pose3().bearing(Point3(1, 0, 0)), 0);
 static SharedNoiseModel model3D(noiseModel::Isotropic::Sigma(3, 0.5));
 BearingRangeFactor3D factor3D(poseKey, pointKey,
                               Pose3().bearing(Point3(1, 0, 0)), 1, model3D);
