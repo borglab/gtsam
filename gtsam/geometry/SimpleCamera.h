@@ -133,6 +133,26 @@ template<>
 struct traits<const SimpleCamera> : public internal::Manifold<SimpleCamera> {
 };
 
-  /// Recover camera from 3*4 camera matrix
-  GTSAM_EXPORT SimpleCamera simpleCamera(const Matrix34& P);
+template <>
+struct Range<SimpleCamera, Point3> {
+  typedef double result_type;
+  double operator()(const SimpleCamera& camera, const Point3& point,
+                    OptionalJacobian<1, 11> H1 = boost::none,
+                    OptionalJacobian<1, 3> H2 = boost::none) {
+    return camera.range(point, H1, H2);
+  }
+};
+
+template <>
+struct Range<SimpleCamera, SimpleCamera> {
+  typedef double result_type;
+  double operator()(const SimpleCamera& camera, const SimpleCamera& sc,
+                    OptionalJacobian<1, 11> H1 = boost::none,
+                    OptionalJacobian<1, 11> H2 = boost::none) {
+    return camera.range(sc, H1, H2);
+  }
+};
+
+/// Recover camera from 3*4 camera matrix
+GTSAM_EXPORT SimpleCamera simpleCamera(const Matrix34& P);
 }
