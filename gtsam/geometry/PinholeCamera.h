@@ -19,6 +19,7 @@
 #pragma once
 
 #include <gtsam/geometry/PinholePose.h>
+#include <gtsam/geometry/BearingRange.h>
 
 namespace gtsam {
 
@@ -302,62 +303,31 @@ private:
 
 };
 
-template<typename Calibration>
-struct traits<PinholeCamera<Calibration> > : public internal::Manifold<
-    PinholeCamera<Calibration> > {
-};
-
-template<typename Calibration>
-struct traits<const PinholeCamera<Calibration> > : public internal::Manifold<
-    PinholeCamera<Calibration> > {
-};
-
-// Define Range functor specializations that are used in RangeFactor
-template <typename A1, typename A2> struct Range;
+// manifold traits
 
 template <typename Calibration>
-struct Range<PinholeCamera<Calibration>, Point3> {
-  typedef double result_type;
-  typedef PinholeCamera<Calibration> Camera;
-  double operator()(const Camera& camera, const Point3& point,
-                    OptionalJacobian<1, Camera::dimension> H1 = boost::none,
-                    OptionalJacobian<1, 3> H2 = boost::none) {
-    return camera.range(point, H1, H2);
-  }
-};
+struct traits<PinholeCamera<Calibration> >
+    : public internal::Manifold<PinholeCamera<Calibration> > {};
 
 template <typename Calibration>
-struct Range<PinholeCamera<Calibration>, Pose3> {
-  typedef double result_type;
-  typedef PinholeCamera<Calibration> Camera;
-  double operator()(const Camera& camera, const Pose3& pose,
-                    OptionalJacobian<1, Camera::dimension> H1 = boost::none,
-                    OptionalJacobian<1, 6> H2 = boost::none) {
-    return camera.range(pose, H1, H2);
-  }
-};
+struct traits<const PinholeCamera<Calibration> >
+    : public internal::Manifold<PinholeCamera<Calibration> > {};
+
+// range traits, used in RangeFactor
+template <typename Calibration>
+struct Range<PinholeCamera<Calibration>, Point3>
+    : HasRange<PinholeCamera<Calibration>, Point3> {};
+
+template <typename Calibration>
+struct Range<PinholeCamera<Calibration>, Pose3>
+    : HasRange<PinholeCamera<Calibration>, Pose3> {};
 
 template <typename CalibrationA, typename CalibrationB>
-struct Range<PinholeCamera<CalibrationA>, PinholeCamera<CalibrationB> > {
-  typedef double result_type;
-  typedef PinholeCamera<CalibrationA> CameraA;
-  typedef PinholeCamera<CalibrationB> CameraB;
-  double operator()(const CameraA& camera1, const CameraB& camera2,
-                    OptionalJacobian<1, CameraA::dimension> H1 = boost::none,
-                    OptionalJacobian<1, CameraB::dimension> H2 = boost::none) {
-    return camera1.range(camera2, H1, H2);
-  }
-};
+struct Range<PinholeCamera<CalibrationA>, PinholeCamera<CalibrationB> >
+    : HasRange<PinholeCamera<CalibrationA>, PinholeCamera<CalibrationB> > {};
 
 template <typename Calibration>
-struct Range<PinholeCamera<Calibration>, CalibratedCamera> {
-  typedef double result_type;
-  typedef PinholeCamera<Calibration> Camera;
-  double operator()(const Camera& camera, const CalibratedCamera& cc,
-                    OptionalJacobian<1, Camera::dimension> H1 = boost::none,
-                    OptionalJacobian<1, 6> H2 = boost::none) {
-    return camera.range(cc, H1, H2);
-  }
-};
+struct Range<PinholeCamera<Calibration>, CalibratedCamera>
+    : HasRange<PinholeCamera<Calibration>, CalibratedCamera> {};
 
 }  // \ gtsam

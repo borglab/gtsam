@@ -93,4 +93,28 @@ struct traits<BearingRange<A1, A2> >
     : Testable<BearingRange<A1, A2> >,
       internal::ManifoldTraits<BearingRange<A1, A2> > {};
 
+// Helper class for to implement Range traits for classes with a bearing method
+template <class A1, typename A2, class T = double>
+struct HasBearing {
+  typedef T result_type;
+  T operator()(
+      const A1& a1, const A2& a2,
+      OptionalJacobian<traits<T>::dimension, traits<A1>::dimension> H1,
+      OptionalJacobian<traits<T>::dimension, traits<A2>::dimension> H2) {
+    return a1.bearing(a2, H1, H2);
+  }
+};
+
+// Helper class for to implement Range traits for classes with a range method
+template <class A1, typename A2, class T = double>
+struct HasRange {
+  typedef T result_type;
+  T operator()(
+      const A1& a1, const A2& a2,
+      OptionalJacobian<traits<T>::dimension, traits<A1>::dimension> H1,
+      OptionalJacobian<traits<T>::dimension, traits<A2>::dimension> H2) {
+    return a1.range(a2, H1, H2);
+  }
+};
+
 }  // namespace gtsam

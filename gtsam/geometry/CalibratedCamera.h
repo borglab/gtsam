@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <gtsam/geometry/BearingRange.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/concepts.h>
 #include <gtsam/base/Manifold.h>
@@ -384,47 +385,22 @@ private:
   /// @}
 };
 
-template<>
-struct traits<CalibratedCamera> : public internal::Manifold<CalibratedCamera> {
-};
-
-template<>
-struct traits<const CalibratedCamera> : public internal::Manifold<
-    CalibratedCamera> {
-};
-
-// Define Range functor specializations that are used in RangeFactor
-template <typename A1, typename A2> struct Range;
+// manifold traits
+template <>
+struct traits<CalibratedCamera> : public internal::Manifold<CalibratedCamera> {};
 
 template <>
-struct Range<CalibratedCamera, Point3> {
-  typedef double result_type;
-  double operator()(const CalibratedCamera& camera, const Point3& point,
-                    OptionalJacobian<1, 6> H1 = boost::none,
-                    OptionalJacobian<1, 3> H2 = boost::none) {
-    return camera.range(point, H1, H2);
-  }
-};
+struct traits<const CalibratedCamera> : public internal::Manifold<CalibratedCamera> {};
+
+// range traits, used in RangeFactor
+template <>
+struct Range<CalibratedCamera, Point3> : HasRange<CalibratedCamera, Point3> {};
 
 template <>
-struct Range<CalibratedCamera, Pose3> {
-  typedef double result_type;
-  double operator()(const CalibratedCamera& camera, const Pose3& pose,
-                    OptionalJacobian<1, 6> H1 = boost::none,
-                    OptionalJacobian<1, 6> H2 = boost::none) {
-    return camera.range(pose, H1, H2);
-  }
-};
+struct Range<CalibratedCamera, Pose3> : HasRange<CalibratedCamera, Pose3> {};
 
 template <>
-struct Range<CalibratedCamera, CalibratedCamera> {
-  typedef double result_type;
-  double operator()(const CalibratedCamera& camera1,
-                    const CalibratedCamera& camera2,
-                    OptionalJacobian<1, 6> H1 = boost::none,
-                    OptionalJacobian<1, 6> H2 = boost::none) {
-    return camera1.range(camera2, H1, H2);
-  }
-};
-}
+struct Range<CalibratedCamera, CalibratedCamera> : HasRange<CalibratedCamera, CalibratedCamera> {};
+
+}  // namespace gtsam
 

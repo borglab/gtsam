@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include <gtsam/geometry/BearingRange.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/base/Lie.h>
@@ -290,57 +291,24 @@ inline Matrix wedge<Pose2>(const Vector& xi) {
 typedef std::pair<Point2,Point2> Point2Pair;
 GTSAM_EXPORT boost::optional<Pose2> align(const std::vector<Point2Pair>& pairs);
 
-template<>
+template <>
 struct traits<Pose2> : public internal::LieGroup<Pose2> {};
 
-template<>
+template <>
 struct traits<const Pose2> : public internal::LieGroup<Pose2> {};
 
-// Define Bearing functor specializations that are used in BearingFactor
-template <typename A1, typename A2> struct Bearing;
+// bearing and range traits, used in RangeFactor
+template <>
+struct Bearing<Pose2, Point2> : HasBearing<Pose2, Point2, Rot2> {};
 
 template <>
-struct Bearing<Pose2, Point2> {
-  typedef Rot2 result_type;
-  Rot2 operator()(const Pose2& pose, const Point2& point,
-                  OptionalJacobian<1, 3> H1 = boost::none,
-                  OptionalJacobian<1, 2> H2 = boost::none) {
-    return pose.bearing(point, H1, H2);
-  }
-};
+struct Bearing<Pose2, Pose2> : HasBearing<Pose2, Pose2, Rot2> {};
 
 template <>
-struct Bearing<Pose2, Pose2> {
-  typedef Rot2 result_type;
-  Rot2 operator()(const Pose2& pose1, const Pose2& pose2,
-                  OptionalJacobian<1, 3> H1 = boost::none,
-                  OptionalJacobian<1, 3> H2 = boost::none) {
-    return pose1.bearing(pose2, H1, H2);
-  }
-};
-
-// Define Range functor specializations that are used in RangeFactor
-template <typename A1, typename A2> struct Range;
+struct Range<Pose2, Point2> : HasRange<Pose2, Point2> {};
 
 template <>
-struct Range<Pose2, Point2> {
-  typedef double result_type;
-  double operator()(const Pose2& pose, const Point2& point,
-                    OptionalJacobian<1, 3> H1 = boost::none,
-                    OptionalJacobian<1, 2> H2 = boost::none) {
-    return pose.range(point, H1, H2);
-  }
-};
-
-template <>
-struct Range<Pose2, Pose2> {
-  typedef double result_type;
-  double operator()(const Pose2& pose1, const Pose2& pose2,
-                    OptionalJacobian<1, 3> H1 = boost::none,
-                    OptionalJacobian<1, 3> H2 = boost::none) {
-    return pose1.range(pose2, H1, H2);
-  }
-};
+struct Range<Pose2, Pose2> : HasRange<Pose2, Pose2> {};
 
 } // namespace gtsam
 

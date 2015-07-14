@@ -357,6 +357,7 @@ struct Range<Vector3, Vector3> {
   double operator()(const Vector3& v1, const Vector3& v2,
                     OptionalJacobian<1, 3> H1, OptionalJacobian<1, 3> H2) {
     return (v2 - v1).norm();
+    // derivatives not implemented
   }
 };
 }
