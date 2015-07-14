@@ -1,4 +1,5 @@
 /**
+
  * GTSAM Wrap Module Definition
  *
  * These are the current classes available through the matlab toolbox interface,
@@ -2289,19 +2290,18 @@ virtual class BearingFactor : gtsam::NoiseModelFactor {
 
 typedef gtsam::BearingFactor<gtsam::Pose2, gtsam::Point2, gtsam::Rot2> BearingFactor2D;
 
-
 #include <gtsam/sam/BearingRangeFactor.h>
-template<POSE, POINT, BEARING>
+template<POSE, POINT, BEARING, RANGE>
 virtual class BearingRangeFactor : gtsam::NoiseModelFactor {
-  BearingRangeFactor(size_t poseKey, size_t pointKey, const BEARING& measuredBearing, double measuredRange, const gtsam::noiseModel::Base* noiseModel);
-
-  pair<MEASURED, double> measured() const;
+  BearingRangeFactor(size_t poseKey, size_t pointKey,
+      const BEARING& measuredBearing, const RANGE& measuredRange,
+      const gtsam::noiseModel::Base* noiseModel);
 
   // enabling serialization functionality
   void serialize() const;
 };
 
-typedef gtsam::BearingRangeFactor<gtsam::Pose2, gtsam::Point2, gtsam::Rot2> BearingRangeFactor2D;
+typedef gtsam::BearingRangeFactor<gtsam::Pose2, gtsam::Point2, gtsam::Rot2, double> BearingRangeFactor2D;
 
 
 #include <gtsam/slam/ProjectionFactor.h>

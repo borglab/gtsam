@@ -125,7 +125,7 @@ class RangeFactorWithTransform : public ExpressionFactor2<T, A1, A2> {
 
  private:
   /** Serialization function */
-  friend typename boost::serialization::access;
+  friend class boost::serialization::access;
   template <typename ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
     ar& boost::serialization::make_nvp(
