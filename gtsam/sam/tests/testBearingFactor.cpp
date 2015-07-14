@@ -49,9 +49,9 @@ BOOST_CLASS_EXPORT(gtsam::noiseModel::Isotropic);
 
 /* ************************************************************************* */
 TEST(BearingFactor, Serialization2D) {
-  EXPECT(serializationTestHelpers::equalsObj<BearingFactor2D>(factor2D));
-  EXPECT(serializationTestHelpers::equalsXML<BearingFactor2D>(factor2D));
-  EXPECT(serializationTestHelpers::equalsBinary<BearingFactor2D>(factor2D));
+  EXPECT(serializationTestHelpers::equalsObj(factor2D));
+  EXPECT(serializationTestHelpers::equalsXML(factor2D));
+  EXPECT(serializationTestHelpers::equalsBinary(factor2D));
 }
 
 /* ************************************************************************* */
@@ -75,9 +75,9 @@ TEST(BearingFactor, 2D) {
 
 /* ************************************************************************* */
 TEST(BearingFactor, Serialization3D) {
-  EXPECT(serializationTestHelpers::equalsObj<BearingFactor3D>(factor3D));
-  EXPECT(serializationTestHelpers::equalsXML<BearingFactor3D>(factor3D));
-  EXPECT(serializationTestHelpers::equalsBinary<BearingFactor3D>(factor3D));
+  EXPECT(serializationTestHelpers::equalsObj(factor3D));
+  EXPECT(serializationTestHelpers::equalsXML(factor3D));
+  EXPECT(serializationTestHelpers::equalsBinary(factor3D));
 }
 
 /* ************************************************************************* */

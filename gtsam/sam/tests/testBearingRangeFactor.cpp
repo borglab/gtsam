@@ -28,7 +28,6 @@
 
 using namespace std;
 using namespace gtsam;
-using namespace serializationTestHelpers;
 
 Key poseKey(1);
 Key pointKey(2);
@@ -49,9 +48,9 @@ BOOST_CLASS_EXPORT(gtsam::noiseModel::Isotropic);
 
 /* ************************************************************************* */
 TEST(BearingRangeFactor, Serialization2D) {
-  EXPECT(equalsObj<BearingRangeFactor2D>(factor2D));
-  EXPECT(equalsXML<BearingRangeFactor2D>(factor2D));
-  EXPECT(equalsBinary<BearingRangeFactor2D>(factor2D));
+  EXPECT(serializationTestHelpers::equalsObj(factor2D));
+  EXPECT(serializationTestHelpers::equalsXML(factor2D));
+  EXPECT(serializationTestHelpers::equalsBinary(factor2D));
 }
 
 /* ************************************************************************* */
@@ -75,9 +74,9 @@ TEST(BearingRangeFactor, 2D) {
 
 /* ************************************************************************* */
 TEST(BearingRangeFactor, Serialization3D) {
-  EXPECT(equalsObj<BearingRangeFactor3D>(factor3D));
-  EXPECT(equalsXML<BearingRangeFactor3D>(factor3D));
-  EXPECT(equalsBinary<BearingRangeFactor3D>(factor3D));
+  EXPECT(serializationTestHelpers::equalsObj(factor3D));
+  EXPECT(serializationTestHelpers::equalsXML(factor3D));
+  EXPECT(serializationTestHelpers::equalsBinary(factor3D));
 }
 
 /* ************************************************************************* */
