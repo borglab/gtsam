@@ -23,10 +23,10 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/base/Testable.h>
 #include <numeric>
-
 namespace gtsam {
 
 /**
+
  * Factor that supports arbitrary expressions via AD
  */
 template<typename T>
@@ -132,10 +132,10 @@ public:
   }
 
 protected:
- /// Default constructor, for serialization
  ExpressionFactor() {}
+ /// Default constructor, for serialization
 
- /// Constructor for use by SerializableExpressionFactor
+ /// Constructor for serializable derived classes
  ExpressionFactor(const SharedNoiseModel& noiseModel, const T& measurement)
      : NoiseModelFactor(noiseModel), measured_(measurement) {
    // Not properly initialized yet, need to call initialize
@@ -155,22 +155,91 @@ protected:
    boost::tie(keys_, dims_) = expression_.keysAndDims();
  }
 
-private:
- /// Serialization function
- template <class ARCHIVE>
- void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-   ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(NoiseModelFactor);
-   ar& boost::serialization::make_nvp("measured_", this->measured_);
+ /// Recreate expression from keys_ and measured_, used in load below.
+ /// Needed to deserialize a derived factor
+ virtual Expression<T> expression() const {
+   throw std::runtime_error("ExpressionFactor::expression not provided: cannot deserialize.");
  }
+
+private:
+ /// Save to an archive: just saves the base class
+ template <class Archive>
+ void save(Archive& ar, const unsigned int /*version*/) const {
+   ar << BOOST_SERIALIZATION_BASE_OBJECT_NVP(NoiseModelFactor);
+   ar << boost::serialization::make_nvp("measured_", this->measured_);
+ }
+
+ /// Load from an archive, creating a valid expression using the overloaded
+ /// [expression] method
+ template <class Archive>
+ void load(Archive& ar, const unsigned int /*version*/) {
+   ar >> BOOST_SERIALIZATION_BASE_OBJECT_NVP(NoiseModelFactor);
+   ar >> boost::serialization::make_nvp("measured_", this->measured_);
+   this->initialize(expression());
+ }
+
+ // Indicate that we implement save/load separately, and be friendly to boost
+ BOOST_SERIALIZATION_SPLIT_MEMBER()
 
  friend class boost::serialization::access;
 };
 // ExpressionFactor
 
-
 /// traits
 template <typename T>
 struct traits<ExpressionFactor<T> > : public Testable<ExpressionFactor<T> > {};
+
+/**
+ * Binary specialization of ExpressionFactor meant as a base class for binary factors
+ * Enforces expression method with two keys, and provides evaluateError
+ * Derived needs to call initialize.
+ */
+template <typename T, typename A1, typename A2>
+class ExpressionFactor2 : public ExpressionFactor<T> {
+ public:
+  /// Destructor
+  virtual ~ExpressionFactor2() {}
+
+  /// Backwards compatible evaluateError, to make existing tests compile
+  Vector evaluateError(const A1& a1, const A2& a2,
+                       boost::optional<Matrix&> H1 = boost::none,
+                       boost::optional<Matrix&> H2 = boost::none) const {
+    Values values;
+    values.insert(this->keys_[0], a1);
+    values.insert(this->keys_[1], a2);
+    std::vector<Matrix> H(2);
+    Vector error = this->unwhitenedError(values, H);
+    if (H1) (*H1) = H[0];
+    if (H2) (*H2) = H[1];
+    return error;
+  }
+
+  /// Recreate expression from given keys_ and measured_, used in load
+  /// Needed to deserialize a derived factor
+  virtual Expression<T> expression(Key key1, Key key2) const {
+    throw std::runtime_error("ExpressionFactor2::expression not provided: cannot deserialize.");
+  }
+
+ protected:
+  /// Default constructor, for serialization
+  ExpressionFactor2() {}
+
+  /// Constructor takes care of keys, but still need to call initialize
+  ExpressionFactor2(Key key1, Key key2,
+                                const SharedNoiseModel& noiseModel,
+                                const T& measurement)
+      : ExpressionFactor<T>(noiseModel, measurement) {
+    this->keys_.push_back(key1);
+    this->keys_.push_back(key2);
+  }
+
+ private:
+  /// Return an expression that predicts the measurement given Values
+  virtual Expression<T> expression() const {
+    return expression(this->keys_[0], this->keys_[1]);
+  }
+};
+// ExpressionFactor2
 
 }// \ namespace gtsam
 

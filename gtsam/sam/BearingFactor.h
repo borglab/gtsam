@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include <gtsam/nonlinear/SerializableExpressionFactor.h>
+#include <gtsam/nonlinear/ExpressionFactor.h>
 
 namespace gtsam {
 
@@ -34,8 +34,8 @@ struct Bearing;
  */
 template <typename A1, typename A2,
           typename T = typename Bearing<A1, A2>::result_type>
-struct BearingFactor : public SerializableExpressionFactor2<T, A1, A2> {
-  typedef SerializableExpressionFactor2<T, A1, A2> Base;
+struct BearingFactor : public ExpressionFactor2<T, A1, A2> {
+  typedef ExpressionFactor2<T, A1, A2> Base;
 
   /// default constructor
   BearingFactor() {}

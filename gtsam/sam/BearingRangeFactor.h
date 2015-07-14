@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include <gtsam/nonlinear/SerializableExpressionFactor.h>
+#include <gtsam/nonlinear/ExpressionFactor.h>
 #include <gtsam/geometry/BearingRange.h>
 #include <boost/concept/assert.hpp>
 
@@ -33,10 +33,10 @@ template <typename A1, typename A2,
           typename B = typename Bearing<A1, A2>::result_type,
           typename R = typename Range<A1, A2>::result_type>
 class BearingRangeFactor
-    : public SerializableExpressionFactor2<BearingRange<A1, A2>, A1, A2> {
+    : public ExpressionFactor2<BearingRange<A1, A2>, A1, A2> {
  private:
   typedef BearingRange<A1, A2> T;
-  typedef SerializableExpressionFactor2<T, A1, A2> Base;
+  typedef ExpressionFactor2<T, A1, A2> Base;
   typedef BearingRangeFactor<A1, A2> This;
 
  public:
@@ -62,7 +62,8 @@ class BearingRangeFactor
 
   // Return measurement expression
   virtual Expression<T> expression(Key key1, Key key2) const {
-    return Expression<T>(T::Measure, Expression<A1>(key1), Expression<A2>(key2));
+    return Expression<T>(T::Measure, Expression<A1>(key1),
+                         Expression<A2>(key2));
   }
 
   /// print

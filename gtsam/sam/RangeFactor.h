@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include <gtsam/nonlinear/SerializableExpressionFactor.h>
+#include <gtsam/nonlinear/ExpressionFactor.h>
 
 namespace gtsam {
 
@@ -33,10 +33,10 @@ struct Range;
  */
 template <typename A1, typename A2 = A1,
           typename T = typename Range<A1, A2>::result_type>
-class RangeFactor : public SerializableExpressionFactor2<T, A1, A2> {
+class RangeFactor : public ExpressionFactor2<T, A1, A2> {
  private:
   typedef RangeFactor<A1, A2> This;
-  typedef SerializableExpressionFactor2<T, A1, A2> Base;
+  typedef ExpressionFactor2<T, A1, A2> Base;
 
  public:
   /// default constructor
@@ -79,11 +79,10 @@ struct traits<RangeFactor<A1, A2, T> >
  */
 template <typename A1, typename A2 = A1,
           typename T = typename Range<A1, A2>::result_type>
-class RangeFactorWithTransform
-    : public SerializableExpressionFactor2<T, A1, A2> {
+class RangeFactorWithTransform : public ExpressionFactor2<T, A1, A2> {
  private:
   typedef RangeFactorWithTransform<A1, A2> This;
-  typedef SerializableExpressionFactor2<T, A1, A2> Base;
+  typedef ExpressionFactor2<T, A1, A2> Base;
 
   A1 body_T_sensor_;  ///< The pose of the sensor in the body frame
 
