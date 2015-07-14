@@ -393,14 +393,8 @@ template <>
 struct traits<const CalibratedCamera> : public internal::Manifold<CalibratedCamera> {};
 
 // range traits, used in RangeFactor
-template <>
-struct Range<CalibratedCamera, Point3> : HasRange<CalibratedCamera, Point3> {};
-
-template <>
-struct Range<CalibratedCamera, Pose3> : HasRange<CalibratedCamera, Pose3> {};
-
-template <>
-struct Range<CalibratedCamera, CalibratedCamera> : HasRange<CalibratedCamera, CalibratedCamera> {};
+template <typename T>
+struct Range<CalibratedCamera, T> : HasRange<CalibratedCamera, T, double> {};
 
 }  // namespace gtsam
 

@@ -137,17 +137,7 @@ template <>
 struct traits<const SimpleCamera> : public internal::Manifold<SimpleCamera> {};
 
 // range traits, used in RangeFactor
-template <>
-struct Range<SimpleCamera, Point3> : HasRange<SimpleCamera, Point3> {};
-
-template <>
-struct Range<SimpleCamera, Pose3> : HasRange<SimpleCamera, Pose3> {};
-
-template <>
-struct Range<SimpleCamera, SimpleCamera> : HasRange<SimpleCamera, SimpleCamera> {};
-
-template <typename Calibration>
-struct Range<SimpleCamera, PinholeCamera<Calibration> >
-    : HasRange<SimpleCamera, PinholeCamera<Calibration> > {};
+template <typename T>
+struct Range<SimpleCamera, T> : HasRange<SimpleCamera, T, double> {};
 
 }  // namespace gtsam

@@ -19,6 +19,7 @@
 #include <gtsam/sam/RangeFactor.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/SimpleCamera.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/base/TestableAssertions.h>
@@ -345,6 +346,14 @@ TEST(RangeFactor, Point3) {
 
   // Verify we get the expected error
   CHECK(assert_equal(expectedError, factor.evaluateError(pose, point), 1e-9));
+}
+
+/* ************************************************************************* */
+// Do tests with SimpleCamera
+TEST( RangeFactor, Camera) {
+  RangeFactor<SimpleCamera,Point3> factor1(poseKey, pointKey, measurement, model);
+  RangeFactor<SimpleCamera,Pose3> factor2(poseKey, pointKey, measurement, model);
+  RangeFactor<SimpleCamera,SimpleCamera> factor3(poseKey, pointKey, measurement, model);
 }
 
 /* ************************************************************************* */

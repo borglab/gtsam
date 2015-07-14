@@ -342,10 +342,7 @@ struct traits<const Pose3> : public internal::LieGroup<Pose3> {};
 template <>
 struct Bearing<Pose3, Point3> : HasBearing<Pose3, Point3, Unit3> {};
 
-template <>
-struct Range<Pose3, Point3> : HasRange<Pose3, Point3> {};
-
-template <>
-struct Range<Pose3, Pose3> : HasRange<Pose3, Pose3> {};
+template <typename T>
+struct Range<Pose3, T> : HasRange<Pose3, T, double> {};
 
 }  // namespace gtsam

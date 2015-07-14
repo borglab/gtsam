@@ -314,20 +314,7 @@ struct traits<const PinholeCamera<Calibration> >
     : public internal::Manifold<PinholeCamera<Calibration> > {};
 
 // range traits, used in RangeFactor
-template <typename Calibration>
-struct Range<PinholeCamera<Calibration>, Point3>
-    : HasRange<PinholeCamera<Calibration>, Point3> {};
-
-template <typename Calibration>
-struct Range<PinholeCamera<Calibration>, Pose3>
-    : HasRange<PinholeCamera<Calibration>, Pose3> {};
-
-template <typename CalibrationA, typename CalibrationB>
-struct Range<PinholeCamera<CalibrationA>, PinholeCamera<CalibrationB> >
-    : HasRange<PinholeCamera<CalibrationA>, PinholeCamera<CalibrationB> > {};
-
-template <typename Calibration>
-struct Range<PinholeCamera<Calibration>, CalibratedCamera>
-    : HasRange<PinholeCamera<Calibration>, CalibratedCamera> {};
+template <typename Calibration, typename T>
+struct Range<PinholeCamera<Calibration>, T> : HasRange<PinholeCamera<Calibration>, T, double> {};
 
 }  // \ gtsam

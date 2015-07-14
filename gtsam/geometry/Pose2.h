@@ -298,17 +298,11 @@ template <>
 struct traits<const Pose2> : public internal::LieGroup<Pose2> {};
 
 // bearing and range traits, used in RangeFactor
-template <>
-struct Bearing<Pose2, Point2> : HasBearing<Pose2, Point2, Rot2> {};
+template <typename T>
+struct Bearing<Pose2, T> : HasBearing<Pose2, T, Rot2> {};
 
-template <>
-struct Bearing<Pose2, Pose2> : HasBearing<Pose2, Pose2, Rot2> {};
-
-template <>
-struct Range<Pose2, Point2> : HasRange<Pose2, Point2> {};
-
-template <>
-struct Range<Pose2, Pose2> : HasRange<Pose2, Pose2> {};
+template <typename T>
+struct Range<Pose2, T> : HasRange<Pose2, T, double> {};
 
 } // namespace gtsam
 

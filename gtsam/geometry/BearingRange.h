@@ -94,7 +94,7 @@ struct traits<BearingRange<A1, A2> >
       internal::ManifoldTraits<BearingRange<A1, A2> > {};
 
 // Helper class for to implement Range traits for classes with a bearing method
-template <class A1, typename A2, class T = double>
+template <class A1, typename A2, class T>
 struct HasBearing {
   typedef T result_type;
   T operator()(
@@ -106,7 +106,7 @@ struct HasBearing {
 };
 
 // Helper class for to implement Range traits for classes with a range method
-template <class A1, typename A2, class T = double>
+template <class A1, typename A2, class T>
 struct HasRange {
   typedef T result_type;
   T operator()(
