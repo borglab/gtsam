@@ -33,6 +33,12 @@
 
 namespace gtsam {
 
+/// Linearization mode: what factor to linearize to
+ enum LinearizationMode {
+   HESSIAN, IMPLICIT_SCHUR, JACOBIAN_Q, JACOBIAN_SVD
+ };
+
+
 /**
  * SmartStereoProjectionFactor: triangulates point
  */
@@ -82,11 +88,8 @@ public:
   /// shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<This> shared_ptr;
 
-  /// shorthand for a StereoCamera // TODO: Get rid of this?
-  typedef StereoCamera Camera;
-
   /// Vector of cameras
-  typedef CameraSet<Camera> Cameras;
+  typedef CameraSet<StereoCamera> Cameras;
 
   /**
    * Constructor
@@ -195,7 +198,7 @@ public:
         }
 
         std::vector<PinholeCamera<Cal3_S2> > mono_cameras;
-        BOOST_FOREACH(const Camera& camera, cameras) {
+        BOOST_FOREACH(const StereoCamera& camera, cameras) {
           const Pose3& pose = camera.pose();
           const Cal3_S2& K = camera.calibration()->calibration();
           mono_cameras.push_back(PinholeCamera<Cal3_S2>(pose, K));
@@ -215,7 +218,7 @@ public:
         // Check landmark distance and reprojection errors to avoid outliers
         double totalReprojError = 0.0;
         size_t i = 0;
-        BOOST_FOREACH(const Camera& camera, cameras) {
+        BOOST_FOREACH(const StereoCamera& camera, cameras) {
           Point3 cameraTranslation = camera.pose().translation();
           // we discard smart factors corresponding to points that are far away
           if (cameraTranslation.distance(point_) > parameters_.landmarkDistanceThreshold) {
@@ -577,9 +580,6 @@ public:
       return Base::totalReprojectionError(cameras, point_);
     }
   }
-
-  /// Cameras are computed in derived class
-  virtual Cameras cameras(const Values& values) const = 0;
 
   /** return the landmark */
   boost::optional<Point3> point() const {

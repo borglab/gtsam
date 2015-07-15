@@ -326,15 +326,15 @@ TEST( SmartStereoProjectionPoseFactor, jacobianSVD ) {
       cam2, cam3, landmark3);
 
   SmartFactor::shared_ptr smartFactor1(
-      new SmartFactor(1, -1, false, false, SmartFactor::JACOBIAN_SVD));
+      new SmartFactor(1, -1, false, false, JACOBIAN_SVD));
   smartFactor1->add(measurements_cam1, views, model, K);
 
   SmartFactor::shared_ptr smartFactor2(
-      new SmartFactor(1, -1, false, false, SmartFactor::JACOBIAN_SVD));
+      new SmartFactor(1, -1, false, false, JACOBIAN_SVD));
   smartFactor2->add(measurements_cam2, views, model, K);
 
   SmartFactor::shared_ptr smartFactor3(
-      new SmartFactor(1, -1, false, false, SmartFactor::JACOBIAN_SVD));
+      new SmartFactor(1, -1, false, false, JACOBIAN_SVD));
   smartFactor3->add(measurements_cam3, views, model, K);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
@@ -394,17 +394,17 @@ TEST( SmartStereoProjectionPoseFactor, landmarkDistance ) {
       cam2, cam3, landmark3);
 
   SmartFactor::shared_ptr smartFactor1(
-      new SmartFactor(1, -1, false, false, SmartFactor::JACOBIAN_SVD,
+      new SmartFactor(1, -1, false, false, JACOBIAN_SVD,
           excludeLandmarksFutherThanDist));
   smartFactor1->add(measurements_cam1, views, model, K);
 
   SmartFactor::shared_ptr smartFactor2(
-      new SmartFactor(1, -1, false, false, SmartFactor::JACOBIAN_SVD,
+      new SmartFactor(1, -1, false, false, JACOBIAN_SVD,
           excludeLandmarksFutherThanDist));
   smartFactor2->add(measurements_cam2, views, model, K);
 
   SmartFactor::shared_ptr smartFactor3(
-      new SmartFactor(1, -1, false, false, SmartFactor::JACOBIAN_SVD,
+      new SmartFactor(1, -1, false, false, JACOBIAN_SVD,
           excludeLandmarksFutherThanDist));
   smartFactor3->add(measurements_cam3, views, model, K);
 
@@ -472,22 +472,22 @@ TEST( SmartStereoProjectionPoseFactor, dynamicOutlierRejection ) {
   measurements_cam4.at(0) = measurements_cam4.at(0) + StereoPoint2(10, 10, 1); // add outlier
 
   SmartFactor::shared_ptr smartFactor1(
-      new SmartFactor(1, -1, false, false, SmartFactor::JACOBIAN_SVD,
+      new SmartFactor(1, -1, false, false, JACOBIAN_SVD,
           excludeLandmarksFutherThanDist, dynamicOutlierRejectionThreshold));
   smartFactor1->add(measurements_cam1, views, model, K);
 
   SmartFactor::shared_ptr smartFactor2(
-      new SmartFactor(1, -1, false, false, SmartFactor::JACOBIAN_SVD,
+      new SmartFactor(1, -1, false, false, JACOBIAN_SVD,
           excludeLandmarksFutherThanDist, dynamicOutlierRejectionThreshold));
   smartFactor2->add(measurements_cam2, views, model, K);
 
   SmartFactor::shared_ptr smartFactor3(
-      new SmartFactor(1, -1, false, false, SmartFactor::JACOBIAN_SVD,
+      new SmartFactor(1, -1, false, false, JACOBIAN_SVD,
           excludeLandmarksFutherThanDist, dynamicOutlierRejectionThreshold));
   smartFactor3->add(measurements_cam3, views, model, K);
 
   SmartFactor::shared_ptr smartFactor4(
-      new SmartFactor(1, -1, false, false, SmartFactor::JACOBIAN_SVD,
+      new SmartFactor(1, -1, false, false, JACOBIAN_SVD,
           excludeLandmarksFutherThanDist, dynamicOutlierRejectionThreshold));
   smartFactor4->add(measurements_cam4, views, model, K);
 

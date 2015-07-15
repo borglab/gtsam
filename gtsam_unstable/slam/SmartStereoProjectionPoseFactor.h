@@ -42,10 +42,7 @@ template<class CALIBRATION>
 class SmartStereoProjectionPoseFactor: public SmartStereoProjectionFactor<CALIBRATION> {
 
 public:
-  /// Linearization mode: what factor to linearize to
-   enum LinearizationMode {
-     HESSIAN, IMPLICIT_SCHUR, JACOBIAN_Q, JACOBIAN_SVD
-   };
+
 
 protected:
 
@@ -163,7 +160,7 @@ public:
     size_t i=0;
     BOOST_FOREACH(const Key& k, this->keys_) {
       Pose3 pose = values.at<Pose3>(k);
-      typename Base::Camera camera(pose, K_all_[i++]);
+      StereoCamera camera(pose, K_all_[i++]);
       cameras.push_back(camera);
     }
     return cameras;
