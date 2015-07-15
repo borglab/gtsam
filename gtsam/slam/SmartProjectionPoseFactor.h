@@ -11,7 +11,7 @@
 
 /**
  * @file   SmartProjectionPoseFactor.h
- * @brief  Produces an Hessian factors on POSES from monocular measurements of a single landmark
+ * @brief  Smart factor on poses, assuming camera calibration is fixed
  * @author Luca Carlone
  * @author Chris Beall
  * @author Zsolt Kira
@@ -34,7 +34,11 @@ namespace gtsam {
  */
 
 /**
- * The calibration is known here. The factor only constraints poses (variable dimension is 6)
+ * This factor assumes that camera calibration is fixed, and that
+ * the calibration is the same for all cameras involved in this factor.
+ * The factor only constrains poses (variable dimension is 6).
+ * This factor requires that values contains the involved poses (Pose3).
+ * If the calibration should be optimized, as well, use SmartProjectionFactor instead!
  * @addtogroup SLAM
  */
 template<class CALIBRATION>
@@ -58,7 +62,7 @@ public:
   /**
    * Constructor
    * @param K (fixed) calibration, assumed to be the same for all cameras
-   * @param  body_P_sensor pose of the camera in the body frame
+   * @param body_P_sensor pose of the camera in the body frame
    * @param params internal parameters of the smart factors
    */
   SmartProjectionPoseFactor(const boost::shared_ptr<CALIBRATION> K,
