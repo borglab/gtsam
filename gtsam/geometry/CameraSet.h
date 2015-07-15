@@ -161,7 +161,7 @@ public:
     for (size_t i = 0; i < m; i++) { // for each camera
 
       const MatrixZD& Fi = Fs[i];
-      const Eigen::Matrix<double, 2, N> Ei_P = //
+      const Eigen::Matrix<double, ZDim, N> Ei_P = //
           E.block(ZDim * i, 0, ZDim, N) * P;
 
       // D = (Dx2) * ZDim
