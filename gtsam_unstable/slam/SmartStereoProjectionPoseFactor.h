@@ -46,8 +46,6 @@ public:
 
 protected:
 
-  LinearizationMode linearizeTo_;  ///< How to linearize the factor (HESSIAN, JACOBIAN_SVD, JACOBIAN_Q)
-
   std::vector<boost::shared_ptr<CALIBRATION> > K_all_; ///< shared pointer to calibration object (one for each camera)
 
 public:
@@ -71,14 +69,9 @@ public:
    * otherwise the factor is simply neglected
    * @param enableEPI if set to true linear triangulation is refined with embedded LM iterations
    */
-  SmartStereoProjectionPoseFactor(const double rankTol = 1,
-      const double linThreshold = -1, const bool manageDegeneracy = false,
-      const bool enableEPI = false, LinearizationMode linearizeTo = HESSIAN,
-      double landmarkDistanceThreshold = 1e10,
-      double dynamicOutlierRejectionThreshold = -1) :
-      Base(rankTol, linThreshold, manageDegeneracy, enableEPI,
-          landmarkDistanceThreshold, dynamicOutlierRejectionThreshold), linearizeTo_(
-          linearizeTo) {
+  SmartStereoProjectionPoseFactor(const SmartStereoProjectionParams& params =
+      SmartStereoProjectionParams()) :
+      Base(params) {
   }
 
   /** Virtual destructor */
@@ -150,6 +143,22 @@ public:
   }
 
   /**
+   * error calculates the error of the factor.
+   */
+  virtual double error(const Values& values) const {
+    if (this->active(values)) {
+      return this->totalReprojectionError(cameras(values));
+    } else { // else of active flag
+      return 0.0;
+    }
+  }
+
+  /** return the calibration object */
+  inline const std::vector<boost::shared_ptr<CALIBRATION> > calibration() const {
+    return K_all_;
+  }
+
+  /**
    * Collect all cameras involved in this factor
    * @param values Values structure which must contain camera poses corresponding
    * to keys involved in this factor
@@ -164,44 +173,6 @@ public:
       cameras.push_back(camera);
     }
     return cameras;
-  }
-
-  /**
-   * Linearize to Gaussian Factor
-   * @param values Values structure which must contain camera poses for this factor
-   * @return
-   */
-  virtual boost::shared_ptr<GaussianFactor> linearize(
-      const Values& values) const {
-    // depending on flag set on construction we may linearize to different linear factors
-    switch(linearizeTo_){
-    case JACOBIAN_SVD :
-      return this->createJacobianSVDFactor(cameras(values), 0.0);
-      break;
-    case JACOBIAN_Q :
-      throw("JacobianQ not working yet!");
-//      return this->createJacobianQFactor(cameras(values), 0.0);
-      break;
-    default:
-      return this->createHessianFactor(cameras(values));
-      break;
-    }
-  }
-
-  /**
-   * error calculates the error of the factor.
-   */
-  virtual double error(const Values& values) const {
-    if (this->active(values)) {
-      return this->totalReprojectionError(cameras(values));
-    } else { // else of active flag
-      return 0.0;
-    }
-  }
-
-  /** return the calibration object */
-  inline const std::vector<boost::shared_ptr<CALIBRATION> > calibration() const {
-    return K_all_;
   }
 
 private:
