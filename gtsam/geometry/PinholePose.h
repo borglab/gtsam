@@ -30,14 +30,19 @@ namespace gtsam {
  * @addtogroup geometry
  * \nosubgrouping
  */
-template<typename Calibration>
+template<typename CALIBRATION>
 class GTSAM_EXPORT PinholeBaseK: public PinholeBase {
 
-  GTSAM_CONCEPT_MANIFOLD_TYPE(Calibration)
+private:
 
-public  :
+  GTSAM_CONCEPT_MANIFOLD_TYPE(CALIBRATION);
 
-  typedef Calibration CalibrationType;
+  // Get dimensions of calibration type at compile time
+  static const int DimK = FixedDimension<CALIBRATION>::value;
+
+public:
+
+  typedef CALIBRATION CalibrationType;
 
   /// @name Standard Constructors
   /// @{
@@ -67,7 +72,7 @@ public  :
   }
 
   /// return calibration
-  virtual const Calibration& calibration() const = 0;
+  virtual const CALIBRATION& calibration() const = 0;
 
   /// @}
   /// @name Transformations and measurement functions
@@ -80,25 +85,63 @@ public  :
     return pn;
   }
 
-  /** project a point from world coordinate to the image, fixed Jacobians
+  /** project a point from world coordinate to the image
    *  @param pw is a point in the world coordinates
    */
-  Point2 project2(const Point3& pw, OptionalJacobian<2, 6> Dpose = boost::none,
-      OptionalJacobian<2, 3> Dpoint = boost::none) const {
+  Point2 project(const Point3& pw) const {
+    const Point2 pn = PinholeBase::project2(pw); // project to normalized coordinates
+    return calibration().uncalibrate(pn); // uncalibrate to pixel coordinates
+  }
+
+  /** project a point from world coordinate to the image
+   *  @param pw is a point at infinity in the world coordinates
+   */
+  Point2 project(const Unit3& pw) const {
+    const Unit3 pc = pose().rotation().unrotate(pw); // convert to camera frame
+    const Point2 pn = PinholeBase::Project(pc); // project to normalized coordinates
+    return calibration().uncalibrate(pn);  // uncalibrate to pixel coordinates
+  }
+
+  /** Templated projection of a point (possibly at infinity) from world coordinate to the image
+   *  @param pw is a 3D point or aUnit3 (point at infinity) in world coordinates
+   *  @param Dpose is the Jacobian w.r.t. pose3
+   *  @param Dpoint is the Jacobian w.r.t. point3
+   *  @param Dcal is the Jacobian w.r.t. calibration
+   */
+  template <class POINT>
+  Point2 _project(const POINT& pw, OptionalJacobian<2, 6> Dpose,
+      OptionalJacobian<2, FixedDimension<POINT>::value> Dpoint,
+      OptionalJacobian<2, DimK> Dcal) const {
 
     // project to normalized coordinates
     const Point2 pn = PinholeBase::project2(pw, Dpose, Dpoint);
 
     // uncalibrate to pixel coordinates
     Matrix2 Dpi_pn;
-    const Point2 pi = calibration().uncalibrate(pn, boost::none,
+    const Point2 pi = calibration().uncalibrate(pn, Dcal,
         Dpose || Dpoint ? &Dpi_pn : 0);
 
     // If needed, apply chain rule
-    if (Dpose) *Dpose = Dpi_pn * (*Dpose);
-    if (Dpoint) *Dpoint = Dpi_pn * (*Dpoint);
+    if (Dpose)
+    *Dpose = Dpi_pn * *Dpose;
+    if (Dpoint)
+    *Dpoint = Dpi_pn * *Dpoint;
 
     return pi;
+  }
+
+  /// project a 3D point from world coordinates into the image
+  Point2 project(const Point3& pw, OptionalJacobian<2, 6> Dpose,
+      OptionalJacobian<2, 3> Dpoint = boost::none,
+      OptionalJacobian<2, DimK> Dcal = boost::none) const {
+    return _project(pw, Dpose, Dpoint, Dcal);
+  }
+
+  /// project a point at infinity from world coordinates into the image
+  Point2 project(const Unit3& pw, OptionalJacobian<2, 6> Dpose,
+      OptionalJacobian<2, 2> Dpoint = boost::none,
+      OptionalJacobian<2, DimK> Dcal = boost::none) const {
+    return _project(pw, Dpose, Dpoint, Dcal);
   }
 
   /// backproject a 2-dimensional point to a 3-dimensional point at given depth
@@ -108,9 +151,9 @@ public  :
   }
 
   /// backproject a 2-dimensional point to a 3-dimensional point at infinity
-  Point3 backprojectPointAtInfinity(const Point2& p) const {
+  Unit3 backprojectPointAtInfinity(const Point2& p) const {
     const Point2 pn = calibration().calibrate(p);
-    const Point3 pc(pn.x(), pn.y(), 1.0); //by convention the last element is 1
+    const Unit3 pc(pn.x(), pn.y(), 1.0); //by convention the last element is 1
     return pose().rotation().rotate(pc);
   }
 
@@ -178,13 +221,13 @@ private:
  * @addtogroup geometry
  * \nosubgrouping
  */
-template<typename Calibration>
-class GTSAM_EXPORT PinholePose: public PinholeBaseK<Calibration> {
+template<typename CALIBRATION>
+class GTSAM_EXPORT PinholePose: public PinholeBaseK<CALIBRATION> {
 
 private:
 
-  typedef PinholeBaseK<Calibration> Base; ///< base class has 3D pose as private member
-  boost::shared_ptr<Calibration> K_; ///< shared pointer to fixed calibration
+  typedef PinholeBaseK<CALIBRATION> Base; ///< base class has 3D pose as private member
+  boost::shared_ptr<CALIBRATION> K_; ///< shared pointer to fixed calibration
 
 public:
 
@@ -201,11 +244,11 @@ public:
 
   /** constructor with pose, uses default calibration */
   explicit PinholePose(const Pose3& pose) :
-      Base(pose), K_(new Calibration()) {
+      Base(pose), K_(new CALIBRATION()) {
   }
 
   /** constructor with pose and calibration */
-  PinholePose(const Pose3& pose, const boost::shared_ptr<Calibration>& K) :
+  PinholePose(const Pose3& pose, const boost::shared_ptr<CALIBRATION>& K) :
       Base(pose), K_(K) {
   }
 
@@ -220,14 +263,14 @@ public:
    * (theta 0 = looking in direction of positive X axis)
    * @param height camera height
    */
-  static PinholePose Level(const boost::shared_ptr<Calibration>& K,
+  static PinholePose Level(const boost::shared_ptr<CALIBRATION>& K,
       const Pose2& pose2, double height) {
     return PinholePose(Base::LevelPose(pose2, height), K);
   }
 
   /// PinholePose::level with default calibration
   static PinholePose Level(const Pose2& pose2, double height) {
-    return PinholePose::Level(boost::make_shared<Calibration>(), pose2, height);
+    return PinholePose::Level(boost::make_shared<CALIBRATION>(), pose2, height);
   }
 
   /**
@@ -240,8 +283,8 @@ public:
    * @param K optional calibration parameter
    */
   static PinholePose Lookat(const Point3& eye, const Point3& target,
-      const Point3& upVector, const boost::shared_ptr<Calibration>& K =
-          boost::make_shared<Calibration>()) {
+      const Point3& upVector, const boost::shared_ptr<CALIBRATION>& K =
+          boost::make_shared<CALIBRATION>()) {
     return PinholePose(Base::LookatPose(eye, target, upVector), K);
   }
 
@@ -251,12 +294,12 @@ public:
 
   /// Init from 6D vector
   explicit PinholePose(const Vector &v) :
-      Base(v), K_(new Calibration()) {
+      Base(v), K_(new CALIBRATION()) {
   }
 
   /// Init from Vector and calibration
   PinholePose(const Vector &v, const Vector &K) :
-      Base(v), K_(new Calibration(K)) {
+      Base(v), K_(new CALIBRATION(K)) {
   }
 
   /// @}
@@ -286,8 +329,24 @@ public:
   }
 
   /// return calibration
-  virtual const Calibration& calibration() const {
+  virtual const CALIBRATION& calibration() const {
     return *K_;
+  }
+
+  /** project a point from world coordinate to the image, 2 derivatives only
+   *  @param pw is a point in world coordinates
+   *  @param Dpose is the Jacobian w.r.t. the whole camera (really only the pose)
+   *  @param Dpoint is the Jacobian w.r.t. point3
+   */
+  Point2 project2(const Point3& pw, OptionalJacobian<2, 6> Dpose = boost::none,
+      OptionalJacobian<2, 3> Dpoint = boost::none) const {
+    return Base::project(pw, Dpose, Dpoint);
+  }
+
+  /// project2 version for point at infinity
+  Point2 project2(const Unit3& pw, OptionalJacobian<2, 6> Dpose = boost::none,
+      OptionalJacobian<2, 2> Dpoint = boost::none) const {
+    return Base::project(pw, Dpose, Dpoint);
   }
 
   /// @}
@@ -336,14 +395,14 @@ private:
 };
 // end of class PinholePose
 
-template<typename Calibration>
-struct traits<PinholePose<Calibration> > : public internal::Manifold<
-    PinholePose<Calibration> > {
+template<typename CALIBRATION>
+struct traits<PinholePose<CALIBRATION> > : public internal::Manifold<
+    PinholePose<CALIBRATION> > {
 };
 
-template<typename Calibration>
-struct traits<const PinholePose<Calibration> > : public internal::Manifold<
-    PinholePose<Calibration> > {
+template<typename CALIBRATION>
+struct traits<const PinholePose<CALIBRATION> > : public internal::Manifold<
+    PinholePose<CALIBRATION> > {
 };
 
 } // \ gtsam

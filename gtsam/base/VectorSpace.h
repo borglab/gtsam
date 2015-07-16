@@ -20,7 +20,7 @@ template<typename T> struct traits;
 
 namespace internal {
 
-/// VectorSpace Implementation for Fixed sizes
+/// VectorSpaceTraits Implementation for Fixed sizes
 template<class Class, int N>
 struct VectorSpaceImpl {
 
@@ -83,7 +83,7 @@ struct VectorSpaceImpl {
   /// @}
 };
 
-/// VectorSpace implementation for dynamic types.
+/// VectorSpaceTraits implementation for dynamic types.
 template<class Class>
 struct VectorSpaceImpl<Class,Eigen::Dynamic> {
 
@@ -159,11 +159,11 @@ struct VectorSpaceImpl<Class,Eigen::Dynamic> {
   /// @}
 };
 
-/// A helper that implements the traits interface for GTSAM lie groups.
+/// A helper that implements the traits interface for GTSAM vector space types.
 /// To use this for your gtsam type, define:
-/// template<> struct traits<Type> : public VectorSpace<Type> { };
+/// template<> struct traits<Type> : public VectorSpaceTraits<Type> { };
 template<class Class>
-struct VectorSpace: Testable<Class>, VectorSpaceImpl<Class, Class::dimension> {
+struct VectorSpaceTraits: VectorSpaceImpl<Class, Class::dimension> {
 
   typedef vector_space_tag structure_category;
 
@@ -178,8 +178,11 @@ struct VectorSpace: Testable<Class>, VectorSpaceImpl<Class, Class::dimension> {
   enum { dimension = Class::dimension};
   typedef Class ManifoldType;
   /// @}
-
 };
+
+/// Both VectorSpaceTRaits and Testable
+template<class Class>
+struct VectorSpace: Testable<Class>, VectorSpaceTraits<Class> {};
 
 /// A helper that implements the traits interface for GTSAM lie groups.
 /// To use this for your gtsam type, define:

@@ -29,9 +29,9 @@ Rot3 iRc(cameraX, cameraY, cameraZ);
 
 // Now, let's create some rotations around IMU frame
 Unit3 p1(1, 0, 0), p2(0, 1, 0), p3(0, 0, 1);
-Rot3 i1Ri2 = Rot3::rodriguez(p1, 1), //
-i2Ri3 = Rot3::rodriguez(p2, 1), //
-i3Ri4 = Rot3::rodriguez(p3, 1);
+Rot3 i1Ri2 = Rot3::AxisAngle(p1, 1), //
+i2Ri3 = Rot3::AxisAngle(p2, 1), //
+i3Ri4 = Rot3::AxisAngle(p3, 1);
 
 // The corresponding rotations in the camera frame
 Rot3 c1Zc2 = iRc.inverse() * i1Ri2 * iRc, //
@@ -47,9 +47,9 @@ typedef noiseModel::Isotropic::shared_ptr Model;
 
 //*************************************************************************
 TEST (RotateFactor, checkMath) {
-  EXPECT(assert_equal(c1Zc2, Rot3::rodriguez(z1, 1)));
-  EXPECT(assert_equal(c2Zc3, Rot3::rodriguez(z2, 1)));
-  EXPECT(assert_equal(c3Zc4, Rot3::rodriguez(z3, 1)));
+  EXPECT(assert_equal(c1Zc2, Rot3::AxisAngle(z1, 1)));
+  EXPECT(assert_equal(c2Zc3, Rot3::AxisAngle(z2, 1)));
+  EXPECT(assert_equal(c3Zc4, Rot3::AxisAngle(z3, 1)));
 }
 
 //*************************************************************************

@@ -23,7 +23,6 @@
 #pragma once
 
 #include <gtsam/geometry/Cal3DS2_Base.h>
-#include <gtsam/base/DerivedValue.h>
 
 namespace gtsam {
 

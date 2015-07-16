@@ -22,8 +22,9 @@
 
 #pragma once
 
-#include <gtsam/geometry/Quaternion.h>
 #include <gtsam/geometry/Unit3.h>
+#include <gtsam/geometry/Quaternion.h>
+#include <gtsam/geometry/SO3.h>
 #include <gtsam/base/concepts.h>
 #include <gtsam/config.h> // Get GTSAM_USE_QUATERNIONS macro
 
@@ -140,7 +141,7 @@ namespace gtsam {
      * as described in http://www.sedris.org/wg8home/Documents/WG80462.pdf.
      * Assumes vehicle coordinate frame X forward, Y right, Z down.
      */
-    static Rot3 ypr  (double y, double p, double r) { return RzRyRx(r,p,y);}
+    static Rot3 ypr(double y, double p, double r) { return RzRyRx(r,p,y);}
 
     /** Create from Quaternion coefficients */
     static Rot3 quaternion(double w, double x, double y, double z) {
@@ -149,45 +150,58 @@ namespace gtsam {
     }
 
     /**
-     * Rodriguez' formula to compute an incremental rotation matrix
-     * @param   w is the rotation axis, unit length
-     * @param   theta rotation angle
-     * @return incremental rotation matrix
+     * Convert from axis/angle representation
+     * @param   axis is the rotation axis, unit length
+     * @param   angle rotation angle
+     * @return incremental rotation
      */
-    static Rot3 rodriguez(const Vector3& w, double theta);
+    static Rot3 AxisAngle(const Vector3& axis, double angle) {
+#ifdef GTSAM_USE_QUATERNIONS
+      return Quaternion(Eigen::AngleAxis<double>(angle, axis));
+#else
+      return SO3::AxisAngle(axis,angle);
+#endif
+      }
 
     /**
-     * Rodriguez' formula to compute an incremental rotation matrix
-     * @param   w is the rotation axis, unit length
-     * @param   theta rotation angle
-     * @return incremental rotation matrix
+     * Convert from axis/angle representation
+     * @param  axisw is the rotation axis, unit length
+     * @param   angle rotation angle
+     * @return incremental rotation
      */
-    static Rot3 rodriguez(const Point3& w, double theta);
+    static Rot3 AxisAngle(const Point3& axis, double angle) {
+      return AxisAngle(axis.vector(),angle);
+    }
 
     /**
-     * Rodriguez' formula to compute an incremental rotation matrix
-     * @param   w is the rotation axis
-     * @param   theta rotation angle
-     * @return incremental rotation matrix
+     * Convert from axis/angle representation
+     * @param   axis is the rotation axis
+     * @param   angle rotation angle
+     * @return incremental rotation
      */
-    static Rot3 rodriguez(const Unit3& w, double theta);
+    static Rot3 AxisAngle(const Unit3& axis, double angle) {
+      return AxisAngle(axis.unitVector(),angle);
+    }
 
     /**
-     * Rodriguez' formula to compute an incremental rotation matrix
-     * @param v a vector of incremental roll,pitch,yaw
-     * @return incremental rotation matrix
+     * Rodrigues' formula to compute an incremental rotation
+     * @param w a vector of incremental roll,pitch,yaw
+     * @return incremental rotation
      */
-    static Rot3 rodriguez(const Vector3& v);
+    static Rot3 Rodrigues(const Vector3& w) {
+      return Rot3::Expmap(w);
+    }
 
     /**
-     * Rodriguez' formula to compute an incremental rotation matrix
+     * Rodrigues' formula to compute an incremental rotation
      * @param wx Incremental roll (about X)
      * @param wy Incremental pitch (about Y)
      * @param wz Incremental yaw (about Z)
-     * @return incremental rotation matrix
+     * @return incremental rotation
      */
-    static Rot3 rodriguez(double wx, double wy, double wz)
-      { return rodriguez(Vector3(wx, wy, wz));}
+    static Rot3 Rodrigues(double wx, double wy, double wz) {
+      return Rodrigues(Vector3(wx, wy, wz));
+    }
 
     /// @}
     /// @name Testable
@@ -272,11 +286,15 @@ namespace gtsam {
 
     /**
      * Exponential map at identity - create a rotation from canonical coordinates
-     * \f$ [R_x,R_y,R_z] \f$ using Rodriguez' formula
+     * \f$ [R_x,R_y,R_z] \f$ using Rodrigues' formula
      */
     static Rot3 Expmap(const Vector& v, OptionalJacobian<3,3> H = boost::none) {
       if(H) *H = Rot3::ExpmapDerivative(v);
-      if (zero(v)) return Rot3(); else return rodriguez(v);
+#ifdef GTSAM_USE_QUATERNIONS
+      return traits<Quaternion>::Expmap(v);
+#else
+      return traits<SO3>::Expmap(v);
+#endif
     }
 
     /**
@@ -422,6 +440,14 @@ namespace gtsam {
     GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os, const Rot3& p);
 
     /// @}
+    /// @name Deprecated
+    /// @{
+    static Rot3 rodriguez(const Vector3& axis, double angle) { return AxisAngle(axis, angle); }
+    static Rot3 rodriguez(const Point3&  axis, double angle) { return AxisAngle(axis, angle); }
+    static Rot3 rodriguez(const Unit3&   axis, double angle) { return AxisAngle(axis, angle); }
+    static Rot3 rodriguez(const Vector3& w)                  { return Rodrigues(w); }
+    static Rot3 rodriguez(double wx, double wy, double wz)   { return Rodrigues(wx, wy, wz); }
+    /// @}
 
   private:
 
@@ -463,9 +489,9 @@ namespace gtsam {
   GTSAM_EXPORT std::pair<Matrix3,Vector3> RQ(const Matrix3& A);
 
   template<>
-  struct traits<Rot3> : public internal::LieGroupTraits<Rot3> {};
+  struct traits<Rot3> : public internal::LieGroup<Rot3> {};
   
   template<>
-  struct traits<const Rot3> : public internal::LieGroupTraits<Rot3> {};
+  struct traits<const Rot3> : public internal::LieGroup<Rot3> {};
 }
 

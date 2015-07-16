@@ -16,7 +16,7 @@
  * @date    Nov 12, 2014
  */
 
-#include <gtsam/slam/RegularJacobianFactor.h>
+#include <gtsam/linear/RegularJacobianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/VectorValues.h>

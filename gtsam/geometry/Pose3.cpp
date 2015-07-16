@@ -32,7 +32,7 @@ GTSAM_CONCEPT_POSE_INST(Pose3);
 
 /* ************************************************************************* */
 Pose3::Pose3(const Pose2& pose2) :
-    R_(Rot3::rodriguez(0, 0, pose2.theta())), t_(
+    R_(Rot3::Rodrigues(0, 0, pose2.theta())), t_(
         Point3(pose2.x(), pose2.y(), 0)) {
 }
 
@@ -111,25 +111,21 @@ bool Pose3::equals(const Pose3& pose, double tol) const {
 
 /* ************************************************************************* */
 /** Modified from Murray94book version (which assumes w and v normalized?) */
-Pose3 Pose3::Expmap(const Vector& xi, OptionalJacobian<6, 6> H) {
-  if (H) {
-    *H = ExpmapDerivative(xi);
-  }
+Pose3 Pose3::Expmap(const Vector6& xi, OptionalJacobian<6, 6> H) {
+  if (H) *H = ExpmapDerivative(xi);
 
   // get angular velocity omega and translational velocity v from twist xi
-  Point3 w(xi(0), xi(1), xi(2)), v(xi(3), xi(4), xi(5));
+  Point3 omega(xi(0), xi(1), xi(2)), v(xi(3), xi(4), xi(5));
 
-  double theta = w.norm();
-  if (theta < 1e-10) {
-    static const Rot3 I;
-    return Pose3(I, v);
-  } else {
-    Point3 n(w / theta); // axis unit vector
-    Rot3 R = Rot3::rodriguez(n.vector(), theta);
-    double vn = n.dot(v); // translation parallel to n
-    Point3 n_cross_v = n.cross(v); // points towards axis
-    Point3 t = (n_cross_v - R * n_cross_v) / theta + vn * n;
+  Rot3 R = Rot3::Expmap(omega.vector());
+  double theta2 = omega.dot(omega);
+  if (theta2 > std::numeric_limits<double>::epsilon()) {
+    double omega_v = omega.dot(v);          // translation parallel to axis
+    Point3 omega_cross_v = omega.cross(v);  // points towards axis
+    Point3 t = (omega_cross_v - R * omega_cross_v + omega_v * omega) / theta2;
     return Pose3(R, t);
+  } else {
+    return Pose3(R, v);
   }
 }
 
@@ -318,33 +314,45 @@ Point3 Pose3::transform_to(const Point3& p, OptionalJacobian<3,6> Dpose,
 
 /* ************************************************************************* */
 double Pose3::range(const Point3& point, OptionalJacobian<1, 6> H1,
-    OptionalJacobian<1, 3> H2) const {
+                    OptionalJacobian<1, 3> H2) const {
+  Matrix36 D_local_pose;
+  Matrix3 D_local_point;
+  Point3 local = transform_to(point, H1 ? &D_local_pose : 0, H2 ? &D_local_point : 0);
   if (!H1 && !H2) {
-    return transform_to(point).norm();
+    return local.norm();
   } else {
-    Matrix36 D1;
-    Matrix3 D2;
-    Point3 d = transform_to(point, H1 ? &D1 : 0, H2 ? &D2 : 0);
-    const double x = d.x(), y = d.y(), z = d.z(), d2 = x * x + y * y + z * z,
-        n = sqrt(d2);
-    Matrix13 D_result_d;
-    D_result_d << x / n, y / n, z / n;
-    if (H1) *H1 = D_result_d * D1;
-    if (H2) *H2 = D_result_d * D2;
-    return n;
+    Matrix13 D_r_local;
+    const double r = local.norm(D_r_local);
+    if (H1) *H1 = D_r_local * D_local_pose;
+    if (H2) *H2 = D_r_local * D_local_point;
+    return r;
   }
 }
 
 /* ************************************************************************* */
-double Pose3::range(const Pose3& pose, OptionalJacobian<1,6> H1,
-    OptionalJacobian<1,6> H2) const {
-  Matrix13 D2;
-  double r = range(pose.translation(), H1, H2? &D2 : 0);
-  if (H2) {
-    Matrix13 H2_ = D2 * pose.rotation().matrix();
-    *H2 << Matrix13::Zero(), H2_;
-  }
+double Pose3::range(const Pose3& pose, OptionalJacobian<1, 6> H1,
+                    OptionalJacobian<1, 6> H2) const {
+  Matrix13 D_local_point;
+  double r = range(pose.translation(), H1, H2 ? &D_local_point : 0);
+  if (H2) *H2 << Matrix13::Zero(), D_local_point * pose.rotation().matrix();
   return r;
+}
+
+/* ************************************************************************* */
+Unit3 Pose3::bearing(const Point3& point, OptionalJacobian<2, 6> H1,
+                     OptionalJacobian<2, 3> H2) const {
+  Matrix36 D_local_pose;
+  Matrix3 D_local_point;
+  Point3 local = transform_to(point, H1 ? &D_local_pose : 0, H2 ? &D_local_point : 0);
+  if (!H1 && !H2) {
+    return Unit3(local);
+  } else {
+    Matrix23 D_b_local;
+    Unit3 b = Unit3::FromPoint3(local, D_b_local);
+    if (H1) *H1 = D_b_local * D_local_pose;
+    if (H2) *H2 = D_b_local * D_local_point;
+    return b;
+  }
 }
 
 /* ************************************************************************* */
@@ -354,25 +362,25 @@ boost::optional<Pose3> align(const vector<Point3Pair>& pairs) {
     return boost::none; // we need at least three pairs
 
   // calculate centroids
-  Vector cp = zero(3), cq = zero(3);
-  BOOST_FOREACH(const Point3Pair& pair, pairs){
-  cp += pair.first.vector();
-  cq += pair.second.vector();
-}
+  Vector3 cp = Vector3::Zero(), cq = Vector3::Zero();
+  BOOST_FOREACH(const Point3Pair& pair, pairs) {
+    cp += pair.first.vector();
+    cq += pair.second.vector();
+  }
   double f = 1.0 / n;
   cp *= f;
   cq *= f;
 
   // Add to form H matrix
-  Matrix3 H = Eigen::Matrix3d::Zero();
-  BOOST_FOREACH(const Point3Pair& pair, pairs){
-  Vector dp = pair.first.vector() - cp;
-  Vector dq = pair.second.vector() - cq;
-  H += dp * dq.transpose();
-}
+  Matrix3 H = Z_3x3;
+  BOOST_FOREACH(const Point3Pair& pair, pairs) {
+    Vector3 dp = pair.first.vector() - cp;
+    Vector3 dq = pair.second.vector() - cq;
+    H += dp * dq.transpose();
+  }
 
 // Compute SVD
-  Matrix U,V;
+  Matrix U, V;
   Vector S;
   svd(H, U, S, V);
 

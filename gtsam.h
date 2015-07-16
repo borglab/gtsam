@@ -1,4 +1,5 @@
 /**
+
  * GTSAM Wrap Module Definition
  *
  * These are the current classes available through the matlab toolbox interface,
@@ -156,7 +157,7 @@ virtual class Value {
   size_t dim() const;
 };
 
-#include <gtsam/base/LieScalar_Deprecated.h>
+#include <gtsam/base/deprecated/LieScalar.h>
 class LieScalar {
   // Standard constructors
   LieScalar();
@@ -185,7 +186,7 @@ class LieScalar {
   static Vector Logmap(const gtsam::LieScalar& p);
 };
 
-#include <gtsam/base/LieVector_Deprecated.h>
+#include <gtsam/base/deprecated/LieVector.h>
 class LieVector {
   // Standard constructors
   LieVector();
@@ -217,7 +218,7 @@ class LieVector {
   void serialize() const;
 };
 
-#include <gtsam/base/LieMatrix_Deprecated.h>
+#include <gtsam/base/deprecated/LieMatrix.h>
 class LieMatrix {
   // Standard constructors
   LieMatrix();
@@ -330,8 +331,6 @@ class StereoPoint2 {
   gtsam::StereoPoint2 between(const gtsam::StereoPoint2& p2) const;
 
   // Manifold
-  static size_t Dim();
-  size_t dim() const;
   gtsam::StereoPoint2 retract(Vector v) const;
   Vector localCoordinates(const gtsam::StereoPoint2& p) const;
 
@@ -440,7 +439,7 @@ class Rot3 {
   static gtsam::Rot3 roll(double t); // positive roll is to right (increasing yaw in aircraft)
   static gtsam::Rot3 ypr(double y, double p, double r);
   static gtsam::Rot3 quaternion(double w, double x, double y, double z);
-  static gtsam::Rot3 rodriguez(Vector v);
+  static gtsam::Rot3 Rodrigues(Vector v);
 
   // Testable
   void print(string s) const;
@@ -814,7 +813,7 @@ class CalibratedCamera {
 
   // Action on Point3
   gtsam::Point2 project(const gtsam::Point3& point) const;
-  static gtsam::Point2 project_to_camera(const gtsam::Point3& cameraPoint);
+  static gtsam::Point2 Project(const gtsam::Point3& cameraPoint);
 
   // Standard Interface
   gtsam::Pose3 pose() const;
@@ -850,7 +849,7 @@ class PinholeCamera {
   static size_t Dim();
 
   // Transformations and measurement functions
-  static gtsam::Point2 project_to_camera(const gtsam::Point3& cameraPoint);
+  static gtsam::Point2 Project(const gtsam::Point3& cameraPoint);
   pair<gtsam::Point2,bool> projectSafe(const gtsam::Point3& pw) const;
   gtsam::Point2 project(const gtsam::Point3& point);
   gtsam::Point3 backproject(const gtsam::Point2& p, double depth) const;
@@ -886,7 +885,7 @@ virtual class SimpleCamera {
   static size_t Dim();
 
   // Transformations and measurement functions
-  static gtsam::Point2 project_to_camera(const gtsam::Point3& cameraPoint);
+  static gtsam::Point2 Project(const gtsam::Point3& cameraPoint);
   pair<gtsam::Point2,bool> projectSafe(const gtsam::Point3& pw) const;
   gtsam::Point2 project(const gtsam::Point3& point);
   gtsam::Point3 backproject(const gtsam::Point2& p, double depth) const;
@@ -1656,12 +1655,12 @@ char symbolChr(size_t key);
 size_t symbolIndex(size_t key);
 
 // Default keyformatter
-void printKeyList  (const gtsam::KeyList& keys);
-void printKeyList  (const gtsam::KeyList& keys, string s);
-void printKeyVector(const gtsam::KeyVector& keys);
-void printKeyVector(const gtsam::KeyVector& keys, string s);
-void printKeySet   (const gtsam::KeySet& keys);
-void printKeySet   (const gtsam::KeySet& keys, string s);
+void PrintKeyList  (const gtsam::KeyList& keys);
+void PrintKeyList  (const gtsam::KeyList& keys, string s);
+void PrintKeyVector(const gtsam::KeyVector& keys);
+void PrintKeyVector(const gtsam::KeyVector& keys, string s);
+void PrintKeySet   (const gtsam::KeySet& keys);
+void PrintKeySet   (const gtsam::KeySet& keys, string s);
 
 #include <gtsam/inference/LabeledSymbol.h>
 class LabeledSymbol {
@@ -1778,7 +1777,7 @@ class Values {
   void swap(gtsam::Values& values);
 
   bool exists(size_t j) const;
-  gtsam::KeyList keys() const;
+  gtsam::KeyVector keys() const;
 
   gtsam::VectorValues zeroVectors() const;
 
@@ -1895,8 +1894,6 @@ class KeySet {
 class KeyVector {
   KeyVector();
   KeyVector(const gtsam::KeyVector& other);
-  KeyVector(const gtsam::KeySet& other);
-  KeyVector(const gtsam::KeyList& other);
 
   // Note: no print function
 
@@ -2266,7 +2263,7 @@ virtual class NonlinearEquality : gtsam::NoiseModelFactor {
 };
 
 
-#include <gtsam/slam/RangeFactor.h>
+#include <gtsam/sam/RangeFactor.h>
 template<POSE, POINT>
 virtual class RangeFactor : gtsam::NoiseModelFactor {
   RangeFactor(size_t key1, size_t key2, double measured, const gtsam::noiseModel::Base* noiseModel);
@@ -2276,20 +2273,16 @@ typedef gtsam::RangeFactor<gtsam::Pose2, gtsam::Point2> RangeFactorPosePoint2;
 typedef gtsam::RangeFactor<gtsam::Pose3, gtsam::Point3> RangeFactorPosePoint3;
 typedef gtsam::RangeFactor<gtsam::Pose2, gtsam::Pose2> RangeFactorPose2;
 typedef gtsam::RangeFactor<gtsam::Pose3, gtsam::Pose3> RangeFactorPose3;
-
-// Commented out by Frank Dec 2014: not poses!
-// If needed, we need a RangeFactor that takes a camera, extracts the pose
-// Should be easy with Expressions
-//typedef gtsam::RangeFactor<gtsam::CalibratedCamera, gtsam::Point3> RangeFactorCalibratedCameraPoint;
-//typedef gtsam::RangeFactor<gtsam::SimpleCamera, gtsam::Point3> RangeFactorSimpleCameraPoint;
-//typedef gtsam::RangeFactor<gtsam::CalibratedCamera, gtsam::CalibratedCamera> RangeFactorCalibratedCamera;
-//typedef gtsam::RangeFactor<gtsam::SimpleCamera, gtsam::SimpleCamera> RangeFactorSimpleCamera;
+typedef gtsam::RangeFactor<gtsam::CalibratedCamera, gtsam::Point3> RangeFactorCalibratedCameraPoint;
+typedef gtsam::RangeFactor<gtsam::SimpleCamera, gtsam::Point3> RangeFactorSimpleCameraPoint;
+typedef gtsam::RangeFactor<gtsam::CalibratedCamera, gtsam::CalibratedCamera> RangeFactorCalibratedCamera;
+typedef gtsam::RangeFactor<gtsam::SimpleCamera, gtsam::SimpleCamera> RangeFactorSimpleCamera;
 
 
-#include <gtsam/slam/BearingFactor.h>
-template<POSE, POINT, ROTATION>
+#include <gtsam/sam/BearingFactor.h>
+template<POSE, POINT, BEARING>
 virtual class BearingFactor : gtsam::NoiseModelFactor {
-  BearingFactor(size_t key1, size_t key2, const ROTATION& measured, const gtsam::noiseModel::Base* noiseModel);
+  BearingFactor(size_t key1, size_t key2, const BEARING& measured, const gtsam::noiseModel::Base* noiseModel);
 
   // enabling serialization functionality
   void serialize() const;
@@ -2297,19 +2290,18 @@ virtual class BearingFactor : gtsam::NoiseModelFactor {
 
 typedef gtsam::BearingFactor<gtsam::Pose2, gtsam::Point2, gtsam::Rot2> BearingFactor2D;
 
-
-#include <gtsam/slam/BearingRangeFactor.h>
-template<POSE, POINT, ROTATION>
+#include <gtsam/sam/BearingRangeFactor.h>
+template<POSE, POINT, BEARING, RANGE>
 virtual class BearingRangeFactor : gtsam::NoiseModelFactor {
-  BearingRangeFactor(size_t poseKey, size_t pointKey, const ROTATION& measuredBearing, double measuredRange, const gtsam::noiseModel::Base* noiseModel);
-
-  pair<ROTATION, double> measured() const;
+  BearingRangeFactor(size_t poseKey, size_t pointKey,
+      const BEARING& measuredBearing, const RANGE& measuredRange,
+      const gtsam::noiseModel::Base* noiseModel);
 
   // enabling serialization functionality
   void serialize() const;
 };
 
-typedef gtsam::BearingRangeFactor<gtsam::Pose2, gtsam::Point2, gtsam::Rot2> BearingRangeFactor2D;
+typedef gtsam::BearingRangeFactor<gtsam::Pose2, gtsam::Point2, gtsam::Rot2, double> BearingRangeFactor2D;
 
 
 #include <gtsam/slam/ProjectionFactor.h>
@@ -2356,18 +2348,31 @@ virtual class GeneralSFMFactor2 : gtsam::NoiseModelFactor {
   void serialize() const;
 };
 
+#include <gtsam/slam/SmartProjectionFactor.h>
+class SmartProjectionParams {
+  SmartProjectionParams();
+  // TODO(frank): make these work:
+  //  void setLinearizationMode(LinearizationMode linMode);
+  //  void setDegeneracyMode(DegeneracyMode degMode);
+  void setRankTolerance(double rankTol);
+  void setEnableEPI(bool enableEPI);
+  void setLandmarkDistanceThreshold(bool landmarkDistanceThreshold);
+  void setDynamicOutlierRejectionThreshold(bool dynOutRejectionThreshold);
+};
+
 #include <gtsam/slam/SmartProjectionPoseFactor.h>
 template<CALIBRATION>
-virtual class SmartProjectionPoseFactor : gtsam::NonlinearFactor {
+virtual class SmartProjectionPoseFactor: gtsam::NonlinearFactor {
 
-  SmartProjectionPoseFactor(double rankTol, double linThreshold,
-      bool manageDegeneracy, bool enableEPI, const gtsam::Pose3& body_P_sensor);
-
-  SmartProjectionPoseFactor(double rankTol);
-  SmartProjectionPoseFactor();
+  SmartProjectionPoseFactor(const CALIBRATION* K);
+  SmartProjectionPoseFactor(const CALIBRATION* K,
+      const gtsam::Pose3& body_P_sensor);
+  SmartProjectionPoseFactor(const CALIBRATION* K,
+      const gtsam::Pose3& body_P_sensor,
+      const gtsam::SmartProjectionParams& params);
 
   void add(const gtsam::Point2& measured_i, size_t poseKey_i,
-      const gtsam::noiseModel::Base* noise_i, const CALIBRATION* K_i);
+      const gtsam::noiseModel::Base* noise_i);
 
   // enabling serialization functionality
   //void serialize() const;

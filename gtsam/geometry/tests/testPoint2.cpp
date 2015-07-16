@@ -37,8 +37,8 @@ TEST(Double , Concept) {
 //******************************************************************************
 TEST(Double , Invariants) {
   double p1(2), p2(5);
-  check_group_invariants(p1, p2);
-  check_manifold_invariants(p1, p2);
+  EXPECT(check_group_invariants(p1, p2));
+  EXPECT(check_manifold_invariants(p1, p2));
 }
 
 //******************************************************************************
@@ -51,14 +51,20 @@ TEST(Point2 , Concept) {
 //******************************************************************************
 TEST(Point2 , Invariants) {
   Point2 p1(1, 2), p2(4, 5);
-  check_group_invariants(p1, p2);
-  check_manifold_invariants(p1, p2);
+  EXPECT(check_group_invariants(p1, p2));
+  EXPECT(check_manifold_invariants(p1, p2));
 }
 
 /* ************************************************************************* */
 TEST(Point2, constructor) {
   Point2 p1(1, 2), p2 = p1;
   EXPECT(assert_equal(p1, p2));
+}
+
+/* ************************************************************************* */
+TEST(Point2, equality) {
+  Point2 p1(1, 2), p2(1,3);
+  EXPECT(!(p1 == p2));
 }
 
 /* ************************************************************************* */

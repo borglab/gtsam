@@ -20,25 +20,22 @@
 #pragma once
 
 #include <gtsam/nonlinear/ExpressionFactor.h>
-#include <gtsam/nonlinear/Expression.h>
 #include <gtsam/nonlinear/factorTesting.h>
-#include <gtsam/base/Matrix.h>
 #include <gtsam/base/Testable.h>
-#include <gtsam/linear/VectorValues.h>
 
 namespace gtsam {
 
 namespace internal {
 // CPPUnitLite-style test for linearization of an ExpressionFactor
 template<typename T>
-void testExpressionJacobians(TestResult& result_, const std::string& name_,
+bool testExpressionJacobians(TestResult& result_, const std::string& name_,
     const gtsam::Expression<T>& expression, const gtsam::Values& values,
     double nd_step, double tolerance) {
   // Create factor
   size_t size = traits<T>::dimension;
   ExpressionFactor<T> f(noiseModel::Unit::Create(size),
       expression.value(values), expression);
-  testFactorJacobians(result_, name_, f, values, nd_step, tolerance);
+  return testFactorJacobians(result_, name_, f, values, nd_step, tolerance);
 }
 } // namespace internal
 } // namespace gtsam
@@ -49,4 +46,4 @@ void testExpressionJacobians(TestResult& result_, const std::string& name_,
 /// \param numerical_derivative_step The step to use when computing the finite difference Jacobians
 /// \param tolerance The numerical tolerance to use when comparing Jacobians.
 #define EXPECT_CORRECT_EXPRESSION_JACOBIANS(expression, values, numerical_derivative_step, tolerance) \
-    { gtsam::internal::testExpressionJacobians(result_, name_, expression, values, numerical_derivative_step, tolerance); }
+    { EXPECT(gtsam::internal::testExpressionJacobians(result_, name_, expression, values, numerical_derivative_step, tolerance)); }

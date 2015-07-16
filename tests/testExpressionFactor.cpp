@@ -21,6 +21,7 @@
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/slam/ProjectionFactor.h>
 #include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/expressionTesting.h>
 #include <gtsam/nonlinear/ExpressionFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/expressionTesting.h>
@@ -36,6 +37,10 @@ using namespace gtsam;
 
 Point2 measured(-17, 30);
 SharedNoiseModel model = noiseModel::Unit::Create(2);
+
+// This deals with the overload problem and makes the expressions factor
+// understand that we work on Point3
+Point2 (*Project)(const Point3&, OptionalJacobian<2, 3>) = &PinholeBase::Project;
 
 namespace leaf {
 // Create some values
@@ -313,7 +318,7 @@ TEST(ExpressionFactor, tree) {
 
   // Create expression tree
   Point3_ p_cam(x, &Pose3::transform_to, p);
-  Point2_ xy_hat(PinholeCamera<Cal3_S2>::project_to_camera, p_cam);
+  Point2_ xy_hat(Project, p_cam);
   Point2_ uv_hat(K, &Cal3_S2::uncalibrate, xy_hat);
 
   // Create factor and check value, dimension, linearization
@@ -330,8 +335,6 @@ TEST(ExpressionFactor, tree) {
   EXPECT_LONGS_EQUAL(2, f2.dim());
   boost::shared_ptr<GaussianFactor> gf2 = f2.linearize(values);
   EXPECT( assert_equal(*expected, *gf2, 1e-9));
-
-  Expression<Point2>::TernaryFunction<Pose3, Point3, Cal3_S2>::type fff = project6;
 
   // Try ternary version
   ExpressionFactor<Point2> f3(model, measured, project3(x, p, K));
@@ -489,7 +492,7 @@ TEST(ExpressionFactor, tree_finite_differences) {
 
   // Create expression tree
   Point3_ p_cam(x, &Pose3::transform_to, p);
-  Point2_ xy_hat(PinholeCamera<Cal3_S2>::project_to_camera, p_cam);
+  Point2_ xy_hat(Project, p_cam);
   Point2_ uv_hat(K, &Cal3_S2::uncalibrate, xy_hat);
 
   const double fd_step = 1e-5;
@@ -500,6 +503,101 @@ TEST(ExpressionFactor, tree_finite_differences) {
 TEST(ExpressionFactor, push_back) {
   NonlinearFactorGraph graph;
   graph.addExpressionFactor(model, Point2(0, 0), leaf::p);
+}
+
+/* ************************************************************************* */
+// Test with multiple compositions on duplicate keys
+struct Combine {
+  double a, b;
+  Combine(double a, double b) : a(a), b(b) {}
+  double operator()(const double& x, const double& y, OptionalJacobian<1, 1> H1,
+                    OptionalJacobian<1, 1> H2) {
+    if (H1) (*H1) << a;
+    if (H2) (*H2) << b;
+    return a * x + b * y;
+  }
+};
+
+TEST(Expression, testMultipleCompositions) {
+  const double tolerance = 1e-5;
+  const double fd_step = 1e-5;
+
+  Values values;
+  values.insert(1, 10.0);
+  values.insert(2, 20.0);
+
+  Expression<double> v1_(Key(1));
+  Expression<double> v2_(Key(2));
+
+  // BinaryExpression(1,2)
+  //   Leaf, key = 1
+  //   Leaf, key = 2
+  Expression<double> sum1_(Combine(1, 2), v1_, v2_);
+  EXPECT(sum1_.keys() == list_of(1)(2));
+  EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum1_, values, fd_step, tolerance);
+
+  // BinaryExpression(3,4)
+  //   BinaryExpression(1,2)
+  //     Leaf, key = 1
+  //     Leaf, key = 2
+  //   Leaf, key = 1
+  Expression<double> sum2_(Combine(3, 4), sum1_, v1_);
+  EXPECT(sum2_.keys() == list_of(1)(2));
+  EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum2_, values, fd_step, tolerance);
+
+  // BinaryExpression(5,6)
+  //   BinaryExpression(3,4)
+  //     BinaryExpression(1,2)
+  //       Leaf, key = 1
+  //       Leaf, key = 2
+  //     Leaf, key = 1
+  //   BinaryExpression(1,2)
+  //     Leaf, key = 1
+  //     Leaf, key = 2
+  Expression<double> sum3_(Combine(5, 6), sum1_, sum2_);
+  EXPECT(sum3_.keys() == list_of(1)(2));
+  EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum3_, values, fd_step, tolerance);
+}
+
+/* ************************************************************************* */
+// Another test, with Ternary Expressions
+static double combine3(const double& x, const double& y, const double& z,
+                        OptionalJacobian<1, 1> H1, OptionalJacobian<1, 1> H2,
+                        OptionalJacobian<1, 1> H3) {
+  if (H1) (*H1) << 1.0;
+  if (H2) (*H2) << 2.0;
+  if (H3) (*H3) << 3.0;
+  return x + 2.0 * y + 3.0 * z;
+}
+
+TEST(Expression, testMultipleCompositions2) {
+  const double tolerance = 1e-5;
+  const double fd_step = 1e-5;
+
+  Values values;
+  values.insert(1, 10.0);
+  values.insert(2, 20.0);
+  values.insert(3, 30.0);
+
+  Expression<double> v1_(Key(1));
+  Expression<double> v2_(Key(2));
+  Expression<double> v3_(Key(3));
+
+  Expression<double> sum1_(Combine(4,5), v1_, v2_);
+  EXPECT(sum1_.keys() == list_of(1)(2));
+  EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum1_, values, fd_step, tolerance);
+
+  Expression<double> sum2_(combine3, v1_, v2_, v3_);
+  EXPECT(sum2_.keys() == list_of(1)(2)(3));
+  EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum2_, values, fd_step, tolerance);
+
+  Expression<double> sum3_(combine3, v3_, v2_, v1_);
+  EXPECT(sum3_.keys() == list_of(1)(2)(3));
+  EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum3_, values, fd_step, tolerance);
+
+  Expression<double> sum4_(combine3, sum1_, sum2_, sum3_);
+  EXPECT(sum4_.keys() == list_of(1)(2)(3));
+  EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum4_, values, fd_step, tolerance);
 }
 
 /* ************************************************************************* */

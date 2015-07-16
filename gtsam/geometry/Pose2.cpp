@@ -59,7 +59,7 @@ bool Pose2::equals(const Pose2& q, double tol) const {
 }
 
 /* ************************************************************************* */
-Pose2 Pose2::Expmap(const Vector& xi, OptionalJacobian<3, 3> H) {
+Pose2 Pose2::Expmap(const Vector3& xi, OptionalJacobian<3, 3> H) {
   if (H) *H = Pose2::ExpmapDerivative(xi);
   assert(xi.size() == 3);
   Point2 v(xi(0),xi(1));
@@ -130,7 +130,7 @@ Matrix3 Pose2::AdjointMap() const {
 }
 
 /* ************************************************************************* */
-Matrix3 Pose2::adjointMap(const Vector& v) {
+Matrix3 Pose2::adjointMap(const Vector3& v) {
   // See Chirikjian12book2, vol.2, pg. 36
   Matrix3 ad = zeros(3,3);
   ad(0,1) = -v[2];

@@ -148,7 +148,7 @@ public:
   /// @{
 
   /// equality
-  inline bool operator ==(const Point2& q) const {return x_==q.x_ && q.y_==q.y_;}
+  inline bool operator ==(const Point2& q) const {return x_==q.x_ && y_==q.y_;}
 
   /// get x
   double x() const {return x_;}

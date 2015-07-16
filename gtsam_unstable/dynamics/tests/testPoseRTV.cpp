@@ -76,11 +76,12 @@ TEST( testPoseRTV, equals ) {
 /* ************************************************************************* */
 TEST( testPoseRTV, Lie ) {
   // origin and zero deltas
-  EXPECT(assert_equal(PoseRTV(), PoseRTV().retract(zero(9)), tol));
-  EXPECT(assert_equal(zero(9), PoseRTV().localCoordinates(PoseRTV()), tol));
+  PoseRTV identity;
+  EXPECT(assert_equal(identity, (PoseRTV)identity.retract(zero(9)), tol));
+  EXPECT(assert_equal(zero(9), identity.localCoordinates(identity), tol));
 
   PoseRTV state1(pt, rot, vel);
-  EXPECT(assert_equal(state1, state1.retract(zero(9)), tol));
+  EXPECT(assert_equal(state1, (PoseRTV)state1.retract(zero(9)), tol));
   EXPECT(assert_equal(zero(9), state1.localCoordinates(state1), tol));
 
   Vector delta = (Vector(9) << 0.1, 0.1, 0.1, 0.2, 0.3, 0.4,-0.1,-0.2,-0.3).finished();
@@ -88,9 +89,9 @@ TEST( testPoseRTV, Lie ) {
   Point3 pt2 = pt + rot * Point3(0.2, 0.3, 0.4);
   Velocity3 vel2 = vel + rot * Velocity3(-0.1,-0.2,-0.3);
   PoseRTV state2(pt2, rot2, vel2);
-  EXPECT(assert_equal(state2, state1.retract(delta), 1e-1));
+  EXPECT(assert_equal(state2, (PoseRTV)state1.retract(delta), 1e-1));
   EXPECT(assert_equal(delta, state1.localCoordinates(state2), 1e-1));
-  EXPECT(assert_equal(-delta, state2.localCoordinates(state1), 1e-1)); // loose tolerance due to retract approximation
+  EXPECT(assert_equal(delta, -state2.localCoordinates(state1), 1e-1));
 }
 
 /* ************************************************************************* */
@@ -120,6 +121,43 @@ TEST( testPoseRTV, dynamics_identities ) {
 
 
 /* ************************************************************************* */
+PoseRTV compose_proxy(const PoseRTV& A, const PoseRTV& B) { return A.compose(B); }
+TEST( testPoseRTV, compose ) {
+  PoseRTV state1(pt, rot, vel), state2 = state1;
+
+  Matrix actH1, actH2;
+  state1.compose(state2, actH1, actH2);
+  Matrix numericH1 = numericalDerivative21(compose_proxy, state1, state2);
+  Matrix numericH2 = numericalDerivative22(compose_proxy, state1, state2);
+  EXPECT(assert_equal(numericH1, actH1, tol));
+  EXPECT(assert_equal(numericH2, actH2, tol));
+}
+
+/* ************************************************************************* */
+PoseRTV between_proxy(const PoseRTV& A, const PoseRTV& B) { return A.between(B); }
+TEST( testPoseRTV, between ) {
+  PoseRTV state1(pt, rot, vel), state2 = state1;
+
+  Matrix actH1, actH2;
+  state1.between(state2, actH1, actH2);
+  Matrix numericH1 = numericalDerivative21(between_proxy, state1, state2);
+  Matrix numericH2 = numericalDerivative22(between_proxy, state1, state2);
+  EXPECT(assert_equal(numericH1, actH1, tol));
+  EXPECT(assert_equal(numericH2, actH2, tol));
+}
+
+/* ************************************************************************* */
+PoseRTV inverse_proxy(const PoseRTV& A) { return A.inverse(); }
+TEST( testPoseRTV, inverse ) {
+  PoseRTV state1(pt, rot, vel);
+
+  Matrix actH1;
+  state1.inverse(actH1);
+  Matrix numericH1 = numericalDerivative11(inverse_proxy, state1);
+  EXPECT(assert_equal(numericH1, actH1, tol));
+}
+
+/* ************************************************************************* */
 double range_proxy(const PoseRTV& A, const PoseRTV& B) { return A.range(B); }
 TEST( testPoseRTV, range ) {
   Point3 tA(1.0, 2.0, 3.0), tB(3.0, 2.0, 3.0);
@@ -141,7 +179,7 @@ PoseRTV transformed_from_proxy(const PoseRTV& a, const Pose3& trans) {
   return a.transformed_from(trans);
 }
 TEST( testPoseRTV, transformed_from_1 ) {
-  Rot3 R = Rot3::rodriguez(0.1, 0.2, 0.3);
+  Rot3 R = Rot3::Rodrigues(0.1, 0.2, 0.3);
   Point3 T(1.0, 2.0, 3.0);
   Velocity3 V(2.0, 3.0, 4.0);
   PoseRTV start(R, T, V);

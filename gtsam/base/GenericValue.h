@@ -194,6 +194,11 @@ public:
 
 };
 
+// traits
+template <typename ValueType>
+struct traits<GenericValue<ValueType> >
+    : public Testable<GenericValue<ValueType> > {};
+
 // define Value::cast here since now GenericValue has been declared
 template<typename ValueType>
 const ValueType& Value::cast() const {

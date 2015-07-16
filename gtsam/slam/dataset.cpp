@@ -15,19 +15,34 @@
  * @brief utility functions for loading datasets
  */
 
-#include <gtsam/slam/dataset.h>
+#include <gtsam/sam/BearingRangeFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/slam/BearingRangeFactor.h>
+#include <gtsam/slam/dataset.h>
+#include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Pose2.h>
-#include <gtsam/geometry/Pose3.h>
-#include <gtsam/linear/Sampler.h>
+#include <gtsam/geometry/Rot3.h>
+#include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/Values.h>
+#include <gtsam/nonlinear/Values-inl.h>
+#include <gtsam/linear/Sampler.h>
+#include <gtsam/base/GenericValue.h>
+#include <gtsam/base/Lie.h>
+#include <gtsam/base/Matrix.h>
+#include <gtsam/base/types.h>
+#include <gtsam/base/Value.h>
+#include <gtsam/base/Vector.h>
 
-#include <boost/filesystem.hpp>
+#include <boost/assign/list_inserter.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+#include <boost/foreach.hpp>
 
+#include <cmath>
 #include <fstream>
-#include <sstream>
-#include <cstdlib>
+#include <iostream>
+#include <stdexcept>
 
 using namespace std;
 namespace fs = boost::filesystem;
@@ -705,10 +720,10 @@ bool readBAL(const string& filename, SfM_data &data) {
 
   // Get the information for the camera poses
   for (size_t i = 0; i < nrPoses; i++) {
-    // Get the rodriguez vector
+    // Get the Rodrigues vector
     float wx, wy, wz;
     is >> wx >> wy >> wz;
-    Rot3 R = Rot3::rodriguez(wx, wy, wz); // BAL-OpenGL rotation matrix
+    Rot3 R = Rot3::Rodrigues(wx, wy, wz); // BAL-OpenGL rotation matrix
 
     // Get the translation vector
     float tx, ty, tz;

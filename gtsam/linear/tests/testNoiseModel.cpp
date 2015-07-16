@@ -33,18 +33,11 @@ using namespace gtsam;
 using namespace noiseModel;
 using namespace boost::assign;
 
-static const double kSigma = 2, s_1=1.0/kSigma, kVariance = kSigma*kSigma, prc = 1.0/kVariance;
-static const Matrix R = (Matrix(3, 3) <<
-    s_1, 0.0, 0.0,
-    0.0, s_1, 0.0,
-    0.0, 0.0, s_1).finished();
-static const Matrix kCovariance = (Matrix(3, 3) <<
-    kVariance, 0.0, 0.0,
-    0.0, kVariance, 0.0,
-    0.0, 0.0, kVariance).finished();
+static const double kSigma = 2, kInverseSigma = 1.0 / kSigma,
+                    kVariance = kSigma * kSigma, prc = 1.0 / kVariance;
+static const Matrix R = Matrix3::Identity() * kInverseSigma;
+static const Matrix kCovariance = Matrix3::Identity() * kVariance;
 static const Vector3 kSigmas(kSigma, kSigma, kSigma);
-
-//static double inf = numeric_limits<double>::infinity();
 
 /* ************************************************************************* */
 TEST(NoiseModel, constructors)
@@ -58,8 +51,8 @@ TEST(NoiseModel, constructors)
   m.push_back(Gaussian::Covariance(kCovariance,false));
   m.push_back(Gaussian::Information(kCovariance.inverse(),false));
   m.push_back(Diagonal::Sigmas(kSigmas,false));
-  m.push_back(Diagonal::Variances((Vector(3) << kVariance, kVariance, kVariance).finished(),false));
-  m.push_back(Diagonal::Precisions((Vector(3) << prc, prc, prc).finished(),false));
+  m.push_back(Diagonal::Variances((Vector3(kVariance, kVariance, kVariance)),false));
+  m.push_back(Diagonal::Precisions(Vector3(prc, prc, prc),false));
   m.push_back(Isotropic::Sigma(3, kSigma,false));
   m.push_back(Isotropic::Variance(3, kVariance,false));
   m.push_back(Isotropic::Precision(3, prc,false));
@@ -82,25 +75,23 @@ TEST(NoiseModel, constructors)
     DOUBLES_EQUAL(distance,mi->Mahalanobis(unwhitened),1e-9);
 
   // test R matrix
-  Matrix expectedR((Matrix(3, 3) <<
-      s_1, 0.0, 0.0,
-      0.0, s_1, 0.0,
-      0.0, 0.0, s_1).finished());
-
   BOOST_FOREACH(Gaussian::shared_ptr mi, m)
-    EXPECT(assert_equal(expectedR,mi->R()));
+    EXPECT(assert_equal(R,mi->R()));
+
+  // test covariance
+  BOOST_FOREACH(Gaussian::shared_ptr mi, m)
+    EXPECT(assert_equal(kCovariance,mi->covariance()));
+
+  // test covariance
+  BOOST_FOREACH(Gaussian::shared_ptr mi, m)
+    EXPECT(assert_equal(kCovariance.inverse(),mi->information()));
 
   // test Whiten operator
   Matrix H((Matrix(3, 4) <<
       0.0, 0.0, 1.0, 1.0,
       0.0, 1.0, 0.0, 1.0,
       1.0, 0.0, 0.0, 1.0).finished());
-
-  Matrix expected((Matrix(3, 4) <<
-      0.0, 0.0, s_1, s_1,
-      0.0, s_1, 0.0, s_1,
-      s_1, 0.0, 0.0, s_1).finished());
-
+  Matrix expected = kInverseSigma * H;
   BOOST_FOREACH(Gaussian::shared_ptr mi, m)
     EXPECT(assert_equal(expected,mi->Whiten(H)));
 
@@ -122,7 +113,7 @@ TEST(NoiseModel, equals)
 {
   Gaussian::shared_ptr g1 = Gaussian::SqrtInformation(R),
                        g2 = Gaussian::SqrtInformation(eye(3,3));
-  Diagonal::shared_ptr d1 = Diagonal::Sigmas((Vector(3) << kSigma, kSigma, kSigma).finished()),
+  Diagonal::shared_ptr d1 = Diagonal::Sigmas(Vector3(kSigma, kSigma, kSigma)),
                        d2 = Diagonal::Sigmas(Vector3(0.1, 0.2, 0.3));
   Isotropic::shared_ptr i1 = Isotropic::Sigma(3, kSigma),
                         i2 = Isotropic::Sigma(3, 0.7);
@@ -141,7 +132,7 @@ TEST(NoiseModel, equals)
 ///* ************************************************************************* */
 //TEST(NoiseModel, ConstrainedSmart )
 //{
-//  Gaussian::shared_ptr nonconstrained = Constrained::MixedSigmas((Vector(3) << sigma, 0.0, sigma), true);
+//  Gaussian::shared_ptr nonconstrained = Constrained::MixedSigmas((Vector3(sigma, 0.0, sigma), true);
 //  Diagonal::shared_ptr n1 = boost::dynamic_pointer_cast<Diagonal>(nonconstrained);
 //  Constrained::shared_ptr n2 = boost::dynamic_pointer_cast<Constrained>(nonconstrained);
 //  EXPECT(n1);
@@ -160,8 +151,8 @@ TEST(NoiseModel, ConstrainedConstructors )
   Constrained::shared_ptr actual;
   size_t d = 3;
   double m = 100.0;
-  Vector sigmas = (Vector(3) << kSigma, 0.0, 0.0).finished();
-  Vector mu = Vector3(200.0, 300.0, 400.0);
+  Vector3 sigmas(kSigma, 0.0, 0.0);
+  Vector3 mu(200.0, 300.0, 400.0);
   actual = Constrained::All(d);
   // TODO: why should this be a thousand ??? Dummy variable?
   EXPECT(assert_equal(gtsam::repeat(d, 1000.0), actual->mu()));
@@ -187,7 +178,7 @@ TEST(NoiseModel, ConstrainedMixed )
 {
   Vector feasible = Vector3(1.0, 0.0, 1.0),
       infeasible = Vector3(1.0, 1.0, 1.0);
-  Diagonal::shared_ptr d = Constrained::MixedSigmas((Vector(3) << kSigma, 0.0, kSigma).finished());
+  Diagonal::shared_ptr d = Constrained::MixedSigmas(Vector3(kSigma, 0.0, kSigma));
   // NOTE: we catch constrained variables elsewhere, so whitening does nothing
   EXPECT(assert_equal(Vector3(0.5, 1.0, 0.5),d->whiten(infeasible)));
   EXPECT(assert_equal(Vector3(0.5, 0.0, 0.5),d->whiten(feasible)));
@@ -346,7 +337,7 @@ TEST(NoiseModel, robustNoise)
 {
   const double k = 10.0, error1 = 1.0, error2 = 100.0;
   Matrix A = (Matrix(2, 2) << 1.0, 10.0, 100.0, 1000.0).finished();
-  Vector b = (Vector(2) <<  error1, error2).finished();
+  Vector b = Vector2(error1, error2);
   const Robust::shared_ptr robust = Robust::Create(
     mEstimator::Huber::Create(k, mEstimator::Huber::Scalar),
     Unit::Create(2));

@@ -20,9 +20,11 @@
 
 #pragma once
 
+#include <gtsam/geometry/BearingRange.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/base/Lie.h>
+#include <gtsam/dllexport.h>
 
 namespace gtsam {
 
@@ -118,7 +120,7 @@ public:
   /// @{
 
   ///Exponential map at identity - create a rotation from canonical coordinates \f$ [T_x,T_y,\theta] \f$
-  static Pose2 Expmap(const Vector& xi, ChartJacobian H = boost::none);
+  static Pose2 Expmap(const Vector3& xi, ChartJacobian H = boost::none);
 
   ///Log map at identity - return the canonical coordinates \f$ [T_x,T_y,\theta] \f$ of this rotation
   static Vector3 Logmap(const Pose2& p, ChartJacobian H = boost::none);
@@ -128,15 +130,14 @@ public:
    * Ad_pose is 3*3 matrix that when applied to twist xi \f$ [T_x,T_y,\theta] \f$, returns Ad_pose(xi)
    */
   Matrix3 AdjointMap() const;
-  inline Vector Adjoint(const Vector& xi) const {
-    assert(xi.size() == 3);
+  inline Vector3 Adjoint(const Vector3& xi) const {
     return AdjointMap()*xi;
   }
 
   /**
    * Compute the [ad(w,v)] operator for SE2 as in [Kobilarov09siggraph], pg 19
    */
-  static Matrix3 adjointMap(const Vector& v);
+  static Matrix3 adjointMap(const Vector3& v);
 
   /**
    * wedge for SE(2):
@@ -290,11 +291,18 @@ inline Matrix wedge<Pose2>(const Vector& xi) {
 typedef std::pair<Point2,Point2> Point2Pair;
 GTSAM_EXPORT boost::optional<Pose2> align(const std::vector<Point2Pair>& pairs);
 
-template<>
-struct traits<Pose2> : public internal::LieGroupTraits<Pose2> {};
+template <>
+struct traits<Pose2> : public internal::LieGroup<Pose2> {};
 
-template<>
-struct traits<const Pose2> : public internal::LieGroupTraits<Pose2> {};
+template <>
+struct traits<const Pose2> : public internal::LieGroup<Pose2> {};
+
+// bearing and range traits, used in RangeFactor
+template <typename T>
+struct Bearing<Pose2, T> : HasBearing<Pose2, T, Rot2> {};
+
+template <typename T>
+struct Range<Pose2, T> : HasRange<Pose2, T, double> {};
 
 } // namespace gtsam
 

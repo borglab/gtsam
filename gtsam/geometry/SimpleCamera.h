@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <gtsam/geometry/BearingRange.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Cal3_S2.h>
 
@@ -125,14 +126,18 @@ public:
 
 };
 
-template<>
-struct traits<SimpleCamera> : public internal::Manifold<SimpleCamera> {
-};
+/// Recover camera from 3*4 camera matrix
+GTSAM_EXPORT SimpleCamera simpleCamera(const Matrix34& P);
 
-template<>
-struct traits<const SimpleCamera> : public internal::Manifold<SimpleCamera> {
-};
+// manifold traits
+template <>
+struct traits<SimpleCamera> : public internal::Manifold<SimpleCamera> {};
 
-  /// Recover camera from 3*4 camera matrix
-  GTSAM_EXPORT SimpleCamera simpleCamera(const Matrix34& P);
-}
+template <>
+struct traits<const SimpleCamera> : public internal::Manifold<SimpleCamera> {};
+
+// range traits, used in RangeFactor
+template <typename T>
+struct Range<SimpleCamera, T> : HasRange<SimpleCamera, T, double> {};
+
+}  // namespace gtsam

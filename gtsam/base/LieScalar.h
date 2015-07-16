@@ -11,7 +11,7 @@
 
 /**
  * @file LieScalar.h
- * @brief External deprecation warning, see LieScalar_Deprecated.h for details
+ * @brief External deprecation warning, see deprecated/LieScalar.h for details
  * @author Kai Ni
  */
 
@@ -23,4 +23,4 @@
   #warning "LieScalar.h is deprecated. Please use double/float instead."
 #endif
 
-#include <gtsam/base/LieScalar_Deprecated.h>
+#include <gtsam/base/deprecated/LieScalar.h>

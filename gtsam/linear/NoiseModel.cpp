@@ -20,6 +20,7 @@
 #include <gtsam/base/timing.h>
 
 #include <boost/foreach.hpp>
+#include <boost/format.hpp>
 #include <boost/random/linear_congruential.hpp>
 #include <boost/random/normal_distribution.hpp>
 #include <boost/random/variate_generator.hpp>
@@ -376,8 +377,11 @@ double Constrained::distance(const Vector& v) const {
 
 /* ************************************************************************* */
 Matrix Constrained::Whiten(const Matrix& H) const {
-  // selective scaling
-  return vector_scale(invsigmas(), H, true);
+  Matrix A = H;
+  for (DenseIndex i=0; i<(DenseIndex)dim_; ++i)
+    if (!constrained(i)) // if constrained, leave row of A as is
+      A.row(i) *= invsigmas_(i);
+  return A;
 }
 
 /* ************************************************************************* */
@@ -503,7 +507,7 @@ Isotropic::shared_ptr Isotropic::Variance(size_t dim, double variance, bool smar
 
 /* ************************************************************************* */
 void Isotropic::print(const string& name) const {
-  cout << name << "isotropic sigma " << " " << sigma_ << endl;
+  cout << boost::format("isotropic dim=%1% sigma=%2%") % dim() % sigma_ << endl;
 }
 
 /* ************************************************************************* */
@@ -529,6 +533,11 @@ Matrix Isotropic::Whiten(const Matrix& H) const {
 /* ************************************************************************* */
 void Isotropic::WhitenInPlace(Matrix& H) const {
   H *= invsigma_;
+}
+
+/* ************************************************************************* */
+void Isotropic::whitenInPlace(Vector& v) const {
+  v *= invsigma_;
 }
 
 /* ************************************************************************* */

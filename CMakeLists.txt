@@ -158,6 +158,12 @@ else()
 	set(GTSAM_USE_TBB 0)  # This will go into config.h
 endif()
 
+###############################################################################
+# Prohibit Timing build mode in combination with TBB
+if(GTSAM_USE_TBB AND (CMAKE_BUILD_TYPE  STREQUAL "Timing"))
+      message(FATAL_ERROR "Timing build mode cannot be used together with TBB. Use a sampling profiler such as Instruments or Intel VTune Amplifier instead.")
+endif()
+
 
 ###############################################################################
 # Find Google perftools
@@ -173,6 +179,11 @@ if(MKL_FOUND AND GTSAM_WITH_EIGEN_MKL)
     set(EIGEN_USE_MKL_ALL 1) # This will go into config.h - it makes Eigen use MKL
     include_directories(${MKL_INCLUDE_DIR})
     list(APPEND GTSAM_ADDITIONAL_LIBRARIES ${MKL_LIBRARIES})
+    
+    # --no-as-needed is required with gcc according to the MKL link advisor
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-as-needed")  
+    endif()
 else()
     set(GTSAM_USE_EIGEN_MKL 0)
     set(EIGEN_USE_MKL_ALL 0)

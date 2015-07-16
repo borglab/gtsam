@@ -128,7 +128,8 @@ namespace gtsam {
 	    OptionalOrderingType orderingType = boost::none) const;
 
     /** Do multifrontal elimination of all variables to produce a Bayes tree.  If an ordering is not
-     *  provided, the ordering provided by COLAMD will be used.
+     *  provided, the ordering will be computed using either COLAMD or METIS, dependeing on
+     *  the parameter orderingType (Ordering::COLAMD or Ordering::METIS)
      *  
      *  <b> Example - Full Cholesky elimination in COLAMD order: </b>
      *  \code

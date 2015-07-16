@@ -691,6 +691,76 @@ TEST(SymbolicBayesTree, complicatedMarginal)
   }
 
 }
+
+/* ************************************************************************* */
+TEST(SymbolicBayesTree, COLAMDvsMETIS) {
+
+  // create circular graph
+  SymbolicFactorGraph sfg;
+  sfg.push_factor(0, 1);
+  sfg.push_factor(1, 2);
+  sfg.push_factor(2, 3);
+  sfg.push_factor(3, 4);
+  sfg.push_factor(4, 5);
+  sfg.push_factor(0, 5);
+
+  // COLAMD
+  {
+    Ordering ordering = Ordering::Create(Ordering::COLAMD, sfg);
+    EXPECT(assert_equal(Ordering(list_of(0)(5)(1)(4)(2)(3)), ordering));
+
+    //  - P( 4 2 3)
+    //  | - P( 1 | 2 4)
+    //  | | - P( 5 | 1 4)
+    //  | | | - P( 0 | 1 5)
+    SymbolicBayesTree expected;
+    expected.insertRoot(
+        MakeClique(list_of(4)(2)(3), 3,
+            list_of(
+                MakeClique(list_of(1)(2)(4), 1,
+                    list_of(
+                        MakeClique(list_of(5)(1)(4), 1,
+                            list_of(MakeClique(list_of(0)(1)(5), 1))))))));
+
+    SymbolicBayesTree actual = *sfg.eliminateMultifrontal(ordering);
+    EXPECT(assert_equal(expected, actual));
+  }
+
+  // METIS
+  {
+    Ordering ordering = Ordering::Create(Ordering::METIS, sfg);
+// Linux and Mac split differently when using mettis
+#if !defined(__APPLE__)
+    EXPECT(assert_equal(Ordering(list_of(3)(2)(5)(0)(4)(1)), ordering));
+#else
+    EXPECT(assert_equal(Ordering(list_of(5)(4)(2)(1)(0)(3)), ordering));
+#endif
+
+    //  - P( 1 0 3)
+    //  | - P( 4 | 0 3)
+    //  | | - P( 5 | 0 4)
+    //  | - P( 2 | 1 3)
+    SymbolicBayesTree expected;
+#if !defined(__APPLE__)
+    expected.insertRoot(
+        MakeClique(list_of(2)(4)(1), 3,
+            list_of(
+                MakeClique(list_of(0)(1)(4), 1,
+                    list_of(MakeClique(list_of(5)(0)(4), 1))))(
+                MakeClique(list_of(3)(2)(4), 1))));
+#else
+    expected.insertRoot(
+            MakeClique(list_of(1)(0)(3), 3,
+                list_of(
+                    MakeClique(list_of(4)(0)(3), 1,
+                        list_of(MakeClique(list_of(5)(0)(4), 1))))(
+                    MakeClique(list_of(2)(1)(3), 1))));
+#endif
+    SymbolicBayesTree actual = *sfg.eliminateMultifrontal(ordering);
+    EXPECT(assert_equal(expected, actual));
+  }
+}
+
 /* ************************************************************************* */
 int main() {
   TestResult tr;

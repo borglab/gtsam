@@ -230,8 +230,8 @@ void ConcurrentBatchSmoother::reorder() {
   // Recalculate the variable index
   variableIndex_ = VariableIndex(factors_);
 
-  FastList<Key> separatorKeys = separatorValues_.keys();
-  ordering_ = Ordering::colamdConstrainedLast(variableIndex_, std::vector<Key>(separatorKeys.begin(), separatorKeys.end()));
+  KeyVector separatorKeys = separatorValues_.keys();
+  ordering_ = Ordering::ColamdConstrainedLast(variableIndex_, std::vector<Key>(separatorKeys.begin(), separatorKeys.end()));
 
 }
 
@@ -371,7 +371,7 @@ void ConcurrentBatchSmoother::updateSmootherSummarization() {
   }
 
   // Get the set of separator keys
-  gtsam::FastSet<Key> separatorKeys;
+  gtsam::KeySet separatorKeys;
   BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, separatorValues_) {
     separatorKeys.insert(key_value.key);
   }

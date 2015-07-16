@@ -175,7 +175,8 @@ using namespace binary;
 Expression<Cal3_S2> K(3);
 
 // Create expression tree
-Expression<Point2> projection(PinholeCamera<Cal3_S2>::project_to_camera, p_cam);
+Point2 (*f)(const Point3&, OptionalJacobian<2, 3>) = &PinholeBase::Project;
+Expression<Point2> projection(f, p_cam);
 Expression<Point2> uv_hat(uncalibrate<Cal3_S2>, K, projection);
 }
 /* ************************************************************************* */

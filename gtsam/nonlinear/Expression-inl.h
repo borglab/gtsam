@@ -29,7 +29,7 @@ namespace gtsam {
 
 template<typename T>
 void Expression<T>::print(const std::string& s) const {
-  std::cout << s << *root_ << std::endl;
+  root_->print(s);
 }
 
 template<typename T>
@@ -155,7 +155,7 @@ size_t Expression<T>::traceSize() const {
 
 template<typename T>
 T Expression<T>::valueAndDerivatives(const Values& values,
-    const FastVector<Key>& keys, const FastVector<int>& dims,
+    const KeyVector& keys, const FastVector<int>& dims,
     std::vector<Matrix>& H) const {
 
   // H should be pre-allocated
@@ -219,7 +219,7 @@ typename Expression<T>::KeysAndDims Expression<T>::keysAndDims() const {
   std::map<Key, int> map;
   dims(map);
   size_t n = map.size();
-  KeysAndDims pair = std::make_pair(FastVector<Key>(n), FastVector<int>(n));
+  KeysAndDims pair = std::make_pair(KeyVector(n), FastVector<int>(n));
   boost::copy(map | boost::adaptors::map_keys, pair.first.begin());
   boost::copy(map | boost::adaptors::map_values, pair.second.begin());
   return pair;
