@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <gtsam/geometry/BearingRange.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/concepts.h>
 #include <gtsam/base/Manifold.h>
@@ -318,7 +319,7 @@ public:
   }
 
   /// @}
-  /// @name Transformations and mesaurement functions
+  /// @name Transformations and measurement functions
   /// @{
 
   /**
@@ -384,14 +385,16 @@ private:
   /// @}
 };
 
-template<>
-struct traits<CalibratedCamera> : public internal::Manifold<CalibratedCamera> {
-};
+// manifold traits
+template <>
+struct traits<CalibratedCamera> : public internal::Manifold<CalibratedCamera> {};
 
-template<>
-struct traits<const CalibratedCamera> : public internal::Manifold<
-    CalibratedCamera> {
-};
+template <>
+struct traits<const CalibratedCamera> : public internal::Manifold<CalibratedCamera> {};
 
-}
+// range traits, used in RangeFactor
+template <typename T>
+struct Range<CalibratedCamera, T> : HasRange<CalibratedCamera, T, double> {};
+
+}  // namespace gtsam
 

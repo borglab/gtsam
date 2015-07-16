@@ -15,8 +15,7 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/LieScalar_Deprecated.h>
-
+#include <gtsam/base/deprecated/LieScalar.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Manifold.h>
 

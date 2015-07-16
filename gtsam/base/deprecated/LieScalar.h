@@ -48,8 +48,10 @@ namespace gtsam {
 
     /// @name Testable
     /// @{
-    void print(const std::string& name="") const;
-    bool equals(const LieScalar& expected, double tol=1e-5) const {
+    void print(const std::string& name = "") const {
+      std::cout << name << ": " << d_ << std::endl;
+    }
+    bool equals(const LieScalar& expected, double tol = 1e-5) const {
       return fabs(expected.d_ - d_) <= tol;
     }
     /// @}

@@ -19,6 +19,7 @@
 #pragma once
 
 #include <gtsam/geometry/PinholePose.h>
+#include <gtsam/geometry/BearingRange.h>
 
 namespace gtsam {
 
@@ -263,24 +264,22 @@ public:
   template<class CalibrationB>
   double range(const PinholeCamera<CalibrationB>& camera,
       OptionalJacobian<1, dimension> Dcamera = boost::none,
-      boost::optional<Matrix&> Dother = boost::none) const {
+      OptionalJacobian<1, 6 + CalibrationB::dimension> Dother = boost::none) const {
     Matrix16 Dcamera_, Dother_;
     double result = this->pose().range(camera.pose(), Dcamera ? &Dcamera_ : 0,
         Dother ? &Dother_ : 0);
     if (Dcamera) {
-      Dcamera->resize(1, 6 + DimK);
       *Dcamera << Dcamera_, Eigen::Matrix<double, 1, DimK>::Zero();
     }
     if (Dother) {
-      Dother->resize(1, 6 + CalibrationB::dimension);
       Dother->setZero();
-      Dother->block<1, 6>(0, 0) = Dother_;
+      Dother->template block<1, 6>(0, 0) = Dother_;
     }
     return result;
   }
 
   /**
-   * Calculate range to another camera
+   * Calculate range to a calibrated camera
    * @param camera Other camera
    * @return range (double)
    */
@@ -304,14 +303,18 @@ private:
 
 };
 
-template<typename Calibration>
-struct traits<PinholeCamera<Calibration> > : public internal::Manifold<
-    PinholeCamera<Calibration> > {
-};
+// manifold traits
 
-template<typename Calibration>
-struct traits<const PinholeCamera<Calibration> > : public internal::Manifold<
-    PinholeCamera<Calibration> > {
-};
+template <typename Calibration>
+struct traits<PinholeCamera<Calibration> >
+    : public internal::Manifold<PinholeCamera<Calibration> > {};
 
-} // \ gtsam
+template <typename Calibration>
+struct traits<const PinholeCamera<Calibration> >
+    : public internal::Manifold<PinholeCamera<Calibration> > {};
+
+// range traits, used in RangeFactor
+template <typename Calibration, typename T>
+struct Range<PinholeCamera<Calibration>, T> : HasRange<PinholeCamera<Calibration>, T, double> {};
+
+}  // \ gtsam

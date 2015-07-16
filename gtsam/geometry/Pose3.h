@@ -19,6 +19,7 @@
 
 #include <gtsam/config.h>
 
+#include <gtsam/geometry/BearingRange.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/base/Lie.h>
@@ -262,6 +263,14 @@ public:
   double range(const Pose3& pose, OptionalJacobian<1, 6> H1 = boost::none,
       OptionalJacobian<1, 6> H2 = boost::none) const;
 
+  /**
+   * Calculate bearing to a landmark
+   * @param point 3D location of landmark
+   * @return bearing (Unit3)
+   */
+  Unit3 bearing(const Point3& point, OptionalJacobian<2, 6> H1 = boost::none,
+      OptionalJacobian<2, 3> H2 = boost::none) const;
+
   /// @}
   /// @name Advanced Interface
   /// @{
@@ -323,11 +332,17 @@ GTSAM_EXPORT boost::optional<Pose3> align(const std::vector<Point3Pair>& pairs);
 // For MATLAB wrapper
 typedef std::vector<Pose3> Pose3Vector;
 
-template<>
+template <>
 struct traits<Pose3> : public internal::LieGroup<Pose3> {};
 
-template<>
+template <>
 struct traits<const Pose3> : public internal::LieGroup<Pose3> {};
 
+// bearing and range traits, used in RangeFactor
+template <>
+struct Bearing<Pose3, Point3> : HasBearing<Pose3, Point3, Unit3> {};
 
-} // namespace gtsam
+template <typename T>
+struct Range<Pose3, T> : HasRange<Pose3, T, double> {};
+
+}  // namespace gtsam

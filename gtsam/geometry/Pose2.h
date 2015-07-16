@@ -20,9 +20,11 @@
 
 #pragma once
 
+#include <gtsam/geometry/BearingRange.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/base/Lie.h>
+#include <gtsam/dllexport.h>
 
 namespace gtsam {
 
@@ -289,11 +291,18 @@ inline Matrix wedge<Pose2>(const Vector& xi) {
 typedef std::pair<Point2,Point2> Point2Pair;
 GTSAM_EXPORT boost::optional<Pose2> align(const std::vector<Point2Pair>& pairs);
 
-template<>
+template <>
 struct traits<Pose2> : public internal::LieGroup<Pose2> {};
 
-template<>
+template <>
 struct traits<const Pose2> : public internal::LieGroup<Pose2> {};
+
+// bearing and range traits, used in RangeFactor
+template <typename T>
+struct Bearing<Pose2, T> : HasBearing<Pose2, T, Rot2> {};
+
+template <typename T>
+struct Range<Pose2, T> : HasRange<Pose2, T, double> {};
 
 } // namespace gtsam
 

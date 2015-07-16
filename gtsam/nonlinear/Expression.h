@@ -172,6 +172,9 @@ public:
 
 private:
 
+  /// Default constructor, for serialization
+  Expression() {}
+
   /// Keys and dimensions in same order
   typedef std::pair<KeyVector, FastVector<int> > KeysAndDims;
   KeysAndDims keysAndDims() const;

@@ -170,4 +170,17 @@ private:
 template<>
 struct traits<PoseRTV> : public internal::LieGroup<PoseRTV> {};
 
+// Define Range functor specializations that are used in RangeFactor
+template <typename A1, typename A2> struct Range;
+
+template <>
+struct Range<PoseRTV, PoseRTV> {
+  typedef double result_type;
+  double operator()(const PoseRTV& pose1, const PoseRTV& pose2,
+                    OptionalJacobian<1, 9> H1 = boost::none,
+                    OptionalJacobian<1, 9> H2 = boost::none) {
+    return pose1.range(pose2, H1, H2);
+  }
+};
+
 } // \namespace gtsam

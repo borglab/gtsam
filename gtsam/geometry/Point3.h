@@ -22,6 +22,7 @@
 #pragma once
 
 #include <gtsam/base/VectorSpace.h>
+#include <gtsam/dllexport.h>
 #include <boost/serialization/nvp.hpp>
 #include <cmath>
 
@@ -199,4 +200,19 @@ struct traits<Point3> : public internal::VectorSpace<Point3> {};
 
 template<>
 struct traits<const Point3> : public internal::VectorSpace<Point3> {};
-}
+
+template <typename A1, typename A2>
+struct Range;
+
+template <>
+struct Range<Point3, Point3> {
+  typedef double result_type;
+  double operator()(const Point3& p, const Point3& q,
+                    OptionalJacobian<1, 3> H1 = boost::none,
+                    OptionalJacobian<1, 3> H2 = boost::none) {
+    return p.distance(q, H1, H2);
+  }
+};
+
+}  // namespace gtsam
+

@@ -634,6 +634,22 @@ TEST( Pose3, range_pose )
 }
 
 /* ************************************************************************* */
+Unit3 bearing_proxy(const Pose3& pose, const Point3& point) {
+  return pose.bearing(point);
+}
+TEST( Pose3, bearing )
+{
+  Matrix expectedH1, actualH1, expectedH2, actualH2;
+  EXPECT(assert_equal(Unit3(1,0,0),x1.bearing(l1, actualH1, actualH2),1e-9));
+
+  // Check numerical derivatives
+  expectedH1 = numericalDerivative21(bearing_proxy, x1, l1);
+  expectedH2 = numericalDerivative22(bearing_proxy, x1, l1);
+  EXPECT(assert_equal(expectedH1,actualH1));
+  EXPECT(assert_equal(expectedH2,actualH2));
+}
+
+/* ************************************************************************* */
 TEST( Pose3, unicycle )
 {
   // velocity in X should be X in inertial frame, rather than global frame

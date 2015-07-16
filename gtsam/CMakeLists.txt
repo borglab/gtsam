@@ -9,7 +9,10 @@ set (gtsam_subdirs
     discrete
     linear
     nonlinear
+    sam
+    sfm
     slam
+    smart
 	navigation
 )
 

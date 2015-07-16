@@ -16,14 +16,15 @@
  *  @date Oct 2012
  */
 
-#include <CppUnitLite/TestHarness.h>
-#include <gtsam/slam/RangeFactor.h>
+#include <gtsam/sam/RangeFactor.h>
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Pose2.h>
-#include <gtsam/geometry/Point2.h>
+#include <gtsam/geometry/SimpleCamera.h>
 #include <gtsam/base/numericalDerivative.h>
+#include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/base/TestableAssertions.h>
+
+#include <CppUnitLite/TestHarness.h>
 #include <boost/bind.hpp>
 
 using namespace std;
@@ -36,6 +37,10 @@ typedef RangeFactor<Pose2, Point2> RangeFactor2D;
 typedef RangeFactor<Pose3, Point3> RangeFactor3D;
 typedef RangeFactorWithTransform<Pose2, Point2> RangeFactorWithTransform2D;
 typedef RangeFactorWithTransform<Pose3, Point3> RangeFactorWithTransform3D;
+
+Key poseKey(1);
+Key pointKey(2);
+double measurement(10.0);
 
 /* ************************************************************************* */
 Vector factorError2D(const Pose2& pose, const Point2& point,
@@ -63,19 +68,33 @@ Vector factorErrorWithTransform3D(const Pose3& pose, const Point3& point,
 
 /* ************************************************************************* */
 TEST( RangeFactor, Constructor) {
-  Key poseKey(1);
-  Key pointKey(2);
-  double measurement(10.0);
-
   RangeFactor2D factor2D(poseKey, pointKey, measurement, model);
   RangeFactor3D factor3D(poseKey, pointKey, measurement, model);
 }
 
 /* ************************************************************************* */
+// Export Noisemodels
+// See http://www.boost.org/doc/libs/1_32_0/libs/serialization/doc/special.html
+BOOST_CLASS_EXPORT(gtsam::noiseModel::Unit);
+
+/* ************************************************************************* */
+TEST(RangeFactor, Serialization2D) {
+  RangeFactor2D factor2D(poseKey, pointKey, measurement, model);
+  EXPECT(serializationTestHelpers::equalsObj(factor2D));
+  EXPECT(serializationTestHelpers::equalsXML(factor2D));
+  EXPECT(serializationTestHelpers::equalsBinary(factor2D));
+}
+
+/* ************************************************************************* */
+TEST(RangeFactor, Serialization3D) {
+  RangeFactor3D factor3D(poseKey, pointKey, measurement, model);
+  EXPECT(serializationTestHelpers::equalsObj(factor3D));
+  EXPECT(serializationTestHelpers::equalsXML(factor3D));
+  EXPECT(serializationTestHelpers::equalsBinary(factor3D));
+}
+
+/* ************************************************************************* */
 TEST( RangeFactor, ConstructorWithTransform) {
-  Key poseKey(1);
-  Key pointKey(2);
-  double measurement(10.0);
   Pose2 body_P_sensor_2D(0.25, -0.10, -M_PI_2);
   Pose3 body_P_sensor_3D(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2),
       Point3(0.25, -0.10, 1.0));
@@ -89,10 +108,6 @@ TEST( RangeFactor, ConstructorWithTransform) {
 /* ************************************************************************* */
 TEST( RangeFactor, Equals ) {
   // Create two identical factors and make sure they're equal
-  Key poseKey(1);
-  Key pointKey(2);
-  double measurement(10.0);
-
   RangeFactor2D factor2D_1(poseKey, pointKey, measurement, model);
   RangeFactor2D factor2D_2(poseKey, pointKey, measurement, model);
   CHECK(assert_equal(factor2D_1, factor2D_2));
@@ -105,9 +120,6 @@ TEST( RangeFactor, Equals ) {
 /* ************************************************************************* */
 TEST( RangeFactor, EqualsWithTransform ) {
   // Create two identical factors and make sure they're equal
-  Key poseKey(1);
-  Key pointKey(2);
-  double measurement(10.0);
   Pose2 body_P_sensor_2D(0.25, -0.10, -M_PI_2);
   Pose3 body_P_sensor_3D(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2),
       Point3(0.25, -0.10, 1.0));
@@ -128,9 +140,6 @@ TEST( RangeFactor, EqualsWithTransform ) {
 /* ************************************************************************* */
 TEST( RangeFactor, Error2D ) {
   // Create a factor
-  Key poseKey(1);
-  Key pointKey(2);
-  double measurement(10.0);
   RangeFactor2D factor(poseKey, pointKey, measurement, model);
 
   // Set the linearization point
@@ -150,9 +159,6 @@ TEST( RangeFactor, Error2D ) {
 /* ************************************************************************* */
 TEST( RangeFactor, Error2DWithTransform ) {
   // Create a factor
-  Key poseKey(1);
-  Key pointKey(2);
-  double measurement(10.0);
   Pose2 body_P_sensor(0.25, -0.10, -M_PI_2);
   RangeFactorWithTransform2D factor(poseKey, pointKey, measurement, model,
       body_P_sensor);
@@ -176,9 +182,6 @@ TEST( RangeFactor, Error2DWithTransform ) {
 /* ************************************************************************* */
 TEST( RangeFactor, Error3D ) {
   // Create a factor
-  Key poseKey(1);
-  Key pointKey(2);
-  double measurement(10.0);
   RangeFactor3D factor(poseKey, pointKey, measurement, model);
 
   // Set the linearization point
@@ -198,9 +201,6 @@ TEST( RangeFactor, Error3D ) {
 /* ************************************************************************* */
 TEST( RangeFactor, Error3DWithTransform ) {
   // Create a factor
-  Key poseKey(1);
-  Key pointKey(2);
-  double measurement(10.0);
   Pose3 body_P_sensor(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2),
       Point3(0.25, -0.10, 1.0));
   RangeFactorWithTransform3D factor(poseKey, pointKey, measurement, model,
@@ -225,9 +225,6 @@ TEST( RangeFactor, Error3DWithTransform ) {
 /* ************************************************************************* */
 TEST( RangeFactor, Jacobian2D ) {
   // Create a factor
-  Key poseKey(1);
-  Key pointKey(2);
-  double measurement(10.0);
   RangeFactor2D factor(poseKey, pointKey, measurement, model);
 
   // Set the linearization point
@@ -253,9 +250,6 @@ TEST( RangeFactor, Jacobian2D ) {
 /* ************************************************************************* */
 TEST( RangeFactor, Jacobian2DWithTransform ) {
   // Create a factor
-  Key poseKey(1);
-  Key pointKey(2);
-  double measurement(10.0);
   Pose2 body_P_sensor(0.25, -0.10, -M_PI_2);
   RangeFactorWithTransform2D factor(poseKey, pointKey, measurement, model,
       body_P_sensor);
@@ -285,9 +279,6 @@ TEST( RangeFactor, Jacobian2DWithTransform ) {
 /* ************************************************************************* */
 TEST( RangeFactor, Jacobian3D ) {
   // Create a factor
-  Key poseKey(1);
-  Key pointKey(2);
-  double measurement(10.0);
   RangeFactor3D factor(poseKey, pointKey, measurement, model);
 
   // Set the linearization point
@@ -313,9 +304,6 @@ TEST( RangeFactor, Jacobian3D ) {
 /* ************************************************************************* */
 TEST( RangeFactor, Jacobian3DWithTransform ) {
   // Create a factor
-  Key poseKey(1);
-  Key pointKey(2);
-  double measurement(10.0);
   Pose3 body_P_sensor(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2),
       Point3(0.25, -0.10, 1.0));
   RangeFactorWithTransform3D factor(poseKey, pointKey, measurement, model,
@@ -341,6 +329,64 @@ TEST( RangeFactor, Jacobian3DWithTransform ) {
   // Verify the Jacobians are correct
   CHECK(assert_equal(H1Expected, H1Actual, 1e-9));
   CHECK(assert_equal(H2Expected, H2Actual, 1e-9));
+}
+
+/* ************************************************************************* */
+// Do a test with Point3
+TEST(RangeFactor, Point3) {
+  // Create a factor
+  RangeFactor<Point3> factor(poseKey, pointKey, measurement, model);
+
+  // Set the linearization point
+  Point3 pose(1.0, 2.0, 00);
+  Point3 point(-4.0, 11.0, 0);
+
+  // The expected error is ||(5.0, 9.0)|| - 10.0 = 0.295630141 meter / UnitCovariance
+  Vector expectedError = (Vector(1) << 0.295630141).finished();
+
+  // Verify we get the expected error
+  CHECK(assert_equal(expectedError, factor.evaluateError(pose, point), 1e-9));
+}
+
+/* ************************************************************************* */
+// Do tests with SimpleCamera
+TEST( RangeFactor, Camera) {
+  RangeFactor<SimpleCamera,Point3> factor1(poseKey, pointKey, measurement, model);
+  RangeFactor<SimpleCamera,Pose3> factor2(poseKey, pointKey, measurement, model);
+  RangeFactor<SimpleCamera,SimpleCamera> factor3(poseKey, pointKey, measurement, model);
+}
+
+/* ************************************************************************* */
+// Do a test with non GTSAM types
+
+namespace gtsam{
+template <>
+struct Range<Vector3, Vector3> {
+  typedef double result_type;
+  double operator()(const Vector3& v1, const Vector3& v2,
+                    OptionalJacobian<1, 3> H1, OptionalJacobian<1, 3> H2) {
+    return (v2 - v1).norm();
+    // derivatives not implemented
+  }
+};
+}
+
+TEST(RangeFactor, NonGTSAM) {
+  // Create a factor
+  Key poseKey(1);
+  Key pointKey(2);
+  double measurement(10.0);
+  RangeFactor<Vector3> factor(poseKey, pointKey, measurement, model);
+
+  // Set the linearization point
+  Vector3 pose(1.0, 2.0, 00);
+  Vector3 point(-4.0, 11.0, 0);
+
+  // The expected error is ||(5.0, 9.0)|| - 10.0 = 0.295630141 meter / UnitCovariance
+  Vector expectedError = (Vector(1) << 0.295630141).finished();
+
+  // Verify we get the expected error
+  CHECK(assert_equal(expectedError, factor.evaluateError(pose, point), 1e-9));
 }
 
 /* ************************************************************************* */
