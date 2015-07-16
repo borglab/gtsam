@@ -241,27 +241,28 @@ public:
     bool retriangulate = decideIfTriangulate(cameras);
     if (retriangulate) {
       // We triangulate the 3D position of the landmark
-      try {
-        // std::cout << "triangulatePoint3 i \n" << rankTolerance << std::endl;
+       std::cout << "triangulateSafe i \n" << std::endl;
 
-        //TODO: Chris will replace this with something else for stereo
+      //TODO: Chris will replace this with something else for stereo
 //        point_ = triangulatePoint3<CALIBRATION>(cameras, this->measured_,
 //            rankTolerance_, enableEPI_);
 
-        // // // Temporary hack to use monocular triangulation
-        std::vector<Point2> mono_measurements;
-        BOOST_FOREACH(const StereoPoint2& sp, this->measured_) {
-          mono_measurements.push_back(sp.point2());
-        }
+      // // // Temporary hack to use monocular triangulation
+      std::vector<Point2> mono_measurements;
+      BOOST_FOREACH(const StereoPoint2& sp, this->measured_) {
+        mono_measurements.push_back(sp.point2());
+      }
 
-        std::vector<PinholeCamera<Cal3_S2> > mono_cameras;
-        BOOST_FOREACH(const StereoCamera& camera, cameras) {
-          const Pose3& pose = camera.pose();
-          const Cal3_S2& K = camera.calibration()->calibration();
-          mono_cameras.push_back(PinholeCamera<Cal3_S2>(pose, K));
-        }
-        Point3 point = triangulatePoint3<PinholeCamera<Cal3_S2> >(mono_cameras, mono_measurements,
-            params_.triangulation.rankTolerance, params_.triangulation.enableEPI);
+      std::vector<PinholeCamera<Cal3_S2> > mono_cameras;
+      BOOST_FOREACH(const StereoCamera& camera, cameras) {
+        const Pose3& pose = camera.pose();
+        const Cal3_S2& K = camera.calibration()->calibration();
+        mono_cameras.push_back(PinholeCamera<Cal3_S2>(pose, K));
+      }
+//        Point3 point = triangulatePoint3<PinholeCamera<Cal3_S2> >(mono_cameras, mono_measurements,
+//            params_.triangulation.rankTolerance, params_.triangulation.enableEPI);
+      result_ = gtsam::triangulateSafe(mono_cameras, mono_measurements,
+             params_.triangulation);
 
         // // // End temporary hack
 
@@ -270,42 +271,31 @@ public:
 //        point_ = cameras[0].backproject(z0);
 
         // Check landmark distance and reprojection errors to avoid outliers
-        double totalReprojError = 0.0;
-        size_t i = 0;
-        BOOST_FOREACH(const StereoCamera& camera, cameras) {
-          Point3 cameraTranslation = camera.pose().translation();
-          // we discard smart factors corresponding to points that are far away
-          if (cameraTranslation.distance(point) > params_.triangulation.landmarkDistanceThreshold) {
-            return TriangulationResult::Degenerate();
-          }
-          const StereoPoint2& zi = this->measured_.at(i);
-          try {
-            StereoPoint2 reprojectionError(camera.project(point) - zi);
-            totalReprojError += reprojectionError.vector().norm();
-          } catch (CheiralityException) {
-            return TriangulationResult::BehindCamera();
-          }
-          i += 1;
-        }
+//        double totalReprojError = 0.0;
+//        size_t i = 0;
+//        BOOST_FOREACH(const StereoCamera& camera, cameras) {
+//          Point3 cameraTranslation = camera.pose().translation();
+//          // we discard smart factors corresponding to points that are far away
+//          if (cameraTranslation.distance(*result_) > params_.triangulation.landmarkDistanceThreshold) {
+//            return TriangulationResult::Degenerate();
+//          }
+//          const StereoPoint2& zi = this->measured_.at(i);
+//          try {
+//            StereoPoint2 reprojectionError(camera.project(*result_) - zi);
+//            totalReprojError += reprojectionError.vector().norm();
+//          } catch (CheiralityException) {
+//            return TriangulationResult::BehindCamera();
+//          }
+//          i += 1;
+//        }
         //std::cout << "totalReprojError error: " << totalReprojError << std::endl;
         // we discard smart factors that have large reprojection error
-        if (params_.triangulation.dynamicOutlierRejectionThreshold > 0
-            && totalReprojError / m > params_.triangulation.dynamicOutlierRejectionThreshold)
-          return TriangulationResult::Degenerate();
+//        if (params_.triangulation.dynamicOutlierRejectionThreshold > 0
+//            && totalReprojError / m > params_.triangulation.dynamicOutlierRejectionThreshold)
+//          return TriangulationResult::Degenerate();
 
-        result_ = TriangulationResult(point);
+//        result_ = TriangulationResult(point);
 
-      } catch (TriangulationUnderconstrainedException&) {
-        // if TriangulationUnderconstrainedException can be
-        // 1) There is a single pose for triangulation - this should not happen because we checked the number of poses before
-        // 2) The rank of the matrix used for triangulation is < 3: rotation-only, parallel cameras (or motion towards the landmark)
-        // in the second case we want to use a rotation-only smart factor
-        return TriangulationResult::Degenerate();
-      } catch (TriangulationCheiralityException&) {
-        // point is behind one of the cameras: can be the case of close-to-parallel cameras or may depend on outliers
-        // we manage this case by either discarding the smart factor, or imposing a rotation-only constraint
-        return TriangulationResult::BehindCamera();
-      }
     }
     return result_;
 
@@ -545,6 +535,9 @@ public:
     else
       result_ = triangulateSafe(cameras);
 
+    std::cout << "Triangulation result in totalReprojectionError" << std::endl;
+    std::cout << result_ << std::endl;
+
     if (result_)
       // All good, just use version in base class
       return Base::totalReprojectionError(cameras, *result_);
@@ -555,9 +548,10 @@ public:
 //      Unit3 backprojected; //= cameras.front().backprojectPointAtInfinity(z0);
 //
 //      return Base::totalReprojectionError(cameras, backprojected);
-    } else
+    } else {
       // if we don't want to manage the exceptions we discard the factor
       return 0.0;
+    }
   }
 
   /// Calculate total reprojection error
