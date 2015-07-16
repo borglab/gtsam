@@ -11,7 +11,7 @@
 
 /**
  * @file   SmartProjectionFactor.h
- * @brief  Base class to create smart factors on poses or cameras
+ * @brief  Smart factor on cameras (pose + calibration)
  * @author Luca Carlone
  * @author Zsolt Kira
  * @author Frank Dellaert
@@ -108,16 +108,22 @@ public:
   void setEnableEPI(bool enableEPI) {
     triangulation.enableEPI = enableEPI;
   }
-  void setLandmarkDistanceThreshold(bool landmarkDistanceThreshold) {
+  void setLandmarkDistanceThreshold(double landmarkDistanceThreshold) {
     triangulation.landmarkDistanceThreshold = landmarkDistanceThreshold;
   }
-  void setDynamicOutlierRejectionThreshold(bool dynOutRejectionThreshold) {
+  void setDynamicOutlierRejectionThreshold(double dynOutRejectionThreshold) {
     triangulation.dynamicOutlierRejectionThreshold = dynOutRejectionThreshold;
   }
 };
 
 /**
  * SmartProjectionFactor: triangulates point and keeps an estimate of it around.
+ * This factor operates with monocular cameras, where a camera is expected to
+ * behave like PinholeCamera or PinholePose. This factor is intended
+ * to be used directly with PinholeCamera, which optimizes the camera pose
+ * and calibration. This also requires that values contains the involved
+ * cameras (instead of poses and calibrations separately).
+ * If the calibration is fixed use SmartProjectionPoseFactor instead!
  */
 template<class CAMERA>
 class SmartProjectionFactor: public SmartFactorBase<CAMERA> {
