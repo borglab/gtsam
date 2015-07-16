@@ -25,16 +25,23 @@
 
 namespace gtsam {
 
-// forward declaration of Bearing functor, assumed partially specified
+// Forward declaration of Bearing functor which should be of A1*A2 -> return_type
+// For example Bearing<Pose3,Point3>(pose,point), defined in Pose3.h will return Unit3
+// At time of writing only Pose2 and Pose3 specialize this functor.
 template <typename A1, typename A2>
 struct Bearing;
 
-// forward declaration of Range functor, assumed partially specified
+// Forward declaration of Range functor which should be of A1*A2 -> return_type
+// For example Range<Pose2,Pose2>(T1,T2), defined in Pose2.h  will return double
+// At time of writing Pose2, Pose3, and several Camera variants specialize this for several types
 template <typename A1, typename A2>
 struct Range;
 
 /**
- * Bearing-Range product for a particular A1,A2 combination
+ * Bearing-Range product for a particular A1,A2 combination will use the functors above to create
+ * a similar functor of type A1*A2 -> pair<Bearing::return_type,Range::return_type>
+ * For example BearingRange<Pose2,Point2>(pose,point) will return pair<Rot2,double>
+ * and BearingRange<Pose3,Point3>(pose,point) will return pair<Unit3,double>
  */
 template <typename A1, typename A2>
 struct BearingRange
@@ -88,31 +95,37 @@ struct BearingRange
   friend class boost::serialization::access;
 };
 
+// Declare this to be both Testable and a Manifold
 template <typename A1, typename A2>
 struct traits<BearingRange<A1, A2> >
     : Testable<BearingRange<A1, A2> >,
       internal::ManifoldTraits<BearingRange<A1, A2> > {};
 
 // Helper class for to implement Range traits for classes with a bearing method
-template <class A1, typename A2, class T>
+// For example, to specialize Bearing to Pose3 and Point3, using Pose3::bearing, it suffices to say
+//   template <> struct Bearing<Pose3, Point3> : HasBearing<Pose3, Point3, Unit3> {};
+// where the third argument is used to indicate the return type
+template <class A1, typename A2, class RT>
 struct HasBearing {
-  typedef T result_type;
-  T operator()(
+  typedef RT result_type;
+  RT operator()(
       const A1& a1, const A2& a2,
-      OptionalJacobian<traits<T>::dimension, traits<A1>::dimension> H1,
-      OptionalJacobian<traits<T>::dimension, traits<A2>::dimension> H2) {
+      OptionalJacobian<traits<RT>::dimension, traits<A1>::dimension> H1,
+      OptionalJacobian<traits<RT>::dimension, traits<A2>::dimension> H2) {
     return a1.bearing(a2, H1, H2);
   }
 };
 
-// Helper class for to implement Range traits for classes with a range method
-template <class A1, typename A2, class T>
+// Similar helper class for to implement Range traits for classes with a range method
+// For classes with overloaded range methods, such as SimpleCamera, this can even be templated:
+//   template <typename T> struct Range<SimpleCamera, T> : HasRange<SimpleCamera, T, double> {};
+template <class A1, typename A2, class RT>
 struct HasRange {
-  typedef T result_type;
-  T operator()(
+  typedef RT result_type;
+  RT operator()(
       const A1& a1, const A2& a2,
-      OptionalJacobian<traits<T>::dimension, traits<A1>::dimension> H1,
-      OptionalJacobian<traits<T>::dimension, traits<A2>::dimension> H2) {
+      OptionalJacobian<traits<RT>::dimension, traits<A1>::dimension> H1,
+      OptionalJacobian<traits<RT>::dimension, traits<A2>::dimension> H2) {
     return a1.range(a2, H1, H2);
   }
 };
