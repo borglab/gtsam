@@ -83,22 +83,6 @@ struct LieGroup {
     return Class::Logmap(between(g));
   }
 
-  static Class Retract(const TangentVector& v) {
-    return Class::ChartAtOrigin::Retract(v);
-  }
-
-  static TangentVector LocalCoordinates(const Class& g) {
-    return Class::ChartAtOrigin::Local(g);
-  }
-
-  static Class Retract(const TangentVector& v, ChartJacobian H) {
-    return Class::ChartAtOrigin::Retract(v,H);
-  }
-
-  static TangentVector LocalCoordinates(const Class& g, ChartJacobian H) {
-    return Class::ChartAtOrigin::Local(g,H);
-  }
-
   Class retract(const TangentVector& v) const {
     return compose(Class::ChartAtOrigin::Retract(v));
   }
