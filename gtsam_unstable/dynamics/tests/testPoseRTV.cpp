@@ -84,7 +84,8 @@ TEST( testPoseRTV, Lie ) {
   EXPECT(assert_equal(state1, (PoseRTV)state1.retract(zero(9)), tol));
   EXPECT(assert_equal(zero(9), state1.localCoordinates(state1), tol));
 
-  Vector delta = (Vector(9) << 0.1, 0.1, 0.1, 0.2, 0.3, 0.4,-0.1,-0.2,-0.3).finished();
+  Vector delta(9);
+  delta << 0.1, 0.1, 0.1, 0.2, 0.3, 0.4,-0.1,-0.2,-0.3;
   Rot3 rot2 = rot.retract(repeat(3, 0.1));
   Point3 pt2 = pt + rot * Point3(0.2, 0.3, 0.4);
   Velocity3 vel2 = vel + rot * Velocity3(-0.1,-0.2,-0.3);
@@ -92,21 +93,14 @@ TEST( testPoseRTV, Lie ) {
   EXPECT(assert_equal(state2, (PoseRTV)state1.retract(delta), 1e-1));
   EXPECT(assert_equal(delta, state1.localCoordinates(state2), 1e-1));
   EXPECT(assert_equal(delta, -state2.localCoordinates(state1), 1e-1));
-}
 
-/* ************************************************************************* */
-TEST(testPoseRTV, localCoordinates) {
-  Point3 i1(0, 1, 0), j1(-1, 0, 0), k1(0, 0, 1);
-  Pose3 x1(Rot3(i1, j1, k1), Point3(5.0, 1.0, 0.0));
-  Vector3 v1(Vector3(0.5, 0.0, 0.0));
+  // roundtrip from state2 to state3 and back
+  PoseRTV state3 = state2.retract(delta);
+  EXPECT(assert_equal(delta, state2.localCoordinates(state3), 1e-1));
 
-  Pose3 x2(Rot3(i1, j1, k1).expmap(Vector3(0.1, 0.2, 0.3)), Point3(5.5, 1.0, 6.0));
-  Vector3 v2(Vector3(0.5, 4.0, 3.0));
-
-  PoseRTV rtv1(x1,v1), rtv2(x2,v2);
-  Vector9 expected, actual = rtv1.localCoordinates(rtv2);
-  expected << 0.1, 0.2, 0.3, 0.0, -0.5, 6.0, 4.0, 0.0, 3.0;
-  EXPECT(assert_equal(expected, actual, 1e-9));
+  // roundtrip from state3 to state4 and back, with expmap
+  PoseRTV state4 = state3.expmap(delta);
+  EXPECT(assert_equal(delta, state3.logmap(state4), 1e-1));
 }
 
 /* ************************************************************************* */
