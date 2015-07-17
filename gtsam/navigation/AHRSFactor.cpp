@@ -199,7 +199,7 @@ Vector AHRSFactor::evaluateError(const Rot3& Ri, const Rot3& Rj,
   if (H2) {
     // dfR/dPosej
     H2->resize(3, 3);
-    (*H2) << D_fR_fRrot * Matrix3::Identity();
+    (*H2) << D_fR_fRrot;
   }
 
   if (H3) {
