@@ -189,37 +189,37 @@ TEST( CombinedImuFactor, ErrorWithBiases ) {
 
   pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
-  CombinedImuFactor::CombinedPreintegratedMeasurements Combined_pre_int_data(
+  CombinedImuFactor::CombinedPreintegratedMeasurements combined_pre_int_data(
       imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0)),
       Matrix3::Identity(), Matrix3::Identity(), Matrix3::Identity(),
       Matrix3::Identity(), 2 * Matrix3::Identity(), I6x6);
 
-  Combined_pre_int_data.integrateMeasurement(measuredAcc, measuredOmega,
+  combined_pre_int_data.integrateMeasurement(measuredAcc, measuredOmega,
       deltaT);
 
   // Create factor
-  ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pre_int_data, gravity,
+  ImuFactor imuFactor(X(1), V(1), X(2), V(2), B(1), pre_int_data, gravity,
       omegaCoriolis);
 
   noiseModel::Gaussian::shared_ptr Combinedmodel =
-      noiseModel::Gaussian::Covariance(Combined_pre_int_data.preintMeasCov());
-  CombinedImuFactor Combinedfactor(X(1), V(1), X(2), V(2), B(1), B(2),
-      Combined_pre_int_data, gravity, omegaCoriolis);
+      noiseModel::Gaussian::Covariance(combined_pre_int_data.preintMeasCov());
+  CombinedImuFactor combinedfactor(X(1), V(1), X(2), V(2), B(1), B(2),
+      combined_pre_int_data, gravity, omegaCoriolis);
 
-  Vector errorExpected = factor.evaluateError(x1, v1, x2, v2, bias);
+  Vector errorExpected = imuFactor.evaluateError(x1, v1, x2, v2, bias);
 
-  Vector errorActual = Combinedfactor.evaluateError(x1, v1, x2, v2, bias,
+  Vector errorActual = combinedfactor.evaluateError(x1, v1, x2, v2, bias,
       bias2);
 
   EXPECT(assert_equal(errorExpected, errorActual.head(9), tol));
 
   // Expected Jacobians
   Matrix H1e, H2e, H3e, H4e, H5e;
-  (void) factor.evaluateError(x1, v1, x2, v2, bias, H1e, H2e, H3e, H4e, H5e);
+  (void) imuFactor.evaluateError(x1, v1, x2, v2, bias, H1e, H2e, H3e, H4e, H5e);
 
   // Actual Jacobians
   Matrix H1a, H2a, H3a, H4a, H5a, H6a;
-  (void) Combinedfactor.evaluateError(x1, v1, x2, v2, bias, bias2, H1a, H2a,
+  (void) combinedfactor.evaluateError(x1, v1, x2, v2, bias, bias2, H1a, H2a,
       H3a, H4a, H5a, H6a);
 
   EXPECT(assert_equal(H1e, H1a.topRows(9)));
@@ -310,24 +310,24 @@ TEST(CombinedImuFactor, PredictPositionAndVelocity) {
   Matrix I6x6(6, 6);
   I6x6 = Matrix::Identity(6, 6);
 
-  CombinedImuFactor::CombinedPreintegratedMeasurements Combined_pre_int_data(
+  CombinedImuFactor::CombinedPreintegratedMeasurements combined_pre_int_data(
       bias, Matrix3::Identity(), Matrix3::Identity(), Matrix3::Identity(),
       Matrix3::Identity(), 2 * Matrix3::Identity(), I6x6, true);
 
   for (int i = 0; i < 1000; ++i)
-    Combined_pre_int_data.integrateMeasurement(measuredAcc, measuredOmega,
+    combined_pre_int_data.integrateMeasurement(measuredAcc, measuredOmega,
         deltaT);
 
   // Create factor
-  noiseModel::Gaussian::shared_ptr Combinedmodel =
-      noiseModel::Gaussian::Covariance(Combined_pre_int_data.preintMeasCov());
+  noiseModel::Gaussian::shared_ptr combinedmodel =
+      noiseModel::Gaussian::Covariance(combined_pre_int_data.preintMeasCov());
   CombinedImuFactor Combinedfactor(X(1), V(1), X(2), V(2), B(1), B(2),
-      Combined_pre_int_data, gravity, omegaCoriolis);
+      combined_pre_int_data, gravity, omegaCoriolis);
 
   // Predict
   Pose3 x1;
   Vector3 v1(0, 0.0, 0.0);
-  PoseVelocityBias poseVelocityBias = Combined_pre_int_data.predict(x1, v1,
+  PoseVelocityBias poseVelocityBias = combined_pre_int_data.predict(x1, v1,
       bias, gravity, omegaCoriolis);
   Pose3 expectedPose(Rot3(), Point3(0, 0.5, 0));
   Vector3 expectedVelocity;
@@ -341,7 +341,7 @@ TEST(CombinedImuFactor, PredictPositionAndVelocity) {
 TEST(CombinedImuFactor, PredictRotation) {
   imuBias::ConstantBias bias(Vector3(0, 0, 0), Vector3(0, 0, 0)); // Biases (acc, rot)
   Matrix I6x6(6, 6);
-  CombinedImuFactor::CombinedPreintegratedMeasurements Combined_pre_int_data(
+  CombinedImuFactor::CombinedPreintegratedMeasurements combined_pre_int_data(
       bias, Matrix3::Identity(), Matrix3::Identity(), Matrix3::Identity(),
       Matrix3::Identity(), 2 * Matrix3::Identity(), I6x6, true);
   Vector3 measuredAcc;
@@ -355,10 +355,10 @@ TEST(CombinedImuFactor, PredictRotation) {
   double deltaT = 0.001;
   double tol = 1e-4;
   for (int i = 0; i < 1000; ++i)
-    Combined_pre_int_data.integrateMeasurement(measuredAcc, measuredOmega,
+    combined_pre_int_data.integrateMeasurement(measuredAcc, measuredOmega,
         deltaT);
   CombinedImuFactor Combinedfactor(X(1), V(1), X(2), V(2), B(1), B(2),
-      Combined_pre_int_data, gravity, omegaCoriolis);
+      combined_pre_int_data, gravity, omegaCoriolis);
 
   // Predict
   Pose3 x(Rot3().ypr(0, 0, 0), Point3(0, 0, 0)), x2;
