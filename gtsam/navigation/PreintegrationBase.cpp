@@ -170,9 +170,9 @@ PoseVelocityBias PreintegrationBase::predict(const Pose3& pose_i,
       - 2 * omegaCoriolis.cross(vel_i) * dt; // Coriolis term
 
   if (use2ndOrderCoriolis) {
-    Vector3 v = omegaCoriolis.cross(omegaCoriolis.cross(pose_i.translation().vector()));
-    dP -= 0.5 * v * dt2;
-    dV -= v * dt;
+    Vector3 temp = omegaCoriolis.cross(omegaCoriolis.cross(pose_i.translation().vector()));
+    dP -= 0.5 * temp * dt2;
+    dV -= temp * dt;
   }
 
   // TODO(frank): pose update below is separate expmap for R,t. Is that kosher?
@@ -207,10 +207,10 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i, const 
                                                      OptionalJacobian<9, 6> H5) const {
 
   // we give some shorter name to rotations and translations
-  const Rot3& Ri = pose_i.rotation();
-  const Matrix3 Ri_transpose_matrix = Ri.transpose();
+  const Rot3& rot_i = pose_i.rotation();
+  const Matrix Ri = rot_i.matrix();
 
-  const Rot3& Rj = pose_j.rotation();
+  const Rot3& rot_j = pose_j.rotation();
   const Vector3 pos_j = pose_j.translation().vector();
 
   // Evaluate residual error, according to [3]
@@ -224,10 +224,10 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i, const 
       deltaVij_biascorrected, use2ndOrderCoriolis);
 
   // Ri.transpose() is important here to preserve a model with *additive* Gaussian noise of correct covariance
-  const Vector3 fp = Ri_transpose_matrix * (pos_j - predictedState_j.pose.translation().vector());
+  const Vector3 fp = Ri.transpose() * (pos_j - predictedState_j.pose.translation().vector());
 
   // Ri.transpose() is important here to preserve a model with *additive* Gaussian noise of correct covariance
-  const Vector3 fv = Ri_transpose_matrix * (vel_j - predictedState_j.velocity);
+  const Vector3 fv = Ri.transpose() * (vel_j - predictedState_j.velocity);
 
   // fR will be computed later. Note: it is the same as: fR = (predictedState_j.pose.translation()).between(Rot_j)
 
@@ -241,20 +241,17 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i, const 
                                                            H5 ? &D_cThetaRij_biasOmegaIncr : 0);
 
   // Coriolis term, note inconsistent with AHRS, where coriolisHat is *after* integration
-  const Vector3 coriolis = integrateCoriolis(Ri, omegaCoriolis);
+  const Vector3 coriolis = integrateCoriolis(rot_i, omegaCoriolis);
   const Vector3 correctedOmega = biascorrectedOmega - coriolis;
 
   // Calculate Jacobians, matrices below needed only for some Jacobians...
   Vector3 fR;
   Matrix3 D_cDeltaRij_cOmega, D_coriolis, D_fR_fRrot, Ritranspose_omegaCoriolisHat;
 
-  if (H1 || H2)
-    Ritranspose_omegaCoriolisHat = Ri_transpose_matrix * skewSymmetric(omegaCoriolis);
-
   // This is done to save computation: we ask for the jacobians only when they are needed
   const double dt = deltaTij(), dt2 = dt*dt;
   Rot3 fRrot;
-  const Rot3 RiBetweenRj = Rot3(Ri_transpose_matrix) * Rj;
+  const Rot3 RiBetweenRj = rot_i.between(rot_j);
   if (H1 || H2 || H3 || H4 || H5) {
     const Rot3 correctedDeltaRij = Rot3::Expmap(correctedOmega, D_cDeltaRij_cOmega);
     // Residual rotation error
@@ -267,10 +264,14 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i, const 
     fRrot = correctedDeltaRij.between(RiBetweenRj);
     fR = Rot3::Logmap(fRrot);
   }
+
+  if (H1 || H2)
+    Ritranspose_omegaCoriolisHat = Ri.transpose() * skewSymmetric(omegaCoriolis);
+
   if (H1) {
     Matrix3 dfPdPi = -I_3x3, dfVdPi = Z_3x3;
     if (use2ndOrderCoriolis) {
-      // this is the same as: Ri.transpose() * omegaCoriolisHat * omegaCoriolisHat * Ri.matrix()
+      // this is the same as: Ri.transpose() * omegaCoriolisHat * omegaCoriolisHat * Ri
       const Matrix3 temp = Ritranspose_omegaCoriolisHat
           * (-Ritranspose_omegaCoriolisHat.transpose());
       dfPdPi += 0.5 * temp * dt2;
@@ -286,23 +287,23 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i, const 
     // dfV/dPi
     dfVdPi,
     // dfR/dRi
-    D_fR_fRrot * (-Rj.between(Ri).matrix() - fRrot.inverse().matrix() * D_coriolis),
+    D_fR_fRrot * (-rot_j.between(rot_i).matrix() - fRrot.inverse().matrix() * D_coriolis),
     // dfR/dPi
     Z_3x3;
   }
   if (H2) {
     (*H2) <<
     // dfP/dVi
-    -Ri_transpose_matrix * dt + Ritranspose_omegaCoriolisHat * dt2,  // Coriolis term - we got rid of the 2 wrt ins paper
+    -Ri.transpose() * dt + Ritranspose_omegaCoriolisHat * dt2,  // Coriolis term - we got rid of the 2 wrt ins paper
     // dfV/dVi
-    -Ri_transpose_matrix + 2 * Ritranspose_omegaCoriolisHat * dt,  // Coriolis term
+    -Ri.transpose() + 2 * Ritranspose_omegaCoriolisHat * dt,  // Coriolis term
     // dfR/dVi
     Z_3x3;
   }
   if (H3) {
     (*H3) <<
     // dfP/dPosej
-    Z_3x3, Ri_transpose_matrix * Rj.matrix(),
+    Z_3x3, Ri.transpose() * rot_j.matrix(),
     // dfV/dPosej
     Matrix::Zero(3, 6),
     // dfR/dPosej
@@ -313,7 +314,7 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i, const 
     // dfP/dVj
     Z_3x3,
     // dfV/dVj
-    Ri_transpose_matrix,
+    Ri.transpose(),
     // dfR/dVj
     Z_3x3;
   }
