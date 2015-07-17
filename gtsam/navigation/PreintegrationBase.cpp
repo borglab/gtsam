@@ -240,29 +240,17 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i, const 
   const Vector3 biascorrectedOmega = biascorrectedThetaRij(biasIncr.gyroscope(),
                                                            H5 ? &D_cThetaRij_biasOmegaIncr : 0);
 
-  // Coriolis term, note inconsistent with AHRS, where coriolisHat is *after* integration
+  // Coriolis term, NOTE inconsistent with AHRS, where coriolisHat is *after* integration
   const Vector3 coriolis = integrateCoriolis(rot_i, omegaCoriolis);
   const Vector3 correctedOmega = biascorrectedOmega - coriolis;
 
-  // Calculate Jacobians, matrices below needed only for some Jacobians...
-  Vector3 fR;
-  Matrix3 D_cDeltaRij_cOmega, D_coriolis, D_fR_fRrot;
-
-  // This is done to save computation: we ask for the jacobians only when they are needed
-  Rot3 fRrot;
+  // Residual rotation error
+  Matrix3 D_cDeltaRij_cOmega;
+  const Rot3 correctedDeltaRij = Rot3::Expmap(correctedOmega, H1 || H5 ? &D_cDeltaRij_cOmega : 0);
   const Rot3 RiBetweenRj = rot_i.between(rot_j);
-  if (H1 || H2 || H3 || H4 || H5) {
-    const Rot3 correctedDeltaRij = Rot3::Expmap(correctedOmega, D_cDeltaRij_cOmega);
-    // Residual rotation error
-    fRrot = correctedDeltaRij.between(RiBetweenRj);
-    fR = Rot3::Logmap(fRrot, D_fR_fRrot);
-    D_coriolis = -D_cDeltaRij_cOmega * skewSymmetric(coriolis);
-  } else {
-    const Rot3 correctedDeltaRij = Rot3::Expmap(correctedOmega);
-    // Residual rotation error
-    fRrot = correctedDeltaRij.between(RiBetweenRj);
-    fR = Rot3::Logmap(fRrot);
-  }
+  const Rot3 fRrot = correctedDeltaRij.between(RiBetweenRj);
+  Matrix3 D_fR_fRrot;
+  const Vector3 fR = Rot3::Logmap(fRrot, H1 || H3 || H5 ? &D_fR_fRrot : 0);
 
   const double dt = deltaTij(), dt2 = dt*dt;
   Matrix3 Ritranspose_omegaCoriolisHat;
@@ -270,6 +258,7 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i, const 
     Ritranspose_omegaCoriolisHat = Ri.transpose() * skewSymmetric(omegaCoriolis);
 
   if (H1) {
+    const Matrix3 D_coriolis = -D_cDeltaRij_cOmega * skewSymmetric(coriolis);
     Matrix3 dfPdPi = -I_3x3, dfVdPi = Z_3x3;
     if (use2ndOrderCoriolis) {
       // this is the same as: Ri.transpose() * omegaCoriolisHat * omegaCoriolisHat * Ri
