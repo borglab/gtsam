@@ -246,10 +246,9 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i, const 
 
   // Calculate Jacobians, matrices below needed only for some Jacobians...
   Vector3 fR;
-  Matrix3 D_cDeltaRij_cOmega, D_coriolis, D_fR_fRrot, Ritranspose_omegaCoriolisHat;
+  Matrix3 D_cDeltaRij_cOmega, D_coriolis, D_fR_fRrot;
 
   // This is done to save computation: we ask for the jacobians only when they are needed
-  const double dt = deltaTij(), dt2 = dt*dt;
   Rot3 fRrot;
   const Rot3 RiBetweenRj = rot_i.between(rot_j);
   if (H1 || H2 || H3 || H4 || H5) {
@@ -265,6 +264,8 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i, const 
     fR = Rot3::Logmap(fRrot);
   }
 
+  const double dt = deltaTij(), dt2 = dt*dt;
+  Matrix3 Ritranspose_omegaCoriolisHat;
   if (H1 || H2)
     Ritranspose_omegaCoriolisHat = Ri.transpose() * skewSymmetric(omegaCoriolis);
 
@@ -278,56 +279,38 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i, const 
       dfVdPi += temp * dt;
     }
     (*H1) <<
-    // dfP/dRi
-    skewSymmetric(fp + deltaPij_biascorrected),
-    // dfP/dPi
-    dfPdPi,
-    // dfV/dRi
-    skewSymmetric(fv + deltaVij_biascorrected),
-    // dfV/dPi
-    dfVdPi,
-    // dfR/dRi
-    D_fR_fRrot * (-rot_j.between(rot_i).matrix() - fRrot.inverse().matrix() * D_coriolis),
-    // dfR/dPi
-    Z_3x3;
+    skewSymmetric(fp + deltaPij_biascorrected),                                             // dfP/dRi
+    dfPdPi,                                                                                 // dfP/dPi
+    skewSymmetric(fv + deltaVij_biascorrected),                                             // dfV/dRi
+    dfVdPi,                                                                                 // dfV/dPi
+    D_fR_fRrot * (-rot_j.between(rot_i).matrix() - fRrot.inverse().matrix() * D_coriolis),  // dfR/dRi
+    Z_3x3;                                                                                  // dfR/dPi
   }
   if (H2) {
     (*H2) <<
-    // dfP/dVi
-    -Ri.transpose() * dt + Ritranspose_omegaCoriolisHat * dt2,  // Coriolis term - we got rid of the 2 wrt ins paper
-    // dfV/dVi
-    -Ri.transpose() + 2 * Ritranspose_omegaCoriolisHat * dt,  // Coriolis term
-    // dfR/dVi
-    Z_3x3;
+    -Ri.transpose() * dt + Ritranspose_omegaCoriolisHat * dt2,  // dfP/dVi
+    -Ri.transpose() + 2 * Ritranspose_omegaCoriolisHat * dt,    // dfV/dVi
+    Z_3x3;                                                      // dfR/dVi
   }
   if (H3) {
     (*H3) <<
-    // dfP/dPosej
-    Z_3x3, Ri.transpose() * rot_j.matrix(),
-    // dfV/dPosej
-    Matrix::Zero(3, 6),
-    // dfR/dPosej
-    D_fR_fRrot, Z_3x3;
+    Z_3x3, Ri.transpose() * rot_j.matrix(), // dfP/dPosej
+    Matrix::Zero(3, 6),                     // dfV/dPosej
+    D_fR_fRrot, Z_3x3;                      // dfR/dPosej
   }
   if (H4) {
     (*H4) <<
-    // dfP/dVj
-    Z_3x3,
-    // dfV/dVj
-    Ri.transpose(),
-    // dfR/dVj
-    Z_3x3;
+    Z_3x3,          // dfP/dVj
+    Ri.transpose(), // dfV/dVj
+    Z_3x3;          // dfR/dVj
   }
   if (H5) {
     // H5 by this point already contains 3*3 biascorrectedThetaRij derivative
     const Matrix3 JbiasOmega = D_cDeltaRij_cOmega * D_cThetaRij_biasOmegaIncr;
     (*H5) <<
-    // dfP/dBias
-    -delPdelBiasAcc(), -delPdelBiasOmega(),
-    // dfV/dBias
-    -delVdelBiasAcc(), -delVdelBiasOmega(),
-    // dfR/dBias
-    Z_3x3, D_fR_fRrot * (-fRrot.inverse().matrix() * JbiasOmega);
+    -delPdelBiasAcc(), -delPdelBiasOmega(),                         // dfP/dBias
+    -delVdelBiasAcc(), -delVdelBiasOmega(),                         // dfV/dBias
+    Z_3x3, D_fR_fRrot * (-fRrot.inverse().matrix() * JbiasOmega);   // dfR/dBias
   }
   Vector9 r;
   r << fp, fv, fR;
