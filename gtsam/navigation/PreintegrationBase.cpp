@@ -268,41 +268,41 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i, const 
       dfVdPi += temp * dt;
     }
     (*H1) <<
+    D_fR_fRrot * (-rot_j.between(rot_i).matrix() - fRrot.inverse().matrix() * D_coriolis),  // dfR/dRi
+    Z_3x3,                                                                                  // dfR/dPi
     skewSymmetric(fp + deltaPij_biascorrected),                                             // dfP/dRi
     dfPdPi,                                                                                 // dfP/dPi
     skewSymmetric(fv + deltaVij_biascorrected),                                             // dfV/dRi
-    dfVdPi,                                                                                 // dfV/dPi
-    D_fR_fRrot * (-rot_j.between(rot_i).matrix() - fRrot.inverse().matrix() * D_coriolis),  // dfR/dRi
-    Z_3x3;                                                                                  // dfR/dPi
+    dfVdPi;                                                                                 // dfV/dPi
   }
   if (H2) {
     (*H2) <<
+    Z_3x3,                                                      // dfR/dVi
     -Ri.transpose() * dt + Ritranspose_omegaCoriolisHat * dt2,  // dfP/dVi
-    -Ri.transpose() + 2 * Ritranspose_omegaCoriolisHat * dt,    // dfV/dVi
-    Z_3x3;                                                      // dfR/dVi
+    -Ri.transpose() + 2 * Ritranspose_omegaCoriolisHat * dt;    // dfV/dVi
   }
   if (H3) {
     (*H3) <<
+    D_fR_fRrot, Z_3x3,                      // dfR/dPosej
     Z_3x3, Ri.transpose() * rot_j.matrix(), // dfP/dPosej
-    Matrix::Zero(3, 6),                     // dfV/dPosej
-    D_fR_fRrot, Z_3x3;                      // dfR/dPosej
+    Matrix::Zero(3, 6);                     // dfV/dPosej
   }
   if (H4) {
     (*H4) <<
+    Z_3x3,          // dfR/dVj
     Z_3x3,          // dfP/dVj
-    Ri.transpose(), // dfV/dVj
-    Z_3x3;          // dfR/dVj
+    Ri.transpose(); // dfV/dVj
   }
   if (H5) {
     // H5 by this point already contains 3*3 biascorrectedThetaRij derivative
     const Matrix3 JbiasOmega = D_cDeltaRij_cOmega * D_cThetaRij_biasOmegaIncr;
     (*H5) <<
+    Z_3x3, D_fR_fRrot * (-fRrot.inverse().matrix() * JbiasOmega),   // dfR/dBias
     -delPdelBiasAcc(), -delPdelBiasOmega(),                         // dfP/dBias
-    -delVdelBiasAcc(), -delVdelBiasOmega(),                         // dfV/dBias
-    Z_3x3, D_fR_fRrot * (-fRrot.inverse().matrix() * JbiasOmega);   // dfR/dBias
+    -delVdelBiasAcc(), -delVdelBiasOmega();                         // dfV/dBias
   }
   Vector9 r;
-  r << fp, fv, fR;
+  r << fR, fp, fv;
   return r;
 }
 

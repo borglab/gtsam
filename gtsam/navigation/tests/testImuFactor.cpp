@@ -47,7 +47,7 @@ Rot3 evaluateRotationError(const ImuFactor& factor, const Pose3& pose_i,
     const Vector3& vel_i, const Pose3& pose_j, const Vector3& vel_j,
     const imuBias::ConstantBias& bias) {
   return Rot3::Expmap(
-      factor.evaluateError(pose_i, vel_i, pose_j, vel_j, bias).tail(3));
+      factor.evaluateError(pose_i, vel_i, pose_j, vel_j, bias).head(3));
 }
 
 // Auxiliary functions to test Jacobians F and G used for
@@ -247,16 +247,16 @@ TEST(ImuFactor, ErrorAndJacobians) {
   // Jacobians are around zero, so the rotation part is the same as:
   Matrix H1Rot3 = numericalDerivative11<Rot3, Pose3>(
       boost::bind(&evaluateRotationError, factor, _1, v1, x2, v2, bias), x1);
-  EXPECT(assert_equal(H1Rot3, H1a.bottomRows(3)));
+  EXPECT(assert_equal(H1Rot3, H1a.topRows(3)));
 
   Matrix H3Rot3 = numericalDerivative11<Rot3, Pose3>(
       boost::bind(&evaluateRotationError, factor, x1, v1, _1, v2, bias), x2);
-  EXPECT(assert_equal(H3Rot3, H3a.bottomRows(3)));
+  EXPECT(assert_equal(H3Rot3, H3a.topRows(3)));
 
   // Evaluate error with wrong values
   Vector3 v2_wrong = v2 + Vector3(0.1, 0.1, 0.1);
   values.update(V(2), v2_wrong);
-  errorExpected << 0, 0, 0, 0.0724744871, 0.040715657, 0.151952901, 0, 0, 0;
+  errorExpected << 0, 0, 0, 0, 0, 0, 0.0724744871, 0.040715657, 0.151952901;
   EXPECT(
       assert_equal(errorExpected,
           factor.evaluateError(x1, v1, x2, v2_wrong, bias), 1e-6));
