@@ -55,7 +55,7 @@ public:
         traits<H>::Compose(this->second,other.second));
   }
   ProductLieGroup inverse() const {
-    return ProductLieGroup(this->first.inverse(), this->second.inverse());
+    return ProductLieGroup(traits<G>::Inverse(this->first), traits<H>::Inverse(this->second));
   }
   ProductLieGroup compose(const ProductLieGroup& g) const {
     return (*this) * g;
