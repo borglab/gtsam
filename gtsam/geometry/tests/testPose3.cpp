@@ -472,15 +472,6 @@ TEST( Pose3, transformPose_to)
 }
 
 /* ************************************************************************* */
-TEST(Pose3, Retract_LocalCoordinates)
-{
-  Vector6 d;
-  d << 1,2,3,4,5,6; d/=10;
-  R = Rot3::Retract(d.head<3>());
-  Pose3 t = Pose3::Retract(d);
-  EXPECT(assert_equal(d, Pose3::LocalCoordinates(t)));
-}
-/* ************************************************************************* */
 TEST(Pose3, retract_localCoordinates)
 {
   Vector6 d12;
