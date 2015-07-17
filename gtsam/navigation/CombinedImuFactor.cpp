@@ -108,7 +108,7 @@ void CombinedImuFactor::CombinedPreintegratedMeasurements::integrateMeasurement(
   Matrix3 H_angles_biasomega = -D_Rincr_integratedOmega * deltaT;
 
   // overall Jacobian wrt preintegrated measurements (df/dx)
-  Matrix F(15, 15);
+  Eigen::Matrix<double,15,15> F;
   // for documentation:
   //  F << I_3x3,    I_3x3 * deltaT,   Z_3x3,             Z_3x3,            Z_3x3,
   //       Z_3x3,    I_3x3,            H_vel_angles,      H_vel_biasacc,    Z_3x3,
@@ -123,9 +123,10 @@ void CombinedImuFactor::CombinedPreintegratedMeasurements::integrateMeasurement(
 
   // first order uncertainty propagation
   // Optimized matrix multiplication   (1/deltaT) * G * measurementCovariance * G.transpose()
-  Matrix G_measCov_Gt = Matrix::Zero(15, 15);
+  Eigen::Matrix<double,15,15> G_measCov_Gt;
+  G_measCov_Gt.setZero(15, 15);
 
-//   BLOCK DIAGONAL TERMS
+  // BLOCK DIAGONAL TERMS
   G_measCov_Gt.block<3, 3>(0, 0) = deltaT * integrationCovariance();
   G_measCov_Gt.block<3, 3>(3, 3) = (1 / deltaT) * (H_vel_biasacc)
       * (accelerometerCovariance() + biasAccOmegaInit_.block<3, 3>(0, 0))
@@ -135,6 +136,7 @@ void CombinedImuFactor::CombinedPreintegratedMeasurements::integrateMeasurement(
       * (H_angles_biasomega.transpose());
   G_measCov_Gt.block<3, 3>(9, 9) = (1 / deltaT) * biasAccCovariance_;
   G_measCov_Gt.block<3, 3>(12, 12) = (1 / deltaT) * biasOmegaCovariance_;
+
   // OFF BLOCK DIAGONAL TERMS
   Matrix3 block23 = H_vel_biasacc * biasAccOmegaInit_.block<3, 3>(3, 0)
       * H_angles_biasomega.transpose();
@@ -234,25 +236,25 @@ Vector CombinedImuFactor::evaluateError(const Pose3& pose_i,
     H1->resize(15, 6);
     H1->block<9, 6>(0, 0) = D_r_pose_i;
     // adding: [dBiasAcc/dPi ; dBiasOmega/dPi]
-    H1->block<6, 6>(9, 0) = Z_6x6;
+    H1->block<6, 6>(9, 0).setZero();
   }
   if (H2) {
     H2->resize(15, 3);
     H2->block<9, 3>(0, 0) = D_r_vel_i;
     // adding: [dBiasAcc/dVi ; dBiasOmega/dVi]
-    H2->block<6, 3>(9, 0) = Matrix::Zero(6, 3);
+    H2->block<6, 3>(9, 0).setZero();
   }
   if (H3) {
     H3->resize(15, 6);
     H3->block<9, 6>(0, 0) = D_r_pose_j;
     // adding: [dBiasAcc/dPj ; dBiasOmega/dPj]
-    H3->block<6, 6>(9, 0) = Z_6x6;
+    H3->block<6, 6>(9, 0).setZero();
   }
   if (H4) {
     H4->resize(15, 3);
     H4->block<9, 3>(0, 0) = D_r_vel_j;
     // adding: [dBiasAcc/dVi ; dBiasOmega/dVi]
-    H4->block<6, 3>(9, 0) = Matrix::Zero(6, 3);
+    H4->block<6, 3>(9, 0).setZero();
   }
   if (H5) {
     H5->resize(15, 6);
@@ -262,7 +264,7 @@ Vector CombinedImuFactor::evaluateError(const Pose3& pose_i,
   }
   if (H6) {
     H6->resize(15, 6);
-    H6->block<9, 6>(0, 0) = Matrix::Zero(9, 6);
+    H6->block<9, 6>(0, 0).setZero();
     // adding: [dBiasAcc/dBias_j ; dBiasOmega/dBias_j]
     H6->block<6, 6>(9, 0) = Hbias_j;
   }
