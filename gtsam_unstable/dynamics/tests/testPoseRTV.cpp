@@ -86,21 +86,23 @@ TEST( testPoseRTV, Lie ) {
 
   Vector delta(9);
   delta << 0.1, 0.1, 0.1, 0.2, 0.3, 0.4,-0.1,-0.2,-0.3;
-  Rot3 rot2 = rot.retract(repeat(3, 0.1));
-  Point3 pt2 = pt + rot * Point3(0.2, 0.3, 0.4);
-  Velocity3 vel2 = vel + rot * Velocity3(-0.1,-0.2,-0.3);
-  PoseRTV state2(pt2, rot2, vel2);
-  EXPECT(assert_equal(state2, (PoseRTV)state1.retract(delta), 1e-1));
-  EXPECT(assert_equal(delta, state1.localCoordinates(state2), 1e-1));
-  EXPECT(assert_equal(delta, -state2.localCoordinates(state1), 1e-1));
+  Pose3 pose2 = Pose3(rot, pt).retract(delta.head<6>());
+  Velocity3 vel2 = vel + Velocity3(-0.1, -0.2, -0.3);
+  PoseRTV state2(pose2.translation(), pose2.rotation(), vel2);
+  EXPECT(assert_equal(state2, (PoseRTV)state1.retract(delta), tol));
+  EXPECT(assert_equal(delta, state1.localCoordinates(state2), tol));
 
   // roundtrip from state2 to state3 and back
   PoseRTV state3 = state2.retract(delta);
-  EXPECT(assert_equal(delta, state2.localCoordinates(state3), 1e-1));
+  EXPECT(assert_equal(delta, state2.localCoordinates(state3), tol));
 
-  // roundtrip from state3 to state4 and back, with expmap
+  // roundtrip from state3 to state4 and back, with expmap.
   PoseRTV state4 = state3.expmap(delta);
-  EXPECT(assert_equal(delta, state3.logmap(state4), 1e-1));
+  EXPECT(assert_equal(delta, state3.logmap(state4), tol));
+
+  // For the expmap/logmap (not necessarily retract/local) -delta goes other way
+  EXPECT(assert_equal(state3, (PoseRTV)state4.expmap(-delta), tol));
+  EXPECT(assert_equal(delta, -state4.logmap(state3), tol));
 }
 
 /* ************************************************************************* */
