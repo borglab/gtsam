@@ -146,57 +146,50 @@ void PreintegrationBase::correctMeasurementsByBiasAndSensorPose(
 
 /// Predict state at time j
 //------------------------------------------------------------------------------
-PoseVelocityBias PreintegrationBase::predict(
-    const Pose3& pose_i, const Vector3& vel_i, const imuBias::ConstantBias& bias_i,
-    const Vector3& gravity, const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis,
-    boost::optional<Vector3&> deltaPij_biascorrected_out,
-    boost::optional<Vector3&> deltaVij_biascorrected_out) const {
-
-  const imuBias::ConstantBias biasIncr = bias_i - biasHat();
-  const Vector3& biasAccIncr = biasIncr.accelerometer();
-  const Vector3& biasOmegaIncr = biasIncr.gyroscope();
-
-  const Rot3& Rot_i = pose_i.rotation();
-  const Matrix3 Rot_i_matrix = Rot_i.matrix();
-  const Vector3 pos_i = pose_i.translation().vector();
-
-  // Predict state at time j
-  /* ---------------------------------------------------------------------------------------------*/
-  const Vector3 deltaPij_biascorrected = deltaPij() + delPdelBiasAcc() * biasAccIncr
-      + delPdelBiasOmega() * biasOmegaIncr;
-  if (deltaPij_biascorrected_out)  // if desired, store this
-    *deltaPij_biascorrected_out = deltaPij_biascorrected;
+PoseVelocityBias PreintegrationBase::predict(const Pose3& pose_i,
+    const Vector3& vel_i, const imuBias::ConstantBias& bias_i,
+    const Vector3& gravity, const Vector3& omegaCoriolis,
+    const Rot3& deltaRij_biascorrected, const Vector3& deltaPij_biascorrected,
+    const Vector3& deltaVij_biascorrected,
+    const bool use2ndOrderCoriolis) const {
 
   const double dt = deltaTij(), dt2 = dt * dt;
-  Vector3 pos_j = pos_i + Rot_i_matrix * deltaPij_biascorrected + vel_i * dt
-      - omegaCoriolis.cross(vel_i) * dt2  // Coriolis term - we got rid of the 2 wrt ins paper
-  + 0.5 * gravity * dt2;
 
-  const Vector3 deltaVij_biascorrected = deltaVij() + delVdelBiasAcc() * biasAccIncr
-      + delVdelBiasOmega() * biasOmegaIncr;
-  if (deltaVij_biascorrected_out)  // if desired, store this
-    *deltaVij_biascorrected_out = deltaVij_biascorrected;
+  // Rotation
+  const Matrix3 Ri = pose_i.rotation().matrix();
+  const Vector3 biascorrectedOmega = Rot3::Logmap(deltaRij_biascorrected);
+  const Vector3 dR = biascorrectedOmega
+      - Ri.transpose() * omegaCoriolis * dt; // Coriolis term
 
-  Vector3 vel_j = Vector3(vel_i + Rot_i_matrix * deltaVij_biascorrected -
-                          2 * omegaCoriolis.cross(vel_i) * dt  // Coriolis term
-                          + gravity * dt);
+  // Translation
+  Vector3 dP = Ri * deltaPij_biascorrected + vel_i * dt + 0.5 * gravity * dt2
+      - omegaCoriolis.cross(vel_i) * dt2; // Coriolis term - we got rid of the 2 wrt INS paper
+
+  // Velocity
+  Vector3 dV = Ri * deltaVij_biascorrected + gravity * dt
+      - 2 * omegaCoriolis.cross(vel_i) * dt; // Coriolis term
 
   if (use2ndOrderCoriolis) {
-    pos_j += -0.5 * omegaCoriolis.cross(omegaCoriolis.cross(pos_i)) * dt2;  // for position
-    vel_j += -omegaCoriolis.cross(omegaCoriolis.cross(pos_i)) * dt;  // for velocity
+    Vector3 v = omegaCoriolis.cross(omegaCoriolis.cross(pose_i.translation().vector()));
+    dP -= 0.5 * v * dt2;
+    dV -= v * dt;
   }
 
-  const Rot3 deltaRij_biascorrected = biascorrectedDeltaRij(biasOmegaIncr);
-  // deltaRij_biascorrected = deltaRij * expmap(delRdelBiasOmega * biasOmegaIncr)
+  // TODO(frank): pose update below is separate expmap for R,t. Is that kosher?
+  const Pose3 pose_j = Pose3(pose_i.rotation().expmap(dR), pose_i.translation() + Point3(dP));
+  return PoseVelocityBias(pose_j, vel_i + dV, bias_i); // bias is predicted as a constant
+}
 
-  const Vector3 biascorrectedOmega = Rot3::Logmap(deltaRij_biascorrected);
-  const Vector3 correctedOmega = biascorrectedOmega
-      - Rot_i_matrix.transpose() * omegaCoriolis * dt;  // Coriolis term
-  const Rot3 correctedDeltaRij = Rot3::Expmap(correctedOmega);
-  const Rot3 Rot_j = Rot_i.compose(correctedDeltaRij);
-
-  const Pose3 pose_j = Pose3(Rot_j, Point3(pos_j));
-  return PoseVelocityBias(pose_j, vel_j, bias_i);  // bias is predicted as a constant
+/// Predict state at time j
+//------------------------------------------------------------------------------
+PoseVelocityBias PreintegrationBase::predict(
+    const Pose3& pose_i, const Vector3& vel_i, const imuBias::ConstantBias& bias_i,
+    const Vector3& gravity, const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis) const {
+  const imuBias::ConstantBias biasIncr = bias_i - biasHat_;
+  return predict(pose_i, vel_i, bias_i, gravity, omegaCoriolis,
+      biascorrectedDeltaRij(biasIncr.gyroscope()),
+      biascorrectedDeltaPij(biasIncr), biascorrectedDeltaVij(biasIncr),
+      use2ndOrderCoriolis);
 }
 
 /// Compute errors w.r.t. preintegrated measurements and Jacobians wrpt pose_i, vel_i, bias_i, pose_j, bias_j
@@ -213,9 +206,6 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i, const 
                                                      OptionalJacobian<9, 3> H4,
                                                      OptionalJacobian<9, 6> H5) const {
 
-  // We need the mismatch w.r.t. the biases used for preintegration
-  const Vector3 biasOmegaIncr = bias_i.gyroscope() - biasHat().gyroscope();
-
   // we give some shorter name to rotations and translations
   const Rot3& Ri = pose_i.rotation();
   const Matrix3 Ri_transpose_matrix = Ri.transpose();
@@ -225,10 +215,13 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i, const 
 
   // Evaluate residual error, according to [3]
   /* ---------------------------------------------------------------------------------------------------- */
-  Vector3 deltaPij_biascorrected, deltaVij_biascorrected;
-  PoseVelocityBias predictedState_j = predict(pose_i, vel_i, bias_i, gravity, omegaCoriolis,
-                                              use2ndOrderCoriolis, deltaPij_biascorrected,
-                                              deltaVij_biascorrected);
+  const imuBias::ConstantBias biasIncr = bias_i - biasHat_;
+  const Rot3 deltaRij_biascorrected = biascorrectedDeltaRij(biasIncr.gyroscope());
+  const Vector3 deltaPij_biascorrected = biascorrectedDeltaPij(biasIncr);
+  const Vector3 deltaVij_biascorrected = biascorrectedDeltaVij(biasIncr);
+  PoseVelocityBias predictedState_j = predict(pose_i, vel_i, bias_i, gravity,
+      omegaCoriolis, deltaRij_biascorrected, deltaPij_biascorrected,
+      deltaVij_biascorrected, use2ndOrderCoriolis);
 
   // Ri.transpose() is important here to preserve a model with *additive* Gaussian noise of correct covariance
   const Vector3 fp = Ri_transpose_matrix * (pos_j - predictedState_j.pose.translation().vector());
@@ -242,8 +235,9 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i, const 
   // Get Get so<3> version of bias corrected rotation
   // If H5 is asked for, we will need the Jacobian, which we store in H5
   // H5 will then be corrected below to take into account the Coriolis effect
+  // TODO(frank): biascorrectedThetaRij calculates deltaRij_biascorrected, which we already have
   Matrix3 D_cThetaRij_biasOmegaIncr;
-  const Vector3 biascorrectedOmega = biascorrectedThetaRij(biasOmegaIncr,
+  const Vector3 biascorrectedOmega = biascorrectedThetaRij(biasIncr.gyroscope(),
                                                            H5 ? &D_cThetaRij_biasOmegaIncr : 0);
 
   // Coriolis term, note inconsistent with AHRS, where coriolisHat is *after* integration

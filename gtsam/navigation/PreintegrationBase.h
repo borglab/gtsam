@@ -138,12 +138,27 @@ class PreintegrationBase : public PreintegratedRotation {
                                               Vector3& correctedOmega,
                                               boost::optional<const Pose3&> body_P_sensor);
 
+  Vector3 biascorrectedDeltaPij(const imuBias::ConstantBias& biasIncr) const {
+    return deltaPij_ + delPdelBiasAcc_ * biasIncr.accelerometer()
+        + delPdelBiasOmega_ * biasIncr.gyroscope();
+  }
+
+  Vector3 biascorrectedDeltaVij(const imuBias::ConstantBias& biasIncr) const {
+    return deltaVij_ + delVdelBiasAcc_ * biasIncr.accelerometer()
+        + delVdelBiasOmega_ * biasIncr.gyroscope();
+  }
+
+  /// Predict state at time j, with bias-corrected quantities given
+  PoseVelocityBias predict(const Pose3& pose_i, const Vector3& vel_i,
+      const imuBias::ConstantBias& bias_i, const Vector3& gravity, const Vector3& omegaCoriolis,
+      const Rot3& deltaRij_biascorrected,
+      const Vector3& deltaPij_biascorrected, const Vector3& deltaVij_biascorrected,
+      const bool use2ndOrderCoriolis = false) const;
+
   /// Predict state at time j
-  PoseVelocityBias predict(
-      const Pose3& pose_i, const Vector3& vel_i, const imuBias::ConstantBias& bias_i,
-      const Vector3& gravity, const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis = false,
-      boost::optional<Vector3&> deltaPij_biascorrected_out = boost::none,
-      boost::optional<Vector3&> deltaVij_biascorrected_out = boost::none) const;
+  PoseVelocityBias predict(const Pose3& pose_i, const Vector3& vel_i,
+      const imuBias::ConstantBias& bias_i, const Vector3& gravity,
+      const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis = false) const;
 
   /// Compute errors w.r.t. preintegrated measurements and jacobians wrt pose_i, vel_i, bias_i, pose_j, bias_j
   Vector9 computeErrorAndJacobians(const Pose3& pose_i, const Vector3& vel_i, const Pose3& pose_j,
