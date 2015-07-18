@@ -13,7 +13,7 @@
 namespace gtsam {
 
 /// Syntactic sugar to clarify components
-typedef Point3 Velocity3;
+typedef Vector3 Velocity3;
 
 /**
  * Robot state for use with IMU measurements
@@ -66,7 +66,7 @@ public:
   // and avoidance of Point3
   Vector vector() const;
   Vector translationVec() const { return pose().translation().vector(); }
-  Vector velocityVec() const { return velocity().vector(); }
+  const Velocity3& velocityVec() const { return velocity(); }
 
   // testable
   bool equals(const PoseRTV& other, double tol=1e-6) const;

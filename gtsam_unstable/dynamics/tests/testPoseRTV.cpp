@@ -198,7 +198,7 @@ TEST( testPoseRTV, transformed_from_1 ) {
 
   Matrix actDTrans, actDGlobal;
   PoseRTV actual = start.transformed_from(transform, actDGlobal, actDTrans);
-  PoseRTV expected(transform.compose(start.pose()), transform.rotation().rotate(V));
+  PoseRTV expected(transform.compose(start.pose()), transform.rotation().matrix() * V);
   EXPECT(assert_equal(expected, actual, tol));
 
   Matrix numDGlobal = numericalDerivative21(transformed_from_proxy, start, transform, 1e-5); // At 1e-8, fails
@@ -217,7 +217,7 @@ TEST( testPoseRTV, transformed_from_2 ) {
 
   Matrix actDTrans, actDGlobal;
   PoseRTV actual = start.transformed_from(transform, actDGlobal, actDTrans);
-  PoseRTV expected(transform.compose(start.pose()), transform.rotation().rotate(V));
+  PoseRTV expected(transform.compose(start.pose()), transform.rotation().matrix() * V);
   EXPECT(assert_equal(expected, actual, tol));
 
   Matrix numDGlobal = numericalDerivative21(transformed_from_proxy, start, transform, 1e-5); // At 1e-8, fails

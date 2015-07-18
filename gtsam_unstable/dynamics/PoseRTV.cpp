@@ -38,13 +38,14 @@ Vector PoseRTV::vector() const {
   Vector rtv(9);
   rtv.head(3) = rotation().xyz();
   rtv.segment(3,3) = translation().vector();
-  rtv.tail(3) = velocity().vector();
+  rtv.tail(3) = velocity();
   return rtv;
 }
 
 /* ************************************************************************* */
 bool PoseRTV::equals(const PoseRTV& other, double tol) const {
-  return pose().equals(other.pose(), tol) && velocity().equals(other.velocity(), tol);
+  return pose().equals(other.pose(), tol)
+      && equal_with_abs_tol(velocity(), other.velocity(), tol);
 }
 
 /* ************************************************************************* */
@@ -52,7 +53,7 @@ void PoseRTV::print(const string& s) const {
   cout << s << ":" << endl;
   gtsam::print((Vector)R().xyz(), "  R:rpy");
   t().print("  T");
-  velocity().print("  V");
+  gtsam::print((Vector)velocity(), "  V");
 }
 
 /* ************************************************************************* */
@@ -137,7 +138,7 @@ Vector6 PoseRTV::imuPrediction(const PoseRTV& x2, double dt) const {
   Vector6 imu;
 
   // acceleration
-  Vector3 accel = (v2-v1).vector() / dt;
+  Vector3 accel = (v2-v1) / dt;
   imu.head<3>() = r2.transpose() * (accel - kGravity);
 
   // rotation rates
@@ -160,7 +161,7 @@ Vector6 PoseRTV::imuPrediction(const PoseRTV& x2, double dt) const {
 Point3 PoseRTV::translationIntegration(const Rot3& r2, const Velocity3& v2, double dt) const {
   // predict point for constraint
   // NOTE: uses simple Euler approach for prediction
-  Point3 pred_t2 = t() + v2 * dt;
+  Point3 pred_t2 = t().retract(v2 * dt);
   return pred_t2;
 }
 
@@ -187,7 +188,7 @@ PoseRTV PoseRTV::transformed_from(const Pose3& trans, ChartJacobian Dglobal,
 
   // Note that we rotate the velocity
   Matrix3 D_newvel_R, D_newvel_v;
-  Velocity3 newvel = trans.rotation().rotate(velocity(), D_newvel_R, D_newvel_v);
+  Velocity3 newvel = trans.rotation().rotate(Point3(velocity()), D_newvel_R, D_newvel_v).vector();
 
   if (Dglobal) {
     Dglobal->setZero();
