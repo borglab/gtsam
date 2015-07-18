@@ -34,11 +34,11 @@ public:
   PoseRTV(const Rot3& rot, const Point3& t, const Velocity3& vel)
   : Base(Pose3(rot, t), vel) {}
   explicit PoseRTV(const Point3& t)
-  : Base(Pose3(Rot3(), t),Velocity3()) {}
+  : Base(Pose3(Rot3(), t),Vector3::Zero()) {}
   PoseRTV(const Pose3& pose, const Velocity3& vel)
   : Base(pose, vel) {}
   explicit PoseRTV(const Pose3& pose)
-  : Base(pose,Velocity3()) {}
+  : Base(pose,Vector3::Zero()) {}
 
   // Construct from Base
   PoseRTV(const Base& base)

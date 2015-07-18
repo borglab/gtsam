@@ -32,7 +32,7 @@ TEST( testPoseRTV, constructors ) {
   PoseRTV state2;
   EXPECT(assert_equal(Point3(),  state2.t(), tol));
   EXPECT(assert_equal(Rot3(), state2.R(), tol));
-  EXPECT(assert_equal(Velocity3(), state2.v(), tol));
+  EXPECT(assert_equal(zero(3), state2.v(), tol));
   EXPECT(assert_equal(Pose3(), state2.pose(), tol));
 
   PoseRTV state3(Pose3(rot, pt), vel);
@@ -44,7 +44,7 @@ TEST( testPoseRTV, constructors ) {
   PoseRTV state4(Pose3(rot, pt));
   EXPECT(assert_equal(pt,  state4.t(), tol));
   EXPECT(assert_equal(rot, state4.R(), tol));
-  EXPECT(assert_equal(Velocity3(), state4.v(), tol));
+  EXPECT(assert_equal(zero(3), state4.v(), tol));
   EXPECT(assert_equal(Pose3(rot, pt), state4.pose(), tol));
 
   Vector vec_init = (Vector(9) << 0.1, 0.2, 0.3,  1.0, 2.0, 3.0,  0.4, 0.5, 0.6).finished();
