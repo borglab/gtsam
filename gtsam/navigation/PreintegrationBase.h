@@ -183,6 +183,14 @@ class PreintegrationBase : public PreintegratedRotation {
         + delVdelBiasOmega_ * biasIncr.gyroscope();
   }
 
+  /// Integrate coriolis correction in body frame state_i
+  Vector9 integrateCoriolis(const NavState& state_i) const;
+
+  /// Recombine the preintegration, gravity, and coriolis in a single NavState tangent vector
+  Vector9 recombinedPrediction(const NavState& state_i,
+      const Rot3& deltaRij_biascorrected, const Vector3& deltaPij_biascorrected,
+      const Vector3& deltaVij_biascorrected) const;
+
   /// Predict state at time j, with bias-corrected quantities given
   NavState predict(const NavState& navState, const Rot3& deltaRij_biascorrected,
       const Vector3& deltaPij_biascorrected,

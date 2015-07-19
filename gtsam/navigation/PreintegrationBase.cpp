@@ -129,38 +129,68 @@ void PreintegrationBase::correctMeasurementsByBiasAndSensorPose(
   }
 }
 
+static Eigen::Block<Vector9,3,1> dR(Vector9& v) { return v.segment<3>(0); }
+static Eigen::Block<Vector9,3,1> dP(Vector9& v) { return v.segment<3>(3); }
+static Eigen::Block<Vector9,3,1> dV(Vector9& v) { return v.segment<3>(6); }
+
 //------------------------------------------------------------------------------
-NavState PreintegrationBase::predict(const NavState& state_i,
+Vector9 PreintegrationBase::integrateCoriolis(const NavState& state_i) const {
+  Vector9 result = Vector9::Zero();
+  if (p().omegaCoriolis) {
+    const Pose3& pose_i = state_i.pose();
+    const Vector3& vel_i = state_i.velocity();
+    const Matrix3 Ri = pose_i.rotation().matrix();
+    const double dt = deltaTij(), dt2 = dt * dt;
+
+    const Vector3& omegaCoriolis = *p().omegaCoriolis;
+    dR(result) -= Ri.transpose() * omegaCoriolis * dt;
+    dP(result) -= omegaCoriolis.cross(vel_i) * dt2; // NOTE(luca): we got rid of the 2 wrt INS paper
+    dV(result) -= 2 * omegaCoriolis.cross(vel_i) * dt;
+    if (p().use2ndOrderCoriolis) {
+      Vector3 temp = omegaCoriolis.cross(
+          omegaCoriolis.cross(pose_i.translation().vector()));
+      dP(result) -= 0.5 * temp * dt2;
+      dV(result) -= temp * dt;
+    }
+  }
+  return result;
+}
+
+//------------------------------------------------------------------------------
+Vector9 PreintegrationBase::recombinedPrediction(const NavState& state_i,
     const Rot3& deltaRij_biascorrected,
     const Vector3& deltaPij_biascorrected,
     const Vector3& deltaVij_biascorrected) const {
 
   const Pose3& pose_i = state_i.pose();
   const Vector3& vel_i = state_i.velocity();
-
-  const double dt = deltaTij(), dt2 = dt * dt;
   const Matrix3 Ri = pose_i.rotation().matrix();
+  const double dt = deltaTij(), dt2 = dt * dt;
 
   // Rotation, translation, and velocity:
-  Vector3 dR = Rot3::Logmap(deltaRij_biascorrected);
-  Vector3 dP = Ri * deltaPij_biascorrected + vel_i * dt + 0.5 * p().gravity * dt2;
-  Vector3 dV = Ri * deltaVij_biascorrected + p().gravity * dt;
+  Vector9 delta;
+  dR(delta) = Rot3::Logmap(deltaRij_biascorrected);
+  dP(delta) = Ri * deltaPij_biascorrected + vel_i * dt + 0.5 * p().gravity * dt2;
+  dV(delta) = Ri * deltaVij_biascorrected + p().gravity * dt;
 
-  if (p().omegaCoriolis) {
-    const Vector3& omegaCoriolis = *p().omegaCoriolis;
-    dR -= Ri.transpose() * omegaCoriolis * dt;  // Coriolis term
-    dP -= omegaCoriolis.cross(vel_i) * dt2;     // NOTE(luca): we got rid of the 2 wrt INS paper
-    dV -= 2 * omegaCoriolis.cross(vel_i) * dt;
-    if (p().use2ndOrderCoriolis) {
-      Vector3 temp = omegaCoriolis.cross(omegaCoriolis.cross(pose_i.translation().vector()));
-      dP -= 0.5 * temp * dt2;
-      dV -= temp * dt;
-    }
-  }
+  if (p().omegaCoriolis) delta +=  integrateCoriolis(state_i);
+  return delta;
+}
+
+//------------------------------------------------------------------------------
+NavState PreintegrationBase::predict(const NavState& state_i,
+    const Rot3& deltaRij_biascorrected,
+    const Vector3& deltaPij_biascorrected,
+    const Vector3& deltaVij_biascorrected) const {
+
+  Vector9 delta = recombinedPrediction(state_i, deltaRij_biascorrected,
+      deltaPij_biascorrected, deltaVij_biascorrected);
 
   // TODO(frank): pose update below is separate expmap for R,t. Is that kosher?
-  const Pose3 pose_j = Pose3(pose_i.rotation().expmap(dR), pose_i.translation() + Point3(dP));
-  return NavState(pose_j, vel_i + dV);
+  const Pose3& pose_i = state_i.pose();
+  const Vector3& vel_i = state_i.velocity();
+  const Pose3 pose_j = Pose3(pose_i.rotation().expmap(dR(delta)), pose_i.translation() + Point3(dP(delta)));
+  return NavState(pose_j, vel_i + dV(delta));
 }
 
 //------------------------------------------------------------------------------
@@ -197,9 +227,9 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i, const 
   const Vector3 deltaVij_biascorrected = biascorrectedDeltaVij(biasIncr);
 
   /// Predict state at time j
-  NavState predictedState_j =
-      predict(NavState(pose_i, vel_i), deltaRij_biascorrected,
-              deltaPij_biascorrected, deltaVij_biascorrected);
+  NavState state_i(pose_i, vel_i);
+  NavState predictedState_j = predict(state_i, deltaRij_biascorrected,
+      deltaPij_biascorrected, deltaVij_biascorrected);
 
   // Evaluate residual error, according to [3]
   // Ri.transpose() is important here to preserve a model with *additive* Gaussian noise of correct covariance
@@ -220,7 +250,7 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i, const 
 
   // Coriolis term, NOTE inconsistent with AHRS, where coriolisHat is *after* integration
   // TODO(frank): move derivatives to predict and do coriolis branching there
-  const Vector3 coriolis = integrateCoriolis(rot_i);
+  const Vector3 coriolis = PreintegratedRotation::integrateCoriolis(rot_i);
   const Vector3 correctedOmega = biascorrectedOmega - coriolis;
 
   // Residual rotation error
