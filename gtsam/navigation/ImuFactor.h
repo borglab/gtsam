@@ -24,10 +24,85 @@
 /* GTSAM includes */
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/navigation/PreintegrationBase.h>
-#include <gtsam/navigation/ImuFactorBase.h>
 #include <gtsam/base/debug.h>
 
 namespace gtsam {
+
+/**
+ * PreintegratedIMUMeasurements accumulates (integrates) the IMU measurements
+ * (rotation rates and accelerations) and the corresponding covariance matrix.
+ * The measurements are then used to build the Preintegrated IMU factor.
+ * Integration is done incrementally (ideally, one integrates the measurement
+ * as soon as it is received from the IMU) so as to avoid costly integration
+ * at time of factor construction.
+ */
+class PreintegratedImuMeasurements: public PreintegrationBase {
+
+  friend class ImuFactor;
+
+protected:
+
+  Eigen::Matrix<double, 9, 9> preintMeasCov_; ///< COVARIANCE OF: [PreintPOSITION PreintVELOCITY PreintROTATION]
+  ///< (first-order propagation from *measurementCovariance*).
+
+  /// Default constructor for serialization
+  PreintegratedImuMeasurements() {}
+
+public:
+
+ /**
+   *  Constructor, initializes the class with no measurements
+   *  @param bias Current estimate of acceleration and rotation rate biases
+   *  @param p    Parameters, typically fixed in a single application
+   */
+  PreintegratedImuMeasurements(const boost::shared_ptr<const Params>& p,
+                            const imuBias::ConstantBias& biasHat) :
+      PreintegrationBase(p,biasHat) {
+    preintMeasCov_.setZero();
+  }
+
+  /// print
+  void print(const std::string& s = "Preintegrated Measurements:") const;
+
+  /// equals
+  bool equals(const PreintegratedImuMeasurements& expected,
+      double tol = 1e-9) const;
+
+  /// Re-initialize PreintegratedIMUMeasurements
+  void resetIntegration();
+
+  /**
+   * Add a single IMU measurement to the preintegration.
+   * @param measuredAcc Measured acceleration (in body frame, as given by the sensor)
+   * @param measuredOmega Measured angular velocity (as given by the sensor)
+   * @param deltaT Time interval between this and the last IMU measurement
+   * @param body_P_sensor Optional sensor frame (pose of the IMU in the body frame)
+   * @param Fout, Gout Jacobians used internally (only needed for testing)
+   */
+  void integrateMeasurement(const Vector3& measuredAcc,
+      const Vector3& measuredOmega, double deltaT,
+      OptionalJacobian<9, 9> Fout = boost::none, OptionalJacobian<9, 9> Gout = boost::none);
+
+  /// Return pre-integrated measurement covariance
+  Matrix preintMeasCov() const { return preintMeasCov_; }
+
+  /// @deprecated constructor
+  PreintegratedImuMeasurements(const imuBias::ConstantBias& biasHat,
+      const Matrix3& measuredAccCovariance,
+      const Matrix3& measuredOmegaCovariance,
+      const Matrix3& integrationErrorCovariance,
+      const bool use2ndOrderIntegration = false);
+
+private:
+
+  /// Serialization function
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegrationBase);
+    ar & BOOST_SERIALIZATION_NVP(preintMeasCov_);
+  }
+};
 
 /**
  *
@@ -53,88 +128,14 @@ namespace gtsam {
  * the vehicle at previous time step), current state (pose and velocity at
  * current time step), and the bias estimate. Following the preintegration
  * scheme proposed in [2], the ImuFactor includes many IMU measurements, which
- * are "summarized" using the PreintegratedMeasurements class.
+ * are "summarized" using the PreintegratedIMUMeasurements class.
  * Note that this factor does not model "temporal consistency" of the biases
  * (which are usually slowly varying quantities), which is up to the caller.
  * See also CombinedImuFactor for a class that does this for you.
  */
 class ImuFactor: public NoiseModelFactor5<Pose3, Vector3, Pose3, Vector3,
-    imuBias::ConstantBias>, public ImuFactorBase {
+    imuBias::ConstantBias> {
 public:
-
-  /**
-   * PreintegratedMeasurements accumulates (integrates) the IMU measurements
-   * (rotation rates and accelerations) and the corresponding covariance matrix.
-   * The measurements are then used to build the Preintegrated IMU factor.
-   * Integration is done incrementally (ideally, one integrates the measurement
-   * as soon as it is received from the IMU) so as to avoid costly integration
-   * at time of factor construction.
-   */
-  class PreintegratedMeasurements: public PreintegrationBase {
-
-    friend class ImuFactor;
-
-  protected:
-
-    Eigen::Matrix<double, 9, 9> preintMeasCov_; ///< COVARIANCE OF: [PreintPOSITION PreintVELOCITY PreintROTATION]
-    ///< (first-order propagation from *measurementCovariance*).
-
-  public:
-
-    /**
-     *  Default constructor, initializes the class with no measurements
-     *  @param bias Current estimate of acceleration and rotation rate biases
-     *  @param measuredAccCovariance      Covariance matrix of measuredAcc
-     *  @param measuredOmegaCovariance    Covariance matrix of measured Angular Rate
-     *  @param integrationErrorCovariance Covariance matrix of integration errors (velocity -> position)
-     *  @param use2ndOrderIntegration     Controls the order of integration
-     *  (if false: p(t+1) = p(t) + v(t) deltaT ; if true: p(t+1) = p(t) + v(t) deltaT + 0.5 * acc(t) deltaT^2)
-     */
-    PreintegratedMeasurements(const imuBias::ConstantBias& bias,
-        const Matrix3& measuredAccCovariance,
-        const Matrix3& measuredOmegaCovariance,
-        const Matrix3& integrationErrorCovariance,
-        const bool use2ndOrderIntegration = false);
-
-    /// print
-    void print(const std::string& s = "Preintegrated Measurements:") const;
-
-    /// equals
-    bool equals(const PreintegratedMeasurements& expected,
-        double tol = 1e-9) const;
-
-    /// Re-initialize PreintegratedMeasurements
-    void resetIntegration();
-
-    /**
-     * Add a single IMU measurement to the preintegration.
-     * @param measuredAcc Measured acceleration (in body frame, as given by the sensor)
-     * @param measuredOmega Measured angular velocity (as given by the sensor)
-     * @param deltaT Time interval between this and the last IMU measurement
-     * @param body_P_sensor Optional sensor frame (pose of the IMU in the body frame)
-     * @param Fout, Gout Jacobians used internally (only needed for testing)
-     */
-    void integrateMeasurement(const Vector3& measuredAcc,
-        const Vector3& measuredOmega, double deltaT,
-        boost::optional<const Pose3&> body_P_sensor = boost::none,
-        OptionalJacobian<9, 9> Fout = boost::none, OptionalJacobian<9, 9> Gout =
-            boost::none);
-
-    /// methods to access class variables
-    Matrix preintMeasCov() const {
-      return preintMeasCov_;
-    }
-
-  private:
-
-    /// Serialization function
-    friend class boost::serialization::access;
-    template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegrationBase);
-      ar & BOOST_SERIALIZATION_NVP(preintMeasCov_);
-    }
-  };
 
 private:
 
@@ -142,7 +143,7 @@ private:
   typedef NoiseModelFactor5<Pose3, Vector3, Pose3, Vector3,
       imuBias::ConstantBias> Base;
 
-  PreintegratedMeasurements _PIM_;
+  PreintegratedImuMeasurements _PIM_;
 
 public:
 
@@ -163,17 +164,9 @@ public:
    * @param pose_j Current pose key
    * @param vel_j  Current velocity key
    * @param bias   Previous bias key
-   * @param preintegratedMeasurements Preintegrated IMU measurements
-   * @param gravity Gravity vector expressed in the global frame
-   * @param omegaCoriolis Rotation rate of the global frame w.r.t. an inertial frame
-   * @param body_P_sensor Optional pose of the sensor frame in the body frame
-   * @param use2ndOrderCoriolis When true, the second-order term is used in the calculation of the Coriolis Effect
    */
   ImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
-      const PreintegratedMeasurements& preintegratedMeasurements,
-      const Vector3& gravity, const Vector3& omegaCoriolis,
-      boost::optional<const Pose3&> body_P_sensor = boost::none,
-      const bool use2ndOrderCoriolis = false);
+      const PreintegratedImuMeasurements& preintegratedMeasurements);
 
   virtual ~ImuFactor() {
   }
@@ -192,7 +185,7 @@ public:
 
   /** Access the preintegrated measurements. */
 
-  const PreintegratedMeasurements& preintegratedMeasurements() const {
+  const PreintegratedImuMeasurements& preintegratedMeasurements() const {
     return _PIM_;
   }
 
@@ -206,16 +199,21 @@ public:
       boost::optional<Matrix&> H3 = boost::none, boost::optional<Matrix&> H4 =
           boost::none, boost::optional<Matrix&> H5 = boost::none) const;
 
-  /// @deprecated The following function has been deprecated, use PreintegrationBase::predict
+  /// @deprecated typename
+  typedef PreintegratedImuMeasurements PreintegratedMeasurements;
+
+  /// @deprecated constructor
+  ImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
+      const PreintegratedMeasurements& preintegratedMeasurements,
+      const Vector3& gravity, const Vector3& omegaCoriolis,
+      const boost::optional<Pose3>& body_P_sensor = boost::none,
+      const bool use2ndOrderCoriolis = false);
+
+  /// @deprecated use PreintegrationBase::predict
   static void Predict(const Pose3& pose_i, const Vector3& vel_i, Pose3& pose_j,
       Vector3& vel_j, const imuBias::ConstantBias& bias_i,
-      const PreintegratedMeasurements& PIM, const Vector3& gravity,
-      const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis = false) {
-    PoseVelocityBias PVB = PIM.predict(pose_i, vel_i, bias_i, gravity,
-        omegaCoriolis, use2ndOrderCoriolis);
-    pose_j = PVB.pose;
-    vel_j = PVB.velocity;
-  }
+      const PreintegratedMeasurements& pim, const Vector3& gravity,
+      const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis = false);
 
 private:
 
@@ -226,13 +224,8 @@ private:
     ar & boost::serialization::make_nvp("NoiseModelFactor5",
          boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(_PIM_);
-    ar & BOOST_SERIALIZATION_NVP(gravity_);
-    ar & BOOST_SERIALIZATION_NVP(omegaCoriolis_);
-    ar & BOOST_SERIALIZATION_NVP(body_P_sensor_);
   }
 };
 // class ImuFactor
-
-typedef ImuFactor::PreintegratedMeasurements ImuFactorPreintegratedMeasurements;
 
 } /// namespace gtsam

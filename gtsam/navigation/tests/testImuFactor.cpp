@@ -90,11 +90,11 @@ const Matrix3 kIntegrationErrorCovariance = intNoiseVar * Matrix3::Identity();
 // Auxiliary functions to test preintegrated Jacobians
 // delPdelBiasAcc_ delPdelBiasOmega_ delVdelBiasAcc_ delVdelBiasOmega_ delRdelBiasOmega_
 /* ************************************************************************* */
-ImuFactor::PreintegratedMeasurements evaluatePreintegratedMeasurements(
+PreintegratedImuMeasurements evaluatePreintegratedMeasurements(
     const imuBias::ConstantBias& bias, const list<Vector3>& measuredAccs,
     const list<Vector3>& measuredOmegas, const list<double>& deltaTs,
     const bool use2ndOrderIntegration = false) {
-  ImuFactor::PreintegratedMeasurements result(bias, kMeasuredAccCovariance,
+  PreintegratedImuMeasurements result(bias, kMeasuredAccCovariance,
       kMeasuredOmegaCovariance, kIntegrationErrorCovariance,
       use2ndOrderIntegration);
 
@@ -159,7 +159,7 @@ TEST(ImuFactor, PreintegratedMeasurements) {
 
   bool use2ndOrderIntegration = true;
   // Actual preintegrated values
-  ImuFactor::PreintegratedMeasurements actual1(bias, kMeasuredAccCovariance,
+  PreintegratedImuMeasurements actual1(bias, kMeasuredAccCovariance,
       kMeasuredOmegaCovariance, kIntegrationErrorCovariance,
       use2ndOrderIntegration);
   actual1.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
@@ -180,7 +180,7 @@ TEST(ImuFactor, PreintegratedMeasurements) {
   double expectedDeltaT2(1);
 
   // Actual preintegrated values
-  ImuFactor::PreintegratedMeasurements actual2 = actual1;
+  PreintegratedImuMeasurements actual2 = actual1;
   actual2.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   EXPECT(
@@ -211,7 +211,7 @@ double deltaT = 1.0;
 TEST(ImuFactor, ErrorAndJacobians) {
   using namespace common;
   bool use2ndOrderIntegration = true;
-  ImuFactor::PreintegratedMeasurements pre_int_data(bias,
+  PreintegratedImuMeasurements pre_int_data(bias,
       kMeasuredAccCovariance, kMeasuredOmegaCovariance,
       kIntegrationErrorCovariance, use2ndOrderIntegration);
   pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
@@ -290,7 +290,7 @@ TEST(ImuFactor, ErrorAndJacobianWithBiases) {
       + Vector3(0.2, 0.0, 0.0);
   double deltaT = 1.0;
 
-  ImuFactor::PreintegratedMeasurements pre_int_data(
+  PreintegratedImuMeasurements pre_int_data(
       imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.1)),
       kMeasuredAccCovariance, kMeasuredOmegaCovariance,
       kIntegrationErrorCovariance);
@@ -330,7 +330,7 @@ TEST(ImuFactor, ErrorAndJacobianWith2ndOrderCoriolis) {
       + Vector3(0.2, 0.0, 0.0);
   double deltaT = 1.0;
 
-  ImuFactor::PreintegratedMeasurements pre_int_data(
+  PreintegratedImuMeasurements pre_int_data(
       imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.1)),
       kMeasuredAccCovariance, kMeasuredOmegaCovariance,
       kIntegrationErrorCovariance);
@@ -452,7 +452,7 @@ TEST(ImuFactor, FirstOrderPreIntegratedMeasurements) {
   }
 
   // Actual preintegrated values
-  ImuFactor::PreintegratedMeasurements preintegrated =
+  PreintegratedImuMeasurements preintegrated =
       evaluatePreintegratedMeasurements(bias, measuredAccs, measuredOmegas,
           deltaTs);
 
@@ -495,7 +495,6 @@ TEST(ImuFactor, FirstOrderPreIntegratedMeasurements) {
 TEST(ImuFactor, JacobianPreintegratedCovariancePropagation) {
   // Linearization point
   imuBias::ConstantBias bias; // Current estimate of acceleration and rotation rate biases
-  Pose3 body_P_sensor = Pose3(); // (Rot3::Expmap(Vector3(0,0.1,0.1)), Point3(1, 0, 1));
 
   // Measurements
   list<Vector3> measuredAccs, measuredOmegas;
@@ -514,7 +513,7 @@ TEST(ImuFactor, JacobianPreintegratedCovariancePropagation) {
   }
   bool use2ndOrderIntegration = false;
   // Actual preintegrated values
-  ImuFactor::PreintegratedMeasurements preintegrated =
+  PreintegratedImuMeasurements preintegrated =
       evaluatePreintegratedMeasurements(bias, measuredAccs, measuredOmegas,
           deltaTs, use2ndOrderIntegration);
 
@@ -531,7 +530,7 @@ TEST(ImuFactor, JacobianPreintegratedCovariancePropagation) {
 
   Matrix Factual, Gactual;
   preintegrated.integrateMeasurement(newMeasuredAcc, newMeasuredOmega,
-      newDeltaT, body_P_sensor, Factual, Gactual);
+      newDeltaT, Factual, Gactual);
 
   //////////////////////////////////////////////////////////////////////////////////////////////
   // COMPUTE NUMERICAL DERIVATIVES FOR F
@@ -619,7 +618,6 @@ TEST(ImuFactor, JacobianPreintegratedCovariancePropagation) {
 TEST(ImuFactor, JacobianPreintegratedCovariancePropagation_2ndOrderInt) {
   // Linearization point
   imuBias::ConstantBias bias; // Current estimate of acceleration and rotation rate biases
-  Pose3 body_P_sensor = Pose3(); // (Rot3::Expmap(Vector3(0,0.1,0.1)), Point3(1, 0, 1));
 
   // Measurements
   list<Vector3> measuredAccs, measuredOmegas;
@@ -638,7 +636,7 @@ TEST(ImuFactor, JacobianPreintegratedCovariancePropagation_2ndOrderInt) {
   }
   bool use2ndOrderIntegration = true;
   // Actual preintegrated values
-  ImuFactor::PreintegratedMeasurements preintegrated =
+  PreintegratedImuMeasurements preintegrated =
       evaluatePreintegratedMeasurements(bias, measuredAccs, measuredOmegas,
           deltaTs, use2ndOrderIntegration);
 
@@ -655,7 +653,7 @@ TEST(ImuFactor, JacobianPreintegratedCovariancePropagation_2ndOrderInt) {
 
   Matrix Factual, Gactual;
   preintegrated.integrateMeasurement(newMeasuredAcc, newMeasuredOmega,
-      newDeltaT, body_P_sensor, Factual, Gactual);
+      newDeltaT, Factual, Gactual);
 
   //////////////////////////////////////////////////////////////////////////////////////////////
   // COMPUTE NUMERICAL DERIVATIVES FOR F
@@ -760,7 +758,7 @@ TEST(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
   const Pose3 body_P_sensor(Rot3::Expmap(Vector3(0, 0.10, 0.10)),
       Point3(1, 0, 0));
 
-  ImuFactor::PreintegratedMeasurements pre_int_data(
+  PreintegratedImuMeasurements pre_int_data(
       imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0)),
       kMeasuredAccCovariance, kMeasuredOmegaCovariance,
       kIntegrationErrorCovariance);
@@ -797,7 +795,7 @@ TEST(ImuFactor, PredictPositionAndVelocity) {
   Matrix I6x6(6, 6);
   I6x6 = Matrix::Identity(6, 6);
 
-  ImuFactor::PreintegratedMeasurements pre_int_data(
+  PreintegratedImuMeasurements pre_int_data(
       imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0)),
       kMeasuredAccCovariance, kMeasuredOmegaCovariance,
       kIntegrationErrorCovariance, true);
@@ -835,7 +833,7 @@ TEST(ImuFactor, PredictRotation) {
   Matrix I6x6(6, 6);
   I6x6 = Matrix::Identity(6, 6);
 
-  ImuFactor::PreintegratedMeasurements pre_int_data(
+  PreintegratedImuMeasurements pre_int_data(
       imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0)),
       kMeasuredAccCovariance, kMeasuredOmegaCovariance,
       kIntegrationErrorCovariance, true);

@@ -146,15 +146,9 @@ TEST( CombinedImuFactor, PreintegratedMeasurements ) {
 
   actual1.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
-  EXPECT(
-      assert_equal(Vector(expected1.deltaPij()), Vector(actual1.deltaPij()),
-          tol));
-  EXPECT(
-      assert_equal(Vector(expected1.deltaVij()), Vector(actual1.deltaVij()),
-          tol));
-  EXPECT(
-      assert_equal(Matrix(expected1.deltaRij()), Matrix(actual1.deltaRij()),
-          tol));
+  EXPECT(assert_equal(Vector(expected1.deltaPij()), actual1.deltaPij(), tol));
+  EXPECT(assert_equal(Vector(expected1.deltaVij()), actual1.deltaVij(), tol));
+  EXPECT(assert_equal(expected1.deltaRij(), actual1.deltaRij(), tol));
   DOUBLES_EQUAL(expected1.deltaTij(), actual1.deltaTij(), tol);
 }
 
@@ -373,7 +367,6 @@ TEST(CombinedImuFactor, PredictRotation) {
 TEST( CombinedImuFactor, JacobianPreintegratedCovariancePropagation ) {
   // Linearization point
   imuBias::ConstantBias bias_old = imuBias::ConstantBias(); ///< Current estimate of acceleration and rotation rate biases
-  Pose3 body_P_sensor = Pose3();
 
   // Measurements
   list<Vector3> measuredAccs, measuredOmegas;
@@ -408,7 +401,7 @@ TEST( CombinedImuFactor, JacobianPreintegratedCovariancePropagation ) {
 
   Matrix Factual, Gactual;
   preintegrated.integrateMeasurement(newMeasuredAcc, newMeasuredOmega,
-      newDeltaT, body_P_sensor, Factual, Gactual);
+      newDeltaT, Factual, Gactual);
 
   bool use2ndOrderIntegration = false;
 

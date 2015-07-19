@@ -50,7 +50,7 @@ Rot3 evaluateRotationError(const AHRSFactor& factor, const Rot3 rot_i,
 AHRSFactor::PreintegratedMeasurements evaluatePreintegratedMeasurements(
     const Vector3& bias, const list<Vector3>& measuredOmegas,
     const list<double>& deltaTs,
-    const Vector3& initialRotationRate = Vector3()) {
+    const Vector3& initialRotationRate = Vector3::Zero()) {
   AHRSFactor::PreintegratedMeasurements result(bias, Matrix3::Identity());
 
   list<Vector3>::const_iterator itOmega = measuredOmegas.begin();

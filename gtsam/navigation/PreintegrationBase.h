@@ -37,11 +37,9 @@ struct PoseVelocityBias {
   Vector3 velocity;
   imuBias::ConstantBias bias;
 
-  PoseVelocityBias(const Pose3& _pose, const Vector3& _velocity, const imuBias::ConstantBias _bias)
-      : pose(_pose),
-        velocity(_velocity),
-        bias(_bias) {
-  }
+  PoseVelocityBias(const Pose3& _pose, const Vector3& _velocity,
+                   const imuBias::ConstantBias _bias)
+      : pose(_pose), velocity(_velocity), bias(_bias) {}
 };
 
 /**
@@ -52,71 +50,85 @@ struct PoseVelocityBias {
  */
 class PreintegrationBase : public PreintegratedRotation {
 
-  const imuBias::ConstantBias biasHat_;  ///< Acceleration and gyro bias used for preintegration
-  const bool use2ndOrderIntegration_;  ///< Controls the order of integration
+ public:
+
+  /// Parameters for pre-integration:
+  /// Usage: Create just a single Params and pass a shared pointer to the constructor
+  struct Params : PreintegratedRotation::Params {
+    Matrix3 accelerometerCovariance;  ///< continuous-time "Covariance" of accelerometer
+    Matrix3 integrationCovariance; ///< continuous-time "Covariance" describing integration uncertainty
+    /// (to compensate errors in Euler integration)
+    bool use2ndOrderIntegration;  ///< Controls the order of integration
+    ///  (if false: p(t+1) = p(t) + v(t) deltaT ; if true: p(t+1) = p(t) + v(t) deltaT + 0.5 * acc(t) deltaT^2)
+    bool use2ndOrderCoriolis;     ///< Whether to use second order Coriolis integration
+    Vector3 gravity;              ///< Gravity constant
+
+    Params()
+        : accelerometerCovariance(I_3x3),
+          integrationCovariance(I_3x3),
+          use2ndOrderIntegration(false),
+          use2ndOrderCoriolis(false),
+          gravity(0, 0, 9.8) {}
+
+   private:
+    /** Serialization function */
+    friend class boost::serialization::access;
+    template<class ARCHIVE>
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegratedRotation::Params);
+      ar & BOOST_SERIALIZATION_NVP(accelerometerCovariance);
+      ar & BOOST_SERIALIZATION_NVP(integrationCovariance);
+      ar & BOOST_SERIALIZATION_NVP(use2ndOrderIntegration);
+      ar & BOOST_SERIALIZATION_NVP(use2ndOrderCoriolis);
+      ar & BOOST_SERIALIZATION_NVP(gravity);
+    }
+  };
+
+ protected:
+
+  /// Acceleration and gyro bias used for preintegration
+  imuBias::ConstantBias biasHat_;
 
   Vector3 deltaPij_;  ///< Preintegrated relative position (does not take into account velocity at time i, see deltap+, in [2]) (in frame i)
   Vector3 deltaVij_;  ///< Preintegrated relative velocity (in global frame)
 
-  Matrix3 delPdelBiasAcc_;  ///< Jacobian of preintegrated position w.r.t. acceleration bias
+  Matrix3 delPdelBiasAcc_;    ///< Jacobian of preintegrated position w.r.t. acceleration bias
   Matrix3 delPdelBiasOmega_;  ///< Jacobian of preintegrated position w.r.t. angular rate bias
-  Matrix3 delVdelBiasAcc_;  ///< Jacobian of preintegrated velocity w.r.t. acceleration bias
+  Matrix3 delVdelBiasAcc_;    ///< Jacobian of preintegrated velocity w.r.t. acceleration bias
   Matrix3 delVdelBiasOmega_;  ///< Jacobian of preintegrated velocity w.r.t. angular rate bias
 
-  const Matrix3 accelerometerCovariance_;  ///< continuous-time "Covariance" of accelerometer measurements
-  const Matrix3 integrationCovariance_;  ///< continuous-time "Covariance" describing integration uncertainty
-  /// (to compensate errors in Euler integration)
+  /// Default constructor for serialization
+  PreintegrationBase() {}
 
  public:
 
   /**
-   *  Default constructor, initializes the variables in the base class
+   *  Constructor, initializes the variables in the base class
    *  @param bias Current estimate of acceleration and rotation rate biases
-   *  @param use2ndOrderIntegration     Controls the order of integration
-   *  (if false: p(t+1) = p(t) + v(t) deltaT ; if true: p(t+1) = p(t) + v(t) deltaT + 0.5 * acc(t) deltaT^2)
+   *  @param p    Parameters, typically fixed in a single application
    */
-  PreintegrationBase(const imuBias::ConstantBias& bias, const Matrix3& measuredAccCovariance,
-                     const Matrix3& measuredOmegaCovariance,
-                     const Matrix3&integrationErrorCovariance, const bool use2ndOrderIntegration);
+  PreintegrationBase(const boost::shared_ptr<const Params>& p,
+                     const imuBias::ConstantBias& biasHat)
+      : PreintegratedRotation(p), biasHat_(biasHat) {
+    resetIntegration();
+  }
 
   /// Re-initialize PreintegratedMeasurements
   void resetIntegration();
 
-  /// methods to access class variables
-  bool use2ndOrderIntegration() const {
-    return use2ndOrderIntegration_;
-  }
-  const Vector3& deltaPij() const {
-    return deltaPij_;
-  }
-  const Vector3& deltaVij() const {
-    return deltaVij_;
-  }
-  const imuBias::ConstantBias& biasHat() const {
-    return biasHat_;
-  }
-  Vector6 biasHatVector() const {
-    return biasHat_.vector();
-  }  // expensive
-  const Matrix3& delPdelBiasAcc() const {
-    return delPdelBiasAcc_;
-  }
-  const Matrix3& delPdelBiasOmega() const {
-    return delPdelBiasOmega_;
-  }
-  const Matrix3& delVdelBiasAcc() const {
-    return delVdelBiasAcc_;
-  }
-  const Matrix3& delVdelBiasOmega() const {
-    return delVdelBiasOmega_;
-  }
+  const Params& p() const { return *boost::static_pointer_cast<const Params>(p_);}
 
-  const Matrix3& accelerometerCovariance() const {
-    return accelerometerCovariance_;
-  }
-  const Matrix3& integrationCovariance() const {
-    return integrationCovariance_;
-  }
+  /// getters
+  const imuBias::ConstantBias& biasHat() const { return biasHat_; }
+  const Vector3& deltaPij() const { return deltaPij_; }
+  const Vector3& deltaVij() const { return deltaVij_; }
+  const Matrix3& delPdelBiasAcc() const { return delPdelBiasAcc_; }
+  const Matrix3& delPdelBiasOmega() const { return delPdelBiasOmega_; }
+  const Matrix3& delVdelBiasAcc() const { return delVdelBiasAcc_; }
+  const Matrix3& delVdelBiasOmega() const { return delVdelBiasOmega_; }
+
+  // Exposed for MATLAB
+  Vector6 biasHatVector() const { return biasHat_.vector(); }
 
   /// print
   void print(const std::string& s) const;
@@ -134,9 +146,9 @@ class PreintegrationBase : public PreintegratedRotation {
                                     double deltaT);
 
   void correctMeasurementsByBiasAndSensorPose(const Vector3& measuredAcc,
-                                              const Vector3& measuredOmega, Vector3& correctedAcc,
-                                              Vector3& correctedOmega,
-                                              boost::optional<const Pose3&> body_P_sensor);
+                                              const Vector3& measuredOmega,
+                                              Vector3* correctedAcc,
+                                              Vector3* correctedOmega);
 
   Vector3 biascorrectedDeltaPij(const imuBias::ConstantBias& biasIncr) const {
     return deltaPij_ + delPdelBiasAcc_ * biasIncr.accelerometer()
@@ -150,26 +162,28 @@ class PreintegrationBase : public PreintegratedRotation {
 
   /// Predict state at time j, with bias-corrected quantities given
   PoseVelocityBias predict(const Pose3& pose_i, const Vector3& vel_i,
-      const imuBias::ConstantBias& bias_i, const Vector3& gravity, const Vector3& omegaCoriolis,
-      const Rot3& deltaRij_biascorrected,
-      const Vector3& deltaPij_biascorrected, const Vector3& deltaVij_biascorrected,
-      const bool use2ndOrderCoriolis = false) const;
+                           const imuBias::ConstantBias& bias_i,
+                           const Rot3& deltaRij_biascorrected,
+                           const Vector3& deltaPij_biascorrected,
+                           const Vector3& deltaVij_biascorrected) const;
 
   /// Predict state at time j
   PoseVelocityBias predict(const Pose3& pose_i, const Vector3& vel_i,
-      const imuBias::ConstantBias& bias_i, const Vector3& gravity,
-      const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis = false) const;
+                           const imuBias::ConstantBias& bias_i) const;
 
   /// Compute errors w.r.t. preintegrated measurements and jacobians wrt pose_i, vel_i, bias_i, pose_j, bias_j
   Vector9 computeErrorAndJacobians(const Pose3& pose_i, const Vector3& vel_i, const Pose3& pose_j,
                                    const Vector3& vel_j, const imuBias::ConstantBias& bias_i,
-                                   const Vector3& gravity, const Vector3& omegaCoriolis,
-                                   const bool use2ndOrderCoriolis, OptionalJacobian<9, 6> H1 =
-                                       boost::none,
+                                   OptionalJacobian<9, 6> H1 = boost::none,
                                    OptionalJacobian<9, 3> H2 = boost::none,
                                    OptionalJacobian<9, 6> H3 = boost::none,
                                    OptionalJacobian<9, 3> H4 = boost::none,
                                    OptionalJacobian<9, 6> H5 = boost::none) const;
+
+  /// @deprecated predict
+  PoseVelocityBias predict(const Pose3& pose_i, const Vector3& vel_i,
+      const imuBias::ConstantBias& bias_i, const Vector3& gravity, const Vector3& omegaCoriolis,
+      const bool use2ndOrderCoriolis = false);
 
  private:
   /** Serialization function */
@@ -177,6 +191,7 @@ class PreintegrationBase : public PreintegratedRotation {
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegratedRotation);
+    ar & BOOST_SERIALIZATION_NVP(p_);
     ar & BOOST_SERIALIZATION_NVP(biasHat_);
     ar & BOOST_SERIALIZATION_NVP(deltaPij_);
     ar & BOOST_SERIALIZATION_NVP(deltaVij_);
@@ -185,34 +200,6 @@ class PreintegrationBase : public PreintegratedRotation {
     ar & BOOST_SERIALIZATION_NVP(delVdelBiasAcc_);
     ar & BOOST_SERIALIZATION_NVP(delVdelBiasOmega_);
   }
-};
-
-class ImuBase {
-
- protected:
-
-  Vector3 gravity_;
-  Vector3 omegaCoriolis_;
-  boost::optional<Pose3> body_P_sensor_;  ///< The pose of the sensor in the body frame
-  bool use2ndOrderCoriolis_;  ///< Controls whether higher order terms are included when calculating the Coriolis Effect
-
- public:
-
-  /// Default constructor, with decent gravity and zero coriolis
-  ImuBase();
-
-  /// Fully fledge constructor
-  ImuBase(const Vector3& gravity, const Vector3& omegaCoriolis,
-          boost::optional<const Pose3&> body_P_sensor = boost::none,
-          const bool use2ndOrderCoriolis = false);
-
-  const Vector3& gravity() const {
-    return gravity_;
-  }
-  const Vector3& omegaCoriolis() const {
-    return omegaCoriolis_;
-  }
-
 };
 
 }  /// namespace gtsam
