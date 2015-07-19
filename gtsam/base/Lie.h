@@ -83,6 +83,25 @@ struct LieGroup {
     return Class::Logmap(between(g));
   }
 
+  Class expmap(const TangentVector& v, //
+      ChartJacobian H1, ChartJacobian H2 = boost::none) const {
+    Jacobian D_g_v;
+    Class g = Class::Expmap(v,H2 ? &D_g_v : 0);
+    Class h = compose(g,H1,H2);
+    if (H2) *H2 = (*H2) * D_g_v;
+    return h;
+  }
+
+  TangentVector logmap(const Class& g, //
+      ChartJacobian H1, ChartJacobian H2 = boost::none) const {
+    Class h = between(g,H1,H2);
+    Jacobian D_v_h;
+    TangentVector v = Class::Logmap(h, (H1 || H2) ? &D_v_h : 0);
+    if (H1) *H1 = D_v_h * (*H1);
+    if (H2) *H2 = D_v_h * (*H2);
+    return v;
+  }
+
   Class retract(const TangentVector& v) const {
     return compose(Class::ChartAtOrigin::Retract(v));
   }
