@@ -135,23 +135,6 @@ class PreintegratedRotation {
     return deltaRij_biascorrected;
   }
 
-  /// Get so<3> version of bias corrected rotation, with optional Jacobian
-  // Implements: log( deltaRij_ * expmap(delRdelBiasOmega_ * biasOmegaIncr) )
-  Vector3 biascorrectedThetaRij(const Vector3& biasOmegaIncr,
-      OptionalJacobian<3, 3> H = boost::none) const {
-    // First, we correct deltaRij using the biasOmegaIncr, rotated
-    Matrix3 D_biascorrected_biasOmegaIncr;
-    const Rot3 biascorrected = biascorrectedDeltaRij(biasOmegaIncr,
-        H ? &D_biascorrected_biasOmegaIncr : 0);
-
-    // This was done via an expmap, now we go *back* to so<3>
-    Matrix3 D_omega_biascorrected;
-    const Vector3 omega = Rot3::Logmap(biascorrected, H ? &D_omega_biascorrected : 0);
-
-    if (H) (*H) = D_omega_biascorrected * D_biascorrected_biasOmegaIncr;
-    return omega;
-  }
-
   /// Integrate coriolis correction in body frame rot_i
   Vector3 integrateCoriolis(const Rot3& rot_i) const {
     if (!p_->omegaCoriolis) return Vector3::Zero();

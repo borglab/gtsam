@@ -193,7 +193,9 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i, const 
   // Evaluate residual error, according to [3]
   /* ---------------------------------------------------------------------------------------------------- */
   const imuBias::ConstantBias biasIncr = bias_i - biasHat_;
-  const Rot3 deltaRij_biascorrected = biascorrectedDeltaRij(biasIncr.gyroscope());
+  Matrix3 D_biascorrected_biasIncr;
+  const Rot3 deltaRij_biascorrected = biascorrectedDeltaRij(
+      biasIncr.gyroscope(), H5 ? &D_biascorrected_biasIncr : 0);
   const Vector3 deltaPij_biascorrected = biascorrectedDeltaPij(biasIncr);
   const Vector3 deltaVij_biascorrected = biascorrectedDeltaVij(biasIncr);
   PoseVelocityBias predictedState_j =
@@ -212,10 +214,8 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i, const 
   // Get Get so<3> version of bias corrected rotation
   // If H5 is asked for, we will need the Jacobian, which we store in H5
   // H5 will then be corrected below to take into account the Coriolis effect
-  // TODO(frank): biascorrectedThetaRij calculates deltaRij_biascorrected, which we already have
-  Matrix3 D_cThetaRij_biasOmegaIncr;
-  const Vector3 biascorrectedOmega = biascorrectedThetaRij(biasIncr.gyroscope(),
-                                                           H5 ? &D_cThetaRij_biasOmegaIncr : 0);
+  Matrix3 D_omega_biascorrected;
+  const Vector3 biascorrectedOmega = Rot3::Logmap(deltaRij_biascorrected, H5 ? &D_omega_biascorrected : 0);
 
   // Coriolis term, NOTE inconsistent with AHRS, where coriolisHat is *after* integration
   // TODO(frank): move derivatives to predict and do coriolis branching there
@@ -272,7 +272,7 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i, const 
   }
   if (H5) {
     // H5 by this point already contains 3*3 biascorrectedThetaRij derivative
-    const Matrix3 JbiasOmega = D_cDeltaRij_cOmega * D_cThetaRij_biasOmegaIncr;
+    const Matrix3 JbiasOmega = D_cDeltaRij_cOmega * D_omega_biascorrected * D_biascorrected_biasIncr;
     (*H5) <<
     Z_3x3, D_fR_fRrot * (-fRrot.inverse().matrix() * JbiasOmega),   // dfR/dBias
     -delPdelBiasAcc(), -delPdelBiasOmega(),                         // dfP/dBias

@@ -83,7 +83,11 @@ void PreintegratedAhrsMeasurements::integrateMeasurement(
 Vector3 PreintegratedAhrsMeasurements::predict(const Vector3& bias,
     OptionalJacobian<3,3> H) const {
   const Vector3 biasOmegaIncr = bias - biasHat_;
-  return biascorrectedThetaRij(biasOmegaIncr, H);
+  const Rot3 biascorrected = biascorrectedDeltaRij(biasOmegaIncr, H);
+  Matrix3 D_omega_biascorrected;
+  const Vector3 omega = Rot3::Logmap(biascorrected, H ? &D_omega_biascorrected : 0);
+  if (H) (*H) = D_omega_biascorrected * (*H);
+  return omega;
 }
 //------------------------------------------------------------------------------
 Vector PreintegratedAhrsMeasurements::DeltaAngles(
