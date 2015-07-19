@@ -126,9 +126,13 @@ class PreintegratedRotation {
     delRdelBiasOmega_ = incrRt * delRdelBiasOmega_ - D_Rincr_integratedOmega * deltaT;
   }
 
-  /// Return a bias corrected version of the integrated rotation - expensive
-  Rot3 biascorrectedDeltaRij(const Vector3& biasOmegaIncr) const {
-    return deltaRij_ * Rot3::Expmap(delRdelBiasOmega_ * biasOmegaIncr);
+  /// Return a bias corrected version of the integrated rotation, with optional Jacobian
+  Rot3 biascorrectedDeltaRij(const Vector3& biasOmegaIncr,
+      OptionalJacobian<3, 3> H = boost::none) const {
+    const Vector3 biasInducedOmega = delRdelBiasOmega_ * biasOmegaIncr;
+    const Rot3 deltaRij_biascorrected = deltaRij_.expmap(biasInducedOmega, boost::none, H);
+    if (H) (*H) *= delRdelBiasOmega_;
+    return deltaRij_biascorrected;
   }
 
   /// Get so<3> version of bias corrected rotation, with optional Jacobian
@@ -136,18 +140,16 @@ class PreintegratedRotation {
   Vector3 biascorrectedThetaRij(const Vector3& biasOmegaIncr,
       OptionalJacobian<3, 3> H = boost::none) const {
     // First, we correct deltaRij using the biasOmegaIncr, rotated
-    const Rot3 deltaRij_biascorrected = biascorrectedDeltaRij(biasOmegaIncr);
+    Matrix3 D_biascorrected_biasOmegaIncr;
+    const Rot3 biascorrected = biascorrectedDeltaRij(biasOmegaIncr,
+        H ? &D_biascorrected_biasOmegaIncr : 0);
 
-    if (H) {
-      Matrix3 Jrinv_theta_bc;
-      // This was done via an expmap, now we go *back* to so<3>
-      const Vector3 biascorrectedOmega = Rot3::Logmap(deltaRij_biascorrected, Jrinv_theta_bc);
-      const Matrix3 Jr_JbiasOmegaIncr = Rot3::ExpmapDerivative(delRdelBiasOmega_ * biasOmegaIncr);
-      (*H) = Jrinv_theta_bc * Jr_JbiasOmegaIncr * delRdelBiasOmega_;
-      return biascorrectedOmega;
-    }
-    //  else
-    return Rot3::Logmap(deltaRij_biascorrected);
+    // This was done via an expmap, now we go *back* to so<3>
+    Matrix3 D_omega_biascorrected;
+    const Vector3 omega = Rot3::Logmap(biascorrected, H ? &D_omega_biascorrected : 0);
+
+    if (H) (*H) = D_omega_biascorrected * D_biascorrected_biasOmegaIncr;
+    return omega;
   }
 
   /// Integrate coriolis correction in body frame rot_i
