@@ -143,7 +143,6 @@ Vector AHRSFactor::evaluateError(const Rot3& Ri, const Rot3& Rj,
 
   // Coriolis term
   const Vector3 coriolis = _PIM_.integrateCoriolis(Ri);
-  const Matrix3 coriolisHat = skewSymmetric(coriolis);
   const Vector3 correctedOmega = biascorrectedOmega - coriolis;
 
   // Prediction
@@ -161,7 +160,7 @@ Vector AHRSFactor::evaluateError(const Rot3& Ri, const Rot3& Rj,
   if (H1) {
     // dfR/dRi
     H1->resize(3, 3);
-    Matrix3 D_coriolis = -D_cDeltaRij_cOmega * coriolisHat;
+    Matrix3 D_coriolis = -D_cDeltaRij_cOmega * skewSymmetric(coriolis);
     (*H1)
         << D_fR_fRrot * (-actualRij.transpose() - fRrot.transpose() * D_coriolis);
   }
