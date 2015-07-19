@@ -129,12 +129,14 @@ void PreintegrationBase::correctMeasurementsByBiasAndSensorPose(
   }
 }
 
-/// Predict state at time j
 //------------------------------------------------------------------------------
-PoseVelocityBias PreintegrationBase::predict(const Pose3& pose_i,
-    const Vector3& vel_i, const imuBias::ConstantBias& bias_i,
-    const Rot3& deltaRij_biascorrected, const Vector3& deltaPij_biascorrected,
+NavState PreintegrationBase::predict(const NavState& state_i,
+    const Rot3& deltaRij_biascorrected,
+    const Vector3& deltaPij_biascorrected,
     const Vector3& deltaVij_biascorrected) const {
+
+  const Pose3& pose_i = state_i.pose();
+  const Vector3& vel_i = state_i.velocity();
 
   const double dt = deltaTij(), dt2 = dt * dt;
   const Matrix3 Ri = pose_i.rotation().matrix();
@@ -158,21 +160,17 @@ PoseVelocityBias PreintegrationBase::predict(const Pose3& pose_i,
 
   // TODO(frank): pose update below is separate expmap for R,t. Is that kosher?
   const Pose3 pose_j = Pose3(pose_i.rotation().expmap(dR), pose_i.translation() + Point3(dP));
-  return PoseVelocityBias(pose_j, vel_i + dV, bias_i); // bias is predicted as a constant
+  return NavState(pose_j, vel_i + dV);
 }
 
-/// Predict state at time j
 //------------------------------------------------------------------------------
-PoseVelocityBias PreintegrationBase::predict(
-    const Pose3& pose_i, const Vector3& vel_i,
+NavState PreintegrationBase::predict(const NavState& state_i,
     const imuBias::ConstantBias& bias_i) const {
   const imuBias::ConstantBias biasIncr = bias_i - biasHat_;
-  return predict(
-      pose_i, vel_i, bias_i, biascorrectedDeltaRij(biasIncr.gyroscope()),
+  return predict(state_i, biascorrectedDeltaRij(biasIncr.gyroscope()),
       biascorrectedDeltaPij(biasIncr), biascorrectedDeltaVij(biasIncr));
 }
 
-/// Compute errors w.r.t. preintegrated measurements and Jacobians wrpt pose_i, vel_i, bias_i, pose_j, bias_j
 //------------------------------------------------------------------------------
 Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i, const Vector3& vel_i,
                                                      const Pose3& pose_j, const Vector3& vel_j,
@@ -190,25 +188,28 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i, const 
   const Rot3& rot_j = pose_j.rotation();
   const Vector3 pos_j = pose_j.translation().vector();
 
-  // Evaluate residual error, according to [3]
-  /* ---------------------------------------------------------------------------------------------------- */
+  /// Compute bias-corrected quantities
   const imuBias::ConstantBias biasIncr = bias_i - biasHat_;
   Matrix3 D_biascorrected_biasIncr;
   const Rot3 deltaRij_biascorrected = biascorrectedDeltaRij(
       biasIncr.gyroscope(), H5 ? &D_biascorrected_biasIncr : 0);
   const Vector3 deltaPij_biascorrected = biascorrectedDeltaPij(biasIncr);
   const Vector3 deltaVij_biascorrected = biascorrectedDeltaVij(biasIncr);
-  PoseVelocityBias predictedState_j =
-      predict(pose_i, vel_i, bias_i, deltaRij_biascorrected,
+
+  /// Predict state at time j
+  NavState predictedState_j =
+      predict(NavState(pose_i, vel_i), deltaRij_biascorrected,
               deltaPij_biascorrected, deltaVij_biascorrected);
 
+  // Evaluate residual error, according to [3]
   // Ri.transpose() is important here to preserve a model with *additive* Gaussian noise of correct covariance
-  const Vector3 fp = Ri.transpose() * (pos_j - predictedState_j.pose.translation().vector());
+  const Vector3 fp = Ri.transpose() * (pos_j - predictedState_j.pose().translation().vector());
 
   // Ri.transpose() is important here to preserve a model with *additive* Gaussian noise of correct covariance
-  const Vector3 fv = Ri.transpose() * (vel_j - predictedState_j.velocity);
+  const Vector3 fv = Ri.transpose() * (vel_j - predictedState_j.velocity());
 
-  // fR will be computed later. Note: it is the same as: fR = (predictedState_j.pose.translation()).between(Rot_j)
+  // fR will be computed later.
+  // Note: it is the same as: fR = predictedState_j.pose.rotation().between(Rot_j)
 
   /* ---------------------------------------------------------------------------------------------------- */
   // Get Get so<3> version of bias corrected rotation
@@ -293,6 +294,6 @@ PoseVelocityBias PreintegrationBase::predict(const Pose3& pose_i, const Vector3&
   q->omegaCoriolis = omegaCoriolis;
   q->use2ndOrderCoriolis = use2ndOrderCoriolis;
   p_ = q;
-  return predict(pose_i, vel_i, bias_i);
+  return PoseVelocityBias(predict(NavState(pose_i, vel_i), bias_i), bias_i);
 }
 }  /// namespace gtsam

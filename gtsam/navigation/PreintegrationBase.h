@@ -25,21 +25,44 @@
 #include <gtsam/navigation/ImuBias.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/ProductLieGroup.h>
 #include <gtsam/base/Vector.h>
 
 namespace gtsam {
 
+/// Velocity in 3D is just a Vector3
+typedef Vector3 Velocity3;
+
 /**
- * Struct to hold all state variables of returned by Predict function
+ * Navigation state: Pose (rotation, translation) + velocity
  */
+class NavState: private ProductLieGroup<Pose3, Velocity3> {
+protected:
+  typedef ProductLieGroup<Pose3, Velocity3> Base;
+  typedef OptionalJacobian<9, 9> ChartJacobian;
+
+public:
+  // constructors
+  NavState() {}
+  NavState(const Pose3& pose, const Velocity3& vel) : Base(pose, vel) {}
+
+  // access
+  const Pose3& pose() const { return first; }
+  const Point3& translation() const { return pose().translation(); }
+  const Rot3& rotation() const { return pose().rotation(); }
+  const Velocity3& velocity() const { return second; }
+};
+
+/// @deprecated
 struct PoseVelocityBias {
   Pose3 pose;
   Vector3 velocity;
   imuBias::ConstantBias bias;
-
-  PoseVelocityBias(const Pose3& _pose, const Vector3& _velocity,
-                   const imuBias::ConstantBias _bias)
+  PoseVelocityBias(const Pose3& _pose, const Vector3& _velocity, const imuBias::ConstantBias _bias)
       : pose(_pose), velocity(_velocity), bias(_bias) {}
+  PoseVelocityBias(const NavState& navState, const imuBias::ConstantBias _bias)
+      : pose(navState.pose()), velocity(navState.velocity()), bias(_bias) {}
+  NavState navState() const { return NavState(pose,velocity);}
 };
 
 /**
@@ -161,15 +184,13 @@ class PreintegrationBase : public PreintegratedRotation {
   }
 
   /// Predict state at time j, with bias-corrected quantities given
-  PoseVelocityBias predict(const Pose3& pose_i, const Vector3& vel_i,
-                           const imuBias::ConstantBias& bias_i,
-                           const Rot3& deltaRij_biascorrected,
-                           const Vector3& deltaPij_biascorrected,
-                           const Vector3& deltaVij_biascorrected) const;
+  NavState predict(const NavState& navState, const Rot3& deltaRij_biascorrected,
+      const Vector3& deltaPij_biascorrected,
+      const Vector3& deltaVij_biascorrected) const;
 
   /// Predict state at time j
-  PoseVelocityBias predict(const Pose3& pose_i, const Vector3& vel_i,
-                           const imuBias::ConstantBias& bias_i) const;
+  NavState predict(const NavState& state_i,
+      const imuBias::ConstantBias& bias_i) const;
 
   /// Compute errors w.r.t. preintegrated measurements and jacobians wrt pose_i, vel_i, bias_i, pose_j, bias_j
   Vector9 computeErrorAndJacobians(const Pose3& pose_i, const Vector3& vel_i, const Pose3& pose_j,
