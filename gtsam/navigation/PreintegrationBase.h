@@ -36,22 +36,56 @@ typedef Vector3 Velocity3;
 /**
  * Navigation state: Pose (rotation, translation) + velocity
  */
-class NavState: private ProductLieGroup<Pose3, Velocity3> {
+class NavState: public ProductLieGroup<Pose3, Velocity3> {
 protected:
   typedef ProductLieGroup<Pose3, Velocity3> Base;
   typedef OptionalJacobian<9, 9> ChartJacobian;
+  using Base::first;
+  using Base::second;
 
 public:
   // constructors
   NavState() {}
   NavState(const Pose3& pose, const Velocity3& vel) : Base(pose, vel) {}
+  NavState(const Rot3& rot, const Point3& t, const Velocity3& vel): Base(Pose3(rot, t), vel) {}
+  NavState(const Base& product) : Base(product) {}
 
   // access
   const Pose3& pose() const { return first; }
   const Point3& translation() const { return pose().translation(); }
   const Rot3& rotation() const { return pose().rotation(); }
   const Velocity3& velocity() const { return second; }
+
+  /// @name Manifold
+  /// @{
+
+  // NavState tangent space sugar.
+  static Eigen::Block<Vector9,3,1> dR(Vector9& v) { return v.segment<3>(0); }
+  static Eigen::Block<Vector9,3,1> dP(Vector9& v) { return v.segment<3>(3); }
+  static Eigen::Block<Vector9,3,1> dV(Vector9& v) { return v.segment<3>(6); }
+
+  // Specialize Retract/Local that agrees with IMUFactors
+  // TODO(frank): This is a very specific retract. Talk to Luca about implications.
+  NavState retract(Vector9& v, //
+      ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) const {
+    if (H1||H2) throw std::runtime_error("NavState::retract derivatives not implemented yet");
+    return NavState(rotation().expmap(dR(v)), translation() + Point3(dP(v)), velocity() + dV(v));
+  }
+  Vector9 localCoordinates(const NavState& g, //
+      ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) const {
+    if (H1||H2) throw std::runtime_error("NavState::localCoordinates derivatives not implemented yet");
+    Vector9 v;
+    dR(v) = rotation().logmap(g.rotation());
+    dP(v) = (g.translation() - translation()).vector();
+    dV(v) = g.velocity() - velocity();
+    return v;
+  }
+  /// @}
 };
+
+// Specialize NavState traits to use a Retract/Local that agrees with IMUFactors
+template<>
+struct traits<NavState> : internal::LieGroupTraits<NavState> {};
 
 /// @deprecated
 struct PoseVelocityBias {
