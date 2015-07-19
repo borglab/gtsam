@@ -83,9 +83,9 @@ Rot3 updatePreintegratedRot(const Rot3& deltaRij_old,
 double accNoiseVar = 0.01;
 double omegaNoiseVar = 0.03;
 double intNoiseVar = 0.0001;
-const Matrix3 kMeasuredAccCovariance = accNoiseVar * Matrix3::Identity();
-const Matrix3 kMeasuredOmegaCovariance = omegaNoiseVar * Matrix3::Identity();
-const Matrix3 kIntegrationErrorCovariance = intNoiseVar * Matrix3::Identity();
+const Matrix3 kMeasuredAccCovariance = accNoiseVar * I_3x3;
+const Matrix3 kMeasuredOmegaCovariance = omegaNoiseVar * I_3x3;
+const Matrix3 kIntegrationErrorCovariance = intNoiseVar * I_3x3;
 
 // Auxiliary functions to test preintegrated Jacobians
 // delPdelBiasAcc_ delPdelBiasOmega_ delVdelBiasAcc_ delVdelBiasOmega_ delRdelBiasOmega_
@@ -211,13 +211,13 @@ double deltaT = 1.0;
 TEST(ImuFactor, ErrorAndJacobians) {
   using namespace common;
   bool use2ndOrderIntegration = true;
-  PreintegratedImuMeasurements pre_int_data(bias,
+  PreintegratedImuMeasurements pim(bias,
       kMeasuredAccCovariance, kMeasuredOmegaCovariance,
       kIntegrationErrorCovariance, use2ndOrderIntegration);
-  pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+  pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   // Create factor
-  ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pre_int_data, kGravity,
+  ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pim, kGravity,
       kZeroOmegaCoriolis);
 
   // Expected error
@@ -263,7 +263,7 @@ TEST(ImuFactor, ErrorAndJacobians) {
   EXPECT(assert_equal(errorExpected, factor.unwhitenedError(values), 1e-6));
 
   // Make sure the whitening is done correctly
-  Matrix cov = pre_int_data.preintMeasCov();
+  Matrix cov = pim.preintMeasCov();
   Matrix R = RtR(cov.inverse());
   Vector whitened = R * errorExpected;
   EXPECT(assert_equal(0.5 * whitened.squaredNorm(), factor.error(values), 1e-6));
@@ -290,14 +290,14 @@ TEST(ImuFactor, ErrorAndJacobianWithBiases) {
       + Vector3(0.2, 0.0, 0.0);
   double deltaT = 1.0;
 
-  PreintegratedImuMeasurements pre_int_data(
+  PreintegratedImuMeasurements pim(
       imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.1)),
       kMeasuredAccCovariance, kMeasuredOmegaCovariance,
       kIntegrationErrorCovariance);
-  pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+  pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   // Create factor
-  ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pre_int_data, kGravity,
+  ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pim, kGravity,
       nonZeroOmegaCoriolis);
 
   Values values;
@@ -330,16 +330,16 @@ TEST(ImuFactor, ErrorAndJacobianWith2ndOrderCoriolis) {
       + Vector3(0.2, 0.0, 0.0);
   double deltaT = 1.0;
 
-  PreintegratedImuMeasurements pre_int_data(
+  PreintegratedImuMeasurements pim(
       imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.1)),
       kMeasuredAccCovariance, kMeasuredOmegaCovariance,
       kIntegrationErrorCovariance);
-  pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+  pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   // Create factor
   Pose3 bodyPsensor = Pose3();
   bool use2ndOrderCoriolis = true;
-  ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pre_int_data, kGravity,
+  ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pim, kGravity,
       nonZeroOmegaCoriolis, bodyPsensor, use2ndOrderCoriolis);
 
   Values values;
@@ -422,7 +422,7 @@ TEST(ImuFactor, fistOrderExponential) {
       Rot3::Expmap((measuredOmega - biasOmega) * deltaT).matrix();
   const Matrix3 actualRot = hatRot
       * Rot3::Expmap(delRdelBiasOmega * deltabiasOmega).matrix();
-  // hatRot * (Matrix3::Identity() + skewSymmetric(delRdelBiasOmega * deltabiasOmega));
+  // hatRot * (I_3x3 + skewSymmetric(delRdelBiasOmega * deltabiasOmega));
 
   // This is a first order expansion so the equality is only an approximation
   EXPECT(assert_equal(expectedRot, actualRot));
@@ -758,15 +758,15 @@ TEST(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
   const Pose3 body_P_sensor(Rot3::Expmap(Vector3(0, 0.10, 0.10)),
       Point3(1, 0, 0));
 
-  PreintegratedImuMeasurements pre_int_data(
+  PreintegratedImuMeasurements pim(
       imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0)),
       kMeasuredAccCovariance, kMeasuredOmegaCovariance,
       kIntegrationErrorCovariance);
 
-  pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+  pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   // Create factor
-  ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pre_int_data, kGravity,
+  ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pim, kGravity,
       nonZeroOmegaCoriolis);
 
   Values values;
@@ -792,25 +792,22 @@ TEST(ImuFactor, PredictPositionAndVelocity) {
   measuredAcc << 0, 1, -9.81;
   double deltaT = 0.001;
 
-  Matrix I6x6(6, 6);
-  I6x6 = Matrix::Identity(6, 6);
-
-  PreintegratedImuMeasurements pre_int_data(
+  PreintegratedImuMeasurements pim(
       imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0)),
       kMeasuredAccCovariance, kMeasuredOmegaCovariance,
       kIntegrationErrorCovariance, true);
 
   for (int i = 0; i < 1000; ++i)
-    pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+    pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   // Create factor
-  ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pre_int_data, kGravity,
+  ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pim, kGravity,
       kZeroOmegaCoriolis);
 
   // Predict
   Pose3 x1;
   Vector3 v1(0, 0.0, 0.0);
-  PoseVelocityBias poseVelocity = pre_int_data.predict(x1, v1, bias, kGravity,
+  PoseVelocityBias poseVelocity = pim.predict(x1, v1, bias, kGravity,
       kZeroOmegaCoriolis);
   Pose3 expectedPose(Rot3(), Point3(0, 0.5, 0));
   Vector3 expectedVelocity;
@@ -830,27 +827,22 @@ TEST(ImuFactor, PredictRotation) {
   measuredAcc << 0, 0, -9.81;
   double deltaT = 0.001;
 
-  Matrix I6x6(6, 6);
-  I6x6 = Matrix::Identity(6, 6);
-
-  PreintegratedImuMeasurements pre_int_data(
+  PreintegratedImuMeasurements pim(
       imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0)),
       kMeasuredAccCovariance, kMeasuredOmegaCovariance,
       kIntegrationErrorCovariance, true);
 
   for (int i = 0; i < 1000; ++i)
-    pre_int_data.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+    pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   // Create factor
-  ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pre_int_data, kGravity,
-      kZeroOmegaCoriolis);
+  ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pim, kGravity, kZeroOmegaCoriolis);
 
   // Predict
   Pose3 x1, x2;
   Vector3 v1 = Vector3(0, 0.0, 0.0);
   Vector3 v2;
-  ImuFactor::Predict(x1, v1, x2, v2, bias, factor.preintegratedMeasurements(),
-      kGravity, kZeroOmegaCoriolis);
+  ImuFactor::Predict(x1, v1, x2, v2, bias, pim, kGravity, kZeroOmegaCoriolis);
   Pose3 expectedPose(Rot3().ypr(M_PI / 10, 0, 0), Point3(0, 0, 0));
   Vector3 expectedVelocity;
   expectedVelocity << 0, 0, 0;
