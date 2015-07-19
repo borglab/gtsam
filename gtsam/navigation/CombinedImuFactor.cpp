@@ -277,19 +277,13 @@ CombinedImuFactor::CombinedImuFactor(
 void CombinedImuFactor::Predict(const Pose3& pose_i, const Vector3& vel_i,
                                 Pose3& pose_j, Vector3& vel_j,
                                 const imuBias::ConstantBias& bias_i,
-                                const CombinedPreintegratedMeasurements& pim,
+                                CombinedPreintegratedMeasurements& pim,
                                 const Vector3& gravity,
                                 const Vector3& omegaCoriolis,
                                 const bool use2ndOrderCoriolis) {
-  // NOTE(frank): hack below only for backward compatibility
-  boost::shared_ptr<CombinedPreintegratedMeasurements::Params> p =
-      boost::make_shared<CombinedPreintegratedMeasurements::Params>(pim.p());
-  p->gravity = gravity;
-  p->omegaCoriolis = omegaCoriolis;
-  p->use2ndOrderCoriolis = use2ndOrderCoriolis;
-  CombinedPreintegratedMeasurements newPim = pim;
-  newPim.p_ = p;
-  PoseVelocityBias pvb = newPim.predict(pose_i, vel_i, bias_i);
+  // use deprecated predict
+  PoseVelocityBias pvb = pim.predict(pose_i, vel_i, bias_i, gravity,
+      omegaCoriolis, use2ndOrderCoriolis);
   pose_j = pvb.pose;
   vel_j = pvb.velocity;
 }

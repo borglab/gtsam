@@ -245,7 +245,7 @@ public:
   // @deprecated use PreintegrationBase::predict
   static void Predict(const Pose3& pose_i, const Vector3& vel_i, Pose3& pose_j,
                       Vector3& vel_j, const imuBias::ConstantBias& bias_i,
-                      const CombinedPreintegratedMeasurements& pim,
+                      CombinedPreintegratedMeasurements& pim,
                       const Vector3& gravity, const Vector3& omegaCoriolis,
                       const bool use2ndOrderCoriolis = false);
 
