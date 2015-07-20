@@ -18,6 +18,7 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/geometry/CalibratedCamera.h>
 #include <boost/make_shared.hpp>
+#include <boost/lexical_cast.hpp>
 
 namespace gtsam {
 
@@ -42,9 +43,12 @@ protected:
   /// shorthand for this class
   typedef TriangulationFactor<CAMERA> This;
 
+  /// shorthand for measurement type, e.g. Point2 or StereoPoint2
+  typedef typename CAMERA::Measurement Measurement;
+
   // Keep a copy of measurement and calibration for I/O
   const CAMERA camera_; ///< CAMERA in which this landmark was seen
-  const Point2 measured_; ///< 2D measurement
+  const Measurement measured_; ///< 2D measurement
 
   // verbosity handling for Cheirality Exceptions
   const bool throwCheirality_; ///< If true, rethrows Cheirality exceptions (default: false)
@@ -69,14 +73,17 @@ public:
    * @param throwCheirality determines whether Cheirality exceptions are rethrown
    * @param verboseCheirality determines whether exceptions are printed for Cheirality
    */
-  TriangulationFactor(const CAMERA& camera, const Point2& measured,
+  TriangulationFactor(const CAMERA& camera, const Measurement& measured,
       const SharedNoiseModel& model, Key pointKey, bool throwCheirality = false,
       bool verboseCheirality = false) :
       Base(model, pointKey), camera_(camera), measured_(measured), throwCheirality_(
           throwCheirality), verboseCheirality_(verboseCheirality) {
-    if (model && model->dim() != 2)
+    if (model && model->dim() != Measurement::dimension)
       throw std::invalid_argument(
-          "TriangulationFactor must be created with 2-dimensional noise model.");
+          "TriangulationFactor must be created with "
+              + boost::lexical_cast<std::string>((int) Measurement::dimension)
+              + "-dimensional noise model.");
+
   }
 
   /** Virtual destructor */
@@ -113,18 +120,18 @@ public:
   Vector evaluateError(const Point3& point, boost::optional<Matrix&> H2 =
       boost::none) const {
     try {
-      Point2 error(camera_.project2(point, boost::none, H2) - measured_);
+      Measurement error(camera_.project2(point, boost::none, H2) - measured_);
       return error.vector();
     } catch (CheiralityException& e) {
       if (H2)
-        *H2 = zeros(2, 3);
+        *H2 = zeros(Measurement::dimension, 3);
       if (verboseCheirality_)
         std::cout << e.what() << ": Landmark "
             << DefaultKeyFormatter(this->key()) << " moved behind camera"
             << std::endl;
       if (throwCheirality_)
         throw e;
-      return ones(2) * 2.0 * camera_.calibration().fx();
+      return ones(Measurement::dimension) * 2.0 * camera_.calibration().fx();
     }
   }
 
@@ -147,8 +154,8 @@ public:
     if (Ab.rows() == 0) {
       std::vector<size_t> dimensions(1, 3);
       Ab = VerticalBlockMatrix(dimensions, 2, true);
-      A.resize(2,3);
-      b.resize(2);
+      A.resize(Measurement::dimension,3);
+      b.resize(Measurement::dimension);
     }
 
     // Would be even better if we could pass blocks to project
@@ -164,7 +171,7 @@ public:
   }
 
   /** return the measurement */
-  const Point2& measured() const {
+  const Measurement& measured() const {
     return measured_;
   }
 
