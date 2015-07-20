@@ -182,6 +182,7 @@ Vector9 PreintegrationBase::integrateCoriolis(const NavState& state_i,
     const Pose3& pose_i = state_i.pose();
     const Vector3& vel_i = state_i.velocity();
     const Matrix3 Ri = pose_i.rotation().matrix();
+    const Vector3& t_i = state_i.translation().vector();
     const double dt = deltaTij(), dt2 = dt * dt;
 
     const Vector3& omegaCoriolis = *p().omegaCoriolis;
@@ -190,16 +191,20 @@ Vector9 PreintegrationBase::integrateCoriolis(const NavState& state_i,
     NavState::dP(result) -= omegaCoriolis.cross(vel_i) * dt2; // NOTE(luca): we got rid of the 2 wrt INS paper
     NavState::dV(result) -= 2.0 * omegaCoriolis.cross(vel_i) * dt;
     if (p().use2ndOrderCoriolis) {
-      Vector3 temp = omegaCoriolis.cross(
-          omegaCoriolis.cross(pose_i.translation().vector()));
+      Vector3 temp = omegaCoriolis.cross(omegaCoriolis.cross(t_i));
       NavState::dP(result) -= 0.5 * temp * dt2;
       NavState::dV(result) -= temp * dt;
     }
     if (H) {
       const Matrix3 omegaCoriolisHat = skewSymmetric(omegaCoriolis);
-      H->block<3,3>(0,0) = -D_dP_Ri;
-      H->block<3,3>(3,6) = - omegaCoriolisHat * dt2;
-      H->block<3,3>(6,6) = - 2.0 * omegaCoriolisHat * dt;
+      H->block<3,3>(0,0) -= D_dP_Ri;
+      H->block<3,3>(3,6) -= omegaCoriolisHat * dt2;
+      H->block<3,3>(6,6) -= 2.0 * omegaCoriolisHat * dt;
+      if (p().use2ndOrderCoriolis) {
+        const Matrix3 omegaCoriolisHat2 = omegaCoriolisHat * omegaCoriolisHat;
+        H->block<3,3>(3,3) -= 0.5 * omegaCoriolisHat2 * dt2;
+        H->block<3,3>(6,3) -= omegaCoriolisHat2 * dt;
+      }
     }
   }
   return result;

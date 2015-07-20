@@ -218,7 +218,7 @@ TEST(ImuFactor, PreintegrationBaseMethods) {
   p->accelerometerCovariance = kMeasuredAccCovariance;
   p->integrationCovariance = kIntegrationErrorCovariance;
   p->use2ndOrderIntegration = false;
-  p->use2ndOrderCoriolis = false;
+  p->use2ndOrderCoriolis = true;
 
   PreintegratedImuMeasurements pim(p, bias);
   pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
@@ -236,7 +236,7 @@ TEST(ImuFactor, PreintegrationBaseMethods) {
   }
   {
     Vector9 expected; // TODO(frank): taken from output. Should really verify.
-    expected << -0.0212372436, -0.0407423986, -0.0974116854, 0.0, -0.08, 0.06, 0.0, -0.08, 0.06;
+    expected << -0.0212372436, -0.0407423986, -0.0974116854, 0.1038, 0.038, -0.0804, 0.1038, 0.038, -0.0804;
     Matrix99 actualH;
     EXPECT(assert_equal(expected, pim.integrateCoriolis(state1, actualH), 1e-5));
     Matrix expectedH = numericalDerivative11<Vector9, NavState>(
@@ -246,7 +246,7 @@ TEST(ImuFactor, PreintegrationBaseMethods) {
   }
   {
     Vector9 expected; // TODO(frank): taken from output. Should really verify.
-    expected << 0.0415946095, -0.0407423986, -0.0974116854, 1, -0.08, 9.85, -0.187214027, 0.110178303, 0.0436304821;
+    expected << 0.0415946095, -0.0407423986, -0.0974116854, 1.1038, 0.038, 9.7096, -0.0834140265, 0.228178303, -0.0967695179;
     Matrix99 actualH1, actualH2;
     Vector9 biasCorrectedDelta = pim.biasCorrectedDelta(bias);
     EXPECT(
