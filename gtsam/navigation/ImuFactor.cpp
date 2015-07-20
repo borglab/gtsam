@@ -31,6 +31,20 @@ using namespace std;
 //------------------------------------------------------------------------------
 // Inner class PreintegratedMeasurements
 //------------------------------------------------------------------------------
+boost::shared_ptr<PreintegratedImuMeasurements::Params> PreintegratedImuMeasurements::MakeParams(
+    const Matrix3& measuredAccCovariance,
+    const Matrix3& measuredOmegaCovariance,
+    const Matrix3& integrationErrorCovariance, bool use2ndOrderIntegration,
+    bool use2ndOrderCoriolis) {
+  boost::shared_ptr<Params> p = boost::make_shared<Params>();
+  p->accelerometerCovariance = measuredAccCovariance;
+  p->gyroscopeCovariance = measuredOmegaCovariance;
+  p->integrationCovariance = integrationErrorCovariance;
+  p->use2ndOrderIntegration = use2ndOrderIntegration;
+  p->use2ndOrderCoriolis = use2ndOrderCoriolis;
+  return p;
+}
+//------------------------------------------------------------------------------
 void PreintegratedImuMeasurements::print(const string& s) const {
   PreintegrationBase::print(s);
 }
@@ -116,9 +130,7 @@ void PreintegratedImuMeasurements::integrateMeasurement(
 PreintegratedImuMeasurements::PreintegratedImuMeasurements(
     const imuBias::ConstantBias& biasHat, const Matrix3& measuredAccCovariance,
     const Matrix3& measuredOmegaCovariance,
-    const Matrix3& integrationErrorCovariance,
-    const bool use2ndOrderIntegration)
-     {
+    const Matrix3& integrationErrorCovariance, bool use2ndOrderIntegration) {
   biasHat_ = biasHat;
   boost::shared_ptr<Params> p = boost::make_shared<Params>();
   p->gyroscopeCovariance = measuredOmegaCovariance;

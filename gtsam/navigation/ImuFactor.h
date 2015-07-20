@@ -50,6 +50,13 @@ protected:
 
 public:
 
+  /// Construct parameters
+  static boost::shared_ptr<Params> MakeParams(
+      const Matrix3& measuredAccCovariance,
+      const Matrix3& measuredOmegaCovariance,
+      const Matrix3& integrationErrorCovariance, bool use2ndOrderIntegration =
+          false, bool use2ndOrderCoriolis = false);
+
  /**
    *  Constructor, initializes the class with no measurements
    *  @param bias Current estimate of acceleration and rotation rate biases
@@ -91,7 +98,7 @@ public:
       const Matrix3& measuredAccCovariance,
       const Matrix3& measuredOmegaCovariance,
       const Matrix3& integrationErrorCovariance,
-      const bool use2ndOrderIntegration = false);
+      bool use2ndOrderIntegration = false);
 
 private:
 
