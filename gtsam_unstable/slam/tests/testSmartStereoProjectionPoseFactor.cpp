@@ -40,11 +40,7 @@ static double b = 1;
 static Cal3_S2Stereo::shared_ptr K(new Cal3_S2Stereo(fov, w, h, b));
 static Cal3_S2Stereo::shared_ptr K2(
     new Cal3_S2Stereo(1500, 1200, 0, 640, 480, b));
-static boost::shared_ptr<Cal3Bundler> Kbundler(
-    new Cal3Bundler(500, 1e-3, 1e-3, 1000, 2000));
 
-//static double rankTol = 1.0;
-//static double linThreshold = -1.0;
 
 static SmartStereoProjectionParams params;
 
