@@ -193,10 +193,10 @@ Vector6 Pose3::ChartAtOrigin::Local(const Pose3& T, ChartJacobian H) {
  *  The closed-form formula is similar to formula 102 in Barfoot14tro)
  */
 static Matrix3 computeQforExpmapDerivative(const Vector6& xi) {
-  Vector3 w(sub(xi, 0, 3));
-  Vector3 v(sub(xi, 3, 6));
-  Matrix3 V = skewSymmetric(v);
-  Matrix3 W = skewSymmetric(w);
+  const Vector3 w = xi.head<3>();
+  const Vector3 v = xi.tail<3>();
+  const Matrix3 V = skewSymmetric(v);
+  const Matrix3 W = skewSymmetric(w);
 
   Matrix3 Q;
 
@@ -215,8 +215,8 @@ static Matrix3 computeQforExpmapDerivative(const Vector6& xi) {
   // The closed-form formula in Barfoot14tro eq. (102)
   double phi = w.norm();
   if (fabs(phi)>1e-5) {
-    double sinPhi = sin(phi), cosPhi = cos(phi);
-    double phi2 = phi * phi, phi3 = phi2 * phi, phi4 = phi3 * phi, phi5 = phi4 * phi;
+    const double sinPhi = sin(phi), cosPhi = cos(phi);
+    const double phi2 = phi * phi, phi3 = phi2 * phi, phi4 = phi3 * phi, phi5 = phi4 * phi;
     // Invert the sign of odd-order terms to have the right Jacobian
     Q = -0.5*V + (phi-sinPhi)/phi3*(W*V + V*W - W*V*W)
             + (1-phi2/2-cosPhi)/phi4*(W*W*V + V*W*W - 3*W*V*W)
@@ -234,40 +234,37 @@ static Matrix3 computeQforExpmapDerivative(const Vector6& xi) {
 
 /* ************************************************************************* */
 Matrix6 Pose3::ExpmapDerivative(const Vector6& xi) {
-  Vector3 w(sub(xi, 0, 3));
-  Matrix3 Jw = Rot3::ExpmapDerivative(w);
-  Matrix3 Q = computeQforExpmapDerivative(xi);
-  Matrix6 J = (Matrix(6,6) << Jw, Z_3x3, Q, Jw).finished();
+  const Vector3 w = xi.head<3>();
+  const Matrix3 Jw = Rot3::ExpmapDerivative(w);
+  const Matrix3 Q = computeQforExpmapDerivative(xi);
+  Matrix6 J;
+  J << Jw, Z_3x3, Q, Jw;
   return J;
 }
 
 /* ************************************************************************* */
 Matrix6 Pose3::LogmapDerivative(const Pose3& pose) {
-  Vector6 xi = Logmap(pose);
-  Vector3 w(sub(xi, 0, 3));
-  Matrix3 Jw = Rot3::LogmapDerivative(w);
-  Matrix3 Q = computeQforExpmapDerivative(xi);
-  Matrix3 Q2 = -Jw*Q*Jw;
-  Matrix6 J = (Matrix(6,6) << Jw, Z_3x3, Q2, Jw).finished();
+  const Vector6 xi = Logmap(pose);
+  const Vector3 w = xi.head<3>();
+  const Matrix3 Jw = Rot3::LogmapDerivative(w);
+  const Matrix3 Q = computeQforExpmapDerivative(xi);
+  const Matrix3 Q2 = -Jw*Q*Jw;
+  Matrix6 J;
+  J << Jw, Z_3x3, Q2, Jw;
   return J;
 }
 
 /* ************************************************************************* */
 const Point3& Pose3::translation(OptionalJacobian<3, 6> H) const {
-  if (H) {
-    *H << Z_3x3, rotation().matrix();
-  }
+  if (H) *H << Z_3x3, rotation().matrix();
   return t_;
 }
 
 /* ************************************************************************* */
 Matrix4 Pose3::matrix() const {
-  const Matrix3 R = R_.matrix();
-  const Vector3 T = t_.vector();
-  Matrix14 A14;
-  A14 << 0.0, 0.0, 0.0, 1.0;
+  static const Matrix14 A14 = (Matrix14() << 0.0, 0.0, 0.0, 1.0).finished();
   Matrix4 mat;
-  mat << R, T, A14;
+  mat << R_.matrix(), t_.vector(), A14;
   return mat;
 }
 
@@ -281,15 +278,17 @@ Pose3 Pose3::transform_to(const Pose3& pose) const {
 /* ************************************************************************* */
 Point3 Pose3::transform_from(const Point3& p, OptionalJacobian<3,6> Dpose,
     OptionalJacobian<3,3> Dpoint) const {
+  // Only get matrix once, to avoid multiple allocations,
+  // as well as multiple conversions in the Quaternion case
+  const Matrix3 R = R_.matrix();
   if (Dpose) {
-    const Matrix3 R = R_.matrix();
-    Matrix3 DR = R * skewSymmetric(-p.x(), -p.y(), -p.z());
-    (*Dpose) << DR, R;
+    Dpose->leftCols<3>() = R * skewSymmetric(-p.x(), -p.y(), -p.z());
+    Dpose->rightCols<3>() = R;
   }
   if (Dpoint) {
-    *Dpoint = R_.matrix();
+    *Dpoint = R;
   }
-  return R_ * p + t_;
+  return Point3(R * p.vector()) + t_;
 }
 
 /* ************************************************************************* */
