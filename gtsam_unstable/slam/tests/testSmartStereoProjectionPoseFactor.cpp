@@ -124,7 +124,7 @@ TEST_UNSAFE( SmartStereoProjectionPoseFactor, noiseless ) {
   Pose3 level_pose = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2),
       Point3(0, 0, 1));
   StereoCamera level_camera(level_pose, K2);
-  cout << "Test 122 STARTS HERE -----------------------------------------  122 " << endl;
+
   // create second camera 1 meter to the right of first camera
   Pose3 level_pose_right = level_pose * Pose3(Rot3(), Point3(1, 0, 0));
   StereoCamera level_camera_right(level_pose_right, K2);
