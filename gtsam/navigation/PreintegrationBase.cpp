@@ -252,11 +252,19 @@ Vector9 PreintegrationBase::recombinedPrediction(const NavState& state_i,
 NavState PreintegrationBase::predict(const NavState& state_i,
     const imuBias::ConstantBias& bias_i, OptionalJacobian<9, 9> H1,
     OptionalJacobian<9, 6> H2) const {
-  Vector9 biasCorrected = biasCorrectedDelta(bias_i, H2);
-  Matrix9 D_delta_biasCorrected;
-  Vector9 delta = recombinedPrediction(state_i, biasCorrected, H1, H2 ? &D_delta_biasCorrected : 0);
-  if (H2) *H2 = D_delta_biasCorrected * (*H2);
-  return state_i.retract(delta);
+  Matrix96 D_biasCorrected_bias;
+  Vector9 biasCorrected = biasCorrectedDelta(bias_i,
+      H2 ? &D_biasCorrected_bias : 0);
+  Matrix9 D_delta_state, D_delta_biasCorrected;
+  Vector9 delta = recombinedPrediction(state_i, biasCorrected,
+      H1 ? &D_delta_state : 0, H2 ? &D_delta_biasCorrected : 0);
+  Matrix9 D_predict_state, D_predict_delta;
+  NavState state_j = state_i.retract(delta, D_predict_state, D_predict_delta);
+  if (H1)
+    *H1 = D_predict_state + D_predict_delta * D_delta_state;
+  if (H2)
+    *H2 = D_predict_delta * D_delta_biasCorrected * D_biasCorrected_bias;
+  return state_j;
 }
 
 //------------------------------------------------------------------------------
