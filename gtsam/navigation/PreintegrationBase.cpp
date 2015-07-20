@@ -155,8 +155,29 @@ Vector9 PreintegrationBase::biasCorrectedDelta(
 }
 
 //------------------------------------------------------------------------------
-Vector9 PreintegrationBase::integrateCoriolis(const NavState& state_i) const {
+static Vector3 rotate(const Matrix3& R, const Vector3& p,
+    OptionalJacobian<3, 3> H1 = boost::none, OptionalJacobian<3, 3> H2 = boost::none) {
+  if (H1) *H1 = R * skewSymmetric(-p.x(), -p.y(), -p.z());
+  if (H2) *H2 = R;
+  return R * p;
+}
+
+//------------------------------------------------------------------------------
+static Vector3 unrotate(const Matrix3& R, const Vector3& p,
+    OptionalJacobian<3, 3> H1 = boost::none, OptionalJacobian<3, 3> H2 = boost::none) {
+  const Matrix3 Rt = R.transpose();
+  Vector3 q = Rt * p;
+  const double wx = q.x(), wy = q.y(), wz = q.z();
+  if (H1) *H1 << 0.0, -wz, +wy, +wz, 0.0, -wx, -wy, +wx, 0.0;
+  if (H2) *H2 = Rt;
+  return q;
+}
+
+//------------------------------------------------------------------------------
+Vector9 PreintegrationBase::integrateCoriolis(const NavState& state_i,
+    OptionalJacobian<9, 9> H) const {
   Vector9 result = Vector9::Zero();
+  if (H) H->setZero();
   if (p().omegaCoriolis) {
     const Pose3& pose_i = state_i.pose();
     const Vector3& vel_i = state_i.velocity();
@@ -164,14 +185,21 @@ Vector9 PreintegrationBase::integrateCoriolis(const NavState& state_i) const {
     const double dt = deltaTij(), dt2 = dt * dt;
 
     const Vector3& omegaCoriolis = *p().omegaCoriolis;
-    NavState::dR(result) -= Ri.transpose() * omegaCoriolis * dt;
+    Matrix3 D_dP_Ri;
+    NavState::dR(result) -= unrotate(Ri, omegaCoriolis * dt, H ? &D_dP_Ri : 0);
     NavState::dP(result) -= omegaCoriolis.cross(vel_i) * dt2; // NOTE(luca): we got rid of the 2 wrt INS paper
-    NavState::dV(result) -= 2 * omegaCoriolis.cross(vel_i) * dt;
+    NavState::dV(result) -= 2.0 * omegaCoriolis.cross(vel_i) * dt;
     if (p().use2ndOrderCoriolis) {
       Vector3 temp = omegaCoriolis.cross(
           omegaCoriolis.cross(pose_i.translation().vector()));
       NavState::dP(result) -= 0.5 * temp * dt2;
       NavState::dV(result) -= temp * dt;
+    }
+    if (H) {
+      const Matrix3 omegaCoriolisHat = skewSymmetric(omegaCoriolis);
+      H->block<3,3>(0,0) = -D_dP_Ri;
+      H->block<3,3>(3,6) = - omegaCoriolisHat * dt2;
+      H->block<3,3>(6,6) = - 2.0 * omegaCoriolisHat * dt;
     }
   }
   return result;
@@ -179,7 +207,7 @@ Vector9 PreintegrationBase::integrateCoriolis(const NavState& state_i) const {
 
 //------------------------------------------------------------------------------
 Vector9 PreintegrationBase::recombinedPrediction(const NavState& state_i,
-    Vector9& biasCorrectedDelta, OptionalJacobian<9, 9> H1,
+    const Vector9& biasCorrectedDelta, OptionalJacobian<9, 9> H1,
     OptionalJacobian<9, 9> H2) const {
 
   const Pose3& pose_i = state_i.pose();
@@ -189,11 +217,29 @@ Vector9 PreintegrationBase::recombinedPrediction(const NavState& state_i,
 
   // Rotation, translation, and velocity:
   Vector9 delta;
+  Matrix3 D_dP_Ri, D_dP_bc, D_dV_Ri, D_dV_bc;
   NavState::dR(delta) = NavState::dR(biasCorrectedDelta);
-  NavState::dP(delta) = Ri * NavState::dP(biasCorrectedDelta) + vel_i * dt + 0.5 * p().gravity * dt2;
-  NavState::dV(delta) = Ri * NavState::dV(biasCorrectedDelta) + p().gravity * dt;
+  NavState::dP(delta) = rotate(Ri, NavState::dP(biasCorrectedDelta), D_dP_Ri, D_dP_bc) + vel_i * dt + 0.5 * p().gravity * dt2;
+  NavState::dV(delta) = rotate(Ri, NavState::dV(biasCorrectedDelta), D_dV_Ri, D_dV_bc) + p().gravity * dt;
 
-  if (p().omegaCoriolis) delta +=  integrateCoriolis(state_i);
+  Matrix9 Hcoriolis;
+  if (p().omegaCoriolis) {
+    delta += integrateCoriolis(state_i, H1 ? &Hcoriolis : 0);
+  }
+  if (H1) {
+    H1->setZero();
+    H1->block<3,3>(3,0) = D_dP_Ri;
+    H1->block<3,3>(3,6) = I_3x3 * dt;
+    H1->block<3,3>(6,0) = D_dV_Ri;
+    if (p().omegaCoriolis) *H1 += Hcoriolis;
+  }
+  if (H2) {
+    H2->setZero();
+    H2->block<3,3>(0,0) = I_3x3;
+    H2->block<3,3>(3,3) = Ri;
+    H2->block<3,3>(6,6) = Ri;
+  }
+
   return delta;
 }
 
@@ -299,11 +345,11 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i, const 
     Ri.transpose(); // dfV/dVj
   }
   if (H5) {
-    const Matrix3 JbiasOmega = D_cDeltaRij_cOmega * D_biasCorrected_bias.block<3,3>(0,3);
+    const Matrix36 JbiasOmega = D_cDeltaRij_cOmega * D_biasCorrected_bias.middleRows<3>(0);
     (*H5) <<
-    Z_3x3, D_fR_fRrot * (-fRrot.inverse().matrix() * JbiasOmega),   // dfR/dBias
-    -delPdelBiasAcc(), -delPdelBiasOmega(),                         // dfP/dBias
-    -delVdelBiasAcc(), -delVdelBiasOmega();                         // dfV/dBias
+    -D_fR_fRrot * fRrot.inverse().matrix() * JbiasOmega,  // dfR/dBias
+    -D_biasCorrected_bias.middleRows<3>(3),               // dfP/dBias
+    -D_biasCorrected_bias.middleRows<3>(6);               // dfV/dBias
   }
   // TODO(frank): Vector9 r = state_i.localCoordinates(predictedState_j); does not work ???
   Vector9 r;

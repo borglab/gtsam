@@ -63,10 +63,13 @@ public:
   static Eigen::Block<Vector9,3,1> dR(Vector9& v) { return v.segment<3>(0); }
   static Eigen::Block<Vector9,3,1> dP(Vector9& v) { return v.segment<3>(3); }
   static Eigen::Block<Vector9,3,1> dV(Vector9& v) { return v.segment<3>(6); }
+  static Eigen::Block<const Vector9,3,1> dR(const Vector9& v) { return v.segment<3>(0); }
+  static Eigen::Block<const Vector9,3,1> dP(const Vector9& v) { return v.segment<3>(3); }
+  static Eigen::Block<const Vector9,3,1> dV(const Vector9& v) { return v.segment<3>(6); }
 
   // Specialize Retract/Local that agrees with IMUFactors
   // TODO(frank): This is a very specific retract. Talk to Luca about implications.
-  NavState retract(Vector9& v, //
+  NavState retract(const Vector9& v, //
       ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) const {
     if (H1||H2) throw std::runtime_error("NavState::retract derivatives not implemented yet");
     return NavState(rotation().expmap(dR(v)), translation() + Point3(dP(v)), velocity() + dV(v));
@@ -213,11 +216,12 @@ class PreintegrationBase : public PreintegratedRotation {
       OptionalJacobian<9, 6> H = boost::none) const;
 
   /// Integrate coriolis correction in body frame state_i
-  Vector9 integrateCoriolis(const NavState& state_i) const;
+  Vector9 integrateCoriolis(const NavState& state_i,
+      OptionalJacobian<9, 9> H = boost::none) const;
 
   /// Recombine the preintegration, gravity, and coriolis in a single NavState tangent vector
   Vector9 recombinedPrediction(const NavState& state_i,
-      Vector9& biasCorrectedDelta, OptionalJacobian<9, 9> H1 = boost::none,
+      const Vector9& biasCorrectedDelta, OptionalJacobian<9, 9> H1 = boost::none,
       OptionalJacobian<9, 9> H2 = boost::none) const;
 
   /// Predict state at time j

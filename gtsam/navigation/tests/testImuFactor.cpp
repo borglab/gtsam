@@ -200,6 +200,7 @@ Vector3 v1(Vector3(0.5, 0.0, 0.0));
 Pose3 x2(Rot3::RzRyRx(M_PI / 12.0 + M_PI / 100.0, M_PI / 6.0, M_PI / 4.0),
     Point3(5.5, 1.0, -50.0));
 Vector3 v2(Vector3(0.5, 0.0, 0.0));
+NavState state1(x1, v1);
 
 // Measurements
 Vector3 measuredOmega(M_PI / 100, 0, 0);
@@ -208,22 +209,59 @@ double deltaT = 1.0;
 } // namespace common
 
 /* ************************************************************************* */
-TEST(ImuFactor, BiasCorrectedDelta) {
+TEST(ImuFactor, PreintegrationBaseMethods) {
   using namespace common;
   boost::shared_ptr<PreintegratedImuMeasurements::Params> p =
-      PreintegratedImuMeasurements::MakeParams(kMeasuredAccCovariance,
-          kMeasuredOmegaCovariance, kIntegrationErrorCovariance);
+      boost::make_shared<PreintegratedImuMeasurements::Params>();
+  p->gyroscopeCovariance = kMeasuredOmegaCovariance;
+  p->omegaCoriolis = Vector3(0.02, 0.03, 0.04);
+  p->accelerometerCovariance = kMeasuredAccCovariance;
+  p->integrationCovariance = kIntegrationErrorCovariance;
+  p->use2ndOrderIntegration = false;
+  p->use2ndOrderCoriolis = false;
+
   PreintegratedImuMeasurements pim(p, bias);
   pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
   pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
-  Vector9 expected; // TODO(frank): taken from output. Should really verify.
-  expected << 0.0628318531, 0.0, 0.0, 4.905, -2.19885135, -8.20622494, 9.81, -4.13885394, -16.4774682;
-  Matrix96 actualH;
-  EXPECT(assert_equal(expected, pim.biasCorrectedDelta(bias,actualH), 1e-5));
-  Matrix expectedH = numericalDerivative11<Vector9, imuBias::ConstantBias>(
-      boost::bind(&PreintegrationBase::biasCorrectedDelta, pim, _1, boost::none), bias);
-  EXPECT(assert_equal(expectedH, actualH));
+  { // biasCorrectedDelta
+    Vector9 expected; // TODO(frank): taken from output. Should really verify.
+    expected << 0.0628318531, 0.0, 0.0, 4.905, -2.19885135, -8.20622494, 9.81, -4.13885394, -16.4774682;
+    Matrix96 actualH;
+    EXPECT(assert_equal(expected, pim.biasCorrectedDelta(bias, actualH), 1e-5));
+    Matrix expectedH = numericalDerivative11<Vector9, imuBias::ConstantBias>(
+        boost::bind(&PreintegrationBase::biasCorrectedDelta, pim, _1,
+            boost::none), bias);
+    EXPECT(assert_equal(expectedH, actualH));
+  }
+  {
+    Vector9 expected; // TODO(frank): taken from output. Should really verify.
+    expected << -0.0212372436, -0.0407423986, -0.0974116854, 0.0, -0.08, 0.06, 0.0, -0.08, 0.06;
+    Matrix99 actualH;
+    EXPECT(assert_equal(expected, pim.integrateCoriolis(state1, actualH), 1e-5));
+    Matrix expectedH = numericalDerivative11<Vector9, NavState>(
+        boost::bind(&PreintegrationBase::integrateCoriolis, pim, _1,
+            boost::none), state1);
+    EXPECT(assert_equal(expectedH, actualH));
+  }
+  {
+    Vector9 expected; // TODO(frank): taken from output. Should really verify.
+    expected << 0.0415946095, -0.0407423986, -0.0974116854, 1, -0.08, 9.85, -0.187214027, 0.110178303, 0.0436304821;
+    Matrix99 actualH1, actualH2;
+    Vector9 biasCorrectedDelta = pim.biasCorrectedDelta(bias);
+    EXPECT(
+        assert_equal(expected,
+            pim.recombinedPrediction(state1, biasCorrectedDelta, actualH1,
+                actualH2), 1e-5));
+    Matrix expectedH1 = numericalDerivative11<Vector9, NavState>(
+        boost::bind(&PreintegrationBase::recombinedPrediction, pim, _1,
+            biasCorrectedDelta, boost::none, boost::none), state1);
+    EXPECT(assert_equal(expectedH1, actualH1));
+    Matrix expectedH2 = numericalDerivative11<Vector9, Vector9>(
+        boost::bind(&PreintegrationBase::recombinedPrediction, pim, state1, _1,
+            boost::none, boost::none), biasCorrectedDelta);
+    EXPECT(assert_equal(expectedH2, actualH2));
+  }
 }
 
 /* ************************************************************************* */
