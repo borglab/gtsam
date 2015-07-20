@@ -268,6 +268,36 @@ NavState PreintegrationBase::predict(const NavState& state_i,
 }
 
 //------------------------------------------------------------------------------
+// TODO(frank): this is *almost* state_j.localCoordinates(predict),
+// except for the damn Ri.transpose. Ri is also the only way this depends on state_i.
+// That is not an accident! Put R in computed covariances instead ?
+static Vector9 computeError(const NavState& state_i, const NavState& state_j,
+    const NavState& predictedState_j) {
+
+  const Rot3& rot_i = state_i.rotation();
+  const Matrix Ri = rot_i.matrix();
+
+  // Residual rotation error
+  // TODO: this also seems to be flipped from localCoordinates
+  const Rot3 fRrot = predictedState_j.rotation().between(state_j.rotation());
+  const Vector3 fR = Rot3::Logmap(fRrot);
+
+  // Evaluate residual error, according to [3]
+  // Ri.transpose() is important here to preserve a model with *additive* Gaussian noise of correct covariance
+  const Vector3 fp = Ri.transpose()
+      * (state_j.translation() - predictedState_j.translation()).vector();
+
+  // Ri.transpose() is important here to preserve a model with *additive* Gaussian noise of correct covariance
+  const Vector3 fv = Ri.transpose()
+      * (state_j.velocity() - predictedState_j.velocity());
+
+  Vector9 r;
+  r << fR, fp, fv;
+  return r;
+  // return state_j.localCoordinates(predictedState_j);
+}
+
+//------------------------------------------------------------------------------
 Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i, const Vector3& vel_i,
                                                      const Pose3& pose_j, const Vector3& vel_j,
                                                      const imuBias::ConstantBias& bias_i,
@@ -280,9 +310,11 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i, const 
   // we give some shorter name to rotations and translations
   const Rot3& rot_i = pose_i.rotation();
   const Matrix Ri = rot_i.matrix();
+  NavState state_i(pose_i, vel_i);
 
   const Rot3& rot_j = pose_j.rotation();
   const Vector3 pos_j = pose_j.translation().vector();
+  NavState state_j(pose_j, vel_j);
 
   // Compute bias-corrected quantities
   // TODO(frank): now redundant with biasCorrected below
@@ -290,9 +322,9 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i, const 
   Vector9 biasCorrected = biasCorrectedDelta(bias_i, D_biasCorrected_bias);
 
   /// Predict state at time j
-  NavState state_i(pose_i, vel_i);
-  Vector9 delta = recombinedPrediction(state_i, biasCorrected);
-  NavState predictedState_j = state_i.retract(delta);
+  Matrix99 D_predict_state;
+  Matrix96 D_predict_bias;
+  NavState predictedState_j = predict(state_i, bias_i, D_predict_state, D_predict_bias);
 
   // Evaluate residual error, according to [3]
   // Ri.transpose() is important here to preserve a model with *additive* Gaussian noise of correct covariance
@@ -315,7 +347,7 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i, const 
   const Rot3 RiBetweenRj = rot_i.between(rot_j);
   const Rot3 fRrot = correctedDeltaRij.between(RiBetweenRj);
   Matrix3 D_fR_fRrot;
-  const Vector3 fR = Rot3::Logmap(fRrot, H1 || H3 || H5 ? &D_fR_fRrot : 0);
+  Rot3::Logmap(fRrot, H1 || H3 || H5 ? &D_fR_fRrot : 0);
 
   const double dt = deltaTij(), dt2 = dt*dt;
   Matrix3 RitOmegaCoriolisHat = Z_3x3;
@@ -364,10 +396,8 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i, const 
     -D_biasCorrected_bias.middleRows<3>(3),               // dfP/dBias
     -D_biasCorrected_bias.middleRows<3>(6);               // dfV/dBias
   }
-  // TODO(frank): Vector9 r = state_i.localCoordinates(predictedState_j); does not work ???
-  Vector9 r;
-  r << fR, fp, fv;
-  return r;
+  // TODO(frank): Do everything via derivatives of function below
+  return computeError(state_i, state_j, predictedState_j);
 }
 
 //------------------------------------------------------------------------------

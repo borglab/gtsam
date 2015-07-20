@@ -68,7 +68,7 @@ public:
   static Eigen::Block<const Vector9,3,1> dV(const Vector9& v) { return v.segment<3>(6); }
 
   // Specialized Retract/Local that agrees with IMUFactors
-  // TODO(frank): This is a very specific retract. Talk to Luca about implications.
+  // NOTE(frank): This also agrees with Pose3.retract
   NavState retract(const Vector9& xi, //
       ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) const {
     Matrix3 H1R, H2R;
