@@ -67,12 +67,23 @@ public:
   static Eigen::Block<const Vector9,3,1> dP(const Vector9& v) { return v.segment<3>(3); }
   static Eigen::Block<const Vector9,3,1> dV(const Vector9& v) { return v.segment<3>(6); }
 
-  // Specialize Retract/Local that agrees with IMUFactors
+  // Specialized Retract/Local that agrees with IMUFactors
   // TODO(frank): This is a very specific retract. Talk to Luca about implications.
-  NavState retract(const Vector9& v, //
+  NavState retract(const Vector9& xi, //
       ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) const {
-    if (H1||H2) throw std::runtime_error("NavState::retract derivatives not implemented yet");
-    return NavState(rotation().expmap(dR(v)), translation() + Point3(dP(v)), velocity() + dV(v));
+    Matrix3 H1R, H2R;
+    const Rot3 R = rotation().expmap(dR(xi), H1 ? &H1R : 0, H2 ? &H2R : 0);
+    const Point3 p = translation() + Point3(dP(xi));
+    const Vector v = velocity() + dV(xi);
+    if (H1) {
+      H1->setIdentity();
+      H1->topLeftCorner<3,3>() = H1R;
+    }
+    if (H2) {
+      H2->setIdentity();
+      H2->topLeftCorner<3,3>() = H2R;
+    }
+    return NavState(R, p, v);
   }
   Vector9 localCoordinates(const NavState& g, //
       ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) const {
@@ -88,7 +99,17 @@ public:
 
 // Specialize NavState traits to use a Retract/Local that agrees with IMUFactors
 template<>
-struct traits<NavState> : internal::LieGroupTraits<NavState> {};
+struct traits<NavState> : internal::LieGroupTraits<NavState> {
+  static void Print(const NavState& m, const std::string& s = "") {
+    m.rotation().print(s+".R");
+    m.translation().print(s+".P");
+    print((Vector)m.velocity(),s+".V");
+  }
+  static bool Equals(const NavState& m1, const NavState& m2, double tol = 1e-8) {
+    return m1.pose().equals(m2.pose(), tol)
+        && equal_with_abs_tol(m1.velocity(), m2.velocity(), tol);
+  }
+};
 
 /// @deprecated
 struct PoseVelocityBias {

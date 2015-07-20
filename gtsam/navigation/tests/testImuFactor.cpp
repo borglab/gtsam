@@ -209,6 +209,55 @@ double deltaT = 1.0;
 } // namespace common
 
 /* ************************************************************************* */
+TEST( NavState, Lie ) {
+  // origin and zero deltas
+  NavState identity;
+  const double tol=1e-5;
+  Rot3 rot = Rot3::RzRyRx(0.1, 0.2, 0.3);
+  Point3 pt(1.0, 2.0, 3.0);
+  Velocity3 vel(0.4, 0.5, 0.6);
+
+  EXPECT(assert_equal(identity, (NavState)identity.retract(zero(9)), tol));
+  EXPECT(assert_equal(zero(9), identity.localCoordinates(identity), tol));
+
+  NavState state1(rot, pt, vel);
+  EXPECT(assert_equal(state1, (NavState)state1.retract(zero(9)), tol));
+  EXPECT(assert_equal(zero(9), state1.localCoordinates(state1), tol));
+
+  // Special retract
+  Vector delta(9);
+  delta << 0.1, 0.1, 0.1, 0.2, 0.3, 0.4,-0.1,-0.2,-0.3;
+  Rot3 rot2 = rot.expmap(delta.head<3>());
+  Point3 t2 = pt + Point3(delta.segment<3>(3));
+  Velocity3 vel2 = vel + Velocity3(-0.1, -0.2, -0.3);
+  NavState state2(rot2, t2, vel2);
+  EXPECT(assert_equal(state2, (NavState)state1.retract(delta), tol));
+  EXPECT(assert_equal(delta, state1.localCoordinates(state2), tol));
+
+  // roundtrip from state2 to state3 and back
+  NavState state3 = state2.retract(delta);
+  EXPECT(assert_equal(delta, state2.localCoordinates(state3), tol));
+
+  // roundtrip from state3 to state4 and back, with expmap.
+  NavState state4 = state3.expmap(delta);
+  EXPECT(assert_equal(delta, state3.logmap(state4), tol));
+
+  // For the expmap/logmap (not necessarily retract/local) -delta goes other way
+  EXPECT(assert_equal(state3, (NavState)state4.expmap(-delta), tol));
+  EXPECT(assert_equal(delta, -state4.logmap(state3), tol));
+
+  // retract derivatives
+  Matrix9 aH1, aH2;
+  state1.retract(delta, aH1, aH2);
+  Matrix eH1 = numericalDerivative11<NavState, NavState>(
+      boost::bind(&NavState::retract, _1, delta, boost::none, boost::none),state1);
+  EXPECT(assert_equal(eH1, aH1));
+  Matrix eH2 = numericalDerivative11<NavState, Vector9>(
+      boost::bind(&NavState::retract, state1, _1, boost::none, boost::none), delta);
+  EXPECT(assert_equal(eH2, aH2));
+}
+
+/* ************************************************************************* */
 TEST(ImuFactor, PreintegrationBaseMethods) {
   using namespace common;
   boost::shared_ptr<PreintegratedImuMeasurements::Params> p =
@@ -225,42 +274,46 @@ TEST(ImuFactor, PreintegrationBaseMethods) {
   pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   { // biasCorrectedDelta
-    Vector9 expected; // TODO(frank): taken from output. Should really verify.
-    expected << 0.0628318531, 0.0, 0.0, 4.905, -2.19885135, -8.20622494, 9.81, -4.13885394, -16.4774682;
     Matrix96 actualH;
-    EXPECT(assert_equal(expected, pim.biasCorrectedDelta(bias, actualH), 1e-5));
+    pim.biasCorrectedDelta(bias, actualH);
     Matrix expectedH = numericalDerivative11<Vector9, imuBias::ConstantBias>(
         boost::bind(&PreintegrationBase::biasCorrectedDelta, pim, _1,
             boost::none), bias);
     EXPECT(assert_equal(expectedH, actualH));
   }
   {
-    Vector9 expected; // TODO(frank): taken from output. Should really verify.
-    expected << -0.0212372436, -0.0407423986, -0.0974116854, 0.1038, 0.038, -0.0804, 0.1038, 0.038, -0.0804;
     Matrix99 actualH;
-    EXPECT(assert_equal(expected, pim.integrateCoriolis(state1, actualH), 1e-5));
+    pim.integrateCoriolis(state1, actualH);
     Matrix expectedH = numericalDerivative11<Vector9, NavState>(
         boost::bind(&PreintegrationBase::integrateCoriolis, pim, _1,
             boost::none), state1);
     EXPECT(assert_equal(expectedH, actualH));
   }
   {
-    Vector9 expected; // TODO(frank): taken from output. Should really verify.
-    expected << 0.0415946095, -0.0407423986, -0.0974116854, 1.1038, 0.038, 9.7096, -0.0834140265, 0.228178303, -0.0967695179;
-    Matrix99 actualH1, actualH2;
+    Matrix99 aH1, aH2;
     Vector9 biasCorrectedDelta = pim.biasCorrectedDelta(bias);
-    EXPECT(
-        assert_equal(expected,
-            pim.recombinedPrediction(state1, biasCorrectedDelta, actualH1,
-                actualH2), 1e-5));
-    Matrix expectedH1 = numericalDerivative11<Vector9, NavState>(
+    pim.recombinedPrediction(state1, biasCorrectedDelta, aH1, aH2);
+    Matrix eH1 = numericalDerivative11<Vector9, NavState>(
         boost::bind(&PreintegrationBase::recombinedPrediction, pim, _1,
             biasCorrectedDelta, boost::none, boost::none), state1);
-    EXPECT(assert_equal(expectedH1, actualH1));
-    Matrix expectedH2 = numericalDerivative11<Vector9, Vector9>(
+    EXPECT(assert_equal(eH1, aH1));
+    Matrix eH2 = numericalDerivative11<Vector9, Vector9>(
         boost::bind(&PreintegrationBase::recombinedPrediction, pim, state1, _1,
             boost::none, boost::none), biasCorrectedDelta);
-    EXPECT(assert_equal(expectedH2, actualH2));
+    EXPECT(assert_equal(eH2, aH2));
+  }
+  {
+    Matrix99 aH1;
+    Matrix96 aH2;
+    pim.predict(state1, bias, aH1, aH2);
+    Matrix eH1 = numericalDerivative11<NavState, NavState>(
+        boost::bind(&PreintegrationBase::predict, pim, _1, bias, boost::none,
+            boost::none), state1);
+    EXPECT(assert_equal(eH1, aH1));
+    Matrix eH2 = numericalDerivative11<NavState, imuBias::ConstantBias>(
+        boost::bind(&PreintegrationBase::predict, pim, state1, _1, boost::none,
+            boost::none), bias);
+    EXPECT(assert_equal(eH2, aH2));
   }
 }
 
