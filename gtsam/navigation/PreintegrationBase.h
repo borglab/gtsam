@@ -207,32 +207,22 @@ class PreintegrationBase : public PreintegratedRotation {
                                               Vector3* correctedAcc,
                                               Vector3* correctedOmega);
 
-  Vector3 biascorrectedDeltaPij(const imuBias::ConstantBias& biasIncr) const {
-    return deltaPij_ + delPdelBiasAcc_ * biasIncr.accelerometer()
-        + delPdelBiasOmega_ * biasIncr.gyroscope();
-  }
-
-  Vector3 biascorrectedDeltaVij(const imuBias::ConstantBias& biasIncr) const {
-    return deltaVij_ + delVdelBiasAcc_ * biasIncr.accelerometer()
-        + delVdelBiasOmega_ * biasIncr.gyroscope();
-  }
+  /// Given the estimate of the bias, return a NavState tangent vector
+  /// summarizing the preintegrated IMU measurements so far
+  Vector9 biasCorrectedDelta(const imuBias::ConstantBias& bias_i,
+      OptionalJacobian<9, 6> H = boost::none) const;
 
   /// Integrate coriolis correction in body frame state_i
   Vector9 integrateCoriolis(const NavState& state_i) const;
 
   /// Recombine the preintegration, gravity, and coriolis in a single NavState tangent vector
   Vector9 recombinedPrediction(const NavState& state_i,
-      const Rot3& deltaRij_biascorrected, const Vector3& deltaPij_biascorrected,
-      const Vector3& deltaVij_biascorrected) const;
-
-  /// Predict state at time j, with bias-corrected quantities given
-  NavState predict(const NavState& navState, const Rot3& deltaRij_biascorrected,
-      const Vector3& deltaPij_biascorrected,
-      const Vector3& deltaVij_biascorrected) const;
+      Vector9& biasCorrectedDelta, OptionalJacobian<9, 9> H1 = boost::none,
+      OptionalJacobian<9, 9> H2 = boost::none) const;
 
   /// Predict state at time j
-  NavState predict(const NavState& state_i,
-      const imuBias::ConstantBias& bias_i) const;
+  NavState predict(const NavState& state_i, const imuBias::ConstantBias& bias_i,
+      OptionalJacobian<9, 9> H1 = boost::none, OptionalJacobian<9, 6> H2 = boost::none) const;
 
   /// Compute errors w.r.t. preintegrated measurements and jacobians wrt pose_i, vel_i, bias_i, pose_j, bias_j
   Vector9 computeErrorAndJacobians(const Pose3& pose_i, const Vector3& vel_i, const Pose3& pose_j,

@@ -208,6 +208,25 @@ double deltaT = 1.0;
 } // namespace common
 
 /* ************************************************************************* */
+TEST(ImuFactor, BiasCorrectedDelta) {
+  using namespace common;
+  boost::shared_ptr<PreintegratedImuMeasurements::Params> p =
+      PreintegratedImuMeasurements::MakeParams(kMeasuredAccCovariance,
+          kMeasuredOmegaCovariance, kIntegrationErrorCovariance);
+  PreintegratedImuMeasurements pim(p, bias);
+  pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+  pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+
+  Vector9 expected; // TODO(frank): taken from output. Should really verify.
+  expected << 0.0628318531, 0.0, 0.0, 4.905, -2.19885135, -8.20622494, 9.81, -4.13885394, -16.4774682;
+  Matrix96 actualH;
+  EXPECT(assert_equal(expected, pim.biasCorrectedDelta(bias,actualH), 1e-5));
+  Matrix expectedH = numericalDerivative11<Vector9, imuBias::ConstantBias>(
+      boost::bind(&PreintegrationBase::biasCorrectedDelta, pim, _1, boost::none), bias);
+  EXPECT(assert_equal(expectedH, actualH));
+}
+
+/* ************************************************************************* */
 TEST(ImuFactor, ErrorAndJacobians) {
   using namespace common;
   bool use2ndOrderIntegration = true;
