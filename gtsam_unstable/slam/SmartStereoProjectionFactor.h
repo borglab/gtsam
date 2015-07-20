@@ -234,67 +234,58 @@ public:
   TriangulationResult triangulateSafe(const Cameras& cameras) const {
 
     size_t m = cameras.size();
-    if (m < 2) { // if we have a single pose the corresponding factor is uninformative
-      return TriangulationResult::Degenerate();
-    }
+//    if (m < 2) { // if we have a single pose the corresponding factor is uninformative
+//      return TriangulationResult::Degenerate();
+//    }
 
     bool retriangulate = decideIfTriangulate(cameras);
     if (retriangulate) {
-      // We triangulate the 3D position of the landmark
-       std::cout << "triangulateSafe i \n" << std::endl;
 
-      //TODO: Chris will replace this with something else for stereo
-//        point_ = triangulatePoint3<CALIBRATION>(cameras, this->measured_,
-//            rankTolerance_, enableEPI_);
-
-      // // // Temporary hack to use monocular triangulation
-      std::vector<Point2> mono_measurements;
-      BOOST_FOREACH(const StereoPoint2& sp, this->measured_) {
-        mono_measurements.push_back(sp.point2());
+      std::vector<Point3> reprojections;
+      reprojections.reserve(m);
+      for(size_t i = 0; i < m; i++) {
+        reprojections.push_back(cameras[i].backproject(measured_[i]));
       }
 
-      std::vector<PinholeCamera<Cal3_S2> > mono_cameras;
-      BOOST_FOREACH(const StereoCamera& camera, cameras) {
-        const Pose3& pose = camera.pose();
-        const Cal3_S2& K = camera.calibration()->calibration();
-        mono_cameras.push_back(PinholeCamera<Cal3_S2>(pose, K));
+      Point3 pw_sum;
+      BOOST_FOREACH(const Point3& pw, reprojections) {
+        pw_sum = pw_sum + pw;
       }
-//        Point3 point = triangulatePoint3<PinholeCamera<Cal3_S2> >(mono_cameras, mono_measurements,
-//            params_.triangulation.rankTolerance, params_.triangulation.enableEPI);
-      result_ = gtsam::triangulateSafe(mono_cameras, mono_measurements,
-             params_.triangulation);
+      // average reprojected landmark
+      Point3 pw_avg = pw_sum / double(m);
 
-        // // // End temporary hack
+      // check if it lies in front of all cameras
+      bool cheirality_ok = true;
+      double totalReprojError = 0;
+      for(size_t i = 0; i < m; i++) {
+        const Pose3& pose = cameras[i].pose();
+        const Point3& pl = pose.transform_to(pw_avg);
+        if (pl.z() <= 0) {
+          cheirality_ok = false;
+          break;
+        }
 
-        // FIXME: temporary: triangulation using only first camera
-//        const StereoPoint2& z0 = this->measured_.at(0);
-//        point_ = cameras[0].backproject(z0);
+        // check landmark distance
+        if (params_.triangulation.landmarkDistanceThreshold > 0 &&
+            pl.norm() > params_.triangulation.landmarkDistanceThreshold) {
+          return TriangulationResult::Degenerate();
+        }
 
-        // Check landmark distance and reprojection errors to avoid outliers
-//        double totalReprojError = 0.0;
-//        size_t i = 0;
-//        BOOST_FOREACH(const StereoCamera& camera, cameras) {
-//          Point3 cameraTranslation = camera.pose().translation();
-//          // we discard smart factors corresponding to points that are far away
-//          if (cameraTranslation.distance(*result_) > params_.triangulation.landmarkDistanceThreshold) {
-//            return TriangulationResult::Degenerate();
-//          }
-//          const StereoPoint2& zi = this->measured_.at(i);
-//          try {
-//            StereoPoint2 reprojectionError(camera.project(*result_) - zi);
-//            totalReprojError += reprojectionError.vector().norm();
-//          } catch (CheiralityException) {
-//            return TriangulationResult::BehindCamera();
-//          }
-//          i += 1;
-//        }
-        //std::cout << "totalReprojError error: " << totalReprojError << std::endl;
-        // we discard smart factors that have large reprojection error
-//        if (params_.triangulation.dynamicOutlierRejectionThreshold > 0
-//            && totalReprojError / m > params_.triangulation.dynamicOutlierRejectionThreshold)
-//          return TriangulationResult::Degenerate();
+        if (params_.triangulation.dynamicOutlierRejectionThreshold > 0) {
+          const StereoPoint2& zi = measured_[i];
+          StereoPoint2 reprojectionError(cameras[i].project(pw_avg) - zi);
+          totalReprojError += reprojectionError.vector().norm();
+        }
+      } // for
 
-//        result_ = TriangulationResult(point);
+      if (params_.triangulation.dynamicOutlierRejectionThreshold > 0
+          && totalReprojError / m > params_.triangulation.dynamicOutlierRejectionThreshold)
+        return TriangulationResult::Degenerate();
+
+      if(cheirality_ok == false) {
+        result_ = TriangulationResult::BehindCamera();
+      }
+      result_ = TriangulationResult(pw_avg);
 
     }
     return result_;
@@ -389,11 +380,11 @@ public:
       return boost::make_shared<JacobianFactorSVD<Base::Dim, ZDim> >(this->keys_);
   }
 
-  /// linearize to a Hessianfactor
-  virtual boost::shared_ptr<RegularHessianFactor<Base::Dim> > linearizeToHessian(
-      const Values& values, double lambda = 0.0) const {
-    return createHessianFactor(this->cameras(values), lambda);
-  }
+//  /// linearize to a Hessianfactor
+//  virtual boost::shared_ptr<RegularHessianFactor<Base::Dim> > linearizeToHessian(
+//      const Values& values, double lambda = 0.0) const {
+//    return createHessianFactor(this->cameras(values), lambda);
+//  }
 
 //  /// linearize to an Implicit Schur factor
 //  virtual boost::shared_ptr<RegularImplicitSchurFactor<StereoCamera> > linearizeToImplicit(
@@ -420,8 +411,8 @@ public:
       return createHessianFactor(cameras, lambda);
 //    case IMPLICIT_SCHUR:
 //      return createRegularImplicitSchurFactor(cameras, lambda);
-//    case JACOBIAN_SVD:
-//      return createJacobianSVDFactor(cameras, lambda);
+    case JACOBIAN_SVD:
+      return createJacobianSVDFactor(cameras, lambda);
 //    case JACOBIAN_Q:
 //      return createJacobianQFactor(cameras, lambda);
     default:
@@ -535,14 +526,11 @@ public:
     else
       result_ = triangulateSafe(cameras);
 
-    std::cout << "Triangulation result in totalReprojectionError" << std::endl;
-    std::cout << result_ << std::endl;
-
     if (result_)
       // All good, just use version in base class
       return Base::totalReprojectionError(cameras, *result_);
     else if (params_.degeneracyMode == HANDLE_INFINITY) {
-      throw("Backproject at infinity");
+      throw(std::runtime_error("Backproject at infinity not implemented for SmartStereo."));
 //      // Otherwise, manage the exceptions with rotation-only factors
 //      const StereoPoint2& z0 = this->measured_.at(0);
 //      Unit3 backprojected; //= cameras.front().backprojectPointAtInfinity(z0);
