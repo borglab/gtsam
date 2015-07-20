@@ -436,8 +436,6 @@ TEST( SmartStereoProjectionPoseFactor, landmarkDistance ) {
 /* *************************************************************************/
 TEST( SmartStereoProjectionPoseFactor, dynamicOutlierRejection ) {
 
-  double dynamicOutlierRejectionThreshold = 1; // max 1 pixel of average reprojection error
-
   vector<Key> views;
   views.push_back(x1);
   views.push_back(x2);
@@ -473,7 +471,7 @@ TEST( SmartStereoProjectionPoseFactor, dynamicOutlierRejection ) {
 
   SmartStereoProjectionParams params;
   params.setLinearizationMode(JACOBIAN_SVD);
-  params.setDynamicOutlierRejectionThreshold(dynamicOutlierRejectionThreshold);
+  params.setDynamicOutlierRejectionThreshold(1);
 
 
   SmartFactor::shared_ptr smartFactor1(new SmartFactor(params));
@@ -487,6 +485,10 @@ TEST( SmartStereoProjectionPoseFactor, dynamicOutlierRejection ) {
 
   SmartFactor::shared_ptr smartFactor4(new SmartFactor(params));
   smartFactor4->add(measurements_cam4, views, model, K);
+
+  // same as factor 4, but dynamic outlier rejection is off
+  SmartFactor::shared_ptr smartFactor4b(new SmartFactor());
+  smartFactor4b->add(measurements_cam4, views, model, K);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
 
@@ -505,7 +507,23 @@ TEST( SmartStereoProjectionPoseFactor, dynamicOutlierRejection ) {
   values.insert(x2, pose2);
   values.insert(x3, pose3);
 
-  // All factors are disabled and pose should remain where it is
+  EXPECT_DOUBLES_EQUAL(0, smartFactor1->error(values), 1e-9);
+  EXPECT_DOUBLES_EQUAL(0, smartFactor2->error(values), 1e-9);
+  EXPECT_DOUBLES_EQUAL(0, smartFactor3->error(values), 1e-9);
+  // zero error due to dynamic outlier rejection
+  EXPECT_DOUBLES_EQUAL(0, smartFactor4->error(values), 1e-9);
+
+  // dynamic outlier rejection is off
+  EXPECT_DOUBLES_EQUAL(6700, smartFactor4b->error(values), 1e-9);
+
+  // Factors 1-3 should have valid point, factor 4 should not
+  EXPECT(smartFactor1->point());
+  EXPECT(smartFactor2->point());
+  EXPECT(smartFactor3->point());
+  EXPECT(smartFactor4->point().degenerate());
+  EXPECT(smartFactor4b->point());
+
+  // Factor 4 is disabled, pose 3 stays put
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, lm_params);
   result = optimizer.optimize();
