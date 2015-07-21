@@ -67,31 +67,33 @@ public:
   static Eigen::Block<const Vector9,3,1> dP(const Vector9& v) { return v.segment<3>(3); }
   static Eigen::Block<const Vector9,3,1> dV(const Vector9& v) { return v.segment<3>(6); }
 
-  // Specialized Retract/Local that agrees with IMUFactors
-  // NOTE(frank): This also agrees with Pose3.retract
+  // Retract/Local that creates a de-novo Nav-state from xi, on all components
+  // separately, but then composes with this, i.e., xi is in rotated frame!
+  // NOTE(frank): This agrees with Pose3.retract, in non-EXPMAP mode, treating V like P
   NavState retract(const Vector9& xi, //
       ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) const {
-    Matrix3 H1R, H2R;
-    const Rot3 R = rotation().expmap(dR(xi), H1 ? &H1R : 0, H2 ? &H2R : 0);
-    const Point3 p = translation() + Point3(dP(xi));
-    const Vector v = velocity() + dV(xi);
-    if (H1) {
-      H1->setIdentity();
-      H1->topLeftCorner<3,3>() = H1R;
-    }
+    Matrix3 D_R_xi;
+    const Rot3 R = Rot3::Expmap(dR(xi), H2 ? &D_R_xi : 0);
+    const Point3 p = Point3(dP(xi));
+    const Vector v = dV(xi);
+    const NavState delta(R, p, v);
+    // retract only depends on this via compose, and second derivative in delta is I_9x9
+    const NavState result = this->compose(delta, H1);
     if (H2) {
-      H2->setIdentity();
-      H2->topLeftCorner<3,3>() = H2R;
+      *H2 << D_R_xi, Z_3x3, Z_3x3, //
+      Z_3x3, I_3x3, Z_3x3, //
+      Z_3x3, Z_3x3, I_3x3;
     }
-    return NavState(R, p, v);
-  }
+    return result;
+}
   Vector9 localCoordinates(const NavState& g, //
       ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) const {
     if (H1||H2) throw std::runtime_error("NavState::localCoordinates derivatives not implemented yet");
+    const NavState delta = this->between(g);
     Vector9 v;
-    dR(v) = rotation().logmap(g.rotation());
-    dP(v) = (g.translation() - translation()).vector();
-    dV(v) = g.velocity() - velocity();
+    dR(v) = Rot3::Logmap(delta.rotation());
+    dP(v) = delta.translation().vector();
+    dV(v) = delta.velocity();
     return v;
   }
   /// @}

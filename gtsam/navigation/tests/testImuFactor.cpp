@@ -227,10 +227,10 @@ TEST( NavState, Lie ) {
   // Special retract
   Vector delta(9);
   delta << 0.1, 0.1, 0.1, 0.2, 0.3, 0.4,-0.1,-0.2,-0.3;
-  Rot3 rot2 = rot.expmap(delta.head<3>());
-  Point3 t2 = pt + Point3(delta.segment<3>(3));
-  Velocity3 vel2 = vel + Velocity3(-0.1, -0.2, -0.3);
-  NavState state2(rot2, t2, vel2);
+  Rot3 drot = Rot3::Expmap(delta.head<3>());
+  Point3 dt = Point3(delta.segment<3>(3));
+  Velocity3 dvel = Velocity3(-0.1, -0.2, -0.3);
+  NavState state2 = state1 * NavState(drot, dt, dvel);
   EXPECT(assert_equal(state2, (NavState)state1.retract(delta), tol));
   EXPECT(assert_equal(delta, state1.localCoordinates(state2), tol));
 
