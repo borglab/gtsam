@@ -30,28 +30,53 @@ static const Velocity3 kVelocity(0.4, 0.5, 0.6);
 static const NavState kIdentity;
 static const NavState kState1(kRotation, kPosition, kVelocity);
 
-const double tol = 1e-5;
-
+/* ************************************************************************* */
+TEST( NavState, Attitude) {
+  Matrix39 aH, eH;
+  Rot3 actual = kState1.attitude(aH);
+  EXPECT(assert_equal(actual, kRotation));
+  eH = numericalDerivative11<Rot3, NavState>(
+      boost::bind(&NavState::attitude, _1, boost::none), kState1);
+  EXPECT(assert_equal((Matrix )eH, aH));
+}
+/* ************************************************************************* */
+TEST( NavState, Position) {
+  Matrix39 aH, eH;
+  Point3 actual = kState1.position(aH);
+  EXPECT(assert_equal(actual, kPosition));
+  eH = numericalDerivative11<Point3, NavState>(
+      boost::bind(&NavState::position, _1, boost::none), kState1);
+  EXPECT(assert_equal((Matrix )eH, aH));
+}
+/* ************************************************************************* */
+TEST( NavState, Velocity) {
+  Matrix39 aH, eH;
+  Velocity3 actual = kState1.velocity(aH);
+  EXPECT(assert_equal(actual, kVelocity));
+  eH = numericalDerivative11<Velocity3, NavState>(
+      boost::bind(&NavState::velocity, _1, boost::none), kState1);
+  EXPECT(assert_equal((Matrix )eH, aH));
+}
 /* ************************************************************************* */
 TEST( NavState, MatrixGroup ) {
   // check roundtrip conversion to 7*7 matrix representation
   Matrix7 T = kState1.matrix();
-  EXPECT(assert_equal(kState1, NavState(T), tol));
+  EXPECT(assert_equal(kState1, NavState(T)));
 
   // check group product agrees with matrix product
   NavState state2 = kState1 * kState1;
   Matrix T2 = T * T;
-  EXPECT(assert_equal(state2, NavState(T2), tol));
-  EXPECT(assert_equal(T2, state2.matrix(), tol));
+  EXPECT(assert_equal(state2, NavState(T2)));
+  EXPECT(assert_equal(T2, state2.matrix()));
 }
 
 /* ************************************************************************* */
 TEST( NavState, Manifold ) {
   // Check zero xi
-  EXPECT(assert_equal(kIdentity, kIdentity.retract(zero(9)), tol));
-  EXPECT(assert_equal(zero(9), kIdentity.localCoordinates(kIdentity), tol));
-  EXPECT(assert_equal(kState1, kState1.retract(zero(9)), tol));
-  EXPECT(assert_equal(zero(9), kState1.localCoordinates(kState1), tol));
+  EXPECT(assert_equal(kIdentity, kIdentity.retract(zero(9))));
+  EXPECT(assert_equal(zero(9), kIdentity.localCoordinates(kIdentity)));
+  EXPECT(assert_equal(kState1, kState1.retract(zero(9))));
+  EXPECT(assert_equal(zero(9), kState1.localCoordinates(kState1)));
 
   // Check definition of retract as operating on components separately
   Vector xi(9);
@@ -60,12 +85,12 @@ TEST( NavState, Manifold ) {
   Point3 dt = Point3(xi.segment < 3 > (3));
   Velocity3 dvel = Velocity3(-0.1, -0.2, -0.3);
   NavState state2 = kState1 * NavState(drot, dt, dvel);
-  EXPECT(assert_equal(state2, kState1.retract(xi), tol));
-  EXPECT(assert_equal(xi, kState1.localCoordinates(state2), tol));
+  EXPECT(assert_equal(state2, kState1.retract(xi)));
+  EXPECT(assert_equal(xi, kState1.localCoordinates(state2)));
 
   // roundtrip from state2 to state3 and back
   NavState state3 = state2.retract(xi);
-  EXPECT(assert_equal(xi, state2.localCoordinates(state3), tol));
+  EXPECT(assert_equal(xi, state2.localCoordinates(state3)));
 
   // Check derivatives for ChartAtOrigin::Retract
   Matrix9 aH, eH;
@@ -96,24 +121,24 @@ TEST( NavState, Manifold ) {
 /* ************************************************************************* */
 TEST( NavState, Lie ) {
   // Check zero xi
-  EXPECT(assert_equal(kIdentity, kIdentity.expmap(zero(9)), tol));
-  EXPECT(assert_equal(zero(9), kIdentity.logmap(kIdentity), tol));
-  EXPECT(assert_equal(kState1, kState1.expmap(zero(9)), tol));
-  EXPECT(assert_equal(zero(9), kState1.logmap(kState1), tol));
+  EXPECT(assert_equal(kIdentity, kIdentity.expmap(zero(9))));
+  EXPECT(assert_equal(zero(9), kIdentity.logmap(kIdentity)));
+  EXPECT(assert_equal(kState1, kState1.expmap(zero(9))));
+  EXPECT(assert_equal(zero(9), kState1.logmap(kState1)));
 
   // Expmap/Logmap roundtrip
   Vector xi(9);
   xi << 0.1, 0.1, 0.1, 0.2, 0.3, 0.4, -0.1, -0.2, -0.3;
   NavState state2 = NavState::Expmap(xi);
-  EXPECT(assert_equal(xi, NavState::Logmap(state2), tol));
+  EXPECT(assert_equal(xi, NavState::Logmap(state2)));
 
   // roundtrip from state2 to state3 and back
   NavState state3 = state2.expmap(xi);
-  EXPECT(assert_equal(xi, state2.logmap(state3), tol));
+  EXPECT(assert_equal(xi, state2.logmap(state3)));
 
   // For the expmap/logmap (not necessarily expmap/local) -xi goes other way
-  EXPECT(assert_equal(state2, state3.expmap(-xi), tol));
-  EXPECT(assert_equal(xi, -state3.logmap(state2), tol));
+  EXPECT(assert_equal(state2, state3.expmap(-xi)));
+  EXPECT(assert_equal(xi, -state3.logmap(state2)));
 }
 
 /* ************************************************************************* */

@@ -69,15 +69,19 @@ public:
   /// @name Component Access
   /// @{
 
-  const Rot3& attitude() const {
+  inline const Rot3& attitude() const {
     return R_;
   }
-  const Point3& position() const {
+  inline const Point3& position() const {
     return t_;
   }
-  const Velocity3& velocity() const {
+  inline const Velocity3& velocity() const {
     return v_;
   }
+  const Rot3& attitude(OptionalJacobian<3, 9> H) const;
+  const Point3& position(OptionalJacobian<3, 9> H) const;
+  const Velocity3& velocity(OptionalJacobian<3, 9> H) const;
+
   const Pose3 pose() const {
     return Pose3(attitude(), position());
   }

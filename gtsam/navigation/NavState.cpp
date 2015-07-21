@@ -22,6 +22,21 @@ namespace gtsam {
 
 #define TIE(R,t,v,x) const Rot3& R = (x).R_;const Point3& t = (x).t_;const Velocity3& v = (x).v_;
 
+const Rot3& NavState::attitude(OptionalJacobian<3, 9> H) const {
+  if (H) *H << I_3x3, Z_3x3, Z_3x3;
+  return R_;
+}
+
+const Point3& NavState::position(OptionalJacobian<3, 9> H) const {
+  if (H) *H << Z_3x3, R(), Z_3x3;
+  return t_;
+}
+
+const Vector3& NavState::velocity(OptionalJacobian<3, 9> H) const {
+  if (H) *H << Z_3x3, Z_3x3, R();
+  return v_;
+}
+
 Matrix7 NavState::matrix() const {
   Matrix3 R = this->R();
   Matrix7 T;
