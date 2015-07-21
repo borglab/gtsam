@@ -155,51 +155,32 @@ Vector9 PreintegrationBase::biasCorrectedDelta(
 }
 
 //------------------------------------------------------------------------------
-static Vector3 rotate(const Matrix3& R, const Vector3& p,
-    OptionalJacobian<3, 3> H1 = boost::none, OptionalJacobian<3, 3> H2 = boost::none) {
-  if (H1) *H1 = R * skewSymmetric(-p.x(), -p.y(), -p.z());
-  if (H2) *H2 = R;
-  return R * p;
-}
-
-//------------------------------------------------------------------------------
-static Vector3 unrotate(const Matrix3& R, const Vector3& p,
-    OptionalJacobian<3, 3> H1 = boost::none, OptionalJacobian<3, 3> H2 = boost::none) {
-  const Matrix3 Rt = R.transpose();
-  Vector3 q = Rt * p;
-  const double wx = q.x(), wy = q.y(), wz = q.z();
-  if (H1) *H1 << 0.0, -wz, +wy, +wz, 0.0, -wx, -wy, +wx, 0.0;
-  if (H2) *H2 = Rt;
-  return q;
-}
-
-//------------------------------------------------------------------------------
 Vector9 PreintegrationBase::integrateCoriolis(const NavState& state_i,
     OptionalJacobian<9, 9> H) const {
   Vector9 result = Vector9::Zero();
   if (H) H->setZero();
   if (p().omegaCoriolis) {
-    const Pose3& pose_i = state_i.pose();
+    const Rot3& rot_i = state_i.attitude();
+    const Point3& t_i = state_i.position();
     const Vector3& vel_i = state_i.velocity();
-    const Matrix3 Ri = pose_i.rotation().matrix();
-    const Vector3& t_i = state_i.position().vector();
     const double dt = deltaTij(), dt2 = dt * dt;
 
     const Vector3& omegaCoriolis = *p().omegaCoriolis;
     Matrix3 D_dP_Ri;
-    NavState::dR(result) -= unrotate(Ri, omegaCoriolis * dt, H ? &D_dP_Ri : 0);
-    NavState::dP(result) -= omegaCoriolis.cross(vel_i) * dt2; // NOTE(luca): we got rid of the 2 wrt INS paper
-    NavState::dV(result) -= 2.0 * omegaCoriolis.cross(vel_i) * dt;
+    NavState::dR(result) -= rot_i.unrotate(omegaCoriolis * dt, H ? &D_dP_Ri : 0);
+    NavState::dP(result) -= (dt2 * omegaCoriolis.cross(vel_i)); // NOTE(luca): we got rid of the 2 wrt INS paper
+    NavState::dV(result) -= ((2.0 * dt) * omegaCoriolis.cross(vel_i));
     if (p().use2ndOrderCoriolis) {
-      Vector3 temp = omegaCoriolis.cross(omegaCoriolis.cross(t_i));
+      Vector3 temp = omegaCoriolis.cross(omegaCoriolis.cross(t_i.vector()));
       NavState::dP(result) -= 0.5 * temp * dt2;
       NavState::dV(result) -= temp * dt;
     }
     if (H) {
+      // Matrix3 Ri = rot_i.matrix();
       const Matrix3 omegaCoriolisHat = skewSymmetric(omegaCoriolis);
       H->block<3,3>(0,0) -= D_dP_Ri;
       H->block<3,3>(3,6) -= omegaCoriolisHat * dt2;
-      H->block<3,3>(6,6) -= 2.0 * omegaCoriolisHat * dt;
+      H->block<3,3>(6,6) -= (2.0 * dt) * omegaCoriolisHat;
       if (p().use2ndOrderCoriolis) {
         const Matrix3 omegaCoriolisHat2 = omegaCoriolisHat * omegaCoriolisHat;
         H->block<3,3>(3,3) -= 0.5 * omegaCoriolisHat2 * dt2;
@@ -215,17 +196,16 @@ Vector9 PreintegrationBase::recombinedPrediction(const NavState& state_i,
     const Vector9& biasCorrectedDelta, OptionalJacobian<9, 9> H1,
     OptionalJacobian<9, 9> H2) const {
 
-  const Pose3& pose_i = state_i.pose();
+  const Rot3& rot_i = state_i.attitude();
   const Vector3& vel_i = state_i.velocity();
-  const Matrix3 Ri = pose_i.rotation().matrix();
   const double dt = deltaTij(), dt2 = dt * dt;
 
   // Rotation, position, and velocity:
   Vector9 delta;
   Matrix3 D_dP_Ri, D_dP_bc, D_dV_Ri, D_dV_bc;
   NavState::dR(delta) = NavState::dR(biasCorrectedDelta);
-  NavState::dP(delta) = rotate(Ri, NavState::dP(biasCorrectedDelta), D_dP_Ri, D_dP_bc) + vel_i * dt + 0.5 * p().gravity * dt2;
-  NavState::dV(delta) = rotate(Ri, NavState::dV(biasCorrectedDelta), D_dV_Ri, D_dV_bc) + p().gravity * dt;
+  NavState::dP(delta) = rot_i.rotate(NavState::dP(biasCorrectedDelta), D_dP_Ri, D_dP_bc) + vel_i * dt + 0.5 * p().gravity * dt2;
+  NavState::dV(delta) = rot_i.rotate(NavState::dV(biasCorrectedDelta), D_dV_Ri, D_dV_bc) + p().gravity * dt;
 
   Matrix9 Hcoriolis;
   if (p().omegaCoriolis) {
@@ -240,6 +220,7 @@ Vector9 PreintegrationBase::recombinedPrediction(const NavState& state_i,
   }
   if (H2) {
     H2->setZero();
+    Matrix3 Ri = rot_i.matrix();
     H2->block<3,3>(0,0) = I_3x3;
     H2->block<3,3>(3,3) = Ri;
     H2->block<3,3>(6,6) = Ri;

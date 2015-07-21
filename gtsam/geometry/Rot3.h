@@ -352,6 +352,12 @@ namespace gtsam {
     Point3 unrotate(const Point3& p, OptionalJacobian<3,3> H1 = boost::none,
         OptionalJacobian<3,3> H2=boost::none) const;
 
+    /// unrotate for Vector3
+    Vector3 unrotate(const Vector3& v, OptionalJacobian<3, 3> H1 = boost::none,
+        OptionalJacobian<3, 3> H2 = boost::none) const {
+      return unrotate(Point3(v), H1, H2).vector();
+    }
+
     /// @}
     /// @name Group Action on Unit3
     /// @{
