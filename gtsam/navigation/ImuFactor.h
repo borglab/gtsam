@@ -28,6 +28,25 @@
 
 namespace gtsam {
 
+/*
+ * If you are using the factor, please cite:
+ * L. Carlone, Z. Kira, C. Beall, V. Indelman, F. Dellaert, Eliminating
+ * conditionally independent sets in factor graphs: a unifying perspective based
+ * on smart factors, Int. Conf. on Robotics and Automation (ICRA), 2014.
+ *
+ * REFERENCES:
+ * [1] G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups",
+ *     Volume 2, 2008.
+ * [2] T. Lupton and S.Sukkarieh, "Visual-Inertial-Aided Navigation for
+ *     High-Dynamic Motion in Built Environments Without Initial Conditions",
+ *     TRO, 28(1):61-76, 2012.
+ * [3] L. Carlone, S. Williams, R. Roberts, "Preintegrated IMU factor:
+ *     Computation of the Jacobian Matrices", Tech. Report, 2013.
+ * [4] C. Forster, L. Carlone, F. Dellaert, D. Scaramuzza, IMU Preintegration on
+ *     Manifold for Efficient Visual-Inertial Maximum-a-Posteriori Estimation,
+ *     Robotics: Science and Systems (RSS), 2015.
+ */
+
 /**
  * PreintegratedIMUMeasurements accumulates (integrates) the IMU measurements
  * (rotation rates and accelerations) and the corresponding covariance matrix.
@@ -35,6 +54,8 @@ namespace gtsam {
  * Integration is done incrementally (ideally, one integrates the measurement
  * as soon as it is received from the IMU) so as to avoid costly integration
  * at time of factor construction.
+ *
+ * @addtogroup SLAM
  */
 class PreintegratedImuMeasurements: public PreintegrationBase {
 
@@ -105,25 +126,6 @@ private:
 };
 
 /**
- *
- * @addtogroup SLAM
- *
- * If you are using the factor, please cite:
- * L. Carlone, Z. Kira, C. Beall, V. Indelman, F. Dellaert, Eliminating conditionally
- * independent sets in factor graphs: a unifying perspective based on smart factors,
- * Int. Conf. on Robotics and Automation (ICRA), 2014.
- *
- ** REFERENCES:
- * [1] G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups",
- *     Volume 2, 2008.
- * [2] T. Lupton and S.Sukkarieh, "Visual-Inertial-Aided Navigation for
- *     High-Dynamic Motion in Built Environments Without Initial Conditions",
- *     TRO, 28(1):61-76, 2012.
- * [3] L. Carlone, S. Williams, R. Roberts, "Preintegrated IMU factor:
- *     Computation of the Jacobian Matrices", Tech. Report, 2013.
- */
-
-/**
  * ImuFactor is a 5-ways factor involving previous state (pose and velocity of
  * the vehicle at previous time step), current state (pose and velocity at
  * current time step), and the bias estimate. Following the preintegration
@@ -132,6 +134,8 @@ private:
  * Note that this factor does not model "temporal consistency" of the biases
  * (which are usually slowly varying quantities), which is up to the caller.
  * See also CombinedImuFactor for a class that does this for you.
+ *
+ * @addtogroup SLAM
  */
 class ImuFactor: public NoiseModelFactor5<Pose3, Vector3, Pose3, Vector3,
     imuBias::ConstantBias> {
