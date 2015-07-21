@@ -42,7 +42,7 @@ public:
   /// gravity in the body frame
   Vector3 b_g(double g_e) const {
     Vector3 n_g(0, 0, g_e);
-    return (bRn_ * n_g).vector();
+    return bRn_ * n_g;
   }
 
   const Rot3& bRn() const {return bRn_; }
