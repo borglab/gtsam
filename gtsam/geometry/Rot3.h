@@ -86,10 +86,14 @@ namespace gtsam {
         double R31, double R32, double R33);
 
     /** constructor from a rotation matrix */
-    Rot3(const Matrix3& R);
-
-    /** constructor from a rotation matrix */
-    Rot3(const Matrix& R);
+    template<typename Derived>
+    inline Rot3(const Eigen::MatrixBase<Derived>& R) {
+      #ifdef GTSAM_USE_QUATERNIONS
+        quaternion_=R
+      #else
+        rot_ = R;
+      #endif
+    }
 
     /** Constructor from a quaternion.  This can also be called using a plain
      * Vector, due to implicit conversion from Vector to Quaternion
@@ -329,6 +333,17 @@ namespace gtsam {
      */
     Point3 rotate(const Point3& p, OptionalJacobian<3,3> H1 = boost::none,
         OptionalJacobian<3,3> H2 = boost::none) const;
+
+    /// operator* for Vector3
+    inline Vector3 operator*(const Vector3& v) const {
+      return rotate(Point3(v)).vector();
+    }
+
+    /// rotate for Vector3
+    Vector3 rotate(const Vector3& v, OptionalJacobian<3, 3> H1 = boost::none,
+        OptionalJacobian<3, 3> H2 = boost::none) const {
+      return rotate(Point3(v), H1, H2).vector();
+    }
 
     /// rotate point from rotated coordinate frame to world = R*p
     Point3 operator*(const Point3& p) const;
