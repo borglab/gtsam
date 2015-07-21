@@ -182,7 +182,7 @@ Vector9 PreintegrationBase::integrateCoriolis(const NavState& state_i,
     const Pose3& pose_i = state_i.pose();
     const Vector3& vel_i = state_i.velocity();
     const Matrix3 Ri = pose_i.rotation().matrix();
-    const Vector3& t_i = state_i.translation().vector();
+    const Vector3& t_i = state_i.position().vector();
     const double dt = deltaTij(), dt2 = dt * dt;
 
     const Vector3& omegaCoriolis = *p().omegaCoriolis;
@@ -220,7 +220,7 @@ Vector9 PreintegrationBase::recombinedPrediction(const NavState& state_i,
   const Matrix3 Ri = pose_i.rotation().matrix();
   const double dt = deltaTij(), dt2 = dt * dt;
 
-  // Rotation, translation, and velocity:
+  // Rotation, position, and velocity:
   Vector9 delta;
   Matrix3 D_dP_Ri, D_dP_bc, D_dV_Ri, D_dV_bc;
   NavState::dR(delta) = NavState::dR(biasCorrectedDelta);
@@ -274,18 +274,18 @@ NavState PreintegrationBase::predict(const NavState& state_i,
 static Vector9 computeError(const NavState& state_i, const NavState& state_j,
     const NavState& predictedState_j) {
 
-  const Rot3& rot_i = state_i.rotation();
+  const Rot3& rot_i = state_i.attitude();
   const Matrix Ri = rot_i.matrix();
 
   // Residual rotation error
   // TODO: this also seems to be flipped from localCoordinates
-  const Rot3 fRrot = predictedState_j.rotation().between(state_j.rotation());
+  const Rot3 fRrot = predictedState_j.attitude().between(state_j.attitude());
   const Vector3 fR = Rot3::Logmap(fRrot);
 
   // Evaluate residual error, according to [3]
   // Ri.transpose() is important here to preserve a model with *additive* Gaussian noise of correct covariance
   const Vector3 fp = Ri.transpose()
-      * (state_j.translation() - predictedState_j.translation()).vector();
+      * (state_j.position() - predictedState_j.position()).vector();
 
   // Ri.transpose() is important here to preserve a model with *additive* Gaussian noise of correct covariance
   const Vector3 fv = Ri.transpose()

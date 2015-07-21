@@ -22,96 +22,10 @@
 #pragma once
 
 #include <gtsam/navigation/PreintegratedRotation.h>
+#include <gtsam/navigation/NavState.h>
 #include <gtsam/navigation/ImuBias.h>
-#include <gtsam/geometry/Pose3.h>
-#include <gtsam/base/Matrix.h>
-#include <gtsam/base/ProductLieGroup.h>
-#include <gtsam/base/Vector.h>
 
 namespace gtsam {
-
-/// Velocity in 3D is just a Vector3
-typedef Vector3 Velocity3;
-
-/**
- * Navigation state: Pose (rotation, translation) + velocity
- */
-class NavState: public ProductLieGroup<Pose3, Velocity3> {
-protected:
-  typedef ProductLieGroup<Pose3, Velocity3> Base;
-  typedef OptionalJacobian<9, 9> ChartJacobian;
-  using Base::first;
-  using Base::second;
-
-public:
-  // constructors
-  NavState() {}
-  NavState(const Pose3& pose, const Velocity3& vel) : Base(pose, vel) {}
-  NavState(const Rot3& rot, const Point3& t, const Velocity3& vel): Base(Pose3(rot, t), vel) {}
-  NavState(const Base& product) : Base(product) {}
-
-  // access
-  const Pose3& pose() const { return first; }
-  const Point3& translation() const { return pose().translation(); }
-  const Rot3& rotation() const { return pose().rotation(); }
-  const Velocity3& velocity() const { return second; }
-
-  /// @name Manifold
-  /// @{
-
-  // NavState tangent space sugar.
-  static Eigen::Block<Vector9,3,1> dR(Vector9& v) { return v.segment<3>(0); }
-  static Eigen::Block<Vector9,3,1> dP(Vector9& v) { return v.segment<3>(3); }
-  static Eigen::Block<Vector9,3,1> dV(Vector9& v) { return v.segment<3>(6); }
-  static Eigen::Block<const Vector9,3,1> dR(const Vector9& v) { return v.segment<3>(0); }
-  static Eigen::Block<const Vector9,3,1> dP(const Vector9& v) { return v.segment<3>(3); }
-  static Eigen::Block<const Vector9,3,1> dV(const Vector9& v) { return v.segment<3>(6); }
-
-  // Retract/Local that creates a de-novo Nav-state from xi, on all components
-  // separately, but then composes with this, i.e., xi is in rotated frame!
-  // NOTE(frank): This agrees with Pose3.retract, in non-EXPMAP mode, treating V like P
-  NavState retract(const Vector9& xi, //
-      ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) const {
-    Matrix3 D_R_xi;
-    const Rot3 R = Rot3::Expmap(dR(xi), H2 ? &D_R_xi : 0);
-    const Point3 p = Point3(dP(xi));
-    const Vector v = dV(xi);
-    const NavState delta(R, p, v);
-    // retract only depends on this via compose, and second derivative in delta is I_9x9
-    const NavState result = this->compose(delta, H1);
-    if (H2) {
-      *H2 << D_R_xi, Z_3x3, Z_3x3, //
-      Z_3x3, I_3x3, Z_3x3, //
-      Z_3x3, Z_3x3, I_3x3;
-    }
-    return result;
-}
-  Vector9 localCoordinates(const NavState& g, //
-      ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) const {
-    if (H1||H2) throw std::runtime_error("NavState::localCoordinates derivatives not implemented yet");
-    const NavState delta = this->between(g);
-    Vector9 v;
-    dR(v) = Rot3::Logmap(delta.rotation());
-    dP(v) = delta.translation().vector();
-    dV(v) = delta.velocity();
-    return v;
-  }
-  /// @}
-};
-
-// Specialize NavState traits to use a Retract/Local that agrees with IMUFactors
-template<>
-struct traits<NavState> : internal::LieGroupTraits<NavState> {
-  static void Print(const NavState& m, const std::string& s = "") {
-    m.rotation().print(s+".R");
-    m.translation().print(s+".P");
-    print((Vector)m.velocity(),s+".V");
-  }
-  static bool Equals(const NavState& m1, const NavState& m2, double tol = 1e-8) {
-    return m1.pose().equals(m2.pose(), tol)
-        && equal_with_abs_tol(m1.velocity(), m2.velocity(), tol);
-  }
-};
 
 /// @deprecated
 struct PoseVelocityBias {
