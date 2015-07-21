@@ -101,7 +101,7 @@ NavState NavState::Expmap(const Vector9& xi, OptionalJacobian<9, 9> H) {
   Eigen::Block<const Vector9, 3, 1> v = dP(xi);
   Eigen::Block<const Vector9, 3, 1> a = dV(xi);
 
-  // NOTE(frank): mostly copy/paste from Pose3
+  // NOTE(frank): See Pose3::Expmap
   Rot3 nRb = Rot3::Expmap(n_omega_nb);
   double theta2 = n_omega_nb.dot(n_omega_nb);
   if (theta2 > std::numeric_limits<double>::epsilon()) {
@@ -126,7 +126,7 @@ Vector9 NavState::Logmap(const NavState& nTb, OptionalJacobian<9, 9> H) {
   TIE(nRb, n_p, n_v, nTb);
   Vector3 n_t = n_p.vector();
 
-  // NOTE(frank): mostly copy/paste from Pose3
+  // NOTE(frank): See Pose3::Logmap
   Vector9 xi;
   Vector3 n_omega_nb = Rot3::Logmap(nRb);
   double theta = n_omega_nb.norm();
@@ -147,7 +147,14 @@ Vector9 NavState::Logmap(const NavState& nTb, OptionalJacobian<9, 9> H) {
 }
 
 Matrix9 NavState::AdjointMap() const {
-  throw std::runtime_error("NavState::AdjointMap not implemented yet");
+  // NOTE(frank): See Pose3::AdjointMap
+  const Matrix3 nRb = R();
+  Matrix3 pAr = skewSymmetric(t()) * nRb;
+  Matrix3 vAr = skewSymmetric(v()) * nRb;
+  Matrix9 adj;
+  //     nR/bR nR/bP nR/bV nP/bR nP/bP nP/bV nV/bR nV/bP nV/bV
+  adj << nRb, Z_3x3, Z_3x3, pAr, nRb, Z_3x3, vAr, Z_3x3, nRb;
+  return adj;
 }
 
 Matrix7 NavState::wedge(const Vector9& xi) {

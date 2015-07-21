@@ -81,16 +81,16 @@ TEST( NavState, Manifold ) {
   EXPECT(assert_equal((Matrix )eH, aH));
 
   // Check retract derivatives
-//  Matrix9 aH1, aH2;
-//  kState1.retract(xi, aH1, aH2);
-//  Matrix eH1 = numericalDerivative11<NavState, NavState>(
-//      boost::bind(&NavState::retract, _1, xi, boost::none, boost::none),
-//      kState1);
-//  EXPECT(assert_equal(eH1, aH1));
-//  Matrix eH2 = numericalDerivative11<NavState, Vector9>(
-//      boost::bind(&NavState::retract, kState1, _1, boost::none, boost::none),
-//      xi);
-//  EXPECT(assert_equal(eH2, aH2));
+  Matrix9 aH1, aH2;
+  kState1.retract(xi, aH1, aH2);
+  Matrix eH1 = numericalDerivative11<NavState, NavState>(
+      boost::bind(&NavState::retract, _1, xi, boost::none, boost::none),
+      kState1);
+  EXPECT(assert_equal(eH1, aH1));
+  Matrix eH2 = numericalDerivative11<NavState, Vector9>(
+      boost::bind(&NavState::retract, kState1, _1, boost::none, boost::none),
+      xi);
+  EXPECT(assert_equal(eH2, aH2));
 }
 
 /* ************************************************************************* */

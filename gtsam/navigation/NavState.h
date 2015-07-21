@@ -189,7 +189,7 @@ public:
       OptionalJacobian<9, 9> H = boost::none);
 
   /// Calculate Adjoint map, a 9x9 matrix that takes a tangent vector in the body frame, and transforms
-  /// it to a tangent vector at idenity, such that Exmap(AdjointMap()*xi) = (*this) * Exmpap(xi);
+  /// it to a tangent vector at identity, such that Exmap(AdjointMap()*xi) = (*this) * Exmpap(xi);
   Matrix9 AdjointMap() const;
 
   /// wedge creates Lie algebra element from tangent vector
