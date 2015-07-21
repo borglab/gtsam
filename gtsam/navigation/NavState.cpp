@@ -96,8 +96,26 @@ Vector9 NavState::ChartAtOrigin::Local(const NavState& x,
 NavState NavState::Expmap(const Vector9& xi, OptionalJacobian<9, 9> H) {
   if (H)
     throw std::runtime_error("NavState::Expmap derivative not implemented yet");
-  // use brute force matrix exponential
-  return expm<NavState>(xi);
+
+  Eigen::Block<const Vector9, 3, 1> n_omega_nb = dR(xi);
+  Eigen::Block<const Vector9, 3, 1> v = dP(xi);
+  Eigen::Block<const Vector9, 3, 1> a = dV(xi);
+
+  Rot3 nRb = Rot3::Expmap(n_omega_nb);
+  double theta2 = n_omega_nb.dot(n_omega_nb);
+  if (theta2 > std::numeric_limits<double>::epsilon()) {
+    double omega_v = n_omega_nb.dot(v); // translation parallel to axis
+    Vector3 omega_cross_v = n_omega_nb.cross(v); // points towards axis
+    Point3 n_t = Point3(omega_cross_v - nRb * omega_cross_v + omega_v * n_omega_nb)
+        / theta2;
+    double omega_a = n_omega_nb.dot(a); // translation parallel to axis
+    Vector3 omega_cross_a = n_omega_nb.cross(a); // points towards axis
+    Vector3 n_v = (omega_cross_a - nRb * omega_cross_a + omega_a * n_omega_nb)
+        / theta2;
+    return NavState(nRb, n_t, n_v);
+  } else {
+    return NavState(nRb, Point3(v), a);
+  }
 }
 
 Vector9 NavState::Logmap(const NavState& p, OptionalJacobian<9, 9> H) {
