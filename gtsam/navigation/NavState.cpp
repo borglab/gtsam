@@ -101,27 +101,49 @@ NavState NavState::Expmap(const Vector9& xi, OptionalJacobian<9, 9> H) {
   Eigen::Block<const Vector9, 3, 1> v = dP(xi);
   Eigen::Block<const Vector9, 3, 1> a = dV(xi);
 
+  // NOTE(frank): mostly copy/paste from Pose3
   Rot3 nRb = Rot3::Expmap(n_omega_nb);
   double theta2 = n_omega_nb.dot(n_omega_nb);
   if (theta2 > std::numeric_limits<double>::epsilon()) {
-    double omega_v = n_omega_nb.dot(v); // translation parallel to axis
+    // Expmap implements a "screw" motion in the direction of n_omega_nb
+    Vector3 n_t_parallel = n_omega_nb * n_omega_nb.dot(v); // component along rotation axis
     Vector3 omega_cross_v = n_omega_nb.cross(v); // points towards axis
-    Point3 n_t = Point3(omega_cross_v - nRb * omega_cross_v + omega_v * n_omega_nb)
+    Point3 n_t = Point3(omega_cross_v - nRb * omega_cross_v + n_t_parallel)
         / theta2;
-    double omega_a = n_omega_nb.dot(a); // translation parallel to axis
+    Vector3 n_v_parallel = n_omega_nb * n_omega_nb.dot(a); // component along rotation axis
     Vector3 omega_cross_a = n_omega_nb.cross(a); // points towards axis
-    Vector3 n_v = (omega_cross_a - nRb * omega_cross_a + omega_a * n_omega_nb)
-        / theta2;
+    Vector3 n_v = (omega_cross_a - nRb * omega_cross_a + n_v_parallel) / theta2;
     return NavState(nRb, n_t, n_v);
   } else {
     return NavState(nRb, Point3(v), a);
   }
 }
 
-Vector9 NavState::Logmap(const NavState& p, OptionalJacobian<9, 9> H) {
+Vector9 NavState::Logmap(const NavState& nTb, OptionalJacobian<9, 9> H) {
   if (H)
     throw std::runtime_error("NavState::Logmap derivative not implemented yet");
-  return Vector9::Zero();
+
+  TIE(nRb, n_p, n_v, nTb);
+  Vector3 n_t = n_p.vector();
+
+  // NOTE(frank): mostly copy/paste from Pose3
+  Vector9 xi;
+  Vector3 n_omega_nb = Rot3::Logmap(nRb);
+  double theta = n_omega_nb.norm();
+  if (theta * theta <= std::numeric_limits<double>::epsilon()) {
+    xi << n_omega_nb, n_t, n_v;
+  } else {
+    Matrix3 W = skewSymmetric(n_omega_nb / theta);
+    // Formula from Agrawal06iros, equation (14)
+    // simplified with Mathematica, and multiplying in n_t to avoid matrix math
+    double factor = (1 - theta / (2. * tan(0.5 * theta)));
+    Vector3 n_x = W * n_t;
+    Vector3 v = n_t - (0.5 * theta) * n_x + factor * (W * n_x);
+    Vector3 n_y = W * n_v;
+    Vector3 a = n_v - (0.5 * theta) * n_y + factor * (W * n_y);
+    xi << n_omega_nb, v, a;
+  }
+  return xi;
 }
 
 Matrix9 NavState::AdjointMap() const {
