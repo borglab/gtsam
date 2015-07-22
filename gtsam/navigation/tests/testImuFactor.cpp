@@ -38,6 +38,7 @@ using symbol_shorthand::B;
 
 static const Vector3 kGravity(0, 0, 9.81);
 static const Vector3 kZeroOmegaCoriolis(0, 0, 0);
+static const Vector3 kNonZeroOmegaCoriolis(0, 0.1, 0.1);
 
 /* ************************************************************************* */
 namespace {
@@ -392,8 +393,6 @@ TEST(ImuFactor, ErrorAndJacobianWithBiases) {
       Point3(5.5, 1.0, -50.0));
 
   // Measurements
-  Vector3 nonZeroOmegaCoriolis;
-  nonZeroOmegaCoriolis << 0, 0.1, 0.1;
   Vector3 measuredOmega;
   measuredOmega << 0, 0, M_PI / 10.0 + 0.3;
   Vector3 measuredAcc = x1.rotation().unrotate(-Point3(kGravity)).vector()
@@ -408,7 +407,7 @@ TEST(ImuFactor, ErrorAndJacobianWithBiases) {
 
   // Create factor
   ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pim, kGravity,
-      nonZeroOmegaCoriolis);
+      kNonZeroOmegaCoriolis);
 
   Values values;
   values.insert(X(1), x1);
@@ -432,8 +431,6 @@ TEST(ImuFactor, ErrorAndJacobianWith2ndOrderCoriolis) {
       Point3(5.5, 1.0, -50.0));
 
   // Measurements
-  Vector3 nonZeroOmegaCoriolis;
-  nonZeroOmegaCoriolis << 0, 0.1, 0.1;
   Vector3 measuredOmega;
   measuredOmega << 0, 0, M_PI / 10.0 + 0.3;
   Vector3 measuredAcc = x1.rotation().unrotate(-Point3(kGravity)).vector()
@@ -450,7 +447,7 @@ TEST(ImuFactor, ErrorAndJacobianWith2ndOrderCoriolis) {
   Pose3 bodyPsensor = Pose3();
   bool use2ndOrderCoriolis = true;
   ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pim, kGravity,
-      nonZeroOmegaCoriolis, bodyPsensor, use2ndOrderCoriolis);
+      kNonZeroOmegaCoriolis, bodyPsensor, use2ndOrderCoriolis);
 
   Values values;
   values.insert(X(1), x1);
@@ -857,8 +854,6 @@ TEST(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
   Vector3 v2(Vector3(0.5, 0.0, 0.0));
 
   // Measurements
-  Vector3 nonZeroOmegaCoriolis;
-  nonZeroOmegaCoriolis << 0, 0.1, 0.1;
   Vector3 measuredOmega;
   measuredOmega << 0, 0, M_PI / 10.0 + 0.3;
   Vector3 measuredAcc = x1.rotation().unrotate(-Point3(kGravity)).vector()
@@ -877,7 +872,7 @@ TEST(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
 
   // Create factor
   ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pim, kGravity,
-      nonZeroOmegaCoriolis);
+      kNonZeroOmegaCoriolis);
 
   Values values;
   values.insert(X(1), x1);
@@ -958,6 +953,45 @@ TEST(ImuFactor, PredictRotation) {
   expectedVelocity << 0, 0, 0;
   EXPECT(assert_equal(expectedPose, x2));
   EXPECT(assert_equal(Vector(expectedVelocity), Vector(v2)));
+}
+
+/* ************************************************************************* */
+TEST(ImuFactor, PredictArbitrary) {
+  imuBias::ConstantBias bias(Vector3(0, 0, 0), Vector3(0, 0, 0)); // Biases (acc, rot)
+
+  // Measurements
+  Vector3 measuredOmega(M_PI / 10, M_PI / 10, M_PI / 10);
+  Vector3 measuredAcc(0.1, 0.2, -9.81);
+  double deltaT = 0.001;
+
+  ImuFactor::PreintegratedMeasurements pim(
+      imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0)),
+      kMeasuredAccCovariance, kMeasuredOmegaCovariance,
+      kIntegrationErrorCovariance, true);
+
+  for (int i = 0; i < 1000; ++i)
+    pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+
+  // Create factor
+  ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pim, kGravity,
+      kZeroOmegaCoriolis);
+
+  // Predict
+  Pose3 x1, x2;
+  Vector3 v1 = Vector3(0, 0.0, 0.0);
+  Vector3 v2;
+  ImuFactor::Predict(x1, v1, x2, v2, bias, pim, kGravity, kZeroOmegaCoriolis);
+
+  // Regression test for Imu Refactor
+  Rot3 expectedR( //
+      +0.903715275, -0.250741668, 0.347026393, //
+      +0.347026393, 0.903715275, -0.250741668, //
+      -0.250741668, 0.347026393, 0.903715275);
+  Point3 expectedT(-0.505517319, 0.569413747, 0.0861035711);
+  Vector3 expectedV(-1.59121524, 1.55353139, 0.3376838540);
+  Pose3 expectedPose(expectedR, expectedT);
+  EXPECT(assert_equal(expectedPose, x2, 1e-7));
+  EXPECT(assert_equal(Vector(expectedV), v2, 1e-7));
 }
 
 /* ************************************************************************* */
