@@ -283,14 +283,6 @@ TEST(ImuFactor, PreintegrationBaseMethods) {
     EXPECT(assert_equal(expectedH, actualH));
   }
   {
-    Matrix9 actualH;
-    pim.integrateCoriolis(state1, actualH);
-    Matrix expectedH = numericalDerivative11<Vector9, NavState>(
-        boost::bind(&PreintegrationBase::integrateCoriolis, pim, _1,
-            boost::none), state1);
-    EXPECT(assert_equal(expectedH, actualH));
-  }
-  {
     Matrix9 aH1, aH2;
     Vector9 biasCorrectedDelta = pim.biasCorrectedDelta(bias);
     pim.recombinedPrediction(state1, biasCorrectedDelta, aH1, aH2);

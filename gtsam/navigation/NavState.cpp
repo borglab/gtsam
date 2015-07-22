@@ -24,24 +24,28 @@ namespace gtsam {
 
 #define TIE(R,t,v,x) const Rot3& R = (x).R_;const Point3& t = (x).t_;const Velocity3& v = (x).v_;
 
+//------------------------------------------------------------------------------
 const Rot3& NavState::attitude(OptionalJacobian<3, 9> H) const {
   if (H)
     *H << I_3x3, Z_3x3, Z_3x3;
   return R_;
 }
 
+//------------------------------------------------------------------------------
 const Point3& NavState::position(OptionalJacobian<3, 9> H) const {
   if (H)
     *H << Z_3x3, R(), Z_3x3;
   return t_;
 }
 
+//------------------------------------------------------------------------------
 const Vector3& NavState::velocity(OptionalJacobian<3, 9> H) const {
   if (H)
     *H << Z_3x3, Z_3x3, R();
   return v_;
 }
 
+//------------------------------------------------------------------------------
 Matrix7 NavState::matrix() const {
   Matrix3 R = this->R();
   Matrix7 T;
@@ -49,29 +53,34 @@ Matrix7 NavState::matrix() const {
   return T;
 }
 
+//------------------------------------------------------------------------------
 void NavState::print(const string& s) const {
   attitude().print(s + ".R");
   position().print(s + ".p");
   gtsam::print((Vector) v_, s + ".v");
 }
 
+//------------------------------------------------------------------------------
 bool NavState::equals(const NavState& other, double tol) const {
   return R_.equals(other.R_, tol) && t_.equals(other.t_, tol)
       && equal_with_abs_tol(v_, other.v_, tol);
 }
 
+//------------------------------------------------------------------------------
 NavState NavState::inverse() const {
   TIE(nRb, n_t, n_v, *this);
   const Rot3 bRn = nRb.inverse();
   return NavState(bRn, -(bRn * n_t), -(bRn * n_v));
 }
 
+//------------------------------------------------------------------------------
 NavState NavState::operator*(const NavState& bTc) const {
   TIE(nRb, n_t, n_v, *this);
   TIE(bRc, b_t, b_v, bTc);
   return NavState(nRb * bRc, nRb * b_t + n_t, nRb * b_v + n_v);
 }
 
+//------------------------------------------------------------------------------
 NavState::PositionAndVelocity //
 NavState::operator*(const PositionAndVelocity& b_tv) const {
   TIE(nRb, n_t, n_v, *this);
@@ -80,14 +89,17 @@ NavState::operator*(const PositionAndVelocity& b_tv) const {
   return PositionAndVelocity(nRb * b_t + n_t, nRb * b_v + n_v);
 }
 
+//------------------------------------------------------------------------------
 Point3 NavState::operator*(const Point3& b_t) const {
   return Point3(R_ * b_t + t_);
 }
 
+//------------------------------------------------------------------------------
 Velocity3 NavState::operator*(const Velocity3& b_v) const {
   return Velocity3(R_ * b_v + v_);
 }
 
+//------------------------------------------------------------------------------
 NavState NavState::ChartAtOrigin::Retract(const Vector9& xi,
     OptionalJacobian<9, 9> H) {
   Matrix3 D_R_xi;
@@ -103,6 +115,7 @@ NavState NavState::ChartAtOrigin::Retract(const Vector9& xi,
   return result;
 }
 
+//------------------------------------------------------------------------------
 Vector9 NavState::ChartAtOrigin::Local(const NavState& x,
     OptionalJacobian<9, 9> H) {
   if (H)
@@ -113,6 +126,7 @@ Vector9 NavState::ChartAtOrigin::Local(const NavState& x,
   return xi;
 }
 
+//------------------------------------------------------------------------------
 NavState NavState::Expmap(const Vector9& xi, OptionalJacobian<9, 9> H) {
   if (H)
     throw runtime_error("NavState::Expmap derivative not implemented yet");
@@ -139,6 +153,7 @@ NavState NavState::Expmap(const Vector9& xi, OptionalJacobian<9, 9> H) {
   }
 }
 
+//------------------------------------------------------------------------------
 Vector9 NavState::Logmap(const NavState& nTb, OptionalJacobian<9, 9> H) {
   if (H)
     throw runtime_error("NavState::Logmap derivative not implemented yet");
@@ -166,6 +181,7 @@ Vector9 NavState::Logmap(const NavState& nTb, OptionalJacobian<9, 9> H) {
   return xi;
 }
 
+//------------------------------------------------------------------------------
 Matrix9 NavState::AdjointMap() const {
   // NOTE(frank): See Pose3::AdjointMap
   const Matrix3 nRb = R();
@@ -177,6 +193,7 @@ Matrix9 NavState::AdjointMap() const {
   return adj;
 }
 
+//------------------------------------------------------------------------------
 Matrix7 NavState::wedge(const Vector9& xi) {
   const Matrix3 Omega = skewSymmetric(dR(xi));
   Matrix7 T;
@@ -184,6 +201,7 @@ Matrix7 NavState::wedge(const Vector9& xi) {
   return T;
 }
 
+//------------------------------------------------------------------------------
 // sugar for derivative blocks
 #define D_R_R(H) H->block<3,3>(0,0)
 #define D_t_t(H) H->block<3,3>(3,3)
@@ -191,9 +209,9 @@ Matrix7 NavState::wedge(const Vector9& xi) {
 #define D_v_t(H) H->block<3,3>(6,3)
 #define D_v_v(H) H->block<3,3>(6,6)
 
-Vector9 NavState::coriolis(const Vector3& omega, double dt, bool secondOrder,
-    OptionalJacobian<9, 9> H) const {
-  Vector9 result;
+//------------------------------------------------------------------------------
+void NavState::addCoriolis(Vector9* xi, const Vector3& omega, double dt,
+    bool secondOrder, OptionalJacobian<9, 9> H) const {
   const Rot3& nRb = attitude();
   const Point3& n_t = position(); // derivative is R() !
   const Vector3& n_v = velocity(); // ditto
@@ -201,28 +219,38 @@ Vector9 NavState::coriolis(const Vector3& omega, double dt, bool secondOrder,
 
   const Vector3 omega_cross_vel = omega.cross(n_v);
   Matrix3 D_dP_R;
-  dR(result) << -nRb.unrotate(omega * dt, H ? &D_dP_R : 0);
-  dP(result) << ((-dt2) * omega_cross_vel); // NOTE(luca): we got rid of the 2 wrt INS paper
-  dV(result) << ((-2.0 * dt) * omega_cross_vel);
+  dR(*xi) -= nRb.unrotate(omega * dt, H ? &D_dP_R : 0);
+  dP(*xi) -= (dt2 * omega_cross_vel); // NOTE(luca): we got rid of the 2 wrt INS paper
+  dV(*xi) -= ((2.0 * dt) * omega_cross_vel);
   if (secondOrder) {
     const Vector3 omega_cross2_t = omega.cross(omega.cross(n_t.vector()));
-    dP(result) -= (0.5 * dt2) * omega_cross2_t;
-    dV(result) -= dt * omega_cross2_t;
+    dP(*xi) -= (0.5 * dt2) * omega_cross2_t;
+    dV(*xi) -= dt * omega_cross2_t;
   }
   if (H) {
     const Matrix3 Omega = skewSymmetric(omega);
     const Matrix3 D_cross_state = Omega * R();
     H->setZero();
-    D_R_R(H) << -D_dP_R;
-    D_t_v(H) << (-dt2) * D_cross_state;
-    D_v_v(H) << (-2.0 * dt) * D_cross_state;
+    D_R_R(H) -= D_dP_R;
+    D_t_v(H) -= dt2 * D_cross_state;
+    D_v_v(H) -= (2.0 * dt) * D_cross_state;
     if (secondOrder) {
       const Matrix3 D_cross2_state = Omega * D_cross_state;
       D_t_t(H) -= (0.5 * dt2) * D_cross2_state;
       D_v_t(H) -= dt * D_cross2_state;
     }
   }
-  return result;
+}
+
+//------------------------------------------------------------------------------
+Vector9 NavState::coriolis(const Vector3& omega, double dt, bool secondOrder,
+    OptionalJacobian<9, 9> H) const {
+  Vector9 xi;
+  xi.setZero();
+  if (H)
+    H->setZero();
+  addCoriolis(&xi, omega, dt, secondOrder, H);
+  return xi;
 }
 
 } /// namespace gtsam

@@ -204,8 +204,13 @@ public:
   /// @{
 
   // Compute tangent space contribution due to coriolis forces
-  Vector9 coriolis(const Vector3& omega, double dt, bool secondOrder,
-      OptionalJacobian<9, 9> H) const;
+  Vector9 coriolis(const Vector3& omega, double dt, bool secondOrder = false,
+      OptionalJacobian<9, 9> H = boost::none) const;
+
+  // Add tangent space contribution due to coriolis forces
+  // Additively modifies xi and H in place (if given)
+  void addCoriolis(Vector9* xi, const Vector3& omega, double dt,
+      bool secondOrder = false, OptionalJacobian<9, 9> H = boost::none) const;
 
   /// @}
 
