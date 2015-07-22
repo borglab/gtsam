@@ -63,7 +63,7 @@ void PreintegrationBase::updatePreintegratedMeasurements(
     const Vector3& correctedAcc, const Rot3& incrR, const double deltaT,
     OptionalJacobian<9, 9> F) {
 
-  const Matrix3 dRij = deltaRij().matrix(); // expensive
+  const Matrix3 dRij = deltaRij_.matrix(); // expensive
   const Vector3 temp = dRij * correctedAcc * deltaT;
 
   if (!p().use2ndOrderIntegration) {
@@ -98,9 +98,9 @@ void PreintegrationBase::updatePreintegratedMeasurements(
 void PreintegrationBase::updatePreintegratedJacobians(
     const Vector3& correctedAcc, const Matrix3& D_Rincr_integratedOmega,
     const Rot3& incrR, double deltaT) {
-  const Matrix3 dRij = deltaRij().matrix(); // expensive
+  const Matrix3 dRij = deltaRij_.matrix(); // expensive
   const Matrix3 temp = -dRij * skewSymmetric(correctedAcc) * deltaT
-      * delRdelBiasOmega();
+      * delRdelBiasOmega_;
   if (!p().use2ndOrderIntegration) {
     delPdelBiasAcc_ += delVdelBiasAcc_ * deltaT;
     delPdelBiasOmega_ += delVdelBiasOmega_ * deltaT;
@@ -158,48 +158,6 @@ Vector9 PreintegrationBase::biasCorrectedDelta(
 }
 
 //------------------------------------------------------------------------------
-Vector9 PreintegrationBase::recombinedPrediction(const NavState& state_i,
-    const Vector9& biasCorrectedDelta, OptionalJacobian<9, 9> H1,
-    OptionalJacobian<9, 9> H2) const {
-
-  const Rot3& rot_i = state_i.attitude();
-  const Vector3& vel_i = state_i.velocity();
-  const double dt = deltaTij(), dt2 = dt * dt;
-
-  // Rotation, position, and velocity:
-  Vector9 xi;
-  Matrix3 D_dP_Ri, D_dP_bc, D_dV_Ri, D_dV_bc;
-  NavState::dR(xi) = NavState::dR(biasCorrectedDelta);
-  NavState::dP(xi) = rot_i.rotate(NavState::dP(biasCorrectedDelta), D_dP_Ri,
-      D_dP_bc) + vel_i * dt + 0.5 * p().gravity * dt2;
-  NavState::dV(xi) = rot_i.rotate(NavState::dV(biasCorrectedDelta), D_dV_Ri,
-      D_dV_bc) + p().gravity * dt;
-
-  Matrix9 Hcoriolis;
-  if (p().omegaCoriolis) {
-    state_i.addCoriolis(&xi, *(p().omegaCoriolis), deltaTij(),
-        p().use2ndOrderCoriolis, H1 ? &Hcoriolis : 0);
-  }
-  if (H1) {
-    H1->setZero();
-    H1->block<3, 3>(3, 0) = D_dP_Ri;
-    H1->block<3, 3>(3, 6) = I_3x3 * dt;
-    H1->block<3, 3>(6, 0) = D_dV_Ri;
-    if (p().omegaCoriolis)
-      *H1 += Hcoriolis;
-  }
-  if (H2) {
-    H2->setZero();
-    Matrix3 Ri = rot_i.matrix();
-    H2->block<3, 3>(0, 0) = I_3x3;
-    H2->block<3, 3>(3, 3) = Ri;
-    H2->block<3, 3>(6, 6) = Ri;
-  }
-
-  return xi;
-}
-
-//------------------------------------------------------------------------------
 NavState PreintegrationBase::predict(const NavState& state_i,
     const imuBias::ConstantBias& bias_i, OptionalJacobian<9, 9> H1,
     OptionalJacobian<9, 6> H2) const {
@@ -207,8 +165,9 @@ NavState PreintegrationBase::predict(const NavState& state_i,
   Vector9 biasCorrected = biasCorrectedDelta(bias_i,
       H2 ? &D_biasCorrected_bias : 0);
   Matrix9 D_delta_state, D_delta_biasCorrected;
-  Vector9 xi = recombinedPrediction(state_i, biasCorrected,
-      H1 ? &D_delta_state : 0, H2 ? &D_delta_biasCorrected : 0);
+  Vector9 xi = state_i.predictXi(biasCorrected, deltaTij_, p().gravity,
+      p().omegaCoriolis, p().use2ndOrderCoriolis, H1 ? &D_delta_state : 0,
+      H2 ? &D_delta_biasCorrected : 0);
   Matrix9 D_predict_state, D_predict_delta;
   NavState state_j = state_i.retract(xi, D_predict_state, D_predict_delta);
   if (H1)
@@ -300,7 +259,7 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i,
   Matrix3 D_fR_fRrot;
   Rot3::Logmap(fRrot, H1 || H3 || H5 ? &D_fR_fRrot : 0);
 
-  const double dt = deltaTij(), dt2 = dt * dt;
+  const double dt = deltaTij_, dt2 = dt * dt;
   Matrix3 RitOmegaCoriolisHat = Z_3x3;
   if ((H1 || H2) && p().omegaCoriolis)
     RitOmegaCoriolisHat = Ri.transpose() * skewSymmetric(*p().omegaCoriolis);

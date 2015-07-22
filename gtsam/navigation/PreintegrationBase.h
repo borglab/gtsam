@@ -152,11 +152,6 @@ class PreintegrationBase : public PreintegratedRotation {
   Vector9 biasCorrectedDelta(const imuBias::ConstantBias& bias_i,
       OptionalJacobian<9, 6> H = boost::none) const;
 
-  /// Recombine the preintegration, gravity, and coriolis in a single NavState tangent vector
-  Vector9 recombinedPrediction(const NavState& state_i,
-      const Vector9& biasCorrectedDelta, OptionalJacobian<9, 9> H1 = boost::none,
-      OptionalJacobian<9, 9> H2 = boost::none) const;
-
   /// Predict state at time j
   NavState predict(const NavState& state_i, const imuBias::ConstantBias& bias_i,
       OptionalJacobian<9, 9> H1 = boost::none, OptionalJacobian<9, 6> H2 = boost::none) const;

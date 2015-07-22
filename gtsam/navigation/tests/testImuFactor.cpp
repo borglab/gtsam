@@ -213,26 +213,26 @@ double deltaT = 1.0;
 TEST( NavState, Lie ) {
   // origin and zero deltas
   NavState identity;
-  const double tol=1e-5;
+  const double tol = 1e-5;
   Rot3 rot = Rot3::RzRyRx(0.1, 0.2, 0.3);
   Point3 pt(1.0, 2.0, 3.0);
   Velocity3 vel(0.4, 0.5, 0.6);
 
-  EXPECT(assert_equal(identity, (NavState)identity.retract(zero(9)), tol));
+  EXPECT(assert_equal(identity, (NavState )identity.retract(zero(9)), tol));
   EXPECT(assert_equal(zero(9), identity.localCoordinates(identity), tol));
 
   NavState state1(rot, pt, vel);
-  EXPECT(assert_equal(state1, (NavState)state1.retract(zero(9)), tol));
+  EXPECT(assert_equal(state1, (NavState )state1.retract(zero(9)), tol));
   EXPECT(assert_equal(zero(9), state1.localCoordinates(state1), tol));
 
   // Special retract
   Vector delta(9);
-  delta << 0.1, 0.1, 0.1, 0.2, 0.3, 0.4,-0.1,-0.2,-0.3;
+  delta << 0.1, 0.1, 0.1, 0.2, 0.3, 0.4, -0.1, -0.2, -0.3;
   Rot3 drot = Rot3::Expmap(delta.head<3>());
-  Point3 dt = Point3(delta.segment<3>(3));
+  Point3 dt = Point3(delta.segment < 3 > (3));
   Velocity3 dvel = Velocity3(-0.1, -0.2, -0.3);
   NavState state2 = state1 * NavState(drot, dt, dvel);
-  EXPECT(assert_equal(state2, (NavState)state1.retract(delta), tol));
+  EXPECT(assert_equal(state2, (NavState )state1.retract(delta), tol));
   EXPECT(assert_equal(delta, state1.localCoordinates(state2), tol));
 
   // roundtrip from state2 to state3 and back
@@ -244,17 +244,19 @@ TEST( NavState, Lie ) {
   EXPECT(assert_equal(delta, state3.logmap(state4), tol));
 
   // For the expmap/logmap (not necessarily retract/local) -delta goes other way
-  EXPECT(assert_equal(state3, (NavState)state4.expmap(-delta), tol));
+  EXPECT(assert_equal(state3, (NavState )state4.expmap(-delta), tol));
   EXPECT(assert_equal(delta, -state4.logmap(state3), tol));
 
   // retract derivatives
   Matrix9 aH1, aH2;
   state1.retract(delta, aH1, aH2);
   Matrix eH1 = numericalDerivative11<NavState, NavState>(
-      boost::bind(&NavState::retract, _1, delta, boost::none, boost::none),state1);
+      boost::bind(&NavState::retract, _1, delta, boost::none, boost::none),
+      state1);
   EXPECT(assert_equal(eH1, aH1));
   Matrix eH2 = numericalDerivative11<NavState, Vector9>(
-      boost::bind(&NavState::retract, state1, _1, boost::none, boost::none), delta);
+      boost::bind(&NavState::retract, state1, _1, boost::none, boost::none),
+      delta);
   EXPECT(assert_equal(eH2, aH2));
 }
 
@@ -283,30 +285,17 @@ TEST(ImuFactor, PreintegrationBaseMethods) {
     EXPECT(assert_equal(expectedH, actualH));
   }
   {
-    Matrix9 aH1, aH2;
-    Vector9 biasCorrectedDelta = pim.biasCorrectedDelta(bias);
-    pim.recombinedPrediction(state1, biasCorrectedDelta, aH1, aH2);
-    Matrix eH1 = numericalDerivative11<Vector9, NavState>(
-        boost::bind(&PreintegrationBase::recombinedPrediction, pim, _1,
-            biasCorrectedDelta, boost::none, boost::none), state1);
-    EXPECT(assert_equal(eH1, aH1));
-    Matrix eH2 = numericalDerivative11<Vector9, Vector9>(
-        boost::bind(&PreintegrationBase::recombinedPrediction, pim, state1, _1,
-            boost::none, boost::none), biasCorrectedDelta);
-    EXPECT(assert_equal(eH2, aH2));
-  }
-  {
     Matrix9 aH1;
     Matrix96 aH2;
     pim.predict(state1, bias, aH1, aH2);
     Matrix eH1 = numericalDerivative11<NavState, NavState>(
         boost::bind(&PreintegrationBase::predict, pim, _1, bias, boost::none,
             boost::none), state1);
-    EXPECT(assert_equal(eH1, aH1));
+    EXPECT(assert_equal(eH1, aH1, 1e-8));
     Matrix eH2 = numericalDerivative11<NavState, imuBias::ConstantBias>(
         boost::bind(&PreintegrationBase::predict, pim, state1, _1, boost::none,
             boost::none), bias);
-    EXPECT(assert_equal(eH2, aH2));
+    EXPECT(assert_equal(eH2, aH2, 1e-8));
   }
 }
 
@@ -314,9 +303,9 @@ TEST(ImuFactor, PreintegrationBaseMethods) {
 TEST(ImuFactor, ErrorAndJacobians) {
   using namespace common;
   bool use2ndOrderIntegration = true;
-  PreintegratedImuMeasurements pim(bias,
-      kMeasuredAccCovariance, kMeasuredOmegaCovariance,
-      kIntegrationErrorCovariance, use2ndOrderIntegration);
+  PreintegratedImuMeasurements pim(bias, kMeasuredAccCovariance,
+      kMeasuredOmegaCovariance, kIntegrationErrorCovariance,
+      use2ndOrderIntegration);
   pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   // Create factor
@@ -933,7 +922,8 @@ TEST(ImuFactor, PredictRotation) {
     pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   // Create factor
-  ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pim, kGravity, kZeroOmegaCoriolis);
+  ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pim, kGravity,
+      kZeroOmegaCoriolis);
 
   // Predict
   Pose3 x1, x2;
