@@ -203,54 +203,115 @@ Matrix7 NavState::wedge(const Vector9& xi) {
 
 //------------------------------------------------------------------------------
 // sugar for derivative blocks
-#define D_R_R(H) H->block<3,3>(0,0)
-#define D_t_t(H) H->block<3,3>(3,3)
-#define D_t_v(H) H->block<3,3>(3,6)
-#define D_v_t(H) H->block<3,3>(6,3)
-#define D_v_v(H) H->block<3,3>(6,6)
+#define D_R_R(H) (H)->block<3,3>(0,0)
+#define D_R_t(H) (H)->block<3,3>(0,3)
+#define D_R_v(H) (H)->block<3,3>(0,6)
+#define D_t_R(H) (H)->block<3,3>(3,0)
+#define D_t_t(H) (H)->block<3,3>(3,3)
+#define D_t_v(H) (H)->block<3,3>(3,6)
+#define D_v_R(H) (H)->block<3,3>(6,0)
+#define D_v_t(H) (H)->block<3,3>(6,3)
+#define D_v_v(H) (H)->block<3,3>(6,6)
 
 //------------------------------------------------------------------------------
-void NavState::addCoriolis(Vector9* xi, const Vector3& omega, double dt,
-    bool secondOrder, OptionalJacobian<9, 9> H) const {
-  const Rot3& nRb = attitude();
-  const Point3& n_t = position(); // derivative is R() !
-  const Vector3& n_v = velocity(); // ditto
+Vector9 NavState::coriolis(double dt, const Vector3& omega, bool secondOrder,
+    OptionalJacobian<9, 9> H) const {
+  TIE(nRb, n_t, n_v, *this);
   const double dt2 = dt * dt;
-
   const Vector3 omega_cross_vel = omega.cross(n_v);
+
+  Vector9 xi;
   Matrix3 D_dP_R;
-  dR(*xi) -= nRb.unrotate(omega * dt, H ? &D_dP_R : 0);
-  dP(*xi) -= (dt2 * omega_cross_vel); // NOTE(luca): we got rid of the 2 wrt INS paper
-  dV(*xi) -= ((2.0 * dt) * omega_cross_vel);
+  dR(xi) << nRb.unrotate((-dt) * omega, H ? &D_dP_R : 0);
+  dP(xi) << ((-dt2) * omega_cross_vel); // NOTE(luca): we got rid of the 2 wrt INS paper
+  dV(xi) << ((-2.0 * dt) * omega_cross_vel);
   if (secondOrder) {
     const Vector3 omega_cross2_t = omega.cross(omega.cross(n_t.vector()));
-    dP(*xi) -= (0.5 * dt2) * omega_cross2_t;
-    dV(*xi) -= dt * omega_cross2_t;
+    dP(xi) -= (0.5 * dt2) * omega_cross2_t;
+    dV(xi) -= dt * omega_cross2_t;
   }
   if (H) {
+    H->setZero();
     const Matrix3 Omega = skewSymmetric(omega);
     const Matrix3 D_cross_state = Omega * R();
     H->setZero();
-    D_R_R(H) -= D_dP_R;
-    D_t_v(H) -= dt2 * D_cross_state;
-    D_v_v(H) -= (2.0 * dt) * D_cross_state;
+    D_R_R(H) << D_dP_R;
+    D_t_v(H) << (-dt2) * D_cross_state;
+    D_v_v(H) << (-2.0 * dt) * D_cross_state;
     if (secondOrder) {
       const Matrix3 D_cross2_state = Omega * D_cross_state;
       D_t_t(H) -= (0.5 * dt2) * D_cross2_state;
       D_v_t(H) -= dt * D_cross2_state;
     }
   }
-}
-
-//------------------------------------------------------------------------------
-Vector9 NavState::coriolis(const Vector3& omega, double dt, bool secondOrder,
-    OptionalJacobian<9, 9> H) const {
-  Vector9 xi;
-  xi.setZero();
-  if (H)
-    H->setZero();
-  addCoriolis(&xi, omega, dt, secondOrder, H);
   return xi;
 }
 
-} /// namespace gtsam
+//------------------------------------------------------------------------------
+Vector9 NavState::predictXi(const Vector9& pim, double dt,
+    const Vector3& gravity, boost::optional<const Vector3&> omegaCoriolis,
+    bool use2ndOrderCoriolis, OptionalJacobian<9, 9> H1,
+    OptionalJacobian<9, 9> H2) const {
+  const Rot3& nRb = R_;
+  const Velocity3& n_v = v_; // derivative is Ri !
+  const double dt2 = dt * dt;
+
+  Vector9 delta;
+  Matrix3 D_dP_Ri, D_dP_dP, D_dV_Ri, D_dV_dV;
+  dR(delta) = dR(pim);
+  // TODO(frank):
+  // - why do we integrate n_v here ?
+  // - the dP and dV should be in body ! How come semi-retract works out ??
+  // - should we rename t_ to p_? if not, we should rename dP do dT
+  dP(delta) = nRb.rotate(dP(pim), H1 ? &D_dP_Ri : 0, H2 ? &D_dP_dP : 0)
+      + n_v * dt + 0.5 * gravity * dt2;
+  dV(delta) = nRb.rotate(dV(pim), H1 ? &D_dV_Ri : 0, H2 ? &D_dV_dV : 0)
+      + gravity * dt;
+
+  if (omegaCoriolis) {
+    delta += coriolis(dt, *omegaCoriolis, use2ndOrderCoriolis, H1);
+  }
+
+  if (H1 || H2) {
+    Matrix3 Ri = nRb.matrix();
+
+    if (H1) {
+      if (!omegaCoriolis)
+        H1->setZero(); // if coriolis H1 is already initialized
+      D_t_R(H1) += D_dP_Ri;
+      D_t_v(H1) += I_3x3 * dt * Ri;
+      D_v_R(H1) += D_dV_Ri;
+    }
+    if (H2) {
+      H2->setZero();
+      D_R_R(H2) << I_3x3;
+      D_t_t(H2) << D_dP_dP;
+      D_v_v(H2) << D_dV_dV;
+    }
+  }
+
+  return delta;
+}
+//------------------------------------------------------------------------------
+NavState NavState::predict(const Vector9& pim, double dt,
+    const Vector3& gravity, boost::optional<const Vector3&> omegaCoriolis,
+    bool use2ndOrderCoriolis, OptionalJacobian<9, 9> H1,
+    OptionalJacobian<9, 9> H2) const {
+
+  Matrix9 D_delta_state, D_delta_pim;
+  Vector9 delta = predictXi(pim, dt, gravity, omegaCoriolis,
+      use2ndOrderCoriolis, H1 ? &D_delta_state : 0, H2 ? &D_delta_pim : 0);
+
+  Matrix9 D_predicted_state, D_predicted_delta;
+  NavState predicted = retract(delta, H1 ? &D_predicted_state : 0,
+      H1 || H2 ? &D_predicted_delta : 0);
+  // TODO(frank): the derivatives of retract are very sparse: inline below:
+  if (H1)
+    *H1 = D_predicted_state + D_predicted_delta * D_delta_state;
+  if (H2)
+    *H2 = D_predicted_delta * D_delta_pim;
+  return predicted;
+}
+//------------------------------------------------------------------------------
+
+}/// namespace gtsam

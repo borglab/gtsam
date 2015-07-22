@@ -203,15 +203,23 @@ public:
   /// @name Dynamics
   /// @{
 
-  // Compute tangent space contribution due to coriolis forces
-  Vector9 coriolis(const Vector3& omega, double dt, bool secondOrder = false,
+  /// Compute tangent space contribution due to Coriolis forces
+  Vector9 coriolis(double dt, const Vector3& omega, bool secondOrder = false,
       OptionalJacobian<9, 9> H = boost::none) const;
 
-  // Add tangent space contribution due to coriolis forces
-  // Additively modifies xi and H in place (if given)
-  void addCoriolis(Vector9* xi, const Vector3& omega, double dt,
-      bool secondOrder = false, OptionalJacobian<9, 9> H = boost::none) const;
+  /// Combine preintegrated measurements, in the form of a tangent space vector,
+  /// with gravity, velocity, and Coriolis forces into a tangent space update.
+  Vector9 predictXi(const Vector9& pim, double dt, const Vector3& gravity,
+      boost::optional<const Vector3&> omegaCoriolis, bool use2ndOrderCoriolis =
+          false, OptionalJacobian<9, 9> H1 = boost::none,
+      OptionalJacobian<9, 9> H2 = boost::none) const;
 
+  /// Combine preintegrated measurements, in the form of a tangent space vector,
+  /// with gravity, velocity, and Coriolis forces into a new state.
+  NavState predict(const Vector9& pim, double dt, const Vector3& gravity,
+      boost::optional<const Vector3&> omegaCoriolis, bool use2ndOrderCoriolis =
+          false, OptionalJacobian<9, 9> H1 = boost::none,
+      OptionalJacobian<9, 9> H2 = boost::none) const;
   /// @}
 
 private:
