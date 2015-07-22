@@ -210,57 +210,6 @@ double deltaT = 1.0;
 } // namespace common
 
 /* ************************************************************************* */
-TEST( NavState, Lie ) {
-  // origin and zero deltas
-  NavState identity;
-  const double tol = 1e-5;
-  Rot3 rot = Rot3::RzRyRx(0.1, 0.2, 0.3);
-  Point3 pt(1.0, 2.0, 3.0);
-  Velocity3 vel(0.4, 0.5, 0.6);
-
-  EXPECT(assert_equal(identity, (NavState )identity.retract(zero(9)), tol));
-  EXPECT(assert_equal(zero(9), identity.localCoordinates(identity), tol));
-
-  NavState state1(rot, pt, vel);
-  EXPECT(assert_equal(state1, (NavState )state1.retract(zero(9)), tol));
-  EXPECT(assert_equal(zero(9), state1.localCoordinates(state1), tol));
-
-  // Special retract
-  Vector delta(9);
-  delta << 0.1, 0.1, 0.1, 0.2, 0.3, 0.4, -0.1, -0.2, -0.3;
-  Rot3 drot = Rot3::Expmap(delta.head<3>());
-  Point3 dt = Point3(delta.segment < 3 > (3));
-  Velocity3 dvel = Velocity3(-0.1, -0.2, -0.3);
-  NavState state2 = state1 * NavState(drot, dt, dvel);
-  EXPECT(assert_equal(state2, (NavState )state1.retract(delta), tol));
-  EXPECT(assert_equal(delta, state1.localCoordinates(state2), tol));
-
-  // roundtrip from state2 to state3 and back
-  NavState state3 = state2.retract(delta);
-  EXPECT(assert_equal(delta, state2.localCoordinates(state3), tol));
-
-  // roundtrip from state3 to state4 and back, with expmap.
-  NavState state4 = state3.expmap(delta);
-  EXPECT(assert_equal(delta, state3.logmap(state4), tol));
-
-  // For the expmap/logmap (not necessarily retract/local) -delta goes other way
-  EXPECT(assert_equal(state3, (NavState )state4.expmap(-delta), tol));
-  EXPECT(assert_equal(delta, -state4.logmap(state3), tol));
-
-  // retract derivatives
-  Matrix9 aH1, aH2;
-  state1.retract(delta, aH1, aH2);
-  Matrix eH1 = numericalDerivative11<NavState, NavState>(
-      boost::bind(&NavState::retract, _1, delta, boost::none, boost::none),
-      state1);
-  EXPECT(assert_equal(eH1, aH1));
-  Matrix eH2 = numericalDerivative11<NavState, Vector9>(
-      boost::bind(&NavState::retract, state1, _1, boost::none, boost::none),
-      delta);
-  EXPECT(assert_equal(eH2, aH2));
-}
-
-/* ************************************************************************* */
 TEST(ImuFactor, PreintegrationBaseMethods) {
   using namespace common;
   boost::shared_ptr<PreintegratedImuMeasurements::Params> p =
