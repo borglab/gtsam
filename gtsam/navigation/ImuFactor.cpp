@@ -68,7 +68,7 @@ void PreintegratedImuMeasurements::integrateMeasurement(
   updatePreintegratedJacobians(correctedAcc, D_Rincr_integratedOmega, Rincr, deltaT);
 
   // Update preintegrated measurements (also get Jacobian)
-  const Matrix3 dRij = deltaRij().matrix();  // store this, which is useful to compute G_test
+  const Matrix3 dRij = deltaRij_.matrix();  // store this, which is useful to compute G_test
   Matrix9 F;  // overall Jacobian wrt preintegrated measurements (df/dx)
   updatePreintegratedMeasurements(correctedAcc, Rincr, deltaT, F);
 

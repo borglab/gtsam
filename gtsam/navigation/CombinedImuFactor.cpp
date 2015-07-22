@@ -74,7 +74,7 @@ void PreintegratedCombinedMeasurements::integrateMeasurement(
   // can be seen as a prediction phase in an EKF framework. In this implementation, contrarily to [2] we
   // consider the uncertainty of the bias selection and we keep correlation between biases and preintegrated measurements
   /* ----------------------------------------------------------------------------------------------------------------------- */
-  const Matrix3 dRij = deltaRij().matrix(); // expensive when quaternion
+  const Matrix3 dRij = deltaRij_.matrix(); // expensive when quaternion
   // Update preintegrated measurements. TODO Frank moved from end of this function !!!
   Matrix9 F_9x9;
   updatePreintegratedMeasurements(correctedAcc, Rincr, deltaT, F_9x9);
