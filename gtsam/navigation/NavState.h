@@ -210,14 +210,14 @@ public:
   /// Combine preintegrated measurements, in the form of a tangent space vector,
   /// with gravity, velocity, and Coriolis forces into a tangent space update.
   Vector9 predictXi(const Vector9& pim, double dt, const Vector3& gravity,
-      boost::optional<const Vector3&> omegaCoriolis, bool use2ndOrderCoriolis =
+      const boost::optional<Vector3>& omegaCoriolis, bool use2ndOrderCoriolis =
           false, OptionalJacobian<9, 9> H1 = boost::none,
       OptionalJacobian<9, 9> H2 = boost::none) const;
 
   /// Combine preintegrated measurements, in the form of a tangent space vector,
   /// with gravity, velocity, and Coriolis forces into a new state.
   NavState predict(const Vector9& pim, double dt, const Vector3& gravity,
-      boost::optional<const Vector3&> omegaCoriolis, bool use2ndOrderCoriolis =
+      const boost::optional<Vector3>& omegaCoriolis, bool use2ndOrderCoriolis =
           false, OptionalJacobian<9, 9> H1 = boost::none,
       OptionalJacobian<9, 9> H2 = boost::none) const;
   /// @}

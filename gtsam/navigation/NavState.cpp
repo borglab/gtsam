@@ -249,7 +249,7 @@ Vector9 NavState::coriolis(double dt, const Vector3& omega, bool secondOrder,
 
 //------------------------------------------------------------------------------
 Vector9 NavState::predictXi(const Vector9& pim, double dt,
-    const Vector3& gravity, boost::optional<const Vector3&> omegaCoriolis,
+    const Vector3& gravity, const boost::optional<Vector3>& omegaCoriolis,
     bool use2ndOrderCoriolis, OptionalJacobian<9, 9> H1,
     OptionalJacobian<9, 9> H2) const {
   const Rot3& nRb = R_;
@@ -294,7 +294,7 @@ Vector9 NavState::predictXi(const Vector9& pim, double dt,
 }
 //------------------------------------------------------------------------------
 NavState NavState::predict(const Vector9& pim, double dt,
-    const Vector3& gravity, boost::optional<const Vector3&> omegaCoriolis,
+    const Vector3& gravity, const boost::optional<Vector3>& omegaCoriolis,
     bool use2ndOrderCoriolis, OptionalJacobian<9, 9> H1,
     OptionalJacobian<9, 9> H2) const {
 
