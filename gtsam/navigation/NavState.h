@@ -200,6 +200,14 @@ public:
   static Matrix7 wedge(const Vector9& xi);
 
   /// @}
+  /// @name Dynamics
+  /// @{
+
+  // Compute tangent space contribution due to coriolis forces
+  Vector9 coriolis(const Vector3& omega, double dt, bool secondOrder,
+      OptionalJacobian<9, 9> H) const;
+
+  /// @}
 
 private:
   /// @{

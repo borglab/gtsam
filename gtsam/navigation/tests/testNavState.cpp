@@ -142,6 +142,51 @@ TEST( NavState, Lie ) {
 }
 
 /* ************************************************************************* */
+TEST(NavState, Coriolis) {
+  Matrix9 actualH;
+  Vector3 omegaCoriolis(0.02, 0.03, 0.04);
+  double dt = 0.5;
+  // first-order
+  bool secondOrder = false;
+  kState1.coriolis(omegaCoriolis, dt, secondOrder, actualH);
+  Matrix expectedH = numericalDerivative11<Vector9, NavState>(
+      boost::bind(&NavState::coriolis, _1, omegaCoriolis, dt, secondOrder,
+          boost::none), kState1);
+  EXPECT(assert_equal(expectedH, actualH));
+  // second-order
+  secondOrder = true;
+  kState1.coriolis(omegaCoriolis, dt, secondOrder, actualH);
+  expectedH = numericalDerivative11<Vector9, NavState>(
+      boost::bind(&NavState::coriolis, _1, omegaCoriolis, dt, secondOrder,
+          boost::none), kState1);
+  EXPECT(assert_equal(expectedH, actualH));
+}
+
+/* ************************************************************************* */
+TEST(NavState, Coriolis2) {
+  NavState state2(Rot3::RzRyRx(M_PI / 12.0, M_PI / 6.0, M_PI / 4.0),
+      Point3(5.0, 1.0, -50.0), Vector3(0.5, 0.0, 0.0));
+
+  Matrix9 actualH;
+  Vector3 omegaCoriolis(0.02, 0.03, 0.04);
+  double dt = 2.0;
+  // first-order
+  bool secondOrder = false;
+  state2.coriolis(omegaCoriolis, dt, secondOrder, actualH);
+  Matrix expectedH = numericalDerivative11<Vector9, NavState>(
+      boost::bind(&NavState::coriolis, _1, omegaCoriolis, dt, secondOrder,
+          boost::none), state2);
+  EXPECT(assert_equal(expectedH, actualH));
+  // second-order
+  secondOrder = true;
+  state2.coriolis(omegaCoriolis, dt, secondOrder, actualH);
+  expectedH = numericalDerivative11<Vector9, NavState>(
+      boost::bind(&NavState::coriolis, _1, omegaCoriolis, dt, secondOrder,
+          boost::none), state2);
+  EXPECT(assert_equal(expectedH, actualH));
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

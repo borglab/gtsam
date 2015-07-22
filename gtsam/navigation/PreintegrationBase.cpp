@@ -46,23 +46,24 @@ void PreintegrationBase::print(const string& s) const {
 }
 
 /// Needed for testable
-bool PreintegrationBase::equals(const PreintegrationBase& other, double tol) const {
-  return PreintegratedRotation::equals(other, tol) &&
-         biasHat_.equals(other.biasHat_, tol) &&
-         equal_with_abs_tol(deltaPij_, other.deltaPij_, tol) &&
-         equal_with_abs_tol(deltaVij_, other.deltaVij_, tol) &&
-         equal_with_abs_tol(delPdelBiasAcc_, other.delPdelBiasAcc_, tol) &&
-         equal_with_abs_tol(delPdelBiasOmega_, other.delPdelBiasOmega_, tol) &&
-         equal_with_abs_tol(delVdelBiasAcc_, other.delVdelBiasAcc_, tol) &&
-         equal_with_abs_tol(delVdelBiasOmega_, other.delVdelBiasOmega_, tol);
+bool PreintegrationBase::equals(const PreintegrationBase& other,
+    double tol) const {
+  return PreintegratedRotation::equals(other, tol)
+      && biasHat_.equals(other.biasHat_, tol)
+      && equal_with_abs_tol(deltaPij_, other.deltaPij_, tol)
+      && equal_with_abs_tol(deltaVij_, other.deltaVij_, tol)
+      && equal_with_abs_tol(delPdelBiasAcc_, other.delPdelBiasAcc_, tol)
+      && equal_with_abs_tol(delPdelBiasOmega_, other.delPdelBiasOmega_, tol)
+      && equal_with_abs_tol(delVdelBiasAcc_, other.delVdelBiasAcc_, tol)
+      && equal_with_abs_tol(delVdelBiasOmega_, other.delVdelBiasOmega_, tol);
 }
 
 /// Update preintegrated measurements
-void PreintegrationBase::updatePreintegratedMeasurements(const Vector3& correctedAcc,
-                                                         const Rot3& incrR, const double deltaT,
-                                                         OptionalJacobian<9, 9> F) {
+void PreintegrationBase::updatePreintegratedMeasurements(
+    const Vector3& correctedAcc, const Rot3& incrR, const double deltaT,
+    OptionalJacobian<9, 9> F) {
 
-  const Matrix3 dRij = deltaRij().matrix();  // expensive
+  const Matrix3 dRij = deltaRij().matrix(); // expensive
   const Vector3 temp = dRij * correctedAcc * deltaT;
 
   if (!p().use2ndOrderIntegration) {
@@ -74,7 +75,7 @@ void PreintegrationBase::updatePreintegratedMeasurements(const Vector3& correcte
 
   Matrix3 R_i, F_angles_angles;
   if (F)
-    R_i = dRij;  // has to be executed before updateIntegratedRotationAndDeltaT as that updates deltaRij
+    R_i = dRij; // has to be executed before updateIntegratedRotationAndDeltaT as that updates deltaRij
   updateIntegratedRotationAndDeltaT(incrR, deltaT, F ? &F_angles_angles : 0);
 
   if (F) {
@@ -86,19 +87,20 @@ void PreintegrationBase::updatePreintegratedMeasurements(const Vector3& correcte
       F_pos_angles = Z_3x3;
 
     //    pos  vel             angle
-    *F <<  //
-        I_3x3, I_3x3 * deltaT, F_pos_angles,    // pos
-        Z_3x3, I_3x3,          F_vel_angles,    // vel
-        Z_3x3, Z_3x3,          F_angles_angles; // angle
+    *F << //
+        I_3x3, I_3x3 * deltaT, F_pos_angles, // pos
+    Z_3x3, I_3x3, F_vel_angles, // vel
+    Z_3x3, Z_3x3, F_angles_angles; // angle
   }
 }
 
 /// Update Jacobians to be used during preintegration
-void PreintegrationBase::updatePreintegratedJacobians(const Vector3& correctedAcc,
-                                                      const Matrix3& D_Rincr_integratedOmega,
-                                                      const Rot3& incrR, double deltaT) {
-  const Matrix3 dRij = deltaRij().matrix();  // expensive
-  const Matrix3 temp = -dRij * skewSymmetric(correctedAcc) * deltaT * delRdelBiasOmega();
+void PreintegrationBase::updatePreintegratedJacobians(
+    const Vector3& correctedAcc, const Matrix3& D_Rincr_integratedOmega,
+    const Rot3& incrR, double deltaT) {
+  const Matrix3 dRij = deltaRij().matrix(); // expensive
+  const Matrix3 temp = -dRij * skewSymmetric(correctedAcc) * deltaT
+      * delRdelBiasOmega();
   if (!p().use2ndOrderIntegration) {
     delPdelBiasAcc_ += delVdelBiasAcc_ * deltaT;
     delPdelBiasOmega_ += delVdelBiasOmega_ * deltaT;
@@ -112,8 +114,8 @@ void PreintegrationBase::updatePreintegratedJacobians(const Vector3& correctedAc
 }
 
 void PreintegrationBase::correctMeasurementsByBiasAndSensorPose(
-    const Vector3& measuredAcc, const Vector3& measuredOmega, Vector3* correctedAcc,
-    Vector3* correctedOmega) {
+    const Vector3& measuredAcc, const Vector3& measuredOmega,
+    Vector3* correctedAcc, Vector3* correctedOmega) {
   *correctedAcc = biasHat_.correctAccelerometer(measuredAcc);
   *correctedOmega = biasHat_.correctGyroscope(measuredOmega);
 
@@ -121,10 +123,11 @@ void PreintegrationBase::correctMeasurementsByBiasAndSensorPose(
   // (originally in the IMU frame) into the body frame
   if (p().body_P_sensor) {
     Matrix3 body_R_sensor = p().body_P_sensor->rotation().matrix();
-    *correctedOmega = body_R_sensor * (*correctedOmega);  // rotation rate vector in the body frame
+    *correctedOmega = body_R_sensor * (*correctedOmega); // rotation rate vector in the body frame
     Matrix3 body_omega_body__cross = skewSymmetric(*correctedOmega);
     *correctedAcc = body_R_sensor * (*correctedAcc)
-        - body_omega_body__cross * body_omega_body__cross * p().body_P_sensor->translation().vector();
+        - body_omega_body__cross * body_omega_body__cross
+            * p().body_P_sensor->translation().vector();
     // linear acceleration vector in the body frame
   }
 }
@@ -157,38 +160,14 @@ Vector9 PreintegrationBase::biasCorrectedDelta(
 //------------------------------------------------------------------------------
 Vector9 PreintegrationBase::integrateCoriolis(const NavState& state_i,
     OptionalJacobian<9, 9> H) const {
-  Vector9 result = Vector9::Zero();
-  if (H) H->setZero();
   if (p().omegaCoriolis) {
-    const Rot3& rot_i = state_i.attitude();
-    const Point3& t_i = state_i.position();
-    const Vector3& vel_i = state_i.velocity();
-    const double dt = deltaTij(), dt2 = dt * dt;
-
-    const Vector3& omegaCoriolis = *p().omegaCoriolis;
-    Matrix3 D_dP_Ri;
-    NavState::dR(result) -= rot_i.unrotate(omegaCoriolis * dt, H ? &D_dP_Ri : 0);
-    NavState::dP(result) -= (dt2 * omegaCoriolis.cross(vel_i)); // NOTE(luca): we got rid of the 2 wrt INS paper
-    NavState::dV(result) -= ((2.0 * dt) * omegaCoriolis.cross(vel_i));
-    if (p().use2ndOrderCoriolis) {
-      Vector3 temp = omegaCoriolis.cross(omegaCoriolis.cross(t_i.vector()));
-      NavState::dP(result) -= 0.5 * temp * dt2;
-      NavState::dV(result) -= temp * dt;
-    }
-    if (H) {
-      // Matrix3 Ri = rot_i.matrix();
-      const Matrix3 omegaCoriolisHat = skewSymmetric(omegaCoriolis);
-      H->block<3,3>(0,0) -= D_dP_Ri;
-      H->block<3,3>(3,6) -= omegaCoriolisHat * dt2;
-      H->block<3,3>(6,6) -= (2.0 * dt) * omegaCoriolisHat;
-      if (p().use2ndOrderCoriolis) {
-        const Matrix3 omegaCoriolisHat2 = omegaCoriolisHat * omegaCoriolisHat;
-        H->block<3,3>(3,3) -= 0.5 * omegaCoriolisHat2 * dt2;
-        H->block<3,3>(6,3) -= omegaCoriolisHat2 * dt;
-      }
-    }
+    return state_i.coriolis(*(p().omegaCoriolis), deltaTij(),
+        p().use2ndOrderCoriolis, H);
+  } else {
+    if (H)
+      H->setZero();
+    return Vector9::Zero();
   }
-  return result;
 }
 
 //------------------------------------------------------------------------------
@@ -204,8 +183,10 @@ Vector9 PreintegrationBase::recombinedPrediction(const NavState& state_i,
   Vector9 delta;
   Matrix3 D_dP_Ri, D_dP_bc, D_dV_Ri, D_dV_bc;
   NavState::dR(delta) = NavState::dR(biasCorrectedDelta);
-  NavState::dP(delta) = rot_i.rotate(NavState::dP(biasCorrectedDelta), D_dP_Ri, D_dP_bc) + vel_i * dt + 0.5 * p().gravity * dt2;
-  NavState::dV(delta) = rot_i.rotate(NavState::dV(biasCorrectedDelta), D_dV_Ri, D_dV_bc) + p().gravity * dt;
+  NavState::dP(delta) = rot_i.rotate(NavState::dP(biasCorrectedDelta), D_dP_Ri,
+      D_dP_bc) + vel_i * dt + 0.5 * p().gravity * dt2;
+  NavState::dV(delta) = rot_i.rotate(NavState::dV(biasCorrectedDelta), D_dV_Ri,
+      D_dV_bc) + p().gravity * dt;
 
   Matrix9 Hcoriolis;
   if (p().omegaCoriolis) {
@@ -213,17 +194,18 @@ Vector9 PreintegrationBase::recombinedPrediction(const NavState& state_i,
   }
   if (H1) {
     H1->setZero();
-    H1->block<3,3>(3,0) = D_dP_Ri;
-    H1->block<3,3>(3,6) = I_3x3 * dt;
-    H1->block<3,3>(6,0) = D_dV_Ri;
-    if (p().omegaCoriolis) *H1 += Hcoriolis;
+    H1->block<3, 3>(3, 0) = D_dP_Ri;
+    H1->block<3, 3>(3, 6) = I_3x3 * dt;
+    H1->block<3, 3>(6, 0) = D_dV_Ri;
+    if (p().omegaCoriolis)
+      *H1 += Hcoriolis;
   }
   if (H2) {
     H2->setZero();
     Matrix3 Ri = rot_i.matrix();
-    H2->block<3,3>(0,0) = I_3x3;
-    H2->block<3,3>(3,3) = Ri;
-    H2->block<3,3>(6,6) = Ri;
+    H2->block<3, 3>(0, 0) = I_3x3;
+    H2->block<3, 3>(3, 3) = Ri;
+    H2->block<3, 3>(6, 6) = Ri;
   }
 
   return delta;
@@ -279,14 +261,11 @@ static Vector9 computeError(const NavState& state_i, const NavState& state_j,
 }
 
 //------------------------------------------------------------------------------
-Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i, const Vector3& vel_i,
-                                                     const Pose3& pose_j, const Vector3& vel_j,
-                                                     const imuBias::ConstantBias& bias_i,
-                                                     OptionalJacobian<9, 6> H1,
-                                                     OptionalJacobian<9, 3> H2,
-                                                     OptionalJacobian<9, 6> H3,
-                                                     OptionalJacobian<9, 3> H4,
-                                                     OptionalJacobian<9, 6> H5) const {
+Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i,
+    const Vector3& vel_i, const Pose3& pose_j, const Vector3& vel_j,
+    const imuBias::ConstantBias& bias_i, OptionalJacobian<9, 6> H1,
+    OptionalJacobian<9, 3> H2, OptionalJacobian<9, 6> H3,
+    OptionalJacobian<9, 3> H4, OptionalJacobian<9, 6> H5) const {
 
   // we give some shorter name to rotations and translations
   const Rot3& rot_i = pose_i.rotation();
@@ -305,11 +284,13 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i, const 
   /// Predict state at time j
   Matrix99 D_predict_state;
   Matrix96 D_predict_bias;
-  NavState predictedState_j = predict(state_i, bias_i, D_predict_state, D_predict_bias);
+  NavState predictedState_j = predict(state_i, bias_i, D_predict_state,
+      D_predict_bias);
 
   // Evaluate residual error, according to [3]
   // Ri.transpose() is important here to preserve a model with *additive* Gaussian noise of correct covariance
-  const Vector3 fp = Ri.transpose() * (pos_j - predictedState_j.pose().translation().vector());
+  const Vector3 fp = Ri.transpose()
+      * (pos_j - predictedState_j.pose().translation().vector());
 
   // Ri.transpose() is important here to preserve a model with *additive* Gaussian noise of correct covariance
   const Vector3 fv = Ri.transpose() * (vel_j - predictedState_j.velocity());
@@ -324,66 +305,68 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i, const 
 
   // Residual rotation error
   Matrix3 D_cDeltaRij_cOmega;
-  const Rot3 correctedDeltaRij = Rot3::Expmap(correctedOmega, H1 || H5 ? &D_cDeltaRij_cOmega : 0);
+  const Rot3 correctedDeltaRij = Rot3::Expmap(correctedOmega,
+      H1 || H5 ? &D_cDeltaRij_cOmega : 0);
   const Rot3 RiBetweenRj = rot_i.between(rot_j);
   const Rot3 fRrot = correctedDeltaRij.between(RiBetweenRj);
   Matrix3 D_fR_fRrot;
   Rot3::Logmap(fRrot, H1 || H3 || H5 ? &D_fR_fRrot : 0);
 
-  const double dt = deltaTij(), dt2 = dt*dt;
+  const double dt = deltaTij(), dt2 = dt * dt;
   Matrix3 RitOmegaCoriolisHat = Z_3x3;
   if ((H1 || H2) && p().omegaCoriolis)
-    RitOmegaCoriolisHat =  Ri.transpose() * skewSymmetric(*p().omegaCoriolis);
+    RitOmegaCoriolisHat = Ri.transpose() * skewSymmetric(*p().omegaCoriolis);
 
   if (H1) {
     const Matrix3 D_coriolis = -D_cDeltaRij_cOmega * skewSymmetric(coriolis);
     Matrix3 dfPdPi = -I_3x3, dfVdPi = Z_3x3;
     if (p().use2ndOrderCoriolis) {
       // this is the same as: Ri.transpose() * p().omegaCoriolisHat * p().omegaCoriolisHat * Ri
-      const Matrix3 temp = RitOmegaCoriolisHat * (-RitOmegaCoriolisHat.transpose());
+      const Matrix3 temp = RitOmegaCoriolisHat
+          * (-RitOmegaCoriolisHat.transpose());
       dfPdPi += 0.5 * temp * dt2;
       dfVdPi += temp * dt;
     }
-    (*H1) <<
-    D_fR_fRrot * (-rot_j.between(rot_i).matrix() - fRrot.inverse().matrix() * D_coriolis),  // dfR/dRi
-    Z_3x3,                                                                                  // dfR/dPi
-    skewSymmetric(fp + NavState::dP(biasCorrected)),                                        // dfP/dRi
-    dfPdPi,                                                                                 // dfP/dPi
-    skewSymmetric(fv + NavState::dV(biasCorrected)),                                        // dfV/dRi
-    dfVdPi;                                                                                 // dfV/dPi
+    (*H1)
+        << D_fR_fRrot
+            * (-rot_j.between(rot_i).matrix()
+                - fRrot.inverse().matrix() * D_coriolis), // dfR/dRi
+    Z_3x3, // dfR/dPi
+    skewSymmetric(fp + NavState::dP(biasCorrected)), // dfP/dRi
+    dfPdPi, // dfP/dPi
+    skewSymmetric(fv + NavState::dV(biasCorrected)), // dfV/dRi
+    dfVdPi; // dfV/dPi
   }
   if (H2) {
-    (*H2) <<
-    Z_3x3,                                                      // dfR/dVi
-    -Ri.transpose() * dt + RitOmegaCoriolisHat * dt2,  // dfP/dVi
-    -Ri.transpose() + 2 * RitOmegaCoriolisHat * dt;    // dfV/dVi
+    (*H2) << Z_3x3, // dfR/dVi
+    -Ri.transpose() * dt + RitOmegaCoriolisHat * dt2, // dfP/dVi
+    -Ri.transpose() + 2 * RitOmegaCoriolisHat * dt; // dfV/dVi
   }
   if (H3) {
-    (*H3) <<
-    D_fR_fRrot, Z_3x3,                      // dfR/dPosej
+    (*H3) << D_fR_fRrot, Z_3x3, // dfR/dPosej
     Z_3x3, Ri.transpose() * rot_j.matrix(), // dfP/dPosej
-    Matrix::Zero(3, 6);                     // dfV/dPosej
+    Matrix::Zero(3, 6); // dfV/dPosej
   }
   if (H4) {
-    (*H4) <<
-    Z_3x3,          // dfR/dVj
-    Z_3x3,          // dfP/dVj
+    (*H4) << Z_3x3, // dfR/dVj
+    Z_3x3, // dfP/dVj
     Ri.transpose(); // dfV/dVj
   }
   if (H5) {
-    const Matrix36 JbiasOmega = D_cDeltaRij_cOmega * D_biasCorrected_bias.middleRows<3>(0);
-    (*H5) <<
-    -D_fR_fRrot * fRrot.inverse().matrix() * JbiasOmega,  // dfR/dBias
-    -D_biasCorrected_bias.middleRows<3>(3),               // dfP/dBias
-    -D_biasCorrected_bias.middleRows<3>(6);               // dfV/dBias
+    const Matrix36 JbiasOmega = D_cDeltaRij_cOmega
+        * D_biasCorrected_bias.middleRows<3>(0);
+    (*H5) << -D_fR_fRrot * fRrot.inverse().matrix() * JbiasOmega, // dfR/dBias
+    -D_biasCorrected_bias.middleRows<3>(3), // dfP/dBias
+    -D_biasCorrected_bias.middleRows<3>(6); // dfV/dBias
   }
   // TODO(frank): Do everything via derivatives of function below
   return computeError(state_i, state_j, predictedState_j);
 }
 
 //------------------------------------------------------------------------------
-PoseVelocityBias PreintegrationBase::predict(const Pose3& pose_i, const Vector3& vel_i,
-    const imuBias::ConstantBias& bias_i, const Vector3& gravity, const Vector3& omegaCoriolis,
+PoseVelocityBias PreintegrationBase::predict(const Pose3& pose_i,
+    const Vector3& vel_i, const imuBias::ConstantBias& bias_i,
+    const Vector3& gravity, const Vector3& omegaCoriolis,
     const bool use2ndOrderCoriolis) {
   // NOTE(frank): parameters are supposed to be constant, below is only provided for compatibility
   boost::shared_ptr<Params> q = boost::make_shared<Params>(p());
@@ -393,4 +376,4 @@ PoseVelocityBias PreintegrationBase::predict(const Pose3& pose_i, const Vector3&
   p_ = q;
   return PoseVelocityBias(predict(NavState(pose_i, vel_i), bias_i), bias_i);
 }
-}  /// namespace gtsam
+} /// namespace gtsam
