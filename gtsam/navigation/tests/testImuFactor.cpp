@@ -57,15 +57,11 @@ Rot3 evaluateRotationError(const ImuFactor& factor, const Pose3& pose_i,
 Vector updatePreintegratedPosVel(const Vector3 deltaPij_old,
     const Vector3& deltaVij_old, const Rot3& deltaRij_old,
     const Vector3& correctedAcc, const Vector3& correctedOmega,
-    const double deltaT, const bool use2ndOrderIntegration_) {
+    const double deltaT) {
   Matrix3 dRij = deltaRij_old.matrix();
   Vector3 temp = dRij * correctedAcc * deltaT;
   Vector3 deltaPij_new;
-  if (!use2ndOrderIntegration_) {
-    deltaPij_new = deltaPij_old + deltaVij_old * deltaT;
-  } else {
-    deltaPij_new = deltaPij_old + deltaVij_old * deltaT + 0.5 * temp * deltaT;
-  }
+  deltaPij_new = deltaPij_old + deltaVij_old * deltaT + 0.5 * temp * deltaT;
   Vector3 deltaVij_new = deltaVij_old + temp;
 
   Vector result(6);
@@ -93,11 +89,9 @@ const Matrix3 kIntegrationErrorCovariance = intNoiseVar * I_3x3;
 /* ************************************************************************* */
 PreintegratedImuMeasurements evaluatePreintegratedMeasurements(
     const imuBias::ConstantBias& bias, const list<Vector3>& measuredAccs,
-    const list<Vector3>& measuredOmegas, const list<double>& deltaTs,
-    const bool use2ndOrderIntegration = false) {
+    const list<Vector3>& measuredOmegas, const list<double>& deltaTs) {
   PreintegratedImuMeasurements result(bias, kMeasuredAccCovariance,
-      kMeasuredOmegaCovariance, kIntegrationErrorCovariance,
-      use2ndOrderIntegration);
+      kMeasuredOmegaCovariance, kIntegrationErrorCovariance);
 
   list<Vector3>::const_iterator itAcc = measuredAccs.begin();
   list<Vector3>::const_iterator itOmega = measuredOmegas.begin();
@@ -142,27 +136,22 @@ Vector3 evaluateLogRotation(const Vector3 thetahat, const Vector3 deltatheta) {
 } // namespace
 
 /* ************************************************************************* */
-namespace straight {
-// Set up IMU measurements
-static const double g = 10; // make this easy to check
-static const double a = 0.2, dt = 3.0;
-const double exact = dt * dt / 2;
-Vector3 measuredAcc(a, 0, -g), measuredOmega(0, 0, 0);
+TEST(ImuFactor, StraightLine) {
+  // Set up IMU measurements
+  static const double g = 10; // make this easy to check
+  static const double a = 0.2, dt = 3.0;
+  const double exact = dt * dt / 2;
+  Vector3 measuredAcc(a, 0, -g), measuredOmega(0, 0, 0);
 
-// Set up body pointing towards y axis, and start at 10,20,0 with zero velocity
-// TODO(frank): clean up Rot3 mess
-static const Rot3 nRb(Point3(0, 1, 0), Point3(1, 0, 0), Point3(0, 0, -1));
-static const Point3 initial_position(10, 20, 0);
-static const NavState state1(nRb, initial_position, Velocity3(0, 0, 0));
-}
-
-TEST(ImuFactor, StraightLineSecondOrder) {
-  using namespace straight;
+  // Set up body pointing towards y axis, and start at 10,20,0 with zero velocity
+  // TODO(frank): clean up Rot3 mess
+  static const Rot3 nRb(Point3(0, 1, 0), Point3(1, 0, 0), Point3(0, 0, -1));
+  static const Point3 initial_position(10, 20, 0);
+  static const NavState state1(nRb, initial_position, Velocity3(0, 0, 0));
 
   imuBias::ConstantBias biasHat, bias;
   boost::shared_ptr<PreintegratedImuMeasurements::Params> p =
       PreintegratedImuMeasurements::Params::MakeSharedFRD();
-  p->use2ndOrderIntegration = true;
   p->b_gravity = Vector3(0, 0, g); // FRD convention
 
   PreintegratedImuMeasurements pim(p, biasHat);
@@ -186,39 +175,6 @@ TEST(ImuFactor, StraightLineSecondOrder) {
   EXPECT(assert_equal(expected, pim.predict(state1, bias)));
 }
 
-TEST(ImuFactor, StraightLineFirstOrder) {
-  using namespace straight;
-
-  imuBias::ConstantBias biasHat, bias;
-  boost::shared_ptr<PreintegratedImuMeasurements::Params> p =
-      PreintegratedImuMeasurements::Params::MakeSharedFRD();
-  p->use2ndOrderIntegration = false;
-  p->b_gravity = Vector3(0, 0, g); // FRD convention
-
-  // We do a rough approximation:
-  PreintegratedImuMeasurements pim(p, biasHat);
-  for (size_t i = 0; i < 10; i++)
-    pim.integrateMeasurement(measuredAcc, measuredOmega, dt / 10);
-
-  // Check integrated quantities in body frame: gravity measured by IMU is integrated!
-  const double approx = exact * 0.9; // approximation for dt split into 10 intervals
-  EXPECT(assert_equal(Rot3(), pim.deltaRij()));
-  EXPECT(assert_equal(Vector3(a * approx, 0, -g * approx), pim.deltaPij()));
-  EXPECT(assert_equal(Vector3(a * dt, 0, -g * dt), pim.deltaVij())); // still correct
-
-  // Check bias-corrected delta: also in body frame
-  Vector9 expectedBC;
-  expectedBC << 0, 0, 0, a * approx, 0, -g * approx, a * dt, 0, -g * dt;
-  EXPECT(assert_equal(expectedBC, pim.biasCorrectedDelta(bias)));
-
-  // Check prediction, note we move along x in body, along y in nav
-  // In this instance the position is just an approximation,
-  // but gravity should be subtracted out exactly
-  NavState expected(nRb, Point3(10, 20 + a * approx, 0), Velocity3(0, a * dt, 0));
-  GTSAM_PRINT(pim);
-  EXPECT(assert_equal(expected, pim.predict(state1, bias)));
-}
-
 /* ************************************************************************* */
 TEST(ImuFactor, PreintegratedMeasurements) {
   // Linearization point
@@ -236,11 +192,9 @@ TEST(ImuFactor, PreintegratedMeasurements) {
   Rot3 expectedDeltaR1 = Rot3::RzRyRx(0.5 * M_PI / 100.0, 0.0, 0.0);
   double expectedDeltaT1(0.5);
 
-  bool use2ndOrderIntegration = true;
   // Actual preintegrated values
   PreintegratedImuMeasurements actual1(bias, kMeasuredAccCovariance,
-      kMeasuredOmegaCovariance, kIntegrationErrorCovariance,
-      use2ndOrderIntegration);
+      kMeasuredOmegaCovariance, kIntegrationErrorCovariance);
   actual1.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   EXPECT(
@@ -294,12 +248,11 @@ double deltaT = 1.0;
 TEST(ImuFactor, PreintegrationBaseMethods) {
   using namespace common;
   boost::shared_ptr<PreintegratedImuMeasurements::Params> p =
-    PreintegratedImuMeasurements::Params::MakeSharedFRD();
+      PreintegratedImuMeasurements::Params::MakeSharedFRD();
   p->gyroscopeCovariance = kMeasuredOmegaCovariance;
   p->omegaCoriolis = Vector3(0.02, 0.03, 0.04);
   p->accelerometerCovariance = kMeasuredAccCovariance;
   p->integrationCovariance = kIntegrationErrorCovariance;
-  p->use2ndOrderIntegration = false;
   p->use2ndOrderCoriolis = true;
 
   PreintegratedImuMeasurements pim(p, bias);
@@ -332,10 +285,8 @@ TEST(ImuFactor, PreintegrationBaseMethods) {
 /* ************************************************************************* */
 TEST(ImuFactor, ErrorAndJacobians) {
   using namespace common;
-  bool use2ndOrderIntegration = true;
   PreintegratedImuMeasurements pim(bias, kMeasuredAccCovariance,
-      kMeasuredOmegaCovariance, kIntegrationErrorCovariance,
-      use2ndOrderIntegration);
+      kMeasuredOmegaCovariance, kIntegrationErrorCovariance);
 
   pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
   EXPECT(assert_equal(state2, pim.predict(state1, bias), 1e-6));
@@ -631,11 +582,10 @@ TEST(ImuFactor, JacobianPreintegratedCovariancePropagation) {
         Vector3(M_PI / 100.0, M_PI / 300.0, 2 * M_PI / 100.0));
     deltaTs.push_back(0.01);
   }
-  bool use2ndOrderIntegration = false;
   // Actual preintegrated values
   PreintegratedImuMeasurements preintegrated =
       evaluatePreintegratedMeasurements(bias, measuredAccs, measuredOmegas,
-          deltaTs, use2ndOrderIntegration);
+          deltaTs);
 
   // so far we only created a nontrivial linearization point for the preintegrated measurements
   // Now we add a new measurement and ask for Jacobians
@@ -658,20 +608,17 @@ TEST(ImuFactor, JacobianPreintegratedCovariancePropagation) {
   // Compute expected f_pos_vel wrt positions
   Matrix dfpv_dpos = numericalDerivative11<Vector, Vector3>(
       boost::bind(&updatePreintegratedPosVel, _1, deltaVij_old, deltaRij_old,
-          newMeasuredAcc, newMeasuredOmega, newDeltaT, use2ndOrderIntegration),
-      deltaPij_old);
+          newMeasuredAcc, newMeasuredOmega, newDeltaT), deltaPij_old);
 
   // Compute expected f_pos_vel wrt velocities
   Matrix dfpv_dvel = numericalDerivative11<Vector, Vector3>(
       boost::bind(&updatePreintegratedPosVel, deltaPij_old, _1, deltaRij_old,
-          newMeasuredAcc, newMeasuredOmega, newDeltaT, use2ndOrderIntegration),
-      deltaVij_old);
+          newMeasuredAcc, newMeasuredOmega, newDeltaT), deltaVij_old);
 
   // Compute expected f_pos_vel wrt angles
   Matrix dfpv_dangle = numericalDerivative11<Vector, Rot3>(
       boost::bind(&updatePreintegratedPosVel, deltaPij_old, deltaVij_old, _1,
-          newMeasuredAcc, newMeasuredOmega, newDeltaT, use2ndOrderIntegration),
-      deltaRij_old);
+          newMeasuredAcc, newMeasuredOmega, newDeltaT), deltaRij_old);
 
   Matrix FexpectedTop6(6, 9);
   FexpectedTop6 << dfpv_dpos, dfpv_dvel, dfpv_dangle;
@@ -698,14 +645,12 @@ TEST(ImuFactor, JacobianPreintegratedCovariancePropagation) {
   // Compute jacobian wrt acc noise
   Matrix dgpv_daccNoise = numericalDerivative11<Vector, Vector3>(
       boost::bind(&updatePreintegratedPosVel, deltaPij_old, deltaVij_old,
-          deltaRij_old, _1, newMeasuredOmega, newDeltaT,
-          use2ndOrderIntegration), newMeasuredAcc);
+          deltaRij_old, _1, newMeasuredOmega, newDeltaT), newMeasuredAcc);
 
   // Compute expected F wrt gyro noise
   Matrix dgpv_domegaNoise = numericalDerivative11<Vector, Vector3>(
       boost::bind(&updatePreintegratedPosVel, deltaPij_old, deltaVij_old,
-          deltaRij_old, newMeasuredAcc, _1, newDeltaT, use2ndOrderIntegration),
-      newMeasuredOmega);
+          deltaRij_old, newMeasuredAcc, _1, newDeltaT), newMeasuredOmega);
   Matrix GexpectedTop6(6, 9);
   GexpectedTop6 << dgpv_dintNoise, dgpv_daccNoise, dgpv_domegaNoise;
 
@@ -754,11 +699,10 @@ TEST(ImuFactor, JacobianPreintegratedCovariancePropagation_2ndOrderInt) {
         Vector3(M_PI / 100.0, M_PI / 300.0, 2 * M_PI / 100.0));
     deltaTs.push_back(0.01);
   }
-  bool use2ndOrderIntegration = true;
   // Actual preintegrated values
   PreintegratedImuMeasurements preintegrated =
       evaluatePreintegratedMeasurements(bias, measuredAccs, measuredOmegas,
-          deltaTs, use2ndOrderIntegration);
+          deltaTs);
 
   // so far we only created a nontrivial linearization point for the preintegrated measurements
   // Now we add a new measurement and ask for Jacobians
@@ -781,20 +725,17 @@ TEST(ImuFactor, JacobianPreintegratedCovariancePropagation_2ndOrderInt) {
   // Compute expected f_pos_vel wrt positions
   Matrix dfpv_dpos = numericalDerivative11<Vector, Vector3>(
       boost::bind(&updatePreintegratedPosVel, _1, deltaVij_old, deltaRij_old,
-          newMeasuredAcc, newMeasuredOmega, newDeltaT, use2ndOrderIntegration),
-      deltaPij_old);
+          newMeasuredAcc, newMeasuredOmega, newDeltaT), deltaPij_old);
 
   // Compute expected f_pos_vel wrt velocities
   Matrix dfpv_dvel = numericalDerivative11<Vector, Vector3>(
       boost::bind(&updatePreintegratedPosVel, deltaPij_old, _1, deltaRij_old,
-          newMeasuredAcc, newMeasuredOmega, newDeltaT, use2ndOrderIntegration),
-      deltaVij_old);
+          newMeasuredAcc, newMeasuredOmega, newDeltaT), deltaVij_old);
 
   // Compute expected f_pos_vel wrt angles
   Matrix dfpv_dangle = numericalDerivative11<Vector, Rot3>(
       boost::bind(&updatePreintegratedPosVel, deltaPij_old, deltaVij_old, _1,
-          newMeasuredAcc, newMeasuredOmega, newDeltaT, use2ndOrderIntegration),
-      deltaRij_old);
+          newMeasuredAcc, newMeasuredOmega, newDeltaT), deltaRij_old);
 
   Matrix FexpectedTop6(6, 9);
   FexpectedTop6 << dfpv_dpos, dfpv_dvel, dfpv_dangle;
@@ -821,14 +762,12 @@ TEST(ImuFactor, JacobianPreintegratedCovariancePropagation_2ndOrderInt) {
   // Compute jacobian wrt acc noise
   Matrix dgpv_daccNoise = numericalDerivative11<Vector, Vector3>(
       boost::bind(&updatePreintegratedPosVel, deltaPij_old, deltaVij_old,
-          deltaRij_old, _1, newMeasuredOmega, newDeltaT,
-          use2ndOrderIntegration), newMeasuredAcc);
+          deltaRij_old, _1, newMeasuredOmega, newDeltaT), newMeasuredAcc);
 
   // Compute expected F wrt gyro noise
   Matrix dgpv_domegaNoise = numericalDerivative11<Vector, Vector3>(
       boost::bind(&updatePreintegratedPosVel, deltaPij_old, deltaVij_old,
-          deltaRij_old, newMeasuredAcc, _1, newDeltaT, use2ndOrderIntegration),
-      newMeasuredOmega);
+          deltaRij_old, newMeasuredAcc, _1, newDeltaT), newMeasuredOmega);
   Matrix GexpectedTop6(6, 9);
   GexpectedTop6 << dgpv_dintNoise, dgpv_daccNoise, dgpv_domegaNoise;
 

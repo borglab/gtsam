@@ -38,8 +38,8 @@ void PreintegratedImuMeasurements::print(const string& s) const {
 //------------------------------------------------------------------------------
 bool PreintegratedImuMeasurements::equals(
     const PreintegratedImuMeasurements& other, double tol) const {
-  return PreintegrationBase::equals(other, tol) &&
-         equal_with_abs_tol(preintMeasCov_, other.preintMeasCov_, tol);
+  return PreintegrationBase::equals(other, tol)
+      && equal_with_abs_tol(preintMeasCov_, other.preintMeasCov_, tol);
 }
 
 //------------------------------------------------------------------------------
@@ -51,8 +51,7 @@ void PreintegratedImuMeasurements::resetIntegration() {
 //------------------------------------------------------------------------------
 void PreintegratedImuMeasurements::integrateMeasurement(
     const Vector3& measuredAcc, const Vector3& measuredOmega, double deltaT,
-    OptionalJacobian<9, 9> F_test,
-    OptionalJacobian<9, 9> G_test) {
+    OptionalJacobian<9, 9> F_test, OptionalJacobian<9, 9> G_test) {
 
   Vector3 correctedAcc, correctedOmega;
   correctMeasurementsByBiasAndSensorPose(measuredAcc, measuredOmega,
@@ -60,16 +59,17 @@ void PreintegratedImuMeasurements::integrateMeasurement(
 
   // rotation increment computed from the current rotation rate measurement
   const Vector3 integratedOmega = correctedOmega * deltaT;
-  Matrix3 D_Rincr_integratedOmega;  // Right jacobian computed at theta_incr
+  Matrix3 D_Rincr_integratedOmega; // Right jacobian computed at theta_incr
   // rotation increment computed from the current rotation rate measurement
   const Rot3 Rincr = Rot3::Expmap(integratedOmega, D_Rincr_integratedOmega);
 
   // Update Jacobians
-  updatePreintegratedJacobians(correctedAcc, D_Rincr_integratedOmega, Rincr, deltaT);
+  updatePreintegratedJacobians(correctedAcc, D_Rincr_integratedOmega, Rincr,
+      deltaT);
 
   // Update preintegrated measurements (also get Jacobian)
-  const Matrix3 dRij = deltaRij_.matrix();  // store this, which is useful to compute G_test
-  Matrix9 F;  // overall Jacobian wrt preintegrated measurements (df/dx)
+  const Matrix3 dRij = deltaRij_.matrix(); // store this, which is useful to compute G_test
+  Matrix9 F; // overall Jacobian wrt preintegrated measurements (df/dx)
   updatePreintegratedMeasurements(correctedAcc, Rincr, deltaT, F);
 
   // first order covariance propagation:
@@ -88,14 +88,13 @@ void PreintegratedImuMeasurements::integrateMeasurement(
       * p().gyroscopeCovariance * D_Rincr_integratedOmega.transpose() * deltaT;
 
   Matrix3 F_pos_noiseacc;
-  if (p().use2ndOrderIntegration) {
-    F_pos_noiseacc = 0.5 * dRij * deltaT * deltaT;
-    preintMeasCov_.block<3, 3>(0, 0) += (1 / deltaT) * F_pos_noiseacc
-        * p().accelerometerCovariance * F_pos_noiseacc.transpose();
-    Matrix3 temp = F_pos_noiseacc * p().accelerometerCovariance * dRij.transpose();  // has 1/deltaT
-    preintMeasCov_.block<3, 3>(0, 3) += temp;
-    preintMeasCov_.block<3, 3>(3, 0) += temp.transpose();
-  }
+  F_pos_noiseacc = 0.5 * dRij * deltaT * deltaT;
+  preintMeasCov_.block<3, 3>(0, 0) += (1 / deltaT) * F_pos_noiseacc
+      * p().accelerometerCovariance * F_pos_noiseacc.transpose();
+  Matrix3 temp = F_pos_noiseacc * p().accelerometerCovariance
+      * dRij.transpose(); // has 1/deltaT
+  preintMeasCov_.block<3, 3>(0, 3) += temp;
+  preintMeasCov_.block<3, 3>(3, 0) += temp.transpose();
 
   // F_test and G_test are given as output for testing purposes and are not needed by the factor
   if (F_test) {
@@ -103,13 +102,10 @@ void PreintegratedImuMeasurements::integrateMeasurement(
   }
   if (G_test) {
     // This in only for testing & documentation, while the actual computation is done block-wise
-    if (!p().use2ndOrderIntegration)
-      F_pos_noiseacc = Z_3x3;
-
     //           intNoise          accNoise           omegaNoise
-    (*G_test) << I_3x3 * deltaT, F_pos_noiseacc, Z_3x3,  // pos
-        Z_3x3, dRij * deltaT, Z_3x3,                      // vel
-        Z_3x3, Z_3x3, D_Rincr_integratedOmega * deltaT;  // angle
+    (*G_test) << I_3x3 * deltaT, F_pos_noiseacc, Z_3x3, // pos
+    Z_3x3, dRij * deltaT, Z_3x3, // vel
+    Z_3x3, Z_3x3, D_Rincr_integratedOmega * deltaT; // angle
   }
 }
 //------------------------------------------------------------------------------
@@ -117,12 +113,13 @@ PreintegratedImuMeasurements::PreintegratedImuMeasurements(
     const imuBias::ConstantBias& biasHat, const Matrix3& measuredAccCovariance,
     const Matrix3& measuredOmegaCovariance,
     const Matrix3& integrationErrorCovariance, bool use2ndOrderIntegration) {
+  if (!use2ndOrderIntegration)
+    throw("PreintegratedImuMeasurements no longer supports first-order integration: it incorrectly compensated for gravity");
   biasHat_ = biasHat;
-  boost::shared_ptr<Params> p = boost::make_shared<Params>();
+  boost::shared_ptr<Params> p = Params::MakeSharedFRD();
   p->gyroscopeCovariance = measuredOmegaCovariance;
   p->accelerometerCovariance = measuredAccCovariance;
   p->integrationCovariance = integrationErrorCovariance;
-  p->use2ndOrderIntegration = use2ndOrderIntegration;
   p_ = p;
   resetIntegration();
 }
@@ -131,10 +128,10 @@ PreintegratedImuMeasurements::PreintegratedImuMeasurements(
 // ImuFactor methods
 //------------------------------------------------------------------------------
 ImuFactor::ImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
-                     const PreintegratedImuMeasurements& pim)
-    : Base(noiseModel::Gaussian::Covariance(pim.preintMeasCov_), pose_i, vel_i,
-           pose_j, vel_j, bias),
-      _PIM_(pim) {}
+    const PreintegratedImuMeasurements& pim) :
+    Base(noiseModel::Gaussian::Covariance(pim.preintMeasCov_), pose_i, vel_i,
+        pose_j, vel_j, bias), _PIM_(pim) {
+}
 
 //------------------------------------------------------------------------------
 gtsam::NonlinearFactor::shared_ptr ImuFactor::clone() const {
@@ -151,7 +148,8 @@ void ImuFactor::print(const string& s, const KeyFormatter& keyFormatter) const {
   Base::print("");
   _PIM_.print("  preintegrated measurements:");
   // Print standard deviations on covariance only
-  cout << "  noise model sigmas: " << this->noiseModel_->sigmas().transpose() << endl;
+  cout << "  noise model sigmas: " << this->noiseModel_->sigmas().transpose()
+      << endl;
 }
 
 //------------------------------------------------------------------------------
@@ -168,21 +166,19 @@ Vector ImuFactor::evaluateError(const Pose3& pose_i, const Vector3& vel_i,
     boost::optional<Matrix&> H2, boost::optional<Matrix&> H3,
     boost::optional<Matrix&> H4, boost::optional<Matrix&> H5) const {
   return _PIM_.computeErrorAndJacobians(pose_i, vel_i, pose_j, vel_j, bias_i,
-                                        H1, H2, H3, H4, H5);
+      H1, H2, H3, H4, H5);
 }
 
 //------------------------------------------------------------------------------
 ImuFactor::ImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
-                     const PreintegratedMeasurements& pim,
-                     const Vector3& gravity, const Vector3& omegaCoriolis,
-                     const boost::optional<Pose3>& body_P_sensor,
-                     const bool use2ndOrderCoriolis)
-    : Base(noiseModel::Gaussian::Covariance(pim.preintMeasCov_), pose_i, vel_i,
-           pose_j, vel_j, bias),
-      _PIM_(pim) {
-  boost::shared_ptr<PreintegratedMeasurements::Params> p =
-      boost::make_shared<PreintegratedMeasurements::Params>(pim.p());
-  p->gravity = gravity;
+    const PreintegratedMeasurements& pim, const Vector3& b_gravity,
+    const Vector3& omegaCoriolis, const boost::optional<Pose3>& body_P_sensor,
+    const bool use2ndOrderCoriolis) :
+    Base(noiseModel::Gaussian::Covariance(pim.preintMeasCov_), pose_i, vel_i,
+        pose_j, vel_j, bias), _PIM_(pim) {
+  boost::shared_ptr<PreintegratedMeasurements::Params> p = boost::make_shared<
+      PreintegratedMeasurements::Params>(pim.p());
+  p->b_gravity = b_gravity;
   p->omegaCoriolis = omegaCoriolis;
   p->body_P_sensor = body_P_sensor;
   p->use2ndOrderCoriolis = use2ndOrderCoriolis;
@@ -191,16 +187,14 @@ ImuFactor::ImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
 
 //------------------------------------------------------------------------------
 void ImuFactor::Predict(const Pose3& pose_i, const Vector3& vel_i,
-                        Pose3& pose_j, Vector3& vel_j,
-                        const imuBias::ConstantBias& bias_i,
-                        PreintegratedMeasurements& pim,
-                        const Vector3& gravity, const Vector3& omegaCoriolis,
-                        const bool use2ndOrderCoriolis) {
+    Pose3& pose_j, Vector3& vel_j, const imuBias::ConstantBias& bias_i,
+    PreintegratedMeasurements& pim, const Vector3& b_gravity,
+    const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis) {
   // use deprecated predict
-  PoseVelocityBias pvb = pim.predict(pose_i, vel_i, bias_i, gravity,
+  PoseVelocityBias pvb = pim.predict(pose_i, vel_i, bias_i, b_gravity,
       omegaCoriolis, use2ndOrderCoriolis);
   pose_j = pvb.pose;
   vel_j = pvb.velocity;
 }
 
-}  // namespace gtsam
+} // namespace gtsam

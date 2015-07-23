@@ -178,12 +178,12 @@ TEST(NavState, PredictXi) {
   xi << 0.1, 0.1, 0.1, 0.2, 0.3, 0.4, -0.1, -0.2, -0.3;
   double dt = 0.5;
   Matrix9 actualH1, actualH2;
-  boost::function<Vector9(const NavState&, const Vector9&)> predictXi =
-      boost::bind(&NavState::predictXi, _1, _2, dt, kGravity, kOmegaCoriolis,
+  boost::function<Vector9(const NavState&, const Vector9&)> integrateTangent =
+      boost::bind(&NavState::integrateTangent, _1, _2, dt, kGravity, kOmegaCoriolis,
           false, boost::none, boost::none);
-  kState1.predictXi(xi, dt, kGravity, kOmegaCoriolis, false, actualH1, actualH2);
-  EXPECT(assert_equal(numericalDerivative21(predictXi, kState1, xi), actualH1));
-  EXPECT(assert_equal(numericalDerivative22(predictXi, kState1, xi), actualH2));
+  kState1.integrateTangent(xi, dt, kGravity, kOmegaCoriolis, false, actualH1, actualH2);
+  EXPECT(assert_equal(numericalDerivative21(integrateTangent, kState1, xi), actualH1));
+  EXPECT(assert_equal(numericalDerivative22(integrateTangent, kState1, xi), actualH2));
 }
 
 /* ************************************************************************* */

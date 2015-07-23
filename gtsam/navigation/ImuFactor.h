@@ -108,11 +108,12 @@ public:
   Matrix preintMeasCov() const { return preintMeasCov_; }
 
   /// @deprecated constructor
+  /// NOTE(frank): assumes FRD convention, only second order integration supported
   PreintegratedImuMeasurements(const imuBias::ConstantBias& biasHat,
       const Matrix3& measuredAccCovariance,
       const Matrix3& measuredOmegaCovariance,
       const Matrix3& integrationErrorCovariance,
-      bool use2ndOrderIntegration = false);
+      bool use2ndOrderIntegration = true);
 
 private:
 
@@ -209,14 +210,14 @@ public:
   /// @deprecated constructor
   ImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
       const PreintegratedMeasurements& preintegratedMeasurements,
-      const Vector3& gravity, const Vector3& omegaCoriolis,
+      const Vector3& b_gravity, const Vector3& omegaCoriolis,
       const boost::optional<Pose3>& body_P_sensor = boost::none,
       const bool use2ndOrderCoriolis = false);
 
   /// @deprecated use PreintegrationBase::predict
   static void Predict(const Pose3& pose_i, const Vector3& vel_i, Pose3& pose_j,
       Vector3& vel_j, const imuBias::ConstantBias& bias_i,
-      PreintegratedMeasurements& pim, const Vector3& gravity,
+      PreintegratedMeasurements& pim, const Vector3& b_gravity,
       const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis = false);
 
 private:

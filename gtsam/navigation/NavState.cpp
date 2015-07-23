@@ -248,25 +248,19 @@ Vector9 NavState::coriolis(double dt, const Vector3& omega, bool secondOrder,
 }
 
 //------------------------------------------------------------------------------
-Vector9 NavState::predictXi(const Vector9& pim, double dt,
-    const Vector3& gravity, const boost::optional<Vector3>& omegaCoriolis,
-    bool use2ndOrderCoriolis, OptionalJacobian<9, 9> H1,
-    OptionalJacobian<9, 9> H2) const {
+Vector9 NavState::integrateTangent(const Vector9& pim, double dt,
+    const boost::optional<Vector3>& omegaCoriolis, bool use2ndOrderCoriolis,
+    OptionalJacobian<9, 9> H1, OptionalJacobian<9, 9> H2) const {
   const Rot3& nRb = R_;
   const Velocity3& n_v = v_; // derivative is Ri !
   const double dt2 = dt * dt;
 
   Vector9 delta;
-  Matrix3 D_dP_Ri, D_dP_dP, D_dV_Ri, D_dV_dV;
+  Matrix3 D_dP_Ri, D_dP_nv;
   dR(delta) = dR(pim);
-  // TODO(frank):
-  // - why do we integrate n_v here ?
-  // - the dP and dV should be in body ! How come semi-retract works out ??
-  // - should we rename t_ to p_? if not, we should rename dP do dT
-  dP(delta) = nRb.rotate(dP(pim), H1 ? &D_dP_Ri : 0, H2 ? &D_dP_dP : 0)
-      + n_v * dt + 0.5 * gravity * dt2;
-  dV(delta) = nRb.rotate(dV(pim), H1 ? &D_dV_Ri : 0, H2 ? &D_dV_dV : 0)
-      + gravity * dt;
+  dP(delta) = dP(pim)
+      + dt * nRb.unrotate(n_v, H1 ? &D_dP_Ri : 0, H2 ? &D_dP_nv : 0);
+  dV(delta) = dV(pim);
 
   if (omegaCoriolis) {
     delta += coriolis(dt, *omegaCoriolis, use2ndOrderCoriolis, H1);
@@ -278,15 +272,11 @@ Vector9 NavState::predictXi(const Vector9& pim, double dt,
     if (H1) {
       if (!omegaCoriolis)
         H1->setZero(); // if coriolis H1 is already initialized
-      D_t_R(H1) += D_dP_Ri;
-      D_t_v(H1) += I_3x3 * dt * Ri;
-      D_v_R(H1) += D_dV_Ri;
+      D_t_R(H1) += dt * D_dP_Ri;
+      D_t_v(H1) += dt * D_dP_nv * Ri;
     }
     if (H2) {
-      H2->setZero();
-      D_R_R(H2) << I_3x3;
-      D_t_t(H2) << D_dP_dP;
-      D_v_v(H2) << D_dV_dV;
+      H2->setIdentity();
     }
   }
 
@@ -294,13 +284,12 @@ Vector9 NavState::predictXi(const Vector9& pim, double dt,
 }
 //------------------------------------------------------------------------------
 NavState NavState::predict(const Vector9& pim, double dt,
-    const Vector3& gravity, const boost::optional<Vector3>& omegaCoriolis,
-    bool use2ndOrderCoriolis, OptionalJacobian<9, 9> H1,
-    OptionalJacobian<9, 9> H2) const {
+    const boost::optional<Vector3>& omegaCoriolis, bool use2ndOrderCoriolis,
+    OptionalJacobian<9, 9> H1, OptionalJacobian<9, 9> H2) const {
 
   Matrix9 D_delta_state, D_delta_pim;
-  Vector9 delta = predictXi(pim, dt, gravity, omegaCoriolis,
-      use2ndOrderCoriolis, H1 ? &D_delta_state : 0, H2 ? &D_delta_pim : 0);
+  Vector9 delta = integrateTangent(pim, dt, omegaCoriolis, use2ndOrderCoriolis,
+      H1 ? &D_delta_state : 0, H2 ? &D_delta_pim : 0);
 
   Matrix9 D_predicted_state, D_predicted_delta;
   NavState predicted = retract(delta, H1 ? &D_predicted_state : 0,

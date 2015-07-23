@@ -33,6 +33,9 @@ typedef Vector3 Velocity3;
  */
 class NavState: public LieGroup<NavState, 9> {
 private:
+
+  // TODO(frank):
+  // - should we rename t_ to p_? if not, we should rename dP do dT
   Rot3 R_; ///< Rotation nRb, rotates points/velocities in body to points/velocities in nav
   Point3 t_; ///< position n_t, in nav frame
   Velocity3 v_; ///< velocity n_v in nav frame
@@ -207,16 +210,16 @@ public:
   Vector9 coriolis(double dt, const Vector3& omega, bool secondOrder = false,
       OptionalJacobian<9, 9> H = boost::none) const;
 
-  /// Combine preintegrated measurements, in the form of a tangent space vector,
-  /// with gravity, velocity, and Coriolis forces into a tangent space update.
-  Vector9 predictXi(const Vector9& pim, double dt, const Vector3& gravity,
+  /// Integrate a tangent vector forwards on tangent space, taking into account
+  /// Coriolis forces if omegaCoriolis is given.
+  Vector9 integrateTangent(const Vector9& pim, double dt,
       const boost::optional<Vector3>& omegaCoriolis, bool use2ndOrderCoriolis =
           false, OptionalJacobian<9, 9> H1 = boost::none,
       OptionalJacobian<9, 9> H2 = boost::none) const;
 
-  /// Combine preintegrated measurements, in the form of a tangent space vector,
-  /// with gravity, velocity, and Coriolis forces into a new state.
-  NavState predict(const Vector9& pim, double dt, const Vector3& gravity,
+  /// Integrate a tangent vector forwards on tangent space, taking into account
+  /// Coriolis forces if omegaCoriolis is given. Calls retract after to yield a NavState
+  NavState predict(const Vector9& pim, double dt,
       const boost::optional<Vector3>& omegaCoriolis, bool use2ndOrderCoriolis =
           false, OptionalJacobian<9, 9> H1 = boost::none,
       OptionalJacobian<9, 9> H2 = boost::none) const;

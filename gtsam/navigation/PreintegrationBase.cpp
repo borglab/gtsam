@@ -64,14 +64,11 @@ void PreintegrationBase::updatePreintegratedMeasurements(
     OptionalJacobian<9, 9> F) {
 
   const Matrix3 dRij = deltaRij_.matrix(); // expensive
-  const Vector3 temp = dRij * correctedAcc * deltaT;
+  const Vector3 j_acc = dRij * correctedAcc; // acceleration in current frame
 
-  if (!p().use2ndOrderIntegration) {
-    deltaPij_ += deltaVij_ * deltaT;
-  } else {
-    deltaPij_ += deltaVij_ * deltaT + 0.5 * temp * deltaT;
-  }
-  deltaVij_ += temp;
+  double dt22 = 0.5 * deltaT * deltaT;
+  deltaPij_ += deltaVij_ * deltaT + dt22 * j_acc;
+  deltaVij_ += deltaT * j_acc;
 
   Matrix3 R_i, F_angles_angles;
   if (F)
@@ -81,10 +78,7 @@ void PreintegrationBase::updatePreintegratedMeasurements(
   if (F) {
     const Matrix3 F_vel_angles = -R_i * skewSymmetric(correctedAcc) * deltaT;
     Matrix3 F_pos_angles;
-    if (p().use2ndOrderIntegration)
-      F_pos_angles = 0.5 * F_vel_angles * deltaT;
-    else
-      F_pos_angles = Z_3x3;
+    F_pos_angles = 0.5 * F_vel_angles * deltaT;
 
     //    pos  vel             angle
     *F << //
@@ -101,13 +95,8 @@ void PreintegrationBase::updatePreintegratedJacobians(
   const Matrix3 dRij = deltaRij_.matrix(); // expensive
   const Matrix3 temp = -dRij * skewSymmetric(correctedAcc) * deltaT
       * delRdelBiasOmega_;
-  if (!p().use2ndOrderIntegration) {
-    delPdelBiasAcc_ += delVdelBiasAcc_ * deltaT;
-    delPdelBiasOmega_ += delVdelBiasOmega_ * deltaT;
-  } else {
-    delPdelBiasAcc_ += delVdelBiasAcc_ * deltaT - 0.5 * dRij * deltaT * deltaT;
-    delPdelBiasOmega_ += deltaT * (delVdelBiasOmega_ + temp * 0.5);
-  }
+  delPdelBiasAcc_ += delVdelBiasAcc_ * deltaT - 0.5 * dRij * deltaT * deltaT;
+  delPdelBiasOmega_ += deltaT * (delVdelBiasOmega_ + temp * 0.5);
   delVdelBiasAcc_ += -dRij * deltaT;
   delVdelBiasOmega_ += temp;
   update_delRdelBiasOmega(D_Rincr_integratedOmega, incrR, deltaT);
@@ -135,10 +124,9 @@ void PreintegrationBase::correctMeasurementsByBiasAndSensorPose(
 //------------------------------------------------------------------------------
 Vector9 PreintegrationBase::biasCorrectedDelta(
     const imuBias::ConstantBias& bias_i, OptionalJacobian<9, 6> H) const {
+  // Correct deltaRij, derivative is delRdelBiasOmega_
   const imuBias::ConstantBias biasIncr = bias_i - biasHat_;
-  Matrix3 D_deltaRij_bias;
-  Rot3 deltaRij = PreintegratedRotation::biascorrectedDeltaRij(
-      biasIncr.gyroscope(), H ? &D_deltaRij_bias : 0);
+  Rot3 deltaRij = biascorrectedDeltaRij(biasIncr.gyroscope());
 
   Vector9 xi;
   Matrix3 D_dR_deltaRij;
@@ -147,9 +135,10 @@ Vector9 PreintegrationBase::biasCorrectedDelta(
       + delPdelBiasOmega_ * biasIncr.gyroscope();
   NavState::dV(xi) = deltaVij_ + delVdelBiasAcc_ * biasIncr.accelerometer()
       + delVdelBiasOmega_ * biasIncr.gyroscope();
+
   if (H) {
     Matrix36 D_dR_bias, D_dP_bias, D_dV_bias;
-    D_dR_bias << Z_3x3, D_dR_deltaRij * D_deltaRij_bias;
+    D_dR_bias << Z_3x3, D_dR_deltaRij * delRdelBiasOmega_;
     D_dP_bias << delPdelBiasAcc_, delPdelBiasOmega_;
     D_dV_bias << delVdelBiasAcc_, delVdelBiasOmega_;
     (*H) << D_dR_bias, D_dP_bias, D_dV_bias;
@@ -161,13 +150,23 @@ Vector9 PreintegrationBase::biasCorrectedDelta(
 NavState PreintegrationBase::predict(const NavState& state_i,
     const imuBias::ConstantBias& bias_i, OptionalJacobian<9, 9> H1,
     OptionalJacobian<9, 6> H2) const {
+  // correct for bias
   Matrix96 D_biasCorrected_bias;
   Vector9 biasCorrected = biasCorrectedDelta(bias_i,
       H2 ? &D_biasCorrected_bias : 0);
+
+  // integrate on tangent space
   Matrix9 D_delta_state, D_delta_biasCorrected;
-  Vector9 xi = state_i.predictXi(biasCorrected, deltaTij_, p().gravity,
+  Vector9 xi = state_i.integrateTangent(biasCorrected, deltaTij_,
       p().omegaCoriolis, p().use2ndOrderCoriolis, H1 ? &D_delta_state : 0,
       H2 ? &D_delta_biasCorrected : 0);
+
+  // Correct for gravity
+  double dt = deltaTij_, dt2 = dt * dt;
+  NavState::dP(xi) += 0.5 * p().b_gravity * dt2;
+  NavState::dV(xi) += p().b_gravity * dt;
+
+  // Use retract to get back to NavState manifold
   Matrix9 D_predict_state, D_predict_delta;
   NavState state_j = state_i.retract(xi, D_predict_state, D_predict_delta);
   if (H1)
@@ -313,11 +312,11 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i,
 //------------------------------------------------------------------------------
 PoseVelocityBias PreintegrationBase::predict(const Pose3& pose_i,
     const Vector3& vel_i, const imuBias::ConstantBias& bias_i,
-    const Vector3& gravity, const Vector3& omegaCoriolis,
+    const Vector3& b_gravity, const Vector3& omegaCoriolis,
     const bool use2ndOrderCoriolis) {
   // NOTE(frank): parameters are supposed to be constant, below is only provided for compatibility
   boost::shared_ptr<Params> q = boost::make_shared<Params>(p());
-  q->gravity = gravity;
+  q->b_gravity = b_gravity;
   q->omegaCoriolis = omegaCoriolis;
   q->use2ndOrderCoriolis = use2ndOrderCoriolis;
   p_ = q;
