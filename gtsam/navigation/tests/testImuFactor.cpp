@@ -142,6 +142,84 @@ Vector3 evaluateLogRotation(const Vector3 thetahat, const Vector3 deltatheta) {
 } // namespace
 
 /* ************************************************************************* */
+namespace straight {
+// Set up IMU measurements
+static const double g = 10; // make this easy to check
+static const double a = 0.2, dt = 3.0;
+const double exact = dt * dt / 2;
+Vector3 measuredAcc(a, 0, -g), measuredOmega(0, 0, 0);
+
+// Set up body pointing towards y axis, and start at 10,20,0 with zero velocity
+// TODO(frank): clean up Rot3 mess
+static const Rot3 nRb(Point3(0, 1, 0), Point3(1, 0, 0), Point3(0, 0, -1));
+static const Point3 initial_position(10, 20, 0);
+static const NavState state1(nRb, initial_position, Velocity3(0, 0, 0));
+}
+
+TEST(ImuFactor, StraightLineSecondOrder) {
+  using namespace straight;
+
+  imuBias::ConstantBias biasHat, bias;
+  boost::shared_ptr<PreintegratedImuMeasurements::Params> p =
+      PreintegratedImuMeasurements::Params::MakeSharedFRD();
+  p->use2ndOrderIntegration = true;
+  p->b_gravity = Vector3(0, 0, g); // FRD convention
+
+  PreintegratedImuMeasurements pim(p, biasHat);
+  for (size_t i = 0; i < 10; i++)
+    pim.integrateMeasurement(measuredAcc, measuredOmega, dt / 10);
+
+  // Check integrated quantities in body frame: gravity measured by IMU is integrated!
+  EXPECT(assert_equal(Rot3(), pim.deltaRij()));
+  EXPECT(assert_equal(Vector3(a * exact, 0, -g * exact), pim.deltaPij()));
+  EXPECT(assert_equal(Vector3(a * dt, 0, -g * dt), pim.deltaVij()));
+
+  // Check bias-corrected delta: also in body frame
+  Vector9 expectedBC;
+  expectedBC << 0, 0, 0, a * exact, 0, -g * exact, a * dt, 0, -g * dt;
+  EXPECT(assert_equal(expectedBC, pim.biasCorrectedDelta(bias)));
+
+  // Check prediction, note we move along x in body, along y in nav
+  NavState expected(nRb, Point3(10, 20 + a * exact, 0),
+      Velocity3(0, a * dt, 0));
+  GTSAM_PRINT(pim);
+  EXPECT(assert_equal(expected, pim.predict(state1, bias)));
+}
+
+TEST(ImuFactor, StraightLineFirstOrder) {
+  using namespace straight;
+
+  imuBias::ConstantBias biasHat, bias;
+  boost::shared_ptr<PreintegratedImuMeasurements::Params> p =
+      PreintegratedImuMeasurements::Params::MakeSharedFRD();
+  p->use2ndOrderIntegration = false;
+  p->b_gravity = Vector3(0, 0, g); // FRD convention
+
+  // We do a rough approximation:
+  PreintegratedImuMeasurements pim(p, biasHat);
+  for (size_t i = 0; i < 10; i++)
+    pim.integrateMeasurement(measuredAcc, measuredOmega, dt / 10);
+
+  // Check integrated quantities in body frame: gravity measured by IMU is integrated!
+  const double approx = exact * 0.9; // approximation for dt split into 10 intervals
+  EXPECT(assert_equal(Rot3(), pim.deltaRij()));
+  EXPECT(assert_equal(Vector3(a * approx, 0, -g * approx), pim.deltaPij()));
+  EXPECT(assert_equal(Vector3(a * dt, 0, -g * dt), pim.deltaVij())); // still correct
+
+  // Check bias-corrected delta: also in body frame
+  Vector9 expectedBC;
+  expectedBC << 0, 0, 0, a * approx, 0, -g * approx, a * dt, 0, -g * dt;
+  EXPECT(assert_equal(expectedBC, pim.biasCorrectedDelta(bias)));
+
+  // Check prediction, note we move along x in body, along y in nav
+  // In this instance the position is just an approximation,
+  // but gravity should be subtracted out exactly
+  NavState expected(nRb, Point3(10, 20 + a * approx, 0), Velocity3(0, a * dt, 0));
+  GTSAM_PRINT(pim);
+  EXPECT(assert_equal(expected, pim.predict(state1, bias)));
+}
+
+/* ************************************************************************* */
 TEST(ImuFactor, PreintegratedMeasurements) {
   // Linearization point
   imuBias::ConstantBias bias(Vector3(0, 0, 0), Vector3(0, 0, 0));
@@ -192,16 +270,19 @@ TEST(ImuFactor, PreintegratedMeasurements) {
   DOUBLES_EQUAL(expectedDeltaT2, actual2.deltaTij(), 1e-6);
 }
 
+/* ************************************************************************* */
 // Common linearization point and measurements for tests
 namespace common {
 imuBias::ConstantBias bias; // Bias
 Pose3 x1(Rot3::RzRyRx(M_PI / 12.0, M_PI / 6.0, M_PI / 4.0),
     Point3(5.0, 1.0, -50.0));
 Vector3 v1(Vector3(0.5, 0.0, 0.0));
+
+NavState state1(x1, v1);
 Pose3 x2(Rot3::RzRyRx(M_PI / 12.0 + M_PI / 100.0, M_PI / 6.0, M_PI / 4.0),
     Point3(5.5, 1.0, -50.0));
 Vector3 v2(Vector3(0.5, 0.0, 0.0));
-NavState state1(x1, v1);
+NavState state2(x2, v2);
 
 // Measurements
 Vector3 measuredOmega(M_PI / 100, 0, 0);
@@ -213,7 +294,7 @@ double deltaT = 1.0;
 TEST(ImuFactor, PreintegrationBaseMethods) {
   using namespace common;
   boost::shared_ptr<PreintegratedImuMeasurements::Params> p =
-      boost::make_shared<PreintegratedImuMeasurements::Params>();
+    PreintegratedImuMeasurements::Params::MakeSharedFRD();
   p->gyroscopeCovariance = kMeasuredOmegaCovariance;
   p->omegaCoriolis = Vector3(0.02, 0.03, 0.04);
   p->accelerometerCovariance = kMeasuredAccCovariance;
@@ -255,7 +336,9 @@ TEST(ImuFactor, ErrorAndJacobians) {
   PreintegratedImuMeasurements pim(bias, kMeasuredAccCovariance,
       kMeasuredOmegaCovariance, kIntegrationErrorCovariance,
       use2ndOrderIntegration);
+
   pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+  EXPECT(assert_equal(state2, pim.predict(state1, bias), 1e-6));
 
   // Create factor
   ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pim, kGravity,
