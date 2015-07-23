@@ -146,16 +146,12 @@ public:
 
   /// RRTMbn - Function computes the rotation rate transformation matrix from
   /// body axis rates to euler angle (global) rates
-  /// TODO(frank): seems to ignore euler.z()
   static Matrix RRTMbn(const Vector3& euler);
-
   static Matrix RRTMbn(const Rot3& att);
 
   /// RRTMnb - Function computes the rotation rate transformation matrix from
   /// euler angle rates to body axis rates
-  /// TODO(frank): seems to ignore euler.z()
   static Matrix RRTMnb(const Vector3& euler);
-
   static Matrix RRTMnb(const Rot3& att);
   /// @}
 
