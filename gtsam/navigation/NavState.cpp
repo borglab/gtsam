@@ -118,11 +118,14 @@ NavState NavState::ChartAtOrigin::Retract(const Vector9& xi,
 //------------------------------------------------------------------------------
 Vector9 NavState::ChartAtOrigin::Local(const NavState& x,
     OptionalJacobian<9, 9> H) {
-  if (H)
-    throw runtime_error(
-        "NavState::ChartOrigin::Local derivative not implemented yet");
   Vector9 xi;
-  xi << Rot3::Logmap(x.R_), x.t(), x.v();
+  Matrix3 D_xi_R;
+  xi << Rot3::Logmap(x.R_, H ? &D_xi_R : 0), x.t(), x.v();
+  if (H) {
+    *H << D_xi_R, Z_3x3, Z_3x3, //
+    Z_3x3, x.R(), Z_3x3, //
+    Z_3x3, Z_3x3, x.R();
+  }
   return xi;
 }
 

@@ -31,6 +31,7 @@ static const NavState kIdentity;
 static const NavState kState1(kRotation, kPosition, kVelocity);
 static const Vector3 kOmegaCoriolis(0.02, 0.03, 0.04);
 static const Vector3 kGravity(0, 0, 9.81);
+static const Vector9 kZeroXi = Vector9::Zero();
 
 /* ************************************************************************* */
 TEST( NavState, Attitude) {
@@ -75,16 +76,16 @@ TEST( NavState, MatrixGroup ) {
 /* ************************************************************************* */
 TEST( NavState, Manifold ) {
   // Check zero xi
-  EXPECT(assert_equal(kIdentity, kIdentity.retract(zero(9))));
-  EXPECT(assert_equal(zero(9), kIdentity.localCoordinates(kIdentity)));
-  EXPECT(assert_equal(kState1, kState1.retract(zero(9))));
-  EXPECT(assert_equal(zero(9), kState1.localCoordinates(kState1)));
+  EXPECT(assert_equal(kIdentity, kIdentity.retract(kZeroXi)));
+  EXPECT(assert_equal(kZeroXi, kIdentity.localCoordinates(kIdentity)));
+  EXPECT(assert_equal(kState1, kState1.retract(kZeroXi)));
+  EXPECT(assert_equal(kZeroXi, kState1.localCoordinates(kState1)));
 
   // Check definition of retract as operating on components separately
-  Vector xi(9);
+  Vector9 xi;
   xi << 0.1, 0.1, 0.1, 0.2, 0.3, 0.4, -0.1, -0.2, -0.3;
   Rot3 drot = Rot3::Expmap(xi.head<3>());
-  Point3 dt = Point3(xi.segment < 3 > (3));
+  Point3 dt = Point3(xi.segment<3>(3));
   Velocity3 dvel = Velocity3(-0.1, -0.2, -0.3);
   NavState state2 = kState1 * NavState(drot, dt, dvel);
   EXPECT(assert_equal(state2, kState1.retract(xi)));
@@ -95,38 +96,49 @@ TEST( NavState, Manifold ) {
   EXPECT(assert_equal(xi, state2.localCoordinates(state3)));
 
   // Check derivatives for ChartAtOrigin::Retract
-  Matrix9 aH, eH;
+  Matrix9 aH;
   //  For zero xi
-  boost::function<NavState(Vector9)> f = boost::bind(
+  boost::function<NavState(const Vector9&)> Retract = boost::bind(
       NavState::ChartAtOrigin::Retract, _1, boost::none);
-  NavState::ChartAtOrigin::Retract(zero(9), aH);
-  eH = numericalDerivative11<NavState, Vector9>(f, zero(9));
-  EXPECT(assert_equal((Matrix )eH, aH));
+  NavState::ChartAtOrigin::Retract(kZeroXi, aH);
+  EXPECT(assert_equal(numericalDerivative11(Retract, kZeroXi), aH));
   //  For non-zero xi
   NavState::ChartAtOrigin::Retract(xi, aH);
-  eH = numericalDerivative11<NavState, Vector9>(f, xi);
-  EXPECT(assert_equal((Matrix )eH, aH));
+  EXPECT(assert_equal(numericalDerivative11(Retract, xi), aH));
+
+  // Check derivatives for ChartAtOrigin::Local
+  //  For zero xi
+  boost::function<Vector9(const NavState&)> Local = boost::bind(
+      NavState::ChartAtOrigin::Local, _1, boost::none);
+  NavState::ChartAtOrigin::Local(kIdentity, aH);
+  EXPECT(assert_equal(numericalDerivative11(Local, kIdentity), aH));
+  //  For non-zero xi
+  NavState::ChartAtOrigin::Local(kState1, aH);
+  EXPECT(assert_equal(numericalDerivative11(Local, kState1), aH));
 
   // Check retract derivatives
   Matrix9 aH1, aH2;
   kState1.retract(xi, aH1, aH2);
-  Matrix eH1 = numericalDerivative11<NavState, NavState>(
-      boost::bind(&NavState::retract, _1, xi, boost::none, boost::none),
-      kState1);
-  EXPECT(assert_equal(eH1, aH1));
-  Matrix eH2 = numericalDerivative11<NavState, Vector9>(
-      boost::bind(&NavState::retract, kState1, _1, boost::none, boost::none),
-      xi);
-  EXPECT(assert_equal(eH2, aH2));
+  boost::function<NavState(const NavState&, const Vector9&)> retract =
+      boost::bind(&NavState::retract, _1, _2, boost::none, boost::none);
+  EXPECT(assert_equal(numericalDerivative21(retract, kState1, xi), aH1));
+  EXPECT(assert_equal(numericalDerivative22(retract, kState1, xi), aH2));
+
+  // Check localCoordinates derivatives
+  kState1.localCoordinates(state2, aH1, aH2);
+  boost::function<Vector9(const NavState&, const NavState&)> localCoordinates =
+      boost::bind(&NavState::localCoordinates, _1, _2, boost::none, boost::none);
+  EXPECT(assert_equal(numericalDerivative21(localCoordinates, kState1, state2), aH1));
+  EXPECT(assert_equal(numericalDerivative22(localCoordinates, kState1, state2), aH2));
 }
 
 /* ************************************************************************* */
 TEST( NavState, Lie ) {
   // Check zero xi
-  EXPECT(assert_equal(kIdentity, kIdentity.expmap(zero(9))));
-  EXPECT(assert_equal(zero(9), kIdentity.logmap(kIdentity)));
-  EXPECT(assert_equal(kState1, kState1.expmap(zero(9))));
-  EXPECT(assert_equal(zero(9), kState1.logmap(kState1)));
+  EXPECT(assert_equal(kIdentity, kIdentity.expmap(kZeroXi)));
+  EXPECT(assert_equal(kZeroXi, kIdentity.logmap(kIdentity)));
+  EXPECT(assert_equal(kState1, kState1.expmap(kZeroXi)));
+  EXPECT(assert_equal(kZeroXi, kState1.logmap(kState1)));
 
   // Expmap/Logmap roundtrip
   Vector xi(9);
