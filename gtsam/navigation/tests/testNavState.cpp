@@ -149,55 +149,41 @@ boost::function<Vector9(const NavState&, const bool&)> coriolis = boost::bind(
     &NavState::coriolis, _1, dt, kOmegaCoriolis, _2, boost::none);
 
 TEST(NavState, Coriolis) {
-  Matrix9 actualH;
+  Matrix9 aH;
 
   // first-order
-  kState1.coriolis(dt, kOmegaCoriolis, false, actualH);
-  EXPECT(assert_equal(numericalDerivative21(coriolis, kState1, false), actualH));
+  kState1.coriolis(dt, kOmegaCoriolis, false, aH);
+  EXPECT(assert_equal(numericalDerivative21(coriolis, kState1, false), aH));
   // second-order
-  kState1.coriolis(dt, kOmegaCoriolis, true, actualH);
-  EXPECT(assert_equal(numericalDerivative21(coriolis, kState1, true), actualH));
+  kState1.coriolis(dt, kOmegaCoriolis, true, aH);
+  EXPECT(assert_equal(numericalDerivative21(coriolis, kState1, true), aH));
 }
 
 TEST(NavState, Coriolis2) {
-  Matrix9 actualH;
+  Matrix9 aH;
   NavState state2(Rot3::RzRyRx(M_PI / 12.0, M_PI / 6.0, M_PI / 4.0),
       Point3(5.0, 1.0, -50.0), Vector3(0.5, 0.0, 0.0));
 
   // first-order
-  state2.coriolis(dt, kOmegaCoriolis, false, actualH);
-  EXPECT(assert_equal(numericalDerivative21(coriolis, state2, false), actualH));
+  state2.coriolis(dt, kOmegaCoriolis, false, aH);
+  EXPECT(assert_equal(numericalDerivative21(coriolis, state2, false), aH));
   // second-order
-  state2.coriolis(dt, kOmegaCoriolis, true, actualH);
-  EXPECT(assert_equal(numericalDerivative21(coriolis, state2, true), actualH));
+  state2.coriolis(dt, kOmegaCoriolis, true, aH);
+  EXPECT(assert_equal(numericalDerivative21(coriolis, state2, true), aH));
 }
 
 /* ************************************************************************* */
-TEST(NavState, PredictXi) {
+TEST(NavState, correctPIM) {
   Vector9 xi;
   xi << 0.1, 0.1, 0.1, 0.2, 0.3, 0.4, -0.1, -0.2, -0.3;
   double dt = 0.5;
-  Matrix9 actualH1, actualH2;
-  boost::function<Vector9(const NavState&, const Vector9&)> integrateTangent =
-      boost::bind(&NavState::integrateTangent, _1, _2, dt, kGravity, kOmegaCoriolis,
+  Matrix9 aH1, aH2;
+  boost::function<Vector9(const NavState&, const Vector9&)> correctPIM =
+      boost::bind(&NavState::correctPIM, _1, _2, dt, kGravity, kOmegaCoriolis,
           false, boost::none, boost::none);
-  kState1.integrateTangent(xi, dt, kGravity, kOmegaCoriolis, false, actualH1, actualH2);
-  EXPECT(assert_equal(numericalDerivative21(integrateTangent, kState1, xi), actualH1));
-  EXPECT(assert_equal(numericalDerivative22(integrateTangent, kState1, xi), actualH2));
-}
-
-/* ************************************************************************* */
-TEST(NavState, Predict) {
-  Vector9 xi;
-  xi << 0.1, 0.1, 0.1, 0.2, 0.3, 0.4, -0.1, -0.2, -0.3;
-  double dt = 0.5;
-  Matrix9 actualH1, actualH2;
-  boost::function<NavState(const NavState&, const Vector9&)> predict =
-      boost::bind(&NavState::predict, _1, _2, dt, kGravity, kOmegaCoriolis,
-          false, boost::none, boost::none);
-  kState1.predict(xi, dt, kGravity, kOmegaCoriolis, false, actualH1, actualH2);
-  EXPECT(assert_equal(numericalDerivative21(predict, kState1, xi), actualH1));
-  EXPECT(assert_equal(numericalDerivative22(predict, kState1, xi), actualH2));
+  kState1.correctPIM(xi, dt, kGravity, kOmegaCoriolis, false, aH1, aH2);
+  EXPECT(assert_equal(numericalDerivative21(correctPIM, kState1, xi), aH1));
+  EXPECT(assert_equal(numericalDerivative22(correctPIM, kState1, xi), aH2));
 }
 
 /* ************************************************************************* */

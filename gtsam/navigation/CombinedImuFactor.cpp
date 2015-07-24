@@ -148,7 +148,7 @@ PreintegratedCombinedMeasurements::PreintegratedCombinedMeasurements(
   if (!use2ndOrderIntegration)
     throw("PreintegratedImuMeasurements no longer supports first-order integration: it incorrectly compensated for gravity");
   biasHat_ = biasHat;
-  boost::shared_ptr<Params> p = Params::MakeSharedFRD();
+  boost::shared_ptr<Params> p = Params::MakeSharedD();
   p->gyroscopeCovariance = measuredOmegaCovariance;
   p->accelerometerCovariance = measuredAccCovariance;
   p->integrationCovariance = integrationErrorCovariance;
@@ -260,7 +260,7 @@ Vector CombinedImuFactor::evaluateError(const Pose3& pose_i,
 //------------------------------------------------------------------------------
 CombinedImuFactor::CombinedImuFactor(
     Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias_i, Key bias_j,
-    const CombinedPreintegratedMeasurements& pim, const Vector3& b_gravity,
+    const CombinedPreintegratedMeasurements& pim, const Vector3& n_gravity,
     const Vector3& omegaCoriolis, const boost::optional<Pose3>& body_P_sensor,
     const bool use2ndOrderCoriolis)
     : Base(noiseModel::Gaussian::Covariance(pim.preintMeasCov_), pose_i, vel_i,
@@ -268,7 +268,7 @@ CombinedImuFactor::CombinedImuFactor(
       _PIM_(pim) {
   boost::shared_ptr<CombinedPreintegratedMeasurements::Params> p =
       boost::make_shared<CombinedPreintegratedMeasurements::Params>(pim.p());
-  p->b_gravity = b_gravity;
+  p->n_gravity = n_gravity;
   p->omegaCoriolis = omegaCoriolis;
   p->body_P_sensor = body_P_sensor;
   p->use2ndOrderCoriolis = use2ndOrderCoriolis;
@@ -279,11 +279,11 @@ void CombinedImuFactor::Predict(const Pose3& pose_i, const Vector3& vel_i,
                                 Pose3& pose_j, Vector3& vel_j,
                                 const imuBias::ConstantBias& bias_i,
                                 CombinedPreintegratedMeasurements& pim,
-                                const Vector3& b_gravity,
+                                const Vector3& n_gravity,
                                 const Vector3& omegaCoriolis,
                                 const bool use2ndOrderCoriolis) {
   // use deprecated predict
-  PoseVelocityBias pvb = pim.predict(pose_i, vel_i, bias_i, b_gravity,
+  PoseVelocityBias pvb = pim.predict(pose_i, vel_i, bias_i, n_gravity,
       omegaCoriolis, use2ndOrderCoriolis);
   pose_j = pvb.pose;
   vel_j = pvb.velocity;

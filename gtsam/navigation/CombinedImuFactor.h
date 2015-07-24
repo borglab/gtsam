@@ -66,19 +66,19 @@ class PreintegratedCombinedMeasurements : public PreintegrationBase {
     Matrix3 biasOmegaCovariance;  ///< continuous-time "Covariance" describing gyroscope bias random walk
     Matrix6 biasAccOmegaInit;     ///< covariance of bias used for pre-integration
 
-    /// See two named constructors below for good values of b_gravity in body frame
-    Params(const Vector3& b_gravity) :
-        PreintegrationBase::Params(b_gravity), biasAccCovariance(I_3x3), biasOmegaCovariance(
+    /// See two named constructors below for good values of n_gravity in body frame
+    Params(const Vector3& n_gravity) :
+        PreintegrationBase::Params(n_gravity), biasAccCovariance(I_3x3), biasOmegaCovariance(
             I_3x3), biasAccOmegaInit(I_6x6) {
     }
 
-    // Default Params for Front-Right-Down convention: b_gravity points along positive Z-axis
-    static boost::shared_ptr<Params> MakeSharedFRD(double g = 9.81) {
+    // Default Params for a Z-down navigation frame, such as NED: gravity points along positive Z-axis
+    static boost::shared_ptr<Params> MakeSharedD(double g = 9.81) {
       return boost::make_shared<Params>(Vector3(0, 0, g));
     }
 
-    // Default Params for Front-Left-Up convention: b_gravity points along negative Z-axis
-    static boost::shared_ptr<Params> MakeSharedFLU(double g = 9.81) {
+    // Default Params for a Z-up navigation frame, such as ENU: gravity points along negative Z-axis
+    static boost::shared_ptr<Params> MakeSharedU(double g = 9.81) {
       return boost::make_shared<Params>(Vector3(0, 0, -g));
     }
 
@@ -151,7 +151,7 @@ class PreintegratedCombinedMeasurements : public PreintegrationBase {
   Matrix preintMeasCov() const { return preintMeasCov_; }
 
   /// deprecated constructor
-  /// NOTE(frank): assumes FRD convention, only second order integration supported
+  /// NOTE(frank): assumes Z-Down convention, only second order integration supported
   PreintegratedCombinedMeasurements(const imuBias::ConstantBias& biasHat,
       const Matrix3& measuredAccCovariance,
       const Matrix3& measuredOmegaCovariance,
@@ -263,7 +263,7 @@ public:
   /// @deprecated constructor
   CombinedImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias_i,
                     Key bias_j, const CombinedPreintegratedMeasurements& pim,
-                    const Vector3& b_gravity, const Vector3& omegaCoriolis,
+                    const Vector3& n_gravity, const Vector3& omegaCoriolis,
                     const boost::optional<Pose3>& body_P_sensor = boost::none,
                     const bool use2ndOrderCoriolis = false);
 
@@ -271,7 +271,7 @@ public:
   static void Predict(const Pose3& pose_i, const Vector3& vel_i, Pose3& pose_j,
                       Vector3& vel_j, const imuBias::ConstantBias& bias_i,
                       CombinedPreintegratedMeasurements& pim,
-                      const Vector3& b_gravity, const Vector3& omegaCoriolis,
+                      const Vector3& n_gravity, const Vector3& omegaCoriolis,
                       const bool use2ndOrderCoriolis = false);
 
 private:

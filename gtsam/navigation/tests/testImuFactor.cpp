@@ -36,7 +36,7 @@ using symbol_shorthand::X;
 using symbol_shorthand::V;
 using symbol_shorthand::B;
 
-static const Vector3 kGravity(0, 0, 9.81);
+static const Vector3 kGravityAlongNavZDown(0, 0, 9.81);
 static const Vector3 kZeroOmegaCoriolis(0, 0, 0);
 static const Vector3 kNonZeroOmegaCoriolis(0, 0.1, 0.1);
 
@@ -151,8 +151,7 @@ TEST(ImuFactor, StraightLine) {
 
   imuBias::ConstantBias biasHat, bias;
   boost::shared_ptr<PreintegratedImuMeasurements::Params> p =
-      PreintegratedImuMeasurements::Params::MakeSharedFRD();
-  p->b_gravity = Vector3(0, 0, g); // FRD convention
+      PreintegratedImuMeasurements::Params::MakeSharedU(g); // Up convention!
 
   PreintegratedImuMeasurements pim(p, biasHat);
   for (size_t i = 0; i < 10; i++)
@@ -171,7 +170,6 @@ TEST(ImuFactor, StraightLine) {
   // Check prediction, note we move along x in body, along y in nav
   NavState expected(nRb, Point3(10, 20 + a * exact, 0),
       Velocity3(0, a * dt, 0));
-  GTSAM_PRINT(pim);
   EXPECT(assert_equal(expected, pim.predict(state1, bias)));
 }
 
@@ -197,12 +195,10 @@ TEST(ImuFactor, PreintegratedMeasurements) {
       kMeasuredOmegaCovariance, kIntegrationErrorCovariance);
   actual1.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
-  EXPECT(
-      assert_equal(Vector(expectedDeltaP1), Vector(actual1.deltaPij()), 1e-6));
-  EXPECT(
-      assert_equal(Vector(expectedDeltaV1), Vector(actual1.deltaVij()), 1e-6));
-  EXPECT(assert_equal(expectedDeltaR1, Rot3(actual1.deltaRij()), 1e-6));
-  DOUBLES_EQUAL(expectedDeltaT1, actual1.deltaTij(), 1e-6);
+  EXPECT(assert_equal(Vector(expectedDeltaP1), Vector(actual1.deltaPij())));
+  EXPECT(assert_equal(Vector(expectedDeltaV1), Vector(actual1.deltaVij())));
+  EXPECT(assert_equal(expectedDeltaR1, Rot3(actual1.deltaRij())));
+  DOUBLES_EQUAL(expectedDeltaT1, actual1.deltaTij(), 1e-9);
 
   // Integrate again
   Vector3 expectedDeltaP2;
@@ -216,39 +212,38 @@ TEST(ImuFactor, PreintegratedMeasurements) {
   PreintegratedImuMeasurements actual2 = actual1;
   actual2.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
-  EXPECT(
-      assert_equal(Vector(expectedDeltaP2), Vector(actual2.deltaPij()), 1e-6));
-  EXPECT(
-      assert_equal(Vector(expectedDeltaV2), Vector(actual2.deltaVij()), 1e-6));
-  EXPECT(assert_equal(expectedDeltaR2, Rot3(actual2.deltaRij()), 1e-6));
-  DOUBLES_EQUAL(expectedDeltaT2, actual2.deltaTij(), 1e-6);
+  EXPECT(assert_equal(Vector(expectedDeltaP2), Vector(actual2.deltaPij())));
+  EXPECT(assert_equal(Vector(expectedDeltaV2), Vector(actual2.deltaVij())));
+  EXPECT(assert_equal(expectedDeltaR2, Rot3(actual2.deltaRij())));
+  DOUBLES_EQUAL(expectedDeltaT2, actual2.deltaTij(), 1e-9);
 }
 
 /* ************************************************************************* */
 // Common linearization point and measurements for tests
 namespace common {
-imuBias::ConstantBias bias; // Bias
-Pose3 x1(Rot3::RzRyRx(M_PI / 12.0, M_PI / 6.0, M_PI / 4.0),
-    Point3(5.0, 1.0, -50.0));
-Vector3 v1(Vector3(0.5, 0.0, 0.0));
-
-NavState state1(x1, v1);
-Pose3 x2(Rot3::RzRyRx(M_PI / 12.0 + M_PI / 100.0, M_PI / 6.0, M_PI / 4.0),
-    Point3(5.5, 1.0, -50.0));
-Vector3 v2(Vector3(0.5, 0.0, 0.0));
-NavState state2(x2, v2);
+static const imuBias::ConstantBias biasHat, bias; // Bias
+static const Pose3 x1(Rot3::RzRyRx(M_PI / 12.0, M_PI / 6.0, M_PI / 4.0),
+    Point3(5.0, 1.0, 0));
+static const Vector3 v1(Vector3(0.5, 0.0, 0.0));
+static const NavState state1(x1, v1);
 
 // Measurements
-Vector3 measuredOmega(M_PI / 100, 0, 0);
-Vector3 measuredAcc = x1.rotation().unrotate(-Point3(kGravity)).vector();
-double deltaT = 1.0;
+static const double w = M_PI / 100;
+static const Vector3 measuredOmega(w, 0, 0);
+static const Vector3 measuredAcc = x1.rotation().unrotate(-kGravityAlongNavZDown);
+static const double deltaT = 1.0;
+
+static const Pose3 x2(Rot3::RzRyRx(M_PI / 12.0 + w, M_PI / 6.0, M_PI / 4.0),
+    Point3(5.5, 1.0, 0));
+static const Vector3 v2(Vector3(0.5, 0.0, 0.0));
+static const NavState state2(x2, v2);
 } // namespace common
 
 /* ************************************************************************* */
 TEST(ImuFactor, PreintegrationBaseMethods) {
   using namespace common;
   boost::shared_ptr<PreintegratedImuMeasurements::Params> p =
-      PreintegratedImuMeasurements::Params::MakeSharedFRD();
+      PreintegratedImuMeasurements::Params::MakeSharedD();
   p->gyroscopeCovariance = kMeasuredOmegaCovariance;
   p->omegaCoriolis = Vector3(0.02, 0.03, 0.04);
   p->accelerometerCovariance = kMeasuredAccCovariance;
@@ -285,22 +280,21 @@ TEST(ImuFactor, PreintegrationBaseMethods) {
 /* ************************************************************************* */
 TEST(ImuFactor, ErrorAndJacobians) {
   using namespace common;
-  PreintegratedImuMeasurements pim(bias, kMeasuredAccCovariance,
+  PreintegratedImuMeasurements pim(biasHat, kMeasuredAccCovariance,
       kMeasuredOmegaCovariance, kIntegrationErrorCovariance);
 
   pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
-  EXPECT(assert_equal(state2, pim.predict(state1, bias), 1e-6));
+  EXPECT(assert_equal(state2, pim.predict(state1, bias)));
 
   // Create factor
-  ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pim, kGravity,
+  ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pim, kGravityAlongNavZDown,
       kZeroOmegaCoriolis);
 
   // Expected error
-  Vector errorExpected(9);
-  errorExpected << 0, 0, 0, 0, 0, 0, 0, 0, 0;
+  Vector expectedError(9);
+  expectedError << 0, 0, 0, 0, 0, 0, 0, 0, 0;
   EXPECT(
-      assert_equal(errorExpected, factor.evaluateError(x1, v1, x2, v2, bias),
-          1e-6));
+      assert_equal(expectedError, factor.evaluateError(x1, v1, x2, v2, bias)));
 
   Values values;
   values.insert(X(1), x1);
@@ -308,7 +302,7 @@ TEST(ImuFactor, ErrorAndJacobians) {
   values.insert(X(2), x2);
   values.insert(V(2), v2);
   values.insert(B(1), bias);
-  EXPECT(assert_equal(errorExpected, factor.unwhitenedError(values), 1e-6));
+  EXPECT(assert_equal(expectedError, factor.unwhitenedError(values)));
 
   // Make sure linearization is correct
   double diffDelta = 1e-5;
@@ -331,17 +325,17 @@ TEST(ImuFactor, ErrorAndJacobians) {
   // Evaluate error with wrong values
   Vector3 v2_wrong = v2 + Vector3(0.1, 0.1, 0.1);
   values.update(V(2), v2_wrong);
-  errorExpected << 0, 0, 0, 0, 0, 0, 0.0724744871, 0.040715657, 0.151952901;
+  expectedError << 0, 0, 0, 0, 0, 0, 0.0724744871, 0.040715657, 0.151952901;
   EXPECT(
-      assert_equal(errorExpected,
-          factor.evaluateError(x1, v1, x2, v2_wrong, bias), 1e-6));
-  EXPECT(assert_equal(errorExpected, factor.unwhitenedError(values), 1e-6));
+      assert_equal(expectedError,
+          factor.evaluateError(x1, v1, x2, v2_wrong, bias)));
+  EXPECT(assert_equal(expectedError, factor.unwhitenedError(values)));
 
   // Make sure the whitening is done correctly
   Matrix cov = pim.preintMeasCov();
   Matrix R = RtR(cov.inverse());
-  Vector whitened = R * errorExpected;
-  EXPECT(assert_equal(0.5 * whitened.squaredNorm(), factor.error(values), 1e-6));
+  Vector whitened = R * expectedError;
+  EXPECT(assert_equal(0.5 * whitened.squaredNorm(), factor.error(values),1e-5));
 
   // Make sure linearization is correct
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, diffDelta, 1e-5);
@@ -359,7 +353,7 @@ TEST(ImuFactor, ErrorAndJacobianWithBiases) {
   // Measurements
   Vector3 measuredOmega;
   measuredOmega << 0, 0, M_PI / 10.0 + 0.3;
-  Vector3 measuredAcc = x1.rotation().unrotate(-Point3(kGravity)).vector()
+  Vector3 measuredAcc = x1.rotation().unrotate(-kGravityAlongNavZDown)
       + Vector3(0.2, 0.0, 0.0);
   double deltaT = 1.0;
 
@@ -370,7 +364,7 @@ TEST(ImuFactor, ErrorAndJacobianWithBiases) {
   pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   // Create factor
-  ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pim, kGravity,
+  ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pim, kGravityAlongNavZDown,
       kNonZeroOmegaCoriolis);
 
   Values values;
@@ -397,7 +391,7 @@ TEST(ImuFactor, ErrorAndJacobianWith2ndOrderCoriolis) {
   // Measurements
   Vector3 measuredOmega;
   measuredOmega << 0, 0, M_PI / 10.0 + 0.3;
-  Vector3 measuredAcc = x1.rotation().unrotate(-Point3(kGravity)).vector()
+  Vector3 measuredAcc = x1.rotation().unrotate(-kGravityAlongNavZDown)
       + Vector3(0.2, 0.0, 0.0);
   double deltaT = 1.0;
 
@@ -410,7 +404,7 @@ TEST(ImuFactor, ErrorAndJacobianWith2ndOrderCoriolis) {
   // Create factor
   Pose3 bodyPsensor = Pose3();
   bool use2ndOrderCoriolis = true;
-  ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pim, kGravity,
+  ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pim, kGravityAlongNavZDown,
       kNonZeroOmegaCoriolis, bodyPsensor, use2ndOrderCoriolis);
 
   Values values;
@@ -808,7 +802,7 @@ TEST(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
   // Measurements
   Vector3 measuredOmega;
   measuredOmega << 0, 0, M_PI / 10.0 + 0.3;
-  Vector3 measuredAcc = x1.rotation().unrotate(-Point3(kGravity)).vector()
+  Vector3 measuredAcc = x1.rotation().unrotate(-kGravityAlongNavZDown)
       + Vector3(0.2, 0.0, 0.0);
   double deltaT = 1.0;
 
@@ -823,7 +817,7 @@ TEST(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
   pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   // Create factor
-  ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pim, kGravity,
+  ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pim, kGravityAlongNavZDown,
       kNonZeroOmegaCoriolis);
 
   Values values;
@@ -858,13 +852,13 @@ TEST(ImuFactor, PredictPositionAndVelocity) {
     pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   // Create factor
-  ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pim, kGravity,
+  ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pim, kGravityAlongNavZDown,
       kZeroOmegaCoriolis);
 
   // Predict
   Pose3 x1;
   Vector3 v1(0, 0.0, 0.0);
-  PoseVelocityBias poseVelocity = pim.predict(x1, v1, bias, kGravity,
+  PoseVelocityBias poseVelocity = pim.predict(x1, v1, bias, kGravityAlongNavZDown,
       kZeroOmegaCoriolis);
   Pose3 expectedPose(Rot3(), Point3(0, 0.5, 0));
   Vector3 expectedVelocity;
@@ -893,14 +887,14 @@ TEST(ImuFactor, PredictRotation) {
     pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   // Create factor
-  ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pim, kGravity,
+  ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pim, kGravityAlongNavZDown,
       kZeroOmegaCoriolis);
 
   // Predict
   Pose3 x1, x2;
   Vector3 v1 = Vector3(0, 0.0, 0.0);
   Vector3 v2;
-  ImuFactor::Predict(x1, v1, x2, v2, bias, pim, kGravity, kZeroOmegaCoriolis);
+  ImuFactor::Predict(x1, v1, x2, v2, bias, pim, kGravityAlongNavZDown, kZeroOmegaCoriolis);
   Pose3 expectedPose(Rot3().ypr(M_PI / 10, 0, 0), Point3(0, 0, 0));
   Vector3 expectedVelocity;
   expectedVelocity << 0, 0, 0;
@@ -926,14 +920,14 @@ TEST(ImuFactor, PredictArbitrary) {
     pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   // Create factor
-  ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pim, kGravity,
+  ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pim, kGravityAlongNavZDown,
       kZeroOmegaCoriolis);
 
   // Predict
   Pose3 x1, x2;
   Vector3 v1 = Vector3(0, 0.0, 0.0);
   Vector3 v2;
-  ImuFactor::Predict(x1, v1, x2, v2, bias, pim, kGravity, kZeroOmegaCoriolis);
+  ImuFactor::Predict(x1, v1, x2, v2, bias, pim, kGravityAlongNavZDown, kZeroOmegaCoriolis);
 
   // Regression test for Imu Refactor
   Rot3 expectedR( //

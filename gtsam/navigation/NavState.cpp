@@ -248,7 +248,8 @@ Vector9 NavState::coriolis(double dt, const Vector3& omega, bool secondOrder,
 }
 
 //------------------------------------------------------------------------------
-Vector9 NavState::integrateTangent(const Vector9& pim, double dt,
+Vector9 NavState::correctPIM(const Vector9& pim, double dt,
+    const Vector3& n_gravity,
     const boost::optional<Vector3>& omegaCoriolis, bool use2ndOrderCoriolis,
     OptionalJacobian<9, 9> H1, OptionalJacobian<9, 9> H2) const {
   const Rot3& nRb = R_;
@@ -256,11 +257,12 @@ Vector9 NavState::integrateTangent(const Vector9& pim, double dt,
   const double dt2 = dt * dt;
 
   Vector9 delta;
-  Matrix3 D_dP_Ri, D_dP_nv;
+  Matrix3 D_dP_Ri1, D_dP_Ri2, D_dP_nv, D_dV_Ri;
   dR(delta) = dR(pim);
   dP(delta) = dP(pim)
-      + dt * nRb.unrotate(n_v, H1 ? &D_dP_Ri : 0, H2 ? &D_dP_nv : 0);
-  dV(delta) = dV(pim);
+      + dt * nRb.unrotate(n_v, H1 ? &D_dP_Ri1 : 0, H2 ? &D_dP_nv : 0)
+      + (0.5 * dt2) * nRb.unrotate(n_gravity, H1 ? &D_dP_Ri2 : 0);
+  dV(delta) = dV(pim) + dt * nRb.unrotate(n_gravity, H1 ? &D_dV_Ri : 0);
 
   if (omegaCoriolis) {
     delta += coriolis(dt, *omegaCoriolis, use2ndOrderCoriolis, H1);
@@ -272,8 +274,9 @@ Vector9 NavState::integrateTangent(const Vector9& pim, double dt,
     if (H1) {
       if (!omegaCoriolis)
         H1->setZero(); // if coriolis H1 is already initialized
-      D_t_R(H1) += dt * D_dP_Ri;
+      D_t_R(H1) += dt * D_dP_Ri1 + (0.5 * dt2) * D_dP_Ri2;
       D_t_v(H1) += dt * D_dP_nv * Ri;
+      D_v_R(H1) += dt * D_dV_Ri;
     }
     if (H2) {
       H2->setIdentity();
@@ -281,25 +284,6 @@ Vector9 NavState::integrateTangent(const Vector9& pim, double dt,
   }
 
   return delta;
-}
-//------------------------------------------------------------------------------
-NavState NavState::predict(const Vector9& pim, double dt,
-    const boost::optional<Vector3>& omegaCoriolis, bool use2ndOrderCoriolis,
-    OptionalJacobian<9, 9> H1, OptionalJacobian<9, 9> H2) const {
-
-  Matrix9 D_delta_state, D_delta_pim;
-  Vector9 delta = integrateTangent(pim, dt, omegaCoriolis, use2ndOrderCoriolis,
-      H1 ? &D_delta_state : 0, H2 ? &D_delta_pim : 0);
-
-  Matrix9 D_predicted_state, D_predicted_delta;
-  NavState predicted = retract(delta, H1 ? &D_predicted_state : 0,
-      H1 || H2 ? &D_predicted_delta : 0);
-  // TODO(frank): the derivatives of retract are very sparse: inline below:
-  if (H1)
-    *H1 = D_predicted_state + D_predicted_delta * D_delta_state;
-  if (H2)
-    *H2 = D_predicted_delta * D_delta_pim;
-  return predicted;
 }
 //------------------------------------------------------------------------------
 

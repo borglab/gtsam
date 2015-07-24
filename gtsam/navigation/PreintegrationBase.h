@@ -63,22 +63,22 @@ public:
     /// (to compensate errors in Euler integration)
     ///  (if false: p(t+1) = p(t) + v(t) deltaT ; if true: p(t+1) = p(t) + v(t) deltaT + 0.5 * acc(t) deltaT^2)
     bool use2ndOrderCoriolis; ///< Whether to use second order Coriolis integration
-    Vector3 b_gravity; ///< Gravity constant in body frame
+    Vector3 n_gravity; ///< Gravity constant in body frame
 
-    /// The Params constructor insists on the user passing in gravity in the *body* frame.
+    /// The Params constructor insists on getting the navigation frame gravity vector
     /// For convenience, two commonly used conventions are provided by named constructors below
-    Params(const Vector3& b_gravity) :
+    Params(const Vector3& n_gravity) :
         accelerometerCovariance(I_3x3), integrationCovariance(I_3x3), use2ndOrderCoriolis(
-            false), b_gravity(b_gravity) {
+            false), n_gravity(n_gravity) {
     }
 
-    // Default Params for Front-Right-Down convention: gravity points along positive Z-axis
-    static boost::shared_ptr<Params> MakeSharedFRD(double g = 9.81) {
+    // Default Params for a Z-down navigation frame, such as NED: gravity points along positive Z-axis
+    static boost::shared_ptr<Params> MakeSharedD(double g = 9.81) {
       return boost::make_shared<Params>(Vector3(0, 0, g));
     }
 
-    // Default Params for Front-Left-Up convention: gravity points along negative Z-axis
-    static boost::shared_ptr<Params> MakeSharedFLU(double g = 9.81) {
+    // Default Params for a Z-up navigation frame, such as ENU: gravity points along negative Z-axis
+    static boost::shared_ptr<Params> MakeSharedU(double g = 9.81) {
       return boost::make_shared<Params>(Vector3(0, 0, -g));
     }
 
@@ -94,7 +94,7 @@ public:
       ar & BOOST_SERIALIZATION_NVP(accelerometerCovariance);
       ar & BOOST_SERIALIZATION_NVP(integrationCovariance);
       ar & BOOST_SERIALIZATION_NVP(use2ndOrderCoriolis);
-      ar & BOOST_SERIALIZATION_NVP(b_gravity);
+      ar & BOOST_SERIALIZATION_NVP(n_gravity);
     }
   };
 
@@ -201,7 +201,7 @@ public:
 
   /// @deprecated predict
   PoseVelocityBias predict(const Pose3& pose_i, const Vector3& vel_i,
-      const imuBias::ConstantBias& bias_i, const Vector3& b_gravity,
+      const imuBias::ConstantBias& bias_i, const Vector3& n_gravity,
       const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis = false);
 
 private:

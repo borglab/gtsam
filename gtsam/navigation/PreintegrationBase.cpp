@@ -157,14 +157,9 @@ NavState PreintegrationBase::predict(const NavState& state_i,
 
   // integrate on tangent space
   Matrix9 D_delta_state, D_delta_biasCorrected;
-  Vector9 xi = state_i.integrateTangent(biasCorrected, deltaTij_,
+  Vector9 xi = state_i.correctPIM(biasCorrected, deltaTij_, p().n_gravity,
       p().omegaCoriolis, p().use2ndOrderCoriolis, H1 ? &D_delta_state : 0,
       H2 ? &D_delta_biasCorrected : 0);
-
-  // Correct for gravity
-  double dt = deltaTij_, dt2 = dt * dt;
-  NavState::dP(xi) += 0.5 * p().b_gravity * dt2;
-  NavState::dV(xi) += p().b_gravity * dt;
 
   // Use retract to get back to NavState manifold
   Matrix9 D_predict_state, D_predict_delta;
@@ -312,11 +307,11 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i,
 //------------------------------------------------------------------------------
 PoseVelocityBias PreintegrationBase::predict(const Pose3& pose_i,
     const Vector3& vel_i, const imuBias::ConstantBias& bias_i,
-    const Vector3& b_gravity, const Vector3& omegaCoriolis,
+    const Vector3& n_gravity, const Vector3& omegaCoriolis,
     const bool use2ndOrderCoriolis) {
   // NOTE(frank): parameters are supposed to be constant, below is only provided for compatibility
   boost::shared_ptr<Params> q = boost::make_shared<Params>(p());
-  q->b_gravity = b_gravity;
+  q->n_gravity = n_gravity;
   q->omegaCoriolis = omegaCoriolis;
   q->use2ndOrderCoriolis = use2ndOrderCoriolis;
   p_ = q;

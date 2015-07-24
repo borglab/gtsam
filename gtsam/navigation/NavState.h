@@ -210,20 +210,12 @@ public:
   Vector9 coriolis(double dt, const Vector3& omega, bool secondOrder = false,
       OptionalJacobian<9, 9> H = boost::none) const;
 
-  /// Integrate a tangent vector forwards on tangent space, taking into account
-  /// Coriolis forces if omegaCoriolis is given.
-  Vector9 integrateTangent(const Vector9& pim, double dt,
+  /// Correct preintegrated tangent vector with our velocity and rotated gravity,
+  /// taking into account Coriolis forces if omegaCoriolis is given.
+  Vector9 correctPIM(const Vector9& pim, double dt, const Vector3& n_gravity,
       const boost::optional<Vector3>& omegaCoriolis, bool use2ndOrderCoriolis =
           false, OptionalJacobian<9, 9> H1 = boost::none,
       OptionalJacobian<9, 9> H2 = boost::none) const;
-
-  /// Integrate a tangent vector forwards on tangent space, taking into account
-  /// Coriolis forces if omegaCoriolis is given. Calls retract after to yield a NavState
-  NavState predict(const Vector9& pim, double dt,
-      const boost::optional<Vector3>& omegaCoriolis, bool use2ndOrderCoriolis =
-          false, OptionalJacobian<9, 9> H1 = boost::none,
-      OptionalJacobian<9, 9> H2 = boost::none) const;
-  /// @}
 
 private:
   /// @{
