@@ -175,8 +175,8 @@ NavState PreintegrationBase::predict(const NavState& state_i,
 // TODO(frank): this is *almost* state_j.localCoordinates(predict),
 // except for the damn Ri.transpose. Ri is also the only way this depends on state_i.
 // That is not an accident! Put R in computed covariances instead ?
-static Vector9 computeError(const NavState& state_i, const NavState& state_j,
-    const NavState& predictedState_j) {
+Vector9 PreintegrationBase::computeError(const NavState& state_i,
+    const NavState& state_j, const NavState& predictedState_j) {
 
   const Rot3& rot_i = state_i.attitude();
   const Matrix Ri = rot_i.matrix();
@@ -198,7 +198,7 @@ static Vector9 computeError(const NavState& state_i, const NavState& state_j,
   Vector9 r;
   r << fR, fp, fv;
   return r;
-  // return state_j.localCoordinates(predictedState_j);
+//  return state_j.localCoordinates(predictedState_j);
 }
 
 //------------------------------------------------------------------------------

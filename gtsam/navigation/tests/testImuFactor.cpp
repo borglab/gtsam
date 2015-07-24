@@ -230,7 +230,8 @@ static const NavState state1(x1, v1);
 // Measurements
 static const double w = M_PI / 100;
 static const Vector3 measuredOmega(w, 0, 0);
-static const Vector3 measuredAcc = x1.rotation().unrotate(-kGravityAlongNavZDown);
+static const Vector3 measuredAcc = x1.rotation().unrotate(
+    -kGravityAlongNavZDown);
 static const double deltaT = 1.0;
 
 static const Pose3 x2(Rot3::RzRyRx(M_PI / 12.0 + w, M_PI / 6.0, M_PI / 4.0),
@@ -254,27 +255,32 @@ TEST(ImuFactor, PreintegrationBaseMethods) {
   pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
   pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
-  { // biasCorrectedDelta
-    Matrix96 actualH;
-    pim.biasCorrectedDelta(bias, actualH);
-    Matrix expectedH = numericalDerivative11<Vector9, imuBias::ConstantBias>(
-        boost::bind(&PreintegrationBase::biasCorrectedDelta, pim, _1,
-            boost::none), bias);
-    EXPECT(assert_equal(expectedH, actualH));
-  }
-  {
-    Matrix9 aH1;
-    Matrix96 aH2;
-    pim.predict(state1, bias, aH1, aH2);
-    Matrix eH1 = numericalDerivative11<NavState, NavState>(
-        boost::bind(&PreintegrationBase::predict, pim, _1, bias, boost::none,
-            boost::none), state1);
-    EXPECT(assert_equal(eH1, aH1, 1e-8));
-    Matrix eH2 = numericalDerivative11<NavState, imuBias::ConstantBias>(
-        boost::bind(&PreintegrationBase::predict, pim, state1, _1, boost::none,
-            boost::none), bias);
-    EXPECT(assert_equal(eH2, aH2, 1e-8));
-  }
+  // biasCorrectedDelta
+  Matrix96 actualH;
+  pim.biasCorrectedDelta(bias, actualH);
+  Matrix expectedH = numericalDerivative11<Vector9, imuBias::ConstantBias>(
+      boost::bind(&PreintegrationBase::biasCorrectedDelta, pim, _1,
+          boost::none), bias);
+  EXPECT(assert_equal(expectedH, actualH));
+
+  Matrix9 aH1;
+  Matrix96 aH2;
+  NavState predictedState = pim.predict(state1, bias, aH1, aH2);
+  Matrix eH1 = numericalDerivative11<NavState, NavState>(
+      boost::bind(&PreintegrationBase::predict, pim, _1, bias, boost::none,
+          boost::none), state1);
+  EXPECT(assert_equal(eH1, aH1, 1e-8));
+  Matrix eH2 = numericalDerivative11<NavState, imuBias::ConstantBias>(
+      boost::bind(&PreintegrationBase::predict, pim, state1, _1, boost::none,
+          boost::none), bias);
+  EXPECT(assert_equal(eH2, aH2, 1e-8));
+
+  EXPECT(
+      assert_equal(Vector(-state1.localCoordinates(predictedState)),
+          PreintegratedImuMeasurements::computeError(state1, state1,
+              predictedState), 1e-8));
+  return;
+
 }
 
 /* ************************************************************************* */
@@ -335,7 +341,7 @@ TEST(ImuFactor, ErrorAndJacobians) {
   Matrix cov = pim.preintMeasCov();
   Matrix R = RtR(cov.inverse());
   Vector whitened = R * expectedError;
-  EXPECT(assert_equal(0.5 * whitened.squaredNorm(), factor.error(values),1e-5));
+  EXPECT(assert_equal(0.5 * whitened.squaredNorm(), factor.error(values), 1e-5));
 
   // Make sure linearization is correct
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, diffDelta, 1e-5);
@@ -357,10 +363,9 @@ TEST(ImuFactor, ErrorAndJacobianWithBiases) {
       + Vector3(0.2, 0.0, 0.0);
   double deltaT = 1.0;
 
-  PreintegratedImuMeasurements pim(
-      imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.1)),
-      kMeasuredAccCovariance, kMeasuredOmegaCovariance,
-      kIntegrationErrorCovariance);
+  imuBias::ConstantBias biasHat(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.1));
+  PreintegratedImuMeasurements pim(biasHat, kMeasuredAccCovariance,
+      kMeasuredOmegaCovariance, kIntegrationErrorCovariance);
   pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   // Create factor
@@ -858,8 +863,8 @@ TEST(ImuFactor, PredictPositionAndVelocity) {
   // Predict
   Pose3 x1;
   Vector3 v1(0, 0.0, 0.0);
-  PoseVelocityBias poseVelocity = pim.predict(x1, v1, bias, kGravityAlongNavZDown,
-      kZeroOmegaCoriolis);
+  PoseVelocityBias poseVelocity = pim.predict(x1, v1, bias,
+      kGravityAlongNavZDown, kZeroOmegaCoriolis);
   Pose3 expectedPose(Rot3(), Point3(0, 0.5, 0));
   Vector3 expectedVelocity;
   expectedVelocity << 0, 1, 0;
@@ -894,7 +899,8 @@ TEST(ImuFactor, PredictRotation) {
   Pose3 x1, x2;
   Vector3 v1 = Vector3(0, 0.0, 0.0);
   Vector3 v2;
-  ImuFactor::Predict(x1, v1, x2, v2, bias, pim, kGravityAlongNavZDown, kZeroOmegaCoriolis);
+  ImuFactor::Predict(x1, v1, x2, v2, bias, pim, kGravityAlongNavZDown,
+      kZeroOmegaCoriolis);
   Pose3 expectedPose(Rot3().ypr(M_PI / 10, 0, 0), Point3(0, 0, 0));
   Vector3 expectedVelocity;
   expectedVelocity << 0, 0, 0;
@@ -927,7 +933,8 @@ TEST(ImuFactor, PredictArbitrary) {
   Pose3 x1, x2;
   Vector3 v1 = Vector3(0, 0.0, 0.0);
   Vector3 v2;
-  ImuFactor::Predict(x1, v1, x2, v2, bias, pim, kGravityAlongNavZDown, kZeroOmegaCoriolis);
+  ImuFactor::Predict(x1, v1, x2, v2, bias, pim, kGravityAlongNavZDown,
+      kZeroOmegaCoriolis);
 
   // Regression test for Imu Refactor
   Rot3 expectedR( //
