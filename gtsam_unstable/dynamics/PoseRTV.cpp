@@ -205,10 +205,10 @@ PoseRTV PoseRTV::transformed_from(const Pose3& trans, ChartJacobian Dglobal,
 }
 
 /* ************************************************************************* */
-Matrix PoseRTV::RRTMbn(const Vector& euler) {
+Matrix PoseRTV::RRTMbn(const Vector3& euler) {
   assert(euler.size() == 3);
-  const double s1 = sin(euler(1-1)), c1 = cos(euler(1-1));
-  const double t2 = tan(euler(2-1)), c2 = cos(euler(2-1));
+  const double s1 = sin(euler.x()), c1 = cos(euler.x());
+  const double t2 = tan(euler.y()), c2 = cos(euler.y());
   Matrix Ebn(3,3);
   Ebn << 1.0, s1 * t2, c1 * t2,
          0.0,      c1,     -s1,
@@ -222,11 +222,10 @@ Matrix PoseRTV::RRTMbn(const Rot3& att) {
 }
 
 /* ************************************************************************* */
-Matrix PoseRTV::RRTMnb(const Vector& euler) {
-  assert(euler.size() == 3);
+Matrix PoseRTV::RRTMnb(const Vector3& euler) {
   Matrix Enb(3,3);
-  const double s1 = sin(euler(1-1)), c1 = cos(euler(1-1));
-  const double s2 = sin(euler(2-1)), c2 = cos(euler(2-1));
+  const double s1 = sin(euler.x()), c1 = cos(euler.x());
+  const double s2 = sin(euler.y()), c2 = cos(euler.y());
   Enb << 1.0, 0.0,   -s2,
          0.0,  c1, s1*c2,
          0.0, -s1, c1*c2;

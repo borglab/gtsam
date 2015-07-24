@@ -101,7 +101,7 @@ Mechanization_bRn2 Mechanization_bRn2::integrate(const Vector3& u,
 
   // convert to navigation frame
   Rot3 nRb = bRn_.inverse();
-  Vector3 n_omega_bn = (nRb*b_omega_bn).vector();
+  Vector3 n_omega_bn = nRb * b_omega_bn;
 
   // integrate bRn using exponential map, assuming constant over dt
   Rot3 delta_nRn = Rot3::Rodrigues(n_omega_bn*dt);

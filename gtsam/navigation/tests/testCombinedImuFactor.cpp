@@ -78,7 +78,7 @@ Rot3 updatePreintegratedMeasurementsRot(const Vector3 deltaPij_old,
       deltaVij_old, deltaRij_old, bias_old, correctedAcc, correctedOmega,
       deltaT, use2ndOrderIntegration);
 
-  return Rot3::Expmap(result.segment<3>(6));
+  return Rot3::Expmap(result.segment < 3 > (6));
 }
 
 // Auxiliary functions to test preintegrated Jacobians
@@ -87,9 +87,8 @@ Rot3 updatePreintegratedMeasurementsRot(const Vector3 deltaPij_old,
 CombinedImuFactor::CombinedPreintegratedMeasurements evaluatePreintegratedMeasurements(
     const imuBias::ConstantBias& bias, const list<Vector3>& measuredAccs,
     const list<Vector3>& measuredOmegas, const list<double>& deltaTs) {
-  CombinedImuFactor::CombinedPreintegratedMeasurements result(bias,
-      I_3x3, I_3x3, I_3x3,
-      I_3x3, I_3x3, I_6x6, false);
+  CombinedImuFactor::CombinedPreintegratedMeasurements result(bias, I_3x3,
+      I_3x3, I_3x3, I_3x3, I_3x3, I_6x6);
 
   list<Vector3>::const_iterator itAcc = measuredAccs.begin();
   list<Vector3>::const_iterator itOmega = measuredOmegas.begin();
@@ -136,13 +135,11 @@ TEST( CombinedImuFactor, PreintegratedMeasurements ) {
   double tol = 1e-6;
 
   // Actual preintegrated values
-  ImuFactor::PreintegratedMeasurements expected1(bias, Z_3x3,
-      Z_3x3, Z_3x3);
+  ImuFactor::PreintegratedMeasurements expected1(bias, Z_3x3, Z_3x3, Z_3x3);
   expected1.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
-  CombinedImuFactor::CombinedPreintegratedMeasurements actual1(bias,
-      Z_3x3, Z_3x3, Z_3x3, Z_3x3,
-      Z_3x3, Z_6x6);
+  CombinedImuFactor::CombinedPreintegratedMeasurements actual1(bias, Z_3x3,
+      Z_3x3, Z_3x3, Z_3x3, Z_3x3, Z_6x6);
 
   actual1.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
@@ -187,7 +184,8 @@ TEST( CombinedImuFactor, ErrorWithBiases ) {
   combined_pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   // Create factor
-  ImuFactor imuFactor(X(1), V(1), X(2), V(2), B(1), pim, gravity, omegaCoriolis);
+  ImuFactor imuFactor(X(1), V(1), X(2), V(2), B(1), pim, gravity,
+      omegaCoriolis);
 
   noiseModel::Gaussian::shared_ptr Combinedmodel =
       noiseModel::Gaussian::Covariance(combined_pim.preintMeasCov());
@@ -195,7 +193,8 @@ TEST( CombinedImuFactor, ErrorWithBiases ) {
       combined_pim, gravity, omegaCoriolis);
 
   Vector errorExpected = imuFactor.evaluateError(x1, v1, x2, v2, bias);
-  Vector errorActual = combinedfactor.evaluateError(x1, v1, x2, v2, bias, bias2);
+  Vector errorActual = combinedfactor.evaluateError(x1, v1, x2, v2, bias,
+      bias2);
   EXPECT(assert_equal(errorExpected, errorActual.head(9), tol));
 
   // Expected Jacobians
@@ -238,7 +237,7 @@ TEST( CombinedImuFactor, FirstOrderPreIntegratedMeasurements ) {
   }
 
   // Actual preintegrated values
-  CombinedImuFactor::CombinedPreintegratedMeasurements preintegrated =
+  CombinedImuFactor::CombinedPreintegratedMeasurements pim =
       evaluatePreintegratedMeasurements(bias, measuredAccs, measuredOmegas,
           deltaTs);
 
@@ -265,16 +264,12 @@ TEST( CombinedImuFactor, FirstOrderPreIntegratedMeasurements ) {
   Matrix expectedDelRdelBiasOmega = expectedDelRdelBias.rightCols(3);
 
   // Compare Jacobians
-  EXPECT(assert_equal(expectedDelPdelBiasAcc, preintegrated.delPdelBiasAcc()));
-  EXPECT(
-      assert_equal(expectedDelPdelBiasOmega, preintegrated.delPdelBiasOmega()));
-  EXPECT(assert_equal(expectedDelVdelBiasAcc, preintegrated.delVdelBiasAcc()));
-  EXPECT(
-      assert_equal(expectedDelVdelBiasOmega, preintegrated.delVdelBiasOmega()));
+  EXPECT(assert_equal(expectedDelPdelBiasAcc, pim.delPdelBiasAcc()));
+  EXPECT(assert_equal(expectedDelPdelBiasOmega, pim.delPdelBiasOmega()));
+  EXPECT(assert_equal(expectedDelVdelBiasAcc, pim.delVdelBiasAcc()));
+  EXPECT(assert_equal(expectedDelVdelBiasOmega, pim.delVdelBiasOmega()));
   EXPECT(assert_equal(expectedDelRdelBiasAcc, Matrix::Zero(3, 3)));
-  EXPECT(
-      assert_equal(expectedDelRdelBiasOmega, preintegrated.delRdelBiasOmega(),
-          1e-3)); // 1e-3 needs to be added only when using quaternions for rotations
+  EXPECT(assert_equal(expectedDelRdelBiasOmega, pim.delRdelBiasOmega(), 1e-3)); // 1e-3 needs to be added only when using quaternions for rotations
 }
 
 /* ************************************************************************* */
@@ -293,23 +288,22 @@ TEST(CombinedImuFactor, PredictPositionAndVelocity) {
   double deltaT = 0.001;
 
   CombinedImuFactor::CombinedPreintegratedMeasurements pim(bias, I_3x3, I_3x3,
-      I_3x3, I_3x3, 2 * I_3x3, I_6x6, true);
+      I_3x3, I_3x3, 2 * I_3x3, I_6x6);
 
   for (int i = 0; i < 1000; ++i)
-    pim.integrateMeasurement(measuredAcc, measuredOmega,
-        deltaT);
+    pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   // Create factor
   noiseModel::Gaussian::shared_ptr combinedmodel =
       noiseModel::Gaussian::Covariance(pim.preintMeasCov());
-  CombinedImuFactor Combinedfactor(X(1), V(1), X(2), V(2), B(1), B(2),
-      pim, gravity, omegaCoriolis);
+  CombinedImuFactor Combinedfactor(X(1), V(1), X(2), V(2), B(1), B(2), pim,
+      gravity, omegaCoriolis);
 
   // Predict
   Pose3 x1;
   Vector3 v1(0, 0.0, 0.0);
-  PoseVelocityBias poseVelocityBias = pim.predict(x1, v1,
-      bias, gravity, omegaCoriolis);
+  PoseVelocityBias poseVelocityBias = pim.predict(x1, v1, bias, gravity,
+      omegaCoriolis);
   Pose3 expectedPose(Rot3(), Point3(0, 0.5, 0));
   Vector3 expectedVelocity;
   expectedVelocity << 0, 1, 0;
@@ -322,7 +316,7 @@ TEST(CombinedImuFactor, PredictPositionAndVelocity) {
 TEST(CombinedImuFactor, PredictRotation) {
   imuBias::ConstantBias bias(Vector3(0, 0, 0), Vector3(0, 0, 0)); // Biases (acc, rot)
   CombinedImuFactor::CombinedPreintegratedMeasurements pim(bias, I_3x3, I_3x3,
-      I_3x3, I_3x3, 2 * I_3x3, I_6x6, true);
+      I_3x3, I_3x3, 2 * I_3x3, I_6x6);
   Vector3 measuredAcc;
   measuredAcc << 0, 0, -9.81;
   Vector3 gravity;
@@ -335,8 +329,8 @@ TEST(CombinedImuFactor, PredictRotation) {
   double tol = 1e-4;
   for (int i = 0; i < 1000; ++i)
     pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
-  CombinedImuFactor Combinedfactor(X(1), V(1), X(2), V(2), B(1), B(2),
-      pim, gravity, omegaCoriolis);
+  CombinedImuFactor Combinedfactor(X(1), V(1), X(2), V(2), B(1), B(2), pim,
+      gravity, omegaCoriolis);
 
   // Predict
   Pose3 x(Rot3().ypr(0, 0, 0), Point3(0, 0, 0)), x2;
@@ -366,8 +360,8 @@ TEST( CombinedImuFactor, JacobianPreintegratedCovariancePropagation ) {
         Vector3(M_PI / 100.0, M_PI / 300.0, 2 * M_PI / 100.0));
     deltaTs.push_back(0.01);
   }
-  // Actual preintegrated values
-  CombinedImuFactor::CombinedPreintegratedMeasurements preintegrated =
+  // Actual pim values
+  CombinedImuFactor::CombinedPreintegratedMeasurements pim =
       evaluatePreintegratedMeasurements(bias_old, measuredAccs, measuredOmegas,
           deltaTs);
 
@@ -376,14 +370,14 @@ TEST( CombinedImuFactor, JacobianPreintegratedCovariancePropagation ) {
   const Vector3 newMeasuredAcc = Vector3(0.1, 0.0, 0.0);
   const Vector3 newMeasuredOmega = Vector3(M_PI / 100.0, 0.0, 0.0);
   const double newDeltaT = 0.01;
-  const Rot3 deltaRij_old = preintegrated.deltaRij(); // before adding new measurement
-  const Vector3 deltaVij_old = preintegrated.deltaVij(); // before adding new measurement
-  const Vector3 deltaPij_old = preintegrated.deltaPij(); // before adding new measurement
+  const Rot3 deltaRij_old = pim.deltaRij(); // before adding new measurement
+  const Vector3 deltaVij_old = pim.deltaVij(); // before adding new measurement
+  const Vector3 deltaPij_old = pim.deltaPij(); // before adding new measurement
 
-  Matrix oldPreintCovariance = preintegrated.preintMeasCov();
+  Matrix oldPreintCovariance = pim.preintMeasCov();
 
   Matrix Factual, Gactual;
-  preintegrated.integrateMeasurement(newMeasuredAcc, newMeasuredOmega,
+  pim.integrateMeasurement(newMeasuredAcc, newMeasuredOmega,
       newDeltaT, Factual, Gactual);
 
   bool use2ndOrderIntegration = false;
@@ -438,7 +432,7 @@ TEST( CombinedImuFactor, JacobianPreintegratedCovariancePropagation ) {
 
   Matrix Fexpected(15, 15);
   Fexpected << df_dpos, df_dvel, df_dangle, df_dbias;
-  EXPECT(assert_equal(Fexpected, Factual));
+  EXPECT(assert_equal(Fexpected, Factual,1e-5));
 
   //////////////////////////////////////////////////////////////////////////////////////////////
   // COMPUTE NUMERICAL DERIVATIVES FOR G
@@ -496,7 +490,7 @@ TEST( CombinedImuFactor, JacobianPreintegratedCovariancePropagation ) {
   Matrix newPreintCovarianceExpected = Factual * oldPreintCovariance
       * Factual.transpose() + (1 / newDeltaT) * Gactual * Gactual.transpose();
 
-  Matrix newPreintCovarianceActual = preintegrated.preintMeasCov();
+  Matrix newPreintCovarianceActual = pim.preintMeasCov();
   EXPECT(assert_equal(newPreintCovarianceExpected, newPreintCovarianceActual));
 }
 

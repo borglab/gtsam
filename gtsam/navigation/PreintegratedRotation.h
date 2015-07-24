@@ -54,12 +54,11 @@ class PreintegratedRotation {
     }
   };
 
- private:
+ protected:
   double deltaTij_;  ///< Time interval from i to j
   Rot3 deltaRij_;    ///< Preintegrated relative orientation (in frame i)
   Matrix3 delRdelBiasOmega_;  ///< Jacobian of preintegrated rotation w.r.t. angular rate bias
 
- protected:
   /// Parameters
   boost::shared_ptr<const Params> p_;
 
@@ -138,7 +137,7 @@ class PreintegratedRotation {
   /// Integrate coriolis correction in body frame rot_i
   Vector3 integrateCoriolis(const Rot3& rot_i) const {
     if (!p_->omegaCoriolis) return Vector3::Zero();
-    return rot_i.transpose() * (*p_->omegaCoriolis) * deltaTij();
+    return rot_i.transpose() * (*p_->omegaCoriolis) * deltaTij_;
   }
 
  private:
