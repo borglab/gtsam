@@ -110,19 +110,20 @@ struct LieGroup {
   Class retract(const TangentVector& v, //
       ChartJacobian H1, ChartJacobian H2 = boost::none) const {
     Jacobian D_g_v;
-    Class g = Class::ChartAtOrigin::Retract(v,H2 ? &D_g_v : 0);
-    Class h = compose(g,H1,H2);
-    if (H2) *H2 = (*H2) * D_g_v;
+    Class g = Class::ChartAtOrigin::Retract(v, H2 ? &D_g_v : 0);
+    Class h = compose(g); // derivatives inlined below
+    if (H1) *H1 = g.inverse().AdjointMap();
+    if (H2) *H2 = D_g_v;
     return h;
   }
 
   TangentVector localCoordinates(const Class& g, //
       ChartJacobian H1, ChartJacobian H2 = boost::none) const {
-    Class h = between(g,H1,H2);
+    Class h = between(g); // derivatives inlined below
     Jacobian D_v_h;
     TangentVector v = Class::ChartAtOrigin::Local(h, (H1 || H2) ? &D_v_h : 0);
-    if (H1) *H1 = D_v_h * (*H1);
-    if (H2) *H2 = D_v_h * (*H2);
+    if (H1) *H1 = - D_v_h * h.inverse().AdjointMap();
+    if (H2) *H2 = D_v_h;
     return v;
   }
 
