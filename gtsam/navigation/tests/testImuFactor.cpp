@@ -269,11 +269,11 @@ TEST(ImuFactor, PreintegrationBaseMethods) {
   Matrix eH1 = numericalDerivative11<NavState, NavState>(
       boost::bind(&PreintegrationBase::predict, pim, _1, bias, boost::none,
           boost::none), state1);
-  EXPECT(assert_equal(eH1, aH1, 1e-8));
+  EXPECT(assert_equal(eH1, aH1));
   Matrix eH2 = numericalDerivative11<NavState, imuBias::ConstantBias>(
       boost::bind(&PreintegrationBase::predict, pim, state1, _1, boost::none,
           boost::none), bias);
-  EXPECT(assert_equal(eH2, aH2, 1e-8));
+  EXPECT(assert_equal(eH2, aH2));
   return;
 
 }
@@ -329,8 +329,8 @@ TEST(ImuFactor, ErrorAndJacobians) {
   expectedError << 0, 0, 0, 0, 0, 0, -0.0724744871, -0.040715657, -0.151952901;
   EXPECT(
       assert_equal(expectedError,
-          factor.evaluateError(x1, v1, x2, v2_wrong, bias),1e-2));
-  EXPECT(assert_equal(expectedError, factor.unwhitenedError(values)));
+          factor.evaluateError(x1, v1, x2, v2_wrong, bias), 1e-2));
+  EXPECT(assert_equal(expectedError, factor.unwhitenedError(values), 1e-2));
 
   // Make sure the whitening is done correctly
   Matrix cov = pim.preintMeasCov();
@@ -363,6 +363,22 @@ TEST(ImuFactor, ErrorAndJacobianWithBiases) {
       kMeasuredOmegaCovariance, kIntegrationErrorCovariance);
   pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
+  // Make sure of biascorrectedDeltaRij with this example...
+  Matrix3 aH;
+  pim.biascorrectedDeltaRij(bias.gyroscope(), aH);
+  Matrix3 eH = numericalDerivative11<Rot3, Vector3>(
+      boost::bind(&PreintegrationBase::biascorrectedDeltaRij, pim, _1,
+          boost::none), bias.gyroscope());
+  EXPECT(assert_equal(eH, aH));
+
+  // ... and of biasCorrectedDelta
+  Matrix96 actualH;
+  pim.biasCorrectedDelta(bias, actualH);
+  Matrix expectedH = numericalDerivative11<Vector9, imuBias::ConstantBias>(
+      boost::bind(&PreintegrationBase::biasCorrectedDelta, pim, _1,
+          boost::none), bias);
+  EXPECT(assert_equal(expectedH, actualH));
+
   // Create factor
   ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pim, kGravityAlongNavZDown,
       kNonZeroOmegaCoriolis);
@@ -376,7 +392,7 @@ TEST(ImuFactor, ErrorAndJacobianWithBiases) {
 
   // Make sure linearization is correct
   double diffDelta = 1e-5;
-  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, diffDelta, 1e-1);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, diffDelta, 1e-3);
 }
 
 /* ************************************************************************* */
@@ -416,7 +432,7 @@ TEST(ImuFactor, ErrorAndJacobianWith2ndOrderCoriolis) {
 
   // Make sure linearization is correct
   double diffDelta = 1e-5;
-  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, diffDelta, 1e-2);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, diffDelta, 1e-3);
 }
 
 /* ************************************************************************* */
@@ -439,8 +455,7 @@ TEST(ImuFactor, PartialDerivative_wrt_Bias) {
   Matrix3 actualdelRdelBiasOmega = -Jr * deltaT; // the delta bias appears with the minus sign
 
   // Compare Jacobians
-  // 1e-3 needs to be added only when using quaternions for rotations
-  EXPECT(assert_equal(expectedDelRdelBiasOmega, actualdelRdelBiasOmega, 1e-3));
+  EXPECT(assert_equal(expectedDelRdelBiasOmega, actualdelRdelBiasOmega, 1e-9));
 }
 
 /* ************************************************************************* */
@@ -552,8 +567,7 @@ TEST(ImuFactor, FirstOrderPreIntegratedMeasurements) {
       assert_equal(expectedDelVdelBiasOmega, preintegrated.delVdelBiasOmega()));
   EXPECT(assert_equal(expectedDelRdelBiasAcc, Matrix::Zero(3, 3)));
   EXPECT(
-      assert_equal(expectedDelRdelBiasOmega, preintegrated.delRdelBiasOmega(),
-          1e-3)); // 1e-3 needs to be added only when using quaternions for rotations
+      assert_equal(expectedDelRdelBiasOmega, preintegrated.delRdelBiasOmega()));
 }
 
 /* ************************************************************************* */
@@ -829,7 +843,8 @@ TEST(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
 
   // Make sure linearization is correct
   double diffDelta = 1e-5;
-  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, diffDelta, 1e-1);
+  // This fails, except if tol = 1e-1: probably wrong!
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, diffDelta, 1e-3);
 }
 
 /* ************************************************************************* */

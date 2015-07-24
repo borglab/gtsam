@@ -126,10 +126,13 @@ Vector9 PreintegrationBase::biasCorrectedDelta(
     const imuBias::ConstantBias& bias_i, OptionalJacobian<9, 6> H) const {
   // Correct deltaRij, derivative is delRdelBiasOmega_
   const imuBias::ConstantBias biasIncr = bias_i - biasHat_;
-  Rot3 deltaRij = biascorrectedDeltaRij(biasIncr.gyroscope());
+  Matrix3 D_deltaRij_bias;
+  Rot3 deltaRij = biascorrectedDeltaRij(biasIncr.gyroscope(), H ? &D_deltaRij_bias : 0);
 
   Vector9 xi;
   Matrix3 D_dR_deltaRij;
+  // TODO(frank): could line below be simplified? It is equivalent to
+  //   LogMap(deltaRij_.compose(Expmap(delRdelBiasOmega_ * biasIncr.gyroscope())))
   NavState::dR(xi) = Rot3::Logmap(deltaRij, H ? &D_dR_deltaRij : 0);
   NavState::dP(xi) = deltaPij_ + delPdelBiasAcc_ * biasIncr.accelerometer()
       + delPdelBiasOmega_ * biasIncr.gyroscope();
@@ -138,7 +141,7 @@ Vector9 PreintegrationBase::biasCorrectedDelta(
 
   if (H) {
     Matrix36 D_dR_bias, D_dP_bias, D_dV_bias;
-    D_dR_bias << Z_3x3, D_dR_deltaRij * delRdelBiasOmega_;
+    D_dR_bias << Z_3x3, D_dR_deltaRij * D_deltaRij_bias;
     D_dP_bias << delPdelBiasAcc_, delPdelBiasOmega_;
     D_dV_bias << delVdelBiasAcc_, delVdelBiasOmega_;
     (*H) << D_dR_bias, D_dP_bias, D_dV_bias;
