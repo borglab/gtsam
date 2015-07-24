@@ -172,136 +172,42 @@ NavState PreintegrationBase::predict(const NavState& state_i,
 }
 
 //------------------------------------------------------------------------------
-// TODO(frank): this is *almost* state_j.localCoordinates(predict),
-// except for the damn Ri.transpose. Ri is also the only way this depends on state_i.
-// That is not an accident! Put R in computed covariances instead ?
-Vector9 PreintegrationBase::computeError(const NavState& state_i,
-    const NavState& state_j, const NavState& predictedState_j) {
-
-  const Rot3& rot_i = state_i.attitude();
-  const Matrix Ri = rot_i.matrix();
-
-  // Residual rotation error
-  // TODO: this also seems to be flipped from localCoordinates
-  const Rot3 fRrot = predictedState_j.attitude().between(state_j.attitude());
-  const Vector3 fR = Rot3::Logmap(fRrot);
-
-  // Evaluate residual error, according to [3]
-  // Ri.transpose() is important here to preserve a model with *additive* Gaussian noise of correct covariance
-  const Vector3 fp = Ri.transpose()
-      * (state_j.position() - predictedState_j.position()).vector();
-
-  // Ri.transpose() is important here to preserve a model with *additive* Gaussian noise of correct covariance
-  const Vector3 fv = Ri.transpose()
-      * (state_j.velocity() - predictedState_j.velocity());
-
-  Vector9 r;
-  r << fR, fp, fv;
-  return r;
-//  return state_j.localCoordinates(predictedState_j);
-}
-
-//------------------------------------------------------------------------------
 Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i,
     const Vector3& vel_i, const Pose3& pose_j, const Vector3& vel_j,
     const imuBias::ConstantBias& bias_i, OptionalJacobian<9, 6> H1,
     OptionalJacobian<9, 3> H2, OptionalJacobian<9, 6> H3,
     OptionalJacobian<9, 3> H4, OptionalJacobian<9, 6> H5) const {
 
-  // we give some shorter name to rotations and translations
-  const Rot3& rot_i = pose_i.rotation();
-  const Matrix Ri = rot_i.matrix();
   NavState state_i(pose_i, vel_i);
-
-  const Rot3& rot_j = pose_j.rotation();
-  const Vector3 pos_j = pose_j.translation().vector();
   NavState state_j(pose_j, vel_j);
 
-  // Compute bias-corrected quantities
-  // TODO(frank): now redundant with biasCorrected below
-  Matrix96 D_biasCorrected_bias;
-  Vector9 biasCorrected = biasCorrectedDelta(bias_i, D_biasCorrected_bias);
-
   /// Predict state at time j
-  Matrix99 D_predict_state;
-  Matrix96 D_predict_bias;
-  NavState predictedState_j = predict(state_i, bias_i, D_predict_state,
-      D_predict_bias);
+  Matrix99 D_predict_state_i;
+  Matrix96 D_predict_bias_i;
+  NavState predictedState_j = predict(state_i, bias_i,
+      H1 || H2 ? &D_predict_state_i : 0, H5 ? &D_predict_bias_i : 0);
 
-  // Evaluate residual error, according to [3]
-  // Ri.transpose() is important here to preserve a model with *additive* Gaussian noise of correct covariance
-  const Vector3 fp = Ri.transpose()
-      * (pos_j - predictedState_j.pose().translation().vector());
+  Matrix9 D_error_state_j, D_error_predict;
+  Vector9 error = state_j.localCoordinates(predictedState_j,
+      H3 || H4 ? &D_error_state_j : 0, H1 || H2 || H5 ? &D_error_predict : 0);
 
-  // Ri.transpose() is important here to preserve a model with *additive* Gaussian noise of correct covariance
-  const Vector3 fv = Ri.transpose() * (vel_j - predictedState_j.velocity());
+  // Separate out derivatives in terms of 5 arguments
+  // Note that doing so requires special treatment of velocities, as when treated as
+  // separate variables the retract applied will not be the semi-direct product in NavState
+  // Instead, the velocities in nav are updated using a straight addition
+  // This is difference is accounted for by the R().transpose calls below
+  if (H1)
+    *H1 << D_error_predict * D_predict_state_i.leftCols<6>();
+  if (H2)
+    *H2 << D_error_predict * D_predict_state_i.rightCols<3>() * state_i.R().transpose();
+  if (H3)
+    *H3 << D_error_state_j.leftCols<6>();
+  if (H4)
+    *H4 << D_error_state_j.rightCols<3>() * state_j.R().transpose();
+  if (H5)
+    *H5 << D_error_predict * D_predict_bias_i;
 
-  // fR will be computed later.
-  // Note: it is the same as: fR = predictedState_j.pose.rotation().between(Rot_j)
-
-  // Coriolis term, NOTE inconsistent with AHRS, where coriolisHat is *after* integration
-  // TODO(frank): move derivatives to predict and do coriolis branching there
-  const Vector3 coriolis = PreintegratedRotation::integrateCoriolis(rot_i);
-  const Vector3 correctedOmega = NavState::dR(biasCorrected) - coriolis;
-
-  // Residual rotation error
-  Matrix3 D_cDeltaRij_cOmega;
-  const Rot3 correctedDeltaRij = Rot3::Expmap(correctedOmega,
-      H1 || H5 ? &D_cDeltaRij_cOmega : 0);
-  const Rot3 RiBetweenRj = rot_i.between(rot_j);
-  const Rot3 fRrot = correctedDeltaRij.between(RiBetweenRj);
-  Matrix3 D_fR_fRrot;
-  Rot3::Logmap(fRrot, H1 || H3 || H5 ? &D_fR_fRrot : 0);
-
-  const double dt = deltaTij_, dt2 = dt * dt;
-  Matrix3 RitOmegaCoriolisHat = Z_3x3;
-  if ((H1 || H2) && p().omegaCoriolis)
-    RitOmegaCoriolisHat = Ri.transpose() * skewSymmetric(*p().omegaCoriolis);
-
-  if (H1) {
-    const Matrix3 D_coriolis = -D_cDeltaRij_cOmega * skewSymmetric(coriolis);
-    Matrix3 dfPdPi = -I_3x3, dfVdPi = Z_3x3;
-    if (p().use2ndOrderCoriolis) {
-      // this is the same as: Ri.transpose() * p().omegaCoriolisHat * p().omegaCoriolisHat * Ri
-      const Matrix3 temp = RitOmegaCoriolisHat
-          * (-RitOmegaCoriolisHat.transpose());
-      dfPdPi += 0.5 * temp * dt2;
-      dfVdPi += temp * dt;
-    }
-    (*H1)
-        << D_fR_fRrot
-            * (-rot_j.between(rot_i).matrix()
-                - fRrot.inverse().matrix() * D_coriolis), // dfR/dRi
-    Z_3x3, // dfR/dPi
-    skewSymmetric(fp + NavState::dP(biasCorrected)), // dfP/dRi
-    dfPdPi, // dfP/dPi
-    skewSymmetric(fv + NavState::dV(biasCorrected)), // dfV/dRi
-    dfVdPi; // dfV/dPi
-  }
-  if (H2) {
-    (*H2) << Z_3x3, // dfR/dVi
-    -Ri.transpose() * dt + RitOmegaCoriolisHat * dt2, // dfP/dVi
-    -Ri.transpose() + 2 * RitOmegaCoriolisHat * dt; // dfV/dVi
-  }
-  if (H3) {
-    (*H3) << D_fR_fRrot, Z_3x3, // dfR/dPosej
-    Z_3x3, Ri.transpose() * rot_j.matrix(), // dfP/dPosej
-    Matrix::Zero(3, 6); // dfV/dPosej
-  }
-  if (H4) {
-    (*H4) << Z_3x3, // dfR/dVj
-    Z_3x3, // dfP/dVj
-    Ri.transpose(); // dfV/dVj
-  }
-  if (H5) {
-    const Matrix36 JbiasOmega = D_cDeltaRij_cOmega
-        * D_biasCorrected_bias.middleRows<3>(0);
-    (*H5) << -D_fR_fRrot * fRrot.inverse().matrix() * JbiasOmega, // dfR/dBias
-    -D_biasCorrected_bias.middleRows<3>(3), // dfP/dBias
-    -D_biasCorrected_bias.middleRows<3>(6); // dfV/dBias
-  }
-  // TODO(frank): Do everything via derivatives of function below
-  return computeError(state_i, state_j, predictedState_j);
+  return error;
 }
 
 //------------------------------------------------------------------------------
