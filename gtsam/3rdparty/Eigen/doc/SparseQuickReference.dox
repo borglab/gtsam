@@ -71,11 +71,10 @@ i.e either row major or column major. The default is column major. Most arithmet
 <td> Constant or Random Insertion</td>
 <td>
 \code
-sm1.setZero(); // Set the matrix with zero elements
-sm1.setConstant(val); //Replace all the nonzero values with val
+sm1.setZero();
 \endcode
 </td>
-<td> The matrix sm1 should have been created before ???</td>
+<td>Remove all non-zero coefficients</td>
 </tr>
 </table>
 

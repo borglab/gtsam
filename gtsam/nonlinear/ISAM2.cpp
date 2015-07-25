@@ -98,7 +98,7 @@ DoglegOptimizerImpl::TrustRegionAdaptationMode ISAM2DoglegParams::adaptationMode
 }
 
 /* ************************************************************************* */
-ISAM2Params::Factorization ISAM2Params::factorizationTranslator(const std::string& str) const {
+ISAM2Params::Factorization ISAM2Params::factorizationTranslator(const std::string& str) {
   std::string s = str;  boost::algorithm::to_upper(s);
   if (s == "QR") return ISAM2Params::QR;
   if (s == "CHOLESKY") return ISAM2Params::CHOLESKY;
@@ -108,7 +108,7 @@ ISAM2Params::Factorization ISAM2Params::factorizationTranslator(const std::strin
 }
 
 /* ************************************************************************* */
-std::string ISAM2Params::factorizationTranslator(const ISAM2Params::Factorization& value) const {
+std::string ISAM2Params::factorizationTranslator(const ISAM2Params::Factorization& value) {
   std::string s;
   switch (value) {
   case ISAM2Params::QR:         s = "QR"; break;
@@ -194,7 +194,7 @@ FastSet<size_t> ISAM2::getAffectedFactors(const FastList<Key>& keys) const {
 // (note that the remaining stuff is summarized in the cached factors)
 
 GaussianFactorGraph::shared_ptr
-ISAM2::relinearizeAffectedFactors(const FastList<Key>& affectedKeys, const FastSet<Key>& relinKeys) const
+ISAM2::relinearizeAffectedFactors(const FastList<Key>& affectedKeys, const KeySet& relinKeys) const
 {
   gttic(getAffectedFactors);
   FastSet<size_t> candidates = getAffectedFactors(affectedKeys);
@@ -204,7 +204,7 @@ ISAM2::relinearizeAffectedFactors(const FastList<Key>& affectedKeys, const FastS
 
   gttic(affectedKeysSet);
   // for fast lookup below
-  FastSet<Key> affectedKeysSet;
+  KeySet affectedKeysSet;
   affectedKeysSet.insert(affectedKeys.begin(), affectedKeys.end());
   gttoc(affectedKeysSet);
 
@@ -260,9 +260,9 @@ GaussianFactorGraph ISAM2::getCachedBoundaryFactors(Cliques& orphans) {
 }
 
 /* ************************************************************************* */
-boost::shared_ptr<FastSet<Key> > ISAM2::recalculate(const FastSet<Key>& markedKeys, const FastSet<Key>& relinKeys,
+boost::shared_ptr<KeySet > ISAM2::recalculate(const KeySet& markedKeys, const KeySet& relinKeys,
                                                     const vector<Key>& observedKeys,
-                                                    const FastSet<Key>& unusedIndices,
+                                                    const KeySet& unusedIndices,
                                                     const boost::optional<FastMap<Key,int> >& constrainKeys,
                                                     ISAM2Result& result)
 {
@@ -326,7 +326,7 @@ boost::shared_ptr<FastSet<Key> > ISAM2::recalculate(const FastSet<Key>& markedKe
     affectedKeys.insert(affectedKeys.end(), conditional->beginFrontals(), conditional->endFrontals());
   gttoc(affectedKeys);
 
-  boost::shared_ptr<FastSet<Key> > affectedKeysSet(new FastSet<Key>()); // Will return this result
+  boost::shared_ptr<KeySet > affectedKeysSet(new KeySet()); // Will return this result
 
   if(affectedKeys.size() >= theta_.size() * batchThreshold)
   {
@@ -341,7 +341,7 @@ boost::shared_ptr<FastSet<Key> > ISAM2::recalculate(const FastSet<Key>& markedKe
     Ordering order;
     if(constrainKeys)
     {
-      order = Ordering::colamdConstrained(variableIndex_, *constrainKeys);
+      order = Ordering::ColamdConstrained(variableIndex_, *constrainKeys);
     }
     else
     {
@@ -351,11 +351,11 @@ boost::shared_ptr<FastSet<Key> > ISAM2::recalculate(const FastSet<Key>& markedKe
         FastMap<Key, int> constraintGroups;
         BOOST_FOREACH(Key var, observedKeys)
           constraintGroups[var] = 1;
-        order = Ordering::colamdConstrained(variableIndex_, constraintGroups);
+        order = Ordering::ColamdConstrained(variableIndex_, constraintGroups);
       }
       else
       {
-        order = Ordering::colamd(variableIndex_);
+        order = Ordering::Colamd(variableIndex_);
       }
     }
     gttoc(ordering);
@@ -481,7 +481,7 @@ boost::shared_ptr<FastSet<Key> > ISAM2::recalculate(const FastSet<Key>& markedKe
 
     // Generate ordering
     gttic(Ordering);
-    Ordering ordering = Ordering::colamdConstrained(affectedFactorsVarIndex, constraintGroups);
+    Ordering ordering = Ordering::ColamdConstrained(affectedFactorsVarIndex, constraintGroups);
     gttoc(Ordering);
 
     ISAM2BayesTree::shared_ptr bayesTree = ISAM2JunctionTree(GaussianEliminationTree(
@@ -566,17 +566,17 @@ ISAM2Result ISAM2::update(
   variableIndex_.remove(removeFactorIndices.begin(), removeFactorIndices.end(), removeFactors);
 
   // Compute unused keys and indices
-  FastSet<Key> unusedKeys;
-  FastSet<Key> unusedIndices;
+  KeySet unusedKeys;
+  KeySet unusedIndices;
   {
     // Get keys from removed factors and new factors, and compute unused keys,
     // i.e., keys that are empty now and do not appear in the new factors.
-    FastSet<Key> removedAndEmpty;
+    KeySet removedAndEmpty;
     BOOST_FOREACH(Key key, removeFactors.keys()) {
       if(variableIndex_[key].empty())
         removedAndEmpty.insert(removedAndEmpty.end(), key);
     }
-    FastSet<Key> newFactorSymbKeys = newFactors.keys();
+    KeySet newFactorSymbKeys = newFactors.keys();
     std::set_difference(removedAndEmpty.begin(), removedAndEmpty.end(),
       newFactorSymbKeys.begin(), newFactorSymbKeys.end(), std::inserter(unusedKeys, unusedKeys.end()));
 
@@ -602,10 +602,10 @@ ISAM2Result ISAM2::update(
 
   gttic(gather_involved_keys);
   // 3. Mark linear update
-  FastSet<Key> markedKeys = newFactors.keys(); // Get keys from new factors
+  KeySet markedKeys = newFactors.keys(); // Get keys from new factors
   // Also mark keys involved in removed factors
   {
-    FastSet<Key> markedRemoveKeys = removeFactors.keys(); // Get keys involved in removed factors
+    KeySet markedRemoveKeys = removeFactors.keys(); // Get keys involved in removed factors
     markedKeys.insert(markedRemoveKeys.begin(), markedRemoveKeys.end()); // Add to the overall set of marked keys
   }
   // Also mark any provided extra re-eliminate keys
@@ -632,7 +632,7 @@ ISAM2Result ISAM2::update(
   gttoc(gather_involved_keys);
 
   // Check relinearization if we're at the nth step, or we are using a looser loop relin threshold
-  FastSet<Key> relinKeys;
+  KeySet relinKeys;
   if (relinearizeThisStep) {
     gttic(gather_relinearize_keys);
     // 4. Mark keys in \Delta above threshold \beta: J=\{\Delta_{j}\in\Delta|\Delta_{j}\geq\beta\}.
@@ -659,7 +659,7 @@ ISAM2Result ISAM2::update(
         result.detail->variableStatus[key].isRelinearized = true; } }
 
     // Add the variables being relinearized to the marked keys
-    FastSet<Key> markedRelinMask;
+    KeySet markedRelinMask;
     BOOST_FOREACH(const Key key, relinKeys)
       markedRelinMask.insert(key);
     markedKeys.insert(relinKeys.begin(), relinKeys.end());
@@ -674,7 +674,7 @@ ISAM2Result ISAM2::update(
 
       // Relin involved keys for detailed results
       if(params_.enableDetailedResults) {
-        FastSet<Key> involvedRelinKeys;
+        KeySet involvedRelinKeys;
         BOOST_FOREACH(const sharedClique& root, roots_)
           Impl::FindAll(root, involvedRelinKeys, markedRelinMask);
         BOOST_FOREACH(Key key, involvedRelinKeys) {
@@ -726,7 +726,7 @@ ISAM2Result ISAM2::update(
 
   gttic(recalculate);
   // 8. Redo top of Bayes tree
-  boost::shared_ptr<FastSet<Key> > replacedKeys;
+  boost::shared_ptr<KeySet > replacedKeys;
   if(!markedKeys.empty() || !observedKeys.empty())
     replacedKeys = recalculate(markedKeys, relinKeys, observedKeys, unusedIndices, constrainedKeys, result);
 
@@ -758,7 +758,7 @@ void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeysList,
                               boost::optional<std::vector<size_t>&> deletedFactorsIndices)
 {
   // Convert to ordered set
-  FastSet<Key> leafKeys(leafKeysList.begin(), leafKeysList.end());
+  KeySet leafKeys(leafKeysList.begin(), leafKeysList.end());
 
   // Keep track of marginal factors - map from clique to the marginal factors
   // that should be incorporated into it, passed up from it's children.
@@ -769,7 +769,7 @@ void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeysList,
   FastSet<size_t> factorIndicesToRemove;
 
   // Keep track of variables removed in subtrees
-  FastSet<Key> leafKeysRemoved;
+  KeySet leafKeysRemoved;
 
   // Remove each variable and its subtrees
   BOOST_FOREACH(Key j, leafKeys) {
@@ -881,7 +881,7 @@ void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeysList,
           graph.push_back(nonlinearFactors_[i]->linearize(theta_)); }
 
         // Reeliminate the linear graph to get the marginal and discard the conditional
-        const FastSet<Key> cliqueFrontals(clique->conditional()->beginFrontals(), clique->conditional()->endFrontals());
+        const KeySet cliqueFrontals(clique->conditional()->beginFrontals(), clique->conditional()->endFrontals());
         FastVector<Key> cliqueFrontalsToEliminate;
         std::set_intersection(cliqueFrontals.begin(), cliqueFrontals.end(), leafKeys.begin(), leafKeys.end(),
           std::back_inserter(cliqueFrontalsToEliminate));
@@ -957,7 +957,7 @@ void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeysList,
     deletedFactorsIndices->assign(factorIndicesToRemove.begin(), factorIndicesToRemove.end());
 
   // Remove the marginalized variables
-  Impl::RemoveVariables(FastSet<Key>(leafKeys.begin(), leafKeys.end()), roots_, theta_, variableIndex_, delta_, deltaNewton_, RgProd_,
+  Impl::RemoveVariables(KeySet(leafKeys.begin(), leafKeys.end()), roots_, theta_, variableIndex_, delta_, deltaNewton_, RgProd_,
     deltaReplacedMask_, nodes_, fixedVariables_);
 }
 

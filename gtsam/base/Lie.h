@@ -75,54 +75,89 @@ struct LieGroup {
     return derived().inverse();
   }
 
+  /// expmap as required by manifold concept
+  /// Applies exponential map to v and composes with *this
   Class expmap(const TangentVector& v) const {
     return compose(Class::Expmap(v));
   }
 
+  /// logmap as required by manifold concept
+  /// Applies logarithmic map to group element that takes *this to g
   TangentVector logmap(const Class& g) const {
     return Class::Logmap(between(g));
   }
 
+  /// expmap with optional derivatives
+  Class expmap(const TangentVector& v, //
+      ChartJacobian H1, ChartJacobian H2 = boost::none) const {
+    Jacobian D_g_v;
+    Class g = Class::Expmap(v,H2 ? &D_g_v : 0);
+    Class h = compose(g); // derivatives inlined below
+    if (H1) *H1 = g.inverse().AdjointMap();
+    if (H2) *H2 = D_g_v;
+    return h;
+  }
+
+  /// logmap with optional derivatives
+  TangentVector logmap(const Class& g, //
+      ChartJacobian H1, ChartJacobian H2 = boost::none) const {
+    Class h = between(g); // derivatives inlined below
+    Jacobian D_v_h;
+    TangentVector v = Class::Logmap(h, (H1 || H2) ? &D_v_h : 0);
+    if (H1) *H1 = - D_v_h * h.inverse().AdjointMap();
+    if (H2) *H2 = D_v_h;
+    return v;
+  }
+
+  /// Retract at origin: possible in Lie group because it has an identity
   static Class Retract(const TangentVector& v) {
     return Class::ChartAtOrigin::Retract(v);
   }
 
+  /// LocalCoordinates at origin: possible in Lie group because it has an identity
   static TangentVector LocalCoordinates(const Class& g) {
     return Class::ChartAtOrigin::Local(g);
   }
 
+  /// Retract at origin with optional derivative
   static Class Retract(const TangentVector& v, ChartJacobian H) {
     return Class::ChartAtOrigin::Retract(v,H);
   }
 
+  /// LocalCoordinates at origin with optional derivative
   static TangentVector LocalCoordinates(const Class& g, ChartJacobian H) {
     return Class::ChartAtOrigin::Local(g,H);
   }
 
+  /// retract as required by manifold concept: applies v at *this
   Class retract(const TangentVector& v) const {
     return compose(Class::ChartAtOrigin::Retract(v));
   }
 
+  /// localCoordinates as required by manifold concept: finds tangent vector between *this and g
   TangentVector localCoordinates(const Class& g) const {
     return Class::ChartAtOrigin::Local(between(g));
   }
 
+  /// retract with optional derivatives
   Class retract(const TangentVector& v, //
       ChartJacobian H1, ChartJacobian H2 = boost::none) const {
     Jacobian D_g_v;
-    Class g = Class::ChartAtOrigin::Retract(v,H2 ? &D_g_v : 0);
-    Class h = compose(g,H1,H2);
-    if (H2) *H2 = (*H2) * D_g_v;
+    Class g = Class::ChartAtOrigin::Retract(v, H2 ? &D_g_v : 0);
+    Class h = compose(g); // derivatives inlined below
+    if (H1) *H1 = g.inverse().AdjointMap();
+    if (H2) *H2 = D_g_v;
     return h;
   }
 
+  /// localCoordinates with optional derivatives
   TangentVector localCoordinates(const Class& g, //
       ChartJacobian H1, ChartJacobian H2 = boost::none) const {
-    Class h = between(g,H1,H2);
+    Class h = between(g); // derivatives inlined below
     Jacobian D_v_h;
     TangentVector v = Class::ChartAtOrigin::Local(h, (H1 || H2) ? &D_v_h : 0);
-    if (H1) *H1 = D_v_h * (*H1);
-    if (H2) *H2 = D_v_h * (*H2);
+    if (H1) *H1 = - D_v_h * h.inverse().AdjointMap();
+    if (H2) *H2 = D_v_h;
     return v;
   }
 
@@ -136,8 +171,10 @@ namespace internal {
 /// A helper class that implements the traits interface for GTSAM lie groups.
 /// To use this for your gtsam type, define:
 /// template<> struct traits<Class> : public internal::LieGroupTraits<Class> {};
+/// Assumes existence of: identity, dimension, localCoordinates, retract,
+/// and additionally Logmap, Expmap, compose, between, and inverse
 template<class Class>
-struct LieGroupTraits : Testable<Class> {
+struct LieGroupTraits {
   typedef lie_group_tag structure_category;
 
   /// @name Group
@@ -167,12 +204,10 @@ struct LieGroupTraits : Testable<Class> {
       ChartJacobian Horigin = boost::none, ChartJacobian Hv = boost::none) {
     return origin.retract(v, Horigin, Hv);
   }
-
   /// @}
 
   /// @name Lie Group
   /// @{
-
   static TangentVector Logmap(const Class& m, ChartJacobian Hm = boost::none) {
     return Class::Logmap(m, Hm);
   }
@@ -195,10 +230,11 @@ struct LieGroupTraits : Testable<Class> {
       ChartJacobian H = boost::none) {
     return m.inverse(H);
   }
-
   /// @}
-
 };
+
+/// Both LieGroupTraits and Testable
+template<class Class> struct LieGroup: LieGroupTraits<Class>, Testable<Class> {};
 
 } // \ namepsace internal
 
@@ -248,7 +284,7 @@ public:
     // log and exp map without Jacobians
     g = traits<T>::Expmap(v);
     v = traits<T>::Logmap(g);
-    // log and expnential map with Jacobians
+    // log and exponential map with Jacobians
     g = traits<T>::Expmap(v, Hg);
     v = traits<T>::Logmap(g, Hg);
   }

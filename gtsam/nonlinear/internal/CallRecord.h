@@ -20,18 +20,9 @@
 
 #pragma once
 
-#include <gtsam/base/VerticalBlockMatrix.h>
-#include <gtsam/base/FastVector.h>
-#include <gtsam/base/Matrix.h>
-
-#include <boost/mpl/transform.hpp>
+#include <gtsam/nonlinear/internal/JacobianMap.h>
 
 namespace gtsam {
-
-class JacobianMap;
-// forward declaration
-
-//-----------------------------------------------------------------------------
 namespace internal {
 
 /**
@@ -64,8 +55,6 @@ struct ConvertToVirtualFunctionSupportedMatrixType<false> {
   }
 };
 
-} // namespace internal
-
 /**
  * The CallRecord is an abstract base class for the any class that stores
  * the Jacobians of applying a function with respect to each of its arguments,
@@ -94,9 +83,8 @@ struct CallRecord {
   inline void reverseAD2(const Eigen::MatrixBase<Derived> & dFdT,
       JacobianMap& jacobians) const {
     _reverseAD3(
-        internal::ConvertToVirtualFunctionSupportedMatrixType<
-            (Derived::RowsAtCompileTime > 5)>::convert(dFdT),
-        jacobians);
+        ConvertToVirtualFunctionSupportedMatrixType<
+            (Derived::RowsAtCompileTime > 5)>::convert(dFdT), jacobians);
   }
 
   // This overload supports matrices with both rows and columns dynamically sized.
@@ -140,7 +128,6 @@ private:
  */
 const int CallRecordMaxVirtualStaticRows = 5;
 
-namespace internal {
 /**
  * The CallRecordImplementor implements the CallRecord interface for a Derived class by
  * delegating to its corresponding (templated) non-virtual methods.
@@ -193,5 +180,4 @@ private:
 };
 
 } // namespace internal
-
 } // gtsam

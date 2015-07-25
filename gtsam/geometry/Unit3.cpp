@@ -15,12 +15,13 @@
  * @author Can Erdogan
  * @author Frank Dellaert
  * @author Alex Trevor
+ * @author Zhaoyang Lv
  * @brief The Unit3 class - basically a point on a unit sphere
  */
 
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/geometry/Point2.h>
-#include <boost/random/mersenne_twister.hpp>
+#include <gtsam/config.h> // for GTSAM_USE_TBB
 
 #ifdef __clang__
 #  pragma clang diagnostic push
@@ -37,6 +38,7 @@
 
 #include <boost/random/variate_generator.hpp>
 #include <iostream>
+#include <limits>
 
 using namespace std;
 
@@ -61,12 +63,10 @@ Unit3 Unit3::Random(boost::mt19937 & rng) {
   boost::uniform_on_sphere<double> randomDirection(3);
   // This variate_generator object is required for versions of boost somewhere
   // around 1.46, instead of drawing directly using boost::uniform_on_sphere(rng).
-  boost::variate_generator<boost::mt19937&, boost::uniform_on_sphere<double> >
-      generator(rng, randomDirection);
+  boost::variate_generator<boost::mt19937&, boost::uniform_on_sphere<double> > generator(
+      rng, randomDirection);
   vector<double> d = generator();
-  Unit3 result;
-  result.p_ = Point3(d[0], d[1], d[2]);
-  return result;
+  return Unit3(d[0], d[1], d[2]);
 }
 
 #ifdef GTSAM_USE_TBB
@@ -80,30 +80,27 @@ const Matrix32& Unit3::basis() const {
 #endif
 
   // Return cached version if exists
-  if (B_)
-    return *B_;
+  if (B_) return *B_;
 
   // Get the axis of rotation with the minimum projected length of the point
-  Point3 axis;
+  Vector3 axis;
   double mx = fabs(p_.x()), my = fabs(p_.y()), mz = fabs(p_.z());
   if ((mx <= my) && (mx <= mz))
-    axis = Point3(1.0, 0.0, 0.0);
+    axis = Vector3(1.0, 0.0, 0.0);
   else if ((my <= mx) && (my <= mz))
-    axis = Point3(0.0, 1.0, 0.0);
+    axis = Vector3(0.0, 1.0, 0.0);
   else if ((mz <= mx) && (mz <= my))
-    axis = Point3(0.0, 0.0, 1.0);
+    axis = Vector3(0.0, 0.0, 1.0);
   else
     assert(false);
 
   // Create the two basis vectors
-  Point3 b1 = p_.cross(axis);
-  b1 = b1 / b1.norm();
-  Point3 b2 = p_.cross(b1);
-  b2 = b2 / b2.norm();
+  Vector3 b1 = p_.cross(axis).normalized();
+  Vector3 b2 = p_.cross(b1).normalized();
 
   // Create the basis matrix
   B_.reset(Matrix32());
-  (*B_) << b1.x(), b2.x(), b1.y(), b2.y(), b1.z(), b2.z();
+  (*B_) << b1, b2;
   return *B_;
 }
 
@@ -119,12 +116,11 @@ Matrix3 Unit3::skew() const {
 }
 
 /* ************************************************************************* */
-Vector Unit3::error(const Unit3& q, OptionalJacobian<2,2> H) const {
+Vector2 Unit3::error(const Unit3& q, OptionalJacobian<2,2> H) const {
   // 2D error is equal to B'*q, as B is 3x2 matrix and q is 3x1
-  Matrix23 Bt = basis().transpose();
-  Vector2 xi = Bt * q.p_.vector();
+  Vector2 xi = basis().transpose() * q.p_;
   if (H)
-    *H = Bt * q.basis();
+    *H = basis().transpose() * q.basis();
   return xi;
 }
 
@@ -140,47 +136,39 @@ double Unit3::distance(const Unit3& q, OptionalJacobian<1,2> H) const {
 
 /* ************************************************************************* */
 Unit3 Unit3::retract(const Vector2& v) const {
-
-  // Get the vector form of the point and the basis matrix
-  Vector3 p = p_.vector();
-  Matrix32 B = basis();
-
   // Compute the 3D xi_hat vector
-  Vector3 xi_hat = v(0) * B.col(0) + v(1) * B.col(1);
+  Vector3 xi_hat = basis() * v;
+  double theta = xi_hat.norm();
 
-  double xi_hat_norm = xi_hat.norm();
-
-  // Avoid nan
-  if (xi_hat_norm == 0.0) {
-    if (v.norm() == 0.0)
-      return Unit3(point3());
-    else
-      return Unit3(-point3());
+  // Treat case of very small v differently
+  if (theta < std::numeric_limits<double>::epsilon()) {
+    return Unit3(cos(theta) * p_ + xi_hat);
   }
 
-  Vector3 exp_p_xi_hat = cos(xi_hat_norm) * p
-      + sin(xi_hat_norm) * (xi_hat / xi_hat_norm);
+  Vector3 exp_p_xi_hat =
+      cos(theta) * p_ + xi_hat * (sin(theta) / theta);
   return Unit3(exp_p_xi_hat);
-
 }
 
 /* ************************************************************************* */
-Vector2 Unit3::localCoordinates(const Unit3& y) const {
-
-  Vector3 p = p_.vector(), q = y.p_.vector();
-  double dot = p.dot(q);
-
-  // Check for special cases
-  if (std::abs(dot - 1.0) < 1e-16)
-    return Vector2(0, 0);
-  else if (std::abs(dot + 1.0) < 1e-16)
-    return Vector2(M_PI, 0);
-  else {
+Vector2 Unit3::localCoordinates(const Unit3& other) const {
+  const double x = p_.dot(other.p_);
+  // Crucial quantity here is y = theta/sin(theta) with theta=acos(x)
+  // Now, y = acos(x) / sin(acos(x)) = acos(x)/sqrt(1-x^2)
+  // We treat the special case 1 and -1 below
+  const double x2 = x * x;
+  const double z = 1 - x2;
+  double y;
+  if (z < std::numeric_limits<double>::epsilon()) {
+    if (x > 0)  // first order expansion at x=1
+      y = 1.0 - (x - 1.0) / 3.0;
+    else  // cop out
+      return Vector2(M_PI, 0.0);
+  } else {
     // no special case
-    double theta = acos(dot);
-    Vector3 result_hat = (theta / sin(theta)) * (q - p * dot);
-    return basis().transpose() * result_hat;
+    y = acos(x) / sqrt(z);
   }
+  return basis().transpose() * y * (other.p_ - x * p_);
 }
 /* ************************************************************************* */
 

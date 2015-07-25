@@ -69,7 +69,7 @@ Mechanization_bRn2 Mechanization_bRn2::initialize(const Matrix& U,
 Mechanization_bRn2 Mechanization_bRn2::correct(const Vector3& dx) const {
   Vector3 rho = sub(dx, 0, 3);
 
-  Rot3 delta_nRn = Rot3::rodriguez(rho);
+  Rot3 delta_nRn = Rot3::Rodrigues(rho);
   Rot3 bRn = bRn_ * delta_nRn;
 
   Vector3 x_g = x_g_ + sub(dx, 3, 6);
@@ -104,7 +104,7 @@ Mechanization_bRn2 Mechanization_bRn2::integrate(const Vector3& u,
   Vector3 n_omega_bn = (nRb*b_omega_bn).vector();
 
   // integrate bRn using exponential map, assuming constant over dt
-  Rot3 delta_nRn = Rot3::rodriguez(n_omega_bn*dt);
+  Rot3 delta_nRn = Rot3::Rodrigues(n_omega_bn*dt);
   Rot3 bRn = bRn_.compose(delta_nRn);
 
   // implicit updating of biases (variables just do not change)

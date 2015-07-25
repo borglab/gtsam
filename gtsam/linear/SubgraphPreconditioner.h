@@ -17,12 +17,30 @@
 
 #pragma once
 
-#include <gtsam/global_includes.h>
 #include <gtsam/linear/Errors.h>
+#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/IterativeSolver.h>
 #include <gtsam/linear/Preconditioner.h>
 #include <gtsam/linear/VectorValues.h>
+#include <gtsam/base/FastMap.h>
+#include <gtsam/base/FastVector.h>
+#include <gtsam/base/types.h>
+#include <gtsam/base/Vector.h>
+#include <gtsam/dllexport.h>
+
+#include <boost/serialization/nvp.hpp>
 #include <boost/shared_ptr.hpp>
+
+#include <map>
+#include <utility>
+#include <vector>
+
+namespace boost {
+namespace serialization {
+class access;
+} /* namespace serialization */
+} /* namespace boost */
 
 namespace gtsam {
 
@@ -44,7 +62,7 @@ namespace gtsam {
   private:
     friend class boost::serialization::access;
     template<class Archive>
-    void serialize(Archive & ar, const unsigned int version) {
+    void serialize(Archive & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_NVP(index_);
       ar & BOOST_SERIALIZATION_NVP(weight_);
     }
@@ -70,7 +88,7 @@ namespace gtsam {
     Subgraph(const std::vector<size_t> &indices) ;
 
     inline const Edges& edges() const { return edges_; }
-    inline const size_t size() const { return edges_.size(); }
+    inline size_t size() const { return edges_.size(); }
     EdgeIndices edgeIndices() const;
 
     iterator begin() { return edges_.begin(); }
@@ -85,7 +103,7 @@ namespace gtsam {
   private:
     friend class boost::serialization::access;
     template<class Archive>
-    void serialize(Archive & ar, const unsigned int version) {
+    void serialize(Archive & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_NVP(edges_);
     }
   };

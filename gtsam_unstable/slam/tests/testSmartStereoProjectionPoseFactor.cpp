@@ -18,8 +18,8 @@
  *  @date   Sept 2013
  */
 
+// TODO #include <gtsam/slam/tests/smartFactorScenarios.h>
 #include <gtsam_unstable/slam/SmartStereoProjectionPoseFactor.h>
-
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/slam/PoseTranslationPrior.h>
 #include <gtsam/slam/ProjectionFactor.h>
@@ -31,8 +31,6 @@
 using namespace std;
 using namespace boost::assign;
 using namespace gtsam;
-
-static bool isDebugTest = false;
 
 // make a realistic calibration matrix
 static double fov = 60; // degrees
@@ -66,7 +64,6 @@ static Pose3 body_P_sensor1(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2),
     Point3(0.25, -0.10, 1.0));
 
 typedef SmartStereoProjectionPoseFactor<Cal3_S2Stereo> SmartFactor;
-typedef SmartStereoProjectionPoseFactor<Cal3Bundler> SmartFactorBundler;
 
 vector<StereoPoint2> stereo_projectToMultipleCameras(const StereoCamera& cam1,
     const StereoCamera& cam2, const StereoCamera& cam3, Point3 landmark) {
@@ -83,9 +80,10 @@ vector<StereoPoint2> stereo_projectToMultipleCameras(const StereoCamera& cam1,
   return measurements_cam;
 }
 
+LevenbergMarquardtParams params;
+
 /* ************************************************************************* */
 TEST( SmartStereoProjectionPoseFactor, Constructor) {
-  fprintf(stderr, "Test 1 Complete");
   SmartFactor::shared_ptr factor1(new SmartFactor());
 }
 
@@ -107,15 +105,6 @@ TEST( SmartStereoProjectionPoseFactor, Constructor4) {
 }
 
 /* ************************************************************************* */
-TEST( SmartStereoProjectionPoseFactor, ConstructorWithTransform) {
-  bool manageDegeneracy = true;
-  bool enableEPI = false;
-  SmartFactor factor1(rankTol, linThreshold, manageDegeneracy, enableEPI,
-      body_P_sensor1);
-  factor1.add(measurement1, poseKey1, model, K);
-}
-
-/* ************************************************************************* */
 TEST( SmartStereoProjectionPoseFactor, Equals ) {
   SmartFactor::shared_ptr factor1(new SmartFactor());
   factor1->add(measurement1, poseKey1, model, K);
@@ -128,8 +117,6 @@ TEST( SmartStereoProjectionPoseFactor, Equals ) {
 
 /* *************************************************************************/
 TEST_UNSAFE( SmartStereoProjectionPoseFactor, noiseless ) {
-  // cout << " ************************ SmartStereoProjectionPoseFactor: noisy ****************************" << endl;
-
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
   Pose3 level_pose = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2),
       Point3(0, 0, 1));
@@ -169,8 +156,6 @@ TEST_UNSAFE( SmartStereoProjectionPoseFactor, noiseless ) {
 
 /* *************************************************************************/
 TEST( SmartStereoProjectionPoseFactor, noisy ) {
-  // cout << " ************************ SmartStereoProjectionPoseFactor: noisy ****************************" << endl;
-
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
   Pose3 level_pose = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2),
       Point3(0, 0, 1));
@@ -226,10 +211,6 @@ TEST( SmartStereoProjectionPoseFactor, noisy ) {
 
 /* *************************************************************************/
 TEST( SmartStereoProjectionPoseFactor, 3poses_smart_projection_factor ) {
-  cout
-      << " ************************ SmartStereoProjectionPoseFactor: 3 cams + 3 landmarks **********************"
-      << endl;
-
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
   Pose3 pose1 = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
   StereoCamera cam1(pose1, K2);
@@ -286,31 +267,31 @@ TEST( SmartStereoProjectionPoseFactor, 3poses_smart_projection_factor ) {
   values.insert(x2, pose2);
   // initialize third pose with some noise, we expect it to move back to original pose3
   values.insert(x3, pose3 * noise_pose);
-  if (isDebugTest)
-    values.at<Pose3>(x3).print("Smart: Pose3 before optimization: ");
+  EXPECT(
+      assert_equal(
+          Pose3(
+              Rot3(0, -0.0314107591, 0.99950656, -0.99950656, -0.0313952598,
+                  -0.000986635786, 0.0314107591, -0.999013364, -0.0313952598),
+              Point3(0.1, -0.1, 1.9)), values.at<Pose3>(x3)));
 
-  LevenbergMarquardtParams params;
-  if (isDebugTest)
-    params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
-  if (isDebugTest)
-    params.verbosity = NonlinearOptimizerParams::ERROR;
+  EXPECT_DOUBLES_EQUAL(1888864, graph.error(values), 1);
 
   Values result;
-  gttic_ (SmartStereoProjectionPoseFactor);
+  gttic_(SmartStereoProjectionPoseFactor);
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
   gttoc_(SmartStereoProjectionPoseFactor);
   tictoc_finishedIteration_();
 
-//  GaussianFactorGraph::shared_ptr GFG = graph.linearize(values);
-//  VectorValues delta = GFG->optimize();
+  EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-6);
+
+  GaussianFactorGraph::shared_ptr GFG = graph.linearize(result);
+  VectorValues delta = GFG->optimize();
+  VectorValues expected = VectorValues::Zero(delta);
+  EXPECT(assert_equal(expected, delta, 1e-6));
 
   // result.print("results of 3 camera, 3 landmark optimization \n");
-  if (isDebugTest)
-    result.at<Pose3>(x3).print("Smart: Pose3 after optimization: ");
   EXPECT(assert_equal(pose3, result.at<Pose3>(x3)));
-  if (isDebugTest)
-    tictoc_print_();
 }
 
 /* *************************************************************************/
@@ -345,15 +326,15 @@ TEST( SmartStereoProjectionPoseFactor, jacobianSVD ) {
       cam2, cam3, landmark3);
 
   SmartFactor::shared_ptr smartFactor1(
-      new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD));
+      new SmartFactor(1, -1, false, false, SmartFactor::JACOBIAN_SVD));
   smartFactor1->add(measurements_cam1, views, model, K);
 
   SmartFactor::shared_ptr smartFactor2(
-      new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD));
+      new SmartFactor(1, -1, false, false, SmartFactor::JACOBIAN_SVD));
   smartFactor2->add(measurements_cam2, views, model, K);
 
   SmartFactor::shared_ptr smartFactor3(
-      new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD));
+      new SmartFactor(1, -1, false, false, SmartFactor::JACOBIAN_SVD));
   smartFactor3->add(measurements_cam3, views, model, K);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
@@ -373,7 +354,6 @@ TEST( SmartStereoProjectionPoseFactor, jacobianSVD ) {
   values.insert(x2, pose2);
   values.insert(x3, pose3 * noise_pose);
 
-  LevenbergMarquardtParams params;
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
@@ -414,17 +394,17 @@ TEST( SmartStereoProjectionPoseFactor, landmarkDistance ) {
       cam2, cam3, landmark3);
 
   SmartFactor::shared_ptr smartFactor1(
-      new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD,
+      new SmartFactor(1, -1, false, false, SmartFactor::JACOBIAN_SVD,
           excludeLandmarksFutherThanDist));
   smartFactor1->add(measurements_cam1, views, model, K);
 
   SmartFactor::shared_ptr smartFactor2(
-      new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD,
+      new SmartFactor(1, -1, false, false, SmartFactor::JACOBIAN_SVD,
           excludeLandmarksFutherThanDist));
   smartFactor2->add(measurements_cam2, views, model, K);
 
   SmartFactor::shared_ptr smartFactor3(
-      new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD,
+      new SmartFactor(1, -1, false, false, SmartFactor::JACOBIAN_SVD,
           excludeLandmarksFutherThanDist));
   smartFactor3->add(measurements_cam3, views, model, K);
 
@@ -446,7 +426,6 @@ TEST( SmartStereoProjectionPoseFactor, landmarkDistance ) {
   values.insert(x3, pose3 * noise_pose);
 
   // All factors are disabled and pose should remain where it is
-  LevenbergMarquardtParams params;
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
@@ -493,22 +472,22 @@ TEST( SmartStereoProjectionPoseFactor, dynamicOutlierRejection ) {
   measurements_cam4.at(0) = measurements_cam4.at(0) + StereoPoint2(10, 10, 1); // add outlier
 
   SmartFactor::shared_ptr smartFactor1(
-      new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD,
+      new SmartFactor(1, -1, false, false, SmartFactor::JACOBIAN_SVD,
           excludeLandmarksFutherThanDist, dynamicOutlierRejectionThreshold));
   smartFactor1->add(measurements_cam1, views, model, K);
 
   SmartFactor::shared_ptr smartFactor2(
-      new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD,
+      new SmartFactor(1, -1, false, false, SmartFactor::JACOBIAN_SVD,
           excludeLandmarksFutherThanDist, dynamicOutlierRejectionThreshold));
   smartFactor2->add(measurements_cam2, views, model, K);
 
   SmartFactor::shared_ptr smartFactor3(
-      new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD,
+      new SmartFactor(1, -1, false, false, SmartFactor::JACOBIAN_SVD,
           excludeLandmarksFutherThanDist, dynamicOutlierRejectionThreshold));
   smartFactor3->add(measurements_cam3, views, model, K);
 
   SmartFactor::shared_ptr smartFactor4(
-      new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_SVD,
+      new SmartFactor(1, -1, false, false, SmartFactor::JACOBIAN_SVD,
           excludeLandmarksFutherThanDist, dynamicOutlierRejectionThreshold));
   smartFactor4->add(measurements_cam4, views, model, K);
 
@@ -530,7 +509,6 @@ TEST( SmartStereoProjectionPoseFactor, dynamicOutlierRejection ) {
   values.insert(x3, pose3);
 
   // All factors are disabled and pose should remain where it is
-  LevenbergMarquardtParams params;
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, params);
   result = optimizer.optimize();
@@ -567,13 +545,13 @@ TEST( SmartStereoProjectionPoseFactor, dynamicOutlierRejection ) {
 //  stereo_projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
 //  stereo_projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
 //
-//  SmartFactor::shared_ptr smartFactor1(new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_Q));
+//  SmartFactor::shared_ptr smartFactor1(new SmartFactor(1, -1, false, false, JACOBIAN_Q));
 //  smartFactor1->add(measurements_cam1, views, model, K);
 //
-//  SmartFactor::shared_ptr smartFactor2(new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_Q));
+//  SmartFactor::shared_ptr smartFactor2(new SmartFactor(1, -1, false, false, JACOBIAN_Q));
 //  smartFactor2->add(measurements_cam2, views, model, K);
 //
-//  SmartFactor::shared_ptr smartFactor3(new SmartFactor(1, -1, false, false, boost::none, JACOBIAN_Q));
+//  SmartFactor::shared_ptr smartFactor3(new SmartFactor(1, -1, false, false, JACOBIAN_Q));
 //  smartFactor3->add(measurements_cam3, views, model, K);
 //
 //  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
@@ -592,8 +570,7 @@ TEST( SmartStereoProjectionPoseFactor, dynamicOutlierRejection ) {
 //  values.insert(x2, pose2);
 //  values.insert(x3, pose3*noise_pose);
 //
-//  LevenbergMarquardtParams params;
-//  Values result;
+////  Values result;
 //  LevenbergMarquardtOptimizer optimizer(graph, values, params);
 //  result = optimizer.optimize();
 //  EXPECT(assert_equal(pose3,result.at<Pose3>(x3)));
@@ -601,7 +578,6 @@ TEST( SmartStereoProjectionPoseFactor, dynamicOutlierRejection ) {
 //
 ///* *************************************************************************/
 //TEST( SmartStereoProjectionPoseFactor, 3poses_projection_factor ){
-//  //  cout << " ************************ Normal ProjectionFactor: 3 cams + 3 landmarks **********************" << endl;
 //
 //  vector<Key> views;
 //  views.push_back(x1);
@@ -653,15 +629,10 @@ TEST( SmartStereoProjectionPoseFactor, dynamicOutlierRejection ) {
 //  values.insert(L(1), landmark1);
 //  values.insert(L(2), landmark2);
 //  values.insert(L(3), landmark3);
-//  if(isDebugTest)  values.at<Pose3>(x3).print("Pose3 before optimization: ");
 //
-//  LevenbergMarquardtParams params;
-//  if(isDebugTest)  params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
-//  if(isDebugTest)  params.verbosity = NonlinearOptimizerParams::ERROR;
 //  LevenbergMarquardtOptimizer optimizer(graph, values, params);
 //  Values result = optimizer.optimize();
 //
-//  if(isDebugTest)  result.at<Pose3>(x3).print("Pose3 after optimization: ");
 //  EXPECT(assert_equal(pose3,result.at<Pose3>(x3)));
 //}
 //
@@ -723,8 +694,6 @@ TEST( SmartStereoProjectionPoseFactor, CheckHessian) {
   Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
   values.insert(x3, pose3 * noise_pose);
-  if (isDebugTest)
-    values.at<Pose3>(x3).print("Smart: Pose3 before optimization: ");
 
   // TODO: next line throws Cheirality exception on Mac
   boost::shared_ptr<GaussianFactor> hessianFactor1 = smartFactor1->linearize(
@@ -749,7 +718,6 @@ TEST( SmartStereoProjectionPoseFactor, CheckHessian) {
       + hessianFactor3->augmentedInformation();
 
   // Check Information vector
-  // cout << AugInformationMatrix.size() << endl;
   Vector InfoVector = AugInformationMatrix.block(0, 18, 18, 1); // 18x18 Hessian + information vector
 
   // Check Hessian
@@ -758,7 +726,6 @@ TEST( SmartStereoProjectionPoseFactor, CheckHessian) {
 //
 ///* *************************************************************************/
 //TEST( SmartStereoProjectionPoseFactor, 3poses_2land_rotation_only_smart_projection_factor ){
-//  // cout << " ************************ SmartStereoProjectionPoseFactor: 3 cams + 2 landmarks: Rotation Only**********************" << endl;
 //
 //  vector<Key> views;
 //  views.push_back(x1);
@@ -811,11 +778,6 @@ TEST( SmartStereoProjectionPoseFactor, CheckHessian) {
 //  values.insert(x2, pose2*noise_pose);
 //  // initialize third pose with some noise, we expect it to move back to original pose3
 //  values.insert(x3, pose3*noise_pose*noise_pose);
-//  if(isDebugTest) values.at<Pose3>(x3).print("Smart: Pose3 before optimization: ");
-//
-//  LevenbergMarquardtParams params;
-//  if(isDebugTest) params.verbosityLM = LevenbergMarquardtParams::TRYDELTA;
-//  if(isDebugTest) params.verbosity = NonlinearOptimizerParams::ERROR;
 //
 //  Values result;
 //  gttic_(SmartStereoProjectionPoseFactor);
@@ -825,15 +787,11 @@ TEST( SmartStereoProjectionPoseFactor, CheckHessian) {
 //  tictoc_finishedIteration_();
 //
 //  // result.print("results of 3 camera, 3 landmark optimization \n");
-//  if(isDebugTest) result.at<Pose3>(x3).print("Smart: Pose3 after optimization: ");
-//  cout << "TEST COMMENTED: rotation only version of smart factors has been deprecated " << endl;
 //  // EXPECT(assert_equal(pose3,result.at<Pose3>(x3)));
-//  if(isDebugTest) tictoc_print_();
 //}
 //
 ///* *************************************************************************/
 //TEST( SmartStereoProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ){
-//  // cout << " ************************ SmartStereoProjectionPoseFactor: 3 cams + 3 landmarks: Rotation Only**********************" << endl;
 //
 //  vector<Key> views;
 //  views.push_back(x1);
@@ -894,11 +852,6 @@ TEST( SmartStereoProjectionPoseFactor, CheckHessian) {
 //  values.insert(x2, pose2);
 //  // initialize third pose with some noise, we expect it to move back to original pose3
 //  values.insert(x3, pose3*noise_pose);
-//  if(isDebugTest) values.at<Pose3>(x3).print("Smart: Pose3 before optimization: ");
-//
-//  LevenbergMarquardtParams params;
-//  if(isDebugTest) params.verbosityLM = LevenbergMarquardtParams::TRYDELTA;
-//  if(isDebugTest) params.verbosity = NonlinearOptimizerParams::ERROR;
 //
 //  Values result;
 //  gttic_(SmartStereoProjectionPoseFactor);
@@ -908,15 +861,11 @@ TEST( SmartStereoProjectionPoseFactor, CheckHessian) {
 //  tictoc_finishedIteration_();
 //
 //  // result.print("results of 3 camera, 3 landmark optimization \n");
-//  if(isDebugTest) result.at<Pose3>(x3).print("Smart: Pose3 after optimization: ");
-//  cout << "TEST COMMENTED: rotation only version of smart factors has been deprecated " << endl;
 //  // EXPECT(assert_equal(pose3,result.at<Pose3>(x3)));
-//  if(isDebugTest) tictoc_print_();
 //}
 //
 ///* *************************************************************************/
 //TEST( SmartStereoProjectionPoseFactor, Hessian ){
-//  // cout << " ************************ SmartStereoProjectionPoseFactor: Hessian **********************" << endl;
 //
 //  vector<Key> views;
 //  views.push_back(x1);
@@ -949,7 +898,6 @@ TEST( SmartStereoProjectionPoseFactor, CheckHessian) {
 //  values.insert(x2, pose2);
 //
 //  boost::shared_ptr<GaussianFactor> hessianFactor = smartFactor1->linearize(values);
-//  if(isDebugTest) hessianFactor->print("Hessian factor \n");
 //
 //  // compute triangulation from linearization point
 //  // compute reprojection errors (sum squared)
@@ -960,8 +908,6 @@ TEST( SmartStereoProjectionPoseFactor, CheckHessian) {
 
 /* *************************************************************************/
 TEST( SmartStereoProjectionPoseFactor, HessianWithRotation ) {
-  // cout << " ************************ SmartStereoProjectionPoseFactor: rotated Hessian **********************" << endl;
-
   vector<Key> views;
   views.push_back(x1);
   views.push_back(x2);
@@ -1026,13 +972,11 @@ TEST( SmartStereoProjectionPoseFactor, HessianWithRotation ) {
   // Hessian is invariant to rotations and translations in the nondegenerate case
   EXPECT(
       assert_equal(hessianFactor->information(),
-          hessianFactorRotTran->information(), 1e-7));
+          hessianFactorRotTran->information(), 1e-6));
 }
 
 /* *************************************************************************/
 TEST( SmartStereoProjectionPoseFactor, HessianWithRotationDegenerate ) {
-  // cout << " ************************ SmartStereoProjectionPoseFactor: rotated Hessian (degenerate) **********************" << endl;
-
   vector<Key> views;
   views.push_back(x1);
   views.push_back(x2);
@@ -1063,8 +1007,6 @@ TEST( SmartStereoProjectionPoseFactor, HessianWithRotationDegenerate ) {
 
   boost::shared_ptr<GaussianFactor> hessianFactor = smartFactor->linearize(
       values);
-  if (isDebugTest)
-    hessianFactor->print("Hessian factor \n");
 
   Pose3 poseDrift = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 0));
 
@@ -1075,8 +1017,6 @@ TEST( SmartStereoProjectionPoseFactor, HessianWithRotationDegenerate ) {
 
   boost::shared_ptr<GaussianFactor> hessianFactorRot = smartFactor->linearize(
       rotValues);
-  if (isDebugTest)
-    hessianFactorRot->print("Hessian factor \n");
 
   // Hessian is invariant to rotations in the nondegenerate case
   EXPECT(

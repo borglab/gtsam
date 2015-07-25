@@ -46,10 +46,10 @@ static const Point3 point2(-0.08, 0.08, 0.0);
 static const Point3 point3( 0.08, 0.08, 0.0);
 static const Point3 point4( 0.08,-0.08, 0.0);
 
-static const Point3 point1_inf(-0.16,-0.16, -1.0);
-static const Point3 point2_inf(-0.16, 0.16, -1.0);
-static const Point3 point3_inf( 0.16, 0.16, -1.0);
-static const Point3 point4_inf( 0.16,-0.16, -1.0);
+static const Unit3 point1_inf(-0.16,-0.16, -1.0);
+static const Unit3 point2_inf(-0.16, 0.16, -1.0);
+static const Unit3 point3_inf( 0.16, 0.16, -1.0);
+static const Unit3 point4_inf( 0.16,-0.16, -1.0);
 
 /* ************************************************************************* */
 TEST( PinholePose, constructor)
@@ -144,11 +144,11 @@ TEST( PinholePose, Dproject)
 {
   Matrix Dpose, Dpoint;
   Point2 result = camera.project2(point1, Dpose, Dpoint);
-  Matrix numerical_pose  = numericalDerivative31(project3, pose, point1, K);
-  Matrix Hexpected2 = numericalDerivative32(project3, pose, point1, K);
+  Matrix expectedDcamera  = numericalDerivative31(project3, pose, point1, K);
+  Matrix expectedDpoint = numericalDerivative32(project3, pose, point1, K);
   EXPECT(assert_equal(Point2(-100,  100), result));
-  EXPECT(assert_equal(numerical_pose,  Dpose,  1e-7));
-  EXPECT(assert_equal(Hexpected2, Dpoint, 1e-7));
+  EXPECT(assert_equal(expectedDcamera,  Dpose,  1e-7));
+  EXPECT(assert_equal(expectedDpoint, Dpoint, 1e-7));
 }
 
 /* ************************************************************************* */
@@ -161,11 +161,11 @@ TEST( PinholePose, Dproject2)
 {
   Matrix Dcamera, Dpoint;
   Point2 result = camera.project2(point1, Dcamera, Dpoint);
-  Matrix Hexpected1 = numericalDerivative21(project4, camera, point1);
-  Matrix Hexpected2  = numericalDerivative22(project4, camera, point1);
+  Matrix expectedDcamera = numericalDerivative21(project4, camera, point1);
+  Matrix expectedDpoint  = numericalDerivative22(project4, camera, point1);
   EXPECT(assert_equal(result, Point2(-100,  100) ));
-  EXPECT(assert_equal(Hexpected1, Dcamera, 1e-7));
-  EXPECT(assert_equal(Hexpected2,  Dpoint,  1e-7));
+  EXPECT(assert_equal(expectedDcamera, Dcamera, 1e-7));
+  EXPECT(assert_equal(expectedDpoint,  Dpoint,  1e-7));
 }
 
 /* ************************************************************************* */
@@ -176,10 +176,29 @@ TEST( CalibratedCamera, Dproject3)
   static const Camera camera(pose1);
   Matrix Dpose, Dpoint;
   camera.project2(point1, Dpose, Dpoint);
-  Matrix numerical_pose  = numericalDerivative21(project4, camera, point1);
+  Matrix expectedDcamera  = numericalDerivative21(project4, camera, point1);
   Matrix numerical_point = numericalDerivative22(project4, camera, point1);
-  CHECK(assert_equal(numerical_pose,  Dpose, 1e-7));
+  CHECK(assert_equal(expectedDcamera,  Dpose, 1e-7));
   CHECK(assert_equal(numerical_point, Dpoint, 1e-7));
+}
+
+/* ************************************************************************* */
+static Point2 project(const Pose3& pose, const Unit3& pointAtInfinity,
+    const Cal3_S2::shared_ptr& cal) {
+  return Camera(pose, cal).project(pointAtInfinity);
+}
+
+/* ************************************************************************* */
+TEST( PinholePose, DprojectAtInfinity2)
+{
+  Unit3 pointAtInfinity(0,0,1000);
+  Matrix Dpose, Dpoint;
+  Point2 result = camera.project2(pointAtInfinity, Dpose, Dpoint);
+  Matrix expectedDcamera  = numericalDerivative31(project, pose, pointAtInfinity, K);
+  Matrix expectedDpoint = numericalDerivative32(project, pose, pointAtInfinity, K);
+  EXPECT(assert_equal(Point2(0,0), result));
+  EXPECT(assert_equal(expectedDcamera,  Dpose,  1e-7));
+  EXPECT(assert_equal(expectedDpoint, Dpoint, 1e-7));
 }
 
 /* ************************************************************************* */
@@ -191,12 +210,12 @@ static double range0(const Camera& camera, const Point3& point) {
 TEST( PinholePose, range0) {
   Matrix D1; Matrix D2;
   double result = camera.range(point1, D1, D2);
-  Matrix Hexpected1 = numericalDerivative21(range0, camera, point1);
-  Matrix Hexpected2 = numericalDerivative22(range0, camera, point1);
+  Matrix expectedDcamera = numericalDerivative21(range0, camera, point1);
+  Matrix expectedDpoint = numericalDerivative22(range0, camera, point1);
   EXPECT_DOUBLES_EQUAL(point1.distance(camera.pose().translation()), result,
       1e-9);
-  EXPECT(assert_equal(Hexpected1, D1, 1e-7));
-  EXPECT(assert_equal(Hexpected2, D2, 1e-7));
+  EXPECT(assert_equal(expectedDcamera, D1, 1e-7));
+  EXPECT(assert_equal(expectedDpoint, D2, 1e-7));
 }
 
 /* ************************************************************************* */
@@ -208,11 +227,11 @@ static double range1(const Camera& camera, const Pose3& pose) {
 TEST( PinholePose, range1) {
   Matrix D1; Matrix D2;
   double result = camera.range(pose1, D1, D2);
-  Matrix Hexpected1 = numericalDerivative21(range1, camera, pose1);
-  Matrix Hexpected2 = numericalDerivative22(range1, camera, pose1);
+  Matrix expectedDcamera = numericalDerivative21(range1, camera, pose1);
+  Matrix expectedDpoint = numericalDerivative22(range1, camera, pose1);
   EXPECT_DOUBLES_EQUAL(1, result, 1e-9);
-  EXPECT(assert_equal(Hexpected1, D1, 1e-7));
-  EXPECT(assert_equal(Hexpected2, D2, 1e-7));
+  EXPECT(assert_equal(expectedDcamera, D1, 1e-7));
+  EXPECT(assert_equal(expectedDpoint, D2, 1e-7));
 }
 
 /* ************************************************************************* */
@@ -228,11 +247,11 @@ static double range2(const Camera& camera, const Camera2& camera2) {
 TEST( PinholePose, range2) {
   Matrix D1; Matrix D2;
   double result = camera.range<Cal3Bundler>(camera2, D1, D2);
-  Matrix Hexpected1 = numericalDerivative21(range2, camera, camera2);
-  Matrix Hexpected2 = numericalDerivative22(range2, camera, camera2);
+  Matrix expectedDcamera = numericalDerivative21(range2, camera, camera2);
+  Matrix expectedDpoint = numericalDerivative22(range2, camera, camera2);
   EXPECT_DOUBLES_EQUAL(1, result, 1e-9);
-  EXPECT(assert_equal(Hexpected1, D1, 1e-7));
-  EXPECT(assert_equal(Hexpected2, D2, 1e-7));
+  EXPECT(assert_equal(expectedDcamera, D1, 1e-7));
+  EXPECT(assert_equal(expectedDpoint, D2, 1e-7));
 }
 
 /* ************************************************************************* */
@@ -245,11 +264,11 @@ static double range3(const Camera& camera, const CalibratedCamera& camera3) {
 TEST( PinholePose, range3) {
   Matrix D1; Matrix D2;
   double result = camera.range(camera3, D1, D2);
-  Matrix Hexpected1 = numericalDerivative21(range3, camera, camera3);
-  Matrix Hexpected2 = numericalDerivative22(range3, camera, camera3);
+  Matrix expectedDcamera = numericalDerivative21(range3, camera, camera3);
+  Matrix expectedDpoint = numericalDerivative22(range3, camera, camera3);
   EXPECT_DOUBLES_EQUAL(1, result, 1e-9);
-  EXPECT(assert_equal(Hexpected1, D1, 1e-7));
-  EXPECT(assert_equal(Hexpected2, D2, 1e-7));
+  EXPECT(assert_equal(expectedDcamera, D1, 1e-7));
+  EXPECT(assert_equal(expectedDpoint, D2, 1e-7));
 }
 
 /* ************************************************************************* */

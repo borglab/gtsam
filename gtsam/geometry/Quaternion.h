@@ -20,6 +20,7 @@
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/concepts.h>
 #include <gtsam/geometry/SO3.h> // Logmap/Expmap derivatives
+#include <limits>
 
 #define QUATERNION_TYPE Eigen::Quaternion<_Scalar,_Options>
 
@@ -73,14 +74,22 @@ struct traits<QUATERNION_TYPE> {
     return g.inverse();
   }
 
-  /// Exponential map, simply be converting omega to axis/angle representation
+  /// Exponential map, using the inlined code from Eigen's conversion from axis/angle
   static Q Expmap(const Eigen::Ref<const TangentVector>& omega,
-      ChartJacobian H = boost::none) {
-    if(H) *H = SO3::ExpmapDerivative(omega);
-    if (omega.isZero()) return Q::Identity();
-    else {
-      _Scalar angle = omega.norm();
-      return Q(Eigen::AngleAxis<_Scalar>(angle, omega / angle));
+                  ChartJacobian H = boost::none) {
+    using std::cos;
+    using std::sin;
+    if (H) *H = SO3::ExpmapDerivative(omega.template cast<double>());
+    _Scalar theta2 = omega.dot(omega);
+    if (theta2 > std::numeric_limits<_Scalar>::epsilon()) {
+      _Scalar theta = std::sqrt(theta2);
+      _Scalar ha = _Scalar(0.5) * theta;
+      Vector3 vec = (sin(ha) / theta) * omega;
+      return Q(cos(ha), vec.x(), vec.y(), vec.z());
+    } else {
+      // first order approximation sin(theta/2)/theta = 0.5
+      Vector3 vec = _Scalar(0.5) * omega;
+      return Q(1.0, vec.x(), vec.y(), vec.z());
     }
   }
 
@@ -93,9 +102,9 @@ struct traits<QUATERNION_TYPE> {
     static const double twoPi = 2.0 * M_PI, NearlyOne = 1.0 - 1e-10,
     NearlyNegativeOne = -1.0 + 1e-10;
 
-    Vector3 omega;
+    TangentVector omega;
 
-    const double qw = q.w();
+    const _Scalar qw = q.w();
     // See Quaternion-Logmap.nb in doc for Taylor expansions
     if (qw > NearlyOne) {
       // Taylor expansion of (angle / s) at 1
@@ -107,7 +116,7 @@ struct traits<QUATERNION_TYPE> {
       omega = (-8. / 3. - 2. / 3. * qw) * q.vec();
     } else {
       // Normal, away from zero case
-      double angle = 2 * acos(qw), s = sqrt(1 - qw * qw);
+      _Scalar angle = 2 * acos(qw), s = sqrt(1 - qw * qw);
       // Important:  convert to [-pi,pi] to keep error continuous
       if (angle > M_PI)
       angle -= twoPi;
@@ -116,7 +125,7 @@ struct traits<QUATERNION_TYPE> {
       omega = (angle / s) * q.vec();
     }
 
-    if(H) *H = SO3::LogmapDerivative(omega);
+    if(H) *H = SO3::LogmapDerivative(omega.template cast<double>());
     return omega;
   }
 

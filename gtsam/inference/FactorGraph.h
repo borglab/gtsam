@@ -332,7 +332,7 @@ namespace gtsam {
     size_t nrFactors() const;
 
     /** Potentially very slow function to return all keys involved */
-    FastSet<Key> keys() const;
+    KeySet keys() const;
 
     /** MATLAB interface utility: Checks whether a factor index idx exists in the graph and is a live pointer */
     inline bool exists(size_t idx) const { return idx < size() && at(idx); }
@@ -342,7 +342,7 @@ namespace gtsam {
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version) {
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_NVP(factors_);
     }
 
