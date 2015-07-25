@@ -126,9 +126,10 @@ void PreintegrationBase::updatePreintegratedJacobians(const Vector3& correctedAc
   update_delRdelBiasOmega(D_Rincr_integratedOmega, incrR, deltaT);
 }
 
-void PreintegrationBase::correctMeasurementsByBiasAndSensorPose(
-    const Vector3& measuredAcc, const Vector3& measuredOmega, Vector3& correctedAcc,
-    Vector3& correctedOmega, boost::optional<const Pose3&> body_P_sensor) {
+std::pair<Vector3, Vector3> PreintegrationBase::correctMeasurementsByBiasAndSensorPose(
+    const Vector3& measuredAcc, const Vector3& measuredOmega,
+    boost::optional<const Pose3&> body_P_sensor) const {
+  Vector3 correctedAcc, correctedOmega;
   correctedAcc = biasHat_.correctAccelerometer(measuredAcc);
   correctedOmega = biasHat_.correctGyroscope(measuredOmega);
 
@@ -136,12 +137,14 @@ void PreintegrationBase::correctMeasurementsByBiasAndSensorPose(
   // (originally in the IMU frame) into the body frame
   if (body_P_sensor) {
     Matrix3 body_R_sensor = body_P_sensor->rotation().matrix();
-    correctedOmega = body_R_sensor * correctedOmega;  // rotation rate vector in the body frame
+    correctedOmega = body_R_sensor * correctedOmega; // rotation rate vector in the body frame
     Matrix3 body_omega_body__cross = skewSymmetric(correctedOmega);
     correctedAcc = body_R_sensor * correctedAcc
-        - body_omega_body__cross * body_omega_body__cross * body_P_sensor->translation().vector();
+        - body_omega_body__cross * body_omega_body__cross
+            * body_P_sensor->translation().vector();
     // linear acceleration vector in the body frame
   }
+  return std::make_pair(correctedAcc, correctedOmega);
 }
 
 /// Predict state at time j

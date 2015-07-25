@@ -133,24 +133,10 @@ class PreintegrationBase : public PreintegratedRotation {
                                     const Matrix3& D_Rincr_integratedOmega, const Rot3& incrR,
                                     double deltaT);
 
-  boost::tuple<Vector3, Vector3>
+  std::pair<Vector3, Vector3>
   correctMeasurementsByBiasAndSensorPose(const Vector3& measuredAcc,
-      const Vector3& measuredOmega, boost::optional<const Pose3&> body_P_sensor) {
-    Vector3 correctedAcc, correctedOmega;
-    correctedAcc = biasHat_.correctAccelerometer(measuredAcc);
-    correctedOmega = biasHat_.correctGyroscope(measuredOmega);
-
-    // Then compensate for sensor-body displacement: we express the quantities
-    // (originally in the IMU frame) into the body frame
-    if(body_P_sensor){
-      Matrix3 body_R_sensor = body_P_sensor->rotation().matrix();
-      correctedOmega = body_R_sensor * correctedOmega; // rotation rate vector in the body frame
-      Matrix3 body_omega_body__cross = skewSymmetric(correctedOmega);
-      correctedAcc = body_R_sensor * correctedAcc - body_omega_body__cross * body_omega_body__cross * body_P_sensor->translation().vector();
-      // linear acceleration vector in the body frame
-    }
-    return boost::make_tuple(correctedAcc, correctedOmega);
-  }
+      const Vector3& measuredOmega,
+      boost::optional<const Pose3&> body_P_sensor) const;
 
   /// Predict state at time j
   PoseVelocityBias predict(
