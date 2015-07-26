@@ -54,8 +54,7 @@ void PreintegratedImuMeasurements::integrateMeasurement(
     OptionalJacobian<9, 9> F_test, OptionalJacobian<9, 9> G_test) {
 
   Vector3 correctedAcc, correctedOmega;
-  correctMeasurementsByBiasAndSensorPose(measuredAcc, measuredOmega,
-      &correctedAcc, &correctedOmega);
+  boost::tie(correctedAcc, correctedOmega) = correctMeasurementsByBiasAndSensorPose(measuredAcc, measuredOmega, body_P_sensor);
 
   // rotation increment computed from the current rotation rate measurement
   const Vector3 integratedOmega = correctedOmega * deltaT;

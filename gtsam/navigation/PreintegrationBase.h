@@ -177,11 +177,11 @@ public:
   void updatePreintegratedJacobians(const Vector3& correctedAcc,
       const Matrix3& D_Rincr_integratedOmega, const Rot3& incrR, double deltaT);
 
-  void correctMeasurementsByBiasAndSensorPose(const Vector3& measuredAcc,
-      const Vector3& measuredOmega, Vector3* correctedAcc,
-      Vector3* correctedOmega);
+  std::pair<Vector3, Vector3>
+  correctMeasurementsByBiasAndSensorPose(const Vector3& measuredAcc,
+      const Vector3& measuredOmega) const;
 
-  /// Given the estimate of the bias, return a NavState tangent vector
+    /// Given the estimate of the bias, return a NavState tangent vector
   /// summarizing the preintegrated IMU measurements so far
   Vector9 biasCorrectedDelta(const imuBias::ConstantBias& bias_i,
       OptionalJacobian<9, 6> H = boost::none) const;

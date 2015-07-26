@@ -959,6 +959,141 @@ TEST(ImuFactor, PredictArbitrary) {
 }
 
 /* ************************************************************************* */
+TEST(ImuFactor, bodyPSensorNoBias) {
+  imuBias::ConstantBias bias(Vector3(0, 0, 0), Vector3(0, 0.1, 0)); // Biases (acc, rot)
+
+  // Measurements
+  Vector3 n_gravity(0, 0, -9.81); // z-up nav frame
+  Vector3 omegaCoriolis(0, 0, 0);
+  // Sensor frame is z-down
+  // Gyroscope measurement is the angular velocity of sensor w.r.t nav frame in sensor frame
+  Vector3 s_omegaMeas_ns(0, 0.1, M_PI / 10);
+  // Acc measurement is acceleration of sensor in the sensor frame, when stationary,
+  // table exerts an equal and opposite force w.r.t gravity
+  Vector3 s_accMeas(0, 0, -9.81);
+  double dt = 0.001;
+
+  // Rotate sensor (z-down) to body (same as navigation) i.e. z-up
+  Pose3 body_P_sensor(Rot3::ypr(0, 0, M_PI), Point3(0, 0, 0));
+
+  ImuFactor::PreintegratedMeasurements pim(bias, Z_3x3, Z_3x3, Z_3x3, true);
+
+  for (int i = 0; i < 1000; ++i)
+    pim.integrateMeasurement(s_accMeas, s_omegaMeas_ns, dt, body_P_sensor);
+
+  // Create factor
+  ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pim, n_gravity, omegaCoriolis);
+
+  // Predict
+  Pose3 x1;
+  Vector3 v1(0, 0, 0);
+  PoseVelocityBias poseVelocity = pim.predict(x1, v1, bias, n_gravity,
+      omegaCoriolis);
+
+  Pose3 expectedPose(Rot3().ypr(-M_PI / 10, 0, 0), Point3(0, 0, 0));
+  EXPECT(assert_equal(expectedPose, poseVelocity.pose));
+
+  Vector3 expectedVelocity(0, 0, 0);
+  EXPECT(assert_equal(Vector(expectedVelocity), Vector(poseVelocity.velocity)));
+}
+
+/* ************************************************************************* */
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/nonlinear/Marginals.h>
+
+TEST(ImuFactor, bodyPSensorWithBias) {
+  using noiseModel::Diagonal;
+  typedef imuBias::ConstantBias Bias;
+
+  int numFactors = 80;
+  Vector6 noiseBetweenBiasSigma;
+  noiseBetweenBiasSigma << Vector3(2.0e-5, 2.0e-5, 2.0e-5), Vector3(3.0e-6,
+      3.0e-6, 3.0e-6);
+  SharedDiagonal biasNoiseModel = Diagonal::Sigmas(noiseBetweenBiasSigma);
+
+  // Measurements
+  Vector3 n_gravity(0, 0, -9.81);
+  Vector3 omegaCoriolis(0, 0, 0);
+
+  // Sensor frame is z-down
+  // Gyroscope measurement is the angular velocity of sensor w.r.t nav frame in sensor frame
+  Vector3 measuredOmega(0, 0.01, 0);
+  // Acc measurement is acceleration of sensor in the sensor frame, when stationary,
+  // table exerts an equal and opposite force w.r.t gravity
+  Vector3 measuredAcc(0, 0, -9.81);
+
+  Pose3 body_P_sensor(Rot3::ypr(0, 0, M_PI), Point3());
+
+  Matrix3 accCov = 1e-7 * I_3x3;
+  Matrix3 gyroCov = 1e-8 * I_3x3;
+  Matrix3 integrationCov = 1e-9 * I_3x3;
+  double deltaT = 0.005;
+
+  //   Specify noise values on priors
+  Vector6 priorNoisePoseSigmas(
+      (Vector(6) << 0.001, 0.001, 0.001, 0.01, 0.01, 0.01).finished());
+  Vector3 priorNoiseVelSigmas((Vector(3) << 0.1, 0.1, 0.1).finished());
+  Vector6 priorNoiseBiasSigmas(
+      (Vector(6) << 0.1, 0.1, 0.1, 0.5e-1, 0.5e-1, 0.5e-1).finished());
+  SharedDiagonal priorNoisePose = Diagonal::Sigmas(priorNoisePoseSigmas);
+  SharedDiagonal priorNoiseVel = Diagonal::Sigmas(priorNoiseVelSigmas);
+  SharedDiagonal priorNoiseBias = Diagonal::Sigmas(priorNoiseBiasSigmas);
+  Vector3 zeroVel(0, 0, 0);
+
+  // Create a factor graph with priors on initial pose, vlocity and bias
+  NonlinearFactorGraph graph;
+  Values values;
+
+  PriorFactor<Pose3> priorPose(X(0), Pose3(), priorNoisePose);
+  graph.add(priorPose);
+  values.insert(X(0), Pose3());
+
+  PriorFactor<Vector3> priorVel(V(0), zeroVel, priorNoiseVel);
+  graph.add(priorVel);
+  values.insert(V(0), zeroVel);
+
+  // The key to this test is that we specify the bias, in the sensor frame, as known a priori
+  // We also create factors below that encode our assumption that this bias is constant over time
+  // In theory, after optimization, we should recover that same bias estimate
+  Bias priorBias(Vector3(0, 0, 0), Vector3(0, 0.01, 0)); // Biases (acc, rot)
+  PriorFactor<Bias> priorBiasFactor(B(0), priorBias, priorNoiseBias);
+  graph.add(priorBiasFactor);
+  values.insert(B(0), priorBias);
+
+  // Now add IMU factors and bias noise models
+  Bias zeroBias(Vector3(0, 0, 0), Vector3(0, 0, 0));
+  for (int i = 1; i < numFactors; i++) {
+    ImuFactor::PreintegratedMeasurements pim =
+        ImuFactor::PreintegratedMeasurements(zeroBias, accCov, gyroCov,
+            integrationCov, true);
+    for (int j = 0; j < 200; ++j)
+      pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT,
+          body_P_sensor);
+
+    // Create factors
+    graph.add(
+        ImuFactor(X(i - 1), V(i - 1), X(i), V(i), B(i - 1), pim, n_gravity,
+            omegaCoriolis));
+    graph.add(BetweenFactor<Bias>(B(i - 1), B(i), zeroBias, biasNoiseModel));
+
+    values.insert(X(i), Pose3());
+    values.insert(V(i), zeroVel);
+    values.insert(B(i), priorBias);
+  }
+
+  // Finally, optimize, and get bias at last time step
+  Values results = LevenbergMarquardtOptimizer(graph, values).optimize();
+  Bias biasActual = results.at<Bias>(B(numFactors - 1));
+
+  // And compare it with expected value (our prior)
+  Bias biasExpected(Vector3(0, 0, 0), Vector3(0, 0.01, 0));
+  EXPECT(assert_equal(biasExpected, biasActual, 1e-3));
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

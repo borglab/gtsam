@@ -59,8 +59,7 @@ void PreintegratedCombinedMeasurements::integrateMeasurement(
   // (i.e., we have to update jacobians and covariances before updating preintegrated measurements).
 
   Vector3 correctedAcc, correctedOmega;
-  correctMeasurementsByBiasAndSensorPose(measuredAcc, measuredOmega,
-      &correctedAcc, &correctedOmega);
+  boost::tie(correctedAcc, correctedOmega) = correctMeasurementsByBiasAndSensorPose(measuredAcc, measuredOmega, body_P_sensor);
 
   const Vector3 integratedOmega = correctedOmega * deltaT; // rotation vector describing rotation increment computed from the current rotation rate measurement
   Matrix3 D_Rincr_integratedOmega; // Right jacobian computed at theta_incr
