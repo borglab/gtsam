@@ -129,22 +129,27 @@ void PreintegrationBase::updatePreintegratedJacobians(const Vector3& correctedAc
 std::pair<Vector3, Vector3> PreintegrationBase::correctMeasurementsByBiasAndSensorPose(
     const Vector3& measuredAcc, const Vector3& measuredOmega,
     boost::optional<const Pose3&> body_P_sensor) const {
-  Vector3 correctedAcc, correctedOmega;
-  correctedAcc = biasHat_.correctAccelerometer(measuredAcc);
-  correctedOmega = biasHat_.correctGyroscope(measuredOmega);
+  // Correct for bias in the sensor frame
+  Vector3 s_correctedAcc, s_correctedOmega;
+  s_correctedAcc = biasHat_.correctAccelerometer(measuredAcc);
+  s_correctedOmega = biasHat_.correctGyroscope(measuredOmega);
 
-  // Then compensate for sensor-body displacement: we express the quantities
+  // Compensate for sensor-body displacement if needed: we express the quantities
   // (originally in the IMU frame) into the body frame
+  // Equations below assume the "body" frame is the CG
   if (body_P_sensor) {
-    Matrix3 body_R_sensor = body_P_sensor->rotation().matrix();
-    correctedOmega = body_R_sensor * correctedOmega; // rotation rate vector in the body frame
-    Matrix3 body_omega_body__cross = skewSymmetric(correctedOmega);
-    correctedAcc = body_R_sensor * correctedAcc
-        - body_omega_body__cross * body_omega_body__cross
-            * body_P_sensor->translation().vector();
-    // linear acceleration vector in the body frame
-  }
-  return std::make_pair(correctedAcc, correctedOmega);
+    Matrix3 bRs = body_P_sensor->rotation().matrix();
+    Vector3 b_correctedOmega = bRs * s_correctedOmega; // rotation rate vector in the body frame
+    Matrix3 body_omega_body__cross = skewSymmetric(b_correctedOmega);
+    Vector3 b_arm = body_P_sensor->translation().vector();
+    Vector3 b_velocity_bs = b_correctedOmega.cross(b_arm); // magnitude: omega * arm
+    // Subtract out the the centripetal acceleration from the measured one
+    // to get linear acceleration vector in the body frame:
+    Vector3 b_correctedAcc = bRs * s_correctedAcc
+        - b_correctedOmega.cross(b_velocity_bs);
+    return std::make_pair(b_correctedAcc, b_correctedOmega);
+  } else
+    return std::make_pair(correctedAcc, s_correctedOmega);
 }
 
 /// Predict state at time j
