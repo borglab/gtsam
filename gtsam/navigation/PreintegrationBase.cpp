@@ -103,8 +103,7 @@ void PreintegrationBase::updatePreintegratedJacobians(
 }
 
 std::pair<Vector3, Vector3> PreintegrationBase::correctMeasurementsByBiasAndSensorPose(
-    const Vector3& measuredAcc, const Vector3& measuredOmega,
-    boost::optional<const Pose3&> body_P_sensor) const {
+    const Vector3& measuredAcc, const Vector3& measuredOmega) const {
   // Correct for bias in the sensor frame
   Vector3 s_correctedAcc, s_correctedOmega;
   s_correctedAcc = biasHat_.correctAccelerometer(measuredAcc);
@@ -113,11 +112,10 @@ std::pair<Vector3, Vector3> PreintegrationBase::correctMeasurementsByBiasAndSens
   // Compensate for sensor-body displacement if needed: we express the quantities
   // (originally in the IMU frame) into the body frame
   // Equations below assume the "body" frame is the CG
-  if (body_P_sensor) {
-    Matrix3 bRs = body_P_sensor->rotation().matrix();
+  if (p().body_P_sensor) {
+    Matrix3 bRs = p().body_P_sensor->rotation().matrix();
+    Vector3 b_arm = p().body_P_sensor->translation().vector();
     Vector3 b_correctedOmega = bRs * s_correctedOmega; // rotation rate vector in the body frame
-    Matrix3 body_omega_body__cross = skewSymmetric(b_correctedOmega);
-    Vector3 b_arm = body_P_sensor->translation().vector();
     Vector3 b_velocity_bs = b_correctedOmega.cross(b_arm); // magnitude: omega * arm
     // Subtract out the the centripetal acceleration from the measured one
     // to get linear acceleration vector in the body frame:
@@ -125,7 +123,7 @@ std::pair<Vector3, Vector3> PreintegrationBase::correctMeasurementsByBiasAndSens
         - b_correctedOmega.cross(b_velocity_bs);
     return std::make_pair(b_correctedAcc, b_correctedOmega);
   } else
-    return std::make_pair(correctedAcc, s_correctedOmega);
+    return std::make_pair(s_correctedAcc, s_correctedOmega);
 }
 
 //------------------------------------------------------------------------------

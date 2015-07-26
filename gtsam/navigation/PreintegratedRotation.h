@@ -60,14 +60,14 @@ class PreintegratedRotation {
   Matrix3 delRdelBiasOmega_;  ///< Jacobian of preintegrated rotation w.r.t. angular rate bias
 
   /// Parameters
-  boost::shared_ptr<const Params> p_;
+  boost::shared_ptr<Params> p_;
 
   /// Default constructor for serialization
   PreintegratedRotation() {}
 
  public:
   /// Default constructor, resets integration to zero
-  explicit PreintegratedRotation(const boost::shared_ptr<const Params>& p) : p_(p) {
+  explicit PreintegratedRotation(const boost::shared_ptr<Params>& p) : p_(p) {
     resetIntegration();
   }
 

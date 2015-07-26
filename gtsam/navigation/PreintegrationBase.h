@@ -122,7 +122,7 @@ public:
    *  @param bias Current estimate of acceleration and rotation rate biases
    *  @param p    Parameters, typically fixed in a single application
    */
-  PreintegrationBase(const boost::shared_ptr<const Params>& p,
+  PreintegrationBase(const boost::shared_ptr<Params>& p,
       const imuBias::ConstantBias& biasHat) :
       PreintegratedRotation(p), biasHat_(biasHat) {
     resetIntegration();
@@ -132,7 +132,7 @@ public:
   void resetIntegration();
 
   const Params& p() const {
-    return *boost::static_pointer_cast<const Params>(p_);
+    return *boost::static_pointer_cast<Params>(p_);
   }
 
   /// getters

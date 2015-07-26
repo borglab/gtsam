@@ -54,7 +54,8 @@ void PreintegratedImuMeasurements::integrateMeasurement(
     OptionalJacobian<9, 9> F_test, OptionalJacobian<9, 9> G_test) {
 
   Vector3 correctedAcc, correctedOmega;
-  boost::tie(correctedAcc, correctedOmega) = correctMeasurementsByBiasAndSensorPose(measuredAcc, measuredOmega, body_P_sensor);
+  boost::tie(correctedAcc, correctedOmega) =
+      correctMeasurementsByBiasAndSensorPose(measuredAcc, measuredOmega);
 
   // rotation increment computed from the current rotation rate measurement
   const Vector3 integratedOmega = correctedOmega * deltaT;
@@ -121,6 +122,14 @@ PreintegratedImuMeasurements::PreintegratedImuMeasurements(
   p->integrationCovariance = integrationErrorCovariance;
   p_ = p;
   resetIntegration();
+}
+
+//------------------------------------------------------------------------------
+void PreintegratedImuMeasurements::integrateMeasurement(
+    const Vector3& measuredAcc, const Vector3& measuredOmega, double deltaT,
+    const Pose3& body_P_sensor) {
+  p_->body_P_sensor = body_P_sensor;
+  integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 }
 
 //------------------------------------------------------------------------------

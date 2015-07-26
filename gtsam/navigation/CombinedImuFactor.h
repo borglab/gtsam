@@ -115,13 +115,13 @@ class PreintegratedCombinedMeasurements : public PreintegrationBase {
    *  Default constructor, initializes the class with no measurements
    *  @param bias Current estimate of acceleration and rotation rate biases
    */
-  PreintegratedCombinedMeasurements(const boost::shared_ptr<const Params>& p,
+  PreintegratedCombinedMeasurements(const boost::shared_ptr<Params>& p,
                                     const imuBias::ConstantBias& biasHat)
       : PreintegrationBase(p, biasHat) {
     preintMeasCov_.setZero();
   }
 
-  const Params& p() const { return *boost::static_pointer_cast<const Params>(p_);}
+  Params& p() const { return *boost::static_pointer_cast<Params>(p_);}
 
   /// print
   void print(const std::string& s = "Preintegrated Measurements:") const;

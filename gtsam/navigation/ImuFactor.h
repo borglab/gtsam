@@ -76,9 +76,9 @@ public:
    *  @param bias Current estimate of acceleration and rotation rate biases
    *  @param p    Parameters, typically fixed in a single application
    */
-  PreintegratedImuMeasurements(const boost::shared_ptr<const Params>& p,
-                            const imuBias::ConstantBias& biasHat) :
-      PreintegrationBase(p,biasHat) {
+  PreintegratedImuMeasurements(const boost::shared_ptr<Params>& p,
+      const imuBias::ConstantBias& biasHat) :
+      PreintegrationBase(p, biasHat) {
     preintMeasCov_.setZero();
   }
 
@@ -114,6 +114,11 @@ public:
       const Matrix3& measuredOmegaCovariance,
       const Matrix3& integrationErrorCovariance,
       bool use2ndOrderIntegration = true);
+
+  /// @deprecated version of integrateMeasurement with body_P_sensor
+  /// Use parameters instead
+  void integrateMeasurement(const Vector3& measuredAcc,
+      const Vector3& measuredOmega, double deltaT, const Pose3& body_P_sensor);
 
 private:
 

@@ -49,8 +49,9 @@ class GTSAM_EXPORT PreintegratedAhrsMeasurements : public PreintegratedRotation 
    *  Default constructor, initialize with no measurements
    *  @param bias Current estimate of acceleration and rotation rate biases
    */
-  PreintegratedAhrsMeasurements(const boost::shared_ptr<const Params>& p, const Vector3& biasHat)
-      : PreintegratedRotation(p), biasHat_(biasHat) {
+  PreintegratedAhrsMeasurements(const boost::shared_ptr<Params>& p,
+      const Vector3& biasHat) :
+      PreintegratedRotation(p), biasHat_(biasHat) {
     resetIntegration();
   }
 
