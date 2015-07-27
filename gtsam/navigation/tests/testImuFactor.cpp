@@ -826,26 +826,43 @@ TEST(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
   PreintegratedImuMeasurements pim(
       imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0)),
       kMeasuredAccCovariance, kMeasuredOmegaCovariance,
-      kIntegrationErrorCovariance);
+      kIntegrationErrorCovariance, true);
 
-  pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+  pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT, body_P_sensor);
 
   Matrix expected(9,9);
   expected <<
-      0.0001, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,//
-      0.0, 0.0001,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,//
-      0.0,    0.0, 0.0001,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,//
-      0.0,    0.0,    0.0,   0.01,    0.0,    0.0,    0.0,    0.0,    0.0,//
-      0.0,    0.0,    0.0,    0.0,   0.01,    0.0,    0.0,    0.0,    0.0,//
-      0.0,    0.0,    0.0,    0.0,    0.0,   0.01,    0.0,    0.0,    0.0,//
-      0.0,    0.0,    0.0,    0.0,    0.0,    0.0,   0.0290687976,    0.0,    0.0,//
-      0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,   0.0290687976,    0.0,//
-      0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,   0.03;
-  EXPECT(assert_equal(expected, pim.preintMeasCov(), 1e-7));
+      0.0026, 0.0,    0.0,    0.005,    0.0,    0.0,    0.0,    0.0,    0.0,//
+      0.0, 0.0026,    0.0,    0.0,    0.005,    0.0,    0.0,    0.0,    0.0,//
+      0.0,    0.0, 0.0026,    0.0,    0.0,    0.005,    0.0,    0.0,    0.0,//
+      0.005,    0.0,    0.0,   0.01,    0.0,    0.0,    0.0,    0.0,    0.0,//
+      0.0,    0.005,    0.0,    0.0,   0.01,    0.0,    0.0,    0.0,    0.0,//
+      0.0,    0.0,    0.005,    0.0,    0.0,   0.01,    0.0,    0.0,    0.0,//
+      0.0,    0.0,    0.0,    0.0,    0.0,    0.0,   0.0290780477,    0.0,    9.23468723e-05,//
+      0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,   0.0290688208,    4.62505461e-06,//
+      0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    9.23468723e-05,   4.62505461e-06,   0.0299907267;
+  EXPECT(assert_equal(expected, pim.preintMeasCov(), 1e-6));
 
   // Create factor
   ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pim, kGravityAlongNavZDown,
       kNonZeroOmegaCoriolis);
+
+  // Predict
+  Pose3 actual_x2;
+  Vector3 actual_v2;
+  ImuFactor::Predict(x1, v1, actual_x2, actual_v2, bias, pim,
+      kGravityAlongNavZDown, kZeroOmegaCoriolis);
+
+  // Regression test with
+  Rot3 expectedR( //
+      0.456795409,   -0.888128414,   0.0506544554,   //
+      0.889548908,     0.45563417,   -0.0331699173,  //
+     0.00637924528,  0.0602114814,    0.998165258);
+  Point3 expectedT(5.30373101, 0.768972495, -49.9942188);
+  Vector3 expected_v2(0.107462014, -0.46205501, 0.0115624037);
+  Pose3 expected_x2(expectedR, expectedT);
+  EXPECT(assert_equal(expected_x2, actual_x2, 1e-7));
+  EXPECT(assert_equal(Vector(expected_v2), actual_v2, 1e-7));
 
   Values values;
   values.insert(X(1), x1);
