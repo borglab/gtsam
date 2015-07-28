@@ -18,6 +18,7 @@
 
 #include <gtsam/geometry/triangulation.h>
 #include <gtsam/geometry/SimpleCamera.h>
+#include <gtsam/geometry/StereoCamera.h>
 #include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <CppUnitLite/TestHarness.h>
@@ -51,6 +52,30 @@ TEST( triangulation, TriangulationFactor ) {
   SharedNoiseModel model;
   typedef TriangulationFactor<SimpleCamera> Factor;
   Factor factor(camera1, z1, model, pointKey);
+
+  // Use the factor to calculate the Jacobians
+  Matrix HActual;
+  factor.evaluateError(landmark, HActual);
+
+  Matrix HExpected = numericalDerivative11<Vector,Point3>(
+      boost::bind(&Factor::evaluateError, &factor, _1, boost::none), landmark);
+
+  // Verify the Jacobians are correct
+  CHECK(assert_equal(HExpected, HActual, 1e-3));
+}
+
+//******************************************************************************
+TEST( triangulation, TriangulationFactorStereo ) {
+  // Create the factor with a measurement that is 3 pixels off in x
+  Key pointKey(1);
+  SharedNoiseModel model;
+  Cal3_S2Stereo::shared_ptr stereoCal(new Cal3_S2Stereo(1500, 1200, 0, 640, 480, 0.5));
+  StereoCamera camera2(pose1, stereoCal);
+
+  StereoPoint2 z2 = camera2.project(landmark);
+
+  typedef TriangulationFactor<StereoCamera> Factor;
+  Factor factor(camera2, z2, model, pointKey);
 
   // Use the factor to calculate the Jacobians
   Matrix HActual;
