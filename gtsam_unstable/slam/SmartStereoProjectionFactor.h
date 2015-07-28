@@ -285,6 +285,10 @@ public:
       if(cheirality_ok == false) {
         result_ = TriangulationResult::BehindCamera();
       }
+
+      pw_avg = triangulateNonlinear(cameras, measured_, pw_avg);
+
+
       result_ = TriangulationResult(pw_avg);
 
     }
@@ -537,6 +541,7 @@ public:
 //
 //      return Base::totalReprojectionError(cameras, backprojected);
     } else {
+      std::cout << "Degenerate factor" << std::endl;
       // if we don't want to manage the exceptions we discard the factor
       return 0.0;
     }
