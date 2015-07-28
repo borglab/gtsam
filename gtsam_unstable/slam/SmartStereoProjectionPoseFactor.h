@@ -38,12 +38,11 @@ namespace gtsam {
  * The calibration is known here. The factor only constraints poses (variable dimension is 6)
  * @addtogroup SLAM
  */
-template<class CALIBRATION>
 class SmartStereoProjectionPoseFactor: public SmartStereoProjectionFactor {
 
 protected:
 
-  std::vector<boost::shared_ptr<CALIBRATION> > K_all_; ///< shared pointer to calibration object (one for each camera)
+  std::vector<boost::shared_ptr<Cal3_S2Stereo> > K_all_; ///< shared pointer to calibration object (one for each camera)
 
 public:
 
@@ -53,7 +52,7 @@ public:
   typedef SmartStereoProjectionFactor Base;
 
   /// shorthand for this class
-  typedef SmartStereoProjectionPoseFactor<CALIBRATION> This;
+  typedef SmartStereoProjectionPoseFactor This;
 
   /// shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<This> shared_ptr;
@@ -83,7 +82,7 @@ public:
    */
   void add(const StereoPoint2 measured_i, const Key poseKey_i,
       const SharedNoiseModel noise_i,
-      const boost::shared_ptr<CALIBRATION> K_i) {
+      const boost::shared_ptr<Cal3_S2Stereo> K_i) {
     Base::add(measured_i, poseKey_i, noise_i);
     K_all_.push_back(K_i);
   }
@@ -97,7 +96,7 @@ public:
    */
   void add(std::vector<StereoPoint2> measurements, std::vector<Key> poseKeys,
       std::vector<SharedNoiseModel> noises,
-      std::vector<boost::shared_ptr<CALIBRATION> > Ks) {
+      std::vector<boost::shared_ptr<Cal3_S2Stereo> > Ks) {
     Base::add(measurements, poseKeys, noises);
     for (size_t i = 0; i < measurements.size(); i++) {
       K_all_.push_back(Ks.at(i));
@@ -112,7 +111,7 @@ public:
    * @param K the (known) camera calibration (same for all measurements)
    */
   void add(std::vector<StereoPoint2> measurements, std::vector<Key> poseKeys,
-      const SharedNoiseModel noise, const boost::shared_ptr<CALIBRATION> K) {
+      const SharedNoiseModel noise, const boost::shared_ptr<Cal3_S2Stereo> K) {
     for (size_t i = 0; i < measurements.size(); i++) {
       Base::add(measurements.at(i), poseKeys.at(i), noise);
       K_all_.push_back(K);
@@ -127,14 +126,15 @@ public:
   void print(const std::string& s = "", const KeyFormatter& keyFormatter =
       DefaultKeyFormatter) const {
     std::cout << s << "SmartStereoProjectionPoseFactor, z = \n ";
-    BOOST_FOREACH(const boost::shared_ptr<CALIBRATION>& K, K_all_)
+    BOOST_FOREACH(const boost::shared_ptr<Cal3_S2Stereo>& K, K_all_)
     K->print("calibration = ");
     Base::print("", keyFormatter);
   }
 
   /// equals
   virtual bool equals(const NonlinearFactor& p, double tol = 1e-9) const {
-    const This *e = dynamic_cast<const This*>(&p);
+    const SmartStereoProjectionPoseFactor *e =
+        dynamic_cast<const SmartStereoProjectionPoseFactor*>(&p);
 
     return e && Base::equals(p, tol);
   }
@@ -151,7 +151,7 @@ public:
   }
 
   /** return the calibration object */
-  inline const std::vector<boost::shared_ptr<CALIBRATION> > calibration() const {
+  inline const std::vector<boost::shared_ptr<Cal3_S2Stereo> > calibration() const {
     return K_all_;
   }
 
@@ -161,11 +161,11 @@ public:
    * to keys involved in this factor
    * @return vector of Values
    */
-  typename Base::Cameras cameras(const Values& values) const {
-    typename Base::Cameras cameras;
+   Base::Cameras cameras(const Values& values) const {
+    Base::Cameras cameras;
     size_t i=0;
     BOOST_FOREACH(const Key& k, this->keys_) {
-      Pose3 pose = values.at<Pose3>(k);
+      const Pose3& pose = values.at<Pose3>(k);
       StereoCamera camera(pose, K_all_[i++]);
       cameras.push_back(camera);
     }
@@ -185,9 +185,9 @@ private:
 }; // end of class declaration
 
 /// traits
-template<class CALIBRATION>
-struct traits<SmartStereoProjectionPoseFactor<CALIBRATION> > : public Testable<
-    SmartStereoProjectionPoseFactor<CALIBRATION> > {
+template<>
+struct traits<SmartStereoProjectionPoseFactor> : public Testable<
+    SmartStereoProjectionPoseFactor> {
 };
 
 } // \ namespace gtsam

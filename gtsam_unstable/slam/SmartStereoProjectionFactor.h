@@ -332,7 +332,7 @@ public:
     }
 
     // Jacobian could be 3D Point3 OR 2D Unit3, difference is E.cols().
-    std::vector<typename Base::MatrixZD> Fblocks;
+    std::vector<Base::MatrixZD> Fblocks;
     Matrix F, E;
     Vector b;
     computeJacobiansWithTriangulatedPoint(Fblocks, E, b, cameras);

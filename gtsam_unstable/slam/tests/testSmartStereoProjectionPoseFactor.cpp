@@ -62,8 +62,6 @@ static StereoPoint2 measurement1(323.0, 300.0, 240.0); //potentially use more re
 static Pose3 body_P_sensor1(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2),
     Point3(0.25, -0.10, 1.0));
 
-typedef SmartStereoProjectionPoseFactor<Cal3_S2Stereo> SmartFactor;
-
 vector<StereoPoint2> stereo_projectToMultipleCameras(const StereoCamera& cam1,
     const StereoCamera& cam2, const StereoCamera& cam3, Point3 landmark) {
 
@@ -83,32 +81,32 @@ LevenbergMarquardtParams lm_params;
 
 /* ************************************************************************* */
 TEST( SmartStereoProjectionPoseFactor, Constructor) {
-  SmartFactor::shared_ptr factor1(new SmartFactor());
+  SmartStereoProjectionPoseFactor::shared_ptr factor1(new SmartStereoProjectionPoseFactor());
 }
 
 /* ************************************************************************* */
 TEST( SmartStereoProjectionPoseFactor, Constructor2) {
-  SmartFactor factor1(params);
+  SmartStereoProjectionPoseFactor factor1(params);
 }
 
 /* ************************************************************************* */
 TEST( SmartStereoProjectionPoseFactor, Constructor3) {
-  SmartFactor::shared_ptr factor1(new SmartFactor());
+  SmartStereoProjectionPoseFactor::shared_ptr factor1(new SmartStereoProjectionPoseFactor());
   factor1->add(measurement1, poseKey1, model, K);
 }
 
 /* ************************************************************************* */
 TEST( SmartStereoProjectionPoseFactor, Constructor4) {
-  SmartFactor factor1(params);
+  SmartStereoProjectionPoseFactor factor1(params);
   factor1.add(measurement1, poseKey1, model, K);
 }
 
 /* ************************************************************************* */
 TEST( SmartStereoProjectionPoseFactor, Equals ) {
-  SmartFactor::shared_ptr factor1(new SmartFactor());
+  SmartStereoProjectionPoseFactor::shared_ptr factor1(new SmartStereoProjectionPoseFactor());
   factor1->add(measurement1, poseKey1, model, K);
 
-  SmartFactor::shared_ptr factor2(new SmartFactor());
+  SmartStereoProjectionPoseFactor::shared_ptr factor2(new SmartStereoProjectionPoseFactor());
   factor2->add(measurement1, poseKey1, model, K);
 
   CHECK(assert_equal(*factor1, *factor2));
@@ -136,7 +134,7 @@ TEST_UNSAFE( SmartStereoProjectionPoseFactor, noiseless ) {
   values.insert(x1, level_pose);
   values.insert(x2, level_pose_right);
 
-  SmartFactor factor1;
+  SmartStereoProjectionPoseFactor factor1;
   factor1.add(level_uv, x1, model, K2);
   factor1.add(level_uv_right, x2, model, K2);
 
@@ -144,7 +142,7 @@ TEST_UNSAFE( SmartStereoProjectionPoseFactor, noiseless ) {
   double expectedError = 0.0;
   EXPECT_DOUBLES_EQUAL(expectedError, actualError, 1e-7);
 
-  SmartFactor::Cameras cameras = factor1.cameras(values);
+  SmartStereoProjectionPoseFactor::Cameras cameras = factor1.cameras(values);
   double actualError2 = factor1.totalReprojectionError(cameras);
   EXPECT_DOUBLES_EQUAL(expectedError, actualError2, 1e-7);
 
@@ -178,13 +176,13 @@ TEST( SmartStereoProjectionPoseFactor, noisy ) {
       Point3(0.5, 0.1, 0.3));
   values.insert(x2, level_pose_right.compose(noise_pose));
 
-  SmartFactor::shared_ptr factor1(new SmartFactor());
+  SmartStereoProjectionPoseFactor::shared_ptr factor1(new SmartStereoProjectionPoseFactor());
   factor1->add(level_uv, x1, model, K);
   factor1->add(level_uv_right, x2, model, K);
 
   double actualError1 = factor1->error(values);
 
-  SmartFactor::shared_ptr factor2(new SmartFactor());
+  SmartStereoProjectionPoseFactor::shared_ptr factor2(new SmartStereoProjectionPoseFactor());
   vector<StereoPoint2> measurements;
   measurements.push_back(level_uv);
   measurements.push_back(level_uv_right);
@@ -240,13 +238,13 @@ TEST( SmartStereoProjectionPoseFactor, 3poses_smart_projection_factor ) {
   views.push_back(x2);
   views.push_back(x3);
 
-  SmartFactor::shared_ptr smartFactor1(new SmartFactor());
+  SmartStereoProjectionPoseFactor::shared_ptr smartFactor1(new SmartStereoProjectionPoseFactor());
   smartFactor1->add(measurements_cam1, views, model, K2);
 
-  SmartFactor::shared_ptr smartFactor2(new SmartFactor());
+  SmartStereoProjectionPoseFactor::shared_ptr smartFactor2(new SmartStereoProjectionPoseFactor());
   smartFactor2->add(measurements_cam2, views, model, K2);
 
-  SmartFactor::shared_ptr smartFactor3(new SmartFactor());
+  SmartStereoProjectionPoseFactor::shared_ptr smartFactor3(new SmartStereoProjectionPoseFactor());
   smartFactor3->add(measurements_cam3, views, model, K2);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
@@ -327,13 +325,13 @@ TEST( SmartStereoProjectionPoseFactor, jacobianSVD ) {
   SmartStereoProjectionParams params;
   params.setLinearizationMode(JACOBIAN_SVD);
 
-  SmartFactor::shared_ptr smartFactor1( new SmartFactor(params));
+  SmartStereoProjectionPoseFactor::shared_ptr smartFactor1( new SmartStereoProjectionPoseFactor(params));
   smartFactor1->add(measurements_cam1, views, model, K);
 
-  SmartFactor::shared_ptr smartFactor2(new SmartFactor(params));
+  SmartStereoProjectionPoseFactor::shared_ptr smartFactor2(new SmartStereoProjectionPoseFactor(params));
   smartFactor2->add(measurements_cam2, views, model, K);
 
-  SmartFactor::shared_ptr smartFactor3(new SmartFactor(params));
+  SmartStereoProjectionPoseFactor::shared_ptr smartFactor3(new SmartStereoProjectionPoseFactor(params));
   smartFactor3->add(measurements_cam3, views, model, K);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
@@ -396,13 +394,13 @@ TEST( SmartStereoProjectionPoseFactor, landmarkDistance ) {
   params.setLinearizationMode(JACOBIAN_SVD);
   params.setLandmarkDistanceThreshold(2);
 
-  SmartFactor::shared_ptr smartFactor1(new SmartFactor(params));
+  SmartStereoProjectionPoseFactor::shared_ptr smartFactor1(new SmartStereoProjectionPoseFactor(params));
   smartFactor1->add(measurements_cam1, views, model, K);
 
-  SmartFactor::shared_ptr smartFactor2(new SmartFactor(params));
+  SmartStereoProjectionPoseFactor::shared_ptr smartFactor2(new SmartStereoProjectionPoseFactor(params));
   smartFactor2->add(measurements_cam2, views, model, K);
 
-  SmartFactor::shared_ptr smartFactor3(new SmartFactor(params));
+  SmartStereoProjectionPoseFactor::shared_ptr smartFactor3(new SmartStereoProjectionPoseFactor(params));
   smartFactor3->add(measurements_cam3, views, model, K);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
@@ -470,20 +468,20 @@ TEST( SmartStereoProjectionPoseFactor, dynamicOutlierRejection ) {
   params.setDynamicOutlierRejectionThreshold(1);
 
 
-  SmartFactor::shared_ptr smartFactor1(new SmartFactor(params));
+  SmartStereoProjectionPoseFactor::shared_ptr smartFactor1(new SmartStereoProjectionPoseFactor(params));
   smartFactor1->add(measurements_cam1, views, model, K);
 
-  SmartFactor::shared_ptr smartFactor2(new SmartFactor(params));
+  SmartStereoProjectionPoseFactor::shared_ptr smartFactor2(new SmartStereoProjectionPoseFactor(params));
   smartFactor2->add(measurements_cam2, views, model, K);
 
-  SmartFactor::shared_ptr smartFactor3(new SmartFactor(params));
+  SmartStereoProjectionPoseFactor::shared_ptr smartFactor3(new SmartStereoProjectionPoseFactor(params));
   smartFactor3->add(measurements_cam3, views, model, K);
 
-  SmartFactor::shared_ptr smartFactor4(new SmartFactor(params));
+  SmartStereoProjectionPoseFactor::shared_ptr smartFactor4(new SmartStereoProjectionPoseFactor(params));
   smartFactor4->add(measurements_cam4, views, model, K);
 
   // same as factor 4, but dynamic outlier rejection is off
-  SmartFactor::shared_ptr smartFactor4b(new SmartFactor());
+  SmartStereoProjectionPoseFactor::shared_ptr smartFactor4b(new SmartStereoProjectionPoseFactor());
   smartFactor4b->add(measurements_cam4, views, model, K);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
@@ -556,13 +554,13 @@ TEST( SmartStereoProjectionPoseFactor, dynamicOutlierRejection ) {
 //  stereo_projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
 //  stereo_projectToMultipleCameras(cam1, cam2, cam3, landmark3, measurements_cam3);
 //
-//  SmartFactor::shared_ptr smartFactor1(new SmartFactor(1, -1, false, false, JACOBIAN_Q));
+//  SmartStereoProjectionPoseFactor::shared_ptr smartFactor1(new SmartStereoProjectionPoseFactor(1, -1, false, false, JACOBIAN_Q));
 //  smartFactor1->add(measurements_cam1, views, model, K);
 //
-//  SmartFactor::shared_ptr smartFactor2(new SmartFactor(1, -1, false, false, JACOBIAN_Q));
+//  SmartStereoProjectionPoseFactor::shared_ptr smartFactor2(new SmartStereoProjectionPoseFactor(1, -1, false, false, JACOBIAN_Q));
 //  smartFactor2->add(measurements_cam2, views, model, K);
 //
-//  SmartFactor::shared_ptr smartFactor3(new SmartFactor(1, -1, false, false, JACOBIAN_Q));
+//  SmartStereoProjectionPoseFactor::shared_ptr smartFactor3(new SmartStereoProjectionPoseFactor(1, -1, false, false, JACOBIAN_Q));
 //  smartFactor3->add(measurements_cam3, views, model, K);
 //
 //  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
@@ -683,13 +681,13 @@ TEST( SmartStereoProjectionPoseFactor, CheckHessian) {
   SmartStereoProjectionParams params;
   params.setRankTolerance(10);
 
-  SmartFactor::shared_ptr smartFactor1(new SmartFactor(params));
+  SmartStereoProjectionPoseFactor::shared_ptr smartFactor1(new SmartStereoProjectionPoseFactor(params));
   smartFactor1->add(measurements_cam1, views, model, K);
 
-  SmartFactor::shared_ptr smartFactor2(new SmartFactor(params));
+  SmartStereoProjectionPoseFactor::shared_ptr smartFactor2(new SmartStereoProjectionPoseFactor(params));
   smartFactor2->add(measurements_cam2, views, model, K);
 
-  SmartFactor::shared_ptr smartFactor3(new SmartFactor(params));
+  SmartStereoProjectionPoseFactor::shared_ptr smartFactor3(new SmartStereoProjectionPoseFactor(params));
   smartFactor3->add(measurements_cam3, views, model, K);
 
   // Create graph to optimize
@@ -766,10 +764,10 @@ TEST( SmartStereoProjectionPoseFactor, CheckHessian) {
 //  stereo_projectToMultipleCameras(cam1, cam2, cam3, landmark2, measurements_cam2);
 //
 //  double rankTol = 50;
-//  SmartFactor::shared_ptr smartFactor1(new SmartFactor(rankTol, linThreshold, manageDegeneracy));
+//  SmartStereoProjectionPoseFactor::shared_ptr smartFactor1(new SmartStereoProjectionPoseFactor(rankTol, linThreshold, manageDegeneracy));
 //  smartFactor1->add(measurements_cam1, views, model, K2);
 //
-//  SmartFactor::shared_ptr smartFactor2(new SmartFactor(rankTol, linThreshold, manageDegeneracy));
+//  SmartStereoProjectionPoseFactor::shared_ptr smartFactor2(new SmartStereoProjectionPoseFactor(rankTol, linThreshold, manageDegeneracy));
 //  smartFactor2->add(measurements_cam2, views, model, K2);
 //
 //  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
@@ -835,13 +833,13 @@ TEST( SmartStereoProjectionPoseFactor, CheckHessian) {
 //
 //  double rankTol = 10;
 //
-//  SmartFactor::shared_ptr smartFactor1(new SmartFactor(rankTol, linThreshold, manageDegeneracy));
+//  SmartStereoProjectionPoseFactor::shared_ptr smartFactor1(new SmartStereoProjectionPoseFactor(rankTol, linThreshold, manageDegeneracy));
 //  smartFactor1->add(measurements_cam1, views, model, K);
 //
-//  SmartFactor::shared_ptr smartFactor2(new SmartFactor(rankTol, linThreshold, manageDegeneracy));
+//  SmartStereoProjectionPoseFactor::shared_ptr smartFactor2(new SmartStereoProjectionPoseFactor(rankTol, linThreshold, manageDegeneracy));
 //  smartFactor2->add(measurements_cam2, views, model, K);
 //
-//  SmartFactor::shared_ptr smartFactor3(new SmartFactor(rankTol, linThreshold, manageDegeneracy));
+//  SmartStereoProjectionPoseFactor::shared_ptr smartFactor3(new SmartStereoProjectionPoseFactor(rankTol, linThreshold, manageDegeneracy));
 //  smartFactor3->add(measurements_cam3, views, model, K);
 //
 //  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
@@ -900,7 +898,7 @@ TEST( SmartStereoProjectionPoseFactor, CheckHessian) {
 //  measurements_cam1.push_back(cam1_uv1);
 //  measurements_cam1.push_back(cam2_uv1);
 //
-//  SmartFactor::shared_ptr smartFactor1(new SmartFactor());
+//  SmartStereoProjectionPoseFactor::shared_ptr smartFactor1(new SmartStereoProjectionPoseFactor());
 //  smartFactor1->add(measurements_cam1,views, model, K2);
 //
 //  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3));
@@ -941,7 +939,7 @@ TEST( SmartStereoProjectionPoseFactor, HessianWithRotation ) {
   vector<StereoPoint2> measurements_cam1 = stereo_projectToMultipleCameras(cam1,
       cam2, cam3, landmark1);
 
-  SmartFactor::shared_ptr smartFactorInstance(new SmartFactor());
+  SmartStereoProjectionPoseFactor::shared_ptr smartFactorInstance(new SmartStereoProjectionPoseFactor());
   smartFactorInstance->add(measurements_cam1, views, model, K);
 
   Values values;
@@ -1009,7 +1007,7 @@ TEST( SmartStereoProjectionPoseFactor, HessianWithRotationDegenerate ) {
   vector<StereoPoint2> measurements_cam1 = stereo_projectToMultipleCameras(cam1,
       cam2, cam3, landmark1);
 
-  SmartFactor::shared_ptr smartFactor(new SmartFactor());
+  SmartStereoProjectionPoseFactor::shared_ptr smartFactor(new SmartStereoProjectionPoseFactor());
   smartFactor->add(measurements_cam1, views, model, K2);
 
   Values values;
