@@ -126,12 +126,10 @@ enum DegeneracyMode {
  * This factor operates with StereoCamrea. This factor requires that values
  * contains the involved camera poses. Calibration is assumed to be fixed.
 */
-template<class CALIBRATION>
 class SmartStereoProjectionFactor: public SmartFactorBase<StereoCamera> {
 private:
 
   typedef SmartFactorBase<StereoCamera> Base;
-  typedef SmartStereoProjectionFactor<CALIBRATION> This;
 
 protected:
 
@@ -149,7 +147,7 @@ protected:
 public:
 
   /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<This> shared_ptr;
+  typedef boost::shared_ptr<SmartStereoProjectionFactor> shared_ptr;
 
   /// Vector of cameras
   typedef CameraSet<StereoCamera> Cameras;
@@ -184,7 +182,8 @@ public:
 
   /// equals
   virtual bool equals(const NonlinearFactor& p, double tol = 1e-9) const {
-    const This *e = dynamic_cast<const This*>(&p);
+    const SmartStereoProjectionFactor *e =
+        dynamic_cast<const SmartStereoProjectionFactor*>(&p);
     return e && params_.linearizationMode == e->params_.linearizationMode
         && Base::equals(p, tol);
   }
@@ -467,7 +466,7 @@ public:
   /// Assumes the point has been computed
   /// Note E can be 2m*3 or 2m*2, in case point is degenerate
   void computeJacobiansWithTriangulatedPoint(
-      std::vector<typename Base::MatrixZD>& Fblocks, Matrix& E, Vector& b,
+      std::vector<Base::MatrixZD>& Fblocks, Matrix& E, Vector& b,
       const Cameras& cameras) const {
 
     if (!result_) {
@@ -486,7 +485,7 @@ public:
 
   /// Version that takes values, and creates the point
   bool triangulateAndComputeJacobians(
-      std::vector<typename Base::MatrixZD>& Fblocks, Matrix& E, Vector& b,
+      std::vector<Base::MatrixZD>& Fblocks, Matrix& E, Vector& b,
       const Values& values) const {
     Cameras cameras = this->cameras(values);
     bool nonDegenerate = triangulateForLinearize(cameras);
@@ -497,7 +496,7 @@ public:
 
   /// takes values
   bool triangulateAndComputeJacobiansSVD(
-      std::vector<typename Base::MatrixZD>& Fblocks, Matrix& Enull, Vector& b,
+      std::vector<Base::MatrixZD>& Fblocks, Matrix& Enull, Vector& b,
       const Values& values) const {
     Cameras cameras = this->cameras(values);
     bool nonDegenerate = triangulateForLinearize(cameras);
@@ -595,9 +594,9 @@ private:
 };
 
 /// traits
-template<class CALIBRATION>
-struct traits<SmartStereoProjectionFactor<CALIBRATION> > : public Testable<
-    SmartStereoProjectionFactor<CALIBRATION> > {
+template<>
+struct traits<SmartStereoProjectionFactor > : public Testable<
+    SmartStereoProjectionFactor> {
 };
 
 } // \ namespace gtsam

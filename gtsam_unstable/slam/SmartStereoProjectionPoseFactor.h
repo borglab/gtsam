@@ -39,10 +39,7 @@ namespace gtsam {
  * @addtogroup SLAM
  */
 template<class CALIBRATION>
-class SmartStereoProjectionPoseFactor: public SmartStereoProjectionFactor<CALIBRATION> {
-
-public:
-
+class SmartStereoProjectionPoseFactor: public SmartStereoProjectionFactor {
 
 protected:
 
@@ -53,7 +50,7 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   /// shorthand for base class type
-  typedef SmartStereoProjectionFactor<CALIBRATION> Base;
+  typedef SmartStereoProjectionFactor Base;
 
   /// shorthand for this class
   typedef SmartStereoProjectionPoseFactor<CALIBRATION> This;
