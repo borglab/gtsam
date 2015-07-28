@@ -273,7 +273,7 @@ TEST( SmartStereoProjectionPoseFactor, 3poses_smart_projection_factor ) {
                   -0.000986635786, 0.0314107591, -0.999013364, -0.0313952598),
               Point3(0.1, -0.1, 1.9)), values.at<Pose3>(x3)));
 
-  EXPECT_DOUBLES_EQUAL(991819.94, graph.error(values), 1);
+  EXPECT_DOUBLES_EQUAL(979345.4, graph.error(values), 1);
 
   Values result;
   gttic_(SmartStereoProjectionPoseFactor);
@@ -282,7 +282,7 @@ TEST( SmartStereoProjectionPoseFactor, 3poses_smart_projection_factor ) {
   gttoc_(SmartStereoProjectionPoseFactor);
   tictoc_finishedIteration_();
 
-  EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-4);
+  EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-5);
 
   GaussianFactorGraph::shared_ptr GFG = graph.linearize(result);
   VectorValues delta = GFG->optimize();
@@ -510,7 +510,7 @@ TEST( SmartStereoProjectionPoseFactor, dynamicOutlierRejection ) {
   EXPECT_DOUBLES_EQUAL(0, smartFactor4->error(values), 1e-9);
 
   // dynamic outlier rejection is off
-  EXPECT_DOUBLES_EQUAL(6700, smartFactor4b->error(values), 1e-9);
+  EXPECT_DOUBLES_EQUAL(6272.613220592455, smartFactor4b->error(values), 1e-9);
 
   // Factors 1-3 should have valid point, factor 4 should not
   EXPECT(smartFactor1->point());
