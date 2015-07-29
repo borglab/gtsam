@@ -238,6 +238,12 @@ public:
 //    }
 
     bool retriangulate = decideIfTriangulate(cameras);
+
+//    if(!retriangulate)
+//      std::cout << "retriangulate = false" << std::endl;
+//
+//    bool retriangulate = true;
+
     if (retriangulate) {
 
       std::vector<Point3> reprojections;
@@ -285,7 +291,8 @@ public:
         result_ = TriangulationResult::BehindCamera();
       }
 
-      pw_avg = triangulateNonlinear(cameras, measured_, pw_avg);
+      if(params_.triangulation.enableEPI)
+        pw_avg = triangulateNonlinear(cameras, measured_, pw_avg);
 
 
       result_ = TriangulationResult(pw_avg);
