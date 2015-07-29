@@ -40,7 +40,9 @@ TEST(NavState, Constructor) {
       boost::bind(&NavState::FromPoseVelocity, _1, _2, boost::none,
           boost::none);
   Matrix aH1, aH2;
-  EXPECT(assert_equal(kState1, NavState::FromPoseVelocity(kPose, kVelocity, aH1, aH2)));
+  EXPECT(
+      assert_equal(kState1,
+          NavState::FromPoseVelocity(kPose, kVelocity, aH1, aH2)));
   EXPECT(assert_equal(numericalDerivative21(construct, kPose, kVelocity), aH1));
   EXPECT(assert_equal(numericalDerivative22(construct, kPose, kVelocity), aH2));
 }
@@ -136,16 +138,20 @@ TEST( NavState, Manifold ) {
   EXPECT(assert_equal(numericalDerivative22(retract, kState1, xi), aH2));
 
   // Check localCoordinates derivatives
+  boost::function<Vector9(const NavState&, const NavState&)> local =
+      boost::bind(&NavState::localCoordinates, _1, _2, boost::none, boost::none);
+  // from state1 to state2
   kState1.localCoordinates(state2, aH1, aH2);
-  boost::function<Vector9(const NavState&, const NavState&)> localCoordinates =
-      boost::bind(&NavState::localCoordinates, _1, _2, boost::none,
-          boost::none);
-  EXPECT(
-      assert_equal(numericalDerivative21(localCoordinates, kState1, state2),
-          aH1));
-  EXPECT(
-      assert_equal(numericalDerivative22(localCoordinates, kState1, state2),
-          aH2));
+  EXPECT(assert_equal(numericalDerivative21(local, kState1, state2), aH1));
+  EXPECT(assert_equal(numericalDerivative22(local, kState1, state2), aH2));
+  // from identity to state2
+  kIdentity.localCoordinates(state2, aH1, aH2);
+  EXPECT(assert_equal(numericalDerivative21(local, kIdentity, state2), aH1));
+  EXPECT(assert_equal(numericalDerivative22(local, kIdentity, state2), aH2));
+  // from state2 to identity
+  state2.localCoordinates(kIdentity, aH1, aH2);
+  EXPECT(assert_equal(numericalDerivative21(local, state2, kIdentity), aH1));
+  EXPECT(assert_equal(numericalDerivative22(local, state2, kIdentity), aH2));
 }
 
 /* ************************************************************************* */
