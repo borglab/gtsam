@@ -67,6 +67,9 @@ public:
   NavState(const Matrix3& R, const Vector9 tv) :
       R_(R), t_(tv.head<3>()), v_(tv.tail<3>()) {
   }
+  /// Named constructor with derivatives
+  static NavState FromPoseVelocity(const Pose3& pose, const Vector3& vel,
+      OptionalJacobian<9, 6> H1, OptionalJacobian<9, 3> H2);
 
   /// @}
   /// @name Component Access

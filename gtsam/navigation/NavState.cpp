@@ -25,6 +25,16 @@ namespace gtsam {
 #define TIE(R,t,v,x) const Rot3& R = (x).R_;const Point3& t = (x).t_;const Velocity3& v = (x).v_;
 
 //------------------------------------------------------------------------------
+NavState NavState::FromPoseVelocity(const Pose3& pose, const Vector3& vel,
+    OptionalJacobian<9, 6> H1, OptionalJacobian<9, 3> H2) {
+  if (H1)
+    *H1 << I_3x3, Z_3x3, Z_3x3, I_3x3, Z_3x3, Z_3x3;
+  if (H2)
+    *H2 << Z_3x3, Z_3x3, pose.rotation().transpose();
+  return NavState(pose, vel);
+}
+
+//------------------------------------------------------------------------------
 const Rot3& NavState::attitude(OptionalJacobian<3, 9> H) const {
   if (H)
     *H << I_3x3, Z_3x3, Z_3x3;
@@ -252,9 +262,9 @@ Vector9 NavState::coriolis(double dt, const Vector3& omega, bool secondOrder,
 
 //------------------------------------------------------------------------------
 Vector9 NavState::correctPIM(const Vector9& pim, double dt,
-    const Vector3& n_gravity,
-    const boost::optional<Vector3>& omegaCoriolis, bool use2ndOrderCoriolis,
-    OptionalJacobian<9, 9> H1, OptionalJacobian<9, 9> H2) const {
+    const Vector3& n_gravity, const boost::optional<Vector3>& omegaCoriolis,
+    bool use2ndOrderCoriolis, OptionalJacobian<9, 9> H1,
+    OptionalJacobian<9, 9> H2) const {
   const Rot3& nRb = R_;
   const Velocity3& n_v = v_; // derivative is Ri !
   const double dt2 = dt * dt;

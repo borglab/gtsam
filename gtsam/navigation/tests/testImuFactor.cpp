@@ -866,8 +866,7 @@ TEST(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
   values.insert(B(1), bias);
 
   // Make sure linearization is correct
-  double diffDelta = 1e-5;
-  // This fails, except if tol = 1e-1: probably wrong!
+  double diffDelta = 1e-7;
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, diffDelta, 1e-3);
 }
 
