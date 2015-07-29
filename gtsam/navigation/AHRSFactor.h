@@ -89,6 +89,7 @@ class GTSAM_EXPORT PreintegratedAhrsMeasurements : public PreintegratedRotation 
                                 const Matrix3& measuredOmegaCovariance)
       : PreintegratedRotation(boost::make_shared<Params>()),
         biasHat_(biasHat) {
+    p_->gyroscopeCovariance = measuredOmegaCovariance;
     resetIntegration();
   }
 
