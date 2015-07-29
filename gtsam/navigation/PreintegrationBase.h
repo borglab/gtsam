@@ -174,11 +174,7 @@ public:
       const Vector3& measuredOmega, const double deltaT,
       Matrix3* D_incrR_integratedOmega, Matrix9* F);
 
-  std::pair<Vector3, Vector3>
-  correctMeasurementsByBiasAndSensorPose(const Vector3& measuredAcc,
-      const Vector3& measuredOmega) const;
-
-    /// Given the estimate of the bias, return a NavState tangent vector
+  /// Given the estimate of the bias, return a NavState tangent vector
   /// summarizing the preintegrated IMU measurements so far
   Vector9 biasCorrectedDelta(const imuBias::ConstantBias& bias_i,
       OptionalJacobian<9, 6> H = boost::none) const;

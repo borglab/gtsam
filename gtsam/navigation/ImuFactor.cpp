@@ -48,6 +48,7 @@ void PreintegratedImuMeasurements::resetIntegration() {
   preintMeasCov_.setZero();
 }
 
+//------------------------------------------------------------------------------
 // sugar for derivative blocks
 #define D_R_R(H) (H)->block<3,3>(0,0)
 #define D_R_t(H) (H)->block<3,3>(0,3)

@@ -63,27 +63,40 @@ void PreintegrationBase::updatePreintegratedMeasurements(
     const Vector3& measuredAcc, const Vector3& measuredOmega,
     const double deltaT, Matrix3* D_incrR_integratedOmega, Matrix9* F) {
 
-  Matrix3 D_Rij_incrR;
-
   // NOTE: order is important here because each update uses old values, e.g., velocity and position updates are based on previous rotation estimate.
   // (i.e., we have to update jacobians and covariances before updating preintegrated measurements).
 
-  Vector3 correctedAcc, correctedOmega;
-  boost::tie(correctedAcc, correctedOmega) =
-      correctMeasurementsByBiasAndSensorPose(measuredAcc, measuredOmega);
+  // Correct for bias in the sensor frame
+  Vector3 correctedAcc = biasHat_.correctAccelerometer(measuredAcc);
 
-  // rotation vector describing rotation increment computed from the current rotation rate measurement
-  const Vector3 integratedOmega = correctedOmega * deltaT;
-  const Rot3 incrR = Rot3::Expmap(integratedOmega, D_incrR_integratedOmega); // rotation increment computed from the current rotation rate measurement
+  // Compensate for sensor-body displacement if needed: we express the quantities
+  // (originally in the IMU frame) into the body frame
+  // Equations below assume the "body" frame is the CG
+  if (p().body_P_sensor) {
+    // Correct omega: slight duplication as this is also done in integrateMeasurement below
+    Matrix3 bRs = p().body_P_sensor->rotation().matrix();
+    Vector3 s_correctedOmega = biasHat_.correctGyroscope(measuredOmega);
+    Vector3 b_correctedOmega = bRs * s_correctedOmega; // rotation rate vector in the body frame
+
+    // Correct acceleration
+    Vector3 b_arm = p().body_P_sensor->translation().vector();
+    Vector3 b_velocity_bs = b_correctedOmega.cross(b_arm); // magnitude: omega * arm
+    // Subtract out the the centripetal acceleration from the measured one
+    // to get linear acceleration vector in the body frame:
+    correctedAcc = bRs * correctedAcc - b_correctedOmega.cross(b_velocity_bs);
+  }
 
   // Calculate acceleration in *current* i frame, i.e., before rotation update below
   Matrix3 D_acc_R;
   const Matrix3 dRij = deltaRij_.matrix(); // expensive
   const Vector3 i_acc = deltaRij_.rotate(correctedAcc, F ? &D_acc_R : 0);
+  const Matrix3 temp = -dRij * skewSymmetric(correctedAcc) * delRdelBiasOmega_;
+
+  Matrix3 D_Rij_incrR;
+  PreintegratedRotation::integrateMeasurement(measuredOmega,
+      biasHat_.gyroscope(), deltaT, D_incrR_integratedOmega, &D_Rij_incrR);
 
   double dt22 = 0.5 * deltaT * deltaT;
-  deltaTij_ += deltaT;
-  deltaRij_ = deltaRij_.compose(incrR, F ? &D_Rij_incrR : 0);
   deltaPij_ += dt22 * i_acc + deltaT * deltaVij_;
   deltaVij_ += deltaT * i_acc;
 
@@ -92,38 +105,10 @@ void PreintegrationBase::updatePreintegratedMeasurements(
   dt22 * D_acc_R, I_3x3, I_3x3 * deltaT, // pos
   deltaT * D_acc_R, Z_3x3, I_3x3; // vel
 
-  const Matrix3 temp = -dRij * skewSymmetric(correctedAcc) * delRdelBiasOmega_;
   delPdelBiasAcc_ += delVdelBiasAcc_ * deltaT - dt22 * dRij;
   delPdelBiasOmega_ += deltaT * delVdelBiasOmega_ + dt22 * temp;
   delVdelBiasAcc_ += -dRij * deltaT;
   delVdelBiasOmega_ += temp * deltaT;
-  const Matrix3 incrRt = incrR.transpose();
-  delRdelBiasOmega_ = incrRt * delRdelBiasOmega_
-      - *D_incrR_integratedOmega * deltaT;
-}
-
-std::pair<Vector3, Vector3> PreintegrationBase::correctMeasurementsByBiasAndSensorPose(
-    const Vector3& measuredAcc, const Vector3& measuredOmega) const {
-  // Correct for bias in the sensor frame
-  Vector3 s_correctedAcc, s_correctedOmega;
-  s_correctedAcc = biasHat_.correctAccelerometer(measuredAcc);
-  s_correctedOmega = biasHat_.correctGyroscope(measuredOmega);
-
-  // Compensate for sensor-body displacement if needed: we express the quantities
-  // (originally in the IMU frame) into the body frame
-  // Equations below assume the "body" frame is the CG
-  if (p().body_P_sensor) {
-    Matrix3 bRs = p().body_P_sensor->rotation().matrix();
-    Vector3 b_arm = p().body_P_sensor->translation().vector();
-    Vector3 b_correctedOmega = bRs * s_correctedOmega; // rotation rate vector in the body frame
-    Vector3 b_velocity_bs = b_correctedOmega.cross(b_arm); // magnitude: omega * arm
-    // Subtract out the the centripetal acceleration from the measured one
-    // to get linear acceleration vector in the body frame:
-    Vector3 b_correctedAcc = bRs * s_correctedAcc
-        - b_correctedOmega.cross(b_velocity_bs);
-    return std::make_pair(b_correctedAcc, b_correctedOmega);
-  } else
-    return std::make_pair(s_correctedAcc, s_correctedOmega);
 }
 
 //------------------------------------------------------------------------------

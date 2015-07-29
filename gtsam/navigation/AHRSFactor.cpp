@@ -50,31 +50,9 @@ void PreintegratedAhrsMeasurements::resetIntegration() {
 void PreintegratedAhrsMeasurements::integrateMeasurement(
     const Vector3& measuredOmega, double deltaT) {
 
-  // First we compensate the measurements for the bias
-  Vector3 correctedOmega = measuredOmega - biasHat_;
-
-  // Then compensate for sensor-body displacement: we express the quantities
-  // (originally in the IMU frame) into the body frame
-  if (p().body_P_sensor) {
-    Matrix3 body_R_sensor = p().body_P_sensor->rotation().matrix();
-    // rotation rate vector in the body frame
-    correctedOmega = body_R_sensor * correctedOmega;
-  }
-
-  // rotation vector describing rotation increment computed from the
-  // current rotation rate measurement
-  const Vector3 theta_incr = correctedOmega * deltaT;
-  Matrix3 D_incrR_integratedOmega;
-  const Rot3 incrR = Rot3::Expmap(theta_incr, D_incrR_integratedOmega); // expensive !!
-
-  // Update Jacobian
-  const Matrix3 incrRt = incrR.transpose();
-  delRdelBiasOmega_ = incrRt * delRdelBiasOmega_ - D_incrR_integratedOmega * deltaT;
-
-  // Update rotation and deltaTij.
-  Matrix3 Fr; // Jacobian of the update
-  deltaRij_ = deltaRij_.compose(incrR, Fr);
-  deltaTij_ += deltaT;
+  Matrix3 D_incrR_integratedOmega, Fr;
+  PreintegratedRotation::integrateMeasurement(measuredOmega,
+      biasHat_, deltaT, &D_incrR_integratedOmega, &Fr);
 
   // first order uncertainty propagation
   // the deltaT allows to pass from continuous time noise to discrete time noise
