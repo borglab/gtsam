@@ -48,6 +48,16 @@ void PreintegratedImuMeasurements::resetIntegration() {
   preintMeasCov_.setZero();
 }
 
+// sugar for derivative blocks
+#define D_R_R(H) (H)->block<3,3>(0,0)
+#define D_R_t(H) (H)->block<3,3>(0,3)
+#define D_R_v(H) (H)->block<3,3>(0,6)
+#define D_t_R(H) (H)->block<3,3>(3,0)
+#define D_t_t(H) (H)->block<3,3>(3,3)
+#define D_t_v(H) (H)->block<3,3>(3,6)
+#define D_v_R(H) (H)->block<3,3>(6,0)
+#define D_v_t(H) (H)->block<3,3>(6,3)
+#define D_v_v(H) (H)->block<3,3>(6,6)
 //------------------------------------------------------------------------------
 void PreintegratedImuMeasurements::integrateMeasurement(
     const Vector3& measuredAcc, const Vector3& measuredOmega, double deltaT,
@@ -81,20 +91,19 @@ void PreintegratedImuMeasurements::integrateMeasurement(
   // NOTE 2: computation of G * (1/deltaT) * measurementCovariance * G.transpose() done block-wise,
   // as G and measurementCovariance are block-diagonal matrices
   preintMeasCov_ = F * preintMeasCov_ * F.transpose();
-  preintMeasCov_.block<3, 3>(0, 0) += p().integrationCovariance * deltaT;
-  preintMeasCov_.block<3, 3>(3, 3) += dRij * p().accelerometerCovariance
-      * dRij.transpose() * deltaT;
-  preintMeasCov_.block<3, 3>(6, 6) += D_Rincr_integratedOmega
-      * p().gyroscopeCovariance * D_Rincr_integratedOmega.transpose() * deltaT;
+  D_t_t(&preintMeasCov_) += p().integrationCovariance * deltaT;
+  D_v_v(&preintMeasCov_) += dRij * p().accelerometerCovariance * dRij.transpose() * deltaT;
+  D_R_R(&preintMeasCov_) += D_Rincr_integratedOmega * p().gyroscopeCovariance
+      * D_Rincr_integratedOmega.transpose() * deltaT;
 
   Matrix3 F_pos_noiseacc;
   F_pos_noiseacc = 0.5 * dRij * deltaT * deltaT;
-  preintMeasCov_.block<3, 3>(0, 0) += (1 / deltaT) * F_pos_noiseacc
+  D_t_t(&preintMeasCov_) += (1 / deltaT) * F_pos_noiseacc
       * p().accelerometerCovariance * F_pos_noiseacc.transpose();
   Matrix3 temp = F_pos_noiseacc * p().accelerometerCovariance
       * dRij.transpose(); // has 1/deltaT
-  preintMeasCov_.block<3, 3>(0, 3) += temp;
-  preintMeasCov_.block<3, 3>(3, 0) += temp.transpose();
+  D_t_v(&preintMeasCov_) += temp;
+  D_v_t(&preintMeasCov_) += temp.transpose();
 
   // F_test and G_test are given as output for testing purposes and are not needed by the factor
   if (F_test) {
@@ -102,10 +111,11 @@ void PreintegratedImuMeasurements::integrateMeasurement(
   }
   if (G_test) {
     // This in only for testing & documentation, while the actual computation is done block-wise
-    //           intNoise          accNoise           omegaNoise
-    (*G_test) << I_3x3 * deltaT, F_pos_noiseacc, Z_3x3, // pos
-    Z_3x3, dRij * deltaT, Z_3x3, // vel
-    Z_3x3, Z_3x3, D_Rincr_integratedOmega * deltaT; // angle
+    //           omegaNoise               intNoise        accNoise
+    (*G_test) <<
+        D_Rincr_integratedOmega * deltaT, Z_3x3,          Z_3x3, // angle
+        Z_3x3,                            I_3x3 * deltaT, F_pos_noiseacc, // pos
+        Z_3x3,                            Z_3x3,          dRij * deltaT; // vel
   }
 }
 //------------------------------------------------------------------------------

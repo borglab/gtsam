@@ -63,25 +63,22 @@ void PreintegrationBase::updatePreintegratedMeasurements(
     const Vector3& correctedAcc, const Rot3& incrR, const double deltaT,
     OptionalJacobian<9, 9> F) {
 
-  const Matrix3 dRij = deltaRij_.matrix(); // expensive
-  const Vector3 i_acc = dRij * correctedAcc; // acceleration in i frame
+  // Calculate acceleration in *current* i frame, i.e., before rotation update below
+  Matrix3 D_acc_R;
+  const Vector3 i_acc = deltaRij_.rotate(correctedAcc, F? &D_acc_R : 0);
 
-  double dt22 = 0.5 * deltaT * deltaT;
-  deltaPij_ += deltaVij_ * deltaT + dt22 * i_acc;
-  deltaVij_ += deltaT * i_acc;
-
-  Matrix3 R_i, F_angles_angles;
+  Matrix3 F_angles_angles;
   updateIntegratedRotationAndDeltaT(incrR, deltaT, F ? &F_angles_angles : 0);
 
-  if (F) {
-    const Matrix3 F_vel_angles = -dRij * skewSymmetric(correctedAcc) * deltaT;
-    Matrix3 F_pos_angles;
+  double dt22 = 0.5 * deltaT * deltaT;
+  deltaPij_ += dt22 * i_acc + deltaT * deltaVij_;
+  deltaVij_ += deltaT * i_acc;
 
-    //    pos  vel             angle
-    *F << //
-        I_3x3, I_3x3 * deltaT, 0.5 * F_vel_angles * deltaT, // pos
-    Z_3x3, I_3x3, F_vel_angles, // vel
-    Z_3x3, Z_3x3, F_angles_angles; // angle
+  if (F) {
+    *F << // angle        pos    vel
+        F_angles_angles,  Z_3x3, Z_3x3,          // angle
+        dt22 * D_acc_R,   I_3x3, I_3x3 * deltaT, // pos
+        deltaT * D_acc_R, Z_3x3, I_3x3;          // vel
   }
 }
 

@@ -628,18 +628,15 @@ TEST(ImuFactor, JacobianPreintegratedCovariancePropagation) {
       boost::bind(&updatePreintegratedPosVel, deltaPij_old, deltaVij_old, _1,
           newMeasuredAcc, newMeasuredOmega, newDeltaT), deltaRij_old);
 
-  Matrix FexpectedTop6(6, 9);
-  FexpectedTop6 << dfpv_dpos, dfpv_dvel, dfpv_dangle;
-
   // Compute expected f_rot wrt angles
   Matrix dfr_dangle = numericalDerivative11<Rot3, Rot3>(
       boost::bind(&updatePreintegratedRot, _1, newMeasuredOmega, newDeltaT),
       deltaRij_old);
 
-  Matrix FexpectedBottom3(3, 9);
-  FexpectedBottom3 << Z_3x3, Z_3x3, dfr_dangle;
   Matrix Fexpected(9, 9);
-  Fexpected << FexpectedTop6, FexpectedBottom3;
+  Fexpected << //
+      dfr_dangle, Z_3x3, Z_3x3, //
+      dfpv_dangle, dfpv_dpos, dfpv_dvel;
 
   EXPECT(assert_equal(Fexpected, Factual));
 
@@ -659,25 +656,25 @@ TEST(ImuFactor, JacobianPreintegratedCovariancePropagation) {
   Matrix dgpv_domegaNoise = numericalDerivative11<Vector, Vector3>(
       boost::bind(&updatePreintegratedPosVel, deltaPij_old, deltaVij_old,
           deltaRij_old, newMeasuredAcc, _1, newDeltaT), newMeasuredOmega);
-  Matrix GexpectedTop6(6, 9);
-  GexpectedTop6 << dgpv_dintNoise, dgpv_daccNoise, dgpv_domegaNoise;
 
   // Compute expected f_rot wrt gyro noise
   Matrix dgr_dangle = numericalDerivative11<Rot3, Vector3>(
       boost::bind(&updatePreintegratedRot, deltaRij_old, _1, newDeltaT),
       newMeasuredOmega);
 
-  Matrix GexpectedBottom3(3, 9);
-  GexpectedBottom3 << Z_3x3, Z_3x3, dgr_dangle;
   Matrix Gexpected(9, 9);
-  Gexpected << GexpectedTop6, GexpectedBottom3;
+  Gexpected << //
+      dgr_dangle, Z_3x3, Z_3x3, //
+      dgpv_domegaNoise, dgpv_dintNoise, dgpv_daccNoise;
 
   EXPECT(assert_equal(Gexpected, Gactual));
 
   // Check covariance propagation
   Matrix9 measurementCovariance;
-  measurementCovariance << intNoiseVar * I_3x3, Z_3x3, Z_3x3, Z_3x3, accNoiseVar
-      * I_3x3, Z_3x3, Z_3x3, Z_3x3, omegaNoiseVar * I_3x3;
+  measurementCovariance << //
+      omegaNoiseVar * I_3x3, Z_3x3, Z_3x3, //
+      Z_3x3, intNoiseVar * I_3x3, Z_3x3,  //
+      Z_3x3, Z_3x3, accNoiseVar * I_3x3;
 
   Matrix newPreintCovarianceExpected = Factual * oldPreintCovariance
       * Factual.transpose()
@@ -745,18 +742,15 @@ TEST(ImuFactor, JacobianPreintegratedCovariancePropagation_2ndOrderInt) {
       boost::bind(&updatePreintegratedPosVel, deltaPij_old, deltaVij_old, _1,
           newMeasuredAcc, newMeasuredOmega, newDeltaT), deltaRij_old);
 
-  Matrix FexpectedTop6(6, 9);
-  FexpectedTop6 << dfpv_dpos, dfpv_dvel, dfpv_dangle;
-
   // Compute expected f_rot wrt angles
   Matrix dfr_dangle = numericalDerivative11<Rot3, Rot3>(
       boost::bind(&updatePreintegratedRot, _1, newMeasuredOmega, newDeltaT),
       deltaRij_old);
 
-  Matrix FexpectedBottom3(3, 9);
-  FexpectedBottom3 << Z_3x3, Z_3x3, dfr_dangle;
   Matrix Fexpected(9, 9);
-  Fexpected << FexpectedTop6, FexpectedBottom3;
+  Fexpected << //
+      dfr_dangle, Z_3x3, Z_3x3, //
+  dfpv_dangle, dfpv_dpos, dfpv_dvel;
 
   EXPECT(assert_equal(Fexpected, Factual));
 
@@ -776,25 +770,25 @@ TEST(ImuFactor, JacobianPreintegratedCovariancePropagation_2ndOrderInt) {
   Matrix dgpv_domegaNoise = numericalDerivative11<Vector, Vector3>(
       boost::bind(&updatePreintegratedPosVel, deltaPij_old, deltaVij_old,
           deltaRij_old, newMeasuredAcc, _1, newDeltaT), newMeasuredOmega);
-  Matrix GexpectedTop6(6, 9);
-  GexpectedTop6 << dgpv_dintNoise, dgpv_daccNoise, dgpv_domegaNoise;
 
   // Compute expected f_rot wrt gyro noise
   Matrix dgr_dangle = numericalDerivative11<Rot3, Vector3>(
       boost::bind(&updatePreintegratedRot, deltaRij_old, _1, newDeltaT),
       newMeasuredOmega);
 
-  Matrix GexpectedBottom3(3, 9);
-  GexpectedBottom3 << Z_3x3, Z_3x3, dgr_dangle;
   Matrix Gexpected(9, 9);
-  Gexpected << GexpectedTop6, GexpectedBottom3;
+  Gexpected << //
+      dgr_dangle, Z_3x3, Z_3x3, //
+  dgpv_domegaNoise, dgpv_dintNoise, dgpv_daccNoise;
 
   EXPECT(assert_equal(Gexpected, Gactual));
 
   // Check covariance propagation
   Matrix9 measurementCovariance;
-  measurementCovariance << intNoiseVar * I_3x3, Z_3x3, Z_3x3, Z_3x3, accNoiseVar
-      * I_3x3, Z_3x3, Z_3x3, Z_3x3, omegaNoiseVar * I_3x3;
+  measurementCovariance << //
+      omegaNoiseVar * I_3x3, Z_3x3, Z_3x3, //
+      Z_3x3, intNoiseVar * I_3x3, Z_3x3,  //
+      Z_3x3, Z_3x3, accNoiseVar * I_3x3;
 
   Matrix newPreintCovarianceExpected = Factual * oldPreintCovariance
       * Factual.transpose()

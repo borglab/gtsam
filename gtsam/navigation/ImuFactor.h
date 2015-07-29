@@ -63,7 +63,7 @@ class PreintegratedImuMeasurements: public PreintegrationBase {
 
 protected:
 
-  Eigen::Matrix<double, 9, 9> preintMeasCov_; ///< COVARIANCE OF: [PreintPOSITION PreintVELOCITY PreintROTATION]
+  Matrix9 preintMeasCov_; ///< COVARIANCE OF: [PreintPOSITION PreintVELOCITY PreintROTATION]
   ///< (first-order propagation from *measurementCovariance*).
 
   /// Default constructor for serialization
