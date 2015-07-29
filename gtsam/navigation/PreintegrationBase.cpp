@@ -183,6 +183,8 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i,
     OptionalJacobian<9, 3> H2, OptionalJacobian<9, 6> H3,
     OptionalJacobian<9, 3> H4, OptionalJacobian<9, 6> H5) const {
 
+  // Note that derivative of constructors below is not identity for velocity, but
+  // a 9*3 matrix == Z_3x3, Z_3x3, state.R().transpose()
   NavState state_i(pose_i, vel_i);
   NavState state_j(pose_j, vel_j);
 
