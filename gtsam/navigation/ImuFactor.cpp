@@ -63,24 +63,13 @@ void PreintegratedImuMeasurements::integrateMeasurement(
     const Vector3& measuredAcc, const Vector3& measuredOmega, double deltaT,
     OptionalJacobian<9, 9> F_test, OptionalJacobian<9, 9> G_test) {
 
-  Vector3 correctedAcc, correctedOmega;
-  boost::tie(correctedAcc, correctedOmega) =
-      correctMeasurementsByBiasAndSensorPose(measuredAcc, measuredOmega);
-
-  // rotation increment computed from the current rotation rate measurement
-  const Vector3 integratedOmega = correctedOmega * deltaT;
-  Matrix3 D_Rincr_integratedOmega; // Right jacobian computed at theta_incr
-  // rotation increment computed from the current rotation rate measurement
-  const Rot3 Rincr = Rot3::Expmap(integratedOmega, D_Rincr_integratedOmega);
-
-  // Update Jacobians
-  updatePreintegratedJacobians(correctedAcc, D_Rincr_integratedOmega, Rincr,
-      deltaT);
+  const Matrix3 dRij = deltaRij_.matrix(); // store this, which is useful to compute G_test
 
   // Update preintegrated measurements (also get Jacobian)
-  const Matrix3 dRij = deltaRij_.matrix(); // store this, which is useful to compute G_test
+  Matrix3 D_incrR_integratedOmega; // Right jacobian computed at theta_incr
   Matrix9 F; // overall Jacobian wrt preintegrated measurements (df/dx)
-  updatePreintegratedMeasurements(correctedAcc, Rincr, deltaT, F);
+  updatePreintegratedMeasurements(measuredAcc, measuredOmega, deltaT,
+      &D_incrR_integratedOmega, &F);
 
   // first order covariance propagation:
   // as in [2] we consider a first order propagation that can be seen as a prediction phase in EKF
@@ -93,8 +82,8 @@ void PreintegratedImuMeasurements::integrateMeasurement(
   preintMeasCov_ = F * preintMeasCov_ * F.transpose();
   D_t_t(&preintMeasCov_) += p().integrationCovariance * deltaT;
   D_v_v(&preintMeasCov_) += dRij * p().accelerometerCovariance * dRij.transpose() * deltaT;
-  D_R_R(&preintMeasCov_) += D_Rincr_integratedOmega * p().gyroscopeCovariance
-      * D_Rincr_integratedOmega.transpose() * deltaT;
+  D_R_R(&preintMeasCov_) += D_incrR_integratedOmega * p().gyroscopeCovariance
+      * D_incrR_integratedOmega.transpose() * deltaT;
 
   Matrix3 F_pos_noiseacc;
   F_pos_noiseacc = 0.5 * dRij * deltaT * deltaT;
@@ -113,7 +102,7 @@ void PreintegratedImuMeasurements::integrateMeasurement(
     // This in only for testing & documentation, while the actual computation is done block-wise
     //           omegaNoise               intNoise        accNoise
     (*G_test) <<
-        D_Rincr_integratedOmega * deltaT, Z_3x3,          Z_3x3, // angle
+        D_incrR_integratedOmega * deltaT, Z_3x3,          Z_3x3, // angle
         Z_3x3,                            I_3x3 * deltaT, F_pos_noiseacc, // pos
         Z_3x3,                            Z_3x3,          dRij * deltaT; // vel
   }

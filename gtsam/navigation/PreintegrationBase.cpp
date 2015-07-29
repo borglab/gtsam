@@ -60,40 +60,46 @@ bool PreintegrationBase::equals(const PreintegrationBase& other,
 
 /// Update preintegrated measurements
 void PreintegrationBase::updatePreintegratedMeasurements(
-    const Vector3& correctedAcc, const Rot3& incrR, const double deltaT,
-    OptionalJacobian<9, 9> F) {
+    const Vector3& measuredAcc, const Vector3& measuredOmega,
+    const double deltaT, Matrix3* D_incrR_integratedOmega, Matrix9* F) {
+
+  Matrix3 D_Rij_incrR;
+
+  // NOTE: order is important here because each update uses old values, e.g., velocity and position updates are based on previous rotation estimate.
+  // (i.e., we have to update jacobians and covariances before updating preintegrated measurements).
+
+  Vector3 correctedAcc, correctedOmega;
+  boost::tie(correctedAcc, correctedOmega) =
+      correctMeasurementsByBiasAndSensorPose(measuredAcc, measuredOmega);
+
+  // rotation vector describing rotation increment computed from the current rotation rate measurement
+  const Vector3 integratedOmega = correctedOmega * deltaT;
+  const Rot3 incrR = Rot3::Expmap(integratedOmega, D_incrR_integratedOmega); // rotation increment computed from the current rotation rate measurement
 
   // Calculate acceleration in *current* i frame, i.e., before rotation update below
   Matrix3 D_acc_R;
-  const Vector3 i_acc = deltaRij_.rotate(correctedAcc, F? &D_acc_R : 0);
-
-  Matrix3 F_angles_angles;
-  updateIntegratedRotationAndDeltaT(incrR, deltaT, F ? &F_angles_angles : 0);
+  const Matrix3 dRij = deltaRij_.matrix(); // expensive
+  const Vector3 i_acc = deltaRij_.rotate(correctedAcc, F ? &D_acc_R : 0);
 
   double dt22 = 0.5 * deltaT * deltaT;
+  deltaTij_ += deltaT;
+  deltaRij_ = deltaRij_.compose(incrR, F ? &D_Rij_incrR : 0);
   deltaPij_ += dt22 * i_acc + deltaT * deltaVij_;
   deltaVij_ += deltaT * i_acc;
 
-  if (F) {
-    *F << // angle        pos    vel
-        F_angles_angles,  Z_3x3, Z_3x3,          // angle
-        dt22 * D_acc_R,   I_3x3, I_3x3 * deltaT, // pos
-        deltaT * D_acc_R, Z_3x3, I_3x3;          // vel
-  }
-}
+  *F << // angle        pos    vel
+      D_Rij_incrR, Z_3x3, Z_3x3, // angle
+  dt22 * D_acc_R, I_3x3, I_3x3 * deltaT, // pos
+  deltaT * D_acc_R, Z_3x3, I_3x3; // vel
 
-/// Update Jacobians to be used during preintegration
-void PreintegrationBase::updatePreintegratedJacobians(
-    const Vector3& correctedAcc, const Matrix3& D_Rincr_integratedOmega,
-    const Rot3& incrR, double deltaT) {
-  const Matrix3 dRij = deltaRij_.matrix(); // expensive
-  const Matrix3 temp = -dRij * skewSymmetric(correctedAcc) * deltaT
-      * delRdelBiasOmega_;
-  delPdelBiasAcc_ += delVdelBiasAcc_ * deltaT - 0.5 * dRij * deltaT * deltaT;
-  delPdelBiasOmega_ += deltaT * (delVdelBiasOmega_ + temp * 0.5);
+  const Matrix3 temp = -dRij * skewSymmetric(correctedAcc) * delRdelBiasOmega_;
+  delPdelBiasAcc_ += delVdelBiasAcc_ * deltaT - dt22 * dRij;
+  delPdelBiasOmega_ += deltaT * delVdelBiasOmega_ + dt22 * temp;
   delVdelBiasAcc_ += -dRij * deltaT;
-  delVdelBiasOmega_ += temp;
-  update_delRdelBiasOmega(D_Rincr_integratedOmega, incrR, deltaT);
+  delVdelBiasOmega_ += temp * deltaT;
+  const Matrix3 incrRt = incrR.transpose();
+  delRdelBiasOmega_ = incrRt * delRdelBiasOmega_
+      - *D_incrR_integratedOmega * deltaT;
 }
 
 std::pair<Vector3, Vector3> PreintegrationBase::correctMeasurementsByBiasAndSensorPose(

@@ -55,33 +55,22 @@ void PreintegratedCombinedMeasurements::integrateMeasurement(
     const Vector3& measuredAcc, const Vector3& measuredOmega, double deltaT,
     boost::optional<Matrix&> F_test, boost::optional<Matrix&> G_test) {
 
-  // NOTE: order is important here because each update uses old values, e.g., velocity and position updates are based on previous rotation estimate.
-  // (i.e., we have to update jacobians and covariances before updating preintegrated measurements).
+  const Matrix3 dRij = deltaRij_.matrix(); // expensive when quaternion
 
-  Vector3 correctedAcc, correctedOmega;
-  boost::tie(correctedAcc, correctedOmega) =
-      correctMeasurementsByBiasAndSensorPose(measuredAcc, measuredOmega);
-
-  const Vector3 integratedOmega = correctedOmega * deltaT; // rotation vector describing rotation increment computed from the current rotation rate measurement
-  Matrix3 D_Rincr_integratedOmega; // Right jacobian computed at theta_incr
-  const Rot3 Rincr = Rot3::Expmap(integratedOmega, D_Rincr_integratedOmega); // rotation increment computed from the current rotation rate measurement
-
-  // Update Jacobians
-  /* ----------------------------------------------------------------------------------------------------------------------- */
-  updatePreintegratedJacobians(correctedAcc, D_Rincr_integratedOmega, Rincr, deltaT);
+  // Update preintegrated measurements.
+  Matrix3 D_incrR_integratedOmega; // Right jacobian computed at theta_incr
+  Matrix9 F_9x9; // overall Jacobian wrt preintegrated measurements (df/dx)
+  updatePreintegratedMeasurements(measuredAcc, measuredOmega, deltaT,
+      &D_incrR_integratedOmega, &F_9x9);
 
   // Update preintegrated measurements covariance: as in [2] we consider a first order propagation that
   // can be seen as a prediction phase in an EKF framework. In this implementation, contrarily to [2] we
   // consider the uncertainty of the bias selection and we keep correlation between biases and preintegrated measurements
   /* ----------------------------------------------------------------------------------------------------------------------- */
-  const Matrix3 dRij = deltaRij_.matrix(); // expensive when quaternion
-  // Update preintegrated measurements. TODO Frank moved from end of this function !!!
-  Matrix9 F_9x9;
-  updatePreintegratedMeasurements(correctedAcc, Rincr, deltaT, F_9x9);
 
   // Single Jacobians to propagate covariance
   Matrix3 H_vel_biasacc = -dRij * deltaT;
-  Matrix3 H_angles_biasomega = -D_Rincr_integratedOmega * deltaT;
+  Matrix3 H_angles_biasomega = -D_incrR_integratedOmega * deltaT;
 
   // overall Jacobian wrt preintegrated measurements (df/dx)
   Eigen::Matrix<double,15,15> F;

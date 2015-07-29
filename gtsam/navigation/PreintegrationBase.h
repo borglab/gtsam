@@ -170,12 +170,9 @@ public:
   bool equals(const PreintegrationBase& other, double tol) const;
 
   /// Update preintegrated measurements
-  void updatePreintegratedMeasurements(const Vector3& correctedAcc,
-      const Rot3& incrR, const double deltaT, OptionalJacobian<9, 9> F);
-
-  /// Update Jacobians to be used during preintegration
-  void updatePreintegratedJacobians(const Vector3& correctedAcc,
-      const Matrix3& D_Rincr_integratedOmega, const Rot3& incrR, double deltaT);
+  void updatePreintegratedMeasurements(const Vector3& measuredAcc,
+      const Vector3& measuredOmega, const double deltaT,
+      Matrix3* D_incrR_integratedOmega, Matrix9* F);
 
   std::pair<Vector3, Vector3>
   correctMeasurementsByBiasAndSensorPose(const Vector3& measuredAcc,

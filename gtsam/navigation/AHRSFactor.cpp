@@ -64,15 +64,17 @@ void PreintegratedAhrsMeasurements::integrateMeasurement(
   // rotation vector describing rotation increment computed from the
   // current rotation rate measurement
   const Vector3 theta_incr = correctedOmega * deltaT;
-  Matrix3 D_Rincr_integratedOmega;
-  const Rot3 incrR = Rot3::Expmap(theta_incr, D_Rincr_integratedOmega); // expensive !!
+  Matrix3 D_incrR_integratedOmega;
+  const Rot3 incrR = Rot3::Expmap(theta_incr, D_incrR_integratedOmega); // expensive !!
 
   // Update Jacobian
-  update_delRdelBiasOmega(D_Rincr_integratedOmega, incrR, deltaT);
+  const Matrix3 incrRt = incrR.transpose();
+  delRdelBiasOmega_ = incrRt * delRdelBiasOmega_ - D_incrR_integratedOmega * deltaT;
 
   // Update rotation and deltaTij.
   Matrix3 Fr; // Jacobian of the update
-  updateIntegratedRotationAndDeltaT(incrR, deltaT, Fr);
+  deltaRij_ = deltaRij_.compose(incrR, Fr);
+  deltaTij_ += deltaT;
 
   // first order uncertainty propagation
   // the deltaT allows to pass from continuous time noise to discrete time noise

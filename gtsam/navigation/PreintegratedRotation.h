@@ -108,21 +108,34 @@ class PreintegratedRotation {
 
   /// @}
 
-  /// Update preintegrated measurements
-  void updateIntegratedRotationAndDeltaT(const Rot3& incrR, const double deltaT,
-      OptionalJacobian<3, 3> H = boost::none) {
-    deltaRij_ = deltaRij_.compose(incrR, H, boost::none);
-    deltaTij_ += deltaT;
-  }
+  void integrateMeasurement(const Vector3& measuredOmega,
+      const Vector3& biasHat, double deltaT, Matrix3* D_incrR_integratedOmega,
+      Matrix3* Fr) {
 
-  /**
-   *  Update Jacobians to be used during preintegration
-   *  TODO: explain arguments
-   */
-  void update_delRdelBiasOmega(const Matrix3& D_Rincr_integratedOmega,
-      const Rot3& incrR, double deltaT) {
+    // First we compensate the measurements for the bias
+    Vector3 correctedOmega = measuredOmega - biasHat;
+
+    // Then compensate for sensor-body displacement: we express the quantities
+    // (originally in the IMU frame) into the body frame
+    if (p_->body_P_sensor) {
+      Matrix3 body_R_sensor = p_->body_P_sensor->rotation().matrix();
+      // rotation rate vector in the body frame
+      correctedOmega = body_R_sensor * correctedOmega;
+    }
+
+    // rotation vector describing rotation increment computed from the
+    // current rotation rate measurement
+    const Vector3 theta_incr = correctedOmega * deltaT;
+    const Rot3 incrR = Rot3::Expmap(theta_incr, D_incrR_integratedOmega); // expensive !!
+
+    // Update deltaTij and rotation
+    deltaTij_ += deltaT;
+    deltaRij_ = deltaRij_.compose(incrR, Fr);
+
+    // Update Jacobian
     const Matrix3 incrRt = incrR.transpose();
-    delRdelBiasOmega_ = incrRt * delRdelBiasOmega_ - D_Rincr_integratedOmega * deltaT;
+    delRdelBiasOmega_ = incrRt * delRdelBiasOmega_
+        - *D_incrR_integratedOmega * deltaT;
   }
 
   /// Return a bias corrected version of the integrated rotation, with optional Jacobian
