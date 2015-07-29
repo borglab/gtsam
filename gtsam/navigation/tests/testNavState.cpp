@@ -26,6 +26,7 @@ using namespace gtsam;
 
 static const Rot3 kRotation = Rot3::RzRyRx(0.1, 0.2, 0.3);
 static const Point3 kPosition(1.0, 2.0, 3.0);
+static const Pose3 kPose(kRotation, kPosition);
 static const Velocity3 kVelocity(0.4, 0.5, 0.6);
 static const NavState kIdentity;
 static const NavState kState1(kRotation, kPosition, kVelocity);
@@ -33,6 +34,16 @@ static const Vector3 kOmegaCoriolis(0.02, 0.03, 0.04);
 static const Vector3 kGravity(0, 0, 9.81);
 static const Vector9 kZeroXi = Vector9::Zero();
 
+/* ************************************************************************* */
+TEST(NavState, Constructor) {
+  boost::function<NavState(const Pose3&, const Vector3&)> construct =
+      boost::bind(&NavState::FromPoseVelocity, _1, _2, boost::none,
+          boost::none);
+  Matrix aH1, aH2;
+  EXPECT(assert_equal(kState1, NavState::FromPoseVelocity(kPose, kVelocity, aH1, aH2)));
+  EXPECT(assert_equal(numericalDerivative21(construct, kPose, kVelocity), aH1));
+  EXPECT(assert_equal(numericalDerivative22(construct, kPose, kVelocity), aH2));
+}
 /* ************************************************************************* */
 TEST( NavState, Attitude) {
   Matrix39 aH, eH;
@@ -127,9 +138,14 @@ TEST( NavState, Manifold ) {
   // Check localCoordinates derivatives
   kState1.localCoordinates(state2, aH1, aH2);
   boost::function<Vector9(const NavState&, const NavState&)> localCoordinates =
-      boost::bind(&NavState::localCoordinates, _1, _2, boost::none, boost::none);
-  EXPECT(assert_equal(numericalDerivative21(localCoordinates, kState1, state2), aH1));
-  EXPECT(assert_equal(numericalDerivative22(localCoordinates, kState1, state2), aH2));
+      boost::bind(&NavState::localCoordinates, _1, _2, boost::none,
+          boost::none);
+  EXPECT(
+      assert_equal(numericalDerivative21(localCoordinates, kState1, state2),
+          aH1));
+  EXPECT(
+      assert_equal(numericalDerivative22(localCoordinates, kState1, state2),
+          aH2));
 }
 
 /* ************************************************************************* */
