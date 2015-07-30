@@ -209,6 +209,12 @@ public:
   /// @name Dynamics
   /// @{
 
+  /// Integrate forward in time given angular velocity and acceleration
+  /// Uses second order integration for position, returns derivatives except deltaT.
+  NavState update(const Vector3& omega, const Vector3& acceleration,
+      const double deltaT, OptionalJacobian<9, 9> F, OptionalJacobian<9, 3> G1,
+      OptionalJacobian<9, 3> G2) const;
+
   /// Compute tangent space contribution due to Coriolis forces
   Vector9 coriolis(double dt, const Vector3& omega, bool secondOrder = false,
       OptionalJacobian<9, 9> H = boost::none) const;

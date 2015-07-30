@@ -227,6 +227,50 @@ Matrix7 NavState::wedge(const Vector9& xi) {
 #define D_v_v(H) (H)->block<3,3>(6,6)
 
 //------------------------------------------------------------------------------
+NavState NavState::update(const Vector3& omega, const Vector3& acceleration,
+    const double deltaT, OptionalJacobian<9, 9> F, OptionalJacobian<9, 3> G1,
+    OptionalJacobian<9, 3> G2) const {
+
+  TIE(nRb, n_t, n_v, *this);
+
+  // Calculate acceleration in *current* i frame, i.e., before rotation update below
+  Matrix3 D_acc_R;
+  const Matrix3 dRij = R(); // expensive in quaternion case
+  const Vector3 i_acc = nRb.rotate(acceleration, D_acc_R);
+
+  // rotation vector describing rotation increment computed from the
+  // current rotation rate measurement
+  const Vector3 integratedOmega = omega * deltaT;
+  Matrix3 D_incrR_integratedOmega;
+  Rot3 incrR = Rot3::Expmap(integratedOmega, G1 ? &D_incrR_integratedOmega : 0); // expensive !!
+
+  Matrix3 D_Rij_incrR;
+  double dt22 = 0.5 * deltaT * deltaT;
+  /// TODO(frank): use retract(deltaT*[omega, bRn*n_v * 0.5*deltaT*acceleration, acceleration])
+  /// But before we do, figure out retract derivatives that are nicer than Lie-generated ones
+  NavState result(nRb.compose(incrR, D_Rij_incrR),
+      n_t + Point3(dt22 * i_acc + deltaT * n_v), n_v + deltaT * i_acc);
+
+  // derivative wrt state
+  if (F) {
+    F->setIdentity();
+    D_R_R(F) << D_Rij_incrR;
+    D_t_R(F) << dt22 * D_acc_R;
+    D_t_v(F) << I_3x3 * deltaT;
+    D_v_R(F) << deltaT * D_acc_R;
+  }
+  // derivative wrt omega
+  if (G1) {
+    *G1 << D_incrR_integratedOmega * deltaT, Z_3x3, Z_3x3;
+  }
+  // derivative wrt acceleration
+  if (G2) {
+    *G2 << Z_3x3, dt22 * dRij, dRij * deltaT;
+  }
+  return result;
+}
+
+//------------------------------------------------------------------------------
 Vector9 NavState::coriolis(double dt, const Vector3& omega, bool secondOrder,
     OptionalJacobian<9, 9> H) const {
   TIE(nRb, n_t, n_v, *this);

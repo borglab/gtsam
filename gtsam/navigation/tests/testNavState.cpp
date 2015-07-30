@@ -139,7 +139,8 @@ TEST( NavState, Manifold ) {
 
   // Check localCoordinates derivatives
   boost::function<Vector9(const NavState&, const NavState&)> local =
-      boost::bind(&NavState::localCoordinates, _1, _2, boost::none, boost::none);
+      boost::bind(&NavState::localCoordinates, _1, _2, boost::none,
+          boost::none);
   // from state1 to state2
   kState1.localCoordinates(state2, aH1, aH2);
   EXPECT(assert_equal(numericalDerivative21(local, kState1, state2), aH1));
@@ -178,6 +179,27 @@ TEST( NavState, Lie ) {
 }
 
 /* ************************************************************************* */
+TEST(NavState, Update) {
+  const Vector3 omega(M_PI / 100.0, 0.0, 0.0);
+  const Vector3 acc(0.1, 0.0, 0.0);
+  const double deltaT = 10;
+  Matrix9 aF;
+  Matrix93 aG1, aG2;
+  boost::function<NavState(const NavState&, const Vector3&, const Vector3&)> update =
+      boost::bind(&NavState::update, _1, _2, _3, deltaT, boost::none,
+          boost::none, boost::none);
+  Vector3 b_acc = kRotation * acc;
+  NavState expected(kRotation.expmap(deltaT * omega),
+      kPosition + Point3((kVelocity + b_acc * deltaT / 2) * deltaT),
+      kVelocity + b_acc * deltaT);
+  NavState actual = kState1.update(omega, acc, deltaT, aF, aG1, aG2);
+  EXPECT(assert_equal(expected, actual));
+  EXPECT(assert_equal(numericalDerivative31(update, kState1, omega, acc), aF));
+  EXPECT(assert_equal(numericalDerivative32(update, kState1, omega, acc), aG1));
+  EXPECT(assert_equal(numericalDerivative33(update, kState1, omega, acc), aG2));
+}
+
+/* ************************************************************************* */
 static const double dt = 2.0;
 boost::function<Vector9(const NavState&, const bool&)> coriolis = boost::bind(
     &NavState::coriolis, _1, dt, kOmegaCoriolis, _2, boost::none);
@@ -207,7 +229,7 @@ TEST(NavState, Coriolis2) {
 }
 
 /* ************************************************************************* */
-TEST(NavState, correctPIM) {
+TEST(NavState, CorrectPIM) {
   Vector9 xi;
   xi << 0.1, 0.1, 0.1, 0.2, 0.3, 0.4, -0.1, -0.2, -0.3;
   double dt = 0.5;
