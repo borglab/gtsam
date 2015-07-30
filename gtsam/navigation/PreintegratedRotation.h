@@ -108,9 +108,11 @@ class PreintegratedRotation {
 
   /// @}
 
-  void integrateMeasurement(const Vector3& measuredOmega,
-      const Vector3& biasHat, double deltaT, Matrix3* D_incrR_integratedOmega,
-      Matrix3* Fr) {
+  /// Take the gyro measurement, correct it using the (constant) bias estimate
+  /// and possibly the sensor pose, and then integrate it forward in time to yield
+  /// an incremental rotation.
+  Rot3 incrementalRotation(const Vector3& measuredOmega, const Vector3& biasHat,
+      double deltaT, OptionalJacobian<3, 3> D_incrR_integratedOmega) const {
 
     // First we compensate the measurements for the bias
     Vector3 correctedOmega = measuredOmega - biasHat;
@@ -125,12 +127,22 @@ class PreintegratedRotation {
 
     // rotation vector describing rotation increment computed from the
     // current rotation rate measurement
-    const Vector3 theta_incr = correctedOmega * deltaT;
-    const Rot3 incrR = Rot3::Expmap(theta_incr, D_incrR_integratedOmega); // expensive !!
+    const Vector3 integratedOmega = correctedOmega * deltaT;
+    return Rot3::Expmap(integratedOmega, D_incrR_integratedOmega); // expensive !!
+  }
+
+  /// Calculate an incremental rotation given the gyro measurement and a time interval,
+  /// and update both deltaTij_ and deltaRij_.
+  void integrateMeasurement(const Vector3& measuredOmega,
+      const Vector3& biasHat, double deltaT, Matrix3* D_incrR_integratedOmega,
+      Matrix3* F) {
+
+    const Rot3 incrR = incrementalRotation(measuredOmega, biasHat, deltaT,
+        D_incrR_integratedOmega);
 
     // Update deltaTij and rotation
     deltaTij_ += deltaT;
-    deltaRij_ = deltaRij_.compose(incrR, Fr);
+    deltaRij_ = deltaRij_.compose(incrR, F);
 
     // Update Jacobian
     const Matrix3 incrRt = incrR.transpose();
