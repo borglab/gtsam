@@ -100,6 +100,10 @@ public:
   Matrix3 R() const {
     return R_.matrix();
   }
+  /// Return quaternion. Induces computation in matrix mode
+  Quaternion quaternion() const {
+    return R_.toQuaternion();
+  }
   /// Return position as Vector3
   Vector3 t() const {
     return t_.vector();
@@ -108,10 +112,9 @@ public:
   const Vector3& v() const {
     return v_;
   }
-  /// Return quaternion. Induces computation in matrix mode
-  Quaternion quaternion() const {
-    return R_.toQuaternion();
-  }
+  // Return velocity in body frame
+  Velocity3 bodyVelocity(OptionalJacobian<3, 9> H) const;
+
   /// Return matrix group representation, in MATLAB notation:
   /// nTb = [nRb 0 n_t; 0 nRb n_v; 0 0 1]
   /// With this embedding in GL(3), matrix product agrees with compose
@@ -210,9 +213,9 @@ public:
   /// @{
 
   /// Integrate forward in time given angular velocity and acceleration
-  /// Uses second order integration for position, returns derivatives except deltaT.
+  /// Uses second order integration for position, returns derivatives except dt.
   NavState update(const Vector3& omega, const Vector3& acceleration,
-      const double deltaT, OptionalJacobian<9, 9> F, OptionalJacobian<9, 3> G1,
+      const double dt, OptionalJacobian<9, 9> F, OptionalJacobian<9, 3> G1,
       OptionalJacobian<9, 3> G2) const;
 
   /// Compute tangent space contribution due to Coriolis forces

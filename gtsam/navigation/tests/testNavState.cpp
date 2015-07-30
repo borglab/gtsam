@@ -24,12 +24,12 @@
 using namespace std;
 using namespace gtsam;
 
-static const Rot3 kRotation = Rot3::RzRyRx(0.1, 0.2, 0.3);
+static const Rot3 kAttitude = Rot3::RzRyRx(0.1, 0.2, 0.3);
 static const Point3 kPosition(1.0, 2.0, 3.0);
-static const Pose3 kPose(kRotation, kPosition);
+static const Pose3 kPose(kAttitude, kPosition);
 static const Velocity3 kVelocity(0.4, 0.5, 0.6);
 static const NavState kIdentity;
-static const NavState kState1(kRotation, kPosition, kVelocity);
+static const NavState kState1(kAttitude, kPosition, kVelocity);
 static const Vector3 kOmegaCoriolis(0.02, 0.03, 0.04);
 static const Vector3 kGravity(0, 0, 9.81);
 static const Vector9 kZeroXi = Vector9::Zero();
@@ -46,15 +46,17 @@ TEST(NavState, Constructor) {
   EXPECT(assert_equal(numericalDerivative21(construct, kPose, kVelocity), aH1));
   EXPECT(assert_equal(numericalDerivative22(construct, kPose, kVelocity), aH2));
 }
+
 /* ************************************************************************* */
 TEST( NavState, Attitude) {
   Matrix39 aH, eH;
   Rot3 actual = kState1.attitude(aH);
-  EXPECT(assert_equal(actual, kRotation));
+  EXPECT(assert_equal(actual, kAttitude));
   eH = numericalDerivative11<Rot3, NavState>(
       boost::bind(&NavState::attitude, _1, boost::none), kState1);
   EXPECT(assert_equal((Matrix )eH, aH));
 }
+
 /* ************************************************************************* */
 TEST( NavState, Position) {
   Matrix39 aH, eH;
@@ -64,6 +66,7 @@ TEST( NavState, Position) {
       boost::bind(&NavState::position, _1, boost::none), kState1);
   EXPECT(assert_equal((Matrix )eH, aH));
 }
+
 /* ************************************************************************* */
 TEST( NavState, Velocity) {
   Matrix39 aH, eH;
@@ -73,6 +76,17 @@ TEST( NavState, Velocity) {
       boost::bind(&NavState::velocity, _1, boost::none), kState1);
   EXPECT(assert_equal((Matrix )eH, aH));
 }
+
+/* ************************************************************************* */
+TEST( NavState, BodyVelocity) {
+  Matrix39 aH, eH;
+  Velocity3 actual = kState1.bodyVelocity(aH);
+  EXPECT(assert_equal(actual, kAttitude.unrotate(kVelocity)));
+  eH = numericalDerivative11<Velocity3, NavState>(
+      boost::bind(&NavState::bodyVelocity, _1, boost::none), kState1);
+  EXPECT(assert_equal((Matrix )eH, aH));
+}
+
 /* ************************************************************************* */
 TEST( NavState, MatrixGroup ) {
   // check roundtrip conversion to 7*7 matrix representation
@@ -188,15 +202,15 @@ TEST(NavState, Update) {
   boost::function<NavState(const NavState&, const Vector3&, const Vector3&)> update =
       boost::bind(&NavState::update, _1, _2, _3, deltaT, boost::none,
           boost::none, boost::none);
-  Vector3 b_acc = kRotation * acc;
-  NavState expected(kRotation.expmap(deltaT * omega),
+  Vector3 b_acc = kAttitude * acc;
+  NavState expected(kAttitude.expmap(deltaT * omega),
       kPosition + Point3((kVelocity + b_acc * deltaT / 2) * deltaT),
       kVelocity + b_acc * deltaT);
   NavState actual = kState1.update(omega, acc, deltaT, aF, aG1, aG2);
   EXPECT(assert_equal(expected, actual));
-  EXPECT(assert_equal(numericalDerivative31(update, kState1, omega, acc), aF));
-  EXPECT(assert_equal(numericalDerivative32(update, kState1, omega, acc), aG1));
-  EXPECT(assert_equal(numericalDerivative33(update, kState1, omega, acc), aG2));
+  EXPECT(assert_equal(numericalDerivative31(update, kState1, omega, acc, 1e-7), aF, 1e-7));
+  EXPECT(assert_equal(numericalDerivative32(update, kState1, omega, acc, 1e-7), aG1, 1e-7));
+  EXPECT(assert_equal(numericalDerivative33(update, kState1, omega, acc, 1e-7), aG2, 1e-7));
 }
 
 /* ************************************************************************* */

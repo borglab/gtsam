@@ -56,6 +56,17 @@ const Vector3& NavState::velocity(OptionalJacobian<3, 9> H) const {
 }
 
 //------------------------------------------------------------------------------
+Vector3 NavState::bodyVelocity(OptionalJacobian<3, 9> H) const {
+  const Rot3& nRb = R_;
+  const Vector3& n_v = v_;
+  Matrix3 D_bv_nRb;
+  Vector3 b_v = nRb.unrotate(n_v, H ? &D_bv_nRb : 0);
+  if (H)
+    *H << D_bv_nRb, Z_3x3, I_3x3;
+  return b_v;
+}
+
+//------------------------------------------------------------------------------
 Matrix7 NavState::matrix() const {
   Matrix3 R = this->R();
   Matrix7 T;
@@ -228,44 +239,38 @@ Matrix7 NavState::wedge(const Vector9& xi) {
 
 //------------------------------------------------------------------------------
 NavState NavState::update(const Vector3& omega, const Vector3& acceleration,
-    const double deltaT, OptionalJacobian<9, 9> F, OptionalJacobian<9, 3> G1,
+    const double dt, OptionalJacobian<9, 9> F, OptionalJacobian<9, 3> G1,
     OptionalJacobian<9, 3> G2) const {
 
-  TIE(nRb, n_t, n_v, *this);
+  Vector9 xi;
+  Matrix39 D_xiP_state;
+  double dt22 = 0.5 * dt * dt;
+  dR(xi) << dt * omega;
+  dP(xi) << dt * bodyVelocity(D_xiP_state) + dt22 * acceleration;
+  dV(xi) << dt * acceleration;
 
-  // Calculate acceleration in *current* i frame, i.e., before rotation update below
-  Matrix3 D_acc_R;
-  const Matrix3 dRij = R(); // expensive in quaternion case
-  const Vector3 i_acc = nRb.rotate(acceleration, D_acc_R);
+  Matrix9 D_result_xi;
+  NavState result = retract(xi, F, D_result_xi);
 
-  // rotation vector describing rotation increment computed from the
-  // current rotation rate measurement
-  const Vector3 integratedOmega = omega * deltaT;
-  Matrix3 D_incrR_integratedOmega;
-  Rot3 incrR = Rot3::Expmap(integratedOmega, G1 ? &D_incrR_integratedOmega : 0); // expensive !!
-
-  Matrix3 D_Rij_incrR;
-  double dt22 = 0.5 * deltaT * deltaT;
-  /// TODO(frank): use retract(deltaT*[omega, bRn*n_v * 0.5*deltaT*acceleration, acceleration])
-  /// But before we do, figure out retract derivatives that are nicer than Lie-generated ones
-  NavState result(nRb.compose(incrR, D_Rij_incrR),
-      n_t + Point3(dt22 * i_acc + deltaT * n_v), n_v + deltaT * i_acc);
-
-  // derivative wrt state
+  // Derivative wrt state is computed by retract directly
+  // However, as xi also depends on n_v, we need to add that contribution
   if (F) {
-    F->setIdentity();
-    D_R_R(F) << D_Rij_incrR;
-    D_t_R(F) << dt22 * D_acc_R;
-    D_t_v(F) << I_3x3 * deltaT;
-    D_v_R(F) << deltaT * D_acc_R;
+    Matrix9 D_xi_state;
+    D_xi_state.setZero();
+    D_xi_state.middleRows<3>(3) = dt * D_xiP_state;
+    *F += D_result_xi * D_xi_state;
   }
   // derivative wrt omega
   if (G1) {
-    *G1 << D_incrR_integratedOmega * deltaT, Z_3x3, Z_3x3;
+    Matrix93 D_xi_omega;
+    D_xi_omega << dt * I_3x3, Z_3x3, Z_3x3;
+    *G1 = D_result_xi * D_xi_omega;
   }
   // derivative wrt acceleration
   if (G2) {
-    *G2 << Z_3x3, dt22 * dRij, dRij * deltaT;
+    Matrix93 D_xi_acceleration;
+    D_xi_acceleration << Z_3x3, dt22 * I_3x3, dt * I_3x3;
+    *G2 = D_result_xi * D_xi_acceleration;
   }
   return result;
 }
@@ -313,16 +318,16 @@ Vector9 NavState::correctPIM(const Vector9& pim, double dt,
   const Velocity3& n_v = v_; // derivative is Ri !
   const double dt2 = dt * dt;
 
-  Vector9 delta;
+  Vector9 xi;
   Matrix3 D_dP_Ri1, D_dP_Ri2, D_dP_nv, D_dV_Ri;
-  dR(delta) = dR(pim);
-  dP(delta) = dP(pim)
+  dR(xi) = dR(pim);
+  dP(xi) = dP(pim)
       + dt * nRb.unrotate(n_v, H1 ? &D_dP_Ri1 : 0, H2 ? &D_dP_nv : 0)
       + (0.5 * dt2) * nRb.unrotate(n_gravity, H1 ? &D_dP_Ri2 : 0);
-  dV(delta) = dV(pim) + dt * nRb.unrotate(n_gravity, H1 ? &D_dV_Ri : 0);
+  dV(xi) = dV(pim) + dt * nRb.unrotate(n_gravity, H1 ? &D_dV_Ri : 0);
 
   if (omegaCoriolis) {
-    delta += coriolis(dt, *omegaCoriolis, use2ndOrderCoriolis, H1);
+    xi += coriolis(dt, *omegaCoriolis, use2ndOrderCoriolis, H1);
   }
 
   if (H1 || H2) {
@@ -340,7 +345,7 @@ Vector9 NavState::correctPIM(const Vector9& pim, double dt,
     }
   }
 
-  return delta;
+  return xi;
 }
 //------------------------------------------------------------------------------
 
