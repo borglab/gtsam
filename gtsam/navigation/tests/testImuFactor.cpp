@@ -54,7 +54,7 @@ Rot3 evaluateRotationError(const ImuFactor& factor, const Pose3& pose_i,
 // Auxiliary functions to test Jacobians F and G used for
 // covariance propagation during preintegration
 /* ************************************************************************* */
-Vector updatePreintegratedPosVel(const Vector3 deltaPij_old,
+Vector6 updatePreintegratedPosVel(const Vector3 deltaPij_old,
     const Vector3& deltaVij_old, const Rot3& deltaRij_old,
     const Vector3& correctedAcc, const Vector3& correctedOmega,
     const double deltaT) {
@@ -64,7 +64,7 @@ Vector updatePreintegratedPosVel(const Vector3 deltaPij_old,
   deltaPij_new = deltaPij_old + deltaVij_old * deltaT + 0.5 * temp * deltaT;
   Vector3 deltaVij_new = deltaVij_old + temp;
 
-  Vector result(6);
+  Vector6 result;
   result << deltaPij_new, deltaVij_new;
   return result;
 }
@@ -576,19 +576,22 @@ TEST(ImuFactor, JacobianPreintegratedCovariancePropagation) {
   imuBias::ConstantBias bias; // Current estimate of acceleration and rotation rate biases
 
   // Measurements
+  const Vector3 measuredAcc(0.1, 0.0, 0.0);
+  const Vector3 measuredOmega(M_PI / 100.0, 0.0, 0.0);
+  const double deltaT = 0.01;
   list<Vector3> measuredAccs, measuredOmegas;
   list<double> deltaTs;
-  measuredAccs.push_back(Vector3(0.1, 0.0, 0.0));
-  measuredOmegas.push_back(Vector3(M_PI / 100.0, 0.0, 0.0));
-  deltaTs.push_back(0.01);
-  measuredAccs.push_back(Vector3(0.1, 0.0, 0.0));
-  measuredOmegas.push_back(Vector3(M_PI / 100.0, 0.0, 0.0));
-  deltaTs.push_back(0.01);
+  measuredAccs.push_back(measuredAcc);
+  measuredOmegas.push_back(measuredOmega);
+  deltaTs.push_back(deltaT);
+  measuredAccs.push_back(measuredAcc);
+  measuredOmegas.push_back(measuredOmega);
+  deltaTs.push_back(deltaT);
   for (int i = 1; i < 100; i++) {
     measuredAccs.push_back(Vector3(0.05, 0.09, 0.01));
     measuredOmegas.push_back(
         Vector3(M_PI / 100.0, M_PI / 300.0, 2 * M_PI / 100.0));
-    deltaTs.push_back(0.01);
+    deltaTs.push_back(deltaT);
   }
   // Actual preintegrated values
   PreintegratedImuMeasurements preintegrated =
@@ -597,9 +600,6 @@ TEST(ImuFactor, JacobianPreintegratedCovariancePropagation) {
 
   // so far we only created a nontrivial linearization point for the preintegrated measurements
   // Now we add a new measurement and ask for Jacobians
-  const Vector3 newMeasuredAcc = Vector3(0.1, 0.0, 0.0);
-  const Vector3 newMeasuredOmega = Vector3(M_PI / 100.0, 0.0, 0.0);
-  const double newDeltaT = 0.01;
   const Rot3 deltaRij_old = preintegrated.deltaRij(); // before adding new measurement
   const Vector3 deltaVij_old = preintegrated.deltaVij(); // before adding new measurement
   const Vector3 deltaPij_old = preintegrated.deltaPij(); // before adding new measurement
@@ -607,36 +607,36 @@ TEST(ImuFactor, JacobianPreintegratedCovariancePropagation) {
   Matrix oldPreintCovariance = preintegrated.preintMeasCov();
 
   Matrix Factual, Gactual;
-  preintegrated.integrateMeasurement(newMeasuredAcc, newMeasuredOmega,
-      newDeltaT, Factual, Gactual);
+  preintegrated.integrateMeasurement(measuredAcc, measuredOmega, deltaT,
+      Factual, Gactual);
 
   //////////////////////////////////////////////////////////////////////////////////////////////
   // COMPUTE NUMERICAL DERIVATIVES FOR F
   //////////////////////////////////////////////////////////////////////////////////////////////
   // Compute expected f_pos_vel wrt positions
-  Matrix dfpv_dpos = numericalDerivative11<Vector, Vector3>(
-      boost::bind(&updatePreintegratedPosVel, _1, deltaVij_old, deltaRij_old,
-          newMeasuredAcc, newMeasuredOmega, newDeltaT), deltaPij_old);
+  boost::function<Vector6(const Vector3&, const Vector3&, const Rot3&)> f =
+      boost::bind(&updatePreintegratedPosVel, _1, _2, _3, measuredAcc,
+          measuredOmega, deltaT);
+  Matrix63 dfpv_dpos = numericalDerivative31(f, deltaPij_old, deltaVij_old,
+      deltaRij_old);
 
   // Compute expected f_pos_vel wrt velocities
-  Matrix dfpv_dvel = numericalDerivative11<Vector, Vector3>(
-      boost::bind(&updatePreintegratedPosVel, deltaPij_old, _1, deltaRij_old,
-          newMeasuredAcc, newMeasuredOmega, newDeltaT), deltaVij_old);
+  Matrix63 dfpv_dvel = numericalDerivative32(f, deltaPij_old, deltaVij_old,
+      deltaRij_old);
 
   // Compute expected f_pos_vel wrt angles
-  Matrix dfpv_dangle = numericalDerivative11<Vector, Rot3>(
-      boost::bind(&updatePreintegratedPosVel, deltaPij_old, deltaVij_old, _1,
-          newMeasuredAcc, newMeasuredOmega, newDeltaT), deltaRij_old);
+  Matrix63 dfpv_dangle = numericalDerivative33(f, deltaPij_old, deltaVij_old,
+      deltaRij_old);
 
   // Compute expected f_rot wrt angles
-  Matrix dfr_dangle = numericalDerivative11<Rot3, Rot3>(
-      boost::bind(&updatePreintegratedRot, _1, newMeasuredOmega, newDeltaT),
+  Matrix3 dfr_dangle = numericalDerivative11<Rot3, Rot3>(
+      boost::bind(&updatePreintegratedRot, _1, measuredOmega, deltaT),
       deltaRij_old);
 
   Matrix Fexpected(9, 9);
   Fexpected << //
       dfr_dangle, Z_3x3, Z_3x3, //
-      dfpv_dangle, dfpv_dpos, dfpv_dvel;
+  dfpv_dangle, dfpv_dpos, dfpv_dvel;
 
   EXPECT(assert_equal(Fexpected, Factual));
 
@@ -645,27 +645,27 @@ TEST(ImuFactor, JacobianPreintegratedCovariancePropagation) {
   //////////////////////////////////////////////////////////////////////////////////////////////
   // Compute jacobian wrt integration noise
   Matrix dgpv_dintNoise(6, 3);
-  dgpv_dintNoise << I_3x3 * newDeltaT, Z_3x3;
+  dgpv_dintNoise << I_3x3 * deltaT, Z_3x3;
 
   // Compute jacobian wrt acc noise
   Matrix dgpv_daccNoise = numericalDerivative11<Vector, Vector3>(
       boost::bind(&updatePreintegratedPosVel, deltaPij_old, deltaVij_old,
-          deltaRij_old, _1, newMeasuredOmega, newDeltaT), newMeasuredAcc);
+          deltaRij_old, _1, measuredOmega, deltaT), measuredAcc);
 
   // Compute expected F wrt gyro noise
   Matrix dgpv_domegaNoise = numericalDerivative11<Vector, Vector3>(
       boost::bind(&updatePreintegratedPosVel, deltaPij_old, deltaVij_old,
-          deltaRij_old, newMeasuredAcc, _1, newDeltaT), newMeasuredOmega);
+          deltaRij_old, measuredAcc, _1, deltaT), measuredOmega);
 
   // Compute expected f_rot wrt gyro noise
   Matrix dgr_dangle = numericalDerivative11<Rot3, Vector3>(
-      boost::bind(&updatePreintegratedRot, deltaRij_old, _1, newDeltaT),
-      newMeasuredOmega);
+      boost::bind(&updatePreintegratedRot, deltaRij_old, _1, deltaT),
+      measuredOmega);
 
   Matrix Gexpected(9, 9);
   Gexpected << //
       dgr_dangle, Z_3x3, Z_3x3, //
-      dgpv_domegaNoise, dgpv_dintNoise, dgpv_daccNoise;
+  dgpv_domegaNoise, dgpv_dintNoise, dgpv_daccNoise;
 
   EXPECT(assert_equal(Gexpected, Gactual));
 
@@ -673,12 +673,12 @@ TEST(ImuFactor, JacobianPreintegratedCovariancePropagation) {
   Matrix9 measurementCovariance;
   measurementCovariance << //
       omegaNoiseVar * I_3x3, Z_3x3, Z_3x3, //
-      Z_3x3, intNoiseVar * I_3x3, Z_3x3,  //
-      Z_3x3, Z_3x3, accNoiseVar * I_3x3;
+  Z_3x3, intNoiseVar * I_3x3, Z_3x3, //
+  Z_3x3, Z_3x3, accNoiseVar * I_3x3;
 
   Matrix newPreintCovarianceExpected = Factual * oldPreintCovariance
       * Factual.transpose()
-      + (1 / newDeltaT) * Gactual * measurementCovariance * Gactual.transpose();
+      + (1 / deltaT) * Gactual * measurementCovariance * Gactual.transpose();
 
   Matrix newPreintCovarianceActual = preintegrated.preintMeasCov();
   EXPECT(assert_equal(newPreintCovarianceExpected, newPreintCovarianceActual));
