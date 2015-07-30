@@ -253,24 +253,17 @@ NavState NavState::update(const Vector3& omega, const Vector3& acceleration,
   NavState result = retract(xi, F, D_result_xi);
 
   // Derivative wrt state is computed by retract directly
-  // However, as xi also depends on n_v, we need to add that contribution
+  // However, as dP(xi) also depends on state, we need to add that contribution
   if (F) {
-    Matrix9 D_xi_state;
-    D_xi_state.setZero();
-    D_xi_state.middleRows<3>(3) = dt * D_xiP_state;
-    *F += D_result_xi * D_xi_state;
+    F->middleRows<3>(3) += dt * D_t_t(F) * D_xiP_state;
   }
   // derivative wrt omega
   if (G1) {
-    Matrix93 D_xi_omega;
-    D_xi_omega << dt * I_3x3, Z_3x3, Z_3x3;
-    *G1 = D_result_xi * D_xi_omega;
+    *G1 = dt * D_result_xi.leftCols<3>();
   }
   // derivative wrt acceleration
   if (G2) {
-    Matrix93 D_xi_acceleration;
-    D_xi_acceleration << Z_3x3, dt22 * I_3x3, dt * I_3x3;
-    *G2 = D_result_xi * D_xi_acceleration;
+    *G2 = dt22 * D_result_xi.middleCols<3>(3) + dt * D_result_xi.rightCols<3>();
   }
   return result;
 }
