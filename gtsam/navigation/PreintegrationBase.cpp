@@ -89,8 +89,8 @@ void PreintegrationBase::updatePreintegratedMeasurements(
   // Calculate acceleration in *current* i frame, i.e., before rotation update below
   Matrix3 D_acc_R;
   const Matrix3 dRij = deltaRij_.matrix(); // expensive
-  const Vector3 i_acc = deltaRij_.rotate(correctedAcc, F ? &D_acc_R : 0);
-  const Matrix3 temp = -dRij * skewSymmetric(correctedAcc) * delRdelBiasOmega_;
+  const Vector3 i_acc = deltaRij_.rotate(correctedAcc, D_acc_R);
+  const Matrix3 D_acc_biasOmega = D_acc_R * delRdelBiasOmega_;
 
   Matrix3 D_Rij_incrR;
   PreintegratedRotation::integrateMeasurement(measuredOmega,
@@ -106,9 +106,9 @@ void PreintegrationBase::updatePreintegratedMeasurements(
   deltaT * D_acc_R, Z_3x3, I_3x3; // vel
 
   delPdelBiasAcc_ += delVdelBiasAcc_ * deltaT - dt22 * dRij;
-  delPdelBiasOmega_ += deltaT * delVdelBiasOmega_ + dt22 * temp;
+  delPdelBiasOmega_ += deltaT * delVdelBiasOmega_ + dt22 * D_acc_biasOmega;
   delVdelBiasAcc_ += -dRij * deltaT;
-  delVdelBiasOmega_ += temp * deltaT;
+  delVdelBiasOmega_ += D_acc_biasOmega * deltaT;
 }
 
 //------------------------------------------------------------------------------
