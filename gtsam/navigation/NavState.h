@@ -212,9 +212,9 @@ public:
   /// @name Dynamics
   /// @{
 
-  /// Integrate forward in time given angular velocity and acceleration
+  /// Integrate forward in time given angular velocity and acceleration in body frame
   /// Uses second order integration for position, returns derivatives except dt.
-  NavState update(const Vector3& omega, const Vector3& acceleration,
+  NavState update(const Vector3& b_acceleration, const Vector3& b_omega,
       const double dt, OptionalJacobian<9, 9> F, OptionalJacobian<9, 3> G1,
       OptionalJacobian<9, 3> G2) const;
 

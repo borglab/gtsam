@@ -206,11 +206,11 @@ TEST(NavState, Update) {
   NavState expected(kAttitude.expmap(deltaT * omega),
       kPosition + Point3((kVelocity + b_acc * deltaT / 2) * deltaT),
       kVelocity + b_acc * deltaT);
-  NavState actual = kState1.update(omega, acc, deltaT, aF, aG1, aG2);
+  NavState actual = kState1.update(acc, omega, deltaT, aF, aG1, aG2);
   EXPECT(assert_equal(expected, actual));
-  EXPECT(assert_equal(numericalDerivative31(update, kState1, omega, acc, 1e-7), aF, 1e-7));
-  EXPECT(assert_equal(numericalDerivative32(update, kState1, omega, acc, 1e-7), aG1, 1e-7));
-  EXPECT(assert_equal(numericalDerivative33(update, kState1, omega, acc, 1e-7), aG2, 1e-7));
+  EXPECT(assert_equal(numericalDerivative31(update, kState1, acc, omega, 1e-7), aF, 1e-7));
+  EXPECT(assert_equal(numericalDerivative32(update, kState1, acc, omega, 1e-7), aG1, 1e-7));
+  EXPECT(assert_equal(numericalDerivative33(update, kState1, acc, omega, 1e-7), aG2, 1e-7));
 }
 
 /* ************************************************************************* */

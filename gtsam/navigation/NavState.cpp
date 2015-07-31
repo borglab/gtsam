@@ -238,7 +238,7 @@ Matrix7 NavState::wedge(const Vector9& xi) {
 #define D_v_v(H) (H)->block<3,3>(6,6)
 
 //------------------------------------------------------------------------------
-NavState NavState::update(const Vector3& omega, const Vector3& acceleration,
+NavState NavState::update(const Vector3& b_acceleration, const Vector3& b_omega,
     const double dt, OptionalJacobian<9, 9> F, OptionalJacobian<9, 3> G1,
     OptionalJacobian<9, 3> G2) const {
 
@@ -248,9 +248,9 @@ NavState NavState::update(const Vector3& omega, const Vector3& acceleration,
   double dt22 = 0.5 * dt * dt;
 
   // Integrate on tangent space. TODO(frank): coriolis?
-  dR(xi) << dt * omega;
-  dP(xi) << dt * b_v + dt22 * acceleration;
-  dV(xi) << dt * acceleration;
+  dR(xi) << dt * b_omega;
+  dP(xi) << dt * b_v + dt22 * b_acceleration;
+  dV(xi) << dt * b_acceleration;
 
   // Bring back to manifold
   Matrix9 D_newState_xi;
@@ -261,21 +261,22 @@ NavState NavState::update(const Vector3& omega, const Vector3& acceleration,
   if (F) {
     F->middleRows<3>(3) += dt * D_t_t(F) * D_xiP_state;
   }
-  // derivative wrt omega
-  if (G1) {
-    // D_newState_dRxi = D_newState_xi.leftCols<3>()
-    // D_dRxi_omega = dt * I_3x3
-    // *G1 = D_newState_omega = D_newState_dRxi * D_dRxi_omega
-    *G1 = D_newState_xi.leftCols<3>() * dt;
-  }
   // derivative wrt acceleration
-  if (G2) {
+  if (G1) {
     // D_newState_dPxi = D_newState_xi.middleCols<3>(3)
     // D_dPxi_acc = dt22 * I_3x3
     // D_newState_dVxi = D_newState_xi.rightCols<3>()
     // D_dVxi_acc = dt * I_3x3
     // *G2 = D_newState_acc = D_newState_dPxi * D_dPxi_acc + D_newState_dVxi * D_dVxi_acc
-    *G2 = D_newState_xi.middleCols<3>(3) * dt22 + D_newState_xi.rightCols<3>() * dt;
+    *G1 = D_newState_xi.middleCols<3>(3) * dt22
+        + D_newState_xi.rightCols<3>() * dt;
+  }
+  // derivative wrt omega
+  if (G2) {
+    // D_newState_dRxi = D_newState_xi.leftCols<3>()
+    // D_dRxi_omega = dt * I_3x3
+    // *G1 = D_newState_omega = D_newState_dRxi * D_dRxi_omega
+    *G2 = D_newState_xi.leftCols<3>() * dt;
   }
   return newState;
 }
