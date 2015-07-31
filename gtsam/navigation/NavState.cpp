@@ -244,13 +244,17 @@ NavState NavState::update(const Vector3& omega, const Vector3& acceleration,
 
   Vector9 xi;
   Matrix39 D_xiP_state;
+  Vector3 b_v = bodyVelocity(F ? &D_xiP_state : 0);
   double dt22 = 0.5 * dt * dt;
+
+  // Integrate on tangent space. TODO(frank): coriolis?
   dR(xi) << dt * omega;
-  dP(xi) << dt * bodyVelocity(F ? &D_xiP_state : 0) + dt22 * acceleration;
+  dP(xi) << dt * b_v + dt22 * acceleration;
   dV(xi) << dt * acceleration;
 
-  Matrix9 D_result_xi;
-  NavState result = retract(xi, F, G1 || G2 ? &D_result_xi : 0);
+  // Bring back to manifold
+  Matrix9 D_newState_xi;
+  NavState newState = retract(xi, F, G1 || G2 ? &D_newState_xi : 0);
 
   // Derivative wrt state is computed by retract directly
   // However, as dP(xi) also depends on state, we need to add that contribution
@@ -259,21 +263,21 @@ NavState NavState::update(const Vector3& omega, const Vector3& acceleration,
   }
   // derivative wrt omega
   if (G1) {
-    // D_result_dRxi = D_result_xi.leftCols<3>()
+    // D_newState_dRxi = D_newState_xi.leftCols<3>()
     // D_dRxi_omega = dt * I_3x3
-    // *G1 = D_result_omega = D_result_dRxi * D_dRxi_omega
-    *G1 = D_result_xi.leftCols<3>() * dt;
+    // *G1 = D_newState_omega = D_newState_dRxi * D_dRxi_omega
+    *G1 = D_newState_xi.leftCols<3>() * dt;
   }
   // derivative wrt acceleration
   if (G2) {
-    // D_result_dPxi = D_result_xi.middleCols<3>(3)
+    // D_newState_dPxi = D_newState_xi.middleCols<3>(3)
     // D_dPxi_acc = dt22 * I_3x3
-    // D_result_dVxi = D_result_xi.rightCols<3>()
+    // D_newState_dVxi = D_newState_xi.rightCols<3>()
     // D_dVxi_acc = dt * I_3x3
-    // *G2 = D_result_acc = D_result_dPxi * D_dPxi_acc + D_result_dVxi * D_dVxi_acc
-    *G2 = D_result_xi.middleCols<3>(3) * dt22 + D_result_xi.rightCols<3>() * dt;
+    // *G2 = D_newState_acc = D_newState_dPxi * D_dPxi_acc + D_newState_dVxi * D_dVxi_acc
+    *G2 = D_newState_xi.middleCols<3>(3) * dt22 + D_newState_xi.rightCols<3>() * dt;
   }
-  return result;
+  return newState;
 }
 
 //------------------------------------------------------------------------------

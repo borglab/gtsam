@@ -113,7 +113,7 @@ public:
     return v_;
   }
   // Return velocity in body frame
-  Velocity3 bodyVelocity(OptionalJacobian<3, 9> H) const;
+  Velocity3 bodyVelocity(OptionalJacobian<3, 9> H = boost::none) const;
 
   /// Return matrix group representation, in MATLAB notation:
   /// nTb = [nRb 0 n_t; 0 nRb n_v; 0 0 1]
