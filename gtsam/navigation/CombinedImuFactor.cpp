@@ -51,17 +51,32 @@ void PreintegratedCombinedMeasurements::resetIntegration() {
 }
 
 //------------------------------------------------------------------------------
+// sugar for derivative blocks
+#define D_R_R(H) (H)->block<3,3>(0,0)
+#define D_R_t(H) (H)->block<3,3>(0,3)
+#define D_R_v(H) (H)->block<3,3>(0,6)
+#define D_t_R(H) (H)->block<3,3>(3,0)
+#define D_t_t(H) (H)->block<3,3>(3,3)
+#define D_t_v(H) (H)->block<3,3>(3,6)
+#define D_v_R(H) (H)->block<3,3>(6,0)
+#define D_v_t(H) (H)->block<3,3>(6,3)
+#define D_v_v(H) (H)->block<3,3>(6,6)
+#define D_a_a(H) (H)->block<3,3>(9,9)
+#define D_g_g(H) (H)->block<3,3>(12,12)
+
+//------------------------------------------------------------------------------
 void PreintegratedCombinedMeasurements::integrateMeasurement(
     const Vector3& measuredAcc, const Vector3& measuredOmega, double deltaT,
-    boost::optional<Matrix&> F_test, boost::optional<Matrix&> G_test) {
+    OptionalJacobian<15, 15> F_test, OptionalJacobian<15, 21> G_test) {
 
-  const Matrix3 dRij = deltaRij_.matrix(); // expensive when quaternion
+  const Matrix3 dRij = deltaXij_.R(); // expensive when quaternion
 
   // Update preintegrated measurements.
   Matrix3 D_incrR_integratedOmega; // Right jacobian computed at theta_incr
   Matrix9 F_9x9; // overall Jacobian wrt preintegrated measurements (df/dx)
+  Matrix93 G1,G2;
   updatePreintegratedMeasurements(measuredAcc, measuredOmega, deltaT,
-      &D_incrR_integratedOmega, &F_9x9);
+      &D_incrR_integratedOmega, &F_9x9, &G1, &G2);
 
   // Update preintegrated measurements covariance: as in [2] we consider a first order propagation that
   // can be seen as a prediction phase in an EKF framework. In this implementation, contrarily to [2] we
@@ -74,17 +89,11 @@ void PreintegratedCombinedMeasurements::integrateMeasurement(
 
   // overall Jacobian wrt preintegrated measurements (df/dx)
   Eigen::Matrix<double,15,15> F;
-  // for documentation:
-  //  F << I_3x3,    I_3x3 * deltaT,   Z_3x3,             Z_3x3,            Z_3x3,
-  //       Z_3x3,    I_3x3,            H_vel_angles,      H_vel_biasacc,    Z_3x3,
-  //       Z_3x3,    Z_3x3,            H_angles_angles,   Z_3x3,            H_angles_biasomega,
-  //       Z_3x3,    Z_3x3,            Z_3x3,             I_3x3,            Z_3x3,
-  //       Z_3x3,    Z_3x3,            Z_3x3,             Z_3x3,            I_3x3;
   F.setZero();
   F.block<9, 9>(0, 0) = F_9x9;
+  F.block<3, 3>(0, 12) = H_angles_biasomega;
+  F.block<3, 3>(6, 9) = H_vel_biasacc;
   F.block<6, 6>(9, 9) = I_6x6;
-  F.block<3, 3>(3, 9) = H_vel_biasacc;
-  F.block<3, 3>(6, 12) = H_angles_biasomega;
 
   // first order uncertainty propagation
   // Optimized matrix multiplication   (1/deltaT) * G * measurementCovariance * G.transpose()
@@ -92,38 +101,36 @@ void PreintegratedCombinedMeasurements::integrateMeasurement(
   G_measCov_Gt.setZero(15, 15);
 
   // BLOCK DIAGONAL TERMS
-  G_measCov_Gt.block<3, 3>(0, 0) = deltaT * p().integrationCovariance;
-  G_measCov_Gt.block<3, 3>(3, 3) = (1 / deltaT) * (H_vel_biasacc)
+  D_t_t(&G_measCov_Gt) = deltaT * p().integrationCovariance;
+  D_v_v(&G_measCov_Gt) = (1 / deltaT) * (H_vel_biasacc)
       * (p().accelerometerCovariance + p().biasAccOmegaInit.block<3, 3>(0, 0))
       * (H_vel_biasacc.transpose());
-  G_measCov_Gt.block<3, 3>(6, 6) = (1 / deltaT) * (H_angles_biasomega)
+  D_R_R(&G_measCov_Gt) = (1 / deltaT) * (H_angles_biasomega)
       * (p().gyroscopeCovariance + p().biasAccOmegaInit.block<3, 3>(3, 3))
       * (H_angles_biasomega.transpose());
-  G_measCov_Gt.block<3, 3>(9, 9) = (1 / deltaT) * p().biasAccCovariance;
-  G_measCov_Gt.block<3, 3>(12, 12) = (1 / deltaT) * p().biasOmegaCovariance;
+  D_a_a(&G_measCov_Gt) = (1 / deltaT) * p().biasAccCovariance;
+  D_g_g(&G_measCov_Gt) = (1 / deltaT) * p().biasOmegaCovariance;
 
   // OFF BLOCK DIAGONAL TERMS
-  Matrix3 block23 = H_vel_biasacc * p().biasAccOmegaInit.block<3, 3>(3, 0)
+  Matrix3 temp = H_vel_biasacc * p().biasAccOmegaInit.block<3, 3>(3, 0)
       * H_angles_biasomega.transpose();
-  G_measCov_Gt.block<3, 3>(3, 6) = block23;
-  G_measCov_Gt.block<3, 3>(6, 3) = block23.transpose();
+  D_v_R(&G_measCov_Gt) = temp;
+  D_R_v(&G_measCov_Gt) = temp.transpose();
   preintMeasCov_ = F * preintMeasCov_ * F.transpose() + G_measCov_Gt;
 
   // F_test and G_test are used for testing purposes and are not needed by the factor
   if (F_test) {
-    F_test->resize(15, 15);
     (*F_test) << F;
   }
   if (G_test) {
-    G_test->resize(15, 21);
     // This is for testing & documentation
     ///< measurementCovariance_ : cov[integrationError measuredAcc measuredOmega biasAccRandomWalk biasOmegaRandomWalk biasAccInit biasOmegaInit] in R^(21 x 21)
     (*G_test) << //
-        I_3x3 * deltaT, Z_3x3, Z_3x3, Z_3x3, Z_3x3, Z_3x3, Z_3x3, //
-    Z_3x3, -H_vel_biasacc, Z_3x3, Z_3x3, Z_3x3, H_vel_biasacc, Z_3x3, //
-    Z_3x3, Z_3x3, -H_angles_biasomega, Z_3x3, Z_3x3, Z_3x3, H_angles_biasomega, //
-    Z_3x3, Z_3x3, Z_3x3, I_3x3, Z_3x3, Z_3x3, Z_3x3, //
-    Z_3x3, Z_3x3, Z_3x3, Z_3x3, I_3x3, Z_3x3, Z_3x3;
+        -H_angles_biasomega, Z_3x3, Z_3x3, Z_3x3, Z_3x3, Z_3x3, H_angles_biasomega, //
+        Z_3x3, I_3x3 * deltaT, Z_3x3, Z_3x3, Z_3x3, Z_3x3, Z_3x3, //
+        Z_3x3, Z_3x3, -H_vel_biasacc, Z_3x3, Z_3x3, H_vel_biasacc, Z_3x3, //
+        Z_3x3, Z_3x3, Z_3x3, I_3x3, Z_3x3, Z_3x3, Z_3x3, //
+        Z_3x3, Z_3x3, Z_3x3, Z_3x3, I_3x3, Z_3x3, Z_3x3;
   }
 }
 
@@ -198,7 +205,7 @@ Vector CombinedImuFactor::evaluateError(const Pose3& pose_i,
   Matrix93 D_r_vel_i, D_r_vel_j;
 
   // error wrt preintegrated measurements
-  Vector9 r_pvR = _PIM_.computeErrorAndJacobians(pose_i, vel_i, pose_j, vel_j, bias_i,
+  Vector9 r_Rpv = _PIM_.computeErrorAndJacobians(pose_i, vel_i, pose_j, vel_j, bias_i,
       H1 ? &D_r_pose_i : 0, H2 ? &D_r_vel_i : 0, H3 ? &D_r_pose_j : 0,
       H4 ? &D_r_vel_j : 0, H5 ? &D_r_bias_i : 0);
 
@@ -242,7 +249,7 @@ Vector CombinedImuFactor::evaluateError(const Pose3& pose_i,
 
   // overall error
   Vector r(15);
-  r << r_pvR, fbias; // vector of size 15
+  r << r_Rpv, fbias; // vector of size 15
   return r;
 }
 

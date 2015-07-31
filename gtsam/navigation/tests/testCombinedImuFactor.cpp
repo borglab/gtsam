@@ -47,36 +47,30 @@ namespace {
 Vector updatePreintegratedMeasurementsTest(const Vector3 deltaPij_old,
     const Vector3& deltaVij_old, const Rot3& deltaRij_old,
     const imuBias::ConstantBias& bias_old, const Vector3& correctedAcc,
-    const Vector3& correctedOmega, const double deltaT,
-    const bool use2ndOrderIntegration) {
+    const Vector3& correctedOmega, const double deltaT) {
 
   Matrix3 dRij = deltaRij_old.matrix();
   Vector3 temp = dRij * (correctedAcc - bias_old.accelerometer()) * deltaT;
   Vector3 deltaPij_new;
-  if (!use2ndOrderIntegration) {
-    deltaPij_new = deltaPij_old + deltaVij_old * deltaT;
-  } else {
-    deltaPij_new = deltaPij_old + deltaVij_old * deltaT + 0.5 * temp * deltaT;
-  }
+  deltaPij_new = deltaPij_old + deltaVij_old * deltaT + 0.5 * temp * deltaT;
   Vector3 deltaVij_new = deltaVij_old + temp;
   Rot3 deltaRij_new = deltaRij_old
       * Rot3::Expmap((correctedOmega - bias_old.gyroscope()) * deltaT);
   Vector3 logDeltaRij_new = Rot3::Logmap(deltaRij_new); // not important any more
   imuBias::ConstantBias bias_new(bias_old);
   Vector result(15);
-  result << deltaPij_new, deltaVij_new, logDeltaRij_new, bias_new.vector();
+  result << logDeltaRij_new, deltaPij_new, deltaVij_new, bias_new.vector();
   return result;
 }
 
 Rot3 updatePreintegratedMeasurementsRot(const Vector3 deltaPij_old,
     const Vector3& deltaVij_old, const Rot3& deltaRij_old,
     const imuBias::ConstantBias& bias_old, const Vector3& correctedAcc,
-    const Vector3& correctedOmega, const double deltaT,
-    const bool use2ndOrderIntegration) {
+    const Vector3& correctedOmega, const double deltaT) {
 
   Vector result = updatePreintegratedMeasurementsTest(deltaPij_old,
       deltaVij_old, deltaRij_old, bias_old, correctedAcc, correctedOmega,
-      deltaT, use2ndOrderIntegration);
+      deltaT);
 
   return Rot3::Expmap(result.segment < 3 > (6));
 }
@@ -377,10 +371,8 @@ TEST( CombinedImuFactor, JacobianPreintegratedCovariancePropagation ) {
   Matrix oldPreintCovariance = pim.preintMeasCov();
 
   Matrix Factual, Gactual;
-  pim.integrateMeasurement(newMeasuredAcc, newMeasuredOmega,
-      newDeltaT, Factual, Gactual);
-
-  bool use2ndOrderIntegration = false;
+  pim.integrateMeasurement(newMeasuredAcc, newMeasuredOmega, newDeltaT, Factual,
+      Gactual);
 
   //////////////////////////////////////////////////////////////////////////////////////////////
   // COMPUTE NUMERICAL DERIVATIVES FOR F
@@ -388,51 +380,51 @@ TEST( CombinedImuFactor, JacobianPreintegratedCovariancePropagation ) {
   // Compute expected F wrt positions (15,3)
   Matrix df_dpos = numericalDerivative11<Vector, Vector3>(
       boost::bind(&updatePreintegratedMeasurementsTest, _1, deltaVij_old,
-          deltaRij_old, bias_old, newMeasuredAcc, newMeasuredOmega, newDeltaT,
-          use2ndOrderIntegration), deltaPij_old);
+          deltaRij_old, bias_old, newMeasuredAcc, newMeasuredOmega, newDeltaT
+          ), deltaPij_old);
   // rotation part has to be done properly, on manifold
-  df_dpos.block<3, 3>(6, 0) = numericalDerivative11<Rot3, Vector3>(
+  df_dpos.block<3, 3>(0, 0) = numericalDerivative11<Rot3, Vector3>(
       boost::bind(&updatePreintegratedMeasurementsRot, _1, deltaVij_old,
-          deltaRij_old, bias_old, newMeasuredAcc, newMeasuredOmega, newDeltaT,
-          use2ndOrderIntegration), deltaPij_old);
+          deltaRij_old, bias_old, newMeasuredAcc, newMeasuredOmega, newDeltaT
+          ), deltaPij_old);
+  EXPECT(assert_equal(df_dpos, Factual.block<15, 3>(0, 3), 1e-5));
 
   // Compute expected F wrt velocities (15,3)
   Matrix df_dvel = numericalDerivative11<Vector, Vector3>(
       boost::bind(&updatePreintegratedMeasurementsTest, deltaPij_old, _1,
-          deltaRij_old, bias_old, newMeasuredAcc, newMeasuredOmega, newDeltaT,
-          use2ndOrderIntegration), deltaVij_old);
+          deltaRij_old, bias_old, newMeasuredAcc, newMeasuredOmega, newDeltaT
+          ), deltaVij_old);
   // rotation part has to be done properly, on manifold
-  df_dvel.block<3, 3>(6, 0) = numericalDerivative11<Rot3, Vector3>(
+  df_dvel.block<3, 3>(0, 0) = numericalDerivative11<Rot3, Vector3>(
       boost::bind(&updatePreintegratedMeasurementsRot, deltaPij_old, _1,
-          deltaRij_old, bias_old, newMeasuredAcc, newMeasuredOmega, newDeltaT,
-          use2ndOrderIntegration), deltaVij_old);
+          deltaRij_old, bias_old, newMeasuredAcc, newMeasuredOmega, newDeltaT
+          ), deltaVij_old);
+  EXPECT(assert_equal(df_dvel, Factual.block<15, 3>(0, 6), 1e-5));
 
   // Compute expected F wrt angles (15,3)
   Matrix df_dangle = numericalDerivative11<Vector, Rot3>(
       boost::bind(&updatePreintegratedMeasurementsTest, deltaPij_old,
           deltaVij_old, _1, bias_old, newMeasuredAcc, newMeasuredOmega,
-          newDeltaT, use2ndOrderIntegration), deltaRij_old);
+          newDeltaT), deltaRij_old);
   // rotation part has to be done properly, on manifold
-  df_dangle.block<3, 3>(6, 0) = numericalDerivative11<Rot3, Rot3>(
+  df_dangle.block<3, 3>(0, 0) = numericalDerivative11<Rot3, Rot3>(
       boost::bind(&updatePreintegratedMeasurementsRot, deltaPij_old,
           deltaVij_old, _1, bias_old, newMeasuredAcc, newMeasuredOmega,
-          newDeltaT, use2ndOrderIntegration), deltaRij_old);
+          newDeltaT), deltaRij_old);
+  EXPECT(assert_equal(df_dangle, Factual.block<15, 3>(0, 0), 1e-5));
 
   // Compute expected F wrt biases (15,6)
   Matrix df_dbias = numericalDerivative11<Vector, imuBias::ConstantBias>(
       boost::bind(&updatePreintegratedMeasurementsTest, deltaPij_old,
           deltaVij_old, deltaRij_old, _1, newMeasuredAcc, newMeasuredOmega,
-          newDeltaT, use2ndOrderIntegration), bias_old);
+          newDeltaT), bias_old);
   // rotation part has to be done properly, on manifold
-  df_dbias.block<3, 6>(6, 0) =
+  df_dbias.block<3, 6>(0, 0) =
       numericalDerivative11<Rot3, imuBias::ConstantBias>(
           boost::bind(&updatePreintegratedMeasurementsRot, deltaPij_old,
               deltaVij_old, deltaRij_old, _1, newMeasuredAcc, newMeasuredOmega,
-              newDeltaT, use2ndOrderIntegration), bias_old);
-
-  Matrix Fexpected(15, 15);
-  Fexpected << df_dpos, df_dvel, df_dangle, df_dbias;
-  EXPECT(assert_equal(Fexpected, Factual,1e-5));
+              newDeltaT), bias_old);
+  EXPECT(assert_equal(df_dbias, Factual.block<15, 6>(0, 9), 1e-5));
 
   //////////////////////////////////////////////////////////////////////////////////////////////
   // COMPUTE NUMERICAL DERIVATIVES FOR G
@@ -444,24 +436,24 @@ TEST( CombinedImuFactor, JacobianPreintegratedCovariancePropagation ) {
   // Compute expected G wrt acc noise (15,3)
   Matrix df_daccNoise = numericalDerivative11<Vector, Vector3>(
       boost::bind(&updatePreintegratedMeasurementsTest, deltaPij_old,
-          deltaVij_old, deltaRij_old, bias_old, _1, newMeasuredOmega, newDeltaT,
-          use2ndOrderIntegration), newMeasuredAcc);
+          deltaVij_old, deltaRij_old, bias_old, _1, newMeasuredOmega, newDeltaT
+          ), newMeasuredAcc);
   // rotation part has to be done properly, on manifold
   df_daccNoise.block<3, 3>(6, 0) = numericalDerivative11<Rot3, Vector3>(
       boost::bind(&updatePreintegratedMeasurementsRot, deltaPij_old,
-          deltaVij_old, deltaRij_old, bias_old, _1, newMeasuredOmega, newDeltaT,
-          use2ndOrderIntegration), newMeasuredAcc);
+          deltaVij_old, deltaRij_old, bias_old, _1, newMeasuredOmega, newDeltaT
+          ), newMeasuredAcc);
 
   // Compute expected G wrt gyro noise (15,3)
   Matrix df_domegaNoise = numericalDerivative11<Vector, Vector3>(
       boost::bind(&updatePreintegratedMeasurementsTest, deltaPij_old,
-          deltaVij_old, deltaRij_old, bias_old, newMeasuredAcc, _1, newDeltaT,
-          use2ndOrderIntegration), newMeasuredOmega);
+          deltaVij_old, deltaRij_old, bias_old, newMeasuredAcc, _1, newDeltaT
+          ), newMeasuredOmega);
   // rotation part has to be done properly, on manifold
   df_domegaNoise.block<3, 3>(6, 0) = numericalDerivative11<Rot3, Vector3>(
       boost::bind(&updatePreintegratedMeasurementsRot, deltaPij_old,
-          deltaVij_old, deltaRij_old, bias_old, newMeasuredAcc, _1, newDeltaT,
-          use2ndOrderIntegration), newMeasuredOmega);
+          deltaVij_old, deltaRij_old, bias_old, newMeasuredAcc, _1, newDeltaT
+          ), newMeasuredOmega);
 
   // Compute expected G wrt bias random walk noise (15,6)
   Matrix df_rwBias(15, 6); // random walk on the bias does not appear in the first 9 entries
@@ -472,13 +464,13 @@ TEST( CombinedImuFactor, JacobianPreintegratedCovariancePropagation ) {
   Matrix df_dinitBias = numericalDerivative11<Vector, imuBias::ConstantBias>(
       boost::bind(&updatePreintegratedMeasurementsTest, deltaPij_old,
           deltaVij_old, deltaRij_old, _1, newMeasuredAcc, newMeasuredOmega,
-          newDeltaT, use2ndOrderIntegration), bias_old);
+          newDeltaT), bias_old);
   // rotation part has to be done properly, on manifold
   df_dinitBias.block<3, 6>(6, 0) = numericalDerivative11<Rot3,
       imuBias::ConstantBias>(
       boost::bind(&updatePreintegratedMeasurementsRot, deltaPij_old,
           deltaVij_old, deltaRij_old, _1, newMeasuredAcc, newMeasuredOmega,
-          newDeltaT, use2ndOrderIntegration), bias_old);
+          newDeltaT), bias_old);
   df_dinitBias.block<6, 6>(9, 0) = Z_6x6; // only has to influence first 9 rows
 
   Matrix Gexpected(15, 21);

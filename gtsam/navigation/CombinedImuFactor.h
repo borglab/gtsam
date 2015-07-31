@@ -142,10 +142,10 @@ class PreintegratedCombinedMeasurements : public PreintegrationBase {
    * @param body_P_sensor Optional sensor frame (pose of the IMU in the body
    * frame)
    */
-  void integrateMeasurement(
-      const Vector3& measuredAcc, const Vector3& measuredOmega, double deltaT,
-      boost::optional<Matrix&> F_test = boost::none,
-      boost::optional<Matrix&> G_test = boost::none);
+  void integrateMeasurement(const Vector3& measuredAcc,
+      const Vector3& measuredOmega, double deltaT,
+      OptionalJacobian<15, 15> F_test = boost::none,
+      OptionalJacobian<15, 21> G_test = boost::none);
 
   /// methods to access class variables
   Matrix preintMeasCov() const { return preintMeasCov_; }
