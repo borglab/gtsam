@@ -61,16 +61,17 @@ void PreintegratedImuMeasurements::resetIntegration() {
 #define D_v_v(H) (H)->block<3,3>(6,6)
 //------------------------------------------------------------------------------
 void PreintegratedImuMeasurements::integrateMeasurement(
-    const Vector3& measuredAcc, const Vector3& measuredOmega, double deltaT,
-    OptionalJacobian<9, 9> F_test, OptionalJacobian<9, 9> G_test) {
+    const Vector3& measuredAcc, const Vector3& measuredOmega, double dt,
+    OptionalJacobian<9, 9> outF, OptionalJacobian<9, 9> G) {
 
-  const Matrix3 dRij = deltaRij_.matrix(); // store this, which is useful to compute G_test
+  static const Matrix93 Gi = (Matrix93() << Z_3x3, I_3x3, Z_3x3).finished();
 
   // Update preintegrated measurements (also get Jacobian)
   Matrix3 D_incrR_integratedOmega; // Right jacobian computed at theta_incr
   Matrix9 F; // overall Jacobian wrt preintegrated measurements (df/dx)
-  updatePreintegratedMeasurements(measuredAcc, measuredOmega, deltaT,
-      &D_incrR_integratedOmega, &F);
+  Matrix93 G1, G2;
+  updatePreintegratedMeasurements(measuredAcc, measuredOmega, dt,
+      &D_incrR_integratedOmega, &F, &G1, &G2);
 
   // first order covariance propagation:
   // as in [2] we consider a first order propagation that can be seen as a prediction phase in EKF
@@ -78,35 +79,13 @@ void PreintegratedImuMeasurements::integrateMeasurement(
   // preintMeasCov = F * preintMeasCov * F.transpose() + G * (1/deltaT) * measurementCovariance * G'
   // NOTE 1: (1/deltaT) allows to pass from continuous time noise to discrete time noise
   // measurementCovariance_discrete = measurementCovariance_contTime * (1/deltaT)
-  // NOTE 2: computation of G * (1/deltaT) * measurementCovariance * G.transpose() done block-wise,
-  // as G and measurementCovariance are block-diagonal matrices
-  preintMeasCov_ = F * preintMeasCov_ * F.transpose();
-  D_R_R(&preintMeasCov_) += D_incrR_integratedOmega * p().gyroscopeCovariance
-      * D_incrR_integratedOmega.transpose() * deltaT;
-  D_t_t(&preintMeasCov_) += p().integrationCovariance * deltaT;
-  D_v_v(&preintMeasCov_) += dRij * p().accelerometerCovariance * dRij.transpose() * deltaT;
+  preintMeasCov_ = F * preintMeasCov_ * F.transpose()
+      + G1 * (p().accelerometerCovariance / dt) * G1.transpose()
+      + Gi * (p().integrationCovariance * dt) * Gi.transpose() // NOTE(frank): (Gi*dt)*(C/dt)*(Gi'*dt)
+      + G2 * (p().gyroscopeCovariance / dt) * G2.transpose();
 
-  Matrix3 F_pos_noiseacc;
-  F_pos_noiseacc = 0.5 * dRij * deltaT * deltaT;
-  D_t_t(&preintMeasCov_) += (1 / deltaT) * F_pos_noiseacc
-      * p().accelerometerCovariance * F_pos_noiseacc.transpose();
-  Matrix3 temp = F_pos_noiseacc * p().accelerometerCovariance
-      * dRij.transpose(); // has 1/deltaT
-  D_t_v(&preintMeasCov_) += temp;
-  D_v_t(&preintMeasCov_) += temp.transpose();
-
-  // F_test and G_test are given as output for testing purposes and are not needed by the factor
-  if (F_test) {
-    (*F_test) << F;
-  }
-  if (G_test) {
-    // This in only for testing & documentation, while the actual computation is done block-wise
-    //           omegaNoise               intNoise        accNoise
-    (*G_test) <<
-        D_incrR_integratedOmega * deltaT, Z_3x3,          Z_3x3, // angle
-        Z_3x3,                            I_3x3 * deltaT, F_pos_noiseacc, // pos
-        Z_3x3,                            Z_3x3,          dRij * deltaT; // vel
-  }
+  if (outF) *outF = F;
+  if (G) *G << G2, Gi*dt, G1; // NOTE(frank): order here is R,P,V
 }
 //------------------------------------------------------------------------------
 PreintegratedImuMeasurements::PreintegratedImuMeasurements(

@@ -322,14 +322,14 @@ Vector9 NavState::correctPIM(const Vector9& pim, double dt,
     OptionalJacobian<9, 9> H2) const {
   const Rot3& nRb = R_;
   const Velocity3& n_v = v_; // derivative is Ri !
-  const double dt2 = dt * dt;
+  const double dt22 = 0.5 * dt * dt;
 
   Vector9 xi;
   Matrix3 D_dP_Ri1, D_dP_Ri2, D_dP_nv, D_dV_Ri;
   dR(xi) = dR(pim);
   dP(xi) = dP(pim)
       + dt * nRb.unrotate(n_v, H1 ? &D_dP_Ri1 : 0, H2 ? &D_dP_nv : 0)
-      + (0.5 * dt2) * nRb.unrotate(n_gravity, H1 ? &D_dP_Ri2 : 0);
+      + dt22 * nRb.unrotate(n_gravity, H1 ? &D_dP_Ri2 : 0);
   dV(xi) = dV(pim) + dt * nRb.unrotate(n_gravity, H1 ? &D_dV_Ri : 0);
 
   if (omegaCoriolis) {
@@ -342,7 +342,7 @@ Vector9 NavState::correctPIM(const Vector9& pim, double dt,
     if (H1) {
       if (!omegaCoriolis)
         H1->setZero(); // if coriolis H1 is already initialized
-      D_t_R(H1) += dt * D_dP_Ri1 + (0.5 * dt2) * D_dP_Ri2;
+      D_t_R(H1) += dt * D_dP_Ri1 + dt22 * D_dP_Ri2;
       D_t_v(H1) += dt * D_dP_nv * Ri;
       D_v_R(H1) += dt * D_dV_Ri;
     }

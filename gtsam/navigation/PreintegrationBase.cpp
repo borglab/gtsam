@@ -29,10 +29,8 @@ namespace gtsam {
 /// Re-initialize PreintegratedMeasurements
 void PreintegrationBase::resetIntegration() {
   deltaTij_ = 0.0;
-  deltaRij_ = Rot3();
+  deltaXij_ = NavState();
   delRdelBiasOmega_ = Z_3x3;
-  deltaPij_ = Vector3::Zero();
-  deltaVij_ = Vector3::Zero();
   delPdelBiasAcc_ = Z_3x3;
   delPdelBiasOmega_ = Z_3x3;
   delVdelBiasAcc_ = Z_3x3;
@@ -43,21 +41,19 @@ void PreintegrationBase::resetIntegration() {
 void PreintegrationBase::print(const string& s) const {
   cout << s << endl;
   cout << "    deltaTij [" << deltaTij_ << "]" << endl;
-  cout << "    deltaRij.ypr = (" << deltaRij_.ypr().transpose() << ")" << endl;
-  cout << "    deltaPij [ " << deltaPij_.transpose() << " ]" << endl;
-  cout << "    deltaVij [ " << deltaVij_.transpose() << " ]" << endl;
+  cout << "    deltaRij.ypr = (" << deltaRij().ypr().transpose() << ")" << endl;
+  cout << "    deltaPij [ " << deltaPij().transpose() << " ]" << endl;
+  cout << "    deltaVij [ " << deltaVij().transpose() << " ]" << endl;
   biasHat_.print("    biasHat");
 }
 
 /// Needed for testable
 bool PreintegrationBase::equals(const PreintegrationBase& other,
     double tol) const {
-  return deltaRij_.equals(other.deltaRij_, tol)
-      && fabs(deltaTij_ - other.deltaTij_) < tol
-      && equal_with_abs_tol(delRdelBiasOmega_, other.delRdelBiasOmega_, tol)
+  return fabs(deltaTij_ - other.deltaTij_) < tol
+      && deltaXij_.equals(other.deltaXij_, tol)
       && biasHat_.equals(other.biasHat_, tol)
-      && equal_with_abs_tol(deltaPij_, other.deltaPij_, tol)
-      && equal_with_abs_tol(deltaVij_, other.deltaVij_, tol)
+      && equal_with_abs_tol(delRdelBiasOmega_, other.delRdelBiasOmega_, tol)
       && equal_with_abs_tol(delPdelBiasAcc_, other.delPdelBiasAcc_, tol)
       && equal_with_abs_tol(delPdelBiasOmega_, other.delPdelBiasOmega_, tol)
       && equal_with_abs_tol(delVdelBiasAcc_, other.delVdelBiasAcc_, tol)
@@ -65,8 +61,8 @@ bool PreintegrationBase::equals(const PreintegrationBase& other,
 }
 
 void PreintegrationBase::updatePreintegratedMeasurements(
-    const Vector3& measuredAcc, const Vector3& measuredOmega,
-    const double deltaT, Matrix3* D_incrR_integratedOmega, Matrix9* F) {
+    const Vector3& measuredAcc, const Vector3& measuredOmega, const double dt,
+    Matrix3* D_incrR_integratedOmega, Matrix9* F, Matrix93* G1, Matrix93* G2) {
 
   // NOTE: order is important here because each update uses old values, e.g., velocity and position updates are based on previous rotation estimate.
   // (i.e., we have to update jacobians and covariances before updating preintegrated measurements).
@@ -91,43 +87,31 @@ void PreintegrationBase::updatePreintegratedMeasurements(
     correctedAcc = bRs * correctedAcc - correctedOmega.cross(b_velocity_bs);
   }
 
-  // Calculate acceleration in *current* i frame, i.e., before rotation update below
+  // Save current rotation for updating Jacobians
+  const Rot3 oldRij = deltaXij_.attitude();
+
+  // Do update in one fell swoop
+  deltaTij_ += dt;
+  deltaXij_ = deltaXij_.update(correctedAcc, correctedOmega, dt, F, G1, G2);
+
+  // Update Jacobians
+  // TODO(frank): we are repeating some computation here: accessible in F ?
   Matrix3 D_acc_R;
-  const Matrix3 dRij = deltaRij_.matrix(); // expensive
-  const Vector3 i_acc = deltaRij_.rotate(correctedAcc, D_acc_R);
+  oldRij.rotate(correctedAcc, D_acc_R);
   const Matrix3 D_acc_biasOmega = D_acc_R * delRdelBiasOmega_;
 
-//  NavState iTj(deltaRij_, deltaPij_, deltaVij_);
-//  iTj = iTj.update();
-
-  // rotation vector describing rotation increment computed from the
-  // current rotation rate measurement
-  const Vector3 integratedOmega = correctedOmega * deltaT;
-  const Rot3 incrR =  Rot3::Expmap(integratedOmega, D_incrR_integratedOmega); // expensive !!
-
-  // Update deltaTij and rotation
-  deltaTij_ += deltaT;
-  Matrix3 D_Rij_incrR;
-  deltaRij_ = deltaRij_.compose(incrR, D_Rij_incrR);
-
-  // Update Jacobian
+  const Vector3 integratedOmega = correctedOmega * dt;
+  const Rot3 incrR = Rot3::Expmap(integratedOmega, D_incrR_integratedOmega); // expensive !!
   const Matrix3 incrRt = incrR.transpose();
   delRdelBiasOmega_ = incrRt * delRdelBiasOmega_
-      - *D_incrR_integratedOmega * deltaT;
+      - *D_incrR_integratedOmega * dt;
 
-  double dt22 = 0.5 * deltaT * deltaT;
-  deltaPij_ += dt22 * i_acc + deltaT * deltaVij_;
-  deltaVij_ += deltaT * i_acc;
-
-  *F << // angle        pos    vel
-      D_Rij_incrR, Z_3x3, Z_3x3, // angle
-  dt22 * D_acc_R, I_3x3, I_3x3 * deltaT, // pos
-  deltaT * D_acc_R, Z_3x3, I_3x3; // vel
-
-  delPdelBiasAcc_ += delVdelBiasAcc_ * deltaT - dt22 * dRij;
-  delPdelBiasOmega_ += deltaT * delVdelBiasOmega_ + dt22 * D_acc_biasOmega;
-  delVdelBiasAcc_ += -dRij * deltaT;
-  delVdelBiasOmega_ += D_acc_biasOmega * deltaT;
+  double dt22 = 0.5 * dt * dt;
+  const Matrix3 dRij = oldRij.matrix(); // expensive
+  delPdelBiasAcc_ += delVdelBiasAcc_ * dt - dt22 * dRij;
+  delPdelBiasOmega_ += dt * delVdelBiasOmega_ + dt22 * D_acc_biasOmega;
+  delVdelBiasAcc_ += -dRij * dt;
+  delVdelBiasOmega_ += D_acc_biasOmega * dt;
 }
 
 //------------------------------------------------------------------------------
@@ -135,24 +119,26 @@ Vector9 PreintegrationBase::biasCorrectedDelta(
     const imuBias::ConstantBias& bias_i, OptionalJacobian<9, 6> H) const {
   // Correct deltaRij, derivative is delRdelBiasOmega_
   const imuBias::ConstantBias biasIncr = bias_i - biasHat_;
-  Matrix3 D_deltaRij_bias;
+  Matrix3 D_correctedRij_bias;
   const Vector3 biasInducedOmega = delRdelBiasOmega_ * biasIncr.gyroscope();
-  const Rot3 deltaRij = deltaRij_.expmap(biasInducedOmega, boost::none, H ? &D_deltaRij_bias : 0);
-  if (H) D_deltaRij_bias *= delRdelBiasOmega_;
+  const Rot3 correctedRij = deltaRij().expmap(biasInducedOmega, boost::none,
+      H ? &D_correctedRij_bias : 0);
+  if (H)
+    D_correctedRij_bias *= delRdelBiasOmega_;
 
   Vector9 xi;
-  Matrix3 D_dR_deltaRij;
+  Matrix3 D_dR_correctedRij;
   // TODO(frank): could line below be simplified? It is equivalent to
   //   LogMap(deltaRij_.compose(Expmap(delRdelBiasOmega_ * biasIncr.gyroscope())))
-  NavState::dR(xi) = Rot3::Logmap(deltaRij, H ? &D_dR_deltaRij : 0);
-  NavState::dP(xi) = deltaPij_ + delPdelBiasAcc_ * biasIncr.accelerometer()
+  NavState::dR(xi) = Rot3::Logmap(correctedRij, H ? &D_dR_correctedRij : 0);
+  NavState::dP(xi) = deltaPij() + delPdelBiasAcc_ * biasIncr.accelerometer()
       + delPdelBiasOmega_ * biasIncr.gyroscope();
-  NavState::dV(xi) = deltaVij_ + delVdelBiasAcc_ * biasIncr.accelerometer()
+  NavState::dV(xi) = deltaVij() + delVdelBiasAcc_ * biasIncr.accelerometer()
       + delVdelBiasOmega_ * biasIncr.gyroscope();
 
   if (H) {
     Matrix36 D_dR_bias, D_dP_bias, D_dV_bias;
-    D_dR_bias << Z_3x3, D_dR_deltaRij * D_deltaRij_bias;
+    D_dR_bias << Z_3x3, D_dR_correctedRij * D_correctedRij_bias;
     D_dP_bias << delPdelBiasAcc_, delPdelBiasOmega_;
     D_dV_bias << delVdelBiasAcc_, delVdelBiasOmega_;
     (*H) << D_dR_bias, D_dP_bias, D_dV_bias;

@@ -96,13 +96,13 @@ public:
    * Add a single IMU measurement to the preintegration.
    * @param measuredAcc Measured acceleration (in body frame, as given by the sensor)
    * @param measuredOmega Measured angular velocity (as given by the sensor)
-   * @param deltaT Time interval between this and the last IMU measurement
-   * @param body_P_sensor Optional sensor frame (pose of the IMU in the body frame)
-   * @param Fout, Gout Jacobians used internally (only needed for testing)
+   * @param dt Time interval between this and the last IMU measurement
+   * @param F, F Jacobians used internally (only needed for testing)
    */
   void integrateMeasurement(const Vector3& measuredAcc,
-      const Vector3& measuredOmega, double deltaT,
-      OptionalJacobian<9, 9> Fout = boost::none, OptionalJacobian<9, 9> Gout = boost::none);
+      const Vector3& measuredOmega, double dt, //
+      OptionalJacobian<9, 9> F = boost::none, //
+      OptionalJacobian<9, 9> G = boost::none);
 
   /// Return pre-integrated measurement covariance
   Matrix preintMeasCov() const { return preintMeasCov_; }

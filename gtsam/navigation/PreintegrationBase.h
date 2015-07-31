@@ -100,9 +100,14 @@ public:
 
 protected:
 
-  double deltaTij_;  ///< Time interval from i to j
-  Rot3 deltaRij_;    ///< Preintegrated relative orientation (in frame i)
-  Matrix3 delRdelBiasOmega_;  ///< Jacobian of preintegrated rotation w.r.t. angular rate bias
+  double deltaTij_;   ///< Time interval from i to j
+
+  /**
+   * Preintegrated navigation state, from frame i to frame j
+   * Note: relative position does not take into account velocity at time i, see deltap+, in [2]
+   * Note: velocity is now also in frame i, as opposed to deltaVij in [2]
+   */
+  NavState deltaXij_;
 
   /// Parameters
   boost::shared_ptr<Params> p_;
@@ -110,12 +115,10 @@ protected:
   /// Acceleration and gyro bias used for preintegration
   imuBias::ConstantBias biasHat_;
 
-  Vector3 deltaPij_; ///< Preintegrated relative position (does not take into account velocity at time i, see deltap+, in [2]) (in frame i)
-  Vector3 deltaVij_; ///< Preintegrated relative velocity (in global frame)
-
-  Matrix3 delPdelBiasAcc_; ///< Jacobian of preintegrated position w.r.t. acceleration bias
+  Matrix3 delRdelBiasOmega_; ///< Jacobian of preintegrated rotation w.r.t. angular rate bias
+  Matrix3 delPdelBiasAcc_;   ///< Jacobian of preintegrated position w.r.t. acceleration bias
   Matrix3 delPdelBiasOmega_; ///< Jacobian of preintegrated position w.r.t. angular rate bias
-  Matrix3 delVdelBiasAcc_; ///< Jacobian of preintegrated velocity w.r.t. acceleration bias
+  Matrix3 delVdelBiasAcc_;   ///< Jacobian of preintegrated velocity w.r.t. acceleration bias
   Matrix3 delVdelBiasOmega_; ///< Jacobian of preintegrated velocity w.r.t. angular rate bias
 
   /// Default constructor for serialization
@@ -147,19 +150,19 @@ public:
     return deltaTij_;
   }
   const Rot3& deltaRij() const {
-    return deltaRij_;
+    return deltaXij_.attitude();
   }
-  const Matrix3& delRdelBiasOmega() const {
-    return delRdelBiasOmega_;
+  Vector3 deltaPij() const {
+    return deltaXij_.position().vector();
+  }
+  Vector3 deltaVij() const {
+    return deltaXij_.velocity();
   }
   const imuBias::ConstantBias& biasHat() const {
     return biasHat_;
   }
-  const Vector3& deltaPij() const {
-    return deltaPij_;
-  }
-  const Vector3& deltaVij() const {
-    return deltaVij_;
+  const Matrix3& delRdelBiasOmega() const {
+    return delRdelBiasOmega_;
   }
   const Matrix3& delPdelBiasAcc() const {
     return delPdelBiasAcc_;
@@ -188,7 +191,7 @@ public:
   /// Update preintegrated measurements
   void updatePreintegratedMeasurements(const Vector3& measuredAcc,
       const Vector3& measuredOmega, const double deltaT,
-      Matrix3* D_incrR_integratedOmega, Matrix9* F);
+      Matrix3* D_incrR_integratedOmega, Matrix9* F, Matrix93* G1, Matrix93* G2);
 
   /// Given the estimate of the bias, return a NavState tangent vector
   /// summarizing the preintegrated IMU measurements so far
@@ -220,11 +223,9 @@ private:
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_NVP(p_);
     ar & BOOST_SERIALIZATION_NVP(deltaTij_);
-    ar & BOOST_SERIALIZATION_NVP(deltaRij_);
-    ar & BOOST_SERIALIZATION_NVP(delRdelBiasOmega_);
+    ar & BOOST_SERIALIZATION_NVP(deltaXij_);
     ar & BOOST_SERIALIZATION_NVP(biasHat_);
-    ar & BOOST_SERIALIZATION_NVP(deltaPij_);
-    ar & BOOST_SERIALIZATION_NVP(deltaVij_);
+    ar & BOOST_SERIALIZATION_NVP(delRdelBiasOmega_);
     ar & BOOST_SERIALIZATION_NVP(delPdelBiasAcc_);
     ar & BOOST_SERIALIZATION_NVP(delPdelBiasOmega_);
     ar & BOOST_SERIALIZATION_NVP(delVdelBiasAcc_);
