@@ -66,8 +66,7 @@ void PreintegratedCombinedMeasurements::resetIntegration() {
 
 //------------------------------------------------------------------------------
 void PreintegratedCombinedMeasurements::integrateMeasurement(
-    const Vector3& measuredAcc, const Vector3& measuredOmega, double deltaT,
-    OptionalJacobian<15, 15> F_test, OptionalJacobian<15, 21> G_test) {
+    const Vector3& measuredAcc, const Vector3& measuredOmega, double deltaT) {
 
   const Matrix3 dRij = deltaXij_.R(); // expensive when quaternion
 
@@ -117,21 +116,6 @@ void PreintegratedCombinedMeasurements::integrateMeasurement(
   D_v_R(&G_measCov_Gt) = temp;
   D_R_v(&G_measCov_Gt) = temp.transpose();
   preintMeasCov_ = F * preintMeasCov_ * F.transpose() + G_measCov_Gt;
-
-  // F_test and G_test are used for testing purposes and are not needed by the factor
-  if (F_test) {
-    (*F_test) << F;
-  }
-  if (G_test) {
-    // This is for testing & documentation
-    ///< measurementCovariance_ : cov[integrationError measuredAcc measuredOmega biasAccRandomWalk biasOmegaRandomWalk biasAccInit biasOmegaInit] in R^(21 x 21)
-    (*G_test) << //
-        -H_angles_biasomega, Z_3x3, Z_3x3, Z_3x3, Z_3x3, Z_3x3, H_angles_biasomega, //
-        Z_3x3, I_3x3 * deltaT, Z_3x3, Z_3x3, Z_3x3, Z_3x3, Z_3x3, //
-        Z_3x3, Z_3x3, -H_vel_biasacc, Z_3x3, Z_3x3, H_vel_biasacc, Z_3x3, //
-        Z_3x3, Z_3x3, Z_3x3, I_3x3, Z_3x3, Z_3x3, Z_3x3, //
-        Z_3x3, Z_3x3, Z_3x3, Z_3x3, I_3x3, Z_3x3, Z_3x3;
-  }
 }
 
 //------------------------------------------------------------------------------

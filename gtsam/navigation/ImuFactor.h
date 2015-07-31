@@ -97,12 +97,9 @@ public:
    * @param measuredAcc Measured acceleration (in body frame, as given by the sensor)
    * @param measuredOmega Measured angular velocity (as given by the sensor)
    * @param dt Time interval between this and the last IMU measurement
-   * @param F, F Jacobians used internally (only needed for testing)
    */
   void integrateMeasurement(const Vector3& measuredAcc,
-      const Vector3& measuredOmega, double dt, //
-      OptionalJacobian<9, 9> F = boost::none, //
-      OptionalJacobian<9, 9> G = boost::none);
+      const Vector3& measuredOmega, double dt);
 
   /// Return pre-integrated measurement covariance
   Matrix preintMeasCov() const { return preintMeasCov_; }

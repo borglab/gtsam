@@ -143,9 +143,7 @@ class PreintegratedCombinedMeasurements : public PreintegrationBase {
    * frame)
    */
   void integrateMeasurement(const Vector3& measuredAcc,
-      const Vector3& measuredOmega, double deltaT,
-      OptionalJacobian<15, 15> F_test = boost::none,
-      OptionalJacobian<15, 21> G_test = boost::none);
+      const Vector3& measuredOmega, double deltaT);
 
   /// methods to access class variables
   Matrix preintMeasCov() const { return preintMeasCov_; }

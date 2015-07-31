@@ -49,20 +49,8 @@ void PreintegratedImuMeasurements::resetIntegration() {
 }
 
 //------------------------------------------------------------------------------
-// sugar for derivative blocks
-#define D_R_R(H) (H)->block<3,3>(0,0)
-#define D_R_t(H) (H)->block<3,3>(0,3)
-#define D_R_v(H) (H)->block<3,3>(0,6)
-#define D_t_R(H) (H)->block<3,3>(3,0)
-#define D_t_t(H) (H)->block<3,3>(3,3)
-#define D_t_v(H) (H)->block<3,3>(3,6)
-#define D_v_R(H) (H)->block<3,3>(6,0)
-#define D_v_t(H) (H)->block<3,3>(6,3)
-#define D_v_v(H) (H)->block<3,3>(6,6)
-//------------------------------------------------------------------------------
 void PreintegratedImuMeasurements::integrateMeasurement(
-    const Vector3& measuredAcc, const Vector3& measuredOmega, double dt,
-    OptionalJacobian<9, 9> outF, OptionalJacobian<9, 9> G) {
+    const Vector3& measuredAcc, const Vector3& measuredOmega, double dt) {
 
   static const Matrix93 Gi = (Matrix93() << Z_3x3, I_3x3, Z_3x3).finished();
 
@@ -70,7 +58,8 @@ void PreintegratedImuMeasurements::integrateMeasurement(
   Matrix9 F; // overall Jacobian wrt preintegrated measurements (df/dx)
   Matrix93 G1, G2;
   Matrix3 D_incrR_integratedOmega;
-  updatePreintegratedMeasurements(measuredAcc, measuredOmega, dt, &D_incrR_integratedOmega, &F, &G1, &G2);
+  updatePreintegratedMeasurements(measuredAcc, measuredOmega, dt,
+      &D_incrR_integratedOmega, &F, &G1, &G2);
 
   // first order covariance propagation:
   // as in [2] we consider a first order propagation that can be seen as a prediction phase in EKF
@@ -82,10 +71,8 @@ void PreintegratedImuMeasurements::integrateMeasurement(
       + G1 * (p().accelerometerCovariance / dt) * G1.transpose()
       + Gi * (p().integrationCovariance * dt) * Gi.transpose() // NOTE(frank): (Gi*dt)*(C/dt)*(Gi'*dt)
       + G2 * (p().gyroscopeCovariance / dt) * G2.transpose();
-
-  if (outF) *outF = F;
-  if (G) *G << G2, Gi*dt, G1; // NOTE(frank): order here is R,P,V
 }
+
 //------------------------------------------------------------------------------
 PreintegratedImuMeasurements::PreintegratedImuMeasurements(
     const imuBias::ConstantBias& biasHat, const Matrix3& measuredAccCovariance,
