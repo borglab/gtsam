@@ -81,10 +81,10 @@ void PreintegratedImuMeasurements::integrateMeasurement(
   // NOTE 2: computation of G * (1/deltaT) * measurementCovariance * G.transpose() done block-wise,
   // as G and measurementCovariance are block-diagonal matrices
   preintMeasCov_ = F * preintMeasCov_ * F.transpose();
-  D_t_t(&preintMeasCov_) += p().integrationCovariance * deltaT;
-  D_v_v(&preintMeasCov_) += dRij * p().accelerometerCovariance * dRij.transpose() * deltaT;
   D_R_R(&preintMeasCov_) += D_incrR_integratedOmega * p().gyroscopeCovariance
       * D_incrR_integratedOmega.transpose() * deltaT;
+  D_t_t(&preintMeasCov_) += p().integrationCovariance * deltaT;
+  D_v_v(&preintMeasCov_) += dRij * p().accelerometerCovariance * dRij.transpose() * deltaT;
 
   Matrix3 F_pos_noiseacc;
   F_pos_noiseacc = 0.5 * dRij * deltaT * deltaT;

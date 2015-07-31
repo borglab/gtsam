@@ -28,7 +28,9 @@ namespace gtsam {
 
 /// Re-initialize PreintegratedMeasurements
 void PreintegrationBase::resetIntegration() {
-  PreintegratedRotation::resetIntegration();
+  deltaTij_ = 0.0;
+  deltaRij_ = Rot3();
+  delRdelBiasOmega_ = Z_3x3;
   deltaPij_ = Vector3::Zero();
   deltaVij_ = Vector3::Zero();
   delPdelBiasAcc_ = Z_3x3;
@@ -39,7 +41,9 @@ void PreintegrationBase::resetIntegration() {
 
 /// Needed for testable
 void PreintegrationBase::print(const string& s) const {
-  PreintegratedRotation::print(s);
+  cout << s << endl;
+  cout << "    deltaTij [" << deltaTij_ << "]" << endl;
+  cout << "    deltaRij.ypr = (" << deltaRij_.ypr().transpose() << ")" << endl;
   cout << "    deltaPij [ " << deltaPij_.transpose() << " ]" << endl;
   cout << "    deltaVij [ " << deltaVij_.transpose() << " ]" << endl;
   biasHat_.print("    biasHat");
@@ -48,7 +52,9 @@ void PreintegrationBase::print(const string& s) const {
 /// Needed for testable
 bool PreintegrationBase::equals(const PreintegrationBase& other,
     double tol) const {
-  return PreintegratedRotation::equals(other, tol)
+  return deltaRij_.equals(other.deltaRij_, tol)
+      && fabs(deltaTij_ - other.deltaTij_) < tol
+      && equal_with_abs_tol(delRdelBiasOmega_, other.delRdelBiasOmega_, tol)
       && biasHat_.equals(other.biasHat_, tol)
       && equal_with_abs_tol(deltaPij_, other.deltaPij_, tol)
       && equal_with_abs_tol(deltaVij_, other.deltaVij_, tol)
@@ -130,7 +136,9 @@ Vector9 PreintegrationBase::biasCorrectedDelta(
   // Correct deltaRij, derivative is delRdelBiasOmega_
   const imuBias::ConstantBias biasIncr = bias_i - biasHat_;
   Matrix3 D_deltaRij_bias;
-  Rot3 deltaRij = biascorrectedDeltaRij(biasIncr.gyroscope(), H ? &D_deltaRij_bias : 0);
+  const Vector3 biasInducedOmega = delRdelBiasOmega_ * biasIncr.gyroscope();
+  const Rot3 deltaRij = deltaRij_.expmap(biasInducedOmega, boost::none, H ? &D_deltaRij_bias : 0);
+  if (H) D_deltaRij_bias *= delRdelBiasOmega_;
 
   Vector9 xi;
   Matrix3 D_dR_deltaRij;

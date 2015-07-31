@@ -364,15 +364,7 @@ TEST(ImuFactor, ErrorAndJacobianWithBiases) {
       kMeasuredOmegaCovariance, kIntegrationErrorCovariance);
   pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
-  // Make sure of biascorrectedDeltaRij with this example...
-  Matrix3 aH;
-  pim.biascorrectedDeltaRij(bias.gyroscope(), aH);
-  Matrix3 eH = numericalDerivative11<Rot3, Vector3>(
-      boost::bind(&PreintegrationBase::biascorrectedDeltaRij, pim, _1,
-          boost::none), bias.gyroscope());
-  EXPECT(assert_equal(eH, aH));
-
-  // ... and of biasCorrectedDelta
+  // Make sure of biasCorrectedDelta
   Matrix96 actualH;
   pim.biasCorrectedDelta(bias, actualH);
   Matrix expectedH = numericalDerivative11<Vector9, imuBias::ConstantBias>(
@@ -803,11 +795,14 @@ TEST(ImuFactor, JacobianPreintegratedCovariancePropagation_2ndOrderInt) {
 Matrix9 MonteCarlo(const PreintegratedImuMeasurements& pim,
     const NavState& state, const imuBias::ConstantBias& bias, double dt,
     const Pose3& body_P_sensor, const Vector3& measuredAcc,
-    const Vector3& measuredOmega, size_t N = 1000) {
+    const Vector3& measuredOmega, size_t N = 100) {
   // Get mean prediction from "ground truth" measurements
   PreintegratedImuMeasurements pim1 = pim;
-  pim1.integrateMeasurement(measuredAcc, measuredOmega, dt, body_P_sensor);
+  for (size_t k=0;k<10;k++)
+    pim1.integrateMeasurement(measuredAcc, measuredOmega, dt, body_P_sensor);
   NavState mean = pim1.predict(state, bias);
+  cout << "pim1.preintMeasCov():" << endl;
+  cout << pim1.preintMeasCov() << endl;
 
   // Do a Monte Carlo analysis to determine empirical density on the predicted state
   Sampler sampleAccelerationNoise(Vector3::Constant(sqrt(accNoiseVar)));
@@ -818,18 +813,23 @@ Matrix9 MonteCarlo(const PreintegratedImuMeasurements& pim,
     PreintegratedImuMeasurements pim2 = pim;
     Vector3 perturbedAcc = measuredAcc + sampleAccelerationNoise.sample();
     Vector3 perturbedOmega = measuredOmega + sampleOmegaNoise.sample();
-    pim2.integrateMeasurement(perturbedAcc, perturbedOmega, dt, body_P_sensor);
+    for (size_t k=0;k<10;k++)
+      pim2.integrateMeasurement(perturbedAcc, perturbedOmega, dt, body_P_sensor);
     NavState prediction = pim2.predict(state, bias);
     samples.col(i) = mean.localCoordinates(prediction);
     sum += samples.col(i);
   }
   Vector9 sampleMean = sum / N;
+  cout << ":" << endl;
+  cout << sampleMean << endl;
   Matrix9 Q;
   Q.setZero();
   for (size_t i = 0; i < N; i++) {
     Vector9 xi = samples.col(i) - sampleMean;
     Q += xi * xi.transpose() / (N - 1);
   }
+  cout << "Q:" << endl;
+  cout << Q << endl;
   return Q;
 }
 
@@ -857,8 +857,6 @@ TEST(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
       kMeasuredOmegaCovariance, kIntegrationErrorCovariance, true);
   Matrix9 Q = MonteCarlo(pim, NavState(x1, v1), biasHat, dt, body_P_sensor,
       measuredAcc, measuredOmega, 1000);
-  cout << Q << endl;
-
 
   Matrix expected(9,9);
   expected <<
@@ -993,14 +991,10 @@ TEST(ImuFactor, PredictArbitrary) {
       kIntegrationErrorCovariance, true);
   Pose3 x1;
   Vector3 v1 = Vector3(0, 0, 0);
-  Matrix9 Q = MonteCarlo(pim, NavState(x1, v1), biasHat, dt, Pose3(),
+  Matrix9 Q = MonteCarlo(pim, NavState(x1, v1), biasHat, 0.1, Pose3(),
       measuredAcc, measuredOmega, 1000);
-  cout << Q << endl;
 
-  pim.integrateMeasurement(measuredAcc, measuredOmega, dt);
-  cout << pim.preintMeasCov() << endl;
-
-  for (int i = 0; i < 999; ++i)
+  for (int i = 0; i < 1000; ++i)
     pim.integrateMeasurement(measuredAcc, measuredOmega, dt);
 
   Matrix expected(9,9);

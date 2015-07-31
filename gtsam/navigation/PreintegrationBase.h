@@ -51,7 +51,7 @@ struct PoseVelocityBias {
  * It includes the definitions of the preintegrated variables and the methods
  * to access, print, and compare them.
  */
-class PreintegrationBase: public PreintegratedRotation {
+class PreintegrationBase {
 
 public:
 
@@ -100,6 +100,13 @@ public:
 
 protected:
 
+  double deltaTij_;  ///< Time interval from i to j
+  Rot3 deltaRij_;    ///< Preintegrated relative orientation (in frame i)
+  Matrix3 delRdelBiasOmega_;  ///< Jacobian of preintegrated rotation w.r.t. angular rate bias
+
+  /// Parameters
+  boost::shared_ptr<Params> p_;
+
   /// Acceleration and gyro bias used for preintegration
   imuBias::ConstantBias biasHat_;
 
@@ -124,7 +131,7 @@ public:
    */
   PreintegrationBase(const boost::shared_ptr<Params>& p,
       const imuBias::ConstantBias& biasHat) :
-      PreintegratedRotation(p), biasHat_(biasHat) {
+      p_(p), biasHat_(biasHat) {
     resetIntegration();
   }
 
@@ -136,6 +143,15 @@ public:
   }
 
   /// getters
+  const double& deltaTij() const {
+    return deltaTij_;
+  }
+  const Rot3& deltaRij() const {
+    return deltaRij_;
+  }
+  const Matrix3& delRdelBiasOmega() const {
+    return delRdelBiasOmega_;
+  }
   const imuBias::ConstantBias& biasHat() const {
     return biasHat_;
   }
@@ -202,8 +218,10 @@ private:
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegratedRotation);
     ar & BOOST_SERIALIZATION_NVP(p_);
+    ar & BOOST_SERIALIZATION_NVP(deltaTij_);
+    ar & BOOST_SERIALIZATION_NVP(deltaRij_);
+    ar & BOOST_SERIALIZATION_NVP(delRdelBiasOmega_);
     ar & BOOST_SERIALIZATION_NVP(biasHat_);
     ar & BOOST_SERIALIZATION_NVP(deltaPij_);
     ar & BOOST_SERIALIZATION_NVP(deltaVij_);
