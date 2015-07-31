@@ -188,6 +188,10 @@ public:
   /// check equality
   bool equals(const PreintegrationBase& other, double tol) const;
 
+  /// Calculate the updated preintegrated measurement, does not modify
+  NavState update(const Vector3& measuredAcc, const Vector3& measuredOmega,
+      const double dt, Matrix9* F, Matrix93* G1, Matrix93* G2) const;
+
   /// Update preintegrated measurements
   void updatePreintegratedMeasurements(const Vector3& measuredAcc,
       const Vector3& measuredOmega, const double deltaT,

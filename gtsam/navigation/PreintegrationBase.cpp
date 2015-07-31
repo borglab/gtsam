@@ -60,12 +60,10 @@ bool PreintegrationBase::equals(const PreintegrationBase& other,
       && equal_with_abs_tol(delVdelBiasOmega_, other.delVdelBiasOmega_, tol);
 }
 
-void PreintegrationBase::updatePreintegratedMeasurements(
-    const Vector3& measuredAcc, const Vector3& measuredOmega, const double dt,
-    Matrix3* D_incrR_integratedOmega, Matrix9* F, Matrix93* G1, Matrix93* G2) {
-
-  // NOTE: order is important here because each update uses old values, e.g., velocity and position updates are based on previous rotation estimate.
-  // (i.e., we have to update jacobians and covariances before updating preintegrated measurements).
+//------------------------------------------------------------------------------
+NavState PreintegrationBase::update(const Vector3& measuredAcc,
+    const Vector3& measuredOmega, const double dt, Matrix9* F, Matrix93* G1,
+    Matrix93* G2) const {
 
   // Correct for bias in the sensor frame
   Vector3 correctedAcc = biasHat_.correctAccelerometer(measuredAcc);
@@ -87,15 +85,28 @@ void PreintegrationBase::updatePreintegratedMeasurements(
     correctedAcc = bRs * correctedAcc - correctedOmega.cross(b_velocity_bs);
   }
 
+  // Do update in one fell swoop
+  return deltaXij_.update(correctedAcc, correctedOmega, dt, F, G1, G2);
+}
+
+//------------------------------------------------------------------------------
+void PreintegrationBase::updatePreintegratedMeasurements(
+    const Vector3& measuredAcc, const Vector3& measuredOmega, const double dt,
+    Matrix3* D_incrR_integratedOmega, Matrix9* F, Matrix93* G1, Matrix93* G2) {
+
   // Save current rotation for updating Jacobians
   const Rot3 oldRij = deltaXij_.attitude();
 
-  // Do update in one fell swoop
+  // Do update
   deltaTij_ += dt;
-  deltaXij_ = deltaXij_.update(correctedAcc, correctedOmega, dt, F, G1, G2);
+  deltaXij_ = update(measuredAcc, measuredOmega, dt, F, G1, G2); // functional
 
   // Update Jacobians
   // TODO(frank): we are repeating some computation here: accessible in F ?
+  // Correct for bias in the sensor frame
+  Vector3 correctedAcc = biasHat_.correctAccelerometer(measuredAcc);
+  Vector3 correctedOmega = biasHat_.correctGyroscope(measuredOmega);
+
   Matrix3 D_acc_R;
   oldRij.rotate(correctedAcc, D_acc_R);
   const Matrix3 D_acc_biasOmega = D_acc_R * delRdelBiasOmega_;
@@ -103,8 +114,7 @@ void PreintegrationBase::updatePreintegratedMeasurements(
   const Vector3 integratedOmega = correctedOmega * dt;
   const Rot3 incrR = Rot3::Expmap(integratedOmega, D_incrR_integratedOmega); // expensive !!
   const Matrix3 incrRt = incrR.transpose();
-  delRdelBiasOmega_ = incrRt * delRdelBiasOmega_
-      - *D_incrR_integratedOmega * dt;
+  delRdelBiasOmega_ = incrRt * delRdelBiasOmega_ - *D_incrR_integratedOmega * dt;
 
   double dt22 = 0.5 * dt * dt;
   const Matrix3 dRij = oldRij.matrix(); // expensive

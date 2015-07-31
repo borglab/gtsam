@@ -67,11 +67,10 @@ void PreintegratedImuMeasurements::integrateMeasurement(
   static const Matrix93 Gi = (Matrix93() << Z_3x3, I_3x3, Z_3x3).finished();
 
   // Update preintegrated measurements (also get Jacobian)
-  Matrix3 D_incrR_integratedOmega; // Right jacobian computed at theta_incr
   Matrix9 F; // overall Jacobian wrt preintegrated measurements (df/dx)
   Matrix93 G1, G2;
-  updatePreintegratedMeasurements(measuredAcc, measuredOmega, dt,
-      &D_incrR_integratedOmega, &F, &G1, &G2);
+  Matrix3 D_incrR_integratedOmega;
+  updatePreintegratedMeasurements(measuredAcc, measuredOmega, dt, &D_incrR_integratedOmega, &F, &G1, &G2);
 
   // first order covariance propagation:
   // as in [2] we consider a first order propagation that can be seen as a prediction phase in EKF
