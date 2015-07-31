@@ -16,15 +16,16 @@
  */
 
 #include <gtsam/navigation/ImuFactor.h>
-#include <gtsam/nonlinear/Values.h>
-#include <gtsam/nonlinear/factorTesting.h>
-#include <gtsam/inference/Symbol.h>
 #include <gtsam/navigation/ImuBias.h>
 #include <gtsam/geometry/Pose3.h>
+#include <gtsam/nonlinear/Values.h>
+#include <gtsam/nonlinear/factorTesting.h>
+#include <gtsam/linear/Sampler.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <CppUnitLite/TestHarness.h>
 
+#include <CppUnitLite/TestHarness.h>
 #include <boost/bind.hpp>
 #include <list>
 
@@ -648,17 +649,17 @@ TEST(ImuFactor, JacobianPreintegratedCovariancePropagation) {
   dgpv_dintNoise << I_3x3 * deltaT, Z_3x3;
 
   // Compute jacobian wrt acc noise
-  Matrix dgpv_daccNoise = numericalDerivative11<Vector, Vector3>(
+  Matrix63 dgpv_daccNoise = numericalDerivative11<Vector6, Vector3>(
       boost::bind(&updatePreintegratedPosVel, deltaPij_old, deltaVij_old,
           deltaRij_old, _1, measuredOmega, deltaT), measuredAcc);
 
   // Compute expected F wrt gyro noise
-  Matrix dgpv_domegaNoise = numericalDerivative11<Vector, Vector3>(
+  Matrix63 dgpv_domegaNoise = numericalDerivative11<Vector6, Vector3>(
       boost::bind(&updatePreintegratedPosVel, deltaPij_old, deltaVij_old,
           deltaRij_old, measuredAcc, _1, deltaT), measuredOmega);
 
   // Compute expected f_rot wrt gyro noise
-  Matrix dgr_dangle = numericalDerivative11<Rot3, Vector3>(
+  Matrix3 dgr_dangle = numericalDerivative11<Rot3, Vector3>(
       boost::bind(&updatePreintegratedRot, deltaRij_old, _1, deltaT),
       measuredOmega);
 
@@ -799,6 +800,40 @@ TEST(ImuFactor, JacobianPreintegratedCovariancePropagation_2ndOrderInt) {
 }
 
 /* ************************************************************************* */
+Matrix9 MonteCarlo(const PreintegratedImuMeasurements& pim,
+    const NavState& state, const imuBias::ConstantBias& bias, double dt,
+    const Pose3& body_P_sensor, const Vector3& measuredAcc,
+    const Vector3& measuredOmega, size_t N = 1000) {
+  // Get mean prediction from "ground truth" measurements
+  PreintegratedImuMeasurements pim1 = pim;
+  pim1.integrateMeasurement(measuredAcc, measuredOmega, dt, body_P_sensor);
+  NavState mean = pim1.predict(state, bias);
+
+  // Do a Monte Carlo analysis to determine empirical density on the predicted state
+  Sampler sampleAccelerationNoise(Vector3::Constant(sqrt(accNoiseVar)));
+  Sampler sampleOmegaNoise(Vector3::Constant(sqrt(omegaNoiseVar)));
+  Matrix samples(9, N);
+  Vector9 sum = Vector9::Zero();
+  for (size_t i = 0; i < N; i++) {
+    PreintegratedImuMeasurements pim2 = pim;
+    Vector3 perturbedAcc = measuredAcc + sampleAccelerationNoise.sample();
+    Vector3 perturbedOmega = measuredOmega + sampleOmegaNoise.sample();
+    pim2.integrateMeasurement(perturbedAcc, perturbedOmega, dt, body_P_sensor);
+    NavState prediction = pim2.predict(state, bias);
+    samples.col(i) = mean.localCoordinates(prediction);
+    sum += samples.col(i);
+  }
+  Vector9 sampleMean = sum / N;
+  Matrix9 Q;
+  Q.setZero();
+  for (size_t i = 0; i < N; i++) {
+    Vector9 xi = samples.col(i) - sampleMean;
+    Q += xi * xi.transpose() / (N - 1);
+  }
+  return Q;
+}
+
+/* ************************************************************************* */
 TEST(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
   imuBias::ConstantBias bias(Vector3(0.2, 0, 0), Vector3(0, 0, 0.3)); // Biases (acc, rot)
   Pose3 x1(Rot3::Expmap(Vector3(0, 0, M_PI / 4.0)), Point3(5.0, 1.0, -50.0));
@@ -812,17 +847,18 @@ TEST(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
   measuredOmega << 0, 0, M_PI / 10.0 + 0.3;
   Vector3 measuredAcc = x1.rotation().unrotate(-kGravityAlongNavZDown)
       + Vector3(0.2, 0.0, 0.0);
-  double deltaT = 1.0;
+  double dt = 1.0;
 
-  const Pose3 body_P_sensor(Rot3::Expmap(Vector3(0, 0.10, 0.10)),
-      Point3(1, 0, 0));
+  Pose3 body_P_sensor(Rot3::Expmap(Vector3(0, 0.1, 0.1)), Point3(1, 0, 0));
+  imuBias::ConstantBias biasHat(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0));
 
-  PreintegratedImuMeasurements pim(
-      imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0)),
-      kMeasuredAccCovariance, kMeasuredOmegaCovariance,
-      kIntegrationErrorCovariance, true);
+  // Get mean prediction from "ground truth" measurements
+  PreintegratedImuMeasurements pim(biasHat, kMeasuredAccCovariance,
+      kMeasuredOmegaCovariance, kIntegrationErrorCovariance, true);
+  Matrix9 Q = MonteCarlo(pim, NavState(x1, v1), biasHat, dt, body_P_sensor,
+      measuredAcc, measuredOmega, 1000);
+  cout << Q << endl;
 
-  pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT, body_P_sensor);
 
   Matrix expected(9,9);
   expected <<
@@ -835,6 +871,7 @@ TEST(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
       0.0, 0.0, 0.0,                                0.005, 0.0, 0.0,  0.01, 0.0, 0.0, //
       0.0, 0.0, 0.0,                                0.0, 0.005, 0.0,  0.0, 0.01, 0.0, //
       0.0, 0.0, 0.0,                                0.0, 0.0, 0.005,  0.0, 0.0, 0.01;
+  pim.integrateMeasurement(measuredAcc, measuredOmega, dt, body_P_sensor);
   EXPECT(assert_equal(expected, pim.preintMeasCov(), 1e-6));
 
   // Create factor
@@ -943,20 +980,28 @@ TEST(ImuFactor, PredictRotation) {
 
 /* ************************************************************************* */
 TEST(ImuFactor, PredictArbitrary) {
-  imuBias::ConstantBias bias(Vector3(0, 0, 0), Vector3(0, 0, 0)); // Biases (acc, rot)
+  imuBias::ConstantBias biasHat(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0));
 
   // Measurements
   Vector3 measuredOmega(M_PI / 10, M_PI / 10, M_PI / 10);
   Vector3 measuredAcc(0.1, 0.2, -9.81);
-  double deltaT = 0.001;
+  double dt = 0.001;
 
   ImuFactor::PreintegratedMeasurements pim(
-      imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0)),
+      biasHat,
       kMeasuredAccCovariance, kMeasuredOmegaCovariance,
       kIntegrationErrorCovariance, true);
+  Pose3 x1;
+  Vector3 v1 = Vector3(0, 0, 0);
+  Matrix9 Q = MonteCarlo(pim, NavState(x1, v1), biasHat, dt, Pose3(),
+      measuredAcc, measuredOmega, 1000);
+  cout << Q << endl;
 
-  for (int i = 0; i < 1000; ++i)
-    pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+  pim.integrateMeasurement(measuredAcc, measuredOmega, dt);
+  cout << pim.preintMeasCov() << endl;
+
+  for (int i = 0; i < 999; ++i)
+    pim.integrateMeasurement(measuredAcc, measuredOmega, dt);
 
   Matrix expected(9,9);
   expected << //
@@ -976,9 +1021,9 @@ TEST(ImuFactor, PredictArbitrary) {
       kZeroOmegaCoriolis);
 
   // Predict
-  Pose3 x1, x2;
-  Vector3 v1 = Vector3(0, 0.0, 0.0);
+  Pose3 x2;
   Vector3 v2;
+  imuBias::ConstantBias bias(Vector3(0, 0, 0), Vector3(0, 0, 0));
   ImuFactor::Predict(x1, v1, x2, v2, bias, pim, kGravityAlongNavZDown,
       kZeroOmegaCoriolis);
 
