@@ -58,7 +58,6 @@ bool PreintegrationBase::equals(const PreintegrationBase& other,
       && equal_with_abs_tol(delVdelBiasOmega_, other.delVdelBiasOmega_, tol);
 }
 
-/// Update preintegrated measurements
 void PreintegrationBase::updatePreintegratedMeasurements(
     const Vector3& measuredAcc, const Vector3& measuredOmega,
     const double deltaT, Matrix3* D_incrR_integratedOmega, Matrix9* F) {
@@ -68,6 +67,7 @@ void PreintegrationBase::updatePreintegratedMeasurements(
 
   // Correct for bias in the sensor frame
   Vector3 correctedAcc = biasHat_.correctAccelerometer(measuredAcc);
+  Vector3 correctedOmega = biasHat_.correctGyroscope(measuredOmega);
 
   // Compensate for sensor-body displacement if needed: we express the quantities
   // (originally in the IMU frame) into the body frame
@@ -75,15 +75,14 @@ void PreintegrationBase::updatePreintegratedMeasurements(
   if (p().body_P_sensor) {
     // Correct omega: slight duplication as this is also done in integrateMeasurement below
     Matrix3 bRs = p().body_P_sensor->rotation().matrix();
-    Vector3 s_correctedOmega = biasHat_.correctGyroscope(measuredOmega);
-    Vector3 b_correctedOmega = bRs * s_correctedOmega; // rotation rate vector in the body frame
+    correctedOmega = bRs * correctedOmega; // rotation rate vector in the body frame
 
     // Correct acceleration
     Vector3 b_arm = p().body_P_sensor->translation().vector();
-    Vector3 b_velocity_bs = b_correctedOmega.cross(b_arm); // magnitude: omega * arm
+    Vector3 b_velocity_bs = correctedOmega.cross(b_arm); // magnitude: omega * arm
     // Subtract out the the centripetal acceleration from the measured one
     // to get linear acceleration vector in the body frame:
-    correctedAcc = bRs * correctedAcc - b_correctedOmega.cross(b_velocity_bs);
+    correctedAcc = bRs * correctedAcc - correctedOmega.cross(b_velocity_bs);
   }
 
   // Calculate acceleration in *current* i frame, i.e., before rotation update below
@@ -92,9 +91,23 @@ void PreintegrationBase::updatePreintegratedMeasurements(
   const Vector3 i_acc = deltaRij_.rotate(correctedAcc, D_acc_R);
   const Matrix3 D_acc_biasOmega = D_acc_R * delRdelBiasOmega_;
 
+//  NavState iTj(deltaRij_, deltaPij_, deltaVij_);
+//  iTj = iTj.update();
+
+  // rotation vector describing rotation increment computed from the
+  // current rotation rate measurement
+  const Vector3 integratedOmega = correctedOmega * deltaT;
+  const Rot3 incrR =  Rot3::Expmap(integratedOmega, D_incrR_integratedOmega); // expensive !!
+
+  // Update deltaTij and rotation
+  deltaTij_ += deltaT;
   Matrix3 D_Rij_incrR;
-  PreintegratedRotation::integrateMeasurement(measuredOmega,
-      biasHat_.gyroscope(), deltaT, D_incrR_integratedOmega, &D_Rij_incrR);
+  deltaRij_ = deltaRij_.compose(incrR, D_Rij_incrR);
+
+  // Update Jacobian
+  const Matrix3 incrRt = incrR.transpose();
+  delRdelBiasOmega_ = incrRt * delRdelBiasOmega_
+      - *D_incrR_integratedOmega * deltaT;
 
   double dt22 = 0.5 * deltaT * deltaT;
   deltaPij_ += dt22 * i_acc + deltaT * deltaVij_;
