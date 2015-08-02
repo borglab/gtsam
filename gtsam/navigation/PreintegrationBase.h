@@ -146,6 +146,9 @@ public:
   }
 
   /// getters
+  const NavState& deltaXij() const {
+    return deltaXij_;
+  }
   const double& deltaTij() const {
     return deltaTij_;
   }
@@ -189,13 +192,15 @@ public:
   bool equals(const PreintegrationBase& other, double tol) const;
 
   /// Calculate the updated preintegrated measurement, does not modify
-  NavState update(const Vector3& measuredAcc, const Vector3& measuredOmega,
-      const double dt, Matrix9* F, Matrix93* G1, Matrix93* G2) const;
+  NavState updatedDeltaXij(const Vector3& measuredAcc,
+      const Vector3& measuredOmega, const double dt, OptionalJacobian<9, 9> F =
+          boost::none, OptionalJacobian<9, 3> G1 = boost::none,
+      OptionalJacobian<9, 3> G2 = boost::none) const;
 
-  /// Update preintegrated measurements
-  void updatePreintegratedMeasurements(const Vector3& measuredAcc,
-      const Vector3& measuredOmega, const double deltaT,
-      Matrix3* D_incrR_integratedOmega, Matrix9* F, Matrix93* G1, Matrix93* G2);
+  /// Update preintegrated measurements and get derivatives
+  void update(const Vector3& measuredAcc, const Vector3& measuredOmega,
+      const double deltaT, Matrix3* D_incrR_integratedOmega, Matrix9* F,
+      Matrix93* G1, Matrix93* G2);
 
   /// Given the estimate of the bias, return a NavState tangent vector
   /// summarizing the preintegrated IMU measurements so far

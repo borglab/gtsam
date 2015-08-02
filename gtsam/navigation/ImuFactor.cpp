@@ -58,7 +58,7 @@ void PreintegratedImuMeasurements::integrateMeasurement(
   Matrix9 F; // overall Jacobian wrt preintegrated measurements (df/dx)
   Matrix93 G1, G2;
   Matrix3 D_incrR_integratedOmega;
-  updatePreintegratedMeasurements(measuredAcc, measuredOmega, dt,
+  PreintegrationBase::update(measuredAcc, measuredOmega, dt,
       &D_incrR_integratedOmega, &F, &G1, &G2);
 
   // first order covariance propagation:
@@ -67,10 +67,20 @@ void PreintegratedImuMeasurements::integrateMeasurement(
   // preintMeasCov = F * preintMeasCov * F.transpose() + G * (1/deltaT) * measurementCovariance * G'
   // NOTE 1: (1/deltaT) allows to pass from continuous time noise to discrete time noise
   // measurementCovariance_discrete = measurementCovariance_contTime * (1/deltaT)
+#ifdef OLD_JACOBIAN_CALCULATION
+  Matrix9 G;
+  G << G1, Gi, G2;
+  Matrix9 Cov;
+  Cov << p().accelerometerCovariance / dt, Z_3x3, Z_3x3,
+      Z_3x3, p().integrationCovariance * dt, Z_3x3,
+      Z_3x3, Z_3x3, p().gyroscopeCovariance / dt;
+  preintMeasCov_ = F * preintMeasCov_ * F.transpose() + G * Cov * G.transpose();
+#else
   preintMeasCov_ = F * preintMeasCov_ * F.transpose()
       + G1 * (p().accelerometerCovariance / dt) * G1.transpose()
       + Gi * (p().integrationCovariance * dt) * Gi.transpose() // NOTE(frank): (Gi*dt)*(C/dt)*(Gi'*dt)
       + G2 * (p().gyroscopeCovariance / dt) * G2.transpose();
+#endif
 }
 
 //------------------------------------------------------------------------------

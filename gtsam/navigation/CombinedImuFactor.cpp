@@ -74,7 +74,7 @@ void PreintegratedCombinedMeasurements::integrateMeasurement(
   Matrix3 D_incrR_integratedOmega; // Right jacobian computed at theta_incr
   Matrix9 F_9x9; // overall Jacobian wrt preintegrated measurements (df/dx)
   Matrix93 G1,G2;
-  updatePreintegratedMeasurements(measuredAcc, measuredOmega, deltaT,
+  PreintegrationBase::update(measuredAcc, measuredOmega, deltaT,
       &D_incrR_integratedOmega, &F_9x9, &G1, &G2);
 
   // Update preintegrated measurements covariance: as in [2] we consider a first order propagation that

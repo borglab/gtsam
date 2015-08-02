@@ -61,9 +61,9 @@ bool PreintegrationBase::equals(const PreintegrationBase& other,
 }
 
 //------------------------------------------------------------------------------
-NavState PreintegrationBase::update(const Vector3& measuredAcc,
-    const Vector3& measuredOmega, const double dt, Matrix9* F, Matrix93* G1,
-    Matrix93* G2) const {
+NavState PreintegrationBase::updatedDeltaXij(const Vector3& measuredAcc,
+    const Vector3& measuredOmega, const double dt, OptionalJacobian<9, 9> F,
+    OptionalJacobian<9, 3> G1, OptionalJacobian<9, 3> G2) const {
 
   // Correct for bias in the sensor frame
   Vector3 correctedAcc = biasHat_.correctAccelerometer(measuredAcc);
@@ -90,7 +90,7 @@ NavState PreintegrationBase::update(const Vector3& measuredAcc,
 }
 
 //------------------------------------------------------------------------------
-void PreintegrationBase::updatePreintegratedMeasurements(
+void PreintegrationBase::update(
     const Vector3& measuredAcc, const Vector3& measuredOmega, const double dt,
     Matrix3* D_incrR_integratedOmega, Matrix9* F, Matrix93* G1, Matrix93* G2) {
 
@@ -99,7 +99,7 @@ void PreintegrationBase::updatePreintegratedMeasurements(
 
   // Do update
   deltaTij_ += dt;
-  deltaXij_ = update(measuredAcc, measuredOmega, dt, F, G1, G2); // functional
+  deltaXij_ = updatedDeltaXij(measuredAcc, measuredOmega, dt, F, G1, G2); // functional
 
   // Update Jacobians
   // TODO(frank): we are repeating some computation here: accessible in F ?
@@ -139,7 +139,7 @@ Vector9 PreintegrationBase::biasCorrectedDelta(
   Vector9 xi;
   Matrix3 D_dR_correctedRij;
   // TODO(frank): could line below be simplified? It is equivalent to
-  //   LogMap(deltaRij_.compose(Expmap(delRdelBiasOmega_ * biasIncr.gyroscope())))
+  //   LogMap(deltaRij_.compose(Expmap(biasInducedOmega)))
   NavState::dR(xi) = Rot3::Logmap(correctedRij, H ? &D_dR_correctedRij : 0);
   NavState::dP(xi) = deltaPij() + delPdelBiasAcc_ * biasIncr.accelerometer()
       + delPdelBiasOmega_ * biasIncr.gyroscope();
