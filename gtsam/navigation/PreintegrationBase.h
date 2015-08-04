@@ -191,6 +191,10 @@ public:
   /// check equality
   bool equals(const PreintegrationBase& other, double tol) const;
 
+  /// Subtract estimate and correct for sensor pose
+  std::pair<Vector3, Vector3> correctMeasurementsByBiasAndSensorPose(
+      const Vector3& j_measuredAcc, const Vector3& j_measuredOmega) const;
+
   /// Calculate the updated preintegrated measurement, does not modify
   /// It takes measured quantities in the j frame
   NavState updatedDeltaXij(const Vector3& j_measuredAcc,

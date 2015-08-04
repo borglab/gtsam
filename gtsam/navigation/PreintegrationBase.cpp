@@ -61,9 +61,8 @@ bool PreintegrationBase::equals(const PreintegrationBase& other,
 }
 
 //------------------------------------------------------------------------------
-NavState PreintegrationBase::updatedDeltaXij(const Vector3& j_measuredAcc,
-    const Vector3& j_measuredOmega, const double dt, OptionalJacobian<9, 9> F,
-    OptionalJacobian<9, 3> G1, OptionalJacobian<9, 3> G2) const {
+std::pair<Vector3, Vector3> PreintegrationBase::correctMeasurementsByBiasAndSensorPose(
+    const Vector3& j_measuredAcc, const Vector3& j_measuredOmega) const {
 
   // Correct for bias in the sensor frame
   Vector3 j_correctedAcc = biasHat_.correctAccelerometer(j_measuredAcc);
@@ -73,17 +72,34 @@ NavState PreintegrationBase::updatedDeltaXij(const Vector3& j_measuredAcc,
   // (originally in the IMU frame) into the body frame
   // Equations below assume the "body" frame is the CG
   if (p().body_P_sensor) {
-    // Correct omega: slight duplication as this is also done in integrateMeasurement below
-    Matrix3 bRs = p().body_P_sensor->rotation().matrix();
-    j_correctedOmega = bRs * j_correctedOmega; // rotation rate vector in the body frame
+    // Correct omega to rotation rate vector in the body frame
+    const Matrix3 bRs = p().body_P_sensor->rotation().matrix();
+    j_correctedOmega = bRs * j_correctedOmega;
 
     // Correct acceleration
-    Vector3 b_arm = p().body_P_sensor->translation().vector();
-    Vector3 b_velocity_bs = j_correctedOmega.cross(b_arm); // magnitude: omega * arm
-    // Subtract out the the centripetal acceleration from the measured one
-    // to get linear acceleration vector in the body frame:
-    j_correctedAcc = bRs * j_correctedAcc - j_correctedOmega.cross(b_velocity_bs);
+    j_correctedAcc = bRs * j_correctedAcc;
+    const Vector3 b_arm = p().body_P_sensor->translation().vector();
+    if (!b_arm.isZero()) {
+      // Subtract out the the centripetal acceleration from the measured one
+      // to get linear acceleration vector in the body frame:
+      const Matrix3 body_Omega_body = skewSymmetric(j_correctedOmega);
+      const Vector3 b_velocity_bs = body_Omega_body * b_arm; // magnitude: omega * arm
+      j_correctedAcc -= body_Omega_body * b_velocity_bs;
+    }
   }
+
+  // Do update in one fell swoop
+  return make_pair(j_correctedAcc, j_correctedOmega);
+}
+
+//------------------------------------------------------------------------------
+NavState PreintegrationBase::updatedDeltaXij(const Vector3& j_measuredAcc,
+    const Vector3& j_measuredOmega, const double dt, OptionalJacobian<9, 9> F,
+    OptionalJacobian<9, 3> G1, OptionalJacobian<9, 3> G2) const {
+
+  Vector3 j_correctedAcc, j_correctedOmega;
+  boost::tie(j_correctedAcc, j_correctedOmega) =
+      correctMeasurementsByBiasAndSensorPose(j_measuredAcc, j_measuredOmega);
 
   // Do update in one fell swoop
   return deltaXij_.update(j_correctedAcc, j_correctedOmega, dt, F, G1, G2);
@@ -103,9 +119,9 @@ void PreintegrationBase::update(
 
   // Update Jacobians
   // TODO(frank): we are repeating some computation here: accessible in F ?
-  // Correct for bias in the sensor frame
-  Vector3 j_correctedAcc = biasHat_.correctAccelerometer(j_measuredAcc);
-  Vector3 j_correctedOmega = biasHat_.correctGyroscope(j_measuredOmega);
+  Vector3 j_correctedAcc, j_correctedOmega;
+  boost::tie(j_correctedAcc, j_correctedOmega) =
+      correctMeasurementsByBiasAndSensorPose(j_measuredAcc, j_measuredOmega);
 
   Matrix3 D_acc_R;
   oldRij.rotate(j_correctedAcc, D_acc_R);
