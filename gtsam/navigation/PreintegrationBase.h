@@ -192,13 +192,15 @@ public:
   bool equals(const PreintegrationBase& other, double tol) const;
 
   /// Calculate the updated preintegrated measurement, does not modify
-  NavState updatedDeltaXij(const Vector3& measuredAcc,
-      const Vector3& measuredOmega, const double dt, OptionalJacobian<9, 9> F =
-          boost::none, OptionalJacobian<9, 3> G1 = boost::none,
-      OptionalJacobian<9, 3> G2 = boost::none) const;
+  /// It takes measured quantities in the j frame
+  NavState updatedDeltaXij(const Vector3& j_measuredAcc,
+      const Vector3& j_measuredOmega, const double dt,
+      OptionalJacobian<9, 9> F = boost::none, OptionalJacobian<9, 3> G1 =
+          boost::none, OptionalJacobian<9, 3> G2 = boost::none) const;
 
   /// Update preintegrated measurements and get derivatives
-  void update(const Vector3& measuredAcc, const Vector3& measuredOmega,
+  /// It takes measured quantities in the j frame
+  void update(const Vector3& j_measuredAcc, const Vector3& j_measuredOmega,
       const double deltaT, Matrix3* D_incrR_integratedOmega, Matrix9* F,
       Matrix93* G1, Matrix93* G2);
 
