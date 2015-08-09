@@ -60,10 +60,8 @@ public:
   struct Params: PreintegratedRotation::Params {
     Matrix3 accelerometerCovariance; ///< continuous-time "Covariance" of accelerometer
     Matrix3 integrationCovariance; ///< continuous-time "Covariance" describing integration uncertainty
-    /// (to compensate errors in Euler integration)
-    ///  (if false: p(t+1) = p(t) + v(t) deltaT ; if true: p(t+1) = p(t) + v(t) deltaT + 0.5 * acc(t) deltaT^2)
     bool use2ndOrderCoriolis; ///< Whether to use second order Coriolis integration
-    Vector3 n_gravity; ///< Gravity constant in body frame
+    Vector3 n_gravity; ///< Gravity vector in nav frame
 
     /// The Params constructor insists on getting the navigation frame gravity vector
     /// For convenience, two commonly used conventions are provided by named constructors below
@@ -81,6 +79,8 @@ public:
     static boost::shared_ptr<Params> MakeSharedU(double g = 9.81) {
       return boost::make_shared<Params>(Vector3(0, 0, -g));
     }
+
+    void print(const std::string& s) const;
 
   protected:
     /// Default constructor for serialization only: uninitialized!

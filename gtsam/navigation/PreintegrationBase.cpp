@@ -26,7 +26,21 @@ using namespace std;
 
 namespace gtsam {
 
-/// Re-initialize PreintegratedMeasurements
+//------------------------------------------------------------------------------
+void PreintegrationBase::Params::print(const string& s) const {
+  PreintegratedRotation::Params::print(s);
+  cout << "accelerometerCovariance:\n[\n" << accelerometerCovariance << "\n]"
+      << endl;
+  cout << "integrationCovariance:\n[\n" << accelerometerCovariance << "\n]"
+      << endl;
+  if (omegaCoriolis && use2ndOrderCoriolis)
+    cout << "Using 2nd-order Coriolis" << endl;
+  if (body_P_sensor)
+    body_P_sensor->print("    ");
+  cout << "n_gravity = (" << n_gravity.transpose() << ")" << endl;
+}
+
+//------------------------------------------------------------------------------
 void PreintegrationBase::resetIntegration() {
   deltaTij_ = 0.0;
   deltaXij_ = NavState();
@@ -37,7 +51,7 @@ void PreintegrationBase::resetIntegration() {
   delVdelBiasOmega_ = Z_3x3;
 }
 
-/// Needed for testable
+//------------------------------------------------------------------------------
 void PreintegrationBase::print(const string& s) const {
   cout << s << endl;
   cout << "    deltaTij [" << deltaTij_ << "]" << endl;
@@ -47,7 +61,7 @@ void PreintegrationBase::print(const string& s) const {
   biasHat_.print("    biasHat");
 }
 
-/// Needed for testable
+//------------------------------------------------------------------------------
 bool PreintegrationBase::equals(const PreintegrationBase& other,
     double tol) const {
   return fabs(deltaTij_ - other.deltaTij_) < tol
@@ -61,7 +75,7 @@ bool PreintegrationBase::equals(const PreintegrationBase& other,
 }
 
 //------------------------------------------------------------------------------
-std::pair<Vector3, Vector3> PreintegrationBase::correctMeasurementsByBiasAndSensorPose(
+pair<Vector3, Vector3> PreintegrationBase::correctMeasurementsByBiasAndSensorPose(
     const Vector3& j_measuredAcc, const Vector3& j_measuredOmega) const {
 
   // Correct for bias in the sensor frame
@@ -106,8 +120,8 @@ NavState PreintegrationBase::updatedDeltaXij(const Vector3& j_measuredAcc,
 }
 
 //------------------------------------------------------------------------------
-void PreintegrationBase::update(
-    const Vector3& j_measuredAcc, const Vector3& j_measuredOmega, const double dt,
+void PreintegrationBase::update(const Vector3& j_measuredAcc,
+    const Vector3& j_measuredOmega, const double dt,
     Matrix3* D_incrR_integratedOmega, Matrix9* F, Matrix93* G1, Matrix93* G2) {
 
   // Save current rotation for updating Jacobians
@@ -130,7 +144,8 @@ void PreintegrationBase::update(
   const Vector3 integratedOmega = j_correctedOmega * dt;
   const Rot3 incrR = Rot3::Expmap(integratedOmega, D_incrR_integratedOmega); // expensive !!
   const Matrix3 incrRt = incrR.transpose();
-  delRdelBiasOmega_ = incrRt * delRdelBiasOmega_ - *D_incrR_integratedOmega * dt;
+  delRdelBiasOmega_ = incrRt * delRdelBiasOmega_
+      - *D_incrR_integratedOmega * dt;
 
   double dt22 = 0.5 * dt * dt;
   const Matrix3 dRij = oldRij.matrix(); // expensive
@@ -227,7 +242,9 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i,
   if (H1)
     *H1 << D_error_predict * D_predict_state_i.leftCols<6>();
   if (H2)
-    *H2 << D_error_predict * D_predict_state_i.rightCols<3>() * state_i.R().transpose();
+    *H2
+        << D_error_predict * D_predict_state_i.rightCols<3>()
+            * state_i.R().transpose();
   if (H3)
     *H3 << D_error_state_j.leftCols<6>();
   if (H4)
@@ -251,4 +268,7 @@ PoseVelocityBias PreintegrationBase::predict(const Pose3& pose_i,
   p_ = q;
   return PoseVelocityBias(predict(NavState(pose_i, vel_i), bias_i), bias_i);
 }
-} /// namespace gtsam
+
+//------------------------------------------------------------------------------
+
+}/// namespace gtsam
