@@ -30,9 +30,13 @@ namespace gtsam {
 
 /*
  * If you are using the factor, please cite:
- * L. Carlone, Z. Kira, C. Beall, V. Indelman, F. Dellaert, Eliminating
+ * L. Carlone, Z. Kira, C. Beall, V. Indelman, F. Dellaert, "Eliminating
  * conditionally independent sets in factor graphs: a unifying perspective based
- * on smart factors, Int. Conf. on Robotics and Automation (ICRA), 2014.
+ * on smart factors", Int. Conf. on Robotics and Automation (ICRA), 2014.
+ *
+ * C. Forster, L. Carlone, F. Dellaert, D. Scaramuzza, "IMU Preintegration on
+ * Manifold for Efficient Visual-Inertial Maximum-a-Posteriori Estimation",
+ * Robotics: Science and Systems (RSS), 2015.
  *
  * REFERENCES:
  * [1] G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups",
@@ -42,8 +46,8 @@ namespace gtsam {
  *     TRO, 28(1):61-76, 2012.
  * [3] L. Carlone, S. Williams, R. Roberts, "Preintegrated IMU factor:
  *     Computation of the Jacobian Matrices", Tech. Report, 2013.
- * [4] C. Forster, L. Carlone, F. Dellaert, D. Scaramuzza, IMU Preintegration on
- *     Manifold for Efficient Visual-Inertial Maximum-a-Posteriori Estimation,
+ * [4] C. Forster, L. Carlone, F. Dellaert, D. Scaramuzza, "IMU Preintegration on
+ *     Manifold for Efficient Visual-Inertial Maximum-a-Posteriori Estimation",
  *     Robotics: Science and Systems (RSS), 2015.
  */
 
@@ -115,7 +119,7 @@ public:
   /// @deprecated version of integrateMeasurement with body_P_sensor
   /// Use parameters instead
   void integrateMeasurement(const Vector3& measuredAcc,
-      const Vector3& measuredOmega, double deltaT, const Pose3& body_P_sensor);
+      const Vector3& measuredOmega, double dt, const Pose3& body_P_sensor);
 
 private:
 
@@ -209,14 +213,15 @@ public:
   /// @deprecated typename
   typedef PreintegratedImuMeasurements PreintegratedMeasurements;
 
-  /// @deprecated constructor
+  /// @deprecated constructor, in the new one gravity, coriolis settings are in Params
   ImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
       const PreintegratedMeasurements& preintegratedMeasurements,
       const Vector3& n_gravity, const Vector3& omegaCoriolis,
       const boost::optional<Pose3>& body_P_sensor = boost::none,
       const bool use2ndOrderCoriolis = false);
 
-  /// @deprecated use PreintegrationBase::predict
+  /// @deprecated use PreintegrationBase::predict,
+  /// in the new one gravity, coriolis settings are in Params
   static void Predict(const Pose3& pose_i, const Vector3& vel_i, Pose3& pose_j,
       Vector3& vel_j, const imuBias::ConstantBias& bias_i,
       PreintegratedMeasurements& pim, const Vector3& n_gravity,
