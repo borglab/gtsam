@@ -32,18 +32,22 @@ namespace gtsam {
  * It includes the definitions of the preintegrated rotation.
  */
 class PreintegratedRotation {
- public:
+public:
 
   /// Parameters for pre-integration:
   /// Usage: Create just a single Params and pass a shared pointer to the constructor
   struct Params {
     Matrix3 gyroscopeCovariance; ///< continuous-time "Covariance" of gyroscope measurements
     boost::optional<Vector3> omegaCoriolis; ///< Coriolis constant
-    boost::optional<Pose3> body_P_sensor;  ///< The pose of the sensor in the body frame
+    boost::optional<Pose3> body_P_sensor; ///< The pose of the sensor in the body frame
 
-    Params():gyroscopeCovariance(I_3x3) {}
+    Params() :
+        gyroscopeCovariance(I_3x3) {
+    }
 
-   private:
+    virtual void print(const std::string& s) const;
+
+  private:
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -54,29 +58,27 @@ class PreintegratedRotation {
     }
   };
 
- protected:
-  double deltaTij_;  ///< Time interval from i to j
-  Rot3 deltaRij_;    ///< Preintegrated relative orientation (in frame i)
-  Matrix3 delRdelBiasOmega_;  ///< Jacobian of preintegrated rotation w.r.t. angular rate bias
+protected:
+  double deltaTij_; ///< Time interval from i to j
+  Rot3 deltaRij_; ///< Preintegrated relative orientation (in frame i)
+  Matrix3 delRdelBiasOmega_; ///< Jacobian of preintegrated rotation w.r.t. angular rate bias
 
   /// Parameters
   boost::shared_ptr<Params> p_;
 
   /// Default constructor for serialization
-  PreintegratedRotation() {}
+  PreintegratedRotation() {
+  }
 
- public:
+public:
   /// Default constructor, resets integration to zero
-  explicit PreintegratedRotation(const boost::shared_ptr<Params>& p) : p_(p) {
+  explicit PreintegratedRotation(const boost::shared_ptr<Params>& p) :
+      p_(p) {
     resetIntegration();
   }
 
   /// Re-initialize PreintegratedMeasurements
-  void resetIntegration() {
-    deltaTij_ = 0.0;
-    deltaRij_ = Rot3();
-    delRdelBiasOmega_ = Z_3x3;
-  }
+  void resetIntegration();
 
   /// @name Access instance variables
   /// @{
@@ -94,17 +96,8 @@ class PreintegratedRotation {
   /// @name Testable
   /// @{
 
-  void print(const std::string& s) const {
-    std::cout << s << std::endl;
-    std::cout << "    deltaTij [" << deltaTij_ << "]" << std::endl;
-    std::cout << "    deltaRij.ypr = (" << deltaRij_.ypr().transpose() << ")" << std::endl;
-  }
-
-  bool equals(const PreintegratedRotation& other, double tol) const {
-    return deltaRij_.equals(other.deltaRij_, tol) &&
-           fabs(deltaTij_ - other.deltaTij_) < tol &&
-           equal_with_abs_tol(delRdelBiasOmega_, other.delRdelBiasOmega_, tol);
-  }
+  void print(const std::string& s) const;
+  bool equals(const PreintegratedRotation& other, double tol) const;
 
   /// @}
 
@@ -112,64 +105,26 @@ class PreintegratedRotation {
   /// and possibly the sensor pose, and then integrate it forward in time to yield
   /// an incremental rotation.
   Rot3 incrementalRotation(const Vector3& measuredOmega, const Vector3& biasHat,
-      double deltaT, OptionalJacobian<3, 3> D_incrR_integratedOmega) const {
-
-    // First we compensate the measurements for the bias
-    Vector3 correctedOmega = measuredOmega - biasHat;
-
-    // Then compensate for sensor-body displacement: we express the quantities
-    // (originally in the IMU frame) into the body frame
-    if (p_->body_P_sensor) {
-      Matrix3 body_R_sensor = p_->body_P_sensor->rotation().matrix();
-      // rotation rate vector in the body frame
-      correctedOmega = body_R_sensor * correctedOmega;
-    }
-
-    // rotation vector describing rotation increment computed from the
-    // current rotation rate measurement
-    const Vector3 integratedOmega = correctedOmega * deltaT;
-    return Rot3::Expmap(integratedOmega, D_incrR_integratedOmega); // expensive !!
-  }
+      double deltaT, OptionalJacobian<3, 3> D_incrR_integratedOmega) const;
 
   /// Calculate an incremental rotation given the gyro measurement and a time interval,
   /// and update both deltaTij_ and deltaRij_.
   void integrateMeasurement(const Vector3& measuredOmega,
       const Vector3& biasHat, double deltaT, Matrix3* D_incrR_integratedOmega,
-      Matrix3* F) {
-
-    const Rot3 incrR = incrementalRotation(measuredOmega, biasHat, deltaT,
-        D_incrR_integratedOmega);
-
-    // Update deltaTij and rotation
-    deltaTij_ += deltaT;
-    deltaRij_ = deltaRij_.compose(incrR, F);
-
-    // Update Jacobian
-    const Matrix3 incrRt = incrR.transpose();
-    delRdelBiasOmega_ = incrRt * delRdelBiasOmega_
-        - *D_incrR_integratedOmega * deltaT;
-  }
+      Matrix3* F);
 
   /// Return a bias corrected version of the integrated rotation, with optional Jacobian
   Rot3 biascorrectedDeltaRij(const Vector3& biasOmegaIncr,
-      OptionalJacobian<3, 3> H = boost::none) const {
-    const Vector3 biasInducedOmega = delRdelBiasOmega_ * biasOmegaIncr;
-    const Rot3 deltaRij_biascorrected = deltaRij_.expmap(biasInducedOmega, boost::none, H);
-    if (H) (*H) *= delRdelBiasOmega_;
-    return deltaRij_biascorrected;
-  }
+      OptionalJacobian<3, 3> H = boost::none) const;
 
   /// Integrate coriolis correction in body frame rot_i
-  Vector3 integrateCoriolis(const Rot3& rot_i) const {
-    if (!p_->omegaCoriolis) return Vector3::Zero();
-    return rot_i.transpose() * (*p_->omegaCoriolis) * deltaTij_;
-  }
+  Vector3 integrateCoriolis(const Rot3& rot_i) const;
 
- private:
+private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {  // NOLINT
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) { // NOLINT
     ar & BOOST_SERIALIZATION_NVP(p_);
     ar & BOOST_SERIALIZATION_NVP(deltaTij_);
     ar & BOOST_SERIALIZATION_NVP(deltaRij_);
@@ -177,4 +132,4 @@ class PreintegratedRotation {
   }
 };
 
-}  // namespace gtsam
+} // namespace gtsam
