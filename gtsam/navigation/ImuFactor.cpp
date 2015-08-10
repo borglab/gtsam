@@ -33,6 +33,7 @@ using namespace std;
 //------------------------------------------------------------------------------
 void PreintegratedImuMeasurements::print(const string& s) const {
   PreintegrationBase::print(s);
+  cout << "    preintMeasCov \n[" << preintMeasCov_ << "]" << endl;
 }
 
 //------------------------------------------------------------------------------
