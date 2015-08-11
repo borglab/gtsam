@@ -247,6 +247,7 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, Key maxID,
   // Parse the pose constraints
   Key id1, id2;
   bool haveLandmark = false;
+  const bool useModelInFile = !model;
   while (!is.eof()) {
     if (!(is >> tag))
       break;
@@ -267,7 +268,7 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, Key maxID,
       if (maxID && (id1 >= maxID || id2 >= maxID))
         continue;
 
-      if (!model)
+      if (useModelInFile)
         model = modelInFile;
 
       if (addNoise)
