@@ -127,7 +127,7 @@ bool MonteCarlo(const PreintegratedImuMeasurements& pim,
   Matrix9 actual = pim1.preintMeasCov();
 
   // Do a Monte Carlo analysis to determine empirical density on the predicted state
-  Sampler sampleAccelerationNoise(Vector3::Constant(sqrt(accNoiseVar / dt)), 0);
+  Sampler sampleAccelerationNoise(Vector3::Constant(sqrt(accNoiseVar / dt)), 234567);
   Sampler sampleOmegaNoise(Vector3::Constant(sqrt(omegaNoiseVar / dt)), 10);
   Matrix samples(9, N);
   Vector9 sum = Vector9::Zero();
@@ -154,7 +154,7 @@ bool MonteCarlo(const PreintegratedImuMeasurements& pim,
   }
 
   // Compare Monte-Carlo value with actual (computed) value
-  return assert_equal(Matrix(1000000*Q), 1000000*actual, 1);
+  return assert_equal(Matrix(10000*Q), 10000*actual, 1);
 }
 
 /* ************************************************************************* */
@@ -199,7 +199,7 @@ TEST(ImuFactor, StraightLine) {
   // Do Monte-Carlo analysis
   PreintegratedImuMeasurements pimMC(kZeroBiasHat, p->accelerometerCovariance,
       p->gyroscopeCovariance, Z_3x3, true); // MonteCarlo does not sample integration noise
-  EXPECT(MonteCarlo(pimMC, state1, kZeroBias, dt/10, Pose3(), measuredAcc, measuredOmega));
+  EXPECT(MonteCarlo(pimMC, state1, kZeroBias, dt/10, Pose3(), measuredAcc, measuredOmega, 100000));
 
   // Check integrated quantities in body frame: gravity measured by IMU is integrated!
   Vector3 b_deltaP(a * dt22, 0, -g * dt22);
