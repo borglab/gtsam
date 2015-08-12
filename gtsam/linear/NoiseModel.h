@@ -823,6 +823,32 @@ namespace gtsam {
         }
       };
 
+      /// DCS implements the Dynamic Covariance Scaling robust error model
+      /// from the paper Robust Map Optimization (Agarwal13icra).
+      class GTSAM_EXPORT DCS : public Base {
+      public:
+        typedef boost::shared_ptr<DCS> shared_ptr;
+
+        DCS(double c = 1.0, const ReweightScheme reweight = Block);
+        virtual ~DCS() {}
+        virtual double weight(double error) const;
+        virtual void print(const std::string &s) const;
+        virtual bool equals(const Base& expected, double tol=1e-8) const;
+        static shared_ptr Create(double k, const ReweightScheme reweight = Block) ;
+
+      protected:
+        double c_;
+
+      private:
+        /** Serialization function */
+        friend class boost::serialization::access;
+        template<class ARCHIVE>
+        void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+          ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+          ar & BOOST_SERIALIZATION_NVP(c_);
+        }
+      };
+
     } ///\namespace mEstimator
 
     /// Base class for robust error models

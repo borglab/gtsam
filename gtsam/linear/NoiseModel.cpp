@@ -799,6 +799,32 @@ Welsh::shared_ptr Welsh::Create(double c, const ReweightScheme reweight) {
   return shared_ptr(new Welsh(c, reweight));
 }
 
+/* ************************************************************************* */
+// DCS
+/* ************************************************************************* */
+DCS::DCS(double c, const ReweightScheme reweight)
+  : Base(reweight), c_(c) {
+}
+
+double DCS::weight(double error) const {
+  double scale = 2.0*c_/(c_ + error*error);
+  return std::min(scale, 1.0);
+}
+
+void DCS::print(const std::string &s="") const {
+  std::cout << s << ": DCS (" << c_ << ")" << std::endl;
+}
+
+bool DCS::equals(const Base &expected, double tol) const {
+  const DCS* p = dynamic_cast<const DCS*>(&expected);
+  if (p == NULL) return false;
+  return fabs(c_ - p->c_) < tol;
+}
+
+DCS::shared_ptr DCS::Create(double c, const ReweightScheme reweight) {
+  return shared_ptr(new DCS(c, reweight));
+}
+
 } // namespace mEstimator
 
 /* ************************************************************************* */
