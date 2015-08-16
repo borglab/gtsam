@@ -153,7 +153,7 @@ public:
     // Allocate memory for Jacobian factor, do only once
     if (Ab.rows() == 0) {
       std::vector<size_t> dimensions(1, 3);
-      Ab = VerticalBlockMatrix(dimensions, 2, true);
+      Ab = VerticalBlockMatrix(dimensions, Measurement::dimension, true);
       A.resize(Measurement::dimension,3);
       b.resize(Measurement::dimension);
     }
