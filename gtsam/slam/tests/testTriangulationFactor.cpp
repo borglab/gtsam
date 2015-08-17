@@ -20,6 +20,8 @@
 #include <gtsam/geometry/SimpleCamera.h>
 #include <gtsam/geometry/StereoCamera.h>
 #include <gtsam/geometry/Cal3Bundler.h>
+#include <gtsam/nonlinear/Expression.h>
+#include <gtsam/nonlinear/ExpressionFactor.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <CppUnitLite/TestHarness.h>
 
@@ -47,7 +49,7 @@ Point2 z1 = camera1.project(landmark);
 
 //******************************************************************************
 TEST( triangulation, TriangulationFactor ) {
-  // Create the factor with a measurement that is 3 pixels off in x
+
   Key pointKey(1);
   SharedNoiseModel model;
   typedef TriangulationFactor<SimpleCamera> Factor;
@@ -66,9 +68,9 @@ TEST( triangulation, TriangulationFactor ) {
 
 //******************************************************************************
 TEST( triangulation, TriangulationFactorStereo ) {
-  // Create the factor with a measurement that is 3 pixels off in x
+
   Key pointKey(1);
-  SharedNoiseModel model;
+  SharedNoiseModel model=noiseModel::Isotropic::Sigma(3,0.5);
   Cal3_S2Stereo::shared_ptr stereoCal(new Cal3_S2Stereo(1500, 1200, 0, 640, 480, 0.5));
   StereoCamera camera2(pose1, stereoCal);
 
@@ -86,6 +88,22 @@ TEST( triangulation, TriangulationFactorStereo ) {
 
   // Verify the Jacobians are correct
   CHECK(assert_equal(HExpected, HActual, 1e-3));
+
+  // compare same problem against expression factor
+  Expression<StereoPoint2>::UnaryFunction<Point3>::type f = boost::bind(&StereoCamera::project2, camera2, _1, boost::none, _2);
+  Expression<Point3> point_(pointKey);
+  Expression<StereoPoint2> project2_(f, point_);
+
+  ExpressionFactor<StereoPoint2> eFactor(model, z2, project2_);
+
+  Values values;
+  values.insert(pointKey, landmark);
+
+  vector<Matrix> HActual1(1), HActual2(1);
+  Vector error1 = factor.unwhitenedError(values, HActual1);
+  Vector error2 = eFactor.unwhitenedError(values, HActual2);
+  EXPECT(assert_equal(error1, error2));
+  EXPECT(assert_equal(HActual1[0], HActual2[0]));
 }
 
 //******************************************************************************
