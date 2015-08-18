@@ -800,6 +800,31 @@ Welsh::shared_ptr Welsh::Create(double c, const ReweightScheme reweight) {
 }
 
 /* ************************************************************************* */
+// GemanMcClure
+/* ************************************************************************* */
+GemanMcClure::GemanMcClure(double c, const ReweightScheme reweight)
+  : Base(reweight), c_(c) {
+}
+
+double GemanMcClure::weight(double error) const {
+  return c_/(c_ + error*error);
+}
+
+void GemanMcClure::print(const std::string &s="") const {
+  std::cout << s << ": Geman-McClure (" << c_ << ")" << std::endl;
+}
+
+bool GemanMcClure::equals(const Base &expected, double tol) const {
+  const GemanMcClure* p = dynamic_cast<const GemanMcClure*>(&expected);
+  if (p == NULL) return false;
+  return fabs(c_ - p->c_) < tol;
+}
+
+GemanMcClure::shared_ptr GemanMcClure::Create(double c, const ReweightScheme reweight) {
+  return shared_ptr(new GemanMcClure(c, reweight));
+}
+
+/* ************************************************************************* */
 // DCS
 /* ************************************************************************* */
 DCS::DCS(double c, const ReweightScheme reweight)
