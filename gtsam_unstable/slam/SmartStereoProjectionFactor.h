@@ -24,6 +24,7 @@
 #include <gtsam/geometry/triangulation.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/StereoCamera.h>
+#include <gtsam/slam/StereoFactor.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/slam/dataset.h>
 
@@ -233,10 +234,6 @@ public:
   TriangulationResult triangulateSafe(const Cameras& cameras) const {
 
     size_t m = cameras.size();
-//    if (m < 2) { // if we have a single pose the corresponding factor is uninformative
-//      return TriangulationResult::Degenerate();
-//    }
-
     bool retriangulate = decideIfTriangulate(cameras);
 
 //    if(!retriangulate)
@@ -245,7 +242,7 @@ public:
 //    bool retriangulate = true;
 
     if (retriangulate) {
-
+//      std::cout << "Retriangulate " << std::endl;
       std::vector<Point3> reprojections;
       reprojections.reserve(m);
       for(size_t i = 0; i < m; i++) {
@@ -259,21 +256,22 @@ public:
       // average reprojected landmark
       Point3 pw_avg = pw_sum / double(m);
 
-      // check if it lies in front of all cameras
-      bool cheirality_ok = true;
       double totalReprojError = 0;
+
+      // check if it lies in front of all cameras
       for(size_t i = 0; i < m; i++) {
         const Pose3& pose = cameras[i].pose();
         const Point3& pl = pose.transform_to(pw_avg);
         if (pl.z() <= 0) {
-          cheirality_ok = false;
-          break;
+          result_ = TriangulationResult::BehindCamera();
+          return result_;
         }
 
         // check landmark distance
         if (params_.triangulation.landmarkDistanceThreshold > 0 &&
             pl.norm() > params_.triangulation.landmarkDistanceThreshold) {
-          return TriangulationResult::Degenerate();
+          result_ = TriangulationResult::Degenerate();
+          return result_;
         }
 
         if (params_.triangulation.dynamicOutlierRejectionThreshold > 0) {
@@ -284,20 +282,27 @@ public:
       } // for
 
       if (params_.triangulation.dynamicOutlierRejectionThreshold > 0
-          && totalReprojError / m > params_.triangulation.dynamicOutlierRejectionThreshold)
-        return TriangulationResult::Degenerate();
-
-      if(cheirality_ok == false) {
-        result_ = TriangulationResult::BehindCamera();
+          && totalReprojError / m > params_.triangulation.dynamicOutlierRejectionThreshold) {
+        result_ = TriangulationResult::Degenerate();
+        return result_;
       }
 
-      if(params_.triangulation.enableEPI)
-        pw_avg = triangulateNonlinear(cameras, measured_, pw_avg);
-
+      if(params_.triangulation.enableEPI) {
+        try {
+         pw_avg = triangulateNonlinear(cameras, measured_, pw_avg);
+        } catch(StereoCheiralityException& e) {
+          if(params_.verboseCheirality)
+            std::cout << "Cheirality Exception in SmartStereoProjectionFactor" << std::endl;
+          if(params_.throwCheirality)
+            throw;
+          result_ = TriangulationResult::BehindCamera();
+          return TriangulationResult::BehindCamera();
+        }
+      }
 
       result_ = TriangulationResult(pw_avg);
 
-    }
+    } // if retriangulate
     return result_;
 
   }
@@ -547,7 +552,6 @@ public:
 //
 //      return Base::totalReprojectionError(cameras, backprojected);
     } else {
-      std::cout << "Degenerate factor" << std::endl;
       // if we don't want to manage the exceptions we discard the factor
       return 0.0;
     }

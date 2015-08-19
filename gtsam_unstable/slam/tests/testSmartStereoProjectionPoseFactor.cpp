@@ -208,6 +208,7 @@ TEST( SmartStereoProjectionPoseFactor, noisy ) {
 
 /* *************************************************************************/
 TEST( SmartStereoProjectionPoseFactor, 3poses_smart_projection_factor ) {
+
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
   Pose3 pose1 = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
   StereoCamera cam1(pose1, K2);
@@ -226,11 +227,11 @@ TEST( SmartStereoProjectionPoseFactor, 3poses_smart_projection_factor ) {
   Point3 landmark3(3, 0, 3.0);
 
   // 1. Project three landmarks into three cameras and triangulate
-  vector<StereoPoint2> measurements_cam1 = stereo_projectToMultipleCameras(cam1,
+  vector<StereoPoint2> measurements_l1 = stereo_projectToMultipleCameras(cam1,
       cam2, cam3, landmark1);
-  vector<StereoPoint2> measurements_cam2 = stereo_projectToMultipleCameras(cam1,
+  vector<StereoPoint2> measurements_l2 = stereo_projectToMultipleCameras(cam1,
       cam2, cam3, landmark2);
-  vector<StereoPoint2> measurements_cam3 = stereo_projectToMultipleCameras(cam1,
+  vector<StereoPoint2> measurements_l3 = stereo_projectToMultipleCameras(cam1,
       cam2, cam3, landmark3);
 
   vector<Key> views;
@@ -238,16 +239,20 @@ TEST( SmartStereoProjectionPoseFactor, 3poses_smart_projection_factor ) {
   views.push_back(x2);
   views.push_back(x3);
 
-  SmartStereoProjectionPoseFactor::shared_ptr smartFactor1(new SmartStereoProjectionPoseFactor());
-  smartFactor1->add(measurements_cam1, views, model, K2);
+  SmartStereoProjectionParams smart_params;
+  smart_params.triangulation.enableEPI = true;
+  SmartStereoProjectionPoseFactor::shared_ptr smartFactor1(new SmartStereoProjectionPoseFactor(smart_params));
+  smartFactor1->add(measurements_l1, views, model, K2);
 
-  SmartStereoProjectionPoseFactor::shared_ptr smartFactor2(new SmartStereoProjectionPoseFactor());
-  smartFactor2->add(measurements_cam2, views, model, K2);
+  SmartStereoProjectionPoseFactor::shared_ptr smartFactor2(new SmartStereoProjectionPoseFactor(smart_params));
+  smartFactor2->add(measurements_l2, views, model, K2);
 
-  SmartStereoProjectionPoseFactor::shared_ptr smartFactor3(new SmartStereoProjectionPoseFactor());
-  smartFactor3->add(measurements_cam3, views, model, K2);
+  SmartStereoProjectionPoseFactor::shared_ptr smartFactor3(new SmartStereoProjectionPoseFactor(smart_params));
+  smartFactor3->add(measurements_l3, views, model, K2);
 
   const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
+
+
 
   NonlinearFactorGraph graph;
   graph.push_back(smartFactor1);
@@ -271,7 +276,13 @@ TEST( SmartStereoProjectionPoseFactor, 3poses_smart_projection_factor ) {
                   -0.000986635786, 0.0314107591, -0.999013364, -0.0313952598),
               Point3(0.1, -0.1, 1.9)), values.at<Pose3>(x3)));
 
-  EXPECT_DOUBLES_EQUAL(979345.4, graph.error(values), 1);
+  //  cout << std::setprecision(10) << "\n----SmartStereoFactor graph initial error: " << graph.error(values) << endl;
+  EXPECT_DOUBLES_EQUAL(797312.95069157204, graph.error(values), 1e-9);
+
+  // get triangulated landmarks from smart factors
+  Point3 landmark1_smart = *smartFactor1->point();
+  Point3 landmark2_smart = *smartFactor2->point();
+  Point3 landmark3_smart = *smartFactor3->point();
 
   Values result;
   gttic_(SmartStereoProjectionPoseFactor);
@@ -282,6 +293,8 @@ TEST( SmartStereoProjectionPoseFactor, 3poses_smart_projection_factor ) {
 
   EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-5);
 
+//  cout << std::setprecision(10) << "SmartStereoFactor graph optimized error: " << graph.error(result) << endl;
+
   GaussianFactorGraph::shared_ptr GFG = graph.linearize(result);
   VectorValues delta = GFG->optimize();
   VectorValues expected = VectorValues::Zero(delta);
@@ -289,6 +302,51 @@ TEST( SmartStereoProjectionPoseFactor, 3poses_smart_projection_factor ) {
 
   // result.print("results of 3 camera, 3 landmark optimization \n");
   EXPECT(assert_equal(pose3, result.at<Pose3>(x3)));
+
+  /* ***************************************************************
+   * Same problem with regular Stereo factors, expect same error!
+   * ****************************************************************/
+
+//  landmark1_smart.print("landmark1_smart");
+//  landmark2_smart.print("landmark2_smart");
+//  landmark3_smart.print("landmark3_smart");
+
+  // add landmarks to values
+  values.insert(L(1), landmark1_smart);
+  values.insert(L(2), landmark2_smart);
+  values.insert(L(3), landmark3_smart);
+
+  // add factors
+  NonlinearFactorGraph graph2;
+
+  graph2.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
+  graph2.push_back(PriorFactor<Pose3>(x2, pose2, noisePrior));
+
+  typedef GenericStereoFactor<Pose3, Point3> ProjectionFactor;
+
+  bool verboseCheirality = true;
+
+  graph2.push_back(ProjectionFactor(measurements_l1[0], model, x1, L(1), K2, false, verboseCheirality));
+  graph2.push_back(ProjectionFactor(measurements_l1[1], model, x2, L(1), K2, false, verboseCheirality));
+  graph2.push_back(ProjectionFactor(measurements_l1[2], model, x3, L(1), K2, false, verboseCheirality));
+
+  graph2.push_back(ProjectionFactor(measurements_l2[0], model, x1, L(2), K2, false, verboseCheirality));
+  graph2.push_back(ProjectionFactor(measurements_l2[1], model, x2, L(2), K2, false, verboseCheirality));
+  graph2.push_back(ProjectionFactor(measurements_l2[2], model, x3, L(2), K2, false, verboseCheirality));
+
+  graph2.push_back(ProjectionFactor(measurements_l3[0], model, x1, L(3), K2, false, verboseCheirality));
+  graph2.push_back(ProjectionFactor(measurements_l3[1], model, x2, L(3), K2, false, verboseCheirality));
+  graph2.push_back(ProjectionFactor(measurements_l3[2], model, x3, L(3), K2, false, verboseCheirality));
+
+//  cout << std::setprecision(10) << "\n----StereoFactor graph initial error: " << graph2.error(values) << endl;
+  EXPECT_DOUBLES_EQUAL(797312.95069157204, graph2.error(values), 1e-9);
+
+  LevenbergMarquardtOptimizer optimizer2(graph2, values, lm_params);
+  Values result2 = optimizer2.optimize();
+  EXPECT_DOUBLES_EQUAL(0, graph2.error(result2), 1e-5);
+
+//  cout << std::setprecision(10) << "StereoFactor graph optimized error: " << graph2.error(result2) << endl;
+
 }
 
 /* *************************************************************************/
@@ -508,7 +566,7 @@ TEST( SmartStereoProjectionPoseFactor, dynamicOutlierRejection ) {
   EXPECT_DOUBLES_EQUAL(0, smartFactor4->error(values), 1e-9);
 
   // dynamic outlier rejection is off
-  EXPECT_DOUBLES_EQUAL(6272.613220592455, smartFactor4b->error(values), 1e-9);
+  EXPECT_DOUBLES_EQUAL(6700, smartFactor4b->error(values), 1e-9);
 
   // Factors 1-3 should have valid point, factor 4 should not
   EXPECT(smartFactor1->point());
