@@ -322,7 +322,7 @@ TEST(NoiseModel, WhitenInPlace)
 }
 
 /* ************************************************************************* */
-TEST(NoiseModel, robustFunction)
+TEST(NoiseModel, robustFunctionHuber)
 {
   const double k = 5.0, error1 = 1.0, error2 = 10.0;
   const mEstimator::Huber::shared_ptr huber = mEstimator::Huber::Create(k);
@@ -332,8 +332,28 @@ TEST(NoiseModel, robustFunction)
   DOUBLES_EQUAL(0.5, weight2, 1e-8);
 }
 
+TEST(NoiseModel, robustFunctionGemanMcClure)
+{
+  const double k = 1.0, error1 = 1.0, error2 = 10.0;
+  const mEstimator::GemanMcClure::shared_ptr gmc = mEstimator::GemanMcClure::Create(k);
+  const double weight1 = gmc->weight(error1),
+               weight2 = gmc->weight(error2);
+  DOUBLES_EQUAL(0.5       , weight1, 1e-8);
+  DOUBLES_EQUAL(0.00990099, weight2, 1e-8);
+}
+
+TEST(NoiseModel, robustFunctionDCS)
+{
+  const double k = 1.0, error1 = 1.0, error2 = 10.0;
+  const mEstimator::DCS::shared_ptr dcs = mEstimator::DCS::Create(k);
+  const double weight1 = dcs->weight(error1),
+               weight2 = dcs->weight(error2);
+  DOUBLES_EQUAL(1.0       , weight1, 1e-8);
+  DOUBLES_EQUAL(0.01980198, weight2, 1e-8);
+}
+
 /* ************************************************************************* */
-TEST(NoiseModel, robustNoise)
+TEST(NoiseModel, robustNoiseHuber)
 {
   const double k = 10.0, error1 = 1.0, error2 = 100.0;
   Matrix A = (Matrix(2, 2) << 1.0, 10.0, 100.0, 1000.0).finished();
@@ -342,7 +362,7 @@ TEST(NoiseModel, robustNoise)
     mEstimator::Huber::Create(k, mEstimator::Huber::Scalar),
     Unit::Create(2));
 
-  robust->WhitenSystem(A,b);
+  robust->WhitenSystem(A, b);
 
   DOUBLES_EQUAL(error1, b(0), 1e-8);
   DOUBLES_EQUAL(sqrt(k*error2), b(1), 1e-8);
@@ -351,6 +371,53 @@ TEST(NoiseModel, robustNoise)
   DOUBLES_EQUAL(10.0, A(0,1), 1e-8);
   DOUBLES_EQUAL(sqrt(k*100.0), A(1,0), 1e-8);
   DOUBLES_EQUAL(sqrt(k/100.0)*1000.0, A(1,1), 1e-8);
+}
+
+TEST(NoiseModel, robustNoiseGemanMcClure)
+{
+  const double k = 1.0, error1 = 1.0, error2 = 100.0;
+  const double a00 = 1.0, a01 = 10.0, a10 = 100.0, a11 = 1000.0;
+  Matrix A = (Matrix(2, 2) << a00, a01, a10, a11).finished();
+  Vector b = Vector2(error1, error2);
+  const Robust::shared_ptr robust = Robust::Create(
+    mEstimator::GemanMcClure::Create(k, mEstimator::GemanMcClure::Scalar),
+    Unit::Create(2));
+
+  robust->WhitenSystem(A, b);
+
+  const double sqrt_weight_error1 = sqrt(0.5);
+  const double sqrt_weight_error2 = sqrt(k/(k + error2*error2));
+
+  DOUBLES_EQUAL(sqrt_weight_error1*error1, b(0), 1e-8);
+  DOUBLES_EQUAL(sqrt_weight_error2*error2, b(1), 1e-8);
+
+  DOUBLES_EQUAL(sqrt_weight_error1*a00, A(0,0), 1e-8);
+  DOUBLES_EQUAL(sqrt_weight_error1*a01, A(0,1), 1e-8);
+  DOUBLES_EQUAL(sqrt_weight_error2*a10, A(1,0), 1e-8);
+  DOUBLES_EQUAL(sqrt_weight_error2*a11, A(1,1), 1e-8);
+}
+
+TEST(NoiseModel, robustNoiseDCS)
+{
+  const double k = 1.0, error1 = 1.0, error2 = 100.0;
+  const double a00 = 1.0, a01 = 10.0, a10 = 100.0, a11 = 1000.0;
+  Matrix A = (Matrix(2, 2) << a00, a01, a10, a11).finished();
+  Vector b = Vector2(error1, error2);
+  const Robust::shared_ptr robust = Robust::Create(
+    mEstimator::DCS::Create(k, mEstimator::DCS::Scalar),
+    Unit::Create(2));
+
+  robust->WhitenSystem(A, b);
+
+  const double sqrt_weight = sqrt(2.0*k/(k + error2*error2));
+
+  DOUBLES_EQUAL(error1, b(0), 1e-8);
+  DOUBLES_EQUAL(sqrt_weight*error2, b(1), 1e-8);
+
+  DOUBLES_EQUAL(a00, A(0,0), 1e-8);
+  DOUBLES_EQUAL(a01, A(0,1), 1e-8);
+  DOUBLES_EQUAL(sqrt_weight*a10, A(1,0), 1e-8);
+  DOUBLES_EQUAL(sqrt_weight*a11, A(1,1), 1e-8);
 }
 
 /* ************************************************************************* */
