@@ -277,7 +277,7 @@ TEST( SmartStereoProjectionPoseFactor, 3poses_smart_projection_factor ) {
               Point3(0.1, -0.1, 1.9)), values.at<Pose3>(x3)));
 
   //  cout << std::setprecision(10) << "\n----SmartStereoFactor graph initial error: " << graph.error(values) << endl;
-  EXPECT_DOUBLES_EQUAL(797312.95069157204, graph.error(values), 1e-9);
+  EXPECT_DOUBLES_EQUAL(797312.95069157204, graph.error(values), 1e-7);
 
   // get triangulated landmarks from smart factors
   Point3 landmark1_smart = *smartFactor1->point();
@@ -339,7 +339,7 @@ TEST( SmartStereoProjectionPoseFactor, 3poses_smart_projection_factor ) {
   graph2.push_back(ProjectionFactor(measurements_l3[2], model, x3, L(3), K2, false, verboseCheirality));
 
 //  cout << std::setprecision(10) << "\n----StereoFactor graph initial error: " << graph2.error(values) << endl;
-  EXPECT_DOUBLES_EQUAL(797312.95069157204, graph2.error(values), 1e-9);
+  EXPECT_DOUBLES_EQUAL(797312.95069157204, graph2.error(values), 1e-7);
 
   LevenbergMarquardtOptimizer optimizer2(graph2, values, lm_params);
   Values result2 = optimizer2.optimize();
