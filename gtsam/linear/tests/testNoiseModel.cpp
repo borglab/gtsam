@@ -349,7 +349,7 @@ TEST(NoiseModel, robustFunctionDCS)
   const double weight1 = dcs->weight(error1),
                weight2 = dcs->weight(error2);
   DOUBLES_EQUAL(1.0       , weight1, 1e-8);
-  DOUBLES_EQUAL(0.01980198, weight2, 1e-8);
+  DOUBLES_EQUAL(0.00039211, weight2, 1e-8);
 }
 
 /* ************************************************************************* */
@@ -413,7 +413,7 @@ TEST(NoiseModel, robustNoiseDCS)
 
   robust->WhitenSystem(A, b);
 
-  const double sqrt_weight = sqrt(2.0*k/(k + error2*error2));
+  const double sqrt_weight = 2.0*k/(k + error2*error2);
 
   DOUBLES_EQUAL(error1, b(0), 1e-8);
   DOUBLES_EQUAL(sqrt_weight*error2, b(1), 1e-8);
