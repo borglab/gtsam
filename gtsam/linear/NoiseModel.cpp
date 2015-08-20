@@ -696,7 +696,7 @@ Huber::Huber(double k, const ReweightScheme reweight)
 }
 
 double Huber::weight(double error) const {
-  return (error < k_) ? (1.0) : (k_ / fabs(error));
+  return (fabs(error) > k_) ? k_ / fabs(error) : 1.0;
 }
 
 void Huber::print(const std::string &s="") const {
