@@ -827,7 +827,8 @@ namespace gtsam {
       /// (Zhang97ivc).
       ///
       /// Note that Geman-McClure weight function uses the parameter c == 1.0,
-      /// but here it's allowed to use different values.
+      /// but here it's allowed to use different values, so we actually have
+      /// the generalized Geman-McClure from (Agarwal15phd).
       class GTSAM_EXPORT GemanMcClure : public Base {
       public:
         typedef boost::shared_ptr<GemanMcClure> shared_ptr;

@@ -338,8 +338,8 @@ TEST(NoiseModel, robustFunctionGemanMcClure)
   const mEstimator::GemanMcClure::shared_ptr gmc = mEstimator::GemanMcClure::Create(k);
   const double weight1 = gmc->weight(error1),
                weight2 = gmc->weight(error2);
-  DOUBLES_EQUAL(0.5       , weight1, 1e-8);
-  DOUBLES_EQUAL(0.00990099, weight2, 1e-8);
+  DOUBLES_EQUAL(0.25      , weight1, 1e-8);
+  DOUBLES_EQUAL(9.80296e-5, weight2, 1e-8);
 }
 
 TEST(NoiseModel, robustFunctionDCS)
@@ -385,8 +385,12 @@ TEST(NoiseModel, robustNoiseGemanMcClure)
 
   robust->WhitenSystem(A, b);
 
-  const double sqrt_weight_error1 = sqrt(0.5);
-  const double sqrt_weight_error2 = sqrt(k/(k + error2*error2));
+  const double k2 = k*k;
+  const double k4 = k2*k2;
+  const double k2error = k2 + error2*error2;
+
+  const double sqrt_weight_error1 = sqrt(0.25);
+  const double sqrt_weight_error2 = sqrt(k4/(k2error*k2error));
 
   DOUBLES_EQUAL(sqrt_weight_error1*error1, b(0), 1e-8);
   DOUBLES_EQUAL(sqrt_weight_error2*error2, b(1), 1e-8);

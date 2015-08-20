@@ -807,7 +807,10 @@ GemanMcClure::GemanMcClure(double c, const ReweightScheme reweight)
 }
 
 double GemanMcClure::weight(double error) const {
-  return c_/(c_ + error*error);
+  const double c2 = c_*c_;
+  const double c4 = c2*c2;
+  const double c2error = c2 + error*error;
+  return c4/(c2error*c2error);
 }
 
 void GemanMcClure::print(const std::string &s="") const {
