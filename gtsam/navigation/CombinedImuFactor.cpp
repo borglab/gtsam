@@ -133,8 +133,8 @@ void CombinedImuFactor::CombinedPreintegratedMeasurements::integrateMeasurement(
   G_measCov_Gt.block<3, 3>(6, 6) = (1 / deltaT) * (H_angles_biasomega)
       * (gyroscopeCovariance() + biasAccOmegaInit_.block<3, 3>(3, 3))
       * (H_angles_biasomega.transpose());
-  G_measCov_Gt.block<3, 3>(9, 9) = (1 / deltaT) * biasAccCovariance_;
-  G_measCov_Gt.block<3, 3>(12, 12) = (1 / deltaT) * biasOmegaCovariance_;
+  G_measCov_Gt.block<3, 3>(9, 9) = deltaT * biasAccCovariance_;
+  G_measCov_Gt.block<3, 3>(12, 12) = deltaT * biasOmegaCovariance_;
   // OFF BLOCK DIAGONAL TERMS
   Matrix3 block23 = H_vel_biasacc * biasAccOmegaInit_.block<3, 3>(3, 0)
       * H_angles_biasomega.transpose();
