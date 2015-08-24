@@ -103,9 +103,9 @@ PreintegratedImuMeasurements::PreintegratedImuMeasurements(
 //------------------------------------------------------------------------------
 void PreintegratedImuMeasurements::integrateMeasurement(
     const Vector3& measuredAcc, const Vector3& measuredOmega, double deltaT,
-    const Pose3& body_P_sensor) {
+    boost::optional<Pose3> body_P_sensor) {
   // modify parameters to accommodate deprecated method:-(
-  p_->body_P_sensor.reset(body_P_sensor);
+  p_->body_P_sensor = body_P_sensor;
   integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 }
 

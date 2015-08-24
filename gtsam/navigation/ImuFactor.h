@@ -119,7 +119,8 @@ public:
   /// @deprecated version of integrateMeasurement with body_P_sensor
   /// Use parameters instead
   void integrateMeasurement(const Vector3& measuredAcc,
-      const Vector3& measuredOmega, double dt, const Pose3& body_P_sensor);
+      const Vector3& measuredOmega, double dt,
+      boost::optional<Pose3> body_P_sensor);
 
 private:
 

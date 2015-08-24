@@ -116,8 +116,8 @@ Vector3 evaluateLogRotation(const Vector3 thetahat, const Vector3 deltatheta) {
 /* ************************************************************************* */
 bool MonteCarlo(const PreintegratedImuMeasurements& pim,
     const NavState& state, const imuBias::ConstantBias& bias, double dt,
-    const Pose3& body_P_sensor, const Vector3& measuredAcc,
-    const Vector3& measuredOmega, size_t N = 10,
+    boost::optional<Pose3> body_P_sensor, const Vector3& measuredAcc,
+    const Vector3& measuredOmega, size_t N = 50000,
     size_t M = 1) {
   // Get mean prediction from "ground truth" measurements
   PreintegratedImuMeasurements pim1 = pim;
@@ -144,12 +144,12 @@ bool MonteCarlo(const PreintegratedImuMeasurements& pim,
     samples.col(i) = xi;
     sum += xi;
   }
-  // Vector9 sampleMean = sum / N;
+   Vector9 sampleMean = sum / N;
   Matrix9 Q;
   Q.setZero();
   for (size_t i = 0; i < N; i++) {
     Vector9 xi = samples.col(i);
-    // xi -= sampleMean;
+     xi -= sampleMean;
     Q += xi * xi.transpose() / (N - 1);
   }
 
@@ -199,7 +199,9 @@ TEST(ImuFactor, StraightLine) {
   // Do Monte-Carlo analysis
   PreintegratedImuMeasurements pimMC(kZeroBiasHat, p->accelerometerCovariance,
       p->gyroscopeCovariance, Z_3x3, true); // MonteCarlo does not sample integration noise
-  EXPECT(MonteCarlo(pimMC, state1, kZeroBias, dt/10, Pose3(), measuredAcc, measuredOmega, 100000));
+  EXPECT(
+      MonteCarlo(pimMC, state1, kZeroBias, dt / 10, boost::none, measuredAcc,
+          measuredOmega));
 
   // Check integrated quantities in body frame: gravity measured by IMU is integrated!
   Vector3 b_deltaP(a * dt22, 0, -g * dt22);
@@ -453,10 +455,9 @@ TEST(ImuFactor, ErrorAndJacobianWith2ndOrderCoriolis) {
   pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   // Create factor
-  Pose3 bodyPsensor = Pose3();
   bool use2ndOrderCoriolis = true;
   ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pim, kGravityAlongNavZDown,
-      kNonZeroOmegaCoriolis, bodyPsensor, use2ndOrderCoriolis);
+      kNonZeroOmegaCoriolis, boost::none, use2ndOrderCoriolis);
 
   Values values;
   values.insert(X(1), x1);
@@ -670,7 +671,7 @@ TEST(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
   values.insert(B(1), bias);
 
   // Make sure linearization is correct
-  double diffDelta = 1e-7;
+  double diffDelta = 1e-5;
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, diffDelta, 1e-3);
 }
 
@@ -759,7 +760,7 @@ TEST(ImuFactor, PredictArbitrary) {
   Pose3 x1;
   Vector3 v1 = Vector3(0, 0, 0);
   imuBias::ConstantBias bias(Vector3(0, 0, 0), Vector3(0, 0, 0));
-  EXPECT(MonteCarlo(pim, NavState(x1, v1), bias, 0.1, Pose3(),
+  EXPECT(MonteCarlo(pim, NavState(x1, v1), bias, 0.1, boost::none,
       measuredAcc, measuredOmega));
 
   for (int i = 0; i < 1000; ++i)
