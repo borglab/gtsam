@@ -916,7 +916,7 @@ class StereoCamera {
   // Standard Interface
   gtsam::Pose3 pose() const;
   double baseline() const;
-  gtsam::Cal3_S2Stereo* calibration() const;
+  gtsam::Cal3_S2Stereo calibration() const;
 
   // Manifold
   gtsam::StereoCamera retract(const Vector& d) const;
