@@ -11,7 +11,7 @@
 
 /**
  * @file   SmartStereoProjectionPoseFactor.h
- * @brief  Produces an Hessian factors on POSES from monocular measurements of a single landmark
+ * @brief  Smart stereo factor on poses, assuming camera calibration is fixed
  * @author Luca Carlone
  * @author Chris Beall
  * @author Zsolt Kira
@@ -35,7 +35,10 @@ namespace gtsam {
  */
 
 /**
- * The calibration is known here. The factor only constraints poses (variable dimension is 6)
+ * This factor assumes that camera calibration is fixed, but each camera
+ * has its own calibration.
+ * The factor only constrains poses (variable dimension is 6).
+ * This factor requires that values contains the involved poses (Pose3).
  * @addtogroup SLAM
  */
 class SmartStereoProjectionPoseFactor: public SmartStereoProjectionFactor {

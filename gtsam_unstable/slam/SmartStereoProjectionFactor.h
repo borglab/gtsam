@@ -11,7 +11,7 @@
 
 /**
  * @file   SmartStereoProjectionFactor.h
- * @brief  Base class to create smart factors on poses or cameras
+ * @brief  Smart stereo factor on StereoCameras (pose + calibration)
  * @author Luca Carlone
  * @author Zsolt Kira
  * @author Frank Dellaert
@@ -123,8 +123,11 @@ enum DegeneracyMode {
 
 /**
  * SmartStereoProjectionFactor: triangulates point and keeps an estimate of it around.
- * This factor operates with StereoCamrea. This factor requires that values
- * contains the involved camera poses. Calibration is assumed to be fixed.
+ * This factor operates with StereoCamera. This factor requires that values
+ * contains the involved StereoCameras. Calibration is assumed to be fixed, as this
+ * is also assumed in StereoCamera.
+ * If you'd like to store poses in values instead of cameras, use
+ * SmartStereoProjectionPoseFactor instead
 */
 class SmartStereoProjectionFactor: public SmartFactorBase<StereoCamera> {
 private:

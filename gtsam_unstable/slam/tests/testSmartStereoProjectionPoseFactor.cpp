@@ -1089,7 +1089,7 @@ TEST( SmartStereoProjectionPoseFactor, HessianWithRotationDegenerate ) {
   // Hessian is invariant to rotations in the nondegenerate case
   EXPECT(
       assert_equal(hessianFactor->information(),
-          hessianFactorRot->information(), 1e-7));
+          hessianFactorRot->information(), 1e-6));
 
   Pose3 poseDrift2 = Pose3(Rot3::ypr(-M_PI / 2, -M_PI / 3, -M_PI / 2),
       Point3(10, -4, 5));
