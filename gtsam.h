@@ -2364,15 +2364,17 @@ class SmartProjectionParams {
 template<CALIBRATION>
 virtual class SmartProjectionPoseFactor: gtsam::NonlinearFactor {
 
-  SmartProjectionPoseFactor(const CALIBRATION* K);
-  SmartProjectionPoseFactor(const CALIBRATION* K,
+  SmartProjectionPoseFactor(const gtsam::noiseModel::Base* noise,
+      const CALIBRATION* K);
+  SmartProjectionPoseFactor(const gtsam::noiseModel::Base* noise,
+      const CALIBRATION* K,
       const gtsam::Pose3& body_P_sensor);
-  SmartProjectionPoseFactor(const CALIBRATION* K,
+  SmartProjectionPoseFactor(const gtsam::noiseModel::Base* noise,
+      const CALIBRATION* K,
       const gtsam::Pose3& body_P_sensor,
       const gtsam::SmartProjectionParams& params);
 
-  void add(const gtsam::Point2& measured_i, size_t poseKey_i,
-      const gtsam::noiseModel::Base* noise_i);
+  void add(const gtsam::Point2& measured_i, size_t poseKey_i);
 
   // enabling serialization functionality
   //void serialize() const;
