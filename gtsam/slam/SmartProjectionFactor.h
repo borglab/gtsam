@@ -159,10 +159,10 @@ public:
    * @param body_P_sensor pose of the camera in the body frame
    * @param params internal parameters of the smart factors
    */
-  SmartProjectionFactor(
+  SmartProjectionFactor(const SharedNoiseModel& sharedNoiseModel,
       const boost::optional<Pose3> body_P_sensor = boost::none,
       const SmartProjectionParams& params = SmartProjectionParams()) :
-      Base(body_P_sensor), params_(params), //
+      Base(sharedNoiseModel, body_P_sensor), params_(params), //
       result_(TriangulationResult::Degenerate()) {
   }
 

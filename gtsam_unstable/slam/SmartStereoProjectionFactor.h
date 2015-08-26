@@ -159,8 +159,10 @@ public:
    * Constructor
    * @param params internal parameters of the smart factors
    */
-  SmartStereoProjectionFactor(const SmartStereoProjectionParams& params =
+  SmartStereoProjectionFactor(const SharedNoiseModel& sharedNoiseModel,
+      const SmartStereoProjectionParams& params =
       SmartStereoProjectionParams()) :
+      Base(sharedNoiseModel), //
       params_(params), //
       result_(TriangulationResult::Degenerate()) {
   }

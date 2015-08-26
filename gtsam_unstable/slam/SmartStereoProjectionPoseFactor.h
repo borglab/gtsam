@@ -62,15 +62,13 @@ public:
 
   /**
    * Constructor
-   * @param rankTol tolerance used to check if point triangulation is degenerate
-   * @param linThreshold threshold on relative pose changes used to decide whether to relinearize (selective relinearization)
-   * @param manageDegeneracy is true, in presence of degenerate triangulation, the factor is converted to a rotation-only constraint,
-   * otherwise the factor is simply neglected
-   * @param enableEPI if set to true linear triangulation is refined with embedded LM iterations
+   * @param Isotropic measurement noise
+   * @param params internal parameters of the smart factors
    */
-  SmartStereoProjectionPoseFactor(const SmartStereoProjectionParams& params =
+  SmartStereoProjectionPoseFactor(const SharedNoiseModel& sharedNoiseModel,
+      const SmartStereoProjectionParams& params =
       SmartStereoProjectionParams()) :
-      Base(params) {
+      Base(sharedNoiseModel, params) {
   }
 
   /** Virtual destructor */
@@ -80,27 +78,23 @@ public:
    * add a new measurement and pose key
    * @param measured is the 2m dimensional location of the projection of a single landmark in the m view (the measurement)
    * @param poseKey is key corresponding to the camera observing the same landmark
-   * @param noise_i is the measurement noise
-   * @param K_i is the (known) camera calibration
+   * @param K is the (fixed) camera calibration
    */
-  void add(const StereoPoint2 measured_i, const Key poseKey_i,
-      const SharedNoiseModel noise_i,
-      const boost::shared_ptr<Cal3_S2Stereo> K_i) {
-    Base::add(measured_i, poseKey_i, noise_i);
-    K_all_.push_back(K_i);
+  void add(const StereoPoint2 measured, const Key poseKey,
+      const boost::shared_ptr<Cal3_S2Stereo> K) {
+    Base::add(measured, poseKey);
+    K_all_.push_back(K);
   }
 
   /**
    *  Variant of the previous one in which we include a set of measurements
    * @param measurements vector of the 2m dimensional location of the projection of a single landmark in the m view (the measurement)
    * @param poseKeys vector of keys corresponding to the camera observing the same landmark
-   * @param noises vector of measurement noises
    * @param Ks vector of calibration objects
    */
   void add(std::vector<StereoPoint2> measurements, std::vector<Key> poseKeys,
-      std::vector<SharedNoiseModel> noises,
       std::vector<boost::shared_ptr<Cal3_S2Stereo> > Ks) {
-    Base::add(measurements, poseKeys, noises);
+    Base::add(measurements, poseKeys);
     for (size_t i = 0; i < measurements.size(); i++) {
       K_all_.push_back(Ks.at(i));
     }
@@ -110,13 +104,12 @@ public:
    * Variant of the previous one in which we include a set of measurements with the same noise and calibration
    * @param mmeasurements vector of the 2m dimensional location of the projection of a single landmark in the m view (the measurement)
    * @param poseKeys vector of keys corresponding to the camera observing the same landmark
-   * @param noise measurement noise (same for all measurements)
    * @param K the (known) camera calibration (same for all measurements)
    */
   void add(std::vector<StereoPoint2> measurements, std::vector<Key> poseKeys,
-      const SharedNoiseModel noise, const boost::shared_ptr<Cal3_S2Stereo> K) {
+      const boost::shared_ptr<Cal3_S2Stereo> K) {
     for (size_t i = 0; i < measurements.size(); i++) {
-      Base::add(measurements.at(i), poseKeys.at(i), noise);
+      Base::add(measurements.at(i), poseKeys.at(i));
       K_all_.push_back(K);
     }
   }
