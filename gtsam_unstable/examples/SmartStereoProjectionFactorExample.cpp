@@ -109,17 +109,17 @@ int main(int argc, char** argv){
 
   //read stereo measurements and construct smart factors
 
-  SmartFactor::shared_ptr factor(new SmartFactor());
+  SmartFactor::shared_ptr factor(new SmartFactor(model));
   size_t current_l = 3;   // hardcoded landmark ID from first measurement
 
   while (factor_file >> x >> l >> uL >> uR >> v >> X >> Y >> Z) {
 
     if(current_l != l) {
       graph.push_back(factor);
-      factor = SmartFactor::shared_ptr(new SmartFactor());
+      factor = SmartFactor::shared_ptr(new SmartFactor(model));
       current_l = l;
     }
-    factor->add(StereoPoint2(uL,uR,v), Symbol('x',x), model, K);
+    factor->add(StereoPoint2(uL,uR,v), Symbol('x',x), K);
   }
 
   Pose3 first_pose = initial_estimate.at<Pose3>(Symbol('x',1));
