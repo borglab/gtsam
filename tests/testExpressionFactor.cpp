@@ -21,7 +21,9 @@
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/slam/ProjectionFactor.h>
 #include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/expressionTesting.h>
 #include <gtsam/nonlinear/ExpressionFactor.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/expressionTesting.h>
 #include <gtsam/base/Testable.h>
 
@@ -35,6 +37,10 @@ using namespace gtsam;
 
 Point2 measured(-17, 30);
 SharedNoiseModel model = noiseModel::Unit::Create(2);
+
+// This deals with the overload problem and makes the expressions factor
+// understand that we work on Point3
+Point2 (*Project)(const Point3&, OptionalJacobian<2, 3>) = &PinholeBase::Project;
 
 namespace leaf {
 // Create some values
@@ -169,7 +175,7 @@ static Point2 myUncal(const Cal3_S2& K, const Point2& p,
 // Binary(Leaf,Leaf)
 TEST(ExpressionFactor, Binary) {
 
-  typedef BinaryExpression<Point2, Cal3_S2, Point2> Binary;
+  typedef internal::BinaryExpression<Point2, Cal3_S2, Point2> Binary;
 
   Cal3_S2_ K_(1);
   Point2_ p_(2);
@@ -184,11 +190,15 @@ TEST(ExpressionFactor, Binary) {
   EXPECT_LONGS_EQUAL(8, sizeof(double));
   EXPECT_LONGS_EQUAL(16, sizeof(Point2));
   EXPECT_LONGS_EQUAL(40, sizeof(Cal3_S2));
-  EXPECT_LONGS_EQUAL(16, sizeof(ExecutionTrace<Point2>));
-  EXPECT_LONGS_EQUAL(16, sizeof(ExecutionTrace<Cal3_S2>));
-  EXPECT_LONGS_EQUAL(2*5*8, sizeof(Jacobian<Point2,Cal3_S2>::type));
-  EXPECT_LONGS_EQUAL(2*2*8, sizeof(Jacobian<Point2,Point2>::type));
-  size_t expectedRecordSize = 16 + 16 + 40 + 2 * 16 + 80 + 32;
+  EXPECT_LONGS_EQUAL(16, sizeof(internal::ExecutionTrace<Point2>));
+  EXPECT_LONGS_EQUAL(16, sizeof(internal::ExecutionTrace<Cal3_S2>));
+  EXPECT_LONGS_EQUAL(2*5*8, sizeof(internal::Jacobian<Point2,Cal3_S2>::type));
+  EXPECT_LONGS_EQUAL(2*2*8, sizeof(internal::Jacobian<Point2,Point2>::type));
+  size_t expectedRecordSize = sizeof(Cal3_S2)
+      + sizeof(internal::ExecutionTrace<Cal3_S2>)
+      + +sizeof(internal::Jacobian<Point2, Cal3_S2>::type) + sizeof(Point2)
+      + sizeof(internal::ExecutionTrace<Point2>)
+      + sizeof(internal::Jacobian<Point2, Point2>::type);
   EXPECT_LONGS_EQUAL(expectedRecordSize + 8, sizeof(Binary::Record));
 
   // Check size
@@ -197,8 +207,8 @@ TEST(ExpressionFactor, Binary) {
   EXPECT_LONGS_EQUAL(expectedRecordSize + 8, size);
   // Use Variable Length Array, allocated on stack by gcc
   // Note unclear for Clang: http://clang.llvm.org/compatibility.html#vla
-  ExecutionTraceStorage traceStorage[size];
-  ExecutionTrace<Point2> trace;
+  internal::ExecutionTraceStorage traceStorage[size];
+  internal::ExecutionTrace<Point2> trace;
   Point2 value = binary.traceExecution(values, trace, traceStorage);
   EXPECT(assert_equal(Point2(),value, 1e-9));
   // trace.print();
@@ -212,9 +222,8 @@ TEST(ExpressionFactor, Binary) {
   // Check matrices
   boost::optional<Binary::Record*> r = trace.record<Binary::Record>();
   CHECK(r);
-  EXPECT(
-      assert_equal(expected25, (Matrix) (*r)-> jacobian<Cal3_S2, 1>(), 1e-9));
-  EXPECT( assert_equal(expected22, (Matrix) (*r)->jacobian<Point2, 2>(), 1e-9));
+  EXPECT(assert_equal(expected25, (Matrix ) (*r)->dTdA1, 1e-9));
+  EXPECT(assert_equal(expected22, (Matrix ) (*r)->dTdA2, 1e-9));
 }
 /* ************************************************************************* */
 // Unary(Binary(Leaf,Leaf))
@@ -250,22 +259,22 @@ TEST(ExpressionFactor, Shallow) {
   LONGS_EQUAL(3,dims[1]);
 
   // traceExecution of shallow tree
-  typedef UnaryExpression<Point2, Point3> Unary;
-  typedef BinaryExpression<Point3, Pose3, Point3> Binary;
+  typedef internal::UnaryExpression<Point2, Point3> Unary;
+  typedef internal::BinaryExpression<Point3, Pose3, Point3> Binary;
   size_t expectedTraceSize = sizeof(Unary::Record) + sizeof(Binary::Record);
-  EXPECT_LONGS_EQUAL(112, sizeof(Unary::Record));
+  EXPECT_LONGS_EQUAL(96, sizeof(Unary::Record));
 #ifdef GTSAM_USE_QUATERNIONS
   EXPECT_LONGS_EQUAL(352, sizeof(Binary::Record));
-  LONGS_EQUAL(112+352, expectedTraceSize);
+  LONGS_EQUAL(96+352, expectedTraceSize);
 #else
-  EXPECT_LONGS_EQUAL(400, sizeof(Binary::Record));
-  LONGS_EQUAL(112+400, expectedTraceSize);
+  EXPECT_LONGS_EQUAL(384, sizeof(Binary::Record));
+  LONGS_EQUAL(96+384, expectedTraceSize);
 #endif
   size_t size = expression.traceSize();
   CHECK(size);
   EXPECT_LONGS_EQUAL(expectedTraceSize, size);
-  ExecutionTraceStorage traceStorage[size];
-  ExecutionTrace<Point2> trace;
+  internal::ExecutionTraceStorage traceStorage[size];
+  internal::ExecutionTrace<Point2> trace;
   Point2 value = expression.traceExecution(values, trace, traceStorage);
   EXPECT(assert_equal(Point2(),value, 1e-9));
   // trace.print();
@@ -277,7 +286,7 @@ TEST(ExpressionFactor, Shallow) {
   // Check matrices
   boost::optional<Unary::Record*> r = trace.record<Unary::Record>();
   CHECK(r);
-  EXPECT(assert_equal(expected23, (Matrix)(*r)->jacobian<Point3, 1>(), 1e-9));
+  EXPECT(assert_equal(expected23, (Matrix)(*r)->dTdA1, 1e-9));
 
   // Linearization
   ExpressionFactor<Point2> f2(model, measured, expression);
@@ -309,7 +318,7 @@ TEST(ExpressionFactor, tree) {
 
   // Create expression tree
   Point3_ p_cam(x, &Pose3::transform_to, p);
-  Point2_ xy_hat(PinholeCamera<Cal3_S2>::project_to_camera, p_cam);
+  Point2_ xy_hat(Project, p_cam);
   Point2_ uv_hat(K, &Cal3_S2::uncalibrate, xy_hat);
 
   // Create factor and check value, dimension, linearization
@@ -326,8 +335,6 @@ TEST(ExpressionFactor, tree) {
   EXPECT_LONGS_EQUAL(2, f2.dim());
   boost::shared_ptr<GaussianFactor> gf2 = f2.linearize(values);
   EXPECT( assert_equal(*expected, *gf2, 1e-9));
-
-  TernaryExpression<Point2, Pose3, Point3, Cal3_S2>::Function fff = project6;
 
   // Try ternary version
   ExpressionFactor<Point2> f3(model, measured, project3(x, p, K));
@@ -485,12 +492,112 @@ TEST(ExpressionFactor, tree_finite_differences) {
 
   // Create expression tree
   Point3_ p_cam(x, &Pose3::transform_to, p);
-  Point2_ xy_hat(PinholeCamera<Cal3_S2>::project_to_camera, p_cam);
+  Point2_ xy_hat(Project, p_cam);
   Point2_ uv_hat(K, &Cal3_S2::uncalibrate, xy_hat);
 
   const double fd_step = 1e-5;
   const double tolerance = 1e-5;
   EXPECT_CORRECT_EXPRESSION_JACOBIANS(uv_hat, values, fd_step, tolerance);
+}
+
+TEST(ExpressionFactor, push_back) {
+  NonlinearFactorGraph graph;
+  graph.addExpressionFactor(model, Point2(0, 0), leaf::p);
+}
+
+/* ************************************************************************* */
+// Test with multiple compositions on duplicate keys
+struct Combine {
+  double a, b;
+  Combine(double a, double b) : a(a), b(b) {}
+  double operator()(const double& x, const double& y, OptionalJacobian<1, 1> H1,
+                    OptionalJacobian<1, 1> H2) {
+    if (H1) (*H1) << a;
+    if (H2) (*H2) << b;
+    return a * x + b * y;
+  }
+};
+
+TEST(Expression, testMultipleCompositions) {
+  const double tolerance = 1e-5;
+  const double fd_step = 1e-5;
+
+  Values values;
+  values.insert(1, 10.0);
+  values.insert(2, 20.0);
+
+  Expression<double> v1_(Key(1));
+  Expression<double> v2_(Key(2));
+
+  // BinaryExpression(1,2)
+  //   Leaf, key = 1
+  //   Leaf, key = 2
+  Expression<double> sum1_(Combine(1, 2), v1_, v2_);
+  EXPECT(sum1_.keys() == list_of(1)(2));
+  EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum1_, values, fd_step, tolerance);
+
+  // BinaryExpression(3,4)
+  //   BinaryExpression(1,2)
+  //     Leaf, key = 1
+  //     Leaf, key = 2
+  //   Leaf, key = 1
+  Expression<double> sum2_(Combine(3, 4), sum1_, v1_);
+  EXPECT(sum2_.keys() == list_of(1)(2));
+  EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum2_, values, fd_step, tolerance);
+
+  // BinaryExpression(5,6)
+  //   BinaryExpression(3,4)
+  //     BinaryExpression(1,2)
+  //       Leaf, key = 1
+  //       Leaf, key = 2
+  //     Leaf, key = 1
+  //   BinaryExpression(1,2)
+  //     Leaf, key = 1
+  //     Leaf, key = 2
+  Expression<double> sum3_(Combine(5, 6), sum1_, sum2_);
+  EXPECT(sum3_.keys() == list_of(1)(2));
+  EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum3_, values, fd_step, tolerance);
+}
+
+/* ************************************************************************* */
+// Another test, with Ternary Expressions
+static double combine3(const double& x, const double& y, const double& z,
+                        OptionalJacobian<1, 1> H1, OptionalJacobian<1, 1> H2,
+                        OptionalJacobian<1, 1> H3) {
+  if (H1) (*H1) << 1.0;
+  if (H2) (*H2) << 2.0;
+  if (H3) (*H3) << 3.0;
+  return x + 2.0 * y + 3.0 * z;
+}
+
+TEST(Expression, testMultipleCompositions2) {
+  const double tolerance = 1e-5;
+  const double fd_step = 1e-5;
+
+  Values values;
+  values.insert(1, 10.0);
+  values.insert(2, 20.0);
+  values.insert(3, 30.0);
+
+  Expression<double> v1_(Key(1));
+  Expression<double> v2_(Key(2));
+  Expression<double> v3_(Key(3));
+
+  Expression<double> sum1_(Combine(4,5), v1_, v2_);
+  EXPECT(sum1_.keys() == list_of(1)(2));
+  EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum1_, values, fd_step, tolerance);
+
+  Expression<double> sum2_(combine3, v1_, v2_, v3_);
+  EXPECT(sum2_.keys() == list_of(1)(2)(3));
+  EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum2_, values, fd_step, tolerance);
+
+  Expression<double> sum3_(combine3, v3_, v2_, v1_);
+  EXPECT(sum3_.keys() == list_of(1)(2)(3));
+  EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum3_, values, fd_step, tolerance);
+
+  Expression<double> sum4_(combine3, sum1_, sum2_, sum3_);
+  EXPECT(sum4_.keys() == list_of(1)(2)(3));
+  EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum4_, values, fd_step, tolerance);
 }
 
 /* ************************************************************************* */

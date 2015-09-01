@@ -59,7 +59,7 @@ public:
   }
 
   /// Static, named constructor TODO think about relation with above
-  static SO3 Rodrigues(const Vector3& axis, double theta);
+  static SO3 AxisAngle(const Vector3& axis, double theta);
 
   /// @}
   /// @name Testable
@@ -93,7 +93,7 @@ public:
 
   /**
    * Exponential map at identity - create a rotation from canonical coordinates
-   * \f$ [R_x,R_y,R_z] \f$ using Rodriguez' formula
+   * \f$ [R_x,R_y,R_z] \f$ using Rodrigues' formula
    */
   static SO3 Expmap(const Vector3& omega, ChartJacobian H = boost::none);
 
@@ -129,11 +129,11 @@ public:
 };
 
 template<>
-struct traits<SO3> : public internal::LieGroupTraits<SO3> {
+struct traits<SO3> : public internal::LieGroup<SO3> {
 };
 
 template<>
-struct traits<const SO3> : public internal::LieGroupTraits<SO3> {
+struct traits<const SO3> : public internal::LieGroup<SO3> {
 };
 } // end namespace gtsam
 

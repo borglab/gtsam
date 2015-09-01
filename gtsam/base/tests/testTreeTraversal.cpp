@@ -45,11 +45,11 @@ struct TestForest {
 };
 
 TestForest makeTestForest() {
-  //    0     1
-  //   / \
-  //  2   3
-  //      |
-  //      4
+  //     0     1
+  //   / |
+  //  2  3
+  //     |
+  //     4
   TestForest forest;
   forest.roots_.push_back(boost::make_shared<TestNode>(0));
   forest.roots_.push_back(boost::make_shared<TestNode>(1));

@@ -34,6 +34,9 @@ using namespace gtsam;
 // Make the typename short so it looks much cleaner
 typedef SmartProjectionPoseFactor<Cal3_S2> SmartFactor;
 
+// create a typedef to the camera type
+typedef PinholePose<Cal3_S2> Camera;
+
 /* ************************************************************************* */
 int main(int argc, char* argv[]) {
 
@@ -55,12 +58,12 @@ int main(int argc, char* argv[]) {
   for (size_t j = 0; j < points.size(); ++j) {
 
     // every landmark represent a single landmark, we use shared pointer to init the factor, and then insert measurements.
-    SmartFactor::shared_ptr smartfactor(new SmartFactor());
+    SmartFactor::shared_ptr smartfactor(new SmartFactor(measurementNoise, K));
 
     for (size_t i = 0; i < poses.size(); ++i) {
 
       // generate the 2D measurement
-      SimpleCamera camera(poses[i], *K);
+      Camera camera(poses[i], K);
       Point2 measurement = camera.project(points[j]);
 
       // call add() function to add measurement into a single factor, here we need to add:
@@ -68,7 +71,7 @@ int main(int argc, char* argv[]) {
       //    2. the corresponding camera's key
       //    3. camera noise model
       //    4. camera calibration
-      smartfactor->add(measurement, i, measurementNoise, K);
+      smartfactor->add(measurement, i);
     }
 
     // insert the smart factor in the graph
@@ -77,24 +80,24 @@ int main(int argc, char* argv[]) {
 
   // Add a prior on pose x0. This indirectly specifies where the origin is.
   // 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
-  noiseModel::Diagonal::shared_ptr poseNoise = noiseModel::Diagonal::Sigmas(
+  noiseModel::Diagonal::shared_ptr noise = noiseModel::Diagonal::Sigmas(
       (Vector(6) << Vector3::Constant(0.3), Vector3::Constant(0.1)).finished());
-  graph.push_back(PriorFactor<Pose3>(0, poses[0], poseNoise));
+  graph.push_back(PriorFactor<Camera>(0, Camera(poses[0],K), noise));
 
   // Because the structure-from-motion problem has a scale ambiguity, the problem is
   // still under-constrained. Here we add a prior on the second pose x1, so this will
   // fix the scale by indicating the distance between x0 and x1.
   // Because these two are fixed, the rest of the poses will be also be fixed.
-  graph.push_back(PriorFactor<Pose3>(1, poses[1], poseNoise)); // add directly to graph
+  graph.push_back(PriorFactor<Camera>(1, Camera(poses[1],K), noise)); // add directly to graph
 
   graph.print("Factor Graph:\n");
 
   // Create the initial estimate to the solution
   // Intentionally initialize the variables off from the ground truth
   Values initialEstimate;
-  Pose3 delta(Rot3::rodriguez(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20));
+  Pose3 delta(Rot3::Rodrigues(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20));
   for (size_t i = 0; i < poses.size(); ++i)
-    initialEstimate.insert(i, poses[i].compose(delta));
+    initialEstimate.insert(i, Camera(poses[i].compose(delta), K));
   initialEstimate.print("Initial Estimates:\n");
 
   // Optimize the graph and print results

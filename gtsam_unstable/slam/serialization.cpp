@@ -5,26 +5,24 @@
  * @author Alex Cunningham
  */
 
+#include <gtsam/base/deprecated/LieMatrix_Deprecated.h>
+#include <gtsam/base/deprecated/LieVector_Deprecated.h>
 #include <gtsam/slam/serialization.h>
 #include <gtsam/base/serialization.h>
 
 //#include <gtsam/slam/AntiFactor.h>
-#include <gtsam/slam/BearingFactor.h>
-#include <gtsam/slam/BearingRangeFactor.h>
+#include <gtsam/sam/BearingRangeFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 //#include <gtsam/slam/BoundingConstraint.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/ProjectionFactor.h>
-#include <gtsam/slam/RangeFactor.h>
+#include <gtsam/sam/RangeFactor.h>
 #include <gtsam/slam/StereoFactor.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianISAM.h>
 #include <gtsam/linear/GaussianMultifrontalSolver.h>
-#include <gtsam/base/LieVector.h>
-#include <gtsam/base/LieMatrix.h>
-//#include <gtsam/geometry/StereoPoint2.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Cal3DS2.h>
@@ -80,9 +78,6 @@ typedef RangeFactor<CalibratedCamera, Point3>           RangeFactorCalibratedCam
 typedef RangeFactor<SimpleCamera, Point3>               RangeFactorSimpleCameraPoint;
 typedef RangeFactor<CalibratedCamera, CalibratedCamera> RangeFactorCalibratedCamera;
 typedef RangeFactor<SimpleCamera, SimpleCamera>         RangeFactorSimpleCamera;
-
-typedef BearingFactor<Pose2, Point2, Rot2> BearingFactor2D;
-typedef BearingFactor<Pose3, Point3, Rot3> BearingFactor3D;
 
 typedef BearingRangeFactor<Pose2, Point2>  BearingRangeFactor2D;
 typedef BearingRangeFactor<Pose3, Point3>  BearingRangeFactor3D;
@@ -185,8 +180,6 @@ BOOST_CLASS_EXPORT_GUID(RangeFactorCalibratedCameraPoint, "gtsam::RangeFactorCal
 BOOST_CLASS_EXPORT_GUID(RangeFactorSimpleCameraPoint, "gtsam::RangeFactorSimpleCameraPoint");
 BOOST_CLASS_EXPORT_GUID(RangeFactorCalibratedCamera, "gtsam::RangeFactorCalibratedCamera");
 BOOST_CLASS_EXPORT_GUID(RangeFactorSimpleCamera, "gtsam::RangeFactorSimpleCamera");
-
-BOOST_CLASS_EXPORT_GUID(BearingFactor2D, "gtsam::BearingFactor2D");
 
 BOOST_CLASS_EXPORT_GUID(BearingRangeFactor2D, "gtsam::BearingRangeFactor2D");
 

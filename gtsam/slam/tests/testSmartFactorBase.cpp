@@ -16,17 +16,24 @@
  *  @date   Feb 2015
  */
 
-#include "../SmartFactorBase.h"
+#include <gtsam/slam/SmartFactorBase.h>
 #include <gtsam/geometry/Pose3.h>
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
 using namespace gtsam;
 
+static SharedNoiseModel unit2(noiseModel::Unit::Create(2));
+static SharedNoiseModel unit3(noiseModel::Unit::Create(3));
+
 /* ************************************************************************* */
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Cal3Bundler.h>
-class PinholeFactor: public SmartFactorBase<PinholeCamera<Cal3Bundler>, 9> {
+class PinholeFactor: public SmartFactorBase<PinholeCamera<Cal3Bundler> > {
+public:
+  typedef SmartFactorBase<PinholeCamera<Cal3Bundler> > Base;
+  PinholeFactor(const SharedNoiseModel& sharedNoiseModel): Base(sharedNoiseModel) {
+  }
   virtual double error(const Values& values) const {
     return 0.0;
   }
@@ -37,15 +44,19 @@ class PinholeFactor: public SmartFactorBase<PinholeCamera<Cal3Bundler>, 9> {
 };
 
 TEST(SmartFactorBase, Pinhole) {
-  PinholeFactor f;
-  f.add(Point2(), 1, SharedNoiseModel());
-  f.add(Point2(), 2, SharedNoiseModel());
+  PinholeFactor f= PinholeFactor(unit2);
+  f.add(Point2(), 1);
+  f.add(Point2(), 2);
   EXPECT_LONGS_EQUAL(2 * 2, f.dim());
 }
 
 /* ************************************************************************* */
 #include <gtsam/geometry/StereoCamera.h>
-class StereoFactor: public SmartFactorBase<StereoCamera, 9> {
+class StereoFactor: public SmartFactorBase<StereoCamera> {
+public:
+  typedef SmartFactorBase<StereoCamera> Base;
+  StereoFactor(const SharedNoiseModel& sharedNoiseModel): Base(sharedNoiseModel) {
+  }
   virtual double error(const Values& values) const {
     return 0.0;
   }
@@ -56,9 +67,9 @@ class StereoFactor: public SmartFactorBase<StereoCamera, 9> {
 };
 
 TEST(SmartFactorBase, Stereo) {
-  StereoFactor f;
-  f.add(StereoPoint2(), 1, SharedNoiseModel());
-  f.add(StereoPoint2(), 2, SharedNoiseModel());
+  StereoFactor f(unit3);
+  f.add(StereoPoint2(), 1);
+  f.add(StereoPoint2(), 2);
   EXPECT_LONGS_EQUAL(2 * 3, f.dim());
 }
 

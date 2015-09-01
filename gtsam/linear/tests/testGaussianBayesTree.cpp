@@ -83,13 +83,30 @@ TEST( GaussianBayesTree, eliminate )
 {
   GaussianBayesTree bt = *chain.eliminateMultifrontal(chainOrdering);
 
+  Scatter scatter(chain);
+  EXPECT_LONGS_EQUAL(4, scatter.size());
+  EXPECT_LONGS_EQUAL(1, scatter.at(0).key);
+  EXPECT_LONGS_EQUAL(2, scatter.at(1).key);
+  EXPECT_LONGS_EQUAL(3, scatter.at(2).key);
+  EXPECT_LONGS_EQUAL(4, scatter.at(3).key);
+
   Matrix two = (Matrix(1, 1) << 2.).finished();
   Matrix one = (Matrix(1, 1) << 1.).finished();
 
   GaussianBayesTree bayesTree_expected;
   bayesTree_expected.insertRoot(
-    MakeClique(GaussianConditional(pair_list_of<Key, Matrix>(x3, (Matrix(2, 1) << 2., 0.).finished()) (x4, (Matrix(2, 1) << 2., 2.).finished()), 2, Vector2(2., 2.)), list_of
-      (MakeClique(GaussianConditional(pair_list_of<Key, Matrix>(x2, (Matrix(2, 1) << -2.*sqrt(2.), 0.).finished()) (x1, (Matrix(2, 1) << -sqrt(2.), -sqrt(2.)).finished()) (x3, (Matrix(2, 1) << -sqrt(2.), sqrt(2.)).finished()), 2, (Vector(2) << -2.*sqrt(2.), 0.).finished())))));
+      MakeClique(
+          GaussianConditional(
+              pair_list_of<Key, Matrix>(x3, (Matrix21() << 2., 0.).finished())(
+                  x4, (Matrix21() << 2., 2.).finished()), 2, Vector2(2., 2.)),
+          list_of(
+              MakeClique(
+                  GaussianConditional(
+                      pair_list_of<Key, Matrix>(x2,
+                          (Matrix21() << -2. * sqrt(2.), 0.).finished())(x1,
+                          (Matrix21() << -sqrt(2.), -sqrt(2.)).finished())(x3,
+                          (Matrix21() << -sqrt(2.), sqrt(2.)).finished()), 2,
+                      (Vector(2) << -2. * sqrt(2.), 0.).finished())))));
 
   EXPECT(assert_equal(bayesTree_expected, bt));
 }

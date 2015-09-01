@@ -15,20 +15,40 @@
  * @author: Frank Dellaert
  */
 
-#include <gtsam/base/DSFVector.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/linear/GaussianBayesNet.h>
-#include <boost/foreach.hpp>
-#include <boost/make_shared.hpp>
+#include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/linear/HessianFactor.h>
+#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/GaussianEliminationTree.h>
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/inference/VariableIndex.h>
+#include <gtsam/base/DSFVector.h>
+#include <gtsam/base/FastMap.h>
+#include <gtsam/base/FastVector.h>
+#include <gtsam/base/types.h>
+#include <gtsam/base/Vector.h>
+
 #include <boost/algorithm/string.hpp>
-#include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/serialization/vector.hpp>
+#include <boost/foreach.hpp>
+#include <boost/shared_ptr.hpp>
+
+#include <algorithm>
+#include <cmath>
+#include <cstdlib>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
-#include <numeric>
+#include <iterator>
+#include <list>
+#include <map>
+#include <numeric> // accumulate
 #include <queue>
 #include <set>
+#include <stdexcept>
+#include <string>
 #include <utility>
 #include <vector>
 

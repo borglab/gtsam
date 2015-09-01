@@ -46,10 +46,9 @@ void GaussNewtonOptimizer::iterate() {
 
 /* ************************************************************************* */
 GaussNewtonParams GaussNewtonOptimizer::ensureHasOrdering(
-  GaussNewtonParams params, const NonlinearFactorGraph& graph) const
-{
-  if(!params.ordering)
-    params.ordering = Ordering::colamd(graph);
+    GaussNewtonParams params, const NonlinearFactorGraph& graph) const {
+  if (!params.ordering)
+    params.ordering = Ordering::Create(params.orderingType, graph);
   return params;
 }
 

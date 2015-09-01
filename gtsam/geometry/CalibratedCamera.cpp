@@ -19,88 +19,168 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/CalibratedCamera.h>
 
+using namespace std;
+
 namespace gtsam {
 
 /* ************************************************************************* */
-CalibratedCamera::CalibratedCamera(const Pose3& pose) :
-    pose_(pose) {
+Matrix26 PinholeBase::Dpose(const Point2& pn, double d) {
+  // optimized version of derivatives, see CalibratedCamera.nb
+  const double u = pn.x(), v = pn.y();
+  double uv = u * v, uu = u * u, vv = v * v;
+  Matrix26 Dpn_pose;
+  Dpn_pose << uv, -1 - uu, v, -d, 0, d * u, 1 + vv, -uv, -u, 0, -d, d * v;
+  return Dpn_pose;
 }
 
 /* ************************************************************************* */
-CalibratedCamera::CalibratedCamera(const Vector &v) :
-    pose_(Pose3::Expmap(v)) {
+Matrix23 PinholeBase::Dpoint(const Point2& pn, double d, const Matrix3& Rt) {
+  // optimized version of derivatives, see CalibratedCamera.nb
+  const double u = pn.x(), v = pn.y();
+  Matrix23 Dpn_point;
+  Dpn_point << //
+      Rt(0, 0) - u * Rt(2, 0), Rt(0, 1) - u * Rt(2, 1), Rt(0, 2) - u * Rt(2, 2), //
+  /**/Rt(1, 0) - v * Rt(2, 0), Rt(1, 1) - v * Rt(2, 1), Rt(1, 2) - v * Rt(2, 2);
+  Dpn_point *= d;
+  return Dpn_point;
 }
 
 /* ************************************************************************* */
-Point2 CalibratedCamera::project_to_camera(const Point3& P,
-    OptionalJacobian<2,3> H1) {
-  if (H1) {
-    double d = 1.0 / P.z(), d2 = d * d;
-    *H1 <<  d, 0.0, -P.x() * d2, 0.0, d, -P.y() * d2;
+Pose3 PinholeBase::LevelPose(const Pose2& pose2, double height) {
+  const double st = sin(pose2.theta()), ct = cos(pose2.theta());
+  const Point3 x(st, -ct, 0), y(0, 0, -1), z(ct, st, 0);
+  const Rot3 wRc(x, y, z);
+  const Point3 t(pose2.x(), pose2.y(), height);
+  return Pose3(wRc, t);
+}
+
+/* ************************************************************************* */
+Pose3 PinholeBase::LookatPose(const Point3& eye, const Point3& target,
+    const Point3& upVector) {
+  Point3 zc = target - eye;
+  zc = zc / zc.norm();
+  Point3 xc = (-upVector).cross(zc); // minus upVector since yc is pointing down
+  xc = xc / xc.norm();
+  Point3 yc = zc.cross(xc);
+  return Pose3(Rot3(xc, yc, zc), eye);
+}
+
+/* ************************************************************************* */
+bool PinholeBase::equals(const PinholeBase &camera, double tol) const {
+  return pose_.equals(camera.pose(), tol);
+}
+
+/* ************************************************************************* */
+void PinholeBase::print(const string& s) const {
+  pose_.print(s + ".pose");
+}
+
+/* ************************************************************************* */
+const Pose3& PinholeBase::getPose(OptionalJacobian<6, 6> H) const {
+  if (H) {
+    H->setZero();
+    H->block(0, 0, 6, 6) = I_6x6;
   }
-  return Point2(P.x() / P.z(), P.y() / P.z());
+  return pose_;
 }
 
 /* ************************************************************************* */
-Point3 CalibratedCamera::backproject_from_camera(const Point2& p,
-    const double scale) {
-  return Point3(p.x() * scale, p.y() * scale, scale);
+Point2 PinholeBase::Project(const Point3& pc, OptionalJacobian<2, 3> Dpoint) {
+  double d = 1.0 / pc.z();
+  const double u = pc.x() * d, v = pc.y() * d;
+  if (Dpoint)
+    *Dpoint << d, 0.0, -u * d, 0.0, d, -v * d;
+  return Point2(u, v);
+}
+
+/* ************************************************************************* */
+Point2 PinholeBase::Project(const Unit3& pc, OptionalJacobian<2, 2> Dpoint) {
+  if (Dpoint) {
+    Matrix32 Dpoint3_pc;
+    Matrix23 Duv_point3;
+    Point2 uv = Project(pc.point3(Dpoint3_pc), Duv_point3);
+    *Dpoint = Duv_point3 * Dpoint3_pc;
+    return uv;
+  } else
+    return Project(pc.point3());
+}
+
+/* ************************************************************************* */
+pair<Point2, bool> PinholeBase::projectSafe(const Point3& pw) const {
+  const Point3 pc = pose().transform_to(pw);
+  const Point2 pn = Project(pc);
+  return make_pair(pn, pc.z() > 0);
+}
+
+/* ************************************************************************* */
+Point2 PinholeBase::project2(const Point3& point, OptionalJacobian<2, 6> Dpose,
+    OptionalJacobian<2, 3> Dpoint) const {
+
+  Matrix3 Rt; // calculated by transform_to if needed
+  const Point3 q = pose().transform_to(point, boost::none, Dpoint ? &Rt : 0);
+#ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
+  if (q.z() <= 0)
+    throw CheiralityException();
+#endif
+  const Point2 pn = Project(q);
+
+  if (Dpose || Dpoint) {
+    const double d = 1.0 / q.z();
+    if (Dpose)
+      *Dpose = PinholeBase::Dpose(pn, d);
+    if (Dpoint)
+      *Dpoint = PinholeBase::Dpoint(pn, d, Rt);
+  }
+  return pn;
+}
+
+/* ************************************************************************* */
+Point2 PinholeBase::project2(const Unit3& pw, OptionalJacobian<2, 6> Dpose,
+    OptionalJacobian<2, 2> Dpoint) const {
+
+  // world to camera coordinate
+  Matrix23 Dpc_rot;
+  Matrix2 Dpc_point;
+  const Unit3 pc = pose().rotation().unrotate(pw, Dpose ? &Dpc_rot : 0,
+      Dpose ? &Dpc_point : 0);
+
+  // camera to normalized image coordinate
+  Matrix2 Dpn_pc;
+  const Point2 pn = Project(pc, Dpose || Dpoint ? &Dpn_pc : 0);
+
+  // chain the Jacobian matrices
+  if (Dpose) {
+    // only rotation is important
+    Matrix26 Dpc_pose;
+    Dpc_pose.setZero();
+    Dpc_pose.leftCols<3>() = Dpc_rot;
+    *Dpose = Dpn_pc * Dpc_pose; // 2x2 * 2x6
+  }
+  if (Dpoint)
+    *Dpoint = Dpn_pc * Dpc_point; // 2x2 * 2*2
+  return pn;
+}
+/* ************************************************************************* */
+Point3 PinholeBase::backproject_from_camera(const Point2& p,
+    const double depth) {
+  return Point3(p.x() * depth, p.y() * depth, depth);
 }
 
 /* ************************************************************************* */
 CalibratedCamera CalibratedCamera::Level(const Pose2& pose2, double height) {
-  double st = sin(pose2.theta()), ct = cos(pose2.theta());
-  Point3 x(st, -ct, 0), y(0, 0, -1), z(ct, st, 0);
-  Rot3 wRc(x, y, z);
-  Point3 t(pose2.x(), pose2.y(), height);
-  Pose3 pose3(wRc, t);
-  return CalibratedCamera(pose3);
+  return CalibratedCamera(LevelPose(pose2, height));
+}
+
+/* ************************************************************************* */
+CalibratedCamera CalibratedCamera::Lookat(const Point3& eye,
+    const Point3& target, const Point3& upVector) {
+  return CalibratedCamera(LookatPose(eye, target, upVector));
 }
 
 /* ************************************************************************* */
 Point2 CalibratedCamera::project(const Point3& point,
-    OptionalJacobian<2,6> Dpose, OptionalJacobian<2,3> Dpoint) const {
-
-#ifdef CALIBRATEDCAMERA_CHAIN_RULE
-  Matrix36 Dpose_;
-  Matrix3 Dpoint_;
-  Point3 q = pose_.transform_to(point, Dpose ? Dpose_ : 0, Dpoint ? Dpoint_ : 0);
-#else
-  Point3 q = pose_.transform_to(point);
-#endif
-  Point2 intrinsic = project_to_camera(q);
-
-  // Check if point is in front of camera
-  if (q.z() <= 0)
-    throw CheiralityException();
-
-  if (Dpose || Dpoint) {
-#ifdef CALIBRATEDCAMERA_CHAIN_RULE
-    // just implement chain rule
-    if(Dpose && Dpoint) {
-      Matrix23 H;
-      project_to_camera(q,H);
-      if (Dpose) *Dpose = H * (*Dpose_);
-      if (Dpoint) *Dpoint = H * (*Dpoint_);
-    }
-#else
-    // optimized version, see CalibratedCamera.nb
-    const double z = q.z(), d = 1.0 / z;
-    const double u = intrinsic.x(), v = intrinsic.y(), uv = u * v;
-    if (Dpose)
-      *Dpose <<  uv, -(1. + u * u), v, -d, 0., d * u, (1. + v * v),
-          -uv, -u, 0., -d, d * v;
-    if (Dpoint) {
-      const Matrix3 R(pose_.rotation().matrix());
-      Matrix23 Dpoint_;
-      Dpoint_ << R(0, 0) - u * R(0, 2), R(1, 0) - u * R(1, 2),
-              R(2, 0) - u * R(2, 2), R(0, 1) - v * R(0, 2),
-              R(1, 1) - v * R(1, 2), R(2, 1) - v * R(2, 2);
-      *Dpoint = d * Dpoint_;
-    }
-#endif
-  }
-  return intrinsic;
+    OptionalJacobian<2, 6> Dcamera, OptionalJacobian<2, 3> Dpoint) const {
+  return project2(point, Dcamera, Dpoint);
 }
 
 /* ************************************************************************* */

@@ -48,7 +48,7 @@ class QPSolver {
   GaussianFactorGraph baseGraph_; //!< factor graphs of cost factors and linear equalities. The working set of inequalities will be added to this base graph in the process.
   VariableIndex costVariableIndex_, equalityVariableIndex_,
       inequalityVariableIndex_;
-  FastSet<Key> constrainedKeys_; //!< all constrained keys, will become factors in the dual graph
+  KeySet constrainedKeys_; //!< all constrained keys, will become factors in the dual graph
 
 public:
   /// Constructor

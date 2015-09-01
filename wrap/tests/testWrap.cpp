@@ -41,10 +41,6 @@ static string topdir = "TOPSRCDIR_NOT_CONFIGURED"; // If TOPSRCDIR is not define
 
 typedef vector<string> strvec;
 
-// NOTE: as this path is only used to generate makefiles, it is hardcoded here for testing
-// In practice, this path will be an absolute system path, which makes testing it more annoying
-static const std::string headerPath = "/not_really_a_real_path/borg/gtsam/wrap";
-
 /* ************************************************************************* */
 TEST( wrap, ArgumentList ) {
   ArgumentList args;

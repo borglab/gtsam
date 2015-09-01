@@ -18,7 +18,7 @@
 
 #pragma once
 
-
+#include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/slam/TriangulationFactor.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -48,17 +48,27 @@ public:
  * @param projection_matrices Projection matrices (K*P^-1)
  * @param measurements 2D measurements
  * @param rank_tol SVD rank tolerance
+ * @return Triangulated point, in homogeneous coordinates
+ */
+GTSAM_EXPORT Vector4 triangulateHomogeneousDLT(
+    const std::vector<Matrix34>& projection_matrices,
+    const std::vector<Point2>& measurements, double rank_tol = 1e-9);
+
+/**
+ * DLT triangulation: See Hartley and Zisserman, 2nd Ed., page 312
+ * @param projection_matrices Projection matrices (K*P^-1)
+ * @param measurements 2D measurements
+ * @param rank_tol SVD rank tolerance
  * @return Triangulated Point3
  */
 GTSAM_EXPORT Point3 triangulateDLT(
     const std::vector<Matrix34>& projection_matrices,
-    const std::vector<Point2>& measurements, double rank_tol);
+    const std::vector<Point2>& measurements, double rank_tol = 1e-9);
 
-///
 /**
  * Create a factor graph with projection factors from poses and one calibration
  * @param poses Camera poses
- * @param sharedCal shared pointer to single calibration object
+ * @param sharedCal shared pointer to single calibration object (monocular only!)
  * @param measurements 2D measurements
  * @param landmarkKey to refer to landmark
  * @param initialEstimate
@@ -76,8 +86,9 @@ std::pair<NonlinearFactorGraph, Values> triangulationGraph(
   static SharedNoiseModel prior_model(noiseModel::Isotropic::Sigma(6, 1e-6));
   for (size_t i = 0; i < measurements.size(); i++) {
     const Pose3& pose_i = poses[i];
-    PinholeCamera<CALIBRATION> camera_i(pose_i, *sharedCal);
-    graph.push_back(TriangulationFactor<CALIBRATION> //
+    typedef PinholePose<CALIBRATION> Camera;
+    Camera camera_i(pose_i, sharedCal);
+    graph.push_back(TriangulationFactor<Camera> //
         (camera_i, measurements[i], unit2, landmarkKey));
   }
   return std::make_pair(graph, values);
@@ -86,31 +97,39 @@ std::pair<NonlinearFactorGraph, Values> triangulationGraph(
 /**
  * Create a factor graph with projection factors from pinhole cameras
  * (each camera has a pose and calibration)
- * @param cameras pinhole cameras
+ * @param cameras pinhole cameras (monocular or stereo)
  * @param measurements 2D measurements
  * @param landmarkKey to refer to landmark
  * @param initialEstimate
  * @return graph and initial values
  */
+template<class CAMERA>
+std::pair<NonlinearFactorGraph, Values> triangulationGraph(
+    const std::vector<CAMERA>& cameras,
+    const std::vector<typename CAMERA::Measurement>& measurements, Key landmarkKey,
+    const Point3& initialEstimate) {
+  Values values;
+  values.insert(landmarkKey, initialEstimate); // Initial landmark value
+  NonlinearFactorGraph graph;
+  static SharedNoiseModel unit(noiseModel::Unit::Create(CAMERA::Measurement::dimension));
+  for (size_t i = 0; i < measurements.size(); i++) {
+    const CAMERA& camera_i = cameras[i];
+    graph.push_back(TriangulationFactor<CAMERA> //
+        (camera_i, measurements[i], unit, landmarkKey));
+  }
+  return std::make_pair(graph, values);
+}
+
+/// PinholeCamera specific version // TODO: (chris) why does this exist?
 template<class CALIBRATION>
 std::pair<NonlinearFactorGraph, Values> triangulationGraph(
     const std::vector<PinholeCamera<CALIBRATION> >& cameras,
     const std::vector<Point2>& measurements, Key landmarkKey,
     const Point3& initialEstimate) {
-  Values values;
-  values.insert(landmarkKey, initialEstimate); // Initial landmark value
-  NonlinearFactorGraph graph;
-  static SharedNoiseModel unit2(noiseModel::Unit::Create(2));
-  static SharedNoiseModel prior_model(noiseModel::Isotropic::Sigma(6, 1e-6));
-  for (size_t i = 0; i < measurements.size(); i++) {
-    const PinholeCamera<CALIBRATION>& camera_i = cameras[i];
-    graph.push_back(TriangulationFactor<CALIBRATION> //
-        (camera_i, measurements[i], unit2, landmarkKey));
-  }
-  return std::make_pair(graph, values);
+  return triangulationGraph<PinholeCamera<CALIBRATION> > //
+  (cameras, measurements, landmarkKey, initialEstimate);
 }
 
-///
 /**
  * Optimize for triangulation
  * @param graph nonlinear factors for projection
@@ -137,32 +156,60 @@ Point3 triangulateNonlinear(const std::vector<Pose3>& poses,
   // Create a factor graph and initial values
   Values values;
   NonlinearFactorGraph graph;
-  boost::tie(graph, values) = triangulationGraph(poses, sharedCal, measurements,
-      Symbol('p', 0), initialEstimate);
+  boost::tie(graph, values) = triangulationGraph<CALIBRATION> //
+      (poses, sharedCal, measurements, Symbol('p', 0), initialEstimate);
 
   return optimize(graph, values, Symbol('p', 0));
 }
 
 /**
  * Given an initial estimate , refine a point using measurements in several cameras
- * @param cameras pinhole cameras
+ * @param cameras pinhole cameras (monocular or stereo)
  * @param measurements 2D measurements
  * @param initialEstimate
  * @return refined Point3
  */
-template<class CALIBRATION>
+template<class CAMERA>
 Point3 triangulateNonlinear(
-    const std::vector<PinholeCamera<CALIBRATION> >& cameras,
-    const std::vector<Point2>& measurements, const Point3& initialEstimate) {
+    const std::vector<CAMERA>& cameras,
+    const std::vector<typename CAMERA::Measurement>& measurements, const Point3& initialEstimate) {
 
   // Create a factor graph and initial values
   Values values;
   NonlinearFactorGraph graph;
-  boost::tie(graph, values) = triangulationGraph(cameras, measurements,
-      Symbol('p', 0), initialEstimate);
+  boost::tie(graph, values) = triangulationGraph<CAMERA> //
+      (cameras, measurements, Symbol('p', 0), initialEstimate);
 
   return optimize(graph, values, Symbol('p', 0));
 }
+
+/// PinholeCamera specific version  // TODO: (chris) why does this exist?
+template<class CALIBRATION>
+Point3 triangulateNonlinear(
+    const std::vector<PinholeCamera<CALIBRATION> >& cameras,
+    const std::vector<Point2>& measurements, const Point3& initialEstimate) {
+  return triangulateNonlinear<PinholeCamera<CALIBRATION> > //
+  (cameras, measurements, initialEstimate);
+}
+
+/**
+ * Create a 3*4 camera projection matrix from calibration and pose.
+ * Functor for partial application on calibration
+ * @param pose The camera pose
+ * @param cal  The calibration
+ * @return Returns a Matrix34
+ */
+template<class CALIBRATION>
+struct CameraProjectionMatrix {
+  CameraProjectionMatrix(const CALIBRATION& calibration) :
+      K_(calibration.K()) {
+  }
+  Matrix34 operator()(const Pose3& pose) const {
+    return K_ * (pose.inverse().matrix()).block<3, 4>(0, 0);
+  }
+private:
+  const Matrix3 K_;
+};
 
 /**
  * Function to triangulate 3D landmark point from an arbitrary number
@@ -188,23 +235,24 @@ Point3 triangulatePoint3(const std::vector<Pose3>& poses,
 
   // construct projection matrices from poses & calibration
   std::vector<Matrix34> projection_matrices;
-  BOOST_FOREACH(const Pose3& pose, poses) {
-    projection_matrices.push_back(
-        sharedCal->K() * (pose.inverse().matrix()).block<3,4>(0,0));
-  }
+  CameraProjectionMatrix<CALIBRATION> createP(*sharedCal); // partially apply
+  BOOST_FOREACH(const Pose3& pose, poses)
+    projection_matrices.push_back(createP(pose));
+
   // Triangulate linearly
   Point3 point = triangulateDLT(projection_matrices, measurements, rank_tol);
 
-  // The n refine using non-linear optimization
+  // Then refine using non-linear optimization
   if (optimize)
-    point = triangulateNonlinear(poses, sharedCal, measurements, point);
+    point = triangulateNonlinear<CALIBRATION> //
+        (poses, sharedCal, measurements, point);
 
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
-  // verify that the triangulated point lies infront of all cameras
+  // verify that the triangulated point lies in front of all cameras
   BOOST_FOREACH(const Pose3& pose, poses) {
     const Point3& p_local = pose.transform_to(point);
     if (p_local.z() <= 0)
-    throw(TriangulationCheiralityException());
+      throw(TriangulationCheiralityException());
   }
 #endif
 
@@ -223,41 +271,195 @@ Point3 triangulatePoint3(const std::vector<Pose3>& poses,
  * @param optimize Flag to turn on nonlinear refinement of triangulation
  * @return Returns a Point3
  */
-template<class CALIBRATION>
+template<class CAMERA>
 Point3 triangulatePoint3(
-    const std::vector<PinholeCamera<CALIBRATION> >& cameras,
+    const std::vector<CAMERA>& cameras,
     const std::vector<Point2>& measurements, double rank_tol = 1e-9,
     bool optimize = false) {
 
   size_t m = cameras.size();
-  assert(measurements.size()==m);
+  assert(measurements.size() == m);
 
   if (m < 2)
     throw(TriangulationUnderconstrainedException());
 
   // construct projection matrices from poses & calibration
-  typedef PinholeCamera<CALIBRATION> Camera;
   std::vector<Matrix34> projection_matrices;
-  BOOST_FOREACH(const Camera& camera, cameras) {
-  Matrix P_ = (camera.pose().inverse().matrix());
-    projection_matrices.push_back(camera.calibration().K()* (P_.block<3,4>(0,0)) );
-   }
+  BOOST_FOREACH(const CAMERA& camera, cameras)
+    projection_matrices.push_back(
+        CameraProjectionMatrix<typename CAMERA::CalibrationType>(camera.calibration())(
+            camera.pose()));
   Point3 point = triangulateDLT(projection_matrices, measurements, rank_tol);
 
   // The n refine using non-linear optimization
   if (optimize)
-    point = triangulateNonlinear(cameras, measurements, point);
+    point = triangulateNonlinear<CAMERA>(cameras, measurements, point);
 
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
-  // verify that the triangulated point lies infront of all cameras
-  BOOST_FOREACH(const Camera& camera, cameras) {
+  // verify that the triangulated point lies in front of all cameras
+  BOOST_FOREACH(const CAMERA& camera, cameras) {
     const Point3& p_local = camera.pose().transform_to(point);
     if (p_local.z() <= 0)
-    throw(TriangulationCheiralityException());
+      throw(TriangulationCheiralityException());
   }
 #endif
 
   return point;
+}
+
+/// Pinhole-specific version
+template<class CALIBRATION>
+Point3 triangulatePoint3(
+    const std::vector<PinholeCamera<CALIBRATION> >& cameras,
+    const std::vector<Point2>& measurements, double rank_tol = 1e-9,
+    bool optimize = false) {
+  return triangulatePoint3<PinholeCamera<CALIBRATION> > //
+  (cameras, measurements, rank_tol, optimize);
+}
+
+struct TriangulationParameters {
+
+  double rankTolerance; ///< threshold to decide whether triangulation is result.degenerate
+  bool enableEPI; ///< if set to true, will refine triangulation using LM
+
+  /**
+   * if the landmark is triangulated at distance larger than this,
+   * result is flagged as degenerate.
+   */
+  double landmarkDistanceThreshold; //
+
+  /**
+   * If this is nonnegative the we will check if the average reprojection error
+   * is smaller than this threshold after triangulation, otherwise result is
+   * flagged as degenerate.
+   */
+  double dynamicOutlierRejectionThreshold;
+
+  /**
+   * Constructor
+   * @param rankTol tolerance used to check if point triangulation is degenerate
+   * @param enableEPI if true refine triangulation with embedded LM iterations
+   * @param landmarkDistanceThreshold flag as degenerate if point further than this
+   * @param dynamicOutlierRejectionThreshold or if average error larger than this
+   *
+   */
+  TriangulationParameters(const double _rankTolerance = 1.0,
+      const bool _enableEPI = false, double _landmarkDistanceThreshold = -1,
+      double _dynamicOutlierRejectionThreshold = -1) :
+      rankTolerance(_rankTolerance), enableEPI(_enableEPI), //
+      landmarkDistanceThreshold(_landmarkDistanceThreshold), //
+      dynamicOutlierRejectionThreshold(_dynamicOutlierRejectionThreshold) {
+  }
+
+  // stream to output
+  friend std::ostream &operator<<(std::ostream &os,
+      const TriangulationParameters& p) {
+    os << "rankTolerance = " << p.rankTolerance << std::endl;
+    os << "enableEPI = " << p.enableEPI << std::endl;
+    os << "landmarkDistanceThreshold = " << p.landmarkDistanceThreshold
+        << std::endl;
+    os << "dynamicOutlierRejectionThreshold = "
+        << p.dynamicOutlierRejectionThreshold << std::endl;
+    return os;
+  }
+};
+
+/**
+ * TriangulationResult is an optional point, along with the reasons why it is invalid.
+ */
+class TriangulationResult: public boost::optional<Point3> {
+  enum Status {
+    VALID, DEGENERATE, BEHIND_CAMERA
+  };
+  Status status_;
+  TriangulationResult(Status s) :
+      status_(s) {
+  }
+public:
+  TriangulationResult(const Point3& p) :
+      status_(VALID) {
+    reset(p);
+  }
+  static TriangulationResult Degenerate() {
+    return TriangulationResult(DEGENERATE);
+  }
+  static TriangulationResult BehindCamera() {
+    return TriangulationResult(BEHIND_CAMERA);
+  }
+  bool degenerate() const {
+    return status_ == DEGENERATE;
+  }
+  bool behindCamera() const {
+    return status_ == BEHIND_CAMERA;
+  }
+  // stream to output
+  friend std::ostream &operator<<(std::ostream &os,
+      const TriangulationResult& result) {
+    if (result)
+      os << "point = " << *result << std::endl;
+    else
+      os << "no point, status = " << result.status_ << std::endl;
+    return os;
+  }
+};
+
+/// triangulateSafe: extensive checking of the outcome
+template<class CAMERA>
+TriangulationResult triangulateSafe(const std::vector<CAMERA>& cameras,
+    const std::vector<Point2>& measured,
+    const TriangulationParameters& params) {
+
+  size_t m = cameras.size();
+
+  // if we have a single pose the corresponding factor is uninformative
+  if (m < 2)
+    return TriangulationResult::Degenerate();
+  else
+    // We triangulate the 3D position of the landmark
+    try {
+      Point3 point = triangulatePoint3<CAMERA>(cameras, measured,
+          params.rankTolerance, params.enableEPI);
+
+      // Check landmark distance and re-projection errors to avoid outliers
+      size_t i = 0;
+      double totalReprojError = 0.0;
+      BOOST_FOREACH(const CAMERA& camera, cameras) {
+        const Pose3& pose = camera.pose();
+        if (params.landmarkDistanceThreshold > 0
+            && pose.translation().distance(point)
+                > params.landmarkDistanceThreshold)
+          return TriangulationResult::Degenerate();
+#ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
+        // verify that the triangulated point lies in front of all cameras
+        // Only needed if this was not yet handled by exception
+        const Point3& p_local = pose.transform_to(point);
+        if (p_local.z() <= 0)
+          return TriangulationResult::BehindCamera();
+#endif
+        // Check reprojection error
+        if (params.dynamicOutlierRejectionThreshold > 0) {
+          const Point2& zi = measured.at(i);
+          Point2 reprojectionError(camera.project(point) - zi);
+          totalReprojError += reprojectionError.vector().norm();
+        }
+        i += 1;
+      }
+      // Flag as degenerate if average reprojection error is too large
+      if (params.dynamicOutlierRejectionThreshold > 0
+          && totalReprojError / m > params.dynamicOutlierRejectionThreshold)
+        return TriangulationResult::Degenerate();
+
+      // all good!
+      return TriangulationResult(point);
+    } catch (TriangulationUnderconstrainedException&) {
+      // This exception is thrown if
+      // 1) There is a single pose for triangulation - this should not happen because we checked the number of poses before
+      // 2) The rank of the matrix used for triangulation is < 3: rotation-only, parallel cameras (or motion towards the landmark)
+      return TriangulationResult::Degenerate();
+    } catch (TriangulationCheiralityException&) {
+      // point is behind one of the cameras: can be the case of close-to-parallel cameras or may depend on outliers
+      return TriangulationResult::BehindCamera();
+    }
 }
 
 } // \namespace gtsam

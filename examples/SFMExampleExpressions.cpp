@@ -84,7 +84,7 @@ int main(int argc, char* argv[]) {
 
   // Create perturbed initial
   Values initial;
-  Pose3 delta(Rot3::rodriguez(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20));
+  Pose3 delta(Rot3::Rodrigues(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20));
   for (size_t i = 0; i < poses.size(); ++i)
     initial.insert(Symbol('x', i), poses[i].compose(delta));
   for (size_t j = 0; j < points.size(); ++j)

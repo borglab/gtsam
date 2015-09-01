@@ -129,7 +129,7 @@ public:
 protected:
   /// Assignment operator, protected because only the Value or DERIVED
   /// assignment operators should be used.
-  DerivedValue<DERIVED>& operator=(const DerivedValue<DERIVED>& rhs) {
+  DerivedValue<DERIVED>& operator=(const DerivedValue<DERIVED>& /*rhs*/) {
     // Nothing to do, do not call base class assignment operator
     return *this;
   }

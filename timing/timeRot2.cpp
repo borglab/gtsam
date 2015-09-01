@@ -15,10 +15,10 @@
  * @author  Richard Roberts
  */
 
-#include <iostream>
 
+#include <gtsam/geometry/Pose2.h>
 #include <gtsam/base/timing.h>
-#include <gtsam/geometry/Rot2.h>
+#include <iostream>
 
 using namespace std;
 using namespace gtsam;
@@ -92,11 +92,8 @@ int main()
   int n = 50000000;
   cout << "NOTE:  Times are reported for " << n << " calls" << endl;
 
-  // create a random direction:
-  double norm=sqrt(16.0+4.0);
-  double x=4.0/norm, y=2.0/norm;
-  Vector v = (Vector(2) << x, y).finished();
-  Rot2 R = Rot2(0.4), R2 = R.retract(v), R3(0.6);
+  Vector1 v; v << 0.1;
+  Rot2 R = Rot2(0.4), R2(0.5), R3(0.6);
 
   TEST(Rot2_Expmap, Rot2::Expmap(v));
   TEST(Rot2_Retract, R.retract(v));

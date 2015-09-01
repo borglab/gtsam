@@ -17,8 +17,15 @@
  */
 
 #include <gtsam/geometry/triangulation.h>
+#include <gtsam/geometry/SimpleCamera.h>
+#include <gtsam/geometry/StereoCamera.h>
+#include <gtsam/geometry/CameraSet.h>
 #include <gtsam/geometry/Cal3Bundler.h>
+#include <gtsam/slam/StereoFactor.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/nonlinear/ExpressionFactor.h>
 #include <CppUnitLite/TestHarness.h>
+
 
 #include <boost/assign.hpp>
 #include <boost/assign/std/vector.hpp>
@@ -49,6 +56,7 @@ Point2 z1 = camera1.project(landmark);
 Point2 z2 = camera2.project(landmark);
 
 //******************************************************************************
+// Simple test with a well-behaved two camera situation
 TEST( triangulation, twoPoses) {
 
   vector<Pose3> poses;
@@ -57,24 +65,37 @@ TEST( triangulation, twoPoses) {
   poses += pose1, pose2;
   measurements += z1, z2;
 
-  bool optimize = true;
   double rank_tol = 1e-9;
 
-  boost::optional<Point3> triangulated_landmark = triangulatePoint3(poses,
-      sharedCal, measurements, rank_tol, optimize);
-  EXPECT(assert_equal(landmark, *triangulated_landmark, 1e-2));
+  // 1. Test simple DLT, perfect in no noise situation
+  bool optimize = false;
+  boost::optional<Point3> actual1 = //
+      triangulatePoint3(poses, sharedCal, measurements, rank_tol, optimize);
+  EXPECT(assert_equal(landmark, *actual1, 1e-7));
 
-  // 2. Add some noise and try again: result should be ~ (4.995, 0.499167, 1.19814)
+  // 2. test with optimization on, same answer
+  optimize = true;
+  boost::optional<Point3> actual2 = //
+      triangulatePoint3(poses, sharedCal, measurements, rank_tol, optimize);
+  EXPECT(assert_equal(landmark, *actual2, 1e-7));
+
+  // 3. Add some noise and try again: result should be ~ (4.995, 0.499167, 1.19814)
   measurements.at(0) += Point2(0.1, 0.5);
   measurements.at(1) += Point2(-0.2, 0.3);
+  optimize = false;
+  boost::optional<Point3> actual3 = //
+      triangulatePoint3(poses, sharedCal, measurements, rank_tol, optimize);
+  EXPECT(assert_equal(Point3(4.995, 0.499167, 1.19814), *actual3, 1e-4));
 
-  boost::optional<Point3> triangulated_landmark_noise = triangulatePoint3(poses,
-      sharedCal, measurements, rank_tol, optimize);
-  EXPECT(assert_equal(landmark, *triangulated_landmark_noise, 1e-2));
+  // 4. Now with optimization on
+  optimize = true;
+  boost::optional<Point3> actual4 = //
+      triangulatePoint3(poses, sharedCal, measurements, rank_tol, optimize);
+  EXPECT(assert_equal(Point3(4.995, 0.499167, 1.19814), *actual4, 1e-4));
 }
 
 //******************************************************************************
-
+// Similar, but now with Bundler calibration
 TEST( triangulation, twoPosesBundler) {
 
   boost::shared_ptr<Cal3Bundler> bundlerCal = //
@@ -95,17 +116,17 @@ TEST( triangulation, twoPosesBundler) {
   bool optimize = true;
   double rank_tol = 1e-9;
 
-  boost::optional<Point3> triangulated_landmark = triangulatePoint3(poses,
-      bundlerCal, measurements, rank_tol, optimize);
-  EXPECT(assert_equal(landmark, *triangulated_landmark, 1e-2));
+  boost::optional<Point3> actual = //
+      triangulatePoint3(poses, bundlerCal, measurements, rank_tol, optimize);
+  EXPECT(assert_equal(landmark, *actual, 1e-7));
 
-  // 2. Add some noise and try again: result should be ~ (4.995, 0.499167, 1.19814)
+  // Add some noise and try again
   measurements.at(0) += Point2(0.1, 0.5);
   measurements.at(1) += Point2(-0.2, 0.3);
 
-  boost::optional<Point3> triangulated_landmark_noise = triangulatePoint3(poses,
-      bundlerCal, measurements, rank_tol, optimize);
-  EXPECT(assert_equal(landmark, *triangulated_landmark_noise, 1e-2));
+  boost::optional<Point3> actual2 = //
+      triangulatePoint3(poses, bundlerCal, measurements, rank_tol, optimize);
+  EXPECT(assert_equal(Point3(4.995, 0.499167, 1.19847), *actual2, 1e-4));
 }
 
 //******************************************************************************
@@ -116,17 +137,17 @@ TEST( triangulation, fourPoses) {
   poses += pose1, pose2;
   measurements += z1, z2;
 
-  boost::optional<Point3> triangulated_landmark = triangulatePoint3(poses,
-      sharedCal, measurements);
-  EXPECT(assert_equal(landmark, *triangulated_landmark, 1e-2));
+  boost::optional<Point3> actual = triangulatePoint3(poses, sharedCal,
+      measurements);
+  EXPECT(assert_equal(landmark, *actual, 1e-2));
 
   // 2. Add some noise and try again: result should be ~ (4.995, 0.499167, 1.19814)
   measurements.at(0) += Point2(0.1, 0.5);
   measurements.at(1) += Point2(-0.2, 0.3);
 
-  boost::optional<Point3> triangulated_landmark_noise = //
+  boost::optional<Point3> actual2 = //
       triangulatePoint3(poses, sharedCal, measurements);
-  EXPECT(assert_equal(landmark, *triangulated_landmark_noise, 1e-2));
+  EXPECT(assert_equal(landmark, *actual2, 1e-2));
 
   // 3. Add a slightly rotated third camera above, again with measurement noise
   Pose3 pose3 = pose1 * Pose3(Rot3::ypr(0.1, 0.2, 0.1), Point3(0.1, -2, -.1));
@@ -150,7 +171,7 @@ TEST( triangulation, fourPoses) {
   SimpleCamera camera4(pose4, *sharedCal);
 
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
-  CHECK_EXCEPTION(camera4.project(landmark);, CheiralityException);
+  CHECK_EXCEPTION(camera4.project(landmark), CheiralityException);
 
   poses += pose4;
   measurements += Point2(400, 400);
@@ -180,17 +201,17 @@ TEST( triangulation, fourPoses_distinct_Ks) {
   cameras += camera1, camera2;
   measurements += z1, z2;
 
-  boost::optional<Point3> triangulated_landmark = //
+  boost::optional<Point3> actual = //
       triangulatePoint3(cameras, measurements);
-  EXPECT(assert_equal(landmark, *triangulated_landmark, 1e-2));
+  EXPECT(assert_equal(landmark, *actual, 1e-2));
 
   // 2. Add some noise and try again: result should be ~ (4.995, 0.499167, 1.19814)
   measurements.at(0) += Point2(0.1, 0.5);
   measurements.at(1) += Point2(-0.2, 0.3);
 
-  boost::optional<Point3> triangulated_landmark_noise = //
+  boost::optional<Point3> actual2 = //
       triangulatePoint3(cameras, measurements);
-  EXPECT(assert_equal(landmark, *triangulated_landmark_noise, 1e-2));
+  EXPECT(assert_equal(landmark, *actual2, 1e-2));
 
   // 3. Add a slightly rotated third camera above, again with measurement noise
   Pose3 pose3 = pose1 * Pose3(Rot3::ypr(0.1, 0.2, 0.1), Point3(0.1, -2, -.1));
@@ -216,7 +237,7 @@ TEST( triangulation, fourPoses_distinct_Ks) {
   SimpleCamera camera4(pose4, K4);
 
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
-  CHECK_EXCEPTION(camera4.project(landmark);, CheiralityException);
+  CHECK_EXCEPTION(camera4.project(landmark), CheiralityException);
 
   cameras += camera4;
   measurements += Point2(400, 400);
@@ -244,23 +265,119 @@ TEST( triangulation, twoIdenticalPoses) {
 }
 
 //******************************************************************************
-/*
- TEST( triangulation, onePose) {
- // we expect this test to fail with a TriangulationUnderconstrainedException
- // because there's only one camera observation
+TEST( triangulation, onePose) {
+  // we expect this test to fail with a TriangulationUnderconstrainedException
+  // because there's only one camera observation
 
- Cal3_S2 *sharedCal(1500, 1200, 0, 640, 480);
+  vector<Pose3> poses;
+  vector<Point2> measurements;
 
- vector<Pose3> poses;
- vector<Point2> measurements;
+  poses += Pose3();
+  measurements += Point2();
 
- poses += Pose3();
- measurements += Point2();
+  CHECK_EXCEPTION(triangulatePoint3(poses, sharedCal, measurements),
+      TriangulationUnderconstrainedException);
+}
 
- CHECK_EXCEPTION(triangulatePoint3(poses, measurements, *sharedCal),
- TriangulationUnderconstrainedException);
- }
- */
+//******************************************************************************
+TEST( triangulation, StereotriangulateNonlinear ) {
+
+  Cal3_S2Stereo::shared_ptr stereoK(new Cal3_S2Stereo(1733.75, 1733.75, 0, 689.645, 508.835, 0.0699612));
+
+  // two camera poses m1, m2
+  Matrix4 m1, m2;
+  m1 << 0.796888717,     0.603404026,   -0.0295271487, 46.6673779,
+      0.592783835,    -0.77156583,    0.230856632,   66.2186159,
+      0.116517574,   -0.201470143,     -0.9725393, -4.28382528,
+      0, 0, 0, 1;
+
+  m2 << -0.955959025,    -0.29288915,   -0.0189328569, 45.7169799,
+      -0.29277519,    0.947083213,    0.131587097, 65.843136,
+     -0.0206094928,   0.131334858,   -0.991123524, -4.3525033,
+     0, 0, 0, 1;
+
+  typedef CameraSet<StereoCamera> Cameras;
+  Cameras cameras;
+  cameras.push_back(StereoCamera(Pose3(m1), stereoK));
+  cameras.push_back(StereoCamera(Pose3(m2), stereoK));
+
+  vector<StereoPoint2> measurements;
+  measurements += StereoPoint2(226.936, 175.212, 424.469);
+  measurements += StereoPoint2(339.571, 285.547, 669.973);
+
+  Point3 initial = Point3(46.0536958, 66.4621179, -6.56285929);  // error: 96.5715555191
+
+  Point3 actual = triangulateNonlinear(cameras, measurements, initial);
+
+  Point3 expected(46.0484569, 66.4710686, -6.55046613); // error: 0.763510644187
+
+  EXPECT(assert_equal(expected, actual, 1e-4));
+
+
+  // regular stereo factor comparison - expect very similar result as above
+  {
+    typedef GenericStereoFactor<Pose3,Point3> StereoFactor;
+
+    Values values;
+    values.insert(Symbol('x', 1), Pose3(m1));
+    values.insert(Symbol('x', 2), Pose3(m2));
+    values.insert(Symbol('l', 1), initial);
+
+    NonlinearFactorGraph graph;
+    static SharedNoiseModel unit(noiseModel::Unit::Create(3));
+    graph.push_back(StereoFactor::shared_ptr(new StereoFactor(measurements[0], unit, Symbol('x',1), Symbol('l',1), stereoK)));
+    graph.push_back(StereoFactor::shared_ptr(new StereoFactor(measurements[1], unit, Symbol('x',2), Symbol('l',1), stereoK)));
+
+    const SharedDiagonal posePrior = noiseModel::Isotropic::Sigma(6, 1e-9);
+    graph.push_back(PriorFactor<Pose3>(Symbol('x',1), Pose3(m1), posePrior));
+    graph.push_back(PriorFactor<Pose3>(Symbol('x',2), Pose3(m2), posePrior));
+
+    LevenbergMarquardtOptimizer optimizer(graph, values);
+    Values result = optimizer.optimize();
+
+    EXPECT(assert_equal(expected, result.at<Point3>(Symbol('l',1)), 1e-4));
+  }
+
+  // use Triangulation Factor directly - expect same result as above
+  {
+    Values values;
+    values.insert(Symbol('l', 1), initial);
+
+    NonlinearFactorGraph graph;
+    static SharedNoiseModel unit(noiseModel::Unit::Create(3));
+
+    graph.push_back(TriangulationFactor<StereoCamera>(cameras[0], measurements[0], unit, Symbol('l',1)));
+    graph.push_back(TriangulationFactor<StereoCamera>(cameras[1], measurements[1], unit, Symbol('l',1)));
+
+    LevenbergMarquardtOptimizer optimizer(graph, values);
+    Values result = optimizer.optimize();
+
+    EXPECT(assert_equal(expected, result.at<Point3>(Symbol('l',1)), 1e-4));
+  }
+
+  // use ExpressionFactor - expect same result as above
+  {
+    Values values;
+    values.insert(Symbol('l', 1), initial);
+
+    NonlinearFactorGraph graph;
+    static SharedNoiseModel unit(noiseModel::Unit::Create(3));
+
+    Expression<Point3> point_(Symbol('l',1));
+    Expression<StereoCamera> camera0_(cameras[0]);
+    Expression<StereoCamera> camera1_(cameras[1]);
+    Expression<StereoPoint2> project0_(camera0_, &StereoCamera::project2, point_);
+    Expression<StereoPoint2> project1_(camera1_, &StereoCamera::project2, point_);
+
+    graph.addExpressionFactor(unit, measurements[0], project0_);
+    graph.addExpressionFactor(unit, measurements[1], project1_);
+
+    LevenbergMarquardtOptimizer optimizer(graph, values);
+    Values result = optimizer.optimize();
+
+    EXPECT(assert_equal(expected, result.at<Point3>(Symbol('l',1)), 1e-4));
+  }
+}
 
 //******************************************************************************
 int main() {
