@@ -158,6 +158,35 @@ bool MonteCarlo(const PreintegratedImuMeasurements& pim,
 }
 
 /* ************************************************************************* */
+Vector3 centrifugal(const Vector3& omega_s, const Pose3& bTs, boost::optional<Matrix33&> H1) {
+  Rot3 bRs = bTs.rotation();
+  Vector3 j_correctedOmega = bRs * omega_s;
+
+  const Vector3 b_arm = bTs.translation().vector();
+
+  // Subtract out the the centripetal acceleration from the measured one
+  // to get linear acceleration vector in the body frame:
+  const Matrix3 body_Omega_body = skewSymmetric(j_correctedOmega);
+  const Vector3 b_velocity_bs = body_Omega_body * b_arm; // magnitude: omega * arm
+  if (H1) {
+    double wdp = j_correctedOmega.dot(b_arm);
+    *H1 = - (diag(Vector3::Constant(wdp)) + j_correctedOmega * b_arm.transpose())*bRs.matrix() + 2*b_arm*omega_s.transpose();
+  }
+  return -body_Omega_body * b_velocity_bs;
+}
+
+/* ************************************************************************* */
+TEST(ImuFactor, centrifugalDeriv) {
+  static const Pose3 bTs(Rot3::ypr(0.1,0.2,0.3), Point3(1.,4.,7.));
+  Vector3 omega_s(0.2,0.4,0.6);
+  Matrix3 H1;
+  Vector3 cb = centrifugal(omega_s, bTs, H1);
+  (void) cb;
+  Matrix Hnum = numericalDerivative11<Vector3, Vector3>(boost::bind(centrifugal, _1, bTs, boost::none), omega_s, 1e-6);
+  EXPECT(assert_equal(Hnum, H1, 1e-5));
+}
+
+/* ************************************************************************* */
 TEST(ImuFactor, StraightLine) {
   // Set up IMU measurements
   static const double g = 10; // make gravity 10 to make this easy to check
