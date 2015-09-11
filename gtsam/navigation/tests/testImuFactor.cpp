@@ -61,6 +61,9 @@ double intNoiseVar = 0.0001;
 const Matrix3 kMeasuredAccCovariance = accNoiseVar * I_3x3;
 const Matrix3 kMeasuredOmegaCovariance = omegaNoiseVar * I_3x3;
 const Matrix3 kIntegrationErrorCovariance = intNoiseVar * I_3x3;
+const Vector3 accNoiseVar2(0.01, 0.02, 0.03);
+const Vector3 omegaNoiseVar2(0.03, 0.01, 0.02);
+int32_t accSamplerSeed = 29284, omegaSamplerSeed = 10;
 
 // Auxiliary functions to test preintegrated Jacobians
 // delPdelBiasAcc_ delPdelBiasOmega_ delVdelBiasAcc_ delVdelBiasOmega_ delRdelBiasOmega_
