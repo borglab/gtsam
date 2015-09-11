@@ -28,6 +28,7 @@
 #include <CppUnitLite/TestHarness.h>
 #include <boost/bind.hpp>
 #include <list>
+#include <fstream>
 
 using namespace std;
 using namespace gtsam;
@@ -120,7 +121,8 @@ Vector3 evaluateLogRotation(const Vector3 thetahat, const Vector3 deltatheta) {
 bool MonteCarlo(const PreintegratedImuMeasurements& pim,
     const NavState& state, const imuBias::ConstantBias& bias, double dt,
     boost::optional<Pose3> body_P_sensor, const Vector3& measuredAcc,
-    const Vector3& measuredOmega, size_t N = 50000,
+    const Vector3& measuredOmega, const Vector3& accNoiseVar,
+    const Vector3& omegaNoiseVar, size_t N = 10000,
     size_t M = 1) {
   // Get mean prediction from "ground truth" measurements
   PreintegratedImuMeasurements pim1 = pim;
@@ -130,8 +132,8 @@ bool MonteCarlo(const PreintegratedImuMeasurements& pim,
   Matrix9 actual = pim1.preintMeasCov();
 
   // Do a Monte Carlo analysis to determine empirical density on the predicted state
-  Sampler sampleAccelerationNoise(Vector3::Constant(sqrt(accNoiseVar / dt)), 234567);
-  Sampler sampleOmegaNoise(Vector3::Constant(sqrt(omegaNoiseVar / dt)), 10);
+  Sampler sampleAccelerationNoise((accNoiseVar/dt).cwiseSqrt(), accSamplerSeed);
+  Sampler sampleOmegaNoise((omegaNoiseVar/dt).cwiseSqrt(), omegaSamplerSeed);
   Matrix samples(9, N);
   Vector9 sum = Vector9::Zero();
   for (size_t i = 0; i < N; i++) {
@@ -147,7 +149,8 @@ bool MonteCarlo(const PreintegratedImuMeasurements& pim,
     samples.col(i) = xi;
     sum += xi;
   }
-   Vector9 sampleMean = sum / N;
+
+  Vector9 sampleMean = sum / N;
   Matrix9 Q;
   Q.setZero();
   for (size_t i = 0; i < N; i++) {
@@ -156,38 +159,11 @@ bool MonteCarlo(const PreintegratedImuMeasurements& pim,
     Q += xi * xi.transpose() / (N - 1);
   }
 
-  // Compare Monte-Carlo value with actual (computed) value
-  return assert_equal(Matrix(10000*Q), 10000*actual, 1);
+  // Compare MonteCarlo value with actual (computed) value
+  return assert_equal(Matrix(Q), actual, 1e-4);
 }
 
-/* ************************************************************************* */
-Vector3 centrifugal(const Vector3& omega_s, const Pose3& bTs, boost::optional<Matrix33&> H1) {
-  Rot3 bRs = bTs.rotation();
-  Vector3 j_correctedOmega = bRs * omega_s;
-
-  const Vector3 b_arm = bTs.translation().vector();
-
-  // Subtract out the the centripetal acceleration from the measured one
-  // to get linear acceleration vector in the body frame:
-  const Matrix3 body_Omega_body = skewSymmetric(j_correctedOmega);
-  const Vector3 b_velocity_bs = body_Omega_body * b_arm; // magnitude: omega * arm
-  if (H1) {
-    double wdp = j_correctedOmega.dot(b_arm);
-    *H1 = - (diag(Vector3::Constant(wdp)) + j_correctedOmega * b_arm.transpose())*bRs.matrix() + 2*b_arm*omega_s.transpose();
-  }
-  return -body_Omega_body * b_velocity_bs;
-}
-
-/* ************************************************************************* */
-TEST(ImuFactor, centrifugalDeriv) {
-  static const Pose3 bTs(Rot3::ypr(0.1,0.2,0.3), Point3(1.,4.,7.));
-  Vector3 omega_s(0.2,0.4,0.6);
-  Matrix3 H1;
-  Vector3 cb = centrifugal(omega_s, bTs, H1);
-  (void) cb;
-  Matrix Hnum = numericalDerivative11<Vector3, Vector3>(boost::bind(centrifugal, _1, bTs, boost::none), omega_s, 1e-6);
-  EXPECT(assert_equal(Hnum, H1, 1e-5));
-}
+#if 1
 
 /* ************************************************************************* */
 TEST(ImuFactor, StraightLine) {
@@ -233,7 +209,7 @@ TEST(ImuFactor, StraightLine) {
       p->gyroscopeCovariance, Z_3x3, true); // MonteCarlo does not sample integration noise
   EXPECT(
       MonteCarlo(pimMC, state1, kZeroBias, dt / 10, boost::none, measuredAcc,
-          measuredOmega));
+          measuredOmega, Vector3::Constant(accNoiseVar), Vector3::Constant(omegaNoiseVar), 100000));
 
   // Check integrated quantities in body frame: gravity measured by IMU is integrated!
   Vector3 b_deltaP(a * dt22, 0, -g * dt22);
@@ -634,8 +610,13 @@ TEST(ImuFactor, FirstOrderPreIntegratedMeasurements) {
   EXPECT(
       assert_equal(expectedDelRdelBiasOmega, preintegrated.delRdelBiasOmega()));
 }
+#endif
 
 /* ************************************************************************* */
+Vector3 correctedAcc(const PreintegratedImuMeasurements& pim, const Vector3& measuredAcc, const Vector3& measuredOmega) {
+  return pim.correctMeasurementsByBiasAndSensorPose(measuredAcc, measuredOmega).first;
+}
+
 TEST(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
   imuBias::ConstantBias bias(Vector3(0.2, 0, 0), Vector3(0, 0, 0.3)); // Biases (acc, rot)
   Pose3 x1(Rot3::Expmap(Vector3(0, 0, M_PI / 4.0)), Point3(5.0, 1.0, -50.0));
@@ -651,14 +632,73 @@ TEST(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
       + Vector3(0.2, 0.0, 0.0);
   double dt = 0.1;
 
-  Pose3 body_P_sensor(Rot3::Expmap(Vector3(0, 0.1, 0.1)), Point3(1, 0, 0));
-  imuBias::ConstantBias biasHat(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0));
+  Pose3 body_P_sensor(Rot3::Expmap(Vector3(0, M_PI/2, 0)), Point3(0.1, 0, 0));
+  imuBias::ConstantBias biasHat(Vector3(0.0, 0.0, 0.0), Vector3(0.0, 0.0, 0.0));
 
   // Get mean prediction from "ground truth" measurements
-  PreintegratedImuMeasurements pim(biasHat, kMeasuredAccCovariance,
-      kMeasuredOmegaCovariance, Z_3x3, true);  // MonteCarlo does not sample integration noise
+  PreintegratedImuMeasurements pim(biasHat, accNoiseVar2.asDiagonal(),
+      omegaNoiseVar2.asDiagonal(), Z_3x3, true);  // MonteCarlo does not sample integration noise
+  pim.set_body_P_sensor(body_P_sensor);
+
+  // Check updatedDeltaXij derivatives
+  Matrix3 D_correctedAcc_measuredOmega;
+  pim.correctMeasurementsByBiasAndSensorPose(measuredAcc, measuredOmega, D_correctedAcc_measuredOmega);
+  Matrix3 expectedD = numericalDerivative11<Vector3, Vector3>(boost::bind(correctedAcc, pim, measuredAcc, _1), measuredOmega, 1e-6);
+  EXPECT(assert_equal(expectedD, D_correctedAcc_measuredOmega, 1e-5));
+
+  Matrix93 G1, G2;
+  NavState preint = pim.updatedDeltaXij(measuredAcc, measuredOmega, dt, boost::none, G1, G2);
+//  Matrix9 preintCov = G1*((accNoiseVar2/dt).asDiagonal())*G1.transpose() + G2*((omegaNoiseVar2/dt).asDiagonal())*G2.transpose();
+
+  Matrix93 expectedG1 = numericalDerivative21<NavState, Vector3, Vector3>(
+      boost::bind(&PreintegratedImuMeasurements::updatedDeltaXij, pim, _1, _2,
+          dt, boost::none, boost::none, boost::none), measuredAcc, measuredOmega,
+      1e-6);
+  EXPECT(assert_equal(expectedG1, G1, 1e-5));
+
+  Matrix93 expectedG2 = numericalDerivative22<NavState, Vector3, Vector3>(
+      boost::bind(&PreintegratedImuMeasurements::updatedDeltaXij, pim, _1, _2,
+          dt, boost::none, boost::none, boost::none), measuredAcc, measuredOmega,
+      1e-6);
+  EXPECT(assert_equal(expectedG2, G2, 1e-5));
+
+#if 0
+  /*
+   * This code is to verify the quality of the generated samples
+   * by checking if the covariance of the generated noises matches
+   * with the input covariance, and visualizing the nonlinearity of
+   * the sample set using the following matlab script:
+   *
+      noises = dlmread('noises.txt');
+      cov(noises)
+
+      samples = dlmread('noises.txt');
+      figure(1);
+      for i=1:9
+          subplot(3,3,i)
+          hist(samples(:,i), 500)
+      end
+   */
+  size_t N = 10000;
+  Matrix samples(9,N);
+  Sampler sampleAccelerationNoise((accNoiseVar2/dt).cwiseSqrt(), 29284);
+  Sampler sampleOmegaNoise((omegaNoiseVar2/dt).cwiseSqrt(), 10);
+  ofstream samplesOut("preintSamples.txt");
+  ofstream noiseOut("noises.txt");
+  for (size_t i = 0; i<N; ++i) {
+    Vector3 accNoise = sampleAccelerationNoise.sample();
+    Vector3 omegaNoise = sampleOmegaNoise.sample();
+    NavState sample = pim.updatedDeltaXij(measuredAcc+accNoise, measuredOmega+omegaNoise, dt);
+    samples.col(i) = sample.localCoordinates(preint);
+    samplesOut << samples.col(i).transpose() << endl;
+    noiseOut << accNoise.transpose() << " " << omegaNoise.transpose() << endl;
+  }
+  samplesOut.close();
+  noiseOut.close();
+#endif
+
   EXPECT(MonteCarlo(pim, NavState(x1, v1), bias, dt, body_P_sensor,
-      measuredAcc, measuredOmega));
+      measuredAcc, measuredOmega, accNoiseVar2, omegaNoiseVar2, 10000));
 
   Matrix expected(9,9);
   expected <<
@@ -793,7 +833,7 @@ TEST(ImuFactor, PredictArbitrary) {
   Vector3 v1 = Vector3(0, 0, 0);
   imuBias::ConstantBias bias(Vector3(0, 0, 0), Vector3(0, 0, 0));
   EXPECT(MonteCarlo(pim, NavState(x1, v1), bias, 0.1, boost::none,
-      measuredAcc, measuredOmega));
+      measuredAcc, measuredOmega, Vector3::Constant(accNoiseVar), Vector3::Constant(omegaNoiseVar)));
 
   for (int i = 0; i < 1000; ++i)
     pim.integrateMeasurement(measuredAcc, measuredOmega, dt);
