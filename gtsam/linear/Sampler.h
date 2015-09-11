@@ -37,7 +37,7 @@ protected:
   noiseModel::Diagonal::shared_ptr model_;
 
   /** generator */
-  boost::minstd_rand generator_;
+  boost::mt19937_64 generator_;
 
 public:
   typedef boost::shared_ptr<Sampler> shared_ptr;
