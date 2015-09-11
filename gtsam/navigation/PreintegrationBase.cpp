@@ -76,7 +76,8 @@ bool PreintegrationBase::equals(const PreintegrationBase& other,
 
 //------------------------------------------------------------------------------
 pair<Vector3, Vector3> PreintegrationBase::correctMeasurementsByBiasAndSensorPose(
-    const Vector3& j_measuredAcc, const Vector3& j_measuredOmega) const {
+    const Vector3& j_measuredAcc, const Vector3& j_measuredOmega,
+    OptionalJacobian<3, 3> D_correctedAcc_measuredOmega) const {
 
   // Correct for bias in the sensor frame
   Vector3 j_correctedAcc = biasHat_.correctAccelerometer(j_measuredAcc);
@@ -99,6 +100,12 @@ pair<Vector3, Vector3> PreintegrationBase::correctMeasurementsByBiasAndSensorPos
       const Matrix3 body_Omega_body = skewSymmetric(j_correctedOmega);
       const Vector3 b_velocity_bs = body_Omega_body * b_arm; // magnitude: omega * arm
       j_correctedAcc -= body_Omega_body * b_velocity_bs;
+      if (D_correctedAcc_measuredOmega) {
+        double wdp = j_correctedOmega.dot(b_arm);
+        *D_correctedAcc_measuredOmega = -(diag(Vector3::Constant(wdp))
+            + j_correctedOmega * b_arm.transpose()) * bRs.matrix()
+            + 2 * b_arm * j_measuredOmega.transpose();
+      }
     }
   }
 
@@ -112,11 +119,20 @@ NavState PreintegrationBase::updatedDeltaXij(const Vector3& j_measuredAcc,
     OptionalJacobian<9, 3> G1, OptionalJacobian<9, 3> G2) const {
 
   Vector3 j_correctedAcc, j_correctedOmega;
+  Matrix3 D_correctedAcc_measuredOmega;
   boost::tie(j_correctedAcc, j_correctedOmega) =
-      correctMeasurementsByBiasAndSensorPose(j_measuredAcc, j_measuredOmega);
-
+      correctMeasurementsByBiasAndSensorPose(j_measuredAcc, j_measuredOmega, D_correctedAcc_measuredOmega);
   // Do update in one fell swoop
-  return deltaXij_.update(j_correctedAcc, j_correctedOmega, dt, F, G1, G2);
+  NavState updated = deltaXij_.update(j_correctedAcc, j_correctedOmega, dt, F, G1, G2);
+  if (G1 && G2 && p().body_P_sensor) {
+    const Matrix3 bRs = p().body_P_sensor->rotation().matrix();
+    *G2 = *G2*bRs;
+    if (!p().body_P_sensor->translation().vector().isZero()) {
+      *G2 += *G1 * D_correctedAcc_measuredOmega;
+    }
+    *G1 = *G1*bRs;
+  }
+  return updated;
 }
 
 //------------------------------------------------------------------------------

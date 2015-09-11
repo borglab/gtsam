@@ -78,8 +78,8 @@ void PreintegratedImuMeasurements::integrateMeasurement(
   preintMeasCov_ = F * preintMeasCov_ * F.transpose() + G * Cov * G.transpose();
 #else
   preintMeasCov_ = F * preintMeasCov_ * F.transpose()
-      + G1 * (p().accelerometerCovariance / dt) * G1.transpose()
       + Gi * (p().integrationCovariance * dt) * Gi.transpose() // NOTE(frank): (Gi*dt)*(C/dt)*(Gi'*dt)
+      + G1 * (p().accelerometerCovariance / dt) * G1.transpose()
       + G2 * (p().gyroscopeCovariance / dt) * G2.transpose();
 #endif
 }

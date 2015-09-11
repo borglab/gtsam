@@ -145,6 +145,10 @@ public:
     return *boost::static_pointer_cast<Params>(p_);
   }
 
+  void set_body_P_sensor(const Pose3& body_P_sensor) {
+    p_->body_P_sensor = body_P_sensor;
+  }
+
   /// getters
   const NavState& deltaXij() const {
     return deltaXij_;
@@ -193,7 +197,8 @@ public:
 
   /// Subtract estimate and correct for sensor pose
   std::pair<Vector3, Vector3> correctMeasurementsByBiasAndSensorPose(
-      const Vector3& j_measuredAcc, const Vector3& j_measuredOmega) const;
+      const Vector3& j_measuredAcc, const Vector3& j_measuredOmega,
+      OptionalJacobian<3, 3> D_correctedAcc_measuredOmega = boost::none) const;
 
   /// Calculate the updated preintegrated measurement, does not modify
   /// It takes measured quantities in the j frame
