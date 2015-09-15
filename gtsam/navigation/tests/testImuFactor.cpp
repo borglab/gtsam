@@ -641,7 +641,7 @@ TEST(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
   pim.set_body_P_sensor(body_P_sensor);
 
   // Check updatedDeltaXij derivatives
-  Matrix3 D_correctedAcc_measuredOmega;
+  Matrix3 D_correctedAcc_measuredOmega = Matrix3::Zero();
   pim.correctMeasurementsByBiasAndSensorPose(measuredAcc, measuredOmega, D_correctedAcc_measuredOmega);
   Matrix3 expectedD = numericalDerivative11<Vector3, Vector3>(boost::bind(correctedAcc, pim, measuredAcc, _1), measuredOmega, 1e-6);
   EXPECT(assert_equal(expectedD, D_correctedAcc_measuredOmega, 1e-5));
@@ -714,6 +714,10 @@ TEST(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
   pim.integrateMeasurement(measuredAcc, measuredOmega, dt, body_P_sensor);
   EXPECT(assert_equal(expected, pim.preintMeasCov(), 1e-6));
 
+  // integrate one more time (at least twice) to get position information
+  // otherwise factor cov noise from preint_cov is not positive definite
+  pim.integrateMeasurement(measuredAcc, measuredOmega, dt, body_P_sensor);
+
   // Create factor
   ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pim, kGravityAlongNavZDown,
       kNonZeroOmegaCoriolis);
@@ -723,7 +727,6 @@ TEST(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
   Vector3 actual_v2;
   ImuFactor::Predict(x1, v1, actual_x2, actual_v2, bias, pim,
       kGravityAlongNavZDown, kZeroOmegaCoriolis);
-
   // Regression test with
   Rot3 expectedR( //
       0.456795409,   -0.888128414,   0.0506544554,   //
@@ -742,8 +745,10 @@ TEST(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
   values.insert(V(2), v2);
   values.insert(B(1), bias);
 
+//  factor.get_noiseModel()->print("noise: ");  // Make sure the noise is valid
+
   // Make sure linearization is correct
-  double diffDelta = 1e-5;
+  double diffDelta = 1e-8;
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, diffDelta, 1e-3);
 }
 
