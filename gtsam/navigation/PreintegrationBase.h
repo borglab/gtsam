@@ -196,22 +196,27 @@ public:
   bool equals(const PreintegrationBase& other, double tol) const;
 
   /// Subtract estimate and correct for sensor pose
+  /// Compute the derivatives due to non-identity body_P_sensor (rotation and centrifugal acc)
+  /// Ignore D_correctedOmega_measuredAcc as it is trivially zero
   std::pair<Vector3, Vector3> correctMeasurementsByBiasAndSensorPose(
       const Vector3& j_measuredAcc, const Vector3& j_measuredOmega,
-      OptionalJacobian<3, 3> D_correctedAcc_measuredOmega = boost::none) const;
+      OptionalJacobian<3, 3> D_correctedAcc_measuredAcc = boost::none,
+      OptionalJacobian<3, 3> D_correctedAcc_measuredOmega = boost::none,
+      OptionalJacobian<3, 3> D_correctedOmega_measuredOmega = boost::none) const;
 
   /// Calculate the updated preintegrated measurement, does not modify
   /// It takes measured quantities in the j frame
   NavState updatedDeltaXij(const Vector3& j_measuredAcc,
       const Vector3& j_measuredOmega, const double dt,
-      OptionalJacobian<9, 9> F = boost::none, OptionalJacobian<9, 3> G1 =
-          boost::none, OptionalJacobian<9, 3> G2 = boost::none) const;
+      OptionalJacobian<9, 9> D_updated_current = boost::none,
+      OptionalJacobian<9, 3> D_updated_measuredAcc = boost::none,
+      OptionalJacobian<9, 3> D_updated_measuredOmega = boost::none) const;
 
   /// Update preintegrated measurements and get derivatives
   /// It takes measured quantities in the j frame
   void update(const Vector3& j_measuredAcc, const Vector3& j_measuredOmega,
-      const double deltaT, Matrix3* D_incrR_integratedOmega, Matrix9* F,
-      Matrix93* G1, Matrix93* G2);
+      const double deltaT, Matrix3* D_incrR_integratedOmega, Matrix9* D_updated_current,
+      Matrix93* D_udpated_measuredAcc, Matrix93* D_updated_measuredOmega);
 
   /// Given the estimate of the bias, return a NavState tangent vector
   /// summarizing the preintegrated IMU measurements so far

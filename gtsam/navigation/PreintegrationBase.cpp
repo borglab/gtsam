@@ -77,7 +77,9 @@ bool PreintegrationBase::equals(const PreintegrationBase& other,
 //------------------------------------------------------------------------------
 pair<Vector3, Vector3> PreintegrationBase::correctMeasurementsByBiasAndSensorPose(
     const Vector3& j_measuredAcc, const Vector3& j_measuredOmega,
-    OptionalJacobian<3, 3> D_correctedAcc_measuredOmega) const {
+    OptionalJacobian<3, 3> D_correctedAcc_measuredAcc,
+    OptionalJacobian<3, 3> D_correctedAcc_measuredOmega,
+    OptionalJacobian<3, 3> D_correctedOmega_measuredOmega) const {
 
   // Correct for bias in the sensor frame
   Vector3 j_correctedAcc = biasHat_.correctAccelerometer(j_measuredAcc);
@@ -93,6 +95,13 @@ pair<Vector3, Vector3> PreintegrationBase::correctMeasurementsByBiasAndSensorPos
 
     // Correct acceleration
     j_correctedAcc = bRs * j_correctedAcc;
+
+    // Jacobians
+    if (D_correctedAcc_measuredAcc) *D_correctedAcc_measuredAcc = bRs;
+    if (D_correctedAcc_measuredOmega) *D_correctedAcc_measuredOmega = Matrix3::Zero();
+    if (D_correctedOmega_measuredOmega) *D_correctedOmega_measuredOmega = bRs;
+
+    // Centrifugal acceleration
     const Vector3 b_arm = p().body_P_sensor->translation().vector();
     if (!b_arm.isZero()) {
       // Subtract out the the centripetal acceleration from the measured one
@@ -100,6 +109,7 @@ pair<Vector3, Vector3> PreintegrationBase::correctMeasurementsByBiasAndSensorPos
       const Matrix3 body_Omega_body = skewSymmetric(j_correctedOmega);
       const Vector3 b_velocity_bs = body_Omega_body * b_arm; // magnitude: omega * arm
       j_correctedAcc -= body_Omega_body * b_velocity_bs;
+      // Update derivative: centrifugal causes the correlation between acc and omega!!!
       if (D_correctedAcc_measuredOmega) {
         double wdp = j_correctedOmega.dot(b_arm);
         *D_correctedAcc_measuredOmega = -(diag(Vector3::Constant(wdp))
@@ -115,22 +125,32 @@ pair<Vector3, Vector3> PreintegrationBase::correctMeasurementsByBiasAndSensorPos
 
 //------------------------------------------------------------------------------
 NavState PreintegrationBase::updatedDeltaXij(const Vector3& j_measuredAcc,
-    const Vector3& j_measuredOmega, const double dt, OptionalJacobian<9, 9> F,
-    OptionalJacobian<9, 3> G1, OptionalJacobian<9, 3> G2) const {
+    const Vector3& j_measuredOmega, const double dt,
+    OptionalJacobian<9, 9> D_updated_current,
+    OptionalJacobian<9, 3> D_updated_measuredAcc,
+    OptionalJacobian<9, 3> D_updated_measuredOmega) const {
 
   Vector3 j_correctedAcc, j_correctedOmega;
-  Matrix3 D_correctedAcc_measuredOmega;
+  Matrix3 D_correctedAcc_measuredAcc, //
+      D_correctedAcc_measuredOmega, //
+      D_correctedOmega_measuredOmega;
+  bool needDerivs = D_updated_measuredAcc && D_updated_measuredOmega && p().body_P_sensor;
   boost::tie(j_correctedAcc, j_correctedOmega) =
-      correctMeasurementsByBiasAndSensorPose(j_measuredAcc, j_measuredOmega, D_correctedAcc_measuredOmega);
+      correctMeasurementsByBiasAndSensorPose(j_measuredAcc, j_measuredOmega,
+          (needDerivs ? &D_correctedAcc_measuredAcc : 0),
+          (needDerivs ? &D_correctedAcc_measuredOmega : 0),
+          (needDerivs ? &D_correctedOmega_measuredOmega : 0));
   // Do update in one fell swoop
-  NavState updated = deltaXij_.update(j_correctedAcc, j_correctedOmega, dt, F, G1, G2);
-  if (G1 && G2 && p().body_P_sensor) {
-    const Matrix3 bRs = p().body_P_sensor->rotation().matrix();
-    *G2 = *G2*bRs;
+  Matrix93 D_updated_correctedAcc, D_updated_correctedOmega;
+  NavState updated = deltaXij_.update(j_correctedAcc, j_correctedOmega, dt, D_updated_current,
+              (needDerivs ? D_updated_correctedAcc : D_updated_measuredAcc),
+              (needDerivs ? D_updated_correctedOmega : D_updated_measuredOmega));
+  if (needDerivs) {
+    *D_updated_measuredAcc = D_updated_correctedAcc * D_correctedAcc_measuredAcc;
+    *D_updated_measuredOmega = D_updated_correctedOmega * D_correctedOmega_measuredOmega;
     if (!p().body_P_sensor->translation().vector().isZero()) {
-      *G2 += *G1 * D_correctedAcc_measuredOmega;
+      *D_updated_measuredOmega += D_updated_correctedAcc * D_correctedAcc_measuredOmega;
     }
-    *G1 = *G1*bRs;
   }
   return updated;
 }
@@ -138,14 +158,16 @@ NavState PreintegrationBase::updatedDeltaXij(const Vector3& j_measuredAcc,
 //------------------------------------------------------------------------------
 void PreintegrationBase::update(const Vector3& j_measuredAcc,
     const Vector3& j_measuredOmega, const double dt,
-    Matrix3* D_incrR_integratedOmega, Matrix9* F, Matrix93* G1, Matrix93* G2) {
+    Matrix3* D_incrR_integratedOmega, Matrix9* D_updated_current,
+    Matrix93* D_updated_measuredAcc, Matrix93* D_updated_measuredOmega) {
 
   // Save current rotation for updating Jacobians
   const Rot3 oldRij = deltaXij_.attitude();
 
   // Do update
   deltaTij_ += dt;
-  deltaXij_ = updatedDeltaXij(j_measuredAcc, j_measuredOmega, dt, F, G1, G2); // functional
+  deltaXij_ = updatedDeltaXij(j_measuredAcc, j_measuredOmega, dt,
+      D_updated_current, D_updated_measuredAcc, D_updated_measuredOmega); // functional
 
   // Update Jacobians
   // TODO(frank): we are repeating some computation here: accessible in F ?
