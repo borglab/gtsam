@@ -86,14 +86,10 @@ namespace gtsam {
         double R31, double R32, double R33);
 
     /** constructor from a rotation matrix */
-    template<typename Derived>
-    inline Rot3(const Eigen::MatrixBase<Derived>& R) {
-      #ifdef GTSAM_USE_QUATERNIONS
-        quaternion_=R
-      #else
-        rot_ = R;
-      #endif
-    }
+    Rot3(const Matrix3& R);
+
+    /** constructor from a rotation matrix */
+    Rot3(const Matrix& R);
 
     /** Constructor from a quaternion.  This can also be called using a plain
      * Vector, due to implicit conversion from Vector to Quaternion

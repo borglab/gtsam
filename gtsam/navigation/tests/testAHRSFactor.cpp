@@ -435,7 +435,7 @@ TEST (AHRSFactor, predictTest) {
   // Actual Jacobians
   Matrix H;
   (void) pim.predict(bias,H);
-  EXPECT(assert_equal(expectedH, H));
+  EXPECT(assert_equal(expectedH, H, 1e-8));
 }
 //******************************************************************************
 #include <gtsam/linear/GaussianFactorGraph.h>

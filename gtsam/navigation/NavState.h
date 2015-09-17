@@ -61,7 +61,7 @@ public:
   }
   /// Construct from Matrix group representation (no checking)
   NavState(const Matrix7& T) :
-      R_(T.block<3, 3>(0, 0)), t_(T.block<3, 1>(0, 6)), v_(T.block<3, 1>(3, 6)) {
+      R_((Matrix3)T.block<3, 3>(0, 0)), t_(T.block<3, 1>(0, 6)), v_(T.block<3, 1>(3, 6)) {
   }
   /// Construct from SO(3) and R^6
   NavState(const Matrix3& R, const Vector9 tv) :

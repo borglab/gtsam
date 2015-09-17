@@ -387,7 +387,7 @@ boost::optional<Pose3> align(const vector<Point3Pair>& pairs) {
   Matrix3 UVtranspose = U * V.transpose();
   Matrix3 detWeighting = I_3x3;
   detWeighting(2, 2) = UVtranspose.determinant();
-  Rot3 R(Matrix(V * detWeighting * U.transpose()));
+  Rot3 R(Matrix3(V * detWeighting * U.transpose()));
   Point3 t = Point3(cq) - R * Point3(cp);
   return Pose3(R, t);
 }
