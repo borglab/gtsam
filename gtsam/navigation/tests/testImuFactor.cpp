@@ -642,7 +642,7 @@ TEST(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
 
   // Check updatedDeltaXij derivatives
   Matrix3 D_correctedAcc_measuredOmega = Matrix3::Zero();
-  pim.correctMeasurementsByBiasAndSensorPose(measuredAcc, measuredOmega, D_correctedAcc_measuredOmega);
+  pim.correctMeasurementsByBiasAndSensorPose(measuredAcc, measuredOmega, boost::none, D_correctedAcc_measuredOmega, boost::none);
   Matrix3 expectedD = numericalDerivative11<Vector3, Vector3>(boost::bind(correctedAcc, pim, measuredAcc, _1), measuredOmega, 1e-6);
   EXPECT(assert_equal(expectedD, D_correctedAcc_measuredOmega, 1e-5));
 
