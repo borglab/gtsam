@@ -31,6 +31,7 @@ Prerequisites:
 
 - [Boost](http://www.boost.org/users/download/) >= 1.43 (Ubuntu: `sudo apt-get install libboost-all-dev`)
 - [CMake](http://www.cmake.org/cmake/resources/software.html) >= 2.6 (Ubuntu: `sudo apt-get install cmake`)
+- A modern compiler, i.e., at least gcc 4.7.3 on Linux.
 
 Optional prerequisites - used automatically if findable by CMake:
 

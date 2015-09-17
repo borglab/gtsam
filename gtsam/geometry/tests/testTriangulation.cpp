@@ -18,8 +18,14 @@
 
 #include <gtsam/geometry/triangulation.h>
 #include <gtsam/geometry/SimpleCamera.h>
+#include <gtsam/geometry/StereoCamera.h>
+#include <gtsam/geometry/CameraSet.h>
 #include <gtsam/geometry/Cal3Bundler.h>
+#include <gtsam/slam/StereoFactor.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/nonlinear/ExpressionFactor.h>
 #include <CppUnitLite/TestHarness.h>
+
 
 #include <boost/assign.hpp>
 #include <boost/assign/std/vector.hpp>
@@ -271,6 +277,106 @@ TEST( triangulation, onePose) {
 
   CHECK_EXCEPTION(triangulatePoint3(poses, sharedCal, measurements),
       TriangulationUnderconstrainedException);
+}
+
+//******************************************************************************
+TEST( triangulation, StereotriangulateNonlinear ) {
+
+  Cal3_S2Stereo::shared_ptr stereoK(new Cal3_S2Stereo(1733.75, 1733.75, 0, 689.645, 508.835, 0.0699612));
+
+  // two camera poses m1, m2
+  Matrix4 m1, m2;
+  m1 << 0.796888717,     0.603404026,   -0.0295271487, 46.6673779,
+      0.592783835,    -0.77156583,    0.230856632,   66.2186159,
+      0.116517574,   -0.201470143,     -0.9725393, -4.28382528,
+      0, 0, 0, 1;
+
+  m2 << -0.955959025,    -0.29288915,   -0.0189328569, 45.7169799,
+      -0.29277519,    0.947083213,    0.131587097, 65.843136,
+     -0.0206094928,   0.131334858,   -0.991123524, -4.3525033,
+     0, 0, 0, 1;
+
+  typedef CameraSet<StereoCamera> Cameras;
+  Cameras cameras;
+  cameras.push_back(StereoCamera(Pose3(m1), stereoK));
+  cameras.push_back(StereoCamera(Pose3(m2), stereoK));
+
+  vector<StereoPoint2> measurements;
+  measurements += StereoPoint2(226.936, 175.212, 424.469);
+  measurements += StereoPoint2(339.571, 285.547, 669.973);
+
+  Point3 initial = Point3(46.0536958, 66.4621179, -6.56285929);  // error: 96.5715555191
+
+  Point3 actual = triangulateNonlinear(cameras, measurements, initial);
+
+  Point3 expected(46.0484569, 66.4710686, -6.55046613); // error: 0.763510644187
+
+  EXPECT(assert_equal(expected, actual, 1e-4));
+
+
+  // regular stereo factor comparison - expect very similar result as above
+  {
+    typedef GenericStereoFactor<Pose3,Point3> StereoFactor;
+
+    Values values;
+    values.insert(Symbol('x', 1), Pose3(m1));
+    values.insert(Symbol('x', 2), Pose3(m2));
+    values.insert(Symbol('l', 1), initial);
+
+    NonlinearFactorGraph graph;
+    static SharedNoiseModel unit(noiseModel::Unit::Create(3));
+    graph.push_back(StereoFactor::shared_ptr(new StereoFactor(measurements[0], unit, Symbol('x',1), Symbol('l',1), stereoK)));
+    graph.push_back(StereoFactor::shared_ptr(new StereoFactor(measurements[1], unit, Symbol('x',2), Symbol('l',1), stereoK)));
+
+    const SharedDiagonal posePrior = noiseModel::Isotropic::Sigma(6, 1e-9);
+    graph.push_back(PriorFactor<Pose3>(Symbol('x',1), Pose3(m1), posePrior));
+    graph.push_back(PriorFactor<Pose3>(Symbol('x',2), Pose3(m2), posePrior));
+
+    LevenbergMarquardtOptimizer optimizer(graph, values);
+    Values result = optimizer.optimize();
+
+    EXPECT(assert_equal(expected, result.at<Point3>(Symbol('l',1)), 1e-4));
+  }
+
+  // use Triangulation Factor directly - expect same result as above
+  {
+    Values values;
+    values.insert(Symbol('l', 1), initial);
+
+    NonlinearFactorGraph graph;
+    static SharedNoiseModel unit(noiseModel::Unit::Create(3));
+
+    graph.push_back(TriangulationFactor<StereoCamera>(cameras[0], measurements[0], unit, Symbol('l',1)));
+    graph.push_back(TriangulationFactor<StereoCamera>(cameras[1], measurements[1], unit, Symbol('l',1)));
+
+    LevenbergMarquardtOptimizer optimizer(graph, values);
+    Values result = optimizer.optimize();
+
+    EXPECT(assert_equal(expected, result.at<Point3>(Symbol('l',1)), 1e-4));
+  }
+
+  // use ExpressionFactor - expect same result as above
+  {
+    Values values;
+    values.insert(Symbol('l', 1), initial);
+
+    NonlinearFactorGraph graph;
+    static SharedNoiseModel unit(noiseModel::Unit::Create(3));
+
+    Expression<Point3> point_(Symbol('l',1));
+    Expression<StereoCamera> camera0_(cameras[0]);
+    Expression<StereoCamera> camera1_(cameras[1]);
+    Expression<StereoPoint2> project0_(camera0_, &StereoCamera::project2, point_);
+    Expression<StereoPoint2> project1_(camera1_, &StereoCamera::project2, point_);
+
+    graph.addExpressionFactor(unit, measurements[0], project0_);
+    graph.addExpressionFactor(unit, measurements[1], project1_);
+
+    LevenbergMarquardtOptimizer optimizer(graph, values);
+    Values result = optimizer.optimize();
+
+    EXPECT(assert_equal(expected, result.at<Point3>(Symbol('l',1)), 1e-4));
+  }
 }
 
 //******************************************************************************
