@@ -987,7 +987,7 @@ TEST(ImuFactor, bodyPSensorWithBias) {
   Bias zeroBias(Vector3(0, 0, 0), Vector3(0, 0, 0));
   for (int i = 1; i < numFactors; i++) {
     ImuFactor::PreintegratedMeasurements pim =
-        ImuFactor::PreintegratedMeasurements(zeroBias, accCov, gyroCov,
+        ImuFactor::PreintegratedMeasurements(priorBias, accCov, gyroCov,
             integrationCov, true);
     for (int j = 0; j < 200; ++j)
       pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT,
