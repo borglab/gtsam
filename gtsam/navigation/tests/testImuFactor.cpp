@@ -632,8 +632,8 @@ TEST(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
       + Vector3(0.2, 0.0, 0.0);
   double dt = 0.1;
 
-  Pose3 body_P_sensor(Rot3::Expmap(Vector3(0, M_PI/2, 0)), Point3(0.1, 0, 0));
-  imuBias::ConstantBias biasHat(Vector3(0.0, 0.0, 0.0), Vector3(0.0, 0.0, 0.0));
+  Pose3 body_P_sensor(Rot3::Expmap(Vector3(0, M_PI/2, 0)), Point3(0.1, 0.05, 0.01));
+  imuBias::ConstantBias biasHat(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0));
 
   // Get mean prediction from "ground truth" measurements
   PreintegratedImuMeasurements pim(biasHat, accNoiseVar2.asDiagonal(),
