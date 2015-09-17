@@ -20,7 +20,7 @@
 
 #include <gtsam/linear/NoiseModel.h>
 
-#include <boost/random/linear_congruential.hpp>
+#include <boost/random.hpp>
 
 namespace gtsam {
 

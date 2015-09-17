@@ -14,8 +14,6 @@
  * @author Alex Cunningham
  */
 
-#include <boost/random.hpp>
-
 #include <gtsam/linear/Sampler.h>
 namespace gtsam {
 
