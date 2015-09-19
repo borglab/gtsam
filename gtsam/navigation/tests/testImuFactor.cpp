@@ -156,7 +156,7 @@ bool MonteCarlo(const PreintegratedImuMeasurements& pim,
   for (size_t i = 0; i < N; i++) {
     Vector9 xi = samples.col(i);
     xi -= sampleMean;
-    Q += xi * xi.transpose() / (N - 1);
+    Q += xi * (xi.transpose() / (N - 1));
   }
 
   // Compare MonteCarlo value with actual (computed) value

@@ -257,7 +257,7 @@ template<typename Lhs, typename Rhs>
 class GeneralProduct<Lhs, Rhs, OuterProduct>
   : public ProductBase<GeneralProduct<Lhs,Rhs,OuterProduct>, Lhs, Rhs>
 {
-    template<typename T> struct IsRowMajorType : internal::conditional<(int(T::Flags)&RowMajorBit), internal::true_type, internal::false_type>::type {};
+    template<typename T> struct IsRowMajor : internal::conditional<(int(T::Flags)&RowMajorBit), internal::true_type, internal::false_type>::type {};
     
   public:
     EIGEN_PRODUCT_PUBLIC_INTERFACE(GeneralProduct)
@@ -281,22 +281,22 @@ class GeneralProduct<Lhs, Rhs, OuterProduct>
     
     template<typename Dest>
     inline void evalTo(Dest& dest) const {
-      internal::outer_product_selector_run(*this, dest, set(), IsRowMajorType<Dest>());
+      internal::outer_product_selector_run(*this, dest, set(), IsRowMajor<Dest>());
     }
     
     template<typename Dest>
     inline void addTo(Dest& dest) const {
-      internal::outer_product_selector_run(*this, dest, add(), IsRowMajorType<Dest>());
+      internal::outer_product_selector_run(*this, dest, add(), IsRowMajor<Dest>());
     }
 
     template<typename Dest>
     inline void subTo(Dest& dest) const {
-      internal::outer_product_selector_run(*this, dest, sub(), IsRowMajorType<Dest>());
+      internal::outer_product_selector_run(*this, dest, sub(), IsRowMajor<Dest>());
     }
 
     template<typename Dest> void scaleAndAddTo(Dest& dest, const Scalar& alpha) const
     {
-      internal::outer_product_selector_run(*this, dest, adds(alpha), IsRowMajorType<Dest>());
+      internal::outer_product_selector_run(*this, dest, adds(alpha), IsRowMajor<Dest>());
     }
 };
 
