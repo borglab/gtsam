@@ -85,11 +85,33 @@ namespace gtsam {
         double R21, double R22, double R23,
         double R31, double R32, double R33);
 
-    /** constructor from a rotation matrix */
-    Rot3(const Matrix3& R);
+    /**
+     * Constructor from a rotation matrix
+     * Version for generic matrices. Need casting to Matrix3
+     * in quaternion mode, since Eigen's quaternion doesn't
+     * allow assignment/construction from a generic matrix.
+     * See: http://stackoverflow.com/questions/27094132/cannot-understand-if-this-is-circular-dependency-or-clang#tab-top
+     */
+    template<typename Derived>
+    inline Rot3(const Eigen::MatrixBase<Derived>& R) {
+      #ifdef GTSAM_USE_QUATERNIONS
+        quaternion_=Matrix3(R);
+      #else
+        rot_ = R;
+      #endif
+    }
 
-    /** constructor from a rotation matrix */
-    Rot3(const Matrix& R);
+    /**
+     * Constructor from a rotation matrix
+     * Overload version for Matrix3 to avoid casting in quaternion mode.
+     */
+    inline Rot3(const Matrix3& R) {
+      #ifdef GTSAM_USE_QUATERNIONS
+        quaternion_=R;
+      #else
+        rot_ = R;
+      #endif
+    }
 
     /** Constructor from a quaternion.  This can also be called using a plain
      * Vector, due to implicit conversion from Vector to Quaternion
