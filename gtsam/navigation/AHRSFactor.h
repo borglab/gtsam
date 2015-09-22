@@ -26,91 +26,94 @@
 
 namespace gtsam {
 
-class GTSAM_EXPORT AHRSFactor: public NoiseModelFactor3<Rot3, Rot3, Vector3> {
-public:
+/**
+ * PreintegratedAHRSMeasurements accumulates (integrates) the Gyroscope
+ * measurements (rotation rates) and the corresponding covariance matrix.
+ * Can be built incrementally so as to avoid costly integration at time of factor construction.
+ */
+class GTSAM_EXPORT PreintegratedAhrsMeasurements : public PreintegratedRotation {
+
+ protected:
+
+  Vector3 biasHat_; ///< Angular rate bias values used during preintegration.
+  Matrix3 preintMeasCov_; ///< Covariance matrix of the preintegrated measurements (first-order propagation from *measurementCovariance*)
+
+  /// Default constructor, only for serialization
+  PreintegratedAhrsMeasurements() {}
+
+  friend class AHRSFactor;
+
+ public:
 
   /**
-   * CombinedPreintegratedMeasurements accumulates (integrates) the Gyroscope
-   * measurements (rotation rates) and the corresponding covariance matrix.
-   * The measurements are then used to build the Preintegrated AHRS factor.
-   * Can be built incrementally so as to avoid costly integration at time of
-   * factor construction.
+   *  Default constructor, initialize with no measurements
+   *  @param bias Current estimate of acceleration and rotation rate biases
    */
-  class GTSAM_EXPORT PreintegratedMeasurements : public PreintegratedRotation {
+  PreintegratedAhrsMeasurements(const boost::shared_ptr<Params>& p,
+      const Vector3& biasHat) :
+      PreintegratedRotation(p), biasHat_(biasHat) {
+    resetIntegration();
+  }
 
-    friend class AHRSFactor;
+  const Params& p() const { return *boost::static_pointer_cast<const Params>(p_);}
+  const Vector3& biasHat() const { return biasHat_; }
+  const Matrix3& preintMeasCov() const { return preintMeasCov_; }
 
-  protected:
-    Vector3 biasHat_; ///< Acceleration and angular rate bias values used during preintegration. Note that we won't be using the accelerometer
-    Matrix3 preintMeasCov_; ///< Covariance matrix of the preintegrated measurements (first-order propagation from *measurementCovariance*)
+  /// print
+  void print(const std::string& s = "Preintegrated Measurements: ") const;
 
-  public:
+  /// equals
+  bool equals(const PreintegratedAhrsMeasurements&, double tol = 1e-9) const;
 
-    /// Default constructor
-    PreintegratedMeasurements();
+  /// Reset inetgrated quantities to zero
+  void resetIntegration();
 
-    /**
-     *  Default constructor, initialize with no measurements
-     *  @param bias Current estimate of acceleration and rotation rate biases
-     *  @param measuredOmegaCovariance Covariance matrix of measured angular rate
-     */
-    PreintegratedMeasurements(const Vector3& bias,
-        const Matrix3& measuredOmegaCovariance);
+  /**
+   * Add a single Gyroscope measurement to the preintegration.
+   * @param measureOmedga Measured angular velocity (in body frame)
+   * @param deltaT Time step
+   */
+  void integrateMeasurement(const Vector3& measuredOmega, double deltaT);
 
-    Vector3 biasHat() const {
-      return biasHat_;
-    }
-    const Matrix3& preintMeasCov() const {
-      return preintMeasCov_;
-    }
+  /// Predict bias-corrected incremental rotation
+  /// TODO: The matrix Hbias is the derivative of predict? Unit-test?
+  Vector3 predict(const Vector3& bias, OptionalJacobian<3,3> H = boost::none) const;
 
-    /// print
-    void print(const std::string& s = "Preintegrated Measurements: ") const;
+  // This function is only used for test purposes
+  // (compare numerical derivatives wrt analytic ones)
+  static Vector DeltaAngles(const Vector& msr_gyro_t, const double msr_dt,
+      const Vector3& delta_angles);
 
-    /// equals
-    bool equals(const PreintegratedMeasurements&, double tol = 1e-9) const;
-
-    /// TODO: Document
-    void resetIntegration();
-
-    /**
-     * Add a single Gyroscope measurement to the preintegration.
-     * @param measureOmedga Measured angular velocity (in body frame)
-     * @param deltaT Time step
-     * @param body_P_sensor Optional sensor frame
-     */
-    void integrateMeasurement(const Vector3& measuredOmega, double deltaT,
-        boost::optional<const Pose3&> body_P_sensor = boost::none);
-
-    /// Predict bias-corrected incremental rotation
-    /// TODO: The matrix Hbias is the derivative of predict? Unit-test?
-    Vector3 predict(const Vector3& bias, boost::optional<Matrix&> H =
-        boost::none) const;
-
-    // This function is only used for test purposes
-    // (compare numerical derivatives wrt analytic ones)
-    static Vector DeltaAngles(const Vector& msr_gyro_t, const double msr_dt,
-        const Vector3& delta_angles);
-
-  private:
-
-    /** Serialization function */
-    friend class boost::serialization::access;
-    template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegratedRotation);
-      ar & BOOST_SERIALIZATION_NVP(biasHat_);
-    }
-  };
+  /// @deprecated constructor
+  PreintegratedAhrsMeasurements(const Vector3& biasHat,
+                                const Matrix3& measuredOmegaCovariance)
+      : PreintegratedRotation(boost::make_shared<Params>()),
+        biasHat_(biasHat) {
+    p_->gyroscopeCovariance = measuredOmegaCovariance;
+    resetIntegration();
+  }
 
 private:
+
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegratedRotation);
+    ar & BOOST_SERIALIZATION_NVP(p_);
+    ar & BOOST_SERIALIZATION_NVP(biasHat_);
+  }
+};
+
+class GTSAM_EXPORT AHRSFactor: public NoiseModelFactor3<Rot3, Rot3, Vector3> {
+
   typedef AHRSFactor This;
   typedef NoiseModelFactor3<Rot3, Rot3, Vector3> Base;
 
-  PreintegratedMeasurements _PIM_;
-  Vector3 gravity_;
-  Vector3 omegaCoriolis_; ///< Controls whether higher order terms are included when calculating the Coriolis Effect
-  boost::optional<Pose3> body_P_sensor_; ///< The pose of the sensor in the body frame
+  PreintegratedAhrsMeasurements _PIM_;
+
+  /** Default constructor - only use for serialization */
+  AHRSFactor() {}
 
 public:
 
@@ -121,22 +124,15 @@ public:
   typedef boost::shared_ptr<AHRSFactor> shared_ptr;
 #endif
 
-  /** Default constructor - only use for serialization */
-  AHRSFactor();
-
   /**
    * Constructor
    * @param rot_i previous rot key
    * @param rot_j current rot key
    * @param bias  previous bias key
    * @param preintegratedMeasurements preintegrated measurements
-   * @param omegaCoriolis rotation rate of the inertial frame
-   * @param body_P_sensor Optional pose of the sensor frame in the body frame
    */
   AHRSFactor(Key rot_i, Key rot_j, Key bias,
-      const PreintegratedMeasurements& preintegratedMeasurements,
-      const Vector3& omegaCoriolis,
-      boost::optional<const Pose3&> body_P_sensor = boost::none);
+      const PreintegratedAhrsMeasurements& preintegratedMeasurements);
 
   virtual ~AHRSFactor() {
   }
@@ -152,12 +148,8 @@ public:
   virtual bool equals(const NonlinearFactor&, double tol = 1e-9) const;
 
   /// Access the preintegrated measurements.
-  const PreintegratedMeasurements& preintegratedMeasurements() const {
+  const PreintegratedAhrsMeasurements& preintegratedMeasurements() const {
     return _PIM_;
-  }
-
-  const Vector3& omegaCoriolis() const {
-    return omegaCoriolis_;
   }
 
   /** implement functions needed to derive from Factor */
@@ -169,10 +161,25 @@ public:
           boost::none) const;
 
   /// predicted states from IMU
+  /// TODO(frank): relationship with PIM predict ??
+  static Rot3 Predict(
+      const Rot3& rot_i, const Vector3& bias,
+      const PreintegratedAhrsMeasurements preintegratedMeasurements);
+
+  /// @deprecated name
+  typedef PreintegratedAhrsMeasurements PreintegratedMeasurements;
+
+  /// @deprecated constructor
+  AHRSFactor(Key rot_i, Key rot_j, Key bias,
+      const PreintegratedMeasurements& preintegratedMeasurements,
+      const Vector3& omegaCoriolis,
+      const boost::optional<Pose3>& body_P_sensor = boost::none);
+
+  /// @deprecated static function
   static Rot3 predict(const Rot3& rot_i, const Vector3& bias,
       const PreintegratedMeasurements preintegratedMeasurements,
       const Vector3& omegaCoriolis,
-      boost::optional<const Pose3&> body_P_sensor = boost::none);
+      const boost::optional<Pose3>& body_P_sensor = boost::none);
 
 private:
 
@@ -184,13 +191,9 @@ private:
         & boost::serialization::make_nvp("NoiseModelFactor3",
             boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(_PIM_);
-    ar & BOOST_SERIALIZATION_NVP(omegaCoriolis_);
-    ar & BOOST_SERIALIZATION_NVP(body_P_sensor_);
   }
 
 };
 // AHRSFactor
-
-typedef AHRSFactor::PreintegratedMeasurements AHRSFactorPreintegratedMeasurements;
 
 } //namespace gtsam

@@ -15,44 +15,43 @@ using namespace gtsam;
 GTSAM_CONCEPT_TESTABLE_INST(PoseRTV)
 GTSAM_CONCEPT_LIE_INST(PoseRTV)
 
-const double tol=1e-5;
-
-Rot3 rot = Rot3::RzRyRx(0.1, 0.2, 0.3);
-Point3 pt(1.0, 2.0, 3.0);
-Velocity3 vel(0.4, 0.5, 0.6);
+static const Rot3 rot = Rot3::RzRyRx(0.1, 0.2, 0.3);
+static const Point3 pt(1.0, 2.0, 3.0);
+static const Velocity3 vel(0.4, 0.5, 0.6);
+static const Vector3 kZero3 = Vector3::Zero();
 
 /* ************************************************************************* */
 TEST( testPoseRTV, constructors ) {
   PoseRTV state1(pt, rot, vel);
-  EXPECT(assert_equal(pt, state1.t(), tol));
-  EXPECT(assert_equal(rot, state1.R(), tol));
-  EXPECT(assert_equal(vel, state1.v(), tol));
-  EXPECT(assert_equal(Pose3(rot, pt), state1.pose(), tol));
+  EXPECT(assert_equal(pt, state1.t()));
+  EXPECT(assert_equal(rot, state1.R()));
+  EXPECT(assert_equal(vel, state1.v()));
+  EXPECT(assert_equal(Pose3(rot, pt), state1.pose()));
 
   PoseRTV state2;
-  EXPECT(assert_equal(Point3(),  state2.t(), tol));
-  EXPECT(assert_equal(Rot3(), state2.R(), tol));
-  EXPECT(assert_equal(Velocity3(), state2.v(), tol));
-  EXPECT(assert_equal(Pose3(), state2.pose(), tol));
+  EXPECT(assert_equal(Point3(),  state2.t()));
+  EXPECT(assert_equal(Rot3(), state2.R()));
+  EXPECT(assert_equal(kZero3, state2.v()));
+  EXPECT(assert_equal(Pose3(), state2.pose()));
 
   PoseRTV state3(Pose3(rot, pt), vel);
-  EXPECT(assert_equal(pt,  state3.t(), tol));
-  EXPECT(assert_equal(rot, state3.R(), tol));
-  EXPECT(assert_equal(vel, state3.v(), tol));
-  EXPECT(assert_equal(Pose3(rot, pt), state3.pose(), tol));
+  EXPECT(assert_equal(pt,  state3.t()));
+  EXPECT(assert_equal(rot, state3.R()));
+  EXPECT(assert_equal(vel, state3.v()));
+  EXPECT(assert_equal(Pose3(rot, pt), state3.pose()));
 
   PoseRTV state4(Pose3(rot, pt));
-  EXPECT(assert_equal(pt,  state4.t(), tol));
-  EXPECT(assert_equal(rot, state4.R(), tol));
-  EXPECT(assert_equal(Velocity3(), state4.v(), tol));
-  EXPECT(assert_equal(Pose3(rot, pt), state4.pose(), tol));
+  EXPECT(assert_equal(pt,  state4.t()));
+  EXPECT(assert_equal(rot, state4.R()));
+  EXPECT(assert_equal(kZero3, state4.v()));
+  EXPECT(assert_equal(Pose3(rot, pt), state4.pose()));
 
   Vector vec_init = (Vector(9) << 0.1, 0.2, 0.3,  1.0, 2.0, 3.0,  0.4, 0.5, 0.6).finished();
   PoseRTV state5(vec_init);
-  EXPECT(assert_equal(pt,  state5.t(), tol));
-  EXPECT(assert_equal(rot, state5.R(), tol));
-  EXPECT(assert_equal(vel, state5.v(), tol));
-  EXPECT(assert_equal(vec_init, state5.vector(), tol));
+  EXPECT(assert_equal(pt,  state5.t()));
+  EXPECT(assert_equal(rot, state5.R()));
+  EXPECT(assert_equal(vel, state5.v()));
+  EXPECT(assert_equal(vec_init, state5.vector()));
 }
 
 /* ************************************************************************* */
@@ -65,33 +64,44 @@ TEST( testPoseRTV, dim ) {
 /* ************************************************************************* */
 TEST( testPoseRTV, equals ) {
   PoseRTV state1, state2(pt, rot, vel), state3(state2), state4(Pose3(rot, pt));
-  EXPECT(assert_equal(state1, state1, tol));
-  EXPECT(assert_equal(state2, state3, tol));
-  EXPECT(assert_equal(state3, state2, tol));
-  EXPECT(assert_inequal(state1, state2, tol));
-  EXPECT(assert_inequal(state2, state1, tol));
-  EXPECT(assert_inequal(state2, state4, tol));
+  EXPECT(assert_equal(state1, state1));
+  EXPECT(assert_equal(state2, state3));
+  EXPECT(assert_equal(state3, state2));
+  EXPECT(assert_inequal(state1, state2));
+  EXPECT(assert_inequal(state2, state1));
+  EXPECT(assert_inequal(state2, state4));
 }
 
 /* ************************************************************************* */
 TEST( testPoseRTV, Lie ) {
   // origin and zero deltas
   PoseRTV identity;
-  EXPECT(assert_equal(identity, (PoseRTV)identity.retract(zero(9)), tol));
-  EXPECT(assert_equal(zero(9), identity.localCoordinates(identity), tol));
+  EXPECT(assert_equal(identity, (PoseRTV)identity.retract(zero(9))));
+  EXPECT(assert_equal(zero(9), identity.localCoordinates(identity)));
 
   PoseRTV state1(pt, rot, vel);
-  EXPECT(assert_equal(state1, (PoseRTV)state1.retract(zero(9)), tol));
-  EXPECT(assert_equal(zero(9), state1.localCoordinates(state1), tol));
+  EXPECT(assert_equal(state1, (PoseRTV)state1.retract(zero(9))));
+  EXPECT(assert_equal(zero(9), state1.localCoordinates(state1)));
 
-  Vector delta = (Vector(9) << 0.1, 0.1, 0.1, 0.2, 0.3, 0.4,-0.1,-0.2,-0.3).finished();
-  Rot3 rot2 = rot.retract(repeat(3, 0.1));
-  Point3 pt2 = pt + rot * Point3(0.2, 0.3, 0.4);
-  Velocity3 vel2 = vel + rot * Velocity3(-0.1,-0.2,-0.3);
-  PoseRTV state2(pt2, rot2, vel2);
-  EXPECT(assert_equal(state2, (PoseRTV)state1.retract(delta), 1e-1));
-  EXPECT(assert_equal(delta, state1.localCoordinates(state2), 1e-1));
-  EXPECT(assert_equal(delta, -state2.localCoordinates(state1), 1e-1));
+  Vector delta(9);
+  delta << 0.1, 0.1, 0.1, 0.2, 0.3, 0.4,-0.1,-0.2,-0.3;
+  Pose3 pose2 = Pose3(rot, pt).retract(delta.head<6>());
+  Velocity3 vel2 = vel + Velocity3(-0.1, -0.2, -0.3);
+  PoseRTV state2(pose2.translation(), pose2.rotation(), vel2);
+  EXPECT(assert_equal(state2, (PoseRTV)state1.retract(delta)));
+  EXPECT(assert_equal(delta, state1.localCoordinates(state2)));
+
+  // roundtrip from state2 to state3 and back
+  PoseRTV state3 = state2.retract(delta);
+  EXPECT(assert_equal(delta, state2.localCoordinates(state3)));
+
+  // roundtrip from state3 to state4 and back, with expmap.
+  PoseRTV state4 = state3.expmap(delta);
+  EXPECT(assert_equal(delta, state3.logmap(state4)));
+
+  // For the expmap/logmap (not necessarily retract/local) -delta goes other way
+  EXPECT(assert_equal(state3, (PoseRTV)state4.expmap(-delta)));
+  EXPECT(assert_equal(delta, -state4.logmap(state3)));
 }
 
 /* ************************************************************************* */
@@ -108,15 +118,15 @@ TEST( testPoseRTV, dynamics_identities ) {
   x3 = x2.generalDynamics(accel, gyro, dt);
   x4 = x3.generalDynamics(accel, gyro, dt);
 
-//  EXPECT(assert_equal(imu01, x0.imuPrediction(x1, dt).first, tol));
-//  EXPECT(assert_equal(imu12, x1.imuPrediction(x2, dt).first, tol));
-//  EXPECT(assert_equal(imu23, x2.imuPrediction(x3, dt).first, tol));
-//  EXPECT(assert_equal(imu34, x3.imuPrediction(x4, dt).first, tol));
+//  EXPECT(assert_equal(imu01, x0.imuPrediction(x1, dt).first));
+//  EXPECT(assert_equal(imu12, x1.imuPrediction(x2, dt).first));
+//  EXPECT(assert_equal(imu23, x2.imuPrediction(x3, dt).first));
+//  EXPECT(assert_equal(imu34, x3.imuPrediction(x4, dt).first));
 //
-//  EXPECT(assert_equal(x1.translation(), x0.imuPrediction(x1, dt).second, tol));
-//  EXPECT(assert_equal(x2.translation(), x1.imuPrediction(x2, dt).second, tol));
-//  EXPECT(assert_equal(x3.translation(), x2.imuPrediction(x3, dt).second, tol));
-//  EXPECT(assert_equal(x4.translation(), x3.imuPrediction(x4, dt).second, tol));
+//  EXPECT(assert_equal(x1.translation(), x0.imuPrediction(x1, dt).second));
+//  EXPECT(assert_equal(x2.translation(), x1.imuPrediction(x2, dt).second));
+//  EXPECT(assert_equal(x3.translation(), x2.imuPrediction(x3, dt).second));
+//  EXPECT(assert_equal(x4.translation(), x3.imuPrediction(x4, dt).second));
 }
 
 
@@ -129,8 +139,8 @@ TEST( testPoseRTV, compose ) {
   state1.compose(state2, actH1, actH2);
   Matrix numericH1 = numericalDerivative21(compose_proxy, state1, state2);
   Matrix numericH2 = numericalDerivative22(compose_proxy, state1, state2);
-  EXPECT(assert_equal(numericH1, actH1, tol));
-  EXPECT(assert_equal(numericH2, actH2, tol));
+  EXPECT(assert_equal(numericH1, actH1));
+  EXPECT(assert_equal(numericH2, actH2));
 }
 
 /* ************************************************************************* */
@@ -142,8 +152,8 @@ TEST( testPoseRTV, between ) {
   state1.between(state2, actH1, actH2);
   Matrix numericH1 = numericalDerivative21(between_proxy, state1, state2);
   Matrix numericH2 = numericalDerivative22(between_proxy, state1, state2);
-  EXPECT(assert_equal(numericH1, actH1, tol));
-  EXPECT(assert_equal(numericH2, actH2, tol));
+  EXPECT(assert_equal(numericH1, actH1));
+  EXPECT(assert_equal(numericH2, actH2));
 }
 
 /* ************************************************************************* */
@@ -154,7 +164,7 @@ TEST( testPoseRTV, inverse ) {
   Matrix actH1;
   state1.inverse(actH1);
   Matrix numericH1 = numericalDerivative11(inverse_proxy, state1);
-  EXPECT(assert_equal(numericH1, actH1, tol));
+  EXPECT(assert_equal(numericH1, actH1));
 }
 
 /* ************************************************************************* */
@@ -162,16 +172,16 @@ double range_proxy(const PoseRTV& A, const PoseRTV& B) { return A.range(B); }
 TEST( testPoseRTV, range ) {
   Point3 tA(1.0, 2.0, 3.0), tB(3.0, 2.0, 3.0);
   PoseRTV rtvA(tA), rtvB(tB);
-  EXPECT_DOUBLES_EQUAL(0.0, rtvA.range(rtvA), tol);
-  EXPECT_DOUBLES_EQUAL(2.0, rtvA.range(rtvB), tol);
-  EXPECT_DOUBLES_EQUAL(2.0, rtvB.range(rtvA), tol);
+  EXPECT_DOUBLES_EQUAL(0.0, rtvA.range(rtvA), 1e-9);
+  EXPECT_DOUBLES_EQUAL(2.0, rtvA.range(rtvB), 1e-9);
+  EXPECT_DOUBLES_EQUAL(2.0, rtvB.range(rtvA), 1e-9);
 
   Matrix actH1, actH2;
   rtvA.range(rtvB, actH1, actH2);
   Matrix numericH1 = numericalDerivative21(range_proxy, rtvA, rtvB);
   Matrix numericH2 = numericalDerivative22(range_proxy, rtvA, rtvB);
-  EXPECT(assert_equal(numericH1, actH1, tol));
-  EXPECT(assert_equal(numericH2, actH2, tol));
+  EXPECT(assert_equal(numericH1, actH1));
+  EXPECT(assert_equal(numericH2, actH2));
 }
 
 /* ************************************************************************* */
@@ -187,13 +197,13 @@ TEST( testPoseRTV, transformed_from_1 ) {
 
   Matrix actDTrans, actDGlobal;
   PoseRTV actual = start.transformed_from(transform, actDGlobal, actDTrans);
-  PoseRTV expected(transform.compose(start.pose()), transform.rotation().rotate(V));
-  EXPECT(assert_equal(expected, actual, tol));
+  PoseRTV expected(transform.compose(start.pose()), transform.rotation().matrix() * V);
+  EXPECT(assert_equal(expected, actual));
 
   Matrix numDGlobal = numericalDerivative21(transformed_from_proxy, start, transform, 1e-5); // At 1e-8, fails
   Matrix numDTrans = numericalDerivative22(transformed_from_proxy, start, transform, 1e-8); // Sensitive to step size
-  EXPECT(assert_equal(numDGlobal, actDGlobal, tol));
-  EXPECT(assert_equal(numDTrans, actDTrans, tol)); // FIXME: still needs analytic derivative
+  EXPECT(assert_equal(numDGlobal, actDGlobal));
+  EXPECT(assert_equal(numDTrans, actDTrans, 1e-5)); // FIXME: still needs analytic derivative
 }
 
 /* ************************************************************************* */
@@ -206,27 +216,27 @@ TEST( testPoseRTV, transformed_from_2 ) {
 
   Matrix actDTrans, actDGlobal;
   PoseRTV actual = start.transformed_from(transform, actDGlobal, actDTrans);
-  PoseRTV expected(transform.compose(start.pose()), transform.rotation().rotate(V));
-  EXPECT(assert_equal(expected, actual, tol));
+  PoseRTV expected(transform.compose(start.pose()), transform.rotation().matrix() * V);
+  EXPECT(assert_equal(expected, actual));
 
   Matrix numDGlobal = numericalDerivative21(transformed_from_proxy, start, transform, 1e-5); // At 1e-8, fails
   Matrix numDTrans = numericalDerivative22(transformed_from_proxy, start, transform, 1e-8); // Sensitive to step size
-  EXPECT(assert_equal(numDGlobal, actDGlobal, tol));
-  EXPECT(assert_equal(numDTrans, actDTrans, tol)); // FIXME: still needs analytic derivative
+  EXPECT(assert_equal(numDGlobal, actDGlobal));
+  EXPECT(assert_equal(numDTrans, actDTrans, 1e-5)); // FIXME: still needs analytic derivative
 }
 
 /* ************************************************************************* */
 TEST(testPoseRTV, RRTMbn) {
-  EXPECT(assert_equal(Matrix::Identity(3,3), PoseRTV::RRTMbn(zero(3)), tol));
-  EXPECT(assert_equal(Matrix::Identity(3,3), PoseRTV::RRTMbn(Rot3()), tol));
-  EXPECT(assert_equal(PoseRTV::RRTMbn(Vector3(0.3, 0.2, 0.1)), PoseRTV::RRTMbn(Rot3::ypr(0.1, 0.2, 0.3)), tol));
+  EXPECT(assert_equal(Matrix::Identity(3,3), PoseRTV::RRTMbn(kZero3)));
+  EXPECT(assert_equal(Matrix::Identity(3,3), PoseRTV::RRTMbn(Rot3())));
+  EXPECT(assert_equal(PoseRTV::RRTMbn(Vector3(0.3, 0.2, 0.1)), PoseRTV::RRTMbn(Rot3::ypr(0.1, 0.2, 0.3))));
 }
 
 /* ************************************************************************* */
 TEST(testPoseRTV, RRTMnb) {
-  EXPECT(assert_equal(Matrix::Identity(3,3), PoseRTV::RRTMnb(zero(3)), tol));
-  EXPECT(assert_equal(Matrix::Identity(3,3), PoseRTV::RRTMnb(Rot3()), tol));
-  EXPECT(assert_equal(PoseRTV::RRTMnb(Vector3(0.3, 0.2, 0.1)), PoseRTV::RRTMnb(Rot3::ypr(0.1, 0.2, 0.3)), tol));
+  EXPECT(assert_equal(Matrix::Identity(3,3), PoseRTV::RRTMnb(kZero3)));
+  EXPECT(assert_equal(Matrix::Identity(3,3), PoseRTV::RRTMnb(Rot3())));
+  EXPECT(assert_equal(PoseRTV::RRTMnb(Vector3(0.3, 0.2, 0.1)), PoseRTV::RRTMnb(Rot3::ypr(0.1, 0.2, 0.3))));
 }
 
 /* ************************************************************************* */

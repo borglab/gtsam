@@ -35,6 +35,12 @@ using symbol_shorthand::X;
 using symbol_shorthand::V;
 using symbol_shorthand::B;
 
+Vector3 kZeroOmegaCoriolis(0,0,0);
+
+// Define covariance matrices
+double accNoiseVar = 0.01;
+const Matrix3 kMeasuredAccCovariance = accNoiseVar * I_3x3;
+
 //******************************************************************************
 namespace {
 Vector callEvaluateError(const AHRSFactor& factor, const Rot3 rot_i,
@@ -50,8 +56,8 @@ Rot3 evaluateRotationError(const AHRSFactor& factor, const Rot3 rot_i,
 AHRSFactor::PreintegratedMeasurements evaluatePreintegratedMeasurements(
     const Vector3& bias, const list<Vector3>& measuredOmegas,
     const list<double>& deltaTs,
-    const Vector3& initialRotationRate = Vector3()) {
-  AHRSFactor::PreintegratedMeasurements result(bias, Matrix3::Identity());
+    const Vector3& initialRotationRate = Vector3::Zero()) {
+  AHRSFactor::PreintegratedMeasurements result(bias, I_3x3);
 
   list<Vector3>::const_iterator itOmega = measuredOmegas.begin();
   list<double>::const_iterator itDeltaT = deltaTs.begin();
@@ -95,7 +101,7 @@ TEST( AHRSFactor, PreintegratedMeasurements ) {
   double expectedDeltaT1(0.5);
 
   // Actual preintegrated values
-  AHRSFactor::PreintegratedMeasurements actual1(bias, Matrix3::Zero());
+  AHRSFactor::PreintegratedMeasurements actual1(bias, Z_3x3);
   actual1.integrateMeasurement(measuredOmega, deltaT);
 
   EXPECT(assert_equal(expectedDeltaR1, Rot3(actual1.deltaRij()), 1e-6));
@@ -121,18 +127,14 @@ TEST(AHRSFactor, Error) {
   Rot3 x2(Rot3::RzRyRx(M_PI / 12.0 + M_PI / 100.0, M_PI / 6.0, M_PI / 4.0));
 
   // Measurements
-  Vector3 gravity;
-  gravity << 0, 0, 9.81;
-  Vector3 omegaCoriolis;
-  omegaCoriolis << 0, 0, 0;
   Vector3 measuredOmega;
   measuredOmega << M_PI / 100, 0, 0;
   double deltaT = 1.0;
-  AHRSFactor::PreintegratedMeasurements pre_int_data(bias, Matrix3::Zero());
-  pre_int_data.integrateMeasurement(measuredOmega, deltaT);
+  AHRSFactor::PreintegratedMeasurements pim(bias, Z_3x3);
+  pim.integrateMeasurement(measuredOmega, deltaT);
 
   // Create factor
-  AHRSFactor factor(X(1), X(2), B(1), pre_int_data, omegaCoriolis, boost::none);
+  AHRSFactor factor(X(1), X(2), B(1), pim, kZeroOmegaCoriolis, boost::none);
 
   Vector3 errorActual = factor.evaluateError(x1, x2, bias);
 
@@ -182,18 +184,16 @@ TEST(AHRSFactor, ErrorWithBiases) {
   Rot3 x2(Rot3::Expmap(Vector3(0, 0, M_PI / 4.0 + M_PI / 10.0)));
 
   // Measurements
-  Vector3 omegaCoriolis;
-  omegaCoriolis << 0, 0.0, 0.0;
   Vector3 measuredOmega;
   measuredOmega << 0, 0, M_PI / 10.0 + 0.3;
   double deltaT = 1.0;
 
-  AHRSFactor::PreintegratedMeasurements pre_int_data(Vector3(0,0,0),
-      Matrix3::Zero());
-  pre_int_data.integrateMeasurement(measuredOmega, deltaT);
+  AHRSFactor::PreintegratedMeasurements pim(Vector3(0,0,0),
+      Z_3x3);
+  pim.integrateMeasurement(measuredOmega, deltaT);
 
   // Create factor
-  AHRSFactor factor(X(1), X(2), B(1), pre_int_data, omegaCoriolis);
+  AHRSFactor factor(X(1), X(2), B(1), pim, kZeroOmegaCoriolis);
 
   Vector errorActual = factor.evaluateError(x1, x2, bias);
 
@@ -269,7 +269,7 @@ TEST( AHRSFactor, PartialDerivativeLogmap ) {
   const Vector3 x = thetahat; // parametrization of so(3)
   const Matrix3 X = skewSymmetric(x); // element of Lie algebra so(3): X = x^
   double normx = norm_2(x);
-  const Matrix3 actualDelFdeltheta = Matrix3::Identity() + 0.5 * X
+  const Matrix3 actualDelFdeltheta = I_3x3 + 0.5 * X
       + (1 / (normx * normx) - (1 + cos(normx)) / (2 * normx * sin(normx))) * X
           * X;
 
@@ -359,8 +359,6 @@ TEST( AHRSFactor, ErrorWithBiasesAndSensorBodyDisplacement ) {
   Rot3 x2(Rot3::Expmap(Vector3(0, 0, M_PI / 4.0 + M_PI / 10.0)));
 
   // Measurements
-  Vector3 gravity;
-  gravity << 0, 0, 9.81;
   Vector3 omegaCoriolis;
   omegaCoriolis << 0, 0.1, 0.1;
   Vector3 measuredOmega;
@@ -370,13 +368,15 @@ TEST( AHRSFactor, ErrorWithBiasesAndSensorBodyDisplacement ) {
   const Pose3 body_P_sensor(Rot3::Expmap(Vector3(0, 0.10, 0.10)),
       Point3(1, 0, 0));
 
-  AHRSFactor::PreintegratedMeasurements pre_int_data(Vector3::Zero(),
-      Matrix3::Zero());
+  AHRSFactor::PreintegratedMeasurements pim(Vector3::Zero(), kMeasuredAccCovariance);
 
-  pre_int_data.integrateMeasurement(measuredOmega, deltaT);
+  pim.integrateMeasurement(measuredOmega, deltaT);
+
+  // Check preintegrated covariance
+  EXPECT(assert_equal(kMeasuredAccCovariance, pim.preintMeasCov()));
 
   // Create factor
-  AHRSFactor factor(X(1), X(2), B(1), pre_int_data, omegaCoriolis);
+  AHRSFactor factor(X(1), X(2), B(1), pim, omegaCoriolis);
 
   // Expected Jacobians
   Matrix H1e = numericalDerivative11<Vector, Rot3>(
@@ -407,34 +407,35 @@ TEST (AHRSFactor, predictTest) {
   Vector3 bias(0,0,0);
 
   // Measurements
-  Vector3 gravity;
-  gravity << 0, 0, 9.81;
-  Vector3 omegaCoriolis;
-  omegaCoriolis << 0, 0.0, 0.0;
   Vector3 measuredOmega;
   measuredOmega << 0, 0, M_PI / 10.0;
-  double deltaT = 0.001;
-  AHRSFactor::PreintegratedMeasurements pre_int_data(bias, Matrix3::Zero());
+  double deltaT = 0.2;
+  AHRSFactor::PreintegratedMeasurements pim(bias, kMeasuredAccCovariance);
   for (int i = 0; i < 1000; ++i) {
-    pre_int_data.integrateMeasurement(measuredOmega, deltaT);
+    pim.integrateMeasurement(measuredOmega, deltaT);
   }
-  AHRSFactor factor(X(1), X(2), B(1), pre_int_data, omegaCoriolis);
+  // Check preintegrated covariance
+  Matrix expectedMeasCov(3,3);
+  expectedMeasCov = 200*kMeasuredAccCovariance;
+  EXPECT(assert_equal(expectedMeasCov, pim.preintMeasCov()));
+
+  AHRSFactor factor(X(1), X(2), B(1), pim, kZeroOmegaCoriolis);
 
   // Predict
   Rot3 x;
-  Rot3 expectedRot = Rot3().ypr(M_PI / 10, 0, 0);
-  Rot3 actualRot = factor.predict(x, bias, pre_int_data, omegaCoriolis);
+  Rot3 expectedRot = Rot3().ypr(20*M_PI, 0, 0);
+  Rot3 actualRot = factor.predict(x, bias, pim, kZeroOmegaCoriolis);
   EXPECT(assert_equal(expectedRot, actualRot, 1e-6));
 
   // AHRSFactor::PreintegratedMeasurements::predict
   Matrix expectedH = numericalDerivative11<Vector3, Vector3>(
       boost::bind(&AHRSFactor::PreintegratedMeasurements::predict,
-          &pre_int_data, _1, boost::none), bias);
+          &pim, _1, boost::none), bias);
 
   // Actual Jacobians
   Matrix H;
-  (void) pre_int_data.predict(bias,H);
-  EXPECT(assert_equal(expectedH, H));
+  (void) pim.predict(bias,H);
+  EXPECT(assert_equal(expectedH, H, 1e-8));
 }
 //******************************************************************************
 #include <gtsam/linear/GaussianFactorGraph.h>
@@ -448,12 +449,7 @@ TEST (AHRSFactor, graphTest) {
 
   // PreIntegrator
   Vector3 biasHat(0, 0, 0);
-  Vector3 gravity;
-  gravity << 0, 0, 9.81;
-  Vector3 omegaCoriolis;
-  omegaCoriolis << 0, 0, 0;
-  AHRSFactor::PreintegratedMeasurements pre_int_data(biasHat,
-      Matrix3::Identity());
+  AHRSFactor::PreintegratedMeasurements pim(biasHat, kMeasuredAccCovariance);
 
   // Pre-integrate measurements
   Vector3 measuredOmega(0, M_PI / 20, 0);
@@ -461,15 +457,15 @@ TEST (AHRSFactor, graphTest) {
 
   // Create Factor
   noiseModel::Base::shared_ptr model = //
-      noiseModel::Gaussian::Covariance(pre_int_data.preintMeasCov());
+      noiseModel::Gaussian::Covariance(pim.preintMeasCov());
   NonlinearFactorGraph graph;
   Values values;
   for (size_t i = 0; i < 5; ++i) {
-    pre_int_data.integrateMeasurement(measuredOmega, deltaT);
+    pim.integrateMeasurement(measuredOmega, deltaT);
   }
 
-  // pre_int_data.print("Pre integrated measurementes");
-  AHRSFactor factor(X(1), X(2), B(1), pre_int_data, omegaCoriolis);
+  // pim.print("Pre integrated measurementes");
+  AHRSFactor factor(X(1), X(2), B(1), pim, kZeroOmegaCoriolis);
   values.insert(X(1), x1);
   values.insert(X(2), x2);
   values.insert(B(1), bias);

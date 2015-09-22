@@ -85,11 +85,33 @@ namespace gtsam {
         double R21, double R22, double R23,
         double R31, double R32, double R33);
 
-    /** constructor from a rotation matrix */
-    Rot3(const Matrix3& R);
+    /**
+     * Constructor from a rotation matrix
+     * Version for generic matrices. Need casting to Matrix3
+     * in quaternion mode, since Eigen's quaternion doesn't
+     * allow assignment/construction from a generic matrix.
+     * See: http://stackoverflow.com/questions/27094132/cannot-understand-if-this-is-circular-dependency-or-clang#tab-top
+     */
+    template<typename Derived>
+    inline Rot3(const Eigen::MatrixBase<Derived>& R) {
+      #ifdef GTSAM_USE_QUATERNIONS
+        quaternion_=Matrix3(R);
+      #else
+        rot_ = R;
+      #endif
+    }
 
-    /** constructor from a rotation matrix */
-    Rot3(const Matrix& R);
+    /**
+     * Constructor from a rotation matrix
+     * Overload version for Matrix3 to avoid casting in quaternion mode.
+     */
+    inline Rot3(const Matrix3& R) {
+      #ifdef GTSAM_USE_QUATERNIONS
+        quaternion_=R;
+      #else
+        rot_ = R;
+      #endif
+    }
 
     /** Constructor from a quaternion.  This can also be called using a plain
      * Vector, due to implicit conversion from Vector to Quaternion
@@ -330,12 +352,29 @@ namespace gtsam {
     Point3 rotate(const Point3& p, OptionalJacobian<3,3> H1 = boost::none,
         OptionalJacobian<3,3> H2 = boost::none) const;
 
+    /// operator* for Vector3
+    inline Vector3 operator*(const Vector3& v) const {
+      return rotate(Point3(v)).vector();
+    }
+
+    /// rotate for Vector3
+    Vector3 rotate(const Vector3& v, OptionalJacobian<3, 3> H1 = boost::none,
+        OptionalJacobian<3, 3> H2 = boost::none) const {
+      return rotate(Point3(v), H1, H2).vector();
+    }
+
     /// rotate point from rotated coordinate frame to world = R*p
     Point3 operator*(const Point3& p) const;
 
     /// rotate point from world to rotated frame \f$ p^c = (R_c^w)^T p^w \f$
     Point3 unrotate(const Point3& p, OptionalJacobian<3,3> H1 = boost::none,
         OptionalJacobian<3,3> H2=boost::none) const;
+
+    /// unrotate for Vector3
+    Vector3 unrotate(const Vector3& v, OptionalJacobian<3, 3> H1 = boost::none,
+        OptionalJacobian<3, 3> H2 = boost::none) const {
+      return unrotate(Point3(v), H1, H2).vector();
+    }
 
     /// @}
     /// @name Group Action on Unit3

@@ -53,9 +53,9 @@ class Dummy {
 class PoseRTV {
   PoseRTV();
   PoseRTV(Vector rtv);
-  PoseRTV(const gtsam::Point3& pt, const gtsam::Rot3& rot, const gtsam::Point3& vel);
-  PoseRTV(const gtsam::Rot3& rot, const gtsam::Point3& pt, const gtsam::Point3& vel);
-  PoseRTV(const gtsam::Pose3& pose, const gtsam::Point3& vel);
+  PoseRTV(const gtsam::Point3& pt, const gtsam::Rot3& rot, const Vector& vel);
+  PoseRTV(const gtsam::Rot3& rot, const gtsam::Point3& pt, const Vector& vel);
+  PoseRTV(const gtsam::Pose3& pose, const Vector& vel);
   PoseRTV(const gtsam::Pose3& pose);
   PoseRTV(double roll, double pitch, double yaw, double x, double y, double z, double vx, double vy, double vz);
 
@@ -66,7 +66,7 @@ class PoseRTV {
   // access
   gtsam::Point3 translation() const;
   gtsam::Rot3 rotation() const;
-  gtsam::Point3 velocity() const;
+  Vector velocity() const;
   gtsam::Pose3 pose() const;
 
   // Vector interfaces

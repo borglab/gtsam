@@ -13,11 +13,12 @@
 namespace gtsam {
 
 /// Syntactic sugar to clarify components
-typedef Point3 Velocity3;
+typedef Vector3 Velocity3;
 
 /**
  * Robot state for use with IMU measurements
  * - contains translation, translational velocity and rotation
+ * TODO(frank): Alex should deprecate/move to project
  */
 class GTSAM_UNSTABLE_EXPORT PoseRTV : public ProductLieGroup<Pose3,Velocity3> {
 protected:
@@ -34,11 +35,11 @@ public:
   PoseRTV(const Rot3& rot, const Point3& t, const Velocity3& vel)
   : Base(Pose3(rot, t), vel) {}
   explicit PoseRTV(const Point3& t)
-  : Base(Pose3(Rot3(), t),Velocity3()) {}
+  : Base(Pose3(Rot3(), t),Vector3::Zero()) {}
   PoseRTV(const Pose3& pose, const Velocity3& vel)
   : Base(pose, vel) {}
   explicit PoseRTV(const Pose3& pose)
-  : Base(pose,Velocity3()) {}
+  : Base(pose,Vector3::Zero()) {}
 
   // Construct from Base
   PoseRTV(const Base& base)
@@ -66,7 +67,7 @@ public:
   // and avoidance of Point3
   Vector vector() const;
   Vector translationVec() const { return pose().translation().vector(); }
-  Vector velocityVec() const { return velocity().vector(); }
+  const Velocity3& velocityVec() const { return velocity(); }
 
   // testable
   bool equals(const PoseRTV& other, double tol=1e-6) const;
@@ -145,14 +146,12 @@ public:
 
   /// RRTMbn - Function computes the rotation rate transformation matrix from
   /// body axis rates to euler angle (global) rates
-  static Matrix RRTMbn(const Vector& euler);
-
+  static Matrix RRTMbn(const Vector3& euler);
   static Matrix RRTMbn(const Rot3& att);
 
   /// RRTMnb - Function computes the rotation rate transformation matrix from
   /// euler angle rates to body axis rates
-  static Matrix RRTMnb(const Vector& euler);
-
+  static Matrix RRTMnb(const Vector3& euler);
   static Matrix RRTMnb(const Rot3& att);
   /// @}
 
@@ -173,14 +172,7 @@ struct traits<PoseRTV> : public internal::LieGroup<PoseRTV> {};
 // Define Range functor specializations that are used in RangeFactor
 template <typename A1, typename A2> struct Range;
 
-template <>
-struct Range<PoseRTV, PoseRTV> {
-  typedef double result_type;
-  double operator()(const PoseRTV& pose1, const PoseRTV& pose2,
-                    OptionalJacobian<1, 9> H1 = boost::none,
-                    OptionalJacobian<1, 9> H2 = boost::none) {
-    return pose1.range(pose2, H1, H2);
-  }
-};
+template<>
+struct Range<PoseRTV, PoseRTV> : HasRange<PoseRTV, PoseRTV, double> {};
 
 } // \namespace gtsam
