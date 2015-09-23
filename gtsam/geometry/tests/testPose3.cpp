@@ -182,8 +182,8 @@ TEST(Pose3, expmaps_galore_full)
   xi = (Vector(6) << 0.2, 0.3, -0.8, 100.0, 120.0, -60.0).finished();
   actual = Pose3::Expmap(xi);
   EXPECT(assert_equal(expm<Pose3>(xi,10), actual,1e-5));
-  EXPECT(assert_equal(Agrawal06iros(xi), actual,1e-6));
-  EXPECT(assert_equal(xi, Pose3::Logmap(actual),1e-6));
+  EXPECT(assert_equal(Agrawal06iros(xi), actual,1e-9));
+  EXPECT(assert_equal(xi, Pose3::Logmap(actual),1e-9));
 }
 
 /* ************************************************************************* */

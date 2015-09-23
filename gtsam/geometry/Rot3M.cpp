@@ -51,18 +51,6 @@ Rot3::Rot3(double R11, double R12, double R13,
 }
 
 /* ************************************************************************* */
-Rot3::Rot3(const Matrix3& R) {
-  rot_ = R;
-}
-
-/* ************************************************************************* */
-Rot3::Rot3(const Matrix& R) {
-  if (R.rows()!=3 || R.cols()!=3)
-    throw invalid_argument("Rot3 constructor expects 3*3 matrix");
-  rot_ = R;
-}
-
-/* ************************************************************************* */
 Rot3::Rot3(const Quaternion& q) : rot_(q.toRotationMatrix()) {
 }
 
@@ -131,10 +119,8 @@ Matrix3 Rot3::transpose() const {
 /* ************************************************************************* */
 Point3 Rot3::rotate(const Point3& p,
     OptionalJacobian<3,3> H1,  OptionalJacobian<3,3> H2) const {
-  if (H1 || H2) {
-      if (H1) *H1 = rot_ * skewSymmetric(-p.x(), -p.y(), -p.z());
-      if (H2) *H2 = rot_;
-    }
+  if (H1) *H1 = rot_ * skewSymmetric(-p.x(), -p.y(), -p.z());
+  if (H2) *H2 = rot_;
   return Point3(rot_ * p.vector());
 }
 
