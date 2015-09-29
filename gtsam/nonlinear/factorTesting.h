@@ -85,9 +85,23 @@ bool testFactorJacobians(TestResult& result_, const std::string& name_,
   // Create actual value by linearize
   boost::shared_ptr<JacobianFactor> actual = //
       boost::dynamic_pointer_cast<JacobianFactor>(factor.linearize(values));
+  if (!actual) return false;
 
   // Check cast result and then equality
-  return actual && assert_equal(expected, *actual, tolerance);
+  bool equal = assert_equal(expected, *actual, tolerance);
+
+  // if not equal, test individual jacobians:
+  if (!equal) {
+    for (size_t i = 0; i < actual->size(); i++) {
+      bool i_good = assert_equal((Matrix) (expected.getA(expected.begin() + i)),
+          (Matrix) (actual->getA(actual->begin() + i)), tolerance);
+      if (!i_good) {
+        std::cout << "Mismatch in Jacobian " << i+1 << " (base 1), as shown above" << std::endl;
+      }
+    }
+  }
+
+  return equal;
 }
 }
 

@@ -30,7 +30,7 @@ using namespace gtsam;
 GTSAM_CONCEPT_MANIFOLD_INST(CalibratedCamera)
 
 // Camera situated at 0.5 meters high, looking down
-static const Pose3 pose1((Matrix)(Matrix(3,3) <<
+static const Pose3 pose1((Matrix3() <<
               1., 0., 0.,
               0.,-1., 0.,
               0., 0.,-1.

@@ -123,8 +123,8 @@ namespace gtsam {
     double tol_;
     equals_star(double tol = 1e-9) : tol_(tol) {}
     bool operator()(const boost::shared_ptr<V>& expected, const boost::shared_ptr<V>& actual) {
-      if (!actual || !expected) return false;
-      return (traits<V>::Equals(*actual,*expected, tol_));
+      if (!actual || !expected) return true;
+      return actual && expected && traits<V>::Equals(*actual,*expected, tol_);
     }
   };
 

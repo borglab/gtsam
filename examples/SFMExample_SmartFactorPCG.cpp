@@ -54,7 +54,7 @@ int main(int argc, char* argv[]) {
   for (size_t j = 0; j < points.size(); ++j) {
 
     // every landmark represent a single landmark, we use shared pointer to init the factor, and then insert measurements.
-    SmartFactor::shared_ptr smartfactor(new SmartFactor(K));
+    SmartFactor::shared_ptr smartfactor(new SmartFactor(measurementNoise, K));
 
     for (size_t i = 0; i < poses.size(); ++i) {
 
@@ -63,7 +63,7 @@ int main(int argc, char* argv[]) {
       Point2 measurement = camera.project(points[j]);
 
       // call add() function to add measurement into a single factor, here we need to add:
-      smartfactor->add(measurement, i, measurementNoise);
+      smartfactor->add(measurement, i);
     }
 
     // insert the smart factor in the graph

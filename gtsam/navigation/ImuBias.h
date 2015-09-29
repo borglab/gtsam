@@ -78,20 +78,18 @@ public:
 
   /** Correct an accelerometer measurement using this bias model, and optionally compute Jacobians */
   Vector3 correctAccelerometer(const Vector3& measurement,
-      boost::optional<Matrix&> H = boost::none) const {
+      OptionalJacobian<3, 6> H = boost::none) const {
     if (H) {
-      H->resize(3, 6);
-      (*H) << -Matrix3::Identity(), Matrix3::Zero();
+      (*H) << -I_3x3, Z_3x3;
     }
     return measurement - biasAcc_;
   }
 
   /** Correct a gyroscope measurement using this bias model, and optionally compute Jacobians */
   Vector3 correctGyroscope(const Vector3& measurement,
-      boost::optional<Matrix&> H = boost::none) const {
+      OptionalJacobian<3, 6> H = boost::none) const {
     if (H) {
-      H->resize(3, 6);
-      (*H) << Matrix3::Zero(), -Matrix3::Identity();
+      (*H) << Z_3x3, -I_3x3;
     }
     return measurement - biasGyro_;
   }

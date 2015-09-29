@@ -44,23 +44,21 @@ enum DegeneracyMode {
 /*
  *  Parameters for the smart projection factors
  */
-class GTSAM_EXPORT SmartProjectionParams {
-
-public:
+struct GTSAM_EXPORT SmartProjectionParams {
 
   LinearizationMode linearizationMode; ///< How to linearize the factor
   DegeneracyMode degeneracyMode; ///< How to linearize the factor
 
   /// @name Parameters governing the triangulation
   /// @{
-  mutable TriangulationParameters triangulation;
-  const double retriangulationThreshold; ///< threshold to decide whether to re-triangulate
+  TriangulationParameters triangulation;
+  double retriangulationThreshold; ///< threshold to decide whether to re-triangulate
   /// @}
 
   /// @name Parameters governing how triangulation result is treated
   /// @{
-  const bool throwCheirality; ///< If true, re-throws Cheirality exceptions (default: false)
-  const bool verboseCheirality; ///< If true, prints text for Cheirality exceptions (default: false)
+  bool throwCheirality; ///< If true, re-throws Cheirality exceptions (default: false)
+  bool verboseCheirality; ///< If true, prints text for Cheirality exceptions (default: false)
   /// @}
 
   // Constructor
@@ -161,10 +159,10 @@ public:
    * @param body_P_sensor pose of the camera in the body frame
    * @param params internal parameters of the smart factors
    */
-  SmartProjectionFactor(
+  SmartProjectionFactor(const SharedNoiseModel& sharedNoiseModel,
       const boost::optional<Pose3> body_P_sensor = boost::none,
       const SmartProjectionParams& params = SmartProjectionParams()) :
-      Base(body_P_sensor), params_(params), //
+      Base(sharedNoiseModel, body_P_sensor), params_(params), //
       result_(TriangulationResult::Degenerate()) {
   }
 
