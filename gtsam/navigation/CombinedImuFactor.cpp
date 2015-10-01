@@ -107,8 +107,8 @@ void PreintegratedCombinedMeasurements::integrateMeasurement(
   D_R_R(&G_measCov_Gt) = (1 / deltaT) * (H_angles_biasomega)
       * (p().gyroscopeCovariance + p().biasAccOmegaInit.block<3, 3>(3, 3))
       * (H_angles_biasomega.transpose());
-  D_a_a(&G_measCov_Gt) = (1 / deltaT) * p().biasAccCovariance;
-  D_g_g(&G_measCov_Gt) = (1 / deltaT) * p().biasOmegaCovariance;
+  D_a_a(&G_measCov_Gt) = deltaT * p().biasAccCovariance;
+  D_g_g(&G_measCov_Gt) = deltaT * p().biasOmegaCovariance;
 
   // OFF BLOCK DIAGONAL TERMS
   Matrix3 temp = H_vel_biasacc * p().biasAccOmegaInit.block<3, 3>(3, 0)
@@ -270,3 +270,4 @@ void CombinedImuFactor::Predict(const Pose3& pose_i, const Vector3& vel_i,
 }
 
 } /// namespace gtsam
+
