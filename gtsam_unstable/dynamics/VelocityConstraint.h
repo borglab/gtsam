@@ -106,12 +106,13 @@ private:
   static gtsam::Vector evaluateError_(const PoseRTV& x1, const PoseRTV& x2,
       double dt, const dynamics::IntegrationMode& mode) {
 
-    const Velocity3& v1 = x1.v(), v2 = x2.v(), p1 = x1.t(), p2 = x2.t();
-    Velocity3 hx;
+    const Velocity3& v1 = x1.v(), v2 = x2.v();
+    const Point3& p1 = x1.t(), p2 = x2.t();
+    Point3 hx;
     switch(mode) {
-    case dynamics::TRAPEZOIDAL: hx = p1 + (v1 + v2) * dt *0.5; break;
-    case dynamics::EULER_START: hx = p1 + v1 * dt; break;
-    case dynamics::EULER_END  : hx = p1 + v2 * dt; break;
+    case dynamics::TRAPEZOIDAL: hx = p1.retract((v1 + v2) * dt *0.5); break;
+    case dynamics::EULER_START: hx = p1.retract(v1 * dt); break;
+    case dynamics::EULER_END  : hx = p1.retract(v2 * dt); break;
     default: assert(false); break;
     }
     return (p2 - hx).vector();

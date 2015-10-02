@@ -15,6 +15,7 @@
  * @author Luca Carlone
  * @author Zsolt Kira
  * @author Frank Dellaert
+ * @author Chris Beall
  */
 
 #pragma once
@@ -49,6 +50,7 @@ private:
   typedef SmartFactorBase<CAMERA> This;
   typedef typename CAMERA::Measurement Z;
 
+protected:
   /**
    * As of Feb 22, 2015, the noise model is the same for all measurements and
    * is isotropic. This allows for moving most calculations of Schur complement
@@ -57,7 +59,6 @@ private:
    */
   SharedIsotropic noiseModel_;
 
-protected:
   /**
    * 2D measurement and noise model for each of the m views
    * We keep a copy of measurements for I/O and computing the error.
@@ -79,22 +80,6 @@ protected:
   typedef Eigen::Matrix<double, Dim, 1> VectorD;
   typedef Eigen::Matrix<double, ZDim, ZDim> Matrix2;
 
-  // check that noise model is isotropic and the same
-  // TODO, this is hacky, we should just do this via constructor, not add
-  void maybeSetNoiseModel(const SharedNoiseModel& sharedNoiseModel) {
-    if (!sharedNoiseModel)
-      return;
-    SharedIsotropic sharedIsotropic = boost::dynamic_pointer_cast<
-        noiseModel::Isotropic>(sharedNoiseModel);
-    if (!sharedIsotropic)
-      throw std::runtime_error("SmartFactorBase: needs isotropic");
-    if (!noiseModel_)
-      noiseModel_ = sharedIsotropic;
-    else if (!sharedIsotropic->equals(*noiseModel_))
-      throw std::runtime_error(
-          "SmartFactorBase: cannot add measurements with different noise model");
-  }
-
 public:
 
   // Definitions for blocks of F, externally visible
@@ -109,8 +94,21 @@ public:
   typedef CameraSet<CAMERA> Cameras;
 
   /// Constructor
-  SmartFactorBase(boost::optional<Pose3> body_P_sensor = boost::none) :
-          body_P_sensor_(body_P_sensor){}
+  SmartFactorBase(const SharedNoiseModel& sharedNoiseModel,
+      boost::optional<Pose3> body_P_sensor = boost::none) :
+          body_P_sensor_(body_P_sensor){
+
+    if (!sharedNoiseModel)
+      throw std::runtime_error("SmartFactorBase: sharedNoiseModel is required");
+
+    SharedIsotropic sharedIsotropic = boost::dynamic_pointer_cast<
+        noiseModel::Isotropic>(sharedNoiseModel);
+
+    if (!sharedIsotropic)
+      throw std::runtime_error("SmartFactorBase: needs isotropic");
+
+    noiseModel_ = sharedIsotropic;
+  }
 
   /// Virtual destructor, subclasses from NonlinearFactor
   virtual ~SmartFactorBase() {
@@ -122,34 +120,18 @@ public:
    * @param poseKey is the index corresponding to the camera observing the landmark
    * @param sharedNoiseModel is the measurement noise
    */
-  void add(const Z& measured_i, const Key& cameraKey_i,
-      const SharedNoiseModel& sharedNoiseModel) {
+  void add(const Z& measured_i, const Key& cameraKey_i) {
     this->measured_.push_back(measured_i);
     this->keys_.push_back(cameraKey_i);
-    maybeSetNoiseModel(sharedNoiseModel);
   }
 
   /**
-   * Add a bunch of measurements, together with the camera keys and noises
+   * Add a bunch of measurements, together with the camera keys
    */
-  void add(std::vector<Z>& measurements, std::vector<Key>& cameraKeys,
-      std::vector<SharedNoiseModel>& noises) {
+  void add(std::vector<Z>& measurements, std::vector<Key>& cameraKeys) {
     for (size_t i = 0; i < measurements.size(); i++) {
       this->measured_.push_back(measurements.at(i));
       this->keys_.push_back(cameraKeys.at(i));
-      maybeSetNoiseModel(noises.at(i));
-    }
-  }
-
-  /**
-   * Add a bunch of measurements and use the same noise model for all of them
-   */
-  void add(std::vector<Z>& measurements, std::vector<Key>& cameraKeys,
-      const SharedNoiseModel& noise) {
-    for (size_t i = 0; i < measurements.size(); i++) {
-      this->measured_.push_back(measurements.at(i));
-      this->keys_.push_back(cameraKeys.at(i));
-      maybeSetNoiseModel(noise);
     }
   }
 
@@ -158,11 +140,10 @@ public:
    * The noise is assumed to be the same for all measurements
    */
   template<class SFM_TRACK>
-  void add(const SFM_TRACK& trackToAdd, const SharedNoiseModel& noise) {
+  void add(const SFM_TRACK& trackToAdd) {
     for (size_t k = 0; k < trackToAdd.number_measurements(); k++) {
       this->measured_.push_back(trackToAdd.measurements[k].second);
       this->keys_.push_back(trackToAdd.measurements[k].first);
-      maybeSetNoiseModel(noise);
     }
   }
 
@@ -198,7 +179,7 @@ public:
     }
     if(body_P_sensor_)
       body_P_sensor_->print("body_P_sensor_:\n");
-    print("", keyFormatter);
+    Base::print("", keyFormatter);
   }
 
   /// equals

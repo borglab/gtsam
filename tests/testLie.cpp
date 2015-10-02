@@ -54,9 +54,9 @@ TEST(Lie, ProductLieGroup) {
   Vector5 d;
   d << 1, 2, 0.1, 0.2, 0.3;
   Product expected(Point2(1, 2), Pose2::Expmap(Vector3(0.1, 0.2, 0.3)));
-  Product pair2 = pair1.retract(d);
+  Product pair2 = pair1.expmap(d);
   EXPECT(assert_equal(expected, pair2, 1e-9));
-  EXPECT(assert_equal(d, pair1.localCoordinates(pair2), 1e-9));
+  EXPECT(assert_equal(d, pair1.logmap(pair2), 1e-9));
 }
 
 /* ************************************************************************* */

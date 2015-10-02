@@ -27,83 +27,50 @@ namespace gtsam {
 //------------------------------------------------------------------------------
 // Inner class PreintegratedMeasurements
 //------------------------------------------------------------------------------
-AHRSFactor::PreintegratedMeasurements::PreintegratedMeasurements(
-    const Vector3& bias, const Matrix3& measuredOmegaCovariance) :
-    PreintegratedRotation(measuredOmegaCovariance), biasHat_(bias)
-{
-  preintMeasCov_.setZero();
-}
-
-//------------------------------------------------------------------------------
-AHRSFactor::PreintegratedMeasurements::PreintegratedMeasurements() :
-    PreintegratedRotation(I_3x3), biasHat_(Vector3())
-{
-  preintMeasCov_.setZero();
-}
-
-//------------------------------------------------------------------------------
-void AHRSFactor::PreintegratedMeasurements::print(const string& s) const {
+void PreintegratedAhrsMeasurements::print(const string& s) const {
   PreintegratedRotation::print(s);
   cout << "biasHat [" << biasHat_.transpose() << "]" << endl;
   cout << " PreintMeasCov [ " << preintMeasCov_ << " ]" << endl;
 }
 
 //------------------------------------------------------------------------------
-bool AHRSFactor::PreintegratedMeasurements::equals(
-    const PreintegratedMeasurements& other, double tol) const {
-  return PreintegratedRotation::equals(other, tol)
-      && equal_with_abs_tol(biasHat_, other.biasHat_, tol);
+bool PreintegratedAhrsMeasurements::equals(
+    const PreintegratedAhrsMeasurements& other, double tol) const {
+  return PreintegratedRotation::equals(other, tol) &&
+         equal_with_abs_tol(biasHat_, other.biasHat_, tol);
 }
 
 //------------------------------------------------------------------------------
-void AHRSFactor::PreintegratedMeasurements::resetIntegration() {
+void PreintegratedAhrsMeasurements::resetIntegration() {
   PreintegratedRotation::resetIntegration();
   preintMeasCov_.setZero();
 }
 
 //------------------------------------------------------------------------------
-void AHRSFactor::PreintegratedMeasurements::integrateMeasurement(
-    const Vector3& measuredOmega, double deltaT,
-    boost::optional<const Pose3&> body_P_sensor) {
+void PreintegratedAhrsMeasurements::integrateMeasurement(
+    const Vector3& measuredOmega, double deltaT) {
 
-  // First we compensate the measurements for the bias
-  Vector3 correctedOmega = measuredOmega - biasHat_;
-
-  // Then compensate for sensor-body displacement: we express the quantities
-  // (originally in the IMU frame) into the body frame
-  if (body_P_sensor) {
-    Matrix3 body_R_sensor = body_P_sensor->rotation().matrix();
-    // rotation rate vector in the body frame
-    correctedOmega = body_R_sensor * correctedOmega;
-  }
-
-  // rotation vector describing rotation increment computed from the
-  // current rotation rate measurement
-  const Vector3 theta_incr = correctedOmega * deltaT;
-  Matrix3 D_Rincr_integratedOmega;
-  const Rot3 incrR = Rot3::Expmap(theta_incr, D_Rincr_integratedOmega); // expensive !!
-
-  // Update Jacobian
-  update_delRdelBiasOmega(D_Rincr_integratedOmega, incrR, deltaT);
-
-  // Update rotation and deltaTij.
-  Matrix3 Fr; // Jacobian of the update
-  updateIntegratedRotationAndDeltaT(incrR, deltaT, Fr);
+  Matrix3 D_incrR_integratedOmega, Fr;
+  PreintegratedRotation::integrateMeasurement(measuredOmega,
+      biasHat_, deltaT, &D_incrR_integratedOmega, &Fr);
 
   // first order uncertainty propagation
   // the deltaT allows to pass from continuous time noise to discrete time noise
-  preintMeasCov_ = Fr * preintMeasCov_ * Fr.transpose()
-      + gyroscopeCovariance() * deltaT;
+  preintMeasCov_ = Fr * preintMeasCov_ * Fr.transpose() + p().gyroscopeCovariance * deltaT;
 }
 
 //------------------------------------------------------------------------------
-Vector3 AHRSFactor::PreintegratedMeasurements::predict(const Vector3& bias,
-    boost::optional<Matrix&> H) const {
+Vector3 PreintegratedAhrsMeasurements::predict(const Vector3& bias,
+    OptionalJacobian<3,3> H) const {
   const Vector3 biasOmegaIncr = bias - biasHat_;
-  return biascorrectedThetaRij(biasOmegaIncr, H);
+  const Rot3 biascorrected = biascorrectedDeltaRij(biasOmegaIncr, H);
+  Matrix3 D_omega_biascorrected;
+  const Vector3 omega = Rot3::Logmap(biascorrected, H ? &D_omega_biascorrected : 0);
+  if (H) (*H) = D_omega_biascorrected * (*H);
+  return omega;
 }
 //------------------------------------------------------------------------------
-Vector AHRSFactor::PreintegratedMeasurements::DeltaAngles(
+Vector PreintegratedAhrsMeasurements::DeltaAngles(
     const Vector& msr_gyro_t, const double msr_dt,
     const Vector3& delta_angles) {
 
@@ -121,22 +88,16 @@ Vector AHRSFactor::PreintegratedMeasurements::DeltaAngles(
 //------------------------------------------------------------------------------
 // AHRSFactor methods
 //------------------------------------------------------------------------------
-AHRSFactor::AHRSFactor() :
-    _PIM_(Vector3(), Z_3x3) {
-}
+AHRSFactor::AHRSFactor(
+    Key rot_i, Key rot_j, Key bias,
+    const PreintegratedAhrsMeasurements& preintegratedMeasurements)
+    : Base(noiseModel::Gaussian::Covariance(
+               preintegratedMeasurements.preintMeasCov_),
+           rot_i, rot_j, bias),
+      _PIM_(preintegratedMeasurements) {}
 
-AHRSFactor::AHRSFactor(Key rot_i, Key rot_j, Key bias,
-    const PreintegratedMeasurements& preintegratedMeasurements,
-    const Vector3& omegaCoriolis, boost::optional<const Pose3&> body_P_sensor) :
-    Base(
-        noiseModel::Gaussian::Covariance(
-            preintegratedMeasurements.preintMeasCov_), rot_i, rot_j, bias), _PIM_(
-        preintegratedMeasurements), omegaCoriolis_(omegaCoriolis), body_P_sensor_(
-        body_P_sensor) {
-}
-
-//------------------------------------------------------------------------------
 gtsam::NonlinearFactor::shared_ptr AHRSFactor::clone() const {
+//------------------------------------------------------------------------------
   return boost::static_pointer_cast<gtsam::NonlinearFactor>(
       gtsam::NonlinearFactor::shared_ptr(new This(*this)));
 }
@@ -147,20 +108,13 @@ void AHRSFactor::print(const string& s,
   cout << s << "AHRSFactor(" << keyFormatter(this->key1()) << ","
       << keyFormatter(this->key2()) << "," << keyFormatter(this->key3()) << ",";
   _PIM_.print("  preintegrated measurements:");
-  cout << "  omegaCoriolis: [ " << omegaCoriolis_.transpose() << " ]" << endl;
   noiseModel_->print("  noise model: ");
-  if (body_P_sensor_)
-    body_P_sensor_->print("  sensor pose in body frame: ");
 }
 
 //------------------------------------------------------------------------------
 bool AHRSFactor::equals(const NonlinearFactor& other, double tol) const {
   const This *e = dynamic_cast<const This*>(&other);
-  return e != NULL && Base::equals(*e, tol) && _PIM_.equals(e->_PIM_, tol)
-      && equal_with_abs_tol(omegaCoriolis_, e->omegaCoriolis_, tol)
-      && ((!body_P_sensor_ && !e->body_P_sensor_)
-          || (body_P_sensor_ && e->body_P_sensor_
-              && body_P_sensor_->equals(*e->body_P_sensor_)));
+  return e != NULL && Base::equals(*e, tol) && _PIM_.equals(e->_PIM_, tol);
 }
 
 //------------------------------------------------------------------------------
@@ -172,8 +126,7 @@ Vector AHRSFactor::evaluateError(const Rot3& Ri, const Rot3& Rj,
   const Vector3 biascorrectedOmega = _PIM_.predict(bias, H3);
 
   // Coriolis term
-  const Vector3 coriolis = _PIM_.integrateCoriolis(Ri, omegaCoriolis_);
-  const Matrix3 coriolisHat = skewSymmetric(coriolis);
+  const Vector3 coriolis = _PIM_.integrateCoriolis(Ri);
   const Vector3 correctedOmega = biascorrectedOmega - coriolis;
 
   // Prediction
@@ -191,7 +144,7 @@ Vector AHRSFactor::evaluateError(const Rot3& Ri, const Rot3& Rj,
   if (H1) {
     // dfR/dRi
     H1->resize(3, 3);
-    Matrix3 D_coriolis = -D_cDeltaRij_cOmega * coriolisHat;
+    Matrix3 D_coriolis = -D_cDeltaRij_cOmega * skewSymmetric(coriolis);
     (*H1)
         << D_fR_fRrot * (-actualRij.transpose() - fRrot.transpose() * D_coriolis);
   }
@@ -199,7 +152,7 @@ Vector AHRSFactor::evaluateError(const Rot3& Ri, const Rot3& Rj,
   if (H2) {
     // dfR/dPosej
     H2->resize(3, 3);
-    (*H2) << D_fR_fRrot * Matrix3::Identity();
+    (*H2) << D_fR_fRrot;
   }
 
   if (H3) {
@@ -215,15 +168,13 @@ Vector AHRSFactor::evaluateError(const Rot3& Ri, const Rot3& Rj,
 }
 
 //------------------------------------------------------------------------------
-Rot3 AHRSFactor::predict(const Rot3& rot_i, const Vector3& bias,
-    const PreintegratedMeasurements preintegratedMeasurements,
-    const Vector3& omegaCoriolis, boost::optional<const Pose3&> body_P_sensor) {
-
+Rot3 AHRSFactor::Predict(
+    const Rot3& rot_i, const Vector3& bias,
+    const PreintegratedAhrsMeasurements preintegratedMeasurements) {
   const Vector3 biascorrectedOmega = preintegratedMeasurements.predict(bias);
 
   // Coriolis term
-  const Vector3 coriolis = //
-      preintegratedMeasurements.integrateCoriolis(rot_i, omegaCoriolis);
+  const Vector3 coriolis = preintegratedMeasurements.integrateCoriolis(rot_i);
 
   const Vector3 correctedOmega = biascorrectedOmega - coriolis;
   const Rot3 correctedDeltaRij = Rot3::Expmap(correctedOmega);
@@ -231,4 +182,31 @@ Rot3 AHRSFactor::predict(const Rot3& rot_i, const Vector3& bias,
   return rot_i.compose(correctedDeltaRij);
 }
 
-} //namespace gtsam
+//------------------------------------------------------------------------------
+AHRSFactor::AHRSFactor(Key rot_i, Key rot_j, Key bias,
+                       const PreintegratedMeasurements& pim,
+                       const Vector3& omegaCoriolis,
+                       const boost::optional<Pose3>& body_P_sensor)
+    : Base(noiseModel::Gaussian::Covariance(pim.preintMeasCov_), rot_i, rot_j, bias),
+      _PIM_(pim) {
+  boost::shared_ptr<PreintegratedMeasurements::Params> p =
+      boost::make_shared<PreintegratedMeasurements::Params>(pim.p());
+  p->body_P_sensor = body_P_sensor;
+  _PIM_.p_ = p;
+}
+
+//------------------------------------------------------------------------------
+Rot3 AHRSFactor::predict(const Rot3& rot_i, const Vector3& bias,
+                         const PreintegratedMeasurements pim,
+                         const Vector3& omegaCoriolis,
+                         const boost::optional<Pose3>& body_P_sensor) {
+  boost::shared_ptr<PreintegratedMeasurements::Params> p =
+      boost::make_shared<PreintegratedMeasurements::Params>(pim.p());
+  p->omegaCoriolis = omegaCoriolis;
+  p->body_P_sensor = body_P_sensor;
+  PreintegratedMeasurements newPim = pim;
+  newPim.p_ = p;
+  return Predict(rot_i, bias, newPim);
+}
+
+}  // namespace gtsam

@@ -99,9 +99,6 @@ public:
   }
 };
 
-const double Event::Speed = 330;
-const Matrix14 Event::JacobianZ = (Matrix14() << 0,0,0,1).finished();
-
 // Define GTSAM traits
 template<>
 struct GTSAM_EXPORT traits<Event> : internal::Manifold<Event> {};
