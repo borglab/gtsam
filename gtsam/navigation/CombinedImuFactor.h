@@ -59,6 +59,8 @@ namespace gtsam {
  */
 class PreintegratedCombinedMeasurements : public PreintegrationBase {
 
+public:
+
   /// Parameters for pre-integration:
   /// Usage: Create just a single Params and pass a shared pointer to the constructor
   struct Params : PreintegrationBase::Params {
