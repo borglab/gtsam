@@ -259,7 +259,6 @@ public:
     // g = F' * (b - E * P * E' * b)
 
     Eigen::Matrix<double, D, D> matrixBlock;
-    typedef SymmetricBlockMatrix::Block Block; ///< A block from the Hessian matrix
 
     // a single point is observed in m cameras
     size_t m = Fs.size(); // cameras observing current point
