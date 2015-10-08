@@ -58,18 +58,19 @@ namespace gtsam {
 
   /* ************************************************************************* */
   bool Values::equals(const Values& other, double tol) const {
-    if(this->size() != other.size())
+    if (this->size() != other.size())
       return false;
-    for(const_iterator it1=this->begin(), it2=other.begin(); it1!=this->end(); ++it1, ++it2) {
-      if(typeid(it1->value) != typeid(it2->value))
+    for (const_iterator it1 = this->begin(), it2 = other.begin();
+        it1 != this->end(); ++it1, ++it2) {
+      const Value& value1 = it1->value;
+      const Value& value2 = it2->value;
+      if (typeid(value1) != typeid(value2) || it1->key != it2->key
+          || !value1.equals_(value2, tol)) {
         return false;
-      if(it1->key != it2->key)
-        return false;
-      if(!it1->value.equals_(it2->value, tol))
-        return false;
+      }
     }
     return true; // We return false earlier if we find anything that does not match
-  }
+}
 
   /* ************************************************************************* */
   bool Values::exists(Key j) const {
@@ -85,7 +86,6 @@ namespace gtsam {
       VectorValues::const_iterator vector_item = delta.find(key_value->key);
       Key key = key_value->key;  // Non-const duplicate to deal with non-const insert argument
       if(vector_item != delta.end()) {
-//        const Vector& singleDelta = delta[key_value->key]; // Delta for this value
         const Vector& singleDelta = vector_item->second;
         Value* retractedValue(key_value->value.retract_(singleDelta)); // Retract
         result.values_.insert(key, retractedValue); // Add retracted result directly to result values
@@ -184,12 +184,13 @@ namespace gtsam {
   void Values::update(Key j, const Value& val) {
     // Find the value to update
     KeyValueMap::iterator item = values_.find(j);
-    if(item == values_.end())
+    if (item == values_.end())
       throw ValuesKeyDoesNotExist("update", j);
 
     // Cast to the derived type
-    if(typeid(*item->second) != typeid(val))
-      throw ValuesIncorrectType(j, typeid(*item->second), typeid(val));
+    const Value& old_value = *item->second;
+    if (typeid(old_value) != typeid(val))
+      throw ValuesIncorrectType(j, typeid(old_value), typeid(val));
 
     values_.replace(item, val.clone_());
   }

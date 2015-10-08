@@ -280,10 +280,11 @@ namespace gtsam {
       throw ValuesKeyDoesNotExist("retrieve", j);
 
     // Check the type and throw exception if incorrect
+    const Value& value = *item->second;
     try {
-      return dynamic_cast<const GenericValue<ValueType>&>(*item->second).value();
+      return dynamic_cast<const GenericValue<ValueType>&>(value).value();
     } catch (std::bad_cast &) {
-      throw ValuesIncorrectType(j, typeid(*item->second), typeid(ValueType));
+      throw ValuesIncorrectType(j, typeid(value), typeid(ValueType));
     }
   }
 
@@ -295,10 +296,11 @@ namespace gtsam {
 
     if(item != values_.end()) {
       // dynamic cast the type and throw exception if incorrect
+      const Value& value = *item->second;
       try {
-        return dynamic_cast<const GenericValue<ValueType>&>(*item->second).value();
+        return dynamic_cast<const GenericValue<ValueType>&>(value).value();
       } catch (std::bad_cast &) {
-        throw ValuesIncorrectType(j, typeid(*item->second), typeid(ValueType));
+        throw ValuesIncorrectType(j, typeid(value), typeid(ValueType));
       }
      } else {
       return boost::none;
