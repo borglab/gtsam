@@ -277,7 +277,8 @@ endif()
 
 # Include boost - use 'BEFORE' so that a specific boost specified to CMake
 # takes precedence over a system-installed one.
-include_directories(BEFORE ${Boost_INCLUDE_DIR})
+# Use 'SYSTEM' to ignore compiler warnings in Boost headers
+include_directories(BEFORE SYSTEM ${Boost_INCLUDE_DIR})
 
 # Add includes for source directories 'BEFORE' boost and any system include
 # paths so that the compiler uses GTSAM headers in our source directory instead
@@ -300,6 +301,13 @@ endif()
 # GCC 4.8+ complains about local typedefs which we use for shared_ptr etc.
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.8)
+    add_definitions(-Wno-unused-local-typedefs)
+  endif()
+endif()
+
+# As of XCode 7, clang also complains about this
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+  if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7.0)
     add_definitions(-Wno-unused-local-typedefs)
   endif()
 endif()
@@ -386,6 +394,8 @@ set(CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-dev (>= 1.43)") #Example: "libc6 (>= 
 # Print configuration variables
 message(STATUS "===============================================================")
 message(STATUS "================  Configuration Options  ======================")
+message(STATUS "  CMAKE_CXX_COMPILER_ID type     : ${CMAKE_CXX_COMPILER_ID}")
+message(STATUS "  CMAKE_CXX_COMPILER_VERSION     : ${CMAKE_CXX_COMPILER_VERSION}")
 message(STATUS "Build flags                                               ")
 print_config_flag(${GTSAM_BUILD_TESTS}                 "Build Tests                    ")
 print_config_flag(${GTSAM_BUILD_EXAMPLES_ALWAYS}       "Build examples with 'make all' ")
