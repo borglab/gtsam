@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -42,14 +42,15 @@ void PreintegratedRotation::resetIntegration() {
 }
 
 void PreintegratedRotation::print(const string& s) const {
-  cout << s << endl;
+  cout << s;
   cout << "    deltaTij [" << deltaTij_ << "]" << endl;
   cout << "    deltaRij.ypr = (" << deltaRij_.ypr().transpose() << ")" << endl;
 }
 
 bool PreintegratedRotation::equals(const PreintegratedRotation& other,
     double tol) const {
-  return deltaRij_.equals(other.deltaRij_, tol)
+  return this->matchesParamsWith(other)
+      && deltaRij_.equals(other.deltaRij_, tol)
       && fabs(deltaTij_ - other.deltaTij_) < tol
       && equal_with_abs_tol(delRdelBiasOmega_, other.delRdelBiasOmega_, tol);
 }
@@ -75,12 +76,16 @@ Rot3 PreintegratedRotation::incrementalRotation(const Vector3& measuredOmega,
   return Rot3::Expmap(integratedOmega, D_incrR_integratedOmega); // expensive !!
 }
 
-void PreintegratedRotation::integrateMeasurement(const Vector3& measuredOmega,
-    const Vector3& biasHat, double deltaT, Matrix3* D_incrR_integratedOmega,
-    Matrix3* F) {
+void PreintegratedRotation::integrateMeasurement(
+    const Vector3& measuredOmega, const Vector3& biasHat, double deltaT,
+    OptionalJacobian<3, 3> optional_D_incrR_integratedOmega, OptionalJacobian<3, 3> F) {
+  Matrix3 D_incrR_integratedOmega;
+  const Rot3 incrR = incrementalRotation(measuredOmega, biasHat, deltaT, D_incrR_integratedOmega);
 
-  const Rot3 incrR = incrementalRotation(measuredOmega, biasHat, deltaT,
-      D_incrR_integratedOmega);
+  // If asked, pass first derivative as well
+  if (optional_D_incrR_integratedOmega) {
+    *optional_D_incrR_integratedOmega << D_incrR_integratedOmega;
+  }
 
   // Update deltaTij and rotation
   deltaTij_ += deltaT;
@@ -88,8 +93,7 @@ void PreintegratedRotation::integrateMeasurement(const Vector3& measuredOmega,
 
   // Update Jacobian
   const Matrix3 incrRt = incrR.transpose();
-  delRdelBiasOmega_ = incrRt * delRdelBiasOmega_
-      - *D_incrR_integratedOmega * deltaT;
+  delRdelBiasOmega_ = incrRt * delRdelBiasOmega_ - D_incrR_integratedOmega * deltaT;
 }
 
 Rot3 PreintegratedRotation::biascorrectedDeltaRij(const Vector3& biasOmegaIncr,

@@ -64,7 +64,8 @@ void PreintegrationBase::print(const string& s) const {
 //------------------------------------------------------------------------------
 bool PreintegrationBase::equals(const PreintegrationBase& other,
     double tol) const {
-  return fabs(deltaTij_ - other.deltaTij_) < tol
+  return this->matchesParamsWith(other)
+      && fabs(deltaTij_ - other.deltaTij_) < tol
       && deltaXij_.equals(other.deltaXij_, tol)
       && biasHat_.equals(other.biasHat_, tol)
       && equal_with_abs_tol(delRdelBiasOmega_, other.delRdelBiasOmega_, tol)

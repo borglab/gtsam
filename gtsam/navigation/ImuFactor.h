@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -81,9 +81,19 @@ public:
    *  @param p    Parameters, typically fixed in a single application
    */
   PreintegratedImuMeasurements(const boost::shared_ptr<Params>& p,
-      const imuBias::ConstantBias& biasHat) :
+      const imuBias::ConstantBias& biasHat = imuBias::ConstantBias()) :
       PreintegrationBase(p, biasHat) {
     preintMeasCov_.setZero();
+  }
+
+/**
+  *  Construct preintegrated directly from members: base class and preintMeasCov
+  *  @param base               PreintegrationBase instance
+  *  @param preintMeasCov      Covariance matrix used in noise model.
+  */
+  PreintegratedImuMeasurements(const PreintegrationBase& base, const Matrix9& preintMeasCov)
+     : PreintegrationBase(base),
+       preintMeasCov_(preintMeasCov) {
   }
 
   /// print
@@ -167,7 +177,7 @@ public:
 #endif
 
   /** Default constructor - only use for serialization */
-  ImuFactor();
+  ImuFactor() {}
 
   /**
    * Constructor
@@ -240,5 +250,11 @@ private:
   }
 };
 // class ImuFactor
+
+template <>
+struct traits<PreintegratedImuMeasurements> : public Testable<PreintegratedImuMeasurements> {};
+
+template <>
+struct traits<ImuFactor> : public Testable<ImuFactor> {};
 
 } /// namespace gtsam

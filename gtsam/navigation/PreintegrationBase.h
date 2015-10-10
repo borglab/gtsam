@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -100,7 +100,14 @@ public:
 
 protected:
 
-  double deltaTij_;   ///< Time interval from i to j
+  /// Parameters
+  boost::shared_ptr<Params> p_;
+
+  /// Acceleration and gyro bias used for preintegration
+  imuBias::ConstantBias biasHat_;
+
+  /// Time interval from i to j
+  double deltaTij_;
 
   /**
    * Preintegrated navigation state, from frame i to frame j
@@ -108,12 +115,6 @@ protected:
    * Note: velocity is now also in frame i, as opposed to deltaVij in [2]
    */
   NavState deltaXij_;
-
-  /// Parameters
-  boost::shared_ptr<Params> p_;
-
-  /// Acceleration and gyro bias used for preintegration
-  imuBias::ConstantBias biasHat_;
 
   Matrix3 delRdelBiasOmega_; ///< Jacobian of preintegrated rotation w.r.t. angular rate bias
   Matrix3 delPdelBiasAcc_;   ///< Jacobian of preintegrated position w.r.t. acceleration bias
@@ -127,20 +128,53 @@ protected:
 
 public:
 
+  /// @name Constructors
+  /// @{
+
   /**
    *  Constructor, initializes the variables in the base class
-   *  @param bias Current estimate of acceleration and rotation rate biases
    *  @param p    Parameters, typically fixed in a single application
+   *  @param bias Current estimate of acceleration and rotation rate biases
    */
   PreintegrationBase(const boost::shared_ptr<Params>& p,
-      const imuBias::ConstantBias& biasHat) :
+      const imuBias::ConstantBias& biasHat = imuBias::ConstantBias()) :
       p_(p), biasHat_(biasHat) {
     resetIntegration();
   }
 
+  /**
+   *  Constructor which takes in all members for generic construction
+   */
+  PreintegrationBase(const boost::shared_ptr<Params>& p, const imuBias::ConstantBias& biasHat,
+                     double deltaTij, const NavState& deltaXij, const Matrix3& delPdelBiasAcc,
+                     const Matrix3& delPdelBiasOmega, const Matrix3& delVdelBiasAcc,
+                     const Matrix3& delVdelBiasOmega)
+      : p_(p),
+        biasHat_(biasHat),
+        deltaTij_(deltaTij),
+        deltaXij_(deltaXij),
+        delPdelBiasAcc_(delPdelBiasAcc),
+        delPdelBiasOmega_(delPdelBiasOmega),
+        delVdelBiasAcc_(delVdelBiasAcc),
+        delVdelBiasOmega_(delVdelBiasOmega) {}
+  /// @}
+
+  /// @name Basic utilities
+  /// @{
   /// Re-initialize PreintegratedMeasurements
   void resetIntegration();
 
+  /// check parameters equality: checks whether shared pointer points to same Params object.
+  bool matchesParamsWith(const PreintegrationBase& other) const {
+    return p_ == other.p_;
+  }
+
+  /// shared pointer to params
+  const boost::shared_ptr<Params>& params() const {
+    return p_;
+  }
+
+  /// const reference to params
   const Params& p() const {
     return *boost::static_pointer_cast<Params>(p_);
   }
@@ -148,8 +182,10 @@ public:
   void set_body_P_sensor(const Pose3& body_P_sensor) {
     p_->body_P_sensor = body_P_sensor;
   }
+  /// @}
 
-  /// getters
+  /// @name Instance variables access
+  /// @{
   const NavState& deltaXij() const {
     return deltaXij_;
   }
@@ -183,17 +219,20 @@ public:
   const Matrix3& delVdelBiasOmega() const {
     return delVdelBiasOmega_;
   }
-
   // Exposed for MATLAB
   Vector6 biasHatVector() const {
     return biasHat_.vector();
   }
+  /// @}
 
-  /// print
+  /// @name Testable
+  /// @{
   void print(const std::string& s) const;
-
-  /// check equality
   bool equals(const PreintegrationBase& other, double tol) const;
+  /// @}
+
+  /// @name Main functionality
+  /// @{
 
   /// Subtract estimate and correct for sensor pose
   /// Compute the derivatives due to non-identity body_P_sensor (rotation and centrifugal acc)
@@ -236,10 +275,17 @@ public:
       OptionalJacobian<9, 6> H3 = boost::none, OptionalJacobian<9, 3> H4 =
           boost::none, OptionalJacobian<9, 6> H5 = boost::none) const;
 
+  /// @}
+
+  /// @name Deprecated
+  /// @{
+
   /// @deprecated predict
   PoseVelocityBias predict(const Pose3& pose_i, const Vector3& vel_i,
       const imuBias::ConstantBias& bias_i, const Vector3& n_gravity,
       const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis = false);
+
+  /// @}
 
 private:
   /** Serialization function */

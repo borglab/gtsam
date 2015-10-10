@@ -113,6 +113,9 @@ public:
   friend class CombinedImuFactor;
 
  public:
+  /// @name Constructors
+  /// @{
+
   /**
    *  Default constructor, initializes the class with no measurements
    *  @param bias Current estimate of acceleration and rotation rate biases
@@ -123,17 +126,31 @@ public:
     preintMeasCov_.setZero();
   }
 
-  Params& p() const { return *boost::static_pointer_cast<Params>(p_);}
+  /// @}
 
-  /// print
-  void print(const std::string& s = "Preintegrated Measurements:") const;
-
-  /// equals
-  bool equals(const PreintegratedCombinedMeasurements& expected,
-              double tol = 1e-9) const;
+  /// @name Basic utilities
+  /// @{
 
   /// Re-initialize PreintegratedCombinedMeasurements
   void resetIntegration();
+
+  /// const reference to params, shadows definition in base class
+  Params& p() const { return *boost::static_pointer_cast<Params>(p_);}
+  /// @}
+
+  /// @name Access instance variables
+  /// @{
+  Matrix preintMeasCov() const { return preintMeasCov_; }
+  /// @}
+
+  /// @name Testable
+  /// @{
+  void print(const std::string& s = "Preintegrated Measurements:") const;
+  bool equals(const PreintegratedCombinedMeasurements& expected, double tol = 1e-9) const;
+  /// @}
+
+  /// @name Main functionality
+  /// @{
 
   /**
    * Add a single IMU measurement to the preintegration.
@@ -147,8 +164,10 @@ public:
   void integrateMeasurement(const Vector3& measuredAcc,
       const Vector3& measuredOmega, double deltaT);
 
-  /// methods to access class variables
-  Matrix preintMeasCov() const { return preintMeasCov_; }
+  /// @}
+
+  /// @name Deprecated
+  /// @{
 
   /// deprecated constructor
   /// NOTE(frank): assumes Z-Down convention, only second order integration supported
@@ -158,6 +177,8 @@ public:
       const Matrix3& integrationErrorCovariance,
       const Matrix3& biasAccCovariance, const Matrix3& biasOmegaCovariance,
       const Matrix6& biasAccOmegaInit, const bool use2ndOrderIntegration = true);
+
+  /// @}
 
  private:
   /// Serialization function
