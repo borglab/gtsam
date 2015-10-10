@@ -163,8 +163,6 @@ bool MonteCarlo(const PreintegratedImuMeasurements& pim,
   return assert_equal(Matrix(Q), actual, 1e-4);
 }
 
-#if 1
-
 /* ************************************************************************* */
 TEST(ImuFactor, StraightLine) {
   // Set up IMU measurements
@@ -610,7 +608,6 @@ TEST(ImuFactor, FirstOrderPreIntegratedMeasurements) {
   EXPECT(
       assert_equal(expectedDelRdelBiasOmega, preintegrated.delRdelBiasOmega()));
 }
-#endif
 
 /* ************************************************************************* */
 Vector3 correctedAcc(const PreintegratedImuMeasurements& pim, const Vector3& measuredAcc, const Vector3& measuredOmega) {
@@ -698,24 +695,12 @@ TEST(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
 #endif
 
   EXPECT(MonteCarlo(pim, NavState(x1, v1), bias, dt, body_P_sensor,
-      measuredAcc, measuredOmega, accNoiseVar2, omegaNoiseVar2, 10000));
+      measuredAcc, measuredOmega, accNoiseVar2, omegaNoiseVar2, 100000));
 
-//  Matrix expected(9,9);
-//  expected <<
-//      0.0290780477, 4.63277848e-07, 9.23468723e-05, 0.0, 0.0, 0.0,    0.0, 0.0, 0.0, //
-//      4.63277848e-07, 0.0290688208, 4.62505461e-06, 0.0, 0.0, 0.0,    0.0, 0.0, 0.0, //
-//      9.23468723e-05, 4.62505461e-06, 0.0299907267, 0.0, 0.0, 0.0,    0.0, 0.0, 0.0, //
-//      0.0, 0.0, 0.0,                                0.0026, 0.0, 0.0, 0.005, 0.0, 0.0, //
-//      0.0, 0.0, 0.0,                                0.0, 0.0026, 0.0, 0.0, 0.005, 0.0, //
-//      0.0, 0.0, 0.0,                                0.0, 0.0, 0.0026, 0.0, 0.0, 0.005, //
-//      0.0, 0.0, 0.0,                                0.005, 0.0, 0.0,  0.01, 0.0, 0.0, //
-//      0.0, 0.0, 0.0,                                0.0, 0.005, 0.0,  0.0, 0.01, 0.0, //
-//      0.0, 0.0, 0.0,                                0.0, 0.0, 0.005,  0.0, 0.0, 0.01;
-  pim.integrateMeasurement(measuredAcc, measuredOmega, dt, body_P_sensor);
-//  EXPECT(assert_equal(expected, pim.preintMeasCov(), 1e-6));
 
-  // integrate one more time (at least twice) to get position information
+  // integrate at least twice to get position information
   // otherwise factor cov noise from preint_cov is not positive definite
+  pim.integrateMeasurement(measuredAcc, measuredOmega, dt, body_P_sensor);
   pim.integrateMeasurement(measuredAcc, measuredOmega, dt, body_P_sensor);
 
   // Create factor
@@ -727,16 +712,6 @@ TEST(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
   Vector3 actual_v2;
   ImuFactor::Predict(x1, v1, actual_x2, actual_v2, bias, pim,
       kGravityAlongNavZDown, kZeroOmegaCoriolis);
-  // Regression test with
-//  Rot3 expectedR( //
-//      0.456795409,   -0.888128414,   0.0506544554,   //
-//      0.889548908,     0.45563417,   -0.0331699173,  //
-//     0.00637924528,  0.0602114814,    0.998165258);
-//  Point3 expectedT(5.30373101, 0.768972495, -49.9942188);
-//  Vector3 expected_v2(0.107462014, -0.46205501, 0.0115624037);
-//  Pose3 expected_x2(expectedR, expectedT);
-//  EXPECT(assert_equal(expected_x2, actual_x2, 1e-7));
-//  EXPECT(assert_equal(Vector(expected_v2), actual_v2, 1e-7));
 
   Values values;
   values.insert(X(1), x1);
@@ -837,24 +812,11 @@ TEST(ImuFactor, PredictArbitrary) {
   Pose3 x1;
   Vector3 v1 = Vector3(0, 0, 0);
   imuBias::ConstantBias bias(Vector3(0, 0, 0), Vector3(0, 0, 0));
-  EXPECT(MonteCarlo(pim, NavState(x1, v1), bias, 0.1, boost::none,
-      measuredAcc, measuredOmega, Vector3::Constant(accNoiseVar), Vector3::Constant(omegaNoiseVar)));
+  EXPECT(MonteCarlo(pim, NavState(x1, v1), bias, 0.1, boost::none, measuredAcc, measuredOmega,
+                    Vector3::Constant(accNoiseVar), Vector3::Constant(omegaNoiseVar), 100000));
 
   for (int i = 0; i < 1000; ++i)
     pim.integrateMeasurement(measuredAcc, measuredOmega, dt);
-
-//  Matrix expected(9,9);
-//  expected << //
-//      0.0299999995, 2.46739898e-10, 2.46739896e-10, -0.0144839494, 0.044978128, 0.0100471195, -0.0409843415, 0.134423822, 0.0383280513, //
-//      2.46739898e-10, 0.0299999995, 2.46739902e-10, -0.0454268484, -0.0149428917, 0.00609093775, -0.13554868, -0.0471183681, 0.0247643646, //
-//      2.46739896e-10, 2.46739902e-10, 0.0299999995, 0.00489577218, 0.00839301168, 0.000448720395, 0.00879031682, 0.0162199769, 0.00112485862, //
-//     -0.0144839494, -0.0454268484, 0.00489577218, 0.142448905, 0.00345595825, -0.0225794125, 0.34774305, 0.0119449979, -0.075667905, //
-//      0.044978128, -0.0149428917, 0.00839301168, 0.00345595825, 0.143318431, 0.0200549262, 0.0112877167, 0.351503176, 0.0629164907, //
-//      0.0100471195, 0.00609093775, 0.000448720395, -0.0225794125, 0.0200549262, 0.0104041905, -0.0580647212, 0.051116506, 0.0285371399, //
-//     -0.0409843415, -0.13554868, 0.00879031682, 0.34774305, 0.0112877167, -0.0580647212, 0.911721561, 0.0412249672, -0.205920425, //
-//      0.134423822, -0.0471183681, 0.0162199769, 0.0119449979, 0.351503176, 0.051116506, 0.0412249672, 0.928013807, 0.169935105, //
-//      0.0383280513, 0.0247643646, 0.00112485862, -0.075667905, 0.0629164907, 0.0285371399, -0.205920425, 0.169935105, 0.09407764;
-//  EXPECT(assert_equal(expected, pim.preintMeasCov(), 1e-7));
 
   // Create factor
   ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pim, kGravityAlongNavZDown,
