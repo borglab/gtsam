@@ -63,12 +63,12 @@ ColPivHouseholderQR<Matrix<EIGTYPE, Dynamic, Dynamic, EIGCOLROW, Dynamic, Dynami
 \
   m_nonzero_pivots = 0; \
   m_maxpivot = RealScalar(0);\
-  m_colsPermutation.resize((int)cols); \
+  m_colsPermutation.resize(cols); \
   m_colsPermutation.indices().setZero(); \
 \
-  lapack_int lda = (lapack_int) m_qr.outerStride(), i; \
+  lapack_int lda = m_qr.outerStride(), i; \
   lapack_int matrix_order = MKLCOLROW; \
-  LAPACKE_##MKLPREFIX##geqp3( matrix_order, (lapack_int)rows, (lapack_int)cols, (MKLTYPE*)m_qr.data(), lda, (lapack_int*)m_colsPermutation.indices().data(), (MKLTYPE*)m_hCoeffs.data()); \
+  LAPACKE_##MKLPREFIX##geqp3( matrix_order, rows, cols, (MKLTYPE*)m_qr.data(), lda, (lapack_int*)m_colsPermutation.indices().data(), (MKLTYPE*)m_hCoeffs.data()); \
   m_isInitialized = true; \
   m_maxpivot=m_qr.diagonal().cwiseAbs().maxCoeff(); \
   m_hCoeffs.adjointInPlace(); \

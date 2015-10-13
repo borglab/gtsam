@@ -17,7 +17,7 @@ You can control the number of thread that will be used using either the OpenMP A
 Unless setNbThreads has been called, Eigen uses the number of threads specified by OpenMP. You can restore this bahavior by calling \code setNbThreads(0); \endcode
 You can query the number of threads that will be used with:
 \code
-n = Eigen::nbThreads(n);
+n = Eigen::nbThreads( );
 \endcode
 You can disable Eigen's multi threading at compile time by defining the EIGEN_DONT_PARALLELIZE preprocessor token.
 

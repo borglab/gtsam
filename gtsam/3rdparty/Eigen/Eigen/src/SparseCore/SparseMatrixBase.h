@@ -404,8 +404,10 @@ template<typename Derived> class SparseMatrixBase : public EigenBase<Derived>
     const ConstInnerVectorReturnType innerVector(Index outer) const;
 
     // set of inner-vectors
-    Block<Derived,Dynamic,Dynamic,true> innerVectors(Index outerStart, Index outerSize);
-    const Block<const Derived,Dynamic,Dynamic,true> innerVectors(Index outerStart, Index outerSize) const;
+    typedef Block<Derived,Dynamic,Dynamic,true> InnerVectorsReturnType;
+    typedef Block<const Derived,Dynamic,Dynamic,true> ConstInnerVectorsReturnType;
+    InnerVectorsReturnType innerVectors(Index outerStart, Index outerSize);
+    const ConstInnerVectorsReturnType innerVectors(Index outerStart, Index outerSize) const;
 
     /** \internal use operator= */
     template<typename DenseDerived>
