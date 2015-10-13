@@ -150,7 +150,6 @@ class IncompleteLUT : internal::noncopyable
     {
       analyzePattern(amat); 
       factorize(amat);
-      m_isInitialized = m_factorizationIsOk;
       return *this;
     }
 
@@ -235,6 +234,8 @@ void IncompleteLUT<Scalar>::analyzePattern(const _MatrixType& amat)
   m_Pinv  = m_P.inverse(); // ... and the inverse permutation
 
   m_analysisIsOk = true;
+  m_factorizationIsOk = false;
+  m_isInitialized = false;
 }
 
 template <typename Scalar>
@@ -442,6 +443,7 @@ void IncompleteLUT<Scalar>::factorize(const _MatrixType& amat)
   m_lu.makeCompressed();
 
   m_factorizationIsOk = true;
+  m_isInitialized = m_factorizationIsOk;
   m_info = Success;
 }
 

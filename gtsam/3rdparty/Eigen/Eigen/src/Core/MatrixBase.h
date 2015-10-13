@@ -159,13 +159,11 @@ template<typename Derived> class MatrixBase
     template<typename OtherDerived>
     Derived& operator=(const ReturnByValue<OtherDerived>& other);
 
-#ifndef EIGEN_PARSED_BY_DOXYGEN
     template<typename ProductDerived, typename Lhs, typename Rhs>
     Derived& lazyAssign(const ProductBase<ProductDerived, Lhs,Rhs>& other);
 
     template<typename MatrixPower, typename Lhs, typename Rhs>
     Derived& lazyAssign(const MatrixPowerProduct<MatrixPower, Lhs,Rhs>& other);
-#endif // not EIGEN_PARSED_BY_DOXYGEN
 
     template<typename OtherDerived>
     Derived& operator+=(const MatrixBase<OtherDerived>& other);
