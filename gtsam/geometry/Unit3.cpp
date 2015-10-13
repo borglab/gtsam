@@ -15,12 +15,14 @@
  * @author Can Erdogan
  * @author Frank Dellaert
  * @author Alex Trevor
- * @author Zhaoyang Lv
  * @brief The Unit3 class - basically a point on a unit sphere
  */
 
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/geometry/Point2.h>
+#include <gtsam/config.h> // GTSAM_USE_TBB
+
+#include <boost/random/mersenne_twister.hpp>
 #include <gtsam/config.h> // for GTSAM_USE_TBB
 
 #ifdef __clang__
@@ -32,13 +34,8 @@
 #  pragma clang diagnostic pop
 #endif
 
-#ifdef GTSAM_USE_TBB
-#include <tbb/mutex.h>
-#endif
-
 #include <boost/random/variate_generator.hpp>
 #include <iostream>
-#include <limits>
 
 using namespace std;
 
@@ -46,14 +43,12 @@ namespace gtsam {
 
 /* ************************************************************************* */
 Unit3 Unit3::FromPoint3(const Point3& point, OptionalJacobian<2,3> H) {
-  Unit3 direction(point);
-  if (H) {
-    // 3*3 Derivative of representation with respect to point is 3*3:
-    Matrix3 D_p_point;
-    point.normalize(D_p_point); // TODO, this calculates norm a second time :-(
-    // Calculate the 2*3 Jacobian
+  // 3*3 Derivative of representation with respect to point is 3*3:
+  Matrix3 D_p_point;
+  Unit3 direction;
+  direction.p_ = point.normalize(H ? &D_p_point : 0);
+  if (H)
     *H << direction.basis().transpose() * D_p_point;
-  }
   return direction;
 }
 
@@ -63,49 +58,105 @@ Unit3 Unit3::Random(boost::mt19937 & rng) {
   boost::uniform_on_sphere<double> randomDirection(3);
   // This variate_generator object is required for versions of boost somewhere
   // around 1.46, instead of drawing directly using boost::uniform_on_sphere(rng).
-  boost::variate_generator<boost::mt19937&, boost::uniform_on_sphere<double> > generator(
-      rng, randomDirection);
+  boost::variate_generator<boost::mt19937&, boost::uniform_on_sphere<double> >
+      generator(rng, randomDirection);
   vector<double> d = generator();
-  return Unit3(d[0], d[1], d[2]);
+  Unit3 result;
+  result.p_ = Point3(d[0], d[1], d[2]);
+  return result;
 }
 
-#ifdef GTSAM_USE_TBB
-tbb::mutex unit3BasisMutex;
-#endif
-
 /* ************************************************************************* */
-const Matrix32& Unit3::basis() const {
+const Matrix32& Unit3::basis(OptionalJacobian<6, 2> H) const {
 #ifdef GTSAM_USE_TBB
-  tbb::mutex::scoped_lock lock(unit3BasisMutex);
+  // NOTE(hayk): At some point it seemed like this reproducably resulted in deadlock. However, I
+  // can't see the reason why and I can no longer reproduce it. It may have been a red herring, or
+  // there is still a latent bug to watch out for.
+  tbb::mutex::scoped_lock lock(B_mutex_);
 #endif
 
-  // Return cached version if exists
-  if (B_) return *B_;
+  // Return cached basis if available and the Jacobian isn't needed.
+  if (B_ && !H) {
+    return *B_;
+  }
+
+  // Return cached basis and derivatives if available.
+  if (B_ && H && H_B_) {
+    *H = *H_B_;
+    return *B_;
+  }
+
+  // Get the unit vector and derivative wrt this.
+  // NOTE(hayk): We can't call point3(), because it would recursively call basis().
+  const Point3& n = p_;
 
   // Get the axis of rotation with the minimum projected length of the point
-  Vector3 axis;
-  double mx = fabs(p_.x()), my = fabs(p_.y()), mz = fabs(p_.z());
-  if ((mx <= my) && (mx <= mz))
-    axis = Vector3(1.0, 0.0, 0.0);
-  else if ((my <= mx) && (my <= mz))
-    axis = Vector3(0.0, 1.0, 0.0);
-  else if ((mz <= mx) && (mz <= my))
-    axis = Vector3(0.0, 0.0, 1.0);
-  else
+  Point3 axis;
+  double mx = fabs(n.x()), my = fabs(n.y()), mz = fabs(n.z());
+  if ((mx <= my) && (mx <= mz)) {
+    axis = Point3(1.0, 0.0, 0.0);
+  } else if ((my <= mx) && (my <= mz)) {
+    axis = Point3(0.0, 1.0, 0.0);
+  } else if ((mz <= mx) && (mz <= my)) {
+    axis = Point3(0.0, 0.0, 1.0);
+  } else {
     assert(false);
+  }
 
-  // Create the two basis vectors
-  Vector3 b1 = p_.cross(axis).normalized();
-  Vector3 b2 = p_.cross(b1).normalized();
+  // Choose the direction of the first basis vector b1 in the tangent plane by crossing n with
+  // the chosen axis.
+  Matrix33 H_B1_n;
+  Point3 B1 = n.cross(axis, H ? &H_B1_n : nullptr);
 
-  // Create the basis matrix
+  // Normalize result to get a unit vector: b1 = B1 / |B1|.
+  Matrix33 H_b1_B1;
+  Point3 b1 = B1.normalize(H ? &H_b1_B1 : nullptr);
+
+  // Get the second basis vector b2, which is orthogonal to n and b1, by crossing them.
+  // No need to normalize this, p and b1 are orthogonal unit vectors.
+  Matrix33 H_b2_n, H_b2_b1;
+  Point3 b2 = n.cross(b1, H ? &H_b2_n : nullptr, H ? &H_b2_b1 : nullptr);
+
+  // Create the basis by stacking b1 and b2.
   B_.reset(Matrix32());
-  (*B_) << b1, b2;
+  (*B_) << b1.x(), b2.x(), b1.y(), b2.y(), b1.z(), b2.z();
+
+  if (H) {
+    // Chain rule tomfoolery to compute the derivative.
+    const Matrix32& H_n_p = *B_;
+    Matrix32 H_b1_p = H_b1_B1 * H_B1_n * H_n_p;
+    Matrix32 H_b2_p = H_b2_n * H_n_p + H_b2_b1 * H_b1_p;
+
+    // Cache the derivative and fill the result.
+    H_B_.reset(Matrix62());
+    (*H_B_) << H_b1_p, H_b2_p;
+    *H = *H_B_;
+  }
+
   return *B_;
 }
 
 /* ************************************************************************* */
-/// The print fuction
+const Point3& Unit3::point3(OptionalJacobian<3, 2> H) const {
+  if (H)
+    *H = basis();
+  return p_;
+}
+
+/* ************************************************************************* */
+Vector3 Unit3::unitVector(boost::optional<Matrix&> H) const {
+  if (H)
+    *H = basis();
+  return (p_.vector());
+}
+
+/* ************************************************************************* */
+std::ostream& operator<<(std::ostream& os, const Unit3& pair) {
+  os << pair.p_ << endl;
+  return os;
+}
+
+/* ************************************************************************* */
 void Unit3::print(const std::string& s) const {
   cout << s << ":" << p_ << endl;
 }
@@ -116,11 +167,72 @@ Matrix3 Unit3::skew() const {
 }
 
 /* ************************************************************************* */
-Vector2 Unit3::error(const Unit3& q, OptionalJacobian<2,2> H) const {
+double Unit3::dot(const Unit3& q, OptionalJacobian<1,2> H_p, OptionalJacobian<1,2> H_q) const {
+  // Get the unit vectors of each, and the derivative.
+  Matrix32 H_pn_p;
+  const Point3& pn = point3(H_p ? &H_pn_p : 0);
+
+  Matrix32 H_qn_q;
+  const Point3& qn = q.point3(H_q ? &H_qn_q : 0);
+
+  // Compute the dot product of the Point3s.
+  Matrix13 H_dot_pn, H_dot_qn;
+  double d = pn.dot(qn, H_p ? &H_dot_pn : nullptr, H_q ? &H_dot_qn : nullptr);
+
+  if (H_p) {
+    (*H_p) << H_dot_pn * H_pn_p;
+  }
+
+  if (H_q) {
+    (*H_q) = H_dot_qn * H_qn_q;
+  }
+
+  return d;
+}
+
+/* ************************************************************************* */
+Vector2 Unit3::error(const Unit3& q, OptionalJacobian<2,2> H_q) const {
   // 2D error is equal to B'*q, as B is 3x2 matrix and q is 3x1
-  Vector2 xi = basis().transpose() * q.p_;
-  if (H)
-    *H = basis().transpose() * q.basis();
+  Matrix23 Bt = basis().transpose();
+  Vector2 xi = Bt * q.p_.vector();
+  if (H_q) {
+    *H_q = Bt * q.basis();
+  }
+  return xi;
+}
+
+/* ************************************************************************* */
+Vector2 Unit3::errorVector(const Unit3& q, OptionalJacobian<2, 2> H_p, OptionalJacobian<2, 2> H_q) const {
+  // Get the point3 of this, and the derivative.
+  Matrix32 H_qn_q;
+  const Point3& qn = q.point3(H_q ? &H_qn_q : 0);
+
+  // 2D error here is projecting q into the tangent plane of this (p).
+  Matrix62 H_B_p;
+  Matrix23 Bt = basis(H_p ? &H_B_p : nullptr).transpose();
+  Vector2 xi = Bt * qn.vector();
+
+  if (H_p) {
+    // Derivatives of each basis vector.
+    const Matrix32& H_b1_p = H_B_p.block<3, 2>(0, 0);
+    const Matrix32& H_b2_p = H_B_p.block<3, 2>(3, 0);
+
+    // Derivatives of the two entries of xi wrt the basis vectors.
+    Matrix13 H_xi1_b1 = qn.vector().transpose();
+    Matrix13 H_xi2_b2 = qn.vector().transpose();
+
+    // Assemble dxi/dp = dxi/dB * dB/dp.
+    Matrix12 H_xi1_p = H_xi1_b1 * H_b1_p;
+    Matrix12 H_xi2_p = H_xi2_b2 * H_b2_p;
+    *H_p << H_xi1_p, H_xi2_p;
+  }
+
+  if (H_q) {
+    // dxi/dq is given by dxi/dqu * dqu/dq, where qu is the unit vector of q.
+    Matrix23 H_xi_qu = Bt;
+    *H_q = H_xi_qu * H_qn_q;
+  }
+
   return xi;
 }
 
@@ -136,39 +248,46 @@ double Unit3::distance(const Unit3& q, OptionalJacobian<1,2> H) const {
 
 /* ************************************************************************* */
 Unit3 Unit3::retract(const Vector2& v) const {
-  // Compute the 3D xi_hat vector
-  Vector3 xi_hat = basis() * v;
-  double theta = xi_hat.norm();
 
-  // Treat case of very small v differently
-  if (theta < std::numeric_limits<double>::epsilon()) {
-    return Unit3(cos(theta) * p_ + xi_hat);
+  // Get the vector form of the point and the basis matrix
+  Vector3 p = p_.vector();
+  Matrix32 B = basis();
+
+  // Compute the 3D xi_hat vector
+  Vector3 xi_hat = v(0) * B.col(0) + v(1) * B.col(1);
+
+  double xi_hat_norm = xi_hat.norm();
+
+  // Avoid nan
+  if (xi_hat_norm == 0.0) {
+    if (v.norm() == 0.0)
+      return Unit3(point3());
+    else
+      return Unit3(-point3());
   }
 
-  Vector3 exp_p_xi_hat =
-      cos(theta) * p_ + xi_hat * (sin(theta) / theta);
+  Vector3 exp_p_xi_hat = cos(xi_hat_norm) * p
+      + sin(xi_hat_norm) * (xi_hat / xi_hat_norm);
   return Unit3(exp_p_xi_hat);
 }
 
 /* ************************************************************************* */
-Vector2 Unit3::localCoordinates(const Unit3& other) const {
-  const double x = p_.dot(other.p_);
-  // Crucial quantity here is y = theta/sin(theta) with theta=acos(x)
-  // Now, y = acos(x) / sin(acos(x)) = acos(x)/sqrt(1-x^2)
-  // We treat the special case 1 and -1 below
-  const double x2 = x * x;
-  const double z = 1 - x2;
-  double y;
-  if (z < std::numeric_limits<double>::epsilon()) {
-    if (x > 0)  // first order expansion at x=1
-      y = 1.0 - (x - 1.0) / 3.0;
-    else  // cop out
-      return Vector2(M_PI, 0.0);
-  } else {
+Vector2 Unit3::localCoordinates(const Unit3& y) const {
+
+  Vector3 p = p_.vector(), q = y.p_.vector();
+  double dot = p.dot(q);
+
+  // Check for special cases
+  if (dot > 1.0 - 1e-16)
+    return Vector2(0, 0);
+  else if (dot < -1.0 + 1e-16)
+    return Vector2(M_PI, 0);
+  else {
     // no special case
-    y = acos(x) / sqrt(z);
+    double theta = acos(dot);
+    Vector3 result_hat = (theta / sin(theta)) * (q - p * dot);
+    return basis().transpose() * result_hat;
   }
-  return basis().transpose() * y * (other.p_ - x * p_);
 }
 /* ************************************************************************* */
 

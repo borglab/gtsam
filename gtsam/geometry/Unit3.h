@@ -20,16 +20,16 @@
 
 #pragma once
 
-#include <gtsam/geometry/Point3.h>
 #include <gtsam/base/Manifold.h>
-#include <gtsam/base/Matrix.h>
-#include <gtsam/dllexport.h>
+#include <gtsam/geometry/Point2.h>
+#include <gtsam/geometry/Point3.h>
 
-#include <boost/optional.hpp>
 #include <boost/random/mersenne_twister.hpp>
-#include <boost/serialization/nvp.hpp>
+#include <boost/optional.hpp>
 
-#include <string>
+#ifdef GTSAM_USE_TBB
+#include <tbb/mutex.h>
+#endif
 
 namespace gtsam {
 
@@ -38,8 +38,13 @@ class GTSAM_EXPORT Unit3 {
 
 private:
 
-  Vector3 p_; ///< The location of the point on the unit sphere
+  Point3 p_; ///< The location of the point on the unit sphere
   mutable boost::optional<Matrix32> B_; ///< Cached basis
+  mutable boost::optional<Matrix62> H_B_; ///< Cached basis derivative
+
+#ifdef GTSAM_USE_TBB
+  mutable tbb::mutex B_mutex_; ///< Mutex to protect the cached basis.
+#endif
 
 public:
 
@@ -57,18 +62,23 @@ public:
 
   /// Construct from point
   explicit Unit3(const Point3& p) :
-      p_(p.vector().normalized()) {
+      p_(p.normalize()) {
   }
 
   /// Construct from a vector3
-  explicit Unit3(const Vector3& p) :
-      p_(p.normalized()) {
+  explicit Unit3(const Vector3& v) :
+      p_(v / v.norm()) {
   }
 
   /// Construct from x,y,z
   Unit3(double x, double y, double z) :
-      p_(x, y, z) {
-    p_.normalize();
+      p_(Point3(x, y, z).normalize()) {
+  }
+
+  /// Construct from 2D point in plane at focal length f
+  /// Unit3(p,1) can be viewed as normalized homogeneous coordinates of 2D point
+  explicit Unit3(const Point2& p, double f=1.0) :
+      p_(Point3(p.x(), p.y(), f).normalize()) {
   }
 
   /// Named constructor from Point3 with optional Jacobian
@@ -83,12 +93,14 @@ public:
   /// @name Testable
   /// @{
 
+  friend std::ostream& operator<<(std::ostream& os, const Unit3& pair);
+
   /// The print fuction
   void print(const std::string& s = std::string()) const;
 
   /// The equals function with tolerance
   bool equals(const Unit3& s, double tol = 1e-9) const {
-    return equal_with_abs_tol(p_, s.p_, tol);
+    return p_.equals(s.p_, tol);
   }
   /// @}
 
@@ -99,36 +111,49 @@ public:
    * Returns the local coordinate frame to tangent plane
    * It is a 3*2 matrix [b1 b2] composed of two orthogonal directions
    * tangent to the sphere at the current direction.
+   * Provides derivatives of the basis with the two basis vectors stacked up as a 6x1.
    */
-  const Matrix32& basis() const;
+  const Matrix32& basis(OptionalJacobian<6, 2> H = boost::none) const;
 
   /// Return skew-symmetric associated with 3D point on unit sphere
   Matrix3 skew() const;
 
   /// Return unit-norm Point3
-  Point3 point3(OptionalJacobian<3, 2> H = boost::none) const {
-    if (H)
-      *H = basis();
-    return Point3(p_);
-  }
+  const Point3& point3(OptionalJacobian<3, 2> H = boost::none) const;
 
   /// Return unit-norm Vector
-  const Vector3& unitVector(boost::optional<Matrix&> H = boost::none) const {
-    if (H)
-      *H = basis();
-    return p_;
-  }
+  Vector3 unitVector(boost::optional<Matrix&> H = boost::none) const;
 
   /// Return scaled direction as Point3
   friend Point3 operator*(double s, const Unit3& d) {
-    return Point3(s * d.p_);
+    return s * d.p_;
   }
 
+  /// Return dot product with q
+  double dot(const Unit3& q, OptionalJacobian<1,2> H1 = boost::none, //
+                             OptionalJacobian<1,2> H2 = boost::none) const;
+
   /// Signed, vector-valued error between two directions
-  Vector2 error(const Unit3& q, OptionalJacobian<2, 2> H = boost::none) const;
+  /// @deprecated, errorVector has the proper derivatives, this confusingly has only the second.
+  Vector2 error(const Unit3& q, OptionalJacobian<2, 2> H_q = boost::none) const;
+
+  /// Signed, vector-valued error between two directions
+  /// NOTE(hayk): This method has zero derivatives if this (p) and q are orthogonal.
+  Vector2 errorVector(const Unit3& q, OptionalJacobian<2, 2> H_p = boost::none, //
+                      OptionalJacobian<2, 2> H_q = boost::none) const;
 
   /// Distance between two directions
   double distance(const Unit3& q, OptionalJacobian<1, 2> H = boost::none) const;
+
+  /// Cross-product between two Unit3s
+  Unit3 cross(const Unit3& q) const {
+    return Unit3(p_.cross(q.p_));
+  }
+
+  /// Cross-product w Point3
+  Point3 cross(const Point3& q) const {
+    return Point3(p_.vector().cross(q.vector()));
+  }
 
   /// @}
 
@@ -147,7 +172,7 @@ public:
 
   enum CoordinatesMode {
     EXPMAP, ///< Use the exponential map to retract
-    RENORM ///< Retract with vector addition and renormalize.
+    RENORM ///< Retract with vector addtion and renormalize.
   };
 
   /// The retract function
@@ -167,6 +192,13 @@ private:
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_NVP(p_);
+    // homebrew serialize Eigen Matrix
+    ar & boost::serialization::make_nvp("B11", (*B_)(0, 0));
+    ar & boost::serialization::make_nvp("B12", (*B_)(0, 1));
+    ar & boost::serialization::make_nvp("B21", (*B_)(1, 0));
+    ar & boost::serialization::make_nvp("B22", (*B_)(1, 1));
+    ar & boost::serialization::make_nvp("B31", (*B_)(2, 0));
+    ar & boost::serialization::make_nvp("B32", (*B_)(2, 1));
   }
 
   /// @}
