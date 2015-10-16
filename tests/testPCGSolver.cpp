@@ -17,21 +17,11 @@
  */
 
 #include <tests/smallExample.h>
-#include <gtsam/slam/PriorFactor.h>
-#include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/Values.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/GaussNewtonOptimizer.h>
-#include <gtsam/nonlinear/DoglegOptimizer.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/PCGSolver.h>
-#include <gtsam/linear/Preconditioner.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>
-#include <gtsam/linear/NoiseModel.h>
 #include <gtsam/inference/Symbol.h>
-#include <gtsam/geometry/Pose2.h>
 #include <gtsam/base/Matrix.h>
 
 #include <CppUnitLite/TestHarness.h>

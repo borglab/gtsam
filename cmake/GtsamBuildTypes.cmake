@@ -53,11 +53,12 @@ if(NOT FIRST_PASS_DONE)
   endif()
 endif()
 
-# Clang on Mac uses a template depth that is less than standard and is too small
+# Clang uses a template depth that is less than standard and is too small
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-	if(NOT "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS "5.0")
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-depth=1024")
-	endif()
+    # Apple Clang before 5.0 does not support -ftemplate-depth.
+    if(NOT (APPLE AND "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS "5.0"))
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-depth=1024")
+    endif()
 endif()
 
 # Set up build type library postfixes
@@ -97,7 +98,8 @@ if(    NOT cmake_build_type_tolower STREQUAL ""
    AND NOT cmake_build_type_tolower STREQUAL "release"
    AND NOT cmake_build_type_tolower STREQUAL "timing"
    AND NOT cmake_build_type_tolower STREQUAL "profiling"
-   AND NOT cmake_build_type_tolower STREQUAL "relwithdebinfo")
+   AND NOT cmake_build_type_tolower STREQUAL "relwithdebinfo"
+   AND NOT cmake_build_type_tolower STREQUAL "minsizerel")
   message(FATAL_ERROR "Unknown build type \"${CMAKE_BUILD_TYPE}\". Allowed values are None, Debug, Release, Timing, Profiling, RelWithDebInfo (case-insensitive).")
 endif()
 

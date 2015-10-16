@@ -20,14 +20,11 @@
 #pragma once
 
 #include <gtsam/dllexport.h>
-#include <gtsam/config.h>
+#include <boost/concept/assert.hpp>
+#include <boost/range/concepts.hpp>
+#include <gtsam/config.h> // for GTSAM_USE_TBB
 
 #include <cstddef>
-#include <string>
-#include <iostream>
-#include <boost/function/function1.hpp>
-#include <boost/range/concepts.hpp>
-#include <boost/optional.hpp>
 
 #ifdef GTSAM_USE_TBB
 #include <tbb/task_scheduler_init.h>
@@ -58,21 +55,8 @@ namespace gtsam {
   /// Integer nonlinear key type
   typedef size_t Key;
 
-  /// Typedef for a function to format a key, i.e. to convert it to a string
-  typedef boost::function<std::string(Key)> KeyFormatter;
-
-  // Helper function for DefaultKeyFormatter
-  GTSAM_EXPORT std::string _defaultKeyFormatter(Key key);
-
-  /// The default KeyFormatter, which is used if no KeyFormatter is passed to
-  /// a nonlinear 'print' function.  Automatically detects plain integer keys
-  /// and Symbol keys.
-  static const KeyFormatter DefaultKeyFormatter = &_defaultKeyFormatter;
-
-
   /// The index type for Eigen objects
   typedef ptrdiff_t DenseIndex;
-
 
   /* ************************************************************************* */
   /**
@@ -147,104 +131,6 @@ namespace gtsam {
   ListOfOneContainer<T> ListOfOne(const T& element) {
     return ListOfOneContainer<T>(element);
   }
-
-  /* ************************************************************************* */
-  /// Base exception type that uses tbb_exception if GTSAM is compiled with TBB.
-  template<class DERIVED>
-  class ThreadsafeException :
-#ifdef GTSAM_USE_TBB
-    public tbb::tbb_exception
-#else
-    public std::exception
-#endif
-  {
-#ifdef GTSAM_USE_TBB
-  private:
-    typedef tbb::tbb_exception Base;
-  protected:
-    typedef std::basic_string<char, std::char_traits<char>, tbb::tbb_allocator<char> > String;
-#else
-  private:
-    typedef std::exception Base;
-  protected:
-    typedef std::string String;
-#endif
-
-  protected:
-    bool dynamic_; ///< Whether this object was moved
-    mutable boost::optional<String> description_; ///< Optional description
-
-    /// Default constructor is protected - may only be created from derived classes
-    ThreadsafeException() : dynamic_(false) {}
-
-    /// Copy constructor is protected - may only be created from derived classes
-    ThreadsafeException(const ThreadsafeException& other) : Base(other), dynamic_(false) {}
-
-    /// Construct with description string
-    ThreadsafeException(const std::string& description) : dynamic_(false), description_(String(description.begin(), description.end())) {}
-
-    /// Default destructor doesn't have the throw()
-    virtual ~ThreadsafeException() throw () {}
-
-  public:
-    // Implement functions for tbb_exception
-#ifdef GTSAM_USE_TBB
-    virtual tbb::tbb_exception* move() throw () {
-      void* cloneMemory = scalable_malloc(sizeof(DERIVED));
-      if (!cloneMemory) {
-        std::cerr << "Failed allocating memory to copy thrown exception, exiting now." << std::endl;
-        exit(-1);
-      }
-      DERIVED* clone = ::new(cloneMemory) DERIVED(static_cast<DERIVED&>(*this));
-      clone->dynamic_ = true;
-      return clone;
-    }
-
-    virtual void destroy() throw() {
-      if (dynamic_) {
-        DERIVED* derivedPtr = static_cast<DERIVED*>(this);
-        derivedPtr->~DERIVED();
-        scalable_free(derivedPtr);
-      }
-    }
-
-    virtual void throw_self() {
-      throw *static_cast<DERIVED*>(this); }
-
-    virtual const char* name() const throw() {
-      return typeid(DERIVED).name(); }
-#endif
-
-    virtual const char* what() const throw() {
-      return description_ ? description_->c_str() : ""; }
-  };
-
-  /* ************************************************************************* */
-  /// Threadsafe runtime error exception
-  class RuntimeErrorThreadsafe : public ThreadsafeException<RuntimeErrorThreadsafe>
-  {
-  public:
-    /// Construct with a string describing the exception
-    RuntimeErrorThreadsafe(const std::string& description) : ThreadsafeException<RuntimeErrorThreadsafe>(description) {}
-  };
-
-  /* ************************************************************************* */
-  /// Threadsafe runtime error exception
-  class OutOfRangeThreadsafe : public ThreadsafeException<OutOfRangeThreadsafe>
-  {
-  public:
-    /// Construct with a string describing the exception
-    OutOfRangeThreadsafe(const std::string& description) : ThreadsafeException<OutOfRangeThreadsafe>(description) {}
-  };
-
-  /* ************************************************************************* */
-  /// Threadsafe invalid argument exception
-  class InvalidArgumentThreadsafe : public ThreadsafeException<InvalidArgumentThreadsafe>
-  {
-  public:
-    /// Construct with a string describing the exception
-    InvalidArgumentThreadsafe(const std::string& description) : ThreadsafeException<InvalidArgumentThreadsafe>(description) {}
-  };
 
   /* ************************************************************************* */
 #ifdef __clang__

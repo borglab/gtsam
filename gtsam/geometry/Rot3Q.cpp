@@ -49,14 +49,6 @@ namespace gtsam {
             R31, R32, R33).finished()) {}
 
   /* ************************************************************************* */
-  Rot3::Rot3(const Matrix3& R) :
-      quaternion_(R) {}
-
-  /* ************************************************************************* */
-  Rot3::Rot3(const Matrix& R) :
-      quaternion_(Matrix3(R)) {}
-
-  /* ************************************************************************* */
   Rot3::Rot3(const Quaternion& q) :
       quaternion_(q) {
   }
@@ -83,10 +75,6 @@ namespace gtsam {
       Quaternion(Eigen::AngleAxisd(x, Eigen::Vector3d::UnitX())));
   }
 
-  /* ************************************************************************* */
-  Rot3 Rot3::rodriguez(const Vector3& w, double theta) {
-    return Quaternion(Eigen::AngleAxis<double>(theta, w));
-  }
   /* ************************************************************************* */
   Rot3 Rot3::operator*(const Rot3& R2) const {
     return Rot3(quaternion_ * R2.quaternion_);

@@ -18,8 +18,8 @@
  */
 
 #pragma once
-
-#include <gtsam/3rdparty/Eigen/Eigen/Dense>
+#include <gtsam/config.h>      // Configuration from CMake
+#include <Eigen/Dense>
 
 #ifndef OPTIONALJACOBIAN_NOBOOST
 #include <boost/optional.hpp>
@@ -40,7 +40,8 @@ class OptionalJacobian {
 
 public:
 
-  /// ::Jacobian size type
+  /// Jacobian size type
+  /// TODO(frank): how to enforce RowMajor? Or better, make it work with any storage order?
   typedef Eigen::Matrix<double, Rows, Cols> Jacobian;
 
 private:
@@ -52,6 +53,14 @@ private:
   void usurp(double* data) {
     new (&map_) Eigen::Map<Jacobian>(data);
   }
+
+  // Private and very dangerous constructor straight from memory
+  OptionalJacobian(double* data) : map_(NULL) {
+    if (data) usurp(data);
+  }
+
+  template<int M, int N>
+  friend class OptionalJacobian;
 
 public:
 
@@ -83,7 +92,7 @@ public:
 #ifndef OPTIONALJACOBIAN_NOBOOST
 
   /// Constructor with boost::none just makes empty
-  OptionalJacobian(boost::none_t none) :
+  OptionalJacobian(boost::none_t /*none*/) :
       map_(NULL) {
   }
 
@@ -98,6 +107,11 @@ public:
 
 #endif
 
+  /// Constructor that will usurp data of a block expression
+  /// TODO(frank): unfortunately using a Map makes usurping non-contiguous memory impossible
+  //  template <typename Derived, bool InnerPanel>
+  //  OptionalJacobian(Eigen::Block<Derived,Rows,Cols,InnerPanel> block) : map_(NULL) { ?? }
+
   /// Return true is allocated, false if default constructor was used
   operator bool() const {
     return map_.data() != NULL;
@@ -108,8 +122,36 @@ public:
     return map_;
   }
 
-  /// TODO: operator->()
-  Eigen::Map<Jacobian>* operator->(){ return &map_; }
+  /// operator->()
+  Eigen::Map<Jacobian>* operator->() {
+    return &map_;
+  }
+
+  /// Access M*N sub-block if we are allocated, otherwise none
+  /// TODO(frank): this could work as is below if only constructor above worked
+  //  template <int M, int N>
+  //  OptionalJacobian<M, N> block(int startRow, int startCol) {
+  //    if (*this)
+  //      OptionalJacobian<M, N>(map_.block<M, N>(startRow, startCol));
+  //    else
+  //      return OptionalJacobian<M, N>();
+  //  }
+
+  /// Access Rows*N sub-block if we are allocated, otherwise return an empty OptionalJacobian
+  /// The use case is functions with arguments that are dissected, e.g. Pose3 into Rot3, Point3
+  /// TODO(frank): ideally, we'd like full block functionality, but see note above.
+  template <int N>
+  OptionalJacobian<Rows, N> cols(int startCol) {
+    if (*this)
+      return OptionalJacobian<Rows, N>(&map_(0,startCol));
+    else
+      return OptionalJacobian<Rows, N>();
+  }
+
+  /// Access M*Cols sub-block if we are allocated, otherwise return empty OptionalJacobian
+  /// The use case is functions that create their return value piecemeal by calling other functions
+  /// TODO(frank): Unfortunately we assume column-major storage order and hence this can't work
+  /// template <int M> OptionalJacobian<M, Cols> rows(int startRow) { ?? }
 };
 
 // The pure dynamic specialization of this is needed to support
@@ -142,7 +184,7 @@ public:
 #ifndef OPTIONALJACOBIAN_NOBOOST
 
   /// Constructor with boost::none just makes empty
-  OptionalJacobian(boost::none_t none) :
+  OptionalJacobian(boost::none_t /*none*/) :
     pointer_(NULL) {
   }
 
@@ -166,6 +208,31 @@ public:
 
   /// TODO: operator->()
   Jacobian* operator->(){ return pointer_; }
+};
+
+// forward declare
+template <typename T> struct traits;
+
+/**
+ * @brief: meta-function to generate Jacobian
+ * @param T return type
+ * @param A argument type
+ */
+template <class T, class A>
+struct MakeJacobian {
+  typedef Eigen::Matrix<double, traits<T>::dimension, traits<A>::dimension> type;
+};
+
+/**
+ * @brief: meta-function to generate JacobianTA optional reference
+ * Used mainly by Expressions
+ * @param T return type
+ * @param A argument type
+ */
+template<class T, class A>
+struct MakeOptionalJacobian {
+  typedef OptionalJacobian<traits<T>::dimension,
+      traits<A>::dimension> type;
 };
 
 } // namespace gtsam

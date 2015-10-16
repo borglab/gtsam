@@ -11,6 +11,7 @@ namespace Eigen {
   - \subpage TopicCustomizingEigen
   - \subpage TopicMultiThreading
   - \subpage TopicUsingIntelMKL
+  - \subpage TopicPitfalls
   - \subpage TopicTemplateKeyword
   - \subpage UserManual_UnderstandingEigen
 */

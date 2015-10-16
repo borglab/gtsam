@@ -9,7 +9,10 @@ set (gtsam_subdirs
     discrete
     linear
     nonlinear
+    sam
+    sfm
     slam
+    smart
 	navigation
 )
 
@@ -130,12 +133,6 @@ else()
     list(APPEND GTSAM_EXPORTED_TARGETS gtsam)
     set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
 endif()
-
-# Set dataset paths
-set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/slam/dataset.cpp"
-    APPEND PROPERTY COMPILE_DEFINITIONS
-	"SOURCE_TREE_DATASET_DIR=\"${PROJECT_SOURCE_DIR}/examples/Data\""
-	"INSTALLED_DATASET_DIR=\"${GTSAM_TOOLBOX_INSTALL_PATH}/gtsam_examples/Data\"")
 
 # Special cases
 if(MSVC)

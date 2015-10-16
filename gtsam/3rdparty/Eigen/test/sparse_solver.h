@@ -124,7 +124,23 @@ void check_sparse_determinant(Solver& solver, const typename Solver::MatrixType&
   Scalar refDet = dA.determinant();
   VERIFY_IS_APPROX(refDet,solver.determinant());
 }
+template<typename Solver, typename DenseMat>
+void check_sparse_abs_determinant(Solver& solver, const typename Solver::MatrixType& A, const DenseMat& dA)
+{
+  using std::abs;
+  typedef typename Solver::MatrixType Mat;
+  typedef typename Mat::Scalar Scalar;
+  
+  solver.compute(A);
+  if (solver.info() != Success)
+  {
+    std::cerr << "sparse solver testing: factorization failed (check_sparse_abs_determinant)\n";
+    return;
+  }
 
+  Scalar refDet = abs(dA.determinant());
+  VERIFY_IS_APPROX(refDet,solver.absDeterminant());
+}
 
 template<typename Solver, typename DenseMat>
 int generate_sparse_spd_problem(Solver& , typename Solver::MatrixType& A, typename Solver::MatrixType& halfA, DenseMat& dA, int maxSize = 300)
@@ -145,7 +161,10 @@ int generate_sparse_spd_problem(Solver& , typename Solver::MatrixType& A, typena
   dA = dM * dM.adjoint();
   
   halfA.resize(size,size);
-  halfA.template selfadjointView<Solver::UpLo>().rankUpdate(M);
+  if(Solver::UpLo==(Lower|Upper))
+    halfA = A;
+  else
+    halfA.template selfadjointView<Solver::UpLo>().rankUpdate(M);
   
   return size;
 }
@@ -258,7 +277,17 @@ int generate_sparse_square_problem(Solver&, typename Solver::MatrixType& A, Dens
   return size;
 }
 
-template<typename Solver> void check_sparse_square_solving(Solver& solver)
+
+struct prune_column {
+  int m_col;
+  prune_column(int col) : m_col(col) {}
+  template<class Scalar>
+  bool operator()(int, int col, const Scalar&) const {
+    return col != m_col;
+  }
+};
+
+template<typename Solver> void check_sparse_square_solving(Solver& solver, bool checkDeficient = false)
 {
   typedef typename Solver::MatrixType Mat;
   typedef typename Mat::Scalar Scalar;
@@ -289,6 +318,13 @@ template<typename Solver> void check_sparse_square_solving(Solver& solver)
     {
       b = DenseVector::Zero(size);
       check_sparse_solving(solver, A, b, dA, b);
+    }
+    // regression test for Bug 792 (structurally rank deficient matrices):
+    if(checkDeficient && size>1) {
+      int col = internal::random<int>(0,size-1);
+      A.prune(prune_column(col));
+      solver.compute(A);
+      VERIFY_IS_EQUAL(solver.info(), NumericalIssue);
     }
   }
   
@@ -324,3 +360,20 @@ template<typename Solver> void check_sparse_square_determinant(Solver& solver)
     check_sparse_determinant(solver, A, dA);
   }
 }
+
+template<typename Solver> void check_sparse_square_abs_determinant(Solver& solver)
+{
+  typedef typename Solver::MatrixType Mat;
+  typedef typename Mat::Scalar Scalar;
+  typedef Matrix<Scalar,Dynamic,Dynamic> DenseMatrix;
+
+  // generate the problem
+  Mat A;
+  DenseMatrix dA;
+  generate_sparse_square_problem(solver, A, dA, 30);
+  A.makeCompressed();
+  for (int i = 0; i < g_repeat; i++) {
+    check_sparse_abs_determinant(solver, A, dA);
+  }
+}
+

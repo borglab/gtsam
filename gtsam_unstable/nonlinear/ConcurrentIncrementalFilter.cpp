@@ -184,7 +184,7 @@ void ConcurrentIncrementalFilter::synchronize(const NonlinearFactorGraph& smooth
   previousSmootherSummarization_ = smootherSummarization;
 
   // Find the set of new separator keys
-  const FastSet<Key>& newSeparatorKeys = isam2_.getFixedVariables();
+  const KeySet& newSeparatorKeys = isam2_.getFixedVariables();
 
   // Use the shortcut to calculate an updated marginal on the current separator
   // Combine just the shortcut and the previousSmootherSummarization
@@ -291,7 +291,7 @@ std::vector<size_t> ConcurrentIncrementalFilter::FindAdjacentFactors(const ISAM2
   std::vector<size_t> removedFactorSlots;
   const VariableIndex& variableIndex = isam2.getVariableIndex();
   BOOST_FOREACH(Key key, keys) {
-    const FastList<size_t>& slots = variableIndex[key];
+    const FastVector<size_t>& slots = variableIndex[key];
     removedFactorSlots.insert(removedFactorSlots.end(), slots.begin(), slots.end());
   }
 
@@ -312,7 +312,7 @@ std::vector<size_t> ConcurrentIncrementalFilter::FindAdjacentFactors(const ISAM2
 void ConcurrentIncrementalFilter::updateShortcut(const NonlinearFactorGraph& removedFactors) {
 
   // Calculate the set of shortcut keys: NewSeparatorKeys + OldSeparatorKeys
-  FastSet<Key> shortcutKeys;
+  KeySet shortcutKeys;
   BOOST_FOREACH(size_t slot, currentSmootherSummarizationSlots_) {
     const NonlinearFactor::shared_ptr& factor = isam2_.getFactorsUnsafe().at(slot);
     if(factor) {
@@ -343,7 +343,7 @@ NonlinearFactorGraph ConcurrentIncrementalFilter::calculateFilterSummarization()
   // variables that result from marginalizing out all of the other variables
 
   // Find the set of current separator keys
-  const FastSet<Key>& separatorKeys = isam2_.getFixedVariables();
+  const KeySet& separatorKeys = isam2_.getFixedVariables();
 
   // Find all cliques that contain any separator variables
   std::set<ISAM2Clique::shared_ptr> separatorCliques;

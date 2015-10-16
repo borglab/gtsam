@@ -28,14 +28,14 @@ using namespace gtsam;
 GTSAM_CONCEPT_TESTABLE_INST(Rot3)
 GTSAM_CONCEPT_LIE_INST(Rot3)
 
-static Rot3 R = Rot3::rodriguez(0.1, 0.4, 0.2);
+static Rot3 R = Rot3::Rodrigues(0.1, 0.4, 0.2);
 static Point3 P(0.2, 0.7, -2.0);
 
 /* ************************************************************************* */
 TEST(Rot3, manifold_cayley)
 {
-  Rot3 gR1 = Rot3::rodriguez(0.1, 0.4, 0.2);
-  Rot3 gR2 = Rot3::rodriguez(0.3, 0.1, 0.7);
+  Rot3 gR1 = Rot3::Rodrigues(0.1, 0.4, 0.2);
+  Rot3 gR2 = Rot3::Rodrigues(0.3, 0.1, 0.7);
   Rot3 origin;
 
   // log behaves correctly

@@ -173,7 +173,7 @@ public:
       Point3 _1T2 = E.direction().point3();
       Point3 d1T2 = d * _1T2;
       Point3 dP2 = E.rotation().unrotate(dP1_ - d1T2); // 2R1*((x,y,1)-d*1T2)
-      pn = SimpleCamera::project_to_camera(dP2);
+      pn = PinholeBase::Project(dP2);
 
     } else {
 
@@ -186,7 +186,7 @@ public:
       Point3 dP2 = E.rotation().unrotate(dP1_ - d1T2, DdP2_rot, DP2_point);
 
       Matrix23 Dpn_dP2;
-      pn = SimpleCamera::project_to_camera(dP2, Dpn_dP2);
+      pn = PinholeBase::Project(dP2, Dpn_dP2);
 
       if (DE) {
         Matrix DdP2_E(3, 5);

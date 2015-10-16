@@ -14,12 +14,10 @@ foreach(snippet_src ${snippets_SRCS})
   if(EIGEN_STANDARD_LIBRARIES_TO_LINK_TO)
     target_link_libraries(${compile_snippet_target} ${EIGEN_STANDARD_LIBRARIES_TO_LINK_TO})
   endif()
-  get_target_property(compile_snippet_executable
-                      ${compile_snippet_target} LOCATION)
   add_custom_command(
     TARGET ${compile_snippet_target}
     POST_BUILD
-    COMMAND ${compile_snippet_executable}
+    COMMAND ${compile_snippet_target}
     ARGS >${CMAKE_CURRENT_BINARY_DIR}/${snippet}.out
   )
   add_dependencies(all_snippets ${compile_snippet_target})

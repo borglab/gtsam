@@ -57,15 +57,15 @@ TEST(SO3 , Retract) {
 
 //******************************************************************************
 TEST(SO3 , Invariants) {
-  check_group_invariants(id,id);
-  check_group_invariants(id,R1);
-  check_group_invariants(R2,id);
-  check_group_invariants(R2,R1);
+  EXPECT(check_group_invariants(id,id));
+  EXPECT(check_group_invariants(id,R1));
+  EXPECT(check_group_invariants(R2,id));
+  EXPECT(check_group_invariants(R2,R1));
 
-  check_manifold_invariants(id,id);
-  check_manifold_invariants(id,R1);
-  check_manifold_invariants(R2,id);
-  check_manifold_invariants(R2,R1);
+  EXPECT(check_manifold_invariants(id,id));
+  EXPECT(check_manifold_invariants(id,R1));
+  EXPECT(check_manifold_invariants(R2,id));
+  EXPECT(check_manifold_invariants(R2,R1));
 }
 
 //******************************************************************************

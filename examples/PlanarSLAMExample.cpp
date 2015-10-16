@@ -42,7 +42,7 @@
 // Also, we will initialize the robot at the origin using a Prior factor.
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/slam/BearingRangeFactor.h>
+#include <gtsam/sam/BearingRangeFactor.h>
 
 // When the factors are created, we will add them to a Factor Graph. As the factors we are using
 // are nonlinear factors, we will need a Nonlinear Factor Graph.

@@ -38,6 +38,7 @@ using namespace gtsam::serializationTestHelpers;
 
 /* ************************************************************************* */
 // Export Noisemodels
+// See http://www.boost.org/doc/libs/1_32_0/libs/serialization/doc/special.html
 BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Constrained, "gtsam_noiseModel_Constrained");
 BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Diagonal, "gtsam_noiseModel_Diagonal");
 BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Gaussian, "gtsam_noiseModel_Gaussian");

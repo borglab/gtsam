@@ -59,7 +59,7 @@ bool Pose2::equals(const Pose2& q, double tol) const {
 }
 
 /* ************************************************************************* */
-Pose2 Pose2::Expmap(const Vector& xi, OptionalJacobian<3, 3> H) {
+Pose2 Pose2::Expmap(const Vector3& xi, OptionalJacobian<3, 3> H) {
   if (H) *H = Pose2::ExpmapDerivative(xi);
   assert(xi.size() == 3);
   Point2 v(xi(0),xi(1));
@@ -130,7 +130,7 @@ Matrix3 Pose2::AdjointMap() const {
 }
 
 /* ************************************************************************* */
-Matrix3 Pose2::adjointMap(const Vector& v) {
+Matrix3 Pose2::adjointMap(const Vector3& v) {
   // See Chirikjian12book2, vol.2, pg. 36
   Matrix3 ad = zeros(3,3);
   ad(0,1) = -v[2];
@@ -201,95 +201,88 @@ Pose2 Pose2::inverse() const {
 /* ************************************************************************* */
 // see doc/math.lyx, SE(2) section
 Point2 Pose2::transform_to(const Point2& point,
-    OptionalJacobian<2, 3> H1, OptionalJacobian<2, 2> H2) const {
-  Point2 d = point - t_;
-  Point2 q = r_.unrotate(d);
-  if (!H1 && !H2) return q;
-  if (H1) *H1 <<
-      -1.0, 0.0,  q.y(),
-      0.0, -1.0, -q.x();
-  if (H2) *H2 << r_.transpose();
+    OptionalJacobian<2, 3> Hpose, OptionalJacobian<2, 2> Hpoint) const {
+  OptionalJacobian<2, 2> Htranslation = Hpose.cols<2>(0);
+  OptionalJacobian<2, 1> Hrotation = Hpose.cols<1>(2);
+  const Point2 q = r_.unrotate(point - t_, Hrotation, Hpoint);
+  if (Htranslation) *Htranslation << -1.0, 0.0, 0.0, -1.0;
   return q;
 }
 
 /* ************************************************************************* */
 // see doc/math.lyx, SE(2) section
-Point2 Pose2::transform_from(const Point2& p,
-    OptionalJacobian<2, 3> H1, OptionalJacobian<2, 2> H2) const {
-  const Point2 q = r_ * p;
-  if (H1 || H2) {
-    const Matrix2 R = r_.matrix();
-    Matrix21 Drotate1;
-    Drotate1 <<  -q.y(), q.x();
-    if (H1) *H1 << R, Drotate1;
-    if (H2) *H2 = R; // R
-  }
+Point2 Pose2::transform_from(const Point2& point,
+    OptionalJacobian<2, 3> Hpose, OptionalJacobian<2, 2> Hpoint) const {
+  OptionalJacobian<2, 2> Htranslation = Hpose.cols<2>(0);
+  OptionalJacobian<2, 1> Hrotation = Hpose.cols<1>(2);
+  const Point2 q = r_.rotate(point, Hrotation, Hpoint);
+  if (Htranslation) *Htranslation = Hpoint ? *Hpoint : r_.matrix();
   return q + t_;
 }
 
 /* ************************************************************************* */
 Rot2 Pose2::bearing(const Point2& point,
-    OptionalJacobian<1, 3> H1, OptionalJacobian<1, 2> H2) const {
+    OptionalJacobian<1, 3> Hpose, OptionalJacobian<1, 2> Hpoint) const {
   // make temporary matrices
-  Matrix23 D1; Matrix2 D2;
-  Point2 d = transform_to(point, H1 ? &D1 : 0, H2 ? &D2 : 0); // uses pointer version
-  if (!H1 && !H2) return Rot2::relativeBearing(d);
+  Matrix23 D_d_pose; Matrix2 D_d_point;
+  Point2 d = transform_to(point, Hpose ? &D_d_pose : 0, Hpoint ? &D_d_point : 0);
+  if (!Hpose && !Hpoint) return Rot2::relativeBearing(d);
   Matrix12 D_result_d;
-  Rot2 result = Rot2::relativeBearing(d, D_result_d);
-  if (H1) *H1 = D_result_d * (D1);
-  if (H2) *H2 = D_result_d * (D2);
+  Rot2 result = Rot2::relativeBearing(d, Hpose || Hpoint ? &D_result_d : 0);
+  if (Hpose) *Hpose = D_result_d * D_d_pose;
+  if (Hpoint) *Hpoint = D_result_d * D_d_point;
   return result;
 }
 
 /* ************************************************************************* */
 Rot2 Pose2::bearing(const Pose2& pose,
-    OptionalJacobian<1, 3> H1, OptionalJacobian<1, 3> H2) const {
+    OptionalJacobian<1, 3> Hpose, OptionalJacobian<1, 3> Hother) const {
   Matrix12 D2;
-  Rot2 result = bearing(pose.t(), H1, H2 ? &D2 : 0);
-  if (H2) {
+  Rot2 result = bearing(pose.t(), Hpose, Hother ? &D2 : 0);
+  if (Hother) {
     Matrix12 H2_ = D2 * pose.r().matrix();
-    *H2 << H2_, Z_1x1;
+    *Hother << H2_, Z_1x1;
   }
   return result;
 }
 /* ************************************************************************* */
 double Pose2::range(const Point2& point,
-    OptionalJacobian<1,3> H1, OptionalJacobian<1,2> H2) const {
+    OptionalJacobian<1,3> Hpose, OptionalJacobian<1,2> Hpoint) const {
   Point2 d = point - t_;
-  if (!H1 && !H2) return d.norm();
-  Matrix12 H;
-  double r = d.norm(H);
-  if (H1) {
-      Matrix23 H1_;
-      H1_ << -r_.c(),  r_.s(),  0.0,
-              -r_.s(), -r_.c(),  0.0;
-      *H1 = H * H1_;
+  if (!Hpose && !Hpoint) return d.norm();
+  Matrix12 D_r_d;
+  double r = d.norm(D_r_d);
+  if (Hpose) {
+      Matrix23 D_d_pose;
+      D_d_pose << -r_.c(),  r_.s(),  0.0,
+                  -r_.s(), -r_.c(),  0.0;
+      *Hpose = D_r_d * D_d_pose;
   }
-  if (H2) *H2 = H;
+  if (Hpoint) *Hpoint = D_r_d;
   return r;
 }
 
 /* ************************************************************************* */
 double Pose2::range(const Pose2& pose,
-    OptionalJacobian<1,3> H1,
-    OptionalJacobian<1,3> H2) const {
+    OptionalJacobian<1,3> Hpose,
+    OptionalJacobian<1,3> Hother) const {
   Point2 d = pose.t() - t_;
-  if (!H1 && !H2) return d.norm();
-  Matrix12 H;
-  double r = d.norm(H);
-  if (H1) {
-      Matrix23 H1_;
-      H1_ <<
+  if (!Hpose && !Hother) return d.norm();
+  Matrix12 D_r_d;
+  double r = d.norm(D_r_d);
+  if (Hpose) {
+      Matrix23 D_d_pose;
+      D_d_pose <<
       -r_.c(),  r_.s(),  0.0,
       -r_.s(), -r_.c(),  0.0;
-      *H1 = H * H1_;
+      *Hpose = D_r_d * D_d_pose;
   }
-  if (H2) {
-      Matrix23 H2_;
-      H2_ <<
+  if (Hother) {
+      Matrix23 D_d_other;
+      D_d_other <<
       pose.r_.c(), -pose.r_.s(),  0.0,
       pose.r_.s(),  pose.r_.c(),  0.0;
-      *H2 = H * H2_;
+      *Hother = D_r_d * D_d_other;
   }
   return r;
 }

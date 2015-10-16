@@ -48,8 +48,10 @@ testVisualISAMExample
 display 'Starting: testUtilities'
 testUtilities
 
-display 'Starting: testSerialization'
-testSerialization
+if(exist('testSerialization.m','file'))
+    display 'Starting: testSerialization'
+    testSerialization
+end
 
 % end of tests
 display 'Tests complete!'

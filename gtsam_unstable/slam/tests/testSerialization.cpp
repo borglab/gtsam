@@ -17,7 +17,7 @@
 
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/slam/BearingRangeFactor.h>
+#include <gtsam/sam/BearingRangeFactor.h>
 
 #include <stdlib.h>
 #include <fstream>

@@ -29,16 +29,15 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  StereoPoint2 StereoCamera::project(const Point3& point,
-      OptionalJacobian<3,6> H1, OptionalJacobian<3,3> H2,
-      OptionalJacobian<3,6> H3) const {
+  StereoPoint2 StereoCamera::project(const Point3& point) const {
+    return project2(point);
+  }
 
-#ifdef STEREOCAMERA_CHAIN_RULE
-    const Point3 q = leftCamPose_.transform_to(point, H1, H2);
-#else
-    // omit derivatives
+  /* ************************************************************************* */
+  StereoPoint2 StereoCamera::project2(const Point3& point,
+      OptionalJacobian<3,6> H1, OptionalJacobian<3,3> H2) const {
+
     const Point3 q = leftCamPose_.transform_to(point);
-#endif
 
     if ( q.z() <= 0 ) throw StereoCheiralityException();
 
@@ -56,12 +55,6 @@ namespace gtsam {
 
     // check if derivatives need to be computed
     if (H1 || H2) {
-#ifdef STEREOCAMERA_CHAIN_RULE
-      // just implement chain rule
-      Matrix3 D_project_point = Dproject_to_stereo_camera1(q); // 3x3 Jacobian
-      if (H1) *H1 = D_project_point*(*H1);
-      if (H2) *H2 = D_project_point*(*H2);
-#else
       // optimized version, see StereoCamera.nb
       if (H1) {
         const double v1 = v/fy, v2 = fx*v1, dx=d*x;
@@ -76,10 +69,6 @@ namespace gtsam {
                 fy*R(0, 1) - R(0, 2)*v , fy*R(1, 1) - R(1, 2)*v , fy*R(2, 1) - R(2, 2)*v;
         *H2 << d * (*H2);
       }
-#endif
-      if (H3)
-        // TODO, this is set to zero, as Cal3_S2Stereo cannot be optimized yet
-        H3->setZero();
     }
 
     // finally translate
@@ -87,15 +76,57 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Matrix3 StereoCamera::Dproject_to_stereo_camera1(const Point3& P) const {
-    double d = 1.0 / P.z(), d2 = d*d;
+  StereoPoint2 StereoCamera::project(const Point3& point,
+      OptionalJacobian<3,6> H1, OptionalJacobian<3,3> H2,
+      OptionalJacobian<3,0> H3) const {
+    if (H3)
+    throw std::runtime_error(
+        "StereoCamera::project does not support third derivative - BTW use project2");
+    return project2(point,H1,H2);
+  }
+
+  /* ************************************************************************* */
+  Point3 StereoCamera::backproject(const StereoPoint2& z) const {
+    Vector measured = z.vector();
+    double Z = K_->baseline() * K_->fx() / (measured[0] - measured[1]);
+    double X = Z * (measured[0] - K_->px()) / K_->fx();
+    double Y = Z * (measured[2] - K_->py()) / K_->fy();
+    Point3 point = leftCamPose_.transform_from(Point3(X, Y, Z));
+    return point;
+  }
+
+  /* ************************************************************************* */
+  Point3 StereoCamera::backproject2(const StereoPoint2& z, OptionalJacobian<3, 6> H1,
+                                    OptionalJacobian<3, 3> H2)  const {
     const Cal3_S2Stereo& K = *K_;
-    double f_x = K.fx(), f_y = K.fy(), b = K.baseline();
-    Matrix3 m;
-    m << f_x*d,   0.0, -d2*f_x* P.x(),
-         f_x*d,   0.0, -d2*f_x*(P.x() - b),
-           0.0, f_y*d, -d2*f_y* P.y();
-    return m;
+    const double fx = K.fx(), fy = K.fy(), cx = K.px(), cy = K.py(), b = K.baseline();
+
+    double uL = z.uL(), uR = z.uR(), v = z.v();
+    double disparity = uL - uR;
+
+    double local_z = b * fx / disparity;
+    const Point3 local(local_z * (uL - cx)/ fx, local_z * (v - cy) / fy, local_z);
+
+    if(H1 || H2) {
+      double z_partial_uR = local_z/disparity;
+      double x_partial_uR = local.x()/disparity;
+      double y_partial_uR = local.y()/disparity;
+      Matrix3 D_local_z;
+      D_local_z << -x_partial_uR + local.z()/fx, x_partial_uR, 0,
+          -y_partial_uR, y_partial_uR, local.z() / fy,
+          -z_partial_uR, z_partial_uR, 0;
+
+      Matrix3 D_point_local;
+      const Point3 point = leftCamPose_.transform_from(local, H1, D_point_local);
+
+      if(H2) {
+        *H2 = D_point_local * D_local_z;
+      }
+
+      return point;
+    }
+
+    return leftCamPose_.transform_from(local);
   }
 
 }

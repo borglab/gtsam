@@ -57,10 +57,10 @@ struct GTSAM_EXPORT ISAM2::Impl {
   /**
    * Remove variables from the ISAM2 system.
    */
-  static void RemoveVariables(const FastSet<Key>& unusedKeys, const FastVector<ISAM2::sharedClique>& roots,
+  static void RemoveVariables(const KeySet& unusedKeys, const FastVector<ISAM2::sharedClique>& roots,
     Values& theta, VariableIndex& variableIndex, VectorValues& delta, VectorValues& deltaNewton,
-    VectorValues& RgProd, FastSet<Key>& replacedKeys, Base::Nodes& nodes,
-    FastSet<Key>& fixedVariables);
+    VectorValues& RgProd, KeySet& replacedKeys, Base::Nodes& nodes,
+    KeySet& fixedVariables);
 
   /**
    * Find the set of variables to be relinearized according to relinearizeThreshold.
@@ -71,7 +71,7 @@ struct GTSAM_EXPORT ISAM2::Impl {
    * @return The set of variable indices in delta whose magnitude is greater than or
    * equal to relinearizeThreshold
    */
-  static FastSet<Key> CheckRelinearizationFull(const VectorValues& delta,
+  static KeySet CheckRelinearizationFull(const VectorValues& delta,
       const ISAM2Params::RelinearizationThreshold& relinearizeThreshold);
 
   /**
@@ -85,7 +85,7 @@ struct GTSAM_EXPORT ISAM2::Impl {
    * @return The set of variable indices in delta whose magnitude is greater than or
    * equal to relinearizeThreshold
    */
-  static FastSet<Key> CheckRelinearizationPartial(const FastVector<ISAM2::sharedClique>& roots,
+  static KeySet CheckRelinearizationPartial(const FastVector<ISAM2::sharedClique>& roots,
     const VectorValues& delta, const ISAM2Params::RelinearizationThreshold& relinearizeThreshold);
 
   /**
@@ -103,7 +103,7 @@ struct GTSAM_EXPORT ISAM2::Impl {
    *
    * Alternatively could we trace up towards the root for each variable here?
    */
-  static void FindAll(ISAM2Clique::shared_ptr clique, FastSet<Key>& keys, const FastSet<Key>& markedMask);
+  static void FindAll(ISAM2Clique::shared_ptr clique, KeySet& keys, const KeySet& markedMask);
 
   /**
    * Apply expmap to the given values, but only for indices appearing in
@@ -119,7 +119,7 @@ struct GTSAM_EXPORT ISAM2::Impl {
    * @param keyFormatter Formatter for printing nonlinear keys during debugging
    */
   static void ExpmapMasked(Values& values, const VectorValues& delta,
-      const FastSet<Key>& mask,
+      const KeySet& mask,
       boost::optional<VectorValues&> invalidateIfDebug = boost::none,
       const KeyFormatter& keyFormatter = DefaultKeyFormatter);
 
@@ -127,13 +127,13 @@ struct GTSAM_EXPORT ISAM2::Impl {
    * Update the Newton's method step point, using wildfire
    */
   static size_t UpdateGaussNewtonDelta(const FastVector<ISAM2::sharedClique>& roots,
-      const FastSet<Key>& replacedKeys, VectorValues& delta, double wildfireThreshold);
+      const KeySet& replacedKeys, VectorValues& delta, double wildfireThreshold);
 
   /**
    * Update the RgProd (R*g) incrementally taking into account which variables
    * have been recalculated in \c replacedKeys.  Only used in Dogleg.
    */
-  static size_t UpdateRgProd(const ISAM2::Roots& roots, const FastSet<Key>& replacedKeys,
+  static size_t UpdateRgProd(const ISAM2::Roots& roots, const KeySet& replacedKeys,
       const VectorValues& gradAtZero, VectorValues& RgProd);
   
   /**

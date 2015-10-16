@@ -1,21 +1,31 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /**
- * @file    testImplicitSchurFactor.cpp
+ * @file    testRegularImplicitSchurFactor.cpp
  * @brief   unit test implicit jacobian factors
  * @author  Frank Dellaert
  * @date    Oct 20, 2013
  */
 
-//#include <gtsam_unstable/slam/ImplicitSchurFactor.h>
-#include <gtsam/slam/RegularImplicitSchurFactor.h>
-//#include <gtsam_unstable/slam/JacobianFactorQ.h>
 #include <gtsam/slam/JacobianFactorQ.h>
-//#include "gtsam_unstable/slam/JacobianFactorQR.h"
-#include "gtsam/slam/JacobianFactorQR.h"
+#include <gtsam/slam/JacobianFactorQR.h>
+#include <gtsam/slam/RegularImplicitSchurFactor.h>
+#include <gtsam/geometry/CalibratedCamera.h>
+#include <gtsam/geometry/Point2.h>
 
-#include <gtsam/base/timing.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/linear/GaussianFactor.h>
+#include <gtsam/base/timing.h>
 
 #include <boost/assign/list_of.hpp>
 #include <boost/assign/std/vector.hpp>
@@ -31,8 +41,8 @@ using namespace gtsam;
 const Matrix26 F0 = Matrix26::Ones();
 const Matrix26 F1 = 2 * Matrix26::Ones();
 const Matrix26 F3 = 3 * Matrix26::Ones();
-const vector<pair<Key, Matrix26> > Fblocks = list_of<pair<Key, Matrix> > //
-    (make_pair(0, F0))(make_pair(1, F1))(make_pair(3, F3));
+const vector<Matrix26> FBlocks = list_of<Matrix26>(F0)(F1)(F3);
+const FastVector<Key> keys = list_of<Key>(0)(1)(3);
 // RHS and sigmas
 const Vector b = (Vector(6) << 1., 2., 3., 4., 5., 6.).finished();
 
@@ -43,7 +53,7 @@ TEST( regularImplicitSchurFactor, creation ) {
   E.block<2,2>(0, 0) = eye(2);
   E.block<2,3>(2, 0) = 2 * ones(2, 3);
   Matrix3 P = (E.transpose() * E).inverse();
-  RegularImplicitSchurFactor<6> expected(Fblocks, E, P, b);
+  RegularImplicitSchurFactor<CalibratedCamera> expected(keys, FBlocks, E, P, b);
   Matrix expectedP = expected.getPointCovariance();
   EXPECT(assert_equal(expectedP, P));
 }
@@ -76,15 +86,15 @@ TEST( regularImplicitSchurFactor, addHessianMultiply ) {
   F << F0, zeros(2, d * 3), zeros(2, d), F1, zeros(2, d*2), zeros(2, d * 3), F3;
 
   // Calculate expected result F'*alpha*(I - E*P*E')*F*x
-  FastVector<Key> keys;
-  keys += 0,1,2,3;
-  Vector x = xvalues.vector(keys);
+  FastVector<Key> keys2;
+  keys2 += 0,1,2,3;
+  Vector x = xvalues.vector(keys2);
   Vector expected = zero(24);
-  RegularImplicitSchurFactor<6>::multiplyHessianAdd(F, E, P, alpha, x, expected);
-  EXPECT(assert_equal(expected, yExpected.vector(keys), 1e-8));
+  RegularImplicitSchurFactor<CalibratedCamera>::multiplyHessianAdd(F, E, P, alpha, x, expected);
+  EXPECT(assert_equal(expected, yExpected.vector(keys2), 1e-8));
 
   // Create ImplicitSchurFactor
-  RegularImplicitSchurFactor<6> implicitFactor(Fblocks, E, P, b);
+  RegularImplicitSchurFactor<CalibratedCamera> implicitFactor(keys, FBlocks, E, P, b);
 
   VectorValues zero = 0 * yExpected;// quick way to get zero w right structure
   { // First Version
@@ -114,32 +124,34 @@ TEST( regularImplicitSchurFactor, addHessianMultiply ) {
 
   // Create JacobianFactor with same error
   const SharedDiagonal model;
-  JacobianFactorQ<6, 2> jf(Fblocks, E, P, b, model);
+  JacobianFactorQ<6, 2> jfQ(keys, FBlocks, E, P, b, model);
 
-  { // error
-    double expectedError = jf.error(xvalues);
-    double actualError = implicitFactor.errorJF(xvalues);
-    DOUBLES_EQUAL(expectedError,actualError,1e-7)
+  // error
+  double expectedError = 11875.083333333334;
+  {
+    EXPECT_DOUBLES_EQUAL(expectedError,jfQ.error(xvalues),1e-7)
+    EXPECT_DOUBLES_EQUAL(expectedError,implicitFactor.errorJF(xvalues),1e-7)
+    EXPECT_DOUBLES_EQUAL(11903.500000000007,implicitFactor.error(xvalues),1e-7)
   }
 
-  { // JacobianFactor with same error
+  {
     VectorValues yActual = zero;
-    jf.multiplyHessianAdd(alpha, xvalues, yActual);
+    jfQ.multiplyHessianAdd(alpha, xvalues, yActual);
     EXPECT(assert_equal(yExpected, yActual, 1e-8));
-    jf.multiplyHessianAdd(alpha, xvalues, yActual);
+    jfQ.multiplyHessianAdd(alpha, xvalues, yActual);
     EXPECT(assert_equal(2 * yExpected, yActual, 1e-8));
-    jf.multiplyHessianAdd(-1, xvalues, yActual);
+    jfQ.multiplyHessianAdd(-1, xvalues, yActual);
     EXPECT(assert_equal(zero, yActual, 1e-8));
   }
 
   { // check hessian Diagonal
-    VectorValues diagExpected = jf.hessianDiagonal();
+    VectorValues diagExpected = jfQ.hessianDiagonal();
     VectorValues diagActual = implicitFactor.hessianDiagonal();
     EXPECT(assert_equal(diagExpected, diagActual, 1e-8));
   }
 
   { // check hessian Block Diagonal
-    map<Key,Matrix> BD = jf.hessianBlockDiagonal();
+    map<Key,Matrix> BD = jfQ.hessianBlockDiagonal();
     map<Key,Matrix> actualBD = implicitFactor.hessianBlockDiagonal();
     LONGS_EQUAL(3,actualBD.size());
     EXPECT(assert_equal(BD[0],actualBD[0]));
@@ -149,40 +161,46 @@ TEST( regularImplicitSchurFactor, addHessianMultiply ) {
 
   { // Raw memory Version
     std::fill(y, y + 24, 0);// zero y !
-    jf.multiplyHessianAdd(alpha, xdata, y);
+    jfQ.multiplyHessianAdd(alpha, xdata, y);
     EXPECT(assert_equal(expected, XMap(y), 1e-8));
-    jf.multiplyHessianAdd(alpha, xdata, y);
+    jfQ.multiplyHessianAdd(alpha, xdata, y);
     EXPECT(assert_equal(Vector(2 * expected), XMap(y), 1e-8));
-    jf.multiplyHessianAdd(-1, xdata, y);
+    jfQ.multiplyHessianAdd(-1, xdata, y);
     EXPECT(assert_equal(Vector(0 * expected), XMap(y), 1e-8));
   }
 
+  VectorValues expectedVV;
+  expectedVV.insert(0,-3.5*ones(6));
+  expectedVV.insert(1,10*ones(6)/3);
+  expectedVV.insert(3,-19.5*ones(6));
   { // Check gradientAtZero
-    VectorValues expected = jf.gradientAtZero();
     VectorValues actual = implicitFactor.gradientAtZero();
-    EXPECT(assert_equal(expected, actual, 1e-8));
+    EXPECT(assert_equal(expectedVV, jfQ.gradientAtZero(), 1e-8));
+    EXPECT(assert_equal(expectedVV, implicitFactor.gradientAtZero(), 1e-8));
   }
 
   // Create JacobianFactorQR
-  JacobianFactorQR<6, 2> jfq(Fblocks, E, P, b, model);
+  JacobianFactorQR<6, 2> jfQR(keys, FBlocks, E, P, b, model);
+    EXPECT_DOUBLES_EQUAL(expectedError, jfQR.error(xvalues),1e-7)
+  EXPECT(assert_equal(expectedVV,  jfQR.gradientAtZero(), 1e-8));
   {
     const SharedDiagonal model;
     VectorValues yActual = zero;
-    jfq.multiplyHessianAdd(alpha, xvalues, yActual);
+    jfQR.multiplyHessianAdd(alpha, xvalues, yActual);
     EXPECT(assert_equal(yExpected, yActual, 1e-8));
-    jfq.multiplyHessianAdd(alpha, xvalues, yActual);
+    jfQR.multiplyHessianAdd(alpha, xvalues, yActual);
     EXPECT(assert_equal(2 * yExpected, yActual, 1e-8));
-    jfq.multiplyHessianAdd(-1, xvalues, yActual);
+    jfQR.multiplyHessianAdd(-1, xvalues, yActual);
     EXPECT(assert_equal(zero, yActual, 1e-8));
   }
 
   { // Raw memory Version
     std::fill(y, y + 24, 0);// zero y !
-    jfq.multiplyHessianAdd(alpha, xdata, y);
+    jfQR.multiplyHessianAdd(alpha, xdata, y);
     EXPECT(assert_equal(expected, XMap(y), 1e-8));
-    jfq.multiplyHessianAdd(alpha, xdata, y);
+    jfQR.multiplyHessianAdd(alpha, xdata, y);
     EXPECT(assert_equal(Vector(2 * expected), XMap(y), 1e-8));
-    jfq.multiplyHessianAdd(-1, xdata, y);
+    jfQR.multiplyHessianAdd(-1, xdata, y);
     EXPECT(assert_equal(Vector(0 * expected), XMap(y), 1e-8));
   }
   delete [] y;
@@ -206,7 +224,7 @@ TEST(regularImplicitSchurFactor, hessianDiagonal)
   E.block<2,3>(2, 0) << 1,2,3,4,5,6;
   E.block<2,3>(4, 0) << 0.5,1,2,3,4,5;
   Matrix3 P = (E.transpose() * E).inverse();
-  RegularImplicitSchurFactor<6> factor(Fblocks, E, P, b);
+  RegularImplicitSchurFactor<CalibratedCamera> factor(keys, FBlocks, E, P, b);
 
   // hessianDiagonal
   VectorValues expected;
@@ -247,6 +265,18 @@ TEST(regularImplicitSchurFactor, hessianDiagonal)
   EXPECT(assert_equal(F0t*(I2-E0*P*E0.transpose())*F0,actualBD[0]));
   EXPECT(assert_equal(F1.transpose()*F1-FtE1*P*FtE1.transpose(),actualBD[1]));
   EXPECT(assert_equal(F3.transpose()*F3-FtE3*P*FtE3.transpose(),actualBD[3]));
+
+  // augmentedInformation (test just checks diagonals)
+  Matrix actualInfo = factor.augmentedInformation();
+  EXPECT(assert_equal(actualBD[0],actualInfo.block<6,6>(0,0)));
+  EXPECT(assert_equal(actualBD[1],actualInfo.block<6,6>(6,6)));
+  EXPECT(assert_equal(actualBD[3],actualInfo.block<6,6>(12,12)));
+
+  // information (test just checks diagonals)
+  Matrix actualInfo2 = factor.information();
+  EXPECT(assert_equal(actualBD[0],actualInfo2.block<6,6>(0,0)));
+  EXPECT(assert_equal(actualBD[1],actualInfo2.block<6,6>(6,6)));
+  EXPECT(assert_equal(actualBD[3],actualInfo2.block<6,6>(12,12)));
 }
 
 /* ************************************************************************* */

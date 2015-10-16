@@ -31,7 +31,7 @@
 #ifndef CERES_INTERNAL_EIGEN_H_
 #define CERES_INTERNAL_EIGEN_H_
 
-#include <gtsam/3rdparty/gtsam_eigen_includes.h>
+#include <Eigen/Core>
 
 namespace ceres {
 

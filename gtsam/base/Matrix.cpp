@@ -20,6 +20,8 @@
 #include <gtsam/base/timing.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/FastList.h>
+#include <Eigen/SVD>
+#include <Eigen/LU>
 
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -180,6 +182,7 @@ void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, SubVec
 }
 
 /* ************************************************************************* */
+//3 argument call
 void print(const Matrix& A, const string &s, ostream& stream) {
   static const Eigen::IOFormat matlab(
       Eigen::StreamPrecision, // precision
@@ -192,6 +195,12 @@ void print(const Matrix& A, const string &s, ostream& stream) {
       "\n  ]" // matSuffix
       );
   cout << s << A.format(matlab) << endl;
+}
+
+/* ************************************************************************* */
+//1 or 2 argument call
+void print(const Matrix& A, const string &s){
+  print(A, s, cout);
 }
 
 /* ************************************************************************* */
@@ -693,6 +702,26 @@ std::string formatMatrixIndented(const std::string& label, const Matrix& matrix,
   return ss.str();
 }
 
+/* ************************************************************************* */
+void inplace_QR(Matrix& A){
+  size_t rows = A.rows();
+  size_t cols = A.cols();
+  size_t size = std::min(rows,cols);
 
+  typedef Eigen::internal::plain_diag_type<Matrix>::type HCoeffsType;
+  typedef Eigen::internal::plain_row_type<Matrix>::type RowVectorType;
+  HCoeffsType hCoeffs(size);
+  RowVectorType temp(cols);
+
+#ifdef GTSAM_USE_SYSTEM_EIGEN
+  // System-Eigen is used, and MKL is off
+  Eigen::internal::householder_qr_inplace_blocked<Matrix, HCoeffsType>(A, hCoeffs, 48, temp.data());
+#else
+  // Patched Eigen is used, and MKL is either on or off
+  Eigen::internal::householder_qr_inplace_blocked<Matrix, HCoeffsType>::run(A, hCoeffs, 48, temp.data());
+#endif
+
+  zeroBelowDiagonal(A);
+}
 
 } // namespace gtsam
