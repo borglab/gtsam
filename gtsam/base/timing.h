@@ -18,6 +18,7 @@
 #pragma once
 
 #include <gtsam/base/FastMap.h>
+#include <gtsam/base/types.h>
 #include <gtsam/dllexport.h>
 #include <gtsam/config.h> // for GTSAM_USE_TBB
 
