@@ -412,38 +412,40 @@ TEST (Unit3, FromPoint3) {
 
 //*******************************************************************************
 TEST(Unit3, ErrorBetweenFactor) {
-  std::vector<Unit3> data = {Unit3(1.0, 0.0, 0.0), Unit3(0.0, 0.0, 1.0)};
+  std::vector<Unit3> data;
+  data.push_back(Unit3(1.0, 0.0, 0.0));
+  data.push_back(Unit3(0.0, 0.0, 1.0));
 
   NonlinearFactorGraph graph;
   Values initial_values;
 
   // Add prior factors.
   SharedNoiseModel R_prior = noiseModel::Unit::Create(2);
-  for (int i = 0; i < data.size(); i++) {
+  for (size_t i = 0; i < data.size(); i++) {
     graph.add(PriorFactor<Unit3>(U(i), data[i], R_prior));
   }
 
   // Add process factors using the dot product error function.
   SharedNoiseModel R_process = noiseModel::Isotropic::Sigma(2, 0.01);
-  for (int i = 0; i < data.size() - 1; i++) {
+  for (size_t i = 0; i < data.size() - 1; i++) {
     Expression<Vector2> exp(Expression<Unit3>(U(i)), &Unit3::errorVector, Expression<Unit3>(U(i + 1)));
     graph.addExpressionFactor<Vector2>(R_process, Vector2::Zero(), exp);
   }
 
   // Add initial values. Since there is no identity, just pick something.
-  for (int i = 0; i < data.size(); i++) {
+  for (size_t i = 0; i < data.size(); i++) {
     initial_values.insert(U(i), Unit3(0.0, 1.0, 0.0));
   }
 
   Values values = GaussNewtonOptimizer(graph, initial_values).optimize();
 
   // Check that the y-value is very small for each.
-  for (int i = 0; i < data.size(); i++) {
+  for (size_t i = 0; i < data.size(); i++) {
     EXPECT(assert_equal(0.0, values.at<Unit3>(U(i)).unitVector().y(), 1e-3));
   }
 
   // Check that the dot product between variables is close to 1.
-  for (int i = 0; i < data.size() - 1; i++) {
+  for (size_t i = 0; i < data.size() - 1; i++) {
     EXPECT(assert_equal(1.0, values.at<Unit3>(U(i)).dot(values.at<Unit3>(U(i + 1))), 1e-2));
   }
 }
