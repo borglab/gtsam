@@ -283,3 +283,9 @@ mark_as_advanced(EIGEN_TEST_EIGEN2)
 if(EIGEN_TEST_EIGEN2)
   add_subdirectory(eigen2)
 endif()
+
+
+option(EIGEN_TEST_BUILD_DOCUMENTATION "Test building the doxygen documentation" OFF)
+IF(EIGEN_TEST_BUILD_DOCUMENTATION)
+  add_dependencies(buildtests doc)
+ENDIF()

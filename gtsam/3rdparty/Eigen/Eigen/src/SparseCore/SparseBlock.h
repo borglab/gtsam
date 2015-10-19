@@ -57,6 +57,16 @@ public:
     inline BlockImpl(const XprType& xpr, int startRow, int startCol, int blockRows, int blockCols)
       : m_matrix(xpr), m_outerStart(IsRowMajor ? startRow : startCol), m_outerSize(IsRowMajor ? blockRows : blockCols)
     {}
+    
+    inline const Scalar coeff(int row, int col) const
+    {
+      return m_matrix.coeff(row + IsRowMajor ? m_outerStart : 0, col +IsRowMajor ? 0 :  m_outerStart);
+    }
+    
+    inline const Scalar coeff(int index) const
+    {
+      return m_matrix.coeff(IsRowMajor ? m_outerStart : index, IsRowMajor ? index :  m_outerStart);
+    }
 
     EIGEN_STRONG_INLINE Index rows() const { return IsRowMajor ? m_outerSize.value() : m_matrix.rows(); }
     EIGEN_STRONG_INLINE Index cols() const { return IsRowMajor ? m_matrix.cols() : m_outerSize.value(); }
@@ -226,6 +236,21 @@ public:
       else
         return Map<const Matrix<Index,OuterSize,1> >(m_matrix.innerNonZeroPtr()+m_outerStart, m_outerSize.value()).sum();
     }
+    
+    inline Scalar& coeffRef(int row, int col)
+    {
+      return m_matrix.const_cast_derived().coeffRef(row + (IsRowMajor ? m_outerStart : 0), col + (IsRowMajor ? 0 :  m_outerStart));
+    }
+    
+    inline const Scalar coeff(int row, int col) const
+    {
+      return m_matrix.coeff(row + (IsRowMajor ? m_outerStart : 0), col + (IsRowMajor ? 0 :  m_outerStart));
+    }
+    
+    inline const Scalar coeff(int index) const
+    {
+      return m_matrix.coeff(IsRowMajor ? m_outerStart : index, IsRowMajor ? index :  m_outerStart);
+    }
 
     const Scalar& lastCoeff() const
     {
@@ -313,6 +338,16 @@ public:
       else
         return Map<const Matrix<Index,OuterSize,1> >(m_matrix.innerNonZeroPtr()+m_outerStart, m_outerSize.value()).sum();
     }
+    
+    inline const Scalar coeff(int row, int col) const
+    {
+      return m_matrix.coeff(row + (IsRowMajor ? m_outerStart : 0), col + (IsRowMajor ? 0 :  m_outerStart));
+    }
+    
+    inline const Scalar coeff(int index) const
+    {
+      return m_matrix.coeff(IsRowMajor ? m_outerStart : index, IsRowMajor ? index :  m_outerStart);
+    }
 
     const Scalar& lastCoeff() const
     {
@@ -355,7 +390,8 @@ const typename SparseMatrixBase<Derived>::ConstInnerVectorReturnType SparseMatri
   * is col-major (resp. row-major).
   */
 template<typename Derived>
-Block<Derived,Dynamic,Dynamic,true> SparseMatrixBase<Derived>::innerVectors(Index outerStart, Index outerSize)
+typename SparseMatrixBase<Derived>::InnerVectorsReturnType
+SparseMatrixBase<Derived>::innerVectors(Index outerStart, Index outerSize)
 {
   return Block<Derived,Dynamic,Dynamic,true>(derived(),
                                              IsRowMajor ? outerStart : 0, IsRowMajor ? 0 : outerStart,
@@ -367,7 +403,8 @@ Block<Derived,Dynamic,Dynamic,true> SparseMatrixBase<Derived>::innerVectors(Inde
   * is col-major (resp. row-major). Read-only.
   */
 template<typename Derived>
-const Block<const Derived,Dynamic,Dynamic,true> SparseMatrixBase<Derived>::innerVectors(Index outerStart, Index outerSize) const
+const typename SparseMatrixBase<Derived>::ConstInnerVectorsReturnType
+SparseMatrixBase<Derived>::innerVectors(Index outerStart, Index outerSize) const
 {
   return Block<const Derived,Dynamic,Dynamic,true>(derived(),
                                                   IsRowMajor ? outerStart : 0, IsRowMajor ? 0 : outerStart,
@@ -394,8 +431,8 @@ public:
       : m_matrix(xpr),
         m_startRow( (BlockRows==1) && (BlockCols==XprType::ColsAtCompileTime) ? i : 0),
         m_startCol( (BlockRows==XprType::RowsAtCompileTime) && (BlockCols==1) ? i : 0),
-        m_blockRows(xpr.rows()),
-        m_blockCols(xpr.cols())
+        m_blockRows(BlockRows==1 ? 1 : xpr.rows()),
+        m_blockCols(BlockCols==1 ? 1 : xpr.cols())
     {}
 
     /** Dynamic-size constructor
@@ -497,3 +534,4 @@ public:
 } // end namespace Eigen
 
 #endif // EIGEN_SPARSE_BLOCK_H
+

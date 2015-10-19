@@ -189,6 +189,12 @@ template<typename _MatrixType> class HouseholderQR
     const HCoeffsType& hCoeffs() const { return m_hCoeffs; }
 
   protected:
+    
+    static void check_template_parameters()
+    {
+      EIGEN_STATIC_ASSERT_NON_INTEGER(Scalar);
+    }
+    
     MatrixType m_qr;
     HCoeffsType m_hCoeffs;
     RowVectorType m_temp;
@@ -349,6 +355,8 @@ struct solve_retval<HouseholderQR<_MatrixType>, Rhs>
 template<typename MatrixType>
 HouseholderQR<MatrixType>& HouseholderQR<MatrixType>::compute(const MatrixType& matrix)
 {
+  check_template_parameters();
+  
   Index rows = matrix.rows();
   Index cols = matrix.cols();
   Index size = (std::min)(rows,cols);

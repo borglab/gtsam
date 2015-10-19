@@ -111,6 +111,18 @@ template<typename ArrayType> void vectorwiseop_array(const ArrayType& m)
     m2.rowwise() /= m2.colwise().sum();
     VERIFY_IS_APPROX(m2, m1.rowwise() / m1.colwise().sum());
   }
+
+  // all/any
+  Array<bool,Dynamic,Dynamic> mb(rows,cols);
+  mb = (m1.real()<=0.7).colwise().all();
+  VERIFY( (mb.col(c) == (m1.real().col(c)<=0.7).all()).all() );
+  mb = (m1.real()<=0.7).rowwise().all();
+  VERIFY( (mb.row(r) == (m1.real().row(r)<=0.7).all()).all() );
+
+  mb = (m1.real()>=0.7).colwise().any();
+  VERIFY( (mb.col(c) == (m1.real().col(c)>=0.7).any()).all() );
+  mb = (m1.real()>=0.7).rowwise().any();
+  VERIFY( (mb.row(r) == (m1.real().row(r)>=0.7).any()).all() );
 }
 
 template<typename MatrixType> void vectorwiseop_matrix(const MatrixType& m)

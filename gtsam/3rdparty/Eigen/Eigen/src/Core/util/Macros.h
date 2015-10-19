@@ -13,7 +13,7 @@
 
 #define EIGEN_WORLD_VERSION 3
 #define EIGEN_MAJOR_VERSION 2
-#define EIGEN_MINOR_VERSION 4
+#define EIGEN_MINOR_VERSION 6
 
 #define EIGEN_VERSION_AT_LEAST(x,y,z) (EIGEN_WORLD_VERSION>x || (EIGEN_WORLD_VERSION>=x && \
                                       (EIGEN_MAJOR_VERSION>y || (EIGEN_MAJOR_VERSION>=y && \
@@ -278,6 +278,7 @@ namespace Eigen {
   #error Please tell me what is the equivalent of __attribute__((aligned(n))) for your compiler
 #endif
 
+#define EIGEN_ALIGN8  EIGEN_ALIGN_TO_BOUNDARY(8)
 #define EIGEN_ALIGN16 EIGEN_ALIGN_TO_BOUNDARY(16)
 
 #if EIGEN_ALIGN_STATICALLY
@@ -332,8 +333,11 @@ namespace Eigen {
   }
 #endif
 
-#define EIGEN_INHERIT_ASSIGNMENT_OPERATORS(Derived) \
-  EIGEN_INHERIT_ASSIGNMENT_EQUAL_OPERATOR(Derived)
+/** \internal
+ * \brief Macro to manually inherit assignment operators.
+ * This is necessary, because the implicitly defined assignment operator gets deleted when a custom operator= is defined.
+ */
+#define EIGEN_INHERIT_ASSIGNMENT_OPERATORS(Derived) EIGEN_INHERIT_ASSIGNMENT_EQUAL_OPERATOR(Derived)
 
 /**
 * Just a side note. Commenting within defines works only by documenting

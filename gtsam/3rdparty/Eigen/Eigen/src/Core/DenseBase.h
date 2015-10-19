@@ -183,10 +183,6 @@ template<typename Derived> class DenseBase
     /** \returns the number of nonzero coefficients which is in practice the number
       * of stored coefficients. */
     inline Index nonZeros() const { return size(); }
-    /** \returns true if either the number of rows or the number of columns is equal to 1.
-      * In other words, this function returns
-      * \code rows()==1 || cols()==1 \endcode
-      * \sa rows(), cols(), IsVectorAtCompileTime. */
 
     /** \returns the outer size.
       *
@@ -266,11 +262,13 @@ template<typename Derived> class DenseBase
     template<typename OtherDerived>
     Derived& operator=(const ReturnByValue<OtherDerived>& func);
 
-#ifndef EIGEN_PARSED_BY_DOXYGEN
-    /** Copies \a other into *this without evaluating other. \returns a reference to *this. */
+    /** \internal Copies \a other into *this without evaluating other. \returns a reference to *this. */
     template<typename OtherDerived>
     Derived& lazyAssign(const DenseBase<OtherDerived>& other);
-#endif // not EIGEN_PARSED_BY_DOXYGEN
+
+    /** \internal Evaluates \a other into *this. \returns a reference to *this. */
+    template<typename OtherDerived>
+    Derived& lazyAssign(const ReturnByValue<OtherDerived>& other);
 
     CommaInitializer<Derived> operator<< (const Scalar& s);
 
