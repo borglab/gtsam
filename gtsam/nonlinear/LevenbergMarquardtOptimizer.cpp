@@ -240,7 +240,13 @@ void LevenbergMarquardtOptimizer::iterate() {
   // Keep increasing lambda until we make make progress
   while (true) {
 
-    gttic_(lm_iteration);
+#ifdef GTSAM_USING_NEW_BOOST_TIMERS
+    boost::timer::cpu_timer lamda_iteration_timer;
+    lamda_iteration_timer.start();
+#else
+    boost::timer lamda_iteration_timer;
+    lamda_iteration_timer.restart();
+#endif
 
     if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA)
       cout << "trying lambda = " << state_.lambda << endl;
@@ -324,14 +330,16 @@ void LevenbergMarquardtOptimizer::iterate() {
       }
     }
 
-    gttoc_(lm_iteration);
-
     if (lmVerbosity == LevenbergMarquardtParams::SUMMARY) {
       // do timing
-      tictoc_getNode(iteration_timer, lm_iteration);
-      double iterationTime = iteration_timer->secs();
+#ifdef GTSAM_USING_NEW_BOOST_TIMERS
+      double iterationTime = 1e-9 * lamda_iteration_timer.elapsed().wall;
+#else
+      double iterationTime = lamda_iteration_timer.elapsed();
+#endif
       if (state_.iterations == 0)
         cout << "iter      cost      cost_change    lambda  success iter_time" << endl;
+
       cout << boost::format("% 4d % 8e   % 3.2e   % 3.2e  % 4d   % 3.2e") %
                   state_.iterations % newError % costChange % state_.lambda %
                   systemSolvedSuccessfully % iterationTime << endl;
