@@ -81,23 +81,33 @@ TEST(BearingFactor, Serialization3D) {
 }
 
 /* ************************************************************************* */
-TEST(BearingFactor, 3D) {
-  // Serialize the factor
-  std::string serialized = serializeXML(factor3D);
-
-  // And de-serialize it
-  BearingFactor3D factor;
-  deserializeXML(serialized, factor);
-
-  // Set the linearization point
-  Values values;
-  values.insert(poseKey, Pose3());
-  values.insert(pointKey, Point3(1, 0, 0));
-
-  EXPECT_CORRECT_EXPRESSION_JACOBIANS(factor.expression(poseKey, pointKey),
-                                      values, 1e-7, 1e-5);
-  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
-}
+// TODO(frank): this test is disabled (for now) because the macros below are
+// incompatible with the Unit3 localCoordinates. The issue is the following:
+// For factors, we want to use Local(value, measured), because we need the error
+// to be expressed in the tangent space of value. This surfaced in the Unit3 case
+// where the tangent space can be radically didfferent from one value to the next.
+// For derivatives, we want Local(constant, varying), because we need a derivative
+// in a constant tangent space. But since the macros below call whitenedError
+// which calls Local(value,measured), we actually call the reverse. This does not
+// matter for types with a commutative Local, but matters a lot for Unit3.
+// More thinking needed about what the right thing is, here...
+//TEST(BearingFactor, 3D) {
+//  // Serialize the factor
+//  std::string serialized = serializeXML(factor3D);
+//
+//  // And de-serialize it
+//  BearingFactor3D factor;
+//  deserializeXML(serialized, factor);
+//
+//  // Set the linearization point
+//  Values values;
+//  values.insert(poseKey, Pose3());
+//  values.insert(pointKey, Point3(1, 0, 0));
+//
+//  EXPECT_CORRECT_EXPRESSION_JACOBIANS(factor.expression(poseKey, pointKey),
+//                                      values, 1e-7, 1e-5);
+//  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
+//}
 
 /* ************************************************************************* */
 int main() {
