@@ -34,7 +34,6 @@
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/random.hpp>
-//#include <boost/thread.hpp>
 #include <boost/assign/std/vector.hpp>
 #include <cmath>
 
@@ -345,14 +344,10 @@ TEST(Unit3, localCoordinates_retract) {
   Vector minXiLimit = Vector2(-1.0, -1.0), maxXiLimit = Vector2(1.0, 1.0);
   for (size_t i = 0; i < numIterations; i++) {
 
-    // Sleep for the random number generator (TODO?: Better create all of them first).
-//    boost::this_thread::sleep(boost::posix_time::milliseconds(0));
-
     // Create the two Unit3s.
     // NOTE: You can not create two totally random Unit3's because you cannot always compute
     // between two any Unit3's. (For instance, they might be at the different sides of the circle).
     Unit3 s1(Point3(randomVector(minSphereLimit, maxSphereLimit)));
-//      Unit3 s2 (Point3(randomVector(minSphereLimit, maxSphereLimit)));
     Vector v12 = randomVector(minXiLimit, maxXiLimit);
     Unit3 s2 = s1.retract(v12);
 
@@ -375,13 +370,9 @@ TEST(Unit3, localCoordinates_retract_expmap) {
   Vector minXiLimit = (Vector(2) << -M_PI, -M_PI).finished(), maxXiLimit = (Vector(2) << M_PI, M_PI).finished();
   for (size_t i = 0; i < numIterations; i++) {
 
-    // Sleep for the random number generator (TODO?: Better create all of them first).
-//    boost::this_thread::sleep(boost::posix_time::milliseconds(0));
-
     // Create the two Unit3s.
     // Unlike the above case, we can use any two Unit3's.
     Unit3 s1(Point3(randomVector(minSphereLimit, maxSphereLimit)));
-//      Unit3 s2 (Point3(randomVector(minSphereLimit, maxSphereLimit)));
     Vector v12 = randomVector(minXiLimit, maxXiLimit);
 
     // Magnitude of the rotation can be at most pi
@@ -396,46 +387,6 @@ TEST(Unit3, localCoordinates_retract_expmap) {
     EXPECT(assert_equal(s2, actual_s2, 1e-3));
   }
 }
-
-//*******************************************************************************
-//TEST( Pose2, between )
-//{
-//  // <
-//  //
-//  //       ^
-//  //
-//  // *--0--*--*
-//  Pose2 gT1(M_PI/2.0, Point2(1,2)); // robot at (1,2) looking towards y
-//  Pose2 gT2(M_PI, Point2(-1,4));  // robot at (-1,4) loooking at negative x
-//
-//  Matrix actualH1,actualH2;
-//  Pose2 expected(M_PI/2.0, Point2(2,2));
-//  Pose2 actual1 = gT1.between(gT2);
-//  Pose2 actual2 = gT1.between(gT2,actualH1,actualH2);
-//  EXPECT(assert_equal(expected,actual1));
-//  EXPECT(assert_equal(expected,actual2));
-//
-//  Matrix expectedH1 = (Matrix(3,3) <<
-//      0.0,-1.0,-2.0,
-//      1.0, 0.0,-2.0,
-//      0.0, 0.0,-1.0
-//  );
-//  Matrix numericalH1 = numericalDerivative21<Pose2,Pose2,Pose2>(testing::between, gT1, gT2);
-//  EXPECT(assert_equal(expectedH1,actualH1));
-//  EXPECT(assert_equal(numericalH1,actualH1));
-//  // Assert H1 = -AdjointMap(between(p2,p1)) as in doc/math.lyx
-//  EXPECT(assert_equal(-gT2.between(gT1).AdjointMap(),actualH1));
-//
-//  Matrix expectedH2 = (Matrix(3,3) <<
-//       1.0, 0.0, 0.0,
-//       0.0, 1.0, 0.0,
-//       0.0, 0.0, 1.0
-//  );
-//  Matrix numericalH2 = numericalDerivative22<Pose2,Pose2,Pose2>(testing::between, gT1, gT2);
-//  EXPECT(assert_equal(expectedH2,actualH2));
-//  EXPECT(assert_equal(numericalH2,actualH2));
-//
-//}
 
 //*******************************************************************************
 TEST(Unit3, Random) {
