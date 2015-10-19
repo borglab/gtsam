@@ -106,16 +106,16 @@ const Matrix32& Unit3::basis(OptionalJacobian<6, 2> H) const {
   // Choose the direction of the first basis vector b1 in the tangent plane by crossing n with
   // the chosen axis.
   Matrix33 H_B1_n;
-  Point3 B1 = n.cross(axis, H ? &H_B1_n : nullptr);
+  Point3 B1 = n.cross(axis, H ? &H_B1_n : 0);
 
   // Normalize result to get a unit vector: b1 = B1 / |B1|.
   Matrix33 H_b1_B1;
-  Point3 b1 = B1.normalize(H ? &H_b1_B1 : nullptr);
+  Point3 b1 = B1.normalize(H ? &H_b1_B1 : 0);
 
   // Get the second basis vector b2, which is orthogonal to n and b1, by crossing them.
   // No need to normalize this, p and b1 are orthogonal unit vectors.
   Matrix33 H_b2_n, H_b2_b1;
-  Point3 b2 = n.cross(b1, H ? &H_b2_n : nullptr, H ? &H_b2_b1 : nullptr);
+  Point3 b2 = n.cross(b1, H ? &H_b2_n : 0, H ? &H_b2_b1 : 0);
 
   // Create the basis by stacking b1 and b2.
   B_.reset(Matrix32());
@@ -177,7 +177,7 @@ double Unit3::dot(const Unit3& q, OptionalJacobian<1,2> H_p, OptionalJacobian<1,
 
   // Compute the dot product of the Point3s.
   Matrix13 H_dot_pn, H_dot_qn;
-  double d = pn.dot(qn, H_p ? &H_dot_pn : nullptr, H_q ? &H_dot_qn : nullptr);
+  double d = pn.dot(qn, H_p ? &H_dot_pn : 0, H_q ? &H_dot_qn : 0);
 
   if (H_p) {
     (*H_p) << H_dot_pn * H_pn_p;
@@ -209,7 +209,7 @@ Vector2 Unit3::errorVector(const Unit3& q, OptionalJacobian<2, 2> H_p, OptionalJ
 
   // 2D error here is projecting q into the tangent plane of this (p).
   Matrix62 H_B_p;
-  Matrix23 Bt = basis(H_p ? &H_B_p : nullptr).transpose();
+  Matrix23 Bt = basis(H_p ? &H_B_p : 0).transpose();
   Vector2 xi = Bt * qn.vector();
 
   if (H_p) {
