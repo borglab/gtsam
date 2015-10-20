@@ -22,11 +22,11 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/Errors.h>
+#include <gtsam/base/timing.h>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/range/adaptor/map.hpp>
 #include <boost/format.hpp>
-#include <boost/timer/timer.hpp>
 
 #include <fstream>
 #include <limits>
@@ -239,7 +239,15 @@ void LevenbergMarquardtOptimizer::iterate() {
 
   // Keep increasing lambda until we make make progress
   while (true) {
-    boost::timer::cpu_timer timer;
+
+#ifdef GTSAM_USING_NEW_BOOST_TIMERS
+    boost::timer::cpu_timer lamda_iteration_timer;
+    lamda_iteration_timer.start();
+#else
+    boost::timer lamda_iteration_timer;
+    lamda_iteration_timer.restart();
+#endif
+
     if (lmVerbosity >= LevenbergMarquardtParams::TRYLAMBDA)
       cout << "trying lambda = " << state_.lambda << endl;
 
@@ -324,9 +332,14 @@ void LevenbergMarquardtOptimizer::iterate() {
 
     if (lmVerbosity == LevenbergMarquardtParams::SUMMARY) {
       // do timing
-      double iterationTime = 1e-9 * timer.elapsed().wall;
+#ifdef GTSAM_USING_NEW_BOOST_TIMERS
+      double iterationTime = 1e-9 * lamda_iteration_timer.elapsed().wall;
+#else
+      double iterationTime = lamda_iteration_timer.elapsed();
+#endif
       if (state_.iterations == 0)
         cout << "iter      cost      cost_change    lambda  success iter_time" << endl;
+
       cout << boost::format("% 4d % 8e   % 3.2e   % 3.2e  % 4d   % 3.2e") %
                   state_.iterations % newError % costChange % state_.lambda %
                   systemSolvedSuccessfully % iterationTime << endl;
