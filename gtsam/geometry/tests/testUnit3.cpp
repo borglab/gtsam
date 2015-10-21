@@ -307,7 +307,7 @@ TEST(Unit3, localCoordinates) {
 Vector6 BasisTest(const Unit3& p, OptionalJacobian<6, 2> H) {
   Matrix32 B = p.basis(H);
   Vector6 B_vec;
-  B_vec << B;
+  B_vec << B.col(0), B.col(1);
   return B_vec;
 }
 
