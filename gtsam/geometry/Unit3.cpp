@@ -15,6 +15,7 @@
  * @author Can Erdogan
  * @author Frank Dellaert
  * @author Alex Trevor
+ * @author Zhaoyang Lv
  * @brief The Unit3 class - basically a point on a unit sphere
  */
 
@@ -36,6 +37,7 @@
 
 #include <boost/random/variate_generator.hpp>
 #include <iostream>
+#include <limits>
 
 using namespace std;
 
@@ -43,12 +45,14 @@ namespace gtsam {
 
 /* ************************************************************************* */
 Unit3 Unit3::FromPoint3(const Point3& point, OptionalJacobian<2,3> H) {
-  // 3*3 Derivative of representation with respect to point is 3*3:
-  Matrix3 D_p_point;
-  Unit3 direction;
-  direction.p_ = point.normalize(H ? &D_p_point : 0);
-  if (H)
+  Unit3 direction(point);
+  if (H) {
+    // 3*3 Derivative of representation with respect to point is 3*3:
+    Matrix3 D_p_point;
+    point.normalize(D_p_point); // TODO, this calculates norm a second time :-(
+    // Calculate the 2*3 Jacobian
     *H << direction.basis().transpose() * D_p_point;
+  }
   return direction;
 }
 
@@ -58,12 +62,10 @@ Unit3 Unit3::Random(boost::mt19937 & rng) {
   boost::uniform_on_sphere<double> randomDirection(3);
   // This variate_generator object is required for versions of boost somewhere
   // around 1.46, instead of drawing directly using boost::uniform_on_sphere(rng).
-  boost::variate_generator<boost::mt19937&, boost::uniform_on_sphere<double> >
-      generator(rng, randomDirection);
+  boost::variate_generator<boost::mt19937&, boost::uniform_on_sphere<double> > generator(
+      rng, randomDirection);
   vector<double> d = generator();
-  Unit3 result;
-  result.p_ = Point3(d[0], d[1], d[2]);
-  return result;
+  return Unit3(d[0], d[1], d[2]);
 }
 
 /* ************************************************************************* */
@@ -88,20 +90,19 @@ const Matrix32& Unit3::basis(OptionalJacobian<6, 2> H) const {
 
   // Get the unit vector and derivative wrt this.
   // NOTE(hayk): We can't call point3(), because it would recursively call basis().
-  const Point3& n = p_;
+  Point3 n(p_);
 
   // Get the axis of rotation with the minimum projected length of the point
   Point3 axis;
-  double mx = fabs(n.x()), my = fabs(n.y()), mz = fabs(n.z());
-  if ((mx <= my) && (mx <= mz)) {
+  double mx = fabs(p_.x()), my = fabs(p_.y()), mz = fabs(p_.z());
+  if ((mx <= my) && (mx <= mz))
     axis = Point3(1.0, 0.0, 0.0);
-  } else if ((my <= mx) && (my <= mz)) {
+  else if ((my <= mx) && (my <= mz))
     axis = Point3(0.0, 1.0, 0.0);
-  } else if ((mz <= mx) && (mz <= my)) {
+  else if ((mz <= mx) && (mz <= my))
     axis = Point3(0.0, 0.0, 1.0);
-  } else {
+  else
     assert(false);
-  }
 
   // Choose the direction of the first basis vector b1 in the tangent plane by crossing n with
   // the chosen axis.
@@ -137,17 +138,17 @@ const Matrix32& Unit3::basis(OptionalJacobian<6, 2> H) const {
 }
 
 /* ************************************************************************* */
-const Point3& Unit3::point3(OptionalJacobian<3, 2> H) const {
+Point3 Unit3::point3(OptionalJacobian<3, 2> H) const {
   if (H)
     *H = basis();
-  return p_;
+  return Point3(p_);
 }
 
 /* ************************************************************************* */
-Vector3 Unit3::unitVector(boost::optional<Matrix&> H) const {
+Vector3 Unit3::unitVector(OptionalJacobian<3, 2> H) const {
   if (H)
     *H = basis();
-  return (p_.vector());
+  return (p_);
 }
 
 /* ************************************************************************* */
@@ -194,7 +195,7 @@ double Unit3::dot(const Unit3& q, OptionalJacobian<1,2> H_p, OptionalJacobian<1,
 Vector2 Unit3::error(const Unit3& q, OptionalJacobian<2,2> H_q) const {
   // 2D error is equal to B'*q, as B is 3x2 matrix and q is 3x1
   Matrix23 Bt = basis().transpose();
-  Vector2 xi = Bt * q.p_.vector();
+  Vector2 xi = Bt * q.p_;
   if (H_q) {
     *H_q = Bt * q.basis();
   }
@@ -248,46 +249,39 @@ double Unit3::distance(const Unit3& q, OptionalJacobian<1,2> H) const {
 
 /* ************************************************************************* */
 Unit3 Unit3::retract(const Vector2& v) const {
-
-  // Get the vector form of the point and the basis matrix
-  Vector3 p = p_.vector();
-  Matrix32 B = basis();
-
   // Compute the 3D xi_hat vector
-  Vector3 xi_hat = v(0) * B.col(0) + v(1) * B.col(1);
+  Vector3 xi_hat = basis() * v;
+  double theta = xi_hat.norm();
 
-  double xi_hat_norm = xi_hat.norm();
-
-  // Avoid nan
-  if (xi_hat_norm == 0.0) {
-    if (v.norm() == 0.0)
-      return Unit3(point3());
-    else
-      return Unit3(-point3());
+  // Treat case of very small v differently
+  if (theta < std::numeric_limits<double>::epsilon()) {
+    return Unit3(cos(theta) * p_ + xi_hat);
   }
 
-  Vector3 exp_p_xi_hat = cos(xi_hat_norm) * p
-      + sin(xi_hat_norm) * (xi_hat / xi_hat_norm);
+  Vector3 exp_p_xi_hat =
+      cos(theta) * p_ + xi_hat * (sin(theta) / theta);
   return Unit3(exp_p_xi_hat);
 }
 
 /* ************************************************************************* */
-Vector2 Unit3::localCoordinates(const Unit3& y) const {
-
-  Vector3 p = p_.vector(), q = y.p_.vector();
-  double dot = p.dot(q);
-
-  // Check for special cases
-  if (dot > 1.0 - 1e-16)
-    return Vector2(0, 0);
-  else if (dot < -1.0 + 1e-16)
-    return Vector2(M_PI, 0);
-  else {
+Vector2 Unit3::localCoordinates(const Unit3& other) const {
+  const double x = p_.dot(other.p_);
+  // Crucial quantity here is y = theta/sin(theta) with theta=acos(x)
+  // Now, y = acos(x) / sin(acos(x)) = acos(x)/sqrt(1-x^2)
+  // We treat the special case 1 and -1 below
+  const double x2 = x * x;
+  const double z = 1 - x2;
+  double y;
+  if (z < std::numeric_limits<double>::epsilon()) {
+    if (x > 0)  // first order expansion at x=1
+      y = 1.0 - (x - 1.0) / 3.0;
+    else  // cop out
+      return Vector2(M_PI, 0.0);
+  } else {
     // no special case
-    double theta = acos(dot);
-    Vector3 result_hat = (theta / sin(theta)) * (q - p * dot);
-    return basis().transpose() * result_hat;
+    y = acos(x) / sqrt(z);
   }
+  return basis().transpose() * y * (other.p_ - x * p_);
 }
 /* ************************************************************************* */
 

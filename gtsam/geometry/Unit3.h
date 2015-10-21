@@ -38,7 +38,7 @@ class GTSAM_EXPORT Unit3 {
 
 private:
 
-  Point3 p_; ///< The location of the point on the unit sphere
+  Vector3 p_; ///< The location of the point on the unit sphere
   mutable boost::optional<Matrix32> B_; ///< Cached basis
   mutable boost::optional<Matrix62> H_B_; ///< Cached basis derivative
 
@@ -62,23 +62,18 @@ public:
 
   /// Construct from point
   explicit Unit3(const Point3& p) :
-      p_(p.normalize()) {
+      p_(p.vector().normalized()) {
   }
 
   /// Construct from a vector3
-  explicit Unit3(const Vector3& v) :
-      p_(v / v.norm()) {
+  explicit Unit3(const Vector3& p) :
+      p_(p.normalized()) {
   }
 
   /// Construct from x,y,z
   Unit3(double x, double y, double z) :
-      p_(Point3(x, y, z).normalize()) {
-  }
-
-  /// Construct from 2D point in plane at focal length f
-  /// Unit3(p,1) can be viewed as normalized homogeneous coordinates of 2D point
-  explicit Unit3(const Point2& p, double f=1.0) :
-      p_(Point3(p.x(), p.y(), f).normalize()) {
+      p_(x, y, z) {
+    p_.normalize();
   }
 
   /// Named constructor from Point3 with optional Jacobian
@@ -100,7 +95,7 @@ public:
 
   /// The equals function with tolerance
   bool equals(const Unit3& s, double tol = 1e-9) const {
-    return p_.equals(s.p_, tol);
+    return equal_with_abs_tol(p_, s.p_, tol);
   }
   /// @}
 
@@ -119,14 +114,14 @@ public:
   Matrix3 skew() const;
 
   /// Return unit-norm Point3
-  const Point3& point3(OptionalJacobian<3, 2> H = boost::none) const;
+  Point3 point3(OptionalJacobian<3, 2> H = boost::none) const;
 
   /// Return unit-norm Vector
-  Vector3 unitVector(boost::optional<Matrix&> H = boost::none) const;
+  Vector3 unitVector(OptionalJacobian<3, 2> H = boost::none) const;
 
   /// Return scaled direction as Point3
   friend Point3 operator*(double s, const Unit3& d) {
-    return s * d.p_;
+    return Point3(s * d.p_);
   }
 
   /// Return dot product with q
@@ -152,7 +147,7 @@ public:
 
   /// Cross-product w Point3
   Point3 cross(const Point3& q) const {
-    return Point3(p_.vector().cross(q.vector()));
+    return point3().cross(q);
   }
 
   /// @}
@@ -172,7 +167,7 @@ public:
 
   enum CoordinatesMode {
     EXPMAP, ///< Use the exponential map to retract
-    RENORM ///< Retract with vector addtion and renormalize.
+    RENORM ///< Retract with vector addition and renormalize.
   };
 
   /// The retract function
@@ -192,13 +187,6 @@ private:
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_NVP(p_);
-    // homebrew serialize Eigen Matrix
-    ar & boost::serialization::make_nvp("B11", (*B_)(0, 0));
-    ar & boost::serialization::make_nvp("B12", (*B_)(0, 1));
-    ar & boost::serialization::make_nvp("B21", (*B_)(1, 0));
-    ar & boost::serialization::make_nvp("B22", (*B_)(1, 1));
-    ar & boost::serialization::make_nvp("B31", (*B_)(2, 0));
-    ar & boost::serialization::make_nvp("B32", (*B_)(2, 1));
   }
 
   /// @}
