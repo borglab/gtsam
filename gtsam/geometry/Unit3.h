@@ -20,12 +20,17 @@
 
 #pragma once
 
-#include <gtsam/base/Manifold.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Point3.h>
+#include <gtsam/base/Manifold.h>
+#include <gtsam/base/Matrix.h>
+#include <gtsam/dllexport.h>
 
-#include <boost/random/mersenne_twister.hpp>
 #include <boost/optional.hpp>
+#include <boost/random/mersenne_twister.hpp>
+#include <boost/serialization/nvp.hpp>
+
+#include <string>
 
 #ifdef GTSAM_USE_TBB
 #include <tbb/mutex.h>
@@ -73,6 +78,12 @@ public:
   /// Construct from x,y,z
   Unit3(double x, double y, double z) :
       p_(x, y, z) {
+    p_.normalize();
+  }
+
+  /// Construct from 2D point in plane at focal length f
+  /// Unit3(p,1) can be viewed as normalized homogeneous coordinates of 2D point
+  explicit Unit3(const Point2& p, double f = 1.0) : p_(p.x(), p.y(), f) {
     p_.normalize();
   }
 

@@ -21,9 +21,6 @@
 
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/geometry/Point2.h>
-#include <gtsam/config.h> // GTSAM_USE_TBB
-
-#include <boost/random/mersenne_twister.hpp>
 #include <gtsam/config.h> // for GTSAM_USE_TBB
 
 #ifdef __clang__
@@ -45,14 +42,13 @@ namespace gtsam {
 
 /* ************************************************************************* */
 Unit3 Unit3::FromPoint3(const Point3& point, OptionalJacobian<2,3> H) {
-  Unit3 direction(point);
-  if (H) {
-    // 3*3 Derivative of representation with respect to point is 3*3:
-    Matrix3 D_p_point;
-    point.normalize(D_p_point); // TODO, this calculates norm a second time :-(
-    // Calculate the 2*3 Jacobian
+  // 3*3 Derivative of representation with respect to point is 3*3:
+  Matrix3 D_p_point;
+  Point3 normalized = point.normalize(H ? &D_p_point : 0);
+  Unit3 direction;
+  direction.p_ = normalized.vector();
+  if (H)
     *H << direction.basis().transpose() * D_p_point;
-  }
   return direction;
 }
 
@@ -90,19 +86,20 @@ const Matrix32& Unit3::basis(OptionalJacobian<6, 2> H) const {
 
   // Get the unit vector and derivative wrt this.
   // NOTE(hayk): We can't call point3(), because it would recursively call basis().
-  Point3 n(p_);
+  const Point3 n(p_);
 
   // Get the axis of rotation with the minimum projected length of the point
   Point3 axis;
-  double mx = fabs(p_.x()), my = fabs(p_.y()), mz = fabs(p_.z());
-  if ((mx <= my) && (mx <= mz))
+  double mx = fabs(n.x()), my = fabs(n.y()), mz = fabs(n.z());
+  if ((mx <= my) && (mx <= mz)) {
     axis = Point3(1.0, 0.0, 0.0);
-  else if ((my <= mx) && (my <= mz))
+  } else if ((my <= mx) && (my <= mz)) {
     axis = Point3(0.0, 1.0, 0.0);
-  else if ((mz <= mx) && (mz <= my))
+  } else if ((mz <= mx) && (mz <= my)) {
     axis = Point3(0.0, 0.0, 1.0);
-  else
+  } else {
     assert(false);
+  }
 
   // Choose the direction of the first basis vector b1 in the tangent plane by crossing n with
   // the chosen axis.
@@ -148,7 +145,7 @@ Point3 Unit3::point3(OptionalJacobian<3, 2> H) const {
 Vector3 Unit3::unitVector(OptionalJacobian<3, 2> H) const {
   if (H)
     *H = basis();
-  return (p_);
+  return p_;
 }
 
 /* ************************************************************************* */
@@ -171,10 +168,10 @@ Matrix3 Unit3::skew() const {
 double Unit3::dot(const Unit3& q, OptionalJacobian<1,2> H_p, OptionalJacobian<1,2> H_q) const {
   // Get the unit vectors of each, and the derivative.
   Matrix32 H_pn_p;
-  const Point3& pn = point3(H_p ? &H_pn_p : 0);
+  Point3 pn = point3(H_p ? &H_pn_p : 0);
 
   Matrix32 H_qn_q;
-  const Point3& qn = q.point3(H_q ? &H_qn_q : 0);
+  Point3 qn = q.point3(H_q ? &H_qn_q : 0);
 
   // Compute the dot product of the Point3s.
   Matrix13 H_dot_pn, H_dot_qn;
@@ -206,7 +203,7 @@ Vector2 Unit3::error(const Unit3& q, OptionalJacobian<2,2> H_q) const {
 Vector2 Unit3::errorVector(const Unit3& q, OptionalJacobian<2, 2> H_p, OptionalJacobian<2, 2> H_q) const {
   // Get the point3 of this, and the derivative.
   Matrix32 H_qn_q;
-  const Point3& qn = q.point3(H_q ? &H_qn_q : 0);
+  Point3 qn = q.point3(H_q ? &H_qn_q : 0);
 
   // 2D error here is projecting q into the tangent plane of this (p).
   Matrix62 H_B_p;
