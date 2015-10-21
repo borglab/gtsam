@@ -163,8 +163,6 @@ bool MonteCarlo(const PreintegratedImuMeasurements& pim,
   return assert_equal(Matrix(Q), actual, 1e-4);
 }
 
-#if 1
-
 /* ************************************************************************* */
 TEST(ImuFactor, StraightLine) {
   // Set up IMU measurements
@@ -610,7 +608,6 @@ TEST(ImuFactor, FirstOrderPreIntegratedMeasurements) {
   EXPECT(
       assert_equal(expectedDelRdelBiasOmega, preintegrated.delRdelBiasOmega()));
 }
-#endif
 
 /* ************************************************************************* */
 Vector3 correctedAcc(const PreintegratedImuMeasurements& pim, const Vector3& measuredAcc, const Vector3& measuredOmega) {
@@ -679,7 +676,7 @@ TEST(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
           hist(samples(:,i), 500)
       end
    */
-  size_t N = 10000;
+  size_t N = 100000;
   Matrix samples(9,N);
   Sampler sampleAccelerationNoise((accNoiseVar2/dt).cwiseSqrt(), 29284);
   Sampler sampleOmegaNoise((omegaNoiseVar2/dt).cwiseSqrt(), 10);
@@ -698,7 +695,7 @@ TEST(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
 #endif
 
   EXPECT(MonteCarlo(pim, NavState(x1, v1), bias, dt, body_P_sensor,
-      measuredAcc, measuredOmega, accNoiseVar2, omegaNoiseVar2, 10000));
+      measuredAcc, measuredOmega, accNoiseVar2, omegaNoiseVar2, 100000));
 
 //  Matrix expected(9,9);
 //  expected <<
@@ -837,8 +834,8 @@ TEST(ImuFactor, PredictArbitrary) {
   Pose3 x1;
   Vector3 v1 = Vector3(0, 0, 0);
   imuBias::ConstantBias bias(Vector3(0, 0, 0), Vector3(0, 0, 0));
-  EXPECT(MonteCarlo(pim, NavState(x1, v1), bias, 0.1, boost::none,
-      measuredAcc, measuredOmega, Vector3::Constant(accNoiseVar), Vector3::Constant(omegaNoiseVar)));
+  EXPECT(MonteCarlo(pim, NavState(x1, v1), bias, 0.1, boost::none, measuredAcc, measuredOmega,
+                    Vector3::Constant(accNoiseVar), Vector3::Constant(omegaNoiseVar), 100000));
 
   for (int i = 0; i < 1000; ++i)
     pim.integrateMeasurement(measuredAcc, measuredOmega, dt);
