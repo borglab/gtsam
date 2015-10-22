@@ -349,11 +349,11 @@ void JacobianFactor::print(const string& s,
     const KeyFormatter& formatter) const {
   static const Eigen::IOFormat matlab(
       Eigen::StreamPrecision, // precision
-      0, // flags
+	  0, // flags
       " ", // coeffSeparator
       ";\n", // rowSeparator
-      "  ",  // rowPrefix
-      "", // rowSuffix
+	  "\t",  // rowPrefix
+	  "", // rowSuffix
       "[\n", // matPrefix
       "\n  ]" // matSuffix
       );
