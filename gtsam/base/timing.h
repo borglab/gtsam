@@ -117,6 +117,7 @@
 #  include <boost/timer/timer.hpp>
 #else
 #  include <boost/timer.hpp>
+#  include <gtsam/base/types.h>
 #endif
 
 #ifdef GTSAM_USE_TBB

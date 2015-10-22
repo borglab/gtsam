@@ -85,11 +85,11 @@ namespace gtsam {
     /** implement functions needed to derive from Factor */
 
     /** vector of errors */
-    Vector evaluateError(const T& p, boost::optional<Matrix&> H = boost::none) const {
-      if (H) (*H) = eye(traits<T>::GetDimension(p));
-      // manifold equivalent of h(x)-z -> log(z,h(x))
+    Vector evaluateError(const T& x, boost::optional<Matrix&> H = boost::none) const {
+      if (H) (*H) = eye(traits<T>::GetDimension(x));
+      // manifold equivalent of z-x -> Local(x,z)
       // TODO(ASL) Add Jacobians.
-      return traits<T>::Local(prior_,p);
+      return -traits<T>::Local(x, prior_);
     }
 
     const VALUE & prior() const { return prior_; }
