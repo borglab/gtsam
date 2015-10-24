@@ -275,8 +275,12 @@ namespace gtsam {
        Eigen::Matrix<double, -1, 1> operator()(Key j,
           const gtsam::Value * const pointer) {
         try {
+//<<<<<<< HEAD
           // value returns a const Vector&, and the return makes a copy !!!!!
           return dynamic_cast<const GenericValue<Eigen::Matrix<double, -1, 1> >&>(*pointer).value();
+//=======
+//          return reinterpret_cast<const GenericValue<Eigen::Matrix<double, -1, 1> >&>(*pointer).value();
+//>>>>>>> feature/FixFixedValues
         } catch (std::bad_cast &) {
           // If a fixed vector was stored, we end up here as well.
           throw ValuesIncorrectType(j, typeid(*pointer),
@@ -379,16 +383,48 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+
+  // wrap all fixed in dynamics when insert and update
+  namespace internal {
+
+  // general type
+  template<typename ValueType>
+  struct handle_wrap {
+    inline gtsam::GenericValue<ValueType> operator()(Key j, const ValueType& val) {
+      return gtsam::GenericValue<ValueType>(val);
+    }
+  };
+
+  // when insert/update a fixed size vector: convert to dynamic size
+  template<int M>
+  struct handle_wrap<Eigen::Matrix<double, M, 1> > {
+    inline gtsam::GenericValue<Eigen::Matrix<double, -1, 1> > operator()(
+        Key j, const Eigen::Matrix<double, M, 1>& val) {
+      return gtsam::GenericValue<Eigen::Matrix<double, -1, 1> >(val);
+    }
+  };
+
+  // when insert/update a fixed size matrix: convert to dynamic size
+  template<int M, int N>
+  struct handle_wrap<Eigen::Matrix<double, M, N> > {
+    inline gtsam::GenericValue<Eigen::Matrix<double, -1, -1> > operator()(
+        Key j, const Eigen::Matrix<double, M, N>& val) {
+      return gtsam::GenericValue<Eigen::Matrix<double, -1, -1> >(val);
+    }
+  };
+
+  }
+
   // insert a templated value
   template<typename ValueType>
-   void Values::insert(Key j, const ValueType& val) {
-     insert(j, static_cast<const Value&>(GenericValue<ValueType>(val)));
-   }
+  void Values::insert(Key j, const ValueType& val) {
+    insert(j, static_cast<const Value&>(internal::handle_wrap<ValueType>()(j, val)));
+  }
 
   // update with templated value
   template <typename ValueType>
   void Values::update(Key j, const ValueType& val) {
-    update(j, static_cast<const Value&>(GenericValue<ValueType >(val)));
+    update(j, static_cast<const Value&>(internal::handle_wrap<ValueType>()(j, val)));
   }
 
 }

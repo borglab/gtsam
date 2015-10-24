@@ -488,14 +488,15 @@ TEST(Values, VectorDynamicInsertFixedRead) {
 }
 
 /* ************************************************************************* */
-TEST(Values, VectorFixedInsertDynamicRead) {
+TEST(Values, VectorDynamicInsertDynamicRead) {
   Values values;
-  Vector3 v; v << 5.0, 6.0, 7.0;
+  Vector v(3); v << 5.0, 6.0, 7.0;
   values.insert(key1, v);
   Vector expected(3); expected << 5.0, 6.0, 7.0;
-  Vector actual(3); actual = values.at<Vector>(key1);
-  //CHECK(assert_equal(expected, actual));
-  CHECK_EXCEPTION(values.at<Vector7>(key1), exception);
+  Vector actual = values.at<Vector>(key1);
+  LONGS_EQUAL(3, actual.rows());
+  LONGS_EQUAL(1, actual.cols());
+  CHECK(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
@@ -505,8 +506,20 @@ TEST(Values, VectorFixedInsertFixedRead) {
   values.insert(key1, v);
   Vector3 expected; expected << 5.0, 6.0, 7.0;
   Vector3 actual = values.at<Vector3>(key1);
-  //CHECK(assert_equal(expected, actual));
+  CHECK(assert_equal(expected, actual));
   CHECK_EXCEPTION(values.at<Vector7>(key1), exception);
+}
+
+/* ************************************************************************* */
+TEST(Values, VectorFixedInsertDynamicRead) {
+  Values values;
+  Vector3 v; v << 5.0, 6.0, 7.0;
+  values.insert(key1, v);
+  Vector expected(3); expected << 5.0, 6.0, 7.0;
+  Vector actual = values.at<Vector>(key1);
+  LONGS_EQUAL(3, actual.rows());
+  LONGS_EQUAL(1, actual.cols());
+  CHECK(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
