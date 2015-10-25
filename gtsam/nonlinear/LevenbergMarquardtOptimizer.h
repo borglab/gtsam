@@ -281,7 +281,7 @@ public:
   };
 
   /// Noise model Cache
-  typedef std::map<size_t, NoiseCacheItem> NoiseMap;
+  typedef std::vector<NoiseCacheItem> NoiseCacheVector;
 
   void writeLogFile(double currentError);
 
