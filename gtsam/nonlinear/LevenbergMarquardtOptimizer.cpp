@@ -189,20 +189,25 @@ GaussianFactorGraph::shared_ptr LevenbergMarquardtOptimizer::buildDampedSystem(
     }
   } else {
     // Straightforward damping:
-    typedef map<size_t, SharedDiagonal> NoiseMap; // Cache noise models
+
     NoiseMap noises;
     BOOST_FOREACH(const Values::KeyValuePair& key_value, state_.values) {
       size_t dim = key_value.value.dim();
-      Matrix A = Matrix::Identity(dim, dim);
-      Vector b = Vector::Zero(dim);
 
       // Check if noise model of appropriate size already exists, else create it and cache it!
       NoiseMap::iterator it = noises.find(dim);
-      SharedDiagonal model = it == noises.end() ? noiseModel::Isotropic::Sigma(dim, sigma) : it->second;
       if(it == noises.end()) {
-        noises[dim] = model;
+        NoiseCacheItem item;
+        item.A = Matrix::Identity(dim, dim);
+        item.b = Vector::Zero(dim);
+        item.model =  noiseModel::Isotropic::Sigma(dim, sigma);
+        noises[dim] = item;
+        damped += boost::make_shared<JacobianFactor>(key_value.key, item.A, item.b, item.model);
+
+      } else {
+        const NoiseCacheItem& item = it->second;
+        damped += boost::make_shared<JacobianFactor>(key_value.key, item.A, item.b, item.model);
       }
-      damped += boost::make_shared<JacobianFactor>(key_value.key, A, b, model);
     }
   }
   gttoc(damp);
