@@ -272,6 +272,17 @@ public:
   GaussianFactorGraph::shared_ptr buildDampedSystem(const GaussianFactorGraph& linear);
   friend class ::NonlinearOptimizerMoreOptimizationTest;
 
+  /** Small struct to cache objects needed for damping.
+   * This is used in buildDampedSystem  */
+  struct NoiseCacheItem {
+    Matrix A;
+    Vector b;
+    SharedDiagonal model;
+  };
+
+  /// Noise model Cache
+  typedef std::vector<NoiseCacheItem> NoiseCacheVector;
+
   void writeLogFile(double currentError);
 
   /// @}
