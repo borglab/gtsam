@@ -87,6 +87,17 @@ public:
     p_.normalize();
   }
 
+  /// Copy constructor
+  Unit3(const Unit3& u) {
+    p_ = u.p_;
+  }
+
+  /// Copy assignment
+  Unit3& operator=(const Unit3 & u) {
+    p_ = u.p_;
+    return *this;
+  }
+
   /// Named constructor from Point3 with optional Jacobian
   static Unit3 FromPoint3(const Point3& point, //
       OptionalJacobian<2, 3> H = boost::none);
