@@ -13,7 +13,7 @@
 
 #define EIGEN_WORLD_VERSION 3
 #define EIGEN_MAJOR_VERSION 2
-#define EIGEN_MINOR_VERSION 6
+#define EIGEN_MINOR_VERSION 7
 
 #define EIGEN_VERSION_AT_LEAST(x,y,z) (EIGEN_WORLD_VERSION>x || (EIGEN_WORLD_VERSION>=x && \
                                       (EIGEN_MAJOR_VERSION>y || (EIGEN_MAJOR_VERSION>=y && \
@@ -95,6 +95,20 @@
 #ifndef EIGEN_DEFAULT_DENSE_INDEX_TYPE
 #define EIGEN_DEFAULT_DENSE_INDEX_TYPE std::ptrdiff_t
 #endif
+
+// A Clang feature extension to determine compiler features.
+// We use it to determine 'cxx_rvalue_references'
+#ifndef __has_feature
+# define __has_feature(x) 0
+#endif
+
+// Do we support r-value references?
+#if (__has_feature(cxx_rvalue_references) || \
+     defined(__GXX_EXPERIMENTAL_CXX0X__) || \
+     (defined(_MSC_VER) && _MSC_VER >= 1600))
+  #define EIGEN_HAVE_RVALUE_REFERENCES
+#endif
+
 
 // Cross compiler wrapper around LLVM's __has_builtin
 #ifdef __has_builtin
@@ -408,6 +422,8 @@ namespace Eigen {
 // see EIGEN_SIZE_MIN_PREFER_DYNAMIC. No need for a separate variant for MaxSizes here.
 #define EIGEN_SIZE_MAX(a,b) (((int)a == Dynamic || (int)b == Dynamic) ? Dynamic \
                            : ((int)a >= (int)b) ? (int)a : (int)b)
+
+#define EIGEN_ADD_COST(a,b) int(a)==Dynamic || int(b)==Dynamic ? Dynamic : int(a)+int(b)
 
 #define EIGEN_LOGICAL_XOR(a,b) (((a) || (b)) && !((a) && (b)))
 

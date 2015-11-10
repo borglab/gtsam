@@ -67,6 +67,22 @@ void check_sparse_solving(Solver& solver, const typename Solver::MatrixType& A, 
     VERIFY(oldb.isApprox(db) && "sparse solver testing: the rhs should not be modified!");
     VERIFY(x.isApprox(refX,test_precision<Scalar>()));
   }
+
+  // if not too large, do some extra check:
+  if(A.rows()<2000)
+  {
+
+    // test expression as input
+    {
+      solver.compute(0.5*(A+A));
+      Rhs x = solver.solve(b);
+      VERIFY(x.isApprox(refX,test_precision<Scalar>()));
+
+      Solver solver2(0.5*(A+A));
+      Rhs x2 = solver2.solve(b);
+      VERIFY(x2.isApprox(refX,test_precision<Scalar>()));
+    }
+  }
 }
 
 template<typename Solver, typename Rhs>

@@ -289,7 +289,7 @@ template<typename Scalar> struct llt_inplace<Scalar, Lower>
         return k;
       mat.coeffRef(k,k) = x = sqrt(x);
       if (k>0 && rs>0) A21.noalias() -= A20 * A10.adjoint();
-      if (rs>0) A21 *= RealScalar(1)/x;
+      if (rs>0) A21 /= x;
     }
     return -1;
   }

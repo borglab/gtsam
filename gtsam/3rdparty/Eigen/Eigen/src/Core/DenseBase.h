@@ -41,14 +41,13 @@ static inline void check_DenseIndex_is_signed() {
 template<typename Derived> class DenseBase
 #ifndef EIGEN_PARSED_BY_DOXYGEN
   : public internal::special_scalar_op_base<Derived,typename internal::traits<Derived>::Scalar,
-                                     typename NumTraits<typename internal::traits<Derived>::Scalar>::Real>
+                                            typename NumTraits<typename internal::traits<Derived>::Scalar>::Real,
+                                            DenseCoeffsBase<Derived> >
 #else
   : public DenseCoeffsBase<Derived>
 #endif // not EIGEN_PARSED_BY_DOXYGEN
 {
   public:
-    using internal::special_scalar_op_base<Derived,typename internal::traits<Derived>::Scalar,
-                typename NumTraits<typename internal::traits<Derived>::Scalar>::Real>::operator*;
 
     class InnerIterator;
 
@@ -63,8 +62,9 @@ template<typename Derived> class DenseBase
     typedef typename internal::traits<Derived>::Scalar Scalar;
     typedef typename internal::packet_traits<Scalar>::type PacketScalar;
     typedef typename NumTraits<Scalar>::Real RealScalar;
+    typedef internal::special_scalar_op_base<Derived,Scalar,RealScalar, DenseCoeffsBase<Derived> > Base;
 
-    typedef DenseCoeffsBase<Derived> Base;
+    using Base::operator*;
     using Base::derived;
     using Base::const_cast_derived;
     using Base::rows;
