@@ -306,6 +306,8 @@ template<typename SparseMatrixType> void sparse_basic(const SparseMatrixType& re
     refM4.setRandom();
     // sparse cwise* dense
     VERIFY_IS_APPROX(m3.cwiseProduct(refM4), refM3.cwiseProduct(refM4));
+    // dense cwise* sparse
+    VERIFY_IS_APPROX(refM4.cwiseProduct(m3), refM4.cwiseProduct(refM3));
 //     VERIFY_IS_APPROX(m3.cwise()/refM4, refM3.cwise()/refM4);
 
     // test aliasing
@@ -528,6 +530,20 @@ template<typename SparseMatrixType> void sparse_basic(const SparseMatrixType& re
     DenseMatrix refMat1 = DenseMatrix::Identity(rows, rows);
     SparseMatrixType m1(rows, rows);
     m1.setIdentity();
+    VERIFY_IS_APPROX(m1, refMat1);
+    for(int k=0; k<rows*rows/4; ++k)
+    {
+      Index i = internal::random<Index>(0,rows-1);
+      Index j = internal::random<Index>(0,rows-1);
+      Scalar v = internal::random<Scalar>();
+      m1.coeffRef(i,j) = v;
+      refMat1.coeffRef(i,j) = v;
+      VERIFY_IS_APPROX(m1, refMat1);
+      if(internal::random<Index>(0,10)<2)
+        m1.makeCompressed();
+    }
+    m1.setIdentity();
+    refMat1.setIdentity();
     VERIFY_IS_APPROX(m1, refMat1);
   }
 }

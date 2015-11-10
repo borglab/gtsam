@@ -35,7 +35,8 @@ struct traits<DiagonalProduct<MatrixType, DiagonalType, ProductOrder> >
     _LinearAccessMask = (RowsAtCompileTime==1 || ColsAtCompileTime==1) ? LinearAccessBit : 0,
 
     Flags = ((HereditaryBits|_LinearAccessMask|AlignedBit) & (unsigned int)(MatrixType::Flags)) | (_Vectorizable ? PacketAccessBit : 0),//(int(MatrixType::Flags)&int(DiagonalType::DiagonalVectorType::Flags)&AlignedBit),
-    CoeffReadCost = NumTraits<Scalar>::MulCost + MatrixType::CoeffReadCost + DiagonalType::DiagonalVectorType::CoeffReadCost
+    Cost0 = EIGEN_ADD_COST(NumTraits<Scalar>::MulCost, MatrixType::CoeffReadCost),
+    CoeffReadCost = EIGEN_ADD_COST(Cost0,DiagonalType::DiagonalVectorType::CoeffReadCost)
   };
 };
 }

@@ -159,7 +159,7 @@ class IncompleteLUT : internal::noncopyable
     template<typename Rhs, typename Dest>
     void _solve(const Rhs& b, Dest& x) const
     {
-      x = m_Pinv * b;  
+      x = m_Pinv * b;
       x = m_lu.template triangularView<UnitLower>().solve(x);
       x = m_lu.template triangularView<Upper>().solve(x);
       x = m_P * x; 
@@ -222,16 +222,25 @@ template<typename _MatrixType>
 void IncompleteLUT<Scalar>::analyzePattern(const _MatrixType& amat)
 {
   // Compute the Fill-reducing permutation
+  // Since ILUT does not perform any numerical pivoting,
+  // it is highly preferable to keep the diagonal through symmetric permutations.
+#ifndef EIGEN_MPL2_ONLY
+  // To this end, let's symmetrize the pattern and perform AMD on it.
   SparseMatrix<Scalar,ColMajor, Index> mat1 = amat;
   SparseMatrix<Scalar,ColMajor, Index> mat2 = amat.transpose();
-  // Symmetrize the pattern
   // FIXME for a matrix with nearly symmetric pattern, mat2+mat1 is the appropriate choice.
   //       on the other hand for a really non-symmetric pattern, mat2*mat1 should be prefered...
   SparseMatrix<Scalar,ColMajor, Index> AtA = mat2 + mat1;
-  AtA.prune(keep_diag());
-  internal::minimum_degree_ordering<Scalar, Index>(AtA, m_P);  // Then compute the AMD ordering...
-
-  m_Pinv  = m_P.inverse(); // ... and the inverse permutation
+  AMDOrdering<Index> ordering;
+  ordering(AtA,m_P);
+  m_Pinv  = m_P.inverse(); // cache the inverse permutation
+#else
+  // If AMD is not available, (MPL2-only), then let's use the slower COLAMD routine.
+  SparseMatrix<Scalar,ColMajor, Index> mat1 = amat;
+  COLAMDOrdering<Index> ordering;
+  ordering(mat1,m_Pinv);
+  m_P = m_Pinv.inverse();
+#endif
 
   m_analysisIsOk = true;
   m_factorizationIsOk = false;

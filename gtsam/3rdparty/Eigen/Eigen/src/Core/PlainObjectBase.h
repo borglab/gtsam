@@ -437,6 +437,20 @@ class PlainObjectBase : public internal::dense_xpr_base<Derived>::type
     }
 #endif
 
+#ifdef EIGEN_HAVE_RVALUE_REFERENCES
+    PlainObjectBase(PlainObjectBase&& other)
+      : m_storage( std::move(other.m_storage) )
+    {
+    }
+
+    PlainObjectBase& operator=(PlainObjectBase&& other)
+    {
+      using std::swap;
+      swap(m_storage, other.m_storage);
+      return *this;
+    }
+#endif
+
     /** Copy constructor */
     EIGEN_STRONG_INLINE PlainObjectBase(const PlainObjectBase& other)
       : m_storage()

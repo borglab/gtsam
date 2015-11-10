@@ -440,6 +440,15 @@ template<typename Derived> class MatrixBase
     template<typename OtherScalar>
     void applyOnTheRight(Index p, Index q, const JacobiRotation<OtherScalar>& j);
 
+///////// SparseCore module /////////
+
+    template<typename OtherDerived>
+    EIGEN_STRONG_INLINE const typename SparseMatrixBase<OtherDerived>::template CwiseProductDenseReturnType<Derived>::Type
+    cwiseProduct(const SparseMatrixBase<OtherDerived> &other) const
+    {
+      return other.cwiseProduct(derived());
+    }
+
 ///////// MatrixFunctions module /////////
 
     typedef typename internal::stem_function<Scalar>::type StemFunction;
