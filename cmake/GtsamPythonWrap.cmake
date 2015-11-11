@@ -1,5 +1,4 @@
 #Setup cache options
-option(GTSAM_BUILD_PYTHON "Build Python wrapper statically (increases build time)" OFF)
 set(GTSAM_BUILD_PYTHON_FLAGS "" CACHE STRING "Extra flags for running Matlab PYTHON compilation")
 set(GTSAM_PYTHON_INSTALL_PATH "" CACHE PATH "Python toolbox destination, blank defaults to CMAKE_INSTALL_PREFIX/borg/python")
 if(NOT GTSAM_PYTHON_INSTALL_PATH)

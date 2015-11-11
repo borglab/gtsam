@@ -30,7 +30,6 @@ message(STATUS "GTSAM_SOURCE_ROOT_DIR: [${GTSAM_SOURCE_ROOT_DIR}]")
 
 # Load build type flags and default to Debug mode
 include(GtsamBuildTypes)
-include(GtsamPythonWrap)
 
 # Use macros for creating tests/timing scripts
 include(GtsamTesting)
@@ -65,6 +64,7 @@ option(GTSAM_WITH_TBB                    "Use Intel Threaded Building Blocks (TB
 option(GTSAM_WITH_EIGEN_MKL              "Eigen will use Intel MKL if available" ON)
 option(GTSAM_WITH_EIGEN_MKL_OPENMP       "Eigen, when using Intel MKL, will also use OpenMP for multithreading if available" ON)
 option(GTSAM_THROW_CHEIRALITY_EXCEPTION "Throw exception when a triangulated point is behind a camera" ON)
+option(GTSAM_BUILD_PYTHON                "Build Python wrapper statically (increases build time)" OFF)
 
 # Options relating to MATLAB wrapper
 # TODO: Check for matlab mex binary before handling building of binaries
@@ -345,8 +345,10 @@ if (GTSAM_INSTALL_MATLAB_TOOLBOX)
 	add_subdirectory(matlab)
 endif()
 
-if(GTSAM_BUILD_PYTHON)
-  add_subdirectory(python)
+# Python wrap
+if (GTSAM_BUILD_PYTHON)
+	include(GtsamPythonWrap)
+	wrap_and_install_python(gtsampy.h "${GTSAM_ADDITIONAL_LIBRARIES}" "")
 endif()
 
 # Build gtsam_unstable
