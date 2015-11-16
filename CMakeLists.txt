@@ -9,8 +9,8 @@ if(NOT DEFINED CMAKE_MACOSX_RPATH)
 endif()
 
 # Set the version number for the library
-set (GTSAM_VERSION_MAJOR 3)
-set (GTSAM_VERSION_MINOR 1)
+set (GTSAM_VERSION_MAJOR 4)
+set (GTSAM_VERSION_MINOR 0)
 set (GTSAM_VERSION_PATCH 0)
 math (EXPR GTSAM_VERSION_NUMERIC "10000 * ${GTSAM_VERSION_MAJOR} + 100 * ${GTSAM_VERSION_MINOR} + ${GTSAM_VERSION_PATCH}")
 set (GTSAM_VERSION_STRING "${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH}")
@@ -59,7 +59,7 @@ option(GTSAM_BUILD_STATIC_LIBRARY        "Build a static gtsam library, instead 
 option(GTSAM_USE_QUATERNIONS             "Enable/Disable using an internal Quaternion representation for rotations instead of rotation matrices. If enable, Rot3::EXPMAP is enforced by default." OFF)
 option(GTSAM_POSE3_EXPMAP 			 	 "Enable/Disable using Pose3::EXPMAP as the default mode. If disabled, Pose3::FIRST_ORDER will be used." OFF)
 option(GTSAM_ROT3_EXPMAP 			 	 "Ignore if GTSAM_USE_QUATERNIONS is OFF (Rot3::EXPMAP by default). Otherwise, enable Rot3::EXPMAP, or if disabled, use Rot3::CAYLEY." OFF)
-option(GTSAM_ENABLE_CONSISTENCY_CHECKS   "Enable/Disable expensive consistency checks"       OFF) 
+option(GTSAM_ENABLE_CONSISTENCY_CHECKS   "Enable/Disable expensive consistency checks"       OFF)
 option(GTSAM_WITH_TBB                    "Use Intel Threaded Building Blocks (TBB) if available" ON)
 option(GTSAM_WITH_EIGEN_MKL              "Eigen will use Intel MKL if available" ON)
 option(GTSAM_WITH_EIGEN_MKL_OPENMP       "Eigen, when using Intel MKL, will also use OpenMP for multithreading if available" ON)
@@ -130,9 +130,9 @@ else()
 endif()
 
 
-if(${Boost_VERSION} EQUAL 105600)
+if(NOT (${Boost_VERSION} LESS 105600))
 	message("Ignoring Boost restriction on optional lvalue assignment from rvalues")
-	add_definitions(-DBOOST_OPTIONAL_ALLOW_BINDING_TO_RVALUES)
+	add_definitions(-DBOOST_OPTIONAL_ALLOW_BINDING_TO_RVALUES -DBOOST_OPTIONAL_CONFIG_ALLOW_BINDING_TO_RVALUES)
 endif()
 
 ###############################################################################
@@ -159,6 +159,12 @@ else()
 	set(GTSAM_USE_TBB 0)  # This will go into config.h
 endif()
 
+###############################################################################
+# Prohibit Timing build mode in combination with TBB
+if(GTSAM_USE_TBB AND (CMAKE_BUILD_TYPE  STREQUAL "Timing"))
+      message(FATAL_ERROR "Timing build mode cannot be used together with TBB. Use a sampling profiler such as Instruments or Intel VTune Amplifier instead.")
+endif()
+
 
 ###############################################################################
 # Find Google perftools
@@ -173,6 +179,11 @@ if(MKL_FOUND AND GTSAM_WITH_EIGEN_MKL)
     set(EIGEN_USE_MKL_ALL 1) # This will go into config.h - it makes Eigen use MKL
     include_directories(${MKL_INCLUDE_DIR})
     list(APPEND GTSAM_ADDITIONAL_LIBRARIES ${MKL_LIBRARIES})
+    
+    # --no-as-needed is required with gcc according to the MKL link advisor
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-as-needed")  
+    endif()
 else()
     set(GTSAM_USE_EIGEN_MKL 0)
     set(EIGEN_USE_MKL_ALL 0)
@@ -192,36 +203,39 @@ endif()
 
 ###############################################################################
 # Option for using system Eigen or GTSAM-bundled Eigen
-### Disabled until our patches are included in Eigen ###
+### These patches only affect usage of MKL. If you want to enable MKL, you *must*
+### use our patched version of Eigen
 ### See:  http://eigen.tuxfamily.org/bz/show_bug.cgi?id=704 (Householder QR MKL selection)
 ###       http://eigen.tuxfamily.org/bz/show_bug.cgi?id=705 (Fix MKL LLT return code)
-###       http://eigen.tuxfamily.org/bz/show_bug.cgi?id=716 (Improved comma initialization)
-# option(GTSAM_USE_SYSTEM_EIGEN "Find and use system-installed Eigen. If 'off', use the one bundled with GTSAM" OFF)
-set(GTSAM_USE_SYSTEM_EIGEN OFF)
+option(GTSAM_USE_SYSTEM_EIGEN "Find and use system-installed Eigen. If 'off', use the one bundled with GTSAM" OFF)
 
 # Switch for using system Eigen or GTSAM-bundled Eigen
 if(GTSAM_USE_SYSTEM_EIGEN)
-	# Use generic Eigen include paths e.g. <Eigen/Core>
-	set(GTSAM_EIGEN_INCLUDE_PREFIX "")
-	
 	find_package(Eigen3 REQUIRED)
 	include_directories(AFTER "${EIGEN3_INCLUDE_DIR}")
-else()
-	# Use bundled Eigen include paths e.g. <gtsam/3rdparty/Eigen/Eigen/Core>
-	set(GTSAM_EIGEN_INCLUDE_PREFIX "gtsam/3rdparty/Eigen/")
 	
+	# Use generic Eigen include paths e.g. <Eigen/Core>
+    set(GTSAM_EIGEN_INCLUDE_PREFIX "${EIGEN3_INCLUDE_DIR}")
+	
+	# check if MKL is also enabled - can have one or the other, but not both!
+	if(EIGEN_USE_MKL_ALL)
+	  message(FATAL_ERROR "MKL cannot be used together with system-installed Eigen, as MKL support relies on patches which are not yet in the system-installed Eigen. Disable either GTSAM_USE_SYSTEM_EIGEN or GTSAM_WITH_EIGEN_MKL")
+	endif()
+else()
+	# Use bundled Eigen include path. 
 	# Clear any variables set by FindEigen3
 	if(EIGEN3_INCLUDE_DIR)
 		set(EIGEN3_INCLUDE_DIR NOTFOUND CACHE STRING "" FORCE)
 	endif()
+	# Add the bundled version of eigen to the include path so that it can still be included
+	# with  #include <Eigen/Core>
+	include_directories(BEFORE "gtsam/3rdparty/Eigen/")
+	
+	# set full path to be used by external projects
+	# this will be added to GTSAM_INCLUDE_DIR by gtsam_extra.cmake.in
+	set(GTSAM_EIGEN_INCLUDE_PREFIX "${CMAKE_INSTALL_PREFIX}/include/gtsam/3rdparty/Eigen/")
+	
 endif()
-
-# Write Eigen include file with the paths for either the system Eigen or the GTSAM-bundled Eigen
-configure_file(gtsam/3rdparty/gtsam_eigen_includes.h.in gtsam/3rdparty/gtsam_eigen_includes.h)
-
-# Install the configuration file for Eigen
-install(FILES ${PROJECT_BINARY_DIR}/gtsam/3rdparty/gtsam_eigen_includes.h DESTINATION include/gtsam/3rdparty)
-
 
 ###############################################################################
 # Global compile options
@@ -272,29 +286,37 @@ endif()
 
 # Include boost - use 'BEFORE' so that a specific boost specified to CMake
 # takes precedence over a system-installed one.
-include_directories(BEFORE ${Boost_INCLUDE_DIR})
+# Use 'SYSTEM' to ignore compiler warnings in Boost headers
+include_directories(BEFORE SYSTEM ${Boost_INCLUDE_DIR})
 
 # Add includes for source directories 'BEFORE' boost and any system include
 # paths so that the compiler uses GTSAM headers in our source directory instead
 # of any previously installed GTSAM headers.
 include_directories(BEFORE
-  gtsam/3rdparty/UFconfig 
+  gtsam/3rdparty/UFconfig
   gtsam/3rdparty/CCOLAMD/Include
-  gtsam/3rdparty/metis-5.1.0/include
-  gtsam/3rdparty/metis-5.1.0/libmetis
-  gtsam/3rdparty/metis-5.1.0/GKlib
+  gtsam/3rdparty/metis/include
+  gtsam/3rdparty/metis/libmetis
+  gtsam/3rdparty/metis/GKlib
   ${PROJECT_SOURCE_DIR}
   ${PROJECT_BINARY_DIR} # So we can include generated config header files
   CppUnitLite)
 
 if(MSVC)
 	add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
-	add_definitions(/wd4251 /wd4275 /wd4251 /wd4661 /wd4344) # Disable non-DLL-exported base class and other warnings
+	add_definitions(/wd4251 /wd4275 /wd4251 /wd4661 /wd4344 /wd4503) # Disable non-DLL-exported base class and other warnings
 endif()
 
 # GCC 4.8+ complains about local typedefs which we use for shared_ptr etc.
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.8)
+    add_definitions(-Wno-unused-local-typedefs)
+  endif()
+endif()
+
+# As of XCode 7, clang also complains about this
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+  if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7.0)
     add_definitions(-Wno-unused-local-typedefs)
   endif()
 endif()
@@ -340,6 +362,7 @@ endif(GTSAM_BUILD_UNSTABLE)
 GtsamMakeConfigFile(GTSAM "${CMAKE_CURRENT_SOURCE_DIR}/gtsam_extra.cmake.in")
 export(TARGETS ${GTSAM_EXPORTED_TARGETS} FILE GTSAM-exports.cmake)
 
+
 # Check for doxygen availability - optional dependency
 find_package(Doxygen)
 
@@ -380,6 +403,8 @@ set(CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-dev (>= 1.43)") #Example: "libc6 (>= 
 # Print configuration variables
 message(STATUS "===============================================================")
 message(STATUS "================  Configuration Options  ======================")
+message(STATUS "  CMAKE_CXX_COMPILER_ID type     : ${CMAKE_CXX_COMPILER_ID}")
+message(STATUS "  CMAKE_CXX_COMPILER_VERSION     : ${CMAKE_CXX_COMPILER_VERSION}")
 message(STATUS "Build flags                                               ")
 print_config_flag(${GTSAM_BUILD_TESTS}                 "Build Tests                    ")
 print_config_flag(${GTSAM_BUILD_EXAMPLES_ALWAYS}       "Build examples with 'make all' ")
@@ -397,6 +422,11 @@ if(NOT MSVC AND NOT XCODE_VERSION)
     message(STATUS "  Build type                     : ${CMAKE_BUILD_TYPE}")
     message(STATUS "  C compilation flags            : ${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_${cmake_build_type_toupper}}")
     message(STATUS "  C++ compilation flags          : ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${cmake_build_type_toupper}}")
+endif()
+if(GTSAM_USE_SYSTEM_EIGEN)
+    message(STATUS "  Use System Eigen               : Yes")
+else()
+    message(STATUS "  Use System Eigen               : No")
 endif()
 if(GTSAM_USE_TBB)
 	message(STATUS "  Use Intel TBB                  : Yes")
@@ -433,6 +463,7 @@ message(STATUS "  CPack Generator                : ${CPACK_GENERATOR}")
 message(STATUS "GTSAM flags                                               ")
 print_config_flag(${GTSAM_USE_QUATERNIONS}             "Quaternions as default Rot3    ")
 print_config_flag(${GTSAM_ENABLE_CONSISTENCY_CHECKS}   "Runtime consistency checking   ")
+print_config_flag(${GTSAM_ROT3_EXPMAP}                 "Rot3 retract is full ExpMap    ")
 print_config_flag(${GTSAM_POSE3_EXPMAP}                "Pose3 retract is full ExpMap   ")
 
 message(STATUS "MATLAB toolbox flags                                      ")

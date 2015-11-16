@@ -39,13 +39,13 @@ namespace {
 
 // Set up initial pose, odometry difference, loop closure difference, and initialization errors
 const Pose3 poseInitial;
-const Pose3 poseOdometry( Rot3::RzRyRx((Vector(3) << 0.05, 0.10, -0.75)), Point3(1.0, -0.25, 0.10) );
-const Pose3 poseError( Rot3::RzRyRx((Vector(3) << 0.01, 0.02, -0.1)), Point3(0.05, -0.05, 0.02) );
+const Pose3 poseOdometry( Rot3::RzRyRx(Vector3(0.05, 0.10, -0.75)), Point3(1.0, -0.25, 0.10) );
+const Pose3 poseError( Rot3::RzRyRx(Vector3(0.01, 0.02, -0.1)), Point3(0.05, -0.05, 0.02) );
 
 // Set up noise models for the factors
 const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
-const SharedDiagonal noiseOdometery = noiseModel::Diagonal::Sigmas((Vector(6) << 0.1, 0.1, 0.1, 0.5, 0.5, 0.5));
-const SharedDiagonal noiseLoop = noiseModel::Diagonal::Sigmas((Vector(6) << 0.25, 0.25, 0.25, 1.0, 1.0, 1.0));
+const SharedDiagonal noiseOdometery = noiseModel::Diagonal::Sigmas((Vector(6) << 0.1, 0.1, 0.1, 0.5, 0.5, 0.5).finished());
+const SharedDiagonal noiseLoop = noiseModel::Diagonal::Sigmas((Vector(6) << 0.25, 0.25, 0.25, 1.0, 1.0, 1.0).finished());
 
 /* ************************************************************************* */
 Values BatchOptimize(const NonlinearFactorGraph& graph, const Values& theta, int maxIter = 100) {
@@ -559,7 +559,7 @@ TEST( ConcurrentBatchSmoother, synchronize_3 )
   ordering = smoother.getOrdering();  // I'm really hoping this is an acceptable ordering...
   GaussianFactorGraph::shared_ptr linearFactors = allFactors.linearize(allValues);
 
-  FastSet<Key> eliminateKeys = linearFactors->keys();
+  KeySet eliminateKeys = linearFactors->keys();
   BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, filterSeparatorValues) {
     eliminateKeys.erase(key_value.key);
   }

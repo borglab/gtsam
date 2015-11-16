@@ -53,7 +53,7 @@ int main(int argc, char* argv[]) {
   NonlinearFactorGraph graph;
 
   // Add a prior on pose x1.
-  noiseModel::Diagonal::shared_ptr poseNoise = noiseModel::Diagonal::Sigmas((Vector(6) << Vector3::Constant(0.3), Vector3::Constant(0.1))); // 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
+  noiseModel::Diagonal::shared_ptr poseNoise = noiseModel::Diagonal::Sigmas((Vector(6) << Vector3::Constant(0.3), Vector3::Constant(0.1)).finished()); // 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
   graph.push_back(PriorFactor<Pose3>(Symbol('x', 0), poses[0], poseNoise));
 
   // Simulated measurements from each camera pose, adding them to the factor graph
@@ -74,7 +74,7 @@ int main(int argc, char* argv[]) {
   graph.push_back(PriorFactor<Point3>(Symbol('l', 0), points[0], pointNoise)); // add directly to graph
 
   // Add a prior on the calibration.
-  noiseModel::Diagonal::shared_ptr calNoise = noiseModel::Diagonal::Sigmas((Vector(5) << 500, 500, 0.1, 100, 100));
+  noiseModel::Diagonal::shared_ptr calNoise = noiseModel::Diagonal::Sigmas((Vector(5) << 500, 500, 0.1, 100, 100).finished());
   graph.push_back(PriorFactor<Cal3_S2>(Symbol('K', 0), K, calNoise));
 
   // Create the initial estimate to the solution
@@ -82,7 +82,7 @@ int main(int argc, char* argv[]) {
   Values initialEstimate;
   initialEstimate.insert(Symbol('K', 0), Cal3_S2(60.0, 60.0, 0.0, 45.0, 45.0));
   for (size_t i = 0; i < poses.size(); ++i)
-    initialEstimate.insert(Symbol('x', i), poses[i].compose(Pose3(Rot3::rodriguez(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20))));
+    initialEstimate.insert(Symbol('x', i), poses[i].compose(Pose3(Rot3::Rodrigues(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20))));
   for (size_t j = 0; j < points.size(); ++j)
     initialEstimate.insert(Symbol('l', j), points[j].compose(Point3(-0.25, 0.20, 0.15)));
 

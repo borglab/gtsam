@@ -32,6 +32,10 @@ namespace gtsam {
   class Ordering;
   class GaussianFactorGraph;
   class SymbolicFactorGraph;
+  template<typename T>
+  class Expression;
+  template<typename T>
+  class ExpressionFactor;
 
   /**
    * Formatting options when saving in GraphViz format using
@@ -47,6 +51,7 @@ namespace gtsam {
     bool mergeSimilarFactors; ///< Merge multiple factors that have the same connectivity
     bool plotFactorPoints; ///< Plots each factor as a dot between the variables
     bool connectKeysToFactor; ///< Draw a line from each key within a factor to the dot of the factor
+    bool binaryEdges; ///< just use non-dotted edges for binary factors
     std::map<size_t, Point2> factorPositions; ///< (optional for each factor) Manually specify factor "dot" positions.
     /// Default constructor sets up robot coordinates.  Paper horizontal is robot Y,
     /// paper vertical is robot X.  Default figure size of 5x5 in.
@@ -54,7 +59,7 @@ namespace gtsam {
       paperHorizontalAxis(Y), paperVerticalAxis(X),
       figureWidthInches(5), figureHeightInches(5), scale(1),
       mergeSimilarFactors(false), plotFactorPoints(true),
-      connectKeysToFactor(true) {}
+      connectKeysToFactor(true), binaryEdges(true) {}
   };
 
 
@@ -101,7 +106,7 @@ namespace gtsam {
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
     /** return keys as an ordered set - ordering is by key value */
-    FastSet<Key> keys() const;
+    KeySet keys() const;
 
     /** unnormalized error, \f$ 0.5 \sum_i (h_i(X_i)-z)^2/\sigma^2 \f$ in the most common case */
     double error(const Values& c) const;
@@ -150,16 +155,33 @@ namespace gtsam {
      */
     NonlinearFactorGraph rekey(const std::map<Key,Key>& rekey_mapping) const;
 
+    /**
+     * Directly add ExpressionFactor that implements |h(x)-z|^2_R
+     * @param h expression that implements measurement function
+     * @param z measurement
+     * @param R model
+     */
+    template<typename T>
+    void addExpressionFactor(const SharedNoiseModel& R, const T& z,
+                             const Expression<T>& h) {
+      push_back(boost::make_shared<ExpressionFactor<T> >(R, z, h));
+    }
+
   private:
 
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version) {
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & boost::serialization::make_nvp("NonlinearFactorGraph",
                 boost::serialization::base_object<Base>(*this));
     }
   };
 
-} // namespace
+/// traits
+template<>
+struct traits<NonlinearFactorGraph> : public Testable<NonlinearFactorGraph> {
+};
+
+} //\ namespace gtsam
 

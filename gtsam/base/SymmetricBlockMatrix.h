@@ -17,9 +17,21 @@
 */
 #pragma once
 
-#include <gtsam/base/Matrix.h>
 #include <gtsam/base/FastVector.h>
+#include <gtsam/base/Matrix.h>
 #include <gtsam/base/SymmetricBlockMatrixBlockExpr.h>
+#include <gtsam/base/types.h>
+#include <gtsam/dllexport.h>
+#include <boost/serialization/nvp.hpp>
+#include <cassert>
+#include <stdexcept>
+#include <vector>
+
+namespace boost {
+namespace serialization {
+class access;
+} /* namespace serialization */
+} /* namespace boost */
 
 namespace gtsam {
 
@@ -199,6 +211,7 @@ namespace gtsam {
 
     void checkBlock(DenseIndex block) const
     {
+      static_cast<void>(block); //Disable unused varibale warnings.
       assert(matrix_.rows() == matrix_.cols());
       assert(matrix_.cols() == variableColOffsets_.back());
       assert(block >= 0);
@@ -235,7 +248,7 @@ namespace gtsam {
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version) {
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       // Fill in the lower triangle part of the matrix, so boost::serialization won't
       // complain about uninitialized data with an input_stream_error exception
       // http://www.boost.org/doc/libs/1_37_0/libs/serialization/doc/exceptions.html#stream_error
@@ -246,13 +259,8 @@ namespace gtsam {
     }
   };
 
-  /* ************************************************************************* */
-  class CholeskyFailed : public gtsam::ThreadsafeException<CholeskyFailed>
-  {
-  public:
-    CholeskyFailed() throw() {}
-    virtual ~CholeskyFailed() throw() {}
-  };
+  /// Foward declare exception class
+  class CholeskyFailed;
 
 }
 

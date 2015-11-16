@@ -27,6 +27,34 @@ using namespace gtsam;
 GTSAM_CONCEPT_TESTABLE_INST(Point2)
 GTSAM_CONCEPT_LIE_INST(Point2)
 
+//******************************************************************************
+TEST(Double , Concept) {
+  BOOST_CONCEPT_ASSERT((IsGroup<double>));
+  BOOST_CONCEPT_ASSERT((IsManifold<double>));
+  BOOST_CONCEPT_ASSERT((IsVectorSpace<double>));
+}
+
+//******************************************************************************
+TEST(Double , Invariants) {
+  double p1(2), p2(5);
+  EXPECT(check_group_invariants(p1, p2));
+  EXPECT(check_manifold_invariants(p1, p2));
+}
+
+//******************************************************************************
+TEST(Point2 , Concept) {
+  BOOST_CONCEPT_ASSERT((IsGroup<Point2>));
+  BOOST_CONCEPT_ASSERT((IsManifold<Point2>));
+  BOOST_CONCEPT_ASSERT((IsVectorSpace<Point2>));
+}
+
+//******************************************************************************
+TEST(Point2 , Invariants) {
+  Point2 p1(1, 2), p2(4, 5);
+  EXPECT(check_group_invariants(p1, p2));
+  EXPECT(check_manifold_invariants(p1, p2));
+}
+
 /* ************************************************************************* */
 TEST(Point2, constructor) {
   Point2 p1(1, 2), p2 = p1;
@@ -34,20 +62,26 @@ TEST(Point2, constructor) {
 }
 
 /* ************************************************************************* */
+TEST(Point2, equality) {
+  Point2 p1(1, 2), p2(1,3);
+  EXPECT(!(p1 == p2));
+}
+
+/* ************************************************************************* */
 TEST(Point2, Lie) {
   Point2 p1(1, 2), p2(4, 5);
   Matrix H1, H2;
 
-  EXPECT(assert_equal(Point2(5,7), p1.compose(p2, H1, H2)));
+  EXPECT(assert_equal(Point2(5,7), traits<Point2>::Compose(p1, p2, H1, H2)));
   EXPECT(assert_equal(eye(2), H1));
   EXPECT(assert_equal(eye(2), H2));
 
-  EXPECT(assert_equal(Point2(3,3), p1.between(p2, H1, H2)));
+  EXPECT(assert_equal(Point2(3,3), traits<Point2>::Between(p1, p2, H1, H2)));
   EXPECT(assert_equal(-eye(2), H1));
   EXPECT(assert_equal(eye(2), H2));
 
-  EXPECT(assert_equal(Point2(5,7), p1.retract((Vector(2) << 4., 5.))));
-  EXPECT(assert_equal((Vector(2) << 3.,3.), p1.localCoordinates(p2)));
+  EXPECT(assert_equal(Point2(5,7), traits<Point2>::Retract(p1, Vector2(4., 5.))));
+  EXPECT(assert_equal(Vector2(3.,3.), traits<Point2>::Local(p1,p2)));
 }
 
 /* ************************************************************************* */
@@ -55,7 +89,7 @@ TEST( Point2, expmap) {
   Vector d(2);
   d(0) = 1;
   d(1) = -1;
-  Point2 a(4, 5), b = a.retract(d), c(5, 4);
+  Point2 a(4, 5), b = traits<Point2>::Retract(a,d), c(5, 4);
   EXPECT(assert_equal(b,c));
 }
 
@@ -84,8 +118,8 @@ namespace {
   Point2 l1(1, 0), l2(1, 1), l3(2, 2), l4(1, 3);
 
   /* ************************************************************************* */
-  LieVector norm_proxy(const Point2& point) {
-    return LieVector(point.norm());
+  double norm_proxy(const Point2& point) {
+    return point.norm();
   }
 }
 TEST( Point2, norm ) {
@@ -101,19 +135,23 @@ TEST( Point2, norm ) {
   // exception, for (0,0) derivative is [Inf,Inf] but we return [1,1]
   actual = x1.norm(actualH);
   EXPECT_DOUBLES_EQUAL(0, actual, 1e-9);
-  expectedH = (Matrix(1, 2) << 1.0, 1.0);
+  expectedH = (Matrix(1, 2) << 1.0, 1.0).finished();
   EXPECT(assert_equal(expectedH,actualH));
 
   actual = x2.norm(actualH);
   EXPECT_DOUBLES_EQUAL(sqrt(2.0), actual, 1e-9);
   expectedH = numericalDerivative11(norm_proxy, x2);
   EXPECT(assert_equal(expectedH,actualH));
+
+  // analytical
+  expectedH = (Matrix(1, 2) << x2.x()/actual, x2.y()/actual).finished();
+  EXPECT(assert_equal(expectedH,actualH));
 }
 
 /* ************************************************************************* */
 namespace {
-  LieVector distance_proxy(const Point2& location, const Point2& point) {
-    return LieVector(location.distance(point));
+  double distance_proxy(const Point2& location, const Point2& point) {
+    return location.distance(point);
   }
 }
 TEST( Point2, distance ) {

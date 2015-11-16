@@ -20,200 +20,280 @@
 
 #pragma once
 
-#include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/geometry/CalibratedCamera.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Point3.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/linear/BinaryJacobianFactor.h>
+#include <gtsam/linear/NoiseModel.h>
+#include <gtsam/base/concepts.h>
+#include <gtsam/base/Manifold.h>
+#include <gtsam/base/Matrix.h>
+#include <gtsam/base/SymmetricBlockMatrix.h>
+#include <gtsam/base/types.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/Vector.h>
+#include <gtsam/base/timing.h>
+
+#include <boost/none.hpp>
+#include <boost/optional/optional.hpp>
+#include <boost/serialization/nvp.hpp>
+#include <boost/smart_ptr/shared_ptr.hpp>
 #include <iostream>
+#include <string>
+
+namespace boost {
+namespace serialization {
+class access;
+} /* namespace serialization */
+} /* namespace boost */
 
 namespace gtsam {
 
-  /**
-   * Non-linear factor for a constraint derived from a 2D measurement.
-   * The calibration is unknown here compared to GenericProjectionFactor
-   * @addtogroup SLAM
-   */
-  template <class CAMERA, class LANDMARK>
-  class GeneralSFMFactor:  public NoiseModelFactor2<CAMERA, LANDMARK> {
-  protected:
-    Point2 measured_;      ///< the 2D measurement
+/**
+ * Non-linear factor for a constraint derived from a 2D measurement.
+ * The calibration is unknown here compared to GenericProjectionFactor
+ * @addtogroup SLAM
+ */
+template<class CAMERA, class LANDMARK>
+class GeneralSFMFactor: public NoiseModelFactor2<CAMERA, LANDMARK> {
 
-  public:
+  GTSAM_CONCEPT_MANIFOLD_TYPE(CAMERA);
+  GTSAM_CONCEPT_MANIFOLD_TYPE(LANDMARK);
 
-    typedef CAMERA Cam;                        ///< typedef for camera type
-    typedef GeneralSFMFactor<CAMERA, LANDMARK> This;  ///< typedef for this object
-    typedef NoiseModelFactor2<CAMERA, LANDMARK> Base;  ///< typedef for the base class
-    typedef Point2 Measurement;              ///< typedef for the measurement
+  static const int DimC = FixedDimension<CAMERA>::value;
+  static const int DimL = FixedDimension<LANDMARK>::value;
+  typedef Eigen::Matrix<double, 2, DimC> JacobianC;
+  typedef Eigen::Matrix<double, 2, DimL> JacobianL;
 
-    // shorthand for a smart pointer to a factor
-    typedef boost::shared_ptr<This> shared_ptr;
+protected:
 
-    /**
-     * Constructor
-     * @param measured is the 2 dimensional location of point in image (the measurement)
-     * @param model is the standard deviation of the measurements
-     * @param cameraKey is the index of the camera
-     * @param landmarkKey is the index of the landmark
-     */
-    GeneralSFMFactor(const Point2& measured, const SharedNoiseModel& model, Key cameraKey, Key landmarkKey) :
-      Base(model, cameraKey, landmarkKey), measured_(measured) {}
+  Point2 measured_; ///< the 2D measurement
 
-    GeneralSFMFactor():measured_(0.0,0.0) {}               ///< default constructor
-    GeneralSFMFactor(const Point2 & p):measured_(p) {}      ///< constructor that takes a Point2
-    GeneralSFMFactor(double x, double y):measured_(x,y) {} ///< constructor that takes doubles x,y to make a Point2
+public:
 
-    virtual ~GeneralSFMFactor() {} ///< destructor
+  typedef GeneralSFMFactor<CAMERA, LANDMARK> This;///< typedef for this object
+  typedef NoiseModelFactor2<CAMERA, LANDMARK> Base;///< typedef for the base class
 
-    /// @return a deep copy of this factor
-    virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
-          gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
-
-    /**
-     * print
-     * @param s optional string naming the factor
-     * @param keyFormatter optional formatter for printing out Symbols
-     */
-    void print(const std::string& s = "SFMFactor", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
-      Base::print(s, keyFormatter);
-      measured_.print(s + ".z");
-    }
-
-    /**
-     * equals
-     */
-    bool equals(const NonlinearFactor &p, double tol = 1e-9) const  {
-      const This* e = dynamic_cast<const This*>(&p);
-      return e && Base::equals(p, tol) && this->measured_.equals(e->measured_, tol) ;
-    }
-
-    /** h(x)-z */
-    Vector evaluateError(const Cam& camera,  const Point3& point,
-        boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const {
-
-      try {
-        Point2 reprojError(camera.project2(point,H1,H2) - measured_);
-        return reprojError.vector();
-      }
-      catch( CheiralityException& e) {
-        if (H1) *H1 = zeros(2, camera.dim());
-        if (H2) *H2 = zeros(2, point.dim());
-        std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2())
-                              << " behind Camera " << DefaultKeyFormatter(this->key1()) << std::endl;
-        return zero(2);
-      }
-    }
-
-    /** return the measured */
-    inline const Point2 measured() const {
-      return measured_;
-    }
-
-  private:
-    /** Serialization function */
-    friend class boost::serialization::access;
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int version) {
-      ar & boost::serialization::make_nvp("NoiseModelFactor2",
-          boost::serialization::base_object<Base>(*this));
-      ar & BOOST_SERIALIZATION_NVP(measured_);
-    }
-  };
+  // shorthand for a smart pointer to a factor
+  typedef boost::shared_ptr<This> shared_ptr;
 
   /**
-   * Non-linear factor for a constraint derived from a 2D measurement.
-   * Compared to GeneralSFMFactor, it is a ternary-factor because the calibration is isolated from camera..
+   * Constructor
+   * @param measured is the 2 dimensional location of point in image (the measurement)
+   * @param model is the standard deviation of the measurements
+   * @param cameraKey is the index of the camera
+   * @param landmarkKey is the index of the landmark
    */
-  template <class CALIBRATION>
-  class GeneralSFMFactor2: public NoiseModelFactor3<Pose3, Point3, CALIBRATION> {
-  protected:
-    Point2 measured_;     ///< the 2D measurement
+  GeneralSFMFactor(const Point2& measured, const SharedNoiseModel& model, Key cameraKey, Key landmarkKey) :
+  Base(model, cameraKey, landmarkKey), measured_(measured) {}
 
-  public:
+  GeneralSFMFactor():measured_(0.0,0.0) {} ///< default constructor
+  GeneralSFMFactor(const Point2 & p):measured_(p) {} ///< constructor that takes a Point2
+  GeneralSFMFactor(double x, double y):measured_(x,y) {} ///< constructor that takes doubles x,y to make a Point2
 
-    typedef GeneralSFMFactor2<CALIBRATION> This;
-    typedef PinholeCamera<CALIBRATION> Camera;                  ///< typedef for camera type
-    typedef NoiseModelFactor3<Pose3, Point3, CALIBRATION> Base; ///< typedef for the base class
-    typedef Point2 Measurement;                                 ///< typedef for the measurement
+  virtual ~GeneralSFMFactor() {} ///< destructor
 
-    // shorthand for a smart pointer to a factor
-    typedef boost::shared_ptr<This> shared_ptr;
+  /// @return a deep copy of this factor
+  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+        gtsam::NonlinearFactor::shared_ptr(new This(*this)));}
 
-    /**
-     * Constructor
-     * @param measured is the 2 dimensional location of point in image (the measurement)
-     * @param model is the standard deviation of the measurements
-     * @param poseKey is the index of the camera
-     * @param landmarkKey is the index of the landmark
-     * @param calibKey is the index of the calibration
-     */
-    GeneralSFMFactor2(const Point2& measured, const SharedNoiseModel& model, Key poseKey, Key landmarkKey, Key calibKey) :
-      Base(model, poseKey, landmarkKey, calibKey), measured_(measured) {}
-    GeneralSFMFactor2():measured_(0.0,0.0) {}              ///< default constructor
+  /**
+   * print
+   * @param s optional string naming the factor
+   * @param keyFormatter optional formatter for printing out Symbols
+   */
+  void print(const std::string& s = "SFMFactor", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+    Base::print(s, keyFormatter);
+    measured_.print(s + ".z");
+  }
 
-    virtual ~GeneralSFMFactor2() {} ///< destructor
+  /**
+   * equals
+   */
+  bool equals(const NonlinearFactor &p, double tol = 1e-9) const {
+    const This* e = dynamic_cast<const This*>(&p);
+    return e && Base::equals(p, tol) && this->measured_.equals(e->measured_, tol);
+  }
 
-    /// @return a deep copy of this factor
-    virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
-          gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
-
-    /**
-     * print
-     * @param s optional string naming the factor
-     * @param keyFormatter optional formatter useful for printing Symbols
-     */
-    void print(const std::string& s = "SFMFactor2", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
-      Base::print(s, keyFormatter);
-      measured_.print(s + ".z");
+  /** h(x)-z */
+  Vector evaluateError(const CAMERA& camera, const LANDMARK& point,
+      boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const {
+    try {
+      Point2 reprojError(camera.project2(point,H1,H2) - measured_);
+      return reprojError.vector();
     }
-
-    /**
-     * equals
-     */
-    bool equals(const NonlinearFactor &p, double tol = 1e-9) const  {
-      const This* e = dynamic_cast<const This*>(&p);
-      return e && Base::equals(p, tol) && this->measured_.equals(e->measured_, tol) ;
-    }
-
-    /** h(x)-z */
-    Vector evaluateError(const Pose3& pose3, const Point3& point, const CALIBRATION &calib,
-                         boost::optional<Matrix&> H1=boost::none,
-                         boost::optional<Matrix&> H2=boost::none,
-                         boost::optional<Matrix&> H3=boost::none) const
-    {
-      try {
-        Camera camera(pose3,calib);
-        Point2 reprojError(camera.project(point, H1, H2, H3) - measured_);
-        return reprojError.vector();
-      }
-      catch( CheiralityException& e) {
-        if (H1) *H1 = zeros(2, pose3.dim());
-        if (H2) *H2 = zeros(2, point.dim());
-        if (H3) *H3 = zeros(2, calib.dim());
-        std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2())
-                              << " behind Camera " << DefaultKeyFormatter(this->key1()) << std::endl;
-      }
+    catch( CheiralityException& e) {
+      if (H1) *H1 = JacobianC::Zero();
+      if (H2) *H2 = JacobianL::Zero();
+      // TODO warn if verbose output asked for
       return zero(2);
     }
+  }
 
-    /** return the measured */
-    inline const Point2 measured() const {
-      return measured_;
+  /// Linearize using fixed-size matrices
+  boost::shared_ptr<GaussianFactor> linearize(const Values& values) const {
+    // Only linearize if the factor is active
+    if (!this->active(values)) return boost::shared_ptr<JacobianFactor>();
+
+    const Key key1 = this->key1(), key2 = this->key2();
+    JacobianC H1;
+    JacobianL H2;
+    Vector2 b;
+    try {
+      const CAMERA& camera = values.at<CAMERA>(key1);
+      const LANDMARK& point = values.at<LANDMARK>(key2);
+      Point2 reprojError(camera.project2(point, H1, H2) - measured());
+      b = -reprojError.vector();
+    } catch (CheiralityException& e) {
+      H1.setZero();
+      H2.setZero();
+      b.setZero();
+      // TODO warn if verbose output asked for
     }
 
-  private:
-    /** Serialization function */
-    friend class boost::serialization::access;
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int version) {
-      ar & boost::serialization::make_nvp("NoiseModelFactor3",
-          boost::serialization::base_object<Base>(*this));
-      ar & BOOST_SERIALIZATION_NVP(measured_);
+    // Whiten the system if needed
+    const SharedNoiseModel& noiseModel = this->get_noiseModel();
+    if (noiseModel && !noiseModel->isUnit()) {
+      // TODO: implement WhitenSystem for fixed size matrices and include
+      // above
+      H1 = noiseModel->Whiten(H1);
+      H2 = noiseModel->Whiten(H2);
+      b = noiseModel->Whiten(b);
     }
-  };
 
+    // Create new (unit) noiseModel, preserving constraints if applicable
+    SharedDiagonal model;
+    if (noiseModel && noiseModel->isConstrained()) {
+      model = boost::static_pointer_cast<noiseModel::Constrained>(noiseModel)->unit();
+    }
 
+    return boost::make_shared<BinaryJacobianFactor<2, DimC, DimL> >(key1, H1, key2, H2, b, model);
+  }
+
+  /** return the measured */
+  inline const Point2 measured() const {
+    return measured_;
+  }
+
+private:
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int /*version*/) {
+    ar & boost::serialization::make_nvp("NoiseModelFactor2",
+        boost::serialization::base_object<Base>(*this));
+    ar & BOOST_SERIALIZATION_NVP(measured_);
+  }
+};
+
+template<class CAMERA, class LANDMARK>
+struct traits<GeneralSFMFactor<CAMERA, LANDMARK> > : Testable<
+    GeneralSFMFactor<CAMERA, LANDMARK> > {
+};
+
+/**
+ * Non-linear factor for a constraint derived from a 2D measurement.
+ * Compared to GeneralSFMFactor, it is a ternary-factor because the calibration is isolated from camera..
+ */
+template<class CALIBRATION>
+class GeneralSFMFactor2: public NoiseModelFactor3<Pose3, Point3, CALIBRATION> {
+
+  GTSAM_CONCEPT_MANIFOLD_TYPE(CALIBRATION);
+  static const int DimK = FixedDimension<CALIBRATION>::value;
+
+protected:
+
+  Point2 measured_; ///< the 2D measurement
+
+public:
+
+  typedef GeneralSFMFactor2<CALIBRATION> This;
+  typedef PinholeCamera<CALIBRATION> Camera;///< typedef for camera type
+  typedef NoiseModelFactor3<Pose3, Point3, CALIBRATION> Base;///< typedef for the base class
+
+  // shorthand for a smart pointer to a factor
+  typedef boost::shared_ptr<This> shared_ptr;
+
+  /**
+   * Constructor
+   * @param measured is the 2 dimensional location of point in image (the measurement)
+   * @param model is the standard deviation of the measurements
+   * @param poseKey is the index of the camera
+   * @param landmarkKey is the index of the landmark
+   * @param calibKey is the index of the calibration
+   */
+  GeneralSFMFactor2(const Point2& measured, const SharedNoiseModel& model, Key poseKey, Key landmarkKey, Key calibKey) :
+  Base(model, poseKey, landmarkKey, calibKey), measured_(measured) {}
+  GeneralSFMFactor2():measured_(0.0,0.0) {} ///< default constructor
+
+  virtual ~GeneralSFMFactor2() {} ///< destructor
+
+  /// @return a deep copy of this factor
+  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
+    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+        gtsam::NonlinearFactor::shared_ptr(new This(*this)));}
+
+  /**
+   * print
+   * @param s optional string naming the factor
+   * @param keyFormatter optional formatter useful for printing Symbols
+   */
+  void print(const std::string& s = "SFMFactor2", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+    Base::print(s, keyFormatter);
+    measured_.print(s + ".z");
+  }
+
+  /**
+   * equals
+   */
+  bool equals(const NonlinearFactor &p, double tol = 1e-9) const {
+    const This* e = dynamic_cast<const This*>(&p);
+    return e && Base::equals(p, tol) && this->measured_.equals(e->measured_, tol);
+  }
+
+  /** h(x)-z */
+  Vector evaluateError(const Pose3& pose3, const Point3& point, const CALIBRATION &calib,
+      boost::optional<Matrix&> H1=boost::none,
+      boost::optional<Matrix&> H2=boost::none,
+      boost::optional<Matrix&> H3=boost::none) const
+  {
+    try {
+      Camera camera(pose3,calib);
+      Point2 reprojError(camera.project(point, H1, H2, H3) - measured_);
+      return reprojError.vector();
+    }
+    catch( CheiralityException& e) {
+      if (H1) *H1 = zeros(2, 6);
+      if (H2) *H2 = zeros(2, 3);
+      if (H3) *H3 = zeros(2, DimK);
+      std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2())
+      << " behind Camera " << DefaultKeyFormatter(this->key1()) << std::endl;
+    }
+    return zero(2);
+  }
+
+  /** return the measured */
+  inline const Point2 measured() const {
+    return measured_;
+  }
+
+private:
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize(Archive & ar, const unsigned int /*version*/) {
+    ar & boost::serialization::make_nvp("NoiseModelFactor3",
+        boost::serialization::base_object<Base>(*this));
+    ar & BOOST_SERIALIZATION_NVP(measured_);
+  }
+};
+
+template<class CALIBRATION>
+struct traits<GeneralSFMFactor2<CALIBRATION> > : Testable<
+    GeneralSFMFactor2<CALIBRATION> > {
+};
 
 } //namespace

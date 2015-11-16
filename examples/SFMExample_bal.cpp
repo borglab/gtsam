@@ -43,7 +43,7 @@ int main (int argc, char* argv[]) {
 
   // Load the SfM data from file
   SfM_data mydata;
-  assert(readBAL(filename, mydata));
+  readBAL(filename, mydata);
   cout << boost::format("read %1% tracks on %2% cameras\n") % mydata.number_tracks() % mydata.number_cameras();
 
   // Create a factor graph

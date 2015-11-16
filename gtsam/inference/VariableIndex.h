@@ -17,16 +17,16 @@
 
 #pragma once
 
-#include <vector>
-#include <deque>
-#include <stdexcept>
-#include <boost/foreach.hpp>
-
-#include <gtsam/base/FastList.h>
-#include <gtsam/base/FastMap.h>
-#include <gtsam/base/types.h>
-#include <gtsam/base/timing.h>
 #include <gtsam/inference/Key.h>
+#include <gtsam/base/FastMap.h>
+#include <gtsam/base/FastVector.h>
+#include <gtsam/dllexport.h>
+
+#include <boost/optional/optional.hpp>
+#include <boost/smart_ptr/shared_ptr.hpp>
+
+#include <cassert>
+#include <stdexcept>
 
 namespace gtsam {
 
@@ -43,7 +43,7 @@ class GTSAM_EXPORT VariableIndex {
 public:
 
   typedef boost::shared_ptr<VariableIndex> shared_ptr;
-  typedef FastList<size_t> Factors;
+  typedef FastVector<size_t> Factors;
   typedef Factors::iterator Factor_iterator;
   typedef Factors::const_iterator Factor_const_iterator;  
 
@@ -175,6 +175,11 @@ protected:
   /// @}
 };
 
-}
+/// traits
+template<>
+struct traits<VariableIndex> : public Testable<VariableIndex> {
+};
+
+} //\ namespace gtsam
 
 #include <gtsam/inference/VariableIndex-inl.h>

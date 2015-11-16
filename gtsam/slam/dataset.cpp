@@ -1,5 +1,4 @@
 /* ----------------------------------------------------------------------------
-
  * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
@@ -16,18 +15,34 @@
  * @brief utility functions for loading datasets
  */
 
-#include <gtsam/slam/dataset.h>
+#include <gtsam/sam/BearingRangeFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/slam/BearingRangeFactor.h>
+#include <gtsam/slam/dataset.h>
+#include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Pose2.h>
-#include <gtsam/linear/Sampler.h>
+#include <gtsam/geometry/Rot3.h>
+#include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/Values.h>
+#include <gtsam/nonlinear/Values-inl.h>
+#include <gtsam/linear/Sampler.h>
+#include <gtsam/base/GenericValue.h>
+#include <gtsam/base/Lie.h>
+#include <gtsam/base/Matrix.h>
+#include <gtsam/base/types.h>
+#include <gtsam/base/Value.h>
+#include <gtsam/base/Vector.h>
 
-#include <boost/filesystem.hpp>
+#include <boost/assign/list_inserter.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+#include <boost/foreach.hpp>
 
+#include <cmath>
 #include <fstream>
-#include <sstream>
-#include <cstdlib>
+#include <iostream>
+#include <stdexcept>
 
 using namespace std;
 namespace fs = boost::filesystem;
@@ -64,8 +79,8 @@ string findExampleDataFile(const string& name) {
   throw
 invalid_argument(
     "gtsam::findExampleDataFile could not find a matching file in\n"
-    SOURCE_TREE_DATASET_DIR " or\n"
-    INSTALLED_DATASET_DIR " named\n" +
+    GTSAM_SOURCE_TREE_DATASET_DIR " or\n"
+    GTSAM_INSTALLED_DATASET_DIR " named\n" +
     name + ", " + name + ".graph, or " + name + ".txt");
 }
 
@@ -232,6 +247,7 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, Key maxID,
   // Parse the pose constraints
   Key id1, id2;
   bool haveLandmark = false;
+  const bool useModelInFile = !model;
   while (!is.eof()) {
     if (!(is >> tag))
       break;
@@ -252,7 +268,7 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, Key maxID,
       if (maxID && (id1 >= maxID || id2 >= maxID))
         continue;
 
-      if (!model)
+      if (useModelInFile)
         model = modelInFile;
 
       if (addNoise)
@@ -314,7 +330,7 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, Key maxID,
 
       // Create noise model
       noiseModel::Diagonal::shared_ptr measurementNoise =
-          noiseModel::Diagonal::Sigmas((Vector(2) << bearing_std, range_std));
+          noiseModel::Diagonal::Sigmas((Vector(2) << bearing_std, range_std).finished());
 
       // Add to graph
       *graph += BearingRangeFactor<Pose2, Point2>(id1, L(id2), bearing, range,
@@ -349,8 +365,9 @@ void save2D(const NonlinearFactorGraph& graph, const Values& config,
   fstream stream(filename.c_str(), fstream::out);
 
   // save poses
+
   BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, config) {
-    const Pose2& pose = dynamic_cast<const Pose2&>(key_value.value);
+    const Pose2& pose = key_value.value.cast<Pose2>();
     stream << "VERTEX2 " << key_value.key << " " << pose.x() << " " << pose.y()
         << " " << pose.theta() << endl;
   }
@@ -392,25 +409,22 @@ GraphAndValues readG2o(const string& g2oFile, const bool is3D,
 /* ************************************************************************* */
 void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
     const string& filename) {
-
   fstream stream(filename.c_str(), fstream::out);
 
   // save 2D & 3D poses
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, estimate) {
+  Values::ConstFiltered<Pose2> viewPose2 = estimate.filter<Pose2>();
+  BOOST_FOREACH(const Values::ConstFiltered<Pose2>::KeyValuePair& key_value, viewPose2) {
+    stream << "VERTEX_SE2 " << key_value.key << " " << key_value.value.x() << " "
+        << key_value.value.y() << " " << key_value.value.theta() << endl;
+  }
 
-    const Pose2* pose2D = dynamic_cast<const Pose2*>(&key_value.value);
-    if(pose2D){
-    stream << "VERTEX_SE2 " << key_value.key << " " << pose2D->x() << " "
-        << pose2D->y() << " " << pose2D->theta() << endl;
-    }
-    const Pose3* pose3D = dynamic_cast<const Pose3*>(&key_value.value);
-    if(pose3D){
-      Point3 p = pose3D->translation();
-      Rot3 R = pose3D->rotation();
+  Values::ConstFiltered<Pose3> viewPose3 = estimate.filter<Pose3>();
+  BOOST_FOREACH(const Values::ConstFiltered<Pose3>::KeyValuePair& key_value, viewPose3) {
+      Point3 p = key_value.value.translation();
+      Rot3 R = key_value.value.rotation();
       stream << "VERTEX_SE3:QUAT " << key_value.key << " " << p.x() << " "  << p.y() << " " << p.z()
         << " " << R.toQuaternion().x() << " " << R.toQuaternion().y() << " " << R.toQuaternion().z()
         << " " << R.toQuaternion().w() << endl;
-    }
   }
 
   // save edges (2D or 3D)
@@ -672,6 +686,7 @@ bool readBundler(const string& filename, SfM_data &data) {
       float u, v;
       is >> cam_idx >> point_idx >> u >> v;
       track.measurements.push_back(make_pair(cam_idx, Point2(u, -v)));
+      track.siftIndices.push_back(make_pair(cam_idx, point_idx));
     }
 
     data.tracks.push_back(track);
@@ -706,10 +721,10 @@ bool readBAL(const string& filename, SfM_data &data) {
 
   // Get the information for the camera poses
   for (size_t i = 0; i < nrPoses; i++) {
-    // Get the rodriguez vector
+    // Get the Rodrigues vector
     float wx, wy, wz;
     is >> wx >> wy >> wz;
-    Rot3 R = Rot3::rodriguez(wx, wy, wz); // BAL-OpenGL rotation matrix
+    Rot3 R = Rot3::Rodrigues(wx, wy, wz); // BAL-OpenGL rotation matrix
 
     // Get the translation vector
     float tx, ty, tz;

@@ -16,21 +16,21 @@
  **/
 #pragma once
 
-#include <ostream>
-
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/Lie.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/NoiseModel.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/Lie.h>
+
+#include <ostream>
 
 namespace gtsam {
 
 /*
  * - The 1st order GaussMarkov factor relates two keys of the same type. This relation is given via
- *      		key_2 = exp(-1/tau*delta_t) * key1 + w_d
- * 		where tau is the time constant and delta_t is the time difference between the two keys.
- * 		w_d is the equivalent discrete noise, whose covariance is calculated from the continuous noise model and delta_t.
+ *          key_2 = exp(-1/tau*delta_t) * key1 + w_d
+ *     where tau is the time constant and delta_t is the time difference between the two keys.
+ *     w_d is the equivalent discrete noise, whose covariance is calculated from the continuous noise model and delta_t.
  * - w_d is approximated as a Gaussian noise.
  * - In the multi-dimensional case, tau is a vector, and the above equation is applied on each element
  *      in the state (represented by keys), using the appropriate time constant in the vector tau.
@@ -80,7 +80,7 @@ public:
 
   /** equals */
   virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
-    const This *e =	dynamic_cast<const This*> (&expected);
+    const This *e =  dynamic_cast<const This*> (&expected);
     return e != NULL && Base::equals(*e, tol);
   }
 
@@ -91,8 +91,8 @@ public:
       boost::optional<Matrix&> H1 = boost::none,
       boost::optional<Matrix&> H2 = boost::none) const {
 
-    Vector v1( VALUE::Logmap(p1) );
-    Vector v2( VALUE::Logmap(p2) );
+    Vector v1( traits<VALUE>::Logmap(p1) );
+    Vector v2( traits<VALUE>::Logmap(p2) );
 
     Vector alpha(tau_.size());
     Vector alpha_v1(tau_.size());
@@ -114,7 +114,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar & BOOST_SERIALIZATION_NVP(dt_);
     ar & BOOST_SERIALIZATION_NVP(tau_);
@@ -131,5 +131,10 @@ private:
   }
 
 }; // \class GaussMarkov1stOrderFactor
+
+/// traits
+template<class VALUE> struct traits<GaussMarkov1stOrderFactor<VALUE> > :
+    public Testable<GaussMarkov1stOrderFactor<VALUE> > {
+};
 
 } /// namespace gtsam

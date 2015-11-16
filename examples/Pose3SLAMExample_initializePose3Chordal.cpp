@@ -43,7 +43,7 @@ int main(const int argc, const char *argv[]) {
   // Add prior on the first key
   NonlinearFactorGraph graphWithPrior = *graph;
   noiseModel::Diagonal::shared_ptr priorModel = //
-      noiseModel::Diagonal::Variances((Vector(6) << 1e-6, 1e-6, 1e-6, 1e-4, 1e-4, 1e-4));
+      noiseModel::Diagonal::Variances((Vector(6) << 1e-6, 1e-6, 1e-6, 1e-4, 1e-4, 1e-4).finished());
   Key firstKey = 0;
   BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, *initial) {
     std::cout << "Adding prior to g2o file " << std::endl;

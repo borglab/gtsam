@@ -17,8 +17,7 @@
  */
 
 #pragma once
-
-#include <gtsam/global_includes.h>
+#include <gtsam/config.h>      // Configuration from CMake
 
 #if !defined GTSAM_ALLOCATOR_BOOSTPOOL && !defined GTSAM_ALLOCATOR_TBB && !defined GTSAM_ALLOCATOR_STL
 #  ifdef GTSAM_USE_TBB

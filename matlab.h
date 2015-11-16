@@ -71,16 +71,16 @@ FastVector<Key> createKeyVector(string s, const Vector& I) {
 }
 
 // Create a KeySet from indices
-FastSet<Key> createKeySet(const Vector& I) {
-  FastSet<Key> set;
+KeySet createKeySet(const Vector& I) {
+  KeySet set;
   for (int i = 0; i < I.size(); i++)
     set.insert(I[i]);
   return set;
 }
 
 // Create a KeySet from indices using symbol
-FastSet<Key> createKeySet(string s, const Vector& I) {
-  FastSet<Key> set;
+KeySet createKeySet(string s, const Vector& I) {
+  KeySet set;
   char c = s[0];
   for (int i = 0; i < I.size(); i++)
     set.insert(symbol(c, I[i]));
@@ -143,7 +143,7 @@ void perturbPoint2(Values& values, double sigma, int32_t seed = 42u) {
       sigma);
   Sampler sampler(model, seed);
   BOOST_FOREACH(const Values::ConstFiltered<Point2>::KeyValuePair& key_value, values.filter<Point2>()) {
-    values.update(key_value.key, key_value.value.retract(sampler.sample()));
+    values.update(key_value.key, key_value.value + Point2(sampler.sample()));
   }
 }
 
@@ -164,7 +164,7 @@ void perturbPoint3(Values& values, double sigma, int32_t seed = 42u) {
       sigma);
   Sampler sampler(model, seed);
   BOOST_FOREACH(const Values::ConstFiltered<Point3>::KeyValuePair& key_value, values.filter<Point3>()) {
-    values.update(key_value.key, key_value.value.retract(sampler.sample()));
+    values.update(key_value.key, key_value.value + Point3(sampler.sample()));
   }
 }
 
@@ -229,7 +229,7 @@ Values localToWorld(const Values& local, const Pose2& base,
   // if no keys given, get all keys from local values
   FastVector<Key> keys(user_keys);
   if (keys.size()==0)
-    keys = FastVector<Key>(local.keys());
+    keys = local.keys();
 
   // Loop over all keys
   BOOST_FOREACH(Key key, keys) {

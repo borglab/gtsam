@@ -18,7 +18,6 @@
 
 #pragma once
 
-#include <gtsam/base/DerivedValue.h>
 #include <gtsam/geometry/Cal3DS2_Base.h>
 
 namespace gtsam {
@@ -37,11 +36,13 @@ namespace gtsam {
  *                      k3 (rr + 2 Pn.y^2) + 2*k4 pn.x pn.y  ]
  * pi = K*pn
  */
-class GTSAM_EXPORT Cal3DS2 : public Cal3DS2_Base, public DerivedValue<Cal3DS2> {
+class GTSAM_EXPORT Cal3DS2 : public Cal3DS2_Base {
 
   typedef Cal3DS2_Base Base;
 
 public:
+
+  enum { dimension = 9 };
 
   /// @name Standard Constructors
   /// @{
@@ -52,6 +53,8 @@ public:
   Cal3DS2(double fx, double fy, double s, double u0, double v0,
       double k1, double k2, double p1 = 0.0, double p2 = 0.0) :
         Base(fx, fy, s, u0, v0, k1, k2, p1, p2) {}
+
+  virtual ~Cal3DS2() {}
 
   /// @}
   /// @name Advanced Constructors
@@ -64,7 +67,7 @@ public:
   /// @{
 
   /// print with optional string
-  void print(const std::string& s = "") const ;
+  virtual void print(const std::string& s = "") const ;
 
   /// assert equality up to a tolerance
   bool equals(const Cal3DS2& K, double tol = 10e-9) const;
@@ -85,19 +88,28 @@ public:
   /// Return dimensions of calibration manifold object
   static size_t Dim() { return 9; }  //TODO: make a final dimension variable
 
-private:
+  /// @}
+  /// @name Clone
+  /// @{
+
+  /// @return a deep copy of this object
+  virtual boost::shared_ptr<Base> clone() const {
+    return boost::shared_ptr<Base>(new Cal3DS2(*this));
+  }
 
   /// @}
+
+
+private:
+
   /// @name Advanced Interface
   /// @{
 
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
-  void serialize(Archive & ar, const unsigned int version)
+  void serialize(Archive & ar, const unsigned int /*version*/)
   {
-    ar & boost::serialization::make_nvp("Cal3DS2",
-        boost::serialization::base_object<Value>(*this));
     ar & boost::serialization::make_nvp("Cal3DS2",
         boost::serialization::base_object<Cal3DS2_Base>(*this));
   }
@@ -105,6 +117,12 @@ private:
   /// @}
 
 };
+
+template<>
+struct traits<Cal3DS2> : public internal::Manifold<Cal3DS2> {};
+
+template<>
+struct traits<const Cal3DS2> : public internal::Manifold<Cal3DS2> {};
 
 }
 

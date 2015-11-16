@@ -36,7 +36,7 @@ TEST( Cal3DS2, uncalibrate)
   double g = 1+k[0]*r+k[1]*r*r ;
   double tx = 2*k[2]*p.x()*p.y()       +   k[3]*(r+2*p.x()*p.x()) ;
   double ty =   k[2]*(r+2*p.y()*p.y()) + 2*k[3]*p.x()*p.y() ;
-  Vector v_hat = (Vector(3) << g*p.x() + tx, g*p.y() + ty, 1.0) ;
+  Vector v_hat = (Vector(3) << g*p.x() + tx, g*p.y() + ty, 1.0).finished();
   Vector v_i = K.K() * v_hat ;
   Point2 p_i(v_i(0)/v_i(2), v_i(1)/v_i(2)) ;
   Point2 q = K.uncalibrate(p);

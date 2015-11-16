@@ -30,6 +30,14 @@ TEST (EssentialMatrix, equality) {
   EXPECT(assert_equal(expected, actual));
 }
 
+//*************************************************************************
+TEST (EssentialMatrix, FromPose3) {
+  EssentialMatrix expected(c1Rc2, Unit3(c1Tc2));
+  Pose3 pose(c1Rc2, c1Tc2);
+  EssentialMatrix actual = EssentialMatrix::FromPose3(pose);
+  EXPECT(assert_equal(expected, actual));
+}
+
 //*******************************************************************************
 TEST(EssentialMatrix, localCoordinates0) {
   EssentialMatrix E;
@@ -47,11 +55,11 @@ TEST (EssentialMatrix, localCoordinates) {
   Vector actual = hx.localCoordinates(EssentialMatrix::FromPose3(pose));
   EXPECT(assert_equal(zero(5), actual, 1e-8));
 
-  Vector d = zero(6);
-  d(4) += 1e-5;
+  Vector6 d;
+  d << 0.1, 0.2, 0.3, 0, 0, 0;
   Vector actual2 = hx.localCoordinates(
       EssentialMatrix::FromPose3(pose.retract(d)));
-  EXPECT(assert_equal(zero(5), actual2, 1e-8));
+  EXPECT(assert_equal(d.head(5), actual2, 1e-8));
 }
 
 //*************************************************************************
@@ -62,17 +70,26 @@ TEST (EssentialMatrix, retract0) {
 
 //*************************************************************************
 TEST (EssentialMatrix, retract1) {
-  EssentialMatrix expected(c1Rc2.retract((Vector(3) << 0.1, 0, 0)), Unit3(c1Tc2));
-  EssentialMatrix actual = trueE.retract((Vector(5) << 0.1, 0, 0, 0, 0));
+  EssentialMatrix expected(c1Rc2.retract(Vector3(0.1, 0, 0)), Unit3(c1Tc2));
+  EssentialMatrix actual = trueE.retract((Vector(5) << 0.1, 0, 0, 0, 0).finished());
   EXPECT(assert_equal(expected, actual));
 }
 
 //*************************************************************************
 TEST (EssentialMatrix, retract2) {
   EssentialMatrix expected(c1Rc2,
-      Unit3(c1Tc2).retract((Vector(2) << 0.1, 0)));
-  EssentialMatrix actual = trueE.retract((Vector(5) << 0, 0, 0, 0.1, 0));
+      Unit3(c1Tc2).retract(Vector2(0.1, 0)));
+  EssentialMatrix actual = trueE.retract((Vector(5) << 0, 0, 0, 0.1, 0).finished());
   EXPECT(assert_equal(expected, actual));
+}
+
+//*************************************************************************
+TEST (EssentialMatrix, RoundTrip) {
+  Vector5 d;
+  d << 0.1, 0.2, 0.3, 0.4, 0.5;
+  EssentialMatrix e, hx = e.retract(d);
+  Vector actual = e.localCoordinates(hx);
+  EXPECT(assert_equal(d, actual, 1e-8));
 }
 
 //*************************************************************************
@@ -85,7 +102,7 @@ TEST (EssentialMatrix, transform_to) {
       * Rot3::roll(M_PI / 6.0);
   Point3 aTb2(19.2, 3.7, 5.9);
   EssentialMatrix E(aRb2, Unit3(aTb2));
-  //EssentialMatrix E(aRb, Unit3(aTb).retract((Vector(2) << 0.1, 0)));
+  //EssentialMatrix E(aRb, Unit3(aTb).retract(Vector2(0.1, 0)));
   static Point3 P(0.2, 0.7, -2);
   Matrix actH1, actH2;
   E.transform_to(P, actH1, actH2);

@@ -344,7 +344,7 @@ namespace gtsam {
       gttic(Full_root_factoring);
       boost::shared_ptr<typename EliminationTraitsType::BayesTreeType> p_C1_B; {
         FastVector<Key> C1_minus_B; {
-          FastSet<Key> C1_minus_B_set(C1->conditional()->beginParents(), C1->conditional()->endParents());
+          KeySet C1_minus_B_set(C1->conditional()->beginParents(), C1->conditional()->endParents());
           BOOST_FOREACH(const Key j, *B->conditional()) {
             C1_minus_B_set.erase(j); }
           C1_minus_B.assign(C1_minus_B_set.begin(), C1_minus_B_set.end());
@@ -356,7 +356,7 @@ namespace gtsam {
       }
       boost::shared_ptr<typename EliminationTraitsType::BayesTreeType> p_C2_B; {
         FastVector<Key> C2_minus_B; {
-          FastSet<Key> C2_minus_B_set(C2->conditional()->beginParents(), C2->conditional()->endParents());
+          KeySet C2_minus_B_set(C2->conditional()->beginParents(), C2->conditional()->endParents());
           BOOST_FOREACH(const Key j, *B->conditional()) {
             C2_minus_B_set.erase(j); }
           C2_minus_B.assign(C2_minus_B_set.begin(), C2_minus_B_set.end());

@@ -18,9 +18,9 @@
 // \callgraph
 #pragma once
 
-#include <gtsam/geometry/Point2.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/geometry/Point2.h>
 
 // \namespace
 
@@ -158,7 +158,7 @@ namespace simulated2D {
     /// Serialization function
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version) {
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
       ar & BOOST_SERIALIZATION_NVP(measured_);
     }
@@ -204,7 +204,7 @@ namespace simulated2D {
     /// Serialization function
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version) {
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
       ar & BOOST_SERIALIZATION_NVP(measured_);
     }
@@ -251,7 +251,7 @@ namespace simulated2D {
     /// Serialization function
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version) {
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
       ar & BOOST_SERIALIZATION_NVP(measured_);
     }
@@ -270,3 +270,16 @@ namespace simulated2D {
   };
 
 } // namespace simulated2D
+
+/// traits
+namespace gtsam {
+template<class POSE, class LANDMARK>
+struct traits<simulated2D::GenericMeasurement<POSE, LANDMARK> > : Testable<
+    simulated2D::GenericMeasurement<POSE, LANDMARK> > {
+};
+
+template<>
+struct traits<simulated2D::Values> : public Testable<simulated2D::Values> {
+};
+}
+

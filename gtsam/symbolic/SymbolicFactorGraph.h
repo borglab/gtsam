@@ -111,9 +111,14 @@ namespace gtsam {
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version) {
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     }
   };
 
-} // namespace gtsam
+/// traits
+template<>
+struct traits<SymbolicFactorGraph> : public Testable<SymbolicFactorGraph> {
+};
+
+} //\ namespace gtsam

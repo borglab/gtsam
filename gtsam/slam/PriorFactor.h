@@ -57,6 +57,11 @@ namespace gtsam {
       Base(model, key), prior_(prior) {
     }
 
+    /** Convenience constructor that takes a full covariance argument */
+    PriorFactor(Key key, const VALUE& prior, const Matrix& covariance) :
+      Base(noiseModel::Gaussian::Covariance(covariance), key), prior_(prior) {
+    }
+
     /// @return a deep copy of this factor
     virtual gtsam::NonlinearFactor::shared_ptr clone() const {
       return boost::static_pointer_cast<gtsam::NonlinearFactor>(
@@ -67,23 +72,24 @@ namespace gtsam {
     /** print */
     virtual void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
       std::cout << s << "PriorFactor on " << keyFormatter(this->key()) << "\n";
-      prior_.print("  prior mean: ");
+      traits<T>::Print(prior_, "  prior mean: ");
       this->noiseModel_->print("  noise model: ");
     }
 
     /** equals */
     virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
       const This* e = dynamic_cast<const This*> (&expected);
-      return e != NULL && Base::equals(*e, tol) && this->prior_.equals(e->prior_, tol);
+      return e != NULL && Base::equals(*e, tol) && traits<T>::Equals(prior_, e->prior_, tol);
     }
 
     /** implement functions needed to derive from Factor */
 
     /** vector of errors */
-    Vector evaluateError(const T& p, boost::optional<Matrix&> H = boost::none) const {
-      if (H) (*H) = eye(p.dim());
-      // manifold equivalent of h(x)-z -> log(z,h(x))
-      return prior_.localCoordinates(p);
+    Vector evaluateError(const T& x, boost::optional<Matrix&> H = boost::none) const {
+      if (H) (*H) = eye(traits<T>::GetDimension(x));
+      // manifold equivalent of z-x -> Local(x,z)
+      // TODO(ASL) Add Jacobians.
+      return -traits<T>::Local(x, prior_);
     }
 
     const VALUE & prior() const { return prior_; }
@@ -93,7 +99,7 @@ namespace gtsam {
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version) {
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & boost::serialization::make_nvp("NoiseModelFactor1",
           boost::serialization::base_object<Base>(*this));
       ar & BOOST_SERIALIZATION_NVP(prior_);

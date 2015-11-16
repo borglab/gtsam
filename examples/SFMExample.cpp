@@ -15,13 +15,7 @@
  * @author  Duy-Nguyen Ta
  */
 
-/**
- * A structure-from-motion example with landmarks
- *  - The landmarks form a 10 meter cube
- *  - The robot rotates around the landmarks, always facing towards the cube
- */
-
-// For loading the data
+// For loading the data, see the comments therein for scenario (camera rotates around cube)
 #include "SFMdata.h"
 
 // Camera observations of landmarks (i.e. pixel coordinates) will be stored as Point2 (x, y).
@@ -80,13 +74,13 @@ int main(int argc, char* argv[]) {
   NonlinearFactorGraph graph;
 
   // Add a prior on pose x1. This indirectly specifies where the origin is.
-  noiseModel::Diagonal::shared_ptr poseNoise = noiseModel::Diagonal::Sigmas((Vector(6) << Vector3::Constant(0.3), Vector3::Constant(0.1))); // 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
+  noiseModel::Diagonal::shared_ptr poseNoise = noiseModel::Diagonal::Sigmas((Vector(6) << Vector3::Constant(0.3), Vector3::Constant(0.1)).finished()); // 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
   graph.push_back(PriorFactor<Pose3>(Symbol('x', 0), poses[0], poseNoise)); // add directly to graph
 
   // Simulated measurements from each camera pose, adding them to the factor graph
   for (size_t i = 0; i < poses.size(); ++i) {
+    SimpleCamera camera(poses[i], *K);
     for (size_t j = 0; j < points.size(); ++j) {
-      SimpleCamera camera(poses[i], *K);
       Point2 measurement = camera.project(points[j]);
       graph.push_back(GenericProjectionFactor<Pose3, Point3, Cal3_S2>(measurement, measurementNoise, Symbol('x', i), Symbol('l', j), K));
     }
@@ -103,7 +97,7 @@ int main(int argc, char* argv[]) {
   // Intentionally initialize the variables off from the ground truth
   Values initialEstimate;
   for (size_t i = 0; i < poses.size(); ++i)
-    initialEstimate.insert(Symbol('x', i), poses[i].compose(Pose3(Rot3::rodriguez(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20))));
+    initialEstimate.insert(Symbol('x', i), poses[i].compose(Pose3(Rot3::Rodrigues(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20))));
   for (size_t j = 0; j < points.size(); ++j)
     initialEstimate.insert(Symbol('l', j), points[j].compose(Point3(-0.25, 0.20, 0.15)));
   initialEstimate.print("Initial Estimates:\n");
@@ -111,6 +105,8 @@ int main(int argc, char* argv[]) {
   /* Optimize the graph and print results */
   Values result = DoglegOptimizer(graph, initialEstimate).optimize();
   result.print("Final results:\n");
+  cout << "initial error = " << graph.error(initialEstimate) << endl;
+  cout << "final error = " << graph.error(result) << endl;
 
   return 0;
 }

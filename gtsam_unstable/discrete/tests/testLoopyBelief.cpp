@@ -1,8 +1,8 @@
 /**
- * @file 	 testLoopyBelief.cpp
+ * @file    testLoopyBelief.cpp
  * @brief  
  * @author Duy-Nguyen Ta
- * @date 	 Oct 11, 2013
+ * @date    Oct 11, 2013
  */
 
 #include <gtsam/inference/VariableIndex.h>
@@ -193,7 +193,7 @@ private:
 
       // add the belief factor for each neighbor variable to this star graph
       // also record the factor index for later modification
-      FastSet<Key> neighbors = star->keys();
+      KeySet neighbors = star->keys();
       neighbors.erase(key);
       CorrectedBeliefIndices correctedBeliefIndices;
       BOOST_FOREACH(Key neighbor, neighbors) {

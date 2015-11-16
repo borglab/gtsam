@@ -111,7 +111,7 @@ namespace gtsam {
     * assumed to have already been solved in and their values are read from \c x.
     * This function works for multiple frontal variables.
     *
-    * Given the Gaussian conditional with log likelihood \f$ |R x_f - (d - S x_s)|^2,
+    * Given the Gaussian conditional with log likelihood \f$ |R x_f - (d - S x_s)|^2 \f$,
     * where \f$ f \f$ are the frontal variables and \f$ s \f$ are the separator
     * variables of this conditional, this solve function computes
     * \f$ x_f = R^{-1} (d - S x_s) \f$ using back-substitution.
@@ -135,13 +135,17 @@ namespace gtsam {
     /** Serialization function */
     friend class boost::serialization::access;
     template<class Archive>
-    void serialize(Archive & ar, const unsigned int version) {
+    void serialize(Archive & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(BaseFactor);
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(BaseConditional);
     }
   }; // GaussianConditional
 
-} // gtsam
+/// traits
+template<>
+struct traits<GaussianConditional> : public Testable<GaussianConditional> {};
+
+} // \ namespace gtsam
 
 #include <gtsam/linear/GaussianConditional-inl.h>
 

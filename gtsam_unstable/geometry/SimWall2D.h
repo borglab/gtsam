@@ -68,6 +68,9 @@ namespace gtsam {
 
   typedef std::vector<SimWall2D> SimWall2DVector;
 
+  /// traits
+  template<> struct traits<SimWall2D> : public Testable<SimWall2D> {};
+
   /**
    * Calculates the next pose in a trajectory constrained by walls, with noise on
    * angular drift and reflection noise

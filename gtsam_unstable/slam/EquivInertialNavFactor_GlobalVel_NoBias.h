@@ -22,7 +22,6 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/geometry/Rot3.h>
-#include <gtsam/base/LieVector.h>
 #include <gtsam/base/Matrix.h>
 
 // Using numerical derivative to calculate d(Pose3::Expmap)/dw
@@ -484,12 +483,12 @@ public:
     Matrix ENU_to_NED = (Matrix(3, 3) <<
         0.0,  1.0,  0.0,
         1.0,  0.0,  0.0,
-        0.0,  0.0, -1.0);
+        0.0,  0.0, -1.0).finished();
 
     Matrix NED_to_ENU = (Matrix(3, 3) <<
         0.0,  1.0,  0.0,
         1.0,  0.0,  0.0,
-        0.0,  0.0, -1.0);
+        0.0,  0.0, -1.0).finished();
 
     // Convert incoming parameters to ENU
     Vector Pos_ENU = NED_to_ENU * Pos_NED;
@@ -575,7 +574,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & boost::serialization::make_nvp("NonlinearFactor2",
         boost::serialization::base_object<Base>(*this));
   }

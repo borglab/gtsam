@@ -21,6 +21,7 @@
 
 #include <boost/math/constants/constants.hpp>
 #include <gtsam/geometry/Rot3.h>
+#include <cmath>
 
 using namespace std;
 
@@ -48,28 +49,24 @@ namespace gtsam {
             R31, R32, R33).finished()) {}
 
   /* ************************************************************************* */
-  Rot3::Rot3(const Matrix3& R) :
-      quaternion_(R) {}
+  Rot3::Rot3(const Quaternion& q) :
+      quaternion_(q) {
+  }
 
   /* ************************************************************************* */
-  Rot3::Rot3(const Matrix& R) :
-      quaternion_(Matrix3(R)) {}
-
-//  /* ************************************************************************* */
-//   Rot3::Rot3(const Matrix3& R) :
-//       quaternion_(R) {}
+  Rot3 Rot3::Rx(double t) {
+    return Quaternion(Eigen::AngleAxisd(t, Eigen::Vector3d::UnitX()));
+  }
 
   /* ************************************************************************* */
-  Rot3::Rot3(const Quaternion& q) : quaternion_(q) {}
+  Rot3 Rot3::Ry(double t) {
+    return Quaternion(Eigen::AngleAxisd(t, Eigen::Vector3d::UnitY()));
+  }
 
   /* ************************************************************************* */
-  Rot3 Rot3::Rx(double t) { return Quaternion(Eigen::AngleAxisd(t, Eigen::Vector3d::UnitX())); }
-
-  /* ************************************************************************* */
-  Rot3 Rot3::Ry(double t) { return Quaternion(Eigen::AngleAxisd(t, Eigen::Vector3d::UnitY())); }
-
-  /* ************************************************************************* */
-  Rot3 Rot3::Rz(double t) { return Quaternion(Eigen::AngleAxisd(t, Eigen::Vector3d::UnitZ())); }
+  Rot3 Rot3::Rz(double t) {
+    return Quaternion(Eigen::AngleAxisd(t, Eigen::Vector3d::UnitZ()));
+  }
 
   /* ************************************************************************* */
   Rot3 Rot3::RzRyRx(double x, double y, double z) { return Rot3(
@@ -79,39 +76,21 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Rot3 Rot3::rodriguez(const Vector& w, double theta) {
-    return Quaternion(Eigen::AngleAxisd(theta, w)); }
-
-  /* ************************************************************************* */
-  Rot3 Rot3::compose(const Rot3& R2,
-  boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
-    if (H1) *H1 = R2.transpose();
-    if (H2) *H2 = I3;
-    return Rot3(quaternion_ * R2.quaternion_);
-  }
-
-  /* ************************************************************************* */
   Rot3 Rot3::operator*(const Rot3& R2) const {
     return Rot3(quaternion_ * R2.quaternion_);
   }
 
   /* ************************************************************************* */
-  Rot3 Rot3::inverse(boost::optional<Matrix&> H1) const {
-    if (H1) *H1 = -matrix();
-    return Rot3(quaternion_.inverse());
-  }
-
-  /* ************************************************************************* */
-  Rot3 Rot3::between(const Rot3& R2,
-  boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
-    if (H1) *H1 = -(R2.transpose()*matrix());
-    if (H2) *H2 = I3;
-    return between_default(*this, R2);
+  // TODO: Could we do this? It works in Rot3M but not here, probably because
+  // here we create an intermediate value by calling matrix()
+  // const Eigen::Transpose<const Matrix3> Rot3::transpose() const {
+  Matrix3 Rot3::transpose() const {
+    return matrix().transpose();
   }
 
   /* ************************************************************************* */
   Point3 Rot3::rotate(const Point3& p,
-        boost::optional<Matrix&> H1,  boost::optional<Matrix&> H2) const {
+        OptionalJacobian<3,3> H1,  OptionalJacobian<3,3> H2) const {
     Matrix R = matrix();
     if (H1) *H1 = R * skewSymmetric(-p.x(), -p.y(), -p.z());
     if (H2) *H2 = R;
@@ -120,31 +99,26 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  // Log map at identity - return the canonical coordinates of this rotation
-  Vector3 Rot3::Logmap(const Rot3& R) {
-    Eigen::AngleAxisd angleAxis(R.quaternion_);
-    if(angleAxis.angle() > M_PI)      // Important:  use the smallest possible
-      angleAxis.angle() -= 2.0*M_PI;  // angle, e.g. no more than PI, to keep
-    if(angleAxis.angle() < -M_PI)     // error continuous.
-      angleAxis.angle() += 2.0*M_PI;
-    return angleAxis.axis() * angleAxis.angle();
+  Vector3 Rot3::Logmap(const Rot3& R, OptionalJacobian<3, 3> H) {
+    return traits<Quaternion>::Logmap(R.quaternion_, H);
   }
 
   /* ************************************************************************* */
-  Rot3 Rot3::retract(const Vector& omega, Rot3::CoordinatesMode mode) const {
-    return compose(Expmap(omega));
+  Rot3 Rot3::ChartAtOrigin::Retract(const Vector3& omega, ChartJacobian H) {
+    static const CoordinatesMode mode = ROT3_DEFAULT_COORDINATES_MODE;
+    if (mode == Rot3::EXPMAP) return Expmap(omega, H);
+    else throw std::runtime_error("Rot3::Retract: unknown mode");
   }
 
   /* ************************************************************************* */
-  Vector3 Rot3::localCoordinates(const Rot3& t2, Rot3::CoordinatesMode mode) const {
-    return Logmap(between(t2));
+  Vector3 Rot3::ChartAtOrigin::Local(const Rot3& R, ChartJacobian H) {
+    static const CoordinatesMode mode = ROT3_DEFAULT_COORDINATES_MODE;
+    if (mode == Rot3::EXPMAP) return Logmap(R, H);
+    else throw std::runtime_error("Rot3::Local: unknown mode");
   }
 
   /* ************************************************************************* */
   Matrix3 Rot3::matrix() const {return quaternion_.toRotationMatrix();}
-
-  /* ************************************************************************* */
-  Matrix3 Rot3::transpose() const {return quaternion_.toRotationMatrix().transpose();}
 
   /* ************************************************************************* */
   Point3 Rot3::r1() const { return Point3(quaternion_.toRotationMatrix().col(0)); }

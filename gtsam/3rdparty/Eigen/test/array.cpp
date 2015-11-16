@@ -109,6 +109,8 @@ template<typename ArrayType> void comparisons(const ArrayType& m)
     VERIFY(! (m1 < m3).all() );
     VERIFY(! (m1 > m3).all() );
   }
+  VERIFY(!(m1 > m2 && m1 < m2).any());
+  VERIFY((m1 <= m2 || m1 >= m2).all());
 
   // comparisons to scalar
   VERIFY( (m1 != (m1(r,c)+1) ).any() );

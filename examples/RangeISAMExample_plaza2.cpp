@@ -39,7 +39,7 @@
 // have been provided with the library for solving robotics SLAM problems.
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/slam/RangeFactor.h>
+#include <gtsam/sam/RangeFactor.h>
 #include <gtsam/slam/dataset.h>
 
 // Standard headers, added last, so we know headers above work on their own
@@ -82,7 +82,8 @@ vector<RangeTriple> readTriples() {
   ifstream is(data_file.c_str());
 
   while (is) {
-    double t, sender, receiver, range;
+    double t, sender, range;
+	size_t receiver;
     is >> t >> sender >> receiver >> range;
     triples.push_back(RangeTriple(t, receiver, range));
   }

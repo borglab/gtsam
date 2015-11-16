@@ -6,7 +6,7 @@
 #include <CppUnitLite/TestHarness.h>
 
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/slam/BearingRangeFactor.h>
+#include <gtsam/sam/BearingRangeFactor.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearISAM.h>
@@ -27,7 +27,7 @@ TEST(testNonlinearISAM, markov_chain ) {
   NonlinearISAM isamChol(reorder_interval, EliminatePreferCholesky); // create an ISAM object
   NonlinearISAM isamQR(reorder_interval, EliminateQR); // create an ISAM object
 
-  SharedDiagonal model = noiseModel::Diagonal::Sigmas((Vector(3) << 3.0, 3.0, 0.5));
+  SharedDiagonal model = noiseModel::Diagonal::Sigmas(Vector3(3.0, 3.0, 0.5));
   Sampler sampler(model, 42u);
 
   // create initial graph
@@ -74,8 +74,8 @@ TEST(testNonlinearISAM, markov_chain_with_disconnects ) {
   NonlinearISAM isamChol(reorder_interval, EliminatePreferCholesky); // create an ISAM object
   NonlinearISAM isamQR(reorder_interval, EliminateQR); // create an ISAM object
 
-  SharedDiagonal model3 = noiseModel::Diagonal::Sigmas((Vector(3) << 3.0, 3.0, 0.5));
-  SharedDiagonal model2 = noiseModel::Diagonal::Sigmas((Vector(2) << 2.0, 2.0));
+  SharedDiagonal model3 = noiseModel::Diagonal::Sigmas(Vector3(3.0, 3.0, 0.5));
+  SharedDiagonal model2 = noiseModel::Diagonal::Sigmas(Vector2(2.0, 2.0));
   Sampler sampler(model3, 42u);
 
   // create initial graph
@@ -151,8 +151,8 @@ TEST(testNonlinearISAM, markov_chain_with_reconnect ) {
   NonlinearISAM isamChol(reorder_interval, EliminatePreferCholesky); // create an ISAM object
   NonlinearISAM isamQR(reorder_interval, EliminateQR); // create an ISAM object
 
-  SharedDiagonal model3 = noiseModel::Diagonal::Sigmas((Vector(3) << 3.0, 3.0, 0.5));
-  SharedDiagonal model2 = noiseModel::Diagonal::Sigmas((Vector(2) << 2.0, 2.0));
+  SharedDiagonal model3 = noiseModel::Diagonal::Sigmas(Vector3(3.0, 3.0, 0.5));
+  SharedDiagonal model2 = noiseModel::Diagonal::Sigmas(Vector2(2.0, 2.0));
   Sampler sampler(model3, 42u);
 
   // create initial graph

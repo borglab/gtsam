@@ -24,15 +24,15 @@ namespace gtsam {
 
 //***************************************************************************
 void GPSFactor::print(const string& s, const KeyFormatter& keyFormatter) const {
-  cout << s << "GPSFactor on " << keyFormatter(this->key()) << "\n";
+  cout << s << "GPSFactor on " << keyFormatter(key()) << "\n";
   nT_.print("  prior mean: ");
-  this->noiseModel_->print("  noise model: ");
+  noiseModel_->print("  noise model: ");
 }
 
 //***************************************************************************
 bool GPSFactor::equals(const NonlinearFactor& expected, double tol) const {
   const This* e = dynamic_cast<const This*>(&expected);
-  return e != NULL && Base::equals(*e, tol) && this->nT_.equals(e->nT_, tol);
+  return e != NULL && Base::equals(*e, tol) && nT_.equals(e->nT_, tol);
 }
 
 //***************************************************************************
@@ -43,8 +43,7 @@ Vector GPSFactor::evaluateError(const Pose3& p,
     H->block < 3, 3 > (0, 0) << zeros(3, 3);
     H->block < 3, 3 > (0, 3) << p.rotation().matrix();
   }
-  // manifold equivalent of h(x)-z -> log(z,h(x))
-  return nT_.localCoordinates(p.translation());
+  return (p.translation() -nT_).vector();
 }
 
 //***************************************************************************

@@ -89,7 +89,7 @@ isam = ISAM2(isamParams);
 currentIMUPoseGlobal = Pose3();
 
 %% Get initial conditions for the estimated trajectory
-currentVelocityGlobal = LieVector([1;0;0]); % the vehicle is stationary at the beginning
+currentVelocityGlobal = [1;0;0]; % the vehicle is stationary at the beginning
 currentBias = imuBias.ConstantBias(zeros(3,1), zeros(3,1));
 
 sigma_init_v = noiseModel.Isotropic.Sigma(3, 1.0);
@@ -127,7 +127,7 @@ for i=1:steps
         fg.add(PriorFactorCal3_S2(calibrationKey,K_corrupt,K_cov));
         
         % velocity and bias evolution
-        fg.add(PriorFactorLieVector(currentVelKey, currentVelocityGlobal, sigma_init_v));
+        fg.add(PriorFactorVector(currentVelKey, currentVelocityGlobal, sigma_init_v));
         fg.add(PriorFactorConstantBias(currentBiasKey, currentBias, sigma_init_b));
         
         result = initial;

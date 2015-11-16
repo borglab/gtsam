@@ -45,11 +45,11 @@ for frame_i=3:options.nrCameras
 end
 
 for i=1:size(truth.cameras,2)
-    pose_i = result.at(symbol('x',i));
+    pose_i = result.atPose3(symbol('x',i));
     CHECK('pose_i.equals(truth.cameras{i}.pose,1e-5)',pose_i.equals(truth.cameras{i}.pose,1e-5))
 end
 
 for j=1:size(truth.points,2)
-    point_j = result.at(symbol('l',j));
+    point_j = result.atPoint3(symbol('l',j));
     CHECK('point_j.equals(truth.points{j},1e-5)',point_j.equals(truth.points{j},1e-5))
 end

@@ -392,6 +392,7 @@ template<typename Scalar> void geometry(void)
   #define VERIFY_EULER(I,J,K, X,Y,Z) { \
     Vector3 ea = m.eulerAngles(I,J,K); \
     Matrix3 m1 = Matrix3(AngleAxisx(ea[0], Vector3::Unit##X()) * AngleAxisx(ea[1], Vector3::Unit##Y()) * AngleAxisx(ea[2], Vector3::Unit##Z())); \
+    VERIFY_IS_APPROX(m, m1); \
     VERIFY_IS_APPROX(m,  Matrix3(AngleAxisx(ea[0], Vector3::Unit##X()) * AngleAxisx(ea[1], Vector3::Unit##Y()) * AngleAxisx(ea[2], Vector3::Unit##Z()))); \
   }
   VERIFY_EULER(0,1,2, X,Y,Z);

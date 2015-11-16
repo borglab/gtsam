@@ -31,28 +31,30 @@
 *
 */
 
-#include <gtsam/base/timing.h>
-#include <gtsam/base/treeTraversal-inst.h>
-#include <gtsam/slam/dataset.h>
-#include <gtsam/geometry/Pose2.h>
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/slam/BearingRangeFactor.h>
-#include <gtsam/inference/Symbol.h>
-#include <gtsam/linear/GaussianJunctionTree.h>
-#include <gtsam/linear/GaussianEliminationTree.h>
+#include <gtsam/sam/BearingRangeFactor.h>
+#include <gtsam/slam/dataset.h>
+#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/geometry/Pose2.h>
 #include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/nonlinear/Marginals.h>
+#include <gtsam/linear/GaussianJunctionTree.h>
+#include <gtsam/linear/GaussianEliminationTree.h>
+#include <gtsam/inference/Symbol.h>
+#include <gtsam/base/timing.h>
+#include <gtsam/base/treeTraversal-inst.h>
+#include <gtsam/config.h> // for GTSAM_USE_TBB
 
-#include <fstream>
-#include <iostream>
-#include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
-#include <boost/serialization/export.hpp>
+#include <boost/archive/binary_oarchive.hpp>
 #include <boost/program_options.hpp>
 #include <boost/range/algorithm/set_algorithm.hpp>
 #include <boost/random.hpp>
+#include <boost/serialization/export.hpp>
+
+#include <fstream>
+#include <iostream>
 
 #ifdef GTSAM_USE_TBB
 #include <tbb/tbb.h>
@@ -71,23 +73,6 @@ typedef Pose2 Pose;
 typedef NoiseModelFactor1<Pose> NM1;
 typedef NoiseModelFactor2<Pose,Pose> NM2;
 typedef BearingRangeFactor<Pose,Point2> BR;
-
-BOOST_CLASS_EXPORT(Value);
-BOOST_CLASS_EXPORT(Pose);
-BOOST_CLASS_EXPORT(Rot2);
-BOOST_CLASS_EXPORT(Point2);
-BOOST_CLASS_EXPORT(NonlinearFactor);
-BOOST_CLASS_EXPORT(NoiseModelFactor);
-BOOST_CLASS_EXPORT(NM1);
-BOOST_CLASS_EXPORT(NM2);
-BOOST_CLASS_EXPORT(BetweenFactor<Pose>);
-BOOST_CLASS_EXPORT(PriorFactor<Pose>);
-BOOST_CLASS_EXPORT(BR);
-BOOST_CLASS_EXPORT(noiseModel::Base);
-BOOST_CLASS_EXPORT(noiseModel::Isotropic);
-BOOST_CLASS_EXPORT(noiseModel::Gaussian);
-BOOST_CLASS_EXPORT(noiseModel::Diagonal);
-BOOST_CLASS_EXPORT(noiseModel::Unit);
 
 double chi2_red(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& config) {
   // Compute degrees of freedom (observations - variables)
@@ -269,12 +254,12 @@ void runIncremental()
       boost::dynamic_pointer_cast<BetweenFactor<Pose> >(datasetMeasurements[nextMeasurement]))
     {
       Key key1 = measurement->key1(), key2 = measurement->key2();
-      if((key1 >= firstStep && key1 < key2) || (key2 >= firstStep && key2 < key1)) {
+      if(((int)key1 >= firstStep && key1 < key2) || ((int)key2 >= firstStep && key2 < key1)) {
         // We found an odometry starting at firstStep
         firstPose = std::min(key1, key2);
         break;
       }
-      if((key2 >= firstStep && key1 < key2) || (key1 >= firstStep && key2 < key1)) {
+      if(((int)key2 >= firstStep && key1 < key2) || ((int)key1 >= firstStep && key2 < key1)) {
         // We found an odometry joining firstStep with a previous pose
         havePreviousPose = true;
         firstPose = std::max(key1, key2);
@@ -295,7 +280,7 @@ void runIncremental()
     NonlinearFactorGraph newFactors;
     Values newVariables;
 
-    newFactors.push_back(boost::make_shared<PriorFactor<Pose> >(firstPose, Pose(), noiseModel::Unit::Create(Pose::Dim())));
+    newFactors.push_back(boost::make_shared<PriorFactor<Pose> >(firstPose, Pose(), noiseModel::Unit::Create(3)));
     newVariables.insert(firstPose, Pose());
 
     isam2.update(newFactors, newVariables);
@@ -303,7 +288,9 @@ void runIncremental()
 
   cout << "Playing forward time steps..." << endl;
 
-  for(size_t step = firstPose; nextMeasurement < datasetMeasurements.size() && (lastStep == -1 || step <= lastStep); ++step)
+  for (size_t step = firstPose;
+      nextMeasurement < datasetMeasurements.size() && (lastStep == -1 || (int)step <= lastStep);
+      ++step)
   {
     Values newVariables;
     NonlinearFactorGraph newFactors;
@@ -474,7 +461,7 @@ void runBatch()
   cout << "Creating batch optimizer..." << endl;
 
   NonlinearFactorGraph measurements = datasetMeasurements;
-  measurements.push_back(boost::make_shared<PriorFactor<Pose> >(0, Pose(), noiseModel::Unit::Create(Pose::Dim())));
+  measurements.push_back(boost::make_shared<PriorFactor<Pose> >(0, Pose(), noiseModel::Unit::Create(3)));
 
   gttic_(Create_optimizer);
   GaussNewtonParams params;
@@ -589,7 +576,7 @@ void runStats()
 {
   cout << "Gathering statistics..." << endl;
   GaussianFactorGraph linear = *datasetMeasurements.linearize(initial);
-  GaussianJunctionTree jt(GaussianEliminationTree(linear, Ordering::COLAMD(linear)));
+  GaussianJunctionTree jt(GaussianEliminationTree(linear, Ordering::Colamd(linear)));
   treeTraversal::ForestStatistics statistics = treeTraversal::GatherStatistics(jt);
 
   ofstream file;

@@ -15,10 +15,10 @@
  * @author  Frank Dellaert
  */
 
-#include <time.h>
-#include <iostream>
-
+#include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/CalibratedCamera.h>
+#include <ctime>
+#include <iostream>
 
 using namespace std;
 using namespace gtsam;
@@ -31,7 +31,7 @@ int main()
       1., 0., 0.,
       0.,-1., 0.,
       0., 0.,-1.
-  )),
+  ).finished()),
   Point3(0,0,0.5));
 
   const CalibratedCamera camera(pose1);

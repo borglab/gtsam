@@ -95,7 +95,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Intentionally initialize the variables off from the ground truth
-    Pose3 noise(Rot3::rodriguez(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20));
+    Pose3 noise(Rot3::Rodrigues(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20));
     Pose3 initial_xi = poses[i].compose(noise);
 
     // Add an initial guess for the current pose
@@ -108,7 +108,7 @@ int main(int argc, char* argv[]) {
     if (i == 0) {
       // Add a prior on pose x0, with 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
       noiseModel::Diagonal::shared_ptr poseNoise = noiseModel::Diagonal::Sigmas(
-          (Vector(6) << Vector3::Constant(0.3), Vector3::Constant(0.1)));
+          (Vector(6) << Vector3::Constant(0.3), Vector3::Constant(0.1)).finished());
       graph.add(PriorFactor<Pose3>(Symbol('x', 0), poses[0], poseNoise));
 
       // Add a prior on landmark l0

@@ -109,9 +109,8 @@ add_custom_target(examples)
 # Add timing target
 add_custom_target(timing)
 
-# Include obsolete macros - will be removed in the near future
-include(GtsamTestingObsolete)
-
+# Add target to build tests without running
+add_custom_target(all.tests)
 
 # Implementations of this file's macros:
 
@@ -165,6 +164,7 @@ macro(gtsamAddTestsGlob_impl groupName globPatterns excludedFiles linkLibraries)
 				add_test(NAME ${script_name} COMMAND ${script_name})
 				add_dependencies(check.${groupName} ${script_name})
 				add_dependencies(check ${script_name})
+        add_dependencies(all.tests ${script_name})
 				if(NOT MSVC AND NOT XCODE_VERSION)
 				  add_custom_target(${script_name}.run ${EXECUTABLE_OUTPUT_PATH}${script_name})
 				endif()
@@ -195,6 +195,9 @@ macro(gtsamAddTestsGlob_impl groupName globPatterns excludedFiles linkLibraries)
 			add_test(NAME ${target_name} COMMAND ${target_name})
 			add_dependencies(check.${groupName} ${target_name})
 			add_dependencies(check ${target_name})
+			if(NOT XCODE_VERSION)
+				add_dependencies(all.tests ${script_name})
+			endif()
 		
 			# Add TOPSRCDIR
 			set_property(SOURCE ${script_srcs} APPEND PROPERTY COMPILE_DEFINITIONS "TOPSRCDIR=\"${PROJECT_SOURCE_DIR}\"")

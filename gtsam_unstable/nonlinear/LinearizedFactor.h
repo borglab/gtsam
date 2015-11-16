@@ -62,7 +62,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & boost::serialization::make_nvp("LinearizedGaussianFactor",
         boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(lin_points_);
@@ -149,15 +149,17 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & boost::serialization::make_nvp("LinearizedJacobianFactor",
         boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(Ab_);
   }
 };
 
-
-
+/// traits
+template<>
+struct traits<LinearizedJacobianFactor> : public Testable<LinearizedJacobianFactor> {
+};
 
 /**
  * A factor that takes a linear, Hessian factor and inserts it into
@@ -262,13 +264,16 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & boost::serialization::make_nvp("LinearizedHessianFactor",
         boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(info_);
   }
 };
 
-
+/// traits
+template<>
+struct traits<LinearizedHessianFactor> : public Testable<LinearizedHessianFactor> {
+};
 
 } // \namespace aspn

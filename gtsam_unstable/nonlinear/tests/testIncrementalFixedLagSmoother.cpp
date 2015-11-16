@@ -17,19 +17,20 @@
  */
 
 
-#include <CppUnitLite/TestHarness.h>
 #include <gtsam_unstable/nonlinear/IncrementalFixedLagSmoother.h>
-#include <gtsam/base/debug.h>
-#include <gtsam/geometry/Point2.h>
-#include <gtsam/inference/Key.h>
-#include <gtsam/inference/Ordering.h>
-#include <gtsam/linear/GaussianBayesNet.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/geometry/Point2.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
+#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/inference/Key.h>
+#include <gtsam/inference/Ordering.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/base/debug.h>
+
+#include <CppUnitLite/TestHarness.h>
 
 using namespace std;
 using namespace gtsam;
@@ -59,8 +60,8 @@ TEST( IncrementalFixedLagSmoother, Example )
   SETDEBUG("IncrementalFixedLagSmoother update", true);
 
   // Set up parameters
-  SharedDiagonal odometerNoise = noiseModel::Diagonal::Sigmas((Vector(2) << 0.1, 0.1));
-  SharedDiagonal loopNoise = noiseModel::Diagonal::Sigmas((Vector(2) << 0.1, 0.1));
+  SharedDiagonal odometerNoise = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1));
+  SharedDiagonal loopNoise = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1));
 
   // Create a Fixed-Lag Smoother
   typedef IncrementalFixedLagSmoother::KeyTimestampMap Timestamps;

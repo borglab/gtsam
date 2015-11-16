@@ -74,9 +74,9 @@ struct BoundingConstraint1: public NoiseModelFactor1<VALUE> {
     }
 
     if (isGreaterThan_)
-      return (Vector(1) << error);
+      return (Vector(1) << error).finished();
     else
-      return -1.0 * (Vector(1) << error);
+      return -1.0 * (Vector(1) << error).finished();
   }
 
 private:
@@ -84,7 +84,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & boost::serialization::make_nvp("NoiseModelFactor1",
         boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(threshold_);
@@ -147,9 +147,9 @@ struct BoundingConstraint2: public NoiseModelFactor2<VALUE1, VALUE2> {
     }
 
     if (isGreaterThan_)
-      return (Vector(1) << error);
+      return (Vector(1) << error).finished();
     else
-      return -1.0 * (Vector(1) << error);
+      return -1.0 * (Vector(1) << error).finished();
   }
 
 private:
@@ -157,7 +157,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & boost::serialization::make_nvp("NoiseModelFactor2",
         boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(threshold_);

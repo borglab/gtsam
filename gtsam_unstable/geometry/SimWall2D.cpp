@@ -128,7 +128,7 @@ std::pair<Pose2, bool> moveWithBounce(const Pose2& cur_pose, double step_size,
 
   // calculate angle to change by
   Rot2 dtheta = Rot2::fromAngle(angle_drift.sample()(0) + bias.theta());
-  Pose2 test_pose = cur_pose.retract((Vector(3) << step_size, 0.0, Rot2::Logmap(dtheta)(0)));
+  Pose2 test_pose = cur_pose.retract((Vector(3) << step_size, 0.0, Rot2::Logmap(dtheta)(0)).finished());
 
   // create a segment to use for intersection checking
   // find the closest intersection
@@ -156,7 +156,7 @@ std::pair<Pose2, bool> moveWithBounce(const Pose2& cur_pose, double step_size,
 
     // Simple check to make sure norm is on side closest robot
     if (cur_pose.t().distance(intersection + norm) > cur_pose.t().distance(intersection - norm))
-      norm = norm.inverse();
+      norm = - norm;
 
     // using the reflection
     const double inside_bias = 0.05;

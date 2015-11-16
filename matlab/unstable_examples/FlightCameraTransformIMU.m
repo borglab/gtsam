@@ -57,7 +57,7 @@ isamParams.setFactorization('QR');
 isam = ISAM2(isamParams);
 
 %% Get initial conditions for the estimated trajectory
-currentVelocityGlobal = LieVector([10;0;0]);    % (This is slightly wrong!)
+currentVelocityGlobal = [10;0;0];    % (This is slightly wrong!) Zhaoyang: Fixed
 currentBias = imuBias.ConstantBias(zeros(3,1), zeros(3,1));
 
 sigma_init_v = noiseModel.Isotropic.Sigma(3, 1.0);
@@ -101,7 +101,7 @@ axis equal;
 
 for i=1:size(trajectory)-1
     xKey = symbol('x',i);
-    pose = trajectory.at(xKey);     % GT pose
+    pose = trajectory.atPose3(xKey);     % GT pose
     pose_t = pose.translation();    % GT pose-translation
     
     if exist('h_cursor','var')
@@ -165,13 +165,13 @@ for i=1:size(trajectory)-1
     if i > 1
      
         xKey_prev = symbol('x',i-1);
-        pose_prev = trajectory.at(xKey_prev);
+        pose_prev = trajectory.atPose3(xKey_prev);
         
         step = pose_prev.between(pose);
                 
         % insert estimate for current pose with some normal noise on
         % translation
-        initial.insert(xKey,result.at(xKey_prev).compose(step.retract([0; 0; 0; normrnd(0,0.2,3,1)])));
+        initial.insert(xKey,result.atPose3(xKey_prev).compose(step.retract([0; 0; 0; normrnd(0,0.2,3,1)])));
         
         % visual measurements
         if measurements.size > 0 && use_camera
@@ -181,12 +181,12 @@ for i=1:size(trajectory)-1
                 zKey = measurementKeys.at(zz);
                 lKey = symbol('l',symbolIndex(zKey));
 
-                fg.add(TransformCalProjectionFactorCal3_S2(measurements.at(zKey), ...
+                fg.add(TransformCalProjectionFactorCal3_S2(measurements.atPoint2(zKey), ...
                     z_cov, xKey, transformKey, lKey, calibrationKey, false, true));
 
                 % only add landmark to values if doesn't exist yet
                 if ~result.exists(lKey)
-                    noisy_landmark = landmarks.at(lKey).compose(Point3(normrnd(0,landmark_noise,3,1)));
+                    noisy_landmark = landmarks.atPoint3(lKey).compose(Point3(normrnd(0,landmark_noise,3,1)));
                     initial.insert(lKey, noisy_landmark);
 
                     % and add a prior since its position is known

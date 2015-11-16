@@ -32,7 +32,7 @@ int main()
       1., 0., 0.,
       0.,-1., 0.,
       0., 0.,-1.
-  ),
+  ).finished(),
   Point3(0,0,0.5));
 
   static Cal3Bundler K(500, 1e-3, 2.0*1e-3);
@@ -89,7 +89,7 @@ int main()
     Matrix Dpose, Dpoint;
     long timeLog = clock();
     for(int i = 0; i < n; i++)
-      camera.project(point1, Dpose, Dpoint);
+      camera.project(point1, Dpose, Dpoint, boost::none);
     long timeLog2 = clock();
     double seconds = (double)(timeLog2-timeLog)/CLOCKS_PER_SEC;
     cout << ((double)seconds*1e9/n) << " nanosecs/call" << endl;

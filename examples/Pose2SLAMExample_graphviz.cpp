@@ -16,11 +16,11 @@
  * @author Frank Dellaert
  */
 
+// For an explanation of headers below, please see Pose2SLAMExample.cpp
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/nonlinear/Marginals.h>
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/geometry/Pose2.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <fstream>
 
 using namespace std;
@@ -32,11 +32,11 @@ int main (int argc, char** argv) {
   NonlinearFactorGraph graph;
 
   // 2a. Add a prior on the first pose, setting it to the origin
-  noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Sigmas((Vector(3) << 0.3, 0.3, 0.1));
+  noiseModel::Diagonal::shared_ptr priorNoise = noiseModel::Diagonal::Sigmas(Vector3(0.3, 0.3, 0.1));
   graph.push_back(PriorFactor<Pose2>(1, Pose2(0, 0, 0), priorNoise));
 
   // For simplicity, we will use the same noise model for odometry and loop closures
-  noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Sigmas((Vector(3) << 0.2, 0.2, 0.1));
+  noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Sigmas(Vector3(0.2, 0.2, 0.1));
 
   // 2b. Add odometry factors
   graph.push_back(BetweenFactor<Pose2>(1, 2, Pose2(2, 0, 0     ), model));

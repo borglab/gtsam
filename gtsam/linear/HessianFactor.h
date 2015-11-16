@@ -18,10 +18,10 @@
 
 #pragma once
 
+#include <gtsam/linear/GaussianFactor.h>
+#include <gtsam/linear/Scatter.h>
 #include <gtsam/base/SymmetricBlockMatrix.h>
 #include <gtsam/base/FastVector.h>
-#include <gtsam/base/FastMap.h>
-#include <gtsam/linear/GaussianFactor.h>
 
 #include <boost/make_shared.hpp>
 
@@ -40,30 +40,6 @@ namespace gtsam {
 
   GTSAM_EXPORT std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<HessianFactor> >
     EliminateCholesky(const GaussianFactorGraph& factors, const Ordering& keys);
-
-  /**
-   * One SlotEntry stores the slot index for a variable, as well its dimension.
-   */
-  struct GTSAM_EXPORT SlotEntry {
-    size_t slot, dimension;
-    SlotEntry(size_t _slot, size_t _dimension)
-    : slot(_slot), dimension(_dimension) {}
-    std::string toString() const;
-  };
-
-  /**
-   * Scatter is an intermediate data structure used when building a HessianFactor
-   * incrementally, to get the keys in the right order. The "scatter" is a map from
-   * global variable indices to slot indices in the union of involved variables.
-   * We also include the dimensionality of the variable.
-   */
-  class Scatter: public FastMap<Key, SlotEntry> {
-  public:
-    Scatter() {
-    }
-    Scatter(const GaussianFactorGraph& gfg,
-        boost::optional<const Ordering&> ordering = boost::none);
-  };
 
   /**
    * @brief A Gaussian factor using the canonical parameters (information form)
@@ -340,7 +316,7 @@ namespace gtsam {
     /// Return the diagonal of the Hessian for this factor
     virtual VectorValues hessianDiagonal() const;
 
-    /* ************************************************************************* */
+    /// Raw memory access version of hessianDiagonal
     virtual void hessianDiagonal(double* d) const;
 
     /// Return the block diagonal of the Hessian for this factor
@@ -363,31 +339,27 @@ namespace gtsam {
     /** Return the full augmented Hessian matrix of this factor as a SymmetricBlockMatrix object. */
     const SymmetricBlockMatrix& matrixObject() const { return info_; }
 
-    /** Update the factor by adding the information from the JacobianFactor
+    /** Update an information matrix by adding the information corresponding to this factor
      * (used internally during elimination).
-     * @param update The JacobianFactor containing the new information to add
      * @param scatter A mapping from variable index to slot index in this HessianFactor
+     * @param info The information matrix to be updated
      */
-    void updateATA(const JacobianFactor& update, const Scatter& scatter);
-
-    /** Update the factor by adding the information from the HessianFactor
-     * (used internally during elimination).
-     * @param update The HessianFactor containing the new information to add
-     * @param scatter A mapping from variable index to slot index in this HessianFactor
-     */
-    void updateATA(const HessianFactor& update, const Scatter& scatter);
+    void updateHessian(const FastVector<Key>& keys, SymmetricBlockMatrix* info) const;
 
     /** y += alpha * A'*A*x */
     void multiplyHessianAdd(double alpha, const VectorValues& x, VectorValues& y) const;
 
-    void multiplyHessianAdd(double alpha, const double* x, double* y, std::vector<size_t> keys) const;
-
-    void multiplyHessianAdd(double alpha, const double* x, double* y) const {};
-
     /// eta for Hessian
     VectorValues gradientAtZero() const;
 
+    /// Raw memory access version of gradientAtZero
     virtual void gradientAtZero(double* d) const;
+
+    /**
+     * Compute the gradient at a key:
+     *      \grad f(x_i) = \sum_j G_ij*x_j - g_i
+     */
+    Vector gradient(Key key, const VectorValues& x) const;
 
     /**
     *   Densely partially eliminate with Cholesky factorization.  JacobianFactors are
@@ -431,12 +403,17 @@ namespace gtsam {
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version) {
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(GaussianFactor);
       ar & BOOST_SERIALIZATION_NVP(info_);
     }
   };
 
-}
+/// traits
+template<>
+struct traits<HessianFactor> : public Testable<HessianFactor> {};
+
+} // \ namespace gtsam
+
 
 #include <gtsam/linear/HessianFactor-inl.h>

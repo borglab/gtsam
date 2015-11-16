@@ -58,7 +58,7 @@ TEST( simulated2DOriented, Dprior )
 TEST( simulated2DOriented, constructor )
 {
   Pose2 measurement(0.2, 0.3, 0.1);
-  SharedDiagonal model = noiseModel::Diagonal::Sigmas((Vector(3) << 1., 1., 1.));
+  SharedDiagonal model = noiseModel::Diagonal::Sigmas(Vector3(1., 1., 1.));
   simulated2DOriented::Odometry factor(measurement, model, X(1), X(2));
 
   simulated2DOriented::Values config;

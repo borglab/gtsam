@@ -74,22 +74,22 @@ TEST( SmartRangeFactor, unwhitenedError ) {
 
   // Whenever there are two ranges or less, error should be zero
   Vector actual1 = f.unwhitenedError(values);
-  EXPECT(assert_equal((Vector(1) << 0.0), actual1));
+  EXPECT(assert_equal((Vector(1) << 0.0).finished(), actual1));
   f.addRange(2, r2);
   Vector actual2 = f.unwhitenedError(values);
-  EXPECT(assert_equal((Vector(1) << 0.0), actual2));
+  EXPECT(assert_equal((Vector(1) << 0.0).finished(), actual2));
 
   f.addRange(3, r3);
   vector<Matrix> H(3);
   Vector actual3 = f.unwhitenedError(values);
   EXPECT_LONGS_EQUAL(3, f.keys().size());
-  EXPECT(assert_equal((Vector(1) << 0.0), actual3));
+  EXPECT(assert_equal((Vector(1) << 0.0).finished(), actual3));
 
   // Check keys and Jacobian
   Vector actual4 = f.unwhitenedError(values, H); // with H now !
-  EXPECT(assert_equal((Vector(1) << 0.0), actual4));
-  CHECK(assert_equal((Matrix(1, 3) << 0.0,-1.0,0.0), H.front()));
-  CHECK(assert_equal((Matrix(1, 3) << sqrt(2.0)/2,-sqrt(2.0)/2,0.0), H.back()));
+  EXPECT(assert_equal((Vector(1) << 0.0).finished(), actual4));
+  CHECK(assert_equal((Matrix(1, 3) << 0.0,-1.0,0.0).finished(), H.front()));
+  CHECK(assert_equal((Matrix(1, 3) << sqrt(2.0)/2,-sqrt(2.0)/2,0.0).finished(), H.back()));
 
   // Test clone
   NonlinearFactor::shared_ptr clone = f.clone();
@@ -109,7 +109,7 @@ TEST( SmartRangeFactor, optimization ) {
   initial.insert(2, pose2);
   initial.insert(3, Pose2(5, 6, 0)); // does not satisfy range measurement
   Vector actual5 = f.unwhitenedError(initial);
-  EXPECT(assert_equal((Vector(1) << sqrt(25.0+16.0)-sqrt(50.0)), actual5));
+  EXPECT(assert_equal((Vector(1) << sqrt(25.0+16.0)-sqrt(50.0)).finished(), actual5));
 
   // Create Factor graph
   NonlinearFactorGraph graph;

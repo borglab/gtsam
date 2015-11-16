@@ -91,7 +91,8 @@ bool files_equal(const string& expected, const string& actual, bool skipheader) 
       cerr << "<<< DIFF OUTPUT (if none, white-space differences only):\n";
       stringstream command;
       command << "diff --ignore-all-space " << expected << " " << actual << endl;
-      system(command.str().c_str());
+      if (system(command.str().c_str())<0)
+        throw "command '" + command.str() + "' failed";
       cerr << ">>>\n";
     }
     return equal;
@@ -112,29 +113,23 @@ string maybe_shared_ptr(bool add, const string& qtype, const string& type) {
   string str = add? "Shared" : "";
   if (add) str += type; 
   else str += qtype;
-
-  //if (add) str += ">";
   return str;
 }
 
 /* ************************************************************************* */
-string qualifiedName(const string& separator, const vector<string>& names, const string& finalName) {
+string qualifiedName(const string& separator, const vector<string>& names) {
   string result;
-  if(!names.empty()) {
-    for(size_t i = 0; i < names.size() - 1; ++i)
+  if (!names.empty()) {
+    for (size_t i = 0; i < names.size() - 1; ++i)
       result += (names[i] + separator);
-    if(finalName.empty())
-      result += names.back();
-    else
-      result += (names.back() + separator + finalName);
-  } else if(!finalName.empty()) {
-    result = finalName;
+    result += names.back();
   }
   return result;
 }
 
 /* ************************************************************************* */
-void createNamespaceStructure(const std::vector<std::string>& namespaces, const std::string& toolboxPath) {
+void createNamespaceStructure(const std::vector<std::string>& namespaces,
+    const std::string& toolboxPath) {
   using namespace boost::filesystem;
   path curPath = toolboxPath;
   BOOST_FOREACH(const string& subdir, namespaces) {

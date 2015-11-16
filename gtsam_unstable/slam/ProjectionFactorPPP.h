@@ -127,13 +127,13 @@ namespace gtsam {
           if(H1 || H2 || H3) {
             gtsam::Matrix H0, H02;
             PinholeCamera<CALIBRATION> camera(pose.compose(transform, H0, H02), *K_);
-            Point2 reprojectionError(camera.project(point, H1, H3) - measured_);
+            Point2 reprojectionError(camera.project(point, H1, H3, boost::none) - measured_);
             *H2 = *H1 * H02;
             *H1 = *H1 * H0;
             return reprojectionError.vector();
           } else {
             PinholeCamera<CALIBRATION> camera(pose.compose(transform), *K_);
-            Point2 reprojectionError(camera.project(point, H1, H3) - measured_);
+            Point2 reprojectionError(camera.project(point, H1, H3, boost::none) - measured_);
             return reprojectionError.vector();
           }
       } catch( CheiralityException& e) {
@@ -170,7 +170,7 @@ namespace gtsam {
     /// Serialization function
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version) {
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
       ar & BOOST_SERIALIZATION_NVP(measured_);
       ar & BOOST_SERIALIZATION_NVP(K_);
@@ -178,4 +178,11 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(verboseCheirality_);
     }
   };
+
+  /// traits
+  template<class POSE, class LANDMARK, class CALIBRATION>
+  struct traits<ProjectionFactorPPP<POSE, LANDMARK, CALIBRATION> > :
+      public Testable<ProjectionFactorPPP<POSE, LANDMARK, CALIBRATION> > {
+  };
+
 } // \ namespace gtsam
