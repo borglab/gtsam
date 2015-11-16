@@ -47,12 +47,12 @@ typedef Expression<Cal3Bundler> Cal3Bundler_;
 
 /// Expression version of PinholeBase::Project
 inline Point2_ project(const Point3_& p_cam) {
-  Point2_::UnaryFunction<Point3>::type f = &PinholeBase::Project;
+  Point2 (*f)(const Point3&, OptionalJacobian<2, 3>) = &PinholeBase::Project;
   return Point2_(f, p_cam);
 }
 
 inline Point2_ project(const Unit3_& p_cam) {
-  Point2_::UnaryFunction<Unit3>::type f = &PinholeBase::Project;
+  Point2 (*f)(const Unit3&, OptionalJacobian<2, 2>) = &PinholeBase::Project;
   return Point2_(f, p_cam);
 }
 
