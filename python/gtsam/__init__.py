@@ -1,1 +1,1 @@
-from libgtsam_python import *
+import noiseModel

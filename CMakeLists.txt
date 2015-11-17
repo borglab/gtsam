@@ -348,7 +348,7 @@ endif()
 # Python wrap
 if (GTSAM_BUILD_PYTHON)
 	include(GtsamPythonWrap)
-	wrap_and_install_python(gtsampy.h "${GTSAM_ADDITIONAL_LIBRARIES}" "")
+	# wrap_and_install_python(gtsampy.h "${GTSAM_ADDITIONAL_LIBRARIES}" "")
 endif()
 
 # Build gtsam_unstable
