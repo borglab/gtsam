@@ -1,3 +1,27 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file noiseModel_python.cpp
+ * @brief wraps the noise model classes into the noiseModel module
+ * @author Ellon Paiva Mendes (LAAS-CNRS)
+ **/
+
+ /** TODOs Summary:
+  *
+  * TODO(Ellon): Don't know yet it it's worth/needed to add 'Wrap structs' for each of the noise models.
+  *              I think it's only worthy if we want to access virtual the virtual functions from python.
+  * TODO(Ellon): Wrap non-pure virtual methods of Base on BaseWrap
+  */
+
 #include <boost/python.hpp>
 
 #include <numpy_eigen/NumpyEigenConverter.hpp>
@@ -43,6 +67,8 @@ struct BaseWrap : Base, wrapper<Base>
     this->get_override("WhitenSystem")();
   }
 
+  // TODO(Ellon) Wrap non-pure virtual methods here. See: http://www.boost.org/doc/libs/1_59_0/libs/python/doc/tutorial/doc/html/python/exposing.html#python.virtual_functions_with_default_implementations
+
 };
 
 BOOST_PYTHON_MODULE(libnoiseModel_python)
@@ -76,7 +102,7 @@ class_<BaseWrap,boost::noncopyable>("Base")
   .def("print", pure_virtual(&Base::print))
 ;
 
-class_<Gaussian, boost::shared_ptr<Gaussian>, bases<Base> >("Gaussian", no_init)
+class_<Gaussian, boost::shared_ptr<Gaussian>, bases<BaseWrap> >("Gaussian", no_init)
   .def("SqrtInformation",&Gaussian::SqrtInformation)
   .staticmethod("SqrtInformation")
   .def("Information",&Gaussian::Information)
@@ -85,7 +111,7 @@ class_<Gaussian, boost::shared_ptr<Gaussian>, bases<Base> >("Gaussian", no_init)
   .staticmethod("Covariance")
 ;
 
-class_<Diagonal, boost::shared_ptr<Diagonal> >("Diagonal", no_init)
+class_<Diagonal, boost::shared_ptr<Diagonal>, bases<Gaussian> >("Diagonal", no_init)
   .def("Sigmas",&Diagonal::Sigmas)
   .staticmethod("Sigmas")
   .def("Variances",&Diagonal::Variances)
@@ -94,7 +120,7 @@ class_<Diagonal, boost::shared_ptr<Diagonal> >("Diagonal", no_init)
   .staticmethod("Precisions")
 ;
 
-class_<Isotropic, boost::shared_ptr<Isotropic> >("Isotropic", no_init)
+class_<Isotropic, boost::shared_ptr<Isotropic>, bases<Diagonal> >("Isotropic", no_init)
   .def("Sigma",&Isotropic::Sigma)
   .staticmethod("Sigma")
   .def("Variance",&Isotropic::Variance)
@@ -103,7 +129,7 @@ class_<Isotropic, boost::shared_ptr<Isotropic> >("Isotropic", no_init)
   .staticmethod("Precision")
 ;
 
-class_<Unit, boost::shared_ptr<Unit> >("Unit", no_init)
+class_<Unit, boost::shared_ptr<Unit>, bases<Isotropic> >("Unit", no_init)
   .def("Create",&Unit::Create)
   .staticmethod("Create")
 ;
