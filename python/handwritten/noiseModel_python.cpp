@@ -74,30 +74,6 @@ struct BaseWrap : Base, wrapper<Base>
 BOOST_PYTHON_MODULE(libnoiseModel_python)
 {
 
-// NOTE: Don't know if it's really necessary to register the matrices convertion here. 
-import_array(); 
-NumpyEigenConverter<Vector>::register_converter();
-NumpyEigenConverter<Vector1>::register_converter();
-NumpyEigenConverter<Vector2>::register_converter();
-NumpyEigenConverter<Vector3>::register_converter();
-NumpyEigenConverter<Vector4>::register_converter();
-NumpyEigenConverter<Vector5>::register_converter();
-NumpyEigenConverter<Vector6>::register_converter();
-NumpyEigenConverter<Vector7>::register_converter();
-NumpyEigenConverter<Vector8>::register_converter();
-NumpyEigenConverter<Vector9>::register_converter();
-NumpyEigenConverter<Vector10>::register_converter();
-
-NumpyEigenConverter<Matrix>::register_converter();
-NumpyEigenConverter<Matrix2>::register_converter();
-NumpyEigenConverter<Matrix3>::register_converter();
-NumpyEigenConverter<Matrix4>::register_converter();
-NumpyEigenConverter<Matrix5>::register_converter();
-NumpyEigenConverter<Matrix6>::register_converter();
-NumpyEigenConverter<Matrix7>::register_converter();
-NumpyEigenConverter<Matrix8>::register_converter();
-NumpyEigenConverter<Matrix9>::register_converter();
-
 class_<BaseWrap,boost::noncopyable>("Base")
   .def("print", pure_virtual(&Base::print))
 ;

@@ -1,2 +1,3 @@
+import registernumpyeigen
 import noiseModel
 import geometry
