@@ -1,5 +1,5 @@
 import registernumpyeigen
 import noiseModel
-import geometry
-import nonlinear
-import slam
+from geometry import *
+from nonlinear import *
+from slam import *
