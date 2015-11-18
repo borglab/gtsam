@@ -24,17 +24,17 @@
 
 #include <boost/python.hpp>
 
-#include <numpy_eigen/NumpyEigenConverter.hpp>
-
 #include <gtsam/linear/NoiseModel.h>
 
 using namespace boost::python;
 using namespace gtsam;
 using namespace gtsam::noiseModel;
 
-// Wrap around pure virtual class Base
+// Wrap around pure virtual class Base.
+// All pure virtual methods should be wrapped. Non-pure may be wrapped if we want to mimic the 
+// overloading through inheritance in Python.
 // See: http://www.boost.org/doc/libs/1_59_0/libs/python/doc/tutorial/doc/html/python/exposing.html#python.class_virtual_functions
-struct BaseWrap : Base, wrapper<Base>
+struct BaseCallback : Base, wrapper<Base>
 {
   void print (const std::string & name="") const {
     this->get_override("print")();
@@ -67,18 +67,20 @@ struct BaseWrap : Base, wrapper<Base>
     this->get_override("WhitenSystem")();
   }
 
-  // TODO(Ellon) Wrap non-pure virtual methods here. See: http://www.boost.org/doc/libs/1_59_0/libs/python/doc/tutorial/doc/html/python/exposing.html#python.virtual_functions_with_default_implementations
+  // TODO(Ellon): Wrap non-pure virtual methods should go here.
+  //              See: http://www.boost.org/doc/libs/1_59_0/libs/python/doc/tutorial/doc/html/python/exposing.html#python.virtual_functions_with_default_implementations
 
 };
 
 BOOST_PYTHON_MODULE(libnoiseModel_python)
 {
 
-class_<BaseWrap,boost::noncopyable>("Base")
+class_<BaseCallback,boost::noncopyable>("Base")
   .def("print", pure_virtual(&Base::print))
 ;
 
-class_<Gaussian, boost::shared_ptr<Gaussian>, bases<BaseWrap> >("Gaussian", no_init)
+// NOTE: We should use "Base" in "bases<...>", and not "BaseCallback" (it was not clear at the begining)
+class_<Gaussian, boost::shared_ptr<Gaussian>, bases<Base> >("Gaussian", no_init)
   .def("SqrtInformation",&Gaussian::SqrtInformation)
   .staticmethod("SqrtInformation")
   .def("Information",&Gaussian::Information)
