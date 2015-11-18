@@ -72,6 +72,19 @@ struct BaseCallback : Base, wrapper<Base>
 
 };
 
+// Overloads for named constructors. Named constructors are static, so we declare them 
+// using BOOST_PYTHON_FUNCTION_OVERLOADS instead of BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS
+// See: http://www.boost.org/doc/libs/1_59_0/libs/python/doc/tutorial/doc/html/python/functions.html#python.default_arguments
+BOOST_PYTHON_FUNCTION_OVERLOADS(Gaussian_SqrtInformation_overloads, Gaussian::SqrtInformation, 1, 2)
+BOOST_PYTHON_FUNCTION_OVERLOADS(Gaussian_Information_overloads, Gaussian::Information, 1, 2)
+BOOST_PYTHON_FUNCTION_OVERLOADS(Gaussian_Covariance_overloads, Gaussian::Covariance, 1, 2)
+BOOST_PYTHON_FUNCTION_OVERLOADS(Diagonal_Sigmas_overloads, Diagonal::Sigmas, 1, 2)
+BOOST_PYTHON_FUNCTION_OVERLOADS(Diagonal_Variances_overloads, Diagonal::Variances, 1, 2)
+BOOST_PYTHON_FUNCTION_OVERLOADS(Diagonal_Precisions_overloads, Diagonal::Precisions, 1, 2)
+BOOST_PYTHON_FUNCTION_OVERLOADS(Isotropic_Sigma_overloads, Isotropic::Sigma, 2, 3)
+BOOST_PYTHON_FUNCTION_OVERLOADS(Isotropic_Variance_overloads, Isotropic::Variance, 2, 3)
+BOOST_PYTHON_FUNCTION_OVERLOADS(Isotropic_Precision_overloads, Isotropic::Precision, 2, 3)
+
 BOOST_PYTHON_MODULE(libnoiseModel_python)
 {
 
@@ -81,29 +94,29 @@ class_<BaseCallback,boost::noncopyable>("Base")
 
 // NOTE: We should use "Base" in "bases<...>", and not "BaseCallback" (it was not clear at the begining)
 class_<Gaussian, boost::shared_ptr<Gaussian>, bases<Base> >("Gaussian", no_init)
-  .def("SqrtInformation",&Gaussian::SqrtInformation)
+  .def("SqrtInformation",&Gaussian::SqrtInformation, Gaussian_SqrtInformation_overloads())
   .staticmethod("SqrtInformation")
-  .def("Information",&Gaussian::Information)
+  .def("Information",&Gaussian::Information, Gaussian_Information_overloads())
   .staticmethod("Information")
-  .def("Covariance",&Gaussian::Covariance)
+  .def("Covariance",&Gaussian::Covariance, Gaussian_Covariance_overloads())
   .staticmethod("Covariance")
 ;
 
 class_<Diagonal, boost::shared_ptr<Diagonal>, bases<Gaussian> >("Diagonal", no_init)
-  .def("Sigmas",&Diagonal::Sigmas)
+  .def("Sigmas",&Diagonal::Sigmas, Diagonal_Sigmas_overloads())
   .staticmethod("Sigmas")
-  .def("Variances",&Diagonal::Variances)
+  .def("Variances",&Diagonal::Variances, Diagonal_Variances_overloads())
   .staticmethod("Variances")
-  .def("Precisions",&Diagonal::Precisions)
+  .def("Precisions",&Diagonal::Precisions, Diagonal_Precisions_overloads())
   .staticmethod("Precisions")
 ;
 
 class_<Isotropic, boost::shared_ptr<Isotropic>, bases<Diagonal> >("Isotropic", no_init)
-  .def("Sigma",&Isotropic::Sigma)
+  .def("Sigma",&Isotropic::Sigma, Isotropic_Sigma_overloads())
   .staticmethod("Sigma")
-  .def("Variance",&Isotropic::Variance)
+  .def("Variance",&Isotropic::Variance, Isotropic_Variance_overloads())
   .staticmethod("Variance")
-  .def("Precision",&Isotropic::Precision)
+  .def("Precision",&Isotropic::Precision, Isotropic_Precision_overloads())
   .staticmethod("Precision")
 ;
 
