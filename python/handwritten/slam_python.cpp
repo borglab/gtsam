@@ -32,16 +32,37 @@ using namespace gtsam;
 
 // Prototypes used to perform overloading
 // See: http://www.boost.org/doc/libs/1_59_0/libs/python/doc/tutorial/doc/html/python/functions.html
+// *NONE*
+
+// Wrap around pure virtual class NonlinearFactor.
+// All pure virtual methods should be wrapped. Non-pure may be wrapped if we want to mimic the 
+// overloading through inheritance in Python.
+// See: http://www.boost.org/doc/libs/1_59_0/libs/python/doc/tutorial/doc/html/python/exposing.html#python.class_virtual_functions
+struct NonlinearFactorCallback : NonlinearFactor, wrapper<NonlinearFactor>
+{
+  double error (const Values & values) const {
+    return this->get_override("error")(values);
+  }
+  size_t dim () const {
+    return this->get_override("dim")();
+  }
+  boost::shared_ptr<GaussianFactor> linearize(const Values & values) const {
+    return this->get_override("linearize")(values);
+  }
+};
 
 // Macro used to define a BetweenFactor given the type.
 #define BETWEENFACTOR(VALUE) \
-  class_< BetweenFactor<VALUE> >("BetweenFactor"#VALUE) \
+  class_< BetweenFactor<VALUE>, bases<NonlinearFactor>, boost::shared_ptr< BetweenFactor<VALUE> > >("BetweenFactor"#VALUE) \
   .def(init<Key,Key,VALUE,noiseModel::Base::shared_ptr>()) \
   .def("measured", &BetweenFactor<VALUE>::measured, return_internal_reference<>()) \
 ;
 
 BOOST_PYTHON_MODULE(libslam_python)
 {
+
+  class_<NonlinearFactorCallback,boost::noncopyable>("NonlinearFactor")
+  ;
 
   BETWEENFACTOR(Point3)
 
