@@ -21,6 +21,7 @@
 
 #include <boost/python.hpp>
 
+#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Rot3.h>
@@ -51,11 +52,17 @@ struct NonlinearFactorCallback : NonlinearFactor, wrapper<NonlinearFactor>
   }
 };
 
-// Macro used to define a BetweenFactor given the type.
+// Macro used to define templated factors
 #define BETWEENFACTOR(VALUE) \
   class_< BetweenFactor<VALUE>, bases<NonlinearFactor>, boost::shared_ptr< BetweenFactor<VALUE> > >("BetweenFactor"#VALUE) \
   .def(init<Key,Key,VALUE,noiseModel::Base::shared_ptr>()) \
   .def("measured", &BetweenFactor<VALUE>::measured, return_internal_reference<>()) \
+;
+
+#define PRIORFACTOR(VALUE) \
+  class_< PriorFactor<VALUE>, bases<NonlinearFactor>, boost::shared_ptr< PriorFactor<VALUE> > >("PriorFactor"#VALUE) \
+  .def(init<Key,VALUE,noiseModel::Base::shared_ptr>()) \
+  .def("prior", &PriorFactor<VALUE>::prior, return_internal_reference<>()) \
 ;
 
 BOOST_PYTHON_MODULE(libslam_python)
@@ -69,5 +76,11 @@ BOOST_PYTHON_MODULE(libslam_python)
   BETWEENFACTOR(Rot3)
 
   BETWEENFACTOR(Pose3)
+
+  PRIORFACTOR(Point3)
+
+  PRIORFACTOR(Rot3)
+
+  PRIORFACTOR(Pose3)
 
 }
