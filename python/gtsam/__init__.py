@@ -1,5 +1,1 @@
-import registernumpyeigen
-import noiseModel
-from geometry import *
-from nonlinear import *
-from slam import *
+from libgtsam_python import *

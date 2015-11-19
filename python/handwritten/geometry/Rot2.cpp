@@ -28,11 +28,11 @@ void exportRot2(){
 
     .def("print", &Rot2::print, print_overloads(args("s")))
     .def("equals", &Rot2::equals, equals_overloads(args("q","tol")))
-    .def("inverse", &Rot2::inverse)
-    .def("compose", &Rot2::compose, compose_overloads(args("q", "H1", "H2")))
-    .def("between", &Rot2::between)
-    .def("dim", &Rot2::dim)
-    .def("retract", &Rot2::retract)
+    // .def("inverse", &Rot2::inverse)
+    // .def("compose", &Rot2::compose, compose_overloads(args("q", "H1", "H2")))
+    // .def("between", &Rot2::between)
+    // .def("dim", &Rot2::dim)
+    // .def("retract", &Rot2::retract)
 
     .def("Expmap", &Rot2::Expmap)
     .staticmethod("Expmap")

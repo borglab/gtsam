@@ -17,15 +17,15 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(range_overloads, Pose2::range, 1, 3)
 
 void exportPose2(){
 
-  double (Pose2::*range1)(const Pose2&, boost::optional<Matrix&>, boost::optional<Matrix&>) const
-    = &Pose2::range;
-  double (Pose2::*range2)(const Point2&, boost::optional<Matrix&>, boost::optional<Matrix&>) const
-    = &Pose2::range;
+  // double (Pose2::*range1)(const Pose2&, boost::optional<Matrix&>, boost::optional<Matrix&>) const
+  //   = &Pose2::range;
+  // double (Pose2::*range2)(const Point2&, boost::optional<Matrix&>, boost::optional<Matrix&>) const
+  //   = &Pose2::range;
 
-  Rot2 (Pose2::*bearing1)(const Pose2&, boost::optional<Matrix&>, boost::optional<Matrix&>) const
-    = &Pose2::bearing;
-  Rot2 (Pose2::*bearing2)(const Point2&, boost::optional<Matrix&>, boost::optional<Matrix&>) const
-    = &Pose2::bearing;
+  // Rot2 (Pose2::*bearing1)(const Pose2&, boost::optional<Matrix&>, boost::optional<Matrix&>) const
+  //   = &Pose2::bearing;
+  // Rot2 (Pose2::*bearing2)(const Point2&, boost::optional<Matrix&>, boost::optional<Matrix&>) const
+  //   = &Pose2::bearing;
 
   class_<Pose2>("Pose2", init<>())
     .def(init<Pose2>())
@@ -34,11 +34,11 @@ void exportPose2(){
     .def("print", &Pose2::print, print_overloads(args("s")))
 
     .def("equals", &Pose2::equals, equals_overloads(args("pose","tol")))
-    .def("inverse", &Pose2::inverse)
-    .def("compose", &Pose2::compose, compose_overloads(args("p2", "H1", "H2")))
-    .def("between", &Pose2::between, between_overloads(args("p2", "H1", "H2")))
-    .def("dim", &Pose2::dim)
-    .def("retract", &Pose2::retract)
+    // .def("inverse", &Pose2::inverse)
+    // .def("compose", &Pose2::compose, compose_overloads(args("p2", "H1", "H2")))
+    // .def("between", &Pose2::between, between_overloads(args("p2", "H1", "H2")))
+    // .def("dim", &Pose2::dim)
+    // .def("retract", &Pose2::retract)
 
     .def("transform_to", &Pose2::transform_to, 
       transform_to_overloads(args("point", "H1", "H2")))
@@ -55,12 +55,12 @@ void exportPose2(){
     .def("translation", &Pose2::translation, return_value_policy<copy_const_reference>())
     .def("rotation", &Pose2::rotation, return_value_policy<copy_const_reference>())
 
-    .def("bearing", bearing1, bearing_overloads())
-    .def("bearing", bearing2, bearing_overloads())
+    // .def("bearing", bearing1, bearing_overloads())
+    // .def("bearing", bearing2, bearing_overloads())
 
     // Function overload example
-    .def("range", range1, range_overloads())
-    .def("range", range2, range_overloads())
+    // .def("range", range1, range_overloads())
+    // .def("range", range2, range_overloads())
 
 
     .def("Expmap", &Pose2::Expmap)

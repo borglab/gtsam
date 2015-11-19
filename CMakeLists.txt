@@ -347,8 +347,16 @@ endif()
 
 # Python wrap
 if (GTSAM_BUILD_PYTHON)
-	include(GtsamPythonWrap)
+	# NOTE: The automatic generation of python wrapper from the gtsampy.h interface is
+	#       not working yet, so we're using a handwritten wrapper files on python/handwritten.
+	#       Once the python wrapping from the interface file is working, you can _swap_ the 
+	#       comments on the next lines
+	
+	# include(GtsamPythonWrap)
 	# wrap_and_install_python(gtsampy.h "${GTSAM_ADDITIONAL_LIBRARIES}" "")
+
+	add_subdirectory(python)
+
 endif()
 
 # Build gtsam_unstable

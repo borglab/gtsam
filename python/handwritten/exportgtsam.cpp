@@ -45,7 +45,7 @@ typedef gtsam::BetweenFactor<gtsam::Pose2> Pose2BetweenFactor;
 
 //-----------------------------------//
 
-BOOST_PYTHON_MODULE(libgtsam){
+BOOST_PYTHON_MODULE(libgtsam_python){
   using namespace boost::python;
   exportPoint2();
   exportRot2();
