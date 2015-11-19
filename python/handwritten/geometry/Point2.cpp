@@ -1,3 +1,20 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @brief wraps Point2 class to python
+ * @author Andrew Melim
+ * @author Ellon Paiva Mendes (LAAS-CNRS)
+ **/
+
 #include <boost/python.hpp>
 #include "gtsam/geometry/Point2.h"
 
@@ -12,15 +29,26 @@ void exportPoint2(){
 
   class_<Point2>("Point2", init<>())
     .def(init<double, double>())
-    .def("print", &Point2::print, print_overloads(args("s")))
+    .def(init<Vector>())
+    .def("identity", &Point2::identity)
+    .def("dist", &Point2::dist)
+    .def("distance", &Point2::distance)
     .def("equals", &Point2::equals, equals_overloads(args("q","tol")))
-    .def("inverse", &Point2::inverse)
-    // .def("compose", &Point2::compose, compose_overloads(args("q", "H1", "H2")))
-    .def("between", &Point2::between)
-    // .def("dim", &Point2::dim)
-    .def("retract", &Point2::retract)
+    .def("norm", &Point2::norm)
+    .def("print", &Point2::print, print_overloads(args("s")))
+    .def("unit", &Point2::unit)
+    .def("vector", &Point2::vector)
     .def("x", &Point2::x)
     .def("y", &Point2::y)
+    .def(self * other<double>()) // __mult__
+    .def(other<double>() * self) // __mult__
+    .def(self + self)
+    .def(-self)
+    .def(self - self)
+    .def(self / other<double>())
+    .def(self_ns::str(self))
+    .def(repr(self))
+    .def(self == self)
   ;
 
 }

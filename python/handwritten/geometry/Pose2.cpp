@@ -1,3 +1,20 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @brief wraps Pose2 class to python
+ * @author Andrew Melim
+ * @author Ellon Paiva Mendes (LAAS-CNRS)
+ **/
+
 #include <boost/python.hpp>
 #include "gtsam/geometry/Pose2.h"
 
