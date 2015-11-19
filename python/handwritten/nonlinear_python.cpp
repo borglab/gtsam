@@ -22,17 +22,19 @@
 #include <boost/python.hpp>
 
 #include <gtsam/nonlinear/Values.h>
+#include <gtsam/nonlinear/ISAM2.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+
 #include <gtsam/geometry/Pose3.h>
 
 using namespace boost::python;
 using namespace gtsam;
 
-// Prototypes used to perform overloading
+// Overloading macros
 // See: http://www.boost.org/doc/libs/1_59_0/libs/python/doc/tutorial/doc/html/python/functions.html
-void  (Values::*insert_0)(const gtsam::Values&) = &Values::insert;
-void  (Values::*insert_1)(Key, const gtsam::Point3&) = &Values::insert;
-void  (Values::*insert_2)(Key, const gtsam::Rot3&) = &Values::insert;
-void  (Values::*insert_3)(Key, const gtsam::Pose3&) = &Values::insert;
+// ISAM2
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(ISAM2_update_overloads, ISAM2::update, 0, 7)
+
 
 /** The function ValuesAt is a workaround to be able to call the correct templated version
   * of Values::at. Without it, python would only try to match the last 'at' metho defined
@@ -79,6 +81,12 @@ void  (Values::*insert_3)(Key, const gtsam::Pose3&) = &Values::insert;
 BOOST_PYTHON_MODULE(libnonlinear_python)
 {
 
+// Function pointers for overloads in Values
+void  (Values::*insert_0)(const gtsam::Values&) = &Values::insert;
+void  (Values::*insert_1)(Key, const gtsam::Point3&) = &Values::insert;
+void  (Values::*insert_2)(Key, const gtsam::Rot3&) = &Values::insert;
+void  (Values::*insert_3)(Key, const gtsam::Pose3&) = &Values::insert;
+
 class_<Values>("Values")
   .def(init<>())
   .def(init<const Values&>())
@@ -87,7 +95,7 @@ class_<Values>("Values")
   .def("empty", &Values::empty)
   .def("equals", &Values::equals)
   .def("erase", &Values::erase)
-  .def("insertFixed", &Values::insertFixed)
+  .def("insert_fixed", &Values::insertFixed)
   .def("print", &Values::print)
   .def("size", &Values::size)
   .def("swap", &Values::swap)
@@ -101,6 +109,31 @@ class_<Values>("Values")
   .def("point3_at", &Values::at<Point3>, return_internal_reference<>())
   .def("rot3_at", &Values::at<Rot3>, return_internal_reference<>())
   .def("pose3_at", &Values::at<Pose3>, return_internal_reference<>())
+;
+
+// Function pointers for overloads in NonlinearFactorGraph
+void (NonlinearFactorGraph::*add_0)(const NonlinearFactorGraph::sharedFactor&) = &NonlinearFactorGraph::add;
+
+class_<NonlinearFactorGraph>("NonlinearFactorGraph")
+  .def("size",&NonlinearFactorGraph::size)
+  .def("add", add_0)
+;
+
+// TODO(Ellon): Export all properties of ISAM2Params
+class_<ISAM2Params>("ISAM2Params")
+;
+
+// TODO(Ellon): Export useful methods/properties of ISAM2Result
+class_<ISAM2Result>("ISAM2Result")
+;
+
+// Function pointers for overloads in ISAM2
+Values (ISAM2::*calculateEstimate_0)() const = &ISAM2::calculateEstimate;
+
+class_<ISAM2>("ISAM2")
+  // TODO(Ellon): wrap all optional values of update
+  .def("update",&ISAM2::update, ISAM2_update_overloads())
+  .def("calculate_estimate", calculateEstimate_0)
 ;
 
 }
