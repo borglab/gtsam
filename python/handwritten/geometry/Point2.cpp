@@ -29,7 +29,7 @@ void exportPoint2(){
 
   class_<Point2>("Point2", init<>())
     .def(init<double, double>())
-    .def(init<Vector>())
+    .def(init<const Vector2 &>())
     .def("identity", &Point2::identity)
     .def("dist", &Point2::dist)
     .def("distance", &Point2::distance)

@@ -29,7 +29,7 @@ void exportPoint3(){
 class_<Point3>("Point3")
   .def(init<>())
   .def(init<double,double,double>())
-  .def(init<Vector>())
+  .def(init<const Vector3 &>())
   .def("identity", &Point3::identity)
   .staticmethod("identity")
   .def("add", &Point3::add)
