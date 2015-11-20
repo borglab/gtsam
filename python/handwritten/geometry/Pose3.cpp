@@ -16,6 +16,10 @@
  **/
 
 #include <boost/python.hpp>
+
+#define NO_IMPORT_ARRAY
+#include <numpy_eigen/NumpyEigenConverter.hpp>
+
 #include "gtsam/geometry/Pose3.h"
 
 #include "gtsam/geometry/Pose2.h"

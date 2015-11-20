@@ -15,6 +15,10 @@
  **/
 
 #include <boost/python.hpp>
+
+#define NO_IMPORT_ARRAY
+#include <numpy_eigen/NumpyEigenConverter.hpp>
+
 #include "gtsam/nonlinear/ISAM2.h"
 
 using namespace boost::python;

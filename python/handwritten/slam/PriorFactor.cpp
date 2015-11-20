@@ -16,6 +16,10 @@
  **/
 
 #include <boost/python.hpp>
+
+#define NO_IMPORT_ARRAY
+#include <numpy_eigen/NumpyEigenConverter.hpp>
+
 #include "gtsam/slam/PriorFactor.h"
 #include "gtsam/geometry/Point2.h"
 #include "gtsam/geometry/Rot2.h"

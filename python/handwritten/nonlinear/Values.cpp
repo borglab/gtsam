@@ -15,6 +15,10 @@
  **/
 
 #include <boost/python.hpp>
+
+#define NO_IMPORT_ARRAY
+#include <numpy_eigen/NumpyEigenConverter.hpp>
+
 #include "gtsam/nonlinear/Values.h"
 #include "gtsam/geometry/Point3.h"
 #include "gtsam/geometry/Rot3.h"

@@ -14,8 +14,9 @@
  * @author Ellon Paiva Mendes (LAAS-CNRS)
  **/
 
- #include <boost/python.hpp>
+#include <boost/python.hpp>
 
+#define NO_IMPORT_ARRAY
 #include <numpy_eigen/NumpyEigenConverter.hpp>
 
 #include "gtsam/base/Matrix.h"
@@ -26,7 +27,8 @@ using namespace gtsam;
 
 void registerNumpyEigenConversions()
 {
-  import_array();
+  // NOTE: import array should be called only in the cpp defining the module
+  // import_array();
   NumpyEigenConverter<Vector>::register_converter();
   NumpyEigenConverter<Vector1>::register_converter();
   NumpyEigenConverter<Vector2>::register_converter();

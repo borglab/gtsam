@@ -18,6 +18,8 @@
 #include <boost/python.hpp>
 #include <boost/cstdint.hpp>
 
+#include <numpy_eigen/NumpyEigenConverter.hpp>
+
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Vector.h>
 
@@ -55,6 +57,8 @@ void registerNumpyEigenConversions();
 BOOST_PYTHON_MODULE(libgtsam_python){
 
   // Should be the first thing to be done
+  import_array();
+  
   registerNumpyEigenConversions();
 
   exportPoint2();
