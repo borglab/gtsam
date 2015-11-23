@@ -53,6 +53,7 @@ void exportISAM2();
 // Slam
 void exportPriorFactors();
 void exportBetweenFactors();
+void exportGenericProjectionFactor();
 
 // Utils (or Python wrapper specific functions)
 void registerNumpyEigenConversions();
@@ -87,4 +88,5 @@ BOOST_PYTHON_MODULE(libgtsam_python){
 
   exportPriorFactors();
   exportBetweenFactors();
+  exportGenericProjectionFactor();
 }
