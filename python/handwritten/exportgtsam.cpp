@@ -35,6 +35,7 @@ void exportRot3();
 void exportPose2();
 void exportPose3();
 void exportPinholeCamera();
+void exportCal3_S2();
 
 // Inference
 void exportSymbol();
@@ -72,6 +73,7 @@ BOOST_PYTHON_MODULE(libgtsam_python){
   exportPose2();
   exportPose3();
   exportPinholeCamera();
+  exportCal3_S2();
 
   exportSymbol();
 
