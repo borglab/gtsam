@@ -20,6 +20,8 @@
 #define NO_IMPORT_ARRAY
 #include <numpy_eigen/NumpyEigenConverter.hpp>
 
+#include <sstream> // for stringstream
+
 #include "gtsam/inference/Symbol.h"
 
 using namespace boost::python;
@@ -43,6 +45,20 @@ std::string selfToString(const Symbol & self)
 	return (std::string)self;
 }
 
+// Helper function to convert a Symbol to int using int() cast in python
+size_t selfToKey(const Symbol & self)
+{
+	return self.key();
+}
+
+// Helper function to recover symbol's unsigned char as string
+std::string chrFromSelf(const Symbol & self)
+{
+	std::stringstream ss;
+	ss << self.chr();
+	return ss.str();
+}
+
 void exportSymbol(){
 
 class_<Symbol, boost::shared_ptr<Symbol> >("Symbol")
@@ -53,7 +69,6 @@ class_<Symbol, boost::shared_ptr<Symbol> >("Symbol")
   .def("print", &Symbol::print, print_overloads(args("s")))
   .def("equals", &Symbol::equals, equals_overloads(args("q","tol")))
   .def("key", &Symbol::key)
-  .def("chr", &Symbol::chr)
   .def("index", &Symbol::index)
   .def(self < self)
   .def(self == self)
@@ -61,6 +76,8 @@ class_<Symbol, boost::shared_ptr<Symbol> >("Symbol")
   .def(self != self)
   .def(self != other<Key>())
   .def("__repr__", &selfToString)
+  .def("__int__", &selfToKey)
+  .def("chr", &chrFromSelf)
 ;
 
 }
