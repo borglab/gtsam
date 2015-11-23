@@ -40,6 +40,7 @@ class_<ISAM2Result>("ISAM2Result")
 Values (ISAM2::*calculateEstimate_0)() const = &ISAM2::calculateEstimate;
 
 class_<ISAM2>("ISAM2")
+  .def(init<const ISAM2Params &>())
   // TODO(Ellon): wrap all optional values of update
   .def("update",&ISAM2::update, update_overloads())
   .def("calculate_estimate", calculateEstimate_0)

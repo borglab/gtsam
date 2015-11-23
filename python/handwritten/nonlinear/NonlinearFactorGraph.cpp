@@ -38,6 +38,8 @@ void exportNonlinearFactorGraph(){
     .def("size",&NonlinearFactorGraph::size)  
     .def("push_back", push_back1)
     .def("add", add1)
+    .def("resize", &NonlinearFactorGraph::resize)
+    .def("empty", &NonlinearFactorGraph::empty)
   ;
 
 }
