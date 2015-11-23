@@ -21,7 +21,6 @@
 #include <numpy_eigen/NumpyEigenConverter.hpp>
 
 #include "gtsam/geometry/Pose3.h"
-
 #include "gtsam/geometry/Pose2.h"
 #include "gtsam/geometry/Point3.h"
 #include "gtsam/geometry/Rot3.h"
@@ -34,18 +33,26 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(equals_overloads, Pose3::equals, 1, 2)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(transform_to_overloads, Pose3::transform_to, 1, 3)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(transform_from_overloads, Pose3::transform_from, 1, 3)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(translation_overloads, Pose3::translation, 0, 1)
-// BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(bearing_overloads, Pose3::bearing, 1, 3)
-// BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(range_overloads, Pose3::range, 1, 3)
-// BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(compose_overloads, Pose3::compose, 1, 3)
-// BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(between_overloads, Pose3::between, 1, 3)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(compose_overloads, Pose3::compose, 2, 3)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(between_overloads, Pose3::between, 2, 3)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(bearing_overloads, Pose3::bearing, 1, 3)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(range_overloads, Pose3::range, 1, 3)
 
 void exportPose3(){
 
-  Point3 (Pose3::*transform_to1)(const Point3&,  OptionalJacobian< 3, 6 >,  OptionalJacobian< 3, 3 > ) const
-    = &Pose3::transform_to;
-  Pose3 (Pose3::*transform_to2)(const Pose3&) const
-    = &Pose3::transform_to;
-  
+  // function pointers to desambiguate transform_to() calls
+  Point3 (Pose3::*transform_to1)(const Point3&,  OptionalJacobian< 3, 6 >,  OptionalJacobian< 3, 3 > ) const = &Pose3::transform_to;
+  Pose3  (Pose3::*transform_to2)(const Pose3&) const = &Pose3::transform_to;
+  // function pointers to desambiguate compose() calls
+  Pose3 (Pose3::*compose1)(const Pose3 &g) const  = &Pose3::compose;
+  Pose3 (Pose3::*compose2)(const Pose3 &g, typename Pose3::ChartJacobian, typename Pose3::ChartJacobian) const  = &Pose3::compose;
+  // function pointers to desambiguate between() calls
+  Pose3 (Pose3::*between1)(const Pose3 &g) const  = &Pose3::between;
+  Pose3 (Pose3::*between2)(const Pose3 &g, typename Pose3::ChartJacobian, typename Pose3::ChartJacobian) const  = &Pose3::between;
+  // function pointers to desambiguate range() calls
+  double (Pose3::*range1)(const Point3 &, OptionalJacobian<1,6>, OptionalJacobian<1,3>) const  = &Pose3::range;
+  double (Pose3::*range2)(const Pose3 &,  OptionalJacobian<1,6>, OptionalJacobian<1,6>) const  = &Pose3::range;
+
   class_<Pose3>("Pose3")
     .def(init<>())
     .def(init<const Pose3 &>())
@@ -74,5 +81,12 @@ void exportPose3(){
     .def(self * other<Point3>()) // __mult__
     .def(self_ns::str(self))     // __str__
     .def(repr(self))             // __repr__
+    .def("compose", compose1)
+    .def("compose", compose2, compose_overloads())
+    .def("between", between1)
+    .def("between", between2, between_overloads())
+    .def("range", range1, range_overloads())
+    .def("range", range2, range_overloads())
+    .def("bearing", &Pose3::bearing, bearing_overloads())
   ;
 }
