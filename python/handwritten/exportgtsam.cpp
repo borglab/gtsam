@@ -36,6 +36,9 @@ void exportPose2();
 void exportPose3();
 void exportPinholeCamera();
 
+// Inference
+void exportSymbol();
+
 // Linear
 void exportNoiseModels();
 
@@ -69,6 +72,8 @@ BOOST_PYTHON_MODULE(libgtsam_python){
   exportPose2();
   exportPose3();
   exportPinholeCamera();
+
+  exportSymbol();
 
   exportNoiseModels();
 
