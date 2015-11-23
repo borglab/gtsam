@@ -34,6 +34,7 @@ void exportRot2();
 void exportRot3();
 void exportPose2();
 void exportPose3();
+void exportPinholeCamera();
 
 // Linear
 void exportNoiseModels();
@@ -67,6 +68,7 @@ BOOST_PYTHON_MODULE(libgtsam_python){
   exportRot3();
   exportPose2();
   exportPose3();
+  exportPinholeCamera();
 
   exportNoiseModels();
 
