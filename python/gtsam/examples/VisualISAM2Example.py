@@ -20,8 +20,8 @@ def visual_ISAM2_example():
     # and type of linear solver. For this example, we we set the relinearization threshold small so the iSAM2 result
     # will approach the batch result.
     parameters = gtsam.ISAM2Params()
-    # parameters.relinearizeThreshold = 0.01; # TODO
-    # parameters.relinearizeSkip = 1;         # TODO
+    parameters.relinearize_threshold = 0.01
+    parameters.relinearize_skip = 1
     isam = gtsam.ISAM2(parameters)
 
     # Create a Factor Graph and Values to hold the new data
@@ -59,19 +59,28 @@ def visual_ISAM2_example():
             for j, point in enumerate(points):
                 initialEstimate.insert(int(gtsam.Symbol('l', j)), point + gtsam.Point3(-0.25, 0.20, 0.15));
         else:
-			# Update iSAM with the new factors
-			isam.update(graph, initialEstimate)
-			# Each call to iSAM2 update(*) performs one iteration of the iterative nonlinear solver.
-			# If accuracy is desired at the expense of time, update(*) can be called additional times
-			# to perform multiple optimizer iterations every step.
-			isam.update()
-			currentEstimate = isam.calculate_estimate();
-			# print "****************************************************"
-			# print "Frame", i, ":"
-			# currentEstimate.print("Current estimate: "); # TODO: Print to screen or plot using matplotlib
+            # Update iSAM with the new factors
+            isam.update(graph, initialEstimate)
+            # Each call to iSAM2 update(*) performs one iteration of the iterative nonlinear solver.
+            # If accuracy is desired at the expense of time, update(*) can be called additional times
+            # to perform multiple optimizer iterations every step.
+            isam.update()
+            currentEstimate = isam.calculate_estimate();
+            print "****************************************************"
+            print "Frame", i, ":"
+            for j in range(i+1):
+                print gtsam.Symbol('x',j)
+                print currentEstimate.pose3_at(int(gtsam.Symbol('x',j)))
 
-			# Clear the factor graph and values for the next iteration
-			graph.resize(0);
-			initialEstimate.clear();
+            for j in range(len(points)):
+                print gtsam.Symbol('l',j)
+                print currentEstimate.point3_at(int(gtsam.Symbol('l',j)))
 
-# TODO: Add a __main__ section here
+            # TODO: Print to screen or plot using matplotlib
+
+            # Clear the factor graph and values for the next iteration
+            graph.resize(0);
+            initialEstimate.clear();
+
+if __name__ == '__main__':
+    visual_ISAM2_example()
