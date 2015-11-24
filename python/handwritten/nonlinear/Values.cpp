@@ -107,5 +107,6 @@ void exportValues(){
   .def("rot3_at", &Values::at<Rot3>, return_value_policy<copy_const_reference>())
   .def("pose3_at", &Values::at<Pose3>, return_value_policy<copy_const_reference>())  
   .def("exists", exists1)
+  .def("keys", &Values::keys)
   ;
 }

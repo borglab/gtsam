@@ -20,12 +20,8 @@
 
 #include <numpy_eigen/NumpyEigenConverter.hpp>
 
-#include <gtsam/base/Matrix.h>
-#include <gtsam/base/Vector.h>
-
-using namespace boost::python;
-using namespace gtsam;
-using namespace std;
+// Base
+void exportFastVectors();
 
 // Geometry
 void exportPoint2();
@@ -67,6 +63,8 @@ BOOST_PYTHON_MODULE(libgtsam_python){
   import_array();
   
   registerNumpyEigenConversions();
+
+  exportFastVectors();
 
   exportPoint2();
   exportPoint3();
