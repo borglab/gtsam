@@ -57,7 +57,7 @@ void registerNumpyEigenConversions();
 
 //-----------------------------------//
 
-BOOST_PYTHON_MODULE(libgtsam_python){
+BOOST_PYTHON_MODULE(_libgtsam_python){
 
   // Should be the first thing to be done
   import_array();
