@@ -9,6 +9,8 @@ During the build of gtsam, when GTSAM_BUILD_PYTHON is enabled, the following ins
 * The user can use the setup.py script to build and install a python package, allowing easy importing into a python project. Examples:
   * python setup.py sdist   ---- Builds a tarball of the python package which can then be distributed
   * python setup.py install ---- Installs the package into the python dist-packages folder. Can then be imported from any python file.
+  * python setup.py install --prefix="your/local/install/path"---- Installs the package into a local instalation folder. Can then be imported from any python file if _prefix_/lib/pythonX.Y/site-packages is present in your $PYTHONPATH
+
 * To run the unit tests, you must first install the package on your path (TODO: Make this easier)
 
 
