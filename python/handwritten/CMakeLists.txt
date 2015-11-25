@@ -1,24 +1,13 @@
-# Macro to get list of subdirectories
-MACRO(SUBDIRLIST result curdir)
-  FILE(GLOB children RELATIVE ${curdir} ${curdir}/*)
-  SET(dirlist "")
-  FOREACH(child ${children})
-    IF(IS_DIRECTORY ${curdir}/${child})
-        LIST(APPEND dirlist ${child})
-    ENDIF()
-  ENDFOREACH()
-  SET(${result} ${dirlist})
-ENDMACRO()
 
 # get subdirectories list
-SUBDIRLIST(SUBDIRS ${CMAKE_CURRENT_SOURCE_DIR})
+subdirlist(SUBDIRS ${CMAKE_CURRENT_SOURCE_DIR})
 
 # get the sources needed to compile gtsam python module
-SET(gtsam_python_srcs "")
-FOREACH(subdir ${SUBDIRS})
+set(gtsam_python_srcs "")
+foreach(subdir ${SUBDIRS})
 	file(GLOB ${subdir}_src "${subdir}/*.cpp")
-	LIST(APPEND gtsam_python_srcs ${${subdir}_src})
-ENDFOREACH()
+	list(APPEND gtsam_python_srcs ${${subdir}_src})
+endforeach()
 
 # Create the library
 set(moduleName gtsam)
