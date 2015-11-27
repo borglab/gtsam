@@ -59,8 +59,13 @@ void registerNumpyEigenConversions();
 
 BOOST_PYTHON_MODULE(_libgtsam_python){
 
+  // NOTE: We need to call import_array1() instead of import_array() to support both python 2 
+  //       and 3. The reason is that BOOST_PYTHON_MODULE puts all its contents in a function 
+  //       returning void, and import_array() is a macro that when expanded for python 3, adds 
+  //       a 'return __null' statement to that function. For more info check files: 
+  //       boost/python/module_init.hpp and numpy/__multiarray_api.h (bottom of the file).
   // Should be the first thing to be done
-  import_array();
+  import_array1();
   
   registerNumpyEigenConversions();
 
