@@ -1,2 +1,2 @@
-from SFMdata import *
-from VisualISAM2Example import *
+from . import SFMdata
+from . import VisualISAM2Example

@@ -1,2 +1,2 @@
-from _libgtsam_python import *
-import utils
+from ._libgtsam_python import *
+from . import utils
