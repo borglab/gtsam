@@ -1,3 +1,4 @@
+from __future__ import print_function
 import gtsam
 from gtsam.examples.SFMdata import *
 from gtsam.utils import *
@@ -36,8 +37,9 @@ def visual_ISAM2_plot(poses, points, result):
     ax.set_xlim3d(-40, 40)
     ax.set_ylim3d(-40, 40)
     ax.set_zlim3d(-40, 40)
-    plt.show(block=False)
-    plt.draw();
+    plt.ion()
+    plt.show()
+    plt.draw()
 
 def visual_ISAM2_example():
     # Define the camera calibration parameters
@@ -104,15 +106,15 @@ def visual_ISAM2_example():
             # to perform multiple optimizer iterations every step.
             isam.update()
             currentEstimate = isam.calculate_estimate();
-            print "****************************************************"
-            print "Frame", i, ":"
+            print( "****************************************************" )
+            print( "Frame", i, ":" )
             for j in range(i+1):
-                print gtsam.Symbol('x',j)
-                print currentEstimate.pose3_at(int(gtsam.Symbol('x',j)))
+                print( gtsam.Symbol('x',j) )
+                print( currentEstimate.pose3_at(int(gtsam.Symbol('x',j))) )
 
             for j in range(len(points)):
-                print gtsam.Symbol('l',j)
-                print currentEstimate.point3_at(int(gtsam.Symbol('l',j)))
+                print( gtsam.Symbol('l',j) )
+                print( currentEstimate.point3_at(int(gtsam.Symbol('l',j))) )
 
             visual_ISAM2_plot(poses, points, currentEstimate);
             time.sleep(1)
