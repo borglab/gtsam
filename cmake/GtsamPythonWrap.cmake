@@ -1,4 +1,5 @@
 #Setup cache options
+set(GTSAM_PYTHON_VERSION "2.7" CACHE STRING "Version of python used to build the wrapper")
 set(GTSAM_BUILD_PYTHON_FLAGS "" CACHE STRING "Extra flags for running Matlab PYTHON compilation")
 set(GTSAM_PYTHON_INSTALL_PATH "" CACHE PATH "Python toolbox destination, blank defaults to CMAKE_INSTALL_PREFIX/borg/python")
 if(NOT GTSAM_PYTHON_INSTALL_PATH)
@@ -7,13 +8,13 @@ endif()
 
 #Author: Paul Furgale Modified by Andrew Melim
 function(wrap_python TARGET_NAME PYTHON_MODULE_DIRECTORY)
-  # Boost
-  find_package(Boost COMPONENTS python filesystem system REQUIRED)
-  include_directories(${Boost_INCLUDE_DIRS})
+  # # Boost
+  # find_package(Boost COMPONENTS python filesystem system REQUIRED)
+  # include_directories(${Boost_INCLUDE_DIRS})
 
-  # Find Python
-  FIND_PACKAGE(PythonLibs 2.7 REQUIRED)
-  INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_DIRS})
+  # # Find Python
+  # FIND_PACKAGE(PythonLibs 2.7 REQUIRED)
+  # INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_DIRS})
 
   IF(APPLE)
     # The apple framework headers don't include the numpy headers for some reason.
