@@ -476,6 +476,12 @@ print_config_flag(${GTSAM_POSE3_EXPMAP}                "Pose3 retract is full Ex
 message(STATUS "MATLAB toolbox flags                                      ")
 print_config_flag(${GTSAM_INSTALL_MATLAB_TOOLBOX}      "Install matlab toolbox         ")
 print_config_flag(${GTSAM_BUILD_WRAP}                  "Build Wrap                     ")
+
+message(STATUS "Python module flags                                       ")
+print_config_flag(${GTSAM_BUILD_PYTHON}                "Build python module            ")
+if(GTSAM_BUILD_PYTHON)
+	message(STATUS "  Python version                 : ${GTSAM_PYTHON_VERSION}")
+endif()
 message(STATUS "===============================================================")
 
 # Print warnings at the end
