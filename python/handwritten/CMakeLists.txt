@@ -16,6 +16,7 @@ add_library(${moduleName}_python SHARED exportgtsam.cpp ${gtsam_python_srcs})
 
 set_target_properties(${moduleName}_python PROPERTIES
     OUTPUT_NAME         ${moduleName}_python
+    SKIP_BUILD_RPATH TRUE
     CLEAN_DIRECT_OUTPUT 1)
 
 target_link_libraries(${moduleName}_python ${Boost_PYTHON${BOOST_PYTHON_VERSION_SUFFIX_UPPERCASE}_LIBRARY} ${PYTHON_LIBRARY} ${gtsamLib}) #temp
