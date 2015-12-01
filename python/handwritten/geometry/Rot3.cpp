@@ -74,13 +74,15 @@ void exportRot3(){
     .def("column", &Rot3::column)
     .def("conjugate", &Rot3::conjugate)
     .def("equals", &Rot3::equals, equals_overloads(args("q","tol")))
+#ifndef GTSAM_USE_QUATERNIONS
     .def("localCayley", &Rot3::localCayley)
+    .def("retractCayley", &Rot3::retractCayley)
+#endif
     .def("matrix", &Rot3::matrix)
     .def("print", &Rot3::print, print_overloads(args("s")))
     .def("r1", &Rot3::r1)
     .def("r2", &Rot3::r2)
     .def("r3", &Rot3::r3)
-    .def("retractCayley", &Rot3::retractCayley)
     .def("rpy", &Rot3::rpy)
     .def("slerp", &Rot3::slerp)
     .def("transpose", &Rot3::transpose)
