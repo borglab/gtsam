@@ -21,16 +21,9 @@ set_target_properties(${moduleName}_python PROPERTIES
 
 target_link_libraries(${moduleName}_python ${Boost_PYTHON${BOOST_PYTHON_VERSION_SUFFIX_UPPERCASE}_LIBRARY} ${PYTHON_LIBRARY} ${gtsamLib}) #temp
 
-# On OSX and Linux, the python library must end in the extension .so. Build this
-# filename here.
-set(PYLIB_OUTPUT_FILE $<TARGET_FILE:${moduleName}_python>)
-set(PYLIB_SO_NAME lib${moduleName}_python.so)
-
-# Installs the library in the gtsam folder, which is used by setup.py to create the gtsam package
-set(PYTHON_MODULE_DIRECTORY ${CMAKE_SOURCE_DIR}/python/gtsam)
 # Cause the library to be output in the correct directory.
 add_custom_command(TARGET ${moduleName}_python
 	POST_BUILD
-	COMMAND cp -v ${PYLIB_OUTPUT_FILE} ${PYTHON_MODULE_DIRECTORY}/_${PYLIB_SO_NAME}
+	COMMAND cp -v $<TARGET_FILE:${moduleName}_python> ${CMAKE_BINARY_DIR}/python/gtsam/_$<TARGET_FILE_NAME:${moduleName}_python>
 	WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
 	COMMENT "Copying library files to python directory" )

@@ -58,6 +58,9 @@ if(Boost_PYTHON${BOOST_PYTHON_VERSION_SUFFIX_UPPERCASE}_FOUND AND PYTHONLIBS_FOU
 	include_directories(${PYTHON_INCLUDE_DIRS})
 	include_directories(${Boost_INCLUDE_DIRS})
 	include_directories(${CMAKE_SOURCE_DIR}/gtsam/3rdparty/numpy_eigen/include/)
+
+	file(COPY "gtsam" DESTINATION ".")
+	file(COPY "setup.py" DESTINATION ".")
 	add_subdirectory(handwritten)
 # Disable python module if we didn't find required lybraries
 else()
