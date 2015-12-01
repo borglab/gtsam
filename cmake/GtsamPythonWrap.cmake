@@ -1,5 +1,5 @@
 #Setup cache options
-set(GTSAM_PYTHON_VERSION "2.7" CACHE STRING "Version of python used to build the wrapper")
+set(GTSAM_PYTHON_VERSION "Default" CACHE STRING "Target python version for GTSAM python module. Use 'Default' to chose the default version")
 set(GTSAM_BUILD_PYTHON_FLAGS "" CACHE STRING "Extra flags for running Matlab PYTHON compilation")
 set(GTSAM_PYTHON_INSTALL_PATH "" CACHE PATH "Python toolbox destination, blank defaults to CMAKE_INSTALL_PREFIX/borg/python")
 if(NOT GTSAM_PYTHON_INSTALL_PATH)

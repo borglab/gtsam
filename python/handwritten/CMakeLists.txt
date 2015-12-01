@@ -18,7 +18,7 @@ set_target_properties(${moduleName}_python PROPERTIES
     OUTPUT_NAME         ${moduleName}_python
     CLEAN_DIRECT_OUTPUT 1)
 
-target_link_libraries(${moduleName}_python ${Boost_PYTHON-PY${PYTHON_VERSION_NUMBER}_LIBRARY} ${PYTHON_LIBRARY} ${gtsamLib}) #temp
+target_link_libraries(${moduleName}_python ${Boost_PYTHON${UPPER_BOOST_PYTHON_VERSION_STRING}_LIBRARY} ${PYTHON_LIBRARY} ${gtsamLib}) #temp
 
 # On OSX and Linux, the python library must end in the extension .so. Build this
 # filename here.
