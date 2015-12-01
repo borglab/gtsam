@@ -28,14 +28,16 @@ else()
 	set(UPPER_BOOST_PYTHON_VERSION_STRING "")
 endif()
 
-# Be sure that python version can be found by FindPythonLibs.cmake
+# Find NumPy C-API
+find_package(NumPy)
+
+# Find Python
+# First, be sure that python version can be found by FindPythonLibs.cmake
 # See: http://stackoverflow.com/a/15660652/2220173
 set(Python_ADDITIONAL_VERSIONS ${GTSAM_PYTHON_VERSION})
-
-# Find Python 
+# Then look for the the lib. If no version is specified when looking for PythonLibs it searches the default version.
+# See: https://cmake.org/cmake/help/v3.1/module/FindPythonInterp.html
 if(GTSAM_PYTHON_VERSION STREQUAL "Default")
-	# If no version is specified when looking for PythonLibs it searches the default version.
-	# See: https://cmake.org/cmake/help/v3.1/module/FindPythonInterp.html
 	find_package(PythonLibs)
 else()
 	find_package(PythonLibs ${GTSAM_PYTHON_VERSION})
@@ -45,7 +47,7 @@ endif()
 find_package(Boost COMPONENTS python${BOOST_PYTHON_VERSION_STRING})
 
 # Add handwritten directory if we found python and boost python
-if(Boost_PYTHON${UPPER_BOOST_PYTHON_VERSION_STRING}_FOUND AND PYTHONLIBS_FOUND)
+if(Boost_PYTHON${UPPER_BOOST_PYTHON_VERSION_STRING}_FOUND AND PYTHONLIBS_FOUND AND NUMPY_FOUND)
 	include_directories(${PYTHON_INCLUDE_DIRS})
 	include_directories(${Boost_INCLUDE_DIRS})
 	include_directories(${CMAKE_SOURCE_DIR}/gtsam/3rdparty/numpy_eigen/include/)
@@ -70,4 +72,8 @@ if(NOT Boost_PYTHON${UPPER_BOOST_PYTHON_VERSION_STRING}_FOUND)
 	else()
 		message(WARNING "Boost Python for python ${GTSAM_PYTHON_VERSION} was not found -- Python module cannot be built. Option GTSAM_BUILD_PYTHON disabled.")
 	endif()
+endif()
+
+if(NOT NUMPY_FOUND)
+	message(WARNING "NumPy C-API was not found -- Python module cannot be built. Option GTSAM_BUILD_PYTHON disabled.")
 endif()
