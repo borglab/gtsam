@@ -23,9 +23,7 @@ target_link_libraries(${moduleName}_python ${Boost_PYTHON${BOOST_PYTHON_VERSION_
 
 # On OSX and Linux, the python library must end in the extension .so. Build this
 # filename here.
-get_property(PYLIB_OUTPUT_FILE TARGET ${moduleName}_python PROPERTY LOCATION)
 set(PYLIB_OUTPUT_FILE $<TARGET_FILE:${moduleName}_python>)
-get_filename_component(PYLIB_OUTPUT_NAME ${PYLIB_OUTPUT_FILE} NAME_WE)
 set(PYLIB_SO_NAME lib${moduleName}_python.so)
 
 # Installs the library in the gtsam folder, which is used by setup.py to create the gtsam package
