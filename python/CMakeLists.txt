@@ -21,13 +21,13 @@ endif()
 
 # Compose strings used to specify the boost python version. They will be empty if we want to use the defaut
 if(NOT GTSAM_PYTHON_VERSION STREQUAL "Default")
-	string(REPLACE "." "" BOOST_PYTHON_VERSION_STRING ${GTSAM_PYTHON_VERSION})       # Remove '.' from version
-	string(SUBSTRING ${BOOST_PYTHON_VERSION_STRING} 0 2 BOOST_PYTHON_VERSION_STRING) # Trim version number to 2 digits
-	set(BOOST_PYTHON_VERSION_STRING "-py${BOOST_PYTHON_VERSION_STRING}")             # Add '-py' prefix
-	string(TOUPPER ${BOOST_PYTHON_VERSION_STRING} UPPER_BOOST_PYTHON_VERSION_STRING) # Get uppercase string
+	string(REPLACE "." "" BOOST_PYTHON_VERSION_SUFFIX ${GTSAM_PYTHON_VERSION})           # Remove '.' from version
+	string(SUBSTRING ${BOOST_PYTHON_VERSION_SUFFIX} 0 2 BOOST_PYTHON_VERSION_SUFFIX)     # Trim version number to 2 digits
+	set(BOOST_PYTHON_VERSION_SUFFIX "-py${BOOST_PYTHON_VERSION_SUFFIX}")                 # Append '-py' prefix
+	string(TOUPPER ${BOOST_PYTHON_VERSION_SUFFIX} BOOST_PYTHON_VERSION_SUFFIX_UPPERCASE) # Get uppercase string
 else()
-	set(BOOST_PYTHON_VERSION_STRING "")
-	set(UPPER_BOOST_PYTHON_VERSION_STRING "")
+	set(BOOST_PYTHON_VERSION_SUFFIX "")
+	set(BOOST_PYTHON_VERSION_SUFFIX_UPPERCASE "")
 endif()
 
 # Find NumPy C-API
@@ -51,10 +51,10 @@ else()
 endif()
 
 # Find Boost Python
-find_package(Boost COMPONENTS python${BOOST_PYTHON_VERSION_STRING})
+find_package(Boost COMPONENTS python${BOOST_PYTHON_VERSION_SUFFIX})
 
 # Add handwritten directory if we found python and boost python
-if(Boost_PYTHON${UPPER_BOOST_PYTHON_VERSION_STRING}_FOUND AND PYTHONLIBS_FOUND)
+if(Boost_PYTHON${BOOST_PYTHON_VERSION_SUFFIX_UPPERCASE}_FOUND AND PYTHONLIBS_FOUND)
 	include_directories(${PYTHON_INCLUDE_DIRS})
 	include_directories(${Boost_INCLUDE_DIRS})
 	include_directories(${CMAKE_SOURCE_DIR}/gtsam/3rdparty/numpy_eigen/include/)
@@ -73,7 +73,7 @@ if(NOT PYTHONLIBS_FOUND)
 	endif()
 endif()
 
-if(NOT Boost_PYTHON${UPPER_BOOST_PYTHON_VERSION_STRING}_FOUND)
+if(NOT Boost_PYTHON${BOOST_PYTHON_VERSION_SUFFIX_UPPERCASE}_FOUND)
 	if(GTSAM_PYTHON_VERSION STREQUAL "Default")
 		message(WARNING "Default Boost python was not found -- Python module cannot be built. Option GTSAM_BUILD_PYTHON disabled.")
 	else()
