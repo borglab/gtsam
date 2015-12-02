@@ -22,8 +22,11 @@ set_target_properties(${moduleName}_python PROPERTIES
 target_link_libraries(${moduleName}_python ${Boost_PYTHON${BOOST_PYTHON_VERSION_SUFFIX_UPPERCASE}_LIBRARY} ${PYTHON_LIBRARY} ${gtsamLib}) #temp
 
 # Cause the library to be output in the correct directory.
-add_custom_command(TARGET ${moduleName}_python
-	POST_BUILD
-	COMMAND cp -v $<TARGET_FILE:${moduleName}_python> ${CMAKE_BINARY_DIR}/python/gtsam/_$<TARGET_FILE_NAME:${moduleName}_python>
-	WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-	COMMENT "Copying library files to python directory" )
+# TODO: Change below to work on different systems (currently works only with Linux)
+add_custom_command(
+	OUTPUT ${CMAKE_BINARY_DIR}/python/gtsam/_libgtsam_python.so
+	DEPENDS gtsam_python
+	COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${moduleName}_python> ${CMAKE_BINARY_DIR}/python/gtsam/_$<TARGET_FILE_NAME:${moduleName}_python>
+	COMMENT "Copying extension module to python/gtsam/_libgtsam_python.so"
+)
+add_custom_target(copy_gtsam_python_module ALL DEPENDS ${CMAKE_BINARY_DIR}/python/gtsam/_libgtsam_python.so)
