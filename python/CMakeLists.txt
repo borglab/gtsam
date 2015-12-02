@@ -70,7 +70,7 @@ if(Boost_PYTHON${BOOST_PYTHON_VERSION_SUFFIX_UPPERCASE}_FOUND AND PYTHONLIBS_FOU
 			OUTPUT ${PY_SRC}
 			DEPENDS ${PY_SRC}
 			COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/${PY_SRC} ${CMAKE_CURRENT_BINARY_DIR}/${PY_SRC}
-			COMMENT "Copying ${PY_SRC}"
+			COMMENT "Copying python/${PY_SRC}"
 		)
 		add_custom_target(copy_${PY_SRC_TARGET_SUFFIX} DEPENDS ${PY_SRC})
 		# Add dependency so the copy is made BEFORE building the python module
