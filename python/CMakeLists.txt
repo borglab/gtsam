@@ -53,15 +53,30 @@ endif()
 # Find Boost Python
 find_package(Boost COMPONENTS python${BOOST_PYTHON_VERSION_SUFFIX})
 
-# Add handwritten directory if we found python and boost python
+# Build python module library and setup the module inside build
 if(Boost_PYTHON${BOOST_PYTHON_VERSION_SUFFIX_UPPERCASE}_FOUND AND PYTHONLIBS_FOUND)
 	include_directories(${PYTHON_INCLUDE_DIRS})
 	include_directories(${Boost_INCLUDE_DIRS})
 	include_directories(${CMAKE_SOURCE_DIR}/gtsam/3rdparty/numpy_eigen/include/)
 
-	file(COPY "gtsam" DESTINATION ".")
-	file(COPY "setup.py" DESTINATION ".")
+	# Build the python module library
 	add_subdirectory(handwritten)
+
+	# Copy all .py files that changes since last build
+	file(GLOB_RECURSE GTSAM_PY_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.py")
+	foreach(PY_SRC ${GTSAM_PY_SRCS})
+		string(REPLACE "/" "_" PY_SRC_TARGET_SUFFIX ${PY_SRC}) # Replace "/" with "_"
+		add_custom_command(
+			OUTPUT ${PY_SRC}
+			DEPENDS ${PY_SRC}
+			COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/${PY_SRC} ${CMAKE_CURRENT_BINARY_DIR}/${PY_SRC}
+			COMMENT "Copying ${PY_SRC}"
+		)
+		add_custom_target(copy_${PY_SRC_TARGET_SUFFIX} DEPENDS ${PY_SRC})
+		# Add dependency so the copy is made BEFORE building the python module
+		add_dependencies(gtsam_python copy_${PY_SRC_TARGET_SUFFIX})
+	endforeach()
+
 # Disable python module if we didn't find required lybraries
 else()
 	set(GTSAM_BUILD_PYTHON OFF CACHE BOOL "Build Python wrapper statically (increases build time)" FORCE)
