@@ -25,6 +25,16 @@
 using namespace boost::python;
 using namespace gtsam;
 
+static Rot3 Quaternion_0(const Vector4& q)
+{
+    return Rot3(Quaternion(q[0],q[1],q[2],q[3]));
+}
+
+static Rot3 Quaternion_1(double w, double x, double y, double z)
+{
+    return Rot3(Quaternion(w,x,y,z));
+}
+
 // Prototypes used to perform overloading
 // See: http://www.boost.org/doc/libs/1_59_0/libs/python/doc/tutorial/doc/html/python/functions.html
 gtsam::Rot3  (*AxisAngle_0)(const Vector3&, double) = &Rot3::AxisAngle;
@@ -40,11 +50,13 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(equals_overloads, Rot3::equals, 1, 2)
 void exportRot3(){
 
   class_<Rot3>("Rot3")
-    .def(init<>())
     .def(init<Point3,Point3,Point3>())
     .def(init<double,double,double,double,double,double,double,double,double>())
     .def(init<const Matrix3 &>())
     .def(init<const Matrix &>())
+    .def("Quaternion", Quaternion_0, arg("q"), "Creates a Rot3 from an array [w,x,y,z] representing a quaternion")
+    .def("Quaternion", Quaternion_1, (arg("w"),arg("x"),arg("y"),arg("z")) )
+    .staticmethod("Quaternion")
     .def("AxisAngle", AxisAngle_0)
     .def("AxisAngle", AxisAngle_1)
     .staticmethod("AxisAngle")
