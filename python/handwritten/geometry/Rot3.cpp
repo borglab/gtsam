@@ -27,12 +27,12 @@ using namespace gtsam;
 
 static Rot3 Quaternion_0(const Vector4& q)
 {
-    return Rot3(Quaternion(q[0],q[1],q[2],q[3]));
+    return Rot3::quaternion(q[0],q[1],q[2],q[3]);
 }
 
 static Rot3 Quaternion_1(double w, double x, double y, double z)
 {
-    return Rot3(Quaternion(w,x,y,z));
+    return Rot3::quaternion(w,x,y,z);
 }
 
 // Prototypes used to perform overloading
@@ -43,6 +43,7 @@ gtsam::Rot3  (*Rodrigues_0)(const Vector3&) = &Rot3::Rodrigues;
 gtsam::Rot3  (*Rodrigues_1)(double, double, double) = &Rot3::Rodrigues;
 gtsam::Rot3  (*RzRyRx_0)(double, double, double) = &Rot3::RzRyRx;
 gtsam::Rot3  (*RzRyRx_1)(const Vector&) = &Rot3::RzRyRx;
+Vector (Rot3::*quaternion_0)() const = &Rot3::quaternion;
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(print_overloads, Rot3::print, 0, 1)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(equals_overloads, Rot3::equals, 1, 2)
@@ -77,8 +78,8 @@ void exportRot3(){
     .staticmethod("Ry")
     .def("Rz", &Rot3::Rz)
     .staticmethod("Rz")
-    .def("RzRyRx", RzRyRx_0)
-    .def("RzRyRx", RzRyRx_1)
+    .def("RzRyRx", RzRyRx_0, (arg("x"),arg("y"),arg("z")), "Rotations around Z, Y, then X axes as in http://en.wikipedia.org/wiki/Rotation_matrix, counterclockwise when looking from unchanging axis" )
+    .def("RzRyRx", RzRyRx_1, arg("xyz"), "Rotations around Z, Y, then X axes as in http://en.wikipedia.org/wiki/Rotation_matrix, counterclockwise when looking from unchanging axis" )
     .staticmethod("RzRyRx")
     .def("identity", &Rot3::identity)
     .staticmethod("identity")
@@ -99,6 +100,7 @@ void exportRot3(){
     .def("slerp", &Rot3::slerp)
     .def("transpose", &Rot3::transpose)
     .def("xyz", &Rot3::xyz)
+    .def("quaternion", quaternion_0)
     .def(self * self)
     .def(self * other<Point3>())
     .def(self * other<Unit3>())
