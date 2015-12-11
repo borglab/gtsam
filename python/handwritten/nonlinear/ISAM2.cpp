@@ -20,6 +20,7 @@
 #include <numpy_eigen/NumpyEigenConverter.hpp>
 
 #include "gtsam/nonlinear/ISAM2.h"
+#include "gtsam/geometry/Pose3.h"
 
 using namespace boost::python;
 using namespace gtsam;
@@ -59,6 +60,8 @@ class_<ISAM2>("ISAM2")
   // TODO(Ellon): wrap all optional values of update
   .def("update",&ISAM2::update, update_overloads())
   .def("calculate_estimate", calculateEstimate_0)
+  .def("calculate_pose3_estimate", &ISAM2::calculateEstimate<Pose3>, (arg("self"), arg("key")) )
+  .def("value_exists", &ISAM2::valueExists)
 ;
 
 }
