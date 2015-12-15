@@ -676,7 +676,7 @@ TEST(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
           hist(samples(:,i), 500)
       end
    */
-  size_t N = 10000;
+  size_t N = 100000;
   Matrix samples(9,N);
   Sampler sampleAccelerationNoise((accNoiseVar2/dt).cwiseSqrt(), 29284);
   Sampler sampleOmegaNoise((omegaNoiseVar2/dt).cwiseSqrt(), 10);

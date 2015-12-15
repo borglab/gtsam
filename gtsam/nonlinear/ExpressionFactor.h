@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -23,6 +23,7 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/base/Testable.h>
 #include <numeric>
+
 namespace gtsam {
 
 /**
@@ -74,7 +75,7 @@ public:
   }
 
   /**
-   * Error function *without* the NoiseModel, \f$ h(x)-z \f$.
+   * Error function *without* the NoiseModel, \f$ z-h(x) -> Local(h(x),z) \f$.
    * We override this method to provide
    * both the function evaluation and its derivative(s) in H.
    */
@@ -82,10 +83,12 @@ public:
       boost::optional<std::vector<Matrix>&> H = boost::none) const {
     if (H) {
       const T value = expression_.valueAndDerivatives(x, keys_, dims_, *H);
-      return traits<T>::Local(measured_, value);
+      // NOTE(hayk): Doing the reverse, AKA Local(measured_, value) is not correct here
+      // because it would use the tangent space of the measurement instead of the value.
+      return -traits<T>::Local(value, measured_);
     } else {
       const T value = expression_.value(x);
-      return traits<T>::Local(measured_, value);
+      return -traits<T>::Local(value, measured_);
     }
   }
 
@@ -96,7 +99,7 @@ public:
 
     // In case noise model is constrained, we need to provide a noise model
     SharedDiagonal noiseModel;
-    if (noiseModel_->isConstrained()) {
+    if (noiseModel_ && noiseModel_->isConstrained()) {
       noiseModel = boost::static_pointer_cast<noiseModel::Constrained>(
           noiseModel_)->unit();
     }
@@ -116,11 +119,13 @@ public:
     T value = expression_.valueAndJacobianMap(x, jacobianMap); // <<< Reverse AD happens here !
 
     // Evaluate error and set RHS vector b
-    Ab(size()).col(0) = -traits<T>::Local(measured_, value);
+    Ab(size()).col(0) = traits<T>::Local(value, measured_);
 
     // Whiten the corresponding system, Ab already contains RHS
-    Vector b = Ab(size()).col(0); // need b to be valid for Robust noise models
-    noiseModel_->WhitenSystem(Ab.matrix(), b);
+    if (noiseModel_) {
+      Vector b = Ab(size()).col(0);  // need b to be valid for Robust noise models
+      noiseModel_->WhitenSystem(Ab.matrix(), b);
+    }
 
     return factor;
   }

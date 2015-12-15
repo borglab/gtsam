@@ -222,6 +222,8 @@ ei_add_test(sizeoverflow)
 ei_add_test(prec_inverse_4x4)
 ei_add_test(vectorwiseop)
 ei_add_test(special_numbers)
+ei_add_test(rvalue_types)
+ei_add_test(mpl2only)
 
 ei_add_test(simplicial_cholesky)
 ei_add_test(conjugate_gradient)
@@ -283,3 +285,9 @@ mark_as_advanced(EIGEN_TEST_EIGEN2)
 if(EIGEN_TEST_EIGEN2)
   add_subdirectory(eigen2)
 endif()
+
+
+option(EIGEN_TEST_BUILD_DOCUMENTATION "Test building the doxygen documentation" OFF)
+IF(EIGEN_TEST_BUILD_DOCUMENTATION)
+  add_dependencies(buildtests doc)
+ENDIF()

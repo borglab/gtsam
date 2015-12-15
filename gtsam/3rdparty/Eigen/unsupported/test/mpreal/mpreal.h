@@ -57,7 +57,8 @@
 #include <limits>
 
 // Options
-#define MPREAL_HAVE_INT64_SUPPORT               // Enable int64_t support if possible. Available only for MSVC 2010 & GCC. 
+// FIXME HAVE_INT64_SUPPORT leads to clashes with long int and int64_t on some systems.
+//#define MPREAL_HAVE_INT64_SUPPORT               // Enable int64_t support if possible. Available only for MSVC 2010 & GCC.
 #define MPREAL_HAVE_MSVC_DEBUGVIEW              // Enable Debugger Visualizer for "Debug" builds in MSVC.
 #define MPREAL_HAVE_DYNAMIC_STD_NUMERIC_LIMITS  // Enable extended std::numeric_limits<mpfr::mpreal> specialization.
                                                 // Meaning that "digits", "round_style" and similar members are defined as functions, not constants.

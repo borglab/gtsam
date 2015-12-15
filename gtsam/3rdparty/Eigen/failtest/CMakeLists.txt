@@ -32,6 +32,17 @@ ei_add_failtest("ref_3")
 ei_add_failtest("ref_4")
 ei_add_failtest("ref_5")
 
+ei_add_failtest("partialpivlu_int")
+ei_add_failtest("fullpivlu_int")
+ei_add_failtest("llt_int")
+ei_add_failtest("ldlt_int")
+ei_add_failtest("qr_int")
+ei_add_failtest("colpivqr_int")
+ei_add_failtest("fullpivqr_int")
+ei_add_failtest("jacobisvd_int")
+ei_add_failtest("eigensolver_int")
+ei_add_failtest("eigensolver_cplx")
+
 if (EIGEN_FAILTEST_FAILURE_COUNT)
   message(FATAL_ERROR
           "${EIGEN_FAILTEST_FAILURE_COUNT} out of ${EIGEN_FAILTEST_COUNT} failtests FAILED. "
