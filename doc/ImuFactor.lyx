@@ -601,9 +601,154 @@ A crucial detail is that the incremental position
 \end_layout
 
 \begin_layout Standard
-The goal of the IMU factor is to integrate IMU measurement between two successiv
-e frames and create a binary factor between two NavStates.
- The binary factor is set up as a prediction:
+The goal of the IMU factor is to integrate IMU measurements between two
+ successive frames and create a binary factor between two NavStates.
+ Integrating successive gyro and accelerometer readings using the above
+ equations over each constant interval yields
+\begin_inset Formula 
+\begin{eqnarray}
+R_{k+1} & = & R_{k}\exp\hat{\omega}_{k}\Delta t_{k}\label{eq:iter_Rk}\\
+p_{k+1} & = & p_{k}+v_{k}\Delta t_{k}+\left(g+R_{k}a_{k}\right)\frac{\left(\Delta t_{k}\right)^{2}}{2}=p_{k}+\frac{v_{k}+v_{k+1}}{2}\Delta t_{k}\nonumber \\
+v_{k+1} & = & v_{k}+(g+R_{k}a_{k})\Delta t_{k}\nonumber 
+\end{eqnarray}
+
+\end_inset
+
+Starting 
+\begin_inset Formula $X_{i}=(R_{i},p_{i},v_{i})$
+\end_inset
+
+, we then obtain an expression for 
+\begin_inset Formula $X_{j}$
+\end_inset
+
+, 
+\begin_inset Formula 
+\begin{eqnarray*}
+R_{j} & = & R_{i}\prod_{k}\exp\hat{\omega}_{k}\Delta t_{k}\\
+p_{j} & = & p_{i}+\sum_{k}v_{k}\Delta t_{k}+\sum_{k}\left(g+R_{k}a_{k}\right)\frac{\left(\Delta t_{k}\right)^{2}}{2}\\
+v_{j} & = & v_{i}+\sum_{k}(g+R_{k}a_{k})\Delta t_{k}
+\end{eqnarray*}
+
+\end_inset
+
+where 
+\begin_inset Formula $R_{k}$
+\end_inset
+
+ has to be updated as in 
+\begin_inset CommandInset ref
+LatexCommand formatted
+reference "eq:iter_Rk"
+
+\end_inset
+
+.
+ Note that
+\begin_inset Formula 
+\[
+v_{k}=v_{i}+\sum_{l}(g+R_{l}a_{l})\Delta t_{l}
+\]
+
+\end_inset
+
+and hence
+\begin_inset Formula 
+\[
+p_{j}=p_{i}+\sum_{k}\left(v_{i}+\sum_{l}(g+R_{l}a_{l})\Delta t_{l}\right)\Delta t_{k}+\sum_{k}\left(g+R_{k}a_{k}\right)\frac{\left(\Delta t_{k}\right)^{2}}{2}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+A crucial problem here is that we depend on a good estimate of 
+\begin_inset Formula $R_{k}$
+\end_inset
+
+ at all times, which includes the potentially wrong estimate for the initial
+ attitude 
+\begin_inset Formula $R_{i}$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+The idea behind the preintegrated IMU factor is two-fold: (a) treat gravity
+ separately, in the navigation frame, and (b) instead of integrating in
+ absolute coordinates, we want the IMU integration to happen in the frame
+ 
+\begin_inset Formula $(R_{i},p_{i},v_{i})$
+\end_inset
+
+.
+ The first idea is easily incorporated by separating out all gravity-related
+ components:
+\begin_inset Formula 
+\begin{eqnarray*}
+p_{j} & = & p_{i}+\sum_{k}v_{k}\Delta t_{k}+\sum_{k}\left(g+R_{k}a_{k}\right)\frac{\left(\Delta t_{k}\right)^{2}}{2}+\sum_{k}v_{k}\Delta t_{k}+\sum_{k}\left(g+R_{k}a_{k}\right)\frac{\left(\Delta t_{k}\right)^{2}}{2}\\
+v_{j} & = & v_{i}+g\sum_{k}\Delta t_{k}+\sum_{k}R_{k}a_{k}\Delta t_{k}
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+But we need to define what that means: clearly, 
+\begin_inset Formula $SE(3)$
+\end_inset
+
+, with its group structure, has a well-defined concept of working 
+\begin_inset Quotes eld
+\end_inset
+
+in the frame
+\begin_inset Quotes erd
+\end_inset
+
+.
+ But in this case we have a manifold, not a group.
+ To deal with this, we perform the integration in the tangent space, and
+ hence we need to define a mapping from tangent space to manifold and vice
+ versa.
+ A possible definition of retract, compatible with the semi-direct group
+ structure of 
+\begin_inset Formula $SE(3)$
+\end_inset
+
+ and treating velocities the same way as positions, is given by
+\begin_inset Formula 
+\[
+X\oplus dX=(R,p,v)\oplus(\omega t,\Delta p,\Delta v)=(R\exp\hat{\omega}t,p+R\Delta p,v+R\Delta v)
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\begin{eqnarray*}
+R_{j} & = & R_{i}\prod_{k}\exp\hat{\omega}_{k}\Delta t_{k}\\
+p_{j} & = & p_{i}+\sum_{k}v_{k}\Delta t_{k}+\frac{1}{2}g\sum_{k}\Delta t_{k}^{2}+\frac{1}{2}\sum_{k}R_{k}a_{k}\Delta t^{2}\\
+v_{j} & = & v_{i}+g\Delta t_{ij}+\sum_{k}R_{k}a_{k}\Delta t_{k}
+\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+The binary factor is set up as a prediction:
 \begin_inset Formula 
 \[
 X_{j}\approx X_{i}\oplus dX_{ij}
@@ -627,7 +772,7 @@ where
  
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 Integrating gyro and accelerometer readings, following Forster05rss, and
  assuming zero bias for now, is done by:
 \begin_inset Formula 
@@ -653,7 +798,7 @@ v_{j} & = & \left\{ v_{i}+g\Delta t_{ij}\right\} +\sum_{k}R_{k}a_{k}\Delta t
 
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 Let us look at a single interval of the incremental terms:
 \begin_inset Formula 
 \begin{eqnarray*}
@@ -669,6 +814,11 @@ Comparing that with the definition of retract, we have
 \[
 R_{j}=R_{i}\oplus\left(\omega,R_{i}^{T}v_{i}+\frac{1}{2}R_{i}^{T}g\Delta t+\frac{1}{2}a\Delta t,R_{i}^{T}g+a_{k}\right)\Delta t
 \]
+
+\end_inset
+
+
+\end_layout
 
 \end_inset
 
