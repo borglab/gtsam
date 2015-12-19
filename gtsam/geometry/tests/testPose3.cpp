@@ -715,7 +715,41 @@ TEST( Pose3, ExpmapDerivative1) {
 }
 
 /* ************************************************************************* */
-TEST( Pose3, LogmapDerivative1) {
+TEST(Pose3, ExpmapDerivative2) {
+  // Iserles05an (Lie-group Methods) says:
+  // scalar is easy: d exp(a(t)) / dt = exp(a(t) a'(t)
+  // matrix is hard: d exp(A(t)) / dt = exp(A(t)) dexp[-A(t)] A'(t)
+  // where A(t): T -> se(3) is a trajectory in the tangent space of SE(3)
+  // Hence, the above matrix equation is typed: 4*4 = SE(3) * linear_map(4*4)
+
+  // In GTSAM, we don't work with the Lie-algebra elements A directly, but with 6-vectors.
+  // xi is easy: d Expmap(xi(t)) / dt = ExmapDerivative[xi(t)] * xi'(t)
+
+  // Let's verify the above formula.
+
+  auto xi = [](double t) {
+    Vector6 v;
+    v << 2 * t, sin(t), 4 * t * t, 2 * t, sin(t), 4 * t * t;
+    return v;
+  };
+  auto xi_dot = [](double t) {
+    Vector6 v;
+    v << 2, cos(t), 8 * t, 2, cos(t), 8 * t;
+    return v;
+  };
+
+  // We define a function T
+  auto T = [xi](double t) { return Pose3::Expmap(xi(t)); };
+
+  for (double t = -2.0; t < 2.0; t += 0.3) {
+    const Matrix expected = numericalDerivative11<Pose3, double>(T, t);
+    const Matrix actual = Pose3::ExpmapDerivative(xi(t)) * xi_dot(t);
+    CHECK(assert_equal(expected, actual, 1e-7));
+  }
+}
+
+/* ************************************************************************* */
+TEST( Pose3, LogmapDerivative) {
   Matrix6 actualH;
   Vector6 w; w << 0.1, 0.2, 0.3, 4.0, 5.0, 6.0;
   Pose3 p = Pose3::Expmap(w);
