@@ -47,7 +47,7 @@ SO3 SO3::AxisAngle(const Vector3& axis, double theta) {
     // get components of axis \omega, where is a unit vector
     const double& wx = axis.x(), wy = axis.y(), wz = axis.z();
 
-    const double costheta = cos(theta), sintheta = sin(theta), c_1 = 1 - costheta;
+    const double costheta = cos(theta), sintheta = sin(theta), s2 = sin(theta/2.0), c_1 = 2.0*s2*s2;
     const double wx_sintheta = wx * sintheta, wy_sintheta = wy * sintheta,
                  wz_sintheta = wz * sintheta;
 
@@ -130,7 +130,6 @@ Vector3 SO3::Logmap(const SO3& R, ChartJacobian H) {
 
 /* ************************************************************************* */
 Matrix3 SO3::ExpmapDerivative(const Vector3& omega)    {
-  using std::cos;
   using std::sin;
 
   double theta2 = omega.dot(omega);
@@ -155,8 +154,9 @@ Matrix3 SO3::ExpmapDerivative(const Vector3& omega)    {
    */
   // element of Lie algebra so(3): X = omega^, normalized by normx
   const Matrix3 Y = skewSymmetric(omega) / theta;
-  return I_3x3 - ((1 - cos(theta)) / (theta)) * Y
-      + (1 - sin(theta) / theta) * Y * Y; // right Jacobian
+  const double s2 = sin(theta / 2.0);
+  return I_3x3 - (2.0 * s2 * s2 / theta) * Y +
+         (1.0 - sin(theta) / theta) * Y * Y;  // right Jacobian
 #endif
 }
 
