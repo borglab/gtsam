@@ -717,9 +717,10 @@ TEST( Pose3, ExpmapDerivative1) {
 /* ************************************************************************* */
 TEST(Pose3, ExpmapDerivative2) {
   // Iserles05an (Lie-group Methods) says:
-  // scalar is easy: d exp(a(t)) / dt = exp(a(t) a'(t)
+  // scalar is easy: d exp(a(t)) / dt = exp(a(t)) a'(t)
   // matrix is hard: d exp(A(t)) / dt = exp(A(t)) dexp[-A(t)] A'(t)
   // where A(t): T -> se(3) is a trajectory in the tangent space of SE(3)
+  // and dexp[A] is a linear map from 4*4 to 4*4 derivatives of se(3)
   // Hence, the above matrix equation is typed: 4*4 = SE(3) * linear_map(4*4)
 
   // In GTSAM, we don't work with the Lie-algebra elements A directly, but with 6-vectors.

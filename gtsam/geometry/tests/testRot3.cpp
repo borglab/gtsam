@@ -284,9 +284,10 @@ TEST( Rot3, ExpmapDerivative2)
 /* ************************************************************************* */
 TEST(Rot3, ExpmapDerivative3) {
   // Iserles05an (Lie-group Methods) says:
-  // scalar is easy: d exp(a(t)) / dt = exp(a(t) a'(t)
+  // scalar is easy: d exp(a(t)) / dt = exp(a(t)) a'(t)
   // matrix is hard: d exp(A(t)) / dt = exp(A(t)) dexp[-A(t)] A'(t)
   // where A(t): R -> so(3) is a trajectory in the tangent space of SO(3)
+  // and dexp[A] is a linear map from 3*3 to 3*3 derivatives of se(3)
   // Hence, the above matrix equation is typed: 3*3 = SO(3) * linear_map(3*3)
 
   // In GTSAM, we don't work with the skew-symmetric matrices A directly, but with 3-vectors.
@@ -299,6 +300,22 @@ TEST(Rot3, ExpmapDerivative3) {
 
   // We define a function R
   auto R = [w](double t) { return Rot3::Expmap(w(t)); };
+
+  for (double t = -2.0; t < 2.0; t += 0.3) {
+    const Matrix expected = numericalDerivative11<Rot3, double>(R, t);
+    const Matrix actual = Rot3::ExpmapDerivative(w(t)) * w_dot(t);
+    CHECK(assert_equal(expected, actual, 1e-7));
+  }
+}
+
+/* ************************************************************************* */
+TEST(Rot3, ExpmapDerivative4) {
+  auto w = [](double t) { return Vector3(2 * t, sin(t), 4 * t * t); };
+  auto w_dot = [](double t) { return Vector3(2, cos(t), 8 * t); };
+
+  // Same as above, but define R as mapping local coordinates to neighborhood aroud R0.
+  const Rot3 R0 = Rot3::Rodrigues(0.1, 0.4, 0.2);
+  auto R = [R0, w](double t) { return R0.expmap(w(t)); };
 
   for (double t = -2.0; t < 2.0; t += 0.3) {
     const Matrix expected = numericalDerivative11<Rot3, double>(R, t);
