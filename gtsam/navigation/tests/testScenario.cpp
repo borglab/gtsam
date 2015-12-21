@@ -10,37 +10,13 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    Scenario.h
- * @brief   Simple class to test navigation scenarios
- * @author  Frank Dellaert
- */
-
-#include <gtsam/geometry/Pose3.h>
-
-namespace gtsam {
-/// Simple class to test navigation scenarios
-class Scenario {
- public:
-  /// Construct scenario with constant twist [w,v]
-  Scenario(const Vector3& w, const Vector3& v)
-      : twist_((Vector6() << w, v).finished()) {}
-
-  Pose3 poseAtTime(double t) { return Pose3::Expmap(twist_ * t); }
-
- private:
-  Vector6 twist_;
-};
-
-}  // namespace gtsam
-
-/**
  * @file    testScenario.cpp
- * @brief   test ImuFacor with Scenario class
+ * @brief   Unit test Scenario class
  * @author  Frank Dellaert
  */
 
+#include <gtsam/navigation/Scenario.h>
 #include <CppUnitLite/TestHarness.h>
-
 #include <cmath>
 
 using namespace std;
