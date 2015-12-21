@@ -25,6 +25,16 @@ using namespace gtsam;
 static const double degree = M_PI / 180.0;
 
 /* ************************************************************************* */
+TEST(Scenario, Forward) {
+  const double v = 2;  // m/s
+  Scenario forward(Vector3::Zero(), Vector3(v, 0, 0));
+
+  const Pose3 T15 = forward.poseAtTime(15);
+  EXPECT(assert_equal(Vector3(0, 0, 0), T15.rotation().xyz(), 1e-9));
+  EXPECT(assert_equal(Point3(30, 0, 0), T15.translation(), 1e-9));
+}
+
+/* ************************************************************************* */
 TEST(Scenario, Circle) {
   // Forward velocity 2m/s, angular velocity 6 degree/sec
   const double v = 2, omega = 6 * degree;

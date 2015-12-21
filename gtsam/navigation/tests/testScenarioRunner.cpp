@@ -42,8 +42,8 @@ class ScenarioRunner {
         zeroBias, kMeasuredAccCovariance, kMeasuredOmegaCovariance,
         kIntegrationErrorCovariance, use2ndOrderCoriolis);
 
-    const Vector3 measuredAcc = scenario_.groundTruthAcc();
-    const Vector3 measuredOmega = scenario_.groundTruthGyro();
+    const Vector3 measuredAcc = scenario_.groundTruthAccInBody();
+    const Vector3 measuredOmega = scenario_.groundTruthGyroInBody();
     double deltaT = scenario_.imuSampleTime();
     for (double t = 0; t <= T; t += deltaT) {
       result.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
@@ -57,12 +57,12 @@ class ScenarioRunner {
     // TODO(frank): allow non-standard
     const imuBias::ConstantBias zeroBias;
     const Pose3 pose_i = Pose3::identity();
-    const Vector3 vel_i = Vector3::Zero();
-    const Vector3 gravity(0, 0, 9.81);
+    const Vector3 vel_i = scenario_.velocityAtTime(0);
     const Vector3 omegaCoriolis = Vector3::Zero();
     const bool use2ndOrderCoriolis = true;
-    const PoseVelocityBias prediction = integrated.predict(
-        pose_i, vel_i, zeroBias, gravity, omegaCoriolis, use2ndOrderCoriolis);
+    const PoseVelocityBias prediction =
+        integrated.predict(pose_i, vel_i, zeroBias, scenario_.gravity(),
+                           omegaCoriolis, use2ndOrderCoriolis);
     return prediction.pose;
   }
 
@@ -86,6 +86,17 @@ using namespace std;
 using namespace gtsam;
 
 static const double degree = M_PI / 180.0;
+
+/* ************************************************************************* */
+TEST(ScenarioRunner, Forward) {
+  const double v = 2;  // m/s
+  Scenario forward(Vector3::Zero(), Vector3(v, 0, 0));
+
+  ScenarioRunner runner(forward);
+  const double T = 10;  // seconds
+  ImuFactor::PreintegratedMeasurements integrated = runner.integrate(T);
+  EXPECT(assert_equal(forward.poseAtTime(T), runner.mean(integrated), 1e-9));
+}
 
 /* ************************************************************************* */
 TEST(ScenarioRunner, Circle) {
