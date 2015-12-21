@@ -73,12 +73,39 @@ Frank Dellaert
 \end_layout
 
 \begin_layout Standard
+\begin_inset CommandInset include
+LatexCommand include
+filename "macros.lyx"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset FormulaMacro
+\renewcommand{\sothree}{\mathfrak{so(3)}}
+{\mathfrak{so(3)}}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection*
+Navigation States
+\end_layout
+
+\begin_layout Standard
 Let us assume a setup where frames with image and/or laser measurements
  are processed at some fairly low rate, e.g., 10 Hz.
- We define the state of the vehicle at those times as attitude, position,
+ 
+\end_layout
+
+\begin_layout Standard
+We define the state of the vehicle at those times as attitude, position,
  and velocity.
  These three quantities are jointly referred to as a NavState 
-\begin_inset Formula $X\doteq(R_{b}^{n},p^{n},v^{n})$
+\begin_inset Formula $X_{b}^{n}\define\left\{ R_{b}^{n},P_{b}^{n},V_{b}^{n}\right\} $
 \end_inset
 
 , where the superscript 
@@ -101,31 +128,959 @@ body frame
  For simplicity, we drop these indices below where clear from context.
 \end_layout
 
+\begin_layout Subsubsection*
+Vector Fields and Differential Equations
+\end_layout
+
 \begin_layout Standard
-Let us consider a simplified situation where we have a perfect gyroscope
- and accelerometer, i.e., assuming zero noise and bias terms, where the angular
- velocity 
+We need a way to describe the evolution of a NavState over time.
+ The NavState lives in a 9-dimensional manifold 
+\begin_inset Formula $M$
+\end_inset
+
+, defined by the orthonormality constraints on 
+\begin_inset Formula $\Rone$
+\end_inset
+
+.
+ For a NavState 
+\begin_inset Formula $X$
+\end_inset
+
+ evolving over time we can write down a differential equation
+\begin_inset Formula 
+\begin{equation}
+\dot{X}(t)=F(t,X)\label{eq:diffeqM}
+\end{equation}
+
+\end_inset
+
+where 
+\begin_inset Formula $F$
+\end_inset
+
+ is a time-varying 
+\series bold
+vector field
+\series default
+ on 
+\begin_inset Formula $M$
+\end_inset
+
+, defined as a mapping from 
+\begin_inset Formula $R\times M$
+\end_inset
+
+ to tangent vectors at 
+\begin_inset Formula $X$
+\end_inset
+
+.
+ A 
+\series bold
+tangent vector
+\series default
+ at 
+\begin_inset Formula $X$
+\end_inset
+
+ is defined as the derivative of a trajectory at 
+\begin_inset Formula $X$
+\end_inset
+
+, and for the NavState manifold this will be a triplet 
+\begin_inset Formula 
+\[
+\left[W(t,X),V(t,X),A(t,X)\right]\in\sothree\times\Rthree\times\Rthree
+\]
+
+\end_inset
+
+where we use square brackets to indicate a tangent vector.
+ The space of all tangent vectors at 
+\begin_inset Formula $X$
+\end_inset
+
+ is denoted by 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula $T_{X}M$
+\end_inset
+
+
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+, and hence 
+\begin_inset Formula $F(t,X)\in T_{X}M$
+\end_inset
+
+.
+ For example, if the state evolves along a constant velocity trajectory
+\begin_inset Formula 
+\[
+X(t)=\left\{ R_{0},P_{0}+V_{0}t,V_{0}\right\} 
+\]
+
+\end_inset
+
+then the differential equation describing the trajectory is
+\begin_inset Formula 
+\[
+X'(t)=\left[0_{3x3},V_{0},0_{3x1}\right],\,\,\,\,\, X(0)=\left\{ R_{0},P_{0},V_{0}\right\} 
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Valid vector fields on a NavState manifold are special, in that the attitude
+ and velocity derivatives can be arbitrary functions of X and t, but the
+ derivative of position is constrained to be equal to the current velocity
+ 
+\begin_inset Formula $V(t)$
+\end_inset
+
+: 
+\begin_inset Formula 
+\begin{equation}
+X'(t)=\left[W(X,t),V(t),A(X,t)\right]\label{eq:validField}
+\end{equation}
+
+\end_inset
+
+If we know 
+\begin_inset Formula $\omega^{b}(t)$
+\end_inset
+
+ and non-gravity 
+\begin_inset Formula $a^{b}(t)$
+\end_inset
+
+ in the body frame, we know (from Murray84book) that the body angular velocity
+ an be written as 
+\begin_inset Formula 
+\[
+\Skew{\omega^{b}}=R(t)^{T}W(X,t)
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $\Skew{\omega^{b}}\in so(3)$
+\end_inset
+
+ is the skew-symmetric matrix corresponding to 
+\begin_inset Formula $\theta$
+\end_inset
+
+, and hence the resulting exact vector field is 
+\begin_inset Formula 
+\begin{equation}
+X'(t)=\left[W(X,t),V(t),A(X,t)\right]=\left[R(t)\Skew{\omega^{b}},V(t),g+R(t)a^{b}(t)\right]\label{eq:bodyField}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection*
+Local Coordinates
+\end_layout
+
+\begin_layout Standard
+Optimization on manifolds relies crucially on the concept of 
+\series bold
+local coordinates
+\series default
+.
+ For example, when optimizing over the rotations 
+\begin_inset Formula $\SOthree$
+\end_inset
+
+ starting from an initial estimate 
+\begin_inset Formula $R_{0}$
+\end_inset
+
+, we define a local map 
+\begin_inset Formula $\Phi_{R_{0}}$
+\end_inset
+
+ from 
+\begin_inset Formula $\theta\in\Rthree$
+\end_inset
+
+ to a neighborhood of 
+\begin_inset Formula $\SOthree$
+\end_inset
+
+ centered around 
+\begin_inset Formula $R_{0}$
+\end_inset
+
+, 
+\begin_inset Formula 
+\[
+\Phi_{R_{0}}(\theta)=R_{0}\exp\left(\Skew{\theta}\right)
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $\exp$
+\end_inset
+
+ is the matrix exponential, given by
+\begin_inset Formula 
+\begin{equation}
+\exp\left(\Skew{\theta}\right)=\sum_{k=0}^{\infty}\frac{1}{k!}\Skew{\theta}^{k}\label{eq:expm}
+\end{equation}
+
+\end_inset
+
+which for 
+\begin_inset Formula $\SOthree$
+\end_inset
+
+ can be efficiently computed in closed form.
+\end_layout
+
+\begin_layout Standard
+The local coordinates 
+\begin_inset Formula $\theta$
+\end_inset
+
+ are isomorphic to tangent vectors at 
+\emph on
+
+\begin_inset Formula $R_{0}$
+\end_inset
+
+
+\emph default
+.
+ To see this, define 
+\begin_inset Formula $\theta=\omega t$
+\end_inset
+
+ and note that 
+\begin_inset Formula 
+\[
+\frac{d\Phi_{R_{0}}\left(\omega t\right)}{dt}\biggr\vert_{t=0}=\frac{dR_{0}\exp\left(\Skew{\omega t}\right)}{dt}\biggr\vert_{t=0}=R_{0}\Skew{\omega}
+\]
+
+\end_inset
+
+Hence, the 3-vector 
 \begin_inset Formula $\omega$
 \end_inset
 
- and acceleration 
-\begin_inset Formula $a$
+ defines a direction of travel on the 
+\begin_inset Formula $\SOthree$
 \end_inset
 
- are measured in the body frame.
- Then we can model the state of the vehicle as governed by the following
- kinematic equations,
+ manifold, but does so in the local coordinate frame define by 
+\begin_inset Formula $R_{0}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+A similar story holds in 
+\begin_inset Formula $\SEthree$
+\end_inset
+
+: we define local coordinates 
+\begin_inset Formula $\xi=\left[\omega t,vt\right]\in\Rsix$
+\end_inset
+
+ and a mapping 
 \begin_inset Formula 
-\begin{eqnarray}
-\dot{R} & = & R\hat{\omega}\label{eq:diffeq}\\
-\dot{p} & = & v\label{eq:diffeq2}\\
-\dot{v} & = & g+Ra\label{eq:diffeq3}
-\end{eqnarray}
+\[
+\Phi_{T_{0}}(\xi)=T_{0}\exp\xihat
+\]
 
 \end_inset
 
-Note that gravity is not measured by an accelerometer and needs to be added
- separately.
+where 
+\begin_inset Formula $\xihat\in\sethree$
+\end_inset
+
+ is defined as 
+\begin_inset Formula 
+\[
+\xihat=\left[\begin{array}{cc}
+\Skew{\omega} & v\\
+0 & 0
+\end{array}\right]t
+\]
+
+\end_inset
+
+and the 6-vectors 
+\begin_inset Formula $\xi$
+\end_inset
+
+ are mapped to tangent vectors 
+\begin_inset Formula $T_{0}\xihat$
+\end_inset
+
+ at 
+\begin_inset Formula $T_{0}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsubsection*
+Local Coordinates
+\end_layout
+
+\begin_layout Standard
+For the local coordinate mapping 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula $\Phi_{R_{0}}\left(\theta\right)$
+\end_inset
+
+
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+ in 
+\begin_inset Formula $\SOthree$
+\end_inset
+
+ we can define a 
+\begin_inset Formula $3\times3$
+\end_inset
+
+ 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+Jacobian 
+\begin_inset Formula $H(\theta)$
+\end_inset
+
+ that models the effect of an incremental change 
+\begin_inset Formula $\delta$
+\end_inset
+
+ to the local coordinates:
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\strikeout default
+\uuline default
+\uwave default
+\noun default
+\color inherit
+
+\begin_inset Formula 
+\begin{equation}
+\Phi_{R_{0}}\left(\theta+\delta\right)\approx\Phi_{R_{0}}\left(\theta\right)\,\exp\left(\Skew{H(\theta)\delta}\right)=\Phi_{\Phi_{R_{0}}\left(\theta\right)}\left(H(\theta)\delta\right)\label{eq:push_exp}
+\end{equation}
+
+\end_inset
+
+This Jacobian depends only on 
+\begin_inset Formula $\theta$
+\end_inset
+
+ and, for the case of 
+\begin_inset Formula $\SOthree$
+\end_inset
+
+, is given by a formula similar to the matrix exponential map, 
+\begin_inset Formula 
+\[
+H(\theta)=\sum_{k=0}^{\infty}\frac{(-1)^{k}}{(k+1)!}\Skew{\theta}^{k}
+\]
+
+\end_inset
+
+which can also be computed in closed form.
+ In particular, 
+\begin_inset Formula $H(0)=I_{3\times3}$
+\end_inset
+
+ at the base 
+\begin_inset Formula $R_{0}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsubsection*
+Numerical Integration in Local Coordinates
+\end_layout
+
+\begin_layout Standard
+Inspired by the paper 
+\begin_inset Quotes eld
+\end_inset
+
+Lie Group Methods
+\begin_inset Quotes erd
+\end_inset
+
+ by Iserles et al.
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Iserles00an"
+
+\end_inset
+
+, when we have a differential equation on 
+\begin_inset Formula $\SOthree$
+\end_inset
+
+,
+\begin_inset Formula 
+\begin{equation}
+\dot{R}(t)=F(R,t),\,\,\,\, R(0)=R_{0}\label{eq:diffSo3}
+\end{equation}
+
+\end_inset
+
+we can transfer it to a differential equation in the 3-dimensional local
+ coordinate space.
+ To do so, we model the solution to 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:diffSo3"
+
+\end_inset
+
+ as
+\begin_inset Formula 
+\[
+R(t)=\Phi_{R_{0}}(\theta(t))
+\]
+
+\end_inset
+
+We can create a trajectory 
+\begin_inset Formula $\gamma(\delta)$
+\end_inset
+
+ that passes through 
+\begin_inset Formula $R(t)$
+\end_inset
+
+ for 
+\begin_inset Formula $\delta=0$
+\end_inset
+
+ 
+\begin_inset Formula 
+\[
+\gamma(\delta)=R(t+\delta)=\Phi_{R_{0}}\left(\theta(t)+\dot{\theta}(t)\delta\right)\approx\Phi_{R(t)}\left(H(\theta)\dot{\theta}(t)\delta\right)
+\]
+
+\end_inset
+
+and taking the derivative for 
+\begin_inset Formula $\delta=0$
+\end_inset
+
+ we obtain
+\begin_inset Formula 
+\[
+\dot{R}(t)=\frac{d\gamma(\delta)}{d\delta}\biggr\vert_{\delta=0}=\frac{d\Phi_{R(t)}\left(H(\theta)\theta'(t)\delta\right)}{dt}\biggr\vert_{t=0}=R(t)\Skew{H(\theta)\dot{\theta}(t)}
+\]
+
+\end_inset
+
+Comparing this to 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:diffSo3"
+
+\end_inset
+
+ we obtain a differential equation for 
+\begin_inset Formula $\theta(t)$
+\end_inset
+
+:
+\begin_inset Formula 
+\[
+\dot{\theta}(t)=H(\theta)^{-1}\left\{ R(t)^{T}F(R,t)\right\} \check{},\,\,\,\,\theta(0)=0_{3\times1}
+\]
+
+\end_inset
+
+In other words, the vector field 
+\begin_inset Formula $F(R,t)$
+\end_inset
+
+ is rotated to the local frame, the inverse hat operator is applied to get
+ a 3-vector, which is then corrected by 
+\begin_inset Formula $H(\theta)^{-1}$
+\end_inset
+
+ away from 
+\begin_inset Formula $\theta=0$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsubsection*
+Retractions
+\end_layout
+
+\begin_layout Standard
+\begin_inset FormulaMacro
+\newcommand{\Rnine}{\mathfrak{\mathbb{R}^{9}}}
+{\mathfrak{\mathbb{R}^{9}}}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Note that the use of the exponential map in local coordinate mappings is
+ not obligatory, even in the context of Lie groups.
+ Often it is computationally expedient to use mappings that are easier to
+ compute, but yet induce the same tangent vector at 
+\begin_inset Formula $T_{0}.$
+\end_inset
+
+ Mappings that satisfy this constraint are collectively known as 
+\series bold
+retractions
+\series default
+.
+ For example, for 
+\begin_inset Formula $\SEthree$
+\end_inset
+
+ one could use the retraction 
+\begin_inset Formula $\mathcal{R}_{T_{0}}:\Rsix\rightarrow\SEthree$
+\end_inset
+
+ 
+\begin_inset Formula 
+\[
+\mathcal{R}_{T_{0}}\left(\xi\right)=T_{0}\left\{ \exp\left(\Skew{\omega t}\right),vt\right\} =\left\{ \Phi_{R_{0}}\left(\omega t\right),P_{0}+R_{0}vt\right\} 
+\]
+
+\end_inset
+
+This trajectory describes a linear path in position while the frame rotates,
+ as opposed to the helical path traced out by the exponential map.
+ The tangent vector at 
+\begin_inset Formula $T_{0}$
+\end_inset
+
+ can be computed as
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{d\mathcal{R}_{T_{0}}\left(\xi\right)}{dt}\biggr\vert_{t=0}=\left[R_{0}\Skew{\omega},R_{0}v\right]
+\]
+
+\end_inset
+
+which is identical to the one induced by 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula $\Phi_{T_{0}}(\xi)=T_{0}\exp\xihat$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+The NavState manifold is not a Lie group like 
+\begin_inset Formula $\SEthree$
+\end_inset
+
+, but we can easily define a retraction that behaves similarly to the one
+ for 
+\begin_inset Formula $\SEthree$
+\end_inset
+
+, while treating velocities the same way as positions:
+\begin_inset Formula 
+\[
+\mathcal{R}_{X_{0}}(\zeta)=\left\{ \Phi_{R_{0}}\left(\omega t\right),P_{0}+R_{0}vt,V_{0}+R_{0}at\right\} 
+\]
+
+\end_inset
+
+Here 
+\begin_inset Formula $\zeta=\left[\omega t,vt,at\right]$
+\end_inset
+
+ is a 9-vector, with respectively angular, position, and velocity components.
+ The tangent vector at 
+\begin_inset Formula $R_{0}$
+\end_inset
+
+ is
+\begin_inset Formula 
+\[
+\frac{d\mathcal{R}_{X_{0}}(\zeta)}{dt}\biggr\vert_{t=0}=\left[R_{0}\Skew{\omega},R_{0}v,R_{0}a\right]
+\]
+
+\end_inset
+
+and the isomorphism between 
+\begin_inset Formula $\Rnine$
+\end_inset
+
+ and 
+\begin_inset Formula $T_{X_{0}}M$
+\end_inset
+
+ is 
+\begin_inset Formula $\zeta\rightarrow\left[R_{0}\Skew{\omega t},R_{0}vt,R_{0}at\right]$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsubsection*
+Integration in Local Coordinates
+\end_layout
+
+\begin_layout Standard
+We now proceed exactly as before to describe the evolution of the NavState
+ in local coordinates.
+ Let us model the solution of the differential equation 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:diffeqM"
+
+\end_inset
+
+ as a trajectory 
+\begin_inset Formula $\zeta(t)=\left[\theta(t),p(t),v(t)\right]$
+\end_inset
+
+, with 
+\begin_inset Formula $\zeta(0)=0$
+\end_inset
+
+, in the local coordinate frame anchored at 
+\begin_inset Formula $X_{0}$
+\end_inset
+
+.
+ Note that this trajectory evolves away from 
+\begin_inset Formula $X_{0}$
+\end_inset
+
+, and we use the symbols 
+\begin_inset Formula $\theta$
+\end_inset
+
+, 
+\begin_inset Formula $p$
+\end_inset
+
+, and 
+\begin_inset Formula $v$
+\end_inset
+
+ to indicate that these are integrated rather than differential quantities.
+ With that, we have 
+\begin_inset Formula 
+\begin{equation}
+X(t)=\mathcal{R}_{X_{0}}(\zeta(t))=\left\{ \Phi_{R_{0}}\left(\theta(t)\right),P_{0}+R_{0}p(t),V_{0}+R_{0}v(t)\right\} \label{eq:scheme1}
+\end{equation}
+
+\end_inset
+
+We can create a trajectory 
+\begin_inset Formula $\gamma(\delta)$
+\end_inset
+
+ that passes through 
+\begin_inset Formula $X(t)$
+\end_inset
+
+ for 
+\begin_inset Formula $\delta=0$
+\end_inset
+
+ 
+\begin_inset Formula 
+\[
+\gamma(\delta)=X(t+\delta)=\left\{ \Phi_{R_{0}}\left(\theta(t)+\theta'(t)\delta\right),P_{0}+R_{0}\left\{ p(t)+p'(t)\delta\right\} ,V_{0}+R_{0}\left\{ v(t)+v'(t)\delta\right\} \right\} 
+\]
+
+\end_inset
+
+and taking the derivative for 
+\begin_inset Formula $\delta=0$
+\end_inset
+
+ we obtain
+\begin_inset Formula 
+\[
+\dot{X}(t)=\frac{d\gamma(\delta)}{d\delta}\biggr\vert_{\delta=0}=\left[R(t)\Skew{H(\theta)\theta'(t)},R_{0}\, p'(t),R_{0}\, v'(t)\right]
+\]
+
+\end_inset
+
+Comparing that with the vector field 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:bodyField"
+
+\end_inset
+
+, we have exact integration iff 
+\begin_inset Formula 
+\[
+\left[R(t)\Skew{H(\theta)\theta'(t)},R_{0}\, p'(t),R_{0}\, v'(t)\right]=\left[R(t)\Skew{\omega^{b}},V(t),g+R(t)a^{b}(t)\right]
+\]
+
+\end_inset
+
+Or, as another way to state this, if we solve the differential equations
+ for 
+\begin_inset Formula $\theta(t)$
+\end_inset
+
+, 
+\begin_inset Formula $p(t)$
+\end_inset
+
+, and 
+\begin_inset Formula $v(t)$
+\end_inset
+
+ such that
+\begin_inset Formula 
+\begin{eqnarray*}
+\dot{\theta}(t) & = & H(\theta)^{-1}\,\omega^{b}\\
+\dot{p}(t) & = & R_{0}^{T}\, V_{0}+v(t)\\
+\dot{v}(t) & = & R_{0}^{T}\, g+R_{b}^{0}(t)a^{b}(t)
+\end{eqnarray*}
+
+\end_inset
+
+where 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula $R_{b}^{0}(t)=R_{0}^{T}R(t)$
+\end_inset
+
+ is the rotation of the body frame with respect to 
+\begin_inset Formula $R_{0}$
+\end_inset
+
+, and we have used 
+\begin_inset Formula $V(t)=V_{0}+R_{0}v(t)$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsubsection*
+Application: The New IMU Factor
+\end_layout
+
+\begin_layout Standard
+The above scheme suffers from one problem, which is that 
+\begin_inset Formula $R_{0}$
+\end_inset
+
+ needs to be known exactly to compensate for the initial velocity 
+\begin_inset Formula $V_{0}$
+\end_inset
+
+ and the gravity 
+\begin_inset Formula $g$
+\end_inset
+
+.
+ Hence, we split up 
+\begin_inset Formula $v(t)$
+\end_inset
+
+ into a gravity-induced part and an accelerometer part
+\begin_inset Formula 
+\[
+v(t)=v_{g}(t)+v_{a}(t)
+\]
+
+\end_inset
+
+evolving as
+\begin_inset Formula 
+\begin{eqnarray*}
+\dot{v}_{g}(t) & = & R_{0}^{T}\, g\\
+\dot{v}_{a}(t) & = & R_{b}^{0}(t)a^{b}(t)
+\end{eqnarray*}
+
+\end_inset
+
+The solution for the first equation is simply 
+\begin_inset Formula $v_{g}(t)=R_{0}^{T}gt$
+\end_inset
+
+.
+ Similarly, we split the position 
+\begin_inset Formula $p(t)$
+\end_inset
+
+ up in three parts 
+\begin_inset Formula 
+\[
+p(t)=p_{0}(t)+p_{g}(t)+p_{v}(t)
+\]
+
+\end_inset
+
+evolving as
+\begin_inset Formula 
+\begin{eqnarray*}
+\dot{p}_{0}(t) & = & R_{0}^{T}\, V_{0}\\
+\dot{p}_{g}(t) & = & v_{g}(t)=R_{0}^{T}gt\\
+\dot{p}_{v}(t) & = & v_{a}(t)
+\end{eqnarray*}
+
+\end_inset
+
+Here the solutions for the two first equations are simply 
+\begin_inset Formula 
+\begin{eqnarray*}
+p_{0}(t) & = & R_{0}^{T}V_{0}t\\
+p_{g}(t) & = & R_{0}^{T}\frac{gt^{2}}{2}
+\end{eqnarray*}
+
+\end_inset
+
+The recipe for the IMU factor is then, in summary.
+ Solve the ordinary differential equation
+\begin_inset Formula 
+\begin{eqnarray*}
+\dot{\theta}(t) & = & H(\theta)^{-1}\,\omega^{b}\\
+\dot{p}_{v}(t) & = & v_{a}(t)\\
+\dot{v}_{a}(t) & = & R_{b}^{0}(t)a^{b}(t)
+\end{eqnarray*}
+
+\end_inset
+
+starting from zero, up to time 
+\begin_inset Formula $t_{ij}$
+\end_inset
+
+, where 
+\begin_inset Formula $R_{b}^{0}(t)=\exp\Skew{\theta(t)}$
+\end_inset
+
+ at all times.
+ Form the local coordinate vector as
+\begin_inset Formula 
+\[
+\zeta(t_{ij})=\left[\theta(t_{ij}),p(t_{ij}),v(t_{ij})\right]=\left[\theta(t_{ij}),R_{0}^{T}V_{0}t_{ij}+R_{0}^{T}\frac{gt_{ij}^{2}}{2}+p_{v}(t_{ij}),R_{0}^{T}gt_{ij}+v_{a}(t_{ij})\right]
+\]
+
+\end_inset
+
+Predict the NavState 
+\begin_inset Formula $X_{j}$
+\end_inset
+
+ at time 
+\begin_inset Formula $t_{j}$
+\end_inset
+
+ from
+\begin_inset Formula 
+\[
+X_{j}=\mathcal{R}_{X_{j}}(\zeta(t_{ij}))=\left\{ \Phi_{R_{0}}\left(\theta(t_{ij})\right),P_{0}+V_{0}t_{ij}+\frac{gt_{ij}^{2}}{2}+R_{0}\, p_{v}(t_{ij}),V_{0}+gt_{ij}+R_{0}\, v_{a}(t_{ij})\right\} 
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Old Stuff:
 \end_layout
 
 \begin_layout Standard
@@ -154,117 +1109,7 @@ We only measure
 
 \begin_layout Standard
 \begin_inset Note Note
-status open
-
-\begin_layout Plain Layout
-This motivates splitting up the integration into two parts: one that depends
- on knowing the exact rotation at the beginning of the interval, and another
- that does not:
-\begin_inset Formula 
-\begin{eqnarray*}
-R(t) & = & R_{0}\int_{0}^{t}R_{0}^{T}R(\tau)\hat{\omega}(\tau)d\tau\\
-\dot{p} & = & R_{0}\int_{0}^{t}R_{0}^{T}v(\tau)d\tau\\
-\dot{v} & = & \int_{0}^{t}gd\tau+R_{0}\int_{0}^{t}R_{0}^{T}R(\tau)a(\tau)d\tau
-\end{eqnarray*}
-
-\end_inset
-
-
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-It is well known that constant angular and linear velocity, expressed in
- the body frame, integrate to a spiral trajectory.
- This is captured exactly by the exponential map of 
-\begin_inset Formula $SE(3)$
-\end_inset
-
-:
-\begin_inset Formula 
-\[
-\left[\begin{array}{cc}
-R & p\\
-0 & 1
-\end{array}\right]=\lim_{n\rightarrow\infty}\left(I+\left[\begin{array}{cc}
-\hat{\omega} & v^{b}\\
-0 & 0
-\end{array}\right]\frac{\Delta t}{n}\right)^{n}\doteq\exp\left[\begin{array}{cc}
-\hat{\omega} & v^{b}\\
-0 & 0
-\end{array}\right]\Delta t
-\]
-
-\end_inset
-
-As can be seen from the definition, the exponential map directly derives
- from dividing up a finite interval 
-\begin_inset Formula $\Delta t$
-\end_inset
-
- into an infinite number of infinitesimally small intervals 
-\begin_inset Formula $\Delta t/n$
-\end_inset
-
-.
- As a consequence, integrating the kinematics forward in 
-\begin_inset Formula $SE(3)$
-\end_inset
-
- translates simply to 
-\emph on
-multiplication
-\emph default
- with 
-\begin_inset Formula $\Delta t$
-\end_inset
-
- in the 6-dimensional tangent space.
-\end_layout
-
-\begin_layout Standard
-What is needed to achieve the same understanding for NavStates, integrated
- forward under constant angular velocity and linear acceleration? For 
-\begin_inset Formula $SE(3)$
-\end_inset
-
-, the exponential map arose naturally when we embedded the 6-dimensional
- manifold in 
-\begin_inset Formula $GL(4)$
-\end_inset
-
-, the space of all non-singular 
-\begin_inset Formula $4\times4$
-\end_inset
-
- matrices.
- We can try the same trick with NavStates, e.g., embedding them in 
-\begin_inset Formula $GL(7)$
-\end_inset
-
- using the following representation:
-\begin_inset Formula 
-\[
-X=\left[\begin{array}{ccc}
-R &  & p\\
- & R & v\\
- &  & 1
-\end{array}\right]
-\]
-
-\end_inset
-
-However, the induced group operation does not really do what we want, nor
- are NavStates even expected to behave as a group.
-\end_layout
-
-\begin_layout Standard
-\begin_inset Note Note
-status open
+status collapsed
 
 \begin_layout Plain Layout
 The group operation inherited from 
@@ -367,122 +1212,8 @@ R+R\hat{\omega}\delta &  & p+v\delta\\
 \end_layout
 
 \begin_layout Standard
-We can still, however, treat the NavState as living in a 9-dimensional manifold
- 
-\begin_inset Formula $M$
-\end_inset
-
-, defined by the orthonormality constraints on 
-\begin_inset Formula $R$
-\end_inset
-
-.
- In mechanics, a natural manifold associated with 
-\begin_inset Formula $SE(3)$
-\end_inset
-
- is its 
-\emph on
-tangent bundle
-\emph default
-, which is 12-dimensional and consists of pairs 
-\begin_inset Formula $((R,p),(\omega,v))$
-\end_inset
-
-, and is useful for integrating the Euler-Lagrange equations of motion.
- However, in an inertial navigation context, we measure 
-\begin_inset Formula $\omega$
-\end_inset
-
- and 
-\begin_inset Formula $a$
-\end_inset
-
-, and we can make do with the 9-dimensional manifold 
-\begin_inset Formula $M$
-\end_inset
-
- consisting of the triples 
-\begin_inset Formula $(R,p,v)$
-\end_inset
-
-.
- 
-\end_layout
-
-\begin_layout Standard
-Under constant angular velocity and linear acceleration, in the body frame,
- we obtain a family of trajectories 
-\begin_inset Formula $\gamma(t):R\rightarrow M$
-\end_inset
-
- by integrating
-\begin_inset Formula 
-\begin{eqnarray*}
-R(t) & = & \int_{0}^{t}R(\tau)\hat{\omega}d\tau\\
-p(t) & = & \int_{0}^{t}v(\tau)d\tau\\
-v(t) & = & \int_{0}^{t}\left\{ g+R(\tau)a\right\} d\tau
-\end{eqnarray*}
-
-\end_inset
-
-with 
-\begin_inset Formula $\gamma(0)=(R_{0},p_{0},v_{0})$
-\end_inset
-
-.
- In analogy to 
-\begin_inset Formula $SE(3)$
-\end_inset
-
- we know that (Murray94book, page 42):
-\begin_inset Formula 
-\begin{eqnarray*}
-R(t) & = & R_{0}\exp\hat{\omega}t\\
-v(t) & = & v_{0}+gt+R_{0}\left\{ (I-\exp\hat{\omega}t)\left(\omega\times a\right)+\omega\omega^{T}at\right\} 
-\end{eqnarray*}
-
-\end_inset
-
-Plugging that into position yields
-\begin_inset Formula 
-\begin{eqnarray*}
-p(t) & = & p_{0}+v_{0}t+g\frac{t^{2}}{2}+R_{0}\int_{0}^{t}\left\{ (I-\exp\hat{\omega}\tau)\left(\omega\times a\right)+\omega\omega^{T}a\tau\right\} d\tau
-\end{eqnarray*}
-
-\end_inset
-
-where the last term integrates the velocity spiral induced by constant accelerat
-ion in the rotating body frame.
- 
-\end_layout
-
-\begin_layout Standard
-It is worth asking what all this complexity buys us, however.
- Even for a quadrotor, forces induced by wind effects and drag are arguably
- better approximated over short intervals as constant in the navigation
- frame.
- And gravity is clearly constant in the navigation frame, but 
-\emph on
-not
-\emph default
- in the body frame.
- 
-\begin_inset Note Note
-status collapsed
-
-\begin_layout Plain Layout
-More so, if we do not know 
-\begin_inset Formula $R$
-\end_inset
-
- perfectly, integrating gravity in the body frame could lead to significant
- errors, as gravity typically dominates other accelerations in the system.
-\end_layout
-
-\end_inset
-
-
+For a quadrotor, forces induced by wind effects and drag are arguably better
+ approximated over short intervals as constant in the navigation frame.
 \end_layout
 
 \begin_layout Standard
@@ -514,86 +1245,6 @@ Plugging this into position now yields a much simpler equation, as well:
 \begin{eqnarray*}
 p(t) & = & p_{0}+v_{0}t+\left(g+R_{0}a\right)\frac{t^{2}}{2}
 \end{eqnarray*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Note Note
-status collapsed
-
-\begin_layout Plain Layout
-In the context of the IMU factor it is useful to describe these trajectories
- in a manner that does not depend on the initial NavState 
-\begin_inset Formula $(R_{0},p_{0},v_{0})$
-\end_inset
-
-.
- Here is an attempt:
-\end_layout
-
-\begin_layout Plain Layout
-\begin_inset Formula 
-\begin{eqnarray*}
-R(t) & = & \int_{0}^{t}R(\tau)\hat{\omega}d\tau\\
-p(t) & = & \int_{0}^{t}v(\tau)d\tau\\
-v(t) & = & \int_{0}^{t}R(\tau)ad\tau
-\end{eqnarray*}
-
-\end_inset
-
-
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Note Note
-status collapsed
-
-\begin_layout Plain Layout
-We now choose to define the retraction from the tangent space at 
-\begin_inset Formula $X$
-\end_inset
-
- back to the manifold as
-\begin_inset Formula 
-\[
-X\oplus dX=(R,p,v)\oplus(d_{R},d_{p},d_{v})\doteq(R\exp d_{R},p+Rd_{p},v+Rd_{v})
-\]
-
-\end_inset
-
-A crucial detail is that the incremental position 
-\begin_inset Formula $d_{p}$
-\end_inset
-
- and velocity 
-\begin_inset Formula $d_{v}$
-\end_inset
-
- are given in the NavState frame, rather than in the global frame, and hence
- are rotated by 
-\begin_inset Formula $R$
-\end_inset
-
- before applying.
- This is in analogy to 
-\begin_inset Formula $SE(3)$
-\end_inset
-
-, treating velocity here in the same way as position in 
-\begin_inset Formula $SE(3)$
-\end_inset
-
-.
- 
-\end_layout
 
 \end_inset
 
@@ -664,6 +1315,10 @@ p_{j}=p_{i}+\sum_{k}\left(v_{i}+\sum_{l}(g+R_{l}a_{l})\Delta t_{l}\right)\Delta 
 \end_layout
 
 \begin_layout Standard
+[Is there not a 3/2 power here as in the RSS paper?]
+\end_layout
+
+\begin_layout Standard
 A crucial problem here is that we depend on a good estimate of 
 \begin_inset Formula $R_{k}$
 \end_inset
@@ -690,7 +1345,7 @@ The idea behind the preintegrated IMU factor is two-fold: (a) treat gravity
  components:
 \begin_inset Formula 
 \begin{eqnarray*}
-p_{j} & = & p_{i}+\sum_{k}v_{k}\Delta t_{k}+\sum_{k}\left(g+R_{k}a_{k}\right)\frac{\left(\Delta t_{k}\right)^{2}}{2}+\sum_{k}v_{k}\Delta t_{k}+\sum_{k}\left(g+R_{k}a_{k}\right)\frac{\left(\Delta t_{k}\right)^{2}}{2}\\
+p_{j} & = & p_{i}+\sum_{k}\left(\sum_{l}g\Delta t_{l}\right)\Delta t_{k}+\sum_{k}\left(v_{i}+\sum_{l}R_{l}a_{l}\Delta t_{l}\right)\Delta t_{k}+\sum_{k}g\frac{\left(\Delta t_{k}\right)^{2}}{2}+\sum_{k}R_{k}a_{k}\frac{\left(\Delta t_{k}\right)^{2}}{2}\\
 v_{j} & = & v_{i}+g\sum_{k}\Delta t_{k}+\sum_{k}R_{k}a_{k}\Delta t_{k}
 \end{eqnarray*}
 
@@ -700,54 +1355,6 @@ v_{j} & = & v_{i}+g\sum_{k}\Delta t_{k}+\sum_{k}R_{k}a_{k}\Delta t_{k}
 \end_layout
 
 \begin_layout Standard
-But we need to define what that means: clearly, 
-\begin_inset Formula $SE(3)$
-\end_inset
-
-, with its group structure, has a well-defined concept of working 
-\begin_inset Quotes eld
-\end_inset
-
-in the frame
-\begin_inset Quotes erd
-\end_inset
-
-.
- But in this case we have a manifold, not a group.
- To deal with this, we perform the integration in the tangent space, and
- hence we need to define a mapping from tangent space to manifold and vice
- versa.
- A possible definition of retract, compatible with the semi-direct group
- structure of 
-\begin_inset Formula $SE(3)$
-\end_inset
-
- and treating velocities the same way as positions, is given by
-\begin_inset Formula 
-\[
-X\oplus dX=(R,p,v)\oplus(\omega t,\Delta p,\Delta v)=(R\exp\hat{\omega}t,p+R\Delta p,v+R\Delta v)
-\]
-
-\end_inset
-
-
-\begin_inset Formula 
-\begin{eqnarray*}
-R_{j} & = & R_{i}\prod_{k}\exp\hat{\omega}_{k}\Delta t_{k}\\
-p_{j} & = & p_{i}+\sum_{k}v_{k}\Delta t_{k}+\frac{1}{2}g\sum_{k}\Delta t_{k}^{2}+\frac{1}{2}\sum_{k}R_{k}a_{k}\Delta t^{2}\\
-v_{j} & = & v_{i}+g\Delta t_{ij}+\sum_{k}R_{k}a_{k}\Delta t_{k}
-\end{eqnarray*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Note Note
-status open
-
-\begin_layout Plain Layout
 The binary factor is set up as a prediction:
 \begin_inset Formula 
 \[
@@ -772,53 +1379,11 @@ where
  
 \end_layout
 
-\begin_layout Plain Layout
-Integrating gyro and accelerometer readings, following Forster05rss, and
- assuming zero bias for now, is done by:
-\begin_inset Formula 
-\begin{eqnarray*}
-R_{j} & = & R_{i}\prod_{k}\exp\omega_{k}\Delta t\\
-p_{j} & = & p_{i}+\sum_{k}v_{k}\Delta t+\frac{1}{2}g\Delta t_{ij}^{2}+\frac{1}{2}\sum_{k}R_{k}a_{k}\Delta t^{2}\\
-v_{j} & = & v_{i}+g\Delta t_{ij}+\sum_{k}R_{k}a_{k}\Delta t
-\end{eqnarray*}
-
-\end_inset
-
-We would, however, like to separate out the constant velocity and gravity
- components from the IMU-induced terms:
-\begin_inset Formula 
-\begin{eqnarray*}
-R_{j} & = & R_{i}\prod_{k}\exp\omega_{k}\Delta t\\
-p_{j} & = & \left\{ p_{i}+v_{i}\Delta t_{ij}+\frac{1}{2}g\Delta t_{ij}^{2}\right\} +\sum_{k}\left(v_{k}-v_{i}\right)\Delta t+\frac{1}{2}\sum_{k}R_{k}a_{k}\Delta t^{2}\\
-v_{j} & = & \left\{ v_{i}+g\Delta t_{ij}\right\} +\sum_{k}R_{k}a_{k}\Delta t
-\end{eqnarray*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-Let us look at a single interval of the incremental terms:
-\begin_inset Formula 
-\begin{eqnarray*}
-R_{j} & = & R_{i}\exp\omega\Delta t\\
-p_{j} & = & p_{i}+v_{i}\Delta t+\frac{1}{2}g\Delta t^{2}+\frac{1}{2}R_{i}a\Delta t^{2}\\
-v_{j} & = & v_{i}+g\Delta t+R_{i}a_{k}\Delta t
-\end{eqnarray*}
-
-\end_inset
-
-Comparing that with the definition of retract, we have
-\begin_inset Formula 
-\[
-R_{j}=R_{i}\oplus\left(\omega,R_{i}^{T}v_{i}+\frac{1}{2}R_{i}^{T}g\Delta t+\frac{1}{2}a\Delta t,R_{i}^{T}g+a_{k}\right)\Delta t
-\]
-
-\end_inset
-
-
-\end_layout
+\begin_layout Standard
+\begin_inset CommandInset bibtex
+LatexCommand bibtex
+bibfiles "refs"
+options "plain"
 
 \end_inset
 
