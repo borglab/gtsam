@@ -330,12 +330,29 @@ namespace gtsam {
     Point3 rotate(const Point3& p, OptionalJacobian<3,3> H1 = boost::none,
         OptionalJacobian<3,3> H2 = boost::none) const;
 
+    /// operator* for Vector3
+    inline Vector3 operator*(const Vector3& v) const {
+      return rotate(Point3(v)).vector();
+    }
+
+    /// rotate for Vector3
+    Vector3 rotate(const Vector3& v, OptionalJacobian<3, 3> H1 = boost::none,
+        OptionalJacobian<3, 3> H2 = boost::none) const {
+      return rotate(Point3(v), H1, H2).vector();
+    }
+
     /// rotate point from rotated coordinate frame to world = R*p
     Point3 operator*(const Point3& p) const;
 
     /// rotate point from world to rotated frame \f$ p^c = (R_c^w)^T p^w \f$
     Point3 unrotate(const Point3& p, OptionalJacobian<3,3> H1 = boost::none,
         OptionalJacobian<3,3> H2=boost::none) const;
+
+    /// unrotate for Vector3
+    Vector3 unrotate(const Vector3& v, OptionalJacobian<3, 3> H1 = boost::none,
+        OptionalJacobian<3, 3> H2 = boost::none) const {
+      return unrotate(Point3(v), H1, H2).vector();
+    }
 
     /// @}
     /// @name Group Action on Unit3
