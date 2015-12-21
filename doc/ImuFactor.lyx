@@ -281,13 +281,13 @@ If we know
  an be written as 
 \begin_inset Formula 
 \[
-\Skew{\omega^{b}}=R(t)^{T}W(X,t)
+\Skew{\omega^{b}(t)}=R(t)^{T}W(X,t)
 \]
 
 \end_inset
 
 where 
-\begin_inset Formula $\Skew{\omega^{b}}\in so(3)$
+\begin_inset Formula $\Skew{\omega^{b}(t)}\in so(3)$
 \end_inset
 
  is the skew-symmetric matrix corresponding to 
@@ -297,7 +297,7 @@ where
 , and hence the resulting exact vector field is 
 \begin_inset Formula 
 \begin{equation}
-X'(t)=\left[W(X,t),V(t),A(X,t)\right]=\left[R(t)\Skew{\omega^{b}},V(t),g+R(t)a^{b}(t)\right]\label{eq:bodyField}
+X'(t)=\left[W(X,t),V(t),A(X,t)\right]=\left[R(t)\Skew{\omega^{b}(t)},V(t),g+R(t)a^{b}(t)\right]\label{eq:bodyField}
 \end{equation}
 
 \end_inset
@@ -902,7 +902,7 @@ reference "eq:bodyField"
 , we have exact integration iff 
 \begin_inset Formula 
 \[
-\left[R(t)\Skew{H(\theta)\theta'(t)},R_{0}\, p'(t),R_{0}\, v'(t)\right]=\left[R(t)\Skew{\omega^{b}},V(t),g+R(t)a^{b}(t)\right]
+\left[R(t)\Skew{H(\theta)\theta'(t)},R_{0}\, p'(t),R_{0}\, v'(t)\right]=\left[R(t)\Skew{\omega^{b}(t)},V(t),g+R(t)a^{b}(t)\right]
 \]
 
 \end_inset
@@ -923,7 +923,7 @@ Or, as another way to state this, if we solve the differential equations
  such that
 \begin_inset Formula 
 \begin{eqnarray*}
-\dot{\theta}(t) & = & H(\theta)^{-1}\,\omega^{b}\\
+\dot{\theta}(t) & = & H(\theta)^{-1}\,\omega^{b}(t)\\
 \dot{p}(t) & = & R_{0}^{T}\, V_{0}+v(t)\\
 \dot{v}(t) & = & R_{0}^{T}\, g+R_{b}^{0}(t)a^{b}(t)
 \end{eqnarray*}
@@ -1033,10 +1033,10 @@ p_{g}(t) & = & R_{0}^{T}\frac{gt^{2}}{2}
 \end_inset
 
 The recipe for the IMU factor is then, in summary.
- Solve the ordinary differential equation
+ Solve the ordinary differential equations
 \begin_inset Formula 
 \begin{eqnarray*}
-\dot{\theta}(t) & = & H(\theta)^{-1}\,\omega^{b}\\
+\dot{\theta}(t) & = & H(\theta)^{-1}\,\omega^{b}(t)\\
 \dot{p}_{v}(t) & = & v_{a}(t)\\
 \dot{v}_{a}(t) & = & R_{b}^{0}(t)a^{b}(t)
 \end{eqnarray*}
@@ -1077,6 +1077,36 @@ X_{j}=\mathcal{R}_{X_{j}}(\zeta(t_{ij}))=\left\{ \Phi_{R_{0}}\left(\theta(t_{ij}
 \end_inset
 
 
+\end_layout
+
+\begin_layout Subsubsection*
+A Simple Euler Scheme
+\end_layout
+
+\begin_layout Standard
+To solve the differential equation we can use a simple Euler scheme:
+\begin_inset Formula 
+\begin{eqnarray*}
+\theta_{k+1}=\theta_{k}+\dot{\theta}(t_{k})\Delta_{t} & = & \theta_{k}+H(\theta_{k})^{-1}\,\omega_{k}^{b}\Delta_{t}\\
+p_{k+1}=p_{k}+\dot{p}_{v}(t_{k})\Delta_{t} & = & p_{k}+v_{k}\Delta_{t}\\
+v_{k+1}=v_{k}+\dot{v}_{a}(t_{k})\Delta_{t} & = & v_{k}+\exp\left(\theta_{k}\right)a_{k}^{b}\Delta_{t}
+\end{eqnarray*}
+
+\end_inset
+
+where 
+\begin_inset Formula $\theta_{k}\define\theta(t_{k})$
+\end_inset
+
+, 
+\begin_inset Formula $p_{k}\define p_{v}(t_{k})$
+\end_inset
+
+, and 
+\begin_inset Formula $v_{k}\define v_{a}(t_{k})$
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Section
