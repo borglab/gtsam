@@ -54,7 +54,7 @@ int main(int argc, char** argv){
   string calibration_loc = findExampleDataFile("VO_calibration.txt");
   string pose_loc = findExampleDataFile("VO_camera_poses_large.txt");
   string factor_loc = findExampleDataFile("VO_stereo_factors_large.txt");
-  
+
   //read camera calibration info from file
   // focal lengths fx, fy, skew s, principal point u0, v0, baseline b
   cout << "Reading calibration info" << endl;
@@ -67,17 +67,17 @@ int main(int argc, char** argv){
   cout << "Reading camera poses" << endl;
   ifstream pose_file(pose_loc.c_str());
 
-  int i;
+  int pose_index;
   MatrixRowMajor m(4,4);
   //read camera pose parameters and use to make initial estimates of camera poses
-  while (pose_file >> i) {
+  while (pose_file >> pose_index) {
     for (int i = 0; i < 16; i++)
       pose_file >> m.data()[i];
-    initial_estimate.insert(i, Pose3(m));
+    initial_estimate.insert(pose_index, Pose3(m));
   }
-  
+
   // landmark keys
-  size_t l;
+  size_t landmark_key;
 
   // pixel coordinates uL, uR, v (same for left/right images due to rectification)
   // landmark coordinates X, Y, Z in camera frame, resulting from triangulation
@@ -90,14 +90,14 @@ int main(int argc, char** argv){
   SmartFactor::shared_ptr factor(new SmartFactor(model, K));
   size_t current_l = 3;   // hardcoded landmark ID from first measurement
 
-  while (factor_file >> i >> l >> uL >> uR >> v >> X >> Y >> Z) {
+  while (factor_file >> pose_index >> landmark_key >> uL >> uR >> v >> X >> Y >> Z) {
 
-    if(current_l != l) {
+    if(current_l != landmark_key) {
       graph.push_back(factor);
       factor = SmartFactor::shared_ptr(new SmartFactor(model, K));
-      current_l = l;
+      current_l = landmark_key;
     }
-    factor->add(Point2(uL,v), i);
+    factor->add(Point2(uL,v), pose_index);
   }
 
   Pose3 firstPose = initial_estimate.at<Pose3>(1);
