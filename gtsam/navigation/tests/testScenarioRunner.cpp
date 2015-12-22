@@ -18,6 +18,8 @@
 #include <gtsam/navigation/ImuFactor.h>
 #include <gtsam/navigation/Scenario.h>
 
+#include <iostream>
+
 namespace gtsam {
 
 double accNoiseVar = 0.01;
@@ -42,11 +44,17 @@ class ScenarioRunner {
         zeroBias, kMeasuredAccCovariance, kMeasuredOmegaCovariance,
         kIntegrationErrorCovariance, use2ndOrderCoriolis);
 
-    const Vector3 measuredAcc = scenario_.groundTruthAccInBody();
-    const Vector3 measuredOmega = scenario_.groundTruthGyroInBody();
-    double deltaT = scenario_.imuSampleTime();
-    for (double t = 0; t <= T; t += deltaT) {
+    const Vector3 measuredOmega = scenario_.angularVelocityInBody();
+    const double deltaT = scenario_.imuSampleTime();
+    const size_t nrSteps = T / deltaT;
+    double t = 0;
+    for (size_t k = 0; k < nrSteps; k++, t += deltaT) {
+      std::cout << t << ", " << deltaT << ": ";
+      const Vector3 measuredAcc = scenario_.accelerationAtTime(t);
       result.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+      //      std::cout << result.deltaRij() << std::endl;
+      std::cout << " a:" << measuredAcc.transpose();
+      std::cout << " P:" << result.deltaVij().transpose() << std::endl;
     }
 
     return result;
@@ -87,13 +95,13 @@ using namespace gtsam;
 
 static const double degree = M_PI / 180.0;
 
-/* ************************************************************************* */
+/* ************************************************************************* *
 TEST(ScenarioRunner, Forward) {
   const double v = 2;  // m/s
   Scenario forward(Vector3::Zero(), Vector3(v, 0, 0));
 
   ScenarioRunner runner(forward);
-  const double T = 10;  // seconds
+  const double T = 1;  // seconds
   ImuFactor::PreintegratedMeasurements integrated = runner.integrate(T);
   EXPECT(assert_equal(forward.poseAtTime(T), runner.mean(integrated), 1e-9));
 }
@@ -102,7 +110,7 @@ TEST(ScenarioRunner, Forward) {
 TEST(ScenarioRunner, Circle) {
   // Forward velocity 2m/s, angular velocity 6 degree/sec
   const double v = 2, omega = 6 * degree;
-  Scenario circle(Vector3(0, 0, omega), Vector3(v, 0, 0));
+  Scenario circle(Vector3(0, 0, omega), Vector3(v, 0, 0), 0.1);
 
   ScenarioRunner runner(circle);
   const double T = 15;  // seconds
