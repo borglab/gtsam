@@ -106,12 +106,25 @@ TEST(ScenarioRunner, Forward) {
 TEST(ScenarioRunner, Circle) {
   // Forward velocity 2m/s, angular velocity 6 degree/sec
   const double v = 2, omega = 6 * degree;
-  Scenario circle(Vector3(0, 0, omega), Vector3(v, 0, 0), 0.01);
+  Scenario circle(Vector3(0, 0, omega), Vector3(v, 0, 0));
 
   ScenarioRunner runner(circle);
   const double T = 15;  // seconds
   ImuFactor::PreintegratedMeasurements integrated = runner.integrate(T);
   EXPECT(assert_equal(circle.pose(T), runner.mean(integrated), 0.1));
+}
+
+/* ************************************************************************* */
+TEST(ScenarioRunner, Loop) {
+  // Forward velocity 2m/s
+  // Pitch up with angular velocity 6 degree/sec (negative in FLU)
+  const double v = 2, w = 6 * degree;
+  Scenario loop(Vector3(0, -w, 0), Vector3(v, 0, 0));
+
+  ScenarioRunner runner(loop);
+  const double T = 30;  // seconds
+  ImuFactor::PreintegratedMeasurements integrated = runner.integrate(T);
+  EXPECT(assert_equal(loop.pose(T), runner.mean(integrated), 0.1));
 }
 
 /* ************************************************************************* */

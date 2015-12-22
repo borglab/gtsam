@@ -36,15 +36,29 @@ TEST(Scenario, Forward) {
 
 /* ************************************************************************* */
 TEST(Scenario, Circle) {
-  // Forward velocity 2m/s, angular velocity 6 degree/sec
-  const double v = 2, omega = 6 * degree;
-  Scenario circle(Vector3(0, 0, omega), Vector3(v, 0, 0));
+  // Forward velocity 2m/s, angular velocity 6 degree/sec around Z
+  const double v = 2, w = 6 * degree;
+  Scenario circle(Vector3(0, 0, w), Vector3(v, 0, 0));
 
-  // R = v/omega, so test if circle is of right size
-  const double R = v / omega;
+  // R = v/w, so test if circle is of right size
+  const double R = v / w;
   const Pose3 T15 = circle.pose(15);
   EXPECT(assert_equal(Vector3(0, 0, 90 * degree), T15.rotation().xyz(), 1e-9));
   EXPECT(assert_equal(Point3(R, R, 0), T15.translation(), 1e-9));
+}
+
+/* ************************************************************************* */
+TEST(Scenario, Loop) {
+  // Forward velocity 2m/s
+  // Pitch up with angular velocity 6 degree/sec (negative in FLU)
+  const double v = 2, w = 6 * degree;
+  Scenario loop(Vector3(0, -w, 0), Vector3(v, 0, 0));
+
+  // R = v/w, so test if loop crests at 2*R
+  const double R = v / w;
+  const Pose3 T30 = loop.pose(30);
+  EXPECT(assert_equal(Vector3(-M_PI, 0, -M_PI), T30.rotation().xyz(), 1e-9));
+  EXPECT(assert_equal(Point3(0, 0, 2 * R), T30.translation(), 1e-9));
 }
 
 /* ************************************************************************* */
