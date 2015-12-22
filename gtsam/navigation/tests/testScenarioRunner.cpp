@@ -48,19 +48,9 @@ class ScenarioRunner {
     const double deltaT = scenario_.imuSampleTime();
     const size_t nrSteps = T / deltaT;
     double t = 0;
-    Vector3 v0 = scenario_.velocity(0);
-    Vector3 v = Vector3::Zero();
-    Vector3 p = Vector3::Zero();
     for (size_t k = 0; k < nrSteps; k++, t += deltaT) {
-      std::cout << t << ", " << deltaT << ": ";
-      p += deltaT * v;
-      v += deltaT * scenario_.acceleration(t);
       const Vector3 measuredAcc = scenario_.accelerationInBody(t);
       result.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
-      std::cout << " P:" << result.deltaPij().transpose();
-      std::cout << " p:" << p.transpose();
-      std::cout << " p0:" << (p + v0 * t).transpose();
-      std::cout << std::endl;
     }
 
     return result;
