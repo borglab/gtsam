@@ -27,12 +27,15 @@ static const double degree = M_PI / 180.0;
 /* ************************************************************************* */
 TEST(ScenarioRunner, Forward) {
   const double v = 2;  // m/s
-  Scenario forward(Vector3::Zero(), Vector3(v, 0, 0));
+  Scenario forward(Vector3::Zero(), Vector3(v, 0, 0), 1e-2, 0.1, 0.00001);
 
   ScenarioRunner runner(forward);
   const double T = 1;  // seconds
-  ImuFactor::PreintegratedMeasurements integrated = runner.integrate(T);
-  EXPECT(assert_equal(forward.pose(T), runner.mean(integrated), 1e-9));
+  ImuFactor::PreintegratedMeasurements pim = runner.integrate(T);
+  EXPECT(assert_equal(forward.pose(T), runner.predict(pim).pose, 1e-9));
+
+  Matrix6 estimatedCov = runner.estimatePoseCovariance(T);
+  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 1e-9));
 }
 
 /* ************************************************************************* */
@@ -43,8 +46,9 @@ TEST(ScenarioRunner, Circle) {
 
   ScenarioRunner runner(circle);
   const double T = 15;  // seconds
-  ImuFactor::PreintegratedMeasurements integrated = runner.integrate(T);
-  EXPECT(assert_equal(circle.pose(T), runner.mean(integrated), 0.1));
+
+  ImuFactor::PreintegratedMeasurements pim = runner.integrate(T);
+  EXPECT(assert_equal(circle.pose(T), runner.predict(pim).pose, 0.1));
 }
 
 /* ************************************************************************* */
@@ -56,8 +60,8 @@ TEST(ScenarioRunner, Loop) {
 
   ScenarioRunner runner(loop);
   const double T = 30;  // seconds
-  ImuFactor::PreintegratedMeasurements integrated = runner.integrate(T);
-  EXPECT(assert_equal(loop.pose(T), runner.mean(integrated), 0.1));
+  ImuFactor::PreintegratedMeasurements pim = runner.integrate(T);
+  EXPECT(assert_equal(loop.pose(T), runner.predict(pim).pose, 0.1));
 }
 
 /* ************************************************************************* */
