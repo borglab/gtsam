@@ -49,20 +49,28 @@ class Scenario {
   }
 
   /// Pose of body in nav frame at time t
-  Pose3 poseAtTime(double t) const { return Pose3::Expmap(twist_ * t); }
+  Pose3 pose(double t) const { return Pose3::Expmap(twist_ * t); }
 
   /// Velocity in nav frame at time t
-  Vector3 velocityAtTime(double t) {
+  Vector3 velocity(double t) {
     const Rot3 nRb = rotAtTime(t);
     return nRb * linearVelocityInBody();
   }
 
   // acceleration in nav frame
-  Vector3 accelerationAtTime(double t) const {
-    const Rot3 nRb = rotAtTime(t);
+  Vector3 acceleration(double t) const {
     const Vector3 centripetalAcceleration =
         angularVelocityInBody().cross(linearVelocityInBody());
+    const Rot3 nRb = rotAtTime(t);
     return nRb * centripetalAcceleration - gravity();
+  }
+
+  // acceleration in body frame frame
+  Vector3 accelerationInBody(double t) const {
+    const Vector3 centripetalAcceleration =
+        angularVelocityInBody().cross(linearVelocityInBody());
+    const Rot3 nRb = rotAtTime(t);
+    return centripetalAcceleration - nRb.transpose() * gravity();
   }
 
  private:

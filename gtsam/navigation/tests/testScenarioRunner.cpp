@@ -48,13 +48,19 @@ class ScenarioRunner {
     const double deltaT = scenario_.imuSampleTime();
     const size_t nrSteps = T / deltaT;
     double t = 0;
+    Vector3 v0 = scenario_.velocity(0);
+    Vector3 v = Vector3::Zero();
+    Vector3 p = Vector3::Zero();
     for (size_t k = 0; k < nrSteps; k++, t += deltaT) {
       std::cout << t << ", " << deltaT << ": ";
-      const Vector3 measuredAcc = scenario_.accelerationAtTime(t);
+      p += deltaT * v;
+      v += deltaT * scenario_.acceleration(t);
+      const Vector3 measuredAcc = scenario_.accelerationInBody(t);
       result.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
-      //      std::cout << result.deltaRij() << std::endl;
-      std::cout << " a:" << measuredAcc.transpose();
-      std::cout << " P:" << result.deltaVij().transpose() << std::endl;
+      std::cout << " P:" << result.deltaPij().transpose();
+      std::cout << " p:" << p.transpose();
+      std::cout << " p0:" << (p + v0 * t).transpose();
+      std::cout << std::endl;
     }
 
     return result;
@@ -65,7 +71,7 @@ class ScenarioRunner {
     // TODO(frank): allow non-standard
     const imuBias::ConstantBias zeroBias;
     const Pose3 pose_i = Pose3::identity();
-    const Vector3 vel_i = scenario_.velocityAtTime(0);
+    const Vector3 vel_i = scenario_.velocity(0);
     const Vector3 omegaCoriolis = Vector3::Zero();
     const bool use2ndOrderCoriolis = true;
     const PoseVelocityBias prediction =
@@ -95,7 +101,7 @@ using namespace gtsam;
 
 static const double degree = M_PI / 180.0;
 
-/* ************************************************************************* *
+/* ************************************************************************* */
 TEST(ScenarioRunner, Forward) {
   const double v = 2;  // m/s
   Scenario forward(Vector3::Zero(), Vector3(v, 0, 0));
@@ -103,19 +109,19 @@ TEST(ScenarioRunner, Forward) {
   ScenarioRunner runner(forward);
   const double T = 1;  // seconds
   ImuFactor::PreintegratedMeasurements integrated = runner.integrate(T);
-  EXPECT(assert_equal(forward.poseAtTime(T), runner.mean(integrated), 1e-9));
+  EXPECT(assert_equal(forward.pose(T), runner.mean(integrated), 1e-9));
 }
 
 /* ************************************************************************* */
 TEST(ScenarioRunner, Circle) {
   // Forward velocity 2m/s, angular velocity 6 degree/sec
   const double v = 2, omega = 6 * degree;
-  Scenario circle(Vector3(0, 0, omega), Vector3(v, 0, 0), 0.1);
+  Scenario circle(Vector3(0, 0, omega), Vector3(v, 0, 0), 0.01);
 
   ScenarioRunner runner(circle);
   const double T = 15;  // seconds
   ImuFactor::PreintegratedMeasurements integrated = runner.integrate(T);
-  EXPECT(assert_equal(circle.poseAtTime(T), runner.mean(integrated), 1e-9));
+  EXPECT(assert_equal(circle.pose(T), runner.mean(integrated), 0.1));
 }
 
 /* ************************************************************************* */
