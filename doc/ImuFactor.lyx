@@ -168,7 +168,7 @@ vector field
 \end_inset
 
 , defined as a mapping from 
-\begin_inset Formula $R\times M$
+\begin_inset Formula $\Rone\times M$
 \end_inset
 
  to tangent vectors at 
@@ -245,7 +245,7 @@ X(t)=\left\{ R_{0},P_{0}+V_{0}t,V_{0}\right\}
 then the differential equation describing the trajectory is
 \begin_inset Formula 
 \[
-X'(t)=\left[0_{3x3},V_{0},0_{3x1}\right],\,\,\,\,\, X(0)=\left\{ R_{0},P_{0},V_{0}\right\} 
+\dot{X}(t)=\left[0_{3x3},V_{0},0_{3x1}\right],\,\,\,\,\,X(0)=\left\{ R_{0},P_{0},V_{0}\right\} 
 \]
 
 \end_inset
@@ -264,7 +264,7 @@ Valid vector fields on a NavState manifold are special, in that the attitude
 : 
 \begin_inset Formula 
 \begin{equation}
-X'(t)=\left[W(X,t),V(t),A(X,t)\right]\label{eq:validField}
+\dot{X}(t)=\left[W(X,t),V(t),A(X,t)\right]\label{eq:validField}
 \end{equation}
 
 \end_inset
@@ -297,7 +297,7 @@ where
 , and hence the resulting exact vector field is 
 \begin_inset Formula 
 \begin{equation}
-X'(t)=\left[W(X,t),V(t),A(X,t)\right]=\left[R(t)\Skew{\omega^{b}},V(t),g+R(t)a^{b}(t)\right]\label{eq:bodyField}
+\dot{X}(t)=\left[W(X,t),V(t),A(X,t)\right]=\left[R(t)\Skew{\omega^{b}},V(t),g+R(t)a^{b}(t)\right]\label{eq:bodyField}
 \end{equation}
 
 \end_inset
@@ -591,7 +591,7 @@ key "Iserles00an"
 ,
 \begin_inset Formula 
 \begin{equation}
-\dot{R}(t)=F(R,t),\,\,\,\, R(0)=R_{0}\label{eq:diffSo3}
+\dot{R}(t)=F(R,t),\,\,\,\,R(0)=R_{0}\label{eq:diffSo3}
 \end{equation}
 
 \end_inset
@@ -640,7 +640,7 @@ and taking the derivative for
  we obtain
 \begin_inset Formula 
 \[
-\dot{R}(t)=\frac{d\gamma(\delta)}{d\delta}\biggr\vert_{\delta=0}=\frac{d\Phi_{R(t)}\left(H(\theta)\theta'(t)\delta\right)}{dt}\biggr\vert_{t=0}=R(t)\Skew{H(\theta)\dot{\theta}(t)}
+\dot{R}(t)=\frac{d\gamma(\delta)}{d\delta}\biggr\vert_{\delta=0}=\frac{d\Phi_{R(t)}\left(H(\theta)\dot{\theta}(t)\delta\right)}{d\delta}\biggr\vert_{\delta=0}=R(t)\Skew{H(\theta)\dot{\theta}(t)}
 \]
 
 \end_inset
@@ -782,7 +782,7 @@ Here
 
  is a 9-vector, with respectively angular, position, and velocity components.
  The tangent vector at 
-\begin_inset Formula $R_{0}$
+\begin_inset Formula $X_{0}$
 \end_inset
 
  is
@@ -875,7 +875,7 @@ We can create a trajectory
  
 \begin_inset Formula 
 \[
-\gamma(\delta)=X(t+\delta)=\left\{ \Phi_{R_{0}}\left(\theta(t)+\theta'(t)\delta\right),P_{0}+R_{0}\left\{ p(t)+p'(t)\delta\right\} ,V_{0}+R_{0}\left\{ v(t)+v'(t)\delta\right\} \right\} 
+\gamma(\delta)=X(t+\delta)=\left\{ \Phi_{R_{0}}\left(\theta(t)+\dot{\theta}(t)\delta\right),P_{0}+R_{0}\left\{ p(t)+\dot{p}(t)\delta\right\} ,V_{0}+R_{0}\left\{ v(t)+\dot{v}(t)\delta\right\} \right\} 
 \]
 
 \end_inset
@@ -887,7 +887,7 @@ and taking the derivative for
  we obtain
 \begin_inset Formula 
 \[
-\dot{X}(t)=\frac{d\gamma(\delta)}{d\delta}\biggr\vert_{\delta=0}=\left[R(t)\Skew{H(\theta)\theta'(t)},R_{0}\, p'(t),R_{0}\, v'(t)\right]
+\dot{X}(t)=\frac{d\gamma(\delta)}{d\delta}\biggr\vert_{\delta=0}=\left[R(t)\Skew{H(\theta)\dot{\theta}(t)},R_{0}\,\dot{p}(t),R_{0}\,\dot{v}(t)\right]
 \]
 
 \end_inset
@@ -902,7 +902,7 @@ reference "eq:bodyField"
 , we have exact integration iff 
 \begin_inset Formula 
 \[
-\left[R(t)\Skew{H(\theta)\theta'(t)},R_{0}\, p'(t),R_{0}\, v'(t)\right]=\left[R(t)\Skew{\omega^{b}},V(t),g+R(t)a^{b}(t)\right]
+\left[R(t)\Skew{H(\theta)\dot{\theta}(t)},R_{0}\,\dot{p}(t),R_{0}\,\dot{v}(t)\right]=\left[R(t)\Skew{\omega^{b}},V(t),g+R(t)a^{b}(t)\right]
 \]
 
 \end_inset
@@ -1036,7 +1036,7 @@ The recipe for the IMU factor is then, in summary.
  Solve the ordinary differential equation
 \begin_inset Formula 
 \begin{eqnarray*}
-\dot{\theta}(t) & = & H(\theta)^{-1}\,\omega^{b}\\
+\dot{\theta}(t) & = & H(\theta(t))^{-1}\,\omega^{b}(t)\\
 \dot{p}_{v}(t) & = & v_{a}(t)\\
 \dot{v}_{a}(t) & = & R_{b}^{0}(t)a^{b}(t)
 \end{eqnarray*}
