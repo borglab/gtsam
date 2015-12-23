@@ -98,8 +98,8 @@ TEST(Scenario, Accelerating) {
 
   const Pose3 T3 = scenario.pose(3);
   EXPECT(assert_equal(nRb, T3.rotation(), 1e-9));
-  EXPECT(assert_equal(Point3(P0.vector() + T * T * A / 2.0), T3.translation(),
-                      1e-9));
+  EXPECT(assert_equal(Point3(10 + T * 50, 20 + a_b * T * T / 2, 0),
+                      T3.translation(), 1e-9));
 }
 
 /* ************************************************************************* */

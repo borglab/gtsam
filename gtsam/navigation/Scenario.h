@@ -73,7 +73,9 @@ class AcceleratingScenario : public Scenario {
                        const Vector3& accelerationInBody)
       : nRb_(nRb), p0_(p0.vector()), v0_(v0), a_n_(nRb_ * accelerationInBody) {}
 
-  Pose3 pose(double t) const { return Pose3(nRb_, p0_ + a_n_ * t * t / 2.0); }
+  Pose3 pose(double t) const {
+    return Pose3(nRb_, p0_ + v0_ * t + a_n_ * t * t / 2.0);
+  }
   Vector3 omega_b(double t) const { return Vector3::Zero(); }
   Vector3 velocity_n(double t) const { return v0_ + a_n_ * t; }
   Vector3 acceleration_n(double t) const { return a_n_; }
