@@ -22,48 +22,60 @@
 using namespace std;
 using namespace gtsam;
 
-static const double degree = M_PI / 180.0;
+static const double kDegree = M_PI / 180.0;
+static const double kDeltaT = 1e-2;
+static const double kGyroSigma = 0.02;
+static const double kAccelerometerSigma = 0.1;
 
 /* ************************************************************************* */
 TEST(ScenarioRunner, Forward) {
   const double v = 2;  // m/s
-  Scenario forward(Vector3::Zero(), Vector3(v, 0, 0), 1e-2, 0.000001, 1);
+  Scenario forward(Vector3::Zero(), Vector3(v, 0, 0), kDeltaT, kGyroSigma,
+                   kAccelerometerSigma);
 
   ScenarioRunner runner(forward);
-  const double T = 1;  // seconds
+  const double T = 0.1;  // seconds
 
   ImuFactor::PreintegratedMeasurements pim = runner.integrate(T);
   EXPECT(assert_equal(forward.pose(T), runner.predict(pim).pose, 1e-9));
 
   Matrix6 estimatedCov = runner.estimatePoseCovariance(T);
-  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 1e-9));
+  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 1e-5));
 }
 
 /* ************************************************************************* */
 TEST(ScenarioRunner, Circle) {
-  // Forward velocity 2m/s, angular velocity 6 degree/sec
-  const double v = 2, w = 6 * degree;
-  Scenario circle(Vector3(0, 0, w), Vector3(v, 0, 0));
+  // Forward velocity 2m/s, angular velocity 6 kDegree/sec
+  const double v = 2, w = 6 * kDegree;
+  Scenario circle(Vector3(0, 0, w), Vector3(v, 0, 0), kDeltaT, kGyroSigma,
+                  kAccelerometerSigma);
 
   ScenarioRunner runner(circle);
-  const double T = 15;  // seconds
+  const double T = 0.1;  // seconds
 
   ImuFactor::PreintegratedMeasurements pim = runner.integrate(T);
   EXPECT(assert_equal(circle.pose(T), runner.predict(pim).pose, 0.1));
+
+  Matrix6 estimatedCov = runner.estimatePoseCovariance(T);
+  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 1e-5));
 }
 
 /* ************************************************************************* */
 TEST(ScenarioRunner, Loop) {
   // Forward velocity 2m/s
-  // Pitch up with angular velocity 6 degree/sec (negative in FLU)
-  const double v = 2, w = 6 * degree;
-  Scenario loop(Vector3(0, -w, 0), Vector3(v, 0, 0));
+  // Pitch up with angular velocity 6 kDegree/sec (negative in FLU)
+  const double v = 2, w = 6 * kDegree;
+  Scenario loop(Vector3(0, -w, 0), Vector3(v, 0, 0), kDeltaT, kGyroSigma,
+                kAccelerometerSigma);
 
   ScenarioRunner runner(loop);
-  const double T = 30;  // seconds
+  const double T = 0.1;  // seconds
 
   ImuFactor::PreintegratedMeasurements pim = runner.integrate(T);
   EXPECT(assert_equal(loop.pose(T), runner.predict(pim).pose, 0.1));
+
+  Matrix6 estimatedCov = runner.estimatePoseCovariance(T);
+  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 1e-5));
 }
 
 /* ************************************************************************* */
