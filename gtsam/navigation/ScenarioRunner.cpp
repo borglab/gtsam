@@ -40,10 +40,9 @@ ImuFactor::PreintegratedMeasurements ScenarioRunner::integrate(
   const size_t nrSteps = T / dt;
   double t = 0;
   for (size_t k = 0; k < nrSteps; k++, t += dt) {
-    Rot3 bRn = scenario_->rotation(t).transpose();
-    Vector3 measuredOmega = scenario_->omega_b(t);
+    Vector3 measuredOmega = measured_angular_velocity(t);
     if (gyroSampler) measuredOmega += gyroSampler->sample() / sqrt_dt;
-    Vector3 measuredAcc = scenario_->acceleration_b(t) - bRn * gravity_n();
+    Vector3 measuredAcc = measured_acceleration(t);
     if (accSampler) measuredAcc += accSampler->sample() / sqrt_dt;
     pim.integrateMeasurement(measuredAcc, measuredOmega, dt);
   }

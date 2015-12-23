@@ -23,7 +23,10 @@ namespace gtsam {
 
 class Sampler;
 
-/// Simple class to test navigation scenarios
+/*
+ *  Simple class to test navigation scenarios.
+ *  Takes a trajectory scenario as input, and can generate IMU measurements
+ */
 class ScenarioRunner {
  public:
   ScenarioRunner(const Scenario* scenario, double imuSampleTime = 1.0 / 100.0,
@@ -33,11 +36,22 @@ class ScenarioRunner {
         gyroNoiseModel_(noiseModel::Isotropic::Sigma(3, gyroSigma)),
         accNoiseModel_(noiseModel::Isotropic::Sigma(3, accSigma)) {}
 
-  const double& imuSampleTime() const { return imuSampleTime_; }
-
   // NOTE(frank): hardcoded for now with Z up (gravity points in negative Z)
   // also, uses g=10 for easy debugging
-  Vector3 gravity_n() const { return Vector3(0, 0, -10.0); }
+  static Vector3 gravity_n() { return Vector3(0, 0, -10.0); }
+
+  // A gyro simly measures angular velocity in body frame
+  Vector3 measured_angular_velocity(double t) const {
+    return scenario_->omega_b(t);
+  }
+
+  // An accelerometer measures acceleration in body, but not gravity
+  Vector3 measured_acceleration(double t) const {
+    Rot3 bRn = scenario_->rotation(t).transpose();
+    return scenario_->acceleration_b(t) - bRn * gravity_n();
+  }
+
+  const double& imuSampleTime() const { return imuSampleTime_; }
 
   const noiseModel::Diagonal::shared_ptr& gyroNoiseModel() const {
     return gyroNoiseModel_;
@@ -70,7 +84,7 @@ class ScenarioRunner {
   }
 
   /// Compute a Monte Carlo estimate of the PIM pose covariance using N samples
-  Matrix6 estimatePoseCovariance(double T, size_t N = 100) const;
+  Matrix6 estimatePoseCovariance(double T, size_t N = 1000) const;
 
  private:
   const Scenario* scenario_;
