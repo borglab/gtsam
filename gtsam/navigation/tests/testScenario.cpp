@@ -16,7 +16,10 @@
  */
 
 #include <gtsam/navigation/Scenario.h>
+#include <gtsam/base/numericalDerivative.h>
+
 #include <CppUnitLite/TestHarness.h>
+#include <boost/bind.hpp>
 #include <cmath>
 
 using namespace std;
@@ -87,18 +90,25 @@ TEST(Scenario, Accelerating) {
   const Point3 P0(10, 20, 0);
   const Vector3 V0(50, 0, 0);
 
-  const double a_b = 0.2;  // m/s^2
-  const AcceleratingScenario scenario(nRb, P0, V0, Vector3(a_b, 0, 0));
+  const double a = 0.2;  // m/s^2
+  const Vector3 A(0, a, 0), W(0.1, 0.2, 0.3);
+  const AcceleratingScenario scenario(nRb, P0, V0, A, W);
 
   const double T = 3;
-  const Vector3 A = nRb * Vector3(a_b, 0, 0);
-  EXPECT(assert_equal(Vector3(0, 0, 0), scenario.omega_b(T), 1e-9));
+  EXPECT(assert_equal(W, scenario.omega_b(T), 1e-9));
   EXPECT(assert_equal(Vector3(V0 + T * A), scenario.velocity_n(T), 1e-9));
   EXPECT(assert_equal(A, scenario.acceleration_n(T), 1e-9));
 
+  {
+  // Check acceleration in nav
+  Matrix expected = numericalDerivative11<Vector3, double>(
+      boost::bind(&Scenario::velocity_n, scenario, _1), T);
+  EXPECT(assert_equal(Vector3(expected), scenario.acceleration_n(T), 1e-9));
+  }
+
   const Pose3 T3 = scenario.pose(3);
-  EXPECT(assert_equal(nRb, T3.rotation(), 1e-9));
-  EXPECT(assert_equal(Point3(10 + T * 50, 20 + a_b * T * T / 2, 0),
+  EXPECT(assert_equal(nRb.expmap(T * W), T3.rotation(), 1e-9));
+  EXPECT(assert_equal(Point3(10 + T * 50, 20 + a * T * T / 2, 0),
                       T3.translation(), 1e-9));
 }
 

@@ -83,8 +83,9 @@ TEST(ScenarioRunner, Accelerating) {
   const Point3 P0(10, 20, 0);
   const Vector3 V0(50, 0, 0);
 
-  const double a_b = 0.2;  // m/s^2
-  const AcceleratingScenario scenario(nRb, P0, V0, Vector3(a_b, 0, 0));
+  const double a = 0.2;  // m/s^2
+  const Vector3 A(0, a, 0);
+  const AcceleratingScenario scenario(nRb, P0, V0, A);
 
   const double T = 3;  // seconds
   ScenarioRunner runner(&scenario, T / 10, kGyroSigma, kAccelerometerSigma);
