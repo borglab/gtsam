@@ -166,30 +166,30 @@ bool MonteCarlo(const PreintegratedImuMeasurements& pim,
 
 /* ************************************************************************* */
 TEST(ImuFactor, StraightLine) {
+  const double a = 0.2, v=50;
+
   // Set up body pointing towards y axis, and start at 10,20,0 with velocity going in X
   // The body itself has Z axis pointing down
   const Rot3 nRb(Point3(0, 1, 0), Point3(1, 0, 0), Point3(0, 0, -1));
   const Point3 initial_position(10, 20, 0);
-  const Vector3 initial_velocity(50, 0, 0);
-  const NavState state1(nRb, initial_position, initial_velocity);
+  const Vector3 initial_velocity(v, 0, 0);
 
-  const double a = 0.2, dt = 3.0;
-  AcceleratingScenario scenario(nRb, inititial_position, initial_velocity,
-                                Vector3(a, 0, 0), dt / 10, sqrt(omegaNoiseVar),
-                                sqrt(accNoiseVar));
+  const AcceleratingScenario scenario(nRb, initial_position, initial_velocity,
+                                      Vector3(a, 0, 0));
 
-  ScenarioRunner runner(scenario);
-  const double T = 3;  // seconds
+  const double T = 3.0;  // seconds
+  ScenarioRunner runner(&scenario, T / 10, sqrt(omegaNoiseVar),
+                        sqrt(accNoiseVar));
 
   ImuFactor::PreintegratedMeasurements pim = runner.integrate(T);
   EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose, 1e-9));
 
   Matrix6 estimatedCov = runner.estimatePoseCovariance(T);
-  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 1e-5));
+  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 0.1));
 
   // Set up IMU measurements
   const double g = 10; // make gravity 10 to make this easy to check
-  const double dt22 = dt * dt / 2;
+  const double dt22 = T * T / 2;
 
   // set up acceleration in X direction, no angular velocity.
   // Since body Z-axis is pointing down, accelerometer measures table exerting force in negative Z
@@ -204,9 +204,9 @@ TEST(ImuFactor, StraightLine) {
   // Check G1 and G2 derivatives of pim.update
   Matrix93 aG1,aG2;
   boost::function<NavState(const Vector3&, const Vector3&)> f =
-      boost::bind(&PreintegrationBase::updatedDeltaXij, pim, _1, _2, dt/10,
+      boost::bind(&PreintegrationBase::updatedDeltaXij, pim, _1, _2, T/10,
           boost::none, boost::none, boost::none);
-  pim.updatedDeltaXij(measuredAcc, measuredOmega, dt / 10, boost::none, aG1, aG2);
+  pim.updatedDeltaXij(measuredAcc, measuredOmega, T / 10, boost::none, aG1, aG2);
   EXPECT(assert_equal(numericalDerivative21(f, measuredAcc, measuredOmega, 1e-7), aG1, 1e-7));
   EXPECT(assert_equal(numericalDerivative22(f, measuredAcc, measuredOmega, 1e-7), aG2, 1e-7));
 
@@ -214,12 +214,12 @@ TEST(ImuFactor, StraightLine) {
   PreintegratedImuMeasurements pimMC(kZeroBiasHat, p->accelerometerCovariance,
       p->gyroscopeCovariance, Z_3x3, true); // MonteCarlo does not sample integration noise
   EXPECT(
-      MonteCarlo(pimMC, state1, kZeroBias, dt / 10, boost::none, measuredAcc,
+      MonteCarlo(pimMC, state1, kZeroBias, T / 10, boost::none, measuredAcc,
           measuredOmega, Vector3::Constant(accNoiseVar), Vector3::Constant(omegaNoiseVar), 100000));
 
   // Check integrated quantities in body frame: gravity measured by IMU is integrated!
   Vector3 b_deltaP(a * dt22, 0, -g * dt22);
-  Vector3 b_deltaV(a * dt, 0, -g * dt);
+  Vector3 b_deltaV(a * T, 0, -g * T);
   EXPECT(assert_equal(Rot3(), pim.deltaRij()));
   EXPECT(assert_equal(b_deltaP, pim.deltaPij()));
   EXPECT(assert_equal(b_deltaV, pim.deltaVij()));
@@ -230,9 +230,10 @@ TEST(ImuFactor, StraightLine) {
   EXPECT(assert_equal(expectedBC, pim.biasCorrectedDelta(kZeroBias)));
 
   // Check prediction in nav, note we move along x in body, along y in nav
-  Point3 expected_position(10 + v * dt, 20 + a * dt22, 0);
-  Velocity3 expected_velocity(v, a * dt, 0);
+  Point3 expected_position(10 + v * T, 20 + a * dt22, 0);
+  Velocity3 expected_velocity(v, a * T, 0);
   NavState expected(nRb, expected_position, expected_velocity);
+  const NavState state1(nRb, initial_position, initial_velocity);
   EXPECT(assert_equal(expected, pim.predict(state1, kZeroBias)));
 }
 
