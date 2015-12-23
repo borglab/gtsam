@@ -67,24 +67,26 @@ class ExpmapScenario : public Scenario {
   const Vector3 a_b_;  // constant centripetal acceleration in body = w_b * v_b
 };
 
-/// Accelerating from an arbitrary initial state
+/// Accelerating from an arbitrary initial state, with optional rotation
 class AcceleratingScenario : public Scenario {
  public:
-  /// Construct scenario with constant twist [w,v]
+  /// Construct scenario with constant acceleration in navigation frame and
+  /// optional angular velocity in body: rotating while translating...
   AcceleratingScenario(const Rot3& nRb, const Point3& p0, const Vector3& v0,
-                       const Vector3& accelerationInBody)
-      : nRb_(nRb), p0_(p0.vector()), v0_(v0), a_n_(nRb_ * accelerationInBody) {}
+                       const Vector3& a_n,
+                       const Vector3& omega_b = Vector3::Zero())
+      : nRb_(nRb), p0_(p0.vector()), v0_(v0), a_n_(a_n), omega_b_(omega_b) {}
 
   Pose3 pose(double t) const {
-    return Pose3(nRb_, p0_ + v0_ * t + a_n_ * t * t / 2.0);
+    return Pose3(nRb_.expmap(omega_b_ * t), p0_ + v0_ * t + a_n_ * t * t / 2.0);
   }
-  Vector3 omega_b(double t) const { return Vector3::Zero(); }
+  Vector3 omega_b(double t) const { return omega_b_; }
   Vector3 velocity_n(double t) const { return v0_ + a_n_ * t; }
   Vector3 acceleration_n(double t) const { return a_n_; }
 
  private:
   const Rot3 nRb_;
-  const Vector3 p0_, v0_, a_n_;
+  const Vector3 p0_, v0_, a_n_, omega_b_;
 };
 
 }  // namespace gtsam
