@@ -30,7 +30,7 @@ static const Matrix3 kIntegrationErrorCovariance = intNoiseVar * I_3x3;
 /// Simple class to test navigation scenarios
 class ScenarioRunner {
  public:
-  ScenarioRunner(const Scenario& scenario) : scenario_(scenario) {}
+  ScenarioRunner(const Scenario* scenario) : scenario_(scenario) {}
 
   /// Integrate measurements for T seconds into a PIM
   ImuFactor::PreintegratedMeasurements integrate(
@@ -40,17 +40,17 @@ class ScenarioRunner {
     const bool use2ndOrderIntegration = true;
 
     ImuFactor::PreintegratedMeasurements pim(
-        zeroBias, scenario_.accCovariance(), scenario_.gyroCovariance(),
+        zeroBias, scenario_->accCovariance(), scenario_->gyroCovariance(),
         kIntegrationErrorCovariance, use2ndOrderIntegration);
 
-    const double dt = scenario_.imuSampleTime();
+    const double dt = scenario_->imuSampleTime();
     const double sqrt_dt = std::sqrt(dt);
     const size_t nrSteps = T / dt;
     double t = 0;
     for (size_t k = 0; k < nrSteps; k++, t += dt) {
-      Vector3 measuredOmega = scenario_.angularVelocityInBody();
+      Vector3 measuredOmega = scenario_->angularVelocityInBody(t);
       if (gyroSampler) measuredOmega += gyroSampler->sample() / sqrt_dt;
-      Vector3 measuredAcc = scenario_.accelerationInBody(t);
+      Vector3 measuredAcc = scenario_->accelerationInBody(t);
       if (accSampler) measuredAcc += accSampler->sample() / sqrt_dt;
       pim.integrateMeasurement(measuredAcc, measuredOmega, dt);
     }
@@ -64,10 +64,10 @@ class ScenarioRunner {
     // TODO(frank): allow non-zero bias, omegaCoriolis
     const imuBias::ConstantBias zeroBias;
     const Pose3 pose_i = Pose3::identity();
-    const Vector3 vel_i = scenario_.velocity(0);
+    const Vector3 vel_i = scenario_->velocity(0);
     const Vector3 omegaCoriolis = Vector3::Zero();
     const bool use2ndOrderCoriolis = true;
-    return pim.predict(pose_i, vel_i, zeroBias, scenario_.gravity(),
+    return pim.predict(pose_i, vel_i, zeroBias, scenario_->gravity(),
                        omegaCoriolis, use2ndOrderCoriolis);
   }
 
@@ -87,8 +87,8 @@ class ScenarioRunner {
     Pose3 prediction = predict(integrate(T)).pose;
 
     // Create two samplers for acceleration and omega noise
-    Sampler gyroSampler(scenario_.gyroNoiseModel(), 10);
-    Sampler accSampler(scenario_.accNoiseModel(), 29284);
+    Sampler gyroSampler(scenario_->gyroNoiseModel(), 10);
+    Sampler accSampler(scenario_->accNoiseModel(), 29284);
 
     // Sample !
     Matrix samples(9, N);
@@ -114,7 +114,7 @@ class ScenarioRunner {
   }
 
  private:
-  Scenario scenario_;
+  const Scenario* scenario_;
 };
 
 }  // namespace gtsam
