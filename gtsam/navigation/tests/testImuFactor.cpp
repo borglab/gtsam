@@ -17,6 +17,7 @@
 
 #include <gtsam/navigation/ImuFactor.h>
 #include <gtsam/navigation/ImuBias.h>
+#include <gtsam/navigation/ScenarioRunner.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/factorTesting.h>
@@ -165,17 +166,30 @@ bool MonteCarlo(const PreintegratedImuMeasurements& pim,
 
 /* ************************************************************************* */
 TEST(ImuFactor, StraightLine) {
-  // Set up IMU measurements
-  static const double g = 10; // make gravity 10 to make this easy to check
-  static const double v = 50.0, a = 0.2, dt = 3.0;
-  const double dt22 = dt * dt / 2;
-
   // Set up body pointing towards y axis, and start at 10,20,0 with velocity going in X
   // The body itself has Z axis pointing down
-  static const Rot3 nRb(Point3(0, 1, 0), Point3(1, 0, 0), Point3(0, 0, -1));
-  static const Point3 initial_position(10, 20, 0);
-  static const Vector3 initial_velocity(v, 0, 0);
-  static const NavState state1(nRb, initial_position, initial_velocity);
+  const Rot3 nRb(Point3(0, 1, 0), Point3(1, 0, 0), Point3(0, 0, -1));
+  const Point3 initial_position(10, 20, 0);
+  const Vector3 initial_velocity(50, 0, 0);
+  const NavState state1(nRb, initial_position, initial_velocity);
+
+  const double a = 0.2, dt = 3.0;
+  AcceleratingScenario scenario(nRb, inititial_position, initial_velocity,
+                                Vector3(a, 0, 0), dt / 10, sqrt(omegaNoiseVar),
+                                sqrt(accNoiseVar));
+
+  ScenarioRunner runner(scenario);
+  const double T = 3;  // seconds
+
+  ImuFactor::PreintegratedMeasurements pim = runner.integrate(T);
+  EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose, 1e-9));
+
+  Matrix6 estimatedCov = runner.estimatePoseCovariance(T);
+  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 1e-5));
+
+  // Set up IMU measurements
+  const double g = 10; // make gravity 10 to make this easy to check
+  const double dt22 = dt * dt / 2;
 
   // set up acceleration in X direction, no angular velocity.
   // Since body Z-axis is pointing down, accelerometer measures table exerting force in negative Z
@@ -188,12 +202,6 @@ TEST(ImuFactor, StraightLine) {
   p->gyroscopeCovariance = kMeasuredOmegaCovariance;
 
   // Check G1 and G2 derivatives of pim.update
-
-  // Now, preintegrate for 3 seconds, in 10 steps
-  PreintegratedImuMeasurements pim(p, kZeroBiasHat);
-  for (size_t i = 0; i < 10; i++)
-    pim.integrateMeasurement(measuredAcc, measuredOmega, dt / 10);
-
   Matrix93 aG1,aG2;
   boost::function<NavState(const Vector3&, const Vector3&)> f =
       boost::bind(&PreintegrationBase::updatedDeltaXij, pim, _1, _2, dt/10,
