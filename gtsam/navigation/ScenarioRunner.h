@@ -97,8 +97,8 @@ class ScenarioRunner {
       const ImuFactor::PreintegratedMeasurements& pim) const {
     Matrix9 cov = pim.preintMeasCov();
     Matrix6 poseCov;
-    poseCov << cov.block<3, 3>(6, 6), cov.block<3, 3>(6, 0),  //
-        cov.block<3, 3>(0, 6), cov.block<3, 3>(0, 0);
+    poseCov << cov.block<3, 3>(0, 0), cov.block<3, 3>(0, 3),  //
+        cov.block<3, 3>(3, 0), cov.block<3, 3>(3, 3);
     return poseCov;
   }
 
