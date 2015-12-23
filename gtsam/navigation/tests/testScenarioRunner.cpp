@@ -79,6 +79,30 @@ TEST(ScenarioRunner, Loop) {
 }
 
 /* ************************************************************************* */
+TEST(ScenarioRunner, Accelerating) {
+  // Set up body pointing towards y axis, and start at 10,20,0 with velocity
+  // going in X
+  // The body itself has Z axis pointing down
+  const Rot3 nRb(Point3(0, 1, 0), Point3(1, 0, 0), Point3(0, 0, -1));
+  const Point3 initial_position(10, 20, 0);
+  const Vector3 initial_velocity(50, 0, 0);
+
+  const double a = 0.2, dt = 3.0;
+  AcceleratingScenario scenario(nRb, initial_velocity, initial_velocity,
+                                Vector3(a, 0, 0), dt / 10, kGyroSigma,
+                                kAccelerometerSigma);
+
+  ScenarioRunner runner(&scenario);
+  const double T = 3;  // seconds
+
+  ImuFactor::PreintegratedMeasurements pim = runner.integrate(T);
+  EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose, 1e-9));
+
+  Matrix6 estimatedCov = runner.estimatePoseCovariance(T);
+  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 1e-5));
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

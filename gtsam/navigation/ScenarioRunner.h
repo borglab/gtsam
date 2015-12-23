@@ -48,9 +48,9 @@ class ScenarioRunner {
     const size_t nrSteps = T / dt;
     double t = 0;
     for (size_t k = 0; k < nrSteps; k++, t += dt) {
-      Vector3 measuredOmega = scenario_->angularVelocityInBody(t);
+      Vector3 measuredOmega = scenario_->omega_b(t);
       if (gyroSampler) measuredOmega += gyroSampler->sample() / sqrt_dt;
-      Vector3 measuredAcc = scenario_->accelerationInBody(t);
+      Vector3 measuredAcc = scenario_->acceleration_b(t);
       if (accSampler) measuredAcc += accSampler->sample() / sqrt_dt;
       pim.integrateMeasurement(measuredAcc, measuredOmega, dt);
     }
@@ -64,7 +64,7 @@ class ScenarioRunner {
     // TODO(frank): allow non-zero bias, omegaCoriolis
     const imuBias::ConstantBias zeroBias;
     const Pose3 pose_i = Pose3::identity();
-    const Vector3 vel_i = scenario_->velocity(0);
+    const Vector3 vel_i = scenario_->velocity_n(0);
     const Vector3 omegaCoriolis = Vector3::Zero();
     const bool use2ndOrderCoriolis = true;
     return pim.predict(pose_i, vel_i, zeroBias, scenario_->gravity(),

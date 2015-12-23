@@ -54,25 +54,25 @@ class Scenario {
   Matrix3 gyroCovariance() const { return gyroNoiseModel_->covariance(); }
   Matrix3 accCovariance() const { return accNoiseModel_->covariance(); }
 
-  /// Pose of body in nav frame at time t
-  virtual Pose3 pose(double t) const = 0;
+  // Quantities a Scenario needs to specify:
 
-  /// Rotation of body in nav frame at time t
+  virtual Pose3 pose(double t) const = 0;
+  virtual Vector3 omega_b(double t) const = 0;
+  virtual Vector3 velocity_n(double t) const = 0;
+  virtual Vector3 acceleration_n(double t) const = 0;
+
+  // Derived quantities:
+
   virtual Rot3 rotation(double t) const { return pose(t).rotation(); }
 
-  virtual Vector3 angularVelocityInBody(double t) const = 0;
-  virtual Vector3 linearVelocityInBody(double t) const = 0;
-  virtual Vector3 accelerationInBody(double t) const = 0;
-
-  /// Velocity in nav frame at time t
-  Vector3 velocity(double t) const {
-    return rotation(t) * linearVelocityInBody(t);
+  Vector3 velocity_b(double t) const {
+    const Rot3 nRb = rotation(t);
+    return nRb.transpose() * velocity_n(t);
   }
 
-  // acceleration in nav frame
-  // TODO(frank): correct for rotating frames?
-  Vector3 acceleration(double t) const {
-    return rotation(t) * accelerationInBody(t);
+  Vector3 acceleration_b(double t) const {
+    const Rot3 nRb = rotation(t);
+    return nRb.transpose() * acceleration_n(t);
   }
 
  private:
@@ -80,9 +80,7 @@ class Scenario {
   noiseModel::Diagonal::shared_ptr gyroNoiseModel_, accNoiseModel_;
 };
 
-/**
- * Simple IMU simulator with constant twist 3D trajectory.
- */
+/// Scenario with constant twist 3D trajectory.
 class ExpmapScenario : public Scenario {
  public:
   /// Construct scenario with constant twist [w,v]
@@ -91,21 +89,40 @@ class ExpmapScenario : public Scenario {
                  double accSigma = 0.01)
       : Scenario(imuSampleTime, gyroSigma, accSigma),
         twist_((Vector6() << w, v).finished()),
-        centripetalAcceleration_(twist_.head<3>().cross(twist_.tail<3>())) {}
+        a_b_(twist_.head<3>().cross(twist_.tail<3>())) {}
 
   Pose3 pose(double t) const { return Pose3::Expmap(twist_ * t); }
-
-  Vector3 angularVelocityInBody(double t) const { return twist_.head<3>(); }
-  Vector3 linearVelocityInBody(double t) const { return twist_.tail<3>(); }
-
-  Vector3 accelerationInBody(double t) const {
-    const Rot3 nRb = rotation(t);
-    return centripetalAcceleration_ - nRb.transpose() * gravity();
-  }
+  Vector3 omega_b(double t) const { return twist_.head<3>(); }
+  Vector3 velocity_n(double t) const { return rotation(t) * twist_.tail<3>(); }
+  Vector3 acceleration_n(double t) const { return rotation(t) * a_b_; }
 
  private:
   const Vector6 twist_;
-  const Vector3 centripetalAcceleration_;
+  const Vector3 a_b_;  // constant centripetal acceleration in body = w_b * v_b
+};
+
+/// Accelerating from an arbitrary initial state
+class AcceleratingScenario : public Scenario {
+ public:
+  /// Construct scenario with constant twist [w,v]
+  AcceleratingScenario(const Rot3& nRb, const Point3& p0, const Vector3& v0,
+                       const Vector3& accelerationInBody,
+                       double imuSampleTime = 1.0 / 100.0,
+                       double gyroSigma = 0.17, double accSigma = 0.01)
+      : Scenario(imuSampleTime, gyroSigma, accSigma),
+        nRb_(nRb),
+        p0_(p0.vector()),
+        v0_(v0),
+        a_n_(nRb_ * accelerationInBody) {}
+
+  Pose3 pose(double t) const { return Pose3(nRb_, p0_ + a_n_ * t * t / 2.0); }
+  Vector3 omega_b(double t) const { return Vector3::Zero(); }
+  Vector3 velocity_n(double t) const { return v0_ + a_n_ * t; }
+  Vector3 acceleration_n(double t) const { return a_n_; }
+
+ private:
+  const Rot3 nRb_;
+  const Vector3 p0_, v0_, a_n_;
 };
 
 }  // namespace gtsam
