@@ -24,7 +24,7 @@
 
 namespace gtsam {
 
-static double intNoiseVar = 0.0001;
+static double intNoiseVar = 0.0000001;
 static const Matrix3 kIntegrationErrorCovariance = intNoiseVar * I_3x3;
 
 /// Simple class to test navigation scenarios
@@ -33,16 +33,16 @@ class ScenarioRunner {
   ScenarioRunner(const Scenario& scenario) : scenario_(scenario) {}
 
   /// Integrate measurements for T seconds into a PIM
-  ImuFactor::PreintegratedMeasurements integrate(
-      double T, boost::optional<Sampler&> gyroSampler = boost::none,
-      boost::optional<Sampler&> accSampler = boost::none) {
+  ImuFactor::PreintegratedMeasurements integrate(double T,
+                                                 Sampler* gyroSampler = 0,
+                                                 Sampler* accSampler = 0) {
     // TODO(frank): allow non-zero
     const imuBias::ConstantBias zeroBias;
-    const bool use2ndOrderCoriolis = true;
+    const bool use2ndOrderIntegration = true;
 
     ImuFactor::PreintegratedMeasurements pim(
         zeroBias, scenario_.accCovariance(), scenario_.gyroCovariance(),
-        kIntegrationErrorCovariance, use2ndOrderCoriolis);
+        kIntegrationErrorCovariance, use2ndOrderIntegration);
 
     const double dt = scenario_.imuSampleTime();
     const double sqrt_dt = std::sqrt(dt);
@@ -86,14 +86,14 @@ class ScenarioRunner {
     Pose3 prediction = predict(integrate(T)).pose;
 
     // Create two samplers for acceleration and omega noise
-    Sampler gyroSampler(scenario_.gyroNoiseModel(), 29285);
+    Sampler gyroSampler(scenario_.gyroNoiseModel(), 10);
     Sampler accSampler(scenario_.accNoiseModel(), 29284);
 
     // Sample !
     Matrix samples(9, N);
     Vector6 sum = Vector6::Zero();
     for (size_t i = 0; i < N; i++) {
-      Pose3 sampled = predict(integrate(T, gyroSampler, accSampler)).pose;
+      Pose3 sampled = predict(integrate(T, &gyroSampler, &accSampler)).pose;
       Vector6 xi = sampled.localCoordinates(prediction);
       samples.col(i) = xi;
       sum += xi;
@@ -106,10 +106,10 @@ class ScenarioRunner {
     for (size_t i = 0; i < N; i++) {
       Vector6 xi = samples.col(i);
       xi -= sampleMean;
-      Q += xi * (xi.transpose() / (N - 1));
+      Q += xi * xi.transpose();
     }
 
-    return Q;
+    return Q / (N - 1);
   }
 
  private:

@@ -27,10 +27,11 @@ static const double degree = M_PI / 180.0;
 /* ************************************************************************* */
 TEST(ScenarioRunner, Forward) {
   const double v = 2;  // m/s
-  Scenario forward(Vector3::Zero(), Vector3(v, 0, 0), 1e-2, 0.1, 0.00001);
+  Scenario forward(Vector3::Zero(), Vector3(v, 0, 0), 1e-2, 0.000001, 1);
 
   ScenarioRunner runner(forward);
   const double T = 1;  // seconds
+
   ImuFactor::PreintegratedMeasurements pim = runner.integrate(T);
   EXPECT(assert_equal(forward.pose(T), runner.predict(pim).pose, 1e-9));
 
@@ -41,8 +42,8 @@ TEST(ScenarioRunner, Forward) {
 /* ************************************************************************* */
 TEST(ScenarioRunner, Circle) {
   // Forward velocity 2m/s, angular velocity 6 degree/sec
-  const double v = 2, omega = 6 * degree;
-  Scenario circle(Vector3(0, 0, omega), Vector3(v, 0, 0));
+  const double v = 2, w = 6 * degree;
+  Scenario circle(Vector3(0, 0, w), Vector3(v, 0, 0));
 
   ScenarioRunner runner(circle);
   const double T = 15;  // seconds
@@ -60,6 +61,7 @@ TEST(ScenarioRunner, Loop) {
 
   ScenarioRunner runner(loop);
   const double T = 30;  // seconds
+
   ImuFactor::PreintegratedMeasurements pim = runner.integrate(T);
   EXPECT(assert_equal(loop.pose(T), runner.predict(pim).pose, 0.1));
 }
