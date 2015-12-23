@@ -74,10 +74,10 @@ class ScenarioRunner {
   /// Return pose covariance by re-arranging pim.preintMeasCov() appropriately
   Matrix6 poseCovariance(
       const ImuFactor::PreintegratedMeasurements& pim) const {
-    Matrix9 cov = pim.preintMeasCov();  // _ position rotation
+    Matrix9 cov = pim.preintMeasCov();
     Matrix6 poseCov;
-    poseCov << cov.block<3, 3>(6, 6), cov.block<3, 3>(6, 3),  //
-        cov.block<3, 3>(3, 6), cov.block<3, 3>(3, 3);
+    poseCov << cov.block<3, 3>(6, 6), cov.block<3, 3>(6, 0),  //
+        cov.block<3, 3>(0, 6), cov.block<3, 3>(0, 0);
     return poseCov;
   }
 
