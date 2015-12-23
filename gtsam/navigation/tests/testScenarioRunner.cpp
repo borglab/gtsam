@@ -93,7 +93,7 @@ TEST(ScenarioRunner, Accelerating) {
   EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose, 1e-9));
 
   Matrix6 estimatedCov = runner.estimatePoseCovariance(T);
-  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 1e-5));
+  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 0.1));
 }
 
 /* ************************************************************************* */
