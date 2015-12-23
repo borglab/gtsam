@@ -57,7 +57,9 @@ class ExpmapScenario : public Scenario {
   Pose3 pose(double t) const { return Pose3::Expmap(twist_ * t); }
   Rot3 rotation(double t) const { return Rot3::Expmap(twist_.head<3>() * t); }
   Vector3 omega_b(double t) const { return twist_.head<3>(); }
-  Vector3 velocity_n(double t) const { return rotation(t) * twist_.tail<3>(); }
+  Vector3 velocity_n(double t) const {
+    return rotation(t).matrix() * twist_.tail<3>();
+  }
   Vector3 acceleration_n(double t) const { return rotation(t) * a_b_; }
 
  private:
