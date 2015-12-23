@@ -33,9 +33,8 @@ class ScenarioRunner {
   ScenarioRunner(const Scenario& scenario) : scenario_(scenario) {}
 
   /// Integrate measurements for T seconds into a PIM
-  ImuFactor::PreintegratedMeasurements integrate(double T,
-                                                 Sampler* gyroSampler = 0,
-                                                 Sampler* accSampler = 0) {
+  ImuFactor::PreintegratedMeasurements integrate(
+      double T, Sampler* gyroSampler = 0, Sampler* accSampler = 0) const {
     // TODO(frank): allow non-zero
     const imuBias::ConstantBias zeroBias;
     const bool use2ndOrderIntegration = true;
@@ -60,7 +59,8 @@ class ScenarioRunner {
   }
 
   /// Predict predict given a PIM
-  PoseVelocityBias predict(const ImuFactor::PreintegratedMeasurements& pim) {
+  PoseVelocityBias predict(
+      const ImuFactor::PreintegratedMeasurements& pim) const {
     // TODO(frank): allow non-zero bias, omegaCoriolis
     const imuBias::ConstantBias zeroBias;
     const Pose3 pose_i = Pose3::identity();
@@ -72,7 +72,8 @@ class ScenarioRunner {
   }
 
   /// Return pose covariance by re-arranging pim.preintMeasCov() appropriately
-  Matrix6 poseCovariance(const ImuFactor::PreintegratedMeasurements& pim) {
+  Matrix6 poseCovariance(
+      const ImuFactor::PreintegratedMeasurements& pim) const {
     Matrix9 cov = pim.preintMeasCov();  // _ position rotation
     Matrix6 poseCov;
     poseCov << cov.block<3, 3>(6, 6), cov.block<3, 3>(6, 3),  //
@@ -81,7 +82,7 @@ class ScenarioRunner {
   }
 
   /// Compute a Monte Carlo estimate of the PIM pose covariance using N samples
-  Matrix6 estimatePoseCovariance(double T, size_t N = 1000) {
+  Matrix6 estimatePoseCovariance(double T, size_t N = 1000) const {
     // Get predict prediction from ground truth measurements
     Pose3 prediction = predict(integrate(T)).pose;
 

@@ -68,7 +68,7 @@ class Scenario {
   Pose3 pose(double t) const { return Pose3::Expmap(twist_ * t); }
 
   /// Velocity in nav frame at time t
-  Vector3 velocity(double t) {
+  Vector3 velocity(double t) const {
     const Rot3 nRb = rotAtTime(t);
     return nRb * linearVelocityInBody();
   }
