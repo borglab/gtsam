@@ -57,15 +57,17 @@ Rot3 evaluateRotationError(const ImuFactor& factor, const Pose3& pose_i,
 
 // Define covariance matrices
 /* ************************************************************************* */
-double accNoiseVar = 0.01;
-double omegaNoiseVar = 0.03;
-double intNoiseVar = 0.0001;
-const Matrix3 kMeasuredAccCovariance = accNoiseVar * I_3x3;
-const Matrix3 kMeasuredOmegaCovariance = omegaNoiseVar * I_3x3;
-const Matrix3 kIntegrationErrorCovariance = intNoiseVar * I_3x3;
-const Vector3 accNoiseVar2(0.01, 0.02, 0.03);
-const Vector3 omegaNoiseVar2(0.03, 0.01, 0.02);
-int32_t accSamplerSeed = 29284, omegaSamplerSeed = 10;
+static const double kGyroSigma = 0.02;
+static const double kAccelerometerSigma = 0.1;
+static double omegaNoiseVar = kGyroSigma * kGyroSigma;
+static double accNoiseVar = kAccelerometerSigma * kAccelerometerSigma;
+static double intNoiseVar = 0.0001;
+static const Matrix3 kMeasuredAccCovariance = accNoiseVar * I_3x3;
+static const Matrix3 kMeasuredOmegaCovariance = omegaNoiseVar * I_3x3;
+static const Matrix3 kIntegrationErrorCovariance = intNoiseVar * I_3x3;
+static const Vector3 accNoiseVar2(0.01, 0.02, 0.03);
+static const Vector3 omegaNoiseVar2(0.03, 0.01, 0.02);
+static int32_t accSamplerSeed = 29284, omegaSamplerSeed = 10;
 
 // Auxiliary functions to test preintegrated Jacobians
 // delPdelBiasAcc_ delPdelBiasOmega_ delVdelBiasAcc_ delVdelBiasOmega_ delRdelBiasOmega_
@@ -165,7 +167,7 @@ bool MonteCarlo(const PreintegratedImuMeasurements& pim,
 }
 
 /* ************************************************************************* */
-TEST(ImuFactor, StraightLine) {
+TEST(ImuFactor, Accelerating) {
   const double a = 0.2, v=50;
 
   // Set up body pointing towards y axis, and start at 10,20,0 with velocity going in X
@@ -178,28 +180,13 @@ TEST(ImuFactor, StraightLine) {
                                       Vector3(a, 0, 0));
 
   const double T = 3.0;  // seconds
-  ScenarioRunner runner(&scenario, T / 10, sqrt(omegaNoiseVar),
-                        sqrt(accNoiseVar));
+  ScenarioRunner runner(&scenario, T / 10, kGyroSigma, kAccelerometerSigma);
 
   ImuFactor::PreintegratedMeasurements pim = runner.integrate(T);
   EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose, 1e-9));
 
   Matrix6 estimatedCov = runner.estimatePoseCovariance(T);
   EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 0.1));
-
-  // Set up IMU measurements
-  const double g = 10; // make gravity 10 to make this easy to check
-  const double dt22 = T * T / 2;
-
-  // set up acceleration in X direction, no angular velocity.
-  // Since body Z-axis is pointing down, accelerometer measures table exerting force in negative Z
-  Vector3 measuredAcc(a, 0, -g), measuredOmega(0, 0, 0);
-
-  // Create parameters assuming nav frame has Z up
-  boost::shared_ptr<PreintegratedImuMeasurements::Params> p =
-      PreintegratedImuMeasurements::Params::MakeSharedU(g);
-  p->accelerometerCovariance = kMeasuredAccCovariance;
-  p->gyroscopeCovariance = kMeasuredOmegaCovariance;
 
   // Check G1 and G2 derivatives of pim.update
   Matrix93 aG1,aG2;
@@ -209,32 +196,6 @@ TEST(ImuFactor, StraightLine) {
   pim.updatedDeltaXij(measuredAcc, measuredOmega, T / 10, boost::none, aG1, aG2);
   EXPECT(assert_equal(numericalDerivative21(f, measuredAcc, measuredOmega, 1e-7), aG1, 1e-7));
   EXPECT(assert_equal(numericalDerivative22(f, measuredAcc, measuredOmega, 1e-7), aG2, 1e-7));
-
-  // Do Monte-Carlo analysis
-  PreintegratedImuMeasurements pimMC(kZeroBiasHat, p->accelerometerCovariance,
-      p->gyroscopeCovariance, Z_3x3, true); // MonteCarlo does not sample integration noise
-  EXPECT(
-      MonteCarlo(pimMC, state1, kZeroBias, T / 10, boost::none, measuredAcc,
-          measuredOmega, Vector3::Constant(accNoiseVar), Vector3::Constant(omegaNoiseVar), 100000));
-
-  // Check integrated quantities in body frame: gravity measured by IMU is integrated!
-  Vector3 b_deltaP(a * dt22, 0, -g * dt22);
-  Vector3 b_deltaV(a * T, 0, -g * T);
-  EXPECT(assert_equal(Rot3(), pim.deltaRij()));
-  EXPECT(assert_equal(b_deltaP, pim.deltaPij()));
-  EXPECT(assert_equal(b_deltaV, pim.deltaVij()));
-
-  // Check bias-corrected delta: also in body frame
-  Vector9 expectedBC;
-  expectedBC << Vector3(0, 0, 0), b_deltaP, b_deltaV;
-  EXPECT(assert_equal(expectedBC, pim.biasCorrectedDelta(kZeroBias)));
-
-  // Check prediction in nav, note we move along x in body, along y in nav
-  Point3 expected_position(10 + v * T, 20 + a * dt22, 0);
-  Velocity3 expected_velocity(v, a * T, 0);
-  NavState expected(nRb, expected_position, expected_velocity);
-  const NavState state1(nRb, initial_position, initial_velocity);
-  EXPECT(assert_equal(expected, pim.predict(state1, kZeroBias)));
 }
 
 /* ************************************************************************* */
