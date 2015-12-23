@@ -76,13 +76,17 @@ TEST(ScenarioRunner, Loop) {
 }
 
 /* ************************************************************************* */
-TEST(ScenarioRunner, Accelerating) {
-  // Set up body pointing towards y axis, and start at 10,20,0 with velocity
-  // going in X. The body itself has Z axis pointing down
-  const Rot3 nRb(Point3(0, 1, 0), Point3(1, 0, 0), Point3(0, 0, -1));
-  const Point3 P0(10, 20, 0);
-  const Vector3 V0(50, 0, 0);
+namespace initial {
+// Set up body pointing towards y axis, and start at 10,20,0 with velocity
+// going in X. The body itself has Z axis pointing down
+const Rot3 nRb(Point3(0, 1, 0), Point3(1, 0, 0), Point3(0, 0, -1));
+const Point3 P0(10, 20, 0);
+const Vector3 V0(50, 0, 0);
+}
 
+/* ************************************************************************* */
+TEST(ScenarioRunner, Accelerating) {
+  using namespace initial;
   const double a = 0.2;  // m/s^2
   const Vector3 A(0, a, 0);
   const AcceleratingScenario scenario(nRb, P0, V0, A);
@@ -93,7 +97,26 @@ TEST(ScenarioRunner, Accelerating) {
   ImuFactor::PreintegratedMeasurements pim = runner.integrate(T);
   EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose, 1e-9));
 
-  Matrix6 estimatedCov = runner.estimatePoseCovariance(T);
+  Matrix6 estimatedCov = runner.estimatePoseCovariance(T,10000);
+  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 0.1));
+  cout << estimatedCov << endl << endl;
+  cout << runner.poseCovariance(pim) << endl;
+}
+
+/* ************************************************************************* */
+TEST(ScenarioRunner, AcceleratingAndRotating) {
+  using namespace initial;
+  const double a = 0.2;  // m/s^2
+  const Vector3 A(0, a, 0), W(0, 0.1, 0);
+  const AcceleratingScenario scenario(nRb, P0, V0, A, W);
+
+  const double T = 3;  // seconds
+  ScenarioRunner runner(&scenario, T / 10, kGyroSigma, kAccelerometerSigma);
+
+  ImuFactor::PreintegratedMeasurements pim = runner.integrate(T);
+  EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose, 1e-9));
+
+  Matrix6 estimatedCov = runner.estimatePoseCovariance(T,10000);
   EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 0.1));
 }
 
