@@ -17,6 +17,7 @@
 
 #include <gtsam/navigation/ImuFactor.h>
 #include <gtsam/navigation/ImuBias.h>
+#include <gtsam/navigation/ScenarioRunner.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/factorTesting.h>
@@ -56,15 +57,17 @@ Rot3 evaluateRotationError(const ImuFactor& factor, const Pose3& pose_i,
 
 // Define covariance matrices
 /* ************************************************************************* */
-double accNoiseVar = 0.01;
-double omegaNoiseVar = 0.03;
-double intNoiseVar = 0.0001;
-const Matrix3 kMeasuredAccCovariance = accNoiseVar * I_3x3;
-const Matrix3 kMeasuredOmegaCovariance = omegaNoiseVar * I_3x3;
-const Matrix3 kIntegrationErrorCovariance = intNoiseVar * I_3x3;
-const Vector3 accNoiseVar2(0.01, 0.02, 0.03);
-const Vector3 omegaNoiseVar2(0.03, 0.01, 0.02);
-int32_t accSamplerSeed = 29284, omegaSamplerSeed = 10;
+static const double kGyroSigma = 0.02;
+static const double kAccelerometerSigma = 0.1;
+static double omegaNoiseVar = kGyroSigma * kGyroSigma;
+static double accNoiseVar = kAccelerometerSigma * kAccelerometerSigma;
+static double intNoiseVar = 0.0001;
+static const Matrix3 kMeasuredAccCovariance = accNoiseVar * I_3x3;
+static const Matrix3 kMeasuredOmegaCovariance = omegaNoiseVar * I_3x3;
+static const Matrix3 kIntegrationErrorCovariance = intNoiseVar * I_3x3;
+static const Vector3 accNoiseVar2(0.01, 0.02, 0.03);
+static const Vector3 omegaNoiseVar2(0.03, 0.01, 0.02);
+static int32_t accSamplerSeed = 29284, omegaSamplerSeed = 10;
 
 // Auxiliary functions to test preintegrated Jacobians
 // delPdelBiasAcc_ delPdelBiasOmega_ delVdelBiasAcc_ delVdelBiasOmega_ delRdelBiasOmega_
@@ -118,114 +121,39 @@ Vector3 evaluateLogRotation(const Vector3 thetahat, const Vector3 deltatheta) {
 } // namespace
 
 /* ************************************************************************* */
-bool MonteCarlo(const PreintegratedImuMeasurements& pim,
-    const NavState& state, const imuBias::ConstantBias& bias, double dt,
-    boost::optional<Pose3> body_P_sensor, const Vector3& measuredAcc,
-    const Vector3& measuredOmega, const Vector3& accNoiseVar,
-    const Vector3& omegaNoiseVar, size_t N = 10000,
-    size_t M = 1) {
-  // Get mean prediction from "ground truth" measurements
-  PreintegratedImuMeasurements pim1 = pim;
-  for (size_t k = 0; k < M; k++)
-    pim1.integrateMeasurement(measuredAcc, measuredOmega, dt, body_P_sensor);
-  NavState prediction = pim1.predict(state, bias);
-  Matrix9 actual = pim1.preintMeasCov();
-
-  // Do a Monte Carlo analysis to determine empirical density on the predicted state
-  Sampler sampleAccelerationNoise((accNoiseVar/dt).cwiseSqrt(), accSamplerSeed);
-  Sampler sampleOmegaNoise((omegaNoiseVar/dt).cwiseSqrt(), omegaSamplerSeed);
-  Matrix samples(9, N);
-  Vector9 sum = Vector9::Zero();
-  for (size_t i = 0; i < N; i++) {
-    PreintegratedImuMeasurements pim2 = pim;
-    for (size_t k = 0; k < M; k++) {
-      Vector3 perturbedAcc = measuredAcc + sampleAccelerationNoise.sample();
-      Vector3 perturbedOmega = measuredOmega + sampleOmegaNoise.sample();
-      pim2.integrateMeasurement(perturbedAcc, perturbedOmega, dt,
-          body_P_sensor);
-    }
-    NavState sampled = pim2.predict(state, bias);
-    Vector9 xi = sampled.localCoordinates(prediction);
-    samples.col(i) = xi;
-    sum += xi;
-  }
-
-  Vector9 sampleMean = sum / N;
-  Matrix9 Q;
-  Q.setZero();
-  for (size_t i = 0; i < N; i++) {
-    Vector9 xi = samples.col(i);
-    xi -= sampleMean;
-    Q += xi * (xi.transpose() / (N - 1));
-  }
-
-  // Compare MonteCarlo value with actual (computed) value
-  return assert_equal(Matrix(Q), actual, 1e-4);
-}
-
-/* ************************************************************************* */
-TEST(ImuFactor, StraightLine) {
-  // Set up IMU measurements
-  static const double g = 10; // make gravity 10 to make this easy to check
-  static const double v = 50.0, a = 0.2, dt = 3.0;
-  const double dt22 = dt * dt / 2;
+TEST(ImuFactor, Accelerating) {
+  const double a = 0.2, v=50;
 
   // Set up body pointing towards y axis, and start at 10,20,0 with velocity going in X
   // The body itself has Z axis pointing down
-  static const Rot3 nRb(Point3(0, 1, 0), Point3(1, 0, 0), Point3(0, 0, -1));
-  static const Point3 initial_position(10, 20, 0);
-  static const Vector3 initial_velocity(v, 0, 0);
-  static const NavState state1(nRb, initial_position, initial_velocity);
+  const Rot3 nRb(Point3(0, 1, 0), Point3(1, 0, 0), Point3(0, 0, -1));
+  const Point3 initial_position(10, 20, 0);
+  const Vector3 initial_velocity(v, 0, 0);
 
-  // set up acceleration in X direction, no angular velocity.
-  // Since body Z-axis is pointing down, accelerometer measures table exerting force in negative Z
-  Vector3 measuredAcc(a, 0, -g), measuredOmega(0, 0, 0);
+  const AcceleratingScenario scenario(nRb, initial_position, initial_velocity,
+                                      Vector3(a, 0, 0));
 
-  // Create parameters assuming nav frame has Z up
-  boost::shared_ptr<PreintegratedImuMeasurements::Params> p =
-      PreintegratedImuMeasurements::Params::MakeSharedU(g);
-  p->accelerometerCovariance = kMeasuredAccCovariance;
-  p->gyroscopeCovariance = kMeasuredOmegaCovariance;
+  const double T = 3.0;  // seconds
+  ScenarioRunner runner(&scenario, T / 10, kGyroSigma, kAccelerometerSigma);
+
+  ImuFactor::PreintegratedMeasurements pim = runner.integrate(T);
+  EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose, 1e-9));
+
+  Matrix6 estimatedCov = runner.estimatePoseCovariance(T);
+  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 0.1));
 
   // Check G1 and G2 derivatives of pim.update
-
-  // Now, preintegrate for 3 seconds, in 10 steps
-  PreintegratedImuMeasurements pim(p, kZeroBiasHat);
-  for (size_t i = 0; i < 10; i++)
-    pim.integrateMeasurement(measuredAcc, measuredOmega, dt / 10);
-
   Matrix93 aG1,aG2;
   boost::function<NavState(const Vector3&, const Vector3&)> f =
-      boost::bind(&PreintegrationBase::updatedDeltaXij, pim, _1, _2, dt/10,
+      boost::bind(&PreintegrationBase::updatedDeltaXij, pim, _1, _2, T/10,
           boost::none, boost::none, boost::none);
-  pim.updatedDeltaXij(measuredAcc, measuredOmega, dt / 10, boost::none, aG1, aG2);
-  EXPECT(assert_equal(numericalDerivative21(f, measuredAcc, measuredOmega, 1e-7), aG1, 1e-7));
-  EXPECT(assert_equal(numericalDerivative22(f, measuredAcc, measuredOmega, 1e-7), aG2, 1e-7));
-
-  // Do Monte-Carlo analysis
-  PreintegratedImuMeasurements pimMC(kZeroBiasHat, p->accelerometerCovariance,
-      p->gyroscopeCovariance, Z_3x3, true); // MonteCarlo does not sample integration noise
-  EXPECT(
-      MonteCarlo(pimMC, state1, kZeroBias, dt / 10, boost::none, measuredAcc,
-          measuredOmega, Vector3::Constant(accNoiseVar), Vector3::Constant(omegaNoiseVar), 100000));
-
-  // Check integrated quantities in body frame: gravity measured by IMU is integrated!
-  Vector3 b_deltaP(a * dt22, 0, -g * dt22);
-  Vector3 b_deltaV(a * dt, 0, -g * dt);
-  EXPECT(assert_equal(Rot3(), pim.deltaRij()));
-  EXPECT(assert_equal(b_deltaP, pim.deltaPij()));
-  EXPECT(assert_equal(b_deltaV, pim.deltaVij()));
-
-  // Check bias-corrected delta: also in body frame
-  Vector9 expectedBC;
-  expectedBC << Vector3(0, 0, 0), b_deltaP, b_deltaV;
-  EXPECT(assert_equal(expectedBC, pim.biasCorrectedDelta(kZeroBias)));
-
-  // Check prediction in nav, note we move along x in body, along y in nav
-  Point3 expected_position(10 + v * dt, 20 + a * dt22, 0);
-  Velocity3 expected_velocity(v, a * dt, 0);
-  NavState expected(nRb, expected_position, expected_velocity);
-  EXPECT(assert_equal(expected, pim.predict(state1, kZeroBias)));
+  const Vector3 measuredAcc = runner.measured_acceleration(T);
+  const Vector3 measuredOmega = runner.measured_angular_velocity(T);
+  pim.updatedDeltaXij(measuredAcc, measuredOmega, T / 10, boost::none, aG1, aG2);
+  EXPECT(assert_equal(
+      numericalDerivative21(f, measuredAcc, measuredOmega, 1e-7), aG1, 1e-7));
+  EXPECT(assert_equal(
+      numericalDerivative22(f, measuredAcc, measuredOmega, 1e-7), aG2, 1e-7));
 }
 
 /* ************************************************************************* */
@@ -615,12 +543,25 @@ Vector3 correctedAcc(const PreintegratedImuMeasurements& pim, const Vector3& mea
 }
 
 TEST(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
-  imuBias::ConstantBias bias(Vector3(0.2, 0, 0), Vector3(0, 0, 0.3)); // Biases (acc, rot)
-  Pose3 x1(Rot3::Expmap(Vector3(0, 0, M_PI / 4.0)), Point3(5.0, 1.0, -50.0));
-  Vector3 v1(Vector3(0.5, 0.0, 0.0));
-  Pose3 x2(Rot3::Expmap(Vector3(0, 0, M_PI / 4.0 + M_PI / 10.0)),
-      Point3(5.5, 1.0, -50.0));
-  Vector3 v2(Vector3(0.5, 0.0, 0.0));
+  const Rot3 nRb = Rot3::Expmap(Vector3(0, 0, M_PI / 4.0));
+  const Point3 initial_position(5.0, 1.0, -50.0);
+  const Vector3 initial_velocity(0.5, 0.0, 0.0);
+
+  const double a = 0.2;
+  const AcceleratingScenario scenario(nRb, initial_position, initial_velocity,
+                                      Vector3(a, 0, 0));
+
+  const double T = 3.0;  // seconds
+  ScenarioRunner runner(&scenario, T / 10, kGyroSigma, kAccelerometerSigma);
+
+  ImuFactor::PreintegratedMeasurements pim = runner.integrate(T);
+  EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose, 1e-9));
+
+  Matrix6 estimatedCov = runner.estimatePoseCovariance(T);
+  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 0.1));
+
+  ///////////////////////////////////////////////////////////////////////////////////////////
+  Pose3 x1(nRb, initial_position);
 
   // Measurements
   Vector3 measuredOmega;
@@ -659,42 +600,8 @@ TEST(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
       1e-6);
   EXPECT(assert_equal(expectedG2, G2, 1e-5));
 
-#if 0
-  /*
-   * This code is to verify the quality of the generated samples
-   * by checking if the covariance of the generated noises matches
-   * with the input covariance, and visualizing the nonlinearity of
-   * the sample set using the following matlab script:
-   *
-      noises = dlmread('noises.txt');
-      cov(noises)
-
-      samples = dlmread('noises.txt');
-      figure(1);
-      for i=1:9
-          subplot(3,3,i)
-          hist(samples(:,i), 500)
-      end
-   */
-  size_t N = 100000;
-  Matrix samples(9,N);
-  Sampler sampleAccelerationNoise((accNoiseVar2/dt).cwiseSqrt(), 29284);
-  Sampler sampleOmegaNoise((omegaNoiseVar2/dt).cwiseSqrt(), 10);
-  ofstream samplesOut("preintSamples.txt");
-  ofstream noiseOut("noises.txt");
-  for (size_t i = 0; i<N; ++i) {
-    Vector3 accNoise = sampleAccelerationNoise.sample();
-    Vector3 omegaNoise = sampleOmegaNoise.sample();
-    NavState sample = pim.updatedDeltaXij(measuredAcc+accNoise, measuredOmega+omegaNoise, dt);
-    samples.col(i) = sample.localCoordinates(preint);
-    samplesOut << samples.col(i).transpose() << endl;
-    noiseOut << accNoise.transpose() << " " << omegaNoise.transpose() << endl;
-  }
-  samplesOut.close();
-  noiseOut.close();
-#endif
-
-  EXPECT(MonteCarlo(pim, NavState(x1, v1), bias, dt, body_P_sensor,
+  imuBias::ConstantBias bias(Vector3(0.2, 0, 0), Vector3(0, 0, 0.3)); // Biases (acc, rot)
+  EXPECT(MonteCarlo(pim, NavState(x1, initial_velocity), bias, dt, body_P_sensor,
       measuredAcc, measuredOmega, accNoiseVar2, omegaNoiseVar2, 100000));
 
 
@@ -710,6 +617,9 @@ TEST(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
   // Predict
   Pose3 actual_x2;
   Vector3 actual_v2;
+  Pose3 x2(Rot3::Expmap(Vector3(0, 0, M_PI / 4.0 + M_PI / 10.0)),
+      Point3(5.5, 1.0, -50.0));
+  Vector3 v2(Vector3(0.5, 0.0, 0.0));
   ImuFactor::Predict(x1, v1, actual_x2, actual_v2, bias, pim,
       kGravityAlongNavZDown, kZeroOmegaCoriolis);
 
@@ -800,6 +710,27 @@ TEST(ImuFactor, PredictRotation) {
 
 /* ************************************************************************* */
 TEST(ImuFactor, PredictArbitrary) {
+  const double a = 0.2, v=50;
+
+  // Set up body pointing towards y axis, and start at 10,20,0 with velocity going in X
+  // The body itself has Z axis pointing down
+  const Rot3 nRb(Point3(0, 1, 0), Point3(1, 0, 0), Point3(0, 0, -1));
+  const Point3 initial_position(10, 20, 0);
+  const Vector3 initial_velocity(v, 0, 0);
+
+  const AcceleratingScenario scenario(nRb, initial_position, initial_velocity,
+                                      Vector3(a, 0, 0));
+
+  const double T = 3.0;  // seconds
+  ScenarioRunner runner(&scenario, T / 10, kGyroSigma, kAccelerometerSigma);
+
+  ImuFactor::PreintegratedMeasurements pim = runner.integrate(T);
+  EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose, 1e-9));
+
+  Matrix6 estimatedCov = runner.estimatePoseCovariance(T);
+  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 0.1));
+  //////////////////////////////////////////////////////////////////////////////////
+
   imuBias::ConstantBias biasHat(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0));
 
   // Measurements

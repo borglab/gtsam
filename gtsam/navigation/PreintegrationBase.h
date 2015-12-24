@@ -100,8 +100,8 @@ public:
 
 protected:
 
-  /// Parameters
-  boost::shared_ptr<Params> p_;
+  /// Parameters. Declared mutable only for deprecated predict method.
+  mutable boost::shared_ptr<Params> p_;
 
   /// Acceleration and gyro bias used for preintegration
   imuBias::ConstantBias biasHat_;
@@ -283,7 +283,7 @@ public:
   /// @deprecated predict
   PoseVelocityBias predict(const Pose3& pose_i, const Vector3& vel_i,
       const imuBias::ConstantBias& bias_i, const Vector3& n_gravity,
-      const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis = false);
+      const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis = false) const;
 
   /// @}
 
