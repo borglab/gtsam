@@ -245,7 +245,7 @@ X(t)=\left\{ R_{0},P_{0}+V_{0}t,V_{0}\right\}
 then the differential equation describing the trajectory is
 \begin_inset Formula 
 \[
-\dot{X}(t)=\left[0_{3x3},V_{0},0_{3x1}\right],\,\,\,\,\,X(0)=\left\{ R_{0},P_{0},V_{0}\right\} 
+\dot{X}(t)=\left[0_{3x3},V_{0},0_{3x1}\right],\,\,\,\,\, X(0)=\left\{ R_{0},P_{0},V_{0}\right\} 
 \]
 
 \end_inset
@@ -591,7 +591,7 @@ key "Iserles00an"
 ,
 \begin_inset Formula 
 \begin{equation}
-\dot{R}(t)=F(R,t),\,\,\,\,R(0)=R_{0}\label{eq:diffSo3}
+\dot{R}(t)=F(R,t),\,\,\,\, R(0)=R_{0}\label{eq:diffSo3}
 \end{equation}
 
 \end_inset
@@ -962,20 +962,22 @@ Application: The New IMU Factor
 \end_layout
 
 \begin_layout Standard
-The above scheme suffers from one problem, which is that 
-\begin_inset Formula $R_{0}$
+In the IMU factor, we need to predict the NavState 
+\begin_inset Formula $X_{j}$
 \end_inset
 
- needs to be known exactly to compensate for the initial velocity 
-\begin_inset Formula $V_{0}$
+ from the current NavState 
+\begin_inset Formula $X_{i}$
 \end_inset
 
- and the gravity 
-\begin_inset Formula $g$
+ and the IMU measurements in-between.
+ The above scheme suffers from a problem, which is that 
+\begin_inset Formula $X_{i}$
 \end_inset
 
-.
- Hence, we split up 
+ needs to be known in order to compensate properly for the initial velocity
+ and rotated gravity vector.
+ Hence, the idea of Lupton was to split up 
 \begin_inset Formula $v(t)$
 \end_inset
 
@@ -990,14 +992,14 @@ v(t)=v_{g}(t)+v_{a}(t)
 evolving as
 \begin_inset Formula 
 \begin{eqnarray*}
-\dot{v}_{g}(t) & = & R_{0}^{T}\, g\\
-\dot{v}_{a}(t) & = & R_{b}^{0}(t)a^{b}(t)
+\dot{v}_{g}(t) & = & R_{i}^{T}\, g\\
+\dot{v}_{a}(t) & = & R_{b}^{i}(t)a^{b}(t)
 \end{eqnarray*}
 
 \end_inset
 
 The solution for the first equation is simply 
-\begin_inset Formula $v_{g}(t)=R_{0}^{T}gt$
+\begin_inset Formula $v_{g}(t)=R_{i}^{T}gt$
 \end_inset
 
 .
@@ -1008,7 +1010,7 @@ The solution for the first equation is simply
  up in three parts 
 \begin_inset Formula 
 \[
-p(t)=p_{0}(t)+p_{g}(t)+p_{v}(t)
+p(t)=p_{i}(t)+p_{g}(t)+p_{v}(t)
 \]
 
 \end_inset
@@ -1016,8 +1018,8 @@ p(t)=p_{0}(t)+p_{g}(t)+p_{v}(t)
 evolving as
 \begin_inset Formula 
 \begin{eqnarray*}
-\dot{p}_{0}(t) & = & R_{0}^{T}\, V_{0}\\
-\dot{p}_{g}(t) & = & v_{g}(t)=R_{0}^{T}gt\\
+\dot{p}_{i}(t) & = & R_{i}^{T}\, V_{i}\\
+\dot{p}_{g}(t) & = & v_{g}(t)=R_{i}^{T}gt\\
 \dot{p}_{v}(t) & = & v_{a}(t)
 \end{eqnarray*}
 
@@ -1026,8 +1028,8 @@ evolving as
 Here the solutions for the two first equations are simply 
 \begin_inset Formula 
 \begin{eqnarray*}
-p_{0}(t) & = & R_{0}^{T}V_{0}t\\
-p_{g}(t) & = & R_{0}^{T}\frac{gt^{2}}{2}
+p_{i}(t) & = & R_{i}^{T}V_{i}t\\
+p_{g}(t) & = & R_{i}^{T}\frac{gt^{2}}{2}
 \end{eqnarray*}
 
 \end_inset
@@ -1038,7 +1040,7 @@ The recipe for the IMU factor is then, in summary.
 \begin{eqnarray*}
 \dot{\theta}(t) & = & H(\theta(t))^{-1}\,\omega^{b}(t)\\
 \dot{p}_{v}(t) & = & v_{a}(t)\\
-\dot{v}_{a}(t) & = & R_{b}^{0}(t)a^{b}(t)
+\dot{v}_{a}(t) & = & R_{b}^{i}(t)a^{b}(t)
 \end{eqnarray*}
 
 \end_inset
@@ -1048,14 +1050,14 @@ starting from zero, up to time
 \end_inset
 
 , where 
-\begin_inset Formula $R_{b}^{0}(t)=\exp\Skew{\theta(t)}$
+\begin_inset Formula $R_{b}^{i}(t)=\exp\Skew{\theta(t)}$
 \end_inset
 
  at all times.
  Form the local coordinate vector as
 \begin_inset Formula 
 \[
-\zeta(t_{ij})=\left[\theta(t_{ij}),p(t_{ij}),v(t_{ij})\right]=\left[\theta(t_{ij}),R_{0}^{T}V_{0}t_{ij}+R_{0}^{T}\frac{gt_{ij}^{2}}{2}+p_{v}(t_{ij}),R_{0}^{T}gt_{ij}+v_{a}(t_{ij})\right]
+\zeta(t_{ij})=\left[\theta(t_{ij}),p(t_{ij}),v(t_{ij})\right]=\left[\theta(t_{ij}),R_{i}^{T}V_{i}t_{ij}+R_{i}^{T}\frac{gt_{ij}^{2}}{2}+p_{v}(t_{ij}),R_{i}^{T}gt_{ij}+v_{a}(t_{ij})\right]
 \]
 
 \end_inset
@@ -1071,12 +1073,36 @@ Predict the NavState
  from
 \begin_inset Formula 
 \[
-X_{j}=\mathcal{R}_{X_{j}}(\zeta(t_{ij}))=\left\{ \Phi_{R_{0}}\left(\theta(t_{ij})\right),P_{0}+V_{0}t_{ij}+\frac{gt_{ij}^{2}}{2}+R_{0}\, p_{v}(t_{ij}),V_{0}+gt_{ij}+R_{0}\, v_{a}(t_{ij})\right\} 
+X_{j}=\mathcal{R}_{X_{j}}(\zeta(t_{ij}))=\left\{ \Phi_{R_{0}}\left(\theta(t_{ij})\right),P_{i}+V_{i}t_{ij}+\frac{gt_{ij}^{2}}{2}+R_{i}\, p_{v}(t_{ij}),V_{i}+gt_{ij}+R_{i}\, v_{a}(t_{ij})\right\} 
 \]
 
 \end_inset
 
 
+\end_layout
+
+\begin_layout Standard
+Note that the predicted NavState 
+\begin_inset Formula $X_{j}$
+\end_inset
+
+ depends on 
+\begin_inset Formula $X_{i}$
+\end_inset
+
+, but the inrgrated quantities 
+\begin_inset Formula $\theta(t)$
+\end_inset
+
+,
+\begin_inset Formula $p_{i}(t)$
+\end_inset
+
+, and 
+\begin_inset Formula $v_{a}(t)$
+\end_inset
+
+ do not.
 \end_layout
 
 \begin_layout Subsubsection*
@@ -1107,6 +1133,27 @@ where
 \end_inset
 
 .
+\end_layout
+
+\begin_layout Standard
+In the above, we have to think about how to handle both bias 
+\begin_inset Formula $(b_{g},b_{a})$
+\end_inset
+
+ and lever arm 
+\begin_inset Formula $T_{s}^{b}$
+\end_inset
+
+.
+ Both of them can be seen as arguments to two functions
+\begin_inset Formula $\omega_{k}^{b}(b_{g})$
+\end_inset
+
+ and 
+\begin_inset Formula $a_{k}^{b}(b_{a},T_{s}^{b})$
+\end_inset
+
+, and hence we have to properly account for their derivatives.
 \end_layout
 
 \begin_layout Section
