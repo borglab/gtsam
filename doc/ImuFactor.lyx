@@ -455,7 +455,7 @@ and the 6-vectors
 \end_layout
 
 \begin_layout Subsubsection*
-Local Coordinates
+Derivative of The Local Coordinate Mapping
 \end_layout
 
 \begin_layout Standard
@@ -1112,11 +1112,11 @@ A Simple Euler Scheme
 \begin_layout Standard
 To solve the differential equation we can use a simple Euler scheme:
 \begin_inset Formula 
-\begin{eqnarray*}
-\theta_{k+1}=\theta_{k}+\dot{\theta}(t_{k})\Delta_{t} & = & \theta_{k}+H(\theta_{k})^{-1}\,\omega_{k}^{b}\Delta_{t}\\
-p_{k+1}=p_{k}+\dot{p}_{v}(t_{k})\Delta_{t} & = & p_{k}+v_{k}\Delta_{t}\\
-v_{k+1}=v_{k}+\dot{v}_{a}(t_{k})\Delta_{t} & = & v_{k}+\exp\left(\theta_{k}\right)a_{k}^{b}\Delta_{t}
-\end{eqnarray*}
+\begin{eqnarray}
+\theta_{k+1}=\theta_{k}+\dot{\theta}(t_{k})\Delta_{t} & = & \theta_{k}+H(\theta_{k})^{-1}\,\omega_{k}^{b}\Delta_{t}\label{eq:euler_theta}\\
+p_{k+1}=p_{k}+\dot{p}_{v}(t_{k})\Delta_{t} & = & p_{k}+v_{k}\Delta_{t}\label{eq:euler_p}\\
+v_{k+1}=v_{k}+\dot{v}_{a}(t_{k})\Delta_{t} & = & v_{k}+\exp\left(\Skew{\theta_{k}}\right)a_{k}^{b}\Delta_{t}\label{eq:euler_v}
+\end{eqnarray}
 
 \end_inset
 
@@ -1135,25 +1135,264 @@ where
 .
 \end_layout
 
+\begin_layout Subsubsection*
+Noise Propagation
+\end_layout
+
 \begin_layout Standard
-In the above, we have to think about how to handle both bias 
-\begin_inset Formula $(b_{g},b_{a})$
-\end_inset
-
- and lever arm 
-\begin_inset Formula $T_{s}^{b}$
-\end_inset
-
-.
- Both of them can be seen as arguments to two functions
-\begin_inset Formula $\omega_{k}^{b}(b_{g})$
+Even when we assume uncorrelated noise on 
+\begin_inset Formula $\omega^{b}$
 \end_inset
 
  and 
-\begin_inset Formula $a_{k}^{b}(b_{a},T_{s}^{b})$
+\begin_inset Formula $a^{b}$
 \end_inset
 
-, and hence we have to properly account for their derivatives.
+, the noise on the final computed quantities will have a non-trivial covariance
+ structure, because the intermediate quantities 
+\begin_inset Formula $\theta_{k}$
+\end_inset
+
+and 
+\begin_inset Formula $v_{k}$
+\end_inset
+
+ appear in multiple places.
+ To model the noise propagation, let us define 
+\begin_inset Formula $\zeta_{k}=[\theta_{k},p_{k},v_{k}]$
+\end_inset
+
+ and rewrite Eqns.
+ (
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:euler_theta"
+
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:euler_v"
+
+\end_inset
+
+) as the non-linear function 
+\begin_inset Formula $f$
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\zeta_{k+1}=f\left(\zeta_{k},\omega_{k}^{b},a_{k}^{b}\right)
+\]
+
+\end_inset
+
+Then the noise on 
+\begin_inset Formula $\zeta_{k+1}$
+\end_inset
+
+ propagates as
+\begin_inset Formula 
+\begin{equation}
+\Sigma_{k+1}=A_{k}\Sigma_{k}A_{k}^{T}+B_{k}\Sigma_{\eta}^{gd}B_{k}+C_{k}\Sigma_{\eta}^{ad}C_{k}\label{eq:prop}
+\end{equation}
+
+\end_inset
+
+where 
+\begin_inset Formula $A_{k}$
+\end_inset
+
+ is the 
+\begin_inset Formula $9\times9$
+\end_inset
+
+ partial derivative of 
+\begin_inset Formula $f$
+\end_inset
+
+ wrpt 
+\begin_inset Formula $\zeta$
+\end_inset
+
+, and 
+\begin_inset Formula $B_{k}$
+\end_inset
+
+ and 
+\begin_inset Formula $C_{k}$
+\end_inset
+
+ the respective 
+\begin_inset Formula $9\times3$
+\end_inset
+
+ partial derivatives with respect to the measured quantities 
+\begin_inset Formula $\omega^{b}$
+\end_inset
+
+ and 
+\begin_inset Formula $a^{b}$
+\end_inset
+
+.
+ Noting that
+\begin_inset Formula 
+\[
+H(\theta)=\sum_{k=0}^{\infty}\frac{(-1)^{k}}{(k+1)!}\Skew{\theta}^{k}\approx I-\frac{1}{2}\Skew{\theta}
+\]
+
+\end_inset
+
+for small 
+\begin_inset Formula $\theta$
+\end_inset
+
+, and 
+\begin_inset Formula 
+\[
+\deriv{\Skew{\theta}\omega}{\theta}=\deriv{\left(\theta\times\omega\right)}{\theta}=-\deriv{\left(\omega\times\theta\right)}{\theta}=-\deriv{\Skew{\omega}\theta}{\theta}=-\Skew{\omega}
+\]
+
+\end_inset
+
+we have 
+\begin_inset Formula 
+\[
+\deriv{H(\theta)\omega}{\theta}\approx\frac{1}{2}\Skew{\omega}
+\]
+
+\end_inset
+
+Similarly, 
+\begin_inset Formula 
+\[
+\exp\left(\Skew{\theta}\right)=\sum_{k=0}^{\infty}\frac{1}{k!}\Skew{\theta}^{k}\approx I+\Skew{\theta}
+\]
+
+\end_inset
+
+and hence
+\begin_inset Formula 
+\[
+\deriv{\exp\left(\Skew{\theta}\right)a}{\theta}\approx-\Skew a
+\]
+
+\end_inset
+
+so we finally obtain
+\begin_inset Formula 
+\[
+A_{k}\approx\left[\begin{array}{ccc}
+I_{3\times3}+\frac{1}{2}\Skew{\omega_{k}^{b}}\Delta_{t}\\
+ & I_{3\times3} & I_{3\times3}\Delta_{t}\\
+-\Skew{a_{k}^{b}}\Delta_{t} &  & I_{3\times3}
+\end{array}\right]
+\]
+
+\end_inset
+
+The other partial derivatives are simply
+\begin_inset Formula 
+\[
+B_{k}=\left[\begin{array}{c}
+H(\theta_{k})^{-1}\Delta^{t}\\
+0_{3\times3}\\
+0_{3\times3}
+\end{array}\right],\,\,\,\, C_{k}=\left[\begin{array}{c}
+0_{3\times3}\\
+0_{3\times3}\\
+\exp\left(\Skew{\theta_{k}}\right)\Delta_{t}
+\end{array}\right]
+\]
+
+\end_inset
+
+Substituting these expressions into Eq.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:prop"
+
+\end_inset
+
+ and dropping terms involving 
+\begin_inset Formula $\Delta_{t}^{2}$
+\end_inset
+
+, we obtain
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula 
+\[
+\Sigma_{k+1}=\Sigma_{k}+\left[\begin{array}{ccc}
+\frac{1}{2}\Skew{\omega_{k}^{b}}\Sigma_{k}^{\theta\theta}-\Sigma_{k}^{\theta\theta}\frac{1}{2}\Skew{\omega_{k}^{b}} & \Sigma_{k}^{\theta v}+\frac{1}{2}\Skew{\omega_{k}^{b}}\Sigma_{k}^{\theta p} & \Sigma_{k}^{\theta\theta}\Skew{a_{k}^{b}}+\frac{1}{2}\Skew{\omega_{k}^{b}}\Sigma_{k}^{\theta v}\\
+. & \Sigma_{k}^{pv}+\Sigma_{k}^{vp} & \Sigma_{k}^{vv}+\Sigma_{k}^{p\theta}\Skew{a_{k}^{b}}\\
+. & . & \Sigma_{k}^{v\theta}\Skew{a_{k}^{b}}-\Skew{a_{k}^{b}}\Sigma_{k}^{\theta v}
+\end{array}\right]\Delta^{t}+\Sigma_{k}^{\eta}
+\]
+
+\end_inset
+
+where we only show the upper-triangular part (the matrix is symmetric) and
+ where 
+\begin_inset Formula 
+\[
+\Sigma_{k}^{\eta}=B_{k}\Sigma_{\eta}^{gd}B_{k}+C_{k}\Sigma_{\eta}^{ad}C_{k}=\left[\begin{array}{ccc}
+\sigma^{g}I_{3\times3}\\
+\\
+ &  & \sigma^{a}I_{3\times3}
+\end{array}\right]\Delta_{t}
+\]
+
+\end_inset
+
+The equality in the last line holds in the case of isotropic Gaussian measuremen
+t noise, in which case 
+\begin_inset Formula $\Sigma_{\eta}^{gd}$
+\end_inset
+
+=
+\begin_inset Formula $\sigma^{g}I_{3\times3}/\Delta_{t}$
+\end_inset
+
+ and 
+\begin_inset Formula $\Sigma_{\eta}^{ga}$
+\end_inset
+
+=
+\begin_inset Formula $\sigma^{a}I_{3\times3}/\Delta_{t}$
+\end_inset
+
+, and used the identities 
+\begin_inset Formula $H(\theta)^{-1}H(\theta)^{-T}\approx I_{3\times3}$
+\end_inset
+
+ for small 
+\begin_inset Formula $\theta$
+\end_inset
+
+, and 
+\begin_inset Formula $\exp\left(\Skew{\theta}\right)\exp\left(\Skew{\theta}\right)^{T}=I_{3\times3}$
+\end_inset
+
+ for all 
+\begin_inset Formula $\theta$
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Section
