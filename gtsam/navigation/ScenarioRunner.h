@@ -30,12 +30,14 @@ class ScenarioRunner {
  public:
   ScenarioRunner(const Scenario* scenario, double imuSampleTime = 1.0 / 100.0,
                  double gyroSigma = 0.17, double accSigma = 0.01,
-                 const imuBias::ConstantBias& bias = imuBias::ConstantBias())
+                 const imuBias::ConstantBias& bias = imuBias::ConstantBias(),
+                 const Vector3& gravity_n = Vector3(0, 0, -10))
       : scenario_(scenario),
         imuSampleTime_(imuSampleTime),
         gyroNoiseModel_(noiseModel::Isotropic::Sigma(3, gyroSigma)),
         accNoiseModel_(noiseModel::Isotropic::Sigma(3, accSigma)),
         bias_(bias),
+        gravity_n_(gravity_n),
         // NOTE(duy): random seeds that work well:
         gyroSampler_(gyroNoiseModel_, 10),
         accSampler_(accNoiseModel_, 29284)
@@ -44,7 +46,7 @@ class ScenarioRunner {
 
   // NOTE(frank): hardcoded for now with Z up (gravity points in negative Z)
   // also, uses g=10 for easy debugging
-  static Vector3 gravity_n() { return Vector3(0, 0, -10.0); }
+  const Vector3& gravity_n() const { return gravity_n_; }
 
   // A gyro simply measures angular velocity in body frame
   Vector3 actual_omega_b(double t) const { return scenario_->omega_b(t); }
@@ -107,8 +109,10 @@ class ScenarioRunner {
  private:
   const Scenario* scenario_;
   const double imuSampleTime_;
+  // TODO(frank): unify with Params, use actual noisemodels there...
   const noiseModel::Diagonal::shared_ptr gyroNoiseModel_, accNoiseModel_;
   const imuBias::ConstantBias bias_;
+  const Vector3 gravity_n_;
 
   // Create two samplers for acceleration and omega noise
   mutable Sampler gyroSampler_, accSampler_;
