@@ -41,9 +41,12 @@ class PreintegratedMeasurements2 {
  private:
   SharedDiagonal accelerometerNoiseModel_, gyroscopeNoiseModel_;
   const imuBias::ConstantBias estimatedBias_;
+
   size_t k_;       ///< index/count of measurements integrated
   Vector3 theta_;  ///< current estimate for theta
-  GaussianFactor::shared_ptr posterior_k_;  ///< posterior on current iterate
+
+  /// posterior on current iterate, as a conditional P(zeta|bias_delta):
+  boost::shared_ptr<GaussianConditional> posterior_k_;
 
  public:
   typedef ImuFactor::PreintegratedMeasurements::Params Params;
@@ -71,6 +74,11 @@ class PreintegratedMeasurements2 {
   NavState predict(const NavState& state_i, const imuBias::ConstantBias& bias_i,
                    OptionalJacobian<9, 9> H1 = boost::none,
                    OptionalJacobian<9, 6> H2 = boost::none) const;
+
+ private:
+  // estimate zeta given estimated biases
+  // calculates conditional mean of P(zeta|bias_delta)
+  Vector9 currentEstimate() const;
 };
 
 /*

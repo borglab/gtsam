@@ -35,12 +35,21 @@ using symbol_shorthand::V;
 
 static const Symbol kBiasKey('B', 0);
 
+Vector9 PreintegratedMeasurements2::currentEstimate() const {
+  VectorValues biasValues;
+  biasValues.insert(kBiasKey, estimatedBias_.vector());
+  VectorValues zetaValues = posterior_k_->solve(biasValues);
+  Vector9 zeta;
+  zeta << zetaValues.at(T(k_)), Vector3::Zero(), Vector3::Zero();
+  return zeta;
+}
+
 void PreintegratedMeasurements2::integrateMeasurement(
     const Vector3& measuredAcc, const Vector3& measuredOmega, double dt) {
   typedef map<Key, Matrix> Terms;
   static const Matrix36 omega_D_bias = (Matrix36() << Z_3x3, I_3x3).finished();
 
-  // Correct measurements by subtractig bias
+  // Correct measurements by subtracting bias
   Vector3 correctedOmega = measuredOmega - estimatedBias_.gyroscope();
 
   GaussianFactorGraph graph;
@@ -49,10 +58,9 @@ void PreintegratedMeasurements2::integrateMeasurement(
 
   // Handle first time differently
   if (k_ == 0) {
-    // theta(1) = measuredOmega - (bias + bias_delta)
+    // theta(1) = (measuredOmega - (bias + bias_delta)) * dt
     graph.add<Terms>({{T(k_ + 1), I_3x3}, {kBiasKey, omega_D_bias}},
-                     correctedOmega, gyroscopeNoiseModel_);
-    GTSAM_PRINT(graph);
+                     dt * correctedOmega, gyroscopeNoiseModel_);
 
     // eliminate all but biases
     Ordering keys = list_of(T(k_ + 1));
@@ -60,23 +68,20 @@ void PreintegratedMeasurements2::integrateMeasurement(
         graph.eliminatePartialSequential(keys, EliminateQR);
   } else {
     // add previous posterior
-    graph.add(posterior_k_);
+    graph.add(boost::static_pointer_cast<GaussianFactor>(posterior_k_));
 
-    // theta(k+1) = theta(k) + inverse(H)*(measuredOmega - (bias + bias_delta))
-    // =>  H*theta(k+1) - H*theta(k) + bias_delta = measuredOmega - bias
+    // theta(k+1) = theta(k) + inverse(H)*(measuredOmega - bias - bias_delta) dt
+    // =>  H*theta(k+1) - H*theta(k) + bias_delta dt = (measuredOmega - bias) dt
     Matrix3 H = Rot3::ExpmapDerivative(theta_);
-    graph.add<Terms>({{T(k_ + 1), H}, {T(k_), -H}, {kBiasKey, omega_D_bias}},
-                     correctedOmega, gyroscopeNoiseModel_);
-    GTSAM_PRINT(graph);
+    graph.add<Terms>(
+        {{T(k_ + 1), H}, {T(k_), -H}, {kBiasKey, omega_D_bias * dt}},
+        dt * correctedOmega, gyroscopeNoiseModel_);
 
     // eliminate all but biases
     Ordering keys = list_of(T(k_))(T(k_ + 1));
     boost::tie(bayesNet, shouldBeEmpty) =
         graph.eliminatePartialSequential(keys, EliminateQR);
   }
-
-  GTSAM_PRINT(*bayesNet);
-  GTSAM_PRINT(*shouldBeEmpty);
 
   // The bayesNet now contains P(zeta(k)|zeta(k+1),bias) P(zeta(k+1)|bias)
   // We marginalize zeta(k) by dropping the first factor
@@ -87,7 +92,9 @@ void PreintegratedMeasurements2::integrateMeasurement(
 NavState PreintegratedMeasurements2::predict(
     const NavState& state_i, const imuBias::ConstantBias& bias_i,
     OptionalJacobian<9, 9> H1, OptionalJacobian<9, 6> H2) const {
-  return NavState();
+  // TODO(frank): handle bias
+  Vector9 zeta = currentEstimate();
+  return state_i.expmap(zeta);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
