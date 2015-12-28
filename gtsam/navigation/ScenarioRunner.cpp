@@ -83,6 +83,9 @@ void PreintegratedMeasurements2::integrateMeasurement(
   Vector3 correctedAcc = measuredAcc - estimatedBias_.accelerometer();
   Vector3 correctedOmega = measuredOmega - estimatedBias_.gyroscope();
 
+  // increment time
+  deltaTij_ += dt;
+
   // Handle first time differently
   if (k_ == 0) {
     initPosterior(correctedAcc, correctedOmega, dt);
@@ -140,6 +143,17 @@ NavState PreintegratedMeasurements2::predict(
     OptionalJacobian<9, 9> H1, OptionalJacobian<9, 6> H2) const {
   // TODO(frank): handle bias
   Vector9 zeta = currentEstimate();
+  cout << "zeta: " << zeta << endl;
+  Rot3 Ri = state_i.attitude();
+  Matrix3 Rit = Ri.transpose();
+  Vector3 gt = deltaTij_ * p_->n_gravity;
+  zeta.segment<3>(3) +=
+      Rit * (state_i.velocity() * deltaTij_ + 0.5 * deltaTij_ * gt);
+  zeta.segment<3>(6) += Rit * gt;
+  cout << "zeta: " << zeta << endl;
+  cout << "tij: " << deltaTij_ << endl;
+  cout << "gt: " << gt.transpose() << endl;
+  cout << "gt^2/2: " << 0.5 * deltaTij_ * gt.transpose() << endl;
   return state_i.expmap(zeta);
 }
 

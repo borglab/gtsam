@@ -40,27 +40,29 @@ class GaussianBayesNet;
  * See ImuFactor.lyx for the relevant math.
  */
 class PreintegratedMeasurements2 {
+ public:
+  typedef ImuFactor::PreintegratedMeasurements::Params Params;
+
  private:
-  SharedDiagonal accelerometerNoiseModel_, gyroscopeNoiseModel_;
+  const boost::shared_ptr<Params> p_;
+  const SharedDiagonal accelerometerNoiseModel_, gyroscopeNoiseModel_;
   const imuBias::ConstantBias estimatedBias_;
 
-  size_t k_;  ///< index/count of measurements integrated
-
+  size_t k_;         ///< index/count of measurements integrated
+  double deltaTij_;  ///< sum of time increments
   /// posterior on current iterate, as a conditional P(zeta|bias_delta):
   boost::shared_ptr<GaussianBayesNet> posterior_k_;
 
  public:
-  typedef ImuFactor::PreintegratedMeasurements::Params Params;
-
-  Matrix9 preintMeasCov() const { return Matrix9::Zero(); }
-
   PreintegratedMeasurements2(
       const boost::shared_ptr<Params>& p,
       const imuBias::ConstantBias& estimatedBias = imuBias::ConstantBias())
-      : accelerometerNoiseModel_(Diagonal(p->accelerometerCovariance)),
+      : p_(p),
+        accelerometerNoiseModel_(Diagonal(p->accelerometerCovariance)),
         gyroscopeNoiseModel_(Diagonal(p->gyroscopeCovariance)),
         estimatedBias_(estimatedBias),
-        k_(0) {}
+        k_(0),
+        deltaTij_(0.0) {}
 
   /**
    * Add a single IMU measurement to the preintegration.
@@ -75,6 +77,8 @@ class PreintegratedMeasurements2 {
   NavState predict(const NavState& state_i, const imuBias::ConstantBias& bias_i,
                    OptionalJacobian<9, 9> H1 = boost::none,
                    OptionalJacobian<9, 6> H2 = boost::none) const;
+
+  Matrix9 preintMeasCov() const { return Matrix9::Zero(); }
 
  private:
   // initialize posterior with first (corrected) IMU measurement
