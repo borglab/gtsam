@@ -21,13 +21,26 @@
 
 namespace gtsam {
 
+////////////////////////////////////////////////////////////////////////////////////////////
+
+void PreintegratedMeasurements2::integrateMeasurement(
+    const Vector3& measuredAcc, const Vector3& measuredOmega, double dt) {}
+
+NavState PreintegratedMeasurements2::predict(
+    const NavState& state_i, const imuBias::ConstantBias& bias_i,
+    OptionalJacobian<9, 9> H1, OptionalJacobian<9, 6> H2) const {
+  return NavState();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+
 static double intNoiseVar = 0.0000001;
 static const Matrix3 kIntegrationErrorCovariance = intNoiseVar * I_3x3;
 
-ImuFactor::PreintegratedMeasurements ScenarioRunner::integrate(
+PreintegratedMeasurements2 ScenarioRunner::integrate(
     double T, const imuBias::ConstantBias& estimatedBias,
     bool corrupted) const {
-  ImuFactor::PreintegratedMeasurements pim(p_, estimatedBias);
+  PreintegratedMeasurements2 pim(p_, estimatedBias);
 
   const double dt = imuSampleTime();
   const size_t nrSteps = T / dt;
@@ -43,7 +56,7 @@ ImuFactor::PreintegratedMeasurements ScenarioRunner::integrate(
 }
 
 NavState ScenarioRunner::predict(
-    const ImuFactor::PreintegratedMeasurements& pim,
+    const PreintegratedMeasurements2& pim,
     const imuBias::ConstantBias& estimatedBias) const {
   const NavState state_i(scenario_->pose(0), scenario_->velocity_n(0));
   return pim.predict(state_i, estimatedBias);

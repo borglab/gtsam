@@ -22,14 +22,41 @@
 
 namespace gtsam {
 
+/**
+ * Class that integrates on the manifold
+ */
+class PreintegratedMeasurements2 {
+ public:
+  typedef ImuFactor::PreintegratedMeasurements::Params Params;
+
+  Matrix9 preintMeasCov() const { return Matrix9::Zero(); }
+
+  PreintegratedMeasurements2(
+      const boost::shared_ptr<Params>& p,
+      const gtsam::imuBias::ConstantBias& estimatedBias) {}
+
+  /**
+   * Add a single IMU measurement to the preintegration.
+   * @param measuredAcc Measured acceleration (in body frame)
+   * @param measuredOmega Measured angular velocity (in body frame)
+   * @param dt Time interval between this and the last IMU measurement
+   */
+  void integrateMeasurement(const Vector3& measuredAcc,
+                            const Vector3& measuredOmega, double dt);
+
+  /// Predict state at time j
+  NavState predict(const NavState& state_i, const imuBias::ConstantBias& bias_i,
+                   OptionalJacobian<9, 9> H1 = boost::none,
+                   OptionalJacobian<9, 6> H2 = boost::none) const;
+};
+
 /*
  *  Simple class to test navigation scenarios.
  *  Takes a trajectory scenario as input, and can generate IMU measurements
  */
 class ScenarioRunner {
  public:
-  typedef boost::shared_ptr<ImuFactor::PreintegratedMeasurements::Params>
-      SharedParams;
+  typedef boost::shared_ptr<PreintegratedMeasurements2::Params> SharedParams;
   ScenarioRunner(const Scenario* scenario, const SharedParams& p,
                  double imuSampleTime = 1.0 / 100.0,
                  const imuBias::ConstantBias& bias = imuBias::ConstantBias())
@@ -67,19 +94,18 @@ class ScenarioRunner {
   const double& imuSampleTime() const { return imuSampleTime_; }
 
   /// Integrate measurements for T seconds into a PIM
-  ImuFactor::PreintegratedMeasurements integrate(
+  PreintegratedMeasurements2 integrate(
       double T,
       const imuBias::ConstantBias& estimatedBias = imuBias::ConstantBias(),
       bool corrupted = false) const;
 
   /// Predict predict given a PIM
-  NavState predict(const ImuFactor::PreintegratedMeasurements& pim,
+  NavState predict(const PreintegratedMeasurements2& pim,
                    const imuBias::ConstantBias& estimatedBias =
                        imuBias::ConstantBias()) const;
 
   /// Return pose covariance by re-arranging pim.preintMeasCov() appropriately
-  Matrix6 poseCovariance(
-      const ImuFactor::PreintegratedMeasurements& pim) const {
+  Matrix6 poseCovariance(const PreintegratedMeasurements2& pim) const {
     Matrix9 cov = pim.preintMeasCov();
     Matrix6 poseCov;
     poseCov << cov.block<3, 3>(0, 0), cov.block<3, 3>(0, 3),  //
