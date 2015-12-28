@@ -42,6 +42,7 @@ class GaussianBayesNet;
 class PreintegratedMeasurements2 {
  public:
   typedef ImuFactor::PreintegratedMeasurements::Params Params;
+  typedef boost::shared_ptr<GaussianBayesNet> SharedBayesNet;
 
  private:
   const boost::shared_ptr<Params> p_;
@@ -50,8 +51,9 @@ class PreintegratedMeasurements2 {
 
   size_t k_;         ///< index/count of measurements integrated
   double deltaTij_;  ///< sum of time increments
-  /// posterior on current iterate, as a conditional P(zeta|bias_delta):
-  boost::shared_ptr<GaussianBayesNet> posterior_k_;
+
+  /// posterior on current iterate, stored as a Bayes net P(zeta|bias_delta):
+  SharedBayesNet posterior_k_;
 
  public:
   PreintegratedMeasurements2(
@@ -82,8 +84,13 @@ class PreintegratedMeasurements2 {
 
  private:
   // initialize posterior with first (corrected) IMU measurement
-  void initPosterior(const Vector3& correctedAcc, const Vector3& correctedOmega,
-                     double dt);
+  SharedBayesNet initPosterior(const Vector3& correctedAcc,
+                               const Vector3& correctedOmega, double dt) const;
+
+  // integrate
+  SharedBayesNet integrateCorrected(const Vector3& correctedAcc,
+                                    const Vector3& correctedOmega,
+                                    double dt) const;
 
   // estimate zeta given estimated biases
   // calculates conditional mean of P(zeta|bias_delta)
