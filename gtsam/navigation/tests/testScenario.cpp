@@ -25,7 +25,24 @@
 using namespace std;
 using namespace gtsam;
 
-static const double degree = M_PI / 180.0;
+static const double kDegree = M_PI / 180.0;
+
+/* ************************************************************************* */
+TEST(Scenario, Spin) {
+  //  angular velocity 6 kDegree/sec
+  const double w = 6 * kDegree;
+  const Vector3 W(0, 0, w), V(0, 0, 0);
+  const ExpmapScenario scenario(W, V);
+
+  const double T = 10;
+  EXPECT(assert_equal(W, scenario.omega_b(T), 1e-9));
+  EXPECT(assert_equal(V, scenario.velocity_b(T), 1e-9));
+  EXPECT(assert_equal(W.cross(V), scenario.acceleration_b(T), 1e-9));
+
+  const Pose3 T10 = scenario.pose(T);
+  EXPECT(assert_equal(Vector3(0, 0, 60 * kDegree), T10.rotation().xyz(), 1e-9));
+  EXPECT(assert_equal(Point3(0, 0, 0), T10.translation(), 1e-9));
+}
 
 /* ************************************************************************* */
 TEST(Scenario, Forward) {
@@ -45,8 +62,8 @@ TEST(Scenario, Forward) {
 
 /* ************************************************************************* */
 TEST(Scenario, Circle) {
-  // Forward velocity 2m/s, angular velocity 6 degree/sec around Z
-  const double v = 2, w = 6 * degree;
+  // Forward velocity 2m/s, angular velocity 6 kDegree/sec around Z
+  const double v = 2, w = 6 * kDegree;
   const Vector3 W(0, 0, w), V(v, 0, 0);
   const ExpmapScenario scenario(W, V);
 
@@ -58,15 +75,15 @@ TEST(Scenario, Circle) {
   // R = v/w, so test if circle is of right size
   const double R = v / w;
   const Pose3 T15 = scenario.pose(T);
-  EXPECT(assert_equal(Vector3(0, 0, 90 * degree), T15.rotation().xyz(), 1e-9));
+  EXPECT(assert_equal(Vector3(0, 0, 90 * kDegree), T15.rotation().xyz(), 1e-9));
   EXPECT(assert_equal(Point3(R, R, 0), T15.translation(), 1e-9));
 }
 
 /* ************************************************************************* */
 TEST(Scenario, Loop) {
   // Forward velocity 2m/s
-  // Pitch up with angular velocity 6 degree/sec (negative in FLU)
-  const double v = 2, w = 6 * degree;
+  // Pitch up with angular velocity 6 kDegree/sec (negative in FLU)
+  const double v = 2, w = 6 * kDegree;
   const Vector3 W(0, -w, 0), V(v, 0, 0);
   const ExpmapScenario scenario(W, V);
 
@@ -100,10 +117,10 @@ TEST(Scenario, Accelerating) {
   EXPECT(assert_equal(A, scenario.acceleration_n(T), 1e-9));
 
   {
-  // Check acceleration in nav
-  Matrix expected = numericalDerivative11<Vector3, double>(
-      boost::bind(&Scenario::velocity_n, scenario, _1), T);
-  EXPECT(assert_equal(Vector3(expected), scenario.acceleration_n(T), 1e-9));
+    // Check acceleration in nav
+    Matrix expected = numericalDerivative11<Vector3, double>(
+        boost::bind(&Scenario::velocity_n, scenario, _1), T);
+    EXPECT(assert_equal(Vector3(expected), scenario.acceleration_n(T), 1e-9));
   }
 
   const Pose3 T3 = scenario.pose(3);
