@@ -16,15 +16,73 @@
  */
 
 #include <gtsam/navigation/ScenarioRunner.h>
+#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/inference/Symbol.h>
+
+#include <boost/assign/std/list.hpp>
 
 #include <cmath>
 
+using namespace std;
+using namespace boost::assign;
+
 namespace gtsam {
 
-////////////////////////////////////////////////////////////////////////////////////////////
+using symbol_shorthand::T;
+using symbol_shorthand::P;
+using symbol_shorthand::V;
+
+static const Symbol kBiasKey('B', 0);
 
 void PreintegratedMeasurements2::integrateMeasurement(
-    const Vector3& measuredAcc, const Vector3& measuredOmega, double dt) {}
+    const Vector3& measuredAcc, const Vector3& measuredOmega, double dt) {
+  typedef map<Key, Matrix> Terms;
+  static const Matrix36 omega_D_bias = (Matrix36() << Z_3x3, I_3x3).finished();
+
+  // Correct measurements by subtractig bias
+  Vector3 correctedOmega = measuredOmega - estimatedBias_.gyroscope();
+
+  GaussianFactorGraph graph;
+  boost::shared_ptr<GaussianBayesNet> bayesNet;
+  GaussianFactorGraph::shared_ptr shouldBeEmpty;
+
+  // Handle first time differently
+  if (k_ == 0) {
+    // theta(1) = measuredOmega - (bias + bias_delta)
+    graph.add<Terms>({{T(k_ + 1), I_3x3}, {kBiasKey, omega_D_bias}},
+                     correctedOmega, gyroscopeNoiseModel_);
+    GTSAM_PRINT(graph);
+
+    // eliminate all but biases
+    Ordering keys = list_of(T(k_ + 1));
+    boost::tie(bayesNet, shouldBeEmpty) =
+        graph.eliminatePartialSequential(keys, EliminateQR);
+  } else {
+    // add previous posterior
+    graph.add(posterior_k_);
+
+    // theta(k+1) = theta(k) + inverse(H)*(measuredOmega - (bias + bias_delta))
+    // =>  H*theta(k+1) - H*theta(k) + bias_delta = measuredOmega - bias
+    Matrix3 H = Rot3::ExpmapDerivative(theta_);
+    graph.add<Terms>({{T(k_ + 1), H}, {T(k_), -H}, {kBiasKey, omega_D_bias}},
+                     correctedOmega, gyroscopeNoiseModel_);
+    GTSAM_PRINT(graph);
+
+    // eliminate all but biases
+    Ordering keys = list_of(T(k_))(T(k_ + 1));
+    boost::tie(bayesNet, shouldBeEmpty) =
+        graph.eliminatePartialSequential(keys, EliminateQR);
+  }
+
+  GTSAM_PRINT(*bayesNet);
+  GTSAM_PRINT(*shouldBeEmpty);
+
+  // The bayesNet now contains P(zeta(k)|zeta(k+1),bias) P(zeta(k+1)|bias)
+  // We marginalize zeta(k) by dropping the first factor
+  posterior_k_ = bayesNet->back();
+  k_ += 1;
+}
 
 NavState PreintegratedMeasurements2::predict(
     const NavState& state_i, const imuBias::ConstantBias& bias_i,

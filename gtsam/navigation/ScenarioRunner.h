@@ -22,10 +22,29 @@
 
 namespace gtsam {
 
+// Convert covariance to diagonal noise model, if possible, otherwise throw
+static noiseModel::Diagonal::shared_ptr Diagonal(const Matrix& covariance) {
+  bool smart = true;
+  auto model = noiseModel::Gaussian::Covariance(covariance, smart);
+  auto diagonal = boost::dynamic_pointer_cast<noiseModel::Diagonal>(model);
+  if (!diagonal)
+    throw std::invalid_argument("ScenarioRunner::Diagonal: not a diagonal");
+  return diagonal;
+}
+
 /**
- * Class that integrates on the manifold
+ * Class that integrates state estimate on the manifold.
+ * We integrate zeta = [theta, position, velocity]
+ * See ImuFactor.lyx for the relevant math.
  */
 class PreintegratedMeasurements2 {
+ private:
+  SharedDiagonal accelerometerNoiseModel_, gyroscopeNoiseModel_;
+  const imuBias::ConstantBias estimatedBias_;
+  size_t k_;       ///< index/count of measurements integrated
+  Vector3 theta_;  ///< current estimate for theta
+  GaussianFactor::shared_ptr posterior_k_;  ///< posterior on current iterate
+
  public:
   typedef ImuFactor::PreintegratedMeasurements::Params Params;
 
@@ -33,7 +52,11 @@ class PreintegratedMeasurements2 {
 
   PreintegratedMeasurements2(
       const boost::shared_ptr<Params>& p,
-      const gtsam::imuBias::ConstantBias& estimatedBias) {}
+      const imuBias::ConstantBias& estimatedBias = imuBias::ConstantBias())
+      : accelerometerNoiseModel_(Diagonal(p->accelerometerCovariance)),
+        gyroscopeNoiseModel_(Diagonal(p->gyroscopeCovariance)),
+        estimatedBias_(estimatedBias),
+        k_(0) {}
 
   /**
    * Add a single IMU measurement to the preintegration.
@@ -57,6 +80,17 @@ class PreintegratedMeasurements2 {
 class ScenarioRunner {
  public:
   typedef boost::shared_ptr<PreintegratedMeasurements2::Params> SharedParams;
+
+ private:
+  const Scenario* scenario_;
+  const SharedParams p_;
+  const double imuSampleTime_;
+  const imuBias::ConstantBias bias_;
+
+  // Create two samplers for acceleration and omega noise
+  mutable Sampler gyroSampler_, accSampler_;
+
+ public:
   ScenarioRunner(const Scenario* scenario, const SharedParams& p,
                  double imuSampleTime = 1.0 / 100.0,
                  const imuBias::ConstantBias& bias = imuBias::ConstantBias())
@@ -117,25 +151,6 @@ class ScenarioRunner {
   Matrix6 estimatePoseCovariance(double T, size_t N = 1000,
                                  const imuBias::ConstantBias& estimatedBias =
                                      imuBias::ConstantBias()) const;
-
- private:
-  // Convert covariance to diagonal noise model, if possible, otherwise throw
-  static noiseModel::Diagonal::shared_ptr Diagonal(const Matrix& covariance) {
-    bool smart = true;
-    auto model = noiseModel::Gaussian::Covariance(covariance, smart);
-    auto diagonal = boost::dynamic_pointer_cast<noiseModel::Diagonal>(model);
-    if (!diagonal)
-      throw std::invalid_argument("ScenarioRunner::Diagonal: not a diagonal");
-    return diagonal;
-  }
-
-  const Scenario* scenario_;
-  const SharedParams p_;
-  const double imuSampleTime_;
-  const imuBias::ConstantBias bias_;
-
-  // Create two samplers for acceleration and omega noise
-  mutable Sampler gyroSampler_, accSampler_;
 };
 
 }  // namespace gtsam
