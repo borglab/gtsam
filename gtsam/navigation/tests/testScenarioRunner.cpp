@@ -52,30 +52,30 @@ TEST(ScenarioRunner, Spin) {
   auto pim = runner.integrate(T);
   EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose(), 1e-9));
 
-//  Matrix6 estimatedCov = runner.estimatePoseCovariance(T);
-//  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 1e-5));
+  //  Matrix6 estimatedCov = runner.estimatePoseCovariance(T);
+  //  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 1e-5));
 }
 
-///* *************************************************************************
-///*/
-// namespace forward {
-// const double v = 2;  // m/s
-// ExpmapScenario scenario(Vector3::Zero(), Vector3(v, 0, 0));
-//}
-///* *************************************************************************
-///*/
-// TEST(ScenarioRunner, Forward) {
-//  using namespace forward;
-//  ScenarioRunner runner(&scenario, defaultParams(), kDeltaT);
-//  const double T = 0.1;  // seconds
-//
-//  auto pim = runner.integrate(T);
-//  EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose(), 1e-9));
-//
-//  Matrix6 estimatedCov = runner.estimatePoseCovariance(T);
-//  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 1e-5));
-//}
-//
+/* *************************************************************************
+/*/
+namespace forward {
+const double v = 2;  // m/s
+ExpmapScenario scenario(Vector3::Zero(), Vector3(v, 0, 0));
+}
+/* *************************************************************************
+/*/
+TEST(ScenarioRunner, Forward) {
+  using namespace forward;
+  ScenarioRunner runner(&scenario, defaultParams(), kDeltaT);
+  const double T = 0.1;  // seconds
+
+  auto pim = runner.integrate(T);
+  EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose(), 1e-9));
+
+  //  Matrix6 estimatedCov = runner.estimatePoseCovariance(T);
+  //  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 1e-5));
+}
+
 ///* *************************************************************************
 ///*/
 // TEST(ScenarioRunner, ForwardWithBias) {

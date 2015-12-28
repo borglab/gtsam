@@ -32,6 +32,8 @@ static noiseModel::Diagonal::shared_ptr Diagonal(const Matrix& covariance) {
   return diagonal;
 }
 
+class GaussianBayesNet;
+
 /**
  * Class that integrates state estimate on the manifold.
  * We integrate zeta = [theta, position, velocity]
@@ -42,11 +44,10 @@ class PreintegratedMeasurements2 {
   SharedDiagonal accelerometerNoiseModel_, gyroscopeNoiseModel_;
   const imuBias::ConstantBias estimatedBias_;
 
-  size_t k_;       ///< index/count of measurements integrated
-  Vector3 theta_;  ///< current estimate for theta
+  size_t k_;  ///< index/count of measurements integrated
 
   /// posterior on current iterate, as a conditional P(zeta|bias_delta):
-  boost::shared_ptr<GaussianConditional> posterior_k_;
+  boost::shared_ptr<GaussianBayesNet> posterior_k_;
 
  public:
   typedef ImuFactor::PreintegratedMeasurements::Params Params;
@@ -76,6 +77,10 @@ class PreintegratedMeasurements2 {
                    OptionalJacobian<9, 6> H2 = boost::none) const;
 
  private:
+  // initialize posterior with first (corrected) IMU measurement
+  void initPosterior(const Vector3& correctedAcc, const Vector3& correctedOmega,
+                     double dt);
+
   // estimate zeta given estimated biases
   // calculates conditional mean of P(zeta|bias_delta)
   Vector9 currentEstimate() const;

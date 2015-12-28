@@ -29,63 +29,109 @@ using namespace boost::assign;
 
 namespace gtsam {
 
-using symbol_shorthand::T;
-using symbol_shorthand::P;
-using symbol_shorthand::V;
+using symbol_shorthand::T;  // for theta
+using symbol_shorthand::P;  // for position
+using symbol_shorthand::V;  // for velocity
 
 static const Symbol kBiasKey('B', 0);
+static const noiseModel::Constrained::shared_ptr kAllConstrained =
+    noiseModel::Constrained::All(3);
+static const Matrix36 acc_H_bias = (Matrix36() << I_3x3, Z_3x3).finished();
+static const Matrix36 omega_H_bias = (Matrix36() << Z_3x3, I_3x3).finished();
 
 Vector9 PreintegratedMeasurements2::currentEstimate() const {
+  // TODO(frank): make faster version just for theta
   VectorValues biasValues;
   biasValues.insert(kBiasKey, estimatedBias_.vector());
-  VectorValues zetaValues = posterior_k_->solve(biasValues);
+  VectorValues zetaValues = posterior_k_->optimize(biasValues);
   Vector9 zeta;
-  zeta << zetaValues.at(T(k_)), Vector3::Zero(), Vector3::Zero();
+  zeta << zetaValues.at(T(k_)), zetaValues.at(P(k_)), zetaValues.at(V(k_));
   return zeta;
+}
+
+void PreintegratedMeasurements2::initPosterior(const Vector3& correctedAcc,
+                                               const Vector3& correctedOmega,
+                                               double dt) {
+  typedef map<Key, Matrix> Terms;
+
+  GaussianFactorGraph graph;
+
+  // theta(1) = (measuredOmega - (bias + bias_delta)) * dt
+  graph.add<Terms>({{T(k_ + 1), I_3x3}, {kBiasKey, omega_H_bias}},
+                   dt * correctedOmega, gyroscopeNoiseModel_);
+
+  // pos(1) = 0
+  graph.add<Terms>({{P(k_ + 1), I_3x3}}, Vector3::Zero(), kAllConstrained);
+
+  // vel(1) = (measuredAcc - (bias + bias_delta)) * dt
+  graph.add<Terms>({{V(k_ + 1), I_3x3}, {kBiasKey, acc_H_bias}},
+                   dt * correctedAcc, accelerometerNoiseModel_);
+
+  // eliminate all but biases
+  // NOTE(frank): After this, posterior_k_ contains P(zeta(1)|bias)
+  Ordering keys = list_of(P(k_ + 1))(V(k_ + 1))(T(k_ + 1));
+  posterior_k_ = graph.eliminatePartialSequential(keys, EliminateQR).first;
+
+  k_ += 1;
 }
 
 void PreintegratedMeasurements2::integrateMeasurement(
     const Vector3& measuredAcc, const Vector3& measuredOmega, double dt) {
   typedef map<Key, Matrix> Terms;
-  static const Matrix36 omega_D_bias = (Matrix36() << Z_3x3, I_3x3).finished();
 
   // Correct measurements by subtracting bias
+  Vector3 correctedAcc = measuredAcc - estimatedBias_.accelerometer();
   Vector3 correctedOmega = measuredOmega - estimatedBias_.gyroscope();
-
-  GaussianFactorGraph graph;
-  boost::shared_ptr<GaussianBayesNet> bayesNet;
-  GaussianFactorGraph::shared_ptr shouldBeEmpty;
 
   // Handle first time differently
   if (k_ == 0) {
-    // theta(1) = (measuredOmega - (bias + bias_delta)) * dt
-    graph.add<Terms>({{T(k_ + 1), I_3x3}, {kBiasKey, omega_D_bias}},
-                     dt * correctedOmega, gyroscopeNoiseModel_);
-
-    // eliminate all but biases
-    Ordering keys = list_of(T(k_ + 1));
-    boost::tie(bayesNet, shouldBeEmpty) =
-        graph.eliminatePartialSequential(keys, EliminateQR);
-  } else {
-    // add previous posterior
-    graph.add(boost::static_pointer_cast<GaussianFactor>(posterior_k_));
-
-    // theta(k+1) = theta(k) + inverse(H)*(measuredOmega - bias - bias_delta) dt
-    // =>  H*theta(k+1) - H*theta(k) + bias_delta dt = (measuredOmega - bias) dt
-    Matrix3 H = Rot3::ExpmapDerivative(theta_);
-    graph.add<Terms>(
-        {{T(k_ + 1), H}, {T(k_), -H}, {kBiasKey, omega_D_bias * dt}},
-        dt * correctedOmega, gyroscopeNoiseModel_);
-
-    // eliminate all but biases
-    Ordering keys = list_of(T(k_))(T(k_ + 1));
-    boost::tie(bayesNet, shouldBeEmpty) =
-        graph.eliminatePartialSequential(keys, EliminateQR);
+    initPosterior(correctedAcc, correctedOmega, dt);
+    return;
   }
 
+  GaussianFactorGraph graph;
+
+  // estimate current estimate from posterior
+  // TODO(frank): maybe we should store this
+  Vector9 zeta = currentEstimate();
+  Vector3 theta_k = zeta.tail<3>();
+
+  // add previous posterior
+  for (const auto& conditional : *posterior_k_)
+    graph.add(boost::static_pointer_cast<GaussianFactor>(conditional));
+
+  // theta(k+1) = theta(k) + inverse(H)*(measuredOmega - bias - bias_delta) dt
+  // =>  H*theta(k+1) - H*theta(k) + bias_delta dt = (measuredOmega - bias) dt
+  Matrix3 H = Rot3::ExpmapDerivative(theta_k);
+  graph.add<Terms>({{T(k_ + 1), H}, {T(k_), -H}, {kBiasKey, omega_H_bias * dt}},
+                   dt * correctedOmega, gyroscopeNoiseModel_);
+
+  // pos(k+1) = pos(k) + vel(k) dt
+  graph.add<Terms>({{P(k_ + 1), I_3x3}, {P(k_), -I_3x3}, {V(k_), -I_3x3 * dt}},
+                   Vector3::Zero(), kAllConstrained);
+
+  // vel(k+1) = vel(k) + Rk*(measuredAcc - bias - bias_delta) dt
+  // =>  Rkt*vel(k+1) - Rkt*vel(k) + bias_delta dt = (measuredAcc - bias) dt
+  Rot3 Rk = Rot3::Expmap(theta_k);
+  Matrix3 Rkt = Rk.transpose();
+  graph.add<Terms>(
+      {{V(k_ + 1), Rkt}, {V(k_), -Rkt}, {kBiasKey, acc_H_bias * dt}},
+      dt * correctedAcc, accelerometerNoiseModel_);
+
+  // eliminate all but biases
+  Ordering keys = list_of(P(k_))(V(k_))(T(k_))(P(k_ + 1))(V(k_ + 1))(T(k_ + 1));
+  boost::shared_ptr<GaussianBayesNet> bayesNet =
+      graph.eliminatePartialSequential(keys, EliminateQR).first;
+
   // The bayesNet now contains P(zeta(k)|zeta(k+1),bias) P(zeta(k+1)|bias)
-  // We marginalize zeta(k) by dropping the first factor
-  posterior_k_ = bayesNet->back();
+  // We marginalize zeta(k) by only saving the conditionals of
+  // P(zeta(k+1)|bias):
+  posterior_k_ = boost::make_shared<GaussianBayesNet>();
+  for (const auto& conditional : *bayesNet) {
+    Symbol symbol(conditional->front());
+    if (symbol.index() == k_ + 1) posterior_k_->push_back(conditional);
+  }
+
   k_ += 1;
 }
 
