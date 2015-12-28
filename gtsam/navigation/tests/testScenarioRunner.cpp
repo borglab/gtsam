@@ -30,6 +30,15 @@ static const double kAccelSigma = 0.1;
 static const Vector3 kAccBias(0.2, 0, 0), kRotBias(0.1, 0, 0.3);
 static const imuBias::ConstantBias kNonZeroBias(kAccBias, kRotBias);
 
+// Create default parameters with Z-down and above noise parameters
+static boost::shared_ptr<PreintegratedImuMeasurements::Params> defaultParams() {
+  auto p = PreintegratedImuMeasurements::Params::MakeSharedD(10);
+  p->gyroscopeCovariance = kGyroSigma * kGyroSigma * I_3x3;
+  p->accelerometerCovariance = kAccelSigma * kAccelSigma * I_3x3;
+  p->integrationCovariance = 0.0000001 * I_3x3;
+  return p;
+}
+
 /* ************************************************************************* */
 namespace forward {
 const double v = 2;  // m/s
@@ -38,11 +47,11 @@ ExpmapScenario scenario(Vector3::Zero(), Vector3(v, 0, 0));
 /* ************************************************************************* */
 TEST(ScenarioRunner, Forward) {
   using namespace forward;
-  ScenarioRunner runner(&scenario, kDeltaT, kGyroSigma, kAccelSigma);
+  ScenarioRunner runner(&scenario, defaultParams(), kDeltaT);
   const double T = 0.1;  // seconds
 
   ImuFactor::PreintegratedMeasurements pim = runner.integrate(T);
-  EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose, 1e-9));
+  EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose(), 1e-9));
 
   Matrix6 estimatedCov = runner.estimatePoseCovariance(T);
   EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 1e-5));
@@ -51,7 +60,7 @@ TEST(ScenarioRunner, Forward) {
 /* ************************************************************************* */
 TEST(ScenarioRunner, ForwardWithBias) {
   using namespace forward;
-  ScenarioRunner runner(&scenario, kDeltaT, kGyroSigma, kAccelSigma);
+  ScenarioRunner runner(&scenario, defaultParams(), kDeltaT);
   const double T = 0.1;  // seconds
 
   ImuFactor::PreintegratedMeasurements pim = runner.integrate(T, kNonZeroBias);
@@ -65,11 +74,11 @@ TEST(ScenarioRunner, Circle) {
   const double v = 2, w = 6 * kDegree;
   ExpmapScenario scenario(Vector3(0, 0, w), Vector3(v, 0, 0));
 
-  ScenarioRunner runner(&scenario, kDeltaT, kGyroSigma, kAccelSigma);
+  ScenarioRunner runner(&scenario, defaultParams(), kDeltaT);
   const double T = 0.1;  // seconds
 
   ImuFactor::PreintegratedMeasurements pim = runner.integrate(T);
-  EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose, 0.1));
+  EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose(), 0.1));
 
   Matrix6 estimatedCov = runner.estimatePoseCovariance(T);
   EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 1e-5));
@@ -82,11 +91,11 @@ TEST(ScenarioRunner, Loop) {
   const double v = 2, w = 6 * kDegree;
   ExpmapScenario scenario(Vector3(0, -w, 0), Vector3(v, 0, 0));
 
-  ScenarioRunner runner(&scenario, kDeltaT, kGyroSigma, kAccelSigma);
+  ScenarioRunner runner(&scenario, defaultParams(), kDeltaT);
   const double T = 0.1;  // seconds
 
   ImuFactor::PreintegratedMeasurements pim = runner.integrate(T);
-  EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose, 0.1));
+  EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose(), 0.1));
 
   Matrix6 estimatedCov = runner.estimatePoseCovariance(T);
   EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 1e-5));
@@ -114,10 +123,10 @@ const double T = 3;  // seconds
 /* ************************************************************************* */
 TEST(ScenarioRunner, Accelerating) {
   using namespace accelerating;
-  ScenarioRunner runner(&scenario, T / 10, kGyroSigma, kAccelSigma);
+  ScenarioRunner runner(&scenario, defaultParams(), T / 10);
 
   ImuFactor::PreintegratedMeasurements pim = runner.integrate(T);
-  EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose, 1e-9));
+  EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose(), 1e-9));
 
   Matrix6 estimatedCov = runner.estimatePoseCovariance(T);
   EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 0.1));
@@ -145,10 +154,10 @@ TEST(ScenarioRunner, AcceleratingAndRotating) {
   const AcceleratingScenario scenario(nRb, P0, V0, A, W);
 
   const double T = 3;  // seconds
-  ScenarioRunner runner(&scenario, T / 10, kGyroSigma, kAccelSigma);
+  ScenarioRunner runner(&scenario, defaultParams(), T / 10);
 
   ImuFactor::PreintegratedMeasurements pim = runner.integrate(T);
-  EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose, 1e-9));
+  EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose(), 1e-9));
 
   Matrix6 estimatedCov = runner.estimatePoseCovariance(T);
   EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 0.1));

@@ -27,11 +27,7 @@ static const Matrix3 kIntegrationErrorCovariance = intNoiseVar * I_3x3;
 ImuFactor::PreintegratedMeasurements ScenarioRunner::integrate(
     double T, const imuBias::ConstantBias& estimatedBias,
     bool corrupted) const {
-  const bool use2ndOrderIntegration = true;
-
-  ImuFactor::PreintegratedMeasurements pim(
-      estimatedBias, accCovariance(), gyroCovariance(),
-      kIntegrationErrorCovariance, use2ndOrderIntegration);
+  ImuFactor::PreintegratedMeasurements pim(p_, estimatedBias);
 
   const double dt = imuSampleTime();
   const size_t nrSteps = T / dt;
@@ -46,27 +42,23 @@ ImuFactor::PreintegratedMeasurements ScenarioRunner::integrate(
   return pim;
 }
 
-PoseVelocityBias ScenarioRunner::predict(
+NavState ScenarioRunner::predict(
     const ImuFactor::PreintegratedMeasurements& pim,
     const imuBias::ConstantBias& estimatedBias) const {
-  // TODO(frank): allow non-zero  omegaCoriolis
-  const Vector3 omegaCoriolis = Vector3::Zero();
-  const bool use2ndOrderCoriolis = true;
-  return pim.predict(scenario_->pose(0), scenario_->velocity_n(0),
-                     estimatedBias, gravity_n(), omegaCoriolis,
-                     use2ndOrderCoriolis);
+  const NavState state_i(scenario_->pose(0), scenario_->velocity_n(0));
+  return pim.predict(state_i, estimatedBias);
 }
 
 Matrix6 ScenarioRunner::estimatePoseCovariance(
     double T, size_t N, const imuBias::ConstantBias& estimatedBias) const {
   // Get predict prediction from ground truth measurements
-  Pose3 prediction = predict(integrate(T)).pose;
+  Pose3 prediction = predict(integrate(T)).pose();
 
   // Sample !
   Matrix samples(9, N);
   Vector6 sum = Vector6::Zero();
   for (size_t i = 0; i < N; i++) {
-    Pose3 sampled = predict(integrate(T, estimatedBias, true)).pose;
+    Pose3 sampled = predict(integrate(T, estimatedBias, true)).pose();
     Vector6 xi = sampled.localCoordinates(prediction);
     samples.col(i) = xi;
     sum += xi;

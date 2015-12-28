@@ -28,25 +28,22 @@ namespace gtsam {
  */
 class ScenarioRunner {
  public:
-  ScenarioRunner(const Scenario* scenario, double imuSampleTime = 1.0 / 100.0,
-                 double gyroSigma = 0.17, double accSigma = 0.01,
-                 const imuBias::ConstantBias& bias = imuBias::ConstantBias(),
-                 const Vector3& gravity_n = Vector3(0, 0, -10))
+  typedef boost::shared_ptr<ImuFactor::PreintegratedMeasurements::Params>
+      SharedParams;
+  ScenarioRunner(const Scenario* scenario, const SharedParams& p,
+                 double imuSampleTime = 1.0 / 100.0,
+                 const imuBias::ConstantBias& bias = imuBias::ConstantBias())
       : scenario_(scenario),
+        p_(p),
         imuSampleTime_(imuSampleTime),
-        gyroNoiseModel_(noiseModel::Isotropic::Sigma(3, gyroSigma)),
-        accNoiseModel_(noiseModel::Isotropic::Sigma(3, accSigma)),
         bias_(bias),
-        gravity_n_(gravity_n),
         // NOTE(duy): random seeds that work well:
-        gyroSampler_(gyroNoiseModel_, 10),
-        accSampler_(accNoiseModel_, 29284)
-
-  {}
+        gyroSampler_(Diagonal(p->gyroscopeCovariance), 10),
+        accSampler_(Diagonal(p->accelerometerCovariance), 29284) {}
 
   // NOTE(frank): hardcoded for now with Z up (gravity points in negative Z)
   // also, uses g=10 for easy debugging
-  const Vector3& gravity_n() const { return gravity_n_; }
+  const Vector3& gravity_n() const { return p_->n_gravity; }
 
   // A gyro simply measures angular velocity in body frame
   Vector3 actual_omega_b(double t) const { return scenario_->omega_b(t); }
@@ -69,17 +66,6 @@ class ScenarioRunner {
 
   const double& imuSampleTime() const { return imuSampleTime_; }
 
-  const noiseModel::Diagonal::shared_ptr& gyroNoiseModel() const {
-    return gyroNoiseModel_;
-  }
-
-  const noiseModel::Diagonal::shared_ptr& accNoiseModel() const {
-    return accNoiseModel_;
-  }
-
-  Matrix3 gyroCovariance() const { return gyroNoiseModel_->covariance(); }
-  Matrix3 accCovariance() const { return accNoiseModel_->covariance(); }
-
   /// Integrate measurements for T seconds into a PIM
   ImuFactor::PreintegratedMeasurements integrate(
       double T,
@@ -87,9 +73,9 @@ class ScenarioRunner {
       bool corrupted = false) const;
 
   /// Predict predict given a PIM
-  PoseVelocityBias predict(const ImuFactor::PreintegratedMeasurements& pim,
-                           const imuBias::ConstantBias& estimatedBias =
-                               imuBias::ConstantBias()) const;
+  NavState predict(const ImuFactor::PreintegratedMeasurements& pim,
+                   const imuBias::ConstantBias& estimatedBias =
+                       imuBias::ConstantBias()) const;
 
   /// Return pose covariance by re-arranging pim.preintMeasCov() appropriately
   Matrix6 poseCovariance(
@@ -107,12 +93,20 @@ class ScenarioRunner {
                                      imuBias::ConstantBias()) const;
 
  private:
+  // Convert covariance to diagonal noise model, if possible, otherwise throw
+  static noiseModel::Diagonal::shared_ptr Diagonal(const Matrix& covariance) {
+    bool smart = true;
+    auto model = noiseModel::Gaussian::Covariance(covariance, smart);
+    auto diagonal = boost::dynamic_pointer_cast<noiseModel::Diagonal>(model);
+    if (!diagonal)
+      throw std::invalid_argument("ScenarioRunner::Diagonal: not a diagonal");
+    return diagonal;
+  }
+
   const Scenario* scenario_;
+  const SharedParams p_;
   const double imuSampleTime_;
-  // TODO(frank): unify with Params, use actual noisemodels there...
-  const noiseModel::Diagonal::shared_ptr gyroNoiseModel_, accNoiseModel_;
   const imuBias::ConstantBias bias_;
-  const Vector3 gravity_n_;
 
   // Create two samplers for acceleration and omega noise
   mutable Sampler gyroSampler_, accSampler_;
