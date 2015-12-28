@@ -295,6 +295,7 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i,
 }
 
 //------------------------------------------------------------------------------
+#ifdef ALLOW_DEPRECATED_IN_GTSAM4
 PoseVelocityBias PreintegrationBase::predict(const Pose3& pose_i,
     const Vector3& vel_i, const imuBias::ConstantBias& bias_i,
     const Vector3& n_gravity, const Vector3& omegaCoriolis,
@@ -307,7 +308,7 @@ PoseVelocityBias PreintegrationBase::predict(const Pose3& pose_i,
   p_ = q;
   return PoseVelocityBias(predict(NavState(pose_i, vel_i), bias_i), bias_i);
 }
-
+#endif
 //------------------------------------------------------------------------------
 
 }/// namespace gtsam

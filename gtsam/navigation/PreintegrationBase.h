@@ -28,6 +28,7 @@
 
 namespace gtsam {
 
+#ifdef ALLOW_DEPRECATED_IN_GTSAM4
 /// @deprecated
 struct PoseVelocityBias {
   Pose3 pose;
@@ -44,6 +45,7 @@ struct PoseVelocityBias {
     return NavState(pose, velocity);
   }
 };
+#endif
 
 /**
  * PreintegrationBase is the base class for PreintegratedMeasurements
@@ -101,7 +103,10 @@ public:
 protected:
 
   /// Parameters. Declared mutable only for deprecated predict method.
-  mutable boost::shared_ptr<Params> p_;
+#ifdef ALLOW_DEPRECATED_IN_GTSAM4
+  mutable
+#endif
+  boost::shared_ptr<Params> p_;
 
   /// Acceleration and gyro bias used for preintegration
   imuBias::ConstantBias biasHat_;
@@ -277,6 +282,7 @@ public:
 
   /// @}
 
+#ifdef ALLOW_DEPRECATED_IN_GTSAM4
   /// @name Deprecated
   /// @{
 
@@ -286,6 +292,7 @@ public:
       const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis = false) const;
 
   /// @}
+#endif
 
 private:
   /** Serialization function */

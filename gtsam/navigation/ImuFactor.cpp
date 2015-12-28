@@ -85,6 +85,7 @@ void PreintegratedImuMeasurements::integrateMeasurement(
 }
 
 //------------------------------------------------------------------------------
+#ifdef ALLOW_DEPRECATED_IN_GTSAM4
 PreintegratedImuMeasurements::PreintegratedImuMeasurements(
     const imuBias::ConstantBias& biasHat, const Matrix3& measuredAccCovariance,
     const Matrix3& measuredOmegaCovariance,
@@ -100,7 +101,6 @@ PreintegratedImuMeasurements::PreintegratedImuMeasurements(
   resetIntegration();
 }
 
-//------------------------------------------------------------------------------
 void PreintegratedImuMeasurements::integrateMeasurement(
     const Vector3& measuredAcc, const Vector3& measuredOmega, double deltaT,
     boost::optional<Pose3> body_P_sensor) {
@@ -108,6 +108,7 @@ void PreintegratedImuMeasurements::integrateMeasurement(
   p_->body_P_sensor = body_P_sensor;
   integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 }
+#endif
 
 //------------------------------------------------------------------------------
 // ImuFactor methods
@@ -171,6 +172,7 @@ ImuFactor::ImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
 }
 
 //------------------------------------------------------------------------------
+#ifdef ALLOW_DEPRECATED_IN_GTSAM4
 void ImuFactor::Predict(const Pose3& pose_i, const Vector3& vel_i,
     Pose3& pose_j, Vector3& vel_j, const imuBias::ConstantBias& bias_i,
     PreintegratedMeasurements& pim, const Vector3& n_gravity,
@@ -181,5 +183,5 @@ void ImuFactor::Predict(const Pose3& pose_i, const Vector3& vel_i,
   pose_j = pvb.pose;
   vel_j = pvb.velocity;
 }
-
+#endif
 } // namespace gtsam

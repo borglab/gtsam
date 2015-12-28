@@ -118,6 +118,7 @@ public:
   /// Return pre-integrated measurement covariance
   Matrix preintMeasCov() const { return preintMeasCov_; }
 
+#ifdef ALLOW_DEPRECATED_IN_GTSAM4
   /// @deprecated constructor
   /// NOTE(frank): assumes Z-Down convention, only second order integration supported
   PreintegratedImuMeasurements(const imuBias::ConstantBias& biasHat,
@@ -131,6 +132,7 @@ public:
   void integrateMeasurement(const Vector3& measuredAcc,
       const Vector3& measuredOmega, double dt,
       boost::optional<Pose3> body_P_sensor);
+#endif
 
 private:
 

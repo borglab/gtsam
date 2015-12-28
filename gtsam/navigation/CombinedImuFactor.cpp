@@ -238,6 +238,7 @@ Vector CombinedImuFactor::evaluateError(const Pose3& pose_i,
 }
 
 //------------------------------------------------------------------------------
+#ifdef ALLOW_DEPRECATED_IN_GTSAM4
 CombinedImuFactor::CombinedImuFactor(
     Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias_i, Key bias_j,
     const CombinedPreintegratedMeasurements& pim, const Vector3& n_gravity,
@@ -254,7 +255,7 @@ CombinedImuFactor::CombinedImuFactor(
   p->use2ndOrderCoriolis = use2ndOrderCoriolis;
   _PIM_.p_ = p;
 }
-//------------------------------------------------------------------------------
+
 void CombinedImuFactor::Predict(const Pose3& pose_i, const Vector3& vel_i,
                                 Pose3& pose_j, Vector3& vel_j,
                                 const imuBias::ConstantBias& bias_i,
@@ -268,6 +269,7 @@ void CombinedImuFactor::Predict(const Pose3& pose_i, const Vector3& vel_i,
   pose_j = pvb.pose;
   vel_j = pvb.velocity;
 }
+#endif
 
 } /// namespace gtsam
 

@@ -281,6 +281,7 @@ public:
   /// @deprecated typename
   typedef gtsam::PreintegratedCombinedMeasurements CombinedPreintegratedMeasurements;
 
+#ifdef ALLOW_DEPRECATED_IN_GTSAM4
   /// @deprecated constructor
   CombinedImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias_i,
                     Key bias_j, const CombinedPreintegratedMeasurements& pim,
@@ -294,6 +295,7 @@ public:
                       CombinedPreintegratedMeasurements& pim,
                       const Vector3& n_gravity, const Vector3& omegaCoriolis,
                       const bool use2ndOrderCoriolis = false);
+#endif
 
 private:
 
