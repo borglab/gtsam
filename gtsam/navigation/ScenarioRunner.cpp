@@ -38,13 +38,20 @@ static const Matrix36 acc_H_bias = (Matrix36() << I_3x3, Z_3x3).finished();
 static const Matrix36 omega_H_bias = (Matrix36() << Z_3x3, I_3x3).finished();
 
 Vector9 PreintegratedMeasurements2::currentEstimate() const {
-  // TODO(frank): make faster version just for theta
   VectorValues biasValues;
   biasValues.insert(kBiasKey, estimatedBias_.vector());
   VectorValues zetaValues = posterior_k_->optimize(biasValues);
   Vector9 zeta;
   zeta << zetaValues.at(T(k_)), zetaValues.at(P(k_)), zetaValues.at(V(k_));
   return zeta;
+}
+
+Vector3 PreintegratedMeasurements2::currentTheta() const {
+  // TODO(frank): make faster version theta = inv(R)*d
+  VectorValues biasValues;
+  biasValues.insert(kBiasKey, estimatedBias_.vector());
+  VectorValues zetaValues = posterior_k_->optimize(biasValues);
+  return zetaValues.at(T(k_));
 }
 
 PreintegratedMeasurements2::SharedBayesNet
@@ -73,7 +80,7 @@ PreintegratedMeasurements2::initPosterior(const Vector3& correctedAcc,
 
   // eliminate all but biases
   // NOTE(frank): After this, posterior_k_ contains P(zeta(1)|bias)
-  Ordering keys = list_of(P(k_ + 1))(V(k_ + 1))(T(k_ + 1));
+  Ordering keys = list_of(T(k_ + 1))(P(k_ + 1))(V(k_ + 1));
   return graph.eliminatePartialSequential(keys, EliminateQR).first;
 }
 
@@ -85,10 +92,8 @@ PreintegratedMeasurements2::integrateCorrected(const Vector3& correctedAcc,
 
   GaussianFactorGraph graph;
 
-  // estimate current estimate from posterior
-  // TODO(frank): maybe we should store this - or only recover theta = inv(R)*d
-  Vector9 zeta = currentEstimate();
-  Vector3 theta_k = zeta.head<3>();
+  // estimate current theta from posterior
+  Vector3 theta_k = currentTheta();
   Rot3 Rk = Rot3::Expmap(theta_k);
   Matrix3 Rkt = Rk.transpose();
 
@@ -119,12 +124,14 @@ PreintegratedMeasurements2::integrateCorrected(const Vector3& correctedAcc,
       correctedAcc * dt, accelerometerNoiseModel_);
 
   // eliminate all but biases
-  Ordering keys = list_of(P(k_))(V(k_))(T(k_))(P(k_ + 1))(V(k_ + 1))(T(k_ + 1));
+  // TODO(frank): does not seem to eliminate in order I want. What gives?
+  Ordering keys = list_of(T(k_))(P(k_))(V(k_))(T(k_ + 1))(P(k_ + 1))(V(k_ + 1));
   SharedBayesNet bayesNet =
       graph.eliminatePartialSequential(keys, EliminateQR).first;
 
   // The Bayes net now contains P(zeta(k)|zeta(k+1),bias) P(zeta(k+1)|bias)
   // We marginalize zeta(k) by removing the conditionals on zeta(k)
+  // TODO(frank): could use erase(begin, begin+3) if order above was correct
   SharedBayesNet marginal = boost::make_shared<GaussianBayesNet>();
   for (const auto& conditional : *bayesNet) {
     Symbol symbol(conditional->front());
@@ -156,15 +163,38 @@ void PreintegratedMeasurements2::integrateMeasurement(
 NavState PreintegratedMeasurements2::predict(
     const NavState& state_i, const imuBias::ConstantBias& bias_i,
     OptionalJacobian<9, 9> H1, OptionalJacobian<9, 6> H2) const {
+  // Get mean of current posterior on zeta
   // TODO(frank): handle bias
   Vector9 zeta = currentEstimate();
+
+  // Correct for initial velocity and gravity
   Rot3 Ri = state_i.attitude();
   Matrix3 Rit = Ri.transpose();
   Vector3 gt = deltaTij_ * p_->n_gravity;
   zeta.segment<3>(3) +=
       Rit * (state_i.velocity() * deltaTij_ + 0.5 * deltaTij_ * gt);
   zeta.segment<3>(6) += Rit * gt;
+
+  // Convert local coordinates to manifold near state_i
   return state_i.retract(zeta);
+}
+
+SharedGaussian PreintegratedMeasurements2::noiseModel() const {
+  Matrix RS;
+  Vector d;
+  GTSAM_PRINT(*posterior_k_);
+  boost::tie(RS, d) = posterior_k_->matrix();
+  cout << RS << endl
+       << endl;
+  cout << d.transpose() << endl;
+
+  // R'*R = A'*A = inv(Cov)
+  // TODO(frank): think of a faster way - implement in noiseModel
+  return noiseModel::Gaussian::SqrtInformation(RS.block<9, 9>(0, 0), false);
+}
+
+Matrix9 PreintegratedMeasurements2::preintMeasCov() const {
+  return noiseModel()->covariance();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////

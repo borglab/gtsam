@@ -80,9 +80,20 @@ class PreintegratedMeasurements2 {
                    OptionalJacobian<9, 9> H1 = boost::none,
                    OptionalJacobian<9, 6> H2 = boost::none) const;
 
-  Matrix9 preintMeasCov() const { return Matrix9::Zero(); }
+  /// Return Gaussian noise model on prediction
+  SharedGaussian noiseModel() const;
+
+  /// @deprecated: Explicitly calculate covariance
+  Matrix9 preintMeasCov() const;
 
  private:
+  // estimate zeta given estimated biases
+  // calculates conditional mean of P(zeta|bias_delta)
+  Vector9 currentEstimate() const;
+
+  // estimate theta given estimated biases
+  Vector3 currentTheta() const;
+
   // initialize posterior with first (corrected) IMU measurement
   SharedBayesNet initPosterior(const Vector3& correctedAcc,
                                const Vector3& correctedOmega, double dt) const;
@@ -92,9 +103,6 @@ class PreintegratedMeasurements2 {
                                     const Vector3& correctedOmega,
                                     double dt) const;
 
-  // estimate zeta given estimated biases
-  // calculates conditional mean of P(zeta|bias_delta)
-  Vector9 currentEstimate() const;
 };
 
 /*
