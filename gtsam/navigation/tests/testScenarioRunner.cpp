@@ -119,18 +119,14 @@ TEST(ScenarioRunner, Loop) {
   //  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 1e-5));
 }
 
-/* *************************************************************************
-/*/
+/* ************************************************************************* */
 namespace initial {
-// Set up body pointing towards y axis, and start at 10,20,0 with velocity
-// going in X. The body itself has Z axis pointing down
-const Rot3 nRb(Point3(0, 1, 0), Point3(1, 0, 0), Point3(0, 0, -1));
-const Point3 P0(10, 20, 0);
-const Vector3 V0(50, 0, 0);
+const Rot3 nRb;
+const Point3 P0;
+const Vector3 V0(0, 0, 0);
 }
 
-/* *************************************************************************
-/*/
+/* ************************************************************************* */
 namespace accelerating {
 using namespace initial;
 const double a = 0.2;  // m/s^2
@@ -173,7 +169,193 @@ TEST(ScenarioRunner, AcceleratingAndRotating) {
   const Vector3 A(0, a, 0), W(0, 0.1, 0);
   const AcceleratingScenario scenario(nRb, P0, V0, A, W);
 
-  const double T = 3;  // seconds
+  const double T = 10;  // seconds
+  ScenarioRunner runner(&scenario, defaultParams(), T / 10);
+
+  auto pim = runner.integrate(T);
+  EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose(), 1e-9));
+
+  //  Matrix6 estimatedCov = runner.estimatePoseCovariance(T);
+  //  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 0.1));
+}
+
+/* ************************************************************************* */
+namespace initial2 {
+// No rotation, but non-zero position and velocities
+const Rot3 nRb;
+const Point3 P0(10, 20, 0);
+const Vector3 V0(50, 0, 0);
+}
+
+/* ************************************************************************* */
+namespace accelerating2 {
+using namespace initial2;
+const double a = 0.2;  // m/s^2
+const Vector3 A(0, a, 0);
+const AcceleratingScenario scenario(nRb, P0, V0, A);
+
+const double T = 3;  // seconds
+}
+
+/* ************************************************************************* */
+TEST(ScenarioRunner, Accelerating2) {
+  using namespace accelerating2;
+  ScenarioRunner runner(&scenario, defaultParams(), T / 10);
+
+  auto pim = runner.integrate(T);
+  EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose(), 1e-9));
+
+  //  Matrix6 estimatedCov = runner.estimatePoseCovariance(T);
+  //  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 0.1));
+}
+
+/* ************************************************************************* */
+// TODO(frank):Fails !
+// TEST(ScenarioRunner, AcceleratingWithBias2) {
+//  using namespace accelerating2;
+//  ScenarioRunner runner(&scenario, T / 10, kGyroSigma, kAccelSigma,
+//                        kNonZeroBias);
+//
+//  auto pim = runner.integrate(T,
+//  kNonZeroBias);
+//  Matrix6 estimatedCov = runner.estimatePoseCovariance(T, 10000,
+//  kNonZeroBias);
+//  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 0.1));
+//}
+
+/* ************************************************************************* */
+TEST(ScenarioRunner, AcceleratingAndRotating2) {
+  using namespace initial2;
+  const double a = 0.2;  // m/s^2
+  const Vector3 A(0, a, 0), W(0, 0.1, 0);
+  const AcceleratingScenario scenario(nRb, P0, V0, A, W);
+
+  const double T = 10;  // seconds
+  ScenarioRunner runner(&scenario, defaultParams(), T / 10);
+
+  auto pim = runner.integrate(T);
+  EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose(), 1e-9));
+
+  //  Matrix6 estimatedCov = runner.estimatePoseCovariance(T);
+  //  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 0.1));
+}
+
+/* ************************************************************************* */
+namespace initial3 {
+// Rotation only
+// Set up body pointing towards y axis. The body itself has Z axis pointing down
+const Rot3 nRb(Point3(0, 1, 0), Point3(1, 0, 0), Point3(0, 0, -1));
+const Point3 P0;
+const Vector3 V0(0, 0, 0);
+}
+
+/* ************************************************************************* */
+namespace accelerating3 {
+using namespace initial3;
+const double a = 0.2;  // m/s^2
+const Vector3 A(0, a, 0);
+const AcceleratingScenario scenario(nRb, P0, V0, A);
+
+const double T = 3;  // seconds
+}
+
+/* ************************************************************************* */
+TEST(ScenarioRunner, Accelerating3) {
+  using namespace accelerating3;
+  ScenarioRunner runner(&scenario, defaultParams(), T / 10);
+
+  auto pim = runner.integrate(T);
+  EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose(), 1e-9));
+
+  //  Matrix6 estimatedCov = runner.estimatePoseCovariance(T);
+  //  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 0.1));
+}
+
+/* ************************************************************************* */
+// TODO(frank):Fails !
+// TEST(ScenarioRunner, AcceleratingWithBias3) {
+//  using namespace accelerating3;
+//  ScenarioRunner runner(&scenario, T / 10, kGyroSigma, kAccelSigma,
+//                        kNonZeroBias);
+//
+//  auto pim = runner.integrate(T,
+//  kNonZeroBias);
+//  Matrix6 estimatedCov = runner.estimatePoseCovariance(T, 10000,
+//  kNonZeroBias);
+//  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 0.1));
+//}
+
+/* ************************************************************************* */
+TEST(ScenarioRunner, AcceleratingAndRotating3) {
+  using namespace initial3;
+  const double a = 0.2;  // m/s^2
+  const Vector3 A(0, a, 0), W(0, 0.1, 0);
+  const AcceleratingScenario scenario(nRb, P0, V0, A, W);
+
+  const double T = 10;  // seconds
+  ScenarioRunner runner(&scenario, defaultParams(), T / 10);
+
+  auto pim = runner.integrate(T);
+  EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose(), 1e-9));
+
+  //  Matrix6 estimatedCov = runner.estimatePoseCovariance(T);
+  //  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 0.1));
+}
+
+/* ************************************************************************* */
+namespace initial4 {
+// Both rotation and translation
+// Set up body pointing towards y axis, and start at 10,20,0 with velocity
+// going in X. The body itself has Z axis pointing down
+const Rot3 nRb(Point3(0, 1, 0), Point3(1, 0, 0), Point3(0, 0, -1));
+const Point3 P0(10, 20, 0);
+const Vector3 V0(50, 0, 0);
+}
+
+/* ************************************************************************* */
+namespace accelerating4 {
+using namespace initial4;
+const double a = 0.2;  // m/s^2
+const Vector3 A(0, a, 0);
+const AcceleratingScenario scenario(nRb, P0, V0, A);
+
+const double T = 3;  // seconds
+}
+
+/* ************************************************************************* */
+TEST(ScenarioRunner, Accelerating4) {
+  using namespace accelerating4;
+  ScenarioRunner runner(&scenario, defaultParams(), T / 10);
+
+  auto pim = runner.integrate(T);
+  EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose(), 1e-9));
+
+  //  Matrix6 estimatedCov = runner.estimatePoseCovariance(T);
+  //  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 0.1));
+}
+
+/* ************************************************************************* */
+// TODO(frank):Fails !
+// TEST(ScenarioRunner, AcceleratingWithBias4) {
+//  using namespace accelerating4;
+//  ScenarioRunner runner(&scenario, T / 10, kGyroSigma, kAccelSigma,
+//                        kNonZeroBias);
+//
+//  auto pim = runner.integrate(T,
+//  kNonZeroBias);
+//  Matrix6 estimatedCov = runner.estimatePoseCovariance(T, 10000,
+//  kNonZeroBias);
+//  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 0.1));
+//}
+
+/* ************************************************************************* */
+TEST(ScenarioRunner, AcceleratingAndRotating4) {
+  using namespace initial4;
+  const double a = 0.2;  // m/s^2
+  const Vector3 A(0, a, 0), W(0, 0.1, 0);
+  const AcceleratingScenario scenario(nRb, P0, V0, A, W);
+
+  const double T = 10;  // seconds
   ScenarioRunner runner(&scenario, defaultParams(), T / 10);
 
   auto pim = runner.integrate(T);
