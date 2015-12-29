@@ -88,7 +88,7 @@ PreintegratedMeasurements2::integrateCorrected(const Vector3& correctedAcc,
   // estimate current estimate from posterior
   // TODO(frank): maybe we should store this - or only recover theta = inv(R)*d
   Vector9 zeta = currentEstimate();
-  Vector3 theta_k = zeta.tail<3>();
+  Vector3 theta_k = zeta.head<3>();
   cout << "zeta: " << zeta.transpose() << endl;
   Rot3 Rk = Rot3::Expmap(theta_k);
   Matrix3 Rkt = Rk.transpose();
@@ -170,7 +170,7 @@ NavState PreintegratedMeasurements2::predict(
   cout << "tij: " << deltaTij_ << endl;
   cout << "gt: " << gt.transpose() << endl;
   cout << "gt^2/2: " << 0.5 * deltaTij_* gt.transpose() << endl;
-  return state_i.expmap(zeta);
+  return state_i.retract(zeta);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
