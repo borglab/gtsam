@@ -89,7 +89,6 @@ PreintegratedMeasurements2::integrateCorrected(const Vector3& correctedAcc,
   // TODO(frank): maybe we should store this - or only recover theta = inv(R)*d
   Vector9 zeta = currentEstimate();
   Vector3 theta_k = zeta.head<3>();
-  cout << "zeta: " << zeta.transpose() << endl;
   Rot3 Rk = Rot3::Expmap(theta_k);
   Matrix3 Rkt = Rk.transpose();
 
@@ -159,17 +158,12 @@ NavState PreintegratedMeasurements2::predict(
     OptionalJacobian<9, 9> H1, OptionalJacobian<9, 6> H2) const {
   // TODO(frank): handle bias
   Vector9 zeta = currentEstimate();
-  cout << "zeta: " << zeta << endl;
   Rot3 Ri = state_i.attitude();
   Matrix3 Rit = Ri.transpose();
   Vector3 gt = deltaTij_ * p_->n_gravity;
   zeta.segment<3>(3) +=
       Rit * (state_i.velocity() * deltaTij_ + 0.5 * deltaTij_ * gt);
   zeta.segment<3>(6) += Rit * gt;
-  cout << "zeta: " << zeta << endl;
-  cout << "tij: " << deltaTij_ << endl;
-  cout << "gt: " << gt.transpose() << endl;
-  cout << "gt^2/2: " << 0.5 * deltaTij_* gt.transpose() << endl;
   return state_i.retract(zeta);
 }
 
