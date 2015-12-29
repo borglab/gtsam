@@ -94,6 +94,12 @@ class PreintegratedMeasurements2 {
   // estimate theta given estimated biases
   Vector3 currentTheta() const;
 
+  // We obtain discrete-time noise models by dividing the continuous-time
+  // covariances by dt:
+
+  SharedDiagonal discreteAccelerometerNoiseModel(double dt) const;
+  SharedDiagonal discreteGyroscopeNoiseModel(double dt) const;
+
   // initialize posterior with first (corrected) IMU measurement
   SharedBayesNet initPosterior(const Vector3& correctedAcc,
                                const Vector3& correctedOmega, double dt) const;
@@ -102,7 +108,6 @@ class PreintegratedMeasurements2 {
   SharedBayesNet integrateCorrected(const Vector3& correctedAcc,
                                     const Vector3& correctedOmega,
                                     double dt) const;
-
 };
 
 /*

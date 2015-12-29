@@ -54,29 +54,43 @@ Vector3 PreintegratedMeasurements2::currentTheta() const {
   return zetaValues.at(T(k_));
 }
 
+SharedDiagonal PreintegratedMeasurements2::discreteAccelerometerNoiseModel(
+    double dt) const {
+  return noiseModel::Diagonal::Sigmas(accelerometerNoiseModel_->sigmas() /
+                                      std::sqrt(dt));
+}
+
+SharedDiagonal PreintegratedMeasurements2::discreteGyroscopeNoiseModel(
+    double dt) const {
+  return noiseModel::Diagonal::Sigmas(gyroscopeNoiseModel_->sigmas() /
+                                      std::sqrt(dt));
+}
+
 PreintegratedMeasurements2::SharedBayesNet
 PreintegratedMeasurements2::initPosterior(const Vector3& correctedAcc,
                                           const Vector3& correctedOmega,
                                           double dt) const {
   typedef map<Key, Matrix> Terms;
 
+  // We create a factor graph and then compute P(zeta|bias)
   GaussianFactorGraph graph;
 
   // theta(1) = (correctedOmega - bias_delta) * dt
   // => theta(1) + bias_delta * dt = correctedOmega * dt
   graph.add<Terms>({{T(k_ + 1), I_3x3}, {kBiasKey, omega_H_bias * dt}},
-                   correctedOmega * dt, gyroscopeNoiseModel_);
+                   correctedOmega * dt, discreteGyroscopeNoiseModel(dt));
 
   // pose(1) = (correctedAcc - bias_delta) * dt^2/2
   // => pose(1) + bias_delta * dt^2/2 = correctedAcc * dt^2/2
   double dt22 = 0.5 * dt * dt;
+  auto accModel = discreteAccelerometerNoiseModel(dt);
   graph.add<Terms>({{P(k_ + 1), I_3x3}, {kBiasKey, acc_H_bias * dt22}},
-                   correctedAcc * dt22, accelerometerNoiseModel_);
+                   correctedAcc * dt22, accModel);
 
   // vel(1) = (correctedAcc - bias_delta) * dt
   // => vel(1) + bias_delta * dt = correctedAcc * dt
   graph.add<Terms>({{V(k_ + 1), I_3x3}, {kBiasKey, acc_H_bias * dt}},
-                   correctedAcc * dt, accelerometerNoiseModel_);
+                   correctedAcc * dt, accModel);
 
   // eliminate all but biases
   // NOTE(frank): After this, posterior_k_ contains P(zeta(1)|bias)
@@ -105,23 +119,24 @@ PreintegratedMeasurements2::integrateCorrected(const Vector3& correctedAcc,
   // =>  H*theta(k+1) - H*theta(k) + bias_delta dt = (measuredOmega - bias) dt
   Matrix3 H = Rot3::ExpmapDerivative(theta_k);
   graph.add<Terms>({{T(k_ + 1), H}, {T(k_), -H}, {kBiasKey, omega_H_bias * dt}},
-                   correctedOmega * dt, gyroscopeNoiseModel_);
+                   correctedOmega * dt, discreteGyroscopeNoiseModel(dt));
 
   // pos(k+1) = pos(k) + vel(k) dt + Rk*(correctedAcc - bias_delta) dt^2/2
   //  => Rkt*pos(k+1) - Rkt*pos(k) - Rkt*vel(k) dt + bias_delta dt^2/2
   //     = correctedAcc dt^2/2
   double dt22 = 0.5 * dt * dt;
+  auto accModel = discreteAccelerometerNoiseModel(dt);
   graph.add<Terms>({{P(k_ + 1), Rkt},
                     {P(k_), -Rkt},
                     {V(k_), -Rkt * dt},
                     {kBiasKey, acc_H_bias * dt22}},
-                   correctedAcc * dt22, accelerometerNoiseModel_);
+                   correctedAcc * dt22, accModel);
 
   // vel(k+1) = vel(k) + Rk*(correctedAcc - bias_delta) dt
   // =>  Rkt*vel(k+1) - Rkt*vel(k) + bias_delta dt = correctedAcc * dt
   graph.add<Terms>(
       {{V(k_ + 1), Rkt}, {V(k_), -Rkt}, {kBiasKey, acc_H_bias * dt}},
-      correctedAcc * dt, accelerometerNoiseModel_);
+      correctedAcc * dt, accModel);
 
   // eliminate all but biases
   // TODO(frank): does not seem to eliminate in order I want. What gives?
@@ -182,11 +197,7 @@ NavState PreintegratedMeasurements2::predict(
 SharedGaussian PreintegratedMeasurements2::noiseModel() const {
   Matrix RS;
   Vector d;
-  GTSAM_PRINT(*posterior_k_);
   boost::tie(RS, d) = posterior_k_->matrix();
-  cout << RS << endl
-       << endl;
-  cout << d.transpose() << endl;
 
   // R'*R = A'*A = inv(Cov)
   // TODO(frank): think of a faster way - implement in noiseModel
