@@ -66,6 +66,9 @@ class PreintegratedMeasurements2 {
         k_(0),
         deltaTij_(0.0) {}
 
+  SharedDiagonal discreteAccelerometerNoiseModel(double dt) const;
+  SharedDiagonal discreteGyroscopeNoiseModel(double dt) const;
+
   /**
    * Add a single IMU measurement to the preintegration.
    * @param measuredAcc Measured acceleration (in body frame)
@@ -97,9 +100,6 @@ class PreintegratedMeasurements2 {
   // We obtain discrete-time noise models by dividing the continuous-time
   // covariances by dt:
 
-  SharedDiagonal discreteAccelerometerNoiseModel(double dt) const;
-  SharedDiagonal discreteGyroscopeNoiseModel(double dt) const;
-
   // initialize posterior with first (corrected) IMU measurement
   SharedBayesNet initPosterior(const Vector3& correctedAcc,
                                const Vector3& correctedOmega, double dt) const;
@@ -121,7 +121,7 @@ class ScenarioRunner {
  private:
   const Scenario* scenario_;
   const SharedParams p_;
-  const double imuSampleTime_;
+  const double imuSampleTime_, sqrt_dt_;
   const imuBias::ConstantBias bias_;
 
   // Create two samplers for acceleration and omega noise
@@ -134,6 +134,7 @@ class ScenarioRunner {
       : scenario_(scenario),
         p_(p),
         imuSampleTime_(imuSampleTime),
+        sqrt_dt_(std::sqrt(imuSampleTime)),
         bias_(bias),
         // NOTE(duy): random seeds that work well:
         gyroSampler_(Diagonal(p->gyroscopeCovariance), 10),
@@ -155,11 +156,11 @@ class ScenarioRunner {
   // versions corrupted by bias and noise
   Vector3 measured_omega_b(double t) const {
     return actual_omega_b(t) + bias_.gyroscope() +
-           gyroSampler_.sample() / std::sqrt(imuSampleTime_);
+           gyroSampler_.sample() / sqrt_dt_;
   }
   Vector3 measured_specific_force_b(double t) const {
     return actual_specific_force_b(t) + bias_.accelerometer() +
-           accSampler_.sample() / std::sqrt(imuSampleTime_);
+           accSampler_.sample() / sqrt_dt_;
   }
 
   const double& imuSampleTime() const { return imuSampleTime_; }
@@ -175,19 +176,13 @@ class ScenarioRunner {
                    const imuBias::ConstantBias& estimatedBias =
                        imuBias::ConstantBias()) const;
 
-  /// Return pose covariance by re-arranging pim.preintMeasCov() appropriately
-  Matrix6 poseCovariance(const PreintegratedMeasurements2& pim) const {
-    Matrix9 cov = pim.preintMeasCov();
-    Matrix6 poseCov;
-    poseCov << cov.block<3, 3>(0, 0), cov.block<3, 3>(0, 3),  //
-        cov.block<3, 3>(3, 0), cov.block<3, 3>(3, 3);
-    return poseCov;
-  }
+  /// Compute a Monte Carlo estimate of the predict covariance using N samples
+  Matrix9 estimateCovariance(double T, size_t N = 1000,
+                             const imuBias::ConstantBias& estimatedBias =
+                                 imuBias::ConstantBias()) const;
 
-  /// Compute a Monte Carlo estimate of the PIM pose covariance using N samples
-  Matrix6 estimatePoseCovariance(double T, size_t N = 1000,
-                                 const imuBias::ConstantBias& estimatedBias =
-                                     imuBias::ConstantBias()) const;
+  /// Estimate covariance of sampled noise for sanity-check
+  Matrix6 estimateNoiseCovariance(size_t N = 1000) const;
 };
 
 }  // namespace gtsam

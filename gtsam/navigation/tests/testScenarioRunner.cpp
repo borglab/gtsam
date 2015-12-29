@@ -23,7 +23,7 @@ using namespace std;
 using namespace gtsam;
 
 static const double kDegree = M_PI / 180.0;
-static const double kDeltaT = 1e-2;
+static const double kDt = 1e-2;
 static const double kGyroSigma = 0.02;
 static const double kAccelSigma = 0.1;
 
@@ -46,14 +46,29 @@ TEST(ScenarioRunner, Spin) {
   const Vector3 W(0, 0, w), V(0, 0, 0);
   const ExpmapScenario scenario(W, V);
 
-  ScenarioRunner runner(&scenario, defaultParams(), kDeltaT);
-  const double T = 0.5;  // seconds
+  auto p = defaultParams();
+  ScenarioRunner runner(&scenario, p, kDt);
+  const double T = kDt;  // seconds
 
   auto pim = runner.integrate(T);
   EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose(), 1e-9));
 
-  Matrix6 estimatedCov = runner.estimatePoseCovariance(T);
-  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 1e-5));
+  // Check noise model agreement
+  EXPECT(assert_equal(p->accelerometerCovariance / kDt,
+                      pim.discreteAccelerometerNoiseModel(kDt)->covariance()));
+  EXPECT(assert_equal(p->gyroscopeCovariance / kDt,
+                      pim.discreteGyroscopeNoiseModel(kDt)->covariance()));
+
+  // Check sampled noise is kosher
+  Matrix6 expected;
+  expected << p->accelerometerCovariance / kDt, Z_3x3,  //
+      Z_3x3, p->gyroscopeCovariance / kDt;
+  Matrix6 actual = runner.estimateNoiseCovariance(10000);
+  EXPECT(assert_equal(expected, actual, 1e-2));
+
+  // Check calculated covariance against Monte Carlo estimate
+  Matrix9 estimatedCov = runner.estimateCovariance(T);
+  EXPECT(assert_equal(estimatedCov, pim.preintMeasCov(), 1e-5));
 }
 
 /* ************************************************************************* */
@@ -64,26 +79,26 @@ ExpmapScenario scenario(Vector3::Zero(), Vector3(v, 0, 0));
 /* ************************************************************************* */
 TEST(ScenarioRunner, Forward) {
   using namespace forward;
-  ScenarioRunner runner(&scenario, defaultParams(), kDeltaT);
+  ScenarioRunner runner(&scenario, defaultParams(), kDt);
   const double T = 0.1;  // seconds
 
   auto pim = runner.integrate(T);
   EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose(), 1e-9));
 
-  //  Matrix6 estimatedCov = runner.estimatePoseCovariance(T);
-  //  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 1e-5));
+  //  Matrix9 estimatedCov = runner.estimateCovariance(T);
+  //  EXPECT(assert_equal(estimatedCov, pim.preintMeasCov(), 1e-5));
 }
 
 /* ************************************************************************* */
 TEST(ScenarioRunner, ForwardWithBias) {
   //  using namespace forward;
-  //  ScenarioRunner runner(&scenario, defaultParams(), kDeltaT);
+  //  ScenarioRunner runner(&scenario, defaultParams(), kDt);
   //  const double T = 0.1;  // seconds
   //
   //  auto pim = runner.integrate(T, kNonZeroBias);
-  //  Matrix6 estimatedCov = runner.estimatePoseCovariance(T, 1000,
+  //  Matrix9 estimatedCov = runner.estimateCovariance(T, 1000,
   //  kNonZeroBias);
-  //  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 0.1));
+  //  EXPECT(assert_equal(estimatedCov, pim.preintMeasCov(), 0.1));
 }
 
 /* ************************************************************************* */
@@ -92,14 +107,14 @@ TEST(ScenarioRunner, Circle) {
   const double v = 2, w = 6 * kDegree;
   ExpmapScenario scenario(Vector3(0, 0, w), Vector3(v, 0, 0));
 
-  ScenarioRunner runner(&scenario, defaultParams(), kDeltaT);
+  ScenarioRunner runner(&scenario, defaultParams(), kDt);
   const double T = 0.1;  // seconds
 
   auto pim = runner.integrate(T);
   EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose(), 0.1));
 
-  //  Matrix6 estimatedCov = runner.estimatePoseCovariance(T);
-  //  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 1e-5));
+  //  Matrix9 estimatedCov = runner.estimateCovariance(T);
+  //  EXPECT(assert_equal(estimatedCov, pim.preintMeasCov(), 1e-5));
 }
 
 /* ************************************************************************* */
@@ -109,14 +124,14 @@ TEST(ScenarioRunner, Loop) {
   const double v = 2, w = 6 * kDegree;
   ExpmapScenario scenario(Vector3(0, -w, 0), Vector3(v, 0, 0));
 
-  ScenarioRunner runner(&scenario, defaultParams(), kDeltaT);
+  ScenarioRunner runner(&scenario, defaultParams(), kDt);
   const double T = 0.1;  // seconds
 
   auto pim = runner.integrate(T);
   EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose(), 0.1));
 
-  //  Matrix6 estimatedCov = runner.estimatePoseCovariance(T);
-  //  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 1e-5));
+  //  Matrix9 estimatedCov = runner.estimateCovariance(T);
+  //  EXPECT(assert_equal(estimatedCov, pim.preintMeasCov(), 1e-5));
 }
 
 /* ************************************************************************* */
@@ -144,8 +159,8 @@ TEST(ScenarioRunner, Accelerating) {
   auto pim = runner.integrate(T);
   EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose(), 1e-9));
 
-  //  Matrix6 estimatedCov = runner.estimatePoseCovariance(T);
-  //  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 0.1));
+  //  Matrix9 estimatedCov = runner.estimateCovariance(T);
+  //  EXPECT(assert_equal(estimatedCov, pim.preintMeasCov(), 0.1));
 }
 
 /* ************************************************************************* */
@@ -157,9 +172,9 @@ TEST(ScenarioRunner, Accelerating) {
 //
 //  auto pim = runner.integrate(T,
 //  kNonZeroBias);
-//  Matrix6 estimatedCov = runner.estimatePoseCovariance(T, 10000,
+//  Matrix9 estimatedCov = runner.estimateCovariance(T, 10000,
 //  kNonZeroBias);
-//  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 0.1));
+//  EXPECT(assert_equal(estimatedCov, pim.preintMeasCov(), 0.1));
 //}
 
 /* ************************************************************************* */
@@ -175,8 +190,8 @@ TEST(ScenarioRunner, AcceleratingAndRotating) {
   auto pim = runner.integrate(T);
   EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose(), 1e-9));
 
-  //  Matrix6 estimatedCov = runner.estimatePoseCovariance(T);
-  //  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 0.1));
+  //  Matrix9 estimatedCov = runner.estimateCovariance(T);
+  //  EXPECT(assert_equal(estimatedCov, pim.preintMeasCov(), 0.1));
 }
 
 /* ************************************************************************* */
@@ -205,8 +220,8 @@ TEST(ScenarioRunner, Accelerating2) {
   auto pim = runner.integrate(T);
   EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose(), 1e-9));
 
-  //  Matrix6 estimatedCov = runner.estimatePoseCovariance(T);
-  //  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 0.1));
+  //  Matrix9 estimatedCov = runner.estimateCovariance(T);
+  //  EXPECT(assert_equal(estimatedCov, pim.preintMeasCov(), 0.1));
 }
 
 /* ************************************************************************* */
@@ -218,9 +233,9 @@ TEST(ScenarioRunner, Accelerating2) {
 //
 //  auto pim = runner.integrate(T,
 //  kNonZeroBias);
-//  Matrix6 estimatedCov = runner.estimatePoseCovariance(T, 10000,
+//  Matrix9 estimatedCov = runner.estimateCovariance(T, 10000,
 //  kNonZeroBias);
-//  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 0.1));
+//  EXPECT(assert_equal(estimatedCov, pim.preintMeasCov(), 0.1));
 //}
 
 /* ************************************************************************* */
@@ -236,8 +251,8 @@ TEST(ScenarioRunner, AcceleratingAndRotating2) {
   auto pim = runner.integrate(T);
   EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose(), 1e-9));
 
-  //  Matrix6 estimatedCov = runner.estimatePoseCovariance(T);
-  //  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 0.1));
+  //  Matrix9 estimatedCov = runner.estimateCovariance(T);
+  //  EXPECT(assert_equal(estimatedCov, pim.preintMeasCov(), 0.1));
 }
 
 /* ************************************************************************* */
@@ -267,8 +282,8 @@ TEST(ScenarioRunner, Accelerating3) {
   auto pim = runner.integrate(T);
   EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose(), 1e-9));
 
-  //  Matrix6 estimatedCov = runner.estimatePoseCovariance(T);
-  //  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 0.1));
+  //  Matrix9 estimatedCov = runner.estimateCovariance(T);
+  //  EXPECT(assert_equal(estimatedCov, pim.preintMeasCov(), 0.1));
 }
 
 /* ************************************************************************* */
@@ -280,9 +295,9 @@ TEST(ScenarioRunner, Accelerating3) {
 //
 //  auto pim = runner.integrate(T,
 //  kNonZeroBias);
-//  Matrix6 estimatedCov = runner.estimatePoseCovariance(T, 10000,
+//  Matrix9 estimatedCov = runner.estimateCovariance(T, 10000,
 //  kNonZeroBias);
-//  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 0.1));
+//  EXPECT(assert_equal(estimatedCov, pim.preintMeasCov(), 0.1));
 //}
 
 /* ************************************************************************* */
@@ -298,8 +313,8 @@ TEST(ScenarioRunner, AcceleratingAndRotating3) {
   auto pim = runner.integrate(T);
   EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose(), 1e-9));
 
-  //  Matrix6 estimatedCov = runner.estimatePoseCovariance(T);
-  //  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 0.1));
+  //  Matrix9 estimatedCov = runner.estimateCovariance(T);
+  //  EXPECT(assert_equal(estimatedCov, pim.preintMeasCov(), 0.1));
 }
 
 /* ************************************************************************* */
@@ -330,8 +345,8 @@ TEST(ScenarioRunner, Accelerating4) {
   auto pim = runner.integrate(T);
   EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose(), 1e-9));
 
-  //  Matrix6 estimatedCov = runner.estimatePoseCovariance(T);
-  //  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 0.1));
+  //  Matrix9 estimatedCov = runner.estimateCovariance(T);
+  //  EXPECT(assert_equal(estimatedCov, pim.preintMeasCov(), 0.1));
 }
 
 /* ************************************************************************* */
@@ -343,9 +358,9 @@ TEST(ScenarioRunner, Accelerating4) {
 //
 //  auto pim = runner.integrate(T,
 //  kNonZeroBias);
-//  Matrix6 estimatedCov = runner.estimatePoseCovariance(T, 10000,
+//  Matrix9 estimatedCov = runner.estimateCovariance(T, 10000,
 //  kNonZeroBias);
-//  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 0.1));
+//  EXPECT(assert_equal(estimatedCov, pim.preintMeasCov(), 0.1));
 //}
 
 /* ************************************************************************* */
@@ -361,8 +376,8 @@ TEST(ScenarioRunner, AcceleratingAndRotating4) {
   auto pim = runner.integrate(T);
   EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose(), 1e-9));
 
-  //  Matrix6 estimatedCov = runner.estimatePoseCovariance(T);
-  //  EXPECT(assert_equal(estimatedCov, runner.poseCovariance(pim), 0.1));
+  //  Matrix9 estimatedCov = runner.estimateCovariance(T);
+  //  EXPECT(assert_equal(estimatedCov, pim.preintMeasCov(), 0.1));
 }
 
 /* ************************************************************************* */

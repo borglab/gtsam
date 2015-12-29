@@ -238,19 +238,40 @@ NavState ScenarioRunner::predict(
   return pim.predict(state_i, estimatedBias);
 }
 
-Matrix6 ScenarioRunner::estimatePoseCovariance(
+Matrix9 ScenarioRunner::estimateCovariance(
     double T, size_t N, const imuBias::ConstantBias& estimatedBias) const {
   // Get predict prediction from ground truth measurements
-  Pose3 prediction = predict(integrate(T)).pose();
+  NavState prediction = predict(integrate(T));
 
   // Sample !
   Matrix samples(9, N);
+  Vector9 sum = Vector9::Zero();
+  for (size_t i = 0; i < N; i++) {
+    NavState sampled = predict(integrate(T, estimatedBias, true));
+    samples.col(i) = sampled.localCoordinates(prediction);
+    sum += samples.col(i);
+  }
+
+  // Compute MC covariance
+  Vector9 sampleMean = sum / N;
+  Matrix9 Q;
+  Q.setZero();
+  for (size_t i = 0; i < N; i++) {
+    Vector9 xi = samples.col(i);
+    xi -= sampleMean;
+    Q += xi * xi.transpose();
+  }
+
+  return Q / (N - 1);
+}
+
+Matrix6 ScenarioRunner::estimateNoiseCovariance(size_t N) const {
+  Matrix samples(6, N);
   Vector6 sum = Vector6::Zero();
   for (size_t i = 0; i < N; i++) {
-    Pose3 sampled = predict(integrate(T, estimatedBias, true)).pose();
-    Vector6 xi = sampled.localCoordinates(prediction);
-    samples.col(i) = xi;
-    sum += xi;
+    samples.col(i) << accSampler_.sample() / sqrt_dt_,
+        gyroSampler_.sample() / sqrt_dt_;
+    sum += samples.col(i);
   }
 
   // Compute MC covariance
