@@ -48,7 +48,7 @@ TEST(ScenarioRunner, Spin) {
 
   auto p = defaultParams();
   ScenarioRunner runner(&scenario, p, kDt);
-  const double T = kDt;  // seconds
+  const double T = 2 * kDt;  // seconds
 
   auto pim = runner.integrate(T);
   EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose(), 1e-9));
@@ -59,15 +59,17 @@ TEST(ScenarioRunner, Spin) {
   EXPECT(assert_equal(p->gyroscopeCovariance / kDt,
                       pim.discreteGyroscopeNoiseModel(kDt)->covariance()));
 
+#ifdef SANITY_CHECK_SAMPLER
   // Check sampled noise is kosher
   Matrix6 expected;
   expected << p->accelerometerCovariance / kDt, Z_3x3,  //
       Z_3x3, p->gyroscopeCovariance / kDt;
-  Matrix6 actual = runner.estimateNoiseCovariance(10000);
+  Matrix6 actual = runner.estimateNoiseCovariance(100000);
   EXPECT(assert_equal(expected, actual, 1e-2));
+#endif
 
   // Check calculated covariance against Monte Carlo estimate
-  Matrix9 estimatedCov = runner.estimateCovariance(T);
+  Matrix9 estimatedCov = runner.estimateCovariance(T, 1000);
   EXPECT(assert_equal(estimatedCov, pim.preintMeasCov(), 1e-5));
 }
 

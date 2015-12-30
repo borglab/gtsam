@@ -76,21 +76,21 @@ PreintegratedMeasurements2::initPosterior(const Vector3& correctedAcc,
   GaussianFactorGraph graph;
 
   // theta(1) = (correctedOmega - bias_delta) * dt
-  // => theta(1) + bias_delta * dt = correctedOmega * dt
-  graph.add<Terms>({{T(k_ + 1), I_3x3}, {kBiasKey, omega_H_bias * dt}},
-                   correctedOmega * dt, discreteGyroscopeNoiseModel(dt));
+  // => theta(1)/dt + bias_delta = correctedOmega
+  auto I_dt = I_3x3 / dt;
+  graph.add<Terms>({{T(k_ + 1), I_dt}, {kBiasKey, omega_H_bias}},
+                   correctedOmega, discreteGyroscopeNoiseModel(dt));
 
-  // pose(1) = (correctedAcc - bias_delta) * dt^2/2
-  // => pose(1) + bias_delta * dt^2/2 = correctedAcc * dt^2/2
-  double dt22 = 0.5 * dt * dt;
+  // pose(1) = (correctedAcc - bias_delta) * dt22
+  // => pose(1) / dt22 + bias_delta = correctedAcc
   auto accModel = discreteAccelerometerNoiseModel(dt);
-  graph.add<Terms>({{P(k_ + 1), I_3x3}, {kBiasKey, acc_H_bias * dt22}},
-                   correctedAcc * dt22, accModel);
+  graph.add<Terms>({{P(k_ + 1), I_dt * (2.0 / dt)}, {kBiasKey, acc_H_bias}},
+                   correctedAcc, accModel);
 
   // vel(1) = (correctedAcc - bias_delta) * dt
-  // => vel(1) + bias_delta * dt = correctedAcc * dt
-  graph.add<Terms>({{V(k_ + 1), I_3x3}, {kBiasKey, acc_H_bias * dt}},
-                   correctedAcc * dt, accModel);
+  // => vel(1)/dt + bias_delta = correctedAcc
+  graph.add<Terms>({{V(k_ + 1), I_dt}, {kBiasKey, acc_H_bias}}, correctedAcc,
+                   accModel);
 
   // eliminate all but biases
   // NOTE(frank): After this, posterior_k_ contains P(zeta(1)|bias)
@@ -116,27 +116,27 @@ PreintegratedMeasurements2::integrateCorrected(const Vector3& correctedAcc,
     graph.add(boost::static_pointer_cast<GaussianFactor>(conditional));
 
   // theta(k+1) = theta(k) + inverse(H)*(correctedOmega - bias_delta) dt
-  // =>  H*theta(k+1) - H*theta(k) + bias_delta dt = (measuredOmega - bias) dt
-  Matrix3 H = Rot3::ExpmapDerivative(theta_k);
-  graph.add<Terms>({{T(k_ + 1), H}, {T(k_), -H}, {kBiasKey, omega_H_bias * dt}},
-                   correctedOmega * dt, discreteGyroscopeNoiseModel(dt));
+  // =>  H*theta(k+1)/dt - H*theta(k)/dt + bias_delta = (measuredOmega - bias)
+  Matrix3 H = Rot3::ExpmapDerivative(theta_k) / dt;
+  graph.add<Terms>({{T(k_ + 1), H}, {T(k_), -H}, {kBiasKey, omega_H_bias}},
+                   correctedOmega, discreteGyroscopeNoiseModel(dt));
 
-  // pos(k+1) = pos(k) + vel(k) dt + Rk*(correctedAcc - bias_delta) dt^2/2
-  //  => Rkt*pos(k+1) - Rkt*pos(k) - Rkt*vel(k) dt + bias_delta dt^2/2
-  //     = correctedAcc dt^2/2
   double dt22 = 0.5 * dt * dt;
+  // pos(k+1) = pos(k) + vel(k) dt + Rk*(correctedAcc - bias_delta) dt22
+  //  => Rkt*pos(k+1)/dt22 - Rkt*pos(k)/dt22 - Rkt*vel(k) dt/dt22 + bias_delta
+  //     = correctedAcc
   auto accModel = discreteAccelerometerNoiseModel(dt);
-  graph.add<Terms>({{P(k_ + 1), Rkt},
-                    {P(k_), -Rkt},
-                    {V(k_), -Rkt * dt},
-                    {kBiasKey, acc_H_bias * dt22}},
-                   correctedAcc * dt22, accModel);
+  graph.add<Terms>({{P(k_ + 1), Rkt / dt22},
+                    {P(k_), -Rkt / dt22},
+                    {V(k_), -Rkt * (2.0 / dt)},
+                    {kBiasKey, acc_H_bias}},
+                   correctedAcc, accModel);
 
   // vel(k+1) = vel(k) + Rk*(correctedAcc - bias_delta) dt
-  // =>  Rkt*vel(k+1) - Rkt*vel(k) + bias_delta dt = correctedAcc * dt
+  // =>  Rkt*vel(k+1)/dt - Rkt*vel(k)/dt + bias_delta = correctedAcc
   graph.add<Terms>(
-      {{V(k_ + 1), Rkt}, {V(k_), -Rkt}, {kBiasKey, acc_H_bias * dt}},
-      correctedAcc * dt, accModel);
+      {{V(k_ + 1), Rkt / dt}, {V(k_), -Rkt / dt}, {kBiasKey, acc_H_bias}},
+      correctedAcc, accModel);
 
   // eliminate all but biases
   // TODO(frank): does not seem to eliminate in order I want. What gives?
@@ -257,8 +257,7 @@ Matrix9 ScenarioRunner::estimateCovariance(
   Matrix9 Q;
   Q.setZero();
   for (size_t i = 0; i < N; i++) {
-    Vector9 xi = samples.col(i);
-    xi -= sampleMean;
+    Vector9 xi = samples.col(i) - sampleMean;
     Q += xi * xi.transpose();
   }
 
@@ -279,8 +278,7 @@ Matrix6 ScenarioRunner::estimateNoiseCovariance(size_t N) const {
   Matrix6 Q;
   Q.setZero();
   for (size_t i = 0; i < N; i++) {
-    Vector6 xi = samples.col(i);
-    xi -= sampleMean;
+    Vector6 xi = samples.col(i) - sampleMean;
     Q += xi * xi.transpose();
   }
 
