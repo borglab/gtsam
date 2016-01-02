@@ -60,9 +60,9 @@ Matrix9 ScenarioRunner::estimateCovariance(double T, size_t N,
   Vector9 sum = Vector9::Zero();
   for (size_t i = 0; i < N; i++) {
     auto pim = integrate(T, estimatedBias, true);
-#if 0
+#if 1
     NavState sampled = predict(pim);
-    Vector9 zeta = sampled.localCoordinates(prediction);
+    Vector9 xi = sampled.localCoordinates(prediction);
 #else
     Vector9 xi = pim.zeta();
 #endif

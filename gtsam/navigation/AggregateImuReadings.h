@@ -67,13 +67,7 @@ class AggregateImuReadings {
 
  public:
   AggregateImuReadings(const boost::shared_ptr<Params>& p,
-                       const Bias& estimatedBias = Bias())
-      : p_(p),
-        accelerometerNoiseModel_(Diagonal(p->accelerometerCovariance)),
-        gyroscopeNoiseModel_(Diagonal(p->gyroscopeCovariance)),
-        estimatedBias_(estimatedBias),
-        k_(0),
-        deltaTij_(0.0) {}
+                       const Bias& estimatedBias = Bias());
 
   // We obtain discrete-time noise models by dividing the continuous-time
   // covariances by dt:
@@ -104,6 +98,9 @@ class AggregateImuReadings {
   Matrix9 preintMeasCov() const;
 
  private:
+  void updateEstimate(const Vector3& measuredAcc, const Vector3& measuredOmega,
+                      double dt);
+
   NonlinearFactorGraph createGraph(const Vector3_& theta_,
                                    const Vector3_& pose_, const Vector3_& vel_,
                                    const Vector3& measuredAcc,
@@ -115,8 +112,8 @@ class AggregateImuReadings {
                                const Vector3& measuredOmega, double dt);
 
   // integrate
-  SharedBayesNet integrateCorrected(const Vector3& measuredAcc,
-                                    const Vector3& measuredOmega, double dt);
+  SharedBayesNet updatePosterior(const Vector3& measuredAcc,
+                                 const Vector3& measuredOmega, double dt);
 };
 
 }  // namespace gtsam

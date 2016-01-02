@@ -38,6 +38,22 @@ using symbol_shorthand::V;  // for velocity
 
 static const Symbol kBiasKey('B', 0);
 
+AggregateImuReadings::AggregateImuReadings(const boost::shared_ptr<Params>& p,
+                                           const Bias& estimatedBias)
+    : p_(p),
+      accelerometerNoiseModel_(Diagonal(p->accelerometerCovariance)),
+      gyroscopeNoiseModel_(Diagonal(p->gyroscopeCovariance)),
+      estimatedBias_(estimatedBias),
+      k_(0),
+      deltaTij_(0.0) {
+  // Initialize values with zeros
+  static const Vector3 kZero(Vector3::Zero());
+  values.insert<Vector3>(T(0), kZero);
+  values.insert<Vector3>(P(0), kZero);
+  values.insert<Vector3>(V(0), kZero);
+  values.insert<Bias>(kBiasKey, estimatedBias_);
+}
+
 SharedDiagonal AggregateImuReadings::discreteAccelerometerNoiseModel(
     double dt) const {
   return noiseModel::Diagonal::Sigmas(accelerometerNoiseModel_->sigmas() /
@@ -48,6 +64,32 @@ SharedDiagonal AggregateImuReadings::discreteGyroscopeNoiseModel(
     double dt) const {
   return noiseModel::Diagonal::Sigmas(gyroscopeNoiseModel_->sigmas() /
                                       std::sqrt(dt));
+}
+
+void AggregateImuReadings::updateEstimate(const Vector3& measuredAcc,
+                                          const Vector3& measuredOmega,
+                                          double dt) {
+  // Get current estimates
+  const Vector3 theta = values.at<Vector3>(T(k_));
+  const Vector3 pos = values.at<Vector3>(P(k_));
+  const Vector3 vel = values.at<Vector3>(V(k_));
+
+  // Correct measurements
+  const Vector3 correctedAcc = measuredAcc - estimatedBias_.accelerometer();
+  const Vector3 correctedOmega = measuredOmega - estimatedBias_.gyroscope();
+
+  // Calculate exact mean propagation
+  Matrix3 H;
+  const Rot3 R = Rot3::Expmap(theta, H);
+  const Vector3 theta_plus = theta + H.inverse() * correctedOmega * dt;
+  const Vector3 vel_plus = vel + R.rotate(correctedAcc) * dt;
+  const Vector3 vel_avg = 0.5 * (vel + vel_plus);
+  const Vector3 pos_plus = pos + vel_avg * dt;
+
+  // Add those values to estimate and linearize around them
+  values.insert<Vector3>(T(k_ + 1), theta_plus);
+  values.insert<Vector3>(P(k_ + 1), pos_plus);
+  values.insert<Vector3>(V(k_ + 1), vel_plus);
 }
 
 NonlinearFactorGraph AggregateImuReadings::createGraph(
@@ -86,11 +128,7 @@ AggregateImuReadings::SharedBayesNet AggregateImuReadings::initPosterior(
   // We create a factor graph and then compute P(zeta|bias)
   auto graph = createGraph(zero_, zero_, zero_, measuredAcc, measuredOmega, dt);
 
-  // These values are exact the first time
-  values.insert<Vector3>(T(k_ + 1), measuredOmega * dt);
-  values.insert<Vector3>(P(k_ + 1), measuredAcc * (0.5 * dt * dt));
-  values.insert<Vector3>(V(k_ + 1), measuredAcc * dt);
-  values.insert<Bias>(kBiasKey, estimatedBias_);
+  // Linearize using updated values (updateEstimate must have been called)
   auto linear_graph = graph.linearize(values);
 
   // eliminate all but biases
@@ -99,35 +137,17 @@ AggregateImuReadings::SharedBayesNet AggregateImuReadings::initPosterior(
   return linear_graph->eliminatePartialSequential(keys, EliminateQR).first;
 }
 
-AggregateImuReadings::SharedBayesNet AggregateImuReadings::integrateCorrected(
+AggregateImuReadings::SharedBayesNet AggregateImuReadings::updatePosterior(
     const Vector3& measuredAcc, const Vector3& measuredOmega, double dt) {
   static const Vector3 kZero(Vector3::Zero());
   static const auto constrModel = noiseModel::Constrained::All(3);
 
   // We create a factor graph and then compute P(zeta|bias)
+  // TODO(frank): Expmap and ExpmapDerivative are called again :-(
   auto graph = createGraph(Vector3_(T(k_)), Vector3_(P(k_)), Vector3_(V(k_)),
                            measuredAcc, measuredOmega, dt);
 
-  // Get current estimates
-  const Vector3 theta = values.at<Vector3>(T(k_));
-  const Vector3 pos = values.at<Vector3>(P(k_));
-  const Vector3 vel = values.at<Vector3>(V(k_));
-
-  // Calculate exact solution: means we do not have to update values
-  // TODO(frank): Expmap and ExpmapDerivative are called again :-(
-  const Vector3 correctedAcc = measuredAcc - estimatedBias_.accelerometer();
-  const Vector3 correctedOmega = measuredOmega - estimatedBias_.gyroscope();
-  Matrix3 H;
-  const Rot3 R = Rot3::Expmap(theta, H);
-  const Vector3 theta_plus = theta + H.inverse() * correctedOmega * dt;
-  const Vector3 vel_plus = vel + R.rotate(correctedAcc) * dt;
-  const Vector3 vel_avg = 0.5 * (vel + vel_plus);
-  const Vector3 pos_plus = pos + vel_avg * dt;
-
-  // Add those values to estimate and linearize around them
-  values.insert<Vector3>(T(k_ + 1), theta_plus);
-  values.insert<Vector3>(P(k_ + 1), pos_plus);
-  values.insert<Vector3>(V(k_ + 1), vel_plus);
+  // Linearize using updated values (updateEstimate must have been called)
   auto linear_graph = graph.linearize(values);
 
   // add previous posterior
@@ -157,11 +177,15 @@ void AggregateImuReadings::integrateMeasurement(const Vector3& measuredAcc,
                                                 double dt) {
   typedef map<Key, Matrix> Terms;
 
-  // Handle first time differently
+  // Do exact mean propagation
+  updateEstimate(measuredAcc, measuredOmega, dt);
+
+  // Use factor graph machinery to linearize aroud exact propagation and
+  // calculate posterior density on the prediction
   if (k_ == 0)
     posterior_k_ = initPosterior(measuredAcc, measuredOmega, dt);
   else
-    posterior_k_ = integrateCorrected(measuredAcc, measuredOmega, dt);
+    posterior_k_ = updatePosterior(measuredAcc, measuredOmega, dt);
 
   // increment counter and time
   k_ += 1;
@@ -187,7 +211,7 @@ NavState AggregateImuReadings::predict(const NavState& state_i,
   Vector3 vel = values.at<Vector3>(V(k_));
 
 // Correct for initial velocity and gravity
-#if 0
+#if 1
   Rot3 Ri = state_i.attitude();
   Matrix3 Rit = Ri.transpose();
   Vector3 gt = deltaTij_ * p_->n_gravity;
@@ -202,13 +226,32 @@ NavState AggregateImuReadings::predict(const NavState& state_i,
 }
 
 SharedGaussian AggregateImuReadings::noiseModel() const {
+  // Get covariance on zeta from Bayes Net, which stores P(zeta|bias) as a
+  // quadratic |R*zeta + S*bias -d|^2
   Matrix RS;
   Vector d;
   boost::tie(RS, d) = posterior_k_->matrix();
+  // NOTEfrank): R'*R = inv(zetaCov)
+  const Matrix9 R = RS.block<9, 9>(0, 0);
+  Matrix9 zetaCov = (R.transpose() * R).inverse();
 
-  // R'*R = A'*A = inv(Cov)
+  // Correct for application of retract, by calcuating the retract derivative H
+  // TODO(frank): yet another application of expmap and expmap derivative
+  Vector3 theta = values.at<Vector3>(T(k_));
+  Matrix3 D_R_theta;
+  const Rot3 iRb = Rot3::Expmap(theta, D_R_theta);
+  Matrix9 H;
+  H << D_R_theta, Z_3x3, Z_3x3,       //
+      Z_3x3, iRb.transpose(), Z_3x3,  //
+      Z_3x3, Z_3x3, iRb.transpose();
+  Matrix9 predictCov = H * zetaCov * H.transpose();
+
   // TODO(frank): think of a faster way - implement in noiseModel
-  return noiseModel::Gaussian::SqrtInformation(RS.block<9, 9>(0, 0), false);
+  return noiseModel::Gaussian::Covariance(predictCov, false);
+
+  // TODO(frank): can we use SqrtInformation like below?
+  // Matrix3 predictSqrtInfo = H * R;
+  // return noiseModel::Gaussian::SqrtInformation(predictSqrtInfo, false);
 }
 
 Matrix9 AggregateImuReadings::preintMeasCov() const {
