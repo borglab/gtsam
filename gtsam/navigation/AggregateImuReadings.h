@@ -90,6 +90,8 @@ class AggregateImuReadings {
   void integrateMeasurement(const Vector3& measuredAcc,
                             const Vector3& measuredOmega, double dt);
 
+  Vector9 zeta() const;
+
   /// Predict state at time j
   NavState predict(const NavState& state_i, const Bias& estimatedBias_i,
                    OptionalJacobian<9, 9> H1 = boost::none,

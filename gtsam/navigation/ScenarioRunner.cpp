@@ -59,9 +59,15 @@ Matrix9 ScenarioRunner::estimateCovariance(double T, size_t N,
   Matrix samples(9, N);
   Vector9 sum = Vector9::Zero();
   for (size_t i = 0; i < N; i++) {
-    NavState sampled = predict(integrate(T, estimatedBias, true));
-    samples.col(i) = sampled.localCoordinates(prediction);
-    sum += samples.col(i);
+    auto pim = integrate(T, estimatedBias, true);
+#if 0
+    NavState sampled = predict(pim);
+    Vector9 zeta = sampled.localCoordinates(prediction);
+#else
+    Vector9 xi = pim.zeta();
+#endif
+    samples.col(i) = xi;
+    sum += xi;
   }
 
   // Compute MC covariance

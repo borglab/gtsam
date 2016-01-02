@@ -168,6 +168,13 @@ void AggregateImuReadings::integrateMeasurement(const Vector3& measuredAcc,
   deltaTij_ += dt;
 }
 
+Vector9 AggregateImuReadings::zeta() const {
+  Vector9 zeta;
+  zeta << values.at<Vector3>(T(k_)), values.at<Vector3>(P(k_)),
+      values.at<Vector3>(V(k_));
+  return zeta;
+}
+
 NavState AggregateImuReadings::predict(const NavState& state_i,
                                        const Bias& bias_i,
                                        OptionalJacobian<9, 9> H1,
@@ -179,12 +186,14 @@ NavState AggregateImuReadings::predict(const NavState& state_i,
   Vector3 pos = values.at<Vector3>(P(k_));
   Vector3 vel = values.at<Vector3>(V(k_));
 
-  // Correct for initial velocity and gravity
+// Correct for initial velocity and gravity
+#if 0
   Rot3 Ri = state_i.attitude();
   Matrix3 Rit = Ri.transpose();
   Vector3 gt = deltaTij_ * p_->n_gravity;
   pos += Rit * (state_i.velocity() * deltaTij_ + 0.5 * deltaTij_ * gt);
   vel += Rit * gt;
+#endif
 
   // Convert local coordinates to manifold near state_i
   Vector9 zeta;

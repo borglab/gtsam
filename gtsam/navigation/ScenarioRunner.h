@@ -86,7 +86,7 @@ class ScenarioRunner {
                    const Bias& estimatedBias = Bias()) const;
 
   /// Compute a Monte Carlo estimate of the predict covariance using N samples
-  Matrix9 estimateCovariance(double T, size_t N = 1000,
+  Matrix9 estimateCovariance(double T, size_t N = 10000,
                              const Bias& estimatedBias = Bias()) const;
 
   /// Estimate covariance of sampled noise for sanity-check
