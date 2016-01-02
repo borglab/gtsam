@@ -232,23 +232,29 @@ SharedGaussian AggregateImuReadings::noiseModel() const {
   Vector d;
   boost::tie(RS, d) = posterior_k_->matrix();
   // NOTEfrank): R'*R = inv(zetaCov)
-  const Matrix9 R = RS.block<9, 9>(0, 0);
+  Matrix9 R = RS.block<9, 9>(0, 0);
 
   // Correct for application of retract, by calculating the retract derivative H
-  // TODO(frank): yet another application of expmap and expmap derivative
-  Vector3 theta = values.at<Vector3>(T(k_));
+  // We have inv(Rp'Rp) = H inv(Rz'Rz) H' => Rp = Rz * inv(H)
+  // From NavState::retract:
+  //  H << D_R_theta, Z_3x3, Z_3x3,
+  //       Z_3x3, iRj.transpose(), Z_3x3,
+  //       Z_3x3, Z_3x3, iRj.transpose();
   Matrix3 D_R_theta;
-  const Rot3 iRb = Rot3::Expmap(theta, D_R_theta);
-  Matrix9 H;
-  H << D_R_theta, Z_3x3, Z_3x3,       //
-      Z_3x3, iRb.transpose(), Z_3x3,  //
-      Z_3x3, Z_3x3, iRb.transpose();
+  Vector3 theta = values.at<Vector3>(T(k_));
+  // TODO(frank): yet another application of expmap and expmap derivative
+  const Matrix3 iRj = Rot3::Expmap(theta, D_R_theta).matrix();
 
-  // inv(Rp'Rp) = H inv(Rz'Rz) H' => Rp = Rz * inv(H)
-  Matrix9 Rp = R * H.inverse();
+  // Rp = R * H.inverse(), implemented blockwise in-place below
+  // NOTE(frank): makes sense: a change in the j-frame has to be converted to a
+  // change in the i-frame, byy rotating with iRj. Similarly, a change in
+  // rotation nRj is mapped to a change in theta via the inverse dexp.
+  R.block<9, 3>(0, 0) *= D_R_theta.inverse();
+  R.block<9, 3>(0, 3) *= iRj;
+  R.block<9, 3>(0, 6) *= iRj;
 
   // TODO(frank): think of a faster way - implement in noiseModel
-  return noiseModel::Gaussian::SqrtInformation(Rp, false);
+  return noiseModel::Gaussian::SqrtInformation(R, false);
 }
 
 Matrix9 AggregateImuReadings::preintMeasCov() const {
