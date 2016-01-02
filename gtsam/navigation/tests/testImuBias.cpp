@@ -16,111 +16,133 @@
  */
 
 #include <gtsam/navigation/ImuBias.h>
+#include <gtsam/base/numericalDerivative.h>
+
 #include <CppUnitLite/TestHarness.h>
+#include <boost/bind.hpp>
 
 using namespace std;
 using namespace gtsam;
 
+typedef imuBias::ConstantBias Bias;
+
 Vector biasAcc1(Vector3(0.2, -0.1, 0));
 Vector biasGyro1(Vector3(0.1, -0.3, -0.2));
-imuBias::ConstantBias bias1(biasAcc1, biasGyro1);
+Bias bias1(biasAcc1, biasGyro1);
 
 Vector biasAcc2(Vector3(0.1, 0.2, 0.04));
 Vector biasGyro2(Vector3(-0.002, 0.005, 0.03));
-imuBias::ConstantBias bias2(biasAcc2, biasGyro2);
+Bias bias2(biasAcc2, biasGyro2);
 
 /* ************************************************************************* */
-TEST( ImuBias, Constructor) {
+TEST(ImuBias, Constructor) {
   // Default Constructor
-  imuBias::ConstantBias bias1;
+  Bias bias1;
 
   // Acc + Gyro Constructor
-  imuBias::ConstantBias bias2(biasAcc2, biasGyro2);
+  Bias bias2(biasAcc2, biasGyro2);
 
   // Copy Constructor
-  imuBias::ConstantBias bias3(bias2);
+  Bias bias3(bias2);
 }
 
 /* ************************************************************************* */
-TEST( ImuBias, inverse) {
-  imuBias::ConstantBias biasActual = bias1.inverse();
-  imuBias::ConstantBias biasExpected = imuBias::ConstantBias(-biasAcc1,
-      -biasGyro1);
+TEST(ImuBias, inverse) {
+  Bias biasActual = bias1.inverse();
+  Bias biasExpected = Bias(-biasAcc1, -biasGyro1);
   EXPECT(assert_equal(biasExpected, biasActual));
 }
 
 /* ************************************************************************* */
-TEST( ImuBias, compose) {
-  imuBias::ConstantBias biasActual = bias2.compose(bias1);
-  imuBias::ConstantBias biasExpected = imuBias::ConstantBias(
-      biasAcc1 + biasAcc2, biasGyro1 + biasGyro2);
+TEST(ImuBias, compose) {
+  Bias biasActual = bias2.compose(bias1);
+  Bias biasExpected = Bias(biasAcc1 + biasAcc2, biasGyro1 + biasGyro2);
   EXPECT(assert_equal(biasExpected, biasActual));
 }
 
 /* ************************************************************************* */
-TEST( ImuBias, between) {
+TEST(ImuBias, between) {
   // p.between(q) == q - p
-  imuBias::ConstantBias biasActual = bias2.between(bias1);
-  imuBias::ConstantBias biasExpected = imuBias::ConstantBias(
-      biasAcc1 - biasAcc2, biasGyro1 - biasGyro2);
+  Bias biasActual = bias2.between(bias1);
+  Bias biasExpected = Bias(biasAcc1 - biasAcc2, biasGyro1 - biasGyro2);
   EXPECT(assert_equal(biasExpected, biasActual));
 }
 
 /* ************************************************************************* */
-TEST( ImuBias, localCoordinates) {
+TEST(ImuBias, localCoordinates) {
   Vector deltaActual = Vector(bias2.localCoordinates(bias1));
-  Vector deltaExpected = (imuBias::ConstantBias(biasAcc1 - biasAcc2,
-      biasGyro1 - biasGyro2)).vector();
+  Vector deltaExpected =
+      (Bias(biasAcc1 - biasAcc2, biasGyro1 - biasGyro2)).vector();
   EXPECT(assert_equal(deltaExpected, deltaActual));
 }
 
 /* ************************************************************************* */
-TEST( ImuBias, retract) {
+TEST(ImuBias, retract) {
   Vector6 delta;
   delta << 0.1, 0.2, -0.3, 0.1, -0.1, 0.2;
-  imuBias::ConstantBias biasActual = bias2.retract(delta);
-  imuBias::ConstantBias biasExpected = imuBias::ConstantBias(
-      biasAcc2 + delta.block<3, 1>(0, 0), biasGyro2 + delta.block<3, 1>(3, 0));
+  Bias biasActual = bias2.retract(delta);
+  Bias biasExpected = Bias(biasAcc2 + delta.block<3, 1>(0, 0),
+                           biasGyro2 + delta.block<3, 1>(3, 0));
   EXPECT(assert_equal(biasExpected, biasActual));
 }
 
 /* ************************************************************************* */
-TEST( ImuBias, Logmap) {
+TEST(ImuBias, Logmap) {
   Vector deltaActual = bias2.Logmap(bias1);
   Vector deltaExpected = bias1.vector();
   EXPECT(assert_equal(deltaExpected, deltaActual));
 }
 
 /* ************************************************************************* */
-TEST( ImuBias, Expmap) {
+TEST(ImuBias, Expmap) {
   Vector6 delta;
   delta << 0.1, 0.2, -0.3, 0.1, -0.1, 0.2;
-  imuBias::ConstantBias biasActual = bias2.Expmap(delta);
-  imuBias::ConstantBias biasExpected = imuBias::ConstantBias(delta);
+  Bias biasActual = bias2.Expmap(delta);
+  Bias biasExpected = Bias(delta);
   EXPECT(assert_equal(biasExpected, biasActual));
 }
 
 /* ************************************************************************* */
-TEST( ImuBias, operatorSub) {
-  imuBias::ConstantBias biasActual = -bias1;
-  imuBias::ConstantBias biasExpected(-biasAcc1, -biasGyro1);
+TEST(ImuBias, operatorSub) {
+  Bias biasActual = -bias1;
+  Bias biasExpected(-biasAcc1, -biasGyro1);
   EXPECT(assert_equal(biasExpected, biasActual));
 }
 
 /* ************************************************************************* */
-TEST( ImuBias, operatorAdd) {
-  imuBias::ConstantBias biasActual = bias2 + bias1;
-  imuBias::ConstantBias biasExpected(biasAcc2 + biasAcc1,
-      biasGyro2 + biasGyro1);
+TEST(ImuBias, operatorAdd) {
+  Bias biasActual = bias2 + bias1;
+  Bias biasExpected(biasAcc2 + biasAcc1, biasGyro2 + biasGyro1);
   EXPECT(assert_equal(biasExpected, biasActual));
 }
 
 /* ************************************************************************* */
-TEST( ImuBias, operatorSubB) {
-  imuBias::ConstantBias biasActual = bias2 - bias1;
-  imuBias::ConstantBias biasExpected(biasAcc2 - biasAcc1,
-      biasGyro2 - biasGyro1);
+TEST(ImuBias, operatorSubB) {
+  Bias biasActual = bias2 - bias1;
+  Bias biasExpected(biasAcc2 - biasAcc1, biasGyro2 - biasGyro1);
   EXPECT(assert_equal(biasExpected, biasActual));
+}
+
+/* ************************************************************************* */
+TEST(ImuBias, Correct1) {
+  Matrix aH1, aH2;
+  const Vector3 measurement(1, 2, 3);
+  boost::function<Vector3(const Bias&, const Vector3&)> f = boost::bind(
+      &Bias::correctAccelerometer, _1, _2, boost::none, boost::none);
+  bias1.correctAccelerometer(measurement, aH1, aH2);
+  EXPECT(assert_equal(numericalDerivative21(f, bias1, measurement), aH1));
+  EXPECT(assert_equal(numericalDerivative22(f, bias1, measurement), aH2));
+}
+
+/* ************************************************************************* */
+TEST(ImuBias, Correct2) {
+  Matrix aH1, aH2;
+  const Vector3 measurement(1, 2, 3);
+  boost::function<Vector3(const Bias&, const Vector3&)> f =
+      boost::bind(&Bias::correctGyroscope, _1, _2, boost::none, boost::none);
+  bias1.correctGyroscope(measurement, aH1, aH2);
+  EXPECT(assert_equal(numericalDerivative21(f, bias1, measurement), aH1));
+  EXPECT(assert_equal(numericalDerivative22(f, bias1, measurement), aH2));
 }
 
 /* ************************************************************************* */
