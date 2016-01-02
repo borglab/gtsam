@@ -233,9 +233,8 @@ SharedGaussian AggregateImuReadings::noiseModel() const {
   boost::tie(RS, d) = posterior_k_->matrix();
   // NOTEfrank): R'*R = inv(zetaCov)
   const Matrix9 R = RS.block<9, 9>(0, 0);
-  Matrix9 zetaCov = (R.transpose() * R).inverse();
 
-  // Correct for application of retract, by calcuating the retract derivative H
+  // Correct for application of retract, by calculating the retract derivative H
   // TODO(frank): yet another application of expmap and expmap derivative
   Vector3 theta = values.at<Vector3>(T(k_));
   Matrix3 D_R_theta;
@@ -244,14 +243,12 @@ SharedGaussian AggregateImuReadings::noiseModel() const {
   H << D_R_theta, Z_3x3, Z_3x3,       //
       Z_3x3, iRb.transpose(), Z_3x3,  //
       Z_3x3, Z_3x3, iRb.transpose();
-  Matrix9 predictCov = H * zetaCov * H.transpose();
+
+  // inv(Rp'Rp) = H inv(Rz'Rz) H' => Rp = Rz * inv(H)
+  Matrix9 Rp = R * H.inverse();
 
   // TODO(frank): think of a faster way - implement in noiseModel
-  return noiseModel::Gaussian::Covariance(predictCov, false);
-
-  // TODO(frank): can we use SqrtInformation like below?
-  // Matrix3 predictSqrtInfo = H * R;
-  // return noiseModel::Gaussian::SqrtInformation(predictSqrtInfo, false);
+  return noiseModel::Gaussian::SqrtInformation(Rp, false);
 }
 
 Matrix9 AggregateImuReadings::preintMeasCov() const {
