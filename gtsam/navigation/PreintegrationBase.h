@@ -110,6 +110,7 @@ protected:
   NavState deltaXij_;
 
   /// Parameters. Declared mutable only for deprecated predict method.
+  /// TODO(frank): make const once deprecated method is removed
   mutable boost::shared_ptr<Params> p_;
 
   /// Acceleration and gyro bias used for preintegration
