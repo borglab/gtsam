@@ -56,9 +56,11 @@ class AggregateImuReadings {
    * @param measuredAcc Measured acceleration (in body frame)
    * @param measuredOmega Measured angular velocity (in body frame)
    * @param dt Time interval between this and the last IMU measurement
+   * TODO(frank): put useExactDexpDerivative in params
    */
   void integrateMeasurement(const Vector3& measuredAcc,
-                            const Vector3& measuredOmega, double dt);
+                            const Vector3& measuredOmega, double dt,
+                            bool useExactDexpDerivative = false);
 
   /// Predict state at time j
   NavState predict(const NavState& state_i, const Bias& estimatedBias_i,
@@ -72,9 +74,11 @@ class AggregateImuReadings {
   Matrix9 preintMeasCov() const;
 
   Vector3 theta() const { return zeta_.head<3>(); }
+
   static Vector9 UpdateEstimate(const Vector9& zeta,
                                 const Vector3& correctedAcc,
                                 const Vector3& correctedOmega, double dt,
+                                bool useExactDexpDerivative = false,
                                 OptionalJacobian<9, 9> A = boost::none,
                                 OptionalJacobian<9, 3> Ba = boost::none,
                                 OptionalJacobian<9, 3> Bw = boost::none);

@@ -16,6 +16,7 @@
  */
 
 #include <gtsam/navigation/AggregateImuReadings.h>
+#include <gtsam/navigation/functors.h>
 #include <cmath>
 
 using namespace std;
@@ -52,8 +53,9 @@ static Eigen::Block<constV9, 3, 1> dV(constV9& v) { return v.segment<3>(6); }
 
 Vector9 AggregateImuReadings::UpdateEstimate(
     const Vector9& zeta, const Vector3& correctedAcc,
-    const Vector3& correctedOmega, double dt, OptionalJacobian<9, 9> A,
-    OptionalJacobian<9, 3> Ba, OptionalJacobian<9, 3> Bw) {
+    const Vector3& correctedOmega, double dt, bool useExactDexpDerivative,
+    OptionalJacobian<9, 9> A, OptionalJacobian<9, 3> Ba,
+    OptionalJacobian<9, 3> Bw) {
   using namespace sugar;
 
   const Vector3 a_dt = correctedAcc * dt;
@@ -61,24 +63,35 @@ Vector9 AggregateImuReadings::UpdateEstimate(
 
   // Calculate exact mean propagation
   Matrix3 D_R_theta;
-  const Rot3 R = Rot3::Expmap(dR(zeta), D_R_theta).matrix();
-  const Matrix3 invH = D_R_theta.inverse();
+  const auto theta = dR(zeta);
+  const Rot3 R = Rot3::Expmap(theta, D_R_theta).matrix();
+
+  Matrix3 D_invHwdt_theta, D_invHwdt_wdt;
+  Vector3 invHwdt;
+  if (useExactDexpDerivative) {
+    invHwdt = correctWithExpmapDerivative(
+        -theta, w_dt, A ? &D_invHwdt_theta : 0, A ? &D_invHwdt_wdt : 0);
+    if (A) D_invHwdt_theta *= -1;
+  } else {
+    const Matrix3 invH = D_R_theta.inverse();
+    invHwdt = invH * w_dt;
+    // First order (small angle) approximation of derivative of invH*w*dt:
+    if (A) D_invHwdt_theta = skewSymmetric(-0.5 * w_dt);
+    if (A) D_invHwdt_wdt = invH;
+  }
 
   Matrix3 D_Radt_R, D_Radt_adt;
   const Vector3 Radt = R.rotate(a_dt, A ? &D_Radt_R : 0, A ? &D_Radt_adt : 0);
 
   Vector9 zeta_plus;
   const double dt2 = 0.5 * dt;
-  dR(zeta_plus) = dR(zeta) + invH * w_dt;
-  dP(zeta_plus) = dP(zeta) + dV(zeta) * dt + Radt * dt2;
-  dV(zeta_plus) = dV(zeta) + Radt;
+  dR(zeta_plus) = dR(zeta) + invHwdt;                     // theta
+  dP(zeta_plus) = dP(zeta) + dV(zeta) * dt + Radt * dt2;  // position
+  dV(zeta_plus) = dV(zeta) + Radt;                        // velocity
 
   if (A) {
     // Exact derivative of R*a*dt with respect to theta:
     const Matrix3 D_Radt_theta = D_Radt_R * D_R_theta;
-
-    // First order (small angle) approximation of derivative of invH*w*dt:
-    const Matrix3 D_invHwdt_theta = skewSymmetric(-0.5 * w_dt);
 
     A->setIdentity();
     A->block<3, 3>(0, 0) += D_invHwdt_theta;
@@ -87,14 +100,15 @@ Vector9 AggregateImuReadings::UpdateEstimate(
     A->block<3, 3>(6, 0) = D_Radt_theta;
   }
   if (Ba) *Ba << Z_3x3, D_Radt_adt* dt* dt2, D_Radt_adt* dt;
-  if (Bw) *Bw << invH* dt, Z_3x3, Z_3x3;
+  if (Bw) *Bw << D_invHwdt_wdt* dt, Z_3x3, Z_3x3;
 
   return zeta_plus;
 }
 
 void AggregateImuReadings::integrateMeasurement(const Vector3& measuredAcc,
                                                 const Vector3& measuredOmega,
-                                                double dt) {
+                                                double dt,
+                                                bool useExactDexpDerivative) {
   // Correct measurements
   const Vector3 correctedAcc = measuredAcc - estimatedBias_.accelerometer();
   const Vector3 correctedOmega = measuredOmega - estimatedBias_.gyroscope();
@@ -102,10 +116,11 @@ void AggregateImuReadings::integrateMeasurement(const Vector3& measuredAcc,
   // Do exact mean propagation
   Matrix9 A;
   Matrix93 Ba, Bw;
-  zeta_ = UpdateEstimate(zeta_, correctedAcc, correctedOmega, dt, A, Ba, Bw);
+  zeta_ = UpdateEstimate(zeta_, correctedAcc, correctedOmega, dt,
+                         useExactDexpDerivative, A, Ba, Bw);
 
   // propagate uncertainty
-  // TODO(frank): specialize to diagonal and upper triangular views
+  // TODO(frank): use noiseModel power: covariance is very expensive !
   const Matrix3 w = gyroscopeNoiseModel_->covariance() / dt;
   const Matrix3 a = accelerometerNoiseModel_->covariance() / dt;
   cov_ = A * cov_ * A.transpose() + Bw * w * Bw.transpose() +
@@ -137,7 +152,6 @@ NavState AggregateImuReadings::predict(const NavState& state_i,
 
 SharedGaussian AggregateImuReadings::noiseModel() const {
   // Correct for application of retract, by calculating the retract derivative H
-  // We have inv(Rp'Rp) = H inv(Rz'Rz) H' => Rp = Rz * inv(H)
   // From NavState::retract:
   Matrix3 D_R_theta;
   const Matrix3 iRj = Rot3::Expmap(theta(), D_R_theta).matrix();
@@ -146,33 +160,10 @@ SharedGaussian AggregateImuReadings::noiseModel() const {
       Z_3x3, iRj.transpose(), Z_3x3,  //
       Z_3x3, Z_3x3, iRj.transpose();
 
+  // TODO(frank): theta() itself is noisy, so should we not correct for that?
+
   Matrix9 HcH = H * cov_ * H.transpose();
-  return noiseModel::Gaussian::Covariance(cov_, false);
-
-  //  // Get covariance on zeta from Bayes Net, which stores P(zeta|bias) as a
-  //  // quadratic |R*zeta + S*bias -d|^2
-  //  Matrix RS;
-  //  Vector d;
-  //  boost::tie(RS, d) = posterior_k_->matrix();
-  //  // NOTEfrank): R'*R = inv(zetaCov)
-  //
-  //  Matrix9 R = RS.block<9, 9>(0, 0);
-  //  cout << "R'R" << endl;
-  //  cout << (R.transpose() * R).inverse() << endl;
-  //  cout << "cov" << endl;
-  //  cout << cov << endl;
-
-  //  // Rp = R * H.inverse(), implemented blockwise in-place below
-  //  // TODO(frank): yet another application of expmap and expmap derivative
-  //  // NOTE(frank): makes sense: a change in the j-frame has to be converted
-  //  // to a change in the i-frame, byy rotating with iRj. Similarly, a change
-  //  // in rotation nRj is mapped to a change in theta via the inverse dexp.
-  //  R.block<9, 3>(0, 0) *= D_R_theta.inverse();
-  //  R.block<9, 3>(0, 3) *= iRj;
-  //  R.block<9, 3>(0, 6) *= iRj;
-  //
-  //  // TODO(frank): think of a faster way - implement in noiseModel
-  //  return noiseModel::Gaussian::SqrtInformation(R, false);
+  return noiseModel::Gaussian::Covariance(HcH, false);
 }
 
 Matrix9 AggregateImuReadings::preintMeasCov() const {
