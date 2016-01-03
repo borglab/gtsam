@@ -65,6 +65,11 @@ class AggregateImuReadings {
   /// Current estimate of zeta_k
   Values values;
 
+  /// Covariances
+  Matrix3 ttCov_, tpCov_, tvCov_,  //
+      ppCov_, pvCov_,              //
+      vvCov_;
+
  public:
   AggregateImuReadings(const boost::shared_ptr<Params>& p,
                        const Bias& estimatedBias = Bias());
@@ -98,6 +103,8 @@ class AggregateImuReadings {
   Matrix9 preintMeasCov() const;
 
  private:
+  Matrix9 zetaCov() const;
+
   void updateEstimate(const Vector3& measuredAcc, const Vector3& measuredOmega,
                       double dt);
 

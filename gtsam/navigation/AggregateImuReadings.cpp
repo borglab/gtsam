@@ -52,6 +52,12 @@ AggregateImuReadings::AggregateImuReadings(const boost::shared_ptr<Params>& p,
   values.insert<Vector3>(P(0), kZero);
   values.insert<Vector3>(V(0), kZero);
   values.insert<Bias>(kBiasKey, estimatedBias_);
+  ttCov_.setZero();
+  tpCov_.setZero();
+  tvCov_.setZero();
+  ppCov_.setZero();
+  pvCov_.setZero();
+  vvCov_.setZero();
 }
 
 SharedDiagonal AggregateImuReadings::discreteAccelerometerNoiseModel(
@@ -79,12 +85,51 @@ void AggregateImuReadings::updateEstimate(const Vector3& measuredAcc,
   const Vector3 correctedOmega = measuredOmega - estimatedBias_.gyroscope();
 
   // Calculate exact mean propagation
-  Matrix3 H;
-  const Rot3 R = Rot3::Expmap(theta, H);
-  const Vector3 theta_plus = theta + H.inverse() * correctedOmega * dt;
-  const Vector3 vel_plus = vel + R.rotate(correctedAcc) * dt;
-  const Vector3 vel_avg = 0.5 * (vel + vel_plus);
-  const Vector3 pos_plus = pos + vel_avg * dt;
+  Matrix3 dexp;
+  const Rot3 R = Rot3::Expmap(theta, dexp);
+  const Matrix3 F = dexp.inverse() * dt, H = R.matrix() * dt;
+  const Vector3 theta_plus = theta + F * correctedOmega;
+  const Vector3 pos_plus = pos + vel * dt + H * (0.5 * dt) * correctedAcc;
+  const Vector3 vel_plus = vel + H * correctedAcc;
+
+  // Propagate uncertainty
+  // TODO(frank): specialize to diagonal and upper triangular views
+  const Matrix3 w = gyroscopeNoiseModel_->covariance() / dt;
+  const Matrix3 a = accelerometerNoiseModel_->covariance() / dt;
+  const Matrix3 Avt = skewSymmetric(-correctedAcc * dt);
+
+#define DEBUG_COVARIANCE
+#ifdef DEBUG_COVARIANCE
+  // Slow covariance calculation for debugging
+  Matrix9 cov = zetaCov();
+  Matrix9 A;
+  A.setIdentity();
+  A.block<3, 3>(6, 0) = Avt;
+  A.block<3, 3>(3, 6) = I_3x3 * dt;
+  Matrix93 Ba, Bw;
+  Bw << F, Z_3x3, Z_3x3;
+  Ba << Z_3x3, H*(dt * 0.5), H;
+  cov = A * cov * A.transpose() + Bw * w * Bw.transpose() +
+        Ba * a * Ba.transpose();
+  assert_equal(cov, zetaCov(), 1e-2);
+#endif
+
+  const Matrix3 HaH = H * a * H.transpose();
+  const Matrix3 temp = Avt * tvCov_ + tvCov_.transpose() * Avt.transpose();
+
+  tpCov_ += dt * tvCov_;
+  // H**2*a*dt**2/4 + dt*vp + dt*(dt*vv + pv)
+  ppCov_ += dt * (0.25 * dt * HaH + pvCov_ + pvCov_.transpose() + dt * vvCov_);
+  pvCov_ += dt * (0.5 * HaH + vvCov_ + temp);
+
+  tvCov_ += ttCov_ * Avt.transpose();
+  vvCov_ += HaH + Avt * ttCov_ * Avt.transpose() + temp;
+
+  ttCov_ += F * w * F.transpose();
+
+#ifdef DEBUG_COVARIANCE
+  assert_equal(cov, zetaCov(), 1e-2);
+#endif
 
   // Add those values to estimate and linearize around them
   values.insert<Vector3>(T(k_ + 1), theta_plus);
@@ -225,36 +270,57 @@ NavState AggregateImuReadings::predict(const NavState& state_i,
   return state_i.retract(zeta);
 }
 
-SharedGaussian AggregateImuReadings::noiseModel() const {
-  // Get covariance on zeta from Bayes Net, which stores P(zeta|bias) as a
-  // quadratic |R*zeta + S*bias -d|^2
-  Matrix RS;
-  Vector d;
-  boost::tie(RS, d) = posterior_k_->matrix();
-  // NOTEfrank): R'*R = inv(zetaCov)
-  Matrix9 R = RS.block<9, 9>(0, 0);
+Matrix9 AggregateImuReadings::zetaCov() const {
+  Matrix9 cov;
+  cov << ttCov_, tpCov_, tvCov_,           //
+      tpCov_.transpose(), ppCov_, pvCov_,  //
+      tvCov_.transpose(), pvCov_.transpose(), vvCov_;
+  return cov;
+}
 
+SharedGaussian AggregateImuReadings::noiseModel() const {
+  Matrix9 cov;
+  cov << ttCov_, tpCov_, tvCov_,           //
+      tpCov_.transpose(), ppCov_, pvCov_,  //
+      tvCov_.transpose(), pvCov_.transpose(), vvCov_;
   // Correct for application of retract, by calculating the retract derivative H
   // We have inv(Rp'Rp) = H inv(Rz'Rz) H' => Rp = Rz * inv(H)
   // From NavState::retract:
-  //  H << D_R_theta, Z_3x3, Z_3x3,
-  //       Z_3x3, iRj.transpose(), Z_3x3,
-  //       Z_3x3, Z_3x3, iRj.transpose();
   Matrix3 D_R_theta;
   Vector3 theta = values.at<Vector3>(T(k_));
-  // TODO(frank): yet another application of expmap and expmap derivative
   const Matrix3 iRj = Rot3::Expmap(theta, D_R_theta).matrix();
+  Matrix9 H;
+  H << D_R_theta, Z_3x3, Z_3x3,       //
+      Z_3x3, iRj.transpose(), Z_3x3,  //
+      Z_3x3, Z_3x3, iRj.transpose();
 
-  // Rp = R * H.inverse(), implemented blockwise in-place below
-  // NOTE(frank): makes sense: a change in the j-frame has to be converted to a
-  // change in the i-frame, byy rotating with iRj. Similarly, a change in
-  // rotation nRj is mapped to a change in theta via the inverse dexp.
-  R.block<9, 3>(0, 0) *= D_R_theta.inverse();
-  R.block<9, 3>(0, 3) *= iRj;
-  R.block<9, 3>(0, 6) *= iRj;
+  Matrix9 HcH = H * cov * H.transpose();
+  return noiseModel::Gaussian::Covariance(cov, false);
 
-  // TODO(frank): think of a faster way - implement in noiseModel
-  return noiseModel::Gaussian::SqrtInformation(R, false);
+  //  // Get covariance on zeta from Bayes Net, which stores P(zeta|bias) as a
+  //  // quadratic |R*zeta + S*bias -d|^2
+  //  Matrix RS;
+  //  Vector d;
+  //  boost::tie(RS, d) = posterior_k_->matrix();
+  //  // NOTEfrank): R'*R = inv(zetaCov)
+  //
+  //  Matrix9 R = RS.block<9, 9>(0, 0);
+  //  cout << "R'R" << endl;
+  //  cout << (R.transpose() * R).inverse() << endl;
+  //  cout << "cov" << endl;
+  //  cout << cov << endl;
+
+  //  // Rp = R * H.inverse(), implemented blockwise in-place below
+  //  // TODO(frank): yet another application of expmap and expmap derivative
+  //  // NOTE(frank): makes sense: a change in the j-frame has to be converted
+  //  // to a change in the i-frame, byy rotating with iRj. Similarly, a change
+  //  // in rotation nRj is mapped to a change in theta via the inverse dexp.
+  //  R.block<9, 3>(0, 0) *= D_R_theta.inverse();
+  //  R.block<9, 3>(0, 3) *= iRj;
+  //  R.block<9, 3>(0, 6) *= iRj;
+  //
+  //  // TODO(frank): think of a faster way - implement in noiseModel
+  //  return noiseModel::Gaussian::SqrtInformation(R, false);
 }
 
 Matrix9 AggregateImuReadings::preintMeasCov() const {
