@@ -31,7 +31,7 @@ static const double degree = M_PI / 180.0;
 TEST(Scenario, Forward) {
   const double v = 2;  // m/s
   const Vector3 W(0, 0, 0), V(v, 0, 0);
-  const ExpmapScenario scenario(W, V);
+  const ConstantTwistScenario scenario(W, V);
 
   const double T = 15;
   EXPECT(assert_equal(W, scenario.omega_b(T), 1e-9));
@@ -48,7 +48,7 @@ TEST(Scenario, Circle) {
   // Forward velocity 2m/s, angular velocity 6 degree/sec around Z
   const double v = 2, w = 6 * degree;
   const Vector3 W(0, 0, w), V(v, 0, 0);
-  const ExpmapScenario scenario(W, V);
+  const ConstantTwistScenario scenario(W, V);
 
   const double T = 15;
   EXPECT(assert_equal(W, scenario.omega_b(T), 1e-9));
@@ -68,7 +68,7 @@ TEST(Scenario, Loop) {
   // Pitch up with angular velocity 6 degree/sec (negative in FLU)
   const double v = 2, w = 6 * degree;
   const Vector3 W(0, -w, 0), V(v, 0, 0);
-  const ExpmapScenario scenario(W, V);
+  const ConstantTwistScenario scenario(W, V);
 
   const double T = 30;
   EXPECT(assert_equal(W, scenario.omega_b(T), 1e-9));

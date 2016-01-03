@@ -46,21 +46,23 @@ class ScenarioRunner {
   const Vector3& gravity_n() const { return p_->n_gravity; }
 
   // A gyro simply measures angular velocity in body frame
-  Vector3 actual_omega_b(double t) const { return scenario_->omega_b(t); }
+  Vector3 actualAngularVelocity(double t) const {
+    return scenario_->omega_b(t);
+  }
 
   // An accelerometer measures acceleration in body, but not gravity
-  Vector3 actual_specific_force_b(double t) const {
+  Vector3 actualSpecificForce(double t) const {
     Rot3 bRn = scenario_->rotation(t).transpose();
     return scenario_->acceleration_b(t) - bRn * gravity_n();
   }
 
   // versions corrupted by bias and noise
-  Vector3 measured_omega_b(double t) const {
-    return actual_omega_b(t) + bias_.gyroscope() +
+  Vector3 measuredAngularVelocity(double t) const {
+    return actualAngularVelocity(t) + bias_.gyroscope() +
            gyroSampler_.sample() / std::sqrt(imuSampleTime_);
   }
-  Vector3 measured_specific_force_b(double t) const {
-    return actual_specific_force_b(t) + bias_.accelerometer() +
+  Vector3 measuredSpecificForce(double t) const {
+    return actualSpecificForce(t) + bias_.accelerometer() +
            accSampler_.sample() / std::sqrt(imuSampleTime_);
   }
 
