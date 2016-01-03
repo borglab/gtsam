@@ -16,27 +16,11 @@
  */
 
 #include <gtsam/navigation/AggregateImuReadings.h>
-#include <gtsam/navigation/functors.h>
-#include <gtsam/nonlinear/ExpressionFactor.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/linear/GaussianBayesNet.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/inference/Symbol.h>
-
-#include <boost/assign/std/list.hpp>
-
 #include <cmath>
 
 using namespace std;
-using namespace boost::assign;
 
 namespace gtsam {
-
-using symbol_shorthand::T;  // for theta
-using symbol_shorthand::P;  // for position
-using symbol_shorthand::V;  // for velocity
-
-static const Symbol kBiasKey('B', 0);
 
 AggregateImuReadings::AggregateImuReadings(const boost::shared_ptr<Params>& p,
                                            const Bias& estimatedBias)
@@ -46,18 +30,8 @@ AggregateImuReadings::AggregateImuReadings(const boost::shared_ptr<Params>& p,
       estimatedBias_(estimatedBias),
       k_(0),
       deltaTij_(0.0) {
-  // Initialize values with zeros
-  static const Vector3 kZero(Vector3::Zero());
-  values.insert<Vector3>(T(0), kZero);
-  values.insert<Vector3>(P(0), kZero);
-  values.insert<Vector3>(V(0), kZero);
-  values.insert<Bias>(kBiasKey, estimatedBias_);
-  ttCov_.setZero();
-  tpCov_.setZero();
-  tvCov_.setZero();
-  ppCov_.setZero();
-  pvCov_.setZero();
-  vvCov_.setZero();
+  zeta_.setZero();
+  cov_.setZero();
 }
 
 SharedDiagonal AggregateImuReadings::discreteAccelerometerNoiseModel(
@@ -72,230 +46,101 @@ SharedDiagonal AggregateImuReadings::discreteGyroscopeNoiseModel(
                                       std::sqrt(dt));
 }
 
-void AggregateImuReadings::updateEstimate(const Vector3& measuredAcc,
-                                          const Vector3& measuredOmega,
-                                          double dt) {
-  // Get current estimates
-  const Vector3 theta = values.at<Vector3>(T(k_));
-  const Vector3 pos = values.at<Vector3>(P(k_));
-  const Vector3 vel = values.at<Vector3>(V(k_));
+// Tangent space sugar.
+namespace sugar {
+typedef const Vector9 constV9;
+static Eigen::Block<Vector9, 3, 1> dR(Vector9& v) { return v.segment<3>(0); }
+static Eigen::Block<Vector9, 3, 1> dP(Vector9& v) { return v.segment<3>(3); }
+static Eigen::Block<Vector9, 3, 1> dV(Vector9& v) { return v.segment<3>(6); }
+static Eigen::Block<constV9, 3, 1> dR(constV9& v) { return v.segment<3>(0); }
+static Eigen::Block<constV9, 3, 1> dP(constV9& v) { return v.segment<3>(3); }
+static Eigen::Block<constV9, 3, 1> dV(constV9& v) { return v.segment<3>(6); }
+}
 
-  // Correct measurements
-  const Vector3 correctedAcc = measuredAcc - estimatedBias_.accelerometer();
-  const Vector3 correctedOmega = measuredOmega - estimatedBias_.gyroscope();
+Vector9 AggregateImuReadings::UpdateEstimate(
+    const Vector9& zeta, const Vector3& correctedAcc,
+    const Vector3& correctedOmega, double dt, OptionalJacobian<9, 9> A,
+    OptionalJacobian<9, 3> Ba, OptionalJacobian<9, 3> Bw) {
+  using namespace sugar;
 
   // Calculate exact mean propagation
   Matrix3 dexp;
-  const Rot3 R = Rot3::Expmap(theta, dexp);
+  const Rot3 R = Rot3::Expmap(dR(zeta), dexp);
   const Matrix3 F = dexp.inverse() * dt, H = R.matrix() * dt;
-  const Vector3 theta_plus = theta + F * correctedOmega;
-  const Vector3 pos_plus = pos + vel * dt + H * (0.5 * dt) * correctedAcc;
-  const Vector3 vel_plus = vel + H * correctedAcc;
 
-  // Propagate uncertainty
-  // TODO(frank): specialize to diagonal and upper triangular views
-  const Matrix3 w = gyroscopeNoiseModel_->covariance() / dt;
-  const Matrix3 a = accelerometerNoiseModel_->covariance() / dt;
-  const Matrix3 Avt = skewSymmetric(-correctedAcc * dt);
+  Vector9 zeta_plus;
+  dR(zeta_plus) = dR(zeta) + F * correctedOmega;
+  dP(zeta_plus) = dP(zeta) + dV(zeta) * dt + H * (0.5 * dt) * correctedAcc;
+  dV(zeta_plus) = dV(zeta) + H * correctedAcc;
 
-#define DEBUG_COVARIANCE
-#ifdef DEBUG_COVARIANCE
-  // Slow covariance calculation for debugging
-  Matrix9 cov = zetaCov();
-  Matrix9 A;
-  A.setIdentity();
-  A.block<3, 3>(6, 0) = Avt;
-  A.block<3, 3>(3, 6) = I_3x3 * dt;
-  Matrix93 Ba, Bw;
-  Bw << F, Z_3x3, Z_3x3;
-  Ba << Z_3x3, H*(dt * 0.5), H;
-  cov = A * cov * A.transpose() + Bw * w * Bw.transpose() +
-        Ba * a * Ba.transpose();
-  assert_equal(cov, zetaCov(), 1e-2);
-#endif
-
-  const Matrix3 HaH = H * a * H.transpose();
-  const Matrix3 temp = Avt * tvCov_ + tvCov_.transpose() * Avt.transpose();
-
-  tpCov_ += dt * tvCov_;
-  // H**2*a*dt**2/4 + dt*vp + dt*(dt*vv + pv)
-  ppCov_ += dt * (0.25 * dt * HaH + pvCov_ + pvCov_.transpose() + dt * vvCov_);
-  pvCov_ += dt * (0.5 * HaH + vvCov_ + temp);
-
-  tvCov_ += ttCov_ * Avt.transpose();
-  vvCov_ += HaH + Avt * ttCov_ * Avt.transpose() + temp;
-
-  ttCov_ += F * w * F.transpose();
-
-#ifdef DEBUG_COVARIANCE
-  assert_equal(cov, zetaCov(), 1e-2);
-#endif
-
-  // Add those values to estimate and linearize around them
-  values.insert<Vector3>(T(k_ + 1), theta_plus);
-  values.insert<Vector3>(P(k_ + 1), pos_plus);
-  values.insert<Vector3>(V(k_ + 1), vel_plus);
-}
-
-NonlinearFactorGraph AggregateImuReadings::createGraph(
-    const Vector3_& theta_, const Vector3_& pos_, const Vector3_& vel_,
-    const Vector3& measuredAcc, const Vector3& measuredOmega, double dt) const {
-  NonlinearFactorGraph graph;
-  Expression<Bias> bias_(kBiasKey);
-  Vector3_ theta_plus_(T(k_ + 1)), pos_plus_(P(k_ + 1)), vel_plus_(V(k_ + 1));
-
-  Vector3_ omega_(PredictAngularVelocity(dt), theta_, theta_plus_);
-  Vector3_ measuredOmega_(boost::bind(&Bias::correctGyroscope, _1, _2, _3, _4),
-                          bias_, omega_);
-  auto gyroModel = discreteGyroscopeNoiseModel(dt);
-  graph.addExpressionFactor(gyroModel, measuredOmega, measuredOmega_);
-
-  Vector3_ averageVelocity_(averageVelocity, vel_, vel_plus_);
-  Vector3_ defect_(PositionDefect(dt), pos_, pos_plus_, averageVelocity_);
-  static const auto constrModel = noiseModel::Constrained::All(3);
-  static const Vector3 kZero(Vector3::Zero());
-  graph.addExpressionFactor(constrModel, kZero, defect_);
-
-  Vector3_ acc_(PredictAcceleration(dt), vel_, vel_plus_, theta_);
-  Vector3_ measuredAcc_(
-      boost::bind(&Bias::correctAccelerometer, _1, _2, _3, _4), bias_, acc_);
-  auto accModel = discreteAccelerometerNoiseModel(dt);
-  graph.addExpressionFactor(accModel, measuredAcc, measuredAcc_);
-
-  return graph;
-}
-
-AggregateImuReadings::SharedBayesNet AggregateImuReadings::initPosterior(
-    const Vector3& measuredAcc, const Vector3& measuredOmega, double dt) {
-  static const Vector3 kZero(Vector3::Zero());
-  static const Vector3_ zero_(kZero);
-
-  // We create a factor graph and then compute P(zeta|bias)
-  auto graph = createGraph(zero_, zero_, zero_, measuredAcc, measuredOmega, dt);
-
-  // Linearize using updated values (updateEstimate must have been called)
-  auto linear_graph = graph.linearize(values);
-
-  // eliminate all but biases
-  // NOTE(frank): After this, posterior_k_ contains P(zeta(1)|bias)
-  Ordering keys = list_of(T(k_ + 1))(P(k_ + 1))(V(k_ + 1));
-  return linear_graph->eliminatePartialSequential(keys, EliminateQR).first;
-}
-
-AggregateImuReadings::SharedBayesNet AggregateImuReadings::updatePosterior(
-    const Vector3& measuredAcc, const Vector3& measuredOmega, double dt) {
-  static const Vector3 kZero(Vector3::Zero());
-  static const auto constrModel = noiseModel::Constrained::All(3);
-
-  // We create a factor graph and then compute P(zeta|bias)
-  // TODO(frank): Expmap and ExpmapDerivative are called again :-(
-  auto graph = createGraph(Vector3_(T(k_)), Vector3_(P(k_)), Vector3_(V(k_)),
-                           measuredAcc, measuredOmega, dt);
-
-  // Linearize using updated values (updateEstimate must have been called)
-  auto linear_graph = graph.linearize(values);
-
-  // add previous posterior
-  for (const auto& conditional : *posterior_k_)
-    linear_graph->add(boost::static_pointer_cast<GaussianFactor>(conditional));
-
-  // eliminate all but biases
-  // TODO(frank): does not seem to eliminate in order I want. What gives?
-  Ordering keys = list_of(T(k_))(P(k_))(V(k_))(T(k_ + 1))(P(k_ + 1))(V(k_ + 1));
-  SharedBayesNet bayesNet =
-      linear_graph->eliminatePartialSequential(keys, EliminateQR).first;
-
-  // The Bayes net now contains P(zeta(k)|zeta(k+1),bias) P(zeta(k+1)|bias)
-  // We marginalize zeta(k) by removing the conditionals on zeta(k)
-  // TODO(frank): could use erase(begin, begin+3) if order above was correct
-  SharedBayesNet marginal = boost::make_shared<GaussianBayesNet>();
-  for (const auto& conditional : *bayesNet) {
-    Symbol symbol(conditional->front());
-    if (symbol.index() > k_) marginal->push_back(conditional);
+  if (A) {
+    const Matrix3 Avt = skewSymmetric(-correctedAcc * dt);
+    A->setIdentity();
+    A->block<3, 3>(6, 0) = Avt;
+    A->block<3, 3>(3, 6) = I_3x3 * dt;
   }
+  if (Ba) *Ba << Z_3x3, H*(dt * 0.5), H;
+  if (Bw) *Bw << F, Z_3x3, Z_3x3;
 
-  return marginal;
+  return zeta_plus;
 }
 
 void AggregateImuReadings::integrateMeasurement(const Vector3& measuredAcc,
                                                 const Vector3& measuredOmega,
                                                 double dt) {
-  typedef map<Key, Matrix> Terms;
+  // Correct measurements
+  const Vector3 correctedAcc = measuredAcc - estimatedBias_.accelerometer();
+  const Vector3 correctedOmega = measuredOmega - estimatedBias_.gyroscope();
 
   // Do exact mean propagation
-  updateEstimate(measuredAcc, measuredOmega, dt);
+  Matrix9 A;
+  Matrix93 Ba, Bw;
+  zeta_ = UpdateEstimate(zeta_, correctedAcc, correctedOmega, dt, A, Ba, Bw);
 
-  // Use factor graph machinery to linearize aroud exact propagation and
-  // calculate posterior density on the prediction
-  if (k_ == 0)
-    posterior_k_ = initPosterior(measuredAcc, measuredOmega, dt);
-  else
-    posterior_k_ = updatePosterior(measuredAcc, measuredOmega, dt);
+  // propagate uncertainty
+  // TODO(frank): specialize to diagonal and upper triangular views
+  const Matrix3 w = gyroscopeNoiseModel_->covariance() / dt;
+  const Matrix3 a = accelerometerNoiseModel_->covariance() / dt;
+  cov_ = A * cov_ * A.transpose() + Bw * w * Bw.transpose() +
+         Ba * a * Ba.transpose();
 
   // increment counter and time
   k_ += 1;
   deltaTij_ += dt;
 }
 
-Vector9 AggregateImuReadings::zeta() const {
-  Vector9 zeta;
-  zeta << values.at<Vector3>(T(k_)), values.at<Vector3>(P(k_)),
-      values.at<Vector3>(V(k_));
-  return zeta;
-}
-
 NavState AggregateImuReadings::predict(const NavState& state_i,
                                        const Bias& bias_i,
                                        OptionalJacobian<9, 9> H1,
                                        OptionalJacobian<9, 6> H2) const {
-  // TODO(frank): handle bias
-
-  // Get current estimates
-  Vector3 theta = values.at<Vector3>(T(k_));
-  Vector3 pos = values.at<Vector3>(P(k_));
-  Vector3 vel = values.at<Vector3>(V(k_));
+  using namespace sugar;
+  Vector9 zeta = zeta_;
 
 // Correct for initial velocity and gravity
 #if 1
   Rot3 Ri = state_i.attitude();
   Matrix3 Rit = Ri.transpose();
   Vector3 gt = deltaTij_ * p_->n_gravity;
-  pos += Rit * (state_i.velocity() * deltaTij_ + 0.5 * deltaTij_ * gt);
-  vel += Rit * gt;
+  dP(zeta) += Rit * (state_i.velocity() * deltaTij_ + 0.5 * deltaTij_ * gt);
+  dV(zeta) += Rit * gt;
 #endif
 
-  // Convert local coordinates to manifold near state_i
-  Vector9 zeta;
-  zeta << theta, pos, vel;
   return state_i.retract(zeta);
 }
 
-Matrix9 AggregateImuReadings::zetaCov() const {
-  Matrix9 cov;
-  cov << ttCov_, tpCov_, tvCov_,           //
-      tpCov_.transpose(), ppCov_, pvCov_,  //
-      tvCov_.transpose(), pvCov_.transpose(), vvCov_;
-  return cov;
-}
-
 SharedGaussian AggregateImuReadings::noiseModel() const {
-  Matrix9 cov;
-  cov << ttCov_, tpCov_, tvCov_,           //
-      tpCov_.transpose(), ppCov_, pvCov_,  //
-      tvCov_.transpose(), pvCov_.transpose(), vvCov_;
   // Correct for application of retract, by calculating the retract derivative H
   // We have inv(Rp'Rp) = H inv(Rz'Rz) H' => Rp = Rz * inv(H)
   // From NavState::retract:
   Matrix3 D_R_theta;
-  Vector3 theta = values.at<Vector3>(T(k_));
-  const Matrix3 iRj = Rot3::Expmap(theta, D_R_theta).matrix();
+  const Matrix3 iRj = Rot3::Expmap(theta(), D_R_theta).matrix();
   Matrix9 H;
   H << D_R_theta, Z_3x3, Z_3x3,       //
       Z_3x3, iRj.transpose(), Z_3x3,  //
       Z_3x3, Z_3x3, iRj.transpose();
 
-  Matrix9 HcH = H * cov * H.transpose();
-  return noiseModel::Gaussian::Covariance(cov, false);
+  Matrix9 HcH = H * cov_ * H.transpose();
+  return noiseModel::Gaussian::Covariance(cov_, false);
 
   //  // Get covariance on zeta from Bayes Net, which stores P(zeta|bias) as a
   //  // quadratic |R*zeta + S*bias -d|^2

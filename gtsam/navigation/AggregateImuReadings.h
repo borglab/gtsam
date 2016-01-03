@@ -22,11 +22,6 @@
 
 namespace gtsam {
 
-class NonlinearFactorGraph;
-template <typename T>
-class Expression;
-typedef Expression<Vector3> Vector3_;
-
 // Convert covariance to diagonal noise model, if possible, otherwise throw
 static noiseModel::Diagonal::shared_ptr Diagonal(const Matrix& covariance) {
   bool smart = true;
@@ -37,8 +32,6 @@ static noiseModel::Diagonal::shared_ptr Diagonal(const Matrix& covariance) {
   return diagonal;
 }
 
-class GaussianBayesNet;
-
 /**
  * Class that integrates state estimate on the manifold.
  * We integrate zeta = [theta, position, velocity]
@@ -48,7 +41,6 @@ class AggregateImuReadings {
  public:
   typedef imuBias::ConstantBias Bias;
   typedef ImuFactor::PreintegratedMeasurements::Params Params;
-  typedef boost::shared_ptr<GaussianBayesNet> SharedBayesNet;
 
  private:
   const boost::shared_ptr<Params> p_;
@@ -58,21 +50,16 @@ class AggregateImuReadings {
   size_t k_;         ///< index/count of measurements integrated
   double deltaTij_;  ///< sum of time increments
 
-  /// posterior on current iterate, stored as a Bayes net
-  /// P(delta_zeta|estimatedBias_delta):
-  SharedBayesNet posterior_k_;
-
   /// Current estimate of zeta_k
-  Values values;
-
-  /// Covariances
-  Matrix3 ttCov_, tpCov_, tvCov_,  //
-      ppCov_, pvCov_,              //
-      vvCov_;
+  Vector9 zeta_;
+  Matrix9 cov_;
 
  public:
   AggregateImuReadings(const boost::shared_ptr<Params>& p,
                        const Bias& estimatedBias = Bias());
+
+  const Vector9& zeta() const { return zeta_; }
+  const Matrix9& zetaCov() const { return cov_; }
 
   // We obtain discrete-time noise models by dividing the continuous-time
   // covariances by dt:
@@ -89,8 +76,6 @@ class AggregateImuReadings {
   void integrateMeasurement(const Vector3& measuredAcc,
                             const Vector3& measuredOmega, double dt);
 
-  Vector9 zeta() const;
-
   /// Predict state at time j
   NavState predict(const NavState& state_i, const Bias& estimatedBias_i,
                    OptionalJacobian<9, 9> H1 = boost::none,
@@ -102,25 +87,13 @@ class AggregateImuReadings {
   /// @deprecated: Explicitly calculate covariance
   Matrix9 preintMeasCov() const;
 
- private:
-  Matrix9 zetaCov() const;
-
-  void updateEstimate(const Vector3& measuredAcc, const Vector3& measuredOmega,
-                      double dt);
-
-  NonlinearFactorGraph createGraph(const Vector3_& theta_,
-                                   const Vector3_& pose_, const Vector3_& vel_,
-                                   const Vector3& measuredAcc,
-                                   const Vector3& measuredOmega,
-                                   double dt) const;
-
-  // initialize posterior with first (corrected) IMU measurement
-  SharedBayesNet initPosterior(const Vector3& measuredAcc,
-                               const Vector3& measuredOmega, double dt);
-
-  // integrate
-  SharedBayesNet updatePosterior(const Vector3& measuredAcc,
-                                 const Vector3& measuredOmega, double dt);
+  Vector3 theta() const { return zeta_.head<3>(); }
+  static Vector9 UpdateEstimate(const Vector9& zeta,
+                                const Vector3& correctedAcc,
+                                const Vector3& correctedOmega, double dt,
+                                OptionalJacobian<9, 9> A,
+                                OptionalJacobian<9, 3> Ba,
+                                OptionalJacobian<9, 3> Bw);
 };
 
 }  // namespace gtsam
