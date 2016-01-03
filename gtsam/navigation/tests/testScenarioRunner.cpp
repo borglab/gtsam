@@ -56,12 +56,6 @@ TEST(ScenarioRunner, Spin) {
   auto pim = runner.integrate(T);
   EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose(), 1e-9));
 
-  // Check noise model agreement
-  EXPECT(assert_equal(p->accelerometerCovariance / kDt,
-                      pim.discreteAccelerometerNoiseModel(kDt)->covariance()));
-  EXPECT(assert_equal(p->gyroscopeCovariance / kDt,
-                      pim.discreteGyroscopeNoiseModel(kDt)->covariance()));
-
 #if 0
   // Check sampled noise is kosher
   Matrix6 expected;

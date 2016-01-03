@@ -22,16 +22,6 @@
 
 namespace gtsam {
 
-// Convert covariance to diagonal noise model, if possible, otherwise throw
-static noiseModel::Diagonal::shared_ptr Diagonal(const Matrix& covariance) {
-  bool smart = true;
-  auto model = noiseModel::Gaussian::Covariance(covariance, smart);
-  auto diagonal = boost::dynamic_pointer_cast<noiseModel::Diagonal>(model);
-  if (!diagonal)
-    throw std::invalid_argument("ScenarioRunner::Diagonal: not a diagonal");
-  return diagonal;
-}
-
 /**
  * Class that integrates state estimate on the manifold.
  * We integrate zeta = [theta, position, velocity]
@@ -44,7 +34,7 @@ class AggregateImuReadings {
 
  private:
   const boost::shared_ptr<Params> p_;
-  const SharedDiagonal accelerometerNoiseModel_, gyroscopeNoiseModel_;
+  const SharedGaussian accelerometerNoiseModel_, gyroscopeNoiseModel_;
   const Bias estimatedBias_;
 
   size_t k_;         ///< index/count of measurements integrated
@@ -60,12 +50,6 @@ class AggregateImuReadings {
 
   const Vector9& zeta() const { return zeta_; }
   const Matrix9& zetaCov() const { return cov_; }
-
-  // We obtain discrete-time noise models by dividing the continuous-time
-  // covariances by dt:
-
-  SharedDiagonal discreteAccelerometerNoiseModel(double dt) const;
-  SharedDiagonal discreteGyroscopeNoiseModel(double dt) const;
 
   /**
    * Add a single IMU measurement to the preintegration.
@@ -91,9 +75,9 @@ class AggregateImuReadings {
   static Vector9 UpdateEstimate(const Vector9& zeta,
                                 const Vector3& correctedAcc,
                                 const Vector3& correctedOmega, double dt,
-                                OptionalJacobian<9, 9> A,
-                                OptionalJacobian<9, 3> Ba,
-                                OptionalJacobian<9, 3> Bw);
+                                OptionalJacobian<9, 9> A = boost::none,
+                                OptionalJacobian<9, 3> Ba = boost::none,
+                                OptionalJacobian<9, 3> Bw = boost::none);
 };
 
 }  // namespace gtsam

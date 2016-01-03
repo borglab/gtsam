@@ -25,8 +25,10 @@ namespace gtsam {
 AggregateImuReadings::AggregateImuReadings(const boost::shared_ptr<Params>& p,
                                            const Bias& estimatedBias)
     : p_(p),
-      accelerometerNoiseModel_(Diagonal(p->accelerometerCovariance)),
-      gyroscopeNoiseModel_(Diagonal(p->gyroscopeCovariance)),
+      accelerometerNoiseModel_(
+          noiseModel::Gaussian::Covariance(p->accelerometerCovariance, true)),
+      gyroscopeNoiseModel_(
+          noiseModel::Gaussian::Covariance(p->gyroscopeCovariance, true)),
       estimatedBias_(estimatedBias),
       k_(0),
       deltaTij_(0.0) {
@@ -34,28 +36,19 @@ AggregateImuReadings::AggregateImuReadings(const boost::shared_ptr<Params>& p,
   cov_.setZero();
 }
 
-SharedDiagonal AggregateImuReadings::discreteAccelerometerNoiseModel(
-    double dt) const {
-  return noiseModel::Diagonal::Sigmas(accelerometerNoiseModel_->sigmas() /
-                                      std::sqrt(dt));
-}
-
-SharedDiagonal AggregateImuReadings::discreteGyroscopeNoiseModel(
-    double dt) const {
-  return noiseModel::Diagonal::Sigmas(gyroscopeNoiseModel_->sigmas() /
-                                      std::sqrt(dt));
-}
-
 // Tangent space sugar.
 namespace sugar {
-typedef const Vector9 constV9;
+
 static Eigen::Block<Vector9, 3, 1> dR(Vector9& v) { return v.segment<3>(0); }
 static Eigen::Block<Vector9, 3, 1> dP(Vector9& v) { return v.segment<3>(3); }
 static Eigen::Block<Vector9, 3, 1> dV(Vector9& v) { return v.segment<3>(6); }
+
+typedef const Vector9 constV9;
 static Eigen::Block<constV9, 3, 1> dR(constV9& v) { return v.segment<3>(0); }
 static Eigen::Block<constV9, 3, 1> dP(constV9& v) { return v.segment<3>(3); }
 static Eigen::Block<constV9, 3, 1> dV(constV9& v) { return v.segment<3>(6); }
-}
+
+}  // namespace sugar
 
 Vector9 AggregateImuReadings::UpdateEstimate(
     const Vector9& zeta, const Vector3& correctedAcc,
@@ -63,24 +56,38 @@ Vector9 AggregateImuReadings::UpdateEstimate(
     OptionalJacobian<9, 3> Ba, OptionalJacobian<9, 3> Bw) {
   using namespace sugar;
 
+  const Vector3 a_dt = correctedAcc * dt;
+  const Vector3 w_dt = correctedOmega * dt;
+
   // Calculate exact mean propagation
-  Matrix3 dexp;
-  const Rot3 R = Rot3::Expmap(dR(zeta), dexp);
-  const Matrix3 F = dexp.inverse() * dt, H = R.matrix() * dt;
+  Matrix3 D_R_theta;
+  const Rot3 R = Rot3::Expmap(dR(zeta), D_R_theta).matrix();
+  const Matrix3 invH = D_R_theta.inverse();
+
+  Matrix3 D_Radt_R, D_Radt_adt;
+  const Vector3 Radt = R.rotate(a_dt, A ? &D_Radt_R : 0, A ? &D_Radt_adt : 0);
 
   Vector9 zeta_plus;
-  dR(zeta_plus) = dR(zeta) + F * correctedOmega;
-  dP(zeta_plus) = dP(zeta) + dV(zeta) * dt + H * (0.5 * dt) * correctedAcc;
-  dV(zeta_plus) = dV(zeta) + H * correctedAcc;
+  const double dt2 = 0.5 * dt;
+  dR(zeta_plus) = dR(zeta) + invH * w_dt;
+  dP(zeta_plus) = dP(zeta) + dV(zeta) * dt + Radt * dt2;
+  dV(zeta_plus) = dV(zeta) + Radt;
 
   if (A) {
-    const Matrix3 Avt = skewSymmetric(-correctedAcc * dt);
+    // Exact derivative of R*a*dt with respect to theta:
+    const Matrix3 D_Radt_theta = D_Radt_R * D_R_theta;
+
+    // First order (small angle) approximation of derivative of invH*w*dt:
+    const Matrix3 D_invHwdt_theta = skewSymmetric(-0.5 * w_dt);
+
     A->setIdentity();
-    A->block<3, 3>(6, 0) = Avt;
+    A->block<3, 3>(0, 0) += D_invHwdt_theta;
+    A->block<3, 3>(3, 0) = D_Radt_theta * dt2;
     A->block<3, 3>(3, 6) = I_3x3 * dt;
+    A->block<3, 3>(6, 0) = D_Radt_theta;
   }
-  if (Ba) *Ba << Z_3x3, H*(dt * 0.5), H;
-  if (Bw) *Bw << F, Z_3x3, Z_3x3;
+  if (Ba) *Ba << Z_3x3, D_Radt_adt* dt* dt2, D_Radt_adt* dt;
+  if (Bw) *Bw << invH* dt, Z_3x3, Z_3x3;
 
   return zeta_plus;
 }

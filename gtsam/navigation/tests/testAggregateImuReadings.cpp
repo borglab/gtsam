@@ -178,12 +178,12 @@ TEST(AggregateImuReadings, UpdateEstimate) {
       boost::bind(&AggregateImuReadings::UpdateEstimate, _1, _2, _3, kDt,
                   boost::none, boost::none, boost::none);
   Vector9 zeta;
-  zeta << 0.1, 0.2, 0.3, 0.1, 0.2, 0.3, 0.1, 0.2, 0.3;
-  const Vector3 acc(0.1, 0.2, 0.3), omega(0.1, 0.2, 0.3);
+  zeta << 0.01, 0.02, 0.03, 100, 200, 300, 10, 5, 3;
+  const Vector3 acc(0.1, 0.2, 10), omega(0.1, 0.2, 0.3);
   pim.UpdateEstimate(zeta, acc, omega, kDt, aH1, aH2, aH3);
-  EXPECT(assert_equal(numericalDerivative31(f, zeta, acc, omega), aH1));
-  EXPECT(assert_equal(numericalDerivative32(f, zeta, acc, omega), aH2));
-  EXPECT(assert_equal(numericalDerivative33(f, zeta, acc, omega), aH3));
+  EXPECT(assert_equal(numericalDerivative31(f, zeta, acc, omega), aH1, 1e-3));
+  EXPECT(assert_equal(numericalDerivative32(f, zeta, acc, omega), aH2, 1e-5));
+  EXPECT(assert_equal(numericalDerivative33(f, zeta, acc, omega), aH3, 1e-5));
 }
 
 /* ************************************************************************* */
