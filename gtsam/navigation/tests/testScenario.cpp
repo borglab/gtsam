@@ -32,7 +32,7 @@ TEST(Scenario, Spin) {
   //  angular velocity 6 kDegree/sec
   const double w = 6 * kDegree;
   const Vector3 W(0, 0, w), V(0, 0, 0);
-  const ExpmapScenario scenario(W, V);
+  const ConstantTwistScenario scenario(W, V);
 
   const double T = 10;
   EXPECT(assert_equal(W, scenario.omega_b(T), 1e-9));
