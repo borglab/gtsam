@@ -103,6 +103,7 @@ public:
 protected:
 
   /// Parameters. Declared mutable only for deprecated predict method.
+  /// TODO(frank): make const once deprecated method is removed
 #ifdef ALLOW_DEPRECATED_IN_GTSAM4
   mutable
 #endif

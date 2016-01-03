@@ -33,7 +33,7 @@ class Scenario {
 
   // Derived quantities:
 
-  virtual Rot3 rotation(double t) const { return pose(t).rotation(); }
+  Rot3 rotation(double t) const { return pose(t).rotation(); }
 
   Vector3 velocity_b(double t) const {
     const Rot3 nRb = rotation(t);
@@ -47,20 +47,19 @@ class Scenario {
 };
 
 /// Scenario with constant twist 3D trajectory.
-class ExpmapScenario : public Scenario {
+class ConstantTwistScenario : public Scenario {
  public:
   /// Construct scenario with constant twist [w,v]
-  ExpmapScenario(const Vector3& w, const Vector3& v)
+  ConstantTwistScenario(const Vector3& w, const Vector3& v)
       : twist_((Vector6() << w, v).finished()),
         a_b_(twist_.head<3>().cross(twist_.tail<3>())) {}
 
-  Pose3 pose(double t) const { return Pose3::Expmap(twist_ * t); }
-  Rot3 rotation(double t) const { return Rot3::Expmap(twist_.head<3>() * t); }
-  Vector3 omega_b(double t) const { return twist_.head<3>(); }
-  Vector3 velocity_n(double t) const {
+  Pose3 pose(double t) const override { return Pose3::Expmap(twist_ * t); }
+  Vector3 omega_b(double t) const override { return twist_.head<3>(); }
+  Vector3 velocity_n(double t) const override {
     return rotation(t).matrix() * twist_.tail<3>();
   }
-  Vector3 acceleration_n(double t) const { return rotation(t) * a_b_; }
+  Vector3 acceleration_n(double t) const override { return rotation(t) * a_b_; }
 
  private:
   const Vector6 twist_;
@@ -77,12 +76,12 @@ class AcceleratingScenario : public Scenario {
                        const Vector3& omega_b = Vector3::Zero())
       : nRb_(nRb), p0_(p0.vector()), v0_(v0), a_n_(a_n), omega_b_(omega_b) {}
 
-  Pose3 pose(double t) const {
+  Pose3 pose(double t) const override {
     return Pose3(nRb_.expmap(omega_b_ * t), p0_ + v0_ * t + a_n_ * t * t / 2.0);
   }
-  Vector3 omega_b(double t) const { return omega_b_; }
-  Vector3 velocity_n(double t) const { return v0_ + a_n_ * t; }
-  Vector3 acceleration_n(double t) const { return a_n_; }
+  Vector3 omega_b(double t) const override { return omega_b_; }
+  Vector3 velocity_n(double t) const override { return v0_ + a_n_ * t; }
+  Vector3 acceleration_n(double t) const override { return a_n_; }
 
  private:
   const Rot3 nRb_;

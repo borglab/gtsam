@@ -16,6 +16,8 @@
  */
 
 #include <gtsam/navigation/ScenarioRunner.h>
+#include <gtsam/base/timing.h>
+
 #include <cmath>
 
 using namespace std;
@@ -35,9 +37,10 @@ AggregateImuReadings ScenarioRunner::integrate(double T,
   const size_t nrSteps = T / dt;
   double t = 0;
   for (size_t k = 0; k < nrSteps; k++, t += dt) {
-    Vector3 measuredOmega = corrupted ? measured_omega_b(t) : actual_omega_b(t);
+    Vector3 measuredOmega =
+        corrupted ? measuredAngularVelocity(t) : actualAngularVelocity(t);
     Vector3 measuredAcc =
-        corrupted ? measured_specific_force_b(t) : actual_specific_force_b(t);
+        corrupted ? measuredSpecificForce(t) : actualSpecificForce(t);
     pim.integrateMeasurement(measuredAcc, measuredOmega, dt);
   }
 
@@ -52,6 +55,8 @@ NavState ScenarioRunner::predict(const AggregateImuReadings& pim,
 
 Matrix9 ScenarioRunner::estimateCovariance(double T, size_t N,
                                            const Bias& estimatedBias) const {
+  gttic_(estimateCovariance);
+
   // Get predict prediction from ground truth measurements
   NavState prediction = predict(integrate(T));
 

@@ -16,6 +16,7 @@
  */
 
 #include <gtsam/navigation/ScenarioRunner.h>
+#include <gtsam/base/timing.h>
 #include <CppUnitLite/TestHarness.h>
 #include <cmath>
 
@@ -78,7 +79,7 @@ TEST(ScenarioRunner, Spin) {
 /* ************************************************************************* */
 namespace forward {
 const double v = 2;  // m/s
-ExpmapScenario scenario(Vector3::Zero(), Vector3(v, 0, 0));
+ConstantTwistScenario scenario(Vector3::Zero(), Vector3(v, 0, 0));
 }
 /* ************************************************************************* */
 TEST(ScenarioRunner, Forward) {
@@ -110,7 +111,7 @@ TEST(ScenarioRunner, ForwardWithBias) {
 TEST(ScenarioRunner, Circle) {
   // Forward velocity 2m/s, angular velocity 6 kDegree/sec
   const double v = 2, w = 6 * kDegree;
-  ExpmapScenario scenario(Vector3(0, 0, w), Vector3(v, 0, 0));
+  ConstantTwistScenario scenario(Vector3(0, 0, w), Vector3(v, 0, 0));
 
   ScenarioRunner runner(&scenario, defaultParams(), kDt);
   const double T = 0.1;  // seconds
@@ -128,7 +129,7 @@ TEST(ScenarioRunner, Loop) {
   // Forward velocity 2m/s
   // Pitch up with angular velocity 6 kDegree/sec (negative in FLU)
   const double v = 2, w = 6 * kDegree;
-  ExpmapScenario scenario(Vector3(0, -w, 0), Vector3(v, 0, 0));
+  ConstantTwistScenario scenario(Vector3(0, -w, 0), Vector3(v, 0, 0));
 
   ScenarioRunner runner(&scenario, defaultParams(), kDt);
   const double T = 0.1;  // seconds
@@ -398,6 +399,8 @@ TEST(ScenarioRunner, AcceleratingAndRotating4) {
 /* ************************************************************************* */
 int main() {
   TestResult tr;
-  return TestRegistry::runAllTests(tr);
+  auto result = TestRegistry::runAllTests(tr);
+  tictoc_print_();
+  return result;
 }
 /* ************************************************************************* */
