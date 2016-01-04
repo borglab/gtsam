@@ -25,14 +25,7 @@ namespace gtsam {
 
 AggregateImuReadings::AggregateImuReadings(const boost::shared_ptr<Params>& p,
                                            const Bias& estimatedBias)
-    : p_(p),
-      accelerometerNoiseModel_(
-          noiseModel::Gaussian::Covariance(p->accelerometerCovariance, true)),
-      gyroscopeNoiseModel_(
-          noiseModel::Gaussian::Covariance(p->gyroscopeCovariance, true)),
-      estimatedBias_(estimatedBias),
-      k_(0),
-      deltaTij_(0.0) {
+    : p_(p), estimatedBias_(estimatedBias), k_(0), deltaTij_(0.0) {
   zeta_.setZero();
   cov_.setZero();
 }
@@ -120,11 +113,13 @@ void AggregateImuReadings::integrateMeasurement(const Vector3& measuredAcc,
                          useExactDexpDerivative, A, Ba, Bw);
 
   // propagate uncertainty
-  // TODO(frank): use noiseModel power: covariance is very expensive !
-  const Matrix3 w = gyroscopeNoiseModel_->covariance() / dt;
-  const Matrix3 a = accelerometerNoiseModel_->covariance() / dt;
-  cov_ = A * cov_ * A.transpose() + Bw * w * Bw.transpose() +
-         Ba * a * Ba.transpose();
+  // TODO(frank): use noiseModel routine so we can have arbitrary noise models.
+  const Matrix3& w = p_->gyroscopeCovariance;
+  const Matrix3& a = p_->accelerometerCovariance;
+  // TODO(frank): use Eigen-tricks for symmetric matrices
+  cov_ = A * cov_ * A.transpose();
+  cov_ += Bw * (w / dt) * Bw.transpose();
+  cov_ += Ba * (a / dt) * Ba.transpose();
 
   // increment counter and time
   k_ += 1;

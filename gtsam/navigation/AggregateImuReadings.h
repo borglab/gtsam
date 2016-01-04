@@ -34,7 +34,6 @@ class AggregateImuReadings {
 
  private:
   const boost::shared_ptr<Params> p_;
-  const SharedGaussian accelerometerNoiseModel_, gyroscopeNoiseModel_;
   const Bias estimatedBias_;
 
   size_t k_;         ///< index/count of measurements integrated
