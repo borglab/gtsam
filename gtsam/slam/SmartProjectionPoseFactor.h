@@ -60,6 +60,11 @@ public:
   typedef boost::shared_ptr<This> shared_ptr;
 
   /**
+   * Default constructor, only for serialization
+   */
+  SmartProjectionPoseFactor() {}
+
+  /**
    * Constructor
    * @param Isotropic measurement noise
    * @param K (fixed) calibration, assumed to be the same for all cameras

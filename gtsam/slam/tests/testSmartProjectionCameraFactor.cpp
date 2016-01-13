@@ -22,6 +22,7 @@
 #include "smartFactorScenarios.h"
 #include <gtsam/slam/SmartProjectionFactor.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/base/serializationTestHelpers.h>
 #include <CppUnitLite/TestHarness.h>
 #include <boost/assign/std/map.hpp>
 #include <iostream>
@@ -841,6 +842,26 @@ TEST( SmartProjectionCameraFactor, implicitJacobianFactor ) {
   hessianFactor.multiplyHessianAdd(alpha, x, yActual);
   implicitSchurFactor.multiplyHessianAdd(alpha, x, yExpected);
   EXPECT(assert_equal(yActual, yExpected, 1e-7));
+}
+
+
+/* ************************************************************************* */
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Constrained, "gtsam_noiseModel_Constrained");
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Diagonal, "gtsam_noiseModel_Diagonal");
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Gaussian, "gtsam_noiseModel_Gaussian");
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Unit, "gtsam_noiseModel_Unit");
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Isotropic, "gtsam_noiseModel_Isotropic");
+BOOST_CLASS_EXPORT_GUID(gtsam::SharedNoiseModel, "gtsam_SharedNoiseModel");
+BOOST_CLASS_EXPORT_GUID(gtsam::SharedDiagonal, "gtsam_SharedDiagonal");
+
+TEST( SmartProjectionCameraFactor, serialize) {
+  using namespace vanilla;
+  using namespace gtsam::serializationTestHelpers;
+  SmartFactor factor(unit2);
+
+  EXPECT(equalsObj(factor));
+  EXPECT(equalsXML(factor));
+  EXPECT(equalsBinary(factor));
 }
 
 /* ************************************************************************* */
