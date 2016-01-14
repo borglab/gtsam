@@ -137,7 +137,7 @@ protected:
 
   /// @name Parameters
   /// @{
-  const SmartProjectionParams params_;
+  SmartProjectionParams params_;
   /// @}
 
   /// @name Caching triangulation
@@ -153,6 +153,11 @@ public:
 
   /// shorthand for a set of cameras
   typedef CameraSet<CAMERA> Cameras;
+
+  /**
+   * Default constructor, only for serialization
+   */
+  SmartProjectionFactor() {}
 
   /**
    * Constructor
