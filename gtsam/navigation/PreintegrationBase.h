@@ -84,15 +84,17 @@ public:
 
   protected:
     /// Default constructor for serialization only: uninitialized!
-    Params();
+    Params() {}
 
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegratedRotation::Params);
-      ar & BOOST_SERIALIZATION_NVP(accelerometerCovariance);
-      ar & BOOST_SERIALIZATION_NVP(integrationCovariance);
+      namespace bs = ::boost::serialization;
+      ar & boost::serialization::make_nvp("PreintegratedRotation_Params",
+           boost::serialization::base_object<PreintegratedRotation::Params>(*this));
+      ar & bs::make_nvp("accelerometerCovariance", bs::make_array(accelerometerCovariance.data(), accelerometerCovariance.size()));
+      ar & bs::make_nvp("integrationCovariance", bs::make_array(integrationCovariance.data(), integrationCovariance.size()));
       ar & BOOST_SERIALIZATION_NVP(use2ndOrderCoriolis);
       ar & BOOST_SERIALIZATION_NVP(n_gravity);
     }
@@ -246,15 +248,16 @@ private:
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+    namespace bs = ::boost::serialization;
     ar & BOOST_SERIALIZATION_NVP(p_);
     ar & BOOST_SERIALIZATION_NVP(deltaTij_);
     ar & BOOST_SERIALIZATION_NVP(deltaXij_);
     ar & BOOST_SERIALIZATION_NVP(biasHat_);
-    ar & BOOST_SERIALIZATION_NVP(delRdelBiasOmega_);
-    ar & BOOST_SERIALIZATION_NVP(delPdelBiasAcc_);
-    ar & BOOST_SERIALIZATION_NVP(delPdelBiasOmega_);
-    ar & BOOST_SERIALIZATION_NVP(delVdelBiasAcc_);
-    ar & BOOST_SERIALIZATION_NVP(delVdelBiasOmega_);
+    ar & bs::make_nvp("delRdelBiasOmega_", bs::make_array(delRdelBiasOmega_.data(), delRdelBiasOmega_.size()));
+    ar & bs::make_nvp("delPdelBiasAcc_", bs::make_array(delPdelBiasAcc_.data(), delPdelBiasAcc_.size()));
+    ar & bs::make_nvp("delPdelBiasOmega_", bs::make_array(delPdelBiasOmega_.data(), delPdelBiasOmega_.size()));
+    ar & bs::make_nvp("delVdelBiasAcc_", bs::make_array(delVdelBiasAcc_.data(), delVdelBiasAcc_.size()));
+    ar & bs::make_nvp("delVdelBiasOmega_", bs::make_array(delVdelBiasOmega_.data(), delVdelBiasOmega_.size()));
   }
 };
 

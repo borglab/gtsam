@@ -201,7 +201,6 @@ private:
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & boost::serialization::make_nvp("imuBias::ConstantBias", *this);
     ar & BOOST_SERIALIZATION_NVP(biasAcc_);
     ar & BOOST_SERIALIZATION_NVP(biasGyro_);
   }
