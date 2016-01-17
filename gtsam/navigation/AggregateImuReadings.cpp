@@ -26,7 +26,7 @@ namespace gtsam {
 
 AggregateImuReadings::AggregateImuReadings(const boost::shared_ptr<Params>& p,
                                            const Bias& estimatedBias)
-    : p_(p), estimatedBias_(estimatedBias), k_(0), deltaTij_(0.0) {
+    : p_(p), estimatedBias_(estimatedBias), deltaTij_(0.0) {
   zeta_.setZero();
   cov_.setZero();
 }
@@ -46,40 +46,44 @@ static Eigen::Block<constV9, 3, 1> dV(constV9& v) { return v.segment<3>(6); }
 }  // namespace sugar
 
 // See extensive discussion in ImuFactor.lyx
-Vector9 AggregateImuReadings::UpdateEstimate(
-    const Vector9& zeta, const Vector3& correctedAcc,
-    const Vector3& correctedOmega, double dt, OptionalJacobian<9, 9> A,
-    OptionalJacobian<9, 3> B, OptionalJacobian<9, 3> C) {
+Vector9 AggregateImuReadings::UpdateEstimate(const Vector9& zeta,
+                                             const Vector3& a_body,
+                                             const Vector3& w_body, double dt,
+                                             OptionalJacobian<9, 9> A,
+                                             OptionalJacobian<9, 3> B,
+                                             OptionalJacobian<9, 3> C) {
   using namespace sugar;
 
-  const Vector3 a_dt = correctedAcc * dt;
-  const Vector3 w_dt = correctedOmega * dt;
+  const auto theta = dR(zeta);
+  const auto p = dP(zeta);
+  const auto v = dV(zeta);
 
   // Calculate exact mean propagation
   Matrix3 H;
-  const auto theta = dR(zeta);
   const Matrix3 R = Rot3::Expmap(theta, H).matrix();
+  const Matrix3 invH = H.inverse();
+  const Vector3 a_nav = R * a_body;
+  const double dt22 = 0.5 * dt * dt;
 
   Vector9 zeta_plus;
-  const double dt2 = 0.5 * dt;
-  const Vector3 Radt = R * a_dt;
-  const Matrix3 invH = H.inverse();
-  dR(zeta_plus) = dR(zeta) + invH * w_dt;                 // theta
-  dP(zeta_plus) = dP(zeta) + dV(zeta) * dt + Radt * dt2;  // position
-  dV(zeta_plus) = dV(zeta) + Radt;                        // velocity
+  dR(zeta_plus) = theta + invH * w_body * dt;  // theta
+  dP(zeta_plus) = p + v * dt + a_nav * dt22;   // position
+  dV(zeta_plus) = v + a_nav * dt;              // velocity
 
   if (A) {
-    // Exact derivative of R*a*dt with respect to theta:
-    const Matrix3 D_Radt_theta = R * skewSymmetric(-a_dt) * H;
+    // First order (small angle) approximation of derivative of invH*w:
+    const Matrix3 invHw_H_theta = skewSymmetric(-0.5 * w_body);
+
+    // Exact derivative of R*a with respect to theta:
+    const Matrix3 a_nav_H_theta = R * skewSymmetric(-a_body) * H;
 
     A->setIdentity();
-    // First order (small angle) approximation of derivative of invH*w*dt:
-    A->block<3, 3>(0, 0) -= skewSymmetric(0.5 * w_dt);
-    A->block<3, 3>(3, 0) = D_Radt_theta * dt2;
+    A->block<3, 3>(0, 0) += invHw_H_theta * dt;
+    A->block<3, 3>(3, 0) = a_nav_H_theta * dt22;
     A->block<3, 3>(3, 6) = I_3x3 * dt;
-    A->block<3, 3>(6, 0) = D_Radt_theta;
+    A->block<3, 3>(6, 0) = a_nav_H_theta * dt;
   }
-  if (B) *B << Z_3x3, R* dt* dt2, R* dt;
+  if (B) *B << Z_3x3, R* dt22, R* dt;
   if (C) *C << invH* dt, Z_3x3, Z_3x3;
 
   return zeta_plus;
@@ -89,25 +93,24 @@ void AggregateImuReadings::integrateMeasurement(const Vector3& measuredAcc,
                                                 const Vector3& measuredOmega,
                                                 double dt) {
   // Correct measurements
-  const Vector3 correctedAcc = measuredAcc - estimatedBias_.accelerometer();
-  const Vector3 correctedOmega = measuredOmega - estimatedBias_.gyroscope();
+  const Vector3 a_body = measuredAcc - estimatedBias_.accelerometer();
+  const Vector3 w_body = measuredOmega - estimatedBias_.gyroscope();
 
   // Do exact mean propagation
   Matrix9 A;
   Matrix93 B, C;
-  zeta_ = UpdateEstimate(zeta_, correctedAcc, correctedOmega, dt, A, B, C);
+  zeta_ = UpdateEstimate(zeta_, a_body, w_body, dt, A, B, C);
 
   // propagate uncertainty
   // TODO(frank): use noiseModel routine so we can have arbitrary noise models.
-  const Matrix3& w = p_->gyroscopeCovariance;
-  const Matrix3& a = p_->accelerometerCovariance;
+  const Matrix3& aCov = p_->accelerometerCovariance;
+  const Matrix3& wCov = p_->gyroscopeCovariance;
+
   // TODO(frank): use Eigen-tricks for symmetric matrices
   cov_ = A * cov_ * A.transpose();
-  cov_ += B * (a / dt) * B.transpose();
-  cov_ += C * (w / dt) * C.transpose();
+  cov_ += B * (aCov / dt) * B.transpose();
+  cov_ += C * (wCov / dt) * C.transpose();
 
-  // increment counter and time
-  k_ += 1;
   deltaTij_ += dt;
 }
 

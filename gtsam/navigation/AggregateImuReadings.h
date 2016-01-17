@@ -38,7 +38,6 @@ class AggregateImuReadings {
   const boost::shared_ptr<Params> p_;
   const Bias estimatedBias_;
 
-  size_t k_;         ///< index/count of measurements integrated
   double deltaTij_;  ///< sum of time increments
 
   /// Current estimate of zeta_k
@@ -75,9 +74,10 @@ class AggregateImuReadings {
 
   Vector3 theta() const { return zeta_.head<3>(); }
 
-  static Vector9 UpdateEstimate(const Vector9& zeta,
-                                const Vector3& correctedAcc,
-                                const Vector3& correctedOmega, double dt,
+  // Update integrated vector on tangent manifold zeta with acceleration
+  // readings a_body and gyro readings w_body, bias-corrected in body frame.
+  static Vector9 UpdateEstimate(const Vector9& zeta, const Vector3& a_body,
+                                const Vector3& w_body, double dt,
                                 OptionalJacobian<9, 9> A = boost::none,
                                 OptionalJacobian<9, 3> B = boost::none,
                                 OptionalJacobian<9, 3> C = boost::none);
