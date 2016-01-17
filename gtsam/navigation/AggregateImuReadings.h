@@ -60,8 +60,7 @@ class AggregateImuReadings {
    * TODO(frank): put useExactDexpDerivative in params
    */
   void integrateMeasurement(const Vector3& measuredAcc,
-                            const Vector3& measuredOmega, double dt,
-                            bool useExactDexpDerivative = false);
+                            const Vector3& measuredOmega, double dt);
 
   /// Predict state at time j
   NavState predict(const NavState& state_i, const Bias& estimatedBias_i,
@@ -79,7 +78,6 @@ class AggregateImuReadings {
   static Vector9 UpdateEstimate(const Vector9& zeta,
                                 const Vector3& correctedAcc,
                                 const Vector3& correctedOmega, double dt,
-                                bool useExactDexpDerivative = false,
                                 OptionalJacobian<9, 9> A = boost::none,
                                 OptionalJacobian<9, 3> B = boost::none,
                                 OptionalJacobian<9, 3> C = boost::none);

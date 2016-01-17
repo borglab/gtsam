@@ -16,7 +16,6 @@
  */
 
 #include <gtsam/navigation/AggregateImuReadings.h>
-#include <gtsam/navigation/functors.h>
 #include <gtsam/base/numericalDerivative.h>
 
 #include <cmath>
@@ -49,9 +48,8 @@ static Eigen::Block<constV9, 3, 1> dV(constV9& v) { return v.segment<3>(6); }
 // See extensive discussion in ImuFactor.lyx
 Vector9 AggregateImuReadings::UpdateEstimate(
     const Vector9& zeta, const Vector3& correctedAcc,
-    const Vector3& correctedOmega, double dt, bool useExactDexpDerivative,
-    OptionalJacobian<9, 9> A, OptionalJacobian<9, 3> B,
-    OptionalJacobian<9, 3> C) {
+    const Vector3& correctedOmega, double dt, OptionalJacobian<9, 9> A,
+    OptionalJacobian<9, 3> B, OptionalJacobian<9, 3> C) {
   using namespace sugar;
 
   const Vector3 a_dt = correctedAcc * dt;
@@ -61,20 +59,6 @@ Vector9 AggregateImuReadings::UpdateEstimate(
   Matrix3 H;
   const auto theta = dR(zeta);
   const Matrix3 R = Rot3::Expmap(theta, H).matrix();
-
-  Matrix3 D_invHwdt_theta = Z_3x3;
-  if (A) {
-    if (useExactDexpDerivative) {
-      boost::function<Vector3(const Vector3&)> f =
-          [w_dt](const Vector3& theta) {
-            return Rot3::ExpmapDerivative(theta).inverse() * w_dt;
-          };
-      D_invHwdt_theta = numericalDerivative11<Vector3, Vector3>(f, theta);
-    } else {
-      // First order (small angle) approximation of derivative of invH*w*dt:
-      D_invHwdt_theta = skewSymmetric(-0.5 * w_dt);
-    }
-  }
 
   Vector9 zeta_plus;
   const double dt2 = 0.5 * dt;
@@ -89,7 +73,8 @@ Vector9 AggregateImuReadings::UpdateEstimate(
     const Matrix3 D_Radt_theta = R * skewSymmetric(-a_dt) * H;
 
     A->setIdentity();
-    A->block<3, 3>(0, 0) += D_invHwdt_theta;
+    // First order (small angle) approximation of derivative of invH*w*dt:
+    A->block<3, 3>(0, 0) -= skewSymmetric(0.5 * w_dt);
     A->block<3, 3>(3, 0) = D_Radt_theta * dt2;
     A->block<3, 3>(3, 6) = I_3x3 * dt;
     A->block<3, 3>(6, 0) = D_Radt_theta;
@@ -102,17 +87,15 @@ Vector9 AggregateImuReadings::UpdateEstimate(
 
 void AggregateImuReadings::integrateMeasurement(const Vector3& measuredAcc,
                                                 const Vector3& measuredOmega,
-                                                double dt,
-                                                bool useExactDexpDerivative) {
+                                                double dt) {
   // Correct measurements
   const Vector3 correctedAcc = measuredAcc - estimatedBias_.accelerometer();
   const Vector3 correctedOmega = measuredOmega - estimatedBias_.gyroscope();
 
   // Do exact mean propagation
   Matrix9 A;
-  Matrix93 Ba, Bw;
-  zeta_ = UpdateEstimate(zeta_, correctedAcc, correctedOmega, dt,
-                         useExactDexpDerivative, A, Ba, Bw);
+  Matrix93 B, C;
+  zeta_ = UpdateEstimate(zeta_, correctedAcc, correctedOmega, dt, A, B, C);
 
   // propagate uncertainty
   // TODO(frank): use noiseModel routine so we can have arbitrary noise models.
@@ -120,8 +103,8 @@ void AggregateImuReadings::integrateMeasurement(const Vector3& measuredAcc,
   const Matrix3& a = p_->accelerometerCovariance;
   // TODO(frank): use Eigen-tricks for symmetric matrices
   cov_ = A * cov_ * A.transpose();
-  cov_ += Bw * (w / dt) * Bw.transpose();
-  cov_ += Ba * (a / dt) * Ba.transpose();
+  cov_ += B * (a / dt) * B.transpose();
+  cov_ += C * (w / dt) * C.transpose();
 
   // increment counter and time
   k_ += 1;
