@@ -223,6 +223,7 @@ public:
       boost::optional<Matrix&> H3 = boost::none, boost::optional<Matrix&> H4 =
           boost::none, boost::optional<Matrix&> H5 = boost::none) const;
 
+#ifdef ALLOW_DEPRECATED_IN_GTSAM4
   /// @deprecated typename
   typedef PreintegratedImuMeasurements PreintegratedMeasurements;
 
@@ -239,6 +240,7 @@ public:
       Vector3& vel_j, const imuBias::ConstantBias& bias_i,
       PreintegratedMeasurements& pim, const Vector3& n_gravity,
       const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis = false);
+#endif
 
 private:
 

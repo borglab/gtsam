@@ -270,19 +270,27 @@ TEST( Rot3, ExpmapDerivative) {
 /* ************************************************************************* */
 TEST( Rot3, ExpmapDerivative2)
 {
-  const Vector3 thetahat(0.1, 0, 0.1);
+  const Vector3 theta(0.1, 0, 0.1);
   const Matrix Jexpected = numericalDerivative11<Rot3, Vector3>(
-      boost::bind(&Rot3::Expmap, _1, boost::none), thetahat);
+      boost::bind(&Rot3::Expmap, _1, boost::none), theta);
 
-  const Matrix Jactual = Rot3::ExpmapDerivative(thetahat);
-  CHECK(assert_equal(Jexpected, Jactual));
-
-  const Matrix Jactual2 = Rot3::ExpmapDerivative(thetahat);
-  CHECK(assert_equal(Jexpected, Jactual2));
+  CHECK(assert_equal(Jexpected, Rot3::ExpmapDerivative(theta)));
+  CHECK(assert_equal(Matrix3(Jexpected.transpose()), Rot3::ExpmapDerivative(-theta)));
 }
 
 /* ************************************************************************* */
-TEST(Rot3, ExpmapDerivative3) {
+TEST( Rot3, ExpmapDerivative3)
+{
+  const Vector3 theta(10, 20, 30);
+  const Matrix Jexpected = numericalDerivative11<Rot3, Vector3>(
+      boost::bind(&Rot3::Expmap, _1, boost::none), theta);
+
+  CHECK(assert_equal(Jexpected, Rot3::ExpmapDerivative(theta)));
+  CHECK(assert_equal(Matrix3(Jexpected.transpose()), Rot3::ExpmapDerivative(-theta)));
+}
+
+/* ************************************************************************* */
+TEST(Rot3, ExpmapDerivative4) {
   // Iserles05an (Lie-group Methods) says:
   // scalar is easy: d exp(a(t)) / dt = exp(a(t)) a'(t)
   // matrix is hard: d exp(A(t)) / dt = exp(A(t)) dexp[-A(t)] A'(t)
@@ -309,7 +317,7 @@ TEST(Rot3, ExpmapDerivative3) {
 }
 
 /* ************************************************************************* */
-TEST(Rot3, ExpmapDerivative4) {
+TEST(Rot3, ExpmapDerivative5) {
   auto w = [](double t) { return Vector3(2 * t, sin(t), 4 * t * t); };
   auto w_dot = [](double t) { return Vector3(2, cos(t), 8 * t); };
 

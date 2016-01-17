@@ -32,7 +32,7 @@ namespace gtsam {
 class AggregateImuReadings {
  public:
   typedef imuBias::ConstantBias Bias;
-  typedef ImuFactor::PreintegratedMeasurements::Params Params;
+  typedef PreintegrationBase::Params Params;
 
  private:
   const boost::shared_ptr<Params> p_;
