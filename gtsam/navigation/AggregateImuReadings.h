@@ -20,6 +20,8 @@
 #include <gtsam/navigation/ImuFactor.h>
 #include <gtsam/linear/NoiseModel.h>
 
+#define LOCALCOORDINATES_ONLY
+
 namespace gtsam {
 
 /**
@@ -79,8 +81,8 @@ class AggregateImuReadings {
                                 const Vector3& correctedOmega, double dt,
                                 bool useExactDexpDerivative = false,
                                 OptionalJacobian<9, 9> A = boost::none,
-                                OptionalJacobian<9, 3> Ba = boost::none,
-                                OptionalJacobian<9, 3> Bw = boost::none);
+                                OptionalJacobian<9, 3> B = boost::none,
+                                OptionalJacobian<9, 3> C = boost::none);
 };
 
 }  // namespace gtsam
