@@ -98,7 +98,6 @@ Navigation States
 \begin_layout Standard
 Let us assume a setup where frames with image and/or laser measurements
  are processed at some fairly low rate, e.g., 10 Hz.
- 
 \end_layout
 
 \begin_layout Standard
@@ -191,7 +190,7 @@ tangent vector
 , and for the NavState manifold this will be a triplet 
 \begin_inset Formula 
 \[
-\left[W(t,X),V(t,X),A(t,X)\right]\in\sothree\times\Rthree\times\Rthree
+\left[\dot{R}(t,X),\dot{P}(t,X),\dot{V}(t,X)\right]\in\sothree\times\Rthree\times\Rthree
 \]
 
 \end_inset
@@ -264,30 +263,42 @@ Valid vector fields on a NavState manifold are special, in that the attitude
 : 
 \begin_inset Formula 
 \begin{equation}
-\dot{X}(t)=\left[W(X,t),V(t),A(X,t)\right]\label{eq:validField}
+\dot{X}(t)=\left[\dot{R}(X,t),V(t),\dot{V}(X,t)\right]\label{eq:validField}
 \end{equation}
 
 \end_inset
 
-If we know 
+Suppose we are given the 
+\series bold
+body angular velocity
+\series default
+ 
 \begin_inset Formula $\omega^{b}(t)$
 \end_inset
 
  and non-gravity 
+\series bold
+acceleration
+\series default
+ 
 \begin_inset Formula $a^{b}(t)$
 \end_inset
 
- in the body frame, we know (from Murray84book) that the body angular velocity
- an be written as 
+ in the body frame.
+ We know (from Murray84book) that the derivative of 
+\begin_inset Formula $R$
+\end_inset
+
+ can be written as 
 \begin_inset Formula 
 \[
-\Skew{\omega^{b}(t)}=R(t)^{T}W(X,t)
+\dot{R}(X,t)=R(t)\Skew{\omega^{b}(t)}
 \]
 
 \end_inset
 
 where 
-\begin_inset Formula $\Skew{\omega^{b}(t)}\in so(3)$
+\begin_inset Formula $\Skew{\theta}\in so(3)$
 \end_inset
 
  is the skew-symmetric matrix corresponding to 
@@ -297,7 +308,7 @@ where
 , and hence the resulting exact vector field is 
 \begin_inset Formula 
 \begin{equation}
-\dot{X}(t)=\left[W(X,t),V(t),A(X,t)\right]=\left[R(t)\Skew{\omega^{b}(t)},V(t),g+R(t)a^{b}(t)\right]\label{eq:bodyField}
+\dot{X}(t)=\left[\dot{R}(X,t),V(t),\dot{V}(X,t)\right]=\left[R(t)\Skew{\omega^{b}(t)},V(t),g+R(t)a^{b}(t)\right]\label{eq:bodyField}
 \end{equation}
 
 \end_inset
@@ -613,7 +624,11 @@ R(t)=\Phi_{R_{0}}(\theta(t))
 
 \end_inset
 
-We can create a trajectory 
+To find an expression for 
+\begin_inset Formula $\dot{\theta}(t)$
+\end_inset
+
+, create a trajectory 
 \begin_inset Formula $\gamma(\delta)$
 \end_inset
 
@@ -625,7 +640,15 @@ We can create a trajectory
 \begin_inset Formula $\delta=0$
 \end_inset
 
- 
+, and moves 
+\begin_inset Formula $\theta(t)$
+\end_inset
+
+ along the direction 
+\begin_inset Formula $\dot{\theta}(t)$
+\end_inset
+
+: 
 \begin_inset Formula 
 \[
 \gamma(\delta)=R(t+\delta)=\Phi_{R_{0}}\left(\theta(t)+\dot{\theta}(t)\delta\right)\approx\Phi_{R(t)}\left(H(\theta)\dot{\theta}(t)\delta\right)
@@ -633,7 +656,7 @@ We can create a trajectory
 
 \end_inset
 
-and taking the derivative for 
+Taking the derivative for 
 \begin_inset Formula $\delta=0$
 \end_inset
 
@@ -1073,7 +1096,7 @@ Predict the NavState
  from
 \begin_inset Formula 
 \[
-X_{j}=\mathcal{R}_{X_{j}}(\zeta(t_{ij}))=\left\{ \Phi_{R_{0}}\left(\theta(t_{ij})\right),P_{i}+V_{i}t_{ij}+\frac{gt_{ij}^{2}}{2}+R_{i}\, p_{v}(t_{ij}),V_{i}+gt_{ij}+R_{i}\, v_{a}(t_{ij})\right\} 
+X_{j}=\mathcal{R}_{X_{i}}(\zeta(t_{ij}))=\left\{ \Phi_{R_{0}}\left(\theta(t_{ij})\right),P_{i}+V_{i}t_{ij}+\frac{gt_{ij}^{2}}{2}+R_{i}\, p_{v}(t_{ij}),V_{i}+gt_{ij}+R_{i}\, v_{a}(t_{ij})\right\} 
 \]
 
 \end_inset
@@ -1090,12 +1113,12 @@ Note that the predicted NavState
 \begin_inset Formula $X_{i}$
 \end_inset
 
-, but the inrgrated quantities 
+, but the integrated quantities 
 \begin_inset Formula $\theta(t)$
 \end_inset
 
 ,
-\begin_inset Formula $p_{i}(t)$
+\begin_inset Formula $p_{v}(t)$
 \end_inset
 
 , and 
@@ -1113,9 +1136,9 @@ A Simple Euler Scheme
 To solve the differential equation we can use a simple Euler scheme:
 \begin_inset Formula 
 \begin{eqnarray}
-\theta_{k+1}=\theta_{k}+\dot{\theta}(t_{k})\Delta_{t} & = & \theta_{k}+H(\theta_{k})^{-1}\,\omega_{k}^{b}\Delta_{t}\label{eq:euler_theta}\\
-p_{k+1}=p_{k}+\dot{p}_{v}(t_{k})\Delta_{t} & = & p_{k}+v_{k}\Delta_{t}\label{eq:euler_p}\\
-v_{k+1}=v_{k}+\dot{v}_{a}(t_{k})\Delta_{t} & = & v_{k}+\exp\left(\Skew{\theta_{k}}\right)a_{k}^{b}\Delta_{t}\label{eq:euler_v}
+\theta_{k+1}=\theta_{k}+\dot{\theta}(t_{k})\Delta_{t} & = & \theta_{k}+H(\theta_{k})^{-1}\,\omega_{k}^{b}\Delta_{t}\label{eq:euler_theta-1}\\
+p_{k+1}=p_{k}+\dot{p}_{v}(t_{k})\Delta_{t} & = & p_{k}+v_{k}\Delta_{t}\label{eq:euler_p-1}\\
+v_{k+1}=v_{k}+\dot{v}_{a}(t_{k})\Delta_{t} & = & v_{k}+\exp\left(\Skew{\theta_{k}}\right)a_{k}^{b}\Delta_{t}\label{eq:euler_v-1}
 \end{eqnarray}
 
 \end_inset
@@ -1130,6 +1153,26 @@ where
 
 , and 
 \begin_inset Formula $v_{k}\define v_{a}(t_{k})$
+\end_inset
+
+.
+ However, the position propagation can be done more accurately, by using
+ exact integration of the zero-order hold acceleration 
+\begin_inset Formula $a_{k}^{b}$
+\end_inset
+
+:
+\begin_inset Formula 
+\begin{eqnarray}
+\theta_{k+1} & = & \theta_{k}+H(\theta_{k})^{-1}\,\omega_{k}^{b}\Delta_{t}\label{eq:euler_theta}\\
+p_{k+1} & = & p_{k}+v_{k}\Delta_{t}+R_{k}a_{k}^{b}\frac{\Delta_{t}^{2}}{2}\label{eq:euler_p}\\
+v_{k+1} & = & v_{k}+R_{k}a_{k}^{b}\Delta_{t}\label{eq:euler_v}
+\end{eqnarray}
+
+\end_inset
+
+where we defined the rotation matrix 
+\begin_inset Formula $R_{k}=\exp\left(\Skew{\theta_{k}}\right)$
 \end_inset
 
 .
@@ -1196,7 +1239,7 @@ Then the noise on
  propagates as
 \begin_inset Formula 
 \begin{equation}
-\Sigma_{k+1}=A_{k}\Sigma_{k}A_{k}^{T}+B_{k}\Sigma_{\eta}^{gd}B_{k}+C_{k}\Sigma_{\eta}^{ad}C_{k}\label{eq:prop}
+\Sigma_{k+1}=A_{k}\Sigma_{k}A_{k}^{T}+B_{k}\Sigma_{\eta}^{ad}B_{k}+C_{k}\Sigma_{\eta}^{gd}C_{k}\label{eq:prop}
 \end{equation}
 
 \end_inset
@@ -1230,65 +1273,84 @@ where
 \end_inset
 
  partial derivatives with respect to the measured quantities 
-\begin_inset Formula $\omega^{b}$
-\end_inset
-
- and 
 \begin_inset Formula $a^{b}$
 \end_inset
 
+ and 
+\begin_inset Formula $\omega^{b}$
+\end_inset
+
 .
- Noting that
+\end_layout
+
+\begin_layout Standard
 \begin_inset Formula 
 \[
-H(\theta)=\sum_{k=0}^{\infty}\frac{(-1)^{k}}{(k+1)!}\Skew{\theta}^{k}\approx I-\frac{1}{2}\Skew{\theta}
+\deriv{\theta_{k+1}}{\theta_{k}}=I_{3x3}+\deriv{H(\theta_{k})^{-1}\omega_{k}^{b}}{\theta_{k}}\Delta_{t}
 \]
 
 \end_inset
 
-for small 
-\begin_inset Formula $\theta$
+It can be shown that for small 
+\begin_inset Formula $\theta_{k}$
 \end_inset
 
-, and 
+ we have 
 \begin_inset Formula 
 \[
-\deriv{\Skew{\theta}\omega}{\theta}=\deriv{\left(\theta\times\omega\right)}{\theta}=-\deriv{\left(\omega\times\theta\right)}{\theta}=-\deriv{\Skew{\omega}\theta}{\theta}=-\Skew{\omega}
+\deriv{H(\theta_{k})^{-1}\omega_{k}^{b}}{\theta_{k}}\approx-\frac{1}{2}\Skew{\omega_{k}^{b}}\mbox{ and hence }\deriv{\theta_{k+1}}{\theta_{k}}=I_{3x3}-\frac{\Delta t}{2}\Skew{\omega_{k}^{b}}
 \]
 
 \end_inset
 
-we have 
+For the derivatives of 
+\begin_inset Formula $p_{k+1}$
+\end_inset
+
+ and 
+\begin_inset Formula $v_{k+1}$
+\end_inset
+
+ we need the derivative
 \begin_inset Formula 
 \[
-\deriv{H(\theta)\omega}{\theta}\approx\frac{1}{2}\Skew{\omega}
+\deriv{R_{k}a_{k}^{b}}{\theta_{k}}=-R_{k}\Skew{a_{k}^{b}}\deriv{R_{k}}{\theta_{k}}=-R_{k}\Skew{a_{k}^{b}}H(\theta_{k})
 \]
 
 \end_inset
 
-Similarly, 
+where we used 
 \begin_inset Formula 
 \[
-\exp\left(\Skew{\theta}\right)=\sum_{k=0}^{\infty}\frac{1}{k!}\Skew{\theta}^{k}\approx I+\Skew{\theta}
+\deriv{\left(Ra\right)}R\approx-R\Skew a
 \]
 
 \end_inset
 
-and hence
-\begin_inset Formula 
-\[
-\deriv{\exp\left(\Skew{\theta}\right)a}{\theta}\approx-\Skew a
-\]
-
+and the fact that the dependence of the rotation 
+\begin_inset Formula $R_{k}$
 \end_inset
 
-so we finally obtain
+ on 
+\begin_inset Formula $\theta_{k}$
+\end_inset
+
+ is the already computed 
+\begin_inset Formula $H(\theta_{k})$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+Putting all this together, we finally obtain
 \begin_inset Formula 
 \[
 A_{k}\approx\left[\begin{array}{ccc}
-I_{3\times3}+\frac{1}{2}\Skew{\omega_{k}^{b}}\Delta_{t}\\
- & I_{3\times3} & I_{3\times3}\Delta_{t}\\
--\Skew{a_{k}^{b}}\Delta_{t} &  & I_{3\times3}
+I_{3\times3}-\frac{\Delta_{t}}{2}\Skew{\omega_{k}^{b}}\\
+-R_{k}\Skew{a_{k}^{b}}H(\theta_{k})\frac{\Delta_{t}}{2}^{2} & I_{3\times3} & I_{3\times3}\Delta_{t}\\
+-R_{k}\Skew{a_{k}^{b}}H(\theta_{k})\Delta_{t} &  & I_{3\times3}
 \end{array}\right]
 \]
 
@@ -1298,101 +1360,27 @@ The other partial derivatives are simply
 \begin_inset Formula 
 \[
 B_{k}=\left[\begin{array}{c}
-H(\theta_{k})^{-1}\Delta^{t}\\
+0_{3\times3}\\
+R_{k}\frac{\Delta_{t}}{2}^{2}\\
+R_{k}\Delta_{t}
+\end{array}\right],\,\,\,\, C_{k}=\left[\begin{array}{c}
+H(\theta_{k})^{-1}\Delta_{t}\\
 0_{3\times3}\\
 0_{3\times3}
-\end{array}\right],\,\,\,\, C_{k}=\left[\begin{array}{c}
-0_{3\times3}\\
-0_{3\times3}\\
-\exp\left(\Skew{\theta_{k}}\right)\Delta_{t}
 \end{array}\right]
 \]
 
 \end_inset
 
-Substituting these expressions into Eq.
- 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "eq:prop"
 
+\end_layout
+
+\begin_layout Standard
+A more accurate partial derivative of 
+\begin_inset Formula $H(\theta_{k})^{-1}$
 \end_inset
 
- and dropping terms involving 
-\begin_inset Formula $\Delta_{t}^{2}$
-\end_inset
-
-, we obtain
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\bar no
-\strikeout off
-\uuline off
-\uwave off
-\noun off
-\color none
-
-\begin_inset Formula 
-\[
-\Sigma_{k+1}=\Sigma_{k}+\left[\begin{array}{ccc}
-\frac{1}{2}\Skew{\omega_{k}^{b}}\Sigma_{k}^{\theta\theta}-\Sigma_{k}^{\theta\theta}\frac{1}{2}\Skew{\omega_{k}^{b}} & \Sigma_{k}^{\theta v}+\frac{1}{2}\Skew{\omega_{k}^{b}}\Sigma_{k}^{\theta p} & \Sigma_{k}^{\theta\theta}\Skew{a_{k}^{b}}+\frac{1}{2}\Skew{\omega_{k}^{b}}\Sigma_{k}^{\theta v}\\
-. & \Sigma_{k}^{pv}+\Sigma_{k}^{vp} & \Sigma_{k}^{vv}+\Sigma_{k}^{p\theta}\Skew{a_{k}^{b}}\\
-. & . & \Sigma_{k}^{v\theta}\Skew{a_{k}^{b}}-\Skew{a_{k}^{b}}\Sigma_{k}^{\theta v}
-\end{array}\right]\Delta^{t}+\Sigma_{k}^{\eta}
-\]
-
-\end_inset
-
-where we only show the upper-triangular part (the matrix is symmetric) and
- where 
-\begin_inset Formula 
-\[
-\Sigma_{k}^{\eta}=B_{k}\Sigma_{\eta}^{gd}B_{k}+C_{k}\Sigma_{\eta}^{ad}C_{k}=\left[\begin{array}{ccc}
-\sigma^{g}I_{3\times3}\\
-\\
- &  & \sigma^{a}I_{3\times3}
-\end{array}\right]\Delta_{t}
-\]
-
-\end_inset
-
-The equality in the last line holds in the case of isotropic Gaussian measuremen
-t noise, in which case 
-\begin_inset Formula $\Sigma_{\eta}^{gd}$
-\end_inset
-
-=
-\begin_inset Formula $\sigma^{g}I_{3\times3}/\Delta_{t}$
-\end_inset
-
- and 
-\begin_inset Formula $\Sigma_{\eta}^{ga}$
-\end_inset
-
-=
-\begin_inset Formula $\sigma^{a}I_{3\times3}/\Delta_{t}$
-\end_inset
-
-, and used the identities 
-\begin_inset Formula $H(\theta)^{-1}H(\theta)^{-T}\approx I_{3\times3}$
-\end_inset
-
- for small 
-\begin_inset Formula $\theta$
-\end_inset
-
-, and 
-\begin_inset Formula $\exp\left(\Skew{\theta}\right)\exp\left(\Skew{\theta}\right)^{T}=I_{3\times3}$
-\end_inset
-
- for all 
-\begin_inset Formula $\theta$
-\end_inset
-
-.
+ can be used, as well.
 \end_layout
 
 \begin_layout Section
