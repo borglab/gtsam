@@ -17,6 +17,8 @@
 
 #include <gtsam/navigation/AggregateImuReadings.h>
 #include <gtsam/navigation/functors.h>
+#include <gtsam/base/numericalDerivative.h>
+
 #include <cmath>
 
 using namespace std;
@@ -60,28 +62,25 @@ Vector9 AggregateImuReadings::UpdateEstimate(
   const auto theta = dR(zeta);
   const Matrix3 R = Rot3::Expmap(theta, H).matrix();
 
-  // NOTE(frank): I believe that D_invHwdt_wdt = H.inverse(), but tests fail :-(
-  Matrix3 D_invHwdt_theta, D_invHwdt_wdt;
-  Vector3 invHwdt;
-  if (useExactDexpDerivative) {
-    // NOTE(frank): ExpmapDerivative(-theta) = H.transpose() not H.inverse() !
-    invHwdt = correctWithExpmapDerivative(
-        -theta, w_dt, A ? &D_invHwdt_theta : 0, A ? &D_invHwdt_wdt : 0);
-    if (A) D_invHwdt_theta *= -1;
-  } else {
-    const Matrix3 invH = H.inverse();
-    invHwdt = invH * w_dt;
-    // First order (small angle) approximation of derivative of invH*w*dt:
-    if (A) {
+  Matrix3 D_invHwdt_theta = Z_3x3;
+  if (A) {
+    if (useExactDexpDerivative) {
+      boost::function<Vector3(const Vector3&)> f =
+          [w_dt](const Vector3& theta) {
+            return Rot3::ExpmapDerivative(theta).inverse() * w_dt;
+          };
+      D_invHwdt_theta = numericalDerivative11<Vector3, Vector3>(f, theta);
+    } else {
+      // First order (small angle) approximation of derivative of invH*w*dt:
       D_invHwdt_theta = skewSymmetric(-0.5 * w_dt);
-      D_invHwdt_wdt = invH;
     }
   }
 
   Vector9 zeta_plus;
   const double dt2 = 0.5 * dt;
   const Vector3 Radt = R * a_dt;
-  dR(zeta_plus) = dR(zeta) + invHwdt;                     // theta
+  const Matrix3 invH = H.inverse();
+  dR(zeta_plus) = dR(zeta) + invH * w_dt;                 // theta
   dP(zeta_plus) = dP(zeta) + dV(zeta) * dt + Radt * dt2;  // position
   dV(zeta_plus) = dV(zeta) + Radt;                        // velocity
 
@@ -96,7 +95,7 @@ Vector9 AggregateImuReadings::UpdateEstimate(
     A->block<3, 3>(6, 0) = D_Radt_theta;
   }
   if (B) *B << Z_3x3, R* dt* dt2, R* dt;
-  if (C) *C << D_invHwdt_wdt* dt, Z_3x3, Z_3x3;
+  if (C) *C << invH* dt, Z_3x3, Z_3x3;
 
   return zeta_plus;
 }
