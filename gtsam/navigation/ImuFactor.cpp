@@ -29,7 +29,7 @@ namespace gtsam {
 using namespace std;
 
 //------------------------------------------------------------------------------
-// Inner class PreintegratedMeasurements
+// Inner class PreintegratedImuMeasurements
 //------------------------------------------------------------------------------
 void PreintegratedImuMeasurements::print(const string& s) const {
   PreintegrationBase::print(s);
@@ -156,14 +156,15 @@ Vector ImuFactor::evaluateError(const Pose3& pose_i, const Vector3& vel_i,
 }
 
 //------------------------------------------------------------------------------
+#ifdef ALLOW_DEPRECATED_IN_GTSAM4
 ImuFactor::ImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
-    const PreintegratedMeasurements& pim, const Vector3& n_gravity,
+    const PreintegratedImuMeasurements& pim, const Vector3& n_gravity,
     const Vector3& omegaCoriolis, const boost::optional<Pose3>& body_P_sensor,
     const bool use2ndOrderCoriolis) :
     Base(noiseModel::Gaussian::Covariance(pim.preintMeasCov_), pose_i, vel_i,
         pose_j, vel_j, bias), _PIM_(pim) {
-  boost::shared_ptr<PreintegratedMeasurements::Params> p = boost::make_shared<
-      PreintegratedMeasurements::Params>(pim.p());
+  boost::shared_ptr<PreintegratedImuMeasurements::Params> p = boost::make_shared<
+      PreintegratedImuMeasurements::Params>(pim.p());
   p->n_gravity = n_gravity;
   p->omegaCoriolis = omegaCoriolis;
   p->body_P_sensor = body_P_sensor;
@@ -171,11 +172,9 @@ ImuFactor::ImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
   _PIM_.p_ = p;
 }
 
-//------------------------------------------------------------------------------
-#ifdef ALLOW_DEPRECATED_IN_GTSAM4
 void ImuFactor::Predict(const Pose3& pose_i, const Vector3& vel_i,
     Pose3& pose_j, Vector3& vel_j, const imuBias::ConstantBias& bias_i,
-    PreintegratedMeasurements& pim, const Vector3& n_gravity,
+    PreintegratedImuMeasurements& pim, const Vector3& n_gravity,
     const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis) {
   // use deprecated predict
   PoseVelocityBias pvb = pim.predict(pose_i, vel_i, bias_i, n_gravity,
@@ -184,4 +183,6 @@ void ImuFactor::Predict(const Pose3& pose_i, const Vector3& vel_i,
   vel_j = pvb.velocity;
 }
 #endif
+//------------------------------------------------------------------------------
+
 } // namespace gtsam

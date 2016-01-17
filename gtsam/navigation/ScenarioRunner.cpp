@@ -25,10 +25,10 @@ namespace gtsam {
 static double intNoiseVar = 0.0000001;
 static const Matrix3 kIntegrationErrorCovariance = intNoiseVar * I_3x3;
 
-ImuFactor::PreintegratedMeasurements ScenarioRunner::integrate(
+PreintegratedImuMeasurements ScenarioRunner::integrate(
     double T, const imuBias::ConstantBias& estimatedBias,
     bool corrupted) const {
-  ImuFactor::PreintegratedMeasurements pim(p_, estimatedBias);
+  PreintegratedImuMeasurements pim(p_, estimatedBias);
 
   const double dt = imuSampleTime();
   const size_t nrSteps = T / dt;
@@ -45,7 +45,7 @@ ImuFactor::PreintegratedMeasurements ScenarioRunner::integrate(
 }
 
 NavState ScenarioRunner::predict(
-    const ImuFactor::PreintegratedMeasurements& pim,
+    const PreintegratedImuMeasurements& pim,
     const imuBias::ConstantBias& estimatedBias) const {
   const NavState state_i(scenario_->pose(0), scenario_->velocity_n(0));
   return pim.predict(state_i, estimatedBias);

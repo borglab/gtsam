@@ -28,8 +28,7 @@ namespace gtsam {
  */
 class ScenarioRunner {
  public:
-  typedef boost::shared_ptr<ImuFactor::PreintegratedMeasurements::Params>
-      SharedParams;
+  typedef boost::shared_ptr<PreintegratedImuMeasurements::Params> SharedParams;
   ScenarioRunner(const Scenario* scenario, const SharedParams& p,
                  double imuSampleTime = 1.0 / 100.0,
                  const imuBias::ConstantBias& bias = imuBias::ConstantBias())
@@ -69,19 +68,18 @@ class ScenarioRunner {
   const double& imuSampleTime() const { return imuSampleTime_; }
 
   /// Integrate measurements for T seconds into a PIM
-  ImuFactor::PreintegratedMeasurements integrate(
+  PreintegratedImuMeasurements integrate(
       double T,
       const imuBias::ConstantBias& estimatedBias = imuBias::ConstantBias(),
       bool corrupted = false) const;
 
   /// Predict predict given a PIM
-  NavState predict(const ImuFactor::PreintegratedMeasurements& pim,
+  NavState predict(const PreintegratedImuMeasurements& pim,
                    const imuBias::ConstantBias& estimatedBias =
                        imuBias::ConstantBias()) const;
 
   /// Return pose covariance by re-arranging pim.preintMeasCov() appropriately
-  Matrix6 poseCovariance(
-      const ImuFactor::PreintegratedMeasurements& pim) const {
+  Matrix6 poseCovariance(const PreintegratedImuMeasurements& pim) const {
     Matrix9 cov = pim.preintMeasCov();
     Matrix6 poseCov;
     poseCov << cov.block<3, 3>(0, 0), cov.block<3, 3>(0, 3),  //
