@@ -44,47 +44,50 @@ static Eigen::Block<constV9, 3, 1> dV(constV9& v) { return v.segment<3>(6); }
 
 }  // namespace sugar
 
+// See extensive discussion in ImuFactor.lyx
 Vector9 AggregateImuReadings::UpdateEstimate(
     const Vector9& zeta, const Vector3& correctedAcc,
     const Vector3& correctedOmega, double dt, bool useExactDexpDerivative,
-    OptionalJacobian<9, 9> A, OptionalJacobian<9, 3> Ba,
-    OptionalJacobian<9, 3> Bw) {
+    OptionalJacobian<9, 9> A, OptionalJacobian<9, 3> B,
+    OptionalJacobian<9, 3> C) {
   using namespace sugar;
 
   const Vector3 a_dt = correctedAcc * dt;
   const Vector3 w_dt = correctedOmega * dt;
 
   // Calculate exact mean propagation
-  Matrix3 D_R_theta;
+  Matrix3 H;
   const auto theta = dR(zeta);
-  const Rot3 R = Rot3::Expmap(theta, D_R_theta).matrix();
+  const Matrix3 R = Rot3::Expmap(theta, H).matrix();
 
+  // NOTE(frank): I believe that D_invHwdt_wdt = H.inverse(), but tests fail :-(
   Matrix3 D_invHwdt_theta, D_invHwdt_wdt;
   Vector3 invHwdt;
   if (useExactDexpDerivative) {
+    // NOTE(frank): ExpmapDerivative(-theta) = H.transpose() not H.inverse() !
     invHwdt = correctWithExpmapDerivative(
         -theta, w_dt, A ? &D_invHwdt_theta : 0, A ? &D_invHwdt_wdt : 0);
     if (A) D_invHwdt_theta *= -1;
   } else {
-    const Matrix3 invH = D_R_theta.inverse();
+    const Matrix3 invH = H.inverse();
     invHwdt = invH * w_dt;
     // First order (small angle) approximation of derivative of invH*w*dt:
-    if (A) D_invHwdt_theta = skewSymmetric(-0.5 * w_dt);
-    if (A) D_invHwdt_wdt = invH;
+    if (A) {
+      D_invHwdt_theta = skewSymmetric(-0.5 * w_dt);
+      D_invHwdt_wdt = invH;
+    }
   }
-
-  Matrix3 D_Radt_R, D_Radt_adt;
-  const Vector3 Radt = R.rotate(a_dt, A ? &D_Radt_R : 0, A ? &D_Radt_adt : 0);
 
   Vector9 zeta_plus;
   const double dt2 = 0.5 * dt;
+  const Vector3 Radt = R * a_dt;
   dR(zeta_plus) = dR(zeta) + invHwdt;                     // theta
   dP(zeta_plus) = dP(zeta) + dV(zeta) * dt + Radt * dt2;  // position
   dV(zeta_plus) = dV(zeta) + Radt;                        // velocity
 
   if (A) {
     // Exact derivative of R*a*dt with respect to theta:
-    const Matrix3 D_Radt_theta = D_Radt_R * D_R_theta;
+    const Matrix3 D_Radt_theta = R * skewSymmetric(-a_dt) * H;
 
     A->setIdentity();
     A->block<3, 3>(0, 0) += D_invHwdt_theta;
@@ -92,8 +95,8 @@ Vector9 AggregateImuReadings::UpdateEstimate(
     A->block<3, 3>(3, 6) = I_3x3 * dt;
     A->block<3, 3>(6, 0) = D_Radt_theta;
   }
-  if (Ba) *Ba << Z_3x3, D_Radt_adt* dt* dt2, D_Radt_adt* dt;
-  if (Bw) *Bw << D_invHwdt_wdt* dt, Z_3x3, Z_3x3;
+  if (B) *B << Z_3x3, R* dt* dt2, R* dt;
+  if (C) *C << D_invHwdt_wdt* dt, Z_3x3, Z_3x3;
 
   return zeta_plus;
 }
@@ -146,6 +149,7 @@ NavState AggregateImuReadings::predict(const NavState& state_i,
 }
 
 SharedGaussian AggregateImuReadings::noiseModel() const {
+#ifndef LOCALCOORDINATES_ONLY
   // Correct for application of retract, by calculating the retract derivative H
   // From NavState::retract:
   Matrix3 D_R_theta;
@@ -156,9 +160,11 @@ SharedGaussian AggregateImuReadings::noiseModel() const {
       Z_3x3, Z_3x3, iRj.transpose();
 
   // TODO(frank): theta() itself is noisy, so should we not correct for that?
-
   Matrix9 HcH = H * cov_ * H.transpose();
   return noiseModel::Gaussian::Covariance(HcH, false);
+#else
+  return noiseModel::Gaussian::Covariance(cov_, false);
+#endif
 }
 
 Matrix9 AggregateImuReadings::preintMeasCov() const {

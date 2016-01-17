@@ -47,12 +47,14 @@ TEST(AggregateImuReadings, CorrectWithExpmapDerivative1) {
   for (Vector3 omega : {Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1)}) {
     for (Vector3 theta :
          {Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1)}) {
-      Vector3 expected = Rot3::ExpmapDerivative(omega) * theta;
+      Matrix3 H = Rot3::ExpmapDerivative(omega);
+      Vector3 expected = H * theta;
       EXPECT(assert_equal(expected, correctWithExpmapDerivative(omega, theta)));
       EXPECT(assert_equal(expected,
                           correctWithExpmapDerivative(omega, theta, aH1, aH2)));
       EXPECT(assert_equal(numericalDerivative21(f, omega, theta), aH1));
       EXPECT(assert_equal(numericalDerivative22(f, omega, theta), aH2));
+      EXPECT(assert_equal(H, aH2));
     }
   }
 }
@@ -64,12 +66,14 @@ TEST(AggregateImuReadings, CorrectWithExpmapDerivative2) {
       correctWithExpmapDerivative, _1, _2, boost::none, boost::none);
   const Vector3 omega(0, 0, 0);
   for (Vector3 theta : {Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1)}) {
-    Vector3 expected = Rot3::ExpmapDerivative(omega) * theta;
+    Matrix3 H = Rot3::ExpmapDerivative(omega);
+    Vector3 expected = H * theta;
     EXPECT(assert_equal(expected, correctWithExpmapDerivative(omega, theta)));
     EXPECT(assert_equal(expected,
                         correctWithExpmapDerivative(omega, theta, aH1, aH2)));
     EXPECT(assert_equal(numericalDerivative21(f, omega, theta), aH1));
     EXPECT(assert_equal(numericalDerivative22(f, omega, theta), aH2));
+    EXPECT(assert_equal(H, aH2));
   }
 }
 
@@ -79,12 +83,14 @@ TEST(AggregateImuReadings, CorrectWithExpmapDerivative3) {
   boost::function<Vector3(const Vector3&, const Vector3&)> f = boost::bind(
       correctWithExpmapDerivative, _1, _2, boost::none, boost::none);
   const Vector3 omega(0.1, 0.2, 0.3), theta(0.4, 0.3, 0.2);
-  Vector3 expected = Rot3::ExpmapDerivative(omega) * theta;
+  Matrix3 H = Rot3::ExpmapDerivative(omega);
+  Vector3 expected = H * theta;
   EXPECT(assert_equal(expected, correctWithExpmapDerivative(omega, theta)));
   EXPECT(assert_equal(expected,
                       correctWithExpmapDerivative(omega, theta, aH1, aH2)));
   EXPECT(assert_equal(numericalDerivative21(f, omega, theta), aH1));
   EXPECT(assert_equal(numericalDerivative22(f, omega, theta), aH2));
+  EXPECT(assert_equal(H, aH2));
 }
 
 /* ************************************************************************* */
