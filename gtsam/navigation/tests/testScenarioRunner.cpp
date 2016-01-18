@@ -25,8 +25,10 @@ using namespace gtsam;
 
 static const double kDegree = M_PI / 180.0;
 static const double kDt = 1e-2;
-static const double kGyroSigma = 0.02;
-static const double kAccelSigma = 0.1;
+
+// realistic white noise strengths are 0.5 deg/sqrt(hr) and 0.1 (m/s)/sqrt(h)
+static const double kGyroSigma = 0.5 * kDegree / 60;
+static const double kAccelSigma = 0.1 / 60.0;
 
 static const Vector3 kAccBias(0.2, 0, 0), kRotBias(0.1, 0, 0.3);
 static const imuBias::ConstantBias kNonZeroBias(kAccBias, kRotBias);

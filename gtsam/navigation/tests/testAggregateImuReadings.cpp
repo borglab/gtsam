@@ -38,21 +38,37 @@ static boost::shared_ptr<AggregateImuReadings::Params> defaultParams() {
   return p;
 }
 
+boost::function<Vector9(const Vector9&, const Vector3&, const Vector3&)> f =
+    boost::bind(&AggregateImuReadings::UpdateEstimate, _1, _2, _3, kDt,
+                boost::none, boost::none, boost::none);
+
 /* ************************************************************************* */
-TEST(AggregateImuReadings, UpdateEstimate) {
+TEST(AggregateImuReadings, UpdateEstimate1) {
   AggregateImuReadings pim(defaultParams());
   Matrix9 aH1;
   Matrix93 aH2, aH3;
-  boost::function<Vector9(const Vector9&, const Vector3&, const Vector3&)> f =
-      boost::bind(&AggregateImuReadings::UpdateEstimate, _1, _2, _3, kDt,
-                  boost::none, boost::none, boost::none);
+  Vector9 zeta;
+  zeta.setZero();
+  const Vector3 acc(0.1, 0.2, 10), omega(0.1, 0.2, 0.3);
+  pim.UpdateEstimate(zeta, acc, omega, kDt, aH1, aH2, aH3);
+  EXPECT(assert_equal(numericalDerivative31(f, zeta, acc, omega), aH1, 1e-9));
+  EXPECT(assert_equal(numericalDerivative32(f, zeta, acc, omega), aH2, 1e-9));
+  EXPECT(assert_equal(numericalDerivative33(f, zeta, acc, omega), aH3, 1e-9));
+}
+
+/* ************************************************************************* */
+TEST(AggregateImuReadings, UpdateEstimate2) {
+  AggregateImuReadings pim(defaultParams());
+  Matrix9 aH1;
+  Matrix93 aH2, aH3;
   Vector9 zeta;
   zeta << 0.01, 0.02, 0.03, 100, 200, 300, 10, 5, 3;
   const Vector3 acc(0.1, 0.2, 10), omega(0.1, 0.2, 0.3);
   pim.UpdateEstimate(zeta, acc, omega, kDt, aH1, aH2, aH3);
+  // NOTE(frank): tolerance of 1e-3 on H1 because approximate away from 0
   EXPECT(assert_equal(numericalDerivative31(f, zeta, acc, omega), aH1, 1e-3));
-  EXPECT(assert_equal(numericalDerivative32(f, zeta, acc, omega), aH2, 1e-5));
-  EXPECT(assert_equal(numericalDerivative33(f, zeta, acc, omega), aH3, 1e-5));
+  EXPECT(assert_equal(numericalDerivative32(f, zeta, acc, omega), aH2, 1e-7));
+  EXPECT(assert_equal(numericalDerivative33(f, zeta, acc, omega), aH3, 1e-9));
 }
 
 /* ************************************************************************* */
