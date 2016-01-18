@@ -142,22 +142,6 @@ TEST(ImuFactor, Accelerating) {
 
   Matrix9 estimatedCov = runner.estimateCovariance(T);
   EXPECT(assert_equal(estimatedCov, pim.preintMeasCov(), 0.1));
-
-  // Check G1 and G2 derivatives of pim.update
-  Matrix93 aG1, aG2;
-  boost::function<NavState(const Vector3&, const Vector3&)> f = boost::bind(
-      &PreintegrationBase::updatedDeltaXij, pim, _1, _2, T / 10, boost::none,
-      boost::none, boost::none);
-  const Vector3 measuredAcc = runner.actualSpecificForce(T);
-  const Vector3 measuredOmega = runner.actualAngularVelocity(T);
-  pim.updatedDeltaXij(measuredAcc, measuredOmega, T / 10, boost::none, aG1,
-      aG2);
-  EXPECT(
-      assert_equal(numericalDerivative21(f, measuredAcc, measuredOmega, 1e-7),
-          aG1, 1e-7));
-  EXPECT(
-      assert_equal(numericalDerivative22(f, measuredAcc, measuredOmega, 1e-7),
-          aG2, 1e-7));
 }
 
 /* ************************************************************************* */
