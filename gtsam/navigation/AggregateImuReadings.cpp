@@ -103,7 +103,6 @@ void AggregateImuReadings::integrateMeasurement(const Vector3& measuredAcc,
   const Matrix3& aCov = p_->accelerometerCovariance;
   const Matrix3& wCov = p_->gyroscopeCovariance;
 
-  // TODO(frank): use Eigen-tricks for symmetric matrices
   cov_ = A * cov_ * A.transpose();
   cov_.noalias() += B * (aCov / dt) * B.transpose();
   cov_.noalias() += C * (wCov / dt) * C.transpose();
@@ -118,20 +117,17 @@ NavState AggregateImuReadings::predict(const NavState& state_i,
   using namespace sugar;
   Vector9 zeta = zeta_;
 
-// Correct for initial velocity and gravity
-#if 1
+  // Correct for initial velocity and gravity
   Rot3 Ri = state_i.attitude();
   Matrix3 Rit = Ri.transpose();
   Vector3 gt = deltaTij_ * p_->n_gravity;
   dP(zeta) += Rit * (state_i.velocity() * deltaTij_ + 0.5 * deltaTij_ * gt);
   dV(zeta) += Rit * gt;
-#endif
 
   return state_i.retract(zeta);
 }
 
 SharedGaussian AggregateImuReadings::noiseModel() const {
-#ifndef LOCALCOORDINATES_ONLY
   // Correct for application of retract, by calculating the retract derivative H
   // From NavState::retract:
   Matrix3 D_R_theta;
@@ -144,9 +140,6 @@ SharedGaussian AggregateImuReadings::noiseModel() const {
   // TODO(frank): theta() itself is noisy, so should we not correct for that?
   Matrix9 HcH = H * cov_ * H.transpose();
   return noiseModel::Gaussian::Covariance(HcH, false);
-#else
-  return noiseModel::Gaussian::Covariance(cov_, false);
-#endif
 }
 
 Matrix9 AggregateImuReadings::preintMeasCov() const {

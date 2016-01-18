@@ -20,8 +20,6 @@
 #include <gtsam/navigation/ImuFactor.h>
 #include <gtsam/linear/NoiseModel.h>
 
-#define LOCALCOORDINATES_ONLY
-
 namespace gtsam {
 
 /**
