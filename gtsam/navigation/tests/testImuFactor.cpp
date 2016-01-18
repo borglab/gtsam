@@ -859,6 +859,52 @@ TEST(ImuFactor, bodyPSensorWithBias) {
   EXPECT(assert_equal(biasExpected, biasActual, 1e-3));
 }
 
+/* ************************************************************************** */
+#include <gtsam/base/serializationTestHelpers.h>
+
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Constrained, "gtsam_noiseModel_Constrained");
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Diagonal, "gtsam_noiseModel_Diagonal");
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Gaussian, "gtsam_noiseModel_Gaussian");
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Unit, "gtsam_noiseModel_Unit");
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Isotropic, "gtsam_noiseModel_Isotropic");
+BOOST_CLASS_EXPORT_GUID(gtsam::SharedNoiseModel, "gtsam_SharedNoiseModel");
+BOOST_CLASS_EXPORT_GUID(gtsam::SharedDiagonal, "gtsam_SharedDiagonal");
+
+TEST(ImuFactor, serialization) {
+  using namespace gtsam::serializationTestHelpers;
+
+  Vector3 n_gravity(0, 0, -9.81);
+  Pose3 body_P_sensor(Rot3::ypr(0, 0, M_PI), Point3());
+  Matrix3 accCov = 1e-7 * I_3x3;
+  Matrix3 gyroCov = 1e-8 * I_3x3;
+  Matrix3 integrationCov = 1e-9 * I_3x3;
+  double deltaT = 0.005;
+  imuBias::ConstantBias priorBias(Vector3(0, 0, 0), Vector3(0, 0.01, 0)); // Biases (acc, rot)
+
+  ImuFactor::PreintegratedMeasurements pim =
+      ImuFactor::PreintegratedMeasurements(priorBias, accCov, gyroCov,
+          integrationCov, true);
+
+  // measurements are needed for non-inf noise model, otherwise will throw err when deserialize
+
+  // Sensor frame is z-down
+  // Gyroscope measurement is the angular velocity of sensor w.r.t nav frame in sensor frame
+  Vector3 measuredOmega(0, 0.01, 0);
+  // Acc measurement is acceleration of sensor in the sensor frame, when stationary,
+  // table exerts an equal and opposite force w.r.t gravity
+  Vector3 measuredAcc(0, 0, -9.81);
+
+  for (int j = 0; j < 200; ++j)
+    pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT,
+        body_P_sensor);
+
+  ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pim);
+
+  EXPECT(equalsObj(factor));
+  EXPECT(equalsXML(factor));
+  EXPECT(equalsBinary(factor));
+}
+
 /* ************************************************************************* */
 int main() {
   TestResult tr;
