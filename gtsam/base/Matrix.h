@@ -477,9 +477,15 @@ GTSAM_EXPORT Matrix vector_scale(const Matrix& A, const Vector& v, bool inf_mask
  * @param wz
  * @return a 3*3 skew symmetric matrix
 */
-GTSAM_EXPORT Matrix3 skewSymmetric(double wx, double wy, double wz);
-template<class Derived>
-inline Matrix3 skewSymmetric(const Eigen::MatrixBase<Derived>& w) { return skewSymmetric(w(0),w(1),w(2));}
+
+inline Matrix3 skewSymmetric(double wx, double wy, double wz) {
+  return (Matrix3() << 0.0, -wz, +wy, +wz, 0.0, -wx, -wy, +wx, 0.0).finished();
+}
+
+template <class Derived>
+inline Matrix3 skewSymmetric(const Eigen::MatrixBase<Derived>& w) {
+  return skewSymmetric(w(0), w(1), w(2));
+}
 
 /** Use Cholesky to calculate inverse square root of a matrix */
 GTSAM_EXPORT Matrix inverse_square_root(const Matrix& A);
