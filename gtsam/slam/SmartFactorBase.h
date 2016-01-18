@@ -93,6 +93,9 @@ public:
   /// We use the new CameraSte data structure to refer to a set of cameras
   typedef CameraSet<CAMERA> Cameras;
 
+  /// Default Constructor, for serialization
+  SmartFactorBase() {}
+
   /// Constructor
   SmartFactorBase(const SharedNoiseModel& sharedNoiseModel,
       boost::optional<Pose3> body_P_sensor = boost::none) :

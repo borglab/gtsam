@@ -31,13 +31,25 @@ void PreintegrationBase::Params::print(const string& s) const {
   PreintegratedRotation::Params::print(s);
   cout << "accelerometerCovariance:\n[\n" << accelerometerCovariance << "\n]"
       << endl;
-  cout << "integrationCovariance:\n[\n" << accelerometerCovariance << "\n]"
+  cout << "integrationCovariance:\n[\n" << integrationCovariance << "\n]"
       << endl;
   if (omegaCoriolis && use2ndOrderCoriolis)
     cout << "Using 2nd-order Coriolis" << endl;
   if (body_P_sensor)
     body_P_sensor->print("    ");
   cout << "n_gravity = (" << n_gravity.transpose() << ")" << endl;
+}
+
+//------------------------------------------------------------------------------
+bool PreintegrationBase::Params::equals(
+    const PreintegratedRotation::Params& other, double tol) const {
+  auto e = dynamic_cast<const PreintegrationBase::Params*>(&other);
+  return e != nullptr && PreintegratedRotation::Params::equals(other, tol)
+      && use2ndOrderCoriolis == e->use2ndOrderCoriolis
+      && equal_with_abs_tol(accelerometerCovariance, e->accelerometerCovariance,
+          tol)
+      && equal_with_abs_tol(integrationCovariance, e->integrationCovariance,
+          tol) && equal_with_abs_tol(n_gravity, e->n_gravity, tol);
 }
 
 //------------------------------------------------------------------------------
@@ -64,8 +76,8 @@ void PreintegrationBase::print(const string& s) const {
 //------------------------------------------------------------------------------
 bool PreintegrationBase::equals(const PreintegrationBase& other,
     double tol) const {
-  return this->matchesParamsWith(other)
-      && fabs(deltaTij_ - other.deltaTij_) < tol
+  const bool params_match = p_->equals(*other.p_, tol);
+  return params_match && fabs(deltaTij_ - other.deltaTij_) < tol
       && deltaXij_.equals(other.deltaXij_, tol)
       && biasHat_.equals(other.biasHat_, tol)
       && equal_with_abs_tol(delRdelBiasOmega_, other.delRdelBiasOmega_, tol)
@@ -82,13 +94,13 @@ pair<Vector3, Vector3> PreintegrationBase::correctMeasurementsByBiasAndSensorPos
     OptionalJacobian<3, 3> D_correctedAcc_measuredOmega,
     OptionalJacobian<3, 3> D_correctedOmega_measuredOmega) const {
 
-  // Correct for bias in the sensor frame
+// Correct for bias in the sensor frame
   Vector3 j_correctedAcc = biasHat_.correctAccelerometer(j_measuredAcc);
   Vector3 j_correctedOmega = biasHat_.correctGyroscope(j_measuredOmega);
 
-  // Compensate for sensor-body displacement if needed: we express the quantities
-  // (originally in the IMU frame) into the body frame
-  // Equations below assume the "body" frame is the CG
+// Compensate for sensor-body displacement if needed: we express the quantities
+// (originally in the IMU frame) into the body frame
+// Equations below assume the "body" frame is the CG
   if (p().body_P_sensor) {
     // Correct omega to rotation rate vector in the body frame
     const Matrix3 bRs = p().body_P_sensor->rotation().matrix();
@@ -98,9 +110,12 @@ pair<Vector3, Vector3> PreintegrationBase::correctMeasurementsByBiasAndSensorPos
     j_correctedAcc = bRs * j_correctedAcc;
 
     // Jacobians
-    if (D_correctedAcc_measuredAcc) *D_correctedAcc_measuredAcc = bRs;
-    if (D_correctedAcc_measuredOmega) *D_correctedAcc_measuredOmega = Matrix3::Zero();
-    if (D_correctedOmega_measuredOmega) *D_correctedOmega_measuredOmega = bRs;
+    if (D_correctedAcc_measuredAcc)
+      *D_correctedAcc_measuredAcc = bRs;
+    if (D_correctedAcc_measuredOmega)
+      *D_correctedAcc_measuredOmega = Matrix3::Zero();
+    if (D_correctedOmega_measuredOmega)
+      *D_correctedOmega_measuredOmega = bRs;
 
     // Centrifugal acceleration
     const Vector3 b_arm = p().body_P_sensor->translation().vector();
@@ -120,7 +135,7 @@ pair<Vector3, Vector3> PreintegrationBase::correctMeasurementsByBiasAndSensorPos
     }
   }
 
-  // Do update in one fell swoop
+// Do update in one fell swoop
   return make_pair(j_correctedAcc, j_correctedOmega);
 }
 
@@ -135,22 +150,27 @@ NavState PreintegrationBase::updatedDeltaXij(const Vector3& j_measuredAcc,
   Matrix3 D_correctedAcc_measuredAcc, //
       D_correctedAcc_measuredOmega, //
       D_correctedOmega_measuredOmega;
-  bool needDerivs = D_updated_measuredAcc && D_updated_measuredOmega && p().body_P_sensor;
+  bool needDerivs = D_updated_measuredAcc && D_updated_measuredOmega
+      && p().body_P_sensor;
   boost::tie(j_correctedAcc, j_correctedOmega) =
       correctMeasurementsByBiasAndSensorPose(j_measuredAcc, j_measuredOmega,
           (needDerivs ? &D_correctedAcc_measuredAcc : 0),
           (needDerivs ? &D_correctedAcc_measuredOmega : 0),
           (needDerivs ? &D_correctedOmega_measuredOmega : 0));
-  // Do update in one fell swoop
+// Do update in one fell swoop
   Matrix93 D_updated_correctedAcc, D_updated_correctedOmega;
-  NavState updated = deltaXij_.update(j_correctedAcc, j_correctedOmega, dt, D_updated_current,
-              (needDerivs ? D_updated_correctedAcc : D_updated_measuredAcc),
-              (needDerivs ? D_updated_correctedOmega : D_updated_measuredOmega));
+  NavState updated = deltaXij_.update(j_correctedAcc, j_correctedOmega, dt,
+      D_updated_current,
+      (needDerivs ? D_updated_correctedAcc : D_updated_measuredAcc),
+      (needDerivs ? D_updated_correctedOmega : D_updated_measuredOmega));
   if (needDerivs) {
-    *D_updated_measuredAcc = D_updated_correctedAcc * D_correctedAcc_measuredAcc;
-    *D_updated_measuredOmega = D_updated_correctedOmega * D_correctedOmega_measuredOmega;
+    *D_updated_measuredAcc = D_updated_correctedAcc
+        * D_correctedAcc_measuredAcc;
+    *D_updated_measuredOmega = D_updated_correctedOmega
+        * D_correctedOmega_measuredOmega;
     if (!p().body_P_sensor->translation().vector().isZero()) {
-      *D_updated_measuredOmega += D_updated_correctedAcc * D_correctedAcc_measuredOmega;
+      *D_updated_measuredOmega += D_updated_correctedAcc
+          * D_correctedAcc_measuredOmega;
     }
   }
   return updated;
@@ -162,16 +182,16 @@ void PreintegrationBase::update(const Vector3& j_measuredAcc,
     Matrix3* D_incrR_integratedOmega, Matrix9* D_updated_current,
     Matrix93* D_updated_measuredAcc, Matrix93* D_updated_measuredOmega) {
 
-  // Save current rotation for updating Jacobians
+// Save current rotation for updating Jacobians
   const Rot3 oldRij = deltaXij_.attitude();
 
-  // Do update
+// Do update
   deltaTij_ += dt;
   deltaXij_ = updatedDeltaXij(j_measuredAcc, j_measuredOmega, dt,
       D_updated_current, D_updated_measuredAcc, D_updated_measuredOmega); // functional
 
-  // Update Jacobians
-  // TODO(frank): we are repeating some computation here: accessible in F ?
+// Update Jacobians
+// TODO(frank): we are repeating some computation here: accessible in F ?
   Vector3 j_correctedAcc, j_correctedOmega;
   boost::tie(j_correctedAcc, j_correctedOmega) =
       correctMeasurementsByBiasAndSensorPose(j_measuredAcc, j_measuredOmega);
@@ -197,7 +217,7 @@ void PreintegrationBase::update(const Vector3& j_measuredAcc,
 //------------------------------------------------------------------------------
 Vector9 PreintegrationBase::biasCorrectedDelta(
     const imuBias::ConstantBias& bias_i, OptionalJacobian<9, 6> H) const {
-  // Correct deltaRij, derivative is delRdelBiasOmega_
+// Correct deltaRij, derivative is delRdelBiasOmega_
   const imuBias::ConstantBias biasIncr = bias_i - biasHat_;
   Matrix3 D_correctedRij_bias;
   const Vector3 biasInducedOmega = delRdelBiasOmega_ * biasIncr.gyroscope();
@@ -208,8 +228,8 @@ Vector9 PreintegrationBase::biasCorrectedDelta(
 
   Vector9 xi;
   Matrix3 D_dR_correctedRij;
-  // TODO(frank): could line below be simplified? It is equivalent to
-  //   LogMap(deltaRij_.compose(Expmap(biasInducedOmega)))
+// TODO(frank): could line below be simplified? It is equivalent to
+//   LogMap(deltaRij_.compose(Expmap(biasInducedOmega)))
   NavState::dR(xi) = Rot3::Logmap(correctedRij, H ? &D_dR_correctedRij : 0);
   NavState::dP(xi) = deltaPij() + delPdelBiasAcc_ * biasIncr.accelerometer()
       + delPdelBiasOmega_ * biasIncr.gyroscope();
@@ -230,18 +250,18 @@ Vector9 PreintegrationBase::biasCorrectedDelta(
 NavState PreintegrationBase::predict(const NavState& state_i,
     const imuBias::ConstantBias& bias_i, OptionalJacobian<9, 9> H1,
     OptionalJacobian<9, 6> H2) const {
-  // correct for bias
+// correct for bias
   Matrix96 D_biasCorrected_bias;
   Vector9 biasCorrected = biasCorrectedDelta(bias_i,
       H2 ? &D_biasCorrected_bias : 0);
 
-  // integrate on tangent space
+// integrate on tangent space
   Matrix9 D_delta_state, D_delta_biasCorrected;
   Vector9 xi = state_i.correctPIM(biasCorrected, deltaTij_, p().n_gravity,
       p().omegaCoriolis, p().use2ndOrderCoriolis, H1 ? &D_delta_state : 0,
       H2 ? &D_delta_biasCorrected : 0);
 
-  // Use retract to get back to NavState manifold
+// Use retract to get back to NavState manifold
   Matrix9 D_predict_state, D_predict_delta;
   NavState state_j = state_i.retract(xi, D_predict_state, D_predict_delta);
   if (H1)
@@ -258,12 +278,12 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i,
     OptionalJacobian<9, 3> H2, OptionalJacobian<9, 6> H3,
     OptionalJacobian<9, 3> H4, OptionalJacobian<9, 6> H5) const {
 
-  // Note that derivative of constructors below is not identity for velocity, but
-  // a 9*3 matrix == Z_3x3, Z_3x3, state.R().transpose()
+// Note that derivative of constructors below is not identity for velocity, but
+// a 9*3 matrix == Z_3x3, Z_3x3, state.R().transpose()
   NavState state_i(pose_i, vel_i);
   NavState state_j(pose_j, vel_j);
 
-  /// Predict state at time j
+/// Predict state at time j
   Matrix99 D_predict_state_i;
   Matrix96 D_predict_bias_i;
   NavState predictedState_j = predict(state_i, bias_i,
@@ -273,11 +293,11 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i,
   Vector9 error = state_j.localCoordinates(predictedState_j,
       H3 || H4 ? &D_error_state_j : 0, H1 || H2 || H5 ? &D_error_predict : 0);
 
-  // Separate out derivatives in terms of 5 arguments
-  // Note that doing so requires special treatment of velocities, as when treated as
-  // separate variables the retract applied will not be the semi-direct product in NavState
-  // Instead, the velocities in nav are updated using a straight addition
-  // This is difference is accounted for by the R().transpose calls below
+// Separate out derivatives in terms of 5 arguments
+// Note that doing so requires special treatment of velocities, as when treated as
+// separate variables the retract applied will not be the semi-direct product in NavState
+// Instead, the velocities in nav are updated using a straight addition
+// This is difference is accounted for by the R().transpose calls below
   if (H1)
     *H1 << D_error_predict * D_predict_state_i.leftCols<6>();
   if (H2)
@@ -300,7 +320,7 @@ PoseVelocityBias PreintegrationBase::predict(const Pose3& pose_i,
     const Vector3& vel_i, const imuBias::ConstantBias& bias_i,
     const Vector3& n_gravity, const Vector3& omegaCoriolis,
     const bool use2ndOrderCoriolis) const {
-  // NOTE(frank): parameters are supposed to be constant, below is only provided for compatibility
+// NOTE(frank): parameters are supposed to be constant, below is only provided for compatibility
   boost::shared_ptr<Params> q = boost::make_shared<Params>(p());
   q->n_gravity = n_gravity;
   q->omegaCoriolis = omegaCoriolis;
@@ -311,4 +331,5 @@ PoseVelocityBias PreintegrationBase::predict(const Pose3& pose_i,
 #endif
 //------------------------------------------------------------------------------
 
-}/// namespace gtsam
+}
+ /// namespace gtsam

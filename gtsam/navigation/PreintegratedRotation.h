@@ -43,15 +43,17 @@ class PreintegratedRotation {
     Params() : gyroscopeCovariance(I_3x3) {}
 
     virtual void print(const std::string& s) const;
+    virtual bool equals(const Params& other, double tol=1e-9) const;
 
    private:
     /** Serialization function */
     friend class boost::serialization::access;
-    template <class ARCHIVE>
-    void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-      ar& BOOST_SERIALIZATION_NVP(gyroscopeCovariance);
-      ar& BOOST_SERIALIZATION_NVP(omegaCoriolis);
-      ar& BOOST_SERIALIZATION_NVP(body_P_sensor);
+    template<class ARCHIVE>
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+      namespace bs = ::boost::serialization;
+      ar & bs::make_nvp("gyroscopeCovariance", bs::make_array(gyroscopeCovariance.data(), gyroscopeCovariance.size()));
+      ar & BOOST_SERIALIZATION_NVP(omegaCoriolis);
+      ar & BOOST_SERIALIZATION_NVP(body_P_sensor);
     }
   };
 

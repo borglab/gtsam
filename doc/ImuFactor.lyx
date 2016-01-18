@@ -1196,7 +1196,7 @@ Even when we assume uncorrelated noise on
 \begin_inset Formula $\theta_{k}$
 \end_inset
 
-and 
+ and 
 \begin_inset Formula $v_{k}$
 \end_inset
 
@@ -1213,7 +1213,7 @@ reference "eq:euler_theta"
 
 \end_inset
 
-
+-
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "eq:euler_v"
@@ -1227,7 +1227,7 @@ reference "eq:euler_v"
 
 \begin_inset Formula 
 \[
-\zeta_{k+1}=f\left(\zeta_{k},\omega_{k}^{b},a_{k}^{b}\right)
+\zeta_{k+1}=f\left(\zeta_{k},a_{k}^{b},\omega_{k}^{b}\right)
 \]
 
 \end_inset
@@ -1284,6 +1284,15 @@ where
 \end_layout
 
 \begin_layout Standard
+We start with the noise propagation on 
+\begin_inset Formula $\theta$
+\end_inset
+
+, which is independent of the other quantities.
+ Taking the derivative, we have
+\end_layout
+
+\begin_layout Standard
 \begin_inset Formula 
 \[
 \deriv{\theta_{k+1}}{\theta_{k}}=I_{3x3}+\deriv{H(\theta_{k})^{-1}\omega_{k}^{b}}{\theta_{k}}\Delta_{t}
@@ -1314,7 +1323,7 @@ For the derivatives of
  we need the derivative
 \begin_inset Formula 
 \[
-\deriv{R_{k}a_{k}^{b}}{\theta_{k}}=-R_{k}\Skew{a_{k}^{b}}\deriv{R_{k}}{\theta_{k}}=-R_{k}\Skew{a_{k}^{b}}H(\theta_{k})
+\deriv{R_{k}a_{k}^{b}}{\theta_{k}}=R_{k}\Skew{-a_{k}^{b}}\deriv{R_{k}}{\theta_{k}}=R_{k}\Skew{-a_{k}^{b}}H(\theta_{k})
 \]
 
 \end_inset
@@ -1322,7 +1331,7 @@ For the derivatives of
 where we used 
 \begin_inset Formula 
 \[
-\deriv{\left(Ra\right)}R\approx-R\Skew a
+\deriv{\left(Ra\right)}R\approx R\Skew{-a}
 \]
 
 \end_inset
@@ -1349,8 +1358,8 @@ Putting all this together, we finally obtain
 \[
 A_{k}\approx\left[\begin{array}{ccc}
 I_{3\times3}-\frac{\Delta_{t}}{2}\Skew{\omega_{k}^{b}}\\
--R_{k}\Skew{a_{k}^{b}}H(\theta_{k})\frac{\Delta_{t}}{2}^{2} & I_{3\times3} & I_{3\times3}\Delta_{t}\\
--R_{k}\Skew{a_{k}^{b}}H(\theta_{k})\Delta_{t} &  & I_{3\times3}
+R_{k}\Skew{-a_{k}^{b}}H(\theta_{k})\frac{\Delta_{t}}{2}^{2} & I_{3\times3} & I_{3\times3}\Delta_{t}\\
+R_{k}\Skew{-a_{k}^{b}}H(\theta_{k})\Delta_{t} &  & I_{3\times3}
 \end{array}\right]
 \]
 
@@ -1373,314 +1382,6 @@ H(\theta_{k})^{-1}\Delta_{t}\\
 \end_inset
 
 
-\end_layout
-
-\begin_layout Standard
-A more accurate partial derivative of 
-\begin_inset Formula $H(\theta_{k})^{-1}$
-\end_inset
-
- can be used, as well.
-\end_layout
-
-\begin_layout Section
-Old Stuff:
-\end_layout
-
-\begin_layout Standard
-We only measure 
-\begin_inset Formula $\omega$
-\end_inset
-
- and 
-\begin_inset Formula $a$
-\end_inset
-
- at discrete instants of time, and hence we need to make choices about how
- to integrate the equations above numerically.
- For a vehicle such as a quadrotor UAV, it is not a bad assumption to model
- 
-\begin_inset Formula $\omega$
-\end_inset
-
- and 
-\begin_inset Formula $a$
-\end_inset
-
- as piecewise constant in the body frame, as the actuation is fixed to the
- body.
-\end_layout
-
-\begin_layout Standard
-\begin_inset Note Note
-status collapsed
-
-\begin_layout Plain Layout
-The group operation inherited from 
-\begin_inset Formula $GL(7)$
-\end_inset
-
- yields the following result,
-\begin_inset Formula 
-\[
-\left[\begin{array}{ccc}
-R_{1} &  & p_{1}\\
- & R_{1} & v_{1}\\
- &  & 1
-\end{array}\right]\left[\begin{array}{ccc}
-R_{2} &  & p_{2}\\
- & R_{2} & v_{2}\\
- &  & 1
-\end{array}\right]=\left[\begin{array}{ccc}
-R_{1}R_{2} &  & p_{1}+R_{1}p_{2}\\
- & R_{1}R_{2} & v_{1}+R_{1}v_{2}\\
- &  & 1
-\end{array}\right]
-\]
-
-\end_inset
-
-i.e., 
-\begin_inset Formula $R_{2}$
-\end_inset
-
-, 
-\begin_inset Formula $p_{2}$
-\end_inset
-
-, and 
-\begin_inset Formula $v_{2}$
-\end_inset
-
- are to interpreted as quantities in the body frame.
- How can we achieve a constant angular velocity/constant acceleration operation
- with this representation? For an infinitesimal interval 
-\begin_inset Formula $\delta$
-\end_inset
-
-, we expect the result to be
-\begin_inset Formula 
-\[
-\left[\begin{array}{ccc}
-R+R\hat{\omega}\delta &  & p+v\delta\\
- & R+R\hat{\omega}\delta & v+Ra\delta\\
- &  & 1
-\end{array}\right]
-\]
-
-\end_inset
-
-This can NOT be achieved by
-\begin_inset Formula 
-\[
-\left[\begin{array}{ccc}
-R &  & p\\
- & R & v\\
- &  & 1
-\end{array}\right]\left[\begin{array}{ccc}
-I+\hat{\omega}\delta & \delta & 0\\
- & I+\hat{\omega}\delta & a\delta\\
- &  & 1
-\end{array}\right]
-\]
-
-\end_inset
-
-because it is not closed.
- Hence, the exponential map as defined below does not really do it for us
-\begin_inset Formula 
-\[
-\left[\begin{array}{ccc}
-R &  & p\\
- & R & v\\
- &  & 1
-\end{array}\right]=\lim_{n\rightarrow\infty}\left(I+\left[\begin{array}{ccc}
-\hat{\omega} &  & v^{b}\\
- & \hat{\omega} & a\\
- &  & 1
-\end{array}\right]\frac{\Delta t}{n}\right)^{n}=\left[\begin{array}{ccc}
-R+R\hat{\omega}\delta &  & p+v\delta\\
- & R+R\hat{\omega}\delta & v+Ra\delta\\
- &  & 1
-\end{array}\right]
-\]
-
-\end_inset
-
-
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-For a quadrotor, forces induced by wind effects and drag are arguably better
- approximated over short intervals as constant in the navigation frame.
-\end_layout
-
-\begin_layout Standard
-Let us examine what we obtain using a constant angular velocity in the body,
- but with a zero-order hold on acceleration in the navigation frame instead.
- While 
-\begin_inset Formula $a$
-\end_inset
-
- is still measured in the body frame, we rotate it once by 
-\begin_inset Formula $R_{0}$
-\end_inset
-
- at 
-\begin_inset Formula $t=0$
-\end_inset
-
-, and we obtain a much simplified picture:
-\begin_inset Formula 
-\begin{eqnarray*}
-R(t) & = & R_{0}\exp\hat{\omega}t\\
-v(t) & = & v_{0}+\left(g+R_{0}a\right)t
-\end{eqnarray*}
-
-\end_inset
-
-Plugging this into position now yields a much simpler equation, as well:
-\begin_inset Formula 
-\begin{eqnarray*}
-p(t) & = & p_{0}+v_{0}t+\left(g+R_{0}a\right)\frac{t^{2}}{2}
-\end{eqnarray*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-The goal of the IMU factor is to integrate IMU measurements between two
- successive frames and create a binary factor between two NavStates.
- Integrating successive gyro and accelerometer readings using the above
- equations over each constant interval yields
-\begin_inset Formula 
-\begin{eqnarray}
-R_{k+1} & = & R_{k}\exp\hat{\omega}_{k}\Delta t_{k}\label{eq:iter_Rk}\\
-p_{k+1} & = & p_{k}+v_{k}\Delta t_{k}+\left(g+R_{k}a_{k}\right)\frac{\left(\Delta t_{k}\right)^{2}}{2}=p_{k}+\frac{v_{k}+v_{k+1}}{2}\Delta t_{k}\nonumber \\
-v_{k+1} & = & v_{k}+(g+R_{k}a_{k})\Delta t_{k}\nonumber 
-\end{eqnarray}
-
-\end_inset
-
-Starting 
-\begin_inset Formula $X_{i}=(R_{i},p_{i},v_{i})$
-\end_inset
-
-, we then obtain an expression for 
-\begin_inset Formula $X_{j}$
-\end_inset
-
-, 
-\begin_inset Formula 
-\begin{eqnarray*}
-R_{j} & = & R_{i}\prod_{k}\exp\hat{\omega}_{k}\Delta t_{k}\\
-p_{j} & = & p_{i}+\sum_{k}v_{k}\Delta t_{k}+\sum_{k}\left(g+R_{k}a_{k}\right)\frac{\left(\Delta t_{k}\right)^{2}}{2}\\
-v_{j} & = & v_{i}+\sum_{k}(g+R_{k}a_{k})\Delta t_{k}
-\end{eqnarray*}
-
-\end_inset
-
-where 
-\begin_inset Formula $R_{k}$
-\end_inset
-
- has to be updated as in 
-\begin_inset CommandInset ref
-LatexCommand formatted
-reference "eq:iter_Rk"
-
-\end_inset
-
-.
- Note that
-\begin_inset Formula 
-\[
-v_{k}=v_{i}+\sum_{l}(g+R_{l}a_{l})\Delta t_{l}
-\]
-
-\end_inset
-
-and hence
-\begin_inset Formula 
-\[
-p_{j}=p_{i}+\sum_{k}\left(v_{i}+\sum_{l}(g+R_{l}a_{l})\Delta t_{l}\right)\Delta t_{k}+\sum_{k}\left(g+R_{k}a_{k}\right)\frac{\left(\Delta t_{k}\right)^{2}}{2}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-[Is there not a 3/2 power here as in the RSS paper?]
-\end_layout
-
-\begin_layout Standard
-A crucial problem here is that we depend on a good estimate of 
-\begin_inset Formula $R_{k}$
-\end_inset
-
- at all times, which includes the potentially wrong estimate for the initial
- attitude 
-\begin_inset Formula $R_{i}$
-\end_inset
-
-.
- 
-\end_layout
-
-\begin_layout Standard
-The idea behind the preintegrated IMU factor is two-fold: (a) treat gravity
- separately, in the navigation frame, and (b) instead of integrating in
- absolute coordinates, we want the IMU integration to happen in the frame
- 
-\begin_inset Formula $(R_{i},p_{i},v_{i})$
-\end_inset
-
-.
- The first idea is easily incorporated by separating out all gravity-related
- components:
-\begin_inset Formula 
-\begin{eqnarray*}
-p_{j} & = & p_{i}+\sum_{k}\left(\sum_{l}g\Delta t_{l}\right)\Delta t_{k}+\sum_{k}\left(v_{i}+\sum_{l}R_{l}a_{l}\Delta t_{l}\right)\Delta t_{k}+\sum_{k}g\frac{\left(\Delta t_{k}\right)^{2}}{2}+\sum_{k}R_{k}a_{k}\frac{\left(\Delta t_{k}\right)^{2}}{2}\\
-v_{j} & = & v_{i}+g\sum_{k}\Delta t_{k}+\sum_{k}R_{k}a_{k}\Delta t_{k}
-\end{eqnarray*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-The binary factor is set up as a prediction:
-\begin_inset Formula 
-\[
-X_{j}\approx X_{i}\oplus dX_{ij}
-\]
-
-\end_inset
-
-where 
-\begin_inset Formula $dX_{ij}$
-\end_inset
-
- is a tangent vector in the tangent space 
-\begin_inset Formula $T_{i}$
-\end_inset
-
- to the manifold at 
-\begin_inset Formula $X_{i}$
-\end_inset
-
-.
- 
 \end_layout
 
 \begin_layout Standard

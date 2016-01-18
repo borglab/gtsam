@@ -29,10 +29,24 @@ void PreintegratedRotation::Params::print(const string& s) const {
   cout << s << endl;
   cout << "gyroscopeCovariance:\n[\n" << gyroscopeCovariance << "\n]" << endl;
   if (omegaCoriolis)
-    cout << "omegaCoriolis = (" << omegaCoriolis->transpose() << ")"
-        << endl;
+    cout << "omegaCoriolis = (" << omegaCoriolis->transpose() << ")" << endl;
   if (body_P_sensor)
     body_P_sensor->print("body_P_sensor");
+}
+
+bool PreintegratedRotation::Params::equals(
+    const PreintegratedRotation::Params& other, double tol) const {
+  if (body_P_sensor) {
+    if (!other.body_P_sensor
+        || !assert_equal(*body_P_sensor, *other.body_P_sensor, tol))
+      return false;
+  }
+  if (omegaCoriolis) {
+    if (!other.omegaCoriolis
+        || !equal_with_abs_tol(*omegaCoriolis, *other.omegaCoriolis, tol))
+      return false;
+  }
+  return equal_with_abs_tol(gyroscopeCovariance, other.gyroscopeCovariance, tol);
 }
 
 void PreintegratedRotation::resetIntegration() {
@@ -49,8 +63,7 @@ void PreintegratedRotation::print(const string& s) const {
 
 bool PreintegratedRotation::equals(const PreintegratedRotation& other,
     double tol) const {
-  return this->matchesParamsWith(other)
-      && deltaRij_.equals(other.deltaRij_, tol)
+  return p_->equals(*other.p_,tol) && deltaRij_.equals(other.deltaRij_, tol)
       && fabs(deltaTij_ - other.deltaTij_) < tol
       && equal_with_abs_tol(delRdelBiasOmega_, other.delRdelBiasOmega_, tol);
 }
@@ -76,11 +89,13 @@ Rot3 PreintegratedRotation::incrementalRotation(const Vector3& measuredOmega,
   return Rot3::Expmap(integratedOmega, D_incrR_integratedOmega); // expensive !!
 }
 
-void PreintegratedRotation::integrateMeasurement(
-    const Vector3& measuredOmega, const Vector3& biasHat, double deltaT,
-    OptionalJacobian<3, 3> optional_D_incrR_integratedOmega, OptionalJacobian<3, 3> F) {
+void PreintegratedRotation::integrateMeasurement(const Vector3& measuredOmega,
+    const Vector3& biasHat, double deltaT,
+    OptionalJacobian<3, 3> optional_D_incrR_integratedOmega,
+    OptionalJacobian<3, 3> F) {
   Matrix3 D_incrR_integratedOmega;
-  const Rot3 incrR = incrementalRotation(measuredOmega, biasHat, deltaT, D_incrR_integratedOmega);
+  const Rot3 incrR = incrementalRotation(measuredOmega, biasHat, deltaT,
+      D_incrR_integratedOmega);
 
   // If asked, pass first derivative as well
   if (optional_D_incrR_integratedOmega) {
@@ -93,7 +108,8 @@ void PreintegratedRotation::integrateMeasurement(
 
   // Update Jacobian
   const Matrix3 incrRt = incrR.transpose();
-  delRdelBiasOmega_ = incrRt * delRdelBiasOmega_ - D_incrR_integratedOmega * deltaT;
+  delRdelBiasOmega_ = incrRt * delRdelBiasOmega_
+      - D_incrR_integratedOmega * deltaT;
 }
 
 Rot3 PreintegratedRotation::biascorrectedDeltaRij(const Vector3& biasOmegaIncr,

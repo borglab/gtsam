@@ -27,14 +27,12 @@ using namespace std;
 
 namespace gtsam {
 
-  static const Matrix I3 = eye(3);
-
   /* ************************************************************************* */
   Rot3::Rot3() : quaternion_(Quaternion::Identity()) {}
 
   /* ************************************************************************* */
   Rot3::Rot3(const Point3& col1, const Point3& col2, const Point3& col3) :
-      quaternion_((Eigen::Matrix3d() <<
+      quaternion_((Matrix3() <<
           col1.x(), col2.x(), col3.x(),
           col1.y(), col2.y(), col3.y(),
           col1.z(), col2.z(), col3.z()).finished()) {}
@@ -43,7 +41,7 @@ namespace gtsam {
   Rot3::Rot3(double R11, double R12, double R13,
       double R21, double R22, double R23,
       double R31, double R32, double R33) :
-        quaternion_((Eigen::Matrix3d() <<
+        quaternion_((Matrix3() <<
             R11, R12, R13,
             R21, R22, R23,
             R31, R32, R33).finished()) {}
@@ -91,10 +89,10 @@ namespace gtsam {
   /* ************************************************************************* */
   Point3 Rot3::rotate(const Point3& p,
         OptionalJacobian<3,3> H1,  OptionalJacobian<3,3> H2) const {
-    Matrix R = matrix();
+    const Matrix3 R = matrix();
     if (H1) *H1 = R * skewSymmetric(-p.x(), -p.y(), -p.z());
     if (H2) *H2 = R;
-    Eigen::Vector3d r = R * p.vector();
+    const Vector3 r = R * p.vector();
     return Point3(r.x(), r.y(), r.z());
   }
 
