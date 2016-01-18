@@ -33,30 +33,22 @@ AggregateImuReadings::AggregateImuReadings(const boost::shared_ptr<Params>& p,
 
 // Tangent space sugar.
 namespace sugar {
-
 static Eigen::Block<Vector9, 3, 1> dR(Vector9& v) { return v.segment<3>(0); }
 static Eigen::Block<Vector9, 3, 1> dP(Vector9& v) { return v.segment<3>(3); }
 static Eigen::Block<Vector9, 3, 1> dV(Vector9& v) { return v.segment<3>(6); }
-
-typedef const Vector9 constV9;
-static Eigen::Block<constV9, 3, 1> dR(constV9& v) { return v.segment<3>(0); }
-static Eigen::Block<constV9, 3, 1> dP(constV9& v) { return v.segment<3>(3); }
-static Eigen::Block<constV9, 3, 1> dV(constV9& v) { return v.segment<3>(6); }
-
 }  // namespace sugar
 
 // See extensive discussion in ImuFactor.lyx
-Vector9 AggregateImuReadings::UpdateEstimate(const Vector9& zeta,
-                                             const Vector3& a_body,
-                                             const Vector3& w_body, double dt,
-                                             OptionalJacobian<9, 9> A,
-                                             OptionalJacobian<9, 3> B,
-                                             OptionalJacobian<9, 3> C) {
+void AggregateImuReadings::UpdateEstimate(const Vector3& a_body,
+                                          const Vector3& w_body, double dt,
+                                          Vector9* zeta,
+                                          OptionalJacobian<9, 9> A,
+                                          OptionalJacobian<9, 3> B,
+                                          OptionalJacobian<9, 3> C) {
   using namespace sugar;
 
-  const auto theta = dR(zeta);
-  const auto p = dP(zeta);
-  const auto v = dV(zeta);
+  const Vector3 theta = dR(*zeta);
+  const Vector3 v = dV(*zeta);
 
   // Calculate exact mean propagation
   Matrix3 H;
@@ -65,10 +57,9 @@ Vector9 AggregateImuReadings::UpdateEstimate(const Vector9& zeta,
   const Vector3 a_nav = R * a_body;
   const double dt22 = 0.5 * dt * dt;
 
-  Vector9 zeta_plus;
-  dR(zeta_plus) = theta + invH * w_body * dt;  // theta
-  dP(zeta_plus) = p + v * dt + a_nav * dt22;   // position
-  dV(zeta_plus) = v + a_nav * dt;              // velocity
+  dR(*zeta) += invH * w_body * dt;     // theta
+  dP(*zeta) += v * dt + a_nav * dt22;  // position
+  dV(*zeta) += a_nav * dt;             // velocity
 
   if (A) {
     // First order (small angle) approximation of derivative of invH*w:
@@ -78,15 +69,21 @@ Vector9 AggregateImuReadings::UpdateEstimate(const Vector9& zeta,
     const Matrix3 a_nav_H_theta = R * skewSymmetric(-a_body) * H;
 
     A->setIdentity();
-    A->block<3, 3>(0, 0) += invHw_H_theta * dt;
+    A->block<3, 3>(0, 0).noalias() += invHw_H_theta * dt;
     A->block<3, 3>(3, 0) = a_nav_H_theta * dt22;
     A->block<3, 3>(3, 6) = I_3x3 * dt;
     A->block<3, 3>(6, 0) = a_nav_H_theta * dt;
   }
-  if (B) *B << Z_3x3, R* dt22, R* dt;
-  if (C) *C << invH* dt, Z_3x3, Z_3x3;
-
-  return zeta_plus;
+  if (B) {
+    B->block<3, 3>(0, 0) = Z_3x3;
+    B->block<3, 3>(3, 0) = R * dt22;
+    B->block<3, 3>(6, 0) = R * dt;
+  }
+  if (C) {
+    C->block<3, 3>(0, 0) = invH * dt;
+    C->block<3, 3>(3, 0) = Z_3x3;
+    C->block<3, 3>(6, 0) = Z_3x3;
+  }
 }
 
 void AggregateImuReadings::integrateMeasurement(const Vector3& measuredAcc,
@@ -99,7 +96,7 @@ void AggregateImuReadings::integrateMeasurement(const Vector3& measuredAcc,
   // Do exact mean propagation
   Matrix9 A;
   Matrix93 B, C;
-  zeta_ = UpdateEstimate(zeta_, a_body, w_body, dt, A, B, C);
+  UpdateEstimate(a_body, w_body, dt, &zeta_, A, B, C);
 
   // propagate uncertainty
   // TODO(frank): use noiseModel routine so we can have arbitrary noise models.
@@ -108,8 +105,8 @@ void AggregateImuReadings::integrateMeasurement(const Vector3& measuredAcc,
 
   // TODO(frank): use Eigen-tricks for symmetric matrices
   cov_ = A * cov_ * A.transpose();
-  cov_ += B * (aCov / dt) * B.transpose();
-  cov_ += C * (wCov / dt) * C.transpose();
+  cov_.noalias() += B * (aCov / dt) * B.transpose();
+  cov_.noalias() += C * (wCov / dt) * C.transpose();
 
   deltaTij_ += dt;
 }
