@@ -83,6 +83,7 @@ public:
     }
 
     void print(const std::string& s) const;
+    bool equals(const PreintegratedRotation::Params& other, double tol) const;
 
   protected:
     /// Default constructor for serialization only: uninitialized!
@@ -132,6 +133,7 @@ protected:
 
   /// Default constructor for serialization
   PreintegrationBase() {
+    resetIntegration();
   }
 
 public:

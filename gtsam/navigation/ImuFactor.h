@@ -71,7 +71,9 @@ protected:
   ///< (first-order propagation from *measurementCovariance*).
 
   /// Default constructor for serialization
-  PreintegratedImuMeasurements() {}
+  PreintegratedImuMeasurements() {
+    preintMeasCov_.setZero();
+  }
 
 public:
 

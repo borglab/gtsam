@@ -73,8 +73,8 @@ void PreintegratedImuMeasurements::integrateMeasurement(
   G << G1, Gi, G2;
   Matrix9 Cov;
   Cov << p().accelerometerCovariance / dt, Z_3x3, Z_3x3,
-      Z_3x3, p().integrationCovariance * dt, Z_3x3,
-      Z_3x3, Z_3x3, p().gyroscopeCovariance / dt;
+  Z_3x3, p().integrationCovariance * dt, Z_3x3,
+  Z_3x3, Z_3x3, p().gyroscopeCovariance / dt;
   preintMeasCov_ = F * preintMeasCov_ * F.transpose() + G * Cov * G.transpose();
 #else
   preintMeasCov_ = F * preintMeasCov_ * F.transpose()
@@ -91,7 +91,7 @@ PreintegratedImuMeasurements::PreintegratedImuMeasurements(
     const Matrix3& measuredOmegaCovariance,
     const Matrix3& integrationErrorCovariance, bool use2ndOrderIntegration) {
   if (!use2ndOrderIntegration)
-    throw("PreintegratedImuMeasurements no longer supports first-order integration: it incorrectly compensated for gravity");
+  throw("PreintegratedImuMeasurements no longer supports first-order integration: it incorrectly compensated for gravity");
   biasHat_ = biasHat;
   boost::shared_ptr<Params> p = Params::MakeSharedD();
   p->gyroscopeCovariance = measuredOmegaCovariance;
@@ -141,8 +141,9 @@ void ImuFactor::print(const string& s, const KeyFormatter& keyFormatter) const {
 //------------------------------------------------------------------------------
 bool ImuFactor::equals(const NonlinearFactor& other, double tol) const {
   const This *e = dynamic_cast<const This*>(&other);
-  return e != NULL && Base::equals(*e, tol) && _PIM_.equals(e->_PIM_, tol)
-      && Base::equals(*e, tol);
+  const bool base = Base::equals(*e, tol);
+  const bool pim = _PIM_.equals(e->_PIM_, tol);
+  return e != nullptr && base && pim;
 }
 
 //------------------------------------------------------------------------------
@@ -161,10 +162,10 @@ ImuFactor::ImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
     const PreintegratedImuMeasurements& pim, const Vector3& n_gravity,
     const Vector3& omegaCoriolis, const boost::optional<Pose3>& body_P_sensor,
     const bool use2ndOrderCoriolis) :
-    Base(noiseModel::Gaussian::Covariance(pim.preintMeasCov_), pose_i, vel_i,
-        pose_j, vel_j, bias), _PIM_(pim) {
+Base(noiseModel::Gaussian::Covariance(pim.preintMeasCov_), pose_i, vel_i,
+    pose_j, vel_j, bias), _PIM_(pim) {
   boost::shared_ptr<PreintegratedImuMeasurements::Params> p = boost::make_shared<
-      PreintegratedImuMeasurements::Params>(pim.p());
+  PreintegratedImuMeasurements::Params>(pim.p());
   p->n_gravity = n_gravity;
   p->omegaCoriolis = omegaCoriolis;
   p->body_P_sensor = body_P_sensor;
@@ -185,4 +186,5 @@ void ImuFactor::Predict(const Pose3& pose_i, const Vector3& vel_i,
 #endif
 //------------------------------------------------------------------------------
 
-} // namespace gtsam
+}
+ // namespace gtsam
