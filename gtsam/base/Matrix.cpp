@@ -581,15 +581,6 @@ Matrix vector_scale(const Matrix& A, const Vector& v, bool inf_mask) {
 }
 
 /* ************************************************************************* */
-Matrix3 skewSymmetric(double wx, double wy, double wz)
-{
-  return (Matrix3() <<
-      0.0, -wz, +wy,
-      +wz, 0.0, -wx,
-      -wy, +wx, 0.0).finished();
-}
-
-/* ************************************************************************* */
 Matrix LLt(const Matrix& A)
 {
   Eigen::LLT<Matrix> llt(A);

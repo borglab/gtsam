@@ -133,9 +133,9 @@ Matrix3 SO3::ExpmapDerivative(const Vector3& omega)    {
   using std::cos;
   using std::sin;
 
-  double theta2 = omega.dot(omega);
+  const double theta2 = omega.dot(omega);
   if (theta2 <= std::numeric_limits<double>::epsilon()) return I_3x3;
-  double theta = std::sqrt(theta2);  // rotation angle
+  const double theta = std::sqrt(theta2);  // rotation angle
 #ifdef DUY_VERSION
   /// Follow Iserles05an, B10, pg 147, with a sign change in the second term (left version)
   Matrix3 X = skewSymmetric(omega);
@@ -154,9 +154,15 @@ Matrix3 SO3::ExpmapDerivative(const Vector3& omega)    {
    * a perturbation on the manifold (expmap(Jr * omega))
    */
   // element of Lie algebra so(3): X = omega^, normalized by normx
-  const Matrix3 Y = skewSymmetric(omega) / theta;
-  return I_3x3 - ((1 - cos(theta)) / (theta)) * Y
-      + (1 - sin(theta) / theta) * Y * Y; // right Jacobian
+  const double wx = omega.x(), wy = omega.y(), wz = omega.z();
+  Matrix3 Y;
+  Y << 0.0, -wz, +wy,
+       +wz, 0.0, -wx,
+       -wy, +wx, 0.0;
+  const double s2 = sin(theta / 2.0);
+  const double a = (2.0 * s2 * s2 / theta2);
+  const double b = (1.0 - sin(theta) / theta) / theta2;
+  return I_3x3 - a * Y + b * Y * Y;
 #endif
 }
 

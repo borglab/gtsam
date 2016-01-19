@@ -310,7 +310,7 @@ namespace gtsam {
      * Exponential map at identity - create a rotation from canonical coordinates
      * \f$ [R_x,R_y,R_z] \f$ using Rodrigues' formula
      */
-    static Rot3 Expmap(const Vector& v, OptionalJacobian<3,3> H = boost::none) {
+    static Rot3 Expmap(const Vector3& v, OptionalJacobian<3,3> H = boost::none) {
       if(H) *H = Rot3::ExpmapDerivative(v);
 #ifdef GTSAM_USE_QUATERNIONS
       return traits<Quaternion>::Expmap(v);

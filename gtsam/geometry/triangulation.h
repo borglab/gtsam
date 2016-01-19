@@ -376,6 +376,15 @@ class TriangulationResult: public boost::optional<Point3> {
       status_(s) {
   }
 public:
+
+  /**
+   * Default constructor, only for serialization
+   */
+  TriangulationResult() {}
+
+  /**
+   * Constructor
+   */
   TriangulationResult(const Point3& p) :
       status_(VALID) {
     reset(p);
