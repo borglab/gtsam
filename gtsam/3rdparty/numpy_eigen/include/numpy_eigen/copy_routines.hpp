@@ -9,16 +9,16 @@ struct CopyNumpyToEigenMatrix
   typedef typename matrix_t::Scalar scalar_t;
   
   template<typename T>
-  void exec(EIGEN_T * M_, PyObject * P_)
+  void exec(EIGEN_T * M_, NPE_PY_ARRAY_OBJECT * P_)
   {
     // Assumes M is already initialized.
     for(int r = 0; r < M_->rows(); r++)
       {
-	for(int c = 0; c < M_->cols(); c++)
-	  {
-	    T * p = static_cast<T*>(PyArray_GETPTR2(P_, r, c));
-	    (*M_)(r,c) = static_cast<scalar_t>(*p);
-	  }
+    for(int c = 0; c < M_->cols(); c++)
+      {
+        T * p = static_cast<T*>(PyArray_GETPTR2(P_, r, c));
+        (*M_)(r,c) = static_cast<scalar_t>(*p);
+      }
       }
   }
 
@@ -31,16 +31,16 @@ struct CopyEigenToNumpyMatrix
   typedef typename matrix_t::Scalar scalar_t;
   
   template<typename T>
-  void exec(EIGEN_T * M_, PyObject * P_)
+  void exec(EIGEN_T * M_, NPE_PY_ARRAY_OBJECT * P_)
   {
     // Assumes M is already initialized.
     for(int r = 0; r < M_->rows(); r++)
       {
-	for(int c = 0; c < M_->cols(); c++)
-	  {
-	    T * p = static_cast<T*>(PyArray_GETPTR2(P_, r, c));
-	    *p = static_cast<T>((*M_)(r,c));
-	  }
+    for(int c = 0; c < M_->cols(); c++)
+      {
+        T * p = static_cast<T*>(PyArray_GETPTR2(P_, r, c));
+        *p = static_cast<T>((*M_)(r,c));
+      }
       }
   }
 
@@ -53,13 +53,13 @@ struct CopyEigenToNumpyVector
   typedef typename matrix_t::Scalar scalar_t;
   
   template<typename T>
-  void exec(EIGEN_T * M_, PyObject * P_)
+  void exec(EIGEN_T * M_, NPE_PY_ARRAY_OBJECT * P_)
   {
     // Assumes M is already initialized.
     for(int i = 0; i < M_->size(); i++)
       {
-	T * p = static_cast<T*>(PyArray_GETPTR1(P_, i));
-	*p = static_cast<T>((*M_)(i));
+    T * p = static_cast<T*>(PyArray_GETPTR1(P_, i));
+    *p = static_cast<T>((*M_)(i));
       }
   }
 
@@ -73,13 +73,13 @@ struct CopyNumpyToEigenVector
   typedef typename matrix_t::Scalar scalar_t;
   
   template<typename T>
-  void exec(EIGEN_T * M_, PyObject * P_)
+  void exec(EIGEN_T * M_, NPE_PY_ARRAY_OBJECT * P_)
   {
     // Assumes M is already initialized.
     for(int i = 0; i < M_->size(); i++)
       {
-	T * p = static_cast<T*>(PyArray_GETPTR1(P_, i));
-	(*M_)(i) = static_cast<scalar_t>(*p);
+    T * p = static_cast<T*>(PyArray_GETPTR1(P_, i));
+    (*M_)(i) = static_cast<scalar_t>(*p);
       }
   }
 
@@ -91,10 +91,11 @@ struct CopyNumpyToEigenVector
 // Crazy syntax in this function was found here:
 // http://stackoverflow.com/questions/1840253/c-template-member-function-of-template-class-called-from-template-function/1840318#1840318
 template< typename FUNCTOR_T>
-inline void numpyTypeDemuxer(typename FUNCTOR_T::matrix_t * M, PyObject * P)
+inline void numpyTypeDemuxer(typename FUNCTOR_T::matrix_t * M, NPE_PY_ARRAY_OBJECT * P)
 {
   FUNCTOR_T f;
-  int npyType = PyArray_ObjectType(P, 0);
+
+  int npyType = getNpyType(P);
   switch(npyType)
     {
     case NPY_BOOL:
