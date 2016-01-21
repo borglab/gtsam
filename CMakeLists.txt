@@ -355,7 +355,6 @@ if (GTSAM_BUILD_PYTHON)
 	#       comments on the next lines
 	
 	# wrap_and_install_python(gtsampy.h "${GTSAM_ADDITIONAL_LIBRARIES}" "")
-
 	add_subdirectory(python)
 
 endif()
@@ -478,7 +477,12 @@ print_config_flag(${GTSAM_INSTALL_MATLAB_TOOLBOX}      "Install matlab toolbox  
 print_config_flag(${GTSAM_BUILD_WRAP}                  "Build Wrap                     ")
 
 message(STATUS "Python module flags                                       ")
-print_config_flag(${GTSAM_BUILD_PYTHON}                "Build python module            ")
+
+if(GTSAM_PYTHON_WARNINGS)
+	message(STATUS "  Build python module            : No - dependencies missing")
+else()
+	print_config_flag(${GTSAM_BUILD_PYTHON}                "Build python module            ")
+endif()
 if(GTSAM_BUILD_PYTHON)
 	message(STATUS "  Python version                 : ${GTSAM_PYTHON_VERSION}")
 endif()
@@ -493,6 +497,9 @@ if(GTSAM_WITH_EIGEN_MKL AND NOT MKL_FOUND)
 endif()
 if(GTSAM_WITH_EIGEN_MKL_OPENMP AND NOT OPENMP_FOUND AND MKL_FOUND)
 	message(WARNING "Your compiler does not support OpenMP - this is ok, but performance may be improved with OpenMP.  Set GTSAM_WITH_EIGEN_MKL_OPENMP to 'Off' to avoid this warning.")
+endif()
+if(GTSAM_BUILD_PYTHON AND GTSAM_PYTHON_WARNINGS)
+	message(WARNING "${GTSAM_PYTHON_WARNINGS}")
 endif()
 
 # Include CPack *after* all flags

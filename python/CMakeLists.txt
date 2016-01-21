@@ -31,9 +31,6 @@ endif()
 
 # Find NumPy C-API -- this is part of the numpy package
 find_package(NumPy)
-if(NUMPY_FOUND)
-  include_directories(${NUMPY_INCLUDE_DIRS})
-endif()
 
 # Find Python
 # First, be sure that python version can be found by FindPythonLibs.cmake
@@ -52,6 +49,9 @@ find_package(Boost COMPONENTS python${BOOST_PYTHON_VERSION_SUFFIX})
 
 # Build python module library and setup the module inside build
 if(Boost_PYTHON${BOOST_PYTHON_VERSION_SUFFIX_UPPERCASE}_FOUND AND PYTHONLIBS_FOUND AND NUMPY_FOUND)
+
+	include_directories(${NUMPY_INCLUDE_DIRS})
+
 	include_directories(${PYTHON_INCLUDE_DIRS})
 	include_directories(${Boost_INCLUDE_DIRS})
 	include_directories(${CMAKE_SOURCE_DIR}/gtsam/3rdparty/numpy_eigen/include/)
@@ -74,28 +74,33 @@ if(Boost_PYTHON${BOOST_PYTHON_VERSION_SUFFIX_UPPERCASE}_FOUND AND PYTHONLIBS_FOU
 		add_dependencies(gtsam_python copy_${PY_SRC_TARGET_SUFFIX})
 	endforeach()
 
-# Disable python module if we didn't find required lybraries
+# Disable python module if we didn't find required libraries
 else()
-	set(GTSAM_BUILD_PYTHON OFF CACHE BOOL "Build Python wrapper statically (increases build time)" FORCE)
-endif()
 
-# Print warnings (useful for ccmake)
-if(NOT NUMPY_FOUND)
-    message(WARNING "Numpy not found -- Python module cannot be built.")
-endif()
-
-if(NOT PYTHONLIBS_FOUND)
-	if(GTSAM_PYTHON_VERSION STREQUAL "Default")
-		message(WARNING "Default PythonLibs was not found -- Python module cannot be built. Option GTSAM_BUILD_PYTHON disabled.")
-	else()
-		message(WARNING "PythonLibs version ${GTSAM_PYTHON_VERSION} was not found -- Python module cannot be built. Option GTSAM_BUILD_PYTHON disabled.")
+	# message will print at end of main CMakeLists.txt
+	SET(GTSAM_PYTHON_WARNINGS "Python dependencies not found - Python module will not be built. Set GTSAM_BUILD_PYTHON to 'Off' to disable this warning. Details:")
+	
+	if(NOT PYTHONLIBS_FOUND)
+		if(GTSAM_PYTHON_VERSION STREQUAL "Default")
+			SET(GTSAM_PYTHON_WARNINGS "${GTSAM_PYTHON_WARNINGS}\n -- Default PythonLibs not found")
+		else()
+			SET(GTSAM_PYTHON_WARNINGS "${GTSAM_PYTHON_WARNINGS}\n -- PythonLibs version ${GTSAM_PYTHON_VERSION} not found")
+		endif()
 	endif()
-endif()
-
-if(NOT Boost_PYTHON${BOOST_PYTHON_VERSION_SUFFIX_UPPERCASE}_FOUND)
-	if(GTSAM_PYTHON_VERSION STREQUAL "Default")
-		message(WARNING "Default Boost python was not found -- Python module cannot be built. Option GTSAM_BUILD_PYTHON disabled.")
-	else()
-		message(WARNING "Boost Python for python ${GTSAM_PYTHON_VERSION} was not found -- Python module cannot be built. Option GTSAM_BUILD_PYTHON disabled.")
+	
+	if(NOT NUMPY_FOUND)
+    	SET(GTSAM_PYTHON_WARNINGS  "${GTSAM_PYTHON_WARNINGS}\n -- Numpy not found")
 	endif()
+	
+	if(NOT Boost_PYTHON${BOOST_PYTHON_VERSION_SUFFIX_UPPERCASE}_FOUND)
+		if(GTSAM_PYTHON_VERSION STREQUAL "Default")
+			SET(GTSAM_PYTHON_WARNINGS "${GTSAM_PYTHON_WARNINGS}\n -- Default Boost python not found")
+		else()
+			SET(GTSAM_PYTHON_WARNINGS "${GTSAM_PYTHON_WARNINGS}\n -- Boost Python for python ${GTSAM_PYTHON_VERSION} not found")
+		endif()
+	endif()
+	
+	# make available at top-level
+	SET(GTSAM_PYTHON_WARNINGS ${GTSAM_PYTHON_WARNINGS} PARENT_SCOPE)
+	
 endif()
