@@ -341,7 +341,7 @@ public:
     if (Aterms.size() > 0) {
       Vector b = zero(delta.at(key).size());
       Factor::const_iterator it = lp_.cost.find(key);
-      if (it != lp_.cost.end()) b = lp_.cost.getA(it);
+      if (it != lp_.cost.end()) b = lp_.cost.getA(it).transpose();
       return boost::make_shared<JacobianFactor>(Aterms, b); // compute the least-square approximation of dual variables
     }
     else {
