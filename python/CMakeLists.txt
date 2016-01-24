@@ -1,4 +1,3 @@
-
 # Guard to avoid breaking this code in ccmake if by accident GTSAM_PYTHON_VERSION is set to an empty string 
 if(GTSAM_PYTHON_VERSION STREQUAL "")
 	set(GTSAM_PYTHON_VERSION "Default" CACHE STRING "Target python version for GTSAM python module. Use 'Default' to chose the default version" FORCE)
@@ -18,6 +17,18 @@ if(NOT (${GTSAM_PYTHON_VERSION} MATCHES ${GTSAM_LAST_PYTHON_VERSION}))
 	set(GTSAM_LAST_PYTHON_VERSION ${GTSAM_PYTHON_VERSION} CACHE STRING "Updating python version used in the last build" FORCE)
 endif()
 
+if(GTSAM_PYTHON_VERSION STREQUAL "Default")
+	# Search the default version.
+	find_package(PythonInterp)
+	find_package(PythonLibs)
+else()
+	find_package(PythonInterp ${GTSAM_PYTHON_VERSION})
+	find_package(PythonLibs ${GTSAM_PYTHON_VERSION})
+endif()
+
+# Find NumPy C-API -- this is part of the numpy package
+find_package(NumPy)
+
 # Compose strings used to specify the boost python version. They will be empty if we want to use the defaut
 if(NOT GTSAM_PYTHON_VERSION STREQUAL "Default")
 	string(REPLACE "." "" BOOST_PYTHON_VERSION_SUFFIX ${GTSAM_PYTHON_VERSION})           # Remove '.' from version
@@ -29,29 +40,12 @@ else()
 	set(BOOST_PYTHON_VERSION_SUFFIX_UPPERCASE "")
 endif()
 
-# Find NumPy C-API -- this is part of the numpy package
-find_package(NumPy)
-
-# Find Python
-# First, be sure that python version can be found by FindPythonLibs.cmake
-# See: http://stackoverflow.com/a/15660652/2220173
-set(Python_ADDITIONAL_VERSIONS ${GTSAM_PYTHON_VERSION})
-# Then look for the the lib. If no version is specified when looking for PythonLibs it searches the default version.
-# See: https://cmake.org/cmake/help/v3.1/module/FindPythonInterp.html
-if(GTSAM_PYTHON_VERSION STREQUAL "Default")
-	find_package(PythonLibs)
-else()
-	find_package(PythonLibs ${GTSAM_PYTHON_VERSION})
-endif()
-
 # Find Boost Python
 find_package(Boost COMPONENTS python${BOOST_PYTHON_VERSION_SUFFIX})
 
-# Build python module library and setup the module inside build
 if(Boost_PYTHON${BOOST_PYTHON_VERSION_SUFFIX_UPPERCASE}_FOUND AND PYTHONLIBS_FOUND AND NUMPY_FOUND)
-
+	# Build library
 	include_directories(${NUMPY_INCLUDE_DIRS})
-
 	include_directories(${PYTHON_INCLUDE_DIRS})
 	include_directories(${Boost_INCLUDE_DIRS})
 	include_directories(${CMAKE_SOURCE_DIR}/gtsam/3rdparty/numpy_eigen/include/)
@@ -59,24 +53,16 @@ if(Boost_PYTHON${BOOST_PYTHON_VERSION_SUFFIX_UPPERCASE}_FOUND AND PYTHONLIBS_FOU
 	# Build the python module library
 	add_subdirectory(handwritten)
 
-	# Copy all .py files that changes since last build
-	file(GLOB_RECURSE GTSAM_PY_SRCS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "*.py")
-	foreach(PY_SRC ${GTSAM_PY_SRCS})
-		string(REPLACE "/" "_" PY_SRC_TARGET_SUFFIX ${PY_SRC}) # Replace "/" with "_"
-		add_custom_command(
-			OUTPUT ${PY_SRC}
-			DEPENDS ${PY_SRC}
-			COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/${PY_SRC} ${CMAKE_CURRENT_BINARY_DIR}/${PY_SRC}
-			COMMENT "Copying python/${PY_SRC}"
-		)
-		add_custom_target(copy_${PY_SRC_TARGET_SUFFIX} DEPENDS ${PY_SRC})
-		# Add dependency so the copy is made BEFORE building the python module
-		add_dependencies(gtsam_python copy_${PY_SRC_TARGET_SUFFIX})
-	endforeach()
+	# Create and invoke setup.py, see https://bloerg.net/2012/11/10/cmake-and-distutils.html
+    set(SETUP_PY_IN "${CMAKE_CURRENT_SOURCE_DIR}/setup.py.in")
+    set(SETUP_PY    "${CMAKE_CURRENT_BINARY_DIR}/setup.py")
 
-# Disable python module if we didn't find required libraries
+    configure_file(${SETUP_PY_IN} ${SETUP_PY})
+
+	# TODO(frank): possibly support a different prefix a la matlab wrapper
+    install(CODE "execute_process(WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} COMMAND ${PYTHON_EXECUTABLE} setup.py -v install --prefix ${CMAKE_INSTALL_PREFIX})")
 else()
-
+	# Disable python module if we didn't find required libraries
 	# message will print at end of main CMakeLists.txt
 	SET(GTSAM_PYTHON_WARNINGS "Python dependencies not found - Python module will not be built. Set GTSAM_BUILD_PYTHON to 'Off' to disable this warning. Details:")
 	
