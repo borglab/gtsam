@@ -8,6 +8,7 @@ setup(name='gtsam',
       author_email='frank.dellaert@gatech.edu',
       maintainer_email='gtsam@lists.gatech.edu',
       url='https://collab.cc.gatech.edu/borg/gtsam',
-      packages=['gtsam', 'gtsam.examples', 'gtsam.utils'],
+      package_dir={ '': '${CMAKE_CURRENT_SOURCE_DIR}' },
+      packages=['gtsam', 'gtsam_utils', 'gtsam_examples', 'gtsam_tests'],
       package_data={'gtsam' : ['_libgtsam_python.so']},
      )

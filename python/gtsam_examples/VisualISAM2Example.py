@@ -1,7 +1,7 @@
 from __future__ import print_function
 import gtsam
-from gtsam.examples.SFMdata import *
-from gtsam.utils import *
+from gtsam_examples.SFMdata import *
+from gtsam_utils import *
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import time # for sleep()
