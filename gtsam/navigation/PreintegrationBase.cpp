@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -20,37 +20,13 @@
  **/
 
 #include "PreintegrationBase.h"
+#ifdef ALLOW_DEPRECATED_IN_GTSAM4
 #include <boost/make_shared.hpp>
+#endif
 
 using namespace std;
 
 namespace gtsam {
-
-//------------------------------------------------------------------------------
-void PreintegrationBase::Params::print(const string& s) const {
-  PreintegratedRotation::Params::print(s);
-  cout << "accelerometerCovariance:\n[\n" << accelerometerCovariance << "\n]"
-      << endl;
-  cout << "integrationCovariance:\n[\n" << integrationCovariance << "\n]"
-      << endl;
-  if (omegaCoriolis && use2ndOrderCoriolis)
-    cout << "Using 2nd-order Coriolis" << endl;
-  if (body_P_sensor)
-    body_P_sensor->print("    ");
-  cout << "n_gravity = (" << n_gravity.transpose() << ")" << endl;
-}
-
-//------------------------------------------------------------------------------
-bool PreintegrationBase::Params::equals(
-    const PreintegratedRotation::Params& other, double tol) const {
-  auto e = dynamic_cast<const PreintegrationBase::Params*>(&other);
-  return e != nullptr && PreintegratedRotation::Params::equals(other, tol)
-      && use2ndOrderCoriolis == e->use2ndOrderCoriolis
-      && equal_with_abs_tol(accelerometerCovariance, e->accelerometerCovariance,
-          tol)
-      && equal_with_abs_tol(integrationCovariance, e->integrationCovariance,
-          tol) && equal_with_abs_tol(n_gravity, e->n_gravity, tol);
-}
 
 //------------------------------------------------------------------------------
 void PreintegrationBase::resetIntegration() {

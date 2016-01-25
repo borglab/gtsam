@@ -28,7 +28,7 @@ namespace gtsam {
  */
 class ScenarioRunner {
  public:
-  typedef boost::shared_ptr<PreintegratedImuMeasurements::Params> SharedParams;
+  typedef boost::shared_ptr<PreintegrationParams> SharedParams;
   ScenarioRunner(const Scenario* scenario, const SharedParams& p,
                  double imuSampleTime = 1.0 / 100.0,
                  const imuBias::ConstantBias& bias = imuBias::ConstantBias())

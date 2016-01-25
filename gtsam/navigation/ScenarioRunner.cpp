@@ -18,6 +18,7 @@
 #include <gtsam/navigation/ScenarioRunner.h>
 #include <gtsam/base/timing.h>
 
+#include <boost/assign.hpp>
 #include <cmath>
 
 namespace gtsam {

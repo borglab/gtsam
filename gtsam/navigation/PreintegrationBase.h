@@ -21,10 +21,9 @@
 
 #pragma once
 
-#include <gtsam/navigation/PreintegratedRotation.h>
+#include <gtsam/navigation/PreintegrationParams.h>
 #include <gtsam/navigation/NavState.h>
 #include <gtsam/navigation/ImuBias.h>
-#include <boost/make_shared.hpp>
 
 namespace gtsam {
 
@@ -55,54 +54,6 @@ struct PoseVelocityBias {
  */
 class PreintegrationBase {
 
-public:
-
-  /// Parameters for pre-integration:
-  /// Usage: Create just a single Params and pass a shared pointer to the constructor
-  struct Params: PreintegratedRotation::Params {
-    Matrix3 accelerometerCovariance; ///< continuous-time "Covariance" of accelerometer
-    Matrix3 integrationCovariance; ///< continuous-time "Covariance" describing integration uncertainty
-    bool use2ndOrderCoriolis; ///< Whether to use second order Coriolis integration
-    Vector3 n_gravity; ///< Gravity vector in nav frame
-
-    /// The Params constructor insists on getting the navigation frame gravity vector
-    /// For convenience, two commonly used conventions are provided by named constructors below
-    Params(const Vector3& n_gravity) :
-        accelerometerCovariance(I_3x3), integrationCovariance(I_3x3), use2ndOrderCoriolis(
-            false), n_gravity(n_gravity) {
-    }
-
-    // Default Params for a Z-down navigation frame, such as NED: gravity points along positive Z-axis
-    static boost::shared_ptr<Params> MakeSharedD(double g = 9.81) {
-      return boost::make_shared<Params>(Vector3(0, 0, g));
-    }
-
-    // Default Params for a Z-up navigation frame, such as ENU: gravity points along negative Z-axis
-    static boost::shared_ptr<Params> MakeSharedU(double g = 9.81) {
-      return boost::make_shared<Params>(Vector3(0, 0, -g));
-    }
-
-    void print(const std::string& s) const;
-    bool equals(const PreintegratedRotation::Params& other, double tol) const;
-
-  protected:
-    /// Default constructor for serialization only: uninitialized!
-    Params() {}
-
-    /** Serialization function */
-    friend class boost::serialization::access;
-    template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-      namespace bs = ::boost::serialization;
-      ar & boost::serialization::make_nvp("PreintegratedRotation_Params",
-           boost::serialization::base_object<PreintegratedRotation::Params>(*this));
-      ar & bs::make_nvp("accelerometerCovariance", bs::make_array(accelerometerCovariance.data(), accelerometerCovariance.size()));
-      ar & bs::make_nvp("integrationCovariance", bs::make_array(integrationCovariance.data(), integrationCovariance.size()));
-      ar & BOOST_SERIALIZATION_NVP(use2ndOrderCoriolis);
-      ar & BOOST_SERIALIZATION_NVP(n_gravity);
-    }
-  };
-
 protected:
 
   /// Parameters. Declared mutable only for deprecated predict method.
@@ -110,7 +61,7 @@ protected:
 #ifdef ALLOW_DEPRECATED_IN_GTSAM4
   mutable
 #endif
-  boost::shared_ptr<Params> p_;
+  boost::shared_ptr<PreintegrationParams> p_;
 
   /// Acceleration and gyro bias used for preintegration
   imuBias::ConstantBias biasHat_;
@@ -146,7 +97,7 @@ public:
    *  @param p    Parameters, typically fixed in a single application
    *  @param bias Current estimate of acceleration and rotation rate biases
    */
-  PreintegrationBase(const boost::shared_ptr<Params>& p,
+  PreintegrationBase(const boost::shared_ptr<PreintegrationParams>& p,
       const imuBias::ConstantBias& biasHat = imuBias::ConstantBias()) :
       p_(p), biasHat_(biasHat) {
     resetIntegration();
@@ -155,7 +106,7 @@ public:
   /**
    *  Constructor which takes in all members for generic construction
    */
-  PreintegrationBase(const boost::shared_ptr<Params>& p, const imuBias::ConstantBias& biasHat,
+  PreintegrationBase(const boost::shared_ptr<PreintegrationParams>& p, const imuBias::ConstantBias& biasHat,
                      double deltaTij, const NavState& deltaXij, const Matrix3& delPdelBiasAcc,
                      const Matrix3& delPdelBiasOmega, const Matrix3& delVdelBiasAcc,
                      const Matrix3& delVdelBiasOmega)
@@ -174,19 +125,19 @@ public:
   /// Re-initialize PreintegratedMeasurements
   void resetIntegration();
 
-  /// check parameters equality: checks whether shared pointer points to same Params object.
+  /// check parameters equality: checks whether shared pointer points to same PreintegrationParams object.
   bool matchesParamsWith(const PreintegrationBase& other) const {
     return p_ == other.p_;
   }
 
   /// shared pointer to params
-  const boost::shared_ptr<Params>& params() const {
+  const boost::shared_ptr<PreintegrationParams>& params() const {
     return p_;
   }
 
   /// const reference to params
-  const Params& p() const {
-    return *boost::static_pointer_cast<Params>(p_);
+  const PreintegrationParams& p() const {
+    return *boost::static_pointer_cast<PreintegrationParams>(p_);
   }
 
   void set_body_P_sensor(const Pose3& body_P_sensor) {
