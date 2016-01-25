@@ -59,7 +59,7 @@ if(Boost_PYTHON${BOOST_PYTHON_VERSION_SUFFIX_UPPERCASE}_FOUND AND PYTHONLIBS_FOU
 
 	# Hacky way to figure out install folder - valid for Linux & Mac
 	# default pattern: prefix/lib/pythonX.Y/site-packages from https://docs.python.org/2/install/ 
-	STRING(CONCAT PY_INSTALL_FOLDER ${CMAKE_INSTALL_PREFIX} "/lib/python" ${PYTHON_VERSION_MAJOR} "." ${PYTHON_VERSION_MINOR} "/site-packages") 
+	SET(PY_INSTALL_FOLDER "${CMAKE_INSTALL_PREFIX}/lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}/site-packages") 
 
     configure_file(${SETUP_PY_IN} ${SETUP_PY})
 
