@@ -24,88 +24,20 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam_unstable/linear/EqualityFactorGraph.h>
 #include <gtsam_unstable/linear/InequalityFactorGraph.h>
-
+#include <gtsam_unstable/linear/InfeasibleInitialValues.h>
 #include <CppUnitLite/TestHarness.h>
-
 #include <boost/foreach.hpp>
 #include <boost/range/adaptor/map.hpp>
+
+#include <gtsam_unstable/linear/InfeasibleInitialValues.h>
+#include <gtsam_unstable/linear/InfeasibleOrUnboundedProblem.h>
+#include <gtsam_unstable/linear/LP.h>
 
 using namespace std;
 using namespace gtsam;
 using namespace gtsam::symbol_shorthand;
 
 namespace gtsam {
-
-/* ************************************************************************* */
-/** An exception indicating that the provided initial value is infeasible */
-class InfeasibleInitialValues: public ThreadsafeException<
-    InfeasibleInitialValues> {
-public:
-  InfeasibleInitialValues() {
-  }
-  virtual ~InfeasibleInitialValues() throw () {
-  }
-
-  virtual const char* what() const throw () {
-    if (description_.empty()) description_ =
-        "An infeasible initial value was provided for the solver.\n";
-    return description_.c_str();
-  }
-
-private:
-  mutable std::string description_;
-};
-
-/// Throw when the problem is either infeasible or unbounded
-class InfeasibleOrUnboundedProblem: public ThreadsafeException<
-InfeasibleOrUnboundedProblem> {
-public:
-  InfeasibleOrUnboundedProblem() {
-  }
-  virtual ~InfeasibleOrUnboundedProblem() throw () {
-  }
-
-  virtual const char* what() const throw () {
-    if (description_.empty()) description_ =
-        "The problem is either infeasible or unbounded.\n";
-    return description_.c_str();
-  }
-
-private:
-  mutable std::string description_;
-};
-
-
-struct LP {
-  LinearCost cost; //!< Linear cost factor
-  EqualityFactorGraph equalities; //!< Linear equality constraints: cE(x) = 0
-  InequalityFactorGraph inequalities; //!< Linear inequality constraints: cI(x) <= 0
-
-  /// check feasibility
-  bool isFeasible(const VectorValues& x) const {
-    return (equalities.error(x) == 0 && inequalities.error(x) == 0);
-  }
-
-  /// print
-  void print(const string& s = "") const {
-    std::cout << s << std::endl;
-    cost.print("Linear cost: ");
-    equalities.print("Linear equality factors: ");
-    inequalities.print("Linear inequality factors: ");
-  }
-
-  /// equals
-  bool equals(const LP& other, double tol = 1e-9) const {
-    return cost.equals(other.cost)
-        && equalities.equals(other.equalities)
-        && inequalities.equals(other.inequalities);
-  }
-
-  typedef boost::shared_ptr<LP> shared_ptr;
-};
-
-/// traits
-template<> struct traits<LP> : public Testable<LP> {};
 
 /// This struct holds the state of QPSolver at each iteration
 struct LPState {
