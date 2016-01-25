@@ -20,6 +20,9 @@
 #include <numpy_eigen/NumpyEigenConverter.hpp>
 
 #include "gtsam/nonlinear/Values.h"
+#include "gtsam/geometry/Point2.h"
+#include "gtsam/geometry/Rot2.h"
+#include "gtsam/geometry/Pose2.h"
 #include "gtsam/geometry/Point3.h"
 #include "gtsam/geometry/Rot3.h"
 #include "gtsam/geometry/Pose3.h"
@@ -69,6 +72,8 @@ using namespace gtsam;
 //   return v.at<T>(j);
 // }
 
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(print_overloads, Values::print, 0, 1);
+
 void exportValues(){
 
   // NOTE: Apparently the class 'Value'' is deprecated, so the commented lines below 
@@ -77,9 +82,13 @@ void exportValues(){
   // const Value& (Values::*at1)(Key) const = &Values::at;
   // void (Values::*insert1)(Key, const Value&) = &Values::insert;
   bool (Values::*exists1)(Key) const = &Values::exists;
+  void  (Values::*insert_point2)(Key, const gtsam::Point2&) = &Values::insert;
+  void  (Values::*insert_rot2)  (Key, const gtsam::Rot2&) = &Values::insert;
+  void  (Values::*insert_pose2) (Key, const gtsam::Pose2&) = &Values::insert;
   void  (Values::*insert_point3)(Key, const gtsam::Point3&) = &Values::insert;
   void  (Values::*insert_rot3)  (Key, const gtsam::Rot3&) = &Values::insert;
   void  (Values::*insert_pose3) (Key, const gtsam::Pose3&) = &Values::insert;
+
 
   class_<Values>("Values", init<>())
   .def(init<Values>())
@@ -89,12 +98,15 @@ void exportValues(){
   .def("equals", &Values::equals)
   .def("erase", &Values::erase)
   .def("insert_fixed", &Values::insertFixed)
-  .def("print", &Values::print)
+  .def("print", &Values::print, print_overloads(args("s")))
   .def("size", &Values::size)
   .def("swap", &Values::swap)
   // NOTE: Following commented lines add useless methods on Values
   // .def("insert", insert1)
   // .def("at", at1, return_value_policy<copy_const_reference>())
+  .def("insert", insert_point2)
+  .def("insert", insert_rot2)
+  .def("insert", insert_pose2)
   .def("insert", insert_point3)
   .def("insert", insert_rot3)
   .def("insert", insert_pose3)

@@ -26,6 +26,7 @@
 using namespace boost::python;
 using namespace gtsam;
 
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(print_overloads, NonlinearFactorGraph::print, 0, 1);
 
 void exportNonlinearFactorGraph(){
 
@@ -40,6 +41,7 @@ void exportNonlinearFactorGraph(){
     .def("add", add1)
     .def("resize", &NonlinearFactorGraph::resize)
     .def("empty", &NonlinearFactorGraph::empty)
+    .def("print", &NonlinearFactorGraph::print, print_overloads(args("s")))
   ;
 
 }
