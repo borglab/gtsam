@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <Eigen/Dense>
 #include <gtsam/navigation/ImuFactor.h>
 #include <gtsam/linear/NoiseModel.h>
 
@@ -32,6 +33,35 @@ class AggregateImuReadings {
   typedef imuBias::ConstantBias Bias;
   typedef PreintegrationBase::Params Params;
 
+  /// The IMU is integrated in the tangent space, represented by a Vector9
+  /// This small inner class provides some convenient constructors and efficient
+  /// access to the orientation, position, and velocity components
+  class TangentVector {
+    Vector9 v_;
+    typedef const Vector9 constV9;
+
+   public:
+    TangentVector() { v_.setZero(); }
+    TangentVector(const Vector9& v) : v_(v) {}
+    TangentVector(const Vector3& theta, const Vector3& pos,
+                  const Vector3& vel) {
+      this->theta() = theta;
+      this->position() = pos;
+      this->velocity() = vel;
+    }
+
+    const Vector9& vector() const { return v_; }
+
+    Eigen::Block<Vector9, 3, 1> theta() { return v_.segment<3>(0); }
+    Eigen::Block<constV9, 3, 1> theta() const { return v_.segment<3>(0); }
+
+    Eigen::Block<Vector9, 3, 1> position() { return v_.segment<3>(3); }
+    Eigen::Block<constV9, 3, 1> position() const { return v_.segment<3>(3); }
+
+    Eigen::Block<Vector9, 3, 1> velocity() { return v_.segment<3>(6); }
+    Eigen::Block<constV9, 3, 1> velocity() const { return v_.segment<3>(6); }
+  };
+
  private:
   const boost::shared_ptr<Params> p_;
   const Bias estimatedBias_;
@@ -39,14 +69,15 @@ class AggregateImuReadings {
   double deltaTij_;  ///< sum of time increments
 
   /// Current estimate of zeta_k
-  Vector9 zeta_;
+  TangentVector zeta_;
   Matrix9 cov_;
 
  public:
   AggregateImuReadings(const boost::shared_ptr<Params>& p,
                        const Bias& estimatedBias = Bias());
 
-  const Vector9& zeta() const { return zeta_; }
+  Vector3 theta() const { return zeta_.theta(); }
+  const Vector9& zeta() const { return zeta_.vector(); }
   const Matrix9& zetaCov() const { return cov_; }
 
   /**
@@ -70,15 +101,14 @@ class AggregateImuReadings {
   /// @deprecated: Explicitly calculate covariance
   Matrix9 preintMeasCov() const;
 
-  Vector3 theta() const { return zeta_.head<3>(); }
-
   // Update integrated vector on tangent manifold zeta with acceleration
   // readings a_body and gyro readings w_body, bias-corrected in body frame.
-  static Vector9 UpdateEstimate(const Vector3& a_body, const Vector3& w_body,
-                                double dt, const Vector9& zeta,
-                                OptionalJacobian<9, 9> A = boost::none,
-                                OptionalJacobian<9, 3> B = boost::none,
-                                OptionalJacobian<9, 3> C = boost::none);
+  static TangentVector UpdateEstimate(const Vector3& a_body,
+                                      const Vector3& w_body, double dt,
+                                      const TangentVector& zeta,
+                                      OptionalJacobian<9, 9> A = boost::none,
+                                      OptionalJacobian<9, 3> B = boost::none,
+                                      OptionalJacobian<9, 3> C = boost::none);
 };
 
 }  // namespace gtsam

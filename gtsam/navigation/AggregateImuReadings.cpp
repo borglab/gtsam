@@ -27,45 +27,24 @@ namespace gtsam {
 AggregateImuReadings::AggregateImuReadings(const boost::shared_ptr<Params>& p,
                                            const Bias& estimatedBias)
     : p_(p), estimatedBias_(estimatedBias), deltaTij_(0.0) {
-  zeta_.setZero();
   cov_.setZero();
 }
 
-// Tangent space sugar.
-namespace sugar {
-static Eigen::Block<Vector9, 3, 1> dR(Vector9& v) { return v.segment<3>(0); }
-static Eigen::Block<Vector9, 3, 1> dP(Vector9& v) { return v.segment<3>(3); }
-static Eigen::Block<Vector9, 3, 1> dV(Vector9& v) { return v.segment<3>(6); }
-
-typedef const Vector9 constV9;
-static Eigen::Block<constV9, 3, 1> dR(constV9& v) { return v.segment<3>(0); }
-static Eigen::Block<constV9, 3, 1> dP(constV9& v) { return v.segment<3>(3); }
-static Eigen::Block<constV9, 3, 1> dV(constV9& v) { return v.segment<3>(6); }
-}  // namespace sugar
-
 // See extensive discussion in ImuFactor.lyx
-Vector9 AggregateImuReadings::UpdateEstimate(const Vector3& a_body,
-                                             const Vector3& w_body, double dt,
-                                             const Vector9& zeta,
-                                             OptionalJacobian<9, 9> A,
-                                             OptionalJacobian<9, 3> B,
-                                             OptionalJacobian<9, 3> C) {
-  using namespace sugar;
-
-  const Vector3 theta = dR(zeta);
-  const Vector3 v = dV(zeta);
-
+AggregateImuReadings::TangentVector AggregateImuReadings::UpdateEstimate(
+    const Vector3& a_body, const Vector3& w_body, double dt,
+    const TangentVector& zeta, OptionalJacobian<9, 9> A,
+    OptionalJacobian<9, 3> B, OptionalJacobian<9, 3> C) {
   // Calculate exact mean propagation
   Matrix3 H;
-  const Matrix3 R = Rot3::Expmap(theta, H).matrix();
+  const Matrix3 R = Rot3::Expmap(zeta.theta(), H).matrix();
   const Matrix3 invH = H.inverse();
   const Vector3 a_nav = R * a_body;
   const double dt22 = 0.5 * dt * dt;
 
-  Vector9 zetaPlus;
-  dR(zetaPlus) = dR(zeta) + invH * w_body * dt;     // theta
-  dP(zetaPlus) = dP(zeta) + v * dt + a_nav * dt22;  // position
-  dV(zetaPlus) = dV(zeta) + a_nav * dt;             // velocity
+  TangentVector zetaPlus(zeta.theta() + invH * w_body * dt,
+                         zeta.position() + zeta.velocity() * dt + a_nav * dt22,
+                         zeta.velocity() + a_nav * dt);
 
   if (A) {
     // First order (small angle) approximation of derivative of invH*w:
@@ -122,17 +101,17 @@ NavState AggregateImuReadings::predict(const NavState& state_i,
                                        const Bias& bias_i,
                                        OptionalJacobian<9, 9> H1,
                                        OptionalJacobian<9, 6> H2) const {
-  using namespace sugar;
-  Vector9 zeta = zeta_;
+  TangentVector zeta = zeta_;
 
   // Correct for initial velocity and gravity
   Rot3 Ri = state_i.attitude();
   Matrix3 Rit = Ri.transpose();
   Vector3 gt = deltaTij_ * p_->n_gravity;
-  dP(zeta) += Rit * (state_i.velocity() * deltaTij_ + 0.5 * deltaTij_ * gt);
-  dV(zeta) += Rit * gt;
+  zeta.position() +=
+      Rit * (state_i.velocity() * deltaTij_ + 0.5 * deltaTij_ * gt);
+  zeta.velocity() += Rit * gt;
 
-  return state_i.retract(zeta);
+  return state_i.retract(zeta.vector());
 }
 
 SharedGaussian AggregateImuReadings::noiseModel() const {

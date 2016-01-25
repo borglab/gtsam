@@ -39,8 +39,9 @@ static boost::shared_ptr<AggregateImuReadings::Params> defaultParams() {
 }
 
 Vector9 f(const Vector9& zeta, const Vector3& a, const Vector3& w) {
-  Vector9 zeta_plus = AggregateImuReadings::UpdateEstimate(a, w, kDt, zeta);
-  return zeta_plus;
+  AggregateImuReadings::TangentVector zeta_plus =
+      AggregateImuReadings::UpdateEstimate(a, w, kDt, zeta);
+  return zeta_plus.vector();
 }
 
 /* ************************************************************************* */
