@@ -1,10 +1,13 @@
 from __future__ import print_function
-import gtsam
-from gtsam_examples.SFMdata import *
-from gtsam_utils import *
+
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+import numpy as np
 import time # for sleep()
+
+import gtsam
+from gtsam_examples import SFMdata
+import gtsam_utils
 
 def visual_ISAM2_plot(poses, points, result):
     # VisualISAMPlot plots current state of ISAM2 object
@@ -22,14 +25,14 @@ def visual_ISAM2_plot(poses, points, result):
     # Can't use data because current frame might not see all points
     # marginals = Marginals(isam.getFactorsUnsafe(), isam.calculateEstimate()); # TODO - this is slow
     # gtsam.plot3DPoints(result, [], marginals);
-    plot3DPoints(fignum, result, 'rx');
+    gtsam_utils.plot3DPoints(fignum, result, 'rx');
 
     # Plot cameras
     M = 0;
     while result.exists(int(gtsam.Symbol('x',M))):
         ii = int(gtsam.Symbol('x',M));
         pose_i = result.pose3_at(ii);
-        plotPose3(fignum, pose_i, 10);
+        gtsam_utils.plotPose3(fignum, pose_i, 10);
         
         M = M + 1;
 
@@ -49,10 +52,10 @@ def visual_ISAM2_example():
     measurementNoise = gtsam.noiseModel.Isotropic.Sigma(2, 1.0) # one pixel in u and v
 
     # Create the set of ground-truth landmarks
-    points = createPoints() # from SFMdata
+    points = SFMdata.createPoints()
 
     # Create the set of ground-truth poses
-    poses = createPoses() # from SFMdata
+    poses = SFMdata.createPoses()
 
     # Create an iSAM2 object. Unlike iSAM1, which performs periodic batch steps to maintain proper linearization
     # and efficient variable ordering, iSAM2 performs partial relinearization/reordering at each step. A parameter
