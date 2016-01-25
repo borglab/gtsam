@@ -47,17 +47,17 @@ using namespace gtsam::symbol_shorthand;
  */
 LP simpleLP1() {
   LP lp;
-  lp.cost = LinearCost(1, (Vector(2) << -1., -1.).finished()); // min -x1-x2 (max x1+x2)
+  lp.cost = LinearCost(1, Vector2( -1., -1.)); // min -x1-x2 (max x1+x2)
   lp.inequalities.push_back(
-      LinearInequality(1, (Vector(2) << -1, 0).finished(), 0, 1)); // x1 >= 0
+      LinearInequality(1, Vector2( -1, 0), 0, 1)); // x1 >= 0
   lp.inequalities.push_back(
-      LinearInequality(1, (Vector(2) << 0, -1).finished(), 0, 2)); //  x2 >= 0
+      LinearInequality(1, Vector2( 0, -1), 0, 2)); //  x2 >= 0
   lp.inequalities.push_back(
-      LinearInequality(1, (Vector(2) << 1, 2).finished(), 4, 3)); //  x1 + 2*x2 <= 4
+      LinearInequality(1, Vector2( 1, 2), 4, 3)); //  x1 + 2*x2 <= 4
   lp.inequalities.push_back(
-      LinearInequality(1, (Vector(2) << 4, 2).finished(), 12, 4)); //  4x1 + 2x2 <= 12
+      LinearInequality(1, Vector2( 4, 2), 12, 4)); //  4x1 + 2x2 <= 12
   lp.inequalities.push_back(
-      LinearInequality(1, (Vector(2) << -1, 1).finished(), 1, 5)); //  -x1 + x2 <= 1
+      LinearInequality(1, Vector2( -1, 1), 1, 5)); //  -x1 + x2 <= 1
   return lp;
 }
 
@@ -83,15 +83,15 @@ TEST(LPInitSolverMatlab, initialization) {
   LP expectedInitLP;
   expectedInitLP.cost = LinearCost(yKey, ones(1));
   expectedInitLP.inequalities.push_back(
-      LinearInequality(1, (Vector(2) << -1, 0).finished(), 2, Vector::Constant(1, -1), 0, 1)); // -x1 - y <= 0
+      LinearInequality(1, Vector2( -1, 0), 2, Vector::Constant(1, -1), 0, 1)); // -x1 - y <= 0
   expectedInitLP.inequalities.push_back(
-      LinearInequality(1, (Vector(2) << 0, -1).finished(), 2, Vector::Constant(1, -1), 0, 2)); // -x2 - y <= 0
+      LinearInequality(1, Vector2( 0, -1), 2, Vector::Constant(1, -1), 0, 2)); // -x2 - y <= 0
   expectedInitLP.inequalities.push_back(
-      LinearInequality(1, (Vector(2) << 1, 2).finished(), 2, Vector::Constant(1, -1), 4, 3)); //  x1 + 2*x2 - y <= 4
+      LinearInequality(1, Vector2( 1, 2), 2, Vector::Constant(1, -1), 4, 3)); //  x1 + 2*x2 - y <= 4
   expectedInitLP.inequalities.push_back(
-      LinearInequality(1, (Vector(2) << 4, 2).finished(), 2, Vector::Constant(1, -1), 12, 4)); //  4x1 + 2x2 - y <= 12
+      LinearInequality(1, Vector2( 4, 2), 2, Vector::Constant(1, -1), 12, 4)); //  4x1 + 2x2 - y <= 12
   expectedInitLP.inequalities.push_back(
-      LinearInequality(1, (Vector(2) << -1, 1).finished(), 2, Vector::Constant(1, -1), 1, 5)); //  -x1 + x2 - y <= 1
+      LinearInequality(1, Vector2( -1, 1), 2, Vector::Constant(1, -1), 1, 5)); //  -x1 + x2 - y <= 1
   CHECK(assert_equal(expectedInitLP, *initLP, 1e-10));
 
   LPSolver lpSolveInit(*initLP);
@@ -99,7 +99,7 @@ TEST(LPInitSolverMatlab, initialization) {
   xy0.insert(yKey, Vector::Constant(1, y0));
   VectorValues xyInit = lpSolveInit.optimize(xy0).first;
   VectorValues expected_init;
-  expected_init.insert(1, (Vector(2) << 1, 1).finished());
+  expected_init.insert(1, Vector2( 1, 1));
   expected_init.insert(2, Vector::Constant(1, -1));
   CHECK(assert_equal(expected_init, xyInit, 1e-10));
 
@@ -117,9 +117,9 @@ TEST(LPInitSolverMatlab, initialization) {
  */
 TEST(LPSolver, overConstrainedLinearSystem) {
   GaussianFactorGraph graph;
-  Matrix A1 = (Matrix(3,1) <<1,1,1).finished();
-  Matrix A2 = (Matrix(3,1) <<1,-1,2).finished();
-  Vector b = (Vector(3) << 1, 5, 6).finished();
+  Matrix A1 = Vector3(1,1,1);
+  Matrix A2 = Vector3(1,-1,2);
+  Vector b = Vector3( 1, 5, 6);
   JacobianFactor factor(1, A1, 2, A2, b, noiseModel::Constrained::All(3));
   graph.push_back(factor);
 
@@ -149,13 +149,13 @@ TEST(LPSolver, simpleTest1) {
   VectorValues x1 = lpSolver.solveWithCurrentWorkingSet(init,
       InequalityFactorGraph());
   VectorValues expected_x1;
-  expected_x1.insert(1, (Vector(2) << 1, 1).finished());
+  expected_x1.insert(1, Vector2( 1, 1));
   CHECK(assert_equal(expected_x1, x1, 1e-10));
 
   VectorValues result, duals;
   boost::tie(result, duals) = lpSolver.optimize(init);
   VectorValues expectedResult;
-  expectedResult.insert(1, (Vector(2)<<8./3., 2./3.).finished());
+  expectedResult.insert(1, Vector2(8./3., 2./3.));
   CHECK(assert_equal(expectedResult, result, 1e-10));
 }
 
@@ -167,9 +167,9 @@ TEST(LPSolver, simpleTest1) {
  */
 /* ************************************************************************* */
 TEST(LPSolver, LinearCost) {
-  LinearCost cost(1, (Vector(3) << 2., 4., 6.).finished());
+  LinearCost cost(1, Vector3( 2., 4., 6.));
   VectorValues x;
-  x.insert(1, (Vector(3) << 1., 3., 5.).finished());
+  x.insert(1, Vector3( 1., 3., 5.));
   double error = cost.error(x);
   double expectedError = 44.0;
   DOUBLES_EQUAL(expectedError, error, 1e-100);
