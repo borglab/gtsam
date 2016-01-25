@@ -74,11 +74,11 @@ class AggregateImuReadings {
 
   // Update integrated vector on tangent manifold zeta with acceleration
   // readings a_body and gyro readings w_body, bias-corrected in body frame.
-  static void UpdateEstimate(const Vector3& a_body, const Vector3& w_body,
-                             double dt, Vector9* zeta,
-                             OptionalJacobian<9, 9> A = boost::none,
-                             OptionalJacobian<9, 3> B = boost::none,
-                             OptionalJacobian<9, 3> C = boost::none);
+  static Vector9 UpdateEstimate(const Vector3& a_body, const Vector3& w_body,
+                                double dt, const Vector9& zeta,
+                                OptionalJacobian<9, 9> A = boost::none,
+                                OptionalJacobian<9, 3> B = boost::none,
+                                OptionalJacobian<9, 3> C = boost::none);
 };
 
 }  // namespace gtsam

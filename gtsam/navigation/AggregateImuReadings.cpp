@@ -36,19 +36,24 @@ namespace sugar {
 static Eigen::Block<Vector9, 3, 1> dR(Vector9& v) { return v.segment<3>(0); }
 static Eigen::Block<Vector9, 3, 1> dP(Vector9& v) { return v.segment<3>(3); }
 static Eigen::Block<Vector9, 3, 1> dV(Vector9& v) { return v.segment<3>(6); }
+
+typedef const Vector9 constV9;
+static Eigen::Block<constV9, 3, 1> dR(constV9& v) { return v.segment<3>(0); }
+static Eigen::Block<constV9, 3, 1> dP(constV9& v) { return v.segment<3>(3); }
+static Eigen::Block<constV9, 3, 1> dV(constV9& v) { return v.segment<3>(6); }
 }  // namespace sugar
 
 // See extensive discussion in ImuFactor.lyx
-void AggregateImuReadings::UpdateEstimate(const Vector3& a_body,
-                                          const Vector3& w_body, double dt,
-                                          Vector9* zeta,
-                                          OptionalJacobian<9, 9> A,
-                                          OptionalJacobian<9, 3> B,
-                                          OptionalJacobian<9, 3> C) {
+Vector9 AggregateImuReadings::UpdateEstimate(const Vector3& a_body,
+                                             const Vector3& w_body, double dt,
+                                             const Vector9& zeta,
+                                             OptionalJacobian<9, 9> A,
+                                             OptionalJacobian<9, 3> B,
+                                             OptionalJacobian<9, 3> C) {
   using namespace sugar;
 
-  const Vector3 theta = dR(*zeta);
-  const Vector3 v = dV(*zeta);
+  const Vector3 theta = dR(zeta);
+  const Vector3 v = dV(zeta);
 
   // Calculate exact mean propagation
   Matrix3 H;
@@ -57,9 +62,10 @@ void AggregateImuReadings::UpdateEstimate(const Vector3& a_body,
   const Vector3 a_nav = R * a_body;
   const double dt22 = 0.5 * dt * dt;
 
-  dR(*zeta) += invH * w_body * dt;     // theta
-  dP(*zeta) += v * dt + a_nav * dt22;  // position
-  dV(*zeta) += a_nav * dt;             // velocity
+  Vector9 zetaPlus;
+  dR(zetaPlus) = dR(zeta) + invH * w_body * dt;     // theta
+  dP(zetaPlus) = dP(zeta) + v * dt + a_nav * dt22;  // position
+  dV(zetaPlus) = dV(zeta) + a_nav * dt;             // velocity
 
   if (A) {
     // First order (small angle) approximation of derivative of invH*w:
@@ -84,6 +90,8 @@ void AggregateImuReadings::UpdateEstimate(const Vector3& a_body,
     C->block<3, 3>(3, 0) = Z_3x3;
     C->block<3, 3>(6, 0) = Z_3x3;
   }
+
+  return zetaPlus;
 }
 
 void AggregateImuReadings::integrateMeasurement(const Vector3& measuredAcc,
@@ -96,7 +104,7 @@ void AggregateImuReadings::integrateMeasurement(const Vector3& measuredAcc,
   // Do exact mean propagation
   Matrix9 A;
   Matrix93 B, C;
-  UpdateEstimate(a_body, w_body, dt, &zeta_, A, B, C);
+  zeta_ = UpdateEstimate(a_body, w_body, dt, zeta_, A, B, C);
 
   // propagate uncertainty
   // TODO(frank): use noiseModel routine so we can have arbitrary noise models.
