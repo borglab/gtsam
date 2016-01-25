@@ -32,34 +32,13 @@
 #include <gtsam_unstable/linear/InfeasibleInitialValues.h>
 #include <gtsam_unstable/linear/InfeasibleOrUnboundedProblem.h>
 #include <gtsam_unstable/linear/LP.h>
+#include <gtsam_unstable/linear/LPState.h>
 
 using namespace std;
 using namespace gtsam;
 using namespace gtsam::symbol_shorthand;
 
 namespace gtsam {
-
-/// This struct holds the state of QPSolver at each iteration
-struct LPState {
-  VectorValues values;
-  VectorValues duals;
-  InequalityFactorGraph workingSet;
-  bool converged;
-  size_t iterations;
-
-  /// default constructor
-  LPState() :
-      values(), duals(), workingSet(), converged(false), iterations(0) {
-  }
-
-  /// constructor with initial values
-  LPState(const VectorValues& initialValues, const VectorValues& initialDuals,
-      const InequalityFactorGraph& initialWorkingSet, bool _converged,
-      size_t _iterations) :
-      values(initialValues), duals(initialDuals), workingSet(initialWorkingSet), converged(
-          _converged), iterations(_iterations) {
-  }
-};
 
 typedef std::map<Key, size_t> KeyDimMap;
 typedef std::vector<std::pair<Key, Matrix> > TermsContainer;
