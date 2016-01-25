@@ -6,6 +6,9 @@
  */
 
 #pragma once
+#include <gtsam_unstable/linear/LPState.h>
+#include <gtsam_unstable/linear/LP.h>
+
 
 namespace gtsam {
 typedef std::map<Key, size_t> KeyDimMap;
