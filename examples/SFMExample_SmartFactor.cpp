@@ -17,51 +17,25 @@
  * @author  Frank Dellaert
  */
 
-/**
- * A structure-from-motion example with landmarks
- *  - The landmarks form a 10 meter cube
- *  - The robot rotates around the landmarks, always facing towards the cube
- */
-
-// For loading the data
-#include "SFMdata.h"
-
-// Camera observations of landmarks (i.e. pixel coordinates) will be stored as Point2 (x, y).
-#include <gtsam/geometry/Point2.h>
-
 // In GTSAM, measurement functions are represented as 'factors'.
-// The factor we used here is SmartProjectionPoseFactor. Every smart factor represent a single landmark,
-// The SmartProjectionPoseFactor only optimize the pose of camera, not the calibration,
-// The calibration should be known.
+// The factor we used here is SmartProjectionPoseFactor.
+// Every smart factor represent a single landmark, seen from multiple cameras.
+// The SmartProjectionPoseFactor only optimizes for the poses of a camera,
+// not the calibration, which is assumed known.
 #include <gtsam/slam/SmartProjectionPoseFactor.h>
 
-// Also, we will initialize the robot at some location using a Prior factor.
-#include <gtsam/slam/PriorFactor.h>
-
-// When the factors are created, we will add them to a Factor Graph. As the factors we are using
-// are nonlinear factors, we will need a Nonlinear Factor Graph.
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-
-// Finally, once all of the factors have been added to our factor graph, we will want to
-// solve/optimize to graph to find the best (Maximum A Posteriori) set of variable values.
-// GTSAM includes several nonlinear optimizers to perform this step. Here we will use a
-// trust-region method known as Powell's Degleg
-#include <gtsam/nonlinear/DoglegOptimizer.h>
-
-// The nonlinear solvers within GTSAM are iterative solvers, meaning they linearize the
-// nonlinear functions around an initial linearization point, then solve the linear system
-// to update the linearization point. This happens repeatedly until the solver converges
-// to a consistent set of variable values. This requires us to specify an initial guess
-// for each variable, held in a Values container.
-#include <gtsam/nonlinear/Values.h>
-
-#include <vector>
+// For an explanation of these headers, see SFMExample.cpp
+#include "SFMdata.h"
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 
 using namespace std;
 using namespace gtsam;
 
 // Make the typename short so it looks much cleaner
-typedef gtsam::SmartProjectionPoseFactor<gtsam::Pose3, gtsam::Cal3_S2> SmartFactor;
+typedef SmartProjectionPoseFactor<Cal3_S2> SmartFactor;
+
+// create a typedef to the camera type
+typedef PinholePose<Cal3_S2> Camera;
 
 /* ************************************************************************* */
 int main(int argc, char* argv[]) {
@@ -84,12 +58,12 @@ int main(int argc, char* argv[]) {
   for (size_t j = 0; j < points.size(); ++j) {
 
     // every landmark represent a single landmark, we use shared pointer to init the factor, and then insert measurements.
-    SmartFactor::shared_ptr smartfactor(new SmartFactor());
+    SmartFactor::shared_ptr smartfactor(new SmartFactor(measurementNoise, K));
 
     for (size_t i = 0; i < poses.size(); ++i) {
 
       // generate the 2D measurement
-      SimpleCamera camera(poses[i], *K);
+      Camera camera(poses[i], K);
       Point2 measurement = camera.project(points[j]);
 
       // call add() function to add measurement into a single factor, here we need to add:
@@ -97,7 +71,7 @@ int main(int argc, char* argv[]) {
       //    2. the corresponding camera's key
       //    3. camera noise model
       //    4. camera calibration
-      smartfactor->add(measurement, i, measurementNoise, K);
+      smartfactor->add(measurement, i);
     }
 
     // insert the smart factor in the graph
@@ -106,28 +80,29 @@ int main(int argc, char* argv[]) {
 
   // Add a prior on pose x0. This indirectly specifies where the origin is.
   // 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
-  noiseModel::Diagonal::shared_ptr poseNoise = noiseModel::Diagonal::Sigmas(
+  noiseModel::Diagonal::shared_ptr noise = noiseModel::Diagonal::Sigmas(
       (Vector(6) << Vector3::Constant(0.3), Vector3::Constant(0.1)).finished());
-  graph.push_back(PriorFactor<Pose3>(0, poses[0], poseNoise));
+  graph.push_back(PriorFactor<Camera>(0, Camera(poses[0],K), noise));
 
   // Because the structure-from-motion problem has a scale ambiguity, the problem is
   // still under-constrained. Here we add a prior on the second pose x1, so this will
   // fix the scale by indicating the distance between x0 and x1.
   // Because these two are fixed, the rest of the poses will be also be fixed.
-  graph.push_back(PriorFactor<Pose3>(1, poses[1], poseNoise)); // add directly to graph
+  graph.push_back(PriorFactor<Camera>(1, Camera(poses[1],K), noise)); // add directly to graph
 
   graph.print("Factor Graph:\n");
 
   // Create the initial estimate to the solution
   // Intentionally initialize the variables off from the ground truth
   Values initialEstimate;
-  Pose3 delta(Rot3::rodriguez(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20));
+  Pose3 delta(Rot3::Rodrigues(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20));
   for (size_t i = 0; i < poses.size(); ++i)
-    initialEstimate.insert(i, poses[i].compose(delta));
+    initialEstimate.insert(i, Camera(poses[i].compose(delta), K));
   initialEstimate.print("Initial Estimates:\n");
 
   // Optimize the graph and print results
-  Values result = DoglegOptimizer(graph, initialEstimate).optimize();
+  LevenbergMarquardtOptimizer optimizer(graph, initialEstimate);
+  Values result = optimizer.optimize();
   result.print("Final results:\n");
 
   // A smart factor represent the 3D point inside the factor, not as a variable.
@@ -136,20 +111,20 @@ int main(int argc, char* argv[]) {
   Values landmark_result;
   for (size_t j = 0; j < points.size(); ++j) {
 
-    // The output of point() is in boost::optional<gtsam::Point3>, as sometimes
-    // the triangulation operation inside smart factor will encounter degeneracy.
-    boost::optional<Point3> point;
-
     // The graph stores Factor shared_ptrs, so we cast back to a SmartFactor first
     SmartFactor::shared_ptr smart = boost::dynamic_pointer_cast<SmartFactor>(graph[j]);
     if (smart) {
-      point = smart->point(result);
+      // The output of point() is in boost::optional<Point3>, as sometimes
+      // the triangulation operation inside smart factor will encounter degeneracy.
+      boost::optional<Point3> point = smart->point(result);
       if (point) // ignore if boost::optional return NULL
         landmark_result.insert(j, *point);
     }
   }
 
   landmark_result.print("Landmark results:\n");
+  cout << "final error: " << graph.error(result) << endl;
+  cout << "number of iterations: " << optimizer.iterations() << endl;
 
   return 0;
 }

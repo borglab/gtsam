@@ -183,15 +183,15 @@ void call_ref()
 
   VERIFY_EVALUATION_COUNT( call_ref_1(a,a), 0);
   VERIFY_EVALUATION_COUNT( call_ref_1(b,b.transpose()), 0);
-//   call_ref_1(ac);           // does not compile because ac is const
+//   call_ref_1(ac,a<c);           // does not compile because ac is const
   VERIFY_EVALUATION_COUNT( call_ref_1(ab,ab), 0);
   VERIFY_EVALUATION_COUNT( call_ref_1(a.head(4),a.head(4)), 0);
   VERIFY_EVALUATION_COUNT( call_ref_1(abc,abc), 0);
   VERIFY_EVALUATION_COUNT( call_ref_1(A.col(3),A.col(3)), 0);
-//   call_ref_1(A.row(3));    // does not compile because innerstride!=1
+//   call_ref_1(A.row(3),A.row(3));    // does not compile because innerstride!=1
   VERIFY_EVALUATION_COUNT( call_ref_3(A.row(3),A.row(3).transpose()), 0);
   VERIFY_EVALUATION_COUNT( call_ref_4(A.row(3),A.row(3).transpose()), 0);
-//   call_ref_1(a+a);          // does not compile for obvious reason
+//   call_ref_1(a+a, a+a);          // does not compile for obvious reason
 
   MatrixXf tmp = A*A.col(1);
   VERIFY_EVALUATION_COUNT( call_ref_2(A*A.col(1), tmp), 1);     // evaluated into a temp
@@ -212,7 +212,7 @@ void call_ref()
   VERIFY_EVALUATION_COUNT( call_ref_5(a,a), 0);
   VERIFY_EVALUATION_COUNT( call_ref_5(a.head(3),a.head(3)), 0);
   VERIFY_EVALUATION_COUNT( call_ref_5(A,A), 0);
-//   call_ref_5(A.transpose());   // does not compile
+//   call_ref_5(A.transpose(),A.transpose());   // does not compile because storage order does not match
   VERIFY_EVALUATION_COUNT( call_ref_5(A.block(1,1,2,2),A.block(1,1,2,2)), 0);
   VERIFY_EVALUATION_COUNT( call_ref_5(b,b), 0);             // storage order do not match, but this is a degenerate case that should work
   VERIFY_EVALUATION_COUNT( call_ref_5(a.row(3),a.row(3)), 0);
@@ -227,6 +227,28 @@ void call_ref()
   VERIFY_EVALUATION_COUNT( call_ref_6(A.block(1,1,2,2),A.block(1,1,2,2)), 0);
   
   VERIFY_EVALUATION_COUNT( call_ref_7(c,c), 0);
+}
+
+typedef Matrix<double,Dynamic,Dynamic,RowMajor> RowMatrixXd;
+int test_ref_overload_fun1(Ref<MatrixXd> )       { return 1; }
+int test_ref_overload_fun1(Ref<RowMatrixXd> )    { return 2; }
+int test_ref_overload_fun1(Ref<MatrixXf> )       { return 3; }
+
+int test_ref_overload_fun2(Ref<const MatrixXd> ) { return 4; }
+int test_ref_overload_fun2(Ref<const MatrixXf> ) { return 5; }
+
+// See also bug 969
+void test_ref_overloads()
+{
+  MatrixXd Ad, Bd;
+  RowMatrixXd rAd, rBd;
+  VERIFY( test_ref_overload_fun1(Ad)==1 );
+  VERIFY( test_ref_overload_fun1(rAd)==2 );
+  
+  MatrixXf Af, Bf;
+  VERIFY( test_ref_overload_fun2(Ad)==4 );
+  VERIFY( test_ref_overload_fun2(Ad+Bd)==4 );
+  VERIFY( test_ref_overload_fun2(Af+Bf)==5 );
 }
 
 void test_ref()
@@ -249,4 +271,6 @@ void test_ref()
     CALL_SUBTEST_5( ref_matrix(MatrixXi(internal::random<int>(1,10),internal::random<int>(1,10))) );
     CALL_SUBTEST_6( call_ref() );
   }
+  
+  CALL_SUBTEST_7( test_ref_overloads() );
 }

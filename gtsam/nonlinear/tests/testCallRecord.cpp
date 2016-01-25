@@ -18,7 +18,7 @@
  * @brief unit tests for CallRecord class
  */
 
-#include <gtsam/nonlinear/CallRecord.h>
+#include <gtsam/nonlinear/internal/CallRecord.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Testable.h>
 
@@ -32,7 +32,7 @@ static const int Cols = 3;
 
 
 int dynamicIfAboveMax(int i){
-  if(i > CallRecordMaxVirtualStaticRows){
+  if(i > internal::CallRecordMaxVirtualStaticRows){
     return Eigen::Dynamic;
   }
   else return i;
@@ -80,13 +80,13 @@ struct Record: public internal::CallRecordImplementor<Record, Cols> {
   }
   void print(const std::string& indent) const {
   }
-  void startReverseAD4(JacobianMap& jacobians) const {
+  void startReverseAD4(internal::JacobianMap& jacobians) const {
   }
 
   mutable CallConfig cc;
  private:
   template<typename SomeMatrix>
-  void reverseAD4(const SomeMatrix & dFdT, JacobianMap& jacobians) const {
+  void reverseAD4(const SomeMatrix & dFdT, internal::JacobianMap& jacobians) const {
     cc.compTimeRows = SomeMatrix::RowsAtCompileTime;
     cc.compTimeCols = SomeMatrix::ColsAtCompileTime;
     cc.runTimeRows = dFdT.rows();
@@ -97,7 +97,7 @@ struct Record: public internal::CallRecordImplementor<Record, Cols> {
   friend struct internal::CallRecordImplementor;
 };
 
-JacobianMap & NJM= *static_cast<JacobianMap *>(NULL);
+internal::JacobianMap & NJM= *static_cast<internal::JacobianMap *>(NULL);
 
 /* ************************************************************************* */
 typedef Eigen::Matrix<double, Eigen::Dynamic, Cols> DynRowMat;

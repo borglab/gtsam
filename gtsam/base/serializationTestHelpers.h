@@ -49,15 +49,15 @@ bool equality(const T& input = T()) {
   return input==output;
 }
 
-// This version requires equals
+// This version requires Testable
 template<class T>
 bool equalsObj(const T& input = T()) {
   T output;
   roundtrip<T>(input,output);
-  return input.equals(output);
+  return assert_equal(input, output);
 }
 
-// De-referenced version for pointers
+// De-referenced version for pointers, requires equals method
 template<class T>
 bool equalsDereferenced(const T& input) {
   T output;
@@ -84,15 +84,15 @@ bool equalityXML(const T& input = T()) {
   return input==output;
 }
 
-// This version requires equals
+// This version requires Testable
 template<class T>
 bool equalsXML(const T& input = T()) {
   T output;
   roundtripXML<T>(input,output);
-  return input.equals(output);
+  return assert_equal(input, output);
 }
 
-// This version is for pointers
+// This version is for pointers, requires equals method
 template<class T>
 bool equalsDereferencedXML(const T& input = T()) {
   T output;
@@ -119,15 +119,15 @@ bool equalityBinary(const T& input = T()) {
   return input==output;
 }
 
-// This version requires equals
+// This version requires Testable
 template<class T>
 bool equalsBinary(const T& input = T()) {
   T output;
   roundtripBinary<T>(input,output);
-  return input.equals(output);
+  return assert_equal(input, output);
 }
 
-// This version is for pointers
+// This version is for pointers, requires equals method
 template<class T>
 bool equalsDereferencedBinary(const T& input = T()) {
   T output;

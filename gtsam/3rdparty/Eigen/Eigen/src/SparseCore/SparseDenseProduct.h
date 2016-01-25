@@ -180,7 +180,7 @@ struct sparse_time_dense_product_impl<SparseLhsType,DenseRhsType,DenseResType, R
         typename Res::Scalar tmp(0);
         for(LhsInnerIterator it(lhs,j); it ;++it)
           tmp += it.value() * rhs.coeff(it.index(),c);
-        res.coeffRef(j,c) = alpha * tmp;
+        res.coeffRef(j,c) += alpha * tmp;
       }
     }
   }
@@ -305,15 +305,6 @@ class DenseTimeSparseProduct
   private:
     DenseTimeSparseProduct& operator=(const DenseTimeSparseProduct&);
 };
-
-// sparse * dense
-template<typename Derived>
-template<typename OtherDerived>
-inline const typename SparseDenseProductReturnType<Derived,OtherDerived>::Type
-SparseMatrixBase<Derived>::operator*(const MatrixBase<OtherDerived> &other) const
-{
-  return typename SparseDenseProductReturnType<Derived,OtherDerived>::Type(derived(), other.derived());
-}
 
 } // end namespace Eigen
 

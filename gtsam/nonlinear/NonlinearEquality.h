@@ -21,20 +21,13 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Manifold.h>
 
+#include <boost/bind.hpp>
+
 #include <limits>
 #include <iostream>
 #include <cmath>
 
 namespace gtsam {
-
-/**
- * Template default compare function that assumes a testable T
- */
-template<class T>
-bool compare(const T& a, const T& b) {
-  GTSAM_CONCEPT_TESTABLE_TYPE(T);
-  return a.equals(b);
-}
 
 /**
  * An equality factor that forces either one variable to a constant,
@@ -76,7 +69,9 @@ public:
   /**
    * Function that compares two values
    */
-  bool (*compare_)(const T& a, const T& b);
+  typedef boost::function<bool(const T&, const T&)> CompareFunction;
+  CompareFunction compare_;
+//  bool (*compare_)(const T& a, const T& b);
 
   /** default constructor - only for serialization */
   NonlinearEquality() {
@@ -92,7 +87,7 @@ public:
    * Constructor - forces exact evaluation
    */
   NonlinearEquality(Key j, const T& feasible,
-      bool (*_compare)(const T&, const T&) = compare<T>) :
+      const CompareFunction &_compare = boost::bind(traits<T>::Equals,_1,_2,1e-9)) :
       Base(noiseModel::Constrained::All(traits<T>::GetDimension(feasible)),
           j), feasible_(feasible), allow_error_(false), error_gain_(0.0), //
       compare_(_compare) {
@@ -102,7 +97,7 @@ public:
    * Constructor - allows inexact evaluation
    */
   NonlinearEquality(Key j, const T& feasible, double error_gain,
-      bool (*_compare)(const T&, const T&) = compare<T>) :
+      const CompareFunction &_compare = boost::bind(traits<T>::Equals,_1,_2,1e-9)) :
       Base(noiseModel::Constrained::All(traits<T>::GetDimension(feasible)),
           j), feasible_(feasible), allow_error_(true), error_gain_(error_gain), //
       compare_(_compare) {
@@ -122,7 +117,7 @@ public:
   /** Check if two factors are equal */
   virtual bool equals(const NonlinearFactor& f, double tol = 1e-9) const {
     const This* e = dynamic_cast<const This*>(&f);
-    return e && Base::equals(f) && feasible_.equals(e->feasible_, tol)
+    return e && Base::equals(f) && traits<T>::Equals(feasible_,e->feasible_, tol)
         && std::abs(error_gain_ - e->error_gain_) < tol;
   }
 
@@ -185,7 +180,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar
         & boost::serialization::make_nvp("NoiseModelFactor1",
             boost::serialization::base_object<Base>(*this));
@@ -273,7 +268,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar
         & boost::serialization::make_nvp("NoiseModelFactor1",
             boost::serialization::base_object<Base>(*this));
@@ -337,7 +332,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar
         & boost::serialization::make_nvp("NoiseModelFactor2",
             boost::serialization::base_object<Base>(*this));

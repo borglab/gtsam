@@ -26,24 +26,19 @@
 
 #include <gtsam/base/GenericValue.h>
 #include <gtsam/base/VectorSpace.h>
-#include <gtsam/base/FastMap.h>
 #include <gtsam/inference/Key.h>
-
-#include <boost/optional.hpp>
-#include <boost/ptr_container/ptr_map.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/iterator/filter_iterator.hpp>
-#include <boost/function.hpp>
 #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
+#pragma GCC diagnostic ignored "-Wunused-local-typedefs"
 #endif
 #include <boost/bind.hpp>
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
 #endif
 #include <boost/ptr_container/serialize_ptr_map.hpp>
-#include <boost/iterator_adaptors.hpp>
 
 #include <string>
 #include <utility>
@@ -297,7 +292,7 @@ namespace gtsam {
      * Returns a set of keys in the config
      * Note: by construction, the list is ordered
      */
-    KeyList keys() const;
+    KeyVector keys() const;
 
     /** Replace all keys and variables */
     Values& operator=(const Values& rhs);
@@ -404,7 +399,7 @@ namespace gtsam {
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version) {
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_NVP(values_);
     }
 

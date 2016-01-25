@@ -15,20 +15,20 @@
  * @brief test SimpleCamera class
  */
 
-#include <cmath>
-#include <iostream>
-
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/geometry/SimpleCamera.h>
+#include <gtsam/geometry/Pose2.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam/geometry/SimpleCamera.h>
+#include <CppUnitLite/TestHarness.h>
+#include <cmath>
+#include <iostream>
 
 using namespace std;
 using namespace gtsam;
 
 static const Cal3_S2 K(625, 625, 0, 0, 0);
 
-static const Pose3 pose1((Matrix)(Matrix(3,3) <<
+static const Pose3 pose1((Matrix3() <<
               1., 0., 0.,
               0.,-1., 0.,
               0., 0.,-1.

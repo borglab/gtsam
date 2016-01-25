@@ -19,47 +19,69 @@
 #include <gtsam/geometry/SO3.h>
 #include <gtsam/base/concepts.h>
 #include <cmath>
-
-using namespace std;
+#include <limits>
 
 namespace gtsam {
 
 /* ************************************************************************* */
-SO3 SO3::Rodrigues(const Vector3& axis, double theta) {
-  using std::cos;
-  using std::sin;
-
-  // get components of axis \omega
-  double wx = axis(0), wy = axis(1), wz = axis(2);
-
-  double c = cos(theta), s = sin(theta), c_1 = 1 - c;
-  double wwTxx = wx * wx, wwTyy = wy * wy, wwTzz = wz * wz;
-  double swx = wx * s, swy = wy * s, swz = wz * s;
-
-  double C00 = c_1 * wwTxx, C01 = c_1 * wx * wy, C02 = c_1 * wx * wz;
-  double C11 = c_1 * wwTyy, C12 = c_1 * wy * wz;
-  double C22 = c_1 * wwTzz;
-
+// Near zero, we just have I + skew(omega)
+static SO3 FirstOrder(const Vector3& omega) {
   Matrix3 R;
-  R << c + C00, -swz + C01, swy + C02, //
-  swz + C01, c + C11, -swx + C12, //
-  -swy + C02, swx + C12, c + C22;
-
+  R(0, 0) =  1.;
+  R(1, 0) =  omega.z();
+  R(2, 0) = -omega.y();
+  R(0, 1) = -omega.z();
+  R(1, 1) =  1.;
+  R(2, 1) =  omega.x();
+  R(0, 2) =  omega.y();
+  R(1, 2) = -omega.x();
+  R(2, 2) =  1.;
   return R;
 }
 
+SO3 SO3::AxisAngle(const Vector3& axis, double theta) {
+  if (theta*theta > std::numeric_limits<double>::epsilon()) {
+    using std::cos;
+    using std::sin;
+
+    // get components of axis \omega, where is a unit vector
+    const double& wx = axis.x(), wy = axis.y(), wz = axis.z();
+
+    const double costheta = cos(theta), sintheta = sin(theta), c_1 = 1 - costheta;
+    const double wx_sintheta = wx * sintheta, wy_sintheta = wy * sintheta,
+                 wz_sintheta = wz * sintheta;
+
+    const double C00 = c_1 * wx * wx, C01 = c_1 * wx * wy, C02 = c_1 * wx * wz;
+    const double C11 = c_1 * wy * wy, C12 = c_1 * wy * wz;
+    const double C22 = c_1 * wz * wz;
+
+    Matrix3 R;
+    R(0, 0) =     costheta + C00;
+    R(1, 0) =  wz_sintheta + C01;
+    R(2, 0) = -wy_sintheta + C02;
+    R(0, 1) = -wz_sintheta + C01;
+    R(1, 1) =     costheta + C11;
+    R(2, 1) =  wx_sintheta + C12;
+    R(0, 2) =  wy_sintheta + C02;
+    R(1, 2) = -wx_sintheta + C12;
+    R(2, 2) =     costheta + C22;
+    return R;
+  } else {
+    return FirstOrder(axis*theta);
+  }
+
+}
+
 /// simply convert omega to axis/angle representation
-SO3 SO3::Expmap(const Vector3& omega,
-    ChartJacobian H) {
+SO3 SO3::Expmap(const Vector3& omega, ChartJacobian H) {
+  if (H) *H = ExpmapDerivative(omega);
 
-  if (H)
-    *H = ExpmapDerivative(omega);
-
-  if (omega.isZero())
-    return Identity();
-  else {
-    double angle = omega.norm();
-    return Rodrigues(omega / angle, angle);
+  double theta2 = omega.dot(omega);
+  if (theta2 > std::numeric_limits<double>::epsilon()) {
+    double theta = std::sqrt(theta2);
+    return AxisAngle(omega / theta, theta);
+  } else {
+    return FirstOrder(omega);
   }
 }
 
@@ -111,8 +133,9 @@ Matrix3 SO3::ExpmapDerivative(const Vector3& omega)    {
   using std::cos;
   using std::sin;
 
-  if(zero(omega)) return I_3x3;
-  double theta = omega.norm();  // rotation angle
+  const double theta2 = omega.dot(omega);
+  if (theta2 <= std::numeric_limits<double>::epsilon()) return I_3x3;
+  const double theta = std::sqrt(theta2);  // rotation angle
 #ifdef DUY_VERSION
   /// Follow Iserles05an, B10, pg 147, with a sign change in the second term (left version)
   Matrix3 X = skewSymmetric(omega);
@@ -131,9 +154,15 @@ Matrix3 SO3::ExpmapDerivative(const Vector3& omega)    {
    * a perturbation on the manifold (expmap(Jr * omega))
    */
   // element of Lie algebra so(3): X = omega^, normalized by normx
-  const Matrix3 Y = skewSymmetric(omega) / theta;
-  return I_3x3 - ((1 - cos(theta)) / (theta)) * Y
-      + (1 - sin(theta) / theta) * Y * Y; // right Jacobian
+  const double wx = omega.x(), wy = omega.y(), wz = omega.z();
+  Matrix3 Y;
+  Y << 0.0, -wz, +wy,
+       +wz, 0.0, -wx,
+       -wy, +wx, 0.0;
+  const double s2 = sin(theta / 2.0);
+  const double a = (2.0 * s2 * s2 / theta2);
+  const double b = (1.0 - sin(theta) / theta) / theta2;
+  return I_3x3 - a * Y + b * Y * Y;
 #endif
 }
 
@@ -142,8 +171,9 @@ Matrix3 SO3::LogmapDerivative(const Vector3& omega)    {
   using std::cos;
   using std::sin;
 
-  if(zero(omega)) return I_3x3;
-  double theta = omega.norm();
+  double theta2 = omega.dot(omega);
+  if (theta2 <= std::numeric_limits<double>::epsilon()) return I_3x3;
+  double theta = std::sqrt(theta2);  // rotation angle
 #ifdef DUY_VERSION
   /// Follow Iserles05an, B11, pg 147, with a sign change in the second term (left version)
   Matrix3 X = skewSymmetric(omega);

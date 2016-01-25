@@ -21,11 +21,16 @@
 // \callgraph
 
 #pragma once
-
 #include <gtsam/base/Vector.h>
+#include <gtsam/config.h>      // Configuration from CMake
+
+#include <boost/math/special_functions/fpclassify.hpp>
+#include <Eigen/Core>
+#include <Eigen/Cholesky>
+#include <Eigen/LU>
 #include <boost/format.hpp>
 #include <boost/tuple/tuple.hpp>
-#include <boost/math/special_functions/fpclassify.hpp>
+
 
 /**
  * Matrix is a typedef in the gtsam namespace
@@ -198,9 +203,14 @@ inline MATRIX prod(const MATRIX& A, const MATRIX&B) {
 }
 
 /**
- * print a matrix
+ * print without optional string, must specify cout yourself
  */
-GTSAM_EXPORT void print(const Matrix& A, const std::string& s = "", std::ostream& stream = std::cout);
+GTSAM_EXPORT void print(const Matrix& A, const std::string& s, std::ostream& stream);
+
+/**
+ * print with optional string to cout
+ */
+GTSAM_EXPORT void print(const Matrix& A, const std::string& s = "");
 
 /**
  * save a matrix to file, which can be loaded by matlab
@@ -367,21 +377,7 @@ GTSAM_EXPORT std::pair<Matrix,Matrix> qr(const Matrix& A);
  * @param A is the input matrix, and is the output
  * @param clear_below_diagonal enables zeroing out below diagonal
  */
-template <class MATRIX>
-void inplace_QR(MATRIX& A) {
-  size_t rows = A.rows();
-  size_t cols = A.cols();
-  size_t size = std::min(rows,cols);
-
-  typedef Eigen::internal::plain_diag_type<Matrix>::type HCoeffsType;
-  typedef Eigen::internal::plain_row_type<Matrix>::type RowVectorType;
-  HCoeffsType hCoeffs(size);
-  RowVectorType temp(cols);
-
-  Eigen::internal::householder_qr_inplace_blocked<MATRIX, HCoeffsType>::run(A, hCoeffs, 48, temp.data());
-
-  zeroBelowDiagonal(A);
-}
+void inplace_QR(Matrix& A);
 
 /**
  * Imperative algorithm for in-place full elimination with
@@ -481,9 +477,15 @@ GTSAM_EXPORT Matrix vector_scale(const Matrix& A, const Vector& v, bool inf_mask
  * @param wz
  * @return a 3*3 skew symmetric matrix
 */
-GTSAM_EXPORT Matrix3 skewSymmetric(double wx, double wy, double wz);
-template<class Derived>
-inline Matrix3 skewSymmetric(const Eigen::MatrixBase<Derived>& w) { return skewSymmetric(w(0),w(1),w(2));}
+
+inline Matrix3 skewSymmetric(double wx, double wy, double wz) {
+  return (Matrix3() << 0.0, -wz, +wy, +wz, 0.0, -wx, -wy, +wx, 0.0).finished();
+}
+
+template <class Derived>
+inline Matrix3 skewSymmetric(const Eigen::MatrixBase<Derived>& w) {
+  return skewSymmetric(w(0), w(1), w(2));
+}
 
 /** Use Cholesky to calculate inverse square root of a matrix */
 GTSAM_EXPORT Matrix inverse_square_root(const Matrix& A);
@@ -541,7 +543,7 @@ namespace boost {
 
     // split version - sends sizes ahead
     template<class Archive>
-    void save(Archive & ar, const gtsam::Matrix & m, unsigned int version) {
+    void save(Archive & ar, const gtsam::Matrix & m, unsigned int /*version*/) {
       const size_t rows = m.rows(), cols = m.cols();
       ar << BOOST_SERIALIZATION_NVP(rows);
       ar << BOOST_SERIALIZATION_NVP(cols);
@@ -549,7 +551,7 @@ namespace boost {
     }
 
     template<class Archive>
-    void load(Archive & ar, gtsam::Matrix & m, unsigned int version) {
+    void load(Archive & ar, gtsam::Matrix & m, unsigned int /*version*/) {
       size_t rows, cols;
       ar >> BOOST_SERIALIZATION_NVP(rows);
       ar >> BOOST_SERIALIZATION_NVP(cols);

@@ -16,11 +16,15 @@
  * @author Frank Dellaert
  */
 
-#include <gtsam/slam/dataset.h>
+// For an explanation of headers below, please see Pose2SLAMExample.cpp
 #include <gtsam/slam/PriorFactor.h>
-#include <gtsam/nonlinear/Marginals.h>
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/geometry/Pose2.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/nonlinear/Marginals.h>
+
+// This new header allows us to read examples easily from .graph files
+#include <gtsam/slam/dataset.h>
 
 using namespace std;
 using namespace gtsam;

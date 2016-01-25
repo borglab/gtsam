@@ -131,7 +131,7 @@ endif()
 
 if(NOT (${Boost_VERSION} LESS 105600))
 	message("Ignoring Boost restriction on optional lvalue assignment from rvalues")
-	add_definitions(-DBOOST_OPTIONAL_ALLOW_BINDING_TO_RVALUES)
+	add_definitions(-DBOOST_OPTIONAL_ALLOW_BINDING_TO_RVALUES -DBOOST_OPTIONAL_CONFIG_ALLOW_BINDING_TO_RVALUES)
 endif()
 
 ###############################################################################
@@ -158,6 +158,12 @@ else()
 	set(GTSAM_USE_TBB 0)  # This will go into config.h
 endif()
 
+###############################################################################
+# Prohibit Timing build mode in combination with TBB
+if(GTSAM_USE_TBB AND (CMAKE_BUILD_TYPE  STREQUAL "Timing"))
+      message(FATAL_ERROR "Timing build mode cannot be used together with TBB. Use a sampling profiler such as Instruments or Intel VTune Amplifier instead.")
+endif()
+
 
 ###############################################################################
 # Find Google perftools
@@ -173,6 +179,11 @@ if(MKL_FOUND AND GTSAM_WITH_EIGEN_MKL)
     set(EIGEN_USE_MKL_ALL 1) # This will go into config.h - it makes Eigen use MKL
     include_directories(${MKL_INCLUDE_DIR})
     list(APPEND GTSAM_ADDITIONAL_LIBRARIES ${MKL_LIBRARIES})
+    
+    # --no-as-needed is required with gcc according to the MKL link advisor
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-as-needed")  
+    endif()
 else()
     set(GTSAM_USE_EIGEN_MKL 0)
     set(EIGEN_USE_MKL_ALL 0)
@@ -192,35 +203,39 @@ endif()
 
 ###############################################################################
 # Option for using system Eigen or GTSAM-bundled Eigen
-### Disabled until our patches are included in Eigen ###
+### These patches only affect usage of MKL. If you want to enable MKL, you *must*
+### use our patched version of Eigen
 ### See:  http://eigen.tuxfamily.org/bz/show_bug.cgi?id=704 (Householder QR MKL selection)
 ###       http://eigen.tuxfamily.org/bz/show_bug.cgi?id=705 (Fix MKL LLT return code)
-###       http://eigen.tuxfamily.org/bz/show_bug.cgi?id=716 (Improved comma initialization)
-# option(GTSAM_USE_SYSTEM_EIGEN "Find and use system-installed Eigen. If 'off', use the one bundled with GTSAM" OFF)
-set(GTSAM_USE_SYSTEM_EIGEN OFF)
+option(GTSAM_USE_SYSTEM_EIGEN "Find and use system-installed Eigen. If 'off', use the one bundled with GTSAM" OFF)
 
 # Switch for using system Eigen or GTSAM-bundled Eigen
 if(GTSAM_USE_SYSTEM_EIGEN)
-	# Use generic Eigen include paths e.g. <Eigen/Core>
-	set(GTSAM_EIGEN_INCLUDE_PREFIX "")
-
 	find_package(Eigen3 REQUIRED)
 	include_directories(AFTER "${EIGEN3_INCLUDE_DIR}")
+	
+	# Use generic Eigen include paths e.g. <Eigen/Core>
+    set(GTSAM_EIGEN_INCLUDE_PREFIX "${EIGEN3_INCLUDE_DIR}")
+	
+	# check if MKL is also enabled - can have one or the other, but not both!
+	if(EIGEN_USE_MKL_ALL)
+	  message(FATAL_ERROR "MKL cannot be used together with system-installed Eigen, as MKL support relies on patches which are not yet in the system-installed Eigen. Disable either GTSAM_USE_SYSTEM_EIGEN or GTSAM_WITH_EIGEN_MKL")
+	endif()
 else()
-	# Use bundled Eigen include paths e.g. <gtsam/3rdparty/Eigen/Eigen/Core>
-	set(GTSAM_EIGEN_INCLUDE_PREFIX "gtsam/3rdparty/Eigen/")
-
+	# Use bundled Eigen include path. 
 	# Clear any variables set by FindEigen3
 	if(EIGEN3_INCLUDE_DIR)
 		set(EIGEN3_INCLUDE_DIR NOTFOUND CACHE STRING "" FORCE)
 	endif()
+	# Add the bundled version of eigen to the include path so that it can still be included
+	# with  #include <Eigen/Core>
+	include_directories(BEFORE "gtsam/3rdparty/Eigen/")
+	
+	# set full path to be used by external projects
+	# this will be added to GTSAM_INCLUDE_DIR by gtsam_extra.cmake.in
+	set(GTSAM_EIGEN_INCLUDE_PREFIX "${CMAKE_INSTALL_PREFIX}/include/gtsam/3rdparty/Eigen/")
+	
 endif()
-
-# Write Eigen include file with the paths for either the system Eigen or the GTSAM-bundled Eigen
-configure_file(gtsam/3rdparty/gtsam_eigen_includes.h.in gtsam/3rdparty/gtsam_eigen_includes.h)
-
-# Install the configuration file for Eigen
-install(FILES ${PROJECT_BINARY_DIR}/gtsam/3rdparty/gtsam_eigen_includes.h DESTINATION include/gtsam/3rdparty)
 
 ###############################################################################
 # Global compile options
@@ -262,7 +277,8 @@ endif()
 
 # Include boost - use 'BEFORE' so that a specific boost specified to CMake
 # takes precedence over a system-installed one.
-include_directories(BEFORE ${Boost_INCLUDE_DIR})
+# Use 'SYSTEM' to ignore compiler warnings in Boost headers
+include_directories(BEFORE SYSTEM ${Boost_INCLUDE_DIR})
 
 # Add includes for source directories 'BEFORE' boost and any system include
 # paths so that the compiler uses GTSAM headers in our source directory instead
@@ -285,6 +301,13 @@ endif()
 # GCC 4.8+ complains about local typedefs which we use for shared_ptr etc.
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.8)
+    add_definitions(-Wno-unused-local-typedefs)
+  endif()
+endif()
+
+# As of XCode 7, clang also complains about this
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+  if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7.0)
     add_definitions(-Wno-unused-local-typedefs)
   endif()
 endif()
@@ -371,6 +394,8 @@ set(CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-dev (>= 1.43)") #Example: "libc6 (>= 
 # Print configuration variables
 message(STATUS "===============================================================")
 message(STATUS "================  Configuration Options  ======================")
+message(STATUS "  CMAKE_CXX_COMPILER_ID type     : ${CMAKE_CXX_COMPILER_ID}")
+message(STATUS "  CMAKE_CXX_COMPILER_VERSION     : ${CMAKE_CXX_COMPILER_VERSION}")
 message(STATUS "Build flags                                               ")
 print_config_flag(${GTSAM_BUILD_TESTS}                 "Build Tests                    ")
 print_config_flag(${GTSAM_BUILD_EXAMPLES_ALWAYS}       "Build examples with 'make all' ")
@@ -388,6 +413,11 @@ if(NOT MSVC AND NOT XCODE_VERSION)
     message(STATUS "  Build type                     : ${CMAKE_BUILD_TYPE}")
     message(STATUS "  C compilation flags            : ${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_${cmake_build_type_toupper}}")
     message(STATUS "  C++ compilation flags          : ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${cmake_build_type_toupper}}")
+endif()
+if(GTSAM_USE_SYSTEM_EIGEN)
+    message(STATUS "  Use System Eigen               : Yes")
+else()
+    message(STATUS "  Use System Eigen               : No")
 endif()
 if(GTSAM_USE_TBB)
 	message(STATUS "  Use Intel TBB                  : Yes")

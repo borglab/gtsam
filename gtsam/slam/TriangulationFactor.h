@@ -16,9 +16,9 @@
  */
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/geometry/SimpleCamera.h>
-#include <boost/optional.hpp>
+#include <gtsam/geometry/CalibratedCamera.h>
 #include <boost/make_shared.hpp>
+#include <boost/lexical_cast.hpp>
 
 namespace gtsam {
 
@@ -27,31 +27,34 @@ namespace gtsam {
  * The calibration and pose are assumed known.
  * @addtogroup SLAM
  */
-template<class CALIBRATION = Cal3_S2>
+template<class CAMERA>
 class TriangulationFactor: public NoiseModelFactor1<Point3> {
 
 public:
 
-  /// Camera type
-  typedef PinholeCamera<CALIBRATION> Camera;
+  /// CAMERA type
+  typedef CAMERA Camera;
 
 protected:
 
+  /// shorthand for base class type
+  typedef NoiseModelFactor1<Point3> Base;
+
+  /// shorthand for this class
+  typedef TriangulationFactor<CAMERA> This;
+
+  /// shorthand for measurement type, e.g. Point2 or StereoPoint2
+  typedef typename CAMERA::Measurement Measurement;
+
   // Keep a copy of measurement and calibration for I/O
-  const Camera camera_; ///< Camera in which this landmark was seen
-  const Point2 measured_; ///< 2D measurement
+  const CAMERA camera_; ///< CAMERA in which this landmark was seen
+  const Measurement measured_; ///< 2D measurement
 
   // verbosity handling for Cheirality Exceptions
   const bool throwCheirality_; ///< If true, rethrows Cheirality exceptions (default: false)
   const bool verboseCheirality_; ///< If true, prints text for Cheirality exceptions (default: false)
 
 public:
-
-  /// shorthand for base class type
-  typedef NoiseModelFactor1<Point3> Base;
-
-  /// shorthand for this class
-  typedef TriangulationFactor<CALIBRATION> This;
 
   /// shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<This> shared_ptr;
@@ -70,14 +73,17 @@ public:
    * @param throwCheirality determines whether Cheirality exceptions are rethrown
    * @param verboseCheirality determines whether exceptions are printed for Cheirality
    */
-  TriangulationFactor(const Camera& camera, const Point2& measured,
+  TriangulationFactor(const CAMERA& camera, const Measurement& measured,
       const SharedNoiseModel& model, Key pointKey, bool throwCheirality = false,
       bool verboseCheirality = false) :
       Base(model, pointKey), camera_(camera), measured_(measured), throwCheirality_(
           throwCheirality), verboseCheirality_(verboseCheirality) {
-    if (model && model->dim() != 2)
+    if (model && model->dim() != Measurement::dimension)
       throw std::invalid_argument(
-          "TriangulationFactor must be created with 2-dimensional noise model.");
+          "TriangulationFactor must be created with "
+              + boost::lexical_cast<std::string>((int) Measurement::dimension)
+              + "-dimensional noise model.");
+
   }
 
   /** Virtual destructor */
@@ -114,18 +120,18 @@ public:
   Vector evaluateError(const Point3& point, boost::optional<Matrix&> H2 =
       boost::none) const {
     try {
-      Point2 error(camera_.project(point, boost::none, H2, boost::none) - measured_);
+      Measurement error(camera_.project2(point, boost::none, H2) - measured_);
       return error.vector();
     } catch (CheiralityException& e) {
       if (H2)
-        *H2 = zeros(2, 3);
+        *H2 = zeros(Measurement::dimension, 3);
       if (verboseCheirality_)
         std::cout << e.what() << ": Landmark "
             << DefaultKeyFormatter(this->key()) << " moved behind camera"
             << std::endl;
       if (throwCheirality_)
         throw e;
-      return ones(2) * 2.0 * camera_.calibration().fx();
+      return ones(Measurement::dimension) * 2.0 * camera_.calibration().fx();
     }
   }
 
@@ -147,14 +153,14 @@ public:
     // Allocate memory for Jacobian factor, do only once
     if (Ab.rows() == 0) {
       std::vector<size_t> dimensions(1, 3);
-      Ab = VerticalBlockMatrix(dimensions, 2, true);
-      A.resize(2,3);
-      b.resize(2);
+      Ab = VerticalBlockMatrix(dimensions, Measurement::dimension, true);
+      A.resize(Measurement::dimension,3);
+      b.resize(Measurement::dimension);
     }
 
     // Would be even better if we could pass blocks to project
     const Point3& point = x.at<Point3>(key());
-    b = -(camera_.project(point, boost::none, A, boost::none) - measured_).vector();
+    b = -(camera_.project2(point, boost::none, A) - measured_).vector();
     if (noiseModel_)
       this->noiseModel_->WhitenSystem(A, b);
 
@@ -165,7 +171,7 @@ public:
   }
 
   /** return the measurement */
-  const Point2& measured() const {
+  const Measurement& measured() const {
     return measured_;
   }
 
@@ -184,7 +190,7 @@ private:
   /// Serialization function
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar & BOOST_SERIALIZATION_NVP(camera_);
     ar & BOOST_SERIALIZATION_NVP(measured_);

@@ -34,30 +34,31 @@ if(NOT FIRST_PASS_DONE)
     set(CMAKE_MODULE_LINKER_FLAGS_PROFILING "${CMAKE_MODULE_LINKER_FLAGS_RELEASE}" CACHE STRING "Linker flags during profiling builds." FORCE)
     mark_as_advanced(CMAKE_C_FLAGS_PROFILING CMAKE_CXX_FLAGS_PROFILING CMAKE_EXE_LINKER_FLAGS_PROFILING CMAKE_SHARED_LINKER_FLAGS_PROFILING CMAKE_MODULE_LINKER_FLAGS_PROFILING)
   else()
-    set(CMAKE_C_FLAGS_DEBUG            "${CMAKE_C_FLAGS_DEBUG} -fno-inline -Wall -DEIGEN_INITIALIZE_MATRICES_BY_NAN" CACHE STRING "Flags used by the compiler during debug builds." FORCE)
-    set(CMAKE_CXX_FLAGS_DEBUG          "${CMAKE_CXX_FLAGS_DEBUG} -fno-inline -Wall -DEIGEN_INITIALIZE_MATRICES_BY_NAN" CACHE STRING "Flags used by the compiler during debug builds." FORCE)
-    set(CMAKE_C_FLAGS_RELWITHDEBINFO   "-g -O3 -Wall -DNDEBUG" CACHE STRING "Flags used by the compiler during relwithdebinfo builds." FORCE)
-    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g -O3 -Wall -DNDEBUG" CACHE STRING "Flags used by the compiler during relwithdebinfo builds." FORCE)
-    set(CMAKE_C_FLAGS_RELEASE          "-O3 -Wall -DNDEBUG -Wall" CACHE STRING "Flags used by the compiler during release builds." FORCE)
-    set(CMAKE_CXX_FLAGS_RELEASE        "-O3 -Wall -DNDEBUG -Wall" CACHE STRING "Flags used by the compiler during release builds." FORCE)
+    set(CMAKE_C_FLAGS_DEBUG            "${CMAKE_C_FLAGS_DEBUG} -std=c11 -fno-inline -Wall -DEIGEN_INITIALIZE_MATRICES_BY_NAN" CACHE STRING "Flags used by the compiler during debug builds." FORCE)
+    set(CMAKE_CXX_FLAGS_DEBUG          "${CMAKE_CXX_FLAGS_DEBUG} -std=c++11 -fno-inline -Wall -DEIGEN_INITIALIZE_MATRICES_BY_NAN" CACHE STRING "Flags used by the compiler during debug builds." FORCE)
+    set(CMAKE_C_FLAGS_RELWITHDEBINFO   "-std=c11 -g -O3 -Wall -DNDEBUG" CACHE STRING "Flags used by the compiler during relwithdebinfo builds." FORCE)
+    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-std=c++11 -g -O3 -Wall -DNDEBUG" CACHE STRING "Flags used by the compiler during relwithdebinfo builds." FORCE)
+    set(CMAKE_C_FLAGS_RELEASE          "-std=c11 -O3 -Wall -DNDEBUG -Wall" CACHE STRING "Flags used by the compiler during release builds." FORCE)
+    set(CMAKE_CXX_FLAGS_RELEASE        "-std=c++11 -O3 -Wall -DNDEBUG -Wall" CACHE STRING "Flags used by the compiler during release builds." FORCE)
     set(CMAKE_C_FLAGS_TIMING           "${CMAKE_C_FLAGS_RELEASE} -DENABLE_TIMING" CACHE STRING "Flags used by the compiler during timing builds." FORCE)
     set(CMAKE_CXX_FLAGS_TIMING         "${CMAKE_CXX_FLAGS_RELEASE} -DENABLE_TIMING" CACHE STRING "Flags used by the compiler during timing builds." FORCE)
     set(CMAKE_EXE_LINKER_FLAGS_TIMING  "${CMAKE_EXE_LINKER_FLAGS_RELEASE}" CACHE STRING "Linker flags during timing builds." FORCE)
     set(CMAKE_SHARED_LINKER_FLAGS_TIMING  "${CMAKE_EXE_LINKER_FLAGS_RELEASE}" CACHE STRING "Linker flags during timing builds." FORCE)
     mark_as_advanced(CMAKE_C_FLAGS_TIMING CMAKE_CXX_FLAGS_TIMING CMAKE_EXE_LINKER_FLAGS_TIMING CMAKE_SHARED_LINKER_FLAGS_TIMING)
-    set(CMAKE_C_FLAGS_PROFILING        "-g -O3 -Wall -DNDEBUG" CACHE STRING "Flags used by the compiler during profiling builds." FORCE)
-    set(CMAKE_CXX_FLAGS_PROFILING      "-g -O3 -Wall -DNDEBUG" CACHE STRING "Flags used by the compiler during profiling builds." FORCE)
+    set(CMAKE_C_FLAGS_PROFILING        "-std=c11 -g -O3 -Wall -DNDEBUG" CACHE STRING "Flags used by the compiler during profiling builds." FORCE)
+    set(CMAKE_CXX_FLAGS_PROFILING      "-std=c++11 -g -O3 -Wall -DNDEBUG" CACHE STRING "Flags used by the compiler during profiling builds." FORCE)
     set(CMAKE_EXE_LINKER_FLAGS_PROFILING "${CMAKE_EXE_LINKER_FLAGS_RELEASE}" CACHE STRING "Linker flags during profiling builds." FORCE)
 	set(CMAKE_SHARED_LINKER_FLAGS_PROFILING "${CMAKE__LINKER_FLAGS_RELEASE}" CACHE STRING "Linker flags during profiling builds." FORCE)
     mark_as_advanced(CMAKE_C_FLAGS_PROFILING CMAKE_CXX_FLAGS_PROFILING CMAKE_EXE_LINKER_FLAGS_PROFILING CMAKE_SHARED_LINKER_FLAGS_PROFILING)
   endif()
 endif()
 
-# Clang on Mac uses a template depth that is less than standard and is too small
+# Clang uses a template depth that is less than standard and is too small
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
-	if(NOT "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS "5.0")
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-depth=1024")
-	endif()
+    # Apple Clang before 5.0 does not support -ftemplate-depth.
+    if(NOT (APPLE AND "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS "5.0"))
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftemplate-depth=1024")
+    endif()
 endif()
 
 # Set up build type library postfixes
@@ -97,7 +98,8 @@ if(    NOT cmake_build_type_tolower STREQUAL ""
    AND NOT cmake_build_type_tolower STREQUAL "release"
    AND NOT cmake_build_type_tolower STREQUAL "timing"
    AND NOT cmake_build_type_tolower STREQUAL "profiling"
-   AND NOT cmake_build_type_tolower STREQUAL "relwithdebinfo")
+   AND NOT cmake_build_type_tolower STREQUAL "relwithdebinfo"
+   AND NOT cmake_build_type_tolower STREQUAL "minsizerel")
   message(FATAL_ERROR "Unknown build type \"${CMAKE_BUILD_TYPE}\". Allowed values are None, Debug, Release, Timing, Profiling, RelWithDebInfo (case-insensitive).")
 endif()
 

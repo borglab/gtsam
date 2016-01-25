@@ -187,7 +187,9 @@ TEST( NonlinearOptimizer, Factorization )
   ordering.push_back(X(1));
   ordering.push_back(X(2));
 
-  LevenbergMarquardtOptimizer optimizer(graph, config, ordering);
+  LevenbergMarquardtParams params;
+  LevenbergMarquardtParams::SetLegacyDefaults(&params);
+  LevenbergMarquardtOptimizer optimizer(graph, config, ordering, params);
   optimizer.iterate();
 
   Values expected;
@@ -260,13 +262,13 @@ TEST_UNSAFE(NonlinearOptimizer, MoreOptimization) {
   expectedGradient.insert(2,zero(3));
 
   // Try LM and Dogleg
-  LevenbergMarquardtParams params;
-//  params.setVerbosityLM("TRYDELTA");
-//  params.setVerbosity("TERMINATION");
-  params.setlambdaUpperBound(1e9);
-//  params.setRelativeErrorTol(0);
-//  params.setAbsoluteErrorTol(0);
-  //params.setlambdaInitial(10);
+  LevenbergMarquardtParams params = LevenbergMarquardtParams::LegacyDefaults();
+  //  params.setVerbosityLM("TRYDELTA");
+  //  params.setVerbosity("TERMINATION");
+  params.lambdaUpperBound = 1e9;
+//  params.relativeErrorTol = 0;
+//  params.absoluteErrorTol = 0;
+  //params.lambdaInitial = 10;
 
   {
     LevenbergMarquardtOptimizer optimizer(fg, init, params);
@@ -290,7 +292,7 @@ TEST_UNSAFE(NonlinearOptimizer, MoreOptimization) {
     initBetter.insert(2, Pose2(11,7,M_PI/2));
 
   {
-    params.setDiagonalDamping(true);
+    params.diagonalDamping = true;
     LevenbergMarquardtOptimizer optimizer(fg, initBetter, params);
 
     // test the diagonal
@@ -399,7 +401,7 @@ public:
   /// Constructor
   IterativeLM(const NonlinearFactorGraph& graph, const Values& initialValues,
       const ConjugateGradientParameters &p,
-      const LevenbergMarquardtParams& params = LevenbergMarquardtParams()) :
+      const LevenbergMarquardtParams& params = LevenbergMarquardtParams::LegacyDefaults()) :
       LevenbergMarquardtOptimizer(graph, initialValues, params), cgParams_(p) {
   }
 
@@ -446,8 +448,7 @@ TEST( NonlinearOptimizer, logfile )
   // Levenberg-Marquardt
   LevenbergMarquardtParams lmParams;
   static const string filename("testNonlinearOptimizer.log");
-  lmParams.setLogFile(filename);
-  CHECK(lmParams.getLogFile()==filename);
+  lmParams.logFile = filename;
   LevenbergMarquardtOptimizer(fg, c0, lmParams).optimize();
 
 //  stringstream expected,actual;

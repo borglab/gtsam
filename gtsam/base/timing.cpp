@@ -16,24 +16,28 @@
  * @date     Oct 5, 2010
  */
 
-#include <math.h>
-#include <stdio.h>
-#include <iostream>
-#include <iomanip>
-#include <stdlib.h>
-#include <boost/foreach.hpp>
-#include <boost/format.hpp>
-#include <boost/algorithm/string.hpp>
-
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
+
+#include <boost/algorithm/string/replace.hpp>
+#include <boost/foreach.hpp>
+#include <boost/format.hpp>
+
+#include <cmath>
+#include <cstddef>
+#include <cassert>
+#include <iomanip>
+#include <iostream>
+#include <map>
+#include <stdexcept>
+#include <utility>
 
 namespace gtsam {
 namespace internal {
 
-GTSAM_EXPORT boost::shared_ptr<TimingOutline> timingRoot(
+GTSAM_EXPORT boost::shared_ptr<TimingOutline> gTimingRoot(
     new TimingOutline("Total", getTicTocID("Total")));
-GTSAM_EXPORT boost::weak_ptr<TimingOutline> timingCurrent(timingRoot);
+GTSAM_EXPORT boost::weak_ptr<TimingOutline> gCurrentTimer(gTimingRoot);
 
 /* ************************************************************************* */
 // Implementation of TimingOutline
@@ -50,8 +54,8 @@ void TimingOutline::add(size_t usecs, size_t usecsWall) {
 }
 
 /* ************************************************************************* */
-TimingOutline::TimingOutline(const std::string& label, size_t myId) :
-    myId_(myId), t_(0), tWall_(0), t2_(0.0), tIt_(0), tMax_(0), tMin_(0), n_(0), myOrder_(
+TimingOutline::TimingOutline(const std::string& label, size_t id) :
+    id_(id), t_(0), tWall_(0), t2_(0.0), tIt_(0), tMax_(0), tMin_(0), n_(0), myOrder_(
         0), lastChildOrder_(0), label_(label) {
 #ifdef GTSAM_USING_NEW_BOOST_TIMERS
   timer_.stop();
@@ -153,7 +157,7 @@ const boost::shared_ptr<TimingOutline>& TimingOutline::child(size_t child,
 }
 
 /* ************************************************************************* */
-void TimingOutline::ticInternal() {
+void TimingOutline::tic() {
 #ifdef GTSAM_USING_NEW_BOOST_TIMERS
   assert(timer_.is_stopped());
   timer_.start();
@@ -169,7 +173,7 @@ void TimingOutline::ticInternal() {
 }
 
 /* ************************************************************************* */
-void TimingOutline::tocInternal() {
+void TimingOutline::toc() {
 #ifdef GTSAM_USING_NEW_BOOST_TIMERS
 
   assert(!timer_.is_stopped());
@@ -212,7 +216,6 @@ void TimingOutline::finishedIteration() {
 }
 
 /* ************************************************************************* */
-// Generate or retrieve a unique global ID number that will be used to look up tic_/toc statements
 size_t getTicTocID(const char *descriptionC) {
   const std::string description(descriptionC);
   // Global (static) map from strings to ID numbers and current next ID number
@@ -232,37 +235,33 @@ size_t getTicTocID(const char *descriptionC) {
 }
 
 /* ************************************************************************* */
-void ticInternal(size_t id, const char *labelC) {
+void tic(size_t id, const char *labelC) {
   const std::string label(labelC);
-  if (ISDEBUG("timing-verbose"))
-    std::cout << "gttic_(" << id << ", " << label << ")" << std::endl;
   boost::shared_ptr<TimingOutline> node = //
-      timingCurrent.lock()->child(id, label, timingCurrent);
-  timingCurrent = node;
-  node->ticInternal();
+      gCurrentTimer.lock()->child(id, label, gCurrentTimer);
+  gCurrentTimer = node;
+  node->tic();
 }
 
 /* ************************************************************************* */
-void tocInternal(size_t id, const char *label) {
-  if (ISDEBUG("timing-verbose"))
-    std::cout << "gttoc(" << id << ", " << label << ")" << std::endl;
-  boost::shared_ptr<TimingOutline> current(timingCurrent.lock());
-  if (id != current->myId_) {
-    timingRoot->print();
+void toc(size_t id, const char *label) {
+  boost::shared_ptr<TimingOutline> current(gCurrentTimer.lock());
+  if (id != current->id_) {
+    gTimingRoot->print();
     throw std::invalid_argument(
         (boost::format(
             "gtsam timing:  Mismatched tic/toc: gttoc(\"%s\") called when last tic was \"%s\".")
             % label % current->label_).str());
   }
   if (!current->parent_.lock()) {
-    timingRoot->print();
+    gTimingRoot->print();
     throw std::invalid_argument(
         (boost::format(
             "gtsam timing:  Mismatched tic/toc: extra gttoc(\"%s\"), already at the root")
             % label).str());
   }
-  current->tocInternal();
-  timingCurrent = current->parent_;
+  current->toc();
+  gCurrentTimer = current->parent_;
 }
 
 } // namespace internal

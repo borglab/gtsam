@@ -15,10 +15,9 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
-
+#include <gtsam/base/deprecated/LieScalar.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Manifold.h>
-#include <gtsam/base/LieScalar.h>
 
 using namespace gtsam;
 
@@ -37,8 +36,8 @@ TEST(LieScalar , Concept) {
 //******************************************************************************
 TEST(LieScalar , Invariants) {
   LieScalar lie1(2), lie2(3);
-  check_group_invariants(lie1, lie2);
-  check_manifold_invariants(lie1, lie2);
+  CHECK(check_group_invariants(lie1, lie2));
+  CHECK(check_manifold_invariants(lie1, lie2));
 }
 
 /* ************************************************************************* */

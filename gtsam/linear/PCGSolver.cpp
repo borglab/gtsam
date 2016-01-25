@@ -1,16 +1,31 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /*
- * PCGSolver.cpp
- *
- *  Created on: Feb 14, 2012
- *      Author: Yong-Dian Jian
- *      Author: Sungtae An
+ * @file PCGSolver.cpp
+ * @brief Preconditioned Conjugate Gradient Solver for linear systems
+ * @date Feb 14, 2012
+ * @author Yong-Dian Jian
+ * @author Sungtae An
  */
 
-#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/PCGSolver.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/Preconditioner.h>
+#include <gtsam/linear/VectorValues.h>
 
+#include <boost/foreach.hpp>
 #include <boost/algorithm/string.hpp>
+
+#include <algorithm>
 #include <iostream>
 #include <stdexcept>
 
@@ -21,7 +36,7 @@ namespace gtsam {
 /*****************************************************************************/
 void PCGSolverParameters::print(ostream &os) const {
   Base::print(os);
-  os << "PCGSolverParameters:" <<  endl;
+  os << "PCGSolverParameters:" << endl;
   preconditioner_->print(os);
 }
 
@@ -32,30 +47,27 @@ PCGSolver::PCGSolver(const PCGSolverParameters &p) {
 }
 
 /*****************************************************************************/
-VectorValues PCGSolver::optimize (
-  const GaussianFactorGraph &gfg,
-  const KeyInfo &keyInfo,
-  const std::map<Key, Vector> &lambda,
-  const VectorValues &initial)
-{
+VectorValues PCGSolver::optimize(const GaussianFactorGraph &gfg,
+    const KeyInfo &keyInfo, const std::map<Key, Vector> &lambda,
+    const VectorValues &initial) {
   /* build preconditioner */
   preconditioner_->build(gfg, keyInfo, lambda);
 
   /* apply pcg */
-  const Vector sol = preconditionedConjugateGradient<GaussianFactorGraphSystem, Vector>(
-        GaussianFactorGraphSystem(gfg, *preconditioner_, keyInfo, lambda),
-        initial.vector(keyInfo.ordering()), parameters_);
+  GaussianFactorGraphSystem system(gfg, *preconditioner_, keyInfo, lambda);
+  Vector x0 = initial.vector(keyInfo.ordering());
+  const Vector sol = preconditionedConjugateGradient(system, x0, parameters_);
 
   return buildVectorValues(sol, keyInfo);
 }
 
 /*****************************************************************************/
 GaussianFactorGraphSystem::GaussianFactorGraphSystem(
-    const GaussianFactorGraph &gfg,
-    const Preconditioner &preconditioner,
-    const KeyInfo &keyInfo,
-    const std::map<Key, Vector> &lambda)
-  : gfg_(gfg), preconditioner_(preconditioner), keyInfo_(keyInfo), lambda_(lambda) {}
+    const GaussianFactorGraph &gfg, const Preconditioner &preconditioner,
+    const KeyInfo &keyInfo, const std::map<Key, Vector> &lambda) :
+    gfg_(gfg), preconditioner_(preconditioner), keyInfo_(keyInfo), lambda_(
+        lambda) {
+}
 
 /*****************************************************************************/
 void GaussianFactorGraphSystem::residual(const Vector &x, Vector &r) const {
@@ -67,7 +79,7 @@ void GaussianFactorGraphSystem::residual(const Vector &x, Vector &r) const {
   /* substract A*x */
   Vector Ax = Vector::Zero(r.rows(), 1);
   multiply(x, Ax);
-  r -= Ax ;
+  r -= Ax;
 }
 
 /*****************************************************************************/
@@ -75,7 +87,7 @@ void GaussianFactorGraphSystem::multiply(const Vector &x, Vector& AtAx) const {
   /* implement A^T*(A*x), assume x and AtAx are pre-allocated */
 
   // Build a VectorValues for Vector x
-  VectorValues vvX = buildVectorValues(x,keyInfo_);
+  VectorValues vvX = buildVectorValues(x, keyInfo_);
 
   // VectorValues form of A'Ax for multiplyHessianAdd
   VectorValues vvAtAx;
@@ -99,31 +111,33 @@ void GaussianFactorGraphSystem::getb(Vector &b) const {
 }
 
 /**********************************************************************************/
-void GaussianFactorGraphSystem::leftPrecondition(const Vector &x, Vector &y) const {
+void GaussianFactorGraphSystem::leftPrecondition(const Vector &x,
+    Vector &y) const {
   // For a preconditioner M = L*L^T
   // Calculate y = L^{-1} x
   preconditioner_.solve(x, y);
 }
 
 /**********************************************************************************/
-void GaussianFactorGraphSystem::rightPrecondition(const Vector &x, Vector &y) const {
+void GaussianFactorGraphSystem::rightPrecondition(const Vector &x,
+    Vector &y) const {
   // For a preconditioner M = L*L^T
   // Calculate y = L^{-T} x
   preconditioner_.transposeSolve(x, y);
 }
 
 /**********************************************************************************/
-VectorValues buildVectorValues(const Vector &v,
-                               const Ordering &ordering,
-                               const map<Key, size_t>  & dimensions) {
+VectorValues buildVectorValues(const Vector &v, const Ordering &ordering,
+    const map<Key, size_t> & dimensions) {
   VectorValues result;
 
   DenseIndex offset = 0;
-  for ( size_t i = 0 ; i < ordering.size() ; ++i ) {
+  for (size_t i = 0; i < ordering.size(); ++i) {
     const Key &key = ordering[i];
     map<Key, size_t>::const_iterator it = dimensions.find(key);
-    if ( it == dimensions.end() ) {
-      throw invalid_argument("buildVectorValues: inconsistent ordering and dimensions");
+    if (it == dimensions.end()) {
+      throw invalid_argument(
+          "buildVectorValues: inconsistent ordering and dimensions");
     }
     const size_t dim = it->second;
     result.insert(key, v.segment(offset, dim));
@@ -137,7 +151,8 @@ VectorValues buildVectorValues(const Vector &v,
 VectorValues buildVectorValues(const Vector &v, const KeyInfo &keyInfo) {
   VectorValues result;
   BOOST_FOREACH ( const KeyInfo::value_type &item, keyInfo ) {
-    result.insert(item.first, v.segment(item.second.colstart(), item.second.dim()));
+    result.insert(item.first,
+        v.segment(item.second.colstart(), item.second.dim()));
   }
   return result;
 }
