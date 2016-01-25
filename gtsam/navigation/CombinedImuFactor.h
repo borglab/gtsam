@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -63,14 +63,14 @@ public:
 
   /// Parameters for pre-integration:
   /// Usage: Create just a single Params and pass a shared pointer to the constructor
-  struct Params : PreintegrationBase::Params {
+  struct Params : PreintegrationParams {
     Matrix3 biasAccCovariance;    ///< continuous-time "Covariance" describing accelerometer bias random walk
     Matrix3 biasOmegaCovariance;  ///< continuous-time "Covariance" describing gyroscope bias random walk
     Matrix6 biasAccOmegaInit;     ///< covariance of bias used for pre-integration
 
     /// See two named constructors below for good values of n_gravity in body frame
     Params(const Vector3& n_gravity) :
-        PreintegrationBase::Params(n_gravity), biasAccCovariance(I_3x3), biasOmegaCovariance(
+        PreintegrationParams(n_gravity), biasAccCovariance(I_3x3), biasOmegaCovariance(
             I_3x3), biasAccOmegaInit(I_6x6) {
     }
 

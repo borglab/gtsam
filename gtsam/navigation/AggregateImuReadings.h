@@ -18,7 +18,9 @@
 #pragma once
 
 #include <Eigen/Dense>
-#include <gtsam/navigation/ImuFactor.h>
+#include <gtsam/navigation/ImuBias.h>
+#include <gtsam/navigation/NavState.h>
+#include <gtsam/navigation/PreintegrationParams.h>
 #include <gtsam/linear/NoiseModel.h>
 
 namespace gtsam {
@@ -31,7 +33,7 @@ namespace gtsam {
 class AggregateImuReadings {
  public:
   typedef imuBias::ConstantBias Bias;
-  typedef PreintegrationBase::Params Params;
+  typedef PreintegrationParams Params;
 
   /// The IMU is integrated in the tangent space, represented by a Vector9
   /// This small inner class provides some convenient constructors and efficient
@@ -64,7 +66,7 @@ class AggregateImuReadings {
 
  private:
   const boost::shared_ptr<Params> p_;
-  const Bias estimatedBias_;
+  const Bias biasHat_;
 
   double deltaTij_;  ///< sum of time increments
 

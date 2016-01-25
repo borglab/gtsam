@@ -62,8 +62,8 @@ static const double kGyroSigma = 0.02;
 static const double kAccelerometerSigma = 0.1;
 
 // Create default parameters with Z-down and above noise paramaters
-static boost::shared_ptr<PreintegratedImuMeasurements::Params> defaultParams() {
-  auto p = PreintegratedImuMeasurements::Params::MakeSharedD(kGravity);
+static boost::shared_ptr<PreintegrationParams> defaultParams() {
+  auto p = PreintegrationParams::MakeSharedD(kGravity);
   p->gyroscopeCovariance = kGyroSigma * kGyroSigma * I_3x3;
   p->accelerometerCovariance = kAccelerometerSigma * kAccelerometerSigma
       * I_3x3;

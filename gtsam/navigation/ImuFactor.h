@@ -82,7 +82,7 @@ public:
    *  @param bias Current estimate of acceleration and rotation rate biases
    *  @param p    Parameters, typically fixed in a single application
    */
-  PreintegratedImuMeasurements(const boost::shared_ptr<Params>& p,
+  PreintegratedImuMeasurements(const boost::shared_ptr<PreintegrationParams>& p,
       const imuBias::ConstantBias& biasHat = imuBias::ConstantBias()) :
       PreintegrationBase(p, biasHat) {
     preintMeasCov_.setZero();
@@ -230,7 +230,7 @@ public:
   /// @deprecated typename
   typedef PreintegratedImuMeasurements PreintegratedMeasurements;
 
-  /// @deprecated constructor, in the new one gravity, coriolis settings are in Params
+  /// @deprecated constructor, in the new one gravity, coriolis settings are in PreintegrationParams
   ImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
       const PreintegratedMeasurements& preintegratedMeasurements,
       const Vector3& n_gravity, const Vector3& omegaCoriolis,
@@ -238,7 +238,7 @@ public:
       const bool use2ndOrderCoriolis = false);
 
   /// @deprecated use PreintegrationBase::predict,
-  /// in the new one gravity, coriolis settings are in Params
+  /// in the new one gravity, coriolis settings are in PreintegrationParams
   static void Predict(const Pose3& pose_i, const Vector3& vel_i, Pose3& pose_j,
       Vector3& vel_j, const imuBias::ConstantBias& bias_i,
       PreintegratedMeasurements& pim, const Vector3& n_gravity,

@@ -26,7 +26,7 @@ namespace gtsam {
 
 AggregateImuReadings::AggregateImuReadings(const boost::shared_ptr<Params>& p,
                                            const Bias& estimatedBias)
-    : p_(p), estimatedBias_(estimatedBias), deltaTij_(0.0) {
+    : p_(p), biasHat_(estimatedBias), deltaTij_(0.0) {
   cov_.setZero();
 }
 
@@ -77,8 +77,8 @@ void AggregateImuReadings::integrateMeasurement(const Vector3& measuredAcc,
                                                 const Vector3& measuredOmega,
                                                 double dt) {
   // Correct measurements
-  const Vector3 a_body = measuredAcc - estimatedBias_.accelerometer();
-  const Vector3 w_body = measuredOmega - estimatedBias_.gyroscope();
+  const Vector3 a_body = measuredAcc - biasHat_.accelerometer();
+  const Vector3 w_body = measuredOmega - biasHat_.gyroscope();
 
   // Do exact mean propagation
   Matrix9 A;
