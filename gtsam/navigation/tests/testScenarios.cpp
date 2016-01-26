@@ -93,14 +93,13 @@ TEST(ScenarioRunner, Forward) {
 
 /* ************************************************************************* */
 TEST(ScenarioRunner, ForwardWithBias) {
-  //  using namespace forward;
-  //  ScenarioRunner runner(&scenario, defaultParams(), kDt);
-  //  const double T = 0.1;  // seconds
-  //
-  //  auto pim = runner.integrate(T, kNonZeroBias);
-  //  Matrix9 estimatedCov = runner.estimateCovariance(T, 1000,
-  //  kNonZeroBias);
-  //  EXPECT(assert_equal(estimatedCov, pim.preintMeasCov(), 0.1));
+  using namespace forward;
+  ScenarioRunner runner(&scenario, defaultParams(), kDt);
+  const double T = 0.1;  // seconds
+
+  auto pim = runner.integrate(T, kNonZeroBias);
+  Matrix9 estimatedCov = runner.estimateCovariance(T, 1000, kNonZeroBias);
+  EXPECT(assert_equal(estimatedCov, pim.preintMeasCov(), 0.1));
 }
 
 /* ************************************************************************* */
@@ -169,18 +168,14 @@ TEST(ScenarioRunner, Accelerating) {
 }
 
 /* ************************************************************************* */
-// TODO(frank):Fails !
-// TEST(ScenarioRunner, AcceleratingWithBias) {
-//  using namespace accelerating;
-//  ScenarioRunner runner(&scenario, T / 10, kGyroSigma, kAccelSigma,
-//                        kNonZeroBias);
-//
-//  auto pim = runner.integrate(T,
-//  kNonZeroBias);
-//  Matrix9 estimatedCov = runner.estimateCovariance(T, 10000,
-//  kNonZeroBias);
-//  EXPECT(assert_equal(estimatedCov, pim.preintMeasCov(), 0.1));
-//}
+TEST(ScenarioRunner, AcceleratingWithBias) {
+  using namespace accelerating;
+  ScenarioRunner runner(&scenario, defaultParams(), T / 10, kNonZeroBias);
+
+  auto pim = runner.integrate(T, kNonZeroBias);
+  Matrix9 estimatedCov = runner.estimateCovariance(T, 10000, kNonZeroBias);
+  EXPECT(assert_equal(estimatedCov, pim.preintMeasCov(), 0.1));
+}
 
 /* ************************************************************************* */
 TEST(ScenarioRunner, AcceleratingAndRotating) {
@@ -232,18 +227,14 @@ TEST(ScenarioRunner, Accelerating2) {
 }
 
 /* ************************************************************************* */
-// TODO(frank):Fails !
-// TEST(ScenarioRunner, AcceleratingWithBias2) {
-//  using namespace accelerating2;
-//  ScenarioRunner runner(&scenario, T / 10, kGyroSigma, kAccelSigma,
-//                        kNonZeroBias);
-//
-//  auto pim = runner.integrate(T,
-//  kNonZeroBias);
-//  Matrix9 estimatedCov = runner.estimateCovariance(T, 10000,
-//  kNonZeroBias);
-//  EXPECT(assert_equal(estimatedCov, pim.preintMeasCov(), 0.1));
-//}
+TEST(ScenarioRunner, AcceleratingWithBias2) {
+  using namespace accelerating2;
+  ScenarioRunner runner(&scenario, defaultParams(), T / 10, kNonZeroBias);
+
+  auto pim = runner.integrate(T, kNonZeroBias);
+  Matrix9 estimatedCov = runner.estimateCovariance(T, 10000, kNonZeroBias);
+  EXPECT(assert_equal(estimatedCov, pim.preintMeasCov(), 0.1));
+}
 
 /* ************************************************************************* */
 TEST(ScenarioRunner, AcceleratingAndRotating2) {
@@ -296,18 +287,14 @@ TEST(ScenarioRunner, Accelerating3) {
 }
 
 /* ************************************************************************* */
-// TODO(frank):Fails !
-// TEST(ScenarioRunner, AcceleratingWithBias3) {
-//  using namespace accelerating3;
-//  ScenarioRunner runner(&scenario, T / 10, kGyroSigma, kAccelSigma,
-//                        kNonZeroBias);
-//
-//  auto pim = runner.integrate(T,
-//  kNonZeroBias);
-//  Matrix9 estimatedCov = runner.estimateCovariance(T, 10000,
-//  kNonZeroBias);
-//  EXPECT(assert_equal(estimatedCov, pim.preintMeasCov(), 0.1));
-//}
+TEST(ScenarioRunner, AcceleratingWithBias3) {
+  using namespace accelerating3;
+  ScenarioRunner runner(&scenario, defaultParams(), T / 10, kNonZeroBias);
+
+  auto pim = runner.integrate(T, kNonZeroBias);
+  Matrix9 estimatedCov = runner.estimateCovariance(T, 10000, kNonZeroBias);
+  EXPECT(assert_equal(estimatedCov, pim.preintMeasCov(), 0.1));
+}
 
 /* ************************************************************************* */
 TEST(ScenarioRunner, AcceleratingAndRotating3) {
@@ -361,18 +348,14 @@ TEST(ScenarioRunner, Accelerating4) {
 }
 
 /* ************************************************************************* */
-// TODO(frank):Fails !
-// TEST(ScenarioRunner, AcceleratingWithBias4) {
-//  using namespace accelerating4;
-//  ScenarioRunner runner(&scenario, T / 10, kGyroSigma, kAccelSigma,
-//                        kNonZeroBias);
-//
-//  auto pim = runner.integrate(T,
-//  kNonZeroBias);
-//  Matrix9 estimatedCov = runner.estimateCovariance(T, 10000,
-//  kNonZeroBias);
-//  EXPECT(assert_equal(estimatedCov, pim.preintMeasCov(), 0.1));
-//}
+TEST(ScenarioRunner, AcceleratingWithBias4) {
+  using namespace accelerating4;
+  ScenarioRunner runner(&scenario, defaultParams(), T / 10, kNonZeroBias);
+
+  auto pim = runner.integrate(T, kNonZeroBias);
+  Matrix9 estimatedCov = runner.estimateCovariance(T, 10000, kNonZeroBias);
+  EXPECT(assert_equal(estimatedCov, pim.preintMeasCov(), 0.1));
+}
 
 /* ************************************************************************* */
 TEST(ScenarioRunner, AcceleratingAndRotating4) {
