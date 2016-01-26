@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @brief exports the python module 
- * @author Andrew Melim 
+ * @brief exports the python module
+ * @author Andrew Melim
  * @author Ellon Paiva Mendes (LAAS-CNRS)
  **/
 
@@ -20,10 +20,10 @@
 
 #include <numpy_eigen/NumpyEigenConverter.hpp>
 
-// Base
+// base
 void exportFastVectors();
 
-// Geometry
+// geometry
 void exportPoint2();
 void exportPoint3();
 void exportRot2();
@@ -34,23 +34,27 @@ void exportPinholeBaseK();
 void exportPinholeCamera();
 void exportCal3_S2();
 
-// Inference
+// inference
 void exportSymbol();
 
-// Linear
+// linear
 void exportNoiseModels();
 
-// Nonlinear
+// nonlinear
 void exportValues();
 void exportNonlinearFactor();
 void exportNonlinearFactorGraph();
 void exportLevenbergMarquardtOptimizer();
 void exportISAM2();
 
-// Slam
+// slam
 void exportPriorFactors();
 void exportBetweenFactors();
 void exportGenericProjectionFactor();
+
+// navigation
+void exportScenario();
+
 
 // Utils (or Python wrapper specific functions)
 void registerNumpyEigenConversions();
@@ -59,14 +63,14 @@ void registerNumpyEigenConversions();
 
 BOOST_PYTHON_MODULE(_libgtsam_python){
 
-  // NOTE: We need to call import_array1() instead of import_array() to support both python 2 
-  //       and 3. The reason is that BOOST_PYTHON_MODULE puts all its contents in a function 
-  //       returning void, and import_array() is a macro that when expanded for python 3, adds 
-  //       a 'return __null' statement to that function. For more info check files: 
+  // NOTE: We need to call import_array1() instead of import_array() to support both python 2
+  //       and 3. The reason is that BOOST_PYTHON_MODULE puts all its contents in a function
+  //       returning void, and import_array() is a macro that when expanded for python 3, adds
+  //       a 'return __null' statement to that function. For more info check files:
   //       boost/python/module_init.hpp and numpy/__multiarray_api.h (bottom of the file).
   // Should be the first thing to be done
   import_array1();
-  
+
   registerNumpyEigenConversions();
 
   exportFastVectors();
@@ -94,4 +98,6 @@ BOOST_PYTHON_MODULE(_libgtsam_python){
   exportPriorFactors();
   exportBetweenFactors();
   exportGenericProjectionFactor();
+
+  exportScenario();
 }
