@@ -117,8 +117,8 @@ private:
 
 
   /// Collect all terms of a factor into a container. TODO: avoid memcpy?
-  TermsContainer collectTerms(const LinearInequality& factor) const {
-    TermsContainer terms;
+  std::vector<std::pair<Key, Matrix> > collectTerms(const LinearInequality& factor) const {
+    std::vector<std::pair<Key, Matrix> > terms;
     for (Factor::const_iterator it = factor.begin(); it != factor.end(); it++) {
       terms.push_back(make_pair(*it, factor.getA(it)));
     }
@@ -126,11 +126,12 @@ private:
   }
 
   /// Turn Cx <= d into Cx - y <= d factors
-  InequalityFactorGraph addSlackVariableToInequalities(Key yKey, const InequalityFactorGraph& inequalities) const {
+  InequalityFactorGraph addSlackVariableToInequalities(Key yKey,
+      const InequalityFactorGraph& inequalities) const {
     InequalityFactorGraph slackInequalities;
     BOOST_FOREACH(const LinearInequality::shared_ptr& factor, lp_.inequalities) {
-      TermsContainer terms = collectTerms(*factor);                      // Cx
-      terms.push_back(make_pair(yKey, Matrix::Constant(1, 1, -1.0)));    // -y
+      std::vector<std::pair<Key, Matrix> > terms = collectTerms(*factor); // Cx
+      terms.push_back(make_pair(yKey, Matrix::Constant(1, 1, -1.0)));// -y
       double d = factor->getb()[0];
       slackInequalities.push_back(LinearInequality(terms, d, factor->dualKey()));
     }

@@ -21,6 +21,7 @@
 #include <gtsam_unstable/linear/QPSolver.h>
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam_unstable/linear/InfeasibleInitialValues.h>
 
 using namespace std;
 using namespace gtsam;
@@ -115,8 +116,7 @@ TEST(QPSolver, dual) {
 
   QPSolver solver(qp);
 
-  GaussianFactorGraph::shared_ptr dualGraph = solver.buildDualGraph(
-      qp.inequalities, initialValues);
+  GaussianFactorGraph::shared_ptr dualGraph = solver.buildDualGraph(qp.inequalities, initialValues);
   VectorValues dual = dualGraph->optimize();
   VectorValues expectedDual;
   expectedDual.insert(0, (Vector(1) << 2.0).finished());

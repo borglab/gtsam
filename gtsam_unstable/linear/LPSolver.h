@@ -6,22 +6,22 @@
  */
 
 #pragma once
+
 #include <gtsam_unstable/linear/LPState.h>
 #include <gtsam_unstable/linear/LP.h>
+#include <gtsam_unstable/linear/ActiveSetSolver.h>
+#include <boost/range/adaptor/map.hpp>
+#include <gtsam/linear/VectorValues.h>
 
 namespace gtsam {
 typedef std::map<Key, size_t> KeyDimMap;
-typedef std::vector<std::pair<Key, Matrix> > TermsContainer;
 
-class LPSolver {
+class LPSolver: public ActiveSetSolver {
   const LP& lp_; //!< the linear programming problem
-  GaussianFactorGraph baseGraph_; //!< unchanged factors needed in every iteration
-  VariableIndex costVariableIndex_, equalityVariableIndex_,
-      inequalityVariableIndex_; //!< index to corresponding factors to build dual graphs
-  FastSet<Key> constrainedKeys_; //!< all constrained keys, will become factors in dual graphs
   KeyDimMap keysDim_; //!< key-dim map of all variables in the constraints, used to create zero priors
 
 public:
+  /// Constructor
   LPSolver(const LP& lp) :
       lp_(lp) {
     // Push back factors that are the same in every iteration to the base graph.
@@ -184,7 +184,7 @@ public:
     return graph;
   }
 
-  //******************************************************************************
+  /// Find solution with the current working set
   VectorValues solveWithCurrentWorkingSet(const VectorValues& xk,
       const InequalityFactorGraph& workingSet) const {
     GaussianFactorGraph workingGraph = baseGraph_; // || X - Xk + g ||^2
@@ -196,168 +196,88 @@ public:
     return workingGraph.optimize();
   }
 
-  //******************************************************************************
-  /// Collect the Jacobian terms for a dual factor
-  template<typename FACTOR>
-  TermsContainer collectDualJacobians(Key key, const FactorGraph<FACTOR>& graph,
-      const VariableIndex& variableIndex) const {
-    TermsContainer Aterms;
-    if (variableIndex.find(key) != variableIndex.end()) {
-    BOOST_FOREACH(size_t factorIx, variableIndex[key]) {
-      typename FACTOR::shared_ptr factor = graph.at(factorIx);
-      if (!factor->active()) continue;
-      Matrix Ai = factor->getA(factor->find(key)).transpose();
-      Aterms.push_back(std::make_pair(factor->dualKey(), Ai));
+//******************************************************************************
+  JacobianFactor::shared_ptr createDualFactor(Key key,
+      const InequalityFactorGraph& workingSet,
+      const VectorValues& delta) const {
+
+    // Transpose the A matrix of constrained factors to have the jacobian of the dual key
+    TermsContainer Aterms = collectDualJacobians < LinearEquality
+        > (key, lp_.equalities, equalityVariableIndex_);
+    TermsContainer AtermsInequalities = collectDualJacobians < LinearInequality
+        > (key, workingSet, inequalityVariableIndex_);
+    Aterms.insert(Aterms.end(), AtermsInequalities.begin(),
+        AtermsInequalities.end());
+
+    // Collect the gradients of unconstrained cost factors to the b vector
+    if (Aterms.size() > 0) {
+      Vector b = zero(delta.at(key).size());
+      Factor::const_iterator it = lp_.cost.find(key);
+      if (it != lp_.cost.end())
+        b = lp_.cost.getA(it).transpose();
+      return boost::make_shared < JacobianFactor > (Aterms, b); // compute the least-square approximation of dual variables
+    } else {
+      return boost::make_shared<JacobianFactor>();
     }
   }
-  return Aterms;
-}
 
 //******************************************************************************
-JacobianFactor::shared_ptr createDualFactor(Key key,
-    const InequalityFactorGraph& workingSet, const VectorValues& delta) const {
-
-  // Transpose the A matrix of constrained factors to have the jacobian of the dual key
-  TermsContainer Aterms = collectDualJacobians<LinearEquality>(key,
-      lp_.equalities, equalityVariableIndex_);
-  TermsContainer AtermsInequalities = collectDualJacobians<LinearInequality>(
-      key, workingSet, inequalityVariableIndex_);
-  Aterms.insert(Aterms.end(), AtermsInequalities.begin(),
-      AtermsInequalities.end());
-
-  // Collect the gradients of unconstrained cost factors to the b vector
-  if (Aterms.size() > 0) {
-    Vector b = zero(delta.at(key).size());
-    Factor::const_iterator it = lp_.cost.find(key);
-    if (it != lp_.cost.end())
-      b = lp_.cost.getA(it).transpose();
-    return boost::make_shared < JacobianFactor > (Aterms, b); // compute the least-square approximation of dual variables
-  } else {
-    return boost::make_shared<JacobianFactor>();
+  boost::tuple<double, int> computeStepSize(
+      const InequalityFactorGraph& workingSet, const VectorValues& xk,
+      const VectorValues& p) const {
+    return ActiveSetSolver::computeStepSize(workingSet, xk, p,
+        std::numeric_limits<double>::infinity());
   }
-}
 
 //******************************************************************************
-GaussianFactorGraph::shared_ptr buildDualGraph(
-    const InequalityFactorGraph& workingSet, const VectorValues& delta) const {
-  GaussianFactorGraph::shared_ptr dualGraph(new GaussianFactorGraph());
-  BOOST_FOREACH(Key key, constrainedKeys_) {
-    // Each constrained key becomes a factor in the dual graph
-    JacobianFactor::shared_ptr dualFactor = createDualFactor(key, workingSet,
-        delta);
-    if (!dualFactor->empty()) dualGraph->push_back(dualFactor);
-  }
-  return dualGraph;
-}
+  InequalityFactorGraph identifyActiveConstraints(
+      const InequalityFactorGraph& inequalities,
+      const VectorValues& initialValues, const VectorValues& duals) const {
+    InequalityFactorGraph workingSet;
+    BOOST_FOREACH(const LinearInequality::shared_ptr& factor, inequalities) {
+      LinearInequality::shared_ptr workingFactor(new LinearInequality(*factor));
 
-//******************************************************************************
-int identifyLeavingConstraint(const InequalityFactorGraph& workingSet,
-    const VectorValues& duals) const {
-  int worstFactorIx = -1;
-  // preset the maxLambda to 0.0: if lambda is <= 0.0, the constraint is either
-  // inactive or a good inequality constraint, so we don't care!
-  double max_s = 0.0;
-  for (size_t factorIx = 0; factorIx < workingSet.size(); ++factorIx) {
-    const LinearInequality::shared_ptr& factor = workingSet.at(factorIx);
-    if (factor->active()) {
-      double s = duals.at(factor->dualKey())[0];
-      if (s > max_s) {
-        worstFactorIx = factorIx;
-        max_s = s;
+      double error = workingFactor->error(initialValues);
+      // TODO: find a feasible initial point for LPSolver.
+      // For now, we just throw an exception
+      if (error > 0) throw InfeasibleInitialValues();
+
+      if (fabs(error) < 1e-7) {
+        workingFactor->activate();
       }
-    }
-  }
-  return worstFactorIx;
-}
-
-//******************************************************************************
-std::pair<double, int> computeStepSize(const InequalityFactorGraph& workingSet,
-    const VectorValues& xk, const VectorValues& p) const {
-  static bool debug = false;
-
-  double minAlpha = std::numeric_limits<double>::infinity();
-  int closestFactorIx = -1;
-  for (size_t factorIx = 0; factorIx < workingSet.size(); ++factorIx) {
-    const LinearInequality::shared_ptr& factor = workingSet.at(factorIx);
-    double b = factor->getb()[0];
-    // only check inactive factors
-    if (!factor->active()) {
-      // Compute a'*p
-      double aTp = factor->dotProductRow(p);
-
-      // Check if  a'*p >0. Don't care if it's not.
-      if (aTp <= 0)
-        continue;
-
-      // Compute a'*xk
-      double aTx = factor->dotProductRow(xk);
-
-      // alpha = (b - a'*xk) / (a'*p)
-      double alpha = (b - aTx) / aTp;
-      if (debug)
-        cout << "alpha: " << alpha << endl;
-
-      // We want the minimum of all those max alphas
-      if (alpha < minAlpha) {
-        closestFactorIx = factorIx;
-        minAlpha = alpha;
+      else {
+        workingFactor->inactivate();
       }
+      workingSet.push_back(workingFactor);
     }
-
+    return workingSet;
   }
 
-  return std::make_pair(minAlpha, closestFactorIx);
-}
-
 //******************************************************************************
-InequalityFactorGraph identifyActiveConstraints(
-    const InequalityFactorGraph& inequalities,
-    const VectorValues& initialValues, const VectorValues& duals) const {
-  InequalityFactorGraph workingSet;
-  BOOST_FOREACH(const LinearInequality::shared_ptr& factor, inequalities) {
-    LinearInequality::shared_ptr workingFactor(new LinearInequality(*factor));
+  /** Optimize with the provided feasible initial values
+   * TODO: throw exception if the initial values is not feasible wrt inequality constraints
+   */
+  pair<VectorValues, VectorValues> optimize(const VectorValues& initialValues,
+      const VectorValues& duals = VectorValues()) const {
 
-    double error = workingFactor->error(initialValues);
-    // TODO: find a feasible initial point for LPSolver.
-    // For now, we just throw an exception
-    if (error > 0) throw InfeasibleInitialValues();
+    // Initialize workingSet from the feasible initialValues
+    InequalityFactorGraph workingSet = identifyActiveConstraints(
+        lp_.inequalities, initialValues, duals);
+    LPState state(initialValues, duals, workingSet, false, 0);
 
-    if (fabs(error) < 1e-7) {
-      workingFactor->activate();
+    /// main loop of the solver
+    while (!state.converged) {
+      state = iterate(state);
     }
-    else {
-      workingFactor->inactivate();
-    }
-    workingSet.push_back(workingFactor);
-  }
-  return workingSet;
-}
 
-//******************************************************************************
-/** Optimize with the provided feasible initial values
- * TODO: throw exception if the initial values is not feasible wrt inequality constraints
- */
-pair<VectorValues, VectorValues> optimize(const VectorValues& initialValues,
-    const VectorValues& duals = VectorValues()) const {
-
-  // Initialize workingSet from the feasible initialValues
-  InequalityFactorGraph workingSet = identifyActiveConstraints(lp_.inequalities,
-      initialValues, duals);
-  LPState state(initialValues, duals, workingSet, false, 0);
-
-  /// main loop of the solver
-  while (!state.converged) {
-    state = iterate(state);
+    return make_pair(state.values, state.duals);
   }
 
-  return make_pair(state.values, state.duals);
-}
-
 //******************************************************************************
-/**
- * Optimize without initial values
- * TODO: Find a feasible initial solution wrt inequality constraints
- */
+  /**
+   * Optimize without initial values
+   * TODO: Find a feasible initial solution wrt inequality constraints
+   */
 //  pair<VectorValues, VectorValues> optimize() const {
 //
 //    // Initialize workingSet from the feasible initialValues
