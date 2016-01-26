@@ -32,6 +32,7 @@ namespace gtsam {
  * defined in the QP struct.
  * Note: This version of QPSolver only works with a feasible initial value.
  */
+  //TODO: Remove Vector Values
 class QPSolver: public ActiveSetSolver {
 
   const QP& qp_; //!< factor graphs of the QP problem, can't be modified!

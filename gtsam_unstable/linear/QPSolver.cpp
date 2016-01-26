@@ -101,32 +101,17 @@ return ActiveSetSolver::computeStepSize(workingSet, xk, p, 1);
 
 //******************************************************************************
 QPState QPSolver::iterate(const QPState& state) const {
-static bool debug = false;
-
 // Algorithm 16.3 from Nocedal06book.
 // Solve with the current working set eqn 16.39, but instead of solving for p solve for x
 VectorValues newValues = solveWithCurrentWorkingSet(state.workingSet);
-if (debug)
-  newValues.print("New solution:");
-
 // If we CAN'T move further
 // if p_k = 0 is the original condition, modified by Duy to say that the state update is zero.
 if (newValues.equals(state.values, 1e-7)) {
   // Compute lambda from the dual graph
-  if (debug)
-    cout << "Building dual graph..." << endl;
   GaussianFactorGraph::shared_ptr dualGraph = buildDualGraph(state.workingSet,
       newValues);
-  if (debug)
-    dualGraph->print("Dual graph: ");
   VectorValues duals = dualGraph->optimize();
-  if (debug)
-    duals.print("Duals :");
-
   int leavingFactor = identifyLeavingConstraint(state.workingSet, duals);
-  if (debug)
-    cout << "leavingFactor: " << leavingFactor << endl;
-
   // If all inequality constraints are satisfied: We have the solution!!
   if (leavingFactor < 0) {
     return QPState(newValues, duals, state.workingSet, true,
@@ -145,17 +130,12 @@ if (newValues.equals(state.values, 1e-7)) {
   VectorValues p = newValues - state.values;
   boost::tie(alpha, factorIx) = // using 16.41
       computeStepSize(state.workingSet, state.values, p);
-  if (debug)
-    cout << "alpha, factorIx: " << alpha << " " << factorIx << " " << endl;
-
   // also add to the working set the one that complains the most
   InequalityFactorGraph newWorkingSet = state.workingSet;
   if (factorIx >= 0)
     newWorkingSet.at(factorIx)->activate();
-
   // step!
   newValues = state.values + alpha * p;
-
   return QPState(newValues, state.duals, newWorkingSet, false,
       state.iterations + 1);
 }

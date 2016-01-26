@@ -81,17 +81,11 @@ public:
 
   //******************************************************************************
   LPState iterate(const LPState& state) const {
-    static bool debug = false;
-
     // Solve with the current working set
     // LP: project the objective neggradient to the constraint's null space
     // to find the direction to move
     VectorValues newValues = solveWithCurrentWorkingSet(state.values,
         state.workingSet);
-//    if (debug) state.workingSet.print("Working set:");
-    if (debug)
-      (newValues - state.values).print("New direction:");
-
     // If we CAN'T move further
     // LP: projection on the constraints' nullspace is zero: we are at a vertex
     if (newValues.equals(state.values, 1e-7)) {
@@ -99,21 +93,11 @@ public:
       // Compute lambda from the dual graph
       // LP: project the objective's gradient onto each constraint gradient to obtain the dual scaling factors
       //	is it true??
-      if (debug)
-        cout << "Building dual graph..." << endl;
       GaussianFactorGraph::shared_ptr dualGraph = buildDualGraph(
           state.workingSet, newValues);
-      if (debug)
-        dualGraph->print("Dual graph: ");
       VectorValues duals = dualGraph->optimize();
-      if (debug)
-        duals.print("Duals :");
-
       // LP: see which ineq constraint has wrong pulling direction, i.e., dual < 0
       int leavingFactor = identifyLeavingConstraint(state.workingSet, duals);
-      if (debug)
-        cout << "leavingFactor: " << leavingFactor << endl;
-
       // If all inequality constraints are satisfied: We have the solution!!
       if (leavingFactor < 0) {
         // TODO If we still have infeasible equality constraints: the problem is over-constrained. No solution!
@@ -139,19 +123,12 @@ public:
       VectorValues p = newValues - state.values;
       boost::tie(alpha, factorIx) = // using 16.41
           computeStepSize(state.workingSet, state.values, p);
-      if (debug)
-        cout << "alpha, factorIx: " << alpha << " " << factorIx << " " << endl;
-
       // also add to the working set the one that complains the most
       InequalityFactorGraph newWorkingSet = state.workingSet;
       if (factorIx >= 0)
         newWorkingSet.at(factorIx)->activate();
-
       // step!
       newValues = state.values + alpha * p;
-      if (debug)
-        newValues.print("New solution:");
-
       return LPState(newValues, state.duals, newWorkingSet, false,
           state.iterations + 1);
     }
