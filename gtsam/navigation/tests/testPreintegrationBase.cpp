@@ -10,12 +10,12 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    testInertialNavFactor.cpp
+ * @file    testPreintegrationBase.cpp
  * @brief   Unit test for the InertialNavFactor
  * @author  Frank Dellaert
  */
 
-#include <gtsam/navigation/AggregateImuReadings.h>
+#include <gtsam/navigation/PreintegrationBase.h>
 #include <gtsam/base/numericalDerivative.h>
 
 #include <CppUnitLite/TestHarness.h>
@@ -30,7 +30,7 @@ static const double kGyroSigma = 0.02;
 static const double kAccelSigma = 0.1;
 
 // Create default parameters with Z-down and above noise parameters
-static boost::shared_ptr<AggregateImuReadings::Params> defaultParams() {
+static boost::shared_ptr<PreintegrationBase::Params> defaultParams() {
   auto p = PreintegrationParams::MakeSharedD(10);
   p->gyroscopeCovariance = kGyroSigma * kGyroSigma * I_3x3;
   p->accelerometerCovariance = kAccelSigma * kAccelSigma * I_3x3;
@@ -39,14 +39,14 @@ static boost::shared_ptr<AggregateImuReadings::Params> defaultParams() {
 }
 
 Vector9 f(const Vector9& zeta, const Vector3& a, const Vector3& w) {
-  AggregateImuReadings::TangentVector zeta_plus =
-      AggregateImuReadings::UpdateEstimate(a, w, kDt, zeta);
+  PreintegrationBase::TangentVector zeta_plus =
+      PreintegrationBase::UpdateEstimate(a, w, kDt, zeta);
   return zeta_plus.vector();
 }
 
 /* ************************************************************************* */
-TEST(AggregateImuReadings, UpdateEstimate1) {
-  AggregateImuReadings pim(defaultParams());
+TEST(PreintegrationBase, UpdateEstimate1) {
+  PreintegrationBase pim(defaultParams());
   const Vector3 acc(0.1, 0.2, 10), omega(0.1, 0.2, 0.3);
   Vector9 zeta;
   zeta.setZero();
@@ -59,8 +59,8 @@ TEST(AggregateImuReadings, UpdateEstimate1) {
 }
 
 /* ************************************************************************* */
-TEST(AggregateImuReadings, UpdateEstimate2) {
-  AggregateImuReadings pim(defaultParams());
+TEST(PreintegrationBase, UpdateEstimate2) {
+  PreintegrationBase pim(defaultParams());
   const Vector3 acc(0.1, 0.2, 10), omega(0.1, 0.2, 0.3);
   Vector9 zeta;
   zeta << 0.01, 0.02, 0.03, 100, 200, 300, 10, 5, 3;

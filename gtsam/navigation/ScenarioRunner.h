@@ -16,7 +16,7 @@
  */
 
 #pragma once
-#include <gtsam/navigation/AggregateImuReadings.h>
+#include <gtsam/navigation/ImuFactor.h>
 #include <gtsam/navigation/Scenario.h>
 #include <gtsam/linear/Sampler.h>
 
@@ -39,7 +39,7 @@ static noiseModel::Diagonal::shared_ptr Diagonal(const Matrix& covariance) {
 class ScenarioRunner {
  public:
   typedef imuBias::ConstantBias Bias;
-  typedef boost::shared_ptr<AggregateImuReadings::Params> SharedParams;
+  typedef boost::shared_ptr<PreintegratedImuMeasurements::Params> SharedParams;
 
  private:
   const Scenario* scenario_;
@@ -90,11 +90,12 @@ class ScenarioRunner {
   const double& imuSampleTime() const { return imuSampleTime_; }
 
   /// Integrate measurements for T seconds into a PIM
-  AggregateImuReadings integrate(double T, const Bias& estimatedBias = Bias(),
-                                 bool corrupted = false) const;
+  PreintegratedImuMeasurements integrate(double T,
+                                         const Bias& estimatedBias = Bias(),
+                                         bool corrupted = false) const;
 
   /// Predict predict given a PIM
-  NavState predict(const AggregateImuReadings& pim,
+  NavState predict(const PreintegratedImuMeasurements& pim,
                    const Bias& estimatedBias = Bias()) const;
 
   /// Compute a Monte Carlo estimate of the predict covariance using N samples

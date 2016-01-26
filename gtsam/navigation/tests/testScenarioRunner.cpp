@@ -34,7 +34,7 @@ static const Vector3 kAccBias(0.2, 0, 0), kRotBias(0.1, 0, 0.3);
 static const imuBias::ConstantBias kNonZeroBias(kAccBias, kRotBias);
 
 // Create default parameters with Z-down and above noise parameters
-static boost::shared_ptr<AggregateImuReadings::Params> defaultParams() {
+static boost::shared_ptr<PreintegratedImuMeasurements::Params> defaultParams() {
   auto p = PreintegrationParams::MakeSharedD(10);
   p->gyroscopeCovariance = kGyroSigma * kGyroSigma * I_3x3;
   p->accelerometerCovariance = kAccelSigma * kAccelSigma * I_3x3;
