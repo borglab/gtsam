@@ -5,6 +5,9 @@
  * @date     1/24/16
  */
 
+#include <gtsam/linear/VectorValues.h>
+#include "InequalityFactorGraph.h"
+
 namespace gtsam {
 
 struct LPState {

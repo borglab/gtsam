@@ -6,6 +6,7 @@
  */
 #pragma once
 
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <boost/range/adaptor/map.hpp>
 
 namespace gtsam {
