@@ -9,6 +9,7 @@ import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 
 import gtsam
+from gtsam_utils import plotPose3
 
 class ImuFactorExample(object):
 
@@ -24,37 +25,54 @@ class ImuFactorExample(object):
         W = np.array([0, -w, 0])
         V = np.array([v, 0, 0])
         self.scenario = gtsam.ConstantTwistScenario(W, V)
-
+        self.dt = 0.5
+        self.realTimeFactor = 10.0
+        
         # Calculate time to do 1 loop
-        self.T = 2 * math.pi / w
+        self.radius = v / w
+        self.timeForOneLoop = 2 * math.pi / w
+        self.labels = list('xyz')
+        self.colors = list('rgb')
 
-    def plot(self, t, pose):
-        # plot IMU    
+    def plot(self, t, pose, omega_b, acceleration_n, acceleration_b):
+        # plot angular velocity    
         plt.figure(1)
-        times = np.arange(0, 10, 0.1)
-        shape = len(times), 1
-        labels = list('xyz')
-        colors = list('rgb')
-        plt.clf()
-        for i, (label, color) in enumerate(zip(labels, colors)):
+        for i, (label, color) in enumerate(zip(self.labels, self.colors)):
             plt.subplot(3, 1, i + 1)
-            imu = np.random.randn(len(times), 1)
-            plt.plot(times, imu, color=color)
-#             plt.axis([tmin, tmax, min,max])
+            plt.scatter(t, omega_b[i], color=color, marker='.')
+            plt.xlabel(label)
+            
+        # plot acceleration in nav
+        plt.figure(2)
+        for i, (label, color) in enumerate(zip(self.labels, self.colors)):
+            plt.subplot(3, 1, i + 1)
+            plt.scatter(t, acceleration_n[i], color=color, marker='.')
+            plt.xlabel(label)
+            
+        # plot acceleration in body
+        plt.figure(3)
+        for i, (label, color) in enumerate(zip(self.labels, self.colors)):
+            plt.subplot(3, 1, i + 1)
+            plt.scatter(t, acceleration_b[i], color=color, marker='.')
             plt.xlabel(label)
             
         # plot ground truth
-        fig = plt.figure(2)
-        ax = fig.gca(projection='3d')
-        p = pose.translation()
-        ax.scatter(p.x(), p.y(), p.z())
+        plotPose3(4, pose, 1.0)
+        ax = plt.gca()
+        ax.set_xlim3d(-self.radius, self.radius)
+        ax.set_ylim3d(-self.radius, self.radius)
+        ax.set_zlim3d(0, self.radius * 2)
 
-        plt.pause(0.1)
+        plt.pause(self.dt / self.realTimeFactor)
 
     def run(self):
-        for t in np.arange(0, self.T / 2, 1):
-            pose = self.scenario.pose(t)
-            self.plot(t, pose)
+        # simulate the loop up to the top
+        for t in np.arange(0, self.timeForOneLoop, self.dt):
+            self.plot(t,
+                      self.scenario.pose(t),
+                      self.scenario.omega_b(t),
+                      self.scenario.acceleration_n(t),
+                      self.scenario.acceleration_b(t))
 
         plt.ioff()
         plt.show()
