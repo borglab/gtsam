@@ -27,23 +27,25 @@ class PreintegrationExample(object):
         params.integrationCovariance = 0.0000001 ** 2 * np.identity(3, np.float)
         return params
 
-    def __init__(self):
+    def __init__(self, twist=None):
+        """Initialize with given twist, a pair(angularVelocityVector, velocityVector)."""
+        
         # setup interactive plotting
         plt.ion()
 
-        # Setup loop scenario
-        # Forward velocity 2m/s
-        # Pitch up with angular velocity 6 degree/sec (negative in FLU)
-        v = 2
-        w = math.radians(30)
-        W = np.array([0, -w, 0])
-        V = np.array([v, 0, 0])
+            # Setup loop as default scenario
+        if twist is not None:
+            (W, V) = twist
+        else:
+            # default = loop with forward velocity 2m/s, while pitching up
+            # with angular velocity 30 degree/sec (negative in FLU)
+            W = np.array([0, -math.radians(30), 0])
+            V = np.array([2, 0, 0])
+
         self.scenario = gtsam.ConstantTwistScenario(W, V)
         self.dt = 1e-2
 
-        # Calculate time to do 1 loop
-        self.radius = v / w
-        self.timeForOneLoop = 2.0 * math.pi / w
+        self.maxDim = 5
         self.labels = list('xyz')
         self.colors = list('rgb')
 
@@ -93,16 +95,18 @@ class PreintegrationExample(object):
         # plot ground truth pose, as well as prediction from integrated IMU measurements
         actualPose = self.scenario.pose(t)
         plotPose3(POSES_FIG, actualPose, 0.3)
+        t = actualPose.translation()
+        self.maxDim = max([abs(t.x()), abs(t.y()), abs(t.z()), self.maxDim])
         ax = plt.gca()
-        ax.set_xlim3d(-self.radius, self.radius)
-        ax.set_ylim3d(-self.radius, self.radius)
-        ax.set_zlim3d(0, self.radius * 2)
+        ax.set_xlim3d(-self.maxDim, self.maxDim)
+        ax.set_ylim3d(-self.maxDim, self.maxDim)
+        ax.set_zlim3d(-self.maxDim, self.maxDim)
 
         plt.pause(0.01)
 
     def run(self):
-        # simulate the loop up to the top
-        T = self.timeForOneLoop
+        # simulate the loop
+        T = 12
         for i, t in enumerate(np.arange(0, T, self.dt)):
             measuredOmega = self.runner.measuredAngularVelocity(t)
             measuredAcc = self.runner.measuredSpecificForce(t)

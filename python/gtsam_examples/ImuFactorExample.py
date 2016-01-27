@@ -20,21 +20,23 @@ X = lambda i: int(gtsam.Symbol('x', i))
 
 class ImuFactorExample(PreintegrationExample):
 
+    def __init__(self):
+        self.velocity = np.array([2, 0, 0])
+        forward_twist = (np.zeros(3), self.velocity)
+        loop_twist = (np.array([0, -math.radians(30), 0]), self.velocity)
+        super(ImuFactorExample, self).__init__(loop_twist)
+    
     def run(self):
         graph = gtsam.NonlinearFactorGraph()
-        for i in [0, 12]:
-            priorNoise = gtsam.noiseModel.Isotropic.Sigma(6, 0.1)
-            graph.push_back(gtsam.PriorFactorPose3(X(i), gtsam.Pose3(), priorNoise))
-            velNoise = gtsam.noiseModel.Isotropic.Sigma(3, 0.1)
-            graph.push_back(gtsam.PriorFactorVector3(V(i), np.array([2, 0, 0]), velNoise))
-        
+
         i = 0  # state index
         
         # initialize data structure for pre-integrated IMU measurements 
         pim = gtsam.PreintegratedImuMeasurements(self.params, self.actualBias)
         
         # simulate the loop
-        T = self.timeForOneLoop
+        T = 3
+        state = self.scenario.navState(0)
         for k, t in enumerate(np.arange(0, T, self.dt)):
             # get measurements and add them to PIM
             measuredOmega = self.runner.measuredAngularVelocity(t)
@@ -50,25 +52,37 @@ class ImuFactorExample(PreintegrationExample):
             if (k + 1) % 100 == 0:
                 factor = gtsam.ImuFactor(X(i), V(i), X(i + 1), V(i + 1), BIAS_KEY, pim)
                 graph.push_back(factor)
+                H1 = gtsam.OptionalJacobian9()
+                H2 = gtsam.OptionalJacobian96()
+                print(pim)
+                predicted = pim.predict(state, self.actualBias, H1, H2)
                 pim.resetIntegration()
+                state = self.scenario.navState(t + self.dt)
+                print("predicted.{}\nstate.{}".format(predicted, state))
                 i += 1
 
-        graph.print()
+        # add priors on beginning and end
         num_poses = i + 1
+        priorNoise = gtsam.noiseModel.Isotropic.Sigma(6, 0.1)
+        velNoise = gtsam.noiseModel.Isotropic.Sigma(3, 0.1)
+        for i, pose in [(0, self.scenario.pose(0)), (num_poses - 1, self.scenario.pose(T))]:
+            graph.push_back(gtsam.PriorFactorPose3(X(i), pose, priorNoise))
+            graph.push_back(gtsam.PriorFactorVector3(V(i), self.velocity, velNoise))
+        
+#         graph.print("\Graph:\n")
 
         initial = gtsam.Values()
-        initial.insert(BIAS_KEY, gtsam.ConstantBias())
+        initial.insert(BIAS_KEY, self.actualBias)
         for i in range(num_poses):
-            initial.insert(X(i), gtsam.Pose3())
-            initial.insert(V(i), np.zeros(3, np.float))
+            initial.insert(X(i), self.scenario.pose(float(i)))
+            initial.insert(V(i), self.velocity)
         
         # optimize using Levenberg-Marquardt optimization
         params = gtsam.LevenbergMarquardtParams()
         params.setVerbosityLM("SUMMARY")
         optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initial, params)
         result = optimizer.optimize()
-        # result.print("\Result:\n")
-        print(self.actualBias)
+#         result.print("\Result:\n")
 
         # Plot cameras
         i = 0

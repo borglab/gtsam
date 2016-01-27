@@ -24,7 +24,13 @@
 using namespace boost::python;
 using namespace gtsam;
 
+typedef gtsam::OptionalJacobian<9, 9> OptionalJacobian9;
+typedef gtsam::OptionalJacobian<9, 6> OptionalJacobian96;
+
 void exportImuFactor() {
+  class_<OptionalJacobian9>("OptionalJacobian9", init<>());
+  class_<OptionalJacobian96>("OptionalJacobian96", init<>());
+
   class_<NavState>("NavState", init<>())
       // TODO(frank): overload with jacobians
       //      .def("attitude", &NavState::attitude)
@@ -61,6 +67,7 @@ void exportImuFactor() {
       init<const boost::shared_ptr<PreintegrationParams>&,
            const imuBias::ConstantBias&>())
       .def(repr(self))
+      .def("predict", &PreintegratedImuMeasurements::predict)
       .def("resetIntegration", &PreintegratedImuMeasurements::resetIntegration)
       .def("integrateMeasurement",
            &PreintegratedImuMeasurements::integrateMeasurement)
