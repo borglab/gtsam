@@ -201,14 +201,13 @@ public:
   /// @return a deep copy of this factor
   virtual gtsam::NonlinearFactor::shared_ptr clone() const;
 
-  /** implement functions needed for Testable */
-
-  /// print
+  /// @name Testable
+  /// @{
+  GTSAM_EXPORT friend std::ostream& operator<<(std::ostream& os, const ImuFactor&);
   virtual void print(const std::string& s, const KeyFormatter& keyFormatter =
       DefaultKeyFormatter) const;
-
-  /// equals
   virtual bool equals(const NonlinearFactor& expected, double tol = 1e-9) const;
+  /// @}
 
   /** Access the preintegrated measurements. */
 

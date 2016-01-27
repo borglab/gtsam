@@ -137,7 +137,7 @@ public:
   }
 
   /// print with optional string
-  void print(const std::string& s = "") const { std::cout << s << *this; }
+  void print(const std::string& s = "") const { std::cout << s << *this << std::endl; }
 
   /** equality up to tolerance */
   inline bool equals(const ConstantBias& expected, double tol = 1e-5) const {

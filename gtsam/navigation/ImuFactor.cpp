@@ -123,16 +123,21 @@ gtsam::NonlinearFactor::shared_ptr ImuFactor::clone() const {
 }
 
 //------------------------------------------------------------------------------
+std::ostream& operator<<(std::ostream& os, const ImuFactor& f) {
+  os << "  preintegrated measurements:\n" << f._PIM_;
+  ;
+  // Print standard deviations on covariance only
+  os << "  noise model sigmas: " << f.noiseModel_->sigmas().transpose();
+  return os;
+}
+
+//------------------------------------------------------------------------------
 void ImuFactor::print(const string& s, const KeyFormatter& keyFormatter) const {
   cout << s << "ImuFactor(" << keyFormatter(this->key1()) << ","
       << keyFormatter(this->key2()) << "," << keyFormatter(this->key3()) << ","
       << keyFormatter(this->key4()) << "," << keyFormatter(this->key5())
       << ")\n";
-  Base::print("");
-  _PIM_.print("  preintegrated measurements:");
-  // Print standard deviations on covariance only
-  cout << "  noise model sigmas: " << this->noiseModel_->sigmas().transpose()
-      << endl;
+  cout << *this << endl;
 }
 
 //------------------------------------------------------------------------------

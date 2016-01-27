@@ -37,7 +37,7 @@ void exportImuFactor() {
       .def(init<const Vector3&, const Vector3&>())
       .def(repr(self));
 
-  class_<PreintegrationParams, boost::shared_ptr<PreintegrationParams> >(
+  class_<PreintegrationParams, boost::shared_ptr<PreintegrationParams>>(
       "PreintegrationParams", init<const Vector3&>())
       .def_readwrite("gyroscopeCovariance",
                      &PreintegrationParams::gyroscopeCovariance)
@@ -67,5 +67,8 @@ void exportImuFactor() {
       .def("preintMeasCov", &PreintegratedImuMeasurements::preintMeasCov);
 
   // NOTE(frank): Abstract classes need boost::noncopyable
-  class_<ImuFactor, boost::noncopyable>("ImuFactor", no_init);
+  class_<ImuFactor, bases<NonlinearFactor>, boost::shared_ptr<ImuFactor>>(
+      "ImuFactor")
+      .def(init<Key, Key, Key, Key, Key, const PreintegratedImuMeasurements&>())
+      .def(repr(self));
 }
