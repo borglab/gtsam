@@ -26,6 +26,8 @@
 #include <gtsam/navigation/ImuBias.h>
 #include <gtsam/linear/NoiseModel.h>
 
+#include <iosfwd>
+
 namespace gtsam {
 
 #define ALLOW_DEPRECATED_IN_GTSAM4
@@ -119,7 +121,6 @@ class PreintegrationBase {
    */
   /// Current estimate of deltaXij_k
   TangentVector deltaXij_;
-  Matrix9 cov_;
 
   Matrix3 delRdelBiasOmega_; ///< Jacobian of preintegrated rotation w.r.t. angular rate bias
   Matrix3 delPdelBiasAcc_;   ///< Jacobian of preintegrated position w.r.t. acceleration bias
@@ -194,7 +195,6 @@ public:
   const double& deltaTij() const { return deltaTij_; }
 
   const Vector9& zeta() const { return deltaXij_.vector(); }
-  const Matrix9& zetaCov() const { return cov_; }
 
   Vector3 theta() const { return deltaXij_.theta(); }
   Vector3 deltaPij() const { return deltaXij_.position(); }
@@ -215,6 +215,7 @@ public:
 
   /// @name Testable
   /// @{
+  GTSAM_EXPORT friend std::ostream& operator<<(std::ostream& os, const PreintegrationBase& pim);
   void print(const std::string& s) const;
   bool equals(const PreintegrationBase& other, double tol) const;
   /// @}
@@ -263,12 +264,6 @@ public:
   NavState predict(const NavState& state_i, const imuBias::ConstantBias& bias_i,
                    OptionalJacobian<9, 9> H1 = boost::none,
                    OptionalJacobian<9, 6> H2 = boost::none) const;
-
-  /// Return Gaussian noise model on prediction
-  SharedGaussian noiseModel() const;
-
-  /// @deprecated: Explicitly calculate covariance
-  Matrix9 preintMeasCov() const;
 
   /// Compute errors w.r.t. preintegrated measurements and jacobians wrt pose_i, vel_i, bias_i, pose_j, bias_j
   Vector9 computeErrorAndJacobians(const Pose3& pose_i, const Vector3& vel_i,

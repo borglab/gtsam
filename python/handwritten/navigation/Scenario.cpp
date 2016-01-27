@@ -70,13 +70,14 @@ void exportScenario() {
   class_<PreintegratedImuMeasurements>(
       "PreintegratedImuMeasurements",
       init<const boost::shared_ptr<PreintegrationParams>&,
-           const imuBias::ConstantBias&>());
+           const imuBias::ConstantBias&>()).def(repr(self));
 
   class_<NavState>("NavState", init<>())
       // TODO(frank): overload with jacobians
       //      .def("attitude", &NavState::attitude)
       //      .def("position", &NavState::position)
       //      .def("velocity", &NavState::velocity)
+      .def(repr(self))
       .def("pose", &NavState::pose);
 
   class_<imuBias::ConstantBias>("ConstantBias", init<>());

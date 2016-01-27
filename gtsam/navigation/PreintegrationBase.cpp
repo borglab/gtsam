@@ -32,7 +32,6 @@ namespace gtsam {
 PreintegrationBase::PreintegrationBase(const boost::shared_ptr<Params>& p,
                                        const Bias& biasHat)
     : p_(p), biasHat_(biasHat), deltaTij_(0.0) {
-  cov_.setZero();
   resetIntegration();
 }
 
@@ -48,13 +47,19 @@ void PreintegrationBase::resetIntegration() {
 }
 
 //------------------------------------------------------------------------------
+ostream& operator<<(ostream& os, const PreintegrationBase& pim) {
+  os << "    deltaTij " << pim.deltaTij_ << endl;
+  os << "    deltaRij " << Point3(pim.theta()) << endl;
+  os << "    deltaPij " << Point3(pim.deltaPij()) << endl;
+  os << "    deltaVij " << Point3(pim.deltaVij()) << endl;
+  os << "    gyrobias " << Point3(pim.biasHat_.gyroscope()) << endl;
+  os << "    acc_bias " << Point3(pim.biasHat_.accelerometer()) << endl;
+  return os;
+}
+
+//------------------------------------------------------------------------------
 void PreintegrationBase::print(const string& s) const {
-  cout << s << endl;
-  cout << "    deltaTij [" << deltaTij_ << "]" << endl;
-  cout << "    deltaRij.ypr = (" << deltaRij().ypr().transpose() << ")" << endl;
-  cout << "    deltaPij [ " << deltaPij().transpose() << " ]" << endl;
-  cout << "    deltaVij [ " << deltaVij().transpose() << " ]" << endl;
-  biasHat_.print("    biasHat");
+  cout << s << *this << endl;
 }
 
 //------------------------------------------------------------------------------
@@ -295,27 +300,6 @@ NavState PreintegrationBase::predict(const NavState& state_i,
   if (H1) *H1 = D_predict_state + D_predict_delta* D_delta_state;
   if (H2) *H2 = D_predict_delta* D_delta_biasCorrected * D_biasCorrected_bias;
   return state_j;
-}
-
-//------------------------------------------------------------------------------
-SharedGaussian PreintegrationBase::noiseModel() const {
-  // Correct for application of retract, by calculating the retract derivative H
-  // From NavState::retract:
-  Matrix3 D_R_theta;
-  const Matrix3 iRj = Rot3::Expmap(theta(), D_R_theta).matrix();
-  Matrix9 H;
-  H << D_R_theta, Z_3x3, Z_3x3,       //
-      Z_3x3, iRj.transpose(), Z_3x3,  //
-      Z_3x3, Z_3x3, iRj.transpose();
-
-  // TODO(frank): theta() itself is noisy, so should we not correct for that?
-  Matrix9 HcH = H * cov_ * H.transpose();
-  return noiseModel::Gaussian::Covariance(HcH, false);
-}
-
-//------------------------------------------------------------------------------
-Matrix9 PreintegrationBase::preintMeasCov() const {
-  return noiseModel()->covariance();
 }
 
 //------------------------------------------------------------------------------

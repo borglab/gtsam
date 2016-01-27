@@ -33,9 +33,9 @@ static const double kAccelSigma = 0.1 / 60.0;
 static const Vector3 kAccBias(0.2, 0, 0), kRotBias(0.1, 0, 0.3);
 static const imuBias::ConstantBias kNonZeroBias(kAccBias, kRotBias);
 
-// Create default parameters with Z-down and above noise parameters
+// Create default parameters with Z-up and above noise parameters
 static boost::shared_ptr<PreintegratedImuMeasurements::Params> defaultParams() {
-  auto p = PreintegrationParams::MakeSharedD(10);
+  auto p = PreintegrationParams::MakeSharedU(10);
   p->gyroscopeCovariance = kGyroSigma * kGyroSigma * I_3x3;
   p->accelerometerCovariance = kAccelSigma * kAccelSigma * I_3x3;
   p->integrationCovariance = 0.0000001 * I_3x3;
@@ -46,7 +46,7 @@ static boost::shared_ptr<PreintegratedImuMeasurements::Params> defaultParams() {
 
 /* ************************************************************************* */
 TEST(ScenarioRunner, Spin) {
-  //  angular velocity 6 kDegree/sec
+  //  angular velocity 6 degree/sec
   const double w = 6 * kDegree;
   const Vector3 W(0, 0, w), V(0, 0, 0);
   const ConstantTwistScenario scenario(W, V);
@@ -104,7 +104,7 @@ TEST(ScenarioRunner, ForwardWithBias) {
 
 /* ************************************************************************* */
 TEST(ScenarioRunner, Circle) {
-  // Forward velocity 2m/s, angular velocity 6 kDegree/sec
+  // Forward velocity 2m/s, angular velocity 6 degree/sec
   const double v = 2, w = 6 * kDegree;
   ConstantTwistScenario scenario(Vector3(0, 0, w), Vector3(v, 0, 0));
 
@@ -122,7 +122,7 @@ TEST(ScenarioRunner, Circle) {
 /* ************************************************************************* */
 TEST(ScenarioRunner, Loop) {
   // Forward velocity 2m/s
-  // Pitch up with angular velocity 6 kDegree/sec (negative in FLU)
+  // Pitch up with angular velocity 6 degree/sec (negative in FLU)
   const double v = 2, w = 6 * kDegree;
   ConstantTwistScenario scenario(Vector3(0, -w, 0), Vector3(v, 0, 0));
 
