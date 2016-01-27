@@ -452,7 +452,7 @@ TEST( dataSet, writeBALfromValues_Dubrovnik){
   SfM_data readData;
   readBAL(filenameToRead, readData);
 
-  Pose3 poseChange = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), gtsam::Point3(0.3,0.1,0.3));
+  Pose3 poseChange = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), gtsam::Point3(0.3,0.1,0.3));
 
   Values value;
   for(size_t i=0; i < readData.number_cameras(); i++){ // for each camera

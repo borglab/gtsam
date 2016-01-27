@@ -40,7 +40,7 @@ Point3 nM(22653.29982, -1956.83010, 44202.47862);
 // Let's assume scale factor,
 double scale = 255.0 / 50000.0;
 // ...ground truth orientation,
-Rot3 nRb = Rot3::yaw(-0.1);
+Rot3 nRb = Rot3::Yaw(-0.1);
 Rot2 theta = nRb.yaw();
 // ...and bias
 Point3 bias(10, -10, 50);

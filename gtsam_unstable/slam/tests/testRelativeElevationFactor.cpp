@@ -18,7 +18,7 @@ SharedNoiseModel model1 = noiseModel::Unit::Create(1);
 const double tol = 1e-5;
 
 const Pose3 pose1(Rot3(), Point3(2.0, 3.0, 4.0));
-const Pose3 pose2(Rot3::pitch(-M_PI_2), Point3(2.0, 3.0, 4.0));
+const Pose3 pose2(Rot3::Pitch(-M_PI_2), Point3(2.0, 3.0, 4.0));
 const Pose3 pose3(Rot3::RzRyRx(0.1, 0.2, 0.3), Point3(2.0, 3.0, 4.0));
 const Point3 point1(3.0, 4.0, 2.0);
 const gtsam::Key poseKey = 1, pointKey = 2;

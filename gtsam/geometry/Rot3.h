@@ -146,13 +146,13 @@ namespace gtsam {
     }
 
     /// Positive yaw is to right (as in aircraft heading). See ypr
-    static Rot3 yaw  (double t) { return Rz(t); }
+    static Rot3 Yaw  (double t) { return Rz(t); }
 
     /// Positive pitch is up (increasing aircraft altitude).See ypr
-    static Rot3 pitch(double t) { return Ry(t); }
+    static Rot3 Pitch(double t) { return Ry(t); }
 
     //// Positive roll is to right (increasing yaw in aircraft).
-    static Rot3 roll (double t) { return Rx(t); }
+    static Rot3 Roll (double t) { return Rx(t); }
 
     /**
      * Returns rotation nRb from body to nav frame.
@@ -163,7 +163,7 @@ namespace gtsam {
      * as described in http://www.sedris.org/wg8home/Documents/WG80462.pdf.
      * Assumes vehicle coordinate frame X forward, Y right, Z down.
      */
-    static Rot3 ypr(double y, double p, double r) { return RzRyRx(r,p,y);}
+    static Rot3 Ypr(double y, double p, double r) { return RzRyRx(r,p,y);}
 
     /** Create from Quaternion coefficients */
     static Rot3 quaternion(double w, double x, double y, double z) {
@@ -419,13 +419,13 @@ namespace gtsam {
 
     /**
      * Use RQ to calculate yaw-pitch-roll angle representation
-     * @return a vector containing ypr s.t. R = Rot3::ypr(y,p,r)
+     * @return a vector containing ypr s.t. R = Rot3::Ypr(y,p,r)
      */
     Vector3 ypr() const;
 
     /**
      * Use RQ to calculate roll-pitch-yaw angle representation
-     * @return a vector containing ypr s.t. R = Rot3::ypr(y,p,r)
+     * @return a vector containing ypr s.t. R = Rot3::Ypr(y,p,r)
      */
     Vector3 rpy() const;
 
@@ -487,6 +487,13 @@ namespace gtsam {
     static Rot3 rodriguez(const Vector3& w)                  { return Rodrigues(w); }
     static Rot3 rodriguez(double wx, double wy, double wz)   { return Rodrigues(wx, wy, wz); }
     /// @}
+
+#ifdef ALLOW_DEPRECATED_IN_GTSAM4
+    static Rot3 yaw  (double t) { return Yaw(t); }
+    static Rot3 pitch(double t) { return Pitch(t); }
+    static Rot3 roll (double t) { return Roll(t); }
+    static Rot3 ypr(double y, double p, double r) { return Ypr(r,p,y);}
+#endif
 
   private:
 

@@ -293,10 +293,10 @@ TEST(CombinedImuFactor, PredictRotation) {
       gravity, omegaCoriolis);
 
   // Predict
-  Pose3 x(Rot3().ypr(0, 0, 0), Point3(0, 0, 0)), x2;
+  Pose3 x(Rot3::Ypr(0, 0, 0), Point3(0, 0, 0)), x2;
   Vector3 v(0, 0, 0), v2;
   CombinedImuFactor::Predict(x, v, x2, v2, bias, pim, gravity, omegaCoriolis);
-  Pose3 expectedPose(Rot3().ypr(M_PI / 10, 0, 0), Point3(0, 0, 0));
+  Pose3 expectedPose(Rot3::Ypr(M_PI / 10, 0, 0), Point3(0, 0, 0));
   EXPECT(assert_equal(expectedPose, x2, tol));
 }
 

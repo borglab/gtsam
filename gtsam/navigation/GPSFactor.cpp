@@ -58,10 +58,10 @@ pair<Pose3, Vector3> GPSFactor::EstimateState(double t1, const Point3& NED1,
 
   // Estimate Rotation
   double yaw = atan2(nV.y(), nV.x());
-  Rot3 nRy = Rot3::yaw(yaw); // yaw frame
+  Rot3 nRy = Rot3::Yaw(yaw); // yaw frame
   Point3 yV = nRy.inverse() * nV; // velocity in yaw frame
   double pitch = -atan2(yV.z(), yV.x()), roll = 0;
-  Rot3 nRb = Rot3::ypr(yaw, pitch, roll);
+  Rot3 nRb = Rot3::Ypr(yaw, pitch, roll);
 
   // Construct initial pose
   Pose3 nTb(nRb, nT); // nTb

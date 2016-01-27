@@ -813,7 +813,7 @@ TEST(ImuFactor, PredictRotation) {
   Vector3 v2;
   ImuFactor::Predict(x1, v1, x2, v2, bias, pim, kGravityAlongNavZDown,
       kZeroOmegaCoriolis);
-  Pose3 expectedPose(Rot3().ypr(M_PI / 10, 0, 0), Point3(0, 0, 0));
+  Pose3 expectedPose(Rot3::Ypr(M_PI / 10, 0, 0), Point3(0, 0, 0));
   Vector3 expectedVelocity;
   expectedVelocity << 0, 0, 0;
   EXPECT(assert_equal(expectedPose, x2));
@@ -891,7 +891,7 @@ TEST(ImuFactor, bodyPSensorNoBias) {
   double dt = 0.001;
 
   // Rotate sensor (z-down) to body (same as navigation) i.e. z-up
-  Pose3 body_P_sensor(Rot3::ypr(0, 0, M_PI), Point3(0, 0, 0));
+  Pose3 body_P_sensor(Rot3::Ypr(0, 0, M_PI), Point3(0, 0, 0));
 
   ImuFactor::PreintegratedMeasurements pim(bias, Z_3x3, Z_3x3, Z_3x3, true);
 
@@ -907,7 +907,7 @@ TEST(ImuFactor, bodyPSensorNoBias) {
   PoseVelocityBias poseVelocity = pim.predict(x1, v1, bias, n_gravity,
       omegaCoriolis);
 
-  Pose3 expectedPose(Rot3().ypr(-M_PI / 10, 0, 0), Point3(0, 0, 0));
+  Pose3 expectedPose(Rot3::Ypr(-M_PI / 10, 0, 0), Point3(0, 0, 0));
   EXPECT(assert_equal(expectedPose, poseVelocity.pose));
 
   Vector3 expectedVelocity(0, 0, 0);
@@ -942,7 +942,7 @@ TEST(ImuFactor, bodyPSensorWithBias) {
   // table exerts an equal and opposite force w.r.t gravity
   Vector3 measuredAcc(0, 0, -9.81);
 
-  Pose3 body_P_sensor(Rot3::ypr(0, 0, M_PI), Point3());
+  Pose3 body_P_sensor(Rot3::Ypr(0, 0, M_PI), Point3());
 
   Matrix3 accCov = 1e-7 * I_3x3;
   Matrix3 gyroCov = 1e-8 * I_3x3;
@@ -1025,7 +1025,7 @@ TEST(ImuFactor, serialization) {
   using namespace gtsam::serializationTestHelpers;
 
   Vector3 n_gravity(0, 0, -9.81);
-  Pose3 body_P_sensor(Rot3::ypr(0, 0, M_PI), Point3());
+  Pose3 body_P_sensor(Rot3::Ypr(0, 0, M_PI), Point3());
   Matrix3 accCov = 1e-7 * I_3x3;
   Matrix3 gyroCov = 1e-8 * I_3x3;
   Matrix3 integrationCov = 1e-9 * I_3x3;

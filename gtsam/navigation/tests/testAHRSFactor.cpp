@@ -423,7 +423,7 @@ TEST (AHRSFactor, predictTest) {
 
   // Predict
   Rot3 x;
-  Rot3 expectedRot = Rot3().ypr(20*M_PI, 0, 0);
+  Rot3 expectedRot = Rot3::Ypr(20*M_PI, 0, 0);
   Rot3 actualRot = factor.predict(x, bias, pim, kZeroOmegaCoriolis);
   EXPECT(assert_equal(expectedRot, actualRot, 1e-6));
 
