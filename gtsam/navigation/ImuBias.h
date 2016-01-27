@@ -124,16 +124,20 @@ public:
 ////      return measurement - bias_gyro_temp - R_G_to_I * w_earth_rate_G;
 //    }
 
-/// @}
-/// @name Testable
-/// @{
+  /// @}
+  /// @name Testable
+  /// @{
 
-/// print with optional string
-  void print(const std::string& s = "") const {
-    // explicit printing for now.
-    std::cout << s + ".Acc  [" << biasAcc_.transpose() << "]" << std::endl;
-    std::cout << s + ".Gyro [" << biasGyro_.transpose() << "]" << std::endl;
+  /// ostream operator
+  GTSAM_EXPORT friend std::ostream& operator<<(std::ostream& os,
+                                               const ConstantBias& bias) {
+    os << "acc = " << Point3(bias.accelerometer());
+    os << " gyro = " << Point3(bias.gyroscope());
+    return os;
   }
+
+  /// print with optional string
+  void print(const std::string& s = "") const { std::cout << s << *this; }
 
   /** equality up to tolerance */
   inline bool equals(const ConstantBias& expected, double tol = 1e-5) const {
