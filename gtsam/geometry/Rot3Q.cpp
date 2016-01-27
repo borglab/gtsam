@@ -47,30 +47,30 @@ namespace gtsam {
             R31, R32, R33).finished()) {}
 
   /* ************************************************************************* */
-  Rot3::Rot3(const Quaternion& q) :
+  Rot3::Rot3(const gtsam::Quaternion& q) :
       quaternion_(q) {
   }
 
   /* ************************************************************************* */
   Rot3 Rot3::Rx(double t) {
-    return Quaternion(Eigen::AngleAxisd(t, Eigen::Vector3d::UnitX()));
+    return gtsam::Quaternion(Eigen::AngleAxisd(t, Eigen::Vector3d::UnitX()));
   }
 
   /* ************************************************************************* */
   Rot3 Rot3::Ry(double t) {
-    return Quaternion(Eigen::AngleAxisd(t, Eigen::Vector3d::UnitY()));
+    return gtsam::Quaternion(Eigen::AngleAxisd(t, Eigen::Vector3d::UnitY()));
   }
 
   /* ************************************************************************* */
   Rot3 Rot3::Rz(double t) {
-    return Quaternion(Eigen::AngleAxisd(t, Eigen::Vector3d::UnitZ()));
+    return gtsam::Quaternion(Eigen::AngleAxisd(t, Eigen::Vector3d::UnitZ()));
   }
 
   /* ************************************************************************* */
   Rot3 Rot3::RzRyRx(double x, double y, double z) { return Rot3(
-      Quaternion(Eigen::AngleAxisd(z, Eigen::Vector3d::UnitZ())) *
-      Quaternion(Eigen::AngleAxisd(y, Eigen::Vector3d::UnitY())) *
-      Quaternion(Eigen::AngleAxisd(x, Eigen::Vector3d::UnitX())));
+      gtsam::Quaternion(Eigen::AngleAxisd(z, Eigen::Vector3d::UnitZ())) *
+      gtsam::Quaternion(Eigen::AngleAxisd(y, Eigen::Vector3d::UnitY())) *
+      gtsam::Quaternion(Eigen::AngleAxisd(x, Eigen::Vector3d::UnitX())));
   }
 
   /* ************************************************************************* */
@@ -98,7 +98,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   Vector3 Rot3::Logmap(const Rot3& R, OptionalJacobian<3, 3> H) {
-    return traits<Quaternion>::Logmap(R.quaternion_, H);
+    return traits<gtsam::Quaternion>::Logmap(R.quaternion_, H);
   }
 
   /* ************************************************************************* */
@@ -128,7 +128,7 @@ namespace gtsam {
   Point3 Rot3::r3() const { return Point3(quaternion_.toRotationMatrix().col(2)); }
 
   /* ************************************************************************* */
-  Quaternion Rot3::toQuaternion() const { return quaternion_; }
+  gtsam::Quaternion Rot3::toQuaternion() const { return quaternion_; }
 
  /* ************************************************************************* */
 

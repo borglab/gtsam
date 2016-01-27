@@ -518,7 +518,7 @@ GraphAndValues load3D(const string& filename) {
       Key id;
       double x, y, z, qx, qy, qz, qw;
       ls >> id >> x >> y >> z >> qx >> qy >> qz >> qw;
-      Rot3 R = Rot3::quaternion(qw, qx, qy, qz);
+      Rot3 R = Rot3::Quaternion(qw, qx, qy, qz);
       Point3 t = Point3(x, y, z);
       initial->insert(id, Pose3(R,t));
     }
@@ -553,7 +553,7 @@ GraphAndValues load3D(const string& filename) {
       Key id1, id2;
       double x, y, z, qx, qy, qz, qw;
       ls >> id1 >> id2 >> x >> y >> z >> qx >> qy >> qz >> qw;
-      Rot3 R = Rot3::quaternion(qw, qx, qy, qz);
+      Rot3 R = Rot3::Quaternion(qw, qx, qy, qz);
       Point3 t = Point3(x, y, z);
       for (int i = 0; i < 6; i++){
         for (int j = i; j < 6; j++){
