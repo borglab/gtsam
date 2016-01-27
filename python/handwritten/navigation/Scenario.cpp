@@ -19,12 +19,20 @@
 #define NO_IMPORT_ARRAY
 #include <numpy_eigen/NumpyEigenConverter.hpp>
 
-#include "gtsam/navigation/Scenario.h"
+#include "gtsam/navigation/ScenarioRunner.h"
 
 using namespace boost::python;
 using namespace gtsam;
 
+// Create const Scenario pointer from ConstantTwistScenario
+static const Scenario* ScenarioPointer(const ConstantTwistScenario& scenario) {
+  return static_cast<const Scenario*>(&scenario);
+}
+
 void exportScenario() {
+  // NOTE(frank): Abstract classes need boost::noncopyable
+  class_<Scenario, boost::noncopyable>("Scenario", no_init);
+
   // TODO(frank): figure out how to do inheritance
   class_<ConstantTwistScenario>("ConstantTwistScenario",
                                 init<const Vector3&, const Vector3&>())
@@ -35,4 +43,35 @@ void exportScenario() {
       .def("rotation", &Scenario::rotation)
       .def("velocity_b", &Scenario::velocity_b)
       .def("acceleration_b", &Scenario::acceleration_b);
+
+  // NOTE(frank): https://wiki.python.org/moin/boost.python/CallPolicy
+  def("ScenarioPointer", &ScenarioPointer,
+      return_value_policy<reference_existing_object>());
+
+  class_<PreintegrationParams, boost::shared_ptr<PreintegrationParams> >(
+      "PreintegrationParams", init<const Vector3&>())
+      .def_readwrite("gyroscopeCovariance",
+                     &PreintegrationParams::gyroscopeCovariance)
+      .def_readwrite("omegaCoriolis", &PreintegrationParams::omegaCoriolis)
+      .def_readwrite("body_P_sensor", &PreintegrationParams::body_P_sensor)
+      .def_readwrite("accelerometerCovariance",
+                     &PreintegrationParams::accelerometerCovariance)
+      .def_readwrite("integrationCovariance",
+                     &PreintegrationParams::integrationCovariance)
+      .def_readwrite("use2ndOrderCoriolis",
+                     &PreintegrationParams::use2ndOrderCoriolis)
+      .def_readwrite("n_gravity", &PreintegrationParams::n_gravity)
+
+      .def("MakeSharedD", &PreintegrationParams::MakeSharedD)
+      .staticmethod("MakeSharedD")
+      .def("MakeSharedU", &PreintegrationParams::MakeSharedU)
+      .staticmethod("MakeSharedU");
+
+  class_<ScenarioRunner>(
+      "ScenarioRunner",
+      init<const Scenario*, const boost::shared_ptr<PreintegrationParams>&,
+           double>())
+      .def("actualSpecificForce", &ScenarioRunner::actualSpecificForce)
+      .def("measuredAngularVelocity", &ScenarioRunner::measuredAngularVelocity)
+      .def("measuredSpecificForce", &ScenarioRunner::measuredSpecificForce);
 }
