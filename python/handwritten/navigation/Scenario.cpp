@@ -67,11 +67,30 @@ void exportScenario() {
       .def("MakeSharedU", &PreintegrationParams::MakeSharedU)
       .staticmethod("MakeSharedU");
 
+  class_<PreintegratedImuMeasurements>(
+      "PreintegratedImuMeasurements",
+      init<const boost::shared_ptr<PreintegrationParams>&,
+           const imuBias::ConstantBias&>());
+
+  class_<NavState>("NavState", init<>())
+      // TODO(frank): overload with jacobians
+      //      .def("attitude", &NavState::attitude)
+      //      .def("position", &NavState::position)
+      //      .def("velocity", &NavState::velocity)
+      .def("pose", &NavState::pose);
+
+  class_<imuBias::ConstantBias>("ConstantBias", init<>());
+
   class_<ScenarioRunner>(
       "ScenarioRunner",
       init<const Scenario*, const boost::shared_ptr<PreintegrationParams>&,
            double>())
       .def("actualSpecificForce", &ScenarioRunner::actualSpecificForce)
       .def("measuredAngularVelocity", &ScenarioRunner::measuredAngularVelocity)
-      .def("measuredSpecificForce", &ScenarioRunner::measuredSpecificForce);
+      .def("measuredSpecificForce", &ScenarioRunner::measuredSpecificForce)
+      .def("imuSampleTime", &ScenarioRunner::imuSampleTime,
+           return_value_policy<copy_const_reference>())
+      .def("integrate", &ScenarioRunner::integrate)
+      .def("predict", &ScenarioRunner::predict)
+      .def("estimateCovariance", &ScenarioRunner::estimateCovariance);
 }

@@ -36,7 +36,7 @@ class ImuFactorExample(object):
         W = np.array([0, -w, 0])
         V = np.array([v, 0, 0])
         self.scenario = gtsam.ConstantTwistScenario(W, V)
-        self.dt = 0.5
+        self.dt = 0.25
         self.realTimeFactor = 10.0
 
         # Calculate time to do 1 loop
@@ -50,6 +50,7 @@ class ImuFactorExample(object):
         self.g = 10  # simple gravity constant
         self.params = self.defaultParams(self.g)
         self.runner = gtsam.ScenarioRunner(gtsam.ScenarioPointer(self.scenario), self.params, dt)
+        self.estimatedBias = gtsam.ConstantBias()
 
     def plot(self, t, measuredOmega, measuredAcc):
         # plot angular velocity    
@@ -77,9 +78,12 @@ class ImuFactorExample(object):
             plt.scatter(t, acceleration_b[i], color=color, marker='.')
             plt.xlabel(label)
 
-        # plot ground truth pose
-        pose = self.scenario.pose(t)
-        plotPose3(4, pose, 1.0)
+        # plot ground truth pose, as well as prediction from integrated IMU measurements
+        actualPose = self.scenario.pose(t)
+        plotPose3(4, actualPose, 1.0)
+        pim = self.runner.integrate(t, self.estimatedBias, False)
+        predictedNavState = self.runner.predict(pim, self.estimatedBias)
+        plotPose3(4, predictedNavState.pose(), 1.0)
         ax = plt.gca()
         ax.set_xlim3d(-self.radius, self.radius)
         ax.set_ylim3d(-self.radius, self.radius)
