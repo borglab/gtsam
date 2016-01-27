@@ -57,8 +57,7 @@ class ConstantTwistScenario : public Scenario {
  public:
   /// Construct scenario with constant twist [w,v]
   ConstantTwistScenario(const Vector3& w, const Vector3& v)
-      : twist_((Vector6() << w, v).finished()),
-        a_b_(twist_.head<3>().cross(twist_.tail<3>())) {}
+      : twist_((Vector6() << w, v).finished()), a_b_(w.cross(v)) {}
 
   Pose3 pose(double t) const override { return Pose3::Expmap(twist_ * t); }
   Vector3 omega_b(double t) const override { return twist_.head<3>(); }
