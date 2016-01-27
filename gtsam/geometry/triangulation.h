@@ -19,6 +19,7 @@
 #pragma once
 
 #include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/geometry/Pose2.h>
 #include <gtsam/slam/TriangulationFactor.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>

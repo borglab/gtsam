@@ -31,8 +31,7 @@ struct Range;
  * Works for any two types A1,A2 for which the functor Range<A1,A2>() is defined
  * @addtogroup SAM
  */
-template <typename A1, typename A2 = A1,
-          typename T = typename Range<A1, A2>::result_type>
+template <typename A1, typename A2 = A1, typename T = double>
 class RangeFactor : public ExpressionFactor2<T, A1, A2> {
  private:
   typedef RangeFactor<A1, A2> This;
