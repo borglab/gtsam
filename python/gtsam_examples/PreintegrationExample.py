@@ -12,7 +12,7 @@ import gtsam
 from gtsam_utils import plotPose3
 
 IMU_FIG = 1
-GROUND_TRUTH_FIG = 2
+POSES_FIG = 2
 
 class PreintegrationExample(object):
 
@@ -92,7 +92,7 @@ class PreintegrationExample(object):
     def plotGroundTruthPose(self, t):
         # plot ground truth pose, as well as prediction from integrated IMU measurements
         actualPose = self.scenario.pose(t)
-        plotPose3(GROUND_TRUTH_FIG, actualPose, 0.3)
+        plotPose3(POSES_FIG, actualPose, 0.3)
         ax = plt.gca()
         ax.set_xlim3d(-self.radius, self.radius)
         ax.set_ylim3d(-self.radius, self.radius)
@@ -111,7 +111,7 @@ class PreintegrationExample(object):
                 self.plotGroundTruthPose(t)
                 pim = self.runner.integrate(t, self.actualBias, True)
                 predictedNavState = self.runner.predict(pim, self.actualBias)
-                plotPose3(GROUND_TRUTH_FIG, predictedNavState.pose(), 0.1)
+                plotPose3(POSES_FIG, predictedNavState.pose(), 0.1)
 
         plt.ioff()
         plt.show()
