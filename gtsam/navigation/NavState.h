@@ -124,6 +124,9 @@ public:
   /// @name Testable
   /// @{
 
+  /// Output stream operator
+  GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os, const NavState&  state);
+
   /// print
   void print(const std::string& s = "") const;
 
@@ -228,6 +231,8 @@ public:
       const boost::optional<Vector3>& omegaCoriolis, bool use2ndOrderCoriolis =
           false, OptionalJacobian<9, 9> H1 = boost::none,
       OptionalJacobian<9, 9> H2 = boost::none) const;
+
+  /// @}
 
 private:
   /// @{
