@@ -36,20 +36,19 @@ class ImuFactorExample(object):
         W = np.array([0, -w, 0])
         V = np.array([v, 0, 0])
         self.scenario = gtsam.ConstantTwistScenario(W, V)
-        self.dt = 0.25
-        self.realTimeFactor = 10.0
+        self.dt = 1e-2
 
         # Calculate time to do 1 loop
         self.radius = v / w
-        self.timeForOneLoop = 2 * math.pi / w
+        self.timeForOneLoop = 2.0 * math.pi / w
         self.labels = list('xyz')
         self.colors = list('rgb')
 
         # Create runner
-        dt = 0.1
         self.g = 10  # simple gravity constant
         self.params = self.defaultParams(self.g)
-        self.runner = gtsam.ScenarioRunner(gtsam.ScenarioPointer(self.scenario), self.params, dt)
+        ptr = gtsam.ScenarioPointer(self.scenario)
+        self.runner = gtsam.ScenarioRunner(ptr, self.params, self.dt)
         self.estimatedBias = gtsam.ConstantBias()
 
     def plot(self, t, measuredOmega, measuredAcc):
@@ -80,10 +79,10 @@ class ImuFactorExample(object):
 
         # plot ground truth pose, as well as prediction from integrated IMU measurements
         actualPose = self.scenario.pose(t)
-        plotPose3(4, actualPose, 1.0)
+        plotPose3(4, actualPose, 0.3)
         pim = self.runner.integrate(t, self.estimatedBias, False)
         predictedNavState = self.runner.predict(pim, self.estimatedBias)
-        plotPose3(4, predictedNavState.pose(), 1.0)
+        plotPose3(4, predictedNavState.pose(), 0.1)
         ax = plt.gca()
         ax.set_xlim3d(-self.radius, self.radius)
         ax.set_ylim3d(-self.radius, self.radius)
@@ -98,14 +97,16 @@ class ImuFactorExample(object):
             plt.scatter(t, measuredAcc[i], color=color, marker='.')
             plt.xlabel(label)
 
-        plt.pause(self.dt / self.realTimeFactor)
+        plt.pause(0.01)
 
     def run(self):
         # simulate the loop up to the top
-        for t in np.arange(0, self.timeForOneLoop, self.dt):
+        T = self.timeForOneLoop
+        for i, t in enumerate(np.arange(0, T, self.dt)):
             measuredOmega = self.runner.measuredAngularVelocity(t)
             measuredAcc = self.runner.measuredSpecificForce(t)
-            self.plot(t, measuredOmega, measuredAcc)
+            if i % 25 == 0:
+                self.plot(t, measuredOmega, measuredAcc)
 
         plt.ioff()
         plt.show()
