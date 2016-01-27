@@ -30,7 +30,6 @@
 
 namespace gtsam {
 
-#define ALLOW_DEPRECATED_IN_GTSAM4
 #ifdef ALLOW_DEPRECATED_IN_GTSAM4
 /// @deprecated
 struct PoseVelocityBias {

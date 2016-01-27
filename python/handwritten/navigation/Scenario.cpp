@@ -48,42 +48,6 @@ void exportScenario() {
   def("ScenarioPointer", &ScenarioPointer,
       return_value_policy<reference_existing_object>());
 
-  class_<PreintegrationParams, boost::shared_ptr<PreintegrationParams> >(
-      "PreintegrationParams", init<const Vector3&>())
-      .def_readwrite("gyroscopeCovariance",
-                     &PreintegrationParams::gyroscopeCovariance)
-      .def_readwrite("omegaCoriolis", &PreintegrationParams::omegaCoriolis)
-      .def_readwrite("body_P_sensor", &PreintegrationParams::body_P_sensor)
-      .def_readwrite("accelerometerCovariance",
-                     &PreintegrationParams::accelerometerCovariance)
-      .def_readwrite("integrationCovariance",
-                     &PreintegrationParams::integrationCovariance)
-      .def_readwrite("use2ndOrderCoriolis",
-                     &PreintegrationParams::use2ndOrderCoriolis)
-      .def_readwrite("n_gravity", &PreintegrationParams::n_gravity)
-
-      .def("MakeSharedD", &PreintegrationParams::MakeSharedD)
-      .staticmethod("MakeSharedD")
-      .def("MakeSharedU", &PreintegrationParams::MakeSharedU)
-      .staticmethod("MakeSharedU");
-
-  class_<PreintegratedImuMeasurements>(
-      "PreintegratedImuMeasurements",
-      init<const boost::shared_ptr<PreintegrationParams>&,
-           const imuBias::ConstantBias&>()).def(repr(self));
-
-  class_<NavState>("NavState", init<>())
-      // TODO(frank): overload with jacobians
-      //      .def("attitude", &NavState::attitude)
-      //      .def("position", &NavState::position)
-      //      .def("velocity", &NavState::velocity)
-      .def(repr(self))
-      .def("pose", &NavState::pose);
-
-  class_<imuBias::ConstantBias>("ConstantBias", init<>())
-      .def(init<const Vector3&, const Vector3&>())
-      .def(repr(self));
-
   class_<ScenarioRunner>(
       "ScenarioRunner",
       init<const Scenario*, const boost::shared_ptr<PreintegrationParams>&,

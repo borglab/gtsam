@@ -53,6 +53,7 @@ void exportBetweenFactors();
 void exportGenericProjectionFactor();
 
 // navigation
+void exportImuFactor();
 void exportScenario();
 
 
@@ -99,5 +100,6 @@ BOOST_PYTHON_MODULE(_libgtsam_python){
   exportBetweenFactors();
   exportGenericProjectionFactor();
 
+  exportImuFactor();
   exportScenario();
 }
