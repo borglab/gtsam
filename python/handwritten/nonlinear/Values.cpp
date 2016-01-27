@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -26,6 +26,7 @@
 #include "gtsam/geometry/Point3.h"
 #include "gtsam/geometry/Rot3.h"
 #include "gtsam/geometry/Pose3.h"
+#include "gtsam/navigation/ImuBias.h"
 
 using namespace boost::python;
 using namespace gtsam;
@@ -44,15 +45,15 @@ using namespace gtsam;
   *     >>> v.at(2,gtsam.geometry.Rot3())
   *     >>> v.at(3,gtsam.geometry.Pose3())
   *
-  * A more 'pythonic' way I think would be to not use this function and define different 
+  * A more 'pythonic' way I think would be to not use this function and define different
   * 'at' methods below using the name of the type in the function name, like:
   *
   *     .def("point3_at", &Values::at<Point3>, return_internal_reference<>())
   *     .def("rot3_at", &Values::at<Rot3>, return_internal_reference<>())
   *     .def("pose3_at", &Values::at<Pose3>, return_internal_reference<>())
   *
-  * and then they could be accessed from python as 
-  * 
+  * and then they could be accessed from python as
+  *
   *     >>> import gtsam
   *     >>> v = gtsam.nonlinear.Values()
   *     >>> v.insert(1,gtsam.geometry.Point3())
@@ -76,8 +77,8 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(print_overloads, Values::print, 0, 1);
 
 void exportValues(){
 
-  // NOTE: Apparently the class 'Value'' is deprecated, so the commented lines below 
-  //       will compile, but are useless in the python wrapper. We need to use specific 
+  // NOTE: Apparently the class 'Value'' is deprecated, so the commented lines below
+  //       will compile, but are useless in the python wrapper. We need to use specific
   //       'at' and 'insert' methods for each type.
   // const Value& (Values::*at1)(Key) const = &Values::at;
   // void (Values::*insert1)(Key, const Value&) = &Values::insert;
@@ -88,6 +89,8 @@ void exportValues(){
   void  (Values::*insert_point3)(Key, const gtsam::Point3&) = &Values::insert;
   void  (Values::*insert_rot3)  (Key, const gtsam::Rot3&) = &Values::insert;
   void  (Values::*insert_pose3) (Key, const gtsam::Pose3&) = &Values::insert;
+  void  (Values::*insert_bias) (Key, const gtsam::imuBias::ConstantBias&) = &Values::insert;
+  void  (Values::*insert_vector3) (Key, const gtsam::Vector3&) = &Values::insert;
 
 
   class_<Values>("Values", init<>())
@@ -110,6 +113,8 @@ void exportValues(){
   .def("insert", insert_point3)
   .def("insert", insert_rot3)
   .def("insert", insert_pose3)
+  .def("insert", insert_bias)
+  .def("insert", insert_vector3)
   // NOTE: The following commented lines are another way of specializing the return type.
   //       See long comment above.
   // .def("at", &ValuesAt<Point3>, return_internal_reference<>())
@@ -117,7 +122,7 @@ void exportValues(){
   // .def("at", &ValuesAt<Pose3>, return_internal_reference<>())
   .def("point3_at", &Values::at<Point3>, return_value_policy<copy_const_reference>())
   .def("rot3_at", &Values::at<Rot3>, return_value_policy<copy_const_reference>())
-  .def("pose3_at", &Values::at<Pose3>, return_value_policy<copy_const_reference>())  
+  .def("pose3_at", &Values::at<Pose3>, return_value_policy<copy_const_reference>())
   .def("exists", exists1)
   .def("keys", &Values::keys)
   ;
