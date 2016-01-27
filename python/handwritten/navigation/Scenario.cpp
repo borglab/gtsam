@@ -80,12 +80,14 @@ void exportScenario() {
       .def(repr(self))
       .def("pose", &NavState::pose);
 
-  class_<imuBias::ConstantBias>("ConstantBias", init<>());
+  class_<imuBias::ConstantBias>("ConstantBias", init<>())
+      .def(init<const Vector3&, const Vector3&>())
+      .def(repr(self));
 
   class_<ScenarioRunner>(
       "ScenarioRunner",
       init<const Scenario*, const boost::shared_ptr<PreintegrationParams>&,
-           double>())
+           double, const imuBias::ConstantBias&>())
       .def("actualSpecificForce", &ScenarioRunner::actualSpecificForce)
       .def("measuredAngularVelocity", &ScenarioRunner::measuredAngularVelocity)
       .def("measuredSpecificForce", &ScenarioRunner::measuredSpecificForce)
