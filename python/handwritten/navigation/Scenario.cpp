@@ -40,6 +40,7 @@ void exportScenario() {
       .def("omega_b", &Scenario::omega_b)
       .def("velocity_n", &Scenario::velocity_n)
       .def("acceleration_n", &Scenario::acceleration_n)
+      .def("navState", &Scenario::navState)
       .def("rotation", &Scenario::rotation)
       .def("velocity_b", &Scenario::velocity_b)
       .def("acceleration_b", &Scenario::acceleration_b);

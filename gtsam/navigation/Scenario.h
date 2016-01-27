@@ -17,7 +17,7 @@
 
 #pragma once
 #include <gtsam/linear/NoiseModel.h>
-#include <gtsam/geometry/Pose3.h>
+#include <gtsam/navigation/NavState.h>
 
 namespace gtsam {
 
@@ -34,6 +34,7 @@ class Scenario {
   // Derived quantities:
 
   Rot3 rotation(double t) const { return pose(t).rotation(); }
+  NavState navState(double t) const { return NavState(pose(t), velocity_n(t)); }
 
   Vector3 velocity_b(double t) const {
     const Rot3 nRb = rotation(t);
