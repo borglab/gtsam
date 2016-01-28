@@ -493,7 +493,7 @@ namespace gtsam {
     static Rot3 roll (double t) { return Roll(t); }
     static Rot3 ypr(double y, double p, double r) { return Ypr(r,p,y);}
     static Rot3 quaternion(double w, double x, double y, double z) {
-      return Rot3::Quaternion q(w, x, y, z);
+      return Rot3::Quaternion(w, x, y, z);
     }
   /// @}
 #endif
