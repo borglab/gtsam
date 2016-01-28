@@ -278,7 +278,7 @@ public:
       boost::optional<Matrix&> H4 = boost::none, boost::optional<Matrix&> H5 =
           boost::none, boost::optional<Matrix&> H6 = boost::none) const;
 
-#ifdef ALLOW_DEPRECATED_IN_GTSAM4
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
   /// @deprecated typename
   typedef gtsam::PreintegratedCombinedMeasurements CombinedPreintegratedMeasurements;
 

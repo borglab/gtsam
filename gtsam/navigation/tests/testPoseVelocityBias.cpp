@@ -25,7 +25,7 @@
 using namespace std;
 using namespace gtsam;
 
-#ifdef ALLOW_DEPRECATED_IN_GTSAM4
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 
 // Should be seen as between(pvb1,pvb2), i.e., written as pvb2 \omin pvb1
 Vector9 error(const PoseVelocityBias& pvb1, const PoseVelocityBias& pvb2) {

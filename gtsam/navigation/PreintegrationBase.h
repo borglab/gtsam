@@ -30,7 +30,7 @@
 
 namespace gtsam {
 
-#ifdef ALLOW_DEPRECATED_IN_GTSAM4
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 /// @deprecated
 struct PoseVelocityBias {
   Pose3 pose;
@@ -102,7 +102,7 @@ class PreintegrationBase {
 
   /// Parameters. Declared mutable only for deprecated predict method.
   /// TODO(frank): make const once deprecated method is removed
-#ifdef ALLOW_DEPRECATED_IN_GTSAM4
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
   mutable
 #endif
   boost::shared_ptr<Params> p_;
@@ -181,7 +181,7 @@ public:
     return *boost::static_pointer_cast<Params>(p_);
   }
 
-#ifdef ALLOW_DEPRECATED_IN_GTSAM4
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
   void set_body_P_sensor(const Pose3& body_P_sensor) {
     p_->body_P_sensor = body_P_sensor;
   }
@@ -280,7 +280,7 @@ public:
 
   /// @}
 
-#ifdef ALLOW_DEPRECATED_IN_GTSAM4
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
   /// @name Deprecated
   /// @{
 

@@ -241,7 +241,7 @@ Vector CombinedImuFactor::evaluateError(const Pose3& pose_i,
 }
 
 //------------------------------------------------------------------------------
-#ifdef ALLOW_DEPRECATED_IN_GTSAM4
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 CombinedImuFactor::CombinedImuFactor(
     Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias_i, Key bias_j,
     const CombinedPreintegratedMeasurements& pim, const Vector3& n_gravity,

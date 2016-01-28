@@ -20,7 +20,7 @@
  **/
 
 #include "PreintegrationBase.h"
-#ifdef ALLOW_DEPRECATED_IN_GTSAM4
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 #include <boost/make_shared.hpp>
 #endif
 
@@ -359,7 +359,7 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i,
 }
 
 //------------------------------------------------------------------------------
-#ifdef ALLOW_DEPRECATED_IN_GTSAM4
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 PoseVelocityBias PreintegrationBase::predict(const Pose3& pose_i,
     const Vector3& vel_i, const imuBias::ConstantBias& bias_i,
     const Vector3& n_gravity, const Vector3& omegaCoriolis,

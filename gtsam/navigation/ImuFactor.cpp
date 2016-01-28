@@ -82,7 +82,7 @@ void PreintegratedImuMeasurements::integrateMeasurement(
 }
 
 //------------------------------------------------------------------------------
-#ifdef ALLOW_DEPRECATED_IN_GTSAM4
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 PreintegratedImuMeasurements::PreintegratedImuMeasurements(
     const imuBias::ConstantBias& biasHat, const Matrix3& measuredAccCovariance,
     const Matrix3& measuredOmegaCovariance,
@@ -159,7 +159,7 @@ Vector ImuFactor::evaluateError(const Pose3& pose_i, const Vector3& vel_i,
 }
 
 //------------------------------------------------------------------------------
-#ifdef ALLOW_DEPRECATED_IN_GTSAM4
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 ImuFactor::ImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
     const PreintegratedImuMeasurements& pim, const Vector3& n_gravity,
     const Vector3& omegaCoriolis, const boost::optional<Pose3>& body_P_sensor,
