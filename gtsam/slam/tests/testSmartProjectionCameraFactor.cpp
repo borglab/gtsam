@@ -47,7 +47,7 @@ template<class CALIBRATION>
 PinholeCamera<CALIBRATION> perturbCameraPoseAndCalibration(
     const PinholeCamera<CALIBRATION>& camera) {
   GTSAM_CONCEPT_MANIFOLD_TYPE(CALIBRATION)
-  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 10, 0., -M_PI / 10),
+  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 10, 0., -M_PI / 10),
       Point3(0.5, 0.1, 0.3));
   Pose3 cameraPose = camera.pose();
   Pose3 perturbedCameraPose = cameraPose.compose(noise_pose);
@@ -61,7 +61,7 @@ PinholeCamera<CALIBRATION> perturbCameraPoseAndCalibration(
 /* ************************************************************************* */
 TEST( SmartProjectionCameraFactor, perturbCameraPose) {
   using namespace vanilla;
-  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 10, 0., -M_PI / 10),
+  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 10, 0., -M_PI / 10),
       Point3(0.5, 0.1, 0.3));
   Pose3 perturbed_level_pose = level_pose.compose(noise_pose);
   Camera actualCamera(perturbed_level_pose, K2);

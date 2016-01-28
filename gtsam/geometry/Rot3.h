@@ -59,7 +59,7 @@ namespace gtsam {
 
 #ifdef GTSAM_USE_QUATERNIONS
     /** Internal Eigen Quaternion */
-    Quaternion quaternion_;
+    gtsam::Quaternion quaternion_;
 #else
     Matrix3 rot_;
 #endif
@@ -146,13 +146,13 @@ namespace gtsam {
     }
 
     /// Positive yaw is to right (as in aircraft heading). See ypr
-    static Rot3 yaw  (double t) { return Rz(t); }
+    static Rot3 Yaw  (double t) { return Rz(t); }
 
     /// Positive pitch is up (increasing aircraft altitude).See ypr
-    static Rot3 pitch(double t) { return Ry(t); }
+    static Rot3 Pitch(double t) { return Ry(t); }
 
     //// Positive roll is to right (increasing yaw in aircraft).
-    static Rot3 roll (double t) { return Rx(t); }
+    static Rot3 Roll (double t) { return Rx(t); }
 
     /**
      * Returns rotation nRb from body to nav frame.
@@ -163,11 +163,11 @@ namespace gtsam {
      * as described in http://www.sedris.org/wg8home/Documents/WG80462.pdf.
      * Assumes vehicle coordinate frame X forward, Y right, Z down.
      */
-    static Rot3 ypr(double y, double p, double r) { return RzRyRx(r,p,y);}
+    static Rot3 Ypr(double y, double p, double r) { return RzRyRx(r,p,y);}
 
     /** Create from Quaternion coefficients */
-    static Rot3 quaternion(double w, double x, double y, double z) {
-      Quaternion q(w, x, y, z);
+    static Rot3 Quaternion(double w, double x, double y, double z) {
+      gtsam::Quaternion q(w, x, y, z);
       return Rot3(q);
     }
 
@@ -179,7 +179,7 @@ namespace gtsam {
      */
     static Rot3 AxisAngle(const Vector3& axis, double angle) {
 #ifdef GTSAM_USE_QUATERNIONS
-      return Quaternion(Eigen::AngleAxis<double>(angle, axis));
+      return gtsam::Quaternion(Eigen::AngleAxis<double>(angle, axis));
 #else
       return SO3::AxisAngle(axis,angle);
 #endif
@@ -313,7 +313,7 @@ namespace gtsam {
     static Rot3 Expmap(const Vector3& v, OptionalJacobian<3,3> H = boost::none) {
       if(H) *H = Rot3::ExpmapDerivative(v);
 #ifdef GTSAM_USE_QUATERNIONS
-      return traits<Quaternion>::Expmap(v);
+      return traits<gtsam::Quaternion>::Expmap(v);
 #else
       return traits<SO3>::Expmap(v);
 #endif
@@ -419,13 +419,13 @@ namespace gtsam {
 
     /**
      * Use RQ to calculate yaw-pitch-roll angle representation
-     * @return a vector containing ypr s.t. R = Rot3::ypr(y,p,r)
+     * @return a vector containing ypr s.t. R = Rot3::Ypr(y,p,r)
      */
     Vector3 ypr() const;
 
     /**
      * Use RQ to calculate roll-pitch-yaw angle representation
-     * @return a vector containing ypr s.t. R = Rot3::ypr(y,p,r)
+     * @return a vector containing ypr s.t. R = Rot3::Ypr(y,p,r)
      */
     Vector3 rpy() const;
 
@@ -460,7 +460,7 @@ namespace gtsam {
     /** Compute the quaternion representation of this rotation.
      * @return The quaternion
      */
-    Quaternion toQuaternion() const;
+    gtsam::Quaternion toQuaternion() const;
 
     /**
      * Converts to a generic matrix to allow for use with matlab
@@ -479,6 +479,8 @@ namespace gtsam {
     GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os, const Rot3& p);
 
     /// @}
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
     /// @name Deprecated
     /// @{
     static Rot3 rodriguez(const Vector3& axis, double angle) { return AxisAngle(axis, angle); }
@@ -486,7 +488,15 @@ namespace gtsam {
     static Rot3 rodriguez(const Unit3&   axis, double angle) { return AxisAngle(axis, angle); }
     static Rot3 rodriguez(const Vector3& w)                  { return Rodrigues(w); }
     static Rot3 rodriguez(double wx, double wy, double wz)   { return Rodrigues(wx, wy, wz); }
-    /// @}
+    static Rot3 yaw  (double t) { return Yaw(t); }
+    static Rot3 pitch(double t) { return Pitch(t); }
+    static Rot3 roll (double t) { return Roll(t); }
+    static Rot3 ypr(double y, double p, double r) { return Ypr(r,p,y);}
+    static Rot3 quaternion(double w, double x, double y, double z) {
+      return Rot3::Quaternion q(w, x, y, z);
+    }
+  /// @}
+#endif
 
   private:
 

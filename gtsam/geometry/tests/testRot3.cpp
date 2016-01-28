@@ -501,17 +501,17 @@ TEST( Rot3, yaw_pitch_roll )
   double t = 0.1;
 
   // yaw is around z axis
-  CHECK(assert_equal(Rot3::Rz(t),Rot3::yaw(t)));
+  CHECK(assert_equal(Rot3::Rz(t),Rot3::Yaw(t)));
 
   // pitch is around y axis
-  CHECK(assert_equal(Rot3::Ry(t),Rot3::pitch(t)));
+  CHECK(assert_equal(Rot3::Ry(t),Rot3::Pitch(t)));
 
   // roll is around x axis
-  CHECK(assert_equal(Rot3::Rx(t),Rot3::roll(t)));
+  CHECK(assert_equal(Rot3::Rx(t),Rot3::Roll(t)));
 
   // Check compound rotation
-  Rot3 expected = Rot3::yaw(0.1) * Rot3::pitch(0.2) * Rot3::roll(0.3);
-  CHECK(assert_equal(expected,Rot3::ypr(0.1,0.2,0.3)));
+  Rot3 expected = Rot3::Yaw(0.1) * Rot3::Pitch(0.2) * Rot3::Roll(0.3);
+  CHECK(assert_equal(expected,Rot3::Ypr(0.1,0.2,0.3)));
 
   CHECK(assert_equal((Vector)Vector3(0.1, 0.2, 0.3),expected.ypr()));
 }
@@ -531,14 +531,14 @@ TEST( Rot3, RQ)
   CHECK(assert_equal(expected,R.xyz(),1e-6));
   CHECK(assert_equal((Vector)Vector3(0.1,0.2,0.3),Rot3::RzRyRx(0.1,0.2,0.3).xyz()));
 
-  // Try using ypr call, asserting that Rot3::ypr(y,p,r).ypr()==[y;p;r]
-  CHECK(assert_equal((Vector)Vector3(0.1,0.2,0.3),Rot3::ypr(0.1,0.2,0.3).ypr()));
-  CHECK(assert_equal((Vector)Vector3(0.3,0.2,0.1),Rot3::ypr(0.1,0.2,0.3).rpy()));
+  // Try using ypr call, asserting that Rot3::Ypr(y,p,r).ypr()==[y;p;r]
+  CHECK(assert_equal((Vector)Vector3(0.1,0.2,0.3),Rot3::Ypr(0.1,0.2,0.3).ypr()));
+  CHECK(assert_equal((Vector)Vector3(0.3,0.2,0.1),Rot3::Ypr(0.1,0.2,0.3).rpy()));
 
   // Try ypr for pure yaw-pitch-roll matrices
-  CHECK(assert_equal((Vector)Vector3(0.1,0.0,0.0),Rot3::yaw (0.1).ypr()));
-  CHECK(assert_equal((Vector)Vector3(0.0,0.1,0.0),Rot3::pitch(0.1).ypr()));
-  CHECK(assert_equal((Vector)Vector3(0.0,0.0,0.1),Rot3::roll (0.1).ypr()));
+  CHECK(assert_equal((Vector)Vector3(0.1,0.0,0.0),Rot3::Yaw (0.1).ypr()));
+  CHECK(assert_equal((Vector)Vector3(0.0,0.1,0.0),Rot3::Pitch(0.1).ypr()));
+  CHECK(assert_equal((Vector)Vector3(0.0,0.0,0.1),Rot3::Roll (0.1).ypr()));
 
   // Try RQ to recover calibration from 3*3 sub-block of projection matrix
   Matrix K = (Matrix(3, 3) << 500.0, 0.0, 320.0, 0.0, 500.0, 240.0, 0.0, 0.0, 1.0).finished();
@@ -594,9 +594,9 @@ TEST(Rot3, quaternion) {
 
   // Check creating Rot3 from quaternion
   EXPECT(assert_equal(R1, Rot3(q1)));
-  EXPECT(assert_equal(R1, Rot3::quaternion(q1.w(), q1.x(), q1.y(), q1.z())));
+  EXPECT(assert_equal(R1, Rot3::Quaternion(q1.w(), q1.x(), q1.y(), q1.z())));
   EXPECT(assert_equal(R2, Rot3(q2)));
-  EXPECT(assert_equal(R2, Rot3::quaternion(q2.w(), q2.x(), q2.y(), q2.z())));
+  EXPECT(assert_equal(R2, Rot3::Quaternion(q2.w(), q2.x(), q2.y(), q2.z())));
 
   // Check converting Rot3 to quaterion
   EXPECT(assert_equal(Vector(R1.toQuaternion().coeffs()), Vector(q1.coeffs())));

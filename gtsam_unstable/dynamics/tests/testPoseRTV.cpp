@@ -193,7 +193,7 @@ TEST( testPoseRTV, transformed_from_1 ) {
   Point3 T(1.0, 2.0, 3.0);
   Velocity3 V(2.0, 3.0, 4.0);
   PoseRTV start(R, T, V);
-  Pose3 transform(Rot3::yaw(M_PI_2), Point3(1.0, 2.0, 3.0));
+  Pose3 transform(Rot3::Yaw(M_PI_2), Point3(1.0, 2.0, 3.0));
 
   Matrix actDTrans, actDGlobal;
   PoseRTV actual = start.transformed_from(transform, actDGlobal, actDTrans);
@@ -212,7 +212,7 @@ TEST( testPoseRTV, transformed_from_2 ) {
   Point3 T(1.0, 2.0, 3.0);
   Velocity3 V(2.0, 3.0, 4.0);
   PoseRTV start(R, T, V);
-  Pose3 transform(Rot3::yaw(M_PI_2), Point3(1.0, 2.0, 3.0));
+  Pose3 transform(Rot3::Yaw(M_PI_2), Point3(1.0, 2.0, 3.0));
 
   Matrix actDTrans, actDGlobal;
   PoseRTV actual = start.transformed_from(transform, actDGlobal, actDTrans);
@@ -229,14 +229,14 @@ TEST( testPoseRTV, transformed_from_2 ) {
 TEST(testPoseRTV, RRTMbn) {
   EXPECT(assert_equal(Matrix::Identity(3,3), PoseRTV::RRTMbn(kZero3)));
   EXPECT(assert_equal(Matrix::Identity(3,3), PoseRTV::RRTMbn(Rot3())));
-  EXPECT(assert_equal(PoseRTV::RRTMbn(Vector3(0.3, 0.2, 0.1)), PoseRTV::RRTMbn(Rot3::ypr(0.1, 0.2, 0.3))));
+  EXPECT(assert_equal(PoseRTV::RRTMbn(Vector3(0.3, 0.2, 0.1)), PoseRTV::RRTMbn(Rot3::Ypr(0.1, 0.2, 0.3))));
 }
 
 /* ************************************************************************* */
 TEST(testPoseRTV, RRTMnb) {
   EXPECT(assert_equal(Matrix::Identity(3,3), PoseRTV::RRTMnb(kZero3)));
   EXPECT(assert_equal(Matrix::Identity(3,3), PoseRTV::RRTMnb(Rot3())));
-  EXPECT(assert_equal(PoseRTV::RRTMnb(Vector3(0.3, 0.2, 0.1)), PoseRTV::RRTMnb(Rot3::ypr(0.1, 0.2, 0.3))));
+  EXPECT(assert_equal(PoseRTV::RRTMnb(Vector3(0.3, 0.2, 0.1)), PoseRTV::RRTMnb(Rot3::Ypr(0.1, 0.2, 0.3))));
 }
 
 /* ************************************************************************* */

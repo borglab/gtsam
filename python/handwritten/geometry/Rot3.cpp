@@ -27,12 +27,12 @@ using namespace gtsam;
 
 static Rot3 Quaternion_0(const Vector4& q)
 {
-    return Rot3::quaternion(q[0],q[1],q[2],q[3]);
+    return Rot3::Quaternion(q[0],q[1],q[2],q[3]);
 }
 
 static Rot3 Quaternion_1(double w, double x, double y, double z)
 {
-    return Rot3::quaternion(w,x,y,z);
+    return Rot3::Quaternion(w,x,y,z);
 }
 
 // Prototypes used to perform overloading
