@@ -34,7 +34,7 @@ def visual_ISAM2_plot(poses, points, result):
     # Plot cameras
     i = 0
     while result.exists(X(i)):
-        pose_i = result.pose3_at(X(i))
+        pose_i = result.atPose3(X(i))
         gtsam_utils.plotPose3(fignum, pose_i, 10)
         i += 1
 
@@ -114,10 +114,10 @@ def visual_ISAM2_example():
             print("****************************************************")
             print("Frame", i, ":")
             for j in range(i + 1):
-                print(X(j), ":", currentEstimate.pose3_at(X(j)))
+                print(X(j), ":", currentEstimate.atPose3(X(j)))
 
             for j in range(len(points)):
-                print(L(j), ":", currentEstimate.point3_at(L(j)))
+                print(L(j), ":", currentEstimate.atPoint3(L(j)))
 
             visual_ISAM2_plot(poses, points, currentEstimate)
 
