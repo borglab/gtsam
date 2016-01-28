@@ -27,7 +27,7 @@ class PreintegrationExample(object):
         params.integrationCovariance = 0.0000001 ** 2 * np.identity(3, np.float)
         return params
 
-    def __init__(self, twist=None):
+    def __init__(self, twist=None, bias=None):
         """Initialize with given twist, a pair(angularVelocityVector, velocityVector)."""
         
         # setup interactive plotting
@@ -53,9 +53,14 @@ class PreintegrationExample(object):
         self.g = 10  # simple gravity constant
         self.params = self.defaultParams(self.g)
         ptr = gtsam.ScenarioPointer(self.scenario)
-        accBias = np.array([0, 0.1, 0])
-        gyroBias = np.array([0, 0, 0])
-        self.actualBias = gtsam.ConstantBias(accBias, gyroBias)
+
+        if bias is not None:
+            self.actualBias = bias
+        else:
+            accBias = np.array([0, 0.1, 0])
+            gyroBias = np.array([0, 0, 0])
+            self.actualBias = gtsam.ConstantBias(accBias, gyroBias)
+
         self.runner = gtsam.ScenarioRunner(ptr, self.params, self.dt, self.actualBias)
 
     def plotImu(self, t, measuredOmega, measuredAcc):
