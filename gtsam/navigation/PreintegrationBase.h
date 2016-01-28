@@ -280,6 +280,12 @@ public:
 
   /// @}
 
+  /** Dummy clone for MATLAB */
+  virtual boost::shared_ptr<PreintegrationBase> clone() const {
+    return boost::shared_ptr<PreintegrationBase>();
+  }
+
+
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
   /// @name Deprecated
   /// @{
