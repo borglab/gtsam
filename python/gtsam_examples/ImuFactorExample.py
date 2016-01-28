@@ -36,7 +36,7 @@ class ImuFactorExample(PreintegrationExample):
         
         # simulate the loop
         T = 3
-        state = self.scenario.navState(0)
+        actual_state_i = self.scenario.navState(0)
         for k, t in enumerate(np.arange(0, T, self.dt)):
             # get measurements and add them to PIM
             measuredOmega = self.runner.measuredAngularVelocity(t)
@@ -54,11 +54,11 @@ class ImuFactorExample(PreintegrationExample):
                 graph.push_back(factor)
                 H1 = gtsam.OptionalJacobian9()
                 H2 = gtsam.OptionalJacobian96()
-                print(pim)
-                predicted = pim.predict(state, self.actualBias, H1, H2)
+                predicted_state_j = pim.predict(actual_state_i, self.actualBias, H1, H2)
+                error = pim.computeError(actual_state_i, predicted_state_j, self.actualBias, H1, H1, H2)
+                print("error={}, norm ={}".format(error, np.linalg.norm(error)))
                 pim.resetIntegration()
-                state = self.scenario.navState(t + self.dt)
-                print("predicted.{}\nstate.{}".format(predicted, state))
+                actual_state_i = self.scenario.navState(t + self.dt)
                 i += 1
 
         # add priors on beginning and end
@@ -74,15 +74,21 @@ class ImuFactorExample(PreintegrationExample):
         initial = gtsam.Values()
         initial.insert(BIAS_KEY, self.actualBias)
         for i in range(num_poses):
-            initial.insert(X(i), self.scenario.pose(float(i)))
-            initial.insert(V(i), self.velocity)
+            state_i = self.scenario.navState(float(i))
+            plotPose3(POSES_FIG, state_i.pose(), 0.9)
+            initial.insert(X(i), state_i.pose())
+            initial.insert(V(i), state_i.velocity())
         
+        for idx in range(num_poses - 1):
+            ff = gtsam.getNonlinearFactor(graph, idx)
+            print(ff.error(initial))
+
         # optimize using Levenberg-Marquardt optimization
         params = gtsam.LevenbergMarquardtParams()
         params.setVerbosityLM("SUMMARY")
         optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initial, params)
         result = optimizer.optimize()
-#         result.print("\Result:\n")
+        result.print("\Result:\n")
 
         # Plot cameras
         i = 0
