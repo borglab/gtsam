@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -52,36 +52,33 @@ void PreintegratedImuMeasurements::resetIntegration() {
 //------------------------------------------------------------------------------
 void PreintegratedImuMeasurements::integrateMeasurement(
     const Vector3& measuredAcc, const Vector3& measuredOmega, double dt) {
-
-  static const Matrix93 Gi = (Matrix93() << Z_3x3, I_3x3, Z_3x3).finished();
-
   // Update preintegrated measurements (also get Jacobian)
-  Matrix9 F; // overall Jacobian wrt preintegrated measurements (df/dx)
-  Matrix93 G1, G2;
+  Matrix9 A;  // overall Jacobian wrt preintegrated measurements (df/dx)
+  Matrix93 B, C;
   Matrix3 D_incrR_integratedOmega;
   PreintegrationBase::update(measuredAcc, measuredOmega, dt,
-      &D_incrR_integratedOmega, &F, &G1, &G2);
+                             &D_incrR_integratedOmega, &A, &B, &C);
 
   // first order covariance propagation:
-  // as in [2] we consider a first order propagation that can be seen as a prediction phase in EKF
-  /* --------------------------------------------------------------------------------------------*/
-  // preintMeasCov = F * preintMeasCov * F.transpose() + G * (1/deltaT) * measurementCovariance * G'
-  // NOTE 1: (1/deltaT) allows to pass from continuous time noise to discrete time noise
-  // measurementCovariance_discrete = measurementCovariance_contTime * (1/deltaT)
-#ifdef OLD_JACOBIAN_CALCULATION
-  Matrix9 G;
-  G << G1, Gi, G2;
-  Matrix9 Cov;
-  Cov << p().accelerometerCovariance / dt, Z_3x3, Z_3x3,
-  Z_3x3, p().integrationCovariance * dt, Z_3x3,
-  Z_3x3, Z_3x3, p().gyroscopeCovariance / dt;
-  preintMeasCov_ = F * preintMeasCov_ * F.transpose() + G * Cov * G.transpose();
-#else
-  preintMeasCov_ = F * preintMeasCov_ * F.transpose()
-      + Gi * (p().integrationCovariance * dt) * Gi.transpose() // NOTE(frank): (Gi*dt)*(C/dt)*(Gi'*dt)
-      + G1 * (p().accelerometerCovariance / dt) * G1.transpose()
-      + G2 * (p().gyroscopeCovariance / dt) * G2.transpose();
-#endif
+  // as in [2] we consider a first order propagation that can be seen as a
+  // prediction phase in EKF
+
+  // propagate uncertainty
+  // TODO(frank): use noiseModel routine so we can have arbitrary noise models.
+  const Matrix3& aCov = p().accelerometerCovariance;
+  const Matrix3& wCov = p().gyroscopeCovariance;
+  const Matrix3& iCov = p().integrationCovariance;
+
+  // NOTE(luca): (1/dt) allows to pass from continuous time noise to discrete
+  // time noise
+  // measurementCovariance_discrete = measurementCovariance_contTime/dt
+  preintMeasCov_ = A * preintMeasCov_ * A.transpose();
+  preintMeasCov_.noalias() += B * (aCov / dt) * B.transpose();
+  preintMeasCov_.noalias() += C * (wCov / dt) * C.transpose();
+
+  // NOTE(frank): (Gi*dt)*(C/dt)*(Gi'*dt)
+  static const Matrix93 Gi = (Matrix93() << Z_3x3, I_3x3, Z_3x3).finished();
+  preintMeasCov_.noalias() += Gi * (iCov * dt) * Gi.transpose();
 }
 
 //------------------------------------------------------------------------------
@@ -126,16 +123,21 @@ gtsam::NonlinearFactor::shared_ptr ImuFactor::clone() const {
 }
 
 //------------------------------------------------------------------------------
+std::ostream& operator<<(std::ostream& os, const ImuFactor& f) {
+  os << "  preintegrated measurements:\n" << f._PIM_;
+  ;
+  // Print standard deviations on covariance only
+  os << "  noise model sigmas: " << f.noiseModel_->sigmas().transpose();
+  return os;
+}
+
+//------------------------------------------------------------------------------
 void ImuFactor::print(const string& s, const KeyFormatter& keyFormatter) const {
   cout << s << "ImuFactor(" << keyFormatter(this->key1()) << ","
       << keyFormatter(this->key2()) << "," << keyFormatter(this->key3()) << ","
       << keyFormatter(this->key4()) << "," << keyFormatter(this->key5())
       << ")\n";
-  Base::print("");
-  _PIM_.print("  preintegrated measurements:");
-  // Print standard deviations on covariance only
-  cout << "  noise model sigmas: " << this->noiseModel_->sigmas().transpose()
-      << endl;
+  cout << *this << endl;
 }
 
 //------------------------------------------------------------------------------

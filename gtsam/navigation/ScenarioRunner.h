@@ -22,20 +22,42 @@
 
 namespace gtsam {
 
+// Convert covariance to diagonal noise model, if possible, otherwise throw
+static noiseModel::Diagonal::shared_ptr Diagonal(const Matrix& covariance) {
+  bool smart = true;
+  auto model = noiseModel::Gaussian::Covariance(covariance, smart);
+  auto diagonal = boost::dynamic_pointer_cast<noiseModel::Diagonal>(model);
+  if (!diagonal)
+    throw std::invalid_argument("ScenarioRunner::Diagonal: not a diagonal");
+  return diagonal;
+}
+
 /*
  *  Simple class to test navigation scenarios.
  *  Takes a trajectory scenario as input, and can generate IMU measurements
  */
 class ScenarioRunner {
  public:
-  typedef boost::shared_ptr<PreintegrationParams> SharedParams;
+  typedef imuBias::ConstantBias Bias;
+  typedef boost::shared_ptr<PreintegratedImuMeasurements::Params> SharedParams;
+
+ private:
+  const Scenario* scenario_;
+  const SharedParams p_;
+  const double imuSampleTime_, sqrt_dt_;
+  const Bias estimatedBias_;
+
+  // Create two samplers for acceleration and omega noise
+  mutable Sampler gyroSampler_, accSampler_;
+
+ public:
   ScenarioRunner(const Scenario* scenario, const SharedParams& p,
-                 double imuSampleTime = 1.0 / 100.0,
-                 const imuBias::ConstantBias& bias = imuBias::ConstantBias())
+                 double imuSampleTime = 1.0 / 100.0, const Bias& bias = Bias())
       : scenario_(scenario),
         p_(p),
         imuSampleTime_(imuSampleTime),
-        bias_(bias),
+        sqrt_dt_(std::sqrt(imuSampleTime)),
+        estimatedBias_(bias),
         // NOTE(duy): random seeds that work well:
         gyroSampler_(Diagonal(p->gyroscopeCovariance), 10),
         accSampler_(Diagonal(p->accelerometerCovariance), 29284) {}
@@ -57,59 +79,31 @@ class ScenarioRunner {
 
   // versions corrupted by bias and noise
   Vector3 measuredAngularVelocity(double t) const {
-    return actualAngularVelocity(t) + bias_.gyroscope() +
-           gyroSampler_.sample() / std::sqrt(imuSampleTime_);
+    return actualAngularVelocity(t) + estimatedBias_.gyroscope() +
+           gyroSampler_.sample() / sqrt_dt_;
   }
   Vector3 measuredSpecificForce(double t) const {
-    return actualSpecificForce(t) + bias_.accelerometer() +
-           accSampler_.sample() / std::sqrt(imuSampleTime_);
+    return actualSpecificForce(t) + estimatedBias_.accelerometer() +
+           accSampler_.sample() / sqrt_dt_;
   }
 
   const double& imuSampleTime() const { return imuSampleTime_; }
 
   /// Integrate measurements for T seconds into a PIM
-  PreintegratedImuMeasurements integrate(
-      double T,
-      const imuBias::ConstantBias& estimatedBias = imuBias::ConstantBias(),
-      bool corrupted = false) const;
+  PreintegratedImuMeasurements integrate(double T,
+                                         const Bias& estimatedBias = Bias(),
+                                         bool corrupted = false) const;
 
   /// Predict predict given a PIM
   NavState predict(const PreintegratedImuMeasurements& pim,
-                   const imuBias::ConstantBias& estimatedBias =
-                       imuBias::ConstantBias()) const;
+                   const Bias& estimatedBias = Bias()) const;
 
-  /// Return pose covariance by re-arranging pim.preintMeasCov() appropriately
-  Matrix6 poseCovariance(const PreintegratedImuMeasurements& pim) const {
-    Matrix9 cov = pim.preintMeasCov();
-    Matrix6 poseCov;
-    poseCov << cov.block<3, 3>(0, 0), cov.block<3, 3>(0, 3),  //
-        cov.block<3, 3>(3, 0), cov.block<3, 3>(3, 3);
-    return poseCov;
-  }
+  /// Compute a Monte Carlo estimate of the predict covariance using N samples
+  Matrix9 estimateCovariance(double T, size_t N = 1000,
+                             const Bias& estimatedBias = Bias()) const;
 
-  /// Compute a Monte Carlo estimate of the PIM pose covariance using N samples
-  Matrix6 estimatePoseCovariance(double T, size_t N = 1000,
-                                 const imuBias::ConstantBias& estimatedBias =
-                                     imuBias::ConstantBias()) const;
-
- private:
-  // Convert covariance to diagonal noise model, if possible, otherwise throw
-  static noiseModel::Diagonal::shared_ptr Diagonal(const Matrix& covariance) {
-    bool smart = true;
-    auto model = noiseModel::Gaussian::Covariance(covariance, smart);
-    auto diagonal = boost::dynamic_pointer_cast<noiseModel::Diagonal>(model);
-    if (!diagonal)
-      throw std::invalid_argument("ScenarioRunner::Diagonal: not a diagonal");
-    return diagonal;
-  }
-
-  const Scenario* scenario_;
-  const SharedParams p_;
-  const double imuSampleTime_;
-  const imuBias::ConstantBias bias_;
-
-  // Create two samplers for acceleration and omega noise
-  mutable Sampler gyroSampler_, accSampler_;
+  /// Estimate covariance of sampled noise for sanity-check
+  Matrix6 estimateNoiseCovariance(size_t N = 1000) const;
 };
 
 }  // namespace gtsam

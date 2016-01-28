@@ -24,6 +24,9 @@
 #include <gtsam/navigation/PreintegrationParams.h>
 #include <gtsam/navigation/NavState.h>
 #include <gtsam/navigation/ImuBias.h>
+#include <gtsam/linear/NoiseModel.h>
+
+#include <iosfwd>
 
 namespace gtsam {
 
@@ -53,15 +56,56 @@ struct PoseVelocityBias {
  * to access, print, and compare them.
  */
 class PreintegrationBase {
+ public:
+  typedef imuBias::ConstantBias Bias;
+  typedef PreintegrationParams Params;
 
-protected:
+  /// The IMU is integrated in the tangent space, represented by a Vector9
+  /// This small inner class provides some convenient constructors and efficient
+  /// access to the orientation, position, and velocity components
+  class TangentVector {
+    Vector9 v_;
+    typedef const Vector9 constV9;
+
+   public:
+    TangentVector() { v_.setZero(); }
+    TangentVector(const Vector9& v) : v_(v) {}
+    TangentVector(const Vector3& theta, const Vector3& pos,
+                  const Vector3& vel) {
+      this->theta() = theta;
+      this->position() = pos;
+      this->velocity() = vel;
+    }
+
+    const Vector9& vector() const { return v_; }
+
+    Eigen::Block<Vector9, 3, 1> theta() { return v_.segment<3>(0); }
+    Eigen::Block<constV9, 3, 1> theta() const { return v_.segment<3>(0); }
+
+    Eigen::Block<Vector9, 3, 1> position() { return v_.segment<3>(3); }
+    Eigen::Block<constV9, 3, 1> position() const { return v_.segment<3>(3); }
+
+    Eigen::Block<Vector9, 3, 1> velocity() { return v_.segment<3>(6); }
+    Eigen::Block<constV9, 3, 1> velocity() const { return v_.segment<3>(6); }
+
+   private:
+     /** Serialization function */
+     friend class boost::serialization::access;
+     template <class ARCHIVE>
+     void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+       namespace bs = ::boost::serialization;
+       ar & bs::make_nvp("v_", bs::make_array(v_.data(), v_.size()));
+     }
+  };
+
+ protected:
 
   /// Parameters. Declared mutable only for deprecated predict method.
   /// TODO(frank): make const once deprecated method is removed
 #ifdef ALLOW_DEPRECATED_IN_GTSAM4
   mutable
 #endif
-  boost::shared_ptr<PreintegrationParams> p_;
+  boost::shared_ptr<Params> p_;
 
   /// Acceleration and gyro bias used for preintegration
   imuBias::ConstantBias biasHat_;
@@ -74,7 +118,8 @@ protected:
    * Note: relative position does not take into account velocity at time i, see deltap+, in [2]
    * Note: velocity is now also in frame i, as opposed to deltaVij in [2]
    */
-  NavState deltaXij_;
+  /// Current estimate of deltaXij_k
+  TangentVector deltaXij_;
 
   Matrix3 delRdelBiasOmega_; ///< Jacobian of preintegrated rotation w.r.t. angular rate bias
   Matrix3 delPdelBiasAcc_;   ///< Jacobian of preintegrated position w.r.t. acceleration bias
@@ -88,7 +133,6 @@ protected:
   }
 
 public:
-
   /// @name Constructors
   /// @{
 
@@ -97,23 +141,20 @@ public:
    *  @param p    Parameters, typically fixed in a single application
    *  @param bias Current estimate of acceleration and rotation rate biases
    */
-  PreintegrationBase(const boost::shared_ptr<PreintegrationParams>& p,
-      const imuBias::ConstantBias& biasHat = imuBias::ConstantBias()) :
-      p_(p), biasHat_(biasHat) {
-    resetIntegration();
-  }
+  PreintegrationBase(const boost::shared_ptr<Params>& p,
+      const imuBias::ConstantBias& biasHat = imuBias::ConstantBias());
 
   /**
    *  Constructor which takes in all members for generic construction
    */
-  PreintegrationBase(const boost::shared_ptr<PreintegrationParams>& p, const imuBias::ConstantBias& biasHat,
-                     double deltaTij, const NavState& deltaXij, const Matrix3& delPdelBiasAcc,
+  PreintegrationBase(const boost::shared_ptr<Params>& p, const imuBias::ConstantBias& biasHat,
+                     double deltaTij, const TangentVector& zeta, const Matrix3& delPdelBiasAcc,
                      const Matrix3& delPdelBiasOmega, const Matrix3& delVdelBiasAcc,
                      const Matrix3& delVdelBiasOmega)
       : p_(p),
         biasHat_(biasHat),
         deltaTij_(deltaTij),
-        deltaXij_(deltaXij),
+        deltaXij_(zeta),
         delPdelBiasAcc_(delPdelBiasAcc),
         delPdelBiasOmega_(delPdelBiasOmega),
         delVdelBiasAcc_(delVdelBiasAcc),
@@ -125,69 +166,55 @@ public:
   /// Re-initialize PreintegratedMeasurements
   void resetIntegration();
 
-  /// check parameters equality: checks whether shared pointer points to same PreintegrationParams object.
+  /// check parameters equality: checks whether shared pointer points to same Params object.
   bool matchesParamsWith(const PreintegrationBase& other) const {
     return p_ == other.p_;
   }
 
   /// shared pointer to params
-  const boost::shared_ptr<PreintegrationParams>& params() const {
+  const boost::shared_ptr<Params>& params() const {
     return p_;
   }
 
   /// const reference to params
-  const PreintegrationParams& p() const {
-    return *boost::static_pointer_cast<PreintegrationParams>(p_);
+  const Params& p() const {
+    return *boost::static_pointer_cast<Params>(p_);
   }
 
+#ifdef ALLOW_DEPRECATED_IN_GTSAM4
   void set_body_P_sensor(const Pose3& body_P_sensor) {
     p_->body_P_sensor = body_P_sensor;
   }
-  /// @}
+#endif
+/// @}
 
   /// @name Instance variables access
   /// @{
-  const NavState& deltaXij() const {
-    return deltaXij_;
-  }
-  const double& deltaTij() const {
-    return deltaTij_;
-  }
-  const Rot3& deltaRij() const {
-    return deltaXij_.attitude();
-  }
-  Vector3 deltaPij() const {
-    return deltaXij_.position().vector();
-  }
-  Vector3 deltaVij() const {
-    return deltaXij_.velocity();
-  }
-  const imuBias::ConstantBias& biasHat() const {
-    return biasHat_;
-  }
-  const Matrix3& delRdelBiasOmega() const {
-    return delRdelBiasOmega_;
-  }
-  const Matrix3& delPdelBiasAcc() const {
-    return delPdelBiasAcc_;
-  }
-  const Matrix3& delPdelBiasOmega() const {
-    return delPdelBiasOmega_;
-  }
-  const Matrix3& delVdelBiasAcc() const {
-    return delVdelBiasAcc_;
-  }
-  const Matrix3& delVdelBiasOmega() const {
-    return delVdelBiasOmega_;
-  }
+  const imuBias::ConstantBias& biasHat() const { return biasHat_; }
+  const double& deltaTij() const { return deltaTij_; }
+
+  const Vector9& zeta() const { return deltaXij_.vector(); }
+
+  Vector3 theta() const { return deltaXij_.theta(); }
+  Vector3 deltaPij() const { return deltaXij_.position(); }
+  Vector3 deltaVij() const { return deltaXij_.velocity(); }
+
+  Rot3 deltaRij() const { return Rot3::Expmap(deltaXij_.theta()); }
+  NavState deltaXij() const { return NavState::Retract(deltaXij_.vector()); }
+
+  const Matrix3& delRdelBiasOmega() const { return delRdelBiasOmega_; }
+  const Matrix3& delPdelBiasAcc() const { return delPdelBiasAcc_; }
+  const Matrix3& delPdelBiasOmega() const { return delPdelBiasOmega_; }
+  const Matrix3& delVdelBiasAcc() const { return delVdelBiasAcc_; }
+  const Matrix3& delVdelBiasOmega() const { return delVdelBiasOmega_; }
+
   // Exposed for MATLAB
-  Vector6 biasHatVector() const {
-    return biasHat_.vector();
-  }
+  Vector6 biasHatVector() const { return biasHat_.vector(); }
   /// @}
 
   /// @name Testable
   /// @{
+  GTSAM_EXPORT friend std::ostream& operator<<(std::ostream& os, const PreintegrationBase& pim);
   void print(const std::string& s) const;
   bool equals(const PreintegrationBase& other, double tol) const;
   /// @}
@@ -204,19 +231,28 @@ public:
       OptionalJacobian<3, 3> D_correctedAcc_measuredOmega = boost::none,
       OptionalJacobian<3, 3> D_correctedOmega_measuredOmega = boost::none) const;
 
+  // Update integrated vector on tangent manifold zeta with acceleration
+  // readings a_body and gyro readings w_body, bias-corrected in body frame.
+  static TangentVector UpdateEstimate(const Vector3& a_body,
+                                      const Vector3& w_body, double dt,
+                                      const TangentVector& zeta,
+                                      OptionalJacobian<9, 9> A = boost::none,
+                                      OptionalJacobian<9, 3> B = boost::none,
+                                      OptionalJacobian<9, 3> C = boost::none);
+
   /// Calculate the updated preintegrated measurement, does not modify
   /// It takes measured quantities in the j frame
-  NavState updatedDeltaXij(const Vector3& j_measuredAcc,
-      const Vector3& j_measuredOmega, const double dt,
-      OptionalJacobian<9, 9> D_updated_current = boost::none,
-      OptionalJacobian<9, 3> D_updated_measuredAcc = boost::none,
-      OptionalJacobian<9, 3> D_updated_measuredOmega = boost::none) const;
+  PreintegrationBase::TangentVector updatedDeltaXij(
+      const Vector3& j_measuredAcc, const Vector3& j_measuredOmega, double dt,
+      OptionalJacobian<9, 9> A = boost::none,
+      OptionalJacobian<9, 3> B = boost::none,
+      OptionalJacobian<9, 3> C = boost::none) const;
 
   /// Update preintegrated measurements and get derivatives
   /// It takes measured quantities in the j frame
   void update(const Vector3& j_measuredAcc, const Vector3& j_measuredOmega,
-      const double deltaT, Matrix3* D_incrR_integratedOmega, Matrix9* D_updated_current,
-      Matrix93* D_udpated_measuredAcc, Matrix93* D_updated_measuredOmega);
+              const double deltaT, Matrix3* D_incrR_integratedOmega, Matrix9* A,
+              Matrix93* B, Matrix93* C);
 
   /// Given the estimate of the bias, return a NavState tangent vector
   /// summarizing the preintegrated IMU measurements so far
@@ -225,8 +261,14 @@ public:
 
   /// Predict state at time j
   NavState predict(const NavState& state_i, const imuBias::ConstantBias& bias_i,
-      OptionalJacobian<9, 9> H1 = boost::none, OptionalJacobian<9, 6> H2 =
-          boost::none) const;
+                   OptionalJacobian<9, 9> H1 = boost::none,
+                   OptionalJacobian<9, 6> H2 = boost::none) const;
+
+  /// Calculate error given navStates
+  Vector9 computeError(const NavState& state_i, const NavState& state_j,
+                       const imuBias::ConstantBias& bias_i,
+                       OptionalJacobian<9, 9> H1, OptionalJacobian<9, 9> H2,
+                       OptionalJacobian<9, 6> H3) const;
 
   /// Compute errors w.r.t. preintegrated measurements and jacobians wrt pose_i, vel_i, bias_i, pose_j, bias_j
   Vector9 computeErrorAndJacobians(const Pose3& pose_i, const Vector3& vel_i,

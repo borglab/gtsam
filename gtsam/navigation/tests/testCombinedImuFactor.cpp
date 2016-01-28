@@ -221,9 +221,9 @@ TEST( CombinedImuFactor, FirstOrderPreIntegratedMeasurements ) {
 
   // Compare Jacobians
   EXPECT(assert_equal(expectedDelPdelBiasAcc, pim.delPdelBiasAcc()));
-  EXPECT(assert_equal(expectedDelPdelBiasOmega, pim.delPdelBiasOmega()));
+  EXPECT(assert_equal(expectedDelPdelBiasOmega, pim.delPdelBiasOmega(),1e-8));
   EXPECT(assert_equal(expectedDelVdelBiasAcc, pim.delVdelBiasAcc()));
-  EXPECT(assert_equal(expectedDelVdelBiasOmega, pim.delVdelBiasOmega()));
+  EXPECT(assert_equal(expectedDelVdelBiasOmega, pim.delVdelBiasOmega(),1e-8));
   EXPECT(assert_equal(expectedDelRdelBiasAcc, Matrix::Zero(3, 3)));
   EXPECT(assert_equal(expectedDelRdelBiasOmega, pim.delRdelBiasOmega(), 1e-3)); // 1e-3 needs to be added only when using quaternions for rotations
 }

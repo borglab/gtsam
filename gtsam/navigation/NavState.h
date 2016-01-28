@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -75,18 +75,9 @@ public:
   /// @name Component Access
   /// @{
 
-  inline const Rot3& attitude() const {
-    return R_;
-  }
-  inline const Point3& position() const {
-    return t_;
-  }
-  inline const Velocity3& velocity() const {
-    return v_;
-  }
-  const Rot3& attitude(OptionalJacobian<3, 9> H) const;
-  const Point3& position(OptionalJacobian<3, 9> H) const;
-  const Velocity3& velocity(OptionalJacobian<3, 9> H) const;
+  const Rot3& attitude(OptionalJacobian<3, 9> H = boost::none) const;
+  const Point3& position(OptionalJacobian<3, 9> H = boost::none) const;
+  const Velocity3& velocity(OptionalJacobian<3, 9> H = boost::none) const;
 
   const Pose3 pose() const {
     return Pose3(attitude(), position());
@@ -123,6 +114,9 @@ public:
   /// @}
   /// @name Testable
   /// @{
+
+  /// Output stream operator
+  GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os, const NavState&  state);
 
   /// print
   void print(const std::string& s = "") const;
@@ -228,6 +222,8 @@ public:
       const boost::optional<Vector3>& omegaCoriolis, bool use2ndOrderCoriolis =
           false, OptionalJacobian<9, 9> H1 = boost::none,
       OptionalJacobian<9, 9> H2 = boost::none) const;
+
+  /// @}
 
 private:
   /// @{

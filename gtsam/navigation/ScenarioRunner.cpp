@@ -21,14 +21,16 @@
 #include <boost/assign.hpp>
 #include <cmath>
 
+using namespace std;
+using namespace boost::assign;
+
 namespace gtsam {
 
 static double intNoiseVar = 0.0000001;
 static const Matrix3 kIntegrationErrorCovariance = intNoiseVar * I_3x3;
 
 PreintegratedImuMeasurements ScenarioRunner::integrate(
-    double T, const imuBias::ConstantBias& estimatedBias,
-    bool corrupted) const {
+    double T, const Bias& estimatedBias, bool corrupted) const {
   PreintegratedImuMeasurements pim(p_, estimatedBias);
 
   const double dt = imuSampleTime();
@@ -45,28 +47,49 @@ PreintegratedImuMeasurements ScenarioRunner::integrate(
   return pim;
 }
 
-NavState ScenarioRunner::predict(
-    const PreintegratedImuMeasurements& pim,
-    const imuBias::ConstantBias& estimatedBias) const {
+NavState ScenarioRunner::predict(const PreintegratedImuMeasurements& pim,
+                                 const Bias& estimatedBias) const {
   const NavState state_i(scenario_->pose(0), scenario_->velocity_n(0));
   return pim.predict(state_i, estimatedBias);
 }
 
-Matrix6 ScenarioRunner::estimatePoseCovariance(
-    double T, size_t N, const imuBias::ConstantBias& estimatedBias) const {
-  gttic_(estimatePoseCovariance);
+Matrix9 ScenarioRunner::estimateCovariance(double T, size_t N,
+                                           const Bias& estimatedBias) const {
+  gttic_(estimateCovariance);
 
   // Get predict prediction from ground truth measurements
-  Pose3 prediction = predict(integrate(T)).pose();
+  NavState prediction = predict(integrate(T));
 
   // Sample !
   Matrix samples(9, N);
-  Vector6 sum = Vector6::Zero();
+  Vector9 sum = Vector9::Zero();
   for (size_t i = 0; i < N; i++) {
-    Pose3 sampled = predict(integrate(T, estimatedBias, true)).pose();
-    Vector6 xi = sampled.localCoordinates(prediction);
+    auto pim = integrate(T, estimatedBias, true);
+    NavState sampled = predict(pim);
+    Vector9 xi = sampled.localCoordinates(prediction);
     samples.col(i) = xi;
     sum += xi;
+  }
+
+  // Compute MC covariance
+  Vector9 sampleMean = sum / N;
+  Matrix9 Q;
+  Q.setZero();
+  for (size_t i = 0; i < N; i++) {
+    Vector9 xi = samples.col(i) - sampleMean;
+    Q += xi * xi.transpose();
+  }
+
+  return Q / (N - 1);
+}
+
+Matrix6 ScenarioRunner::estimateNoiseCovariance(size_t N) const {
+  Matrix samples(6, N);
+  Vector6 sum = Vector6::Zero();
+  for (size_t i = 0; i < N; i++) {
+    samples.col(i) << accSampler_.sample() / sqrt_dt_,
+        gyroSampler_.sample() / sqrt_dt_;
+    sum += samples.col(i);
   }
 
   // Compute MC covariance
@@ -74,8 +97,7 @@ Matrix6 ScenarioRunner::estimatePoseCovariance(
   Matrix6 Q;
   Q.setZero();
   for (size_t i = 0; i < N; i++) {
-    Vector6 xi = samples.col(i);
-    xi -= sampleMean;
+    Vector6 xi = samples.col(i) - sampleMean;
     Q += xi * xi.transpose();
   }
 
