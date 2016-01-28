@@ -24,18 +24,29 @@
 using namespace boost::python;
 using namespace gtsam;
 
-typedef gtsam::OptionalJacobian<9, 9> OptionalJacobian9;
+typedef gtsam::OptionalJacobian<3, 9> OptionalJacobian39;
 typedef gtsam::OptionalJacobian<9, 6> OptionalJacobian96;
+typedef gtsam::OptionalJacobian<9, 9> OptionalJacobian9;
+
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(print_overloads, print, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(attitude_overloads, attitude, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(position_overloads, position, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(velocity_overloads, velocity, 0, 1)
 
 void exportImuFactor() {
-  class_<OptionalJacobian9>("OptionalJacobian9", init<>());
+  class_<OptionalJacobian39>("OptionalJacobian39", init<>());
   class_<OptionalJacobian96>("OptionalJacobian96", init<>());
+  class_<OptionalJacobian9>("OptionalJacobian9", init<>());
 
   class_<NavState>("NavState", init<>())
       // TODO(frank): overload with jacobians
-      //      .def("attitude", &NavState::attitude)
-      //      .def("position", &NavState::position)
-      //      .def("velocity", &NavState::velocity)
+      .def("print", &NavState::print, print_overloads())
+      .def("attitude", &NavState::attitude,
+           attitude_overloads()[return_value_policy<copy_const_reference>()])
+      .def("position", &NavState::position,
+           position_overloads()[return_value_policy<copy_const_reference>()])
+      .def("velocity", &NavState::velocity,
+           velocity_overloads()[return_value_policy<copy_const_reference>()])
       .def(repr(self))
       .def("pose", &NavState::pose);
 
@@ -77,6 +88,7 @@ void exportImuFactor() {
   // NOTE(frank): Abstract classes need boost::noncopyable
   class_<ImuFactor, bases<NonlinearFactor>, boost::shared_ptr<ImuFactor>>(
       "ImuFactor")
+      .def("error", &ImuFactor::error)
       .def(init<Key, Key, Key, Key, Key, const PreintegratedImuMeasurements&>())
       .def(repr(self));
 }
