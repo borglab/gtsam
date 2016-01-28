@@ -244,44 +244,99 @@ TEST(Rot3, retract_localCoordinates2)
   EXPECT(assert_equal(t1, t2.retract(d21)));
 }
 /* ************************************************************************* */
-Vector w = Vector3(0.1, 0.27, -0.2);
-
-// Left trivialization Derivative of exp(w) wrpt w:
+namespace exmap_derivative {
+static const Vector3 w(0.1, 0.27, -0.2);
+}
+// Left trivialized Derivative of exp(w) wrpt w:
 // How does exp(w) change when w changes?
 // We find a y such that: exp(w) exp(y) = exp(w + dw) for dw --> 0
 // => y = log (exp(-w) * exp(w+dw))
 Vector3 testDexpL(const Vector3& dw) {
+  using exmap_derivative::w;
   return Rot3::Logmap(Rot3::Expmap(-w) * Rot3::Expmap(w + dw));
 }
 
 TEST( Rot3, ExpmapDerivative) {
-  Matrix actualDexpL = Rot3::ExpmapDerivative(w);
-  Matrix expectedDexpL = numericalDerivative11<Vector3, Vector3>(testDexpL,
+  using exmap_derivative::w;
+  const Matrix actualDexpL = Rot3::ExpmapDerivative(w);
+  const Matrix expectedDexpL = numericalDerivative11<Vector3, Vector3>(testDexpL,
       Vector3::Zero(), 1e-2);
   EXPECT(assert_equal(expectedDexpL, actualDexpL,1e-7));
 
-  Matrix actualDexpInvL = Rot3::LogmapDerivative(w);
+  const Matrix actualDexpInvL = Rot3::LogmapDerivative(w);
   EXPECT(assert_equal(expectedDexpL.inverse(), actualDexpInvL,1e-7));
+  }
+
+/* ************************************************************************* */
+TEST( Rot3, ExpmapDerivative2)
+{
+  const Vector3 theta(0.1, 0, 0.1);
+  const Matrix Jexpected = numericalDerivative11<Rot3, Vector3>(
+      boost::bind(&Rot3::Expmap, _1, boost::none), theta);
+
+  CHECK(assert_equal(Jexpected, Rot3::ExpmapDerivative(theta)));
+  CHECK(assert_equal(Matrix3(Jexpected.transpose()), Rot3::ExpmapDerivative(-theta)));
 }
 
 /* ************************************************************************* */
-Vector3 thetahat(0.1, 0, 0.1);
-TEST( Rot3, ExpmapDerivative2)
+TEST( Rot3, ExpmapDerivative3)
 {
-  Matrix Jexpected = numericalDerivative11<Rot3, Vector3>(
-      boost::bind(&Rot3::Expmap, _1, boost::none), thetahat);
+  const Vector3 theta(10, 20, 30);
+  const Matrix Jexpected = numericalDerivative11<Rot3, Vector3>(
+      boost::bind(&Rot3::Expmap, _1, boost::none), theta);
 
-  Matrix Jactual = Rot3::ExpmapDerivative(thetahat);
-  CHECK(assert_equal(Jexpected, Jactual));
+  CHECK(assert_equal(Jexpected, Rot3::ExpmapDerivative(theta)));
+  CHECK(assert_equal(Matrix3(Jexpected.transpose()), Rot3::ExpmapDerivative(-theta)));
+}
 
-  Matrix Jactual2 = Rot3::ExpmapDerivative(thetahat);
-  CHECK(assert_equal(Jexpected, Jactual2));
+/* ************************************************************************* */
+TEST(Rot3, ExpmapDerivative4) {
+  // Iserles05an (Lie-group Methods) says:
+  // scalar is easy: d exp(a(t)) / dt = exp(a(t)) a'(t)
+  // matrix is hard: d exp(A(t)) / dt = exp(A(t)) dexp[-A(t)] A'(t)
+  // where A(t): R -> so(3) is a trajectory in the tangent space of SO(3)
+  // and dexp[A] is a linear map from 3*3 to 3*3 derivatives of se(3)
+  // Hence, the above matrix equation is typed: 3*3 = SO(3) * linear_map(3*3)
+
+  // In GTSAM, we don't work with the skew-symmetric matrices A directly, but with 3-vectors.
+  // omega is easy: d Expmap(w(t)) / dt = ExmapDerivative[w(t)] * w'(t)
+
+  // Let's verify the above formula.
+
+  auto w = [](double t) { return Vector3(2 * t, sin(t), 4 * t * t); };
+  auto w_dot = [](double t) { return Vector3(2, cos(t), 8 * t); };
+
+  // We define a function R
+  auto R = [w](double t) { return Rot3::Expmap(w(t)); };
+
+  for (double t = -2.0; t < 2.0; t += 0.3) {
+    const Matrix expected = numericalDerivative11<Rot3, double>(R, t);
+    const Matrix actual = Rot3::ExpmapDerivative(w(t)) * w_dot(t);
+    CHECK(assert_equal(expected, actual, 1e-7));
+  }
+}
+
+/* ************************************************************************* */
+TEST(Rot3, ExpmapDerivative5) {
+  auto w = [](double t) { return Vector3(2 * t, sin(t), 4 * t * t); };
+  auto w_dot = [](double t) { return Vector3(2, cos(t), 8 * t); };
+
+  // Same as above, but define R as mapping local coordinates to neighborhood aroud R0.
+  const Rot3 R0 = Rot3::Rodrigues(0.1, 0.4, 0.2);
+  auto R = [R0, w](double t) { return R0.expmap(w(t)); };
+
+  for (double t = -2.0; t < 2.0; t += 0.3) {
+    const Matrix expected = numericalDerivative11<Rot3, double>(R, t);
+    const Matrix actual = Rot3::ExpmapDerivative(w(t)) * w_dot(t);
+    CHECK(assert_equal(expected, actual, 1e-7));
+  }
 }
 
 /* ************************************************************************* */
 TEST( Rot3, jacobianExpmap )
 {
-  Matrix Jexpected = numericalDerivative11<Rot3, Vector3>(boost::bind(
+  const Vector3 thetahat(0.1, 0, 0.1);
+  const Matrix Jexpected = numericalDerivative11<Rot3, Vector3>(boost::bind(
       &Rot3::Expmap, _1, boost::none), thetahat);
   Matrix3 Jactual;
   const Rot3 R = Rot3::Expmap(thetahat, Jactual);
@@ -291,18 +346,20 @@ TEST( Rot3, jacobianExpmap )
 /* ************************************************************************* */
 TEST( Rot3, LogmapDerivative )
 {
-  Rot3 R = Rot3::Expmap(thetahat); // some rotation
-  Matrix Jexpected = numericalDerivative11<Vector,Rot3>(boost::bind(
+  const Vector3 thetahat(0.1, 0, 0.1);
+  const Rot3 R = Rot3::Expmap(thetahat); // some rotation
+  const Matrix Jexpected = numericalDerivative11<Vector,Rot3>(boost::bind(
       &Rot3::Logmap, _1, boost::none), R);
-  Matrix3 Jactual = Rot3::LogmapDerivative(thetahat);
+  const Matrix3 Jactual = Rot3::LogmapDerivative(thetahat);
   EXPECT(assert_equal(Jexpected, Jactual));
 }
 
 /* ************************************************************************* */
-TEST( Rot3, jacobianLogmap )
+TEST( Rot3, JacobianLogmap )
 {
-  Rot3 R = Rot3::Expmap(thetahat); // some rotation
-  Matrix Jexpected = numericalDerivative11<Vector,Rot3>(boost::bind(
+  const Vector3 thetahat(0.1, 0, 0.1);
+  const Rot3 R = Rot3::Expmap(thetahat); // some rotation
+  const Matrix Jexpected = numericalDerivative11<Vector,Rot3>(boost::bind(
       &Rot3::Logmap, _1, boost::none), R);
   Matrix3 Jactual;
   Rot3::Logmap(R, Jactual);
