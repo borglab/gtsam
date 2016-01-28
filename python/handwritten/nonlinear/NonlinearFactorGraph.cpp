@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -11,7 +11,7 @@
 
 /**
  * @brief exports NonlinearFactorGraph class to python
- * @author Andrew Melim 
+ * @author Andrew Melim
  * @author Ellon Paiva Mendes (LAAS-CNRS)
  **/
 
@@ -28,6 +28,13 @@ using namespace gtsam;
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(print_overloads, NonlinearFactorGraph::print, 0, 1);
 
+boost::shared_ptr<NonlinearFactor> getNonlinearFactor(
+    const NonlinearFactorGraph& graph, size_t idx) {
+  auto p = boost::dynamic_pointer_cast<NonlinearFactor>(graph.at(idx));
+  if (!p) throw std::runtime_error("No NonlinearFactor at requested index");
+  return p;
+};
+
 void exportNonlinearFactorGraph(){
 
   typedef NonlinearFactorGraph::sharedFactor sharedFactor;
@@ -36,12 +43,14 @@ void exportNonlinearFactorGraph(){
   void (NonlinearFactorGraph::*add1)(const sharedFactor&) = &NonlinearFactorGraph::add;
 
   class_<NonlinearFactorGraph>("NonlinearFactorGraph", init<>())
-    .def("size",&NonlinearFactorGraph::size)  
+    .def("size",&NonlinearFactorGraph::size)
     .def("push_back", push_back1)
     .def("add", add1)
     .def("resize", &NonlinearFactorGraph::resize)
     .def("empty", &NonlinearFactorGraph::empty)
     .def("print", &NonlinearFactorGraph::print, print_overloads(args("s")))
   ;
+
+  def("getNonlinearFactor", getNonlinearFactor);
 
 }
