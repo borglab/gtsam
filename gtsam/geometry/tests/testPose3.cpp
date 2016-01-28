@@ -556,12 +556,12 @@ TEST( Pose3, between )
 /* ************************************************************************* */
 // some shared test values - pulled from equivalent test in Pose2
 Point3 l1(1, 0, 0), l2(1, 1, 0), l3(2, 2, 0), l4(1, 4,-4);
-Pose3 x1, x2(Rot3::ypr(0.0, 0.0, 0.0), l2), x3(Rot3::ypr(M_PI/4.0, 0.0, 0.0), l2);
+Pose3 x1, x2(Rot3::Ypr(0.0, 0.0, 0.0), l2), x3(Rot3::Ypr(M_PI/4.0, 0.0, 0.0), l2);
 Pose3
-    xl1(Rot3::ypr(0.0, 0.0, 0.0), Point3(1, 0, 0)),
-    xl2(Rot3::ypr(0.0, 1.0, 0.0), Point3(1, 1, 0)),
-    xl3(Rot3::ypr(1.0, 0.0, 0.0), Point3(2, 2, 0)),
-    xl4(Rot3::ypr(0.0, 0.0, 1.0), Point3(1, 4,-4));
+    xl1(Rot3::Ypr(0.0, 0.0, 0.0), Point3(1, 0, 0)),
+    xl2(Rot3::Ypr(0.0, 1.0, 0.0), Point3(1, 1, 0)),
+    xl3(Rot3::Ypr(1.0, 0.0, 0.0), Point3(2, 2, 0)),
+    xl4(Rot3::Ypr(0.0, 0.0, 1.0), Point3(1, 4,-4));
 
 /* ************************************************************************* */
 double range_proxy(const Pose3& pose, const Point3& point) {
@@ -654,9 +654,9 @@ TEST( Pose3, unicycle )
 {
   // velocity in X should be X in inertial frame, rather than global frame
   Vector x_step = delta(6,3,1.0);
-  EXPECT(assert_equal(Pose3(Rot3::ypr(0,0,0), l1), expmap_default<Pose3>(x1, x_step), tol));
-  EXPECT(assert_equal(Pose3(Rot3::ypr(0,0,0), Point3(2,1,0)), expmap_default<Pose3>(x2, x_step), tol));
-  EXPECT(assert_equal(Pose3(Rot3::ypr(M_PI/4.0,0,0), Point3(2,2,0)), expmap_default<Pose3>(x3, sqrt(2.0) * x_step), tol));
+  EXPECT(assert_equal(Pose3(Rot3::Ypr(0,0,0), l1), expmap_default<Pose3>(x1, x_step), tol));
+  EXPECT(assert_equal(Pose3(Rot3::Ypr(0,0,0), Point3(2,1,0)), expmap_default<Pose3>(x2, x_step), tol));
+  EXPECT(assert_equal(Pose3(Rot3::Ypr(M_PI/4.0,0,0), Point3(2,2,0)), expmap_default<Pose3>(x3, sqrt(2.0) * x_step), tol));
 }
 
 /* ************************************************************************* */

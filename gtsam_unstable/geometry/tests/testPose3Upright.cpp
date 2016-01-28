@@ -58,9 +58,9 @@ TEST( testPose3Upright, conversions ) {
   EXPECT(assert_equal(Point3(1.0, 2.0, 3.0), pose.translation(), tol));
   EXPECT(assert_equal(Point2(1.0, 2.0), pose.translation2(), tol));
   EXPECT(assert_equal(Rot2::fromAngle(0.1), pose.rotation2(), tol));
-  EXPECT(assert_equal(Rot3::yaw(0.1), pose.rotation(), tol));
+  EXPECT(assert_equal(Rot3::Yaw(0.1), pose.rotation(), tol));
   EXPECT(assert_equal(Pose2(1.0, 2.0, 0.1), pose.pose2(), tol));
-  EXPECT(assert_equal(Pose3(Rot3::yaw(0.1), Point3(1.0, 2.0, 3.0)), pose.pose(), tol));
+  EXPECT(assert_equal(Pose3(Rot3::Yaw(0.1), Point3(1.0, 2.0, 3.0)), pose.pose(), tol));
 }
 
 /* ************************************************************************* */

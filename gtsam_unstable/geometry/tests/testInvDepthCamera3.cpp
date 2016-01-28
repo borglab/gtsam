@@ -17,7 +17,7 @@ using namespace std;
 using namespace gtsam;
 
 static Cal3_S2::shared_ptr K(new Cal3_S2(1500, 1200, 0, 640, 480));
-Pose3 level_pose = Pose3(Rot3::ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1));
+Pose3 level_pose = Pose3(Rot3::Ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1));
 SimpleCamera level_camera(level_pose, *K);
 
 /* ************************************************************************* */
@@ -142,7 +142,7 @@ TEST(InvDepthFactor, backproject2)
   // backwards facing camera
   Vector expected((Vector(5) << -5.,-5.,2., 3., -0.1).finished());
   double inv_depth(1./10);
-  InvDepthCamera3<Cal3_S2> inv_camera(Pose3(Rot3::ypr(1.5,0.1, -1.5), Point3(-5, -5, 2)),K);
+  InvDepthCamera3<Cal3_S2> inv_camera(Pose3(Rot3::Ypr(1.5,0.1, -1.5), Point3(-5, -5, 2)),K);
   Point2 z = inv_camera.project(expected, inv_depth);
 
   Vector5 actual_vec;

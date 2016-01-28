@@ -123,7 +123,7 @@ Vector3 Rot3::rpy() const {
 
 /* ************************************************************************* */
 Vector Rot3::quaternion() const {
-  Quaternion q = toQuaternion();
+  gtsam::Quaternion q = toQuaternion();
   Vector v(4);
   v(0) = q.w();
   v(1) = q.x();

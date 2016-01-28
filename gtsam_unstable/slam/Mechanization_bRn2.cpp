@@ -60,7 +60,7 @@ Mechanization_bRn2 Mechanization_bRn2::initialize(const Matrix& U,
   double pitch = atan2(-g1, sqrt(g2 * g2 + g3 * g3));
   double yaw = 0;
   // This returns body-to-nav nRb
-  Rot3 bRn = Rot3::ypr(yaw, pitch, roll).inverse();
+  Rot3 bRn = Rot3::Ypr(yaw, pitch, roll).inverse();
 
   return Mechanization_bRn2(bRn, x_g, x_a);
 }

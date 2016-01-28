@@ -135,7 +135,7 @@ TEST( CalibratedCamera, Dproject_point_pose)
 // Add a test with more arbitrary rotation
 TEST( CalibratedCamera, Dproject_point_pose2)
 {
-  static const Pose3 pose1(Rot3::ypr(0.1, -0.1, 0.4), Point3(0, 0, -10));
+  static const Pose3 pose1(Rot3::Ypr(0.1, -0.1, 0.4), Point3(0, 0, -10));
   static const CalibratedCamera camera(pose1);
   Matrix Dpose, Dpoint;
   camera.project(point1, Dpose, Dpoint);
@@ -165,7 +165,7 @@ TEST( CalibratedCamera, Dproject_point_pose_infinity)
 // Add a test with more arbitrary rotation
 TEST( CalibratedCamera, Dproject_point_pose2_infinity)
 {
-  static const Pose3 pose1(Rot3::ypr(0.1, -0.1, 0.4), Point3(0, 0, -10));
+  static const Pose3 pose1(Rot3::Ypr(0.1, -0.1, 0.4), Point3(0, 0, -10));
   static const CalibratedCamera camera(pose1);
   Matrix Dpose, Dpoint;
   camera.project2(pointAtInfinity, Dpose, Dpoint);

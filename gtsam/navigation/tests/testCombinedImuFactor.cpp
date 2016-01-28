@@ -277,7 +277,7 @@ TEST(CombinedImuFactor, PredictRotation) {
   CombinedImuFactor Combinedfactor(X(1), V(1), X(2), V(2), B(1), B(2), pim);
 
   // Predict
-  Pose3 x(Rot3().ypr(0, 0, 0), Point3(0, 0, 0)), x2;
+  Pose3 x(Rot3::Ypr(0, 0, 0), Point3(0, 0, 0)), x2;
   Vector3 v(0, 0, 0), v2;
   NavState actual = pim.predict(NavState(x, v), bias);
   Pose3 expectedPose(Rot3().ypr(M_PI / 10, 0, 0), Point3(0, 0, 0));

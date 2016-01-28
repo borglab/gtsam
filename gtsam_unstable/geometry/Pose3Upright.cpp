@@ -64,7 +64,7 @@ Rot2 Pose3Upright::rotation2() const {
 
 /* ************************************************************************* */
 Rot3 Pose3Upright::rotation() const {
-  return Rot3::yaw(theta());
+  return Rot3::Yaw(theta());
 }
 
 /* ************************************************************************* */

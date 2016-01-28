@@ -65,6 +65,7 @@ option(GTSAM_WITH_EIGEN_MKL              "Eigen will use Intel MKL if available"
 option(GTSAM_WITH_EIGEN_MKL_OPENMP       "Eigen, when using Intel MKL, will also use OpenMP for multithreading if available" ON)
 option(GTSAM_THROW_CHEIRALITY_EXCEPTION "Throw exception when a triangulated point is behind a camera" ON)
 option(GTSAM_BUILD_PYTHON                "Enable/Disable building & installation of Python module" ON)
+option(GTSAM_ALLOW_DEPRECATED_SINCE_V4   "Allow use of methods/functions deprecated in GTSAM 4" ON)
 
 # Options relating to MATLAB wrapper
 # TODO: Check for matlab mex binary before handling building of binaries
@@ -317,6 +318,10 @@ if(GTSAM_ENABLE_CONSISTENCY_CHECKS)
   add_definitions(-DGTSAM_EXTRA_CONSISTENCY_CHECKS)
 endif()
 
+if(GTSAM_ENABLE_CONSISTENCY_CHECKS)
+	add_definitions(-DGTSAM_ALLOW_DEPRECATED_SINCE_V4)
+endif()
+
 ###############################################################################
 # Add components
 
@@ -471,6 +476,7 @@ print_config_flag(${GTSAM_USE_QUATERNIONS}             "Quaternions as default R
 print_config_flag(${GTSAM_ENABLE_CONSISTENCY_CHECKS}   "Runtime consistency checking   ")
 print_config_flag(${GTSAM_ROT3_EXPMAP}                 "Rot3 retract is full ExpMap    ")
 print_config_flag(${GTSAM_POSE3_EXPMAP}                "Pose3 retract is full ExpMap   ")
+print_config_flag(${GTSAM_ALLOW_DEPRECATED_SINCE_V4}   "Deprecated in GTSAM 4 allowed  ")
 
 message(STATUS "MATLAB toolbox flags                                      ")
 print_config_flag(${GTSAM_INSTALL_MATLAB_TOOLBOX}      "Install matlab toolbox         ")

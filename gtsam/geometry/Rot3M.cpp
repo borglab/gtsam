@@ -51,7 +51,7 @@ Rot3::Rot3(double R11, double R12, double R13,
 }
 
 /* ************************************************************************* */
-Rot3::Rot3(const Quaternion& q) : rot_(q.toRotationMatrix()) {
+Rot3::Rot3(const gtsam::Quaternion& q) : rot_(q.toRotationMatrix()) {
 }
 
 /* ************************************************************************* */
@@ -191,8 +191,8 @@ Point3 Rot3::r2() const { return Point3(rot_.col(1)); }
 Point3 Rot3::r3() const { return Point3(rot_.col(2)); }
 
 /* ************************************************************************* */
-Quaternion Rot3::toQuaternion() const {
-  return Quaternion(rot_);
+gtsam::Quaternion Rot3::toQuaternion() const {
+  return gtsam::Quaternion(rot_);
 }
 
 /* ************************************************************************* */
