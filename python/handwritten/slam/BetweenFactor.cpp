@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -11,7 +11,7 @@
 
 /**
  * @brief wraps BetweenFactor for several values to python
- * @author Andrew Melim 
+ * @author Andrew Melim
  * @author Ellon Paiva Mendes (LAAS-CNRS)
  **/
 
@@ -33,17 +33,17 @@ using namespace gtsam;
 
 using namespace std;
 
-// template<class VALUE>
+// template<class T>
 // void exportBetweenFactor(const std::string& name){
-//   class_<VALUE>(name, init<>())
-//   .def(init<Key, Key, VALUE, SharedNoiseModel>())
+//   class_<T>(name, init<>())
+//   .def(init<Key, Key, T, SharedNoiseModel>())
 //   ;
 // }
 
-#define BETWEENFACTOR(VALUE) \
-  class_< BetweenFactor<VALUE>, bases<NonlinearFactor>, boost::shared_ptr< BetweenFactor<VALUE> > >("BetweenFactor"#VALUE) \
-  .def(init<Key,Key,VALUE,noiseModel::Base::shared_ptr>()) \
-  .def("measured", &BetweenFactor<VALUE>::measured, return_internal_reference<>()) \
+#define BETWEENFACTOR(T) \
+  class_< BetweenFactor<T>, bases<NonlinearFactor>, boost::shared_ptr< BetweenFactor<T> > >("BetweenFactor"#T) \
+  .def(init<Key,Key,T,noiseModel::Base::shared_ptr>()) \
+  .def("measured", &BetweenFactor<T>::measured, return_internal_reference<>()) \
 ;
 
 void exportBetweenFactors()

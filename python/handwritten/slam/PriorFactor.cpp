@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -11,7 +11,7 @@
 
 /**
  * @brief wraps PriorFactor for several values to python
- * @author Andrew Melim 
+ * @author Andrew Melim
  * @author Ellon Paiva Mendes (LAAS-CNRS)
  **/
 
@@ -54,4 +54,5 @@ void exportPriorFactors()
   PRIORFACTOR(Point3)
   PRIORFACTOR(Rot3)
   PRIORFACTOR(Pose3)
+  PRIORFACTOR(Vector3)
 }

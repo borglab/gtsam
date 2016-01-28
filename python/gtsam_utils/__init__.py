@@ -1,1 +1,1 @@
-from ._plot import *
+from .plot import *
