@@ -318,6 +318,10 @@ if(GTSAM_ENABLE_CONSISTENCY_CHECKS)
   add_definitions(-DGTSAM_EXTRA_CONSISTENCY_CHECKS)
 endif()
 
+if(GTSAM_ENABLE_CONSISTENCY_CHECKS)
+	add_definitions(-DGTSAM_ALLOW_DEPRECATED_SINCE_V4)
+endif()
+
 ###############################################################################
 # Add components
 
