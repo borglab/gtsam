@@ -264,6 +264,12 @@ public:
                    OptionalJacobian<9, 9> H1 = boost::none,
                    OptionalJacobian<9, 6> H2 = boost::none) const;
 
+  /// Calculate error given navStates
+  Vector9 computeError(const NavState& state_i, const NavState& state_j,
+                       const imuBias::ConstantBias& bias_i,
+                       OptionalJacobian<9, 9> H1, OptionalJacobian<9, 9> H2,
+                       OptionalJacobian<9, 6> H3) const;
+
   /// Compute errors w.r.t. preintegrated measurements and jacobians wrt pose_i, vel_i, bias_i, pose_j, bias_j
   Vector9 computeErrorAndJacobians(const Pose3& pose_i, const Vector3& vel_i,
       const Pose3& pose_j, const Vector3& vel_j,

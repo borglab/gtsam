@@ -303,6 +303,32 @@ NavState PreintegrationBase::predict(const NavState& state_i,
 }
 
 //------------------------------------------------------------------------------
+Vector9 PreintegrationBase::computeError(const NavState& state_i,
+                                         const NavState& state_j,
+                                         const imuBias::ConstantBias& bias_i,
+                                         OptionalJacobian<9, 9> H1,
+                                         OptionalJacobian<9, 9> H2,
+                                         OptionalJacobian<9, 6> H3) const {
+  // Predict state at time j
+  Matrix9 D_predict_state_i;
+  Matrix96 D_predict_bias_i;
+  NavState predictedState_j = predict(
+      state_i, bias_i, H1 ? &D_predict_state_i : 0, H3 ? &D_predict_bias_i : 0);
+
+  // Calculate error
+  Matrix9 D_error_state_j, D_error_predict;
+  Vector9 error =
+      state_j.localCoordinates(predictedState_j, H2 ? &D_error_state_j : 0,
+                               H1 || H3 ? &D_error_predict : 0);
+
+  if (H1) *H1 << D_error_predict* D_predict_state_i;
+  if (H2) *H2 << D_error_state_j;
+  if (H3) *H3 << D_error_predict* D_predict_bias_i;
+
+  return error;
+}
+
+//------------------------------------------------------------------------------
 Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i,
     const Vector3& vel_i, const Pose3& pose_j, const Vector3& vel_j,
     const imuBias::ConstantBias& bias_i, OptionalJacobian<9, 6> H1,
@@ -314,26 +340,20 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i,
   NavState state_i(pose_i, vel_i);
   NavState state_j(pose_j, vel_j);
 
-  /// Predict state at time j
-  Matrix99 D_predict_state_i;
-  Matrix96 D_predict_bias_i;
-  NavState predictedState_j = predict(state_i, bias_i,
-      H1 || H2 ? &D_predict_state_i : 0, H5 ? &D_predict_bias_i : 0);
-
-  Matrix9 D_error_state_j, D_error_predict;
-  Vector9 error = state_j.localCoordinates(predictedState_j,
-      H3 || H4 ? &D_error_state_j : 0, H1 || H2 || H5 ? &D_error_predict : 0);
+  // Predict state at time j
+  Matrix9 D_error_state_i, D_error_state_j;
+  Vector9 error = computeError(state_i, state_j, bias_i,
+                         H1 || H2 ? &D_error_state_i : 0, H3 || H4 ? &D_error_state_j : 0, H5);
 
   // Separate out derivatives in terms of 5 arguments
   // Note that doing so requires special treatment of velocities, as when treated as
   // separate variables the retract applied will not be the semi-direct product in NavState
   // Instead, the velocities in nav are updated using a straight addition
   // This is difference is accounted for by the R().transpose calls below
-  if (H1) *H1 << D_error_predict* D_predict_state_i.leftCols<6>();
-  if (H2) *H2 << D_error_predict* D_predict_state_i.rightCols<3>() * state_i.R().transpose();
+  if (H1) *H1 << D_error_state_i.leftCols<6>();
+  if (H2) *H2 << D_error_state_i.rightCols<3>() * state_i.R().transpose();
   if (H3) *H3 << D_error_state_j.leftCols<6>();
   if (H4) *H4 << D_error_state_j.rightCols<3>() * state_j.R().transpose();
-  if (H5) *H5 << D_error_predict* D_predict_bias_i;
 
   return error;
 }
@@ -355,5 +375,4 @@ PoseVelocityBias PreintegrationBase::predict(const Pose3& pose_i,
 #endif
 //------------------------------------------------------------------------------
 
-}
- /// namespace gtsam
+}  // namespace gtsam

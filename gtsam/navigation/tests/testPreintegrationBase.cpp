@@ -74,6 +74,24 @@ TEST(PreintegrationBase, UpdateEstimate2) {
 }
 
 /* ************************************************************************* */
+TEST(PreintegrationBase, computeError) {
+  PreintegrationBase pim(defaultParams());
+  NavState x1, x2;
+  imuBias::ConstantBias bias;
+  Matrix9 aH1, aH2;
+  Matrix96 aH3;
+  pim.computeError(x1, x2, bias, aH1, aH2, aH3);
+  boost::function<Vector9(const NavState&, const NavState&,
+                          const imuBias::ConstantBias&)> f =
+      boost::bind(&PreintegrationBase::computeError, pim, _1, _2, _3,
+                  boost::none, boost::none, boost::none);
+  // NOTE(frank): tolerance of 1e-3 on H1 because approximate away from 0
+  EXPECT(assert_equal(numericalDerivative31(f, x1, x2, bias), aH1, 1e-9));
+  EXPECT(assert_equal(numericalDerivative32(f, x1, x2, bias), aH2, 1e-9));
+  EXPECT(assert_equal(numericalDerivative33(f, x1, x2, bias), aH3, 1e-9));
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

@@ -68,6 +68,7 @@ void exportImuFactor() {
            const imuBias::ConstantBias&>())
       .def(repr(self))
       .def("predict", &PreintegratedImuMeasurements::predict)
+      .def("computeError", &PreintegratedImuMeasurements::computeError)
       .def("resetIntegration", &PreintegratedImuMeasurements::resetIntegration)
       .def("integrateMeasurement",
            &PreintegratedImuMeasurements::integrateMeasurement)
