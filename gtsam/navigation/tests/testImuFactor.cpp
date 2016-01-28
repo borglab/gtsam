@@ -747,7 +747,7 @@ TEST(ImuFactor, bodyPSensorNoBias) {
   // Rotate sensor (z-down) to body (same as navigation) i.e. z-up
   auto p = defaultParams();
   p->n_gravity = Vector3(0, 0, -kGravity); // z-up nav frame
-  p->body_P_sensor = Pose3(Rot3::ypr(0, 0, M_PI), Point3(0, 0, 0));
+  p->body_P_sensor = Pose3(Rot3::Ypr(0, 0, M_PI), Point3(0, 0, 0));
 
   // Measurements
   // Gyroscope measurement is the angular velocity of sensor w.r.t nav frame in sensor frame
@@ -802,7 +802,7 @@ TEST(ImuFactor, bodyPSensorWithBias) {
 
   auto p = defaultParams();
   p->n_gravity = Vector3(0, 0, -kGravity);
-  p->body_P_sensor = Pose3(Rot3::ypr(0, 0, M_PI), Point3());
+  p->body_P_sensor = Pose3(Rot3::Ypr(0, 0, M_PI), Point3());
   p->accelerometerCovariance = 1e-7 * I_3x3;
   p->gyroscopeCovariance = 1e-8 * I_3x3;
   p->integrationCovariance = 1e-9 * I_3x3;
@@ -885,7 +885,7 @@ TEST(ImuFactor, serialization) {
 
   auto p = defaultParams();
   p->n_gravity = Vector3(0, 0, -9.81);
-  p->body_P_sensor = Pose3(Rot3::ypr(0, 0, M_PI), Point3());
+  p->body_P_sensor = Pose3(Rot3::Ypr(0, 0, M_PI), Point3());
   p->accelerometerCovariance = 1e-7 * I_3x3;
   p->gyroscopeCovariance = 1e-8 * I_3x3;
   p->integrationCovariance = 1e-9 * I_3x3;
