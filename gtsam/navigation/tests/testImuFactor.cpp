@@ -684,7 +684,7 @@ TEST(ImuFactor, PredictRotation) {
 
   // Predict
   NavState actual = pim.predict(NavState(), bias);
-  NavState expected(Rot3().ypr(M_PI / 10, 0, 0), Point3(), Vector3::Zero());
+  NavState expected(Rot3::Ypr(M_PI / 10, 0, 0), Point3(), Vector3::Zero());
   EXPECT(assert_equal(expected, actual));
 }
 
@@ -768,7 +768,7 @@ TEST(ImuFactor, bodyPSensorNoBias) {
   // Predict
   NavState actual = pim.predict(NavState(), bias);
 
-  Pose3 expectedPose(Rot3().ypr(-M_PI / 10, 0, 0), Point3(0, 0, 0));
+  Pose3 expectedPose(Rot3::Ypr(-M_PI / 10, 0, 0), Point3(0, 0, 0));
   EXPECT(assert_equal(expectedPose, actual.pose()));
 
   Vector3 expectedVelocity(0, 0, 0);
