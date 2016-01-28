@@ -7,3 +7,4 @@
 *.txt.user
 *.txt.user.6d59f0c
 /python-build/
+*.pydevproject
