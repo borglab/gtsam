@@ -48,7 +48,7 @@ if(Boost_PYTHON${BOOST_PYTHON_VERSION_SUFFIX_UPPERCASE}_FOUND AND PYTHONLIBS_FOU
 	include_directories(${NUMPY_INCLUDE_DIRS})
 	include_directories(${PYTHON_INCLUDE_DIRS})
 	include_directories(${Boost_INCLUDE_DIRS})
-	include_directories(${CMAKE_SOURCE_DIR}/gtsam/3rdparty/numpy_eigen/include/)
+	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/)
 
 	# Build the python module library
 	add_subdirectory(handwritten)
