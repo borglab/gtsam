@@ -18,8 +18,9 @@
 
 #pragma once
 
-#include <gtsam/inference/FactorGraph.h>
 #include <gtsam_unstable/linear/LinearInequality.h>
+#include <gtsam/linear/VectorValues.h>
+#include <gtsam/inference/FactorGraph.h>
 
 namespace gtsam {
 

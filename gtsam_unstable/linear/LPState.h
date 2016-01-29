@@ -10,7 +10,9 @@
 
 namespace gtsam {
 
+// TODO: comment
 struct LPState {
+  // TODO: comment member variables
   VectorValues values;
   VectorValues duals;
   InequalityFactorGraph workingSet;

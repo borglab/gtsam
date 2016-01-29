@@ -13,20 +13,22 @@
  * @file    QPSolver.h
  * @brief   A quadratic programming solver implements the active set method
  * @date    Apr 15, 2014
+ * @author  Ivan Dario Jimenez
  * @author  Duy-Nguyen Ta
  */
 
 #pragma once
 
-#include <gtsam/linear/VectorValues.h>
 #include <gtsam_unstable/linear/QP.h>
 #include <gtsam_unstable/linear/ActiveSetSolver.h>
 #include <gtsam_unstable/linear/QPState.h>
+#include <gtsam/linear/VectorValues.h>
 
 #include <vector>
 #include <set>
 
 namespace gtsam {
+
 /**
  * This QPSolver uses the active set method to solve a quadratic programming problem
  * defined in the QP struct.
@@ -48,24 +50,23 @@ public:
   /// Create a dual factor
   JacobianFactor::shared_ptr createDualFactor(Key key,
       const InequalityFactorGraph& workingSet, const VectorValues& delta) const;
-  /// @}
 
+  /// TODO(comment)
   boost::tuple<double, int> computeStepSize(
       const InequalityFactorGraph& workingSet, const VectorValues& xk,
       const VectorValues& p) const;
 
-  /** Iterate 1 step, return a new state with a new workingSet and values */
+  /// Iterate 1 step, return a new state with a new workingSet and values
   QPState iterate(const QPState& state) const;
 
-  /**
-   * Identify active constraints based on initial values.
-   */
+  /// Identify active constraints based on initial values.
   InequalityFactorGraph identifyActiveConstraints(
       const InequalityFactorGraph& inequalities,
       const VectorValues& initialValues, const VectorValues& duals =
           VectorValues(), bool useWarmStart = true) const;
 
-  /** Optimize with a provided initial values
+  /**
+   * Optimize with provided initial values
    * For this version, it is the responsibility of the caller to provide
    * a feasible initial value, otherwise, an exception will be thrown.
    * @return a pair of <primal, dual> solutions
@@ -76,4 +77,4 @@ public:
 
 };
 
-} /* namespace gtsam */
+} // namespace gtsam
