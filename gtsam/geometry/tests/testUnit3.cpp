@@ -70,7 +70,7 @@ static Unit3 rotate_(const Rot3& R, const Unit3& p) {
 }
 
 TEST(Unit3, rotate) {
-  Rot3 R = Rot3::yaw(0.5);
+  Rot3 R = Rot3::Yaw(0.5);
   Unit3 p(1, 0, 0);
   Unit3 expected = Unit3(R.column(1));
   Unit3 actual = R * p;
@@ -95,7 +95,7 @@ static Unit3 unrotate_(const Rot3& R, const Unit3& p) {
 }
 
 TEST(Unit3, unrotate) {
-  Rot3 R = Rot3::yaw(-M_PI / 4.0);
+  Rot3 R = Rot3::Yaw(-M_PI / 4.0);
   Unit3 p(1, 0, 0);
   Unit3 expected = Unit3(1, 1, 0);
   Unit3 actual = R.unrotate(p);

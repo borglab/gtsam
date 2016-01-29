@@ -115,7 +115,7 @@ TEST( SmartStereoProjectionPoseFactor, Equals ) {
 /* *************************************************************************/
 TEST_UNSAFE( SmartStereoProjectionPoseFactor, noiseless ) {
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  Pose3 level_pose = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2),
+  Pose3 level_pose = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2),
       Point3(0, 0, 1));
   StereoCamera level_camera(level_pose, K2);
 
@@ -154,7 +154,7 @@ TEST_UNSAFE( SmartStereoProjectionPoseFactor, noiseless ) {
 /* *************************************************************************/
 TEST( SmartStereoProjectionPoseFactor, noisy ) {
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  Pose3 level_pose = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2),
+  Pose3 level_pose = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2),
       Point3(0, 0, 1));
   StereoCamera level_camera(level_pose, K2);
 
@@ -172,7 +172,7 @@ TEST( SmartStereoProjectionPoseFactor, noisy ) {
 
   Values values;
   values.insert(x1, level_pose);
-  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 10, 0., -M_PI / 10),
+  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 10, 0., -M_PI / 10),
       Point3(0.5, 0.1, 0.3));
   values.insert(x2, level_pose_right.compose(noise_pose));
 
@@ -206,7 +206,7 @@ TEST( SmartStereoProjectionPoseFactor, noisy ) {
 TEST( SmartStereoProjectionPoseFactor, 3poses_smart_projection_factor ) {
 
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
+  Pose3 pose1 = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
   StereoCamera cam1(pose1, K2);
 
   // create second camera 1 meter to the right of first camera
@@ -257,8 +257,8 @@ TEST( SmartStereoProjectionPoseFactor, 3poses_smart_projection_factor ) {
   graph.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
   graph.push_back(PriorFactor<Pose3>(x2, pose2, noisePrior));
 
-  //  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
-  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
+  //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
+  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
   Values values;
   values.insert(x1, pose1);
@@ -354,7 +354,7 @@ TEST( SmartStereoProjectionPoseFactor, jacobianSVD ) {
   views.push_back(x3);
 
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
+  Pose3 pose1 = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
   StereoCamera cam1(pose1, K);
   // create second camera 1 meter to the right of first camera
   Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(1, 0, 0));
@@ -397,8 +397,8 @@ TEST( SmartStereoProjectionPoseFactor, jacobianSVD ) {
   graph.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
   graph.push_back(PriorFactor<Pose3>(x2, pose2, noisePrior));
 
-  //  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
-  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
+  //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
+  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
   Values values;
   values.insert(x1, pose1);
@@ -422,7 +422,7 @@ TEST( SmartStereoProjectionPoseFactor, landmarkDistance ) {
   views.push_back(x3);
 
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
+  Pose3 pose1 = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
   StereoCamera cam1(pose1, K);
   // create second camera 1 meter to the right of first camera
   Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(1, 0, 0));
@@ -466,8 +466,8 @@ TEST( SmartStereoProjectionPoseFactor, landmarkDistance ) {
   graph.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
   graph.push_back(PriorFactor<Pose3>(x2, pose2, noisePrior));
 
-  //  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
-  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
+  //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
+  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
   Values values;
   values.insert(x1, pose1);
@@ -490,7 +490,7 @@ TEST( SmartStereoProjectionPoseFactor, dynamicOutlierRejection ) {
   views.push_back(x3);
 
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
+  Pose3 pose1 = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
   StereoCamera cam1(pose1, K);
   // create second camera 1 meter to the right of first camera
   Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(1, 0, 0));
@@ -548,7 +548,7 @@ TEST( SmartStereoProjectionPoseFactor, dynamicOutlierRejection ) {
   graph.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
   graph.push_back(PriorFactor<Pose3>(x2, pose2, noisePrior));
 
-  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
+  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
   Values values;
   values.insert(x1, pose1);
@@ -587,7 +587,7 @@ TEST( SmartStereoProjectionPoseFactor, dynamicOutlierRejection ) {
 //  views.push_back(x3);
 //
 //  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-//  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI/2, 0., -M_PI/2), Point3(0,0,1));
+//  Pose3 pose1 = Pose3(Rot3::Ypr(-M_PI/2, 0., -M_PI/2), Point3(0,0,1));
 //  StereoCamera cam1(pose1, K);
 //  // create second camera 1 meter to the right of first camera
 //  Pose3 pose2 = pose1 * Pose3(Rot3(), Point3(1,0,0));
@@ -626,8 +626,8 @@ TEST( SmartStereoProjectionPoseFactor, dynamicOutlierRejection ) {
 //  graph.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
 //  graph.push_back(PriorFactor<Pose3>(x2, pose2, noisePrior));
 //
-//  //  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
-//  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/100, 0., -M_PI/100), Point3(0.1,0.1,0.1)); // smaller noise
+//  //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
+//  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/100, 0., -M_PI/100), Point3(0.1,0.1,0.1)); // smaller noise
 //  Values values;
 //  values.insert(x1, pose1);
 //  values.insert(x2, pose2);
@@ -648,7 +648,7 @@ TEST( SmartStereoProjectionPoseFactor, dynamicOutlierRejection ) {
 //  views.push_back(x3);
 //
 //  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-//  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI/2, 0., -M_PI/2), Point3(0,0,1));
+//  Pose3 pose1 = Pose3(Rot3::Ypr(-M_PI/2, 0., -M_PI/2), Point3(0,0,1));
 //  StereoCamera cam1(pose1, K2);
 //
 //  // create second camera 1 meter to the right of first camera
@@ -684,7 +684,7 @@ TEST( SmartStereoProjectionPoseFactor, dynamicOutlierRejection ) {
 //  graph.push_back(PriorFactor<Pose3>(x1, pose1, noisePrior));
 //  graph.push_back(PriorFactor<Pose3>(x2, pose2, noisePrior));
 //
-//  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3));
+//  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3));
 //  Values values;
 //  values.insert(x1, pose1);
 //  values.insert(x2, pose2);
@@ -708,7 +708,7 @@ TEST( SmartStereoProjectionPoseFactor, CheckHessian) {
   views.push_back(x3);
 
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
+  Pose3 pose1 = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
   StereoCamera cam1(pose1, K);
 
   // create second camera
@@ -754,7 +754,7 @@ TEST( SmartStereoProjectionPoseFactor, CheckHessian) {
   values.insert(x1, pose1);
   values.insert(x2, pose2);
   // initialize third pose with some noise, we expect it to move back to original pose3
-  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
+  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
   values.insert(x3, pose3 * noise_pose);
 
@@ -796,7 +796,7 @@ TEST( SmartStereoProjectionPoseFactor, CheckHessian) {
 //  views.push_back(x3);
 //
 //  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-//  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI/2, 0., -M_PI/2), Point3(0,0,1));
+//  Pose3 pose1 = Pose3(Rot3::Ypr(-M_PI/2, 0., -M_PI/2), Point3(0,0,1));
 //  StereoCamera cam1(pose1, K2);
 //
 //  // create second camera 1 meter to the right of first camera
@@ -835,7 +835,7 @@ TEST( SmartStereoProjectionPoseFactor, CheckHessian) {
 //  graph.push_back(PoseTranslationPrior<Pose3>(x2, positionPrior, noisePriorTranslation));
 //  graph.push_back(PoseTranslationPrior<Pose3>(x3, positionPrior, noisePriorTranslation));
 //
-//  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), Point3(0.1,0.1,0.1)); // smaller noise
+//  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.1,0.1,0.1)); // smaller noise
 //  Values values;
 //  values.insert(x1, pose1);
 //  values.insert(x2, pose2*noise_pose);
@@ -862,7 +862,7 @@ TEST( SmartStereoProjectionPoseFactor, CheckHessian) {
 //  views.push_back(x3);
 //
 //  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-//  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI/2, 0., -M_PI/2), Point3(0,0,1));
+//  Pose3 pose1 = Pose3(Rot3::Ypr(-M_PI/2, 0., -M_PI/2), Point3(0,0,1));
 //  StereoCamera cam1(pose1, K);
 //
 //  // create second camera 1 meter to the right of first camera
@@ -908,8 +908,8 @@ TEST( SmartStereoProjectionPoseFactor, CheckHessian) {
 //  graph.push_back(PoseTranslationPrior<Pose3>(x2, positionPrior, noisePriorTranslation));
 //  graph.push_back(PoseTranslationPrior<Pose3>(x3, positionPrior, noisePriorTranslation));
 //
-//  //  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
-//  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/100, 0., -M_PI/100), Point3(0.1,0.1,0.1)); // smaller noise
+//  //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
+//  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/100, 0., -M_PI/100), Point3(0.1,0.1,0.1)); // smaller noise
 //  Values values;
 //  values.insert(x1, pose1);
 //  values.insert(x2, pose2);
@@ -935,7 +935,7 @@ TEST( SmartStereoProjectionPoseFactor, CheckHessian) {
 //  views.push_back(x2);
 //
 //  // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-//  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI/2, 0., -M_PI/2), Point3(0,0,1));
+//  Pose3 pose1 = Pose3(Rot3::Ypr(-M_PI/2, 0., -M_PI/2), Point3(0,0,1));
 //  StereoCamera cam1(pose1, K2);
 //
 //  // create second camera 1 meter to the right of first camera
@@ -955,7 +955,7 @@ TEST( SmartStereoProjectionPoseFactor, CheckHessian) {
 //  SmartStereoProjectionPoseFactor::shared_ptr smartFactor1(new SmartStereoProjectionPoseFactor());
 //  smartFactor1->add(measurements_cam1,views, model, K2);
 //
-//  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3));
+//  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3));
 //  Values values;
 //  values.insert(x1, pose1);
 //  values.insert(x2, pose2);
@@ -977,7 +977,7 @@ TEST( SmartStereoProjectionPoseFactor, HessianWithRotation ) {
   views.push_back(x3);
 
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
+  Pose3 pose1 = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
   StereoCamera cam1(pose1, K);
 
   // create second camera 1 meter to the right of first camera
@@ -1005,7 +1005,7 @@ TEST( SmartStereoProjectionPoseFactor, HessianWithRotation ) {
       smartFactorInstance->linearize(values);
   // hessianFactor->print("Hessian factor \n");
 
-  Pose3 poseDrift = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 0));
+  Pose3 poseDrift = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 0));
 
   Values rotValues;
   rotValues.insert(x1, poseDrift.compose(pose1));
@@ -1021,7 +1021,7 @@ TEST( SmartStereoProjectionPoseFactor, HessianWithRotation ) {
       assert_equal(hessianFactor->information(),
           hessianFactorRot->information(), 1e-7));
 
-  Pose3 poseDrift2 = Pose3(Rot3::ypr(-M_PI / 2, -M_PI / 3, -M_PI / 2),
+  Pose3 poseDrift2 = Pose3(Rot3::Ypr(-M_PI / 2, -M_PI / 3, -M_PI / 2),
       Point3(10, -4, 5));
 
   Values tranValues;
@@ -1047,7 +1047,7 @@ TEST( SmartStereoProjectionPoseFactor, HessianWithRotationDegenerate ) {
   views.push_back(x3);
 
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  Pose3 pose1 = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
+  Pose3 pose1 = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
   StereoCamera cam1(pose1, K2);
 
   // Second and third cameras in same place, which is a degenerate configuration
@@ -1072,7 +1072,7 @@ TEST( SmartStereoProjectionPoseFactor, HessianWithRotationDegenerate ) {
   boost::shared_ptr<GaussianFactor> hessianFactor = smartFactor->linearize(
       values);
 
-  Pose3 poseDrift = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 0));
+  Pose3 poseDrift = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 0));
 
   Values rotValues;
   rotValues.insert(x1, poseDrift.compose(pose1));
@@ -1087,7 +1087,7 @@ TEST( SmartStereoProjectionPoseFactor, HessianWithRotationDegenerate ) {
       assert_equal(hessianFactor->information(),
           hessianFactorRot->information(), 1e-6));
 
-  Pose3 poseDrift2 = Pose3(Rot3::ypr(-M_PI / 2, -M_PI / 3, -M_PI / 2),
+  Pose3 poseDrift2 = Pose3(Rot3::Ypr(-M_PI / 2, -M_PI / 3, -M_PI / 2),
       Point3(10, -4, 5));
 
   Values tranValues;

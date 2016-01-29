@@ -163,7 +163,7 @@ TEST( SmartProjectionPoseFactor, noisy ) {
 
   Values values;
   values.insert(x1, cam1.pose());
-  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 10, 0., -M_PI / 10),
+  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 10, 0., -M_PI / 10),
       Point3(0.5, 0.1, 0.3));
   values.insert(x2, pose_right.compose(noise_pose));
 
@@ -196,7 +196,7 @@ TEST( SmartProjectionPoseFactor, smartFactorWithSensorBodyTransform ){
   Cal3_S2::shared_ptr K(new Cal3_S2(fov,w,h));
 
   // create first camera. Looking along X-axis, 1 meter above ground plane (x-y)
-  Pose3 cameraPose1 = Pose3(Rot3::ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1)); // body poses
+  Pose3 cameraPose1 = Pose3(Rot3::Ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1)); // body poses
   Pose3 cameraPose2 = cameraPose1 * Pose3(Rot3(), Point3(1,0,0));
   Pose3 cameraPose3 = cameraPose1 * Pose3(Rot3(), Point3(0,-1,0));
 
@@ -205,7 +205,7 @@ TEST( SmartProjectionPoseFactor, smartFactorWithSensorBodyTransform ){
   SimpleCamera cam3(cameraPose3, *K);
 
   // create arbitrary body_Pose_sensor (transforms from sensor to body)
-  Pose3 sensor_to_body =  Pose3(Rot3::ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(1, 1, 1)); // Pose3(); //
+  Pose3 sensor_to_body =  Pose3(Rot3::Ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(1, 1, 1)); // Pose3(); //
 
   // These are the poses we want to estimate, from camera measurements
   Pose3 bodyPose1 = cameraPose1.compose(sensor_to_body.inverse());
@@ -263,7 +263,7 @@ TEST( SmartProjectionPoseFactor, smartFactorWithSensorBodyTransform ){
   double expectedError = 0.0;
   DOUBLES_EQUAL(expectedError, actualError, 1e-7)
 
-  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/100, 0., -M_PI/100), gtsam::Point3(0.1,0.1,0.1));
+  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/100, 0., -M_PI/100), gtsam::Point3(0.1,0.1,0.1));
   Values values;
   values.insert(x1, bodyPose1);
   values.insert(x2, bodyPose2);
@@ -317,8 +317,8 @@ TEST( SmartProjectionPoseFactor, 3poses_smart_projection_factor ) {
   groundTruth.insert(x3, cam3.pose());
   DOUBLES_EQUAL(0, graph.error(groundTruth), 1e-9);
 
-  //  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
-  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
+  //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
+  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
   Values values;
   values.insert(x1, cam1.pose());
@@ -539,8 +539,8 @@ TEST( SmartProjectionPoseFactor, 3poses_iterative_smart_projection_factor ) {
   graph.push_back(PriorFactor<Pose3>(x1, cam1.pose(), noisePrior));
   graph.push_back(PriorFactor<Pose3>(x2, cam2.pose(), noisePrior));
 
-  //  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
-  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
+  //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
+  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
   Values values;
   values.insert(x1, cam1.pose());
@@ -606,8 +606,8 @@ TEST( SmartProjectionPoseFactor, jacobianSVD ) {
   graph.push_back(PriorFactor<Pose3>(x1, cam1.pose(), noisePrior));
   graph.push_back(PriorFactor<Pose3>(x2, cam2.pose(), noisePrior));
 
-  //  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
-  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
+  //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
+  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
   Values values;
   values.insert(x1, cam1.pose());
@@ -667,8 +667,8 @@ TEST( SmartProjectionPoseFactor, landmarkDistance ) {
   graph.push_back(PriorFactor<Pose3>(x1, cam1.pose(), noisePrior));
   graph.push_back(PriorFactor<Pose3>(x2, cam2.pose(), noisePrior));
 
-  //  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
-  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
+  //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
+  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
   Values values;
   values.insert(x1, cam1.pose());
@@ -792,7 +792,7 @@ TEST( SmartProjectionPoseFactor, jacobianQ ) {
   graph.push_back(PriorFactor<Pose3>(x1, cam1.pose(), noisePrior));
   graph.push_back(PriorFactor<Pose3>(x2, cam2.pose(), noisePrior));
 
-  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
+  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
   Values values;
   values.insert(x1, cam1.pose());
@@ -844,7 +844,7 @@ TEST( SmartProjectionPoseFactor, 3poses_projection_factor ) {
   graph.push_back(PriorFactor<Pose3>(x1, level_pose, noisePrior));
   graph.push_back(PriorFactor<Pose3>(x2, pose_right, noisePrior));
 
-  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 10, 0., -M_PI / 10),
+  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 10, 0., -M_PI / 10),
       Point3(0.5, 0.1, 0.3));
   Values values;
   values.insert(x1, level_pose);
@@ -908,8 +908,8 @@ TEST( SmartProjectionPoseFactor, CheckHessian) {
   graph.push_back(smartFactor2);
   graph.push_back(smartFactor3);
 
-  //  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
-  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
+  //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
+  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
   Values values;
   values.insert(x1, cam1.pose());
@@ -995,7 +995,7 @@ TEST( SmartProjectionPoseFactor, 3poses_2land_rotation_only_smart_projection_fac
   graph.push_back(
       PoseTranslationPrior<Pose3>(x3, positionPrior, noisePriorTranslation));
 
-  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
+  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
   Values values;
   values.insert(x1, cam1.pose());
@@ -1063,8 +1063,8 @@ TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) 
   graph.push_back(
       PoseTranslationPrior<Pose3>(x3, positionPrior, noisePriorTranslation));
 
-  //  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
-  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
+  //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
+  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
   Values values;
   values.insert(x1, cam1.pose());
@@ -1108,7 +1108,7 @@ TEST( SmartProjectionPoseFactor, Hessian ) {
   SmartFactor::shared_ptr smartFactor1(new SmartFactor(model, sharedK2));
   smartFactor1->add(measurements_cam1, views);
 
-  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 10, 0., -M_PI / 10),
+  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 10, 0., -M_PI / 10),
       Point3(0.5, 0.1, 0.3));
   Values values;
   values.insert(x1, cam1.pose());
@@ -1148,7 +1148,7 @@ TEST( SmartProjectionPoseFactor, HessianWithRotation ) {
   boost::shared_ptr<GaussianFactor> factor = smartFactorInstance->linearize(
       values);
 
-  Pose3 poseDrift = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 0));
+  Pose3 poseDrift = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 0));
 
   Values rotValues;
   rotValues.insert(x1, poseDrift.compose(level_pose));
@@ -1161,7 +1161,7 @@ TEST( SmartProjectionPoseFactor, HessianWithRotation ) {
   // Hessian is invariant to rotations in the nondegenerate case
   EXPECT(assert_equal(factor->information(), factorRot->information(), 1e-7));
 
-  Pose3 poseDrift2 = Pose3(Rot3::ypr(-M_PI / 2, -M_PI / 3, -M_PI / 2),
+  Pose3 poseDrift2 = Pose3(Rot3::Ypr(-M_PI / 2, -M_PI / 3, -M_PI / 2),
       Point3(10, -4, 5));
 
   Values tranValues;
@@ -1203,7 +1203,7 @@ TEST( SmartProjectionPoseFactor, HessianWithRotationDegenerate ) {
 
   boost::shared_ptr<GaussianFactor> factor = smartFactor->linearize(values);
 
-  Pose3 poseDrift = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 0));
+  Pose3 poseDrift = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 0));
 
   Values rotValues;
   rotValues.insert(x1, poseDrift.compose(level_pose));
@@ -1216,7 +1216,7 @@ TEST( SmartProjectionPoseFactor, HessianWithRotationDegenerate ) {
   // Hessian is invariant to rotations in the nondegenerate case
   EXPECT(assert_equal(factor->information(), factorRot->information(), 1e-7));
 
-  Pose3 poseDrift2 = Pose3(Rot3::ypr(-M_PI / 2, -M_PI / 3, -M_PI / 2),
+  Pose3 poseDrift2 = Pose3(Rot3::Ypr(-M_PI / 2, -M_PI / 3, -M_PI / 2),
       Point3(10, -4, 5));
 
   Values tranValues;
@@ -1278,8 +1278,8 @@ TEST( SmartProjectionPoseFactor, Cal3Bundler ) {
   graph.push_back(PriorFactor<Pose3>(x1, cam1.pose(), noisePrior));
   graph.push_back(PriorFactor<Pose3>(x2, cam2.pose(), noisePrior));
 
-  //  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
-  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
+  //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
+  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
   Values values;
   values.insert(x1, cam1.pose());
@@ -1357,8 +1357,8 @@ TEST( SmartProjectionPoseFactor, Cal3BundlerRotationOnly ) {
   graph.push_back(
       PoseTranslationPrior<Pose3>(x3, positionPrior, noisePriorTranslation));
 
-  //  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
-  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 100, 0., -M_PI / 100),
+  //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
+  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
       Point3(0.1, 0.1, 0.1)); // smaller noise
   Values values;
   values.insert(x1, cam1.pose());

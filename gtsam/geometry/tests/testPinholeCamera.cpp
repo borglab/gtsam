@@ -242,7 +242,7 @@ TEST( PinholeCamera, Dproject2)
 // Add a test with more arbitrary rotation
 TEST( PinholeCamera, Dproject3)
 {
-  static const Pose3 pose1(Rot3::ypr(0.1, -0.1, 0.4), Point3(0, 0, -10));
+  static const Pose3 pose1(Rot3::Ypr(0.1, -0.1, 0.4), Point3(0, 0, -10));
   static const Camera camera(pose1);
   Matrix Dpose, Dpoint;
   camera.project2(point1, Dpose, Dpoint);

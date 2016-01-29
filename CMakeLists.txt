@@ -64,6 +64,8 @@ option(GTSAM_WITH_TBB                    "Use Intel Threaded Building Blocks (TB
 option(GTSAM_WITH_EIGEN_MKL              "Eigen will use Intel MKL if available" ON)
 option(GTSAM_WITH_EIGEN_MKL_OPENMP       "Eigen, when using Intel MKL, will also use OpenMP for multithreading if available" ON)
 option(GTSAM_THROW_CHEIRALITY_EXCEPTION "Throw exception when a triangulated point is behind a camera" ON)
+option(GTSAM_BUILD_PYTHON                "Enable/Disable building & installation of Python module" ON)
+option(GTSAM_ALLOW_DEPRECATED_SINCE_V4   "Allow use of methods/functions deprecated in GTSAM 4" ON)
 
 # Options relating to MATLAB wrapper
 # TODO: Check for matlab mex binary before handling building of binaries
@@ -316,6 +318,10 @@ if(GTSAM_ENABLE_CONSISTENCY_CHECKS)
   add_definitions(-DGTSAM_EXTRA_CONSISTENCY_CHECKS)
 endif()
 
+if(GTSAM_ALLOW_DEPRECATED_SINCE_V4)
+	add_definitions(-DGTSAM_ALLOW_DEPRECATED_SINCE_V4)
+endif()
+
 ###############################################################################
 # Add components
 
@@ -342,6 +348,20 @@ add_subdirectory(timing)
 # Matlab toolbox
 if (GTSAM_INSTALL_MATLAB_TOOLBOX)
 	add_subdirectory(matlab)
+endif()
+
+# Python wrap
+if (GTSAM_BUILD_PYTHON)
+	include(GtsamPythonWrap)
+
+	# NOTE: The automatic generation of python wrapper from the gtsampy.h interface is
+	#       not working yet, so we're using a handwritten wrapper files on python/handwritten.
+	#       Once the python wrapping from the interface file is working, you can _swap_ the 
+	#       comments on the next lines
+	
+	# wrap_and_install_python(gtsampy.h "${GTSAM_ADDITIONAL_LIBRARIES}" "")
+	add_subdirectory(python)
+
 endif()
 
 # Build gtsam_unstable
@@ -456,10 +476,22 @@ print_config_flag(${GTSAM_USE_QUATERNIONS}             "Quaternions as default R
 print_config_flag(${GTSAM_ENABLE_CONSISTENCY_CHECKS}   "Runtime consistency checking   ")
 print_config_flag(${GTSAM_ROT3_EXPMAP}                 "Rot3 retract is full ExpMap    ")
 print_config_flag(${GTSAM_POSE3_EXPMAP}                "Pose3 retract is full ExpMap   ")
+print_config_flag(${GTSAM_ALLOW_DEPRECATED_SINCE_V4}   "Deprecated in GTSAM 4 allowed  ")
 
 message(STATUS "MATLAB toolbox flags                                      ")
 print_config_flag(${GTSAM_INSTALL_MATLAB_TOOLBOX}      "Install matlab toolbox         ")
 print_config_flag(${GTSAM_BUILD_WRAP}                  "Build Wrap                     ")
+
+message(STATUS "Python module flags                                       ")
+
+if(GTSAM_PYTHON_WARNINGS)
+	message(STATUS "  Build python module            : No - dependencies missing")
+else()
+	print_config_flag(${GTSAM_BUILD_PYTHON}                "Build python module            ")
+endif()
+if(GTSAM_BUILD_PYTHON)
+	message(STATUS "  Python version                 : ${GTSAM_PYTHON_VERSION}")
+endif()
 message(STATUS "===============================================================")
 
 # Print warnings at the end
@@ -471,6 +503,9 @@ if(GTSAM_WITH_EIGEN_MKL AND NOT MKL_FOUND)
 endif()
 if(GTSAM_WITH_EIGEN_MKL_OPENMP AND NOT OPENMP_FOUND AND MKL_FOUND)
 	message(WARNING "Your compiler does not support OpenMP - this is ok, but performance may be improved with OpenMP.  Set GTSAM_WITH_EIGEN_MKL_OPENMP to 'Off' to avoid this warning.")
+endif()
+if(GTSAM_BUILD_PYTHON AND GTSAM_PYTHON_WARNINGS)
+	message(WARNING "${GTSAM_PYTHON_WARNINGS}")
 endif()
 
 # Include CPack *after* all flags

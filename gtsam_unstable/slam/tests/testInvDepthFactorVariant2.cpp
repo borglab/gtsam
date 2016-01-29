@@ -24,8 +24,8 @@ using namespace gtsam;
 TEST( InvDepthFactorVariant2, optimize) {
 
   // Create two poses looking in the x-direction
-  Pose3 pose1(Rot3::ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1.0));
-  Pose3 pose2(Rot3::ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1.5));
+  Pose3 pose1(Rot3::Ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1.0));
+  Pose3 pose2(Rot3::Ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1.5));
 
   // Create a landmark 5 meters in front of pose1 (camera center at (0,0,1))
   Point3 landmark(5, 0, 1);

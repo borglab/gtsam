@@ -37,7 +37,7 @@ static const boost::shared_ptr<Cal3_S2> sharedCal = //
     boost::make_shared<Cal3_S2>(1500, 1200, 0, 640, 480);
 
 // Looking along X-axis, 1 meter above ground plane (x-y)
-static const Rot3 upright = Rot3::ypr(-M_PI / 2, 0., -M_PI / 2);
+static const Rot3 upright = Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2);
 static const Pose3 pose1 = Pose3(upright, gtsam::Point3(0, 0, 1));
 SimpleCamera camera1(pose1, *sharedCal);
 
