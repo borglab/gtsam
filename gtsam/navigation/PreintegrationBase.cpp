@@ -20,9 +20,8 @@
  **/
 
 #include "PreintegrationBase.h"
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+#include <gtsam/base/numericalDerivative.h>
 #include <boost/make_shared.hpp>
-#endif
 
 using namespace std;
 
@@ -78,14 +77,14 @@ bool PreintegrationBase::equals(const PreintegrationBase& other,
 
 //------------------------------------------------------------------------------
 pair<Vector3, Vector3> PreintegrationBase::correctMeasurementsByBiasAndSensorPose(
-    const Vector3& j_measuredAcc, const Vector3& j_measuredOmega,
+    const Vector3& measuredAcc, const Vector3& measuredOmega,
     OptionalJacobian<3, 3> D_correctedAcc_measuredAcc,
     OptionalJacobian<3, 3> D_correctedAcc_measuredOmega,
     OptionalJacobian<3, 3> D_correctedOmega_measuredOmega) const {
 
   // Correct for bias in the sensor frame
-  Vector3 j_correctedAcc = biasHat_.correctAccelerometer(j_measuredAcc);
-  Vector3 j_correctedOmega = biasHat_.correctGyroscope(j_measuredOmega);
+  Vector3 correctedAcc = biasHat_.correctAccelerometer(measuredAcc);
+  Vector3 correctedOmega = biasHat_.correctGyroscope(measuredOmega);
 
   // Compensate for sensor-body displacement if needed: we express the quantities
   // (originally in the IMU frame) into the body frame
@@ -95,8 +94,8 @@ pair<Vector3, Vector3> PreintegrationBase::correctMeasurementsByBiasAndSensorPos
     const Matrix3 bRs = p().body_P_sensor->rotation().matrix();
 
     // Convert angular velocity and acceleration from sensor to body frame
-    j_correctedOmega = bRs * j_correctedOmega;
-    j_correctedAcc = bRs * j_correctedAcc;
+    correctedOmega = bRs * correctedOmega;
+    correctedAcc = bRs * correctedAcc;
 
     // Jacobians
     if (D_correctedAcc_measuredAcc) *D_correctedAcc_measuredAcc = bRs;
@@ -108,21 +107,21 @@ pair<Vector3, Vector3> PreintegrationBase::correctMeasurementsByBiasAndSensorPos
     if (!b_arm.isZero()) {
       // Subtract out the the centripetal acceleration from the measured one
       // to get linear acceleration vector in the body frame:
-      const Matrix3 body_Omega_body = skewSymmetric(j_correctedOmega);
+      const Matrix3 body_Omega_body = skewSymmetric(correctedOmega);
       const Vector3 b_velocity_bs = body_Omega_body * b_arm; // magnitude: omega * arm
-      j_correctedAcc -= body_Omega_body * b_velocity_bs;
+      correctedAcc -= body_Omega_body * b_velocity_bs;
 
       // Update derivative: centrifugal causes the correlation between acc and omega!!!
       if (D_correctedAcc_measuredOmega) {
-        double wdp = j_correctedOmega.dot(b_arm);
+        double wdp = correctedOmega.dot(b_arm);
         *D_correctedAcc_measuredOmega = -(diag(Vector3::Constant(wdp))
-            + j_correctedOmega * b_arm.transpose()) * bRs.matrix()
-            + 2 * b_arm * j_measuredOmega.transpose();
+            + correctedOmega * b_arm.transpose()) * bRs.matrix()
+            + 2 * b_arm * measuredOmega.transpose();
       }
     }
   }
 
-  return make_pair(j_correctedAcc, j_correctedOmega);
+  return make_pair(correctedAcc, correctedOmega);
 }
 
 //------------------------------------------------------------------------------
@@ -144,15 +143,24 @@ PreintegrationBase::TangentVector PreintegrationBase::UpdateEstimate(
 
   if (A) {
     // First order (small angle) approximation of derivative of invH*w:
-    const Matrix3 invHw_H_theta = skewSymmetric(-0.5 * w_body);
+//    const Matrix3 invHw_H_theta = skewSymmetric(-0.5 * w_body);
+    // NOTE(frank): Rot3::ExpmapDerivative(w_body) is also an approximation (but less accurate):
+    // If we replace approximation with numerical derivative we get better accuracy:
+      auto f = [w_body](const Vector3& theta) {
+        return Rot3::ExpmapDerivative(theta).inverse() * w_body;
+      };
+      const Matrix3 invHw_H_theta = numericalDerivative11<Vector3, Vector3>(f, zeta.theta());
 
     // Exact derivative of R*a with respect to theta:
     const Matrix3 a_nav_H_theta = R * skewSymmetric(-a_body) * H;
 
     A->setIdentity();
+    // theta:
     A->block<3, 3>(0, 0).noalias() += invHw_H_theta * dt;
+    // position:
     A->block<3, 3>(3, 0) = a_nav_H_theta * dt22;
     A->block<3, 3>(3, 6) = I_3x3 * dt;
+    // velocity:
     A->block<3, 3>(6, 0) = a_nav_H_theta * dt;
   }
   if (B) {
@@ -176,8 +184,8 @@ PreintegrationBase::TangentVector PreintegrationBase::updatedDeltaXij(
     OptionalJacobian<9, 3> C) const {
   if (!p().body_P_sensor) {
     // Correct for bias in the sensor frame
-    Vector3 correctedAcc = biasHat_.correctAccelerometer(measuredAcc);
-    Vector3 correctedOmega = biasHat_.correctGyroscope(measuredOmega);
+    const Vector3 correctedAcc = biasHat_.correctAccelerometer(measuredAcc);
+    const Vector3 correctedOmega = biasHat_.correctGyroscope(measuredOmega);
 
     // Do update in one fell swoop
     return UpdateEstimate(correctedAcc, correctedOmega, dt, deltaXij_, A, B, C);
@@ -209,8 +217,8 @@ PreintegrationBase::TangentVector PreintegrationBase::updatedDeltaXij(
 }
 
 //------------------------------------------------------------------------------
-void PreintegrationBase::update(const Vector3& j_measuredAcc,
-                                const Vector3& j_measuredOmega, double dt,
+void PreintegrationBase::update(const Vector3& measuredAcc,
+                                const Vector3& measuredOmega, double dt,
                                 Matrix3* D_incrR_integratedOmega, Matrix9* A,
                                 Matrix93* B, Matrix93* C) {
   // Save current rotation for updating Jacobians
@@ -218,44 +226,41 @@ void PreintegrationBase::update(const Vector3& j_measuredAcc,
 
   // Do update
   deltaTij_ += dt;
-  deltaXij_ = updatedDeltaXij(j_measuredAcc, j_measuredOmega, dt, A, B, C);
+  deltaXij_ = updatedDeltaXij(measuredAcc, measuredOmega, dt, A, B, C);
 
-  // Update Jacobians
-  // TODO(frank): we are repeating some computation here: accessible in A ?
-  // Possibly: derivatives are just -B and -C ??
-  Vector3 j_correctedAcc, j_correctedOmega;
-  boost::tie(j_correctedAcc, j_correctedOmega) =
-      correctMeasurementsByBiasAndSensorPose(j_measuredAcc, j_measuredOmega);
+  // D_plus_abias = D_plus_zeta * D_zeta_abias + D_plus_a * D_a_abias
+  Matrix93 D_zeta_abias, D_plus_abias;
+  D_zeta_abias << Z_3x3, delPdelBiasAcc_, delVdelBiasAcc_;
+  D_plus_abias = (*A) * D_zeta_abias - (*B);
+  delPdelBiasAcc_ = D_plus_abias.middleRows<3>(3);
+  delVdelBiasAcc_ = D_plus_abias.middleRows<3>(6);
 
-  double dt22 = 0.5 * dt * dt;
-  const Matrix3 dRij = oldRij.matrix();  // expensive
-  delPdelBiasAcc_ += delVdelBiasAcc_ * dt - dt22 * dRij;
-  delVdelBiasAcc_ += -dRij * dt;
-
-  cout << "B:" << endl;
-  cout << -(*B) << endl;
-  cout << "update:" << endl;
-  cout << - dt22 * dRij << endl;
-  cout << -dRij * dt << endl;
+#ifdef USE_NEW_WAY_FOR_OMEGA
+  // D_plus_wbias = D_plus_zeta * D_zeta_wbias + D_plus_w * D_w_wbias
+  Matrix93 D_zeta_wbias, D_plus_wbias;
+  D_zeta_wbias << delRdelBiasOmega_, delPdelBiasOmega_, delVdelBiasOmega_;
+  D_plus_wbias = (*A) * D_zeta_wbias - (*C);
+  delRdelBiasOmega_ = D_plus_wbias.middleRows<3>(0);
+  delPdelBiasOmega_ = D_plus_wbias.middleRows<3>(3);
+  delVdelBiasOmega_ = D_plus_wbias.middleRows<3>(6);
+#else
+  // The old way matches the derivatives of deltaRij()
+  Vector3 correctedAcc, correctedOmega;
+  boost::tie(correctedAcc, correctedOmega) =
+      correctMeasurementsByBiasAndSensorPose(measuredAcc, measuredOmega);
 
   Matrix3 D_acc_R;
-  oldRij.rotate(j_correctedAcc, D_acc_R);
+  double dt22 = 0.5 * dt * dt;
+  oldRij.rotate(correctedAcc, D_acc_R);
   const Matrix3 D_acc_biasOmega = D_acc_R * delRdelBiasOmega_;
-  const Vector3 integratedOmega = j_correctedOmega * dt;
-  const Rot3 incrR =
-      Rot3::Expmap(integratedOmega, D_incrR_integratedOmega);  // expensive !!
+  const Vector3 integratedOmega = correctedOmega * dt;
+  const Rot3 incrR = Rot3::Expmap(integratedOmega, D_incrR_integratedOmega);
   const Matrix3 incrRt = incrR.transpose();
 
-  delRdelBiasOmega_ =
-      incrRt * delRdelBiasOmega_ - *D_incrR_integratedOmega * dt;
+  delRdelBiasOmega_ = incrRt * delRdelBiasOmega_ - *D_incrR_integratedOmega * dt;
   delPdelBiasOmega_ += dt * delVdelBiasOmega_ + dt22 * D_acc_biasOmega;
   delVdelBiasOmega_ += D_acc_biasOmega * dt;
-  cout << "C:" << endl;
-  cout << -(*C) << endl;
-  cout << "update:" << endl;
-  cout <<  - *D_incrR_integratedOmega* dt << endl;
-  cout <<  dt22 * D_acc_biasOmega << endl;
-  cout << D_acc_biasOmega * dt << endl;
+#endif
 }
 
 //------------------------------------------------------------------------------

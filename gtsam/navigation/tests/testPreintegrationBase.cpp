@@ -69,7 +69,7 @@ TEST(PreintegrationBase, UpdateEstimate2) {
   pim.UpdateEstimate(acc, omega, kDt, zeta, aH1, aH2, aH3);
   // NOTE(frank): tolerance of 1e-3 on H1 because approximate away from 0
   EXPECT(assert_equal(numericalDerivative31(f, zeta, acc, omega), aH1, 1e-3));
-  EXPECT(assert_equal(numericalDerivative32(f, zeta, acc, omega), aH2, 1e-7));
+  EXPECT(assert_equal(numericalDerivative32(f, zeta, acc, omega), aH2, 1e-8));
   EXPECT(assert_equal(numericalDerivative33(f, zeta, acc, omega), aH3, 1e-9));
 }
 

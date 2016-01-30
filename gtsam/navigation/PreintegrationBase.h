@@ -226,7 +226,7 @@ public:
   /// Compute the derivatives due to non-identity body_P_sensor (rotation and centrifugal acc)
   /// Ignore D_correctedOmega_measuredAcc as it is trivially zero
   std::pair<Vector3, Vector3> correctMeasurementsByBiasAndSensorPose(
-      const Vector3& j_measuredAcc, const Vector3& j_measuredOmega,
+      const Vector3& measuredAcc, const Vector3& measuredOmega,
       OptionalJacobian<3, 3> D_correctedAcc_measuredAcc = boost::none,
       OptionalJacobian<3, 3> D_correctedAcc_measuredOmega = boost::none,
       OptionalJacobian<3, 3> D_correctedOmega_measuredOmega = boost::none) const;
@@ -243,14 +243,14 @@ public:
   /// Calculate the updated preintegrated measurement, does not modify
   /// It takes measured quantities in the j frame
   PreintegrationBase::TangentVector updatedDeltaXij(
-      const Vector3& j_measuredAcc, const Vector3& j_measuredOmega, double dt,
+      const Vector3& measuredAcc, const Vector3& measuredOmega, double dt,
       OptionalJacobian<9, 9> A = boost::none,
       OptionalJacobian<9, 3> B = boost::none,
       OptionalJacobian<9, 3> C = boost::none) const;
 
   /// Update preintegrated measurements and get derivatives
   /// It takes measured quantities in the j frame
-  void update(const Vector3& j_measuredAcc, const Vector3& j_measuredOmega,
+  void update(const Vector3& measuredAcc, const Vector3& measuredOmega,
               const double deltaT, Matrix3* D_incrR_integratedOmega, Matrix9* A,
               Matrix93* B, Matrix93* C);
 
