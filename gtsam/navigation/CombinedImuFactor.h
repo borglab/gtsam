@@ -66,12 +66,12 @@ public:
   struct Params : PreintegrationParams {
     Matrix3 biasAccCovariance;    ///< continuous-time "Covariance" describing accelerometer bias random walk
     Matrix3 biasOmegaCovariance;  ///< continuous-time "Covariance" describing gyroscope bias random walk
-    Matrix6 biasAccOmegaInit;     ///< covariance of bias used for pre-integration
+    Matrix6 biasAccOmegaInt;     ///< covariance of bias used for pre-integration
 
     /// See two named constructors below for good values of n_gravity in body frame
     Params(const Vector3& n_gravity) :
         PreintegrationParams(n_gravity), biasAccCovariance(I_3x3), biasOmegaCovariance(
-            I_3x3), biasAccOmegaInit(I_6x6) {
+            I_3x3), biasAccOmegaInt(I_6x6) {
     }
 
     // Default Params for a Z-down navigation frame, such as NED: gravity points along positive Z-axis
@@ -95,7 +95,7 @@ public:
       ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegratedRotation::Params);
       ar& BOOST_SERIALIZATION_NVP(biasAccCovariance);
       ar& BOOST_SERIALIZATION_NVP(biasOmegaCovariance);
-      ar& BOOST_SERIALIZATION_NVP(biasAccOmegaInit);
+      ar& BOOST_SERIALIZATION_NVP(biasAccOmegaInt);
     }
   };
 
@@ -166,9 +166,7 @@ public:
 
   /// @}
 
-  /// @name Deprecated
-  /// @{
-
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
   /// deprecated constructor
   /// NOTE(frank): assumes Z-Down convention, only second order integration supported
   PreintegratedCombinedMeasurements(const imuBias::ConstantBias& biasHat,
@@ -176,9 +174,8 @@ public:
       const Matrix3& measuredOmegaCovariance,
       const Matrix3& integrationErrorCovariance,
       const Matrix3& biasAccCovariance, const Matrix3& biasOmegaCovariance,
-      const Matrix6& biasAccOmegaInit, const bool use2ndOrderIntegration = true);
-
-  /// @}
+      const Matrix6& biasAccOmegaInt, const bool use2ndOrderIntegration = true);
+#endif
 
  private:
   /// Serialization function

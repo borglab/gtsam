@@ -108,16 +108,16 @@ void PreintegratedCombinedMeasurements::integrateMeasurement(
   // BLOCK DIAGONAL TERMS
   D_t_t(&G_measCov_Gt) = dt * iCov;
   D_v_v(&G_measCov_Gt) = (1 / dt) * H_vel_biasacc *
-                         (aCov + p().biasAccOmegaInit.block<3, 3>(0, 0)) *
+                         (aCov + p().biasAccOmegaInt.block<3, 3>(0, 0)) *
                          (H_vel_biasacc.transpose());
   D_R_R(&G_measCov_Gt) = (1 / dt) * H_angles_biasomega *
-                         (wCov + p().biasAccOmegaInit.block<3, 3>(3, 3)) *
+                         (wCov + p().biasAccOmegaInt.block<3, 3>(3, 3)) *
                          (H_angles_biasomega.transpose());
   D_a_a(&G_measCov_Gt) = dt * p().biasAccCovariance;
   D_g_g(&G_measCov_Gt) = dt * p().biasOmegaCovariance;
 
   // OFF BLOCK DIAGONAL TERMS
-  Matrix3 temp = H_vel_biasacc * p().biasAccOmegaInit.block<3, 3>(3, 0) *
+  Matrix3 temp = H_vel_biasacc * p().biasAccOmegaInt.block<3, 3>(3, 0) *
                  H_angles_biasomega.transpose();
   D_v_R(&G_measCov_Gt) = temp;
   D_R_v(&G_measCov_Gt) = temp.transpose();
@@ -125,11 +125,12 @@ void PreintegratedCombinedMeasurements::integrateMeasurement(
 }
 
 //------------------------------------------------------------------------------
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 PreintegratedCombinedMeasurements::PreintegratedCombinedMeasurements(
     const imuBias::ConstantBias& biasHat, const Matrix3& measuredAccCovariance,
     const Matrix3& measuredOmegaCovariance,
     const Matrix3& integrationErrorCovariance, const Matrix3& biasAccCovariance,
-    const Matrix3& biasOmegaCovariance, const Matrix6& biasAccOmegaInit,
+    const Matrix3& biasOmegaCovariance, const Matrix6& biasAccOmegaInt,
     const bool use2ndOrderIntegration) {
   if (!use2ndOrderIntegration)
     throw("PreintegratedImuMeasurements no longer supports first-order integration: it incorrectly compensated for gravity");
@@ -140,11 +141,12 @@ PreintegratedCombinedMeasurements::PreintegratedCombinedMeasurements(
   p->integrationCovariance = integrationErrorCovariance;
   p->biasAccCovariance = biasAccCovariance;
   p->biasOmegaCovariance = biasOmegaCovariance;
-  p->biasAccOmegaInit = biasAccOmegaInit;
+  p->biasAccOmegaInt = biasAccOmegaInt;
   p_ = p;
   resetIntegration();
   preintMeasCov_.setZero();
 }
+#endif
 //------------------------------------------------------------------------------
 // CombinedImuFactor methods
 //------------------------------------------------------------------------------

@@ -13,8 +13,9 @@
  * @file    testCombinedImuFactor.cpp
  * @brief   Unit test for Lupton-style combined IMU factor
  * @author  Luca Carlone
- * @author  Stephen Williams
+ * @author  Frank Dellaert
  * @author  Richard Roberts
+ * @author  Stephen Williams
  */
 
 #include <gtsam/navigation/ImuFactor.h>
@@ -51,8 +52,8 @@ namespace {
 PreintegratedCombinedMeasurements evaluatePreintegratedMeasurements(
     const imuBias::ConstantBias& bias, const list<Vector3>& measuredAccs,
     const list<Vector3>& measuredOmegas, const list<double>& deltaTs) {
-  PreintegratedCombinedMeasurements result(bias, I_3x3,
-      I_3x3, I_3x3, I_3x3, I_3x3, I_6x6);
+  auto p = PreintegratedCombinedMeasurements::Params::MakeSharedD(9.81);
+  PreintegratedCombinedMeasurements result(p, bias);
 
   list<Vector3>::const_iterator itAcc = measuredAccs.begin();
   list<Vector3>::const_iterator itOmega = measuredOmegas.begin();
