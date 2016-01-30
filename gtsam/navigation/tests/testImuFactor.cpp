@@ -30,7 +30,6 @@
 #include <CppUnitLite/TestHarness.h>
 #include <boost/bind.hpp>
 #include <list>
-#include <fstream>
 
 #include "imuFactorTesting.h"
 
@@ -61,16 +60,6 @@ static boost::shared_ptr<PreintegrationParams> defaultParams() {
       * I_3x3;
   p->integrationCovariance = 0.0001 * I_3x3;
   return p;
-}
-
-/* ************************************************************************* */
-Rot3 evaluateRotation(const Vector3 measuredOmega, const Vector3 biasOmega,
-    const double deltaT) {
-  return Rot3::Expmap((measuredOmega - biasOmega) * deltaT);
-}
-
-Vector3 evaluateLogRotation(const Vector3 thetahat, const Vector3 deltatheta) {
-  return Rot3::Logmap(Rot3::Expmap(thetahat).compose(Rot3::Expmap(deltatheta)));
 }
 
 } // namespace
@@ -371,13 +360,16 @@ TEST(ImuFactor, PartialDerivative_wrt_Bias) {
   Vector3 measuredOmega(0.1, 0, 0);
   double deltaT = 0.5;
 
-  // Compute numerical derivatives
-  Matrix expectedDelRdelBiasOmega = numericalDerivative11<Rot3, Vector3>(
-      boost::bind(&evaluateRotation, measuredOmega, _1, deltaT),
-      Vector3(biasOmega));
+  auto evaluateRotation = [=](const Vector3 biasOmega) {
+    return Rot3::Expmap((measuredOmega - biasOmega) * deltaT);
+  };
 
-  const Matrix3 Jr = Rot3::ExpmapDerivative(
-      (measuredOmega - biasOmega) * deltaT);
+  // Compute numerical derivatives
+  Matrix expectedDelRdelBiasOmega =
+      numericalDerivative11<Rot3, Vector3>(evaluateRotation, biasOmega);
+
+  const Matrix3 Jr =
+      Rot3::ExpmapDerivative((measuredOmega - biasOmega) * deltaT);
 
   Matrix3 actualdelRdelBiasOmega = -Jr * deltaT; // the delta bias appears with the minus sign
 
@@ -393,9 +385,14 @@ TEST(ImuFactor, PartialDerivativeLogmap) {
   // Measurements
   Vector3 deltatheta(0, 0, 0);
 
+  auto evaluateLogRotation = [=](const Vector3 deltatheta) {
+    return Rot3::Logmap(
+        Rot3::Expmap(thetahat).compose(Rot3::Expmap(deltatheta)));
+  };
+
   // Compute numerical derivatives
-  Matrix expectedDelFdeltheta = numericalDerivative11<Vector, Vector3>(
-      boost::bind(&evaluateLogRotation, thetahat, _1), Vector3(deltatheta));
+  Matrix expectedDelFdeltheta =
+      numericalDerivative11<Vector, Vector3>(evaluateLogRotation, deltatheta);
 
   Matrix3 actualDelFdeltheta = Rot3::LogmapDerivative(thetahat);
 
@@ -513,7 +510,7 @@ TEST(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
 
 // TODO(frank): revive derivative tests
 //  Matrix93 G1, G2;
-//  PreintegrationBase::TangentVector preint =
+//  Vector9 preint =
 //      pim.updatedDeltaXij(measuredAcc, measuredOmega, dt, boost::none, G1, G2);
 //
 //  Matrix93 expectedG1 = numericalDerivative21<NavState, Vector3, Vector3>(
@@ -785,53 +782,97 @@ TEST(ImuFactor, bodyPSensorWithBias) {
   EXPECT(assert_equal(biasExpected, biasActual, 1e-3));
 }
 
-/* ************************************************************************** */
-#include <gtsam/base/serializationTestHelpers.h>
+/* ************************************************************************* */
+static const double kVelocity = 2.0, kAngularVelocity = M_PI / 6;
 
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Constrained,
-    "gtsam_noiseModel_Constrained");
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Diagonal,
-    "gtsam_noiseModel_Diagonal");
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Gaussian,
-    "gtsam_noiseModel_Gaussian");
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Unit, "gtsam_noiseModel_Unit");
-BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Isotropic,
-    "gtsam_noiseModel_Isotropic");
-BOOST_CLASS_EXPORT_GUID(gtsam::SharedNoiseModel, "gtsam_SharedNoiseModel");
-BOOST_CLASS_EXPORT_GUID(gtsam::SharedDiagonal, "gtsam_SharedDiagonal");
+struct ImuFactorMergeTest {
+  boost::shared_ptr<PreintegratedImuMeasurements::Params> p_;
+  const ConstantTwistScenario forward_, loop_;
 
-TEST(ImuFactor, serialization) {
-  using namespace gtsam::serializationTestHelpers;
+  ImuFactorMergeTest()
+      : p_(PreintegratedImuMeasurements::Params::MakeSharedU(kGravity)),
+        forward_(Z_3x1, Vector3(kVelocity, 0, 0)),
+        loop_(Vector3(0, -kAngularVelocity, 0), Vector3(kVelocity, 0, 0)) {
+    // arbitrary noise values
+    p_->gyroscopeCovariance = I_3x3 * 0.01;
+    p_->accelerometerCovariance = I_3x3 * 0.02;
+    p_->accelerometerCovariance = I_3x3 * 0.03;
+  }
 
-  auto p = defaultParams();
-  p->n_gravity = Vector3(0, 0, -9.81);
-  p->body_P_sensor = Pose3(Rot3::Ypr(0, 0, M_PI), Point3());
-  p->accelerometerCovariance = 1e-7 * I_3x3;
-  p->gyroscopeCovariance = 1e-8 * I_3x3;
-  p->integrationCovariance = 1e-9 * I_3x3;
-  double deltaT = 0.005;
-  Bias priorBias(Vector3(0, 0, 0), Vector3(0, 0.01, 0)); // Biases (acc, rot)
+  void TestScenarioBiasCase(TestResult& result_, const std::string& name_,
+                            const Scenario& scenario,
+                            const imuBias::ConstantBias& bias01,
+                            const imuBias::ConstantBias& bias12, double tol) {
+    // Test merge by creating a 01, 12, and 02 PreintegratedRotation,
+    // then checking the merge of 01-12 matches 02.
+    PreintegratedImuMeasurements pim01(p_, bias01);
+    PreintegratedImuMeasurements pim12(p_, bias12);
+    PreintegratedImuMeasurements expected_pim02(p_, bias01);
 
-  PreintegratedImuMeasurements pim(p, priorBias);
+    double deltaT = 0.05;
+    ScenarioRunner runner(&scenario, p_, deltaT);
+    // TODO(frank) can this loop just go into runner ?
+    for (int i = 0; i < 100; i++) {
+      double t = i * deltaT;
+      // integrate the measurements appropriately
+      Vector3 accel_meas = runner.actualSpecificForce(t);
+      Vector3 omega_meas = runner.actualAngularVelocity(t);
+      expected_pim02.integrateMeasurement(accel_meas, omega_meas, deltaT);
+      if (i < 50) {
+        pim01.integrateMeasurement(accel_meas, omega_meas, deltaT);
+      } else {
+        pim12.integrateMeasurement(accel_meas, omega_meas, deltaT);
+      }
+    }
+    auto actual_pim02 = ImuFactor::Merge(pim01, pim12);
+    EXPECT(assert_equal(expected_pim02.preintegrated(), actual_pim02.preintegrated(), tol));
+//    EXPECT(assert_equal(expected_pim02, actual_pim02, tol));
 
-  // measurements are needed for non-inf noise model, otherwise will throw err when deserialize
+    ImuFactor::shared_ptr factor_01 =
+        boost::make_shared<ImuFactor>(X(0), V(0), X(1), V(1), B(0), pim01);
+    ImuFactor::shared_ptr factor_12 =
+        boost::make_shared<ImuFactor>(X(1), V(1), X(2), V(2), B(0), pim12);
+    ImuFactor::shared_ptr factor_02_true = boost::make_shared<ImuFactor>(
+        X(0), V(0), X(2), V(2), B(0), expected_pim02);
 
-  // Sensor frame is z-down
-  // Gyroscope measurement is the angular velocity of sensor w.r.t nav frame in sensor frame
-  Vector3 measuredOmega(0, 0.01, 0);
-  // Acc measurement is acceleration of sensor in the sensor frame, when stationary,
-  // table exerts an equal and opposite force w.r.t gravity
-  Vector3 measuredAcc(0, 0, -9.81);
+    // ImuFactor::shared_ptr factor_02_merged = factor01.mergeWith(factor_12);
+    // EXPECT(assert_equal(*factor_02_true, *factor_02_merged, tol));
+  }
 
-  for (int j = 0; j < 200; ++j)
-    pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+  void TestScenarios(TestResult& result_, const std::string& name_,
+                     const imuBias::ConstantBias& bias01,
+                     const imuBias::ConstantBias& bias12, double tol) {
+    for (auto scenario : {forward_, loop_})
+      TestScenarioBiasCase(result_, name_, scenario, bias01, bias12, tol);
+  }
+};
 
-  ImuFactor factor(X(1), V(1), X(2), V(2), B(1), pim);
-
-  EXPECT(equalsObj(factor));
-  EXPECT(equalsXML(factor));
-  EXPECT(equalsBinary(factor));
+/* ************************************************************************* */
+// Test case with identical biases where there is no approximation so we expect
+// an exact answer.
+TEST(ImuFactor, MergeZeroBias) {
+  ImuFactorMergeTest mergeTest;
+  mergeTest.TestScenarios(result_, name_, kZeroBias, kZeroBias, 1e-6);
 }
+
+//// Test case with different biases where we expect there to be some variation.
+//TEST(ImuFactor, MergeChangingBias) {
+//  ImuFactorMergeTest mergeTest;
+//  mergeTest.TestScenarios(
+//      result_, name_, imuBias::ConstantBias(Vector3(0.03, -0.02, 0.01),
+//                                            Vector3(-0.01, 0.02, -0.03)),
+//      imuBias::ConstantBias(Vector3(0.01, 0.02, 0.03),
+//                            Vector3(0.03, -0.02, 0.01)),
+//      0.4);
+//}
+//
+//// Test case with non-zero coriolis
+//TEST(ImuFactor, MergeWithCoriolis) {
+//  ImuFactorMergeTest mergeTest;
+//  mergeTest.p_->omegaCoriolis.reset(Vector3(0.1, 0.2, -0.1));
+//  mergeTest.TestScenarios(result_, name_, kZeroBias, kZeroBias,
+//                                      1e-6);
+//}
 
 /* ************************************************************************* */
 int main() {

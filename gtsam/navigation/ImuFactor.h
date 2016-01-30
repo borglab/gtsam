@@ -225,6 +225,11 @@ public:
       boost::optional<Matrix&> H3 = boost::none, boost::optional<Matrix&> H4 =
           boost::none, boost::optional<Matrix&> H5 = boost::none) const;
 
+  // Merge two pre-integrated measurement classes
+  static PreintegratedImuMeasurements Merge(
+      const PreintegratedImuMeasurements& pim01,
+      const PreintegratedImuMeasurements& pim12);
+
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
   /// @deprecated typename
   typedef PreintegratedImuMeasurements PreintegratedMeasurements;
