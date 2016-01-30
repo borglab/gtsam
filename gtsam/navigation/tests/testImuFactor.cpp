@@ -12,17 +12,18 @@
 /**
  * @file    testImuFactor.cpp
  * @brief   Unit test for ImuFactor
- * @author  Luca Carlone, Stephen Williams, Richard Roberts, Frank Dellaert
+ * @author  Luca Carlone
+ * @author  Frank Dellaert
+ * @author  Richard Roberts
+ * @author  Stephen Williams
  */
 
 #include <gtsam/navigation/ImuFactor.h>
-#include <gtsam/navigation/ImuBias.h>
 #include <gtsam/navigation/ScenarioRunner.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/factorTesting.h>
 #include <gtsam/linear/Sampler.h>
-#include <gtsam/inference/Symbol.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/numericalDerivative.h>
 
@@ -31,22 +32,10 @@
 #include <list>
 #include <fstream>
 
-using namespace std;
-using namespace gtsam;
-
-// Convenience for named keys
-using symbol_shorthand::X;
-using symbol_shorthand::V;
-using symbol_shorthand::B;
-
-typedef imuBias::ConstantBias Bias;
-static const Vector3 Z_3x1 = Vector3::Zero();
-static const Bias kZeroBiasHat, kZeroBias;
+#include "imuFactorTesting.h"
 
 static const double kGravity = 10;
 static const Vector3 kGravityAlongNavZDown(0, 0, kGravity);
-static const Vector3 kZeroOmegaCoriolis(0, 0, 0);
-static const Vector3 kNonZeroOmegaCoriolis(0, 0.1, 0.1);
 
 /* ************************************************************************* */
 namespace {
@@ -78,31 +67,18 @@ static boost::shared_ptr<PreintegrationParams> defaultParams() {
 // delPdelBiasAcc_ delPdelBiasOmega_ delVdelBiasAcc_ delVdelBiasOmega_ delRdelBiasOmega_
 /* ************************************************************************* */
 PreintegratedImuMeasurements evaluatePreintegratedMeasurements(
-    const Bias& bias, const list<Vector3>& measuredAccs,
-    const list<Vector3>& measuredOmegas, const list<double>& deltaTs) {
-  PreintegratedImuMeasurements result(defaultParams(), bias);
-
-  list<Vector3>::const_iterator itAcc = measuredAccs.begin();
-  list<Vector3>::const_iterator itOmega = measuredOmegas.begin();
-  list<double>::const_iterator itDeltaT = deltaTs.begin();
-  for (; itAcc != measuredAccs.end(); ++itAcc, ++itOmega, ++itDeltaT) {
-    result.integrateMeasurement(*itAcc, *itOmega, *itDeltaT);
-  }
-  return result;
+    const Bias& bias) {
+  PreintegratedImuMeasurements pim(defaultParams(), bias);
+  integrateMeasurements(testing::SomeMeasurements(), &pim);
+  return pim;
 }
 
-Vector3 evaluatePreintegratedMeasurementsPosition(
-    const Bias& bias, const list<Vector3>& measuredAccs,
-    const list<Vector3>& measuredOmegas, const list<double>& deltaTs) {
-  return evaluatePreintegratedMeasurements(bias, measuredAccs, measuredOmegas,
-      deltaTs).deltaPij();
+Vector3 evaluatePreintegratedMeasurementsPosition(const Bias& bias) {
+  return evaluatePreintegratedMeasurements(bias).deltaPij();
 }
 
-Vector3 evaluatePreintegratedMeasurementsVelocity(
-    const Bias& bias, const list<Vector3>& measuredAccs,
-    const list<Vector3>& measuredOmegas, const list<double>& deltaTs) {
-  return evaluatePreintegratedMeasurements(bias, measuredAccs, measuredOmegas,
-      deltaTs).deltaVij();
+Vector3 evaluatePreintegratedMeasurementsVelocity(const Bias& bias) {
+  return evaluatePreintegratedMeasurements(bias).deltaVij();
 }
 
 Rot3 evaluateRotation(const Vector3 measuredOmega, const Vector3 biasOmega,
@@ -478,33 +454,15 @@ TEST(ImuFactor, fistOrderExponential) {
 
 /* ************************************************************************* */
 TEST(ImuFactor, FirstOrderPreIntegratedMeasurements) {
-  // Measurements
-  list<Vector3> measuredAccs, measuredOmegas;
-  list<double> deltaTs;
-  measuredAccs.push_back(Vector3(0.1, 0.0, 0.0));
-  measuredOmegas.push_back(Vector3(M_PI / 100.0, 0.0, 0.0));
-  deltaTs.push_back(0.01);
-  measuredAccs.push_back(Vector3(0.1, 0.0, 0.0));
-  measuredOmegas.push_back(Vector3(M_PI / 100.0, 0.0, 0.0));
-  deltaTs.push_back(0.01);
-  for (int i = 1; i < 100; i++) {
-    measuredAccs.push_back(Vector3(0.05, 0.09, 0.01));
-    measuredOmegas.push_back(
-        Vector3(M_PI / 100.0, M_PI / 300.0, 2 * M_PI / 100.0));
-    deltaTs.push_back(0.01);
-  }
-
   // Actual pre-integrated values
   PreintegratedImuMeasurements preintegrated =
-      evaluatePreintegratedMeasurements(kZeroBias, measuredAccs, measuredOmegas,
-                                        deltaTs);
+      evaluatePreintegratedMeasurements(kZeroBias);
 
   // Check derivative of rotation
-  boost::function<Vector3(const Vector3&, const Vector3&)> theta = [=](
-      const Vector3& a, const Vector3& w) {
-    return evaluatePreintegratedMeasurements(
-               Bias(a, w), measuredAccs, measuredOmegas, deltaTs).theta();
-  };
+  boost::function<Vector3(const Vector3&, const Vector3&)> theta =
+      [=](const Vector3& a, const Vector3& w) {
+        return evaluatePreintegratedMeasurements(Bias(a, w)).theta();
+      };
   EXPECT(
       assert_equal(numericalDerivative21(theta, Z_3x1, Z_3x1), Matrix(Z_3x3)));
   EXPECT(assert_equal(numericalDerivative22(theta, Z_3x1, Z_3x1),
@@ -512,9 +470,7 @@ TEST(ImuFactor, FirstOrderPreIntegratedMeasurements) {
 
   // Check derivative of translation
   Matrix expectedDelPdelBias = numericalDerivative11<Vector, Bias>(
-      boost::bind(&evaluatePreintegratedMeasurementsPosition, _1, measuredAccs,
-                  measuredOmegas, deltaTs),
-      kZeroBias);
+      &evaluatePreintegratedMeasurementsPosition, kZeroBias);
   Matrix expectedDelPdelBiasAcc = expectedDelPdelBias.leftCols(3);
   Matrix expectedDelPdelBiasOmega = expectedDelPdelBias.rightCols(3);
   EXPECT(assert_equal(expectedDelPdelBiasAcc, preintegrated.delPdelBiasAcc()));
@@ -523,9 +479,7 @@ TEST(ImuFactor, FirstOrderPreIntegratedMeasurements) {
 
   // Check derivative of velocity
   Matrix expectedDelVdelBias = numericalDerivative11<Vector, Bias>(
-      boost::bind(&evaluatePreintegratedMeasurementsVelocity, _1, measuredAccs,
-                  measuredOmegas, deltaTs),
-      kZeroBias);
+      &evaluatePreintegratedMeasurementsVelocity, kZeroBias);
   Matrix expectedDelVdelBiasAcc = expectedDelVdelBias.leftCols(3);
   Matrix expectedDelVdelBiasOmega = expectedDelVdelBias.rightCols(3);
   EXPECT(assert_equal(expectedDelVdelBiasAcc, preintegrated.delVdelBiasAcc()));

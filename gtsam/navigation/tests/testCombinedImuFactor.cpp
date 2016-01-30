@@ -32,17 +32,7 @@
 #include <boost/bind.hpp>
 #include <list>
 
-using namespace std;
-using namespace gtsam;
-
-// Convenience for named keys
-using symbol_shorthand::X;
-using symbol_shorthand::V;
-using symbol_shorthand::B;
-
-typedef imuBias::ConstantBias Bias;
-static const Vector3 Z_3x1 = Vector3::Zero();
-static const Bias kZeroBiasHat, kZeroBias;
+#include "imuFactorTesting.h"
 
 namespace {
 
@@ -50,34 +40,22 @@ namespace {
 // delPdelBiasAcc_ delPdelBiasOmega_ delVdelBiasAcc_ delVdelBiasOmega_ delRdelBiasOmega_
 /* ************************************************************************* */
 PreintegratedCombinedMeasurements evaluatePreintegratedMeasurements(
-    const imuBias::ConstantBias& bias, const list<Vector3>& measuredAccs,
-    const list<Vector3>& measuredOmegas, const list<double>& deltaTs) {
+    const imuBias::ConstantBias& bias) {
   auto p = PreintegratedCombinedMeasurements::Params::MakeSharedD(9.81);
-  PreintegratedCombinedMeasurements result(p, bias);
-
-  list<Vector3>::const_iterator itAcc = measuredAccs.begin();
-  list<Vector3>::const_iterator itOmega = measuredOmegas.begin();
-  list<double>::const_iterator itDeltaT = deltaTs.begin();
-  for (; itAcc != measuredAccs.end(); ++itAcc, ++itOmega, ++itDeltaT) {
-    result.integrateMeasurement(*itAcc, *itOmega, *itDeltaT);
-  }
-  return result;
+  PreintegratedCombinedMeasurements pim(p, bias);
+  integrateMeasurements(testing::SomeMeasurements(), &pim);
+  return pim;
 }
 
 Vector3 evaluatePreintegratedMeasurementsPosition(
-    const imuBias::ConstantBias& bias, const list<Vector3>& measuredAccs,
-    const list<Vector3>& measuredOmegas, const list<double>& deltaTs) {
-  return evaluatePreintegratedMeasurements(bias, measuredAccs, measuredOmegas,
-      deltaTs).deltaPij();
+    const imuBias::ConstantBias& bias) {
+  return evaluatePreintegratedMeasurements(bias).deltaPij();
 }
 
 Vector3 evaluatePreintegratedMeasurementsVelocity(
-    const imuBias::ConstantBias& bias, const list<Vector3>& measuredAccs,
-    const list<Vector3>& measuredOmegas, const list<double>& deltaTs) {
-  return evaluatePreintegratedMeasurements(bias, measuredAccs, measuredOmegas,
-      deltaTs).deltaVij();
+    const imuBias::ConstantBias& bias) {
+  return evaluatePreintegratedMeasurements(bias).deltaVij();
 }
-
 }
 
 /* ************************************************************************* */
@@ -167,64 +145,39 @@ TEST( CombinedImuFactor, ErrorWithBiases ) {
 }
 
 /* ************************************************************************* */
-TEST( CombinedImuFactor, FirstOrderPreIntegratedMeasurements ) {
-  // Linearization point
-  imuBias::ConstantBias bias; ///< Current estimate of acceleration and rotation rate biases
-
-  Pose3 body_P_sensor(Rot3::Expmap(Vector3(0, 0.1, 0.1)), Point3(1, 0, 1));
-
-  // Measurements
-  list<Vector3> measuredAccs, measuredOmegas;
-  list<double> deltaTs;
-  measuredAccs.push_back(Vector3(0.1, 0.0, 0.0));
-  measuredOmegas.push_back(Vector3(M_PI / 100.0, 0.0, 0.0));
-  deltaTs.push_back(0.01);
-  measuredAccs.push_back(Vector3(0.1, 0.0, 0.0));
-  measuredOmegas.push_back(Vector3(M_PI / 100.0, 0.0, 0.0));
-  deltaTs.push_back(0.01);
-  for (int i = 1; i < 100; i++) {
-    measuredAccs.push_back(Vector3(0.05, 0.09, 0.01));
-    measuredOmegas.push_back(
-        Vector3(M_PI / 100.0, M_PI / 300.0, 2 * M_PI / 100.0));
-    deltaTs.push_back(0.01);
-  }
-
+TEST(CombinedImuFactor, FirstOrderPreIntegratedMeasurements) {
   // Actual preintegrated values
   PreintegratedCombinedMeasurements pim =
-      evaluatePreintegratedMeasurements(bias, measuredAccs, measuredOmegas,
-          deltaTs);
+      evaluatePreintegratedMeasurements(kZeroBiasHat);
 
   // Check derivative of rotation
-  boost::function<Vector3(const Vector3&, const Vector3&)> theta = [=](
-      const Vector3& a, const Vector3& w) {
-    return evaluatePreintegratedMeasurements(
-               Bias(a, w), measuredAccs, measuredOmegas, deltaTs).theta();
-  };
+  boost::function<Vector3(const Vector3&, const Vector3&)> theta =
+      [=](const Vector3& a, const Vector3& w) {
+        return evaluatePreintegratedMeasurements(Bias(a, w)).theta();
+      };
   EXPECT(
       assert_equal(numericalDerivative21(theta, Z_3x1, Z_3x1), Matrix(Z_3x3)));
   EXPECT(assert_equal(numericalDerivative22(theta, Z_3x1, Z_3x1),
                       pim.delRdelBiasOmega(), 1e-7));
 
   // Compute numerical derivatives
-  Matrix expectedDelPdelBias = numericalDerivative11<Vector,
-      imuBias::ConstantBias>(
-      boost::bind(&evaluatePreintegratedMeasurementsPosition, _1, measuredAccs,
-          measuredOmegas, deltaTs), bias);
+  Matrix expectedDelPdelBias =
+      numericalDerivative11<Vector, imuBias::ConstantBias>(
+          evaluatePreintegratedMeasurementsPosition, kZeroBiasHat);
   Matrix expectedDelPdelBiasAcc = expectedDelPdelBias.leftCols(3);
   Matrix expectedDelPdelBiasOmega = expectedDelPdelBias.rightCols(3);
 
-  Matrix expectedDelVdelBias = numericalDerivative11<Vector,
-      imuBias::ConstantBias>(
-      boost::bind(&evaluatePreintegratedMeasurementsVelocity, _1, measuredAccs,
-          measuredOmegas, deltaTs), bias);
+  Matrix expectedDelVdelBias =
+      numericalDerivative11<Vector, imuBias::ConstantBias>(
+          &evaluatePreintegratedMeasurementsVelocity, kZeroBiasHat);
   Matrix expectedDelVdelBiasAcc = expectedDelVdelBias.leftCols(3);
   Matrix expectedDelVdelBiasOmega = expectedDelVdelBias.rightCols(3);
 
   // Compare Jacobians
   EXPECT(assert_equal(expectedDelPdelBiasAcc, pim.delPdelBiasAcc()));
-  EXPECT(assert_equal(expectedDelPdelBiasOmega, pim.delPdelBiasOmega(),1e-8));
+  EXPECT(assert_equal(expectedDelPdelBiasOmega, pim.delPdelBiasOmega(), 1e-8));
   EXPECT(assert_equal(expectedDelVdelBiasAcc, pim.delVdelBiasAcc()));
-  EXPECT(assert_equal(expectedDelVdelBiasOmega, pim.delVdelBiasOmega(),1e-8));
+  EXPECT(assert_equal(expectedDelVdelBiasOmega, pim.delVdelBiasOmega(), 1e-8));
 }
 
 /* ************************************************************************* */
