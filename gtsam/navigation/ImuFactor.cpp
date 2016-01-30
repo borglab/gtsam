@@ -69,9 +69,7 @@ void PreintegratedImuMeasurements::integrateMeasurement(
   const Matrix3& wCov = p().gyroscopeCovariance;
   const Matrix3& iCov = p().integrationCovariance;
 
-  // NOTE(luca): (1/dt) allows to pass from continuous time noise to discrete
-  // time noise
-  // measurementCovariance_discrete = measurementCovariance_contTime/dt
+  // (1/dt) allows to pass from continuous time noise to discrete time noise
   preintMeasCov_ = A * preintMeasCov_ * A.transpose();
   preintMeasCov_.noalias() += B * (aCov / dt) * B.transpose();
   preintMeasCov_.noalias() += C * (wCov / dt) * C.transpose();

@@ -202,11 +202,12 @@ public:
   Rot3 deltaRij() const { return Rot3::Expmap(deltaXij_.theta()); }
   NavState deltaXij() const { return NavState::Retract(deltaXij_.vector()); }
 
-  const Matrix3& delRdelBiasOmega() const { return delRdelBiasOmega_; }
-  const Matrix3& delPdelBiasAcc() const { return delPdelBiasAcc_; }
-  const Matrix3& delPdelBiasOmega() const { return delPdelBiasOmega_; }
-  const Matrix3& delVdelBiasAcc() const { return delVdelBiasAcc_; }
-  const Matrix3& delVdelBiasOmega() const { return delVdelBiasOmega_; }
+  const Matrix93 zeta_H_biasAcc() {
+    return (Matrix93() << Z_3x3, delPdelBiasAcc_, delVdelBiasAcc_).finished();
+  }
+  const Matrix93 zeta_H_biasOmega() {
+    return (Matrix93() << delRdelBiasOmega_, delPdelBiasOmega_, delVdelBiasOmega_).finished();
+  }
 
   // Exposed for MATLAB
   Vector6 biasHatVector() const { return biasHat_.vector(); }

@@ -34,30 +34,6 @@
 
 #include "imuFactorTesting.h"
 
-namespace {
-
-// Auxiliary functions to test preintegrated Jacobians
-// delPdelBiasAcc_ delPdelBiasOmega_ delVdelBiasAcc_ delVdelBiasOmega_ delRdelBiasOmega_
-/* ************************************************************************* */
-PreintegratedCombinedMeasurements evaluatePreintegratedMeasurements(
-    const imuBias::ConstantBias& bias) {
-  auto p = PreintegratedCombinedMeasurements::Params::MakeSharedD(9.81);
-  PreintegratedCombinedMeasurements pim(p, bias);
-  integrateMeasurements(testing::SomeMeasurements(), &pim);
-  return pim;
-}
-
-Vector3 evaluatePreintegratedMeasurementsPosition(
-    const imuBias::ConstantBias& bias) {
-  return evaluatePreintegratedMeasurements(bias).deltaPij();
-}
-
-Vector3 evaluatePreintegratedMeasurementsVelocity(
-    const imuBias::ConstantBias& bias) {
-  return evaluatePreintegratedMeasurements(bias).deltaVij();
-}
-}
-
 /* ************************************************************************* */
 TEST( CombinedImuFactor, PreintegratedMeasurements ) {
   // Linearization point
@@ -146,38 +122,24 @@ TEST( CombinedImuFactor, ErrorWithBiases ) {
 
 /* ************************************************************************* */
 TEST(CombinedImuFactor, FirstOrderPreIntegratedMeasurements) {
-  // Actual preintegrated values
-  PreintegratedCombinedMeasurements pim =
-      evaluatePreintegratedMeasurements(kZeroBiasHat);
+  auto p = PreintegratedCombinedMeasurements::Params::MakeSharedD(9.81);
+  testing::SomeMeasurements measurements;
 
-  // Check derivative of rotation
-  boost::function<Vector3(const Vector3&, const Vector3&)> theta =
+  boost::function<Vector9(const Vector3&, const Vector3&)> zeta =
       [=](const Vector3& a, const Vector3& w) {
-        return evaluatePreintegratedMeasurements(Bias(a, w)).theta();
+        PreintegratedImuMeasurements pim(p, Bias(a, w));
+        testing::integrateMeasurements(measurements, &pim);
+        return pim.zeta();
       };
-  EXPECT(
-      assert_equal(numericalDerivative21(theta, Z_3x1, Z_3x1), Matrix(Z_3x3)));
-  EXPECT(assert_equal(numericalDerivative22(theta, Z_3x1, Z_3x1),
-                      pim.delRdelBiasOmega(), 1e-7));
 
-  // Compute numerical derivatives
-  Matrix expectedDelPdelBias =
-      numericalDerivative11<Vector, imuBias::ConstantBias>(
-          evaluatePreintegratedMeasurementsPosition, kZeroBiasHat);
-  Matrix expectedDelPdelBiasAcc = expectedDelPdelBias.leftCols(3);
-  Matrix expectedDelPdelBiasOmega = expectedDelPdelBias.rightCols(3);
+  // Actual pre-integrated values
+  PreintegratedCombinedMeasurements pim(p);
+  testing::integrateMeasurements(measurements, &pim);
 
-  Matrix expectedDelVdelBias =
-      numericalDerivative11<Vector, imuBias::ConstantBias>(
-          &evaluatePreintegratedMeasurementsVelocity, kZeroBiasHat);
-  Matrix expectedDelVdelBiasAcc = expectedDelVdelBias.leftCols(3);
-  Matrix expectedDelVdelBiasOmega = expectedDelVdelBias.rightCols(3);
-
-  // Compare Jacobians
-  EXPECT(assert_equal(expectedDelPdelBiasAcc, pim.delPdelBiasAcc()));
-  EXPECT(assert_equal(expectedDelPdelBiasOmega, pim.delPdelBiasOmega(), 1e-8));
-  EXPECT(assert_equal(expectedDelVdelBiasAcc, pim.delVdelBiasAcc()));
-  EXPECT(assert_equal(expectedDelVdelBiasOmega, pim.delVdelBiasOmega(), 1e-8));
+  EXPECT(assert_equal(numericalDerivative21(zeta, Z_3x1, Z_3x1),
+                      pim.zeta_H_biasAcc()));
+  EXPECT(assert_equal(numericalDerivative22(zeta, Z_3x1, Z_3x1),
+                      pim.zeta_H_biasOmega(), 1e-7));
 }
 
 /* ************************************************************************* */
