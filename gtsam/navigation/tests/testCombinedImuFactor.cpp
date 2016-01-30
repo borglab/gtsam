@@ -125,21 +125,21 @@ TEST(CombinedImuFactor, FirstOrderPreIntegratedMeasurements) {
   auto p = PreintegratedCombinedMeasurements::Params::MakeSharedD(9.81);
   testing::SomeMeasurements measurements;
 
-  boost::function<Vector9(const Vector3&, const Vector3&)> zeta =
+  boost::function<Vector9(const Vector3&, const Vector3&)> preintegrated =
       [=](const Vector3& a, const Vector3& w) {
         PreintegratedImuMeasurements pim(p, Bias(a, w));
         testing::integrateMeasurements(measurements, &pim);
-        return pim.zeta();
+        return pim.preintegrated();
       };
 
   // Actual pre-integrated values
   PreintegratedCombinedMeasurements pim(p);
   testing::integrateMeasurements(measurements, &pim);
 
-  EXPECT(assert_equal(numericalDerivative21(zeta, Z_3x1, Z_3x1),
-                      pim.zeta_H_biasAcc()));
-  EXPECT(assert_equal(numericalDerivative22(zeta, Z_3x1, Z_3x1),
-                      pim.zeta_H_biasOmega(), 1e-3));
+  EXPECT(assert_equal(numericalDerivative21(preintegrated, Z_3x1, Z_3x1),
+                      pim.preintegrated_H_biasAcc()));
+  EXPECT(assert_equal(numericalDerivative22(preintegrated, Z_3x1, Z_3x1),
+                      pim.preintegrated_H_biasOmega(), 1e-3));
 }
 
 /* ************************************************************************* */

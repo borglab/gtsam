@@ -80,10 +80,10 @@ class PreintegrationBase {
    * Note: relative position does not take into account velocity at time i, see deltap+, in [2]
    * Note: velocity is now also in frame i, as opposed to deltaVij in [2]
    */
-  Vector9 zeta_;
+  Vector9 preintegrated_;
 
-  Matrix93 zeta_H_biasAcc_;    ///< Jacobian of preintegrated zeta w.r.t. acceleration bias
-  Matrix93 zeta_H_biasOmega_;  ///< Jacobian of preintegrated zeta w.r.t. angular rate bias
+  Matrix93 preintegrated_H_biasAcc_;    ///< Jacobian of preintegrated preintegrated w.r.t. acceleration bias
+  Matrix93 preintegrated_H_biasOmega_;  ///< Jacobian of preintegrated preintegrated w.r.t. angular rate bias
 
   /// Default constructor for serialization
   PreintegrationBase() {
@@ -136,17 +136,17 @@ public:
   const imuBias::ConstantBias& biasHat() const { return biasHat_; }
   const double& deltaTij() const { return deltaTij_; }
 
-  const Vector9& zeta() const { return zeta_; }
+  const Vector9& preintegrated() const { return preintegrated_; }
 
-  Vector3 theta() const { return zeta_.head<3>(); }
-  Vector3 deltaPij() const { return zeta_.segment<3>(3); }
-  Vector3 deltaVij() const { return zeta_.tail<3>(); }
+  Vector3 theta() const { return preintegrated_.head<3>(); }
+  Vector3 deltaPij() const { return preintegrated_.segment<3>(3); }
+  Vector3 deltaVij() const { return preintegrated_.tail<3>(); }
 
   Rot3 deltaRij() const { return Rot3::Expmap(theta()); }
-  NavState deltaXij() const { return NavState::Retract(zeta_); }
+  NavState deltaXij() const { return NavState::Retract(preintegrated_); }
 
-  const Matrix93& zeta_H_biasAcc() const { return zeta_H_biasAcc_; }
-  const Matrix93& zeta_H_biasOmega() const { return zeta_H_biasOmega_; }
+  const Matrix93& preintegrated_H_biasAcc() const { return preintegrated_H_biasAcc_; }
+  const Matrix93& preintegrated_H_biasOmega() const { return preintegrated_H_biasOmega_; }
 
   // Exposed for MATLAB
   Vector6 biasHatVector() const { return biasHat_.vector(); }
@@ -165,26 +165,25 @@ public:
   /// Subtract estimate and correct for sensor pose
   /// Compute the derivatives due to non-identity body_P_sensor (rotation and centrifugal acc)
   /// Ignore D_correctedOmega_measuredAcc as it is trivially zero
-  std::pair<Vector3, Vector3> correctMeasurementsByBiasAndSensorPose(
-      const Vector3& measuredAcc, const Vector3& measuredOmega,
-      OptionalJacobian<3, 3> D_correctedAcc_measuredAcc = boost::none,
-      OptionalJacobian<3, 3> D_correctedAcc_measuredOmega = boost::none,
-      OptionalJacobian<3, 3> D_correctedOmega_measuredOmega = boost::none) const;
+  std::pair<Vector3, Vector3> correctMeasurementsBySensorPose(
+      const Vector3& unbiasedAcc, const Vector3& unbiasedOmega,
+      OptionalJacobian<3, 3> D_correctedAcc_unbiasedAcc = boost::none,
+      OptionalJacobian<3, 3> D_correctedAcc_unbiasedOmega = boost::none,
+      OptionalJacobian<3, 3> D_correctedOmega_unbiasedOmega = boost::none) const;
 
-  // Update integrated vector on tangent manifold zeta with acceleration
+  // Update integrated vector on tangent manifold preintegrated with acceleration
   // readings a_body and gyro readings w_body, bias-corrected in body frame.
   static Vector9 UpdateEstimate(const Vector3& a_body, const Vector3& w_body,
-                                double dt, const Vector9& zeta,
+                                double dt, const Vector9& preintegrated,
                                 OptionalJacobian<9, 9> A = boost::none,
                                 OptionalJacobian<9, 3> B = boost::none,
                                 OptionalJacobian<9, 3> C = boost::none);
 
   /// Calculate the updated preintegrated measurement, does not modify
   /// It takes measured quantities in the j frame
-  Vector9 updatedZeta(const Vector3& measuredAcc, const Vector3& measuredOmega,
-                      double dt, OptionalJacobian<9, 9> A = boost::none,
-                      OptionalJacobian<9, 3> B = boost::none,
-                      OptionalJacobian<9, 3> C = boost::none) const;
+  Vector9 updatedPreintegrated(const Vector3& measuredAcc,
+                               const Vector3& measuredOmega, double dt,
+                               Matrix9* A, Matrix93* B, Matrix93* C) const;
 
   /// Update preintegrated measurements and get derivatives
   /// It takes measured quantities in the j frame
@@ -245,9 +244,9 @@ private:
     ar & BOOST_SERIALIZATION_NVP(p_);
     ar & BOOST_SERIALIZATION_NVP(biasHat_);
     ar & BOOST_SERIALIZATION_NVP(deltaTij_);
-    ar & bs::make_nvp("zeta_", bs::make_array(zeta_.data(), zeta_.size()));
-    ar & bs::make_nvp("zeta_H_biasAcc_", bs::make_array(zeta_H_biasAcc_.data(), zeta_H_biasAcc_.size()));
-    ar & bs::make_nvp("zeta_H_biasOmega_", bs::make_array(zeta_H_biasOmega_.data(), zeta_H_biasOmega_.size()));
+    ar & bs::make_nvp("preintegrated_", bs::make_array(preintegrated_.data(), preintegrated_.size()));
+    ar & bs::make_nvp("preintegrated_H_biasAcc_", bs::make_array(preintegrated_H_biasAcc_.data(), preintegrated_H_biasAcc_.size()));
+    ar & bs::make_nvp("preintegrated_H_biasOmega_", bs::make_array(preintegrated_H_biasOmega_.data(), preintegrated_H_biasOmega_.size()));
   }
 };
 
