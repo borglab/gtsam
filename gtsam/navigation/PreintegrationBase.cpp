@@ -227,22 +227,35 @@ void PreintegrationBase::update(const Vector3& j_measuredAcc,
   boost::tie(j_correctedAcc, j_correctedOmega) =
       correctMeasurementsByBiasAndSensorPose(j_measuredAcc, j_measuredOmega);
 
+  double dt22 = 0.5 * dt * dt;
+  const Matrix3 dRij = oldRij.matrix();  // expensive
+  delPdelBiasAcc_ += delVdelBiasAcc_ * dt - dt22 * dRij;
+  delVdelBiasAcc_ += -dRij * dt;
+
+  cout << "B:" << endl;
+  cout << -(*B) << endl;
+  cout << "update:" << endl;
+  cout << - dt22 * dRij << endl;
+  cout << -dRij * dt << endl;
+
   Matrix3 D_acc_R;
   oldRij.rotate(j_correctedAcc, D_acc_R);
   const Matrix3 D_acc_biasOmega = D_acc_R * delRdelBiasOmega_;
-
   const Vector3 integratedOmega = j_correctedOmega * dt;
-  const Rot3 incrR = Rot3::Expmap(integratedOmega, D_incrR_integratedOmega); // expensive !!
+  const Rot3 incrR =
+      Rot3::Expmap(integratedOmega, D_incrR_integratedOmega);  // expensive !!
   const Matrix3 incrRt = incrR.transpose();
-  delRdelBiasOmega_ = incrRt * delRdelBiasOmega_
-      - *D_incrR_integratedOmega * dt;
 
-  double dt22 = 0.5 * dt * dt;
-  const Matrix3 dRij = oldRij.matrix(); // expensive
-  delPdelBiasAcc_ += delVdelBiasAcc_ * dt - dt22 * dRij;
+  delRdelBiasOmega_ =
+      incrRt * delRdelBiasOmega_ - *D_incrR_integratedOmega * dt;
   delPdelBiasOmega_ += dt * delVdelBiasOmega_ + dt22 * D_acc_biasOmega;
-  delVdelBiasAcc_ += -dRij * dt;
   delVdelBiasOmega_ += D_acc_biasOmega * dt;
+  cout << "C:" << endl;
+  cout << -(*C) << endl;
+  cout << "update:" << endl;
+  cout <<  - *D_incrR_integratedOmega* dt << endl;
+  cout <<  dt22 * D_acc_biasOmega << endl;
+  cout << D_acc_biasOmega * dt << endl;
 }
 
 //------------------------------------------------------------------------------
