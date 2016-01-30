@@ -38,11 +38,8 @@ PreintegrationBase::PreintegrationBase(const boost::shared_ptr<Params>& p,
 void PreintegrationBase::resetIntegration() {
   deltaTij_ = 0.0;
   deltaXij_ = TangentVector();
-  delRdelBiasOmega_ = Z_3x3;
-  delPdelBiasAcc_ = Z_3x3;
-  delPdelBiasOmega_ = Z_3x3;
-  delVdelBiasAcc_ = Z_3x3;
-  delVdelBiasOmega_ = Z_3x3;
+  zeta_H_biasAcc_.setZero();
+  zeta_H_biasOmega_.setZero();
 }
 
 //------------------------------------------------------------------------------
@@ -68,11 +65,8 @@ bool PreintegrationBase::equals(const PreintegrationBase& other,
   return params_match && fabs(deltaTij_ - other.deltaTij_) < tol
       && biasHat_.equals(other.biasHat_, tol)
       && equal_with_abs_tol(deltaXij_.vector(), other.deltaXij_.vector(), tol)
-      && equal_with_abs_tol(delRdelBiasOmega_, other.delRdelBiasOmega_, tol)
-      && equal_with_abs_tol(delPdelBiasAcc_, other.delPdelBiasAcc_, tol)
-      && equal_with_abs_tol(delPdelBiasOmega_, other.delPdelBiasOmega_, tol)
-      && equal_with_abs_tol(delVdelBiasAcc_, other.delVdelBiasAcc_, tol)
-      && equal_with_abs_tol(delVdelBiasOmega_, other.delVdelBiasOmega_, tol);
+      && equal_with_abs_tol(zeta_H_biasAcc_, other.zeta_H_biasAcc_, tol)
+      && equal_with_abs_tol(zeta_H_biasOmega_, other.zeta_H_biasOmega_, tol);
 }
 
 //------------------------------------------------------------------------------
@@ -226,49 +220,23 @@ void PreintegrationBase::update(const Vector3& measuredAcc,
   deltaXij_ = updatedDeltaXij(measuredAcc, measuredOmega, dt, A, B, C);
 
   // D_plus_abias = D_plus_zeta * D_zeta_abias + D_plus_a * D_a_abias
-  Matrix93 D_zeta_abias, D_plus_abias;
-  D_zeta_abias << Z_3x3, delPdelBiasAcc_, delVdelBiasAcc_;
-  D_plus_abias = (*A) * D_zeta_abias - (*B);
-  delPdelBiasAcc_ = D_plus_abias.middleRows<3>(3);
-  delVdelBiasAcc_ = D_plus_abias.middleRows<3>(6);
+  zeta_H_biasAcc_ = (*A) * zeta_H_biasAcc_ - (*B);
 
   // D_plus_wbias = D_plus_zeta * D_zeta_wbias + D_plus_w * D_w_wbias
-  Matrix93 D_zeta_wbias, D_plus_wbias;
-  D_zeta_wbias << delRdelBiasOmega_, delPdelBiasOmega_, delVdelBiasOmega_;
-  D_plus_wbias = (*A) * D_zeta_wbias - (*C);
-  delRdelBiasOmega_ = D_plus_wbias.middleRows<3>(0);
-  delPdelBiasOmega_ = D_plus_wbias.middleRows<3>(3);
-  delVdelBiasOmega_ = D_plus_wbias.middleRows<3>(6);
+  zeta_H_biasOmega_ = (*A) * zeta_H_biasOmega_ - (*C);
 }
 
 //------------------------------------------------------------------------------
 Vector9 PreintegrationBase::biasCorrectedDelta(
     const imuBias::ConstantBias& bias_i, OptionalJacobian<9, 6> H) const {
-// Correct deltaRij, derivative is delRdelBiasOmega_
+  // We correct for a change between bias_i and the biasHat_ used to integrate
+  // This is a simple linear correction with obvious derivatives
   const imuBias::ConstantBias biasIncr = bias_i - biasHat_;
-  Matrix3 D_correctedRij_bias;
-  const Vector3 biasInducedOmega = delRdelBiasOmega_ * biasIncr.gyroscope();
-  const Rot3 correctedRij = deltaRij().expmap(biasInducedOmega, boost::none,
-      H ? &D_correctedRij_bias : 0);
-  if (H)
-    D_correctedRij_bias *= delRdelBiasOmega_;
-
-  Vector9 xi;
-  Matrix3 D_dR_correctedRij;
-  // TODO(frank): could line below be simplified? It is equivalent to
-  //   LogMap(deltaRij_.compose(Expmap(biasInducedOmega)))
-  NavState::dR(xi) = Rot3::Logmap(correctedRij, H ? &D_dR_correctedRij : 0);
-  NavState::dP(xi) = deltaPij() + delPdelBiasAcc_ * biasIncr.accelerometer()
-      + delPdelBiasOmega_ * biasIncr.gyroscope();
-  NavState::dV(xi) = deltaVij() + delVdelBiasAcc_ * biasIncr.accelerometer()
-      + delVdelBiasOmega_ * biasIncr.gyroscope();
+  const Vector9 xi = zeta() + zeta_H_biasAcc_ * biasIncr.accelerometer() +
+                     zeta_H_biasOmega_ * biasIncr.gyroscope();
 
   if (H) {
-    Matrix36 D_dR_bias, D_dP_bias, D_dV_bias;
-    D_dR_bias << Z_3x3, D_dR_correctedRij * D_correctedRij_bias;
-    D_dP_bias << delPdelBiasAcc_, delPdelBiasOmega_;
-    D_dV_bias << delVdelBiasAcc_, delVdelBiasOmega_;
-    (*H) << D_dR_bias, D_dP_bias, D_dV_bias;
+    (*H) << zeta_H_biasAcc_, zeta_H_biasOmega_;
   }
   return xi;
 }

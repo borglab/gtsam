@@ -121,11 +121,8 @@ class PreintegrationBase {
   /// Current estimate of deltaXij_k
   TangentVector deltaXij_;
 
-  Matrix3 delRdelBiasOmega_; ///< Jacobian of preintegrated rotation w.r.t. angular rate bias
-  Matrix3 delPdelBiasAcc_;   ///< Jacobian of preintegrated position w.r.t. acceleration bias
-  Matrix3 delPdelBiasOmega_; ///< Jacobian of preintegrated position w.r.t. angular rate bias
-  Matrix3 delVdelBiasAcc_;   ///< Jacobian of preintegrated velocity w.r.t. acceleration bias
-  Matrix3 delVdelBiasOmega_; ///< Jacobian of preintegrated velocity w.r.t. angular rate bias
+  Matrix93 zeta_H_biasAcc_;    ///< Jacobian of preintegrated zeta w.r.t. acceleration bias
+  Matrix93 zeta_H_biasOmega_;  ///< Jacobian of preintegrated zeta w.r.t. angular rate bias
 
   /// Default constructor for serialization
   PreintegrationBase() {
@@ -144,21 +141,6 @@ public:
   PreintegrationBase(const boost::shared_ptr<Params>& p,
       const imuBias::ConstantBias& biasHat = imuBias::ConstantBias());
 
-  /**
-   *  Constructor which takes in all members for generic construction
-   */
-  PreintegrationBase(const boost::shared_ptr<Params>& p, const imuBias::ConstantBias& biasHat,
-                     double deltaTij, const TangentVector& zeta, const Matrix3& delPdelBiasAcc,
-                     const Matrix3& delPdelBiasOmega, const Matrix3& delVdelBiasAcc,
-                     const Matrix3& delVdelBiasOmega)
-      : p_(p),
-        biasHat_(biasHat),
-        deltaTij_(deltaTij),
-        deltaXij_(zeta),
-        delPdelBiasAcc_(delPdelBiasAcc),
-        delPdelBiasOmega_(delPdelBiasOmega),
-        delVdelBiasAcc_(delVdelBiasAcc),
-        delVdelBiasOmega_(delVdelBiasOmega) {}
   /// @}
 
   /// @name Basic utilities
@@ -202,12 +184,8 @@ public:
   Rot3 deltaRij() const { return Rot3::Expmap(deltaXij_.theta()); }
   NavState deltaXij() const { return NavState::Retract(deltaXij_.vector()); }
 
-  const Matrix93 zeta_H_biasAcc() {
-    return (Matrix93() << Z_3x3, delPdelBiasAcc_, delVdelBiasAcc_).finished();
-  }
-  const Matrix93 zeta_H_biasOmega() {
-    return (Matrix93() << delRdelBiasOmega_, delPdelBiasOmega_, delVdelBiasOmega_).finished();
-  }
+  const Matrix93& zeta_H_biasAcc() const { return zeta_H_biasAcc_; }
+  const Matrix93& zeta_H_biasOmega() const { return zeta_H_biasOmega_; }
 
   // Exposed for MATLAB
   Vector6 biasHatVector() const { return biasHat_.vector(); }
@@ -309,11 +287,8 @@ private:
     ar & BOOST_SERIALIZATION_NVP(deltaTij_);
     ar & BOOST_SERIALIZATION_NVP(deltaXij_);
     ar & BOOST_SERIALIZATION_NVP(biasHat_);
-    ar & bs::make_nvp("delRdelBiasOmega_", bs::make_array(delRdelBiasOmega_.data(), delRdelBiasOmega_.size()));
-    ar & bs::make_nvp("delPdelBiasAcc_", bs::make_array(delPdelBiasAcc_.data(), delPdelBiasAcc_.size()));
-    ar & bs::make_nvp("delPdelBiasOmega_", bs::make_array(delPdelBiasOmega_.data(), delPdelBiasOmega_.size()));
-    ar & bs::make_nvp("delVdelBiasAcc_", bs::make_array(delVdelBiasAcc_.data(), delVdelBiasAcc_.size()));
-    ar & bs::make_nvp("delVdelBiasOmega_", bs::make_array(delVdelBiasOmega_.data(), delVdelBiasOmega_.size()));
+    ar & bs::make_nvp("zeta_H_biasAcc_", bs::make_array(zeta_H_biasAcc_.data(), zeta_H_biasAcc_.size()));
+    ar & bs::make_nvp("zeta_H_biasOmega_", bs::make_array(zeta_H_biasOmega_.data(), zeta_H_biasOmega_.size()));
   }
 };
 
