@@ -211,8 +211,7 @@ Vector9 PreintegrationBase::updatedPreintegrated(const Vector3& measuredAcc,
 //------------------------------------------------------------------------------
 void PreintegrationBase::update(const Vector3& measuredAcc,
                                 const Vector3& measuredOmega, double dt,
-                                Matrix3* D_incrR_integratedOmega, Matrix9* A,
-                                Matrix93* B, Matrix93* C) {
+                                Matrix9* A, Matrix93* B, Matrix93* C) {
   // Do update
   deltaTij_ += dt;
   preintegrated_ = updatedPreintegrated(measuredAcc, measuredOmega, dt, A, B, C);

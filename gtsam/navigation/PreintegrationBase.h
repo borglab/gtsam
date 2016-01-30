@@ -188,8 +188,7 @@ public:
   /// Update preintegrated measurements and get derivatives
   /// It takes measured quantities in the j frame
   void update(const Vector3& measuredAcc, const Vector3& measuredOmega,
-              const double deltaT, Matrix3* D_incrR_integratedOmega, Matrix9* A,
-              Matrix93* B, Matrix93* C);
+              const double deltaT, Matrix9* A, Matrix93* B, Matrix93* C);
 
   /// Given the estimate of the bias, return a NavState tangent vector
   /// summarizing the preintegrated IMU measurements so far

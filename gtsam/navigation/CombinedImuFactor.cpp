@@ -67,31 +67,28 @@ void PreintegratedCombinedMeasurements::resetIntegration() {
 //------------------------------------------------------------------------------
 void PreintegratedCombinedMeasurements::integrateMeasurement(
     const Vector3& measuredAcc, const Vector3& measuredOmega, double dt) {
-  const Matrix3 dRij = deltaRij().matrix();  // expensive when quaternion
-
   // Update preintegrated measurements.
-  Matrix3 D_incrR_integratedOmega;  // Right jacobian computed at theta_incr
   Matrix9 A;  // overall Jacobian wrt preintegrated measurements (df/dx)
   Matrix93 B, C;
-  PreintegrationBase::update(measuredAcc, measuredOmega, dt,
-                             &D_incrR_integratedOmega, &A, &B, &C);
+  PreintegrationBase::update(measuredAcc, measuredOmega, dt, &A, &B, &C);
 
   // Update preintegrated measurements covariance: as in [2] we consider a first
   // order propagation that can be seen as a prediction phase in an EKF
-  // framework. In this implementation, contrarily to [2] we consider the
+  // framework. In this implementation, in contrast to [2], we consider the
   // uncertainty of the bias selection and we keep correlation between biases
   // and preintegrated measurements
 
   // Single Jacobians to propagate covariance
-  Matrix3 H_vel_biasacc = -dRij * dt;
-  Matrix3 H_angles_biasomega = -D_incrR_integratedOmega * dt;
+  // TODO(frank): should we not also accout for bias on position?
+  Matrix3 theta_H_biasOmega = - C.topRows<3>();
+  Matrix3 vel_H_biasAcc = -B.bottomRows<3>();
 
   // overall Jacobian wrt preintegrated measurements (df/dx)
   Eigen::Matrix<double, 15, 15> F;
   F.setZero();
   F.block<9, 9>(0, 0) = A;
-  F.block<3, 3>(0, 12) = H_angles_biasomega;
-  F.block<3, 3>(6, 9) = H_vel_biasacc;
+  F.block<3, 3>(0, 12) = theta_H_biasOmega;
+  F.block<3, 3>(6, 9) = vel_H_biasAcc;
   F.block<6, 6>(9, 9) = I_6x6;
 
   // propagate uncertainty
@@ -101,24 +98,25 @@ void PreintegratedCombinedMeasurements::integrateMeasurement(
   const Matrix3& iCov = p().integrationCovariance;
 
   // first order uncertainty propagation
-  // Optimized matrix multiplication   (1/dt) * G * measurementCovariance * G.transpose()
+  // Optimized matrix multiplication   (1/dt) * G * measurementCovariance *
+  // G.transpose()
   Eigen::Matrix<double, 15, 15> G_measCov_Gt;
   G_measCov_Gt.setZero(15, 15);
 
   // BLOCK DIAGONAL TERMS
   D_t_t(&G_measCov_Gt) = dt * iCov;
-  D_v_v(&G_measCov_Gt) = (1 / dt) * H_vel_biasacc *
+  D_v_v(&G_measCov_Gt) = (1 / dt) * vel_H_biasAcc *
                          (aCov + p().biasAccOmegaInt.block<3, 3>(0, 0)) *
-                         (H_vel_biasacc.transpose());
-  D_R_R(&G_measCov_Gt) = (1 / dt) * H_angles_biasomega *
+                         (vel_H_biasAcc.transpose());
+  D_R_R(&G_measCov_Gt) = (1 / dt) * theta_H_biasOmega *
                          (wCov + p().biasAccOmegaInt.block<3, 3>(3, 3)) *
-                         (H_angles_biasomega.transpose());
+                         (theta_H_biasOmega.transpose());
   D_a_a(&G_measCov_Gt) = dt * p().biasAccCovariance;
   D_g_g(&G_measCov_Gt) = dt * p().biasOmegaCovariance;
 
   // OFF BLOCK DIAGONAL TERMS
-  Matrix3 temp = H_vel_biasacc * p().biasAccOmegaInt.block<3, 3>(3, 0) *
-                 H_angles_biasomega.transpose();
+  Matrix3 temp = vel_H_biasAcc * p().biasAccOmegaInt.block<3, 3>(3, 0) *
+                 theta_H_biasOmega.transpose();
   D_v_R(&G_measCov_Gt) = temp;
   D_R_v(&G_measCov_Gt) = temp.transpose();
   preintMeasCov_ = F * preintMeasCov_ * F.transpose() + G_measCov_Gt;
