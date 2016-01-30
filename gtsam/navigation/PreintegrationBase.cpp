@@ -144,8 +144,9 @@ Vector9 PreintegrationBase::UpdateEstimate(const Vector3& a_body,
       velocity + a_nav* dt;                   // velocity
 
   if (A) {
-#define USE_NUMERICAL_DERIVATIVE
 #ifdef USE_NUMERICAL_DERIVATIVE
+    // The use of this yields much more accurate derivatives, but it's slow!
+    // TODO(frank): find a cheap closed form solution (look at Iserles)
     auto f = [w_body](const Vector3& theta) {
       return Rot3::ExpmapDerivative(theta).inverse() * w_body;
     };
@@ -153,7 +154,6 @@ Vector9 PreintegrationBase::UpdateEstimate(const Vector3& a_body,
         numericalDerivative11<Vector3, Vector3>(f, theta);
 #else
     // First order (small angle) approximation of derivative of invH*w:
-    // TODO(frank): find a cheap closed form solution (look at Iserles)
     // NOTE(frank): Rot3::ExpmapDerivative(w_body) is a less accurate approximation
     const Matrix3 invHw_H_theta = skewSymmetric(-0.5 * w_body);
 #endif

@@ -453,7 +453,7 @@ TEST(ImuFactor, FirstOrderPreIntegratedMeasurements) {
   EXPECT(assert_equal(numericalDerivative21(zeta, Z_3x1, Z_3x1),
                       pim.zeta_H_biasAcc()));
   EXPECT(assert_equal(numericalDerivative22(zeta, Z_3x1, Z_3x1),
-                      pim.zeta_H_biasOmega(), 1e-7));
+                      pim.zeta_H_biasOmega(), 1e-3));
 }
 
 /* ************************************************************************* */
