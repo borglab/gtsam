@@ -172,23 +172,20 @@ public:
       OptionalJacobian<3, 3> D_correctedOmega_unbiasedOmega = boost::none) const;
 
   // Update integrated vector on tangent manifold preintegrated with acceleration
-  // readings a_body and gyro readings w_body, bias-corrected in body frame.
-  static Vector9 UpdateEstimate(const Vector3& a_body, const Vector3& w_body,
-                                double dt, const Vector9& preintegrated,
-                                OptionalJacobian<9, 9> A = boost::none,
-                                OptionalJacobian<9, 3> B = boost::none,
-                                OptionalJacobian<9, 3> C = boost::none);
-
-  /// Calculate the updated preintegrated measurement, does not modify
-  /// It takes measured quantities in the j frame
-  Vector9 updatedPreintegrated(const Vector3& measuredAcc,
-                               const Vector3& measuredOmega, double dt,
-                               Matrix9* A, Matrix93* B, Matrix93* C) const;
+  // Static, functional version.
+  static Vector9 UpdatePreintegrated(const Vector3& a_body,
+                                     const Vector3& w_body, double dt,
+                                     const Vector9& preintegrated,
+                                     OptionalJacobian<9, 9> A = boost::none,
+                                     OptionalJacobian<9, 3> B = boost::none,
+                                     OptionalJacobian<9, 3> C = boost::none);
 
   /// Update preintegrated measurements and get derivatives
   /// It takes measured quantities in the j frame
-  void update(const Vector3& measuredAcc, const Vector3& measuredOmega,
-              const double deltaT, Matrix9* A, Matrix93* B, Matrix93* C);
+  /// Modifies preintegrated_ in place after correcting for bias and possibly sensor pose
+  void updatedPreintegrated(const Vector3& measuredAcc,
+                            const Vector3& measuredOmega, const double deltaT,
+                            Matrix9* A, Matrix93* B, Matrix93* C);
 
   /// Given the estimate of the bias, return a NavState tangent vector
   /// summarizing the preintegrated IMU measurements so far

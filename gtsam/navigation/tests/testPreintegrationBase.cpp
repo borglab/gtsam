@@ -39,7 +39,7 @@ static boost::shared_ptr<PreintegrationBase::Params> defaultParams() {
 }
 
 Vector9 f(const Vector9& zeta, const Vector3& a, const Vector3& w) {
-  return PreintegrationBase::UpdateEstimate(a, w, kDt, zeta);
+  return PreintegrationBase::UpdatePreintegrated(a, w, kDt, zeta);
 }
 
 /* ************************************************************************* */
@@ -50,7 +50,7 @@ TEST(PreintegrationBase, UpdateEstimate1) {
   zeta.setZero();
   Matrix9 aH1;
   Matrix93 aH2, aH3;
-  pim.UpdateEstimate(acc, omega, kDt, zeta, aH1, aH2, aH3);
+  pim.UpdatePreintegrated(acc, omega, kDt, zeta, aH1, aH2, aH3);
   EXPECT(assert_equal(numericalDerivative31(f, zeta, acc, omega), aH1, 1e-9));
   EXPECT(assert_equal(numericalDerivative32(f, zeta, acc, omega), aH2, 1e-9));
   EXPECT(assert_equal(numericalDerivative33(f, zeta, acc, omega), aH3, 1e-9));
@@ -64,7 +64,7 @@ TEST(PreintegrationBase, UpdateEstimate2) {
   zeta << 0.01, 0.02, 0.03, 100, 200, 300, 10, 5, 3;
   Matrix9 aH1;
   Matrix93 aH2, aH3;
-  pim.UpdateEstimate(acc, omega, kDt, zeta, aH1, aH2, aH3);
+  pim.UpdatePreintegrated(acc, omega, kDt, zeta, aH1, aH2, aH3);
   // NOTE(frank): tolerance of 1e-3 on H1 because approximate away from 0
   EXPECT(assert_equal(numericalDerivative31(f, zeta, acc, omega), aH1, 1e-3));
   EXPECT(assert_equal(numericalDerivative32(f, zeta, acc, omega), aH2, 1e-8));

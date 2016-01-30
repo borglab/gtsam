@@ -116,7 +116,7 @@ pair<Vector3, Vector3> PreintegrationBase::correctMeasurementsBySensorPose(
 
 //------------------------------------------------------------------------------
 // See extensive discussion in ImuFactor.lyx
-Vector9 PreintegrationBase::UpdateEstimate(const Vector3& a_body,
+Vector9 PreintegrationBase::UpdatePreintegrated(const Vector3& a_body,
                                            const Vector3& w_body, double dt,
                                            const Vector9& preintegrated,
                                            OptionalJacobian<9, 9> A,
@@ -178,43 +178,31 @@ Vector9 PreintegrationBase::UpdateEstimate(const Vector3& a_body,
 }
 
 //------------------------------------------------------------------------------
-Vector9 PreintegrationBase::updatedPreintegrated(const Vector3& measuredAcc,
-                                                 const Vector3& measuredOmega,
-                                                 double dt, Matrix9* A,
-                                                 Matrix93* B, Matrix93* C) const {
+void PreintegrationBase::updatedPreintegrated(const Vector3& measuredAcc,
+                                              const Vector3& measuredOmega,
+                                              double dt, Matrix9* A,
+                                              Matrix93* B, Matrix93* C) {
   // Correct for bias in the sensor frame
-  Vector3 unbiasedAcc = biasHat_.correctAccelerometer(measuredAcc);
-  Vector3 unbiasedOmega = biasHat_.correctGyroscope(measuredOmega);
+  Vector3 acc = biasHat_.correctAccelerometer(measuredAcc);
+  Vector3 omega = biasHat_.correctGyroscope(measuredOmega);
 
-  if (!p().body_P_sensor) {
-    return UpdateEstimate(unbiasedAcc, unbiasedOmega, dt, preintegrated_, A, B,
-                          C);
-  } else {
-    // More complicated derivatives in case of sensor displacement
-    Matrix3 D_correctedAcc_unbiasedAcc, D_correctedAcc_unbiasedOmega,
-        D_correctedOmega_unbiasedOmega;
-    auto corrected = correctMeasurementsBySensorPose(
-        unbiasedAcc, unbiasedOmega, D_correctedAcc_unbiasedAcc,
-        D_correctedAcc_unbiasedOmega, D_correctedOmega_unbiasedOmega);
+  // Possibly correct for sensor pose
+  Matrix3 D_correctedAcc_acc, D_correctedAcc_omega, D_correctedOmega_omega;
+  if (p().body_P_sensor)
+    boost::tie(acc, omega) = correctMeasurementsBySensorPose( acc, omega,
+        D_correctedAcc_acc, D_correctedAcc_omega, D_correctedOmega_omega);
 
-    const Vector9 updated = UpdateEstimate(corrected.first, corrected.second, dt,
-                                           preintegrated_, A, B, C);
-
-    *C *= D_correctedOmega_unbiasedOmega;
-    if (!p().body_P_sensor->translation().vector().isZero())
-      *C += *B* D_correctedAcc_unbiasedOmega;
-    *B *= D_correctedAcc_unbiasedAcc;  // NOTE(frank): needs to be last
-    return updated;
-  }
-}
-
-//------------------------------------------------------------------------------
-void PreintegrationBase::update(const Vector3& measuredAcc,
-                                const Vector3& measuredOmega, double dt,
-                                Matrix9* A, Matrix93* B, Matrix93* C) {
-  // Do update
+    // Do update
   deltaTij_ += dt;
-  preintegrated_ = updatedPreintegrated(measuredAcc, measuredOmega, dt, A, B, C);
+  preintegrated_ = UpdatePreintegrated(acc, omega, dt, preintegrated_, A, B, C);
+
+  if (p().body_P_sensor) {
+    // More complicated derivatives in case of non-trivial sensor pose
+    *C *= D_correctedOmega_omega;
+    if (!p().body_P_sensor->translation().vector().isZero())
+      *C += *B* D_correctedAcc_omega;
+    *B *= D_correctedAcc_acc;  // NOTE(frank): needs to be last
+  }
 
   // D_plus_abias = D_plus_preintegrated * D_preintegrated_abias + D_plus_a * D_a_abias
   preintegrated_H_biasAcc_ = (*A) * preintegrated_H_biasAcc_ - (*B);

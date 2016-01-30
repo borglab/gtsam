@@ -55,7 +55,7 @@ void PreintegratedImuMeasurements::integrateMeasurement(
   // Update preintegrated measurements (also get Jacobian)
   Matrix9 A;  // overall Jacobian wrt preintegrated measurements (df/dx)
   Matrix93 B, C;
-  PreintegrationBase::update(measuredAcc, measuredOmega, dt, &A, &B, &C);
+  updatedPreintegrated(measuredAcc, measuredOmega, dt, &A, &B, &C);
 
   // first order covariance propagation:
   // as in [2] we consider a first order propagation that can be seen as a
