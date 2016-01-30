@@ -60,44 +60,6 @@ class PreintegrationBase {
   typedef imuBias::ConstantBias Bias;
   typedef PreintegrationParams Params;
 
-  /// The IMU is integrated in the tangent space, represented by a Vector9
-  /// This small inner class provides some convenient constructors and efficient
-  /// access to the orientation, position, and velocity components
-  class TangentVector {
-    Vector9 v_;
-    typedef const Vector9 constV9;
-
-   public:
-    TangentVector() { v_.setZero(); }
-    TangentVector(const Vector9& v) : v_(v) {}
-    TangentVector(const Vector3& theta, const Vector3& pos,
-                  const Vector3& vel) {
-      this->theta() = theta;
-      this->position() = pos;
-      this->velocity() = vel;
-    }
-
-    const Vector9& vector() const { return v_; }
-
-    Eigen::Block<Vector9, 3, 1> theta() { return v_.segment<3>(0); }
-    Eigen::Block<constV9, 3, 1> theta() const { return v_.segment<3>(0); }
-
-    Eigen::Block<Vector9, 3, 1> position() { return v_.segment<3>(3); }
-    Eigen::Block<constV9, 3, 1> position() const { return v_.segment<3>(3); }
-
-    Eigen::Block<Vector9, 3, 1> velocity() { return v_.segment<3>(6); }
-    Eigen::Block<constV9, 3, 1> velocity() const { return v_.segment<3>(6); }
-
-   private:
-     /** Serialization function */
-     friend class boost::serialization::access;
-     template <class ARCHIVE>
-     void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-       namespace bs = ::boost::serialization;
-       ar & bs::make_nvp("v_", bs::make_array(v_.data(), v_.size()));
-     }
-  };
-
  protected:
 
   /// Parameters. Declared mutable only for deprecated predict method.
@@ -108,7 +70,7 @@ class PreintegrationBase {
   boost::shared_ptr<Params> p_;
 
   /// Acceleration and gyro bias used for preintegration
-  imuBias::ConstantBias biasHat_;
+  Bias biasHat_;
 
   /// Time interval from i to j
   double deltaTij_;
@@ -118,8 +80,7 @@ class PreintegrationBase {
    * Note: relative position does not take into account velocity at time i, see deltap+, in [2]
    * Note: velocity is now also in frame i, as opposed to deltaVij in [2]
    */
-  /// Current estimate of deltaXij_k
-  TangentVector deltaXij_;
+  Vector9 zeta_;
 
   Matrix93 zeta_H_biasAcc_;    ///< Jacobian of preintegrated zeta w.r.t. acceleration bias
   Matrix93 zeta_H_biasOmega_;  ///< Jacobian of preintegrated zeta w.r.t. angular rate bias
@@ -175,14 +136,14 @@ public:
   const imuBias::ConstantBias& biasHat() const { return biasHat_; }
   const double& deltaTij() const { return deltaTij_; }
 
-  const Vector9& zeta() const { return deltaXij_.vector(); }
+  const Vector9& zeta() const { return zeta_; }
 
-  Vector3 theta() const { return deltaXij_.theta(); }
-  Vector3 deltaPij() const { return deltaXij_.position(); }
-  Vector3 deltaVij() const { return deltaXij_.velocity(); }
+  Vector3 theta() const { return zeta_.head<3>(); }
+  Vector3 deltaPij() const { return zeta_.segment<3>(3); }
+  Vector3 deltaVij() const { return zeta_.tail<3>(); }
 
-  Rot3 deltaRij() const { return Rot3::Expmap(deltaXij_.theta()); }
-  NavState deltaXij() const { return NavState::Retract(deltaXij_.vector()); }
+  Rot3 deltaRij() const { return Rot3::Expmap(theta()); }
+  NavState deltaXij() const { return NavState::Retract(zeta_); }
 
   const Matrix93& zeta_H_biasAcc() const { return zeta_H_biasAcc_; }
   const Matrix93& zeta_H_biasOmega() const { return zeta_H_biasOmega_; }
@@ -212,20 +173,18 @@ public:
 
   // Update integrated vector on tangent manifold zeta with acceleration
   // readings a_body and gyro readings w_body, bias-corrected in body frame.
-  static TangentVector UpdateEstimate(const Vector3& a_body,
-                                      const Vector3& w_body, double dt,
-                                      const TangentVector& zeta,
-                                      OptionalJacobian<9, 9> A = boost::none,
-                                      OptionalJacobian<9, 3> B = boost::none,
-                                      OptionalJacobian<9, 3> C = boost::none);
+  static Vector9 UpdateEstimate(const Vector3& a_body, const Vector3& w_body,
+                                double dt, const Vector9& zeta,
+                                OptionalJacobian<9, 9> A = boost::none,
+                                OptionalJacobian<9, 3> B = boost::none,
+                                OptionalJacobian<9, 3> C = boost::none);
 
   /// Calculate the updated preintegrated measurement, does not modify
   /// It takes measured quantities in the j frame
-  PreintegrationBase::TangentVector updatedDeltaXij(
-      const Vector3& measuredAcc, const Vector3& measuredOmega, double dt,
-      OptionalJacobian<9, 9> A = boost::none,
-      OptionalJacobian<9, 3> B = boost::none,
-      OptionalJacobian<9, 3> C = boost::none) const;
+  Vector9 updatedZeta(const Vector3& measuredAcc, const Vector3& measuredOmega,
+                      double dt, OptionalJacobian<9, 9> A = boost::none,
+                      OptionalJacobian<9, 3> B = boost::none,
+                      OptionalJacobian<9, 3> C = boost::none) const;
 
   /// Update preintegrated measurements and get derivatives
   /// It takes measured quantities in the j frame
@@ -284,9 +243,9 @@ private:
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     namespace bs = ::boost::serialization;
     ar & BOOST_SERIALIZATION_NVP(p_);
-    ar & BOOST_SERIALIZATION_NVP(deltaTij_);
-    ar & BOOST_SERIALIZATION_NVP(deltaXij_);
     ar & BOOST_SERIALIZATION_NVP(biasHat_);
+    ar & BOOST_SERIALIZATION_NVP(deltaTij_);
+    ar & bs::make_nvp("zeta_", bs::make_array(zeta_.data(), zeta_.size()));
     ar & bs::make_nvp("zeta_H_biasAcc_", bs::make_array(zeta_H_biasAcc_.data(), zeta_H_biasAcc_.size()));
     ar & bs::make_nvp("zeta_H_biasOmega_", bs::make_array(zeta_H_biasOmega_.data(), zeta_H_biasOmega_.size()));
   }

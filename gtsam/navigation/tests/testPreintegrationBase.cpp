@@ -39,9 +39,7 @@ static boost::shared_ptr<PreintegrationBase::Params> defaultParams() {
 }
 
 Vector9 f(const Vector9& zeta, const Vector3& a, const Vector3& w) {
-  PreintegrationBase::TangentVector zeta_plus =
-      PreintegrationBase::UpdateEstimate(a, w, kDt, zeta);
-  return zeta_plus.vector();
+  return PreintegrationBase::UpdateEstimate(a, w, kDt, zeta);
 }
 
 /* ************************************************************************* */

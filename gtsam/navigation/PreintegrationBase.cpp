@@ -37,7 +37,7 @@ PreintegrationBase::PreintegrationBase(const boost::shared_ptr<Params>& p,
 //------------------------------------------------------------------------------
 void PreintegrationBase::resetIntegration() {
   deltaTij_ = 0.0;
-  deltaXij_ = TangentVector();
+  zeta_ = Vector9();
   zeta_H_biasAcc_.setZero();
   zeta_H_biasOmega_.setZero();
 }
@@ -64,7 +64,7 @@ bool PreintegrationBase::equals(const PreintegrationBase& other,
   const bool params_match = p_->equals(*other.p_, tol);
   return params_match && fabs(deltaTij_ - other.deltaTij_) < tol
       && biasHat_.equals(other.biasHat_, tol)
-      && equal_with_abs_tol(deltaXij_.vector(), other.deltaXij_.vector(), tol)
+      && equal_with_abs_tol(zeta_, other.zeta_, tol)
       && equal_with_abs_tol(zeta_H_biasAcc_, other.zeta_H_biasAcc_, tol)
       && equal_with_abs_tol(zeta_H_biasOmega_, other.zeta_H_biasOmega_, tol);
 }
@@ -120,42 +120,52 @@ pair<Vector3, Vector3> PreintegrationBase::correctMeasurementsByBiasAndSensorPos
 
 //------------------------------------------------------------------------------
 // See extensive discussion in ImuFactor.lyx
-PreintegrationBase::TangentVector PreintegrationBase::UpdateEstimate(
-    const Vector3& a_body, const Vector3& w_body, double dt,
-    const TangentVector& zeta, OptionalJacobian<9, 9> A,
-    OptionalJacobian<9, 3> B, OptionalJacobian<9, 3> C) {
+Vector9 PreintegrationBase::UpdateEstimate(const Vector3& a_body,
+                                           const Vector3& w_body, double dt,
+                                           const Vector9& zeta,
+                                           OptionalJacobian<9, 9> A,
+                                           OptionalJacobian<9, 3> B,
+                                           OptionalJacobian<9, 3> C) {
+  const auto theta = zeta.segment<3>(0);
+  const auto position = zeta.segment<3>(3);
+  const auto velocity = zeta.segment<3>(6);
+
   // Calculate exact mean propagation
   Matrix3 H;
-  const Matrix3 R = Rot3::Expmap(zeta.theta(), H).matrix();
+  const Matrix3 R = Rot3::Expmap(theta, H).matrix();
   const Matrix3 invH = H.inverse();
   const Vector3 a_nav = R * a_body;
   const double dt22 = 0.5 * dt * dt;
 
-  TangentVector zetaPlus(zeta.theta() + invH * w_body * dt,
-                         zeta.position() + zeta.velocity() * dt + a_nav * dt22,
-                         zeta.velocity() + a_nav * dt);
+  Vector9 zetaPlus;
+  zetaPlus <<                                 //
+      theta + invH* w_body* dt,               // theta
+      position + velocity* dt + a_nav* dt22,  // position
+      velocity + a_nav* dt;                   // velocity
 
   if (A) {
+#define USE_NUMERICAL_DERIVATIVE
+#ifdef USE_NUMERICAL_DERIVATIVE
+    auto f = [w_body](const Vector3& theta) {
+      return Rot3::ExpmapDerivative(theta).inverse() * w_body;
+    };
+    const Matrix3 invHw_H_theta =
+        numericalDerivative11<Vector3, Vector3>(f, theta);
+#else
     // First order (small angle) approximation of derivative of invH*w:
-//    const Matrix3 invHw_H_theta = skewSymmetric(-0.5 * w_body);
-    // NOTE(frank): Rot3::ExpmapDerivative(w_body) is also an approximation (but less accurate):
-    // If we replace approximation with numerical derivative we get better accuracy:
-      auto f = [w_body](const Vector3& theta) {
-        return Rot3::ExpmapDerivative(theta).inverse() * w_body;
-      };
-      const Matrix3 invHw_H_theta = numericalDerivative11<Vector3, Vector3>(f, zeta.theta());
+    // TODO(frank): find a cheap closed form solution (look at Iserles)
+    // NOTE(frank): Rot3::ExpmapDerivative(w_body) is a less accurate approximation
+    const Matrix3 invHw_H_theta = skewSymmetric(-0.5 * w_body);
+#endif
 
     // Exact derivative of R*a with respect to theta:
     const Matrix3 a_nav_H_theta = R * skewSymmetric(-a_body) * H;
 
     A->setIdentity();
-    // theta:
-    A->block<3, 3>(0, 0).noalias() += invHw_H_theta * dt;
-    // position:
-    A->block<3, 3>(3, 0) = a_nav_H_theta * dt22;
-    A->block<3, 3>(3, 6) = I_3x3 * dt;
-    // velocity:
-    A->block<3, 3>(6, 0) = a_nav_H_theta * dt;
+    A->block<3, 3>(0, 0).noalias() += invHw_H_theta * dt;  // theta
+    A->block<3, 3>(3, 0) = a_nav_H_theta * dt22;  // position wrpt theta...
+    A->block<3, 3>(3, 6) = I_3x3 * dt;            // .. and velocity
+    A->block<3, 3>(6, 0) = a_nav_H_theta * dt;    // velocity wrpt theta
   }
   if (B) {
     B->block<3, 3>(0, 0) = Z_3x3;
@@ -172,7 +182,7 @@ PreintegrationBase::TangentVector PreintegrationBase::UpdateEstimate(
 }
 
 //------------------------------------------------------------------------------
-PreintegrationBase::TangentVector PreintegrationBase::updatedDeltaXij(
+Vector9 PreintegrationBase::updatedZeta(
     const Vector3& measuredAcc, const Vector3& measuredOmega, double dt,
     OptionalJacobian<9, 9> A, OptionalJacobian<9, 3> B,
     OptionalJacobian<9, 3> C) const {
@@ -182,7 +192,7 @@ PreintegrationBase::TangentVector PreintegrationBase::updatedDeltaXij(
     const Vector3 correctedOmega = biasHat_.correctGyroscope(measuredOmega);
 
     // Do update in one fell swoop
-    return UpdateEstimate(correctedAcc, correctedOmega, dt, deltaXij_, A, B, C);
+    return UpdateEstimate(correctedAcc, correctedOmega, dt, zeta_, A, B, C);
   } else {
     // More complicated derivatives in case of sensor displacement
     Vector3 correctedAcc, correctedOmega;
@@ -196,8 +206,8 @@ PreintegrationBase::TangentVector PreintegrationBase::updatedDeltaXij(
 
     // Do update in one fell swoop
     Matrix93 D_updated_correctedAcc, D_updated_correctedOmega;
-    const PreintegrationBase::TangentVector updated =
-        UpdateEstimate(correctedAcc, correctedOmega, dt, deltaXij_, A,
+    const Vector9 updated =
+        UpdateEstimate(correctedAcc, correctedOmega, dt, zeta_, A,
                        ((B || C) ? &D_updated_correctedAcc : 0),
                        (C ? &D_updated_correctedOmega : 0));
     if (B) *B = D_updated_correctedAcc* D_correctedAcc_measuredAcc;
@@ -217,7 +227,7 @@ void PreintegrationBase::update(const Vector3& measuredAcc,
                                 Matrix93* B, Matrix93* C) {
   // Do update
   deltaTij_ += dt;
-  deltaXij_ = updatedDeltaXij(measuredAcc, measuredOmega, dt, A, B, C);
+  zeta_ = updatedZeta(measuredAcc, measuredOmega, dt, A, B, C);
 
   // D_plus_abias = D_plus_zeta * D_zeta_abias + D_plus_a * D_a_abias
   zeta_H_biasAcc_ = (*A) * zeta_H_biasAcc_ - (*B);
