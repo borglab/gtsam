@@ -34,19 +34,19 @@
 using namespace std;
 using namespace gtsam;
 
-typedef imuBias::ConstantBias Bias;
-
 // Convenience for named keys
 using symbol_shorthand::X;
 using symbol_shorthand::V;
 using symbol_shorthand::B;
 
+typedef imuBias::ConstantBias Bias;
+static const Vector3 Z_3x1 = Vector3::Zero();
+static const Bias kZeroBiasHat, kZeroBias;
+
 static const double kGravity = 10;
 static const Vector3 kGravityAlongNavZDown(0, 0, kGravity);
 static const Vector3 kZeroOmegaCoriolis(0, 0, 0);
 static const Vector3 kNonZeroOmegaCoriolis(0, 0.1, 0.1);
-static const Bias kZeroBiasHat, kZeroBias;
-static const Vector3 Z_3x1 = Vector3::Zero();
 
 /* ************************************************************************* */
 namespace {
@@ -500,10 +500,10 @@ TEST(ImuFactor, FirstOrderPreIntegratedMeasurements) {
                                         deltaTs);
 
   // Check derivative of rotation
-  boost::function<Rot3(const Vector3&, const Vector3&)> theta = [=](
+  boost::function<Vector3(const Vector3&, const Vector3&)> theta = [=](
       const Vector3& a, const Vector3& w) {
     return evaluatePreintegratedMeasurements(
-               Bias(a, w), measuredAccs, measuredOmegas, deltaTs).deltaRij();
+               Bias(a, w), measuredAccs, measuredOmegas, deltaTs).theta();
   };
   EXPECT(
       assert_equal(numericalDerivative21(theta, Z_3x1, Z_3x1), Matrix(Z_3x3)));

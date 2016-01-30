@@ -39,6 +39,10 @@ using symbol_shorthand::X;
 using symbol_shorthand::V;
 using symbol_shorthand::B;
 
+typedef imuBias::ConstantBias Bias;
+static const Vector3 Z_3x1 = Vector3::Zero();
+static const Bias kZeroBiasHat, kZeroBias;
+
 namespace {
 
 // Auxiliary functions to test preintegrated Jacobians
@@ -71,14 +75,6 @@ Vector3 evaluatePreintegratedMeasurementsVelocity(
     const list<Vector3>& measuredOmegas, const list<double>& deltaTs) {
   return evaluatePreintegratedMeasurements(bias, measuredAccs, measuredOmegas,
       deltaTs).deltaVij();
-}
-
-Rot3 evaluatePreintegratedMeasurementsRotation(
-    const imuBias::ConstantBias& bias, const list<Vector3>& measuredAccs,
-    const list<Vector3>& measuredOmegas, const list<double>& deltaTs) {
-  return Rot3(
-      evaluatePreintegratedMeasurements(bias, measuredAccs, measuredOmegas,
-          deltaTs).deltaRij());
 }
 
 }
@@ -197,6 +193,17 @@ TEST( CombinedImuFactor, FirstOrderPreIntegratedMeasurements ) {
       evaluatePreintegratedMeasurements(bias, measuredAccs, measuredOmegas,
           deltaTs);
 
+  // Check derivative of rotation
+  boost::function<Vector3(const Vector3&, const Vector3&)> theta = [=](
+      const Vector3& a, const Vector3& w) {
+    return evaluatePreintegratedMeasurements(
+               Bias(a, w), measuredAccs, measuredOmegas, deltaTs).theta();
+  };
+  EXPECT(
+      assert_equal(numericalDerivative21(theta, Z_3x1, Z_3x1), Matrix(Z_3x3)));
+  EXPECT(assert_equal(numericalDerivative22(theta, Z_3x1, Z_3x1),
+                      pim.delRdelBiasOmega(), 1e-7));
+
   // Compute numerical derivatives
   Matrix expectedDelPdelBias = numericalDerivative11<Vector,
       imuBias::ConstantBias>(
@@ -212,20 +219,11 @@ TEST( CombinedImuFactor, FirstOrderPreIntegratedMeasurements ) {
   Matrix expectedDelVdelBiasAcc = expectedDelVdelBias.leftCols(3);
   Matrix expectedDelVdelBiasOmega = expectedDelVdelBias.rightCols(3);
 
-  Matrix expectedDelRdelBias =
-      numericalDerivative11<Rot3, imuBias::ConstantBias>(
-          boost::bind(&evaluatePreintegratedMeasurementsRotation, _1,
-              measuredAccs, measuredOmegas, deltaTs), bias);
-  Matrix expectedDelRdelBiasAcc = expectedDelRdelBias.leftCols(3);
-  Matrix expectedDelRdelBiasOmega = expectedDelRdelBias.rightCols(3);
-
   // Compare Jacobians
   EXPECT(assert_equal(expectedDelPdelBiasAcc, pim.delPdelBiasAcc()));
   EXPECT(assert_equal(expectedDelPdelBiasOmega, pim.delPdelBiasOmega(),1e-8));
   EXPECT(assert_equal(expectedDelVdelBiasAcc, pim.delVdelBiasAcc()));
   EXPECT(assert_equal(expectedDelVdelBiasOmega, pim.delVdelBiasOmega(),1e-8));
-  EXPECT(assert_equal(expectedDelRdelBiasAcc, Matrix::Zero(3, 3)));
-  EXPECT(assert_equal(expectedDelRdelBiasOmega, pim.delRdelBiasOmega(), 1e-3)); // 1e-3 needs to be added only when using quaternions for rotations
 }
 
 /* ************************************************************************* */

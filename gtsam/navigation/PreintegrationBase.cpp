@@ -221,9 +221,6 @@ void PreintegrationBase::update(const Vector3& measuredAcc,
                                 const Vector3& measuredOmega, double dt,
                                 Matrix3* D_incrR_integratedOmega, Matrix9* A,
                                 Matrix93* B, Matrix93* C) {
-  // Save current rotation for updating Jacobians
-  const Rot3 oldRij = deltaRij();
-
   // Do update
   deltaTij_ += dt;
   deltaXij_ = updatedDeltaXij(measuredAcc, measuredOmega, dt, A, B, C);
@@ -235,7 +232,6 @@ void PreintegrationBase::update(const Vector3& measuredAcc,
   delPdelBiasAcc_ = D_plus_abias.middleRows<3>(3);
   delVdelBiasAcc_ = D_plus_abias.middleRows<3>(6);
 
-#ifdef USE_NEW_WAY_FOR_OMEGA
   // D_plus_wbias = D_plus_zeta * D_zeta_wbias + D_plus_w * D_w_wbias
   Matrix93 D_zeta_wbias, D_plus_wbias;
   D_zeta_wbias << delRdelBiasOmega_, delPdelBiasOmega_, delVdelBiasOmega_;
@@ -243,24 +239,6 @@ void PreintegrationBase::update(const Vector3& measuredAcc,
   delRdelBiasOmega_ = D_plus_wbias.middleRows<3>(0);
   delPdelBiasOmega_ = D_plus_wbias.middleRows<3>(3);
   delVdelBiasOmega_ = D_plus_wbias.middleRows<3>(6);
-#else
-  // The old way matches the derivatives of deltaRij()
-  Vector3 correctedAcc, correctedOmega;
-  boost::tie(correctedAcc, correctedOmega) =
-      correctMeasurementsByBiasAndSensorPose(measuredAcc, measuredOmega);
-
-  Matrix3 D_acc_R;
-  double dt22 = 0.5 * dt * dt;
-  oldRij.rotate(correctedAcc, D_acc_R);
-  const Matrix3 D_acc_biasOmega = D_acc_R * delRdelBiasOmega_;
-  const Vector3 integratedOmega = correctedOmega * dt;
-  const Rot3 incrR = Rot3::Expmap(integratedOmega, D_incrR_integratedOmega);
-  const Matrix3 incrRt = incrR.transpose();
-
-  delRdelBiasOmega_ = incrRt * delRdelBiasOmega_ - *D_incrR_integratedOmega * dt;
-  delPdelBiasOmega_ += dt * delVdelBiasOmega_ + dt22 * D_acc_biasOmega;
-  delVdelBiasOmega_ += D_acc_biasOmega * dt;
-#endif
 }
 
 //------------------------------------------------------------------------------
