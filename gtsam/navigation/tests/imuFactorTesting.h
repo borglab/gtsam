@@ -35,6 +35,15 @@ static const Bias kZeroBiasHat, kZeroBias;
 static const Vector3 kZeroOmegaCoriolis(0, 0, 0);
 static const Vector3 kNonZeroOmegaCoriolis(0, 0.1, 0.1);
 
+static const double kGravity = 10;
+static const Vector3 kGravityAlongNavZDown(0, 0, kGravity);
+
+// Realistic MEMS white noise characteristics. Angular and velocity random walk
+// expressed in degrees respectively m/s per sqrt(hr).
+auto radians = [](double t) { return t * M_PI / 180; };
+static const double kGyroSigma = radians(0.5) / 60;  // 0.5 degree ARW
+static const double kAccelSigma = 0.1 / 60;          // 10 cm VRW
+
 namespace testing {
 
 struct ImuMeasurement {

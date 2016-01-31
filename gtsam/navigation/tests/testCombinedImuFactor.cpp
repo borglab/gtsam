@@ -34,10 +34,21 @@
 
 #include "imuFactorTesting.h"
 
+namespace testing {
+// Create default parameters with Z-down and above noise parameters
+static boost::shared_ptr<PreintegratedCombinedMeasurements::Params> Params() {
+  auto p = PreintegratedCombinedMeasurements::Params::MakeSharedD(kGravity);
+  p->gyroscopeCovariance = kGyroSigma * kGyroSigma * I_3x3;
+  p->accelerometerCovariance = kAccelSigma * kAccelSigma * I_3x3;
+  p->integrationCovariance = 0.0001 * I_3x3;
+  return p;
+}
+}
+
 /* ************************************************************************* */
 TEST( CombinedImuFactor, PreintegratedMeasurements ) {
   // Linearization point
-  imuBias::ConstantBias bias(Vector3(0, 0, 0), Vector3(0, 0, 0)); ///< Current estimate of acceleration and angular rate biases
+  Bias bias(Vector3(0, 0, 0), Vector3(0, 0, 0)); ///< Current estimate of acceleration and angular rate biases
 
   // Measurements
   Vector3 measuredAcc(0.1, 0.0, 0.0);
@@ -45,7 +56,7 @@ TEST( CombinedImuFactor, PreintegratedMeasurements ) {
   double deltaT = 0.5;
   double tol = 1e-6;
 
-  auto p = PreintegratedCombinedMeasurements::Params::MakeSharedD(9.81);
+  auto p = testing::Params();
 
   // Actual preintegrated values
   PreintegratedImuMeasurements expected1(p, bias);
@@ -63,18 +74,18 @@ TEST( CombinedImuFactor, PreintegratedMeasurements ) {
 
 /* ************************************************************************* */
 TEST( CombinedImuFactor, ErrorWithBiases ) {
-  imuBias::ConstantBias bias(Vector3(0.2, 0, 0), Vector3(0, 0, 0.3)); // Biases (acc, rot)
-  imuBias::ConstantBias bias2(Vector3(0.2, 0.2, 0), Vector3(1, 0, 0.3)); // Biases (acc, rot)
+  Bias bias(Vector3(0.2, 0, 0), Vector3(0, 0, 0.3)); // Biases (acc, rot)
+  Bias bias2(Vector3(0.2, 0.2, 0), Vector3(1, 0, 0.3)); // Biases (acc, rot)
   Pose3 x1(Rot3::Expmap(Vector3(0, 0, M_PI / 4.0)), Point3(5.0, 1.0, -50.0));
   Vector3 v1(0.5, 0.0, 0.0);
   Pose3 x2(Rot3::Expmap(Vector3(0, 0, M_PI / 4.0 + M_PI / 10.0)),
       Point3(5.5, 1.0, -50.0));
   Vector3 v2(0.5, 0.0, 0.0);
 
-  auto p = PreintegratedCombinedMeasurements::Params::MakeSharedD(9.81);
+  auto p = testing::Params();
   p->omegaCoriolis = Vector3(0,0.1,0.1);
   PreintegratedImuMeasurements pim(
-      p, imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0)));
+      p, Bias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0)));
 
   // Measurements
   Vector3 measuredOmega;
@@ -87,7 +98,7 @@ TEST( CombinedImuFactor, ErrorWithBiases ) {
   pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   PreintegratedCombinedMeasurements combined_pim(p,
-      imuBias::ConstantBias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0)));
+      Bias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0)));
 
   combined_pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
@@ -122,7 +133,7 @@ TEST( CombinedImuFactor, ErrorWithBiases ) {
 
 /* ************************************************************************* */
 TEST(CombinedImuFactor, FirstOrderPreIntegratedMeasurements) {
-  auto p = PreintegratedCombinedMeasurements::Params::MakeSharedD(9.81);
+  auto p = testing::Params();
   testing::SomeMeasurements measurements;
 
   boost::function<Vector9(const Vector3&, const Vector3&)> preintegrated =
@@ -144,16 +155,14 @@ TEST(CombinedImuFactor, FirstOrderPreIntegratedMeasurements) {
 
 /* ************************************************************************* */
 TEST(CombinedImuFactor, PredictPositionAndVelocity) {
-  imuBias::ConstantBias bias(Vector3(0, 0.1, 0), Vector3(0, 0.1, 0)); // Biases (acc, rot)
+  const Bias bias(Vector3(0, 0.1, 0), Vector3(0, 0.1, 0));  // Biases (acc, rot)
 
-  auto p = PreintegratedCombinedMeasurements::Params::MakeSharedD(9.81);
+  auto p = testing::Params();
 
   // Measurements
-  Vector3 measuredOmega;
-  measuredOmega << 0, 0.1, 0; //M_PI/10.0+0.3;
-  Vector3 measuredAcc;
-  measuredAcc << 0, 1.1, -9.81;
-  double deltaT = 0.001;
+  const Vector3 measuredOmega(0, 0.1, 0);  // M_PI/10.0+0.3;
+  const Vector3 measuredAcc(0, 1.1, -kGravity);
+  const double deltaT = 0.001;
 
   PreintegratedCombinedMeasurements pim(p, bias);
 
@@ -161,40 +170,36 @@ TEST(CombinedImuFactor, PredictPositionAndVelocity) {
     pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   // Create factor
-  noiseModel::Gaussian::shared_ptr combinedmodel =
+  const noiseModel::Gaussian::shared_ptr combinedmodel =
       noiseModel::Gaussian::Covariance(pim.preintMeasCov());
-  CombinedImuFactor Combinedfactor(X(1), V(1), X(2), V(2), B(1), B(2), pim);
+  const CombinedImuFactor Combinedfactor(X(1), V(1), X(2), V(2), B(1), B(2), pim);
 
   // Predict
-  NavState actual = pim.predict(NavState(), bias);
-  Pose3 expectedPose(Rot3(), Point3(0, 0.5, 0));
-  Vector3 expectedVelocity;
-  expectedVelocity << 0, 1, 0;
+  const NavState actual = pim.predict(NavState(), bias);
+  const Pose3 expectedPose(Rot3(), Point3(0, 0.5, 0));
+  const Vector3 expectedVelocity(0, 1, 0);
   EXPECT(assert_equal(expectedPose, actual.pose()));
-  EXPECT(
-      assert_equal(Vector(expectedVelocity), Vector(actual.velocity())));
+  EXPECT(assert_equal(Vector(expectedVelocity), Vector(actual.velocity())));
 }
 
 /* ************************************************************************* */
 TEST(CombinedImuFactor, PredictRotation) {
-  imuBias::ConstantBias bias(Vector3(0, 0, 0), Vector3(0, 0, 0)); // Biases (acc, rot)
-  auto p = PreintegratedCombinedMeasurements::Params::MakeSharedD(9.81);
+  const Bias bias(Vector3(0, 0, 0), Vector3(0, 0, 0)); // Biases (acc, rot)
+  auto p = testing::Params();
   PreintegratedCombinedMeasurements pim(p, bias);
-  Vector3 measuredAcc;
-  measuredAcc << 0, 0, -9.81;
-  Vector3 measuredOmega;
-  measuredOmega << 0, 0, M_PI / 10.0;
-  double deltaT = 0.001;
-  double tol = 1e-4;
+  const Vector3 measuredAcc = - kGravityAlongNavZDown;
+  const Vector3 measuredOmega(0, 0, M_PI / 10.0);
+  const double deltaT = 0.001;
+  const double tol = 1e-4;
   for (int i = 0; i < 1000; ++i)
     pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
-  CombinedImuFactor Combinedfactor(X(1), V(1), X(2), V(2), B(1), B(2), pim);
+  const CombinedImuFactor Combinedfactor(X(1), V(1), X(2), V(2), B(1), B(2), pim);
 
   // Predict
-  Pose3 x(Rot3::Ypr(0, 0, 0), Point3(0, 0, 0)), x2;
-  Vector3 v(0, 0, 0), v2;
-  NavState actual = pim.predict(NavState(x, v), bias);
-  Pose3 expectedPose(Rot3::Ypr(M_PI / 10, 0, 0), Point3(0, 0, 0));
+  const Pose3 x(Rot3::Ypr(0, 0, 0), Point3(0, 0, 0)), x2;
+  const Vector3 v(0, 0, 0), v2;
+  const NavState actual = pim.predict(NavState(x, v), bias);
+  const Pose3 expectedPose(Rot3::Ypr(M_PI / 10, 0, 0), Point3(0, 0, 0));
   EXPECT(assert_equal(expectedPose, actual.pose(), tol));
 }
 

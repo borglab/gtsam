@@ -21,30 +21,28 @@
 #include <CppUnitLite/TestHarness.h>
 #include <boost/bind.hpp>
 
-using namespace std;
-using namespace gtsam;
+#include "imuFactorTesting.h"
 
 static const double kDt = 0.1;
-
-static const double kGyroSigma = 0.02;
-static const double kAccelSigma = 0.1;
-
-// Create default parameters with Z-down and above noise parameters
-static boost::shared_ptr<PreintegrationBase::Params> defaultParams() {
-  auto p = PreintegrationParams::MakeSharedD(10);
-  p->gyroscopeCovariance = kGyroSigma * kGyroSigma * I_3x3;
-  p->accelerometerCovariance = kAccelSigma * kAccelSigma * I_3x3;
-  p->integrationCovariance = 0.0000001 * I_3x3;
-  return p;
-}
 
 Vector9 f(const Vector9& zeta, const Vector3& a, const Vector3& w) {
   return PreintegrationBase::UpdatePreintegrated(a, w, kDt, zeta);
 }
 
+namespace testing {
+// Create default parameters with Z-down and above noise parameters
+static boost::shared_ptr<PreintegrationParams> Params() {
+  auto p = PreintegrationParams::MakeSharedD(kGravity);
+  p->gyroscopeCovariance = kGyroSigma * kGyroSigma * I_3x3;
+  p->accelerometerCovariance = kAccelSigma * kAccelSigma * I_3x3;
+  p->integrationCovariance = 0.0001 * I_3x3;
+  return p;
+}
+}
+
 /* ************************************************************************* */
 TEST(PreintegrationBase, UpdateEstimate1) {
-  PreintegrationBase pim(defaultParams());
+  PreintegrationBase pim(testing::Params());
   const Vector3 acc(0.1, 0.2, 10), omega(0.1, 0.2, 0.3);
   Vector9 zeta;
   zeta.setZero();
@@ -58,7 +56,7 @@ TEST(PreintegrationBase, UpdateEstimate1) {
 
 /* ************************************************************************* */
 TEST(PreintegrationBase, UpdateEstimate2) {
-  PreintegrationBase pim(defaultParams());
+  PreintegrationBase pim(testing::Params());
   const Vector3 acc(0.1, 0.2, 10), omega(0.1, 0.2, 0.3);
   Vector9 zeta;
   zeta << 0.01, 0.02, 0.03, 100, 200, 300, 10, 5, 3;
@@ -73,7 +71,7 @@ TEST(PreintegrationBase, UpdateEstimate2) {
 
 /* ************************************************************************* */
 TEST(PreintegrationBase, computeError) {
-  PreintegrationBase pim(defaultParams());
+  PreintegrationBase pim(testing::Params());
   NavState x1, x2;
   imuBias::ConstantBias bias;
   Matrix9 aH1, aH2;
