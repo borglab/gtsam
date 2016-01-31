@@ -140,6 +140,7 @@ Vector9 PreintegrationBase::UpdatePreintegrated(const Vector3& a_body,
       velocity + a_nav* dt;                   // velocity
 
   if (A) {
+#define USE_NUMERICAL_DERIVATIVE
 #ifdef USE_NUMERICAL_DERIVATIVE
     // The use of this yields much more accurate derivatives, but it's slow!
     // TODO(frank): find a cheap closed form solution (look at Iserles)

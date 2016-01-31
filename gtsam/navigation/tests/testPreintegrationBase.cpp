@@ -136,7 +136,7 @@ TEST(PreintegrationBase, Compose) {
   EXPECT(assert_equal(numericalDerivative21(f, Z_3x1, Z_3x1),
                       expected_pim02.preintegrated_H_biasAcc()));
   EXPECT(assert_equal(numericalDerivative22(f, Z_3x1, Z_3x1),
-                      expected_pim02.preintegrated_H_biasOmega(), 1e-3));
+                      expected_pim02.preintegrated_H_biasOmega(), 1e-7));
 }
 
 /* ************************************************************************* */
