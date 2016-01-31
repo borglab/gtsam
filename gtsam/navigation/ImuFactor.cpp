@@ -113,9 +113,9 @@ ImuFactor::ImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
 }
 
 //------------------------------------------------------------------------------
-gtsam::NonlinearFactor::shared_ptr ImuFactor::clone() const {
-  return boost::static_pointer_cast<gtsam::NonlinearFactor>(
-      gtsam::NonlinearFactor::shared_ptr(new This(*this)));
+NonlinearFactor::shared_ptr ImuFactor::clone() const {
+  return boost::static_pointer_cast<NonlinearFactor>(
+      NonlinearFactor::shared_ptr(new This(*this)));
 }
 
 //------------------------------------------------------------------------------
@@ -176,6 +176,29 @@ PreintegratedImuMeasurements ImuFactor::Merge(
                          H2 * pim12.preintMeasCov_ * H2.transpose();
 
   return pim02;
+}
+
+//------------------------------------------------------------------------------
+ImuFactor::shared_ptr ImuFactor::Merge(const shared_ptr& f01,
+                                       const shared_ptr& f12) {
+  // IMU bias keys must be the same.
+  if (f01->key5() != f12->key5())
+    throw std::domain_error("ImuFactor::Merge: IMU bias keys must be the same");
+
+  // expect intermediate pose, velocity keys to matchup.
+  if (f01->key3() != f12->key1() || f01->key4() != f12->key2())
+    throw std::domain_error(
+        "ImuFactor::Merge: intermediate pose, velocity keys need to match up");
+
+  // return new factor
+  auto pim02 =
+      Merge(f01->preintegratedMeasurements(), f12->preintegratedMeasurements());
+  return boost::make_shared<ImuFactor>(f01->key1(),  // P0
+                                       f01->key2(),  // V0
+                                       f12->key3(),  // P2
+                                       f12->key4(),  // V2
+                                       f01->key5(),  // B
+                                       pim02);
 }
 
 //------------------------------------------------------------------------------

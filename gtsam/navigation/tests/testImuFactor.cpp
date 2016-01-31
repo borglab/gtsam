@@ -829,8 +829,8 @@ struct ImuFactorMergeTest {
     ImuFactor::shared_ptr factor02_expected = boost::make_shared<ImuFactor>(
         X(0), V(0), X(2), V(2), B(0), pim02_expected);
 
-//    ImuFactor::shared_ptr factor02_merged = factor01.mergeWith(factor12);
-//    EXPECT(assert_equal(*factor02_expected, *factor02_merged, tol));
+    ImuFactor::shared_ptr factor02_merged = ImuFactor::Merge(factor01, factor12);
+    EXPECT(assert_equal(*factor02_expected, *factor02_merged, tol));
     return result_.getFailureCount();
   }
 
