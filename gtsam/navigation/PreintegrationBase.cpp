@@ -178,7 +178,7 @@ Vector9 PreintegrationBase::UpdatePreintegrated(const Vector3& a_body,
 }
 
 //------------------------------------------------------------------------------
-void PreintegrationBase::updatedPreintegrated(const Vector3& measuredAcc,
+void PreintegrationBase::integrateMeasurement(const Vector3& measuredAcc,
                                               const Vector3& measuredOmega,
                                               double dt, Matrix9* A,
                                               Matrix93* B, Matrix93* C) {
@@ -211,6 +211,15 @@ void PreintegrationBase::updatedPreintegrated(const Vector3& measuredAcc,
   preintegrated_H_biasOmega_ = (*A) * preintegrated_H_biasOmega_ - (*C);
 }
 
+void PreintegrationBase::integrateMeasurement(const Vector3& measuredAcc,
+                                              const Vector3& measuredOmega,
+                                              double dt) {
+  // NOTE(frank): integrateMeasuremtn always needs to compute the derivatives,
+  // even when not of interest to the caller. Provide scratch space here.
+  Matrix9 A;
+  Matrix93 B, C;
+  integrateMeasurement(measuredAcc, measuredOmega, dt, &A, &B, &C);
+}
 //------------------------------------------------------------------------------
 Vector9 PreintegrationBase::biasCorrectedDelta(
     const imuBias::ConstantBias& bias_i, OptionalJacobian<9, 6> H) const {
@@ -321,6 +330,53 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i,
 #define D_v_v(H) (H)->block<3,3>(6,6)
 
 //------------------------------------------------------------------------------
+Vector9 PreintegrationBase::Compose(const Vector9& zeta01,
+                                    const Vector9& zeta12, double deltaT12,
+                                    OptionalJacobian<9, 9> H1,
+                                    OptionalJacobian<9, 9> H2) {
+  const auto t01 = zeta01.segment<3>(0);
+  const auto p01 = zeta01.segment<3>(3);
+  const auto v01 = zeta01.segment<3>(6);
+
+  const auto t12 = zeta12.segment<3>(0);
+  const auto p12 = zeta12.segment<3>(3);
+  const auto v12 = zeta12.segment<3>(6);
+
+  Matrix3 R01_H_t01, R12_H_t12;
+  const Rot3 R01 = Rot3::Expmap(t01, R01_H_t01);
+  const Rot3 R12 = Rot3::Expmap(t12, R12_H_t12);
+
+  Matrix3 R02_H_R01, R02_H_R12;
+  const Rot3 R02 = R01.compose(R12, R02_H_R01, R02_H_R12);
+
+  Matrix3 t02_H_R02;
+  Vector9 zeta02;
+  const Matrix3 R = R01.matrix();
+  zeta02 << Rot3::Logmap(R02, t02_H_R02),  // theta
+      p01 + v01 * deltaT12 + R * p12,      // position
+      v01 + R * v12;                       // velocity
+
+  if (H1) {
+    H1->setZero();
+    D_R_R(H1) = t02_H_R02 * R02_H_R01 * R01_H_t01;
+    D_t_R(H1) = R * skewSymmetric(-p12) * R01_H_t01;
+    D_t_t(H1) = I_3x3;
+    D_t_v(H1) = I_3x3 * deltaT12;
+    D_v_R(H1) = R * skewSymmetric(-v12) * R01_H_t01;
+    D_v_v(H1) = I_3x3;
+  }
+
+  if (H2) {
+    H2->setZero();
+    D_R_R(H2) = t02_H_R02 * R02_H_R12 * R12_H_t12;
+    D_t_t(H2) = R;
+    D_v_v(H2) = R;
+  }
+
+  return zeta02;
+}
+
+//------------------------------------------------------------------------------
 void PreintegrationBase::mergeWith(const PreintegrationBase& pim12, Matrix9* H1,
                                    Matrix9* H2) {
   if (!matchesParamsWith(pim12))
@@ -335,28 +391,8 @@ void PreintegrationBase::mergeWith(const PreintegrationBase& pim12, Matrix9* H1,
   const double& t12 = pim12.deltaTij();
   deltaTij_ = t01 + t12;
 
-  Matrix3 R01_H_theta01, R12_H_theta12;
-  const Rot3 R01 = Rot3::Expmap(theta(), R01_H_theta01);
-  const Rot3 R12 = Rot3::Expmap(pim12.theta(), R12_H_theta12);
-
-  Matrix3 R02_H_R01, R02_H_R12;
-  const Rot3 R02 = R01.compose(R12, R02_H_R01, R02_H_R12);
-
-  Matrix3 theta02_H_R02;
-  preintegrated_ << Rot3::Logmap(R02, theta02_H_R02),
-      deltaPij() + deltaVij() * t12 + R01 * pim12.deltaPij(),
-      deltaVij() + R01 * pim12.deltaVij();
-
-  H1->setZero();
-  D_R_R(H1) = theta02_H_R02 * R02_H_R01 * R01_H_theta01;
-  D_t_t(H1) = I_3x3;
-  D_t_v(H1) = I_3x3 * t12;
-  D_v_v(H1) = I_3x3;
-
-  H2->setZero();
-  D_R_R(H2) = theta02_H_R02 * R02_H_R12 * R12_H_theta12;  // I_3x3 ??
-  D_t_t(H2) = R01.matrix();  // + rotated_H_theta1 ??
-  D_v_v(H2) = R01.matrix();  // + rotated_H_theta1 ??
+  preintegrated_ << PreintegrationBase::Compose(
+      preintegrated(), pim12.preintegrated(), t12, H1, H2);
 
   preintegrated_H_biasAcc_ =
       (*H1) * preintegrated_H_biasAcc_ + (*H2) * pim12.preintegrated_H_biasAcc_;

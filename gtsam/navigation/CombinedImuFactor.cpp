@@ -70,7 +70,7 @@ void PreintegratedCombinedMeasurements::integrateMeasurement(
   // Update preintegrated measurements.
   Matrix9 A;  // overall Jacobian wrt preintegrated measurements (df/dx)
   Matrix93 B, C;
-  updatedPreintegrated(measuredAcc, measuredOmega, dt, &A, &B, &C);
+  PreintegrationBase::integrateMeasurement(measuredAcc, measuredOmega, dt, &A, &B, &C);
 
   // Update preintegrated measurements covariance: as in [2] we consider a first
   // order propagation that can be seen as a prediction phase in an EKF

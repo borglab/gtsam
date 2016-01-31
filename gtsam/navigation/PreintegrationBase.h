@@ -183,9 +183,13 @@ public:
   /// Update preintegrated measurements and get derivatives
   /// It takes measured quantities in the j frame
   /// Modifies preintegrated_ in place after correcting for bias and possibly sensor pose
-  void updatedPreintegrated(const Vector3& measuredAcc,
+  void integrateMeasurement(const Vector3& measuredAcc,
                             const Vector3& measuredOmega, const double deltaT,
                             Matrix9* A, Matrix93* B, Matrix93* C);
+
+  // Version without derivatives
+  void integrateMeasurement(const Vector3& measuredAcc,
+                            const Vector3& measuredOmega, const double deltaT);
 
   /// Given the estimate of the bias, return a NavState tangent vector
   /// summarizing the preintegrated IMU measurements so far
@@ -210,6 +214,12 @@ public:
           boost::none, OptionalJacobian<9, 3> H2 = boost::none,
       OptionalJacobian<9, 6> H3 = boost::none, OptionalJacobian<9, 3> H4 =
           boost::none, OptionalJacobian<9, 6> H5 = boost::none) const;
+
+  // Compose the two preintegrated vectors
+  static Vector9 Compose(const Vector9& zeta01, const Vector9& zeta12,
+                         double deltaT12,
+                         OptionalJacobian<9, 9> H1 = boost::none,
+                         OptionalJacobian<9, 9> H2 = boost::none);
 
   /// Merge in a different set of measurements and update bias derivatives accordingly
   /// The derivatives apply to the preintegrated Vector9
