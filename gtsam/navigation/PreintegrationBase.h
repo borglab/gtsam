@@ -211,6 +211,9 @@ public:
       OptionalJacobian<9, 6> H3 = boost::none, OptionalJacobian<9, 3> H4 =
           boost::none, OptionalJacobian<9, 6> H5 = boost::none) const;
 
+  /// Merge in a different set of measurements and update bias derivatives accordingly
+  /// The derivatives apply to the preintegrated Vector9
+  void mergeWith(const PreintegrationBase& pim, Matrix9* H1, Matrix9* H2);
   /// @}
 
   /** Dummy clone for MATLAB */

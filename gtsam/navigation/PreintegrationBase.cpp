@@ -309,6 +309,63 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i,
 }
 
 //------------------------------------------------------------------------------
+// sugar for derivative blocks
+#define D_R_R(H) (H)->block<3,3>(0,0)
+#define D_R_t(H) (H)->block<3,3>(0,3)
+#define D_R_v(H) (H)->block<3,3>(0,6)
+#define D_t_R(H) (H)->block<3,3>(3,0)
+#define D_t_t(H) (H)->block<3,3>(3,3)
+#define D_t_v(H) (H)->block<3,3>(3,6)
+#define D_v_R(H) (H)->block<3,3>(6,0)
+#define D_v_t(H) (H)->block<3,3>(6,3)
+#define D_v_v(H) (H)->block<3,3>(6,6)
+
+//------------------------------------------------------------------------------
+void PreintegrationBase::mergeWith(const PreintegrationBase& pim12, Matrix9* H1,
+                                   Matrix9* H2) {
+  if (!matchesParamsWith(pim12))
+    throw std::domain_error(
+        "Cannot merge preintegrated measurements with different params");
+
+  if (params()->body_P_sensor)
+    throw std::domain_error(
+        "Cannot merge preintegrated measurements with sensor pose yet");
+
+  const double& t01 = deltaTij();
+  const double& t12 = pim12.deltaTij();
+  deltaTij_ = t01 + t12;
+
+  Matrix3 R01_H_theta01, R12_H_theta12;
+  const Rot3 R01 = Rot3::Expmap(theta(), R01_H_theta01);
+  const Rot3 R12 = Rot3::Expmap(pim12.theta(), R12_H_theta12);
+
+  Matrix3 R02_H_R01, R02_H_R12;
+  const Rot3 R02 = R01.compose(R12, R02_H_R01, R02_H_R12);
+
+  Matrix3 theta02_H_R02;
+  preintegrated_ << Rot3::Logmap(R02, theta02_H_R02),
+      deltaPij() + deltaVij() * t12 + R01 * pim12.deltaPij(),
+      deltaVij() + R01 * pim12.deltaVij();
+
+  H1->setZero();
+  D_R_R(H1) = theta02_H_R02 * R02_H_R01 * R01_H_theta01;
+  D_t_t(H1) = I_3x3;
+  D_t_v(H1) = I_3x3 * t12;
+  D_v_v(H1) = I_3x3;
+
+  H2->setZero();
+  D_R_R(H2) = theta02_H_R02 * R02_H_R12 * R12_H_theta12;  // I_3x3 ??
+  D_t_t(H2) = R01.matrix();  // + rotated_H_theta1 ??
+  D_v_v(H2) = R01.matrix();  // + rotated_H_theta1 ??
+
+  preintegrated_H_biasAcc_ =
+      (*H1) * preintegrated_H_biasAcc_ + (*H2) * pim12.preintegrated_H_biasAcc_;
+
+  preintegrated_H_biasOmega_ = (*H1) * preintegrated_H_biasOmega_ +
+                               (*H2) * pim12.preintegrated_H_biasOmega_;
+}
+
+//------------------------------------------------------------------------------
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 PoseVelocityBias PreintegrationBase::predict(const Pose3& pose_i,
     const Vector3& vel_i, const imuBias::ConstantBias& bias_i,

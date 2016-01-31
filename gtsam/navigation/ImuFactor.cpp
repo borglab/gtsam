@@ -158,26 +158,26 @@ Vector ImuFactor::evaluateError(const Pose3& pose_i, const Vector3& vel_i,
 PreintegratedImuMeasurements ImuFactor::Merge(
     const PreintegratedImuMeasurements& pim01,
     const PreintegratedImuMeasurements& pim12) {
-  if(!pim01.matchesParamsWith(pim12))
-    throw std::domain_error("Cannot merge PreintegratedImuMeasurements with different params");
+  if (!pim01.matchesParamsWith(pim12))
+    throw std::domain_error(
+        "Cannot merge PreintegratedImuMeasurements with different params");
 
-  if(pim01.params()->body_P_sensor)
-    throw std::domain_error("Cannot merge PreintegratedImuMeasurements with sensor pose yet");
+  if (pim01.params()->body_P_sensor)
+    throw std::domain_error(
+        "Cannot merge PreintegratedImuMeasurements with sensor pose yet");
 
   // the bias for the merged factor will be the bias from 01
-  PreintegratedImuMeasurements pim02(pim01.params(), pim01.biasHat());
+  PreintegratedImuMeasurements pim02 = pim01;
 
-  const double& t01 = pim01.deltaTij();
-  const double& t12 = pim12.deltaTij();
-  pim02.deltaTij_ = t01 + t12;
+  Matrix9 H1, H2;
+  pim02.mergeWith(pim12, &H1, &H2);
 
-  const Rot3 R01 = pim01.deltaRij(), R12 = pim12.deltaRij();
-  pim02.preintegrated_ << Rot3::Logmap(R01 * R12),
-      pim01.deltaPij() + pim01.deltaVij() * t12 + R01 * pim12.deltaPij(),
-      pim01.deltaVij() + R01 * pim12.deltaVij();
+  pim02.preintMeasCov_ = H1 * pim01.preintMeasCov_ * H1.transpose() +
+                         H2 * pim12.preintMeasCov_ * H2.transpose();
 
   return pim02;
 }
+
 //------------------------------------------------------------------------------
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 ImuFactor::ImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
