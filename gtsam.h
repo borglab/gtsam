@@ -2519,11 +2519,6 @@ virtual class PreintegrationBase {
   Vector deltaPij() const;
   Vector deltaVij() const;
   Vector biasHatVector() const;
-  Matrix delPdelBiasAcc() const;
-  Matrix delPdelBiasOmega() const;
-  Matrix delVdelBiasAcc() const;
-  Matrix delVdelBiasOmega() const;
-  Matrix delRdelBiasOmega() const;
 
   // Standard Interface
   gtsam::NavState predict(const gtsam::NavState& state_i,
@@ -2562,12 +2557,6 @@ virtual class ImuFactor: gtsam::NonlinearFactor {
 
 #include <gtsam/navigation/CombinedImuFactor.h>
 virtual class PreintegratedCombinedMeasurements: gtsam::PreintegrationBase {
-  // Standard Constructor
-  PreintegratedCombinedMeasurements(const gtsam::imuBias::ConstantBias& bias,
-      Matrix measuredAccCovariance, Matrix measuredOmegaCovariance,
-      Matrix integrationErrorCovariance, Matrix biasAccCovariance,
-      Matrix biasOmegaCovariance, Matrix biasAccOmegaInit);
-
   // Testable
   void print(string s) const;
   bool equals(const gtsam::PreintegratedCombinedMeasurements& expected,
