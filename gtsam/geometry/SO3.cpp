@@ -68,16 +68,13 @@ SO3 ExpmapFunctor::expmap() const {
 
 DexpFunctor::DexpFunctor(const Vector3& omega)
     : ExpmapFunctor(omega), omega(omega) {
-  if (nearZero) return;
-  a = one_minus_cos / theta;
-  b = 1.0 - sin_theta / theta;
-}
-
-SO3 DexpFunctor::dexp() const {
   if (nearZero)
-    return I_3x3 - 0.5 * W;
-  else
-    return I_3x3 - a * K + b * KK;
+    dexp_ = I_3x3 - 0.5 * W;
+  else {
+    a = one_minus_cos / theta;
+    b = 1.0 - sin_theta / theta;
+    dexp_ = I_3x3 - a * K + b * KK;
+  }
 }
 
 Vector3 DexpFunctor::applyDexp(const Vector3& v, OptionalJacobian<3, 3> H1,
@@ -87,18 +84,31 @@ Vector3 DexpFunctor::applyDexp(const Vector3& v, OptionalJacobian<3, 3> H1,
     if (H2) *H2 = I_3x3;
     return v - 0.5 * omega.cross(v);
   }
-  const Vector3 Kv = omega.cross(v / theta);
-  const Vector3 KKv = omega.cross(Kv / theta);
   if (H1) {
     // TODO(frank): Iserles hints that there should be a form I + c*K + d*KK
+    const Vector3 Kv = omega.cross(v / theta);
+    const Vector3 KKv = omega.cross(Kv / theta);
     const Matrix3 T = skewSymmetric(v / theta);
     const double Da = (sin_theta - 2.0 * a) / theta2;
     const double Db = (one_minus_cos - 3.0 * b) / theta2;
     *H1 = (-Da * Kv + Db * KKv) * omega.transpose() + a * T -
           skewSymmetric(Kv * b / theta) - b * K * T;
   }
-  if (H2) *H2 = dexp();
-  return v - a * Kv + b * KKv;
+  if (H2) *H2 = dexp_;
+  return dexp_ * v;
+}
+
+Vector3 DexpFunctor::applyInvDexp(const Vector3& v, OptionalJacobian<3, 3> H1,
+                                  OptionalJacobian<3, 3> H2) const {
+  const Matrix3 invDexp = dexp_.inverse();
+  const Vector3 c = invDexp * v;
+  if (H1) {
+    Matrix3 D_dexpv_omega;
+    applyDexp(c, D_dexpv_omega);  // get derivative H of forward mapping
+    *H1 = -invDexp* D_dexpv_omega;
+  }
+  if (H2) *H2 = invDexp;
+  return c;
 }
 
 }  // namespace so3
@@ -119,12 +129,6 @@ SO3 SO3::Expmap(const Vector3& omega, ChartJacobian H) {
 
 Matrix3 SO3::ExpmapDerivative(const Vector3& omega) {
   return so3::DexpFunctor(omega).dexp();
-}
-
-Vector3 SO3::ApplyExpmapDerivative(const Vector3& omega, const Vector3& v,
-                                   OptionalJacobian<3, 3> H1,
-                                   OptionalJacobian<3, 3> H2) {
-  return so3::DexpFunctor(omega).applyDexp(v, H1, H2);
 }
 
 /* ************************************************************************* */
