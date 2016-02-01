@@ -86,13 +86,12 @@ Vector3 DexpFunctor::applyDexp(const Vector3& v, OptionalJacobian<3, 3> H1,
   }
   if (H1) {
     // TODO(frank): Iserles hints that there should be a form I + c*K + d*KK
-    const Vector3 Kv = omega.cross(v / theta);
-    const Vector3 KKv = omega.cross(Kv / theta);
-    const Matrix3 T = skewSymmetric(v / theta);
+    const Vector3 Kv = K * v;
     const double Da = (sin_theta - 2.0 * a) / theta2;
     const double Db = (one_minus_cos - 3.0 * b) / theta2;
-    *H1 = (-Da * Kv + Db * KKv) * omega.transpose() + a * T -
-          skewSymmetric(Kv * b / theta) - b * K * T;
+    *H1 = (Db * K - Da * I_3x3) * Kv * omega.transpose() -
+          skewSymmetric(Kv * b / theta) +
+          (a * I_3x3 - b * K) * skewSymmetric(v / theta);
   }
   if (H2) *H2 = dexp_;
   return dexp_ * v;
