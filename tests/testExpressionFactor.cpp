@@ -345,7 +345,6 @@ TEST(ExpressionFactor, tree) {
 }
 
 /* ************************************************************************* */
-
 TEST(ExpressionFactor, Compose1) {
 
   // Create expression
@@ -598,6 +597,65 @@ TEST(Expression, testMultipleCompositions2) {
   Expression<double> sum4_(combine3, sum1_, sum2_, sum3_);
   EXPECT(sum4_.keys() == list_of(1)(2)(3));
   EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum4_, values, fd_step, tolerance);
+}
+
+/* ************************************************************************* */
+// Test multiplication with the inverse of a matrix
+TEST(ExpressionFactor, MultiplyWithInverse) {
+  auto model = noiseModel::Isotropic::Sigma(3, 1);
+
+  // Create expression
+  auto f_expr = MultiplyWithInverse<3>()(Key(0), Key(1));
+
+  // Check derivatives
+  Values values;
+  Matrix3 A = Vector3(1, 2, 3).asDiagonal();
+  A(0, 1) = 0.1;
+  A(0, 2) = 0.1;
+  const Vector3 b(0.1, 0.2, 0.3);
+  values.insert<Matrix3>(0, A);
+  values.insert<Vector3>(1, b);
+  ExpressionFactor<Vector3> factor(model, Vector3::Zero(), f_expr);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-5, 1e-5);
+}
+
+/* ************************************************************************* */
+// Test multiplication with the inverse of a matrix function
+namespace test_operator {
+Vector3 f(const Point2& a, const Vector3& b, OptionalJacobian<3, 2> H1,
+          OptionalJacobian<3, 3> H2) {
+  Matrix3 A = Vector3(1, 2, 3).asDiagonal();
+  A(0, 1) = a.x();
+  A(0, 2) = a.y();
+  A(1, 0) = a.x();
+  if (H1) *H1 << b.y(), b.z(), b.x(), 0, 0, 0;
+  if (H2) *H2 = A;
+  return A * b;
+};
+}
+
+TEST(ExpressionFactor, MultiplyWithInverseFunction) {
+  auto model = noiseModel::Isotropic::Sigma(3, 1);
+
+  using test_operator::f;
+  auto f_expr = MultiplyWithInverseFunction<Point2, 3>(f)(Key(0), Key(1));
+
+  // Check derivatives
+  Point2 a(1, 2);
+  const Vector3 b(0.1, 0.2, 0.3);
+  Matrix32 H1;
+  Matrix3 A;
+  const Vector Ab = f(a, b, H1, A);
+  CHECK(assert_equal(A * b, Ab));
+  CHECK(assert_equal(numericalDerivative11<Vector3, Point2>(
+                         boost::bind(f, _1, b, boost::none, boost::none), a),
+                     H1));
+
+  Values values;
+  values.insert<Point2>(0, a);
+  values.insert<Vector3>(1, b);
+  ExpressionFactor<Vector3> factor(model, Vector3::Zero(), f_expr);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-5, 1e-5);
 }
 
 /* ************************************************************************* */
