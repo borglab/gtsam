@@ -204,56 +204,50 @@ TEST(SO3, JacobianLogmap) {
 }
 
 /* ************************************************************************* */
-TEST(SO3, ApplyExpmapDerivative1) {
+Vector3 apply(const Vector3& omega, const Vector3& v) {
+  so3::DexpFunctor local(omega);
+  return local.applyDexp(v);
+}
+
+/* ************************************************************************* */
+TEST(SO3, ApplyDexp) {
   Matrix aH1, aH2;
-  boost::function<Vector3(const Vector3&, const Vector3&)> f =
-      boost::bind(SO3::ApplyExpmapDerivative, _1, _2, boost::none, boost::none);
-  for (Vector3 omega : {Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1)}) {
-    for (Vector3 v : {Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1)}) {
-      Matrix3 H = SO3::ExpmapDerivative(omega);
-      Vector3 expected = H * v;
-      EXPECT(assert_equal(expected, SO3::ApplyExpmapDerivative(omega, v)));
-      EXPECT(assert_equal(expected,
-                          SO3::ApplyExpmapDerivative(omega, v, aH1, aH2)));
-      EXPECT(assert_equal(numericalDerivative21(f, omega, v), aH1));
-      EXPECT(assert_equal(numericalDerivative22(f, omega, v), aH2));
-      EXPECT(assert_equal(H, aH2));
+  for (Vector3 omega : {Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(0, 1, 0),
+                        Vector3(0, 0, 1), Vector3(0.1, 0.2, 0.3)}) {
+    so3::DexpFunctor local(omega);
+    for (Vector3 v : {Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1),
+                      Vector3(0.4, 0.3, 0.2)}) {
+      EXPECT(assert_equal(Vector3(local.dexp() * v),
+                          local.applyDexp(v, aH1, aH2)));
+      EXPECT(assert_equal(numericalDerivative21(apply, omega, v), aH1));
+      EXPECT(assert_equal(numericalDerivative22(apply, omega, v), aH2));
+      EXPECT(assert_equal(local.dexp(), aH2));
     }
   }
 }
 
 /* ************************************************************************* */
-TEST(SO3, ApplyExpmapDerivative2) {
-  Matrix aH1, aH2;
-  boost::function<Vector3(const Vector3&, const Vector3&)> f =
-      boost::bind(SO3::ApplyExpmapDerivative, _1, _2, boost::none, boost::none);
-  const Vector3 omega(0, 0, 0);
-  for (Vector3 v : {Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1)}) {
-    Matrix3 H = SO3::ExpmapDerivative(omega);
-    Vector3 expected = H * v;
-    EXPECT(assert_equal(expected, SO3::ApplyExpmapDerivative(omega, v)));
-    EXPECT(
-        assert_equal(expected, SO3::ApplyExpmapDerivative(omega, v, aH1, aH2)));
-    EXPECT(assert_equal(numericalDerivative21(f, omega, v), aH1));
-    EXPECT(assert_equal(numericalDerivative22(f, omega, v), aH2));
-    EXPECT(assert_equal(H, aH2));
-  }
+Vector3 applyInv(const Vector3& omega, const Vector3& v) {
+  so3::DexpFunctor local(omega);
+  return local.applyInvDexp(v);
 }
 
 /* ************************************************************************* */
-TEST(SO3, ApplyExpmapDerivative3) {
+TEST(SO3, ApplyInvDexp) {
   Matrix aH1, aH2;
-  boost::function<Vector3(const Vector3&, const Vector3&)> f =
-      boost::bind(SO3::ApplyExpmapDerivative, _1, _2, boost::none, boost::none);
-  const Vector3 omega(0.1, 0.2, 0.3), v(0.4, 0.3, 0.2);
-  Matrix3 H = SO3::ExpmapDerivative(omega);
-  Vector3 expected = H * v;
-  EXPECT(assert_equal(expected, SO3::ApplyExpmapDerivative(omega, v)));
-  EXPECT(
-      assert_equal(expected, SO3::ApplyExpmapDerivative(omega, v, aH1, aH2)));
-  EXPECT(assert_equal(numericalDerivative21(f, omega, v), aH1));
-  EXPECT(assert_equal(numericalDerivative22(f, omega, v), aH2));
-  EXPECT(assert_equal(H, aH2));
+  for (Vector3 omega : {Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(0, 1, 0),
+                        Vector3(0, 0, 1), Vector3(0.1, 0.2, 0.3)}) {
+    so3::DexpFunctor local(omega);
+    Matrix invDexp = local.dexp().inverse();
+    for (Vector3 v : {Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1),
+                      Vector3(0.4, 0.3, 0.2)}) {
+      EXPECT(
+          assert_equal(Vector3(invDexp * v), local.applyInvDexp(v, aH1, aH2)));
+      EXPECT(assert_equal(numericalDerivative21(applyInv, omega, v), aH1));
+      EXPECT(assert_equal(numericalDerivative22(applyInv, omega, v), aH2));
+      EXPECT(assert_equal(invDexp, aH2));
+    }
+  }
 }
 
 //******************************************************************************

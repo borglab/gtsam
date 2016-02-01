@@ -102,11 +102,6 @@ public:
   /// Derivative of Expmap
   static Matrix3 ExpmapDerivative(const Vector3& omega);
 
-  /// Implement ExpmapDerivative(omega) * v, with derivatives
-  static Vector3 ApplyExpmapDerivative(const Vector3& omega, const Vector3& v,
-                                       OptionalJacobian<3, 3> H1 = boost::none,
-                                       OptionalJacobian<3, 3> H2 = boost::none);
-
   /**
    * Log map at identity - returns the canonical coordinates
    * \f$ [R_x,R_y,R_z] \f$ of this rotation
@@ -137,6 +132,7 @@ public:
 
 // This namespace exposes two functors that allow for saving computation when
 // exponential map and its derivatives are needed at the same location in so<3>
+// The second functor also implements dedicated methods to apply dexp and/or inv(dexp)
 namespace so3 {
 
 /// Functor implementing Exponential map
@@ -156,7 +152,7 @@ class ExpmapFunctor {
   /// Constructor with axis-angle
   ExpmapFunctor(const Vector3& axis, double angle);
 
-  /// Rodrgues formula
+  /// Rodrigues formula
   SO3 expmap() const;
 };
 
@@ -164,6 +160,7 @@ class ExpmapFunctor {
 class DexpFunctor : public ExpmapFunctor {
   const Vector3 omega;
   double a, b;
+  Matrix3 dexp_;
 
  public:
   /// Constructor with element of Lie algebra so(3)
@@ -175,11 +172,16 @@ class DexpFunctor : public ExpmapFunctor {
   //   expmap(omega + v) \approx expmap(omega) * expmap(dexp * v)
   // This maps a perturbation v in the tangent space to
   // a perturbation on the manifold Expmap(dexp * v) */
-  SO3 dexp() const;
+  const Matrix3& dexp() const { return dexp_; }
 
   /// Multiplies with dexp(), with optional derivatives
-  Vector3 applyDexp(const Vector3& v, OptionalJacobian<3, 3> H1,
-                    OptionalJacobian<3, 3> H2) const;
+  Vector3 applyDexp(const Vector3& v, OptionalJacobian<3, 3> H1 = boost::none,
+                    OptionalJacobian<3, 3> H2 = boost::none) const;
+
+  /// Multiplies with dexp().inverse(), with optional derivatives
+  Vector3 applyInvDexp(const Vector3& v,
+                       OptionalJacobian<3, 3> H1 = boost::none,
+                       OptionalJacobian<3, 3> H2 = boost::none) const;
 };
 }  //  namespace so3
 
