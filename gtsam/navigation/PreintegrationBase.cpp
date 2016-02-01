@@ -37,7 +37,7 @@ PreintegrationBase::PreintegrationBase(const boost::shared_ptr<Params>& p,
 //------------------------------------------------------------------------------
 void PreintegrationBase::resetIntegration() {
   deltaTij_ = 0.0;
-  preintegrated_ = Vector9();
+  preintegrated_.setZero();
   preintegrated_H_biasAcc_.setZero();
   preintegrated_H_biasOmega_.setZero();
 }
@@ -347,7 +347,7 @@ Vector9 PreintegrationBase::Compose(const Vector9& zeta01,
   const Rot3 R01 = Rot3::Expmap(t01, R01_H_t01);
   const Rot3 R12 = Rot3::Expmap(t12, R12_H_t12);
 
-  Matrix3 R02_H_R01, R02_H_R12;
+  Matrix3 R02_H_R01, R02_H_R12; // NOTE(frank): R02_H_R12 == Identity
   const Rot3 R02 = R01.compose(R12, R02_H_R01, R02_H_R12);
 
   Matrix3 t02_H_R02;
@@ -358,13 +358,11 @@ Vector9 PreintegrationBase::Compose(const Vector9& zeta01,
       v01 + R * v12;                       // velocity
 
   if (H1) {
-    H1->setZero();
+    H1->setIdentity();
     D_R_R(H1) = t02_H_R02 * R02_H_R01 * R01_H_t01;
     D_t_R(H1) = R * skewSymmetric(-p12) * R01_H_t01;
-    D_t_t(H1) = I_3x3;
     D_t_v(H1) = I_3x3 * deltaT12;
     D_v_R(H1) = R * skewSymmetric(-v12) * R01_H_t01;
-    D_v_v(H1) = I_3x3;
   }
 
   if (H2) {
@@ -392,8 +390,15 @@ void PreintegrationBase::mergeWith(const PreintegrationBase& pim12, Matrix9* H1,
   const double& t12 = pim12.deltaTij();
   deltaTij_ = t01 + t12;
 
-  preintegrated_ << PreintegrationBase::Compose(
-      preintegrated(), pim12.preintegrated(), t12, H1, H2);
+  Vector9 zeta01 = preintegrated();
+  Vector9 zeta12 = pim12.preintegrated();
+
+  // TODO(frank): adjust zeta12 due to bias difference
+//  const imuBias::ConstantBias bias_incr_for_12 = biasHat() - pim12.biasHat();
+//  zeta12 += pim12.delPdelBiasAcc() * bias_incr_for_12.accelerometer() +
+//            pim12.delPdelBiasOmega() * bias_incr_for_12.gyroscope();
+
+  preintegrated_ << PreintegrationBase::Compose(zeta01, zeta12, t12, H1, H2);
 
   preintegrated_H_biasAcc_ =
       (*H1) * preintegrated_H_biasAcc_ + (*H2) * pim12.preintegrated_H_biasAcc_;
