@@ -120,32 +120,34 @@ Vector9 PreintegrationBase::UpdatePreintegrated(
     const Vector3& a_body, const Vector3& w_body, double dt,
     const Vector9& preintegrated, OptionalJacobian<9, 9> A,
     OptionalJacobian<9, 3> B, OptionalJacobian<9, 3> C) {
-  // TODO(frank): expose DexpImpl functor and save on computation
-  static const MultiplyWithInverseFunction<Vector3, 3> applyInvDexp(SO3::ApplyExpmapDerivative);
-
   const auto theta = preintegrated.segment<3>(0);
   const auto position = preintegrated.segment<3>(3);
   const auto velocity = preintegrated.segment<3>(6);
 
+  // This functor allows for saving computation when exponential map and its
+  // derivatives are needed at the same location in so<3>
+  so3::DexpFunctor local(theta);
+
   // Calculate exact mean propagation
-  Matrix3 H, invH, invHw_H_theta;
-  const Vector invHw = applyInvDexp(theta, w_body, A ? &invHw_H_theta : 0, invH);
-  const Matrix3 R = Rot3::Expmap(theta, A ? &H : 0).matrix();
+  Matrix3 w_tangent_H_theta, invH;
+  const Vector w_tangent =  // angular velocity mapped back to tangent space
+      local.applyInvDexp(w_body, A ? &w_tangent_H_theta : 0, C ? &invH : 0);
+  const SO3 R = local.expmap();
   const Vector3 a_nav = R * a_body;
   const double dt22 = 0.5 * dt * dt;
 
   Vector9 preintegratedPlus;
-  preintegratedPlus <<                        //
-      theta + invHw* dt,                      // theta
+  preintegratedPlus <<                        // new preintegrated vector:
+      theta + w_tangent* dt,                  // theta
       position + velocity* dt + a_nav* dt22,  // position
       velocity + a_nav* dt;                   // velocity
 
   if (A) {
     // Exact derivative of R*a with respect to theta:
-    const Matrix3 a_nav_H_theta = R * skewSymmetric(-a_body) * H;
+    const Matrix3 a_nav_H_theta = R * skewSymmetric(-a_body) * local.dexp();
 
     A->setIdentity();
-    A->block<3, 3>(0, 0).noalias() += invHw_H_theta * dt;  // theta
+    A->block<3, 3>(0, 0).noalias() += w_tangent_H_theta * dt;  // theta
     A->block<3, 3>(3, 0) = a_nav_H_theta * dt22;  // position wrpt theta...
     A->block<3, 3>(3, 6) = I_3x3 * dt;            // .. and velocity
     A->block<3, 3>(6, 0) = a_nav_H_theta * dt;    // velocity wrpt theta
