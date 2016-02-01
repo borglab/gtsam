@@ -605,7 +605,7 @@ TEST(ExpressionFactor, MultiplyWithInverse) {
   auto model = noiseModel::Isotropic::Sigma(3, 1);
 
   // Create expression
-  auto f_expr = MultiplyWithInverse<3>()(Key(0), Key(1));
+  Vector3_ f_expr(MultiplyWithInverse<3>(), Expression<Matrix3>(0), Vector3_(1));
 
   // Check derivatives
   Values values;
@@ -638,7 +638,8 @@ TEST(ExpressionFactor, MultiplyWithInverseFunction) {
   auto model = noiseModel::Isotropic::Sigma(3, 1);
 
   using test_operator::f;
-  auto f_expr = MultiplyWithInverseFunction<Point2, 3>(f)(Key(0), Key(1));
+  Vector3_ f_expr(MultiplyWithInverseFunction<Point2, 3>(f),
+                  Expression<Point2>(0), Vector3_(1));
 
   // Check derivatives
   Point2 a(1, 2);
