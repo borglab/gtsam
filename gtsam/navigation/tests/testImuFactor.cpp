@@ -790,8 +790,8 @@ struct ImuFactorMergeTest {
 
   int TestScenario(TestResult& result_, const std::string& name_,
                            const Scenario& scenario,
-                           const imuBias::ConstantBias& bias01,
-                           const imuBias::ConstantBias& bias12, double tol) {
+                           const Bias& bias01,
+                           const Bias& bias12, double tol) {
     // Test merge by creating a 01, 12, and 02 PreintegratedRotation,
     // then checking the merge of 01-12 matches 02.
     PreintegratedImuMeasurements pim01(p_, bias01);
@@ -831,40 +831,41 @@ struct ImuFactorMergeTest {
   }
 
   void TestScenarios(TestResult& result_, const std::string& name_,
-                     const imuBias::ConstantBias& bias01,
-                     const imuBias::ConstantBias& bias12, double tol) {
+                     const Bias& bias01,
+                     const Bias& bias12, double tol) {
     for (auto scenario : {forward_, loop_})
       TestScenario(result_, name_, scenario, bias01, bias12, tol);
   }
 };
 
 /* ************************************************************************* */
-// Test case with identical biases where there is no approximation so we expect
-// an exact answer.
+// Test case with zero biases
 TEST(ImuFactor, MergeZeroBias) {
   ImuFactorMergeTest mergeTest;
-  // TODO(frank): not too happy with large tolerance (needed for loop case)
-  mergeTest.TestScenarios(result_, name_, kZeroBias, kZeroBias, 1e-3);
+  mergeTest.TestScenarios(result_, name_, kZeroBias, kZeroBias, 1e-4);
 }
 
-//// Test case with different biases where we expect there to be some variation.
-//TEST(ImuFactor, MergeChangingBias) {
-//  ImuFactorMergeTest mergeTest;
-//  mergeTest.TestScenarios(
-//      result_, name_, imuBias::ConstantBias(Vector3(0.03, -0.02, 0.01),
-//                                            Vector3(-0.01, 0.02, -0.03)),
-//      imuBias::ConstantBias(Vector3(0.01, 0.02, 0.03),
-//                            Vector3(0.03, -0.02, 0.01)),
-//      0.4);
-//}
-//
-//// Test case with non-zero coriolis
-//TEST(ImuFactor, MergeWithCoriolis) {
-//  ImuFactorMergeTest mergeTest;
-//  mergeTest.p_->omegaCoriolis.reset(Vector3(0.1, 0.2, -0.1));
-//  mergeTest.TestScenarios(result_, name_, kZeroBias, kZeroBias,
-//                                      1e-6);
-//}
+// Test case with identical biases: we expect an exact answer.
+TEST(ImuFactor, MergeConstantBias) {
+  ImuFactorMergeTest mergeTest;
+  Bias bias(Vector3(0.03, -0.02, 0.01), Vector3(-0.01, 0.02, -0.03));
+  mergeTest.TestScenarios(result_, name_, bias, bias, 1e-4);
+}
+
+// Test case with different biases where we expect there to be some variation.
+TEST(ImuFactor, MergeChangingBias) {
+  ImuFactorMergeTest mergeTest;
+  mergeTest.TestScenarios(result_, name_,
+      Bias(Vector3(0.03, -0.02, 0.01), Vector3(-0.01, 0.02, -0.03)),
+      Bias(Vector3(0.01, 0.02, 0.03), Vector3(0.03, -0.02, 0.01)), 1e-1);
+}
+
+// Test case with non-zero coriolis
+TEST(ImuFactor, MergeWithCoriolis) {
+  ImuFactorMergeTest mergeTest;
+  mergeTest.p_->omegaCoriolis = Vector3(0.1, 0.2, -0.1);
+  mergeTest.TestScenarios(result_, name_, kZeroBias, kZeroBias, 1e-4);
+}
 
 /* ************************************************************************* */
 int main() {

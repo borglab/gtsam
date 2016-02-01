@@ -368,11 +368,11 @@ void PreintegrationBase::mergeWith(const PreintegrationBase& pim12, Matrix9* H1,
                                    Matrix9* H2) {
   if (!matchesParamsWith(pim12))
     throw std::domain_error(
-        "Cannot merge preintegrated measurements with different params");
+        "Cannot merge pre-integrated measurements with different params");
 
   if (params()->body_P_sensor)
     throw std::domain_error(
-        "Cannot merge preintegrated measurements with sensor pose yet");
+        "Cannot merge pre-integrated measurements with sensor pose yet");
 
   const double& t01 = deltaTij();
   const double& t12 = pim12.deltaTij();
@@ -382,9 +382,9 @@ void PreintegrationBase::mergeWith(const PreintegrationBase& pim12, Matrix9* H1,
   Vector9 zeta12 = pim12.preintegrated();
 
   // TODO(frank): adjust zeta12 due to bias difference
-//  const imuBias::ConstantBias bias_incr_for_12 = biasHat() - pim12.biasHat();
-//  zeta12 += pim12.delPdelBiasAcc() * bias_incr_for_12.accelerometer() +
-//            pim12.delPdelBiasOmega() * bias_incr_for_12.gyroscope();
+  const imuBias::ConstantBias bias_incr_for_12 = biasHat() - pim12.biasHat();
+  zeta12 += pim12.preintegrated_H_biasOmega_ * bias_incr_for_12.gyroscope()
+      + pim12.preintegrated_H_biasAcc_ * bias_incr_for_12.accelerometer();
 
   preintegrated_ << PreintegrationBase::Compose(zeta01, zeta12, t12, H1, H2);
 
