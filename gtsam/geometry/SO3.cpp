@@ -26,31 +26,24 @@
 namespace gtsam {
 
 /* ************************************************************************* */
-// Functor that helps implement Exponential map and its derivatives
+// Functor implementing Exponential map
 struct ExpmapImpl {
-  const Vector3 omega;
   const double theta2;
   Matrix3 W, K, KK;
   bool nearZero;
-  double theta, sin_theta, sin_over_theta, one_minus_cos, a, b;
+  double theta, sin_theta, one_minus_cos;  // only defined if !nearZero
 
   void init() {
     nearZero = (theta2 <= std::numeric_limits<double>::epsilon());
-    if (!nearZero) {
-      theta = std::sqrt(theta2);  // rotation angle
-      sin_theta = std::sin(theta);
-      sin_over_theta = sin_theta / theta;
-      const double s2 = std::sin(theta / 2.0);
-      one_minus_cos =
-          2.0 * s2 * s2;  // numerically better than [1 - cos(theta)]
-      a = one_minus_cos / theta;
-      b = 1.0 - sin_over_theta;
-    }
+    if (nearZero) return;
+    theta = std::sqrt(theta2);  // rotation angle
+    sin_theta = std::sin(theta);
+    const double s2 = std::sin(theta / 2.0);
+    one_minus_cos = 2.0 * s2 * s2;  // numerically better than [1 - cos(theta)]
   }
 
-  // Constructor with element of Lie algebra so(3): W = omega^, normalized by
-  // normx
-  ExpmapImpl(const Vector3& omega) : omega(omega), theta2(omega.dot(omega)) {
+  // Constructor with element of Lie algebra so(3)
+  ExpmapImpl(const Vector3& omega) : theta2(omega.dot(omega)) {
     const double wx = omega.x(), wy = omega.y(), wz = omega.z();
     W << 0.0, -wz, +wy, +wz, 0.0, -wx, -wy, +wx, 0.0;
     init();
@@ -62,8 +55,7 @@ struct ExpmapImpl {
   }
 
   // Constructor with axis-angle
-  ExpmapImpl(const Vector3& axis, double angle)
-      : omega(axis * angle), theta2(angle * angle) {
+  ExpmapImpl(const Vector3& axis, double angle) : theta2(angle * angle) {
     const double ax = axis.x(), ay = axis.y(), az = axis.z();
     K << 0.0, -az, +ay, +az, 0.0, -ax, -ay, +ax, 0.0;
     W = K * angle;
@@ -74,11 +66,31 @@ struct ExpmapImpl {
     }
   }
 
-  SO3 operator()() const {
+  // Rodrgues formula
+  SO3 expmap() const {
     if (nearZero)
       return I_3x3 + W;
     else
       return I_3x3 + sin_theta * K + one_minus_cos * K * K;
+  }
+};
+
+/* ************************************************************************* */
+SO3 SO3::AxisAngle(const Vector3& axis, double theta) {
+  return ExpmapImpl(axis, theta).expmap();
+}
+
+/* ************************************************************************* */
+// Functor that implements Exponential map *and* its derivatives
+struct DexpImpl : ExpmapImpl {
+  const Vector3 omega;
+  double a, b;  // constants used in dexp and applyDexp
+
+  // Constructor with element of Lie algebra so(3)
+  DexpImpl(const Vector3& omega) : ExpmapImpl(omega), omega(omega) {
+    if (nearZero) return;
+    a = one_minus_cos / theta;
+    b = 1.0 - sin_theta / theta;
   }
 
   // NOTE(luca): Right Jacobian for Exponential map in SO(3) - equation
@@ -100,41 +112,41 @@ struct ExpmapImpl {
     if (nearZero) {
       if (H1) *H1 = 0.5 * skewSymmetric(v);
       if (H2) *H2 = I_3x3;
-      return v;
+      return v - 0.5 * omega.cross(v);
     }
-    Matrix3 dexp = I_3x3 - a * K + b * KK;
+    const Vector3 Kv = omega.cross(v / theta);
+    const Vector3 KKv = omega.cross(Kv / theta);
     if (H1) {
-      const Vector3 Kv = omega.cross(v / theta);
-      const Vector3 KKv = omega.cross(Kv / theta);
+      // TODO(frank): Iserles hints that there should be a form I + c*K + d*KK
       const Matrix3 T = skewSymmetric(v / theta);
-      const double Da = (sin_over_theta - 2.0 * a / theta) / theta;
-      const double Db = (3.0 * sin_over_theta - std::cos(theta) - 2.0) / theta2;
+      const double Da = (sin_theta - 2.0 * a) / theta2;
+      const double Db = (one_minus_cos - 3.0 * b) / theta2;
       *H1 = (-Da * Kv + Db * KKv) * omega.transpose() + a * T -
             skewSymmetric(Kv * b / theta) - b * K * T;
     }
-    if (H2) *H2 = dexp;
-    return dexp * v;
+    if (H2) *H2 = dexp();
+    return v - a * Kv + b * KKv;
   }
 };
 
-SO3 SO3::AxisAngle(const Vector3& axis, double theta) {
-  return ExpmapImpl(axis, theta)();
-}
-
+/* ************************************************************************* */
 SO3 SO3::Expmap(const Vector3& omega, ChartJacobian H) {
-  ExpmapImpl impl(omega);
-  if (H) *H = impl.dexp();
-  return impl();
+  if (H) {
+    DexpImpl impl(omega);
+    *H = impl.dexp();
+    return impl.expmap();
+  } else
+    return ExpmapImpl(omega).expmap();
 }
 
 Matrix3 SO3::ExpmapDerivative(const Vector3& omega) {
-  return ExpmapImpl(omega).dexp();
+  return DexpImpl(omega).dexp();
 }
 
 Vector3 SO3::ApplyExpmapDerivative(const Vector3& omega, const Vector3& v,
                                    OptionalJacobian<3, 3> H1,
                                    OptionalJacobian<3, 3> H2) {
-  return ExpmapImpl(omega).applyDexp(v, H1, H2);
+  return DexpImpl(omega).applyDexp(v, H1, H2);
 }
 
 /* ************************************************************************* */
