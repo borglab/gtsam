@@ -32,26 +32,38 @@ struct ExpmapImpl {
   const double theta2;
   Matrix3 W;
   bool nearZero;
-  double theta, s1, s2, c_1;
+  double theta, sin_over_theta, one_minus_cos;
 
-  // omega: element of Lie algebra so(3): W = omega^, normalized by normx
-  ExpmapImpl(const Vector3& omega) : omega(omega), theta2(omega.dot(omega)) {
+  void Initialize() {
     const double wx = omega.x(), wy = omega.y(), wz = omega.z();
     W << 0.0, -wz, +wy, +wz, 0.0, -wx, -wy, +wx, 0.0;  // Skew[omega]
     nearZero = (theta2 <= std::numeric_limits<double>::epsilon());
     if (!nearZero) {
       theta = std::sqrt(theta2);  // rotation angle
-      s1 = std::sin(theta) / theta;
-      s2 = std::sin(theta / 2.0);
-      c_1 = 2.0 * s2 * s2;  // numerically better behaved than [1 - cos(theta)]
+      sin_over_theta = std::sin(theta) / theta;
+      const double s2 = std::sin(theta / 2.0);
+      one_minus_cos =
+          2.0 * s2 * s2;  // numerically better behaved than [1 - cos(theta)]
     }
+  }
+
+  // Constructor with element of Lie algebra so(3): W = omega^, normalized by
+  // normx
+  ExpmapImpl(const Vector3& omega) : omega(omega), theta2(omega.dot(omega)) {
+    Initialize();
+  }
+
+  // Constructor with axis-angle
+  ExpmapImpl(const Vector3& axis, double theta)
+      : omega(axis * theta), theta2(theta * theta) {
+    Initialize();
   }
 
   SO3 operator()() const {
     if (nearZero)
       return I_3x3 + W;
     else
-      return I_3x3 + s1 * W + c_1 * W * W / theta2;
+      return I_3x3 + sin_over_theta * W + one_minus_cos * W * W / theta2;
   }
 
   // NOTE(luca): Right Jacobian for Exponential map in SO(3) - equation
@@ -64,8 +76,8 @@ struct ExpmapImpl {
     if (nearZero) {
       return I_3x3 - 0.5 * W;
     } else {
-      const double a = c_1 / theta2;
-      const double b = (1.0 - s1) / theta2;
+      const double a = one_minus_cos / theta2;
+      const double b = (1.0 - sin_over_theta) / theta2;
       return I_3x3 - a * W + b * W * W;
     }
   }
@@ -78,15 +90,16 @@ struct ExpmapImpl {
       if (H2) *H2 = I_3x3;
       return v;
     } else {
-      const double a = c_1 / theta2;
-      const double b = (1.0 - s1) / theta2;
+      const double a = one_minus_cos / theta2;
+      const double b = (1.0 - sin_over_theta) / theta2;
       Matrix3 dexp = I_3x3 - a * W + b * W * W;
       if (H1) {
         const Vector3 Wv = omega.cross(v);
         const Vector3 WWv = omega.cross(Wv);
         const Matrix3 T = skewSymmetric(v);
-        const double Da = (s1 - 2.0 * a) / theta2;
-        const double Db = (3.0 * s1 - std::cos(theta) - 2.0) / theta2 / theta2;
+        const double Da = (sin_over_theta - 2.0 * a) / theta2;
+        const double Db =
+            (3.0 * sin_over_theta - std::cos(theta) - 2.0) / theta2 / theta2;
         *H1 = (-Da * Wv + Db * WWv) * omega.transpose() + a * T -
               b * skewSymmetric(Wv) - b * W * T;
       }
@@ -97,7 +110,7 @@ struct ExpmapImpl {
 };
 
 SO3 SO3::AxisAngle(const Vector3& axis, double theta) {
-  return ExpmapImpl(axis*theta)();
+  return ExpmapImpl(axis, theta)();
 }
 
 SO3 SO3::Expmap(const Vector3& omega, ChartJacobian H) {
@@ -127,7 +140,7 @@ Vector3 SO3::Logmap(const SO3& R, ChartJacobian H) {
   const double& R31 = R(2, 0), R32 = R(2, 1), R33 = R(2, 2);
 
   // Get trace(R)
-  double tr = R.trace();
+  const double tr = R.trace();
 
   Vector3 omega;
 
@@ -143,7 +156,7 @@ Vector3 SO3::Logmap(const SO3& R, ChartJacobian H) {
       omega = (M_PI / sqrt(2.0 + 2.0 * R11)) * Vector3(1.0 + R11, R21, R31);
   } else {
     double magnitude;
-    double tr_3 = tr - 3.0; // always negative
+    const double tr_3 = tr - 3.0; // always negative
     if (tr_3 < -1e-7) {
       double theta = acos((tr - 1.0) / 2.0);
       magnitude = theta / (2.0 * sin(theta));
@@ -167,14 +180,6 @@ Matrix3 SO3::LogmapDerivative(const Vector3& omega) {
   double theta2 = omega.dot(omega);
   if (theta2 <= std::numeric_limits<double>::epsilon()) return I_3x3;
   double theta = std::sqrt(theta2);  // rotation angle
-#ifdef DUY_VERSION
-  /// Follow Iserles05an, B11, pg 147, with a sign change in the second term (left version)
-  Matrix3 X = skewSymmetric(omega);
-  Matrix3 X2 = X*X;
-  double vi = theta/2.0;
-  double s2 = (theta*tan(M_PI_2-vi) - 2)/(2*theta*theta);
-  return I_3x3 + 0.5*X - s2*X2;
-#else // Luca's version
   /** Right Jacobian for Log map in SO(3) - equation (10.86) and following equations in
    * G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups", Volume 2, 2008.
    * logmap( Rhat * expmap(omega) ) \approx logmap( Rhat ) + Jrinv * omega
@@ -182,11 +187,10 @@ Matrix3 SO3::LogmapDerivative(const Vector3& omega) {
    * This maps a perturbation on the manifold (expmap(omega))
    * to a perturbation in the tangent space (Jrinv * omega)
    */
-  const Matrix3 X = skewSymmetric(omega); // element of Lie algebra so(3): X = omega^
-  return I_3x3 + 0.5 * X
-      + (1 / (theta * theta) - (1 + cos(theta)) / (2 * theta * sin(theta))) * X
-          * X;
-#endif
+  const Matrix3 W = skewSymmetric(omega); // element of Lie algebra so(3): W = omega^
+  return I_3x3 + 0.5 * W +
+         (1 / (theta * theta) - (1 + cos(theta)) / (2 * theta * sin(theta))) *
+             W * W;
 }
 
 /* ************************************************************************* */
