@@ -13,6 +13,8 @@
  * @file    SO3.h
  * @brief   3*3 matrix representation of SO(3)
  * @author  Frank Dellaert
+ * @author  Luca Carlone
+ * @author  Duy Nguyen Ta
  * @date    December 2014
  */
 
@@ -97,14 +99,19 @@ public:
    */
   static SO3 Expmap(const Vector3& omega, ChartJacobian H = boost::none);
 
+  /// Derivative of Expmap
+  static Matrix3 ExpmapDerivative(const Vector3& omega);
+
+  /// Implement ExpmapDerivative(omega) * v, with derivatives
+  static Vector3 ApplyExpmapDerivative(const Vector3& omega, const Vector3& v,
+                                       OptionalJacobian<3, 3> H1 = boost::none,
+                                       OptionalJacobian<3, 3> H2 = boost::none);
+
   /**
    * Log map at identity - returns the canonical coordinates
    * \f$ [R_x,R_y,R_z] \f$ of this rotation
    */
   static Vector3 Logmap(const SO3& R, ChartJacobian H = boost::none);
-
-  /// Derivative of Expmap
-  static Matrix3 ExpmapDerivative(const Vector3& omega);
 
   /// Derivative of Logmap
   static Matrix3 LogmapDerivative(const Vector3& omega);
