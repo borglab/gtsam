@@ -63,7 +63,7 @@ SO3 ExpmapFunctor::expmap() const {
   if (nearZero)
     return I_3x3 + W;
   else
-    return I_3x3 + sin_theta * K + one_minus_cos * K * K;
+    return I_3x3 + sin_theta * K + one_minus_cos * KK;
 }
 
 DexpFunctor::DexpFunctor(const Vector3& omega)
