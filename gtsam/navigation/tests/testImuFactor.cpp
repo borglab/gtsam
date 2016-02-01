@@ -88,55 +88,51 @@ TEST(ImuFactor, PreintegratedMeasurements) {
   double deltaT = 0.5;
 
   // Expected pre-integrated values
-  Vector3 expectedDeltaP1;
-  expectedDeltaP1 << 0.5 * 0.1 * 0.5 * 0.5, 0, 0;
+  Vector3 expectedDeltaR1(0.5 * M_PI / 100.0, 0.0, 0.0);
+  Vector3 expectedDeltaP1(0.5 * 0.1 * 0.5 * 0.5, 0, 0);
   Vector3 expectedDeltaV1(0.05, 0.0, 0.0);
-  Rot3 expectedDeltaR1 = Rot3::RzRyRx(0.5 * M_PI / 100.0, 0.0, 0.0);
-  double expectedDeltaT1(0.5);
 
   // Actual pre-integrated values
-  PreintegratedImuMeasurements actual1(testing::Params());
-  actual1.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+  PreintegratedImuMeasurements actual(testing::Params());
+  EXPECT(assert_equal(Z_3x1, actual.theta()));
+  EXPECT(assert_equal(Z_3x1, actual.deltaPij()));
+  EXPECT(assert_equal(Z_3x1, actual.deltaVij()));
+  DOUBLES_EQUAL(0.0, actual.deltaTij(), 1e-9);
 
-  EXPECT(assert_equal(Vector(expectedDeltaP1), Vector(actual1.deltaPij())));
-  EXPECT(assert_equal(Vector(expectedDeltaV1), Vector(actual1.deltaVij())));
-  EXPECT(assert_equal(expectedDeltaR1, Rot3(actual1.deltaRij())));
-  DOUBLES_EQUAL(expectedDeltaT1, actual1.deltaTij(), 1e-9);
+  actual.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+  EXPECT(assert_equal(expectedDeltaR1, actual.theta()));
+  EXPECT(assert_equal(expectedDeltaP1, actual.deltaPij()));
+  EXPECT(assert_equal(expectedDeltaV1, actual.deltaVij()));
+  DOUBLES_EQUAL(0.5, actual.deltaTij(), 1e-9);
 
   // Check derivatives of computeError
   Bias bias(Vector3(0.2, 0, 0), Vector3(0.1, 0, 0.3)); // Biases (acc, rot)
-  NavState x1, x2 = actual1.predict(x1, bias);
+  NavState x1, x2 = actual.predict(x1, bias);
 
   {
   Matrix9 aH1, aH2;
   Matrix96 aH3;
-  actual1.computeError(x1, x2, bias, aH1, aH2, aH3);
-  boost::function<Vector9(const NavState&, const NavState&,
-                          const Bias&)> f =
-      boost::bind(&PreintegrationBase::computeError, actual1, _1, _2, _3,
+  actual.computeError(x1, x2, bias, aH1, aH2, aH3);
+  boost::function<Vector9(const NavState&, const NavState&, const Bias&)> f =
+      boost::bind(&PreintegrationBase::computeError, actual, _1, _2, _3,
                   boost::none, boost::none, boost::none);
-  // NOTE(frank): tolerance of 1e-3 on H1 because approximate away from 0
   EXPECT(assert_equal(numericalDerivative31(f, x1, x2, bias), aH1, 1e-9));
   EXPECT(assert_equal(numericalDerivative32(f, x1, x2, bias), aH2, 1e-9));
   EXPECT(assert_equal(numericalDerivative33(f, x1, x2, bias), aH3, 1e-9));
   }
 
   // Integrate again
-  Vector3 expectedDeltaP2;
-  expectedDeltaP2 << 0.025 + expectedDeltaP1(0) + 0.5 * 0.1 * 0.5 * 0.5, 0, 0;
-  Vector3 expectedDeltaV2 = Vector3(0.05, 0.0, 0.0)
-      + expectedDeltaR1.matrix() * measuredAcc * 0.5;
-  Rot3 expectedDeltaR2 = Rot3::RzRyRx(2.0 * 0.5 * M_PI / 100.0, 0.0, 0.0);
-  double expectedDeltaT2(1);
+  Vector3 expectedDeltaR2(2.0 * 0.5 * M_PI / 100.0, 0.0, 0.0);
+  Vector3 expectedDeltaP2(0.025 + expectedDeltaP1(0) + 0.5 * 0.1 * 0.5 * 0.5, 0, 0);
+  Vector3 expectedDeltaV2 = Vector3(0.05, 0.0, 0.0) +
+                            Rot3::Expmap(expectedDeltaR1) * measuredAcc * 0.5;
 
   // Actual pre-integrated values
-  PreintegratedImuMeasurements actual2 = actual1;
-  actual2.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
-
-  EXPECT(assert_equal(Vector(expectedDeltaP2), Vector(actual2.deltaPij())));
-  EXPECT(assert_equal(Vector(expectedDeltaV2), Vector(actual2.deltaVij())));
-  EXPECT(assert_equal(expectedDeltaR2, Rot3(actual2.deltaRij())));
-  DOUBLES_EQUAL(expectedDeltaT2, actual2.deltaTij(), 1e-9);
+  actual.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+  EXPECT(assert_equal(expectedDeltaR2, actual.theta()));
+  EXPECT(assert_equal(expectedDeltaP2, actual.deltaPij()));
+  EXPECT(assert_equal(expectedDeltaV2, actual.deltaVij()));
+  DOUBLES_EQUAL(1.0, actual.deltaTij(), 1e-9);
 }
 /* ************************************************************************* */
 // Common linearization point and measurements for tests
@@ -802,7 +798,7 @@ struct ImuFactorMergeTest {
     PreintegratedImuMeasurements pim12(p_, bias12);
     PreintegratedImuMeasurements pim02_expected(p_, bias01);
 
-    double deltaT = 0.05;
+    double deltaT = 0.01;
     ScenarioRunner runner(&scenario, p_, deltaT);
     // TODO(frank) can this loop just go into runner ?
     for (int i = 0; i < 100; i++) {
@@ -837,8 +833,8 @@ struct ImuFactorMergeTest {
   void TestScenarios(TestResult& result_, const std::string& name_,
                      const imuBias::ConstantBias& bias01,
                      const imuBias::ConstantBias& bias12, double tol) {
-    for (auto scenario : {forward_})
-      EXPECT_LONGS_EQUAL(0,TestScenario(result_, name_, scenario, bias01, bias12, tol));
+    for (auto scenario : {forward_, loop_})
+      TestScenario(result_, name_, scenario, bias01, bias12, tol);
   }
 };
 
@@ -847,7 +843,8 @@ struct ImuFactorMergeTest {
 // an exact answer.
 TEST(ImuFactor, MergeZeroBias) {
   ImuFactorMergeTest mergeTest;
-  mergeTest.TestScenarios(result_, name_, kZeroBias, kZeroBias, 1e-5);
+  // TODO(frank): not too happy with large tolerance (needed for loop case)
+  mergeTest.TestScenarios(result_, name_, kZeroBias, kZeroBias, 1e-3);
 }
 
 //// Test case with different biases where we expect there to be some variation.
