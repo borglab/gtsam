@@ -116,45 +116,31 @@ pair<Vector3, Vector3> PreintegrationBase::correctMeasurementsBySensorPose(
 
 //------------------------------------------------------------------------------
 // See extensive discussion in ImuFactor.lyx
-Vector9 PreintegrationBase::UpdatePreintegrated(const Vector3& a_body,
-                                           const Vector3& w_body, double dt,
-                                           const Vector9& preintegrated,
-                                           OptionalJacobian<9, 9> A,
-                                           OptionalJacobian<9, 3> B,
-                                           OptionalJacobian<9, 3> C) {
+Vector9 PreintegrationBase::UpdatePreintegrated(
+    const Vector3& a_body, const Vector3& w_body, double dt,
+    const Vector9& preintegrated, OptionalJacobian<9, 9> A,
+    OptionalJacobian<9, 3> B, OptionalJacobian<9, 3> C) {
+  // TODO(frank): expose DexpImpl functor and save on computation
+  static const MultiplyWithInverseFunction<Vector3, 3> applyInvDexp(SO3::ApplyExpmapDerivative);
+
   const auto theta = preintegrated.segment<3>(0);
   const auto position = preintegrated.segment<3>(3);
   const auto velocity = preintegrated.segment<3>(6);
 
   // Calculate exact mean propagation
-  Matrix3 H;
-  const Matrix3 R = Rot3::Expmap(theta, H).matrix();
-  const Matrix3 invH = H.inverse();
+  Matrix3 H, invH, invHw_H_theta;
+  const Vector invHw = applyInvDexp(theta, w_body, A ? &invHw_H_theta : 0, invH);
+  const Matrix3 R = Rot3::Expmap(theta, A ? &H : 0).matrix();
   const Vector3 a_nav = R * a_body;
   const double dt22 = 0.5 * dt * dt;
 
   Vector9 preintegratedPlus;
-  preintegratedPlus <<                                 //
-      theta + invH* w_body* dt,               // theta
+  preintegratedPlus <<                        //
+      theta + invHw* dt,                      // theta
       position + velocity* dt + a_nav* dt22,  // position
       velocity + a_nav* dt;                   // velocity
 
   if (A) {
-#define USE_NUMERICAL_DERIVATIVE
-#ifdef USE_NUMERICAL_DERIVATIVE
-    // The use of this yields much more accurate derivatives, but it's slow!
-    // TODO(frank): find a cheap closed form solution (look at Iserles)
-    auto f = [w_body](const Vector3& theta) {
-      return Rot3::ExpmapDerivative(theta).inverse() * w_body;
-    };
-    const Matrix3 invHw_H_theta =
-        numericalDerivative11<Vector3, Vector3>(f, theta);
-#else
-    // First order (small angle) approximation of derivative of invH*w:
-    // NOTE(frank): Rot3::ExpmapDerivative(w_body) is a less accurate approximation
-    const Matrix3 invHw_H_theta = skewSymmetric(-0.5 * w_body);
-#endif
-
     // Exact derivative of R*a with respect to theta:
     const Matrix3 a_nav_H_theta = R * skewSymmetric(-a_body) * H;
 
