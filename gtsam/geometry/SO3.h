@@ -135,6 +135,54 @@ public:
   /// @}
 };
 
+// This namespace exposes two functors that allow for saving computation when
+// exponential map and its derivatives are needed at the same location in so<3>
+namespace so3 {
+
+/// Functor implementing Exponential map
+class ExpmapFunctor {
+ protected:
+  const double theta2;
+  Matrix3 W, K, KK;
+  bool nearZero;
+  double theta, sin_theta, one_minus_cos;  // only defined if !nearZero
+
+  void init();
+
+ public:
+  /// Constructor with element of Lie algebra so(3)
+  ExpmapFunctor(const Vector3& omega);
+
+  /// Constructor with axis-angle
+  ExpmapFunctor(const Vector3& axis, double angle);
+
+  /// Rodrgues formula
+  SO3 expmap() const;
+};
+
+/// Functor that implements Exponential map *and* its derivatives
+class DexpFunctor : public ExpmapFunctor {
+  const Vector3 omega;
+  double a, b;
+
+ public:
+  /// Constructor with element of Lie algebra so(3)
+  DexpFunctor(const Vector3& omega);
+
+  // NOTE(luca): Right Jacobian for Exponential map in SO(3) - equation
+  // (10.86) and following equations in G.S. Chirikjian, "Stochastic Models,
+  // Information Theory, and Lie Groups", Volume 2, 2008.
+  //   expmap(omega + v) \approx expmap(omega) * expmap(dexp * v)
+  // This maps a perturbation v in the tangent space to
+  // a perturbation on the manifold Expmap(dexp * v) */
+  SO3 dexp() const;
+
+  /// Multiplies with dexp(), with optional derivatives
+  Vector3 applyDexp(const Vector3& v, OptionalJacobian<3, 3> H1,
+                    OptionalJacobian<3, 3> H2) const;
+};
+}  //  namespace so3
+
 template<>
 struct traits<SO3> : public internal::LieGroup<SO3> {
 };
