@@ -25,128 +25,106 @@
 
 namespace gtsam {
 
-/* ************************************************************************* */
-// Functor implementing Exponential map
-struct ExpmapImpl {
-  const double theta2;
-  Matrix3 W, K, KK;
-  bool nearZero;
-  double theta, sin_theta, one_minus_cos;  // only defined if !nearZero
+namespace so3 {
 
-  void init() {
-    nearZero = (theta2 <= std::numeric_limits<double>::epsilon());
-    if (nearZero) return;
-    theta = std::sqrt(theta2);  // rotation angle
-    sin_theta = std::sin(theta);
-    const double s2 = std::sin(theta / 2.0);
-    one_minus_cos = 2.0 * s2 * s2;  // numerically better than [1 - cos(theta)]
-  }
+void ExpmapFunctor::init() {
+  nearZero = (theta2 <= std::numeric_limits<double>::epsilon());
+  if (nearZero) return;
+  theta = std::sqrt(theta2);  // rotation angle
+  sin_theta = std::sin(theta);
+  const double s2 = std::sin(theta / 2.0);
+  one_minus_cos = 2.0 * s2 * s2;  // numerically better than [1 - cos(theta)]
+}
 
-  // Constructor with element of Lie algebra so(3)
-  ExpmapImpl(const Vector3& omega) : theta2(omega.dot(omega)) {
-    const double wx = omega.x(), wy = omega.y(), wz = omega.z();
-    W << 0.0, -wz, +wy, +wz, 0.0, -wx, -wy, +wx, 0.0;
-    init();
-    if (!nearZero) {
-      theta = std::sqrt(theta2);
-      K = W / theta;
-      KK = K * K;
-    }
+ExpmapFunctor::ExpmapFunctor(const Vector3& omega) : theta2(omega.dot(omega)) {
+  const double wx = omega.x(), wy = omega.y(), wz = omega.z();
+  W << 0.0, -wz, +wy, +wz, 0.0, -wx, -wy, +wx, 0.0;
+  init();
+  if (!nearZero) {
+    theta = std::sqrt(theta2);
+    K = W / theta;
+    KK = K * K;
   }
+}
 
-  // Constructor with axis-angle
-  ExpmapImpl(const Vector3& axis, double angle) : theta2(angle * angle) {
-    const double ax = axis.x(), ay = axis.y(), az = axis.z();
-    K << 0.0, -az, +ay, +az, 0.0, -ax, -ay, +ax, 0.0;
-    W = K * angle;
-    init();
-    if (!nearZero) {
-      theta = angle;
-      KK = K * K;
-    }
+ExpmapFunctor::ExpmapFunctor(const Vector3& axis, double angle)
+    : theta2(angle * angle) {
+  const double ax = axis.x(), ay = axis.y(), az = axis.z();
+  K << 0.0, -az, +ay, +az, 0.0, -ax, -ay, +ax, 0.0;
+  W = K * angle;
+  init();
+  if (!nearZero) {
+    theta = angle;
+    KK = K * K;
   }
+}
 
-  // Rodrgues formula
-  SO3 expmap() const {
-    if (nearZero)
-      return I_3x3 + W;
-    else
-      return I_3x3 + sin_theta * K + one_minus_cos * K * K;
+SO3 ExpmapFunctor::expmap() const {
+  if (nearZero)
+    return I_3x3 + W;
+  else
+    return I_3x3 + sin_theta * K + one_minus_cos * K * K;
+}
+
+DexpFunctor::DexpFunctor(const Vector3& omega)
+    : ExpmapFunctor(omega), omega(omega) {
+  if (nearZero) return;
+  a = one_minus_cos / theta;
+  b = 1.0 - sin_theta / theta;
+}
+
+SO3 DexpFunctor::dexp() const {
+  if (nearZero)
+    return I_3x3 - 0.5 * W;
+  else
+    return I_3x3 - a * K + b * KK;
+}
+
+Vector3 DexpFunctor::applyDexp(const Vector3& v, OptionalJacobian<3, 3> H1,
+                               OptionalJacobian<3, 3> H2) const {
+  if (nearZero) {
+    if (H1) *H1 = 0.5 * skewSymmetric(v);
+    if (H2) *H2 = I_3x3;
+    return v - 0.5 * omega.cross(v);
   }
-};
+  const Vector3 Kv = omega.cross(v / theta);
+  const Vector3 KKv = omega.cross(Kv / theta);
+  if (H1) {
+    // TODO(frank): Iserles hints that there should be a form I + c*K + d*KK
+    const Matrix3 T = skewSymmetric(v / theta);
+    const double Da = (sin_theta - 2.0 * a) / theta2;
+    const double Db = (one_minus_cos - 3.0 * b) / theta2;
+    *H1 = (-Da * Kv + Db * KKv) * omega.transpose() + a * T -
+          skewSymmetric(Kv * b / theta) - b * K * T;
+  }
+  if (H2) *H2 = dexp();
+  return v - a * Kv + b * KKv;
+}
+
+}  // namespace so3
 
 /* ************************************************************************* */
 SO3 SO3::AxisAngle(const Vector3& axis, double theta) {
-  return ExpmapImpl(axis, theta).expmap();
+  return so3::ExpmapFunctor(axis, theta).expmap();
 }
 
-/* ************************************************************************* */
-// Functor that implements Exponential map *and* its derivatives
-struct DexpImpl : ExpmapImpl {
-  const Vector3 omega;
-  double a, b;  // constants used in dexp and applyDexp
-
-  // Constructor with element of Lie algebra so(3)
-  DexpImpl(const Vector3& omega) : ExpmapImpl(omega), omega(omega) {
-    if (nearZero) return;
-    a = one_minus_cos / theta;
-    b = 1.0 - sin_theta / theta;
-  }
-
-  // NOTE(luca): Right Jacobian for Exponential map in SO(3) - equation
-  // (10.86) and following equations in G.S. Chirikjian, "Stochastic Models,
-  // Information Theory, and Lie Groups", Volume 2, 2008.
-  //   expmap(omega + v) \approx expmap(omega) * expmap(dexp * v)
-  // This maps a perturbation v in the tangent space to
-  // a perturbation on the manifold Expmap(dexp * v) */
-  SO3 dexp() const {
-    if (nearZero)
-      return I_3x3 - 0.5 * W;
-    else
-      return I_3x3 - a * K + b * KK;
-  }
-
-  // Just multiplies with dexp()
-  Vector3 applyDexp(const Vector3& v, OptionalJacobian<3, 3> H1,
-                    OptionalJacobian<3, 3> H2) const {
-    if (nearZero) {
-      if (H1) *H1 = 0.5 * skewSymmetric(v);
-      if (H2) *H2 = I_3x3;
-      return v - 0.5 * omega.cross(v);
-    }
-    const Vector3 Kv = omega.cross(v / theta);
-    const Vector3 KKv = omega.cross(Kv / theta);
-    if (H1) {
-      // TODO(frank): Iserles hints that there should be a form I + c*K + d*KK
-      const Matrix3 T = skewSymmetric(v / theta);
-      const double Da = (sin_theta - 2.0 * a) / theta2;
-      const double Db = (one_minus_cos - 3.0 * b) / theta2;
-      *H1 = (-Da * Kv + Db * KKv) * omega.transpose() + a * T -
-            skewSymmetric(Kv * b / theta) - b * K * T;
-    }
-    if (H2) *H2 = dexp();
-    return v - a * Kv + b * KKv;
-  }
-};
-
-/* ************************************************************************* */
 SO3 SO3::Expmap(const Vector3& omega, ChartJacobian H) {
   if (H) {
-    DexpImpl impl(omega);
+    so3::DexpFunctor impl(omega);
     *H = impl.dexp();
     return impl.expmap();
   } else
-    return ExpmapImpl(omega).expmap();
+    return so3::ExpmapFunctor(omega).expmap();
 }
 
 Matrix3 SO3::ExpmapDerivative(const Vector3& omega) {
-  return DexpImpl(omega).dexp();
+  return so3::DexpFunctor(omega).dexp();
 }
 
 Vector3 SO3::ApplyExpmapDerivative(const Vector3& omega, const Vector3& v,
                                    OptionalJacobian<3, 3> H1,
                                    OptionalJacobian<3, 3> H2) {
-  return DexpImpl(omega).applyDexp(v, H1, H2);
+  return so3::DexpFunctor(omega).applyDexp(v, H1, H2);
 }
 
 /* ************************************************************************* */
