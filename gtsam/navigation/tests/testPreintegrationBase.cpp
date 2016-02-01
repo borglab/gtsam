@@ -17,6 +17,9 @@
 
 #include <gtsam/navigation/PreintegrationBase.h>
 #include <gtsam/base/numericalDerivative.h>
+#include <gtsam/nonlinear/expressions.h>
+#include <gtsam/nonlinear/ExpressionFactor.h>
+#include <gtsam/nonlinear/expressionTesting.h>
 
 #include <CppUnitLite/TestHarness.h>
 #include <boost/bind.hpp>
@@ -38,6 +41,27 @@ static boost::shared_ptr<PreintegrationParams> Params() {
   p->integrationCovariance = 0.0001 * I_3x3;
   return p;
 }
+}
+
+/* ************************************************************************* */
+TEST(ExpressionFactor, ApplyInvDexp) {
+  auto model = noiseModel::Isotropic::Sigma(3, 1);
+
+  /// Functor implements ExpmapDerivative(omega).inverse() * v, with derivatives
+  MultiplyWithInverseFunction<Vector3, 3> applyInvDexp(SO3::ApplyExpmapDerivative);
+  Vector3_ f_expr(applyInvDexp, Vector3_(0), Vector3_(1));
+
+  // Check derivatives
+  Vector3 omega(1, 2, 3);
+  const Vector3 v(0.1, 0.2, 0.3);
+  const Vector3 expected = SO3::ExpmapDerivative(omega).inverse() * v;
+  CHECK(assert_equal(expected, applyInvDexp(omega,v)));
+
+  Values values;
+  values.insert<Vector3>(0, omega);
+  values.insert<Vector3>(1, v);
+  ExpressionFactor<Vector3> factor(model, Vector3::Zero(), f_expr);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-5, 1e-5);
 }
 
 /* ************************************************************************* */
