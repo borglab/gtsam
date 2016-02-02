@@ -27,8 +27,8 @@ namespace gtsam {
 
 namespace so3 {
 
-void ExpmapFunctor::init() {
-  nearZero = (theta2 <= std::numeric_limits<double>::epsilon());
+void ExpmapFunctor::init(bool nearZeroApprox) {
+  nearZero = nearZeroApprox || (theta2 <= std::numeric_limits<double>::epsilon());
   if (nearZero) return;
   theta = std::sqrt(theta2);  // rotation angle
   sin_theta = std::sin(theta);
@@ -36,10 +36,11 @@ void ExpmapFunctor::init() {
   one_minus_cos = 2.0 * s2 * s2;  // numerically better than [1 - cos(theta)]
 }
 
-ExpmapFunctor::ExpmapFunctor(const Vector3& omega) : theta2(omega.dot(omega)) {
+ExpmapFunctor::ExpmapFunctor(const Vector3& omega, bool nearZeroApprox)
+    : theta2(omega.dot(omega)) {
   const double wx = omega.x(), wy = omega.y(), wz = omega.z();
   W << 0.0, -wz, +wy, +wz, 0.0, -wx, -wy, +wx, 0.0;
-  init();
+  init(nearZeroApprox);
   if (!nearZero) {
     theta = std::sqrt(theta2);
     K = W / theta;
@@ -47,12 +48,12 @@ ExpmapFunctor::ExpmapFunctor(const Vector3& omega) : theta2(omega.dot(omega)) {
   }
 }
 
-ExpmapFunctor::ExpmapFunctor(const Vector3& axis, double angle)
+ExpmapFunctor::ExpmapFunctor(const Vector3& axis, double angle, bool nearZeroApprox)
     : theta2(angle * angle) {
   const double ax = axis.x(), ay = axis.y(), az = axis.z();
   K << 0.0, -az, +ay, +az, 0.0, -ax, -ay, +ax, 0.0;
   W = K * angle;
-  init();
+  init(nearZeroApprox);
   if (!nearZero) {
     theta = angle;
     KK = K * K;
@@ -66,8 +67,8 @@ SO3 ExpmapFunctor::expmap() const {
     return I_3x3 + sin_theta * K + one_minus_cos * KK;
 }
 
-DexpFunctor::DexpFunctor(const Vector3& omega)
-    : ExpmapFunctor(omega), omega(omega) {
+DexpFunctor::DexpFunctor(const Vector3& omega, bool nearZeroApprox)
+    : ExpmapFunctor(omega, nearZeroApprox), omega(omega) {
   if (nearZero)
     dexp_ = I_3x3 - 0.5 * W;
   else {
@@ -79,19 +80,18 @@ DexpFunctor::DexpFunctor(const Vector3& omega)
 
 Vector3 DexpFunctor::applyDexp(const Vector3& v, OptionalJacobian<3, 3> H1,
                                OptionalJacobian<3, 3> H2) const {
-  if (nearZero) {
-    if (H1) *H1 = 0.5 * skewSymmetric(v);
-    if (H2) *H2 = I_3x3;
-    return v - 0.5 * omega.cross(v);
-  }
   if (H1) {
-    // TODO(frank): Iserles hints that there should be a form I + c*K + d*KK
-    const Vector3 Kv = K * v;
-    const double Da = (sin_theta - 2.0 * a) / theta2;
-    const double Db = (one_minus_cos - 3.0 * b) / theta2;
-    *H1 = (Db * K - Da * I_3x3) * Kv * omega.transpose() -
-          skewSymmetric(Kv * b / theta) +
-          (a * I_3x3 - b * K) * skewSymmetric(v / theta);
+    if (nearZero) {
+      *H1 = 0.5 * skewSymmetric(v);
+    } else {
+      // TODO(frank): Iserles hints that there should be a form I + c*K + d*KK
+      const Vector3 Kv = K * v;
+      const double Da = (sin_theta - 2.0 * a) / theta2;
+      const double Db = (one_minus_cos - 3.0 * b) / theta2;
+      *H1 = (Db * K - Da * I_3x3) * Kv * omega.transpose() -
+            skewSymmetric(Kv * b / theta) +
+            (a * I_3x3 - b * K) * skewSymmetric(v / theta);
+    }
   }
   if (H2) *H2 = dexp_;
   return dexp_ * v;
