@@ -116,7 +116,7 @@ private:
   }
 
 
-  /// Collect all terms of a factor into a container. TODO: avoid memcpy?
+  /// Collect all terms of a factor into a container.
   std::vector<std::pair<Key, Matrix> > collectTerms(const LinearInequality& factor) const {
     std::vector<std::pair<Key, Matrix> > terms;
     for (Factor::const_iterator it = factor.begin(); it != factor.end(); it++) {

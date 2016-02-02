@@ -35,7 +35,10 @@ public:
     return keysDim_;
   }
 
-  /// TODO(comment)
+  /*
+   * Iterates through every factor in a linear graph and generates a
+   * mapping between every factor key and it's corresponding dimensionality.
+   */
   template<class LinearGraph>
   KeyDimMap collectKeysDim(const LinearGraph& linearGraph) const {
     KeyDimMap keysDim;
@@ -51,7 +54,12 @@ public:
   GaussianFactorGraph::shared_ptr createZeroPriors(const KeyVector& costKeys,
       const KeyDimMap& keysDim) const;
 
-  /// TODO(comment)
+  /*
+   * This function performs an iteration of the Active Set Method for solving
+   * LP problems. At the end of this iteration the problem should either be found
+   * to be unfeasible, solved or the current state changed to reflect a new
+   * working set.
+   */
   LPState iterate(const LPState& state) const;
 
   /**
@@ -73,7 +81,12 @@ public:
   VectorValues solveWithCurrentWorkingSet(const VectorValues& xk,
       const InequalityFactorGraph& workingSet) const;
 
-  /// TODO(comment)
+  /*
+   * A dual factor takes the objective function and a set of constraints.
+   * It then creates a least-square approximation of the lagrangian multipliers
+   * for the following problem: f' = - lambda * g' where f is the objection
+   * function g are dual factors and lambda is the lagrangian multiplier.
+   */
   JacobianFactor::shared_ptr createDualFactor(Key key,
       const InequalityFactorGraph& workingSet, const VectorValues& delta) const;
 
@@ -82,7 +95,11 @@ public:
       const InequalityFactorGraph& workingSet, const VectorValues& xk,
       const VectorValues& p) const;
 
-  /// TODO(comment)
+  /*
+   * Given an initial value this function determine which constraints are active
+   * which can be used to initialize the working set.
+   * A constraint Ax <= b  is active if we have an x' s.t. Ax' = b
+   */
   InequalityFactorGraph identifyActiveConstraints(
       const InequalityFactorGraph& inequalities,
       const VectorValues& initialValues, const VectorValues& duals) const;

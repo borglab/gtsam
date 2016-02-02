@@ -100,7 +100,17 @@ public:
     return worstFactorIx;
   }
 
-  /// TODO: comment
+  /*  This function will create a dual graph that solves for the
+   *  lagrange multipliers for the current working set.
+   *  You can use lagrange multipliers as a necessary condition for optimality.
+   *  The factor graph that is being solved is f' = -lambda * g'
+   *  where f is the optimized function and g is the function resulting from
+   *  aggregating the working set.
+   *  The lambdas give you information about the feasibility of a constraint.
+   *  if lambda < 0  the constraint is Ok
+   *  if lambda = 0  you are on the constraint
+   *  if lambda > 0  you are violating the constraint.
+   */
   GaussianFactorGraph::shared_ptr buildDualGraph(
       const InequalityFactorGraph& workingSet,
       const VectorValues& delta) const {

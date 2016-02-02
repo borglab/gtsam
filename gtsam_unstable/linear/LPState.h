@@ -10,13 +10,21 @@
 
 namespace gtsam {
 
-// TODO: comment
+/*
+ * This struct contains the state information for a single iteration of an
+ * active set method iteration.
+ */
 struct LPState {
-  // TODO: comment member variables
+  // A itermediate value for the value of the final solution.
   VectorValues values;
+  // Constains the set of duals computed during the iteration that retuned this
+  // state.
   VectorValues duals;
+  // An inequality Factor Graph that contains only the active constriants.
   InequalityFactorGraph workingSet;
+  // True if the algorithm has converged to a solution
   bool converged;
+  // counter for the number of iteration. Incremented at the end of each iter.
   size_t iterations;
 
   /// default constructor
