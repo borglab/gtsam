@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -29,7 +29,7 @@ namespace gtsam {
 using namespace std;
 
 //------------------------------------------------------------------------------
-// Inner class PreintegratedMeasurements
+// Inner class PreintegratedImuMeasurements
 //------------------------------------------------------------------------------
 void PreintegratedImuMeasurements::print(const string& s) const {
   PreintegrationBase::print(s);
@@ -52,45 +52,39 @@ void PreintegratedImuMeasurements::resetIntegration() {
 //------------------------------------------------------------------------------
 void PreintegratedImuMeasurements::integrateMeasurement(
     const Vector3& measuredAcc, const Vector3& measuredOmega, double dt) {
-
-  static const Matrix93 Gi = (Matrix93() << Z_3x3, I_3x3, Z_3x3).finished();
-
   // Update preintegrated measurements (also get Jacobian)
-  Matrix9 F; // overall Jacobian wrt preintegrated measurements (df/dx)
-  Matrix93 G1, G2;
-  Matrix3 D_incrR_integratedOmega;
-  PreintegrationBase::update(measuredAcc, measuredOmega, dt,
-      &D_incrR_integratedOmega, &F, &G1, &G2);
+  Matrix9 A;  // overall Jacobian wrt preintegrated measurements (df/dx)
+  Matrix93 B, C;
+  PreintegrationBase::integrateMeasurement(measuredAcc, measuredOmega, dt, &A, &B, &C);
 
   // first order covariance propagation:
-  // as in [2] we consider a first order propagation that can be seen as a prediction phase in EKF
-  /* --------------------------------------------------------------------------------------------*/
-  // preintMeasCov = F * preintMeasCov * F.transpose() + G * (1/deltaT) * measurementCovariance * G'
-  // NOTE 1: (1/deltaT) allows to pass from continuous time noise to discrete time noise
-  // measurementCovariance_discrete = measurementCovariance_contTime * (1/deltaT)
-#ifdef OLD_JACOBIAN_CALCULATION
-  Matrix9 G;
-  G << G1, Gi, G2;
-  Matrix9 Cov;
-  Cov << p().accelerometerCovariance / dt, Z_3x3, Z_3x3,
-      Z_3x3, p().integrationCovariance * dt, Z_3x3,
-      Z_3x3, Z_3x3, p().gyroscopeCovariance / dt;
-  preintMeasCov_ = F * preintMeasCov_ * F.transpose() + G * Cov * G.transpose();
-#else
-  preintMeasCov_ = F * preintMeasCov_ * F.transpose()
-      + Gi * (p().integrationCovariance * dt) * Gi.transpose() // NOTE(frank): (Gi*dt)*(C/dt)*(Gi'*dt)
-      + G1 * (p().accelerometerCovariance / dt) * G1.transpose()
-      + G2 * (p().gyroscopeCovariance / dt) * G2.transpose();
-#endif
+  // as in [2] we consider a first order propagation that can be seen as a
+  // prediction phase in EKF
+
+  // propagate uncertainty
+  // TODO(frank): use noiseModel routine so we can have arbitrary noise models.
+  const Matrix3& aCov = p().accelerometerCovariance;
+  const Matrix3& wCov = p().gyroscopeCovariance;
+  const Matrix3& iCov = p().integrationCovariance;
+
+  // (1/dt) allows to pass from continuous time noise to discrete time noise
+  preintMeasCov_ = A * preintMeasCov_ * A.transpose();
+  preintMeasCov_.noalias() += B * (aCov / dt) * B.transpose();
+  preintMeasCov_.noalias() += C * (wCov / dt) * C.transpose();
+
+  // NOTE(frank): (Gi*dt)*(C/dt)*(Gi'*dt)
+  static const Matrix93 Gi = (Matrix93() << Z_3x3, I_3x3, Z_3x3).finished();
+  preintMeasCov_.noalias() += Gi * (iCov * dt) * Gi.transpose();
 }
 
 //------------------------------------------------------------------------------
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 PreintegratedImuMeasurements::PreintegratedImuMeasurements(
     const imuBias::ConstantBias& biasHat, const Matrix3& measuredAccCovariance,
     const Matrix3& measuredOmegaCovariance,
     const Matrix3& integrationErrorCovariance, bool use2ndOrderIntegration) {
   if (!use2ndOrderIntegration)
-    throw("PreintegratedImuMeasurements no longer supports first-order integration: it incorrectly compensated for gravity");
+  throw("PreintegratedImuMeasurements no longer supports first-order integration: it incorrectly compensated for gravity");
   biasHat_ = biasHat;
   boost::shared_ptr<Params> p = Params::MakeSharedD();
   p->gyroscopeCovariance = measuredOmegaCovariance;
@@ -100,7 +94,6 @@ PreintegratedImuMeasurements::PreintegratedImuMeasurements(
   resetIntegration();
 }
 
-//------------------------------------------------------------------------------
 void PreintegratedImuMeasurements::integrateMeasurement(
     const Vector3& measuredAcc, const Vector3& measuredOmega, double deltaT,
     boost::optional<Pose3> body_P_sensor) {
@@ -108,6 +101,7 @@ void PreintegratedImuMeasurements::integrateMeasurement(
   p_->body_P_sensor = body_P_sensor;
   integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 }
+#endif
 
 //------------------------------------------------------------------------------
 // ImuFactor methods
@@ -119,9 +113,18 @@ ImuFactor::ImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
 }
 
 //------------------------------------------------------------------------------
-gtsam::NonlinearFactor::shared_ptr ImuFactor::clone() const {
-  return boost::static_pointer_cast<gtsam::NonlinearFactor>(
-      gtsam::NonlinearFactor::shared_ptr(new This(*this)));
+NonlinearFactor::shared_ptr ImuFactor::clone() const {
+  return boost::static_pointer_cast<NonlinearFactor>(
+      NonlinearFactor::shared_ptr(new This(*this)));
+}
+
+//------------------------------------------------------------------------------
+std::ostream& operator<<(std::ostream& os, const ImuFactor& f) {
+  os << "  preintegrated measurements:\n" << f._PIM_;
+  ;
+  // Print standard deviations on covariance only
+  os << "  noise model sigmas: " << f.noiseModel_->sigmas().transpose();
+  return os;
 }
 
 //------------------------------------------------------------------------------
@@ -130,18 +133,15 @@ void ImuFactor::print(const string& s, const KeyFormatter& keyFormatter) const {
       << keyFormatter(this->key2()) << "," << keyFormatter(this->key3()) << ","
       << keyFormatter(this->key4()) << "," << keyFormatter(this->key5())
       << ")\n";
-  Base::print("");
-  _PIM_.print("  preintegrated measurements:");
-  // Print standard deviations on covariance only
-  cout << "  noise model sigmas: " << this->noiseModel_->sigmas().transpose()
-      << endl;
+  cout << *this << endl;
 }
 
 //------------------------------------------------------------------------------
 bool ImuFactor::equals(const NonlinearFactor& other, double tol) const {
   const This *e = dynamic_cast<const This*>(&other);
-  return e != NULL && Base::equals(*e, tol) && _PIM_.equals(e->_PIM_, tol)
-      && Base::equals(*e, tol);
+  const bool base = Base::equals(*e, tol);
+  const bool pim = _PIM_.equals(e->_PIM_, tol);
+  return e != nullptr && base && pim;
 }
 
 //------------------------------------------------------------------------------
@@ -155,14 +155,62 @@ Vector ImuFactor::evaluateError(const Pose3& pose_i, const Vector3& vel_i,
 }
 
 //------------------------------------------------------------------------------
+PreintegratedImuMeasurements ImuFactor::Merge(
+    const PreintegratedImuMeasurements& pim01,
+    const PreintegratedImuMeasurements& pim12) {
+  if (!pim01.matchesParamsWith(pim12))
+    throw std::domain_error(
+        "Cannot merge PreintegratedImuMeasurements with different params");
+
+  if (pim01.params()->body_P_sensor)
+    throw std::domain_error(
+        "Cannot merge PreintegratedImuMeasurements with sensor pose yet");
+
+  // the bias for the merged factor will be the bias from 01
+  PreintegratedImuMeasurements pim02 = pim01;
+
+  Matrix9 H1, H2;
+  pim02.mergeWith(pim12, &H1, &H2);
+
+  pim02.preintMeasCov_ = H1 * pim01.preintMeasCov_ * H1.transpose() +
+                         H2 * pim12.preintMeasCov_ * H2.transpose();
+
+  return pim02;
+}
+
+//------------------------------------------------------------------------------
+ImuFactor::shared_ptr ImuFactor::Merge(const shared_ptr& f01,
+                                       const shared_ptr& f12) {
+  // IMU bias keys must be the same.
+  if (f01->key5() != f12->key5())
+    throw std::domain_error("ImuFactor::Merge: IMU bias keys must be the same");
+
+  // expect intermediate pose, velocity keys to matchup.
+  if (f01->key3() != f12->key1() || f01->key4() != f12->key2())
+    throw std::domain_error(
+        "ImuFactor::Merge: intermediate pose, velocity keys need to match up");
+
+  // return new factor
+  auto pim02 =
+      Merge(f01->preintegratedMeasurements(), f12->preintegratedMeasurements());
+  return boost::make_shared<ImuFactor>(f01->key1(),  // P0
+                                       f01->key2(),  // V0
+                                       f12->key3(),  // P2
+                                       f12->key4(),  // V2
+                                       f01->key5(),  // B
+                                       pim02);
+}
+
+//------------------------------------------------------------------------------
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 ImuFactor::ImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
-    const PreintegratedMeasurements& pim, const Vector3& n_gravity,
+    const PreintegratedImuMeasurements& pim, const Vector3& n_gravity,
     const Vector3& omegaCoriolis, const boost::optional<Pose3>& body_P_sensor,
     const bool use2ndOrderCoriolis) :
-    Base(noiseModel::Gaussian::Covariance(pim.preintMeasCov_), pose_i, vel_i,
-        pose_j, vel_j, bias), _PIM_(pim) {
-  boost::shared_ptr<PreintegratedMeasurements::Params> p = boost::make_shared<
-      PreintegratedMeasurements::Params>(pim.p());
+Base(noiseModel::Gaussian::Covariance(pim.preintMeasCov_), pose_i, vel_i,
+    pose_j, vel_j, bias), _PIM_(pim) {
+  boost::shared_ptr<PreintegratedImuMeasurements::Params> p = boost::make_shared<
+  PreintegratedImuMeasurements::Params>(pim.p());
   p->n_gravity = n_gravity;
   p->omegaCoriolis = omegaCoriolis;
   p->body_P_sensor = body_P_sensor;
@@ -170,10 +218,9 @@ ImuFactor::ImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
   _PIM_.p_ = p;
 }
 
-//------------------------------------------------------------------------------
 void ImuFactor::Predict(const Pose3& pose_i, const Vector3& vel_i,
     Pose3& pose_j, Vector3& vel_j, const imuBias::ConstantBias& bias_i,
-    PreintegratedMeasurements& pim, const Vector3& n_gravity,
+    PreintegratedImuMeasurements& pim, const Vector3& n_gravity,
     const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis) {
   // use deprecated predict
   PoseVelocityBias pvb = pim.predict(pose_i, vel_i, bias_i, n_gravity,
@@ -181,5 +228,8 @@ void ImuFactor::Predict(const Pose3& pose_i, const Vector3& vel_i,
   pose_j = pvb.pose;
   vel_j = pvb.velocity;
 }
+#endif
+//------------------------------------------------------------------------------
 
-} // namespace gtsam
+}
+ // namespace gtsam

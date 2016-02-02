@@ -75,10 +75,16 @@ Matrix7 NavState::matrix() const {
 }
 
 //------------------------------------------------------------------------------
+ostream& operator<<(ostream& os, const NavState& state) {
+  os << "R:" << state.attitude();
+  os << "p:" << state.position() << endl;
+  os << "v:" << Point3(state.velocity()) << endl;
+  return os;
+}
+
+//------------------------------------------------------------------------------
 void NavState::print(const string& s) const {
-  attitude().print(s + ".R");
-  position().print(s + ".p");
-  gtsam::print((Vector) v_, s + ".v");
+  cout << s << *this << endl;
 }
 
 //------------------------------------------------------------------------------
