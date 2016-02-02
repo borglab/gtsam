@@ -204,48 +204,48 @@ TEST(SO3, JacobianLogmap) {
 }
 
 /* ************************************************************************* */
-Vector3 apply(const Vector3& omega, const Vector3& v) {
-  so3::DexpFunctor local(omega);
-  return local.applyDexp(v);
-}
-
-/* ************************************************************************* */
 TEST(SO3, ApplyDexp) {
   Matrix aH1, aH2;
-  for (Vector3 omega : {Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(0, 1, 0),
-                        Vector3(0, 0, 1), Vector3(0.1, 0.2, 0.3)}) {
-    so3::DexpFunctor local(omega);
-    for (Vector3 v : {Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1),
-                      Vector3(0.4, 0.3, 0.2)}) {
-      EXPECT(assert_equal(Vector3(local.dexp() * v),
-                          local.applyDexp(v, aH1, aH2)));
-      EXPECT(assert_equal(numericalDerivative21(apply, omega, v), aH1));
-      EXPECT(assert_equal(numericalDerivative22(apply, omega, v), aH2));
-      EXPECT(assert_equal(local.dexp(), aH2));
+  for (bool nearZeroApprox : {true, false}) {
+    boost::function<Vector3(const Vector3&, const Vector3&)> f =
+        [=](const Vector3& omega, const Vector3& v) {
+          return so3::DexpFunctor(omega, nearZeroApprox).applyDexp(v);
+        };
+    for (Vector3 omega : {Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(0, 1, 0),
+                          Vector3(0, 0, 1), Vector3(0.1, 0.2, 0.3)}) {
+      so3::DexpFunctor local(omega, nearZeroApprox);
+      for (Vector3 v : {Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1),
+                        Vector3(0.4, 0.3, 0.2)}) {
+        EXPECT(assert_equal(Vector3(local.dexp() * v),
+                            local.applyDexp(v, aH1, aH2)));
+        EXPECT(assert_equal(numericalDerivative21(f, omega, v), aH1));
+        EXPECT(assert_equal(numericalDerivative22(f, omega, v), aH2));
+        EXPECT(assert_equal(local.dexp(), aH2));
+      }
     }
   }
 }
 
 /* ************************************************************************* */
-Vector3 applyInv(const Vector3& omega, const Vector3& v) {
-  so3::DexpFunctor local(omega);
-  return local.applyInvDexp(v);
-}
-
-/* ************************************************************************* */
 TEST(SO3, ApplyInvDexp) {
   Matrix aH1, aH2;
-  for (Vector3 omega : {Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(0, 1, 0),
-                        Vector3(0, 0, 1), Vector3(0.1, 0.2, 0.3)}) {
-    so3::DexpFunctor local(omega);
-    Matrix invDexp = local.dexp().inverse();
-    for (Vector3 v : {Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1),
-                      Vector3(0.4, 0.3, 0.2)}) {
-      EXPECT(
-          assert_equal(Vector3(invDexp * v), local.applyInvDexp(v, aH1, aH2)));
-      EXPECT(assert_equal(numericalDerivative21(applyInv, omega, v), aH1));
-      EXPECT(assert_equal(numericalDerivative22(applyInv, omega, v), aH2));
-      EXPECT(assert_equal(invDexp, aH2));
+  for (bool nearZeroApprox : {true, false}) {
+    boost::function<Vector3(const Vector3&, const Vector3&)> f =
+        [=](const Vector3& omega, const Vector3& v) {
+          return so3::DexpFunctor(omega, nearZeroApprox).applyInvDexp(v);
+        };
+    for (Vector3 omega : {Vector3(0, 0, 0), Vector3(1, 0, 0), Vector3(0, 1, 0),
+                          Vector3(0, 0, 1), Vector3(0.1, 0.2, 0.3)}) {
+      so3::DexpFunctor local(omega, nearZeroApprox);
+      Matrix invDexp = local.dexp().inverse();
+      for (Vector3 v : {Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1),
+                        Vector3(0.4, 0.3, 0.2)}) {
+        EXPECT(assert_equal(Vector3(invDexp * v),
+                            local.applyInvDexp(v, aH1, aH2)));
+        EXPECT(assert_equal(numericalDerivative21(f, omega, v), aH1));
+        EXPECT(assert_equal(numericalDerivative22(f, omega, v), aH2));
+        EXPECT(assert_equal(invDexp, aH2));
+      }
     }
   }
 }

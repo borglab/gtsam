@@ -143,14 +143,14 @@ class ExpmapFunctor {
   bool nearZero;
   double theta, sin_theta, one_minus_cos;  // only defined if !nearZero
 
-  void init();
+  void init(bool nearZeroApprox = false);
 
  public:
   /// Constructor with element of Lie algebra so(3)
-  ExpmapFunctor(const Vector3& omega);
+  ExpmapFunctor(const Vector3& omega, bool nearZeroApprox = false);
 
   /// Constructor with axis-angle
-  ExpmapFunctor(const Vector3& axis, double angle);
+  ExpmapFunctor(const Vector3& axis, double angle, bool nearZeroApprox = false);
 
   /// Rodrigues formula
   SO3 expmap() const;
@@ -164,7 +164,7 @@ class DexpFunctor : public ExpmapFunctor {
 
  public:
   /// Constructor with element of Lie algebra so(3)
-  DexpFunctor(const Vector3& omega);
+  DexpFunctor(const Vector3& omega, bool nearZeroApprox = false);
 
   // NOTE(luca): Right Jacobian for Exponential map in SO(3) - equation
   // (10.86) and following equations in G.S. Chirikjian, "Stochastic Models,
