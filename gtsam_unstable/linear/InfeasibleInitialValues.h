@@ -10,7 +10,7 @@
 namespace gtsam {
 /* ************************************************************************* */
 /** An exception indicating that the provided initial value is infeasible
- * Also used to indicatethat the noise model dimension passed into a
+ * Also used to inzdicatethat the noise model dimension passed into a
  * JacobianFactor has a different dimensionality than the factor. */
 class InfeasibleInitialValues: public ThreadsafeException<
     InfeasibleInitialValues> {
