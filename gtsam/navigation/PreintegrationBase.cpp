@@ -130,7 +130,7 @@ Vector9 PreintegrationBase::UpdatePreintegrated(
 
   // Calculate exact mean propagation
   Matrix3 w_tangent_H_theta, invH;
-  const Vector w_tangent =  // angular velocity mapped back to tangent space
+  const Vector3 w_tangent =  // angular velocity mapped back to tangent space
       local.applyInvDexp(w_body, A ? &w_tangent_H_theta : 0, C ? &invH : 0);
   const SO3 R = local.expmap();
   const Vector3 a_nav = R * a_body;
