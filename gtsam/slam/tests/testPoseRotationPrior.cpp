@@ -30,7 +30,7 @@ const gtsam::Key poseKey = 1;
 
 // Pose3 examples
 const Point3 point3A(1.0, 2.0, 3.0), point3B(4.0, 6.0, 8.0);
-const Rot3 rot3A, rot3B = Rot3::pitch(-M_PI_2), rot3C = Rot3::Expmap(Vector3(0.1, 0.2, 0.3));
+const Rot3 rot3A, rot3B = Rot3::Pitch(-M_PI_2), rot3C = Rot3::Expmap(Vector3(0.1, 0.2, 0.3));
 
 // Pose2 examples
 const Point2 point2A(1.0, 2.0), point2B(4.0, 6.0);

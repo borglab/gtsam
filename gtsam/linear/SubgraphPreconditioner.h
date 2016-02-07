@@ -17,12 +17,30 @@
 
 #pragma once
 
-#include <gtsam/global_includes.h>
 #include <gtsam/linear/Errors.h>
+#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/IterativeSolver.h>
 #include <gtsam/linear/Preconditioner.h>
 #include <gtsam/linear/VectorValues.h>
+#include <gtsam/base/FastMap.h>
+#include <gtsam/base/FastVector.h>
+#include <gtsam/base/types.h>
+#include <gtsam/base/Vector.h>
+#include <gtsam/dllexport.h>
+
+#include <boost/serialization/nvp.hpp>
 #include <boost/shared_ptr.hpp>
+
+#include <map>
+#include <utility>
+#include <vector>
+
+namespace boost {
+namespace serialization {
+class access;
+} /* namespace serialization */
+} /* namespace boost */
 
 namespace gtsam {
 

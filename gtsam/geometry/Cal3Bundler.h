@@ -18,7 +18,6 @@
 
 #pragma once
 
-#include <gtsam/base/DerivedValue.h>
 #include <gtsam/geometry/Point2.h>
 
 namespace gtsam {

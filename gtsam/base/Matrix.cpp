@@ -184,21 +184,17 @@ void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, SubVec
 /* ************************************************************************* */
 //3 argument call
 void print(const Matrix& A, const string &s, ostream& stream) {
-  size_t m = A.rows(), n = A.cols();
-
-  // print out all elements
-  stream << s << "[\n";
-  for( size_t i = 0 ; i < m ; i++) {
-    for( size_t j = 0 ; j < n ; j++) {
-      double aij = A(i,j);
-      if(aij != 0.0)
-        stream << setw(12) << setprecision(9) << aij << ",\t";
-      else
-        stream << "         0.0,\t";
-    }
-    stream << endl;
-  }
-  stream << "];" << endl;
+  static const Eigen::IOFormat matlab(
+      Eigen::StreamPrecision, // precision
+      0, // flags
+      " ", // coeffSeparator
+      ";\n", // rowSeparator
+	  " \t",  // rowPrefix
+      "", // rowSuffix
+      "[\n", // matPrefix
+      "\n  ]" // matSuffix
+      );
+  cout << s << A.format(matlab) << endl;
 }
 
 /* ************************************************************************* */
@@ -582,15 +578,6 @@ Matrix vector_scale(const Matrix& A, const Vector& v, bool inf_mask) {
       M.col(j) *= v(j);
   }
   return M;
-}
-
-/* ************************************************************************* */
-Matrix3 skewSymmetric(double wx, double wy, double wz)
-{
-  return (Matrix3() <<
-      0.0, -wz, +wy,
-      +wz, 0.0, -wx,
-      -wy, +wx, 0.0).finished();
 }
 
 /* ************************************************************************* */

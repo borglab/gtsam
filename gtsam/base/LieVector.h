@@ -11,7 +11,7 @@
 
 /**
  * @file LieVector.h
- * @brief Deprecation warning for LieVector_Deprecated.h, see LieVector_Deprecated.h for details.
+ * @brief Deprecation warning for LieVector, see deprecated/LieVector.h for details.
  * @author Paul Drews
  */
 
@@ -23,4 +23,4 @@
 #warning "LieVector.h is deprecated. Please use Eigen::Vector instead."
 #endif
 
-#include <gtsam/base/LieVector_Deprecated.h>
+#include <gtsam/base/deprecated/LieVector.h>

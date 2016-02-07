@@ -61,7 +61,7 @@ TEST(PinholeCamera, BAL) {
 
   Values actual = lm.optimize();
   double actualError = graph.error(actual);
-  EXPECT_DOUBLES_EQUAL(0.0199833, actualError, 1e-7);
+  EXPECT_DOUBLES_EQUAL(0.0199833, actualError, 1e-5);
 }
 
 /* ************************************************************************* */

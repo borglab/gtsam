@@ -172,12 +172,15 @@ public:
 
 private:
 
+  /// Default constructor, for serialization
+  Expression() {}
+
   /// Keys and dimensions in same order
-  typedef std::pair<FastVector<Key>, FastVector<int> > KeysAndDims;
+  typedef std::pair<KeyVector, FastVector<int> > KeysAndDims;
   KeysAndDims keysAndDims() const;
 
   /// private version that takes keys and dimensions, returns derivatives
-  T valueAndDerivatives(const Values& values, const FastVector<Key>& keys,
+  T valueAndDerivatives(const Values& values, const KeyVector& keys,
       const FastVector<int>& dims, std::vector<Matrix>& H) const;
 
   /// trace execution, very unsafe

@@ -26,16 +26,14 @@
  *  -makes monocular observations of many landmarks
  */
 
-#include <gtsam/geometry/Pose3.h>
+#include <gtsam/slam/SmartProjectionPoseFactor.h>
+#include <gtsam/slam/dataset.h>
 #include <gtsam/geometry/Cal3_S2Stereo.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/inference/Symbol.h>
-#include <gtsam/slam/dataset.h>
-
-#include <gtsam/slam/SmartProjectionPoseFactor.h>
 
 #include <string>
 #include <fstream>
@@ -46,6 +44,7 @@ using namespace gtsam;
 
 int main(int argc, char** argv){
 
+  typedef PinholePose<Cal3_S2> Camera;
   typedef SmartProjectionPoseFactor<Cal3_S2> SmartFactor;
 
   Values initial_estimate;
@@ -55,7 +54,7 @@ int main(int argc, char** argv){
   string calibration_loc = findExampleDataFile("VO_calibration.txt");
   string pose_loc = findExampleDataFile("VO_camera_poses_large.txt");
   string factor_loc = findExampleDataFile("VO_stereo_factors_large.txt");
-  
+
   //read camera calibration info from file
   // focal lengths fx, fy, skew s, principal point u0, v0, baseline b
   cout << "Reading calibration info" << endl;
@@ -68,18 +67,17 @@ int main(int argc, char** argv){
   cout << "Reading camera poses" << endl;
   ifstream pose_file(pose_loc.c_str());
 
-  int pose_id;
+  int pose_index;
   MatrixRowMajor m(4,4);
   //read camera pose parameters and use to make initial estimates of camera poses
-  while (pose_file >> pose_id) {
-    for (int i = 0; i < 16; i++) {
+  while (pose_file >> pose_index) {
+    for (int i = 0; i < 16; i++)
       pose_file >> m.data()[i];
-    }
-    initial_estimate.insert(Symbol('x', pose_id), Pose3(m));
+    initial_estimate.insert(pose_index, Pose3(m));
   }
-  
-  // camera and landmark keys
-  size_t x, l;
+
+  // landmark keys
+  size_t landmark_key;
 
   // pixel coordinates uL, uR, v (same for left/right images due to rectification)
   // landmark coordinates X, Y, Z in camera frame, resulting from triangulation
@@ -89,24 +87,24 @@ int main(int argc, char** argv){
 
   //read stereo measurements and construct smart factors
 
-  SmartFactor::shared_ptr factor(new SmartFactor());
+  SmartFactor::shared_ptr factor(new SmartFactor(model, K));
   size_t current_l = 3;   // hardcoded landmark ID from first measurement
 
-  while (factor_file >> x >> l >> uL >> uR >> v >> X >> Y >> Z) {
+  while (factor_file >> pose_index >> landmark_key >> uL >> uR >> v >> X >> Y >> Z) {
 
-    if(current_l != l) {
+    if(current_l != landmark_key) {
       graph.push_back(factor);
-      factor = SmartFactor::shared_ptr(new SmartFactor());
-      current_l = l;
+      factor = SmartFactor::shared_ptr(new SmartFactor(model, K));
+      current_l = landmark_key;
     }
-    factor->add(Point2(uL,v), Symbol('x',x), model, K);
+    factor->add(Point2(uL,v), pose_index);
   }
 
-  Pose3 first_pose = initial_estimate.at<Pose3>(Symbol('x',1));
+  Pose3 firstPose = initial_estimate.at<Pose3>(1);
   //constrain the first pose such that it cannot change from its original value during optimization
   // NOTE: NonlinearEquality forces the optimizer to use QR rather than Cholesky
   // QR is much slower than Cholesky, but numerically more stable
-  graph.push_back(NonlinearEquality<Pose3>(Symbol('x',1),first_pose));
+  graph.push_back(NonlinearEquality<Pose3>(1,firstPose));
 
   LevenbergMarquardtParams params;
   params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;

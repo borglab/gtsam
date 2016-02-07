@@ -20,6 +20,7 @@
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/dllexport.h>
 
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/extended_type_info.hpp>
@@ -62,10 +63,11 @@ namespace gtsam {
       Base(size_t dim = 1):dim_(dim) {}
       virtual ~Base() {}
 
-      /// true if a constrained noise mode, saves slow/clumsy dynamic casting
-      virtual bool isConstrained() const {
-        return false; // default false
-      }
+      /// true if a constrained noise model, saves slow/clumsy dynamic casting
+      virtual bool isConstrained() const { return false; } // default false
+
+      /// true if a unit noise model, saves slow/clumsy dynamic casting
+      virtual bool isUnit() const { return false; }  // default false
 
       /// Dimensionality
       inline size_t dim() const { return dim_;}
@@ -79,6 +81,9 @@ namespace gtsam {
 
       /// Whiten an error vector.
       virtual Vector whiten(const Vector& v) const = 0;
+
+      /// Whiten a matrix.
+      virtual Matrix Whiten(const Matrix& H) const = 0;
 
       /// Unwhiten an error vector.
       virtual Vector unwhiten(const Vector& v) const = 0;
@@ -237,7 +242,7 @@ namespace gtsam {
       virtual Matrix R() const { return thisR();}
 
       /// Compute information matrix
-      virtual Matrix information() const { return thisR().transpose() * thisR(); }
+      virtual Matrix information() const { return R().transpose() * R(); }
 
       /// Compute covariance matrix
       virtual Matrix covariance() const { return information().inverse(); }
@@ -390,9 +395,7 @@ namespace gtsam {
       virtual ~Constrained() {}
 
       /// true if a constrained noise mode, saves slow/clumsy dynamic casting
-      virtual bool isConstrained() const {
-        return true;
-      }
+      virtual bool isConstrained() const { return true; }
 
       /// Return true if a particular dimension is free or constrained
       bool constrained(size_t i) const;
@@ -548,6 +551,7 @@ namespace gtsam {
       virtual Vector unwhiten(const Vector& v) const;
       virtual Matrix Whiten(const Matrix& H) const;
       virtual void WhitenInPlace(Matrix& H) const;
+      virtual void whitenInPlace(Vector& v) const;
       virtual void WhitenInPlace(Eigen::Block<Matrix> H) const;
 
       /**
@@ -589,6 +593,9 @@ namespace gtsam {
       static shared_ptr Create(size_t dim) {
         return shared_ptr(new Unit(dim));
       }
+
+      /// true if a unit noise model, saves slow/clumsy dynamic casting
+      virtual bool isUnit() const { return true; }
 
       virtual void print(const std::string& name) const;
       virtual double Mahalanobis(const Vector& v) const {return v.dot(v); }
@@ -816,6 +823,65 @@ namespace gtsam {
         }
       };
 
+      /// GemanMcClure implements the "Geman-McClure" robust error model
+      /// (Zhang97ivc).
+      ///
+      /// Note that Geman-McClure weight function uses the parameter c == 1.0,
+      /// but here it's allowed to use different values, so we actually have
+      /// the generalized Geman-McClure from (Agarwal15phd).
+      class GTSAM_EXPORT GemanMcClure : public Base {
+      public:
+        typedef boost::shared_ptr<GemanMcClure> shared_ptr;
+
+        GemanMcClure(double c = 1.0, const ReweightScheme reweight = Block);
+        virtual ~GemanMcClure() {}
+        virtual double weight(double error) const;
+        virtual void print(const std::string &s) const;
+        virtual bool equals(const Base& expected, double tol=1e-8) const;
+        static shared_ptr Create(double k, const ReweightScheme reweight = Block) ;
+
+      protected:
+        double c_;
+
+      private:
+        /** Serialization function */
+        friend class boost::serialization::access;
+        template<class ARCHIVE>
+        void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+          ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+          ar & BOOST_SERIALIZATION_NVP(c_);
+        }
+      };
+
+      /// DCS implements the Dynamic Covariance Scaling robust error model
+      /// from the paper Robust Map Optimization (Agarwal13icra).
+      ///
+      /// Under the special condition of the parameter c == 1.0 and not
+      /// forcing the output weight s <= 1.0, DCS is similar to Geman-McClure.
+      class GTSAM_EXPORT DCS : public Base {
+      public:
+        typedef boost::shared_ptr<DCS> shared_ptr;
+
+        DCS(double c = 1.0, const ReweightScheme reweight = Block);
+        virtual ~DCS() {}
+        virtual double weight(double error) const;
+        virtual void print(const std::string &s) const;
+        virtual bool equals(const Base& expected, double tol=1e-8) const;
+        static shared_ptr Create(double k, const ReweightScheme reweight = Block) ;
+
+      protected:
+        double c_;
+
+      private:
+        /** Serialization function */
+        friend class boost::serialization::access;
+        template<class ARCHIVE>
+        void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+          ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+          ar & BOOST_SERIALIZATION_NVP(c_);
+        }
+      };
+
     } ///\namespace mEstimator
 
     /// Base class for robust error models
@@ -854,6 +920,8 @@ namespace gtsam {
       // TODO: functions below are dummy but necessary for the noiseModel::Base
       inline virtual Vector whiten(const Vector& v) const
       { Vector r = v; this->WhitenSystem(r); return r; }
+      inline virtual Matrix Whiten(const Matrix& A) const
+      { Vector b; Matrix B=A; this->WhitenSystem(B,b); return B; }
       inline virtual Vector unwhiten(const Vector& /*v*/) const
       { throw std::invalid_argument("unwhiten is not currently supported for robust noise models."); }
       inline virtual double distance(const Vector& v) const

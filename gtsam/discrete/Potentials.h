@@ -19,6 +19,7 @@
 
 #include <gtsam/discrete/AlgebraicDecisionTree.h>
 #include <gtsam/discrete/DiscreteKey.h>
+#include <gtsam/inference/Key.h>
 
 #include <boost/shared_ptr.hpp>
 #include <set>

@@ -36,7 +36,7 @@ VALUE ISAM2::calculateEstimate(Key key) const {
 namespace internal {
 template<class CLIQUE>
 void optimizeWildfire(const boost::shared_ptr<CLIQUE>& clique, double threshold,
-    FastSet<Key>& changed, const FastSet<Key>& replaced, VectorValues& delta, size_t& count)
+    KeySet& changed, const KeySet& replaced, VectorValues& delta, size_t& count)
 {
   // if none of the variables in this clique (frontal and separator!) changed
   // significantly, then by the running intersection property, none of the
@@ -113,7 +113,7 @@ void optimizeWildfire(const boost::shared_ptr<CLIQUE>& clique, double threshold,
 
 template<class CLIQUE>
 bool optimizeWildfireNode(const boost::shared_ptr<CLIQUE>& clique, double threshold,
-    FastSet<Key>& changed, const FastSet<Key>& replaced, VectorValues& delta, size_t& count)
+    KeySet& changed, const KeySet& replaced, VectorValues& delta, size_t& count)
 {
   // if none of the variables in this clique (frontal and separator!) changed
   // significantly, then by the running intersection property, none of the
@@ -245,8 +245,8 @@ bool optimizeWildfireNode(const boost::shared_ptr<CLIQUE>& clique, double thresh
 
 /* ************************************************************************* */
 template<class CLIQUE>
-size_t optimizeWildfire(const boost::shared_ptr<CLIQUE>& root, double threshold, const FastSet<Key>& keys, VectorValues& delta) {
-  FastSet<Key> changed;
+size_t optimizeWildfire(const boost::shared_ptr<CLIQUE>& root, double threshold, const KeySet& keys, VectorValues& delta) {
+  KeySet changed;
   int count = 0;
   // starting from the root, call optimize on each conditional
   if(root)
@@ -256,9 +256,9 @@ size_t optimizeWildfire(const boost::shared_ptr<CLIQUE>& root, double threshold,
 
 /* ************************************************************************* */
 template<class CLIQUE>
-size_t optimizeWildfireNonRecursive(const boost::shared_ptr<CLIQUE>& root, double threshold, const FastSet<Key>& keys, VectorValues& delta)
+size_t optimizeWildfireNonRecursive(const boost::shared_ptr<CLIQUE>& root, double threshold, const KeySet& keys, VectorValues& delta)
 {
-  FastSet<Key> changed;
+  KeySet changed;
   size_t count = 0;
 
   if (root) {

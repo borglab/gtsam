@@ -64,6 +64,8 @@ option(GTSAM_WITH_TBB                    "Use Intel Threaded Building Blocks (TB
 option(GTSAM_WITH_EIGEN_MKL              "Eigen will use Intel MKL if available" ON)
 option(GTSAM_WITH_EIGEN_MKL_OPENMP       "Eigen, when using Intel MKL, will also use OpenMP for multithreading if available" ON)
 option(GTSAM_THROW_CHEIRALITY_EXCEPTION "Throw exception when a triangulated point is behind a camera" ON)
+option(GTSAM_BUILD_PYTHON                "Enable/Disable building & installation of Python module" ON)
+option(GTSAM_ALLOW_DEPRECATED_SINCE_V4   "Allow use of methods/functions deprecated in GTSAM 4" ON)
 
 # Options relating to MATLAB wrapper
 # TODO: Check for matlab mex binary before handling building of binaries
@@ -80,6 +82,10 @@ endif()
 
 if(GTSAM_INSTALL_MATLAB_TOOLBOX AND GTSAM_BUILD_STATIC_LIBRARY)
 	message(FATAL_ERROR "GTSAM_INSTALL_MATLAB_TOOLBOX and GTSAM_BUILD_STATIC_LIBRARY are both enabled.  The MATLAB wrapper cannot be compiled with a static GTSAM library because mex modules are themselves shared libraries.  If you want a self-contained mex module, enable GTSAM_MEX_BUILD_STATIC_MODULE instead of GTSAM_BUILD_STATIC_LIBRARY.")
+endif()
+
+if(GTSAM_BUILD_PYTHON AND GTSAM_ALLOW_DEPRECATED_SINCE_V4)
+	message(FATAL_ERROR "GTSAM_BUILD_PYTHON and GTSAM_ALLOW_DEPRECATED_SINCE_V4 are both enabled. The python module cannot be compiled with deprecated functions turned on. Turn one of the two options off.")
 endif()
 
 # Flags for choosing default packaging tools
@@ -131,7 +137,7 @@ endif()
 
 if(NOT (${Boost_VERSION} LESS 105600))
 	message("Ignoring Boost restriction on optional lvalue assignment from rvalues")
-	add_definitions(-DBOOST_OPTIONAL_ALLOW_BINDING_TO_RVALUES)
+	add_definitions(-DBOOST_OPTIONAL_ALLOW_BINDING_TO_RVALUES -DBOOST_OPTIONAL_CONFIG_ALLOW_BINDING_TO_RVALUES)
 endif()
 
 ###############################################################################
@@ -158,6 +164,12 @@ else()
 	set(GTSAM_USE_TBB 0)  # This will go into config.h
 endif()
 
+###############################################################################
+# Prohibit Timing build mode in combination with TBB
+if(GTSAM_USE_TBB AND (CMAKE_BUILD_TYPE  STREQUAL "Timing"))
+      message(FATAL_ERROR "Timing build mode cannot be used together with TBB. Use a sampling profiler such as Instruments or Intel VTune Amplifier instead.")
+endif()
+
 
 ###############################################################################
 # Find Google perftools
@@ -173,6 +185,11 @@ if(MKL_FOUND AND GTSAM_WITH_EIGEN_MKL)
     set(EIGEN_USE_MKL_ALL 1) # This will go into config.h - it makes Eigen use MKL
     include_directories(${MKL_INCLUDE_DIR})
     list(APPEND GTSAM_ADDITIONAL_LIBRARIES ${MKL_LIBRARIES})
+    
+    # --no-as-needed is required with gcc according to the MKL link advisor
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-as-needed")  
+    endif()
 else()
     set(GTSAM_USE_EIGEN_MKL 0)
     set(EIGEN_USE_MKL_ALL 0)
@@ -266,7 +283,8 @@ endif()
 
 # Include boost - use 'BEFORE' so that a specific boost specified to CMake
 # takes precedence over a system-installed one.
-include_directories(BEFORE ${Boost_INCLUDE_DIR})
+# Use 'SYSTEM' to ignore compiler warnings in Boost headers
+include_directories(BEFORE SYSTEM ${Boost_INCLUDE_DIR})
 
 # Add includes for source directories 'BEFORE' boost and any system include
 # paths so that the compiler uses GTSAM headers in our source directory instead
@@ -293,8 +311,19 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   endif()
 endif()
 
+# As of XCode 7, clang also complains about this
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+  if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7.0)
+    add_definitions(-Wno-unused-local-typedefs)
+  endif()
+endif()
+
 if(GTSAM_ENABLE_CONSISTENCY_CHECKS)
   add_definitions(-DGTSAM_EXTRA_CONSISTENCY_CHECKS)
+endif()
+
+if(GTSAM_ALLOW_DEPRECATED_SINCE_V4)
+	add_definitions(-DGTSAM_ALLOW_DEPRECATED_SINCE_V4)
 endif()
 
 ###############################################################################
@@ -323,6 +352,20 @@ add_subdirectory(timing)
 # Matlab toolbox
 if (GTSAM_INSTALL_MATLAB_TOOLBOX)
 	add_subdirectory(matlab)
+endif()
+
+# Python wrap
+if (GTSAM_BUILD_PYTHON)
+	include(GtsamPythonWrap)
+
+	# NOTE: The automatic generation of python wrapper from the gtsampy.h interface is
+	#       not working yet, so we're using a handwritten wrapper files on python/handwritten.
+	#       Once the python wrapping from the interface file is working, you can _swap_ the 
+	#       comments on the next lines
+	
+	# wrap_and_install_python(gtsampy.h "${GTSAM_ADDITIONAL_LIBRARIES}" "")
+	add_subdirectory(python)
+
 endif()
 
 # Build gtsam_unstable
@@ -375,6 +418,8 @@ set(CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-dev (>= 1.43)") #Example: "libc6 (>= 
 # Print configuration variables
 message(STATUS "===============================================================")
 message(STATUS "================  Configuration Options  ======================")
+message(STATUS "  CMAKE_CXX_COMPILER_ID type     : ${CMAKE_CXX_COMPILER_ID}")
+message(STATUS "  CMAKE_CXX_COMPILER_VERSION     : ${CMAKE_CXX_COMPILER_VERSION}")
 message(STATUS "Build flags                                               ")
 print_config_flag(${GTSAM_BUILD_TESTS}                 "Build Tests                    ")
 print_config_flag(${GTSAM_BUILD_EXAMPLES_ALWAYS}       "Build examples with 'make all' ")
@@ -435,10 +480,22 @@ print_config_flag(${GTSAM_USE_QUATERNIONS}             "Quaternions as default R
 print_config_flag(${GTSAM_ENABLE_CONSISTENCY_CHECKS}   "Runtime consistency checking   ")
 print_config_flag(${GTSAM_ROT3_EXPMAP}                 "Rot3 retract is full ExpMap    ")
 print_config_flag(${GTSAM_POSE3_EXPMAP}                "Pose3 retract is full ExpMap   ")
+print_config_flag(${GTSAM_ALLOW_DEPRECATED_SINCE_V4}   "Deprecated in GTSAM 4 allowed  ")
 
 message(STATUS "MATLAB toolbox flags                                      ")
 print_config_flag(${GTSAM_INSTALL_MATLAB_TOOLBOX}      "Install matlab toolbox         ")
 print_config_flag(${GTSAM_BUILD_WRAP}                  "Build Wrap                     ")
+
+message(STATUS "Python module flags                                       ")
+
+if(GTSAM_PYTHON_WARNINGS)
+	message(STATUS "  Build python module            : No - dependencies missing")
+else()
+	print_config_flag(${GTSAM_BUILD_PYTHON}                "Build python module            ")
+endif()
+if(GTSAM_BUILD_PYTHON)
+	message(STATUS "  Python version                 : ${GTSAM_PYTHON_VERSION}")
+endif()
 message(STATUS "===============================================================")
 
 # Print warnings at the end
@@ -450,6 +507,9 @@ if(GTSAM_WITH_EIGEN_MKL AND NOT MKL_FOUND)
 endif()
 if(GTSAM_WITH_EIGEN_MKL_OPENMP AND NOT OPENMP_FOUND AND MKL_FOUND)
 	message(WARNING "Your compiler does not support OpenMP - this is ok, but performance may be improved with OpenMP.  Set GTSAM_WITH_EIGEN_MKL_OPENMP to 'Off' to avoid this warning.")
+endif()
+if(GTSAM_BUILD_PYTHON AND GTSAM_PYTHON_WARNINGS)
+	message(WARNING "${GTSAM_PYTHON_WARNINGS}")
 endif()
 
 # Include CPack *after* all flags

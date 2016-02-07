@@ -89,7 +89,7 @@ TEST(GPSData, init) {
 
   // Check values values
   EXPECT(assert_equal((Vector )Vector3(29.9575, -29.0564, -1.95993), nV, 1e-4));
-  EXPECT( assert_equal(Rot3::ypr(-0.770131, 0.046928, 0), T.rotation(), 1e-5));
+  EXPECT( assert_equal(Rot3::Ypr(-0.770131, 0.046928, 0), T.rotation(), 1e-5));
   Point3 expectedT(2.38461, -2.31289, -0.156011);
   EXPECT(assert_equal(expectedT, T.translation(), 1e-5));
 }

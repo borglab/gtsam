@@ -18,7 +18,13 @@
 
 #pragma once
 
+#include <gtsam/geometry/BearingRange.h>
 #include <gtsam/geometry/Pose3.h>
+#include <gtsam/base/concepts.h>
+#include <gtsam/base/Manifold.h>
+#include <gtsam/base/ThreadsafeException.h>
+#include <gtsam/dllexport.h>
+#include <boost/serialization/nvp.hpp>
 
 namespace gtsam {
 
@@ -38,6 +44,18 @@ public:
  * \nosubgrouping
  */
 class GTSAM_EXPORT PinholeBase {
+
+public:
+
+  /** Pose Concept requirements */
+  typedef Rot3 Rotation;
+  typedef Point3 Translation;
+
+  /**
+   *  Some classes template on either PinholeCamera or StereoCamera,
+   *  and this typedef informs those classes what "project" returns.
+   */
+  typedef Point2 Measurement;
 
 private:
 
@@ -130,6 +148,16 @@ public:
     return pose_;
   }
 
+  /// get rotation
+  const Rot3& rotation() const {
+    return pose_.rotation();
+  }
+
+  /// get translation
+  const Point3& translation() const {
+    return pose_.translation();
+  }
+
   /// return pose, with derivative
   const Pose3& getPose(OptionalJacobian<6, 6> H) const;
 
@@ -142,14 +170,21 @@ public:
    * Does *not* throw a CheiralityException, even if pc behind image plane
    * @param pc point in camera coordinates
    */
-  static Point2 project_to_camera(const Point3& pc, //
+  static Point2 Project(const Point3& pc, //
       OptionalJacobian<2, 3> Dpoint = boost::none);
+
+  /**
+   * Project from 3D point at infinity in camera coordinates into image
+   * Does *not* throw a CheiralityException, even if pc behind image plane
+   * @param pc point in camera coordinates
+   */
+  static Point2 Project(const Unit3& pc, //
+      OptionalJacobian<2, 2> Dpoint = boost::none);
 
   /// Project a point into the image and check depth
   std::pair<Point2, bool> projectSafe(const Point3& pw) const;
 
-  /**
-   * Project point into the image
+  /** Project point into the image
    * Throws a CheiralityException if point behind image plane iff GTSAM_THROW_CHEIRALITY_EXCEPTION
    * @param point 3D point in world coordinates
    * @return the intrinsic coordinates of the projected point
@@ -157,8 +192,32 @@ public:
   Point2 project2(const Point3& point, OptionalJacobian<2, 6> Dpose =
       boost::none, OptionalJacobian<2, 3> Dpoint = boost::none) const;
 
+  /** Project point at infinity into the image
+   * Throws a CheiralityException if point behind image plane iff GTSAM_THROW_CHEIRALITY_EXCEPTION
+   * @param point 3D point in world coordinates
+   * @return the intrinsic coordinates of the projected point
+   */
+  Point2 project2(const Unit3& point,
+      OptionalJacobian<2, 6> Dpose = boost::none,
+      OptionalJacobian<2, 2> Dpoint = boost::none) const;
+
   /// backproject a 2-dimensional point to a 3-dimensional point at given depth
   static Point3 backproject_from_camera(const Point2& p, const double depth);
+
+  /// @}
+  /// @name Advanced interface
+  /// @{
+
+  /**
+   * Return the start and end indices (inclusive) of the translation component of the
+   * exponential map parameterization
+   * @return a pair of [start, end] indices into the tangent space vector
+   */
+  inline static std::pair<size_t, size_t> translationInterval() {
+    return std::make_pair(3, 5);
+  }
+
+  /// @}
 
 private:
 
@@ -260,7 +319,7 @@ public:
   }
 
   /// @}
-  /// @name Transformations and mesaurement functions
+  /// @name Transformations and measurement functions
   /// @{
 
   /**
@@ -326,14 +385,16 @@ private:
   /// @}
 };
 
-template<>
-struct traits<CalibratedCamera> : public internal::Manifold<CalibratedCamera> {
-};
+// manifold traits
+template <>
+struct traits<CalibratedCamera> : public internal::Manifold<CalibratedCamera> {};
 
-template<>
-struct traits<const CalibratedCamera> : public internal::Manifold<
-    CalibratedCamera> {
-};
+template <>
+struct traits<const CalibratedCamera> : public internal::Manifold<CalibratedCamera> {};
 
-}
+// range traits, used in RangeFactor
+template <typename T>
+struct Range<CalibratedCamera, T> : HasRange<CalibratedCamera, T, double> {};
+
+}  // namespace gtsam
 

@@ -67,6 +67,22 @@ void check_sparse_solving(Solver& solver, const typename Solver::MatrixType& A, 
     VERIFY(oldb.isApprox(db) && "sparse solver testing: the rhs should not be modified!");
     VERIFY(x.isApprox(refX,test_precision<Scalar>()));
   }
+
+  // if not too large, do some extra check:
+  if(A.rows()<2000)
+  {
+
+    // test expression as input
+    {
+      solver.compute(0.5*(A+A));
+      Rhs x = solver.solve(b);
+      VERIFY(x.isApprox(refX,test_precision<Scalar>()));
+
+      Solver solver2(0.5*(A+A));
+      Rhs x2 = solver2.solve(b);
+      VERIFY(x2.isApprox(refX,test_precision<Scalar>()));
+    }
+  }
 }
 
 template<typename Solver, typename Rhs>
@@ -161,7 +177,10 @@ int generate_sparse_spd_problem(Solver& , typename Solver::MatrixType& A, typena
   dA = dM * dM.adjoint();
   
   halfA.resize(size,size);
-  halfA.template selfadjointView<Solver::UpLo>().rankUpdate(M);
+  if(Solver::UpLo==(Lower|Upper))
+    halfA = A;
+  else
+    halfA.template selfadjointView<Solver::UpLo>().rankUpdate(M);
   
   return size;
 }
@@ -274,7 +293,17 @@ int generate_sparse_square_problem(Solver&, typename Solver::MatrixType& A, Dens
   return size;
 }
 
-template<typename Solver> void check_sparse_square_solving(Solver& solver)
+
+struct prune_column {
+  int m_col;
+  prune_column(int col) : m_col(col) {}
+  template<class Scalar>
+  bool operator()(int, int col, const Scalar&) const {
+    return col != m_col;
+  }
+};
+
+template<typename Solver> void check_sparse_square_solving(Solver& solver, bool checkDeficient = false)
 {
   typedef typename Solver::MatrixType Mat;
   typedef typename Mat::Scalar Scalar;
@@ -305,6 +334,13 @@ template<typename Solver> void check_sparse_square_solving(Solver& solver)
     {
       b = DenseVector::Zero(size);
       check_sparse_solving(solver, A, b, dA, b);
+    }
+    // regression test for Bug 792 (structurally rank deficient matrices):
+    if(checkDeficient && size>1) {
+      int col = internal::random<int>(0,size-1);
+      A.prune(prune_column(col));
+      solver.compute(A);
+      VERIFY_IS_EQUAL(solver.info(), NumericalIssue);
     }
   }
   

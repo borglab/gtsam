@@ -11,56 +11,123 @@
 
 /**
  * @file    SO3.cpp
- * @brief   3*3 matrix representation o SO(3)
+ * @brief   3*3 matrix representation of SO(3)
  * @author  Frank Dellaert
+ * @author  Luca Carlone
+ * @author  Duy Nguyen Ta
  * @date    December 2014
  */
 
 #include <gtsam/geometry/SO3.h>
 #include <gtsam/base/concepts.h>
 #include <cmath>
-
-using namespace std;
+#include <limits>
 
 namespace gtsam {
 
-/* ************************************************************************* */
-SO3 SO3::Rodrigues(const Vector3& axis, double theta) {
-  using std::cos;
-  using std::sin;
+namespace so3 {
 
-  // get components of axis \omega
-  double wx = axis(0), wy = axis(1), wz = axis(2);
-
-  double c = cos(theta), s = sin(theta), c_1 = 1 - c;
-  double wwTxx = wx * wx, wwTyy = wy * wy, wwTzz = wz * wz;
-  double swx = wx * s, swy = wy * s, swz = wz * s;
-
-  double C00 = c_1 * wwTxx, C01 = c_1 * wx * wy, C02 = c_1 * wx * wz;
-  double C11 = c_1 * wwTyy, C12 = c_1 * wy * wz;
-  double C22 = c_1 * wwTzz;
-
-  Matrix3 R;
-  R << c + C00, -swz + C01, swy + C02, //
-  swz + C01, c + C11, -swx + C12, //
-  -swy + C02, swx + C12, c + C22;
-
-  return R;
+void ExpmapFunctor::init(bool nearZeroApprox) {
+  nearZero = nearZeroApprox || (theta2 <= std::numeric_limits<double>::epsilon());
+  if (nearZero) return;
+  theta = std::sqrt(theta2);  // rotation angle
+  sin_theta = std::sin(theta);
+  const double s2 = std::sin(theta / 2.0);
+  one_minus_cos = 2.0 * s2 * s2;  // numerically better than [1 - cos(theta)]
 }
 
-/// simply convert omega to axis/angle representation
-SO3 SO3::Expmap(const Vector3& omega,
-    ChartJacobian H) {
-
-  if (H)
-    *H = ExpmapDerivative(omega);
-
-  if (omega.isZero())
-    return Identity();
-  else {
-    double angle = omega.norm();
-    return Rodrigues(omega / angle, angle);
+ExpmapFunctor::ExpmapFunctor(const Vector3& omega, bool nearZeroApprox)
+    : theta2(omega.dot(omega)) {
+  const double wx = omega.x(), wy = omega.y(), wz = omega.z();
+  W << 0.0, -wz, +wy, +wz, 0.0, -wx, -wy, +wx, 0.0;
+  init(nearZeroApprox);
+  if (!nearZero) {
+    theta = std::sqrt(theta2);
+    K = W / theta;
+    KK = K * K;
   }
+}
+
+ExpmapFunctor::ExpmapFunctor(const Vector3& axis, double angle, bool nearZeroApprox)
+    : theta2(angle * angle) {
+  const double ax = axis.x(), ay = axis.y(), az = axis.z();
+  K << 0.0, -az, +ay, +az, 0.0, -ax, -ay, +ax, 0.0;
+  W = K * angle;
+  init(nearZeroApprox);
+  if (!nearZero) {
+    theta = angle;
+    KK = K * K;
+  }
+}
+
+SO3 ExpmapFunctor::expmap() const {
+  if (nearZero)
+    return I_3x3 + W;
+  else
+    return I_3x3 + sin_theta * K + one_minus_cos * KK;
+}
+
+DexpFunctor::DexpFunctor(const Vector3& omega, bool nearZeroApprox)
+    : ExpmapFunctor(omega, nearZeroApprox), omega(omega) {
+  if (nearZero)
+    dexp_ = I_3x3 - 0.5 * W;
+  else {
+    a = one_minus_cos / theta;
+    b = 1.0 - sin_theta / theta;
+    dexp_ = I_3x3 - a * K + b * KK;
+  }
+}
+
+Vector3 DexpFunctor::applyDexp(const Vector3& v, OptionalJacobian<3, 3> H1,
+                               OptionalJacobian<3, 3> H2) const {
+  if (H1) {
+    if (nearZero) {
+      *H1 = 0.5 * skewSymmetric(v);
+    } else {
+      // TODO(frank): Iserles hints that there should be a form I + c*K + d*KK
+      const Vector3 Kv = K * v;
+      const double Da = (sin_theta - 2.0 * a) / theta2;
+      const double Db = (one_minus_cos - 3.0 * b) / theta2;
+      *H1 = (Db * K - Da * I_3x3) * Kv * omega.transpose() -
+            skewSymmetric(Kv * b / theta) +
+            (a * I_3x3 - b * K) * skewSymmetric(v / theta);
+    }
+  }
+  if (H2) *H2 = dexp_;
+  return dexp_ * v;
+}
+
+Vector3 DexpFunctor::applyInvDexp(const Vector3& v, OptionalJacobian<3, 3> H1,
+                                  OptionalJacobian<3, 3> H2) const {
+  const Matrix3 invDexp = dexp_.inverse();
+  const Vector3 c = invDexp * v;
+  if (H1) {
+    Matrix3 D_dexpv_omega;
+    applyDexp(c, D_dexpv_omega);  // get derivative H of forward mapping
+    *H1 = -invDexp* D_dexpv_omega;
+  }
+  if (H2) *H2 = invDexp;
+  return c;
+}
+
+}  // namespace so3
+
+/* ************************************************************************* */
+SO3 SO3::AxisAngle(const Vector3& axis, double theta) {
+  return so3::ExpmapFunctor(axis, theta).expmap();
+}
+
+SO3 SO3::Expmap(const Vector3& omega, ChartJacobian H) {
+  if (H) {
+    so3::DexpFunctor impl(omega);
+    *H = impl.dexp();
+    return impl.expmap();
+  } else
+    return so3::ExpmapFunctor(omega).expmap();
+}
+
+Matrix3 SO3::ExpmapDerivative(const Vector3& omega) {
+  return so3::DexpFunctor(omega).dexp();
 }
 
 /* ************************************************************************* */
@@ -74,7 +141,7 @@ Vector3 SO3::Logmap(const SO3& R, ChartJacobian H) {
   const double& R31 = R(2, 0), R32 = R(2, 1), R33 = R(2, 2);
 
   // Get trace(R)
-  double tr = R.trace();
+  const double tr = R.trace();
 
   Vector3 omega;
 
@@ -90,7 +157,7 @@ Vector3 SO3::Logmap(const SO3& R, ChartJacobian H) {
       omega = (M_PI / sqrt(2.0 + 2.0 * R11)) * Vector3(1.0 + R11, R21, R31);
   } else {
     double magnitude;
-    double tr_3 = tr - 3.0; // always negative
+    const double tr_3 = tr - 3.0; // always negative
     if (tr_3 < -1e-7) {
       double theta = acos((tr - 1.0) / 2.0);
       magnitude = theta / (2.0 * sin(theta));
@@ -107,51 +174,13 @@ Vector3 SO3::Logmap(const SO3& R, ChartJacobian H) {
 }
 
 /* ************************************************************************* */
-Matrix3 SO3::ExpmapDerivative(const Vector3& omega)    {
+Matrix3 SO3::LogmapDerivative(const Vector3& omega) {
   using std::cos;
   using std::sin;
 
-  if(zero(omega)) return I_3x3;
-  double theta = omega.norm();  // rotation angle
-#ifdef DUY_VERSION
-  /// Follow Iserles05an, B10, pg 147, with a sign change in the second term (left version)
-  Matrix3 X = skewSymmetric(omega);
-  Matrix3 X2 = X*X;
-  double vi = theta/2.0;
-  double s1 = sin(vi)/vi;
-  double s2 = (theta - sin(theta))/(theta*theta*theta);
-  return I_3x3 - 0.5*s1*s1*X + s2*X2;
-#else // Luca's version
-  /**
-   * Right Jacobian for Exponential map in SO(3) - equation (10.86) and following equations in
-   * G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups", Volume 2, 2008.
-   * expmap(thetahat + omega) \approx expmap(thetahat) * expmap(Jr * omega)
-   * where Jr = ExpmapDerivative(thetahat);
-   * This maps a perturbation in the tangent space (omega) to
-   * a perturbation on the manifold (expmap(Jr * omega))
-   */
-  // element of Lie algebra so(3): X = omega^, normalized by normx
-  const Matrix3 Y = skewSymmetric(omega) / theta;
-  return I_3x3 - ((1 - cos(theta)) / (theta)) * Y
-      + (1 - sin(theta) / theta) * Y * Y; // right Jacobian
-#endif
-}
-
-/* ************************************************************************* */
-Matrix3 SO3::LogmapDerivative(const Vector3& omega)    {
-  using std::cos;
-  using std::sin;
-
-  if(zero(omega)) return I_3x3;
-  double theta = omega.norm();
-#ifdef DUY_VERSION
-  /// Follow Iserles05an, B11, pg 147, with a sign change in the second term (left version)
-  Matrix3 X = skewSymmetric(omega);
-  Matrix3 X2 = X*X;
-  double vi = theta/2.0;
-  double s2 = (theta*tan(M_PI_2-vi) - 2)/(2*theta*theta);
-  return I_3x3 + 0.5*X - s2*X2;
-#else // Luca's version
+  double theta2 = omega.dot(omega);
+  if (theta2 <= std::numeric_limits<double>::epsilon()) return I_3x3;
+  double theta = std::sqrt(theta2);  // rotation angle
   /** Right Jacobian for Log map in SO(3) - equation (10.86) and following equations in
    * G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups", Volume 2, 2008.
    * logmap( Rhat * expmap(omega) ) \approx logmap( Rhat ) + Jrinv * omega
@@ -159,11 +188,10 @@ Matrix3 SO3::LogmapDerivative(const Vector3& omega)    {
    * This maps a perturbation on the manifold (expmap(omega))
    * to a perturbation in the tangent space (Jrinv * omega)
    */
-  const Matrix3 X = skewSymmetric(omega); // element of Lie algebra so(3): X = omega^
-  return I_3x3 + 0.5 * X
-      + (1 / (theta * theta) - (1 + cos(theta)) / (2 * theta * sin(theta))) * X
-          * X;
-#endif
+  const Matrix3 W = skewSymmetric(omega); // element of Lie algebra so(3): W = omega^
+  return I_3x3 + 0.5 * W +
+         (1 / (theta * theta) - (1 + cos(theta)) / (2 * theta * sin(theta))) *
+             W * W;
 }
 
 /* ************************************************************************* */

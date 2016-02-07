@@ -14,9 +14,6 @@
  * @author Alex Cunningham
  */
 
-#include <boost/random/normal_distribution.hpp>
-#include <boost/random/variate_generator.hpp>
-
 #include <gtsam/linear/Sampler.h>
 namespace gtsam {
 
@@ -51,7 +48,7 @@ Vector Sampler::sampleDiagonal(const Vector& sigmas) {
     } else {
       typedef boost::normal_distribution<double> Normal;
       Normal dist(0.0, sigma);
-      boost::variate_generator<boost::minstd_rand&, Normal> norm(generator_, dist);
+      boost::variate_generator<boost::mt19937_64&, Normal> norm(generator_, dist);
       result(i) = norm();
     }
   }

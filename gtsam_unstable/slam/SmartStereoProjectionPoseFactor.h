@@ -11,10 +11,11 @@
 
 /**
  * @file   SmartStereoProjectionPoseFactor.h
- * @brief  Produces an Hessian factors on POSES from monocular measurements of a single landmark
+ * @brief  Smart stereo factor on poses, assuming camera calibration is fixed
  * @author Luca Carlone
  * @author Chris Beall
  * @author Zsolt Kira
+ * @author Frank Dellaert
  */
 
 #pragma once
@@ -34,46 +35,41 @@ namespace gtsam {
  */
 
 /**
- * The calibration is known here. The factor only constraints poses (variable dimension is 6)
+ * This factor assumes that camera calibration is fixed, but each camera
+ * has its own calibration.
+ * The factor only constrains poses (variable dimension is 6).
+ * This factor requires that values contains the involved poses (Pose3).
  * @addtogroup SLAM
  */
-template<class CALIBRATION>
-class SmartStereoProjectionPoseFactor: public SmartStereoProjectionFactor<CALIBRATION, 6> {
+class SmartStereoProjectionPoseFactor: public SmartStereoProjectionFactor {
+
 protected:
 
-  LinearizationMode linearizeTo_;  ///< How to linearize the factor (HESSIAN, JACOBIAN_SVD, JACOBIAN_Q)
-
-  std::vector<boost::shared_ptr<CALIBRATION> > K_all_; ///< shared pointer to calibration object (one for each camera)
+  std::vector<boost::shared_ptr<Cal3_S2Stereo> > K_all_; ///< shared pointer to calibration object (one for each camera)
 
 public:
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   /// shorthand for base class type
-  typedef SmartStereoProjectionFactor<CALIBRATION, 6> Base;
+  typedef SmartStereoProjectionFactor Base;
 
   /// shorthand for this class
-  typedef SmartStereoProjectionPoseFactor<CALIBRATION> This;
+  typedef SmartStereoProjectionPoseFactor This;
 
   /// shorthand for a smart pointer to a factor
   typedef boost::shared_ptr<This> shared_ptr;
 
   /**
    * Constructor
-   * @param rankTol tolerance used to check if point triangulation is degenerate
-   * @param linThreshold threshold on relative pose changes used to decide whether to relinearize (selective relinearization)
-   * @param manageDegeneracy is true, in presence of degenerate triangulation, the factor is converted to a rotation-only constraint,
-   * otherwise the factor is simply neglected
-   * @param enableEPI if set to true linear triangulation is refined with embedded LM iterations
-   * @param body_P_sensor is the transform from body to sensor frame (default identity)
+   * @param Isotropic measurement noise
+   * @param params internal parameters of the smart factors
    */
-  SmartStereoProjectionPoseFactor(const double rankTol = 1,
-      const double linThreshold = -1, const bool manageDegeneracy = false,
-      const bool enableEPI = false, boost::optional<Pose3> body_P_sensor = boost::none,
-      LinearizationMode linearizeTo = HESSIAN, double landmarkDistanceThreshold = 1e10,
-      double dynamicOutlierRejectionThreshold = -1) :
-        Base(rankTol, linThreshold, manageDegeneracy, enableEPI, body_P_sensor,
-        landmarkDistanceThreshold, dynamicOutlierRejectionThreshold), linearizeTo_(linearizeTo) {}
+  SmartStereoProjectionPoseFactor(const SharedNoiseModel& sharedNoiseModel,
+      const SmartStereoProjectionParams& params =
+      SmartStereoProjectionParams()) :
+      Base(sharedNoiseModel, params) {
+  }
 
   /** Virtual destructor */
   virtual ~SmartStereoProjectionPoseFactor() {}
@@ -82,27 +78,23 @@ public:
    * add a new measurement and pose key
    * @param measured is the 2m dimensional location of the projection of a single landmark in the m view (the measurement)
    * @param poseKey is key corresponding to the camera observing the same landmark
-   * @param noise_i is the measurement noise
-   * @param K_i is the (known) camera calibration
+   * @param K is the (fixed) camera calibration
    */
-  void add(const StereoPoint2 measured_i, const Key poseKey_i,
-      const SharedNoiseModel noise_i,
-      const boost::shared_ptr<CALIBRATION> K_i) {
-    Base::add(measured_i, poseKey_i, noise_i);
-    K_all_.push_back(K_i);
+  void add(const StereoPoint2 measured, const Key poseKey,
+      const boost::shared_ptr<Cal3_S2Stereo> K) {
+    Base::add(measured, poseKey);
+    K_all_.push_back(K);
   }
 
   /**
    *  Variant of the previous one in which we include a set of measurements
    * @param measurements vector of the 2m dimensional location of the projection of a single landmark in the m view (the measurement)
    * @param poseKeys vector of keys corresponding to the camera observing the same landmark
-   * @param noises vector of measurement noises
    * @param Ks vector of calibration objects
    */
   void add(std::vector<StereoPoint2> measurements, std::vector<Key> poseKeys,
-      std::vector<SharedNoiseModel> noises,
-      std::vector<boost::shared_ptr<CALIBRATION> > Ks) {
-    Base::add(measurements, poseKeys, noises);
+      std::vector<boost::shared_ptr<Cal3_S2Stereo> > Ks) {
+    Base::add(measurements, poseKeys);
     for (size_t i = 0; i < measurements.size(); i++) {
       K_all_.push_back(Ks.at(i));
     }
@@ -112,13 +104,12 @@ public:
    * Variant of the previous one in which we include a set of measurements with the same noise and calibration
    * @param mmeasurements vector of the 2m dimensional location of the projection of a single landmark in the m view (the measurement)
    * @param poseKeys vector of keys corresponding to the camera observing the same landmark
-   * @param noise measurement noise (same for all measurements)
    * @param K the (known) camera calibration (same for all measurements)
    */
   void add(std::vector<StereoPoint2> measurements, std::vector<Key> poseKeys,
-      const SharedNoiseModel noise, const boost::shared_ptr<CALIBRATION> K) {
+      const boost::shared_ptr<Cal3_S2Stereo> K) {
     for (size_t i = 0; i < measurements.size(); i++) {
-      Base::add(measurements.at(i), poseKeys.at(i), noise);
+      Base::add(measurements.at(i), poseKeys.at(i));
       K_all_.push_back(K);
     }
   }
@@ -131,55 +122,17 @@ public:
   void print(const std::string& s = "", const KeyFormatter& keyFormatter =
       DefaultKeyFormatter) const {
     std::cout << s << "SmartStereoProjectionPoseFactor, z = \n ";
-    BOOST_FOREACH(const boost::shared_ptr<CALIBRATION>& K, K_all_)
+    BOOST_FOREACH(const boost::shared_ptr<Cal3_S2Stereo>& K, K_all_)
     K->print("calibration = ");
     Base::print("", keyFormatter);
   }
 
   /// equals
   virtual bool equals(const NonlinearFactor& p, double tol = 1e-9) const {
-    const This *e = dynamic_cast<const This*>(&p);
+    const SmartStereoProjectionPoseFactor *e =
+        dynamic_cast<const SmartStereoProjectionPoseFactor*>(&p);
 
     return e && Base::equals(p, tol);
-  }
-
-  /**
-   * Collect all cameras involved in this factor
-   * @param values Values structure which must contain camera poses corresponding
-   * to keys involved in this factor
-   * @return vector of Values
-   */
-  typename Base::Cameras cameras(const Values& values) const {
-    typename Base::Cameras cameras;
-    size_t i=0;
-    BOOST_FOREACH(const Key& k, this->keys_) {
-      Pose3 pose = values.at<Pose3>(k);
-      typename Base::Camera camera(pose, K_all_[i++]);
-      cameras.push_back(camera);
-    }
-    return cameras;
-  }
-
-  /**
-   * Linearize to Gaussian Factor
-   * @param values Values structure which must contain camera poses for this factor
-   * @return
-   */
-  virtual boost::shared_ptr<GaussianFactor> linearize(
-      const Values& values) const {
-    // depending on flag set on construction we may linearize to different linear factors
-    switch(linearizeTo_){
-    case JACOBIAN_SVD :
-      return this->createJacobianSVDFactor(cameras(values), 0.0);
-      break;
-    case JACOBIAN_Q :
-      throw("JacobianQ not working yet!");
-//      return this->createJacobianQFactor(cameras(values), 0.0);
-      break;
-    default:
-      return this->createHessianFactor(cameras(values));
-      break;
-    }
   }
 
   /**
@@ -194,8 +147,25 @@ public:
   }
 
   /** return the calibration object */
-  inline const std::vector<boost::shared_ptr<CALIBRATION> > calibration() const {
+  inline const std::vector<boost::shared_ptr<Cal3_S2Stereo> > calibration() const {
     return K_all_;
+  }
+
+  /**
+   * Collect all cameras involved in this factor
+   * @param values Values structure which must contain camera poses corresponding
+   * to keys involved in this factor
+   * @return vector of Values
+   */
+   Base::Cameras cameras(const Values& values) const {
+    Base::Cameras cameras;
+    size_t i=0;
+    BOOST_FOREACH(const Key& k, this->keys_) {
+      const Pose3& pose = values.at<Pose3>(k);
+      StereoCamera camera(pose, K_all_[i++]);
+      cameras.push_back(camera);
+    }
+    return cameras;
   }
 
 private:
@@ -211,9 +181,9 @@ private:
 }; // end of class declaration
 
 /// traits
-template<class CALIBRATION>
-struct traits<SmartStereoProjectionPoseFactor<CALIBRATION> > : public Testable<
-    SmartStereoProjectionPoseFactor<CALIBRATION> > {
+template<>
+struct traits<SmartStereoProjectionPoseFactor> : public Testable<
+    SmartStereoProjectionPoseFactor> {
 };
 
 } // \ namespace gtsam

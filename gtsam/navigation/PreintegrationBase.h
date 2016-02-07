@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -21,28 +21,33 @@
 
 #pragma once
 
-#include <gtsam/navigation/PreintegratedRotation.h>
+#include <gtsam/navigation/PreintegrationParams.h>
+#include <gtsam/navigation/NavState.h>
 #include <gtsam/navigation/ImuBias.h>
-#include <gtsam/geometry/Pose3.h>
-#include <gtsam/base/Matrix.h>
-#include <gtsam/base/Vector.h>
+#include <gtsam/linear/NoiseModel.h>
+
+#include <iosfwd>
 
 namespace gtsam {
 
-/**
- * Struct to hold all state variables of returned by Predict function
- */
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+/// @deprecated
 struct PoseVelocityBias {
   Pose3 pose;
   Vector3 velocity;
   imuBias::ConstantBias bias;
-
-  PoseVelocityBias(const Pose3& _pose, const Vector3& _velocity, const imuBias::ConstantBias _bias)
-      : pose(_pose),
-        velocity(_velocity),
-        bias(_bias) {
+  PoseVelocityBias(const Pose3& _pose, const Vector3& _velocity,
+      const imuBias::ConstantBias _bias) :
+      pose(_pose), velocity(_velocity), bias(_bias) {
+  }
+  PoseVelocityBias(const NavState& navState, const imuBias::ConstantBias _bias) :
+      pose(navState.pose()), velocity(navState.velocity()), bias(_bias) {
+  }
+  NavState navState() const {
+    return NavState(pose, velocity);
   }
 };
+#endif
 
 /**
  * PreintegrationBase is the base class for PreintegratedMeasurements
@@ -50,154 +55,208 @@ struct PoseVelocityBias {
  * It includes the definitions of the preintegrated variables and the methods
  * to access, print, and compare them.
  */
-class PreintegrationBase : public PreintegratedRotation {
-
-  imuBias::ConstantBias biasHat_;  ///< Acceleration and angular rate bias values used during preintegration
-  bool use2ndOrderIntegration_;  ///< Controls the order of integration
-
-  Vector3 deltaPij_;  ///< Preintegrated relative position (does not take into account velocity at time i, see deltap+, in [2]) (in frame i)
-  Vector3 deltaVij_;  ///< Preintegrated relative velocity (in global frame)
-
-  Matrix3 delPdelBiasAcc_;  ///< Jacobian of preintegrated position w.r.t. acceleration bias
-  Matrix3 delPdelBiasOmega_;  ///< Jacobian of preintegrated position w.r.t. angular rate bias
-  Matrix3 delVdelBiasAcc_;  ///< Jacobian of preintegrated velocity w.r.t. acceleration bias
-  Matrix3 delVdelBiasOmega_;  ///< Jacobian of preintegrated velocity w.r.t. angular rate bias
-
-  const Matrix3 accelerometerCovariance_;  ///< continuous-time "Covariance" of accelerometer measurements
-  const Matrix3 integrationCovariance_;  ///< continuous-time "Covariance" describing integration uncertainty
-  /// (to compensate errors in Euler integration)
-
+class PreintegrationBase {
  public:
+  typedef imuBias::ConstantBias Bias;
+  typedef PreintegrationParams Params;
+
+ protected:
+
+  /// Parameters. Declared mutable only for deprecated predict method.
+  /// TODO(frank): make const once deprecated method is removed
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+  mutable
+#endif
+  boost::shared_ptr<Params> p_;
+
+  /// Acceleration and gyro bias used for preintegration
+  Bias biasHat_;
+
+  /// Time interval from i to j
+  double deltaTij_;
 
   /**
-   *  Default constructor, initializes the variables in the base class
-   *  @param bias Current estimate of acceleration and rotation rate biases
-   *  @param use2ndOrderIntegration     Controls the order of integration
-   *  (if false: p(t+1) = p(t) + v(t) deltaT ; if true: p(t+1) = p(t) + v(t) deltaT + 0.5 * acc(t) deltaT^2)
+   * Preintegrated navigation state, from frame i to frame j
+   * Note: relative position does not take into account velocity at time i, see deltap+, in [2]
+   * Note: velocity is now also in frame i, as opposed to deltaVij in [2]
    */
-  PreintegrationBase(const imuBias::ConstantBias& bias, const Matrix3& measuredAccCovariance,
-                     const Matrix3& measuredOmegaCovariance,
-                     const Matrix3&integrationErrorCovariance, const bool use2ndOrderIntegration);
+  Vector9 preintegrated_;
 
-  /// methods to access class variables
-  bool use2ndOrderIntegration() const {
-    return use2ndOrderIntegration_;
-  }
-  const Vector3& deltaPij() const {
-    return deltaPij_;
-  }
-  const Vector3& deltaVij() const {
-    return deltaVij_;
-  }
-  const imuBias::ConstantBias& biasHat() const {
-    return biasHat_;
-  }
-  Vector6 biasHatVector() const {
-    return biasHat_.vector();
-  }  // expensive
-  const Matrix3& delPdelBiasAcc() const {
-    return delPdelBiasAcc_;
-  }
-  const Matrix3& delPdelBiasOmega() const {
-    return delPdelBiasOmega_;
-  }
-  const Matrix3& delVdelBiasAcc() const {
-    return delVdelBiasAcc_;
-  }
-  const Matrix3& delVdelBiasOmega() const {
-    return delVdelBiasOmega_;
+  Matrix93 preintegrated_H_biasAcc_;    ///< Jacobian of preintegrated preintegrated w.r.t. acceleration bias
+  Matrix93 preintegrated_H_biasOmega_;  ///< Jacobian of preintegrated preintegrated w.r.t. angular rate bias
+
+  /// Default constructor for serialization
+  PreintegrationBase() {
+    resetIntegration();
   }
 
-  const Matrix3& accelerometerCovariance() const {
-    return accelerometerCovariance_;
-  }
-  const Matrix3& integrationCovariance() const {
-    return integrationCovariance_;
-  }
+public:
+  /// @name Constructors
+  /// @{
 
-  /// print
-  void print(const std::string& s) const;
+  /**
+   *  Constructor, initializes the variables in the base class
+   *  @param p    Parameters, typically fixed in a single application
+   *  @param bias Current estimate of acceleration and rotation rate biases
+   */
+  PreintegrationBase(const boost::shared_ptr<Params>& p,
+      const imuBias::ConstantBias& biasHat = imuBias::ConstantBias());
 
-  /// check equality
-  bool equals(const PreintegrationBase& other, double tol) const;
+  /// @}
 
+  /// @name Basic utilities
+  /// @{
   /// Re-initialize PreintegratedMeasurements
   void resetIntegration();
 
-  /// Update preintegrated measurements
-  void updatePreintegratedMeasurements(const Vector3& correctedAcc, const Rot3& incrR,
-                                       const double deltaT, OptionalJacobian<9, 9> F);
+  /// check parameters equality: checks whether shared pointer points to same Params object.
+  bool matchesParamsWith(const PreintegrationBase& other) const {
+    return p_ == other.p_;
+  }
 
-  /// Update Jacobians to be used during preintegration
-  void updatePreintegratedJacobians(const Vector3& correctedAcc,
-                                    const Matrix3& D_Rincr_integratedOmega, const Rot3& incrR,
-                                    double deltaT);
+  /// shared pointer to params
+  const boost::shared_ptr<Params>& params() const {
+    return p_;
+  }
 
-  void correctMeasurementsByBiasAndSensorPose(const Vector3& measuredAcc,
-                                              const Vector3& measuredOmega, Vector3& correctedAcc,
-                                              Vector3& correctedOmega,
-                                              boost::optional<const Pose3&> body_P_sensor);
+  /// const reference to params
+  const Params& p() const {
+    return *boost::static_pointer_cast<Params>(p_);
+  }
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+  void set_body_P_sensor(const Pose3& body_P_sensor) {
+    p_->body_P_sensor = body_P_sensor;
+  }
+#endif
+/// @}
+
+  /// @name Instance variables access
+  /// @{
+  const imuBias::ConstantBias& biasHat() const { return biasHat_; }
+  const double& deltaTij() const { return deltaTij_; }
+
+  const Vector9& preintegrated() const { return preintegrated_; }
+
+  Vector3 theta() const { return preintegrated_.head<3>(); }
+  Vector3 deltaPij() const { return preintegrated_.segment<3>(3); }
+  Vector3 deltaVij() const { return preintegrated_.tail<3>(); }
+
+  Rot3 deltaRij() const { return Rot3::Expmap(theta()); }
+  NavState deltaXij() const { return NavState::Retract(preintegrated_); }
+
+  const Matrix93& preintegrated_H_biasAcc() const { return preintegrated_H_biasAcc_; }
+  const Matrix93& preintegrated_H_biasOmega() const { return preintegrated_H_biasOmega_; }
+
+  // Exposed for MATLAB
+  Vector6 biasHatVector() const { return biasHat_.vector(); }
+  /// @}
+
+  /// @name Testable
+  /// @{
+  GTSAM_EXPORT friend std::ostream& operator<<(std::ostream& os, const PreintegrationBase& pim);
+  void print(const std::string& s) const;
+  bool equals(const PreintegrationBase& other, double tol) const;
+  /// @}
+
+  /// @name Main functionality
+  /// @{
+
+  /// Subtract estimate and correct for sensor pose
+  /// Compute the derivatives due to non-identity body_P_sensor (rotation and centrifugal acc)
+  /// Ignore D_correctedOmega_measuredAcc as it is trivially zero
+  std::pair<Vector3, Vector3> correctMeasurementsBySensorPose(
+      const Vector3& unbiasedAcc, const Vector3& unbiasedOmega,
+      OptionalJacobian<3, 3> D_correctedAcc_unbiasedAcc = boost::none,
+      OptionalJacobian<3, 3> D_correctedAcc_unbiasedOmega = boost::none,
+      OptionalJacobian<3, 3> D_correctedOmega_unbiasedOmega = boost::none) const;
+
+  // Update integrated vector on tangent manifold preintegrated with acceleration
+  // Static, functional version.
+  static Vector9 UpdatePreintegrated(const Vector3& a_body,
+                                     const Vector3& w_body, double dt,
+                                     const Vector9& preintegrated,
+                                     OptionalJacobian<9, 9> A = boost::none,
+                                     OptionalJacobian<9, 3> B = boost::none,
+                                     OptionalJacobian<9, 3> C = boost::none);
+
+  /// Update preintegrated measurements and get derivatives
+  /// It takes measured quantities in the j frame
+  /// Modifies preintegrated_ in place after correcting for bias and possibly sensor pose
+  void integrateMeasurement(const Vector3& measuredAcc,
+                            const Vector3& measuredOmega, const double deltaT,
+                            Matrix9* A, Matrix93* B, Matrix93* C);
+
+  // Version without derivatives
+  void integrateMeasurement(const Vector3& measuredAcc,
+                            const Vector3& measuredOmega, const double deltaT);
+
+  /// Given the estimate of the bias, return a NavState tangent vector
+  /// summarizing the preintegrated IMU measurements so far
+  Vector9 biasCorrectedDelta(const imuBias::ConstantBias& bias_i,
+      OptionalJacobian<9, 6> H = boost::none) const;
 
   /// Predict state at time j
-  PoseVelocityBias predict(
-      const Pose3& pose_i, const Vector3& vel_i, const imuBias::ConstantBias& bias_i,
-      const Vector3& gravity, const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis = false,
-      boost::optional<Vector3&> deltaPij_biascorrected_out = boost::none,
-      boost::optional<Vector3&> deltaVij_biascorrected_out = boost::none) const;
+  NavState predict(const NavState& state_i, const imuBias::ConstantBias& bias_i,
+                   OptionalJacobian<9, 9> H1 = boost::none,
+                   OptionalJacobian<9, 6> H2 = boost::none) const;
+
+  /// Calculate error given navStates
+  Vector9 computeError(const NavState& state_i, const NavState& state_j,
+                       const imuBias::ConstantBias& bias_i,
+                       OptionalJacobian<9, 9> H1, OptionalJacobian<9, 9> H2,
+                       OptionalJacobian<9, 6> H3) const;
 
   /// Compute errors w.r.t. preintegrated measurements and jacobians wrt pose_i, vel_i, bias_i, pose_j, bias_j
-  Vector9 computeErrorAndJacobians(const Pose3& pose_i, const Vector3& vel_i, const Pose3& pose_j,
-                                   const Vector3& vel_j, const imuBias::ConstantBias& bias_i,
-                                   const Vector3& gravity, const Vector3& omegaCoriolis,
-                                   const bool use2ndOrderCoriolis, OptionalJacobian<9, 6> H1 =
-                                       boost::none,
-                                   OptionalJacobian<9, 3> H2 = boost::none,
-                                   OptionalJacobian<9, 6> H3 = boost::none,
-                                   OptionalJacobian<9, 3> H4 = boost::none,
-                                   OptionalJacobian<9, 6> H5 = boost::none) const;
+  Vector9 computeErrorAndJacobians(const Pose3& pose_i, const Vector3& vel_i,
+      const Pose3& pose_j, const Vector3& vel_j,
+      const imuBias::ConstantBias& bias_i, OptionalJacobian<9, 6> H1 =
+          boost::none, OptionalJacobian<9, 3> H2 = boost::none,
+      OptionalJacobian<9, 6> H3 = boost::none, OptionalJacobian<9, 3> H4 =
+          boost::none, OptionalJacobian<9, 6> H5 = boost::none) const;
 
- private:
+  // Compose the two preintegrated vectors
+  static Vector9 Compose(const Vector9& zeta01, const Vector9& zeta12,
+                         double deltaT12,
+                         OptionalJacobian<9, 9> H1 = boost::none,
+                         OptionalJacobian<9, 9> H2 = boost::none);
+
+  /// Merge in a different set of measurements and update bias derivatives accordingly
+  /// The derivatives apply to the preintegrated Vector9
+  void mergeWith(const PreintegrationBase& pim, Matrix9* H1, Matrix9* H2);
+  /// @}
+
+  /** Dummy clone for MATLAB */
+  virtual boost::shared_ptr<PreintegrationBase> clone() const {
+    return boost::shared_ptr<PreintegrationBase>();
+  }
+
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+  /// @name Deprecated
+  /// @{
+
+  /// @deprecated predict
+  PoseVelocityBias predict(const Pose3& pose_i, const Vector3& vel_i,
+      const imuBias::ConstantBias& bias_i, const Vector3& n_gravity,
+      const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis = false) const;
+
+  /// @}
+#endif
+
+private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegratedRotation);
+    namespace bs = ::boost::serialization;
+    ar & BOOST_SERIALIZATION_NVP(p_);
     ar & BOOST_SERIALIZATION_NVP(biasHat_);
-    ar & BOOST_SERIALIZATION_NVP(deltaPij_);
-    ar & BOOST_SERIALIZATION_NVP(deltaVij_);
-    ar & BOOST_SERIALIZATION_NVP(delPdelBiasAcc_);
-    ar & BOOST_SERIALIZATION_NVP(delPdelBiasOmega_);
-    ar & BOOST_SERIALIZATION_NVP(delVdelBiasAcc_);
-    ar & BOOST_SERIALIZATION_NVP(delVdelBiasOmega_);
+    ar & BOOST_SERIALIZATION_NVP(deltaTij_);
+    ar & bs::make_nvp("preintegrated_", bs::make_array(preintegrated_.data(), preintegrated_.size()));
+    ar & bs::make_nvp("preintegrated_H_biasAcc_", bs::make_array(preintegrated_H_biasAcc_.data(), preintegrated_H_biasAcc_.size()));
+    ar & bs::make_nvp("preintegrated_H_biasOmega_", bs::make_array(preintegrated_H_biasOmega_.data(), preintegrated_H_biasOmega_.size()));
   }
 };
 
-class ImuBase {
-
- protected:
-
-  Vector3 gravity_;
-  Vector3 omegaCoriolis_;
-  boost::optional<Pose3> body_P_sensor_;  ///< The pose of the sensor in the body frame
-  bool use2ndOrderCoriolis_;  ///< Controls whether higher order terms are included when calculating the Coriolis Effect
-
- public:
-
-  /// Default constructor, with decent gravity and zero coriolis
-  ImuBase();
-
-  /// Fully fledge constructor
-  ImuBase(const Vector3& gravity, const Vector3& omegaCoriolis,
-          boost::optional<const Pose3&> body_P_sensor = boost::none,
-          const bool use2ndOrderCoriolis = false);
-
-  const Vector3& gravity() const {
-    return gravity_;
-  }
-  const Vector3& omegaCoriolis() const {
-    return omegaCoriolis_;
-  }
-
-};
-
-}  /// namespace gtsam
+} /// namespace gtsam

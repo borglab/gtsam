@@ -26,6 +26,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <boost/assign/std/list.hpp> // for operator +=
+#include <boost/assign/std/vector.hpp>
 #include <boost/assign/list_of.hpp>
 using namespace boost::assign;
 #include <stdexcept>
@@ -308,12 +309,12 @@ TEST(Values, extract_keys)
   config.insert(key3, Pose2());
   config.insert(key4, Pose2());
 
-  FastList<Key> expected, actual;
+  KeyVector expected, actual;
   expected += key1, key2, key3, key4;
   actual = config.keys();
 
   CHECK(actual.size() == expected.size());
-  FastList<Key>::const_iterator itAct = actual.begin(), itExp = expected.begin();
+  KeyVector::const_iterator itAct = actual.begin(), itExp = expected.begin();
   for (; itAct != actual.end() && itExp != expected.end(); ++itAct, ++itExp) {
     EXPECT(*itExp == *itAct);
   }

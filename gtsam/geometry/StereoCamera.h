@@ -66,8 +66,8 @@ public:
   StereoCamera(const Pose3& leftCamPose, const Cal3_S2Stereo::shared_ptr K);
 
   /// Return shared pointer to calibration
-  const Cal3_S2Stereo::shared_ptr calibration() const {
-    return K_;
+  const Cal3_S2Stereo& calibration() const {
+    return *K_;
   }
 
   /// @}

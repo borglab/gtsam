@@ -17,6 +17,7 @@
 
 #include <gtsam/global_includes.h>
 #include <gtsam/base/Matrix.h>
+
 #include <boost/assign/list_of.hpp>
 #include <boost/foreach.hpp>
 #include <map>

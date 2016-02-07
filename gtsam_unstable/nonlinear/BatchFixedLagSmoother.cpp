@@ -205,7 +205,7 @@ void BatchFixedLagSmoother::reorder(const std::set<Key>& marginalizeKeys) {
   }
 
   // COLAMD groups will be used to place marginalize keys in Group 0, and everything else in Group 1
-  ordering_ = Ordering::colamdConstrainedFirst(factors_,
+  ordering_ = Ordering::ColamdConstrainedFirst(factors_,
       std::vector<Key>(marginalizeKeys.begin(), marginalizeKeys.end()));
 
   if (debug) {
@@ -407,7 +407,7 @@ void BatchFixedLagSmoother::marginalize(const std::set<Key>& marginalizeKeys) {
   std::set<size_t> removedFactorSlots;
   VariableIndex variableIndex(factors_);
   BOOST_FOREACH(Key key, marginalizeKeys) {
-    const FastList<size_t>& slots = variableIndex[key];
+    const FastVector<size_t>& slots = variableIndex[key];
     removedFactorSlots.insert(slots.begin(), slots.end());
   }
 
@@ -463,7 +463,7 @@ void BatchFixedLagSmoother::PrintKeySet(const std::set<Key>& keys,
 }
 
 /* ************************************************************************* */
-void BatchFixedLagSmoother::PrintKeySet(const gtsam::FastSet<Key>& keys,
+void BatchFixedLagSmoother::PrintKeySet(const gtsam::KeySet& keys,
     const std::string& label) {
   std::cout << label;
   BOOST_FOREACH(gtsam::Key key, keys) {
@@ -531,13 +531,13 @@ NonlinearFactorGraph BatchFixedLagSmoother::calculateMarginalFactors(
         "BatchFixedLagSmoother::calculateMarginalFactors  Marginalize Keys: ");
 
   // Get the set of all keys involved in the factor graph
-  FastSet<Key> allKeys(graph.keys());
+  KeySet allKeys(graph.keys());
   if (debug)
     PrintKeySet(allKeys,
         "BatchFixedLagSmoother::calculateMarginalFactors  All Keys: ");
 
   // Calculate the set of RemainingKeys = AllKeys \Intersect marginalizeKeys
-  FastSet<Key> remainingKeys;
+  KeySet remainingKeys;
   std::set_difference(allKeys.begin(), allKeys.end(), marginalizeKeys.begin(),
       marginalizeKeys.end(), std::inserter(remainingKeys, remainingKeys.end()));
   if (debug)

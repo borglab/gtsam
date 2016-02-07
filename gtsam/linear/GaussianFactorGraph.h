@@ -135,7 +135,7 @@ namespace gtsam {
      * Return the set of variables involved in the factors (computes a set
      * union).
      */
-    typedef FastSet<Key> Keys;
+    typedef KeySet Keys;
     Keys keys() const;
 
     /* return a map of (Key, dimension) */

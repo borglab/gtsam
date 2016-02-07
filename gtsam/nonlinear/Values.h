@@ -32,6 +32,7 @@
 #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
+#pragma GCC diagnostic ignored "-Wunused-local-typedefs"
 #endif
 #include <boost/bind.hpp>
 #ifdef __GNUC__
@@ -291,7 +292,7 @@ namespace gtsam {
      * Returns a set of keys in the config
      * Note: by construction, the list is ordered
      */
-    KeyList keys() const;
+    KeyVector keys() const;
 
     /** Replace all keys and variables */
     Values& operator=(const Values& rhs);

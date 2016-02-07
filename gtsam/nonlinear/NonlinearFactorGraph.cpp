@@ -17,21 +17,23 @@
  * @author  Christian Potthast
  */
 
-#include <cmath>
-#include <limits>
-#include <boost/foreach.hpp>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/inference/Ordering.h>
-#include <gtsam/inference/FactorGraph-inst.h>
 #include <gtsam/symbolic/SymbolicFactorGraph.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/inference/FactorGraph-inst.h>
+#include <gtsam/config.h> // for GTSAM_USE_TBB
 
 #ifdef GTSAM_USE_TBB
 #  include <tbb/parallel_for.h>
 #endif
+
+#include <boost/foreach.hpp>
+#include <cmath>
+#include <limits>
 
 using namespace std;
 
@@ -70,7 +72,7 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
   stm << "  size=\"" << formatting.figureWidthInches << "," <<
     formatting.figureHeightInches << "\";\n\n";
 
-  FastSet<Key> keys = this->keys();
+  KeySet keys = this->keys();
 
   // Local utility function to extract x and y coordinates
   struct { boost::optional<Point2> operator()(
@@ -144,7 +146,7 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
 
   if (formatting.mergeSimilarFactors) {
     // Remove duplicate factors
-    FastSet<vector<Key> > structure;
+    std::set<vector<Key> > structure;
     BOOST_FOREACH(const sharedFactor& factor, *this){
       if(factor) {
         vector<Key> factorKeys = factor->keys();
@@ -234,8 +236,8 @@ double NonlinearFactorGraph::error(const Values& c) const {
 }
 
 /* ************************************************************************* */
-FastSet<Key> NonlinearFactorGraph::keys() const {
-  FastSet<Key> keys;
+KeySet NonlinearFactorGraph::keys() const {
+  KeySet keys;
   BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
     if(factor)
       keys.insert(factor->begin(), factor->end());
@@ -246,13 +248,13 @@ FastSet<Key> NonlinearFactorGraph::keys() const {
 /* ************************************************************************* */
 Ordering NonlinearFactorGraph::orderingCOLAMD() const
 {
-  return Ordering::colamd(*this);
+  return Ordering::Colamd(*this);
 }
 
 /* ************************************************************************* */
 Ordering NonlinearFactorGraph::orderingCOLAMDConstrained(const FastMap<Key, int>& constraints) const
 {
-  return Ordering::colamdConstrained(*this, constraints);
+  return Ordering::ColamdConstrained(*this, constraints);
 }
 
 /* ************************************************************************* */
@@ -276,23 +278,26 @@ SymbolicFactorGraph::shared_ptr NonlinearFactorGraph::symbolic() const
 namespace {
 
 #ifdef GTSAM_USE_TBB
-  struct _LinearizeOneFactor {
-    const NonlinearFactorGraph& graph;
-    const Values& linearizationPoint;
-    GaussianFactorGraph& result;
-    _LinearizeOneFactor(const NonlinearFactorGraph& graph, const Values& linearizationPoint, GaussianFactorGraph& result) :
-      graph(graph), linearizationPoint(linearizationPoint), result(result) {}
-    void operator()(const tbb::blocked_range<size_t>& r) const
-    {
-      for(size_t i = r.begin(); i != r.end(); ++i)
-      {
-        if(graph[i])
-          result[i] = graph[i]->linearize(linearizationPoint);
-        else
-          result[i] = GaussianFactor::shared_ptr();
-      }
+class _LinearizeOneFactor {
+  const NonlinearFactorGraph& nonlinearGraph_;
+  const Values& linearizationPoint_;
+  GaussianFactorGraph& result_;
+public:
+  // Create functor with constant parameters
+  _LinearizeOneFactor(const NonlinearFactorGraph& graph,
+      const Values& linearizationPoint, GaussianFactorGraph& result) :
+      nonlinearGraph_(graph), linearizationPoint_(linearizationPoint), result_(result) {
+  }
+  // Operator that linearizes a given range of the factors
+  void operator()(const tbb::blocked_range<size_t>& blocked_range) const {
+    for (size_t i = blocked_range.begin(); i != blocked_range.end(); ++i) {
+      if (nonlinearGraph_[i])
+        result_[i] = nonlinearGraph_[i]->linearize(linearizationPoint_);
+      else
+        result_[i] = GaussianFactor::shared_ptr();
     }
-  };
+  }
+};
 #endif
 
 }
@@ -321,7 +326,7 @@ GaussianFactorGraph::shared_ptr NonlinearFactorGraph::linearize(const Values& li
     if(factor) {
       (*linearFG) += factor->linearize(linearizationPoint);
     } else
-      (*linearFG) += GaussianFactor::shared_ptr();
+    (*linearFG) += GaussianFactor::shared_ptr();
   }
 
 #endif

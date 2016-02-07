@@ -34,29 +34,12 @@ void Rot3::print(const std::string& s) const {
 }
 
 /* ************************************************************************* */
-Rot3 Rot3::rodriguez(const Point3& w, double theta) {
-  return rodriguez((Vector)w.vector(),theta);
-}
-
-/* ************************************************************************* */
-Rot3 Rot3::rodriguez(const Unit3& w, double theta) {
-  return rodriguez(w.point3(),theta);
-}
-
-/* ************************************************************************* */
-Rot3 Rot3::Random(boost::mt19937 & rng) {
+Rot3 Rot3::Random(boost::mt19937& rng) {
   // TODO allow any engine without including all of boost :-(
-  Unit3 w = Unit3::Random(rng);
-  boost::uniform_real<double> randomAngle(-M_PI,M_PI);
+  Unit3 axis = Unit3::Random(rng);
+  boost::uniform_real<double> randomAngle(-M_PI, M_PI);
   double angle = randomAngle(rng);
-  return rodriguez(w,angle);
-}
-
-/* ************************************************************************* */
-Rot3 Rot3::rodriguez(const Vector3& w) {
-  double t = w.norm();
-  if (t < 1e-10) return Rot3();
-  return rodriguez(w/t, t);
+  return AxisAngle(axis, angle);
 }
 
 /* ************************************************************************* */
@@ -140,7 +123,7 @@ Vector3 Rot3::rpy() const {
 
 /* ************************************************************************* */
 Vector Rot3::quaternion() const {
-  Quaternion q = toQuaternion();
+  gtsam::Quaternion q = toQuaternion();
   Vector v(4);
   v(0) = q.w();
   v(1) = q.x();
