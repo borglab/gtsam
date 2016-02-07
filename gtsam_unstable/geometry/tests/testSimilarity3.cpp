@@ -42,7 +42,7 @@ GTSAM_CONCEPT_TESTABLE_INST(Similarity3)
 static Point3 P(0.2, 0.7, -2);
 static Rot3 R = Rot3::Rodrigues(0.3, 0, 0);
 static double s = 4;
-static Similarity3 T_default(R, Point3(3.5, -8.2, 4.2), 1);
+static Similarity3 T1(R, Point3(3.5, -8.2, 4.2), 1);
 static Similarity3 T2(Rot3::Rodrigues(0.3, 0.2, 0.1), Point3(3.5, -8.2, 4.2), 1);
 static Similarity3 T3(Rot3::Rodrigues(-90, 0, 0), Point3(1, 2, 3), 1);
 static Similarity3 T4(R, P, s);
@@ -79,16 +79,13 @@ TEST(Similarity3, Getters) {
 
 //******************************************************************************
 TEST(Similarity3, AdjointMap) {
-  Similarity3 test(Rot3::Ypr(1, 2, 3).inverse(), Point3(4, 5, 6), 7);
-  Matrix7 result;
-  result << -1.5739, -2.4512, -6.3651, -50.7671, -11.2503, 16.8859, -28.0000,
-      6.3167, -2.9884, -0.4111, 0.8502, 8.6373, -49.7260, -35.0000,
-      -2.5734, -5.8362, 2.8839, 33.1363, 0.3024, 30.1811, -42.0000,
-      0, 0, 0, -0.2248, -0.3502, -0.9093, 0,
-      0, 0, 0, 0.9024, -0.4269, -0.0587, 0,
-      0, 0, 0, -0.3676, -0.8337, 0.4120, 0,
-      0, 0, 0, 0, 0, 0, 1.0000;
-  EXPECT(assert_equal(result, test.AdjointMap(), 1e-3));
+  const Matrix4 T = T2.matrix();
+  // Check Ad with actual definition
+  Vector7 delta;
+  delta << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7;
+  Matrix4 W = Similarity3::wedge(delta);
+  Matrix4 TW = Similarity3::wedge(T2.AdjointMap() * delta);
+  EXPECT(assert_equal(TW, Matrix4(T * W * T.inverse()), 1e-9));
 }
 
 //******************************************************************************
@@ -169,13 +166,13 @@ TEST( Similarity3, retract_first_order) {
 TEST(Similarity3, localCoordinates_first_order) {
   Vector d12 = repeat(7, 0.1);
   d12(6) = 1.0;
-  Similarity3 t1 = T_default, t2 = t1.retract(d12);
+  Similarity3 t1 = T1, t2 = t1.retract(d12);
   EXPECT(assert_equal(d12, t1.localCoordinates(t2)));
 }
 
 //******************************************************************************
 TEST(Similarity3, manifold_first_order) {
-  Similarity3 t1 = T_default;
+  Similarity3 t1 = T1;
   Similarity3 t2 = T3;
   Similarity3 origin;
   Vector d12 = t1.localCoordinates(t2);
@@ -188,10 +185,11 @@ TEST(Similarity3, manifold_first_order) {
 // Return as a 4*4 Matrix
 TEST(Similarity3, Matrix) {
   Matrix4 expected;
-  expected << 2, 0, 0, 1,
-      0, 2, 0, 1,
-      0, 0, 2, 0,
-      0, 0, 0, 1;
+  expected <<
+      1, 0, 0, 1,
+      0, 1, 0, 1,
+      0, 0, 1, 0,
+      0, 0, 0, 0.5;
   Matrix4 actual = T6.matrix();
   EXPECT(assert_equal(expected, actual));
 }
@@ -226,55 +224,39 @@ TEST(Similarity3, ExpLogMap) {
 //******************************************************************************
 // Group action on Point3 (with simpler transform)
 TEST(Similarity3, GroupAction) {
-  EXPECT(assert_equal(Point3(1, 1, 0), T6 * Point3(0, 0, 0)));
+  EXPECT(assert_equal(Point3(2, 2, 0), T6 * Point3(0, 0, 0)));
+  EXPECT(assert_equal(Point3(4, 2, 0), T6 * Point3(1, 0, 0)));
 
-  // Test actual group action on R^4
+  // Test group action on R^4 via matrix representation
   Vector4 qh;
   qh << 1, 0, 0, 1;
   Vector4 ph;
-  ph << 3, 1, 0, 1;
+  ph << 2, 1, 0, 0.5; // equivalent to Point3(4, 2, 0)
   EXPECT(assert_equal((Vector )ph, T6.matrix() * qh));
 
+  // Test some more...
+  Point3 pa = Point3(1, 0, 0);
   Similarity3 Ta(Rot3(), Point3(1, 2, 3), 1.0);
   Similarity3 Tb(Rot3(), Point3(1, 2, 3), 2.0);
-
-  Point3 pa = Point3(1, 0, 0);
-  Point3 pTa = Point3(2, 2, 3);
-  Point3 pTb = Point3(3, 2, 3);
-
-  EXPECT(assert_equal(pTa, Ta.transform_from(pa)));
-  EXPECT(assert_equal(pTb, Tb.transform_from(pa)));
+  EXPECT(assert_equal(Point3(2, 2, 3), Ta.transform_from(pa)));
+  EXPECT(assert_equal(Point3(4, 4, 6), Tb.transform_from(pa)));
 
   Similarity3 Tc(Rot3::Rz(M_PI/2.0), Point3(1, 2, 3), 1.0);
   Similarity3 Td(Rot3::Rz(M_PI/2.0), Point3(1, 2, 3), 2.0);
-
-  Point3 pTc = Point3(1, 3, 3);
-  Point3 pTd = Point3(1, 4, 3);
-
-  EXPECT(assert_equal(pTc, Tc.transform_from(pa)));
-  EXPECT(assert_equal(pTd, Td.transform_from(pa)));
+  EXPECT(assert_equal(Point3(1, 3, 3), Tc.transform_from(pa)));
+  EXPECT(assert_equal(Point3(2, 6, 6), Td.transform_from(pa)));
 
   // Test derivative
   boost::function<Point3(Similarity3, Point3)> f = boost::bind(
       &Similarity3::transform_from, _1, _2, boost::none, boost::none);
 
-  { // T default
+  Point3 q(1, 2, 3);
+  for (const auto T : { T1, T2, T3, T4, T5, T6 }) {
     Point3 q(1, 0, 0);
-    Matrix H1 = numericalDerivative21<Point3, Similarity3, Point3>(f, T_default, q);
-    Matrix H2 = numericalDerivative22<Point3, Similarity3, Point3>(f, T_default, q);
+    Matrix H1 = numericalDerivative21<Point3, Similarity3, Point3>(f, T1, q);
+    Matrix H2 = numericalDerivative22<Point3, Similarity3, Point3>(f, T1, q);
     Matrix actualH1, actualH2;
-    T_default.transform_from(q, actualH1, actualH2);
-    EXPECT(assert_equal(H1, actualH1));
-    EXPECT(assert_equal(H2, actualH2));
-  }
-  { // T4
-    Point3 q(1, 0, 0);
-    Matrix H1 = numericalDerivative21<Point3, Similarity3, Point3>(f, T6, q);
-    Matrix H2 = numericalDerivative22<Point3, Similarity3, Point3>(f, T6, q);
-    Matrix actualH1, actualH2;
-    Point3 p = T6.transform_from(q, actualH1, actualH2);
-    EXPECT(assert_equal(Point3(3, 1, 0), p));
-    EXPECT(assert_equal(Point3(3, 1, 0), T6 * q));
+    T1.transform_from(q, actualH1, actualH2);
     EXPECT(assert_equal(H1, actualH1));
     EXPECT(assert_equal(H2, actualH2));
   }

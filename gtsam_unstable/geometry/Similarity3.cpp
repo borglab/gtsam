@@ -38,13 +38,13 @@ Similarity3::Similarity3(const Matrix3& R, const Vector3& t, double s) :
     R_(R), t_(t), s_(s) {
 }
 
-bool Similarity3::equals(const Similarity3& sim, double tol) const {
-  return R_.equals(sim.R_, tol) && t_.equals(sim.t_, tol) && s_ < (sim.s_ + tol)
-      && s_ > (sim.s_ - tol);
+bool Similarity3::equals(const Similarity3& other, double tol) const {
+  return R_.equals(other.R_, tol) && t_.equals(other.t_, tol)
+      && s_ < (other.s_ + tol) && s_ > (other.s_ - tol);
 }
 
 bool Similarity3::operator==(const Similarity3& other) const {
-  return equals(other, 1e-9);
+  return R_.matrix() == other.R_.matrix() && t_ == other.t_ && s_ == other.s_;
 }
 
 void Similarity3::print(const std::string& s) const {
@@ -70,40 +70,47 @@ Similarity3 Similarity3::inverse() const {
 
 Point3 Similarity3::transform_from(const Point3& p, //
     OptionalJacobian<3, 7> H1, OptionalJacobian<3, 3> H2) const {
+  Point3 q = R_ * p + t_;
   if (H1) {
     const Matrix3 R = R_.matrix();
     Matrix3 DR = s_ * R * skewSymmetric(-p.x(), -p.y(), -p.z());
-    *H1 << DR, R, R * p.vector();
-    print("From Derivative");
+    // TODO(frank): explain the derivative in lambda
+    *H1 << DR, s_ * R, s_ * p.vector();
   }
   if (H2)
     *H2 = s_ * R_.matrix(); // just 3*3 sub-block of matrix()
-  return R_ * (s_ * p) + t_;
-  // TODO: Effect of scale change is this, right?
-  // No, this is incorrect. Zhaoyang Lv
-  // sR t * (1+v)I 0 * p = s(1+v)R t * p = s(1+v)Rp + t = sRp + vRp + t
-  // 0001   000    1   1   000     1   1
+  return s_ * q;
 }
 
 Point3 Similarity3::operator*(const Point3& p) const {
   return transform_from(p);
 }
 
+Matrix4 Similarity3::wedge(const Vector7& xi) {
+  // http://www.ethaneade.org/latex2html/lie/node29.html
+  const auto w = xi.head<3>();
+  const auto u = xi.segment<3>(3);
+  double lambda = xi[6];
+  Matrix4 W;
+  W << skewSymmetric(w), u, 0, 0, 0, -lambda;
+  return W;
+}
+
 Matrix7 Similarity3::AdjointMap() const {
-//  ToDo:  This adjoint might not be correct, it is based on delta = [u, w, lambda]
-//  However, we use the convention delta = [w, u, lambda]
+  // http://www.ethaneade.org/latex2html/lie/node30.html
   const Matrix3 R = R_.matrix();
   const Vector3 t = t_.vector();
   Matrix3 A = s_ * skewSymmetric(t) * R;
   Matrix7 adj;
-  adj << s_ * R, A, -s_ * t, // 3*7
-  Z_3x3, R, Matrix31::Zero(), // 3*7
-  Matrix16::Zero(), 1; // 1*7
+  adj <<
+      R, Z_3x3, Matrix31::Zero(), // 3*7
+      A, s_ * R, -s_ * t, // 3*7
+      Matrix16::Zero(), 1; // 1*7
   return adj;
 }
 
-Matrix33 Similarity3::GetV(Vector3 w, double lambda){
-  Matrix33 wx = skewSymmetric(w[0], w[1], w[2]);
+Matrix3 Similarity3::GetV(Vector3 w, double lambda) {
+  Matrix3 wx = skewSymmetric(w[0], w[1], w[2]);
   double lambdasquared = lambda * lambda;
   double thetasquared = w.transpose() * w;
   double theta = sqrt(thetasquared);
@@ -122,13 +129,12 @@ Matrix33 Similarity3::GetV(Vector3 w, double lambda){
     A = (1 - exp(-lambda)) / lambda;
     B = alpha * (beta - gama) + gama;
     C = alpha * (mu - upsilon) + upsilon;
-  }
-  else if(thetasquared <= 1e-9 && lambdasquared > 1e-9) {
+  } else if (thetasquared <= 1e-9 && lambdasquared > 1e-9) {
     //Taylor series expansions
     X = 1;
-    Y = 0.5-thetasquared/24.0;
-    Z = 1.0/6.0 - thetasquared/120.0;
-    W = 1.0/24.0 - thetasquared/720.0;
+    Y = 0.5 - thetasquared / 24.0;
+    Z = 1.0 / 6.0 - thetasquared / 120.0;
+    W = 1.0 / 24.0 - thetasquared / 720.0;
     alpha = lambdasquared / (lambdasquared + thetasquared);
     beta = (exp(-lambda) - 1 + lambda) / lambdasquared;
     gama = Y - (lambda * Z);
@@ -138,8 +144,7 @@ Matrix33 Similarity3::GetV(Vector3 w, double lambda){
     A = (1 - exp(-lambda)) / lambda;
     B = alpha * (beta - gama) + gama;
     C = alpha * (mu - upsilon) + upsilon;
-  }
-  else if(thetasquared > 1e-9 && lambdasquared <= 1e-9) {
+  } else if (thetasquared > 1e-9 && lambdasquared <= 1e-9) {
     X = sin(theta) / theta;
     Y = (1 - cos(theta)) / thetasquared;
     Z = (1 - X) / thetasquared;
@@ -158,10 +163,9 @@ Matrix33 Similarity3::GetV(Vector3 w, double lambda){
     }
     B = alpha * (beta - gama) + gama;
     C = alpha * (mu - upsilon) + upsilon;
-  }
-  else {
+  } else {
     X = 1;
-    Y = 0.5-thetasquared/24.0;
+    Y = 0.5 - thetasquared / 24.0;
     Z = 1.0 / 6.0 - thetasquared / 120.0;
     W = 1.0 / 24.0 - thetasquared / 720.0;
     alpha = lambdasquared / (lambdasquared + thetasquared);
@@ -179,7 +183,7 @@ Matrix33 Similarity3::GetV(Vector3 w, double lambda){
     B = gama;
     C = upsilon;
   }
-  return A * Matrix33::Identity() + B * wx + C * wx * wx;
+  return A * I_3x3 + B * wx + C * wx * wx;
 }
 
 Vector7 Similarity3::Logmap(const Similarity3& s, OptionalJacobian<7, 7> Hm) {
@@ -196,26 +200,27 @@ Vector7 Similarity3::Logmap(const Similarity3& s, OptionalJacobian<7, 7> Hm) {
 }
 
 Similarity3 Similarity3::Expmap(const Vector7& v, OptionalJacobian<7, 7> Hm) {
-  Vector3 w(v.head<3>());
+  const auto w = v.head<3>();
+  const auto u = v.segment<3>(3);
   double lambda = v[6];
   if (Hm) {
-    Matrix6 J_pose = Pose3::ExpmapDerivative(v.head<6>());
+    // Matrix6 J_pose = Pose3::ExpmapDerivative(v.head<6>());
     // incomplete
   }
-  return Similarity3(Rot3::Expmap(w), Point3(GetV(w, lambda)*v.segment<3>(3)), 1.0/exp(-lambda));
+  const Matrix3 V = GetV(w, lambda);
+  return Similarity3(Rot3::Expmap(w), Point3(V * u), exp(lambda));
 }
 
-
 std::ostream &operator<<(std::ostream &os, const Similarity3& p) {
-  os << "[" << p.rotation().xyz().transpose() << " " << p.translation().vector().transpose() << " " <<
-      p.scale() << "]\';";
+  os << "[" << p.rotation().xyz().transpose() << " "
+      << p.translation().vector().transpose() << " " << p.scale() << "]\';";
   return os;
 }
 
 const Matrix4 Similarity3::matrix() const {
   Matrix4 T;
-  T.topRows<3>() << s_ * R_.matrix(), t_.vector();
-  T.bottomRows<1>() << 0, 0, 0, 1;
+  T.topRows<3>() << R_.matrix(), t_.vector();
+  T.bottomRows<1>() << 0, 0, 0, 1.0/s_;
   return T;
 }
 

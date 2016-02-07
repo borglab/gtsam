@@ -67,7 +67,7 @@ public:
   /// Compare with tolerance
   bool equals(const Similarity3& sim, double tol) const;
 
-  /// Compare with standard tolerance
+  /// Exact equality
   bool operator==(const Similarity3& other) const;
 
   /// Print with optional string
@@ -92,6 +92,7 @@ public:
   /// @name Group action on Point3
   /// @{
 
+  /// Action on a point p is s*(R*p+t)
   Point3 transform_from(const Point3& p, //
       OptionalJacobian<3, 7> H1 = boost::none, //
       OptionalJacobian<3, 3> H2 = boost::none) const;
@@ -124,10 +125,18 @@ public:
     }
   };
 
+  using LieGroup<Similarity3, 7>::inverse;
+
+  /**
+   * wedge for Similarity3:
+   * @param xi 7-dim twist (w,u,lambda) where
+   * @return 4*4 element of Lie algebra that can be exponentiated
+   * TODO(frank): rename to Hat, make part of traits
+   */
+  static Matrix4 wedge(const Vector7& xi);
+
   /// Project from one tangent space to another
   Matrix7 AdjointMap() const;
-
-  using LieGroup<Similarity3, 7>::inverse;
 
   /// @}
   /// @name Standard interface
@@ -152,6 +161,7 @@ public:
   }
 
   /// Convert to a rigid body pose (R, s*t)
+  /// TODO(frank): why is this here? Red flag! Definitely don't have it as a cast.
   operator Pose3() const;
 
   /// Dimensionality of tangent space = 7 DOF - used to autodetect sizes
@@ -170,7 +180,7 @@ public:
 
   /// Calculate expmap and logmap coefficients.
 private:
-  static Matrix33 GetV(Vector3 w, double lambda);
+  static Matrix3 GetV(Vector3 w, double lambda);
 
   /// @}
 
