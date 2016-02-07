@@ -40,11 +40,11 @@ using symbol_shorthand::X;
 GTSAM_CONCEPT_TESTABLE_INST(Similarity3)
 
 static Point3 P(0.2, 0.7, -2);
-static Rot3 R = Rot3::rodriguez(0.3, 0, 0);
+static Rot3 R = Rot3::Rodrigues(0.3, 0, 0);
 static double s = 4;
 static Similarity3 T_default(R, Point3(3.5, -8.2, 4.2), 1);
-static Similarity3 T2(Rot3::rodriguez(0.3, 0.2, 0.1), Point3(3.5, -8.2, 4.2), 1);
-static Similarity3 T3(Rot3::rodriguez(-90, 0, 0), Point3(1, 2, 3), 1);
+static Similarity3 T2(Rot3::Rodrigues(0.3, 0.2, 0.1), Point3(3.5, -8.2, 4.2), 1);
+static Similarity3 T3(Rot3::Rodrigues(-90, 0, 0), Point3(1, 2, 3), 1);
 static Similarity3 T4(R, P, s);
 static Similarity3 T5(R, P, 10);
 static Similarity3 T6(Rot3(), Point3(1, 1, 0), 2); // Simpler transform
@@ -71,15 +71,15 @@ TEST(Similarity3, Getters) {
   EXPECT(assert_equal(Point3(), sim3_default.translation()));
   EXPECT_DOUBLES_EQUAL(1.0, sim3_default.scale(), 1e-9);
 
-  Similarity3 sim3(Rot3::ypr(1, 2, 3), Point3(4, 5, 6), 7);
-  EXPECT(assert_equal(Rot3::ypr(1, 2, 3), sim3.rotation()));
+  Similarity3 sim3(Rot3::Ypr(1, 2, 3), Point3(4, 5, 6), 7);
+  EXPECT(assert_equal(Rot3::Ypr(1, 2, 3), sim3.rotation()));
   EXPECT(assert_equal(Point3(4, 5, 6), sim3.translation()));
   EXPECT_DOUBLES_EQUAL(7.0, sim3.scale(), 1e-9);
 }
 
 //******************************************************************************
 TEST(Similarity3, AdjointMap) {
-  Similarity3 test(Rot3::ypr(1, 2, 3).inverse(), Point3(4, 5, 6), 7);
+  Similarity3 test(Rot3::Ypr(1, 2, 3).inverse(), Point3(4, 5, 6), 7);
   Matrix7 result;
   result << -1.5739, -2.4512, -6.3651, -50.7671, -11.2503, 16.8859, -28.0000,
       6.3167, -2.9884, -0.4111, 0.8502, 8.6373, -49.7260, -35.0000,
@@ -93,7 +93,7 @@ TEST(Similarity3, AdjointMap) {
 
 //******************************************************************************
 TEST(Similarity3, inverse) {
-  Similarity3 sim3(Rot3::ypr(1, 2, 3).inverse(), Point3(4, 5, 6), 7);
+  Similarity3 sim3(Rot3::Ypr(1, 2, 3).inverse(), Point3(4, 5, 6), 7);
   Matrix3 Re; // some values from matlab
   Re << -0.2248, 0.9024, -0.3676, -0.3502, -0.4269, -0.8337, -0.9093, -0.0587, 0.4120;
   Vector3 te(-9.8472, 59.7640, 10.2125);
@@ -109,8 +109,8 @@ TEST(Similarity3, inverse) {
 
 //******************************************************************************
 TEST(Similarity3, Multiplication) {
-  Similarity3 test1(Rot3::ypr(1, 2, 3).inverse(), Point3(4, 5, 6), 7);
-  Similarity3 test2(Rot3::ypr(1, 2, 3).inverse(), Point3(8, 9, 10), 11);
+  Similarity3 test1(Rot3::Ypr(1, 2, 3).inverse(), Point3(4, 5, 6), 7);
+  Similarity3 test2(Rot3::Ypr(1, 2, 3).inverse(), Point3(8, 9, 10), 11);
   Matrix3 re;
   re << 0.0688, 0.9863, -0.1496, -0.5665, -0.0848, -0.8197, -0.8211, 0.1412, 0.5530;
   Vector3 te(-13.6797, 3.2441, -5.7794);
@@ -137,14 +137,14 @@ TEST(Similarity3, Manifold) {
   v3 << 0, 0, 0, 1, 2, 3, 0;
   EXPECT(assert_equal(v3, sim2.localCoordinates(sim3)));
 
-  Similarity3 other = Similarity3(Rot3::ypr(0.1, 0.2, 0.3), Point3(4, 5, 6), 1);
+  Similarity3 other = Similarity3(Rot3::Ypr(0.1, 0.2, 0.3), Point3(4, 5, 6), 1);
 
   Vector vlocal = sim.localCoordinates(other);
 
   EXPECT(assert_equal(sim.retract(vlocal), other, 1e-2));
 
-  Similarity3 other2 = Similarity3(Rot3::ypr(0.3, 0, 0), Point3(4, 5, 6), 1);
-  Rot3 R = Rot3::rodriguez(0.3, 0, 0);
+  Similarity3 other2 = Similarity3(Rot3::Ypr(0.3, 0, 0), Point3(4, 5, 6), 1);
+  Rot3 R = Rot3::Rodrigues(0.3, 0, 0);
 
   Vector vlocal2 = sim.localCoordinates(other2);
 
@@ -284,7 +284,7 @@ TEST(Similarity3, GroupAction) {
 // Test very simple prior optimization example
 TEST(Similarity3, Optimization) {
   // Create a PriorFactor with a Sim3 prior
-  Similarity3 prior = Similarity3(Rot3::ypr(0.1, 0.2, 0.3), Point3(1, 2, 3), 4);
+  Similarity3 prior = Similarity3(Rot3::Ypr(0.1, 0.2, 0.3), Point3(1, 2, 3), 4);
   noiseModel::Isotropic::shared_ptr model = noiseModel::Isotropic::Sigma(7, 1);
   Symbol key('x', 1);
   PriorFactor<Similarity3> factor(key, prior, model);
@@ -311,13 +311,13 @@ TEST(Similarity3, Optimization) {
 // Test optimization with both Prior and BetweenFactors
 TEST(Similarity3, Optimization2) {
   Similarity3 prior = Similarity3();
-  Similarity3 m1 = Similarity3(Rot3::ypr(M_PI / 4.0, 0, 0), Point3(2.0, 0, 0),
+  Similarity3 m1 = Similarity3(Rot3::Ypr(M_PI / 4.0, 0, 0), Point3(2.0, 0, 0),
       1.0);
-  Similarity3 m2 = Similarity3(Rot3::ypr(M_PI / 2.0, 0, 0),
+  Similarity3 m2 = Similarity3(Rot3::Ypr(M_PI / 2.0, 0, 0),
       Point3(sqrt(8) * 0.9, 0, 0), 1.0);
-  Similarity3 m3 = Similarity3(Rot3::ypr(3 * M_PI / 4.0, 0, 0),
+  Similarity3 m3 = Similarity3(Rot3::Ypr(3 * M_PI / 4.0, 0, 0),
       Point3(sqrt(32) * 0.8, 0, 0), 1.0);
-  Similarity3 m4 = Similarity3(Rot3::ypr(M_PI / 2.0, 0, 0),
+  Similarity3 m4 = Similarity3(Rot3::Ypr(M_PI / 2.0, 0, 0),
       Point3(6 * 0.7, 0, 0), 1.0);
   Similarity3 loop = Similarity3(1.42);
 
@@ -348,13 +348,13 @@ TEST(Similarity3, Optimization2) {
   Values initial;
   initial.insert<Similarity3>(X(1), Similarity3());
   initial.insert<Similarity3>(X(2),
-      Similarity3(Rot3::ypr(M_PI / 2.0, 0, 0), Point3(1, 0, 0), 1.1));
+      Similarity3(Rot3::Ypr(M_PI / 2.0, 0, 0), Point3(1, 0, 0), 1.1));
   initial.insert<Similarity3>(X(3),
-      Similarity3(Rot3::ypr(2.0 * M_PI / 2.0, 0, 0), Point3(0.9, 1.1, 0), 1.2));
+      Similarity3(Rot3::Ypr(2.0 * M_PI / 2.0, 0, 0), Point3(0.9, 1.1, 0), 1.2));
   initial.insert<Similarity3>(X(4),
-      Similarity3(Rot3::ypr(3.0 * M_PI / 2.0, 0, 0), Point3(0, 1, 0), 1.3));
+      Similarity3(Rot3::Ypr(3.0 * M_PI / 2.0, 0, 0), Point3(0, 1, 0), 1.3));
   initial.insert<Similarity3>(X(5),
-      Similarity3(Rot3::ypr(4.0 * M_PI / 2.0, 0, 0), Point3(0, 0, 0), 1.0));
+      Similarity3(Rot3::Ypr(4.0 * M_PI / 2.0, 0, 0), Point3(0, 0, 0), 1.0));
 
   //initial.print("Initial Estimate\n");
 
