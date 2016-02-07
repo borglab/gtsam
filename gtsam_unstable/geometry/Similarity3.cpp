@@ -38,6 +38,10 @@ Similarity3::Similarity3(const Matrix3& R, const Vector3& t, double s) :
     R_(R), t_(t), s_(s) {
 }
 
+Similarity3::Similarity3(const Matrix4& T) :
+    R_(T.topLeftCorner<3, 3>()), t_(T.topRightCorner<3, 1>()), s_(1.0 / T(3, 3)) {
+}
+
 bool Similarity3::equals(const Similarity3& other, double tol) const {
   return R_.equals(other.R_, tol) && t_.equals(other.t_, tol)
       && s_ < (other.s_ + tol) && s_ > (other.s_ - tol);
@@ -100,7 +104,7 @@ Matrix7 Similarity3::AdjointMap() const {
   // http://www.ethaneade.org/latex2html/lie/node30.html
   const Matrix3 R = R_.matrix();
   const Vector3 t = t_.vector();
-  Matrix3 A = s_ * skewSymmetric(t) * R;
+  const Matrix3 A = s_ * skewSymmetric(t) * R;
   Matrix7 adj;
   adj <<
       R, Z_3x3, Matrix31::Zero(), // 3*7
@@ -110,91 +114,86 @@ Matrix7 Similarity3::AdjointMap() const {
 }
 
 Matrix3 Similarity3::GetV(Vector3 w, double lambda) {
-  Matrix3 wx = skewSymmetric(w[0], w[1], w[2]);
-  double lambdasquared = lambda * lambda;
-  double thetasquared = w.transpose() * w;
-  double theta = sqrt(thetasquared);
-  double X, Y, Z, W, alpha, beta, gama, mu, upsilon, A, B, C;
-  if (thetasquared > 1e-9 && lambdasquared > 1e-9) {
-    X = sin(theta) / theta;
-    Y = (1 - cos(theta)) / thetasquared;
-    Z = (1 - X) / thetasquared;
-    W = (0.5 - Y) / thetasquared;
-    alpha = lambdasquared / (lambdasquared + thetasquared);
-    beta = (exp(-lambda) - 1 + lambda) / lambdasquared;
-    gama = Y - (lambda * Z);
-    mu = (1 - lambda + (0.5 * lambdasquared) - exp(-lambda))
-        / (lambdasquared * lambda);
-    upsilon = Z - (lambda * W);
+  // http://www.ethaneade.org/latex2html/lie/node29.html
+  double lambda2 = lambda * lambda;
+  double theta2 = w.transpose() * w;
+  double theta = sqrt(theta2);
+  double A, B, C;
+  // TODO(frank): eliminate copy/paste
+  if (theta2 > 1e-9 && lambda2 > 1e-9) {
+    const double X = sin(theta) / theta;
+    const double Y = (1 - cos(theta)) / theta2;
+    const double Z = (1 - X) / theta2;
+    const double W = (0.5 - Y) / theta2;
+    const double alpha = lambda2 / (lambda2 + theta2);
+    const double beta = (exp(-lambda) - 1 + lambda) / lambda2;
+    const double gamma = Y - (lambda * Z);
+    const double mu = (1 - lambda + (0.5 * lambda2) - exp(-lambda))
+        / (lambda2 * lambda);
+    const double upsilon = Z - (lambda * W);
     A = (1 - exp(-lambda)) / lambda;
-    B = alpha * (beta - gama) + gama;
+    B = alpha * (beta - gamma) + gamma;
     C = alpha * (mu - upsilon) + upsilon;
-  } else if (thetasquared <= 1e-9 && lambdasquared > 1e-9) {
+  } else if (theta2 <= 1e-9 && lambda2 > 1e-9) {
     //Taylor series expansions
-    X = 1;
-    Y = 0.5 - thetasquared / 24.0;
-    Z = 1.0 / 6.0 - thetasquared / 120.0;
-    W = 1.0 / 24.0 - thetasquared / 720.0;
-    alpha = lambdasquared / (lambdasquared + thetasquared);
-    beta = (exp(-lambda) - 1 + lambda) / lambdasquared;
-    gama = Y - (lambda * Z);
-    mu = (1 - lambda + (0.5 * lambdasquared) - exp(-lambda))
-        / (lambdasquared * lambda);
-    upsilon = Z - (lambda * W);
+    const double Y = 0.5 - theta2 / 24.0;
+    const double Z = 1.0 / 6.0 - theta2 / 120.0;
+    const double W = 1.0 / 24.0 - theta2 / 720.0;
+    const double alpha = lambda2 / (lambda2 + theta2);
+    const double beta = (exp(-lambda) - 1 + lambda) / lambda2;
+    const double gamma = Y - (lambda * Z);
+    const double mu = (1 - lambda + (0.5 * lambda2) - exp(-lambda))
+        / (lambda2 * lambda);
+    const double upsilon = Z - (lambda * W);
     A = (1 - exp(-lambda)) / lambda;
-    B = alpha * (beta - gama) + gama;
+    B = alpha * (beta - gamma) + gamma;
     C = alpha * (mu - upsilon) + upsilon;
-  } else if (thetasquared > 1e-9 && lambdasquared <= 1e-9) {
-    X = sin(theta) / theta;
-    Y = (1 - cos(theta)) / thetasquared;
-    Z = (1 - X) / thetasquared;
-    W = (0.5 - Y) / thetasquared;
-    alpha = lambdasquared / (lambdasquared + thetasquared);
-    beta = 0.5 - lambda / 6.0 + lambdasquared / 24.0
-        - (lambda * lambdasquared) / 120;
-    gama = Y - (lambda * Z);
-    mu = 1.0 / 6.0 - lambda / 24 + lambdasquared / 120
-        - (lambda * lambdasquared) / 720;
-    upsilon = Z - (lambda * W);
+  } else if (theta2 > 1e-9 && lambda2 <= 1e-9) {
+    const double X = sin(theta) / theta;
+    const double Y = (1 - cos(theta)) / theta2;
+    const double Z = (1 - X) / theta2;
+    const double W = (0.5 - Y) / theta2;
+    const double alpha = lambda2 / (lambda2 + theta2);
+    const double beta = 0.5 - lambda / 6.0 + lambda2 / 24.0
+        - (lambda * lambda2) / 120;
+    const double gamma = Y - (lambda * Z);
+    const double mu = 1.0 / 6.0 - lambda / 24 + lambda2 / 120
+        - (lambda * lambda2) / 720;
+    const double upsilon = Z - (lambda * W);
     if (lambda < 1e-9) {
-      A = 1 - lambda / 2.0 + lambdasquared / 6.0;
+      A = 1 - lambda / 2.0 + lambda2 / 6.0;
     } else {
       A = (1 - exp(-lambda)) / lambda;
     }
-    B = alpha * (beta - gama) + gama;
+    B = alpha * (beta - gamma) + gamma;
     C = alpha * (mu - upsilon) + upsilon;
   } else {
-    X = 1;
-    Y = 0.5 - thetasquared / 24.0;
-    Z = 1.0 / 6.0 - thetasquared / 120.0;
-    W = 1.0 / 24.0 - thetasquared / 720.0;
-    alpha = lambdasquared / (lambdasquared + thetasquared);
-    beta = 0.5 - lambda / 6.0 + lambdasquared / 24.0
-        - (lambda * lambdasquared) / 120;
-    gama = Y - (lambda * Z);
-    mu = 1.0 / 6.0 - lambda / 24 + lambdasquared / 120
-        - (lambda * lambdasquared) / 720;
-    upsilon = Z - (lambda * W);
+    const double Y = 0.5 - theta2 / 24.0;
+    const double Z = 1.0 / 6.0 - theta2 / 120.0;
+    const double W = 1.0 / 24.0 - theta2 / 720.0;
+    const double gamma = Y - (lambda * Z);
+    const double upsilon = Z - (lambda * W);
     if (lambda < 1e-9) {
-      A = 1 - lambda / 2.0 + lambdasquared / 6.0;
+      A = 1 - lambda / 2.0 + lambda2 / 6.0;
     } else {
       A = (1 - exp(-lambda)) / lambda;
     }
-    B = gama;
+    B = gamma;
     C = upsilon;
   }
-  return A * I_3x3 + B * wx + C * wx * wx;
+  const Matrix3 Wx = skewSymmetric(w[0], w[1], w[2]);
+  return A * I_3x3 + B * Wx + C * Wx * Wx;
 }
 
-Vector7 Similarity3::Logmap(const Similarity3& s, OptionalJacobian<7, 7> Hm) {
-  // To get the logmap, calculate w and lambda, then solve for u as show at ethaneade.org
+Vector7 Similarity3::Logmap(const Similarity3& T, OptionalJacobian<7, 7> Hm) {
+  // To get the logmap, calculate w and lambda, then solve for u as shown by Ethan at
   // www.ethaneade.org/latex2html/lie/node29.html
-  Vector3 w = Rot3::Logmap(s.R_);
-  double lambda = log(s.s_);
+  const Vector3 w = Rot3::Logmap(T.R_);
+  const double lambda = log(T.s_);
   Vector7 result;
-  result << w, GetV(w, lambda).inverse() * s.t_.vector(), lambda;
+  result << w, GetV(w, lambda).inverse() * T.t_.vector(), lambda;
   if (Hm) {
-    // incomplete
+    throw std::runtime_error("Similarity3::Logmap: derivative not implemented");
   }
   return result;
 }
@@ -202,10 +201,9 @@ Vector7 Similarity3::Logmap(const Similarity3& s, OptionalJacobian<7, 7> Hm) {
 Similarity3 Similarity3::Expmap(const Vector7& v, OptionalJacobian<7, 7> Hm) {
   const auto w = v.head<3>();
   const auto u = v.segment<3>(3);
-  double lambda = v[6];
+  const double lambda = v[6];
   if (Hm) {
-    // Matrix6 J_pose = Pose3::ExpmapDerivative(v.head<6>());
-    // incomplete
+    throw std::runtime_error("Similarity3::Expmap: derivative not implemented");
   }
   const Matrix3 V = GetV(w, lambda);
   return Similarity3(Rot3::Expmap(w), Point3(V * u), exp(lambda));

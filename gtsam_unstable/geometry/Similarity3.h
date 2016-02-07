@@ -60,6 +60,9 @@ public:
   /// Construct from Eigen types
   Similarity3(const Matrix3& R, const Vector3& t, double s);
 
+  /// Construct from matrix [R t; 0 s^-1]
+  Similarity3(const Matrix4& T);
+
   /// @}
   /// @name Testable
   /// @{
@@ -118,10 +121,10 @@ public:
   /// Chart at the origin
   struct ChartAtOrigin {
     static Similarity3 Retract(const Vector7& v, ChartJacobian H = boost::none) {
-      return Similarity3::Expmap(v);
+      return Similarity3::Expmap(v, H);
     }
     static Vector7 Local(const Similarity3& other, ChartJacobian H = boost::none) {
-      return Similarity3::Logmap(other);
+      return Similarity3::Logmap(other, H);
     }
   };
 
@@ -183,15 +186,17 @@ private:
   static Matrix3 GetV(Vector3 w, double lambda);
 
   /// @}
-
 };
 
 template<>
-struct traits<Similarity3> : public internal::LieGroup<Similarity3> {
-};
-
-template<>
-struct traits<const Similarity3> : public internal::LieGroup<Similarity3> {
-};
-
+inline Matrix wedge<Similarity3>(const Vector& xi) {
+  return Similarity3::wedge(xi);
 }
+
+template<>
+struct traits<Similarity3> : public internal::LieGroup<Similarity3> {};
+
+template<>
+struct traits<const Similarity3> : public internal::LieGroup<Similarity3> {};
+
+} // namespace gtsam

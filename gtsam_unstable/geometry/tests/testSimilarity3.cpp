@@ -26,6 +26,7 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/base/numericalDerivative.h>
+#include <gtsam/base/testLie.h>
 #include <gtsam/base/Testable.h>
 
 #include <CppUnitLite/TestHarness.h>
@@ -39,15 +40,16 @@ using symbol_shorthand::X;
 
 GTSAM_CONCEPT_TESTABLE_INST(Similarity3)
 
-static Point3 P(0.2, 0.7, -2);
-static Rot3 R = Rot3::Rodrigues(0.3, 0, 0);
-static double s = 4;
-static Similarity3 T1(R, Point3(3.5, -8.2, 4.2), 1);
-static Similarity3 T2(Rot3::Rodrigues(0.3, 0.2, 0.1), Point3(3.5, -8.2, 4.2), 1);
-static Similarity3 T3(Rot3::Rodrigues(-90, 0, 0), Point3(1, 2, 3), 1);
-static Similarity3 T4(R, P, s);
-static Similarity3 T5(R, P, 10);
-static Similarity3 T6(Rot3(), Point3(1, 1, 0), 2); // Simpler transform
+static const Point3 P(0.2, 0.7, -2);
+static const Rot3 R = Rot3::Rodrigues(0.3, 0, 0);
+static const double s = 4;
+static const Similarity3 id;
+static const Similarity3 T1(R, Point3(3.5, -8.2, 4.2), 1);
+static const Similarity3 T2(Rot3::Rodrigues(0.3, 0.2, 0.1), Point3(3.5, -8.2, 4.2), 1);
+static const Similarity3 T3(Rot3::Rodrigues(-90, 0, 0), Point3(1, 2, 3), 1);
+static const Similarity3 T4(R, P, s);
+static const Similarity3 T5(R, P, 10);
+static const Similarity3 T6(Rot3(), Point3(1, 1, 0), 2); // Simpler transform
 
 //******************************************************************************
 TEST(Similarity3, Concepts) {
@@ -197,10 +199,10 @@ TEST(Similarity3, Matrix) {
 //*****************************************************************************
 // Exponential and log maps
 TEST(Similarity3, ExpLogMap) {
-  Vector7 expected;
-  expected << 0.1,0.2,0.3,0.4,0.5,0.6,0.7;
-  Vector7 actual = Similarity3::Logmap(Similarity3::Expmap(expected));
-  EXPECT(assert_equal(expected, actual));
+  Vector7 delta;
+  delta << 0.1,0.2,0.3,0.4,0.5,0.6,0.7;
+  Vector7 actual = Similarity3::Logmap(Similarity3::Expmap(delta));
+  EXPECT(assert_equal(delta, actual));
 
   Vector7 zeros;
   zeros << 0,0,0,0,0,0,0;
@@ -211,14 +213,8 @@ TEST(Similarity3, ExpLogMap) {
   Similarity3 ident = Similarity3::identity();
   EXPECT(assert_equal(expZero, ident));
 
-  // Compare to matrix exponential calculated using matlab expm
-  Rot3 Rexpm(0.9358,   -0.2832,    0.2102,
-             0.3029,    0.9506,   -0.0680,
-            -0.1805,    0.1273,    0.9753);
-  Point3 texpm(0.2724, 0.3825, 0.4213);
-  Similarity3 Sexpm(Rexpm, texpm, 2.0138);
-  Similarity3 Scalc = Similarity3::Expmap(expected);
-  EXPECT(assert_equal(Sexpm, Scalc, 1e-3));
+  // Compare to matrix exponential, using expm in Lie.h
+  EXPECT(assert_equal(expm<Similarity3>(delta), Similarity3::Expmap(delta), 1e-3));
 }
 
 //******************************************************************************
@@ -385,6 +381,31 @@ TEST(Similarity3, AlignScaledPointClouds) {
 //  graph.addExpressionFactor(predict1, p1, R); // |T*q1 - p1|
 //  graph.addExpressionFactor(predict2, p2, R); // |T*q2 - p2|
 //  graph.addExpressionFactor(predict3, p3, R); // |T*q3 - p3|
+}
+
+//******************************************************************************
+TEST(Similarity3 , Invariants) {
+  Similarity3 id;
+
+  EXPECT(check_group_invariants(id,id));
+  EXPECT(check_group_invariants(id,T3));
+  EXPECT(check_group_invariants(T2,id));
+  EXPECT(check_group_invariants(T2,T3));
+
+  EXPECT(check_manifold_invariants(id,id));
+  EXPECT(check_manifold_invariants(id,T3));
+  EXPECT(check_manifold_invariants(T2,id));
+  EXPECT(check_manifold_invariants(T2,T3));
+}
+
+//******************************************************************************
+TEST(Similarity3 , LieGroupDerivatives) {
+  Similarity3 id;
+
+  CHECK_LIE_GROUP_DERIVATIVES(id,id);
+  CHECK_LIE_GROUP_DERIVATIVES(id,T2);
+  CHECK_LIE_GROUP_DERIVATIVES(T2,id);
+  CHECK_LIE_GROUP_DERIVATIVES(T2,T3);
 }
 
 //******************************************************************************
