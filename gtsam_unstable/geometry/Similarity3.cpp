@@ -67,18 +67,18 @@ Similarity3 Similarity3::operator*(const Similarity3& T) const {
 }
 
 Similarity3 Similarity3::inverse() const {
-  Rot3 Rt = R_.inverse();
-  Point3 sRt = R_.inverse() * (-s_ * t_);
+  const Rot3 Rt = R_.inverse();
+  const Point3 sRt = Rt * (-s_ * t_);
   return Similarity3(Rt, sRt, 1.0 / s_);
 }
 
 Point3 Similarity3::transform_from(const Point3& p, //
     OptionalJacobian<3, 7> H1, OptionalJacobian<3, 3> H2) const {
-  Point3 q = R_ * p + t_;
+  const Point3 q = R_ * p + t_;
   if (H1) {
     // For this derivative, see LieGroups.pdf
     const Matrix3 sR = s_ * R_.matrix();
-    Matrix3 DR = sR * skewSymmetric(-p.x(), -p.y(), -p.z());
+    const Matrix3 DR = sR * skewSymmetric(-p.x(), -p.y(), -p.z());
     *H1 << DR, sR, sR * p.vector();
   }
   if (H2)
@@ -94,7 +94,7 @@ Matrix4 Similarity3::wedge(const Vector7& xi) {
   // http://www.ethaneade.org/latex2html/lie/node29.html
   const auto w = xi.head<3>();
   const auto u = xi.segment<3>(3);
-  double lambda = xi[6];
+  const double lambda = xi[6];
   Matrix4 W;
   W << skewSymmetric(w), u, 0, 0, 0, -lambda;
   return W;
@@ -106,81 +106,43 @@ Matrix7 Similarity3::AdjointMap() const {
   const Vector3 t = t_.vector();
   const Matrix3 A = s_ * skewSymmetric(t) * R;
   Matrix7 adj;
-  adj <<
-      R, Z_3x3, Matrix31::Zero(), // 3*7
-      A, s_ * R, -s_ * t, // 3*7
-      Matrix16::Zero(), 1; // 1*7
+  adj << R, Z_3x3, Matrix31::Zero(), // 3*7
+  A, s_ * R, -s_ * t, // 3*7
+  Matrix16::Zero(), 1; // 1*7
   return adj;
 }
 
 Matrix3 Similarity3::GetV(Vector3 w, double lambda) {
   // http://www.ethaneade.org/latex2html/lie/node29.html
-  double lambda2 = lambda * lambda;
-  double theta2 = w.transpose() * w;
-  double theta = sqrt(theta2);
-  double A, B, C;
-  // TODO(frank): eliminate copy/paste
-  if (theta2 > 1e-9 && lambda2 > 1e-9) {
+  const double theta2 = w.transpose() * w;
+  double Y, Z, W;
+  if (theta2 > 1e-9) {
+    const double theta = sqrt(theta2);
     const double X = sin(theta) / theta;
-    const double Y = (1 - cos(theta)) / theta2;
-    const double Z = (1 - X) / theta2;
-    const double W = (0.5 - Y) / theta2;
-    const double alpha = lambda2 / (lambda2 + theta2);
-    const double beta = (exp(-lambda) - 1 + lambda) / lambda2;
-    const double gamma = Y - (lambda * Z);
-    const double mu = (1 - lambda + (0.5 * lambda2) - exp(-lambda))
-        / (lambda2 * lambda);
-    const double upsilon = Z - (lambda * W);
-    A = (1 - exp(-lambda)) / lambda;
-    B = alpha * (beta - gamma) + gamma;
-    C = alpha * (mu - upsilon) + upsilon;
-  } else if (theta2 <= 1e-9 && lambda2 > 1e-9) {
-    //Taylor series expansions
-    const double Y = 0.5 - theta2 / 24.0;
-    const double Z = 1.0 / 6.0 - theta2 / 120.0;
-    const double W = 1.0 / 24.0 - theta2 / 720.0;
-    const double alpha = lambda2 / (lambda2 + theta2);
-    const double beta = (exp(-lambda) - 1 + lambda) / lambda2;
-    const double gamma = Y - (lambda * Z);
-    const double mu = (1 - lambda + (0.5 * lambda2) - exp(-lambda))
-        / (lambda2 * lambda);
-    const double upsilon = Z - (lambda * W);
-    A = (1 - exp(-lambda)) / lambda;
-    B = alpha * (beta - gamma) + gamma;
-    C = alpha * (mu - upsilon) + upsilon;
-  } else if (theta2 > 1e-9 && lambda2 <= 1e-9) {
-    const double X = sin(theta) / theta;
-    const double Y = (1 - cos(theta)) / theta2;
-    const double Z = (1 - X) / theta2;
-    const double W = (0.5 - Y) / theta2;
-    const double alpha = lambda2 / (lambda2 + theta2);
-    const double beta = 0.5 - lambda / 6.0 + lambda2 / 24.0
-        - (lambda * lambda2) / 120;
-    const double gamma = Y - (lambda * Z);
-    const double mu = 1.0 / 6.0 - lambda / 24 + lambda2 / 120
-        - (lambda * lambda2) / 720;
-    const double upsilon = Z - (lambda * W);
-    if (lambda < 1e-9) {
-      A = 1 - lambda / 2.0 + lambda2 / 6.0;
-    } else {
-      A = (1 - exp(-lambda)) / lambda;
-    }
-    B = alpha * (beta - gamma) + gamma;
-    C = alpha * (mu - upsilon) + upsilon;
+    Y = (1 - cos(theta)) / theta2;
+    Z = (1 - X) / theta2;
+    W = (0.5 - Y) / theta2;
   } else {
-    const double Y = 0.5 - theta2 / 24.0;
-    const double Z = 1.0 / 6.0 - theta2 / 120.0;
-    const double W = 1.0 / 24.0 - theta2 / 720.0;
-    const double gamma = Y - (lambda * Z);
-    const double upsilon = Z - (lambda * W);
-    if (lambda < 1e-9) {
-      A = 1 - lambda / 2.0 + lambda2 / 6.0;
-    } else {
-      A = (1 - exp(-lambda)) / lambda;
-    }
-    B = gamma;
-    C = upsilon;
+    // Taylor series expansion for theta=0, X not needed (as is 1)
+    Y = 0.5 - theta2 / 24.0;
+    Z = 1.0 / 6.0 - theta2 / 120.0;
+    W = 1.0 / 24.0 - theta2 / 720.0;
   }
+  const double lambda2 = lambda * lambda, lambda3 = lambda2 * lambda;
+  double A, alpha = 0.0, beta, mu;
+  if (lambda2 > 1e-9) {
+    A = (1.0 - exp(-lambda)) / lambda;
+    alpha = 1.0 / (1.0 + theta2 / lambda2);
+    beta = (exp(-lambda) - 1 + lambda) / lambda2;
+    mu = (1 - lambda + (0.5 * lambda2) - exp(-lambda)) / lambda3;
+  } else {
+    A = 1.0 - lambda / 2.0 + lambda2 / 6.0;
+    beta = 0.5 - lambda / 6.0 + lambda2 / 24.0 - lambda3 / 120.0;
+    mu = 1.0 / 6.0 - lambda / 24.0 + lambda2 / 120.0 - lambda3 / 720.0;
+  }
+  const double gamma = Y - (lambda * Z), upsilon = Z - (lambda * W);
+  const double B = alpha * (beta - gamma) + gamma;
+  const double C = alpha * (mu - upsilon) + upsilon;
   const Matrix3 Wx = skewSymmetric(w[0], w[1], w[2]);
   return A * I_3x3 + B * Wx + C * Wx * Wx;
 }
@@ -218,7 +180,7 @@ std::ostream &operator<<(std::ostream &os, const Similarity3& p) {
 const Matrix4 Similarity3::matrix() const {
   Matrix4 T;
   T.topRows<3>() << R_.matrix(), t_.vector();
-  T.bottomRows<1>() << 0, 0, 0, 1.0/s_;
+  T.bottomRows<1>() << 0, 0, 0, 1.0 / s_;
   return T;
 }
 
@@ -226,4 +188,4 @@ Similarity3::operator Pose3() const {
   return Pose3(R_, s_ * t_);
 }
 
-}
+} // namespace gtsam
