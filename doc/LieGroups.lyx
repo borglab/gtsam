@@ -1,5 +1,5 @@
-#LyX 2.0 created this file. For more info see http://www.lyx.org/
-\lyxformat 413
+#LyX 2.1 created this file. For more info see http://www.lyx.org/
+\lyxformat 474
 \begin_document
 \begin_header
 \textclass article
@@ -15,13 +15,13 @@ theorems-std
 \font_roman times
 \font_sans default
 \font_typewriter default
+\font_math auto
 \font_default_family rmdefault
 \use_non_tex_fonts false
 \font_sc false
 \font_osf false
 \font_sf_scale 100
 \font_tt_scale 100
-
 \graphics default
 \default_output_format default
 \output_sync 0
@@ -32,15 +32,24 @@ theorems-std
 \use_hyperref false
 \papersize default
 \use_geometry true
-\use_amsmath 1
-\use_esint 0
-\use_mhchem 1
-\use_mathdots 1
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 0
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
 \cite_engine basic
+\cite_engine_type default
+\biblio_style plain
 \use_bibtopic false
 \use_indices false
 \paperorientation portrait
 \suppress_date false
+\justification true
 \use_refstyle 0
 \index Index
 \shortcut idx
@@ -96,7 +105,7 @@ We will start with a small example of a robot moving in a plane, parameterized
 2D pose
 \emph default
  
-\begin_inset Formula $(x,\, y,\,\theta)$
+\begin_inset Formula $(x,\,y,\,\theta)$
 \end_inset
 
 .
@@ -135,7 +144,7 @@ A similar story holds for translation in the
  direction, and in fact for translations in general:
 \begin_inset Formula 
 \[
-(x_{t},\, y_{t},\,\theta_{t})=(x_{0}+v_{x}t,\, y_{0}+v_{y}t,\,\theta_{0})
+(x_{t},\,y_{t},\,\theta_{t})=(x_{0}+v_{x}t,\,y_{0}+v_{y}t,\,\theta_{0})
 \]
 
 \end_inset
@@ -143,7 +152,7 @@ A similar story holds for translation in the
 Similarly for rotation we have 
 \begin_inset Formula 
 \[
-(x_{t},\, y_{t},\,\theta_{t})=(x_{0},\, y_{0},\,\theta_{0}+\omega t)
+(x_{t},\,y_{t},\,\theta_{t})=(x_{0},\,y_{0},\,\theta_{0}+\omega t)
 \]
 
 \end_inset
@@ -175,7 +184,7 @@ status collapsed
 \end_inset
 
 
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 Robot moving along a circular trajectory.
@@ -196,20 +205,20 @@ However, if we combine translation and rotation, the story breaks down!
  We cannot write
 \begin_inset Formula 
 \[
-(x_{t},\, y_{t},\,\theta_{t})=(x_{0}+v_{x}t,\, y_{0}+v_{y}t,\,\theta_{0}+\omega t)
+(x_{t},\,y_{t},\,\theta_{t})=(x_{0}+v_{x}t,\,y_{0}+v_{y}t,\,\theta_{0}+\omega t)
 \]
 
 \end_inset
 
 The reason is that, if we move the robot a tiny bit according to the velocity
  vector 
-\begin_inset Formula $(v_{x},\, v_{y},\,\omega)$
+\begin_inset Formula $(v_{x},\,v_{y},\,\omega)$
 \end_inset
 
 , we have (to first order)
 \begin_inset Formula 
 \[
-(x_{\delta},\, y_{\delta},\,\theta_{\delta})=(x_{0}+v_{x}\delta,\, y_{0}+v_{y}\delta,\,\theta_{0}+\omega\delta)
+(x_{\delta},\,y_{\delta},\,\theta_{\delta})=(x_{0}+v_{x}\delta,\,y_{0}+v_{y}\delta,\,\theta_{0}+\omega\delta)
 \]
 
 \end_inset
@@ -255,7 +264,7 @@ status open
 \end_inset
 
 
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 \begin_inset CommandInset label
@@ -290,7 +299,7 @@ To make progress, we have to be more precise about how the robot behaves.
  as
 \begin_inset Formula 
 \[
-T_{1}T_{2}=(x_{1},\, y_{1},\,\theta_{1})(x_{2},\, y_{2},\,\theta_{2})=(x_{1}+\cos\theta_{1}x_{2}-\sin\theta y_{2},\, y_{1}+\sin\theta_{1}x_{2}+\cos\theta_{1}y_{2},\,\theta_{1}+\theta_{2})
+T_{1}T_{2}=(x_{1},\,y_{1},\,\theta_{1})(x_{2},\,y_{2},\,\theta_{2})=(x_{1}+\cos\theta_{1}x_{2}-\sin\theta y_{2},\,y_{1}+\sin\theta_{1}x_{2}+\cos\theta_{1}y_{2},\,\theta_{1}+\theta_{2})
 \]
 
 \end_inset
@@ -1600,13 +1609,13 @@ Hence, an alternative way of writing down elements of
 \end_inset
 
  is as the ordered pair 
-\begin_inset Formula $(R,\, t)$
+\begin_inset Formula $(R,\,t)$
 \end_inset
 
 , with composition defined a
 \begin_inset Formula 
 \[
-(R_{1},\, t_{1})(R_{2},\, t_{2})=(R_{1}R_{2},\, R{}_{1}t_{2}+t_{1})
+(R_{1},\,t_{1})(R_{2},\,t_{2})=(R_{1}R_{2},\,R{}_{1}t_{2}+t_{1})
 \]
 
 \end_inset
@@ -2569,13 +2578,13 @@ where
 \end_inset
 
  is as the ordered pair 
-\begin_inset Formula $(R,\, t)$
+\begin_inset Formula $(R,\,t)$
 \end_inset
 
 , with composition defined as
 \begin_inset Formula 
 \[
-(R_{1},\, t_{1})(R_{2},\, t_{2})=(R_{1}R_{2},\, R{}_{1}t_{2}+t_{1})
+(R_{1},\,t_{1})(R_{2},\,t_{2})=(R_{1}R_{2},\,R{}_{1}t_{2}+t_{1})
 \]
 
 \end_inset
@@ -2932,6 +2941,218 @@ R^{T} & -R^{T}t\\
 p\\
 1
 \end{array}\right]=T^{-1}\hat{p}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+3D Similarity Transformations
+\end_layout
+
+\begin_layout Standard
+The group of 3D similarity transformations 
+\begin_inset Formula $Sim(3)$
+\end_inset
+
+ is the set of 
+\begin_inset Formula $4\times4$
+\end_inset
+
+ invertible matrices of the form
+\begin_inset Formula 
+\[
+T\define\left[\begin{array}{cc}
+R & t\\
+0 & s^{-1}
+\end{array}\right]
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $s$
+\end_inset
+
+ is a scalar.
+ There are several different conventions in use for the Lie algebra generators,
+ but we use
+\begin_inset Formula 
+\[
+G^{1}=\left(\begin{array}{cccc}
+0 & 0 & 0 & 0\\
+0 & 0 & -1 & 0\\
+0 & 1 & 0 & 0\\
+0 & 0 & 0 & 0
+\end{array}\right)\mbox{}G^{2}=\left(\begin{array}{cccc}
+0 & 0 & 1 & 0\\
+0 & 0 & 0 & 0\\
+-1 & 0 & 0 & 0\\
+0 & 0 & 0 & 0
+\end{array}\right)\mbox{ }G^{3}=\left(\begin{array}{cccc}
+0 & -1 & 0 & 0\\
+1 & 0 & 0 & 0\\
+0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0
+\end{array}\right)
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+G^{4}=\left(\begin{array}{cccc}
+0 & 0 & 0 & 1\\
+0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0
+\end{array}\right)\mbox{}G^{5}=\left(\begin{array}{cccc}
+0 & 0 & 0 & 0\\
+0 & 0 & 0 & 1\\
+0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0
+\end{array}\right)\mbox{ }G^{6}=\left(\begin{array}{cccc}
+0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0\\
+0 & 0 & 0 & 1\\
+0 & 0 & 0 & 0
+\end{array}\right)\mbox{ }G^{7}=\left(\begin{array}{cccc}
+0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0\\
+0 & 0 & 0 & -1
+\end{array}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Actions
+\end_layout
+
+\begin_layout Standard
+The action of 
+\begin_inset Formula $\SEthree$
+\end_inset
+
+ on 3D points is done by embedding the points in 
+\begin_inset Formula $\mathbb{R}^{4}$
+\end_inset
+
+ by using homogeneous coordinates
+\begin_inset Formula 
+\[
+\hat{q}=\left[\begin{array}{c}
+q\\
+s^{-1}
+\end{array}\right]=\left[\begin{array}{c}
+Rp+t\\
+s^{-1}
+\end{array}\right]=\left[\begin{array}{cc}
+R & t\\
+0 & s^{-1}
+\end{array}\right]\left[\begin{array}{c}
+p\\
+1
+\end{array}\right]=T\hat{p}
+\]
+
+\end_inset
+
+The derivative 
+\begin_inset Formula $D_{1}f(\xi)$
+\end_inset
+
+ in an incremental change 
+\begin_inset Formula $\xi$
+\end_inset
+
+ to 
+\begin_inset Formula $T$
+\end_inset
+
+ is given by 
+\begin_inset Formula $TH(p)$
+\end_inset
+
+ where 
+\begin_inset Formula 
+\[
+H(p)=G_{jk}^{i}p^{j}=\left(\begin{array}{ccccccc}
+0 & z & -y & 1 & 0 & 0 & 0\\
+-z & 0 & x & 0 & 1 & 0 & 0\\
+y & -x & 0 & 0 & 0 & 1 & 0\\
+0 & 0 & 0 & 0 & 0 & 0 & -1
+\end{array}\right)
+\]
+
+\end_inset
+
+In other words
+\begin_inset Formula 
+\[
+D_{1}f(\xi)=\left[\begin{array}{cc}
+R & t\\
+0 & s^{-1}
+\end{array}\right]\left[\begin{array}{ccc}
+-\left[p\right]_{x} & I_{3} & 0\\
+0 & 0 & -1
+\end{array}\right]=\left[\begin{array}{ccc}
+-R\left[p\right]_{x} & R & -t\\
+0 & 0 & -s^{-1}
+\end{array}\right]
+\]
+
+\end_inset
+
+This is the derivative for the action on homogeneous coordinates.
+ Switching back to non-homogeneous coordinates is done by
+\begin_inset Formula 
+\[
+\left[\begin{array}{c}
+q\\
+a
+\end{array}\right]\rightarrow q/a
+\]
+
+\end_inset
+
+with derivative
+\begin_inset Formula 
+\[
+\left[\begin{array}{cc}
+a^{-1}I_{3} & -qa^{-2}\end{array}\right]
+\]
+
+\end_inset
+
+For 
+\begin_inset Formula $a=s^{-1}$
+\end_inset
+
+ we obtain
+\begin_inset Formula 
+\[
+D_{1}f(\xi)=\left[\begin{array}{cc}
+sI_{3} & -qs^{2}\end{array}\right]\left[\begin{array}{ccc}
+-R\left[p\right]_{x} & R & -t\\
+0 & 0 & -s^{-1}
+\end{array}\right]=\left[\begin{array}{ccc}
+-sR\left[p\right]_{x} & sR & -st+qs\end{array}\right]=\left[\begin{array}{ccc}
+-sR\left[p\right]_{x} & sR & sRp\end{array}\right]
 \]
 
 \end_inset

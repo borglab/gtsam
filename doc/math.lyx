@@ -1,5 +1,5 @@
-#LyX 2.0 created this file. For more info see http://www.lyx.org/
-\lyxformat 413
+#LyX 2.1 created this file. For more info see http://www.lyx.org/
+\lyxformat 474
 \begin_document
 \begin_header
 \textclass article
@@ -17,13 +17,13 @@ theorems-ams-bytype
 \font_roman times
 \font_sans default
 \font_typewriter default
+\font_math auto
 \font_default_family rmdefault
 \use_non_tex_fonts false
 \font_sc false
 \font_osf false
 \font_sf_scale 100
 \font_tt_scale 100
-
 \graphics default
 \default_output_format default
 \output_sync 0
@@ -34,15 +34,24 @@ theorems-ams-bytype
 \use_hyperref false
 \papersize default
 \use_geometry true
-\use_amsmath 1
-\use_esint 0
-\use_mhchem 1
-\use_mathdots 1
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 0
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 0
+\use_package stmaryrd 1
+\use_package undertilde 1
 \cite_engine basic
+\cite_engine_type default
+\biblio_style plain
 \use_bibtopic false
 \use_indices false
 \paperorientation portrait
 \suppress_date false
+\justification true
 \use_refstyle 0
 \index Index
 \shortcut idx
@@ -1603,11 +1612,7 @@ name "sec:Derivatives-of-Actions"
 \end_layout
 
 \begin_layout Standard
-The (usual) action of an 
-\begin_inset Formula $n$
-\end_inset
-
--dimensional matrix group 
+The (usual) action of a matrix group 
 \begin_inset Formula $G$
 \end_inset
 
@@ -1632,7 +1637,7 @@ Since this is a function defined on the product
 \end_inset
 
  the derivative is a linear transformation 
-\begin_inset Formula $Df:\Multi{2n}n$
+\begin_inset Formula $Df:\Multi{m+n}n$
 \end_inset
 
  with
@@ -1643,7 +1648,15 @@ Df_{(T,p)}\left(\xi,\delta p\right)=D_{1}f_{(T,p)}\left(\xi\right)+D_{2}f_{(T,p)
 
 \end_inset
 
+where 
+\begin_inset Formula $m$
+\end_inset
 
+ is the dimensionality of the manifold 
+\begin_inset Formula $G$
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Theorem
@@ -1672,7 +1685,7 @@ H(p) & I_{n}\end{array}\right]
 \end_inset
 
 with 
-\begin_inset Formula $H:\Reals n\rightarrow\Reals{n\times n}$
+\begin_inset Formula $H:\Reals m\rightarrow\Reals{n\times m}$
 \end_inset
 
  a linear mapping that depends on 
@@ -1799,7 +1812,7 @@ with
 \end_inset
 
  an 
-\begin_inset Formula $n\times n$
+\begin_inset Formula $n\times m$
 \end_inset
 
  matrix that depends on 
@@ -3377,7 +3390,7 @@ Retractions
 
 \begin_layout Standard
 \begin_inset FormulaMacro
-\renewcommand{\retract}{\mathcal{R}}
+\newcommand{\retract}{\mathcal{R}}
 {\mathcal{R}}
 \end_inset
 
