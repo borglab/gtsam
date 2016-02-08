@@ -45,7 +45,8 @@ static const Rot3 R = Rot3::Rodrigues(0.3, 0, 0);
 static const double s = 4;
 static const Similarity3 id;
 static const Similarity3 T1(R, Point3(3.5, -8.2, 4.2), 1);
-static const Similarity3 T2(Rot3::Rodrigues(0.3, 0.2, 0.1), Point3(3.5, -8.2, 4.2), 1);
+static const Similarity3 T2(Rot3::Rodrigues(0.3, 0.2, 0.1),
+    Point3(3.5, -8.2, 4.2), 1);
 static const Similarity3 T3(Rot3::Rodrigues(-90, 0, 0), Point3(1, 2, 3), 1);
 static const Similarity3 T4(R, P, s);
 static const Similarity3 T5(R, P, 10);
@@ -187,11 +188,7 @@ TEST(Similarity3, manifold_first_order) {
 // Return as a 4*4 Matrix
 TEST(Similarity3, Matrix) {
   Matrix4 expected;
-  expected <<
-      1, 0, 0, 1,
-      0, 1, 0, 1,
-      0, 0, 1, 0,
-      0, 0, 0, 0.5;
+  expected << 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0.5;
   Matrix4 actual = T6.matrix();
   EXPECT(assert_equal(expected, actual));
 }
@@ -200,12 +197,12 @@ TEST(Similarity3, Matrix) {
 // Exponential and log maps
 TEST(Similarity3, ExpLogMap) {
   Vector7 delta;
-  delta << 0.1,0.2,0.3,0.4,0.5,0.6,0.7;
+  delta << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7;
   Vector7 actual = Similarity3::Logmap(Similarity3::Expmap(delta));
   EXPECT(assert_equal(delta, actual));
 
   Vector7 zeros;
-  zeros << 0,0,0,0,0,0,0;
+  zeros << 0, 0, 0, 0, 0, 0, 0;
   Vector7 logIdentity = Similarity3::Logmap(Similarity3::identity());
   EXPECT(assert_equal(zeros, logIdentity));
 
@@ -214,7 +211,8 @@ TEST(Similarity3, ExpLogMap) {
   EXPECT(assert_equal(expZero, ident));
 
   // Compare to matrix exponential, using expm in Lie.h
-  EXPECT(assert_equal(expm<Similarity3>(delta), Similarity3::Expmap(delta), 1e-3));
+  EXPECT(
+      assert_equal(expm<Similarity3>(delta), Similarity3::Expmap(delta), 1e-3));
 }
 
 //******************************************************************************
@@ -237,8 +235,8 @@ TEST(Similarity3, GroupAction) {
   EXPECT(assert_equal(Point3(2, 2, 3), Ta.transform_from(pa)));
   EXPECT(assert_equal(Point3(4, 4, 6), Tb.transform_from(pa)));
 
-  Similarity3 Tc(Rot3::Rz(M_PI/2.0), Point3(1, 2, 3), 1.0);
-  Similarity3 Td(Rot3::Rz(M_PI/2.0), Point3(1, 2, 3), 2.0);
+  Similarity3 Tc(Rot3::Rz(M_PI / 2.0), Point3(1, 2, 3), 1.0);
+  Similarity3 Td(Rot3::Rz(M_PI / 2.0), Point3(1, 2, 3), 2.0);
   EXPECT(assert_equal(Point3(1, 3, 3), Tc.transform_from(pa)));
   EXPECT(assert_equal(Point3(2, 6, 6), Td.transform_from(pa)));
 
@@ -249,10 +247,10 @@ TEST(Similarity3, GroupAction) {
   Point3 q(1, 2, 3);
   for (const auto T : { T1, T2, T3, T4, T5, T6 }) {
     Point3 q(1, 0, 0);
-    Matrix H1 = numericalDerivative21<Point3, Similarity3, Point3>(f, T1, q);
-    Matrix H2 = numericalDerivative22<Point3, Similarity3, Point3>(f, T1, q);
+    Matrix H1 = numericalDerivative21<Point3, Similarity3, Point3>(f, T, q);
+    Matrix H2 = numericalDerivative22<Point3, Similarity3, Point3>(f, T, q);
     Matrix actualH1, actualH2;
-    T1.transform_from(q, actualH1, actualH2);
+    T.transform_from(q, actualH1, actualH2);
     EXPECT(assert_equal(H1, actualH1));
     EXPECT(assert_equal(H2, actualH2));
   }
@@ -387,25 +385,25 @@ TEST(Similarity3, AlignScaledPointClouds) {
 TEST(Similarity3 , Invariants) {
   Similarity3 id;
 
-  EXPECT(check_group_invariants(id,id));
-  EXPECT(check_group_invariants(id,T3));
-  EXPECT(check_group_invariants(T2,id));
-  EXPECT(check_group_invariants(T2,T3));
+  EXPECT(check_group_invariants(id, id));
+  EXPECT(check_group_invariants(id, T3));
+  EXPECT(check_group_invariants(T2, id));
+  EXPECT(check_group_invariants(T2, T3));
 
-  EXPECT(check_manifold_invariants(id,id));
-  EXPECT(check_manifold_invariants(id,T3));
-  EXPECT(check_manifold_invariants(T2,id));
-  EXPECT(check_manifold_invariants(T2,T3));
+  EXPECT(check_manifold_invariants(id, id));
+  EXPECT(check_manifold_invariants(id, T3));
+  EXPECT(check_manifold_invariants(T2, id));
+  EXPECT(check_manifold_invariants(T2, T3));
 }
 
 //******************************************************************************
 TEST(Similarity3 , LieGroupDerivatives) {
   Similarity3 id;
 
-  CHECK_LIE_GROUP_DERIVATIVES(id,id);
-  CHECK_LIE_GROUP_DERIVATIVES(id,T2);
-  CHECK_LIE_GROUP_DERIVATIVES(T2,id);
-  CHECK_LIE_GROUP_DERIVATIVES(T2,T3);
+  CHECK_LIE_GROUP_DERIVATIVES(id, id);
+  CHECK_LIE_GROUP_DERIVATIVES(id, T2);
+  CHECK_LIE_GROUP_DERIVATIVES(T2, id);
+  CHECK_LIE_GROUP_DERIVATIVES(T2, T3);
 }
 
 //******************************************************************************
