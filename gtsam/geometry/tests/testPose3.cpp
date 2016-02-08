@@ -556,12 +556,12 @@ TEST( Pose3, between )
 /* ************************************************************************* */
 // some shared test values - pulled from equivalent test in Pose2
 Point3 l1(1, 0, 0), l2(1, 1, 0), l3(2, 2, 0), l4(1, 4,-4);
-Pose3 x1, x2(Rot3::ypr(0.0, 0.0, 0.0), l2), x3(Rot3::ypr(M_PI/4.0, 0.0, 0.0), l2);
+Pose3 x1, x2(Rot3::Ypr(0.0, 0.0, 0.0), l2), x3(Rot3::Ypr(M_PI/4.0, 0.0, 0.0), l2);
 Pose3
-    xl1(Rot3::ypr(0.0, 0.0, 0.0), Point3(1, 0, 0)),
-    xl2(Rot3::ypr(0.0, 1.0, 0.0), Point3(1, 1, 0)),
-    xl3(Rot3::ypr(1.0, 0.0, 0.0), Point3(2, 2, 0)),
-    xl4(Rot3::ypr(0.0, 0.0, 1.0), Point3(1, 4,-4));
+    xl1(Rot3::Ypr(0.0, 0.0, 0.0), Point3(1, 0, 0)),
+    xl2(Rot3::Ypr(0.0, 1.0, 0.0), Point3(1, 1, 0)),
+    xl3(Rot3::Ypr(1.0, 0.0, 0.0), Point3(2, 2, 0)),
+    xl4(Rot3::Ypr(0.0, 0.0, 1.0), Point3(1, 4,-4));
 
 /* ************************************************************************* */
 double range_proxy(const Pose3& pose, const Point3& point) {
@@ -654,9 +654,9 @@ TEST( Pose3, unicycle )
 {
   // velocity in X should be X in inertial frame, rather than global frame
   Vector x_step = delta(6,3,1.0);
-  EXPECT(assert_equal(Pose3(Rot3::ypr(0,0,0), l1), expmap_default<Pose3>(x1, x_step), tol));
-  EXPECT(assert_equal(Pose3(Rot3::ypr(0,0,0), Point3(2,1,0)), expmap_default<Pose3>(x2, x_step), tol));
-  EXPECT(assert_equal(Pose3(Rot3::ypr(M_PI/4.0,0,0), Point3(2,2,0)), expmap_default<Pose3>(x3, sqrt(2.0) * x_step), tol));
+  EXPECT(assert_equal(Pose3(Rot3::Ypr(0,0,0), l1), expmap_default<Pose3>(x1, x_step), tol));
+  EXPECT(assert_equal(Pose3(Rot3::Ypr(0,0,0), Point3(2,1,0)), expmap_default<Pose3>(x2, x_step), tol));
+  EXPECT(assert_equal(Pose3(Rot3::Ypr(M_PI/4.0,0,0), Point3(2,2,0)), expmap_default<Pose3>(x3, sqrt(2.0) * x_step), tol));
 }
 
 /* ************************************************************************* */
@@ -715,7 +715,42 @@ TEST( Pose3, ExpmapDerivative1) {
 }
 
 /* ************************************************************************* */
-TEST( Pose3, LogmapDerivative1) {
+TEST(Pose3, ExpmapDerivative2) {
+  // Iserles05an (Lie-group Methods) says:
+  // scalar is easy: d exp(a(t)) / dt = exp(a(t)) a'(t)
+  // matrix is hard: d exp(A(t)) / dt = exp(A(t)) dexp[-A(t)] A'(t)
+  // where A(t): T -> se(3) is a trajectory in the tangent space of SE(3)
+  // and dexp[A] is a linear map from 4*4 to 4*4 derivatives of se(3)
+  // Hence, the above matrix equation is typed: 4*4 = SE(3) * linear_map(4*4)
+
+  // In GTSAM, we don't work with the Lie-algebra elements A directly, but with 6-vectors.
+  // xi is easy: d Expmap(xi(t)) / dt = ExmapDerivative[xi(t)] * xi'(t)
+
+  // Let's verify the above formula.
+
+  auto xi = [](double t) {
+    Vector6 v;
+    v << 2 * t, sin(t), 4 * t * t, 2 * t, sin(t), 4 * t * t;
+    return v;
+  };
+  auto xi_dot = [](double t) {
+    Vector6 v;
+    v << 2, cos(t), 8 * t, 2, cos(t), 8 * t;
+    return v;
+  };
+
+  // We define a function T
+  auto T = [xi](double t) { return Pose3::Expmap(xi(t)); };
+
+  for (double t = -2.0; t < 2.0; t += 0.3) {
+    const Matrix expected = numericalDerivative11<Pose3, double>(T, t);
+    const Matrix actual = Pose3::ExpmapDerivative(xi(t)) * xi_dot(t);
+    CHECK(assert_equal(expected, actual, 1e-7));
+  }
+}
+
+/* ************************************************************************* */
+TEST( Pose3, LogmapDerivative) {
   Matrix6 actualH;
   Vector6 w; w << 0.1, 0.2, 0.3, 4.0, 5.0, 6.0;
   Pose3 p = Pose3::Expmap(w);

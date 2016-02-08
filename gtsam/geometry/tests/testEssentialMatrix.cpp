@@ -20,7 +20,7 @@ GTSAM_CONCEPT_MANIFOLD_INST(EssentialMatrix)
 
 //*************************************************************************
 // Create two cameras and corresponding essential matrix E
-Rot3 c1Rc2 = Rot3::yaw(M_PI_2);
+Rot3 c1Rc2 = Rot3::Yaw(M_PI_2);
 Point3 c1Tc2(0.1, 0, 0);
 EssentialMatrix trueE(c1Rc2, Unit3(c1Tc2));
 
@@ -98,8 +98,8 @@ Point3 transform_to_(const EssentialMatrix& E, const Point3& point) {
 }
 TEST (EssentialMatrix, transform_to) {
   // test with a more complicated EssentialMatrix
-  Rot3 aRb2 = Rot3::yaw(M_PI / 3.0) * Rot3::pitch(M_PI_4)
-      * Rot3::roll(M_PI / 6.0);
+  Rot3 aRb2 = Rot3::Yaw(M_PI / 3.0) * Rot3::Pitch(M_PI_4)
+      * Rot3::Roll(M_PI / 6.0);
   Point3 aTb2(19.2, 3.7, 5.9);
   EssentialMatrix E(aRb2, Unit3(aTb2));
   //EssentialMatrix E(aRb, Unit3(aTb).retract(Vector2(0.1, 0)));
@@ -159,7 +159,7 @@ TEST (EssentialMatrix, FromPose3_a) {
 //*************************************************************************
 TEST (EssentialMatrix, FromPose3_b) {
   Matrix actualH;
-  Rot3 c1Rc2 = Rot3::ypr(0.1, -0.2, 0.3);
+  Rot3 c1Rc2 = Rot3::Ypr(0.1, -0.2, 0.3);
   Point3 c1Tc2(0.4, 0.5, 0.6);
   EssentialMatrix E(c1Rc2, Unit3(c1Tc2));
   Pose3 pose(c1Rc2, c1Tc2); // Pose between two cameras
@@ -181,7 +181,7 @@ TEST (EssentialMatrix, streaming) {
 //*************************************************************************
 TEST (EssentialMatrix, epipoles) {
   // Create an E
-  Rot3 c1Rc2 = Rot3::ypr(0.1, -0.2, 0.3);
+  Rot3 c1Rc2 = Rot3::Ypr(0.1, -0.2, 0.3);
   Point3 c1Tc2(0.4, 0.5, 0.6);
   EssentialMatrix E(c1Rc2, Unit3(c1Tc2));
 

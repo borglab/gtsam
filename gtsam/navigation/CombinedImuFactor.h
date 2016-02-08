@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -59,17 +59,19 @@ namespace gtsam {
  */
 class PreintegratedCombinedMeasurements : public PreintegrationBase {
 
+public:
+
   /// Parameters for pre-integration:
   /// Usage: Create just a single Params and pass a shared pointer to the constructor
-  struct Params : PreintegrationBase::Params {
+  struct Params : PreintegrationParams {
     Matrix3 biasAccCovariance;    ///< continuous-time "Covariance" describing accelerometer bias random walk
     Matrix3 biasOmegaCovariance;  ///< continuous-time "Covariance" describing gyroscope bias random walk
-    Matrix6 biasAccOmegaInit;     ///< covariance of bias used for pre-integration
+    Matrix6 biasAccOmegaInt;     ///< covariance of bias used for pre-integration
 
     /// See two named constructors below for good values of n_gravity in body frame
     Params(const Vector3& n_gravity) :
-        PreintegrationBase::Params(n_gravity), biasAccCovariance(I_3x3), biasOmegaCovariance(
-            I_3x3), biasAccOmegaInit(I_6x6) {
+        PreintegrationParams(n_gravity), biasAccCovariance(I_3x3), biasOmegaCovariance(
+            I_3x3), biasAccOmegaInt(I_6x6) {
     }
 
     // Default Params for a Z-down navigation frame, such as NED: gravity points along positive Z-axis
@@ -93,7 +95,7 @@ class PreintegratedCombinedMeasurements : public PreintegrationBase {
       ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegratedRotation::Params);
       ar& BOOST_SERIALIZATION_NVP(biasAccCovariance);
       ar& BOOST_SERIALIZATION_NVP(biasOmegaCovariance);
-      ar& BOOST_SERIALIZATION_NVP(biasAccOmegaInit);
+      ar& BOOST_SERIALIZATION_NVP(biasAccOmegaInt);
     }
   };
 
@@ -111,27 +113,45 @@ class PreintegratedCombinedMeasurements : public PreintegrationBase {
   friend class CombinedImuFactor;
 
  public:
+  /// @name Constructors
+  /// @{
+
   /**
    *  Default constructor, initializes the class with no measurements
    *  @param bias Current estimate of acceleration and rotation rate biases
    */
-  PreintegratedCombinedMeasurements(const boost::shared_ptr<Params>& p,
-                                    const imuBias::ConstantBias& biasHat)
+  PreintegratedCombinedMeasurements(
+      const boost::shared_ptr<Params>& p,
+      const imuBias::ConstantBias& biasHat = imuBias::ConstantBias())
       : PreintegrationBase(p, biasHat) {
     preintMeasCov_.setZero();
   }
 
-  Params& p() const { return *boost::static_pointer_cast<Params>(p_);}
+  /// @}
 
-  /// print
-  void print(const std::string& s = "Preintegrated Measurements:") const;
-
-  /// equals
-  bool equals(const PreintegratedCombinedMeasurements& expected,
-              double tol = 1e-9) const;
+  /// @name Basic utilities
+  /// @{
 
   /// Re-initialize PreintegratedCombinedMeasurements
   void resetIntegration();
+
+  /// const reference to params, shadows definition in base class
+  Params& p() const { return *boost::static_pointer_cast<Params>(p_);}
+  /// @}
+
+  /// @name Access instance variables
+  /// @{
+  Matrix preintMeasCov() const { return preintMeasCov_; }
+  /// @}
+
+  /// @name Testable
+  /// @{
+  void print(const std::string& s = "Preintegrated Measurements:") const;
+  bool equals(const PreintegratedCombinedMeasurements& expected, double tol = 1e-9) const;
+  /// @}
+
+  /// @name Main functionality
+  /// @{
 
   /**
    * Add a single IMU measurement to the preintegration.
@@ -145,9 +165,9 @@ class PreintegratedCombinedMeasurements : public PreintegrationBase {
   void integrateMeasurement(const Vector3& measuredAcc,
       const Vector3& measuredOmega, double deltaT);
 
-  /// methods to access class variables
-  Matrix preintMeasCov() const { return preintMeasCov_; }
+  /// @}
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
   /// deprecated constructor
   /// NOTE(frank): assumes Z-Down convention, only second order integration supported
   PreintegratedCombinedMeasurements(const imuBias::ConstantBias& biasHat,
@@ -155,7 +175,8 @@ class PreintegratedCombinedMeasurements : public PreintegrationBase {
       const Matrix3& measuredOmegaCovariance,
       const Matrix3& integrationErrorCovariance,
       const Matrix3& biasAccCovariance, const Matrix3& biasOmegaCovariance,
-      const Matrix6& biasAccOmegaInit, const bool use2ndOrderIntegration = true);
+      const Matrix6& biasAccOmegaInt, const bool use2ndOrderIntegration = true);
+#endif
 
  private:
   /// Serialization function
@@ -255,6 +276,7 @@ public:
       boost::optional<Matrix&> H4 = boost::none, boost::optional<Matrix&> H5 =
           boost::none, boost::optional<Matrix&> H6 = boost::none) const;
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
   /// @deprecated typename
   typedef gtsam::PreintegratedCombinedMeasurements CombinedPreintegratedMeasurements;
 
@@ -271,6 +293,7 @@ public:
                       CombinedPreintegratedMeasurements& pim,
                       const Vector3& n_gravity, const Vector3& omegaCoriolis,
                       const bool use2ndOrderCoriolis = false);
+#endif
 
 private:
 

@@ -141,7 +141,20 @@ namespace gtsam {
   /* ************************************************************************* */  
   pair<Matrix,Vector> GaussianBayesNet::matrix() const
   {
-    return GaussianFactorGraph(*this).jacobian();
+    GaussianFactorGraph factorGraph(*this);
+    KeySet keys = factorGraph.keys();
+    // add frontal keys in order
+    Ordering ordering;
+    BOOST_FOREACH (const sharedConditional& cg, *this)
+      BOOST_FOREACH (Key key, cg->frontals()) {
+        ordering.push_back(key);
+        keys.erase(key);
+      }
+    // add remaining keys in case Bayes net is incomplete
+    BOOST_FOREACH (Key key, keys)
+      ordering.push_back(key);
+    // return matrix and RHS
+    return factorGraph.jacobian(ordering);
   }
 
   ///* ************************************************************************* */

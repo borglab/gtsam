@@ -314,7 +314,7 @@ public:
   /// triangulate
   bool triangulateForLinearize(const Cameras& cameras) const {
     triangulateSafe(cameras); // imperative, might reset result_
-    return (result_);
+    return bool(result_);
   }
 
   /// linearize returns a Hessianfactor that is an approximation of error(p)
@@ -583,7 +583,7 @@ public:
 
     /// Is result valid?
     bool isValid() const {
-      return result_;
+      return bool(result_);
     }
 
     /** return the degenerate state */

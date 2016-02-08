@@ -120,9 +120,9 @@ Pose3 Pose3::Expmap(const Vector6& xi, OptionalJacobian<6, 6> H) {
   Rot3 R = Rot3::Expmap(omega.vector());
   double theta2 = omega.dot(omega);
   if (theta2 > std::numeric_limits<double>::epsilon()) {
-    double omega_v = omega.dot(v);          // translation parallel to axis
-    Point3 omega_cross_v = omega.cross(v);  // points towards axis
-    Point3 t = (omega_cross_v - R * omega_cross_v + omega_v * omega) / theta2;
+    Point3 t_parallel = omega * omega.dot(v); // translation parallel to axis
+    Point3 omega_cross_v = omega.cross(v);    // points towards axis
+    Point3 t = (omega_cross_v - R * omega_cross_v + t_parallel) / theta2;
     return Pose3(R, t);
   } else {
     return Pose3(R, v);

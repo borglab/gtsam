@@ -222,7 +222,7 @@ ALIASES                = "only_for_vectors=This is only for vectors (either row-
                          "note_about_using_kernel_to_study_multiple_solutions=If you need a complete analysis of the space of solutions, take the one solution obtained by this method and add to it elements of the kernel, as determined by kernel()." \
                          "note_about_checking_solutions=This method just tries to find as good a solution as possible. If you want to check whether a solution exists or if it is accurate, just call this function to get a result and then compute the error of this result, or use MatrixBase::isApprox() directly, for instance like this: \code bool a_solution_exists = (A*result).isApprox(b, precision); \endcode This method avoids dividing by zero, so that the non-existence of a solution doesn't by itself mean that you'll get \c inf or \c nan values." \
                          "note_try_to_help_rvo=This function returns the result by value. In order to make that efficient, it is implemented as just a return statement using a special constructor, hopefully allowing the compiler to perform a RVO (return value optimization)." \
-                         "nonstableyet=\warning This is not considered to be part of the stable public API yet. Changes may happen in future releases. See \ref Experimental \"Experimental parts of Eigen\"
+                         "nonstableyet=\warning This is not considered to be part of the stable public API yet. Changes may happen in future releases. See \ref Experimental \"Experimental parts of Eigen\""
 
 ALIASES += "eigenAutoToc=  "
 ALIASES += "eigenManualPage=\defgroup"
@@ -315,7 +315,7 @@ IDL_PROPERTY_SUPPORT   = YES
 # member in the group (if any) for the other members of the group. By default
 # all members of a group must be documented explicitly.
 
-DISTRIBUTE_GROUP_DOC   = NO
+DISTRIBUTE_GROUP_DOC   = YES
 
 # Set the SUBGROUPING tag to YES (the default) to allow class member groups of
 # the same type (for instance a group of public functions) to be put as a
@@ -365,7 +365,7 @@ TYPEDEF_HIDES_STRUCT   = NO
 # 2^(16+SYMBOL_CACHE_SIZE). The valid range is 0..9, the default is 0,
 # corresponding to a cache size of 2^16 = 65536 symbols.
 
-SYMBOL_CACHE_SIZE      = 0
+# SYMBOL_CACHE_SIZE      = 0
 
 # Similar to the SYMBOL_CACHE_SIZE the size of the symbol lookup cache can be
 # set using LOOKUP_CACHE_SIZE. This cache is used to resolve symbols given
@@ -562,7 +562,7 @@ GENERATE_BUGLIST       = NO
 # disable (NO) the deprecated list. This list is created by putting
 # \deprecated commands in the documentation.
 
-GENERATE_DEPRECATEDLIST= NO
+GENERATE_DEPRECATEDLIST= YES
 
 # The ENABLED_SECTIONS tag can be used to enable conditional
 # documentation sections, marked by \if sectionname ... \endif.
@@ -1465,13 +1465,13 @@ XML_OUTPUT             = xml
 # which can be used by a validating XML parser to check the
 # syntax of the XML files.
 
-XML_SCHEMA             =
+# XML_SCHEMA             =
 
 # The XML_DTD tag can be used to specify an XML DTD,
 # which can be used by a validating XML parser to check the
 # syntax of the XML files.
 
-XML_DTD                =
+# XML_DTD                =
 
 # If the XML_PROGRAMLISTING tag is set to YES Doxygen will
 # dump the program listings (including syntax highlighting
@@ -1699,7 +1699,7 @@ DOT_NUM_THREADS        = 0
 # the DOTFONTPATH environment variable or by setting DOT_FONTPATH to the
 # directory containing the font.
 
-DOT_FONTNAME           = FreeSans
+DOT_FONTNAME           = 
 
 # The DOT_FONTSIZE tag can be used to set the size of the font of dot graphs.
 # The default size is 10pt.

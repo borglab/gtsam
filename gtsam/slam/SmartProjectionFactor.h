@@ -137,7 +137,7 @@ protected:
 
   /// @name Parameters
   /// @{
-  const SmartProjectionParams params_;
+  SmartProjectionParams params_;
   /// @}
 
   /// @name Caching triangulation
@@ -153,6 +153,11 @@ public:
 
   /// shorthand for a set of cameras
   typedef CameraSet<CAMERA> Cameras;
+
+  /**
+   * Default constructor, only for serialization
+   */
+  SmartProjectionFactor() {}
 
   /**
    * Constructor
@@ -246,7 +251,7 @@ public:
   /// triangulate
   bool triangulateForLinearize(const Cameras& cameras) const {
     triangulateSafe(cameras); // imperative, might reset result_
-    return (result_);
+    return bool(result_);
   }
 
   /// linearize returns a Hessianfactor that is an approximation of error(p)

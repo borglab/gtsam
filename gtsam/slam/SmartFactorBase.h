@@ -50,6 +50,7 @@ private:
   typedef SmartFactorBase<CAMERA> This;
   typedef typename CAMERA::Measurement Z;
 
+protected:
   /**
    * As of Feb 22, 2015, the noise model is the same for all measurements and
    * is isotropic. This allows for moving most calculations of Schur complement
@@ -58,7 +59,6 @@ private:
    */
   SharedIsotropic noiseModel_;
 
-protected:
   /**
    * 2D measurement and noise model for each of the m views
    * We keep a copy of measurements for I/O and computing the error.
@@ -92,6 +92,9 @@ public:
 
   /// We use the new CameraSte data structure to refer to a set of cameras
   typedef CameraSet<CAMERA> Cameras;
+
+  /// Default Constructor, for serialization
+  SmartFactorBase() {}
 
   /// Constructor
   SmartFactorBase(const SharedNoiseModel& sharedNoiseModel,

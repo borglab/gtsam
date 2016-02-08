@@ -59,7 +59,7 @@ OrientedPlane3 transform_(const OrientedPlane3& plane,  const Pose3& xr) {
 }
 
 TEST (OrientedPlane3, transform) {
-  gtsam::Pose3 pose(gtsam::Rot3::ypr(-M_PI / 4.0, 0.0, 0.0),
+  gtsam::Pose3 pose(gtsam::Rot3::Ypr(-M_PI / 4.0, 0.0, 0.0),
       gtsam::Point3(2.0, 3.0, 4.0));
   OrientedPlane3 plane(-1, 0, 0, 5);
   OrientedPlane3 expectedPlane(-sqrt(2.0) / 2.0, -sqrt(2.0) / 2.0, 0.0, 3);

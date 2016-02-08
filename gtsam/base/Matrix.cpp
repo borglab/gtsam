@@ -189,7 +189,7 @@ void print(const Matrix& A, const string &s, ostream& stream) {
       0, // flags
       " ", // coeffSeparator
       ";\n", // rowSeparator
-      "  ",  // rowPrefix
+	  " \t",  // rowPrefix
       "", // rowSuffix
       "[\n", // matPrefix
       "\n  ]" // matSuffix
@@ -578,15 +578,6 @@ Matrix vector_scale(const Matrix& A, const Vector& v, bool inf_mask) {
       M.col(j) *= v(j);
   }
   return M;
-}
-
-/* ************************************************************************* */
-Matrix3 skewSymmetric(double wx, double wy, double wz)
-{
-  return (Matrix3() <<
-      0.0, -wz, +wy,
-      +wz, 0.0, -wx,
-      -wy, +wx, 0.0).finished();
 }
 
 /* ************************************************************************* */

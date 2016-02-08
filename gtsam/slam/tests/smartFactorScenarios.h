@@ -34,7 +34,7 @@ Point3 landmark4(10, 0.5, 1.2);
 Point3 landmark5(10, -0.5, 1.2);
 
 // First camera pose, looking along X-axis, 1 meter above ground plane (x-y)
-Pose3 level_pose = Pose3(Rot3::ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
+Pose3 level_pose = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
 // Second camera 1 meter to the right of first camera
 Pose3 pose_right = level_pose * Pose3(Rot3(), Point3(1, 0, 0));
 // Third camera 1 meter above the first camera
@@ -123,7 +123,7 @@ Camera cam3(pose_above, sharedBundlerK);
 
 template<class CAMERA>
 CAMERA perturbCameraPose(const CAMERA& camera) {
-  Pose3 noise_pose = Pose3(Rot3::ypr(-M_PI / 10, 0., -M_PI / 10),
+  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 10, 0., -M_PI / 10),
       Point3(0.5, 0.1, 0.3));
   Pose3 cameraPose = camera.pose();
   Pose3 perturbedCameraPose = cameraPose.compose(noise_pose);

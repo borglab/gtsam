@@ -25,6 +25,8 @@
 using namespace std;
 using namespace gtsam;
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+
 // Should be seen as between(pvb1,pvb2), i.e., written as pvb2 \omin pvb1
 Vector9 error(const PoseVelocityBias& pvb1, const PoseVelocityBias& pvb2) {
   Matrix3 R1 = pvb1.pose.rotation().matrix();
@@ -55,6 +57,7 @@ TEST(PoseVelocityBias, error) {
   expected << 0.0, -0.5, 6.0, 4.0, 0.0, 3.0, 0.1, 0.2, 0.3;
   EXPECT(assert_equal(expected, actual, 1e-9));
 }
+#endif
 
 /* ************************************************************************************************/
 int main() {

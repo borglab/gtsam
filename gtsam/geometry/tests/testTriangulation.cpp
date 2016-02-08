@@ -40,7 +40,7 @@ static const boost::shared_ptr<Cal3_S2> sharedCal = //
     boost::make_shared<Cal3_S2>(1500, 1200, 0, 640, 480);
 
 // Looking along X-axis, 1 meter above ground plane (x-y)
-static const Rot3 upright = Rot3::ypr(-M_PI / 2, 0., -M_PI / 2);
+static const Rot3 upright = Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2);
 static const Pose3 pose1 = Pose3(upright, gtsam::Point3(0, 0, 1));
 PinholeCamera<Cal3_S2> camera1(pose1, *sharedCal);
 
@@ -150,7 +150,7 @@ TEST( triangulation, fourPoses) {
   EXPECT(assert_equal(landmark, *actual2, 1e-2));
 
   // 3. Add a slightly rotated third camera above, again with measurement noise
-  Pose3 pose3 = pose1 * Pose3(Rot3::ypr(0.1, 0.2, 0.1), Point3(0.1, -2, -.1));
+  Pose3 pose3 = pose1 * Pose3(Rot3::Ypr(0.1, 0.2, 0.1), Point3(0.1, -2, -.1));
   SimpleCamera camera3(pose3, *sharedCal);
   Point2 z3 = camera3.project(landmark);
 
@@ -167,7 +167,7 @@ TEST( triangulation, fourPoses) {
   EXPECT(assert_equal(landmark, *triangulated_3cameras_opt, 1e-2));
 
   // 4. Test failure: Add a 4th camera facing the wrong way
-  Pose3 pose4 = Pose3(Rot3::ypr(M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
+  Pose3 pose4 = Pose3(Rot3::Ypr(M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
   SimpleCamera camera4(pose4, *sharedCal);
 
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
@@ -214,7 +214,7 @@ TEST( triangulation, fourPoses_distinct_Ks) {
   EXPECT(assert_equal(landmark, *actual2, 1e-2));
 
   // 3. Add a slightly rotated third camera above, again with measurement noise
-  Pose3 pose3 = pose1 * Pose3(Rot3::ypr(0.1, 0.2, 0.1), Point3(0.1, -2, -.1));
+  Pose3 pose3 = pose1 * Pose3(Rot3::Ypr(0.1, 0.2, 0.1), Point3(0.1, -2, -.1));
   Cal3_S2 K3(700, 500, 0, 640, 480);
   SimpleCamera camera3(pose3, K3);
   Point2 z3 = camera3.project(landmark);
@@ -232,7 +232,7 @@ TEST( triangulation, fourPoses_distinct_Ks) {
   EXPECT(assert_equal(landmark, *triangulated_3cameras_opt, 1e-2));
 
   // 4. Test failure: Add a 4th camera facing the wrong way
-  Pose3 pose4 = Pose3(Rot3::ypr(M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
+  Pose3 pose4 = Pose3(Rot3::Ypr(M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 1));
   Cal3_S2 K4(700, 500, 0, 640, 480);
   SimpleCamera camera4(pose4, K4);
 

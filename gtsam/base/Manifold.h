@@ -169,7 +169,8 @@ struct FixedDimension {
 };
 
 /// Helper class to construct the product manifold of two other manifolds, M1 and M2
-/// Assumes nothing except manifold structure from M1 and M2
+/// Assumes nothing except manifold structure for M1 and M2, and the existence
+/// of default constructor for those types
 template<typename M1, typename M2>
 class ProductManifold: public std::pair<M1, M2> {
   BOOST_CONCEPT_ASSERT((IsManifold<M1>));

@@ -19,6 +19,7 @@
 #pragma once
 
 #include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/geometry/Pose2.h>
 #include <gtsam/slam/TriangulationFactor.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -376,6 +377,15 @@ class TriangulationResult: public boost::optional<Point3> {
       status_(s) {
   }
 public:
+
+  /**
+   * Default constructor, only for serialization
+   */
+  TriangulationResult() {}
+
+  /**
+   * Constructor
+   */
   TriangulationResult(const Point3& p) :
       status_(VALID) {
     reset(p);

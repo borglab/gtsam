@@ -742,6 +742,11 @@ template<typename _MatrixType, int QRPreconditioner> class JacobiSVD
 
   private:
     void allocate(Index rows, Index cols, unsigned int computationOptions);
+    
+    static void check_template_parameters()
+    {
+      EIGEN_STATIC_ASSERT_NON_INTEGER(Scalar);
+    }
 
   protected:
     MatrixUType m_matrixU;
@@ -818,6 +823,8 @@ template<typename MatrixType, int QRPreconditioner>
 JacobiSVD<MatrixType, QRPreconditioner>&
 JacobiSVD<MatrixType, QRPreconditioner>::compute(const MatrixType& matrix, unsigned int computationOptions)
 {
+  check_template_parameters();
+  
   using std::abs;
   allocate(matrix.rows(), matrix.cols(), computationOptions);
 

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -66,64 +66,69 @@ void PreintegratedCombinedMeasurements::resetIntegration() {
 
 //------------------------------------------------------------------------------
 void PreintegratedCombinedMeasurements::integrateMeasurement(
-    const Vector3& measuredAcc, const Vector3& measuredOmega, double deltaT) {
-
-  const Matrix3 dRij = deltaXij_.R(); // expensive when quaternion
-
+    const Vector3& measuredAcc, const Vector3& measuredOmega, double dt) {
   // Update preintegrated measurements.
-  Matrix3 D_incrR_integratedOmega; // Right jacobian computed at theta_incr
-  Matrix9 F_9x9; // overall Jacobian wrt preintegrated measurements (df/dx)
-  Matrix93 G1,G2;
-  PreintegrationBase::update(measuredAcc, measuredOmega, deltaT,
-      &D_incrR_integratedOmega, &F_9x9, &G1, &G2);
+  Matrix9 A;  // overall Jacobian wrt preintegrated measurements (df/dx)
+  Matrix93 B, C;
+  PreintegrationBase::integrateMeasurement(measuredAcc, measuredOmega, dt, &A, &B, &C);
 
-  // Update preintegrated measurements covariance: as in [2] we consider a first order propagation that
-  // can be seen as a prediction phase in an EKF framework. In this implementation, contrarily to [2] we
-  // consider the uncertainty of the bias selection and we keep correlation between biases and preintegrated measurements
-  /* ----------------------------------------------------------------------------------------------------------------------- */
+  // Update preintegrated measurements covariance: as in [2] we consider a first
+  // order propagation that can be seen as a prediction phase in an EKF
+  // framework. In this implementation, in contrast to [2], we consider the
+  // uncertainty of the bias selection and we keep correlation between biases
+  // and preintegrated measurements
 
   // Single Jacobians to propagate covariance
-  Matrix3 H_vel_biasacc = -dRij * deltaT;
-  Matrix3 H_angles_biasomega = -D_incrR_integratedOmega * deltaT;
+  // TODO(frank): should we not also accout for bias on position?
+  Matrix3 theta_H_biasOmega = - C.topRows<3>();
+  Matrix3 vel_H_biasAcc = -B.bottomRows<3>();
 
   // overall Jacobian wrt preintegrated measurements (df/dx)
-  Eigen::Matrix<double,15,15> F;
+  Eigen::Matrix<double, 15, 15> F;
   F.setZero();
-  F.block<9, 9>(0, 0) = F_9x9;
-  F.block<3, 3>(0, 12) = H_angles_biasomega;
-  F.block<3, 3>(6, 9) = H_vel_biasacc;
+  F.block<9, 9>(0, 0) = A;
+  F.block<3, 3>(0, 12) = theta_H_biasOmega;
+  F.block<3, 3>(6, 9) = vel_H_biasAcc;
   F.block<6, 6>(9, 9) = I_6x6;
 
+  // propagate uncertainty
+  // TODO(frank): use noiseModel routine so we can have arbitrary noise models.
+  const Matrix3& aCov = p().accelerometerCovariance;
+  const Matrix3& wCov = p().gyroscopeCovariance;
+  const Matrix3& iCov = p().integrationCovariance;
+
   // first order uncertainty propagation
-  // Optimized matrix multiplication   (1/deltaT) * G * measurementCovariance * G.transpose()
-  Eigen::Matrix<double,15,15> G_measCov_Gt;
+  // Optimized matrix multiplication   (1/dt) * G * measurementCovariance *
+  // G.transpose()
+  Eigen::Matrix<double, 15, 15> G_measCov_Gt;
   G_measCov_Gt.setZero(15, 15);
 
   // BLOCK DIAGONAL TERMS
-  D_t_t(&G_measCov_Gt) = deltaT * p().integrationCovariance;
-  D_v_v(&G_measCov_Gt) = (1 / deltaT) * (H_vel_biasacc)
-      * (p().accelerometerCovariance + p().biasAccOmegaInit.block<3, 3>(0, 0))
-      * (H_vel_biasacc.transpose());
-  D_R_R(&G_measCov_Gt) = (1 / deltaT) * (H_angles_biasomega)
-      * (p().gyroscopeCovariance + p().biasAccOmegaInit.block<3, 3>(3, 3))
-      * (H_angles_biasomega.transpose());
-  D_a_a(&G_measCov_Gt) = (1 / deltaT) * p().biasAccCovariance;
-  D_g_g(&G_measCov_Gt) = (1 / deltaT) * p().biasOmegaCovariance;
+  D_t_t(&G_measCov_Gt) = dt * iCov;
+  D_v_v(&G_measCov_Gt) = (1 / dt) * vel_H_biasAcc *
+                         (aCov + p().biasAccOmegaInt.block<3, 3>(0, 0)) *
+                         (vel_H_biasAcc.transpose());
+  D_R_R(&G_measCov_Gt) = (1 / dt) * theta_H_biasOmega *
+                         (wCov + p().biasAccOmegaInt.block<3, 3>(3, 3)) *
+                         (theta_H_biasOmega.transpose());
+  D_a_a(&G_measCov_Gt) = dt * p().biasAccCovariance;
+  D_g_g(&G_measCov_Gt) = dt * p().biasOmegaCovariance;
 
   // OFF BLOCK DIAGONAL TERMS
-  Matrix3 temp = H_vel_biasacc * p().biasAccOmegaInit.block<3, 3>(3, 0)
-      * H_angles_biasomega.transpose();
+  Matrix3 temp = vel_H_biasAcc * p().biasAccOmegaInt.block<3, 3>(3, 0) *
+                 theta_H_biasOmega.transpose();
   D_v_R(&G_measCov_Gt) = temp;
   D_R_v(&G_measCov_Gt) = temp.transpose();
   preintMeasCov_ = F * preintMeasCov_ * F.transpose() + G_measCov_Gt;
 }
 
 //------------------------------------------------------------------------------
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 PreintegratedCombinedMeasurements::PreintegratedCombinedMeasurements(
     const imuBias::ConstantBias& biasHat, const Matrix3& measuredAccCovariance,
     const Matrix3& measuredOmegaCovariance,
     const Matrix3& integrationErrorCovariance, const Matrix3& biasAccCovariance,
-    const Matrix3& biasOmegaCovariance, const Matrix6& biasAccOmegaInit,
+    const Matrix3& biasOmegaCovariance, const Matrix6& biasAccOmegaInt,
     const bool use2ndOrderIntegration) {
   if (!use2ndOrderIntegration)
     throw("PreintegratedImuMeasurements no longer supports first-order integration: it incorrectly compensated for gravity");
@@ -134,11 +139,12 @@ PreintegratedCombinedMeasurements::PreintegratedCombinedMeasurements(
   p->integrationCovariance = integrationErrorCovariance;
   p->biasAccCovariance = biasAccCovariance;
   p->biasOmegaCovariance = biasOmegaCovariance;
-  p->biasAccOmegaInit = biasAccOmegaInit;
+  p->biasAccOmegaInt = biasAccOmegaInt;
   p_ = p;
   resetIntegration();
   preintMeasCov_.setZero();
 }
+#endif
 //------------------------------------------------------------------------------
 // CombinedImuFactor methods
 //------------------------------------------------------------------------------
@@ -238,6 +244,7 @@ Vector CombinedImuFactor::evaluateError(const Pose3& pose_i,
 }
 
 //------------------------------------------------------------------------------
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 CombinedImuFactor::CombinedImuFactor(
     Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias_i, Key bias_j,
     const CombinedPreintegratedMeasurements& pim, const Vector3& n_gravity,
@@ -254,7 +261,7 @@ CombinedImuFactor::CombinedImuFactor(
   p->use2ndOrderCoriolis = use2ndOrderCoriolis;
   _PIM_.p_ = p;
 }
-//------------------------------------------------------------------------------
+
 void CombinedImuFactor::Predict(const Pose3& pose_i, const Vector3& vel_i,
                                 Pose3& pose_j, Vector3& vel_j,
                                 const imuBias::ConstantBias& bias_i,
@@ -268,5 +275,7 @@ void CombinedImuFactor::Predict(const Pose3& pose_i, const Vector3& vel_i,
   pose_j = pvb.pose;
   vel_j = pvb.velocity;
 }
+#endif
 
 } /// namespace gtsam
+

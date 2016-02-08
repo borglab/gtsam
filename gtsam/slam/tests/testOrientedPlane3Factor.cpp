@@ -47,7 +47,7 @@ TEST (OrientedPlane3Factor, lm_translation_error) {
 
   // Init pose and prior.  Pose Prior is needed since a single plane measurement does not fully constrain the pose
   Symbol init_sym('x', 0);
-  Pose3 init_pose(Rot3::ypr(0.0, 0.0, 0.0), Point3(0.0, 0.0, 0.0));
+  Pose3 init_pose(Rot3::Ypr(0.0, 0.0, 0.0), Point3(0.0, 0.0, 0.0));
   Vector sigmas(6);
   sigmas << 0.001, 0.001, 0.001, 0.001, 0.001, 0.001;
   PriorFactor<Pose3> pose_prior(init_sym, init_pose,
@@ -94,7 +94,7 @@ TEST (OrientedPlane3Factor, lm_rotation_error) {
 
   // Init pose and prior.  Pose Prior is needed since a single plane measurement does not fully constrain the pose
   Symbol init_sym('x', 0);
-  Pose3 init_pose(Rot3::ypr(0.0, 0.0, 0.0), Point3(0.0, 0.0, 0.0));
+  Pose3 init_pose(Rot3::Ypr(0.0, 0.0, 0.0), Point3(0.0, 0.0, 0.0));
   PriorFactor<Pose3> pose_prior(init_sym, init_pose,
       noiseModel::Diagonal::Sigmas(
           (Vector(6) << 0.001, 0.001, 0.001, 0.001, 0.001, 0.001).finished()));
