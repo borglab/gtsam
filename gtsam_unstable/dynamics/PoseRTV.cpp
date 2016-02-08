@@ -161,7 +161,7 @@ Vector6 PoseRTV::imuPrediction(const PoseRTV& x2, double dt) const {
 Point3 PoseRTV::translationIntegration(const Rot3& r2, const Velocity3& v2, double dt) const {
   // predict point for constraint
   // NOTE: uses simple Euler approach for prediction
-  Point3 pred_t2 = t().retract(v2 * dt);
+  Point3 pred_t2 = t() + Point3(v2 * dt);
   return pred_t2;
 }
 

@@ -113,7 +113,7 @@ int main(int argc, char* argv[]) {
       // Add initial guesses to all observed landmarks
       // Intentionally initialize the variables off from the ground truth
       for (size_t j = 0; j < points.size(); ++j)
-        initialEstimate.insert(Symbol('l', j), points[j].compose(Point3(-0.25, 0.20, 0.15)));
+        initialEstimate.insert(Symbol('l', j), points[j] +Point3(-0.25, 0.20, 0.15));
 
     } else {
       // Update iSAM with the new factors

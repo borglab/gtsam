@@ -88,7 +88,7 @@ int main(int argc, char* argv[]) {
   for (size_t i = 0; i < poses.size(); ++i)
     initial.insert(Symbol('x', i), poses[i].compose(delta));
   for (size_t j = 0; j < points.size(); ++j)
-    initial.insert(Symbol('l', j), points[j].compose(Point3(-0.25, 0.20, 0.15)));
+    initial.insert(Symbol('l', j), points[j] + Point3(-0.25, 0.20, 0.15));
   cout << "initial error = " << graph.error(initial) << endl;
 
   /* Optimize the graph and print results */

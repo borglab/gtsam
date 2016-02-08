@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -158,6 +158,7 @@ namespace gtsam {
     /// Output stream operator
     GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os, const Point3& p);
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
     /// @name Deprecated
     /// @{
     Point3 inverse() const { return -(*this);}
@@ -168,6 +169,7 @@ namespace gtsam {
     static Vector3 Logmap(const Point3& p) { return p.vector();}
     static Point3 Expmap(const Vector3& v) { return Point3(v);}
     /// @}
+#endif
 
   private:
 
