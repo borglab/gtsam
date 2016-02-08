@@ -28,6 +28,7 @@
 #include <vector> 
 #include <iostream> 
 #include <fstream> 
+#include <sstream>
 #include <iterator>     // std::ostream_iterator
 //#include <cstdint> // on Linux GCC: fails with error regarding needing C++0x std flags 
 //#include <cinttypes> // same failure as above 
@@ -309,6 +310,25 @@ vector<Class> Class::expandTemplate(Str templateArg,
     inst.templateArgs.clear();
     inst.typedefName = qualifiedName("::") + "<" + instName.qualifiedName("::")
         + ">";
+    result.push_back(inst);
+  }
+  return result;
+}
+
+/* ************************************************************************* */
+vector<Class> Class::expandTemplate(Str templateArg,
+    const vector<int>& integers) const {
+  vector<Class> result;
+  BOOST_FOREACH(int i, integers) {
+    Qualified expandedClass = (Qualified) (*this);
+    stringstream ss; ss << i;
+    string instName = ss.str();
+    expandedClass.expand(instName);
+    const TemplateSubstitution ts(templateArg, instName, expandedClass);
+    Class inst = expandTemplate(ts);
+    inst.name_ = expandedClass.name();
+    inst.templateArgs.clear();
+    inst.typedefName = qualifiedName("::") + "<" + instName + ">";
     result.push_back(inst);
   }
   return result;
