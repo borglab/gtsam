@@ -76,10 +76,10 @@ Point3 Similarity3::transform_from(const Point3& p, //
     OptionalJacobian<3, 7> H1, OptionalJacobian<3, 3> H2) const {
   Point3 q = R_ * p + t_;
   if (H1) {
-    const Matrix3 R = R_.matrix();
-    Matrix3 DR = s_ * R * skewSymmetric(-p.x(), -p.y(), -p.z());
-    // TODO(frank): explain the derivative in lambda
-    *H1 << DR, s_ * R, s_ * p.vector();
+    // For this derivative, see LieGroups.pdf
+    const Matrix3 sR = s_ * R_.matrix();
+    Matrix3 DR = sR * skewSymmetric(-p.x(), -p.y(), -p.z());
+    *H1 << DR, sR, sR * p.vector();
   }
   if (H2)
     *H2 = s_ * R_.matrix(); // just 3*3 sub-block of matrix()
