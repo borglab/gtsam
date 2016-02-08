@@ -249,10 +249,10 @@ TEST(Similarity3, GroupAction) {
   Point3 q(1, 2, 3);
   for (const auto T : { T1, T2, T3, T4, T5, T6 }) {
     Point3 q(1, 0, 0);
-    Matrix H1 = numericalDerivative21<Point3, Similarity3, Point3>(f, T1, q);
-    Matrix H2 = numericalDerivative22<Point3, Similarity3, Point3>(f, T1, q);
+	Matrix H1 = numericalDerivative21<Point3, Similarity3, Point3>(f, T, q);
+	Matrix H2 = numericalDerivative22<Point3, Similarity3, Point3>(f, T, q);
     Matrix actualH1, actualH2;
-    T1.transform_from(q, actualH1, actualH2);
+	T.transform_from(q, actualH1, actualH2);
     EXPECT(assert_equal(H1, actualH1));
     EXPECT(assert_equal(H2, actualH2));
   }
