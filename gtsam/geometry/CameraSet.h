@@ -110,20 +110,16 @@ public:
     std::vector<Z> z(m);
 
     // Allocate derivatives
-    if (E)
-      E->resize(ZDim * m, N);
-    if (Fs)
-      Fs->resize(m);
+    if (E) E->resize(ZDim * m, N);
+    if (Fs) Fs->resize(m);
 
     // Project and fill derivatives
     for (size_t i = 0; i < m; i++) {
       MatrixZD Fi;
       Eigen::Matrix<double, ZDim, N> Ei;
       z[i] = this->at(i).project2(point, Fs ? &Fi : 0, E ? &Ei : 0);
-      if (Fs)
-        (*Fs)[i] = Fi;
-      if (E)
-        E->block<ZDim, N>(ZDim * i, 0) = Ei;
+      if (Fs) (*Fs)[i] = Fi;
+      if (E) E->block<ZDim, N>(ZDim * i, 0) = Ei;
     }
 
     return z;
