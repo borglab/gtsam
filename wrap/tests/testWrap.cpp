@@ -445,15 +445,17 @@ TEST( wrap, matlab_code_geometry ) {
   string apath = "actual/";
 
   EXPECT(files_equal(epath + "geometry_wrapper.cpp" , apath + "geometry_wrapper.cpp" ));
-  EXPECT(files_equal(epath + "+gtsam/Point2.m"      , apath + "+gtsam/Point2.m"             ));
-  EXPECT(files_equal(epath + "+gtsam/Point3.m"      , apath + "+gtsam/Point3.m"             ));
+  EXPECT(files_equal(epath + "+gtsam/Point2.m"      , apath + "+gtsam/Point2.m"      ));
+  EXPECT(files_equal(epath + "+gtsam/Point3.m"      , apath + "+gtsam/Point3.m"      ));
   EXPECT(files_equal(epath + "Test.m"               , apath + "Test.m"               ));
   EXPECT(files_equal(epath + "MyBase.m"             , apath + "MyBase.m"             ));
+  EXPECT(files_equal(epath + "MyVector3.m"          , apath + "MyVector3.m"          ));
+  EXPECT(files_equal(epath + "MyVector12.m"         , apath + "MyVector12.m"         ));
   EXPECT(files_equal(epath + "MyTemplatePoint2.m"   , apath + "MyTemplatePoint2.m"   ));
   EXPECT(files_equal(epath + "MyTemplateMatrix.m"   , apath + "MyTemplateMatrix.m"   ));
-  EXPECT(files_equal(epath + "MyFactorPosePoint2.m" , apath + "MyFactorPosePoint2.m"));
+  EXPECT(files_equal(epath + "MyFactorPosePoint2.m" , apath + "MyFactorPosePoint2.m" ));
   EXPECT(files_equal(epath + "aGlobalFunction.m"    , apath + "aGlobalFunction.m"    ));
-  EXPECT(files_equal(epath + "overloadedGlobalFunction.m"    , apath + "overloadedGlobalFunction.m"    ));
+  EXPECT(files_equal(epath + "overloadedGlobalFunction.m", apath + "overloadedGlobalFunction.m"));
 }
 
 /* ************************************************************************* */
