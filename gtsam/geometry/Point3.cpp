@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -75,6 +75,7 @@ double Point3::distance(const Point3 &p2, OptionalJacobian<1, 3> H1,
 }
 
 /* ************************************************************************* */
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 Point3 Point3::add(const Point3 &q, OptionalJacobian<3,3> H1,
     OptionalJacobian<3,3> H2) const {
   if (H1) *H1 = I_3x3;
@@ -82,13 +83,13 @@ Point3 Point3::add(const Point3 &q, OptionalJacobian<3,3> H1,
   return *this + q;
 }
 
-/* ************************************************************************* */
 Point3 Point3::sub(const Point3 &q, OptionalJacobian<3,3> H1,
     OptionalJacobian<3,3> H2) const {
   if (H1) *H1 = I_3x3;
   if (H2) *H2 = I_3x3;
   return *this - q;
 }
+#endif
 
 /* ************************************************************************* */
 Point3 Point3::cross(const Point3 &q, OptionalJacobian<3, 3> H_p, OptionalJacobian<3, 3> H_q) const {

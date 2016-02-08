@@ -107,11 +107,6 @@ namespace gtsam {
     double distance(const Point3& p2, OptionalJacobian<1, 3> H1 = boost::none,
                     OptionalJacobian<1, 3> H2 = boost::none) const;
 
-    /** @deprecated The following function has been deprecated, use distance above */
-    inline double dist(const Point3& p2) const {
-      return (p2 - *this).norm();
-    }
-
     /** Distance of the point from the origin, with Jacobian */
     double norm(OptionalJacobian<1,3> H = boost::none) const;
 
@@ -145,14 +140,6 @@ namespace gtsam {
     /// get z
     inline double z() const {return z_;}
 
-    /** add two points, add(this,q) is same as this + q */
-    Point3 add (const Point3 &q,
-          OptionalJacobian<3, 3> H1=boost::none, OptionalJacobian<3, 3> H2=boost::none) const;
-
-    /** subtract two points, sub(this,q) is same as this - q */
-    Point3 sub (const Point3 &q,
-          OptionalJacobian<3,3> H1=boost::none, OptionalJacobian<3,3> H2=boost::none) const;
-
     /// @}
 
     /// Output stream operator
@@ -168,7 +155,12 @@ namespace gtsam {
     Point3 retract(const Vector3& v) const { return compose(Point3(v));}
     static Vector3 Logmap(const Point3& p) { return p.vector();}
     static Point3 Expmap(const Vector3& v) { return Point3(v);}
-    /// @}
+    inline double dist(const Point3& p2) const { return (p2 - *this).norm(); }
+    Point3 add(const Point3& q, OptionalJacobian<3, 3> H1 = boost::none,
+               OptionalJacobian<3, 3> H2 = boost::none) const;
+    Point3 sub(const Point3& q, OptionalJacobian<3, 3> H1 = boost::none,
+               OptionalJacobian<3, 3> H2 = boost::none) const;
+  /// @}
 #endif
 
   private:

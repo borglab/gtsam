@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -36,16 +36,13 @@ class_<Point3>("Point3")
   .def(init<const Vector3 &>())
   .def("identity", &Point3::identity)
   .staticmethod("identity")
-  .def("add", &Point3::add)
   .def("cross", &Point3::cross)
-  .def("dist", &Point3::dist)
   .def("distance", &Point3::distance)
   .def("dot", &Point3::dot)
   .def("equals", &Point3::equals, equals_overloads(args("q","tol")))
   .def("norm", &Point3::norm)
   .def("normalize", &Point3::normalize)
   .def("print", &Point3::print, print_overloads(args("s")))
-  .def("sub", &Point3::sub)
   .def("vector", &Point3::vector)
   .def("x", &Point3::x)
   .def("y", &Point3::y)
