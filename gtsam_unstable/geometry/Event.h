@@ -33,10 +33,6 @@ class Event {
 public:
   enum { dimension = 4 };
 
-  /// Speed of sound
-  static const double Speed;
-  static const Matrix14 JacobianZ;
-
   /// Default Constructor
   Event() :
       time_(0) {
@@ -57,6 +53,7 @@ public:
 
   // TODO we really have to think of a better way to do linear arguments
   double height(OptionalJacobian<1,4> H = boost::none) const {
+    static const Matrix14 JacobianZ = (Matrix14() << 0,0,0,1).finished();
     if (H) *H = JacobianZ;
     return location_.z();
   }
@@ -87,6 +84,7 @@ public:
   double toa(const Point3& microphone, //
       OptionalJacobian<1, 4> H1 = boost::none, //
       OptionalJacobian<1, 3> H2 = boost::none) const {
+    static const double Speed = 330;
     Matrix13 D1, D2;
     double distance = location_.distance(microphone, D1, D2);
     if (H1)
