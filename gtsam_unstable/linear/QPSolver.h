@@ -89,6 +89,15 @@ public:
       const VectorValues& initialValues, const VectorValues& duals =
           VectorValues(), bool useWarmStart = true) const;
 
+  /**
+   * For this version the caller will not have to provide an initial value
+   * Uses the matlab strategy for initialization
+   * See  http://www.mathworks.com/help/optim/ug/quadratic-programming-algorithms.html#brrzwpf-22
+   * For details
+   * @return a pair of <primal, dual> solutions
+   */
+  std::pair<VectorValues, VectorValues> optimize() const;
+
 };
 
 } // namespace gtsam

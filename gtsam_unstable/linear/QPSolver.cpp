@@ -19,6 +19,7 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/inference/FactorGraph-inst.h>
 #include <gtsam_unstable/linear/QPSolver.h>
+#include <gtsam_unstable/linear/LPSolver.h>
 #include <gtsam_unstable/linear/InfeasibleInitialValues.h>
 #include <boost/range/adaptor/map.hpp>
 
@@ -176,5 +177,20 @@ pair<VectorValues, VectorValues> QPSolver::optimize(
 
   return make_pair(state.values, state.duals);
 }
+
+pair<VectorValues, VectorValues> QPSolver::optimize() const {
+  LP initProblem;
+
+  initProblem.cost = LinearCost(2,ones(1,1)); // min gamma s.t.
+  initProblem.equalities = qp_.equalities;    // s.t Ax = b from the original problem
+  //TODO: SLACK Variable needs to be added
+  initProblem.inequalities = qp_.inequalities; // s.t. Ax - gamma <= b Ax from the original problem
+
+  LPSolver solver(initProblem);
+  VectorValues result, duals;
+  boost::tie(result, duals) = solver.optimize();
+
+  return optimize(result);
+};
 
 } /* namespace gtsam */

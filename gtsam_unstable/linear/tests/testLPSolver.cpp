@@ -19,7 +19,6 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/inference/FactorGraph-inst.h>
-#include <gtsam_unstable/linear/LinearCost.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam_unstable/linear/EqualityFactorGraph.h>
@@ -59,6 +58,13 @@ LP simpleLP1() {
   lp.inequalities.push_back(
       LinearInequality(1, Vector2( -1, 1), 1, 5)); //  -x1 + x2 <= 1
   return lp;
+}
+
+LP infeasibleLP(){
+  LP lp;
+
+  lp.cost = LinearCost(1, Vector3(-1, -1, -2));
+
 }
 
 /* ************************************************************************* */
@@ -154,6 +160,20 @@ TEST(LPSolver, simpleTest1) {
 
   VectorValues result, duals;
   boost::tie(result, duals) = lpSolver.optimize(init);
+  VectorValues expectedResult;
+  expectedResult.insert(1, Vector2(8./3., 2./3.));
+  CHECK(assert_equal(expectedResult, result, 1e-10));
+}
+
+
+/* ************************************************************************* */
+TEST(LPSolver, testWithoutInitialValues) {
+  LP lp = simpleLP1();
+
+  LPSolver lpSolver(lp);
+  VectorValues result, duals;
+  boost::tie(result, duals) = lpSolver.optimize();
+
   VectorValues expectedResult;
   expectedResult.insert(1, Vector2(8./3., 2./3.));
   CHECK(assert_equal(expectedResult, result, 1e-10));

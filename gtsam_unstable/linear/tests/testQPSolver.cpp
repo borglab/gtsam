@@ -22,12 +22,14 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam_unstable/linear/InfeasibleInitialValues.h>
+#include <gtsam_unstable/linear/InfeasibleOrUnboundedProblem.h>
 
 using namespace std;
 using namespace gtsam;
 using namespace gtsam::symbol_shorthand;
 
 const Matrix One = ones(1,1);
+
 
 /* ************************************************************************* */
 // Create test graph according to Forst10book_pg171Ex5
@@ -38,9 +40,11 @@ QP createTestCase() {
   // Note the Hessian encodes:
   //        0.5*x1'*G11*x1 + x1'*G12*x2 + 0.5*x2'*G22*x2 - x1'*g1 - x2'*g2 + 0.5*f
   // Hence, we have G11=2, G12 = -1, g1 = +3, G22 = 2, g2 = 0, f = 10
+  //TODO:  THIS TEST MIGHT BE WRONG : the last parameter  might be 5 instead of 10 because the form of the equation
+  // Should be 0.5x'Gx + gx + f : Nocedal 449
   qp.cost.push_back(
       HessianFactor(X(1), X(2), 2.0 * ones(1, 1), -ones(1, 1), 3.0 * ones(1),
-          2.0 * ones(1, 1), zero(1), 10.0));
+          2.0 * ones(1, 1), zero(1), 10));
 
   // Inequality constraints
   qp.inequalities.push_back(LinearInequality(X(1), ones(1,1), X(2), ones(1,1), 2, 0)); // x1 + x2 <= 2 --> x1 + x2 -2 <= 0, --> b=2
@@ -247,6 +251,18 @@ TEST(QPSolver, optimizeMatlabEx) {
 }
 
 /* ************************************************************************* */
+TEST(QPSolver, optimizeMatlabExNoinitials) {
+  QP qp = createTestMatlabQPEx();
+  QPSolver solver(qp);
+  VectorValues solution;
+  boost::tie(solution, boost::tuples::ignore) = solver.optimize();
+  VectorValues expectedSolution;
+  expectedSolution.insert(X(1), (Vector(1) << 2.0 / 3.0).finished());
+  expectedSolution.insert(X(2), (Vector(1) << 4.0 / 3.0).finished());
+  CHECK(assert_equal(expectedSolution, solution, 1e-7));
+}
+
+/* ************************************************************************* */
 // Create test graph as in Nocedal06book, Ex 16.4, pg. 475
 QP createTestNocedal06bookEx16_4() {
   QP qp;
@@ -320,6 +336,31 @@ TEST(QPSolver, infeasibleInitial) {
     solver.optimize(initialValues),
     InfeasibleInitialValues
   );
+}
+
+/* ************************************************************************* */
+TEST(QPSolver, infeasibleConstraints) {
+    QP qp;
+
+    // Objective functions x1^2 - x1*x2 + x2^2 - 3*x1 + 5
+    // Note the Hessian encodes:
+    //        0.5*x1'*G11*x1 + x1'*G12*x2 + 0.5*x2'*G22*x2 - x1'*g1 - x2'*g2 + 0.5*f
+    // Hence, we have G11=2, G12 = -1, g1 = +3, G22 = 2, g2 = 0, f = 10
+    qp.cost.push_back(
+      HessianFactor(X(1), X(2), 2.0 * ones(1, 1), -ones(1, 1), 3.0 * ones(1),
+                    2.0 * ones(1, 1), zero(1), 5));
+
+    qp.inequalities.push_back(LinearInequality(X(1), -1.0 * ones(1,1), X(2), -1.0 * ones(1,1), 32, 0)); // x1 + x2  >= 32
+    qp.inequalities.push_back(LinearInequality(X(1), ones(1,1), 0, 1));                 // x1     <= 0
+    qp.inequalities.push_back(LinearInequality(X(2), ones(1,1), 0, 2));                 //    x2  <= 0
+    qp.inequalities.push_back(LinearInequality(X(1), -ones(1,1), 0, 1));                 // -x1     <= 0
+    qp.inequalities.push_back(LinearInequality(X(2), -ones(1,1), 0, 2));                 //    -x2  <= 0
+
+    QPSolver solver(qp);
+
+    CHECK_EXCEPTION(
+      solver.optimize(),
+      InfeasibleOrUnboundedProblem);
 }
 
 /* ************************************************************************* */

@@ -11,6 +11,7 @@
 #include <gtsam_unstable/linear/LPState.h>
 #include <gtsam_unstable/linear/LP.h>
 #include <gtsam_unstable/linear/ActiveSetSolver.h>
+#include <gtsam_unstable/linear/LinearCost.h>
 #include <gtsam/linear/VectorValues.h>
 
 #include <boost/range/adaptor/map.hpp>
@@ -113,21 +114,22 @@ public:
 
   /**
    * Optimize without initial values
-   * TODO: Find a feasible initial solution wrt inequality constraints
+   * TODO: Find a feasible initial solution that doens't involve simplex method
+   * nor Solving another LP
    */
-//  pair<VectorValues, VectorValues> optimize() const {
-//
-//    // Initialize workingSet from the feasible initialValues
+  pair<VectorValues, VectorValues> optimize() const {
+
+    // Initialize workingSet from the feasible initialValues
 //    InequalityFactorGraph workingSet = identifyActiveConstraints(
 //        lp_.inequalities, initialValues, duals);
 //    LPState state(initialValues, duals, workingSet, false, 0);
-//
-//    /// main loop of the solver
+
+    /// main loop of the solver
 //    while (!state.converged) {
 //      state = iterate(state);
 //    }
-//
+
 //    return make_pair(state.values, state.duals);
-//  }
+  }
 };
 }  // namespace gtsam
