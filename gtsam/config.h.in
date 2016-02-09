@@ -60,4 +60,5 @@
 // Option for not throwing the CheiralityException for points that are behind a camera
 #cmakedefine GTSAM_THROW_CHEIRALITY_EXCEPTION
 
-
+// Make sure dependent projects that want it can see deprecated functions
+#cmakedefine GTSAM_ALLOW_DEPRECATED_SINCE_V4
