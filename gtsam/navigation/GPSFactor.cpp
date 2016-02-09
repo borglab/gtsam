@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -43,7 +43,7 @@ Vector GPSFactor::evaluateError(const Pose3& p,
     H->block < 3, 3 > (0, 0) << zeros(3, 3);
     H->block < 3, 3 > (0, 3) << p.rotation().matrix();
   }
-  return (p.translation() -nT_).vector();
+  return p.translation().vector() -nT_.vector();
 }
 
 //***************************************************************************

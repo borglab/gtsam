@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -34,7 +34,7 @@ typedef PinholeCamera<Cal3_S2> Camera;
 
 static const Cal3_S2 K(625, 625, 0, 0, 0);
 
-static const Pose3 pose(Matrix3(Vector3(1, -1, -1).asDiagonal()), Point3(0, 0, 0.5));
+static const Pose3 pose(Rot3(Vector3(1, -1, -1).asDiagonal()), Point3(0, 0, 0.5));
 static const Camera camera(pose, K);
 
 static const Pose3 pose1(Rot3(), Point3(0, 1, 0.5));
