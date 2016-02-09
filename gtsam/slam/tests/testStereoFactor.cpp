@@ -31,11 +31,7 @@
 using namespace std;
 using namespace gtsam;
 
-static Pose3 camera1((Matrix) (Matrix(3, 3) <<
-           1., 0., 0.,
-           0.,-1., 0.,
-           0., 0.,-1.
-           ).finished(),
+static Pose3 camera1(Rot3(Vector3(1, -1, -1).asDiagonal()),
         Point3(0,0,6.25));
 
 static boost::shared_ptr<Cal3_S2Stereo> K(new Cal3_S2Stereo(625, 625, 0, 320, 240, 0.5));

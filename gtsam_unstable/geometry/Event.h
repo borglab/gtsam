@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -72,7 +72,7 @@ public:
 
   /// Updates a with tangent space delta
   inline Event retract(const Vector4& v) const {
-    return Event(time_ + v[0], location_.retract(v.tail(3)));
+    return Event(time_ + v[0], location_ + Point3(v.tail<3>()));
   }
 
   /// Returns inverse retraction

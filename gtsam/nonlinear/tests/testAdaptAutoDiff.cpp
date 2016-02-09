@@ -167,7 +167,7 @@ Camera camera(Pose3(Rot3().retract(Vector3(0.1, 0.2, 0.3)), Point3(0, 5, 0)),
               Cal3Bundler0(1, 0, 0));
 Point3 point(10, 0, -5);  // negative Z-axis convention of Snavely!
 Vector9 P = Camera().localCoordinates(camera);
-Vector3 X = Point3::Logmap(point);
+Vector3 X = point.vector();
 Vector2 expectedMeasurement(1.2431567, 1.2525694);
 Matrix E1 = numericalDerivative21<Vector2, Vector9, Vector3>(adapted, P, X);
 Matrix E2 = numericalDerivative22<Vector2, Vector9, Vector3>(adapted, P, X);

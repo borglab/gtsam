@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -91,7 +91,7 @@ struct PointPrior3D: public NoiseModelFactor1<Point3> {
    */
   Vector evaluateError(const Point3& x, boost::optional<Matrix&> H =
       boost::none) const {
-    return (prior(x, H) - measured_).vector();
+    return prior(x, H).vector() - measured_.vector();
   }
 };
 
@@ -122,7 +122,7 @@ struct Simulated3DMeasurement: public NoiseModelFactor2<Point3, Point3> {
    */
   Vector evaluateError(const Point3& x1, const Point3& x2,
       boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) const {
-    return (mea(x1, x2, H1, H2) - measured_).vector();
+    return mea(x1, x2, H1, H2).vector() - measured_.vector();
   }
 };
 

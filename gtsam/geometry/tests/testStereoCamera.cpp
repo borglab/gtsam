@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -74,11 +74,11 @@ TEST( StereoCamera, project)
 
 /* ************************************************************************* */
 
-static Pose3 camPose((Matrix)(Matrix(3,3) <<
+static Pose3 camPose(Rot3((Matrix3() <<
            1., 0., 0.,
            0.,-1., 0.,
            0., 0.,-1.
-           ).finished(),
+           ).finished()),
         Point3(0,0,6.25));
 
 static Cal3_S2Stereo::shared_ptr K(new Cal3_S2Stereo(1500, 1500, 0, 320, 240, 0.5));
