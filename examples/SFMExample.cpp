@@ -99,7 +99,7 @@ int main(int argc, char* argv[]) {
   for (size_t i = 0; i < poses.size(); ++i)
     initialEstimate.insert(Symbol('x', i), poses[i].compose(Pose3(Rot3::Rodrigues(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20))));
   for (size_t j = 0; j < points.size(); ++j)
-    initialEstimate.insert(Symbol('l', j), points[j] + Point3(-0.25, 0.20, 0.15));
+    initialEstimate.insert<Point3>(Symbol('l', j), points[j] + Point3(-0.25, 0.20, 0.15));
   initialEstimate.print("Initial Estimates:\n");
 
   /* Optimize the graph and print results */
