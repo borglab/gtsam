@@ -65,10 +65,12 @@ public:
       p_(1.0, 0.0, 0.0) {
   }
 
+#ifndef GTSAM_USE_VECTOR3_POINTS
   /// Construct from point
   explicit Unit3(const Point3& p) :
       p_(p.vector().normalized()) {
   }
+#endif
 
   /// Construct from a vector3
   explicit Unit3(const Vector3& p) :

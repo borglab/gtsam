@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -297,7 +297,7 @@ Point3 Pose3::transform_to(const Point3& p, OptionalJacobian<3,6> Dpose,
   // Only get transpose once, to avoid multiple allocations,
   // as well as multiple conversions in the Quaternion case
   const Matrix3 Rt = R_.transpose();
-  const Point3 q(Rt*(p - t_).vector());
+  const Point3 q(Rt*(p.vector() - t_.vector()));
   if (Dpose) {
     const double wx = q.x(), wy = q.y(), wz = q.z();
     (*Dpose) <<

@@ -15,25 +15,25 @@
  */
 
 #include <gtsam/geometry/Point3.h>
+#include <cmath>
 
 using namespace std;
 
 namespace gtsam {
 
 /* ************************************************************************* */
-bool Point3::equals(const Point3 & q, double tol) const {
-  return (fabs(x_ - q.x()) < tol && fabs(y_ - q.y()) < tol
-      && fabs(z_ - q.z()) < tol);
+bool Point3::equals(const Point3 &q, double tol) const {
+  return (fabs(x() - q.x()) < tol && fabs(y() - q.y()) < tol &&
+          fabs(z() - q.z()) < tol);
 }
 
 /* ************************************************************************* */
-
 void Point3::print(const string& s) const {
   cout << s << *this << endl;
 }
 
+#ifndef GTSAM_USE_VECTOR3_POINTS
 /* ************************************************************************* */
-
 bool Point3::operator==(const Point3& q) const {
   return x_ == q.x_ && y_ == q.y_ && z_ == q.z_;
 }
@@ -57,18 +57,19 @@ Point3 Point3::operator*(double s) const {
 Point3 Point3::operator/(double s) const {
   return Point3(x_ / s, y_ / s, z_ / s);
 }
+#endif
 
 /* ************************************************************************* */
 double Point3::distance(const Point3 &p2, OptionalJacobian<1, 3> H1,
                         OptionalJacobian<1, 3> H2) const {
   double d = (p2 - *this).norm();
   if (H1) {
-    *H1 << x_ - p2.x(), y_ - p2.y(), z_ - p2.z();
+    *H1 << x() - p2.x(), y() - p2.y(), z() - p2.z();
     *H1 = *H1 *(1. / d);
   }
 
   if (H2) {
-    *H2 << -x_ + p2.x(), -y_ + p2.y(), -z_ + p2.z();
+    *H2 << -x() + p2.x(), -y() + p2.y(), -z() + p2.z();
     *H2 = *H2 *(1. / d);
   }
   return d;
@@ -100,8 +101,8 @@ Point3 Point3::cross(const Point3 &q, OptionalJacobian<3, 3> H_p, OptionalJacobi
     *H_q << skewSymmetric(vector());
   }
 
-  return Point3(y_ * q.z_ - z_ * q.y_, z_ * q.x_ - x_ * q.z_,
-      x_ * q.y_ - y_ * q.x_);
+  return Point3(y() * q.z() - z() * q.y(), z() * q.x() - x() * q.z(),
+      x() * q.y() - y() * q.x());
 }
 
 /* ************************************************************************* */
@@ -113,15 +114,15 @@ double Point3::dot(const Point3 &q, OptionalJacobian<1, 3> H_p, OptionalJacobian
     *H_q << vector().transpose();
   }
 
-  return (x_ * q.x_ + y_ * q.y_ + z_ * q.z_);
+  return (x() * q.x() + y() * q.y() + z() * q.z());
 }
 
 /* ************************************************************************* */
 double Point3::norm(OptionalJacobian<1,3> H) const {
-  double r = sqrt(x_ * x_ + y_ * y_ + z_ * z_);
+  double r = std::sqrt(x() * x() + y() * y() + z() * z());
   if (H) {
     if (fabs(r) > 1e-10)
-      *H << x_ / r, y_ / r, z_ / r;
+      *H << x() / r, y() / r, z() / r;
     else
       *H << 1, 1, 1; // really infinity, why 1 ?
   }
@@ -133,10 +134,10 @@ Point3 Point3::normalize(OptionalJacobian<3,3> H) const {
   Point3 normalized = *this / norm();
   if (H) {
     // 3*3 Derivative
-    double x2 = x_ * x_, y2 = y_ * y_, z2 = z_ * z_;
-    double xy = x_ * y_, xz = x_ * z_, yz = y_ * z_;
+    double x2 = x() * x(), y2 = y() * y(), z2 = z() * z();
+    double xy = x() * y(), xz = x() * z(), yz = y() * z();
     *H << y2 + z2, -xy, -xz, /**/-xy, x2 + z2, -yz, /**/-xz, -yz, x2 + y2;
-    *H /= pow(x2 + y2 + z2, 1.5);
+    *H /= std::pow(x2 + y2 + z2, 1.5);
   }
   return normalized;
 }

@@ -35,6 +35,7 @@
 #include <boost/random/variate_generator.hpp>
 #include <iostream>
 #include <limits>
+#include <cmath>
 
 using namespace std;
 
@@ -252,11 +253,10 @@ Unit3 Unit3::retract(const Vector2& v) const {
 
   // Treat case of very small v differently
   if (theta < std::numeric_limits<double>::epsilon()) {
-    return Unit3(cos(theta) * p_ + xi_hat);
+    return Unit3(Vector3(std::cos(theta) * p_ + xi_hat));
   }
 
-  Vector3 exp_p_xi_hat =
-      cos(theta) * p_ + xi_hat * (sin(theta) / theta);
+  Vector3 exp_p_xi_hat = std::cos(theta) * p_ + xi_hat * (sin(theta) / theta);
   return Unit3(exp_p_xi_hat);
 }
 

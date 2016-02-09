@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -65,10 +65,12 @@ public:
       R_(R), t_(t) {
   }
 
-  /** Construct from R,t, where t \in vector3 */
+#ifndef GTSAM_USE_VECTOR3_POINTS
+  /** Construct from R,t */
   Pose3(const Rot3& R, const Vector3& t) :
       R_(R), t_(t) {
   }
+#endif
 
   /** Construct from Pose2 */
   explicit Pose3(const Pose2& pose2);
