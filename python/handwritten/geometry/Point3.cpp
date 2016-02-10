@@ -41,7 +41,7 @@ class_<Point3>("Point3")
   .def("dot", &Point3::dot)
   .def("equals", &Point3::equals, equals_overloads(args("q","tol")))
   .def("norm", &Point3::norm)
-  .def("normalize", &Point3::normalize)
+  .def("normalized", &Point3::normalized)
   .def("print", &Point3::print, print_overloads(args("s")))
 #ifndef GTSAM_USE_VECTOR3_POINTS
   .def("vector", &Point3::vector)

@@ -38,41 +38,51 @@ bool Point3::operator==(const Point3& q) const {
   return x_ == q.x_ && y_ == q.y_ && z_ == q.z_;
 }
 
-/* ************************************************************************* */
 Point3 Point3::operator+(const Point3& q) const {
   return Point3(x_ + q.x_, y_ + q.y_, z_ + q.z_);
 }
 
-/* ************************************************************************* */
 Point3 Point3::operator-(const Point3& q) const {
   return Point3(x_ - q.x_, y_ - q.y_, z_ - q.z_);
 }
 
-/* ************************************************************************* */
 Point3 Point3::operator*(double s) const {
   return Point3(x_ * s, y_ * s, z_ * s);
 }
 
-/* ************************************************************************* */
 Point3 Point3::operator/(double s) const {
   return Point3(x_ / s, y_ / s, z_ / s);
 }
 #endif
 
 /* ************************************************************************* */
-double Point3::distance(const Point3 &p2, OptionalJacobian<1, 3> H1,
+double Point3::distance(const Point3 &q, OptionalJacobian<1, 3> H1,
                         OptionalJacobian<1, 3> H2) const {
-  double d = (p2 - *this).norm();
-  if (H1) {
-    *H1 << x() - p2.x(), y() - p2.y(), z() - p2.z();
-    *H1 = *H1 *(1. / d);
-  }
+  return gtsam::distance(*this,q,H1,H2);
+}
 
-  if (H2) {
-    *H2 << -x() + p2.x(), -y() + p2.y(), -z() + p2.z();
-    *H2 = *H2 *(1. / d);
-  }
-  return d;
+double Point3::norm(OptionalJacobian<1,3> H) const {
+  return gtsam::norm(*this, H);
+}
+
+Point3 Point3::normalized(OptionalJacobian<3,3> H) const {
+  return gtsam::normalize(*this, H);
+}
+
+Point3 Point3::cross(const Point3 &q, OptionalJacobian<3, 3> H1,
+                     OptionalJacobian<3, 3> H2) const {
+  return gtsam::cross(*this, q, H1, H2);
+}
+
+double Point3::dot(const Point3 &q, OptionalJacobian<1, 3> H1,
+                   OptionalJacobian<1, 3> H2) const {
+  return gtsam::dot(*this, q, H1, H2);
+}
+
+/* ************************************************************************* */
+ostream &operator<<(ostream &os, const Point3& p) {
+  os << '[' << p.x() << ", " << p.y() << ", " << p.z() << "]\';";
+  return os;
 }
 
 /* ************************************************************************* */
@@ -93,59 +103,56 @@ Point3 Point3::sub(const Point3 &q, OptionalJacobian<3,3> H1,
 #endif
 
 /* ************************************************************************* */
-Point3 Point3::cross(const Point3 &q, OptionalJacobian<3, 3> H_p, OptionalJacobian<3, 3> H_q) const {
-  if (H_p) {
-    *H_p << skewSymmetric(-q.vector());
+double distance(const Point3 &p1, const Point3 &q, OptionalJacobian<1, 3> H1,
+                OptionalJacobian<1, 3> H2) {
+  double d = (q - p1).norm();
+  if (H1) {
+    *H1 << p1.x() - q.x(), p1.y() - q.y(), p1.z() - q.z();
+    *H1 = *H1 *(1. / d);
   }
-  if (H_q) {
-    *H_q << skewSymmetric(vector());
+  if (H2) {
+    *H2 << -p1.x() + q.x(), -p1.y() + q.y(), -p1.z() + q.z();
+    *H2 = *H2 *(1. / d);
   }
-
-  return Point3(y() * q.z() - z() * q.y(), z() * q.x() - x() * q.z(),
-      x() * q.y() - y() * q.x());
+  return d;
 }
 
-/* ************************************************************************* */
-double Point3::dot(const Point3 &q, OptionalJacobian<1, 3> H_p, OptionalJacobian<1, 3> H_q) const {
-  if (H_p) {
-    *H_p << q.vector().transpose();
-  }
-  if (H_q) {
-    *H_q << vector().transpose();
-  }
-
-  return (x() * q.x() + y() * q.y() + z() * q.z());
-}
-
-/* ************************************************************************* */
-double Point3::norm(OptionalJacobian<1,3> H) const {
-  double r = std::sqrt(x() * x() + y() * y() + z() * z());
+double norm(const Point3 &p, OptionalJacobian<1, 3> H) {
+  double r = sqrt(p.x() * p.x() + p.y() * p.y() + p.z() * p.z());
   if (H) {
     if (fabs(r) > 1e-10)
-      *H << x() / r, y() / r, z() / r;
+      *H << p.x() / r, p.y() / r, p.z() / r;
     else
-      *H << 1, 1, 1; // really infinity, why 1 ?
+      *H << 1, 1, 1;  // really infinity, why 1 ?
   }
   return r;
 }
 
-/* ************************************************************************* */
-Point3 Point3::normalize(OptionalJacobian<3,3> H) const {
-  Point3 normalized = *this / norm();
+Point3 normalize(const Point3 &p, OptionalJacobian<3, 3> H) {
+  Point3 normalized = p / norm(p);
   if (H) {
     // 3*3 Derivative
-    double x2 = x() * x(), y2 = y() * y(), z2 = z() * z();
-    double xy = x() * y(), xz = x() * z(), yz = y() * z();
-    *H << y2 + z2, -xy, -xz, /**/-xy, x2 + z2, -yz, /**/-xz, -yz, x2 + y2;
-    *H /= std::pow(x2 + y2 + z2, 1.5);
+    double x2 = p.x() * p.x(), y2 = p.y() * p.y(), z2 = p.z() * p.z();
+    double xy = p.x() * p.y(), xz = p.x() * p.z(), yz = p.y() * p.z();
+    *H << y2 + z2, -xy, -xz, /**/ -xy, x2 + z2, -yz, /**/ -xz, -yz, x2 + y2;
+    *H /= pow(x2 + y2 + z2, 1.5);
   }
   return normalized;
 }
 
-/* ************************************************************************* */
-ostream &operator<<(ostream &os, const Point3& p) {
-  os << '[' << p.x() << ", " << p.y() << ", " << p.z() << "]\';";
-  return os;
+Point3 cross(const Point3 &p, const Point3 &q, OptionalJacobian<3, 3> H1,
+             OptionalJacobian<3, 3> H2) {
+  if (H1) *H1 << skewSymmetric(-q.x(), -q.y(), -q.z());
+  if (H2) *H2 << skewSymmetric(p.x(), p.y(), p.z());
+  return Point3(p.y() * q.z() - p.z() * q.y(), p.z() * q.x() - p.x() * q.z(),
+                p.x() * q.y() - p.y() * q.x());
+}
+
+double dot(const Point3 &p, const Point3 &q, OptionalJacobian<1, 3> H1,
+           OptionalJacobian<1, 3> H2) {
+  if (H1) *H1 << q.x(), q.y(), q.z();
+  if (H2) *H2 << p.x(), p.y(), p.z();
+  return p.x() * q.x() + p.y() * q.y() + p.z() * q.z();
 }
 
 /* ************************************************************************* */
