@@ -104,14 +104,14 @@ namespace gtsam {
     Point3 operator / (double s) const;
 
     /** distance between two points */
-    double distance(const Point3& p2, OptionalJacobian<1, 3> H1 = boost::none,
+    double distance(const Point3& q, OptionalJacobian<1, 3> H1 = boost::none,
                     OptionalJacobian<1, 3> H2 = boost::none) const;
 
     /** Distance of the point from the origin, with Jacobian */
     double norm(OptionalJacobian<1,3> H = boost::none) const;
 
     /** normalize, with optional Jacobian */
-    Point3 normalize(OptionalJacobian<3, 3> H = boost::none) const;
+    Point3 normalized(OptionalJacobian<3, 3> H = boost::none) const;
 
     /** cross product @return this x q */
     Point3 cross(const Point3 &q, OptionalJacobian<3, 3> H_p = boost::none, //
@@ -155,7 +155,8 @@ namespace gtsam {
     Point3 retract(const Vector3& v) const { return compose(Point3(v));}
     static Vector3 Logmap(const Point3& p) { return p.vector();}
     static Point3 Expmap(const Vector3& v) { return Point3(v);}
-    inline double dist(const Point3& p2) const { return (p2 - *this).norm(); }
+    inline double dist(const Point3& q) const { return (q - *this).norm(); }
+    Point3 normalize(OptionalJacobian<3, 3> H = boost::none) const { return normalized(H);}
     Point3 add(const Point3& q, OptionalJacobian<3, 3> H1 = boost::none,
                OptionalJacobian<3, 3> H2 = boost::none) const;
     Point3 sub(const Point3& q, OptionalJacobian<3, 3> H1 = boost::none,
@@ -194,6 +195,31 @@ struct traits<Point3> : public internal::VectorSpace<Point3> {};
 template<>
 struct traits<const Point3> : public internal::VectorSpace<Point3> {};
 
+/// distance between two points
+double distance(const Point3& p1, const Point3& q,
+                OptionalJacobian<1, 3> H1 = boost::none,
+                OptionalJacobian<1, 3> H2 = boost::none);
+
+/// Distance of the point from the origin, with Jacobian
+double norm(const Point3& p, OptionalJacobian<1, 3> H = boost::none);
+
+/// normalize, with optional Jacobian
+Point3 normalize(const Point3& p, OptionalJacobian<3, 3> H = boost::none);
+
+/// cross product @return this x q
+Point3 cross(const Point3& p, const Point3& q,
+             OptionalJacobian<3, 3> H_p = boost::none,
+             OptionalJacobian<3, 3> H_q = boost::none);
+
+/// dot product
+double dot(const Point3& p, const Point3& q,
+           OptionalJacobian<1, 3> H_p = boost::none,
+           OptionalJacobian<1, 3> H_q = boost::none);
+
+// Convenience typedef
+typedef std::pair<Point3, Point3> Point3Pair;
+std::ostream &operator<<(std::ostream &os, const gtsam::Point3Pair &p);
+
 template <typename A1, typename A2>
 struct Range;
 
@@ -203,7 +229,7 @@ struct Range<Point3, Point3> {
   double operator()(const Point3& p, const Point3& q,
                     OptionalJacobian<1, 3> H1 = boost::none,
                     OptionalJacobian<1, 3> H2 = boost::none) {
-    return p.distance(q, H1, H2);
+    return distance(p, q, H1, H2);
   }
 };
 

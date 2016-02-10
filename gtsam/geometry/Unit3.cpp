@@ -44,7 +44,7 @@ namespace gtsam {
 Unit3 Unit3::FromPoint3(const Point3& point, OptionalJacobian<2,3> H) {
   // 3*3 Derivative of representation with respect to point is 3*3:
   Matrix3 D_p_point;
-  Point3 normalized = point.normalize(H ? &D_p_point : 0);
+  Point3 normalized = normalize(point, H ? &D_p_point : 0);
   Unit3 direction;
   direction.p_ = normalized.vector();
   if (H)
@@ -108,7 +108,7 @@ const Matrix32& Unit3::basis(OptionalJacobian<6, 2> H) const {
 
   // Normalize result to get a unit vector: b1 = B1 / |B1|.
   Matrix33 H_b1_B1;
-  Point3 b1 = B1.normalize(H ? &H_b1_B1 : 0);
+  Point3 b1 = normalize(B1, H ? &H_b1_B1 : 0);
 
   // Get the second basis vector b2, which is orthogonal to n and b1, by crossing them.
   // No need to normalize this, p and b1 are orthogonal unit vectors.
