@@ -83,7 +83,7 @@ vector<RangeTriple> readTriples() {
 
   while (is) {
     double t, sender, range;
-	size_t receiver;
+    size_t receiver;
     is >> t >> sender >> receiver >> range;
     triples.push_back(RangeTriple(t, receiver, range));
   }
