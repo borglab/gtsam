@@ -217,7 +217,7 @@ option(GTSAM_USE_SYSTEM_EIGEN "Find and use system-installed Eigen. If 'off', us
 
 # Use system Eigen if version >= 3.2.5 since that includes our patches
 find_package(Eigen3 QUIET)
-if(EIGEN3_FOUND AND (${EIGEN3_VERSION} VERSION_GREATER "3.2.4"))
+if(EIGEN3_FOUND AND (EIGEN3_VERSION VERSION_GREATER 3.2.4))
 	set(GTSAM_USE_SYSTEM_EIGEN ON)
 	set(GTSAM_SYSTEM_EIGEN_MKL_ERROR OFF)
 else()
