@@ -52,8 +52,7 @@ public:
   /// @{
 
   /** Default constructor is origin */
-  Pose3() {
-  }
+ Pose3() : R_(traits<Rot3>::Identity()), t_(traits<Point3>::Identity()) {}
 
   /** Copy constructor */
   Pose3(const Pose3& pose) :
@@ -64,13 +63,6 @@ public:
   Pose3(const Rot3& R, const Point3& t) :
       R_(R), t_(t) {
   }
-
-#ifndef GTSAM_USE_VECTOR3_POINTS
-  /** Construct from R,t */
-  Pose3(const Rot3& R, const Vector3& t) :
-      R_(R), t_(t) {
-  }
-#endif
 
   /** Construct from Pose2 */
   explicit Pose3(const Pose2& pose2);

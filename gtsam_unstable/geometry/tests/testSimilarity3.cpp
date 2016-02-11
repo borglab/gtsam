@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -71,7 +71,7 @@ TEST(Similarity3, Constructors) {
 TEST(Similarity3, Getters) {
   Similarity3 sim3_default;
   EXPECT(assert_equal(Rot3(), sim3_default.rotation()));
-  EXPECT(assert_equal(Point3(), sim3_default.translation()));
+  EXPECT(assert_equal(Point3(0,0,0), sim3_default.translation()));
   EXPECT_DOUBLES_EQUAL(1.0, sim3_default.scale(), 1e-9);
 
   Similarity3 sim3(Rot3::Ypr(1, 2, 3), Point3(4, 5, 6), 7);
@@ -158,7 +158,7 @@ TEST( Similarity3, retract_first_order) {
   Similarity3 id;
   Vector v = zero(7);
   v(0) = 0.3;
-  EXPECT(assert_equal(Similarity3(R, Point3(), 1), id.retract(v), 1e-2));
+  EXPECT(assert_equal(Similarity3(R, Point3(0,0,0), 1), id.retract(v), 1e-2));
 //  v(3) = 0.2;
 //  v(4) = 0.7;
 //  v(5) = -2;

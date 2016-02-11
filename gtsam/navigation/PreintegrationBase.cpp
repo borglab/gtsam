@@ -94,7 +94,7 @@ pair<Vector3, Vector3> PreintegrationBase::correctMeasurementsBySensorPose(
   if (D_correctedOmega_unbiasedOmega) *D_correctedOmega_unbiasedOmega = bRs;
 
   // Centrifugal acceleration
-  const Vector3 b_arm = p().body_P_sensor->translation().vector();
+  const Vector3 b_arm = p().body_P_sensor->translation();
   if (!b_arm.isZero()) {
     // Subtract out the the centripetal acceleration from the unbiased one
     // to get linear acceleration vector in the body frame:
@@ -188,7 +188,7 @@ void PreintegrationBase::integrateMeasurement(const Vector3& measuredAcc,
   if (p().body_P_sensor) {
     // More complicated derivatives in case of non-trivial sensor pose
     *C *= D_correctedOmega_omega;
-    if (!p().body_P_sensor->translation().vector().isZero())
+    if (!p().body_P_sensor->translation().isZero())
       *C += *B* D_correctedAcc_omega;
     *B *= D_correctedAcc_acc;  // NOTE(frank): needs to be last
   }

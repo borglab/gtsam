@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -808,7 +808,7 @@ bool writeBAL(const string& filename, SfM_data &data) {
     Cal3Bundler cameraCalibration = data.cameras[i].calibration();
     Pose3 poseOpenGL = gtsam2openGL(poseGTSAM);
     os << Rot3::Logmap(poseOpenGL.rotation()) << endl;
-    os << poseOpenGL.translation().vector() << endl;
+    os << poseOpenGL.translation() << endl;
     os << cameraCalibration.fx() << endl;
     os << cameraCalibration.k1() << endl;
     os << cameraCalibration.k2() << endl;
@@ -880,7 +880,7 @@ bool writeBALfromValues(const string& filename, const SfM_data &data,
       dataValues.tracks[j].r = 1.0;
       dataValues.tracks[j].g = 0.0;
       dataValues.tracks[j].b = 0.0;
-      dataValues.tracks[j].p = Point3();
+      dataValues.tracks[j].p = Point3(0,0,0);
     }
   }
 

@@ -35,7 +35,7 @@ public:
 
   /// Default Constructor
   Event() :
-      time_(0) {
+      time_(0), location_(0,0,0) {
   }
 
   /// Constructor from time and location

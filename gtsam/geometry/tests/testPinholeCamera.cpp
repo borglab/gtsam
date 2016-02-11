@@ -103,16 +103,16 @@ TEST( PinholeCamera, level2)
 TEST( PinholeCamera, lookat)
 {
   // Create a level camera, looking in Y-direction
-  Point3 C(10.0,0.0,0.0);
-  Camera camera = Camera::Lookat(C, Point3(), Point3(0.0,0.0,1.0));
+  Point3 C(10,0,0);
+  Camera camera = Camera::Lookat(C, Point3(0,0,0), Point3(0,0,1));
 
   // expected
   Point3 xc(0,1,0),yc(0,0,-1),zc(-1,0,0);
   Pose3 expected(Rot3(xc,yc,zc),C);
-  EXPECT(assert_equal( camera.pose(), expected));
+  EXPECT(assert_equal(camera.pose(), expected));
 
-  Point3 C2(30.0,0.0,10.0);
-  Camera camera2 = Camera::Lookat(C2, Point3(), Point3(0.0,0.0,1.0));
+  Point3 C2(30,0,10);
+  Camera camera2 = Camera::Lookat(C2, Point3(), Point3(0,0,1));
 
   Matrix R = camera2.pose().rotation().matrix();
   Matrix I = trans(R)*R;
@@ -278,7 +278,7 @@ TEST( PinholeCamera, range0) {
   double result = camera.range(point1, D1, D2);
   Matrix Hexpected1 = numericalDerivative21(range0, camera, point1);
   Matrix Hexpected2 = numericalDerivative22(range0, camera, point1);
-  EXPECT_DOUBLES_EQUAL(point1.distance(camera.pose().translation()), result,
+  EXPECT_DOUBLES_EQUAL(distance(point1, camera.pose().translation()), result,
       1e-9);
   EXPECT(assert_equal(Hexpected1, D1, 1e-7));
   EXPECT(assert_equal(Hexpected2, D2, 1e-7));

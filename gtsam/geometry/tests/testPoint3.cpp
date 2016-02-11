@@ -71,14 +71,14 @@ TEST( Point3, arithmetic) {
 
 /* ************************************************************************* */
 TEST( Point3, equals) {
-  CHECK(P.equals(P));
-  Point3 Q;
-  CHECK(!P.equals(Q));
+  CHECK(traits<Point3>::Equals(P,P));
+  Point3 Q(0,0,0);
+  CHECK(!traits<Point3>::Equals(P,Q));
 }
 
 /* ************************************************************************* */
 TEST( Point3, dot) {
-  Point3 origin, ones(1, 1, 1);
+  Point3 origin(0,0,0), ones(1, 1, 1);
   CHECK(origin.dot(Point3(1, 1, 0)) == 0);
   CHECK(ones.dot(Point3(1, 1, 0)) == 2);
 }
@@ -111,20 +111,20 @@ TEST (Point3, norm) {
   Matrix actualH;
   Point3 point(3,4,5); // arbitrary point
   double expected = sqrt(50);
-  EXPECT_DOUBLES_EQUAL(expected, point.norm(actualH), 1e-8);
+  EXPECT_DOUBLES_EQUAL(expected, norm(point, actualH), 1e-8);
   Matrix expectedH = numericalDerivative11<double, Point3>(norm_proxy, point);
   EXPECT(assert_equal(expectedH, actualH, 1e-8));
 }
 
 /* ************************************************************************* */
 double testFunc(const Point3& P, const Point3& Q) {
-  return P.distance(Q);
+  return distance(P,Q);
 }
 
 TEST (Point3, distance) {
   Point3 P(1., 12.8, -32.), Q(52.7, 4.9, -13.3);
   Matrix H1, H2;
-  double d = P.distance(Q, H1, H2);
+  double d = distance(P, Q, H1, H2);
   double expectedDistance = 55.542686;
   Matrix numH1 = numericalDerivative21(testFunc, P, Q);
   Matrix numH2 = numericalDerivative22(testFunc, P, Q);
@@ -137,9 +137,9 @@ TEST (Point3, distance) {
 TEST(Point3, cross) {
   Matrix aH1, aH2;
   boost::function<Point3(const Point3&, const Point3&)> f =
-      boost::bind(&Point3::cross, _1, _2, boost::none, boost::none);
+      boost::bind(&gtsam::cross, _1, _2, boost::none, boost::none);
   const Point3 omega(0, 1, 0), theta(4, 6, 8);
-  omega.cross(theta, aH1, aH2);
+  cross(omega, theta, aH1, aH2);
   EXPECT(assert_equal(numericalDerivative21(f, omega, theta), aH1));
   EXPECT(assert_equal(numericalDerivative22(f, omega, theta), aH2));
 }

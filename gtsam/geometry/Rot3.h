@@ -171,22 +171,6 @@ namespace gtsam {
       return Rot3(q);
     }
 
-#ifndef GTSAM_USE_VECTOR3_POINTS
-    /**
-     * Convert from axis/angle representation
-     * @param   axis is the rotation axis, unit length
-     * @param   angle rotation angle
-     * @return incremental rotation
-     */
-    static Rot3 AxisAngle(const Vector3& axis, double angle) {
-#ifdef GTSAM_USE_QUATERNIONS
-      return gtsam::Quaternion(Eigen::AngleAxis<double>(angle, axis));
-#else
-      return Rot3(SO3::AxisAngle(axis,angle));
-#endif
-      }
-#endif
-
     /**
      * Convert from axis/angle representation
      * @param  axisw is the rotation axis, unit length
@@ -197,7 +181,7 @@ namespace gtsam {
 #ifdef GTSAM_USE_QUATERNIONS
       return gtsam::Quaternion(Eigen::AngleAxis<double>(angle, axis.vector()));
 #else
-      return Rot3(SO3::AxisAngle(axis.vector(),angle));
+      return Rot3(SO3::AxisAngle(axis,angle));
 #endif
     }
 
@@ -364,24 +348,6 @@ namespace gtsam {
     /// rotate point from world to rotated frame \f$ p^c = (R_c^w)^T p^w \f$
     Point3 unrotate(const Point3& p, OptionalJacobian<3,3> H1 = boost::none,
         OptionalJacobian<3,3> H2=boost::none) const;
-
-#ifndef GTSAM_USE_VECTOR3_POINTS
-    /// operator* for Vector3
-    inline Vector3 operator*(const Vector3& v) const {
-      return rotate(Point3(v)).vector();
-    }
-
-    /// rotate for Vector3
-    Vector3 rotate(const Vector3& v, OptionalJacobian<3, 3> H1 = boost::none,
-        OptionalJacobian<3, 3> H2 = boost::none) const {
-      return rotate(Point3(v), H1, H2).vector();
-    }
-    /// unrotate for Vector3
-    Vector3 unrotate(const Vector3& v, OptionalJacobian<3, 3> H1 = boost::none,
-        OptionalJacobian<3, 3> H2 = boost::none) const {
-      return unrotate(Point3(v), H1, H2).vector();
-    }
-#endif
 
     /// @}
     /// @name Group Action on Unit3

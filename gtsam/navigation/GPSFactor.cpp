@@ -25,14 +25,14 @@ namespace gtsam {
 //***************************************************************************
 void GPSFactor::print(const string& s, const KeyFormatter& keyFormatter) const {
   cout << s << "GPSFactor on " << keyFormatter(key()) << "\n";
-  nT_.print("  prior mean: ");
+  cout << "  prior mean: " << nT_ << "\n";
   noiseModel_->print("  noise model: ");
 }
 
 //***************************************************************************
 bool GPSFactor::equals(const NonlinearFactor& expected, double tol) const {
   const This* e = dynamic_cast<const This*>(&expected);
-  return e != NULL && Base::equals(*e, tol) && nT_.equals(e->nT_, tol);
+  return e != NULL && Base::equals(*e, tol) && traits<Point3>::Equals(nT_, e->nT_, tol);
 }
 
 //***************************************************************************
@@ -43,7 +43,7 @@ Vector GPSFactor::evaluateError(const Pose3& p,
     H->block < 3, 3 > (0, 0) << zeros(3, 3);
     H->block < 3, 3 > (0, 3) << p.rotation().matrix();
   }
-  return p.translation().vector() -nT_.vector();
+  return p.translation() -nT_;
 }
 
 //***************************************************************************
@@ -66,7 +66,7 @@ pair<Pose3, Vector3> GPSFactor::EstimateState(double t1, const Point3& NED1,
   // Construct initial pose
   Pose3 nTb(nRb, nT); // nTb
 
-  return make_pair(nTb, nV.vector());
+  return make_pair(nTb, nV);
 }
 //***************************************************************************
 

@@ -49,7 +49,7 @@ public:
 
   /// Default constructor
   NavState() :
-      v_(Vector3::Zero()) {
+      t_(0,0,0), v_(Vector3::Zero()) {
   }
   /// Construct from attitude, position, velocity
   NavState(const Rot3& R, const Point3& t, const Velocity3& v) :
@@ -97,7 +97,7 @@ public:
   }
   /// Return position as Vector3
   Vector3 t() const {
-    return t_.vector();
+    return t_;
   }
   /// Return velocity as Vector3. Computation-free.
   const Vector3& v() const {
@@ -146,9 +146,6 @@ public:
 
   /// Act on position alone, n_t = nRb * b_t + n_t
   Point3 operator*(const Point3& b_t) const;
-
-  /// Act on velocity alone, n_v = nRb * b_v + n_v
-  Velocity3 operator*(const Velocity3& b_v) const;
 
   /// @}
   /// @name Manifold

@@ -23,11 +23,11 @@
 namespace gtsam {
 
 Similarity3::Similarity3() :
-    R_(), t_(), s_(1) {
+    t_(0,0,0), s_(1) {
 }
 
 Similarity3::Similarity3(double s) :
-    s_(s) {
+    t_(0,0,0), s_(s) {
 }
 
 Similarity3::Similarity3(const Rot3& R, const Point3& t, double s) :

@@ -21,39 +21,15 @@ using namespace std;
 
 namespace gtsam {
 
-/* ************************************************************************* */
+#ifndef GTSAM_USE_VECTOR3_POINTS
 bool Point3::equals(const Point3 &q, double tol) const {
   return (fabs(x() - q.x()) < tol && fabs(y() - q.y()) < tol &&
           fabs(z() - q.z()) < tol);
 }
 
-/* ************************************************************************* */
 void Point3::print(const string& s) const {
   cout << s << *this << endl;
 }
-
-#ifndef GTSAM_USE_VECTOR3_POINTS
-/* ************************************************************************* */
-bool Point3::operator==(const Point3& q) const {
-  return x_ == q.x_ && y_ == q.y_ && z_ == q.z_;
-}
-
-Point3 Point3::operator+(const Point3& q) const {
-  return Point3(x_ + q.x_, y_ + q.y_, z_ + q.z_);
-}
-
-Point3 Point3::operator-(const Point3& q) const {
-  return Point3(x_ - q.x_, y_ - q.y_, z_ - q.z_);
-}
-
-Point3 Point3::operator*(double s) const {
-  return Point3(x_ * s, y_ * s, z_ * s);
-}
-
-Point3 Point3::operator/(double s) const {
-  return Point3(x_ / s, y_ / s, z_ / s);
-}
-#endif
 
 /* ************************************************************************* */
 double Point3::distance(const Point3 &q, OptionalJacobian<1, 3> H1,
@@ -102,6 +78,7 @@ Point3 Point3::sub(const Point3 &q, OptionalJacobian<3,3> H1,
 }
 #endif
 
+#endif
 /* ************************************************************************* */
 double distance(const Point3 &p1, const Point3 &q, OptionalJacobian<1, 3> H1,
                 OptionalJacobian<1, 3> H2) {

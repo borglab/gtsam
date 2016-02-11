@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -36,9 +36,9 @@ Rot3::Rot3() : rot_(I_3x3) {}
 
 /* ************************************************************************* */
 Rot3::Rot3(const Point3& col1, const Point3& col2, const Point3& col3) {
-  rot_.col(0) = col1.vector();
-  rot_.col(1) = col2.vector();
-  rot_.col(2) = col3.vector();
+  rot_.col(0) = (Vector3)col1;
+  rot_.col(1) = (Vector3)col2;
+  rot_.col(2) = (Vector3)col3;
 }
 
 /* ************************************************************************* */
@@ -121,7 +121,7 @@ Point3 Rot3::rotate(const Point3& p,
     OptionalJacobian<3,3> H1,  OptionalJacobian<3,3> H2) const {
   if (H1) *H1 = rot_ * skewSymmetric(-p.x(), -p.y(), -p.z());
   if (H2) *H2 = rot_;
-  return Point3(rot_ * p.vector());
+  return rot_ * p;
 }
 
 /* ************************************************************************* */
