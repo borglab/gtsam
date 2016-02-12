@@ -11,27 +11,6 @@
 namespace gtsam {
 
 /*
- * Iterates through each factor in the factor graph and checks 
- * whether it's active. If the factor is active it reutrns the A 
- * term of the factor.
- */
-template<typename FACTOR>
-ActiveSetSolver::TermsContainer ActiveSetSolver::collectDualJacobians(Key key,
-    const FactorGraph<FACTOR>& graph,
-    const VariableIndex& variableIndex) const {
-  ActiveSetSolver::TermsContainer Aterms;
-  if (variableIndex.find(key) != variableIndex.end()) {
-  BOOST_FOREACH (size_t factorIx, variableIndex[key]) {
-    typename FACTOR::shared_ptr factor = graph.at(factorIx);
-    if (!factor->active()) continue;
-    Matrix Ai = factor->getA(factor->find(key)).transpose();
-    Aterms.push_back(std::make_pair(factor->dualKey(), Ai));
-  }
-}
-return Aterms;
-}
-
-/*
  * The goal of this function is to find currently active inequality constraints
  * that violate the condition to be active. The one that violates the condition
  * the most will be removed from the active set. See Nocedal06book, pg 469-471

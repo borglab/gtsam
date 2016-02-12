@@ -19,10 +19,6 @@ namespace gtsam {
  * share.
  */
 class ActiveSetSolver {
-public:
-
-  typedef std::vector<std::pair<Key, Matrix> > TermsContainer; //!< vector of key matrix pairs
-  //Matrices are usually the A term for a factor.
 protected:
   KeySet constrainedKeys_; //!< all constrained keys, will become factors in dual graphs
   GaussianFactorGraph baseGraph_; //!< factor graphs of cost factors and linear equalities.
@@ -32,6 +28,8 @@ protected:
       inequalityVariableIndex_; //!< index to corresponding factors to build dual graphs
 
 public:
+  typedef std::vector<std::pair<Key, Matrix> > TermsContainer; //!< vector of key matrix pairs
+  //Matrices are usually the A term for a factor.
   /**
    * Creates a dual factor from the current workingSet and the key of the
    * the variable used to created the dual factor.
@@ -45,37 +43,53 @@ public:
    * Dual Jacobians used to build a dual factor graph.
    */
   template<typename FACTOR>
-  TermsContainer collectDualJacobians(Key key, const FactorGraph<FACTOR>& graph,
-      const VariableIndex& variableIndex) const;
+  TermsContainer collectDualJacobians(Key key,
+      const FactorGraph<FACTOR>& graph,
+      const VariableIndex& variableIndex) const {
+    /*
+     * Iterates through each factor in the factor graph and checks 
+     * whether it's active. If the factor is active it reutrns the A 
+     * term of the factor.
+     */
+    TermsContainer Aterms;
+    if (variableIndex.find(key) != variableIndex.end()) {
+    BOOST_FOREACH (size_t factorIx, variableIndex[key]) {
+      typename FACTOR::shared_ptr factor = graph.at(factorIx);
+      if (!factor->active()) continue;
+      Matrix Ai = factor->getA(factor->find(key)).transpose();
+      Aterms.push_back(std::make_pair(factor->dualKey(), Ai));
+    }
+  }
+  return Aterms;
+}
+/**
+ * Identifies active constraints that shouldn't be active anymore.
+ */
+int identifyLeavingConstraint(const InequalityFactorGraph& workingSet,
+    const VectorValues& lambdas) const;
 
-  /**
-   * Identifies active constraints that shouldn't be active anymore.
-   */
-  int identifyLeavingConstraint(const InequalityFactorGraph& workingSet,
-      const VectorValues& lambdas) const;
-
-  /**
-   * Builds a dual graph from the current working set.
-   */
-  GaussianFactorGraph::shared_ptr buildDualGraph(
-      const InequalityFactorGraph& workingSet, const VectorValues& delta) const;
+/**
+ * Builds a dual graph from the current working set.
+ */
+GaussianFactorGraph::shared_ptr buildDualGraph(
+    const InequalityFactorGraph& workingSet, const VectorValues& delta) const;
 
 protected:
-  /**
-   * Protected constructor because this class doesn't have any meaning without
-   * a concrete Programming problem to solve.
-   */
-  ActiveSetSolver() :
-      constrainedKeys_() {
-  }
+/**
+ * Protected constructor because this class doesn't have any meaning without
+ * a concrete Programming problem to solve.
+ */
+ActiveSetSolver() :
+    constrainedKeys_() {
+}
 
-  /**
-   * Computes the distance to move from the current point being examined to the next 
-   * location to be examined by the graph. This should only be used where there are less 
-   * than two constraints active.
-   */
-  boost::tuple<double, int> computeStepSize(
-      const InequalityFactorGraph& workingSet, const VectorValues& xk,
-      const VectorValues& p, const double& startAlpha) const;
+/**
+ * Computes the distance to move from the current point being examined to the next 
+ * location to be examined by the graph. This should only be used where there are less 
+ * than two constraints active.
+ */
+boost::tuple<double, int> computeStepSize(
+    const InequalityFactorGraph& workingSet, const VectorValues& xk,
+    const VectorValues& p, const double& startAlpha) const;
 };
 } // namespace gtsam

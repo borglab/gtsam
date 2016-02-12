@@ -1,8 +1,8 @@
 /**
  * @file     LPSolver.h
  * @brief    Class used to solve Linear Programming Problems as defined in LP.h
- * @author   Ivan Dario Jimenez
  * @author   Duy Nguyen Ta
+ * @author   Ivan Dario Jimenez
  * @date     1/24/16
  */
 
@@ -114,7 +114,7 @@ public:
 
   /**
    * Optimize without initial values
-   * TODO: Find a feasible initial solution that doens't involve simplex method
+   * TODO: Find a feasible initial solution that doesn't involve simplex method
    * nor Solving another LP
    */
   pair<VectorValues, VectorValues> optimize() const {
