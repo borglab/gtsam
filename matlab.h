@@ -103,7 +103,7 @@ Matrix extractPoint3(const Values& values) {
   Matrix result(points.size(), 3);
   size_t j = 0;
   BOOST_FOREACH(const Values::ConstFiltered<Point3>::KeyValuePair& key_value, points)
-    result.row(j++) = key_value.value.vector();
+    result.row(j++) = key_value.value;
   return result;
 }
 
@@ -131,7 +131,7 @@ Matrix extractPose3(const Values& values) {
     result.row(j).segment(0, 3) << key_value.value.rotation().matrix().row(0);
     result.row(j).segment(3, 3) << key_value.value.rotation().matrix().row(1);
     result.row(j).segment(6, 3) << key_value.value.rotation().matrix().row(2);
-    result.row(j).tail(3) = key_value.value.translation().vector();
+    result.row(j).tail(3) = key_value.value.translation();
     j++;
   }
   return result;
