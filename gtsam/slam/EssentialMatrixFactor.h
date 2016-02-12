@@ -19,7 +19,7 @@ namespace gtsam {
  */
 class EssentialMatrixFactor: public NoiseModelFactor1<EssentialMatrix> {
 
-  Vector vA_, vB_; ///< Homogeneous versions, in ideal coordinates
+  Vector3 vA_, vB_; ///< Homogeneous versions, in ideal coordinates
 
   typedef NoiseModelFactor1<EssentialMatrix> Base;
   typedef EssentialMatrixFactor This;
@@ -107,9 +107,7 @@ public:
    */
   EssentialMatrixFactor2(Key key1, Key key2, const Point2& pA, const Point2& pB,
       const SharedNoiseModel& model) :
-      Base(model, key1, key2) {
-    dP1_ = Point3(pA.x(), pA.y(), 1);
-    pn_ = pB;
+      Base(model, key1, key2), dP1_(EssentialMatrix::Homogeneous(pA)), pn_(pB) {
     f_ = 1.0;
   }
 
@@ -125,11 +123,8 @@ public:
   template<class CALIBRATION>
   EssentialMatrixFactor2(Key key1, Key key2, const Point2& pA, const Point2& pB,
       const SharedNoiseModel& model, boost::shared_ptr<CALIBRATION> K) :
-      Base(model, key1, key2) {
-    assert(K);
-    Point2 p1 = K->calibrate(pA);
-    dP1_ = Point3(p1.x(), p1.y(), 1); // d*P1 = (x,y,1)
-    pn_ = K->calibrate(pB);
+      Base(model, key1, key2), dP1_(
+          EssentialMatrix::Homogeneous(K->calibrate(pA))), pn_(K->calibrate(pB)) {
     f_ = 0.5 * (K->fx() + K->fy());
   }
 
