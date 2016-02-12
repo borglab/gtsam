@@ -326,7 +326,7 @@ void gtsamPoint3_string_deserialize_19(int nargout, mxArray *out[], int nargin, 
   string serialized = unwrap< string >(in[0]);
   istringstream in_archive_stream(serialized);
   boost::archive::text_iarchive in_archive(in_archive_stream);
-  Shared output(new gtsam::Point3(0,0,0));
+  Shared output(new gtsam::Point3());
   in_archive >> *output;
   out[0] = wrap_shared_ptr(output,"gtsam.Point3", false);
 }
