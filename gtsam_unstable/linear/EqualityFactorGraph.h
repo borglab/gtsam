@@ -22,7 +22,10 @@
 #include <gtsam_unstable/linear/LinearEquality.h>
 
 namespace gtsam {
-
+/**
+ * This class is used to represent an equality constraint on
+ * a Programming problem of the form Ax = b.
+ */
 class EqualityFactorGraph : public FactorGraph<LinearEquality> {
 public:
   typedef boost::shared_ptr<EqualityFactorGraph> shared_ptr;
