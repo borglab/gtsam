@@ -100,7 +100,7 @@ Vector6 Pose3::adjointTranspose(const Vector6& xi, const Vector6& y,
 void Pose3::print(const string& s) const {
   cout << s;
   R_.print("R:\n");
-  traits<Point3>::Print(t_, "t: ");
+  cout << '[' << t_.x() << ", " << t_.y() << ", " << t_.z() << "]\';";
 }
 
 /* ************************************************************************* */
@@ -394,7 +394,9 @@ boost::optional<Pose3> align(const vector<Point3Pair>& pairs) {
 
 /* ************************************************************************* */
 std::ostream &operator<<(std::ostream &os, const Pose3& pose) {
-  os << pose.rotation() << "\n" << pose.translation() << endl;
+  os << pose.rotation() << "\n";
+  const Point3& t = pose.translation();
+  os << '[' << t.x() << ", " << t.y() << ", " << t.z() << "]\';\n";
   return os;
 }
 

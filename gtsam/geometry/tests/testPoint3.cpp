@@ -84,12 +84,14 @@ TEST( Point3, dot) {
 }
 
 /* ************************************************************************* */
+#ifndef GTSAM_USE_VECTOR3_POINTS
 TEST( Point3, stream) {
   Point3 p(1, 2, -3);
   std::ostringstream os;
   os << p;
   EXPECT(os.str() == "[1, 2, -3]';");
 }
+#endif
 
 //*************************************************************************
 TEST (Point3, normalize) {
