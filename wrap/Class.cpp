@@ -567,7 +567,7 @@ void Class::deserialization_fragments(FileWriter& proxyFile,
   //  string serialized = unwrap< string >(in[0]);
   //  istringstream in_archive_stream(serialized);
   //  boost::archive::text_iarchive in_archive(in_archive_stream);
-  //  Shared output(new Point3());
+  //  Shared output(new Point3(0,0,0));
   //  in_archive >> *output;
   //  out[0] = wrap_shared_ptr(output,"Point3", false);
   //}

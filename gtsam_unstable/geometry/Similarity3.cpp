@@ -43,7 +43,7 @@ Similarity3::Similarity3(const Matrix4& T) :
 }
 
 bool Similarity3::equals(const Similarity3& other, double tol) const {
-  return R_.equals(other.R_, tol) && t_.equals(other.t_, tol)
+  return R_.equals(other.R_, tol) && traits<Point3>::Equals(t_, other.t_, tol)
       && s_ < (other.s_ + tol) && s_ > (other.s_ - tol);
 }
 
@@ -55,8 +55,7 @@ void Similarity3::print(const std::string& s) const {
   std::cout << std::endl;
   std::cout << s;
   rotation().print("R:\n");
-  translation().print("t: ");
-  std::cout << "s: " << scale() << std::endl;
+  std::cout << "t: " << translation().transpose() << "s: " << scale() << std::endl;
 }
 
 Similarity3 Similarity3::identity() {
@@ -79,7 +78,7 @@ Point3 Similarity3::transform_from(const Point3& p, //
     // For this derivative, see LieGroups.pdf
     const Matrix3 sR = s_ * R_.matrix();
     const Matrix3 DR = sR * skewSymmetric(-p.x(), -p.y(), -p.z());
-    *H1 << DR, sR, sR * p.vector();
+    *H1 << DR, sR, sR * p;
   }
   if (H2)
     *H2 = s_ * R_.matrix(); // just 3*3 sub-block of matrix()
@@ -103,7 +102,7 @@ Matrix4 Similarity3::wedge(const Vector7& xi) {
 Matrix7 Similarity3::AdjointMap() const {
   // http://www.ethaneade.org/latex2html/lie/node30.html
   const Matrix3 R = R_.matrix();
-  const Vector3 t = t_.vector();
+  const Vector3 t = t_;
   const Matrix3 A = s_ * skewSymmetric(t) * R;
   Matrix7 adj;
   adj << R, Z_3x3, Matrix31::Zero(), // 3*7
@@ -153,7 +152,7 @@ Vector7 Similarity3::Logmap(const Similarity3& T, OptionalJacobian<7, 7> Hm) {
   const Vector3 w = Rot3::Logmap(T.R_);
   const double lambda = log(T.s_);
   Vector7 result;
-  result << w, GetV(w, lambda).inverse() * T.t_.vector(), lambda;
+  result << w, GetV(w, lambda).inverse() * T.t_, lambda;
   if (Hm) {
     throw std::runtime_error("Similarity3::Logmap: derivative not implemented");
   }
@@ -173,13 +172,13 @@ Similarity3 Similarity3::Expmap(const Vector7& v, OptionalJacobian<7, 7> Hm) {
 
 std::ostream &operator<<(std::ostream &os, const Similarity3& p) {
   os << "[" << p.rotation().xyz().transpose() << " "
-      << p.translation().vector().transpose() << " " << p.scale() << "]\';";
+      << p.translation().transpose() << " " << p.scale() << "]\';";
   return os;
 }
 
 const Matrix4 Similarity3::matrix() const {
   Matrix4 T;
-  T.topRows<3>() << R_.matrix(), t_.vector();
+  T.topRows<3>() << R_.matrix(), t_;
   T.bottomRows<1>() << 0, 0, 0, 1.0 / s_;
   return T;
 }

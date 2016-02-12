@@ -37,7 +37,7 @@ PoseRTV::PoseRTV(const Vector& rtv) :
 Vector PoseRTV::vector() const {
   Vector rtv(9);
   rtv.head(3) = rotation().xyz();
-  rtv.segment(3,3) = translation().vector();
+  rtv.segment(3,3) = translation();
   rtv.tail(3) = velocity();
   return rtv;
 }
@@ -52,7 +52,7 @@ bool PoseRTV::equals(const PoseRTV& other, double tol) const {
 void PoseRTV::print(const string& s) const {
   cout << s << ":" << endl;
   gtsam::print((Vector)R().xyz(), "  R:rpy");
-  t().print("  T");
+  cout << "  T" << t().transpose() << endl;
   gtsam::print((Vector)velocity(), "  V");
 }
 
@@ -103,7 +103,7 @@ PoseRTV PoseRTV::flyingDynamics(
   Rot3 yaw_correction_bn = Rot3::Yaw(yaw2);
   Point3 forward(forward_accel, 0.0, 0.0);
   Vector Acc_n =
-      yaw_correction_bn.rotate(forward).vector()              // applies locally forward force in the global frame
+      yaw_correction_bn.rotate(forward)              // applies locally forward force in the global frame
       - drag * (Vector(3) << v1.x(), v1.y(), 0.0).finished()  // drag term dependent on v1
       + delta(3, 2, loss_lift - lift_control);                // falling due to lift lost from pitch
 
@@ -172,7 +172,7 @@ double PoseRTV::range(const PoseRTV& other,
   const Point3 t1 = pose().translation(H1 ? &D_t1_pose : 0);
   const Point3 t2 = other.pose().translation(H2 ? &D_t2_other : 0);
   Matrix13 D_d_t1, D_d_t2;
-  double d = t1.distance(t2, H1 ? &D_d_t1 : 0, H2 ? &D_d_t2 : 0);
+  double d = distance(t1, t2, H1 ? &D_d_t1 : 0, H2 ? &D_d_t2 : 0);
   if (H1) *H1 << D_d_t1 * D_t1_pose, 0,0,0;
   if (H2) *H2 << D_d_t2 * D_t2_other, 0,0,0;
   return d;
@@ -188,7 +188,7 @@ PoseRTV PoseRTV::transformed_from(const Pose3& trans, ChartJacobian Dglobal,
 
   // Note that we rotate the velocity
   Matrix3 D_newvel_R, D_newvel_v;
-  Velocity3 newvel = trans.rotation().rotate(Point3(velocity()), D_newvel_R, D_newvel_v).vector();
+  Velocity3 newvel = trans.rotation().rotate(Point3(velocity()), D_newvel_R, D_newvel_v);
 
   if (Dglobal) {
     Dglobal->setZero();

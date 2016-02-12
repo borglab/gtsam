@@ -52,7 +52,9 @@ class GTSAM_EXPORT Point3 : public Vector3 {
 
 #ifndef GTSAM_ALLOW_DEPRECATED_SINCE_V4
     /// Default constructor now creates *uninitialized* point !!!!
-    Point3() {}
+    Point3() {
+      throw std::runtime_error("Default constructor called!");
+    }
 #endif
 
 
@@ -106,8 +108,13 @@ class GTSAM_EXPORT Point3 : public Vector3 {
     /// @name Standard Interface
     /// @{
 
-    /** return vectorized form (column-wise)*/
+    /// return as Vector3
     const Vector3& vector() const { return *this; }
+
+    /// return as transposed vector
+    Eigen::DenseBase<Vector3>::ConstTransposeReturnType transpose() const {
+      return this->Vector3::transpose();
+    }
 
     /// @}
 

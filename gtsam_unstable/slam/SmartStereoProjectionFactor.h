@@ -1,12 +1,12 @@
 /* ----------------------------------------------------------------------------
- 
+
  * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
- 
+
  * See LICENSE for the license information
- 
+
  * -------------------------------------------------------------------------- */
 
 /**
@@ -253,7 +253,7 @@ public:
         reprojections.push_back(cameras[i].backproject(measured_[i]));
       }
 
-      Point3 pw_sum;
+      Point3 pw_sum(0,0,0);
       BOOST_FOREACH(const Point3& pw, reprojections) {
         pw_sum = pw_sum + pw;
       }
