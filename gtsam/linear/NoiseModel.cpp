@@ -120,7 +120,10 @@ Gaussian::shared_ptr Gaussian::Covariance(const Matrix& covariance,
   if (variances)
     return Diagonal::Variances(*variances, true);
   else {
-    // TODO: can we do this more efficiently and still get an upper triangular nmatrix??
+    // NOTE: if cov = L'*L, then the square root information R can be found by
+    // QR, as L.inverse() = Q*R, with Q some rotation matrix. However, R has
+    // annoying sign flips with respect the simpler Information(inv(cov)),
+    // hence we choose the simpler path here:
     return Information(covariance.inverse(), false);
   }
 }
