@@ -28,8 +28,8 @@ namespace gtsam {
   template<class FACTORGRAPH>
   boost::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesNetType>
     EliminateableFactorGraph<FACTORGRAPH>::eliminateSequential(
-	OptionalOrdering ordering, const Eliminate& function,
-	OptionalVariableIndex variableIndex, OptionalOrderingType orderingType) const
+    OptionalOrdering ordering, const Eliminate& function,
+    OptionalVariableIndex variableIndex, OptionalOrderingType orderingType) const
   {
     if(ordering && variableIndex) {
       gttic(eliminateSequential);
@@ -65,8 +65,8 @@ namespace gtsam {
   template<class FACTORGRAPH>
   boost::shared_ptr<typename EliminateableFactorGraph<FACTORGRAPH>::BayesTreeType>
     EliminateableFactorGraph<FACTORGRAPH>::eliminateMultifrontal(
-	  OptionalOrdering ordering, const Eliminate& function,
-	  OptionalVariableIndex variableIndex, OptionalOrderingType orderingType) const
+    OptionalOrdering ordering, const Eliminate& function,
+    OptionalVariableIndex variableIndex, OptionalOrderingType orderingType) const
   {
     if(ordering && variableIndex) {
       gttic(eliminateMultifrontal);
@@ -86,16 +86,16 @@ namespace gtsam {
       // If no VariableIndex provided, compute one and call this function again IMPORTANT: we check
       // for no variable index first so that it's always computed if we need to call COLAMD because
       // no Ordering is provided.
-		  return eliminateMultifrontal(ordering, function, VariableIndex(asDerived()), orderingType);
+      return eliminateMultifrontal(ordering, function, VariableIndex(asDerived()), orderingType);
     }
     else /*if(!ordering)*/ {
       // If no Ordering provided, compute one and call this function again.  We are guaranteed to
       // have a VariableIndex already here because we computed one if needed in the previous 'else'
       // block.
-	    if (orderingType == Ordering::METIS)
-		    return eliminateMultifrontal(Ordering::Metis(asDerived()), function, variableIndex, orderingType);
-	    else
-		    return eliminateMultifrontal(Ordering::Colamd(*variableIndex), function, variableIndex, orderingType);
+      if (orderingType == Ordering::METIS)
+        return eliminateMultifrontal(Ordering::Metis(asDerived()), function, variableIndex, orderingType);
+      else
+        return eliminateMultifrontal(Ordering::Colamd(*variableIndex), function, variableIndex, orderingType);
     }
   }
 
