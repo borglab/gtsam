@@ -28,10 +28,11 @@
 
 namespace gtsam {
 
-//#define GTSAM_USE_VECTOR3_POINTS
+#define GTSAM_USE_VECTOR3_POINTS
 #ifdef GTSAM_USE_VECTOR3_POINTS
 
-  // As of GTSAM4, we just typedef Point3 to Vector3
+  /// As of GTSAM 4, in order to make GTSAM more lean,
+  /// it is now possible to just typedef Point3 to Vector3
   typedef Vector3 Point3;
 
 #else
@@ -51,12 +52,9 @@ class GTSAM_EXPORT Point3 : public Vector3 {
     /// @{
 
 #ifndef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-    /// Default constructor now creates *uninitialized* point !!!!
-    Point3() {
-      throw std::runtime_error("Default constructor called!");
-    }
+    /// Default constructor no longer initializes, just like Vector3
+    Point3() {}
 #endif
-
 
     /// Construct from x, y, and z coordinates
     Point3(double x, double y, double z): Vector3(x,y, z) {}
@@ -111,11 +109,6 @@ class GTSAM_EXPORT Point3 : public Vector3 {
     /// return as Vector3
     const Vector3& vector() const { return *this; }
 
-    /// return as transposed vector
-    Eigen::DenseBase<Vector3>::ConstTransposeReturnType transpose() const {
-      return this->Vector3::transpose();
-    }
-
     /// @}
 
     /// Output stream operator
@@ -124,7 +117,7 @@ class GTSAM_EXPORT Point3 : public Vector3 {
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
     /// @name Deprecated
     /// @{
-    Point3() { setZero(); }
+    Point3() { setZero(); } // initializes to zero, in contrast to new behavior
     Point3 inverse() const { return -(*this);}
     Point3 compose(const Point3& q) const { return (*this)+q;}
     Point3 between(const Point3& q) const { return q-(*this);}
