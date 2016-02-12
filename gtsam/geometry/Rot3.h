@@ -456,7 +456,9 @@ namespace gtsam {
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
     /// @name Deprecated
     /// @{
+#ifndef GTSAM_USE_VECTOR3_POINTS
     static Rot3 rodriguez(const Vector3& axis, double angle) { return AxisAngle(axis, angle); }
+#endif
     static Rot3 rodriguez(const Point3&  axis, double angle) { return AxisAngle(axis, angle); }
     static Rot3 rodriguez(const Unit3&   axis, double angle) { return AxisAngle(axis, angle); }
     static Rot3 rodriguez(const Vector3& w)                  { return Rodrigues(w); }
