@@ -115,7 +115,7 @@ private:
     case dynamics::EULER_END  : hx = p1 + Point3(v2 * dt); break;
     default: assert(false); break;
     }
-    return p2.vector() - hx.vector();
+    return p2 - hx;
   }
 };
 

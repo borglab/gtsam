@@ -81,7 +81,7 @@ double f2(const Point3& p, OptionalJacobian<1, 3> H) {
   return 0.0;
 }
 Vector f3(const Point3& p, OptionalJacobian<Eigen::Dynamic, 3> H) {
-  return p.vector();
+  return p;
 }
 Expression<Point3> p(1);
 set<Key> expected = list_of(1);
@@ -108,7 +108,7 @@ TEST(Expression, NullaryMethod) {
 
   // Create expression
   Expression<Point3> p(67);
-  Expression<double> norm(p, &Point3::norm);
+  Expression<double> norm(&gtsam::norm, p);
 
   // Create Values
   Values values;

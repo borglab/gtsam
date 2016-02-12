@@ -64,7 +64,7 @@ TEST(Similarity3, Constructors) {
   Similarity3 sim3_Construct1;
   Similarity3 sim3_Construct2(s);
   Similarity3 sim3_Construct3(R, P, s);
-  Similarity3 sim4_Construct4(R.matrix(), P.vector(), s);
+  Similarity3 sim4_Construct4(R.matrix(), P, s);
 }
 
 //******************************************************************************

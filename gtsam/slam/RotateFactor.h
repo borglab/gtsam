@@ -44,9 +44,9 @@ public:
   virtual void print(const std::string& s = "",
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
     Base::print(s);
-    std::cout << "RotateFactor:" << std::endl;
-    p_.print("p");
-    z_.print("z");
+    std::cout << "RotateFactor:]\n";
+    std::cout << "p: " << p_.transpose() << std::endl;
+    std::cout << "z: " << z_.transpose() << std::endl;
   }
 
   /// vector of errors returns 2D vector

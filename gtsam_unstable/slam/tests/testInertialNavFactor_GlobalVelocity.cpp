@@ -233,7 +233,7 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
 
 ///* VADIM - START ************************************************************************* */
 //Vector3 predictionRq(const Vector3 angles, const Vector3 q) {
-//  return (Rot3().RzRyRx(angles) * q).vector();
+//  return (Rot3().RzRyRx(angles) * q);
 //}
 //
 //TEST (InertialNavFactor_GlobalVelocity, Rotation_Deriv ) {
@@ -435,7 +435,7 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
   Vector measurement_acc = Vector3(0.2, 0.1, -0.3 + 9.81)
       + omega__cross * omega__cross
           * body_P_sensor.rotation().inverse().matrix()
-          * body_P_sensor.translation().vector(); // Measured in ENU orientation
+          * body_P_sensor.translation(); // Measured in ENU orientation
 
   InertialNavFactor_GlobalVelocity<Pose3, Vector3, imuBias::ConstantBias> f(
       PoseKey1, VelKey1, BiasKey1, PoseKey2, VelKey2, measurement_acc,
@@ -474,7 +474,7 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
   Vector measurement_acc = Vector3(0.2, 0.1, -0.3 + 9.81)
       + omega__cross * omega__cross
           * body_P_sensor.rotation().inverse().matrix()
-          * body_P_sensor.translation().vector(); // Measured in ENU orientation
+          * body_P_sensor.translation(); // Measured in ENU orientation
 
   InertialNavFactor_GlobalVelocity<Pose3, Vector3, imuBias::ConstantBias> f(
       PoseKey1, VelKey1, BiasKey1, PoseKey2, VelKey2, measurement_acc,
@@ -512,7 +512,7 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
   Vector measurement_acc = Vector3(0.0, 0.0, 0.0 + 9.81)
       + omega__cross * omega__cross
           * body_P_sensor.rotation().inverse().matrix()
-          * body_P_sensor.translation().vector(); // Measured in ENU orientation
+          * body_P_sensor.translation(); // Measured in ENU orientation
 
   InertialNavFactor_GlobalVelocity<Pose3, Vector3, imuBias::ConstantBias> f(
       PoseKey1, VelKey1, BiasKey1, PoseKey2, VelKey2, measurement_acc,
@@ -554,7 +554,7 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
       Vector3(-6.763926150509185, 6.501390843381716, +2.300389940090343)
           + omega__cross * omega__cross
               * body_P_sensor.rotation().inverse().matrix()
-              * body_P_sensor.translation().vector(); // Measured in ENU orientation
+              * body_P_sensor.translation(); // Measured in ENU orientation
 
   InertialNavFactor_GlobalVelocity<Pose3, Vector3, imuBias::ConstantBias> f(
       PoseKey1, VelKey1, BiasKey1, PoseKey2, VelKey2, measurement_acc,
@@ -605,7 +605,7 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
       Vector3(-6.763926150509185, 6.501390843381716, +2.300389940090343)
           + omega__cross * omega__cross
               * body_P_sensor.rotation().inverse().matrix()
-              * body_P_sensor.translation().vector(); // Measured in ENU orientation
+              * body_P_sensor.translation(); // Measured in ENU orientation
 
   InertialNavFactor_GlobalVelocity<Pose3, Vector3, imuBias::ConstantBias> factor(
       PoseKey1, VelKey1, BiasKey1, PoseKey2, VelKey2, measurement_acc,

@@ -139,7 +139,7 @@ public:
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
     Base::print(s);
     std::cout << "  EssentialMatrixFactor2 with measurements\n  ("
-        << dP1_.vector().transpose() << ")' and (" << pn_.vector().transpose()
+        << dP1_.transpose() << ")' and (" << pn_.vector().transpose()
         << ")'" << std::endl;
   }
 
@@ -191,7 +191,7 @@ public:
 
       if (Dd) // efficient backwards computation:
         //      (2*3)    * (3*3)      * (3*1)
-        *Dd = -f_ * (Dpn_dP2 * (DP2_point * _1T2.vector()));
+        *Dd = -f_ * (Dpn_dP2 * (DP2_point * _1T2));
 
     }
     Point2 reprojectionError = pn - pn_;
