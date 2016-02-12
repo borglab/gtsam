@@ -112,7 +112,7 @@ TEST( PinholeCamera, lookat)
   EXPECT(assert_equal(camera.pose(), expected));
 
   Point3 C2(30,0,10);
-  Camera camera2 = Camera::Lookat(C2, Point3(), Point3(0,0,1));
+  Camera camera2 = Camera::Lookat(C2, Point3(0,0,0), Point3(0,0,1));
 
   Matrix R = camera2.pose().rotation().matrix();
   Matrix I = trans(R)*R;
@@ -149,7 +149,7 @@ TEST( PinholeCamera, backprojectInfinity)
 /* ************************************************************************* */
 TEST( PinholeCamera, backproject2)
 {
-  Point3 origin;
+  Point3 origin(0,0,0);
   Rot3 rot(1., 0., 0., 0., 0., 1., 0., -1., 0.); // a camera1 looking down
   Camera camera(Pose3(rot, origin), K);
 
@@ -165,7 +165,7 @@ TEST( PinholeCamera, backproject2)
 /* ************************************************************************* */
 TEST( PinholeCamera, backprojectInfinity2)
 {
-  Point3 origin;
+  Point3 origin(0,0,0);
   Rot3 rot(1., 0., 0., 0., 0., 1., 0., -1., 0.); // a camera1 looking down
   Camera camera(Pose3(rot, origin), K);
 
@@ -180,7 +180,7 @@ TEST( PinholeCamera, backprojectInfinity2)
 /* ************************************************************************* */
 TEST( PinholeCamera, backprojectInfinity3)
 {
-  Point3 origin;
+  Point3 origin(0,0,0);
   Rot3 rot(1., 0., 0., 0., 1., 0., 0., 0., 1.); // identity
   Camera camera(Pose3(rot, origin), K);
 

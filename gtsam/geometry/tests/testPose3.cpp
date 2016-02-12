@@ -306,7 +306,7 @@ TEST( Pose3, Dtransform_from1_b)
 
 TEST( Pose3, Dtransform_from1_c)
 {
-  Point3 origin;
+  Point3 origin(0,0,0);
   Pose3 T0(R,origin);
   Matrix actualDtransform_from1;
   T0.transform_from(P, actualDtransform_from1, boost::none);

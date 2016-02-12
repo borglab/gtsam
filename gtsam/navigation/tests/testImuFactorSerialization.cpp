@@ -43,7 +43,7 @@ TEST(ImuFactor, serialization) {
 
   // Create default parameters with Z-down and above noise paramaters
   auto p = PreintegrationParams::MakeSharedD(9.81);
-  p->body_P_sensor = Pose3(Rot3::Ypr(0, 0, M_PI), Point3());
+  p->body_P_sensor = Pose3(Rot3::Ypr(0, 0, M_PI), Point3(0,0,0));
   p->accelerometerCovariance = 1e-7 * I_3x3;
   p->gyroscopeCovariance = 1e-8 * I_3x3;
   p->integrationCovariance = 1e-9 * I_3x3;
