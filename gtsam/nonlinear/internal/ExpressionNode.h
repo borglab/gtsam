@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -269,9 +269,13 @@ public:
   // Inner Record Class
   struct Record: public CallRecordImplementor<Record, traits<T>::dimension> {
 
-    A1 value1;
-    ExecutionTrace<A1> trace1;
     typename Jacobian<T, A1>::type dTdA1;
+    ExecutionTrace<A1> trace1;
+    A1 value1;
+
+    /// Construct record by calling argument expression
+    Record(const Values& values, const ExpressionNode<A1>& expression1, ExecutionTraceStorage* ptr)
+        : value1(expression1.traceExecution(values, trace1, ptr + upAligned(sizeof(Record)))) {}
 
     /// Print to std::cout
     void print(const std::string& indent) const {
@@ -305,20 +309,15 @@ public:
       ExecutionTraceStorage* ptr) const {
     assert(reinterpret_cast<size_t>(ptr) % TraceAlignment == 0);
 
-    // Create the record at the start of the traceStorage and advance the pointer
-    Record* record = new (ptr) Record();
-    ptr += upAligned(sizeof(Record));
-
-    // Record the traces for all arguments
-    // After this, the traceStorage pointer is set to after what was written
+    // Create a Record in the memory pointed to by ptr
+    // Calling the construct will record the traces for all arguments
     // Write an Expression<A> execution trace in record->trace
     // Iff Constant or Leaf, this will not write to traceStorage, only to trace.
     // Iff the expression is functional, write all Records in traceStorage buffer
     // Return value of type T is recorded in record->value
-    record->value1 = expression1_->traceExecution(values, record->trace1, ptr);
+    Record* record = new (ptr) Record(values, *expression1_, ptr);
 
-    //  We have written in the buffer, the next caller expects we advance the pointer
-    ptr += expression1_->traceSize();
+    // Our trace parameter is set to point to the Record
     trace.setFunction(record);
 
     // Finally, the function call fills in the Jacobian dTdA1
@@ -384,13 +383,20 @@ public:
   // Inner Record Class
   struct Record: public CallRecordImplementor<Record, traits<T>::dimension> {
 
-    A1 value1;
-    ExecutionTrace<A1> trace1;
     typename Jacobian<T, A1>::type dTdA1;
-
-    A2 value2;
-    ExecutionTrace<A2> trace2;
     typename Jacobian<T, A2>::type dTdA2;
+
+    ExecutionTrace<A1> trace1;
+    ExecutionTrace<A2> trace2;
+
+    A1 value1;
+    A2 value2;
+
+    /// Construct record by calling argument expressions
+    Record(const Values& values, const ExpressionNode<A1>& expression1,
+           const ExpressionNode<A2>& expression2, ExecutionTraceStorage* ptr)
+        : value1(expression1.traceExecution(values, trace1, ptr += upAligned(sizeof(Record)))),
+          value2(expression2.traceExecution(values, trace2, ptr += expression1.traceSize())) {}
 
     /// Print to std::cout
     void print(const std::string& indent) const {
@@ -418,12 +424,7 @@ public:
   virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
       ExecutionTraceStorage* ptr) const {
     assert(reinterpret_cast<size_t>(ptr) % TraceAlignment == 0);
-    Record* record = new (ptr) Record();
-    ptr += upAligned(sizeof(Record));
-    record->value1 = expression1_->traceExecution(values, record->trace1, ptr);
-    ptr += expression1_->traceSize();
-    record->value2 = expression2_->traceExecution(values, record->trace2, ptr);
-    ptr += expression2_->traceSize();
+    Record* record = new (ptr) Record(values, *expression1_, *expression2_, ptr);
     trace.setFunction(record);
     return function_(record->value1, record->value2, record->dTdA1, record->dTdA2);
   }
@@ -492,17 +493,25 @@ public:
   // Inner Record Class
   struct Record: public CallRecordImplementor<Record, traits<T>::dimension> {
 
-    A1 value1;
-    ExecutionTrace<A1> trace1;
     typename Jacobian<T, A1>::type dTdA1;
-
-    A2 value2;
-    ExecutionTrace<A2> trace2;
     typename Jacobian<T, A2>::type dTdA2;
-
-    A3 value3;
-    ExecutionTrace<A3> trace3;
     typename Jacobian<T, A3>::type dTdA3;
+
+    ExecutionTrace<A1> trace1;
+    ExecutionTrace<A2> trace2;
+    ExecutionTrace<A3> trace3;
+
+    A1 value1;
+    A2 value2;
+    A3 value3;
+
+    /// Construct record by calling 3 argument expressions
+    Record(const Values& values, const ExpressionNode<A1>& expression1,
+           const ExpressionNode<A2>& expression2,
+           const ExpressionNode<A3>& expression3, ExecutionTraceStorage* ptr)
+        : value1(expression1.traceExecution(values, trace1, ptr += upAligned(sizeof(Record)))),
+          value2(expression2.traceExecution(values, trace2, ptr += expression1.traceSize())),
+          value3(expression3.traceExecution(values, trace3, ptr += expression2.traceSize())) {}
 
     /// Print to std::cout
     void print(const std::string& indent) const {
@@ -531,19 +540,12 @@ public:
 
   /// Construct an execution trace for reverse AD, see UnaryExpression for explanation
   virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-      ExecutionTraceStorage* ptr) const {
+                           ExecutionTraceStorage* ptr) const {
     assert(reinterpret_cast<size_t>(ptr) % TraceAlignment == 0);
-    Record* record = new (ptr) Record();
-    ptr += upAligned(sizeof(Record));
-    record->value1 = expression1_->traceExecution(values, record->trace1, ptr);
-    ptr += expression1_->traceSize();
-    record->value2 = expression2_->traceExecution(values, record->trace2, ptr);
-    ptr += expression2_->traceSize();
-    record->value3 = expression3_->traceExecution(values, record->trace3, ptr);
-    ptr += expression3_->traceSize();
+    Record* record = new (ptr) Record(values, *expression1_, *expression2_, *expression3_, ptr);
     trace.setFunction(record);
     return function_(record->value1, record->value2, record->value3,
-        record->dTdA1, record->dTdA2, record->dTdA3);
+                     record->dTdA1, record->dTdA2, record->dTdA3);
   }
 };
 
