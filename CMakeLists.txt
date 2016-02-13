@@ -215,15 +215,6 @@ endif()
 ###       http://eigen.tuxfamily.org/bz/show_bug.cgi?id=705 (Fix MKL LLT return code)
 option(GTSAM_USE_SYSTEM_EIGEN "Find and use system-installed Eigen. If 'off', use the one bundled with GTSAM" OFF)
 
-# Use system Eigen if version >= 3.2.5 since that includes our patches
-find_package(Eigen3 QUIET)
-if(EIGEN3_FOUND AND (EIGEN3_VERSION VERSION_GREATER 3.2.4))
-	set(GTSAM_USE_SYSTEM_EIGEN ON)
-	set(GTSAM_SYSTEM_EIGEN_MKL_ERROR OFF)
-else()
-	set(GTSAM_SYSTEM_EIGEN_MKL_ERROR ON)
-endif()
-
 # Switch for using system Eigen or GTSAM-bundled Eigen
 if(GTSAM_USE_SYSTEM_EIGEN)
 	find_package(Eigen3 REQUIRED)
@@ -233,7 +224,8 @@ if(GTSAM_USE_SYSTEM_EIGEN)
     set(GTSAM_EIGEN_INCLUDE_PREFIX "${EIGEN3_INCLUDE_DIR}")
 	
 	# check if MKL is also enabled - can have one or the other, but not both!
-	if(EIGEN_USE_MKL_ALL AND GTSAM_SYSTEM_EIGEN_MKL_ERROR)
+	# Note: Eigen >= v3.2.5 includes our patches
+	if(EIGEN_USE_MKL_ALL AND (EIGEN3_VERSION VERSION_LESS 3.2.5))
 	  message(FATAL_ERROR "MKL cannot be used together with system-installed Eigen, as MKL support relies on patches which are not yet in the system-installed Eigen. Disable either GTSAM_USE_SYSTEM_EIGEN or GTSAM_WITH_EIGEN_MKL")
 	endif()
 else()
