@@ -224,8 +224,9 @@ if(GTSAM_USE_SYSTEM_EIGEN)
     set(GTSAM_EIGEN_INCLUDE_PREFIX "${EIGEN3_INCLUDE_DIR}")
 	
 	# check if MKL is also enabled - can have one or the other, but not both!
-	if(EIGEN_USE_MKL_ALL)
-	  message(FATAL_ERROR "MKL cannot be used together with system-installed Eigen, as MKL support relies on patches which are not yet in the system-installed Eigen. Disable either GTSAM_USE_SYSTEM_EIGEN or GTSAM_WITH_EIGEN_MKL")
+	# Note: Eigen >= v3.2.5 includes our patches
+	if(EIGEN_USE_MKL_ALL AND (EIGEN3_VERSION VERSION_LESS 3.2.5))
+	  message(FATAL_ERROR "MKL requires at least Eigen 3.2.5, and your system appears to have an older version. Disable GTSAM_USE_SYSTEM_EIGEN to use GTSAM's copy of Eigen, or disable GTSAM_WITH_EIGEN_MKL")
 	endif()
 else()
 	# Use bundled Eigen include path. 
