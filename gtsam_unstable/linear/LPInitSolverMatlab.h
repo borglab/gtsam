@@ -5,12 +5,11 @@
  * @date     1/24/16
  */
 
-
 #pragma once
 
 #include <gtsam_unstable/linear/LPInitSolver.h>
 #include <gtsam_unstable/linear/InfeasibleOrUnboundedProblem.h>
-
+#include <CppUnitLite/Test.h>
 
 namespace gtsam {
 /**
@@ -39,13 +38,16 @@ namespace gtsam {
  * inequality constraint, we can't conclude that the problem is infeasible.
  * However, whether it is infeasible or unbounded, we don't have a unique solution anyway.
  */
-class LPInitSolverMatlab : public LPInitSolver {
+class LPInitSolverMatlab: public LPInitSolver {
   typedef LPInitSolver Base;
 public:
-  LPInitSolverMatlab(const LPSolver& lpSolver) : Base(lpSolver) {}
-  virtual ~LPInitSolverMatlab() {}
+  LPInitSolverMatlab(const LPSolver& lpSolver) :
+      Base(lpSolver) {
+  }
+  virtual ~LPInitSolverMatlab() {
+  }
 
-  virtual VectorValues solve() const  {
+  virtual VectorValues solve() const {
     // Build the graph to solve for the initial value of the initial problem
     GaussianFactorGraph::shared_ptr initOfInitGraph = buildInitOfInitGraph();
     VectorValues x0 = initOfInitGraph->optimize();
@@ -62,7 +64,7 @@ public:
     VectorValues xyInit = lpSolveInit.optimize(xy0).first;
     double yOpt = xyInit.at(yKey)[0];
     xyInit.erase(yKey);
-    if ( yOpt > 0)
+    if (yOpt > 0)
       throw InfeasibleOrUnboundedProblem();
     else
       return xyInit;
@@ -72,9 +74,10 @@ private:
   /// build initial LP
   LP::shared_ptr buildInitialLP(Key yKey) const {
     LP::shared_ptr initLP(new LP());
-    initLP->cost = LinearCost(yKey, ones(1));    // min y
-    initLP->equalities = lp_.equalities;         // st. Ax = b
-    initLP->inequalities = addSlackVariableToInequalities(yKey, lp_.inequalities); // Cx-y <= d
+    initLP->cost = LinearCost(yKey, ones(1)); // min y
+    initLP->equalities = lp_.equalities; // st. Ax = b
+    initLP->inequalities = addSlackVariableToInequalities(yKey,
+        lp_.inequalities); // Cx-y <= d
     return initLP;
   }
 
@@ -83,7 +86,7 @@ private:
     Key maxK = 0;
     BOOST_FOREACH(Key key, keysDim | boost::adaptors::map_keys)
     if (maxK < key)
-      maxK = key;
+    maxK = key;
     return maxK;
   }
 
@@ -93,7 +96,8 @@ private:
    */
   GaussianFactorGraph::shared_ptr buildInitOfInitGraph() const {
     // first add equality constraints Ax = b
-    GaussianFactorGraph::shared_ptr initGraph(new GaussianFactorGraph(lp_.equalities));
+    GaussianFactorGraph::shared_ptr initGraph(
+        new GaussianFactorGraph(lp_.equalities));
 
     // create factor ||x||^2 and add to the graph
     const KeyDimMap& keysDim = lpSolver_.keysDim();
@@ -110,15 +114,15 @@ private:
     BOOST_FOREACH(const LinearInequality::shared_ptr& factor, lp_.inequalities) {
       double error = factor->error(x0);
       if (error > y0)
-        y0 = error;
+      y0 = error;
     }
     return y0;
   }
 
-
   /// Collect all terms of a factor into a container.
-  std::vector<std::pair<Key, Matrix> > collectTerms(const LinearInequality& factor) const {
-    std::vector<std::pair<Key, Matrix> > terms;
+  std::vector<std::pair<Key, Matrix> > collectTerms(
+      const LinearInequality& factor) const {
+    std::vector < std::pair<Key, Matrix> > terms;
     for (Factor::const_iterator it = factor.begin(); it != factor.end(); it++) {
       terms.push_back(make_pair(*it, factor.getA(it)));
     }

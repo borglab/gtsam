@@ -31,7 +31,6 @@
 #include <gtsam_unstable/linear/LPSolver.h>
 #include <gtsam_unstable/linear/LPInitSolverMatlab.h>
 
-
 using namespace std;
 using namespace gtsam;
 using namespace gtsam::symbol_shorthand;
@@ -46,21 +45,16 @@ using namespace gtsam::symbol_shorthand;
  */
 LP simpleLP1() {
   LP lp;
-  lp.cost = LinearCost(1, Vector2( -1., -1.)); // min -x1-x2 (max x1+x2)
-  lp.inequalities.push_back(
-      LinearInequality(1, Vector2( -1, 0), 0, 1)); // x1 >= 0
-  lp.inequalities.push_back(
-      LinearInequality(1, Vector2( 0, -1), 0, 2)); //  x2 >= 0
-  lp.inequalities.push_back(
-      LinearInequality(1, Vector2( 1, 2), 4, 3)); //  x1 + 2*x2 <= 4
-  lp.inequalities.push_back(
-      LinearInequality(1, Vector2( 4, 2), 12, 4)); //  4x1 + 2x2 <= 12
-  lp.inequalities.push_back(
-      LinearInequality(1, Vector2( -1, 1), 1, 5)); //  -x1 + x2 <= 1
+  lp.cost = LinearCost(1, Vector2(-1., -1.)); // min -x1-x2 (max x1+x2)
+  lp.inequalities.push_back(LinearInequality(1, Vector2(-1, 0), 0, 1)); // x1 >= 0
+  lp.inequalities.push_back(LinearInequality(1, Vector2(0, -1), 0, 2)); //  x2 >= 0
+  lp.inequalities.push_back(LinearInequality(1, Vector2(1, 2), 4, 3)); //  x1 + 2*x2 <= 4
+  lp.inequalities.push_back(LinearInequality(1, Vector2(4, 2), 12, 4)); //  4x1 + 2x2 <= 12
+  lp.inequalities.push_back(LinearInequality(1, Vector2(-1, 1), 1, 5)); //  -x1 + x2 <= 1
   return lp;
 }
 
-LP infeasibleLP(){
+LP infeasibleLP() {
   LP lp;
 
   lp.cost = LinearCost(1, Vector3(-1, -1, -2));
@@ -91,13 +85,13 @@ TEST(LPInitSolverMatlab, initialization) {
   expectedInitLP.inequalities.push_back(
       LinearInequality(1, Vector2( -1, 0), 2, Vector::Constant(1, -1), 0, 1)); // -x1 - y <= 0
   expectedInitLP.inequalities.push_back(
-      LinearInequality(1, Vector2( 0, -1), 2, Vector::Constant(1, -1), 0, 2)); // -x2 - y <= 0
+      LinearInequality(1, Vector2( 0, -1), 2, Vector::Constant(1, -1), 0, 2));// -x2 - y <= 0
   expectedInitLP.inequalities.push_back(
-      LinearInequality(1, Vector2( 1, 2), 2, Vector::Constant(1, -1), 4, 3)); //  x1 + 2*x2 - y <= 4
+      LinearInequality(1, Vector2( 1, 2), 2, Vector::Constant(1, -1), 4, 3));//  x1 + 2*x2 - y <= 4
   expectedInitLP.inequalities.push_back(
-      LinearInequality(1, Vector2( 4, 2), 2, Vector::Constant(1, -1), 12, 4)); //  4x1 + 2x2 - y <= 12
+      LinearInequality(1, Vector2( 4, 2), 2, Vector::Constant(1, -1), 12, 4));//  4x1 + 2x2 - y <= 12
   expectedInitLP.inequalities.push_back(
-      LinearInequality(1, Vector2( -1, 1), 2, Vector::Constant(1, -1), 1, 5)); //  -x1 + x2 - y <= 1
+      LinearInequality(1, Vector2( -1, 1), 2, Vector::Constant(1, -1), 1, 5));//  -x1 + x2 - y <= 1
   CHECK(assert_equal(expectedInitLP, *initLP, 1e-10));
 
   LPSolver lpSolveInit(*initLP);
@@ -122,61 +116,56 @@ TEST(LPInitSolverMatlab, initialization) {
  *  x + 2y = 6
  */
 TEST(LPSolver, overConstrainedLinearSystem) {
-  GaussianFactorGraph graph;
-  Matrix A1 = Vector3(1,1,1);
-  Matrix A2 = Vector3(1,-1,2);
-  Vector b = Vector3( 1, 5, 6);
-  JacobianFactor factor(1, A1, 2, A2, b, noiseModel::Constrained::All(3));
-  graph.push_back(factor);
+GaussianFactorGraph graph;
+Matrix A1 = Vector3(1,1,1);
+Matrix A2 = Vector3(1,-1,2);
+Vector b = Vector3( 1, 5, 6);
+JacobianFactor factor(1, A1, 2, A2, b, noiseModel::Constrained::All(3));
+graph.push_back(factor);
 
-  VectorValues x = graph.optimize();
-  // This check confirms that gtsam linear constraint solver can't handle over-constrained system
-  CHECK(factor.error(x) != 0.0);
+VectorValues x = graph.optimize();
+// This check confirms that gtsam linear constraint solver can't handle over-constrained system
+CHECK(factor.error(x) != 0.0);
 }
 
 TEST(LPSolver, overConstrainedLinearSystem2) {
-  GaussianFactorGraph graph;
-  graph.push_back(JacobianFactor(1, ones(1, 1), 2, ones(1, 1), ones(1), noiseModel::Constrained::All(1)));
-  graph.push_back(JacobianFactor(1, ones(1, 1), 2, -ones(1, 1), 5*ones(1), noiseModel::Constrained::All(1)));
-  graph.push_back(JacobianFactor(1, ones(1, 1), 2, 2*ones(1, 1), 6*ones(1), noiseModel::Constrained::All(1)));
-  VectorValues x = graph.optimize();
-  // This check confirms that gtsam linear constraint solver can't handle over-constrained system
-  CHECK(graph.error(x) != 0.0);
+GaussianFactorGraph graph;
+graph.push_back(JacobianFactor(1, ones(1, 1), 2, ones(1, 1), ones(1), noiseModel::Constrained::All(1)));
+graph.push_back(JacobianFactor(1, ones(1, 1), 2, -ones(1, 1), 5*ones(1), noiseModel::Constrained::All(1)));
+graph.push_back(JacobianFactor(1, ones(1, 1), 2, 2*ones(1, 1), 6*ones(1), noiseModel::Constrained::All(1)));
+VectorValues x = graph.optimize();
+// This check confirms that gtsam linear constraint solver can't handle over-constrained system
+CHECK(graph.error(x) != 0.0);
 }
 
 /* ************************************************************************* */
 TEST(LPSolver, simpleTest1) {
-  LP lp = simpleLP1();
+LP lp = simpleLP1();
+LPSolver lpSolver(lp);
+VectorValues init;
+init.insert(1, zero(2));
 
-  LPSolver lpSolver(lp);
-  VectorValues init;
-  init.insert(1, zero(2));
+VectorValues x1 = lpSolver.solveWithCurrentWorkingSet(init,
+    InequalityFactorGraph());
+VectorValues expected_x1;
+expected_x1.insert(1, Vector2( 1, 1));
+CHECK(assert_equal(expected_x1, x1, 1e-10));
 
-  VectorValues x1 = lpSolver.solveWithCurrentWorkingSet(init,
-      InequalityFactorGraph());
-  VectorValues expected_x1;
-  expected_x1.insert(1, Vector2( 1, 1));
-  CHECK(assert_equal(expected_x1, x1, 1e-10));
-
-  VectorValues result, duals;
-  boost::tie(result, duals) = lpSolver.optimize(init);
-  VectorValues expectedResult;
-  expectedResult.insert(1, Vector2(8./3., 2./3.));
-  CHECK(assert_equal(expectedResult, result, 1e-10));
+VectorValues result, duals;
+boost::tie(result, duals) = lpSolver.optimize(init);
+VectorValues expectedResult;
+expectedResult.insert(1, Vector2(8./3., 2./3.));
+CHECK(assert_equal(expectedResult, result, 1e-10));
 }
-
 
 /* ************************************************************************* */
 TEST(LPSolver, testWithoutInitialValues) {
-//  LP lp = simpleLP1();
-//
-//  LPSolver lpSolver(lp);
-//  VectorValues result, duals;
-//  boost::tie(result, duals) = lpSolver.optimize();
-//
-//  VectorValues expectedResult;
-//  expectedResult.insert(1, Vector2(8./3., 2./3.));
-//  CHECK(assert_equal(expectedResult, result, 1e-10));
+LP lp = simpleLP1();
+LPSolver lpSolver(lp);
+VectorValues result,duals, expectedResult;
+expectedResult.insert(1, Vector2(8./3., 2./3.));
+boost::tie(result, duals) = lpSolver.optimize();
+CHECK(assert_equal(expectedResult, result));
 }
 
 /**
@@ -187,18 +176,18 @@ TEST(LPSolver, testWithoutInitialValues) {
  */
 /* ************************************************************************* */
 TEST(LPSolver, LinearCost) {
-  LinearCost cost(1, Vector3( 2., 4., 6.));
-  VectorValues x;
-  x.insert(1, Vector3( 1., 3., 5.));
-  double error = cost.error(x);
-  double expectedError = 44.0;
-  DOUBLES_EQUAL(expectedError, error, 1e-100);
+LinearCost cost(1, Vector3( 2., 4., 6.));
+VectorValues x;
+x.insert(1, Vector3( 1., 3., 5.));
+double error = cost.error(x);
+double expectedError = 44.0;
+DOUBLES_EQUAL(expectedError, error, 1e-100);
 }
 
 /* ************************************************************************* */
 int main() {
-  TestResult tr;
-  return TestRegistry::runAllTests(tr);
+TestResult tr;
+return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
 
