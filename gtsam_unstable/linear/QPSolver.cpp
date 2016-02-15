@@ -22,13 +22,15 @@
 #include <gtsam_unstable/linear/LPSolver.h>
 #include <gtsam_unstable/linear/InfeasibleInitialValues.h>
 #include <boost/range/adaptor/map.hpp>
+#include "LPInitSolverMatlab.h"
 
 using namespace std;
 
 namespace gtsam {
 
 //******************************************************************************
-QPSolver::QPSolver(const QP& qp) : qp_(qp) {
+QPSolver::QPSolver(const QP& qp) :
+    qp_(qp) {
   baseGraph_ = qp_.cost;
   baseGraph_.push_back(qp_.equalities.begin(), qp_.equalities.end());
   costVariableIndex_ = VariableIndex(qp_.cost);
@@ -43,37 +45,35 @@ VectorValues QPSolver::solveWithCurrentWorkingSet(
     const InequalityFactorGraph& workingSet) const {
   GaussianFactorGraph workingGraph = baseGraph_;
   for (const LinearInequality::shared_ptr& factor : workingSet) {
-    if (factor->active()) workingGraph.push_back(factor);
+    if (factor->active())
+      workingGraph.push_back(factor);
   }
   return workingGraph.optimize();
 }
 
 //******************************************************************************
-JacobianFactor::shared_ptr QPSolver::createDualFactor(
-    Key key, const InequalityFactorGraph& workingSet,
-    const VectorValues& delta) const {
+JacobianFactor::shared_ptr QPSolver::createDualFactor(Key key,
+    const InequalityFactorGraph& workingSet, const VectorValues& delta) const {
   // Transpose the A matrix of constrained factors to have the jacobian of the
   // dual key
-  std::vector<std::pair<Key, Matrix> > Aterms =
-      collectDualJacobians<LinearEquality>(key, qp_.equalities,
-                                           equalityVariableIndex_);
-  std::vector<std::pair<Key, Matrix> > AtermsInequalities =
-      collectDualJacobians<LinearInequality>(key, workingSet,
-                                             inequalityVariableIndex_);
+  std::vector < std::pair<Key, Matrix> > Aterms = collectDualJacobians
+      < LinearEquality > (key, qp_.equalities, equalityVariableIndex_);
+  std::vector < std::pair<Key, Matrix> > AtermsInequalities =
+      collectDualJacobians < LinearInequality
+          > (key, workingSet, inequalityVariableIndex_);
   Aterms.insert(Aterms.end(), AtermsInequalities.begin(),
-                AtermsInequalities.end());
+      AtermsInequalities.end());
 
   // Collect the gradients of unconstrained cost factors to the b vector
   if (Aterms.size() > 0) {
     Vector b = zero(delta.at(key).size());
     if (costVariableIndex_.find(key) != costVariableIndex_.end()) {
-      for (size_t factorIx: costVariableIndex_[key]) {
+      for (size_t factorIx : costVariableIndex_[key]) {
         GaussianFactor::shared_ptr factor = qp_.cost.at(factorIx);
         b += factor->gradient(key, delta);
       }
     }
-    return boost::make_shared<JacobianFactor>(
-        Aterms, b);  // compute the least-square approximation of dual variables
+    return boost::make_shared < JacobianFactor > (Aterms, b); // compute the least-square approximation of dual variables
   } else {
     return boost::make_shared<JacobianFactor>();
   }
@@ -97,20 +97,20 @@ QPState QPSolver::iterate(const QPState& state) const {
   // update is zero.
   if (newValues.equals(state.values, 1e-7)) {
     // Compute lambda from the dual graph
-    GaussianFactorGraph::shared_ptr dualGraph =
-        buildDualGraph(state.workingSet, newValues);
+    GaussianFactorGraph::shared_ptr dualGraph = buildDualGraph(state.workingSet,
+        newValues);
     VectorValues duals = dualGraph->optimize();
     int leavingFactor = identifyLeavingConstraint(state.workingSet, duals);
     // If all inequality constraints are satisfied: We have the solution!!
     if (leavingFactor < 0) {
       return QPState(newValues, duals, state.workingSet, true,
-                     state.iterations + 1);
+          state.iterations + 1);
     } else {
       // Inactivate the leaving constraint
       InequalityFactorGraph newWorkingSet = state.workingSet;
       newWorkingSet.at(leavingFactor)->inactivate();
       return QPState(newValues, duals, newWorkingSet, false,
-                     state.iterations + 1);
+          state.iterations + 1);
     }
   } else {
     // If we CAN make some progress, i.e. p_k != 0
@@ -118,15 +118,16 @@ QPState QPSolver::iterate(const QPState& state) const {
     double alpha;
     int factorIx;
     VectorValues p = newValues - state.values;
-    boost::tie(alpha, factorIx) =  // using 16.41
+    boost::tie(alpha, factorIx) = // using 16.41
         computeStepSize(state.workingSet, state.values, p);
     // also add to the working set the one that complains the most
     InequalityFactorGraph newWorkingSet = state.workingSet;
-    if (factorIx >= 0) newWorkingSet.at(factorIx)->activate();
+    if (factorIx >= 0)
+      newWorkingSet.at(factorIx)->activate();
     // step!
     newValues = state.values + alpha * p;
     return QPState(newValues, state.duals, newWorkingSet, false,
-                   state.iterations + 1);
+        state.iterations + 1);
   }
 }
 
@@ -136,7 +137,7 @@ InequalityFactorGraph QPSolver::identifyActiveConstraints(
     const VectorValues& initialValues, const VectorValues& duals,
     bool useWarmStart) const {
   InequalityFactorGraph workingSet;
-  for (const LinearInequality::shared_ptr& factor: inequalities) {
+  for (const LinearInequality::shared_ptr& factor : inequalities) {
     LinearInequality::shared_ptr workingFactor(new LinearInequality(*factor));
     if (useWarmStart == true && duals.exists(workingFactor->dualKey())) {
       workingFactor->activate();
@@ -148,7 +149,8 @@ InequalityFactorGraph QPSolver::identifyActiveConstraints(
         // TODO: find a feasible initial point for QPSolver.
         // For now, we just throw an exception, since we don't have an LPSolver
         // to do this yet
-        if (error > 0) throw InfeasibleInitialValues();
+        if (error > 0)
+          throw InfeasibleInitialValues();
 
         if (fabs(error) < 1e-7) {
           workingFactor->activate();
@@ -167,8 +169,8 @@ pair<VectorValues, VectorValues> QPSolver::optimize(
     const VectorValues& initialValues, const VectorValues& duals,
     bool useWarmStart) const {
   // Initialize workingSet from the feasible initialValues
-  InequalityFactorGraph workingSet = identifyActiveConstraints(
-      qp_.inequalities, initialValues, duals, useWarmStart);
+  InequalityFactorGraph workingSet = identifyActiveConstraints(qp_.inequalities,
+      initialValues, duals, useWarmStart);
   QPState state(initialValues, duals, workingSet, false, 0);
 
   /// main loop of the solver
@@ -179,18 +181,22 @@ pair<VectorValues, VectorValues> QPSolver::optimize(
 }
 
 pair<VectorValues, VectorValues> QPSolver::optimize() const {
+  //Make an LP with any linear cost function. It doesn't matter for initialization.
   LP initProblem;
-
-  initProblem.cost = LinearCost(2,ones(1,1)); // min gamma s.t.
-  initProblem.equalities = qp_.equalities;    // s.t Ax = b from the original problem
-  //TODO: SLACK Variable needs to be added
-  initProblem.inequalities = qp_.inequalities; // s.t. Ax - gamma <= b Ax from the original problem
-
+  Key newKey = 0; // make an unrelated key for a random variable cost
+  BOOST_FOREACH(Key key, qp_.cost.getKeyDimMap() | boost::adaptors::map_keys)
+  if(newKey < key)
+  newKey = key;
+  newKey++;
+  initProblem.cost = LinearCost(newKey, ones(1));
+  initProblem.equalities = qp_.equalities;
+  initProblem.inequalities = qp_.inequalities;
   LPSolver solver(initProblem);
-  VectorValues result, duals;
-  boost::tie(result, duals) = solver.optimize();
+  LPInitSolverMatlab initSolver(solver);
+  VectorValues initValues = initSolver.solve();
 
-  return optimize(result);
-};
+  return optimize(initValues);
+}
+;
 
 } /* namespace gtsam */

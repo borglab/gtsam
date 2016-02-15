@@ -9,6 +9,7 @@
 
 #include <gtsam_unstable/linear/LPInitSolver.h>
 #include <gtsam_unstable/linear/InfeasibleOrUnboundedProblem.h>
+#include <gtsam_unstable/linear/QPSolver.h>
 #include <CppUnitLite/Test.h>
 
 namespace gtsam {

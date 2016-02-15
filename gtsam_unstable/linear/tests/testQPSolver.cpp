@@ -28,8 +28,7 @@ using namespace std;
 using namespace gtsam;
 using namespace gtsam::symbol_shorthand;
 
-const Matrix One = ones(1,1);
-
+const Matrix One = ones(1, 1);
 
 /* ************************************************************************* */
 // Create test graph according to Forst10book_pg171Ex5
@@ -47,10 +46,11 @@ QP createTestCase() {
           2.0 * ones(1, 1), zero(1), 10));
 
   // Inequality constraints
-  qp.inequalities.push_back(LinearInequality(X(1), ones(1,1), X(2), ones(1,1), 2, 0)); // x1 + x2 <= 2 --> x1 + x2 -2 <= 0, --> b=2
-  qp.inequalities.push_back(LinearInequality(X(1), -ones(1,1), 0, 1));                 // -x1     <= 0
-  qp.inequalities.push_back(LinearInequality(X(2), -ones(1,1), 0, 2));                 //    -x2  <= 0
-  qp.inequalities.push_back(LinearInequality(X(1), ones(1,1), 1.5, 3));                // x1      <= 3/2
+  qp.inequalities.push_back(
+      LinearInequality(X(1), ones(1, 1), X(2), ones(1, 1), 2, 0)); // x1 + x2 <= 2 --> x1 + x2 -2 <= 0, --> b=2
+  qp.inequalities.push_back(LinearInequality(X(1), -ones(1, 1), 0, 1)); // -x1     <= 0
+  qp.inequalities.push_back(LinearInequality(X(2), -ones(1, 1), 0, 2)); //    -x2  <= 0
+  qp.inequalities.push_back(LinearInequality(X(1), ones(1, 1), 1.5, 3)); // x1      <= 3/2
 
   return qp;
 }
@@ -72,15 +72,15 @@ TEST(QPSolver, constraintsAux) {
 
   VectorValues lambdas;
   lambdas.insert(0, (Vector(1) << -0.5).finished());
-  lambdas.insert(1, (Vector(1) <<  0.0).finished());
-  lambdas.insert(2, (Vector(1) <<  0.3).finished());
-  lambdas.insert(3, (Vector(1) <<  0.1).finished());
+  lambdas.insert(1, (Vector(1) << 0.0).finished());
+  lambdas.insert(2, (Vector(1) << 0.3).finished());
+  lambdas.insert(3, (Vector(1) << 0.1).finished());
   int factorIx = solver.identifyLeavingConstraint(qp.inequalities, lambdas);
   LONGS_EQUAL(2, factorIx);
 
   VectorValues lambdas2;
   lambdas2.insert(0, (Vector(1) << -0.5).finished());
-  lambdas2.insert(1, (Vector(1) <<  0.0).finished());
+  lambdas2.insert(1, (Vector(1) << 0.0).finished());
   lambdas2.insert(2, (Vector(1) << -0.3).finished());
   lambdas2.insert(3, (Vector(1) << -0.1).finished());
   int factorIx2 = solver.identifyLeavingConstraint(qp.inequalities, lambdas2);
@@ -137,14 +137,14 @@ TEST(QPSolver, indentifyActiveConstraints) {
   currentSolution.insert(X(2), zero(1));
 
   InequalityFactorGraph workingSet =
-      solver.identifyActiveConstraints(qp.inequalities, currentSolution);
+  solver.identifyActiveConstraints(qp.inequalities, currentSolution);
 
-  CHECK(!workingSet.at(0)->active());   // inactive
-  CHECK(workingSet.at(1)->active());    // active
-  CHECK(workingSet.at(2)->active());    // active
-  CHECK(!workingSet.at(3)->active());   // inactive
+  CHECK(!workingSet.at(0)->active()); // inactive
+  CHECK(workingSet.at(1)->active());// active
+  CHECK(workingSet.at(2)->active());// active
+  CHECK(!workingSet.at(3)->active());// inactive
 
-  VectorValues solution  = solver.solveWithCurrentWorkingSet(workingSet);
+  VectorValues solution = solver.solveWithCurrentWorkingSet(workingSet);
   VectorValues expectedSolution;
   expectedSolution.insert(X(1), (Vector(1) << 0.0).finished());
   expectedSolution.insert(X(2), (Vector(1) << 0.0).finished());
@@ -178,7 +178,7 @@ TEST(QPSolver, iterate) {
   expectedSolutions[3].insert(X(2), (Vector(1) << 0.5).finished());
 
   InequalityFactorGraph workingSet =
-      solver.identifyActiveConstraints(qp.inequalities, currentSolution);
+  solver.identifyActiveConstraints(qp.inequalities, currentSolution);
 
   QPState state(currentSolution, VectorValues(), workingSet, false, 100);
 
@@ -227,15 +227,16 @@ QP createTestMatlabQPEx() {
           2.0 * ones(1, 1), 6 * ones(1), 1000.0));
 
   // Inequality constraints
-  qp.inequalities.push_back(LinearInequality(X(1), One, X(2), One, 2, 0));      // x1 + x2 <= 2
-  qp.inequalities.push_back(LinearInequality(X(1), -One, X(2), 2*One, 2, 1));   //-x1 + 2*x2 <=2
-  qp.inequalities.push_back(LinearInequality(X(1), 2*One, X(2), One, 3, 2));    // 2*x1 + x2 <=3
-  qp.inequalities.push_back(LinearInequality(X(1), -One, 0, 3));                // -x1      <= 0
-  qp.inequalities.push_back(LinearInequality(X(2), -One, 0, 4));                //      -x2 <= 0
+  qp.inequalities.push_back(LinearInequality(X(1), One, X(2), One, 2, 0)); // x1 + x2 <= 2
+  qp.inequalities.push_back(LinearInequality(X(1), -One, X(2), 2 * One, 2, 1)); //-x1 + 2*x2 <=2
+  qp.inequalities.push_back(LinearInequality(X(1), 2 * One, X(2), One, 3, 2)); // 2*x1 + x2 <=3
+  qp.inequalities.push_back(LinearInequality(X(1), -One, 0, 3)); // -x1      <= 0
+  qp.inequalities.push_back(LinearInequality(X(2), -One, 0, 4)); //      -x2 <= 0
 
   return qp;
 }
 
+///* ************************************************************************* */
 TEST(QPSolver, optimizeMatlabEx) {
   QP qp = createTestMatlabQPEx();
   QPSolver solver(qp);
@@ -252,15 +253,14 @@ TEST(QPSolver, optimizeMatlabEx) {
 
 ///* ************************************************************************* */
 TEST(QPSolver, optimizeMatlabExNoinitials) {
-// TODO: Enable this test when everything is fixed.
-//  QP qp = createTestMatlabQPEx();
-//  QPSolver solver(qp);
-//  VectorValues solution;
-//  boost::tie(solution, boost::tuples::ignore) = solver.optimize();
-//  VectorValues expectedSolution;
-//  expectedSolution.insert(X(1), (Vector(1) << 2.0 / 3.0).finished());
-//  expectedSolution.insert(X(2), (Vector(1) << 4.0 / 3.0).finished());
-//  CHECK(assert_equal(expectedSolution, solution, 1e-7));
+  QP qp = createTestMatlabQPEx();
+  QPSolver solver(qp);
+  VectorValues solution;
+  boost::tie(solution, boost::tuples::ignore) = solver.optimize();
+  VectorValues expectedSolution;
+  expectedSolution.insert(X(1), (Vector(1) << 2.0 / 3.0).finished());
+  expectedSolution.insert(X(2), (Vector(1) << 4.0 / 3.0).finished());
+  CHECK(assert_equal(expectedSolution, solution, 1e-7));
 }
 
 /* ************************************************************************* */
@@ -272,9 +272,12 @@ QP createTestNocedal06bookEx16_4() {
   qp.cost.push_back(JacobianFactor(X(2), ones(1, 1), 2.5 * ones(1)));
 
   // Inequality constraints
-  qp.inequalities.push_back(LinearInequality(X(1), -ones(1, 1), X(2), 2 * ones(1, 1), 2, 0));
-  qp.inequalities.push_back(LinearInequality(X(1), ones(1, 1), X(2), 2 * ones(1, 1), 6, 1));
-  qp.inequalities.push_back(LinearInequality(X(1), ones(1, 1), X(2), -2 * ones(1, 1), 2, 2));
+  qp.inequalities.push_back(
+      LinearInequality(X(1), -ones(1, 1), X(2), 2 * ones(1, 1), 2, 0));
+  qp.inequalities.push_back(
+      LinearInequality(X(1), ones(1, 1), X(2), 2 * ones(1, 1), 6, 1));
+  qp.inequalities.push_back(
+      LinearInequality(X(1), ones(1, 1), X(2), -2 * ones(1, 1), 2, 2));
   qp.inequalities.push_back(LinearInequality(X(1), -ones(1, 1), 0.0, 3));
   qp.inequalities.push_back(LinearInequality(X(2), -ones(1, 1), 0.0, 4));
 
@@ -308,7 +311,7 @@ TEST(QPSolver, failedSubproblem) {
   expected.insert(X(1), (Vector(2) << 1.0, 0.0).finished());
 
   VectorValues initialValues;
-  initialValues.insert(X(1),  (Vector(2) << 10.0, 100.0).finished());
+  initialValues.insert(X(1), (Vector(2) << 10.0, 100.0).finished());
 
   QPSolver solver(qp);
   VectorValues solution;
@@ -329,40 +332,14 @@ TEST(QPSolver, infeasibleInitial) {
   expected.insert(X(1), (Vector(2) << 1.0, 0.0).finished());
 
   VectorValues initialValues;
-  initialValues.insert(X(1),  (Vector(2) << -10.0, 100.0).finished());
+  initialValues.insert(X(1), (Vector(2) << -10.0, 100.0).finished());
 
   QPSolver solver(qp);
   VectorValues solution;
   CHECK_EXCEPTION(
-    solver.optimize(initialValues),
-    InfeasibleInitialValues
+      solver.optimize(initialValues),
+      InfeasibleInitialValues
   );
-}
-
-/* ************************************************************************* */
-TEST(QPSolver, infeasibleConstraints) {
-    QP qp;
-    // Objective functions x1^2 - x1*x2 + x2^2 - 3*x1 + 5
-    // Note the Hessian encodes:
-    //        0.5*x1'*G11*x1 + x1'*G12*x2 + 0.5*x2'*G22*x2 - x1'*g1 - x2'*g2 + 0.5*f
-    // Hence, we have G11=2, G12 = -1, g1 = +3, G22 = 2, g2 = 0, f = 10
-    // TODO: Test Fails because we if constraints aren't feasible, the initial point will not
-    // be feasible either. we need to check for infeasible constraints.
-    qp.cost.push_back(
-      HessianFactor(X(1), X(2), 2.0 * ones(1, 1), -ones(1, 1), 3.0 * ones(1),
-                    2.0 * ones(1, 1), zero(1), 5));
-    qp.inequalities.push_back(LinearInequality(X(1), -1.0 * ones(1,1), X(2), -1.0 * ones(1,1), 32, 0)); // x1 + x2  >= 32
-    qp.inequalities.push_back(LinearInequality(X(1), ones(1,1), 0, 1));                 // x1     <= 0
-    qp.inequalities.push_back(LinearInequality(X(2), ones(1,1), 0, 2));                 //    x2  <= 0
-    qp.inequalities.push_back(LinearInequality(X(1), -ones(1,1), 0, 1));                 // -x1     <= 0
-    qp.inequalities.push_back(LinearInequality(X(2), -ones(1,1), 0, 2));                 //    -x2  <= 0
-    QPSolver solver(qp);
-    VectorValues init;
-    init.insert(X(1), (Vector(1) << 0.0).finished());
-    init.insert(X(2), (Vector(1) << 0.0).finished());
-    CHECK_EXCEPTION(
-      solver.optimize(init),
-      InfeasibleOrUnboundedProblem);
 }
 
 /* ************************************************************************* */

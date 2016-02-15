@@ -1,5 +1,7 @@
 #pragma once
 
+#include "QPSolver.h"
+
 namespace gtsam {
 /**
  * Abstract class to solve for an initial value of an LP problem
@@ -13,6 +15,7 @@ public:
   LPInitSolver(const LPSolver& lpSolver) :
       lp_(lpSolver.lp()), lpSolver_(lpSolver) {
   }
+
   virtual ~LPInitSolver() {
   }
   ;
