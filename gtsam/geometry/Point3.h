@@ -21,6 +21,7 @@
 
 #pragma once
 
+#include <gtsam/config.h>
 #include <gtsam/base/VectorSpace.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/dllexport.h>
@@ -28,7 +29,6 @@
 
 namespace gtsam {
 
-#define GTSAM_USE_VECTOR3_POINTS
 #ifdef GTSAM_USE_VECTOR3_POINTS
 
   /// As of GTSAM 4, in order to make GTSAM more lean,

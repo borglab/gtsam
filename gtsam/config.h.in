@@ -62,3 +62,6 @@
 
 // Make sure dependent projects that want it can see deprecated functions
 #cmakedefine GTSAM_ALLOW_DEPRECATED_SINCE_V4
+
+// Publish flag about Eigen typedef
+#cmakedefine GTSAM_USE_VECTOR3_POINTS
