@@ -34,6 +34,18 @@ inline void on_temporary_creation(int) {
 
 // test Ref.h
 
+// Deal with i387 extended precision
+#if EIGEN_ARCH_i386 && !(EIGEN_ARCH_x86_64)
+
+#if EIGEN_COMP_GNUC_STRICT && EIGEN_GNUC_AT_LEAST(4,4)
+#pragma GCC optimize ("-ffloat-store")
+#else
+#undef VERIFY_IS_EQUAL
+#define VERIFY_IS_EQUAL(X,Y) VERIFY_IS_APPROX(X,Y)
+#endif
+
+#endif
+
 template<typename MatrixType> void ref_matrix(const MatrixType& m)
 {
   typedef typename MatrixType::Index Index;
@@ -70,7 +82,6 @@ template<typename MatrixType> void ref_matrix(const MatrixType& m)
   m2.block(i,j,brows,bcols).setRandom();
   rm2 = m2.block(i,j,brows,bcols);
   VERIFY_IS_EQUAL(m1, m2);
-  
   
   ConstRefDynMat rm3 = m1.block(i,j,brows,bcols);
   m1.block(i,j,brows,bcols) *= 2;

@@ -83,10 +83,17 @@ public:
   template<typename Derived>
   inline explicit AngleAxis(const MatrixBase<Derived>& m) { *this = m; }
 
+  /** \returns the value of the rotation angle in radian */
   Scalar angle() const { return m_angle; }
+  /** \returns a read-write reference to the stored angle in radian */
   Scalar& angle() { return m_angle; }
 
+  /** \returns the rotation axis */
   const Vector3& axis() const { return m_axis; }
+  /** \returns a read-write reference to the stored rotation axis.
+    *
+    * \warning The rotation axis must remain a \b unit vector.
+    */
   Vector3& axis() { return m_axis; }
 
   /** Concatenates two rotations */

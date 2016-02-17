@@ -21,7 +21,7 @@ i.e either row major or column major. The default is column major. Most arithmet
 <td> Resize/Reserve</td>
 <td> 
  \code
-    sm1.resize(m,n);      //Change sm1 to a m x n matrix. 
+    sm1.resize(m,n);      // Change sm1 to a m x n matrix.
     sm1.reserve(nnz);     // Allocate room for nnz nonzeros elements.   
   \endcode 
 </td>
@@ -151,10 +151,10 @@ It is easy to perform arithmetic operations on sparse matrices provided that the
 <td> Permutation </td>
 <td> 
 \code 
-perm.indices(); // Reference to the vector of indices
+perm.indices();      // Reference to the vector of indices
 sm1.twistedBy(perm); // Permute rows and columns
-sm2 = sm1 * perm; //Permute the columns
-sm2 = perm * sm1; // Permute the columns
+sm2 = sm1 * perm;    // Permute the columns
+sm2 = perm * sm1;    // Permute the columns
 \endcode 
 </td>
 <td> 
@@ -181,9 +181,9 @@ sm2 = perm * sm1; // Permute the columns
 
 \section sparseotherops Other supported operations
 <table class="manual">
-<tr><th>Operations</th> <th> Code </th> <th> Notes</th> </tr>
+<tr><th style="min-width:initial"> Code </th> <th> Notes</th> </tr>
+<tr><td colspan="2">Sub-matrices</td></tr>
 <tr>
-<td>Sub-matrices</td> 
 <td> 
 \code 
   sm1.block(startRow, startCol, rows, cols); 
@@ -193,25 +193,31 @@ sm2 = perm * sm1; // Permute the columns
   sm1.bottomLeftCorner( rows, cols);
   sm1.bottomRightCorner( rows, cols);
   \endcode
-</td> <td>  </td>
+</td><td>
+Contrary to dense matrices, here <strong>all these methods are read-only</strong>.\n
+See \ref TutorialSparse_SubMatrices and below for read-write sub-matrices.
+</td>
 </tr>
-<tr> 
-<td> Range </td>
+<tr class="alt"><td colspan="2"> Range </td></tr>
+<tr class="alt">
 <td> 
 \code 
-  sm1.innerVector(outer); 
-  sm1.innerVectors(start, size);
-  sm1.leftCols(size);
-  sm2.rightCols(size);
-  sm1.middleRows(start, numRows);
-  sm1.middleCols(start, numCols);
-  sm1.col(j);
+  sm1.innerVector(outer);           // RW
+  sm1.innerVectors(start, size);    // RW
+  sm1.leftCols(size);               // RW
+  sm2.rightCols(size);              // RO because sm2 is row-major
+  sm1.middleRows(start, numRows);   // RO becasue sm1 is column-major
+  sm1.middleCols(start, numCols);   // RW
+  sm1.col(j);                       // RW
 \endcode
 </td>
-<td>A inner vector is either a row (for row-major) or a column (for column-major). As stated earlier, the evaluation can be done in a matrix with different storage order </td>
+<td>
+A inner vector is either a row (for row-major) or a column (for column-major).\n
+As stated earlier, for a read-write sub-matrix (RW), the evaluation can be done in a matrix with different storage order.
+</td>
 </tr>
+<tr><td colspan="2"> Triangular and selfadjoint views</td></tr>
 <tr>
-<td> Triangular and selfadjoint views</td>
 <td> 
 \code
   sm2 = sm1.triangularview<Lower>();
@@ -222,26 +228,30 @@ sm2 = perm * sm1; // Permute the columns
 \code 
   \endcode </td>
 </tr>
-<tr> 
-<td>Triangular solve </td>
+<tr class="alt"><td colspan="2">Triangular solve </td></tr>
+<tr class="alt">
 <td> 
 \code 
  dv2 = sm1.triangularView<Upper>().solve(dv1);
- dv2 = sm1.topLeftCorner(size, size).triangularView<Lower>().solve(dv1);
+ dv2 = sm1.topLeftCorner(size, size)
+          .triangularView<Lower>().solve(dv1);
 \endcode 
 </td>
 <td> For general sparse solve, Use any suitable module described at \ref TopicSparseSystems </td>
 </tr>
+<tr><td colspan="2"> Low-level API</td></tr>
 <tr>
-<td> Low-level API</td>
 <td>
 \code
-sm1.valuePtr(); // Pointer to the values
-sm1.innerIndextr(); // Pointer to the indices.
-sm1.outerIndexPtr(); //Pointer to the beginning of each inner vector
+sm1.valuePtr();      // Pointer to the values
+sm1.innerIndextr();  // Pointer to the indices.
+sm1.outerIndexPtr(); // Pointer to the beginning of each inner vector
 \endcode
 </td>
-<td> If the matrix is not in compressed form, makeCompressed() should be called before. Note that these functions are mostly provided for interoperability purposes with external libraries. A better access to the values of the matrix is done by using the InnerIterator class as described in \link TutorialSparse the Tutorial Sparse \endlink section</td>
+<td>
+If the matrix is not in compressed form, makeCompressed() should be called before.\n
+Note that these functions are mostly provided for interoperability purposes with external libraries.\n
+A better access to the values of the matrix is done by using the InnerIterator class as described in \link TutorialSparse the Tutorial Sparse \endlink section</td>
 </tr>
 </table>
 */
