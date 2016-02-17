@@ -40,7 +40,7 @@ static inline void check_DenseIndex_is_signed() {
   */
 template<typename Derived> class DenseBase
 #ifndef EIGEN_PARSED_BY_DOXYGEN
-  : public internal::special_scalar_op_base<Derived,typename internal::traits<Derived>::Scalar,
+  : public internal::special_scalar_op_base<Derived, typename internal::traits<Derived>::Scalar,
                                             typename NumTraits<typename internal::traits<Derived>::Scalar>::Real,
                                             DenseCoeffsBase<Derived> >
 #else
