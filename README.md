@@ -38,6 +38,13 @@ Optional prerequisites - used automatically if findable by CMake:
 - [Intel Threaded Building Blocks (TBB)](http://www.threadingbuildingblocks.org/) (Ubuntu: `sudo apt-get install libtbb-dev`)
 - [Intel Math Kernel Library (MKL)](http://software.intel.com/en-us/intel-mkl)
 
+GTSAM 4 Compatibility
+---------------------
+
+GTSAM 4 will introduce several new features, most notably Expressions and a python toolbox. We will also deprecate some legacy functionality and wrongly named methods, but by default the flag GTSAM_ALLOW_DEPRECATED_SINCE_V4 is enabled, allowing anyone to just pull V4 and compile. To build the python toolbox, however, you will have to explicitly disable that flag.
+
+Also, GTSAM 4 introduces traits, a C++ technique that allows optimizing with non-GTSAM types. That opens the door to retiring geometric types such as Point2 and Point3 to pure Eigen types, which we will also do.
+
 Additional Information
 ----------------------
 
