@@ -109,6 +109,15 @@ class GTSAM_EXPORT Point3 : public Vector3 {
     /// return as Vector3
     const Vector3& vector() const { return *this; }
 
+    /// get x
+    inline double x() const {return (*this)[0];}
+
+    /// get y
+    inline double y() const {return (*this)[1];}
+
+    /// get z
+    inline double z() const {return (*this)[2];}
+
     /// @}
 
     /// Output stream operator
