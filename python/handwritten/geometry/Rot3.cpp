@@ -39,9 +39,6 @@ static Rot3 Quaternion_1(double w, double x, double y, double z)
 // See: http://www.boost.org/doc/libs/1_59_0/libs/python/doc/tutorial/doc/html/python/functions.html
 gtsam::Rot3  (*AxisAngle_0)(const gtsam::Point3&, double) = &Rot3::AxisAngle;
 gtsam::Rot3  (*AxisAngle_1)(const gtsam::Unit3&, double) = &Rot3::AxisAngle;
-#ifndef GTSAM_USE_VECTOR3_POINTS
-gtsam::Rot3  (*AxisAngle_2)(const Vector3&, double) = &Rot3::AxisAngle;
-#endif
 gtsam::Rot3  (*Rodrigues_0)(const Vector3&) = &Rot3::Rodrigues;
 gtsam::Rot3  (*Rodrigues_1)(double, double, double) = &Rot3::Rodrigues;
 gtsam::Rot3  (*RzRyRx_0)(double, double, double) = &Rot3::RzRyRx;
@@ -70,12 +67,8 @@ void exportRot3(){
     .staticmethod("Logmap")
     .def("LogmapDerivative", &Rot3::LogmapDerivative)
     .staticmethod("LogmapDerivative")
-#ifdef GTSAM_USE_VECTOR3_POINTS
     .def("AxisAngle", AxisAngle_0)
     .def("AxisAngle", AxisAngle_1)
-#else
-    .def("AxisAngle", AxisAngle_2)
-#endif
     .def("Rodrigues", Rodrigues_0)
     .def("Rodrigues", Rodrigues_1)
     .staticmethod("Rodrigues")
