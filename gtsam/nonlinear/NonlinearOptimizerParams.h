@@ -154,16 +154,16 @@ public:
 
   void setOrdering(const Ordering& ordering) {
     this->ordering = ordering;
-	  this->orderingType = Ordering::CUSTOM;
+    this->orderingType = Ordering::CUSTOM;
   }
 
   std::string getOrderingType() const {
-	  return orderingTypeTranslator(orderingType);
+    return orderingTypeTranslator(orderingType);
   }
 
   // Note that if you want to use a custom ordering, you must set the ordering directly, this will switch to custom type
   void setOrderingType(const std::string& ordering){
-	  orderingType = orderingTypeTranslator(ordering);
+    orderingType = orderingTypeTranslator(ordering);
   }
 
 private:

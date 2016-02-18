@@ -21,15 +21,17 @@
 // \callgraph
 
 #pragma once
+#include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/config.h>      // Configuration from CMake
 
-#include <boost/math/special_functions/fpclassify.hpp>
 #include <Eigen/Core>
 #include <Eigen/Cholesky>
 #include <Eigen/LU>
 #include <boost/format.hpp>
+#include <boost/function.hpp>
 #include <boost/tuple/tuple.hpp>
+#include <boost/math/special_functions/fpclassify.hpp>
 
 
 /**
@@ -531,6 +533,75 @@ DLT(const Matrix& A, double rank_tol = 1e-9);
 GTSAM_EXPORT Matrix expm(const Matrix& A, size_t K=7);
 
 std::string formatMatrixIndented(const std::string& label, const Matrix& matrix, bool makeVectorHorizontal = false);
+
+/**
+ * Functor that implements multiplication of a vector b with the inverse of a
+ * matrix A. The derivatives are inspired by Mike Giles' "An extended collection
+ * of matrix derivative results for forward and reverse mode algorithmic
+ * differentiation", at https://people.maths.ox.ac.uk/gilesm/files/NA-08-01.pdf
+ */
+template <int N>
+struct MultiplyWithInverse {
+  typedef Eigen::Matrix<double, N, 1> VectorN;
+  typedef Eigen::Matrix<double, N, N> MatrixN;
+
+  /// A.inverse() * b, with optional derivatives
+  VectorN operator()(const MatrixN& A, const VectorN& b,
+                     OptionalJacobian<N, N* N> H1 = boost::none,
+                     OptionalJacobian<N, N> H2 = boost::none) const {
+    const MatrixN invA = A.inverse();
+    const VectorN c = invA * b;
+    // The derivative in A is just -[c[0]*invA c[1]*invA ... c[N-1]*invA]
+    if (H1)
+      for (size_t j = 0; j < N; j++)
+        H1->template middleCols<N>(N * j) = -c[j] * invA;
+    // The derivative in b is easy, as invA*b is just a linear map:
+    if (H2) *H2 = invA;
+    return c;
+  }
+};
+
+/**
+ * Functor that implements multiplication with the inverse of a matrix, itself
+ * the result of a function f. It turn out we only need the derivatives of the
+ * operator phi(a): b -> f(a) * b
+ */
+template <typename T, int N>
+struct MultiplyWithInverseFunction {
+  enum { M = traits<T>::dimension };
+  typedef Eigen::Matrix<double, N, 1> VectorN;
+  typedef Eigen::Matrix<double, N, N> MatrixN;
+
+  // The function phi should calculate f(a)*b, with derivatives in a and b.
+  // Naturally, the derivative in b is f(a).
+  typedef boost::function<VectorN(
+      const T&, const VectorN&, OptionalJacobian<N, M>, OptionalJacobian<N, N>)>
+      Operator;
+
+  /// Construct with function as explained above
+  MultiplyWithInverseFunction(const Operator& phi) : phi_(phi) {}
+
+  /// f(a).inverse() * b, with optional derivatives
+  VectorN operator()(const T& a, const VectorN& b,
+                     OptionalJacobian<N, M> H1 = boost::none,
+                     OptionalJacobian<N, N> H2 = boost::none) const {
+    MatrixN A;
+    phi_(a, b, boost::none, A);  // get A = f(a) by calling f once
+    const MatrixN invA = A.inverse();
+    const VectorN c = invA * b;
+
+    if (H1) {
+      Eigen::Matrix<double, N, M> H;
+      phi_(a, c, H, boost::none);  // get derivative H of forward mapping
+      *H1 = -invA* H;
+    }
+    if (H2) *H2 = invA;
+    return c;
+  }
+
+ private:
+  const Operator phi_;
+};
 
 } // namespace gtsam
 

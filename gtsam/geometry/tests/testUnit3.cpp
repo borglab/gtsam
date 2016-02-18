@@ -377,7 +377,7 @@ TEST(Unit3, retract_expmap) {
 TEST(Unit3, Random) {
   boost::mt19937 rng(42);
   // Check that means are all zero at least
-  Point3 expectedMean, actualMean;
+  Point3 expectedMean(0,0,0), actualMean(0,0,0);
   for (size_t i = 0; i < 100; i++)
     actualMean = actualMean + Unit3::Random(rng).point3();
   actualMean = actualMean / 100;

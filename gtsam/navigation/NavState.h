@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -49,7 +49,7 @@ public:
 
   /// Default constructor
   NavState() :
-      v_(Vector3::Zero()) {
+      t_(0,0,0), v_(Vector3::Zero()) {
   }
   /// Construct from attitude, position, velocity
   NavState(const Rot3& R, const Point3& t, const Velocity3& v) :
@@ -75,18 +75,9 @@ public:
   /// @name Component Access
   /// @{
 
-  inline const Rot3& attitude() const {
-    return R_;
-  }
-  inline const Point3& position() const {
-    return t_;
-  }
-  inline const Velocity3& velocity() const {
-    return v_;
-  }
-  const Rot3& attitude(OptionalJacobian<3, 9> H) const;
-  const Point3& position(OptionalJacobian<3, 9> H) const;
-  const Velocity3& velocity(OptionalJacobian<3, 9> H) const;
+  const Rot3& attitude(OptionalJacobian<3, 9> H = boost::none) const;
+  const Point3& position(OptionalJacobian<3, 9> H = boost::none) const;
+  const Velocity3& velocity(OptionalJacobian<3, 9> H = boost::none) const;
 
   const Pose3 pose() const {
     return Pose3(attitude(), position());
@@ -106,7 +97,7 @@ public:
   }
   /// Return position as Vector3
   Vector3 t() const {
-    return t_.vector();
+    return t_;
   }
   /// Return velocity as Vector3. Computation-free.
   const Vector3& v() const {
@@ -123,6 +114,9 @@ public:
   /// @}
   /// @name Testable
   /// @{
+
+  /// Output stream operator
+  GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os, const NavState&  state);
 
   /// print
   void print(const std::string& s = "") const;
@@ -152,9 +146,6 @@ public:
 
   /// Act on position alone, n_t = nRb * b_t + n_t
   Point3 operator*(const Point3& b_t) const;
-
-  /// Act on velocity alone, n_v = nRb * b_v + n_v
-  Velocity3 operator*(const Velocity3& b_v) const;
 
   /// @}
   /// @name Manifold
@@ -228,6 +219,8 @@ public:
       const boost::optional<Vector3>& omegaCoriolis, bool use2ndOrderCoriolis =
           false, OptionalJacobian<9, 9> H1 = boost::none,
       OptionalJacobian<9, 9> H2 = boost::none) const;
+
+  /// @}
 
 private:
   /// @{

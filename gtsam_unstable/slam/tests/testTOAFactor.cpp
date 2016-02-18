@@ -44,7 +44,7 @@ static SharedNoiseModel model(noiseModel::Isotropic::Sigma(1, 0.5 * ms));
 
 static const double timeOfEvent = 25;
 static const Event exampleEvent(timeOfEvent, 1, 0, 0);
-static const Point3 microphoneAt0;
+static const Point3 microphoneAt0(0,0,0);
 
 //*****************************************************************************
 TEST( TOAFactor, NewWay ) {

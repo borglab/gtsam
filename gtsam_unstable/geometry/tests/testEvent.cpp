@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -34,7 +34,7 @@ static SharedNoiseModel model(noiseModel::Isotropic::Sigma(1,0.5*ms));
 
 static const double timeOfEvent = 25;
 static const Event exampleEvent(timeOfEvent, 1, 0, 0);
-static const Point3 microphoneAt0;
+static const Point3 microphoneAt0(0,0,0);
 
 //*****************************************************************************
 TEST( Event, Constructor ) {
@@ -45,13 +45,13 @@ TEST( Event, Constructor ) {
 //*****************************************************************************
 TEST( Event, Toa1 ) {
   Event event(0, 1, 0, 0);
-  double expected = 1 / Event::Speed;
+  double expected = 1. / 330;
   EXPECT_DOUBLES_EQUAL(expected, event.toa(microphoneAt0), 1e-9);
 }
 
 //*****************************************************************************
 TEST( Event, Toa2 ) {
-  double expectedTOA = timeOfEvent + 1 / Event::Speed;
+  double expectedTOA = timeOfEvent + 1. / 330;
   EXPECT_DOUBLES_EQUAL(expectedTOA, exampleEvent.toa(microphoneAt0), 1e-9);
 }
 
@@ -79,7 +79,7 @@ TEST( Event, Expression ) {
 
   Values values;
   values.insert(key, exampleEvent);
-  double expectedTOA = timeOfEvent + 1 / Event::Speed;
+  double expectedTOA = timeOfEvent + 1. / 330;
   EXPECT_DOUBLES_EQUAL(expectedTOA, expression.value(values), 1e-9);
 }
 

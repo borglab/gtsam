@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -82,13 +82,13 @@ Gaussian::shared_ptr Gaussian::SqrtInformation(const Matrix& R, bool smart) {
   size_t m = R.rows(), n = R.cols();
   if (m != n)
     throw invalid_argument("Gaussian::SqrtInformation: R not square");
-  boost::optional<Vector> diagonal = boost::none;
-  if (smart)
-    diagonal = checkIfDiagonal(R);
-  if (diagonal)
-    return Diagonal::Sigmas(diagonal->array().inverse(), true);
-  else
-    return shared_ptr(new Gaussian(R.rows(), R));
+  if (smart) {
+    boost::optional<Vector> diagonal = checkIfDiagonal(R);
+    if (diagonal)
+      return Diagonal::Sigmas(diagonal->array().inverse(), true);
+  }
+  // NOTE(frank): only reaches here if !smart && !diagonal
+  return shared_ptr(new Gaussian(R.rows(), R));
 }
 
 /* ************************************************************************* */
@@ -120,7 +120,10 @@ Gaussian::shared_ptr Gaussian::Covariance(const Matrix& covariance,
   if (variances)
     return Diagonal::Variances(*variances, true);
   else {
-    // TODO: can we do this more efficiently and still get an upper triangular nmatrix??
+    // NOTE: if cov = L'*L, then the square root information R can be found by
+    // QR, as L.inverse() = Q*R, with Q some rotation matrix. However, R has
+    // annoying sign flips with respect the simpler Information(inv(cov)),
+    // hence we choose the simpler path here:
     return Information(covariance.inverse(), false);
   }
 }

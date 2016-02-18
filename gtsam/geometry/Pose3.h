@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -52,8 +52,7 @@ public:
   /// @{
 
   /** Default constructor is origin */
-  Pose3() {
-  }
+ Pose3() : R_(traits<Rot3>::Identity()), t_(traits<Point3>::Identity()) {}
 
   /** Copy constructor */
   Pose3(const Pose3& pose) :
@@ -62,11 +61,6 @@ public:
 
   /** Construct from R,t */
   Pose3(const Rot3& R, const Point3& t) :
-      R_(R), t_(t) {
-  }
-
-  /** Construct from R,t, where t \in vector3 */
-  Pose3(const Rot3& R, const Vector3& t) :
       R_(R), t_(t) {
   }
 

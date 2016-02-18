@@ -327,7 +327,7 @@ Values computePoses(NonlinearFactorGraph& pose3graph,  Values& initialRot) {
   BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, initialRot){
     Key key = key_value.key;
     const Rot3& rot = initialRot.at<Rot3>(key);
-    Pose3 initializedPose = Pose3(rot, Point3());
+    Pose3 initializedPose = Pose3(rot, Point3(0,0,0));
     initialPose.insert(key, initializedPose);
   }
   // add prior

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -75,15 +75,21 @@ Matrix7 NavState::matrix() const {
 }
 
 //------------------------------------------------------------------------------
+ostream& operator<<(ostream& os, const NavState& state) {
+  os << "R:" << state.attitude();
+  os << "p:" << state.position() << endl;
+  os << "v:" << Point3(state.velocity()) << endl;
+  return os;
+}
+
+//------------------------------------------------------------------------------
 void NavState::print(const string& s) const {
-  attitude().print(s + ".R");
-  position().print(s + ".p");
-  gtsam::print((Vector) v_, s + ".v");
+  cout << s << *this << endl;
 }
 
 //------------------------------------------------------------------------------
 bool NavState::equals(const NavState& other, double tol) const {
-  return R_.equals(other.R_, tol) && t_.equals(other.t_, tol)
+  return R_.equals(other.R_, tol) && traits<Point3>::Equals(t_, other.t_, tol)
       && equal_with_abs_tol(v_, other.v_, tol);
 }
 
@@ -113,11 +119,6 @@ NavState::operator*(const PositionAndVelocity& b_tv) const {
 //------------------------------------------------------------------------------
 Point3 NavState::operator*(const Point3& b_t) const {
   return Point3(R_ * b_t + t_);
-}
-
-//------------------------------------------------------------------------------
-Velocity3 NavState::operator*(const Velocity3& b_v) const {
-  return Velocity3(R_ * b_v + v_);
 }
 
 //------------------------------------------------------------------------------
@@ -183,7 +184,7 @@ Vector9 NavState::Logmap(const NavState& nTb, OptionalJacobian<9, 9> H) {
     throw runtime_error("NavState::Logmap derivative not implemented yet");
 
   TIE(nRb, n_p, n_v, nTb);
-  Vector3 n_t = n_p.vector();
+  Vector3 n_t = n_p;
 
   // NOTE(frank): See Pose3::Logmap
   Vector9 xi;
@@ -294,7 +295,7 @@ Vector9 NavState::coriolis(double dt, const Vector3& omega, bool secondOrder,
   dP(xi) << ((-dt2) * omega_cross_vel); // NOTE(luca): we got rid of the 2 wrt INS paper
   dV(xi) << ((-2.0 * dt) * omega_cross_vel);
   if (secondOrder) {
-    const Vector3 omega_cross2_t = omega.cross(omega.cross(n_t.vector()));
+    const Vector3 omega_cross2_t = omega.cross(omega.cross(n_t));
     dP(xi) -= (0.5 * dt2) * omega_cross2_t;
     dV(xi) -= dt * omega_cross2_t;
   }

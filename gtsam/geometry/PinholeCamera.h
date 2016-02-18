@@ -32,6 +32,14 @@ namespace gtsam {
 template<typename Calibration>
 class GTSAM_EXPORT PinholeCamera: public PinholeBaseK<Calibration> {
 
+public:
+
+  /**
+   *  Some classes template on either PinholeCamera or StereoCamera,
+   *  and this typedef informs those classes what "project" returns.
+   */
+  typedef Point2 Measurement;
+
 private:
 
   typedef PinholeBaseK<Calibration> Base; ///< base class has 3D pose as private member
@@ -96,6 +104,20 @@ public:
   static PinholeCamera Lookat(const Point3& eye, const Point3& target,
       const Point3& upVector, const Calibration& K = Calibration()) {
     return PinholeCamera(Base::LookatPose(eye, target, upVector), K);
+  }
+
+  // Create PinholeCamera, with derivatives
+  static PinholeCamera Create(const Pose3& pose, const Calibration &K,
+      OptionalJacobian<dimension, 6> H1 = boost::none, //
+      OptionalJacobian<dimension, DimK> H2 = boost::none) {
+    typedef Eigen::Matrix<double, DimK, 6> MatrixK6;
+    if (H1)
+      *H1 << I_6x6, MatrixK6::Zero();
+    typedef Eigen::Matrix<double, 6, DimK> Matrix6K;
+    typedef Eigen::Matrix<double, DimK, DimK> MatrixK;
+    if (H2)
+      *H2 << Matrix6K::Zero(), MatrixK::Identity();
+    return PinholeCamera(pose,K);
   }
 
   /// @}

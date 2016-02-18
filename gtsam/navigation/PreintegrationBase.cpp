@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -20,6 +20,7 @@
  **/
 
 #include "PreintegrationBase.h"
+#include <gtsam/base/numericalDerivative.h>
 #include <boost/make_shared.hpp>
 
 using namespace std;
@@ -27,227 +28,252 @@ using namespace std;
 namespace gtsam {
 
 //------------------------------------------------------------------------------
-void PreintegrationBase::Params::print(const string& s) const {
-  PreintegratedRotation::Params::print(s);
-  cout << "accelerometerCovariance:\n[\n" << accelerometerCovariance << "\n]"
-      << endl;
-  cout << "integrationCovariance:\n[\n" << accelerometerCovariance << "\n]"
-      << endl;
-  if (omegaCoriolis && use2ndOrderCoriolis)
-    cout << "Using 2nd-order Coriolis" << endl;
-  if (body_P_sensor)
-    body_P_sensor->print("    ");
-  cout << "n_gravity = (" << n_gravity.transpose() << ")" << endl;
+PreintegrationBase::PreintegrationBase(const boost::shared_ptr<Params>& p,
+                                       const Bias& biasHat)
+    : p_(p), biasHat_(biasHat), deltaTij_(0.0) {
+  resetIntegration();
 }
 
 //------------------------------------------------------------------------------
 void PreintegrationBase::resetIntegration() {
   deltaTij_ = 0.0;
-  deltaXij_ = NavState();
-  delRdelBiasOmega_ = Z_3x3;
-  delPdelBiasAcc_ = Z_3x3;
-  delPdelBiasOmega_ = Z_3x3;
-  delVdelBiasAcc_ = Z_3x3;
-  delVdelBiasOmega_ = Z_3x3;
+  preintegrated_.setZero();
+  preintegrated_H_biasAcc_.setZero();
+  preintegrated_H_biasOmega_.setZero();
+}
+
+//------------------------------------------------------------------------------
+ostream& operator<<(ostream& os, const PreintegrationBase& pim) {
+  os << "    deltaTij " << pim.deltaTij_ << endl;
+  os << "    deltaRij " << Point3(pim.theta()) << endl;
+  os << "    deltaPij " << Point3(pim.deltaPij()) << endl;
+  os << "    deltaVij " << Point3(pim.deltaVij()) << endl;
+  os << "    gyrobias " << Point3(pim.biasHat_.gyroscope()) << endl;
+  os << "    acc_bias " << Point3(pim.biasHat_.accelerometer()) << endl;
+  return os;
 }
 
 //------------------------------------------------------------------------------
 void PreintegrationBase::print(const string& s) const {
-  cout << s << endl;
-  cout << "    deltaTij [" << deltaTij_ << "]" << endl;
-  cout << "    deltaRij.ypr = (" << deltaRij().ypr().transpose() << ")" << endl;
-  cout << "    deltaPij [ " << deltaPij().transpose() << " ]" << endl;
-  cout << "    deltaVij [ " << deltaVij().transpose() << " ]" << endl;
-  biasHat_.print("    biasHat");
+  cout << s << *this << endl;
 }
 
 //------------------------------------------------------------------------------
 bool PreintegrationBase::equals(const PreintegrationBase& other,
     double tol) const {
-  return fabs(deltaTij_ - other.deltaTij_) < tol
-      && deltaXij_.equals(other.deltaXij_, tol)
+  const bool params_match = p_->equals(*other.p_, tol);
+  return params_match && fabs(deltaTij_ - other.deltaTij_) < tol
       && biasHat_.equals(other.biasHat_, tol)
-      && equal_with_abs_tol(delRdelBiasOmega_, other.delRdelBiasOmega_, tol)
-      && equal_with_abs_tol(delPdelBiasAcc_, other.delPdelBiasAcc_, tol)
-      && equal_with_abs_tol(delPdelBiasOmega_, other.delPdelBiasOmega_, tol)
-      && equal_with_abs_tol(delVdelBiasAcc_, other.delVdelBiasAcc_, tol)
-      && equal_with_abs_tol(delVdelBiasOmega_, other.delVdelBiasOmega_, tol);
+      && equal_with_abs_tol(preintegrated_, other.preintegrated_, tol)
+      && equal_with_abs_tol(preintegrated_H_biasAcc_, other.preintegrated_H_biasAcc_, tol)
+      && equal_with_abs_tol(preintegrated_H_biasOmega_, other.preintegrated_H_biasOmega_, tol);
 }
 
 //------------------------------------------------------------------------------
-pair<Vector3, Vector3> PreintegrationBase::correctMeasurementsByBiasAndSensorPose(
-    const Vector3& j_measuredAcc, const Vector3& j_measuredOmega,
-    OptionalJacobian<3, 3> D_correctedAcc_measuredAcc,
-    OptionalJacobian<3, 3> D_correctedAcc_measuredOmega,
-    OptionalJacobian<3, 3> D_correctedOmega_measuredOmega) const {
-
-  // Correct for bias in the sensor frame
-  Vector3 j_correctedAcc = biasHat_.correctAccelerometer(j_measuredAcc);
-  Vector3 j_correctedOmega = biasHat_.correctGyroscope(j_measuredOmega);
+pair<Vector3, Vector3> PreintegrationBase::correctMeasurementsBySensorPose(
+    const Vector3& unbiasedAcc, const Vector3& unbiasedOmega,
+    OptionalJacobian<3, 3> D_correctedAcc_unbiasedAcc,
+    OptionalJacobian<3, 3> D_correctedAcc_unbiasedOmega,
+    OptionalJacobian<3, 3> D_correctedOmega_unbiasedOmega) const {
+  assert(p().body_P_sensor);
 
   // Compensate for sensor-body displacement if needed: we express the quantities
   // (originally in the IMU frame) into the body frame
   // Equations below assume the "body" frame is the CG
-  if (p().body_P_sensor) {
-    // Correct omega to rotation rate vector in the body frame
-    const Matrix3 bRs = p().body_P_sensor->rotation().matrix();
-    j_correctedOmega = bRs * j_correctedOmega;
 
-    // Correct acceleration
-    j_correctedAcc = bRs * j_correctedAcc;
+  // Get sensor to body rotation matrix
+  const Matrix3 bRs = p().body_P_sensor->rotation().matrix();
 
-    // Jacobians
-    if (D_correctedAcc_measuredAcc) *D_correctedAcc_measuredAcc = bRs;
-    if (D_correctedAcc_measuredOmega) *D_correctedAcc_measuredOmega = Matrix3::Zero();
-    if (D_correctedOmega_measuredOmega) *D_correctedOmega_measuredOmega = bRs;
+  // Convert angular velocity and acceleration from sensor to body frame
+  Vector3 correctedAcc = bRs * unbiasedAcc;
+  const Vector3 correctedOmega = bRs * unbiasedOmega;
 
-    // Centrifugal acceleration
-    const Vector3 b_arm = p().body_P_sensor->translation().vector();
-    if (!b_arm.isZero()) {
-      // Subtract out the the centripetal acceleration from the measured one
-      // to get linear acceleration vector in the body frame:
-      const Matrix3 body_Omega_body = skewSymmetric(j_correctedOmega);
-      const Vector3 b_velocity_bs = body_Omega_body * b_arm; // magnitude: omega * arm
-      j_correctedAcc -= body_Omega_body * b_velocity_bs;
-      // Update derivative: centrifugal causes the correlation between acc and omega!!!
-      if (D_correctedAcc_measuredOmega) {
-        double wdp = j_correctedOmega.dot(b_arm);
-        *D_correctedAcc_measuredOmega = -(diag(Vector3::Constant(wdp))
-            + j_correctedOmega * b_arm.transpose()) * bRs.matrix()
-            + 2 * b_arm * j_measuredOmega.transpose();
-      }
+  // Jacobians
+  if (D_correctedAcc_unbiasedAcc) *D_correctedAcc_unbiasedAcc = bRs;
+  if (D_correctedAcc_unbiasedOmega) *D_correctedAcc_unbiasedOmega = Z_3x3;
+  if (D_correctedOmega_unbiasedOmega) *D_correctedOmega_unbiasedOmega = bRs;
+
+  // Centrifugal acceleration
+  const Vector3 b_arm = p().body_P_sensor->translation();
+  if (!b_arm.isZero()) {
+    // Subtract out the the centripetal acceleration from the unbiased one
+    // to get linear acceleration vector in the body frame:
+    const Matrix3 body_Omega_body = skewSymmetric(correctedOmega);
+    const Vector3 b_velocity_bs = body_Omega_body * b_arm; // magnitude: omega * arm
+    correctedAcc -= body_Omega_body * b_velocity_bs;
+
+    // Update derivative: centrifugal causes the correlation between acc and omega!!!
+    if (D_correctedAcc_unbiasedOmega) {
+      double wdp = correctedOmega.dot(b_arm);
+      *D_correctedAcc_unbiasedOmega = -(diag(Vector3::Constant(wdp))
+          + correctedOmega * b_arm.transpose()) * bRs.matrix()
+          + 2 * b_arm * unbiasedOmega.transpose();
     }
   }
 
-  // Do update in one fell swoop
-  return make_pair(j_correctedAcc, j_correctedOmega);
+  return make_pair(correctedAcc, correctedOmega);
 }
 
 //------------------------------------------------------------------------------
-NavState PreintegrationBase::updatedDeltaXij(const Vector3& j_measuredAcc,
-    const Vector3& j_measuredOmega, const double dt,
-    OptionalJacobian<9, 9> D_updated_current,
-    OptionalJacobian<9, 3> D_updated_measuredAcc,
-    OptionalJacobian<9, 3> D_updated_measuredOmega) const {
+// See extensive discussion in ImuFactor.lyx
+Vector9 PreintegrationBase::UpdatePreintegrated(
+    const Vector3& a_body, const Vector3& w_body, double dt,
+    const Vector9& preintegrated, OptionalJacobian<9, 9> A,
+    OptionalJacobian<9, 3> B, OptionalJacobian<9, 3> C) {
+  const auto theta = preintegrated.segment<3>(0);
+  const auto position = preintegrated.segment<3>(3);
+  const auto velocity = preintegrated.segment<3>(6);
 
-  Vector3 j_correctedAcc, j_correctedOmega;
-  Matrix3 D_correctedAcc_measuredAcc, //
-      D_correctedAcc_measuredOmega, //
-      D_correctedOmega_measuredOmega;
-  bool needDerivs = D_updated_measuredAcc && D_updated_measuredOmega && p().body_P_sensor;
-  boost::tie(j_correctedAcc, j_correctedOmega) =
-      correctMeasurementsByBiasAndSensorPose(j_measuredAcc, j_measuredOmega,
-          (needDerivs ? &D_correctedAcc_measuredAcc : 0),
-          (needDerivs ? &D_correctedAcc_measuredOmega : 0),
-          (needDerivs ? &D_correctedOmega_measuredOmega : 0));
-  // Do update in one fell swoop
-  Matrix93 D_updated_correctedAcc, D_updated_correctedOmega;
-  NavState updated = deltaXij_.update(j_correctedAcc, j_correctedOmega, dt, D_updated_current,
-              (needDerivs ? D_updated_correctedAcc : D_updated_measuredAcc),
-              (needDerivs ? D_updated_correctedOmega : D_updated_measuredOmega));
-  if (needDerivs) {
-    *D_updated_measuredAcc = D_updated_correctedAcc * D_correctedAcc_measuredAcc;
-    *D_updated_measuredOmega = D_updated_correctedOmega * D_correctedOmega_measuredOmega;
-    if (!p().body_P_sensor->translation().vector().isZero()) {
-      *D_updated_measuredOmega += D_updated_correctedAcc * D_correctedAcc_measuredOmega;
-    }
+  // This functor allows for saving computation when exponential map and its
+  // derivatives are needed at the same location in so<3>
+  so3::DexpFunctor local(theta);
+
+  // Calculate exact mean propagation
+  Matrix3 w_tangent_H_theta, invH;
+  const Vector3 w_tangent =  // angular velocity mapped back to tangent space
+      local.applyInvDexp(w_body, A ? &w_tangent_H_theta : 0, C ? &invH : 0);
+  const SO3 R = local.expmap();
+  const Vector3 a_nav = R * a_body;
+  const double dt22 = 0.5 * dt * dt;
+
+  Vector9 preintegratedPlus;
+  preintegratedPlus <<                        // new preintegrated vector:
+      theta + w_tangent* dt,                  // theta
+      position + velocity* dt + a_nav* dt22,  // position
+      velocity + a_nav* dt;                   // velocity
+
+  if (A) {
+    // Exact derivative of R*a with respect to theta:
+    const Matrix3 a_nav_H_theta = R * skewSymmetric(-a_body) * local.dexp();
+
+    A->setIdentity();
+    A->block<3, 3>(0, 0).noalias() += w_tangent_H_theta * dt;  // theta
+    A->block<3, 3>(3, 0) = a_nav_H_theta * dt22;  // position wrpt theta...
+    A->block<3, 3>(3, 6) = I_3x3 * dt;            // .. and velocity
+    A->block<3, 3>(6, 0) = a_nav_H_theta * dt;    // velocity wrpt theta
   }
-  return updated;
+  if (B) {
+    B->block<3, 3>(0, 0) = Z_3x3;
+    B->block<3, 3>(3, 0) = R * dt22;
+    B->block<3, 3>(6, 0) = R * dt;
+  }
+  if (C) {
+    C->block<3, 3>(0, 0) = invH * dt;
+    C->block<3, 3>(3, 0) = Z_3x3;
+    C->block<3, 3>(6, 0) = Z_3x3;
+  }
+
+  return preintegratedPlus;
 }
 
 //------------------------------------------------------------------------------
-void PreintegrationBase::update(const Vector3& j_measuredAcc,
-    const Vector3& j_measuredOmega, const double dt,
-    Matrix3* D_incrR_integratedOmega, Matrix9* D_updated_current,
-    Matrix93* D_updated_measuredAcc, Matrix93* D_updated_measuredOmega) {
+void PreintegrationBase::integrateMeasurement(const Vector3& measuredAcc,
+                                              const Vector3& measuredOmega,
+                                              double dt, Matrix9* A,
+                                              Matrix93* B, Matrix93* C) {
+  // Correct for bias in the sensor frame
+  Vector3 acc = biasHat_.correctAccelerometer(measuredAcc);
+  Vector3 omega = biasHat_.correctGyroscope(measuredOmega);
 
-  // Save current rotation for updating Jacobians
-  const Rot3 oldRij = deltaXij_.attitude();
+  // Possibly correct for sensor pose
+  Matrix3 D_correctedAcc_acc, D_correctedAcc_omega, D_correctedOmega_omega;
+  if (p().body_P_sensor)
+    boost::tie(acc, omega) = correctMeasurementsBySensorPose( acc, omega,
+        D_correctedAcc_acc, D_correctedAcc_omega, D_correctedOmega_omega);
 
-  // Do update
+    // Do update
   deltaTij_ += dt;
-  deltaXij_ = updatedDeltaXij(j_measuredAcc, j_measuredOmega, dt,
-      D_updated_current, D_updated_measuredAcc, D_updated_measuredOmega); // functional
+  preintegrated_ = UpdatePreintegrated(acc, omega, dt, preintegrated_, A, B, C);
 
-  // Update Jacobians
-  // TODO(frank): we are repeating some computation here: accessible in F ?
-  Vector3 j_correctedAcc, j_correctedOmega;
-  boost::tie(j_correctedAcc, j_correctedOmega) =
-      correctMeasurementsByBiasAndSensorPose(j_measuredAcc, j_measuredOmega);
+  if (p().body_P_sensor) {
+    // More complicated derivatives in case of non-trivial sensor pose
+    *C *= D_correctedOmega_omega;
+    if (!p().body_P_sensor->translation().isZero())
+      *C += *B* D_correctedAcc_omega;
+    *B *= D_correctedAcc_acc;  // NOTE(frank): needs to be last
+  }
 
-  Matrix3 D_acc_R;
-  oldRij.rotate(j_correctedAcc, D_acc_R);
-  const Matrix3 D_acc_biasOmega = D_acc_R * delRdelBiasOmega_;
+  // D_plus_abias = D_plus_preintegrated * D_preintegrated_abias + D_plus_a * D_a_abias
+  preintegrated_H_biasAcc_ = (*A) * preintegrated_H_biasAcc_ - (*B);
 
-  const Vector3 integratedOmega = j_correctedOmega * dt;
-  const Rot3 incrR = Rot3::Expmap(integratedOmega, D_incrR_integratedOmega); // expensive !!
-  const Matrix3 incrRt = incrR.transpose();
-  delRdelBiasOmega_ = incrRt * delRdelBiasOmega_
-      - *D_incrR_integratedOmega * dt;
-
-  double dt22 = 0.5 * dt * dt;
-  const Matrix3 dRij = oldRij.matrix(); // expensive
-  delPdelBiasAcc_ += delVdelBiasAcc_ * dt - dt22 * dRij;
-  delPdelBiasOmega_ += dt * delVdelBiasOmega_ + dt22 * D_acc_biasOmega;
-  delVdelBiasAcc_ += -dRij * dt;
-  delVdelBiasOmega_ += D_acc_biasOmega * dt;
+  // D_plus_wbias = D_plus_preintegrated * D_preintegrated_wbias + D_plus_w * D_w_wbias
+  preintegrated_H_biasOmega_ = (*A) * preintegrated_H_biasOmega_ - (*C);
 }
 
+void PreintegrationBase::integrateMeasurement(const Vector3& measuredAcc,
+                                              const Vector3& measuredOmega,
+                                              double dt) {
+  // NOTE(frank): integrateMeasuremtn always needs to compute the derivatives,
+  // even when not of interest to the caller. Provide scratch space here.
+  Matrix9 A;
+  Matrix93 B, C;
+  integrateMeasurement(measuredAcc, measuredOmega, dt, &A, &B, &C);
+}
 //------------------------------------------------------------------------------
 Vector9 PreintegrationBase::biasCorrectedDelta(
     const imuBias::ConstantBias& bias_i, OptionalJacobian<9, 6> H) const {
-  // Correct deltaRij, derivative is delRdelBiasOmega_
+  // We correct for a change between bias_i and the biasHat_ used to integrate
+  // This is a simple linear correction with obvious derivatives
   const imuBias::ConstantBias biasIncr = bias_i - biasHat_;
-  Matrix3 D_correctedRij_bias;
-  const Vector3 biasInducedOmega = delRdelBiasOmega_ * biasIncr.gyroscope();
-  const Rot3 correctedRij = deltaRij().expmap(biasInducedOmega, boost::none,
-      H ? &D_correctedRij_bias : 0);
-  if (H)
-    D_correctedRij_bias *= delRdelBiasOmega_;
-
-  Vector9 xi;
-  Matrix3 D_dR_correctedRij;
-  // TODO(frank): could line below be simplified? It is equivalent to
-  //   LogMap(deltaRij_.compose(Expmap(biasInducedOmega)))
-  NavState::dR(xi) = Rot3::Logmap(correctedRij, H ? &D_dR_correctedRij : 0);
-  NavState::dP(xi) = deltaPij() + delPdelBiasAcc_ * biasIncr.accelerometer()
-      + delPdelBiasOmega_ * biasIncr.gyroscope();
-  NavState::dV(xi) = deltaVij() + delVdelBiasAcc_ * biasIncr.accelerometer()
-      + delVdelBiasOmega_ * biasIncr.gyroscope();
+  const Vector9 biasCorrected =
+      preintegrated() + preintegrated_H_biasAcc_ * biasIncr.accelerometer() +
+      preintegrated_H_biasOmega_ * biasIncr.gyroscope();
 
   if (H) {
-    Matrix36 D_dR_bias, D_dP_bias, D_dV_bias;
-    D_dR_bias << Z_3x3, D_dR_correctedRij * D_correctedRij_bias;
-    D_dP_bias << delPdelBiasAcc_, delPdelBiasOmega_;
-    D_dV_bias << delVdelBiasAcc_, delVdelBiasOmega_;
-    (*H) << D_dR_bias, D_dP_bias, D_dV_bias;
+    (*H) << preintegrated_H_biasAcc_, preintegrated_H_biasOmega_;
   }
-  return xi;
+  return biasCorrected;
 }
 
 //------------------------------------------------------------------------------
 NavState PreintegrationBase::predict(const NavState& state_i,
-    const imuBias::ConstantBias& bias_i, OptionalJacobian<9, 9> H1,
-    OptionalJacobian<9, 6> H2) const {
-  // correct for bias
+                                     const imuBias::ConstantBias& bias_i,
+                                     OptionalJacobian<9, 9> H1,
+                                     OptionalJacobian<9, 6> H2) const {
+  // TODO(frank): make sure this stuff is still correct
   Matrix96 D_biasCorrected_bias;
-  Vector9 biasCorrected = biasCorrectedDelta(bias_i,
-      H2 ? &D_biasCorrected_bias : 0);
+  Vector9 biasCorrected =
+      biasCorrectedDelta(bias_i, H2 ? &D_biasCorrected_bias : 0);
 
-  // integrate on tangent space
+  // Correct for initial velocity and gravity
   Matrix9 D_delta_state, D_delta_biasCorrected;
   Vector9 xi = state_i.correctPIM(biasCorrected, deltaTij_, p().n_gravity,
-      p().omegaCoriolis, p().use2ndOrderCoriolis, H1 ? &D_delta_state : 0,
-      H2 ? &D_delta_biasCorrected : 0);
+                                  p().omegaCoriolis, p().use2ndOrderCoriolis,
+                                  H1 ? &D_delta_state : 0,
+                                  H2 ? &D_delta_biasCorrected : 0);
 
   // Use retract to get back to NavState manifold
   Matrix9 D_predict_state, D_predict_delta;
   NavState state_j = state_i.retract(xi, D_predict_state, D_predict_delta);
-  if (H1)
-    *H1 = D_predict_state + D_predict_delta * D_delta_state;
-  if (H2)
-    *H2 = D_predict_delta * D_delta_biasCorrected * D_biasCorrected_bias;
+  if (H1) *H1 = D_predict_state + D_predict_delta* D_delta_state;
+  if (H2) *H2 = D_predict_delta* D_delta_biasCorrected* D_biasCorrected_bias;
   return state_j;
+}
+
+//------------------------------------------------------------------------------
+Vector9 PreintegrationBase::computeError(const NavState& state_i,
+                                         const NavState& state_j,
+                                         const imuBias::ConstantBias& bias_i,
+                                         OptionalJacobian<9, 9> H1,
+                                         OptionalJacobian<9, 9> H2,
+                                         OptionalJacobian<9, 6> H3) const {
+  // Predict state at time j
+  Matrix9 D_predict_state_i;
+  Matrix96 D_predict_bias_i;
+  NavState predictedState_j = predict(
+      state_i, bias_i, H1 ? &D_predict_state_i : 0, H3 ? &D_predict_bias_i : 0);
+
+  // Calculate error
+  Matrix9 D_error_state_j, D_error_predict;
+  Vector9 error =
+      state_j.localCoordinates(predictedState_j, H2 ? &D_error_state_j : 0,
+                               H1 || H3 ? &D_error_predict : 0);
+
+  if (H1) *H1 << D_error_predict* D_predict_state_i;
+  if (H2) *H2 << D_error_state_j;
+  if (H3) *H3 << D_error_predict* D_predict_bias_i;
+
+  return error;
 }
 
 //------------------------------------------------------------------------------
@@ -262,43 +288,120 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i,
   NavState state_i(pose_i, vel_i);
   NavState state_j(pose_j, vel_j);
 
-  /// Predict state at time j
-  Matrix99 D_predict_state_i;
-  Matrix96 D_predict_bias_i;
-  NavState predictedState_j = predict(state_i, bias_i,
-      H1 || H2 ? &D_predict_state_i : 0, H5 ? &D_predict_bias_i : 0);
-
-  Matrix9 D_error_state_j, D_error_predict;
-  Vector9 error = state_j.localCoordinates(predictedState_j,
-      H3 || H4 ? &D_error_state_j : 0, H1 || H2 || H5 ? &D_error_predict : 0);
+  // Predict state at time j
+  Matrix9 D_error_state_i, D_error_state_j;
+  Vector9 error = computeError(state_i, state_j, bias_i,
+                         H1 || H2 ? &D_error_state_i : 0, H3 || H4 ? &D_error_state_j : 0, H5);
 
   // Separate out derivatives in terms of 5 arguments
   // Note that doing so requires special treatment of velocities, as when treated as
   // separate variables the retract applied will not be the semi-direct product in NavState
   // Instead, the velocities in nav are updated using a straight addition
   // This is difference is accounted for by the R().transpose calls below
-  if (H1)
-    *H1 << D_error_predict * D_predict_state_i.leftCols<6>();
-  if (H2)
-    *H2
-        << D_error_predict * D_predict_state_i.rightCols<3>()
-            * state_i.R().transpose();
-  if (H3)
-    *H3 << D_error_state_j.leftCols<6>();
-  if (H4)
-    *H4 << D_error_state_j.rightCols<3>() * state_j.R().transpose();
-  if (H5)
-    *H5 << D_error_predict * D_predict_bias_i;
+  if (H1) *H1 << D_error_state_i.leftCols<6>();
+  if (H2) *H2 << D_error_state_i.rightCols<3>() * state_i.R().transpose();
+  if (H3) *H3 << D_error_state_j.leftCols<6>();
+  if (H4) *H4 << D_error_state_j.rightCols<3>() * state_j.R().transpose();
 
   return error;
 }
 
 //------------------------------------------------------------------------------
+// sugar for derivative blocks
+#define D_R_R(H) (H)->block<3,3>(0,0)
+#define D_R_t(H) (H)->block<3,3>(0,3)
+#define D_R_v(H) (H)->block<3,3>(0,6)
+#define D_t_R(H) (H)->block<3,3>(3,0)
+#define D_t_t(H) (H)->block<3,3>(3,3)
+#define D_t_v(H) (H)->block<3,3>(3,6)
+#define D_v_R(H) (H)->block<3,3>(6,0)
+#define D_v_t(H) (H)->block<3,3>(6,3)
+#define D_v_v(H) (H)->block<3,3>(6,6)
+
+//------------------------------------------------------------------------------
+Vector9 PreintegrationBase::Compose(const Vector9& zeta01,
+                                    const Vector9& zeta12, double deltaT12,
+                                    OptionalJacobian<9, 9> H1,
+                                    OptionalJacobian<9, 9> H2) {
+  const auto t01 = zeta01.segment<3>(0);
+  const auto p01 = zeta01.segment<3>(3);
+  const auto v01 = zeta01.segment<3>(6);
+
+  const auto t12 = zeta12.segment<3>(0);
+  const auto p12 = zeta12.segment<3>(3);
+  const auto v12 = zeta12.segment<3>(6);
+
+  Matrix3 R01_H_t01, R12_H_t12;
+  const Rot3 R01 = Rot3::Expmap(t01, R01_H_t01);
+  const Rot3 R12 = Rot3::Expmap(t12, R12_H_t12);
+
+  Matrix3 R02_H_R01, R02_H_R12; // NOTE(frank): R02_H_R12 == Identity
+  const Rot3 R02 = R01.compose(R12, R02_H_R01, R02_H_R12);
+
+  Matrix3 t02_H_R02;
+  Vector9 zeta02;
+  const Matrix3 R = R01.matrix();
+  zeta02 << Rot3::Logmap(R02, t02_H_R02),  // theta
+      p01 + v01 * deltaT12 + R * p12,      // position
+      v01 + R * v12;                       // velocity
+
+  if (H1) {
+    H1->setIdentity();
+    D_R_R(H1) = t02_H_R02 * R02_H_R01 * R01_H_t01;
+    D_t_R(H1) = R * skewSymmetric(-p12) * R01_H_t01;
+    D_t_v(H1) = I_3x3 * deltaT12;
+    D_v_R(H1) = R * skewSymmetric(-v12) * R01_H_t01;
+  }
+
+  if (H2) {
+    H2->setZero();
+    D_R_R(H2) = t02_H_R02 * R02_H_R12 * R12_H_t12;
+    D_t_t(H2) = R;
+    D_v_v(H2) = R;
+  }
+
+  return zeta02;
+}
+
+//------------------------------------------------------------------------------
+void PreintegrationBase::mergeWith(const PreintegrationBase& pim12, Matrix9* H1,
+                                   Matrix9* H2) {
+  if (!matchesParamsWith(pim12))
+    throw std::domain_error(
+        "Cannot merge pre-integrated measurements with different params");
+
+  if (params()->body_P_sensor)
+    throw std::domain_error(
+        "Cannot merge pre-integrated measurements with sensor pose yet");
+
+  const double& t01 = deltaTij();
+  const double& t12 = pim12.deltaTij();
+  deltaTij_ = t01 + t12;
+
+  Vector9 zeta01 = preintegrated();
+  Vector9 zeta12 = pim12.preintegrated();
+
+  // TODO(frank): adjust zeta12 due to bias difference
+  const imuBias::ConstantBias bias_incr_for_12 = biasHat() - pim12.biasHat();
+  zeta12 += pim12.preintegrated_H_biasOmega_ * bias_incr_for_12.gyroscope()
+      + pim12.preintegrated_H_biasAcc_ * bias_incr_for_12.accelerometer();
+
+  preintegrated_ << PreintegrationBase::Compose(zeta01, zeta12, t12, H1, H2);
+
+  preintegrated_H_biasAcc_ =
+      (*H1) * preintegrated_H_biasAcc_ + (*H2) * pim12.preintegrated_H_biasAcc_;
+
+  preintegrated_H_biasOmega_ = (*H1) * preintegrated_H_biasOmega_ +
+                               (*H2) * pim12.preintegrated_H_biasOmega_;
+}
+
+//------------------------------------------------------------------------------
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 PoseVelocityBias PreintegrationBase::predict(const Pose3& pose_i,
     const Vector3& vel_i, const imuBias::ConstantBias& bias_i,
     const Vector3& n_gravity, const Vector3& omegaCoriolis,
-    const bool use2ndOrderCoriolis) {
-  // NOTE(frank): parameters are supposed to be constant, below is only provided for compatibility
+    const bool use2ndOrderCoriolis) const {
+// NOTE(frank): parameters are supposed to be constant, below is only provided for compatibility
   boost::shared_ptr<Params> q = boost::make_shared<Params>(p());
   q->n_gravity = n_gravity;
   q->omegaCoriolis = omegaCoriolis;
@@ -306,7 +409,7 @@ PoseVelocityBias PreintegrationBase::predict(const Pose3& pose_i,
   p_ = q;
   return PoseVelocityBias(predict(NavState(pose_i, vel_i), bias_i), bias_i);
 }
-
+#endif
 //------------------------------------------------------------------------------
 
-}/// namespace gtsam
+}  // namespace gtsam

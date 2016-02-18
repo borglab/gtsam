@@ -139,7 +139,7 @@ TEST(ExpressionFactor, Unary) {
 typedef Eigen::Matrix<double,9,3> Matrix93;
 Vector9 wide(const Point3& p, OptionalJacobian<9,3> H) {
   Vector9 v;
-  v << p.vector(), p.vector(), p.vector();
+  v << p, p, p;
   if (H) *H << eye(3), eye(3), eye(3);
   return v;
 }
@@ -186,25 +186,8 @@ TEST(ExpressionFactor, Binary) {
   values.insert(1, Cal3_S2());
   values.insert(2, Point2(0, 0));
 
-  // traceRaw will fill raw with [Trace<Point2> | Binary::Record]
-  EXPECT_LONGS_EQUAL(8, sizeof(double));
-  EXPECT_LONGS_EQUAL(16, sizeof(Point2));
-  EXPECT_LONGS_EQUAL(40, sizeof(Cal3_S2));
-  EXPECT_LONGS_EQUAL(16, sizeof(internal::ExecutionTrace<Point2>));
-  EXPECT_LONGS_EQUAL(16, sizeof(internal::ExecutionTrace<Cal3_S2>));
-  EXPECT_LONGS_EQUAL(2*5*8, sizeof(internal::Jacobian<Point2,Cal3_S2>::type));
-  EXPECT_LONGS_EQUAL(2*2*8, sizeof(internal::Jacobian<Point2,Point2>::type));
-  size_t expectedRecordSize = sizeof(Cal3_S2)
-      + sizeof(internal::ExecutionTrace<Cal3_S2>)
-      + +sizeof(internal::Jacobian<Point2, Cal3_S2>::type) + sizeof(Point2)
-      + sizeof(internal::ExecutionTrace<Point2>)
-      + sizeof(internal::Jacobian<Point2, Point2>::type);
-  EXPECT_LONGS_EQUAL(expectedRecordSize + 8, sizeof(Binary::Record));
-
   // Check size
   size_t size = binary.traceSize();
-  CHECK(size);
-  EXPECT_LONGS_EQUAL(expectedRecordSize + 8, size);
   // Use Variable Length Array, allocated on stack by gcc
   // Note unclear for Clang: http://clang.llvm.org/compatibility.html#vla
   internal::ExecutionTraceStorage traceStorage[size];
@@ -261,18 +244,7 @@ TEST(ExpressionFactor, Shallow) {
   // traceExecution of shallow tree
   typedef internal::UnaryExpression<Point2, Point3> Unary;
   typedef internal::BinaryExpression<Point3, Pose3, Point3> Binary;
-  size_t expectedTraceSize = sizeof(Unary::Record) + sizeof(Binary::Record);
-  EXPECT_LONGS_EQUAL(96, sizeof(Unary::Record));
-#ifdef GTSAM_USE_QUATERNIONS
-  EXPECT_LONGS_EQUAL(352, sizeof(Binary::Record));
-  LONGS_EQUAL(96+352, expectedTraceSize);
-#else
-  EXPECT_LONGS_EQUAL(384, sizeof(Binary::Record));
-  LONGS_EQUAL(96+384, expectedTraceSize);
-#endif
   size_t size = expression.traceSize();
-  CHECK(size);
-  EXPECT_LONGS_EQUAL(expectedTraceSize, size);
   internal::ExecutionTraceStorage traceStorage[size];
   internal::ExecutionTrace<Point2> trace;
   Point2 value = expression.traceExecution(values, trace, traceStorage);
@@ -345,7 +317,6 @@ TEST(ExpressionFactor, tree) {
 }
 
 /* ************************************************************************* */
-
 TEST(ExpressionFactor, Compose1) {
 
   // Create expression
@@ -598,6 +569,66 @@ TEST(Expression, testMultipleCompositions2) {
   Expression<double> sum4_(combine3, sum1_, sum2_, sum3_);
   EXPECT(sum4_.keys() == list_of(1)(2)(3));
   EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum4_, values, fd_step, tolerance);
+}
+
+/* ************************************************************************* */
+// Test multiplication with the inverse of a matrix
+TEST(ExpressionFactor, MultiplyWithInverse) {
+  auto model = noiseModel::Isotropic::Sigma(3, 1);
+
+  // Create expression
+  Vector3_ f_expr(MultiplyWithInverse<3>(), Expression<Matrix3>(0), Vector3_(1));
+
+  // Check derivatives
+  Values values;
+  Matrix3 A = Vector3(1, 2, 3).asDiagonal();
+  A(0, 1) = 0.1;
+  A(0, 2) = 0.1;
+  const Vector3 b(0.1, 0.2, 0.3);
+  values.insert<Matrix3>(0, A);
+  values.insert<Vector3>(1, b);
+  ExpressionFactor<Vector3> factor(model, Vector3::Zero(), f_expr);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-5, 1e-5);
+}
+
+/* ************************************************************************* */
+// Test multiplication with the inverse of a matrix function
+namespace test_operator {
+Vector3 f(const Point2& a, const Vector3& b, OptionalJacobian<3, 2> H1,
+          OptionalJacobian<3, 3> H2) {
+  Matrix3 A = Vector3(1, 2, 3).asDiagonal();
+  A(0, 1) = a.x();
+  A(0, 2) = a.y();
+  A(1, 0) = a.x();
+  if (H1) *H1 << b.y(), b.z(), b.x(), 0, 0, 0;
+  if (H2) *H2 = A;
+  return A * b;
+};
+}
+
+TEST(ExpressionFactor, MultiplyWithInverseFunction) {
+  auto model = noiseModel::Isotropic::Sigma(3, 1);
+
+  using test_operator::f;
+  Vector3_ f_expr(MultiplyWithInverseFunction<Point2, 3>(f),
+                  Expression<Point2>(0), Vector3_(1));
+
+  // Check derivatives
+  Point2 a(1, 2);
+  const Vector3 b(0.1, 0.2, 0.3);
+  Matrix32 H1;
+  Matrix3 A;
+  const Vector Ab = f(a, b, H1, A);
+  CHECK(assert_equal(A * b, Ab));
+  CHECK(assert_equal(numericalDerivative11<Vector3, Point2>(
+                         boost::bind(f, _1, b, boost::none, boost::none), a),
+                     H1));
+
+  Values values;
+  values.insert<Point2>(0, a);
+  values.insert<Vector3>(1, b);
+  ExpressionFactor<Vector3> factor(model, Vector3::Zero(), f_expr);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-5, 1e-5);
 }
 
 /* ************************************************************************* */

@@ -189,7 +189,7 @@ void print(const Matrix& A, const string &s, ostream& stream) {
       0, // flags
       " ", // coeffSeparator
       ";\n", // rowSeparator
-	  " \t",  // rowPrefix
+      " \t",  // rowPrefix
       "", // rowSuffix
       "[\n", // matPrefix
       "\n  ]" // matSuffix
@@ -704,11 +704,9 @@ void inplace_QR(Matrix& A){
   HCoeffsType hCoeffs(size);
   RowVectorType temp(cols);
 
-#ifdef GTSAM_USE_SYSTEM_EIGEN
-  // System-Eigen is used, and MKL is off
+#if !EIGEN_VERSION_AT_LEAST(3,2,5)
   Eigen::internal::householder_qr_inplace_blocked<Matrix, HCoeffsType>(A, hCoeffs, 48, temp.data());
 #else
-  // Patched Eigen is used, and MKL is either on or off
   Eigen::internal::householder_qr_inplace_blocked<Matrix, HCoeffsType>::run(A, hCoeffs, 48, temp.data());
 #endif
 

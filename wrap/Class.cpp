@@ -28,6 +28,7 @@
 #include <vector> 
 #include <iostream> 
 #include <fstream> 
+#include <sstream>
 #include <iterator>     // std::ostream_iterator
 //#include <cstdint> // on Linux GCC: fails with error regarding needing C++0x std flags 
 //#include <cinttypes> // same failure as above 
@@ -315,6 +316,25 @@ vector<Class> Class::expandTemplate(Str templateArg,
 }
 
 /* ************************************************************************* */
+vector<Class> Class::expandTemplate(Str templateArg,
+    const vector<int>& integers) const {
+  vector<Class> result;
+  BOOST_FOREACH(int i, integers) {
+    Qualified expandedClass = (Qualified) (*this);
+    stringstream ss; ss << i;
+    string instName = ss.str();
+    expandedClass.expand(instName);
+    const TemplateSubstitution ts(templateArg, instName, expandedClass);
+    Class inst = expandTemplate(ts);
+    inst.name_ = expandedClass.name();
+    inst.templateArgs.clear();
+    inst.typedefName = qualifiedName("::") + "<" + instName + ">";
+    result.push_back(inst);
+  }
+  return result;
+}
+
+/* ************************************************************************* */
 void Class::addMethod(bool verbose, bool is_const, Str methodName,
     const ArgumentList& argumentList, const ReturnValue& returnValue,
     const Template& tmplate) {
@@ -547,7 +567,7 @@ void Class::deserialization_fragments(FileWriter& proxyFile,
   //  string serialized = unwrap< string >(in[0]);
   //  istringstream in_archive_stream(serialized);
   //  boost::archive::text_iarchive in_archive(in_archive_stream);
-  //  Shared output(new Point3());
+  //  Shared output(new Point3(0,0,0));
   //  in_archive >> *output;
   //  out[0] = wrap_shared_ptr(output,"Point3", false);
   //}

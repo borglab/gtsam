@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -295,19 +295,18 @@ private:
 };
 
 /**
- *  Three term approximation of the Baker�Campbell�Hausdorff formula
+ *  Three term approximation of the Baker-Campbell-Hausdorff formula
  *  In non-commutative Lie groups, when composing exp(Z) = exp(X)exp(Y)
  *  it is not true that Z = X+Y. Instead, Z can be calculated using the BCH
  *  formula: Z = X + Y + [X,Y]/2 + [X-Y,[X,Y]]/12 - [Y,[X,[X,Y]]]/24
- *  http://en.wikipedia.org/wiki/Baker�Campbell�Hausdorff_formula
+ *  http://en.wikipedia.org/wiki/Baker-Campbell-Hausdorff_formula
  */
 /// AGC: bracket() only appears in Rot3 tests, should this be used elsewhere?
 template<class T>
 T BCH(const T& X, const T& Y) {
   static const double _2 = 1. / 2., _12 = 1. / 12., _24 = 1. / 24.;
   T X_Y = bracket(X, Y);
-  return X + Y + _2 * X_Y + _12 * bracket(X - Y, X_Y) - _24 * bracket(Y,
-      bracket(X, X_Y));
+  return T(X + Y + _2 * X_Y + _12 * bracket(X - Y, X_Y) - _24 * bracket(Y, bracket(X, X_Y)));
 }
 
 /**

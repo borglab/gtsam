@@ -436,7 +436,7 @@ TriangulationResult triangulateSafe(const std::vector<CAMERA>& cameras,
       BOOST_FOREACH(const CAMERA& camera, cameras) {
         const Pose3& pose = camera.pose();
         if (params.landmarkDistanceThreshold > 0
-            && pose.translation().distance(point)
+            && distance(pose.translation(), point)
                 > params.landmarkDistanceThreshold)
           return TriangulationResult::Degenerate();
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION

@@ -49,8 +49,12 @@ SfM_data preamble(int argc, char* argv[]) {
 
   // Load BAL file
   SfM_data db;
-  string defaultFilename = findExampleDataFile("dubrovnik-16-22106-pre");
-  bool success = readBAL(argc > 1 ? argv[argc - 1] : defaultFilename, db);
+  string filename;
+  if (argc > 1)
+    filename = argv[argc - 1];
+  else
+    filename = findExampleDataFile("dubrovnik-16-22106-pre");
+  bool success = readBAL(argv[argc - 1], db);
   if (!success) throw runtime_error("Could not access file!");
   return db;
 }

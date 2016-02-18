@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -71,7 +71,9 @@ protected:
   ///< (first-order propagation from *measurementCovariance*).
 
   /// Default constructor for serialization
-  PreintegratedImuMeasurements() {}
+  PreintegratedImuMeasurements() {
+    preintMeasCov_.setZero();
+  }
 
 public:
 
@@ -80,10 +82,20 @@ public:
    *  @param bias Current estimate of acceleration and rotation rate biases
    *  @param p    Parameters, typically fixed in a single application
    */
-  PreintegratedImuMeasurements(const boost::shared_ptr<Params>& p,
-      const imuBias::ConstantBias& biasHat) :
+  PreintegratedImuMeasurements(const boost::shared_ptr<PreintegrationParams>& p,
+      const imuBias::ConstantBias& biasHat = imuBias::ConstantBias()) :
       PreintegrationBase(p, biasHat) {
     preintMeasCov_.setZero();
+  }
+
+/**
+  *  Construct preintegrated directly from members: base class and preintMeasCov
+  *  @param base               PreintegrationBase instance
+  *  @param preintMeasCov      Covariance matrix used in noise model.
+  */
+  PreintegratedImuMeasurements(const PreintegrationBase& base, const Matrix9& preintMeasCov)
+     : PreintegrationBase(base),
+       preintMeasCov_(preintMeasCov) {
   }
 
   /// print
@@ -108,6 +120,7 @@ public:
   /// Return pre-integrated measurement covariance
   Matrix preintMeasCov() const { return preintMeasCov_; }
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
   /// @deprecated constructor
   /// NOTE(frank): assumes Z-Down convention, only second order integration supported
   PreintegratedImuMeasurements(const imuBias::ConstantBias& biasHat,
@@ -121,6 +134,7 @@ public:
   void integrateMeasurement(const Vector3& measuredAcc,
       const Vector3& measuredOmega, double dt,
       boost::optional<Pose3> body_P_sensor);
+#endif
 
 private:
 
@@ -187,14 +201,13 @@ public:
   /// @return a deep copy of this factor
   virtual gtsam::NonlinearFactor::shared_ptr clone() const;
 
-  /** implement functions needed for Testable */
-
-  /// print
+  /// @name Testable
+  /// @{
+  GTSAM_EXPORT friend std::ostream& operator<<(std::ostream& os, const ImuFactor&);
   virtual void print(const std::string& s, const KeyFormatter& keyFormatter =
       DefaultKeyFormatter) const;
-
-  /// equals
   virtual bool equals(const NonlinearFactor& expected, double tol = 1e-9) const;
+  /// @}
 
   /** Access the preintegrated measurements. */
 
@@ -212,10 +225,19 @@ public:
       boost::optional<Matrix&> H3 = boost::none, boost::optional<Matrix&> H4 =
           boost::none, boost::optional<Matrix&> H5 = boost::none) const;
 
+  /// Merge two pre-integrated measurement classes
+  static PreintegratedImuMeasurements Merge(
+      const PreintegratedImuMeasurements& pim01,
+      const PreintegratedImuMeasurements& pim12);
+
+  /// Merge two factors
+  static shared_ptr Merge(const shared_ptr& f01, const shared_ptr& f12);
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
   /// @deprecated typename
   typedef PreintegratedImuMeasurements PreintegratedMeasurements;
 
-  /// @deprecated constructor, in the new one gravity, coriolis settings are in Params
+  /// @deprecated constructor, in the new one gravity, coriolis settings are in PreintegrationParams
   ImuFactor(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
       const PreintegratedMeasurements& preintegratedMeasurements,
       const Vector3& n_gravity, const Vector3& omegaCoriolis,
@@ -223,11 +245,12 @@ public:
       const bool use2ndOrderCoriolis = false);
 
   /// @deprecated use PreintegrationBase::predict,
-  /// in the new one gravity, coriolis settings are in Params
+  /// in the new one gravity, coriolis settings are in PreintegrationParams
   static void Predict(const Pose3& pose_i, const Vector3& vel_i, Pose3& pose_j,
       Vector3& vel_j, const imuBias::ConstantBias& bias_i,
       PreintegratedMeasurements& pim, const Vector3& n_gravity,
       const Vector3& omegaCoriolis, const bool use2ndOrderCoriolis = false);
+#endif
 
 private:
 
@@ -242,7 +265,10 @@ private:
 };
 // class ImuFactor
 
-/// traits
-template<> struct traits<ImuFactor> : public Testable<ImuFactor> {};
+template <>
+struct traits<PreintegratedImuMeasurements> : public Testable<PreintegratedImuMeasurements> {};
+
+template <>
+struct traits<ImuFactor> : public Testable<ImuFactor> {};
 
 } /// namespace gtsam
