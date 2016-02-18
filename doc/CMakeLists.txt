@@ -28,6 +28,7 @@ if (GTSAM_BUILD_DOCS)
         gtsam/discrete 
         gtsam/linear 
         gtsam/nonlinear 
+        gtsam/sam 
         gtsam/slam 
         gtsam
     )
