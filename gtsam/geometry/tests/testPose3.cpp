@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -62,7 +62,7 @@ TEST( Pose3, retract_first_order)
   Pose3 id;
   Vector v = zero(6);
   v(0) = 0.3;
-  EXPECT(assert_equal(Pose3(R, Point3()), id.retract(v),1e-2));
+  EXPECT(assert_equal(Pose3(R, Point3(0,0,0)), id.retract(v),1e-2));
   v(3)=0.2;v(4)=0.7;v(5)=-2;
   EXPECT(assert_equal(Pose3(R, P),id.retract(v),1e-2));
 }
@@ -72,7 +72,7 @@ TEST( Pose3, retract_expmap)
 {
   Vector v = zero(6); v(0) = 0.3;
   Pose3 pose = Pose3::Expmap(v);
-  EXPECT(assert_equal(Pose3(R, Point3()), pose, 1e-2));
+  EXPECT(assert_equal(Pose3(R, Point3(0,0,0)), pose, 1e-2));
   EXPECT(assert_equal(v,Pose3::Logmap(pose),1e-2));
 }
 
@@ -82,7 +82,7 @@ TEST( Pose3, expmap_a_full)
   Pose3 id;
   Vector v = zero(6);
   v(0) = 0.3;
-  EXPECT(assert_equal(expmap_default<Pose3>(id, v), Pose3(R, Point3())));
+  EXPECT(assert_equal(expmap_default<Pose3>(id, v), Pose3(R, Point3(0,0,0))));
   v(3)=0.2;v(4)=0.394742;v(5)=-2.08998;
   EXPECT(assert_equal(Pose3(R, P),expmap_default<Pose3>(id, v),1e-5));
 }
@@ -93,7 +93,7 @@ TEST( Pose3, expmap_a_full2)
   Pose3 id;
   Vector v = zero(6);
   v(0) = 0.3;
-  EXPECT(assert_equal(expmap_default<Pose3>(id, v), Pose3(R, Point3())));
+  EXPECT(assert_equal(expmap_default<Pose3>(id, v), Pose3(R, Point3(0,0,0))));
   v(3)=0.2;v(4)=0.394742;v(5)=-2.08998;
   EXPECT(assert_equal(Pose3(R, P),expmap_default<Pose3>(id, v),1e-5));
 }
@@ -306,7 +306,7 @@ TEST( Pose3, Dtransform_from1_b)
 
 TEST( Pose3, Dtransform_from1_c)
 {
-  Point3 origin;
+  Point3 origin(0,0,0);
   Pose3 T0(R,origin);
   Matrix actualDtransform_from1;
   T0.transform_from(P, actualDtransform_from1, boost::none);
@@ -388,7 +388,7 @@ TEST( Pose3, transform_to_translate)
 /* ************************************************************************* */
 TEST( Pose3, transform_to_rotate)
 {
-    Pose3 transform(Rot3::Rodrigues(0,0,-1.570796), Point3());
+    Pose3 transform(Rot3::Rodrigues(0,0,-1.570796), Point3(0,0,0));
     Point3 actual = transform.transform_to(Point3(2,1,10));
     Point3 expected(-1,2,10);
     EXPECT(assert_equal(expected, actual, 0.001));
@@ -406,7 +406,7 @@ TEST( Pose3, transform_to)
 /* ************************************************************************* */
 TEST( Pose3, transform_from)
 {
-    Point3 actual = T3.transform_from(Point3());
+    Point3 actual = T3.transform_from(Point3(0,0,0));
     Point3 expected = Point3(1.,2.,3.);
     EXPECT(assert_equal(expected, actual));
 }

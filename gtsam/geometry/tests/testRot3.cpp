@@ -542,8 +542,8 @@ TEST(Rot3, quaternion) {
   Point3 expected1 = R1*p1;
   Point3 expected2 = R2*p2;
 
-  Point3 actual1 = Point3(q1*p1.vector());
-  Point3 actual2 = Point3(q2*p2.vector());
+  Point3 actual1 = Point3(q1*p1);
+  Point3 actual2 = Point3(q2*p2);
 
   EXPECT(assert_equal(expected1, actual1));
   EXPECT(assert_equal(expected2, actual2));

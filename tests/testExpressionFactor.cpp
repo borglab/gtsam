@@ -139,7 +139,7 @@ TEST(ExpressionFactor, Unary) {
 typedef Eigen::Matrix<double,9,3> Matrix93;
 Vector9 wide(const Point3& p, OptionalJacobian<9,3> H) {
   Vector9 v;
-  v << p.vector(), p.vector(), p.vector();
+  v << p, p, p;
   if (H) *H << eye(3), eye(3), eye(3);
   return v;
 }

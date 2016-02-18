@@ -35,6 +35,7 @@
 #include <boost/random/variate_generator.hpp>
 #include <iostream>
 #include <limits>
+#include <cmath>
 
 using namespace std;
 
@@ -44,9 +45,8 @@ namespace gtsam {
 Unit3 Unit3::FromPoint3(const Point3& point, OptionalJacobian<2,3> H) {
   // 3*3 Derivative of representation with respect to point is 3*3:
   Matrix3 D_p_point;
-  Point3 normalized = point.normalize(H ? &D_p_point : 0);
   Unit3 direction;
-  direction.p_ = normalized.vector();
+  direction.p_ = normalize(point, H ? &D_p_point : 0);
   if (H)
     *H << direction.basis().transpose() * D_p_point;
   return direction;
@@ -89,31 +89,27 @@ const Matrix32& Unit3::basis(OptionalJacobian<6, 2> H) const {
   const Point3 n(p_);
 
   // Get the axis of rotation with the minimum projected length of the point
-  Point3 axis;
+  Point3 axis(0, 0, 1);
   double mx = fabs(n.x()), my = fabs(n.y()), mz = fabs(n.z());
   if ((mx <= my) && (mx <= mz)) {
     axis = Point3(1.0, 0.0, 0.0);
   } else if ((my <= mx) && (my <= mz)) {
     axis = Point3(0.0, 1.0, 0.0);
-  } else if ((mz <= mx) && (mz <= my)) {
-    axis = Point3(0.0, 0.0, 1.0);
-  } else {
-    assert(false);
   }
 
   // Choose the direction of the first basis vector b1 in the tangent plane by crossing n with
   // the chosen axis.
   Matrix33 H_B1_n;
-  Point3 B1 = n.cross(axis, H ? &H_B1_n : 0);
+  Point3 B1 = gtsam::cross(n, axis, H ? &H_B1_n : 0);
 
   // Normalize result to get a unit vector: b1 = B1 / |B1|.
   Matrix33 H_b1_B1;
-  Point3 b1 = B1.normalize(H ? &H_b1_B1 : 0);
+  Point3 b1 = normalize(B1, H ? &H_b1_B1 : 0);
 
   // Get the second basis vector b2, which is orthogonal to n and b1, by crossing them.
   // No need to normalize this, p and b1 are orthogonal unit vectors.
   Matrix33 H_b2_n, H_b2_b1;
-  Point3 b2 = n.cross(b1, H ? &H_b2_n : 0, H ? &H_b2_b1 : 0);
+  Point3 b2 = gtsam::cross(n, b1, H ? &H_b2_n : 0, H ? &H_b2_b1 : 0);
 
   // Create the basis by stacking b1 and b2.
   B_.reset(Matrix32());
@@ -175,7 +171,7 @@ double Unit3::dot(const Unit3& q, OptionalJacobian<1,2> H_p, OptionalJacobian<1,
 
   // Compute the dot product of the Point3s.
   Matrix13 H_dot_pn, H_dot_qn;
-  double d = pn.dot(qn, H_p ? &H_dot_pn : 0, H_q ? &H_dot_qn : 0);
+  double d = gtsam::dot(pn, qn, H_p ? &H_dot_pn : 0, H_q ? &H_dot_qn : 0);
 
   if (H_p) {
     (*H_p) << H_dot_pn * H_pn_p;
@@ -208,7 +204,7 @@ Vector2 Unit3::errorVector(const Unit3& q, OptionalJacobian<2, 2> H_p, OptionalJ
   // 2D error here is projecting q into the tangent plane of this (p).
   Matrix62 H_B_p;
   Matrix23 Bt = basis(H_p ? &H_B_p : 0).transpose();
-  Vector2 xi = Bt * qn.vector();
+  Vector2 xi = Bt * qn;
 
   if (H_p) {
     // Derivatives of each basis vector.
@@ -216,8 +212,8 @@ Vector2 Unit3::errorVector(const Unit3& q, OptionalJacobian<2, 2> H_p, OptionalJ
     const Matrix32& H_b2_p = H_B_p.block<3, 2>(3, 0);
 
     // Derivatives of the two entries of xi wrt the basis vectors.
-    Matrix13 H_xi1_b1 = qn.vector().transpose();
-    Matrix13 H_xi2_b2 = qn.vector().transpose();
+    Matrix13 H_xi1_b1 = qn.transpose();
+    Matrix13 H_xi2_b2 = qn.transpose();
 
     // Assemble dxi/dp = dxi/dB * dB/dp.
     Matrix12 H_xi1_p = H_xi1_b1 * H_b1_p;
@@ -252,11 +248,10 @@ Unit3 Unit3::retract(const Vector2& v) const {
 
   // Treat case of very small v differently
   if (theta < std::numeric_limits<double>::epsilon()) {
-    return Unit3(cos(theta) * p_ + xi_hat);
+    return Unit3(Vector3(std::cos(theta) * p_ + xi_hat));
   }
 
-  Vector3 exp_p_xi_hat =
-      cos(theta) * p_ + xi_hat * (sin(theta) / theta);
+  Vector3 exp_p_xi_hat = std::cos(theta) * p_ + xi_hat * (sin(theta) / theta);
   return Unit3(exp_p_xi_hat);
 }
 

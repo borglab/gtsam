@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -82,7 +82,7 @@ Unit3 Rot3::operator*(const Unit3& p) const {
 Point3 Rot3::unrotate(const Point3& p, OptionalJacobian<3,3> H1,
     OptionalJacobian<3,3> H2) const {
   const Matrix3& Rt = transpose();
-  Point3 q(Rt * p.vector()); // q = Rt*p
+  Point3 q(Rt * p); // q = Rt*p
   const double wx = q.x(), wy = q.y(), wz = q.z();
   if (H1)
     *H1 << 0.0, -wz, +wy, +wz, 0.0, -wx, -wy, +wx, 0.0;

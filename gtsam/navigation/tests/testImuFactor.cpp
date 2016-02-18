@@ -590,7 +590,7 @@ TEST(ImuFactor, PredictRotation) {
 
   // Predict
   NavState actual = pim.predict(NavState(), bias);
-  NavState expected(Rot3::Ypr(M_PI / 10, 0, 0), Point3(), Z_3x1);
+  NavState expected(Rot3::Ypr(M_PI / 10, 0, 0), Point3(0,0,0), Z_3x1);
   EXPECT(assert_equal(expected, actual));
 }
 
@@ -708,7 +708,7 @@ TEST(ImuFactor, bodyPSensorWithBias) {
 
   auto p = testing::Params();
   p->n_gravity = Vector3(0, 0, -kGravity);
-  p->body_P_sensor = Pose3(Rot3::Ypr(0, 0, M_PI), Point3());
+  p->body_P_sensor = Pose3(Rot3::Ypr(0, 0, M_PI), Point3(0,0,0));
   p->accelerometerCovariance = 1e-7 * I_3x3;
   p->gyroscopeCovariance = 1e-8 * I_3x3;
   p->integrationCovariance = 1e-9 * I_3x3;

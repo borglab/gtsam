@@ -140,7 +140,7 @@ TEST(ScenarioRunner, Loop) {
 /* ************************************************************************* */
 namespace initial {
 const Rot3 nRb;
-const Point3 P0;
+const Point3 P0(0,0,0);
 const Vector3 V0(0, 0, 0);
 }
 
@@ -259,7 +259,7 @@ namespace initial3 {
 // Rotation only
 // Set up body pointing towards y axis. The body itself has Z axis pointing down
 const Rot3 nRb(Point3(0, 1, 0), Point3(1, 0, 0), Point3(0, 0, -1));
-const Point3 P0;
+const Point3 P0(0,0,0);
 const Vector3 V0(0, 0, 0);
 }
 

@@ -39,7 +39,7 @@ OrientedPlane3 OrientedPlane3::transform(const Pose3& xr, OptionalJacobian<3, 3>
   Unit3 n_rotated = xr.rotation().unrotate(n_, D_rotated_plane, D_rotated_pose);
 
   Vector3 unit_vec = n_rotated.unitVector();
-  double pred_d = n_.unitVector().dot(xr.translation().vector()) + d_;
+  double pred_d = n_.unitVector().dot(xr.translation()) + d_;
 
   if (Hr) {
     *Hr = zeros(3, 6);
@@ -47,7 +47,7 @@ OrientedPlane3 OrientedPlane3::transform(const Pose3& xr, OptionalJacobian<3, 3>
     Hr->block<1, 3>(2, 3) = unit_vec;
   }
   if (Hp) {
-    Vector2 hpp = n_.basis().transpose() * xr.translation().vector();
+    Vector2 hpp = n_.basis().transpose() * xr.translation();
     *Hp = Z_3x3;
     Hp->block<2, 2>(0, 0) = D_rotated_pose;
     Hp->block<1, 2>(2, 0) = hpp;

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -147,6 +147,7 @@ typedef std::pair<size_t, size_t> SIFT_Index;
 
 /// Define the structure for the 3D points
 struct SfM_Track {
+  SfM_Track():p(0,0,0) {}
   Point3 p; ///< 3D position of the point
   float r, g, b; ///< RGB color of the 3D point
   std::vector<SfM_Measurement> measurements; ///< The 2D image projections (id,(u,v))

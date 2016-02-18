@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -84,9 +84,9 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
     } else if (const GenericValue<Point2>* p = dynamic_cast<const GenericValue<Point2>*>(&value)) {
       t << p->value().x(), p->value().y(), 0;
     } else if (const GenericValue<Pose3>* p = dynamic_cast<const GenericValue<Pose3>*>(&value)) {
-      t = p->value().translation().vector();
+      t = p->value().translation();
     } else if (const GenericValue<Point3>* p = dynamic_cast<const GenericValue<Point3>*>(&value)) {
-      t = p->value().vector();
+      t = p->value();
     } else {
       return boost::none;
     }

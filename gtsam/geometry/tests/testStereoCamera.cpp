@@ -46,7 +46,7 @@ TEST( StereoCamera, project)
   // point X Y Z in meters
   Point3 p(0, 0, 5);
   StereoPoint2 result = stereoCam.project(p);
-  CHECK(assert_equal(StereoPoint2(320,320-150,240),result));
+  CHECK(assert_equal(StereoPoint2(320, 320 - 150, 240), result));
 
   // point X Y Z in meters
   Point3 p2(1, 1, 5);
