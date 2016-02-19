@@ -125,15 +125,15 @@ TEST(testlcnlpSolver, poseOnALine) {
 
   //Instantiate LinearConstraintNLP
   LinearConstraintNLP lcnlp;
-  lcnlp.cost.add(PriorFactor<Pose3>(X(1), Pose3(Rot3::ypr(0.1, 0.2, 0.3), Point3(1, 0, 0)), noiseModel::Unit::Create(6)));
+  lcnlp.cost.add(PriorFactor<Pose3>(X(1), Pose3(Rot3::Ypr(0.1, 0.2, 0.3), Point3(1, 0, 0)), noiseModel::Unit::Create(6)));
   LineConstraintX constraint(X(1), dualKey);
   lcnlp.linearEqualities.add(constraint);
 
   Values initialValues;
-  initialValues.insert(X(1), Pose3(Rot3::ypr(0.3, 0.2, 0.3), Point3(1,0,0)));
+  initialValues.insert(X(1), Pose3(Rot3::Ypr(0.3, 0.2, 0.3), Point3(1,0,0)));
 
   Values expectedSolution;
-  expectedSolution.insert(X(1), Pose3(Rot3::ypr(0.1, 0.2, 0.3), Point3()));
+  expectedSolution.insert(X(1), Pose3(Rot3::Ypr(0.1, 0.2, 0.3), Point3()));
 
   // Instantiate LinearConstraintSQP
   LinearConstraintSQP lcnlpSolver(lcnlp);

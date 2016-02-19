@@ -146,7 +146,7 @@ TEST(PositionUpperBoundX, evaluateError ) {
   // Instantiate a class PositionUpperBoundX
   PositionUpperBoundX ineq(X(1), 45.6);
 
-  Pose3 pose(Rot3::ypr(0.1, 0.3, 0.2), Point3(43.0, 27.8, 91.1));
+  Pose3 pose(Rot3::Ypr(0.1, 0.3, 0.2), Point3(43.0, 27.8, 91.1));
   Matrix H;
   Vector error = ineq.evaluateError(pose, H);
 

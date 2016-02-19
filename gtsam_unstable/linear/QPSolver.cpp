@@ -22,7 +22,7 @@
 #include <gtsam_unstable/linear/LPSolver.h>
 #include <gtsam_unstable/linear/InfeasibleInitialValues.h>
 #include <boost/range/adaptor/map.hpp>
-#include "LPInitSolverMatlab.h"
+#include <gtsam_unstable/linear/LPInitSolverMatlab.h>
 
 using namespace std;
 
