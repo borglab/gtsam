@@ -19,6 +19,7 @@
 #pragma once
 
 #include <gtsam_unstable/linear/LinearInequality.h>
+#include <gtsam/inference/FactorGraph-inst.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/inference/FactorGraph.h>
 
@@ -38,8 +39,7 @@ public:
   }
 
   /** equals */
-  bool equals(const InequalityFactorGraph& other,
-      double tol = 1e-9) const {
+  bool equals(const InequalityFactorGraph& other, double tol = 1e-9) const {
     return Base::equals(other, tol);
   }
 
@@ -47,18 +47,18 @@ public:
    * Compute error of a guess.
    * Infinity error if it violates an inequality; zero otherwise. */
   double error(const VectorValues& x) const {
-    BOOST_FOREACH(const sharedFactor& factor, *this){
+    BOOST_FOREACH(const sharedFactor& factor, *this) {
       if(factor)
-        if (factor->error(x) > 0)
-          return std::numeric_limits<double>::infinity();
+      if (factor->error(x) > 0)
+      return std::numeric_limits<double>::infinity();
     }
     return 0.0;
   }
 };
 
 /// traits
-template<> struct traits<InequalityFactorGraph> : public Testable<
-    InequalityFactorGraph> {
+template<>
+struct traits<InequalityFactorGraph> : public Testable<InequalityFactorGraph> {
 };
 
 } // \ namespace gtsam
