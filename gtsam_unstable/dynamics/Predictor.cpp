@@ -22,30 +22,29 @@ Matrix31 Xdot(Matrix31 x, double c) {//, Matrix<2> u) {
   // For now, just some hard coded centroids
   // And for now, we will ignore the input u
   Matrix31 xdot;
+
   for(int i=0; i<3; i++) {
-    xdot[i] = exp(-((x-c)^2)/0.25);
+    xdot[i] = exp(pow(x[i]-c,2)/-0.25);
   }
   return xdot;
 }
 
-typedef std::function<Matrix<3>(Matrix31, double)> RBF;
+typedef std::function<Matrix31(Matrix31, double)> RBF;
 
-struct Predictor {
-  Predictor(Matrix31 x,double dt) {
-    RBF rbf;
+
+  Predictor::Predictor(Matrix31 x,double dt) {
+    x_ = x;
+    RBF rbf(Xdot);
     for (int i=0;i<5;i++) {
       dt_rbf_.col(i) = dt * rbf(x,i*0.5);
     }
   }
-  Matrix3 operator()(Matrix51 theta, OptionalJacobian<3,5> H) {
+  Matrix31 Predictor::operator()(Matrix51 theta, OptionalJacobian<3,5> H) {
     // calculate f(x,y) as sum of RBF:
     // i.e., \sum w_i rbf(x,u)
     if (H) *H = dt_rbf_;
-    return x + dt_rbf_*theta; // nxm * mx1
-}
-private:
-  //std:vector<RBF> rbf;
-  Matrix<3,5> dt_rbf_;
-};
+    return x_ + dt_rbf_*theta; // nxm * mx1
+  }
+
 
 }

@@ -14,10 +14,12 @@ namespace gtsam {
 
 struct Predictor {
   Predictor(Matrix31 x,double dt);
-  Matrix3 operator()(Matrix51 theta, OptionalJacobian<3,5> H);
+  Matrix31 operator()(Matrix51 theta, OptionalJacobian<3,5> H);
 private:
   //std:vector<RBF> rbf;
-  Matrix<3,5> dt_rbf_;
+  Matrix35 dt_rbf_;
+  Matrix31 x_;
+
 };
 
 } // \namespace gtsam
