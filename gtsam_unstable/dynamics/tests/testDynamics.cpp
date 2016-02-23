@@ -10,6 +10,7 @@
 #include <gtsam/nonlinear/Expression.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/ExpressionFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam_unstable/dynamics/Predictor.h>
@@ -31,25 +32,41 @@ using namespace gtsam;
 TEST( testDynamics, example ) {
 
   NonlinearFactorGraph graph;
-//  noiseModel::Diagonal::shared_ptr R = noiseModel::Diagonal::Sigmas(Vector3(0.3, 0.3, 0.3, 0.3, 0.3));
-//
-//  Expression<Matrix<5>> theta_expr(50);
-////  R = dynamics noise model;
-//  Matrix<3> X;
-////  for (pair<X,U> xu : xu_pairs) {
-//  X[0] = 0;
-//  X[1] = 0;
-//  X[2] = 0;
-//
-//  Predictor predict(X, 0.1);
-//  Expression<X> predict_expr(predict, theta_expr);
-//  graph.addExpressionFactor(predict_expr, next_x, R);
+  Vector5 sigmas;
+  sigmas << 0.3,0.3,0.3,0.3,0.3;
+  noiseModel::Diagonal::shared_ptr R = noiseModel::Diagonal::Sigmas(sigmas);
+
+  Values vals;
+  Matrix31 Theta;
+  Theta << 0.1,0.1,0.1;
+
+  vals.insert(50, Theta);
+  Expression<Matrix51> theta_expr(50);
+  Matrix31 X, X2;
+  X << 0,0,0;
+  X2 << 0.2,0.2,0.2;
+
+  Predictor predict(X, 0.1);
+  Expression<Matrix31> predict_expr(predict, theta_expr);
+  graph.addExpressionFactor(R, X2, predict_expr);
+  graph.print("Factor Graph:\n");
+  LevenbergMarquardtOptimizer optimizer(graph, vals);
+  Values result = optimizer.optimize();
+  result.print("Final Result:\n");
 }
 
 TEST( testDynamics, testPredict ) {
   Matrix31 X;
   X << 0,0,0;
   Predictor predict(X, 0.1);
+  Matrix51 Theta;
+  Theta << 0.1,0.1,0.1,0.1,0.1;
+  Matrix31 X2;
+  Matrix35 J;
+  X2 = predict(Theta, J);
+  std::cout << "X1\n" << X << std::endl;
+  std::cout << "X2\n" << X2 << std::endl;
+
 }
 
 /* ************************************************************************* */
