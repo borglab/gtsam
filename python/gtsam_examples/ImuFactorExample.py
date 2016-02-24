@@ -18,6 +18,8 @@ BIAS_KEY = int(gtsam.Symbol('b', 0))
 V = lambda j: int(gtsam.Symbol('v', j))
 X = lambda i: int(gtsam.Symbol('x', i))
 
+np.set_printoptions(precision=3, suppress=True)
+
 class ImuFactorExample(PreintegrationExample):
 
     def __init__(self):
@@ -25,14 +27,18 @@ class ImuFactorExample(PreintegrationExample):
         self.priorNoise = gtsam.noiseModel.Isotropic.Sigma(6, 0.1)
         self.velNoise = gtsam.noiseModel.Isotropic.Sigma(3, 0.1)
 
+        # Choose one of these twists to change scenario: 
+        zero_twist = (np.zeros(3), np.zeros(3))
         forward_twist = (np.zeros(3), self.velocity)
         loop_twist = (np.array([0, -math.radians(30), 0]), self.velocity)
+        sick_twist = (np.array([math.radians(30), -math.radians(30), 0]), self.velocity)
 
         accBias = np.array([-0.3, 0.1, 0.2])
         gyroBias = np.array([0.1, 0.3, -0.1])
         bias = gtsam.ConstantBias(accBias, gyroBias)
 
-        super(ImuFactorExample, self).__init__(loop_twist, bias)
+        dt = 1e-2
+        super(ImuFactorExample, self).__init__(sick_twist, bias, dt)
 
     def addPrior(self, i, graph):
         state = self.scenario.navState(i)
@@ -42,41 +48,13 @@ class ImuFactorExample(PreintegrationExample):
     def run(self):
         graph = gtsam.NonlinearFactorGraph()
 
-        i = 0  # state index
-        
         # initialize data structure for pre-integrated IMU measurements 
         pim = gtsam.PreintegratedImuMeasurements(self.params, self.actualBias)
         
-        # simulate the loop
-        T = 12
-        actual_state_i = self.scenario.navState(0)
-        for k, t in enumerate(np.arange(0, T, self.dt)):
-            # get measurements and add them to PIM
-            measuredOmega = self.runner.measuredAngularVelocity(t)
-            measuredAcc = self.runner.measuredSpecificForce(t)
-            pim.integrateMeasurement(measuredAcc, measuredOmega, self.dt)
-            
-            # Plot IMU many times
-            if k % 10 == 0:
-                self.plotImu(t, measuredOmega, measuredAcc)
-            
-            # Plot every second
-            if k % 100 == 0:
-                self.plotGroundTruthPose(t)
-            
-            # create IMU factor every second
-            if (k + 1) % 100 == 0:
-                factor = gtsam.ImuFactor(X(i), V(i), X(i + 1), V(i + 1), BIAS_KEY, pim)
-                graph.push_back(factor)
-                pim.resetIntegration()
-                actual_state_i = self.scenario.navState(t + self.dt)
-                i += 1
-
-        # add priors on beginning and end
-        num_poses = i + 1
-        self.addPrior(0, graph)
-        self.addPrior(num_poses - 1, graph)
+        H9 = gtsam.OptionalJacobian9();
         
+        T = 12
+        num_poses = T + 1  # assumes 1 factor per second
         initial = gtsam.Values()
         initial.insert(BIAS_KEY, self.actualBias)
         for i in range(num_poses):
@@ -84,11 +62,51 @@ class ImuFactorExample(PreintegrationExample):
             initial.insert(X(i), state_i.pose())
             initial.insert(V(i), state_i.velocity())
         
+        # simulate the loop
+        i = 0  # state index        
+        actual_state_i = self.scenario.navState(0)
+        for k, t in enumerate(np.arange(0, T, self.dt)):
+            # get measurements and add them to PIM
+            measuredOmega = self.runner.measuredAngularVelocity(t)
+            measuredAcc = self.runner.measuredSpecificForce(t)
+            pim.integrateMeasurement(measuredAcc, measuredOmega, self.dt, H9, H9)
+            
+            # Plot IMU many times
+            if k % 10 == 0:
+                self.plotImu(t, measuredOmega, measuredAcc)
+            
+            # Plot every second
+            if k % int(1 / self.dt) == 0:
+                self.plotGroundTruthPose(t)
+            
+            # create IMU factor every second
+            if (k + 1) % int(1 / self.dt) == 0:
+                factor = gtsam.ImuFactor(X(i), V(i), X(i + 1), V(i + 1), BIAS_KEY, pim)
+                graph.push_back(factor)
+                if True:
+                    print(factor)
+                    H2 = gtsam.OptionalJacobian96();
+                    print(pim.predict(actual_state_i, self.actualBias, H9, H2))
+                pim.resetIntegration()
+                actual_state_i = self.scenario.navState(t + self.dt)
+                i += 1
+
+        # add priors on beginning and end
+        self.addPrior(0, graph)
+        self.addPrior(num_poses - 1, graph)
+        
         # optimize using Levenberg-Marquardt optimization
         params = gtsam.LevenbergMarquardtParams()
         params.setVerbosityLM("SUMMARY")
         optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initial, params)
         result = optimizer.optimize()
+        
+        # Calculate and print marginal covariances
+        marginals = gtsam.Marginals(graph, result)
+        print("Covariance on bias:\n", marginals.marginalCovariance(BIAS_KEY))
+        for i in range(num_poses):
+            print("Covariance on pose {}:\n{}\n".format(i, marginals.marginalCovariance(X(i))))
+            print("Covariance on vel {}:\n{}\n".format(i, marginals.marginalCovariance(V(i))))
 
         # Plot resulting poses
         i = 0

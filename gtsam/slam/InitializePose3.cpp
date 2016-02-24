@@ -125,7 +125,7 @@ NonlinearFactorGraph buildPose3graph(const NonlinearFactorGraph& graph) {
     if (pose3Prior)
       pose3Graph.add(
           BetweenFactor<Pose3>(keyAnchor, pose3Prior->keys()[0],
-              pose3Prior->prior(), pose3Prior->get_noiseModel()));
+              pose3Prior->prior(), pose3Prior->noiseModel()));
   }
   return pose3Graph;
 }
@@ -327,7 +327,7 @@ Values computePoses(NonlinearFactorGraph& pose3graph,  Values& initialRot) {
   BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, initialRot){
     Key key = key_value.key;
     const Rot3& rot = initialRot.at<Rot3>(key);
-    Pose3 initializedPose = Pose3(rot, Point3(0,0,0));
+    Pose3 initializedPose = Pose3(rot, Point3(0, 0, 0));
     initialPose.insert(key, initializedPose);
   }
   // add prior

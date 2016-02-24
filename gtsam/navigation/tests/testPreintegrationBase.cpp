@@ -120,25 +120,24 @@ TEST(PreintegrationBase, Compose) {
 }
 
 /* ************************************************************************* */
- TEST(PreintegrationBase, MergedBiasDerivatives) {
+TEST(PreintegrationBase, MergedBiasDerivatives) {
   testing::SomeMeasurements measurements;
 
-  boost::function<Vector9(const Vector3&, const Vector3&)> f =
-      [=](const Vector3& a, const Vector3& w) {
-        PreintegrationBase pim02(testing::Params(), Bias(a, w));
-        testing::integrateMeasurements(measurements, &pim02);
-        testing::integrateMeasurements(measurements, &pim02);
-        return pim02.preintegrated();
-      };
+  auto f = [=](const Vector3& a, const Vector3& w) {
+    PreintegrationBase pim02(testing::Params(), Bias(a, w));
+    testing::integrateMeasurements(measurements, &pim02);
+    testing::integrateMeasurements(measurements, &pim02);
+    return pim02.preintegrated();
+  };
 
   // Expected merge result
   PreintegrationBase expected_pim02(testing::Params());
   testing::integrateMeasurements(measurements, &expected_pim02);
   testing::integrateMeasurements(measurements, &expected_pim02);
 
-  EXPECT(assert_equal(numericalDerivative21(f, Z_3x1, Z_3x1),
+  EXPECT(assert_equal(numericalDerivative21<Vector9, Vector3, Vector3>(f, Z_3x1, Z_3x1),
                       expected_pim02.preintegrated_H_biasAcc()));
-  EXPECT(assert_equal(numericalDerivative22(f, Z_3x1, Z_3x1),
+  EXPECT(assert_equal(numericalDerivative22<Vector9, Vector3, Vector3>(f, Z_3x1, Z_3x1),
                       expected_pim02.preintegrated_H_biasOmega(), 1e-7));
 }
 

@@ -193,6 +193,7 @@ TEST( NavState, Lie ) {
 }
 
 /* ************************************************************************* */
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 TEST(NavState, Update) {
   Vector3 omega(M_PI / 100.0, 0.0, 0.0);
   Vector3 acc(0.1, 0.0, 0.0);
@@ -220,6 +221,7 @@ TEST(NavState, Update) {
   EXPECT(assert_equal(numericalDerivative32(update, kState1, acc, omega, 1e-7), aG1, 1e-7));
   EXPECT(assert_equal(numericalDerivative33(update, kState1, acc, omega, 1e-7), aG2, 1e-7));
 }
+#endif
 
 /* ************************************************************************* */
 static const double dt = 2.0;

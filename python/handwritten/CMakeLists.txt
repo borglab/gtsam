@@ -10,10 +10,13 @@ endforeach()
 
 # Create the library
 add_library(gtsam_python SHARED exportgtsam.cpp ${gtsam_python_srcs})
+string(TOUPPER "${CMAKE_BUILD_TYPE}" build_type_toupper)
 set_target_properties(gtsam_python PROPERTIES
-	OUTPUT_NAME         gtsam_python
-	SKIP_BUILD_RPATH    TRUE
-	CLEAN_DIRECT_OUTPUT 1
+	OUTPUT_NAME                   gtsampy
+    PREFIX                        ""
+    ${build_type_toupper}_POSTFIX ""
+	SKIP_BUILD_RPATH              TRUE
+	CLEAN_DIRECT_OUTPUT           1
 )
 target_link_libraries(gtsam_python
                       ${Boost_PYTHON${BOOST_PYTHON_VERSION_SUFFIX_UPPERCASE}_LIBRARY}
@@ -21,10 +24,11 @@ target_link_libraries(gtsam_python
 
 # Cause the library to be output in the correct directory.
 # TODO: Change below to work on different systems (currently works only with Linux)
+set(output_path ${CMAKE_CURRENT_BINARY_DIR}/../gtsam/_libgtsam_python.so)
 add_custom_command(
-	OUTPUT ${CMAKE_BINARY_DIR}/python/gtsam/_libgtsam_python.so
+	OUTPUT ${output_path}
 	DEPENDS gtsam_python
-	COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:gtsam_python> ${CMAKE_BINARY_DIR}/python/gtsam/_libgtsam_python.so
+	COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:gtsam_python> ${output_path}
 	COMMENT "Copying extension module to python/gtsam/_libgtsam_python.so"
 )
-add_custom_target(copy_gtsam_python_module ALL DEPENDS ${CMAKE_BINARY_DIR}/python/gtsam/_libgtsam_python.so)
+add_custom_target(copy_gtsam_python_module ALL DEPENDS ${output_path})

@@ -432,7 +432,7 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
     boost::shared_ptr<BetweenFactor<Pose2> > factor =
         boost::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor_);
     if (factor){
-      SharedNoiseModel model = factor->get_noiseModel();
+      SharedNoiseModel model = factor->noiseModel();
       boost::shared_ptr<noiseModel::Gaussian> gaussianModel =
           boost::dynamic_pointer_cast<noiseModel::Gaussian>(model);
       if (!gaussianModel){
@@ -455,7 +455,7 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
         boost::dynamic_pointer_cast< BetweenFactor<Pose3> >(factor_);
 
     if (factor3D){
-      SharedNoiseModel model = factor3D->get_noiseModel();
+      SharedNoiseModel model = factor3D->noiseModel();
 
       boost::shared_ptr<noiseModel::Gaussian> gaussianModel =
           boost::dynamic_pointer_cast<noiseModel::Gaussian>(model);

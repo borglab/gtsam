@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -32,7 +32,7 @@ namespace gtsam {
 
 /**
  * The VariableIndex class computes and stores the block column structure of a
- * factor graph.  The factor graph stores a collection of factors, each of 
+ * factor graph.  The factor graph stores a collection of factors, each of
  * which involves a set of variables.  In contrast, the VariableIndex is built
  * from a factor graph prior to elimination, and stores the list of factors
  * that involve each variable.  This information is stored as a deque of
@@ -45,7 +45,7 @@ public:
   typedef boost::shared_ptr<VariableIndex> shared_ptr;
   typedef FastVector<size_t> Factors;
   typedef Factors::iterator Factor_iterator;
-  typedef Factors::const_iterator Factor_const_iterator;  
+  typedef Factors::const_iterator Factor_const_iterator;
 
 protected:
   typedef FastMap<Key,Factors> KeyMap;
@@ -81,7 +81,7 @@ public:
    * The number of variable entries.  This is one greater than the variable
    * with the highest index.
    */
-  Key size() const { return index_.size(); }
+  size_t size() const { return index_.size(); }
 
   /** The number of factors in the original factor graph */
   size_t nFactors() const { return nFactors_; }

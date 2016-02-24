@@ -162,7 +162,7 @@
 #include <limits>
 #include <string>
 
-#include <Eigen/Core>
+#include <gtsam/3rdparty/ceres/eigen.h>
 #include <gtsam/3rdparty/ceres/fpclassify.h>
 
 namespace ceres {

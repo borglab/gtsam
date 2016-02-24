@@ -1742,7 +1742,8 @@ virtual class NonlinearFactor {
 
 virtual class NoiseModelFactor: gtsam::NonlinearFactor {
   void equals(const gtsam::NoiseModelFactor& other, double tol) const;
-  gtsam::noiseModel::Base* get_noiseModel() const;
+  gtsam::noiseModel::Base* get_noiseModel() const; // deprecated by below
+  gtsam::noiseModel::Base* noiseModel() const;
   Vector unwhitenedError(const gtsam::Values& x) const;
   Vector whitenedError(const gtsam::Values& x) const;
 };

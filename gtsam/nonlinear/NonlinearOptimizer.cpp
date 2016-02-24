@@ -184,6 +184,10 @@ bool checkConvergence(double relativeErrorTreshold, double absoluteErrorTreshold
 }
 
 /* ************************************************************************* */
-
+GTSAM_EXPORT bool checkConvergence(const NonlinearOptimizerParams& params, double currentError,
+                                   double newError) {
+  return checkConvergence(params.relativeErrorTol, params.absoluteErrorTol, params.errorTol,
+                          currentError, newError, params.verbosity);
+}
 
 }

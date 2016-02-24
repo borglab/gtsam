@@ -36,9 +36,9 @@ Rot3::Rot3() : rot_(I_3x3) {}
 
 /* ************************************************************************* */
 Rot3::Rot3(const Point3& col1, const Point3& col2, const Point3& col3) {
-  rot_.col(0) = (Vector3)col1;
-  rot_.col(1) = (Vector3)col2;
-  rot_.col(2) = (Vector3)col3;
+  rot_.col(0) = col1;
+  rot_.col(1) = col2;
+  rot_.col(2) = col3;
 }
 
 /* ************************************************************************* */

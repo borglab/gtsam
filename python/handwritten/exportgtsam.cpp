@@ -16,8 +16,6 @@
  **/
 
 #include <boost/python.hpp>
-#include <boost/cstdint.hpp>
-
 #include <numpy_eigen/NumpyEigenConverter.hpp>
 
 // base
@@ -33,6 +31,7 @@ void exportPose3();
 void exportPinholeBaseK();
 void exportPinholeCamera();
 void exportCal3_S2();
+void export_geometry();
 
 // inference
 void exportSymbol();
@@ -51,6 +50,7 @@ void exportISAM2();
 void exportPriorFactors();
 void exportBetweenFactors();
 void exportGenericProjectionFactor();
+void export_slam();
 
 // navigation
 void exportImuFactor();
@@ -62,7 +62,7 @@ void registerNumpyEigenConversions();
 
 //-----------------------------------//
 
-BOOST_PYTHON_MODULE(_libgtsam_python){
+BOOST_PYTHON_MODULE(gtsampy){
 
   // NOTE: We need to call import_array1() instead of import_array() to support both python 2
   //       and 3. The reason is that BOOST_PYTHON_MODULE puts all its contents in a function
@@ -85,6 +85,7 @@ BOOST_PYTHON_MODULE(_libgtsam_python){
   exportPinholeBaseK();
   exportPinholeCamera();
   exportCal3_S2();
+  export_geometry();
 
   exportSymbol();
 
@@ -99,6 +100,7 @@ BOOST_PYTHON_MODULE(_libgtsam_python){
   exportPriorFactors();
   exportBetweenFactors();
   exportGenericProjectionFactor();
+  export_slam();
 
   exportImuFactor();
   exportScenario();

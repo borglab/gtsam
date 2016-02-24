@@ -27,6 +27,7 @@
 #include "gtsam/geometry/Rot3.h"
 #include "gtsam/geometry/Pose3.h"
 #include "gtsam/navigation/ImuBias.h"
+#include "gtsam/navigation/NavState.h"
 
 using namespace boost::python;
 using namespace gtsam;
@@ -45,6 +46,7 @@ void exportValues(){
   void  (Values::*insert_rot3)  (Key, const gtsam::Rot3&) = &Values::insert;
   void  (Values::*insert_pose3) (Key, const gtsam::Pose3&) = &Values::insert;
   void  (Values::*insert_bias) (Key, const Bias&) = &Values::insert;
+  void  (Values::*insert_navstate) (Key, const NavState&) = &Values::insert;
   void  (Values::*insert_vector3) (Key, const gtsam::Vector3&) = &Values::insert;
 
   class_<Values>("Values", init<>())
@@ -65,6 +67,7 @@ void exportValues(){
   .def("insert", insert_rot3)
   .def("insert", insert_pose3)
   .def("insert", insert_bias)
+  .def("insert", insert_navstate)
   .def("insert", insert_vector3)
   .def("atPoint2", &Values::at<Point2>, return_value_policy<copy_const_reference>())
   .def("atRot2", &Values::at<Rot2>, return_value_policy<copy_const_reference>())
@@ -73,6 +76,7 @@ void exportValues(){
   .def("atRot3", &Values::at<Rot3>, return_value_policy<copy_const_reference>())
   .def("atPose3", &Values::at<Pose3>, return_value_policy<copy_const_reference>())
   .def("atConstantBias", &Values::at<Bias>, return_value_policy<copy_const_reference>())
+  .def("atNavState", &Values::at<NavState>, return_value_policy<copy_const_reference>())
   .def("atVector3", &Values::at<Vector3>, return_value_policy<copy_const_reference>())
   .def("exists", exists1)
   .def("keys", &Values::keys)

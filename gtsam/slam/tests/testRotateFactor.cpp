@@ -20,26 +20,28 @@ using namespace std;
 using namespace boost::assign;
 using namespace gtsam;
 
+static const double kDegree = M_PI / 180;
+
 //*************************************************************************
 // Create some test data
 // Let's assume IMU is aligned with aero (X-forward,Z down)
 // And camera is looking forward.
-Point3 cameraX(0, 1, 0), cameraY(0, 0, 1), cameraZ(1, 0, 0);
-Rot3 iRc(cameraX, cameraY, cameraZ);
+static const Point3 cameraX(0, 1, 0), cameraY(0, 0, 1), cameraZ(1, 0, 0);
+static const Rot3 iRc(cameraX, cameraY, cameraZ);
 
 // Now, let's create some rotations around IMU frame
-Unit3 p1(1, 0, 0), p2(0, 1, 0), p3(0, 0, 1);
-Rot3 i1Ri2 = Rot3::AxisAngle(p1, 1), //
+static const Unit3 p1(1, 0, 0), p2(0, 1, 0), p3(0, 0, 1);
+static const Rot3 i1Ri2 = Rot3::AxisAngle(p1, 1), //
 i2Ri3 = Rot3::AxisAngle(p2, 1), //
 i3Ri4 = Rot3::AxisAngle(p3, 1);
 
 // The corresponding rotations in the camera frame
-Rot3 c1Zc2 = iRc.inverse() * i1Ri2 * iRc, //
+static const Rot3 c1Zc2 = iRc.inverse() * i1Ri2 * iRc, //
 c2Zc3 = iRc.inverse() * i2Ri3 * iRc, //
 c3Zc4 = iRc.inverse() * i3Ri4 * iRc;
 
 // The corresponding rotated directions in the camera frame
-Unit3 z1 = iRc.inverse() * p1, //
+static const Unit3 z1 = iRc.inverse() * p1, //
 z2 = iRc.inverse() * p2, //
 z3 = iRc.inverse() * p3;
 
@@ -98,8 +100,7 @@ TEST (RotateFactor, minimization) {
 
   // Check error at initial estimate
   Values initial;
-  double degree = M_PI / 180;
-  Rot3 initialE = iRc.retract(degree * Vector3(20, -20, 20));
+  Rot3 initialE = iRc.retract(kDegree * Vector3(20, -20, 20));
   initial.insert(1, initialE);
 
 #if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
@@ -172,8 +173,7 @@ TEST (RotateDirectionsFactor, minimization) {
 
   // Check error at initial estimate
   Values initial;
-  double degree = M_PI / 180;
-  Rot3 initialE = iRc.retract(degree * Vector3(20, -20, 20));
+  Rot3 initialE = iRc.retract(kDegree * Vector3(20, -20, 20));
   initial.insert(1, initialE);
 
 #if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
@@ -184,7 +184,6 @@ TEST (RotateDirectionsFactor, minimization) {
 
   // Optimize
   LevenbergMarquardtParams parameters;
-  //parameters.setVerbosity("ERROR");
   LevenbergMarquardtOptimizer optimizer(graph, initial, parameters);
   Values result = optimizer.optimize();
 
@@ -194,6 +193,39 @@ TEST (RotateDirectionsFactor, minimization) {
 
   // Check error at result
   EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-4);
+}
+
+//*************************************************************************
+TEST(RotateDirectionsFactor, Initialization) {
+  // Create a gravity vector in a nav frame that has Z up
+  const Point3 n_gravity(0, 0, -10);
+  const Unit3 n_p(-n_gravity);
+
+  // NOTE(frank): avoid singularities by using 85/275 instead of 90/270
+  std::vector<double> angles = {0, 45, 85, 135, 180, 225, 275, 315};
+  for (double yaw : angles) {
+    const Rot3 nRy = Rot3::Yaw(yaw * kDegree);
+    for (double pitch : angles) {
+      const Rot3 yRp = Rot3::Pitch(pitch * kDegree);
+      for (double roll : angles) {
+        const Rot3 pRb = Rot3::Roll(roll * kDegree);
+
+        // Rotation from body to nav frame:
+        const Rot3 nRb = nRy * yRp * pRb;
+        const Vector3 rpy = nRb.rpy() / kDegree;
+
+        // Simulate measurement of IMU in body frame:
+        const Point3 b_acc = nRb.unrotate(-n_gravity);
+        const Unit3 b_z(b_acc);
+
+        // Check initialization
+        const Rot3 actual_nRb = RotateDirectionsFactor::Initialize(n_p, b_z);
+        const Vector3 actual_rpy = actual_nRb.rpy() / kDegree;
+        EXPECT_DOUBLES_EQUAL(rpy.x(), actual_rpy.x(), 1e-5);
+        EXPECT_DOUBLES_EQUAL(rpy.y(), actual_rpy.y(), 1e-5);
+      }
+    }
+  }
 }
 
 /* ************************************************************************* */

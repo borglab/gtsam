@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -29,6 +29,8 @@
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
 #include <gtsam/base/cholesky.h>
+
+#include <boost/foreach.hpp>
 
 using namespace std;
 using namespace gtsam;
@@ -67,27 +69,6 @@ namespace gtsam {
     }
     return spec;
   }
-
-  /* ************************************************************************* */
-    vector<size_t> GaussianFactorGraph::getkeydim() const {
-      // First find dimensions of each variable
-      vector<size_t> dims;
-      BOOST_FOREACH(const sharedFactor& factor, *this) {
-        for (GaussianFactor::const_iterator pos = factor->begin();
-            pos != factor->end(); ++pos) {
-          if (dims.size() <= *pos)
-            dims.resize(*pos + 1, 0);
-          dims[*pos] = factor->getDim(pos);
-        }
-      }
-      // Find accumulated dimensions for variables
-      vector<size_t> dims_accumulated;
-      dims_accumulated.resize(dims.size()+1,0);
-      dims_accumulated[0]=0;
-      for (size_t i=1; i<dims_accumulated.size(); i++)
-        dims_accumulated[i] = dims_accumulated[i-1]+dims[i-1];
-      return dims_accumulated;
-    }
 
   /* ************************************************************************* */
   GaussianFactorGraph::shared_ptr GaussianFactorGraph::cloneToPtr() const {
@@ -228,7 +209,8 @@ namespace gtsam {
   Matrix GaussianFactorGraph::augmentedHessian(
       boost::optional<const Ordering&> optionalOrdering) const {
     // combine all factors and get upper-triangular part of Hessian
-    HessianFactor combined(*this, Scatter(*this, optionalOrdering));
+    Scatter scatter(*this, optionalOrdering);
+    HessianFactor combined(*this, scatter);
     Matrix result = combined.info();
     // Fill in lower-triangular part of Hessian
     result.triangularView<Eigen::StrictlyLower>() = result.transpose();

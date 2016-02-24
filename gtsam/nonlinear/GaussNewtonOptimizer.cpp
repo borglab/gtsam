@@ -11,7 +11,7 @@
 
 /**
  * @file    GaussNewtonOptimizer.cpp
- * @brief   
+ * @brief
  * @author  Richard Roberts
  * @date   Feb 26, 2012
  */
@@ -26,14 +26,19 @@ namespace gtsam {
 
 /* ************************************************************************* */
 void GaussNewtonOptimizer::iterate() {
+  gttic(GaussNewtonOptimizer_Iterate);
 
   const NonlinearOptimizerState& current = state_;
 
   // Linearize graph
+  gttic(GaussNewtonOptimizer_Linearize);
   GaussianFactorGraph::shared_ptr linear = graph_.linearize(current.values);
+  gttoc(GaussNewtonOptimizer_Linearize);
 
   // Solve Factor Graph
+  gttic(GaussNewtonOptimizer_Solve);
   const VectorValues delta = solve(*linear, current.values, params_);
+  gttoc(GaussNewtonOptimizer_Solve);
 
   // Maybe show output
   if(params_.verbosity >= NonlinearOptimizerParams::DELTA) delta.print("delta");

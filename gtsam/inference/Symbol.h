@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -21,6 +21,7 @@
 #include <gtsam/inference/Key.h>
 #include <gtsam/base/Testable.h>
 #include <boost/serialization/nvp.hpp>
+#include <cstdint>
 
 namespace gtsam {
 
@@ -32,8 +33,8 @@ namespace gtsam {
  */
 class GTSAM_EXPORT Symbol {
 protected:
-  unsigned char c_;
-  size_t j_;
+  const unsigned char c_;
+  const std::uint64_t j_;
 
 public:
 
@@ -48,7 +49,7 @@ public:
   }
 
   /** Constructor */
-  Symbol(unsigned char c, size_t j) :
+  Symbol(unsigned char c, std::uint64_t j) :
     c_(c), j_(j) {
   }
 
@@ -73,7 +74,7 @@ public:
   }
 
   /** Retrieve key index */
-  size_t index() const {
+  std::uint64_t index() const {
     return j_;
   }
 
@@ -124,41 +125,41 @@ private:
 };
 
 /** Create a symbol key from a character and index, i.e. x5. */
-inline Key symbol(unsigned char c, size_t j) { return (Key)Symbol(c,j); }
+inline Key symbol(unsigned char c, std::uint64_t j) { return (Key)Symbol(c,j); }
 
 /** Return the character portion of a symbol key. */
 inline unsigned char symbolChr(Key key) { return Symbol(key).chr(); }
 
 /** Return the index portion of a symbol key. */
-inline size_t symbolIndex(Key key) { return Symbol(key).index(); }
+inline std::uint64_t symbolIndex(Key key) { return Symbol(key).index(); }
 
 namespace symbol_shorthand {
-inline Key A(size_t j) { return Symbol('a', j); }
-inline Key B(size_t j) { return Symbol('b', j); }
-inline Key C(size_t j) { return Symbol('c', j); }
-inline Key D(size_t j) { return Symbol('d', j); }
-inline Key E(size_t j) { return Symbol('e', j); }
-inline Key F(size_t j) { return Symbol('f', j); }
-inline Key G(size_t j) { return Symbol('g', j); }
-inline Key H(size_t j) { return Symbol('h', j); }
-inline Key I(size_t j) { return Symbol('i', j); }
-inline Key J(size_t j) { return Symbol('j', j); }
-inline Key K(size_t j) { return Symbol('k', j); }
-inline Key L(size_t j) { return Symbol('l', j); }
-inline Key M(size_t j) { return Symbol('m', j); }
-inline Key N(size_t j) { return Symbol('n', j); }
-inline Key O(size_t j) { return Symbol('o', j); }
-inline Key P(size_t j) { return Symbol('p', j); }
-inline Key Q(size_t j) { return Symbol('q', j); }
-inline Key R(size_t j) { return Symbol('r', j); }
-inline Key S(size_t j) { return Symbol('s', j); }
-inline Key T(size_t j) { return Symbol('t', j); }
-inline Key U(size_t j) { return Symbol('u', j); }
-inline Key V(size_t j) { return Symbol('v', j); }
-inline Key W(size_t j) { return Symbol('w', j); }
-inline Key X(size_t j) { return Symbol('x', j); }
-inline Key Y(size_t j) { return Symbol('y', j); }
-inline Key Z(size_t j) { return Symbol('z', j); }
+inline Key A(std::uint64_t j) { return Symbol('a', j); }
+inline Key B(std::uint64_t j) { return Symbol('b', j); }
+inline Key C(std::uint64_t j) { return Symbol('c', j); }
+inline Key D(std::uint64_t j) { return Symbol('d', j); }
+inline Key E(std::uint64_t j) { return Symbol('e', j); }
+inline Key F(std::uint64_t j) { return Symbol('f', j); }
+inline Key G(std::uint64_t j) { return Symbol('g', j); }
+inline Key H(std::uint64_t j) { return Symbol('h', j); }
+inline Key I(std::uint64_t j) { return Symbol('i', j); }
+inline Key J(std::uint64_t j) { return Symbol('j', j); }
+inline Key K(std::uint64_t j) { return Symbol('k', j); }
+inline Key L(std::uint64_t j) { return Symbol('l', j); }
+inline Key M(std::uint64_t j) { return Symbol('m', j); }
+inline Key N(std::uint64_t j) { return Symbol('n', j); }
+inline Key O(std::uint64_t j) { return Symbol('o', j); }
+inline Key P(std::uint64_t j) { return Symbol('p', j); }
+inline Key Q(std::uint64_t j) { return Symbol('q', j); }
+inline Key R(std::uint64_t j) { return Symbol('r', j); }
+inline Key S(std::uint64_t j) { return Symbol('s', j); }
+inline Key T(std::uint64_t j) { return Symbol('t', j); }
+inline Key U(std::uint64_t j) { return Symbol('u', j); }
+inline Key V(std::uint64_t j) { return Symbol('v', j); }
+inline Key W(std::uint64_t j) { return Symbol('w', j); }
+inline Key X(std::uint64_t j) { return Symbol('x', j); }
+inline Key Y(std::uint64_t j) { return Symbol('y', j); }
+inline Key Z(std::uint64_t j) { return Symbol('z', j); }
 }
 
 /// traits
