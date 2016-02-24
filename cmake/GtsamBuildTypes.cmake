@@ -48,7 +48,7 @@ if(NOT FIRST_PASS_DONE)
     set(CMAKE_C_FLAGS_PROFILING        "-std=c11 -g -O3 -Wall -DNDEBUG" CACHE STRING "Flags used by the compiler during profiling builds." FORCE)
     set(CMAKE_CXX_FLAGS_PROFILING      "-std=c++11 -g -O3 -Wall -DNDEBUG" CACHE STRING "Flags used by the compiler during profiling builds." FORCE)
     set(CMAKE_EXE_LINKER_FLAGS_PROFILING "${CMAKE_EXE_LINKER_FLAGS_RELEASE}" CACHE STRING "Linker flags during profiling builds." FORCE)
-	set(CMAKE_SHARED_LINKER_FLAGS_PROFILING "${CMAKE__LINKER_FLAGS_RELEASE}" CACHE STRING "Linker flags during profiling builds." FORCE)
+    set(CMAKE_SHARED_LINKER_FLAGS_PROFILING "${CMAKE__LINKER_FLAGS_RELEASE}" CACHE STRING "Linker flags during profiling builds." FORCE)
     mark_as_advanced(CMAKE_C_FLAGS_PROFILING CMAKE_CXX_FLAGS_PROFILING CMAKE_EXE_LINKER_FLAGS_PROFILING CMAKE_SHARED_LINKER_FLAGS_PROFILING)
   endif()
 endif()
@@ -105,7 +105,7 @@ endif()
 
 # Mark that first pass is done
 set(FIRST_PASS_DONE TRUE CACHE INTERNAL "Internally used to mark whether cmake has been run multiple times")
-mark_as_advanced(FIRST_PASS_DONE) 
+mark_as_advanced(FIRST_PASS_DONE)
 
 # Enable Visual Studio solution folders
 set_property(GLOBAL PROPERTY USE_FOLDERS On)
