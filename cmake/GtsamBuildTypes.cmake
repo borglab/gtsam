@@ -14,6 +14,8 @@ option(GTSAM_BUILD_TYPE_POSTFIXES        "Enable/Disable appending the build typ
 
 # Add debugging flags but only on the first pass
 if(NOT FIRST_PASS_DONE)
+  # Set all CMAKE_BUILD_TYPE flags:
+  # (see https://cmake.org/Wiki/CMake_Useful_Variables#Compilers_and_Tools)
   if(MSVC)
     set(CMAKE_C_FLAGS_DEBUG            "/D_DEBUG /MDd /Zi /Ob0 /Od /RTC1 /W3 /GR /EHsc /MP /DWINDOWS_LEAN_AND_MEAN /DEIGEN_INITIALIZE_MATRICES_BY_NAN" CACHE STRING "Flags used by the compiler during debug builds." FORCE)
     set(CMAKE_CXX_FLAGS_DEBUG          "/D_DEBUG /MDd /Zi /Ob0 /Od /RTC1 /W3 /GR /EHsc /MP /DWINDOWS_LEAN_AND_MEAN /DEIGEN_INITIALIZE_MATRICES_BY_NAN" CACHE STRING "Flags used by the compiler during debug builds." FORCE)
@@ -51,6 +53,9 @@ if(NOT FIRST_PASS_DONE)
     set(CMAKE_SHARED_LINKER_FLAGS_PROFILING "${CMAKE__LINKER_FLAGS_RELEASE}" CACHE STRING "Linker flags during profiling builds." FORCE)
     mark_as_advanced(CMAKE_C_FLAGS_PROFILING CMAKE_CXX_FLAGS_PROFILING CMAKE_EXE_LINKER_FLAGS_PROFILING CMAKE_SHARED_LINKER_FLAGS_PROFILING)
   endif()
+  # Make CMAKE_BUILD_TYPE=None flags default to the CMAKE_BUILD_TYPE=RelWithDebInfo ones:
+  set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS_RELWITHDEBINFO}" CACHE STRING "Flags used by the compiler during none builds." FORCE)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}" CACHE STRING "Flags used by the compiler during none builds." FORCE)
 endif()
 
 # Clang uses a template depth that is less than standard and is too small
