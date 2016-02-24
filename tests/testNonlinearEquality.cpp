@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -525,10 +525,13 @@ TEST (testNonlinearEqualityConstraint, stereo_constrained ) {
 
   // create initial estimates
   Rot3 faceTowardsY(Point3(1, 0, 0), Point3(0, 0, -1), Point3(0, 1, 0));
-  Pose3 poseLeft(faceTowardsY, Point3());  // origin, left camera
+
+  Pose3 poseLeft(faceTowardsY, Point3(0, 0, 0));  // origin, left camera
   SimpleCamera leftCamera(poseLeft, K);
-  Pose3 poseRight(faceTowardsY, Point3(2, 0, 0)); // 2 units to the right
+
+  Pose3 poseRight(faceTowardsY, Point3(2, 0, 0));  // 2 units to the right
   SimpleCamera rightCamera(poseRight, K);
+
   Point3 landmark(1, 5, 0); //centered between the cameras, 5 units away
 
   // keys
