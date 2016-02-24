@@ -66,20 +66,21 @@ pair<Pose3, Vector3> GPSFactor::EstimateState(double t1, const Point3& NED1,
 //***************************************************************************
 void GPSFactor2::print(const string& s, const KeyFormatter& keyFormatter) const {
   cout << s << "GPSFactor2 on " << keyFormatter(key()) << "\n";
-  nT_.print("  GPS measurement: ");
+  cout << "  GPS measurement: " << nT_.transpose() << endl;
   noiseModel_->print("  noise model: ");
 }
 
 //***************************************************************************
 bool GPSFactor2::equals(const NonlinearFactor& expected, double tol) const {
   const This* e = dynamic_cast<const This*>(&expected);
-  return e != NULL && Base::equals(*e, tol) && nT_.equals(e->nT_, tol);
+  return e != NULL && Base::equals(*e, tol) &&
+         traits<Point3>::Equals(nT_, e->nT_, tol);
 }
 
 //***************************************************************************
 Vector GPSFactor2::evaluateError(const NavState& p,
     boost::optional<Matrix&> H) const {
-  return p.position(H).vector() -nT_.vector();
+  return p.position(H) -nT_;
 }
 
 //***************************************************************************

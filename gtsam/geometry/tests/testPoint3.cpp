@@ -93,20 +93,20 @@ TEST( Point3, dot) {
 
   // Use numerical derivatives to calculate the expected Jacobians
   Matrix H1, H2;
-  boost::function<double(const Point3&, const Point3&)> f = boost::bind(&Point3::dot, _1, _2,  //
-                                                                      boost::none, boost::none);
+  boost::function<double(const Point3&, const Point3&)> f =
+      [](const Point3& p, const Point3& q) { return gtsam::dot(p, q); };
   {
-    p.dot(q, H1, H2);
+    gtsam::dot(p, q, H1, H2);
     EXPECT(assert_equal(numericalDerivative21<double,Point3>(f, p, q), H1, 1e-9));
     EXPECT(assert_equal(numericalDerivative22<double,Point3>(f, p, q), H2, 1e-9));
   }
   {
-    p.dot(r, H1, H2);
+    gtsam::dot(p, r, H1, H2);
     EXPECT(assert_equal(numericalDerivative21<double,Point3>(f, p, r), H1, 1e-9));
     EXPECT(assert_equal(numericalDerivative22<double,Point3>(f, p, r), H2, 1e-9));
   }
   {
-    p.dot(t, H1, H2);
+    gtsam::dot(p, t, H1, H2);
     EXPECT(assert_equal(numericalDerivative21<double,Point3>(f, p, t), H1, 1e-9));
     EXPECT(assert_equal(numericalDerivative22<double,Point3>(f, p, t), H2, 1e-9));
   }
@@ -134,15 +134,15 @@ TEST( Point3, cross2) {
 
   // Use numerical derivatives to calculate the expected Jacobians
   Matrix H1, H2;
-  boost::function<Point3(const Point3&, const Point3&)> f = boost::bind(&Point3::cross, _1, _2,  //
+  boost::function<Point3(const Point3&, const Point3&)> f = boost::bind(&gtsam::cross, _1, _2,  //
                                                                       boost::none, boost::none);
   {
-    p.cross(q, H1, H2);
+    gtsam::cross(p, q, H1, H2);
     EXPECT(assert_equal(numericalDerivative21<Point3,Point3>(f, p, q), H1, 1e-9));
     EXPECT(assert_equal(numericalDerivative22<Point3,Point3>(f, p, q), H2, 1e-9));
   }
   {
-    p.cross(r, H1, H2);
+    gtsam::cross(p, r, H1, H2);
     EXPECT(assert_equal(numericalDerivative21<Point3,Point3>(f, p, r), H1, 1e-9));
     EXPECT(assert_equal(numericalDerivative22<Point3,Point3>(f, p, r), H2, 1e-9));
   }

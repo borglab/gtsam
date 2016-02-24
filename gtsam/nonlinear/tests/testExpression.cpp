@@ -372,7 +372,7 @@ TEST(Expression, TripleSum) {
 /* ************************************************************************* */
 TEST(Expression, SumOfUnaries) {
   const Key key(67);
-  const double_ norm_(Point3_(key), &Point3::norm);
+  const double_ norm_(&gtsam::norm, Point3_(key));
   const double_ sum_ = norm_ + norm_;
 
   Values values;
@@ -391,7 +391,7 @@ TEST(Expression, SumOfUnaries) {
 TEST(Expression, UnaryOfSum) {
   const Key key1(42), key2(67);
   const Point3_ sum_ = Point3_(key1) + Point3_(key2);
-  const double_ norm_(sum_, &Point3::norm);
+  const double_ norm_(&gtsam::norm, sum_);
 
   map<Key, int> actual_dims, expected_dims = map_list_of<Key, int>(key1, 3)(key2, 3);
   norm_.dims(actual_dims);
@@ -455,7 +455,7 @@ TEST(Expression, Subtract) {
 /* ************************************************************************* */
 TEST(Expression, LinearExpression) {
   const Key key(67);
-  const boost::function<Vector3(Point3)> f = boost::bind(&Point3::vector, _1);
+  const boost::function<Vector3(Point3)> f = [](const Point3& p) { return (Vector3)p; };
   const Matrix3 kIdentity = I_3x3;
   const Expression<Vector3> linear_ = linearExpression(f, Point3_(key), kIdentity);
 
