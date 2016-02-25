@@ -80,6 +80,9 @@ protected:
   typedef Eigen::Matrix<double, Dim, 1> VectorD;
   typedef Eigen::Matrix<double, ZDim, ZDim> Matrix2;
 
+  // Cache for Fblocks, to avoid a malloc ever time we re-linearize
+  mutable std::vector<MatrixZD> Fblocks;
+
 public:
 
   // Definitions for blocks of F, externally visible
@@ -98,8 +101,10 @@ public:
 
   /// Constructor
   SmartFactorBase(const SharedNoiseModel& sharedNoiseModel,
-      boost::optional<Pose3> body_P_sensor = boost::none) :
-          body_P_sensor_(body_P_sensor){
+      boost::optional<Pose3> body_P_sensor = boost::none, size_t expectedNumberCameras=10) :
+          body_P_sensor_(body_P_sensor) {
+
+    Fblocks.reserve(expectedNumberCameras);
 
     if (!sharedNoiseModel)
       throw std::runtime_error("SmartFactorBase: sharedNoiseModel is required");
@@ -283,7 +288,6 @@ public:
       const Cameras& cameras, const Point3& point, const double lambda = 0.0,
       bool diagonalDamping = false) const {
 
-    std::vector<MatrixZD> Fblocks;
     Matrix E;
     Vector b;
     computeJacobians(Fblocks, E, b, cameras, point);
