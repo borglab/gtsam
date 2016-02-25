@@ -15,6 +15,8 @@ option(GTSAM_BUILD_TYPE_POSTFIXES        "Enable/Disable appending the build typ
 # Set custom compilation flags.
 # NOTE: We set all the CACHE variables with a GTSAM prefix, and then set a normal local variable below
 # so that we don't "pollute" the global variable namespace in the cmake cache.
+  # Set all CMAKE_BUILD_TYPE flags:
+  # (see https://cmake.org/Wiki/CMake_Useful_Variables#Compilers_and_Tools)
 if(MSVC)
     set(GTSAM_CMAKE_C_FLAGS_DEBUG            "/D_DEBUG /MDd /Zi /Ob0 /Od /RTC1 /W3 /GR /EHsc /MP /DWINDOWS_LEAN_AND_MEAN /DEIGEN_INITIALIZE_MATRICES_BY_NAN" CACHE STRING "Flags used by the compiler during debug builds.")
     set(GTSAM_CMAKE_CXX_FLAGS_DEBUG          "/D_DEBUG /MDd /Zi /Ob0 /Od /RTC1 /W3 /GR /EHsc /MP /DWINDOWS_LEAN_AND_MEAN /DEIGEN_INITIALIZE_MATRICES_BY_NAN" CACHE STRING "Flags used by the compiler during debug builds.")
@@ -64,6 +66,10 @@ set(CMAKE_C_FLAGS_PROFILING ${GTSAM_CMAKE_C_FLAGS_PROFILING})
 set(CMAKE_CXX_FLAGS_PROFILING ${GTSAM_CMAKE_CXX_FLAGS_PROFILING})
 set(CMAKE_C_FLAGS_TIMING ${GTSAM_CMAKE_C_FLAGS_TIMING})
 set(CMAKE_CXX_FLAGS_TIMING ${GTSAM_CMAKE_CXX_FLAGS_TIMING})
+
+# Make CMAKE_BUILD_TYPE=None flags default to the CMAKE_BUILD_TYPE=RelWithDebInfo ones:
+set(CMAKE_C_FLAGS   ${GTSAM_CMAKE_C_FLAGS_RELWITHDEBINFO})
+set(CMAKE_CXX_FLAGS ${GTSAM_CMAKE_CXX_FLAGS_RELWITHDEBINFO})
 
 set(CMAKE_SHARED_LINKER_FLAGS_TIMING ${GTSAM_CMAKE_SHARED_LINKER_FLAGS_TIMING})
 set(CMAKE_MODULE_LINKER_FLAGS_TIMING ${GTSAM_CMAKE_MODULE_LINKER_FLAGS_TIMING})
