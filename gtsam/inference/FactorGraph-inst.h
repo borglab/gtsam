@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -74,11 +74,26 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class FACTOR>
   KeySet FactorGraph<FACTOR>::keys() const {
-    KeySet allKeys;
-    BOOST_FOREACH(const sharedFactor& factor, factors_)
+    KeySet keys;
+    BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
+      if(factor)
+        keys.insert(factor->begin(), factor->end());
+    }
+    return keys;
+  }
+
+  /* ************************************************************************* */
+  template <class FACTOR>
+  KeyVector FactorGraph<FACTOR>::keyVector() const {
+    KeyVector keys;
+    keys.reserve(2 * size());  // guess at size
+    BOOST_FOREACH (const sharedFactor& factor, factors_)
       if (factor)
-        allKeys.insert(factor->begin(), factor->end());
-    return allKeys;
+        keys.insert(keys.end(), factor->begin(), factor->end());
+    std::sort(keys.begin(), keys.end());
+    auto last = std::unique(keys.begin(), keys.end());
+    keys.erase(last, keys.end());
+    return keys;
   }
 
   /* ************************************************************************* */

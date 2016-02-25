@@ -292,7 +292,7 @@ double weightedPseudoinverse(const Vector& a, const Vector& weights,
       // Basically, instead of doing a normal QR step with the weighted
       // pseudoinverse, we enforce the constraint by turning
       // ax + AS = b into x + (A/a)S = b/a, for the first row where a!=0
-      pseudo = delta(m, i, 1 / a[i]);
+      pseudo = delta(m, i, 1.0 / a[i]);
       return inf;
     }
   }

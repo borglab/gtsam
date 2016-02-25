@@ -50,7 +50,7 @@ public:
   }
 
   /// construct from 3D vector
-  StereoPoint2(const Vector3& v) :
+  explicit StereoPoint2(const Vector3& v) :
     uL_(v(0)), uR_(v(1)), v_(v(2)) {}
 
   /// @}
@@ -78,6 +78,11 @@ public:
   /// inverse
   StereoPoint2 operator-() const {
     return StereoPoint2(-uL_, -uR_, -v_);
+  }
+
+  /// add vector on right
+  inline StereoPoint2 operator +(const Vector3& v) const {
+    return StereoPoint2(uL_ + v[0], uR_ + v[1], v_ + v[2]);
   }
 
   /// add

@@ -77,6 +77,7 @@ class PreintegrationBase {
 
   /**
    * Preintegrated navigation state, from frame i to frame j
+   * Order is: theta, position, velocity
    * Note: relative position does not take into account velocity at time i, see deltap+, in [2]
    * Note: velocity is now also in frame i, as opposed to deltaVij in [2]
    */
@@ -91,6 +92,9 @@ class PreintegrationBase {
   }
 
 public:
+  /// @name Constructors
+  /// @{
+
   /// @name Constructors
   /// @{
 
@@ -111,7 +115,7 @@ public:
 
   /// check parameters equality: checks whether shared pointer points to same Params object.
   bool matchesParamsWith(const PreintegrationBase& other) const {
-    return p_ == other.p_;
+    return p_.get() == other.p_.get();
   }
 
   /// shared pointer to params
@@ -134,7 +138,7 @@ public:
   /// @name Instance variables access
   /// @{
   const imuBias::ConstantBias& biasHat() const { return biasHat_; }
-  const double& deltaTij() const { return deltaTij_; }
+  double deltaTij() const { return deltaTij_; }
 
   const Vector9& preintegrated() const { return preintegrated_; }
 
@@ -167,9 +171,9 @@ public:
   /// Ignore D_correctedOmega_measuredAcc as it is trivially zero
   std::pair<Vector3, Vector3> correctMeasurementsBySensorPose(
       const Vector3& unbiasedAcc, const Vector3& unbiasedOmega,
-      OptionalJacobian<3, 3> D_correctedAcc_unbiasedAcc = boost::none,
-      OptionalJacobian<3, 3> D_correctedAcc_unbiasedOmega = boost::none,
-      OptionalJacobian<3, 3> D_correctedOmega_unbiasedOmega = boost::none) const;
+      OptionalJacobian<3, 3> correctedAcc_H_unbiasedAcc = boost::none,
+      OptionalJacobian<3, 3> correctedAcc_H_unbiasedOmega = boost::none,
+      OptionalJacobian<3, 3> correctedOmega_H_unbiasedOmega = boost::none) const;
 
   // Update integrated vector on tangent manifold preintegrated with acceleration
   // Static, functional version.
@@ -215,7 +219,7 @@ public:
       OptionalJacobian<9, 6> H3 = boost::none, OptionalJacobian<9, 3> H4 =
           boost::none, OptionalJacobian<9, 6> H5 = boost::none) const;
 
-  // Compose the two preintegrated vectors
+  // Compose the two pre-integrated 9D-vectors zeta01 and zeta02, with derivatives
   static Vector9 Compose(const Vector9& zeta01, const Vector9& zeta12,
                          double deltaT12,
                          OptionalJacobian<9, 9> H1 = boost::none,
@@ -243,6 +247,8 @@ public:
 
   /// @}
 #endif
+
+  /// @}
 
 private:
   /** Serialization function */

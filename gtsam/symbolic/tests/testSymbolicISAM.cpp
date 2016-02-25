@@ -87,7 +87,8 @@ TEST( SymbolicISAM, iSAM )
   fullGraph += SymbolicFactor(_B_, _S_);
 
   // This ordering is chosen to match the one chosen by COLAMD during the ISAM update
-  SymbolicBayesTree expected = *fullGraph.eliminateMultifrontal(Ordering(list_of(_X_)(_B_)(_S_)(_E_)(_L_)(_T_)));
+  Ordering ordering(list_of(_X_)(_B_)(_S_)(_E_)(_L_)(_T_));
+  SymbolicBayesTree expected = *fullGraph.eliminateMultifrontal(ordering);
 
   // Add factor on B and S
   SymbolicISAM actual = *asiaGraph.eliminateMultifrontal();

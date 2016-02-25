@@ -165,23 +165,23 @@ namespace gtsam {
       return variableColOffsets_[actualBlock];
     }
 
+    /** Get the apparent first row of the underlying matrix for all operations */
+    const DenseIndex& rowStart() const { return rowStart_; }
+
     /** Get or set the apparent first row of the underlying matrix for all operations */
     DenseIndex& rowStart() { return rowStart_; }
+
+    /** Get the apparent last row (exclusive, i.e. rows() == rowEnd() - rowStart()) of the underlying matrix for all operations */
+    const DenseIndex& rowEnd() const { return rowEnd_; }
 
     /** Get or set the apparent last row (exclusive, i.e. rows() == rowEnd() - rowStart()) of the underlying matrix for all operations */
     DenseIndex& rowEnd() { return rowEnd_; }
 
+    /** Get the apparent first block for all operations */
+    const DenseIndex& firstBlock() const { return blockStart_; }
+
     /** Get or set the apparent first block for all operations */
     DenseIndex& firstBlock() { return blockStart_; }
-
-    /** Get the apparent first row of the underlying matrix for all operations */
-    DenseIndex rowStart() const { return rowStart_; }
-
-    /** Get the apparent last row (exclusive, i.e. rows() == rowEnd() - rowStart()) of the underlying matrix for all operations */
-    DenseIndex rowEnd() const { return rowEnd_; }
-
-    /** Get the apparent first block for all operations */
-    DenseIndex firstBlock() const { return blockStart_; }
 
     /** Access to full matrix (*including* any portions excluded by rowStart(), rowEnd(), and firstBlock()) */
     const Matrix& matrix() const { return matrix_; }

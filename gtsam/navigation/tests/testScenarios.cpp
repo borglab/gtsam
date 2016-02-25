@@ -75,7 +75,7 @@ TEST(ScenarioRunner, Spin) {
 /* ************************************************************************* */
 namespace forward {
 const double v = 2;  // m/s
-ConstantTwistScenario scenario(Vector3::Zero(), Vector3(v, 0, 0));
+ConstantTwistScenario scenario(Z_3x1, Vector3(v, 0, 0));
 }
 /* ************************************************************************* */
 TEST(ScenarioRunner, Forward) {

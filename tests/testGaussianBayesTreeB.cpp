@@ -309,7 +309,8 @@ TEST(GaussianBayesTree, shortcut_overlapping_separator)
   // c(5|6)
   //   c(1,2|5)
   //   c(3,4|5)
-  GaussianBayesTree bt = *fg.eliminateMultifrontal(Ordering(fg.keys())); // eliminate in increasing key order, fg.keys() is sorted.
+  Ordering ordering(fg.keys());
+  GaussianBayesTree bt = *fg.eliminateMultifrontal(ordering); // eliminate in increasing key order, fg.keys() is sorted.
 
   GaussianFactorGraph joint = *bt.joint(1,2, EliminateQR);
 

@@ -94,9 +94,9 @@ TEST(ImuFactor, PreintegratedMeasurements) {
 
   // Actual pre-integrated values
   PreintegratedImuMeasurements actual(testing::Params());
-  EXPECT(assert_equal(Z_3x1, actual.theta()));
-  EXPECT(assert_equal(Z_3x1, actual.deltaPij()));
-  EXPECT(assert_equal(Z_3x1, actual.deltaVij()));
+  EXPECT(assert_equal(kZero, actual.theta()));
+  EXPECT(assert_equal(kZero, actual.deltaPij()));
+  EXPECT(assert_equal(kZero, actual.deltaVij()));
   DOUBLES_EQUAL(0.0, actual.deltaTij(), 1e-9);
 
   actual.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
@@ -185,8 +185,25 @@ TEST(ImuFactor, PreintegrationBaseMethods) {
       boost::bind(&PreintegrationBase::predict, pim, state1, _1, boost::none,
           boost::none), kZeroBias);
   EXPECT(assert_equal(eH2, aH2));
-  return;
+}
 
+/* ************************************************************************* */
+TEST(ImuFactor, MultipleMeasurements) {
+  using namespace common;
+
+  PreintegratedImuMeasurements expected(testing::Params(), kZeroBiasHat);
+  expected.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+  expected.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+
+  Matrix32 acc,gyro;
+  Matrix12 dts;
+  acc << measuredAcc, measuredAcc;
+  gyro << measuredOmega, measuredOmega;
+  dts << deltaT, deltaT;
+  PreintegratedImuMeasurements actual(testing::Params(), kZeroBiasHat);
+  actual.integrateMeasurements(acc,gyro,dts);
+
+  EXPECT(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */
@@ -436,9 +453,9 @@ TEST(ImuFactor, FirstOrderPreIntegratedMeasurements) {
   PreintegratedImuMeasurements pim(testing::Params());
   testing::integrateMeasurements(measurements, &pim);
 
-  EXPECT(assert_equal(numericalDerivative21(preintegrated, Z_3x1, Z_3x1),
+  EXPECT(assert_equal(numericalDerivative21(preintegrated, kZero, kZero),
                       pim.preintegrated_H_biasAcc()));
-  EXPECT(assert_equal(numericalDerivative22(preintegrated, Z_3x1, Z_3x1),
+  EXPECT(assert_equal(numericalDerivative22(preintegrated, kZero, kZero),
                       pim.preintegrated_H_biasOmega(), 1e-3));
 }
 
@@ -780,7 +797,7 @@ struct ImuFactorMergeTest {
 
   ImuFactorMergeTest()
       : p_(PreintegratedImuMeasurements::Params::MakeSharedU(kGravity)),
-        forward_(Z_3x1, Vector3(kVelocity, 0, 0)),
+        forward_(kZero, Vector3(kVelocity, 0, 0)),
         loop_(Vector3(0, -kAngularVelocity, 0), Vector3(kVelocity, 0, 0)) {
     // arbitrary noise values
     p_->gyroscopeCovariance = I_3x3 * 0.01;
@@ -865,6 +882,29 @@ TEST(ImuFactor, MergeWithCoriolis) {
   ImuFactorMergeTest mergeTest;
   mergeTest.p_->omegaCoriolis = Vector3(0.1, 0.2, -0.1);
   mergeTest.TestScenarios(result_, name_, kZeroBias, kZeroBias, 1e-4);
+}
+
+/* ************************************************************************* */
+// Same values as pre-integration test but now testing covariance
+TEST(ImuFactor, CheckCovariance) {
+  // Measurements
+  Vector3 measuredAcc(0.1, 0.0, 0.0);
+  Vector3 measuredOmega(M_PI / 100.0, 0.0, 0.0);
+  double deltaT = 0.5;
+
+  PreintegratedImuMeasurements actual(testing::Params());
+  actual.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+  Matrix9 expected;
+  expected << 1.0577e-08, 0, 0, 0, 0, 0, 0, 0, 0,     //
+      0, 1.0577e-08, 0, 0, 0, 0, 0, 0, 0,             //
+      0, 0, 1.0577e-08, 0, 0, 0, 0, 0, 0,             //
+      0, 0, 0, 5.00868e-05, 0, 0, 3.47222e-07, 0, 0,  //
+      0, 0, 0, 0, 5.00868e-05, 0, 0, 3.47222e-07, 0,  //
+      0, 0, 0, 0, 0, 5.00868e-05, 0, 0, 3.47222e-07,  //
+      0, 0, 0, 3.47222e-07, 0, 0, 1.38889e-06, 0, 0,  //
+      0, 0, 0, 0, 3.47222e-07, 0, 0, 1.38889e-06, 0,  //
+      0, 0, 0, 0, 0, 3.47222e-07, 0, 0, 1.38889e-06;
+  EXPECT(assert_equal(expected, actual.preintMeasCov()));
 }
 
 /* ************************************************************************* */

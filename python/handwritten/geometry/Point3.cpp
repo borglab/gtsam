@@ -27,6 +27,7 @@ using namespace gtsam;
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(print_overloads, Point3::print, 0, 1)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(equals_overloads, Point3::equals, 1, 2)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(norm_overloads, Point3::norm, 0, 1)
 
 void exportPoint3(){
 
@@ -40,7 +41,7 @@ class_<Point3>("Point3")
   .def("distance", &Point3::distance)
   .def("dot", &Point3::dot)
   .def("equals", &Point3::equals, equals_overloads(args("q","tol")))
-  .def("norm", &Point3::norm)
+  .def("norm", &Point3::norm, norm_overloads(args("OptionalJacobian<1,3>")))
   .def("normalized", &Point3::normalized)
   .def("print", &Point3::print, print_overloads(args("s")))
 #ifndef GTSAM_USE_VECTOR3_POINTS

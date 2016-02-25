@@ -71,7 +71,7 @@ TEST(Ordering, grouped_constrained_ordering) {
   SymbolicFactorGraph sfg = example::symbolicChain();
 
   // constrained version - push one set to the end
-  FastMap<size_t, int> constraints;
+  FastMap<Key, int> constraints;
   constraints[2] = 1;
   constraints[4] = 1;
   constraints[5] = 2;

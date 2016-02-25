@@ -61,12 +61,12 @@ public:
 };
 
 /**
- * Factor on unknown rotation R that relates two directions p_i = iRc * z_c
+ * Factor on unknown rotation iRc that relates two directions c
  * Directions provide less constraints than a full rotation
  */
 class RotateDirectionsFactor: public NoiseModelFactor1<Rot3> {
 
-  Unit3 p_, z_; ///< Predicted and measured directions, p = iRc * z
+  Unit3 i_p_, c_z_; ///< Predicted and measured directions, i_p = iRc * c_z
 
   typedef NoiseModelFactor1<Rot3> Base;
   typedef RotateDirectionsFactor This;
@@ -74,9 +74,17 @@ class RotateDirectionsFactor: public NoiseModelFactor1<Rot3> {
 public:
 
   /// Constructor
-  RotateDirectionsFactor(Key key, const Unit3& p, const Unit3& z,
+  RotateDirectionsFactor(Key key, const Unit3& i_p, const Unit3& c_z,
       const SharedNoiseModel& model) :
-      Base(model, key), p_(p), z_(z) {
+      Base(model, key), i_p_(i_p), c_z_(c_z) {
+  }
+
+  /// Initialize rotation iRc such that i_p = iRc * c_z
+  static Rot3 Initialize(const Unit3& i_p, const Unit3& c_z) {
+    gtsam::Quaternion iRc;
+    // setFromTwoVectors sets iRc to (a) quaternion which transform c_z into i_p
+    iRc.setFromTwoVectors(c_z.unitVector(), i_p.unitVector());
+    return Rot3(iRc);
   }
 
   /// @return a deep copy of this factor
@@ -89,23 +97,21 @@ public:
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
     Base::print(s);
     std::cout << "RotateDirectionsFactor:" << std::endl;
-    p_.print("p");
-    z_.print("z");
+    i_p_.print("p");
+    c_z_.print("z");
   }
 
   /// vector of errors returns 2D vector
-  Vector evaluateError(const Rot3& R,
-      boost::optional<Matrix&> H = boost::none) const {
-    Unit3 q = R * z_;
-    Vector e = p_.error(q, H);
+  Vector evaluateError(const Rot3& iRc, boost::optional<Matrix&> H = boost::none) const {
+    Unit3 i_q = iRc * c_z_;
+    Vector error = i_p_.error(i_q, H);
     if (H) {
       Matrix DR;
-      R.rotate(z_, DR);
+      iRc.rotate(c_z_, DR);
       *H = (*H) * DR;
     }
-    return e;
+    return error;
   }
-
 };
-} // gtsam
+}  // namespace gtsam
 

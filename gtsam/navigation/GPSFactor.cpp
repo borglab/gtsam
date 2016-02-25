@@ -25,7 +25,7 @@ namespace gtsam {
 //***************************************************************************
 void GPSFactor::print(const string& s, const KeyFormatter& keyFormatter) const {
   cout << s << "GPSFactor on " << keyFormatter(key()) << "\n";
-  cout << "  prior mean: " << nT_ << "\n";
+  cout << "  GPS measurement: " << nT_ << "\n";
   noiseModel_->print("  noise model: ");
 }
 
@@ -38,12 +38,7 @@ bool GPSFactor::equals(const NonlinearFactor& expected, double tol) const {
 //***************************************************************************
 Vector GPSFactor::evaluateError(const Pose3& p,
     boost::optional<Matrix&> H) const {
-  if (H) {
-    H->resize(3, 6);
-    H->block < 3, 3 > (0, 0) << zeros(3, 3);
-    H->block < 3, 3 > (0, 3) << p.rotation().matrix();
-  }
-  return p.translation() -nT_;
+  return p.translation(H) -nT_;
 }
 
 //***************************************************************************
@@ -68,6 +63,26 @@ pair<Pose3, Vector3> GPSFactor::EstimateState(double t1, const Point3& NED1,
 
   return make_pair(nTb, nV);
 }
+//***************************************************************************
+void GPSFactor2::print(const string& s, const KeyFormatter& keyFormatter) const {
+  cout << s << "GPSFactor2 on " << keyFormatter(key()) << "\n";
+  cout << "  GPS measurement: " << nT_.transpose() << endl;
+  noiseModel_->print("  noise model: ");
+}
+
+//***************************************************************************
+bool GPSFactor2::equals(const NonlinearFactor& expected, double tol) const {
+  const This* e = dynamic_cast<const This*>(&expected);
+  return e != NULL && Base::equals(*e, tol) &&
+         traits<Point3>::Equals(nT_, e->nT_, tol);
+}
+
+//***************************************************************************
+Vector GPSFactor2::evaluateError(const NavState& p,
+    boost::optional<Matrix&> H) const {
+  return p.position(H) -nT_;
+}
+
 //***************************************************************************
 
 }/// namespace gtsam

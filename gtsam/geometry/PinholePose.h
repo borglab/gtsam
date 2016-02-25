@@ -328,6 +328,11 @@ public:
   virtual ~PinholePose() {
   }
 
+  /// return shared pointer to calibration
+  const boost::shared_ptr<CALIBRATION>& sharedCalibration() const {
+    return K_;
+  }
+
   /// return calibration
   virtual const CALIBRATION& calibration() const {
     return *K_;

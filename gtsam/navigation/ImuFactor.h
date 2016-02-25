@@ -64,6 +64,7 @@ namespace gtsam {
 class PreintegratedImuMeasurements: public PreintegrationBase {
 
   friend class ImuFactor;
+  friend class ImuFactor2;
 
 protected:
 
@@ -114,11 +115,17 @@ public:
    * @param measuredOmega Measured angular velocity (as given by the sensor)
    * @param dt Time interval between this and the last IMU measurement
    */
-  void integrateMeasurement(const Vector3& measuredAcc,
-      const Vector3& measuredOmega, double dt);
+  void integrateMeasurement(const Vector3& measuredAcc, const Vector3& measuredOmega, double dt);
+
+  /// Add multiple measurements, in matrix columns
+  void integrateMeasurements(const Matrix& measuredAccs, const Matrix& measuredOmegas,
+                             const Matrix& dts);
 
   /// Return pre-integrated measurement covariance
   Matrix preintMeasCov() const { return preintMeasCov_; }
+
+  /// Merge in a different set of measurements and update bias derivatives accordingly
+  void mergeWith(const PreintegratedImuMeasurements& pim, Matrix9* H1, Matrix9* H2);
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
   /// @deprecated constructor
@@ -162,8 +169,6 @@ private:
  */
 class ImuFactor: public NoiseModelFactor5<Pose3, Vector3, Pose3, Vector3,
     imuBias::ConstantBias> {
-public:
-
 private:
 
   typedef ImuFactor This;
@@ -220,7 +225,7 @@ public:
   /// vector of errors
   Vector evaluateError(const Pose3& pose_i, const Vector3& vel_i,
       const Pose3& pose_j, const Vector3& vel_j,
-      const imuBias::ConstantBias& bias, boost::optional<Matrix&> H1 =
+      const imuBias::ConstantBias& bias_i, boost::optional<Matrix&> H1 =
           boost::none, boost::optional<Matrix&> H2 = boost::none,
       boost::optional<Matrix&> H3 = boost::none, boost::optional<Matrix&> H4 =
           boost::none, boost::optional<Matrix&> H5 = boost::none) const;
@@ -265,10 +270,81 @@ private:
 };
 // class ImuFactor
 
+/**
+ * ImuFactor2 is a ternary factor that uses NavStates rather than Pose/Velocity.
+ * @addtogroup SLAM
+ */
+class ImuFactor2 : public NoiseModelFactor3<NavState, NavState, imuBias::ConstantBias> {
+private:
+
+  typedef ImuFactor2 This;
+  typedef NoiseModelFactor3<NavState, NavState, imuBias::ConstantBias> Base;
+
+  PreintegratedImuMeasurements _PIM_;
+
+public:
+
+  /** Default constructor - only use for serialization */
+  ImuFactor2() {}
+
+  /**
+   * Constructor
+   * @param state_i Previous state key
+   * @param state_j Current state key
+   * @param bias    Previous bias key
+   */
+  ImuFactor2(Key state_i, Key state_j, Key bias,
+             const PreintegratedImuMeasurements& preintegratedMeasurements);
+
+  virtual ~ImuFactor2() {
+  }
+
+  /// @return a deep copy of this factor
+  virtual gtsam::NonlinearFactor::shared_ptr clone() const;
+
+  /// @name Testable
+  /// @{
+  GTSAM_EXPORT friend std::ostream& operator<<(std::ostream& os, const ImuFactor2&);
+  virtual void print(const std::string& s, const KeyFormatter& keyFormatter =
+      DefaultKeyFormatter) const;
+  virtual bool equals(const NonlinearFactor& expected, double tol = 1e-9) const;
+  /// @}
+
+  /** Access the preintegrated measurements. */
+
+  const PreintegratedImuMeasurements& preintegratedMeasurements() const {
+    return _PIM_;
+  }
+
+  /** implement functions needed to derive from Factor */
+
+  /// vector of errors
+  Vector evaluateError(const NavState& state_i, const NavState& state_j,
+                       const imuBias::ConstantBias& bias_i,  //
+                       boost::optional<Matrix&> H1 = boost::none,
+                       boost::optional<Matrix&> H2 = boost::none,
+                       boost::optional<Matrix&> H3 = boost::none) const;
+
+private:
+
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+    ar & boost::serialization::make_nvp("NoiseModelFactor3",
+         boost::serialization::base_object<Base>(*this));
+    ar & BOOST_SERIALIZATION_NVP(_PIM_);
+  }
+};
+// class ImuFactor2
+
 template <>
 struct traits<PreintegratedImuMeasurements> : public Testable<PreintegratedImuMeasurements> {};
 
 template <>
 struct traits<ImuFactor> : public Testable<ImuFactor> {};
+
+template <>
+struct traits<ImuFactor2> : public Testable<ImuFactor2> {};
 
 } /// namespace gtsam

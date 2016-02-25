@@ -27,7 +27,7 @@ class PreintegrationExample(object):
         params.integrationCovariance = 0.0000001 ** 2 * np.identity(3, np.float)
         return params
 
-    def __init__(self, twist=None, bias=None):
+    def __init__(self, twist=None, bias=None, dt=1e-2):
         """Initialize with given twist, a pair(angularVelocityVector, velocityVector)."""
         
         # setup interactive plotting
@@ -43,7 +43,7 @@ class PreintegrationExample(object):
             V = np.array([2, 0, 0])
 
         self.scenario = gtsam.ConstantTwistScenario(W, V)
-        self.dt = 1e-2
+        self.dt = dt
 
         self.maxDim = 5
         self.labels = list('xyz')

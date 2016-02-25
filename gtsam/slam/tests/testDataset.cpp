@@ -413,8 +413,8 @@ TEST( dataSet, writeBAL_Dubrovnik)
   CHECK(readBAL(filenameToWrite, writtenData));
 
   // Check that what we read is the same as what we wrote
-  EXPECT(assert_equal(readData.number_cameras(),writtenData.number_cameras()));
-  EXPECT(assert_equal(readData.number_tracks(),writtenData.number_tracks()));
+  EXPECT_LONGS_EQUAL(readData.number_cameras(),writtenData.number_cameras());
+  EXPECT_LONGS_EQUAL(readData.number_tracks(),writtenData.number_tracks());
 
   for (size_t i = 0; i < readData.number_cameras(); i++){
     PinholeCamera<Cal3Bundler> expectedCamera = writtenData.cameras[i];
@@ -437,7 +437,7 @@ TEST( dataSet, writeBAL_Dubrovnik)
 
     // check measurements
     for (size_t k = 0; k < actualTrack.number_measurements(); k++){
-      EXPECT(assert_equal(expectedTrack.measurements[k].first,actualTrack.measurements[k].first));
+      EXPECT_LONGS_EQUAL(expectedTrack.measurements[k].first,actualTrack.measurements[k].first);
       EXPECT(assert_equal(expectedTrack.measurements[k].second,actualTrack.measurements[k].second));
     }
   }

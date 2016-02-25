@@ -81,6 +81,71 @@ TEST( Point3, dot) {
   Point3 origin(0,0,0), ones(1, 1, 1);
   CHECK(origin.dot(Point3(1, 1, 0)) == 0);
   CHECK(ones.dot(Point3(1, 1, 0)) == 2);
+
+  Point3 p(1, 0.2, 0.3);
+  Point3 q = p + Point3(0.5, 0.2, -3.0);
+  Point3 r = p + Point3(0.8, 0, 0);
+  Point3 t = p + Point3(0, 0.3, -0.4);
+  EXPECT(assert_equal(1.130000, p.dot(p), 1e-8));
+  EXPECT(assert_equal(0.770000, p.dot(q), 1e-5));
+  EXPECT(assert_equal(1.930000, p.dot(r), 1e-5));
+  EXPECT(assert_equal(1.070000, p.dot(t), 1e-5));
+
+  // Use numerical derivatives to calculate the expected Jacobians
+  Matrix H1, H2;
+  boost::function<double(const Point3&, const Point3&)> f =
+      [](const Point3& p, const Point3& q) { return gtsam::dot(p, q); };
+  {
+    gtsam::dot(p, q, H1, H2);
+    EXPECT(assert_equal(numericalDerivative21<double,Point3>(f, p, q), H1, 1e-9));
+    EXPECT(assert_equal(numericalDerivative22<double,Point3>(f, p, q), H2, 1e-9));
+  }
+  {
+    gtsam::dot(p, r, H1, H2);
+    EXPECT(assert_equal(numericalDerivative21<double,Point3>(f, p, r), H1, 1e-9));
+    EXPECT(assert_equal(numericalDerivative22<double,Point3>(f, p, r), H2, 1e-9));
+  }
+  {
+    gtsam::dot(p, t, H1, H2);
+    EXPECT(assert_equal(numericalDerivative21<double,Point3>(f, p, t), H1, 1e-9));
+    EXPECT(assert_equal(numericalDerivative22<double,Point3>(f, p, t), H2, 1e-9));
+  }
+}
+
+/* ************************************************************************* */
+TEST(Point3, cross) {
+  Matrix aH1, aH2;
+  boost::function<Point3(const Point3&, const Point3&)> f =
+      boost::bind(&gtsam::cross, _1, _2, boost::none, boost::none);
+  const Point3 omega(0, 1, 0), theta(4, 6, 8);
+  cross(omega, theta, aH1, aH2);
+  EXPECT(assert_equal(numericalDerivative21(f, omega, theta), aH1));
+  EXPECT(assert_equal(numericalDerivative22(f, omega, theta), aH2));
+}
+
+/* ************************************************************************* */
+TEST( Point3, cross2) {
+  Point3 p(1, 0.2, 0.3);
+  Point3 q = p + Point3(0.5, 0.2, -3.0);
+  Point3 r = p + Point3(0.8, 0, 0);
+  EXPECT(assert_equal(Point3(0, 0, 0), p.cross(p), 1e-8));
+  EXPECT(assert_equal(Point3(-0.66, 3.15, 0.1), p.cross(q), 1e-5));
+  EXPECT(assert_equal(Point3(0, 0.24, -0.16), p.cross(r), 1e-5));
+
+  // Use numerical derivatives to calculate the expected Jacobians
+  Matrix H1, H2;
+  boost::function<Point3(const Point3&, const Point3&)> f = boost::bind(&gtsam::cross, _1, _2,  //
+                                                                      boost::none, boost::none);
+  {
+    gtsam::cross(p, q, H1, H2);
+    EXPECT(assert_equal(numericalDerivative21<Point3,Point3>(f, p, q), H1, 1e-9));
+    EXPECT(assert_equal(numericalDerivative22<Point3,Point3>(f, p, q), H2, 1e-9));
+  }
+  {
+    gtsam::cross(p, r, H1, H2);
+    EXPECT(assert_equal(numericalDerivative21<Point3,Point3>(f, p, r), H1, 1e-9));
+    EXPECT(assert_equal(numericalDerivative22<Point3,Point3>(f, p, r), H2, 1e-9));
+  }
 }
 
 /* ************************************************************************* */
@@ -133,17 +198,6 @@ TEST (Point3, distance) {
   DOUBLES_EQUAL(expectedDistance, d, 1e-5);
   EXPECT(assert_equal(numH1, H1, 1e-8));
   EXPECT(assert_equal(numH2, H2, 1e-8));
-}
-
-/* ************************************************************************* */
-TEST(Point3, cross) {
-  Matrix aH1, aH2;
-  boost::function<Point3(const Point3&, const Point3&)> f =
-      boost::bind(&gtsam::cross, _1, _2, boost::none, boost::none);
-  const Point3 omega(0, 1, 0), theta(4, 6, 8);
-  cross(omega, theta, aH1, aH2);
-  EXPECT(assert_equal(numericalDerivative21(f, omega, theta), aH1));
-  EXPECT(assert_equal(numericalDerivative22(f, omega, theta), aH2));
 }
 
 /* ************************************************************************* */

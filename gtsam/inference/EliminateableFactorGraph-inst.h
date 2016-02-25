@@ -48,16 +48,20 @@ namespace gtsam {
       // If no VariableIndex provided, compute one and call this function again IMPORTANT: we check
       // for no variable index first so that it's always computed if we need to call COLAMD because
       // no Ordering is provided.
-      return eliminateSequential(ordering, function, VariableIndex(asDerived()), orderingType);
+      VariableIndex computedVariableIndex(asDerived());
+      return eliminateSequential(ordering, function, computedVariableIndex, orderingType);
     }
     else /*if(!ordering)*/ {
       // If no Ordering provided, compute one and call this function again.  We are guaranteed to
       // have a VariableIndex already here because we computed one if needed in the previous 'else'
       // block.
-      if (orderingType == Ordering::METIS)
-        return eliminateSequential(Ordering::Metis(asDerived()), function, variableIndex, orderingType);
-      else
-        return eliminateSequential(Ordering::Colamd(*variableIndex), function, variableIndex, orderingType);
+      if (orderingType == Ordering::METIS) {
+        Ordering computedOrdering = Ordering::Metis(asDerived());
+        return eliminateSequential(computedOrdering, function, variableIndex, orderingType);
+      } else {
+        Ordering computedOrdering = Ordering::Colamd(*variableIndex);
+        return eliminateSequential(computedOrdering, function, variableIndex, orderingType);
+      }
     }
   }
 
@@ -86,16 +90,20 @@ namespace gtsam {
       // If no VariableIndex provided, compute one and call this function again IMPORTANT: we check
       // for no variable index first so that it's always computed if we need to call COLAMD because
       // no Ordering is provided.
-      return eliminateMultifrontal(ordering, function, VariableIndex(asDerived()), orderingType);
+      VariableIndex computedVariableIndex(asDerived());
+      return eliminateMultifrontal(ordering, function, computedVariableIndex, orderingType);
     }
     else /*if(!ordering)*/ {
       // If no Ordering provided, compute one and call this function again.  We are guaranteed to
       // have a VariableIndex already here because we computed one if needed in the previous 'else'
       // block.
-      if (orderingType == Ordering::METIS)
-        return eliminateMultifrontal(Ordering::Metis(asDerived()), function, variableIndex, orderingType);
-      else
-        return eliminateMultifrontal(Ordering::Colamd(*variableIndex), function, variableIndex, orderingType);
+      if (orderingType == Ordering::METIS) {
+        Ordering computedOrdering = Ordering::Metis(asDerived());
+        return eliminateMultifrontal(computedOrdering, function, variableIndex, orderingType);
+      } else {
+        Ordering computedOrdering = Ordering::Colamd(*variableIndex);
+        return eliminateMultifrontal(computedOrdering, function, variableIndex, orderingType);
+      }
     }
   }
 
@@ -112,7 +120,8 @@ namespace gtsam {
       return etree.eliminate(function);
     } else {
       // If no variable index is provided, compute one and call this function again
-      return eliminatePartialSequential(ordering, function, VariableIndex(asDerived()));
+      VariableIndex computedVariableIndex(asDerived());
+      return eliminatePartialSequential(ordering, function, computedVariableIndex);
     }
   }
 
@@ -132,7 +141,8 @@ namespace gtsam {
       return eliminatePartialSequential(ordering, function, variableIndex);
     } else {
       // If no variable index is provided, compute one and call this function again
-      return eliminatePartialSequential(variables, function, VariableIndex(asDerived()));
+      VariableIndex computedVariableIndex(asDerived());
+      return eliminatePartialSequential(variables, function, computedVariableIndex);
     }
   }
 
@@ -150,7 +160,8 @@ namespace gtsam {
       return junctionTree.eliminate(function);
     } else {
       // If no variable index is provided, compute one and call this function again
-      return eliminatePartialMultifrontal(ordering, function, VariableIndex(asDerived()));
+      VariableIndex computedVariableIndex(asDerived());
+      return eliminatePartialMultifrontal(ordering, function, computedVariableIndex);
     }
   }
 
@@ -170,7 +181,8 @@ namespace gtsam {
       return eliminatePartialMultifrontal(ordering, function, variableIndex);
     } else {
       // If no variable index is provided, compute one and call this function again
-      return eliminatePartialMultifrontal(variables, function, VariableIndex(asDerived()));
+      VariableIndex computedVariableIndex(asDerived());
+      return eliminatePartialMultifrontal(variables, function, computedVariableIndex);
     }
   }
 
@@ -287,7 +299,8 @@ namespace gtsam {
       }
     } else {
       // If no variable index is provided, compute one and call this function again
-      return marginalMultifrontalBayesTree(variables, marginalizedVariableOrdering, function, VariableIndex(asDerived()));
+      VariableIndex computedVariableIndex(asDerived());
+      return marginalMultifrontalBayesTree(variables, marginalizedVariableOrdering, function, computedVariableIndex);
     }
   }
 
@@ -312,7 +325,8 @@ namespace gtsam {
     else
     {
       // If no variable index is provided, compute one and call this function again
-      return marginal(variables, function, VariableIndex(asDerived()));
+      VariableIndex computedVariableIndex(asDerived());
+      return marginal(variables, function, computedVariableIndex);
     }
   }
 

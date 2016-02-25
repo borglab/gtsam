@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -46,29 +46,29 @@ typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> M
 
 // Create handy typedefs and constants for square-size matrices
 // MatrixMN, MatrixN = MatrixNN, I_NxN, and Z_NxN, for M,N=1..9
-#define GTSAM_MAKE_TYPEDEFS(SIZE, SUFFIX)   \
-typedef Eigen::Matrix<double, SIZE, SIZE> Matrix##SUFFIX;  \
-typedef Eigen::Matrix<double, 1, SIZE> Matrix1##SUFFIX;  \
-typedef Eigen::Matrix<double, 2, SIZE> Matrix2##SUFFIX;  \
-typedef Eigen::Matrix<double, 3, SIZE> Matrix3##SUFFIX;  \
-typedef Eigen::Matrix<double, 4, SIZE> Matrix4##SUFFIX;  \
-typedef Eigen::Matrix<double, 5, SIZE> Matrix5##SUFFIX;  \
-typedef Eigen::Matrix<double, 6, SIZE> Matrix6##SUFFIX;  \
-typedef Eigen::Matrix<double, 7, SIZE> Matrix7##SUFFIX;  \
-typedef Eigen::Matrix<double, 8, SIZE> Matrix8##SUFFIX;  \
-typedef Eigen::Matrix<double, 9, SIZE> Matrix9##SUFFIX;  \
-static const Eigen::MatrixBase<Matrix##SUFFIX>::IdentityReturnType I_##SUFFIX##x##SUFFIX = Matrix##SUFFIX::Identity(); \
-static const Eigen::MatrixBase<Matrix##SUFFIX>::ConstantReturnType Z_##SUFFIX##x##SUFFIX = Matrix##SUFFIX::Zero();
+#define GTSAM_MAKE_MATRIX_DEFS(N)   \
+typedef Eigen::Matrix<double, N, N> Matrix##N;  \
+typedef Eigen::Matrix<double, 1, N> Matrix1##N;  \
+typedef Eigen::Matrix<double, 2, N> Matrix2##N;  \
+typedef Eigen::Matrix<double, 3, N> Matrix3##N;  \
+typedef Eigen::Matrix<double, 4, N> Matrix4##N;  \
+typedef Eigen::Matrix<double, 5, N> Matrix5##N;  \
+typedef Eigen::Matrix<double, 6, N> Matrix6##N;  \
+typedef Eigen::Matrix<double, 7, N> Matrix7##N;  \
+typedef Eigen::Matrix<double, 8, N> Matrix8##N;  \
+typedef Eigen::Matrix<double, 9, N> Matrix9##N;  \
+static const Eigen::MatrixBase<Matrix##N>::IdentityReturnType I_##N##x##N = Matrix##N::Identity(); \
+static const Eigen::MatrixBase<Matrix##N>::ConstantReturnType Z_##N##x##N = Matrix##N::Zero();
 
-GTSAM_MAKE_TYPEDEFS(1,1);
-GTSAM_MAKE_TYPEDEFS(2,2);
-GTSAM_MAKE_TYPEDEFS(3,3);
-GTSAM_MAKE_TYPEDEFS(4,4);
-GTSAM_MAKE_TYPEDEFS(5,5);
-GTSAM_MAKE_TYPEDEFS(6,6);
-GTSAM_MAKE_TYPEDEFS(7,7);
-GTSAM_MAKE_TYPEDEFS(8,8);
-GTSAM_MAKE_TYPEDEFS(9,9);
+GTSAM_MAKE_MATRIX_DEFS(1);
+GTSAM_MAKE_MATRIX_DEFS(2);
+GTSAM_MAKE_MATRIX_DEFS(3);
+GTSAM_MAKE_MATRIX_DEFS(4);
+GTSAM_MAKE_MATRIX_DEFS(5);
+GTSAM_MAKE_MATRIX_DEFS(6);
+GTSAM_MAKE_MATRIX_DEFS(7);
+GTSAM_MAKE_MATRIX_DEFS(8);
+GTSAM_MAKE_MATRIX_DEFS(9);
 
 // Matrix expressions for accessing parts of matrices
 typedef Eigen::Block<Matrix> SubMatrix;
@@ -135,7 +135,7 @@ inline bool operator==(const Matrix& A, const Matrix& B) {
 }
 
 /**
- * inequality 
+ * inequality
  */
 inline bool operator!=(const Matrix& A, const Matrix& B) {
   return !(A==B);
@@ -371,7 +371,7 @@ GTSAM_EXPORT Matrix inverse(const Matrix& A);
  * m*n matrix -> m*m Q, m*n R
  * @param A a matrix
  * @return <Q,R> rotation matrix Q, upper triangular R
- */ 
+ */
 GTSAM_EXPORT std::pair<Matrix,Matrix> qr(const Matrix& A);
 
 /**
@@ -434,7 +434,7 @@ GTSAM_EXPORT Vector backSubstituteUpper(const Vector& b, const Matrix& U, bool u
  * @param b an RHS vector
  * @param unit, set true if unit triangular
  * @return the solution x of L*x=b
- */ 
+ */
 GTSAM_EXPORT Vector backSubstituteLower(const Matrix& L, const Vector& b, bool unit=false);
 
 /**

@@ -215,6 +215,13 @@ namespace gtsam {
       return Rodrigues(Vector3(wx, wy, wz));
     }
 
+    /// Determine a rotation to bring two vectors into alignment, using the rotation axis provided
+    static Rot3 AlignPair(const Unit3& axis, const Unit3& a_p, const Unit3& b_p);
+
+    /// Calculate rotation from two pairs of homogeneous points using two successive rotations
+    static Rot3 AlignTwoPairs(const Unit3& a_p, const Unit3& b_p,  //
+                              const Unit3& a_q, const Unit3& b_q);
+
     /// @}
     /// @name Testable
     /// @{
@@ -456,9 +463,6 @@ namespace gtsam {
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
     /// @name Deprecated
     /// @{
-#ifndef GTSAM_USE_VECTOR3_POINTS
-    static Rot3 rodriguez(const Vector3& axis, double angle) { return AxisAngle(axis, angle); }
-#endif
     static Rot3 rodriguez(const Point3&  axis, double angle) { return AxisAngle(axis, angle); }
     static Rot3 rodriguez(const Unit3&   axis, double angle) { return AxisAngle(axis, angle); }
     static Rot3 rodriguez(const Vector3& w)                  { return Rodrigues(w); }
