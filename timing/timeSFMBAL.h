@@ -67,7 +67,7 @@ int optimize(const SfM_data& db, const NonlinearFactorGraph& graph,
   // Set parameters to be similar to ceres
   LevenbergMarquardtParams params;
   LevenbergMarquardtParams::SetCeresDefaults(&params);
-  params.setVerbosityLM("SUMMARY");
+//  params.setVerbosityLM("SUMMARY");
 
   if (gUseSchur) {
     // Create Schur-complement ordering
@@ -81,8 +81,11 @@ int optimize(const SfM_data& db, const NonlinearFactorGraph& graph,
   }
 
   // Optimize
-  LevenbergMarquardtOptimizer lm(graph, initial, params);
-  Values result = lm.optimize();
+  {
+    gttic_(optimize);
+    LevenbergMarquardtOptimizer lm(graph, initial, params);
+    Values result = lm.optimize();
+  }
 
   tictoc_finishedIteration_();
   tictoc_print_();
