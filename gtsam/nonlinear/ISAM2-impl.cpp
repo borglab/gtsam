@@ -46,7 +46,7 @@ void ISAM2::Impl::AddVariables(
 
 /* ************************************************************************* */
 void ISAM2::Impl::AddFactorsStep1(const NonlinearFactorGraph& newFactors, bool useUnusedSlots,
-  NonlinearFactorGraph& nonlinearFactors, FastVector<size_t>& newFactorIndices)
+  NonlinearFactorGraph& nonlinearFactors, FactorIndices& newFactorIndices)
 {
   newFactorIndices.resize(newFactors.size());
 

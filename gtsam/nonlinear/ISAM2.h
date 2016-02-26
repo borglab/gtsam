@@ -257,6 +257,7 @@ struct GTSAM_EXPORT ISAM2Params {
   /// @}
 };
 
+typedef FastVector<size_t> FactorIndices;
 
 /**
  * @addtogroup ISAM2
@@ -318,7 +319,7 @@ struct GTSAM_EXPORT ISAM2Result {
    * factors passed as \c newFactors to ISAM2::update().  These indices may be
    * used later to refer to the factors in order to remove them.
    */
-  FastVector<size_t> newFactorsIndices;
+  FactorIndices newFactorsIndices;
 
   /** A struct holding detailed results, which must be enabled with
    * ISAM2Params::enableDetailedResults.
@@ -530,7 +531,7 @@ public:
    */
   virtual ISAM2Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(),
       const Values& newTheta = Values(),
-      const std::vector<size_t>& removeFactorIndices = std::vector<size_t>(),
+      const FactorIndices& removeFactorIndices = FactorIndices(),
       const boost::optional<FastMap<Key,int> >& constrainedKeys = boost::none,
       const boost::optional<FastList<Key> >& noRelinKeys = boost::none,
       const boost::optional<FastList<Key> >& extraReelimKeys = boost::none,
@@ -551,8 +552,8 @@ public:
    * indices of any factor that was removed during the 'marginalizeLeaves' call
    */
   void marginalizeLeaves(const FastList<Key>& leafKeys,
-    boost::optional<std::vector<size_t>&> marginalFactorsIndices = boost::none,
-    boost::optional<std::vector<size_t>&> deletedFactorsIndices = boost::none);
+    boost::optional<FactorIndices&> marginalFactorsIndices = boost::none,
+    boost::optional<FactorIndices&> deletedFactorsIndices = boost::none);
 
   /// Access the current linearization point
   const Values& getLinearizationPoint() const {
