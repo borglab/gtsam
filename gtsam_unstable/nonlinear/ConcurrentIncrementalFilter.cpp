@@ -43,7 +43,7 @@ bool ConcurrentIncrementalFilter::equals(const ConcurrentFilter& rhs, double tol
 
 /* ************************************************************************* */
 ConcurrentIncrementalFilter::Result ConcurrentIncrementalFilter::update(const NonlinearFactorGraph& newFactors, const Values& newTheta,
-    const boost::optional<FastList<Key> >& keysToMove, const boost::optional< std::vector<size_t> >& removeFactorIndices) {
+    const boost::optional<FastList<Key> >& keysToMove, const boost::optional< FactorIndices >& removeFactorIndices) {
 
   gttic(update);
 
@@ -117,7 +117,7 @@ ConcurrentIncrementalFilter::Result ConcurrentIncrementalFilter::update(const No
 
     gttic(cache_smoother_factors);
     // Find the set of factors that will be removed
-    std::vector<size_t> removedFactorSlots = FindAdjacentFactors(isam2_, *keysToMove, currentSmootherSummarizationSlots_);
+    FactorIndices removedFactorSlots = FindAdjacentFactors(isam2_, *keysToMove, currentSmootherSummarizationSlots_);
     // Cache these factors for later transmission to the smoother
     NonlinearFactorGraph removedFactors;
     BOOST_FOREACH(size_t slot, removedFactorSlots) {
@@ -134,8 +134,8 @@ ConcurrentIncrementalFilter::Result ConcurrentIncrementalFilter::update(const No
     gttoc(cache_smoother_factors);
 
     gttic(marginalize);
-    std::vector<size_t> marginalFactorsIndices;
-    std::vector<size_t> deletedFactorsIndices;
+    FactorIndices marginalFactorsIndices;
+    FactorIndices deletedFactorsIndices;
     isam2_.marginalizeLeaves(*keysToMove, marginalFactorsIndices, deletedFactorsIndices);
     currentSmootherSummarizationSlots_.insert(currentSmootherSummarizationSlots_.end(), marginalFactorsIndices.begin(), marginalFactorsIndices.end());
     BOOST_FOREACH(size_t index, deletedFactorsIndices) {
@@ -285,10 +285,10 @@ void ConcurrentIncrementalFilter::RecursiveMarkAffectedKeys(const Key& key, cons
 }
 
 /* ************************************************************************* */
-std::vector<size_t> ConcurrentIncrementalFilter::FindAdjacentFactors(const ISAM2& isam2, const FastList<Key>& keys, const std::vector<size_t>& factorsToIgnore) {
+FactorIndices ConcurrentIncrementalFilter::FindAdjacentFactors(const ISAM2& isam2, const FastList<Key>& keys, const FactorIndices& factorsToIgnore) {
 
   // Identify any new factors to be sent to the smoother (i.e. any factor involving keysToMove)
-  std::vector<size_t> removedFactorSlots;
+  FactorIndices removedFactorSlots;
   const VariableIndex& variableIndex = isam2.getVariableIndex();
   BOOST_FOREACH(Key key, keys) {
     const FastVector<size_t>& slots = variableIndex[key];
