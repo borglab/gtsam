@@ -510,7 +510,7 @@ boost::shared_ptr<KeySet > ISAM2::recalculate(const KeySet& markedKeys, const Ke
 
 /* ************************************************************************* */
 ISAM2Result ISAM2::update(
-    const NonlinearFactorGraph& newFactors, const Values& newTheta, const KeyVector& removeFactorIndices,
+    const NonlinearFactorGraph& newFactors, const Values& newTheta, const FactorIndices& removeFactorIndices,
     const boost::optional<FastMap<Key,int> >& constrainedKeys, const boost::optional<FastList<Key> >& noRelinKeys,
     const boost::optional<FastList<Key> >& extraReelimKeys, bool force_relinearize)
 {
@@ -753,8 +753,8 @@ ISAM2Result ISAM2::update(
 
 /* ************************************************************************* */
 void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeysList,
-                              boost::optional<std::vector<size_t>&> marginalFactorsIndices,
-                              boost::optional<std::vector<size_t>&> deletedFactorsIndices)
+                              boost::optional<FactorIndices&> marginalFactorsIndices,
+                              boost::optional<FactorIndices&> deletedFactorsIndices)
 {
   // Convert to ordered set
   KeySet leafKeys(leafKeysList.begin(), leafKeysList.end());

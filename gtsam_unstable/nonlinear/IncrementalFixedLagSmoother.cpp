@@ -126,7 +126,7 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
 
   // Update iSAM2
   ISAM2Result isamResult = isam_.update(newFactors, newTheta,
-      KeyVector(), constrainedKeys, boost::none, additionalMarkedKeys);
+      FactorIndices(), constrainedKeys, boost::none, additionalMarkedKeys);
 
   if (debug) {
     PrintSymbolicTree(isam_,
