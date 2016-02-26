@@ -530,7 +530,7 @@ public:
    */
   virtual ISAM2Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(),
       const Values& newTheta = Values(),
-      const std::vector<size_t>& removeFactorIndices = std::vector<size_t>(),
+      const KeyVector& removeFactorIndices = KeyVector(),
       const boost::optional<FastMap<Key,int> >& constrainedKeys = boost::none,
       const boost::optional<FastList<Key> >& noRelinKeys = boost::none,
       const boost::optional<FastList<Key> >& extraReelimKeys = boost::none,
