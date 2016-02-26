@@ -719,7 +719,7 @@ bool readBAL(const string& filename, SfM_data &data) {
     size_t i = 0, j = 0;
     float u, v;
     is >> i >> j >> u >> v;
-    data.tracks[j].emplace_back(i, Point2(u, -v));
+    data.tracks[j].measurements.emplace_back(i, Point2(u, -v));
   }
 
   // Get the information for the camera poses
