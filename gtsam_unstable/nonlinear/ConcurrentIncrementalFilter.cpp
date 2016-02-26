@@ -56,7 +56,7 @@ ConcurrentIncrementalFilter::Result ConcurrentIncrementalFilter::update(const No
   Result result;
 
   // We do not need to remove any factors at this time
-  KeyVector removedFactors;
+  FactorIndices removedFactors;
 
   if(removeFactorIndices){
     removedFactors.insert(removedFactors.end(), removeFactorIndices->begin(), removeFactorIndices->end());
@@ -210,7 +210,7 @@ void ConcurrentIncrementalFilter::synchronize(const NonlinearFactorGraph& smooth
       isam2_.params().getEliminationFunction());
 
   // Remove the old factors on the separator and insert the new ones
-  KeyVector removeFactors(currentSmootherSummarizationSlots_.begin(), currentSmootherSummarizationSlots_.end());
+  FactorIndices removeFactors(currentSmootherSummarizationSlots_.begin(), currentSmootherSummarizationSlots_.end());
   ISAM2Result result = isam2_.update(currentSmootherSummarization, Values(), removeFactors, boost::none, noRelinKeys, boost::none, false);
   currentSmootherSummarizationSlots_ = result.newFactorsIndices;
 

@@ -45,7 +45,7 @@ bool ConcurrentIncrementalSmoother::equals(const ConcurrentSmoother& rhs, double
 
 /* ************************************************************************* */
 ConcurrentIncrementalSmoother::Result ConcurrentIncrementalSmoother::update(const NonlinearFactorGraph& newFactors, const Values& newTheta,
-    const boost::optional<KeyVector>& removeFactorIndices) {
+    const boost::optional<FactorIndices>& removeFactorIndices) {
 
   gttic(update);
 
@@ -106,7 +106,7 @@ ConcurrentIncrementalSmoother::Result ConcurrentIncrementalSmoother::update(cons
       synchronizationUpdatesAvailable_ = false;
     } else {
       // Update the system using iSAM2
-      isam2Result = isam2_.update(newFactors, newTheta, KeyVector(), constrainedKeys, noRelinKeys);
+      isam2Result = isam2_.update(newFactors, newTheta, FactorIndices(), constrainedKeys, noRelinKeys);
     }
   }
 
