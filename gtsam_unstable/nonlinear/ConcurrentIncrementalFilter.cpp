@@ -56,43 +56,43 @@ ConcurrentIncrementalFilter::Result ConcurrentIncrementalFilter::update(const No
   Result result;
 
   // We do not need to remove any factors at this time
-  gtsam::FastVector<size_t> removedFactors;
+  KeyVector removedFactors;
 
   if(removeFactorIndices){
     removedFactors.insert(removedFactors.end(), removeFactorIndices->begin(), removeFactorIndices->end());
   }
 
   // Generate ordering constraints that force the 'keys to move' to the end
-  boost::optional<gtsam::FastMap<gtsam::Key,int> > orderingConstraints = boost::none;
+  boost::optional<FastMap<Key,int> > orderingConstraints = boost::none;
   if(keysToMove && keysToMove->size() > 0) {
-    orderingConstraints = gtsam::FastMap<gtsam::Key,int>();
+    orderingConstraints = FastMap<Key,int>();
     int group = 1;
     // Set all existing variables to Group1
     if(isam2_.getLinearizationPoint().size() > 0) {
-      BOOST_FOREACH(const gtsam::Values::ConstKeyValuePair& key_value, isam2_.getLinearizationPoint()) {
+      BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, isam2_.getLinearizationPoint()) {
         orderingConstraints->operator[](key_value.key) = group;
       }
       ++group;
     }
     // Assign new variables to the root
-    BOOST_FOREACH(const gtsam::Values::ConstKeyValuePair& key_value, newTheta) {
+    BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, newTheta) {
       orderingConstraints->operator[](key_value.key) = group;
     }
     // Set marginalizable variables to Group0
-    BOOST_FOREACH(gtsam::Key key, *keysToMove){
+    BOOST_FOREACH(Key key, *keysToMove){
       orderingConstraints->operator[](key) = 0;
     }
   }
 
   // Create the set of linear keys that iSAM2 should hold constant
   // iSAM2 takes care of this for us; no need to specify additional noRelin keys
-  boost::optional<gtsam::FastList<gtsam::Key> > noRelinKeys = boost::none;
+  boost::optional<FastList<Key> > noRelinKeys = boost::none;
 
   // Mark additional keys between the 'keys to move' and the leaves
   boost::optional<FastList<Key> > additionalKeys = boost::none;
   if(keysToMove && keysToMove->size() > 0) {
     std::set<Key> markedKeys;
-    BOOST_FOREACH(gtsam::Key key, *keysToMove) {
+    BOOST_FOREACH(Key key, *keysToMove) {
       if(isam2_.getLinearizationPoint().exists(key)) {
         ISAM2Clique::shared_ptr clique = isam2_[key];
         GaussianConditional::const_iterator key_iter = clique->conditional()->begin();
@@ -100,7 +100,7 @@ ConcurrentIncrementalFilter::Result ConcurrentIncrementalFilter::update(const No
           markedKeys.insert(*key_iter);
           ++key_iter;
         }
-        BOOST_FOREACH(const gtsam::ISAM2Clique::shared_ptr& child, clique->children) {
+        BOOST_FOREACH(const ISAM2Clique::shared_ptr& child, clique->children) {
           RecursiveMarkAffectedKeys(key, child, markedKeys);
         }
       }
@@ -110,7 +110,7 @@ ConcurrentIncrementalFilter::Result ConcurrentIncrementalFilter::update(const No
 
   // Update the system using iSAM2
   gttic(isam2);
-  gtsam::ISAM2Result isam2Result = isam2_.update(newFactors, newTheta, removedFactors, orderingConstraints, noRelinKeys, additionalKeys);
+  ISAM2Result isam2Result = isam2_.update(newFactors, newTheta, removedFactors, orderingConstraints, noRelinKeys, additionalKeys);
   gttoc(isam2);
 
   if(keysToMove && keysToMove->size() > 0) {
@@ -210,7 +210,7 @@ void ConcurrentIncrementalFilter::synchronize(const NonlinearFactorGraph& smooth
       isam2_.params().getEliminationFunction());
 
   // Remove the old factors on the separator and insert the new ones
-  FastVector<size_t> removeFactors(currentSmootherSummarizationSlots_.begin(), currentSmootherSummarizationSlots_.end());
+  KeyVector removeFactors(currentSmootherSummarizationSlots_.begin(), currentSmootherSummarizationSlots_.end());
   ISAM2Result result = isam2_.update(currentSmootherSummarization, Values(), removeFactors, boost::none, noRelinKeys, boost::none, false);
   currentSmootherSummarizationSlots_ = result.newFactorsIndices;
 

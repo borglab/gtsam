@@ -510,7 +510,7 @@ boost::shared_ptr<KeySet > ISAM2::recalculate(const KeySet& markedKeys, const Ke
 
 /* ************************************************************************* */
 ISAM2Result ISAM2::update(
-    const NonlinearFactorGraph& newFactors, const Values& newTheta, const vector<size_t>& removeFactorIndices,
+    const NonlinearFactorGraph& newFactors, const Values& newTheta, const KeyVector& removeFactorIndices,
     const boost::optional<FastMap<Key,int> >& constrainedKeys, const boost::optional<FastList<Key> >& noRelinKeys,
     const boost::optional<FastList<Key> >& extraReelimKeys, bool force_relinearize)
 {
