@@ -139,7 +139,7 @@ TEST(testlcnlpSolver, poseOnALine) {
   initialValues.insert(X(1), Pose3(Rot3::Ypr(0.3, 0.2, 0.3), Point3(1,0,0)));
 
   Values expectedSolution;
-  expectedSolution.insert(X(1), Pose3(Rot3::Ypr(0.1, 0.2, 0.3), Point3()));
+  expectedSolution.insert(X(1), Pose3(Rot3::Ypr(0.1, 0.2, 0.3), Point3(0,0,0)));
 
   // Instantiate LinearConstraintSQP
   LinearConstraintSQP lcnlpSolver(lcnlp);
