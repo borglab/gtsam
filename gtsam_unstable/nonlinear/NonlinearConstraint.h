@@ -327,7 +327,7 @@ public:
   /**
    * Default Constructor for I/O
    */
-  NonlinearConstraint3() {
+  NonlinearConstraint3(){
   }
 
   /**

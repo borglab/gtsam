@@ -213,6 +213,41 @@ TEST(QPSolver, optimizeForst10book_pg171Ex5) {
   CHECK(assert_equal(expectedSolution, solution, 1e-100));
 }
 
+QP createExampleQP(){
+  QP exampleqp;
+  exampleqp.cost.push_back(
+  HessianFactor(X(1),Y(1),
+  8.0 *ones(1,1), 2.0 * ones(1,1), 1.5*ones(1),
+  10.0 *ones(1,1), -2.0 *ones(1), 4.0));
+  // 2x + y >= 2
+  exampleqp.inequalities.push_back(
+  LinearInequality(X(1), -2.0*ones(1,1), Y(1), -ones(1,1), -2, 0));
+  // -x + 2y <= 6
+  exampleqp.inequalities.push_back(
+  LinearInequality(X(1), -ones(1,1), Y(1), 2.0* ones(1,1), 6, 1));
+   //x >= 0
+  exampleqp.inequalities.push_back(
+  LinearInequality(X(1), -ones(1,1), 0, 2));
+  // y > = 0
+  exampleqp.inequalities.push_back(
+  LinearInequality(Y(1), -ones(1,1), 0, 3));
+  // x<= 20
+  exampleqp.inequalities.push_back(
+  LinearInequality(X(1), ones(1,1), 20, 4));
+  return exampleqp;
+};
+
+TEST(QPSolver, QPExampleData){
+  QP exampleqp("QPExample.QPS");
+
+  QP expectedqp = createExampleQP();
+  // min f(x,y) = 4 + 1.5x -y + 0.5(8x^2 + 2xy + 2yx + 10y^2
+
+//  CHECK(expectedqp.cost.equals(exampleqp.cost, 1e-7));
+//  CHECK(expectedqp.inequalities.equals(exampleqp.inequalities, 1e-7));
+//  CHECK(expectedqp.equalities.equals(exampleqp.equalities, 1e-7));
+}
+
 /* ************************************************************************* */
 // Create Matlab's test graph as in http://www.mathworks.com/help/optim/ug/quadprog.html
 QP createTestMatlabQPEx() {

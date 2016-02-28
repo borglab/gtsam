@@ -45,6 +45,10 @@ struct QP {
           _linearInequalities) {
   }
 
+  QP(std::string MPS_FileName):
+    cost(), equalities(), inequalities() {}
+
+
   /** print */
   void print(const std::string& s = "") {
     std::cout << s << std::endl;

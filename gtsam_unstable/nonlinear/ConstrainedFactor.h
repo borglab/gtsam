@@ -40,6 +40,8 @@ public:
   typedef boost::shared_ptr<ConstrainedFactor> shared_ptr;
 
 public:
+  /// Default constructor with default key value.
+  ConstrainedFactor() : dualKey_(0) {}
   /// Construct with dual key
   ConstrainedFactor(Key dualKey) : dualKey_(dualKey) {}
 
