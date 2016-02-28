@@ -1,4 +1,3 @@
-/gtsam/inference/FactorGraph.h
 /build*
 .idea
 *.pyc
