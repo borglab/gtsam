@@ -136,6 +136,13 @@ else()
     set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
 endif()
 
+# make sure that ccolamd compiles even in face of warnings
+if(WIN32)
+    set_source_files_properties(${3rdparty_srcs} PROPERTIES COMPILE_FLAGS "/w")
+else()
+    set_source_files_properties(${3rdparty_srcs} PROPERTIES COMPILE_FLAGS "-Wno-error")
+endif()
+
 # Special cases
 if(MSVC)
 	set_property(SOURCE
