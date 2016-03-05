@@ -171,7 +171,7 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::aid(
     // calculate residual gravity measurement
     z = n_g_ - trans(bRn) * measured_b_g;
     H = collect(3, &n_g_cross_, &Z_3x3, &bRn);
-    R = trans(bRn) * diag(emul(sigmas_v_a_, sigmas_v_a_)) * bRn;
+    R = trans(bRn) * diag(sigmas_v_a_.cwiseProduct(sigmas_v_a_)) * bRn;
   } else {
     // my measurement prediction (in body frame):
     // F(:,k) = bias - b_g
@@ -186,7 +186,8 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::aid(
     Matrix b_g = bRn * n_g_cross_;
     H = collect(3, &b_g, &Z_3x3, &I_3x3);
     // And the measurement noise, TODO: should be created once where sigmas_v_a is given
-    R = diag(emul(sigmas_v_a_, sigmas_v_a_));
+    R = diag(sigmas_v_a_.cwiseQuotient(sigmas_v_a_));
+
   }
 
 // update the Kalman filter

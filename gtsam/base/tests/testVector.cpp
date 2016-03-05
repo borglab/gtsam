@@ -198,7 +198,7 @@ TEST(Vector, weightedPseudoinverse )
   // create sigmas
   Vector sigmas(2);
   sigmas(0) = 0.1; sigmas(1) = 0.2;
-  Vector weights = reciprocal(emul(sigmas,sigmas));
+  Vector weights = reciprocal(sigmas.cwiseProduct(sigmas));
 
   // perform solve
   Vector actual; double precision;
@@ -224,8 +224,7 @@ TEST(Vector, weightedPseudoinverse_constraint )
   // create sigmas
   Vector sigmas(2);
   sigmas(0) = 0.0; sigmas(1) = 0.2;
-  Vector weights = reciprocal(emul(sigmas,sigmas));
-
+  Vector weights = reciprocal(sigmas.cwiseProduct(sigmas));
   // perform solve
   Vector actual; double precision;
   boost::tie(actual, precision) = weightedPseudoinverse(x, weights);
@@ -244,7 +243,7 @@ TEST(Vector, weightedPseudoinverse_nan )
 {
   Vector a = (Vector(4) << 1., 0., 0., 0.).finished();
   Vector sigmas = (Vector(4) << 0.1, 0.1, 0., 0.).finished();
-  Vector weights = reciprocal(emul(sigmas,sigmas));
+  Vector weights = reciprocal(sigmas.cwiseProduct(sigmas));
   Vector pseudo; double precision;
   boost::tie(pseudo, precision) = weightedPseudoinverse(a, weights);
 

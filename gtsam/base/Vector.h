@@ -20,7 +20,6 @@
 
 
 #pragma once
-
 #ifndef MKL_BLAS
 #define MKL_BLAS MKL_DOMAIN_BLAS
 #endif
@@ -213,6 +212,7 @@ GTSAM_EXPORT ConstSubVector sub(const Vector &v, size_t i1, size_t i2);
  */
 GTSAM_EXPORT void subInsert(Vector& fullVector, const Vector& subVector, size_t i);
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 /**
  * elementwise multiplication
  * @param a first vector
@@ -220,6 +220,7 @@ GTSAM_EXPORT void subInsert(Vector& fullVector, const Vector& subVector, size_t 
  * @return vector [a(i)*b(i)]
  */
 GTSAM_EXPORT Vector emul(const Vector &a, const Vector &b);
+#endif
 
 /**
  * elementwise division
