@@ -43,7 +43,9 @@ if(NOT GTSAM_USE_SYSTEM_EIGEN)
 endif()
 
 option(GTSAM_BUILD_METIS_EXECUTABLES "Build metis library executables" OFF)
-add_subdirectory(metis)
+if(GTSAM_SUPPORT_NESTED_DISSECTION)
+	add_subdirectory(metis)
+endif()
 
 add_subdirectory(ceres)
 

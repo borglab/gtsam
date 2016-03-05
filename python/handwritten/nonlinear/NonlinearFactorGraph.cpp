@@ -49,6 +49,7 @@ void exportNonlinearFactorGraph(){
     .def("resize", &NonlinearFactorGraph::resize)
     .def("empty", &NonlinearFactorGraph::empty)
     .def("print", &NonlinearFactorGraph::print, print_overloads(args("s")))
+    .def("clone", &NonlinearFactorGraph::clone)
   ;
 
   def("getNonlinearFactor", getNonlinearFactor);

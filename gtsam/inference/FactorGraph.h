@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -114,7 +114,7 @@ namespace gtsam {
     /// @}
     /// @name Advanced Constructors
     /// @{
-    
+
     // TODO: are these needed?
 
     ///**
@@ -319,10 +319,10 @@ namespace gtsam {
     void replace(size_t index, sharedFactor factor) { at(index) = factor; }
 
     /** Erase factor and rearrange other factors to take up the empty space */
-    void erase(iterator item) { factors_.erase(item); }
+    iterator erase(iterator item) { return factors_.erase(item); }
 
     /** Erase factors and rearrange other factors to take up the empty space */
-    void erase(iterator first, iterator last) { factors_.erase(first, last); }
+    iterator erase(iterator first, iterator last) { return factors_.erase(first, last); }
 
     /// @}
     /// @name Advanced Interface
@@ -331,8 +331,11 @@ namespace gtsam {
     /** return the number of non-null factors */
     size_t nrFactors() const;
 
-    /** Potentially very slow function to return all keys involved */
+    /** Potentially slow function to return all keys involved, sorted, as a set */
     KeySet keys() const;
+
+    /** Potentially slow function to return all keys involved, sorted, as a vector */
+    KeyVector keyVector() const;
 
     /** MATLAB interface utility: Checks whether a factor index idx exists in the graph and is a live pointer */
     inline bool exists(size_t idx) const { return idx < size() && at(idx); }

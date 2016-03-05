@@ -146,7 +146,7 @@ static void getDeltaThetaAndNoise(NonlinearFactor::shared_ptr factor,
   deltaTheta = (Vector(1) << pose2Between->measured().theta()).finished();
 
   // Retrieve the noise model for the relative rotation
-  SharedNoiseModel model = pose2Between->get_noiseModel();
+  SharedNoiseModel model = pose2Between->noiseModel();
   boost::shared_ptr<noiseModel::Diagonal> diagonalModel =
       boost::dynamic_pointer_cast<noiseModel::Diagonal>(model);
   if (!diagonalModel)
@@ -213,7 +213,7 @@ static NonlinearFactorGraph buildPose2graph(const NonlinearFactorGraph& graph) {
     if (pose2Prior)
       pose2Graph.add(
           BetweenFactor<Pose2>(keyAnchor, pose2Prior->keys()[0],
-              pose2Prior->prior(), pose2Prior->get_noiseModel()));
+              pose2Prior->prior(), pose2Prior->noiseModel()));
   }
   return pose2Graph;
 }
@@ -329,7 +329,7 @@ Values computePoses(const NonlinearFactorGraph& pose2graph,
       // Retrieve the noise model for the relative rotation
       boost::shared_ptr<noiseModel::Diagonal> diagonalModel =
           boost::dynamic_pointer_cast<noiseModel::Diagonal>(
-              pose2Between->get_noiseModel());
+              pose2Between->noiseModel());
 
       linearPose2graph.add(key1, J1, key2, I3, b, diagonalModel);
     } else {

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -67,7 +67,7 @@ namespace gtsam {
    * A non-linear factor graph is a graph of non-Gaussian, i.e. non-linear factors,
    * which derive from NonlinearFactor. The values structures are typically (in SAM) more general
    * than just vectors, e.g., Rot3 or Pose3, which are objects in non-linear manifolds.
-   * Linearizing the non-linear factor graph creates a linear factor graph on the 
+   * Linearizing the non-linear factor graph creates a linear factor graph on the
    * tangent vector space at the linearization point. Because the tangent space is a true
    * vector space, the config type will be an VectorValues in that linearized factor graph.
    */
@@ -94,8 +94,13 @@ namespace gtsam {
     template<class DERIVEDFACTOR>
     NonlinearFactorGraph(const FactorGraph<DERIVEDFACTOR>& graph) : Base(graph) {}
 
-    /** print just calls base class */
-    void print(const std::string& str = "NonlinearFactorGraph: ", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+    /** print */
+    void print(const std::string& str = "NonlinearFactorGraph: ",
+               const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+
+    /** print errors along with factors*/
+    void printErrors(const Values& values, const std::string& str = "NonlinearFactorGraph: ",
+                     const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
     /** Test equality */
     bool equals(const NonlinearFactorGraph& other, double tol = 1e-9) const;
@@ -105,14 +110,11 @@ namespace gtsam {
       const GraphvizFormatting& graphvizFormatting = GraphvizFormatting(),
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
-    /** return keys as an ordered set - ordering is by key value */
-    KeySet keys() const;
-
     /** unnormalized error, \f$ 0.5 \sum_i (h_i(X_i)-z)^2/\sigma^2 \f$ in the most common case */
-    double error(const Values& c) const;
+    double error(const Values& values) const;
 
     /** Unnormalized probability. O(n) */
-    double probPrime(const Values& c) const;
+    double probPrime(const Values& values) const;
 
     /**
      * Create a symbolic factor graph

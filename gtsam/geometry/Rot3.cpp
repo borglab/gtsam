@@ -42,6 +42,58 @@ Rot3 Rot3::Random(boost::mt19937& rng) {
   return AxisAngle(axis, angle);
 }
 
+
+
+/* ************************************************************************* */
+Rot3 Rot3::AlignPair(const Unit3& axis, const Unit3& a_p, const Unit3& b_p) {
+  // if a_p is already aligned with b_p, return the identity rotation
+  if (std::abs(a_p.dot(b_p)) > 0.999999999) {
+    return Rot3();
+  }
+
+  // Check axis was not degenerate cross product
+  const Vector3 z = axis.unitVector();
+  if (z.hasNaN())
+    throw std::runtime_error("AlignSinglePair: axis has Nans");
+
+  // Now, calculate rotation that takes b_p to a_p
+  const Matrix3 P = I_3x3 - z * z.transpose();  // orthogonal projector
+  const Vector3 a_po = P * a_p.unitVector();    // point in a orthogonal to axis
+  const Vector3 b_po = P * b_p.unitVector();    // point in b orthogonal to axis
+  const Vector3 x = a_po.normalized();          // x-axis in axis-orthogonal plane, along a_p vector
+  const Vector3 y = z.cross(x);                 // y-axis in axis-orthogonal plane
+  const double u = x.dot(b_po);                 // x-coordinate for b_po
+  const double v = y.dot(b_po);                 // y-coordinate for b_po
+  double angle = std::atan2(v, u);
+  return Rot3::AxisAngle(z, -angle);
+}
+
+/* ************************************************************************* */
+Rot3 Rot3::AlignTwoPairs(const Unit3& a_p, const Unit3& b_p,  //
+                         const Unit3& a_q, const Unit3& b_q) {
+  // there are three frames in play:
+  // a: the first frame in which p and q are measured
+  // b: the second frame in which p and q are measured
+  // i: intermediate, after aligning first pair
+
+  // First, find rotation around that aligns a_p and b_p
+  Rot3 i_R_b = AlignPair(a_p.cross(b_p), a_p, b_p);
+
+  // Rotate points in frame b to the intermediate frame,
+  // in which we expect the point p to be aligned now
+  Unit3 i_q = i_R_b * b_q;
+  assert(assert_equal(a_p, i_R_b * b_p, 1e-6));
+
+  // Now align second pair: we need to align i_q to a_q
+  Rot3 a_R_i = AlignPair(a_p, a_q, i_q);
+  assert(assert_equal(a_p, a_R_i * a_p, 1e-6));
+  assert(assert_equal(a_q, a_R_i * i_q, 1e-6));
+
+  // The desired rotation is the product of both
+  Rot3 a_R_b = a_R_i * i_R_b;
+  return a_R_b;
+}
+
 /* ************************************************************************* */
 bool Rot3::equals(const Rot3 & R, double tol) const {
   return equal_with_abs_tol(matrix(), R.matrix(), tol);
@@ -172,10 +224,7 @@ ostream &operator<<(ostream &os, const Rot3& R) {
 
 /* ************************************************************************* */
 Rot3 Rot3::slerp(double t, const Rot3& other) const {
-  // amazingly simple in GTSAM :-)
-  assert(t>=0 && t<=1);
-  Vector3 omega = Logmap(between(other));
-  return compose(Expmap(t * omega));
+  return interpolate(*this, other, t);
 }
 
 /* ************************************************************************* */

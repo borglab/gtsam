@@ -284,7 +284,9 @@ namespace gtsam {
     try {
       return dynamic_cast<const GenericValue<ValueType>&>(value).value();
     } catch (std::bad_cast &) {
-      throw ValuesIncorrectType(j, typeid(value), typeid(ValueType));
+      // NOTE(abe): clang warns about potential side effects if done in typeid
+      const Value* value = item->second;
+      throw ValuesIncorrectType(j, typeid(*value), typeid(ValueType));
     }
   }
 
@@ -300,7 +302,9 @@ namespace gtsam {
       try {
         return dynamic_cast<const GenericValue<ValueType>&>(value).value();
       } catch (std::bad_cast &) {
-        throw ValuesIncorrectType(j, typeid(value), typeid(ValueType));
+        // NOTE(abe): clang warns about potential side effects if done in typeid
+        const Value* value = item->second;
+        throw ValuesIncorrectType(j, typeid(*value), typeid(ValueType));
       }
      } else {
       return boost::none;

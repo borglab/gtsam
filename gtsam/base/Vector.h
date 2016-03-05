@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -41,13 +41,25 @@ typedef Eigen::VectorXd Vector;
 typedef Eigen::Matrix<double, 1, 1> Vector1;
 typedef Eigen::Vector2d Vector2;
 typedef Eigen::Vector3d Vector3;
-typedef Eigen::Matrix<double, 4, 1> Vector4;
-typedef Eigen::Matrix<double, 5, 1> Vector5;
-typedef Eigen::Matrix<double, 6, 1> Vector6;
-typedef Eigen::Matrix<double, 7, 1> Vector7;
-typedef Eigen::Matrix<double, 8, 1> Vector8;
-typedef Eigen::Matrix<double, 9, 1> Vector9;
-typedef Eigen::Matrix<double, 10, 1> Vector10;
+
+static const Eigen::MatrixBase<Vector2>::ConstantReturnType Z_2x1 = Vector2::Zero();
+static const Eigen::MatrixBase<Vector3>::ConstantReturnType Z_3x1 = Vector3::Zero();
+
+// Create handy typedefs and constants for vectors with N>3
+// VectorN and Z_Nx1, for N=1..9
+#define GTSAM_MAKE_VECTOR_DEFS(N)                \
+  typedef Eigen::Matrix<double, N, 1> Vector##N; \
+  static const Eigen::MatrixBase<Vector##N>::ConstantReturnType Z_##N##x1 = Vector##N::Zero();
+
+GTSAM_MAKE_VECTOR_DEFS(4);
+GTSAM_MAKE_VECTOR_DEFS(5);
+GTSAM_MAKE_VECTOR_DEFS(6);
+GTSAM_MAKE_VECTOR_DEFS(7);
+GTSAM_MAKE_VECTOR_DEFS(8);
+GTSAM_MAKE_VECTOR_DEFS(9);
+GTSAM_MAKE_VECTOR_DEFS(10);
+GTSAM_MAKE_VECTOR_DEFS(11);
+GTSAM_MAKE_VECTOR_DEFS(12);
 
 typedef Eigen::VectorBlock<Vector> SubVector;
 typedef Eigen::VectorBlock<const Vector> ConstSubVector;
@@ -89,7 +101,7 @@ inline Vector zero(size_t n) { return Vector::Zero(n);}
  * @param n size
  */
 inline Vector ones(size_t n) { return Vector::Ones(n); }
-  
+
 /**
  * check if all zero
  */

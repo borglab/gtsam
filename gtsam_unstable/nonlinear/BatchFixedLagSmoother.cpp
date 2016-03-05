@@ -536,6 +536,12 @@ NonlinearFactorGraph BatchFixedLagSmoother::calculateMarginalFactors(
     PrintKeySet(allKeys,
         "BatchFixedLagSmoother::calculateMarginalFactors  All Keys: ");
 
+  if (!std::includes(allKeys.begin(), allKeys.end(), marginalizeKeys.begin(),
+      marginalizeKeys.end())) {
+    throw std::runtime_error("Some keys found in marginalizeKeys do not"
+                             " occur in the graph.");
+  }
+
   // Calculate the set of RemainingKeys = AllKeys \Intersect marginalizeKeys
   KeySet remainingKeys;
   std::set_difference(allKeys.begin(), allKeys.end(), marginalizeKeys.begin(),

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -13,20 +13,20 @@
  * @file    Testable.h
  * @brief   Concept check for values that can be used in unit tests
  * @author  Frank Dellaert
- * 
+ *
  * The necessary functions to implement for Testable are defined
  * below with additional details as to the interface.
  * The concept checking function will check whether or not
  * the function exists in derived class and throw compile-time errors.
- * 
+ *
  * print with optional string naming the object
  *     void print(const std::string& name) const = 0;
- * 
+ *
  * equality up to tolerance
  * tricky to implement, see NoiseModelFactor1 for an example
  * equals is not supposed to print out *anything*, just return true|false
  *     bool equals(const Derived& expected, double tol) const = 0;
- * 
+ *
  */
 
 // \callgraph
@@ -123,7 +123,7 @@ namespace gtsam {
     double tol_;
     equals_star(double tol = 1e-9) : tol_(tol) {}
     bool operator()(const boost::shared_ptr<V>& expected, const boost::shared_ptr<V>& actual) {
-      if (!actual || !expected) return true;
+      if (!actual && !expected) return true;
       return actual && expected && traits<V>::Equals(*actual,*expected, tol_);
     }
   };

@@ -50,7 +50,7 @@ public:
   /// @{
 
   /// construct from 2D vector
-  Point2(const Vector2& v) {
+  explicit Point2(const Vector2& v) {
     x_ = v(0);
     y_ = v(1);
   }
@@ -111,6 +111,11 @@ public:
 
   /// inverse
   inline Point2 operator- () const {return Point2(-x_,-y_);}
+
+  /// add vector on right
+  inline Point2 operator +(const Vector2& v) const {
+    return Point2(x_ + v[0], y_ + v[1]);
+  }
 
   /// add
   inline Point2 operator + (const Point2& q) const {return Point2(x_+q.x_,y_+q.y_);}
@@ -193,6 +198,10 @@ private:
 
   /// @}
 };
+
+// Convenience typedef
+typedef std::pair<Point2, Point2> Point2Pair;
+std::ostream &operator<<(std::ostream &os, const gtsam::Point2Pair &p);
 
 // For MATLAB wrapper
 typedef std::vector<Point2> Point2Vector;

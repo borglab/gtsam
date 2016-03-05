@@ -559,7 +559,6 @@ TEST( ConcurrentIncrementalFilter, update_and_marginalize_2 )
 /* ************************************************************************* */
 TEST( ConcurrentIncrementalFilter, synchronize_0 )
 {
-  std::cout << "*********************** synchronize_0 ************************" << std::endl;
   // Create a set of optimizer parameters
   ISAM2Params parameters;
 
@@ -593,7 +592,6 @@ TEST( ConcurrentIncrementalFilter, synchronize_0 )
 ///* ************************************************************************* */
 TEST( ConcurrentIncrementalFilter, synchronize_1 )
 {
-  std::cout << "*********************** synchronize_1 ************************" << std::endl;
   // Create a set of optimizer parameters
   ISAM2Params parameters;
   parameters.relinearizeThreshold = 0;
@@ -641,7 +639,6 @@ TEST( ConcurrentIncrementalFilter, synchronize_1 )
 /* ************************************************************************* */
 TEST( ConcurrentIncrementalFilter, synchronize_2 )
 {
-  std::cout << "*********************** synchronize_2 ************************" << std::endl;
   // Create a set of optimizer parameters
   ISAM2Params parameters;
   parameters.relinearizeThreshold = 0;
@@ -712,7 +709,6 @@ TEST( ConcurrentIncrementalFilter, synchronize_2 )
 /* ************************************************************************* */
 TEST( ConcurrentIncrementalFilter, synchronize_3 )
 {
-  std::cout << "*********************** synchronize_3 ************************" << std::endl;
   // Create a set of optimizer parameters
   ISAM2Params parameters;
   parameters.relinearizeThreshold = 0;
@@ -800,7 +796,6 @@ TEST( ConcurrentIncrementalFilter, synchronize_3 )
 /* ************************************************************************* */
 TEST( ConcurrentIncrementalFilter, synchronize_4 )
 {
-  std::cout << "*********************** synchronize_4 ************************" << std::endl;
   // Create a set of optimizer parameters
   ISAM2Params parameters;
   parameters.relinearizeThreshold = 0;
@@ -896,7 +891,6 @@ TEST( ConcurrentIncrementalFilter, synchronize_4 )
 /* ************************************************************************* */
 TEST( ConcurrentIncrementalFilter, synchronize_5 )
 {
-  std::cout << "*********************** synchronize_5 ************************" << std::endl;
   // Create a set of optimizer parameters
   ISAM2Params parameters;
   parameters.relinearizeThreshold = 0;
@@ -1092,7 +1086,6 @@ TEST( ConcurrentIncrementalFilter, synchronize_5 )
 ///* ************************************************************************* */
 TEST( ConcurrentIncrementalFilter, CalculateMarginals_1 )
 {
-  std::cout << "*********************** CalculateMarginals_1 ************************" << std::endl;
   // We compare the manual computation of the linear marginals from a factor graph, with the function CalculateMarginals
   NonlinearFactor::shared_ptr factor1(new PriorFactor<Pose3>(1, poseInitial, noisePrior));
   NonlinearFactor::shared_ptr factor2(new BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
@@ -1141,8 +1134,6 @@ TEST( ConcurrentIncrementalFilter, CalculateMarginals_1 )
 ///* ************************************************************************* */
 TEST( ConcurrentIncrementalFilter, CalculateMarginals_2 )
 {
-  std::cout << "*********************** CalculateMarginals_2 ************************" << std::endl;
-
   // We compare the manual computation of the linear marginals from a factor graph, with the function CalculateMarginals
   NonlinearFactor::shared_ptr factor1(new PriorFactor<Pose3>(1, poseInitial, noisePrior));
   NonlinearFactor::shared_ptr factor2(new BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
@@ -1163,7 +1154,6 @@ TEST( ConcurrentIncrementalFilter, CalculateMarginals_2 )
   newValues.insert(1, value1);
   newValues.insert(2, value2);
   newValues.insert(3, value3);
-
 
 
     // Create the set of marginalizable variables
@@ -1190,8 +1180,6 @@ TEST( ConcurrentIncrementalFilter, CalculateMarginals_2 )
 
   // Check
   CHECK(assert_equal(expectedMarginals, actualMarginals, 1e-6));
-//  actualMarginals.print("actualMarginals \n");
-//  expectedMarginals.print("expectedMarginals \n");
 }
 
 
@@ -1199,8 +1187,6 @@ TEST( ConcurrentIncrementalFilter, CalculateMarginals_2 )
 ///* ************************************************************************* */
 TEST( ConcurrentIncrementalFilter, removeFactors_topology_1 )
 {
-  std::cout << "*********************** removeFactors_topology_1 ************************" << std::endl;
-
   // Create a set of optimizer parameters
   ISAM2Params parameters;
   parameters.relinearizeThreshold = 0;
@@ -1233,8 +1219,9 @@ TEST( ConcurrentIncrementalFilter, removeFactors_topology_1 )
 
   // factor we want to remove
   // NOTE: we can remove factors, paying attention that the remaining graph remains connected
-  // we remove a single factor, the number 1, which is a BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery);
-  std::vector<size_t> removeFactorIndices(1,1);
+  // we remove a single factor, the number 1, which is a BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery)
+  FactorIndices removeFactorIndices;
+  removeFactorIndices.push_back(1);
 
   // Add no factors to the filter (we only want to test the removal)
   NonlinearFactorGraph noFactors;
@@ -1245,7 +1232,7 @@ TEST( ConcurrentIncrementalFilter, removeFactors_topology_1 )
 
   NonlinearFactorGraph expectedGraph;
   expectedGraph.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
-  // we removed this one: expectedGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  // we removed this one: expectedGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery))
   // we should add an empty one, so that the ordering and labeling of the factors is preserved
   expectedGraph.push_back(NonlinearFactor::shared_ptr());
   expectedGraph.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
@@ -1258,7 +1245,6 @@ TEST( ConcurrentIncrementalFilter, removeFactors_topology_1 )
 /////* ************************************************************************* */
 TEST( ConcurrentIncrementalFilter, removeFactors_topology_2 )
 {
-  std::cout << "*********************** removeFactors_topology_2 ************************" << std::endl;
   // we try removing the last factor
 
   ISAM2Params parameters;
@@ -1293,7 +1279,7 @@ TEST( ConcurrentIncrementalFilter, removeFactors_topology_2 )
   // factor we want to remove
   // NOTE: we can remove factors, paying attention that the remaining graph remains connected
   // we remove a single factor, the number 1, which is a BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery);
-  std::vector<size_t> removeFactorIndices(1,4);
+  FactorIndices removeFactorIndices(1,4);
 
   // Add no factors to the filter (we only want to test the removal)
   NonlinearFactorGraph noFactors;
@@ -1318,7 +1304,6 @@ TEST( ConcurrentIncrementalFilter, removeFactors_topology_2 )
 /////* ************************************************************************* */
 TEST( ConcurrentIncrementalFilter, removeFactors_topology_3 )
 {
-  std::cout << "*********************** removeFactors_topology_3 ************************" << std::endl;
   // we try removing the first factor
 
   ISAM2Params parameters;
@@ -1353,7 +1338,7 @@ TEST( ConcurrentIncrementalFilter, removeFactors_topology_3 )
   // factor we want to remove
   // NOTE: we can remove factors, paying attention that the remaining graph remains connected
   // we remove a single factor, the number 0, which is a BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery);
-  std::vector<size_t> removeFactorIndices(1,0);
+  FactorIndices removeFactorIndices(1,0);
 
   // Add no factors to the filter (we only want to test the removal)
   NonlinearFactorGraph noFactors;
@@ -1376,7 +1361,6 @@ TEST( ConcurrentIncrementalFilter, removeFactors_topology_3 )
 /////* ************************************************************************* */
 TEST( ConcurrentIncrementalFilter, removeFactors_values )
 {
-  std::cout << "*********************** removeFactors_values ************************" << std::endl;
   // we try removing the last factor
 
   ISAM2Params parameters;
@@ -1411,7 +1395,7 @@ TEST( ConcurrentIncrementalFilter, removeFactors_values )
   // factor we want to remove
   // NOTE: we can remove factors, paying attention that the remaining graph remains connected
   // we remove a single factor, the number 4, which is a BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery);
-  std::vector<size_t> removeFactorIndices(1,4);
+  FactorIndices removeFactorIndices(1,4);
 
   // Add no factors to the filter (we only want to test the removal)
   NonlinearFactorGraph noFactors;

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -28,11 +28,6 @@
 namespace gtsam {
 
 template<typename T>
-void Expression<T>::print(const std::string& s) const {
-  root_->print(s);
-}
-
-template<typename T>
 Expression<T>::Expression(const T& value) :
     root_(new internal::ConstantExpression<T>(value)) {
 }
@@ -48,7 +43,7 @@ Expression<T>::Expression(const Symbol& symbol) :
 }
 
 template<typename T>
-Expression<T>::Expression(unsigned char c, size_t j) :
+Expression<T>::Expression(unsigned char c, std::uint64_t j) :
     root_(new internal::LeafExpression<T>(Symbol(c, j))) {
 }
 
@@ -126,6 +121,11 @@ std::set<Key> Expression<T>::keys() const {
 template<typename T>
 void Expression<T>::dims(std::map<Key, int>& map) const {
   root_->dims(map);
+}
+
+template<typename T>
+void Expression<T>::print(const std::string& s) const {
+  root_->print(s);
 }
 
 template<typename T>
@@ -257,6 +257,32 @@ std::vector<Expression<T> > createUnknowns(size_t n, char c, size_t start) {
   for (size_t i = start; i < start + n; i++)
     unknowns.push_back(Expression<T>(c, i));
   return unknowns;
+}
+
+template <typename T>
+ScalarMultiplyExpression<T>::ScalarMultiplyExpression(double s, const Expression<T>& e)
+    : Expression<T>(boost::make_shared<internal::ScalarMultiplyNode<T>>(s, e)) {}
+
+template <typename T>
+SumExpression<T>::SumExpression(const std::vector<Expression<T>>& expressions)
+    : Expression<T>(boost::make_shared<internal::SumExpressionNode<T>>(expressions)) {}
+
+template <typename T>
+SumExpression<T> SumExpression<T>::operator+(const Expression<T>& e) const {
+  SumExpression<T> copy = *this;
+  boost::static_pointer_cast<internal::SumExpressionNode<T>>(copy.root_)->add(e);
+  return copy;
+}
+
+template <typename T>
+SumExpression<T>& SumExpression<T>::operator+=(const Expression<T>& e) {
+  boost::static_pointer_cast<internal::SumExpressionNode<T>>(this->root_)->add(e);
+  return *this;
+}
+
+template <typename T>
+size_t SumExpression<T>::nrTerms() const {
+  return boost::static_pointer_cast<internal::SumExpressionNode<T>>(this->root_)->nrTerms();
 }
 
 } // namespace gtsam

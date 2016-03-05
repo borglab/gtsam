@@ -51,17 +51,12 @@ class GTSAM_EXPORT Point3 : public Vector3 {
     /// @name Standard Constructors
     /// @{
 
-#ifndef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-    /// Default constructor no longer initializes, just like Vector3
-    Point3() {}
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+    // Deprecated default constructor initializes to zero, in contrast to new behavior below
+    Point3() { setZero(); }
 #endif
 
-    /// Construct from x, y, and z coordinates
-    Point3(double x, double y, double z): Vector3(x,y, z) {}
-
-    /// Construct from other vector
-    template<typename Derived>
-    inline Point3(const Eigen::MatrixBase<Derived>& v): Vector3(v) {}
+    using Vector3::Vector3;
 
     /// @}
     /// @name Testable
@@ -126,7 +121,6 @@ class GTSAM_EXPORT Point3 : public Vector3 {
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
     /// @name Deprecated
     /// @{
-    Point3() { setZero(); } // initializes to zero, in contrast to new behavior
     Point3 inverse() const { return -(*this);}
     Point3 compose(const Point3& q) const { return (*this)+q;}
     Point3 between(const Point3& q) const { return q-(*this);}

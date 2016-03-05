@@ -37,6 +37,14 @@ Pose3::Pose3(const Pose2& pose2) :
 }
 
 /* ************************************************************************* */
+Pose3 Pose3::Create(const Rot3& R, const Point3& t, OptionalJacobian<6, 3> H1,
+                    OptionalJacobian<6, 3> H2) {
+  if (H1) *H1 << I_3x3, Z_3x3;
+  if (H2) *H2 << Z_3x3, R.transpose();
+  return Pose3(R, t);
+}
+
+/* ************************************************************************* */
 Pose3 Pose3::inverse() const {
   Rot3 Rt = R_.inverse();
   return Pose3(Rt, Rt * (-t_));
@@ -193,8 +201,8 @@ Vector6 Pose3::ChartAtOrigin::Local(const Pose3& T, ChartJacobian H) {
  *  The closed-form formula is similar to formula 102 in Barfoot14tro)
  */
 static Matrix3 computeQforExpmapDerivative(const Vector6& xi) {
-  const Vector3 w = xi.head<3>();
-  const Vector3 v = xi.tail<3>();
+  const auto w = xi.head<3>();
+  const auto v = xi.tail<3>();
   const Matrix3 V = skewSymmetric(v);
   const Matrix3 W = skewSymmetric(w);
 
@@ -261,8 +269,17 @@ const Point3& Pose3::translation(OptionalJacobian<3, 6> H) const {
 }
 
 /* ************************************************************************* */
+
+const Rot3& Pose3::rotation(OptionalJacobian<3, 6> H) const {
+  if (H) {
+    *H << I_3x3, Z_3x3;
+  }
+  return R_;
+}
+
+/* ************************************************************************* */
 Matrix4 Pose3::matrix() const {
-  static const Matrix14 A14 = (Matrix14() << 0.0, 0.0, 0.0, 1.0).finished();
+  static const auto A14 = Eigen::RowVector4d(0,0,0,1);
   Matrix4 mat;
   mat << R_.matrix(), t_, A14;
   return mat;
@@ -273,6 +290,14 @@ Pose3 Pose3::transform_to(const Pose3& pose) const {
   Rot3 cRv = R_ * Rot3(pose.R_.inverse());
   Point3 t = pose.transform_to(t_);
   return Pose3(cRv, t);
+}
+
+/* ************************************************************************* */
+Pose3 Pose3::transform_pose_to(const Pose3& pose, OptionalJacobian<6, 6> H1,
+                                                  OptionalJacobian<6, 6> H2) const {
+  if (H1) *H1 = -pose.inverse().AdjointMap() * AdjointMap();
+  if (H2) *H2 = I_6x6;
+  return inverse() * pose;
 }
 
 /* ************************************************************************* */
@@ -355,41 +380,54 @@ Unit3 Pose3::bearing(const Point3& point, OptionalJacobian<2, 6> H1,
 }
 
 /* ************************************************************************* */
-boost::optional<Pose3> align(const vector<Point3Pair>& pairs) {
-  const size_t n = pairs.size();
+boost::optional<Pose3> Pose3::Align(const std::vector<Point3Pair>& abPointPairs) {
+  const size_t n = abPointPairs.size();
   if (n < 3)
-    return boost::none; // we need at least three pairs
+    return boost::none;  // we need at least three pairs
 
   // calculate centroids
-  Point3 cp(0,0,0), cq(0,0,0);
-  BOOST_FOREACH(const Point3Pair& pair, pairs) {
-    cp += pair.first;
-    cq += pair.second;
+  Point3 aCentroid(0,0,0), bCentroid(0,0,0);
+  for(const Point3Pair& abPair: abPointPairs) {
+    aCentroid += abPair.first;
+    bCentroid += abPair.second;
   }
   double f = 1.0 / n;
-  cp *= f;
-  cq *= f;
+  aCentroid *= f;
+  bCentroid *= f;
 
   // Add to form H matrix
   Matrix3 H = Z_3x3;
-  BOOST_FOREACH(const Point3Pair& pair, pairs) {
-    Point3 dp = pair.first - cp;
-    Point3 dq = pair.second - cq;
-    H += dp * dq.transpose();
+  for(const Point3Pair& abPair: abPointPairs) {
+    Point3 da = abPair.first - aCentroid;
+    Point3 db = abPair.second - bCentroid;
+    H += db * da.transpose();
     }
 
-// Compute SVD
-  Matrix U, V;
-  Vector S;
-  svd(H, U, S, V);
+  // Compute SVD
+  Eigen::JacobiSVD<Matrix> svd(H, Eigen::ComputeThinU | Eigen::ComputeThinV);
+  Matrix U = svd.matrixU();
+  Vector S = svd.singularValues();
+  Matrix V = svd.matrixV();
+
+  // Check rank
+  if (S[1] < 1e-10)
+    return boost::none;
 
   // Recover transform with correction from Eggert97machinevisionandapplications
   Matrix3 UVtranspose = U * V.transpose();
   Matrix3 detWeighting = I_3x3;
   detWeighting(2, 2) = UVtranspose.determinant();
-  Rot3 R(Matrix3(V * detWeighting * U.transpose()));
-  Point3 t = Point3(cq) - R * Point3(cp);
-  return Pose3(R, t);
+  Rot3 aRb(Matrix(V * detWeighting * U.transpose()));
+  Point3 aTb = Point3(aCentroid) - aRb * Point3(bCentroid);
+  return Pose3(aRb, aTb);
+}
+
+boost::optional<Pose3> align(const vector<Point3Pair>& baPointPairs) {
+  vector<Point3Pair> abPointPairs;
+  BOOST_FOREACH (const Point3Pair& baPair, baPointPairs) {
+    abPointPairs.push_back(make_pair(baPair.second, baPair.first));
+  }
+  return Pose3::Align(abPointPairs);
 }
 
 /* ************************************************************************* */

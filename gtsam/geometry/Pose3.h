@@ -73,6 +73,19 @@ public:
           T(2, 2)), t_(T(0, 3), T(1, 3), T(2, 3)) {
   }
 
+  /// Named constructor with derivatives
+  static Pose3 Create(const Rot3& R, const Point3& t,
+                      OptionalJacobian<6, 3> H1 = boost::none,
+                      OptionalJacobian<6, 3> H2 = boost::none);
+
+  /**
+   *  Create Pose3 by aligning two point pairs
+   *  A pose aTb is estimated between pairs (a_point, b_point) such that a_point = aTb * b_point
+   *  Meant to replace the deprecated function 'align', which orders the pairs the opposite way.
+   *  Note this allows for noise on the points but in that case the mapping will not be exact.
+   */
+  static boost::optional<Pose3> Align(const std::vector<Point3Pair>& abPointPairs);
+
   /// @}
   /// @name Testable
   /// @{
@@ -213,9 +226,7 @@ public:
   /// @{
 
   /// get rotation
-  const Rot3& rotation() const {
-    return R_;
-  }
+  const Rot3& rotation(OptionalJacobian<3, 6> H = boost::none) const;
 
   /// get translation
   const Point3& translation(OptionalJacobian<3, 6> H = boost::none) const;
@@ -238,8 +249,14 @@ public:
   /** convert to 4*4 matrix */
   Matrix4 matrix() const;
 
-  /** receives a pose in world coordinates and transforms it to local coordinates */
+  /** receives a pose in local coordinates and transforms it to world coordinates
+  * @deprecated: This is actually equivalent to transform_from, so it is WRONG! Use
+  * transform_pose_to instead. */
   Pose3 transform_to(const Pose3& pose) const;
+
+  /** receives a pose in world coordinates and transforms it to local coordinates */
+  Pose3 transform_pose_to(const Pose3& pose, OptionalJacobian<6, 6> H1 = boost::none,
+                                             OptionalJacobian<6, 6> H2 = boost::none) const;
 
   /**
    * Calculate range to a landmark
@@ -291,7 +308,7 @@ public:
   GTSAM_EXPORT
   friend std::ostream &operator<<(std::ostream &os, const Pose3& p);
 
-private:
+ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
@@ -317,11 +334,11 @@ inline Matrix wedge<Pose3>(const Vector& xi) {
 }
 
 /**
- * Calculate pose between a vector of 3D point correspondences (p,q)
- * where q = Pose3::transform_from(p) = t + R*p
+ * Calculate pose between a vector of 3D point correspondences (b_point, a_point)
+ * where a_point = Pose3::transform_from(b_point) = t + R*b_point
+ * @deprecated: use Pose3::Align with point pairs ordered the opposite way
  */
-typedef std::pair<Point3, Point3> Point3Pair;
-GTSAM_EXPORT boost::optional<Pose3> align(const std::vector<Point3Pair>& pairs);
+GTSAM_EXPORT boost::optional<Pose3> align(const std::vector<Point3Pair>& baPointPairs);
 
 // For MATLAB wrapper
 typedef std::vector<Pose3> Pose3Vector;

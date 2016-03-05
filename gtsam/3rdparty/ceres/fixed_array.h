@@ -33,7 +33,7 @@
 #define CERES_PUBLIC_INTERNAL_FIXED_ARRAY_H_
 
 #include <cstddef>
-#include <Eigen/Core>
+#include <gtsam/3rdparty/ceres/eigen.h>
 #include <gtsam/3rdparty/ceres/macros.h>
 #include <gtsam/3rdparty/ceres/manual_constructor.h>
 

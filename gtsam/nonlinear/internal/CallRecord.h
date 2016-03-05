@@ -31,34 +31,39 @@ namespace internal {
  * it just passes dense Eigen matrices through.
  */
 template<bool ConvertToDynamicRows>
-struct ConvertToVirtualFunctionSupportedMatrixType {
+struct ConvertToDynamicIf {
   template<typename Derived>
   static Eigen::Matrix<double, Eigen::Dynamic, Derived::ColsAtCompileTime> convert(
-      const Eigen::MatrixBase<Derived> & x) {
+      const Eigen::MatrixBase<Derived>& x) {
     return x;
   }
 };
 
 template<>
-struct ConvertToVirtualFunctionSupportedMatrixType<false> {
+struct ConvertToDynamicIf<false> {
   template<typename Derived>
   static const Eigen::Matrix<double, Derived::RowsAtCompileTime,
       Derived::ColsAtCompileTime> convert(
       const Eigen::MatrixBase<Derived> & x) {
     return x;
   }
-  // special treatment of matrices that don't need conversion
-  template<int Rows, int Cols>
-  static const Eigen::Matrix<double, Rows, Cols> & convert(
-      const Eigen::Matrix<double, Rows, Cols> & x) {
+  // Most common case:  just pass through matrices that are already of the right fixed-size type
+  template <int Rows, int Cols>
+  static const Eigen::Matrix<double, Rows, Cols>& convert(
+      const Eigen::Matrix<double, Rows, Cols>& x) {
     return x;
   }
 };
 
 /**
- * The CallRecord is an abstract base class for the any class that stores
+ * The CallRecord is an abstract base class for any class that stores
  * the Jacobians of applying a function with respect to each of its arguments,
  * as well as an execution trace for each of its arguments.
+ *
+ * The complicated structure of this class is to get around the limitations of mixing inheritance
+ * (needed so that a trace can keep Record pointers) and templating (needed for efficient matrix
+ * multiplication). The "hack" is to implement N differently sized reverse AD methods, and select
+ * the appropriate version with the dispatch method reverseAD2 below.
  */
 template<int Cols>
 struct CallRecord {
@@ -72,19 +77,18 @@ struct CallRecord {
   // Called *once* by the main AD entry point, ExecutionTrace::startReverseAD1
   // This function then calls ExecutionTrace::reverseAD for every argument
   // which will in turn call the reverseAD method below.
-  // This non-virtual function _startReverseAD3, implemented in derived
+  // Calls virtual function _startReverseAD3, implemented in derived
   inline void startReverseAD2(JacobianMap& jacobians) const {
     _startReverseAD3(jacobians);
   }
 
   // Dispatch the reverseAD2 calls issued by ExecutionTrace::reverseAD1
-  // Here we convert to dynamic if the
-  template<typename Derived>
-  inline void reverseAD2(const Eigen::MatrixBase<Derived> & dFdT,
-      JacobianMap& jacobians) const {
-    _reverseAD3(
-        ConvertToVirtualFunctionSupportedMatrixType<
-            (Derived::RowsAtCompileTime > 5)>::convert(dFdT), jacobians);
+  // Here we convert dFdT to a dynamic Matrix if the # rows>5, because _reverseAD3 is only
+  // specialized for fixed-size matrices up to 5 rows.
+  // The appropriate _reverseAD3 method is selected by method overloading.
+  template <typename Derived>
+  inline void reverseAD2(const Eigen::MatrixBase<Derived>& dFdT, JacobianMap& jacobians) const {
+    _reverseAD3(ConvertToDynamicIf<(Derived::RowsAtCompileTime > 5)>::convert(dFdT), jacobians);
   }
 
   // This overload supports matrices with both rows and columns dynamically sized.
@@ -144,6 +148,8 @@ private:
     derived().print(indent);
   }
 
+  // Called from base class non-virtual inline method startReverseAD2
+  // Calls non-virtual function startReverseAD4, implemented in Derived (ExpressionNode::Record)
   virtual void _startReverseAD3(JacobianMap& jacobians) const {
     derived().startReverseAD4(jacobians);
   }

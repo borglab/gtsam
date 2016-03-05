@@ -95,6 +95,11 @@ public:
     return fy_;
   }
 
+  /// aspect ratio
+  inline double aspectRatio() const {
+    return fx_/fy_;
+  }
+
   /// skew
   inline double skew() const {
     return s_;

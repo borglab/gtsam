@@ -28,8 +28,8 @@ using symbol_shorthand::X;
 using symbol_shorthand::V;
 using symbol_shorthand::B;
 
+static const Vector3 kZero = Z_3x1;
 typedef imuBias::ConstantBias Bias;
-static const Vector3 Z_3x1 = Vector3::Zero();
 static const Bias kZeroBiasHat, kZeroBias;
 
 static const Vector3 kZeroOmegaCoriolis(0, 0, 0);

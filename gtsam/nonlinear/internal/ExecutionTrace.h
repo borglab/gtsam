@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -90,6 +90,7 @@ void handleLeafCase(const Eigen::MatrixBase<Derived>& dTdA,
 template<class T>
 class ExecutionTrace {
   static const int Dim = traits<T>::dimension;
+  typedef Eigen::Matrix<double, Dim, Dim> JacobianTT;
   enum {
     Constant, Leaf, Function
   } kind;
@@ -97,21 +98,26 @@ class ExecutionTrace {
     Key key;
     CallRecord<Dim>* ptr;
   } content;
-public:
+
+ public:
+
   /// Pointer always starts out as a Constant
   ExecutionTrace() :
       kind(Constant) {
   }
+
   /// Change pointer to a Leaf Record
   void setLeaf(Key key) {
     kind = Leaf;
     content.key = key;
   }
+
   /// Take ownership of pointer to a Function Record
   void setFunction(CallRecord<Dim>* record) {
     kind = Function;
     content.ptr = record;
   }
+
   /// Print
   void print(const std::string& indent = "") const {
     if (kind == Constant)
@@ -122,6 +128,7 @@ public:
       content.ptr->print(indent + "  ");
     }
   }
+
   /// Return record pointer, quite unsafe, used only for testing
   template<class Record>
   boost::optional<Record*> record() {
@@ -132,11 +139,11 @@ public:
       return p ? boost::optional<Record*>(p) : boost::none;
     }
   }
+
   /**
    *  *** This is the main entry point for reverse AD, called from Expression ***
    * Called only once, either inserts I into Jacobians (Leaf) or starts AD (Function)
    */
-  typedef Eigen::Matrix<double, Dim, Dim> JacobianTT;
   void startReverseAD1(JacobianMap& jacobians) const {
     if (kind == Leaf) {
       // This branch will only be called on trivial Leaf expressions, i.e. Priors
@@ -147,7 +154,11 @@ public:
       // Inside startReverseAD2 the correctly dimensioned pipeline is chosen.
       content.ptr->startReverseAD2(jacobians);
   }
-  // Either add to Jacobians (Leaf) or propagate (Function)
+
+  /// Either add to Jacobians (Leaf) or propagate (Function)
+  // This is a crucial method in selecting the pipeline dimension: since it is templated method
+  // it will call the templated Record method reverseAD2. Hence, at this point in the pipeline
+  // there are as many reverseAD1 and reverseAD2 versions as there are different Jacobian sizes.
   template<typename DerivedMatrix>
   void reverseAD1(const Eigen::MatrixBase<DerivedMatrix> & dTdA,
       JacobianMap& jacobians) const {

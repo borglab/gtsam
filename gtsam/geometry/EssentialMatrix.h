@@ -52,6 +52,11 @@ public:
       Base(aRb, aTb), E_(direction().skew() * rotation().matrix()) {
   }
 
+  /// Named constructor with derivatives
+  static EssentialMatrix FromRotationAndDirection(const Rot3& aRb, const Unit3& aTb,
+                                                  OptionalJacobian<5, 3> H1 = boost::none,
+                                                  OptionalJacobian<5, 2> H2 = boost::none);
+
   /// Named constructor converting a Pose3 with scale to EssentialMatrix (no scale)
   static EssentialMatrix FromPose3(const Pose3& _1P2_,
       OptionalJacobian<5, 6> H = boost::none);

@@ -27,6 +27,7 @@
 #include "gtsam/geometry/Point3.h"
 #include "gtsam/geometry/Rot3.h"
 #include "gtsam/geometry/Pose3.h"
+#include "gtsam/navigation/NavState.h"
 
 using namespace boost::python;
 using namespace gtsam;
@@ -55,4 +56,5 @@ void exportPriorFactors()
   PRIORFACTOR(Rot3)
   PRIORFACTOR(Pose3)
   PRIORFACTOR(Vector3)
+  PRIORFACTOR(NavState)
 }

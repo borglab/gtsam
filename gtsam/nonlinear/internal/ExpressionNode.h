@@ -234,7 +234,7 @@ class UnaryExpression: public ExpressionNode<T> {
   /// Constructor with a unary function f, and input argument e1
   UnaryExpression(Function f, const Expression<A1>& e1) :
       expression1_(e1.root()), function_(f) {
-    ExpressionNode<T>::traceSize_ = upAligned(sizeof(Record)) + e1.traceSize();
+    this->traceSize_ = upAligned(sizeof(Record)) + e1.traceSize();
   }
 
   friend class Expression<T>;
@@ -298,8 +298,8 @@ public:
     }
 
     /// Given df/dT, multiply in dT/dA and continue reverse AD process
-    template<typename SomeMatrix>
-    void reverseAD4(const SomeMatrix & dFdT, JacobianMap& jacobians) const {
+    template<typename MatrixType>
+    void reverseAD4(const MatrixType & dFdT, JacobianMap& jacobians) const {
       trace1.reverseAD1(dFdT * dTdA1, jacobians);
     }
   };
@@ -339,7 +339,7 @@ class BinaryExpression: public ExpressionNode<T> {
   BinaryExpression(Function f, const Expression<A1>& e1,
       const Expression<A2>& e2) :
       expression1_(e1.root()), expression2_(e2.root()), function_(f) {
-    ExpressionNode<T>::traceSize_ = //
+    this->traceSize_ = //
         upAligned(sizeof(Record)) + e1.traceSize() + e2.traceSize();
   }
 
@@ -406,15 +406,15 @@ public:
       std::cout << indent << "}" << std::endl;
     }
 
-    /// Start the reverse AD process, see comments in Base
+    /// Start the reverse AD process, see comments in UnaryExpression
     void startReverseAD4(JacobianMap& jacobians) const {
       trace1.reverseAD1(dTdA1, jacobians);
       trace2.reverseAD1(dTdA2, jacobians);
     }
 
     /// Given df/dT, multiply in dT/dA and continue reverse AD process
-    template<typename SomeMatrix>
-    void reverseAD4(const SomeMatrix & dFdT, JacobianMap& jacobians) const {
+    template<typename MatrixType>
+    void reverseAD4(const MatrixType & dFdT, JacobianMap& jacobians) const {
       trace1.reverseAD1(dFdT * dTdA1, jacobians);
       trace2.reverseAD1(dFdT * dTdA2, jacobians);
     }
@@ -446,7 +446,7 @@ class TernaryExpression: public ExpressionNode<T> {
       const Expression<A2>& e2, const Expression<A3>& e3) :
       expression1_(e1.root()), expression2_(e2.root()), expression3_(e3.root()), //
       function_(f) {
-    ExpressionNode<T>::traceSize_ = upAligned(sizeof(Record)) + //
+    this->traceSize_ = upAligned(sizeof(Record)) + //
         e1.traceSize() + e2.traceSize() + e3.traceSize();
   }
 
@@ -530,8 +530,8 @@ public:
     }
 
     /// Given df/dT, multiply in dT/dA and continue reverse AD process
-    template<typename SomeMatrix>
-    void reverseAD4(const SomeMatrix & dFdT, JacobianMap& jacobians) const {
+    template<typename MatrixType>
+    void reverseAD4(const MatrixType & dFdT, JacobianMap& jacobians) const {
       trace1.reverseAD1(dFdT * dTdA1, jacobians);
       trace2.reverseAD1(dFdT * dTdA2, jacobians);
       trace3.reverseAD1(dFdT * dTdA3, jacobians);
@@ -549,5 +549,194 @@ public:
   }
 };
 
-} // namespace internal
-} // namespace gtsam
+//-----------------------------------------------------------------------------
+/// Expression for scalar multiplication
+template <class T>
+class ScalarMultiplyNode : public ExpressionNode<T> {
+  // Check that T is a vector space
+  BOOST_CONCEPT_ASSERT((gtsam::IsVectorSpace<T>));
+
+  double scalar_;
+  boost::shared_ptr<ExpressionNode<T> > expression_;
+
+ public:
+  /// Constructor with a unary function f, and input argument e1
+  ScalarMultiplyNode(double s, const Expression<T>& e) : scalar_(s), expression_(e.root()) {
+    this->traceSize_ = upAligned(sizeof(Record)) + e.traceSize();
+  }
+
+  /// Destructor
+  virtual ~ScalarMultiplyNode() {}
+
+  /// Print
+  virtual void print(const std::string& indent = "") const {
+    std::cout << indent << "ScalarMultiplyNode" << std::endl;
+    expression_->print(indent + "  ");
+  }
+
+  /// Return value
+  virtual T value(const Values& values) const {
+    return scalar_ * expression_->value(values);
+  }
+
+  /// Return keys that play in this expression
+  virtual std::set<Key> keys() const {
+    return expression_->keys();
+  }
+
+  /// Return dimensions for each argument
+  virtual void dims(std::map<Key, int>& map) const {
+    expression_->dims(map);
+  }
+
+  // Inner Record Class
+  struct Record : public CallRecordImplementor<Record, traits<T>::dimension> {
+    static const int Dim = traits<T>::dimension;
+    typedef Eigen::Matrix<double, Dim, Dim> JacobianTT;
+
+    double scalar_dTdA;
+    ExecutionTrace<T> trace;
+
+    /// Print to std::cout
+    void print(const std::string& indent) const {
+      std::cout << indent << "ScalarMultiplyNode::Record {" << std::endl;
+      std::cout << indent << "D(" << typeid(T).name() << ")/D(" << typeid(T).name()
+                << ") = " << scalar_dTdA << std::endl;
+      trace.print();
+      std::cout << indent << "}" << std::endl;
+    }
+
+    /// Start the reverse AD process
+    void startReverseAD4(JacobianMap& jacobians) const {
+      trace.reverseAD1(scalar_dTdA * JacobianTT::Identity(), jacobians);
+    }
+
+    /// Given df/dT, multiply in dT/dA and continue reverse AD process
+    template <typename MatrixType>
+    void reverseAD4(const MatrixType& dFdT, JacobianMap& jacobians) const {
+      trace.reverseAD1(dFdT * scalar_dTdA, jacobians);
+    }
+  };
+
+  /// Construct an execution trace for reverse AD
+  virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
+                           ExecutionTraceStorage* ptr) const {
+    assert(reinterpret_cast<size_t>(ptr) % TraceAlignment == 0);
+    Record* record = new (ptr) Record();
+    ptr += upAligned(sizeof(Record));
+    T value = expression_->traceExecution(values, record->trace, ptr);
+    ptr += expression_->traceSize();
+    trace.setFunction(record);
+    record->scalar_dTdA = scalar_;
+    return scalar_ * value;
+  }
+};
+
+//-----------------------------------------------------------------------------
+/// Sum Expression
+template <class T>
+class SumExpressionNode : public ExpressionNode<T> {
+  typedef ExpressionNode<T> NodeT;
+  std::vector<boost::shared_ptr<NodeT>> expressions_;
+
+ public:
+  explicit SumExpressionNode(const std::vector<Expression<T>>& expressions) {
+    this->traceSize_ = upAligned(sizeof(Record));
+    for (const Expression<T>& e : expressions)
+      add(e);
+  }
+
+  void add(const Expression<T>& e) {
+    expressions_.push_back(e.root());
+    this->traceSize_ += e.traceSize();
+  }
+
+  /// Destructor
+  virtual ~SumExpressionNode() {}
+
+  size_t nrTerms() const {
+    return expressions_.size();
+  }
+
+  /// Print
+  virtual void print(const std::string& indent = "") const {
+    std::cout << indent << "SumExpressionNode" << std::endl;
+    for (const auto& node : expressions_)
+      node->print(indent + "  ");
+  }
+
+  /// Return value
+  virtual T value(const Values& values) const {
+    auto it = expressions_.begin();
+    T sum = (*it)->value(values);
+    for (++it; it != expressions_.end(); ++it)
+      sum = sum + (*it)->value(values);
+    return sum;
+  }
+
+  /// Return keys that play in this expression
+  virtual std::set<Key> keys() const {
+    std::set<Key> keys;
+    for (const auto& node : expressions_) {
+      std::set<Key> myKeys = node->keys();
+      keys.insert(myKeys.begin(), myKeys.end());
+    }
+    return keys;
+  }
+
+  /// Return dimensions for each argument
+  virtual void dims(std::map<Key, int>& map) const {
+    for (const auto& node : expressions_)
+      node->dims(map);
+  }
+
+  // Inner Record Class
+  struct Record : public CallRecordImplementor<Record, traits<T>::dimension> {
+    std::vector<ExecutionTrace<T>> traces_;
+
+    explicit Record(size_t nrArguments) : traces_(nrArguments) {}
+
+    /// Print to std::cout
+    void print(const std::string& indent) const {
+      std::cout << indent << "SumExpressionNode::Record {" << std::endl;
+      for (const auto& trace : traces_)
+        trace.print(indent);
+      std::cout << indent << "}" << std::endl;
+    }
+
+    /// If the SumExpression is the root, we just start as many pipelines as there are terms.
+    void startReverseAD4(JacobianMap& jacobians) const {
+      for (const auto& trace : traces_)
+        // NOTE(frank): equivalent to trace.reverseAD1(dTdA, jacobians) with dTdA=Identity
+        trace.startReverseAD1(jacobians);
+    }
+
+    /// If we are not the root, we simply pass on the adjoint matrix dFdT to all terms
+    template <typename MatrixType>
+    void reverseAD4(const MatrixType& dFdT, JacobianMap& jacobians) const {
+      for (const auto& trace : traces_)
+        // NOTE(frank): equivalent to trace.reverseAD1(dFdT * dTdA, jacobians) with dTdA=Identity
+        trace.reverseAD1(dFdT, jacobians);
+    }
+  };
+
+  /// Construct an execution trace for reverse AD
+  virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
+                           ExecutionTraceStorage* ptr) const {
+    assert(reinterpret_cast<size_t>(ptr) % TraceAlignment == 0);
+    size_t nrArguments = expressions_.size();
+    Record* record = new (ptr) Record(nrArguments);
+    ptr += upAligned(sizeof(Record));
+    size_t i = 0;
+    T sum = traits<T>::Identity();
+    for (const auto& node : expressions_) {
+      sum = sum + node->traceExecution(values, record->traces_[i++], ptr);
+      ptr += node->traceSize();
+    }
+    trace.setFunction(record);
+    return sum;
+  }
+};
+
+}  // namespace internal
+}  // namespace gtsam

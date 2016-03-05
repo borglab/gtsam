@@ -140,4 +140,10 @@ ostream &operator<<(ostream &os, const Point2& p) {
   return os;
 }
 
+/* ************************************************************************* */
+ostream &operator<<(ostream &os, const gtsam::Point2Pair &p) {
+  os << p.first << " <-> " << p.second;
+  return os;
+}
+
 } // namespace gtsam

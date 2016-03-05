@@ -327,6 +327,15 @@ T expm(const Vector& x, int K=7) {
   return T(expm(xhat,K));
 }
 
+/**
+ * Linear interpolation between X and Y by coefficient t in [0, 1].
+ */
+template <typename T>
+T interpolate(const T& X, const T& Y, double t) {
+  assert(t >= 0 && t <= 1);
+  return traits<T>::Compose(X, traits<T>::Expmap(t * traits<T>::Logmap(traits<T>::Between(X, Y))));
+}
+
 } // namespace gtsam
 
 /**

@@ -29,11 +29,12 @@ namespace so3 {
 
 void ExpmapFunctor::init(bool nearZeroApprox) {
   nearZero = nearZeroApprox || (theta2 <= std::numeric_limits<double>::epsilon());
-  if (nearZero) return;
-  theta = std::sqrt(theta2);  // rotation angle
-  sin_theta = std::sin(theta);
-  const double s2 = std::sin(theta / 2.0);
-  one_minus_cos = 2.0 * s2 * s2;  // numerically better than [1 - cos(theta)]
+  if (!nearZero) {
+    theta = std::sqrt(theta2);  // rotation angle
+    sin_theta = std::sin(theta);
+    const double s2 = std::sin(theta / 2.0);
+    one_minus_cos = 2.0 * s2 * s2;  // numerically better than [1 - cos(theta)]
+  }
 }
 
 ExpmapFunctor::ExpmapFunctor(const Vector3& omega, bool nearZeroApprox)
@@ -42,7 +43,6 @@ ExpmapFunctor::ExpmapFunctor(const Vector3& omega, bool nearZeroApprox)
   W << 0.0, -wz, +wy, +wz, 0.0, -wx, -wy, +wx, 0.0;
   init(nearZeroApprox);
   if (!nearZero) {
-    theta = std::sqrt(theta2);
     K = W / theta;
     KK = K * K;
   }
@@ -55,7 +55,6 @@ ExpmapFunctor::ExpmapFunctor(const Vector3& axis, double angle, bool nearZeroApp
   W = K * angle;
   init(nearZeroApprox);
   if (!nearZero) {
-    theta = angle;
     KK = K * K;
   }
 }

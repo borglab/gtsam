@@ -2,7 +2,7 @@
  * @file LinearContainerFactor.h
  *
  * @brief Wrap Jacobian and Hessian linear factors to allow simple injection into a nonlinear graph
- * 
+ *
  * @date Jul 6, 2012
  * @author Alex Cunningham
  */
@@ -36,7 +36,13 @@ protected:
   /** direct copy constructor */
   LinearContainerFactor(const GaussianFactor::shared_ptr& factor, const boost::optional<Values>& linearizationPoint);
 
+  // Some handy typedefs
+  typedef NonlinearFactor Base;
+  typedef LinearContainerFactor This;
+
 public:
+
+  typedef boost::shared_ptr<This> shared_ptr;
 
   /** Primary constructor: store a linear factor with optional linearization point */
   LinearContainerFactor(const JacobianFactor& factor, const Values& linearizationPoint = Values());

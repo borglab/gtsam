@@ -303,7 +303,7 @@ TEST(Unit3, localCoordinates) {
 }
 
 //*******************************************************************************
-// Wrapper to make basis return a vector6 so we can test numerical derivatives.
+// Wrapper to make basis return a Vector6 so we can test numerical derivatives.
 Vector6 BasisTest(const Unit3& p, OptionalJacobian<6, 2> H) {
   Matrix32 B = p.basis(H);
   Vector6 B_vec;

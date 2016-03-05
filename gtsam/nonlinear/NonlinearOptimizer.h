@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -191,7 +191,7 @@ public:
 
   /// @}
 
-protected:  
+protected:
   /** A default implementation of the optimization loop, which calls iterate()
    * until checkConvergence returns true.
    */
@@ -213,5 +213,8 @@ protected:
 GTSAM_EXPORT bool checkConvergence(double relativeErrorTreshold,
     double absoluteErrorTreshold, double errorThreshold,
     double currentError, double newError, NonlinearOptimizerParams::Verbosity verbosity = NonlinearOptimizerParams::SILENT);
+
+GTSAM_EXPORT bool checkConvergence(const NonlinearOptimizerParams& params, double currentError,
+                                   double newError);
 
 } // gtsam

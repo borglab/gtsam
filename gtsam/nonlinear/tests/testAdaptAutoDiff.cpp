@@ -238,9 +238,6 @@ TEST(AdaptAutoDiff, SnavelyExpression) {
   EXPECT_LONGS_EQUAL(
       sizeof(internal::BinaryExpression<Vector2, Vector9, Vector3>::Record),
       expression.traceSize());
-#ifdef GTSAM_USE_QUATERNIONS
-  EXPECT_LONGS_EQUAL(336, expression.traceSize());
-#endif
   set<Key> expected = list_of(1)(2);
   EXPECT(expected == expression.keys());
 }

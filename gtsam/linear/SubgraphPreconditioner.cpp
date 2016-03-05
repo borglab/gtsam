@@ -508,9 +508,8 @@ Errors SubgraphPreconditioner::operator*(const VectorValues& y) const {
 void SubgraphPreconditioner::multiplyInPlace(const VectorValues& y, Errors& e) const {
 
   Errors::iterator ei = e.begin();
-  for ( Key i = 0 ; i < y.size() ; ++i, ++ei ) {
+  for (size_t i = 0; i < y.size(); ++i, ++ei)
     *ei = y[i];
-  }
 
   // Add A2 contribution
   VectorValues x = Rc1()->backSubstitute(y);      // x=inv(R1)*y
@@ -523,9 +522,9 @@ VectorValues SubgraphPreconditioner::operator^(const Errors& e) const {
 
   Errors::const_iterator it = e.begin();
   VectorValues y = zero();
-  for ( Key i = 0 ; i < y.size() ; ++i, ++it )
-    y[i] = *it ;
-  transposeMultiplyAdd2(1.0,it,e.end(),y);
+  for (size_t i = 0; i < y.size(); ++i, ++it)
+    y[i] = *it;
+  transposeMultiplyAdd2(1.0, it, e.end(), y);
   return y;
 }
 
@@ -535,7 +534,7 @@ void SubgraphPreconditioner::transposeMultiplyAdd
 (double alpha, const Errors& e, VectorValues& y) const {
 
   Errors::const_iterator it = e.begin();
-  for ( Key i = 0 ; i < y.size() ; ++i, ++it ) {
+  for (size_t i = 0; i < y.size(); ++i, ++it) {
     const Vector& ei = *it;
     axpy(alpha, ei, y[i]);
   }

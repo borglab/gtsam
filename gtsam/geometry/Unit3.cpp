@@ -60,7 +60,7 @@ Unit3 Unit3::Random(boost::mt19937 & rng) {
   // around 1.46, instead of drawing directly using boost::uniform_on_sphere(rng).
   boost::variate_generator<boost::mt19937&, boost::uniform_on_sphere<double> > generator(
       rng, randomDirection);
-  vector<double> d = generator();
+  const vector<double> d = generator();
   return Unit3(d[0], d[1], d[2]);
 }
 
@@ -100,16 +100,16 @@ const Matrix32& Unit3::basis(OptionalJacobian<6, 2> H) const {
   // Choose the direction of the first basis vector b1 in the tangent plane by crossing n with
   // the chosen axis.
   Matrix33 H_B1_n;
-  Point3 B1 = gtsam::cross(n, axis, H ? &H_B1_n : 0);
+  Point3 B1 = gtsam::cross(n, axis, H ? &H_B1_n : nullptr);
 
   // Normalize result to get a unit vector: b1 = B1 / |B1|.
   Matrix33 H_b1_B1;
-  Point3 b1 = normalize(B1, H ? &H_b1_B1 : 0);
+  Point3 b1 = normalize(B1, H ? &H_b1_B1 : nullptr);
 
   // Get the second basis vector b2, which is orthogonal to n and b1, by crossing them.
   // No need to normalize this, p and b1 are orthogonal unit vectors.
   Matrix33 H_b2_n, H_b2_b1;
-  Point3 b2 = gtsam::cross(n, b1, H ? &H_b2_n : 0, H ? &H_b2_b1 : 0);
+  Point3 b2 = gtsam::cross(n, b1, H ? &H_b2_n : nullptr, H ? &H_b2_b1 : nullptr);
 
   // Create the basis by stacking b1 and b2.
   B_.reset(Matrix32());
@@ -118,8 +118,8 @@ const Matrix32& Unit3::basis(OptionalJacobian<6, 2> H) const {
   if (H) {
     // Chain rule tomfoolery to compute the derivative.
     const Matrix32& H_n_p = *B_;
-    Matrix32 H_b1_p = H_b1_B1 * H_B1_n * H_n_p;
-    Matrix32 H_b2_p = H_b2_n * H_n_p + H_b2_b1 * H_b1_p;
+    const Matrix32 H_b1_p = H_b1_B1 * H_B1_n * H_n_p;
+    const Matrix32 H_b2_p = H_b2_n * H_n_p + H_b2_b1 * H_b1_p;
 
     // Cache the derivative and fill the result.
     H_B_.reset(Matrix62());
@@ -164,14 +164,14 @@ Matrix3 Unit3::skew() const {
 double Unit3::dot(const Unit3& q, OptionalJacobian<1,2> H_p, OptionalJacobian<1,2> H_q) const {
   // Get the unit vectors of each, and the derivative.
   Matrix32 H_pn_p;
-  Point3 pn = point3(H_p ? &H_pn_p : 0);
+  Point3 pn = point3(H_p ? &H_pn_p : nullptr);
 
   Matrix32 H_qn_q;
-  Point3 qn = q.point3(H_q ? &H_qn_q : 0);
+  const Point3 qn = q.point3(H_q ? &H_qn_q : nullptr);
 
   // Compute the dot product of the Point3s.
   Matrix13 H_dot_pn, H_dot_qn;
-  double d = gtsam::dot(pn, qn, H_p ? &H_dot_pn : 0, H_q ? &H_dot_qn : 0);
+  double d = gtsam::dot(pn, qn, H_p ? &H_dot_pn : nullptr, H_q ? &H_dot_qn : nullptr);
 
   if (H_p) {
     (*H_p) << H_dot_pn * H_pn_p;
@@ -187,10 +187,9 @@ double Unit3::dot(const Unit3& q, OptionalJacobian<1,2> H_p, OptionalJacobian<1,
 /* ************************************************************************* */
 Vector2 Unit3::error(const Unit3& q, OptionalJacobian<2,2> H_q) const {
   // 2D error is equal to B'*q, as B is 3x2 matrix and q is 3x1
-  Matrix23 Bt = basis().transpose();
-  Vector2 xi = Bt * q.p_;
+  const Vector2 xi = basis().transpose() * q.p_;
   if (H_q) {
-    *H_q = Bt * q.basis();
+    *H_q = basis().transpose() * q.basis();
   }
   return xi;
 }
@@ -199,11 +198,11 @@ Vector2 Unit3::error(const Unit3& q, OptionalJacobian<2,2> H_q) const {
 Vector2 Unit3::errorVector(const Unit3& q, OptionalJacobian<2, 2> H_p, OptionalJacobian<2, 2> H_q) const {
   // Get the point3 of this, and the derivative.
   Matrix32 H_qn_q;
-  Point3 qn = q.point3(H_q ? &H_qn_q : 0);
+  const Point3 qn = q.point3(H_q ? &H_qn_q : nullptr);
 
   // 2D error here is projecting q into the tangent plane of this (p).
   Matrix62 H_B_p;
-  Matrix23 Bt = basis(H_p ? &H_B_p : 0).transpose();
+  Matrix23 Bt = basis(H_p ? &H_B_p : nullptr).transpose();
   Vector2 xi = Bt * qn;
 
   if (H_p) {
@@ -212,18 +211,18 @@ Vector2 Unit3::errorVector(const Unit3& q, OptionalJacobian<2, 2> H_p, OptionalJ
     const Matrix32& H_b2_p = H_B_p.block<3, 2>(3, 0);
 
     // Derivatives of the two entries of xi wrt the basis vectors.
-    Matrix13 H_xi1_b1 = qn.transpose();
-    Matrix13 H_xi2_b2 = qn.transpose();
+    const Matrix13 H_xi1_b1 = qn.transpose();
+    const Matrix13 H_xi2_b2 = qn.transpose();
 
     // Assemble dxi/dp = dxi/dB * dB/dp.
-    Matrix12 H_xi1_p = H_xi1_b1 * H_b1_p;
-    Matrix12 H_xi2_p = H_xi2_b2 * H_b2_p;
+    const Matrix12 H_xi1_p = H_xi1_b1 * H_b1_p;
+    const Matrix12 H_xi2_p = H_xi2_b2 * H_b2_p;
     *H_p << H_xi1_p, H_xi2_p;
   }
 
   if (H_q) {
     // dxi/dq is given by dxi/dqu * dqu/dq, where qu is the unit vector of q.
-    Matrix23 H_xi_qu = Bt;
+    const Matrix23 H_xi_qu = Bt;
     *H_q = H_xi_qu * H_qn_q;
   }
 
@@ -232,26 +231,27 @@ Vector2 Unit3::errorVector(const Unit3& q, OptionalJacobian<2, 2> H_p, OptionalJ
 
 /* ************************************************************************* */
 double Unit3::distance(const Unit3& q, OptionalJacobian<1,2> H) const {
-  Matrix2 H_;
-  Vector2 xi = error(q, H_);
-  double theta = xi.norm();
+  Matrix2 H_xi_q;
+  const Vector2 xi = error(q, H ? &H_xi_q : nullptr);
+  const double theta = xi.norm();
   if (H)
-    *H = (xi.transpose() / theta) * H_;
+    *H = (xi.transpose() / theta) * H_xi_q;
   return theta;
 }
 
 /* ************************************************************************* */
 Unit3 Unit3::retract(const Vector2& v) const {
   // Compute the 3D xi_hat vector
-  Vector3 xi_hat = basis() * v;
-  double theta = xi_hat.norm();
+  const Vector3 xi_hat = basis() * v;
+  const double theta = xi_hat.norm();
 
   // Treat case of very small v differently
   if (theta < std::numeric_limits<double>::epsilon()) {
     return Unit3(Vector3(std::cos(theta) * p_ + xi_hat));
   }
 
-  Vector3 exp_p_xi_hat = std::cos(theta) * p_ + xi_hat * (sin(theta) / theta);
+  const Vector3 exp_p_xi_hat =
+      std::cos(theta) * p_ + xi_hat * (sin(theta) / theta);
   return Unit3(exp_p_xi_hat);
 }
 

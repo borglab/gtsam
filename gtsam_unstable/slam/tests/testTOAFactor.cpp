@@ -19,6 +19,7 @@
 
 #include <gtsam_unstable/geometry/Event.h>
 #include <gtsam/nonlinear/ExpressionFactorGraph.h>
+#include <gtsam/nonlinear/expressions.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/base/numericalDerivative.h>
 
@@ -31,7 +32,6 @@ using namespace gtsam;
 
 // typedefs
 typedef Eigen::Matrix<double, 1, 1> Vector1;
-typedef Expression<double> Double_;
 typedef Expression<Point3> Point3_;
 typedef Expression<Event> Event_;
 
@@ -52,7 +52,7 @@ TEST( TOAFactor, NewWay ) {
   Event_ eventExpression(key);
   Point3_ microphoneConstant(microphoneAt0); // constant expression
   double measurement = 7;
-  Double_ expression(&Event::toa, eventExpression, microphoneConstant);
+  double_ expression(&Event::toa, eventExpression, microphoneConstant);
   ExpressionFactor<double> factor(model, measurement, expression);
 }
 
@@ -92,7 +92,7 @@ TEST( TOAFactor, WholeEnchilada ) {
   Event_ eventExpression(key);
   for (size_t i = 0; i < K; i++) {
     Point3_ microphone_i(microphones[i]); // constant expression
-    Double_ predictTOA(&Event::toa, eventExpression, microphone_i);
+    double_ predictTOA(&Event::toa, eventExpression, microphone_i);
     graph.addExpressionFactor(predictTOA, simulatedTOA[i], model);
   }
 

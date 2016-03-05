@@ -109,7 +109,7 @@ public:
    * and additionally, variables that were already in the system must not be included here.
    */
   Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(), const Values& newTheta = Values(),
-      const boost::optional< std::vector<size_t> >& removeFactorIndices = boost::none);
+      const boost::optional<FactorIndices>& removeFactorIndices = boost::none);
 
   /**
    * Perform any required operations before the synchronization process starts.
@@ -152,7 +152,7 @@ protected:
   Values smootherValues_; ///< New variables to be added to the smoother during the next update
   NonlinearFactorGraph filterSummarizationFactors_; ///< New filter summarization factors to replace the existing filter summarization during the next update
   Values separatorValues_; ///< The linearization points of the separator variables. These should not be changed during optimization.
-  FastVector<size_t> filterSummarizationSlots_;  ///< The slots in factor graph that correspond to the current filter summarization factors
+  FactorIndices filterSummarizationSlots_;  ///< The slots in factor graph that correspond to the current filter summarization factors
   bool synchronizationUpdatesAvailable_; ///< Flag indicating the currently stored synchronization updates have not been applied yet
 
   // Storage for information to be sent to the filter

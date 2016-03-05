@@ -117,11 +117,13 @@ TEST( Rot3, Rodrigues2)
 {
   Vector axis = Vector3(0., 1., 0.); // rotation around Y
   double angle = 3.14 / 4.0;
-  Rot3 actual = Rot3::AxisAngle(axis, angle);
   Rot3 expected(0.707388, 0, 0.706825,
                        0, 1,        0,
                -0.706825, 0, 0.707388);
+  Rot3 actual = Rot3::AxisAngle(axis, angle);
   CHECK(assert_equal(expected,actual,1e-5));
+  Rot3 actual2 = Rot3::Rodrigues(angle*axis);
+  CHECK(assert_equal(expected,actual2,1e-5));
 }
 
 /* ************************************************************************* */
@@ -242,6 +244,7 @@ TEST(Rot3, retract_localCoordinates2)
   EXPECT(assert_equal(t2, t1.retract(d12)));
   Vector d21 = t2.localCoordinates(t1);
   EXPECT(assert_equal(t1, t2.retract(d21)));
+  EXPECT(assert_equal(d12, -d21));
 }
 /* ************************************************************************* */
 TEST(Rot3, manifold_expmap)

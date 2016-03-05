@@ -239,6 +239,7 @@ Matrix7 NavState::wedge(const Vector9& xi) {
 #define D_v_v(H) (H)->block<3,3>(6,6)
 
 //------------------------------------------------------------------------------
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 NavState NavState::update(const Vector3& b_acceleration, const Vector3& b_omega,
     const double dt, OptionalJacobian<9, 9> F, OptionalJacobian<9, 3> G1,
     OptionalJacobian<9, 3> G2) const {
@@ -281,6 +282,7 @@ NavState NavState::update(const Vector3& b_acceleration, const Vector3& b_omega,
   }
   return newState;
 }
+#endif
 
 //------------------------------------------------------------------------------
 Vector9 NavState::coriolis(double dt, const Vector3& omega, bool secondOrder,

@@ -432,7 +432,7 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
     boost::shared_ptr<BetweenFactor<Pose2> > factor =
         boost::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor_);
     if (factor){
-      SharedNoiseModel model = factor->get_noiseModel();
+      SharedNoiseModel model = factor->noiseModel();
       boost::shared_ptr<noiseModel::Gaussian> gaussianModel =
           boost::dynamic_pointer_cast<noiseModel::Gaussian>(model);
       if (!gaussianModel){
@@ -455,7 +455,7 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
         boost::dynamic_pointer_cast< BetweenFactor<Pose3> >(factor_);
 
     if (factor3D){
-      SharedNoiseModel model = factor3D->get_noiseModel();
+      SharedNoiseModel model = factor3D->noiseModel();
 
       boost::shared_ptr<noiseModel::Gaussian> gaussianModel =
           boost::dynamic_pointer_cast<noiseModel::Gaussian>(model);
@@ -658,10 +658,11 @@ bool readBundler(const string& filename, SfM_data &data) {
 
     Pose3 pose = openGL2gtsam(R, tx, ty, tz);
 
-    data.cameras.push_back(SfM_Camera(pose, K));
+    data.cameras.emplace_back(pose, K);
   }
 
   // Get the information for the 3D points
+  data.tracks.reserve(nrPoints);
   for (size_t j = 0; j < nrPoints; j++) {
     SfM_Track track;
 
@@ -681,12 +682,14 @@ bool readBundler(const string& filename, SfM_data &data) {
     size_t nvisible = 0;
     is >> nvisible;
 
+    track.measurements.reserve(nvisible);
+    track.siftIndices.reserve(nvisible);
     for (size_t k = 0; k < nvisible; k++) {
       size_t cam_idx = 0, point_idx = 0;
       float u, v;
       is >> cam_idx >> point_idx >> u >> v;
-      track.measurements.push_back(make_pair(cam_idx, Point2(u, -v)));
-      track.siftIndices.push_back(make_pair(cam_idx, point_idx));
+      track.measurements.emplace_back(cam_idx, Point2(u, -v));
+      track.siftIndices.emplace_back(cam_idx, point_idx);
     }
 
     data.tracks.push_back(track);
@@ -716,7 +719,7 @@ bool readBAL(const string& filename, SfM_data &data) {
     size_t i = 0, j = 0;
     float u, v;
     is >> i >> j >> u >> v;
-    data.tracks[j].measurements.push_back(make_pair(i, Point2(u, -v)));
+    data.tracks[j].measurements.emplace_back(i, Point2(u, -v));
   }
 
   // Get the information for the camera poses
@@ -737,7 +740,7 @@ bool readBAL(const string& filename, SfM_data &data) {
     is >> f >> k1 >> k2;
     Cal3Bundler K(f, k1, k2);
 
-    data.cameras.push_back(SfM_Camera(pose, K));
+    data.cameras.emplace_back(pose, K);
   }
 
   // Get the information for the 3D points

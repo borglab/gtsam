@@ -57,11 +57,29 @@ OrientedPlane3 OrientedPlane3::transform(const Pose3& xr, OptionalJacobian<3, 3>
   return OrientedPlane3(unit_vec(0), unit_vec(1), unit_vec(2), pred_d);
 }
 
-
 /* ************************************************************************* */
 Vector3 OrientedPlane3::error(const OrientedPlane3& plane) const {
   Vector2 n_error = -n_.localCoordinates(plane.n_);
   return Vector3(n_error(0), n_error(1), d_ - plane.d_);
+}
+
+/* ************************************************************************* */
+Vector3 OrientedPlane3::errorVector(const OrientedPlane3& other, OptionalJacobian<3, 3> H1,
+                                    OptionalJacobian<3, 3> H2) const {
+  Matrix22 H_n_error_this, H_n_error_other;
+  Vector2 n_error = n_.errorVector(other.normal(), H1 ? &H_n_error_this : 0,
+                                   H2 ? &H_n_error_other : 0);
+
+  double d_error = d_ - other.d_;
+
+  if (H1) {
+    *H1 << H_n_error_this, Vector2::Zero(), 0, 0, 1;
+  }
+  if (H2) {
+    *H2 << H_n_error_other, Vector2::Zero(), 0, 0, -1;
+  }
+
+  return Vector3(n_error(0), n_error(1), d_error);
 }
 
 /* ************************************************************************* */
