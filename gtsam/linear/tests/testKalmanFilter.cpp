@@ -270,7 +270,7 @@ TEST( KalmanFilter, QRvsCholesky ) {
   EXPECT(assert_equal(expected2, pb2->covariance(), 1e-7));
 
   // do the above update again, this time with a full Matrix Q
-  Matrix modelQ = diag(sigmas.cwiseProduct(sigmas));
+  Matrix modelQ = diag(sigmas.array().square());
   KalmanFilter::State pa3 = kfa.updateQ(pa, H, z, modelQ);
   KalmanFilter::State pb3 = kfb.updateQ(pb, H, z, modelQ);
 

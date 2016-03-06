@@ -186,8 +186,7 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::aid(
     Matrix b_g = bRn * n_g_cross_;
     H = collect(3, &b_g, &Z_3x3, &I_3x3);
     // And the measurement noise, TODO: should be created once where sigmas_v_a is given
-    R = diag(sigmas_v_a_.cwiseQuotient(sigmas_v_a_));
-
+    R = diag(sigmas_v_a_.array().square());
   }
 
 // update the Kalman filter
