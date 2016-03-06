@@ -48,7 +48,7 @@ AHRS::AHRS(const Matrix& stationaryU, const Matrix& stationaryF, double g_e,
   Vector3 var_omega_w = 0 * ones(3); // TODO
   Vector3 var_omega_g = (0.0034 * 0.0034) * ones(3);
   Vector3 var_omega_a = (0.034 * 0.034) * ones(3);
-  Vector3 sigmas_v_g_sq = sigmas_v_g.cwiseProduct(sigmas_v_g);
+  Vector3 sigmas_v_g_sq = sigmas_v_g.array().square();
   var_w_ << var_omega_w, var_omega_g, sigmas_v_g_sq, var_omega_a;
 
   // Quantities needed for aiding
@@ -171,7 +171,7 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::aid(
     // calculate residual gravity measurement
     z = n_g_ - trans(bRn) * measured_b_g;
     H = collect(3, &n_g_cross_, &Z_3x3, &bRn);
-    R = trans(bRn) * diag(sigmas_v_a_.cwiseProduct(sigmas_v_a_)) * bRn;
+    R = trans(bRn) * diag(sigmas_v_a_.array().square()) * bRn;
   } else {
     // my measurement prediction (in body frame):
     // F(:,k) = bias - b_g
