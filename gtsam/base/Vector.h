@@ -213,7 +213,7 @@ GTSAM_EXPORT ConstSubVector sub(const Vector &v, size_t i1, size_t i2);
 GTSAM_EXPORT void subInsert(Vector& fullVector, const Vector& subVector, size_t i);
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-GTSAM_EXPORT Vector emul(const Vector &a, const Vector &b);
+GTSAM_EXPORT inline Vector emul(const Vector &a, const Vector &b) {assert (b.size()==a.size()); return a.cwiseProduct(b);}
 #endif
 
 /**

@@ -187,12 +187,6 @@ void subInsert(Vector& fullVector, const Vector& subVector, size_t i) {
 }
 
 /* ************************************************************************* */
-Vector emul(const Vector &a, const Vector &b) {
-  assert (b.size()==a.size());
-  return a.cwiseProduct(b);
-}
-
-/* ************************************************************************* */
 Vector ediv(const Vector &a, const Vector &b) {
   assert (b.size()==a.size());
   return a.cwiseQuotient(b);
