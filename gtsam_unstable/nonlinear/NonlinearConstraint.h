@@ -107,8 +107,8 @@ public:
   virtual void evaluateHessians(const X& x1, std::vector<Matrix>& G11) const {
 
     static const bool debug = false;
-
-    boost::function<Vector(const X&)> vecH1(
+    typedef Eigen::Matrix<double, X1Dim, 1> actual_size;
+    boost::function<actual_size(const X&)> vecH1(
         boost::bind(&This::vectorizeH1t, this, _1));
 
     Matrix G11all = numericalDerivative11(vecH1, x1, 1e-5);
