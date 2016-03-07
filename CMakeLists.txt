@@ -242,7 +242,7 @@ else()
 	endif()
 	# Add the bundled version of eigen to the include path so that it can still be included
 	# with  #include <Eigen/Core>
-	include_directories(BEFORE "gtsam/3rdparty/Eigen/")
+	include_directories(BEFORE SYSTEM "gtsam/3rdparty/Eigen/")
 
 	# set full path to be used by external projects
 	# this will be added to GTSAM_INCLUDE_DIR by gtsam_extra.cmake.in
