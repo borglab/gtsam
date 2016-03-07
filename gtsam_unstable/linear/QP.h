@@ -21,6 +21,7 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam_unstable/linear/EqualityFactorGraph.h>
 #include <gtsam_unstable/linear/InequalityFactorGraph.h>
+#include <gtsam/slam/dataset.h>
 
 namespace gtsam {
 
@@ -41,13 +42,8 @@ struct QP {
   QP(const GaussianFactorGraph& _cost,
       const EqualityFactorGraph& _linearEqualities,
       const InequalityFactorGraph& _linearInequalities) :
-      cost(_cost), equalities(_linearEqualities), inequalities(
-          _linearInequalities) {
+      cost(_cost), equalities(_linearEqualities), inequalities(_linearInequalities) {
   }
-
-  QP(std::string MPS_FileName):
-    cost(), equalities(), inequalities() {}
-
 
   /** print */
   void print(const std::string& s = "") {
