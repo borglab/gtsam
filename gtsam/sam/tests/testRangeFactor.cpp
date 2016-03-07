@@ -38,8 +38,8 @@ typedef RangeFactor<Pose3, Point3> RangeFactor3D;
 typedef RangeFactorWithTransform<Pose2, Point2> RangeFactorWithTransform2D;
 typedef RangeFactorWithTransform<Pose3, Point3> RangeFactorWithTransform3D;
 
-Key poseKey(1);
-Key pointKey(2);
+Key poseKey(2);
+Key pointKey(1);
 double measurement(10.0);
 
 /* ************************************************************************* */

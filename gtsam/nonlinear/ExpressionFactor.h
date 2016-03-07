@@ -158,7 +158,13 @@ protected:
 
    // Get keys and dimensions for Jacobian matrices
    // An Expression is assumed unmutable, so we do this now
-   boost::tie(keys_, dims_) = expression_.keysAndDims();
+   if (keys_.empty())
+     boost::tie(keys_, dims_) = expression_.keysAndDims();
+   else {
+      std::map<Key, int> map;
+      expression_.dims(map);
+      for (Key key : keys_) dims_.push_back(map[key]);   
+   }
  }
 
  /// Recreate expression from keys_ and measured_, used in load below.
