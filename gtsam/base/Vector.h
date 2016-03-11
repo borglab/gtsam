@@ -251,13 +251,6 @@ GTSAM_EXPORT Vector esqrt(const Vector& v);
 GTSAM_EXPORT Vector abs(const Vector& v);
 
 /**
- * Return the max element of a vector
- * @param a is a vector
- * @return max(a)
- */
-GTSAM_EXPORT double max(const Vector &a);
-
-/**
  * Dot product
  */
 template<class V1, class V2>
@@ -337,6 +330,7 @@ GTSAM_EXPORT Vector concatVectors(size_t nrVectors, ...);
 GTSAM_EXPORT inline Vector emul(const Vector &a, const Vector &b) {assert (b.size()==a.size()); return a.cwiseProduct(b);}
 GTSAM_EXPORT inline Vector reciprocal(const Vector &a) {return a.array().inverse();}
 GTSAM_EXPORT inline double sum(const Vector &a){return a.sum();}
+GTSAM_EXPORT inline double max(const Vector &a){return a.maxCoeff();}
 #endif
 
 } // namespace gtsam

@@ -220,11 +220,6 @@ Vector abs(const Vector& v) {
 }
 
 /* ************************************************************************* */
-double max(const Vector &a) {
-  return a.maxCoeff();
-}
-
-/* ************************************************************************* */
 // imperative version, pass in x
 double houseInPlace(Vector &v) {
   const double x0 = v(0);
