@@ -205,11 +205,6 @@ Vector ediv_(const Vector &a, const Vector &b) {
 }
 
 /* ************************************************************************* */
-double sum(const Vector &a) {
-  return a.sum();
-}
-
-/* ************************************************************************* */
 double norm_2(const Vector& v) {
   return v.norm();
 }

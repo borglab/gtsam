@@ -229,13 +229,6 @@ GTSAM_EXPORT Vector ediv(const Vector &a, const Vector &b);
 GTSAM_EXPORT Vector ediv_(const Vector &a, const Vector &b);
 
 /**
- * sum vector elements
- * @param a vector
- * @return sum_i a(i)
- */
-GTSAM_EXPORT double sum(const Vector &a);
-
-/**
  * Calculates L2 norm for a vector
  * modeled after boost.ublas for compatibility
  * @param v vector
@@ -343,8 +336,8 @@ GTSAM_EXPORT Vector concatVectors(size_t nrVectors, ...);
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 GTSAM_EXPORT inline Vector emul(const Vector &a, const Vector &b) {assert (b.size()==a.size()); return a.cwiseProduct(b);}
 GTSAM_EXPORT inline Vector reciprocal(const Vector &a) {return a.array().inverse();}
+GTSAM_EXPORT inline double sum(const Vector &a){return a.sum();}
 #endif
-
 
 } // namespace gtsam
 
