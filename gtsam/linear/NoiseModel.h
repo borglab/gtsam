@@ -309,7 +309,7 @@ namespace gtsam {
        * i.e. the diagonal of the information matrix, i.e., weights
        */
       static shared_ptr Precisions(const Vector& precisions, bool smart = true) {
-        return Variances(reciprocal(precisions), smart);
+        return Variances(precisions.array().inverse(), smart);
       }
 
       virtual void print(const std::string& name) const;
@@ -443,10 +443,10 @@ namespace gtsam {
        * precisions, some of which might be inf
        */
       static shared_ptr MixedPrecisions(const Vector& mu, const Vector& precisions) {
-        return MixedVariances(mu, reciprocal(precisions));
+        return MixedVariances(mu, precisions.array().inverse());
       }
       static shared_ptr MixedPrecisions(const Vector& precisions) {
-        return MixedVariances(reciprocal(precisions));
+        return MixedVariances(precisions.array().inverse());
       }
 
       /**

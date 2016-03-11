@@ -244,13 +244,6 @@ GTSAM_EXPORT double sum(const Vector &a);
 GTSAM_EXPORT double norm_2(const Vector& v);
 
 /**
- * Elementwise reciprocal of vector elements
- * @param a vector
- * @return [1/a(i)]
- */
-GTSAM_EXPORT Vector reciprocal(const Vector &a);
-
-/**
  * Elementwise sqrt of vector elements
  * @param v is a vector
  * @return [sqrt(a(i))]
@@ -349,7 +342,9 @@ GTSAM_EXPORT Vector concatVectors(size_t nrVectors, ...);
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 GTSAM_EXPORT inline Vector emul(const Vector &a, const Vector &b) {assert (b.size()==a.size()); return a.cwiseProduct(b);}
+GTSAM_EXPORT inline Vector reciprocal(const Vector &a) {return a.array().inverse();}
 #endif
+
 
 } // namespace gtsam
 

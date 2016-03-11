@@ -339,7 +339,7 @@ weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
   list<boost::tuple<Vector, double, double> > results;
 
   Vector pseudo(m); // allocate storage for pseudo-inverse
-  Vector weights = reciprocal(sigmas.array().square()); // calculate weights once
+  Vector weights = sigmas.array().square().inverse(); // calculate weights once
 
   // We loop over all columns, because the columns that can be eliminated
   // are not necessarily contiguous. For each one, estimate the corresponding

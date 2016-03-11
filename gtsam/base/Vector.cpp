@@ -215,11 +215,6 @@ double norm_2(const Vector& v) {
 }
 
 /* ************************************************************************* */
-Vector reciprocal(const Vector &a) {
-  return a.array().inverse();
-}
-
-/* ************************************************************************* */
 Vector esqrt(const Vector& v) {
   return v.cwiseSqrt();
 }

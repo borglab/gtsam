@@ -198,7 +198,7 @@ TEST(Vector, weightedPseudoinverse )
   // create sigmas
   Vector sigmas(2);
   sigmas(0) = 0.1; sigmas(1) = 0.2;
-  Vector weights = reciprocal(sigmas.array().square());
+  Vector weights = sigmas.array().square().inverse();
 
   // perform solve
   Vector actual; double precision;
@@ -224,7 +224,7 @@ TEST(Vector, weightedPseudoinverse_constraint )
   // create sigmas
   Vector sigmas(2);
   sigmas(0) = 0.0; sigmas(1) = 0.2;
-  Vector weights = reciprocal(sigmas.array().square());
+  Vector weights = sigmas.array().square().inverse();
   // perform solve
   Vector actual; double precision;
   boost::tie(actual, precision) = weightedPseudoinverse(x, weights);
@@ -243,7 +243,7 @@ TEST(Vector, weightedPseudoinverse_nan )
 {
   Vector a = (Vector(4) << 1., 0., 0., 0.).finished();
   Vector sigmas = (Vector(4) << 0.1, 0.1, 0., 0.).finished();
-  Vector weights = reciprocal(sigmas.array().square());
+  Vector weights = sigmas.array().square().inverse();
   Vector pseudo; double precision;
   boost::tie(pseudo, precision) = weightedPseudoinverse(a, weights);
 
@@ -306,7 +306,7 @@ TEST(Vector, greater_than )
 TEST(Vector, reciprocal )
 {
   Vector v = Vector3(1.0, 2.0, 4.0);
-  EXPECT(assert_equal(Vector3(1.0, 0.5, 0.25),reciprocal(v)));
+  EXPECT(assert_equal(Vector3(1.0, 0.5, 0.25), (Vector) v.array().inverse()));
 }
 
 /* ************************************************************************* */
