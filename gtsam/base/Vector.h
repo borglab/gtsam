@@ -244,13 +244,6 @@ GTSAM_EXPORT double norm_2(const Vector& v);
 GTSAM_EXPORT Vector esqrt(const Vector& v);
 
 /**
- * Absolute values of vector elements
- * @param v is a vector
- * @return [abs(a(i))]
- */
-GTSAM_EXPORT Vector abs(const Vector& v);
-
-/**
  * Dot product
  */
 template<class V1, class V2>
@@ -327,10 +320,11 @@ GTSAM_EXPORT Vector concatVectors(const std::list<Vector>& vs);
 GTSAM_EXPORT Vector concatVectors(size_t nrVectors, ...);
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+GTSAM_EXPORT inline Vector abs(const Vector& v){return v.cwiseAbs();}
 GTSAM_EXPORT inline Vector emul(const Vector &a, const Vector &b) {assert (b.size()==a.size()); return a.cwiseProduct(b);}
+GTSAM_EXPORT inline double max(const Vector &a){return a.maxCoeff();}
 GTSAM_EXPORT inline Vector reciprocal(const Vector &a) {return a.array().inverse();}
 GTSAM_EXPORT inline double sum(const Vector &a){return a.sum();}
-GTSAM_EXPORT inline double max(const Vector &a){return a.maxCoeff();}
 #endif
 
 } // namespace gtsam

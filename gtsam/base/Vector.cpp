@@ -215,11 +215,6 @@ Vector esqrt(const Vector& v) {
 }
 
 /* ************************************************************************* */
-Vector abs(const Vector& v) {
-  return v.cwiseAbs();
-}
-
-/* ************************************************************************* */
 // imperative version, pass in x
 double houseInPlace(Vector &v) {
   const double x0 = v(0);
