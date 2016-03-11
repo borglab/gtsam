@@ -210,11 +210,6 @@ double norm_2(const Vector& v) {
 }
 
 /* ************************************************************************* */
-Vector esqrt(const Vector& v) {
-  return v.cwiseSqrt();
-}
-
-/* ************************************************************************* */
 // imperative version, pass in x
 double houseInPlace(Vector &v) {
   const double x0 = v(0);
@@ -336,7 +331,5 @@ Vector concatVectors(size_t nrVectors, ...)
   va_end(ap);
   return concatVectors(vs);
 }
-
-/* ************************************************************************* */
 
 } // namespace gtsam

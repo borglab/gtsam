@@ -258,7 +258,7 @@ Diagonal::shared_ptr Diagonal::Variances(const Vector& variances, bool smart) {
       if (variances(j) != variances(0)) goto full;
     return Isotropic::Variance(n, variances(0), true);
   }
-  full: return shared_ptr(new Diagonal(esqrt(variances)));
+  full: return shared_ptr(new Diagonal(variances.cwiseSqrt()));
 }
 
 /* ************************************************************************* */

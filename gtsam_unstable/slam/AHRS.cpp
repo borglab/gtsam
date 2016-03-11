@@ -32,7 +32,7 @@ AHRS::AHRS(const Matrix& stationaryU, const Matrix& stationaryF, double g_e,
 
   // estimate standard deviation on gyroscope readings
   Pg_ = Cov(stationaryU);
-  Vector3 sigmas_v_g = esqrt(Pg_.diagonal() * T);
+  Vector3 sigmas_v_g = (Pg_.diagonal() * T).cwiseSqrt();
 
   // estimate standard deviation on accelerometer readings
   Pa_ = Cov(stationaryF);
@@ -52,7 +52,7 @@ AHRS::AHRS(const Matrix& stationaryU, const Matrix& stationaryF, double g_e,
   var_w_ << var_omega_w, var_omega_g, sigmas_v_g_sq, var_omega_a;
 
   // Quantities needed for aiding
-  sigmas_v_a_ = esqrt(T * Pa_.diagonal());
+  sigmas_v_a_ = (T * Pa_.diagonal()).cwiseSqrt();
 
   // gravity in nav frame
   n_g_ = (Vector(3) << 0.0, 0.0, g_e).finished();

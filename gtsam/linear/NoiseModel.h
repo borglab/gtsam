@@ -432,10 +432,10 @@ namespace gtsam {
        * standard devations, some of which might be zero
        */
       static shared_ptr MixedVariances(const Vector& mu, const Vector& variances) {
-        return shared_ptr(new Constrained(mu, esqrt(variances)));
+        return shared_ptr(new Constrained(mu, variances.cwiseSqrt()));
       }
       static shared_ptr MixedVariances(const Vector& variances) {
-        return shared_ptr(new Constrained(esqrt(variances)));
+        return shared_ptr(new Constrained(variances.cwiseSqrt()));
       }
 
       /**
