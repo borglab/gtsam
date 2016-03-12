@@ -257,7 +257,7 @@ TEST(Vector, ediv )
 {
   Vector a = Vector3(10., 20., 30.);
   Vector b = Vector3(2.0, 5.0, 6.0);
-  Vector actual(ediv(a,b));
+  Vector actual(a.cwiseQuotient(b));
 
   Vector c = Vector3(5.0, 4.0, 5.0);
   EXPECT(assert_equal(c,actual));

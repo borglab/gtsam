@@ -187,12 +187,6 @@ void subInsert(Vector& fullVector, const Vector& subVector, size_t i) {
 }
 
 /* ************************************************************************* */
-Vector ediv(const Vector &a, const Vector &b) {
-  assert (b.size()==a.size());
-  return a.cwiseQuotient(b);
-}
-
-/* ************************************************************************* */
 Vector ediv_(const Vector &a, const Vector &b) {
   size_t n = a.size();
   assert (b.size()==a.size());

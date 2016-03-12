@@ -213,14 +213,6 @@ GTSAM_EXPORT ConstSubVector sub(const Vector &v, size_t i1, size_t i2);
 GTSAM_EXPORT void subInsert(Vector& fullVector, const Vector& subVector, size_t i);
 
 /**
- * elementwise division
- * @param a first vector
- * @param b second vector
- * @return vector [a(i)/b(i)]
- */
-GTSAM_EXPORT Vector ediv(const Vector &a, const Vector &b);
-
-/**
  * elementwise division, but 0/0 = 0, not inf
  * @param a first vector
  * @param b second vector
@@ -306,6 +298,7 @@ GTSAM_EXPORT Vector concatVectors(size_t nrVectors, ...);
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 GTSAM_EXPORT inline Vector abs(const Vector& v){return v.cwiseAbs();}
+GTSAM_EXPORT Vector ediv(const Vector &a, const Vector &b) {assert (b.size()==a.size()); return a.cwiseQuotient(b);}
 GTSAM_EXPORT inline Vector esqrt(const Vector& v) { return v.cwiseSqrt();}
 GTSAM_EXPORT inline Vector emul(const Vector &a, const Vector &b) {assert (b.size()==a.size()); return a.cwiseProduct(b);}
 GTSAM_EXPORT inline double max(const Vector &a){return a.maxCoeff();}
