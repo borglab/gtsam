@@ -148,7 +148,7 @@ TEST(Pose3, Adjoint_full)
 Pose3 Agrawal06iros(const Vector& xi) {
   Vector w = xi.head(3);
   Vector v = xi.tail(3);
-  double t = norm_2(w);
+  double t = w.norm();
   if (t < 1e-5)
     return Pose3(Rot3(), Point3(v));
   else {

@@ -205,11 +205,6 @@ Vector ediv_(const Vector &a, const Vector &b) {
 }
 
 /* ************************************************************************* */
-double norm_2(const Vector& v) {
-  return v.norm();
-}
-
-/* ************************************************************************* */
 // imperative version, pass in x
 double houseInPlace(Vector &v) {
   const double x0 = v(0);

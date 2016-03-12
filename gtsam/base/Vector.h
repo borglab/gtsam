@@ -229,14 +229,6 @@ GTSAM_EXPORT Vector ediv(const Vector &a, const Vector &b);
 GTSAM_EXPORT Vector ediv_(const Vector &a, const Vector &b);
 
 /**
- * Calculates L2 norm for a vector
- * modeled after boost.ublas for compatibility
- * @param v vector
- * @return the L2 norm
- */
-GTSAM_EXPORT double norm_2(const Vector& v);
-
-/**
  * Dot product
  */
 template<class V1, class V2>
@@ -317,6 +309,7 @@ GTSAM_EXPORT inline Vector abs(const Vector& v){return v.cwiseAbs();}
 GTSAM_EXPORT inline Vector esqrt(const Vector& v) { return v.cwiseSqrt();}
 GTSAM_EXPORT inline Vector emul(const Vector &a, const Vector &b) {assert (b.size()==a.size()); return a.cwiseProduct(b);}
 GTSAM_EXPORT inline double max(const Vector &a){return a.maxCoeff();}
+GTSAM_EXPORT inline double norm_2(const Vector& v) {return v.norm();}
 GTSAM_EXPORT inline Vector reciprocal(const Vector &a) {return a.array().inverse();}
 GTSAM_EXPORT inline double sum(const Vector &a){return a.sum();}
 #endif

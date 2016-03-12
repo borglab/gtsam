@@ -33,7 +33,7 @@ Mechanization_bRn2 Mechanization_bRn2::initialize(const Matrix& U,
   if(g_e == 0) {
     if (flat)
       // acceleration measured is  along the z-axis.
-      b_g = (Vector3(3) << 0.0, 0.0, norm_2(meanF)).finished();
+      b_g = (Vector3(3) << 0.0, 0.0, meanF.norm()).finished();
     else
       // acceleration measured is the opposite of gravity (10.13)
       b_g = -meanF;

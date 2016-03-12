@@ -96,7 +96,7 @@ TEST( Rot3, equals)
 /* ************************************************************************* */
 // Notice this uses J^2 whereas fast uses w*w', and has cos(t)*I + ....
 Rot3 slow_but_correct_Rodrigues(const Vector& w) {
-  double t = norm_2(w);
+  double t = w.norm();
   Matrix3 J = skewSymmetric(w / t);
   if (t < 1e-5) return Rot3();
   Matrix3 R = I_3x3 + sin(t) * J + (1.0 - cos(t)) * (J * J);
@@ -130,7 +130,7 @@ TEST( Rot3, Rodrigues2)
 TEST( Rot3, Rodrigues3)
 {
   Vector w = Vector3(0.1, 0.2, 0.3);
-  Rot3 R1 = Rot3::AxisAngle(w / norm_2(w), norm_2(w));
+  Rot3 R1 = Rot3::AxisAngle(w / w.norm(), w.norm());
   Rot3 R2 = slow_but_correct_Rodrigues(w);
   CHECK(assert_equal(R2,R1));
 }
