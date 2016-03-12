@@ -182,11 +182,6 @@ ConstSubVector sub(const Vector &v, size_t i1, size_t i2) {
 }
 
 /* ************************************************************************* */
-void subInsert(Vector& fullVector, const Vector& subVector, size_t i) {
-  fullVector.segment(i, subVector.size()) = subVector;
-}
-
-/* ************************************************************************* */
 Vector ediv_(const Vector &a, const Vector &b) {
   size_t n = a.size();
   assert (b.size()==a.size());

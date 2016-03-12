@@ -142,7 +142,7 @@ TEST(Vector, subInsert )
        small = ones(3);
 
   size_t i = 2;
-  subInsert(big, small, i);
+  big.segment(i,small.size()) = small;
 
   Vector expected = (Vector(6) << 0.0, 0.0, 1.0, 1.0, 1.0, 0.0).finished();
 

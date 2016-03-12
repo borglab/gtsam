@@ -90,7 +90,8 @@ Vector newtonEuler(const Vector& Vb, const Vector& Fb, const Matrix& Inertia) {
 TEST( DiscreteEulerPoincareHelicopter, evaluateError) {
   Vector Fu = computeFu(gamma2, u2);
   Vector fGravity_g1 = zero(6);
-  subInsert(fGravity_g1, g1.rotation().unrotate(Point3(0.0, 0.0, -mass*9.81)), 3); // gravity force in g1 frame
+  Vector subVector = g1.rotation().unrotate(Point3(0.0, 0.0, -mass*9.81));
+  fGravity_g1.segment(3,subVector.size()) = subVector;
   Vector Fb = Fu+fGravity_g1;
 
   Vector dV = newtonEuler(V1_g1, Fb, Inertia);

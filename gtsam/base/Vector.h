@@ -205,14 +205,6 @@ GTSAM_EXPORT bool linear_dependent(const Vector& vec1, const Vector& vec2, doubl
 GTSAM_EXPORT ConstSubVector sub(const Vector &v, size_t i1, size_t i2);
 
 /**
- * Inserts a subvector into a vector IN PLACE
- * @param fullVector is the vector to be changed
- * @param subVector is the vector to insert
- * @param i is the index where the subvector should be inserted
- */
-GTSAM_EXPORT void subInsert(Vector& fullVector, const Vector& subVector, size_t i);
-
-/**
  * elementwise division, but 0/0 = 0, not inf
  * @param a first vector
  * @param b second vector
@@ -304,6 +296,7 @@ GTSAM_EXPORT inline Vector emul(const Vector &a, const Vector &b) {assert (b.siz
 GTSAM_EXPORT inline double max(const Vector &a){return a.maxCoeff();}
 GTSAM_EXPORT inline double norm_2(const Vector& v) {return v.norm();}
 GTSAM_EXPORT inline Vector reciprocal(const Vector &a) {return a.array().inverse();}
+GTSAM_EXPORT void subInsert(Vector& fullVector, const Vector& subVector, size_t i) {fullVector.segment(i, subVector.size()) = subVector;}
 GTSAM_EXPORT inline double sum(const Vector &a){return a.sum();}
 #endif
 
