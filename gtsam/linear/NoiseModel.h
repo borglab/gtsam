@@ -416,7 +416,7 @@ namespace gtsam {
        * standard devations, some of which might be zero
        */
       static shared_ptr MixedSigmas(const Vector& sigmas) {
-        return MixedSigmas(repeat(sigmas.size(), 1000.0), sigmas);
+        return MixedSigmas(Vector::Constant(sigmas.size(), 1000.0), sigmas);
       }
 
       /**
@@ -424,7 +424,7 @@ namespace gtsam {
        * standard devations, some of which might be zero
        */
       static shared_ptr MixedSigmas(double m, const Vector& sigmas) {
-        return MixedSigmas(repeat(sigmas.size(), m), sigmas);
+        return MixedSigmas(Vector::Constant(sigmas.size(), m), sigmas);
       }
 
       /**
@@ -458,17 +458,17 @@ namespace gtsam {
 
       /** Fully constrained variations */
       static shared_ptr All(size_t dim) {
-        return shared_ptr(new Constrained(repeat(dim, 1000.0), repeat(dim,0)));
+        return shared_ptr(new Constrained(Vector::Constant(dim, 1000.0), Vector::Constant(dim,0)));
       }
 
       /** Fully constrained variations */
       static shared_ptr All(size_t dim, const Vector& mu) {
-        return shared_ptr(new Constrained(mu, repeat(dim,0)));
+        return shared_ptr(new Constrained(mu, Vector::Constant(dim,0)));
       }
 
       /** Fully constrained variations with a mu parameter */
       static shared_ptr All(size_t dim, double mu) {
-        return shared_ptr(new Constrained(repeat(dim, mu), repeat(dim,0)));
+        return shared_ptr(new Constrained(Vector::Constant(dim, mu), Vector::Constant(dim,0)));
       }
 
       virtual void print(const std::string& name) const;
@@ -522,10 +522,10 @@ namespace gtsam {
 
       /** protected constructor takes sigma */
       Isotropic(size_t dim, double sigma) :
-        Diagonal(repeat(dim, sigma)),sigma_(sigma),invsigma_(1.0/sigma) {}
+        Diagonal(Vector::Constant(dim, sigma)),sigma_(sigma),invsigma_(1.0/sigma) {}
 
       /* dummy constructor to allow for serialization */
-      Isotropic() : Diagonal(repeat(1, 1.0)),sigma_(1.0),invsigma_(1.0) {}
+      Isotropic() : Diagonal(Vector::Constant(1, 1.0)),sigma_(1.0),invsigma_(1.0) {}
 
     public:
 

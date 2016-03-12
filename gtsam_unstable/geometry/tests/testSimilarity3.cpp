@@ -167,7 +167,7 @@ TEST( Similarity3, retract_first_order) {
 
 //******************************************************************************
 TEST(Similarity3, localCoordinates_first_order) {
-  Vector d12 = repeat(7, 0.1);
+  Vector d12 = Vector::Constant(7, 0.1);
   d12(6) = 1.0;
   Similarity3 t1 = T1, t2 = t1.retract(d12);
   EXPECT(assert_equal(d12, t1.localCoordinates(t2)));

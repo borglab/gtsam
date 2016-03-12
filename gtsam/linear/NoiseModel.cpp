@@ -326,7 +326,7 @@ static void fix(const Vector& sigmas, Vector& precisions, Vector& invsigmas) {
 
 /* ************************************************************************* */
 Constrained::Constrained(const Vector& sigmas)
-  : Diagonal(sigmas), mu_(repeat(sigmas.size(), 1000.0)) {
+  : Diagonal(sigmas), mu_(Vector::Constant(sigmas.size(), 1000.0)) {
   internal::fix(sigmas, precisions_, invsigmas_);
 }
 

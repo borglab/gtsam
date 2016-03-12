@@ -64,13 +64,6 @@ typedef Eigen::VectorBlock<Vector> SubVector;
 typedef Eigen::VectorBlock<const Vector> ConstSubVector;
 
 /**
- * Create vector initialized to a constant value
- * @param n is the size of the vector
- * @param value is a constant value to insert into the vector
- */
-GTSAM_EXPORT Vector repeat(size_t n, double value);
-
-/**
  * Create basis vector of dimension n,
  * with a constant in spot i
  * @param n is the size of the vector
@@ -281,14 +274,15 @@ GTSAM_EXPORT Vector concatVectors(size_t nrVectors, ...);
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 GTSAM_EXPORT inline Vector abs(const Vector& v){return v.cwiseAbs();}
-GTSAM_EXPORT Vector ediv(const Vector &a, const Vector &b) {assert (b.size()==a.size()); return a.cwiseQuotient(b);}
+GTSAM_EXPORT inline Vector ediv(const Vector &a, const Vector &b) {assert (b.size()==a.size()); return a.cwiseQuotient(b);}
 GTSAM_EXPORT inline Vector esqrt(const Vector& v) { return v.cwiseSqrt();}
 GTSAM_EXPORT inline Vector emul(const Vector &a, const Vector &b) {assert (b.size()==a.size()); return a.cwiseProduct(b);}
 GTSAM_EXPORT inline double max(const Vector &a){return a.maxCoeff();}
 GTSAM_EXPORT inline double norm_2(const Vector& v) {return v.norm();}
 GTSAM_EXPORT inline Vector reciprocal(const Vector &a) {return a.array().inverse();}
-GTSAM_EXPORT ConstSubVector sub(const Vector &v, size_t i1, size_t i2) {return v.segment(i1,i2-i1);}
-GTSAM_EXPORT void subInsert(Vector& fullVector, const Vector& subVector, size_t i) {fullVector.segment(i, subVector.size()) = subVector;}
+GTSAM_EXPORT inline Vector repeat(size_t n, double value) {return Vector::Constant(n, value);}
+GTSAM_EXPORT inline const SubVector sub(const Vector &v, size_t i1, size_t i2) {return v.segment(i1,i2-i1);}
+GTSAM_EXPORT inline void subInsert(Vector& fullVector, const Vector& subVector, size_t i) {fullVector.segment(i, subVector.size()) = subVector;}
 GTSAM_EXPORT inline double sum(const Vector &a){return a.sum();}
 #endif
 

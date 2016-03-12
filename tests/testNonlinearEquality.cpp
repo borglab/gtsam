@@ -137,7 +137,7 @@ TEST ( NonlinearEquality, error ) {
 
   actual = nle->unwhitenedError(bad_linearize);
   EXPECT(
-      assert_equal(actual, repeat(3, std::numeric_limits<double>::infinity())));
+      assert_equal(actual, Vector::Constant(3, std::numeric_limits<double>::infinity())));
 }
 
 //******************************************************************************
