@@ -67,13 +67,13 @@ Mechanization_bRn2 Mechanization_bRn2::initialize(const Matrix& U,
 
 /* ************************************************************************* */
 Mechanization_bRn2 Mechanization_bRn2::correct(const Vector3& dx) const {
-  Vector3 rho = sub(dx, 0, 3);
+  Vector3 rho = dx.segment(0,3);
 
   Rot3 delta_nRn = Rot3::Rodrigues(rho);
   Rot3 bRn = bRn_ * delta_nRn;
 
-  Vector3 x_g = x_g_ + sub(dx, 3, 6);
-  Vector3 x_a = x_a_ + sub(dx, 6, 9);
+  Vector3 x_g = x_g_ + dx.segment(3,3);
+  Vector3 x_a = x_a_ + dx.segment(6,3);
 
   return Mechanization_bRn2(bRn, x_g, x_a);
 }

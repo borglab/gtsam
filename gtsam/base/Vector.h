@@ -196,15 +196,6 @@ GTSAM_EXPORT bool assert_equal(const ConstSubVector& vec1, const ConstSubVector&
 GTSAM_EXPORT bool linear_dependent(const Vector& vec1, const Vector& vec2, double tol=1e-9);
 
 /**
- * extract subvector, slice semantics, i.e. range = [i1,i2[ excluding i2
- * @param v Vector
- * @param i1 first row index
- * @param i2 last  row index + 1
- * @return subvector v(i1:i2)
- */
-GTSAM_EXPORT ConstSubVector sub(const Vector &v, size_t i1, size_t i2);
-
-/**
  * elementwise division, but 0/0 = 0, not inf
  * @param a first vector
  * @param b second vector
@@ -296,6 +287,7 @@ GTSAM_EXPORT inline Vector emul(const Vector &a, const Vector &b) {assert (b.siz
 GTSAM_EXPORT inline double max(const Vector &a){return a.maxCoeff();}
 GTSAM_EXPORT inline double norm_2(const Vector& v) {return v.norm();}
 GTSAM_EXPORT inline Vector reciprocal(const Vector &a) {return a.array().inverse();}
+GTSAM_EXPORT ConstSubVector sub(const Vector &v, size_t i1, size_t i2) {return v.segment(i1,i2-i1);}
 GTSAM_EXPORT void subInsert(Vector& fullVector, const Vector& subVector, size_t i) {fullVector.segment(i, subVector.size()) = subVector;}
 GTSAM_EXPORT inline double sum(const Vector &a){return a.sum();}
 #endif

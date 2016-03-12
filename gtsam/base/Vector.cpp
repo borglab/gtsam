@@ -177,11 +177,6 @@ bool linear_dependent(const Vector& vec1, const Vector& vec2, double tol) {
 }
 
 /* ************************************************************************* */
-ConstSubVector sub(const Vector &v, size_t i1, size_t i2) {
-  return v.segment(i1,i2-i1);
-}
-
-/* ************************************************************************* */
 Vector ediv_(const Vector &a, const Vector &b) {
   size_t n = a.size();
   assert (b.size()==a.size());

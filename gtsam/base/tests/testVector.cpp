@@ -126,7 +126,7 @@ TEST(Vector, sub )
   a(0) = 10; a(1) = 20; a(2) = 3;
   a(3) = 34; a(4) = 11; a(5) = 2;
 
-  Vector result(sub(a,2,5));
+  Vector result(a.segment(2,3));
 
   Vector b(3);
   b(0) = 3; b(1) = 34; b(2) =11;
