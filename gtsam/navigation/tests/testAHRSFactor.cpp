@@ -268,7 +268,7 @@ TEST( AHRSFactor, PartialDerivativeLogmap ) {
 
   const Vector3 x = thetahat; // parametrization of so(3)
   const Matrix3 X = skewSymmetric(x); // element of Lie algebra so(3): X = x^
-  double normx = norm_2(x);
+  double normx = x.norm();
   const Matrix3 actualDelFdeltheta = I_3x3 + 0.5 * X
       + (1 / (normx * normx) - (1 + cos(normx)) / (2 * normx * sin(normx))) * X
           * X;

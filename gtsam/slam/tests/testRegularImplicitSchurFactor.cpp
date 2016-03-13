@@ -69,16 +69,16 @@ TEST( regularImplicitSchurFactor, addHessianMultiply ) {
 
   double alpha = 0.5;
   VectorValues xvalues = map_list_of //
-  (0, gtsam::repeat(6, 2))//
-  (1, gtsam::repeat(6, 4))//
-  (2, gtsam::repeat(6, 0))// distractor
-  (3, gtsam::repeat(6, 8));
+  (0, Vector::Constant(6, 2))//
+  (1, Vector::Constant(6, 4))//
+  (2, Vector::Constant(6, 0))// distractor
+  (3, Vector::Constant(6, 8));
 
   VectorValues yExpected = map_list_of//
-  (0, gtsam::repeat(6, 27))//
-  (1, gtsam::repeat(6, -40))//
-  (2, gtsam::repeat(6, 0))// distractor
-  (3, gtsam::repeat(6, 279));
+  (0, Vector::Constant(6, 27))//
+  (1, Vector::Constant(6, -40))//
+  (2, Vector::Constant(6, 0))// distractor
+  (3, Vector::Constant(6, 279));
 
   // Create full F
   size_t M=4, m = 3, d = 6;

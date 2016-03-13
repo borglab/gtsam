@@ -148,7 +148,7 @@ TEST(Pose3, Adjoint_full)
 Pose3 Agrawal06iros(const Vector& xi) {
   Vector w = xi.head(3);
   Vector v = xi.tail(3);
-  double t = norm_2(w);
+  double t = w.norm();
   if (t < 1e-5)
     return Pose3(Rot3(), Point3(v));
   else {
@@ -538,7 +538,7 @@ TEST(Pose3, retract_localCoordinates)
 /* ************************************************************************* */
 TEST(Pose3, expmap_logmap)
 {
-  Vector d12 = repeat(6,0.1);
+  Vector d12 = Vector6::Constant(0.1);
   Pose3 t1 = T, t2 = t1.expmap(d12);
   EXPECT(assert_equal(d12, t1.logmap(t2)));
 }

@@ -73,8 +73,8 @@ TEST( testBoundingConstraint, unary_basics_inactive2 ) {
   EXPECT_DOUBLES_EQUAL(2.0, constraint4.threshold(), tol);
   EXPECT(!constraint3.isGreaterThan());
   EXPECT(!constraint4.isGreaterThan());
-  EXPECT(assert_equal(repeat(1, 3.0), constraint3.evaluateError(pt2), tol));
-  EXPECT(assert_equal(repeat(1, 5.0), constraint4.evaluateError(pt2), tol));
+  EXPECT(assert_equal(Vector::Constant(1, 3.0), constraint3.evaluateError(pt2), tol));
+  EXPECT(assert_equal(Vector::Constant(1, 5.0), constraint4.evaluateError(pt2), tol));
   EXPECT(assert_equal(zero(1), constraint3.unwhitenedError(config), tol));
   EXPECT(assert_equal(zero(1), constraint4.unwhitenedError(config), tol));
   EXPECT_DOUBLES_EQUAL(0.0, constraint3.error(config), tol);
@@ -88,10 +88,10 @@ TEST( testBoundingConstraint, unary_basics_active1 ) {
   config.insert(key, pt2);
   EXPECT(constraint1.active(config));
   EXPECT(constraint2.active(config));
-  EXPECT(assert_equal(repeat(1,-3.0), constraint1.evaluateError(pt2), tol));
-  EXPECT(assert_equal(repeat(1,-5.0), constraint2.evaluateError(pt2), tol));
-  EXPECT(assert_equal(repeat(1,-3.0), constraint1.unwhitenedError(config), tol));
-  EXPECT(assert_equal(repeat(1,-5.0), constraint2.unwhitenedError(config), tol));
+  EXPECT(assert_equal(Vector::Constant(1,-3.0), constraint1.evaluateError(pt2), tol));
+  EXPECT(assert_equal(Vector::Constant(1,-5.0), constraint2.evaluateError(pt2), tol));
+  EXPECT(assert_equal(Vector::Constant(1,-3.0), constraint1.unwhitenedError(config), tol));
+  EXPECT(assert_equal(Vector::Constant(1,-5.0), constraint2.unwhitenedError(config), tol));
   EXPECT_DOUBLES_EQUAL(45.0, constraint1.error(config), tol);
   EXPECT_DOUBLES_EQUAL(125.0, constraint2.error(config), tol);
 }
@@ -129,8 +129,8 @@ TEST( testBoundingConstraint, unary_linearization_active) {
   config2.insert(key, pt2);
   GaussianFactor::shared_ptr actual1 = constraint1.linearize(config2);
   GaussianFactor::shared_ptr actual2 = constraint2.linearize(config2);
-  JacobianFactor expected1(key, (Matrix(1, 2) << 1.0, 0.0).finished(), repeat(1, 3.0), hard_model1);
-  JacobianFactor expected2(key, (Matrix(1, 2) << 0.0, 1.0).finished(), repeat(1, 5.0), hard_model1);
+  JacobianFactor expected1(key, (Matrix(1, 2) << 1.0, 0.0).finished(), Vector::Constant(1, 3.0), hard_model1);
+  JacobianFactor expected2(key, (Matrix(1, 2) << 0.0, 1.0).finished(), Vector::Constant(1, 5.0), hard_model1);
   EXPECT(assert_equal((const GaussianFactor&)expected1, *actual1, tol));
   EXPECT(assert_equal((const GaussianFactor&)expected2, *actual2, tol));
 }
