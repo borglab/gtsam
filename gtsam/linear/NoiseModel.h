@@ -525,7 +525,7 @@ namespace gtsam {
         Diagonal(Vector::Constant(dim, sigma)),sigma_(sigma),invsigma_(1.0/sigma) {}
 
       /* dummy constructor to allow for serialization */
-      Isotropic() : Diagonal(Vector::Constant(1, 1.0)),sigma_(1.0),invsigma_(1.0) {}
+      Isotropic() : Diagonal(Vector1::Constant(1.0)),sigma_(1.0),invsigma_(1.0) {}
 
     public:
 

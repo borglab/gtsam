@@ -224,16 +224,16 @@ TEST(Rot3, log)
 /* ************************************************************************* */
 TEST(Rot3, retract_localCoordinates)
 {
-  Vector3 d12 = Vector::Constant(3,0.1);
+  Vector3 d12 = Vector3::Constant(0.1);
   Rot3 R2 = R.retract(d12);
   EXPECT(assert_equal(d12, R.localCoordinates(R2)));
 }
 /* ************************************************************************* */
 TEST(Rot3, expmap_logmap)
 {
-  Vector3 d12 = Vector::Constant(3,0.1);
+  Vector3 d12 = Vector3::Constant(0.1);
   Rot3 R2 = R.expmap(d12);
-  EXPECT(assert_equal(d12, R.logmap(R2)));
+  EXPECT(assert_equal(d12, (Vector) R.logmap(R2)));
 }
 
 /* ************************************************************************* */

@@ -538,7 +538,7 @@ TEST(Pose3, retract_localCoordinates)
 /* ************************************************************************* */
 TEST(Pose3, expmap_logmap)
 {
-  Vector d12 = Vector::Constant(6,0.1);
+  Vector d12 = Vector6::Constant(0.1);
   Pose3 t1 = T, t2 = t1.expmap(d12);
   EXPECT(assert_equal(d12, t1.logmap(t2)));
 }
