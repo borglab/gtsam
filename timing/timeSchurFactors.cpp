@@ -62,7 +62,7 @@ void timeAll(size_t m, size_t N) {
   double alpha = 0.5;
   VectorValues xvalues, yvalues;
   for (size_t i = 0; i < m; i++)
-    xvalues.insert(i, Vector::Constant(D,2);
+    xvalues.insert(i, Vector::Constant(D,2));
 
   // Implicit
   RegularImplicitSchurFactor<CAMERA> implicitFactor(keys, Fblocks, E, P, b);
