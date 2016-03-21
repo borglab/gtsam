@@ -153,7 +153,7 @@ public:
         throw std::invalid_argument(
             "Linearization point not feasible for "
                 + DefaultKeyFormatter(this->key()) + "!");
-      return repeat(nj, std::numeric_limits<double>::infinity()); // set error to infinity if not equal
+      return Vector::Constant(nj, std::numeric_limits<double>::infinity()); // set error to infinity if not equal
     }
   }
 

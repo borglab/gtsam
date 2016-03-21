@@ -52,7 +52,7 @@ namespace gtsam {
       Key key;
       size_t n;
       boost::tie(key, n) = v;
-      values_.insert(make_pair(key, sub(x, j, j + n)));
+      values_.insert(make_pair(key, x.segment(j,n)));
       j += n;
     }
   }

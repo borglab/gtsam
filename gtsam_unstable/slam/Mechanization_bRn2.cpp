@@ -33,7 +33,7 @@ Mechanization_bRn2 Mechanization_bRn2::initialize(const Matrix& U,
   if(g_e == 0) {
     if (flat)
       // acceleration measured is  along the z-axis.
-      b_g = (Vector3(3) << 0.0, 0.0, norm_2(meanF)).finished();
+      b_g = (Vector3(3) << 0.0, 0.0, meanF.norm()).finished();
     else
       // acceleration measured is the opposite of gravity (10.13)
       b_g = -meanF;
@@ -66,14 +66,14 @@ Mechanization_bRn2 Mechanization_bRn2::initialize(const Matrix& U,
 }
 
 /* ************************************************************************* */
-Mechanization_bRn2 Mechanization_bRn2::correct(const Vector3& dx) const {
-  Vector3 rho = sub(dx, 0, 3);
+Mechanization_bRn2 Mechanization_bRn2::correct(const Vector9& dx) const {
+  Vector3 rho = dx.segment<3>(0);
 
   Rot3 delta_nRn = Rot3::Rodrigues(rho);
   Rot3 bRn = bRn_ * delta_nRn;
 
-  Vector3 x_g = x_g_ + sub(dx, 3, 6);
-  Vector3 x_a = x_a_ + sub(dx, 6, 9);
+  Vector3 x_g = x_g_ + dx.segment<3>(3);
+  Vector3 x_a = x_a_ + dx.segment<3>(6);
 
   return Mechanization_bRn2(bRn, x_g, x_a);
 }

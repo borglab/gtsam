@@ -155,13 +155,13 @@ TEST(NoiseModel, ConstrainedConstructors )
   Vector3 mu(200.0, 300.0, 400.0);
   actual = Constrained::All(d);
   // TODO: why should this be a thousand ??? Dummy variable?
-  EXPECT(assert_equal(gtsam::repeat(d, 1000.0), actual->mu()));
-  EXPECT(assert_equal(gtsam::repeat(d, 0), actual->sigmas()));
-  EXPECT(assert_equal(gtsam::repeat(d, 0), actual->invsigmas())); // Actually zero as dummy value
-  EXPECT(assert_equal(gtsam::repeat(d, 0), actual->precisions())); // Actually zero as dummy value
+  EXPECT(assert_equal(Vector::Constant(d, 1000.0), actual->mu()));
+  EXPECT(assert_equal(Vector::Constant(d, 0), actual->sigmas()));
+  EXPECT(assert_equal(Vector::Constant(d, 0), actual->invsigmas())); // Actually zero as dummy value
+  EXPECT(assert_equal(Vector::Constant(d, 0), actual->precisions())); // Actually zero as dummy value
 
   actual = Constrained::All(d, m);
-  EXPECT(assert_equal(gtsam::repeat(d, m), actual->mu()));
+  EXPECT(assert_equal(Vector::Constant(d, m), actual->mu()));
 
   actual = Constrained::All(d, mu);
   EXPECT(assert_equal(mu, actual->mu()));
@@ -170,7 +170,7 @@ TEST(NoiseModel, ConstrainedConstructors )
   EXPECT(assert_equal(mu, actual->mu()));
 
   actual = Constrained::MixedSigmas(m, sigmas);
-  EXPECT(assert_equal( gtsam::repeat(d, m), actual->mu()));
+  EXPECT(assert_equal(Vector::Constant(d, m), actual->mu()));
 }
 
 /* ************************************************************************* */
