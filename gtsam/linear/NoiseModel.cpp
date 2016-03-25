@@ -31,8 +31,8 @@
 #include <typeinfo>
 #include <stdexcept>
 #include <cmath>
-
-using namespace std;
+#include <list>
+#include <vector>
 
 namespace gtsam {
 namespace noiseModel {
@@ -82,7 +82,7 @@ Vector Base::sigmas() const {
 Gaussian::shared_ptr Gaussian::SqrtInformation(const Matrix& R, bool smart) {
   size_t m = R.rows(), n = R.cols();
   if (m != n)
-    throw invalid_argument("Gaussian::SqrtInformation: R not square");
+    throw std::invalid_argument("Gaussian::SqrtInformation: R not square");
   if (smart) {
     boost::optional<Vector> diagonal = checkIfDiagonal(R);
     if (diagonal)
@@ -96,7 +96,7 @@ Gaussian::shared_ptr Gaussian::SqrtInformation(const Matrix& R, bool smart) {
 Gaussian::shared_ptr Gaussian::Information(const Matrix& information, bool smart) {
   size_t m = information.rows(), n = information.cols();
   if (m != n)
-    throw invalid_argument("Gaussian::Information: R not square");
+    throw std::invalid_argument("Gaussian::Information: R not square");
   boost::optional<Vector> diagonal = boost::none;
   if (smart)
     diagonal = checkIfDiagonal(information);
@@ -114,7 +114,7 @@ Gaussian::shared_ptr Gaussian::Covariance(const Matrix& covariance,
     bool smart) {
   size_t m = covariance.rows(), n = covariance.cols();
   if (m != n)
-    throw invalid_argument("Gaussian::Covariance: covariance not square");
+    throw std::invalid_argument("Gaussian::Covariance: covariance not square");
   boost::optional<Vector> variances = boost::none;
   if (smart)
     variances = checkIfDiagonal(covariance);
@@ -130,7 +130,7 @@ Gaussian::shared_ptr Gaussian::Covariance(const Matrix& covariance,
 }
 
 /* ************************************************************************* */
-void Gaussian::print(const string& name) const {
+void Gaussian::print(const std::string& name) const {
   gtsam::print(thisR(), name + "Gaussian");
 }
 
@@ -192,7 +192,7 @@ SharedDiagonal Gaussian::QR(Matrix& Ab) const {
   // get size(A) and maxRank
   // TODO: really no rank problems ?
    size_t m = Ab.rows(), n = Ab.cols()-1;
-   size_t maxRank = min(m,n);
+   size_t maxRank = std::min(m,n);
 
   // pre-whiten everything (cheaply if possible)
   WhitenInPlace(Ab);
@@ -210,7 +210,7 @@ SharedDiagonal Gaussian::QR(Matrix& Ab) const {
   return noiseModel::Unit::Create(maxRank);
 }
 
-void Gaussian::WhitenSystem(vector<Matrix>& A, Vector& b) const {
+void Gaussian::WhitenSystem(std::vector<Matrix>& A, Vector& b) const {
   BOOST_FOREACH(Matrix& Aj, A) { WhitenInPlace(Aj); }
   whitenInPlace(b);
 }
@@ -279,7 +279,7 @@ Diagonal::shared_ptr Diagonal::Sigmas(const Vector& sigmas, bool smart) {
 }
 
 /* ************************************************************************* */
-void Diagonal::print(const string& name) const {
+void Diagonal::print(const std::string& name) const {
   gtsam::print(sigmas_, name + "diagonal sigmas");
 }
 
@@ -443,11 +443,11 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
   // get size(A) and maxRank
   size_t m = Ab.rows();
   const size_t n = Ab.cols() - 1;
-  const size_t maxRank = min(m, n);
+  const size_t maxRank = std::min(m, n);
 
   // create storage for [R d]
   typedef boost::tuple<size_t, Matrix, double> Triple;
-  list<Triple> Rd;
+  std::list<Triple> Rd;
 
   Matrix rd(1, n + 1);  // and for row of R
   Vector invsigmas = sigmas_.array().inverse();
@@ -571,8 +571,8 @@ Isotropic::shared_ptr Isotropic::Variance(size_t dim, double variance, bool smar
 }
 
 /* ************************************************************************* */
-void Isotropic::print(const string& name) const {
-  cout << boost::format("isotropic dim=%1% sigma=%2%") % dim() % sigma_ << endl;
+void Isotropic::print(const std::string& name) const {
+  std::cout << boost::format("isotropic dim=%1% sigma=%2%") % dim() % sigma_ << std::endl;
 }
 
 /* ************************************************************************* */
@@ -614,7 +614,7 @@ void Isotropic::WhitenInPlace(Eigen::Block<Matrix> H) const {
 // Unit
 /* ************************************************************************* */
 void Unit::print(const std::string& name) const {
-  cout << name << "unit (" << dim_ << ") " << endl;
+  std::cout << name << "unit (" << dim_ << ") " << std::endl;
 }
 
 /* ************************************************************************* */
@@ -644,7 +644,7 @@ void Base::reweight(Vector& error) const {
 }
 
 // Reweight n block matrices with one error vector
-void Base::reweight(vector<Matrix> &A, Vector &error) const {
+void Base::reweight(std::vector<Matrix> &A, Vector &error) const {
   if ( reweight_ == Block ) {
     const double w = sqrtWeight(error.norm());
     BOOST_FOREACH(Matrix& Aj, A) {
@@ -714,23 +714,27 @@ void Base::reweight(Matrix &A1, Matrix &A2, Matrix &A3, Vector &error) const {
 /* ************************************************************************* */
 
 void Null::print(const std::string &s="") const
-{ cout << s << "null ()" << endl; }
+{ std::cout << s << "null ()" << std::endl; }
 
 Null::shared_ptr Null::Create()
 { return shared_ptr(new Null()); }
-
-Fair::Fair(double c, const ReweightScheme reweight) : Base(reweight), c_(c) {
-  if (c_ <= 0) {
-    throw runtime_error("mEstimator Fair takes only positive double in constructor.");
-  }
-}
 
 /* ************************************************************************* */
 // Fair
 /* ************************************************************************* */
 
+Fair::Fair(double c, const ReweightScheme reweight) : Base(reweight), c_(c) {
+  if (c_ <= 0) {
+    throw std::runtime_error("mEstimator Fair takes only positive double in constructor.");
+  }
+}
+
+double Fair::weight(double error) const {
+  return 1.0 / (1.0 + std::abs(error) / c_);
+}
+
 void Fair::print(const std::string &s="") const
-{ cout << s << "fair (" << c_ << ")" << endl; }
+{ std::cout << s << "fair (" << c_ << ")" << std::endl; }
 
 bool Fair::equals(const Base &expected, double tol) const {
   const Fair* p = dynamic_cast<const Fair*> (&expected);
@@ -747,12 +751,17 @@ Fair::shared_ptr Fair::Create(double c, const ReweightScheme reweight)
 
 Huber::Huber(double k, const ReweightScheme reweight) : Base(reweight), k_(k) {
   if (k_ <= 0) {
-    throw runtime_error("mEstimator Huber takes only positive double in constructor.");
+    throw std::runtime_error("mEstimator Huber takes only positive double in constructor.");
   }
 }
 
+double Huber::weight(double error) const {
+  double abs_error = std::abs(error);
+  return (abs_error < k_) ? 1.0 : (k_ / abs_error);
+}
+
 void Huber::print(const std::string &s="") const {
-  cout << s << "huber (" << k_ << ")" << endl;
+  std::cout << s << "huber (" << k_ << ")" << std::endl;
 }
 
 bool Huber::equals(const Base &expected, double tol) const {
@@ -771,12 +780,16 @@ Huber::shared_ptr Huber::Create(double c, const ReweightScheme reweight) {
 
 Cauchy::Cauchy(double k, const ReweightScheme reweight) : Base(reweight), k_(k), ksquared_(k * k) {
   if (k <= 0) {
-    throw runtime_error("mEstimator Cauchy takes only positive double in constructor.");
+    throw std::runtime_error("mEstimator Cauchy takes only positive double in constructor.");
   }
 }
 
+double Cauchy::weight(double error) const {
+  return ksquared_ / (ksquared_ + error*error);
+}
+
 void Cauchy::print(const std::string &s="") const {
-  cout << s << "cauchy (" << k_ << ")" << endl;
+  std::cout << s << "cauchy (" << k_ << ")" << std::endl;
 }
 
 bool Cauchy::equals(const Base &expected, double tol) const {
@@ -793,6 +806,14 @@ Cauchy::shared_ptr Cauchy::Create(double c, const ReweightScheme reweight) {
 // Tukey
 /* ************************************************************************* */
 Tukey::Tukey(double c, const ReweightScheme reweight) : Base(reweight), c_(c), csquared_(c * c) {}
+
+double Tukey::weight(double error) const {
+  if (std::abs(error) <= c_) {
+    double xc2 = error*error/csquared_;
+    return (1.0-xc2)*(1.0-xc2);
+  }
+  return 0.0;
+}
 
 void Tukey::print(const std::string &s="") const {
   std::cout << s << ": Tukey (" << c_ << ")" << std::endl;
@@ -812,6 +833,11 @@ Tukey::shared_ptr Tukey::Create(double c, const ReweightScheme reweight) {
 // Welsh
 /* ************************************************************************* */
 Welsh::Welsh(double c, const ReweightScheme reweight) : Base(reweight), c_(c), csquared_(c * c) {}
+
+double Welsh::weight(double error) const {
+  double xc2 = (error*error)/csquared_;
+  return std::exp(-xc2);
+}
 
 void Welsh::print(const std::string &s="") const {
   std::cout << s << ": Welsh (" << c_ << ")" << std::endl;
@@ -848,7 +874,7 @@ void GemanMcClure::print(const std::string &s="") const {
 bool GemanMcClure::equals(const Base &expected, double tol) const {
   const GemanMcClure* p = dynamic_cast<const GemanMcClure*>(&expected);
   if (p == NULL) return false;
-  return fabs(c_ - p->c_) < tol;
+  return std::abs(c_ - p->c_) < tol;
 }
 
 GemanMcClure::shared_ptr GemanMcClure::Create(double c, const ReweightScheme reweight) {
@@ -880,7 +906,7 @@ void DCS::print(const std::string &s="") const {
 bool DCS::equals(const Base &expected, double tol) const {
   const DCS* p = dynamic_cast<const DCS*>(&expected);
   if (p == NULL) return false;
-  return fabs(c_ - p->c_) < tol;
+  return std::abs(c_ - p->c_) < tol;
 }
 
 DCS::shared_ptr DCS::Create(double c, const ReweightScheme reweight) {
@@ -909,7 +935,7 @@ void Robust::WhitenSystem(Vector& b) const {
   robust_->reweight(b);
 }
 
-void Robust::WhitenSystem(vector<Matrix>& A, Vector& b) const {
+void Robust::WhitenSystem(std::vector<Matrix>& A, Vector& b) const {
   noise_->WhitenSystem(A,b);
   robust_->reweight(A,b);
 }

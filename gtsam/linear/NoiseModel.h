@@ -634,10 +634,10 @@ namespace gtsam {
      *
      * To illustrate, let's consider the least-squares (L2), L1, and Huber estimators as examples:
      *
-     * Name        Symbol          Least-Squares   L1-norm    Huber
-     * Residual    \rho(x)         0.5*x^2         |x|        0.5*x^2 if x<k, 0.5*k^2 + k|x-k| otherwise
-     * Derivative  \phi(x)         x               sgn(x)     x       if x<k, k sgn(x)         otherwise
-     * Weight      w(x)=\phi(x)/x  1               1/|x|      1       if x<k, k/|x|            otherwise
+     * Name        Symbol          Least-Squares  L1-norm   Huber
+     * Residual    \rho(x)         0.5*x^2        |x|       0.5*x^2 if |x|<k else 0.5*k^2 + k(|x|-k)
+     * Derivative  \phi(x)         x              sgn(x)    x       if |x|<k else k sgn(x)
+     * Weight      w(x)=\phi(x)/x  1              1/|x|     1       if |x|<k else k/|x|
      *
      * With these definitions, D(\rho(x), p) = \phi(x) D(x,p) = w(x) x D(x,p) = w(x) D(L2(x), p),
      * and hence we can solve the equivalent weighted least squares problem \sum w(r_i) \rho(r_i)
@@ -727,9 +727,7 @@ namespace gtsam {
         typedef boost::shared_ptr<Fair> shared_ptr;
 
         Fair(double c = 1.3998, const ReweightScheme reweight = Block);
-        double weight(double error) const {
-          return 1.0 / (1.0 + fabs(error) / c_);
-        }
+        double weight(double error) const override;
         void print(const std::string &s) const;
         bool equals(const Base& expected, double tol=1e-8) const;
         static shared_ptr Create(double c, const ReweightScheme reweight = Block) ;
@@ -753,9 +751,7 @@ namespace gtsam {
         typedef boost::shared_ptr<Huber> shared_ptr;
 
         Huber(double k = 1.345, const ReweightScheme reweight = Block);
-        double weight(double error) const {
-          return (error < k_) ? (1.0) : (k_ / fabs(error));
-        }
+        double weight(double error) const override;
         void print(const std::string &s) const;
         bool equals(const Base& expected, double tol=1e-8) const;
         static shared_ptr Create(double k, const ReweightScheme reweight = Block) ;
@@ -783,9 +779,7 @@ namespace gtsam {
         typedef boost::shared_ptr<Cauchy> shared_ptr;
 
         Cauchy(double k = 0.1, const ReweightScheme reweight = Block);
-        double weight(double error) const {
-          return ksquared_ / (ksquared_ + error*error);
-        }
+        double weight(double error) const override;
         void print(const std::string &s) const;
         bool equals(const Base& expected, double tol=1e-8) const;
         static shared_ptr Create(double k, const ReweightScheme reweight = Block) ;
@@ -809,13 +803,7 @@ namespace gtsam {
         typedef boost::shared_ptr<Tukey> shared_ptr;
 
         Tukey(double c = 4.6851, const ReweightScheme reweight = Block);
-        double weight(double error) const {
-          if (std::fabs(error) <= c_) {
-            double xc2 = error*error/csquared_;
-            return (1.0-xc2)*(1.0-xc2);
-          }
-          return 0.0;
-        }
+        double weight(double error) const override;
         void print(const std::string &s) const;
         bool equals(const Base& expected, double tol=1e-8) const;
         static shared_ptr Create(double k, const ReweightScheme reweight = Block) ;
@@ -839,10 +827,7 @@ namespace gtsam {
         typedef boost::shared_ptr<Welsh> shared_ptr;
 
         Welsh(double c = 2.9846, const ReweightScheme reweight = Block);
-        double weight(double error) const {
-          double xc2 = (error*error)/csquared_;
-          return std::exp(-xc2);
-        }
+        double weight(double error) const override;
         void print(const std::string &s) const;
         bool equals(const Base& expected, double tol=1e-8) const;
         static shared_ptr Create(double k, const ReweightScheme reweight = Block) ;
@@ -869,7 +854,7 @@ namespace gtsam {
 
         GemanMcClure(double c = 1.0, const ReweightScheme reweight = Block);
         virtual ~GemanMcClure() {}
-        virtual double weight(double error) const;
+        virtual double weight(double error) const override;
         virtual void print(const std::string &s) const;
         virtual bool equals(const Base& expected, double tol=1e-8) const;
         static shared_ptr Create(double k, const ReweightScheme reweight = Block) ;
@@ -898,7 +883,7 @@ namespace gtsam {
 
         DCS(double c = 1.0, const ReweightScheme reweight = Block);
         virtual ~DCS() {}
-        virtual double weight(double error) const;
+        virtual double weight(double error) const override;
         virtual void print(const std::string &s) const;
         virtual bool equals(const Base& expected, double tol=1e-8) const;
         static shared_ptr Create(double k, const ReweightScheme reweight = Block) ;
