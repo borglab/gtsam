@@ -451,41 +451,82 @@ TEST(NoiseModel, WhitenInPlace)
 /* ************************************************************************* */
 TEST(NoiseModel, robustFunctionHuber)
 {
-  const double k = 5.0, error1 = 1.0, error2 = 10.0;
-  const mEstimator::Huber::shared_ptr huber = mEstimator::Huber::Create(k);
-  const double weight1 = huber->weight(error1),
-               weight2 = huber->weight(error2);
-  DOUBLES_EQUAL(1.0, weight1, 1e-8);
-  DOUBLES_EQUAL(0.5, weight2, 1e-8);
+  // Residual    \rho(x)         0.5*x^2 if |x|<k, 0.5*k^2 + k(|x|-k) otherwise
+  // Derivative  \phi(x)         x       if |x|<k, k sgn(x)           otherwise
+  // Weight      w(x)=\phi(x)/x  1       if |x|<k, k/|x|              otherwise
+  // Huber is
+  const double k = 5.0;
+  auto phi = [k](double x) { return abs(x)<k ? x : k * x / fabs(x); };
+  auto huber = mEstimator::Huber::Create(k);
+  EXPECT_DOUBLES_EQUAL(-k, phi(-2*k), 1e-8);
+  EXPECT_DOUBLES_EQUAL(-k, phi(-k), 1e-8);
+  EXPECT_DOUBLES_EQUAL(k, phi(k), 1e-8);
+  EXPECT_DOUBLES_EQUAL(k, phi(2*k), 1e-8);
+  for (double x : {-10, -1, 1, 10}) {
+    EXPECT_DOUBLES_EQUAL(phi(x) / x, huber->weight(x), 1e-8);
+  }
 }
 
 TEST(NoiseModel, robustFunctionGemanMcClure)
 {
   const double k = 1.0, error1 = 1.0, error2 = 10.0;
-  const mEstimator::GemanMcClure::shared_ptr gmc = mEstimator::GemanMcClure::Create(k);
-  const double weight1 = gmc->weight(error1),
-               weight2 = gmc->weight(error2);
-  DOUBLES_EQUAL(0.25      , weight1, 1e-8);
-  DOUBLES_EQUAL(9.80296e-5, weight2, 1e-8);
+  auto gmc = mEstimator::GemanMcClure::Create(k);
+  DOUBLES_EQUAL(0.25      , gmc->weight(error1), 1e-8);
+  DOUBLES_EQUAL(9.80296e-5, gmc->weight(error2), 1e-8);
 }
 
 TEST(NoiseModel, robustFunctionDCS)
 {
   const double k = 1.0, error1 = 1.0, error2 = 10.0;
-  const mEstimator::DCS::shared_ptr dcs = mEstimator::DCS::Create(k);
-  const double weight1 = dcs->weight(error1),
-               weight2 = dcs->weight(error2);
-  DOUBLES_EQUAL(1.0       , weight1, 1e-8);
-  DOUBLES_EQUAL(0.00039211, weight2, 1e-8);
+  auto dcs = mEstimator::DCS::Create(k);
+  DOUBLES_EQUAL(1.0       , dcs->weight(error1), 1e-8);
+  DOUBLES_EQUAL(0.00039211, dcs->weight(error2), 1e-8);
 }
 
 /* ************************************************************************* */
-TEST(NoiseModel, robustNoiseHuber)
+TEST(NoiseModel, robustNoiseHuber) {
+  const double k = 1.0;
+  auto huber = mEstimator::Huber::Create(k, mEstimator::Huber::Scalar);
+  auto robust = Robust::Create(huber, Unit::Create(1));
+
+  // Huber Residual \rho(x) = 0.5*x^2 if |x|<k, 0.5*k^2 + k(|x|-k) otherwise
+  auto rho = [k](double x) {
+    return fabs(x) < k ? 0.5 * x * x : 0.5 * k * k + k * (fabs(x) - k);
+  };
+
+  // Corresponding re-weighted error
+  auto error = [huber](double x) {
+    double e = std::sqrt(huber->weight(x)) * x;
+    return 0.5 * e * e;
+  };
+
+  // The above is incorrect
+  // rho(x) = 0.5 * w * x*2 implies w = 2 * rho(x) / x^2
+  // M-estimator equivalence implies w = phi(x) / x
+  // Which would imply phi(x) = 2 * rho(x) / x
+  // but 2 * rho(x) / x = 2*sign(x)*k
+
+  // In quadratic regime
+  for (double x : {-1.0, -0.5, 0.0, 0.5, 1.0}) {
+    Vector1 v; v << x;
+    EXPECT_DOUBLES_EQUAL(rho(x), error(x), 1e-8);
+    EXPECT_DOUBLES_EQUAL(rho(x), 0.5 * robust->distance(v), 1e-8);
+  }
+  // In linear regime
+  for (double x : {-4.0, -3.0, -2.0, 2.0, 3.0, 4.0}) {
+    cout << x << endl;
+    Vector1 v; v << x;
+    EXPECT_DOUBLES_EQUAL(rho(x), error(x), 1e-8);
+//    EXPECT_DOUBLES_EQUAL(rho(x), 0.5 * robust->distance(v), 1e-8);
+  }
+}
+
+TEST(NoiseModel, robustNoiseHuber2)
 {
   const double k = 10.0, error1 = 1.0, error2 = 100.0;
   Matrix A = (Matrix(2, 2) << 1.0, 10.0, 100.0, 1000.0).finished();
   Vector b = Vector2(error1, error2);
-  const Robust::shared_ptr robust = Robust::Create(
+  auto robust = Robust::Create(
     mEstimator::Huber::Create(k, mEstimator::Huber::Scalar),
     Unit::Create(2));
 
