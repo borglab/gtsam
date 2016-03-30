@@ -1409,6 +1409,26 @@ TEST(SmartProjectionPoseFactor, serialize) {
   EXPECT(equalsBinary(factor));
 }
 
+TEST(SmartProjectionPoseFactor, serialize2) {
+  using namespace vanillaPose;
+  using namespace gtsam::serializationTestHelpers;
+  SmartProjectionParams params;
+  params.setRankTolerance(rankTol);
+  Pose3 bts;
+  SmartFactor factor(model, sharedK, bts, params);
+
+  // insert some measurments
+  vector<Key> key_view;
+  vector<Point2> meas_view;
+  key_view.push_back(Symbol('x', 1));
+  meas_view.push_back(Point2(10, 10));
+  factor.add(meas_view, key_view);
+
+  EXPECT(equalsObj(factor));
+  EXPECT(equalsXML(factor));
+  EXPECT(equalsBinary(factor));
+}
+
 /* ************************************************************************* */
 int main() {
   TestResult tr;

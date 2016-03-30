@@ -363,6 +363,18 @@ struct TriangulationParameters {
         << p.dynamicOutlierRejectionThreshold << std::endl;
     return os;
   }
+
+private:
+
+  /// Serialization function
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int version) {
+    ar & BOOST_SERIALIZATION_NVP(rankTolerance);
+    ar & BOOST_SERIALIZATION_NVP(enableEPI);
+    ar & BOOST_SERIALIZATION_NVP(landmarkDistanceThreshold);
+    ar & BOOST_SERIALIZATION_NVP(dynamicOutlierRejectionThreshold);
+  }
 };
 
 /**
@@ -410,6 +422,15 @@ public:
     else
       os << "no point, status = " << result.status_ << std::endl;
     return os;
+  }
+
+private:
+
+  /// Serialization function
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int version) {
+    ar & BOOST_SERIALIZATION_NVP(status_);
   }
 };
 
