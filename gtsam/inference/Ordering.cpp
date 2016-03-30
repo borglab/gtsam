@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -23,7 +23,10 @@
 
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/3rdparty/CCOLAMD/Include/ccolamd.h>
+
+#ifdef GTSAM_SUPPORT_NESTED_DISSECTION
 #include <gtsam/3rdparty/metis/include/metis.h>
+#endif
 
 using namespace std;
 
@@ -198,6 +201,7 @@ Ordering Ordering::ColamdConstrained(const VariableIndex& variableIndex,
 
 /* ************************************************************************* */
 Ordering Ordering::Metis(const MetisIndex& met) {
+#ifdef GTSAM_SUPPORT_NESTED_DISSECTION
   gttic(Ordering_METIS);
 
   vector<idx_t> xadj = met.xadj();
@@ -227,6 +231,10 @@ Ordering Ordering::Metis(const MetisIndex& met) {
     result[j] = met.intToKey(perm[j]);
   }
   return result;
+#else
+  throw runtime_error("GTSAM was built without support for Metis-based "
+                      "nested dissection");
+#endif
 }
 
 /* ************************************************************************* */

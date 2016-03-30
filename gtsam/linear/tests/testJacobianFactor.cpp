@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -19,6 +19,7 @@
 #include <gtsam/base/TestableAssertions.h>
 #include <CppUnitLite/TestHarness.h>
 
+#include <gtsam/inference/VariableSlots.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/GaussianConditional.h>
@@ -162,36 +163,45 @@ TEST(JabobianFactor, Hessian_conversion) {
 }
 
 /* ************************************************************************* */
+namespace simple_graph {
+
+Key keyX(10), keyY(8), keyZ(12);
+
+double sigma1 = 0.1;
+Matrix A11 = Matrix::Identity(2, 2);
+Vector2 b1(2, -1);
+JacobianFactor factor1(keyX, A11, b1, noiseModel::Isotropic::Sigma(2, sigma1));
+
+double sigma2 = 0.5;
+Matrix A21 = -2 * Matrix::Identity(2, 2);
+Matrix A22 = 3 * Matrix::Identity(2, 2);
+Vector2 b2(4, -5);
+JacobianFactor factor2(keyX, A21, keyY, A22, b2, noiseModel::Isotropic::Sigma(2, sigma2));
+
+double sigma3 = 1.0;
+Matrix A32 = -4 * Matrix::Identity(2, 2);
+Matrix A33 = 5 * Matrix::Identity(2, 2);
+Vector2 b3(3, -6);
+JacobianFactor factor3(keyY, A32, keyZ, A33, b3, noiseModel::Isotropic::Sigma(2, sigma3));
+
+GaussianFactorGraph factors(list_of(factor1)(factor2)(factor3));
+Ordering ordering(list_of(keyX)(keyY)(keyZ));
+}
+
+/* ************************************************************************* */
 TEST( JacobianFactor, construct_from_graph)
 {
-  GaussianFactorGraph factors;
-
-  double sigma1 = 0.1;
-  Matrix A11 = Matrix::Identity(2,2);
-  Vector b1(2); b1 << 2, -1;
-  factors.add(JacobianFactor(10, A11, b1, noiseModel::Isotropic::Sigma(2, sigma1)));
-
-  double sigma2 = 0.5;
-  Matrix A21 = -2 * Matrix::Identity(2,2);
-  Matrix A22 = 3 * Matrix::Identity(2,2);
-  Vector b2(2); b2 << 4, -5;
-  factors.add(JacobianFactor(10, A21, 8, A22, b2, noiseModel::Isotropic::Sigma(2, sigma2)));
-
-  double sigma3 = 1.0;
-  Matrix A32 = -4 * Matrix::Identity(2,2);
-  Matrix A33 = 5 * Matrix::Identity(2,2);
-  Vector b3(2); b3 << 3, -6;
-  factors.add(JacobianFactor(8, A32, 12, A33, b3, noiseModel::Isotropic::Sigma(2, sigma3)));
+  using namespace simple_graph;
 
   Matrix A1(6,2); A1 << A11, A21, Matrix::Zero(2,2);
   Matrix A2(6,2); A2 << Matrix::Zero(2,2), A22, A32;
   Matrix A3(6,2); A3 << Matrix::Zero(4,2), A33;
   Vector b(6); b << b1, b2, b3;
   Vector sigmas(6); sigmas << sigma1, sigma1, sigma2, sigma2, sigma3, sigma3;
-  JacobianFactor expected(10, A1, 8, A2, 12, A3, b, noiseModel::Diagonal::Sigmas(sigmas));
+  JacobianFactor expected(keyX, A1, keyY, A2, keyZ, A3, b, noiseModel::Diagonal::Sigmas(sigmas));
 
   // The ordering here specifies the order in which the variables will appear in the combined factor
-  JacobianFactor actual(factors, Ordering(list_of(10)(8)(12)));
+  JacobianFactor actual(factors, ordering);
 
   EXPECT(assert_equal(expected, actual));
 }
@@ -466,7 +476,7 @@ TEST(JacobianFactor, eliminate2 )
     +0.00,-0.20,+0.00,-0.80
     ).finished()/oldSigma;
   Vector d = Vector2(0.2,-0.14)/oldSigma;
-  GaussianConditional expectedCG(2, d, R11, 11, S12);
+  GaussianConditional expectedCG(2, d, R11, 11, S12, noiseModel::Unit::Create(2));
 
   EXPECT(assert_equal(expectedCG, *actual.first, 1e-4));
 
@@ -478,7 +488,7 @@ TEST(JacobianFactor, eliminate2 )
     0.00, 1.00, +0.00, -1.00
     ).finished()/sigma;
   Vector b1 = Vector2(0.0, 0.894427);
-  JacobianFactor expectedLF(11, Bl1x1, b1);
+  JacobianFactor expectedLF(11, Bl1x1, b1, noiseModel::Unit::Create(2));
   EXPECT(assert_equal(expectedLF, *actual.second,1e-3));
 }
 
@@ -516,7 +526,7 @@ TEST(JacobianFactor, EliminateQR)
   EXPECT(assert_equal(2.0 * Ab, actualDense));
 
   // Expected augmented matrix, both GaussianConditional (first 6 rows) and remaining factor (next 4 rows)
-  Matrix R = 2.0 * (Matrix(11, 11) <<
+  Matrix R = 2.0 * (Matrix(10, 11) <<
     -12.1244,  -5.1962,  -5.2786,  -8.6603, -10.5573,  -5.9385, -11.3820,  -7.2581,  -8.7427, -13.4440,  -5.3611,
     0.,   4.6904,   5.0254,   5.5432,   5.5737,   3.0153,  -3.0153,  -3.5635,  -3.9290,  -2.7412,   2.1625,
     0.,       0., -13.8160,  -8.7166, -10.2245,  -8.8666,  -8.7632,  -5.2544,  -6.9192, -10.5537,  -9.3250,
@@ -526,24 +536,24 @@ TEST(JacobianFactor, EliminateQR)
     0.,       0.,       0.,       0.,       0.,       0., -11.1139,  -0.6521,  -2.1943,  -7.5529,  -0.9081,
     0.,       0.,       0.,       0.,       0.,       0.,       0.,  -4.6479,  -1.9367,  -6.5170,  -3.7685,
     0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,   8.2503,   3.3757,   6.8476,
-    0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,  -5.7095,  -0.0090,
-    0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,  -7.1635).finished();
+    0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,  -5.7095,  -0.0090).finished();
 
-  GaussianConditional expectedFragment(
-    list_of(3)(5)(7)(9)(11), 3, VerticalBlockMatrix(list_of(2)(2)(2)(2)(2)(1), R));
+  GaussianConditional expectedFragment(list_of(3)(5)(7)(9)(11), 3,
+                                       VerticalBlockMatrix(list_of(2)(2)(2)(2)(2)(1), R.topRows(6)),
+                                       noiseModel::Unit::Create(6));
 
   // Eliminate (3 frontal variables, 6 scalar columns) using QR !!!!
   GaussianFactorGraph::EliminationResult actual = EliminateQR(factors, list_of(3)(5)(7));
   const JacobianFactor &actualJF = dynamic_cast<const JacobianFactor&>(*actual.second);
 
   EXPECT(assert_equal(expectedFragment, *actual.first, 0.001));
-  EXPECT(assert_equal(size_t(2), actualJF.keys().size()));
+  EXPECT_LONGS_EQUAL(size_t(2), actualJF.keys().size());
   EXPECT(assert_equal(Key(9), actualJF.keys()[0]));
   EXPECT(assert_equal(Key(11), actualJF.keys()[1]));
-  EXPECT(assert_equal(Matrix(R.block(6, 6, 5, 2)), actualJF.getA(actualJF.begin()), 0.001));
-  EXPECT(assert_equal(Matrix(R.block(6, 8, 5, 2)), actualJF.getA(actualJF.begin()+1), 0.001));
-  EXPECT(assert_equal(Vector(R.col(10).segment(6, 5)), actualJF.getb(), 0.001));
-  EXPECT(!actualJF.get_model());
+  EXPECT(assert_equal(Matrix(R.block(6, 6, 4, 2)), actualJF.getA(actualJF.begin()), 0.001));
+  EXPECT(assert_equal(Matrix(R.block(6, 8, 4, 2)), actualJF.getA(actualJF.begin()+1), 0.001));
+  EXPECT(assert_equal(Vector(R.col(10).segment(6, 4)), actualJF.getb(), 0.001));
+  EXPECT(assert_equal(*noiseModel::Diagonal::Sigmas(Vector4::Ones()), *actualJF.get_model(), 0.001));
 }
 
 /* ************************************************************************* */
@@ -557,8 +567,8 @@ TEST ( JacobianFactor, constraint_eliminate1 )
   pair<GaussianConditional::shared_ptr, JacobianFactor::shared_ptr>
     actual = lc.eliminate(list_of(1));
 
-  // verify linear factor
-  EXPECT(actual.second->size() == 0);
+  // verify linear factor is a null ptr
+  EXPECT(actual.second->empty());
 
   // verify conditional Gaussian
   Vector sigmas = Vector2(0.0, 0.0);
@@ -574,14 +584,10 @@ TEST ( JacobianFactor, constraint_eliminate2 )
   Vector b(2); b(0)=3.0; b(1)=4.0;
 
   // A1 - invertible
-  Matrix A1(2,2);
-  A1(0,0) = 1.0 ; A1(0,1) = 2.0;
-  A1(1,0) = 2.0 ; A1(1,1) = 1.0;
+  Matrix2 A1;  A1 << 2,4, 2,1;
 
   // A2 - not invertible
-  Matrix A2(2,2);
-  A2(0,0) = 1.0 ; A2(0,1) = 2.0;
-  A2(1,0) = 2.0 ; A2(1,1) = 4.0;
+  Matrix2 A2;  A2 << 2,4, 2,4;
 
   JacobianFactor lc(1, A1, 2, A2, b, noiseModel::Constrained::All(2));
 
@@ -598,16 +604,36 @@ TEST ( JacobianFactor, constraint_eliminate2 )
   EXPECT(assert_equal(expectedLF, *actual.second));
 
   // verify CG
-  Matrix R = (Matrix(2, 2) <<
-      1.0,    2.0,
-      0.0,    1.0).finished();
-  Matrix S = (Matrix(2, 2) <<
-      1.0,    2.0,
-      0.0,    0.0).finished();
+  Matrix2 R; R << 1,2, 0,1;
+  Matrix2 S; S << 1,2, 0,0;
   Vector d = Vector2(3.0, 0.6666);
   Vector sigmas = Vector2(0.0, 0.0);
   GaussianConditional expectedCG(1, d, R, 2, S, noiseModel::Diagonal::Sigmas(sigmas));
   EXPECT(assert_equal(expectedCG, *actual.first, 1e-4));
+}
+
+/* ************************************************************************* */
+TEST(JacobianFactor, OverdeterminedEliminate) {
+  Matrix Ab(9, 4);
+  Ab << 0, 1, 0, 0,  //
+      0, 0, 1, 0,    //
+      Matrix74::Ones();
+
+  // Call Gaussian version
+  Vector9 sigmas = Vector9::Ones();
+  SharedDiagonal diagonal = noiseModel::Diagonal::Sigmas(sigmas);
+
+  JacobianFactor factor(0, Ab.leftCols(3), Ab.col(3), diagonal);
+  GaussianFactorGraph::EliminationResult actual = factor.eliminate(list_of(0));
+
+  Matrix expectedRd(3, 4);
+  expectedRd << -2.64575131, -2.64575131, -2.64575131, -2.64575131,  //
+      0.0, -1, 0, 0,                                                 //
+      0.0, 0.0, -1, 0;
+  GaussianConditional expectedConditional(0, expectedRd.col(3), expectedRd.leftCols(3),
+                                          noiseModel::Unit::Create(3));
+  EXPECT(assert_equal(expectedConditional, *actual.first, 1e-4));
+  EXPECT(actual.second->empty());
 }
 
 /* ************************************************************************* */

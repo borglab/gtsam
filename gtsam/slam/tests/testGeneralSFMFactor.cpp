@@ -105,16 +105,16 @@ static vector<Point3> genPoint3() {
 
 static vector<GeneralCamera> genCameraDefaultCalibration() {
   vector<GeneralCamera> X;
-  X.push_back(GeneralCamera(Pose3(eye(3), Point3(-baseline / 2., 0., 0.))));
-  X.push_back(GeneralCamera(Pose3(eye(3), Point3(baseline / 2., 0., 0.))));
+  X.push_back(GeneralCamera(Pose3(Rot3(), Point3(-baseline / 2., 0., 0.))));
+  X.push_back(GeneralCamera(Pose3(Rot3(), Point3(baseline / 2., 0., 0.))));
   return X;
 }
 
 static vector<GeneralCamera> genCameraVariableCalibration() {
   const Cal3_S2 K(640, 480, 0.1, 320, 240);
   vector<GeneralCamera> X;
-  X.push_back(GeneralCamera(Pose3(eye(3), Point3(-baseline / 2., 0., 0.)), K));
-  X.push_back(GeneralCamera(Pose3(eye(3), Point3(baseline / 2., 0., 0.)), K));
+  X.push_back(GeneralCamera(Pose3(Rot3(), Point3(-baseline / 2., 0., 0.)), K));
+  X.push_back(GeneralCamera(Pose3(Rot3(), Point3(baseline / 2., 0., 0.)), K));
   return X;
 }
 
@@ -154,7 +154,7 @@ TEST( GeneralSFMFactor, error ) {
   Point3 t1(0, 0, -6);
   Pose3 x1(R, t1);
   values.insert(X(1), GeneralCamera(x1));
-  Point3 l1;
+  Point3 l1(0,0,0);
   values.insert(L(1), l1);
   EXPECT(
       assert_equal(((Vector ) Vector2(-3., 0.)),
@@ -451,7 +451,7 @@ TEST(GeneralSFMFactor, BinaryJacobianFactor) {
   Point3 t1(0, 0, -6);
   Pose3 x1(R, t1);
   values.insert(X(1), GeneralCamera(x1));
-  Point3 l1;
+  Point3 l1(0,0,0);
   values.insert(L(1), l1);
 
   vector<SharedNoiseModel> models;

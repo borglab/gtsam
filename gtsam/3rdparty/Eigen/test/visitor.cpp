@@ -55,6 +55,11 @@ template<typename MatrixType> void matrixVisitor(const MatrixType& p)
   VERIFY_IS_APPROX(maxc, eigen_maxc);
   VERIFY_IS_APPROX(minc, m.minCoeff());
   VERIFY_IS_APPROX(maxc, m.maxCoeff());
+
+  eigen_maxc = (m.adjoint()*m).maxCoeff(&eigen_maxrow,&eigen_maxcol);
+  eigen_maxc = (m.adjoint()*m).eval().maxCoeff(&maxrow,&maxcol);
+  VERIFY(maxrow == eigen_maxrow);
+  VERIFY(maxcol == eigen_maxcol);
 }
 
 template<typename VectorType> void vectorVisitor(const VectorType& w)

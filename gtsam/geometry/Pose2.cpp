@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -216,7 +216,7 @@ Point2 Pose2::transform_from(const Point2& point,
   OptionalJacobian<2, 2> Htranslation = Hpose.cols<2>(0);
   OptionalJacobian<2, 1> Hrotation = Hpose.cols<1>(2);
   const Point2 q = r_.rotate(point, Hrotation, Hpoint);
-  if (Htranslation) *Htranslation = Hpoint ? *Hpoint : r_.matrix();
+  if (Htranslation) *Htranslation = (Hpoint ? *Hpoint : r_.matrix());
   return q + t_;
 }
 

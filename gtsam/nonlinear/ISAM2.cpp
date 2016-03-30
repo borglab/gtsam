@@ -171,14 +171,14 @@ bool ISAM2::equals(const ISAM2& other, double tol) const {
 }
 
 /* ************************************************************************* */
-FastSet<size_t> ISAM2::getAffectedFactors(const FastList<Key>& keys) const {
+KeySet ISAM2::getAffectedFactors(const KeyList& keys) const {
   static const bool debug = false;
   if(debug) cout << "Getting affected factors for ";
   if(debug) { BOOST_FOREACH(const Key key, keys) { cout << key << " "; } }
   if(debug) cout << endl;
 
   NonlinearFactorGraph allAffected;
-  FastSet<size_t> indices;
+  KeySet indices;
   BOOST_FOREACH(const Key key, keys) {
     const VariableIndex::Factors& factors(variableIndex_[key]);
     indices.insert(factors.begin(), factors.end());
@@ -197,7 +197,7 @@ GaussianFactorGraph::shared_ptr
 ISAM2::relinearizeAffectedFactors(const FastList<Key>& affectedKeys, const KeySet& relinKeys) const
 {
   gttic(getAffectedFactors);
-  FastSet<size_t> candidates = getAffectedFactors(affectedKeys);
+  KeySet candidates = getAffectedFactors(affectedKeys);
   gttoc(getAffectedFactors);
 
   NonlinearFactorGraph nonlinearAffectedFactors;
@@ -210,7 +210,7 @@ ISAM2::relinearizeAffectedFactors(const FastList<Key>& affectedKeys, const KeySe
 
   gttic(check_candidates_and_linearize);
   GaussianFactorGraph::shared_ptr linearized = boost::make_shared<GaussianFactorGraph>();
-  BOOST_FOREACH(size_t idx, candidates) {
+  BOOST_FOREACH(Key idx, candidates) {
     bool inside = true;
     bool useCachedLinear = params_.cacheLinearizedFactors;
     BOOST_FOREACH(Key key, nonlinearFactors_[idx]->keys()) {
@@ -464,9 +464,8 @@ boost::shared_ptr<KeySet > ISAM2::recalculate(const KeySet& markedKeys, const Ke
       constraintGroups = *constrainKeys;
     } else {
       constraintGroups = FastMap<Key,int>();
-      const int group = observedKeys.size() < affectedFactorsVarIndex.size()
-        ? 1 : 0;
-      BOOST_FOREACH(Key var, observedKeys)
+      const int group = observedKeys.size() < affectedFactorsVarIndex.size() ? 1 : 0;
+      BOOST_FOREACH (Key var, observedKeys)
         constraintGroups.insert(make_pair(var, group));
     }
 
@@ -511,7 +510,7 @@ boost::shared_ptr<KeySet > ISAM2::recalculate(const KeySet& markedKeys, const Ke
 
 /* ************************************************************************* */
 ISAM2Result ISAM2::update(
-    const NonlinearFactorGraph& newFactors, const Values& newTheta, const vector<size_t>& removeFactorIndices,
+    const NonlinearFactorGraph& newFactors, const Values& newTheta, const FactorIndices& removeFactorIndices,
     const boost::optional<FastMap<Key,int> >& constrainedKeys, const boost::optional<FastList<Key> >& noRelinKeys,
     const boost::optional<FastList<Key> >& extraReelimKeys, bool force_relinearize)
 {
@@ -754,8 +753,8 @@ ISAM2Result ISAM2::update(
 
 /* ************************************************************************* */
 void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeysList,
-                              boost::optional<std::vector<size_t>&> marginalFactorsIndices,
-                              boost::optional<std::vector<size_t>&> deletedFactorsIndices)
+                              boost::optional<FactorIndices&> marginalFactorsIndices,
+                              boost::optional<FactorIndices&> deletedFactorsIndices)
 {
   // Convert to ordered set
   KeySet leafKeys(leafKeysList.begin(), leafKeysList.end());
@@ -766,7 +765,7 @@ void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeysList,
   map<Key, vector<GaussianFactor::shared_ptr> > marginalFactors;
 
   // Keep track of factors that get summarized by removing cliques
-  FastSet<size_t> factorIndicesToRemove;
+  KeySet factorIndicesToRemove;
 
   // Keep track of variables removed in subtrees
   KeySet leafKeysRemoved;
@@ -828,10 +827,10 @@ void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeysList,
         // get the childrens' marginals from any existing children, plus
         // the marginals from the marginalFactors multimap, which come from any
         // subtrees already marginalized out.
-        
+
         // Add child marginals and remove marginalized subtrees
         GaussianFactorGraph graph;
-        FastSet<size_t> factorsInSubtreeRoot;
+        KeySet factorsInSubtreeRoot;
         Cliques subtreesToRemove;
         BOOST_FOREACH(const sharedClique& child, clique->children) {
           // Remove subtree if child depends on any marginalized keys
@@ -867,14 +866,14 @@ void ISAM2::marginalizeLeaves(const FastList<Key>& leafKeysList,
         // These are the factors that involve *marginalized* frontal variables in this clique
         // but do not involve frontal variables of any of its children.
         // TODO: reuse cached linear factors
-        FastSet<size_t> factorsFromMarginalizedInClique_step1;
+        KeySet factorsFromMarginalizedInClique_step1;
         BOOST_FOREACH(Key frontal, clique->conditional()->frontals()) {
           if(leafKeys.exists(frontal))
             factorsFromMarginalizedInClique_step1.insert(variableIndex_[frontal].begin(), variableIndex_[frontal].end()); }
         // Remove any factors in subtrees that we're removing at this step
         BOOST_FOREACH(const sharedClique& removedChild, childrenRemoved) {
           BOOST_FOREACH(Key indexInClique, removedChild->conditional()->frontals()) {
-            BOOST_FOREACH(size_t factorInvolving, variableIndex_[indexInClique]) {
+            BOOST_FOREACH(Key factorInvolving, variableIndex_[indexInClique]) {
               factorsFromMarginalizedInClique_step1.erase(factorInvolving); } } }
         // Create factor graph from factor indices
         BOOST_FOREACH(size_t i, factorsFromMarginalizedInClique_step1) {
@@ -989,15 +988,15 @@ void ISAM2::updateDelta(bool forceFullSolve) const
     gttic(Wildfire_update);
     lastBacksubVariableCount = Impl::UpdateGaussNewtonDelta(roots_, deltaReplacedMask_, deltaNewton_, effectiveWildfireThreshold);
     gttoc(Wildfire_update);
-    
+
     // Compute steepest descent step
     const VectorValues gradAtZero = this->gradientAtZero(); // Compute gradient
     Impl::UpdateRgProd(roots_, deltaReplacedMask_, gradAtZero, RgProd_); // Update RgProd
     const VectorValues dx_u = Impl::ComputeGradientSearch(gradAtZero, RgProd_); // Compute gradient search point
-    
+
     // Clear replaced keys mask because now we've updated deltaNewton_ and RgProd_
     deltaReplacedMask_.clear();
-    
+
     // Compute dogleg point
     DoglegOptimizerImpl::IterationResult doglegResult(DoglegOptimizerImpl::Iterate(
         *doglegDelta_, doglegParams.adaptationMode, dx_u, deltaNewton_, *this, nonlinearFactors_,
@@ -1076,11 +1075,11 @@ VectorValues ISAM2::gradientAtZero() const
 {
   // Create result
   VectorValues g;
-  
+
   // Sum up contributions for each clique
   BOOST_FOREACH(const ISAM2::sharedClique& root, this->roots())
   gradientAtZeroTreeAdder(root, g);
-  
+
   return g;
 }
 

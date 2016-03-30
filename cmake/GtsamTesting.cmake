@@ -164,9 +164,9 @@ macro(gtsamAddTestsGlob_impl groupName globPatterns excludedFiles linkLibraries)
 				add_test(NAME ${script_name} COMMAND ${script_name})
 				add_dependencies(check.${groupName} ${script_name})
 				add_dependencies(check ${script_name})
-        add_dependencies(all.tests ${script_name})
+                add_dependencies(all.tests ${script_name})
 				if(NOT MSVC AND NOT XCODE_VERSION)
-				  add_custom_target(${script_name}.run ${EXECUTABLE_OUTPUT_PATH}${script_name})
+				  add_custom_target(${script_name}.run ${EXECUTABLE_OUTPUT_PATH}${script_name} DEPENDS ${script_name})
 				endif()
 			
 				# Add TOPSRCDIR
@@ -254,7 +254,7 @@ macro(gtsamAddExesGlob_impl globPatterns excludedFiles linkLibraries groupName b
 		# Add target dependencies
 		add_dependencies(${groupName} ${script_name})
 		if(NOT MSVC AND NOT XCODE_VERSION)
-		  add_custom_target(${script_name}.run ${EXECUTABLE_OUTPUT_PATH}${script_name})
+		  add_custom_target(${script_name}.run ${EXECUTABLE_OUTPUT_PATH}${script_name} DEPENDS ${script_name})
 		endif()
 
 		# Add TOPSRCDIR

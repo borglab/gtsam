@@ -43,11 +43,6 @@ bool zero(const Vector& v) {
 }
 
 /* ************************************************************************* */
-Vector repeat(size_t n, double value) {
-  return Vector::Constant(n, value);
-}
-
-/* ************************************************************************* */
 Vector delta(size_t n, size_t i, double value) {
   return Vector::Unit(n, i) * value;
 }
@@ -177,28 +172,6 @@ bool linear_dependent(const Vector& vec1, const Vector& vec2, double tol) {
 }
 
 /* ************************************************************************* */
-ConstSubVector sub(const Vector &v, size_t i1, size_t i2) {
-  return v.segment(i1,i2-i1);
-}
-
-/* ************************************************************************* */
-void subInsert(Vector& fullVector, const Vector& subVector, size_t i) {
-  fullVector.segment(i, subVector.size()) = subVector;
-}
-
-/* ************************************************************************* */
-Vector emul(const Vector &a, const Vector &b) {
-  assert (b.size()==a.size());
-  return a.cwiseProduct(b);
-}
-
-/* ************************************************************************* */
-Vector ediv(const Vector &a, const Vector &b) {
-  assert (b.size()==a.size());
-  return a.cwiseQuotient(b);
-}
-
-/* ************************************************************************* */
 Vector ediv_(const Vector &a, const Vector &b) {
   size_t n = a.size();
   assert (b.size()==a.size());
@@ -208,36 +181,6 @@ Vector ediv_(const Vector &a, const Vector &b) {
     c(i) = (bi==0.0 && ai==0.0) ? 0.0 : ai/bi;
   }
   return c;
-}
-
-/* ************************************************************************* */
-double sum(const Vector &a) {
-  return a.sum();
-}
-
-/* ************************************************************************* */
-double norm_2(const Vector& v) {
-  return v.norm();
-}
-
-/* ************************************************************************* */
-Vector reciprocal(const Vector &a) {
-  return a.array().inverse();
-}
-
-/* ************************************************************************* */
-Vector esqrt(const Vector& v) {
-  return v.cwiseSqrt();
-}
-
-/* ************************************************************************* */
-Vector abs(const Vector& v) {
-  return v.cwiseAbs();
-}
-
-/* ************************************************************************* */
-double max(const Vector &a) {
-  return a.maxCoeff();
 }
 
 /* ************************************************************************* */
@@ -292,7 +235,7 @@ double weightedPseudoinverse(const Vector& a, const Vector& weights,
       // Basically, instead of doing a normal QR step with the weighted
       // pseudoinverse, we enforce the constraint by turning
       // ax + AS = b into x + (A/a)S = b/a, for the first row where a!=0
-      pseudo = delta(m, i, 1 / a[i]);
+      pseudo = delta(m, i, 1.0 / a[i]);
       return inf;
     }
   }
@@ -362,7 +305,5 @@ Vector concatVectors(size_t nrVectors, ...)
   va_end(ap);
   return concatVectors(vs);
 }
-
-/* ************************************************************************* */
 
 } // namespace gtsam

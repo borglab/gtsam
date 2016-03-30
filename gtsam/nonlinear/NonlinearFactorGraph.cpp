@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -43,8 +43,8 @@ namespace gtsam {
 template class FactorGraph<NonlinearFactor>;
 
 /* ************************************************************************* */
-double NonlinearFactorGraph::probPrime(const Values& c) const {
-  return exp(-0.5 * error(c));
+double NonlinearFactorGraph::probPrime(const Values& values) const {
+  return exp(-0.5 * error(values));
 }
 
 /* ************************************************************************* */
@@ -54,6 +54,24 @@ void NonlinearFactorGraph::print(const std::string& str, const KeyFormatter& key
     stringstream ss;
     ss << "Factor " << i << ": ";
     if (factors_[i] != NULL) factors_[i]->print(ss.str(), keyFormatter);
+    cout << endl;
+  }
+}
+
+/* ************************************************************************* */
+void NonlinearFactorGraph::printErrors(const Values& values, const std::string& str,
+                                       const KeyFormatter& keyFormatter) const {
+  cout << str << "size: " << size() << endl
+       << endl;
+  for (size_t i = 0; i < factors_.size(); i++) {
+    stringstream ss;
+    ss << "Factor " << i << ": ";
+    if (factors_[i] == NULL) {
+      cout << "NULL" << endl;
+    } else {
+      factors_[i]->print(ss.str(), keyFormatter);
+      cout << "error = " << factors_[i]->error(values) << endl;
+    }
     cout << endl;
   }
 }
@@ -84,9 +102,9 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
     } else if (const GenericValue<Point2>* p = dynamic_cast<const GenericValue<Point2>*>(&value)) {
       t << p->value().x(), p->value().y(), 0;
     } else if (const GenericValue<Pose3>* p = dynamic_cast<const GenericValue<Pose3>*>(&value)) {
-      t = p->value().translation().vector();
+      t = p->value().translation();
     } else if (const GenericValue<Point3>* p = dynamic_cast<const GenericValue<Point3>*>(&value)) {
-      t = p->value().vector();
+      t = p->value();
     } else {
       return boost::none;
     }
@@ -224,25 +242,15 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
 }
 
 /* ************************************************************************* */
-double NonlinearFactorGraph::error(const Values& c) const {
+double NonlinearFactorGraph::error(const Values& values) const {
   gttic(NonlinearFactorGraph_error);
   double total_error = 0.;
   // iterate over all the factors_ to accumulate the log probabilities
   BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
     if(factor)
-      total_error += factor->error(c);
+      total_error += factor->error(values);
   }
   return total_error;
-}
-
-/* ************************************************************************* */
-KeySet NonlinearFactorGraph::keys() const {
-  KeySet keys;
-  BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
-    if(factor)
-      keys.insert(factor->begin(), factor->end());
-  }
-  return keys;
 }
 
 /* ************************************************************************* */

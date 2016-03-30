@@ -1,12 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D as _Axes3D
+
+def plotPoint3OnAxes(ax, point, linespec):
+    ax.plot([point.x()], [point.y()], [point.z()], linespec)
 
 def plotPoint3(fignum, point, linespec):
     fig = plt.figure(fignum)
     ax = fig.gca(projection='3d')
-    ax.plot([point.x()], [point.y()], [point.z()], linespec)
-
+    plotPoint3OnAxes(ax, point, linespec)
 
 def plot3DPoints(fignum, values, linespec, marginals=None):
     # PLOT3DPOINTS Plots the Point3's in a values, with optional covariances
@@ -29,11 +30,7 @@ def plot3DPoints(fignum, values, linespec, marginals=None):
             continue
             # I guess it's not a Point3
 
-def plotPose3(fignum, pose, axisLength=0.1):
-    # get figure object
-    fig = plt.figure(fignum)
-    ax = fig.gca(projection='3d')
-
+def plotPose3OnAxes(ax, pose, axisLength=0.1):
     # get rotation and translation (center)
     gRp = pose.rotation().matrix()  # rotation from pose to global
     C = pose.translation().vector()
@@ -42,18 +39,24 @@ def plotPose3(fignum, pose, axisLength=0.1):
     xAxis = C + gRp[:, 0] * axisLength
     L = np.append(C[np.newaxis], xAxis[np.newaxis], axis=0)
     ax.plot(L[:, 0], L[:, 1], L[:, 2], 'r-')
-    
+
     yAxis = C + gRp[:, 1] * axisLength
     L = np.append(C[np.newaxis], yAxis[np.newaxis], axis=0)
     ax.plot(L[:, 0], L[:, 1], L[:, 2], 'g-')
-    
+
     zAxis = C + gRp[:, 2] * axisLength
     L = np.append(C[np.newaxis], zAxis[np.newaxis], axis=0)
     ax.plot(L[:, 0], L[:, 1], L[:, 2], 'b-')
 
     # # plot the covariance
     # if (nargin>2) && (~isempty(P))
-    #     pPp = P(4:6,4:6); % covariance matrix in pose coordinate frame    
+    #     pPp = P(4:6,4:6); % covariance matrix in pose coordinate frame
     #     gPp = gRp*pPp*gRp'; % convert the covariance matrix to global coordinate frame
-    #     gtsam.covarianceEllipse3D(C,gPp);  
+    #     gtsam.covarianceEllipse3D(C,gPp);
     # end
+
+def plotPose3(fignum, pose, axisLength=0.1):
+    # get figure object
+    fig = plt.figure(fignum)
+    ax = fig.gca(projection='3d')
+    plotPose3OnAxes(ax, pose, axisLength)

@@ -107,7 +107,7 @@ TEST( GeneralSFMFactor_Cal3Bundler, error ) {
   Point3 t1(0, 0, -6);
   Pose3 x1(R, t1);
   values.insert(X(1), GeneralCamera(x1));
-  Point3 l1;
+  Point3 l1(0,0,0);
   values.insert(L(1), l1);
   EXPECT(assert_equal(Vector2(-3., 0.), factor->unwhitenedError(values)));
 }

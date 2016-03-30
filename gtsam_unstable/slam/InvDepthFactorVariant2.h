@@ -79,7 +79,7 @@ public:
         && Base::equals(p, tol)
         && this->measured_.equals(e->measured_, tol)
         && this->K_->equals(*e->K_, tol)
-        && this->referencePoint_.equals(e->referencePoint_, tol);
+        && traits<Point3>::Equals(this->referencePoint_, e->referencePoint_, tol);
   }
 
   Vector inverseDepthError(const Pose3& pose, const Vector3& landmark) const {

@@ -72,9 +72,30 @@ void PreintegratedImuMeasurements::integrateMeasurement(
   preintMeasCov_.noalias() += B * (aCov / dt) * B.transpose();
   preintMeasCov_.noalias() += C * (wCov / dt) * C.transpose();
 
-  // NOTE(frank): (Gi*dt)*(C/dt)*(Gi'*dt)
-  static const Matrix93 Gi = (Matrix93() << Z_3x3, I_3x3, Z_3x3).finished();
-  preintMeasCov_.noalias() += Gi * (iCov * dt) * Gi.transpose();
+  // NOTE(frank): (Gi*dt)*(C/dt)*(Gi'*dt), with Gi << Z_3x3, I_3x3, Z_3x3
+  preintMeasCov_.block<3,3>(3,3).noalias() += iCov * dt;
+}
+
+//------------------------------------------------------------------------------
+void PreintegratedImuMeasurements::integrateMeasurements(const Matrix& measuredAccs,
+                                                         const Matrix& measuredOmegas,
+                                                         const Matrix& dts) {
+  assert(measuredAccs.rows() == 3 && measuredOmegas.rows() == 3 && dts.rows() == 1);
+  assert(dts.cols() >= 1);
+  assert(measuredAccs.cols() == dts.cols());
+  assert(measuredOmegas.cols() == dts.cols());
+  size_t n = static_cast<size_t>(dts.cols());
+  for (size_t j = 0; j < n; j++) {
+    integrateMeasurement(measuredAccs.col(j), measuredOmegas.col(j), dts(0,j));
+  }
+}
+
+//------------------------------------------------------------------------------
+void PreintegratedImuMeasurements::mergeWith(const PreintegratedImuMeasurements& pim12,  //
+                                             Matrix9* H1, Matrix9* H2) {
+  PreintegrationBase::mergeWith(pim12, H1, H2);
+  preintMeasCov_ =
+      *H1 * preintMeasCov_ * H1->transpose() + *H2 * pim12.preintMeasCov_ * H2->transpose();
 }
 
 //------------------------------------------------------------------------------
@@ -120,9 +141,7 @@ NonlinearFactor::shared_ptr ImuFactor::clone() const {
 
 //------------------------------------------------------------------------------
 std::ostream& operator<<(std::ostream& os, const ImuFactor& f) {
-  os << "  preintegrated measurements:\n" << f._PIM_;
-  ;
-  // Print standard deviations on covariance only
+  f._PIM_.print("preintegrated measurements:\n");
   os << "  noise model sigmas: " << f.noiseModel_->sigmas().transpose();
   return os;
 }
@@ -171,9 +190,6 @@ PreintegratedImuMeasurements ImuFactor::Merge(
 
   Matrix9 H1, H2;
   pim02.mergeWith(pim12, &H1, &H2);
-
-  pim02.preintMeasCov_ = H1 * pim01.preintMeasCov_ * H1.transpose() +
-                         H2 * pim12.preintMeasCov_ * H2.transpose();
 
   return pim02;
 }
@@ -229,6 +245,50 @@ void ImuFactor::Predict(const Pose3& pose_i, const Vector3& vel_i,
   vel_j = pvb.velocity;
 }
 #endif
+//------------------------------------------------------------------------------
+// ImuFactor2 methods
+//------------------------------------------------------------------------------
+ImuFactor2::ImuFactor2(Key state_i, Key state_j, Key bias, const PreintegratedImuMeasurements& pim)
+    : Base(noiseModel::Gaussian::Covariance(pim.preintMeasCov_), state_i, state_j, bias),
+      _PIM_(pim) {}
+
+//------------------------------------------------------------------------------
+NonlinearFactor::shared_ptr ImuFactor2::clone() const {
+  return boost::static_pointer_cast<NonlinearFactor>(
+      NonlinearFactor::shared_ptr(new This(*this)));
+}
+
+//------------------------------------------------------------------------------
+std::ostream& operator<<(std::ostream& os, const ImuFactor2& f) {
+  f._PIM_.print("preintegrated measurements:\n");
+  os << "  noise model sigmas: " << f.noiseModel_->sigmas().transpose();
+  return os;
+}
+
+//------------------------------------------------------------------------------
+void ImuFactor2::print(const string& s, const KeyFormatter& keyFormatter) const {
+  cout << s << "ImuFactor2(" << keyFormatter(this->key1()) << "," << keyFormatter(this->key2())
+       << "," << keyFormatter(this->key3()) << ")\n";
+  cout << *this << endl;
+}
+
+//------------------------------------------------------------------------------
+bool ImuFactor2::equals(const NonlinearFactor& other, double tol) const {
+  const This *e = dynamic_cast<const This*>(&other);
+  const bool base = Base::equals(*e, tol);
+  const bool pim = _PIM_.equals(e->_PIM_, tol);
+  return e != nullptr && base && pim;
+}
+
+//------------------------------------------------------------------------------
+Vector ImuFactor2::evaluateError(const NavState& state_i, const NavState& state_j,
+                                 const imuBias::ConstantBias& bias_i,  //
+                                 boost::optional<Matrix&> H1,
+                                 boost::optional<Matrix&> H2,
+                                 boost::optional<Matrix&> H3) const {
+  return _PIM_.computeError(state_i, state_j, bias_i, H1, H2, H3);
+}
+
 //------------------------------------------------------------------------------
 
 }

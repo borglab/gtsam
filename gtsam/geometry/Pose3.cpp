@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -37,6 +37,14 @@ Pose3::Pose3(const Pose2& pose2) :
 }
 
 /* ************************************************************************* */
+Pose3 Pose3::Create(const Rot3& R, const Point3& t, OptionalJacobian<6, 3> H1,
+                    OptionalJacobian<6, 3> H2) {
+  if (H1) *H1 << I_3x3, Z_3x3;
+  if (H2) *H2 << Z_3x3, R.transpose();
+  return Pose3(R, t);
+}
+
+/* ************************************************************************* */
 Pose3 Pose3::inverse() const {
   Rot3 Rt = R_.inverse();
   return Pose3(Rt, Rt * (-t_));
@@ -48,8 +56,7 @@ Pose3 Pose3::inverse() const {
 // Experimental - unit tests of derivatives based on it do not check out yet
 Matrix6 Pose3::AdjointMap() const {
   const Matrix3 R = R_.matrix();
-  const Vector3 t = t_.vector();
-  Matrix3 A = skewSymmetric(t) * R;
+  Matrix3 A = skewSymmetric(t_.x(), t_.y(), t_.z()) * R;
   Matrix6 adj;
   adj << R, Z_3x3, A, R;
   return adj;
@@ -101,12 +108,12 @@ Vector6 Pose3::adjointTranspose(const Vector6& xi, const Vector6& y,
 void Pose3::print(const string& s) const {
   cout << s;
   R_.print("R:\n");
-  t_.print("t: ");
+  cout << '[' << t_.x() << ", " << t_.y() << ", " << t_.z() << "]\';";
 }
 
 /* ************************************************************************* */
 bool Pose3::equals(const Pose3& pose, double tol) const {
-  return R_.equals(pose.R_, tol) && t_.equals(pose.t_, tol);
+  return R_.equals(pose.R_, tol) && traits<Point3>::Equals(t_, pose.t_, tol);
 }
 
 /* ************************************************************************* */
@@ -115,14 +122,14 @@ Pose3 Pose3::Expmap(const Vector6& xi, OptionalJacobian<6, 6> H) {
   if (H) *H = ExpmapDerivative(xi);
 
   // get angular velocity omega and translational velocity v from twist xi
-  Point3 omega(xi(0), xi(1), xi(2)), v(xi(3), xi(4), xi(5));
+  Vector3 omega(xi(0), xi(1), xi(2)), v(xi(3), xi(4), xi(5));
 
-  Rot3 R = Rot3::Expmap(omega.vector());
+  Rot3 R = Rot3::Expmap(omega);
   double theta2 = omega.dot(omega);
   if (theta2 > std::numeric_limits<double>::epsilon()) {
-    Point3 t_parallel = omega * omega.dot(v); // translation parallel to axis
-    Point3 omega_cross_v = omega.cross(v);    // points towards axis
-    Point3 t = (omega_cross_v - R * omega_cross_v + t_parallel) / theta2;
+    Vector3 t_parallel = omega * omega.dot(v); // translation parallel to axis
+    Vector3 omega_cross_v = omega.cross(v);    // points towards axis
+    Vector3 t = (omega_cross_v - R * omega_cross_v + t_parallel) / theta2;
     return Pose3(R, t);
   } else {
     return Pose3(R, v);
@@ -132,19 +139,20 @@ Pose3 Pose3::Expmap(const Vector6& xi, OptionalJacobian<6, 6> H) {
 /* ************************************************************************* */
 Vector6 Pose3::Logmap(const Pose3& p, OptionalJacobian<6, 6> H) {
   if (H) *H = LogmapDerivative(p);
-  Vector3 w = Rot3::Logmap(p.rotation()), T = p.translation().vector();
-  double t = w.norm();
+  const Vector3 w = Rot3::Logmap(p.rotation());
+  const Vector3 T = p.translation();
+  const double t = w.norm();
   if (t < 1e-10) {
     Vector6 log;
     log << w, T;
     return log;
   } else {
-    Matrix3 W = skewSymmetric(w / t);
+    const Matrix3 W = skewSymmetric(w / t);
     // Formula from Agrawal06iros, equation (14)
     // simplified with Mathematica, and multiplying in T to avoid matrix math
-    double Tan = tan(0.5 * t);
-    Vector3 WT = W * T;
-    Vector3 u = T - (0.5 * t) * WT + (1 - t / (2. * Tan)) * (W * WT);
+    const double Tan = tan(0.5 * t);
+    const Vector3 WT = W * T;
+    const Vector3 u = T - (0.5 * t) * WT + (1 - t / (2. * Tan)) * (W * WT);
     Vector6 log;
     log << w, u;
     return log;
@@ -178,7 +186,7 @@ Vector6 Pose3::ChartAtOrigin::Local(const Pose3& T, ChartJacobian H) {
     H->topLeftCorner<3,3>() = DR;
   }
   Vector6 xi;
-  xi << omega, T.translation().vector();
+  xi << omega, T.translation();
   return xi;
 #endif
 }
@@ -193,8 +201,8 @@ Vector6 Pose3::ChartAtOrigin::Local(const Pose3& T, ChartJacobian H) {
  *  The closed-form formula is similar to formula 102 in Barfoot14tro)
  */
 static Matrix3 computeQforExpmapDerivative(const Vector6& xi) {
-  const Vector3 w = xi.head<3>();
-  const Vector3 v = xi.tail<3>();
+  const auto w = xi.head<3>();
+  const auto v = xi.tail<3>();
   const Matrix3 V = skewSymmetric(v);
   const Matrix3 W = skewSymmetric(w);
 
@@ -261,10 +269,19 @@ const Point3& Pose3::translation(OptionalJacobian<3, 6> H) const {
 }
 
 /* ************************************************************************* */
+
+const Rot3& Pose3::rotation(OptionalJacobian<3, 6> H) const {
+  if (H) {
+    *H << I_3x3, Z_3x3;
+  }
+  return R_;
+}
+
+/* ************************************************************************* */
 Matrix4 Pose3::matrix() const {
-  static const Matrix14 A14 = (Matrix14() << 0.0, 0.0, 0.0, 1.0).finished();
+  static const auto A14 = Eigen::RowVector4d(0,0,0,1);
   Matrix4 mat;
-  mat << R_.matrix(), t_.vector(), A14;
+  mat << R_.matrix(), t_, A14;
   return mat;
 }
 
@@ -273,6 +290,14 @@ Pose3 Pose3::transform_to(const Pose3& pose) const {
   Rot3 cRv = R_ * Rot3(pose.R_.inverse());
   Point3 t = pose.transform_to(t_);
   return Pose3(cRv, t);
+}
+
+/* ************************************************************************* */
+Pose3 Pose3::transform_pose_to(const Pose3& pose, OptionalJacobian<6, 6> H1,
+                                                  OptionalJacobian<6, 6> H2) const {
+  if (H1) *H1 = -pose.inverse().AdjointMap() * AdjointMap();
+  if (H2) *H2 = I_6x6;
+  return inverse() * pose;
 }
 
 /* ************************************************************************* */
@@ -288,7 +313,7 @@ Point3 Pose3::transform_from(const Point3& p, OptionalJacobian<3,6> Dpose,
   if (Dpoint) {
     *Dpoint = R;
   }
-  return Point3(R * p.vector()) + t_;
+  return R_ * p + t_;
 }
 
 /* ************************************************************************* */
@@ -297,7 +322,7 @@ Point3 Pose3::transform_to(const Point3& p, OptionalJacobian<3,6> Dpose,
   // Only get transpose once, to avoid multiple allocations,
   // as well as multiple conversions in the Quaternion case
   const Matrix3 Rt = R_.transpose();
-  const Point3 q(Rt*(p - t_).vector());
+  const Point3 q(Rt*(p - t_));
   if (Dpose) {
     const double wx = q.x(), wy = q.y(), wz = q.z();
     (*Dpose) <<
@@ -321,7 +346,7 @@ double Pose3::range(const Point3& point, OptionalJacobian<1, 6> H1,
     return local.norm();
   } else {
     Matrix13 D_r_local;
-    const double r = local.norm(D_r_local);
+    const double r = norm(local, D_r_local);
     if (H1) *H1 = D_r_local * D_local_pose;
     if (H2) *H2 = D_r_local * D_local_point;
     return r;
@@ -355,46 +380,61 @@ Unit3 Pose3::bearing(const Point3& point, OptionalJacobian<2, 6> H1,
 }
 
 /* ************************************************************************* */
-boost::optional<Pose3> align(const vector<Point3Pair>& pairs) {
-  const size_t n = pairs.size();
+boost::optional<Pose3> Pose3::Align(const std::vector<Point3Pair>& abPointPairs) {
+  const size_t n = abPointPairs.size();
   if (n < 3)
-    return boost::none; // we need at least three pairs
+    return boost::none;  // we need at least three pairs
 
   // calculate centroids
-  Vector3 cp = Vector3::Zero(), cq = Vector3::Zero();
-  BOOST_FOREACH(const Point3Pair& pair, pairs) {
-    cp += pair.first.vector();
-    cq += pair.second.vector();
+  Point3 aCentroid(0,0,0), bCentroid(0,0,0);
+  for(const Point3Pair& abPair: abPointPairs) {
+    aCentroid += abPair.first;
+    bCentroid += abPair.second;
   }
   double f = 1.0 / n;
-  cp *= f;
-  cq *= f;
+  aCentroid *= f;
+  bCentroid *= f;
 
   // Add to form H matrix
   Matrix3 H = Z_3x3;
-  BOOST_FOREACH(const Point3Pair& pair, pairs) {
-    Vector3 dp = pair.first.vector() - cp;
-    Vector3 dq = pair.second.vector() - cq;
-    H += dp * dq.transpose();
-  }
+  for(const Point3Pair& abPair: abPointPairs) {
+    Point3 da = abPair.first - aCentroid;
+    Point3 db = abPair.second - bCentroid;
+    H += db * da.transpose();
+    }
 
-// Compute SVD
-  Matrix U, V;
-  Vector S;
-  svd(H, U, S, V);
+  // Compute SVD
+  Eigen::JacobiSVD<Matrix> svd(H, Eigen::ComputeThinU | Eigen::ComputeThinV);
+  Matrix U = svd.matrixU();
+  Vector S = svd.singularValues();
+  Matrix V = svd.matrixV();
+
+  // Check rank
+  if (S[1] < 1e-10)
+    return boost::none;
 
   // Recover transform with correction from Eggert97machinevisionandapplications
   Matrix3 UVtranspose = U * V.transpose();
   Matrix3 detWeighting = I_3x3;
   detWeighting(2, 2) = UVtranspose.determinant();
-  Rot3 R(Matrix3(V * detWeighting * U.transpose()));
-  Point3 t = Point3(cq) - R * Point3(cp);
-  return Pose3(R, t);
+  Rot3 aRb(Matrix(V * detWeighting * U.transpose()));
+  Point3 aTb = Point3(aCentroid) - aRb * Point3(bCentroid);
+  return Pose3(aRb, aTb);
+}
+
+boost::optional<Pose3> align(const vector<Point3Pair>& baPointPairs) {
+  vector<Point3Pair> abPointPairs;
+  BOOST_FOREACH (const Point3Pair& baPair, baPointPairs) {
+    abPointPairs.push_back(make_pair(baPair.second, baPair.first));
+  }
+  return Pose3::Align(abPointPairs);
 }
 
 /* ************************************************************************* */
 std::ostream &operator<<(std::ostream &os, const Pose3& pose) {
-  os << pose.rotation() << "\n" << pose.translation() << endl;
+  os << pose.rotation() << "\n";
+  const Point3& t = pose.translation();
+  os << '[' << t.x() << ", " << t.y() << ", " << t.z() << "]\';\n";
   return os;
 }
 

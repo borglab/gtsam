@@ -18,14 +18,14 @@ To optimize over continuous types, we assume they are manifolds. This is central
 
 [Manifolds](http://en.wikipedia.org/wiki/Manifold#Charts.2C_atlases.2C_and_transition_maps) and [charts](http://en.wikipedia.org/wiki/Manifold#Charts.2C_atlases.2C_and_transition_maps) are intimately linked concepts. We are only interested here in [differentiable manifolds](http://en.wikipedia.org/wiki/Differentiable_manifold#Definition), continuous spaces that can be locally approximated *at any point* using a local vector space, called the [tangent space](http://en.wikipedia.org/wiki/Tangent_space). A *chart* is an invertible map from the manifold to that tangent space.
 
-In GTSAM, all properties and operations needed to use a type must be defined through template specialization of the struct  `gtsam::traits`. Concept checks are used to check that all required functions are implemented.
-In detail, we ask the following are defined in the traits object:
+In GTSAM, all properties and operations needed to use a type must be defined through template specialization of the struct `gtsam::traits`. Concept checks are used to check that all required functions are implemented.
+In detail, we ask that the following items are defined in the traits object (although, not all are needed for optimization):
 
 * values:
-   * `enum { dimension = D};`, an enum that indicates the dimensionality *n* of the manifold. In Eigen-fashion, we also support manifolds whose dimenionality is only defined at runtime, by specifying the value -1.
-* types: 
+   * `enum { dimension = D};`, an enum that indicates the dimensionality *n* of the manifold. In Eigen-fashion, we also support manifolds whose dimensionality is only defined at runtime, by specifying the value -1.
+* types:
     * `TangentVector`, type that lives in tangent space. This will almost always be an `Eigen::Matrix<double,n,1>`.
-    * `ChartJacobian`, a typedef for `OptionalJacobian<dimension, dimension>`.  
+    * `ChartJacobian`, a typedef for `OptionalJacobian<dimension, dimension>`.
     * `ManifoldType`, a pointer back to the type.
     * `structure_category`, a tag type that defines what requirements the type fulfills, and therefore what requirements this traits class must fulfill. It should be defined to be one of the following: 
         * `gtsam::traits::manifold_tag` -- Everything in this list is expected
@@ -33,7 +33,7 @@ In detail, we ask the following are defined in the traits object:
         * `gtsam::traits::lie_group_tag` -- Everything in this list is expected, plus the functions defined under **Groups**, and **Lie Groups** below.
         * `gtsam::traits::vector_space_tag` -- Everything in this list is expected, plus the functions defined under **Groups**, and **Lie Groups** below.
 * valid expressions:
-    * `size_t dim = traits<T>::getDimension(p);` static function should be defined. This is mostly useful if the size is not known at compile time.
+    * `size_t dim = traits<T>::GetDimension(p);` static function should be defined. This is mostly useful if the size is not known at compile time.
     * `v = traits<T>::Local(p,q)`, the chart, from manifold to tangent space, think of it as *q (-) p*, where *p* and *q* are elements of the manifold and the result, *v* is an element of the vector space.
     * `p = traits<T>::Retract(p,v)`, the inverse chart, from tangent space to manifold, think of it as *p (+) v*, where *p* is an element of the manifold and the result, *v* is an element of the vector space.
 * invariants

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -20,7 +20,6 @@
 
 
 #pragma once
-
 #ifndef MKL_BLAS
 #define MKL_BLAS MKL_DOMAIN_BLAS
 #endif
@@ -41,23 +40,28 @@ typedef Eigen::VectorXd Vector;
 typedef Eigen::Matrix<double, 1, 1> Vector1;
 typedef Eigen::Vector2d Vector2;
 typedef Eigen::Vector3d Vector3;
-typedef Eigen::Matrix<double, 4, 1> Vector4;
-typedef Eigen::Matrix<double, 5, 1> Vector5;
-typedef Eigen::Matrix<double, 6, 1> Vector6;
-typedef Eigen::Matrix<double, 7, 1> Vector7;
-typedef Eigen::Matrix<double, 8, 1> Vector8;
-typedef Eigen::Matrix<double, 9, 1> Vector9;
-typedef Eigen::Matrix<double, 10, 1> Vector10;
+
+static const Eigen::MatrixBase<Vector2>::ConstantReturnType Z_2x1 = Vector2::Zero();
+static const Eigen::MatrixBase<Vector3>::ConstantReturnType Z_3x1 = Vector3::Zero();
+
+// Create handy typedefs and constants for vectors with N>3
+// VectorN and Z_Nx1, for N=1..9
+#define GTSAM_MAKE_VECTOR_DEFS(N)                \
+  typedef Eigen::Matrix<double, N, 1> Vector##N; \
+  static const Eigen::MatrixBase<Vector##N>::ConstantReturnType Z_##N##x1 = Vector##N::Zero();
+
+GTSAM_MAKE_VECTOR_DEFS(4);
+GTSAM_MAKE_VECTOR_DEFS(5);
+GTSAM_MAKE_VECTOR_DEFS(6);
+GTSAM_MAKE_VECTOR_DEFS(7);
+GTSAM_MAKE_VECTOR_DEFS(8);
+GTSAM_MAKE_VECTOR_DEFS(9);
+GTSAM_MAKE_VECTOR_DEFS(10);
+GTSAM_MAKE_VECTOR_DEFS(11);
+GTSAM_MAKE_VECTOR_DEFS(12);
 
 typedef Eigen::VectorBlock<Vector> SubVector;
 typedef Eigen::VectorBlock<const Vector> ConstSubVector;
-
-/**
- * Create vector initialized to a constant value
- * @param n is the size of the vector
- * @param value is a constant value to insert into the vector
- */
-GTSAM_EXPORT Vector repeat(size_t n, double value);
 
 /**
  * Create basis vector of dimension n,
@@ -89,7 +93,7 @@ inline Vector zero(size_t n) { return Vector::Zero(n);}
  * @param n size
  */
 inline Vector ones(size_t n) { return Vector::Ones(n); }
-  
+
 /**
  * check if all zero
  */
@@ -185,88 +189,12 @@ GTSAM_EXPORT bool assert_equal(const ConstSubVector& vec1, const ConstSubVector&
 GTSAM_EXPORT bool linear_dependent(const Vector& vec1, const Vector& vec2, double tol=1e-9);
 
 /**
- * extract subvector, slice semantics, i.e. range = [i1,i2[ excluding i2
- * @param v Vector
- * @param i1 first row index
- * @param i2 last  row index + 1
- * @return subvector v(i1:i2)
- */
-GTSAM_EXPORT ConstSubVector sub(const Vector &v, size_t i1, size_t i2);
-
-/**
- * Inserts a subvector into a vector IN PLACE
- * @param fullVector is the vector to be changed
- * @param subVector is the vector to insert
- * @param i is the index where the subvector should be inserted
- */
-GTSAM_EXPORT void subInsert(Vector& fullVector, const Vector& subVector, size_t i);
-
-/**
- * elementwise multiplication
- * @param a first vector
- * @param b second vector
- * @return vector [a(i)*b(i)]
- */
-GTSAM_EXPORT Vector emul(const Vector &a, const Vector &b);
-
-/**
- * elementwise division
- * @param a first vector
- * @param b second vector
- * @return vector [a(i)/b(i)]
- */
-GTSAM_EXPORT Vector ediv(const Vector &a, const Vector &b);
-
-/**
  * elementwise division, but 0/0 = 0, not inf
  * @param a first vector
  * @param b second vector
  * @return vector [a(i)/b(i)]
  */
 GTSAM_EXPORT Vector ediv_(const Vector &a, const Vector &b);
-
-/**
- * sum vector elements
- * @param a vector
- * @return sum_i a(i)
- */
-GTSAM_EXPORT double sum(const Vector &a);
-
-/**
- * Calculates L2 norm for a vector
- * modeled after boost.ublas for compatibility
- * @param v vector
- * @return the L2 norm
- */
-GTSAM_EXPORT double norm_2(const Vector& v);
-
-/**
- * Elementwise reciprocal of vector elements
- * @param a vector
- * @return [1/a(i)]
- */
-GTSAM_EXPORT Vector reciprocal(const Vector &a);
-
-/**
- * Elementwise sqrt of vector elements
- * @param v is a vector
- * @return [sqrt(a(i))]
- */
-GTSAM_EXPORT Vector esqrt(const Vector& v);
-
-/**
- * Absolute values of vector elements
- * @param v is a vector
- * @return [abs(a(i))]
- */
-GTSAM_EXPORT Vector abs(const Vector& v);
-
-/**
- * Return the max element of a vector
- * @param a is a vector
- * @return max(a)
- */
-GTSAM_EXPORT double max(const Vector &a);
 
 /**
  * Dot product
@@ -343,6 +271,21 @@ GTSAM_EXPORT Vector concatVectors(const std::list<Vector>& vs);
  * concatenate Vectors
  */
 GTSAM_EXPORT Vector concatVectors(size_t nrVectors, ...);
+
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+GTSAM_EXPORT inline Vector abs(const Vector& v){return v.cwiseAbs();}
+GTSAM_EXPORT inline Vector ediv(const Vector &a, const Vector &b) {assert (b.size()==a.size()); return a.cwiseQuotient(b);}
+GTSAM_EXPORT inline Vector esqrt(const Vector& v) { return v.cwiseSqrt();}
+GTSAM_EXPORT inline Vector emul(const Vector &a, const Vector &b) {assert (b.size()==a.size()); return a.cwiseProduct(b);}
+GTSAM_EXPORT inline double max(const Vector &a){return a.maxCoeff();}
+GTSAM_EXPORT inline double norm_2(const Vector& v) {return v.norm();}
+GTSAM_EXPORT inline Vector reciprocal(const Vector &a) {return a.array().inverse();}
+GTSAM_EXPORT inline Vector repeat(size_t n, double value) {return Vector::Constant(n, value);}
+GTSAM_EXPORT inline const Vector sub(const Vector &v, size_t i1, size_t i2) {return v.segment(i1,i2-i1);}
+GTSAM_EXPORT inline void subInsert(Vector& fullVector, const Vector& subVector, size_t i) {fullVector.segment(i, subVector.size()) = subVector;}
+GTSAM_EXPORT inline double sum(const Vector &a){return a.sum();}
+#endif
 
 } // namespace gtsam
 

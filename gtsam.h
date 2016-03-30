@@ -127,13 +127,13 @@ namespace std {
         void pop_back();*/
     };
     //typedef std::vector
-  
+
     #include<list>
     template<T>
     class list
     {
-    
-    
+
+
     };
 
 }
@@ -360,17 +360,6 @@ class Point3 {
 
   // Group
   static gtsam::Point3 identity();
-  gtsam::Point3 inverse() const;
-  gtsam::Point3 compose(const gtsam::Point3& p2) const;
-  gtsam::Point3 between(const gtsam::Point3& p2) const;
-
-  // Manifold
-  gtsam::Point3 retract(Vector v) const;
-  Vector localCoordinates(const gtsam::Point3& p) const;
-
-  // Lie Group
-  static gtsam::Point3 Expmap(Vector v);
-  static Vector Logmap(const gtsam::Point3& p);
 
   // Standard Interface
   Vector vector() const;
@@ -1069,7 +1058,7 @@ class SymbolicBayesTree {
     void clear();
     void deleteCachedShortcuts();
     size_t numCachedSeparatorMarginals() const;
-  
+
   gtsam::SymbolicConditional* marginalFactor(size_t key) const;
   gtsam::SymbolicFactorGraph* joint(size_t key1, size_t key2) const;
   gtsam::SymbolicBayesNet* jointBayesNet(size_t key1, size_t key2) const;
@@ -1079,19 +1068,19 @@ class SymbolicBayesTree {
 //   BayesTreeClique();
 //   BayesTreeClique(CONDITIONAL* conditional);
 // //  BayesTreeClique(const std::pair<typename ConditionalType::shared_ptr, typename ConditionalType::FactorType::shared_ptr>& result) : Base(result) {}
-// 
+//
 //   bool equals(const This& other, double tol) const;
 //   void print(string s) const;
 //   void printTree() const; // Default indent of ""
 //   void printTree(string indent) const;
 //   size_t numCachedSeparatorMarginals() const;
-// 
+//
 //   CONDITIONAL* conditional() const;
 //   bool isRoot() const;
 //   size_t treeSize() const;
 // //  const std::list<derived_ptr>& children() const { return children_; }
 // //  derived_ptr parent() const { return parent_.lock(); }
-// 
+//
 //   // FIXME: need wrapped versions graphs, BayesNet
 // //  BayesNet<ConditionalType> shortcut(derived_ptr root, Eliminate function) const;
 // //  FactorGraph<FactorType> marginal(derived_ptr root, Eliminate function) const;
@@ -1345,7 +1334,7 @@ virtual class JacobianFactor : gtsam::GaussianFactor {
 
   void transposeMultiplyAdd(double alpha, const Vector& e, gtsam::VectorValues& x) const;
   gtsam::JacobianFactor whiten() const;
-  
+
   pair<gtsam::GaussianConditional*, gtsam::JacobianFactor*> eliminate(const gtsam::Ordering& keys) const;
 
   void setModel(bool anyConstrained, const Vector& sigmas);
@@ -1422,7 +1411,7 @@ class GaussianFactorGraph {
   gtsam::GaussianFactorGraph clone() const;
   gtsam::GaussianFactorGraph negate() const;
 
-  // Optimizing and linear algebra  
+  // Optimizing and linear algebra
   gtsam::VectorValues optimize() const;
   gtsam::VectorValues optimize(const gtsam::Ordering& ordering) const;
   gtsam::VectorValues optimizeGradientSearch() const;
@@ -1511,7 +1500,7 @@ virtual class GaussianBayesNet {
     //Constructors
   GaussianBayesNet();
   GaussianBayesNet(const gtsam::GaussianConditional* conditional);
-  
+
   // Testable
   void print(string s) const;
   bool equals(const gtsam::GaussianBayesNet& other, double tol) const;
@@ -1527,7 +1516,7 @@ virtual class GaussianBayesNet {
   gtsam::GaussianConditional* back() const;
   void push_back(gtsam::GaussianConditional* conditional);
   void push_back(const gtsam::GaussianBayesNet& bayesNet);
-  
+
   gtsam::VectorValues optimize() const;
   gtsam::VectorValues optimize(gtsam::VectorValues& solutionForMissing) const;
   gtsam::VectorValues optimizeGradientSearch() const;
@@ -1551,7 +1540,7 @@ virtual class GaussianBayesTree {
   bool empty() const;
   size_t numCachedSeparatorMarginals() const;
   void saveGraph(string s) const;
-  
+
   gtsam::VectorValues optimize() const;
   gtsam::VectorValues optimizeGradientSearch() const;
   gtsam::VectorValues gradient(const gtsam::VectorValues& x0) const;
@@ -1753,7 +1742,8 @@ virtual class NonlinearFactor {
 
 virtual class NoiseModelFactor: gtsam::NonlinearFactor {
   void equals(const gtsam::NoiseModelFactor& other, double tol) const;
-  gtsam::noiseModel::Base* get_noiseModel() const;
+  gtsam::noiseModel::Base* get_noiseModel() const; // deprecated by below
+  gtsam::noiseModel::Base* noiseModel() const;
   Vector unwhitenedError(const gtsam::Values& x) const;
   Vector whitenedError(const gtsam::Values& x) const;
 };
@@ -1833,7 +1823,7 @@ class Values {
 
   /// Fixed size versions, for n in 1..9
   Vector atFixed(size_t j, size_t n);
-  
+
   /// version for double
   void insertDouble(size_t j, double c);
   double atDouble(size_t j) const;
@@ -2004,7 +1994,7 @@ virtual class NonlinearOptimizerParams {
   void setVerbosity(string s);
 
   string getLinearSolverType() const;
-  
+
   void setLinearSolverType(string solver);
   void setOrdering(const gtsam::Ordering& ordering);
   void setIterativeParams(gtsam::IterativeOptimizationParameters* params);
@@ -2171,6 +2161,8 @@ class ISAM2Result {
   size_t getCliques() const;
 };
 
+class FactorIndices {};
+
 class ISAM2 {
   ISAM2();
   ISAM2(const gtsam::ISAM2Params& params);
@@ -2183,8 +2175,8 @@ class ISAM2 {
 
   gtsam::ISAM2Result update();
   gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta);
-  gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::KeyVector& removeFactorIndices);
-  gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::KeyVector& removeFactorIndices, const gtsam::KeyGroupMap& constrainedKeys);
+  gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::FactorIndices& removeFactorIndices);
+  gtsam::ISAM2Result update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::FactorIndices& removeFactorIndices, const gtsam::KeyGroupMap& constrainedKeys);
   // TODO: wrap the full version of update
  //void update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::KeyVector& removeFactorIndices, FastMap<Key,int>& constrainedKeys);
   //void update(const gtsam::NonlinearFactorGraph& newFactors, const gtsam::Values& newTheta, const gtsam::KeyVector& removeFactorIndices, FastMap<Key,int>& constrainedKeys, bool force_relinearize);

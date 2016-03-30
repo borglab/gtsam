@@ -610,11 +610,11 @@ TEST( SmartProjectionCameraFactor, noiselessBundler ) {
   double expectedError = 0.0;
   DOUBLES_EQUAL(expectedError, actualError, 1e-3);
 
-  Point3 oldPoint; // this takes the point stored in the factor (we are not interested in this)
+  Point3 oldPoint(0,0,0); // this takes the point stored in the factor (we are not interested in this)
   if (factor1->point())
     oldPoint = *(factor1->point());
 
-  Point3 expectedPoint;
+  Point3 expectedPoint(0,0,0);
   if (factor1->point(values))
     expectedPoint = *(factor1->point(values));
 
@@ -636,10 +636,9 @@ TEST( SmartProjectionCameraFactor, comparisonGeneralSfMFactor ) {
   smartGraph.push_back(factor1);
   double expectedError = factor1->error(values);
   double expectedErrorGraph = smartGraph.error(values);
-  Point3 expectedPoint;
+  Point3 expectedPoint(0,0,0);
   if (factor1->point())
     expectedPoint = *(factor1->point());
-  // cout << "expectedPoint " << expectedPoint.vector() << endl;
 
   // COMMENTS:
   // 1) triangulation introduces small errors, then for a fair comparison we use expectedPoint as
@@ -653,7 +652,7 @@ TEST( SmartProjectionCameraFactor, comparisonGeneralSfMFactor ) {
   Vector e1 = sfm1.evaluateError(values.at<Camera>(c1), values.at<Point3>(l1));
   Vector e2 = sfm2.evaluateError(values.at<Camera>(c2), values.at<Point3>(l1));
   double actualError = 0.5
-      * (norm_2(e1) * norm_2(e1) + norm_2(e2) * norm_2(e2));
+      * (e1.norm() * e1.norm() + e2.norm() * e2.norm());
   double actualErrorGraph = generalGraph.error(values);
 
   DOUBLES_EQUAL(expectedErrorGraph, actualErrorGraph, 1e-7);
@@ -677,7 +676,7 @@ TEST( SmartProjectionCameraFactor, comparisonGeneralSfMFactor1 ) {
   smartGraph.push_back(factor1);
   Matrix expectedHessian = smartGraph.linearize(values)->hessian().first;
   Vector expectedInfoVector = smartGraph.linearize(values)->hessian().second;
-  Point3 expectedPoint;
+  Point3 expectedPoint(0,0,0);
   if (factor1->point())
     expectedPoint = *(factor1->point());
 
@@ -720,7 +719,7 @@ TEST( SmartProjectionCameraFactor, comparisonGeneralSfMFactor1 ) {
 //  smartGraph.push_back(factor1);
 //  GaussianFactorGraph::shared_ptr gfgSmart = smartGraph.linearize(values);
 //
-//  Point3 expectedPoint;
+//  Point3 expectedPoint(0,0,0);
 //  if(factor1->point())
 //    expectedPoint = *(factor1->point());
 //
@@ -773,7 +772,7 @@ TEST( SmartProjectionCameraFactor, computeImplicitJacobian ) {
   cameras.push_back(level_camera_right);
 
   factor1->error(values); // this is important to have a triangulation of the point
-  Point3 point;
+  Point3 point(0,0,0);
   if (factor1->point())
     point = *(factor1->point());
   vector<Matrix29> Fblocks;

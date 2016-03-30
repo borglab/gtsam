@@ -421,16 +421,16 @@ TEST(ADT, conversion)
   ADT fDiscreteKey(X & Y, "0.2 0.5 0.3 0.6");
   dot(fDiscreteKey, "conversion-f1");
 
-  std::map<size_t, size_t> ordering;
-  ordering[0] = 5;
-  ordering[1] = 2;
+  std::map<Key, Key> keyMap;
+  keyMap[0] = 5;
+  keyMap[1] = 2;
 
-  AlgebraicDecisionTree<size_t> fIndexKey(fDiscreteKey, ordering);
+  AlgebraicDecisionTree<Key> fIndexKey(fDiscreteKey, keyMap);
   //  f1.print("f1");
   //  f2.print("f2");
   dot(fIndexKey, "conversion-f2");
 
-  Assignment<size_t> x00, x01, x02, x10, x11, x12;
+  Assignment<Key> x00, x01, x02, x10, x11, x12;
   x00[5] = 0, x00[2] = 0;
   x01[5] = 0, x01[2] = 1;
   x10[5] = 1, x10[2] = 0;

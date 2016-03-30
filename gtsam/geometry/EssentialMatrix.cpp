@@ -13,6 +13,17 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
+EssentialMatrix EssentialMatrix::FromRotationAndDirection(const Rot3& aRb, const Unit3& aTb,
+                                                          OptionalJacobian<5, 3> H1,
+                                                          OptionalJacobian<5, 2> H2) {
+  if (H1)
+    *H1 << I_3x3, Matrix23::Zero();
+  if (H2)
+    *H2 << Matrix32::Zero(), I_2x2;
+  return EssentialMatrix(aRb, aTb);
+}
+
+/* ************************************************************************* */
 EssentialMatrix EssentialMatrix::FromPose3(const Pose3& aPb,
     OptionalJacobian<5, 6> H) {
   const Rot3& aRb = aPb.rotation();
@@ -107,7 +118,7 @@ ostream& operator <<(ostream& os, const EssentialMatrix& E) {
   Rot3 R = E.rotation();
   Unit3 d = E.direction();
   os.precision(10);
-  os << R.xyz().transpose() << " " << d.point3().vector().transpose() << " ";
+  os << R.xyz().transpose() << " " << d.point3().transpose() << " ";
   return os;
 }
 

@@ -20,7 +20,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 endif()
 
 set(GKLIB_PATH ${PROJECT_SOURCE_DIR}/GKlib CACHE PATH "path to GKlib")
-set(SHARED FALSE CACHE BOOL "build a shared library")
+set(METIS_SHARED TRUE CACHE BOOL "build a shared library")
 
 if(MSVC)
   set(METIS_INSTALL FALSE)
@@ -29,11 +29,11 @@ else()
 endif()
 
 # Configure libmetis library.
-if(SHARED)
+if(METIS_SHARED)
   set(METIS_LIBRARY_TYPE SHARED)
 else()
   set(METIS_LIBRARY_TYPE STATIC)
-endif(SHARED)
+endif(METIS_SHARED)
 
 include(${GKLIB_PATH}/GKlibSystem.cmake)
 # Add include directories.

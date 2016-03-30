@@ -61,8 +61,8 @@ void PreintegrationBase::print(const string& s) const {
 //------------------------------------------------------------------------------
 bool PreintegrationBase::equals(const PreintegrationBase& other,
     double tol) const {
-  const bool params_match = p_->equals(*other.p_, tol);
-  return params_match && fabs(deltaTij_ - other.deltaTij_) < tol
+  return p_->equals(*other.p_, tol)
+      && fabs(deltaTij_ - other.deltaTij_) < tol
       && biasHat_.equals(other.biasHat_, tol)
       && equal_with_abs_tol(preintegrated_, other.preintegrated_, tol)
       && equal_with_abs_tol(preintegrated_H_biasAcc_, other.preintegrated_H_biasAcc_, tol)
@@ -72,9 +72,9 @@ bool PreintegrationBase::equals(const PreintegrationBase& other,
 //------------------------------------------------------------------------------
 pair<Vector3, Vector3> PreintegrationBase::correctMeasurementsBySensorPose(
     const Vector3& unbiasedAcc, const Vector3& unbiasedOmega,
-    OptionalJacobian<3, 3> D_correctedAcc_unbiasedAcc,
-    OptionalJacobian<3, 3> D_correctedAcc_unbiasedOmega,
-    OptionalJacobian<3, 3> D_correctedOmega_unbiasedOmega) const {
+    OptionalJacobian<3, 3> correctedAcc_H_unbiasedAcc,
+    OptionalJacobian<3, 3> correctedAcc_H_unbiasedOmega,
+    OptionalJacobian<3, 3> correctedOmega_H_unbiasedOmega) const {
   assert(p().body_P_sensor);
 
   // Compensate for sensor-body displacement if needed: we express the quantities
@@ -89,12 +89,12 @@ pair<Vector3, Vector3> PreintegrationBase::correctMeasurementsBySensorPose(
   const Vector3 correctedOmega = bRs * unbiasedOmega;
 
   // Jacobians
-  if (D_correctedAcc_unbiasedAcc) *D_correctedAcc_unbiasedAcc = bRs;
-  if (D_correctedAcc_unbiasedOmega) *D_correctedAcc_unbiasedOmega = Z_3x3;
-  if (D_correctedOmega_unbiasedOmega) *D_correctedOmega_unbiasedOmega = bRs;
+  if (correctedAcc_H_unbiasedAcc) *correctedAcc_H_unbiasedAcc = bRs;
+  if (correctedAcc_H_unbiasedOmega) *correctedAcc_H_unbiasedOmega = Z_3x3;
+  if (correctedOmega_H_unbiasedOmega) *correctedOmega_H_unbiasedOmega = bRs;
 
   // Centrifugal acceleration
-  const Vector3 b_arm = p().body_P_sensor->translation().vector();
+  const Vector3 b_arm = p().body_P_sensor->translation();
   if (!b_arm.isZero()) {
     // Subtract out the the centripetal acceleration from the unbiased one
     // to get linear acceleration vector in the body frame:
@@ -103,9 +103,9 @@ pair<Vector3, Vector3> PreintegrationBase::correctMeasurementsBySensorPose(
     correctedAcc -= body_Omega_body * b_velocity_bs;
 
     // Update derivative: centrifugal causes the correlation between acc and omega!!!
-    if (D_correctedAcc_unbiasedOmega) {
+    if (correctedAcc_H_unbiasedOmega) {
       double wdp = correctedOmega.dot(b_arm);
-      *D_correctedAcc_unbiasedOmega = -(diag(Vector3::Constant(wdp))
+      *correctedAcc_H_unbiasedOmega = -(diag(Vector3::Constant(wdp))
           + correctedOmega * b_arm.transpose()) * bRs.matrix()
           + 2 * b_arm * unbiasedOmega.transpose();
     }
@@ -188,7 +188,7 @@ void PreintegrationBase::integrateMeasurement(const Vector3& measuredAcc,
   if (p().body_P_sensor) {
     // More complicated derivatives in case of non-trivial sensor pose
     *C *= D_correctedOmega_omega;
-    if (!p().body_P_sensor->translation().vector().isZero())
+    if (!p().body_P_sensor->translation().isZero())
       *C += *B* D_correctedAcc_omega;
     *B *= D_correctedAcc_acc;  // NOTE(frank): needs to be last
   }
@@ -366,27 +366,26 @@ Vector9 PreintegrationBase::Compose(const Vector9& zeta01,
 //------------------------------------------------------------------------------
 void PreintegrationBase::mergeWith(const PreintegrationBase& pim12, Matrix9* H1,
                                    Matrix9* H2) {
-  if (!matchesParamsWith(pim12))
-    throw std::domain_error(
-        "Cannot merge pre-integrated measurements with different params");
+  if (!matchesParamsWith(pim12)) {
+    throw std::domain_error("Cannot merge pre-integrated measurements with different params");
+  }
 
-  if (params()->body_P_sensor)
-    throw std::domain_error(
-        "Cannot merge pre-integrated measurements with sensor pose yet");
+  if (params()->body_P_sensor) {
+    throw std::domain_error("Cannot merge pre-integrated measurements with sensor pose yet");
+  }
 
-  const double& t01 = deltaTij();
-  const double& t12 = pim12.deltaTij();
+  const double t01 = deltaTij();
+  const double t12 = pim12.deltaTij();
   deltaTij_ = t01 + t12;
 
-  Vector9 zeta01 = preintegrated();
-  Vector9 zeta12 = pim12.preintegrated();
+  const Vector9 zeta01 = preintegrated();
+  Vector9 zeta12 = pim12.preintegrated(); // will be modified.
 
-  // TODO(frank): adjust zeta12 due to bias difference
   const imuBias::ConstantBias bias_incr_for_12 = biasHat() - pim12.biasHat();
   zeta12 += pim12.preintegrated_H_biasOmega_ * bias_incr_for_12.gyroscope()
       + pim12.preintegrated_H_biasAcc_ * bias_incr_for_12.accelerometer();
 
-  preintegrated_ << PreintegrationBase::Compose(zeta01, zeta12, t12, H1, H2);
+  preintegrated_ = PreintegrationBase::Compose(zeta01, zeta12, t12, H1, H2);
 
   preintegrated_H_biasAcc_ =
       (*H1) * preintegrated_H_biasAcc_ + (*H2) * pim12.preintegrated_H_biasAcc_;

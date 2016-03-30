@@ -220,17 +220,15 @@ public:
   static SymmetricBlockMatrix SchurComplement(const FBlocks& Fblocks,
       const Matrix& E, const Vector& b, const double lambda = 0.0,
       bool diagonalDamping = false) {
-    SymmetricBlockMatrix augmentedHessian;
     if (E.cols() == 2) {
       Matrix2 P;
       ComputePointCovariance(P, E, lambda, diagonalDamping);
-      augmentedHessian = SchurComplement(Fblocks, E, P, b);
+      return SchurComplement(Fblocks, E, P, b);
     } else {
       Matrix3 P;
       ComputePointCovariance(P, E, lambda, diagonalDamping);
-      augmentedHessian = SchurComplement(Fblocks, E, P, b);
+      return SchurComplement(Fblocks, E, P, b);
     }
-    return augmentedHessian;
   }
 
   /**

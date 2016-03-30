@@ -49,7 +49,7 @@ public:
 
   /// Default constructor
   NavState() :
-      v_(Vector3::Zero()) {
+      t_(0,0,0), v_(Vector3::Zero()) {
   }
   /// Construct from attitude, position, velocity
   NavState(const Rot3& R, const Point3& t, const Velocity3& v) :
@@ -97,7 +97,7 @@ public:
   }
   /// Return position as Vector3
   Vector3 t() const {
-    return t_.vector();
+    return t_;
   }
   /// Return velocity as Vector3. Computation-free.
   const Vector3& v() const {
@@ -146,9 +146,6 @@ public:
 
   /// Act on position alone, n_t = nRb * b_t + n_t
   Point3 operator*(const Point3& b_t) const;
-
-  /// Act on velocity alone, n_v = nRb * b_v + n_v
-  Velocity3 operator*(const Velocity3& b_v) const;
 
   /// @}
   /// @name Manifold
@@ -206,11 +203,13 @@ public:
   /// @name Dynamics
   /// @{
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
   /// Integrate forward in time given angular velocity and acceleration in body frame
   /// Uses second order integration for position, returns derivatives except dt.
   NavState update(const Vector3& b_acceleration, const Vector3& b_omega,
       const double dt, OptionalJacobian<9, 9> F, OptionalJacobian<9, 3> G1,
       OptionalJacobian<9, 3> G2) const;
+#endif
 
   /// Compute tangent space contribution due to Coriolis forces
   Vector9 coriolis(double dt, const Vector3& omega, bool secondOrder = false,

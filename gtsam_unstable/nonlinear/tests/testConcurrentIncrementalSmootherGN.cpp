@@ -600,8 +600,6 @@ TEST( ConcurrentIncrementalSmootherGN, synchronize_3 )
 ///* ************************************************************************* */
 TEST( ConcurrentIncrementalSmoother, removeFactors_topology_1 )
 {
-  std::cout << "*********************** removeFactors_topology_1 ************************" << std::endl;
-
   // Create a set of optimizer parameters
   ISAM2Params parameters;
   parameters.optimizationParams = ISAM2GaussNewtonParams();
@@ -629,9 +627,7 @@ TEST( ConcurrentIncrementalSmoother, removeFactors_topology_1 )
   // factor we want to remove
   // NOTE: we can remove factors, paying attention that the remaining graph remains connected
   // we remove a single factor, the number 1, which is a BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery);
-  std::vector<size_t> removeFactorIndices(2,1);
-
-
+  FactorIndices removeFactorIndices(2,1);
 
   // Add no factors to the smoother (we only want to test the removal)
   NonlinearFactorGraph noFactors;
@@ -657,7 +653,6 @@ TEST( ConcurrentIncrementalSmoother, removeFactors_topology_1 )
 /////* ************************************************************************* */
 //TEST( ConcurrentIncrementalSmoother, removeFactors_topology_2 )
 //{
-//  std::cout << "*********************** removeFactors_topology_2 ************************" << std::endl;
 //  // we try removing the last factor
 //
 //  // Create a set of optimizer parameters
@@ -711,7 +706,6 @@ TEST( ConcurrentIncrementalSmoother, removeFactors_topology_1 )
 /////* ************************************************************************* */
 //TEST( ConcurrentBatchSmoother, removeFactors_topology_3 )
 //{
-//  std::cout << "*********************** removeFactors_topology_3 ************************" << std::endl;
 //  // we try removing the first factor
 //
 //  // Create a set of optimizer parameters
@@ -761,7 +755,6 @@ TEST( ConcurrentIncrementalSmoother, removeFactors_topology_1 )
 /////* ************************************************************************* */
 //TEST( ConcurrentBatchSmoother, removeFactors_values )
 //{
-//  std::cout << "*********************** removeFactors_values ************************" << std::endl;
 //  // we try removing the last factor
 //
 //  // Create a set of optimizer parameters

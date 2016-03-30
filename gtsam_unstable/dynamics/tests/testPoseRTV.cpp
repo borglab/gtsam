@@ -29,7 +29,7 @@ TEST( testPoseRTV, constructors ) {
   EXPECT(assert_equal(Pose3(rot, pt), state1.pose()));
 
   PoseRTV state2;
-  EXPECT(assert_equal(Point3(),  state2.t()));
+  EXPECT(assert_equal(Point3(0,0,0),  state2.t()));
   EXPECT(assert_equal(Rot3(), state2.R()));
   EXPECT(assert_equal(kZero3, state2.v()));
   EXPECT(assert_equal(Pose3(), state2.pose()));

@@ -51,6 +51,12 @@ private:
   typedef SmartFactorBase<CAMERA> This;
   typedef typename CAMERA::Measurement Z;
 
+public:
+
+  static const int Dim = traits<CAMERA>::dimension; ///< Camera dimension
+  static const int ZDim = traits<Z>::dimension; ///< Measurement dimension
+  typedef Eigen::Matrix<double, ZDim, Dim> MatrixZD; // F blocks (derivatives wrpt camera)
+
 protected:
   /**
    * As of Feb 22, 2015, the noise model is the same for all measurements and
@@ -71,20 +77,10 @@ protected:
   boost::optional<Pose3> body_P_sensor_; ///< Pose of the camera in the body frame
   /// @}
 
-  static const int Dim = traits<CAMERA>::dimension; ///< Camera dimension
-  static const int ZDim = traits<Z>::dimension; ///< Measurement dimension
-
-  // Definitions for block matrices used internally
-  typedef Eigen::Matrix<double, Dim, ZDim> MatrixD2; // F'
-  typedef Eigen::Matrix<double, Dim, Dim> MatrixDD; // camera hessian block
-  typedef Eigen::Matrix<double, ZDim, 3> Matrix23;
-  typedef Eigen::Matrix<double, Dim, 1> VectorD;
-  typedef Eigen::Matrix<double, ZDim, ZDim> Matrix2;
+  // Cache for Fblocks, to avoid a malloc ever time we re-linearize
+  mutable std::vector<MatrixZD> Fblocks;
 
 public:
-
-  // Definitions for blocks of F, externally visible
-  typedef Eigen::Matrix<double, ZDim, Dim> MatrixZD; // F
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -99,8 +95,9 @@ public:
 
   /// Constructor
   SmartFactorBase(const SharedNoiseModel& sharedNoiseModel,
-      boost::optional<Pose3> body_P_sensor = boost::none) :
-          body_P_sensor_(body_P_sensor){
+                  boost::optional<Pose3> body_P_sensor = boost::none,
+                  size_t expectedNumberCameras = 10)
+      : body_P_sensor_(body_P_sensor), Fblocks(expectedNumberCameras) {
 
     if (!sharedNoiseModel)
       throw std::runtime_error("SmartFactorBase: sharedNoiseModel is required");
@@ -284,14 +281,12 @@ public:
       const Cameras& cameras, const Point3& point, const double lambda = 0.0,
       bool diagonalDamping = false) const {
 
-    std::vector<MatrixZD> Fblocks;
     Matrix E;
     Vector b;
     computeJacobians(Fblocks, E, b, cameras, point);
 
     // build augmented hessian
-    SymmetricBlockMatrix augmentedHessian = Cameras::SchurComplement(Fblocks, E,
-        b);
+    SymmetricBlockMatrix augmentedHessian = Cameras::SchurComplement(Fblocks, E, b);
 
     return boost::make_shared<RegularHessianFactor<Dim> >(keys_,
         augmentedHessian);
@@ -308,10 +303,8 @@ public:
       const FastVector<Key> allKeys) const {
     Matrix E;
     Vector b;
-    std::vector<MatrixZD> Fblocks;
     computeJacobians(Fblocks, E, b, cameras, point);
-    Cameras::UpdateSchurComplement(Fblocks, E, b, allKeys, keys_,
-        augmentedHessian);
+    Cameras::UpdateSchurComplement(Fblocks, E, b, allKeys, keys_, augmentedHessian);
   }
 
   /// Whiten the Jacobians computed by computeJacobians using noiseModel_

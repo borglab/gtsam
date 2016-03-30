@@ -70,19 +70,19 @@ public:
       (*H).middleCols(transInterval.first, tDim) = R.matrix();
     }
 
-    return newTrans.vector() - measured_.vector();
+    return traits<Translation>::Local(measured_, newTrans);
   }
 
   /** equals specialized to this factor */
   virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
     const This *e = dynamic_cast<const This*> (&expected);
-    return e != NULL && Base::equals(*e, tol) && measured_.equals(e->measured_, tol);
+    return e != NULL && Base::equals(*e, tol) && traits<Translation>::Equals(measured_, e->measured_, tol);
   }
 
   /** print contents */
   void print(const std::string& s="", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
     Base::print(s + "PoseTranslationPrior", keyFormatter);
-    measured_.print("Measured Translation");
+    traits<Translation>::Print(measured_, "Measured Translation");
   }
 
 private:

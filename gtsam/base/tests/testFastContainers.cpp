@@ -22,11 +22,11 @@ using namespace gtsam;
 /* ************************************************************************* */
 TEST( testFastContainers, KeySet ) {
 
-  FastVector<Key> init_vector;
+  KeyVector init_vector;
   init_vector += 2, 3, 4, 5;
 
-  FastSet<size_t> actSet(init_vector);
-  FastSet<size_t> expSet; expSet += 2, 3, 4, 5;
+  KeySet actSet(init_vector);
+  KeySet expSet; expSet += 2, 3, 4, 5;
   EXPECT(actSet == expSet);
 }
 

@@ -187,7 +187,7 @@ public:
       Vector GyroCorrected(Bias1.correctGyroscope(measurement_gyro_));
       body_omega_body = body_R_sensor * GyroCorrected;
       Matrix body_omega_body__cross = skewSymmetric(body_omega_body);
-      body_a_body = body_R_sensor * AccCorrected - body_omega_body__cross * body_omega_body__cross * body_P_sensor_->translation().vector();
+      body_a_body = body_R_sensor * AccCorrected - body_omega_body__cross * body_omega_body__cross * body_P_sensor_->translation();
     } else {
       body_a_body = AccCorrected;
     }

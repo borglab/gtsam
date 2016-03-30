@@ -46,7 +46,7 @@ public:
      * factors passed as \c newFactors update().  These indices may be
      * used later to refer to the factors in order to remove them.
      */
-    std::vector<size_t> newFactorsIndices;
+    FactorIndices newFactorsIndices;
 
     double error; ///< The final factor graph error
 
@@ -124,7 +124,7 @@ public:
    */
   Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(), const Values& newTheta = Values(),
       const boost::optional<FastList<Key> >& keysToMove = boost::none,
-      const boost::optional< std::vector<size_t> >& removeFactorIndices = boost::none);
+      const boost::optional< FactorIndices >& removeFactorIndices = boost::none);
 
   /**
    * Perform any required operations before the synchronization process starts.
@@ -170,7 +170,7 @@ protected:
 
   // ???
   NonlinearFactorGraph previousSmootherSummarization_; ///< The smoother summarization on the old separator sent by the smoother during the last synchronization
-  std::vector<size_t> currentSmootherSummarizationSlots_;  ///< The slots in factor graph that correspond to the current smoother summarization on the current separator
+  FactorIndices currentSmootherSummarizationSlots_;  ///< The slots in factor graph that correspond to the current smoother summarization on the current separator
   NonlinearFactorGraph smootherShortcut_; ///< A set of conditional factors from the old separator to the current separator (recursively calculated during each filter update)
 
   // Storage for information to be sent to the smoother
@@ -183,7 +183,7 @@ private:
   static void RecursiveMarkAffectedKeys(const Key& key, const ISAM2Clique::shared_ptr& clique, std::set<Key>& additionalKeys);
 
   /** Find the set of iSAM2 factors adjacent to 'keys' */
-  static std::vector<size_t> FindAdjacentFactors(const ISAM2& isam2, const FastList<Key>& keys, const std::vector<size_t>& factorsToIgnore);
+  static FactorIndices FindAdjacentFactors(const ISAM2& isam2, const FastList<Key>& keys, const FactorIndices& factorsToIgnore);
 
   /** Update the shortcut marginal between the current separator keys and the previous separator keys */
   // TODO: Make this a static function

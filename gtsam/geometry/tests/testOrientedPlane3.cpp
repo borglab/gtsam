@@ -139,6 +139,30 @@ TEST(OrientedPlane3, localCoordinates_retract) {
   }
 }
 
+//*******************************************************************************
+TEST (OrientedPlane3, error2) {
+  OrientedPlane3 plane1(-1, 0.1, 0.2, 5);
+  OrientedPlane3 plane2(-1.1, 0.2, 0.3, 5.4);
+
+  // Hard-coded regression values, to ensure the result doesn't change.
+  EXPECT(assert_equal(zero(3), plane1.errorVector(plane1), 1e-8));
+  EXPECT(assert_equal(Vector3(-0.0677674148, -0.0760543588, -0.4), plane1.errorVector(plane2), 1e-5));
+
+  // Test the jacobians of transform
+  Matrix33 actualH1, expectedH1, actualH2, expectedH2;
+
+  Vector3 actual = plane1.errorVector(plane2, actualH1, actualH2);
+  EXPECT(assert_equal(plane1.normal().errorVector(plane2.normal()), Vector2(actual[0], actual[1])));
+  EXPECT(assert_equal(plane1.distance() - plane2.distance(), actual[2]));
+
+  boost::function<Vector3(const OrientedPlane3&, const OrientedPlane3&)> f = //
+      boost::bind(&OrientedPlane3::errorVector, _1, _2, boost::none, boost::none);
+  expectedH1 = numericalDerivative21(f, plane1, plane2);
+  expectedH2 = numericalDerivative22(f, plane1, plane2);
+  EXPECT(assert_equal(expectedH1, actualH1, 1e-9));
+  EXPECT(assert_equal(expectedH2, actualH2, 1e-9));
+}
+
 /* ************************************************************************* */
 int main() {
   srand(time(NULL));

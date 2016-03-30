@@ -35,12 +35,12 @@ int main(int argc, char* argv[]) {
   // Build graph using conventional GeneralSFMFactor
   NonlinearFactorGraph graph;
   for (size_t j = 0; j < db.number_tracks(); j++) {
+    Point3_ nav_point_(P(j));
     BOOST_FOREACH (const SfM_Measurement& m, db.tracks[j].measurements) {
       size_t i = m.first;
       Point2 z = m.second;
       Pose3_ navTcam_(C(i));
       Cal3Bundler_ calibration_(K(i));
-      Point3_ nav_point_(P(j));
       graph.addExpressionFactor(
           gNoiseModel, z,
           uncalibrate(calibration_,

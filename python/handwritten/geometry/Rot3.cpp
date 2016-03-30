@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -37,8 +37,8 @@ static Rot3 Quaternion_1(double w, double x, double y, double z)
 
 // Prototypes used to perform overloading
 // See: http://www.boost.org/doc/libs/1_59_0/libs/python/doc/tutorial/doc/html/python/functions.html
-gtsam::Rot3  (*AxisAngle_0)(const Vector3&, double) = &Rot3::AxisAngle;
-gtsam::Rot3  (*AxisAngle_1)(const gtsam::Point3&, double) = &Rot3::AxisAngle;
+gtsam::Rot3  (*AxisAngle_0)(const gtsam::Point3&, double) = &Rot3::AxisAngle;
+gtsam::Rot3  (*AxisAngle_1)(const gtsam::Unit3&, double) = &Rot3::AxisAngle;
 gtsam::Rot3  (*Rodrigues_0)(const Vector3&) = &Rot3::Rodrigues;
 gtsam::Rot3  (*Rodrigues_1)(double, double, double) = &Rot3::Rodrigues;
 gtsam::Rot3  (*RzRyRx_0)(double, double, double) = &Rot3::RzRyRx;
@@ -58,9 +58,6 @@ void exportRot3(){
     .def("Quaternion", Quaternion_0, arg("q"), "Creates a Rot3 from an array [w,x,y,z] representing a quaternion")
     .def("Quaternion", Quaternion_1, (arg("w"),arg("x"),arg("y"),arg("z")) )
     .staticmethod("Quaternion")
-    .def("AxisAngle", AxisAngle_0)
-    .def("AxisAngle", AxisAngle_1)
-    .staticmethod("AxisAngle")
     .def("Expmap", &Rot3::Expmap)
     .staticmethod("Expmap")
     .def("ExpmapDerivative", &Rot3::ExpmapDerivative)
@@ -69,6 +66,9 @@ void exportRot3(){
     .staticmethod("Logmap")
     .def("LogmapDerivative", &Rot3::LogmapDerivative)
     .staticmethod("LogmapDerivative")
+    .def("AxisAngle", AxisAngle_0)
+    .def("AxisAngle", AxisAngle_1)
+    .staticmethod("AxisAngle")
     .def("Rodrigues", Rodrigues_0)
     .def("Rodrigues", Rodrigues_1)
     .staticmethod("Rodrigues")

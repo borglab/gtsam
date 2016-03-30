@@ -37,7 +37,7 @@ LabeledSymbol::LabeledSymbol(const LabeledSymbol& key)
 : c_(key.c_), label_(key.label_), j_(key.j_) {}
 
 /* ************************************************************************* */
-LabeledSymbol::LabeledSymbol(unsigned char c, unsigned char label, size_t j)
+LabeledSymbol::LabeledSymbol(unsigned char c, unsigned char label, std::uint64_t j)
 : c_(c), label_(label), j_(j) {}
 
 /* ************************************************************************* */

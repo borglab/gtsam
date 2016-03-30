@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -25,6 +25,7 @@
 #include <gtsam/config.h> // for GTSAM_USE_TBB
 
 #include <cstddef>
+#include <cstdint>
 
 #ifdef GTSAM_USE_TBB
 #include <tbb/task_scheduler_init.h>
@@ -53,7 +54,7 @@
 namespace gtsam {
 
   /// Integer nonlinear key type
-  typedef size_t Key;
+  typedef std::uint64_t Key;
 
   /// The index type for Eigen objects
   typedef ptrdiff_t DenseIndex;

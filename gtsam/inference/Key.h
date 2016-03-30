@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -11,7 +11,7 @@
 
 /**
  * @file Key.h
- * @brief 
+ * @brief
  * @author Richard Roberts
  * @date Feb 20, 2012
  */
@@ -78,14 +78,19 @@ GTSAM_EXPORT void PrintKeySet(const KeySet& keys, const std::string& s = "",
 
 // Define Key to be Testable by specializing gtsam::traits
 template<typename T> struct traits;
-template<> struct traits<Key> {
-  static void Print(const Key& key, const std::string& str = "") {
-    PrintKey(key, str);
+
+template <>
+struct traits<Key> {
+  static void Print(const Key& val, const std::string& str = "") {
+    PrintKey(val, str);
   }
-  static bool Equals(const Key& key1, const Key& key2, double tol = 1e-8) {
-    return key1 == key2;
+  static bool Equals(const Key& val1, const Key& val2, double tol = 1e-8) {
+    return val1 == val2;
   }
 };
 
 } // namespace gtsam
+
+
+
 

@@ -86,6 +86,8 @@ namespace gtsam {
   VectorValues GaussianBayesNet::backSubstitute(const VectorValues& rhs) const
   {
     VectorValues result;
+    // TODO this looks pretty sketchy. result is passed as the parents argument
+    //  as it's filled up by solving the gaussian conditionals.
     BOOST_REVERSE_FOREACH(const sharedConditional& cg, *this) {
       result.insert(cg->solveOtherRHS(result, rhs));
     }
@@ -138,17 +140,18 @@ namespace gtsam {
   //  return grad;
   //}
 
-  /* ************************************************************************* */  
-  pair<Matrix,Vector> GaussianBayesNet::matrix() const
-  {
+  /* ************************************************************************* */
+  pair<Matrix, Vector> GaussianBayesNet::matrix() const {
     GaussianFactorGraph factorGraph(*this);
     KeySet keys = factorGraph.keys();
     // add frontal keys in order
     Ordering ordering;
     BOOST_FOREACH (const sharedConditional& cg, *this)
-      BOOST_FOREACH (Key key, cg->frontals()) {
-        ordering.push_back(key);
-        keys.erase(key);
+      if (cg) {
+        BOOST_FOREACH (Key key, cg->frontals()) {
+          ordering.push_back(key);
+          keys.erase(key);
+        }
       }
     // add remaining keys in case Bayes net is incomplete
     BOOST_FOREACH (Key key, keys)
