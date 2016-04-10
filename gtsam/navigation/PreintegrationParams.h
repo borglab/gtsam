@@ -23,7 +23,7 @@ namespace gtsam {
 
 /// Parameters for pre-integration:
 /// Usage: Create just a single Params and pass a shared pointer to the constructor
-struct PreintegrationParams: PreintegratedRotation::Params {
+struct PreintegrationParams: PreintegratedRotationParams {
   Matrix3 accelerometerCovariance; ///< continuous-time "Covariance" of accelerometer
   Matrix3 integrationCovariance; ///< continuous-time "Covariance" describing integration uncertainty
   bool use2ndOrderCoriolis; ///< Whether to use second order Coriolis integration
@@ -50,6 +50,14 @@ struct PreintegrationParams: PreintegratedRotation::Params {
   void print(const std::string& s) const;
   bool equals(const PreintegratedRotation::Params& other, double tol) const;
 
+  void setAccelerometerCovariance(const Matrix3& cov) { accelerometerCovariance = cov; }
+  void setIntegrationCovariance(const Matrix3& cov)   { integrationCovariance = cov; }
+  void setUse2ndOrderCoriolis(bool flag)              { use2ndOrderCoriolis = flag; }
+
+  const Matrix3& getAccelerometerCovariance() const { return accelerometerCovariance; }
+  const Matrix3& getIntegrationCovariance()   const { return integrationCovariance; }
+  bool           getUse2ndOrderCoriolis()     const { return use2ndOrderCoriolis; }
+
 protected:
   /// Default constructor for serialization only: uninitialized!
   PreintegrationParams() {}
@@ -60,7 +68,7 @@ protected:
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     namespace bs = ::boost::serialization;
     ar & boost::serialization::make_nvp("PreintegratedRotation_Params",
-         boost::serialization::base_object<PreintegratedRotation::Params>(*this));
+         boost::serialization::base_object<PreintegratedRotationParams>(*this));
     ar & bs::make_nvp("accelerometerCovariance", bs::make_array(accelerometerCovariance.data(), accelerometerCovariance.size()));
     ar & bs::make_nvp("integrationCovariance", bs::make_array(integrationCovariance.data(), integrationCovariance.size()));
     ar & BOOST_SERIALIZATION_NVP(use2ndOrderCoriolis);

@@ -26,6 +26,38 @@
 
 namespace gtsam {
 
+/// Parameters for pre-integration:
+/// Usage: Create just a single Params and pass a shared pointer to the constructor
+struct PreintegratedRotationParams {
+  Matrix3 gyroscopeCovariance;  ///< continuous-time "Covariance" of gyroscope measurements
+  boost::optional<Vector3> omegaCoriolis;  ///< Coriolis constant
+  boost::optional<Pose3> body_P_sensor;    ///< The pose of the sensor in the body frame
+
+  PreintegratedRotationParams() : gyroscopeCovariance(I_3x3) {}
+
+  virtual void print(const std::string& s) const;
+  virtual bool equals(const PreintegratedRotationParams& other, double tol=1e-9) const;
+
+  void setGyroscopeCovariance(const Matrix3& cov)   { gyroscopeCovariance = cov;  }
+  void setOmegaCoriolis(const Vector3& omega)       { omegaCoriolis.reset(omega); }
+  void setBodyPSensor(const Pose3& pose)            { body_P_sensor.reset(pose);  }
+
+  const Matrix3& getGyroscopeCovariance()     const { return gyroscopeCovariance; }
+  boost::optional<Vector3> getOmegaCoriolis() const { return omegaCoriolis; }
+  boost::optional<Pose3>   getBodyPSensor()   const { return body_P_sensor; }
+
+ private:
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+    namespace bs = ::boost::serialization;
+    ar & bs::make_nvp("gyroscopeCovariance", bs::make_array(gyroscopeCovariance.data(), gyroscopeCovariance.size()));
+    ar & BOOST_SERIALIZATION_NVP(omegaCoriolis);
+    ar & BOOST_SERIALIZATION_NVP(body_P_sensor);
+  }
+};
+
 /**
  * PreintegratedRotation is the base class for all PreintegratedMeasurements
  * classes (in AHRSFactor, ImuFactor, and CombinedImuFactor).
@@ -33,29 +65,7 @@ namespace gtsam {
  */
 class PreintegratedRotation {
  public:
-  /// Parameters for pre-integration:
-  /// Usage: Create just a single Params and pass a shared pointer to the constructor
-  struct Params {
-    Matrix3 gyroscopeCovariance;  ///< continuous-time "Covariance" of gyroscope measurements
-    boost::optional<Vector3> omegaCoriolis;  ///< Coriolis constant
-    boost::optional<Pose3> body_P_sensor;    ///< The pose of the sensor in the body frame
-
-    Params() : gyroscopeCovariance(I_3x3) {}
-
-    virtual void print(const std::string& s) const;
-    virtual bool equals(const Params& other, double tol=1e-9) const;
-
-   private:
-    /** Serialization function */
-    friend class boost::serialization::access;
-    template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-      namespace bs = ::boost::serialization;
-      ar & bs::make_nvp("gyroscopeCovariance", bs::make_array(gyroscopeCovariance.data(), gyroscopeCovariance.size()));
-      ar & BOOST_SERIALIZATION_NVP(omegaCoriolis);
-      ar & BOOST_SERIALIZATION_NVP(body_P_sensor);
-    }
-  };
+  typedef PreintegratedRotationParams Params;
 
  protected:
   /// Parameters

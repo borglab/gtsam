@@ -2489,10 +2489,30 @@ class NavState {
   gtsam::Pose3 pose() const;
 };
 
+#include <gtsam/navigation/PreintegratedRotation.h>
+virtual class PreintegratedRotationParams {
+  PreintegratedRotationParams();
+  void setGyroscopeCovariance(Matrix cov);
+  void setOmegaCoriolis(Vector omega);
+  void setBodyPSensor(const gtsam::Pose3& pose);
+
+  Matrix getGyroscopeCovariance() const;
+
+  // TODO(frank): allow optional
+  //  boost::optional<Vector3> getOmegaCoriolis() const;
+  //  boost::optional<Pose3>   getBodyPSensor()   const;
+};
+
 #include <gtsam/navigation/PreintegrationParams.h>
-class PreintegrationParams {
+virtual class PreintegrationParams : gtsam::PreintegratedRotationParams {
   PreintegrationParams(Vector n_gravity);
-  // TODO(frank): add setters/getters or make this MATLAB wrapper feature
+  void setAccelerometerCovariance(Matrix cov);
+  void setIntegrationCovariance(Matrix cov);
+  void setUse2ndOrderCoriolis(bool flag);
+
+  Matrix getAccelerometerCovariance() const;
+  Matrix getIntegrationCovariance()   const;
+  bool   getUse2ndOrderCoriolis()     const;
 };
 
 #include <gtsam/navigation/PreintegrationBase.h>
