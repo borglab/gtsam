@@ -31,6 +31,12 @@ IMU_metadata.AccelerometerBiasSigma = 1e-6;
 IMU_metadata.GyroscopeBiasSigma = 1e-6;
 IMU_metadata.IntegrationSigma = 1e-1;
 
+n_gravity = [0;0;-9.8];
+IMU_params = PreintegrationParams(n_gravity);
+IMU_params.setAccelerometerCovariance(IMU_metadata.AccelerometerSigma.^2 * eye(3));
+IMU_params.setGyroscopeCovariance(IMU_metadata.GyroscopeSigma.^2 * eye(3));
+IMU_params.setIntegrationCovariance(IMU_metadata.IntegrationSigma.^2 * eye(3));
+
 transformKey = 1000;
 calibrationKey = 2000;
 
@@ -52,7 +58,7 @@ K = Cal3_S2(20,1280,960);
 % initialize K incorrectly
 K_corrupt = Cal3_S2(K.fx()+10,K.fy()+10,0,K.px(),K.py());
 
-isamParams = gtsam.ISAM2Params;
+isamParams = ISAM2Params;
 isamParams.setFactorization('QR');
 isam = ISAM2(isamParams);
 
@@ -63,7 +69,6 @@ currentBias = imuBias.ConstantBias(zeros(3,1), zeros(3,1));
 sigma_init_v = noiseModel.Isotropic.Sigma(3, 1.0);
 sigma_init_b = noiseModel.Isotropic.Sigmas([ 0.100; 0.100; 0.100; 5.00e-05; 5.00e-05; 5.00e-05 ]);
 sigma_between_b = [ IMU_metadata.AccelerometerBiasSigma * ones(3,1); IMU_metadata.GyroscopeBiasSigma * ones(3,1) ];
-g = [0;0;-9.8];
 w_coriolis = [0;0;0];
 
 %% generate trajectory and landmarks
@@ -181,12 +186,14 @@ for i=1:size(trajectory)-1
                 zKey = measurementKeys.at(zz);
                 lKey = symbol('l',symbolIndex(zKey));
 
-                fg.add(TransformCalProjectionFactorCal3_S2(measurements.atPoint2(zKey), ...
+                fg.add(ProjectionFactorPPPCCal3_S2(measurements.atPoint2(zKey), ...
                     z_cov, xKey, transformKey, lKey, calibrationKey, false, true));
 
                 % only add landmark to values if doesn't exist yet
                 if ~result.exists(lKey)
-                    noisy_landmark = landmarks.atPoint3(lKey).compose(Point3(normrnd(0,landmark_noise,3,1)));
+                    p = landmarks.atPoint3(lKey);
+                    n = normrnd(0,landmark_noise,3,1);
+                    noisy_landmark = Point3(p.x()+n(1),p.y()+n(2),p.z()+n(3));
                     initial.insert(lKey, noisy_landmark);
 
                     % and add a prior since its position is known
@@ -211,11 +218,9 @@ for i=1:size(trajectory)-1
 %         [ currentIMUPoseGlobal, currentVelocityGlobal ] = imuSimulator.integrateTrajectory( ...
 %     currentIMUPoseGlobal, omega, velocity, velocity, deltaT);
 
-        currentSummarizedMeasurement = gtsam.ImuFactorPreintegratedMeasurements( ...
-        currentBias, IMU_metadata.AccelerometerSigma.^2 * eye(3), ...
-        IMU_metadata.GyroscopeSigma.^2 * eye(3), IMU_metadata.IntegrationSigma.^2 * eye(3));
+        currentSummarizedMeasurement = PreintegratedImuMeasurements(IMU_params,currentBias);
     
-        accMeas = acc_omega(1:3)-g;
+        accMeas = acc_omega(1:3)-n_gravity;
         omegaMeas = acc_omega(4:6);
         currentSummarizedMeasurement.integrateMeasurement(accMeas, omegaMeas, deltaT);
 
@@ -223,7 +228,7 @@ for i=1:size(trajectory)-1
         fg.add(ImuFactor( ...
         xKey_prev, currentVelKey-1, ...
         xKey, currentVelKey, ...
-        currentBiasKey, currentSummarizedMeasurement, g, w_coriolis));
+        currentBiasKey, currentSummarizedMeasurement));
     
         % Bias evolution as given in the IMU metadata
         fg.add(BetweenFactorConstantBias(currentBiasKey-1, currentBiasKey, imuBias.ConstantBias(zeros(3,1), zeros(3,1)), ...
