@@ -1,3 +1,7 @@
+% Simulation for concurrent IMU, camera, IMU-camera transform estimation during flight with known landmarks
+% author: Chris Beall
+% date: July 2014
+
 clear all;
 clf;
 
@@ -24,7 +28,7 @@ if(write_video)
     open(videoObj);
 end
 
-% IMU parameters
+%% IMU parameters
 IMU_metadata.AccelerometerSigma = 1e-2;    
 IMU_metadata.GyroscopeSigma = 1e-2;
 IMU_metadata.AccelerometerBiasSigma = 1e-6;
@@ -104,7 +108,9 @@ zlabel('z');
 title('Estimated vs. actual IMU-cam transform');
 axis equal;
 
+%% Main loop
 for i=1:size(trajectory)-1
+    %% Preliminaries
     xKey = symbol('x',i);
     pose = trajectory.atPose3(xKey);     % GT pose
     pose_t = pose.translation();    % GT pose-translation
@@ -139,6 +145,7 @@ for i=1:size(trajectory)-1
     gps_pose = pose.retract([0; 0; 0; normrnd(0,gps_noise,3,1)]);
     fg.add(PoseTranslationPrior3D(xKey, gps_pose, GPS_trans_cov));
     
+    %% First-time initialization
     if i==1
         % camera transform
         if use_camera_transform_noise
@@ -158,12 +165,10 @@ for i=1:size(trajectory)-1
         result = initial;
     end
     
-    % priors on first two poses
+    %% priors on first two poses
     if i < 3        
-%         fg.add(PriorFactorLieVector(currentVelKey, currentVelocityGlobal, sigma_init_v));
+        % fg.add(PriorFactorLieVector(currentVelKey, currentVelocityGlobal, sigma_init_v));
         fg.add(PriorFactorConstantBias(currentBiasKey, currentBias, sigma_init_b));
-        
-        
     end
    
     %% the 'normal' case
@@ -202,13 +207,11 @@ for i=1:size(trajectory)-1
             end
         end % end landmark observations 
         
-
         %% IMU
         deltaT = 1;
         logmap = Pose3.Logmap(step);
         omega = logmap(1:3);
         velocity = logmap(4:6);
-       
        
         % Simulate IMU measurements, considering Coriolis effect 
         % (in this simple example we neglect gravity and there are no other forces acting on the body)
@@ -234,7 +237,7 @@ for i=1:size(trajectory)-1
         fg.add(BetweenFactorConstantBias(currentBiasKey-1, currentBiasKey, imuBias.ConstantBias(zeros(3,1), zeros(3,1)), ...
         noiseModel.Diagonal.Sigmas(sqrt(10) * sigma_between_b)));
     
-        % ISAM update
+        %% ISAM update
         isam.update(fg, initial);
         result = isam.calculateEstimate();
         
@@ -300,10 +303,8 @@ for i=1:size(trajectory)-1
     
 end
 
-% print out final camera transform
+%% print out final camera transform and write video
 result.at(transformKey);
-
-
 if(write_video)
     close(videoObj);
 end
