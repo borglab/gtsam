@@ -212,48 +212,6 @@ TEST(Matrix, column )
 }
 
 /* ************************************************************************* */
-TEST(Matrix, insert_column )
-{
-  Matrix big = Matrix::Zero(5,6);
-  Vector col = ones(5);
-  size_t j = 3;
-
-  big.col(j) = col;
-
-  Matrix expected = (Matrix(5, 6) <<
-      0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
-      0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
-      0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
-      0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
-      0.0, 0.0, 0.0, 1.0, 0.0, 0.0).finished();
-
-  EXPECT(assert_equal(expected, big));
-}
-
-/* ************************************************************************* */
-TEST(Matrix, insert_subcolumn )
-{
-  Matrix big = Matrix::Zero(5,6);
-  Vector col1 = ones(2);
-  size_t i = 1;
-  size_t j = 3;
-
-  big.col(j).segment(i,col1.size()) = col1;
-
-  Vector col2 = ones(1);
-  big.col(5).segment(4,col2.size()) = col2;
-
-  Matrix expected = (Matrix(5, 6) <<
-      0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-      0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
-      0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
-      0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-      0.0, 0.0, 0.0, 0.0, 0.0, 1.0).finished();
-
-  EXPECT(assert_equal(expected, big));
-}
-
-/* ************************************************************************* */
 TEST(Matrix, row )
 {
   Matrix A = (Matrix(4, 7) << -1., 0., 1., 0., 0., 0., -0.2, 0., -1., 0., 1.,
@@ -270,22 +228,6 @@ TEST(Matrix, row )
   Vector a3 = row(A, 3);
   Vector exp3 = (Vector(7) << 0., 1., 0., 0., 0., -1., -0.1).finished();
   EXPECT(assert_equal(a3, exp3));
-}
-
-/* ************************************************************************* */
-TEST(Matrix, zeros )
-{
-  Matrix A(2, 3);
-  A(0, 0) = 0;
-  A(0, 1) = 0;
-  A(0, 2) = 0;
-  A(1, 0) = 0;
-  A(1, 1) = 0;
-  A(1, 2) = 0;
-
-  Matrix zero = Matrix::Zero(2,3);
-
-  EQUALITY(A , zero);
 }
 
 /* ************************************************************************* */
@@ -1050,26 +992,6 @@ TEST(Matrix, RtR )
 TEST(Matrix, cholesky_inverse )
 {
   EQUALITY(cholesky::M.inverse(), cholesky_inverse(cholesky::M));
-}
-
-/* ************************************************************************* */
-TEST(Matrix, multiplyAdd )
-{
-  Matrix A = (Matrix(3, 4) << 4., 0., 0., 1., 0., 4., 0., 2., 0., 0., 1., 3.).finished();
-  Vector x = (Vector(4) << 1., 2., 3., 4.).finished(), e = Vector3(5., 6., 7.),
-      expected = e + A * x;
-  e += A * x;
-  EXPECT(assert_equal(expected, e));
-}
-
-/* ************************************************************************* */
-TEST(Matrix, transposeMultiplyAdd )
-{
-  Matrix A = (Matrix(3, 4) << 4., 0., 0., 1., 0., 4., 0., 2., 0., 0., 1., 3.).finished();
-  Vector x = (Vector(4) << 1., 2., 3., 4.).finished(), e = Vector3(5., 6., 7.),
-      expected = x + trans(A) * e;
-  x += A.transpose() * e;
-  EXPECT(assert_equal(expected, x));
 }
 
 /* ************************************************************************* */
