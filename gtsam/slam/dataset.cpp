@@ -472,7 +472,7 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
           << p.x() << " "  << p.y() << " " << p.z()  << " " << R.toQuaternion().x()
           << " " << R.toQuaternion().y() << " " << R.toQuaternion().z()  << " " << R.toQuaternion().w();
 
-      Matrix InfoG2o = eye(6);
+      Matrix InfoG2o = Matrix::Identity(6,6);
       InfoG2o.block(0,0,3,3) = Info.block(3,3,3,3); // cov translation
       InfoG2o.block(3,3,3,3) = Info.block(0,0,3,3); // cov rotation
       InfoG2o.block(0,3,3,3) = Info.block(0,3,3,3); // off diagonal
@@ -539,7 +539,7 @@ GraphAndValues load3D(const string& filename) {
       ls >> id1 >> id2 >> x >> y >> z >> roll >> pitch >> yaw;
       Rot3 R = Rot3::Ypr(yaw,pitch,roll);
       Point3 t = Point3(x, y, z);
-      Matrix m = eye(6);
+      Matrix m = Matrix::Identity(6,6);
       for (int i = 0; i < 6; i++)
         for (int j = i; j < 6; j++)
           ls >> m(i, j);
@@ -549,7 +549,7 @@ GraphAndValues load3D(const string& filename) {
       graph->push_back(factor);
     }
     if (tag == "EDGE_SE3:QUAT") {
-      Matrix m = eye(6);
+      Matrix m = Matrix::Identity(6,6);
       Key id1, id2;
       double x, y, z, qx, qy, qz, qw;
       ls >> id1 >> id2 >> x >> y >> z >> qx >> qy >> qz >> qw;
@@ -563,7 +563,7 @@ GraphAndValues load3D(const string& filename) {
           m(j, i) = mij;
         }
       }
-      Matrix mgtsam = eye(6);
+      Matrix mgtsam = Matrix::Identity(6,6);
       mgtsam.block(0,0,3,3) = m.block(3,3,3,3); // cov rotation
       mgtsam.block(3,3,3,3) = m.block(0,0,3,3); // cov translation
       mgtsam.block(0,3,3,3) = m.block(0,3,3,3); // off diagonal

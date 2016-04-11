@@ -341,7 +341,7 @@ namespace gtsam {
        * Return R itself, but note that Whiten(H) is cheaper than R*H
        */
       virtual Matrix R() const {
-        return diag(invsigmas());
+        return invsigmas().asDiagonal();
       }
 
     private:

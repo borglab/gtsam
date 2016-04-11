@@ -32,7 +32,7 @@ namespace gtsam {
 namespace InitializePose3 {
 
 //static const Matrix I = eye(1);
-static const Matrix I9 = eye(9);
+static const Matrix I9 = Matrix::Identity(9,9);
 static const Vector zero9 = Vector::Zero(9);
 static const Matrix zero33= Matrix::Zero(3,3);
 

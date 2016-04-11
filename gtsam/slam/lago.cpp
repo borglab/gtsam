@@ -30,8 +30,8 @@ using namespace std;
 namespace gtsam {
 namespace lago {
 
-static const Matrix I = eye(1);
-static const Matrix I3 = eye(3);
+static const Matrix I = Matrix::Identity(1,1);
+static const Matrix I3 = Matrix::Identity(3,3);
 
 static const Key keyAnchor = symbol('Z', 9999999);
 static const noiseModel::Diagonal::shared_ptr priorOrientationNoise =

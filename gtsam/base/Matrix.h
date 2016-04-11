@@ -33,7 +33,6 @@
 #include <boost/tuple/tuple.hpp>
 #include <boost/math/special_functions/fpclassify.hpp>
 
-
 /**
  * Matrix is a typedef in the gtsam namespace
  * TODO: make a version to work with matlab wrapping
@@ -73,38 +72,6 @@ GTSAM_MAKE_MATRIX_DEFS(9);
 // Matrix expressions for accessing parts of matrices
 typedef Eigen::Block<Matrix> SubMatrix;
 typedef Eigen::Block<const Matrix> ConstSubMatrix;
-
-// Matlab-like syntax
-
-/**
- * Creates an zeros matrix, with matlab-like syntax
- *
- * Note: if assigning a block (created from an Eigen block() function) of a matrix to zeros,
- * don't use this function, instead use ".setZero(m,n)" to avoid an Eigen error.
- */
-GTSAM_EXPORT Matrix zeros(size_t m, size_t n);
-
-/**
- * Creates an ones matrix, with matlab-like syntax
- */
-GTSAM_EXPORT Matrix ones(size_t m, size_t n);
-
-/**
- * Creates an identity matrix, with matlab-like syntax
- *
- * Note: if assigning a block (created from an Eigen block() function) of a matrix to identity,
- * don't use this function, instead use ".setIdentity(m,n)" to avoid an Eigen error.
- */
-GTSAM_EXPORT Matrix eye(size_t m, size_t n);
-
-/**
- * Creates a square identity matrix, with matlab-like syntax
- *
- * Note: if assigning a block (created from an Eigen block() function) of a matrix to identity,
- * don't use this function, instead use ".setIdentity(m)" to avoid an Eigen error.
- */
-inline Matrix eye( size_t m ) { return eye(m,m); }
-GTSAM_EXPORT Matrix diag(const Vector& v);
 
 /**
  * equals with an tolerance
@@ -291,8 +258,6 @@ const typename MATRIX::ConstRowXpr row(const MATRIX& A, size_t j) {
  */
 GTSAM_EXPORT void insertColumn(Matrix& A, const Vector& col, size_t j);
 GTSAM_EXPORT void insertColumn(Matrix& A, const Vector& col, size_t i, size_t j);
-
-GTSAM_EXPORT Vector columnNormSquare(const Matrix &A);
 
 /**
  * Zeros all of the elements below the diagonal of a matrix, in place
@@ -492,12 +457,6 @@ inline Matrix3 skewSymmetric(const Eigen::MatrixBase<Derived>& w) {
 /** Use Cholesky to calculate inverse square root of a matrix */
 GTSAM_EXPORT Matrix inverse_square_root(const Matrix& A);
 
-/** Calculate the LL^t decomposition of a S.P.D matrix */
-GTSAM_EXPORT Matrix LLt(const Matrix& A);
-
-/** Calculate the R^tR decomposition of a S.P.D matrix */
-GTSAM_EXPORT Matrix RtR(const Matrix& A);
-
 /** Return the inverse of a S.P.D. matrix.  Inversion is done via Cholesky decomposition. */
 GTSAM_EXPORT Matrix cholesky_inverse(const Matrix &A);
 
@@ -603,6 +562,28 @@ struct MultiplyWithInverseFunction {
   const Operator phi_;
 };
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+inline Matrix zeros( size_t m, size_t n ) { return Matrix::Zero(m,n); }
+inline Matrix ones( size_t m, size_t n ) { return Matrix::Ones(m,n); }
+inline Matrix eye( size_t m, size_t n) { return Matrix::Identity(m, n); }
+inline Matrix eye( size_t m ) { return eye(m,m); }
+inline Matrix diag(const Vector& v) { return v.asDiagonal(); }
+inline void multiplyAdd(double alpha, const Matrix& A, const Vector& x, Vector& e) { e += alpha * A * x; }
+inline void multiplyAdd(const Matrix& A, const Vector& x, Vector& e) { e += A * x; }
+inline void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, Vector& x) { x += alpha * A.transpose() * e; }
+inline void transposeMultiplyAdd(const Matrix& A, const Vector& e, Vector& x) { x += A.transpose() * e; }
+inline void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, SubVector x) { x += alpha * A.transpose() * e; }
+inline void insertColumn(Matrix& A, const Vector& col, size_t j) { A.col(j) = col; }
+inline void insertColumn(Matrix& A, const Vector& col, size_t i, size_t j) { A.col(j).segment(i, col.size()) = col; }
+inline void solve(Matrix& A, Matrix& B) { B = A.fullPivLu().solve(B); }
+inline Matrix inverse(const Matrix& A) { return A.inverse(); }
+#endif
+
+GTSAM_EXPORT Matrix LLt(const Matrix& A);
+
+GTSAM_EXPORT Matrix RtR(const Matrix& A);
+
+GTSAM_EXPORT Vector columnNormSquare(const Matrix &A);
 } // namespace gtsam
 
 #include <boost/serialization/nvp.hpp>
