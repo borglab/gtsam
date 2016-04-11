@@ -17,7 +17,7 @@
  *  @date December 2014
  */
 
-#include <gtsam_unstable/nonlinear/ExpressionFactor.h>
+#include <gtsam/nonlinear/ExpressionFactor.h>
 #include <gtsam_unstable/geometry/Event.h>
 
 namespace gtsam {
@@ -25,7 +25,7 @@ namespace gtsam {
 /// A "Time of Arrival" factor - so little code seems hardly worth it :-)
 class TOAFactor: public ExpressionFactor<double> {
 
-  typedef Expression<double> double_;
+  typedef Expression<double> Double_;
 
 public:
 
@@ -40,7 +40,7 @@ public:
       const Expression<Point3>& microphone_, double toaMeasurement,
       const SharedNoiseModel& model) :
       ExpressionFactor<double>(model, toaMeasurement,
-          double_(&Event::toa, eventExpression, microphone_)) {
+          Double_(&Event::toa, eventExpression, microphone_)) {
   }
 
 };
