@@ -723,9 +723,8 @@ TEST( Pose3, adjointMap) {
   Matrix res = Pose3::adjointMap(screwPose3::xi);
   Matrix wh = skewSymmetric(screwPose3::xi(0), screwPose3::xi(1), screwPose3::xi(2));
   Matrix vh = skewSymmetric(screwPose3::xi(3), screwPose3::xi(4), screwPose3::xi(5));
-  Matrix Z3 = Z_3x3;
   Matrix6 expected;
-  expected << wh, Z3, vh, wh;
+  expected << wh, Z_3x3, vh, wh;
   EXPECT(assert_equal(expected,res,1e-5));
 }
 
