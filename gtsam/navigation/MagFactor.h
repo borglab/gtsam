@@ -154,7 +154,7 @@ public:
     // measured bM = nRb� * nM + b, where b is unknown bias
     Point3 hx = bRn_.rotate(nM, boost::none, H1) + bias;
     if (H2)
-      *H2 = eye(3);
+      *H2 = I_3x3;
     return (hx - measured_);
   }
 };
@@ -205,7 +205,7 @@ public:
       *H2 = scale * H * (*H2);
     }
     if (H3)
-      *H3 = eye(3);
+      *H3 = I_3x3;
     return (hx - measured_);
   }
 };

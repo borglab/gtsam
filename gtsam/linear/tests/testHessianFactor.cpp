@@ -54,7 +54,7 @@ TEST(HessianFactor, emptyConstructor)
   HessianFactor f;
   DOUBLES_EQUAL(0.0, f.constantTerm(), 1e-9);        // Constant term should be zero
   EXPECT(assert_equal(Vector(), f.linearTerm()));    // Linear term should be empty
-  EXPECT(assert_equal(zeros(1,1), f.info()));        // Full matrix should be 1-by-1 zero matrix
+  EXPECT(assert_equal((Matrix) Z_1x1, f.info()));        // Full matrix should be 1-by-1 zero matrix
   DOUBLES_EQUAL(0.0, f.error(VectorValues()), 1e-9); // Should have zero error
 }
 
@@ -123,11 +123,11 @@ TEST(HessianFactor, Constructor1)
 TEST(HessianFactor, Constructor1b)
 {
   Vector mu = Vector2(1.0,2.0);
-  Matrix Sigma = eye(2,2);
+  Matrix Sigma = I_2x2;
 
   HessianFactor factor(0, mu, Sigma);
 
-  Matrix G = eye(2,2);
+  Matrix G = I_2x2;
   Vector g = G*mu;
   double f = dot(g,mu);
 

@@ -269,11 +269,11 @@ Rot3 composeThree(const Rot3& R1, const Rot3& R2, const Rot3& R3, OptionalJacobi
                   OptionalJacobian<3, 3> H2, OptionalJacobian<3, 3> H3) {
   // return dummy derivatives (not correct, but that's ok for testing here)
   if (H1)
-    *H1 = eye(3);
+    *H1 = I_3x3;
   if (H2)
-    *H2 = eye(3);
+    *H2 = I_3x3;
   if (H3)
-    *H3 = eye(3);
+    *H3 = I_3x3;
   return R1 * (R2 * R3);
 }
 

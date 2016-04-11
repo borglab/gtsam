@@ -141,7 +141,7 @@ public:
       if (H)
         // set Jacobians to zero for n<3
         for (size_t j = 0; j < n; j++)
-          (*H)[j] = zeros(3, 1);
+          (*H)[j] = Matrix::Zero(3, 1);
       return zero(1);
     } else {
       Vector error = zero(1);

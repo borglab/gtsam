@@ -42,7 +42,7 @@ OrientedPlane3 OrientedPlane3::transform(const Pose3& xr, OptionalJacobian<3, 3>
   double pred_d = n_.unitVector().dot(xr.translation()) + d_;
 
   if (Hr) {
-    *Hr = Matrix::Zero(3, 6);
+    *Hr = Matrix::Zero(3,6);
     Hr->block<2, 3>(0, 0) = D_rotated_plane;
     Hr->block<1, 3>(2, 3) = unit_vec;
   }

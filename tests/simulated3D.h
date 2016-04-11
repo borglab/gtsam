@@ -39,7 +39,7 @@ namespace simulated3D {
  * Prior on a single pose
  */
 Point3 prior(const Point3& x, boost::optional<Matrix&> H = boost::none) {
-  if (H) *H = eye(3);
+  if (H) *H = I_3x3;
   return x;
 }
 
@@ -49,8 +49,8 @@ Point3 prior(const Point3& x, boost::optional<Matrix&> H = boost::none) {
 Point3 odo(const Point3& x1, const Point3& x2,
     boost::optional<Matrix&> H1 = boost::none,
     boost::optional<Matrix&> H2 = boost::none) {
-  if (H1) *H1 = -1 * eye(3);
-  if (H2) *H2 = eye(3);
+  if (H1) *H1 = -1 * I_3x3;
+  if (H2) *H2 = I_3x3;
   return x2 - x1;
 }
 
@@ -60,8 +60,8 @@ Point3 odo(const Point3& x1, const Point3& x2,
 Point3 mea(const Point3& x, const Point3& l,
     boost::optional<Matrix&> H1 = boost::none,
     boost::optional<Matrix&> H2 = boost::none) {
-  if (H1) *H1 = -1 * eye(3);
-  if (H2) *H2 = eye(3);
+  if (H1) *H1 = -1 * I_3x3;
+  if (H2) *H2 = I_3x3;
   return l - x;
 }
 

@@ -29,7 +29,7 @@ options.showImages = false;
 measurementNoiseSigma = 1.0;
 pointNoiseSigma = 0.1;
 cameraNoiseSigmas = [0.001 0.001 0.001 0.1 0.1 0.1 ...
-                     0.001*ones(1,5)]';
+                     0.001*Matrix::Ones(1,5)]';
 
 %% Create the graph (defined in visualSLAM.h, derived from NonlinearFactorGraph)
 graph = NonlinearFactorGraph;

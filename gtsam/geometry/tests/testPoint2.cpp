@@ -73,12 +73,12 @@ TEST(Point2, Lie) {
   Matrix H1, H2;
 
   EXPECT(assert_equal(Point2(5,7), traits<Point2>::Compose(p1, p2, H1, H2)));
-  EXPECT(assert_equal(eye(2), H1));
-  EXPECT(assert_equal(eye(2), H2));
+  EXPECT(assert_equal(I_2x2, H1));
+  EXPECT(assert_equal(I_2x2, H2));
 
   EXPECT(assert_equal(Point2(3,3), traits<Point2>::Between(p1, p2, H1, H2)));
-  EXPECT(assert_equal(-eye(2), H1));
-  EXPECT(assert_equal(eye(2), H2));
+  EXPECT(assert_equal(-I_2x2, H1));
+  EXPECT(assert_equal(I_2x2, H2));
 
   EXPECT(assert_equal(Point2(5,7), traits<Point2>::Retract(p1, Vector2(4., 5.))));
   EXPECT(assert_equal(Vector2(3.,3.), traits<Point2>::Local(p1,p2)));

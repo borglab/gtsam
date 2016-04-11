@@ -140,7 +140,7 @@ typedef Eigen::Matrix<double,9,3> Matrix93;
 Vector9 wide(const Point3& p, OptionalJacobian<9,3> H) {
   Vector9 v;
   v << p, p, p;
-  if (H) *H << eye(3), eye(3), eye(3);
+  if (H) *H << I_3x3, I_3x3, I_3x3;
   return v;
 }
 typedef Eigen::Matrix<double,9,9> Matrix9;
@@ -334,11 +334,11 @@ TEST(ExpressionFactor, Compose1) {
   // Check unwhitenedError
   std::vector<Matrix> H(2);
   Vector actual = f.unwhitenedError(values, H);
-  EXPECT( assert_equal(eye(3), H[0],1e-9));
-  EXPECT( assert_equal(eye(3), H[1],1e-9));
+  EXPECT( assert_equal(I_3x3, H[0],1e-9));
+  EXPECT( assert_equal(I_3x3, H[1],1e-9));
 
   // Check linearization
-  JacobianFactor expected(1, eye(3), 2, eye(3), zero(3));
+  JacobianFactor expected(1, I_3x3, 2, I_3x3, zero(3));
   boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
   boost::shared_ptr<JacobianFactor> jf = //
       boost::dynamic_pointer_cast<JacobianFactor>(gf);
@@ -364,10 +364,10 @@ TEST(ExpressionFactor, compose2) {
   std::vector<Matrix> H(1);
   Vector actual = f.unwhitenedError(values, H);
   EXPECT_LONGS_EQUAL(1, H.size());
-  EXPECT( assert_equal(2*eye(3), H[0],1e-9));
+  EXPECT( assert_equal(2*I_3x3, H[0],1e-9));
 
   // Check linearization
-  JacobianFactor expected(1, 2 * eye(3), zero(3));
+  JacobianFactor expected(1, 2 * I_3x3, zero(3));
   boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
   boost::shared_ptr<JacobianFactor> jf = //
       boost::dynamic_pointer_cast<JacobianFactor>(gf);
@@ -393,10 +393,10 @@ TEST(ExpressionFactor, compose3) {
   std::vector<Matrix> H(1);
   Vector actual = f.unwhitenedError(values, H);
   EXPECT_LONGS_EQUAL(1, H.size());
-  EXPECT( assert_equal(eye(3), H[0],1e-9));
+  EXPECT( assert_equal(I_3x3, H[0],1e-9));
 
   // Check linearization
-  JacobianFactor expected(3, eye(3), zero(3));
+  JacobianFactor expected(3, I_3x3, zero(3));
   boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
   boost::shared_ptr<JacobianFactor> jf = //
       boost::dynamic_pointer_cast<JacobianFactor>(gf);
@@ -409,11 +409,11 @@ Rot3 composeThree(const Rot3& R1, const Rot3& R2, const Rot3& R3,
     OptionalJacobian<3, 3> H1, OptionalJacobian<3, 3> H2, OptionalJacobian<3, 3> H3) {
   // return dummy derivatives (not correct, but that's ok for testing here)
   if (H1)
-    *H1 = eye(3);
+    *H1 = I_3x3;
   if (H2)
-    *H2 = eye(3);
+    *H2 = I_3x3;
   if (H3)
-    *H3 = eye(3);
+    *H3 = I_3x3;
   return R1 * (R2 * R3);
 }
 
@@ -436,12 +436,12 @@ TEST(ExpressionFactor, composeTernary) {
   std::vector<Matrix> H(3);
   Vector actual = f.unwhitenedError(values, H);
   EXPECT_LONGS_EQUAL(3, H.size());
-  EXPECT( assert_equal(eye(3), H[0],1e-9));
-  EXPECT( assert_equal(eye(3), H[1],1e-9));
-  EXPECT( assert_equal(eye(3), H[2],1e-9));
+  EXPECT( assert_equal(I_3x3, H[0],1e-9));
+  EXPECT( assert_equal(I_3x3, H[1],1e-9));
+  EXPECT( assert_equal(I_3x3, H[2],1e-9));
 
   // Check linearization
-  JacobianFactor expected(1, eye(3), 2, eye(3), 3, eye(3), zero(3));
+  JacobianFactor expected(1, I_3x3, 2, I_3x3, 3, I_3x3, zero(3));
   boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
   boost::shared_ptr<JacobianFactor> jf = //
       boost::dynamic_pointer_cast<JacobianFactor>(gf);

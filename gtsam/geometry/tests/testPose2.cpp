@@ -102,7 +102,7 @@ TEST(Pose2, expmap3) {
       0.99,  0.0, -0.015,
       0.0,   0.0,  0.0).finished();
   Matrix A2 = A*A/2.0, A3 = A2*A/3.0, A4=A3*A/4.0;
-  Matrix expected = eye(3) + A + A2 + A3 + A4;
+  Matrix expected = I_3x3 + A + A2 + A3 + A4;
 
   Vector v = Vector3(0.01, -0.015, 0.99);
   Pose2 pose = Pose2::Expmap(v);
@@ -311,7 +311,7 @@ TEST(Pose2, compose_a)
        -1.0, 0.0, 2.0,
       0.0, 0.0, 1.0
   ).finished();
-  Matrix expectedH2 = eye(3);
+  Matrix expectedH2 = I_3x3;
   Matrix numericalH1 = numericalDerivative21<Pose2, Pose2, Pose2>(testing::compose, pose1, pose2);
   Matrix numericalH2 = numericalDerivative22<Pose2, Pose2, Pose2>(testing::compose, pose1, pose2);
   EXPECT(assert_equal(expectedH1,actualDcompose1));

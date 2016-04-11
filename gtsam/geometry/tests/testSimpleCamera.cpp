@@ -76,7 +76,7 @@ TEST( SimpleCamera, lookat)
 
   Matrix R = camera2.pose().rotation().matrix();
   Matrix I = trans(R)*R;
-  CHECK(assert_equal(I, eye(3)));
+  CHECK(assert_equal(I, I_3x3));
 }
 
 /* ************************************************************************* */

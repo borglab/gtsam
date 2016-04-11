@@ -83,7 +83,7 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::initialize(double g_e) 
       0.0, 0.0, 0.0).finished();                             // we don't know anything on yaw
 
   // Calculate the initial covariance matrix for the error state dx, Farrell08book eq. 10.66
-  Matrix Pa = 0.025 * 0.025 * eye(3);
+  Matrix Pa = 0.025 * 0.025 * I_3x3;
   Matrix P11 = Omega_T * (H_g * (Pa + Pa_) * trans(H_g)) * trans(Omega_T);
   P11(2, 2) = 0.0001;
   Matrix P12 = -Omega_T * H_g * Pa;
@@ -171,7 +171,7 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::aid(
     // calculate residual gravity measurement
     z = n_g_ - trans(bRn) * measured_b_g;
     H = collect(3, &n_g_cross_, &Z_3x3, &bRn);
-    R = trans(bRn) * diag(sigmas_v_a_.array().square()) * bRn;
+    R = trans(bRn) * ((Vector3) sigmas_v_a_.array().square()).asDiagonal() * bRn;
   } else {
     // my measurement prediction (in body frame):
     // F(:,k) = bias - b_g
@@ -186,7 +186,7 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::aid(
     Matrix b_g = bRn * n_g_cross_;
     H = collect(3, &b_g, &Z_3x3, &I_3x3);
     // And the measurement noise, TODO: should be created once where sigmas_v_a is given
-    R = diag(sigmas_v_a_.array().square());
+    R = ((Vector3) sigmas_v_a_.array().square()).asDiagonal();
   }
 
 // update the Kalman filter
@@ -196,7 +196,7 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::aid(
   Mechanization_bRn2 newMech = mech.correct(updatedState->mean());
 
 // reset KF state
-  Vector dx = zeros(9, 1);
+  Vector dx = Z_9x1;
   updatedState = KF_.init(dx, updatedState->covariance());
 
   return make_pair(newMech, updatedState);
@@ -217,7 +217,7 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::aidGeneral(
   Matrix H = collect(3, &b_g, &I_3x3, &Z_3x3);
 //  Matrix R = diag(emul(sigmas_v_a_, sigmas_v_a_));
 //  Matrix R = diag(Vector3(1.0, 0.2, 1.0)); // good for L_twice
-  Matrix R = diag(Vector3(0.01, 0.0001, 0.01));
+  Matrix R = Vector3(0.01, 0.0001, 0.01).asDiagonal();
 
 // update the Kalman filter
   KalmanFilter::State updatedState = KF_.updateQ(state, H, z, R);
@@ -226,7 +226,7 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::aidGeneral(
   Mechanization_bRn2 newMech = mech.correct(updatedState->mean());
 
 // reset KF state
-  Vector dx = zeros(9, 1);
+  Vector dx = Z_9x1;
   updatedState = KF_.init(dx, updatedState->covariance());
 
   return make_pair(newMech, updatedState);

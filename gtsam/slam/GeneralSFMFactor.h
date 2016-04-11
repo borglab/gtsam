@@ -266,9 +266,9 @@ public:
       return reprojError.vector();
     }
     catch( CheiralityException& e) {
-      if (H1) *H1 = zeros(2, 6);
-      if (H2) *H2 = zeros(2, 3);
-      if (H3) *H3 = zeros(2, DimK);
+      if (H1) *H1 = Matrix::Zero(2, 6);
+      if (H2) *H2 = Matrix::Zero(2, 3);
+      if (H3) *H3 = Matrix::Zero(2, DimK);
       std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2())
       << " behind Camera " << DefaultKeyFormatter(this->key1()) << std::endl;
     }

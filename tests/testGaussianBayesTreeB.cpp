@@ -79,7 +79,7 @@ TEST( GaussianBayesTree, linear_smoother_shortcuts )
   double sigma3 = 0.61808;
   Matrix A56 = (Matrix(2,2) << -0.382022,0.,0.,-0.382022).finished();
   GaussianBayesNet expected3;
-  expected3 += GaussianConditional(X(5), zero(2), eye(2)/sigma3, X(6), A56/sigma3);
+  expected3 += GaussianConditional(X(5), zero(2), I_2x2/sigma3, X(6), A56/sigma3);
   GaussianBayesTree::sharedClique C3 = bayesTree[X(4)];
   GaussianBayesNet actual3 = C3->shortcut(R);
   EXPECT(assert_equal(expected3,actual3,tol));
@@ -88,7 +88,7 @@ TEST( GaussianBayesTree, linear_smoother_shortcuts )
   double sigma4 = 0.661968;
   Matrix A46 = (Matrix(2,2) << -0.146067,0.,0.,-0.146067).finished();
   GaussianBayesNet expected4;
-  expected4 += GaussianConditional(X(4), zero(2), eye(2)/sigma4, X(6), A46/sigma4);
+  expected4 += GaussianConditional(X(4), zero(2), I_2x2/sigma4, X(6), A46/sigma4);
   GaussianBayesTree::sharedClique C4 = bayesTree[X(3)];
   GaussianBayesNet actual4 = C4->shortcut(R);
   EXPECT(assert_equal(expected4,actual4,tol));
@@ -134,7 +134,7 @@ TEST( GaussianBayesTree, balanced_smoother_marginals )
   // Check marginal on x1
   JacobianFactor expected1 = GaussianDensity::FromMeanAndStddev(X(1), zero(2), sigmax1);
   JacobianFactor actual1 = *bayesTree.marginalFactor(X(1));
-  Matrix expectedCovarianceX1 = eye(2,2) * (sigmax1 * sigmax1);
+  Matrix expectedCovarianceX1 = I_2x2 * (sigmax1 * sigmax1);
   Matrix actualCovarianceX1;
   GaussianFactor::shared_ptr m = bayesTree.marginalFactor(X(1), EliminateCholesky);
   actualCovarianceX1 = bayesTree.marginalFactor(X(1), EliminateCholesky)->information().inverse();
@@ -243,7 +243,7 @@ TEST( GaussianBayesTree, balanced_smoother_joint )
   GaussianBayesTree bayesTree = *smoother.eliminateMultifrontal(ordering);
 
   // Conditional density elements reused by both tests
-  const Matrix I = eye(2), A = -0.00429185*I;
+  const Matrix I = I_2x2, A = -0.00429185*I;
 
   // Check the joint density P(x1,x7) factored as P(x1|x7)P(x7)
   GaussianBayesNet expected1 = list_of

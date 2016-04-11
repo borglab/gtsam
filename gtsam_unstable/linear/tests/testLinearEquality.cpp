@@ -186,7 +186,7 @@ TEST(LinearEquality, matrices)
 /* ************************************************************************* */
 TEST(LinearEquality, operators )
 {
-  Matrix I = eye(2);
+  Matrix I = I_2x2;
   Vector b = (Vector(2) << 0.2,-0.1).finished();
   LinearEquality lf(1, -I, 2, I, b, 0);
 

@@ -132,7 +132,7 @@ Matrix3 Pose2::AdjointMap() const {
 /* ************************************************************************* */
 Matrix3 Pose2::adjointMap(const Vector3& v) {
   // See Chirikjian12book2, vol.2, pg. 36
-  Matrix3 ad = Matrix::Zero(3,3);
+  Matrix3 ad = Z_3x3;
   ad(0,1) = -v[2];
   ad(1,0) = v[2];
   ad(0,2) = v[1];
