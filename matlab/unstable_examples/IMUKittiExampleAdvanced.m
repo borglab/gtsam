@@ -155,7 +155,7 @@ for measurementIndex = 1:length(timestamps)
     %% Create GPS factor
     if type == 2
       newFactors.add(PriorFactorPose3(currentPoseKey, Pose3(currentPoseGlobal.rotation, GPS_data(measurementIndex).Position), ...
-        noiseModel.Diagonal.Precisions([ zeros(3,1); 1./(GPS_data(measurementIndex).PositionSigma).^2*Matrix::Ones(3,1) ])));
+        noiseModel.Diagonal.Precisions([ zeros(3,1); 1./(GPS_data(measurementIndex).PositionSigma).^2*ones(3,1) ])));
     end
     
     %% Create VO factor

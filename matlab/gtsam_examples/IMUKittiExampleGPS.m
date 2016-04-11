@@ -38,7 +38,7 @@ currentBias = imuBias.ConstantBias(zeros(3,1), zeros(3,1));
 sigma_init_x = noiseModel.Isotropic.Precisions([ 0.0; 0.0; 0.0; 1; 1; 1 ]);
 sigma_init_v = noiseModel.Isotropic.Sigma(3, 1000.0);
 sigma_init_b = noiseModel.Isotropic.Sigmas([ 0.100; 0.100; 0.100; 5.00e-05; 5.00e-05; 5.00e-05 ]);
-sigma_between_b = [ IMU_metadata.AccelerometerBiasSigma * Matrix::Ones(3,1); IMU_metadata.GyroscopeBiasSigma * Matrix::Ones(3,1) ];
+sigma_between_b = [ IMU_metadata.AccelerometerBiasSigma * ones(3,1); IMU_metadata.GyroscopeBiasSigma * ones(3,1) ];
 g = [0;0;-9.8];
 w_coriolis = [0;0;0];
 
