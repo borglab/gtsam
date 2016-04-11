@@ -274,6 +274,7 @@ namespace gtsam {
     namespace internal {
 
     // Check the type and throw exception if incorrect
+    // Generic version, partially specialized below for various Eigen Matrix types
     template<typename ValueType>
     struct handle {
       ValueType operator()(Key j, const gtsam::Value * const pointer) {
@@ -375,14 +376,7 @@ namespace gtsam {
        throw ValuesKeyDoesNotExist("at", j);
 
     // Check the type and throw exception if incorrect
-    const Value& value = *item->second;
-    try {
-      return dynamic_cast<const GenericValue<ValueType>&>(value).value();
-    } catch (std::bad_cast &) {
-      // NOTE(abe): clang warns about potential side effects if done in typeid
-      const Value* value = item->second;
-      throw ValuesIncorrectType(j, typeid(*value), typeid(ValueType));
-    }
+    return internal::handle<ValueType>()(j,item->second);
   }
 
   /* ************************************************************************* */
