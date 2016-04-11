@@ -274,7 +274,7 @@ inline GaussianFactorGraph createGaussianFactorGraph() {
   GaussianFactorGraph fg;
 
   // linearized prior on x1: c[_x1_]+x1=0 i.e. x1=-c[_x1_]
-  fg += JacobianFactor(X(1), 10*I_2x2, -1.0*Matrix::Ones(2,2));
+  fg += JacobianFactor(X(1), 10*I_2x2, -1.0*ones(2));
 
   // odometry between x1 and x2: x2-x1=[0.2;-0.1]
   fg += JacobianFactor(X(1), -10*I_2x2, X(2), 10*I_2x2, Vector2(2.0, -1.0));

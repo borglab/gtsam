@@ -47,7 +47,7 @@ TEST(GaussianFactorGraph, initialization) {
   SharedDiagonal unit2 = noiseModel::Unit::Create(2);
 
   fg +=
-    JacobianFactor(0, 10*I_2x2, -1.0*Matrix::Ones(2,2), unit2),
+    JacobianFactor(0, 10*I_2x2, -1.0*ones(2), unit2),
     JacobianFactor(0, -10*I_2x2,1, 10*I_2x2, Vector2(2.0, -1.0), unit2),
     JacobianFactor(0, -5*I_2x2, 2, 5*I_2x2, Vector2(0.0, 1.0), unit2),
     JacobianFactor(1, -5*I_2x2, 2, 5*I_2x2, Vector2(-1.0, 1.5), unit2);
@@ -166,7 +166,7 @@ static GaussianFactorGraph createSimpleGaussianFactorGraph() {
   GaussianFactorGraph fg;
   SharedDiagonal unit2 = noiseModel::Unit::Create(2);
   // linearized prior on x1: c[_x1_]+x1=0 i.e. x1=-c[_x1_]
-  fg += JacobianFactor(2, 10*I_2x2, -1.0*Matrix::Ones(2,2), unit2);
+  fg += JacobianFactor(2, 10*I_2x2, -1.0*ones(2), unit2);
   // odometry between x1 and x2: x2-x1=[0.2;-0.1]
   fg += JacobianFactor(0, 10*I_2x2, 2, -10*I_2x2, Vector2(2.0, -1.0), unit2);
   // measurement between x1 and l1: l1-x1=[0.0;0.2]
