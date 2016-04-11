@@ -292,12 +292,8 @@ namespace gtsam {
        Eigen::Matrix<double, -1, 1> operator()(Key j,
           const gtsam::Value * const pointer) {
         try {
-//<<<<<<< HEAD
           // value returns a const Vector&, and the return makes a copy !!!!!
           return dynamic_cast<const GenericValue<Eigen::Matrix<double, -1, 1> >&>(*pointer).value();
-//=======
-//          return reinterpret_cast<const GenericValue<Eigen::Matrix<double, -1, 1> >&>(*pointer).value();
-//>>>>>>> feature/FixFixedValues
         } catch (std::bad_cast &) {
           // If a fixed vector was stored, we end up here as well.
           throw ValuesIncorrectType(j, typeid(*pointer),
