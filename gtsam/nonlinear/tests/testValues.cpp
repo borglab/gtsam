@@ -477,13 +477,59 @@ TEST(Values, Destructors) {
 }
 
 /* ************************************************************************* */
-TEST(Values, FixedSize) {
+TEST(Values, VectorDynamicInsertFixedRead) {
   Values values;
   Vector v(3); v << 5.0, 6.0, 7.0;
-  values.insertFixed(key1, v, 3);
+  values.insert(key1, v);
   Vector3 expected(5.0, 6.0, 7.0);
-  CHECK(assert_equal((Vector)expected, values.at<Vector3>(key1)));
-  CHECK_EXCEPTION(values.insertFixed(key1, v, 12),runtime_error);
+  Vector3 actual = values.at<Vector3>(key1);
+  CHECK(assert_equal(expected, actual));
+  CHECK_EXCEPTION(values.at<Vector7>(key1), exception);
+}
+
+/* ************************************************************************* */
+TEST(Values, VectorDynamicInsertDynamicRead) {
+  Values values;
+  Vector v(3); v << 5.0, 6.0, 7.0;
+  values.insert(key1, v);
+  Vector expected(3); expected << 5.0, 6.0, 7.0;
+  Vector actual = values.at<Vector>(key1);
+  LONGS_EQUAL(3, actual.rows());
+  LONGS_EQUAL(1, actual.cols());
+  CHECK(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
+TEST(Values, VectorFixedInsertFixedRead) {
+  Values values;
+  Vector3 v; v << 5.0, 6.0, 7.0;
+  values.insert(key1, v);
+  Vector3 expected; expected << 5.0, 6.0, 7.0;
+  Vector3 actual = values.at<Vector3>(key1);
+  CHECK(assert_equal(expected, actual));
+  CHECK_EXCEPTION(values.at<Vector7>(key1), exception);
+}
+
+/* ************************************************************************* */
+TEST(Values, VectorFixedInsertDynamicRead) {
+  Values values;
+  Vector3 v; v << 5.0, 6.0, 7.0;
+  values.insert(key1, v);
+  Vector expected(3); expected << 5.0, 6.0, 7.0;
+  Vector actual = values.at<Vector>(key1);
+  LONGS_EQUAL(3, actual.rows());
+  LONGS_EQUAL(1, actual.cols());
+  CHECK(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
+TEST(Values, MatrixDynamicInsertFixedRead) {
+  Values values;
+  Matrix v(1,3); v << 5.0, 6.0, 7.0;
+  values.insert(key1, v);
+  Vector3 expected(5.0, 6.0, 7.0);
+  CHECK(assert_equal((Vector)expected, values.at<Matrix13>(key1)));
+  CHECK_EXCEPTION(values.at<Matrix23>(key1), exception);
 }
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }

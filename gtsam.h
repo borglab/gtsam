@@ -1798,9 +1798,6 @@ class Values {
   void insert(size_t j, Vector t);
   void insert(size_t j, Matrix t);
 
-  // Fixed size version
-  void insertFixed(size_t j, Vector t, size_t n);
-
   void update(size_t j, const gtsam::Point2& t);
   void update(size_t j, const gtsam::Point3& t);
   void update(size_t j, const gtsam::Rot2& t);
@@ -1817,12 +1814,6 @@ class Values {
 
   template<T = {gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Pose2, gtsam::Rot3, gtsam::Pose3, gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3Bundler, gtsam::EssentialMatrix, gtsam::imuBias::ConstantBias, Vector, Matrix}>
   T at(size_t j);
-
-  /// Fixed size versions, for n in 1..9
-  void insertFixed(size_t j, Vector t, size_t n);
-
-  /// Fixed size versions, for n in 1..9
-  Vector atFixed(size_t j, size_t n);
 
   /// version for double
   void insertDouble(size_t j, double c);
