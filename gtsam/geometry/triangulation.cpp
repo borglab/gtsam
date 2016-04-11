@@ -56,11 +56,10 @@ Vector4 triangulateHomogeneousDLT(
 Point3 triangulateDLT(const std::vector<Matrix34>& projection_matrices,
     const std::vector<Point2>& measurements, double rank_tol) {
 
-  Vector4 v = triangulateHomogeneousDLT(projection_matrices, measurements,
-      rank_tol);
+  Vector4 v = triangulateHomogeneousDLT(projection_matrices, measurements, rank_tol);
 
   // Create 3D point from homogeneous coordinates
-  return Point3(sub((v / v(3)), 0, 3));
+  return Point3(v.head<3>() / v[3]);
 }
 
 ///
@@ -91,5 +90,4 @@ Point3 optimize(const NonlinearFactorGraph& graph, const Values& values,
   return result.at<Point3>(landmarkKey);
 }
 
-} // \namespace gtsam
-
+}  // \namespace gtsam

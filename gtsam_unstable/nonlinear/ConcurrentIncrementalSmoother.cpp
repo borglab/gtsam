@@ -45,14 +45,14 @@ bool ConcurrentIncrementalSmoother::equals(const ConcurrentSmoother& rhs, double
 
 /* ************************************************************************* */
 ConcurrentIncrementalSmoother::Result ConcurrentIncrementalSmoother::update(const NonlinearFactorGraph& newFactors, const Values& newTheta,
-    const boost::optional< std::vector<size_t> >& removeFactorIndices) {
+    const boost::optional<FactorIndices>& removeFactorIndices) {
 
   gttic(update);
 
   // Create the return result meta-data
   Result result;
 
-  gtsam::FastVector<size_t> removedFactors;
+  FastVector<size_t> removedFactors;
 
   if(removeFactorIndices){
     // Be very careful to this line
@@ -72,7 +72,7 @@ ConcurrentIncrementalSmoother::Result ConcurrentIncrementalSmoother::update(cons
   }
 
   // Use iSAM2 to perform an update
-  gtsam::ISAM2Result isam2Result;
+  ISAM2Result isam2Result;
   if(isam2_.getFactorsUnsafe().size() + newFactors.size() + smootherFactors_.size() + filterSummarizationFactors_.size() > 0) {
     if(synchronizationUpdatesAvailable_) {
       // Augment any new factors/values with the cached data from the last synchronization
@@ -106,7 +106,7 @@ ConcurrentIncrementalSmoother::Result ConcurrentIncrementalSmoother::update(cons
       synchronizationUpdatesAvailable_ = false;
     } else {
       // Update the system using iSAM2
-      isam2Result = isam2_.update(newFactors, newTheta, FastVector<size_t>(), constrainedKeys, noRelinKeys);
+      isam2Result = isam2_.update(newFactors, newTheta, FactorIndices(), constrainedKeys, noRelinKeys);
     }
   }
 
@@ -245,7 +245,7 @@ void ConcurrentIncrementalSmoother::updateSmootherSummarization() {
   }
 
   // Get the set of separator keys
-  gtsam::KeySet separatorKeys;
+  KeySet separatorKeys;
   BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, separatorValues_) {
     separatorKeys.insert(key_value.key);
   }

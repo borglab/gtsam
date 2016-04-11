@@ -66,7 +66,7 @@ public:
   // Access to vector for ease of use with Matlab
   // and avoidance of Point3
   Vector vector() const;
-  Vector translationVec() const { return pose().translation().vector(); }
+  Vector translationVec() const { return pose().translation(); }
   const Velocity3& velocityVec() const { return velocity(); }
 
   // testable
@@ -126,7 +126,7 @@ public:
 
   /// @return a vector for Matlab compatibility
   inline Vector translationIntegrationVec(const PoseRTV& x2, double dt) const {
-    return translationIntegration(x2, dt).vector();
+    return translationIntegration(x2, dt);
   }
 
   /**

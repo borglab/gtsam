@@ -155,13 +155,13 @@ TEST(NoiseModel, ConstrainedConstructors )
   Vector3 mu(200.0, 300.0, 400.0);
   actual = Constrained::All(d);
   // TODO: why should this be a thousand ??? Dummy variable?
-  EXPECT(assert_equal(gtsam::repeat(d, 1000.0), actual->mu()));
-  EXPECT(assert_equal(gtsam::repeat(d, 0), actual->sigmas()));
-  EXPECT(assert_equal(gtsam::repeat(d, 0), actual->invsigmas())); // Actually zero as dummy value
-  EXPECT(assert_equal(gtsam::repeat(d, 0), actual->precisions())); // Actually zero as dummy value
+  EXPECT(assert_equal(Vector::Constant(d, 1000.0), actual->mu()));
+  EXPECT(assert_equal(Vector::Constant(d, 0), actual->sigmas()));
+  EXPECT(assert_equal(Vector::Constant(d, 0), actual->invsigmas())); // Actually zero as dummy value
+  EXPECT(assert_equal(Vector::Constant(d, 0), actual->precisions())); // Actually zero as dummy value
 
   actual = Constrained::All(d, m);
-  EXPECT(assert_equal(gtsam::repeat(d, m), actual->mu()));
+  EXPECT(assert_equal(Vector::Constant(d, m), actual->mu()));
 
   actual = Constrained::All(d, mu);
   EXPECT(assert_equal(mu, actual->mu()));
@@ -170,7 +170,7 @@ TEST(NoiseModel, ConstrainedConstructors )
   EXPECT(assert_equal(mu, actual->mu()));
 
   actual = Constrained::MixedSigmas(m, sigmas);
-  EXPECT(assert_equal( gtsam::repeat(d, m), actual->mu()));
+  EXPECT(assert_equal(Vector::Constant(d, m), actual->mu()));
 }
 
 /* ************************************************************************* */
@@ -222,45 +222,172 @@ namespace exampleQR {
   SharedDiagonal diagonal = noiseModel::Diagonal::Sigmas(sigmas);
 }
 
+/* ************************************************************************* */
 TEST( NoiseModel, QR )
 {
   Matrix Ab1 = exampleQR::Ab;
   Matrix Ab2 = exampleQR::Ab; // otherwise overwritten !
 
-  // Expected result
-  Vector expectedSigmas = (Vector(4) << 0.0894427, 0.0894427, 0.223607, 0.223607).finished();
-  SharedDiagonal expectedModel = noiseModel::Diagonal::Sigmas(expectedSigmas);
-
   // Call Gaussian version
   SharedDiagonal actual1 = exampleQR::diagonal->QR(Ab1);
-  EXPECT(!actual1);
+  EXPECT(actual1->isUnit());
   EXPECT(linear_dependent(exampleQR::Rd,Ab1,1e-4)); // Ab was modified in place !!!
 
-  // Call Constrained version
-  SharedDiagonal constrained = noiseModel::Constrained::MixedSigmas(exampleQR::sigmas);
-  SharedDiagonal actual2 = constrained->QR(Ab2);
-  SharedDiagonal expectedModel2 = noiseModel::Diagonal::Sigmas(expectedSigmas);
-  EXPECT(assert_equal(*expectedModel2,*actual2,1e-6));
+  // Expected result for constrained version
+  Vector expectedSigmas = (Vector(4) << 0.0894427, 0.0894427, 0.223607, 0.223607).finished();
+  SharedDiagonal expectedModel = noiseModel::Diagonal::Sigmas(expectedSigmas);
   Matrix expectedRd2 = (Matrix(4, 7) <<
       1.,  0., -0.2,  0., -0.8, 0.,  0.2,
       0.,  1.,  0.,-0.2,   0., -0.8,-0.14,
       0.,  0.,  1.,   0., -1.,  0.,  0.0,
       0.,  0.,  0.,   1.,  0., -1.,  0.2).finished();
-  EXPECT(linear_dependent(expectedRd2,Ab2,1e-6)); // Ab was modified in place !!!
+
+  // Call Constrained version
+  SharedDiagonal constrained = noiseModel::Constrained::MixedSigmas(exampleQR::sigmas);
+  SharedDiagonal actual2 = constrained->QR(Ab2);
+  EXPECT(assert_equal(*expectedModel, *actual2, 1e-6));
+  EXPECT(linear_dependent(expectedRd2, Ab2, 1e-6));  // Ab was modified in place !!!
 }
 
 /* ************************************************************************* */
+TEST(NoiseModel, OverdeterminedQR) {
+  Matrix Ab1(9, 4);
+  Ab1 << 0, 1, 0, 0,  //
+      0, 0, 1, 0,    //
+      Matrix74::Ones();
+  Matrix Ab2 = Ab1; // otherwise overwritten !
+
+  // Call Gaussian version
+  Vector9 sigmas = Vector9::Ones() ;
+  SharedDiagonal diagonal = noiseModel::Diagonal::Sigmas(sigmas);
+  SharedDiagonal actual1 = diagonal->QR(Ab1);
+  EXPECT(actual1->isUnit());
+  Matrix expectedRd(9,4);
+  expectedRd << -2.64575131, -2.64575131, -2.64575131, -2.64575131,  //
+      0.0, -1, 0, 0,                                                 //
+      0.0, 0.0, -1, 0,                                               //
+      Matrix64::Zero();
+  EXPECT(assert_equal(expectedRd, Ab1, 1e-4));  // Ab was modified in place !!!
+
+  // Expected result for constrained version
+  Vector3 expectedSigmas(0.377964473, 1, 1);
+  SharedDiagonal expectedModel = noiseModel::Diagonal::Sigmas(expectedSigmas);
+
+  // Call Constrained version
+  SharedDiagonal constrained = noiseModel::Constrained::MixedSigmas(sigmas);
+  SharedDiagonal actual2 = constrained->QR(Ab2);
+  EXPECT(assert_equal(*expectedModel, *actual2, 1e-6));
+  expectedRd.row(0) *= 0.377964473; // not divided by sigma!
+  EXPECT(assert_equal(-expectedRd, Ab2, 1e-6));  // Ab was modified in place !!!
+}
+
+/* ************************************************************************* */
+TEST( NoiseModel, MixedQR )
+{
+  // Call Constrained version, with first and third row treated as constraints
+  // Naming the 6 variables u,v,w,x,y,z, we have
+  // u = -z
+  // w = -x
+  // And let's have simple priors on variables
+  Matrix Ab(5,6+1);
+  Ab <<
+      1,0,0,0,0,1,  0, // u+z = 0
+      0,0,0,0,1,0,  0, // y^2
+      0,0,1,1,0,0,  0, // w+x = 0
+      0,1,0,0,0,0,  0, // v^2
+      0,0,0,0,0,1,  0; // z^2
+  Vector mixed_sigmas = (Vector(5) << 0, 1, 0, 1, 1).finished();
+  SharedDiagonal constrained = noiseModel::Constrained::MixedSigmas(mixed_sigmas);
+
+  // Expected result
+  Vector expectedSigmas = (Vector(5) << 0, 1, 0, 1, 1).finished();
+  SharedDiagonal expectedModel = noiseModel::Diagonal::Sigmas(expectedSigmas);
+  Matrix expectedRd(5, 6+1);
+  expectedRd << 1, 0, 0, 0, 0, 1, 0,  //
+                0, 1, 0, 0, 0, 0, 0,  //
+                0, 0, 1, 1, 0, 0, 0,  //
+                0, 0, 0, 0, 1, 0, 0,  //
+                0, 0, 0, 0, 0, 1, 0;  //
+
+  SharedDiagonal actual = constrained->QR(Ab);
+  EXPECT(assert_equal(*expectedModel,*actual,1e-6));
+  EXPECT(linear_dependent(expectedRd,Ab,1e-6)); // Ab was modified in place !!!
+}
+
+/* ************************************************************************* */
+TEST( NoiseModel, MixedQR2 )
+{
+  // Let's have three variables x,y,z, but x=z and y=z
+  // Hence, all non-constraints are really measurements on z
+  Matrix Ab(11,3+1);
+  Ab <<
+      1,0,0,  0, //
+      0,1,0,  0, //
+      0,0,1,  0, //
+     -1,0,1,  0, // x=z
+      1,0,0,  0, //
+      0,1,0,  0, //
+      0,0,1,  0, //
+     0,-1,1,  0, // y=z
+      1,0,0,  0, //
+      0,1,0,  0, //
+      0,0,1,  0; //
+
+  Vector sigmas(11);
+  sigmas.setOnes();
+  sigmas[3] = 0;
+  sigmas[7] = 0;
+  SharedDiagonal constrained = noiseModel::Constrained::MixedSigmas(sigmas);
+
+  // Expected result
+  Vector3 expectedSigmas(0,0,1.0/3);
+  SharedDiagonal expectedModel = noiseModel::Constrained::MixedSigmas(expectedSigmas);
+  Matrix expectedRd(11, 3+1);
+  expectedRd.setZero();
+  expectedRd.row(0) << -1,  0, 1,  0;  // x=z
+  expectedRd.row(1) <<  0, -1, 1,  0;  // y=z
+  expectedRd.row(2) <<  0,  0, 1,  0;  // z=0 +/- 1/3
+
+  SharedDiagonal actual = constrained->QR(Ab);
+  EXPECT(assert_equal(*expectedModel,*actual,1e-6));
+  EXPECT(assert_equal(expectedRd,Ab,1e-6)); // Ab was modified in place !!!
+}
+
+/* ************************************************************************* */
+TEST( NoiseModel, FullyConstrained )
+{
+  Matrix Ab(3,7);
+  Ab <<
+      1,0,0,0,0,1,  2, // u+z = 2
+      0,0,1,1,0,0,  4, // w+x = 4
+      0,1,0,1,1,1,  8; // v+x+y+z=8
+  SharedDiagonal constrained = noiseModel::Constrained::All(3);
+
+  // Expected result
+  SharedDiagonal expectedModel = noiseModel::Diagonal::Sigmas(Vector3 (0,0,0));
+  Matrix expectedRd(3, 7);
+  expectedRd << 1, 0, 0, 0, 0, 1, 2,  //
+                0, 1, 0, 1, 1, 1, 8,  //
+                0, 0, 1, 1, 0, 0, 4;  //
+
+  SharedDiagonal actual = constrained->QR(Ab);
+  EXPECT(assert_equal(*expectedModel,*actual,1e-6));
+  EXPECT(linear_dependent(expectedRd,Ab,1e-6)); // Ab was modified in place !!!
+}
+
+/* ************************************************************************* */
+// This matches constraint_eliminate2 in testJacobianFactor
 TEST(NoiseModel, QRNan )
 {
   SharedDiagonal constrained = noiseModel::Constrained::All(2);
-  Matrix Ab = (Matrix(2, 5) << 1., 2., 1., 2., 3., 2., 1., 2., 4., 4.).finished();
+  Matrix Ab = (Matrix25() << 2, 4, 2, 4, 6,   2, 1, 2, 4, 4).finished();
 
   SharedDiagonal expected = noiseModel::Constrained::All(2);
-  Matrix expectedAb = (Matrix(2, 5) << 1., 2., 1., 2., 3., 0., 1., 0., 0., 2.0/3).finished();
+  Matrix expectedAb = (Matrix25() << 1, 2, 1, 2, 3, 0, 1, 0, 0, 2.0/3).finished();
 
   SharedDiagonal actual = constrained->QR(Ab);
   EXPECT(assert_equal(*expected,*actual));
-  EXPECT(assert_equal(expectedAb,Ab));
+  EXPECT(linear_dependent(expectedAb,Ab));
 }
 
 /* ************************************************************************* */

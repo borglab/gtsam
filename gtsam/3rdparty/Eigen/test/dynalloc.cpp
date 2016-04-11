@@ -87,6 +87,32 @@ template<typename T> void check_dynaligned()
   delete obj;
 }
 
+template<typename T> void check_custom_new_delete()
+{
+  {
+    T* t = new T;
+    delete t;
+  }
+  
+  {
+    std::size_t N = internal::random<std::size_t>(1,10);
+    T* t = new T[N];
+    delete[] t;
+  }
+  
+#ifdef EIGEN_ALIGN
+  {
+    T* t = static_cast<T *>((T::operator new)(sizeof(T)));
+    (T::operator delete)(t, sizeof(T));
+  }
+  
+  {
+    T* t = static_cast<T *>((T::operator new)(sizeof(T)));
+    (T::operator delete)(t);
+  }
+#endif
+}
+
 void test_dynalloc()
 {
   // low level dynamic memory allocation
@@ -94,7 +120,9 @@ void test_dynalloc()
   CALL_SUBTEST(check_aligned_malloc());
   CALL_SUBTEST(check_aligned_new());
   CALL_SUBTEST(check_aligned_stack_alloc());
-
+  
+  // check static allocation, who knows ?
+  #if EIGEN_ALIGN_STATICALLY
   for (int i=0; i<g_repeat*100; ++i)
   {
     CALL_SUBTEST(check_dynaligned<Vector4f>() );
@@ -102,10 +130,13 @@ void test_dynalloc()
     CALL_SUBTEST(check_dynaligned<Matrix4f>() );
     CALL_SUBTEST(check_dynaligned<Vector4d>() );
     CALL_SUBTEST(check_dynaligned<Vector4i>() );
+    
+    CALL_SUBTEST( check_custom_new_delete<Vector4f>() );
+    CALL_SUBTEST( check_custom_new_delete<Vector2f>() );
+    CALL_SUBTEST( check_custom_new_delete<Matrix4f>() );
+    CALL_SUBTEST( check_custom_new_delete<MatrixXi>() );
   }
-  
-  // check static allocation, who knows ?
-  #if EIGEN_ALIGN_STATICALLY
+
   {
     MyStruct foo0;  VERIFY(size_t(foo0.avec.data())%ALIGNMENT==0);
     MyClassA fooA;  VERIFY(size_t(fooA.avec.data())%ALIGNMENT==0);

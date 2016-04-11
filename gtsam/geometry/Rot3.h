@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -93,7 +93,7 @@ namespace gtsam {
      * See: http://stackoverflow.com/questions/27094132/cannot-understand-if-this-is-circular-dependency-or-clang#tab-top
      */
     template<typename Derived>
-    inline Rot3(const Eigen::MatrixBase<Derived>& R) {
+    inline explicit Rot3(const Eigen::MatrixBase<Derived>& R) {
       #ifdef GTSAM_USE_QUATERNIONS
         quaternion_=Matrix3(R);
       #else
@@ -105,7 +105,7 @@ namespace gtsam {
      * Constructor from a rotation matrix
      * Overload version for Matrix3 to avoid casting in quaternion mode.
      */
-    inline Rot3(const Matrix3& R) {
+    inline explicit Rot3(const Matrix3& R) {
       #ifdef GTSAM_USE_QUATERNIONS
         quaternion_=R;
       #else
@@ -173,26 +173,16 @@ namespace gtsam {
 
     /**
      * Convert from axis/angle representation
-     * @param   axis is the rotation axis, unit length
-     * @param   angle rotation angle
-     * @return incremental rotation
-     */
-    static Rot3 AxisAngle(const Vector3& axis, double angle) {
-#ifdef GTSAM_USE_QUATERNIONS
-      return gtsam::Quaternion(Eigen::AngleAxis<double>(angle, axis));
-#else
-      return SO3::AxisAngle(axis,angle);
-#endif
-      }
-
-    /**
-     * Convert from axis/angle representation
      * @param  axisw is the rotation axis, unit length
      * @param   angle rotation angle
      * @return incremental rotation
      */
     static Rot3 AxisAngle(const Point3& axis, double angle) {
-      return AxisAngle(axis.vector(),angle);
+#ifdef GTSAM_USE_QUATERNIONS
+      return gtsam::Quaternion(Eigen::AngleAxis<double>(angle, axis.vector()));
+#else
+      return Rot3(SO3::AxisAngle(axis,angle));
+#endif
     }
 
     /**
@@ -224,6 +214,13 @@ namespace gtsam {
     static Rot3 Rodrigues(double wx, double wy, double wz) {
       return Rodrigues(Vector3(wx, wy, wz));
     }
+
+    /// Determine a rotation to bring two vectors into alignment, using the rotation axis provided
+    static Rot3 AlignPair(const Unit3& axis, const Unit3& a_p, const Unit3& b_p);
+
+    /// Calculate rotation from two pairs of homogeneous points using two successive rotations
+    static Rot3 AlignTwoPairs(const Unit3& a_p, const Unit3& b_p,  //
+                              const Unit3& a_q, const Unit3& b_q);
 
     /// @}
     /// @name Testable
@@ -315,7 +312,7 @@ namespace gtsam {
 #ifdef GTSAM_USE_QUATERNIONS
       return traits<gtsam::Quaternion>::Expmap(v);
 #else
-      return traits<SO3>::Expmap(v);
+      return Rot3(traits<SO3>::Expmap(v));
 #endif
     }
 
@@ -352,29 +349,12 @@ namespace gtsam {
     Point3 rotate(const Point3& p, OptionalJacobian<3,3> H1 = boost::none,
         OptionalJacobian<3,3> H2 = boost::none) const;
 
-    /// operator* for Vector3
-    inline Vector3 operator*(const Vector3& v) const {
-      return rotate(Point3(v)).vector();
-    }
-
-    /// rotate for Vector3
-    Vector3 rotate(const Vector3& v, OptionalJacobian<3, 3> H1 = boost::none,
-        OptionalJacobian<3, 3> H2 = boost::none) const {
-      return rotate(Point3(v), H1, H2).vector();
-    }
-
     /// rotate point from rotated coordinate frame to world = R*p
     Point3 operator*(const Point3& p) const;
 
     /// rotate point from world to rotated frame \f$ p^c = (R_c^w)^T p^w \f$
     Point3 unrotate(const Point3& p, OptionalJacobian<3,3> H1 = boost::none,
         OptionalJacobian<3,3> H2=boost::none) const;
-
-    /// unrotate for Vector3
-    Vector3 unrotate(const Vector3& v, OptionalJacobian<3, 3> H1 = boost::none,
-        OptionalJacobian<3, 3> H2 = boost::none) const {
-      return unrotate(Point3(v), H1, H2).vector();
-    }
 
     /// @}
     /// @name Group Action on Unit3
@@ -483,7 +463,6 @@ namespace gtsam {
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
     /// @name Deprecated
     /// @{
-    static Rot3 rodriguez(const Vector3& axis, double angle) { return AxisAngle(axis, angle); }
     static Rot3 rodriguez(const Point3&  axis, double angle) { return AxisAngle(axis, angle); }
     static Rot3 rodriguez(const Unit3&   axis, double angle) { return AxisAngle(axis, angle); }
     static Rot3 rodriguez(const Vector3& w)                  { return Rodrigues(w); }
@@ -539,7 +518,7 @@ namespace gtsam {
 
   template<>
   struct traits<Rot3> : public internal::LieGroup<Rot3> {};
-  
+
   template<>
   struct traits<const Rot3> : public internal::LieGroup<Rot3> {};
 }

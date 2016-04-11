@@ -44,7 +44,7 @@ public:
       biasAcc_(biasAcc), biasGyro_(biasGyro) {
   }
 
-  ConstantBias(const Vector6& v) :
+  explicit ConstantBias(const Vector6& v) :
       biasAcc_(v.head<3>()), biasGyro_(v.tail<3>()) {
   }
 
@@ -112,6 +112,11 @@ public:
   /** inverse */
   inline ConstantBias operator-() const {
     return ConstantBias(-biasAcc_, -biasGyro_);
+  }
+
+  /** addition of vector on right */
+  ConstantBias operator+(const Vector6& v) const {
+    return ConstantBias(biasAcc_ + v.head<3>(), biasGyro_ + v.tail<3>());
   }
 
   /** addition */

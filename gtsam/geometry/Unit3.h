@@ -66,11 +66,6 @@ public:
   }
 
   /// Construct from point
-  explicit Unit3(const Point3& p) :
-      p_(p.vector().normalized()) {
-  }
-
-  /// Construct from a vector3
   explicit Unit3(const Vector3& p) :
       p_(p.normalized()) {
   }

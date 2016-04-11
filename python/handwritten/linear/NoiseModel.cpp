@@ -110,6 +110,7 @@ void exportNoiseModels(){
     .def("Covariance",&Gaussian::Covariance, Gaussian_Covariance_overloads())
     .staticmethod("Covariance")
   ;
+  register_ptr_to_python< boost::shared_ptr<Gaussian> >();
   
   class_<Diagonal, boost::shared_ptr<Diagonal>, bases<Gaussian> >("Diagonal", no_init)
     .def("Sigmas",&Diagonal::Sigmas, Diagonal_Sigmas_overloads())
@@ -119,6 +120,7 @@ void exportNoiseModels(){
     .def("Precisions",&Diagonal::Precisions, Diagonal_Precisions_overloads())
     .staticmethod("Precisions")
   ;
+  register_ptr_to_python< boost::shared_ptr<Diagonal> >();
   
   class_<Isotropic, boost::shared_ptr<Isotropic>, bases<Diagonal> >("Isotropic", no_init)
     .def("Sigma",&Isotropic::Sigma, Isotropic_Sigma_overloads())
@@ -128,10 +130,12 @@ void exportNoiseModels(){
     .def("Precision",&Isotropic::Precision, Isotropic_Precision_overloads())
     .staticmethod("Precision")
   ;
+  register_ptr_to_python< boost::shared_ptr<Isotropic> >();
   
   class_<Unit, boost::shared_ptr<Unit>, bases<Isotropic> >("Unit", no_init)
     .def("Create",&Unit::Create)
     .staticmethod("Create")
   ;
 
+  register_ptr_to_python< boost::shared_ptr<Unit> >();
 }

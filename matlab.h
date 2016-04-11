@@ -28,8 +28,6 @@
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/SimpleCamera.h>
 
-#include <boost/foreach.hpp>
-
 #include <exception>
 
 namespace gtsam {
@@ -92,7 +90,7 @@ Matrix extractPoint2(const Values& values) {
   size_t j = 0;
   Values::ConstFiltered<Point2> points = values.filter<Point2>();
   Matrix result(points.size(), 2);
-  BOOST_FOREACH(const Values::ConstFiltered<Point2>::KeyValuePair& key_value, points)
+  for(const auto& key_value: points)
     result.row(j++) = key_value.value.vector();
   return result;
 }
@@ -102,8 +100,8 @@ Matrix extractPoint3(const Values& values) {
   Values::ConstFiltered<Point3> points = values.filter<Point3>();
   Matrix result(points.size(), 3);
   size_t j = 0;
-  BOOST_FOREACH(const Values::ConstFiltered<Point3>::KeyValuePair& key_value, points)
-    result.row(j++) = key_value.value.vector();
+  for(const auto& key_value: points)
+    result.row(j++) = key_value.value;
   return result;
 }
 
@@ -112,7 +110,7 @@ Matrix extractPose2(const Values& values) {
   Values::ConstFiltered<Pose2> poses = values.filter<Pose2>();
   Matrix result(poses.size(), 3);
   size_t j = 0;
-  BOOST_FOREACH(const Values::ConstFiltered<Pose2>::KeyValuePair& key_value, poses)
+  for(const auto& key_value: poses)
     result.row(j++) << key_value.value.x(), key_value.value.y(), key_value.value.theta();
   return result;
 }
@@ -127,11 +125,11 @@ Matrix extractPose3(const Values& values) {
   Values::ConstFiltered<Pose3> poses = values.filter<Pose3>();
   Matrix result(poses.size(), 12);
   size_t j = 0;
-  BOOST_FOREACH(const Values::ConstFiltered<Pose3>::KeyValuePair& key_value, poses) {
+  for(const auto& key_value: poses) {
     result.row(j).segment(0, 3) << key_value.value.rotation().matrix().row(0);
     result.row(j).segment(3, 3) << key_value.value.rotation().matrix().row(1);
     result.row(j).segment(6, 3) << key_value.value.rotation().matrix().row(2);
-    result.row(j).tail(3) = key_value.value.translation().vector();
+    result.row(j).tail(3) = key_value.value.translation();
     j++;
   }
   return result;
@@ -142,8 +140,8 @@ void perturbPoint2(Values& values, double sigma, int32_t seed = 42u) {
   noiseModel::Isotropic::shared_ptr model = noiseModel::Isotropic::Sigma(2,
       sigma);
   Sampler sampler(model, seed);
-  BOOST_FOREACH(const Values::ConstFiltered<Point2>::KeyValuePair& key_value, values.filter<Point2>()) {
-    values.update(key_value.key, key_value.value + Point2(sampler.sample()));
+  for(const auto& key_value: values.filter<Point2>()) {
+    values.update<Point2>(key_value.key, key_value.value + Point2(sampler.sample()));
   }
 }
 
@@ -153,8 +151,8 @@ void perturbPose2(Values& values, double sigmaT, double sigmaR, int32_t seed =
   noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Sigmas(
       Vector3(sigmaT, sigmaT, sigmaR));
   Sampler sampler(model, seed);
-  BOOST_FOREACH(const Values::ConstFiltered<Pose2>::KeyValuePair& key_value, values.filter<Pose2>()) {
-    values.update(key_value.key, key_value.value.retract(sampler.sample()));
+  for(const auto& key_value: values.filter<Pose2>()) {
+    values.update<Pose2>(key_value.key, key_value.value.retract(sampler.sample()));
   }
 }
 
@@ -163,8 +161,8 @@ void perturbPoint3(Values& values, double sigma, int32_t seed = 42u) {
   noiseModel::Isotropic::shared_ptr model = noiseModel::Isotropic::Sigma(3,
       sigma);
   Sampler sampler(model, seed);
-  BOOST_FOREACH(const Values::ConstFiltered<Point3>::KeyValuePair& key_value, values.filter<Point3>()) {
-    values.update(key_value.key, key_value.value + Point3(sampler.sample()));
+  for(const auto& key_value: values.filter<Point3>()) {
+    values.update<Point3>(key_value.key, key_value.value + Point3(sampler.sample()));
   }
 }
 
@@ -204,13 +202,13 @@ Matrix reprojectionErrors(const NonlinearFactorGraph& graph,
     const Values& values) {
   // first count
   size_t K = 0, k = 0;
-  BOOST_FOREACH(const NonlinearFactor::shared_ptr& f, graph)
+  for(const NonlinearFactor::shared_ptr& f: graph)
     if (boost::dynamic_pointer_cast<const GenericProjectionFactor<Pose3, Point3> >(
         f))
       ++K;
   // now fill
   Matrix errors(2, K);
-  BOOST_FOREACH(const NonlinearFactor::shared_ptr& f, graph) {
+  for(const NonlinearFactor::shared_ptr& f: graph) {
     boost::shared_ptr<const GenericProjectionFactor<Pose3, Point3> > p =
         boost::dynamic_pointer_cast<const GenericProjectionFactor<Pose3, Point3> >(
             f);
@@ -232,7 +230,7 @@ Values localToWorld(const Values& local, const Pose2& base,
     keys = local.keys();
 
   // Loop over all keys
-  BOOST_FOREACH(Key key, keys) {
+  for(Key key: keys) {
     try {
       // if value is a Pose2, compose it with base pose
       Pose2 pose = local.at<Pose2>(key);

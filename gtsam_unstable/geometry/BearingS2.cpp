@@ -34,7 +34,7 @@ BearingS2 BearingS2::fromDownwardsObservation(const Pose3& A, const Point3& B) {
       0.,1.,0.,
       -1.,0.,0.).finished();
   //  p_rel_c = Cbc*Cnb*(PosObj - Pos);
-  Vector p_rel_c = Cbc*Cnb*(B.vector() - A.translation().vector());
+  Vector p_rel_c = Cbc*Cnb*(B - A.translation());
 
   // FIXME: the matlab code checks for p_rel_c(0) greater than
 
@@ -50,7 +50,7 @@ BearingS2 BearingS2::fromForwardObservation(const Pose3& A, const Point3& B) {
   //  Cnb = DCMnb(Att);
   Matrix Cnb = A.rotation().matrix().transpose();
 
-  Vector p_rel_c = Cnb*(B.vector() - A.translation().vector());
+  Vector p_rel_c = Cnb*(B - A.translation());
 
   // FIXME: the matlab code checks for p_rel_c(0) greater than
 

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -135,7 +135,7 @@ namespace gtsam {
     /// @{
 
     /** Number of variables stored. */
-    Key size() const { return values_.size(); }
+    size_t size() const { return values_.size(); }
 
     /** Return the dimension of variable \c j. */
     size_t dim(Key j) const { return at(j).rows(); }

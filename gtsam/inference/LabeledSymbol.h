@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -34,7 +34,7 @@ namespace gtsam {
 class GTSAM_EXPORT LabeledSymbol {
 protected:
   unsigned char c_, label_;
-  size_t j_;
+  std::uint64_t j_;
 
 public:
   /** Default constructor */
@@ -44,7 +44,7 @@ public:
   LabeledSymbol(const LabeledSymbol& key);
 
   /** Constructor */
-  LabeledSymbol(unsigned char c, unsigned char label, size_t j);
+  LabeledSymbol(unsigned char c, unsigned char label, std::uint64_t j);
 
   /** Constructor that decodes an integer gtsam::Key */
   LabeledSymbol(gtsam::Key key);

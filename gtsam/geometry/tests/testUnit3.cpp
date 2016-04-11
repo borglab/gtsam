@@ -303,7 +303,7 @@ TEST(Unit3, localCoordinates) {
 }
 
 //*******************************************************************************
-// Wrapper to make basis return a vector6 so we can test numerical derivatives.
+// Wrapper to make basis return a Vector6 so we can test numerical derivatives.
 Vector6 BasisTest(const Unit3& p, OptionalJacobian<6, 2> H) {
   Matrix32 B = p.basis(H);
   Vector6 B_vec;
@@ -377,7 +377,7 @@ TEST(Unit3, retract_expmap) {
 TEST(Unit3, Random) {
   boost::mt19937 rng(42);
   // Check that means are all zero at least
-  Point3 expectedMean, actualMean;
+  Point3 expectedMean(0,0,0), actualMean(0,0,0);
   for (size_t i = 0; i < 100; i++)
     actualMean = actualMean + Unit3::Random(rng).point3();
   actualMean = actualMean / 100;

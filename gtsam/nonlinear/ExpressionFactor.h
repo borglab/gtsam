@@ -43,8 +43,8 @@ protected:
   Expression<T> expression_;  ///< the expression that is AD enabled
   FastVector<int> dims_;      ///< dimensions of the Jacobian matrices
 
-public:
 
+ public:
   typedef boost::shared_ptr<ExpressionFactor<T> > shared_ptr;
 
   /// Constructor
@@ -61,9 +61,10 @@ public:
   const T& measured() const { return measured_; }
 
   /// print relies on Testable traits being defined for T
-  void print(const std::string& s, const KeyFormatter& keyFormatter) const {
+  void print(const std::string& s = "",
+             const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
     NoiseModelFactor::print(s, keyFormatter);
-    traits<T>::Print(measured_, s + ".measured_");
+    traits<T>::Print(measured_, "ExpressionFactor with measurement: ");
   }
 
   /// equals relies on Testable traits being defined for T
@@ -80,7 +81,7 @@ public:
    * both the function evaluation and its derivative(s) in H.
    */
   virtual Vector unwhitenedError(const Values& x,
-      boost::optional<std::vector<Matrix>&> H = boost::none) const {
+                                 boost::optional<std::vector<Matrix>&> H = boost::none) const {
     if (H) {
       const T value = expression_.valueAndDerivatives(x, keys_, dims_, *H);
       // NOTE(hayk): Doing the reverse, AKA Local(measured_, value) is not correct here

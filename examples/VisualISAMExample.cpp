@@ -120,7 +120,7 @@ int main(int argc, char* argv[]) {
       Point3 noise(-0.25, 0.20, 0.15);
       for (size_t j = 0; j < points.size(); ++j) {
         // Intentionally initialize the variables off from the ground truth
-        Point3 initial_lj = points[j].compose(noise);
+        Point3 initial_lj = points[j] + noise;
         initialEstimate.insert(Symbol('l', j), initial_lj);
       }
 

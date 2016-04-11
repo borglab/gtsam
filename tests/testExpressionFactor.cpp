@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -139,7 +139,7 @@ TEST(ExpressionFactor, Unary) {
 typedef Eigen::Matrix<double,9,3> Matrix93;
 Vector9 wide(const Point3& p, OptionalJacobian<9,3> H) {
   Vector9 v;
-  v << p.vector(), p.vector(), p.vector();
+  v << p, p, p;
   if (H) *H << eye(3), eye(3), eye(3);
   return v;
 }
@@ -186,25 +186,8 @@ TEST(ExpressionFactor, Binary) {
   values.insert(1, Cal3_S2());
   values.insert(2, Point2(0, 0));
 
-  // traceRaw will fill raw with [Trace<Point2> | Binary::Record]
-  EXPECT_LONGS_EQUAL(8, sizeof(double));
-  EXPECT_LONGS_EQUAL(16, sizeof(Point2));
-  EXPECT_LONGS_EQUAL(40, sizeof(Cal3_S2));
-  EXPECT_LONGS_EQUAL(16, sizeof(internal::ExecutionTrace<Point2>));
-  EXPECT_LONGS_EQUAL(16, sizeof(internal::ExecutionTrace<Cal3_S2>));
-  EXPECT_LONGS_EQUAL(2*5*8, sizeof(internal::Jacobian<Point2,Cal3_S2>::type));
-  EXPECT_LONGS_EQUAL(2*2*8, sizeof(internal::Jacobian<Point2,Point2>::type));
-  size_t expectedRecordSize = sizeof(Cal3_S2)
-      + sizeof(internal::ExecutionTrace<Cal3_S2>)
-      + +sizeof(internal::Jacobian<Point2, Cal3_S2>::type) + sizeof(Point2)
-      + sizeof(internal::ExecutionTrace<Point2>)
-      + sizeof(internal::Jacobian<Point2, Point2>::type);
-  EXPECT_LONGS_EQUAL(expectedRecordSize + 8, sizeof(Binary::Record));
-
   // Check size
   size_t size = binary.traceSize();
-  CHECK(size);
-  EXPECT_LONGS_EQUAL(expectedRecordSize + 8, size);
   // Use Variable Length Array, allocated on stack by gcc
   // Note unclear for Clang: http://clang.llvm.org/compatibility.html#vla
   internal::ExecutionTraceStorage traceStorage[size];
@@ -261,18 +244,7 @@ TEST(ExpressionFactor, Shallow) {
   // traceExecution of shallow tree
   typedef internal::UnaryExpression<Point2, Point3> Unary;
   typedef internal::BinaryExpression<Point3, Pose3, Point3> Binary;
-  size_t expectedTraceSize = sizeof(Unary::Record) + sizeof(Binary::Record);
-  EXPECT_LONGS_EQUAL(96, sizeof(Unary::Record));
-#ifdef GTSAM_USE_QUATERNIONS
-  EXPECT_LONGS_EQUAL(352, sizeof(Binary::Record));
-  LONGS_EQUAL(96+352, expectedTraceSize);
-#else
-  EXPECT_LONGS_EQUAL(384, sizeof(Binary::Record));
-  LONGS_EQUAL(96+384, expectedTraceSize);
-#endif
   size_t size = expression.traceSize();
-  CHECK(size);
-  EXPECT_LONGS_EQUAL(expectedTraceSize, size);
   internal::ExecutionTraceStorage traceStorage[size];
   internal::ExecutionTrace<Point2> trace;
   Point2 value = expression.traceExecution(values, trace, traceStorage);

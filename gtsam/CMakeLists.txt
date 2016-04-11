@@ -88,7 +88,9 @@ configure_file("${PROJECT_SOURCE_DIR}/cmake/dllexport.h.in" "dllexport.h")
 list(APPEND gtsam_srcs "${PROJECT_BINARY_DIR}/gtsam/config.h" "${PROJECT_BINARY_DIR}/gtsam/dllexport.h")
 install(FILES "${PROJECT_BINARY_DIR}/gtsam/config.h" "${PROJECT_BINARY_DIR}/gtsam/dllexport.h" DESTINATION include/gtsam)
 
-list(APPEND GTSAM_ADDITIONAL_LIBRARIES metis)
+if(GTSAM_SUPPORT_NESTED_DISSECTION)
+    list(APPEND GTSAM_ADDITIONAL_LIBRARIES metis)
+endif()
 
 # Versions
 set(gtsam_version   ${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH})

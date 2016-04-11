@@ -52,7 +52,7 @@ struct GTSAM_EXPORT ISAM2::Impl {
   /// complete list of nonlinear factors, and populates the list of new factor indices, both
   /// optionally finding and reusing empty factor slots.
   static void AddFactorsStep1(const NonlinearFactorGraph& newFactors, bool useUnusedSlots,
-    NonlinearFactorGraph& nonlinearFactors, FastVector<size_t>& newFactorIndices);
+    NonlinearFactorGraph& nonlinearFactors, FactorIndices& newFactorIndices);
     
   /**
    * Remove variables from the ISAM2 system.

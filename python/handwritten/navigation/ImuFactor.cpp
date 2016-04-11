@@ -20,6 +20,7 @@
 #include <numpy_eigen/NumpyEigenConverter.hpp>
 
 #include "gtsam/navigation/ImuFactor.h"
+#include "gtsam/navigation/GPSFactor.h"
 
 using namespace boost::python;
 using namespace gtsam;
@@ -32,6 +33,8 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(print_overloads, print, 0, 1)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(attitude_overloads, attitude, 0, 1)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(position_overloads, position, 0, 1)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(velocity_overloads, velocity, 0, 1)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(equals_overloads, PreintegratedImuMeasurements::equals, 1, 2)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(predict_overloads, PreintegrationBase::predict, 2, 4)
 
 void exportImuFactor() {
   class_<OptionalJacobian39>("OptionalJacobian39", init<>());
@@ -39,6 +42,7 @@ void exportImuFactor() {
   class_<OptionalJacobian9>("OptionalJacobian9", init<>());
 
   class_<NavState>("NavState", init<>())
+      .def(init<const Rot3&, const Point3&, const Velocity3&>())
       // TODO(frank): overload with jacobians
       .def("print", &NavState::print, print_overloads())
       .def("attitude", &NavState::attitude,
@@ -73,22 +77,45 @@ void exportImuFactor() {
       .def("MakeSharedU", &PreintegrationParams::MakeSharedU)
       .staticmethod("MakeSharedU");
 
-  class_<PreintegratedImuMeasurements>(
+  // NOTE(frank): https://mail.python.org/pipermail/cplusplus-sig/2016-January/017362.html
+  register_ptr_to_python< boost::shared_ptr<PreintegrationParams> >();
+
+  class_<PreintegrationBase>(
+      "PreintegrationBase",
+      init<const boost::shared_ptr<PreintegrationParams>&, const imuBias::ConstantBias&>())
+      .def("predict", &PreintegrationBase::predict, predict_overloads())
+      .def("computeError", &PreintegrationBase::computeError)
+      .def("resetIntegration", &PreintegrationBase::resetIntegration)
+      .def("deltaTij", &PreintegrationBase::deltaTij);
+
+  class_<PreintegratedImuMeasurements, bases<PreintegrationBase>>(
       "PreintegratedImuMeasurements",
-      init<const boost::shared_ptr<PreintegrationParams>&,
-           const imuBias::ConstantBias&>())
+      init<const boost::shared_ptr<PreintegrationParams>&, const imuBias::ConstantBias&>())
       .def(repr(self))
-      .def("predict", &PreintegratedImuMeasurements::predict)
-      .def("computeError", &PreintegratedImuMeasurements::computeError)
-      .def("resetIntegration", &PreintegratedImuMeasurements::resetIntegration)
-      .def("integrateMeasurement",
-           &PreintegratedImuMeasurements::integrateMeasurement)
+      .def("equals", &PreintegratedImuMeasurements::equals, equals_overloads(args("other", "tol")))
+      .def("integrateMeasurement", &PreintegratedImuMeasurements::integrateMeasurement)
+      .def("integrateMeasurements", &PreintegratedImuMeasurements::integrateMeasurements)
       .def("preintMeasCov", &PreintegratedImuMeasurements::preintMeasCov);
 
-  // NOTE(frank): Abstract classes need boost::noncopyable
-  class_<ImuFactor, bases<NonlinearFactor>, boost::shared_ptr<ImuFactor>>(
-      "ImuFactor")
+  class_<ImuFactor, bases<NonlinearFactor>, boost::shared_ptr<ImuFactor>>("ImuFactor")
       .def("error", &ImuFactor::error)
       .def(init<Key, Key, Key, Key, Key, const PreintegratedImuMeasurements&>())
       .def(repr(self));
+  register_ptr_to_python<boost::shared_ptr<ImuFactor>>();
+
+  class_<ImuFactor2, bases<NonlinearFactor>, boost::shared_ptr<ImuFactor2>>("ImuFactor2")
+      .def("error", &ImuFactor2::error)
+      .def(init<Key, Key, Key, const PreintegratedImuMeasurements&>())
+      .def(repr(self));
+  register_ptr_to_python<boost::shared_ptr<ImuFactor2>>();
+
+  class_<GPSFactor, bases<NonlinearFactor>, boost::shared_ptr<GPSFactor>>("GPSFactor")
+      .def("error", &GPSFactor::error)
+      .def(init<Key, const Point3&, noiseModel::Base::shared_ptr>());
+  register_ptr_to_python<boost::shared_ptr<GPSFactor>>();
+
+  class_<GPSFactor2, bases<NonlinearFactor>, boost::shared_ptr<GPSFactor2>>("GPSFactor2")
+      .def("error", &GPSFactor2::error)
+      .def(init<Key, const Point3&, noiseModel::Base::shared_ptr>());
+  register_ptr_to_python<boost::shared_ptr<GPSFactor2>>();
 }

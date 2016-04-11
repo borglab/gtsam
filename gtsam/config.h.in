@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -32,11 +32,11 @@
 #cmakedefine GTSAM_USE_QUATERNIONS
 
 // Whether GTSAM is compiled to use Pose3::EXPMAP as the default coordinates mode for Pose3's retract and localCoordinates (otherwise, Pose3::FIRST_ORDER will be used)
-#cmakedefine GTSAM_POSE3_EXPMAP 
+#cmakedefine GTSAM_POSE3_EXPMAP
 
 // Whether GTSAM is compiled to use Rot3::EXPMAP as the default coordinates mode for Rot3's retract and localCoordinates (otherwise, Pose3::CAYLEY will be used)
 #ifndef GTSAM_USE_QUATERNIONS
-	#cmakedefine GTSAM_ROT3_EXPMAP 
+	#cmakedefine GTSAM_ROT3_EXPMAP
 #endif
 
 // Whether we are using TBB (if TBB was found and GTSAM_WITH_TBB is enabled in CMake)
@@ -60,4 +60,11 @@
 // Option for not throwing the CheiralityException for points that are behind a camera
 #cmakedefine GTSAM_THROW_CHEIRALITY_EXCEPTION
 
+// Make sure dependent projects that want it can see deprecated functions
+#cmakedefine GTSAM_ALLOW_DEPRECATED_SINCE_V4
 
+// Publish flag about Eigen typedef
+#cmakedefine GTSAM_USE_VECTOR3_POINTS
+
+// Support Metis-based nested dissection
+#cmakedefine GTSAM_SUPPORT_NESTED_DISSECTION

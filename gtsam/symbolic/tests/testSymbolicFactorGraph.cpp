@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -23,9 +23,27 @@
 #include <gtsam/symbolic/SymbolicConditional.h>
 #include <gtsam/symbolic/tests/symbolicExampleGraphs.h>
 
+#include <boost/assign/std/set.hpp>
+
 using namespace std;
 using namespace gtsam;
 using namespace boost::assign;
+
+/* ************************************************************************* */
+TEST(SymbolicFactorGraph, keys1) {
+  KeySet expected;
+  expected += 0, 1, 2, 3, 4;
+  KeySet actual = simpleTestGraph1.keys();
+  EXPECT(expected == actual);
+}
+
+/* ************************************************************************* */
+TEST(SymbolicFactorGraph, keys2) {
+  KeySet expected;
+  expected += 0, 1, 2, 3, 4, 5;
+  KeySet actual = simpleTestGraph2.keys();
+  EXPECT(expected == actual);
+}
 
 /* ************************************************************************* */
 TEST(SymbolicFactorGraph, eliminateFullSequential)

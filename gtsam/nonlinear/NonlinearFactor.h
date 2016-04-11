@@ -207,7 +207,12 @@ public:
     return noiseModel_->dim();
   }
 
-  /** access to the noise model */
+  /// access to the noise model
+  const SharedNoiseModel& noiseModel() const {
+    return noiseModel_;
+  }
+
+  /// @deprecated access to the noise model
   SharedNoiseModel get_noiseModel() const {
     return noiseModel_;
   }

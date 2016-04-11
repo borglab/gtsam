@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -35,7 +35,7 @@ public:
 
   /// Default Constructor
   Event() :
-      time_(0) {
+      time_(0), location_(0,0,0) {
   }
 
   /// Constructor from time and location
@@ -60,19 +60,18 @@ public:
 
   /** print with optional string */
   void print(const std::string& s = "") const {
-    std::cout << s << "time = " << time_;
-    location_.print("; location");
+    std::cout << s << "time = " << time_ << "location = " << location_.transpose();
   }
 
   /** equals with an tolerance */
   bool equals(const Event& other, double tol = 1e-9) const {
     return std::abs(time_ - other.time_) < tol
-        && location_.equals(other.location_, tol);
+        && traits<Point3>::Equals(location_, other.location_, tol);
   }
 
   /// Updates a with tangent space delta
   inline Event retract(const Vector4& v) const {
-    return Event(time_ + v[0], location_.retract(v.tail(3)));
+    return Event(time_ + v[0], location_ + Point3(v.tail<3>()));
   }
 
   /// Returns inverse retraction
@@ -86,7 +85,7 @@ public:
       OptionalJacobian<1, 3> H2 = boost::none) const {
     static const double Speed = 330;
     Matrix13 D1, D2;
-    double distance = location_.distance(microphone, D1, D2);
+    double distance = gtsam::distance(location_, microphone, D1, D2);
     if (H1)
       // derivative of toa with respect to event
       *H1 << 1.0, D1 / Speed;

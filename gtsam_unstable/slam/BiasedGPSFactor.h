@@ -58,15 +58,15 @@ namespace gtsam {
     virtual void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
       std::cout << s << "BiasedGPSFactor("
           << keyFormatter(this->key1()) << ","
-          << keyFormatter(this->key2()) << ")\n";
-      measured_.print("  measured: ");
+          << keyFormatter(this->key2()) << ")\n"
+          << "  measured: " << measured_.transpose() << std::endl;
       this->noiseModel_->print("  noise model: ");
     }
 
     /** equals */
     virtual bool equals(const NonlinearFactor& expected, double tol=1e-9) const {
       const This *e =  dynamic_cast<const This*> (&expected);
-      return e != NULL && Base::equals(*e, tol) && this->measured_.equals(e->measured_, tol);
+      return e != NULL && Base::equals(*e, tol) && traits<Point3>::Equals(this->measured_, e->measured_, tol);
     }
 
     /** implement functions needed to derive from Factor */
@@ -82,7 +82,7 @@ namespace gtsam {
         H2->resize(3,3); // jacobian wrt bias
         (*H2) << Matrix3::Identity();
       }
-      return pose.translation().vector() + bias.vector() - measured_.vector();
+      return pose.translation() + bias - measured_;
     }
 
     /** return the measured */

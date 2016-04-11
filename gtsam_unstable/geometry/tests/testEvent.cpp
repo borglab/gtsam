@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -34,7 +34,7 @@ static SharedNoiseModel model(noiseModel::Isotropic::Sigma(1,0.5*ms));
 
 static const double timeOfEvent = 25;
 static const Event exampleEvent(timeOfEvent, 1, 0, 0);
-static const Point3 microphoneAt0;
+static const Point3 microphoneAt0(0,0,0);
 
 //*****************************************************************************
 TEST( Event, Constructor ) {

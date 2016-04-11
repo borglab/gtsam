@@ -73,7 +73,7 @@ class ScenarioRunner {
 
   // An accelerometer measures acceleration in body, but not gravity
   Vector3 actualSpecificForce(double t) const {
-    Rot3 bRn = scenario_->rotation(t).transpose();
+    Rot3 bRn(scenario_->rotation(t).transpose());
     return scenario_->acceleration_b(t) - bRn * gravity_n();
   }
 

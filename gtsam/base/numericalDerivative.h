@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -131,11 +131,11 @@ typename internal::FixedSizeMatrix<Y,X>::type numericalDerivative11(boost::funct
   typedef typename TraitsX::TangentVector TangentX;
 
   // get value at x, and corresponding chart
-  Y hx = h(x);
+  const Y hx = h(x);
 
   // Bit of a hack for now to find number of rows
-  TangentY zeroY = TraitsY::Local(hx, hx);
-  size_t m = zeroY.size();
+  const TangentY zeroY = TraitsY::Local(hx, hx);
+  const size_t m = zeroY.size();
 
   // Prepare a tangent vector to perturb x with, only works for fixed size
   TangentX dx;
@@ -143,12 +143,12 @@ typename internal::FixedSizeMatrix<Y,X>::type numericalDerivative11(boost::funct
 
   // Fill in Jacobian H
   Matrix H = zeros(m, N);
-  double factor = 1.0 / (2.0 * delta);
+  const double factor = 1.0 / (2.0 * delta);
   for (int j = 0; j < N; j++) {
     dx(j) = delta;
-    TangentY dy1 = TraitsY::Local(hx, h(TraitsX::Retract(x, dx)));
+    const TangentY dy1 = TraitsY::Local(hx, h(TraitsX::Retract(x, dx)));
     dx(j) = -delta;
-    TangentY dy2 = TraitsY::Local(hx, h(TraitsX::Retract(x, dx)));
+    const TangentY dy2 = TraitsY::Local(hx, h(TraitsX::Retract(x, dx)));
     dx(j) = 0;
     H.col(j) << (dy1 - dy2) * factor;
   }

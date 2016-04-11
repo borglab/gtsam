@@ -361,10 +361,10 @@ TEST( RangeFactor, Camera) {
 
 namespace gtsam{
 template <>
-struct Range<Vector3, Vector3> {
+struct Range<Vector4, Vector4> {
   typedef double result_type;
-  double operator()(const Vector3& v1, const Vector3& v2,
-                    OptionalJacobian<1, 3> H1, OptionalJacobian<1, 3> H2) {
+  double operator()(const Vector4& v1, const Vector4& v2,
+                    OptionalJacobian<1, 4> H1, OptionalJacobian<1, 4> H2) {
     return (v2 - v1).norm();
     // derivatives not implemented
   }
@@ -376,11 +376,11 @@ TEST(RangeFactor, NonGTSAM) {
   Key poseKey(1);
   Key pointKey(2);
   double measurement(10.0);
-  RangeFactor<Vector3> factor(poseKey, pointKey, measurement, model);
+  RangeFactor<Vector4> factor(poseKey, pointKey, measurement, model);
 
   // Set the linearization point
-  Vector3 pose(1.0, 2.0, 00);
-  Vector3 point(-4.0, 11.0, 0);
+  Vector4 pose(1.0, 2.0, 00, 0);
+  Vector4 point(-4.0, 11.0, 0, 0);
 
   // The expected error is ||(5.0, 9.0)|| - 10.0 = 0.295630141 meter / UnitCovariance
   Vector expectedError = (Vector(1) << 0.295630141).finished();

@@ -111,7 +111,7 @@ public:
  * Handy data structure for iterative solvers
  * key to (index, dimension, colstart)
  */
-class GTSAM_EXPORT KeyInfoEntry: public boost::tuple<size_t, size_t, size_t> {
+class GTSAM_EXPORT KeyInfoEntry: public boost::tuple<Key, size_t, Key> {
 
 public:
 

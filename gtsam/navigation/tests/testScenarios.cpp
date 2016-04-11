@@ -75,7 +75,7 @@ TEST(ScenarioRunner, Spin) {
 /* ************************************************************************* */
 namespace forward {
 const double v = 2;  // m/s
-ConstantTwistScenario scenario(Vector3::Zero(), Vector3(v, 0, 0));
+ConstantTwistScenario scenario(Z_3x1, Vector3(v, 0, 0));
 }
 /* ************************************************************************* */
 TEST(ScenarioRunner, Forward) {
@@ -140,7 +140,7 @@ TEST(ScenarioRunner, Loop) {
 /* ************************************************************************* */
 namespace initial {
 const Rot3 nRb;
-const Point3 P0;
+const Point3 P0(0,0,0);
 const Vector3 V0(0, 0, 0);
 }
 
@@ -259,7 +259,7 @@ namespace initial3 {
 // Rotation only
 // Set up body pointing towards y axis. The body itself has Z axis pointing down
 const Rot3 nRb(Point3(0, 1, 0), Point3(1, 0, 0), Point3(0, 0, -1));
-const Point3 P0;
+const Point3 P0(0,0,0);
 const Vector3 V0(0, 0, 0);
 }
 

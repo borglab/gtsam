@@ -94,8 +94,8 @@ namespace gtsam {
     /// Typedef for an optional variable index as an argument to elimination functions
     typedef boost::optional<const VariableIndex&> OptionalVariableIndex;
 
-	  /// Typedef for an optional ordering type
-	  typedef boost::optional<Ordering::OrderingType> OptionalOrderingType;
+    /// Typedef for an optional ordering type
+    typedef boost::optional<Ordering::OrderingType> OptionalOrderingType;
 
     /** Do sequential elimination of all variables to produce a Bayes net.  If an ordering is not
      *  provided, the ordering provided by COLAMD will be used.
@@ -104,10 +104,10 @@ namespace gtsam {
      *  \code
      *  boost::shared_ptr<GaussianBayesNet> result = graph.eliminateSequential(EliminateCholesky);
      *  \endcode
-	   *
-	   *  <b> Example - METIS ordering for elimination
-	   *  \code
-	   *  boost::shared_ptr<GaussianBayesNet> result = graph.eliminateSequential(OrderingType::METIS);
+     *
+     *  <b> Example - METIS ordering for elimination
+     *  \code
+     *  boost::shared_ptr<GaussianBayesNet> result = graph.eliminateSequential(OrderingType::METIS);
      *  
      *  <b> Example - Full QR elimination in specified order:
      *  \code
@@ -125,7 +125,7 @@ namespace gtsam {
       OptionalOrdering ordering = boost::none,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
       OptionalVariableIndex variableIndex = boost::none,
-	    OptionalOrderingType orderingType = boost::none) const;
+      OptionalOrderingType orderingType = boost::none) const;
 
     /** Do multifrontal elimination of all variables to produce a Bayes tree.  If an ordering is not
      *  provided, the ordering will be computed using either COLAMD or METIS, dependeing on
@@ -151,8 +151,8 @@ namespace gtsam {
     boost::shared_ptr<BayesTreeType> eliminateMultifrontal(
       OptionalOrdering ordering = boost::none,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
-	    OptionalVariableIndex variableIndex = boost::none,
-	    OptionalOrderingType orderingType = boost::none) const;
+      OptionalVariableIndex variableIndex = boost::none,
+      OptionalOrderingType orderingType = boost::none) const;
 
     /** Do sequential elimination of some variables, in \c ordering provided, to produce a Bayes net
      *  and a remaining factor graph.  This computes the factorization \f$ p(X) = p(A|B) p(B) \f$,

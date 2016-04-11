@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -52,25 +52,32 @@ public:
    * @param graph The factor graph defining the full joint density on all variables.
    * @param solution The linearization point about which to compute Gaussian marginals (usually the MLE as obtained from a NonlinearOptimizer).
    * @param factorization The linear decomposition mode - either Marginals::CHOLESKY (faster and suitable for most problems) or Marginals::QR (slower but more numerically stable for poorly-conditioned problems).
+   * @param ordering An optional variable ordering for elimination.
    */
-  Marginals(const NonlinearFactorGraph& graph, const Values& solution, Factorization factorization = CHOLESKY);
+  Marginals(const NonlinearFactorGraph& graph, const Values& solution, Factorization factorization = CHOLESKY,
+            EliminateableFactorGraph<GaussianFactorGraph>::OptionalOrdering ordering = boost::none);
 
   /** print */
   void print(const std::string& str = "Marginals: ", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
+  /** Compute the marginal factor of a single variable */
+  GaussianFactor::shared_ptr marginalFactor(Key variable) const;
+
+  /** Compute the marginal information matrix of a single variable.
+    * Use LLt(const Matrix&) or RtR(const Matrix&) to obtain the square-root information matrix. */
+  Matrix marginalInformation(Key variable) const;
+
   /** Compute the marginal covariance of a single variable */
   Matrix marginalCovariance(Key variable) const;
-
-  /** Compute the marginal information matrix of a single variable.  You can
-   * use LLt(const Matrix&) or RtR(const Matrix&) to obtain the square-root information
-   * matrix. */
-  Matrix marginalInformation(Key variable) const;
 
   /** Compute the joint marginal covariance of several variables */
   JointMarginal jointMarginalCovariance(const std::vector<Key>& variables) const;
 
   /** Compute the joint marginal information of several variables */
   JointMarginal jointMarginalInformation(const std::vector<Key>& variables) const;
+
+  /** Optimize the bayes tree */
+  VectorValues optimize() const;
 };
 
 /**
@@ -80,7 +87,7 @@ class GTSAM_EXPORT JointMarginal {
 
 protected:
   SymmetricBlockMatrix blockMatrix_;
-  std::vector<size_t> keys_;
+  KeyVector keys_;
   FastMap<Key, size_t> indices_;
 
 public:

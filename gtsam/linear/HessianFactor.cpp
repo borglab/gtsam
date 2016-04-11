@@ -455,8 +455,8 @@ std::pair<boost::shared_ptr<GaussianConditional>,
   // Build joint factor
   HessianFactor::shared_ptr jointFactor;
   try {
-    jointFactor = boost::make_shared<HessianFactor>(factors,
-        Scatter(factors, keys));
+    Scatter scatter(factors, keys);
+    jointFactor = boost::make_shared<HessianFactor>(factors, scatter);
   } catch (std::invalid_argument&) {
     throw InvalidDenseElimination(
         "EliminateCholesky was called with a request to eliminate variables that are not\n"

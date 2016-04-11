@@ -363,6 +363,18 @@ struct TriangulationParameters {
         << p.dynamicOutlierRejectionThreshold << std::endl;
     return os;
   }
+
+private:
+
+  /// Serialization function
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int version) {
+    ar & BOOST_SERIALIZATION_NVP(rankTolerance);
+    ar & BOOST_SERIALIZATION_NVP(enableEPI);
+    ar & BOOST_SERIALIZATION_NVP(landmarkDistanceThreshold);
+    ar & BOOST_SERIALIZATION_NVP(dynamicOutlierRejectionThreshold);
+  }
 };
 
 /**
@@ -411,6 +423,15 @@ public:
       os << "no point, status = " << result.status_ << std::endl;
     return os;
   }
+
+private:
+
+  /// Serialization function
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int version) {
+    ar & BOOST_SERIALIZATION_NVP(status_);
+  }
 };
 
 /// triangulateSafe: extensive checking of the outcome
@@ -436,7 +457,7 @@ TriangulationResult triangulateSafe(const std::vector<CAMERA>& cameras,
       BOOST_FOREACH(const CAMERA& camera, cameras) {
         const Pose3& pose = camera.pose();
         if (params.landmarkDistanceThreshold > 0
-            && pose.translation().distance(point)
+            && distance(pose.translation(), point)
                 > params.landmarkDistanceThreshold)
           return TriangulationResult::Degenerate();
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION

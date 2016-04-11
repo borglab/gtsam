@@ -81,7 +81,7 @@ TEST( NavState, Velocity) {
 TEST( NavState, BodyVelocity) {
   Matrix39 aH, eH;
   Velocity3 actual = kState1.bodyVelocity(aH);
-  EXPECT(assert_equal(actual, kAttitude.unrotate(kVelocity)));
+  EXPECT(assert_equal<Velocity3>(actual, kAttitude.unrotate(kVelocity)));
   eH = numericalDerivative11<Velocity3, NavState>(
       boost::bind(&NavState::bodyVelocity, _1, boost::none), kState1);
   EXPECT(assert_equal((Matrix )eH, aH));
@@ -193,6 +193,7 @@ TEST( NavState, Lie ) {
 }
 
 /* ************************************************************************* */
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 TEST(NavState, Update) {
   Vector3 omega(M_PI / 100.0, 0.0, 0.0);
   Vector3 acc(0.1, 0.0, 0.0);
@@ -220,6 +221,7 @@ TEST(NavState, Update) {
   EXPECT(assert_equal(numericalDerivative32(update, kState1, acc, omega, 1e-7), aG1, 1e-7));
   EXPECT(assert_equal(numericalDerivative33(update, kState1, acc, omega, 1e-7), aG2, 1e-7));
 }
+#endif
 
 /* ************************************************************************* */
 static const double dt = 2.0;

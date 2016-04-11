@@ -349,11 +349,11 @@ void JacobianFactor::print(const string& s,
     const KeyFormatter& formatter) const {
   static const Eigen::IOFormat matlab(
       Eigen::StreamPrecision, // precision
-	  0, // flags
+      0, // flags
       " ", // coeffSeparator
       ";\n", // rowSeparator
-	  "\t",  // rowPrefix
-	  "", // rowSuffix
+      "\t",  // rowPrefix
+      "", // rowSuffix
       "[\n", // matPrefix
       "\n  ]" // matSuffix
       );
@@ -527,15 +527,16 @@ void JacobianFactor::updateHessian(const FastVector<Key>& infoKeys,
     // Loop over blocks of A, including RHS with j==n
     vector<DenseIndex> slots(n+1);
     for (DenseIndex j = 0; j <= n; ++j) {
+      Eigen::Block<const Matrix> Ab_j = Ab_(j);
       const DenseIndex J = (j == n) ? N : Slot(infoKeys, keys_[j]);
       slots[j] = J;
       // Fill off-diagonal blocks with Ai'*Aj
       for (DenseIndex i = 0; i < j; ++i) {
         const DenseIndex I = slots[i];  // because i<j, slots[i] is valid.
-        (*info)(I, J).knownOffDiagonal() += Ab_(i).transpose() * Ab_(j);
+        (*info)(I, J).knownOffDiagonal() += Ab_(i).transpose() * Ab_j;
       }
       // Fill diagonal block with Aj'*Aj
-      (*info)(J, J).selfadjointView().rankUpdate(Ab_(j).transpose());
+      (*info)(J, J).selfadjointView().rankUpdate(Ab_j.transpose());
     }
   }
 }
@@ -691,8 +692,8 @@ GaussianFactor::shared_ptr JacobianFactor::negate() const {
 }
 
 /* ************************************************************************* */
-std::pair<boost::shared_ptr<GaussianConditional>,
-    boost::shared_ptr<JacobianFactor> > JacobianFactor::eliminate(
+std::pair<GaussianConditional::shared_ptr,
+    JacobianFactor::shared_ptr> JacobianFactor::eliminate(
     const Ordering& keys) {
   GaussianFactorGraph graph;
   graph.add(*this);
@@ -710,8 +711,7 @@ void JacobianFactor::setModel(bool anyConstrained, const Vector& sigmas) {
 }
 
 /* ************************************************************************* */
-std::pair<boost::shared_ptr<GaussianConditional>,
-    boost::shared_ptr<JacobianFactor> > EliminateQR(
+std::pair<GaussianConditional::shared_ptr, JacobianFactor::shared_ptr> EliminateQR(
     const GaussianFactorGraph& factors, const Ordering& keys) {
   gttic(EliminateQR);
   // Combine and sort variable blocks in elimination order
@@ -721,77 +721,84 @@ std::pair<boost::shared_ptr<GaussianConditional>,
   } catch (std::invalid_argument&) {
     throw InvalidDenseElimination(
         "EliminateQR was called with a request to eliminate variables that are not\n"
-            "involved in the provided factors.");
+        "involved in the provided factors.");
   }
 
   // Do dense elimination
+  // The following QR variants eliminate to fully triangular or trapezoidal
   SharedDiagonal noiseModel;
-  if (jointFactor->model_)
-    jointFactor->model_ = jointFactor->model_->QR(jointFactor->Ab_.matrix());
-  else
-    inplace_QR(jointFactor->Ab_.matrix());
-
-  // Zero below the diagonal
-  jointFactor->Ab_.matrix().triangularView<Eigen::StrictlyLower>().setZero();
+  VerticalBlockMatrix& Ab = jointFactor->Ab_;
+  if (jointFactor->model_) {
+    // The noiseModel QR can, in the case of constraints, yield a "staggered" QR where
+    // some rows have more leading zeros than in an upper triangular matrix.
+    // In either case, QR will put zeros below the "diagonal".
+    jointFactor->model_ = jointFactor->model_->QR(Ab.matrix());
+  } else {
+    // The inplace variant will have no valid rows anymore below m==n
+    // and only entries above the diagonal are valid.
+    inplace_QR(Ab.matrix());
+    // We zero below the diagonal to agree with the result from noieModel QR
+    Ab.matrix().triangularView<Eigen::StrictlyLower>().setZero();
+    size_t m = Ab.rows(), n = Ab.cols() - 1;
+    size_t maxRank = min(m, n);
+    jointFactor->model_ = noiseModel::Unit::Create(maxRank);
+  }
 
   // Split elimination result into conditional and remaining factor
-  GaussianConditional::shared_ptr conditional = //
+  GaussianConditional::shared_ptr conditional =  //
       jointFactor->splitConditional(keys.size());
 
   return make_pair(conditional, jointFactor);
 }
 
 /* ************************************************************************* */
-GaussianConditional::shared_ptr JacobianFactor::splitConditional(
-    size_t nrFrontals) {
+GaussianConditional::shared_ptr JacobianFactor::splitConditional(size_t nrFrontals) {
   gttic(JacobianFactor_splitConditional);
 
-  if (nrFrontals > size())
+  if (!model_) {
     throw std::invalid_argument(
-        "Requesting to split more variables than exist using JacobianFactor::splitConditional");
+        "JacobianFactor::splitConditional cannot be  given a NULL noise model");
+  }
 
+  if (nrFrontals > size()) {
+    throw std::invalid_argument(
+        "JacobianFactor::splitConditional was requested to split off more variables than exist.");
+  }
+
+  // Convert nr of keys to number of scalar columns
   DenseIndex frontalDim = Ab_.range(0, nrFrontals).cols();
 
+  // Check that the noise model has at least this dimension
+  // If this is *not* the case, we do not have enough information on the frontal variables.
+  if ((DenseIndex)model_->dim() < frontalDim)
+    throw IndeterminantLinearSystemException(this->keys().front());
+
   // Restrict the matrix to be in the first nrFrontals variables and create the conditional
-  gttic(cond_Rd);
   const DenseIndex originalRowEnd = Ab_.rowEnd();
   Ab_.rowEnd() = Ab_.rowStart() + frontalDim;
   SharedDiagonal conditionalNoiseModel;
-  if (model_) {
-    if ((DenseIndex) model_->dim() < frontalDim)
-      throw IndeterminantLinearSystemException(this->keys().front());
-    conditionalNoiseModel = noiseModel::Diagonal::Sigmas(
-        model_->sigmas().segment(Ab_.rowStart(), Ab_.rows()));
-  }
-  GaussianConditional::shared_ptr conditional = boost::make_shared<
-      GaussianConditional>(Base::keys_, nrFrontals, Ab_, conditionalNoiseModel);
-  const DenseIndex maxRemainingRows = std::min(Ab_.cols(), originalRowEnd)
-      - Ab_.rowStart() - frontalDim;
-  const DenseIndex remainingRows =
-      model_ ? std::min(model_->sigmas().size() - frontalDim,
-          maxRemainingRows) :
-          maxRemainingRows;
+  conditionalNoiseModel =
+      noiseModel::Diagonal::Sigmas(model_->sigmas().segment(Ab_.rowStart(), Ab_.rows()));
+  GaussianConditional::shared_ptr conditional =
+      boost::make_shared<GaussianConditional>(Base::keys_, nrFrontals, Ab_, conditionalNoiseModel);
+
+  const DenseIndex maxRemainingRows =
+      std::min(Ab_.cols(), originalRowEnd) - Ab_.rowStart() - frontalDim;
+  const DenseIndex remainingRows = std::min(model_->sigmas().size() - frontalDim, maxRemainingRows);
   Ab_.rowStart() += frontalDim;
   Ab_.rowEnd() = Ab_.rowStart() + remainingRows;
   Ab_.firstBlock() += nrFrontals;
-  gttoc(cond_Rd);
 
   // Take lower-right block of Ab to get the new factor
-  gttic(remaining_factor);
   keys_.erase(begin(), begin() + nrFrontals);
   // Set sigmas with the right model
-  if (model_) {
-    if (model_->isConstrained())
-      model_ = noiseModel::Constrained::MixedSigmas(
-          model_->sigmas().tail(remainingRows));
-    else
-      model_ = noiseModel::Diagonal::Sigmas(
-          model_->sigmas().tail(remainingRows));
-    assert(model_->dim() == (size_t)Ab_.rows());
-  }
-  gttoc(remaining_factor);
+  if (model_->isConstrained())
+    model_ = noiseModel::Constrained::MixedSigmas(model_->sigmas().tail(remainingRows));
+  else
+    model_ = noiseModel::Diagonal::Sigmas(model_->sigmas().tail(remainingRows));
+  assert(model_->dim() == (size_t)Ab_.rows());
 
   return conditional;
 }
 
-}
+}  // namespace gtsam

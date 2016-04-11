@@ -1,12 +1,12 @@
 /* ----------------------------------------------------------------------------
- 
+
  * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
- 
+
  * See LICENSE for the license information
- 
+
  * -------------------------------------------------------------------------- */
 
 /**
@@ -111,6 +111,20 @@ struct GTSAM_EXPORT SmartProjectionParams {
   }
   void setDynamicOutlierRejectionThreshold(double dynOutRejectionThreshold) {
     triangulation.dynamicOutlierRejectionThreshold = dynOutRejectionThreshold;
+  }
+
+private:
+
+  /// Serialization function
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int version) {
+    ar & BOOST_SERIALIZATION_NVP(linearizationMode);
+    ar & BOOST_SERIALIZATION_NVP(degeneracyMode);
+    ar & BOOST_SERIALIZATION_NVP(triangulation);
+    ar & BOOST_SERIALIZATION_NVP(retriangulationThreshold);
+    ar & BOOST_SERIALIZATION_NVP(throwCheirality);
+    ar & BOOST_SERIALIZATION_NVP(verboseCheirality);
   }
 };
 
@@ -535,8 +549,9 @@ private:
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int version) {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-    ar & BOOST_SERIALIZATION_NVP(params_.throwCheirality);
-    ar & BOOST_SERIALIZATION_NVP(params_.verboseCheirality);
+    ar & BOOST_SERIALIZATION_NVP(params_);
+    ar & BOOST_SERIALIZATION_NVP(result_);
+    ar & BOOST_SERIALIZATION_NVP(cameraPosesTriangulation_);
   }
 }
 ;

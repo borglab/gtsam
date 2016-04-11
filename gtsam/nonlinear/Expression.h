@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -22,6 +22,7 @@
 #include <gtsam/nonlinear/internal/JacobianMap.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/base/OptionalJacobian.h>
+#include <gtsam/base/VectorSpace.h>
 
 #include <boost/bind.hpp>
 #include <boost/make_shared.hpp>
@@ -52,10 +53,13 @@ public:
   /// Define type so we can apply it as a meta-function
   typedef Expression<T> type;
 
-private:
+protected:
 
   // Paul's trick shared pointer, polymorphic root of entire expression tree
   boost::shared_ptr<internal::ExpressionNode<T> > root_;
+
+  /// Construct with a custom root
+  Expression(const boost::shared_ptr<internal::ExpressionNode<T> >& root) : root_(root) {}
 
 public:
 
@@ -85,9 +89,6 @@ public:
             typename MakeOptionalJacobian<T, A3>::type)> type;
   };
 
-  /// Print
-  void print(const std::string& s) const;
-
   /// Construct a constant expression
   Expression(const T& value);
 
@@ -98,7 +99,7 @@ public:
   Expression(const Symbol& symbol);
 
   /// Construct a leaf expression, creating Symbol
-  Expression(unsigned char c, size_t j);
+  Expression(unsigned char c, std::uint64_t j);
 
   /// Construct a unary function expression
   template<typename A>
@@ -147,6 +148,9 @@ public:
   /// Return dimensions for each argument, as a map
   void dims(std::map<Key, int>& map) const;
 
+  /// Print
+  void print(const std::string& s) const;
+
   /**
    * @brief Return value and optional derivatives, reverse AD version
    * Notes: this is not terribly efficient, and H should have correct size.
@@ -170,7 +174,7 @@ public:
   /// Return size needed for memory buffer in traceExecution
   size_t traceSize() const;
 
-private:
+protected:
 
   /// Default constructor, for serialization
   Expression() {}
@@ -198,6 +202,85 @@ private:
   // and add tests
   friend class ::ExpressionFactorShallowTest;
 };
+
+/**
+ *  A ScalarMultiplyExpression is a specialization of Expression that multiplies with a scalar
+ *  It optimizes the Jacobian calculation for this specific case
+ */
+template <typename T>
+class ScalarMultiplyExpression : public Expression<T> {
+  // Check that T is a vector space
+  BOOST_CONCEPT_ASSERT((gtsam::IsVectorSpace<T>));
+
+ public:
+  explicit ScalarMultiplyExpression(double s, const Expression<T>& e);
+};
+
+/**
+ *  A SumExpression is a specialization of Expression that just sums the arguments
+ *  It optimizes the Jacobian calculation for this specific case
+ */
+template <typename T>
+class SumExpression : public Expression<T> {
+  // Check that T is a vector space
+  BOOST_CONCEPT_ASSERT((gtsam::IsVectorSpace<T>));
+
+ public:
+  explicit SumExpression(const std::vector<Expression<T>>& expressions);
+
+  // Syntactic sugar to allow e1 + e2 + e3...
+  SumExpression operator+(const Expression<T>& e) const;
+  SumExpression& operator+=(const Expression<T>& e);
+
+  size_t nrTerms() const;
+};
+
+/**
+ * Create an expression out of a linear function f:T->A with (constant) Jacobian dTdA
+ *  TODO(frank): create a more efficient version like ScalarMultiplyExpression. This version still
+ *  does a malloc every linearize.
+ */
+template <typename T, typename A>
+Expression<T> linearExpression(
+    const boost::function<T(A)>& f, const Expression<A>& expression,
+    const Eigen::Matrix<double, traits<T>::dimension, traits<A>::dimension>& dTdA) {
+  // Use lambda to endow f with a linear Jacobian
+  typename Expression<T>::template UnaryFunction<A>::type g =
+      [=](const A& value, typename MakeOptionalJacobian<T, A>::type H) {
+        if (H)
+          *H << dTdA;
+        return f(value);
+      };
+  return Expression<T>(g, expression);
+}
+
+/**
+ *  Construct an expression that executes the scalar multiplication with an input expression
+ *  The type T must be a vector space
+ *  Example:
+ *    Expression<Point2> a(0), b = 12 * a;
+ */
+template <typename T>
+ScalarMultiplyExpression<T> operator*(double s, const Expression<T>& e) {
+  return ScalarMultiplyExpression<T>(s, e);
+}
+
+/**
+ *  Construct an expression that sums two input expressions of the same type T
+ *  The type T must be a vector space
+ *  Example:
+ *    Expression<Point2> a(0), b(1), c = a + b;
+ */
+template <typename T>
+SumExpression<T> operator+(const Expression<T>& e1, const Expression<T>& e2) {
+  return SumExpression<T>({e1, e2});
+}
+
+/// Construct an expression that subtracts one expression from another
+template <typename T>
+SumExpression<T> operator-(const Expression<T>& e1, const Expression<T>& e2) {
+  return e1 + (-1.0) * e2;
+}
 
 /**
  *  Construct a product expression, assumes T::compose(T) -> T

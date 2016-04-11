@@ -121,6 +121,8 @@ namespace Eigen {
     \ingroup Sparse_chapter */
 /** \addtogroup TopicSparseSystems
     \ingroup Sparse_chapter */
+/** \addtogroup MatrixfreeSolverExample
+    \ingroup Sparse_chapter */
 
 /** \addtogroup Sparse_Reference
     \ingroup Sparse_chapter */

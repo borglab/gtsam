@@ -232,9 +232,11 @@ namespace gtsam {
       /**
        * Apply appropriately weighted QR factorization to the system [A b]
        *               Q'  *   [A b]  =  [R d]
-       * Dimensions: (r*m) * m*(n+1) = r*(n+1)
+       * Dimensions: (r*m) * m*(n+1) = r*(n+1), where r = min(m,n).
+       * This routine performs an in-place factorization on Ab.
+       * Below-diagonal elements are set to zero by this routine.
        * @param Ab is the m*(n+1) augmented system matrix [A b]
-       * @return in-place QR factorization [R d]. Below-diagonal is undefined !!!!!
+       * @return Empty SharedDiagonal() noise model: R,d are whitened
        */
       virtual boost::shared_ptr<Diagonal> QR(Matrix& Ab) const;
 
@@ -307,7 +309,7 @@ namespace gtsam {
        * i.e. the diagonal of the information matrix, i.e., weights
        */
       static shared_ptr Precisions(const Vector& precisions, bool smart = true) {
-        return Variances(reciprocal(precisions), smart);
+        return Variances(precisions.array().inverse(), smart);
       }
 
       virtual void print(const std::string& name) const;
@@ -414,7 +416,7 @@ namespace gtsam {
        * standard devations, some of which might be zero
        */
       static shared_ptr MixedSigmas(const Vector& sigmas) {
-        return MixedSigmas(repeat(sigmas.size(), 1000.0), sigmas);
+        return MixedSigmas(Vector::Constant(sigmas.size(), 1000.0), sigmas);
       }
 
       /**
@@ -422,7 +424,7 @@ namespace gtsam {
        * standard devations, some of which might be zero
        */
       static shared_ptr MixedSigmas(double m, const Vector& sigmas) {
-        return MixedSigmas(repeat(sigmas.size(), m), sigmas);
+        return MixedSigmas(Vector::Constant(sigmas.size(), m), sigmas);
       }
 
       /**
@@ -430,10 +432,10 @@ namespace gtsam {
        * standard devations, some of which might be zero
        */
       static shared_ptr MixedVariances(const Vector& mu, const Vector& variances) {
-        return shared_ptr(new Constrained(mu, esqrt(variances)));
+        return shared_ptr(new Constrained(mu, variances.cwiseSqrt()));
       }
       static shared_ptr MixedVariances(const Vector& variances) {
-        return shared_ptr(new Constrained(esqrt(variances)));
+        return shared_ptr(new Constrained(variances.cwiseSqrt()));
       }
 
       /**
@@ -441,10 +443,10 @@ namespace gtsam {
        * precisions, some of which might be inf
        */
       static shared_ptr MixedPrecisions(const Vector& mu, const Vector& precisions) {
-        return MixedVariances(mu, reciprocal(precisions));
+        return MixedVariances(mu, precisions.array().inverse());
       }
       static shared_ptr MixedPrecisions(const Vector& precisions) {
-        return MixedVariances(reciprocal(precisions));
+        return MixedVariances(precisions.array().inverse());
       }
 
       /**
@@ -456,17 +458,17 @@ namespace gtsam {
 
       /** Fully constrained variations */
       static shared_ptr All(size_t dim) {
-        return shared_ptr(new Constrained(repeat(dim, 1000.0), repeat(dim,0)));
+        return shared_ptr(new Constrained(Vector::Constant(dim, 1000.0), Vector::Constant(dim,0)));
       }
 
       /** Fully constrained variations */
       static shared_ptr All(size_t dim, const Vector& mu) {
-        return shared_ptr(new Constrained(mu, repeat(dim,0)));
+        return shared_ptr(new Constrained(mu, Vector::Constant(dim,0)));
       }
 
       /** Fully constrained variations with a mu parameter */
       static shared_ptr All(size_t dim, double mu) {
-        return shared_ptr(new Constrained(repeat(dim, mu), repeat(dim,0)));
+        return shared_ptr(new Constrained(Vector::Constant(dim, mu), Vector::Constant(dim,0)));
       }
 
       virtual void print(const std::string& name) const;
@@ -482,6 +484,12 @@ namespace gtsam {
 
       /**
        * Apply QR factorization to the system [A b], taking into account constraints
+       *               Q'  *   [A b]  =  [R d]
+       * Dimensions: (r*m) * m*(n+1) = r*(n+1), where r = min(m,n).
+       * This routine performs an in-place factorization on Ab.
+       * Below-diagonal elements are set to zero by this routine.
+       * @param Ab is the m*(n+1) augmented system matrix [A b]
+       * @return diagonal noise model can be all zeros, mixed, or not-constrained
        */
       virtual Diagonal::shared_ptr QR(Matrix& Ab) const;
 
@@ -514,10 +522,10 @@ namespace gtsam {
 
       /** protected constructor takes sigma */
       Isotropic(size_t dim, double sigma) :
-        Diagonal(repeat(dim, sigma)),sigma_(sigma),invsigma_(1.0/sigma) {}
+        Diagonal(Vector::Constant(dim, sigma)),sigma_(sigma),invsigma_(1.0/sigma) {}
 
       /* dummy constructor to allow for serialization */
-      Isotropic() : Diagonal(repeat(1, 1.0)),sigma_(1.0),invsigma_(1.0) {}
+      Isotropic() : Diagonal(Vector1::Constant(1.0)),sigma_(1.0),invsigma_(1.0) {}
 
     public:
 
@@ -618,8 +626,24 @@ namespace gtsam {
       }
     };
 
-    // TODO: should not really exist
-    /// The mEstimator namespace contains all robust error functions (not models)
+    /**
+     * The mEstimator name space contains all robust error functions.
+     * It mirrors the exposition at
+     *  http://research.microsoft.com/en-us/um/people/zhang/INRIA/Publis/Tutorial-Estim/node24.html
+     * which talks about minimizing \sum \rho(r_i), where \rho is a residual function of choice.
+     *
+     * To illustrate, let's consider the least-squares (L2), L1, and Huber estimators as examples:
+     *
+     * Name        Symbol          Least-Squares   L1-norm    Huber
+     * Residual    \rho(x)         0.5*x^2         |x|        0.5*x^2 if x<k, 0.5*k^2 + k|x-k| otherwise
+     * Derivative  \phi(x)         x               sgn(x)     x       if x<k, k sgn(x)         otherwise
+     * Weight      w(x)=\phi(x)/x  1               1/|x|      1       if x<k, k/|x|            otherwise
+     *
+     * With these definitions, D(\rho(x), p) = \phi(x) D(x,p) = w(x) x D(x,p) = w(x) D(L2(x), p),
+     * and hence we can solve the equivalent weighted least squares problem \sum w(r_i) \rho(r_i)
+     *
+     * Each M-estimator in the mEstimator name space simply implements the above functions.
+     */
     namespace mEstimator {
 
       //---------------------------------------------------------------------------------------
@@ -696,18 +720,19 @@ namespace gtsam {
 
       /// Fair implements the "Fair" robust error model (Zhang97ivc)
       class GTSAM_EXPORT Fair : public Base {
+      protected:
+        double c_;
+
       public:
         typedef boost::shared_ptr<Fair> shared_ptr;
 
         Fair(double c = 1.3998, const ReweightScheme reweight = Block);
-        virtual ~Fair() {}
-        virtual double weight(double error) const;
-        virtual void print(const std::string &s) const;
-        virtual bool equals(const Base& expected, double tol=1e-8) const;
+        double weight(double error) const {
+          return 1.0 / (1.0 + fabs(error) / c_);
+        }
+        void print(const std::string &s) const;
+        bool equals(const Base& expected, double tol=1e-8) const;
         static shared_ptr Create(double c, const ReweightScheme reweight = Block) ;
-
-      protected:
-        double c_;
 
       private:
         /** Serialization function */
@@ -721,18 +746,19 @@ namespace gtsam {
 
       /// Huber implements the "Huber" robust error model (Zhang97ivc)
       class GTSAM_EXPORT Huber : public Base {
+      protected:
+        double k_;
+
       public:
         typedef boost::shared_ptr<Huber> shared_ptr;
 
-        virtual ~Huber() {}
         Huber(double k = 1.345, const ReweightScheme reweight = Block);
-        virtual double weight(double error) const;
-        virtual void print(const std::string &s) const;
-        virtual bool equals(const Base& expected, double tol=1e-8) const;
+        double weight(double error) const {
+          return (error < k_) ? (1.0) : (k_ / fabs(error));
+        }
+        void print(const std::string &s) const;
+        bool equals(const Base& expected, double tol=1e-8) const;
         static shared_ptr Create(double k, const ReweightScheme reweight = Block) ;
-
-      protected:
-        double k_;
 
       private:
         /** Serialization function */
@@ -750,18 +776,19 @@ namespace gtsam {
       ///   oberlaender@fzi.de
       /// Thanks Jan!
       class GTSAM_EXPORT Cauchy : public Base {
+      protected:
+        double k_, ksquared_;
+
       public:
         typedef boost::shared_ptr<Cauchy> shared_ptr;
 
-        virtual ~Cauchy() {}
         Cauchy(double k = 0.1, const ReweightScheme reweight = Block);
-        virtual double weight(double error) const;
-        virtual void print(const std::string &s) const;
-        virtual bool equals(const Base& expected, double tol=1e-8) const;
+        double weight(double error) const {
+          return ksquared_ / (ksquared_ + error*error);
+        }
+        void print(const std::string &s) const;
+        bool equals(const Base& expected, double tol=1e-8) const;
         static shared_ptr Create(double k, const ReweightScheme reweight = Block) ;
-
-      protected:
-        double k_;
 
       private:
         /** Serialization function */
@@ -775,18 +802,23 @@ namespace gtsam {
 
       /// Tukey implements the "Tukey" robust error model (Zhang97ivc)
       class GTSAM_EXPORT Tukey : public Base {
+      protected:
+        double c_, csquared_;
+
       public:
         typedef boost::shared_ptr<Tukey> shared_ptr;
 
         Tukey(double c = 4.6851, const ReweightScheme reweight = Block);
-        virtual ~Tukey() {}
-        virtual double weight(double error) const;
-        virtual void print(const std::string &s) const;
-        virtual bool equals(const Base& expected, double tol=1e-8) const;
+        double weight(double error) const {
+          if (std::fabs(error) <= c_) {
+            double xc2 = error*error/csquared_;
+            return (1.0-xc2)*(1.0-xc2);
+          }
+          return 0.0;
+        }
+        void print(const std::string &s) const;
+        bool equals(const Base& expected, double tol=1e-8) const;
         static shared_ptr Create(double k, const ReweightScheme reweight = Block) ;
-
-      protected:
-        double c_;
 
       private:
         /** Serialization function */
@@ -800,18 +832,20 @@ namespace gtsam {
 
       /// Welsh implements the "Welsh" robust error model (Zhang97ivc)
       class GTSAM_EXPORT Welsh : public Base {
+      protected:
+        double c_, csquared_;
+
       public:
         typedef boost::shared_ptr<Welsh> shared_ptr;
 
         Welsh(double c = 2.9846, const ReweightScheme reweight = Block);
-        virtual ~Welsh() {}
-        virtual double weight(double error) const;
-        virtual void print(const std::string &s) const;
-        virtual bool equals(const Base& expected, double tol=1e-8) const;
+        double weight(double error) const {
+          double xc2 = (error*error)/csquared_;
+          return std::exp(-xc2);
+        }
+        void print(const std::string &s) const;
+        bool equals(const Base& expected, double tol=1e-8) const;
         static shared_ptr Create(double k, const ReweightScheme reweight = Block) ;
-
-      protected:
-        double c_;
 
       private:
         /** Serialization function */
@@ -884,7 +918,23 @@ namespace gtsam {
 
     } ///\namespace mEstimator
 
-    /// Base class for robust error models
+    /**
+     *  Base class for robust error models
+     *  The robust M-estimators above simply tell us how to re-weight the residual, and are
+     *  isotropic kernels, in that they do not allow for correlated noise. They also have no way
+     *  to scale the residual values, e.g., dividing by a single standard deviation.
+     *  Hence, the actual robust noise model below does this scaling/whitening in sequence, by
+     *  passing both a standard noise model and a robust estimator.
+     *
+     *  Taking as an example noise = Isotropic::Create(d, sigma),  we first divide the residuals
+     *  uw = |Ax-b| by sigma by "whitening" the system (A,b), obtaining r = |Ax-b|/sigma, and
+     *  then we pass the now whitened residual 'r' through the robust M-estimator.
+     *  This is currently done by multiplying with sqrt(w), because the residuals will be squared
+     *  again in error, yielding 0.5 \sum w(r)*r^2.
+     *
+     *  In other words, while sigma is expressed in the native residual units, a parameter like
+     *  k in the Huber norm is expressed in whitened units, i.e., "nr of sigmas".
+     */
     class GTSAM_EXPORT Robust : public Base {
     public:
       typedef boost::shared_ptr<Robust> shared_ptr;

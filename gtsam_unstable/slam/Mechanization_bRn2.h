@@ -68,7 +68,7 @@ public:
    * @param obj The current state
    * @param dx The error used to correct and return a new state
    */
-  Mechanization_bRn2 correct(const Vector3& dx) const;
+  Mechanization_bRn2 correct(const Vector9& dx) const;
 
   /**
    * Integrate to get new state

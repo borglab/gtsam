@@ -110,8 +110,8 @@ VectorValues NonlinearOptimizer::solve(const GaussianFactorGraph &gfg,
     delta = gfg.optimize(*params.ordering, params.getEliminationFunction());
   } else if (params.isSequential()) {
     // Sequential QR or Cholesky (decided by params.getEliminationFunction())
-    delta = gfg.eliminateSequential(*params.ordering, params.getEliminationFunction(), 
-								     boost::none, params.orderingType)->optimize();
+    delta = gfg.eliminateSequential(*params.ordering,
+            params.getEliminationFunction(), boost::none, params.orderingType)->optimize();
   } else if (params.isIterative()) {
 
     // Conjugate Gradient -> needs params.iterativeParams
@@ -184,6 +184,10 @@ bool checkConvergence(double relativeErrorTreshold, double absoluteErrorTreshold
 }
 
 /* ************************************************************************* */
-
+GTSAM_EXPORT bool checkConvergence(const NonlinearOptimizerParams& params, double currentError,
+                                   double newError) {
+  return checkConvergence(params.relativeErrorTol, params.absoluteErrorTol, params.errorTol,
+                          currentError, newError, params.verbosity);
+}
 
 }

@@ -30,6 +30,7 @@ public:
   /// Constructor
   OrientedPlane3Factor() {
   }
+  virtual ~OrientedPlane3Factor() {}
 
   /// Constructor with measured plane coefficients (a,b,c,d), noise model, pose symbol
   OrientedPlane3Factor(const Vector&z, const SharedGaussian& noiseModel,

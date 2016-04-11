@@ -463,6 +463,35 @@ TEST( NonlinearOptimizer, logfile )
 }
 
 /* ************************************************************************* */
+// Minimal traits example
+struct MyType : public Vector3 {
+  using Vector3::Vector3;
+};
+
+namespace gtsam {
+template <>
+struct traits<MyType> {
+  static bool Equals(const MyType&, const MyType&, double tol) {return true;}
+  static void Print(const MyType&, const string&) {}
+  static int GetDimension(const MyType&) { return 3;}
+  static MyType Retract(const MyType&, const Vector3&) {return MyType();}
+  static Vector3 Local(const MyType&, const MyType&) {return Vector3();}
+};
+}
+
+TEST(NonlinearOptimizer, Traits) {
+  NonlinearFactorGraph fg;
+  fg += PriorFactor<MyType>(0, MyType(0, 0, 0), noiseModel::Isotropic::Sigma(3, 1));
+
+  Values init;
+  init.insert(0, MyType(0,0,0));
+
+  LevenbergMarquardtOptimizer optimizer(fg, init);
+  Values actual = optimizer.optimize();
+  EXPECT(assert_equal(init, actual));
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

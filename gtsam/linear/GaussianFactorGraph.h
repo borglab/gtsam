@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -17,7 +17,7 @@
  * @author  Alireza Fathi
  * @author  Richard Roberts
  * @author  Frank Dellaert
- */ 
+ */
 
 #pragma once
 
@@ -140,8 +140,6 @@ namespace gtsam {
 
     /* return a map of (Key, dimension) */
     std::map<Key, size_t> getKeyDimMap() const;
-
-    std::vector<size_t> getkeydim() const;
 
     /** unnormalized error */
     double error(const VectorValues& x) const {

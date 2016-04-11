@@ -959,8 +959,8 @@ TEST( SmartProjectionPoseFactor, 3poses_2land_rotation_only_smart_projection_fac
   views.push_back(x3);
 
   // Two different cameras, at the same position, but different rotations
-  Pose3 pose2 = level_pose * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3());
-  Pose3 pose3 = pose2 * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3());
+  Pose3 pose2 = level_pose * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0,0,0));
+  Pose3 pose3 = pose2 * Pose3(Rot3::RzRyRx(-0.05, 0.0, -0.05), Point3(0,0,0));
   Camera cam2(pose2, sharedK2);
   Camera cam3(pose3, sharedK2);
 
@@ -1403,6 +1403,26 @@ TEST(SmartProjectionPoseFactor, serialize) {
   SmartProjectionParams params;
   params.setRankTolerance(rankTol);
   SmartFactor factor(model, sharedK, boost::none, params);
+
+  EXPECT(equalsObj(factor));
+  EXPECT(equalsXML(factor));
+  EXPECT(equalsBinary(factor));
+}
+
+TEST(SmartProjectionPoseFactor, serialize2) {
+  using namespace vanillaPose;
+  using namespace gtsam::serializationTestHelpers;
+  SmartProjectionParams params;
+  params.setRankTolerance(rankTol);
+  Pose3 bts;
+  SmartFactor factor(model, sharedK, bts, params);
+
+  // insert some measurments
+  vector<Key> key_view;
+  vector<Point2> meas_view;
+  key_view.push_back(Symbol('x', 1));
+  meas_view.push_back(Point2(10, 10));
+  factor.add(meas_view, key_view);
 
   EXPECT(equalsObj(factor));
   EXPECT(equalsXML(factor));

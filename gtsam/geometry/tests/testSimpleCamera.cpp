@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -28,13 +28,9 @@ using namespace gtsam;
 
 static const Cal3_S2 K(625, 625, 0, 0, 0);
 
-static const Pose3 pose1((Matrix3() <<
-              1., 0., 0.,
-              0.,-1., 0.,
-              0., 0.,-1.
-              ).finished(),
-            Point3(0,0,0.5));
- 
+static const Pose3 pose1(Rot3(Vector3(1, -1, -1).asDiagonal()),
+                         Point3(0, 0, 0.5));
+
 static const SimpleCamera camera(pose1, K);
 
 static const Point3 point1(-0.08,-0.08, 0.0);
@@ -67,16 +63,16 @@ TEST( SimpleCamera, level2)
 TEST( SimpleCamera, lookat)
 {
   // Create a level camera, looking in Y-direction
-  Point3 C(10.0,0.0,0.0);
-  SimpleCamera camera = SimpleCamera::Lookat(C, Point3(), Point3(0.0,0.0,1.0));
+  Point3 C(10,0,0);
+  SimpleCamera camera = SimpleCamera::Lookat(C, Point3(0,0,0), Point3(0,0,1));
 
   // expected
   Point3 xc(0,1,0),yc(0,0,-1),zc(-1,0,0);
   Pose3 expected(Rot3(xc,yc,zc),C);
   CHECK(assert_equal( camera.pose(), expected));
 
-  Point3 C2(30.0,0.0,10.0);
-  SimpleCamera camera2 = SimpleCamera::Lookat(C2, Point3(), Point3(0.0,0.0,1.0));
+  Point3 C2(30,0,10);
+  SimpleCamera camera2 = SimpleCamera::Lookat(C2, Point3(0,0,0), Point3(0,0,1));
 
   Matrix R = camera2.pose().rotation().matrix();
   Matrix I = trans(R)*R;
@@ -104,7 +100,7 @@ TEST( SimpleCamera, backproject)
 /* ************************************************************************* */
 TEST( SimpleCamera, backproject2)
 {
-  Point3 origin;
+  Point3 origin(0,0,0);
   Rot3 rot(1., 0., 0., 0., 0., 1., 0., -1., 0.); // a camera looking down
   SimpleCamera camera(Pose3(rot, origin), K);
 

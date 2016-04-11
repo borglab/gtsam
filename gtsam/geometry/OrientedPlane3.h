@@ -114,6 +114,15 @@ public:
    */
   Vector3 error(const OrientedPlane3& plane) const;
 
+  /** Computes the error between the two planes, with derivatives.
+   *  This uses Unit3::errorVector, as opposed to the other .error() in this class, which uses
+   *  Unit3::localCoordinates. This one has correct derivatives.
+   *  NOTE(hayk): The derivatives are zero when normals are exactly orthogonal.
+   * @param the other plane
+   */
+  Vector3 errorVector(const OrientedPlane3& other, OptionalJacobian<3, 3> H1 = boost::none, //
+                      OptionalJacobian<3, 3> H2 = boost::none) const;
+
   /// Dimensionality of tangent space = 3 DOF
   inline static size_t Dim() {
     return 3;

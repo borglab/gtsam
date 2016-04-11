@@ -43,7 +43,7 @@ struct VectorSpaceImpl {
       ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) {
     if (H1) *H1 = Jacobian::Identity();
     if (H2) *H2 = Jacobian::Identity();
-    return origin + (Class)v;
+    return origin + v;
   }
 
   /// @}
@@ -117,7 +117,7 @@ struct VectorSpaceImpl<Class,Eigen::Dynamic> {
       ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) {
     if (H1) *H1 = Eye(origin);
     if (H2) *H2 = Eye(origin);
-    return origin + Class(v);
+    return origin + v;
   }
 
   /// @}
@@ -159,11 +159,33 @@ struct VectorSpaceImpl<Class,Eigen::Dynamic> {
   /// @}
 };
 
-/// A helper that implements the traits interface for GTSAM vector space types.
-/// To use this for your gtsam type, define:
-/// template<> struct traits<Type> : public VectorSpaceTraits<Type> { };
+/// Requirements on type to pass it to Manifold template below
+template<class Class>
+struct HasVectorSpacePrereqs {
+
+  enum { dim = Class::dimension };
+
+  Class p, q;
+  Vector v;
+
+  BOOST_CONCEPT_USAGE(HasVectorSpacePrereqs) {
+    p = Class::identity();  // identity
+    q = p + p;              // addition
+    q = p - p;              // subtraction
+    v = p.vector();         // conversion to vector
+    q = p + v;              // addition of a vector on the right
+  }
+};
+
+/// A helper that implements the traits interface for *classes* that define vector spaces
+/// To use this for your class, define:
+/// template<> struct traits<Class> : public VectorSpaceTraits<Class> {};
+/// The class needs to support the requirements defined by HasVectorSpacePrereqs above
 template<class Class>
 struct VectorSpaceTraits: VectorSpaceImpl<Class, Class::dimension> {
+
+  // Check that Class has the necessary machinery
+  BOOST_CONCEPT_ASSERT((HasVectorSpacePrereqs<Class>));
 
   typedef vector_space_tag structure_category;
 
@@ -180,12 +202,11 @@ struct VectorSpaceTraits: VectorSpaceImpl<Class, Class::dimension> {
   /// @}
 };
 
-/// Both VectorSpaceTRaits and Testable
+/// VectorSpace provides both Testable and VectorSpaceTraits
 template<class Class>
 struct VectorSpace: Testable<Class>, VectorSpaceTraits<Class> {};
 
-/// A helper that implements the traits interface for GTSAM lie groups.
-/// To use this for your gtsam type, define:
+/// A helper that implements the traits interface for scalar vector spaces. Usage:
 /// template<> struct traits<Type> : public ScalarTraits<Type> { };
 template<typename Scalar>
 struct ScalarTraits : VectorSpaceImpl<Scalar, 1> {

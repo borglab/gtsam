@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -96,11 +96,11 @@ TEST( Rot3, equals)
 /* ************************************************************************* */
 // Notice this uses J^2 whereas fast uses w*w', and has cos(t)*I + ....
 Rot3 slow_but_correct_Rodrigues(const Vector& w) {
-  double t = norm_2(w);
-  Matrix J = skewSymmetric(w / t);
+  double t = w.norm();
+  Matrix3 J = skewSymmetric(w / t);
   if (t < 1e-5) return Rot3();
-  Matrix R = I_3x3 + sin(t) * J + (1.0 - cos(t)) * (J * J);
-  return R;
+  Matrix3 R = I_3x3 + sin(t) * J + (1.0 - cos(t)) * (J * J);
+  return Rot3(R);
 }
 
 /* ************************************************************************* */
@@ -117,18 +117,20 @@ TEST( Rot3, Rodrigues2)
 {
   Vector axis = Vector3(0., 1., 0.); // rotation around Y
   double angle = 3.14 / 4.0;
-  Rot3 actual = Rot3::AxisAngle(axis, angle);
   Rot3 expected(0.707388, 0, 0.706825,
                        0, 1,        0,
                -0.706825, 0, 0.707388);
+  Rot3 actual = Rot3::AxisAngle(axis, angle);
   CHECK(assert_equal(expected,actual,1e-5));
+  Rot3 actual2 = Rot3::Rodrigues(angle*axis);
+  CHECK(assert_equal(expected,actual2,1e-5));
 }
 
 /* ************************************************************************* */
 TEST( Rot3, Rodrigues3)
 {
   Vector w = Vector3(0.1, 0.2, 0.3);
-  Rot3 R1 = Rot3::AxisAngle(w / norm_2(w), norm_2(w));
+  Rot3 R1 = Rot3::AxisAngle(w / w.norm(), w.norm());
   Rot3 R2 = slow_but_correct_Rodrigues(w);
   CHECK(assert_equal(R2,R1));
 }
@@ -201,7 +203,7 @@ TEST(Rot3, log)
   // Windows and Linux have flipped sign in quaternion mode
 #if !defined(__APPLE__) && defined (GTSAM_USE_QUATERNIONS)
   w = (Vector(3) << x*PI, y*PI, z*PI).finished();
-  R = Rot3::Rodrigues(w); 
+  R = Rot3::Rodrigues(w);
   EXPECT(assert_equal(Vector(-w), Rot3::Logmap(R),1e-12));
 #else
   CHECK_OMEGA(x*PI,y*PI,z*PI)
@@ -222,16 +224,16 @@ TEST(Rot3, log)
 /* ************************************************************************* */
 TEST(Rot3, retract_localCoordinates)
 {
-  Vector3 d12 = repeat(3,0.1);
+  Vector3 d12 = Vector3::Constant(0.1);
   Rot3 R2 = R.retract(d12);
   EXPECT(assert_equal(d12, R.localCoordinates(R2)));
 }
 /* ************************************************************************* */
 TEST(Rot3, expmap_logmap)
 {
-  Vector3 d12 = repeat(3,0.1);
+  Vector3 d12 = Vector3::Constant(0.1);
   Rot3 R2 = R.expmap(d12);
-  EXPECT(assert_equal(d12, R.logmap(R2)));
+  EXPECT(assert_equal(d12, (Vector) R.logmap(R2)));
 }
 
 /* ************************************************************************* */
@@ -242,6 +244,7 @@ TEST(Rot3, retract_localCoordinates2)
   EXPECT(assert_equal(t2, t1.retract(d12)));
   Vector d21 = t2.localCoordinates(t1);
   EXPECT(assert_equal(t1, t2.retract(d21)));
+  EXPECT(assert_equal(d12, -d21));
 }
 /* ************************************************************************* */
 TEST(Rot3, manifold_expmap)
@@ -274,14 +277,13 @@ TEST(Rot3, manifold_expmap)
 }
 
 /* ************************************************************************* */
-class AngularVelocity: public Point3 {
-public:
-  AngularVelocity(const Point3& p) :
-    Point3(p) {
-  }
-  AngularVelocity(double wx, double wy, double wz) :
-    Point3(wx, wy, wz) {
-  }
+class AngularVelocity : public Vector3 {
+ public:
+  template <typename Derived>
+  inline AngularVelocity(const Eigen::MatrixBase<Derived>& v)
+      : Vector3(v) {}
+
+  AngularVelocity(double wx, double wy, double wz) : Vector3(wx, wy, wz) {}
 };
 
 AngularVelocity bracket(const AngularVelocity& X, const AngularVelocity& Y) {
@@ -294,10 +296,10 @@ TEST(Rot3, BCH)
   // Approximate exmap by BCH formula
   AngularVelocity w1(0.2, -0.1, 0.1);
   AngularVelocity w2(0.01, 0.02, -0.03);
-  Rot3 R1 = Rot3::Expmap (w1.vector()), R2 = Rot3::Expmap (w2.vector());
+  Rot3 R1 = Rot3::Expmap (w1), R2 = Rot3::Expmap (w2);
   Rot3 R3 = R1 * R2;
   Vector expected = Rot3::Logmap(R3);
-  Vector actual = BCH(w1, w2).vector();
+  Vector actual = BCH(w1, w2);
   CHECK(assert_equal(expected, actual,1e-5));
 }
 
@@ -543,8 +545,8 @@ TEST(Rot3, quaternion) {
   Point3 expected1 = R1*p1;
   Point3 expected2 = R2*p2;
 
-  Point3 actual1 = Point3(q1*p1.vector());
-  Point3 actual2 = Point3(q2*p2.vector());
+  Point3 actual1 = Point3(q1*p1);
+  Point3 actual2 = Point3(q2*p2);
 
   EXPECT(assert_equal(expected1, actual1));
   EXPECT(assert_equal(expected2, actual2));
