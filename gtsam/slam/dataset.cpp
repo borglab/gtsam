@@ -564,10 +564,12 @@ GraphAndValues load3D(const string& filename) {
         }
       }
       Matrix mgtsam = I_6x6;
-      mgtsam.block(0,0,3,3) = m.block(3,3,3,3); // cov rotation
-      mgtsam.block(3,3,3,3) = m.block(0,0,3,3); // cov translation
-      mgtsam.block(0,3,3,3) = m.block(0,3,3,3); // off diagonal
-      mgtsam.block(3,0,3,3) = m.block(3,0,3,3); // off diagonal
+
+      mgtsam.block<3,3>(0,0) = m.block<3,3>(3,3); // cov rotation
+      mgtsam.block<3,3>(3,3) = m.block<3,3>(0,0); // cov translation
+      mgtsam.block<3,3>(0,3) = m.block<3,3>(0,3); // off diagonal
+      mgtsam.block<3,3>(3,0) = m.block<3,3>(3,0); // off diagonal
+
       SharedNoiseModel model = noiseModel::Gaussian::Information(mgtsam);
       NonlinearFactor::shared_ptr factor(new BetweenFactor<Pose3>(id1, id2, Pose3(R,t), model));
       graph->push_back(factor);
