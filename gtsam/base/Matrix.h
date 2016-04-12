@@ -23,11 +23,12 @@
 #pragma once
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/Vector.h>
-#include <gtsam/config.h>      // Configuration from CMake
-
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+#include <gtsam/config.h>
 #include <Eigen/Core>
 #include <Eigen/Cholesky>
 #include <Eigen/LU>
+#endif
 #include <boost/format.hpp>
 #include <boost/function.hpp>
 #include <boost/tuple/tuple.hpp>
