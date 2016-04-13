@@ -81,7 +81,7 @@ Pose3 Pose3Upright::pose() const {
 Pose3Upright Pose3Upright::inverse(boost::optional<Matrix&> H1) const {
   Pose3Upright result(T_.inverse(H1), -z_);
   if (H1) {
-    Matrix H1_ = -eye(4,4);
+    Matrix H1_ = -I_4x4;
     H1_.topLeftCorner(2,2) = H1->topLeftCorner(2,2);
     H1_.topRightCorner(2, 1) = H1->topRightCorner(2, 1);
     *H1 = H1_;
@@ -96,12 +96,12 @@ Pose3Upright Pose3Upright::compose(const Pose3Upright& p2,
     return Pose3Upright(T_.compose(p2.T_), z_ + p2.z_);
   Pose3Upright result(T_.compose(p2.T_, H1), z_ + p2.z_);
   if (H1) {
-    Matrix H1_ = eye(4,4);
+    Matrix H1_ = I_4x4;
     H1_.topLeftCorner(2,2) = H1->topLeftCorner(2,2);
     H1_.topRightCorner(2, 1) = H1->topRightCorner(2, 1);
     *H1 = H1_;
   }
-  if (H2) *H2 = eye(4,4);
+  if (H2) *H2 = I_4x4;
   return result;
 }
 
@@ -112,12 +112,12 @@ Pose3Upright Pose3Upright::between(const Pose3Upright& p2,
     return Pose3Upright(T_.between(p2.T_), p2.z_ - z_);
   Pose3Upright result(T_.between(p2.T_, H1, H2), p2.z_ - z_);
   if (H1) {
-    Matrix H1_ = -eye(4,4);
+    Matrix H1_ = -I_4x4;
     H1_.topLeftCorner(2,2) = H1->topLeftCorner(2,2);
     H1_.topRightCorner(2, 1) = H1->topRightCorner(2, 1);
     *H1 = H1_;
   }
-  if (H2) *H2 = eye(4,4);
+  if (H2) *H2 = I_4x4;
   return result;
 }
 

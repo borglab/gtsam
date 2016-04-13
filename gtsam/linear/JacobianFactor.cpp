@@ -565,8 +565,7 @@ void JacobianFactor::transposeMultiplyAdd(double alpha, const Vector& e,
     pair<VectorValues::iterator, bool> xi = x.tryInsert(j, Vector());
     if (xi.second)
       xi.first->second = Vector::Zero(getDim(begin() + pos));
-    gtsam::transposeMultiplyAdd(Ab_(pos), E, xi.first->second);
-
+    xi.first->second += Ab_(pos).transpose()*E;
   }
 }
 

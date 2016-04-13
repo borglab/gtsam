@@ -100,7 +100,7 @@ public:
         boost::optional<Matrix&> Dlocal = boost::none) const  {
     Point newlocal = transform_point<Transform,Point>(trans, global, Dtrans, Dforeign);
     if (Dlocal)
-      *Dlocal = -1* gtsam::eye(Point::dimension);
+      *Dlocal = -1* Matrix::Identity(Point::dimension,Point::dimension);
     return traits<Point>::Local(local,newlocal);
   }
 

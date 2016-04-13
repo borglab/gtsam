@@ -55,8 +55,8 @@ Vector Rot2BetweenFactorEvaluateErrorOptimizedBetween(const Rot2& measured, cons
   boost::optional<Matrix&> H1, boost::optional<Matrix&> H2)
 {
   Rot2 hx = Rot2betweenOptimized(p1, p2); // h(x)
-  if (H1) *H1 = -eye(1);
-  if (H2) *H2 = eye(1);
+  if (H1) *H1 = -I_1x1;
+  if (H2) *H2 = I_1x1;
   // manifold equivalent of h(x)-z -> log(z,h(x))
   return Rot2::Logmap(Rot2betweenOptimized(measured, hx));
 }
@@ -67,8 +67,8 @@ Vector Rot2BetweenFactorEvaluateErrorOptimizedBetweenNoeye(const Rot2& measured,
 {
   // TODO: Implement
   Rot2 hx = Rot2betweenOptimized(p1, p2); // h(x)
-  if (H1) *H1 = -Matrix::Identity(1,1);
-  if (H2) *H2 = Matrix::Identity(1,1);
+  if (H1) *H1 = -I_1x1;
+  if (H2) *H2 = I_1x1;
   // manifold equivalent of h(x)-z -> log(z,h(x))
   return Rot2::Logmap(Rot2betweenOptimized(measured, hx));
 }

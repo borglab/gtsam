@@ -23,16 +23,16 @@
 #pragma once
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/Vector.h>
-#include <gtsam/config.h>      // Configuration from CMake
-
+#include <gtsam/config.h>
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 #include <Eigen/Core>
 #include <Eigen/Cholesky>
 #include <Eigen/LU>
+#endif
 #include <boost/format.hpp>
 #include <boost/function.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/math/special_functions/fpclassify.hpp>
-
 
 /**
  * Matrix is a typedef in the gtsam namespace
@@ -74,40 +74,8 @@ GTSAM_MAKE_MATRIX_DEFS(9);
 typedef Eigen::Block<Matrix> SubMatrix;
 typedef Eigen::Block<const Matrix> ConstSubMatrix;
 
-// Matlab-like syntax
-
 /**
- * Creates an zeros matrix, with matlab-like syntax
- *
- * Note: if assigning a block (created from an Eigen block() function) of a matrix to zeros,
- * don't use this function, instead use ".setZero(m,n)" to avoid an Eigen error.
- */
-GTSAM_EXPORT Matrix zeros(size_t m, size_t n);
-
-/**
- * Creates an ones matrix, with matlab-like syntax
- */
-GTSAM_EXPORT Matrix ones(size_t m, size_t n);
-
-/**
- * Creates an identity matrix, with matlab-like syntax
- *
- * Note: if assigning a block (created from an Eigen block() function) of a matrix to identity,
- * don't use this function, instead use ".setIdentity(m,n)" to avoid an Eigen error.
- */
-GTSAM_EXPORT Matrix eye(size_t m, size_t n);
-
-/**
- * Creates a square identity matrix, with matlab-like syntax
- *
- * Note: if assigning a block (created from an Eigen block() function) of a matrix to identity,
- * don't use this function, instead use ".setIdentity(m)" to avoid an Eigen error.
- */
-inline Matrix eye( size_t m ) { return eye(m,m); }
-GTSAM_EXPORT Matrix diag(const Vector& v);
-
-/**
- * equals with an tolerance
+ * equals with a tolerance
  */
 template <class MATRIX>
 bool equal_with_abs_tol(const Eigen::DenseBase<MATRIX>& A, const Eigen::DenseBase<MATRIX>& B, double tol = 1e-9) {
@@ -167,35 +135,10 @@ GTSAM_EXPORT bool linear_independent(const Matrix& A, const Matrix& B, double to
 GTSAM_EXPORT bool linear_dependent(const Matrix& A, const Matrix& B, double tol = 1e-9);
 
 /**
- * BLAS Level-2 style e <- e + alpha*A*x
- */
-GTSAM_EXPORT void multiplyAdd(double alpha, const Matrix& A, const Vector& x, Vector& e);
-
-/**
- * BLAS Level-2 style e <- e + A*x
- */
-GTSAM_EXPORT void multiplyAdd(const Matrix& A, const Vector& x, Vector& e);
-
-/**
  * overload ^ for trans(A)*v
  * We transpose the vectors for speed.
  */
 GTSAM_EXPORT Vector operator^(const Matrix& A, const Vector & v);
-
-/**
- * BLAS Level-2 style x <- x + alpha*A'*e
- */
-GTSAM_EXPORT void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, Vector& x);
-
-/**
- * BLAS Level-2 style x <- x + A'*e
- */
-GTSAM_EXPORT void transposeMultiplyAdd(const Matrix& A, const Vector& e, Vector& x);
-
-/**
- * BLAS Level-2 style x <- x + alpha*A'*e
- */
-GTSAM_EXPORT void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, SubVector x);
 
 /** products using old-style format to improve compatibility */
 template<class MATRIX>
@@ -282,19 +225,6 @@ const typename MATRIX::ConstRowXpr row(const MATRIX& A, size_t j) {
 }
 
 /**
- * inserts a column into a matrix IN PLACE
- * NOTE: there is no size checking
- * Alternate form allows for vectors smaller than the whole column to be inserted
- * @param A matrix to be modified in place
- * @param col is the vector to be inserted
- * @param j is the index to insert the column
- */
-GTSAM_EXPORT void insertColumn(Matrix& A, const Vector& col, size_t j);
-GTSAM_EXPORT void insertColumn(Matrix& A, const Vector& col, size_t i, size_t j);
-
-GTSAM_EXPORT Vector columnNormSquare(const Matrix &A);
-
-/**
  * Zeros all of the elements below the diagonal of a matrix, in place
  * @param A is a matrix, to be modified in place
  * @param cols is the number of columns to zero, use zero for all columns
@@ -354,17 +284,6 @@ inline typename Reshape<OutM, OutN, OutOptions, InM, InN, InOptions>::ReshapedTy
   BOOST_STATIC_ASSERT(InM * InN == OutM * OutN);
   return Reshape<OutM, OutN, OutOptions, InM, InN, InOptions>::reshape(m);
 }
-
-/**
- * solve AX=B via in-place Lu factorization and backsubstitution
- * After calling, A contains LU, B the solved RHS vectors
- */
-GTSAM_EXPORT void solve(Matrix& A, Matrix& B);
-
-/**
- * invert A
- */
-GTSAM_EXPORT Matrix inverse(const Matrix& A);
 
 /**
  * QR factorization, inefficient, best use imperative householder below
@@ -492,12 +411,6 @@ inline Matrix3 skewSymmetric(const Eigen::MatrixBase<Derived>& w) {
 /** Use Cholesky to calculate inverse square root of a matrix */
 GTSAM_EXPORT Matrix inverse_square_root(const Matrix& A);
 
-/** Calculate the LL^t decomposition of a S.P.D matrix */
-GTSAM_EXPORT Matrix LLt(const Matrix& A);
-
-/** Calculate the R^tR decomposition of a S.P.D matrix */
-GTSAM_EXPORT Matrix RtR(const Matrix& A);
-
 /** Return the inverse of a S.P.D. matrix.  Inversion is done via Cholesky decomposition. */
 GTSAM_EXPORT Matrix cholesky_inverse(const Matrix &A);
 
@@ -603,6 +516,28 @@ struct MultiplyWithInverseFunction {
   const Operator phi_;
 };
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+inline Matrix zeros( size_t m, size_t n ) { return Matrix::Zero(m,n); }
+inline Matrix ones( size_t m, size_t n ) { return Matrix::Ones(m,n); }
+inline Matrix eye( size_t m, size_t n) { return Matrix::Identity(m, n); }
+inline Matrix eye( size_t m ) { return eye(m,m); }
+inline Matrix diag(const Vector& v) { return v.asDiagonal(); }
+inline void multiplyAdd(double alpha, const Matrix& A, const Vector& x, Vector& e) { e += alpha * A * x; }
+inline void multiplyAdd(const Matrix& A, const Vector& x, Vector& e) { e += A * x; }
+inline void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, Vector& x) { x += alpha * A.transpose() * e; }
+inline void transposeMultiplyAdd(const Matrix& A, const Vector& e, Vector& x) { x += A.transpose() * e; }
+inline void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, SubVector x) { x += alpha * A.transpose() * e; }
+inline void insertColumn(Matrix& A, const Vector& col, size_t j) { A.col(j) = col; }
+inline void insertColumn(Matrix& A, const Vector& col, size_t i, size_t j) { A.col(j).segment(i, col.size()) = col; }
+inline void solve(Matrix& A, Matrix& B) { B = A.fullPivLu().solve(B); }
+inline Matrix inverse(const Matrix& A) { return A.inverse(); }
+#endif
+
+GTSAM_EXPORT Matrix LLt(const Matrix& A);
+
+GTSAM_EXPORT Matrix RtR(const Matrix& A);
+
+GTSAM_EXPORT Vector columnNormSquare(const Matrix &A);
 } // namespace gtsam
 
 #include <boost/serialization/nvp.hpp>

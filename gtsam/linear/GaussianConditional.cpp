@@ -183,7 +183,7 @@ namespace gtsam {
     if (frontalVec.hasNaN()) throw IndeterminantLinearSystemException(this->keys().front());
 
     for (const_iterator it = beginParents(); it!= endParents(); it++)
-      gtsam::transposeMultiplyAdd(-1.0, Matrix(getA(it)), frontalVec, gy[*it]);
+      gy[*it] += -1.0 * Matrix(getA(it)).transpose() * frontalVec;
 
     // Scale by sigmas
     if(model_)

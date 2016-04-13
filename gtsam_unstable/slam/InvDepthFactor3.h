@@ -89,9 +89,9 @@ public:
       gtsam::Point2 reprojectionError(camera.project(point, invDepth, H1, H2, H3) - measured_);
       return reprojectionError.vector();
     } catch( CheiralityException& e) {
-      if (H1) *H1 = gtsam::zeros(2,6);
-      if (H2) *H2 = gtsam::zeros(2,5);
-      if (H3) *H2 = gtsam::zeros(2,1);
+      if (H1) *H1 = Matrix::Zero(2,6);
+      if (H2) *H2 = Matrix::Zero(2,5);
+      if (H3) *H2 = Matrix::Zero(2,1);
       std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2()) <<
           " moved behind camera " << DefaultKeyFormatter(this->key1()) << std::endl;
       return gtsam::ones(2) * 2.0 * K_->fx();

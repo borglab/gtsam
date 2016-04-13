@@ -42,7 +42,7 @@ TEST(SymmetricBlockMatrix, ReadBlocks)
     23, 29).finished();
   Matrix actual1 = testBlockMatrix(1, 1);
   // Test only writing the upper triangle for efficiency
-  Matrix actual1t = Matrix::Zero(2, 2);
+  Matrix actual1t = Z_2x2;
   actual1t.triangularView<Eigen::Upper>() = testBlockMatrix(1, 1).triangularView();
   EXPECT(assert_equal(expected1, actual1));
   EXPECT(assert_equal(Matrix(expected1.triangularView<Eigen::Upper>()), actual1t));

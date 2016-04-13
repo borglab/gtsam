@@ -227,15 +227,15 @@ TEST( testPoseRTV, transformed_from_2 ) {
 
 /* ************************************************************************* */
 TEST(testPoseRTV, RRTMbn) {
-  EXPECT(assert_equal(Matrix::Identity(3,3), PoseRTV::RRTMbn(kZero3)));
-  EXPECT(assert_equal(Matrix::Identity(3,3), PoseRTV::RRTMbn(Rot3())));
+  EXPECT(assert_equal(I_3x3, PoseRTV::RRTMbn(kZero3)));
+  EXPECT(assert_equal(I_3x3, PoseRTV::RRTMbn(Rot3())));
   EXPECT(assert_equal(PoseRTV::RRTMbn(Vector3(0.3, 0.2, 0.1)), PoseRTV::RRTMbn(Rot3::Ypr(0.1, 0.2, 0.3))));
 }
 
 /* ************************************************************************* */
 TEST(testPoseRTV, RRTMnb) {
-  EXPECT(assert_equal(Matrix::Identity(3,3), PoseRTV::RRTMnb(kZero3)));
-  EXPECT(assert_equal(Matrix::Identity(3,3), PoseRTV::RRTMnb(Rot3())));
+  EXPECT(assert_equal(I_3x3, PoseRTV::RRTMnb(kZero3)));
+  EXPECT(assert_equal(I_3x3, PoseRTV::RRTMnb(Rot3())));
   EXPECT(assert_equal(PoseRTV::RRTMnb(Vector3(0.3, 0.2, 0.1)), PoseRTV::RRTMnb(Rot3::Ypr(0.1, 0.2, 0.3))));
 }
 

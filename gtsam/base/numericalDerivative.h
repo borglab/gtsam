@@ -142,7 +142,7 @@ typename internal::FixedSizeMatrix<Y,X>::type numericalDerivative11(boost::funct
   dx.setZero();
 
   // Fill in Jacobian H
-  Matrix H = zeros(m, N);
+  Matrix H = Matrix::Zero(m, N);
   const double factor = 1.0 / (2.0 * delta);
   for (int j = 0; j < N; j++) {
     dx(j) = delta;

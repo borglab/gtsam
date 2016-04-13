@@ -29,8 +29,8 @@ Vector gamma2 = Vector2(0.0, 0.0);  // no shape
 Vector u2 = Vector2(0.0, 0.0); // no control at time 2
 double distT = 1.0; // distance from the body-centered x axis to the big top motor
 double distR = 5.0; // distance from the body-centered z axis to the small motor
-Matrix Mass = diag((Vector(3) << mass, mass, mass).finished());
-Matrix Inertia = diag((Vector(6) << 2.0/5.0*mass*distR*distR, 2.0/5.0*mass*distR*distR, 2.0/5.0*mass*distR*distR, mass, mass, mass).finished());
+Matrix Mass = ((Vector(3) << mass, mass, mass).finished()).asDiagonal();
+Matrix Inertia = (Vector(6) << 2.0/5.0*mass*distR*distR, 2.0/5.0*mass*distR*distR, 2.0/5.0*mass*distR*distR, mass, mass, mass).finished().asDiagonal();
 
 Vector computeFu(const Vector& gamma, const Vector& control) {
   double gamma_r = gamma(0), gamma_p = gamma(1);

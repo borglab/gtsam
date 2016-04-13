@@ -56,7 +56,7 @@ public:
       Base() {
     size_t j = 0, m2 = E.rows(), m = m2 / ZDim;
     // Calculate projector Q
-    Matrix Q = eye(m2) - E * P * E.transpose();
+    Matrix Q = Matrix::Identity(m2,m2) - E * P * E.transpose();
     // Calculate pre-computed Jacobian matrices
     // TODO: can we do better ?
     std::vector<KeyMatrix> QF;

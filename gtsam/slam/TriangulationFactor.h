@@ -124,7 +124,7 @@ public:
       return error.vector();
     } catch (CheiralityException& e) {
       if (H2)
-        *H2 = zeros(Measurement::dimension, 3);
+        *H2 = Matrix::Zero(Measurement::dimension, 3);
       if (verboseCheirality_)
         std::cout << e.what() << ": Landmark "
             << DefaultKeyFormatter(this->key()) << " moved behind camera"

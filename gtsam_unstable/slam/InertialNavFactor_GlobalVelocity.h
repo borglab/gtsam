@@ -278,9 +278,9 @@ public:
   static inline noiseModel::Gaussian::shared_ptr CalcEquivalentNoiseCov(const noiseModel::Gaussian::shared_ptr& gaussian_acc, const noiseModel::Gaussian::shared_ptr& gaussian_gyro,
       const noiseModel::Gaussian::shared_ptr& gaussian_process){
 
-    Matrix cov_acc = inverse( gaussian_acc->R().transpose() * gaussian_acc->R() );
-    Matrix cov_gyro = inverse( gaussian_gyro->R().transpose() * gaussian_gyro->R() );
-    Matrix cov_process = inverse( gaussian_process->R().transpose() * gaussian_process->R() );
+    Matrix cov_acc = ( gaussian_acc->R().transpose() * gaussian_acc->R() ).inverse();
+    Matrix cov_gyro = ( gaussian_gyro->R().transpose() * gaussian_gyro->R() ).inverse();
+    Matrix cov_process = ( gaussian_process->R().transpose() * gaussian_process->R() ).inverse();
 
     cov_process.block(0,0, 3,3) += cov_gyro;
     cov_process.block(6,6, 3,3) += cov_acc;

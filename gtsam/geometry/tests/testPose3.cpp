@@ -153,7 +153,7 @@ Pose3 Agrawal06iros(const Vector& xi) {
     return Pose3(Rot3(), Point3(v));
   else {
     Matrix W = skewSymmetric(w/t);
-    Matrix A = eye(3) + ((1 - cos(t)) / t) * W + ((t - sin(t)) / t) * (W * W);
+    Matrix A = I_3x3 + ((1 - cos(t)) / t) * W + ((t - sin(t)) / t) * (W * W);
     return Pose3(Rot3::Expmap (w), Point3(A * v));
   }
 }
@@ -267,7 +267,7 @@ TEST( Pose3, inverse)
 {
   Matrix actualDinverse;
   Matrix actual = T.inverse(actualDinverse).matrix();
-  Matrix expected = inverse(T.matrix());
+  Matrix expected = T.matrix().inverse();
   EXPECT(assert_equal(actual,expected,1e-8));
 
   Matrix numericalH = numericalDerivative11(testing::inverse<Pose3>, T);
@@ -293,7 +293,7 @@ TEST( Pose3, inverseDerivatives2)
 TEST( Pose3, compose_inverse)
 {
   Matrix actual = (T*T.inverse()).matrix();
-  Matrix expected = eye(4,4);
+  Matrix expected = I_4x4;
   EXPECT(assert_equal(actual,expected,1e-8));
 }
 
@@ -723,9 +723,8 @@ TEST( Pose3, adjointMap) {
   Matrix res = Pose3::adjointMap(screwPose3::xi);
   Matrix wh = skewSymmetric(screwPose3::xi(0), screwPose3::xi(1), screwPose3::xi(2));
   Matrix vh = skewSymmetric(screwPose3::xi(3), screwPose3::xi(4), screwPose3::xi(5));
-  Matrix Z3 = zeros(3,3);
   Matrix6 expected;
-  expected << wh, Z3, vh, wh;
+  expected << wh, Z_3x3, vh, wh;
   EXPECT(assert_equal(expected,res,1e-5));
 }
 

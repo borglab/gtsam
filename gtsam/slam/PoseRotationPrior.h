@@ -75,7 +75,7 @@ public:
   Vector evaluateError(const Pose& pose, boost::optional<Matrix&> H = boost::none) const {
     const Rotation& newR = pose.rotation();
     if (H) {
-      *H = gtsam::zeros(rDim, xDim);
+      *H = Matrix::Zero(rDim, xDim);
       std::pair<size_t, size_t> rotInterval = POSE::rotationInterval();
       (*H).middleCols(rotInterval.first, rDim).setIdentity(rDim, rDim);
     }

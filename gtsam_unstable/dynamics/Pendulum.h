@@ -50,9 +50,9 @@ public:
       boost::optional<Matrix&> H2 = boost::none,
       boost::optional<Matrix&> H3 = boost::none) const {
     const size_t p = 1;
-    if (H1) *H1 = -eye(p);
-    if (H2) *H2 = eye(p);
-    if (H3) *H3 = eye(p)*h_;
+    if (H1) *H1 = -Matrix::Identity(p,p);
+    if (H2) *H2 = Matrix::Identity(p,p);
+    if (H3) *H3 = Matrix::Identity(p,p)*h_;
     return (Vector(1) << qk+v*h_-qk1).finished();
   }
 
@@ -98,9 +98,9 @@ public:
       boost::optional<Matrix&> H2 = boost::none,
       boost::optional<Matrix&> H3 = boost::none) const {
     const size_t p = 1;
-    if (H1) *H1 = -eye(p);
-    if (H2) *H2 = eye(p);
-    if (H3) *H3 = -eye(p)*h_*g_/r_*cos(q);
+    if (H1) *H1 = -Matrix::Identity(p,p);
+    if (H2) *H2 = Matrix::Identity(p,p);
+    if (H3) *H3 = -Matrix::Identity(p,p)*h_*g_/r_*cos(q);
     return (Vector(1) << vk - h_ * g_ / r_ * sin(q) - vk1).finished();
   }
 
@@ -154,9 +154,9 @@ public:
     double mr2_h = 1/h_*m_*r_*r_;
     double mgrh  = m_*g_*r_*h_;
 
-    if (H1) *H1 = -eye(p);
-    if (H2) *H2 = eye(p)*(-mr2_h + mgrh*(1-alpha_)*(1-alpha_)*cos(qmid));
-    if (H3) *H3 = eye(p)*( mr2_h + mgrh*(1-alpha_)*(alpha_)*cos(qmid));
+    if (H1) *H1 = -Matrix::Identity(p,p);
+    if (H2) *H2 = Matrix::Identity(p,p)*(-mr2_h + mgrh*(1-alpha_)*(1-alpha_)*cos(qmid));
+    if (H3) *H3 = Matrix::Identity(p,p)*( mr2_h + mgrh*(1-alpha_)*(alpha_)*cos(qmid));
 
     return (Vector(1) << mr2_h * (qk1 - qk) + mgrh * (1 - alpha_) * sin(qmid) - pk).finished();
   }
@@ -210,9 +210,9 @@ public:
     double mr2_h = 1/h_*m_*r_*r_;
     double mgrh  = m_*g_*r_*h_;
 
-    if (H1) *H1 = -eye(p);
-    if (H2) *H2 = eye(p)*(-mr2_h - mgrh*(1-alpha_)*alpha_*cos(qmid));
-    if (H3) *H3 = eye(p)*( mr2_h - mgrh*alpha_*alpha_*cos(qmid));
+    if (H1) *H1 = -Matrix::Identity(p,p);
+    if (H2) *H2 = Matrix::Identity(p,p)*(-mr2_h - mgrh*(1-alpha_)*alpha_*cos(qmid));
+    if (H3) *H3 = Matrix::Identity(p,p)*( mr2_h - mgrh*alpha_*alpha_*cos(qmid));
 
     return (Vector(1) << mr2_h * (qk1 - qk) - mgrh * alpha_ * sin(qmid) - pk1).finished();
   }

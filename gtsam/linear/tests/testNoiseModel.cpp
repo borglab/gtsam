@@ -112,7 +112,7 @@ TEST(NoiseModel, Unit)
 TEST(NoiseModel, equals)
 {
   Gaussian::shared_ptr g1 = Gaussian::SqrtInformation(R),
-                       g2 = Gaussian::SqrtInformation(eye(3,3));
+                       g2 = Gaussian::SqrtInformation(I_3x3);
   Diagonal::shared_ptr d1 = Diagonal::Sigmas(Vector3(kSigma, kSigma, kSigma)),
                        d2 = Diagonal::Sigmas(Vector3(0.1, 0.2, 0.3));
   Isotropic::shared_ptr i1 = Isotropic::Sigma(3, kSigma),
@@ -395,7 +395,7 @@ TEST(NoiseModel, SmartSqrtInformation )
 {
   bool smart = true;
   gtsam::SharedGaussian expected = Unit::Create(3);
-  gtsam::SharedGaussian actual = Gaussian::SqrtInformation(eye(3), smart);
+  gtsam::SharedGaussian actual = Gaussian::SqrtInformation(I_3x3, smart);
   EXPECT(assert_equal(*expected,*actual));
 }
 
@@ -404,7 +404,7 @@ TEST(NoiseModel, SmartSqrtInformation2 )
 {
   bool smart = true;
   gtsam::SharedGaussian expected = Unit::Isotropic::Sigma(3,2);
-  gtsam::SharedGaussian actual = Gaussian::SqrtInformation(0.5*eye(3), smart);
+  gtsam::SharedGaussian actual = Gaussian::SqrtInformation(0.5*I_3x3, smart);
   EXPECT(assert_equal(*expected,*actual));
 }
 
@@ -413,7 +413,7 @@ TEST(NoiseModel, SmartInformation )
 {
   bool smart = true;
   gtsam::SharedGaussian expected = Unit::Isotropic::Variance(3,2);
-  Matrix M = 0.5*eye(3);
+  Matrix M = 0.5*I_3x3;
   EXPECT(checkIfDiagonal(M));
   gtsam::SharedGaussian actual = Gaussian::Information(M, smart);
   EXPECT(assert_equal(*expected,*actual));
@@ -424,7 +424,7 @@ TEST(NoiseModel, SmartCovariance )
 {
   bool smart = true;
   gtsam::SharedGaussian expected = Unit::Create(3);
-  gtsam::SharedGaussian actual = Gaussian::Covariance(eye(3), smart);
+  gtsam::SharedGaussian actual = Gaussian::Covariance(I_3x3, smart);
   EXPECT(assert_equal(*expected,*actual));
 }
 
@@ -433,7 +433,7 @@ TEST(NoiseModel, ScalarOrVector )
 {
   bool smart = true;
   SharedGaussian expected = Unit::Create(3);
-  SharedGaussian actual = Gaussian::Covariance(eye(3), smart);
+  SharedGaussian actual = Gaussian::Covariance(I_3x3, smart);
   EXPECT(assert_equal(*expected,*actual));
 }
 
@@ -442,9 +442,9 @@ TEST(NoiseModel, WhitenInPlace)
 {
   Vector sigmas = Vector3(0.1, 0.1, 0.1);
   SharedDiagonal model = Diagonal::Sigmas(sigmas);
-  Matrix A = eye(3);
+  Matrix A = I_3x3;
   model->WhitenInPlace(A);
-  Matrix expected = eye(3) * 10;
+  Matrix expected = I_3x3 * 10;
   EXPECT(assert_equal(expected, A));
 }
 

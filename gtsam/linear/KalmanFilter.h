@@ -69,7 +69,7 @@ public:
   // Constructor
   KalmanFilter(size_t n, Factorization method =
       KALMANFILTER_DEFAULT_FACTORIZATION) :
-      n_(n), I_(eye(n_, n_)), function_(
+      n_(n), I_(Matrix::Identity(n_, n_)), function_(
           method == QR ? GaussianFactorGraph::Eliminate(EliminateQR) :
               GaussianFactorGraph::Eliminate(EliminateCholesky)) {
   }

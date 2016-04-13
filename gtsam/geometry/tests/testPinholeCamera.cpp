@@ -116,7 +116,7 @@ TEST( PinholeCamera, lookat)
 
   Matrix R = camera2.pose().rotation().matrix();
   Matrix I = trans(R)*R;
-  EXPECT(assert_equal(I, eye(3)));
+  EXPECT(assert_equal(I, I_3x3));
 }
 
 /* ************************************************************************* */

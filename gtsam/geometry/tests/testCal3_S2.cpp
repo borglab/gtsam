@@ -122,8 +122,8 @@ TEST(Cal3_S2, between) {
   Matrix H1, H2;
 
   EXPECT(assert_equal(Cal3_S2(0,1,2,3,4), k1.between(k2, H1, H2)));
-  EXPECT(assert_equal(-eye(5), H1));
-  EXPECT(assert_equal(eye(5), H2));
+  EXPECT(assert_equal(-I_5x5, H1));
+  EXPECT(assert_equal(I_5x5, H2));
 
 }
 

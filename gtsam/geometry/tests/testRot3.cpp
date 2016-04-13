@@ -555,8 +555,8 @@ TEST(Rot3, quaternion) {
 /* ************************************************************************* */
 Matrix Cayley(const Matrix& A) {
   Matrix::Index n = A.cols();
-  const Matrix I = eye(n);
-  return (I-A)*inverse(I+A);
+  const Matrix I = Matrix::Identity(n,n);
+  return (I-A)*(I+A).inverse();
 }
 
 TEST( Rot3, Cayley ) {

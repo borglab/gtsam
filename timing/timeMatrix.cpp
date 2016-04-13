@@ -46,7 +46,7 @@ double timeCollect(size_t p, size_t m, size_t n, bool passDims, size_t reps) {
   vector<const Matrix *> matrices;
   for (size_t i=0; i<p;++i) {
     Matrix * M = new Matrix;
-    (*M) = eye(m,n);
+    (*M) = Matrix::Identity(m,n);
     matrices.push_back(M);
   }
 
@@ -216,8 +216,8 @@ double timeHouseholder(size_t reps) {
  */
 double timeMatrixInsert(size_t reps) {
   // create a matrix
-  Matrix bigBase = zeros(100, 100);
-  Matrix small = eye(5,5);
+  Matrix bigBase = Matrix::Zero(100, 100);
+  Matrix small = Matrix::Identity(5,5);
 
   // perform timing
   double elapsed;

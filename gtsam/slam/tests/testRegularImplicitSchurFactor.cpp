@@ -49,9 +49,9 @@ const Vector b = (Vector(6) << 1., 2., 3., 4., 5., 6.).finished();
 //*************************************************************************************
 TEST( regularImplicitSchurFactor, creation ) {
   // Matrix E = Matrix::Ones(6,3);
-  Matrix E = zeros(6, 3);
-  E.block<2,2>(0, 0) = eye(2);
-  E.block<2,3>(2, 0) = 2 * ones(2, 3);
+  Matrix E = Matrix::Zero(6, 3);
+  E.block<2,2>(0, 0) = I_2x2;
+  E.block<2,3>(2, 0) = 2 * Matrix::Ones(2, 3);
   Matrix3 P = (E.transpose() * E).inverse();
   RegularImplicitSchurFactor<CalibratedCamera> expected(keys, FBlocks, E, P, b);
   Matrix expectedP = expected.getPointCovariance();
@@ -61,10 +61,10 @@ TEST( regularImplicitSchurFactor, creation ) {
 /* ************************************************************************* */
 TEST( regularImplicitSchurFactor, addHessianMultiply ) {
 
-  Matrix E = zeros(6, 3);
-  E.block<2,2>(0, 0) = eye(2);
-  E.block<2,3>(2, 0) = 2 * ones(2, 3);
-  E.block<2,2>(4, 1) = eye(2);
+  Matrix E = Matrix::Zero(6, 3);
+  E.block<2,2>(0, 0) = I_2x2;
+  E.block<2,3>(2, 0) = 2 * Matrix::Ones(2, 3);
+  E.block<2,2>(4, 1) = I_2x2;
   Matrix3 P = (E.transpose() * E).inverse();
 
   double alpha = 0.5;
@@ -83,7 +83,7 @@ TEST( regularImplicitSchurFactor, addHessianMultiply ) {
   // Create full F
   size_t M=4, m = 3, d = 6;
   Matrix F(2 * m, d * M);
-  F << F0, zeros(2, d * 3), zeros(2, d), F1, zeros(2, d*2), zeros(2, d * 3), F3;
+  F << F0, Matrix::Zero(2, d * 3), Matrix::Zero(2, d), F1, Matrix::Zero(2, d*2), Matrix::Zero(2, d * 3), F3;
 
   // Calculate expected result F'*alpha*(I - E*P*E')*F*x
   FastVector<Key> keys2;
@@ -246,7 +246,7 @@ TEST(regularImplicitSchurFactor, hessianDiagonal)
   EXPECT(assert_equal(F3.transpose()*F3-FtE3*P*FtE3.transpose(),actualBD[3]));
 
   // variant two
-  Matrix I2 = eye(2);
+  Matrix I2 = I_2x2;
   Matrix E0 = E.block<2,3>(0, 0);
   Matrix F0t = F0.transpose();
   EXPECT(assert_equal(F0t*F0-F0t*E0*P*E0.transpose()*F0,actualBD[0]));
