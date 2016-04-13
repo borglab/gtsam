@@ -23,8 +23,8 @@
 #pragma once
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/Vector.h>
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 #include <gtsam/config.h>
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 #include <Eigen/Core>
 #include <Eigen/Cholesky>
 #include <Eigen/LU>
