@@ -257,9 +257,9 @@ TEST_UNSAFE(NonlinearOptimizer, MoreOptimization) {
   expected.insert(2, Pose2(1, 1, M_PI));
 
   VectorValues expectedGradient;
-  expectedGradient.insert(0,zero(3));
-  expectedGradient.insert(1,zero(3));
-  expectedGradient.insert(2,zero(3));
+  expectedGradient.insert(0,Z_3x1);
+  expectedGradient.insert(1,Z_3x1);
+  expectedGradient.insert(2,Z_3x1);
 
   // Try LM and Dogleg
   LevenbergMarquardtParams params = LevenbergMarquardtParams::LegacyDefaults();

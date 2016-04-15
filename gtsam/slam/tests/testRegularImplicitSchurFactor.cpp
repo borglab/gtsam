@@ -89,7 +89,7 @@ TEST( regularImplicitSchurFactor, addHessianMultiply ) {
   FastVector<Key> keys2;
   keys2 += 0,1,2,3;
   Vector x = xvalues.vector(keys2);
-  Vector expected = zero(24);
+  Vector expected = Vector::Zero(24);
   RegularImplicitSchurFactor<CalibratedCamera>::multiplyHessianAdd(F, E, P, alpha, x, expected);
   EXPECT(assert_equal(expected, yExpected.vector(keys2), 1e-8));
 

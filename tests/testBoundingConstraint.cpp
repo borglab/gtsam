@@ -56,8 +56,8 @@ TEST( testBoundingConstraint, unary_basics_inactive1 ) {
   EXPECT(constraint2.isGreaterThan());
   EXPECT(assert_equal(ones(1), constraint1.evaluateError(pt1), tol));
   EXPECT(assert_equal(ones(1), constraint2.evaluateError(pt1), tol));
-  EXPECT(assert_equal(zero(1), constraint1.unwhitenedError(config), tol));
-  EXPECT(assert_equal(zero(1), constraint2.unwhitenedError(config), tol));
+  EXPECT(assert_equal(Z_1x1, constraint1.unwhitenedError(config), tol));
+  EXPECT(assert_equal(Z_1x1, constraint2.unwhitenedError(config), tol));
   EXPECT_DOUBLES_EQUAL(0.0, constraint1.error(config), tol);
   EXPECT_DOUBLES_EQUAL(0.0, constraint2.error(config), tol);
 }
@@ -75,8 +75,8 @@ TEST( testBoundingConstraint, unary_basics_inactive2 ) {
   EXPECT(!constraint4.isGreaterThan());
   EXPECT(assert_equal(Vector::Constant(1, 3.0), constraint3.evaluateError(pt2), tol));
   EXPECT(assert_equal(Vector::Constant(1, 5.0), constraint4.evaluateError(pt2), tol));
-  EXPECT(assert_equal(zero(1), constraint3.unwhitenedError(config), tol));
-  EXPECT(assert_equal(zero(1), constraint4.unwhitenedError(config), tol));
+  EXPECT(assert_equal(Z_1x1, constraint3.unwhitenedError(config), tol));
+  EXPECT(assert_equal(Z_1x1, constraint4.unwhitenedError(config), tol));
   EXPECT_DOUBLES_EQUAL(0.0, constraint3.error(config), tol);
   EXPECT_DOUBLES_EQUAL(0.0, constraint4.error(config), tol);
 }
@@ -189,26 +189,26 @@ TEST( testBoundingConstraint, MaxDistance_basics) {
 
   EXPECT(assert_equal((Vector(1) << 2.0).finished(), rangeBound.evaluateError(pt1, pt1)));
   EXPECT(assert_equal(ones(1), rangeBound.evaluateError(pt1, pt2)));
-  EXPECT(assert_equal(zero(1), rangeBound.evaluateError(pt1, pt3)));
+  EXPECT(assert_equal(Z_1x1, rangeBound.evaluateError(pt1, pt3)));
   EXPECT(assert_equal(-1.0*ones(1), rangeBound.evaluateError(pt1, pt4)));
 
   Values config1;
   config1.insert(key1, pt1);
   config1.insert(key2, pt1);
   EXPECT(!rangeBound.active(config1));
-  EXPECT(assert_equal(zero(1), rangeBound.unwhitenedError(config1)));
+  EXPECT(assert_equal(Z_1x1, rangeBound.unwhitenedError(config1)));
   EXPECT(!rangeBound.linearize(config1));
   EXPECT_DOUBLES_EQUAL(0.0, rangeBound.error(config1), tol);
 
   config1.update(key2, pt2);
   EXPECT(!rangeBound.active(config1));
-  EXPECT(assert_equal(zero(1), rangeBound.unwhitenedError(config1)));
+  EXPECT(assert_equal(Z_1x1, rangeBound.unwhitenedError(config1)));
   EXPECT(!rangeBound.linearize(config1));
   EXPECT_DOUBLES_EQUAL(0.0, rangeBound.error(config1), tol);
 
   config1.update(key2, pt3);
   EXPECT(rangeBound.active(config1));
-  EXPECT(assert_equal(zero(1), rangeBound.unwhitenedError(config1)));
+  EXPECT(assert_equal(Z_1x1, rangeBound.unwhitenedError(config1)));
   EXPECT_DOUBLES_EQUAL(0.0, rangeBound.error(config1), tol);
 
   config1.update(key2, pt4);

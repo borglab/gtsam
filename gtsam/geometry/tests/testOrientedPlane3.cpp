@@ -97,7 +97,7 @@ inline static Vector randomVector(const Vector& minLimits,
 
   // Get the number of dimensions and create the return vector
   size_t numDims = dim(minLimits);
-  Vector vector = zero(numDims);
+  Vector vector = Vector::Zero(numDims);
 
   // Create the random vector
   for (size_t i = 0; i < numDims; i++) {
@@ -145,7 +145,7 @@ TEST (OrientedPlane3, error2) {
   OrientedPlane3 plane2(-1.1, 0.2, 0.3, 5.4);
 
   // Hard-coded regression values, to ensure the result doesn't change.
-  EXPECT(assert_equal(zero(3), plane1.errorVector(plane1), 1e-8));
+  EXPECT(assert_equal((Vector) Z_3x1, plane1.errorVector(plane1), 1e-8));
   EXPECT(assert_equal(Vector3(-0.0677674148, -0.0760543588, -0.4), plane1.errorVector(plane2), 1e-5));
 
   // Test the jacobians of transform

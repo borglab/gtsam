@@ -473,13 +473,13 @@ TEST(GaussianFactorGraph, replace)
   SharedDiagonal noise(noiseModel::Isotropic::Sigma(3, 1.0));
 
   GaussianFactorGraph::sharedFactor f1(new JacobianFactor(
-      ord[X(1)], I_3x3, ord[X(2)], I_3x3, zero(3), noise));
+      ord[X(1)], I_3x3, ord[X(2)], I_3x3, Z_3x1, noise));
   GaussianFactorGraph::sharedFactor f2(new JacobianFactor(
-      ord[X(2)], I_3x3, ord[X(3)], I_3x3, zero(3), noise));
+      ord[X(2)], I_3x3, ord[X(3)], I_3x3, Z_3x1, noise));
   GaussianFactorGraph::sharedFactor f3(new JacobianFactor(
-      ord[X(3)], I_3x3, ord[X(4)], I_3x3, zero(3), noise));
+      ord[X(3)], I_3x3, ord[X(4)], I_3x3, Z_3x1, noise));
   GaussianFactorGraph::sharedFactor f4(new JacobianFactor(
-      ord[X(5)], I_3x3, ord[X(6)], I_3x3, zero(3), noise));
+      ord[X(5)], I_3x3, ord[X(6)], I_3x3, Z_3x1, noise));
 
   GaussianFactorGraph actual;
   actual.push_back(f1);

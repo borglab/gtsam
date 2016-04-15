@@ -61,7 +61,7 @@ TEST( Pose3, constructors)
 TEST( Pose3, retract_first_order)
 {
   Pose3 id;
-  Vector v = zero(6);
+  Vector v = Z_6x1;
   v(0) = 0.3;
   EXPECT(assert_equal(Pose3(R, Point3(0,0,0)), id.retract(v),1e-2));
   v(3)=0.2;v(4)=0.7;v(5)=-2;
@@ -71,7 +71,7 @@ TEST( Pose3, retract_first_order)
 /* ************************************************************************* */
 TEST( Pose3, retract_expmap)
 {
-  Vector v = zero(6); v(0) = 0.3;
+  Vector v = Z_6x1; v(0) = 0.3;
   Pose3 pose = Pose3::Expmap(v);
   EXPECT(assert_equal(Pose3(R, Point3(0,0,0)), pose, 1e-2));
   EXPECT(assert_equal(v,Pose3::Logmap(pose),1e-2));
@@ -81,7 +81,7 @@ TEST( Pose3, retract_expmap)
 TEST( Pose3, expmap_a_full)
 {
   Pose3 id;
-  Vector v = zero(6);
+  Vector v = Z_6x1;
   v(0) = 0.3;
   EXPECT(assert_equal(expmap_default<Pose3>(id, v), Pose3(R, Point3(0,0,0))));
   v(3)=0.2;v(4)=0.394742;v(5)=-2.08998;
@@ -92,7 +92,7 @@ TEST( Pose3, expmap_a_full)
 TEST( Pose3, expmap_a_full2)
 {
   Pose3 id;
-  Vector v = zero(6);
+  Vector v = Z_6x1;
   v(0) = 0.3;
   EXPECT(assert_equal(expmap_default<Pose3>(id, v), Pose3(R, Point3(0,0,0))));
   v(3)=0.2;v(4)=0.394742;v(5)=-2.08998;

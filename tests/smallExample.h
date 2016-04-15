@@ -260,9 +260,9 @@ inline VectorValues createZeroDelta() {
   using symbol_shorthand::X;
   using symbol_shorthand::L;
   VectorValues c;
-  c.insert(L(1), zero(2));
-  c.insert(X(1), zero(2));
-  c.insert(X(2), zero(2));
+  c.insert(L(1), Z_2x1);
+  c.insert(X(1), Z_2x1);
+  c.insert(X(2), Z_2x1);
   return c;
 }
 

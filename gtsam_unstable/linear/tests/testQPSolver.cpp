@@ -39,7 +39,7 @@ QP createTestCase() {
   // Hence, we have G11=2, G12 = -1, g1 = +3, G22 = 2, g2 = 0, f = 10
   qp.cost.push_back(
       HessianFactor(X(1), X(2), 2.0 * Matrix::Ones(1, 1), -Matrix::Ones(1, 1), 3.0 * ones(1),
-          2.0 * Matrix::Ones(1, 1), zero(1), 10.0));
+          2.0 * Matrix::Ones(1, 1), Z_1x1, 10.0));
 
   // Inequality constraints
   qp.inequalities.push_back(LinearInequality(X(1), Matrix::Ones(1,1), X(2), Matrix::Ones(1,1), 2, 0)); // x1 + x2 <= 2 --> x1 + x2 -2 <= 0, --> b=2
@@ -92,8 +92,8 @@ QP createEqualityConstrainedTest() {
   //        0.5*x1'*G11*x1 + x1'*G12*x2 + 0.5*x2'*G22*x2 - x1'*g1 - x2'*g2 + 0.5*f
   // Hence, we have G11=2, G12 = 0, g1 = 0, G22 = 2, g2 = 0, f = 0
   qp.cost.push_back(
-      HessianFactor(X(1), X(2), 2.0 * Matrix::Ones(1, 1), Z_1x1, zero(1),
-          2.0 * Matrix::Ones(1, 1), zero(1), 0.0));
+      HessianFactor(X(1), X(2), 2.0 * Matrix::Ones(1, 1), Z_1x1, Z_1x1,
+          2.0 * Matrix::Ones(1, 1), Z_1x1, 0.0));
 
   // Equality constraints
   // x1 + x2 = 1 --> x1 + x2 -1 = 0, hence we negate the b vector
@@ -129,8 +129,8 @@ TEST(QPSolver, indentifyActiveConstraints) {
   QPSolver solver(qp);
 
   VectorValues currentSolution;
-  currentSolution.insert(X(1), zero(1));
-  currentSolution.insert(X(2), zero(1));
+  currentSolution.insert(X(1), Z_1x1);
+  currentSolution.insert(X(2), Z_1x1);
 
   LinearInequalityFactorGraph workingSet =
       solver.identifyActiveConstraints(qp.inequalities, currentSolution);
@@ -154,8 +154,8 @@ TEST(QPSolver, iterate) {
   QPSolver solver(qp);
 
   VectorValues currentSolution;
-  currentSolution.insert(X(1), zero(1));
-  currentSolution.insert(X(2), zero(1));
+  currentSolution.insert(X(1), Z_1x1);
+  currentSolution.insert(X(2), Z_1x1);
 
   std::vector<VectorValues> expectedSolutions(4), expectedDuals(4);
   expectedSolutions[0].insert(X(1), (Vector(1) << 0.0).finished());
@@ -199,8 +199,8 @@ TEST(QPSolver, optimizeForst10book_pg171Ex5) {
   QP qp = createTestCase();
   QPSolver solver(qp);
   VectorValues initialValues;
-  initialValues.insert(X(1), zero(1));
-  initialValues.insert(X(2), zero(1));
+  initialValues.insert(X(1), Z_1x1);
+  initialValues.insert(X(2), Z_1x1);
   VectorValues solution;
   boost::tie(solution, boost::tuples::ignore) = solver.optimize(initialValues);
   VectorValues expectedSolution;
@@ -236,8 +236,8 @@ TEST(QPSolver, optimizeMatlabEx) {
   QP qp = createTestMatlabQPEx();
   QPSolver solver(qp);
   VectorValues initialValues;
-  initialValues.insert(X(1), zero(1));
-  initialValues.insert(X(2), zero(1));
+  initialValues.insert(X(1), Z_1x1);
+  initialValues.insert(X(2), Z_1x1);
   VectorValues solution;
   boost::tie(solution, boost::tuples::ignore) = solver.optimize(initialValues);
   VectorValues expectedSolution;
@@ -269,7 +269,7 @@ TEST(QPSolver, optimizeNocedal06bookEx16_4) {
   QPSolver solver(qp);
   VectorValues initialValues;
   initialValues.insert(X(1), (Vector(1) << 2.0).finished());
-  initialValues.insert(X(2), zero(1));
+  initialValues.insert(X(2), Z_1x1);
 
   VectorValues solution;
   boost::tie(solution, boost::tuples::ignore) = solver.optimize(initialValues);
@@ -283,8 +283,8 @@ TEST(QPSolver, optimizeNocedal06bookEx16_4) {
 
 TEST(QPSolver, failedSubproblem) {
   QP qp;
-  qp.cost.push_back(JacobianFactor(X(1), I_2x2, zero(2)));
-  qp.cost.push_back(HessianFactor(X(1), Z_2x2, zero(2), 100.0));
+  qp.cost.push_back(JacobianFactor(X(1), I_2x2, Z_2x1));
+  qp.cost.push_back(HessianFactor(X(1), Z_2x2, Z_2x1, 100.0));
   qp.inequalities.push_back(
       LinearInequality(X(1), (Matrix(1,2) << -1.0, 0.0).finished(), -1.0, 0));
 

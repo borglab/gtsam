@@ -377,7 +377,7 @@ void HessianFactor::multiplyHessianAdd(double alpha, const VectorValues& x,
   vector<Vector> y;
   y.reserve(size());
   for (const_iterator it = begin(); it != end(); it++)
-    y.push_back(zero(getDim(it)));
+    y.push_back(Vector::Zero(getDim(it)));
 
   // Accessing the VectorValues one by one is expensive
   // So we will loop over columns to access x only once per column
@@ -427,7 +427,7 @@ void HessianFactor::gradientAtZero(double* d) const {
 Vector HessianFactor::gradient(Key key, const VectorValues& x) const {
   Factor::const_iterator i = find(key);
   // Sum over G_ij*xj for all xj connecting to xi
-  Vector b = zero(x.at(key).size());
+  Vector b = Vector::Zero(x.at(key).size());
   for (Factor::const_iterator j = begin(); j != end(); ++j) {
     // Obtain Gij from the Hessian factor
     // Hessian factor only stores an upper triangular matrix, so be careful when i>j

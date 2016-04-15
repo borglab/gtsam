@@ -25,8 +25,8 @@ TEST( testVelocityConstraint, trapezoidal ) {
   VelocityConstraint constraint(x1, x2, dynamics::TRAPEZOIDAL, dt);
 
   // verify error function
-  EXPECT(assert_equal(zero(3), constraint.evaluateError(origin, pose1), tol));
-  EXPECT(assert_equal(zero(3), constraint.evaluateError(origin, origin), tol));
+  EXPECT(assert_equal(Z_3x1, constraint.evaluateError(origin, pose1), tol));
+  EXPECT(assert_equal(Z_3x1, constraint.evaluateError(origin, origin), tol));
   EXPECT(assert_equal(delta(3, 0,-1.0), constraint.evaluateError(pose1, pose1), tol));
   EXPECT(assert_equal(delta(3, 0, 0.5), constraint.evaluateError(origin, pose1a), tol));
 }
@@ -38,8 +38,8 @@ TEST( testEulerVelocityConstraint, euler_start ) {
 
   // verify error function
   EXPECT(assert_equal(delta(3, 0, 0.5), constraint.evaluateError(origin, pose1), tol));
-  EXPECT(assert_equal(zero(3), constraint.evaluateError(origin, origin), tol));
-  EXPECT(assert_equal(zero(3), constraint.evaluateError(pose1, pose2), tol));
+  EXPECT(assert_equal(Z_3x1, constraint.evaluateError(origin, origin), tol));
+  EXPECT(assert_equal(Z_3x1, constraint.evaluateError(pose1, pose2), tol));
   EXPECT(assert_equal(delta(3, 0, 0.5), constraint.evaluateError(origin, pose1a), tol));
 }
 
@@ -50,8 +50,8 @@ TEST( testEulerVelocityConstraint, euler_end ) {
 
   // verify error function
   EXPECT(assert_equal(delta(3, 0,-0.5), constraint.evaluateError(origin, pose1), tol));
-  EXPECT(assert_equal(zero(3), constraint.evaluateError(origin, origin), tol));
-  EXPECT(assert_equal(zero(3), constraint.evaluateError(pose1, pose2), tol));
+  EXPECT(assert_equal(Z_3x1, constraint.evaluateError(origin, origin), tol));
+  EXPECT(assert_equal(Z_3x1, constraint.evaluateError(pose1, pose2), tol));
   EXPECT(assert_equal(delta(3, 0, 0.5), constraint.evaluateError(origin, pose1a), tol));
 }
 

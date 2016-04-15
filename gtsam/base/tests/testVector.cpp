@@ -87,15 +87,6 @@ TEST(Vector, zero1 )
 }
 
 /* ************************************************************************* */
-TEST(Vector, zero2 )
-{
-  Vector a = zero(2);
-  Vector b = Vector::Zero(2);
-  EXPECT(a==b);
-  EXPECT(assert_equal(a, b));
-}
-
-/* ************************************************************************* */
 TEST(Vector, scalar_multiply )
 {
   Vector a(2); a(0) = 10; a(1) = 20;
@@ -256,7 +247,7 @@ TEST(Vector, equals )
 TEST(Vector, greater_than )
 {
   Vector v1 = Vector3(1.0, 2.0, 3.0),
-       v2 = zero(3);
+       v2 = Z_3x1;
   EXPECT(greaterThanOrEqual(v1, v1)); // test basic greater than
   EXPECT(greaterThanOrEqual(v1, v2)); // test equals
 }

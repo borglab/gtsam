@@ -55,7 +55,7 @@ DummyFactor::linearize(const Values& c) const {
 
   noiseModel::Diagonal::shared_ptr model = noiseModel::Unit::Create(rowDim_);
   return GaussianFactor::shared_ptr(
-      new JacobianFactor(terms, zero(rowDim_), model));
+      new JacobianFactor(terms, Vector::Zero(rowDim_), model));
 }
 
 /* ************************************************************************* */

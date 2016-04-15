@@ -76,12 +76,12 @@ TEST( testPoseRTV, equals ) {
 TEST( testPoseRTV, Lie ) {
   // origin and zero deltas
   PoseRTV identity;
-  EXPECT(assert_equal(identity, (PoseRTV)identity.retract(zero(9))));
-  EXPECT(assert_equal(zero(9), identity.localCoordinates(identity)));
+  EXPECT(assert_equal(identity, (PoseRTV)identity.retract(Z_9x1)));
+  EXPECT(assert_equal((Vector) Z_9x1, identity.localCoordinates(identity)));
 
   PoseRTV state1(pt, rot, vel);
-  EXPECT(assert_equal(state1, (PoseRTV)state1.retract(zero(9))));
-  EXPECT(assert_equal(zero(9), state1.localCoordinates(state1)));
+  EXPECT(assert_equal(state1, (PoseRTV)state1.retract(Z_9x1)));
+  EXPECT(assert_equal((Vector) Z_9x1, state1.localCoordinates(state1)));
 
   Vector delta(9);
   delta << 0.1, 0.1, 0.1, 0.2, 0.3, 0.4,-0.1,-0.2,-0.3;
@@ -111,7 +111,7 @@ TEST( testPoseRTV, dynamics_identities ) {
 
   const double dt = 0.1;
   Vector accel = Vector3(0.2, 0.0, 0.0), gyro = Vector3(0.0, 0.0, 0.2);
-  Vector imu01 = zero(6), imu12 = zero(6), imu23 = zero(6), imu34 = zero(6);
+  Vector imu01 = Z_6x1, imu12 = Z_6x1, imu23 = Z_6x1, imu34 = Z_6x1;
 
   x1 = x0.generalDynamics(accel, gyro, dt);
   x2 = x1.generalDynamics(accel, gyro, dt);

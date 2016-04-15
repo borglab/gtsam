@@ -101,7 +101,7 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::initialize(double g_e) 
   P_plus_k2.block<3,3>(6, 3) = Z_3x3;
   P_plus_k2.block<3,3>(6, 6) = Pa;
 
-  Vector dx = zero(9);
+  Vector dx = Z_9x1;
   KalmanFilter::State state = KF_.init(dx, P_plus_k2);
   return std::make_pair(mech0_, state);
 }

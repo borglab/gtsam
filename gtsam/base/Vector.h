@@ -249,13 +249,12 @@ inline const Vector sub(const Vector &v, size_t i1, size_t i2) {return v.segment
 inline void subInsert(Vector& fullVector, const Vector& subVector, size_t i) {fullVector.segment(i, subVector.size()) = subVector;}
 inline double sum(const Vector &a){return a.sum();}
 
+inline Vector zero(size_t n) { return Vector::Zero(n);}
+#endif
 inline Vector delta(size_t n, size_t i, double value){ return Vector::Unit(n, i) * value;}
 inline Vector basis(size_t n, size_t i) { return delta(n, i, 1.0); }
-inline Vector zero(size_t n) { return Vector::Zero(n);}
 inline Vector ones(size_t n) { return Vector::Ones(n); }
 inline size_t dim(const Vector& v) { return v.size(); }
-
-#endif
 
 } // namespace gtsam
 

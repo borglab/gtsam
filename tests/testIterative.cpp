@@ -62,7 +62,7 @@ TEST( Iterative, conjugateGradientDescent )
   // get matrices
   Matrix A;
   Vector b;
-  Vector x0 = gtsam::zero(6);
+  Vector x0 = Z_6x1;
   boost::tie(A, b) = fg.jacobian();
   Vector expectedX = (Vector(6) << -0.1, 0.1, -0.1, -0.1, 0.1, -0.2).finished();
 
@@ -104,7 +104,7 @@ TEST( Iterative, conjugateGradientDescent_hard_constraint )
   VectorValues actual = conjugateGradientDescent(*fg, zeros, parameters);
 
   VectorValues expected;
-  expected.insert(X(1), zero(3));
+  expected.insert(X(1), Z_3x1);
   expected.insert(X(2), Vector3(-0.5,0.,0.));
   CHECK(assert_equal(expected, actual));
 }
@@ -131,7 +131,7 @@ TEST( Iterative, conjugateGradientDescent_soft_constraint )
   VectorValues actual = conjugateGradientDescent(*fg, zeros, parameters);
 
   VectorValues expected;
-  expected.insert(X(1), zero(3));
+  expected.insert(X(1), Z_3x1);
   expected.insert(X(2), Vector3(-0.5,0.,0.));
   CHECK(assert_equal(expected, actual));
 }

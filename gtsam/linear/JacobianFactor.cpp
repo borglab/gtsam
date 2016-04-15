@@ -543,7 +543,7 @@ void JacobianFactor::updateHessian(const FastVector<Key>& infoKeys,
 
 /* ************************************************************************* */
 Vector JacobianFactor::operator*(const VectorValues& x) const {
-  Vector Ax = zero(Ab_.rows());
+  Vector Ax = Vector::Zero(Ab_.rows());
   if (empty())
     return Ax;
 
@@ -594,7 +594,7 @@ void JacobianFactor::multiplyHessianAdd(double alpha, const double* x, double* y
 
   if (empty())
     return;
-  Vector Ax = zero(Ab_.rows());
+  Vector Ax = Vector::Zero(Ab_.rows());
 
   /// Just iterate over all A matrices and multiply in correct config part (looping over keys)
   /// E.g.: Jacobian A = [A0 A1 A2] multiplies x = [x0 x1 x2]'

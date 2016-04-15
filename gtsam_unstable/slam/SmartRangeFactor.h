@@ -142,9 +142,9 @@ public:
         // set Jacobians to zero for n<3
         for (size_t j = 0; j < n; j++)
           (*H)[j] = Matrix::Zero(3, 1);
-      return zero(1);
+      return Z_1x1;
     } else {
-      Vector error = zero(1);
+      Vector error = Z_1x1;
 
       // triangulate to get the optimized point
       // TODO: Should we have a (better?) variant that does this in relative coordinates ?
