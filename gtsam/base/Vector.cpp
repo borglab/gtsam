@@ -43,11 +43,6 @@ bool zero(const Vector& v) {
 }
 
 /* ************************************************************************* */
-Vector delta(size_t n, size_t i, double value) {
-  return Vector::Unit(n, i) * value;
-}
-
-/* ************************************************************************* */
 //3 argument call
 void print(const Vector& v, const string& s, ostream& stream) {
   size_t n = v.size();
