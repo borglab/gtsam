@@ -54,8 +54,8 @@ TEST( testBoundingConstraint, unary_basics_inactive1 ) {
   EXPECT_DOUBLES_EQUAL(2.0, constraint2.threshold(), tol);
   EXPECT(constraint1.isGreaterThan());
   EXPECT(constraint2.isGreaterThan());
-  EXPECT(assert_equal(ones(1), constraint1.evaluateError(pt1), tol));
-  EXPECT(assert_equal(ones(1), constraint2.evaluateError(pt1), tol));
+  EXPECT(assert_equal(Vector::Ones(1), constraint1.evaluateError(pt1), tol));
+  EXPECT(assert_equal(Vector::Ones(1), constraint2.evaluateError(pt1), tol));
   EXPECT(assert_equal(Z_1x1, constraint1.unwhitenedError(config), tol));
   EXPECT(assert_equal(Z_1x1, constraint2.unwhitenedError(config), tol));
   EXPECT_DOUBLES_EQUAL(0.0, constraint1.error(config), tol);
@@ -103,10 +103,10 @@ TEST( testBoundingConstraint, unary_basics_active2 ) {
   config.insert(key, pt1);
   EXPECT(constraint3.active(config));
   EXPECT(constraint4.active(config));
-  EXPECT(assert_equal(-1.0 * ones(1), constraint3.evaluateError(pt1), tol));
-  EXPECT(assert_equal(-1.0 * ones(1), constraint4.evaluateError(pt1), tol));
-  EXPECT(assert_equal(-1.0 * ones(1), constraint3.unwhitenedError(config), tol));
-  EXPECT(assert_equal(-1.0 * ones(1), constraint4.unwhitenedError(config), tol));
+  EXPECT(assert_equal(-1.0 * Vector::Ones(1), constraint3.evaluateError(pt1), tol));
+  EXPECT(assert_equal(-1.0 * Vector::Ones(1), constraint4.evaluateError(pt1), tol));
+  EXPECT(assert_equal(-1.0 * Vector::Ones(1), constraint3.unwhitenedError(config), tol));
+  EXPECT(assert_equal(-1.0 * Vector::Ones(1), constraint4.unwhitenedError(config), tol));
   EXPECT_DOUBLES_EQUAL(5.0, constraint3.error(config), tol);
   EXPECT_DOUBLES_EQUAL(5.0, constraint4.error(config), tol);
 }
@@ -188,9 +188,9 @@ TEST( testBoundingConstraint, MaxDistance_basics) {
   EXPECT(rangeBound.dim() == 1);
 
   EXPECT(assert_equal((Vector(1) << 2.0).finished(), rangeBound.evaluateError(pt1, pt1)));
-  EXPECT(assert_equal(ones(1), rangeBound.evaluateError(pt1, pt2)));
+  EXPECT(assert_equal(Vector::Ones(1), rangeBound.evaluateError(pt1, pt2)));
   EXPECT(assert_equal(Z_1x1, rangeBound.evaluateError(pt1, pt3)));
-  EXPECT(assert_equal(-1.0*ones(1), rangeBound.evaluateError(pt1, pt4)));
+  EXPECT(assert_equal(-1.0*Vector::Ones(1), rangeBound.evaluateError(pt1, pt4)));
 
   Values config1;
   config1.insert(key1, pt1);
@@ -213,7 +213,7 @@ TEST( testBoundingConstraint, MaxDistance_basics) {
 
   config1.update(key2, pt4);
   EXPECT(rangeBound.active(config1));
-  EXPECT(assert_equal(-1.0*ones(1), rangeBound.unwhitenedError(config1)));
+  EXPECT(assert_equal(-1.0*Vector::Ones(1), rangeBound.unwhitenedError(config1)));
   EXPECT_DOUBLES_EQUAL(0.5*mu, rangeBound.error(config1), tol);
 }
 

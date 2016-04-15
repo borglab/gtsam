@@ -170,9 +170,9 @@ TEST( regularImplicitSchurFactor, addHessianMultiply ) {
   }
 
   VectorValues expectedVV;
-  expectedVV.insert(0,-3.5*ones(6));
-  expectedVV.insert(1,10*ones(6)/3);
-  expectedVV.insert(3,-19.5*ones(6));
+  expectedVV.insert(0,-3.5*Vector::Ones(6));
+  expectedVV.insert(1,10*Vector::Ones(6)/3);
+  expectedVV.insert(3,-19.5*Vector::Ones(6));
   { // Check gradientAtZero
     VectorValues actual = implicitFactor.gradientAtZero();
     EXPECT(assert_equal(expectedVV, jfQ.gradientAtZero(), 1e-8));
@@ -210,9 +210,9 @@ TEST( regularImplicitSchurFactor, addHessianMultiply ) {
 TEST(regularImplicitSchurFactor, hessianDiagonal)
 {
   /* TESTED AGAINST MATLAB
-   *  F = [ones(2,6) zeros(2,6) zeros(2,6)
-        zeros(2,6) 2*ones(2,6) zeros(2,6)
-        zeros(2,6) zeros(2,6) 3*ones(2,6)]
+   *  F = [Vector::Ones(2,6) zeros(2,6) zeros(2,6)
+        zeros(2,6) 2*Vector::Ones(2,6) zeros(2,6)
+        zeros(2,6) zeros(2,6) 3*Vector::Ones(2,6)]
       E = [[1:6] [1:6] [0.5 1:5]];
       E = reshape(E',3,6)'
       P = inv(E' * E)
@@ -228,9 +228,9 @@ TEST(regularImplicitSchurFactor, hessianDiagonal)
 
   // hessianDiagonal
   VectorValues expected;
-  expected.insert(0, 1.195652*ones(6));
-  expected.insert(1, 4.782608*ones(6));
-  expected.insert(3, 7.043478*ones(6));
+  expected.insert(0, 1.195652*Vector::Ones(6));
+  expected.insert(1, 4.782608*Vector::Ones(6));
+  expected.insert(3, 7.043478*Vector::Ones(6));
   EXPECT(assert_equal(expected, factor.hessianDiagonal(),1e-5));
 
   // hessianBlockDiagonal

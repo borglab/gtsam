@@ -167,7 +167,7 @@ TEST( KalmanFilter, predict ) {
 // Test both QR and Cholesky versions in case of a realistic (AHRS) dynamics update
 TEST( KalmanFilter, QRvsCholesky ) {
 
-  Vector mean = ones(9);
+  Vector mean = Vector::Ones(9);
   Matrix covariance = 1e-6 * (Matrix(9, 9) <<
       15.0, -6.2, 0.0, 0.0, 0.0, 0.0, 0.0, 63.8, -0.6,
       -6.2, 21.9, -0.0, 0.0, 0.0, 0.0, -63.8, -0.0, -0.1,

@@ -260,9 +260,9 @@ TEST(JacobianFactor, matrices_NULL)
 
   // hessianDiagonal
   VectorValues expectDiagonal;
-  expectDiagonal.insert(5, ones(3));
-  expectDiagonal.insert(10, 4*ones(3));
-  expectDiagonal.insert(15, 9*ones(3));
+  expectDiagonal.insert(5, Vector::Ones(3));
+  expectDiagonal.insert(10, 4*Vector::Ones(3));
+  expectDiagonal.insert(15, 9*Vector::Ones(3));
   EXPECT(assert_equal(expectDiagonal, factor.hessianDiagonal()));
 
   // hessianBlockDiagonal

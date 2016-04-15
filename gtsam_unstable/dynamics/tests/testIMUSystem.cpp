@@ -38,7 +38,7 @@ TEST(testIMUSystem, instantiations) {
   gtsam::SharedNoiseModel model6 = gtsam::noiseModel::Unit::Create(6);
   gtsam::SharedNoiseModel model9 = gtsam::noiseModel::Unit::Create(9);
 
-  Vector accel = ones(3), gyro = ones(3);
+  Vector accel = Vector::Ones(3), gyro = Vector::Ones(3);
 
   IMUFactor<PoseRTV> imu(accel, gyro, 0.01, x1, x2, model6);
   FullIMUFactor<PoseRTV> full_imu(accel, gyro, 0.01, x1, x2, model9);
@@ -48,7 +48,7 @@ TEST(testIMUSystem, instantiations) {
   VelocityConstraint constraint(x1, x2, 0.1, 10000);
   PriorFactor<gtsam::PoseRTV> posePrior(x1, x1_v, model9);
   DHeightPrior heightPrior(x1, 0.1, model1);
-  VelocityPrior velPrior(x1, ones(3), model3);
+  VelocityPrior velPrior(x1, Vector::Ones(3), model3);
 }
 
 /* ************************************************************************* */

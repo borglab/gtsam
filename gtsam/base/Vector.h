@@ -250,10 +250,10 @@ inline void subInsert(Vector& fullVector, const Vector& subVector, size_t i) {fu
 inline double sum(const Vector &a){return a.sum();}
 
 inline Vector zero(size_t n) { return Vector::Zero(n);}
+inline Vector ones(size_t n) { return Vector::Ones(n); }
 #endif
 inline Vector delta(size_t n, size_t i, double value){ return Vector::Unit(n, i) * value;}
 inline Vector basis(size_t n, size_t i) { return delta(n, i, 1.0); }
-inline Vector ones(size_t n) { return Vector::Ones(n); }
 inline size_t dim(const Vector& v) { return v.size(); }
 
 } // namespace gtsam

@@ -45,9 +45,9 @@ AHRS::AHRS(const Matrix& stationaryU, const Matrix& stationaryF, double g_e,
 
   F_g_ = -I_3x3 / tau_g;
   F_a_ = -I_3x3 / tau_a;
-  Vector3 var_omega_w = 0 * ones(3); // TODO
-  Vector3 var_omega_g = (0.0034 * 0.0034) * ones(3);
-  Vector3 var_omega_a = (0.034 * 0.034) * ones(3);
+  Vector3 var_omega_w = 0 * Vector::Ones(3); // TODO
+  Vector3 var_omega_g = (0.0034 * 0.0034) * Vector::Ones(3);
+  Vector3 var_omega_a = (0.034 * 0.034) * Vector::Ones(3);
   Vector3 sigmas_v_g_sq = sigmas_v_g.array().square();
   var_w_ << var_omega_w, var_omega_g, sigmas_v_g_sq, var_omega_a;
 

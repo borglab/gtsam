@@ -97,7 +97,7 @@ TEST( GaussianFactorGraph, eliminateOne_x2 )
   // create expected Conditional Gaussian
   double sig = 0.0894427;
   Matrix I = I_2x2/sig, R11 = I, S12 = -0.2*I, S13 = -0.8*I;
-  Vector d = Vector2(0.2, -0.14)/sig, sigma = ones(2);
+  Vector d = Vector2(0.2, -0.14)/sig, sigma = Vector::Ones(2);
   GaussianConditional expected(ordering[X(2)],d,R11,ordering[L(1)],S12,ordering[X(1)],S13,sigma);
 
   EXPECT(assert_equal(expected,*actual,tol));
@@ -113,7 +113,7 @@ TEST( GaussianFactorGraph, eliminateOne_l1 )
   // create expected Conditional Gaussian
   double sig = sqrt(2.0)/10.;
   Matrix I = I_2x2/sig, R11 = I, S12 = -0.5*I, S13 = -0.5*I;
-  Vector d = Vector2(-0.1, 0.25)/sig, sigma = ones(2);
+  Vector d = Vector2(-0.1, 0.25)/sig, sigma = Vector::Ones(2);
   GaussianConditional expected(ordering[L(1)],d,R11,ordering[X(1)],S12,ordering[X(2)],S13,sigma);
 
   EXPECT(assert_equal(expected,*actual,tol));
@@ -130,7 +130,7 @@ TEST( GaussianFactorGraph, eliminateOne_x1_fast )
 
   // create expected Conditional Gaussian
   Matrix I = 15*I_2x2, R11 = I, S12 = -0.111111*I, S13 = -0.444444*I;
-  Vector d = Vector2(-0.133333, -0.0222222), sigma = ones(2);
+  Vector d = Vector2(-0.133333, -0.0222222), sigma = Vector::Ones(2);
   GaussianConditional expected(ordering[X(1)],15*d,R11,ordering[L(1)],S12,ordering[X(2)],S13,sigma);
 
   // Create expected remaining new factor
@@ -160,7 +160,7 @@ TEST( GaussianFactorGraph, eliminateOne_x2_fast )
   // create expected Conditional Gaussian
   double sig = 0.0894427;
   Matrix I = I_2x2/sig, R11 = I, S12 = -0.2*I, S13 = -0.8*I;
-  Vector d = Vector2(0.2, -0.14)/sig, sigma = ones(2);
+  Vector d = Vector2(0.2, -0.14)/sig, sigma = Vector::Ones(2);
   GaussianConditional expected(ordering[X(2)],d,R11,ordering[X(1)],S13,ordering[L(1)],S12,sigma);
 
   EXPECT(assert_equal(expected,*actual,tol));
@@ -176,7 +176,7 @@ TEST( GaussianFactorGraph, eliminateOne_l1_fast )
   // create expected Conditional Gaussian
   double sig = sqrt(2.0)/10.;
   Matrix I = I_2x2/sig, R11 = I, S12 = -0.5*I, S13 = -0.5*I;
-  Vector d = Vector2(-0.1, 0.25)/sig, sigma = ones(2);
+  Vector d = Vector2(-0.1, 0.25)/sig, sigma = Vector::Ones(2);
   GaussianConditional expected(ordering[L(1)],d,R11,ordering[X(1)],S12,ordering[X(2)],S13,sigma);
 
   EXPECT(assert_equal(expected,*actual,tol));
@@ -195,11 +195,11 @@ TEST( GaussianFactorGraph, eliminateAll )
   GaussianBayesNet expected = simpleGaussian(ordering[X(1)],d1,0.1);
 
   double sig1 = 0.149071;
-  Vector d2 = Vector2(0.0, 0.2)/sig1, sigma2 = ones(2);
+  Vector d2 = Vector2(0.0, 0.2)/sig1, sigma2 = Vector::Ones(2);
   push_front(expected,ordering[L(1)],d2, I/sig1,ordering[X(1)], (-1)*I/sig1,sigma2);
 
   double sig2 = 0.0894427;
-  Vector d3 = Vector2(0.2, -0.14)/sig2, sigma3 = ones(2);
+  Vector d3 = Vector2(0.2, -0.14)/sig2, sigma3 = Vector::Ones(2);
   push_front(expected,ordering[X(2)],d3, I/sig2,ordering[L(1)], (-0.2)*I/sig2, ordering[X(1)], (-0.8)*I/sig2, sigma3);
 
   // Check one ordering
@@ -588,7 +588,7 @@ TEST( GaussianFactorGraph, conditional_sigma_failure) {
   BOOST_FOREACH(const GaussianBayesTree::sharedClique& clique, actBT.nodes() | br::map_values) {
     GaussianConditional::shared_ptr conditional = clique->conditional();
     //size_t dim = conditional->rows();
-    //EXPECT(assert_equal(gtsam::ones(dim), conditional->get_model()->sigmas(), tol));
+    //EXPECT(assert_equal(gtsam::Vector::Ones(dim), conditional->get_model()->sigmas(), tol));
     EXPECT(!conditional->get_model());
   }
 }
