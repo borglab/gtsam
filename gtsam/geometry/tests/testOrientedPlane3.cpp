@@ -96,7 +96,7 @@ inline static Vector randomVector(const Vector& minLimits,
     const Vector& maxLimits) {
 
   // Get the number of dimensions and create the return vector
-  size_t numDims = dim(minLimits);
+  size_t numDims = minLimits.size();
   Vector vector = Vector::Zero(numDims);
 
   // Create the random vector
