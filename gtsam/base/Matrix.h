@@ -16,6 +16,7 @@
  * @author  Kai Ni
  * @author  Frank Dellaert
  * @author  Alex Cunningham
+ * @author  Alex Hagiopol
  */
 
 // \callgraph

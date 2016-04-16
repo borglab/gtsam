@@ -14,6 +14,7 @@
  * @brief   typedef and functions to augment Eigen's VectorXd
  * @author  Kai Ni
  * @author  Frank Dellaert
+ * @author  Alex Hagiopol
  */
 
 // \callgraph
