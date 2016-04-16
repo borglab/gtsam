@@ -1,3 +1,37 @@
+Apr 1, 2016: version 2.9.5
+
+    * licensing simplified (no other change); refer to CCOLAMD/Doc/License.txt
+
+Feb 1, 2016: version 2.9.4
+
+    * update to Makefiles
+
+Jan 30, 2016: version 2.9.3
+
+    * modifications to Makefiles
+
+Jan 1, 2016: version 2.9.2
+
+    * modified Makefile to create shared libraries
+        No change to C code except version number.
+        The empty file ccolamd_global.c removed.
+
+Oct 10, 2014: version 2.9.1
+
+    modified MATLAB/ccolamd_make.m.  No change to C code except version number.
+
+July 31, 2013: version 2.9.0
+
+    * changed malloc and printf pointers to use SuiteSparse_config
+
+Jun 1, 2012: version 2.8.0
+
+    * changed from UFconfig to SuiteSparse_config
+
+Dec 7, 2011: version 2.7.4
+
+    * fixed the Makefile to better align with CFLAGS and other standards
+
 Jan 25, 2011: version 2.7.3
 
     * minor fix to "make install"
