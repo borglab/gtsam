@@ -34,15 +34,6 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-bool zero(const Vector& v) {
-  bool result = true;
-  size_t n = v.size();
-  for( size_t j = 0 ; j < n ; j++)
-    result = result && (v(j) == 0.0);
-  return result;
-}
-
-/* ************************************************************************* */
 //3 argument call
 void print(const Vector& v, const string& s, ostream& stream) {
   size_t n = v.size();
