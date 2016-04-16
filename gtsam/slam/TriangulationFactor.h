@@ -131,7 +131,7 @@ public:
             << std::endl;
       if (throwCheirality_)
         throw e;
-      return Vector::Ones(Measurement::dimension) * 2.0 * camera_.calibration().fx();
+      return Eigen::Matrix<double,Measurement::dimension,1>::Constant(2.0 * camera_.calibration().fx());
     }
   }
 
