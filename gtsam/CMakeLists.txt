@@ -26,7 +26,7 @@ set (3rdparty_srcs
  ${eigen_headers} # Set by 3rdparty/CMakeLists.txt
  ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/CCOLAMD/Source/ccolamd.c
  ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/CCOLAMD/Source/ccolamd_global.c
- ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/UFconfig/UFconfig.c)
+ ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/SuiteSparse_config/SuiteSparse_config.c)
 gtsam_assign_source_folders("${3rdparty_srcs}") # Create MSVC structure
 
 # To exclude a source from the library build (in any subfolder)

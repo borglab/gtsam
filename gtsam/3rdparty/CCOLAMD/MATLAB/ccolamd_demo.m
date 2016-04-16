@@ -47,9 +47,8 @@ spparms ('default') ;
 A = sprandn (n, n, 2/n) + speye (n) ;
 b = (1:n)' ;
 
-figure (1)
 clf ;
-subplot (2,2,1)
+subplot (3,4,1)
 spy (A)
 title ('original matrix')
 
@@ -62,7 +61,7 @@ fl = luflops (L, U) ;
 x = Q * (U \ (L \ (P * b))) ;
 fprintf (1, '\nFlop count for [L,U,P] = lu (A*Q):          %d\n', fl) ;
 fprintf (1, 'residual:                                     %e\n', norm (A*x-b));
-subplot (2,2,2) ;
+subplot (3,4,2) ;
 spy (L|U) ;
 title ('LU with ccolamd') ;
 
@@ -76,7 +75,7 @@ fl = luflops (L, U) ;
 x = Q * (U \ (L \ (P * b))) ;
 fprintf (1, '\nFlop count for [L,U,P] = lu (A*Q):          %d\n', fl) ;
 fprintf (1, 'residual:                                     %e\n', norm (A*x-b));
-subplot (2,2,3) ;
+subplot (3,4,3) ;
 spy (L|U) ;
 title ('LU with colamd') ;
 catch
@@ -89,7 +88,7 @@ fl = luflops (L, U) ;
 x = U \ (L \ (P * b)) ;
 fprintf (1, '\nFlop count for [L,U,P] = lu (A*Q):          %d\n', fl) ;
 fprintf (1, 'residual:                                     %e\n', norm (A*x-b));
-subplot (2,2,4) ;
+subplot (3,4,4) ;
 spy (L|U) ;
 title ('LU with no ordering') ;
 
@@ -111,9 +110,7 @@ n = 1000 ;
 fprintf (1, 'Generating a random %d-by-%d sparse matrix.\n', n, n) ;
 A = sprandn (n, n, 2/n) + speye (n) ;
 
-figure (2)
-clf ;
-subplot (2,2,1)
+subplot (3,4,5)
 spy (A)
 title ('original matrix')
 
@@ -121,7 +118,7 @@ fprintf (1, '\n\nUnordered matrix:\n') ;
 [lnz,h,parent,post,R] = symbfact (A, 'col') ;
 fprintf (1, 'nz in Cholesky factors of A''A:            %d\n', sum (lnz)) ;
 fprintf (1, 'flop count for Cholesky of A''A:           %d\n', sum (lnz.^2)) ;
-subplot (2,2,4) ;
+subplot (3,4,6) ;
 spy (R) ;
 title ('Cholesky with no ordering') ;
 
@@ -133,7 +130,7 @@ fprintf (1, '\n\nccolamd run time:                         %f\n', t) ;
 fprintf (1, 'ccolamd ordering quality: \n') ;
 fprintf (1, 'nz in Cholesky factors of A(:,p)''A(:,p):  %d\n', sum (lnz)) ;
 fprintf (1, 'flop count for Cholesky of A(:,p)''A(:,p): %d\n', sum (lnz.^2)) ;
-subplot (2,2,2) ;
+subplot (3,4,7) ;
 spy (R) ;
 title ('Cholesky with ccolamd') ;
 
@@ -146,7 +143,7 @@ fprintf (1, '\n\ncolamd run time:                          %f\n', t) ;
 fprintf (1, 'colamd ordering quality: \n') ;
 fprintf (1, 'nz in Cholesky factors of A(:,p)''A(:,p):  %d\n', sum (lnz)) ;
 fprintf (1, 'flop count for Cholesky of A(:,p)''A(:,p): %d\n', sum (lnz.^2)) ;
-subplot (2,2,3) ;
+subplot (3,4,8) ;
 spy (R) ;
 title ('Cholesky with colamd') ;
 catch
@@ -164,9 +161,7 @@ fprintf (1, '\n-----------------------------------------------------------\n') ;
 fprintf (1, 'Generating a random symmetric %d-by-%d sparse matrix.\n', n, n) ;
 A = A+A' ;
 
-figure (3)
-clf ;
-subplot (2,2,1)
+subplot (3,4,9) ;
 spy (A)
 title ('original matrix')
 
@@ -174,7 +169,7 @@ fprintf (1, '\n\nUnordered matrix:\n') ;
 [lnz,h,parent,post,R] = symbfact (A, 'sym') ;
 fprintf (1, 'nz in Cholesky factors of A:       %d\n', sum (lnz)) ;
 fprintf (1, 'flop count for Cholesky of A:      %d\n', sum (lnz.^2)) ;
-subplot (2,2,4) ;
+subplot (3,4,10) ;
 spy (R) ;
 title ('Cholesky with no ordering') ;
 
@@ -186,7 +181,7 @@ fprintf (1, '\n\ncsymamd run time:                  %f\n', t) ;
 fprintf (1, 'csymamd ordering quality: \n') ;
 fprintf (1, 'nz in Cholesky factors of A(p,p):  %d\n', sum (lnz)) ;
 fprintf (1, 'flop count for Cholesky of A(p,p): %d\n', sum (lnz.^2)) ;
-subplot (2,2,2) ;
+subplot (3,4,11) ;
 spy (R) ;
 title ('Cholesky with csymamd') ;
 
@@ -199,7 +194,7 @@ fprintf (1, '\n\nsymamd run time:                   %f\n', t) ;
 fprintf (1, 'symamd ordering quality: \n') ;
 fprintf (1, 'nz in Cholesky factors of A(p,p):  %d\n', sum (lnz)) ;
 fprintf (1, 'flop count for Cholesky of A(p,p): %d\n', sum (lnz.^2)) ;
-subplot (2,2,3) ;
+subplot (3,4,12) ;
 spy (R) ;
 title ('Cholesky with symamd') ;
 catch
