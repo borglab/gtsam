@@ -26,7 +26,7 @@ using namespace gtsam;
 const double tol=1e-5;
 
 static const Key x0 = 0, x1 = 1, x2 = 2, x3 = 3, x4 = 4;
-static const Vector g = delta(3, 2, -9.81);
+static const Vector g = Vector::Unit(3,2)*(-9.81);
 
 /* ************************************************************************* */
 TEST(testIMUSystem, instantiations) {
@@ -149,8 +149,8 @@ TEST( testIMUSystem, linear_trajectory) {
   const double dt = 1.0;
 
   PoseRTV start;
-  Vector accel = delta(3, 0, 0.5); // forward force
-  Vector gyro = delta(3, 0, 0.1); // constant rotation
+  Vector accel = Vector::Unit(3,0)*0.5; // forward force
+  Vector gyro = Vector::Unit(3,0)*0.1; // constant rotation
   SharedDiagonal model = noiseModel::Unit::Create(9);
 
   Values true_traj, init_traj;

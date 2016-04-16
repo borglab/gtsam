@@ -235,7 +235,6 @@ GTSAM_EXPORT Vector concatVectors(const std::list<Vector>& vs);
  */
 GTSAM_EXPORT Vector concatVectors(size_t nrVectors, ...);
 
-
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 inline Vector abs(const Vector& v){return v.cwiseAbs();}
 inline Vector ediv(const Vector &a, const Vector &b) {assert (b.size()==a.size()); return a.cwiseQuotient(b);}
@@ -252,10 +251,9 @@ inline double sum(const Vector &a){return a.sum();}
 inline Vector zero(size_t n) { return Vector::Zero(n);}
 inline Vector ones(size_t n) { return Vector::Ones(n); }
 inline size_t dim(const Vector& v) { return v.size(); }
-#endif
 inline Vector delta(size_t n, size_t i, double value){ return Vector::Unit(n, i) * value;}
 inline Vector basis(size_t n, size_t i) { return delta(n, i, 1.0); }
-
+#endif
 } // namespace gtsam
 
 #include <boost/serialization/nvp.hpp>

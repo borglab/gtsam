@@ -712,7 +712,7 @@ TEST(Pose3, Bearing2) {
 TEST( Pose3, unicycle )
 {
   // velocity in X should be X in inertial frame, rather than global frame
-  Vector x_step = delta(6,3,1.0);
+  Vector x_step = Vector::Unit(6,3)*1.0;
   EXPECT(assert_equal(Pose3(Rot3::Ypr(0,0,0), l1), expmap_default<Pose3>(x1, x_step), tol));
   EXPECT(assert_equal(Pose3(Rot3::Ypr(0,0,0), Point3(2,1,0)), expmap_default<Pose3>(x2, x_step), tol));
   EXPECT(assert_equal(Pose3(Rot3::Ypr(M_PI/4.0,0,0), Point3(2,2,0)), expmap_default<Pose3>(x3, sqrt(2.0) * x_step), tol));
