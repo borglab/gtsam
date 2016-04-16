@@ -123,7 +123,7 @@ TEST( SmartProjectionCameraFactor, noiseless ) {
   double expectedError = 0.0;
   DOUBLES_EQUAL(expectedError, factor1->error(values), 1e-7);
   CHECK(
-      assert_equal(zero(4),
+      assert_equal(Z_4x1,
           factor1->reprojectionErrorAfterTriangulation(values), 1e-7));
 }
 
@@ -652,7 +652,7 @@ TEST( SmartProjectionCameraFactor, comparisonGeneralSfMFactor ) {
   Vector e1 = sfm1.evaluateError(values.at<Camera>(c1), values.at<Point3>(l1));
   Vector e2 = sfm2.evaluateError(values.at<Camera>(c2), values.at<Point3>(l1));
   double actualError = 0.5
-      * (norm_2(e1) * norm_2(e1) + norm_2(e2) * norm_2(e2));
+      * (e1.norm() * e1.norm() + e2.norm() * e2.norm());
   double actualErrorGraph = generalGraph.error(values);
 
   DOUBLES_EQUAL(expectedErrorGraph, actualErrorGraph, 1e-7);

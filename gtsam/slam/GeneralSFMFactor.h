@@ -129,7 +129,7 @@ public:
       if (H1) *H1 = JacobianC::Zero();
       if (H2) *H2 = JacobianL::Zero();
       // TODO warn if verbose output asked for
-      return zero(2);
+      return Z_2x1;
     }
   }
 
@@ -266,13 +266,13 @@ public:
       return reprojError.vector();
     }
     catch( CheiralityException& e) {
-      if (H1) *H1 = zeros(2, 6);
-      if (H2) *H2 = zeros(2, 3);
-      if (H3) *H3 = zeros(2, DimK);
+      if (H1) *H1 = Matrix::Zero(2, 6);
+      if (H2) *H2 = Matrix::Zero(2, 3);
+      if (H3) *H3 = Matrix::Zero(2, DimK);
       std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2())
       << " behind Camera " << DefaultKeyFormatter(this->key1()) << std::endl;
     }
-    return zero(2);
+    return Z_2x1;
   }
 
   /** return the measured */

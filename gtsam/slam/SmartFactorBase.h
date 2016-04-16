@@ -29,6 +29,7 @@
 #include <gtsam/geometry/CameraSet.h>
 
 #include <boost/optional.hpp>
+#include <boost/serialization/optional.hpp>
 #include <boost/make_shared.hpp>
 #include <vector>
 
@@ -73,7 +74,7 @@ protected:
   std::vector<Z> measured_;
 
   /// @name Pose of the camera in the body frame
-  const boost::optional<Pose3> body_P_sensor_; ///< Pose of the camera in the body frame
+  boost::optional<Pose3> body_P_sensor_; ///< Pose of the camera in the body frame
   /// @}
 
   // Cache for Fblocks, to avoid a malloc ever time we re-linearize
@@ -385,7 +386,9 @@ private:
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+    ar & BOOST_SERIALIZATION_NVP(noiseModel_);
     ar & BOOST_SERIALIZATION_NVP(measured_);
+    ar & BOOST_SERIALIZATION_NVP(body_P_sensor_);
   }
 };
 // end class SmartFactorBase

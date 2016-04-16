@@ -112,6 +112,20 @@ struct GTSAM_EXPORT SmartProjectionParams {
   void setDynamicOutlierRejectionThreshold(double dynOutRejectionThreshold) {
     triangulation.dynamicOutlierRejectionThreshold = dynOutRejectionThreshold;
   }
+
+private:
+
+  /// Serialization function
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int version) {
+    ar & BOOST_SERIALIZATION_NVP(linearizationMode);
+    ar & BOOST_SERIALIZATION_NVP(degeneracyMode);
+    ar & BOOST_SERIALIZATION_NVP(triangulation);
+    ar & BOOST_SERIALIZATION_NVP(retriangulationThreshold);
+    ar & BOOST_SERIALIZATION_NVP(throwCheirality);
+    ar & BOOST_SERIALIZATION_NVP(verboseCheirality);
+  }
 };
 
 /**
@@ -277,9 +291,9 @@ public:
     if (params_.degeneracyMode == ZERO_ON_DEGENERACY && !result_) {
       // failed: return"empty" Hessian
       BOOST_FOREACH(Matrix& m, Gs)
-        m = zeros(Base::Dim, Base::Dim);
+        m = Matrix::Zero(Base::Dim, Base::Dim);
       BOOST_FOREACH(Vector& v, gs)
-        v = zero(Base::Dim);
+        v = Vector::Zero(Base::Dim);
       return boost::make_shared<RegularHessianFactor<Base::Dim> >(this->keys_,
           Gs, gs, 0.0);
     }
@@ -463,7 +477,7 @@ public:
     if (nonDegenerate)
       return Base::unwhitenedError(cameras, *result_);
     else
-      return zero(cameras.size() * 2);
+      return Vector::Zero(cameras.size() * 2);
   }
 
   /**
@@ -535,8 +549,9 @@ private:
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int version) {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
-    ar & BOOST_SERIALIZATION_NVP(params_.throwCheirality);
-    ar & BOOST_SERIALIZATION_NVP(params_.verboseCheirality);
+    ar & BOOST_SERIALIZATION_NVP(params_);
+    ar & BOOST_SERIALIZATION_NVP(result_);
+    ar & BOOST_SERIALIZATION_NVP(cameraPosesTriangulation_);
   }
 }
 ;

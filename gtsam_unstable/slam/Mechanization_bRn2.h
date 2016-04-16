@@ -30,7 +30,7 @@ public:
    * @param r3 Z-axis of rotated frame
    */
   Mechanization_bRn2(const Rot3& initial_bRn = Rot3(),
-      const Vector3& initial_x_g = zero(3), const Vector3& initial_x_a = zero(3)) :
+      const Vector3& initial_x_g = Z_3x1, const Vector3& initial_x_a = Z_3x1) :
       bRn_(initial_bRn), x_g_(initial_x_g), x_a_(initial_x_a) {
   }
 
@@ -68,7 +68,7 @@ public:
    * @param obj The current state
    * @param dx The error used to correct and return a new state
    */
-  Mechanization_bRn2 correct(const Vector3& dx) const;
+  Mechanization_bRn2 correct(const Vector9& dx) const;
 
   /**
    * Integrate to get new state

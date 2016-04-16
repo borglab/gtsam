@@ -51,7 +51,7 @@ TEST( KalmanFilter, constructor ) {
   EXPECT(assert_equal(x_initial, p1->mean()));
   Matrix Sigma = (Matrix(2, 2) << 0.01, 0.0, 0.0, 0.01).finished();
   EXPECT(assert_equal(Sigma, p1->covariance()));
-  EXPECT(assert_equal(inverse(Sigma), p1->information()));
+  EXPECT(assert_equal(Sigma.inverse(), p1->information()));
 
   // Create one with a sharedGaussian
   KalmanFilter::State p2 = kf1.init(x_initial, Sigma);
@@ -65,33 +65,33 @@ TEST( KalmanFilter, constructor ) {
 TEST( KalmanFilter, linear1 ) {
 
   // Create the controls and measurement properties for our example
-  Matrix F = eye(2, 2);
-  Matrix B = eye(2, 2);
+  Matrix F = I_2x2;
+  Matrix B = I_2x2;
   Vector u = Vector2(1.0, 0.0);
   SharedDiagonal modelQ = noiseModel::Isotropic::Sigma(2, 0.1);
-  Matrix Q = 0.01*eye(2, 2);
-  Matrix H = eye(2, 2);
+  Matrix Q = 0.01*I_2x2;
+  Matrix H = I_2x2;
   State z1(1.0, 0.0);
   State z2(2.0, 0.0);
   State z3(3.0, 0.0);
   SharedDiagonal modelR = noiseModel::Isotropic::Sigma(2, 0.1);
-  Matrix R = 0.01*eye(2, 2);
+  Matrix R = 0.01*I_2x2;
 
   // Create the set of expected output TestValues
   State expected0(0.0, 0.0);
-  Matrix P00 = 0.01*eye(2, 2);
+  Matrix P00 = 0.01*I_2x2;
 
   State expected1(1.0, 0.0);
   Matrix P01 = P00 + Q;
-  Matrix I11 = inverse(P01) + inverse(R);
+  Matrix I11 = P01.inverse() + R.inverse();
 
   State expected2(2.0, 0.0);
-  Matrix P12 = inverse(I11) + Q;
-  Matrix I22 = inverse(P12) + inverse(R);
+  Matrix P12 = I11.inverse() + Q;
+  Matrix I22 = P12.inverse() + R.inverse();
 
   State expected3(3.0, 0.0);
-  Matrix P23 = inverse(I22) + Q;
-  Matrix I33 = inverse(P23) + inverse(R);
+  Matrix P23 = I22.inverse() + Q;
+  Matrix I33 = P23.inverse() + R.inverse();
 
   // Create a Kalman filter of dimension 2
   KalmanFilter kf(2);
@@ -140,7 +140,7 @@ TEST( KalmanFilter, predict ) {
   Vector u = Vector3(1.0, 0.0, 2.0);
   Matrix R = (Matrix(2, 2) << 1.0, 0.5, 0.0, 3.0).finished();
   Matrix M = trans(R)*R;
-  Matrix Q = inverse(M);
+  Matrix Q = M.inverse();
 
   // Create a Kalman filter of dimension 2
   KalmanFilter kf(2);
@@ -167,7 +167,7 @@ TEST( KalmanFilter, predict ) {
 // Test both QR and Cholesky versions in case of a realistic (AHRS) dynamics update
 TEST( KalmanFilter, QRvsCholesky ) {
 
-  Vector mean = ones(9);
+  Vector mean = Vector::Ones(9);
   Matrix covariance = 1e-6 * (Matrix(9, 9) <<
       15.0, -6.2, 0.0, 0.0, 0.0, 0.0, 0.0, 63.8, -0.6,
       -6.2, 21.9, -0.0, 0.0, 0.0, 0.0, -63.8, -0.0, -0.1,
@@ -197,8 +197,8 @@ TEST( KalmanFilter, QRvsCholesky ) {
       0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1000000.0, 0.0, 0.0,
       0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1000000.0, 0.0,
       0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1000000.0).finished();
-  Matrix B = zeros(9, 1);
-  Vector u = zero(1);
+  Matrix B = Matrix::Zero(9, 1);
+  Vector u = Z_1x1;
   Matrix dt_Q_k = 1e-6 * (Matrix(9, 9) <<
       33.7, 3.1, -0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
       3.1, 126.4, -0.3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -270,7 +270,7 @@ TEST( KalmanFilter, QRvsCholesky ) {
   EXPECT(assert_equal(expected2, pb2->covariance(), 1e-7));
 
   // do the above update again, this time with a full Matrix Q
-  Matrix modelQ = diag(emul(sigmas,sigmas));
+  Matrix modelQ = ((Matrix) sigmas.array().square()).asDiagonal();
   KalmanFilter::State pa3 = kfa.updateQ(pa, H, z, modelQ);
   KalmanFilter::State pb3 = kfb.updateQ(pb, H, z, modelQ);
 

@@ -131,7 +131,7 @@ TEST(Manifold, DefaultChart) {
   EXPECT_DOUBLES_EQUAL(traits<double>::Retract(0, v1), 1, 1e-9);
 
   // Dynamic does not work yet !
-  Vector z = zero(2), v(2);
+  Vector z = Z_2x1, v(2);
   v << 1, 0;
   //DefaultChart<Vector> chart4;
 //  EXPECT(assert_equal(traits<Vector>::Local(z, v), v));
@@ -146,7 +146,7 @@ TEST(Manifold, DefaultChart) {
   EXPECT(assert_equal(traits<Rot3>::Retract(I, v3), R));
   // Check zero vector
   //DefaultChart<Rot3> chart6;
-  EXPECT(assert_equal(zero(3), traits<Rot3>::Local(R, R)));
+  EXPECT(assert_equal((Vector) Z_3x1, traits<Rot3>::Local(R, R)));
 }
 
 //******************************************************************************

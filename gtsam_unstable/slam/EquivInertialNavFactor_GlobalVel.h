@@ -434,8 +434,8 @@ public:
     delta_t += msr_dt;
 
     // Update EquivCov_Overall
-    Matrix Z_3x3 = zeros(3,3);
-    Matrix I_3x3 = eye(3,3);
+    Matrix Z_3x3 = Z_3x3;
+    Matrix I_3x3 = I_3x3;
 
     Matrix H_pos_pos = numericalDerivative11<Vector3, Vector3>(boost::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt, _1, delta_vel_in_t0), delta_pos_in_t0);
     Matrix H_pos_vel = numericalDerivative11<Vector3, Vector3>(boost::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt, delta_pos_in_t0, _1), delta_vel_in_t0);
@@ -461,7 +461,7 @@ public:
 
 
     noiseModel::Gaussian::shared_ptr model_discrete_curr = calc_descrete_noise_model(model_continuous_overall, msr_dt );
-    Matrix Q_d = inverse(model_discrete_curr->R().transpose() * model_discrete_curr->R() );
+    Matrix Q_d = (model_discrete_curr->R().transpose() * model_discrete_curr->R()).inverse();
 
     EquivCov_Overall = F * EquivCov_Overall * F.transpose() + Q_d;
     // Luca: force identity covariance matrix (for testing purposes)
@@ -536,9 +536,9 @@ public:
   static inline noiseModel::Gaussian::shared_ptr CalcEquivalentNoiseCov(const noiseModel::Gaussian::shared_ptr& gaussian_acc, const noiseModel::Gaussian::shared_ptr& gaussian_gyro,
       const noiseModel::Gaussian::shared_ptr& gaussian_process){
 
-    Matrix cov_acc = inverse( gaussian_acc->R().transpose() * gaussian_acc->R() );
-    Matrix cov_gyro = inverse( gaussian_gyro->R().transpose() * gaussian_gyro->R() );
-    Matrix cov_process = inverse( gaussian_process->R().transpose() * gaussian_process->R() );
+    Matrix cov_acc = ( gaussian_acc->R().transpose() * gaussian_acc->R() ).inverse();
+    Matrix cov_gyro = ( gaussian_gyro->R().transpose() * gaussian_gyro->R() ).inverse();
+    Matrix cov_process = ( gaussian_process->R().transpose() * gaussian_process->R() ).inverse();
 
     cov_process.block(0,0, 3,3) += cov_gyro;
     cov_process.block(6,6, 3,3) += cov_acc;
@@ -550,9 +550,9 @@ public:
       const noiseModel::Gaussian::shared_ptr& gaussian_process,
       Matrix& cov_acc, Matrix& cov_gyro, Matrix& cov_process_without_acc_gyro){
 
-    cov_acc = inverse( gaussian_acc->R().transpose() * gaussian_acc->R() );
-    cov_gyro = inverse( gaussian_gyro->R().transpose() * gaussian_gyro->R() );
-    cov_process_without_acc_gyro = inverse( gaussian_process->R().transpose() * gaussian_process->R() );
+    cov_acc = ( gaussian_acc->R().transpose() * gaussian_acc->R() ).inverse();
+    cov_gyro = ( gaussian_gyro->R().transpose() * gaussian_gyro->R() ).inverse();
+    cov_process_without_acc_gyro = ( gaussian_process->R().transpose() * gaussian_process->R() ).inverse();
   }
 
   static inline void Calc_g_rho_omega_earth_NED(const Vector& Pos_NED, const Vector& Vel_NED, const Vector& LatLonHeight_IC, const Vector& Pos_NED_Initial,

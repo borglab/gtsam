@@ -62,7 +62,7 @@ TEST (EssentialMatrix, FromPose3) {
 //*******************************************************************************
 TEST(EssentialMatrix, localCoordinates0) {
   EssentialMatrix E;
-  Vector expected = zero(5);
+  Vector expected = Z_5x1;
   Vector actual = E.localCoordinates(E);
   EXPECT(assert_equal(expected, actual, 1e-8));
 }
@@ -74,7 +74,7 @@ TEST (EssentialMatrix, localCoordinates) {
   Pose3 pose(trueRotation, trueTranslation);
   EssentialMatrix hx = EssentialMatrix::FromPose3(pose);
   Vector actual = hx.localCoordinates(EssentialMatrix::FromPose3(pose));
-  EXPECT(assert_equal(zero(5), actual, 1e-8));
+  EXPECT(assert_equal(Z_5x1, actual, 1e-8));
 
   Vector6 d;
   d << 0.1, 0.2, 0.3, 0, 0, 0;
@@ -85,7 +85,7 @@ TEST (EssentialMatrix, localCoordinates) {
 
 //*************************************************************************
 TEST (EssentialMatrix, retract0) {
-  EssentialMatrix actual = trueE.retract(zero(5));
+  EssentialMatrix actual = trueE.retract(Z_5x1);
   EXPECT(assert_equal(trueE, actual));
 }
 

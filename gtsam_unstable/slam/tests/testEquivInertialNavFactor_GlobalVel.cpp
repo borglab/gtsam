@@ -41,8 +41,8 @@ TEST( EquivInertialNavFactor_GlobalVel, Constructor)
   Vector delta_vel_in_t0 = Vector3(0.0, 0.0, 0.0);
   Vector delta_angles = Vector3(0.0, 0.0, 0.0);
   double delta_t = 0.0;
-  Matrix EquivCov_Overall = zeros(15,15);
-  Matrix Jacobian_wrt_t0_Overall = eye(15);
+  Matrix EquivCov_Overall = Matrix::Zero(15,15);
+  Matrix Jacobian_wrt_t0_Overall = Matrix::Identity(15,15);
   imuBias::ConstantBias bias1 = imuBias::ConstantBias();
 
   // Earth Terms (gravity, etc)

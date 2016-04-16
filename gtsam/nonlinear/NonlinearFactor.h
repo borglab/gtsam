@@ -313,7 +313,7 @@ public:
         return evaluateError(x1);
       }
     } else {
-      return zero(this->dim());
+      return Vector::Zero(this->dim());
     }
   }
 
@@ -388,7 +388,7 @@ public:
         return evaluateError(x1, x2);
       }
     } else {
-      return zero(this->dim());
+      return Vector::Zero(this->dim());
     }
   }
 
@@ -463,7 +463,7 @@ public:
       else
         return evaluateError(x.at<X1>(keys_[0]), x.at<X2>(keys_[1]), x.at<X3>(keys_[2]));
     } else {
-      return zero(this->dim());
+      return Vector::Zero(this->dim());
     }
   }
 
@@ -543,7 +543,7 @@ public:
       else
         return evaluateError(x.at<X1>(keys_[0]), x.at<X2>(keys_[1]), x.at<X3>(keys_[2]), x.at<X4>(keys_[3]));
     } else {
-      return zero(this->dim());
+      return Vector::Zero(this->dim());
     }
   }
 
@@ -627,7 +627,7 @@ public:
       else
         return evaluateError(x.at<X1>(keys_[0]), x.at<X2>(keys_[1]), x.at<X3>(keys_[2]), x.at<X4>(keys_[3]), x.at<X5>(keys_[4]));
     } else {
-      return zero(this->dim());
+      return Vector::Zero(this->dim());
     }
   }
 
@@ -715,7 +715,7 @@ public:
       else
         return evaluateError(x.at<X1>(keys_[0]), x.at<X2>(keys_[1]), x.at<X3>(keys_[2]), x.at<X4>(keys_[3]), x.at<X5>(keys_[4]), x.at<X6>(keys_[5]));
     } else {
-      return zero(this->dim());
+      return Vector::Zero(this->dim());
     }
   }
 

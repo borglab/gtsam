@@ -25,7 +25,7 @@ Expression<T> compose(const Expression<T>& t1, const Expression<T>& t2) {
 }
 
 // Some typedefs
-typedef Expression<double> double_;
+typedef Expression<double> Double_;
 typedef Expression<Vector1> Vector1_;
 typedef Expression<Vector2> Vector2_;
 typedef Expression<Vector3> Vector3_;

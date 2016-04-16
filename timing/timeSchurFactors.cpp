@@ -55,14 +55,14 @@ void timeAll(size_t m, size_t N) {
   Matrix P = (E.transpose() * E).inverse();
 
   // RHS and sigmas
-  const Vector b = gtsam::repeat(2 * m, 1);
+  const Vector b = Vector::Constant(2*m,1);
   const SharedDiagonal model;
 
   // parameters for multiplyHessianAdd
   double alpha = 0.5;
   VectorValues xvalues, yvalues;
   for (size_t i = 0; i < m; i++)
-    xvalues.insert(i, gtsam::repeat(D, 2));
+    xvalues.insert(i, Vector::Constant(D,2));
 
   // Implicit
   RegularImplicitSchurFactor<CAMERA> implicitFactor(keys, Fblocks, E, P, b);
@@ -109,7 +109,7 @@ void timeAll(size_t m, size_t N) {
     double* xdata = x.data();
 
     // create a y
-    Vector y = zero(m * D);
+    Vector y = Vector::Zero(m * D);
     TIME(RawImplicit, implicitFactor, xdata, y.data())
     TIME(RawJacobianQ, jf, xdata, y.data())
     TIME(RawJacobianQR, jqr, xdata, y.data())

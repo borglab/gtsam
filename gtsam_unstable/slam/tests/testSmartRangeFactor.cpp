@@ -70,7 +70,7 @@ TEST( SmartRangeFactor, unwhitenedError ) {
   // Check Jacobian for n==1
   vector<Matrix> H1(1);
   f.unwhitenedError(values, H1); // with H now !
-  CHECK(assert_equal(zeros(3,1), H1.front()));
+  CHECK(assert_equal(Matrix::Zero(3,1), H1.front()));
 
   // Whenever there are two ranges or less, error should be zero
   Vector actual1 = f.unwhitenedError(values);

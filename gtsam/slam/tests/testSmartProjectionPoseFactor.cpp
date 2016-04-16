@@ -140,7 +140,7 @@ TEST( SmartProjectionPoseFactor, noiseless ) {
   Vector actualErrors = factor.unwhitenedError(cameras, *point, F, E);
   EXPECT(assert_equal(expectedE, E, 1e-7));
 
-  EXPECT(assert_equal(zero(4), actualErrors, 1e-7));
+  EXPECT(assert_equal(Z_4x1, actualErrors, 1e-7));
 
   // Calculate using computeJacobians
   Vector b;
@@ -1403,6 +1403,26 @@ TEST(SmartProjectionPoseFactor, serialize) {
   SmartProjectionParams params;
   params.setRankTolerance(rankTol);
   SmartFactor factor(model, sharedK, boost::none, params);
+
+  EXPECT(equalsObj(factor));
+  EXPECT(equalsXML(factor));
+  EXPECT(equalsBinary(factor));
+}
+
+TEST(SmartProjectionPoseFactor, serialize2) {
+  using namespace vanillaPose;
+  using namespace gtsam::serializationTestHelpers;
+  SmartProjectionParams params;
+  params.setRankTolerance(rankTol);
+  Pose3 bts;
+  SmartFactor factor(model, sharedK, bts, params);
+
+  // insert some measurments
+  vector<Key> key_view;
+  vector<Point2> meas_view;
+  key_view.push_back(Symbol('x', 1));
+  meas_view.push_back(Point2(10, 10));
+  factor.add(meas_view, key_view);
 
   EXPECT(equalsObj(factor));
   EXPECT(equalsXML(factor));

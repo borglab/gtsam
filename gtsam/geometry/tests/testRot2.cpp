@@ -62,8 +62,8 @@ TEST( Rot2, compose)
 
   Matrix H1, H2;
   (void) Rot2::fromAngle(1.0).compose(Rot2::fromAngle(2.0), H1, H2);
-  EXPECT(assert_equal(eye(1), H1));
-  EXPECT(assert_equal(eye(1), H2));
+  EXPECT(assert_equal(I_1x1, H1));
+  EXPECT(assert_equal(I_1x1, H2));
 }
 
 /* ************************************************************************* */
@@ -74,8 +74,8 @@ TEST( Rot2, between)
 
   Matrix H1, H2;
   (void) Rot2::fromAngle(1.0).between(Rot2::fromAngle(2.0), H1, H2);
-  EXPECT(assert_equal(-eye(1), H1));
-  EXPECT(assert_equal(eye(1), H2));
+  EXPECT(assert_equal(-I_1x1, H1));
+  EXPECT(assert_equal(I_1x1, H2));
 }
 
 /* ************************************************************************* */
@@ -89,7 +89,7 @@ TEST( Rot2, equals)
 /* ************************************************************************* */
 TEST( Rot2, expmap)
 {
-  Vector v = zero(1);
+  Vector v = Z_1x1;
   CHECK(assert_equal(R.retract(v), R));
 }
 

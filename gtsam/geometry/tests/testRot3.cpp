@@ -96,7 +96,7 @@ TEST( Rot3, equals)
 /* ************************************************************************* */
 // Notice this uses J^2 whereas fast uses w*w', and has cos(t)*I + ....
 Rot3 slow_but_correct_Rodrigues(const Vector& w) {
-  double t = norm_2(w);
+  double t = w.norm();
   Matrix3 J = skewSymmetric(w / t);
   if (t < 1e-5) return Rot3();
   Matrix3 R = I_3x3 + sin(t) * J + (1.0 - cos(t)) * (J * J);
@@ -130,7 +130,7 @@ TEST( Rot3, Rodrigues2)
 TEST( Rot3, Rodrigues3)
 {
   Vector w = Vector3(0.1, 0.2, 0.3);
-  Rot3 R1 = Rot3::AxisAngle(w / norm_2(w), norm_2(w));
+  Rot3 R1 = Rot3::AxisAngle(w / w.norm(), w.norm());
   Rot3 R2 = slow_but_correct_Rodrigues(w);
   CHECK(assert_equal(R2,R1));
 }
@@ -152,7 +152,7 @@ TEST( Rot3, Rodrigues4)
 /* ************************************************************************* */
 TEST( Rot3, retract)
 {
-  Vector v = zero(3);
+  Vector v = Z_3x1;
   CHECK(assert_equal(R, R.retract(v)));
 
 //  // test Canonical coordinates
@@ -213,7 +213,7 @@ TEST(Rot3, log)
 #define CHECK_OMEGA_ZERO(X,Y,Z) \
   w = (Vector(3) << (double)X, (double)Y, double(Z)).finished(); \
   R = Rot3::Rodrigues(w); \
-  EXPECT(assert_equal(zero(3), Rot3::Logmap(R)));
+  EXPECT(assert_equal((Vector) Z_3x1, Rot3::Logmap(R)));
 
   CHECK_OMEGA_ZERO( 2.0*PI,      0,      0)
   CHECK_OMEGA_ZERO(      0, 2.0*PI,      0)
@@ -224,16 +224,16 @@ TEST(Rot3, log)
 /* ************************************************************************* */
 TEST(Rot3, retract_localCoordinates)
 {
-  Vector3 d12 = repeat(3,0.1);
+  Vector3 d12 = Vector3::Constant(0.1);
   Rot3 R2 = R.retract(d12);
   EXPECT(assert_equal(d12, R.localCoordinates(R2)));
 }
 /* ************************************************************************* */
 TEST(Rot3, expmap_logmap)
 {
-  Vector3 d12 = repeat(3,0.1);
+  Vector3 d12 = Vector3::Constant(0.1);
   Rot3 R2 = R.expmap(d12);
-  EXPECT(assert_equal(d12, R.logmap(R2)));
+  EXPECT(assert_equal(d12, (Vector) R.logmap(R2)));
 }
 
 /* ************************************************************************* */
@@ -555,8 +555,8 @@ TEST(Rot3, quaternion) {
 /* ************************************************************************* */
 Matrix Cayley(const Matrix& A) {
   Matrix::Index n = A.cols();
-  const Matrix I = eye(n);
-  return (I-A)*inverse(I+A);
+  const Matrix I = Matrix::Identity(n,n);
+  return (I-A)*(I+A).inverse();
 }
 
 TEST( Rot3, Cayley ) {

@@ -31,10 +31,9 @@ using namespace std;
 namespace gtsam {
 namespace InitializePose3 {
 
-//static const Matrix I = eye(1);
-static const Matrix I9 = eye(9);
+static const Matrix I9 = I_9x9;
 static const Vector zero9 = Vector::Zero(9);
-static const Matrix zero33= Matrix::Zero(3,3);
+static const Matrix zero33 = Z_3x3;
 
 static const Key keyAnchor = symbol('Z', 9999999);
 
@@ -54,11 +53,9 @@ GaussianFactorGraph buildLinearOrientationGraph(const NonlinearFactorGraph& g) {
     else
       std::cout << "Error in buildLinearOrientationGraph" << std::endl;
 
-    // std::cout << "Rij \n" << Rij << std::endl;
-
     const FastVector<Key>& keys = factor->keys();
     Key key1 = keys[0], key2 = keys[1];
-    Matrix M9 = Matrix::Zero(9,9);
+    Matrix M9 = Z_9x9;
     M9.block(0,0,3,3) = Rij;
     M9.block(3,3,3,3) = Rij;
     M9.block(6,6,3,3) = Rij;
@@ -74,7 +71,7 @@ GaussianFactorGraph buildLinearOrientationGraph(const NonlinearFactorGraph& g) {
 Values normalizeRelaxedRotations(const VectorValues& relaxedRot3) {
   gttic(InitializePose3_computeOrientationsChordal);
 
-  Matrix ppm = Matrix::Zero(3,3); // plus plus minus
+  Matrix ppm = Z_3x3; // plus plus minus
   ppm(0,0) = 1; ppm(1,1) = 1; ppm(2,2) = -1;
 
   Values validRot3;

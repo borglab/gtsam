@@ -119,12 +119,12 @@ namespace gtsam {
 
     /// Left-trivialized derivative of the exponential map
     static Matrix ExpmapDerivative(const Vector& /*v*/) {
-      return ones(1);
+      return I_1x1;
     }
 
     /// Left-trivialized derivative inverse of the exponential map
     static Matrix LogmapDerivative(const Vector& /*v*/) {
-      return ones(1);
+      return I_1x1;
     }
 
     // Chart at origin simply uses exponential map and its inverse

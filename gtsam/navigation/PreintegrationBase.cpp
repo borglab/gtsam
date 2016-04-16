@@ -105,7 +105,7 @@ pair<Vector3, Vector3> PreintegrationBase::correctMeasurementsBySensorPose(
     // Update derivative: centrifugal causes the correlation between acc and omega!!!
     if (correctedAcc_H_unbiasedOmega) {
       double wdp = correctedOmega.dot(b_arm);
-      *correctedAcc_H_unbiasedOmega = -(diag(Vector3::Constant(wdp))
+      *correctedAcc_H_unbiasedOmega = -( (Matrix) Vector3::Constant(wdp).asDiagonal()
           + correctedOmega * b_arm.transpose()) * bRs.matrix()
           + 2 * b_arm * unbiasedOmega.transpose();
     }

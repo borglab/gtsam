@@ -258,7 +258,7 @@ Diagonal::shared_ptr Diagonal::Variances(const Vector& variances, bool smart) {
       if (variances(j) != variances(0)) goto full;
     return Isotropic::Variance(n, variances(0), true);
   }
-  full: return shared_ptr(new Diagonal(esqrt(variances)));
+  full: return shared_ptr(new Diagonal(variances.cwiseSqrt()));
 }
 
 /* ************************************************************************* */
@@ -326,7 +326,7 @@ static void fix(const Vector& sigmas, Vector& precisions, Vector& invsigmas) {
 
 /* ************************************************************************* */
 Constrained::Constrained(const Vector& sigmas)
-  : Diagonal(sigmas), mu_(repeat(sigmas.size(), 1000.0)) {
+  : Diagonal(sigmas), mu_(Vector::Constant(sigmas.size(), 1000.0)) {
   internal::fix(sigmas, precisions_, invsigmas_);
 }
 
@@ -405,7 +405,7 @@ void Constrained::WhitenInPlace(Eigen::Block<Matrix> H) const {
 
 /* ************************************************************************* */
 Constrained::shared_ptr Constrained::unit() const {
-  Vector sigmas = ones(dim());
+  Vector sigmas = Vector::Ones(dim());
   for (size_t i=0; i<dim(); ++i)
     if (constrained(i))
       sigmas(i) = 0.0;

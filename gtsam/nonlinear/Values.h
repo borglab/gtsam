@@ -168,16 +168,13 @@ namespace gtsam {
     /** Retrieve a variable by key \c j.  The type of the value associated with
      * this key is supplied as a template argument to this function.
      * @param j Retrieve the value associated with this key
-     * @tparam Value The type of the value stored with this key, this method
-     * throws DynamicValuesIncorrectType if this requested type is not correct.
-     * @return A const reference to the stored value
+     * @tparam ValueType The type of the value stored with this key, this method
+     * Throws DynamicValuesIncorrectType if this requested type is not correct.
+     * Dynamic matrices/vectors can be retrieved as fixed-size, but not vice-versa.
+     * @return The stored value
      */
     template<typename ValueType>
-    const ValueType& at(Key j) const;
-
-    /// Special version for small fixed size vectors, for matlab/python
-    /// throws truntime error if n<1 || n>9
-    Vector atFixed(Key j, size_t n);
+    ValueType at(Key j) const;
 
     /// version for double
     double atDouble(size_t key) const { return at<double>(key);}
@@ -258,10 +255,6 @@ namespace gtsam {
      */
     template <typename ValueType>
     void insert(Key j, const ValueType& val);
-
-    /// Special version for small fixed size vectors, for matlab/python
-    /// throws truntime error if n<1 || n>9
-    void insertFixed(Key j, const Vector& v, size_t n);
 
     /// version for double
     void insertDouble(Key j, double c) { insert<double>(j,c); }
@@ -500,6 +493,28 @@ namespace gtsam {
     }
   };
 
+  /* ************************************************************************* */
+  class GTSAM_EXPORT NoMatchFoundForFixed: public std::exception {
+
+  protected:
+    const size_t M1_, N1_;
+    const size_t M2_, N2_;
+
+  private:
+    mutable std::string message_;
+
+  public:
+    NoMatchFoundForFixed(size_t M1, size_t N1, size_t M2, size_t N2) throw () :
+        M1_(M1), N1_(N1), M2_(M2), N2_(N2) {
+    }
+
+    virtual ~NoMatchFoundForFixed() throw () {
+    }
+
+    virtual const char* what() const throw ();
+  };
+
+  /* ************************************************************************* */
   /// traits
   template<>
   struct traits<Values> : public Testable<Values> {

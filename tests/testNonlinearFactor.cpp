@@ -91,7 +91,7 @@ TEST( NonlinearFactor, NonlinearFactor )
   // calculate the error_vector from the factor "f1"
   // error_vector = [0.1 0.1]
   Vector actual_e = boost::dynamic_pointer_cast<NoiseModelFactor>(factor)->unwhitenedError(cfg);
-  CHECK(assert_equal(0.1*ones(2),actual_e));
+  CHECK(assert_equal(0.1*Vector::Ones(2),actual_e));
 
   // error = 0.5 * [1 1] * [1;1] = 1
   double expected = 1.0;

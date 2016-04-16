@@ -138,15 +138,15 @@ public:
         return (stereoCam.project(point, H1, H2) - measured_).vector();
       }
     } catch(StereoCheiralityException& e) {
-      if (H1) *H1 = zeros(3,6);
-      if (H2) *H2 = zeros(3,3);
+      if (H1) *H1 = Matrix::Zero(3,6);
+      if (H2) *H2 = Z_3x3;
       if (verboseCheirality_)
       std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2()) <<
           " moved behind camera " << DefaultKeyFormatter(this->key1()) << std::endl;
       if (throwCheirality_)
         throw e;
     }
-    return ones(3) * 2.0 * K_->fx();
+    return Vector3::Constant(2.0 * K_->fx());
   }
 
   /** return the measured */

@@ -142,18 +142,18 @@ public:
     const size_t nj = traits<T>::GetDimension(feasible_);
     if (allow_error_) {
       if (H)
-        *H = eye(nj); // FIXME: this is not the right linearization for nonlinear compare
+        *H = Matrix::Identity(nj,nj); // FIXME: this is not the right linearization for nonlinear compare
       return traits<T>::Local(xj,feasible_);
     } else if (compare_(feasible_, xj)) {
       if (H)
-        *H = eye(nj);
-      return zero(nj); // set error to zero if equal
+        *H = Matrix::Identity(nj,nj);
+      return Vector::Zero(nj); // set error to zero if equal
     } else {
       if (H)
         throw std::invalid_argument(
             "Linearization point not feasible for "
                 + DefaultKeyFormatter(this->key()) + "!");
-      return repeat(nj, std::numeric_limits<double>::infinity()); // set error to infinity if not equal
+      return Vector::Constant(nj, std::numeric_limits<double>::infinity()); // set error to infinity if not equal
     }
   }
 
@@ -249,7 +249,7 @@ public:
   Vector evaluateError(const X& x1,
       boost::optional<Matrix&> H = boost::none) const {
     if (H)
-      (*H) = eye(traits<X>::GetDimension(x1));
+      (*H) = Matrix::Identity(traits<X>::GetDimension(x1),traits<X>::GetDimension(x1));
     // manifold equivalent of h(x)-z -> log(z,h(x))
     return traits<X>::Local(value_,x1);
   }
@@ -322,8 +322,8 @@ public:
   Vector evaluateError(const X& x1, const X& x2, boost::optional<Matrix&> H1 =
       boost::none, boost::optional<Matrix&> H2 = boost::none) const {
     static const size_t p = traits<X>::dimension;
-    if (H1) *H1 = -eye(p);
-    if (H2) *H2 =  eye(p);
+    if (H1) *H1 = -Matrix::Identity(p,p);
+    if (H2) *H2 =  Matrix::Identity(p,p);
     return traits<X>::Local(x1,x2);
   }
 

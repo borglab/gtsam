@@ -17,7 +17,7 @@
  * @brief unit tests for Block Automatic Differentiation
  */
 
-#include <gtsam/nonlinear/Expression.h>
+#include <gtsam/nonlinear/expressions.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Point3.h>
@@ -32,9 +32,7 @@ using boost::assign::map_list_of;
 using namespace std;
 using namespace gtsam;
 
-typedef Expression<double> double_;
 typedef Expression<Point3> Point3_;
-typedef Expression<Vector3> Vector3_;
 typedef Expression<Pose3> Pose3_;
 typedef Expression<Rot3> Rot3_;
 
@@ -101,7 +99,7 @@ TEST(Expression, Unary1) {
 }
 TEST(Expression, Unary2) {
   using namespace unary;
-  double_ e(f2, p);
+  Double_ e(f2, p);
   EXPECT(expected == e.keys());
 }
 
@@ -156,7 +154,7 @@ Point3_ p_cam(x, &Pose3::transform_to, p);
 // Check that creating an expression to double compiles
 TEST(Expression, BinaryToDouble) {
   using namespace binary;
-  double_ p_cam(doubleF, x, p);
+  Double_ p_cam(doubleF, x, p);
 }
 
 /* ************************************************************************* */
@@ -269,11 +267,11 @@ Rot3 composeThree(const Rot3& R1, const Rot3& R2, const Rot3& R3, OptionalJacobi
                   OptionalJacobian<3, 3> H2, OptionalJacobian<3, 3> H3) {
   // return dummy derivatives (not correct, but that's ok for testing here)
   if (H1)
-    *H1 = eye(3);
+    *H1 = I_3x3;
   if (H2)
-    *H2 = eye(3);
+    *H2 = I_3x3;
   if (H3)
-    *H3 = eye(3);
+    *H3 = I_3x3;
   return R1 * (R2 * R3);
 }
 
@@ -372,8 +370,8 @@ TEST(Expression, TripleSum) {
 /* ************************************************************************* */
 TEST(Expression, SumOfUnaries) {
   const Key key(67);
-  const double_ norm_(&gtsam::norm, Point3_(key));
-  const double_ sum_ = norm_ + norm_;
+  const Double_ norm_(&gtsam::norm, Point3_(key));
+  const Double_ sum_ = norm_ + norm_;
 
   Values values;
   values.insert<Point3>(key, Point3(6, 0, 0));
@@ -391,7 +389,7 @@ TEST(Expression, SumOfUnaries) {
 TEST(Expression, UnaryOfSum) {
   const Key key1(42), key2(67);
   const Point3_ sum_ = Point3_(key1) + Point3_(key2);
-  const double_ norm_(&gtsam::norm, sum_);
+  const Double_ norm_(&gtsam::norm, sum_);
 
   map<Key, int> actual_dims, expected_dims = map_list_of<Key, int>(key1, 3)(key2, 3);
   norm_.dims(actual_dims);

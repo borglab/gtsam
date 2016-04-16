@@ -31,7 +31,6 @@ using namespace std;
 using namespace gtsam;
 
 // typedefs
-typedef Eigen::Matrix<double, 1, 1> Vector1;
 typedef Expression<Point3> Point3_;
 typedef Expression<Event> Event_;
 
@@ -52,7 +51,7 @@ TEST( TOAFactor, NewWay ) {
   Event_ eventExpression(key);
   Point3_ microphoneConstant(microphoneAt0); // constant expression
   double measurement = 7;
-  double_ expression(&Event::toa, eventExpression, microphoneConstant);
+  Double_ expression(&Event::toa, eventExpression, microphoneConstant);
   ExpressionFactor<double> factor(model, measurement, expression);
 }
 
@@ -92,7 +91,7 @@ TEST( TOAFactor, WholeEnchilada ) {
   Event_ eventExpression(key);
   for (size_t i = 0; i < K; i++) {
     Point3_ microphone_i(microphones[i]); // constant expression
-    double_ predictTOA(&Event::toa, eventExpression, microphone_i);
+    Double_ predictTOA(&Event::toa, eventExpression, microphone_i);
     graph.addExpressionFactor(predictTOA, simulatedTOA[i], model);
   }
 

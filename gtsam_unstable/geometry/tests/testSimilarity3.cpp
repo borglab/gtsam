@@ -156,7 +156,7 @@ TEST(Similarity3, Manifold) {
 //******************************************************************************
 TEST( Similarity3, retract_first_order) {
   Similarity3 id;
-  Vector v = zero(7);
+  Vector v = Z_7x1;
   v(0) = 0.3;
   EXPECT(assert_equal(Similarity3(R, Point3(0,0,0), 1), id.retract(v), 1e-2));
 //  v(3) = 0.2;
@@ -167,7 +167,7 @@ TEST( Similarity3, retract_first_order) {
 
 //******************************************************************************
 TEST(Similarity3, localCoordinates_first_order) {
-  Vector d12 = repeat(7, 0.1);
+  Vector7 d12 = Vector7::Constant(0.1);
   d12(6) = 1.0;
   Similarity3 t1 = T1, t2 = t1.retract(d12);
   EXPECT(assert_equal(d12, t1.localCoordinates(t2)));

@@ -32,7 +32,7 @@ AHRS::AHRS(const Matrix& stationaryU, const Matrix& stationaryF, double g_e,
 
   // estimate standard deviation on gyroscope readings
   Pg_ = Cov(stationaryU);
-  Vector3 sigmas_v_g = esqrt(Pg_.diagonal() * T);
+  Vector3 sigmas_v_g = (Pg_.diagonal() * T).cwiseSqrt();
 
   // estimate standard deviation on accelerometer readings
   Pa_ = Cov(stationaryF);
@@ -45,14 +45,14 @@ AHRS::AHRS(const Matrix& stationaryU, const Matrix& stationaryF, double g_e,
 
   F_g_ = -I_3x3 / tau_g;
   F_a_ = -I_3x3 / tau_a;
-  Vector3 var_omega_w = 0 * ones(3); // TODO
-  Vector3 var_omega_g = (0.0034 * 0.0034) * ones(3);
-  Vector3 var_omega_a = (0.034 * 0.034) * ones(3);
-  Vector3 sigmas_v_g_sq = sigmas_v_g.cwiseProduct(sigmas_v_g);
+  Vector3 var_omega_w = 0 * Vector::Ones(3); // TODO
+  Vector3 var_omega_g = (0.0034 * 0.0034) * Vector::Ones(3);
+  Vector3 var_omega_a = (0.034 * 0.034) * Vector::Ones(3);
+  Vector3 sigmas_v_g_sq = sigmas_v_g.array().square();
   var_w_ << var_omega_w, var_omega_g, sigmas_v_g_sq, var_omega_a;
 
   // Quantities needed for aiding
-  sigmas_v_a_ = esqrt(T * Pa_.diagonal());
+  sigmas_v_a_ = (T * Pa_.diagonal()).cwiseSqrt();
 
   // gravity in nav frame
   n_g_ = (Vector(3) << 0.0, 0.0, g_e).finished();
@@ -83,7 +83,7 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::initialize(double g_e) 
       0.0, 0.0, 0.0).finished();                             // we don't know anything on yaw
 
   // Calculate the initial covariance matrix for the error state dx, Farrell08book eq. 10.66
-  Matrix Pa = 0.025 * 0.025 * eye(3);
+  Matrix Pa = 0.025 * 0.025 * I_3x3;
   Matrix P11 = Omega_T * (H_g * (Pa + Pa_) * trans(H_g)) * trans(Omega_T);
   P11(2, 2) = 0.0001;
   Matrix P12 = -Omega_T * H_g * Pa;
@@ -101,7 +101,7 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::initialize(double g_e) 
   P_plus_k2.block<3,3>(6, 3) = Z_3x3;
   P_plus_k2.block<3,3>(6, 6) = Pa;
 
-  Vector dx = zero(9);
+  Vector dx = Z_9x1;
   KalmanFilter::State state = KF_.init(dx, P_plus_k2);
   return std::make_pair(mech0_, state);
 }
@@ -171,7 +171,7 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::aid(
     // calculate residual gravity measurement
     z = n_g_ - trans(bRn) * measured_b_g;
     H = collect(3, &n_g_cross_, &Z_3x3, &bRn);
-    R = trans(bRn) * diag(emul(sigmas_v_a_, sigmas_v_a_)) * bRn;
+    R = trans(bRn) * ((Vector3) sigmas_v_a_.array().square()).asDiagonal() * bRn;
   } else {
     // my measurement prediction (in body frame):
     // F(:,k) = bias - b_g
@@ -186,7 +186,7 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::aid(
     Matrix b_g = bRn * n_g_cross_;
     H = collect(3, &b_g, &Z_3x3, &I_3x3);
     // And the measurement noise, TODO: should be created once where sigmas_v_a is given
-    R = diag(emul(sigmas_v_a_, sigmas_v_a_));
+    R = ((Vector3) sigmas_v_a_.array().square()).asDiagonal();
   }
 
 // update the Kalman filter
@@ -196,7 +196,7 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::aid(
   Mechanization_bRn2 newMech = mech.correct(updatedState->mean());
 
 // reset KF state
-  Vector dx = zeros(9, 1);
+  Vector dx = Z_9x1;
   updatedState = KF_.init(dx, updatedState->covariance());
 
   return make_pair(newMech, updatedState);
@@ -217,7 +217,7 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::aidGeneral(
   Matrix H = collect(3, &b_g, &I_3x3, &Z_3x3);
 //  Matrix R = diag(emul(sigmas_v_a_, sigmas_v_a_));
 //  Matrix R = diag(Vector3(1.0, 0.2, 1.0)); // good for L_twice
-  Matrix R = diag(Vector3(0.01, 0.0001, 0.01));
+  Matrix R = Vector3(0.01, 0.0001, 0.01).asDiagonal();
 
 // update the Kalman filter
   KalmanFilter::State updatedState = KF_.updateQ(state, H, z, R);
@@ -226,7 +226,7 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::aidGeneral(
   Mechanization_bRn2 newMech = mech.correct(updatedState->mean());
 
 // reset KF state
-  Vector dx = zeros(9, 1);
+  Vector dx = Z_9x1;
   updatedState = KF_.init(dx, updatedState->covariance());
 
   return make_pair(newMech, updatedState);

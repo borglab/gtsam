@@ -63,7 +63,7 @@ namespace simulated2DOriented {
 
   /// Prior on a single pose, optional derivative version
   Pose2 prior(const Pose2& x, boost::optional<Matrix&> H = boost::none) {
-    if (H) *H = gtsam::eye(3);
+    if (H) *H = I_3x3;
     return x;
   }
 

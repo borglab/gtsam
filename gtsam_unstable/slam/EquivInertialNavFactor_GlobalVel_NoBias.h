@@ -367,8 +367,8 @@ public:
     delta_t += msr_dt;
 
     // Update EquivCov_Overall
-    Matrix Z_3x3 = zeros(3,3);
-    Matrix I_3x3 = eye(3,3);
+    Matrix Z_3x3 = Z_3x3;
+    Matrix I_3x3 = I_3x3;
 
     Matrix H_pos_pos = numericalDerivative11<LieVector, LieVector>(boost::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt, _1, delta_vel_in_t0), delta_pos_in_t0);
     Matrix H_pos_vel = numericalDerivative11<LieVector, LieVector>(boost::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt, delta_pos_in_t0, _1), delta_vel_in_t0);

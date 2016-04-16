@@ -103,8 +103,8 @@ public:
 
     Vector hx(v2 - alpha_v1);
 
-    if(H1) *H1 = - diag(alpha);
-    if(H2) *H2 = eye(v2.size());
+    if(H1) *H1 = -1 * alpha.asDiagonal();
+    if(H2) *H2 = Matrix::Identity(v2.size(),v2.size());
 
     return hx;
   }

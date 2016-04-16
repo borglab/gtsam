@@ -309,7 +309,7 @@ namespace gtsam {
        * i.e. the diagonal of the information matrix, i.e., weights
        */
       static shared_ptr Precisions(const Vector& precisions, bool smart = true) {
-        return Variances(reciprocal(precisions), smart);
+        return Variances(precisions.array().inverse(), smart);
       }
 
       virtual void print(const std::string& name) const;
@@ -341,7 +341,7 @@ namespace gtsam {
        * Return R itself, but note that Whiten(H) is cheaper than R*H
        */
       virtual Matrix R() const {
-        return diag(invsigmas());
+        return invsigmas().asDiagonal();
       }
 
     private:
@@ -381,7 +381,7 @@ namespace gtsam {
        * from appearing in invsigmas or precisions.
        * mu set to large default value (1000.0)
        */
-      Constrained(const Vector& sigmas = zero(1));
+      Constrained(const Vector& sigmas = Z_1x1);
 
       /**
        * Constructor that prevents any inf values
@@ -416,7 +416,7 @@ namespace gtsam {
        * standard devations, some of which might be zero
        */
       static shared_ptr MixedSigmas(const Vector& sigmas) {
-        return MixedSigmas(repeat(sigmas.size(), 1000.0), sigmas);
+        return MixedSigmas(Vector::Constant(sigmas.size(), 1000.0), sigmas);
       }
 
       /**
@@ -424,7 +424,7 @@ namespace gtsam {
        * standard devations, some of which might be zero
        */
       static shared_ptr MixedSigmas(double m, const Vector& sigmas) {
-        return MixedSigmas(repeat(sigmas.size(), m), sigmas);
+        return MixedSigmas(Vector::Constant(sigmas.size(), m), sigmas);
       }
 
       /**
@@ -432,10 +432,10 @@ namespace gtsam {
        * standard devations, some of which might be zero
        */
       static shared_ptr MixedVariances(const Vector& mu, const Vector& variances) {
-        return shared_ptr(new Constrained(mu, esqrt(variances)));
+        return shared_ptr(new Constrained(mu, variances.cwiseSqrt()));
       }
       static shared_ptr MixedVariances(const Vector& variances) {
-        return shared_ptr(new Constrained(esqrt(variances)));
+        return shared_ptr(new Constrained(variances.cwiseSqrt()));
       }
 
       /**
@@ -443,10 +443,10 @@ namespace gtsam {
        * precisions, some of which might be inf
        */
       static shared_ptr MixedPrecisions(const Vector& mu, const Vector& precisions) {
-        return MixedVariances(mu, reciprocal(precisions));
+        return MixedVariances(mu, precisions.array().inverse());
       }
       static shared_ptr MixedPrecisions(const Vector& precisions) {
-        return MixedVariances(reciprocal(precisions));
+        return MixedVariances(precisions.array().inverse());
       }
 
       /**
@@ -458,17 +458,17 @@ namespace gtsam {
 
       /** Fully constrained variations */
       static shared_ptr All(size_t dim) {
-        return shared_ptr(new Constrained(repeat(dim, 1000.0), repeat(dim,0)));
+        return shared_ptr(new Constrained(Vector::Constant(dim, 1000.0), Vector::Constant(dim,0)));
       }
 
       /** Fully constrained variations */
       static shared_ptr All(size_t dim, const Vector& mu) {
-        return shared_ptr(new Constrained(mu, repeat(dim,0)));
+        return shared_ptr(new Constrained(mu, Vector::Constant(dim,0)));
       }
 
       /** Fully constrained variations with a mu parameter */
       static shared_ptr All(size_t dim, double mu) {
-        return shared_ptr(new Constrained(repeat(dim, mu), repeat(dim,0)));
+        return shared_ptr(new Constrained(Vector::Constant(dim, mu), Vector::Constant(dim,0)));
       }
 
       virtual void print(const std::string& name) const;
@@ -522,10 +522,10 @@ namespace gtsam {
 
       /** protected constructor takes sigma */
       Isotropic(size_t dim, double sigma) :
-        Diagonal(repeat(dim, sigma)),sigma_(sigma),invsigma_(1.0/sigma) {}
+        Diagonal(Vector::Constant(dim, sigma)),sigma_(sigma),invsigma_(1.0/sigma) {}
 
       /* dummy constructor to allow for serialization */
-      Isotropic() : Diagonal(repeat(1, 1.0)),sigma_(1.0),invsigma_(1.0) {}
+      Isotropic() : Diagonal(Vector1::Constant(1.0)),sigma_(1.0),invsigma_(1.0) {}
 
     public:
 

@@ -49,9 +49,9 @@ const Vector b = (Vector(6) << 1., 2., 3., 4., 5., 6.).finished();
 //*************************************************************************************
 TEST( regularImplicitSchurFactor, creation ) {
   // Matrix E = Matrix::Ones(6,3);
-  Matrix E = zeros(6, 3);
-  E.block<2,2>(0, 0) = eye(2);
-  E.block<2,3>(2, 0) = 2 * ones(2, 3);
+  Matrix E = Matrix::Zero(6, 3);
+  E.block<2,2>(0, 0) = I_2x2;
+  E.block<2,3>(2, 0) = 2 * Matrix::Ones(2, 3);
   Matrix3 P = (E.transpose() * E).inverse();
   RegularImplicitSchurFactor<CalibratedCamera> expected(keys, FBlocks, E, P, b);
   Matrix expectedP = expected.getPointCovariance();
@@ -61,35 +61,35 @@ TEST( regularImplicitSchurFactor, creation ) {
 /* ************************************************************************* */
 TEST( regularImplicitSchurFactor, addHessianMultiply ) {
 
-  Matrix E = zeros(6, 3);
-  E.block<2,2>(0, 0) = eye(2);
-  E.block<2,3>(2, 0) = 2 * ones(2, 3);
-  E.block<2,2>(4, 1) = eye(2);
+  Matrix E = Matrix::Zero(6, 3);
+  E.block<2,2>(0, 0) = I_2x2;
+  E.block<2,3>(2, 0) = 2 * Matrix::Ones(2, 3);
+  E.block<2,2>(4, 1) = I_2x2;
   Matrix3 P = (E.transpose() * E).inverse();
 
   double alpha = 0.5;
   VectorValues xvalues = map_list_of //
-  (0, gtsam::repeat(6, 2))//
-  (1, gtsam::repeat(6, 4))//
-  (2, gtsam::repeat(6, 0))// distractor
-  (3, gtsam::repeat(6, 8));
+  (0, Vector::Constant(6, 2))//
+  (1, Vector::Constant(6, 4))//
+  (2, Vector::Constant(6, 0))// distractor
+  (3, Vector::Constant(6, 8));
 
   VectorValues yExpected = map_list_of//
-  (0, gtsam::repeat(6, 27))//
-  (1, gtsam::repeat(6, -40))//
-  (2, gtsam::repeat(6, 0))// distractor
-  (3, gtsam::repeat(6, 279));
+  (0, Vector::Constant(6, 27))//
+  (1, Vector::Constant(6, -40))//
+  (2, Vector::Constant(6, 0))// distractor
+  (3, Vector::Constant(6, 279));
 
   // Create full F
   size_t M=4, m = 3, d = 6;
   Matrix F(2 * m, d * M);
-  F << F0, zeros(2, d * 3), zeros(2, d), F1, zeros(2, d*2), zeros(2, d * 3), F3;
+  F << F0, Matrix::Zero(2, d * 3), Matrix::Zero(2, d), F1, Matrix::Zero(2, d*2), Matrix::Zero(2, d * 3), F3;
 
   // Calculate expected result F'*alpha*(I - E*P*E')*F*x
   FastVector<Key> keys2;
   keys2 += 0,1,2,3;
   Vector x = xvalues.vector(keys2);
-  Vector expected = zero(24);
+  Vector expected = Vector::Zero(24);
   RegularImplicitSchurFactor<CalibratedCamera>::multiplyHessianAdd(F, E, P, alpha, x, expected);
   EXPECT(assert_equal(expected, yExpected.vector(keys2), 1e-8));
 
@@ -170,9 +170,9 @@ TEST( regularImplicitSchurFactor, addHessianMultiply ) {
   }
 
   VectorValues expectedVV;
-  expectedVV.insert(0,-3.5*ones(6));
-  expectedVV.insert(1,10*ones(6)/3);
-  expectedVV.insert(3,-19.5*ones(6));
+  expectedVV.insert(0,-3.5*Vector::Ones(6));
+  expectedVV.insert(1,10*Vector::Ones(6)/3);
+  expectedVV.insert(3,-19.5*Vector::Ones(6));
   { // Check gradientAtZero
     VectorValues actual = implicitFactor.gradientAtZero();
     EXPECT(assert_equal(expectedVV, jfQ.gradientAtZero(), 1e-8));
@@ -210,9 +210,9 @@ TEST( regularImplicitSchurFactor, addHessianMultiply ) {
 TEST(regularImplicitSchurFactor, hessianDiagonal)
 {
   /* TESTED AGAINST MATLAB
-   *  F = [ones(2,6) zeros(2,6) zeros(2,6)
-        zeros(2,6) 2*ones(2,6) zeros(2,6)
-        zeros(2,6) zeros(2,6) 3*ones(2,6)]
+   *  F = [Vector::Ones(2,6) zeros(2,6) zeros(2,6)
+        zeros(2,6) 2*Vector::Ones(2,6) zeros(2,6)
+        zeros(2,6) zeros(2,6) 3*Vector::Ones(2,6)]
       E = [[1:6] [1:6] [0.5 1:5]];
       E = reshape(E',3,6)'
       P = inv(E' * E)
@@ -228,9 +228,9 @@ TEST(regularImplicitSchurFactor, hessianDiagonal)
 
   // hessianDiagonal
   VectorValues expected;
-  expected.insert(0, 1.195652*ones(6));
-  expected.insert(1, 4.782608*ones(6));
-  expected.insert(3, 7.043478*ones(6));
+  expected.insert(0, 1.195652*Vector::Ones(6));
+  expected.insert(1, 4.782608*Vector::Ones(6));
+  expected.insert(3, 7.043478*Vector::Ones(6));
   EXPECT(assert_equal(expected, factor.hessianDiagonal(),1e-5));
 
   // hessianBlockDiagonal
@@ -246,7 +246,7 @@ TEST(regularImplicitSchurFactor, hessianDiagonal)
   EXPECT(assert_equal(F3.transpose()*F3-FtE3*P*FtE3.transpose(),actualBD[3]));
 
   // variant two
-  Matrix I2 = eye(2);
+  Matrix I2 = I_2x2;
   Matrix E0 = E.block<2,3>(0, 0);
   Matrix F0t = F0.transpose();
   EXPECT(assert_equal(F0t*F0-F0t*E0*P*E0.transpose()*F0,actualBD[0]));
