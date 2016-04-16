@@ -726,6 +726,7 @@ TEST(SymbolicBayesTree, COLAMDvsMETIS) {
     EXPECT(assert_equal(expected, actual));
   }
 
+#ifdef GTSAM_SUPPORT_NESTED_DISSECTION
   // METIS
   {
     Ordering ordering = Ordering::Create(Ordering::METIS, sfg);
@@ -759,6 +760,7 @@ TEST(SymbolicBayesTree, COLAMDvsMETIS) {
     SymbolicBayesTree actual = *sfg.eliminateMultifrontal(ordering);
     EXPECT(assert_equal(expected, actual));
   }
+#endif
 }
 
 /* ************************************************************************* */
