@@ -172,6 +172,7 @@ TEST(Ordering, csr_format_3) {
 }
 
 /* ************************************************************************* */
+#ifdef GTSAM_SUPPORT_NESTED_DISSECTION
 TEST(Ordering, csr_format_4) {
   SymbolicFactorGraph sfg;
 
@@ -206,8 +207,9 @@ TEST(Ordering, csr_format_4) {
 
   Ordering metOrder2 = Ordering::Metis(sfg);
 }
-
+#endif
 /* ************************************************************************* */
+#ifdef GTSAM_SUPPORT_NESTED_DISSECTION
 TEST(Ordering, metis) {
 
   SymbolicFactorGraph sfg;
@@ -228,8 +230,9 @@ TEST(Ordering, metis) {
 
   Ordering metis = Ordering::Metis(sfg);
 }
-
+#endif
 /* ************************************************************************* */
+#ifdef GTSAM_SUPPORT_NESTED_DISSECTION
 TEST(Ordering, MetisLoop) {
 
   // create linear graph
@@ -261,7 +264,7 @@ TEST(Ordering, MetisLoop) {
   }
 #endif
 }
-
+#endif
 /* ************************************************************************* */
 TEST(Ordering, Create) {
 
@@ -280,6 +283,7 @@ TEST(Ordering, Create) {
     EXPECT(assert_equal(expected, actual));
   }
 
+#ifdef GTSAM_SUPPORT_NESTED_DISSECTION
   // METIS
   {
     Ordering actual = Ordering::Create(Ordering::METIS, sfg);
@@ -289,6 +293,7 @@ TEST(Ordering, Create) {
     Ordering expected = Ordering(list_of(5)(3)(4)(1)(0)(2));
     EXPECT(assert_equal(expected, actual));
   }
+#endif
 
   // CUSTOM
   CHECK_EXCEPTION(Ordering::Create(Ordering::CUSTOM, sfg), runtime_error);
