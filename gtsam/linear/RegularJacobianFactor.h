@@ -83,7 +83,7 @@ public:
   void multiplyHessianAdd(double alpha, const double* x, double* y) const {
     if (empty())
       return;
-    Vector Ax = zero(Ab_.rows());
+    Vector Ax = Vector::Zero(Ab_.rows());
 
     // Just iterate over all A matrices and multiply in correct config part
     for (size_t pos = 0; pos < size(); ++pos)
@@ -173,7 +173,7 @@ public:
    * RAW memory access! Assumes keys start at 0 and go to M-1, and x is laid out that way
    */
   Vector operator*(const double* x) const {
-    Vector Ax = zero(Ab_.rows());
+    Vector Ax = Vector::Zero(Ab_.rows());
     if (empty())
       return Ax;
 

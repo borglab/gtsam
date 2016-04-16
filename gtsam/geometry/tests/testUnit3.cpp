@@ -237,7 +237,7 @@ TEST(Unit3, distance) {
 TEST(Unit3, localCoordinates0) {
   Unit3 p;
   Vector actual = p.localCoordinates(p);
-  EXPECT(assert_equal(zero(2), actual, 1e-8));
+  EXPECT(assert_equal(Z_2x1, actual, 1e-8));
 }
 
 TEST(Unit3, localCoordinates) {
@@ -245,14 +245,14 @@ TEST(Unit3, localCoordinates) {
     Unit3 p, q;
     Vector2 expected = Vector2::Zero();
     Vector2 actual = p.localCoordinates(q);
-    EXPECT(assert_equal(zero(2), actual, 1e-8));
+    EXPECT(assert_equal((Vector) Z_2x1, actual, 1e-8));
     EXPECT(assert_equal(q, p.retract(expected), 1e-8));
   }
   {
     Unit3 p, q(1, 6.12385e-21, 0);
     Vector2 expected = Vector2::Zero();
     Vector2 actual = p.localCoordinates(q);
-    EXPECT(assert_equal(zero(2), actual, 1e-8));
+    EXPECT(assert_equal((Vector) Z_2x1, actual, 1e-8));
     EXPECT(assert_equal(q, p.retract(expected), 1e-8));
   }
   {

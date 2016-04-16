@@ -45,9 +45,9 @@ AHRS::AHRS(const Matrix& stationaryU, const Matrix& stationaryF, double g_e,
 
   F_g_ = -I_3x3 / tau_g;
   F_a_ = -I_3x3 / tau_a;
-  Vector3 var_omega_w = 0 * ones(3); // TODO
-  Vector3 var_omega_g = (0.0034 * 0.0034) * ones(3);
-  Vector3 var_omega_a = (0.034 * 0.034) * ones(3);
+  Vector3 var_omega_w = 0 * Vector::Ones(3); // TODO
+  Vector3 var_omega_g = (0.0034 * 0.0034) * Vector::Ones(3);
+  Vector3 var_omega_a = (0.034 * 0.034) * Vector::Ones(3);
   Vector3 sigmas_v_g_sq = sigmas_v_g.array().square();
   var_w_ << var_omega_w, var_omega_g, sigmas_v_g_sq, var_omega_a;
 
@@ -101,7 +101,7 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::initialize(double g_e) 
   P_plus_k2.block<3,3>(6, 3) = Z_3x3;
   P_plus_k2.block<3,3>(6, 6) = Pa;
 
-  Vector dx = zero(9);
+  Vector dx = Z_9x1;
   KalmanFilter::State state = KF_.init(dx, P_plus_k2);
   return std::make_pair(mech0_, state);
 }

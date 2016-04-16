@@ -152,7 +152,7 @@ TEST( Rot3, Rodrigues4)
 /* ************************************************************************* */
 TEST( Rot3, retract)
 {
-  Vector v = zero(3);
+  Vector v = Z_3x1;
   CHECK(assert_equal(R, R.retract(v)));
 
 //  // test Canonical coordinates
@@ -213,7 +213,7 @@ TEST(Rot3, log)
 #define CHECK_OMEGA_ZERO(X,Y,Z) \
   w = (Vector(3) << (double)X, (double)Y, double(Z)).finished(); \
   R = Rot3::Rodrigues(w); \
-  EXPECT(assert_equal(zero(3), Rot3::Logmap(R)));
+  EXPECT(assert_equal((Vector) Z_3x1, Rot3::Logmap(R)));
 
   CHECK_OMEGA_ZERO( 2.0*PI,      0,      0)
   CHECK_OMEGA_ZERO(      0, 2.0*PI,      0)

@@ -109,7 +109,7 @@ void timeAll(size_t m, size_t N) {
     double* xdata = x.data();
 
     // create a y
-    Vector y = zero(m * D);
+    Vector y = Vector::Zero(m * D);
     TIME(RawImplicit, implicitFactor, xdata, y.data())
     TIME(RawJacobianQ, jf, xdata, y.data())
     TIME(RawJacobianQR, jqr, xdata, y.data())

@@ -145,7 +145,7 @@ TEST (Serialization, linear_factors) {
 
   Key i1 = 4, i2 = 7;
   Matrix A1 = I_3x3, A2 = -1.0 * I_3x3;
-  Vector b = ones(3);
+  Vector b = Vector::Ones(3);
   SharedDiagonal model = noiseModel::Diagonal::Sigmas(Vector3(1.0, 2.0, 3.0));
   JacobianFactor jacobianfactor(i1, A1, i2, A2, b, model);
   EXPECT(equalsObj(jacobianfactor));
@@ -186,7 +186,7 @@ TEST (Serialization, gaussian_factor_graph) {
   {
     Key i1 = 4, i2 = 7;
     Matrix A1 = I_3x3, A2 = -1.0 * I_3x3;
-    Vector b = ones(3);
+    Vector b = Vector::Ones(3);
     SharedDiagonal model = noiseModel::Diagonal::Sigmas(Vector3(1.0, 2.0, 3.0));
     JacobianFactor jacobianfactor(i1, A1, i2, A2, b, model);
     HessianFactor hessianfactor(jacobianfactor);

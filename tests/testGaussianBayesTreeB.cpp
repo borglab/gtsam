@@ -79,7 +79,7 @@ TEST( GaussianBayesTree, linear_smoother_shortcuts )
   double sigma3 = 0.61808;
   Matrix A56 = (Matrix(2,2) << -0.382022,0.,0.,-0.382022).finished();
   GaussianBayesNet expected3;
-  expected3 += GaussianConditional(X(5), zero(2), I_2x2/sigma3, X(6), A56/sigma3);
+  expected3 += GaussianConditional(X(5), Z_2x1, I_2x2/sigma3, X(6), A56/sigma3);
   GaussianBayesTree::sharedClique C3 = bayesTree[X(4)];
   GaussianBayesNet actual3 = C3->shortcut(R);
   EXPECT(assert_equal(expected3,actual3,tol));
@@ -88,7 +88,7 @@ TEST( GaussianBayesTree, linear_smoother_shortcuts )
   double sigma4 = 0.661968;
   Matrix A46 = (Matrix(2,2) << -0.146067,0.,0.,-0.146067).finished();
   GaussianBayesNet expected4;
-  expected4 += GaussianConditional(X(4), zero(2), I_2x2/sigma4, X(6), A46/sigma4);
+  expected4 += GaussianConditional(X(4), Z_2x1, I_2x2/sigma4, X(6), A46/sigma4);
   GaussianBayesTree::sharedClique C4 = bayesTree[X(3)];
   GaussianBayesNet actual4 = C4->shortcut(R);
   EXPECT(assert_equal(expected4,actual4,tol));
@@ -132,7 +132,7 @@ TEST( GaussianBayesTree, balanced_smoother_marginals )
   double tol=1e-5;
 
   // Check marginal on x1
-  JacobianFactor expected1 = GaussianDensity::FromMeanAndStddev(X(1), zero(2), sigmax1);
+  JacobianFactor expected1 = GaussianDensity::FromMeanAndStddev(X(1), Z_2x1, sigmax1);
   JacobianFactor actual1 = *bayesTree.marginalFactor(X(1));
   Matrix expectedCovarianceX1 = I_2x2 * (sigmax1 * sigmax1);
   Matrix actualCovarianceX1;
@@ -143,22 +143,22 @@ TEST( GaussianBayesTree, balanced_smoother_marginals )
 
   // Check marginal on x2
   double sigx2 = 0.68712938; // FIXME: this should be corrected analytically
-  JacobianFactor expected2 = GaussianDensity::FromMeanAndStddev(X(2), zero(2), sigx2);
+  JacobianFactor expected2 = GaussianDensity::FromMeanAndStddev(X(2), Z_2x1, sigx2);
   JacobianFactor actual2 = *bayesTree.marginalFactor(X(2));
   EXPECT(assert_equal(expected2,actual2,tol));
 
   // Check marginal on x3
-  JacobianFactor expected3 = GaussianDensity::FromMeanAndStddev(X(3), zero(2), sigmax3);
+  JacobianFactor expected3 = GaussianDensity::FromMeanAndStddev(X(3), Z_2x1, sigmax3);
   JacobianFactor actual3 = *bayesTree.marginalFactor(X(3));
   EXPECT(assert_equal(expected3,actual3,tol));
 
   // Check marginal on x4
-  JacobianFactor expected4 = GaussianDensity::FromMeanAndStddev(X(4), zero(2), sigmax4);
+  JacobianFactor expected4 = GaussianDensity::FromMeanAndStddev(X(4), Z_2x1, sigmax4);
   JacobianFactor actual4 = *bayesTree.marginalFactor(X(4));
   EXPECT(assert_equal(expected4,actual4,tol));
 
   // Check marginal on x7 (should be equal to x1)
-  JacobianFactor expected7 = GaussianDensity::FromMeanAndStddev(X(7), zero(2), sigmax7);
+  JacobianFactor expected7 = GaussianDensity::FromMeanAndStddev(X(7), Z_2x1, sigmax7);
   JacobianFactor actual7 = *bayesTree.marginalFactor(X(7));
   EXPECT(assert_equal(expected7,actual7,tol));
 }
@@ -212,8 +212,8 @@ TEST( GaussianBayesTree, balanced_smoother_shortcuts )
 //
 //  // Check the clique marginal P(C3)
 //  double sigmax2_alt = 1/1.45533; // THIS NEEDS TO BE CHECKED!
-//  GaussianBayesNet expected = simpleGaussian(ordering[X(2)],zero(2),sigmax2_alt);
-//  push_front(expected,ordering[X(1)], zero(2), eye(2)*sqrt(2), ordering[X(2)], -eye(2)*sqrt(2)/2, ones(2));
+//  GaussianBayesNet expected = simpleGaussian(ordering[X(2)],Z_2x1,sigmax2_alt);
+//  push_front(expected,ordering[X(1)], Z_2x1, eye(2)*sqrt(2), ordering[X(2)], -eye(2)*sqrt(2)/2, ones(2));
 //  GaussianISAM::sharedClique R = bayesTree.root(), C3 = bayesTree[ordering[X(1)]];
 //  GaussianFactorGraph marginal = C3->marginal(R);
 //  GaussianVariableIndex varIndex(marginal);
@@ -248,17 +248,17 @@ TEST( GaussianBayesTree, balanced_smoother_joint )
   // Check the joint density P(x1,x7) factored as P(x1|x7)P(x7)
   GaussianBayesNet expected1 = list_of
     // Why does the sign get flipped on the prior?
-    (GaussianConditional(X(1), zero(2), I/sigmax7, X(7), A/sigmax7))
-    (GaussianConditional(X(7), zero(2), -1*I/sigmax7));
+    (GaussianConditional(X(1), Z_2x1, I/sigmax7, X(7), A/sigmax7))
+    (GaussianConditional(X(7), Z_2x1, -1*I/sigmax7));
   GaussianBayesNet actual1 = *bayesTree.jointBayesNet(X(1),X(7));
   EXPECT(assert_equal(expected1, actual1, tol));
 
   //  // Check the joint density P(x7,x1) factored as P(x7|x1)P(x1)
   //  GaussianBayesNet expected2;
   //  GaussianConditional::shared_ptr
-  //      parent2(new GaussianConditional(X(1), zero(2), -1*I/sigmax1, ones(2)));
+  //      parent2(new GaussianConditional(X(1), Z_2x1, -1*I/sigmax1, ones(2)));
   //    expected2.push_front(parent2);
-  //  push_front(expected2,X(7), zero(2), I/sigmax1, X(1), A/sigmax1, sigma);
+  //  push_front(expected2,X(7), Z_2x1, I/sigmax1, X(1), A/sigmax1, sigma);
   //  GaussianBayesNet actual2 = *bayesTree.jointBayesNet(X(7),X(1));
   //  EXPECT(assert_equal(expected2,actual2,tol));
 
@@ -266,19 +266,19 @@ TEST( GaussianBayesTree, balanced_smoother_joint )
   double sig14 = 0.784465;
   Matrix A14 = -0.0769231*I;
   GaussianBayesNet expected3 = list_of
-    (GaussianConditional(X(1), zero(2), I/sig14, X(4), A14/sig14))
-    (GaussianConditional(X(4), zero(2), I/sigmax4));
+    (GaussianConditional(X(1), Z_2x1, I/sig14, X(4), A14/sig14))
+    (GaussianConditional(X(4), Z_2x1, I/sigmax4));
   GaussianBayesNet actual3 = *bayesTree.jointBayesNet(X(1),X(4));
   EXPECT(assert_equal(expected3,actual3,tol));
 
   //  // Check the joint density P(x4,x1), i.e. with a root variable, factored the other way
   //  GaussianBayesNet expected4;
   //  GaussianConditional::shared_ptr
-  //      parent4(new GaussianConditional(X(1), zero(2), -1.0*I/sigmax1, ones(2)));
+  //      parent4(new GaussianConditional(X(1), Z_2x1, -1.0*I/sigmax1, ones(2)));
   //    expected4.push_front(parent4);
   //  double sig41 = 0.668096;
   //  Matrix A41 = -0.055794*I;
-  //  push_front(expected4,X(4), zero(2), I/sig41, X(1), A41/sig41, sigma);
+  //  push_front(expected4,X(4), Z_2x1, I/sig41, X(1), A41/sig41, sigma);
   //  GaussianBayesNet actual4 = *bayesTree.jointBayesNet(X(4),X(1));
   //  EXPECT(assert_equal(expected4,actual4,tol));
 }

@@ -96,7 +96,7 @@ public:
           << ": Inverse Depth Landmark [" << DefaultKeyFormatter(this->key2()) << "]"
           << " moved behind camera [" << DefaultKeyFormatter(this->key1()) <<"]"
           << std::endl;
-      return gtsam::ones(2) * 2.0 * K_->fx();
+      return gtsam::Vector::Ones(2) * 2.0 * K_->fx();
     }
     return (gtsam::Vector(1) << 0.0).finished();
   }

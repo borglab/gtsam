@@ -89,7 +89,7 @@ TEST( Rot2, equals)
 /* ************************************************************************* */
 TEST( Rot2, expmap)
 {
-  Vector v = zero(1);
+  Vector v = Z_1x1;
   CHECK(assert_equal(R.retract(v), R));
 }
 

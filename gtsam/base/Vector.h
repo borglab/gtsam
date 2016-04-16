@@ -14,10 +14,10 @@
  * @brief   typedef and functions to augment Eigen's VectorXd
  * @author  Kai Ni
  * @author  Frank Dellaert
+ * @author  Alex Hagiopol
  */
 
 // \callgraph
-
 
 #pragma once
 #ifndef MKL_BLAS
@@ -62,47 +62,6 @@ GTSAM_MAKE_VECTOR_DEFS(12);
 
 typedef Eigen::VectorBlock<Vector> SubVector;
 typedef Eigen::VectorBlock<const Vector> ConstSubVector;
-
-/**
- * Create basis vector of dimension n,
- * with a constant in spot i
- * @param n is the size of the vector
- * @param i index of the one
- * @param value is the value to insert into the vector
- * @return delta vector
- */
-GTSAM_EXPORT Vector delta(size_t n, size_t i, double value);
-
-/**
- * Create basis vector of dimension n,
- * with one in spot i
- * @param n is the size of the vector
- * @param i index of the one
- * @return basis vector
- */
-inline Vector basis(size_t n, size_t i) { return delta(n, i, 1.0); }
-
-/**
- * Create zero vector
- * @param n size
- */
-inline Vector zero(size_t n) { return Vector::Zero(n);}
-
-/**
- * Create vector initialized to ones
- * @param n size
- */
-inline Vector ones(size_t n) { return Vector::Ones(n); }
-
-/**
- * check if all zero
- */
-GTSAM_EXPORT bool zero(const Vector& v);
-
-/**
- * dimensionality == size
- */
-inline size_t dim(const Vector& v) { return v.size(); }
 
 /**
  * print without optional string, must specify cout yourself
@@ -272,21 +231,25 @@ GTSAM_EXPORT Vector concatVectors(const std::list<Vector>& vs);
  */
 GTSAM_EXPORT Vector concatVectors(size_t nrVectors, ...);
 
-
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-GTSAM_EXPORT inline Vector abs(const Vector& v){return v.cwiseAbs();}
-GTSAM_EXPORT inline Vector ediv(const Vector &a, const Vector &b) {assert (b.size()==a.size()); return a.cwiseQuotient(b);}
-GTSAM_EXPORT inline Vector esqrt(const Vector& v) { return v.cwiseSqrt();}
-GTSAM_EXPORT inline Vector emul(const Vector &a, const Vector &b) {assert (b.size()==a.size()); return a.cwiseProduct(b);}
-GTSAM_EXPORT inline double max(const Vector &a){return a.maxCoeff();}
-GTSAM_EXPORT inline double norm_2(const Vector& v) {return v.norm();}
-GTSAM_EXPORT inline Vector reciprocal(const Vector &a) {return a.array().inverse();}
-GTSAM_EXPORT inline Vector repeat(size_t n, double value) {return Vector::Constant(n, value);}
-GTSAM_EXPORT inline const Vector sub(const Vector &v, size_t i1, size_t i2) {return v.segment(i1,i2-i1);}
-GTSAM_EXPORT inline void subInsert(Vector& fullVector, const Vector& subVector, size_t i) {fullVector.segment(i, subVector.size()) = subVector;}
-GTSAM_EXPORT inline double sum(const Vector &a){return a.sum();}
+inline Vector abs(const Vector& v){return v.cwiseAbs();}
+inline Vector basis(size_t n, size_t i) { return Vector::Unit(n,i); }
+inline Vector delta(size_t n, size_t i, double value){ return Vector::Unit(n, i) * value;}
+inline size_t dim(const Vector& v) { return v.size(); }
+inline Vector ediv(const Vector &a, const Vector &b) {assert (b.size()==a.size()); return a.cwiseQuotient(b);}
+inline Vector esqrt(const Vector& v) { return v.cwiseSqrt();}
+inline Vector emul(const Vector &a, const Vector &b) {assert (b.size()==a.size()); return a.cwiseProduct(b);}
+inline double max(const Vector &a){return a.maxCoeff();}
+inline double norm_2(const Vector& v) {return v.norm();}
+inline Vector ones(size_t n) { return Vector::Ones(n); }
+inline Vector reciprocal(const Vector &a) {return a.array().inverse();}
+inline Vector repeat(size_t n, double value) {return Vector::Constant(n, value);}
+inline const Vector sub(const Vector &v, size_t i1, size_t i2) {return v.segment(i1,i2-i1);}
+inline void subInsert(Vector& fullVector, const Vector& subVector, size_t i) {fullVector.segment(i, subVector.size()) = subVector;}
+inline double sum(const Vector &a){return a.sum();}
+inline bool zero(const Vector& v){ return v.isZero(); }
+inline Vector zero(size_t n) { return Vector::Zero(n); }
 #endif
-
 } // namespace gtsam
 
 #include <boost/serialization/nvp.hpp>

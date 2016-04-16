@@ -88,7 +88,7 @@ typename internal::FixedSizeMatrix<X>::type numericalGradient(boost::function<do
   TangentX d;
   d.setZero();
 
-  Vector g = zero(N); // Can be fixed size
+  Eigen::Matrix<double,N,1> g; g.setZero(); // Can be fixed size
   for (int j = 0; j < N; j++) {
     d(j) = delta;
     double hxplus = h(traits<X>::Retract(x, d));

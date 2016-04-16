@@ -108,7 +108,7 @@ TEST( TransformBtwRobotsUnaryFactorEM, unwhitenedError)
   Vector err = g.unwhitenedError(values);
 
   // Equals
-  CHECK(assert_equal(err, zero(3), 1e-5));
+  CHECK(assert_equal(err, Z_3x1, 1e-5));
 }
 
 /* ************************************************************************* */
@@ -147,7 +147,7 @@ TEST( TransformBtwRobotsUnaryFactorEM, unwhitenedError2)
   Vector err = g.unwhitenedError(values);
 
   // Equals
-  CHECK(assert_equal(err, zero(3), 1e-5));
+  CHECK(assert_equal(err, Z_3x1, 1e-5));
 }
 
 /* ************************************************************************* */

@@ -45,7 +45,7 @@ TEST( EssentialMatrixConstraint, test ) {
       Rot3::RzRyRx(0.179693265735950, 0.002945368776519, 0.102274823253840),
       Point3(-3.37493895, 6.14660244, -8.93650986));
 
-  Vector expected = zero(5);
+  Vector expected = Z_5x1;
   Vector actual = factor.evaluateError(pose1,pose2);
   CHECK(assert_equal(expected, actual, 1e-8));
 

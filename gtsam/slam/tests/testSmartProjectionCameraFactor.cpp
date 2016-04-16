@@ -123,7 +123,7 @@ TEST( SmartProjectionCameraFactor, noiseless ) {
   double expectedError = 0.0;
   DOUBLES_EQUAL(expectedError, factor1->error(values), 1e-7);
   CHECK(
-      assert_equal(zero(4),
+      assert_equal(Z_4x1,
           factor1->reprojectionErrorAfterTriangulation(values), 1e-7));
 }
 

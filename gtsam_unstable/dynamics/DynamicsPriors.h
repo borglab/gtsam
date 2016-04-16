@@ -75,7 +75,7 @@ struct DGroundConstraint : public gtsam::PartialPriorFactor<PoseRTV> {
    */
   DGroundConstraint(Key key, double height, const gtsam::SharedNoiseModel& model)
   : Base(key, model) {
-    this->prior_ = delta(4, 0, height); // [z, vz, roll, pitch]
+    this->prior_ = Vector::Unit(4,0)*height; // [z, vz, roll, pitch]
     this->mask_.resize(4);
     this->mask_[0] = 5; // z = height
     this->mask_[1] = 8; // vz

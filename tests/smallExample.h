@@ -260,9 +260,9 @@ inline VectorValues createZeroDelta() {
   using symbol_shorthand::X;
   using symbol_shorthand::L;
   VectorValues c;
-  c.insert(L(1), zero(2));
-  c.insert(X(1), zero(2));
-  c.insert(X(2), zero(2));
+  c.insert(L(1), Z_2x1);
+  c.insert(X(1), Z_2x1);
+  c.insert(X(2), Z_2x1);
   return c;
 }
 
@@ -274,7 +274,7 @@ inline GaussianFactorGraph createGaussianFactorGraph() {
   GaussianFactorGraph fg;
 
   // linearized prior on x1: c[_x1_]+x1=0 i.e. x1=-c[_x1_]
-  fg += JacobianFactor(X(1), 10*I_2x2, -1.0*ones(2));
+  fg += JacobianFactor(X(1), 10*I_2x2, -1.0*Vector::Ones(2));
 
   // odometry between x1 and x2: x2-x1=[0.2;-0.1]
   fg += JacobianFactor(X(1), -10*I_2x2, X(2), 10*I_2x2, Vector2(2.0, -1.0));

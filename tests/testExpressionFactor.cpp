@@ -338,7 +338,7 @@ TEST(ExpressionFactor, Compose1) {
   EXPECT( assert_equal(I_3x3, H[1],1e-9));
 
   // Check linearization
-  JacobianFactor expected(1, I_3x3, 2, I_3x3, zero(3));
+  JacobianFactor expected(1, I_3x3, 2, I_3x3, Z_3x1);
   boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
   boost::shared_ptr<JacobianFactor> jf = //
       boost::dynamic_pointer_cast<JacobianFactor>(gf);
@@ -367,7 +367,7 @@ TEST(ExpressionFactor, compose2) {
   EXPECT( assert_equal(2*I_3x3, H[0],1e-9));
 
   // Check linearization
-  JacobianFactor expected(1, 2 * I_3x3, zero(3));
+  JacobianFactor expected(1, 2 * I_3x3, Z_3x1);
   boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
   boost::shared_ptr<JacobianFactor> jf = //
       boost::dynamic_pointer_cast<JacobianFactor>(gf);
@@ -396,7 +396,7 @@ TEST(ExpressionFactor, compose3) {
   EXPECT( assert_equal(I_3x3, H[0],1e-9));
 
   // Check linearization
-  JacobianFactor expected(3, I_3x3, zero(3));
+  JacobianFactor expected(3, I_3x3, Z_3x1);
   boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
   boost::shared_ptr<JacobianFactor> jf = //
       boost::dynamic_pointer_cast<JacobianFactor>(gf);
@@ -441,7 +441,7 @@ TEST(ExpressionFactor, composeTernary) {
   EXPECT( assert_equal(I_3x3, H[2],1e-9));
 
   // Check linearization
-  JacobianFactor expected(1, I_3x3, 2, I_3x3, 3, I_3x3, zero(3));
+  JacobianFactor expected(1, I_3x3, 2, I_3x3, 3, I_3x3, Z_3x1);
   boost::shared_ptr<GaussianFactor> gf = f.linearize(values);
   boost::shared_ptr<JacobianFactor> jf = //
       boost::dynamic_pointer_cast<JacobianFactor>(gf);

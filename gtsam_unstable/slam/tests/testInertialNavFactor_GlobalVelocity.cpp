@@ -152,7 +152,7 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
   imuBias::ConstantBias Bias1;
 
   Vector ActualErr(f.evaluateError(Pose1, Vel1, Bias1, Pose2, Vel2));
-  Vector ExpectedErr(zero(9));
+  Vector ExpectedErr(Z_9x1);
 
   CHECK(assert_equal(ExpectedErr, ActualErr, 1e-5));
 }
@@ -185,7 +185,7 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
   imuBias::ConstantBias Bias1;
 
   Vector ActualErr(f.evaluateError(Pose1, Vel1, Bias1, Pose2, Vel2));
-  Vector ExpectedErr(zero(9));
+  Vector ExpectedErr(Z_9x1);
 
   CHECK(assert_equal(ExpectedErr, ActualErr, 1e-5));
 }
@@ -225,7 +225,7 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
   imuBias::ConstantBias Bias1;
 
   Vector ActualErr(f.evaluateError(Pose1, Vel1, Bias1, Pose2, Vel2));
-  Vector ExpectedErr(zero(9));
+  Vector ExpectedErr(Z_9x1);
 
   // TODO: Expected values need to be updated for global velocity version
   CHECK(assert_equal(ExpectedErr, ActualErr, 1e-5));
@@ -488,7 +488,7 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
   imuBias::ConstantBias Bias1;
 
   Vector ActualErr(f.evaluateError(Pose1, Vel1, Bias1, Pose2, Vel2));
-  Vector ExpectedErr(zero(9));
+  Vector ExpectedErr(Z_9x1);
 
   CHECK(assert_equal(ExpectedErr, ActualErr, 1e-5));
 }
@@ -529,7 +529,7 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
   imuBias::ConstantBias Bias1;
 
   Vector ActualErr(f.evaluateError(Pose1, Vel1, Bias1, Pose2, Vel2));
-  Vector ExpectedErr(zero(9));
+  Vector ExpectedErr(Z_9x1);
 
   CHECK(assert_equal(ExpectedErr, ActualErr, 1e-5));
 }
@@ -579,7 +579,7 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
   imuBias::ConstantBias Bias1;
 
   Vector ActualErr(f.evaluateError(Pose1, Vel1, Bias1, Pose2, Vel2));
-  Vector ExpectedErr(zero(9));
+  Vector ExpectedErr(Z_9x1);
 
   // TODO: Expected values need to be updated for global velocity version
   CHECK(assert_equal(ExpectedErr, ActualErr, 1e-5));

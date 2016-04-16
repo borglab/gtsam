@@ -405,7 +405,7 @@ void Constrained::WhitenInPlace(Eigen::Block<Matrix> H) const {
 
 /* ************************************************************************* */
 Constrained::shared_ptr Constrained::unit() const {
-  Vector sigmas = ones(dim());
+  Vector sigmas = Vector::Ones(dim());
   for (size_t i=0; i<dim(); ++i)
     if (constrained(i))
       sigmas(i) = 0.0;

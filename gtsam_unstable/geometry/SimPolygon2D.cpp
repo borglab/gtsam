@@ -149,7 +149,7 @@ SimPolygon2D SimPolygon2D::randomTriangle(
 
     // extend from B to find C
     double dBC = randomDistance(mean_side_len, sigma_side_len, min_side_len);
-    Pose2 xC = xB.retract(delta(3, 0, dBC));
+    Pose2 xC = xB.retract(Vector::Unit(3,0)*dBC);
 
     // use triangle equality to verify non-degenerate triangle
     double dAC = xA.t().distance(xC.t());

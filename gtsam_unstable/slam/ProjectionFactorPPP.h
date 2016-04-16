@@ -146,7 +146,7 @@ namespace gtsam {
         if (throwCheirality_)
           throw e;
       }
-      return ones(2) * 2.0 * K_->fx();
+      return Vector::Ones(2) * 2.0 * K_->fx();
     }
 
     /** return the measurement */

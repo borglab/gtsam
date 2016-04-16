@@ -113,7 +113,7 @@ namespace gtsam {
       // FIXME: this was originally the generic retraction - may not produce same results
       Vector full_logmap = T::Logmap(p);
 //      Vector full_logmap = T::identity().localCoordinates(p); // Alternate implementation
-      Vector masked_logmap = zero(this->dim());
+      Vector masked_logmap = Vector::Zero(this->dim());
       for (size_t i=0; i<mask_.size(); ++i)
         masked_logmap(i) = full_logmap(mask_[i]);
       return masked_logmap - prior_;

@@ -129,7 +129,7 @@ public:
       if (H1) *H1 = JacobianC::Zero();
       if (H2) *H2 = JacobianL::Zero();
       // TODO warn if verbose output asked for
-      return zero(2);
+      return Z_2x1;
     }
   }
 
@@ -272,7 +272,7 @@ public:
       std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2())
       << " behind Camera " << DefaultKeyFormatter(this->key1()) << std::endl;
     }
-    return zero(2);
+    return Z_2x1;
   }
 
   /** return the measured */

@@ -146,7 +146,7 @@ public:
       if (throwCheirality_)
         throw e;
     }
-    return ones(3) * 2.0 * K_->fx();
+    return Vector3::Constant(2.0 * K_->fx());
   }
 
   /** return the measured */

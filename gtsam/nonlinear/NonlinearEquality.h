@@ -147,7 +147,7 @@ public:
     } else if (compare_(feasible_, xj)) {
       if (H)
         *H = Matrix::Identity(nj,nj);
-      return zero(nj); // set error to zero if equal
+      return Vector::Zero(nj); // set error to zero if equal
     } else {
       if (H)
         throw std::invalid_argument(

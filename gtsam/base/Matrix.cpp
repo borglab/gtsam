@@ -290,7 +290,7 @@ weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
     if (precision < 1e-8) continue;
 
     // create solution and copy into r
-    Vector r(basis(n, j));
+    Vector r(Vector::Unit(n,j));
     for (size_t j2=j+1; j2<n; ++j2)
       r(j2) = pseudo.dot(A.col(j2));
 

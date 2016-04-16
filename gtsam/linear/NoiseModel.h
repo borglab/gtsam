@@ -381,7 +381,7 @@ namespace gtsam {
        * from appearing in invsigmas or precisions.
        * mu set to large default value (1000.0)
        */
-      Constrained(const Vector& sigmas = zero(1));
+      Constrained(const Vector& sigmas = Z_1x1);
 
       /**
        * Constructor that prevents any inf values

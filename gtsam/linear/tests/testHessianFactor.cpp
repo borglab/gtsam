@@ -484,7 +484,7 @@ TEST(HessianFactor, combine) {
   -8.94427191,      0.0,
          0.0, -8.94427191).finished();
   Vector b = Vector2(2.23606798,-1.56524758);
-  SharedDiagonal model = noiseModel::Diagonal::Sigmas(ones(2));
+  SharedDiagonal model = noiseModel::Diagonal::Sigmas(Vector::Ones(2));
   GaussianFactor::shared_ptr f(new JacobianFactor(0, A0, 1, A1, 2, A2, b, model));
   GaussianFactorGraph factors = list_of(f);
 
