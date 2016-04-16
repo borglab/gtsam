@@ -232,7 +232,7 @@ GTSAM_EXPORT Vector concatVectors(size_t nrVectors, ...);
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 inline Vector abs(const Vector& v){return v.cwiseAbs();}
-inline Vector basis(size_t n, size_t i) { return delta(n, i, 1.0); }
+inline Vector basis(size_t n, size_t i) { return Vector::Unit(n,i); }
 inline Vector delta(size_t n, size_t i, double value){ return Vector::Unit(n, i) * value;}
 inline size_t dim(const Vector& v) { return v.size(); }
 inline Vector ediv(const Vector &a, const Vector &b) {assert (b.size()==a.size()); return a.cwiseQuotient(b);}
