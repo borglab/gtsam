@@ -26,7 +26,7 @@ using namespace std;
 using namespace gtsam;
 using namespace gtsam::symbol_shorthand;
 
-const Matrix One = Matrix::Ones(1,1);
+const Matrix One = I_1x1;
 
 /* ************************************************************************* */
 // Create test graph according to Forst10book_pg171Ex5
@@ -38,14 +38,14 @@ QP createTestCase() {
   //        0.5*x1'*G11*x1 + x1'*G12*x2 + 0.5*x2'*G22*x2 - x1'*g1 - x2'*g2 + 0.5*f
   // Hence, we have G11=2, G12 = -1, g1 = +3, G22 = 2, g2 = 0, f = 10
   qp.cost.push_back(
-      HessianFactor(X(1), X(2), 2.0 * Matrix::Ones(1, 1), -Matrix::Ones(1, 1), 3.0 * Vector::Ones(1),
+      HessianFactor(X(1), X(2), 2.0 * Matrix::Ones(1, 1), -Matrix::Ones(1, 1), 3.0 * I_1x1,
           2.0 * Matrix::Ones(1, 1), Z_1x1, 10.0));
 
   // Inequality constraints
-  qp.inequalities.push_back(LinearInequality(X(1), Matrix::Ones(1,1), X(2), Matrix::Ones(1,1), 2, 0)); // x1 + x2 <= 2 --> x1 + x2 -2 <= 0, --> b=2
-  qp.inequalities.push_back(LinearInequality(X(1), -Matrix::Ones(1,1), 0, 1));                 // -x1     <= 0
-  qp.inequalities.push_back(LinearInequality(X(2), -Matrix::Ones(1,1), 0, 2));                 //    -x2  <= 0
-  qp.inequalities.push_back(LinearInequality(X(1), Matrix::Ones(1,1), 1.5, 3));                // x1      <= 3/2
+  qp.inequalities.push_back(LinearInequality(X(1), I_1x1, X(2), I_1x1, 2, 0)); // x1 + x2 <= 2 --> x1 + x2 -2 <= 0, --> b=2
+  qp.inequalities.push_back(LinearInequality(X(1), -I_1x1, 0, 1));                 // -x1     <= 0
+  qp.inequalities.push_back(LinearInequality(X(2), -I_1x1, 0, 2));                 //    -x2  <= 0
+  qp.inequalities.push_back(LinearInequality(X(1), I_1x1, 1.5, 3));                // x1      <= 3/2
 
   return qp;
 }
@@ -110,8 +110,8 @@ TEST(QPSolver, dual) {
 
   // Initials values
   VectorValues initialValues;
-  initialValues.insert(X(1), Vector::Ones(1));
-  initialValues.insert(X(2), Vector::Ones(1));
+  initialValues.insert(X(1), I_1x1);
+  initialValues.insert(X(2), I_1x1);
 
   QPSolver solver(qp);
 
@@ -219,8 +219,8 @@ QP createTestMatlabQPEx() {
   //        0.5*x1'*G11*x1 + x1'*G12*x2 + 0.5*x2'*G22*x2 - x1'*g1 - x2'*g2 + 0.5*f
   // Hence, we have G11=1, G12 = -1, g1 = +2, G22 = 2, g2 = +6, f = 0
   qp.cost.push_back(
-      HessianFactor(X(1), X(2), 1.0 * Matrix::Ones(1,1), -Matrix::Ones(1, 1), 2.0 * Vector::Ones(1),
-          2.0 * Matrix::Ones(1, 1), 6 * Vector::Ones(1), 1000.0));
+      HessianFactor(X(1), X(2), 1.0 * I_1x1, -Matrix::Ones(1, 1), 2.0 * I_1x1,
+          2.0 * Matrix::Ones(1, 1), 6 * I_1x1, 1000.0));
 
   // Inequality constraints
   qp.inequalities.push_back(LinearInequality(X(1), One, X(2), One, 2, 0));      // x1 + x2 <= 2
@@ -251,8 +251,8 @@ TEST(QPSolver, optimizeMatlabEx) {
 QP createTestNocedal06bookEx16_4() {
   QP qp;
 
-  qp.cost.push_back(JacobianFactor(X(1), Matrix::Ones(1, 1), Vector::Ones(1)));
-  qp.cost.push_back(JacobianFactor(X(2), Matrix::Ones(1, 1), 2.5 * Vector::Ones(1)));
+  qp.cost.push_back(JacobianFactor(X(1), Matrix::Ones(1, 1), I_1x1));
+  qp.cost.push_back(JacobianFactor(X(2), Matrix::Ones(1, 1), 2.5 * I_1x1));
 
   // Inequality constraints
   qp.inequalities.push_back(LinearInequality(X(1), -One, X(2), 2 * One, 2, 0));
