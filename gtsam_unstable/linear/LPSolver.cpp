@@ -54,7 +54,8 @@ LPState LPSolver::iterate(const LPState &state) const {
   // to find the direction to move
   VectorValues newValues = solveWithCurrentWorkingSet(state.values,
       state.workingSet);
-
+//  GTSAM_PRINT(newValues);
+//  GTSAM_PRINT(state.values);
   // If we CAN'T move further
   // LP: projection on the constraints' nullspace is zero: we are at a vertex
   if (newValues.equals(state.values, 1e-7)) {
@@ -66,6 +67,8 @@ LPState LPSolver::iterate(const LPState &state) const {
     GaussianFactorGraph::shared_ptr dualGraph = buildDualGraph(state.workingSet,
         newValues);
     VectorValues duals = dualGraph->optimize();
+//    GTSAM_PRINT(*dualGraph);
+//    GTSAM_PRINT(duals);
     // LP: see which inequality constraint has wrong pulling direction, i.e., dual < 0
     int leavingFactor = identifyLeavingConstraint(state.workingSet, duals);
     // If all inequality constraints are satisfied: We have the solution!!
@@ -92,6 +95,7 @@ LPState LPSolver::iterate(const LPState &state) const {
     double alpha;
     int factorIx;
     VectorValues p = newValues - state.values;
+//    GTSAM_PRINT(p);
     boost::tie(alpha, factorIx) = // using 16.41
         computeStepSize(state.workingSet, state.values, p);
     // also add to the working set the one that complains the most
@@ -108,14 +112,31 @@ LPState LPSolver::iterate(const LPState &state) const {
 GaussianFactorGraph::shared_ptr LPSolver::createLeastSquareFactors(
     const LinearCost &cost, const VectorValues &xk) const {
   GaussianFactorGraph::shared_ptr graph(new GaussianFactorGraph());
-  KeyVector keys = cost.keys();
+  //Something in this function breaks when working with funcions that do not include all
+  //Variables in the cost function. When adding the missing variables as shown we still don't converge
+  //to the right answer as we would expect from the iterations.
+//  GTSAM_PRINT(xk);
+//  GTSAM_PRINT(cost);
 
   for (LinearCost::const_iterator it = cost.begin(); it != cost.end(); ++it) {
     size_t dim = cost.getDim(it);
     Vector b = xk.at(*it) - cost.getA(it).transpose(); // b = xk-g
     graph->push_back(JacobianFactor(*it, eye(dim), b));
   }
+  KeySet allKeys = lp_.inequalities.keys();
+  allKeys.merge(lp_.equalities.keys());
+  allKeys.merge(KeySet(lp_.cost.keys()));
 
+  if (cost.keys().size() != allKeys.size()) {
+    KeySet difference;
+    std::set_difference(allKeys.begin(), allKeys.end(), lp_.cost.begin(),
+        lp_.cost.end(), std::inserter(difference, difference.end()));
+    for (Key k : difference) {
+      graph->push_back(JacobianFactor(k, eye(keysDim_.at(k)), xk.at(k)));
+    }
+  }
+
+//  GTSAM_PRINT(*graph);
   return graph;
 }
 
@@ -123,11 +144,11 @@ VectorValues LPSolver::solveWithCurrentWorkingSet(const VectorValues &xk,
     const InequalityFactorGraph &workingSet) const {
   GaussianFactorGraph workingGraph = baseGraph_; // || X - Xk + g ||^2
   workingGraph.push_back(*createLeastSquareFactors(lp_.cost, xk));
-
   for (const LinearInequality::shared_ptr &factor : workingSet) {
     if (factor->active())
       workingGraph.push_back(factor);
   }
+//  GTSAM_PRINT(workingGraph);
   return workingGraph.optimize();
 }
 
@@ -186,9 +207,11 @@ std::pair<VectorValues, VectorValues> LPSolver::optimize(
     LPState state(initialValues, duals, workingSet, false, 0);
 
     /// main loop of the solver
-    while (!state.converged)
+    while (!state.converged) {
+      if(state.iterations > 10000) // Temporary break to avoid infine loops
+        break;
       state = iterate(state);
-
+    }
     return make_pair(state.values, state.duals);
   }
 }

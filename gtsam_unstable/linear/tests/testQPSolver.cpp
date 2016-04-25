@@ -213,9 +213,8 @@ TEST(QPSolver, optimizeForst10book_pg171Ex5) {
   CHECK(assert_equal(expectedSolution, solution, 1e-100));
 }
 
-void testParser(QPSParser parser) {
+pair<QP, QP> testParser(QPSParser parser) {
   QP exampleqp = parser.Parse();
-
 //  QP expectedqp = createExampleQP();
   QP expectedqp;
   // min f(x,y) = 4 + 1.5x -y + 0.58x^2 + 2xy + 2yx + 10y^2
@@ -234,7 +233,8 @@ void testParser(QPSParser parser) {
   expectedqp.inequalities.push_back(LinearInequality(X(2), -ones(1, 1), 0, 3));
   // x<= 20
   expectedqp.inequalities.push_back(LinearInequality(X(1), ones(1, 1), 20, 4));
-
+  return std::make_pair(expectedqp, exampleqp);
+//  CHECK(assert_equal(expectedqp.cost, exampleqp.cost, 1e-7));
 //  CHECK(expectedqp.cost.equals(exampleqp.cost, 1e-7));
 //  CHECK(expectedqp.inequalities.equals(exampleqp.inequalities, 1e-7));
 //  CHECK(expectedqp.equalities.equals(exampleqp.equalities, 1e-7));
@@ -242,9 +242,18 @@ void testParser(QPSParser parser) {
 
 TEST(QPSolver, QPExampleData) {
 
-  testParser(QPSParser("QPExample.QPS"));
-  testParser(QPSParser("AUG2D.QPS"));
-  testParser(QPSParser("CONT-050.QPS"));
+  auto expected_actual = testParser(QPSParser("QPExample.QPS"));
+  VectorValues actualSolution, expectedSolution;
+  expected_actual.first.print("EXPECTED GRAPH:");
+  expected_actual.second.print("ACTUAL GRAPH");
+  boost::tie(expectedSolution, boost::tuples::ignore) = QPSolver(expected_actual.first).optimize();
+  std::cout << "Expected Execution Works" << std::endl;
+  boost::tie(actualSolution, boost::tuples::ignore) = QPSolver(expected_actual.second).optimize();
+  std::cout << "Actual Execution Works" << std::endl;
+
+    CHECK(assert_equal(actualSolution, expectedSolution, 1e-7));
+//  testParser(QPSParser("AUG2D.QPS"));
+//  testParser(QPSParser("CONT-050.QPS"));
 }
 
 /* ************************************************************************* */
