@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <gtsam/inference/Symbol.h>
 #include <boost/fusion/sequence.hpp>
+#include <boost/fusion/include/vector.hpp>
 
 namespace gtsam {
 class RawQP {
