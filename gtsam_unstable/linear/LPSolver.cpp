@@ -127,6 +127,7 @@ GaussianFactorGraph::shared_ptr LPSolver::createLeastSquareFactors(
   allKeys.merge(lp_.equalities.keys());
   allKeys.merge(KeySet(lp_.cost.keys()));
 
+  // for vars that are not in the cost, the cost gradient is zero (g=0), so b=xk
   if (cost.keys().size() != allKeys.size()) {
     KeySet difference;
     std::set_difference(allKeys.begin(), allKeys.end(), lp_.cost.begin(),
