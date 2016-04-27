@@ -65,7 +65,7 @@ public:
     const int tDim = traits<Translation>::GetDimension(newTrans);
     const int xDim = traits<Pose>::GetDimension(pose);
     if (H) {
-      *H = gtsam::zeros(tDim, xDim);
+      *H = Matrix::Zero(tDim, xDim);
       std::pair<size_t, size_t> transInterval = POSE::translationInterval();
       (*H).middleCols(transInterval.first, tDim) = R.matrix();
     }

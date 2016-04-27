@@ -168,19 +168,19 @@ namespace simple_graph {
 Key keyX(10), keyY(8), keyZ(12);
 
 double sigma1 = 0.1;
-Matrix A11 = Matrix::Identity(2, 2);
+Matrix A11 = I_2x2;
 Vector2 b1(2, -1);
 JacobianFactor factor1(keyX, A11, b1, noiseModel::Isotropic::Sigma(2, sigma1));
 
 double sigma2 = 0.5;
-Matrix A21 = -2 * Matrix::Identity(2, 2);
-Matrix A22 = 3 * Matrix::Identity(2, 2);
+Matrix A21 = -2 * I_2x2;
+Matrix A22 = 3 * I_2x2;
 Vector2 b2(4, -5);
 JacobianFactor factor2(keyX, A21, keyY, A22, b2, noiseModel::Isotropic::Sigma(2, sigma2));
 
 double sigma3 = 1.0;
-Matrix A32 = -4 * Matrix::Identity(2, 2);
-Matrix A33 = 5 * Matrix::Identity(2, 2);
+Matrix A32 = -4 * I_2x2;
+Matrix A33 = 5 * I_2x2;
 Vector2 b3(3, -6);
 JacobianFactor factor3(keyY, A32, keyZ, A33, b3, noiseModel::Isotropic::Sigma(2, sigma3));
 
@@ -193,8 +193,8 @@ TEST( JacobianFactor, construct_from_graph)
 {
   using namespace simple_graph;
 
-  Matrix A1(6,2); A1 << A11, A21, Matrix::Zero(2,2);
-  Matrix A2(6,2); A2 << Matrix::Zero(2,2), A22, A32;
+  Matrix A1(6,2); A1 << A11, A21, Z_2x2;
+  Matrix A2(6,2); A2 << Z_2x2, A22, A32;
   Matrix A3(6,2); A3 << Matrix::Zero(4,2), A33;
   Vector b(6); b << b1, b2, b3;
   Vector sigmas(6); sigmas << sigma1, sigma1, sigma2, sigma2, sigma3, sigma3;
@@ -260,17 +260,17 @@ TEST(JacobianFactor, matrices_NULL)
 
   // hessianDiagonal
   VectorValues expectDiagonal;
-  expectDiagonal.insert(5, ones(3));
-  expectDiagonal.insert(10, 4*ones(3));
-  expectDiagonal.insert(15, 9*ones(3));
+  expectDiagonal.insert(5, Vector::Ones(3));
+  expectDiagonal.insert(10, 4*Vector::Ones(3));
+  expectDiagonal.insert(15, 9*Vector::Ones(3));
   EXPECT(assert_equal(expectDiagonal, factor.hessianDiagonal()));
 
   // hessianBlockDiagonal
   map<Key,Matrix> actualBD = factor.hessianBlockDiagonal();
   LONGS_EQUAL(3,actualBD.size());
-  EXPECT(assert_equal(1*eye(3),actualBD[5]));
-  EXPECT(assert_equal(4*eye(3),actualBD[10]));
-  EXPECT(assert_equal(9*eye(3),actualBD[15]));
+  EXPECT(assert_equal(1*I_3x3,actualBD[5]));
+  EXPECT(assert_equal(4*I_3x3,actualBD[10]));
+  EXPECT(assert_equal(9*I_3x3,actualBD[15]));
 }
 
 /* ************************************************************************* */
@@ -314,9 +314,9 @@ TEST(JacobianFactor, matrices)
   // hessianBlockDiagonal
   map<Key,Matrix> actualBD = factor.hessianBlockDiagonal();
   LONGS_EQUAL(3,actualBD.size());
-  EXPECT(assert_equal(4*eye(3),actualBD[5]));
-  EXPECT(assert_equal(16*eye(3),actualBD[10]));
-  EXPECT(assert_equal(36*eye(3),actualBD[15]));
+  EXPECT(assert_equal(4*I_3x3,actualBD[5]));
+  EXPECT(assert_equal(16*I_3x3,actualBD[10]));
+  EXPECT(assert_equal(36*I_3x3,actualBD[15]));
 }
 
 /* ************************************************************************* */
@@ -324,7 +324,7 @@ TEST(JacobianFactor, operators )
 {
   SharedDiagonal  sigma0_1 = noiseModel::Isotropic::Sigma(2,0.1);
 
-  Matrix I = eye(2);
+  Matrix I = I_2x2;
   Vector b = Vector2(0.2,-0.1);
   JacobianFactor lf(1, -I, 2, I, b, sigma0_1);
 
@@ -405,7 +405,7 @@ TEST(JacobianFactor, eliminate)
   gfg.add(0, A10, 1, A11, b1, noiseModel::Diagonal::Sigmas(s1, true));
   gfg.add(1, A21, b2, noiseModel::Diagonal::Sigmas(s2, true));
 
-  Matrix zero3x3 = zeros(3,3);
+  Matrix zero3x3 = Matrix::Zero(3,3);
   Matrix A0 = gtsam::stack(3, &A10, &zero3x3, &zero3x3);
   Matrix A1 = gtsam::stack(3, &A11, &A01, &A21);
   Vector9 b; b << b1, b0, b2;
@@ -561,7 +561,7 @@ TEST ( JacobianFactor, constraint_eliminate1 )
 {
   // construct a linear constraint
   Vector v(2); v(0)=1.2; v(1)=3.4;
-  JacobianFactor lc(1, eye(2), v, noiseModel::Constrained::All(2));
+  JacobianFactor lc(1, I_2x2, v, noiseModel::Constrained::All(2));
 
   // eliminate it
   pair<GaussianConditional::shared_ptr, JacobianFactor::shared_ptr>
@@ -572,7 +572,7 @@ TEST ( JacobianFactor, constraint_eliminate1 )
 
   // verify conditional Gaussian
   Vector sigmas = Vector2(0.0, 0.0);
-  GaussianConditional expCG(1, v, eye(2), noiseModel::Diagonal::Sigmas(sigmas));
+  GaussianConditional expCG(1, v, I_2x2, noiseModel::Diagonal::Sigmas(sigmas));
   EXPECT(assert_equal(expCG, *actual.first));
 }
 

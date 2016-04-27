@@ -34,20 +34,6 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-bool zero(const Vector& v) {
-  bool result = true;
-  size_t n = v.size();
-  for( size_t j = 0 ; j < n ; j++)
-    result = result && (v(j) == 0.0);
-  return result;
-}
-
-/* ************************************************************************* */
-Vector delta(size_t n, size_t i, double value) {
-  return Vector::Unit(n, i) * value;
-}
-
-/* ************************************************************************* */
 //3 argument call
 void print(const Vector& v, const string& s, ostream& stream) {
   size_t n = v.size();
@@ -235,7 +221,7 @@ double weightedPseudoinverse(const Vector& a, const Vector& weights,
       // Basically, instead of doing a normal QR step with the weighted
       // pseudoinverse, we enforce the constraint by turning
       // ax + AS = b into x + (A/a)S = b/a, for the first row where a!=0
-      pseudo = delta(m, i, 1.0 / a[i]);
+      pseudo = Vector::Unit(m,i)*(1.0/a[i]);
       return inf;
     }
   }

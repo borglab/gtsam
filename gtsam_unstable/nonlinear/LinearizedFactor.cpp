@@ -194,7 +194,7 @@ bool LinearizedHessianFactor::equals(const NonlinearFactor& expected, double tol
 double LinearizedHessianFactor::error(const Values& c) const {
 
   // Construct an error vector in key-order from the Values
-  Vector dx = zero(dim());
+  Vector dx = Vector::Zero(dim());
   size_t index = 0;
   for(unsigned int i = 0; i < this->size(); ++i){
     Key key = this->keys()[i];
@@ -217,7 +217,7 @@ boost::shared_ptr<GaussianFactor>
 LinearizedHessianFactor::linearize(const Values& c) const {
 
   // Construct an error vector in key-order from the Values
-  Vector dx = zero(dim());
+  Vector dx = Vector::Zero(dim());
   size_t index = 0;
   for(unsigned int i = 0; i < this->size(); ++i){
     Key key = this->keys()[i];

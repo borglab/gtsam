@@ -61,7 +61,7 @@ TEST( Pose3, constructors)
 TEST( Pose3, retract_first_order)
 {
   Pose3 id;
-  Vector v = zero(6);
+  Vector v = Z_6x1;
   v(0) = 0.3;
   EXPECT(assert_equal(Pose3(R, Point3(0,0,0)), id.retract(v),1e-2));
   v(3)=0.2;v(4)=0.7;v(5)=-2;
@@ -71,7 +71,7 @@ TEST( Pose3, retract_first_order)
 /* ************************************************************************* */
 TEST( Pose3, retract_expmap)
 {
-  Vector v = zero(6); v(0) = 0.3;
+  Vector v = Z_6x1; v(0) = 0.3;
   Pose3 pose = Pose3::Expmap(v);
   EXPECT(assert_equal(Pose3(R, Point3(0,0,0)), pose, 1e-2));
   EXPECT(assert_equal(v,Pose3::Logmap(pose),1e-2));
@@ -81,7 +81,7 @@ TEST( Pose3, retract_expmap)
 TEST( Pose3, expmap_a_full)
 {
   Pose3 id;
-  Vector v = zero(6);
+  Vector v = Z_6x1;
   v(0) = 0.3;
   EXPECT(assert_equal(expmap_default<Pose3>(id, v), Pose3(R, Point3(0,0,0))));
   v(3)=0.2;v(4)=0.394742;v(5)=-2.08998;
@@ -92,7 +92,7 @@ TEST( Pose3, expmap_a_full)
 TEST( Pose3, expmap_a_full2)
 {
   Pose3 id;
-  Vector v = zero(6);
+  Vector v = Z_6x1;
   v(0) = 0.3;
   EXPECT(assert_equal(expmap_default<Pose3>(id, v), Pose3(R, Point3(0,0,0))));
   v(3)=0.2;v(4)=0.394742;v(5)=-2.08998;
@@ -153,7 +153,7 @@ Pose3 Agrawal06iros(const Vector& xi) {
     return Pose3(Rot3(), Point3(v));
   else {
     Matrix W = skewSymmetric(w/t);
-    Matrix A = eye(3) + ((1 - cos(t)) / t) * W + ((t - sin(t)) / t) * (W * W);
+    Matrix A = I_3x3 + ((1 - cos(t)) / t) * W + ((t - sin(t)) / t) * (W * W);
     return Pose3(Rot3::Expmap (w), Point3(A * v));
   }
 }
@@ -267,7 +267,7 @@ TEST( Pose3, inverse)
 {
   Matrix actualDinverse;
   Matrix actual = T.inverse(actualDinverse).matrix();
-  Matrix expected = inverse(T.matrix());
+  Matrix expected = T.matrix().inverse();
   EXPECT(assert_equal(actual,expected,1e-8));
 
   Matrix numericalH = numericalDerivative11(testing::inverse<Pose3>, T);
@@ -293,7 +293,7 @@ TEST( Pose3, inverseDerivatives2)
 TEST( Pose3, compose_inverse)
 {
   Matrix actual = (T*T.inverse()).matrix();
-  Matrix expected = eye(4,4);
+  Matrix expected = I_4x4;
   EXPECT(assert_equal(actual,expected,1e-8));
 }
 
@@ -712,7 +712,7 @@ TEST(Pose3, Bearing2) {
 TEST( Pose3, unicycle )
 {
   // velocity in X should be X in inertial frame, rather than global frame
-  Vector x_step = delta(6,3,1.0);
+  Vector x_step = Vector::Unit(6,3)*1.0;
   EXPECT(assert_equal(Pose3(Rot3::Ypr(0,0,0), l1), expmap_default<Pose3>(x1, x_step), tol));
   EXPECT(assert_equal(Pose3(Rot3::Ypr(0,0,0), Point3(2,1,0)), expmap_default<Pose3>(x2, x_step), tol));
   EXPECT(assert_equal(Pose3(Rot3::Ypr(M_PI/4.0,0,0), Point3(2,2,0)), expmap_default<Pose3>(x3, sqrt(2.0) * x_step), tol));
@@ -723,9 +723,8 @@ TEST( Pose3, adjointMap) {
   Matrix res = Pose3::adjointMap(screwPose3::xi);
   Matrix wh = skewSymmetric(screwPose3::xi(0), screwPose3::xi(1), screwPose3::xi(2));
   Matrix vh = skewSymmetric(screwPose3::xi(3), screwPose3::xi(4), screwPose3::xi(5));
-  Matrix Z3 = zeros(3,3);
   Matrix6 expected;
-  expected << wh, Z3, vh, wh;
+  expected << wh, Z_3x3, vh, wh;
   EXPECT(assert_equal(expected,res,1e-5));
 }
 

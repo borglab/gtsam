@@ -88,7 +88,7 @@ typename internal::FixedSizeMatrix<X>::type numericalGradient(boost::function<do
   TangentX d;
   d.setZero();
 
-  Vector g = zero(N); // Can be fixed size
+  Eigen::Matrix<double,N,1> g; g.setZero(); // Can be fixed size
   for (int j = 0; j < N; j++) {
     d(j) = delta;
     double hxplus = h(traits<X>::Retract(x, d));
@@ -142,7 +142,7 @@ typename internal::FixedSizeMatrix<Y,X>::type numericalDerivative11(boost::funct
   dx.setZero();
 
   // Fill in Jacobian H
-  Matrix H = zeros(m, N);
+  Matrix H = Matrix::Zero(m, N);
   const double factor = 1.0 / (2.0 * delta);
   for (int j = 0; j < N; j++) {
     dx(j) = delta;

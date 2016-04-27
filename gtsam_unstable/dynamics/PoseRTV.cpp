@@ -11,7 +11,7 @@ namespace gtsam {
 
 using namespace std;
 
-static const Vector kGravity = delta(3, 2, 9.81);
+static const Vector kGravity = Vector::Unit(3,2)*9.81;
 
 /* ************************************************************************* */
 double bound(double a, double min, double max) {
@@ -105,7 +105,7 @@ PoseRTV PoseRTV::flyingDynamics(
   Vector Acc_n =
       yaw_correction_bn.rotate(forward)              // applies locally forward force in the global frame
       - drag * (Vector(3) << v1.x(), v1.y(), 0.0).finished()  // drag term dependent on v1
-      + delta(3, 2, loss_lift - lift_control);                // falling due to lift lost from pitch
+      + Vector::Unit(3,2)*(loss_lift - lift_control);                // falling due to lift lost from pitch
 
   // Update Vehicle Position and Velocity
   Velocity3 v2 = v1 + Velocity3(Acc_n * dt);

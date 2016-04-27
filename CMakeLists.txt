@@ -305,7 +305,7 @@ endif()
 # paths so that the compiler uses GTSAM headers in our source directory instead
 # of any previously installed GTSAM headers.
 include_directories(BEFORE
-  gtsam/3rdparty/UFconfig
+  gtsam/3rdparty/SuiteSparse_config
   gtsam/3rdparty/CCOLAMD/Include
   ${METIS_INCLUDE_DIRECTORIES}
   ${PROJECT_SOURCE_DIR}

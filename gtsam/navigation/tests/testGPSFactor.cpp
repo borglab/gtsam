@@ -58,7 +58,7 @@ TEST( GPSFactor, Constructor ) {
 
   // Create a linearization point at zero error
   Pose3 T(Rot3::RzRyRx(0.15, -0.30, 0.45), Point3(E, N, U));
-  EXPECT(assert_equal(zero(3),factor.evaluateError(T),1e-5));
+  EXPECT(assert_equal(Z_3x1,factor.evaluateError(T),1e-5));
 
   // Calculate numerical derivatives
   Matrix expectedH = numericalDerivative11<Vector,Pose3>(
@@ -87,7 +87,7 @@ TEST( GPSFactor2, Constructor ) {
 
   // Create a linearization point at zero error
   NavState T(Rot3::RzRyRx(0.15, -0.30, 0.45), Point3(E, N, U), Vector3::Zero());
-  EXPECT(assert_equal(zero(3),factor.evaluateError(T),1e-5));
+  EXPECT(assert_equal(Z_3x1,factor.evaluateError(T),1e-5));
 
   // Calculate numerical derivatives
   Matrix expectedH = numericalDerivative11<Vector,NavState>(

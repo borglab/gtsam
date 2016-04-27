@@ -170,7 +170,7 @@ TEST(GaussianBayesTree, complicatedMarginal) {
   LONGS_EQUAL(1, (long)actualJacobianQR.size());
   LONGS_EQUAL(5, (long)actualJacobianQR.keys()[0]);
   Matrix actualA = actualJacobianQR.getA(actualJacobianQR.begin());
-  Matrix actualCov = inverse(actualA.transpose() * actualA);
+  Matrix actualCov = (actualA.transpose() * actualA).inverse();
   EXPECT(assert_equal(expectedCov, actualCov, 1e-1));
 
   // Marginal on 6
@@ -187,7 +187,7 @@ TEST(GaussianBayesTree, complicatedMarginal) {
   LONGS_EQUAL(1, (long)actualJacobianQR.size());
   LONGS_EQUAL(6, (long)actualJacobianQR.keys()[0]);
   actualA = actualJacobianQR.getA(actualJacobianQR.begin());
-  actualCov = inverse(actualA.transpose() * actualA);
+  actualCov = (actualA.transpose() * actualA).inverse();
   EXPECT(assert_equal(expectedCov, actualCov, 1e1));
 }
 

@@ -66,7 +66,7 @@ JacobianFactor::shared_ptr QPSolver::createDualFactor(Key key,
 
   // Collect the gradients of unconstrained cost factors to the b vector
   if (Aterms.size() > 0) {
-    Vector b = zero(delta.at(key).size());
+    Vector b = Vector::Zero(delta.at(key).size());
     if (costVariableIndex_.find(key) != costVariableIndex_.end()) {
       for (size_t factorIx : costVariableIndex_[key]) {
         GaussianFactor::shared_ptr factor = qp_.cost.at(factorIx);

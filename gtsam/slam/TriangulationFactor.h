@@ -124,14 +124,14 @@ public:
       return error.vector();
     } catch (CheiralityException& e) {
       if (H2)
-        *H2 = zeros(Measurement::dimension, 3);
+        *H2 = Matrix::Zero(Measurement::dimension, 3);
       if (verboseCheirality_)
         std::cout << e.what() << ": Landmark "
             << DefaultKeyFormatter(this->key()) << " moved behind camera"
             << std::endl;
       if (throwCheirality_)
         throw e;
-      return ones(Measurement::dimension) * 2.0 * camera_.calibration().fx();
+      return Eigen::Matrix<double,Measurement::dimension,1>::Constant(2.0 * camera_.calibration().fx());
     }
   }
 

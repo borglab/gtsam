@@ -7,7 +7,7 @@ function plot3DPoints(values, linespec, marginals)
 import gtsam.*
 
 if ~exist('linespec', 'var') || isempty(linespec)
-    linespec = 'g';
+    linespec = 'g*';
 end
 haveMarginals = exist('marginals', 'var');
 keys = KeyVector(values.keys);
@@ -15,19 +15,25 @@ keys = KeyVector(values.keys);
 holdstate = ishold;
 hold on
 
-% Plot points and covariance matrices
-for i = 0:keys.size-1
-    key = keys.at(i);
-    try
-        p = values.atPoint3(key);
-        if haveMarginals
+if haveMarginals
+    % Plot points and covariance matrices (slow)
+    for i = 0:keys.size-1
+        key = keys.at(i);
+        try
+            p = values.atPoint3(key)
             P = marginals.marginalCovariance(key);
             gtsam.plotPoint3(p, linespec, P);
-        else
-            gtsam.plotPoint3(p, linespec);
+        catch
+            % I guess it's not a Point3
         end
-    catch
-        % I guess it's not a Point3
+    end
+else
+    % Extract all in C++ and plot all at once (fast)
+    P = utilities.extractPoint3(values);
+    if size(linespec,2)==1
+        plot3(P(:,1),P(:,2),P(:,3),[linespec '*']);
+    else
+        plot3(P(:,1),P(:,2),P(:,3),linespec);
     end
 end
 

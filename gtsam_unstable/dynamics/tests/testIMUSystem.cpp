@@ -26,7 +26,7 @@ using namespace gtsam;
 const double tol=1e-5;
 
 static const Key x0 = 0, x1 = 1, x2 = 2, x3 = 3, x4 = 4;
-static const Vector g = delta(3, 2, -9.81);
+static const Vector g = Vector::Unit(3,2)*(-9.81);
 
 /* ************************************************************************* */
 TEST(testIMUSystem, instantiations) {
@@ -38,7 +38,7 @@ TEST(testIMUSystem, instantiations) {
   gtsam::SharedNoiseModel model6 = gtsam::noiseModel::Unit::Create(6);
   gtsam::SharedNoiseModel model9 = gtsam::noiseModel::Unit::Create(9);
 
-  Vector accel = ones(3), gyro = ones(3);
+  Vector accel = Vector::Ones(3), gyro = Vector::Ones(3);
 
   IMUFactor<PoseRTV> imu(accel, gyro, 0.01, x1, x2, model6);
   FullIMUFactor<PoseRTV> full_imu(accel, gyro, 0.01, x1, x2, model9);
@@ -48,7 +48,7 @@ TEST(testIMUSystem, instantiations) {
   VelocityConstraint constraint(x1, x2, 0.1, 10000);
   PriorFactor<gtsam::PoseRTV> posePrior(x1, x1_v, model9);
   DHeightPrior heightPrior(x1, 0.1, model1);
-  VelocityPrior velPrior(x1, ones(3), model3);
+  VelocityPrior velPrior(x1, Vector::Ones(3), model3);
 }
 
 /* ************************************************************************* */
@@ -149,8 +149,8 @@ TEST( testIMUSystem, linear_trajectory) {
   const double dt = 1.0;
 
   PoseRTV start;
-  Vector accel = delta(3, 0, 0.5); // forward force
-  Vector gyro = delta(3, 0, 0.1); // constant rotation
+  Vector accel = Vector::Unit(3,0)*0.5; // forward force
+  Vector gyro = Vector::Unit(3,0)*0.1; // constant rotation
   SharedDiagonal model = noiseModel::Unit::Create(9);
 
   Values true_traj, init_traj;

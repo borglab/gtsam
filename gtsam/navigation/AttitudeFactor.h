@@ -189,7 +189,7 @@ public:
     Vector e = attitudeError(nTb.rotation(), H);
     if (H) {
       Matrix H23 = *H;
-      *H = Matrix::Zero(2, 6);
+      *H = Matrix::Zero(2,6);
       H->block<2,3>(0,0) = H23;
     }
     return e;

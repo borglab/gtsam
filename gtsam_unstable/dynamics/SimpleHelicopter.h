@@ -140,7 +140,7 @@ public:
     }
 
     if (H3) {
-      *H3 = zeros(6,6);
+      *H3 = Z_6x6;
       insertSub(*H3, -h_*D_gravityBody_gk, 3, 0);
     }
 

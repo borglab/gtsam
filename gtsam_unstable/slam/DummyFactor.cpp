@@ -50,12 +50,12 @@ DummyFactor::linearize(const Values& c) const {
   std::vector<std::pair<Key, Matrix> > terms(this->size());
   for(size_t j=0; j<this->size(); ++j) {
     terms[j].first = keys()[j];
-    terms[j].second = zeros(rowDim_, dims_[j]);
+    terms[j].second = Matrix::Zero(rowDim_, dims_[j]);
   }
 
   noiseModel::Diagonal::shared_ptr model = noiseModel::Unit::Create(rowDim_);
   return GaussianFactor::shared_ptr(
-      new JacobianFactor(terms, zero(rowDim_), model));
+      new JacobianFactor(terms, Vector::Zero(rowDim_), model));
 }
 
 /* ************************************************************************* */

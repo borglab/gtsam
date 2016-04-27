@@ -58,7 +58,7 @@ TEST (RotateFactor, checkMath) {
 TEST (RotateFactor, test) {
   Model model = noiseModel::Isotropic::Sigma(3, 0.01);
   RotateFactor f(1, i1Ri2, c1Zc2, model);
-  EXPECT(assert_equal(zero(3), f.evaluateError(iRc), 1e-8));
+  EXPECT(assert_equal(Z_3x1, f.evaluateError(iRc), 1e-8));
 
   Rot3 R = iRc.retract(Vector3(0.1, 0.2, 0.1));
 #if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
@@ -127,7 +127,7 @@ TEST (RotateFactor, minimization) {
 TEST (RotateDirectionsFactor, test) {
   Model model = noiseModel::Isotropic::Sigma(2, 0.01);
   RotateDirectionsFactor f(1, p1, z1, model);
-  EXPECT(assert_equal(zero(2), f.evaluateError(iRc), 1e-8));
+  EXPECT(assert_equal(Z_2x1, f.evaluateError(iRc), 1e-8));
 
   Rot3 R = iRc.retract(Vector3(0.1, 0.2, 0.1));
 

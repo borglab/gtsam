@@ -47,7 +47,7 @@ Vector OrientedPlane3DirectionPrior::evaluateError(const OrientedPlane3& plane,
     Vector e = n_hat_p.error(n_hat_q, H_p);
     H->resize(2, 3);
     H->block<2, 2>(0, 0) << H_p;
-    H->block<2, 1>(0, 2) << Matrix::Zero(2, 1);
+    H->block<2, 1>(0, 2) << Z_2x1;
     return e;
   } else {
     Unit3 n_hat_p = measured_p_.normal();

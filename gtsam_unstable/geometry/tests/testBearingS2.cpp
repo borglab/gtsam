@@ -48,11 +48,11 @@ TEST( testBearingS2, manifold ) {
   BearingS2 origin, b1(0.2, 0.3);
   EXPECT_LONGS_EQUAL(2, origin.dim());
 
-  EXPECT(assert_equal(zero(2), origin.localCoordinates(origin), tol));
-  EXPECT(assert_equal(origin, origin.retract(zero(2)), tol));
+  EXPECT(assert_equal(Z_2x1, origin.localCoordinates(origin), tol));
+  EXPECT(assert_equal(origin, origin.retract(Z_2x1), tol));
 
-  EXPECT(assert_equal(zero(2), b1.localCoordinates(b1), tol));
-  EXPECT(assert_equal(b1, b1.retract(zero(2)), tol));
+  EXPECT(assert_equal(Z_2x1, b1.localCoordinates(b1), tol));
+  EXPECT(assert_equal(b1, b1.retract(Z_2x1), tol));
 }
 
 /* ************************************************************************* */

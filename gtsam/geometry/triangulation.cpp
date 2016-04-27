@@ -31,7 +31,7 @@ Vector4 triangulateHomogeneousDLT(
   size_t m = projection_matrices.size();
 
   // Allocate DLT matrix
-  Matrix A = zeros(m * 2, 4);
+  Matrix A = Matrix::Zero(m * 2, 4);
 
   for (size_t i = 0; i < m; i++) {
     size_t row = i * 2;

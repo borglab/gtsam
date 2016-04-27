@@ -41,9 +41,9 @@ public:
       boost::optional<Matrix&> H2 = boost::none,
       boost::optional<Matrix&> H3 = boost::none) const {
     const size_t p = 1;
-    if (H1) *H1 = eye(p);
-    if (H2) *H2 = -eye(p);
-    if (H3) *H3 = eye(p)*dt_;
+    if (H1) *H1 = Matrix::Identity(p,p);
+    if (H2) *H2 = -Matrix::Identity(p,p);
+    if (H3) *H3 = Matrix::Identity(p,p)*dt_;
     return (Vector(1) << x1+v*dt_-x2).finished();
   }
 

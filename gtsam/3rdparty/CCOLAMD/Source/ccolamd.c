@@ -5,8 +5,6 @@
 /* ----------------------------------------------------------------------------
  * CCOLAMD, Copyright (C) Univ. of Florida.  Authors: Timothy A. Davis,
  * Sivasankaran Rajamanickam, and Stefan Larimore
- * See License.txt for the Version 2.1 of the GNU Lesser General Public License
- * http://www.cise.ufl.edu/research/sparse
  * -------------------------------------------------------------------------- */
 
 /*
@@ -58,39 +56,13 @@
  *	COLAMD is also available under alternate licenses, contact T. Davis
  *	for details.
  *
- *	This library is free software; you can redistribute it and/or
- *	modify it under the terms of the GNU Lesser General Public
- *	License as published by the Free Software Foundation; either
- *	version 2.1 of the License, or (at your option) any later version.
- *
- *	This library is distributed in the hope that it will be useful,
- *	but WITHOUT ANY WARRANTY; without even the implied warranty of
- *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- *	Lesser General Public License for more details.
- *
- *	You should have received a copy of the GNU Lesser General Public
- *	License along with this library; if not, write to the Free Software
- *	Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301
- *	USA
- *
- *	Permission is hereby granted to use or copy this program under the
- *	terms of the GNU LGPL, provided that the Copyright, this License,
- *	and the Availability of the original version is retained on all copies.
- *	User documentation of any code that uses this code or any modified
- *	version of this code must cite the Copyright, this License, the
- *	Availability note, and "Used by permission." Permission to modify
- *	the code and to distribute modified code is granted, provided the
- *	Copyright, this License, and the Availability note are retained,
- *	and a notice that the code was modified is included.
+ *	See CCOLAMD/Doc/License.txt for the license.
  *
  *  Availability:
  *
  *	The CCOLAMD/CSYMAMD library is available at
  *
- *	    http://www.cise.ufl.edu/research/sparse/ccolamd/
- *
- *	This is the http://www.cise.ufl.edu/research/sparse/ccolamd/ccolamd.c
- *	file.
+ *	    http://www.suitesparse.com
  *
  *   See the ChangeLog file for changes since Version 1.0.
  */
@@ -99,10 +71,10 @@
 /* === Description of user-callable routines ================================ */
 /* ========================================================================== */
 
-/* CCOLAMD includes both int and UF_long versions of all its routines.  The
- * description below is for the int version.   For UF_long, all int arguments
- * become UF_long integers.  UF_long is normally defined as long, except for
- * WIN64 */
+/* CCOLAMD includes both int and SuiteSparse_long versions of all its routines.
+ * The description below is for the int version.   For SuiteSparse_long, all
+ * int arguments become SuiteSparse_long integers.  SuiteSparse_long is
+ * normally defined as long, except for WIN64 */
 
 /*  ----------------------------------------------------------------------------
  *  ccolamd_recommended:
@@ -112,8 +84,8 @@
  *
  *	    #include "ccolamd.h"
  *	    size_t ccolamd_recommended (int nnz, int n_row, int n_col) ;
- *	    size_t ccolamd_l_recommended (UF_long nnz, UF_long n_row,
- *		UF_long n_col) ;
+ *	    size_t ccolamd_l_recommended (SuiteSparse_long nnz,
+ *              SuiteSparse_long n_row, SuiteSparse_long n_col) ;
  *
  *	Purpose:
  *
@@ -209,9 +181,12 @@
  *	    	double knobs [CCOLAMD_KNOBS], int stats [CCOLAMD_STATS],
  *		int *cmember) ;
  *
- *	    UF_long ccolamd_l (UF_long n_row, UF_long n_col, UF_long Alen,
- *		UF_long *A, UF_long *p, double knobs [CCOLAMD_KNOBS],
- *		UF_long stats [CCOLAMD_STATS], UF_long *cmember) ;
+ *	    SuiteSparse_long ccolamd_l (SuiteSparse_long n_row,
+ *	        SuiteSparse_long n_col, SuiteSparse_long Alen,
+ *              SuiteSparse_long *A, SuiteSparse_long *p,
+ *              double knobs [CCOLAMD_KNOBS],
+ *              SuiteSparse_long stats [CCOLAMD_STATS],
+ *              SuiteSparse_long *cmember) ;
  *
  *	Purpose:
  *
@@ -385,9 +360,7 @@
  *
  *	Example:
  *
- *	    See
- *	    http://www.cise.ufl.edu/research/sparse/ccolamd/ccolamd_example.c
- *	    for a complete example.
+ *	    See ccolamd_example.c for a complete example.
  *
  *	    To order the columns of a 5-by-4 matrix with 11 nonzero entries in
  *	    the following nonzero pattern
@@ -423,10 +396,12 @@
  *		void (*allocate) (size_t, size_t), void (*release) (void *),
  *		int *cmember, int stype) ;
  *
- *	    UF_long csymamd_l (UF_long n, UF_long *A, UF_long *p, UF_long *perm,
- *	    	double knobs [CCOLAMD_KNOBS], UF_long stats [CCOLAMD_STATS],
- *		void (*allocate) (size_t, size_t), void (*release) (void *),
- *		UF_long *cmember, UF_long stype) ;
+ *	    SuiteSparse_long csymamd_l (SuiteSparse_long n,
+ *              SuiteSparse_long *A, SuiteSparse_long *p,
+ *              SuiteSparse_long *perm, double knobs [CCOLAMD_KNOBS],
+ *              SuiteSparse_long stats [CCOLAMD_STATS], void (*allocate)
+ *              (size_t, size_t), void (*release) (void *),
+ *              SuiteSparse_long *cmember, SuiteSparse_long stype) ;
  *
  *	Purpose:
  *
@@ -562,7 +537,7 @@
  *
  *	    #include "ccolamd.h"
  *	    ccolamd_report (int stats [CCOLAMD_STATS]) ;
- *	    ccolamd_l_report (UF_long stats [CCOLAMD_STATS]) ;
+ *	    ccolamd_l_report (SuiteSparse_long stats [CCOLAMD_STATS]) ;
  *
  *	Purpose:
  *
@@ -583,7 +558,7 @@
  *
  *	    #include "ccolamd.h"
  *	    csymamd_report (int stats [CCOLAMD_STATS]) ;
- *	    csymamd_l_report (UF_long stats [CCOLAMD_STATS]) ;
+ *	    csymamd_l_report (SuiteSparse_long stats [CCOLAMD_STATS]) ;
  *
  *	Purpose:
  *
@@ -617,12 +592,11 @@
 
 #include "ccolamd.h"
 
+#include <stdlib.h>
 #include <math.h>
 #include <limits.h>
 
 #ifdef MATLAB_MEX_FILE
-#include <stdint.h>
-typedef uint16_t char16_t;
 #include "mex.h"
 #include "matrix.h"
 #endif
@@ -636,17 +610,14 @@ typedef uint16_t char16_t;
 #endif
 
 /* ========================================================================== */
-/* === int or UF_long ======================================================= */
+/* === int or SuiteSparse_long ============================================== */
 /* ========================================================================== */
-
-/* define UF_long */
-#include "UFconfig.h"
 
 #ifdef DLONG
 
-#define Int UF_long
-#define ID  UF_long_id
-#define Int_MAX UF_long_max
+#define Int SuiteSparse_long
+#define ID  SuiteSparse_long_id
+#define Int_MAX SuiteSparse_long_max
 
 #define CCOLAMD_recommended ccolamd_l_recommended
 #define CCOLAMD_set_defaults ccolamd_l_set_defaults
@@ -811,9 +782,6 @@ typedef struct CColamd_Row_struct
 #define INDEX(i) (i)
 #endif
 
-/* All output goes through the PRINTF macro.  */
-#define PRINTF(params) { if (ccolamd_printf != NULL) (void) ccolamd_printf params ; }
-
 
 /* ========================================================================== */
 /* === Debugging prototypes and definitions ================================= */
@@ -827,11 +795,11 @@ typedef struct CColamd_Row_struct
 PRIVATE Int ccolamd_debug ;
 
 /* debug print statements */
-#define DEBUG0(params) { PRINTF (params) ; }
-#define DEBUG1(params) { if (ccolamd_debug >= 1) PRINTF (params) ; }
-#define DEBUG2(params) { if (ccolamd_debug >= 2) PRINTF (params) ; }
-#define DEBUG3(params) { if (ccolamd_debug >= 3) PRINTF (params) ; }
-#define DEBUG4(params) { if (ccolamd_debug >= 4) PRINTF (params) ; }
+#define DEBUG0(params) { SUITESPARSE_PRINTF (params) ; }
+#define DEBUG1(params) { if (ccolamd_debug >= 1) SUITESPARSE_PRINTF (params) ; }
+#define DEBUG2(params) { if (ccolamd_debug >= 2) SUITESPARSE_PRINTF (params) ; }
+#define DEBUG3(params) { if (ccolamd_debug >= 3) SUITESPARSE_PRINTF (params) ; }
+#define DEBUG4(params) { if (ccolamd_debug >= 4) SUITESPARSE_PRINTF (params) ; }
 
 #ifdef MATLAB_MEX_FILE
 #define ASSERT(expression) (mxAssert ((expression), ""))
@@ -3752,12 +3720,12 @@ PRIVATE void print_report
 
     Int i1, i2, i3 ;
 
-    PRINTF (("\n%s version %d.%d, %s: ", method,
+    SUITESPARSE_PRINTF (("\n%s version %d.%d, %s: ", method,
 	    CCOLAMD_MAIN_VERSION, CCOLAMD_SUB_VERSION, CCOLAMD_DATE)) ;
 
     if (!stats)
     {
-    	PRINTF (("No statistics available.\n")) ;
+    	SUITESPARSE_PRINTF (("No statistics available.\n")) ;
 	return ;
     }
 
@@ -3767,11 +3735,11 @@ PRIVATE void print_report
 
     if (stats [CCOLAMD_STATUS] >= 0)
     {
-    	PRINTF(("OK.  ")) ;
+    	SUITESPARSE_PRINTF(("OK.  ")) ;
     }
     else
     {
-    	PRINTF(("ERROR.  ")) ;
+    	SUITESPARSE_PRINTF(("ERROR.  ")) ;
     }
 
     switch (stats [CCOLAMD_STATUS])
@@ -3779,91 +3747,105 @@ PRIVATE void print_report
 
 	case CCOLAMD_OK_BUT_JUMBLED:
 
-	    PRINTF(("Matrix has unsorted or duplicate row indices.\n")) ;
+            SUITESPARSE_PRINTF((
+                    "Matrix has unsorted or duplicate row indices.\n")) ;
 
-	    PRINTF(("%s: duplicate or out-of-order row indices:    "ID"\n",
-		    method, i3)) ;
+            SUITESPARSE_PRINTF((
+                    "%s: duplicate or out-of-order row indices:    "ID"\n",
+                    method, i3)) ;
 
-	    PRINTF(("%s: last seen duplicate or out-of-order row:  "ID"\n",
-		    method, INDEX (i2))) ;
+            SUITESPARSE_PRINTF((
+                    "%s: last seen duplicate or out-of-order row:  "ID"\n",
+                    method, INDEX (i2))) ;
 
-	    PRINTF(("%s: last seen in column:                      "ID"",
-		    method, INDEX (i1))) ;
+            SUITESPARSE_PRINTF((
+                    "%s: last seen in column:                      "ID"",
+                    method, INDEX (i1))) ;
 
 	    /* no break - fall through to next case instead */
 
 	case CCOLAMD_OK:
 
-	    PRINTF(("\n")) ;
+            SUITESPARSE_PRINTF(("\n")) ;
 
- 	    PRINTF(("%s: number of dense or empty rows ignored:    "ID"\n",
-		    method, stats [CCOLAMD_DENSE_ROW])) ;
+            SUITESPARSE_PRINTF((
+                    "%s: number of dense or empty rows ignored:    "ID"\n",
+                    method, stats [CCOLAMD_DENSE_ROW])) ;
 
-	    PRINTF(("%s: number of dense or empty columns ignored: "ID"\n",
-		    method, stats [CCOLAMD_DENSE_COL])) ;
+            SUITESPARSE_PRINTF((
+                    "%s: number of dense or empty columns ignored: "ID"\n",
+                    method, stats [CCOLAMD_DENSE_COL])) ;
 
-	    PRINTF(("%s: number of garbage collections performed:  "ID"\n",
-		    method, stats [CCOLAMD_DEFRAG_COUNT])) ;
+            SUITESPARSE_PRINTF((
+                    "%s: number of garbage collections performed:  "ID"\n",
+                    method, stats [CCOLAMD_DEFRAG_COUNT])) ;
 	    break ;
 
 	case CCOLAMD_ERROR_A_not_present:
 
-	    PRINTF(("Array A (row indices of matrix) not present.\n")) ;
+            SUITESPARSE_PRINTF((
+                    "Array A (row indices of matrix) not present.\n")) ;
 	    break ;
 
 	case CCOLAMD_ERROR_p_not_present:
 
-	    PRINTF(("Array p (column pointers for matrix) not present.\n")) ;
+            SUITESPARSE_PRINTF((
+                    "Array p (column pointers for matrix) not present.\n")) ;
 	    break ;
 
 	case CCOLAMD_ERROR_nrow_negative:
 
-	    PRINTF(("Invalid number of rows ("ID").\n", i1)) ;
+            SUITESPARSE_PRINTF(("Invalid number of rows ("ID").\n", i1)) ;
 	    break ;
 
 	case CCOLAMD_ERROR_ncol_negative:
 
-	    PRINTF(("Invalid number of columns ("ID").\n", i1)) ;
+            SUITESPARSE_PRINTF(("Invalid number of columns ("ID").\n", i1)) ;
 	    break ;
 
 	case CCOLAMD_ERROR_nnz_negative:
 
-	    PRINTF(("Invalid number of nonzero entries ("ID").\n", i1)) ;
+            SUITESPARSE_PRINTF((
+                    "Invalid number of nonzero entries ("ID").\n", i1)) ;
 	    break ;
 
 	case CCOLAMD_ERROR_p0_nonzero:
 
-	    PRINTF(("Invalid column pointer, p [0] = "ID", must be 0.\n", i1)) ;
+            SUITESPARSE_PRINTF((
+                    "Invalid column pointer, p [0] = "ID", must be 0.\n", i1)) ;
 	    break ;
 
 	case CCOLAMD_ERROR_A_too_small:
 
-	    PRINTF(("Array A too small.\n")) ;
-	    PRINTF(("        Need Alen >= "ID", but given only Alen = "ID".\n",
-		    i1, i2)) ;
+            SUITESPARSE_PRINTF(("Array A too small.\n")) ;
+            SUITESPARSE_PRINTF((
+                    "        Need Alen >= "ID", but given only Alen = "ID".\n",
+                    i1, i2)) ;
 	    break ;
 
 	case CCOLAMD_ERROR_col_length_negative:
 
-	    PRINTF(("Column "ID" has a negative number of entries ("ID").\n",
-		    INDEX (i1), i2)) ;
+            SUITESPARSE_PRINTF((
+                    "Column "ID" has a negative number of entries ("ID").\n",
+                    INDEX (i1), i2)) ;
 	    break ;
 
 	case CCOLAMD_ERROR_row_index_out_of_bounds:
 
-	    PRINTF(("Row index (row "ID") out of bounds ("ID" to "ID") in"
-		    "column "ID".\n", INDEX (i2), INDEX (0), INDEX (i3-1),
-		    INDEX (i1))) ;
+            SUITESPARSE_PRINTF((
+                    "Row index (row "ID") out of bounds ("ID" to "ID") in"
+                    "column "ID".\n", INDEX (i2), INDEX (0), INDEX (i3-1),
+                    INDEX (i1))) ;
 	    break ;
 
 	case CCOLAMD_ERROR_out_of_memory:
 
-	    PRINTF(("Out of memory.\n")) ;
+            SUITESPARSE_PRINTF(("Out of memory.\n")) ;
 	    break ;
 
 	case CCOLAMD_ERROR_invalid_cmember:
 
-	    PRINTF(("cmember invalid\n")) ;
+            SUITESPARSE_PRINTF(("cmember invalid\n")) ;
 	    break ;
     }
 }

@@ -48,7 +48,7 @@ TEST( testPoseTranslationFactor, level3_zero_error ) {
   Pose3 pose1(rot3A, point3A);
   Pose3TranslationPrior factor(poseKey, point3A, model3);
   Matrix actH1;
-  EXPECT(assert_equal(zero(3), factor.evaluateError(pose1, actH1)));
+  EXPECT(assert_equal(Z_3x1, factor.evaluateError(pose1, actH1)));
   Matrix expH1 = numericalDerivative22<Vector3,Pose3TranslationPrior,Pose3>(evalFactorError3, factor, pose1, 1e-5);
   EXPECT(assert_equal(expH1, actH1, tol));
 }
@@ -68,7 +68,7 @@ TEST( testPoseTranslationFactor, pitched3_zero_error ) {
   Pose3 pose1(rot3B, point3A);
   Pose3TranslationPrior factor(poseKey, point3A, model3);
   Matrix actH1;
-  EXPECT(assert_equal(zero(3), factor.evaluateError(pose1, actH1)));
+  EXPECT(assert_equal(Z_3x1, factor.evaluateError(pose1, actH1)));
   Matrix expH1 = numericalDerivative22<Vector3,Pose3TranslationPrior,Pose3>(evalFactorError3, factor, pose1, 1e-5);
   EXPECT(assert_equal(expH1, actH1, tol));
 }
@@ -88,7 +88,7 @@ TEST( testPoseTranslationFactor, smallrot3_zero_error ) {
   Pose3 pose1(rot3C, point3A);
   Pose3TranslationPrior factor(poseKey, point3A, model3);
   Matrix actH1;
-  EXPECT(assert_equal(zero(3), factor.evaluateError(pose1, actH1)));
+  EXPECT(assert_equal(Z_3x1, factor.evaluateError(pose1, actH1)));
   Matrix expH1 = numericalDerivative22<Vector3,Pose3TranslationPrior,Pose3>(evalFactorError3, factor, pose1, 1e-5);
   EXPECT(assert_equal(expH1, actH1, tol));
 }
@@ -108,7 +108,7 @@ TEST( testPoseTranslationFactor, level2_zero_error ) {
   Pose2 pose1(rot2A, point2A);
   Pose2TranslationPrior factor(poseKey, point2A, model2);
   Matrix actH1;
-  EXPECT(assert_equal(zero(2), factor.evaluateError(pose1, actH1)));
+  EXPECT(assert_equal(Z_2x1, factor.evaluateError(pose1, actH1)));
   Matrix expH1 = numericalDerivative22<Vector2,Pose2TranslationPrior,Pose2>(evalFactorError2, factor, pose1, 1e-5);
   EXPECT(assert_equal(expH1, actH1, tol));
 }

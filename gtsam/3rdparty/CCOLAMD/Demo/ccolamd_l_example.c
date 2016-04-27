@@ -1,12 +1,10 @@
 /* ========================================================================== */
-/* === ccolamd and csymamd example (UF_long integer version) ================ */
+/* === ccolamd and csymamd example (long integer version) =================== */
 /* ========================================================================== */
 
 /* ----------------------------------------------------------------------------
  * CCOLAMD Copyright (C), Univ. of Florida.  Authors: Timothy A. Davis,
  * Sivasankaran Rajamanickam, and Stefan Larimore
- * See License.txt for the Version 2.1 of the GNU Lesser General Public License
- * http://www.cise.ufl.edu/research/sparse
  * -------------------------------------------------------------------------- */
 
 /*
@@ -46,9 +44,6 @@
 #define B_NNZ 4
 #define B_N 5
 
-/* define UF_long */
-#include "UFconfig.h"
-
 int main (void)
 {
 
@@ -56,14 +51,14 @@ int main (void)
     /* input matrix A definition */
     /* ====================================================================== */
 
-    UF_long A [ALEN] = {
+    SuiteSparse_long A [ALEN] = {
 
     	0, 1, 4,		/* row indices of nonzeros in column 0 */
 	2, 4,			/* row indices of nonzeros in column 1 */
 	0, 1, 2, 3,		/* row indices of nonzeros in column 2 */
 	1, 3} ;			/* row indices of nonzeros in column 3 */
 
-    UF_long p [ ] = {
+    SuiteSparse_long p [ ] = {
 
     	0,			/* column 0 is in A [0..2] */
 	3,			/* column 1 is in A [3..4] */ 
@@ -75,7 +70,7 @@ int main (void)
     /* input matrix B definition */
     /* ====================================================================== */
 
-    UF_long B [ ] = {		/* Note: only strictly lower triangular part */
+    SuiteSparse_long B [ ] = {  /* Note: only strictly lower triangular part */
     				/* is included, since symamd ignores the */
 				/* diagonal and upper triangular part of B. */
 
@@ -85,7 +80,7 @@ int main (void)
     	4			/* row indices of nonzeros in column 3 */
     	} ;			/* row indices of nonzeros in column 4 (none) */
 
-    UF_long q [ ] = {
+    SuiteSparse_long q [ ] = {
 
     	0,			/* column 0 is in B [0] */
 	1,			/* column 1 is in B [1..2] */ 
@@ -98,10 +93,9 @@ int main (void)
     /* other variable definitions */
     /* ====================================================================== */
 
-    UF_long perm [B_N+1] ;	    /* note the size is N+1 */
-    UF_long stats [CCOLAMD_STATS] ; /* for ccolamd and csymamd output stats */
-
-    UF_long row, col, pp, length, ok ;
+    SuiteSparse_long perm [B_N+1] ;	    /* note the size is N+1 */
+    SuiteSparse_long stats [CCOLAMD_STATS] ;  /* ccolamd/csymamd output stats */
+    SuiteSparse_long row, col, pp, length, ok ;
 
     /* ====================================================================== */
     /* dump the input matrix A */

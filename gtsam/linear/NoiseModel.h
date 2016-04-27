@@ -341,7 +341,7 @@ namespace gtsam {
        * Return R itself, but note that Whiten(H) is cheaper than R*H
        */
       virtual Matrix R() const {
-        return diag(invsigmas());
+        return invsigmas().asDiagonal();
       }
 
     private:
@@ -381,7 +381,7 @@ namespace gtsam {
        * from appearing in invsigmas or precisions.
        * mu set to large default value (1000.0)
        */
-      Constrained(const Vector& sigmas = zero(1));
+      Constrained(const Vector& sigmas = Z_1x1);
 
       /**
        * Constructor that prevents any inf values

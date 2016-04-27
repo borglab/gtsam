@@ -223,7 +223,7 @@ public:
       *H1 = -F(p1);
 
     if(H2)
-      *H2 = eye(dim());
+      *H2 = Matrix::Identity(dim(),dim());
 
     // Return the error between the prediction and the supplied value of p2
     return (p2 - prediction).vector();
