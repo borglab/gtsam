@@ -129,6 +129,8 @@ struct QPSParser::MPSGrammar: base_grammar {
 
 QP QPSParser::Parse() {
   RawQP rawData;
+  std::fstream stream(fileName_.c_str());
+  stream.unsetf(std::ios::skipws);
   boost::spirit::basic_istream_iterator<char> begin(stream);
   boost::spirit::basic_istream_iterator<char> last;
 

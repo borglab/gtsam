@@ -17,13 +17,12 @@ namespace gtsam {
 class QPSParser {
 
 private:
-  std::fstream stream;
+  std::string fileName_;
   struct MPSGrammar;
 public:
 
   QPSParser(const std::string& fileName) :
-      stream(findExampleDataFile(fileName).c_str()) {
-    stream.unsetf(std::ios::skipws);
+      fileName_(findExampleDataFile(fileName)) {
   }
 
   QP Parse();
