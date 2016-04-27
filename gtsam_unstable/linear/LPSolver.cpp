@@ -27,7 +27,7 @@ LPSolver::LPSolver(const LP &lp) :
 
   // Create and push zero priors of constrained variables that do not exist in
   // the cost function
-  baseGraph_.push_back(*createZeroPriors(lp_.cost.keys(), keysDim_));
+  // baseGraph_.push_back(*createZeroPriors(lp_.cost.keys(), keysDim_));
 
   // Variable index
   equalityVariableIndex_ = VariableIndex(lp_.equalities);
@@ -208,8 +208,8 @@ std::pair<VectorValues, VectorValues> LPSolver::optimize(
 
     /// main loop of the solver
     while (!state.converged) {
-      if(state.iterations > 10000) // Temporary break to avoid infine loops
-        break;
+      // if(state.iterations > 100) // Temporary break to avoid infine loops
+      //   break;
       state = iterate(state);
     }
     return make_pair(state.values, state.duals);
