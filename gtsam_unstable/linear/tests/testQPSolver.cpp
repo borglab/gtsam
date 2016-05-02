@@ -211,48 +211,42 @@ TEST(QPSolver, optimizeForst10book_pg171Ex5) {
   expectedSolution.insert(X(2), (Vector(1) << 0.5).finished());
   CHECK(assert_equal(expectedSolution, solution, 1e-100));
 }
-
 pair<QP, QP> testParser(QPSParser parser) {
   QP exampleqp = parser.Parse();
-//  QP expectedqp = createExampleQP();
   QP expectedqp;
+  Key X1(Symbol('X',1)), X2(Symbol('X',2));
   // min f(x,y) = 4 + 1.5x -y + 0.58x^2 + 2xy + 2yx + 10y^2
   expectedqp.cost.push_back(
-    HessianFactor(X(1), X(2), 8.0 * ones(1, 1), 2.0 * ones(1, 1),
+    HessianFactor(X1, X2, 8.0 * ones(1, 1), 2.0 * ones(1, 1),
                   1.5 * ones(1), 10.0 * ones(1, 1), -2.0 * ones(1), 4.0));
   // 2x + y >= 2
-  expectedqp.inequalities.push_back(
-    LinearInequality(X(1), -2.0 * ones(1, 1), X(2), -ones(1, 1), -2, 0));
   // -x + 2y <= 6
   expectedqp.inequalities.push_back(
-    LinearInequality(X(1), -ones(1, 1), X(2), 2.0 * ones(1, 1), 6, 1));
-  //x >= 0
-  expectedqp.inequalities.push_back(LinearInequality(X(1), -ones(1, 1), 0, 2));
-  // y > = 0
-  expectedqp.inequalities.push_back(LinearInequality(X(2), -ones(1, 1), 0, 3));
+    LinearInequality(X2, -ones(1, 1), X1, -2.0 * ones(1, 1), -2, 0));
+  expectedqp.inequalities.push_back(
+    LinearInequality(X2, 2.0 * ones(1, 1), X1, -ones(1, 1), 6, 1));
   // x<= 20
-  expectedqp.inequalities.push_back(LinearInequality(X(1), ones(1, 1), 20, 4));
+  expectedqp.inequalities.push_back(LinearInequality(X1, ones(1, 1), 20, 4));
+  //x >= 0
+  expectedqp.inequalities.push_back(LinearInequality(X1, -ones(1, 1), 0, 2));
+  // y > = 0
+  expectedqp.inequalities.push_back(LinearInequality(X2, -ones(1, 1), 0, 3));
   return std::make_pair(expectedqp, exampleqp);
-//  CHECK(assert_equal(expectedqp.cost, exampleqp.cost, 1e-7));
-//  CHECK(expectedqp.cost.equals(exampleqp.cost, 1e-7));
-//  CHECK(expectedqp.inequalities.equals(exampleqp.inequalities, 1e-7));
-//  CHECK(expectedqp.equalities.equals(exampleqp.equalities, 1e-7));
 };
 
-TEST(QPSolver, QPExampleData) {
+TEST(QPSolver, ParserSyntaticTest){
+  auto expectedActual = testParser(QPSParser("QPExample.QPS"));
+  CHECK(assert_equal(expectedActual.first.cost, expectedActual.second.cost, 1e-7));
+  CHECK(assert_equal(expectedActual.first.inequalities, expectedActual.second.inequalities, 1e-7));
+  CHECK(assert_equal(expectedActual.first.equalities, expectedActual.second.equalities, 1e-7));
+}
 
+TEST(QPSolver, ParserSemanticTest) {
   auto expected_actual = testParser(QPSParser("QPExample.QPS"));
   VectorValues actualSolution, expectedSolution;
-  expected_actual.first.print("EXPECTED GRAPH:");
-  expected_actual.second.print("ACTUAL GRAPH");
   boost::tie(expectedSolution, boost::tuples::ignore) = QPSolver(expected_actual.first).optimize();
-  std::cout << "Expected Execution Works" << std::endl;
   boost::tie(actualSolution, boost::tuples::ignore) = QPSolver(expected_actual.second).optimize();
-  std::cout << "Actual Execution Works" << std::endl;
-
-    CHECK(assert_equal(actualSolution, expectedSolution, 1e-7));
-//  testParser(QPSParser("AUG2D.QPS"));
-//  testParser(QPSParser("CONT-050.QPS"));
+  CHECK(assert_equal(actualSolution, expectedSolution, 1e-7));
 }
 
 /* ************************************************************************* */

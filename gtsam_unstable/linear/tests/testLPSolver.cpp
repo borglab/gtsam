@@ -56,36 +56,11 @@ LP simpleLP1() {
 
 /* ************************************************************************* */
 namespace gtsam {
-TEST(LPInitSolverMatlab, infinite_loop_multi_var) {
-  LP initchecker;
-  Key X = symbol('X',1);
-  Key Y = symbol('Y',1);
-  Key Z = symbol('Z',1);
-  initchecker.cost = LinearCost(Z, ones(1)); //min alpha
-//  initchecker.cost = LinearCost(Z, ones(1), X, zero(1), Y, zero(1)); //min alpha
-  initchecker.inequalities.push_back(LinearInequality(X,-2.0*ones(1), Y, -1.0*ones(1), Z, -1.0*ones(1),-2,1));//-2x-y-alpha <= -2
-  initchecker.inequalities.push_back(LinearInequality(X, -1.0*ones(1), Y, 2.0*ones(1), Z, -1.0*ones(1), 6, 2));// -x+2y-alpha <= 6
-  initchecker.inequalities.push_back(LinearInequality(X, -1.0*ones(1), Z, -1.0*ones(1), 0,3));// -x - alpha <= 0
-  initchecker.inequalities.push_back(LinearInequality(X, 1.0*ones(1), Z, -1.0*ones(1), 20, 4));//x - alpha <= 20
-  initchecker.inequalities.push_back(LinearInequality(Y, -1.0*ones(1), Z, -1.0*ones(1), 0, 5));// -y - alpha <= 0
-  LPSolver solver(initchecker);
-  VectorValues starter;
-  starter.insert(X, zero(1));
-  starter.insert(Y, zero(1));
-  starter.insert(Z, 2*ones(1));
-  VectorValues results, duals;
-  boost::tie(results, duals) = solver.optimize(starter);
-  VectorValues expected;
-  expected.insert(X, Vector::Constant(1, 13.5));
-  expected.insert(Y, Vector::Constant(1,6.5));
-  expected.insert(Z, Vector::Constant(1,-6.5));
-  CHECK(assert_equal(results, expected, 1e-7));
-}
 
 TEST(LPInitSolverMatlab, infinite_loop_single_var) {
   LP initchecker;
   initchecker.cost = LinearCost(1,Vector3(0,0,1)); //min alpha
-  initchecker.inequalities.push_back(LinearInequality(1, Vector3(-2,-1,-1),-2,1));//-2x-y-alpha <= -2 
+  initchecker.inequalities.push_back(LinearInequality(1, Vector3(-2,-1,-1),-2,1));//-2x-y-alpha <= -2
   initchecker.inequalities.push_back(LinearInequality(1, Vector3(-1,2,-1), 6, 2));// -x+2y-alpha <= 6
   initchecker.inequalities.push_back(LinearInequality(1, Vector3(-1,0,-1), 0,3));// -x - alpha <= 0
   initchecker.inequalities.push_back(LinearInequality(1, Vector3(1,0,-1), 20, 4));//x - alpha <= 20
@@ -99,6 +74,34 @@ TEST(LPInitSolverMatlab, infinite_loop_single_var) {
   expected.insert(1, Vector3(13.5, 6.5, -6.5));
   CHECK(assert_equal(results, expected, 1e-7));
 }
+
+TEST(LPInitSolverMatlab, infinite_loop_multi_var) {
+  LP initchecker;
+  Key X = symbol('X', 1);
+  Key Y = symbol('Y', 1);
+  Key Z = symbol('Z', 1);
+  initchecker.cost = LinearCost(Z, ones(1)); //min alpha
+  initchecker.inequalities.push_back(
+      LinearInequality(X, -2.0 * ones(1), Y, -1.0 * ones(1), Z, -1.0 * ones(1), -2, 1));//-2x-y-alpha <= -2
+  initchecker.inequalities.push_back(
+      LinearInequality(X, -1.0 * ones(1), Y, 2.0 * ones(1), Z, -1.0 * ones(1), 6, 2));// -x+2y-alpha <= 6
+  initchecker.inequalities.push_back(LinearInequality(X, -1.0 * ones(1), Z, -1.0 * ones(1), 0, 3));// -x - alpha <= 0
+  initchecker.inequalities.push_back(LinearInequality(X, 1.0 * ones(1), Z, -1.0 * ones(1), 20, 4));//x - alpha <= 20
+  initchecker.inequalities.push_back(LinearInequality(Y, -1.0 * ones(1), Z, -1.0 * ones(1), 0, 5));// -y - alpha <= 0
+  LPSolver solver(initchecker);
+  VectorValues starter;
+  starter.insert(X, zero(1));
+  starter.insert(Y, zero(1));
+  starter.insert(Z, 2 * ones(1));
+  VectorValues results, duals;
+  boost::tie(results, duals) = solver.optimize(starter);
+  VectorValues expected;
+  expected.insert(X, Vector::Constant(1, 13.5));
+  expected.insert(Y, Vector::Constant(1, 6.5));
+  expected.insert(Z, Vector::Constant(1, -6.5));
+  CHECK(assert_equal(results, expected, 1e-7));
+}
+
 TEST(LPInitSolverMatlab, initialization) {
   LP lp = simpleLP1();
   LPSolver lpSolver(lp);

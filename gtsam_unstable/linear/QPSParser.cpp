@@ -137,7 +137,7 @@ QP QPSParser::Parse() {
   if (!parse(begin, last, MPSGrammar(&rawData)) || begin != last) {
     throw QPSParserException();
   } else {
-    std::cout << "Parse Successful." << std::endl;
+//    std::cout << "Parse Successful." << std::endl;
   }
 
   return rawData.makeQP();

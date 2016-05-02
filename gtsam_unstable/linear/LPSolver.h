@@ -23,7 +23,7 @@ typedef std::map<Key, size_t> KeyDimMap;
 class LPSolver: public ActiveSetSolver {
   const LP &lp_; //!< the linear programming problem
   KeyDimMap keysDim_; //!< key-dim map of all variables in the constraints, used to create zero priors
-
+  std::vector<size_t> addedZeroPriorsIndex_;
 public:
   /// Constructor
   LPSolver(const LP &lp);
