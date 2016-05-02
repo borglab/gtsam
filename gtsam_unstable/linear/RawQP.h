@@ -32,7 +32,7 @@ private:
   std::unordered_map<Key, double> up;
   std::unordered_map<Key, double> lo;
   std::vector<Key> Free;
-  const bool debug = true;
+  const bool debug = false;
 
 public:
   RawQP() :
