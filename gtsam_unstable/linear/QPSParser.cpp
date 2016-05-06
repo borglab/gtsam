@@ -4,59 +4,44 @@
 #define BOOST_SPIRIT_USE_PHOENIX_V3 1
 
 #include <gtsam_unstable/linear/QPSParser.h>
+#include <gtsam_unstable/linear/QPSParserException.h>
+#include <gtsam_unstable/linear/RawQP.h>
+
 #include <boost/spirit/include/qi.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <boost/phoenix/bind.hpp>
 #include <boost/spirit/include/classic.hpp>
 
+namespace bf = boost::fusion;
+namespace qi = boost::spirit::qi;
+
 namespace gtsam {
-typedef boost::spirit::qi::grammar<boost::spirit::basic_istream_iterator<char>> base_grammar;
+typedef qi::grammar<boost::spirit::basic_istream_iterator<char>> base_grammar;
 
 struct QPSParser::MPSGrammar: base_grammar {
+  typedef std::vector<char> Chars;
   RawQP * rqp_;
+  boost::function<void(bf::vector<Chars, Chars, Chars> const&)> setName;
+  boost::function<void(bf::vector<Chars, char, Chars, Chars, Chars> const &)> addRow;
+  boost::function<
+      void(bf::vector<Chars, Chars, Chars, Chars, Chars, double, Chars> const &)> rhsSingle;
   boost::function<
       void(
-          boost::fusion::vector<std::vector<char>, std::vector<char>,
-              std::vector<char>> const&)> setName;
+          bf::vector<Chars, Chars, Chars, Chars, Chars, double, Chars, Chars,
+              Chars, double>)> rhsDouble;
+  boost::function<
+      void(bf::vector<Chars, Chars, Chars, Chars, Chars, double, Chars>)> colSingle;
   boost::function<
       void(
-          boost::fusion::vector<std::vector<char>, char, std::vector<char>,
-              std::vector<char>, std::vector<char>> const &)> addRow;
+          bf::vector<Chars, Chars, Chars, Chars, double, Chars, Chars, Chars,
+              double> const &)> colDouble;
+  boost::function<
+      void(bf::vector<Chars, Chars, Chars, Chars, Chars, double, Chars> const &)> addQuadTerm;
   boost::function<
       void(
-          boost::fusion::vector<std::vector<char>, std::vector<char>,
-              std::vector<char>, std::vector<char>, std::vector<char>, double,
-              std::vector<char> > const &)> rhsSingle;
+          bf::vector<Chars, Chars, Chars, Chars, Chars, Chars, Chars, double> const &)> addBound;
   boost::function<
-      void(
-          boost::fusion::vector<std::vector<char>, std::vector<char>,
-              std::vector<char>, std::vector<char>, std::vector<char>, double,
-              std::vector<char>, std::vector<char>, std::vector<char>, double>)> rhsDouble;
-  boost::function<
-      void(
-          boost::fusion::vector<std::vector<char>, std::vector<char>,
-              std::vector<char>, std::vector<char>, std::vector<char>, double,
-              std::vector<char>>)> colSingle;
-  boost::function<
-      void(
-          boost::fusion::vector<std::vector<char>, std::vector<char>,
-              std::vector<char>, std::vector<char>, double, std::vector<char>,
-              std::vector<char>, std::vector<char>, double> const &)> colDouble;
-  boost::function<
-      void(
-          boost::fusion::vector<std::vector<char>, std::vector<char>,
-              std::vector<char>, std::vector<char>, std::vector<char>, double,
-              std::vector<char>> const &)> addQuadTerm;
-  boost::function<
-      void(
-          boost::fusion::vector<std::vector<char>, std::vector<char>,
-              std::vector<char>, std::vector<char>, std::vector<char>,
-              std::vector<char>, std::vector<char>, double> const &)> addBound;
-  boost::function<
-      void(
-          boost::fusion::vector<std::vector<char>, std::vector<char>,
-              std::vector<char>, std::vector<char>, std::vector<char>,
-              std::vector<char>, std::vector<char>> const &)> addBoundFr;
+      void(bf::vector<Chars, Chars, Chars, Chars, Chars, Chars, Chars> const &)> addBoundFr;
   MPSGrammar(RawQP * rqp) :
       base_grammar(start), rqp_(rqp), setName(
           boost::bind(&RawQP::setName, rqp, ::_1)), addRow(
@@ -75,7 +60,7 @@ struct QPSParser::MPSGrammar: base_grammar {
     word = lexeme[+character];
     name = lexeme[lit("NAME") >> *blank >> title >> +space][setName];
     row = lexeme[*blank >> character >> +blank >> word >> *blank][addRow];
-    rhs_single = lexeme[*blank >>  word >> +blank >> word >> +blank>> double_
+    rhs_single = lexeme[*blank >> word >> +blank >> word >> +blank >> double_
         >> *blank][rhsSingle];
     rhs_double = lexeme[(*blank >> word >> +blank >> word >> +blank >> double_
         >> +blank >> word >> +blank >> double_)[rhsDouble] >> *blank];
@@ -103,28 +88,11 @@ struct QPSParser::MPSGrammar: base_grammar {
         >> end];
   }
 
-  boost::spirit::qi::rule<boost::spirit::basic_istream_iterator<char>, char()> character;
-  boost::spirit::qi::rule<boost::spirit::basic_istream_iterator<char>,
-      std::vector<char>()> word;
-  boost::spirit::qi::rule<boost::spirit::basic_istream_iterator<char>,
-      std::vector<char>()> title;
-  boost::spirit::qi::rule<boost::spirit::basic_istream_iterator<char> > row;
-  boost::spirit::qi::rule<boost::spirit::basic_istream_iterator<char> > end;
-  boost::spirit::qi::rule<boost::spirit::basic_istream_iterator<char> > col_single;
-  boost::spirit::qi::rule<boost::spirit::basic_istream_iterator<char> > col_double;
-  boost::spirit::qi::rule<boost::spirit::basic_istream_iterator<char> > rhs_single;
-  boost::spirit::qi::rule<boost::spirit::basic_istream_iterator<char> > rhs_double;
-  boost::spirit::qi::rule<boost::spirit::basic_istream_iterator<char> > ranges;
-  boost::spirit::qi::rule<boost::spirit::basic_istream_iterator<char> > bound;
-  boost::spirit::qi::rule<boost::spirit::basic_istream_iterator<char> > bound_fr;
-  boost::spirit::qi::rule<boost::spirit::basic_istream_iterator<char> > bounds;
-  boost::spirit::qi::rule<boost::spirit::basic_istream_iterator<char> > quad;
-  boost::spirit::qi::rule<boost::spirit::basic_istream_iterator<char> > quad_l;
-  boost::spirit::qi::rule<boost::spirit::basic_istream_iterator<char> > rows;
-  boost::spirit::qi::rule<boost::spirit::basic_istream_iterator<char> > cols;
-  boost::spirit::qi::rule<boost::spirit::basic_istream_iterator<char> > rhs;
-  boost::spirit::qi::rule<boost::spirit::basic_istream_iterator<char> > name;
-  boost::spirit::qi::rule<boost::spirit::basic_istream_iterator<char> > start;
+  qi::rule<boost::spirit::basic_istream_iterator<char>, char()> character;
+  qi::rule<boost::spirit::basic_istream_iterator<char>, Chars()> word, title;
+  qi::rule<boost::spirit::basic_istream_iterator<char> > row, end, col_single,
+      col_double, rhs_single, rhs_double, ranges, bound, bound_fr, bounds, quad,
+      quad_l, rows, cols, rhs, name, start;
 };
 
 QP QPSParser::Parse() {
@@ -136,8 +104,6 @@ QP QPSParser::Parse() {
 
   if (!parse(begin, last, MPSGrammar(&rawData)) || begin != last) {
     throw QPSParserException();
-  } else {
-//    std::cout << "Parse Successful." << std::endl;
   }
 
   return rawData.makeQP();

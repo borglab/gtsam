@@ -8,8 +8,6 @@
 #pragma once
 
 #include <gtsam_unstable/linear/QP.h>
-#include <gtsam_unstable/linear/QPSParserException.h>
-#include <gtsam_unstable/linear/RawQP.h>
 #include <fstream>
 
 namespace gtsam {
