@@ -25,14 +25,6 @@ LPSolver::LPSolver(const LP &lp) :
   KeyDimMap keysDim2 = collectKeysDim(lp_.inequalities);
   keysDim_.insert(keysDim2.begin(), keysDim2.end());
 
-  // Create and push zero priors of constrained variables that do not exist in
-  // the cost function
-  auto addedZeroPriorsGraph = *createZeroPriors(lp_.cost.keys(), keysDim_);
-  //before we add them we fill an array with the indeces of the added zero priors
-  addedZeroPriorsIndex_.resize(addedZeroPriorsGraph.size());
-  std::iota(addedZeroPriorsIndex_.begin(), addedZeroPriorsIndex_.end(), baseGraph_.size());
-  baseGraph_.push_back(addedZeroPriorsGraph);
-
   // Variable index
   equalityVariableIndex_ = VariableIndex(lp_.equalities);
   inequalityVariableIndex_ = VariableIndex(lp_.inequalities);
@@ -40,17 +32,6 @@ LPSolver::LPSolver(const LP &lp) :
   constrainedKeys_.merge(lp_.inequalities.keys());
 }
 
-GaussianFactorGraph::shared_ptr LPSolver::createZeroPriors(
-    const KeyVector &costKeys, const KeyDimMap &keysDim) const {
-  GaussianFactorGraph::shared_ptr graph(new GaussianFactorGraph());
-  for (Key key : keysDim | boost::adaptors::map_keys) {
-    if (find(costKeys.begin(), costKeys.end(), key) == costKeys.end()) {
-      size_t dim = keysDim.at(key);
-      graph->push_back(JacobianFactor(key, eye(dim), zero(dim)));
-    }
-  }
-  return graph;
-}
 
 LPState LPSolver::iterate(const LPState &state) const {
   // Solve with the current working set
@@ -140,9 +121,9 @@ VectorValues LPSolver::solveWithCurrentWorkingSet(const VectorValues &xk,
   GaussianFactorGraph workingGraph = baseGraph_; // || X - Xk + g ||^2
 //  We remove the old zero priors from the base graph we are going to use to solve
   //This iteration's problem
-  for (size_t index : addedZeroPriorsIndex_) {
-    workingGraph.remove(index);
-  }
+//  for (size_t index : addedZeroPriorsIndex_) {
+//    workingGraph.remove(index);
+//  }
 
   workingGraph.push_back(*createLeastSquareFactors(lp_.cost, xk));
   for (const LinearInequality::shared_ptr &factor : workingSet) {
