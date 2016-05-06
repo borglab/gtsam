@@ -139,7 +139,7 @@ TEST(LPInitSolver, initialization) {
   xy0.insert(yKey, Vector::Constant(1, y0));
   VectorValues xyInit = lpSolveInit.optimize(xy0).first;
   VectorValues expected_init;
-  expected_init.insert(1, Vector2( 1, 1));
+  expected_init.insert(1, Vector::Ones(2));
   expected_init.insert(2, Vector::Constant(1, -1));
   CHECK(assert_equal(expected_init, xyInit, 1e-10));
 
@@ -188,7 +188,7 @@ init.insert(1, Vector::Zero(2));
 VectorValues x1 = lpSolver.solveWithCurrentWorkingSet(init,
     InequalityFactorGraph());
 VectorValues expected_x1;
-expected_x1.insert(1, Vector2( 1, 1));
+expected_x1.insert(1, Vector::Ones(2));
 CHECK(assert_equal(expected_x1, x1, 1e-10));
 
 VectorValues result, duals;
