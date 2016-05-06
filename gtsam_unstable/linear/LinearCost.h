@@ -61,19 +61,19 @@ public:
 
 	/** Construct unary factor */
 	LinearCost(Key i1, const RowVector& A1) :
-			Base(i1, A1, zero(1)) {
+			Base(i1, A1, Vector1::Zero()) {
 	}
 
 	/** Construct binary factor */
 	LinearCost(Key i1, const RowVector& A1, Key i2, const RowVector& A2,
 			double b) :
-			Base(i1, A1, i2, A2, zero(1)) {
+			Base(i1, A1, i2, A2, Vector1::Zero()) {
 	}
 
 	/** Construct ternary factor */
 	LinearCost(Key i1, const RowVector& A1, Key i2, const RowVector& A2, Key i3,
 			const RowVector& A3) :
-			Base(i1, A1, i2, A2, i3, A3, zero(1)) {
+			Base(i1, A1, i2, A2, i3, A3, Vector1::Zero()) {
 	}
 
 	/** Construct an n-ary factor
@@ -81,7 +81,7 @@ public:
 	 *         collection of keys and matrices making up the factor. */
 	template<typename TERMS>
 	LinearCost(const TERMS& terms) :
-			Base(terms, zero(1)) {
+			Base(terms, Vector1::Zero()) {
 	}
 
 	/** Virtual destructor */
