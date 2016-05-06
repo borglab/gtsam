@@ -29,11 +29,13 @@
 #include <boost/range/adaptor/map.hpp>
 
 #include <gtsam_unstable/linear/LPSolver.h>
-#include <gtsam_unstable/linear/LPInitSolverMatlab.h>
+#include <gtsam_unstable/linear/LPInitSolver.h>
 
 using namespace std;
 using namespace gtsam;
 using namespace gtsam::symbol_shorthand;
+
+static const Vector kOne = Vector::Ones(1), kZero = Vector::Zero(1);
 
 /* ************************************************************************* */
 /**
@@ -57,7 +59,7 @@ LP simpleLP1() {
 /* ************************************************************************* */
 namespace gtsam {
 
-TEST(LPInitSolverMatlab, infinite_loop_single_var) {
+TEST(LPInitSolver, infinite_loop_single_var) {
   LP initchecker;
   initchecker.cost = LinearCost(1,Vector3(0,0,1)); //min alpha
   initchecker.inequalities.push_back(LinearInequality(1, Vector3(-2,-1,-1),-2,1));//-2x-y-alpha <= -2
@@ -75,24 +77,24 @@ TEST(LPInitSolverMatlab, infinite_loop_single_var) {
   CHECK(assert_equal(results, expected, 1e-7));
 }
 
-TEST(LPInitSolverMatlab, infinite_loop_multi_var) {
+TEST(LPInitSolver, infinite_loop_multi_var) {
   LP initchecker;
   Key X = symbol('X', 1);
   Key Y = symbol('Y', 1);
   Key Z = symbol('Z', 1);
-  initchecker.cost = LinearCost(Z, ones(1)); //min alpha
+  initchecker.cost = LinearCost(Z, kOne); //min alpha
   initchecker.inequalities.push_back(
-      LinearInequality(X, -2.0 * ones(1), Y, -1.0 * ones(1), Z, -1.0 * ones(1), -2, 1));//-2x-y-alpha <= -2
+      LinearInequality(X, -2.0 * kOne, Y, -1.0 * kOne, Z, -1.0 * kOne, -2, 1));//-2x-y-alpha <= -2
   initchecker.inequalities.push_back(
-      LinearInequality(X, -1.0 * ones(1), Y, 2.0 * ones(1), Z, -1.0 * ones(1), 6, 2));// -x+2y-alpha <= 6
-  initchecker.inequalities.push_back(LinearInequality(X, -1.0 * ones(1), Z, -1.0 * ones(1), 0, 3));// -x - alpha <= 0
-  initchecker.inequalities.push_back(LinearInequality(X, 1.0 * ones(1), Z, -1.0 * ones(1), 20, 4));//x - alpha <= 20
-  initchecker.inequalities.push_back(LinearInequality(Y, -1.0 * ones(1), Z, -1.0 * ones(1), 0, 5));// -y - alpha <= 0
+      LinearInequality(X, -1.0 * kOne, Y, 2.0 * kOne, Z, -1.0 * kOne, 6, 2));// -x+2y-alpha <= 6
+  initchecker.inequalities.push_back(LinearInequality(X, -1.0 * kOne, Z, -1.0 * kOne, 0, 3));// -x - alpha <= 0
+  initchecker.inequalities.push_back(LinearInequality(X, 1.0 * kOne, Z, -1.0 * kOne, 20, 4));//x - alpha <= 20
+  initchecker.inequalities.push_back(LinearInequality(Y, -1.0 * kOne, Z, -1.0 * kOne, 0, 5));// -y - alpha <= 0
   LPSolver solver(initchecker);
   VectorValues starter;
-  starter.insert(X, zero(1));
-  starter.insert(Y, zero(1));
-  starter.insert(Z, 2 * ones(1));
+  starter.insert(X, kZero);
+  starter.insert(Y, kZero);
+  starter.insert(Z, Vector::Constant(2, 2.0));
   VectorValues results, duals;
   boost::tie(results, duals) = solver.optimize(starter);
   VectorValues expected;
@@ -102,15 +104,15 @@ TEST(LPInitSolverMatlab, infinite_loop_multi_var) {
   CHECK(assert_equal(results, expected, 1e-7));
 }
 
-TEST(LPInitSolverMatlab, initialization) {
+TEST(LPInitSolver, initialization) {
   LP lp = simpleLP1();
   LPSolver lpSolver(lp);
-  LPInitSolverMatlab initSolver(lpSolver);
+  LPInitSolver initSolver(lpSolver);
 
   GaussianFactorGraph::shared_ptr initOfInitGraph = initSolver.buildInitOfInitGraph();
   VectorValues x0 = initOfInitGraph->optimize();
   VectorValues expected_x0;
-  expected_x0.insert(1, zero(2));
+  expected_x0.insert(1, Vector::Zero(2));
   CHECK(assert_equal(expected_x0, x0, 1e-10));
 
   double y0 = initSolver.compute_y0(x0);
@@ -120,7 +122,7 @@ TEST(LPInitSolverMatlab, initialization) {
   Key yKey = 2;
   LP::shared_ptr initLP = initSolver.buildInitialLP(yKey);
   LP expectedInitLP;
-  expectedInitLP.cost = LinearCost(yKey, ones(1));
+  expectedInitLP.cost = LinearCost(yKey, kOne);
   expectedInitLP.inequalities.push_back(
       LinearInequality(1, Vector2( -1, 0), 2, Vector::Constant(1, -1), 0, 1)); // -x1 - y <= 0
   expectedInitLP.inequalities.push_back(
@@ -168,9 +170,9 @@ CHECK(factor.error(x) != 0.0);
 
 TEST(LPSolver, overConstrainedLinearSystem2) {
 GaussianFactorGraph graph;
-graph.push_back(JacobianFactor(1, ones(1, 1), 2, ones(1, 1), ones(1), noiseModel::Constrained::All(1)));
-graph.push_back(JacobianFactor(1, ones(1, 1), 2, -ones(1, 1), 5*ones(1), noiseModel::Constrained::All(1)));
-graph.push_back(JacobianFactor(1, ones(1, 1), 2, 2*ones(1, 1), 6*ones(1), noiseModel::Constrained::All(1)));
+graph.push_back(JacobianFactor(1, I_1x1, 2, I_1x1, kOne, noiseModel::Constrained::All(1)));
+graph.push_back(JacobianFactor(1, I_1x1, 2, -I_1x1, 5*kOne, noiseModel::Constrained::All(1)));
+graph.push_back(JacobianFactor(1, I_1x1, 2, 2*I_1x1, 6*kOne, noiseModel::Constrained::All(1)));
 VectorValues x = graph.optimize();
 // This check confirms that gtsam linear constraint solver can't handle over-constrained system
 CHECK(graph.error(x) != 0.0);
@@ -181,7 +183,7 @@ TEST(LPSolver, simpleTest1) {
 LP lp = simpleLP1();
 LPSolver lpSolver(lp);
 VectorValues init;
-init.insert(1, zero(2));
+init.insert(1, Vector::Zero(2));
 
 VectorValues x1 = lpSolver.solveWithCurrentWorkingSet(init,
     InequalityFactorGraph());

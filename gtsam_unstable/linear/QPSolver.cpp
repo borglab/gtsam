@@ -22,7 +22,7 @@
 #include <gtsam_unstable/linear/LPSolver.h>
 #include <gtsam_unstable/linear/InfeasibleInitialValues.h>
 #include <boost/range/adaptor/map.hpp>
-#include <gtsam_unstable/linear/LPInitSolverMatlab.h>
+#include <gtsam_unstable/linear/LPInitSolver.h>
 
 using namespace std;
 
@@ -188,11 +188,11 @@ pair<VectorValues, VectorValues> QPSolver::optimize() const {
   if(newKey < key)
   newKey = key;
   newKey++;
-  initProblem.cost = LinearCost(newKey, ones(1));
+  initProblem.cost = LinearCost(newKey, Vector::Ones(1));
   initProblem.equalities = qp_.equalities;
   initProblem.inequalities = qp_.inequalities;
   LPSolver solver(initProblem);
-  LPInitSolverMatlab initSolver(solver);
+  LPInitSolver initSolver(solver);
   VectorValues initValues = initSolver.solve();
 
   return optimize(initValues);

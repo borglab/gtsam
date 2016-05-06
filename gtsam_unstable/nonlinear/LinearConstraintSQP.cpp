@@ -69,7 +69,7 @@ VectorValues LinearConstraintSQP::initializeDuals() const {
   BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, lcnlp_.linearEqualities){
     ConstrainedFactor::shared_ptr constraint
         = boost::dynamic_pointer_cast<ConstrainedFactor>(factor);
-    duals.insert(constraint->dualKey(), zero(factor->dim()));
+    duals.insert(constraint->dualKey(), Vector::Zero(factor->dim()));
   }
 
   return duals;
@@ -93,7 +93,7 @@ LinearConstraintNLPState LinearConstraintSQP::iterate(
   QPSolver qpSolver(qp);
   VectorValues zeroInitialValues;
   BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, state.values)
-    zeroInitialValues.insert(key_value.key, zero(key_value.value.dim()));
+    zeroInitialValues.insert(key_value.key, Vector::Zero(key_value.value.dim()));
 
   boost::tie(delta, duals) = qpSolver.optimize(zeroInitialValues, state.duals,
       params_.warmStart);

@@ -21,7 +21,7 @@ void RawQP::addColumn(
 
   std::string var_(at_c < 1 > (vars).begin(), at_c < 1 > (vars).end());
   std::string row_(at_c < 3 > (vars).begin(), at_c < 3 > (vars).end());
-  Matrix11 coefficient = at_c < 5 > (vars) * ones(1, 1);
+  Matrix11 coefficient = at_c < 5 > (vars) * I_1x1;
 
   if (!varname_to_key.count(var_))
     varname_to_key[var_] = Symbol('X', varNumber++);
@@ -45,8 +45,8 @@ void RawQP::addColumnDouble(
   std::string var_(at_c < 0 > (vars).begin(), at_c < 0 > (vars).end());
   std::string row1_(at_c < 2 > (vars).begin(), at_c < 2 > (vars).end());
   std::string row2_(at_c < 6 > (vars).begin(), at_c < 6 > (vars).end());
-  Matrix11 coefficient1 = at_c < 4 > (vars) * ones(1, 1);
-  Matrix11 coefficient2 = at_c < 8 > (vars) * ones(1, 1);
+  Matrix11 coefficient1 = at_c < 4 > (vars) * I_1x1;
+  Matrix11 coefficient2 = at_c < 8 > (vars) * I_1x1;
   if (!varname_to_key.count(var_))
     varname_to_key.insert( { var_, Symbol('X', varNumber++) });
   if (row1_ == obj_name)
@@ -174,7 +174,7 @@ void RawQP::addQuadTerm(
         std::vector<char>> const &vars) {
   std::string var1_(at_c < 1 > (vars).begin(), at_c < 1 > (vars).end());
   std::string var2_(at_c < 3 > (vars).begin(), at_c < 3 > (vars).end());
-  Matrix11 coefficient = at_c < 5 > (vars) * ones(1, 1);
+  Matrix11 coefficient = at_c < 5 > (vars) * I_1x1;
 
   H[varname_to_key[var1_]][varname_to_key[var2_]] = coefficient;
   H[varname_to_key[var2_]][varname_to_key[var1_]] = coefficient;
@@ -212,7 +212,7 @@ QP RawQP::makeQP() {
       KeyMatPair.push_back(km);
     }
     madeQP.equalities.push_back(
-        LinearEquality(KeyMatPair, b[kv.first] * ones(1, 1), dual_key_num++));
+        LinearEquality(KeyMatPair, b[kv.first] * I_1x1, dual_key_num++));
   }
 
   for (auto kv : IG) {
@@ -239,13 +239,13 @@ QP RawQP::makeQP() {
       continue;
     if (up.count(k) == 1)
       madeQP.inequalities.push_back(
-          LinearInequality(k, ones(1, 1), up[k], dual_key_num++));
+          LinearInequality(k, I_1x1, up[k], dual_key_num++));
     if (lo.count(k) == 1)
       madeQP.inequalities.push_back(
-          LinearInequality(k, -ones(1, 1), lo[k], dual_key_num++));
+          LinearInequality(k, -I_1x1, lo[k], dual_key_num++));
     else
       madeQP.inequalities.push_back(
-          LinearInequality(k, -ones(1, 1), 0, dual_key_num++));
+          LinearInequality(k, -I_1x1, 0, dual_key_num++));
   }
   return madeQP;
 }

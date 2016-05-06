@@ -9,11 +9,11 @@
 #include <gtsam_unstable/linear/LPSolver.h>
 #include <gtsam_unstable/linear/InfeasibleInitialValues.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam_unstable/linear/LPInitSolverMatlab.h>
+#include <gtsam_unstable/linear/LPInitSolver.h>
 
 namespace gtsam {
 LPSolver::LPSolver(const LP &lp) :
-    lp_(lp), addedZeroPriorsIndex_(){
+    lp_(lp), addedZeroPriorsIndex_() {
   // Push back factors that are the same in every iteration to the base graph.
   // Those include the equality constraints and zero priors for keys that are
   // not in the cost
@@ -31,7 +31,6 @@ LPSolver::LPSolver(const LP &lp) :
   constrainedKeys_ = lp_.equalities.keys();
   constrainedKeys_.merge(lp_.inequalities.keys());
 }
-
 
 LPState LPSolver::iterate(const LPState &state) const {
   // Solve with the current working set
@@ -96,21 +95,21 @@ GaussianFactorGraph::shared_ptr LPSolver::createLeastSquareFactors(
   for (LinearCost::const_iterator it = cost.begin(); it != cost.end(); ++it) {
     size_t dim = cost.getDim(it);
     Vector b = xk.at(*it) - cost.getA(it).transpose(); // b = xk-g
-    graph->push_back(JacobianFactor(*it, eye(dim), b));
+    graph->push_back(JacobianFactor(*it, Matrix::Identity(dim, dim), b));
   }
 
   KeySet allKeys = lp_.inequalities.keys();
   allKeys.merge(lp_.equalities.keys());
   allKeys.merge(KeySet(lp_.cost.keys()));
-// add the corresponding factors for all variables that are not explicitly in the cost
-  //function
-//   for vars that are not in the cost, the cost gradient is zero (g=0), so b=xk
+  // add the corresponding factors for all variables that are not explicitly in the
+  // cost function for vars that are not in the cost, the cost gradient is zero (g=0), so b=xk
   if (cost.keys().size() != allKeys.size()) {
     KeySet difference;
     std::set_difference(allKeys.begin(), allKeys.end(), lp_.cost.begin(),
-                        lp_.cost.end(), std::inserter(difference, difference.end()));
+        lp_.cost.end(), std::inserter(difference, difference.end()));
     for (Key k : difference) {
-      graph->push_back(JacobianFactor(k, eye(keysDim_.at(k)), xk.at(k)));
+      size_t dim = keysDim_.at(k);
+      graph->push_back(JacobianFactor(k, Matrix::Identity(dim,dim), xk.at(k)));
     }
   }
   return graph;
@@ -137,20 +136,20 @@ boost::shared_ptr<JacobianFactor> LPSolver::createDualFactor(Key key,
     const InequalityFactorGraph &workingSet, const VectorValues &delta) const {
   // Transpose the A matrix of constrained factors to have the jacobian of the
   // dual key
-  TermsContainer Aterms = collectDualJacobians < LinearEquality
-      > (key, lp_.equalities, equalityVariableIndex_);
-  TermsContainer AtermsInequalities = collectDualJacobians < LinearInequality
-      > (key, workingSet, inequalityVariableIndex_);
+  TermsContainer Aterms = collectDualJacobians<LinearEquality>(key,
+      lp_.equalities, equalityVariableIndex_);
+  TermsContainer AtermsInequalities = collectDualJacobians<LinearInequality>(
+      key, workingSet, inequalityVariableIndex_);
   Aterms.insert(Aterms.end(), AtermsInequalities.begin(),
       AtermsInequalities.end());
 
   // Collect the gradients of unconstrained cost factors to the b vector
   if (Aterms.size() > 0) {
-    Vector b = zero(delta.at(key).size());
+    Vector b = Vector::Zero(delta.at(key).size());
     Factor::const_iterator it = lp_.cost.find(key);
     if (it != lp_.cost.end())
       b = lp_.cost.getA(it).transpose();
-    return boost::make_shared < JacobianFactor > (Aterms, b); // compute the least-square approximation of dual variables
+    return boost::make_shared<JacobianFactor>(Aterms, b); // compute the least-square approximation of dual variables
   } else {
     return boost::make_shared<JacobianFactor>();
   }
@@ -203,7 +202,7 @@ boost::tuples::tuple<double, int> LPSolver::computeStepSize(
 }
 
 pair<VectorValues, VectorValues> LPSolver::optimize() const {
-  LPInitSolverMatlab initSolver(*this);
+  LPInitSolver initSolver(*this);
   VectorValues initValues = initSolver.solve();
   return optimize(initValues);
 }
