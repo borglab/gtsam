@@ -511,16 +511,16 @@ TEST(Values, VectorFixedInsertFixedRead) {
 }
 
 /* ************************************************************************* */
-TEST(Values, VectorFixedInsertDynamicRead) {
-  Values values;
-  Vector3 v; v << 5.0, 6.0, 7.0;
-  values.insert(key1, v);
-  Vector expected(3); expected << 5.0, 6.0, 7.0;
-  Vector actual = values.at<Vector>(key1);
-  LONGS_EQUAL(3, actual.rows());
-  LONGS_EQUAL(1, actual.cols());
-  CHECK(assert_equal(expected, actual));
-}
+//TEST(Values, VectorFixedInsertDynamicRead) {
+//  Values values;
+//  Vector3 v; v << 5.0, 6.0, 7.0;
+//  values.insert(key1, v);
+//  Vector expected(3); expected << 5.0, 6.0, 7.0;
+//  Vector actual = values.at<Vector>(key1);
+//  LONGS_EQUAL(3, actual.rows());
+//  LONGS_EQUAL(1, actual.cols());
+//  CHECK(assert_equal(expected, actual));
+//}
 
 /* ************************************************************************* */
 TEST(Values, MatrixDynamicInsertFixedRead) {
