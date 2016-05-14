@@ -271,99 +271,74 @@ namespace gtsam {
 
    /* ************************************************************************* */
 
-    namespace internal {
+   namespace internal {
 
-    // Check the type and throw exception if incorrect
-    // Generic version, partially specialized below for various Eigen Matrix types
-    template<typename ValueType>
-    struct handle {
-      ValueType operator()(Key j, const gtsam::Value * const pointer) {
-        try {
-          // value returns a const ValueType&, and the return makes a copy !!!!!
-          return dynamic_cast<const GenericValue<ValueType>&>(*pointer).value();
-        } catch (std::bad_cast &) {
-          throw ValuesIncorrectType(j, typeid(*pointer), typeid(ValueType));
-        }
-      }
-    };
+   // Check the type and throw exception if incorrect
+   // Generic version, partially specialized below for various Eigen Matrix types
+   template <typename ValueType>
+   struct handle {
+     ValueType operator()(Key j, const Value* const pointer) {
+       try {
+         // value returns a const ValueType&, and the return makes a copy !!!!!
+         return dynamic_cast<const GenericValue<ValueType>&>(*pointer).value();
+       } catch (std::bad_cast&) {
+         throw ValuesIncorrectType(j, typeid(*pointer), typeid(ValueType));
+       }
+     }
+   };
 
-    // Handle dynamic vectors
-    template<>
-    struct handle<Eigen::Matrix<double, -1, 1> > {
-       Eigen::Matrix<double, -1, 1> operator()(Key j,
-          const gtsam::Value * const pointer) {
-        try {
-          // value returns a const Vector&, and the return makes a copy !!!!!
-          return dynamic_cast<const GenericValue<Eigen::Matrix<double, -1, 1> >&>(*pointer).value();
-        } catch (std::bad_cast &) {
-          // If a fixed vector was stored, we end up here as well.
-          throw ValuesIncorrectType(j, typeid(*pointer),
-              typeid(Eigen::Matrix<double, -1, 1>));
-        }
-      }
-    };
+   template <typename MatrixType, bool isDynamic>
+   struct handle_matrix;
 
-    // Handle dynamic matrices
-    template<int N>
-    struct handle<Eigen::Matrix<double, -1, N> > {
-       Eigen::Matrix<double, -1, N> operator()(Key j,
-          const gtsam::Value * const pointer) {
-        try {
-          // value returns a const Matrix&, and the return makes a copy !!!!!
-          return dynamic_cast<const GenericValue<Eigen::Matrix<double, -1, N> >&>(*pointer).value();
-        } catch (std::bad_cast &) {
-          // If a fixed matrix was stored, we end up here as well.
-          throw ValuesIncorrectType(j, typeid(*pointer),
-              typeid(Eigen::Matrix<double, -1, N>));
-        }
-      }
-    };
+   // Handle dynamic matrices
+   template <int M, int N>
+   struct handle_matrix<Eigen::Matrix<double, M, N>, true> {
+     Eigen::Matrix<double, M, N> operator()(Key j, const Value* const pointer) {
+       try {
+         // value returns a const Matrix&, and the return makes a copy !!!!!
+         return dynamic_cast<const GenericValue<Eigen::Matrix<double, M, N>>&>(*pointer).value();
+       } catch (std::bad_cast&) {
+         // If a fixed matrix was stored, we end up here as well.
+         throw ValuesIncorrectType(j, typeid(*pointer), typeid(Eigen::Matrix<double, M, N>));
+       }
+     }
+   };
 
-    // Request for a fixed vector
-    // TODO(jing): is this piece of code really needed ???
-    template<int M>
-    struct handle<Eigen::Matrix<double, M, 1> > {
-      Eigen::Matrix<double, M, 1> operator()(Key j,
-          const gtsam::Value * const pointer) {
-        try {
-          // value returns a const VectorM&, and the return makes a copy !!!!!
-          return dynamic_cast<const GenericValue<Eigen::Matrix<double, M, 1> >&>(*pointer).value();
-        } catch (std::bad_cast &) {
-          // Check if a dynamic vector was stored
-          Matrix A = handle<Eigen::VectorXd>()(j, pointer); // will throw if not....
-          // Yes: check size, and throw if not a match
-          if (A.rows() != M || A.cols() != 1)
-            throw NoMatchFoundForFixed(M, 1, A.rows(), A.cols());
-          else
-            // This is not a copy because of RVO
-            return A;
-        }
-      }
-    };
+   // Handle fixed matrices
+   template <int M, int N>
+   struct handle_matrix<Eigen::Matrix<double, M, N>, false> {
+     Eigen::Matrix<double, M, N> operator()(Key j, const Value* const pointer) {
+       try {
+         // value returns a const MatrixMN&, and the return makes a copy !!!!!
+         return dynamic_cast<const GenericValue<Eigen::Matrix<double, M, N>>&>(*pointer).value();
+       } catch (std::bad_cast&) {
+         Matrix A;
+         try {
+           // Check if a dynamic matrix was stored
+           A = handle_matrix<Eigen::MatrixXd, true>()(j, pointer);  // will throw if not....
+         } catch (const ValuesIncorrectType&) {
+           // Or a dynamic vector
+           A = handle_matrix<Eigen::VectorXd, true>()(j, pointer);  // will throw if not....
+         }
+         // Yes: check size, and throw if not a match
+         if (A.rows() != M || A.cols() != N)
+           throw NoMatchFoundForFixed(M, N, A.rows(), A.cols());
+         else
+           return A; // copy but not malloc
+       }
+     }
+   };
 
-    // Request for a fixed matrix
-    template<int M, int N>
-    struct handle<Eigen::Matrix<double, M, N> > {
-      Eigen::Matrix<double, M, N> operator()(Key j,
-          const gtsam::Value * const pointer) {
-        try {
-          // value returns a const MatrixMN&, and the return makes a copy !!!!!
-          return dynamic_cast<const GenericValue<Eigen::Matrix<double, M, N> >&>(*pointer).value();
-        } catch (std::bad_cast &) {
-          // Check if a dynamic matrix was stored
-          Matrix A = handle<Eigen::MatrixXd>()(j, pointer); // will throw if not....
-          // Yes: check size, and throw if not a match
-          if (A.rows() != M || A.cols() != N)
-            throw NoMatchFoundForFixed(M, N, A.rows(), A.cols());
-          else
-            // This is not a copy because of RVO
-            return A;
-        }
-      }
-    };
+   // Handle matrices
+   template <int M, int N>
+   struct handle<Eigen::Matrix<double, M, N>> {
+     Eigen::Matrix<double, M, N> operator()(Key j, const Value* const pointer) {
+       return handle_matrix<Eigen::Matrix<double, M, N>,
+                            (M == Eigen::Dynamic || N == Eigen::Dynamic)>()(j, pointer);
+     }
+   };
 
-
-    } // internal
+   }  // internal
 
    /* ************************************************************************* */
    template<typename ValueType>
@@ -402,47 +377,16 @@ namespace gtsam {
 
   /* ************************************************************************* */
 
-  // wrap all fixed in dynamics when insert and update
-  namespace internal {
-
-  // general type
-  template<typename ValueType>
-  struct handle_wrap {
-    inline gtsam::GenericValue<ValueType> operator()(Key j, const ValueType& val) {
-      return gtsam::GenericValue<ValueType>(val);
-    }
-  };
-
-  // when insert/update a fixed size vector: convert to dynamic size
-  template<int M>
-  struct handle_wrap<Eigen::Matrix<double, M, 1> > {
-    inline gtsam::GenericValue<Eigen::Matrix<double, -1, 1> > operator()(
-        Key j, const Eigen::Matrix<double, M, 1>& val) {
-      return gtsam::GenericValue<Eigen::Matrix<double, -1, 1> >(val);
-    }
-  };
-
-  // when insert/update a fixed size matrix: convert to dynamic size
-  template<int M, int N>
-  struct handle_wrap<Eigen::Matrix<double, M, N> > {
-    inline gtsam::GenericValue<Eigen::Matrix<double, -1, -1> > operator()(
-        Key j, const Eigen::Matrix<double, M, N>& val) {
-      return gtsam::GenericValue<Eigen::Matrix<double, -1, -1> >(val);
-    }
-  };
-
-  }
-
   // insert a templated value
   template<typename ValueType>
   void Values::insert(Key j, const ValueType& val) {
-    insert(j, static_cast<const Value&>(internal::handle_wrap<ValueType>()(j, val)));
+    insert(j, static_cast<const Value&>(GenericValue<ValueType>(val)));
   }
 
   // update with templated value
   template <typename ValueType>
   void Values::update(Key j, const ValueType& val) {
-    update(j, static_cast<const Value&>(internal::handle_wrap<ValueType>()(j, val)));
+    update(j, static_cast<const Value&>(GenericValue<ValueType>(val)));
   }
 
 }
