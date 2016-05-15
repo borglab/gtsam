@@ -37,15 +37,28 @@ PreintegrationBase::PreintegrationBase(const boost::shared_ptr<Params>& p,
 //------------------------------------------------------------------------------
 void PreintegrationBase::resetIntegration() {
   deltaTij_ = 0.0;
+#ifdef GTSAM_IMU_MANIFOLD_INTEGRATION
   preintegrated_.setZero();
   preintegrated_H_biasAcc_.setZero();
   preintegrated_H_biasOmega_.setZero();
+#else
+  deltaXij_ = NavState();
+  delRdelBiasOmega_.setZero();
+  delPdelBiasAcc_.setZero();
+  delPdelBiasOmega_.setZero();
+  delVdelBiasAcc_.setZero();
+  delVdelBiasOmega_.setZero();
+#endif
 }
 
 //------------------------------------------------------------------------------
 ostream& operator<<(ostream& os, const PreintegrationBase& pim) {
   os << "    deltaTij " << pim.deltaTij_ << endl;
+#ifdef GTSAM_IMU_MANIFOLD_INTEGRATION
   os << "    deltaRij " << Point3(pim.theta()) << endl;
+#else
+  os << "    deltaRij.ypr = (" << pim.deltaRij().ypr().transpose() << ")" << endl;
+#endif
   os << "    deltaPij " << Point3(pim.deltaPij()) << endl;
   os << "    deltaVij " << Point3(pim.deltaVij()) << endl;
   os << "    gyrobias " << Point3(pim.biasHat_.gyroscope()) << endl;
@@ -64,9 +77,18 @@ bool PreintegrationBase::equals(const PreintegrationBase& other,
   return p_->equals(*other.p_, tol)
       && fabs(deltaTij_ - other.deltaTij_) < tol
       && biasHat_.equals(other.biasHat_, tol)
+#ifdef GTSAM_IMU_MANIFOLD_INTEGRATION
       && equal_with_abs_tol(preintegrated_, other.preintegrated_, tol)
       && equal_with_abs_tol(preintegrated_H_biasAcc_, other.preintegrated_H_biasAcc_, tol)
       && equal_with_abs_tol(preintegrated_H_biasOmega_, other.preintegrated_H_biasOmega_, tol);
+#else
+      && deltaXij_.equals(other.deltaXij_, tol)
+      && equal_with_abs_tol(delRdelBiasOmega_, other.delRdelBiasOmega_, tol)
+      && equal_with_abs_tol(delPdelBiasAcc_, other.delPdelBiasAcc_, tol)
+      && equal_with_abs_tol(delPdelBiasOmega_, other.delPdelBiasOmega_, tol)
+      && equal_with_abs_tol(delVdelBiasAcc_, other.delVdelBiasAcc_, tol)
+      && equal_with_abs_tol(delVdelBiasOmega_, other.delVdelBiasOmega_, tol);
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -105,7 +127,8 @@ pair<Vector3, Vector3> PreintegrationBase::correctMeasurementsBySensorPose(
     // Update derivative: centrifugal causes the correlation between acc and omega!!!
     if (correctedAcc_H_unbiasedOmega) {
       double wdp = correctedOmega.dot(b_arm);
-      *correctedAcc_H_unbiasedOmega = -( (Matrix) Vector3::Constant(wdp).asDiagonal()
+      const Matrix3 diag_wdp = Vector3::Constant(wdp).asDiagonal();
+      *correctedAcc_H_unbiasedOmega = -( diag_wdp
           + correctedOmega * b_arm.transpose()) * bRs.matrix()
           + 2 * b_arm * unbiasedOmega.transpose();
     }
@@ -114,6 +137,7 @@ pair<Vector3, Vector3> PreintegrationBase::correctMeasurementsBySensorPose(
   return make_pair(correctedAcc, correctedOmega);
 }
 
+#ifdef GTSAM_IMU_MANIFOLD_INTEGRATION
 //------------------------------------------------------------------------------
 // See extensive discussion in ImuFactor.lyx
 Vector9 PreintegrationBase::UpdatePreintegrated(
@@ -224,29 +248,150 @@ Vector9 PreintegrationBase::biasCorrectedDelta(
   }
   return biasCorrected;
 }
+#else
+
+//------------------------------------------------------------------------------
+pair<Vector3, Vector3> PreintegrationBase::correctMeasurementsByBiasAndSensorPose(
+    const Vector3& measuredAcc, const Vector3& measuredOmega,
+    OptionalJacobian<3, 3> D_correctedAcc_measuredAcc,
+    OptionalJacobian<3, 3> D_correctedAcc_measuredOmega,
+    OptionalJacobian<3, 3> D_correctedOmega_measuredOmega) const {
+
+  // Correct for bias in the sensor frame
+  Vector3 unbiasedAcc = biasHat_.correctAccelerometer(measuredAcc);
+  Vector3 unbiasedOmega = biasHat_.correctGyroscope(measuredOmega);
+
+  return correctMeasurementsBySensorPose(unbiasedAcc, unbiasedOmega,
+      D_correctedAcc_measuredAcc, D_correctedAcc_measuredOmega,
+      D_correctedOmega_measuredOmega);
+}
+
+//------------------------------------------------------------------------------
+NavState PreintegrationBase::updatedDeltaXij(const Vector3& measuredAcc,
+    const Vector3& measuredOmega, const double dt,
+    OptionalJacobian<9, 9> D_updated_current,
+    OptionalJacobian<9, 3> D_updated_measuredAcc,
+    OptionalJacobian<9, 3> D_updated_measuredOmega) const {
+
+  Vector3 correctedAcc, correctedOmega;
+  Matrix3 D_correctedAcc_measuredAcc, //
+      D_correctedAcc_measuredOmega, //
+      D_correctedOmega_measuredOmega;
+  bool needDerivs = D_updated_measuredAcc && D_updated_measuredOmega && p().body_P_sensor;
+  boost::tie(correctedAcc, correctedOmega) =
+      correctMeasurementsByBiasAndSensorPose(measuredAcc, measuredOmega,
+          (needDerivs ? &D_correctedAcc_measuredAcc : 0),
+          (needDerivs ? &D_correctedAcc_measuredOmega : 0),
+          (needDerivs ? &D_correctedOmega_measuredOmega : 0));
+  // Do update in one fell swoop
+  Matrix93 D_updated_correctedAcc, D_updated_correctedOmega;
+  NavState updated = deltaXij_.update(correctedAcc, correctedOmega, dt, D_updated_current,
+              (needDerivs ? D_updated_correctedAcc : D_updated_measuredAcc),
+              (needDerivs ? D_updated_correctedOmega : D_updated_measuredOmega));
+  if (needDerivs) {
+    *D_updated_measuredAcc = D_updated_correctedAcc * D_correctedAcc_measuredAcc;
+    *D_updated_measuredOmega = D_updated_correctedOmega * D_correctedOmega_measuredOmega;
+    if (!p().body_P_sensor->translation().vector().isZero()) {
+      *D_updated_measuredOmega += D_updated_correctedAcc * D_correctedAcc_measuredOmega;
+    }
+  }
+  return updated;
+}
+
+//------------------------------------------------------------------------------
+void PreintegrationBase::update(const Vector3& measuredAcc,
+    const Vector3& measuredOmega, const double dt,
+    Matrix3* D_incrR_integratedOmega, Matrix9* D_updated_current,
+    Matrix93* D_updated_measuredAcc, Matrix93* D_updated_measuredOmega) {
+
+  // Save current rotation for updating Jacobians
+  const Rot3 oldRij = deltaXij_.attitude();
+
+  // Do update
+  deltaTij_ += dt;
+  deltaXij_ = updatedDeltaXij(measuredAcc, measuredOmega, dt,
+      D_updated_current, D_updated_measuredAcc, D_updated_measuredOmega); // functional
+
+  // Update Jacobians
+  // TODO(frank): we are repeating some computation here: accessible in F ?
+  Vector3 correctedAcc, correctedOmega;
+  boost::tie(correctedAcc, correctedOmega) =
+      correctMeasurementsByBiasAndSensorPose(measuredAcc, measuredOmega);
+
+  Matrix3 D_acc_R;
+  oldRij.rotate(correctedAcc, D_acc_R);
+  const Matrix3 D_acc_biasOmega = D_acc_R * delRdelBiasOmega_;
+
+  const Vector3 integratedOmega = correctedOmega * dt;
+  const Rot3 incrR = Rot3::Expmap(integratedOmega, D_incrR_integratedOmega); // expensive !!
+  const Matrix3 incrRt = incrR.transpose();
+  delRdelBiasOmega_ = incrRt * delRdelBiasOmega_
+      - *D_incrR_integratedOmega * dt;
+
+  double dt22 = 0.5 * dt * dt;
+  const Matrix3 dRij = oldRij.matrix(); // expensive
+  delPdelBiasAcc_ += delVdelBiasAcc_ * dt - dt22 * dRij;
+  delPdelBiasOmega_ += dt * delVdelBiasOmega_ + dt22 * D_acc_biasOmega;
+  delVdelBiasAcc_ += -dRij * dt;
+  delVdelBiasOmega_ += D_acc_biasOmega * dt;
+}
+
+//------------------------------------------------------------------------------
+Vector9 PreintegrationBase::biasCorrectedDelta(
+    const imuBias::ConstantBias& bias_i, OptionalJacobian<9, 6> H) const {
+  // Correct deltaRij, derivative is delRdelBiasOmega_
+  const imuBias::ConstantBias biasIncr = bias_i - biasHat_;
+  Matrix3 D_correctedRij_bias;
+  const Vector3 biasInducedOmega = delRdelBiasOmega_ * biasIncr.gyroscope();
+  const Rot3 correctedRij = deltaRij().expmap(biasInducedOmega, boost::none,
+      H ? &D_correctedRij_bias : 0);
+  if (H)
+    D_correctedRij_bias *= delRdelBiasOmega_;
+
+  Vector9 xi;
+  Matrix3 D_dR_correctedRij;
+  // TODO(frank): could line below be simplified? It is equivalent to
+  //   LogMap(deltaRij_.compose(Expmap(biasInducedOmega)))
+  NavState::dR(xi) = Rot3::Logmap(correctedRij, H ? &D_dR_correctedRij : 0);
+  NavState::dP(xi) = deltaPij() + delPdelBiasAcc_ * biasIncr.accelerometer()
+      + delPdelBiasOmega_ * biasIncr.gyroscope();
+  NavState::dV(xi) = deltaVij() + delVdelBiasAcc_ * biasIncr.accelerometer()
+      + delVdelBiasOmega_ * biasIncr.gyroscope();
+
+  if (H) {
+    Matrix36 D_dR_bias, D_dP_bias, D_dV_bias;
+    D_dR_bias << Z_3x3, D_dR_correctedRij * D_correctedRij_bias;
+    D_dP_bias << delPdelBiasAcc_, delPdelBiasOmega_;
+    D_dV_bias << delVdelBiasAcc_, delVdelBiasOmega_;
+    (*H) << D_dR_bias, D_dP_bias, D_dV_bias;
+  }
+  return xi;
+}
+
+#endif
 
 //------------------------------------------------------------------------------
 NavState PreintegrationBase::predict(const NavState& state_i,
-                                     const imuBias::ConstantBias& bias_i,
-                                     OptionalJacobian<9, 9> H1,
-                                     OptionalJacobian<9, 6> H2) const {
+    const imuBias::ConstantBias& bias_i, OptionalJacobian<9, 9> H1,
+    OptionalJacobian<9, 6> H2) const {
   // TODO(frank): make sure this stuff is still correct
   Matrix96 D_biasCorrected_bias;
-  Vector9 biasCorrected =
-      biasCorrectedDelta(bias_i, H2 ? &D_biasCorrected_bias : 0);
+  Vector9 biasCorrected = biasCorrectedDelta(bias_i,
+      H2 ? &D_biasCorrected_bias : 0);
 
   // Correct for initial velocity and gravity
   Matrix9 D_delta_state, D_delta_biasCorrected;
   Vector9 xi = state_i.correctPIM(biasCorrected, deltaTij_, p().n_gravity,
-                                  p().omegaCoriolis, p().use2ndOrderCoriolis,
-                                  H1 ? &D_delta_state : 0,
-                                  H2 ? &D_delta_biasCorrected : 0);
+      p().omegaCoriolis, p().use2ndOrderCoriolis, H1 ? &D_delta_state : 0,
+      H2 ? &D_delta_biasCorrected : 0);
 
   // Use retract to get back to NavState manifold
   Matrix9 D_predict_state, D_predict_delta;
   NavState state_j = state_i.retract(xi, D_predict_state, D_predict_delta);
-  if (H1) *H1 = D_predict_state + D_predict_delta* D_delta_state;
-  if (H2) *H2 = D_predict_delta* D_delta_biasCorrected* D_biasCorrected_bias;
+  if (H1)
+    *H1 = D_predict_state + D_predict_delta * D_delta_state;
+  if (H2)
+    *H2 = D_predict_delta * D_delta_biasCorrected * D_biasCorrected_bias;
   return state_j;
 }
 
@@ -306,6 +451,7 @@ Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i,
   return error;
 }
 
+#ifdef GTSAM_IMU_MANIFOLD_INTEGRATION
 //------------------------------------------------------------------------------
 // sugar for derivative blocks
 #define D_R_R(H) (H)->block<3,3>(0,0)
@@ -393,6 +539,7 @@ void PreintegrationBase::mergeWith(const PreintegrationBase& pim12, Matrix9* H1,
   preintegrated_H_biasOmega_ = (*H1) * preintegrated_H_biasOmega_ +
                                (*H2) * pim12.preintegrated_H_biasOmega_;
 }
+#endif
 
 //------------------------------------------------------------------------------
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
@@ -408,6 +555,7 @@ PoseVelocityBias PreintegrationBase::predict(const Pose3& pose_i,
   p_ = q;
   return PoseVelocityBias(predict(NavState(pose_i, vel_i), bias_i), bias_i);
 }
+
 #endif
 //------------------------------------------------------------------------------
 

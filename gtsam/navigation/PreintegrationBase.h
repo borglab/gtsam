@@ -81,10 +81,18 @@ class PreintegrationBase {
    * Note: relative position does not take into account velocity at time i, see deltap+, in [2]
    * Note: velocity is now also in frame i, as opposed to deltaVij in [2]
    */
+#ifdef GTSAM_IMU_MANIFOLD_INTEGRATION
   Vector9 preintegrated_;
-
   Matrix93 preintegrated_H_biasAcc_;    ///< Jacobian of preintegrated preintegrated w.r.t. acceleration bias
   Matrix93 preintegrated_H_biasOmega_;  ///< Jacobian of preintegrated preintegrated w.r.t. angular rate bias
+#else
+  NavState deltaXij_;
+  Matrix3 delRdelBiasOmega_; ///< Jacobian of preintegrated rotation w.r.t. angular rate bias
+  Matrix3 delPdelBiasAcc_;   ///< Jacobian of preintegrated position w.r.t. acceleration bias
+  Matrix3 delPdelBiasOmega_; ///< Jacobian of preintegrated position w.r.t. angular rate bias
+  Matrix3 delVdelBiasAcc_;   ///< Jacobian of preintegrated velocity w.r.t. acceleration bias
+  Matrix3 delVdelBiasOmega_; ///< Jacobian of preintegrated velocity w.r.t. angular rate bias
+#endif
 
   /// Default constructor for serialization
   PreintegrationBase() {
@@ -140,17 +148,22 @@ public:
   const imuBias::ConstantBias& biasHat() const { return biasHat_; }
   double deltaTij() const { return deltaTij_; }
 
+#ifdef GTSAM_IMU_MANIFOLD_INTEGRATION
   const Vector9& preintegrated() const { return preintegrated_; }
-
-  Vector3 theta() const { return preintegrated_.head<3>(); }
-  Vector3 deltaPij() const { return preintegrated_.segment<3>(3); }
-  Vector3 deltaVij() const { return preintegrated_.tail<3>(); }
-
-  Rot3 deltaRij() const { return Rot3::Expmap(theta()); }
+  Vector3 theta() const     { return preintegrated_.head<3>(); }
+  Vector3 deltaPij() const  { return preintegrated_.segment<3>(3); }
+  Vector3 deltaVij() const  { return preintegrated_.tail<3>(); }
+  Rot3 deltaRij() const     { return Rot3::Expmap(theta()); }
   NavState deltaXij() const { return NavState::Retract(preintegrated_); }
 
   const Matrix93& preintegrated_H_biasAcc() const { return preintegrated_H_biasAcc_; }
   const Matrix93& preintegrated_H_biasOmega() const { return preintegrated_H_biasOmega_; }
+#else
+  const NavState& deltaXij() const { return deltaXij_; }
+  const Rot3& deltaRij() const { return deltaXij_.attitude(); }
+  Vector3 deltaPij() const     { return deltaXij_.position().vector(); }
+  Vector3 deltaVij() const     { return deltaXij_.velocity(); }
+#endif
 
   // Exposed for MATLAB
   Vector6 biasHatVector() const { return biasHat_.vector(); }
@@ -174,6 +187,8 @@ public:
       OptionalJacobian<3, 3> correctedAcc_H_unbiasedAcc = boost::none,
       OptionalJacobian<3, 3> correctedAcc_H_unbiasedOmega = boost::none,
       OptionalJacobian<3, 3> correctedOmega_H_unbiasedOmega = boost::none) const;
+
+#ifdef GTSAM_IMU_MANIFOLD_INTEGRATION
 
   // Update integrated vector on tangent manifold preintegrated with acceleration
   // Static, functional version.
@@ -200,6 +215,38 @@ public:
   Vector9 biasCorrectedDelta(const imuBias::ConstantBias& bias_i,
       OptionalJacobian<9, 6> H = boost::none) const;
 
+#else
+
+  /// Subtract estimate and correct for sensor pose
+  /// Compute the derivatives due to non-identity body_P_sensor (rotation and centrifugal acc)
+  /// Ignore D_correctedOmega_measuredAcc as it is trivially zero
+  std::pair<Vector3, Vector3> correctMeasurementsByBiasAndSensorPose(
+      const Vector3& j_measuredAcc, const Vector3& j_measuredOmega,
+      OptionalJacobian<3, 3> D_correctedAcc_measuredAcc = boost::none,
+      OptionalJacobian<3, 3> D_correctedAcc_measuredOmega = boost::none,
+      OptionalJacobian<3, 3> D_correctedOmega_measuredOmega = boost::none) const;
+
+  /// Calculate the updated preintegrated measurement, does not modify
+  /// It takes measured quantities in the j frame
+  NavState updatedDeltaXij(const Vector3& j_measuredAcc,
+      const Vector3& j_measuredOmega, const double dt,
+      OptionalJacobian<9, 9> D_updated_current = boost::none,
+      OptionalJacobian<9, 3> D_updated_measuredAcc = boost::none,
+      OptionalJacobian<9, 3> D_updated_measuredOmega = boost::none) const;
+
+  /// Update preintegrated measurements and get derivatives
+  /// It takes measured quantities in the j frame
+  void update(const Vector3& j_measuredAcc, const Vector3& j_measuredOmega,
+      const double deltaT, Matrix3* D_incrR_integratedOmega, Matrix9* D_updated_current,
+      Matrix93* D_udpated_measuredAcc, Matrix93* D_updated_measuredOmega);
+
+  /// Given the estimate of the bias, return a NavState tangent vector
+  /// summarizing the preintegrated IMU measurements so far
+  Vector9 biasCorrectedDelta(const imuBias::ConstantBias& bias_i,
+      OptionalJacobian<9, 6> H = boost::none) const;
+
+#endif
+
   /// Predict state at time j
   NavState predict(const NavState& state_i, const imuBias::ConstantBias& bias_i,
                    OptionalJacobian<9, 9> H1 = boost::none,
@@ -219,6 +266,7 @@ public:
       OptionalJacobian<9, 6> H3 = boost::none, OptionalJacobian<9, 3> H4 =
           boost::none, OptionalJacobian<9, 6> H5 = boost::none) const;
 
+#ifdef GTSAM_IMU_MANIFOLD_INTEGRATION
   // Compose the two pre-integrated 9D-vectors zeta01 and zeta02, with derivatives
   static Vector9 Compose(const Vector9& zeta01, const Vector9& zeta12,
                          double deltaT12,
@@ -229,12 +277,12 @@ public:
   /// The derivatives apply to the preintegrated Vector9
   void mergeWith(const PreintegrationBase& pim, Matrix9* H1, Matrix9* H2);
   /// @}
+#endif
 
   /** Dummy clone for MATLAB */
   virtual boost::shared_ptr<PreintegrationBase> clone() const {
     return boost::shared_ptr<PreintegrationBase>();
   }
-
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
   /// @name Deprecated
@@ -257,11 +305,22 @@ private:
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     namespace bs = ::boost::serialization;
     ar & BOOST_SERIALIZATION_NVP(p_);
+#ifdef GTSAM_IMU_MANIFOLD_INTEGRATION
     ar & BOOST_SERIALIZATION_NVP(biasHat_);
     ar & BOOST_SERIALIZATION_NVP(deltaTij_);
     ar & bs::make_nvp("preintegrated_", bs::make_array(preintegrated_.data(), preintegrated_.size()));
     ar & bs::make_nvp("preintegrated_H_biasAcc_", bs::make_array(preintegrated_H_biasAcc_.data(), preintegrated_H_biasAcc_.size()));
     ar & bs::make_nvp("preintegrated_H_biasOmega_", bs::make_array(preintegrated_H_biasOmega_.data(), preintegrated_H_biasOmega_.size()));
+#else
+    ar & BOOST_SERIALIZATION_NVP(deltaTij_);
+    ar & BOOST_SERIALIZATION_NVP(deltaXij_);
+    ar & BOOST_SERIALIZATION_NVP(biasHat_);
+    ar & bs::make_nvp("delRdelBiasOmega_", bs::make_array(delRdelBiasOmega_.data(), delRdelBiasOmega_.size()));
+    ar & bs::make_nvp("delPdelBiasAcc_", bs::make_array(delPdelBiasAcc_.data(), delPdelBiasAcc_.size()));
+    ar & bs::make_nvp("delPdelBiasOmega_", bs::make_array(delPdelBiasOmega_.data(), delPdelBiasOmega_.size()));
+    ar & bs::make_nvp("delVdelBiasAcc_", bs::make_array(delVdelBiasAcc_.data(), delVdelBiasAcc_.size()));
+    ar & bs::make_nvp("delVdelBiasOmega_", bs::make_array(delVdelBiasOmega_.data(), delVdelBiasOmega_.size()));
+#endif
   }
 };
 

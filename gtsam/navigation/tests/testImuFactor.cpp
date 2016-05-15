@@ -94,13 +94,13 @@ TEST(ImuFactor, PreintegratedMeasurements) {
 
   // Actual pre-integrated values
   PreintegratedImuMeasurements actual(testing::Params());
-  EXPECT(assert_equal(kZero, actual.theta()));
+  EXPECT(assert_equal(Rot3(), actual.deltaRij()));
   EXPECT(assert_equal(kZero, actual.deltaPij()));
   EXPECT(assert_equal(kZero, actual.deltaVij()));
   DOUBLES_EQUAL(0.0, actual.deltaTij(), 1e-9);
 
   actual.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
-  EXPECT(assert_equal(expectedDeltaR1, actual.theta()));
+  EXPECT(assert_equal(Rot3::Expmap(expectedDeltaR1), actual.deltaRij()));
   EXPECT(assert_equal(expectedDeltaP1, actual.deltaPij()));
   EXPECT(assert_equal(expectedDeltaV1, actual.deltaVij()));
   DOUBLES_EQUAL(0.5, actual.deltaTij(), 1e-9);
@@ -129,7 +129,7 @@ TEST(ImuFactor, PreintegratedMeasurements) {
 
   // Actual pre-integrated values
   actual.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
-  EXPECT(assert_equal(expectedDeltaR2, actual.theta()));
+  EXPECT(assert_equal(Rot3::Expmap(expectedDeltaR2), actual.deltaRij()));
   EXPECT(assert_equal(expectedDeltaP2, actual.deltaPij()));
   EXPECT(assert_equal(expectedDeltaV2, actual.deltaVij()));
   DOUBLES_EQUAL(1.0, actual.deltaTij(), 1e-9);
@@ -439,6 +439,7 @@ TEST(ImuFactor, fistOrderExponential) {
 }
 
 /* ************************************************************************* */
+#ifdef GTSAM_IMU_MANIFOLD_INTEGRATION
 TEST(ImuFactor, FirstOrderPreIntegratedMeasurements) {
   testing::SomeMeasurements measurements;
 
@@ -458,7 +459,7 @@ TEST(ImuFactor, FirstOrderPreIntegratedMeasurements) {
   EXPECT(assert_equal(numericalDerivative22(preintegrated, kZero, kZero),
                       pim.preintegrated_H_biasOmega(), 1e-3));
 }
-
+#endif
 /* ************************************************************************* */
 Vector3 correctedAcc(const PreintegratedImuMeasurements& pim,
     const Vector3& measuredAcc, const Vector3& measuredOmega) {
@@ -789,6 +790,7 @@ TEST(ImuFactor, bodyPSensorWithBias) {
 }
 
 /* ************************************************************************* */
+#ifdef GTSAM_IMU_MANIFOLD_INTEGRATION
 static const double kVelocity = 2.0, kAngularVelocity = M_PI / 6;
 
 struct ImuFactorMergeTest {
@@ -883,6 +885,7 @@ TEST(ImuFactor, MergeWithCoriolis) {
   mergeTest.p_->omegaCoriolis = Vector3(0.1, 0.2, -0.1);
   mergeTest.TestScenarios(result_, name_, kZeroBias, kZeroBias, 1e-4);
 }
+#endif
 
 /* ************************************************************************* */
 // Same values as pre-integration test but now testing covariance

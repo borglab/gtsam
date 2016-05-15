@@ -28,6 +28,7 @@
 
 static const double kDt = 0.1;
 
+#ifdef GTSAM_IMU_MANIFOLD_INTEGRATION
 Vector9 f(const Vector9& zeta, const Vector3& a, const Vector3& w) {
   return PreintegrationBase::UpdatePreintegrated(a, w, kDt, zeta);
 }
@@ -140,6 +141,7 @@ TEST(PreintegrationBase, MergedBiasDerivatives) {
   EXPECT(assert_equal(numericalDerivative22<Vector9, Vector3, Vector3>(f, Z_3x1, Z_3x1),
                       expected_pim02.preintegrated_H_biasOmega(), 1e-7));
 }
+#endif
 
 /* ************************************************************************* */
 int main() {

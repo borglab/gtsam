@@ -203,7 +203,7 @@ public:
   /// @name Dynamics
   /// @{
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+#if defined(GTSAM_ALLOW_DEPRECATED_SINCE_V4) || !defined(GTSAM_IMU_MANIFOLD_INTEGRATION)
   /// Integrate forward in time given angular velocity and acceleration in body frame
   /// Uses second order integration for position, returns derivatives except dt.
   NavState update(const Vector3& b_acceleration, const Vector3& b_omega,

@@ -55,7 +55,13 @@ void PreintegratedImuMeasurements::integrateMeasurement(
   // Update preintegrated measurements (also get Jacobian)
   Matrix9 A;  // overall Jacobian wrt preintegrated measurements (df/dx)
   Matrix93 B, C;
+#ifdef GTSAM_IMU_MANIFOLD_INTEGRATION
   PreintegrationBase::integrateMeasurement(measuredAcc, measuredOmega, dt, &A, &B, &C);
+#else
+  Matrix3 D_incrR_integratedOmega;
+  PreintegrationBase::update(measuredAcc, measuredOmega, dt,
+      &D_incrR_integratedOmega, &A, &B, &C);
+#endif
 
   // first order covariance propagation:
   // as in [2] we consider a first order propagation that can be seen as a
@@ -91,13 +97,14 @@ void PreintegratedImuMeasurements::integrateMeasurements(const Matrix& measuredA
 }
 
 //------------------------------------------------------------------------------
+#ifdef GTSAM_IMU_MANIFOLD_INTEGRATION
 void PreintegratedImuMeasurements::mergeWith(const PreintegratedImuMeasurements& pim12,  //
                                              Matrix9* H1, Matrix9* H2) {
   PreintegrationBase::mergeWith(pim12, H1, H2);
   preintMeasCov_ =
       *H1 * preintMeasCov_ * H1->transpose() + *H2 * pim12.preintMeasCov_ * H2->transpose();
 }
-
+#endif
 //------------------------------------------------------------------------------
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 PreintegratedImuMeasurements::PreintegratedImuMeasurements(
@@ -174,6 +181,7 @@ Vector ImuFactor::evaluateError(const Pose3& pose_i, const Vector3& vel_i,
 }
 
 //------------------------------------------------------------------------------
+#ifdef GTSAM_IMU_MANIFOLD_INTEGRATION
 PreintegratedImuMeasurements ImuFactor::Merge(
     const PreintegratedImuMeasurements& pim01,
     const PreintegratedImuMeasurements& pim12) {
@@ -216,6 +224,7 @@ ImuFactor::shared_ptr ImuFactor::Merge(const shared_ptr& f01,
                                        f01->key5(),  // B
                                        pim02);
 }
+#endif
 
 //------------------------------------------------------------------------------
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
