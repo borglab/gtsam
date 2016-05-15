@@ -124,7 +124,7 @@ public:
   /// Return pre-integrated measurement covariance
   Matrix preintMeasCov() const { return preintMeasCov_; }
 
-#ifdef GTSAM_IMU_MANIFOLD_INTEGRATION
+#ifdef GTSAM_TANGENT_PREINTEGRATION
   /// Merge in a different set of measurements and update bias derivatives accordingly
   void mergeWith(const PreintegratedImuMeasurements& pim, Matrix9* H1, Matrix9* H2);
 #endif
@@ -232,7 +232,7 @@ public:
       boost::optional<Matrix&> H3 = boost::none, boost::optional<Matrix&> H4 =
           boost::none, boost::optional<Matrix&> H5 = boost::none) const;
 
-#ifdef GTSAM_IMU_MANIFOLD_INTEGRATION
+#ifdef GTSAM_TANGENT_PREINTEGRATION
   /// Merge two pre-integrated measurement classes
   static PreintegratedImuMeasurements Merge(
       const PreintegratedImuMeasurements& pim01,

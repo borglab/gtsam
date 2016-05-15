@@ -132,7 +132,7 @@ TEST( CombinedImuFactor, ErrorWithBiases ) {
 }
 
 /* ************************************************************************* */
-#ifdef GTSAM_IMU_MANIFOLD_INTEGRATION
+#ifdef GTSAM_TANGENT_PREINTEGRATION
 TEST(CombinedImuFactor, FirstOrderPreIntegratedMeasurements) {
   auto p = testing::Params();
   testing::SomeMeasurements measurements;

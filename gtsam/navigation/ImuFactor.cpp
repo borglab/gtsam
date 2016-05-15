@@ -91,7 +91,7 @@ void PreintegratedImuMeasurements::integrateMeasurements(const Matrix& measuredA
 }
 
 //------------------------------------------------------------------------------
-#ifdef GTSAM_IMU_MANIFOLD_INTEGRATION
+#ifdef GTSAM_TANGENT_PREINTEGRATION
 void PreintegratedImuMeasurements::mergeWith(const PreintegratedImuMeasurements& pim12,  //
                                              Matrix9* H1, Matrix9* H2) {
   PreintegrationBase::mergeWith(pim12, H1, H2);
@@ -175,7 +175,7 @@ Vector ImuFactor::evaluateError(const Pose3& pose_i, const Vector3& vel_i,
 }
 
 //------------------------------------------------------------------------------
-#ifdef GTSAM_IMU_MANIFOLD_INTEGRATION
+#ifdef GTSAM_TANGENT_PREINTEGRATION
 PreintegratedImuMeasurements ImuFactor::Merge(
     const PreintegratedImuMeasurements& pim01,
     const PreintegratedImuMeasurements& pim12) {

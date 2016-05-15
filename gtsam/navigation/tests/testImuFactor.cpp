@@ -445,7 +445,7 @@ TEST(ImuFactor, fistOrderExponential) {
 }
 
 /* ************************************************************************* */
-#ifdef GTSAM_IMU_MANIFOLD_INTEGRATION
+#ifdef GTSAM_TANGENT_PREINTEGRATION
 TEST(ImuFactor, FirstOrderPreIntegratedMeasurements) {
   testing::SomeMeasurements measurements;
 
@@ -796,7 +796,7 @@ TEST(ImuFactor, bodyPSensorWithBias) {
 }
 
 /* ************************************************************************* */
-#ifdef GTSAM_IMU_MANIFOLD_INTEGRATION
+#ifdef GTSAM_TANGENT_PREINTEGRATION
 static const double kVelocity = 2.0, kAngularVelocity = M_PI / 6;
 
 struct ImuFactorMergeTest {
