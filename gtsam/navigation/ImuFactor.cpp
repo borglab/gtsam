@@ -59,7 +59,7 @@ void PreintegratedImuMeasurements::integrateMeasurement(
   PreintegrationBase::integrateMeasurement(measuredAcc, measuredOmega, dt, &A, &B, &C);
 #else
   Matrix3 D_incrR_integratedOmega;
-  PreintegrationBase::update(measuredAcc, measuredOmega, dt,
+  PreintegrationBase::integrateMeasurement(measuredAcc, measuredOmega, dt,
       &D_incrR_integratedOmega, &A, &B, &C);
 #endif
 

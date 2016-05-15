@@ -74,7 +74,7 @@ void PreintegratedCombinedMeasurements::integrateMeasurement(
   PreintegrationBase::integrateMeasurement(measuredAcc, measuredOmega, dt, &A, &B, &C);
 #else
   Matrix3 D_incrR_integratedOmega; // Right jacobian computed at theta_incr
-  PreintegrationBase::update(measuredAcc, measuredOmega, dt,
+  PreintegrationBase::integrateMeasurement(measuredAcc, measuredOmega, dt,
       &D_incrR_integratedOmega, &A, &B, &C);
 #endif
 

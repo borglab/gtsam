@@ -193,7 +193,7 @@ Vector9 PreintegrationBase::UpdatePreintegrated(
 //------------------------------------------------------------------------------
 void PreintegrationBase::integrateMeasurement(const Vector3& measuredAcc,
                                               const Vector3& measuredOmega,
-                                              double dt, Matrix9* A,
+                                              const double dt, Matrix9* A,
                                               Matrix93* B, Matrix93* C) {
   // Correct for bias in the sensor frame
   Vector3 acc = biasHat_.correctAccelerometer(measuredAcc);
@@ -202,10 +202,10 @@ void PreintegrationBase::integrateMeasurement(const Vector3& measuredAcc,
   // Possibly correct for sensor pose
   Matrix3 D_correctedAcc_acc, D_correctedAcc_omega, D_correctedOmega_omega;
   if (p().body_P_sensor)
-    boost::tie(acc, omega) = correctMeasurementsBySensorPose( acc, omega,
+    boost::tie(acc, omega) = correctMeasurementsBySensorPose(acc, omega,
         D_correctedAcc_acc, D_correctedAcc_omega, D_correctedOmega_omega);
 
-    // Do update
+  // Do update
   deltaTij_ += dt;
   preintegrated_ = UpdatePreintegrated(acc, omega, dt, preintegrated_, A, B, C);
 
@@ -227,7 +227,7 @@ void PreintegrationBase::integrateMeasurement(const Vector3& measuredAcc,
 void PreintegrationBase::integrateMeasurement(const Vector3& measuredAcc,
                                               const Vector3& measuredOmega,
                                               double dt) {
-  // NOTE(frank): integrateMeasuremtn always needs to compute the derivatives,
+  // NOTE(frank): integrateMeasurement always needs to compute the derivatives,
   // even when not of interest to the caller. Provide scratch space here.
   Matrix9 A;
   Matrix93 B, C;
@@ -251,78 +251,42 @@ Vector9 PreintegrationBase::biasCorrectedDelta(
 #else
 
 //------------------------------------------------------------------------------
-pair<Vector3, Vector3> PreintegrationBase::correctMeasurementsByBiasAndSensorPose(
-    const Vector3& measuredAcc, const Vector3& measuredOmega,
-    OptionalJacobian<3, 3> D_correctedAcc_measuredAcc,
-    OptionalJacobian<3, 3> D_correctedAcc_measuredOmega,
-    OptionalJacobian<3, 3> D_correctedOmega_measuredOmega) const {
+void PreintegrationBase::integrateMeasurement(const Vector3& measuredAcc,
+    const Vector3& measuredOmega, const double dt,
+    Matrix3* D_incrR_integratedOmega, Matrix9* A, Matrix93* B, Matrix93* C) {
 
   // Correct for bias in the sensor frame
-  Vector3 unbiasedAcc = biasHat_.correctAccelerometer(measuredAcc);
-  Vector3 unbiasedOmega = biasHat_.correctGyroscope(measuredOmega);
+  Vector3 acc = biasHat_.correctAccelerometer(measuredAcc);
+  Vector3 omega = biasHat_.correctGyroscope(measuredOmega);
 
-  return correctMeasurementsBySensorPose(unbiasedAcc, unbiasedOmega,
-      D_correctedAcc_measuredAcc, D_correctedAcc_measuredOmega,
-      D_correctedOmega_measuredOmega);
-}
-
-//------------------------------------------------------------------------------
-NavState PreintegrationBase::updatedDeltaXij(const Vector3& measuredAcc,
-    const Vector3& measuredOmega, const double dt,
-    OptionalJacobian<9, 9> D_updated_current,
-    OptionalJacobian<9, 3> D_updated_measuredAcc,
-    OptionalJacobian<9, 3> D_updated_measuredOmega) const {
-
-  Vector3 correctedAcc, correctedOmega;
-  Matrix3 D_correctedAcc_measuredAcc, //
-      D_correctedAcc_measuredOmega, //
-      D_correctedOmega_measuredOmega;
-  bool needDerivs = D_updated_measuredAcc && D_updated_measuredOmega && p().body_P_sensor;
-  boost::tie(correctedAcc, correctedOmega) =
-      correctMeasurementsByBiasAndSensorPose(measuredAcc, measuredOmega,
-          (needDerivs ? &D_correctedAcc_measuredAcc : 0),
-          (needDerivs ? &D_correctedAcc_measuredOmega : 0),
-          (needDerivs ? &D_correctedOmega_measuredOmega : 0));
-  // Do update in one fell swoop
-  Matrix93 D_updated_correctedAcc, D_updated_correctedOmega;
-  NavState updated = deltaXij_.update(correctedAcc, correctedOmega, dt, D_updated_current,
-              (needDerivs ? D_updated_correctedAcc : D_updated_measuredAcc),
-              (needDerivs ? D_updated_correctedOmega : D_updated_measuredOmega));
-  if (needDerivs) {
-    *D_updated_measuredAcc = D_updated_correctedAcc * D_correctedAcc_measuredAcc;
-    *D_updated_measuredOmega = D_updated_correctedOmega * D_correctedOmega_measuredOmega;
-    if (!p().body_P_sensor->translation().vector().isZero()) {
-      *D_updated_measuredOmega += D_updated_correctedAcc * D_correctedAcc_measuredOmega;
-    }
-  }
-  return updated;
-}
-
-//------------------------------------------------------------------------------
-void PreintegrationBase::update(const Vector3& measuredAcc,
-    const Vector3& measuredOmega, const double dt,
-    Matrix3* D_incrR_integratedOmega, Matrix9* D_updated_current,
-    Matrix93* D_updated_measuredAcc, Matrix93* D_updated_measuredOmega) {
+  // Possibly correct for sensor pose
+  Matrix3 D_correctedAcc_acc, D_correctedAcc_omega, D_correctedOmega_omega;
+  if (p().body_P_sensor)
+    boost::tie(acc, omega) = correctMeasurementsBySensorPose(acc, omega,
+        D_correctedAcc_acc, D_correctedAcc_omega, D_correctedOmega_omega);
 
   // Save current rotation for updating Jacobians
   const Rot3 oldRij = deltaXij_.attitude();
 
   // Do update
   deltaTij_ += dt;
-  deltaXij_ = updatedDeltaXij(measuredAcc, measuredOmega, dt,
-      D_updated_current, D_updated_measuredAcc, D_updated_measuredOmega); // functional
+  deltaXij_ = deltaXij_.update(acc, omega, dt, A, B, C); // functional
+
+  if (p().body_P_sensor) {
+    // More complicated derivatives in case of non-trivial sensor pose
+    *C *= D_correctedOmega_omega;
+    if (!p().body_P_sensor->translation().isZero())
+      *C += *B* D_correctedAcc_omega;
+    *B *= D_correctedAcc_acc;  // NOTE(frank): needs to be last
+  }
 
   // Update Jacobians
-  // TODO(frank): we are repeating some computation here: accessible in F ?
-  Vector3 correctedAcc, correctedOmega;
-  boost::tie(correctedAcc, correctedOmega) =
-      correctMeasurementsByBiasAndSensorPose(measuredAcc, measuredOmega);
-
+  // TODO(frank): Try same simplification as in new approach
   Matrix3 D_acc_R;
-  oldRij.rotate(correctedAcc, D_acc_R);
+  oldRij.rotate(acc, D_acc_R);
   const Matrix3 D_acc_biasOmega = D_acc_R * delRdelBiasOmega_;
 
-  const Vector3 integratedOmega = correctedOmega * dt;
+  const Vector3 integratedOmega = omega * dt;
   const Rot3 incrR = Rot3::Expmap(integratedOmega, D_incrR_integratedOmega); // expensive !!
   const Matrix3 incrRt = incrR.transpose();
   delRdelBiasOmega_ = incrRt * delRdelBiasOmega_
