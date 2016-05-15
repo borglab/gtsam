@@ -6,7 +6,8 @@ list(APPEND CMAKE_PREFIX_PATH "${CMAKE_INSTALL_PREFIX}")
 if(NOT CMAKE_BUILD_TYPE AND NOT MSVC AND NOT XCODE_VERSION)
     set(GTSAM_CMAKE_BUILD_TYPE "Release" CACHE STRING
       "Choose the type of build, options are: None Debug Release Timing Profiling RelWithDebInfo.")
-    set(CMAKE_BUILD_TYPE ${GTSAM_CMAKE_BUILD_TYPE})
+    set(CMAKE_BUILD_TYPE ${GTSAM_CMAKE_BUILD_TYPE} CACHE STRING
+      "Choose the type of build, options are: None Debug Release Timing Profiling RelWithDebInfo." FORCE)
 endif()
 
 # Add option for using build type postfixes to allow installing multiple build modes
