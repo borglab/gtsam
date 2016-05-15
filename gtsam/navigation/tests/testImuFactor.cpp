@@ -58,6 +58,16 @@ Rot3 evaluateRotationError(const ImuFactor& factor, const Pose3& pose_i,
 } // namespace
 
 /* ************************************************************************* */
+TEST(ImuFactor, PreintegratedMeasurementsConstruction) {
+  // Actual pre-integrated values
+  PreintegratedImuMeasurements actual(testing::Params());
+  EXPECT(assert_equal(Rot3(), actual.deltaRij()));
+  EXPECT(assert_equal(kZero, actual.deltaPij()));
+  EXPECT(assert_equal(kZero, actual.deltaVij()));
+  DOUBLES_EQUAL(0.0, actual.deltaTij(), 1e-9);
+}
+
+/* ************************************************************************* */
 TEST(ImuFactor, Accelerating) {
   const double a = 0.2, v = 50;
 
@@ -83,22 +93,18 @@ TEST(ImuFactor, Accelerating) {
 /* ************************************************************************* */
 TEST(ImuFactor, PreintegratedMeasurements) {
   // Measurements
-  Vector3 measuredAcc(0.1, 0.0, 0.0);
-  Vector3 measuredOmega(M_PI / 100.0, 0.0, 0.0);
+  const double a = 0.1, w = M_PI / 100.0;
+  Vector3 measuredAcc(a, 0.0, 0.0);
+  Vector3 measuredOmega(w, 0.0, 0.0);
   double deltaT = 0.5;
 
   // Expected pre-integrated values
-  Vector3 expectedDeltaR1(0.5 * M_PI / 100.0, 0.0, 0.0);
-  Vector3 expectedDeltaP1(0.5 * 0.1 * 0.5 * 0.5, 0, 0);
+  Vector3 expectedDeltaR1(w * deltaT, 0.0, 0.0);
+  Vector3 expectedDeltaP1(0.5 * a * deltaT*deltaT, 0, 0);
   Vector3 expectedDeltaV1(0.05, 0.0, 0.0);
 
   // Actual pre-integrated values
   PreintegratedImuMeasurements actual(testing::Params());
-  EXPECT(assert_equal(Rot3(), actual.deltaRij()));
-  EXPECT(assert_equal(kZero, actual.deltaPij()));
-  EXPECT(assert_equal(kZero, actual.deltaVij()));
-  DOUBLES_EQUAL(0.0, actual.deltaTij(), 1e-9);
-
   actual.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
   EXPECT(assert_equal(Rot3::Expmap(expectedDeltaR1), actual.deltaRij()));
   EXPECT(assert_equal(expectedDeltaP1, actual.deltaPij()));
