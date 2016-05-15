@@ -124,9 +124,9 @@ public:
   const imuBias::ConstantBias& biasHat() const { return biasHat_; }
   double deltaTij() const { return deltaTij_; }
 
-  virtual Vector3 deltaPij() const=0;
-  virtual Vector3 deltaVij() const=0;
-  virtual Rot3 deltaRij() const=0;
+  virtual Vector3  deltaPij() const=0;
+  virtual Vector3  deltaVij() const=0;
+  virtual Rot3     deltaRij() const=0;
   virtual NavState deltaXij() const=0;
 
   // Exposed for MATLAB
@@ -136,8 +136,7 @@ public:
   /// @name Testable
   /// @{
   GTSAM_EXPORT friend std::ostream& operator<<(std::ostream& os, const PreintegrationBase& pim);
-  void print(const std::string& s) const;
-  virtual bool equals(const PreintegrationBase& other, double tol) const = 0;
+  virtual void print(const std::string& s) const;
   /// @}
 
   /// @name Main functionality
@@ -155,8 +154,12 @@ public:
   /// Update preintegrated measurements and get derivatives
   /// It takes measured quantities in the j frame
   /// Modifies preintegrated quantities in place after correcting for bias and possibly sensor pose
-  virtual void integrateMeasurement(const Vector3& measuredAcc, const Vector3& measuredOmega,
+  virtual void update(const Vector3& measuredAcc, const Vector3& measuredOmega,
       const double dt, Matrix9* A, Matrix93* B, Matrix93* C)=0;
+
+  /// Version without derivatives
+  virtual void integrateMeasurement(const Vector3& measuredAcc,
+      const Vector3& measuredOmega, const double dt);
 
   /// Given the estimate of the bias, return a NavState tangent vector
   /// summarizing the preintegrated IMU measurements so far
@@ -181,11 +184,6 @@ public:
           boost::none, OptionalJacobian<9, 3> H2 = boost::none,
       OptionalJacobian<9, 6> H3 = boost::none, OptionalJacobian<9, 3> H4 =
           boost::none, OptionalJacobian<9, 6> H5 = boost::none) const;
-
-  /** Dummy clone for MATLAB */
-  virtual boost::shared_ptr<PreintegrationBase> clone() const {
-    return boost::shared_ptr<PreintegrationBase>();
-  }
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
   /// @name Deprecated

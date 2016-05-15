@@ -23,10 +23,17 @@
 
 /* GTSAM includes */
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/navigation/PreintegrationBase.h>
+#include <gtsam/navigation/ManifoldPreintegration.h>
+#include <gtsam/navigation/TangentPreintegration.h>
 #include <gtsam/base/debug.h>
 
 namespace gtsam {
+
+#ifdef GTSAM_TANGENT_PREINTEGRATION
+typedef TangentPreintegration PreintegrationType;
+#else
+typedef ManifoldPreintegration PreintegrationType;
+#endif
 
 /*
  * If you are using the factor, please cite:
@@ -61,7 +68,7 @@ namespace gtsam {
  *
  * @addtogroup SLAM
  */
-class PreintegratedImuMeasurements: public PreintegrationBase {
+class PreintegratedImuMeasurements: public PreintegrationType {
 
   friend class ImuFactor;
   friend class ImuFactor2;
@@ -85,29 +92,28 @@ public:
    */
   PreintegratedImuMeasurements(const boost::shared_ptr<PreintegrationParams>& p,
       const imuBias::ConstantBias& biasHat = imuBias::ConstantBias()) :
-      PreintegrationBase(p, biasHat) {
+      PreintegrationType(p, biasHat) {
     preintMeasCov_.setZero();
   }
 
 /**
   *  Construct preintegrated directly from members: base class and preintMeasCov
-  *  @param base               PreintegrationBase instance
+  *  @param base               PreintegrationType instance
   *  @param preintMeasCov      Covariance matrix used in noise model.
   */
-  PreintegratedImuMeasurements(const PreintegrationBase& base, const Matrix9& preintMeasCov)
-     : PreintegrationBase(base),
+  PreintegratedImuMeasurements(const PreintegrationType& base, const Matrix9& preintMeasCov)
+     : PreintegrationType(base),
        preintMeasCov_(preintMeasCov) {
   }
 
   /// print
-  void print(const std::string& s = "Preintegrated Measurements:") const;
+  void print(const std::string& s = "Preintegrated Measurements:") const override;
 
   /// equals
-  bool equals(const PreintegratedImuMeasurements& expected,
-      double tol = 1e-9) const;
+  bool equals(const PreintegratedImuMeasurements& expected, double tol = 1e-9) const;
 
   /// Re-initialize PreintegratedIMUMeasurements
-  void resetIntegration();
+  void resetIntegration() override;
 
   /**
    * Add a single IMU measurement to the preintegration.
@@ -115,7 +121,8 @@ public:
    * @param measuredOmega Measured angular velocity (as given by the sensor)
    * @param dt Time interval between this and the last IMU measurement
    */
-  void integrateMeasurement(const Vector3& measuredAcc, const Vector3& measuredOmega, double dt);
+  void integrateMeasurement(const Vector3& measuredAcc,
+      const Vector3& measuredOmega, const double dt) override;
 
   /// Add multiple measurements, in matrix columns
   void integrateMeasurements(const Matrix& measuredAccs, const Matrix& measuredOmegas,
@@ -152,7 +159,7 @@ private:
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     namespace bs = ::boost::serialization;
-    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegrationBase);
+    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegrationType);
     ar & bs::make_nvp("preintMeasCov_", bs::make_array(preintMeasCov_.data(), preintMeasCov_.size()));
   }
 };

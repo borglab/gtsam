@@ -31,7 +31,6 @@ namespace gtsam {
 PreintegrationBase::PreintegrationBase(const boost::shared_ptr<Params>& p,
                                        const Bias& biasHat)
     : p_(p), biasHat_(biasHat), deltaTij_(0.0) {
-  resetIntegration();
 }
 
 //------------------------------------------------------------------------------
@@ -94,6 +93,16 @@ pair<Vector3, Vector3> PreintegrationBase::correctMeasurementsBySensorPose(
   }
 
   return make_pair(correctedAcc, correctedOmega);
+}
+
+//------------------------------------------------------------------------------
+void PreintegrationBase::integrateMeasurement(const Vector3& measuredAcc,
+    const Vector3& measuredOmega, double dt) {
+  // NOTE(frank): integrateMeasurement always needs to compute the derivatives,
+  // even when not of interest to the caller. Provide scratch space here.
+  Matrix9 A;
+  Matrix93 B, C;
+  update(measuredAcc, measuredOmega, dt, &A, &B, &C);
 }
 
 //------------------------------------------------------------------------------

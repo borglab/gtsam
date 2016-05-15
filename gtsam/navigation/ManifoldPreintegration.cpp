@@ -26,9 +26,9 @@ using namespace std;
 namespace gtsam {
 
 //------------------------------------------------------------------------------
-ManifoldPreintegration::ManifoldPreintegration(const boost::shared_ptr<Params>& p,
-                                       const Bias& biasHat)
-    : PreintegrationBase(p, biasHat) {
+ManifoldPreintegration::ManifoldPreintegration(
+    const boost::shared_ptr<Params>& p, const Bias& biasHat) :
+    PreintegrationBase(p, biasHat) {
   resetIntegration();
 }
 
@@ -46,8 +46,7 @@ void ManifoldPreintegration::resetIntegration() {
 //------------------------------------------------------------------------------
 bool ManifoldPreintegration::equals(const ManifoldPreintegration& other,
     double tol) const {
-  return p_->equals(*other.p_, tol)
-      && fabs(deltaTij_ - other.deltaTij_) < tol
+  return p_->equals(*other.p_, tol) && fabs(deltaTij_ - other.deltaTij_) < tol
       && biasHat_.equals(other.biasHat_, tol)
       && deltaXij_.equals(other.deltaXij_, tol)
       && equal_with_abs_tol(delRdelBiasOmega_, other.delRdelBiasOmega_, tol)
@@ -58,9 +57,9 @@ bool ManifoldPreintegration::equals(const ManifoldPreintegration& other,
 }
 
 //------------------------------------------------------------------------------
-void ManifoldPreintegration::integrateMeasurement(const Vector3& measuredAcc,
-    const Vector3& measuredOmega, const double dt,
-    Matrix9* A, Matrix93* B, Matrix93* C) {
+void ManifoldPreintegration::update(const Vector3& measuredAcc,
+    const Vector3& measuredOmega, const double dt, Matrix9* A, Matrix93* B,
+    Matrix93* C) {
 
   // Correct for bias in the sensor frame
   Vector3 acc = biasHat_.correctAccelerometer(measuredAcc);
@@ -83,8 +82,8 @@ void ManifoldPreintegration::integrateMeasurement(const Vector3& measuredAcc,
     // More complicated derivatives in case of non-trivial sensor pose
     *C *= D_correctedOmega_omega;
     if (!p().body_P_sensor->translation().isZero())
-      *C += *B* D_correctedAcc_omega;
-    *B *= D_correctedAcc_acc;  // NOTE(frank): needs to be last
+      *C += *B * D_correctedAcc_omega;
+    *B *= D_correctedAcc_acc; // NOTE(frank): needs to be last
   }
 
   // Update Jacobians
@@ -141,4 +140,4 @@ Vector9 ManifoldPreintegration::biasCorrectedDelta(
 
 //------------------------------------------------------------------------------
 
-}  // namespace gtsam
+}// namespace gtsam

@@ -21,7 +21,8 @@
 
 #pragma once
 
-#include <gtsam/navigation/ManifoldPreintegration.h>
+#include <gtsam/navigation/NavState.h>
+#include <gtsam/navigation/PreintegrationBase.h>
 
 namespace gtsam {
 
@@ -72,14 +73,14 @@ public:
 
   /// @name Instance variables access
   /// @{
-  const NavState& deltaXij() const override { return deltaXij_; }
-  const Rot3& deltaRij()     const override { return deltaXij_.attitude(); }
-  Vector3 deltaPij()         const override { return deltaXij_.position().vector(); }
-  Vector3 deltaVij()         const override { return deltaXij_.velocity(); }
+  NavState deltaXij() const override { return deltaXij_; }
+  Rot3     deltaRij() const override { return deltaXij_.attitude(); }
+  Vector3  deltaPij() const override { return deltaXij_.position().vector(); }
+  Vector3  deltaVij() const override { return deltaXij_.velocity(); }
 
   /// @name Testable
   /// @{
-  bool equals(const ManifoldPreintegration& other, double tol) const override;
+  bool equals(const ManifoldPreintegration& other, double tol) const;
   /// @}
 
   /// @name Main functionality
@@ -89,8 +90,8 @@ public:
   /// It takes measured quantities in the j frame
   /// Modifies preintegrated quantities in place after correcting for bias and possibly sensor pose
   /// NOTE(frank): implementation is different in two versions
-  void integrateMeasurement(const Vector3& measuredAcc, const Vector3& measuredOmega, const double dt,
-                            Matrix9* A, Matrix93* B, Matrix93* C) override;
+  void update(const Vector3& measuredAcc, const Vector3& measuredOmega, const double dt,
+              Matrix9* A, Matrix93* B, Matrix93* C) override;
 
   /// Given the estimate of the bias, return a NavState tangent vector
   /// summarizing the preintegrated IMU measurements so far

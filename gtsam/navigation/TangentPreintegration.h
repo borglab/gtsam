@@ -64,9 +64,9 @@ public:
 
   /// @name Instance variables access
   /// @{
-  Vector3 deltaPij()  const override { return preintegrated_.segment<3>(3); }
-  Vector3 deltaVij()  const override { return preintegrated_.tail<3>(); }
-  Rot3 deltaRij()     const override { return Rot3::Expmap(theta()); }
+  Vector3  deltaPij() const override { return preintegrated_.segment<3>(3); }
+  Vector3  deltaVij() const override { return preintegrated_.tail<3>(); }
+  Rot3     deltaRij() const override { return Rot3::Expmap(theta()); }
   NavState deltaXij() const override { return NavState::Retract(preintegrated_); }
 
   const Vector9& preintegrated() const { return preintegrated_; }
@@ -76,7 +76,7 @@ public:
 
   /// @name Testable
   /// @{
-  bool equals(const TangentPreintegration& other, double tol) const override;
+  bool equals(const TangentPreintegration& other, double tol) const;
   /// @}
 
   /// @name Main functionality
@@ -91,15 +91,12 @@ public:
                                      OptionalJacobian<9, 3> B = boost::none,
                                      OptionalJacobian<9, 3> C = boost::none);
 
-  // Version without derivatives
-  void integrateMeasurement(const Vector3& measuredAcc, const Vector3& measuredOmega, const double dt);
-
   /// Update preintegrated measurements and get derivatives
   /// It takes measured quantities in the j frame
   /// Modifies preintegrated quantities in place after correcting for bias and possibly sensor pose
   /// NOTE(frank): implementation is different in two versions
-  void integrateMeasurement(const Vector3& measuredAcc, const Vector3& measuredOmega, const double dt,
-                            Matrix9* A, Matrix93* B, Matrix93* C) override;
+  void update(const Vector3& measuredAcc, const Vector3& measuredOmega,
+      const double dt, Matrix9* A, Matrix93* B, Matrix93* C) override;
 
   /// Given the estimate of the bias, return a NavState tangent vector
   /// summarizing the preintegrated IMU measurements so far

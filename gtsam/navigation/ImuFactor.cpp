@@ -32,20 +32,20 @@ using namespace std;
 // Inner class PreintegratedImuMeasurements
 //------------------------------------------------------------------------------
 void PreintegratedImuMeasurements::print(const string& s) const {
-  PreintegrationBase::print(s);
+  PreintegrationType::print(s);
   cout << "    preintMeasCov \n[" << preintMeasCov_ << "]" << endl;
 }
 
 //------------------------------------------------------------------------------
 bool PreintegratedImuMeasurements::equals(
     const PreintegratedImuMeasurements& other, double tol) const {
-  return PreintegrationBase::equals(other, tol)
+  return PreintegrationType::equals(other, tol)
       && equal_with_abs_tol(preintMeasCov_, other.preintMeasCov_, tol);
 }
 
 //------------------------------------------------------------------------------
 void PreintegratedImuMeasurements::resetIntegration() {
-  PreintegrationBase::resetIntegration();
+  PreintegrationType::resetIntegration();
   preintMeasCov_.setZero();
 }
 
@@ -53,9 +53,9 @@ void PreintegratedImuMeasurements::resetIntegration() {
 void PreintegratedImuMeasurements::integrateMeasurement(
     const Vector3& measuredAcc, const Vector3& measuredOmega, double dt) {
   // Update preintegrated measurements (also get Jacobian)
-  Matrix9 A;  // overall Jacobian wrt preintegrated measurements (df/dx)
+  Matrix9 A; // overall Jacobian wrt preintegrated measurements (df/dx)
   Matrix93 B, C;
-  PreintegrationBase::integrateMeasurement(measuredAcc, measuredOmega, dt, &A, &B, &C);
+  PreintegrationType::update(measuredAcc, measuredOmega, dt, &A, &B, &C);
 
   // first order covariance propagation:
   // as in [2] we consider a first order propagation that can be seen as a
@@ -73,30 +73,31 @@ void PreintegratedImuMeasurements::integrateMeasurement(
   preintMeasCov_.noalias() += C * (wCov / dt) * C.transpose();
 
   // NOTE(frank): (Gi*dt)*(C/dt)*(Gi'*dt), with Gi << Z_3x3, I_3x3, Z_3x3
-  preintMeasCov_.block<3,3>(3,3).noalias() += iCov * dt;
+  preintMeasCov_.block<3, 3>(3, 3).noalias() += iCov * dt;
 }
 
 //------------------------------------------------------------------------------
-void PreintegratedImuMeasurements::integrateMeasurements(const Matrix& measuredAccs,
-                                                         const Matrix& measuredOmegas,
-                                                         const Matrix& dts) {
-  assert(measuredAccs.rows() == 3 && measuredOmegas.rows() == 3 && dts.rows() == 1);
+void PreintegratedImuMeasurements::integrateMeasurements(
+    const Matrix& measuredAccs, const Matrix& measuredOmegas,
+    const Matrix& dts) {
+  assert(
+      measuredAccs.rows() == 3 && measuredOmegas.rows() == 3 && dts.rows() == 1);
   assert(dts.cols() >= 1);
   assert(measuredAccs.cols() == dts.cols());
   assert(measuredOmegas.cols() == dts.cols());
   size_t n = static_cast<size_t>(dts.cols());
   for (size_t j = 0; j < n; j++) {
-    integrateMeasurement(measuredAccs.col(j), measuredOmegas.col(j), dts(0,j));
+    integrateMeasurement(measuredAccs.col(j), measuredOmegas.col(j), dts(0, j));
   }
 }
 
 //------------------------------------------------------------------------------
 #ifdef GTSAM_TANGENT_PREINTEGRATION
-void PreintegratedImuMeasurements::mergeWith(const PreintegratedImuMeasurements& pim12,  //
-                                             Matrix9* H1, Matrix9* H2) {
-  PreintegrationBase::mergeWith(pim12, H1, H2);
+void PreintegratedImuMeasurements::mergeWith(const PreintegratedImuMeasurements& pim12, //
+    Matrix9* H1, Matrix9* H2) {
+  PreintegrationType::mergeWith(pim12, H1, H2);
   preintMeasCov_ =
-      *H1 * preintMeasCov_ * H1->transpose() + *H2 * pim12.preintMeasCov_ * H2->transpose();
+  *H1 * preintMeasCov_ * H1->transpose() + *H2 * pim12.preintMeasCov_ * H2->transpose();
 }
 #endif
 //------------------------------------------------------------------------------
@@ -180,12 +181,12 @@ PreintegratedImuMeasurements ImuFactor::Merge(
     const PreintegratedImuMeasurements& pim01,
     const PreintegratedImuMeasurements& pim12) {
   if (!pim01.matchesParamsWith(pim12))
-    throw std::domain_error(
-        "Cannot merge PreintegratedImuMeasurements with different params");
+  throw std::domain_error(
+      "Cannot merge PreintegratedImuMeasurements with different params");
 
   if (pim01.params()->body_P_sensor)
-    throw std::domain_error(
-        "Cannot merge PreintegratedImuMeasurements with sensor pose yet");
+  throw std::domain_error(
+      "Cannot merge PreintegratedImuMeasurements with sensor pose yet");
 
   // the bias for the merged factor will be the bias from 01
   PreintegratedImuMeasurements pim02 = pim01;
@@ -198,25 +199,25 @@ PreintegratedImuMeasurements ImuFactor::Merge(
 
 //------------------------------------------------------------------------------
 ImuFactor::shared_ptr ImuFactor::Merge(const shared_ptr& f01,
-                                       const shared_ptr& f12) {
+    const shared_ptr& f12) {
   // IMU bias keys must be the same.
   if (f01->key5() != f12->key5())
-    throw std::domain_error("ImuFactor::Merge: IMU bias keys must be the same");
+  throw std::domain_error("ImuFactor::Merge: IMU bias keys must be the same");
 
   // expect intermediate pose, velocity keys to matchup.
   if (f01->key3() != f12->key1() || f01->key4() != f12->key2())
-    throw std::domain_error(
-        "ImuFactor::Merge: intermediate pose, velocity keys need to match up");
+  throw std::domain_error(
+      "ImuFactor::Merge: intermediate pose, velocity keys need to match up");
 
   // return new factor
   auto pim02 =
-      Merge(f01->preintegratedMeasurements(), f12->preintegratedMeasurements());
-  return boost::make_shared<ImuFactor>(f01->key1(),  // P0
-                                       f01->key2(),  // V0
-                                       f12->key3(),  // P2
-                                       f12->key4(),  // V2
-                                       f01->key5(),  // B
-                                       pim02);
+  Merge(f01->preintegratedMeasurements(), f12->preintegratedMeasurements());
+  return boost::make_shared<ImuFactor>(f01->key1(),// P0
+      f01->key2(),// V0
+      f12->key3(),// P2
+      f12->key4(),// V2
+      f01->key5(),// B
+      pim02);
 }
 #endif
 
@@ -251,9 +252,11 @@ void ImuFactor::Predict(const Pose3& pose_i, const Vector3& vel_i,
 //------------------------------------------------------------------------------
 // ImuFactor2 methods
 //------------------------------------------------------------------------------
-ImuFactor2::ImuFactor2(Key state_i, Key state_j, Key bias, const PreintegratedImuMeasurements& pim)
-    : Base(noiseModel::Gaussian::Covariance(pim.preintMeasCov_), state_i, state_j, bias),
-      _PIM_(pim) {}
+ImuFactor2::ImuFactor2(Key state_i, Key state_j, Key bias,
+    const PreintegratedImuMeasurements& pim) :
+    Base(noiseModel::Gaussian::Covariance(pim.preintMeasCov_), state_i, state_j,
+        bias), _PIM_(pim) {
+}
 
 //------------------------------------------------------------------------------
 NonlinearFactor::shared_ptr ImuFactor2::clone() const {
@@ -269,9 +272,11 @@ std::ostream& operator<<(std::ostream& os, const ImuFactor2& f) {
 }
 
 //------------------------------------------------------------------------------
-void ImuFactor2::print(const string& s, const KeyFormatter& keyFormatter) const {
-  cout << s << "ImuFactor2(" << keyFormatter(this->key1()) << "," << keyFormatter(this->key2())
-       << "," << keyFormatter(this->key3()) << ")\n";
+void ImuFactor2::print(const string& s,
+    const KeyFormatter& keyFormatter) const {
+  cout << s << "ImuFactor2(" << keyFormatter(this->key1()) << ","
+      << keyFormatter(this->key2()) << "," << keyFormatter(this->key3())
+      << ")\n";
   cout << *this << endl;
 }
 
@@ -284,15 +289,15 @@ bool ImuFactor2::equals(const NonlinearFactor& other, double tol) const {
 }
 
 //------------------------------------------------------------------------------
-Vector ImuFactor2::evaluateError(const NavState& state_i, const NavState& state_j,
-                                 const imuBias::ConstantBias& bias_i,  //
-                                 boost::optional<Matrix&> H1,
-                                 boost::optional<Matrix&> H2,
-                                 boost::optional<Matrix&> H3) const {
+Vector ImuFactor2::evaluateError(const NavState& state_i,
+    const NavState& state_j,
+    const imuBias::ConstantBias& bias_i, //
+    boost::optional<Matrix&> H1, boost::optional<Matrix&> H2,
+    boost::optional<Matrix&> H3) const {
   return _PIM_.computeError(state_i, state_j, bias_i, H1, H2, H3);
 }
 
 //------------------------------------------------------------------------------
 
 }
- // namespace gtsam
+// namespace gtsam
