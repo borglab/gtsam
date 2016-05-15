@@ -55,13 +55,7 @@ void PreintegratedImuMeasurements::integrateMeasurement(
   // Update preintegrated measurements (also get Jacobian)
   Matrix9 A;  // overall Jacobian wrt preintegrated measurements (df/dx)
   Matrix93 B, C;
-#ifdef GTSAM_IMU_MANIFOLD_INTEGRATION
   PreintegrationBase::integrateMeasurement(measuredAcc, measuredOmega, dt, &A, &B, &C);
-#else
-  Matrix3 D_incrR_integratedOmega;
-  PreintegrationBase::integrateMeasurement(measuredAcc, measuredOmega, dt,
-      &D_incrR_integratedOmega, &A, &B, &C);
-#endif
 
   // first order covariance propagation:
   // as in [2] we consider a first order propagation that can be seen as a

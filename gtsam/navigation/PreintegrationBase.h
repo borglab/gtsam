@@ -199,34 +199,23 @@ public:
                                      OptionalJacobian<9, 3> B = boost::none,
                                      OptionalJacobian<9, 3> C = boost::none);
 
-  /// Update preintegrated measurements and get derivatives
-  /// It takes measured quantities in the j frame
-  /// Modifies preintegrated_ in place after correcting for bias and possibly sensor pose
-  void integrateMeasurement(const Vector3& measuredAcc, const Vector3& measuredOmega, const double dt,
-                            Matrix9* A, Matrix93* B, Matrix93* C);
-
   // Version without derivatives
   void integrateMeasurement(const Vector3& measuredAcc, const Vector3& measuredOmega, const double dt);
 
-  /// Given the estimate of the bias, return a NavState tangent vector
-  /// summarizing the preintegrated IMU measurements so far
-  Vector9 biasCorrectedDelta(const imuBias::ConstantBias& bias_i,
-      OptionalJacobian<9, 6> H = boost::none) const;
-
-#else
+#endif
 
   /// Update preintegrated measurements and get derivatives
   /// It takes measured quantities in the j frame
+  /// Modifies preintegrated quantities in place after correcting for bias and possibly sensor pose
+  /// NOTE(frank): implementation is different in two versions
   void integrateMeasurement(const Vector3& measuredAcc, const Vector3& measuredOmega, const double dt,
-      Matrix3* D_incrR_integratedOmega,
-      Matrix9* A, Matrix93* B, Matrix93* C);
+                            Matrix9* A, Matrix93* B, Matrix93* C);
 
   /// Given the estimate of the bias, return a NavState tangent vector
   /// summarizing the preintegrated IMU measurements so far
+  /// NOTE(frank): implementation is different in two versions
   Vector9 biasCorrectedDelta(const imuBias::ConstantBias& bias_i,
       OptionalJacobian<9, 6> H = boost::none) const;
-
-#endif
 
   /// Predict state at time j
   NavState predict(const NavState& state_i, const imuBias::ConstantBias& bias_i,

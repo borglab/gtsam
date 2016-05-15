@@ -253,7 +253,7 @@ Vector9 PreintegrationBase::biasCorrectedDelta(
 //------------------------------------------------------------------------------
 void PreintegrationBase::integrateMeasurement(const Vector3& measuredAcc,
     const Vector3& measuredOmega, const double dt,
-    Matrix3* D_incrR_integratedOmega, Matrix9* A, Matrix93* B, Matrix93* C) {
+    Matrix9* A, Matrix93* B, Matrix93* C) {
 
   // Correct for bias in the sensor frame
   Vector3 acc = biasHat_.correctAccelerometer(measuredAcc);
@@ -287,10 +287,10 @@ void PreintegrationBase::integrateMeasurement(const Vector3& measuredAcc,
   const Matrix3 D_acc_biasOmega = D_acc_R * delRdelBiasOmega_;
 
   const Vector3 integratedOmega = omega * dt;
+  Matrix3 D_incrR_integratedOmega;
   const Rot3 incrR = Rot3::Expmap(integratedOmega, D_incrR_integratedOmega); // expensive !!
   const Matrix3 incrRt = incrR.transpose();
-  delRdelBiasOmega_ = incrRt * delRdelBiasOmega_
-      - *D_incrR_integratedOmega * dt;
+  delRdelBiasOmega_ = incrRt * delRdelBiasOmega_ - D_incrR_integratedOmega * dt;
 
   double dt22 = 0.5 * dt * dt;
   const Matrix3 dRij = oldRij.matrix(); // expensive

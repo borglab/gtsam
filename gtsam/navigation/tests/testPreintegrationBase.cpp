@@ -26,9 +26,9 @@
 
 #include "imuFactorTesting.h"
 
+#ifdef GTSAM_IMU_MANIFOLD_INTEGRATION
 static const double kDt = 0.1;
 
-#ifdef GTSAM_IMU_MANIFOLD_INTEGRATION
 Vector9 f(const Vector9& zeta, const Vector3& a, const Vector3& w) {
   return PreintegrationBase::UpdatePreintegrated(a, w, kDt, zeta);
 }
