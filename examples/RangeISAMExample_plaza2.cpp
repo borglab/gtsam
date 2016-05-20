@@ -43,7 +43,6 @@
 #include <gtsam/slam/dataset.h>
 
 // Standard headers, added last, so we know headers above work on their own
-#include <boost/foreach.hpp>
 #include <fstream>
 #include <iostream>
 
