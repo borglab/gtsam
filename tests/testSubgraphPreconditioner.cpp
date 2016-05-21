@@ -57,7 +57,7 @@ TEST( SubgraphPreconditioner, planarOrdering ) {
 /** unnormalized error */
 static double error(const GaussianFactorGraph& fg, const VectorValues& x) {
   double total_error = 0.;
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, fg)
+  for(const GaussianFactor::shared_ptr& factor: fg)
     total_error += factor->error(x);
   return total_error;
 }
