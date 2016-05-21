@@ -8,7 +8,6 @@
 #include "GlobalFunction.h"
 #include "utilities.h"
 
-#include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 
 namespace wrap {
@@ -44,7 +43,7 @@ void GlobalFunction::matlab_proxy(const string& toolboxPath,
   }
 
   size_t lastcheck = grouped_functions.size();
-  BOOST_FOREACH(const GlobalFunctionMap::value_type& p, grouped_functions) {
+  for(const GlobalFunctionMap::value_type& p: grouped_functions) {
     p.second.generateSingleFunction(toolboxPath, wrapperName, typeAttributes,
         file, functionNames);
     if (--lastcheck != 0)

@@ -1,6 +1,5 @@
 #include <wrap/matlab.h>
 #include <map>
-#include <boost/foreach.hpp>
 
 #include <boost/serialization/export.hpp>
 #include <boost/archive/text_iarchive.hpp>
@@ -116,7 +115,7 @@ void _geometry_RTTIRegister() {
     if(!registry)
       registry = mxCreateStructMatrix(1, 1, 0, NULL);
     typedef std::pair<std::string, std::string> StringPair;
-    BOOST_FOREACH(const StringPair& rtti_matlab, types) {
+    for(const StringPair& rtti_matlab: types) {
       int fieldId = mxAddField(registry, rtti_matlab.first.c_str());
       if(fieldId < 0)
         mexErrMsgTxt("gtsam wrap:  Error indexing RTTI types, inheritance will not work correctly");
