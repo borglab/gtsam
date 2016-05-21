@@ -145,7 +145,7 @@ TEST( BTree, iterating )
   CHECK(*(++it) == p5)
   CHECK((++it)==tree.end())
 
-  // acid iterator test: BOOST_FOREACH
+  // acid iterator test
   int sum = 0;
   for(const KeyInt& p: tree)
 sum  += p.second;

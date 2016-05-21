@@ -66,7 +66,7 @@ ConcurrentIncrementalSmoother::Result ConcurrentIncrementalSmoother::update(cons
   // Also, mark the separator keys as fixed linearization points
   FastMap<Key,int> constrainedKeys;
   FastList<Key> noRelinKeys;
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, separatorValues_) {
+  for(const Values::ConstKeyValuePair& key_value: separatorValues_) {
     constrainedKeys[key_value.key] = 1;
     noRelinKeys.push_back(key_value.key);
   }
@@ -82,12 +82,12 @@ ConcurrentIncrementalSmoother::Result ConcurrentIncrementalSmoother::update(cons
       Values values(newTheta);
       // Unfortunately, we must be careful here, as some of the smoother values
       // and/or separator values may have been added previously
-      BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, smootherValues_) {
+      for(const Values::ConstKeyValuePair& key_value: smootherValues_) {
         if(!isam2_.getLinearizationPoint().exists(key_value.key)) {
           values.insert(key_value.key, smootherValues_.at(key_value.key));
         }
       }
-      BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, separatorValues_) {
+      for(const Values::ConstKeyValuePair& key_value: separatorValues_) {
         if(!isam2_.getLinearizationPoint().exists(key_value.key)) {
           values.insert(key_value.key, separatorValues_.at(key_value.key));
         }
@@ -188,15 +188,15 @@ void ConcurrentIncrementalSmoother::updateSmootherSummarization() {
 
   // Find all cliques that contain any separator variables
   std::set<ISAM2Clique::shared_ptr> separatorCliques;
-  BOOST_FOREACH(Key key, separatorValues_.keys()) {
+  for(Key key: separatorValues_.keys()) {
     ISAM2Clique::shared_ptr clique = isam2_[key];
     separatorCliques.insert( clique );
   }
 
   // Create the set of clique keys LC:
   std::vector<Key> cliqueKeys;
-  BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, separatorCliques) {
-    BOOST_FOREACH(Key key, clique->conditional()->frontals()) {
+  for(const ISAM2Clique::shared_ptr& clique: separatorCliques) {
+    for(Key key: clique->conditional()->frontals()) {
       cliqueKeys.push_back(key);
     }
   }
@@ -204,8 +204,8 @@ void ConcurrentIncrementalSmoother::updateSmootherSummarization() {
 
   // Gather all factors that involve only clique keys
   std::set<size_t> cliqueFactorSlots;
-  BOOST_FOREACH(Key key, cliqueKeys) {
-    BOOST_FOREACH(size_t slot, isam2_.getVariableIndex()[key]) {
+  for(Key key: cliqueKeys) {
+    for(size_t slot: isam2_.getVariableIndex()[key]) {
       const NonlinearFactor::shared_ptr& factor = isam2_.getFactorsUnsafe().at(slot);
       if(factor) {
         std::set<Key> factorKeys(factor->begin(), factor->end());
@@ -217,36 +217,36 @@ void ConcurrentIncrementalSmoother::updateSmootherSummarization() {
   }
 
   // Remove any factor included in the filter summarization
-  BOOST_FOREACH(size_t slot, filterSummarizationSlots_) {
+  for(size_t slot: filterSummarizationSlots_) {
     cliqueFactorSlots.erase(slot);
   }
 
   // Create a factor graph from the identified factors
   NonlinearFactorGraph graph;
-  BOOST_FOREACH(size_t slot, cliqueFactorSlots) {
+  for(size_t slot: cliqueFactorSlots) {
     graph.push_back(isam2_.getFactorsUnsafe().at(slot));
   }
 
   // Find the set of children of the separator cliques
   std::set<ISAM2Clique::shared_ptr> childCliques;
   // Add all of the children
-  BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, separatorCliques) {
+  for(const ISAM2Clique::shared_ptr& clique: separatorCliques) {
     childCliques.insert(clique->children.begin(), clique->children.end());
   }
   // Remove any separator cliques that were added because they were children of other separator cliques
-  BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, separatorCliques) {
+  for(const ISAM2Clique::shared_ptr& clique: separatorCliques) {
     childCliques.erase(clique);
   }
 
   // Augment the factor graph with cached factors from the children
-  BOOST_FOREACH(const ISAM2Clique::shared_ptr& clique, childCliques) {
+  for(const ISAM2Clique::shared_ptr& clique: childCliques) {
     LinearContainerFactor::shared_ptr factor(new LinearContainerFactor(clique->cachedFactor(), isam2_.getLinearizationPoint()));
     graph.push_back( factor );
   }
 
   // Get the set of separator keys
   KeySet separatorKeys;
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, separatorValues_) {
+  for(const Values::ConstKeyValuePair& key_value: separatorValues_) {
     separatorKeys.insert(key_value.key);
   }
 
