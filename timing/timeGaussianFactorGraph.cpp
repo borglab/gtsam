@@ -82,7 +82,7 @@ double timePlanarSmootherEliminate(int N, bool old = true) {
 //    // create an internal ordering to render Ab
 //    Ordering render;
 //    render += key;
-//    BOOST_FOREACH(const Symbol& k, joint_factor->keys())
+//    for(const Symbol& k: joint_factor->keys())
 //    if (k != key) render += k;
 //
 //    Matrix Ab = joint_factor->matrix_augmented(render,false);
