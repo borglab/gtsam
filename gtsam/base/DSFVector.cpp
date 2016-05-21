@@ -79,7 +79,7 @@ DSFVector::DSFVector(const boost::shared_ptr<V>& v_in,
 /* ************************************************************************* */
 bool DSFVector::isSingleton(const size_t& label) const {
   bool result = false;
-  BOOST_FOREACH(size_t key,keys_) {
+  for(size_t key: keys_) {
     if (find(key) == label) {
       if (!result) // find the first occurrence
         result = true;
@@ -93,7 +93,7 @@ bool DSFVector::isSingleton(const size_t& label) const {
 /* ************************************************************************* */
 std::set<size_t> DSFVector::set(const size_t& label) const {
   std::set < size_t > set;
-  BOOST_FOREACH(size_t key,keys_)
+  for(size_t key: keys_)
     if (find(key) == label)
       set.insert(key);
   return set;
@@ -102,7 +102,7 @@ std::set<size_t> DSFVector::set(const size_t& label) const {
 /* ************************************************************************* */
 std::map<size_t, std::set<size_t> > DSFVector::sets() const {
   std::map<size_t, std::set<size_t> > sets;
-  BOOST_FOREACH(size_t key,keys_)
+  for(size_t key: keys_)
     sets[find(key)].insert(key);
   return sets;
 }
@@ -110,7 +110,7 @@ std::map<size_t, std::set<size_t> > DSFVector::sets() const {
 /* ************************************************************************* */
 std::map<size_t, std::vector<size_t> > DSFVector::arrays() const {
   std::map<size_t, std::vector<size_t> > arrays;
-  BOOST_FOREACH(size_t key,keys_)
+  for(size_t key: keys_)
     arrays[find(key)].push_back(key);
   return arrays;
 }

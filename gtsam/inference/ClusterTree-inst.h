@@ -13,7 +13,6 @@
 #include <gtsam/base/timing.h>
 #include <gtsam/base/treeTraversal-inst.h>
 
-#include <boost/foreach.hpp>
 #include <boost/bind.hpp>
 
 namespace gtsam {
@@ -87,7 +86,7 @@ struct EliminationData {
       gatheredFactors += myData.childFactors;
 
       // Check for Bayes tree orphan subtrees, and add them to our children
-      BOOST_FOREACH(const sharedFactor& f, node->factors) {
+      for(const sharedFactor& f: node->factors) {
         if (const BayesTreeOrphanWrapper<BTNode>* asSubtree =
             dynamic_cast<const BayesTreeOrphanWrapper<BTNode>*>(f.get())) {
           myData.bayesTreeNode->children.push_back(asSubtree->clique);
@@ -107,7 +106,7 @@ struct EliminationData {
       // Fill nodes index - we do this here instead of calling insertRoot at the end to avoid
       // putting orphan subtrees in the index - they'll already be in the index of the ISAM2
       // object they're added to.
-      BOOST_FOREACH(const Key& j, myData.bayesTreeNode->conditional()->frontals())
+      for(const Key& j: myData.bayesTreeNode->conditional()->frontals())
         nodesIndex_.insert(std::make_pair(j, myData.bayesTreeNode));
 
       // Store remaining factor in parent's gathered factors
@@ -138,7 +137,7 @@ void ClusterTree<BAYESTREE, GRAPH>::Cluster::mergeChildren(
   size_t nrNewChildren = 0;
   // Loop over children
   size_t i = 0;
-  BOOST_FOREACH(const sharedNode& child, children) {
+  for(const sharedNode& child: children) {
     if (merge[i]) {
       nrKeys += child->orderedFrontalKeys.size();
       nrFactors += child->factors.size();
@@ -155,7 +154,7 @@ void ClusterTree<BAYESTREE, GRAPH>::Cluster::mergeChildren(
   typename Node::Children newChildren;
   newChildren.reserve(nrNewChildren);
   i = 0;
-  BOOST_FOREACH(const sharedNode& child, children) {
+  for(const sharedNode& child: children) {
     if (merge[i]) {
       // Merge keys. For efficiency, we add keys in reverse order at end, calling reverse after..
       orderedFrontalKeys.insert(orderedFrontalKeys.end(),
@@ -228,7 +227,7 @@ std::pair<boost::shared_ptr<BAYESTREE>, boost::shared_ptr<GRAPH> > ClusterTree<
   remaining->reserve(
       remainingFactors_.size() + rootsContainer.childFactors.size());
   remaining->push_back(remainingFactors_.begin(), remainingFactors_.end());
-  BOOST_FOREACH(const sharedFactor& factor, rootsContainer.childFactors) {
+  for(const sharedFactor& factor: rootsContainer.childFactors) {
     if (factor)
       remaining->push_back(factor);
   }

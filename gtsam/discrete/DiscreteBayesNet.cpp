@@ -46,7 +46,7 @@ namespace gtsam {
   double DiscreteBayesNet::evaluate(const DiscreteConditional::Values & values) const {
     // evaluate all conditionals and multiply
     double result = 1.0;
-    BOOST_FOREACH(DiscreteConditional::shared_ptr conditional, *this)
+    for(DiscreteConditional::shared_ptr conditional: *this)
       result *= (*conditional)(values);
     return result;
   }

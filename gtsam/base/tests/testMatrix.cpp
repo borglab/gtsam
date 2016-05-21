@@ -919,7 +919,7 @@ TEST(Matrix, weighted_elimination )
 
   // unpack and verify
   i = 0;
-  BOOST_FOREACH(boost::tie(r, di, sigma), solution){
+  for(boost::tie(r, di, sigma): solution){
     EXPECT(assert_equal(r, expectedR.row(i))); // verify r
     DOUBLES_EQUAL(d(i), di, 1e-8); // verify d
     DOUBLES_EQUAL(newSigmas(i), sigma, 1e-5); // verify sigma

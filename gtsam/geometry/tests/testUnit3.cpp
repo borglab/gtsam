@@ -33,7 +33,6 @@
 #include <CppUnitLite/TestHarness.h>
 
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 #include <boost/random.hpp>
 #include <boost/assign/std/vector.hpp>
 #include <cmath>
@@ -56,7 +55,7 @@ TEST(Unit3, point3) {
   ps += Point3(1, 0, 0), Point3(0, 1, 0), Point3(0, 0, 1), Point3(1, 1, 0)
       / sqrt(2.0);
   Matrix actualH, expectedH;
-  BOOST_FOREACH(Point3 p,ps) {
+  for(Point3 p: ps) {
     Unit3 s(p);
     expectedH = numericalDerivative11<Point3, Unit3>(point3_, s);
     EXPECT(assert_equal(p, s.point3(actualH), 1e-8));

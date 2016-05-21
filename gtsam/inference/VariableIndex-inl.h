@@ -34,7 +34,7 @@ void VariableIndex::augment(const FG& factors,
     if (factors[i]) {
       const size_t globalI =
           newFactorIndices ? (*newFactorIndices)[i] : nFactors_;
-      BOOST_FOREACH(const Key key, *factors[i]) {
+      for(const Key key: *factors[i]) {
         index_[key].push_back(globalI);
         ++nEntries_;
       }
@@ -67,7 +67,7 @@ void VariableIndex::remove(ITERATOR firstFactor, ITERATOR lastFactor,
       throw std::invalid_argument(
           "Internal error, requested inconsistent number of factor indices and factors in VariableIndex::remove");
     if (factors[i]) {
-      BOOST_FOREACH(Key j, *factors[i]) {
+      for(Key j: *factors[i]) {
         Factors& factorEntries = internalAt(j);
         Factors::iterator entry = std::find(factorEntries.begin(),
             factorEntries.end(), *factorIndex);

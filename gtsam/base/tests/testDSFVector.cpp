@@ -70,7 +70,7 @@ TEST(DSFBase, mergePairwiseMatches) {
 
   // Merge matches
   DSFBase dsf(7); // We allow for keys 0..6
-  BOOST_FOREACH(const Match& m, matches)
+  for(const Match& m: matches)
     dsf.merge(m.first,m.second);
 
   // Each point is now associated with a set, represented by one of its members
@@ -206,7 +206,7 @@ TEST(DSFVector, mergePairwiseMatches) {
 
   // Merge matches
   DSFVector dsf(keys);
-  BOOST_FOREACH(const Match& m, matches)
+  for(const Match& m: matches)
     dsf.merge(m.first,m.second);
 
   // Check that we have two connected components, 1,2,3 and 4,5,6
