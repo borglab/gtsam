@@ -29,7 +29,6 @@
 #include <gtsam/base/ThreadsafeException.h>
 #include <gtsam/base/timing.h>
 
-#include <boost/foreach.hpp>
 #include <boost/format.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/tuple/tuple.hpp>
@@ -241,7 +240,7 @@ HessianFactor::HessianFactor(const GaussianFactorGraph& factors,
   keys_.resize(n);
   FastVector<DenseIndex> dims(n + 1);
   DenseIndex slot = 0;
-  BOOST_FOREACH(const SlotEntry& slotentry, *scatter) {
+  for(const SlotEntry& slotentry: *scatter) {
     keys_[slot] = slotentry.key;
     dims[slot] = slotentry.dimension;
     ++slot;
@@ -253,7 +252,7 @@ HessianFactor::HessianFactor(const GaussianFactorGraph& factors,
 
   // Form A' * A
   gttic(update);
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factors)
+  for(const GaussianFactor::shared_ptr& factor: factors)
     if (factor)
       factor->updateHessian(keys_, &info_);
   gttoc(update);

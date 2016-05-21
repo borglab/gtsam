@@ -193,7 +193,7 @@ boost::shared_ptr<Values> composePoses(const G& graph, const PredecessorMap<KEY>
   // attach the relative poses to the edges
   PoseEdge edge12, edge21;
   bool found1, found2;
-  BOOST_FOREACH(typename G::sharedFactor nl_factor, graph) {
+  for(typename G::sharedFactor nl_factor: graph) {
 
     if (nl_factor->keys().size() > 2)
       throw std::invalid_argument("composePoses: only support factors with at most two keys");
@@ -243,7 +243,7 @@ PredecessorMap<KEY> findMinimumSpanningTree(const G& fg) {
   // convert edge to string pairs
   PredecessorMap<KEY> tree;
   typename SDGraph<KEY>::vertex_iterator itVertex = boost::vertices(g).first;
-  BOOST_FOREACH(const typename SDGraph<KEY>::Vertex& vi, p_map){
+  for(const typename SDGraph<KEY>::Vertex& vi: p_map){
     KEY key = boost::get(boost::vertex_name, g, *itVertex);
     KEY parent = boost::get(boost::vertex_name, g, vi);
     tree.insert(key, parent);
@@ -258,7 +258,7 @@ void split(const G& g, const PredecessorMap<KEY>& tree, G& Ab1, G& Ab2) {
 
   typedef typename G::sharedFactor F ;
 
-  BOOST_FOREACH(const F& factor, g)
+  for(const F& factor: g)
   {
     if (factor->keys().size() > 2)
       throw(std::invalid_argument("split: only support factors with at most two keys"));

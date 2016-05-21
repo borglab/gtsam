@@ -127,7 +127,7 @@ JointMarginal Marginals::jointMarginalInformation(const std::vector<Key>& variab
     // Get dimensions from factor graph
     std::vector<size_t> dims;
     dims.reserve(variablesSorted.size());
-    BOOST_FOREACH(Key key, variablesSorted) {
+    for(Key key: variablesSorted) {
       dims.push_back(values_.at(key).dim());
     }
 
@@ -144,7 +144,7 @@ VectorValues Marginals::optimize() const {
 void JointMarginal::print(const std::string& s, const KeyFormatter& formatter) const {
   cout << s << "Joint marginal on keys ";
   bool first = true;
-  BOOST_FOREACH(Key key, keys_) {
+  for(Key key: keys_) {
     if(!first)
       cout << ", ";
     else

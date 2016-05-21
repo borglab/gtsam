@@ -20,7 +20,6 @@
 
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/RegularJacobianFactor.h>
-#include <boost/foreach.hpp>
 #include <vector>
 
 namespace gtsam {
@@ -114,7 +113,7 @@ public:
       double* yvalues) const {
     // Create a vector of temporary y_ values, corresponding to rows i
     y_.resize(size());
-    BOOST_FOREACH(VectorD & yi, y_)
+    for(VectorD & yi: y_)
       yi.setZero();
 
     // Accessing the VectorValues one by one is expensive
@@ -147,7 +146,7 @@ public:
 
     // Create a vector of temporary y_ values, corresponding to rows i
     y_.resize(size());
-    BOOST_FOREACH(VectorD & yi, y_)
+    for(VectorD & yi: y_)
       yi.setZero();
 
     // Accessing the VectorValues one by one is expensive

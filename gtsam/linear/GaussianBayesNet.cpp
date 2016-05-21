@@ -25,7 +25,7 @@
 using namespace std;
 using namespace gtsam;
 
-#define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL) 
+#define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL):COL)
 #define REVERSE_FOREACH_PAIR( KEY, VAL, COL) BOOST_REVERSE_FOREACH (boost::tie(KEY,VAL),COL)
 
 namespace gtsam {
@@ -107,7 +107,7 @@ namespace gtsam {
 
     // we loop from first-eliminated to last-eliminated
     // i^th part of L*gy=gx is done block-column by block-column of L
-    BOOST_FOREACH(const sharedConditional& cg, *this)
+    for(const sharedConditional& cg: *this)
       cg->solveTransposeInPlace(gy);
 
     return gy;
@@ -146,15 +146,15 @@ namespace gtsam {
     KeySet keys = factorGraph.keys();
     // add frontal keys in order
     Ordering ordering;
-    BOOST_FOREACH (const sharedConditional& cg, *this)
+    for (const sharedConditional& cg: *this)
       if (cg) {
-        BOOST_FOREACH (Key key, cg->frontals()) {
+        for (Key key: cg->frontals()) {
           ordering.push_back(key);
           keys.erase(key);
         }
       }
     // add remaining keys in case Bayes net is incomplete
-    BOOST_FOREACH (Key key, keys)
+    for (Key key: keys)
       ordering.push_back(key);
     // return matrix and RHS
     return factorGraph.jacobian(ordering);
@@ -182,7 +182,7 @@ namespace gtsam {
   double GaussianBayesNet::logDeterminant() const
   {
     double logDet = 0.0;
-    BOOST_FOREACH(const sharedConditional& cg, *this) {
+    for(const sharedConditional& cg: *this) {
       if(cg->get_model()) {
         Vector diag = cg->get_R().diagonal();
         cg->get_model()->whitenInPlace(diag);

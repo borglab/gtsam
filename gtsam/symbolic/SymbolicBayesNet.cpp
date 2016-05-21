@@ -20,6 +20,8 @@
 #include <gtsam/symbolic/SymbolicConditional.h>
 #include <gtsam/inference/FactorGraph-inst.h>
 
+#include <boost/foreach.hpp>
+
 #include <fstream>
 
 namespace gtsam {
@@ -43,7 +45,7 @@ namespace gtsam {
       SymbolicConditional::Frontals frontals = conditional->frontals();
       Key me = frontals.front();
       SymbolicConditional::Parents parents = conditional->parents();
-      BOOST_FOREACH(Key p, parents)
+      for(Key p: parents)
         of << p << "->" << me << std::endl;
     }
 

@@ -59,7 +59,7 @@ namespace gtsam {
 /* ************************************************************************* */
 static GaussianFactorGraph::shared_ptr convertToJacobianFactors(const GaussianFactorGraph &gfg) {
   GaussianFactorGraph::shared_ptr result(new GaussianFactorGraph());
-  BOOST_FOREACH(const GaussianFactor::shared_ptr &gf, gfg) {
+  for(const GaussianFactor::shared_ptr &gf: gfg) {
     JacobianFactor::shared_ptr jf = boost::dynamic_pointer_cast<JacobianFactor>(gf);
     if( !jf ) {
       jf = boost::make_shared<JacobianFactor>(*gf); // Convert any non-Jacobian factors to Jacobians (e.g. Hessian -> Jacobian with Cholesky)
@@ -122,7 +122,7 @@ vector<size_t> uniqueSampler(const vector<double> &weight, const size_t n) {
 
     /* sampling and cache results */
     vector<size_t> samples = iidSampler(localWeights, n-count);
-    BOOST_FOREACH ( const size_t &id, samples ) {
+    for ( const size_t &id: samples ) {
       if ( touched[id] == false ) {
         touched[id] = true ;
         result.push_back(id);
@@ -136,7 +136,7 @@ vector<size_t> uniqueSampler(const vector<double> &weight, const size_t n) {
 /****************************************************************************/
 Subgraph::Subgraph(const std::vector<size_t> &indices) {
   edges_.reserve(indices.size());
-  BOOST_FOREACH ( const size_t &idx, indices ) {
+  for ( const size_t &idx: indices ) {
     edges_.push_back(SubgraphEdge(idx, 1.0));
   }
 }
@@ -144,7 +144,7 @@ Subgraph::Subgraph(const std::vector<size_t> &indices) {
 /****************************************************************************/
 std::vector<size_t> Subgraph::edgeIndices() const {
   std::vector<size_t> eid; eid.reserve(size());
-  BOOST_FOREACH ( const SubgraphEdge &edge, edges_ ) {
+  for ( const SubgraphEdge &edge: edges_ ) {
     eid.push_back(edge.index_);
   }
   return eid;
@@ -180,7 +180,7 @@ std::ostream &operator<<(std::ostream &os, const SubgraphEdge &edge) {
 /****************************************************************************/
 std::ostream &operator<<(std::ostream &os, const Subgraph &subgraph) {
   os << "Subgraph" << endl;
-  BOOST_FOREACH ( const SubgraphEdge &e, subgraph.edges() ) {
+  for ( const SubgraphEdge &e: subgraph.edges() ) {
     os << e << ", " ;
   }
   return os;
@@ -286,7 +286,7 @@ std::vector<size_t> SubgraphBuilder::buildTree(const GaussianFactorGraph &gfg, c
 std::vector<size_t> SubgraphBuilder::unary(const GaussianFactorGraph &gfg) const {
   std::vector<size_t> result ;
   size_t idx = 0;
-  BOOST_FOREACH ( const GaussianFactor::shared_ptr &gf, gfg ) {
+  for ( const GaussianFactor::shared_ptr &gf: gfg ) {
     if ( gf->size() == 1 ) {
       result.push_back(idx);
     }
@@ -299,7 +299,7 @@ std::vector<size_t> SubgraphBuilder::unary(const GaussianFactorGraph &gfg) const
 std::vector<size_t> SubgraphBuilder::natural_chain(const GaussianFactorGraph &gfg) const {
   std::vector<size_t> result ;
   size_t idx = 0;
-  BOOST_FOREACH ( const GaussianFactor::shared_ptr &gf, gfg ) {
+  for ( const GaussianFactor::shared_ptr &gf: gfg ) {
     if ( gf->size() == 2 ) {
       const Key k0 = gf->keys()[0], k1 = gf->keys()[1];
       if ( (k1-k0) == 1 || (k0-k1) == 1 )
@@ -332,9 +332,9 @@ std::vector<size_t> SubgraphBuilder::bfs(const GaussianFactorGraph &gfg) const {
   /* traversal */
   while ( !q.empty() ) {
     const size_t head = q.front(); q.pop();
-    BOOST_FOREACH ( const size_t id, variableIndex[head] ) {
+    for ( const size_t id: variableIndex[head] ) {
       const GaussianFactor &gf = *gfg[id];
-      BOOST_FOREACH ( const size_t key, gf.keys() ) {
+      for ( const size_t key: gf.keys() ) {
         if ( flags.count(key) == 0 ) {
           q.push(key);
           flags.insert(key);
@@ -360,7 +360,7 @@ std::vector<size_t> SubgraphBuilder::kruskal(const GaussianFactorGraph &gfg, con
   DSFVector D(n) ;
 
   size_t count = 0 ; double sum = 0.0 ;
-  BOOST_FOREACH (const size_t id, idx) {
+  for (const size_t id: idx) {
     const GaussianFactor &gf = *gfg[id];
     if ( gf.keys().size() != 2 ) continue;
     const size_t u = ordering.find(gf.keys()[0])->second,
@@ -399,7 +399,7 @@ Subgraph::shared_ptr SubgraphBuilder::operator() (const GaussianFactorGraph &gfg
   }
 
   /* down weight the tree edges to zero */
-  BOOST_FOREACH ( const size_t id, tree ) {
+  for ( const size_t id: tree ) {
     w[id] = 0.0;
   }
 
@@ -419,7 +419,7 @@ SubgraphBuilder::Weights SubgraphBuilder::weights(const GaussianFactorGraph &gfg
   const size_t m = gfg.size() ;
   Weights weight; weight.reserve(m);
 
-  BOOST_FOREACH(const GaussianFactor::shared_ptr &gf, gfg ) {
+  for(const GaussianFactor::shared_ptr &gf: gfg ) {
     switch ( parameters_.skeletonWeight_ ) {
     case SubgraphBuilderParameters::EQUAL:
       weight.push_back(1.0);
@@ -589,7 +589,7 @@ void SubgraphPreconditioner::transposeSolve(const Vector& y, Vector& x) const
   std::copy(y.data(), y.data() + y.rows(), x.data());
 
   /* in place back substitute */
-  BOOST_FOREACH(const boost::shared_ptr<GaussianConditional> & cg, *Rc1_) {
+  for(const boost::shared_ptr<GaussianConditional> & cg: *Rc1_) {
     const Vector rhsFrontal = getSubvector(x, keyInfo_, FastVector<Key>(cg->beginFrontals(), cg->endFrontals()));
 //    const Vector solFrontal = cg->get_R().triangularView<Eigen::Upper>().transpose().solve(rhsFrontal);
     const Vector solFrontal = cg->get_R().transpose().triangularView<Eigen::Lower>().solve(rhsFrontal);
@@ -634,7 +634,7 @@ Vector getSubvector(const Vector &src, const KeyInfo &keyInfo, const FastVector<
 
   /* figure out dimension by traversing the keys */
   size_t d = 0;
-  BOOST_FOREACH ( const Key &key, keys ) {
+  for ( const Key &key: keys ) {
     const KeyInfoEntry &entry = keyInfo.find(key)->second;
     cache.push_back(make_pair(entry.colstart(), entry.dim()));
     d += entry.dim();
@@ -643,7 +643,7 @@ Vector getSubvector(const Vector &src, const KeyInfo &keyInfo, const FastVector<
   /* use the cache to fill the result */
   Vector result = Vector::Zero(d, 1);
   size_t idx = 0;
-  BOOST_FOREACH ( const Cache::value_type &p, cache ) {
+  for ( const Cache::value_type &p: cache ) {
     result.segment(idx, p.second) = src.segment(p.first, p.second) ;
     idx += p.second;
   }
@@ -655,7 +655,7 @@ Vector getSubvector(const Vector &src, const KeyInfo &keyInfo, const FastVector<
 void setSubvector(const Vector &src, const KeyInfo &keyInfo, const FastVector<Key> &keys, Vector &dst) {
   /* use the cache  */
   size_t idx = 0;
-  BOOST_FOREACH ( const Key &key, keys ) {
+  for ( const Key &key: keys ) {
     const KeyInfoEntry &entry = keyInfo.find(key)->second;
     dst.segment(entry.colstart(), entry.dim()) = src.segment(idx, entry.dim()) ;
     idx += entry.dim();
@@ -668,7 +668,7 @@ buildFactorSubgraph(const GaussianFactorGraph &gfg, const Subgraph &subgraph, co
 
   GaussianFactorGraph::shared_ptr result(new GaussianFactorGraph());
   result->reserve(subgraph.size());
-  BOOST_FOREACH ( const SubgraphEdge &e, subgraph ) {
+  for ( const SubgraphEdge &e: subgraph ) {
     const size_t idx = e.index();
     if ( clone ) result->push_back(gfg[idx]->clone());
     else result->push_back(gfg[idx]);
