@@ -3,7 +3,6 @@
  * @author Alex Cunningham
  */
 
-#include <boost/foreach.hpp>
 
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam_unstable/geometry/SimWall2D.h>
@@ -135,7 +134,7 @@ std::pair<Pose2, bool> moveWithBounce(const Pose2& cur_pose, double step_size,
   SimWall2D traj(test_pose.t(), cur_pose.t());
   bool collision = false;  Point2 intersection(1e+10, 1e+10);
   SimWall2D closest_wall;
-  BOOST_FOREACH(const SimWall2D& wall, walls) {
+  for(const SimWall2D& wall: walls) {
     Point2 cur_intersection;
     if (wall.intersects(traj,cur_intersection)) {
       collision = true;

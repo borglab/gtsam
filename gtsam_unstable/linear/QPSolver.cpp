@@ -30,7 +30,7 @@ QPSolver::QPSolver(const QP& qp) : qp_(qp) {
 VectorValues QPSolver::solveWithCurrentWorkingSet(
     const LinearInequalityFactorGraph& workingSet) const {
   GaussianFactorGraph workingGraph = baseGraph_;
-  BOOST_FOREACH(const LinearInequality::shared_ptr& factor, workingSet) {
+  for(const LinearInequality::shared_ptr& factor: workingSet) {
     if (factor->active())
       workingGraph.push_back(factor);
   }
@@ -53,7 +53,7 @@ JacobianFactor::shared_ptr QPSolver::createDualFactor(Key key,
   if (Aterms.size() > 0) {
     Vector b = Vector::Zero(delta.at(key).size());
     if (costVariableIndex_.find(key) != costVariableIndex_.end()) {
-      BOOST_FOREACH(size_t factorIx, costVariableIndex_[key]) {
+      for(size_t factorIx: costVariableIndex_[key]) {
         GaussianFactor::shared_ptr factor = qp_.cost.at(factorIx);
         b += factor->gradient(key, delta);
       }
@@ -69,7 +69,7 @@ JacobianFactor::shared_ptr QPSolver::createDualFactor(Key key,
 GaussianFactorGraph::shared_ptr QPSolver::buildDualGraph(
     const LinearInequalityFactorGraph& workingSet, const VectorValues& delta) const {
   GaussianFactorGraph::shared_ptr dualGraph(new GaussianFactorGraph());
-  BOOST_FOREACH(Key key, constrainedKeys_) {
+  for(Key key: constrainedKeys_) {
     // Each constrained key becomes a factor in the dual graph
     JacobianFactor::shared_ptr dualFactor = createDualFactor(key, workingSet, delta);
     if (!dualFactor->empty())
@@ -219,7 +219,7 @@ LinearInequalityFactorGraph QPSolver::identifyActiveConstraints(
     const LinearInequalityFactorGraph& inequalities,
     const VectorValues& initialValues) const {
   LinearInequalityFactorGraph workingSet;
-  BOOST_FOREACH(const LinearInequality::shared_ptr& factor, inequalities){
+  for(const LinearInequality::shared_ptr& factor: inequalities){
     LinearInequality::shared_ptr workingFactor(new LinearInequality(*factor));
     double error = workingFactor->error(initialValues);
     if (fabs(error)>1e-7){
