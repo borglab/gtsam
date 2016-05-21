@@ -1,5 +1,6 @@
 #include <wrap/matlab.h>
 #include <map>
+#include <boost/foreach.hpp>
 
 #include <path/to/ns1.h>
 #include <path/to/ns1/ClassB.h>
