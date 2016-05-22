@@ -18,7 +18,6 @@
 #pragma once
 
 #include <stdexcept>
-#include <boost/foreach.hpp>
 #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -31,8 +30,6 @@
 #include <boost/graph/prim_minimum_spanning_tree.hpp>
 
 #include <gtsam/inference/graph.h>
-
-#define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL)
 
 namespace gtsam {
 
@@ -123,9 +120,10 @@ predecessorMap2Graph(const PredecessorMap<KEY>& p_map) {
   G g;
   std::map<KEY, V> key2vertex;
   V v1, v2, root;
-  KEY child, parent;
   bool foundRoot = false;
-  FOREACH_PAIR(child, parent, p_map) {
+  for(auto child_parent: p_map) {
+    KEY child, parent;
+    std::tie(child,parent) = child_parent;
     if (key2vertex.find(child) == key2vertex.end()) {
        v1 = add_vertex(child, g);
        key2vertex.insert(std::make_pair(child, v1));

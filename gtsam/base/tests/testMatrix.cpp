@@ -21,7 +21,6 @@
 #include <gtsam/base/testLie.h>
 #include <CppUnitLite/TestHarness.h>
 #include <boost/tuple/tuple.hpp>
-#include <boost/foreach.hpp>
 #include <iostream>
 #include <sstream>
 
@@ -907,10 +906,6 @@ TEST(Matrix, weighted_elimination )
   Vector d = (Vector(4) << 0.2, -0.14, 0.0, 0.2).finished();
   Vector newSigmas = (Vector(4) << 0.0894427, 0.0894427, 0.223607, 0.223607).finished();
 
-  Vector r;
-  double di, sigma;
-  size_t i;
-
   // perform elimination
   Matrix A1 = A;
   Vector b1 = b;
@@ -918,8 +913,11 @@ TEST(Matrix, weighted_elimination )
       weighted_eliminate(A1, b1, sigmas);
 
   // unpack and verify
-  i = 0;
-  BOOST_FOREACH(boost::tie(r, di, sigma), solution) {
+  size_t i = 0;
+  for (const auto& tuple : solution) {
+    Vector r;
+    double di, sigma;
+    boost::tie(r, di, sigma) = tuple;
     EXPECT(assert_equal(r, expectedR.row(i))); // verify r
     DOUBLES_EQUAL(d(i), di, 1e-8); // verify d
     DOUBLES_EQUAL(newSigmas(i), sigma, 1e-5); // verify sigma
