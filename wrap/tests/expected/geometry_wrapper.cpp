@@ -1,6 +1,5 @@
 #include <wrap/matlab.h>
 #include <map>
-#include <boost/foreach.hpp>
 
 #include <boost/serialization/export.hpp>
 #include <boost/archive/text_iarchive.hpp>

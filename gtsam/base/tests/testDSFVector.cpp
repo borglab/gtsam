@@ -20,7 +20,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/assign/std/list.hpp>
 #include <boost/assign/std/set.hpp>

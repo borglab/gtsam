@@ -27,7 +27,6 @@
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/base/numericalDerivative.h>
 
-#include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/assign/std/list.hpp>
 using namespace boost::assign;

@@ -30,7 +30,6 @@ using namespace boost::assign;
 #include <sstream>
 #include <CppUnitLite/TestHarness.h>
 #include <boost/tuple/tuple.hpp>
-#include <boost/foreach.hpp>
 
 using namespace std;
 using namespace gtsam;

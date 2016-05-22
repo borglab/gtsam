@@ -22,8 +22,6 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/base/numericalDerivative.h>
 
-#include <boost/foreach.hpp>
-
 namespace gtsam {
 
 /**

@@ -23,7 +23,6 @@
 #include <Eigen/SVD>
 #include <Eigen/LU>
 
-#include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/tokenizer.hpp>
 

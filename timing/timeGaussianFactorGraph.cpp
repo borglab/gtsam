@@ -16,7 +16,6 @@
  */
 
 #include <time.h>
-#include <boost/foreach.hpp>
 #include <boost/assign/std/list.hpp> // for operator += in Ordering
 #include <CppUnitLite/TestHarness.h>
 #include <tests/smallExample.h>

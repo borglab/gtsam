@@ -18,7 +18,6 @@
 
 #include <gtsam/base/DSFVector.h>
 #include <boost/make_shared.hpp>
-#include <boost/foreach.hpp>
 #include <algorithm>
 
 using namespace std;

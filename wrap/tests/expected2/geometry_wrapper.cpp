@@ -1,6 +1,5 @@
 #include <wrap/matlab.h>
 #include <map>
-#include <boost/foreach.hpp>
 
 #include <folder/path/to/Test.h>
 

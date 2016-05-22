@@ -6,16 +6,17 @@
  *  Description: unit tests for generic graph
  */
 
-#include <map>
+#include <gtsam_unstable/partition/GenericGraph.h>
+
+#include <CppUnitLite/TestHarness.h>
+
 #include <boost/assign/std/list.hpp> // for operator +=
 #include <boost/assign/std/set.hpp> // for operator +=
 #include <boost/assign/std/vector.hpp> // for operator +=
 using namespace boost::assign;
-#include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
-#include <CppUnitLite/TestHarness.h>
 
-#include <gtsam_unstable/partition/GenericGraph.h>
+#include <map>
 
 using namespace std;
 using namespace gtsam;

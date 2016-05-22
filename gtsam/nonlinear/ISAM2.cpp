@@ -15,7 +15,6 @@
  * @author  Michael Kaess, Richard Roberts
  */
 
-#include <boost/foreach.hpp>
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
 #include <boost/range/adaptors.hpp>

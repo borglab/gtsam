@@ -16,7 +16,6 @@
  */
 
 #include <gtsam_unstable/nonlinear/LinearizedFactor.h>
-#include <boost/foreach.hpp>
 #include <iostream>
 
 namespace gtsam {

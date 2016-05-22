@@ -223,7 +223,6 @@ void Module::matlab_code(const string& toolboxPath) const {
   FileWriter wrapperFile(wrapperFileName, verbose, "//");
   wrapperFile.oss << "#include <wrap/matlab.h>\n";
   wrapperFile.oss << "#include <map>\n";
-  wrapperFile.oss << "#include <boost/foreach.hpp>\n";
   wrapperFile.oss << "\n";
 
   // Include boost.serialization archive headers before other class headers

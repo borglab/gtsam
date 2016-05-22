@@ -21,7 +21,6 @@
 #include <gtsam/discrete/DiscreteConditional.h>
 #include <gtsam/base/FastSet.h>
 
-#include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
 
 using namespace std;
