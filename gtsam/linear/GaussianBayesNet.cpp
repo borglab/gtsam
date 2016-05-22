@@ -20,13 +20,10 @@
 #include <gtsam/inference/FactorGraph-inst.h>
 #include <gtsam/base/timing.h>
 
-#include <boost/foreach.hpp>
+#include <boost/range/adaptor/reversed.hpp>
 
 using namespace std;
 using namespace gtsam;
-
-#define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL):COL)
-#define REVERSE_FOREACH_PAIR( KEY, VAL, COL) BOOST_REVERSE_FOREACH (boost::tie(KEY,VAL),COL)
 
 namespace gtsam {
 
@@ -52,7 +49,7 @@ namespace gtsam {
     VectorValues soln(solutionForMissing); // possibly empty
     // (R*x)./sigmas = y by solving x=inv(R)*(y.*sigmas)
     /** solve each node in turn in topological sort order (parents first)*/
-    BOOST_REVERSE_FOREACH(const sharedConditional& cg, *this) {
+    for (auto cg: boost::adaptors::reverse(*this)) {
       // i^th part of R*x=y, x=inv(R)*y
       // (Rii*xi + R_i*x(i+1:))./si = yi <-> xi = inv(Rii)*(yi.*si - R_i*x(i+1:))
       soln.insert(cg->solve(soln));
@@ -88,7 +85,7 @@ namespace gtsam {
     VectorValues result;
     // TODO this looks pretty sketchy. result is passed as the parents argument
     //  as it's filled up by solving the gaussian conditionals.
-    BOOST_REVERSE_FOREACH(const sharedConditional& cg, *this) {
+    for (auto cg: boost::adaptors::reverse(*this)) {
       result.insert(cg->solveOtherRHS(result, rhs));
     }
     return result;

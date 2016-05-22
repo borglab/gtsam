@@ -32,7 +32,7 @@
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/serialization/vector.hpp>
-#include <boost/foreach.hpp>
+#include <boost/range/adaptor/reversed.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include <algorithm>
@@ -569,7 +569,7 @@ void SubgraphPreconditioner::solve(const Vector& y, Vector &x) const
   std::copy(y.data(), y.data() + y.rows(), x.data());
 
   /* in place back substitute */
-  BOOST_REVERSE_FOREACH(const boost::shared_ptr<GaussianConditional> & cg, *Rc1_) {
+  for (auto cg: boost::adaptors::reverse(*Rc1_)) {
     /* collect a subvector of x that consists of the parents of cg (S) */
     const Vector xParent = getSubvector(x, keyInfo_, FastVector<Key>(cg->beginParents(), cg->endParents()));
     const Vector rhsFrontal = getSubvector(x, keyInfo_, FastVector<Key>(cg->beginFrontals(), cg->endFrontals()));
