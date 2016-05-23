@@ -24,7 +24,6 @@
 
 #include <boost/format.hpp>
 #include <boost/optional.hpp>
-#include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/assign/std/vector.hpp>
 using boost::assign::operator+=;
@@ -310,7 +309,7 @@ namespace gtsam {
       label_(label), allSame_(true) {
 
       branches_.reserve(f.branches_.size()); // reserve space
-      BOOST_FOREACH (const NodePtr& branch, f.branches_)
+      for (const NodePtr& branch: f.branches_)
               push_back(branch->apply(op));
     }
 
@@ -332,7 +331,7 @@ namespace gtsam {
     // If second argument of binary op is Leaf node, recurse on branches
     NodePtr apply_g_op_fL(const Leaf& fL, const Binary& op) const {
       boost::shared_ptr<Choice> h(new Choice(label(), nrChoices()));
-      BOOST_FOREACH(NodePtr branch, branches_)
+      for(NodePtr branch: branches_)
               h->push_back(fL.apply_f_op_g(*branch, op));
       return Unique(h);
     }
@@ -347,7 +346,7 @@ namespace gtsam {
     template<typename OP>
     NodePtr apply_fC_op_gL(const Leaf& gL, OP op) const {
       boost::shared_ptr<Choice> h(new Choice(label(), nrChoices()));
-      BOOST_FOREACH(const NodePtr& branch, branches_)
+      for(const NodePtr& branch: branches_)
               h->push_back(branch->apply_f_op_g(gL, op));
       return Unique(h);
     }
@@ -359,7 +358,7 @@ namespace gtsam {
     
       // second case, not label of interest, just recurse
       boost::shared_ptr<Choice> r(new Choice(label_, branches_.size()));
-      BOOST_FOREACH(const NodePtr& branch, branches_)
+      for(const NodePtr& branch: branches_)
               r->push_back(branch->choose(label, index));
       return Unique(r);
     }
@@ -593,7 +592,7 @@ namespace gtsam {
 
     // put together via Shannon expansion otherwise not sorted.
     std::vector<LY> functions;
-    BOOST_FOREACH(const MXNodePtr& branch, choice->branches()) {
+    for(const MXNodePtr& branch: choice->branches()) {
       LY converted(convert<M, X>(branch, map, op));
       functions += converted;
     }

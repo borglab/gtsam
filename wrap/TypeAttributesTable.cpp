@@ -20,7 +20,6 @@
 #include "Class.h"
 #include "utilities.h"
 
-#include <boost/foreach.hpp>
 #include <boost/range/adaptor/map.hpp>
 #include <boost/range/algorithm/copy.hpp>
 
@@ -45,7 +44,7 @@ const TypeAttributes& TypeAttributesTable::attributes(const string& key) const {
 
 /* ************************************************************************* */
 void TypeAttributesTable::addClasses(const vector<Class>& classes) {
-  BOOST_FOREACH(const Class& cls, classes) {
+  for(const Class& cls: classes) {
     if (!table_.insert(
         make_pair(cls.qualifiedName("::"), TypeAttributes(cls.isVirtual))).second)
       throw DuplicateDefinition("class " + cls.qualifiedName("::"));
@@ -55,7 +54,7 @@ void TypeAttributesTable::addClasses(const vector<Class>& classes) {
 /* ************************************************************************* */
 void TypeAttributesTable::addForwardDeclarations(
     const vector<ForwardDeclaration>& forwardDecls) {
-  BOOST_FOREACH(const ForwardDeclaration& fwDec, forwardDecls) {
+  for(const ForwardDeclaration& fwDec: forwardDecls) {
     if (!table_.insert(make_pair(fwDec.name, TypeAttributes(fwDec.isVirtual))).second)
       throw DuplicateDefinition("class " + fwDec.name);
   }
@@ -63,7 +62,7 @@ void TypeAttributesTable::addForwardDeclarations(
 
 /* ************************************************************************* */
 void TypeAttributesTable::checkValidity(const vector<Class>& classes) const {
-  BOOST_FOREACH(const Class& cls, classes) {
+  for(const Class& cls: classes) {
 
     boost::optional<string> parent = cls.qualifiedParent();
     if (parent) {

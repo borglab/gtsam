@@ -22,7 +22,6 @@
 #include <gtsam/linear/Preconditioner.h>
 #include <gtsam/linear/VectorValues.h>
 
-#include <boost/foreach.hpp>
 #include <boost/algorithm/string.hpp>
 
 #include <algorithm>
@@ -150,7 +149,7 @@ VectorValues buildVectorValues(const Vector &v, const Ordering &ordering,
 /**********************************************************************************/
 VectorValues buildVectorValues(const Vector &v, const KeyInfo &keyInfo) {
   VectorValues result;
-  BOOST_FOREACH ( const KeyInfo::value_type &item, keyInfo ) {
+  for ( const KeyInfo::value_type &item: keyInfo ) {
     result.insert(item.first,
         v.segment(item.second.colstart(), item.second.dim()));
   }

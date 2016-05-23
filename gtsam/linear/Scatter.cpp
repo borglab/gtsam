@@ -20,7 +20,6 @@
 #include <gtsam/linear/Scatter.h>
 #include <gtsam/inference/Ordering.h>
 
-#include <boost/foreach.hpp>
 #include <algorithm>
 
 using namespace std;
@@ -41,13 +40,13 @@ Scatter::Scatter(const GaussianFactorGraph& gfg,
 
   // If we have an ordering, pre-fill the ordered variables first
   if (ordering) {
-    BOOST_FOREACH (Key key, *ordering) {
+    for (Key key: *ordering) {
       push_back(SlotEntry(key, 0));
     }
   }
 
   // Now, find dimensions of variables and/or extend
-  BOOST_FOREACH (const GaussianFactor::shared_ptr& factor, gfg) {
+  for (const GaussianFactor::shared_ptr& factor: gfg) {
     if (!factor) continue;
 
     // TODO: Fix this hack to cope with zero-row Jacobians that come from BayesTreeOrphanWrappers

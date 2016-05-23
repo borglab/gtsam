@@ -15,7 +15,7 @@ namespace gtsam {
   /* ************************************************************************* */
   AllDiff::AllDiff(const DiscreteKeys& dkeys) :
     Constraint(dkeys.indices()) {
-    BOOST_FOREACH(const DiscreteKey& dkey, dkeys)
+    for(const DiscreteKey& dkey: dkeys)
         cardinalities_.insert(dkey);
   }
 
@@ -23,7 +23,7 @@ namespace gtsam {
   void AllDiff::print(const std::string& s,
       const KeyFormatter& formatter) const {
     std::cout << s << "AllDiff on ";
-    BOOST_FOREACH (Key dkey, keys_)
+    for (Key dkey: keys_)
       std::cout << formatter(dkey) << " ";
     std::cout << std::endl;
   }
@@ -31,7 +31,7 @@ namespace gtsam {
   /* ************************************************************************* */
   double AllDiff::operator()(const Values& values) const {
     std::set < size_t > taken; // record values taken by keys
-    BOOST_FOREACH(Key dkey, keys_) {
+    for(Key dkey: keys_) {
       size_t value = values.at(dkey); // get the value for that key
       if (taken.count(value)) return 0.0;// check if value alreday taken
       taken.insert(value);// if not, record it as taken and keep checking
@@ -70,7 +70,7 @@ namespace gtsam {
     // Check all other domains for singletons and erase corresponding values
     // This is the same as arc-consistency on the equivalent binary constraints
     bool changed = false;
-    BOOST_FOREACH(Key k, keys_)
+    for(Key k: keys_)
       if (k != j) {
         const Domain& Dk = domains[k];
         if (Dk.isSingleton()) { // check if singleton
@@ -88,7 +88,7 @@ namespace gtsam {
   Constraint::shared_ptr AllDiff::partiallyApply(const Values& values) const {
     DiscreteKeys newKeys;
     // loop over keys and add them only if they do not appear in values
-    BOOST_FOREACH(Key k, keys_)
+    for(Key k: keys_)
       if (values.find(k) == values.end()) {
         newKeys.push_back(DiscreteKey(k,cardinalities_.at(k)));
       }
@@ -99,7 +99,7 @@ namespace gtsam {
   Constraint::shared_ptr AllDiff::partiallyApply(
       const std::vector<Domain>& domains) const {
     DiscreteFactor::Values known;
-    BOOST_FOREACH(Key k, keys_) {
+    for(Key k: keys_) {
         const Domain& Dk = domains[k];
         if (Dk.isSingleton())
           known[k] = Dk.firstValue();

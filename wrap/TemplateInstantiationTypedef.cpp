@@ -20,7 +20,6 @@
 
 #include "utilities.h"
 #include <iostream>
-#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 
 using namespace std;
@@ -31,7 +30,7 @@ Class TemplateInstantiationTypedef::findAndExpand(
     const vector<Class>& classes) const {
   // Find matching class
   boost::optional<Class const &> matchedClass;
-  BOOST_FOREACH(const Class& cls, classes) {
+  for(const Class& cls: classes) {
     if (cls.name() == class_.name() && cls.namespaces() == class_.namespaces()
         && cls.templateArgs.size() == typeList.size()) {
       matchedClass.reset(cls);

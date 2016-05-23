@@ -93,7 +93,7 @@ void ISAM2::Impl::RemoveVariables(const KeySet& unusedKeys, const FastVector<ISA
                                   KeySet& fixedVariables)
 {
   variableIndex.removeUnusedVariables(unusedKeys.begin(), unusedKeys.end());
-  BOOST_FOREACH(Key key, unusedKeys) {
+  for(Key key: unusedKeys) {
     delta.erase(key);
     deltaNewton.erase(key);
     RgProd.erase(key);
@@ -112,7 +112,7 @@ KeySet ISAM2::Impl::CheckRelinearizationFull(const VectorValues& delta,
 
   if(const double* threshold = boost::get<double>(&relinearizeThreshold))
   {
-    BOOST_FOREACH(const VectorValues::KeyValuePair& key_delta, delta) {
+    for(const VectorValues::KeyValuePair& key_delta: delta) {
       double maxDelta = key_delta.second.lpNorm<Eigen::Infinity>();
       if(maxDelta >= *threshold)
         relinKeys.insert(key_delta.first);
@@ -120,7 +120,7 @@ KeySet ISAM2::Impl::CheckRelinearizationFull(const VectorValues& delta,
   }
   else if(const FastMap<char,Vector>* thresholds = boost::get<FastMap<char,Vector> >(&relinearizeThreshold))
   {
-    BOOST_FOREACH(const VectorValues::KeyValuePair& key_delta, delta) {
+    for(const VectorValues::KeyValuePair& key_delta: delta) {
       const Vector& threshold = thresholds->find(Symbol(key_delta.first).chr())->second;
       if(threshold.rows() != key_delta.second.rows())
         throw std::invalid_argument("Relinearization threshold vector dimensionality for '" + std::string(1, Symbol(key_delta.first).chr()) + "' passed into iSAM2 parameters does not match actual variable dimensionality.");
@@ -138,7 +138,7 @@ void CheckRelinearizationRecursiveDouble(KeySet& relinKeys, double threshold,
 {
   // Check the current clique for relinearization
   bool relinearize = false;
-  BOOST_FOREACH(Key var, *clique->conditional()) {
+  for(Key var: *clique->conditional()) {
     double maxDelta = delta[var].lpNorm<Eigen::Infinity>();
     if(maxDelta >= threshold) {
       relinKeys.insert(var);
@@ -148,7 +148,7 @@ void CheckRelinearizationRecursiveDouble(KeySet& relinKeys, double threshold,
 
   // If this node was relinearized, also check its children
   if(relinearize) {
-    BOOST_FOREACH(const ISAM2Clique::shared_ptr& child, clique->children) {
+    for(const ISAM2Clique::shared_ptr& child: clique->children) {
       CheckRelinearizationRecursiveDouble(relinKeys, threshold, delta, child);
     }
   }
@@ -161,7 +161,7 @@ void CheckRelinearizationRecursiveMap(KeySet& relinKeys, const FastMap<char,Vect
 {
   // Check the current clique for relinearization
   bool relinearize = false;
-  BOOST_FOREACH(Key var, *clique->conditional()) {
+  for(Key var: *clique->conditional()) {
     // Find the threshold for this variable type
     const Vector& threshold = thresholds.find(Symbol(var).chr())->second;
 
@@ -180,7 +180,7 @@ void CheckRelinearizationRecursiveMap(KeySet& relinKeys, const FastMap<char,Vect
 
   // If this node was relinearized, also check its children
   if(relinearize) {
-    BOOST_FOREACH(const ISAM2Clique::shared_ptr& child, clique->children) {
+    for(const ISAM2Clique::shared_ptr& child: clique->children) {
       CheckRelinearizationRecursiveMap(relinKeys, thresholds, delta, child);
     }
   }
@@ -192,7 +192,7 @@ KeySet ISAM2::Impl::CheckRelinearizationPartial(const FastVector<ISAM2::sharedCl
                                                         const ISAM2Params::RelinearizationThreshold& relinearizeThreshold)
 {
   KeySet relinKeys;
-  BOOST_FOREACH(const ISAM2::sharedClique& root, roots) {
+  for(const ISAM2::sharedClique& root: roots) {
     if(relinearizeThreshold.type() == typeid(double))
       CheckRelinearizationRecursiveDouble(relinKeys, boost::get<double>(relinearizeThreshold), delta, root);
     else if(relinearizeThreshold.type() == typeid(FastMap<char,Vector>))
@@ -207,7 +207,7 @@ void ISAM2::Impl::FindAll(ISAM2Clique::shared_ptr clique, KeySet& keys, const Ke
   static const bool debug = false;
   // does the separator contain any of the variables?
   bool found = false;
-  BOOST_FOREACH(Key key, clique->conditional()->parents()) {
+  for(Key key: clique->conditional()->parents()) {
     if (markedMask.exists(key)) {
       found = true;
       break;
@@ -219,7 +219,7 @@ void ISAM2::Impl::FindAll(ISAM2Clique::shared_ptr clique, KeySet& keys, const Ke
     if(debug) clique->print("Key(s) marked in clique ");
     if(debug) cout << "so marking key " << clique->conditional()->front() << endl;
   }
-  BOOST_FOREACH(const ISAM2Clique::shared_ptr& child, clique->children) {
+  for(const ISAM2Clique::shared_ptr& child: clique->children) {
     FindAll(child, keys, markedMask);
   }
 }
@@ -267,7 +267,7 @@ inline static void optimizeInPlace(const boost::shared_ptr<ISAM2Clique>& clique,
   result.update(clique->conditional()->solve(result));
 
   // starting from the root, call optimize on each conditional
-  BOOST_FOREACH(const boost::shared_ptr<ISAM2Clique>& child, clique->children)
+  for(const boost::shared_ptr<ISAM2Clique>& child: clique->children)
     optimizeInPlace(child, result);
 }
 }
@@ -280,14 +280,14 @@ size_t ISAM2::Impl::UpdateGaussNewtonDelta(const FastVector<ISAM2::sharedClique>
 
   if (wildfireThreshold <= 0.0) {
     // Threshold is zero or less, so do a full recalculation
-    BOOST_FOREACH(const ISAM2::sharedClique& root, roots)
+    for(const ISAM2::sharedClique& root: roots)
       internal::optimizeInPlace(root, delta);
     lastBacksubVariableCount = delta.size();
 
   } else {
     // Optimize with wildfire
     lastBacksubVariableCount = 0;
-    BOOST_FOREACH(const ISAM2::sharedClique& root, roots)
+    for(const ISAM2::sharedClique& root: roots)
       lastBacksubVariableCount += optimizeWildfireNonRecursive(
       root, wildfireThreshold, replacedKeys, delta); // modifies delta
 
@@ -309,7 +309,7 @@ void updateRgProd(const boost::shared_ptr<ISAM2Clique>& clique, const KeySet& re
   // update deltas and recurse to children, but if not, we do not need to
   // recurse further because of the running separator property.
   bool anyReplaced = false;
-  BOOST_FOREACH(Key j, *clique->conditional()) {
+  for(Key j: *clique->conditional()) {
     if(replacedKeys.exists(j)) {
       anyReplaced = true;
       break;
@@ -327,7 +327,7 @@ void updateRgProd(const boost::shared_ptr<ISAM2Clique>& clique, const KeySet& re
 
     // Write into RgProd vector
     DenseIndex vectorPosition = 0;
-    BOOST_FOREACH(Key frontal, clique->conditional()->frontals()) {
+    for(Key frontal: clique->conditional()->frontals()) {
       Vector& RgProdValue = RgProd[frontal];
       RgProdValue = RSgProd.segment(vectorPosition, RgProdValue.size());
       vectorPosition += RgProdValue.size();
@@ -339,7 +339,7 @@ void updateRgProd(const boost::shared_ptr<ISAM2Clique>& clique, const KeySet& re
     varsUpdated += clique->conditional()->nrFrontals();
 
     // Recurse to children
-    BOOST_FOREACH(const ISAM2Clique::shared_ptr& child, clique->children) {
+    for(const ISAM2Clique::shared_ptr& child: clique->children) {
       updateRgProd(child, replacedKeys, grad, RgProd, varsUpdated); }
   }
 }
@@ -351,7 +351,7 @@ size_t ISAM2::Impl::UpdateRgProd(const ISAM2::Roots& roots, const KeySet& replac
 
   // Update variables
   size_t varsUpdated = 0;
-  BOOST_FOREACH(const ISAM2::sharedClique& root, roots) {
+  for(const ISAM2::sharedClique& root: roots) {
     internal::updateRgProd(root, replacedKeys, gradAtZero, RgProd, varsUpdated);
   }
 

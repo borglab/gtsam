@@ -43,7 +43,6 @@
 #include <gtsam/slam/dataset.h>
 
 // Standard headers, added last, so we know headers above work on their own
-#include <boost/foreach.hpp>
 #include <fstream>
 #include <iostream>
 
@@ -151,7 +150,7 @@ int main (int argc, char** argv) {
 
   // Loop over odometry
   gttic_(iSAM);
-  BOOST_FOREACH(const TimedOdometry& timedOdometry, odometry) {
+  for(const TimedOdometry& timedOdometry: odometry) {
     //--------------------------------- odometry loop -----------------------------------------
     double t;
     Pose2 odometry;
@@ -196,7 +195,7 @@ int main (int argc, char** argv) {
     }
     i += 1;
     //--------------------------------- odometry loop -----------------------------------------
-  } // BOOST_FOREACH
+  } // end for
   gttoc_(iSAM);
 
   // Print timings

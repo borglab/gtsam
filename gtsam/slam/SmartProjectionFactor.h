@@ -290,9 +290,9 @@ public:
 
     if (params_.degeneracyMode == ZERO_ON_DEGENERACY && !result_) {
       // failed: return"empty" Hessian
-      BOOST_FOREACH(Matrix& m, Gs)
+      for(Matrix& m: Gs)
         m = Matrix::Zero(Base::Dim, Base::Dim);
-      BOOST_FOREACH(Vector& v, gs)
+      for(Vector& v: gs)
         v = Vector::Zero(Base::Dim);
       return boost::make_shared<RegularHessianFactor<Base::Dim> >(this->keys_,
           Gs, gs, 0.0);

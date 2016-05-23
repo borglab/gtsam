@@ -28,7 +28,7 @@ namespace gtsam {
 void ConcurrentBatchSmoother::print(const std::string& s, const KeyFormatter& keyFormatter) const {
   std::cout << s;
   std::cout << "  Factors:" << std::endl;
-  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, factors_) {
+  for(const NonlinearFactor::shared_ptr& factor: factors_) {
     PrintNonlinearFactor(factor, "    ", keyFormatter);
   }
   theta_.print("Values:\n");
@@ -61,7 +61,7 @@ ConcurrentBatchSmoother::Result ConcurrentBatchSmoother::update(const NonlinearF
     theta_.insert(newTheta);
 
     // Add new variables to the end of the ordering
-    BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, newTheta) {
+    for(const Values::ConstKeyValuePair& key_value: newTheta) {
       ordering_.push_back(key_value.key);
     }
 
@@ -135,7 +135,7 @@ void ConcurrentBatchSmoother::synchronize(const NonlinearFactorGraph& smootherFa
   removeFactors(filterSummarizationSlots_);
 
   // Insert new linpoints into the values, augment the ordering, and store new dims to augment delta
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, smootherValues) {
+  for(const Values::ConstKeyValuePair& key_value: smootherValues) {
     std::pair<Values::iterator, bool> iter_inserted = theta_.tryInsert(key_value.key, key_value.value);
     if(iter_inserted.second) {
       // If the insert succeeded
@@ -146,7 +146,7 @@ void ConcurrentBatchSmoother::synchronize(const NonlinearFactorGraph& smootherFa
       iter_inserted.first->value = key_value.value;
     }
   }
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, separatorValues) {
+  for(const Values::ConstKeyValuePair& key_value: separatorValues) {
     std::pair<Values::iterator, bool> iter_inserted = theta_.tryInsert(key_value.key, key_value.value);
     if(iter_inserted.second) {
       // If the insert succeeded
@@ -188,7 +188,7 @@ std::vector<size_t> ConcurrentBatchSmoother::insertFactors(const NonlinearFactor
   slots.reserve(factors.size());
 
   // Insert the factor into an existing hole in the factor graph, if possible
-  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, factors) {
+  for(const NonlinearFactor::shared_ptr& factor: factors) {
     size_t slot;
     if(availableSlots_.size() > 0) {
       slot = availableSlots_.front();
@@ -212,7 +212,7 @@ void ConcurrentBatchSmoother::removeFactors(const std::vector<size_t>& slots) {
   gttic(remove_factors);
 
   // For each factor slot to delete...
-  BOOST_FOREACH(size_t slot, slots) {
+  for(size_t slot: slots) {
 
     // Remove the factor from the graph
     factors_.remove(slot);
@@ -277,7 +277,7 @@ ConcurrentBatchSmoother::Result ConcurrentBatchSmoother::optimize() {
         dampedFactorGraph.reserve(linearFactorGraph.size() + delta_.size());
         {
           // for each of the variables, add a prior at the current solution
-          BOOST_FOREACH(const VectorValues::KeyValuePair& key_value, delta_) {
+          for(const VectorValues::KeyValuePair& key_value: delta_) {
             size_t dim = key_value.second.size();
             Matrix A = Matrix::Identity(dim,dim);
             Vector b = key_value.second;
@@ -322,7 +322,7 @@ ConcurrentBatchSmoother::Result ConcurrentBatchSmoother::optimize() {
           // Put the linearization points and deltas back for specific variables
           if(separatorValues_.size() > 0) {
             theta_.update(separatorValues_);
-            BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, separatorValues_) {
+            for(const Values::ConstKeyValuePair& key_value: separatorValues_) {
               delta_.at(key_value.key) = newDelta.at(key_value.key);
             }
           }
@@ -366,13 +366,13 @@ void ConcurrentBatchSmoother::updateSmootherSummarization() {
 
   // Create a nonlinear factor graph without the filter summarization factors
   NonlinearFactorGraph graph(factors_);
-  BOOST_FOREACH(size_t slot, filterSummarizationSlots_) {
+  for(size_t slot: filterSummarizationSlots_) {
     graph.remove(slot);
   }
 
   // Get the set of separator keys
   gtsam::KeySet separatorKeys;
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, separatorValues_) {
+  for(const Values::ConstKeyValuePair& key_value: separatorValues_) {
     separatorKeys.insert(key_value.key);
   }
 
@@ -389,7 +389,7 @@ void ConcurrentBatchSmoother::PrintNonlinearFactor(const NonlinearFactor::shared
     } else {
       std::cout << "f( ";
     }
-    BOOST_FOREACH(Key key, *factor) {
+    for(Key key: *factor) {
       std::cout << keyFormatter(key) << " ";
     }
     std::cout << ")" << std::endl;
@@ -403,7 +403,7 @@ void ConcurrentBatchSmoother::PrintLinearFactor(const GaussianFactor::shared_ptr
   std::cout << indent;
   if(factor) {
     std::cout << "g( ";
-    BOOST_FOREACH(Key key, *factor) {
+    for(Key key: *factor) {
       std::cout << keyFormatter(key) << " ";
     }
     std::cout << ")" << std::endl;

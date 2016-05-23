@@ -20,7 +20,6 @@
 #include <gtsam/base/timing.h>
 
 #include <boost/algorithm/string/replace.hpp>
-#include <boost/foreach.hpp>
 #include <boost/format.hpp>
 
 #include <cmath>
@@ -66,7 +65,7 @@ TimingOutline::TimingOutline(const std::string& label, size_t id) :
 size_t TimingOutline::time() const {
   size_t time = 0;
   bool hasChildren = false;
-  BOOST_FOREACH(const ChildMap::value_type& child, children_) {
+  for(const ChildMap::value_type& child: children_) {
     time += child.second->time();
     hasChildren = true;
   }
@@ -86,11 +85,11 @@ void TimingOutline::print(const std::string& outline) const {
   // Order children
   typedef FastMap<size_t, boost::shared_ptr<TimingOutline> > ChildOrder;
   ChildOrder childOrder;
-  BOOST_FOREACH(const ChildMap::value_type& child, children_) {
+  for(const ChildMap::value_type& child: children_) {
     childOrder[child.second->myOrder_] = child.second;
   }
   // Print children
-  BOOST_FOREACH(const ChildOrder::value_type order_child, childOrder) {
+  for(const ChildOrder::value_type order_child: childOrder) {
     std::string childOutline(outline);
     childOutline += "|   ";
     order_child.second->print(childOutline);
@@ -130,7 +129,7 @@ void TimingOutline::print2(const std::string& outline,
     std::cout << std::endl;
   }
 
-  BOOST_FOREACH(const ChildMap::value_type& child, children_) {
+  for(const ChildMap::value_type& child: children_) {
     std::string childOutline(outline);
     if (n_ == 0) {
       child.second->print2(childOutline, childTotal);
@@ -210,7 +209,7 @@ void TimingOutline::finishedIteration() {
   if (tMin_ == 0 || tIt_ < tMin_)
     tMin_ = tIt_;
   tIt_ = 0;
-  BOOST_FOREACH(ChildMap::value_type& child, children_) {
+  for(ChildMap::value_type& child: children_) {
     child.second->finishedIteration();
   }
 }

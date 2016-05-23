@@ -19,7 +19,6 @@
 #include <gtsam/geometry/concepts.h>
 #include <gtsam/base/concepts.h>
 
-#include <boost/foreach.hpp>
 #include <iostream>
 #include <cmath>
 
@@ -424,7 +423,7 @@ boost::optional<Pose3> Pose3::Align(const std::vector<Point3Pair>& abPointPairs)
 
 boost::optional<Pose3> align(const vector<Point3Pair>& baPointPairs) {
   vector<Point3Pair> abPointPairs;
-  BOOST_FOREACH (const Point3Pair& baPair, baPointPairs) {
+  for (const Point3Pair& baPair: baPointPairs) {
     abPointPairs.push_back(make_pair(baPair.second, baPair.first));
   }
   return Pose3::Align(abPointPairs);

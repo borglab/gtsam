@@ -23,7 +23,6 @@
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Point3.h>
 
-#include <boost/foreach.hpp>
 
 using namespace std;
 using namespace gtsam;
@@ -38,7 +37,7 @@ int main(int argc, char* argv[]) {
   // Build graph using conventional GeneralSFMFactor
   NonlinearFactorGraph graph;
   for (size_t j = 0; j < db.number_tracks(); j++) {
-    BOOST_FOREACH (const SfM_Measurement& m, db.tracks[j].measurements) {
+    for (const SfM_Measurement& m: db.tracks[j].measurements) {
       size_t i = m.first;
       Point2 z = m.second;
       graph.push_back(SfmFactor(z, gNoiseModel, C(i), P(j)));
@@ -47,9 +46,9 @@ int main(int argc, char* argv[]) {
 
   Values initial;
   size_t i = 0, j = 0;
-  BOOST_FOREACH (const SfM_Camera& camera, db.cameras)
+  for (const SfM_Camera& camera: db.cameras)
     initial.insert(C(i++), camera);
-  BOOST_FOREACH (const SfM_Track& track, db.tracks)
+  for (const SfM_Track& track: db.tracks)
     initial.insert(P(j++), track.p);
 
   return optimize(db, graph, initial);

@@ -18,7 +18,6 @@
 
 #include "Argument.h"
 
-#include <boost/foreach.hpp>
 #include <boost/regex.hpp>
 #include <boost/lexical_cast.hpp>
 
@@ -40,7 +39,7 @@ Argument Argument::expandTemplate(const TemplateSubstitution& ts) const {
 ArgumentList ArgumentList::expandTemplate(
     const TemplateSubstitution& ts) const {
   ArgumentList instArgList;
-  BOOST_FOREACH(const Argument& arg, *this) {
+  for(const Argument& arg: *this) {
     Argument instArg = arg.expandTemplate(ts);
     instArgList.push_back(instArg);
   }
@@ -50,7 +49,7 @@ ArgumentList ArgumentList::expandTemplate(
 /* ************************************************************************* */
 string Argument::matlabClass(const string& delim) const {
   string result;
-  BOOST_FOREACH(const string& ns, type.namespaces())
+  for(const string& ns: type.namespaces())
     result += ns + delim;
   if (type.name() == "string" || type.name() == "unsigned char"
       || type.name() == "char")
@@ -110,7 +109,7 @@ void Argument::proxy_check(FileWriter& proxyFile, const string& s) const {
 string ArgumentList::types() const {
   string str;
   bool first = true;
-  BOOST_FOREACH(Argument arg, *this) {
+  for(Argument arg: *this) {
     if (!first)
       str += ",";
     str += arg.type.name();
@@ -124,8 +123,8 @@ string ArgumentList::signature() const {
   string sig;
   bool cap = false;
 
-  BOOST_FOREACH(Argument arg, *this) {
-    BOOST_FOREACH(char ch, arg.type.name())
+  for(Argument arg: *this) {
+    for(char ch: arg.type.name())
       if (isupper(ch)) {
         sig += ch;
         //If there is a capital letter, we don't want to read it below
@@ -144,7 +143,7 @@ string ArgumentList::signature() const {
 string ArgumentList::names() const {
   string str;
   bool first = true;
-  BOOST_FOREACH(Argument arg, *this) {
+  for(Argument arg: *this) {
     if (!first)
       str += ",";
     str += arg.name;
@@ -155,7 +154,7 @@ string ArgumentList::names() const {
 
 /* ************************************************************************* */
 bool ArgumentList::allScalar() const {
-  BOOST_FOREACH(Argument arg, *this)
+  for(Argument arg: *this)
     if (!arg.isScalar())
       return false;
   return true;
@@ -164,7 +163,7 @@ bool ArgumentList::allScalar() const {
 /* ************************************************************************* */
 void ArgumentList::matlab_unwrap(FileWriter& file, int start) const {
   int index = start;
-  BOOST_FOREACH(Argument arg, *this) {
+  for(Argument arg: *this) {
     stringstream buf;
     buf << "in[" << index << "]";
     arg.matlab_unwrap(file, buf.str());
@@ -176,7 +175,7 @@ void ArgumentList::matlab_unwrap(FileWriter& file, int start) const {
 void ArgumentList::emit_prototype(FileWriter& file, const string& name) const {
   file.oss << name << "(";
   bool first = true;
-  BOOST_FOREACH(Argument arg, *this) {
+  for(Argument arg: *this) {
     if (!first)
       file.oss << ", ";
     file.oss << arg.type.name() << " " << arg.name;

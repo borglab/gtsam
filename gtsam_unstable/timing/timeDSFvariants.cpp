@@ -23,7 +23,6 @@
 #include <boost/random.hpp>
 #include <boost/timer.hpp>
 #include <boost/format.hpp>
-#include <boost/foreach.hpp>
 #include <boost/assign/std/vector.hpp>
 
 #include <iostream>
@@ -46,7 +45,7 @@ int main(int argc, char* argv[]) {
   // loop over number of images
   vector<size_t> ms;
   ms += 10, 20, 30, 40, 50, 100, 200, 300, 400, 500, 1000;
-  BOOST_FOREACH(size_t m,ms) {
+  for(size_t m: ms) {
     // We use volatile here to make these appear to the optimizing compiler as
     // if their values are only known at run-time.
     volatile size_t n = 500; // number of points per image
@@ -74,7 +73,7 @@ int main(int argc, char* argv[]) {
       // DSFBase version
       timer tim;
       DSFBase dsf(N); // Allow for N keys
-      BOOST_FOREACH(const Match& m, matches)
+      for(const Match& m: matches)
         dsf.merge(m.first, m.second);
       os << tim.elapsed() << ",";
       cout << format("DSFBase: %1% s") % tim.elapsed() << endl;
@@ -84,7 +83,7 @@ int main(int argc, char* argv[]) {
       // DSFMap version
       timer tim;
       DSFMap<size_t> dsf;
-      BOOST_FOREACH(const Match& m, matches)
+      for(const Match& m: matches)
         dsf.merge(m.first, m.second);
       os << tim.elapsed() << endl;
       cout << format("DSFMap: %1% s") % tim.elapsed() << endl;
@@ -96,7 +95,7 @@ int main(int argc, char* argv[]) {
       DSF<size_t> dsf;
       for (size_t j = 0; j < N; j++)
         dsf = dsf.makeSet(j);
-      BOOST_FOREACH(const Match& m, matches)
+      for(const Match& m: matches)
         dsf = dsf.makeUnion(m.first, m.second);
       os << tim.elapsed() << endl;
       cout << format("DSF functional: %1% s") % tim.elapsed() << endl;
@@ -108,7 +107,7 @@ int main(int argc, char* argv[]) {
       DSF<size_t> dsf;
       for (size_t j = 0; j < N; j++)
         dsf.makeSetInPlace(j);
-      BOOST_FOREACH(const Match& m, matches)
+      for(const Match& m: matches)
         dsf.makeUnionInPlace(m.first, m.second);
       os << tim.elapsed() << ",";
       cout << format("DSF in-place: %1% s") % tim.elapsed() << endl;

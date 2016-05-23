@@ -26,7 +26,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/assign/std/list.hpp> // for operator +=
 #include <boost/assign/std/set.hpp> // for operator +=
@@ -585,7 +584,7 @@ TEST( GaussianFactorGraph, conditional_sigma_failure) {
   GaussianBayesTree actBT = *lfg.eliminateMultifrontal();
 
   // Check that all sigmas in an unconstrained bayes tree are set to one
-  BOOST_FOREACH(const GaussianBayesTree::sharedClique& clique, actBT.nodes() | br::map_values) {
+  for(const GaussianBayesTree::sharedClique& clique: actBT.nodes() | br::map_values) {
     GaussianConditional::shared_ptr conditional = clique->conditional();
     //size_t dim = conditional->rows();
     //EXPECT(assert_equal(gtsam::Vector::Ones(dim), conditional->get_model()->sigmas(), tol));
