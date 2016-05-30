@@ -31,7 +31,6 @@
 #  include <tbb/parallel_for.h>
 #endif
 
-#include <boost/foreach.hpp>
 #include <cmath>
 #include <limits>
 
@@ -133,7 +132,7 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
   // Find bounds
   double minX = numeric_limits<double>::infinity(), maxX = -numeric_limits<double>::infinity();
   double minY = numeric_limits<double>::infinity(), maxY = -numeric_limits<double>::infinity();
-  BOOST_FOREACH(Key key, keys) {
+  for(Key key: keys) {
     if(values.exists(key)) {
       boost::optional<Point2> xy = getXY(values.at(key), formatting);
       if(xy) {
@@ -150,7 +149,7 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
   }
 
   // Create nodes for each variable in the graph
-  BOOST_FOREACH(Key key, keys){
+  for(Key key: keys){
     // Label the node with the label from the KeyFormatter
     stm << "  var" << key << "[label=\"" << keyFormatter(key) << "\"";
     if(values.exists(key)) {
@@ -165,7 +164,7 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
   if (formatting.mergeSimilarFactors) {
     // Remove duplicate factors
     std::set<vector<Key> > structure;
-    BOOST_FOREACH(const sharedFactor& factor, *this){
+    for(const sharedFactor& factor: *this){
       if(factor) {
         vector<Key> factorKeys = factor->keys();
         std::sort(factorKeys.begin(), factorKeys.end());
@@ -175,7 +174,7 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
 
     // Create factors and variable connections
     size_t i = 0;
-    BOOST_FOREACH(const vector<Key>& factorKeys, structure){
+    for(const vector<Key>& factorKeys: structure){
       // Make each factor a dot
       stm << "  factor" << i << "[label=\"\", shape=point";
       {
@@ -187,7 +186,7 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
       stm << "];\n";
 
       // Make factor-variable connections
-      BOOST_FOREACH(Key key, factorKeys) {
+      for(Key key: factorKeys) {
         stm << "  var" << key << "--" << "factor" << i << ";\n";
       }
 
@@ -214,7 +213,7 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
 
           // Make factor-variable connections
           if(formatting.connectKeysToFactor && factor) {
-            BOOST_FOREACH(Key key, *factor) {
+            for(Key key: *factor) {
               stm << "  var" << key << "--" << "factor" << i << ";\n";
             }
           }
@@ -224,7 +223,7 @@ void NonlinearFactorGraph::saveGraph(std::ostream &stm, const Values& values,
         if(factor) {
           Key k;
           bool firstTime = true;
-          BOOST_FOREACH(Key key, *this->at(i)) {
+          for(Key key: *this->at(i)) {
             if(firstTime) {
               k = key;
               firstTime = false;
@@ -246,7 +245,7 @@ double NonlinearFactorGraph::error(const Values& values) const {
   gttic(NonlinearFactorGraph_error);
   double total_error = 0.;
   // iterate over all the factors_ to accumulate the log probabilities
-  BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
+  for(const sharedFactor& factor: this->factors_) {
     if(factor)
       total_error += factor->error(values);
   }
@@ -272,7 +271,7 @@ SymbolicFactorGraph::shared_ptr NonlinearFactorGraph::symbolic() const
   SymbolicFactorGraph::shared_ptr symbolic = boost::make_shared<SymbolicFactorGraph>();
   symbolic->reserve(this->size());
 
-  BOOST_FOREACH(const sharedFactor& factor, *this) {
+  for(const sharedFactor& factor: *this) {
     if(factor)
       *symbolic += SymbolicFactor(*factor);
     else
@@ -330,7 +329,7 @@ GaussianFactorGraph::shared_ptr NonlinearFactorGraph::linearize(const Values& li
   linearFG->reserve(this->size());
 
   // linearize all factors
-  BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
+  for(const sharedFactor& factor: this->factors_) {
     if(factor) {
       (*linearFG) += factor->linearize(linearizationPoint);
     } else
@@ -345,7 +344,7 @@ GaussianFactorGraph::shared_ptr NonlinearFactorGraph::linearize(const Values& li
 /* ************************************************************************* */
 NonlinearFactorGraph NonlinearFactorGraph::clone() const {
   NonlinearFactorGraph result;
-  BOOST_FOREACH(const sharedFactor& f, *this) {
+  for(const sharedFactor& f: *this) {
     if (f)
       result.push_back(f->clone());
     else
@@ -357,7 +356,7 @@ NonlinearFactorGraph NonlinearFactorGraph::clone() const {
 /* ************************************************************************* */
 NonlinearFactorGraph NonlinearFactorGraph::rekey(const std::map<Key,Key>& rekey_mapping) const {
   NonlinearFactorGraph result;
-  BOOST_FOREACH(const sharedFactor& f, *this) {
+  for(const sharedFactor& f: *this) {
     if (f)
       result.push_back(f->rekey(rekey_mapping));
     else

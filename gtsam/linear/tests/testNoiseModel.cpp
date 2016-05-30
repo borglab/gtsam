@@ -22,7 +22,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/foreach.hpp>
 #include <boost/assign/std/vector.hpp>
 
 #include <iostream>
@@ -58,32 +57,32 @@ TEST(NoiseModel, constructors)
   m.push_back(Isotropic::Precision(3, prc,false));
 
   // test kSigmas
-  BOOST_FOREACH(Gaussian::shared_ptr mi, m)
+  for(Gaussian::shared_ptr mi: m)
     EXPECT(assert_equal(kSigmas,mi->sigmas()));
 
   // test whiten
-  BOOST_FOREACH(Gaussian::shared_ptr mi, m)
+  for(Gaussian::shared_ptr mi: m)
     EXPECT(assert_equal(whitened,mi->whiten(unwhitened)));
 
   // test unwhiten
-  BOOST_FOREACH(Gaussian::shared_ptr mi, m)
+  for(Gaussian::shared_ptr mi: m)
     EXPECT(assert_equal(unwhitened,mi->unwhiten(whitened)));
 
   // test Mahalanobis distance
   double distance = 5*5+10*10+15*15;
-  BOOST_FOREACH(Gaussian::shared_ptr mi, m)
+  for(Gaussian::shared_ptr mi: m)
     DOUBLES_EQUAL(distance,mi->Mahalanobis(unwhitened),1e-9);
 
   // test R matrix
-  BOOST_FOREACH(Gaussian::shared_ptr mi, m)
+  for(Gaussian::shared_ptr mi: m)
     EXPECT(assert_equal(R,mi->R()));
 
   // test covariance
-  BOOST_FOREACH(Gaussian::shared_ptr mi, m)
+  for(Gaussian::shared_ptr mi: m)
     EXPECT(assert_equal(kCovariance,mi->covariance()));
 
   // test covariance
-  BOOST_FOREACH(Gaussian::shared_ptr mi, m)
+  for(Gaussian::shared_ptr mi: m)
     EXPECT(assert_equal(kCovariance.inverse(),mi->information()));
 
   // test Whiten operator
@@ -92,7 +91,7 @@ TEST(NoiseModel, constructors)
       0.0, 1.0, 0.0, 1.0,
       1.0, 0.0, 0.0, 1.0).finished());
   Matrix expected = kInverseSigma * H;
-  BOOST_FOREACH(Gaussian::shared_ptr mi, m)
+  for(Gaussian::shared_ptr mi: m)
     EXPECT(assert_equal(expected,mi->Whiten(H)));
 
   // can only test inplace version once :-)

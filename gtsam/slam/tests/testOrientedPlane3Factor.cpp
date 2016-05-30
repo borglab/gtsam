@@ -24,7 +24,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <boost/bind.hpp>
-#include <boost/foreach.hpp>
 #include <boost/assign/std/vector.hpp>
 
 using namespace boost::assign;

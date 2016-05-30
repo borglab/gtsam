@@ -560,14 +560,14 @@ TEST( ConcurrentBatchSmoother, synchronize_3 )
   GaussianFactorGraph::shared_ptr linearFactors = allFactors.linearize(allValues);
 
   KeySet eliminateKeys = linearFactors->keys();
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, filterSeparatorValues) {
+  for(const Values::ConstKeyValuePair& key_value: filterSeparatorValues) {
     eliminateKeys.erase(key_value.key);
   }
   std::vector<Key> variables(eliminateKeys.begin(), eliminateKeys.end());
   GaussianFactorGraph result = *linearFactors->eliminatePartialMultifrontal(variables, EliminateCholesky).second;
 
   expectedSmootherSummarization.resize(0);
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, result) {
+  for(const GaussianFactor::shared_ptr& factor: result) {
     expectedSmootherSummarization.push_back(LinearContainerFactor(factor, allValues));
   }
 

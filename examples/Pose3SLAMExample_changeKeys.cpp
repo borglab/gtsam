@@ -56,7 +56,7 @@ int main(const int argc, const char *argv[]) {
     std::cout << "Rewriting input to file: " << inputFileRewritten << std::endl;
     // Additional: rewrite input with simplified keys 0,1,...
     Values simpleInitial;
-    BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, *initial) {
+    for(const Values::ConstKeyValuePair& key_value: *initial) {
       Key key;
       if(add)
         key = key_value.key + firstKey;
@@ -66,7 +66,7 @@ int main(const int argc, const char *argv[]) {
       simpleInitial.insert(key, initial->at(key_value.key));
     }
     NonlinearFactorGraph simpleGraph;
-    BOOST_FOREACH(const boost::shared_ptr<NonlinearFactor>& factor, *graph) {
+    for(const boost::shared_ptr<NonlinearFactor>& factor: *graph) {
       boost::shared_ptr<BetweenFactor<Pose3> > pose3Between =
           boost::dynamic_pointer_cast<BetweenFactor<Pose3> >(factor);
       if (pose3Between){

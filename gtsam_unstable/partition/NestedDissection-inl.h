@@ -70,11 +70,11 @@ namespace gtsam { namespace partition {
   boost::shared_ptr<SubNLG> NestedDissection<NLG, SubNLG, GenericGraph>::makeSubNLG(
       const NLG& fg, const vector<size_t>& frontals, const vector<size_t>& sep, const boost::shared_ptr<SubNLG>& parent) const {
     OrderedSymbols frontalKeys;
-    BOOST_FOREACH(const size_t index, frontals)
+    for(const size_t index: frontals)
       frontalKeys.push_back(int2symbol_[index]);
 
     UnorderedSymbols sepKeys;
-    BOOST_FOREACH(const size_t index, sep)
+    for(const size_t index: sep)
       sepKeys.insert(int2symbol_[index]);
 
     return boost::make_shared<SubNLG>(fg, frontalKeys, sepKeys, parent);
@@ -129,7 +129,7 @@ namespace gtsam { namespace partition {
     // make three lists of variables A, B, and C
     int partition;
     childFrontals.resize(numSubmaps);
-    BOOST_FOREACH(const size_t key, keys){
+    for(const size_t key: keys){
       partition = partitionTable[key];
       switch (partition) {
       case -1: break;                                        // the separator of the separator variables
@@ -144,13 +144,13 @@ namespace gtsam { namespace partition {
     childSeps.reserve(numSubmaps);
     frontalFactors.resize(numSubmaps);
     frontalUnaryFactors.resize(numSubmaps);
-    BOOST_FOREACH(typename GenericGraph::value_type factor, fg)
+    for(typename GenericGraph::value_type factor: fg)
       processFactor(factor, partitionTable, frontalFactors, sepFactors, childSeps_, weeklinks);
-    BOOST_FOREACH(const set<size_t>& childSep, childSeps_)
+    for(const set<size_t>& childSep: childSeps_)
       childSeps.push_back(vector<size_t>(childSep.begin(), childSep.end()));
 
     // add unary factor to the current cluster or pass it to one of the child clusters
-    BOOST_FOREACH(const sharedGenericUnaryFactor& unaryFactor_, unaryFactors) {
+    for(const sharedGenericUnaryFactor& unaryFactor_: unaryFactors) {
       partition = partitionTable[unaryFactor_->key.index];
       if (!partition) sepFactors.push_back(fg_[unaryFactor_->index]);
       else frontalUnaryFactors[partition-1].push_back(unaryFactor_);
@@ -164,7 +164,7 @@ namespace gtsam { namespace partition {
     NLG sepFactors;
     typename GenericGraph::const_iterator it = gfg.begin(), itLast = gfg.end();
     while(it!=itLast) sepFactors.push_back(fg_[(*it++)->index]);
-    BOOST_FOREACH(const sharedGenericUnaryFactor& unaryFactor_, unaryFactors)
+    for(const sharedGenericUnaryFactor& unaryFactor_: unaryFactors)
       sepFactors.push_back(fg_[unaryFactor_->index]);
     return sepFactors;
   }

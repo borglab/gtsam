@@ -32,7 +32,6 @@
 #include <gtsam/base/cholesky.h>
 
 #include <boost/assign/list_of.hpp>
-#include <boost/foreach.hpp>
 #include <boost/format.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/array.hpp>
@@ -185,12 +184,12 @@ boost::tuple<FastVector<DenseIndex>, DenseIndex, DenseIndex> _countDims(
           "Unable to determine dimensionality for all variables");
   }
 
-  BOOST_FOREACH(const JacobianFactor::shared_ptr& factor, factors) {
+  for(const JacobianFactor::shared_ptr& factor: factors) {
     m += factor->rows();
   }
 
 #ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
-  BOOST_FOREACH(DenseIndex d, varDims) {
+  for(DenseIndex d: varDims) {
     assert(d != numeric_limits<DenseIndex>::max());
   }
 #endif
@@ -204,7 +203,7 @@ FastVector<JacobianFactor::shared_ptr> _convertOrCastToJacobians(
   gttic(Convert_to_Jacobians);
   FastVector<JacobianFactor::shared_ptr> jacobians;
   jacobians.reserve(factors.size());
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factors) {
+  for(const GaussianFactor::shared_ptr& factor: factors) {
     if (factor) {
       if (JacobianFactor::shared_ptr jf = boost::dynamic_pointer_cast<
           JacobianFactor>(factor))
@@ -262,7 +261,7 @@ JacobianFactor::JacobianFactor(const GaussianFactorGraph& graph,
           "The ordering provided to the JacobianFactor combine constructor\n"
               "contained extra variables that did not appear in the factors to combine.");
     // Add the remaining slots
-    BOOST_FOREACH(VariableSlots::const_iterator item, unorderedSlots) {
+    for(VariableSlots::const_iterator item: unorderedSlots) {
       orderedSlots.push_back(item);
     }
   } else {
@@ -292,7 +291,7 @@ JacobianFactor::JacobianFactor(const GaussianFactorGraph& graph,
   // Loop over slots in combined factor and copy blocks from source factors
   gttic(copy_blocks);
   size_t combinedSlot = 0;
-  BOOST_FOREACH(VariableSlots::const_iterator varslot, orderedSlots) {
+  for(VariableSlots::const_iterator varslot: orderedSlots) {
     JacobianFactor::ABlock destSlot(this->getA(this->begin() + combinedSlot));
     // Loop over source jacobians
     DenseIndex nextRow = 0;

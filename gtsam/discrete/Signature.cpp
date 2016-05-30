@@ -17,7 +17,6 @@
  */
 
 #include <sstream>
-#include <boost/foreach.hpp>
 
 #include "Signature.h"
 
@@ -125,7 +124,7 @@ namespace gtsam {
 
   DiscreteKeys Signature::discreteKeysParentsFirst() const {
     DiscreteKeys keys;
-    BOOST_FOREACH(const DiscreteKey& key, parents_)
+    for(const DiscreteKey& key: parents_)
       keys.push_back(key);
     keys.push_back(key_);
     return keys;
@@ -134,7 +133,7 @@ namespace gtsam {
   vector<Key> Signature::indices() const {
     vector<Key> js;
     js.push_back(key_.first);
-    BOOST_FOREACH(const DiscreteKey& key, parents_)
+    for(const DiscreteKey& key: parents_)
       js.push_back(key.first);
     return js;
   }
@@ -142,8 +141,8 @@ namespace gtsam {
   vector<double> Signature::cpt() const {
     vector<double> cpt;
     if (table_) {
-      BOOST_FOREACH(const Row& row, *table_)
-              BOOST_FOREACH(const double& x, row)
+      for(const Row& row: *table_)
+              for(const double& x: row)
                       cpt.push_back(x);
     }
     return cpt;
@@ -171,7 +170,7 @@ namespace gtsam {
 //        qi::phrase_parse(f, l, parser::grammar.table, qi::space, table); // using full grammar
           parser::parse_table(spec, table);
     if (success) {
-      BOOST_FOREACH(Row& row, table)
+      for(Row& row: table)
         normalize(row);
       table_.reset(table);
     }
@@ -180,7 +179,7 @@ namespace gtsam {
 
   Signature& Signature::operator=(const Table& t) {
     Table table = t;
-    BOOST_FOREACH(Row& row, table)
+    for(Row& row: table)
       normalize(row);
     table_.reset(table);
     return *this;

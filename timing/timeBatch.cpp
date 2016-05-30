@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
     // Compute marginals
     Marginals marginals(graph, optimizer.values());
     int i=0;
-    BOOST_FOREACH(Key key, initial.keys()) {
+    for(Key key: initial.keys()) {
       gttic_(marginalInformation);
       Matrix info = marginals.marginalInformation(key);
       gttoc_(marginalInformation);

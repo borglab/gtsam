@@ -200,7 +200,7 @@ struct GTSAM_EXPORT ISAM2Params {
     else
     {
       std::cout << "relinearizeThreshold:              " << "{mapped}" << "\n";
-      BOOST_FOREACH(const ISAM2ThresholdMapValue& value, boost::get<ISAM2ThresholdMap>(relinearizeThreshold)) {
+      for(const ISAM2ThresholdMapValue& value: boost::get<ISAM2ThresholdMap>(relinearizeThreshold)) {
         std::cout << "                                   '" << value.first << "' -> [" << value.second.transpose() << " ]\n";
       }
     }

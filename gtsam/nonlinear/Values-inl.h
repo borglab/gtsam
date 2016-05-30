@@ -26,8 +26,6 @@
 
 #include <utility>
 
-#include <boost/foreach.hpp>
-
 #include <gtsam/base/DerivedValue.h>
 #include <gtsam/nonlinear/Values.h> // Only so Eclipse finds class definition
 
@@ -220,7 +218,7 @@ namespace gtsam {
   /** Constructor from a Filtered view copies out all values */
   template<class ValueType>
   Values::Values(const Values::Filtered<ValueType>& view) {
-    BOOST_FOREACH(const typename Filtered<ValueType>::KeyValuePair& key_value, view) {
+    for(const typename Filtered<ValueType>::KeyValuePair& key_value: view) {
       Key key = key_value.key;
       insert(key, static_cast<const ValueType&>(key_value.value));
     }
@@ -229,7 +227,7 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class ValueType>
   Values::Values(const Values::ConstFiltered<ValueType>& view) {
-    BOOST_FOREACH(const typename ConstFiltered<ValueType>::KeyValuePair& key_value, view) {
+    for(const typename ConstFiltered<ValueType>::KeyValuePair& key_value: view) {
       Key key = key_value.key;
       insert(key, static_cast<const ValueType&>(key_value.value));
     }

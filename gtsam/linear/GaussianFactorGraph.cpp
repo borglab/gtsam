@@ -30,8 +30,6 @@
 #include <gtsam/base/timing.h>
 #include <gtsam/base/cholesky.h>
 
-#include <boost/foreach.hpp>
-
 using namespace std;
 using namespace gtsam;
 
@@ -50,7 +48,7 @@ namespace gtsam {
   /* ************************************************************************* */
   GaussianFactorGraph::Keys GaussianFactorGraph::keys() const {
     KeySet keys;
-    BOOST_FOREACH(const sharedFactor& factor, *this)
+    for(const sharedFactor& factor: *this)
     if (factor)
       keys.insert(factor->begin(), factor->end());
     return keys;
@@ -59,7 +57,7 @@ namespace gtsam {
   /* ************************************************************************* */
   std::map<Key, size_t> GaussianFactorGraph::getKeyDimMap() const {
     map<Key, size_t> spec;
-    BOOST_FOREACH ( const GaussianFactor::shared_ptr &gf, *this ) {
+    for ( const GaussianFactor::shared_ptr &gf: *this ) {
       for ( GaussianFactor::const_iterator it = gf->begin() ; it != gf->end() ; it++ ) {
         map<Key,size_t>::iterator it2 = spec.find(*it);
         if ( it2 == spec.end() ) {
@@ -80,7 +78,7 @@ namespace gtsam {
   /* ************************************************************************* */
   GaussianFactorGraph GaussianFactorGraph::clone() const {
     GaussianFactorGraph result;
-    BOOST_FOREACH(const sharedFactor& f, *this) {
+    for(const sharedFactor& f: *this) {
       if (f)
         result.push_back(f->clone());
       else
@@ -92,7 +90,7 @@ namespace gtsam {
   /* ************************************************************************* */
   GaussianFactorGraph GaussianFactorGraph::negate() const {
     GaussianFactorGraph result;
-    BOOST_FOREACH(const sharedFactor& f, *this) {
+    for(const sharedFactor& f: *this) {
       if (f)
         result.push_back(f->negate());
       else
@@ -106,7 +104,7 @@ namespace gtsam {
     // First find dimensions of each variable
     typedef std::map<Key, size_t> KeySizeMap;
     KeySizeMap dims;
-    BOOST_FOREACH(const sharedFactor& factor, *this) {
+    for(const sharedFactor& factor: *this) {
       if (!static_cast<bool>(factor)) continue;
 
       for (GaussianFactor::const_iterator key = factor->begin();
@@ -118,7 +116,7 @@ namespace gtsam {
     // Compute first scalar column of each variable
     size_t currentColIndex = 0;
     KeySizeMap columnIndices = dims;
-    BOOST_FOREACH(const KeySizeMap::value_type& col, dims) {
+    for(const KeySizeMap::value_type& col: dims) {
       columnIndices[col.first] = currentColIndex;
       currentColIndex += dims[col.first];
     }
@@ -127,7 +125,7 @@ namespace gtsam {
     typedef boost::tuple<size_t, size_t, double> triplet;
     vector<triplet> entries;
     size_t row = 0;
-    BOOST_FOREACH(const sharedFactor& factor, *this) {
+    for(const sharedFactor& factor: *this) {
       if (!static_cast<bool>(factor)) continue;
 
       // Convert to JacobianFactor if necessary
@@ -229,7 +227,7 @@ namespace gtsam {
   /* ************************************************************************* */
   VectorValues GaussianFactorGraph::hessianDiagonal() const {
     VectorValues d;
-    BOOST_FOREACH(const sharedFactor& factor, *this) {
+    for(const sharedFactor& factor: *this) {
       if(factor){
         VectorValues di = factor->hessianDiagonal();
         d.addInPlace_(di);
@@ -241,7 +239,7 @@ namespace gtsam {
   /* ************************************************************************* */
   map<Key,Matrix> GaussianFactorGraph::hessianBlockDiagonal() const {
     map<Key,Matrix> blocks;
-    BOOST_FOREACH(const sharedFactor& factor, *this) {
+    for(const sharedFactor& factor: *this) {
       if (!factor) continue;
       map<Key,Matrix> BD = factor->hessianBlockDiagonal();
       map<Key,Matrix>::const_iterator it = BD.begin();
@@ -279,7 +277,7 @@ namespace gtsam {
   VectorValues GaussianFactorGraph::gradient(const VectorValues& x0) const
   {
     VectorValues g = VectorValues::Zero(x0);
-    BOOST_FOREACH(const sharedFactor& Ai_G, *this) {
+    for(const sharedFactor& Ai_G: *this) {
       JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
       Vector e = Ai->error_vector(x0);
       Ai->transposeMultiplyAdd(1.0, e, g);
@@ -291,7 +289,7 @@ namespace gtsam {
   VectorValues GaussianFactorGraph::gradientAtZero() const {
     // Zero-out the gradient
     VectorValues g;
-    BOOST_FOREACH(const sharedFactor& factor, *this) {
+    for(const sharedFactor& factor: *this) {
       if (!factor) continue;
       VectorValues gi = factor->gradientAtZero();
       g.addInPlace_(gi);
@@ -331,7 +329,7 @@ namespace gtsam {
   /* ************************************************************************* */
   Errors GaussianFactorGraph::operator*(const VectorValues& x) const {
     Errors e;
-    BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, *this) {
+    for(const GaussianFactor::shared_ptr& Ai_G: *this) {
       JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
       e.push_back((*Ai) * x);
     }
@@ -341,7 +339,7 @@ namespace gtsam {
   /* ************************************************************************* */
   void GaussianFactorGraph::multiplyHessianAdd(double alpha,
       const VectorValues& x, VectorValues& y) const {
-    BOOST_FOREACH(const GaussianFactor::shared_ptr& f, *this)
+    for(const GaussianFactor::shared_ptr& f: *this)
      f->multiplyHessianAdd(alpha, x, y);
   }
 
@@ -353,7 +351,7 @@ namespace gtsam {
   /* ************************************************************************* */
   void GaussianFactorGraph::multiplyInPlace(const VectorValues& x, const Errors::iterator& e) const {
     Errors::iterator ei = e;
-    BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, *this) {
+    for(const GaussianFactor::shared_ptr& Ai_G: *this) {
       JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
       *ei = (*Ai)*x;
       ei++;
@@ -363,7 +361,7 @@ namespace gtsam {
   /* ************************************************************************* */
   bool hasConstraints(const GaussianFactorGraph& factors) {
     typedef JacobianFactor J;
-    BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factors) {
+    for(const GaussianFactor::shared_ptr& factor: factors) {
       J::shared_ptr jacobian(boost::dynamic_pointer_cast<J>(factor));
       if (jacobian && jacobian->get_model() && jacobian->get_model()->isConstrained()) {
         return true;
@@ -378,7 +376,7 @@ namespace gtsam {
                                                  VectorValues& x) const {
     // For each factor add the gradient contribution
     Errors::const_iterator ei = e.begin();
-    BOOST_FOREACH(const sharedFactor& Ai_G, *this) {
+    for(const sharedFactor& Ai_G: *this) {
       JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
       Ai->transposeMultiplyAdd(alpha, *(ei++), x);
     }
@@ -387,7 +385,7 @@ namespace gtsam {
   ///* ************************************************************************* */
   //void residual(const GaussianFactorGraph& fg, const VectorValues &x, VectorValues &r) {
   //  Key i = 0 ;
-  //  BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, fg) {
+  //  for(const GaussianFactor::shared_ptr& Ai_G: fg) {
   //    JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
   //    r[i] = Ai->getb();
   //    i++;
@@ -401,7 +399,7 @@ namespace gtsam {
   //void multiply(const GaussianFactorGraph& fg, const VectorValues &x, VectorValues &r) {
   //  r.setZero();
   //  Key i = 0;
-  //  BOOST_FOREACH(const GaussianFactor::shared_ptr& Ai_G, fg) {
+  //  for(const GaussianFactor::shared_ptr& Ai_G: fg) {
   //    JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
   //    Vector &y = r[i];
   //    for(JacobianFactor::const_iterator j = Ai->begin(); j != Ai->end(); ++j) {
@@ -416,7 +414,7 @@ namespace gtsam {
   {
     VectorValues x;
     Errors::const_iterator ei = e.begin();
-    BOOST_FOREACH(const sharedFactor& Ai_G, *this) {
+    for(const sharedFactor& Ai_G: *this) {
       JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
       for(JacobianFactor::const_iterator j = Ai->begin(); j != Ai->end(); ++j) {
         // Create the value as a zero vector if it does not exist.
@@ -434,7 +432,7 @@ namespace gtsam {
   Errors GaussianFactorGraph::gaussianErrors(const VectorValues& x) const
   {
     Errors e;
-    BOOST_FOREACH(const sharedFactor& Ai_G, *this) {
+    for(const sharedFactor& Ai_G: *this) {
       JacobianFactor::shared_ptr Ai = convertToJacobianFactorPtr(Ai_G);
       e.push_back(Ai->error_vector(x));
     }

@@ -157,7 +157,7 @@ GaussianFactorGraph::shared_ptr LevenbergMarquardtOptimizer::buildDampedSystem(
   // Only retrieve diagonal vector when reuse_diagonal = false
   if (params_.diagonalDamping && state_.reuseDiagonal == false) {
     state_.hessianDiagonal = linear.hessianDiagonal();
-    BOOST_FOREACH(Vector& v, state_.hessianDiagonal | map_values) {
+    for(Vector& v: state_.hessianDiagonal | map_values) {
       for (int aa = 0; aa < v.size(); aa++) {
         v(aa) = std::min(std::max(v(aa), params_.minDiagonal),
             params_.maxDiagonal);
@@ -172,7 +172,7 @@ GaussianFactorGraph::shared_ptr LevenbergMarquardtOptimizer::buildDampedSystem(
   GaussianFactorGraph &damped = (*dampedPtr);
   damped.reserve(damped.size() + state_.values.size());
   if (params_.diagonalDamping) {
-    BOOST_FOREACH(const VectorValues::KeyValuePair& key_vector, state_.hessianDiagonal) {
+    for(const VectorValues::KeyValuePair& key_vector: state_.hessianDiagonal) {
       // Fill in the diagonal of A with diag(hessian)
       try {
         Matrix A = Eigen::DiagonalMatrix<double, Eigen::Dynamic>(
@@ -192,7 +192,7 @@ GaussianFactorGraph::shared_ptr LevenbergMarquardtOptimizer::buildDampedSystem(
 
     // initialize noise model cache to a reasonable default size
     NoiseCacheVector noises(6);
-    BOOST_FOREACH(const Values::KeyValuePair& key_value, state_.values) {
+    for(const Values::KeyValuePair& key_value: state_.values) {
       size_t dim = key_value.value.dim();
 
       if (dim > noises.size())

@@ -213,7 +213,7 @@ void getAllCliques(const SymbolicBayesTree::sharedClique& subtree, SymbolicBayes
   if (subtree) {
     cliques.push_back(subtree);
     // Recursive call over all child cliques
-    BOOST_FOREACH(SymbolicBayesTree::sharedClique& childClique, subtree->children) {
+    for(SymbolicBayesTree::sharedClique& childClique: subtree->children) {
       getAllCliques(childClique,cliques);
     }
   }
@@ -241,7 +241,7 @@ TEST( BayesTree, shortcutCheck )
   SymbolicBayesTree::Cliques allCliques;
   getAllCliques(rootClique,allCliques);
 
-  BOOST_FOREACH(SymbolicBayesTree::sharedClique& clique, allCliques) {
+  for(SymbolicBayesTree::sharedClique& clique: allCliques) {
     //clique->print("Clique#");
     SymbolicBayesNet bn = clique->shortcut(rootClique);
     //bn.print("Shortcut:\n");
@@ -250,13 +250,13 @@ TEST( BayesTree, shortcutCheck )
 
   // Check if all the cached shortcuts are cleared
   rootClique->deleteCachedShortcuts();
-  BOOST_FOREACH(SymbolicBayesTree::sharedClique& clique, allCliques) {
+  for(SymbolicBayesTree::sharedClique& clique: allCliques) {
     bool notCleared = clique->cachedSeparatorMarginal().is_initialized();
     CHECK( notCleared == false);
   }
   EXPECT_LONGS_EQUAL(0, (long)rootClique->numCachedSeparatorMarginals());
 
-//  BOOST_FOREACH(SymbolicBayesTree::sharedClique& clique, allCliques) {
+//  for(SymbolicBayesTree::sharedClique& clique: allCliques) {
 //    clique->print("Clique#");
 //    if(clique->cachedShortcut()){
 //      bn = clique->cachedShortcut().get();

@@ -21,7 +21,6 @@
 #include <gtsam/discrete/DiscreteConditional.h>
 #include <gtsam/base/FastSet.h>
 
-#include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
 
 using namespace std;
@@ -66,11 +65,11 @@ namespace gtsam {
     ADT::Binary op) const {
     map<Key,size_t> cs; // new cardinalities
     // make unique key-cardinality map
-    BOOST_FOREACH(Key j, keys()) cs[j] = cardinality(j);
-    BOOST_FOREACH(Key j, f.keys()) cs[j] = f.cardinality(j);
+    for(Key j: keys()) cs[j] = cardinality(j);
+    for(Key j: f.keys()) cs[j] = f.cardinality(j);
     // Convert map into keys
     DiscreteKeys keys;
-    BOOST_FOREACH(const DiscreteKey& key, cs)
+    for(const DiscreteKey& key: cs)
       keys.push_back(key);
     // apply operand
     ADT result = ADT::apply(f, op);

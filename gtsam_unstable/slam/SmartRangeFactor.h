@@ -14,7 +14,6 @@
 #include <gtsam/inference/Key.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/base/timing.h>
-#include <boost/foreach.hpp>
 #include <map>
 
 namespace gtsam {
@@ -100,7 +99,7 @@ public:
     boost::optional<Circle2> best_circle;
 
     // loop over all circles
-    BOOST_FOREACH(const Circle2& it, circles) {
+    for(const Circle2& it: circles) {
       // distance between circle centers.
       double d = circle1.center.dist(it.center);
       if (d < 1e-9)
@@ -123,7 +122,7 @@ public:
     // pick winner based on other measurements
     double error1 = 0, error2 = 0;
     Point2 p1 = intersections.front(), p2 = intersections.back();
-    BOOST_FOREACH(const Circle2& it, circles) {
+    for(const Circle2& it: circles) {
       error1 += it.center.dist(p1);
       error2 += it.center.dist(p2);
     }

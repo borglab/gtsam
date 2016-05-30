@@ -17,7 +17,6 @@
  */
 
 #include <boost/shared_ptr.hpp>
-#include <boost/foreach.hpp>
 #include <boost/assign/std/list.hpp> // for +=
 using namespace boost::assign;
 
@@ -146,9 +145,9 @@ TEST( BTree, iterating )
   CHECK(*(++it) == p5)
   CHECK((++it)==tree.end())
 
-  // acid iterator test: BOOST_FOREACH
+  // acid iterator test
   int sum = 0;
-  BOOST_FOREACH(const KeyInt& p, tree)
+  for(const KeyInt& p: tree)
 sum  += p.second;
   LONGS_EQUAL(15,sum)
 

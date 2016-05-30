@@ -18,7 +18,6 @@
 
 #pragma once
 
-#include <boost/foreach.hpp>
 #include <iostream>
 #include <vector>
 #include <map>
@@ -36,7 +35,7 @@ namespace gtsam {
   public:
     void print(const std::string& s = "Assignment: ") const {
       std::cout << s << ": ";
-      BOOST_FOREACH(const typename Assignment::value_type& keyValue, *this)
+      for(const typename Assignment::value_type& keyValue: *this)
         std::cout << "(" << keyValue.first << ", " << keyValue.second << ")";
       std::cout << std::endl;
     }
@@ -65,7 +64,7 @@ namespace gtsam {
     std::vector<Assignment<L> > allPossValues;
     Assignment<L> values;
     typedef std::pair<L, size_t> DiscreteKey;
-    BOOST_FOREACH(const DiscreteKey& key, keys)
+    for(const DiscreteKey& key: keys)
       values[key.first] = 0;  //Initialize from 0
     while (1) {
       allPossValues.push_back(values);

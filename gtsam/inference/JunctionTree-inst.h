@@ -105,7 +105,7 @@ struct ConstructorTraversalData {
     // decide which children to merge, as index into children
     std::vector<bool> merge(nrChildren, false);
     size_t myNrFrontals = 1, i = 0;
-    BOOST_FOREACH(const sharedNode& child, node->children) {
+    for(const sharedNode& child: node->children) {
       // Check if we should merge the i^th child
       if (myNrParents + myNrFrontals == childConditionals[i]->nrParents()) {
         // Increment number of frontal variables
