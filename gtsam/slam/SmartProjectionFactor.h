@@ -64,9 +64,9 @@ struct GTSAM_EXPORT SmartProjectionParams {
   // Constructor
   SmartProjectionParams(LinearizationMode linMode = HESSIAN,
       DegeneracyMode degMode = IGNORE_DEGENERACY, bool throwCheirality = false,
-      bool verboseCheirality = false) :
+      bool verboseCheirality = false, double retriangulationTh = 1e-5) :
       linearizationMode(linMode), degeneracyMode(degMode), retriangulationThreshold(
-          1e-5), throwCheirality(throwCheirality), verboseCheirality(
+    		  retriangulationTh), throwCheirality(throwCheirality), verboseCheirality(
           verboseCheirality) {
   }
 
@@ -94,8 +94,14 @@ struct GTSAM_EXPORT SmartProjectionParams {
   bool getThrowCheirality() const {
     return throwCheirality;
   }
+  double getRetriangulationThreshold() const {
+	return retriangulationThreshold;
+  }
   void setLinearizationMode(LinearizationMode linMode) {
     linearizationMode = linMode;
+  }
+  void setRetriangulationThreshold(double retriangulationTh) {
+	retriangulationThreshold = retriangulationTh;
   }
   void setDegeneracyMode(DegeneracyMode degMode) {
     degeneracyMode = degMode;
