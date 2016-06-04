@@ -104,8 +104,15 @@ NavState NavState::inverse() const {
 NavState NavState::operator*(const NavState& bTc) const {
   TIE(nRb, n_t, n_v, *this);
   TIE(bRc, b_t, b_v, bTc);
-  return NavState(nRb * bRc, nRb * b_t + n_t, nRb * b_v + n_v);
+  return NavState(nRb * bRc, n_t + nRb * b_t, n_v + nRb * b_v);
 }
+
+//------------------------------------------------------------------------------
+//NavState NavState::retract(const Vector9& xi) const {
+//  TIE(nRb, n_t, n_v, *this);
+//  const Rot3 bRc = Rot3::Expmap(dR(xi));
+//  return NavState(nRb * bRc, n_t + nRb * dP(xi), n_v + nRb * dV(xi));
+//}
 
 //------------------------------------------------------------------------------
 NavState::PositionAndVelocity //
