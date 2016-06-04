@@ -78,6 +78,12 @@ public:
   Vector3  deltaPij() const override { return deltaXij_.position().vector(); }
   Vector3  deltaVij() const override { return deltaXij_.velocity(); }
 
+  Matrix3  delRdelBiasOmega() const { return delRdelBiasOmega_; }
+  Matrix3  delPdelBiasAcc() const { return delPdelBiasAcc_; }
+  Matrix3  delPdelBiasOmega() const { return delPdelBiasOmega_; }
+  Matrix3  delVdelBiasAcc() const { return delVdelBiasAcc_; }
+  Matrix3  delVdelBiasOmega() const { return delVdelBiasOmega_; }
+
   /// @name Testable
   /// @{
   bool equals(const ManifoldPreintegration& other, double tol) const;
