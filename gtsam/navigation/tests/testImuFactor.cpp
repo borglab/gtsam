@@ -445,27 +445,33 @@ TEST(ImuFactor, fistOrderExponential) {
 }
 
 /* ************************************************************************* */
-#ifdef GTSAM_TANGENT_PREINTEGRATION
 TEST(ImuFactor, FirstOrderPreIntegratedMeasurements) {
   testing::SomeMeasurements measurements;
 
-  boost::function<Vector9(const Vector3&, const Vector3&)> preintegrated =
+#ifdef GTSAM_TANGENT_PREINTEGRATION
+  boost::function<Vector9(const Vector3&, const Vector3&)> integrate =
+#else
+  boost::function<NavState(const Vector3&, const Vector3&)> integrate =
+#endif
       [=](const Vector3& a, const Vector3& w) {
         PreintegratedImuMeasurements pim(testing::Params(), Bias(a, w));
         testing::integrateMeasurements(measurements, &pim);
+#ifdef GTSAM_TANGENT_PREINTEGRATION
         return pim.preintegrated();
+#else
+        return pim.deltaXij();
+#endif
       };
 
   // Actual pre-integrated values
   PreintegratedImuMeasurements pim(testing::Params());
   testing::integrateMeasurements(measurements, &pim);
 
-  EXPECT(assert_equal(numericalDerivative21(preintegrated, kZero, kZero),
+  EXPECT(assert_equal(numericalDerivative21(integrate, kZero, kZero),
                       pim.preintegrated_H_biasAcc()));
-  EXPECT(assert_equal(numericalDerivative22(preintegrated, kZero, kZero),
+  EXPECT(assert_equal(numericalDerivative22(integrate, kZero, kZero),
                       pim.preintegrated_H_biasOmega(), 1e-3));
 }
-#endif
 /* ************************************************************************* */
 Vector3 correctedAcc(const PreintegratedImuMeasurements& pim,
     const Vector3& measuredAcc, const Vector3& measuredOmega) {

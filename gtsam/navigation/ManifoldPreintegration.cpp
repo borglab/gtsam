@@ -36,6 +36,8 @@ ManifoldPreintegration::ManifoldPreintegration(
 void ManifoldPreintegration::resetIntegration() {
   deltaTij_ = 0.0;
   deltaXij_ = NavState();
+  preintegrated_H_biasAcc_.setZero();
+  preintegrated_H_biasOmega_.setZero();
   delRdelBiasOmega_.setZero();
   delPdelBiasAcc_.setZero();
   delPdelBiasOmega_.setZero();
@@ -86,6 +88,16 @@ void ManifoldPreintegration::update(const Vector3& measuredAcc,
     *B *= D_correctedAcc_acc; // NOTE(frank): needs to be last
   }
 
+  // new_H_biasAcc = new_H_old * old_H_biasAcc + new_H_acc * acc_H_biasAcc
+  // where acc_H_biasAcc = -I_3x3, hence
+  // new_H_biasAcc = new_H_old * old_H_biasAcc - new_H_acc
+  preintegrated_H_biasAcc_ = (*A) * preintegrated_H_biasAcc_ - (*B);
+
+  // new_H_biasOmega = new_H_old * old_H_biasOmega + new_H_omega * omega_H_biasOmega
+  // where omega_H_biasOmega = -I_3x3, hence
+  // new_H_biasOmega = new_H_old * old_H_biasOmega - new_H_omega
+  preintegrated_H_biasOmega_ = (*A) * preintegrated_H_biasOmega_ - (*C);
+
   // Update Jacobians
   // TODO(frank): Try same simplification as in new approach
   Matrix3 D_acc_R;
@@ -111,29 +123,30 @@ Vector9 ManifoldPreintegration::biasCorrectedDelta(
     const imuBias::ConstantBias& bias_i, OptionalJacobian<9, 6> H) const {
   // Correct deltaRij, derivative is delRdelBiasOmega_
   const imuBias::ConstantBias biasIncr = bias_i - biasHat_;
-  Matrix3 D_correctedRij_bias;
-  const Vector3 biasInducedOmega = delRdelBiasOmega_ * biasIncr.gyroscope();
-  const Rot3 correctedRij = deltaRij().expmap(biasInducedOmega, boost::none,
-      H ? &D_correctedRij_bias : 0);
-  if (H)
-    D_correctedRij_bias *= delRdelBiasOmega_;
+  const Vector9 delta_xi =
+        preintegrated_H_biasAcc_ * biasIncr.accelerometer()
+      + preintegrated_H_biasOmega_ * biasIncr.gyroscope();
+
+  Matrix3 D_correctedRij_deltaRxi;
+  const Rot3 correctedRij = deltaRij().expmap(NavState::dR(delta_xi),
+      boost::none, H ? &D_correctedRij_deltaRxi : 0);
+
+//  TIE(nRb, n_t, n_v, *this);
+//  const Rot3 bRc = Rot3::Expmap(dR(xi));
+//  return NavState(nRb * bRc, n_t + nRb * dP(xi), n_v + nRb * dV(xi));
 
   Vector9 xi;
   Matrix3 D_dR_correctedRij;
   // TODO(frank): could line below be simplified? It is equivalent to
   //   LogMap(deltaRij_.compose(Expmap(biasInducedOmega)))
   NavState::dR(xi) = Rot3::Logmap(correctedRij, H ? &D_dR_correctedRij : 0);
-  NavState::dP(xi) = deltaPij() + delPdelBiasAcc_ * biasIncr.accelerometer()
-      + delPdelBiasOmega_ * biasIncr.gyroscope();
-  NavState::dV(xi) = deltaVij() + delVdelBiasAcc_ * biasIncr.accelerometer()
-      + delVdelBiasOmega_ * biasIncr.gyroscope();
+  NavState::dP(xi) = deltaPij() + deltaRij() * NavState::dP(delta_xi);
+  NavState::dV(xi) = deltaVij() + deltaRij() * NavState::dV(delta_xi);
 
   if (H) {
-    Matrix36 D_dR_bias, D_dP_bias, D_dV_bias;
-    D_dR_bias << Z_3x3, D_dR_correctedRij * D_correctedRij_bias;
-    D_dP_bias << delPdelBiasAcc_, delPdelBiasOmega_;
-    D_dV_bias << delVdelBiasAcc_, delVdelBiasOmega_;
-    (*H) << D_dR_bias, D_dP_bias, D_dV_bias;
+    (*H) << preintegrated_H_biasAcc_, preintegrated_H_biasOmega_;
+    // NOTE(frank): correct for the Logmap and Expmap in rotational part
+    H->block<3,3>(0,3) = D_dR_correctedRij * D_correctedRij_deltaRxi * H->block<3,3>(0,3);
   }
   return xi;
 }
