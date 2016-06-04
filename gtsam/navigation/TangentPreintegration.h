@@ -33,8 +33,8 @@ class TangentPreintegration : public PreintegrationBase {
    * Order is: theta, position, velocity
    */
   Vector9 preintegrated_;
-  Matrix93 preintegrated_H_biasAcc_;    ///< Jacobian of preintegrated preintegrated w.r.t. acceleration bias
-  Matrix93 preintegrated_H_biasOmega_;  ///< Jacobian of preintegrated preintegrated w.r.t. angular rate bias
+  Matrix93 preintegrated_H_biasAcc_;    ///< Jacobian of preintegrated_ w.r.t. acceleration bias
+  Matrix93 preintegrated_H_biasOmega_;  ///< Jacobian of preintegrated_ w.r.t. angular rate bias
 
   /// Default constructor for serialization
   TangentPreintegration() {
