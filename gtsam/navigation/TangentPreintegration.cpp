@@ -128,10 +128,14 @@ void TangentPreintegration::update(const Vector3& measuredAcc,
     *B *= D_correctedAcc_acc; // NOTE(frank): needs to be last
   }
 
-  // D_plus_abias = D_plus_preintegrated * D_preintegrated_abias + D_plus_a * D_a_abias
+  // new_H_biasAcc = new_H_old * old_H_biasAcc + new_H_acc * acc_H_biasAcc
+  // where acc_H_biasAcc = -I_3x3, hence
+  // new_H_biasAcc = new_H_old * old_H_biasAcc - new_H_acc
   preintegrated_H_biasAcc_ = (*A) * preintegrated_H_biasAcc_ - (*B);
 
-  // D_plus_wbias = D_plus_preintegrated * D_preintegrated_wbias + D_plus_w * D_w_wbias
+  // new_H_biasOmega = new_H_old * old_H_biasOmega + new_H_omega * omega_H_biasOmega
+  // where omega_H_biasOmega = -I_3x3, hence
+  // new_H_biasOmega = new_H_old * old_H_biasOmega - new_H_omega
   preintegrated_H_biasOmega_ = (*A) * preintegrated_H_biasOmega_ - (*C);
 }
 
