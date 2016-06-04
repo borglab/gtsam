@@ -445,28 +445,6 @@ TEST(ImuFactor, fistOrderExponential) {
 }
 
 /* ************************************************************************* */
-#ifdef GTSAM_TANGENT_PREINTEGRATION
-TEST(ImuFactor, FirstOrderPreIntegratedMeasurements) {
-  testing::SomeMeasurements measurements;
-
-  boost::function<Vector9(const Vector3&, const Vector3&)> preintegrated =
-      [=](const Vector3& a, const Vector3& w) {
-        PreintegratedImuMeasurements pim(testing::Params(), Bias(a, w));
-        testing::integrateMeasurements(measurements, &pim);
-        return pim.preintegrated();
-      };
-
-  // Actual pre-integrated values
-  PreintegratedImuMeasurements pim(testing::Params());
-  testing::integrateMeasurements(measurements, &pim);
-
-  EXPECT(assert_equal(numericalDerivative21(preintegrated, kZero, kZero),
-                      pim.preintegrated_H_biasAcc()));
-  EXPECT(assert_equal(numericalDerivative22(preintegrated, kZero, kZero),
-                      pim.preintegrated_H_biasOmega(), 1e-3));
-}
-#endif
-/* ************************************************************************* */
 Vector3 correctedAcc(const PreintegratedImuMeasurements& pim,
     const Vector3& measuredAcc, const Vector3& measuredOmega) {
   Vector3 correctedAcc = pim.biasHat().correctAccelerometer(measuredAcc);
