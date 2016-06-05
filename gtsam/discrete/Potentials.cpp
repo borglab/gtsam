@@ -54,7 +54,7 @@ namespace gtsam {
   void Potentials::print(const string& s,
       const KeyFormatter& formatter) const {
     cout << s << "\n  Cardinalities: ";
-    BOOST_FOREACH(const DiscreteKey& key, cardinalities_)
+    for(const DiscreteKey& key: cardinalities_)
       cout << formatter(key.first) << "=" << formatter(key.second) << " ";
     cout << endl;
     ADT::print(" ");
@@ -68,11 +68,11 @@ namespace gtsam {
 //    map<Key, Key> ordering;
 //
 //    // Get the original keys from cardinalities_
-//    BOOST_FOREACH(const DiscreteKey& key, cardinalities_)
+//    for(const DiscreteKey& key: cardinalities_)
 //      keys & key;
 //
 //    // Perform Permutation
-//    BOOST_FOREACH(DiscreteKey& key, keys) {
+//    for(DiscreteKey& key: keys) {
 //      ordering[key.first] = remapping[key.first];
 //      key.first = ordering[key.first];
 //    }

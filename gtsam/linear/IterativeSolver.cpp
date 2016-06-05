@@ -20,7 +20,6 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
 #include <boost/algorithm/string.hpp>
-#include <boost/foreach.hpp>
 #include <iostream>
 
 using namespace std;
@@ -127,7 +126,7 @@ void KeyInfo::initialize(const GaussianFactorGraph &fg) {
 /****************************************************************************/
 vector<size_t> KeyInfo::colSpec() const {
   std::vector<size_t> result(size(), 0);
-  BOOST_FOREACH ( const KeyInfo::value_type &item, *this ) {
+  for ( const KeyInfo::value_type &item: *this ) {
     result[item.second.index()] = item.second.dim();
   }
   return result;
@@ -136,7 +135,7 @@ vector<size_t> KeyInfo::colSpec() const {
 /****************************************************************************/
 VectorValues KeyInfo::x0() const {
   VectorValues result;
-  BOOST_FOREACH ( const KeyInfo::value_type &item, *this ) {
+  for ( const KeyInfo::value_type &item: *this ) {
     result.insert(item.first, Vector::Zero(item.second.dim()));
   }
   return result;

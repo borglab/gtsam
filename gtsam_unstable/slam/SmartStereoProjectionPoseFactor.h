@@ -122,7 +122,7 @@ public:
   void print(const std::string& s = "", const KeyFormatter& keyFormatter =
       DefaultKeyFormatter) const {
     std::cout << s << "SmartStereoProjectionPoseFactor, z = \n ";
-    BOOST_FOREACH(const boost::shared_ptr<Cal3_S2Stereo>& K, K_all_)
+    for(const boost::shared_ptr<Cal3_S2Stereo>& K: K_all_)
     K->print("calibration = ");
     Base::print("", keyFormatter);
   }
@@ -160,7 +160,7 @@ public:
    Base::Cameras cameras(const Values& values) const {
     Base::Cameras cameras;
     size_t i=0;
-    BOOST_FOREACH(const Key& k, this->keys_) {
+    for(const Key& k: this->keys_) {
       const Pose3& pose = values.at<Pose3>(k);
       StereoCamera camera(pose, K_all_[i++]);
       cameras.push_back(camera);

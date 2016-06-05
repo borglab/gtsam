@@ -25,7 +25,6 @@
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/linear/VectorValues.h>
 
-#include <boost/foreach.hpp>
 #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -194,7 +193,7 @@ namespace gtsam {
   /* ************************************************************************* */
   size_t Values::dim() const {
     size_t result = 0;
-    BOOST_FOREACH(const ConstKeyValuePair& key_value, *this) {
+    for(const ConstKeyValuePair& key_value: *this) {
       result += key_value.value.dim();
     }
     return result;
@@ -203,7 +202,7 @@ namespace gtsam {
   /* ************************************************************************* */
   VectorValues Values::zeroVectors() const {
     VectorValues result;
-    BOOST_FOREACH(const ConstKeyValuePair& key_value, *this)
+    for(const ConstKeyValuePair& key_value: *this)
       result.insert(key_value.key, Vector::Zero(key_value.value.dim()));
     return result;
   }

@@ -68,7 +68,7 @@ public:
       const VariableIndex& variableIndex) const {
     std::vector<std::pair<Key, Matrix> > Aterms;
     if (variableIndex.find(key) != variableIndex.end()) {
-      BOOST_FOREACH(size_t factorIx, variableIndex[key]){
+      for(size_t factorIx: variableIndex[key]){
       typename FACTOR::shared_ptr factor = graph.at(factorIx);
       if (!factor->active()) continue;
       Matrix Ai = factor->getA(factor->find(key)).transpose();

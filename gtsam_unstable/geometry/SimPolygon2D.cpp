@@ -4,7 +4,6 @@
  */
 
 #include <iostream>
-#include <boost/foreach.hpp>
 #include <boost/random/linear_congruential.hpp>
 #include <boost/random/uniform_real.hpp>
 #include <boost/random/normal_distribution.hpp>
@@ -55,7 +54,7 @@ bool SimPolygon2D::equals(const SimPolygon2D& p, double tol) const {
 /* ************************************************************************* */
 void SimPolygon2D::print(const string& s) const {
   cout << "SimPolygon " << s << ": " << endl;
-  BOOST_FOREACH(const Point2& p, landmarks_)
+  for(const Point2& p: landmarks_)
     p.print("   ");
 }
 
@@ -73,7 +72,7 @@ bool SimPolygon2D::contains(const Point2& c) const {
   vector<SimWall2D> edges = walls();
   bool initialized = false;
   bool lastSide = false;
-  BOOST_FOREACH(const SimWall2D& ab, edges) {
+  for(const SimWall2D& ab: edges) {
     // compute cross product of ab and ac
     Point2 dab = ab.b() - ab.a();
     Point2 dac = c - ab.a();
@@ -97,10 +96,10 @@ bool SimPolygon2D::contains(const Point2& c) const {
 
 /* ************************************************************************* */
 bool SimPolygon2D::overlaps(const SimPolygon2D& p) const {
-  BOOST_FOREACH(const Point2& a, landmarks_)
+  for(const Point2& a: landmarks_)
     if (p.contains(a))
       return true;
-  BOOST_FOREACH(const Point2& a, p.landmarks_)
+  for(const Point2& a: p.landmarks_)
     if (contains(a))
       return true;
   return false;
@@ -108,7 +107,7 @@ bool SimPolygon2D::overlaps(const SimPolygon2D& p) const {
 
 /* ***************************************************************** */
 bool SimPolygon2D::anyContains(const Point2& p, const vector<SimPolygon2D>& obstacles) {
-  BOOST_FOREACH(const SimPolygon2D& poly, obstacles)
+  for(const SimPolygon2D& poly: obstacles)
     if (poly.contains(p))
       return true;
   return false;
@@ -116,7 +115,7 @@ bool SimPolygon2D::anyContains(const Point2& p, const vector<SimPolygon2D>& obst
 
 /* ************************************************************************* */
 bool SimPolygon2D::anyOverlaps(const SimPolygon2D& p, const vector<SimPolygon2D>& obstacles) {
-  BOOST_FOREACH(const SimPolygon2D& poly, obstacles)
+  for(const SimPolygon2D& poly: obstacles)
     if (poly.overlaps(p))
       return true;
   return false;
@@ -134,7 +133,7 @@ SimPolygon2D SimPolygon2D::randomTriangle(
   lms.push_back(Point2(-d2,-d2));
   lms.push_back(Point2( d2,-d2));
 
-  BOOST_FOREACH(const SimPolygon2D& poly, existing_polys)
+  for(const SimPolygon2D& poly: existing_polys)
     lms.insert(lms.begin(), poly.vertices().begin(), poly.vertices().end());
 
   for (size_t i=0; i<max_it; ++i) {
@@ -188,7 +187,7 @@ SimPolygon2D SimPolygon2D::randomRectangle(
   lms.push_back(Point2(-d2, d2));
   lms.push_back(Point2(-d2,-d2));
   lms.push_back(Point2( d2,-d2));
-  BOOST_FOREACH(const SimPolygon2D& poly, existing_polys)
+  for(const SimPolygon2D& poly: existing_polys)
     lms.insert(lms.begin(), poly.vertices().begin(), poly.vertices().end());
 
   const Point2 lower_corner(-side_len,-side_len);
@@ -320,7 +319,7 @@ bool SimPolygon2D::insideBox(double s, const Point2& p) {
 /* ***************************************************************** */
 bool SimPolygon2D::nearExisting(const std::vector<Point2>& S,
     const Point2& p, double threshold) {
-  BOOST_FOREACH(const Point2& Sp, S)
+  for(const Point2& Sp: S)
     if (Sp.distance(p) < threshold)
       return true;
   return false;

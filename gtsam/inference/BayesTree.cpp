@@ -20,7 +20,6 @@
 
 #include <gtsam/inference/BayesTree.h>
 
-#include <boost/foreach.hpp>
 #include <iostream>
 
 namespace gtsam {
@@ -41,7 +40,7 @@ BayesTreeCliqueStats BayesTreeCliqueData::getStats() const
 
   double sum = 0.0;
   size_t max = 0;
-  BOOST_FOREACH(size_t s, conditionalSizes) {
+  for(size_t s: conditionalSizes) {
     sum += (double)s;
     if(s > max) max = s;
   }
@@ -50,7 +49,7 @@ BayesTreeCliqueStats BayesTreeCliqueData::getStats() const
 
   sum = 0.0;
   max = 1;
-  BOOST_FOREACH(size_t s, separatorSizes) {
+  for(size_t s: separatorSizes) {
     sum += (double)s;
     if(s > max) max = s;
   }

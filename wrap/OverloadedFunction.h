@@ -49,7 +49,7 @@ public:
   std::vector<ArgumentList> expandArgumentListsTemplate(
       const TemplateSubstitution& ts) const {
     std::vector<ArgumentList> result;
-    BOOST_FOREACH(const ArgumentList& argList, argLists_) {
+    for(const ArgumentList& argList: argLists_) {
       ArgumentList instArgList = argList.expandTemplate(ts);
       result.push_back(instArgList);
     }
@@ -63,8 +63,8 @@ public:
 
   void verifyArguments(const std::vector<std::string>& validArgs,
       const std::string s) const {
-    BOOST_FOREACH(const ArgumentList& argList, argLists_) {
-      BOOST_FOREACH(Argument arg, argList) {
+    for(const ArgumentList& argList: argLists_) {
+      for(Argument arg: argList) {
         std::string fullType = arg.type.qualifiedName("::");
         if (find(validArgs.begin(), validArgs.end(), fullType)
             == validArgs.end())
@@ -75,7 +75,7 @@ public:
 
   friend std::ostream& operator<<(std::ostream& os,
       const ArgumentOverloads& overloads) {
-    BOOST_FOREACH(const ArgumentList& argList, overloads.argLists_)
+    for(const ArgumentList& argList: overloads.argLists_)
       os << argList << std::endl;
     return os;
   }
@@ -106,7 +106,7 @@ static std::map<std::string, F> expandMethodTemplate(
     const std::map<std::string, F>& methods, const TemplateSubstitution& ts) {
   std::map<std::string, F> result;
   typedef std::pair<const std::string, F> NamedMethod;
-  BOOST_FOREACH(NamedMethod namedMethod, methods) {
+  for(NamedMethod namedMethod: methods) {
     F instMethod = namedMethod.second;
     instMethod.expandTemplate(ts);
     namedMethod.second = instMethod;
@@ -119,7 +119,7 @@ template<class F>
 inline void verifyArguments(const std::vector<std::string>& validArgs,
     const std::map<std::string, F>& vt) {
   typedef typename std::map<std::string, F>::value_type NamedMethod;
-  BOOST_FOREACH(const NamedMethod& namedMethod, vt)
+  for(const NamedMethod& namedMethod: vt)
     namedMethod.second.verifyArguments(validArgs);
 }
 

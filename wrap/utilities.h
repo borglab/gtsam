@@ -21,7 +21,6 @@
 #include "FileWriter.h"
 
 #include <boost/format.hpp>
-#include <boost/foreach.hpp>
 
 #include <string>
 #include <vector>

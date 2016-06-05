@@ -64,18 +64,18 @@ NonlinearFactorGraph CalculateMarginals(const NonlinearFactorGraph& factorGraph,
 
 
   std::set<Key> KeysToKeep;
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, linPoint) { // we cycle over all the keys of factorGraph
+  for(const Values::ConstKeyValuePair& key_value: linPoint) { // we cycle over all the keys of factorGraph
     KeysToKeep.insert(key_value.key);
   } // so far we are keeping all keys, but we want to delete the ones that we are going to marginalize
-  BOOST_FOREACH(Key key, keysToMarginalize) {
+  for(Key key: keysToMarginalize) {
     KeysToKeep.erase(key);
   } // we removed the keys that we have to marginalize
 
   Ordering ordering;
-  BOOST_FOREACH(Key key, keysToMarginalize) {
+  for(Key key: keysToMarginalize) {
     ordering.push_back(key);
   } // the keys that we marginalize should be at the beginning in the ordering
-  BOOST_FOREACH(Key key, KeysToKeep) {
+  for(Key key: KeysToKeep) {
     ordering.push_back(key);
   }
 
@@ -84,7 +84,7 @@ NonlinearFactorGraph CalculateMarginals(const NonlinearFactorGraph& factorGraph,
   GaussianFactorGraph marginal = *linearGraph.eliminatePartialMultifrontal(vector<Key>(keysToMarginalize.begin(), keysToMarginalize.end()), EliminateCholesky).second;
 
   NonlinearFactorGraph LinearContainerForGaussianMarginals;
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, marginal) {
+  for(const GaussianFactor::shared_ptr& factor: marginal) {
     LinearContainerForGaussianMarginals.push_back(LinearContainerFactor(factor, linPoint));
   }
   return LinearContainerForGaussianMarginals;
@@ -439,7 +439,7 @@ TEST( ConcurrentBatchFilter, update_and_marginalize )
   // ==========================================================
   expectedGraph.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
 
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, result) {
+  for(const GaussianFactor::shared_ptr& factor: result) {
     expectedGraph.push_back(LinearContainerFactor(factor, partialValues));
   }
 
@@ -451,7 +451,7 @@ TEST( ConcurrentBatchFilter, update_and_marginalize )
   Values expectedValues = optimalValues;
 
   // Check
-  BOOST_FOREACH(Key key, keysToMove) {
+  for(Key key: keysToMove) {
     expectedValues.erase(key);
   }
 
@@ -1014,7 +1014,7 @@ TEST( ConcurrentBatchFilter, CalculateMarginals_1 )
   GaussianFactorGraph result = *linearFactorGraph.eliminatePartialMultifrontal(linearIndices, EliminateCholesky).second;
 
   NonlinearFactorGraph expectedMarginals;
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, result) {
+  for(const GaussianFactor::shared_ptr& factor: result) {
     expectedMarginals.push_back(LinearContainerFactor(factor, newValues));
 
   }
@@ -1069,7 +1069,7 @@ TEST( ConcurrentBatchFilter, CalculateMarginals_2 )
   GaussianFactorGraph result = *linearFactorGraph.eliminatePartialMultifrontal(linearIndices, EliminateCholesky).second;
 
   NonlinearFactorGraph expectedMarginals;
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, result) {
+  for(const GaussianFactor::shared_ptr& factor: result) {
     expectedMarginals.push_back(LinearContainerFactor(factor, newValues));
 
   }

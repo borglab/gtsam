@@ -19,7 +19,6 @@
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/base/timing.h>
 
-#include <boost/foreach.hpp>
 #include <boost/format.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/random/linear_congruential.hpp>
@@ -211,7 +210,7 @@ SharedDiagonal Gaussian::QR(Matrix& Ab) const {
 }
 
 void Gaussian::WhitenSystem(vector<Matrix>& A, Vector& b) const {
-  BOOST_FOREACH(Matrix& Aj, A) { WhitenInPlace(Aj); }
+  for(Matrix& Aj: A) { WhitenInPlace(Aj); }
   whitenInPlace(b);
 }
 
@@ -542,7 +541,7 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
   size_t i = 0;  // start with first row
   bool mixed = false;
   Ab.setZero();  // make sure we don't look below
-  BOOST_FOREACH (const Triple& t, Rd) {
+  for (const Triple& t: Rd) {
     const size_t& j = t.get<0>();
     const Matrix& rd = t.get<1>();
     precisions(i) = t.get<2>();
@@ -647,14 +646,14 @@ void Base::reweight(Vector& error) const {
 void Base::reweight(vector<Matrix> &A, Vector &error) const {
   if ( reweight_ == Block ) {
     const double w = sqrtWeight(error.norm());
-    BOOST_FOREACH(Matrix& Aj, A) {
+    for(Matrix& Aj: A) {
       Aj *= w;
     }
     error *= w;
   }
   else {
     const Vector W = sqrtWeight(error);
-    BOOST_FOREACH(Matrix& Aj, A) {
+    for(Matrix& Aj: A) {
       vector_scale_inplace(W,Aj);
     }
     error = W.cwiseProduct(error);

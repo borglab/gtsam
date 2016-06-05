@@ -22,7 +22,6 @@
 #include <gtsam/base/lieProxies.h>
 
 #include <CppUnitLite/TestHarness.h>
-#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <boost/assign/std/vector.hpp> // for operator +=
 #include <cmath>

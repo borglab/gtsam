@@ -123,7 +123,7 @@ public:
    */
   typename Base::Cameras cameras(const Values& values) const {
     typename Base::Cameras cameras;
-    BOOST_FOREACH(const Key& k, this->keys_) {
+    for(const Key& k: this->keys_) {
       Pose3 pose = values.at<Pose3>(k);
       if (Base::body_P_sensor_)
         pose = pose.compose(*(Base::body_P_sensor_));

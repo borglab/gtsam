@@ -11,7 +11,6 @@
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 
-#include <boost/foreach.hpp>
 
 namespace gtsam {
 
@@ -19,7 +18,7 @@ namespace gtsam {
 void LinearContainerFactor::initializeLinearizationPoint(const Values& linearizationPoint) {
   if (!linearizationPoint.empty()) {
     linearizationPoint_ = Values();
-    BOOST_FOREACH(const gtsam::Key& key, this->keys()) {
+    for(const gtsam::Key& key: this->keys()) {
       linearizationPoint_->insert(key, linearizationPoint.at(key));
     }
   } else {
@@ -82,7 +81,7 @@ double LinearContainerFactor::error(const Values& c) const {
 
   // Extract subset of values for comparison
   Values csub;
-  BOOST_FOREACH(const gtsam::Key& key, keys())
+  for(const gtsam::Key& key: keys())
     csub.insert(key, c.at(key));
 
   // create dummy ordering for evaluation
@@ -111,7 +110,7 @@ GaussianFactor::shared_ptr LinearContainerFactor::linearize(const Values& c) con
 
   // Extract subset of values
   Values subsetC;
-  BOOST_FOREACH(const gtsam::Key& key, this->keys())
+  for(const gtsam::Key& key: this->keys())
     subsetC.insert(key, c.at(key));
 
   // Determine delta between linearization points using new ordering
@@ -170,7 +169,7 @@ NonlinearFactorGraph LinearContainerFactor::convertLinearGraph(
     const GaussianFactorGraph& linear_graph, const Values& linearizationPoint)
 {
   NonlinearFactorGraph result;
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& f, linear_graph)
+  for(const GaussianFactor::shared_ptr& f: linear_graph)
     if (f)
       result.push_back(NonlinearFactorGraph::sharedFactor(
           new LinearContainerFactor(f, linearizationPoint)));

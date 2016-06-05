@@ -237,7 +237,7 @@ Point3 triangulatePoint3(const std::vector<Pose3>& poses,
   // construct projection matrices from poses & calibration
   std::vector<Matrix34> projection_matrices;
   CameraProjectionMatrix<CALIBRATION> createP(*sharedCal); // partially apply
-  BOOST_FOREACH(const Pose3& pose, poses)
+  for(const Pose3& pose: poses)
     projection_matrices.push_back(createP(pose));
 
   // Triangulate linearly
@@ -250,7 +250,7 @@ Point3 triangulatePoint3(const std::vector<Pose3>& poses,
 
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
   // verify that the triangulated point lies in front of all cameras
-  BOOST_FOREACH(const Pose3& pose, poses) {
+  for(const Pose3& pose: poses) {
     const Point3& p_local = pose.transform_to(point);
     if (p_local.z() <= 0)
       throw(TriangulationCheiralityException());
@@ -286,7 +286,7 @@ Point3 triangulatePoint3(
 
   // construct projection matrices from poses & calibration
   std::vector<Matrix34> projection_matrices;
-  BOOST_FOREACH(const CAMERA& camera, cameras)
+  for(const CAMERA& camera: cameras)
     projection_matrices.push_back(
         CameraProjectionMatrix<typename CAMERA::CalibrationType>(camera.calibration())(
             camera.pose()));
@@ -298,7 +298,7 @@ Point3 triangulatePoint3(
 
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
   // verify that the triangulated point lies in front of all cameras
-  BOOST_FOREACH(const CAMERA& camera, cameras) {
+  for(const CAMERA& camera: cameras) {
     const Point3& p_local = camera.pose().transform_to(point);
     if (p_local.z() <= 0)
       throw(TriangulationCheiralityException());
@@ -454,7 +454,7 @@ TriangulationResult triangulateSafe(const std::vector<CAMERA>& cameras,
       // Check landmark distance and re-projection errors to avoid outliers
       size_t i = 0;
       double totalReprojError = 0.0;
-      BOOST_FOREACH(const CAMERA& camera, cameras) {
+      for(const CAMERA& camera: cameras) {
         const Pose3& pose = camera.pose();
         if (params.landmarkDistanceThreshold > 0
             && distance(pose.translation(), point)

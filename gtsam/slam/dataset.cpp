@@ -37,7 +37,6 @@
 #include <boost/assign/list_inserter.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
-#include <boost/foreach.hpp>
 
 #include <cmath>
 #include <fstream>
@@ -68,8 +67,8 @@ string findExampleDataFile(const string& name) {
   namesToSearch.push_back(name + ".out");
 
   // Find first name that exists
-  BOOST_FOREACH(const fs::path& root, rootsToSearch) {
-    BOOST_FOREACH(const fs::path& name, namesToSearch) {
+  for(const fs::path& root: rootsToSearch) {
+    for(const fs::path& name: namesToSearch) {
       if (fs::is_regular_file(root / name))
         return (root / name).string();
     }
@@ -366,7 +365,7 @@ void save2D(const NonlinearFactorGraph& graph, const Values& config,
 
   // save poses
 
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, config) {
+  for(const Values::ConstKeyValuePair& key_value: config) {
     const Pose2& pose = key_value.value.cast<Pose2>();
     stream << "VERTEX2 " << key_value.key << " " << pose.x() << " " << pose.y()
         << " " << pose.theta() << endl;
@@ -375,7 +374,7 @@ void save2D(const NonlinearFactorGraph& graph, const Values& config,
   // save edges
   Matrix R = model->R();
   Matrix RR = trans(R) * R; //prod(trans(R),R);
-  BOOST_FOREACH(boost::shared_ptr<NonlinearFactor> factor_, graph) {
+  for(boost::shared_ptr<NonlinearFactor> factor_: graph) {
     boost::shared_ptr<BetweenFactor<Pose2> > factor =
         boost::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor_);
     if (!factor)
@@ -413,13 +412,13 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
 
   // save 2D & 3D poses
   Values::ConstFiltered<Pose2> viewPose2 = estimate.filter<Pose2>();
-  BOOST_FOREACH(const Values::ConstFiltered<Pose2>::KeyValuePair& key_value, viewPose2) {
+  for(const Values::ConstFiltered<Pose2>::KeyValuePair& key_value: viewPose2) {
     stream << "VERTEX_SE2 " << key_value.key << " " << key_value.value.x() << " "
         << key_value.value.y() << " " << key_value.value.theta() << endl;
   }
 
   Values::ConstFiltered<Pose3> viewPose3 = estimate.filter<Pose3>();
-  BOOST_FOREACH(const Values::ConstFiltered<Pose3>::KeyValuePair& key_value, viewPose3) {
+  for(const Values::ConstFiltered<Pose3>::KeyValuePair& key_value: viewPose3) {
       Point3 p = key_value.value.translation();
       Rot3 R = key_value.value.rotation();
       stream << "VERTEX_SE3:QUAT " << key_value.key << " " << p.x() << " "  << p.y() << " " << p.z()
@@ -428,7 +427,7 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
   }
 
   // save edges (2D or 3D)
-  BOOST_FOREACH(boost::shared_ptr<NonlinearFactor> factor_, graph) {
+  for(boost::shared_ptr<NonlinearFactor> factor_: graph) {
     boost::shared_ptr<BetweenFactor<Pose2> > factor =
         boost::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor_);
     if (factor){
@@ -898,7 +897,7 @@ bool writeBALfromValues(const string& filename, const SfM_data &data,
 Values initialCamerasEstimate(const SfM_data& db) {
   Values initial;
   size_t i = 0; // NO POINTS:  j = 0;
-  BOOST_FOREACH(const SfM_Camera& camera, db.cameras)
+  for(const SfM_Camera& camera: db.cameras)
     initial.insert(i++, camera);
   return initial;
 }
@@ -906,9 +905,9 @@ Values initialCamerasEstimate(const SfM_data& db) {
 Values initialCamerasAndPointsEstimate(const SfM_data& db) {
   Values initial;
   size_t i = 0, j = 0;
-  BOOST_FOREACH(const SfM_Camera& camera, db.cameras)
+  for(const SfM_Camera& camera: db.cameras)
     initial.insert((i++), camera);
-  BOOST_FOREACH(const SfM_Track& track, db.tracks)
+  for(const SfM_Track& track: db.tracks)
     initial.insert(P(j++), track.p);
   return initial;
 }

@@ -18,7 +18,6 @@
 
 #include <gtsam/linear/VectorValues.h>
 
-#include <boost/foreach.hpp>
 #include <boost/bind.hpp>
 #include <boost/range/combine.hpp>
 #include <boost/range/numeric.hpp>
@@ -48,7 +47,7 @@ namespace gtsam {
   VectorValues::VectorValues(const Vector& x, const Dims& dims) {
     typedef pair<Key, size_t> Pair;
     size_t j = 0;
-    BOOST_FOREACH(const Pair& v, dims) {
+    for(const Pair& v: dims) {
       Key key;
       size_t n;
       boost::tie(key, n) = v;
@@ -61,7 +60,7 @@ namespace gtsam {
   VectorValues VectorValues::Zero(const VectorValues& other)
   {
     VectorValues result;
-    BOOST_FOREACH(const KeyValuePair& v, other)
+    for(const KeyValuePair& v: other)
       result.values_.insert(make_pair(v.first, Vector::Zero(v.second.size())));
     return result;
   }
@@ -82,7 +81,7 @@ namespace gtsam {
   void VectorValues::update(const VectorValues& values)
   {
     iterator hint = begin();
-    BOOST_FOREACH(const KeyValuePair& key_value, values)
+    for(const KeyValuePair& key_value: values)
     {
       // Use this trick to find the value using a hint, since we are inserting from another sorted map
       size_t oldSize = values_.size();
@@ -108,14 +107,14 @@ namespace gtsam {
   /* ************************************************************************* */
   void VectorValues::setZero()
   {
-    BOOST_FOREACH(Vector& v, values_ | map_values)
+    for(Vector& v: values_ | map_values)
       v.setZero();
   }
 
   /* ************************************************************************* */
   void VectorValues::print(const string& str, const KeyFormatter& formatter) const {
     cout << str << ": " << size() << " elements\n";
-    BOOST_FOREACH(const value_type& key_value, *this)
+    for(const value_type& key_value: *this)
       cout << "  " << formatter(key_value.first) << ": " << key_value.second.transpose() << "\n";
     cout.flush();
   }
@@ -125,7 +124,7 @@ namespace gtsam {
     if(this->size() != x.size())
       return false;
     typedef boost::tuple<value_type, value_type> ValuePair;
-    BOOST_FOREACH(const ValuePair& values, boost::combine(*this, x)) {
+    for(const ValuePair& values: boost::combine(*this, x)) {
       if(values.get<0>().first != values.get<1>().first ||
         !equal_with_abs_tol(values.get<0>().second, values.get<1>().second, tol))
         return false;
@@ -138,13 +137,13 @@ namespace gtsam {
   {
     // Count dimensions
     DenseIndex totalDim = 0;
-    BOOST_FOREACH(const Vector& v, *this | map_values)
+    for(const Vector& v: *this | map_values)
       totalDim += v.size();
 
     // Copy vectors
     Vector result(totalDim);
     DenseIndex pos = 0;
-    BOOST_FOREACH(const Vector& v, *this | map_values) {
+    for(const Vector& v: *this | map_values) {
       result.segment(pos, v.size()) = v;
       pos += v.size();
     }
@@ -166,7 +165,7 @@ namespace gtsam {
     // Copy vectors
     Vector result(totalDim);
     DenseIndex pos = 0;
-    BOOST_FOREACH(const Vector *v, items) {
+    for(const Vector *v: items) {
       result.segment(pos, v->size()) = *v;
       pos += v->size();
     }
@@ -179,11 +178,11 @@ namespace gtsam {
   {
     // Count dimensions
     DenseIndex totalDim = 0;
-    BOOST_FOREACH(size_t dim, keys | map_values)
+    for(size_t dim: keys | map_values)
       totalDim += dim;
     Vector result(totalDim);
     size_t j = 0;
-    BOOST_FOREACH(const Dims::value_type& it, keys) {
+    for(const Dims::value_type& it: keys) {
       result.segment(j,it.second) = at(it.first);
       j += it.second;
     }
@@ -221,7 +220,7 @@ namespace gtsam {
     double result = 0.0;
     typedef boost::tuple<value_type, value_type> ValuePair;
     using boost::adaptors::map_values;
-    BOOST_FOREACH(const ValuePair& values, boost::combine(*this, v)) {
+    for(const ValuePair& values: boost::combine(*this, v)) {
       assert_throw(values.get<0>().first == values.get<1>().first,
         invalid_argument("VectorValues::dot called with a VectorValues of different structure"));
       assert_throw(values.get<0>().second.size() == values.get<1>().second.size(),
@@ -240,7 +239,7 @@ namespace gtsam {
   double VectorValues::squaredNorm() const {
     double sumSquares = 0.0;
     using boost::adaptors::map_values;
-    BOOST_FOREACH(const Vector& v, *this | map_values)
+    for(const Vector& v: *this | map_values)
       sumSquares += v.squaredNorm();
     return sumSquares;
   }
@@ -329,7 +328,7 @@ namespace gtsam {
   VectorValues operator*(const double a, const VectorValues &v)
   {
     VectorValues result;
-    BOOST_FOREACH(const VectorValues::KeyValuePair& key_v, v)
+    for(const VectorValues::KeyValuePair& key_v: v)
       result.values_.insert(result.values_.end(), make_pair(key_v.first, a * key_v.second));
     return result;
   }
@@ -343,7 +342,7 @@ namespace gtsam {
   /* ************************************************************************* */
   VectorValues& VectorValues::operator*=(double alpha)
   {
-    BOOST_FOREACH(Vector& v, *this | map_values)
+    for(Vector& v: *this | map_values)
       v *= alpha;
     return *this;
   }

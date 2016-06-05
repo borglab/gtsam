@@ -20,7 +20,6 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
-#include <boost/foreach.hpp>
 
 #ifdef GTSAM_USE_TBB
 #  include <tbb/tbb.h>
@@ -101,7 +100,7 @@ namespace gtsam {
 
                 tbb::task* firstChild = 0;
                 tbb::task_list childTasks;
-                BOOST_FOREACH(const boost::shared_ptr<NODE>& child, treeNode->children)
+                for(const boost::shared_ptr<NODE>& child: treeNode->children)
                 {
                   // Process child in a subtask.  Important:  Run visitorPre before calling
                   // allocate_child so that if visitorPre throws an exception, we will not have
@@ -143,7 +142,7 @@ namespace gtsam {
 
         void processNodeRecursively(const boost::shared_ptr<NODE>& node, DATA& myData)
         {
-          BOOST_FOREACH(const boost::shared_ptr<NODE>& child, node->children)
+          for(const boost::shared_ptr<NODE>& child: node->children)
           {
             DATA childData = visitorPre(child, myData);
             processNodeRecursively(child, childData);
@@ -174,7 +173,7 @@ namespace gtsam {
           typedef PreOrderTask<NODE, DATA, VISITOR_PRE, VISITOR_POST> PreOrderTask;
           // Create data and tasks for our children
           tbb::task_list tasks;
-          BOOST_FOREACH(const boost::shared_ptr<NODE>& root, roots)
+          for(const boost::shared_ptr<NODE>& root: roots)
           {
             boost::shared_ptr<DATA> rootData = boost::allocate_shared<DATA>(tbb::scalable_allocator<DATA>(), visitorPre(root, myData));
             tasks.push_back(*new(allocate_child())
