@@ -34,7 +34,7 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(attitude_overloads, attitude, 0, 1)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(position_overloads, position, 0, 1)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(velocity_overloads, velocity, 0, 1)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(equals_overloads, PreintegratedImuMeasurements::equals, 1, 2)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(predict_overloads, PreintegrationBase::predict, 2, 4)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(predict_overloads, PreintegratedImuMeasurements::predict, 2, 4)
 
 void exportImuFactor() {
   class_<OptionalJacobian39>("OptionalJacobian39", init<>());
@@ -80,18 +80,13 @@ void exportImuFactor() {
   // NOTE(frank): https://mail.python.org/pipermail/cplusplus-sig/2016-January/017362.html
   register_ptr_to_python< boost::shared_ptr<PreintegrationParams> >();
 
-  class_<PreintegrationBase>(
-      "PreintegrationBase",
-      init<const boost::shared_ptr<PreintegrationParams>&, const imuBias::ConstantBias&>())
-      .def("predict", &PreintegrationBase::predict, predict_overloads())
-      .def("computeError", &PreintegrationBase::computeError)
-      .def("resetIntegration", &PreintegrationBase::resetIntegration)
-      .def("deltaTij", &PreintegrationBase::deltaTij);
-
-  class_<PreintegratedImuMeasurements, bases<PreintegrationBase>>(
-      "PreintegratedImuMeasurements",
+  class_<PreintegratedImuMeasurements>("PreintegratedImuMeasurements",
       init<const boost::shared_ptr<PreintegrationParams>&, const imuBias::ConstantBias&>())
       .def(repr(self))
+      .def("predict", &PreintegratedImuMeasurements::predict, predict_overloads())
+      .def("computeError", &PreintegratedImuMeasurements::computeError)
+      .def("resetIntegration", &PreintegratedImuMeasurements::resetIntegration)
+      .def("deltaTij", &PreintegratedImuMeasurements::deltaTij)
       .def("equals", &PreintegratedImuMeasurements::equals, equals_overloads(args("other", "tol")))
       .def("integrateMeasurement", &PreintegratedImuMeasurements::integrateMeasurement)
       .def("integrateMeasurements", &PreintegratedImuMeasurements::integrateMeasurements)
