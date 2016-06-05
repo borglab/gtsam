@@ -39,13 +39,9 @@ class ManifoldPreintegration : public PreintegrationBase {
    * Note: velocity is now also in frame i, as opposed to deltaVij in [2]
    */
   NavState deltaXij_;
+  // TODO(Luca): Move to base
   Matrix93 preintegrated_H_biasAcc_;    ///< Jacobian of deltaXij_ w.r.t. acceleration bias
   Matrix93 preintegrated_H_biasOmega_;  ///< Jacobian of deltaXij_ w.r.t. angular rate bias
-  Matrix3 delRdelBiasOmega_; ///< Jacobian of preintegrated rotation w.r.t. angular rate bias
-  Matrix3 delPdelBiasAcc_;   ///< Jacobian of preintegrated position w.r.t. acceleration bias
-  Matrix3 delPdelBiasOmega_; ///< Jacobian of preintegrated position w.r.t. angular rate bias
-  Matrix3 delVdelBiasAcc_;   ///< Jacobian of preintegrated velocity w.r.t. acceleration bias
-  Matrix3 delVdelBiasOmega_; ///< Jacobian of preintegrated velocity w.r.t. angular rate bias
 
   /// Default constructor for serialization
   ManifoldPreintegration() {
@@ -80,22 +76,13 @@ public:
   Vector3  deltaPij() const override { return deltaXij_.position().vector(); }
   Vector3  deltaVij() const override { return deltaXij_.velocity(); }
 
-  Matrix3  delRdelBiasOmega() const { return delRdelBiasOmega_; }
-  Matrix3  delPdelBiasAcc() const   { return delPdelBiasAcc_; }
-  Matrix3  delPdelBiasOmega() const { return delPdelBiasOmega_; }
-  Matrix3  delVdelBiasAcc() const   { return delVdelBiasAcc_; }
-  Matrix3  delVdelBiasOmega() const { return delVdelBiasOmega_; }
-
   const Matrix93 preintegrated_H_biasAcc() const {
-//    Matrix93 preintegrated_H_biasAcc;
-//    preintegrated_H_biasAcc << Z_3x3, delPdelBiasAcc_, delVdelBiasAcc_;
     return preintegrated_H_biasAcc_;
   }
   const Matrix93 preintegrated_H_biasOmega() const {
-//    Matrix93 preintegrated_H_biasOmega;
-//    preintegrated_H_biasOmega << delRdelBiasOmega_, delPdelBiasOmega_, delVdelBiasOmega_;
     return preintegrated_H_biasOmega_;
   }
+
   /// @name Testable
   /// @{
   bool equals(const ManifoldPreintegration& other, double tol) const;
@@ -134,11 +121,7 @@ private:
     ar & BOOST_SERIALIZATION_NVP(deltaTij_);
     ar & BOOST_SERIALIZATION_NVP(deltaXij_);
     ar & BOOST_SERIALIZATION_NVP(biasHat_);
-    ar & bs::make_nvp("delRdelBiasOmega_", bs::make_array(delRdelBiasOmega_.data(), delRdelBiasOmega_.size()));
-    ar & bs::make_nvp("delPdelBiasAcc_", bs::make_array(delPdelBiasAcc_.data(), delPdelBiasAcc_.size()));
-    ar & bs::make_nvp("delPdelBiasOmega_", bs::make_array(delPdelBiasOmega_.data(), delPdelBiasOmega_.size()));
-    ar & bs::make_nvp("delVdelBiasAcc_", bs::make_array(delVdelBiasAcc_.data(), delVdelBiasAcc_.size()));
-    ar & bs::make_nvp("delVdelBiasOmega_", bs::make_array(delVdelBiasOmega_.data(), delVdelBiasOmega_.size()));
+    // TODO(Luca): 2 Jacobians, in base !
   }
 };
 

@@ -36,26 +36,18 @@ ManifoldPreintegration::ManifoldPreintegration(
 void ManifoldPreintegration::resetIntegration() {
   deltaTij_ = 0.0;
   deltaXij_ = NavState();
+  // TODO(Luca): Move to base
   preintegrated_H_biasAcc_.setZero();
   preintegrated_H_biasOmega_.setZero();
-  delRdelBiasOmega_.setZero();
-  delPdelBiasAcc_.setZero();
-  delPdelBiasOmega_.setZero();
-  delVdelBiasAcc_.setZero();
-  delVdelBiasOmega_.setZero();
 }
 
 //------------------------------------------------------------------------------
 bool ManifoldPreintegration::equals(const ManifoldPreintegration& other,
     double tol) const {
+  // TODO(Luca): check base
   return p_->equals(*other.p_, tol) && fabs(deltaTij_ - other.deltaTij_) < tol
       && biasHat_.equals(other.biasHat_, tol)
-      && deltaXij_.equals(other.deltaXij_, tol)
-      && equal_with_abs_tol(delRdelBiasOmega_, other.delRdelBiasOmega_, tol)
-      && equal_with_abs_tol(delPdelBiasAcc_, other.delPdelBiasAcc_, tol)
-      && equal_with_abs_tol(delPdelBiasOmega_, other.delPdelBiasOmega_, tol)
-      && equal_with_abs_tol(delVdelBiasAcc_, other.delVdelBiasAcc_, tol)
-      && equal_with_abs_tol(delVdelBiasOmega_, other.delVdelBiasOmega_, tol);
+      && deltaXij_.equals(other.deltaXij_, tol);
 }
 
 //------------------------------------------------------------------------------
@@ -97,25 +89,6 @@ void ManifoldPreintegration::update(const Vector3& measuredAcc,
   // where omega_H_biasOmega = -I_3x3, hence
   // new_H_biasOmega = new_H_old * old_H_biasOmega - new_H_omega
   preintegrated_H_biasOmega_ = (*A) * preintegrated_H_biasOmega_ - (*C);
-
-  // Update Jacobians
-  // TODO(frank): Try same simplification as in new approach
-  Matrix3 D_acc_R;
-  oldRij.rotate(acc, D_acc_R);
-  const Matrix3 D_acc_biasOmega = D_acc_R * delRdelBiasOmega_;
-
-  const Vector3 integratedOmega = omega * dt;
-  Matrix3 D_incrR_integratedOmega;
-  const Rot3 incrR = Rot3::Expmap(integratedOmega, D_incrR_integratedOmega); // expensive !!
-  const Matrix3 incrRt = incrR.transpose();
-  delRdelBiasOmega_ = incrRt * delRdelBiasOmega_ - D_incrR_integratedOmega * dt;
-
-  double dt22 = 0.5 * dt * dt;
-  const Matrix3 dRij = oldRij.matrix(); // expensive
-  delPdelBiasAcc_ += delVdelBiasAcc_ * dt - dt22 * dRij;
-  delPdelBiasOmega_ += dt * delVdelBiasOmega_ + dt22 * D_acc_biasOmega;
-  delVdelBiasAcc_ += -dRij * dt;
-  delVdelBiasOmega_ += D_acc_biasOmega * dt;
 }
 
 //------------------------------------------------------------------------------
