@@ -34,7 +34,7 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(attitude_overloads, attitude, 0, 1)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(position_overloads, position, 0, 1)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(velocity_overloads, velocity, 0, 1)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(equals_overloads, PreintegratedImuMeasurements::equals, 1, 2)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(predict_overloads, PreintegrationType::predict, 2, 4)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(predict_overloads, PreintegrationBase::predict, 2, 4)
 
 void exportImuFactor() {
   class_<OptionalJacobian39>("OptionalJacobian39", init<>());
@@ -81,7 +81,11 @@ void exportImuFactor() {
   register_ptr_to_python< boost::shared_ptr<PreintegrationParams> >();
 
   class_<PreintegrationType>(
-      "PreintegrationType",
+#ifdef GTSAM_TANGENT_PREINTEGRATION
+      "TangentPreintegration",
+#else
+      "ManifoldPreintegration",
+#endif
       init<const boost::shared_ptr<PreintegrationParams>&, const imuBias::ConstantBias&>())
       .def("predict", &PreintegrationType::predict, predict_overloads())
       .def("computeError", &PreintegrationType::computeError)
