@@ -68,6 +68,31 @@ TEST(ImuFactor, PreintegratedMeasurementsConstruction) {
 }
 
 /* ************************************************************************* */
+TEST(ImuFactor, PreintegratedMeasurementsReset) {
+
+	auto p = testing::Params();
+	// Create a preintegrated measurement struct and integrate
+	PreintegratedImuMeasurements pimActual(p);
+	Vector3 measuredAcc(0.5, 1.0, 0.5);
+	Vector3 measuredOmega(0.1, 0.3, 0.1);
+	double deltaT = 1.0;
+	pimActual.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+
+	// reset and make sure that it is the same as a fresh one
+	pimActual.resetIntegration();
+	CHECK(assert_equal(pimActual, PreintegratedImuMeasurements(p)));
+
+	// Now create one with a different bias ..
+	Bias nonZeroBias(Vector3(0.2, 0, 0), Vector3(0.1, 0, 0.3));
+	PreintegratedImuMeasurements pimExpected(p, nonZeroBias);
+
+	// integrate again, then reset to a new bias
+	pimActual.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+	pimActual.resetIntegrationAndSetBias(nonZeroBias);
+	CHECK(assert_equal(pimActual, pimExpected));
+}
+
+/* ************************************************************************* */
 TEST(ImuFactor, Accelerating) {
   const double a = 0.2, v = 50;
 
@@ -444,34 +469,6 @@ TEST(ImuFactor, fistOrderExponential) {
   EXPECT(assert_equal(expectedRot, actualRot));
 }
 
-/* ************************************************************************* */
-TEST(ImuFactor, FirstOrderPreIntegratedMeasurements) {
-  testing::SomeMeasurements measurements;
-
-#ifdef GTSAM_TANGENT_PREINTEGRATION
-  boost::function<Vector9(const Vector3&, const Vector3&)> integrate =
-#else
-  boost::function<NavState(const Vector3&, const Vector3&)> integrate =
-#endif
-      [=](const Vector3& a, const Vector3& w) {
-        PreintegratedImuMeasurements pim(testing::Params(), Bias(a, w));
-        testing::integrateMeasurements(measurements, &pim);
-#ifdef GTSAM_TANGENT_PREINTEGRATION
-        return pim.preintegrated();
-#else
-        return pim.deltaXij();
-#endif
-      };
-
-  // Actual pre-integrated values
-  PreintegratedImuMeasurements pim(testing::Params());
-  testing::integrateMeasurements(measurements, &pim);
-
-  EXPECT(assert_equal(numericalDerivative21(integrate, kZero, kZero),
-                      pim.preintegrated_H_biasAcc()));
-  EXPECT(assert_equal(numericalDerivative22(integrate, kZero, kZero),
-                      pim.preintegrated_H_biasOmega(), 1e-3));
-}
 /* ************************************************************************* */
 Vector3 correctedAcc(const PreintegratedImuMeasurements& pim,
     const Vector3& measuredAcc, const Vector3& measuredOmega) {

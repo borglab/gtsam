@@ -19,7 +19,6 @@
 #include <gtsam/base/Testable.h>
 #include <Eigen/Core>
 #include <iostream>
-#include <boost/foreach.hpp>
 
 namespace gtsam {
 

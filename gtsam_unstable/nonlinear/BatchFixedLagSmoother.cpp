@@ -64,7 +64,7 @@ FixedLagSmoother::Result BatchFixedLagSmoother::update(
   // Add the new variables to theta
   theta_.insert(newTheta);
   // Add new variables to the end of the ordering
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, newTheta) {
+  for(const Values::ConstKeyValuePair& key_value: newTheta) {
     ordering_.push_back(key_value.key);
   }
   // Augment Delta
@@ -87,7 +87,7 @@ FixedLagSmoother::Result BatchFixedLagSmoother::update(
       current_timestamp - smootherLag_);
   if (debug) {
     std::cout << "Marginalizable Keys: ";
-    BOOST_FOREACH(Key key, marginalizableKeys) {
+    for(Key key: marginalizableKeys) {
       std::cout << DefaultKeyFormatter(key) << " ";
     }
     std::cout << std::endl;
@@ -123,7 +123,7 @@ FixedLagSmoother::Result BatchFixedLagSmoother::update(
 /* ************************************************************************* */
 void BatchFixedLagSmoother::insertFactors(
     const NonlinearFactorGraph& newFactors) {
-  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, newFactors) {
+  for(const NonlinearFactor::shared_ptr& factor: newFactors) {
     Key index;
     // Insert the factor into an existing hole in the factor graph, if possible
     if (availableSlots_.size() > 0) {
@@ -135,7 +135,7 @@ void BatchFixedLagSmoother::insertFactors(
       factors_.push_back(factor);
     }
     // Update the FactorIndex
-    BOOST_FOREACH(Key key, *factor) {
+    for(Key key: *factor) {
       factorIndex_[key].insert(index);
     }
   }
@@ -144,10 +144,10 @@ void BatchFixedLagSmoother::insertFactors(
 /* ************************************************************************* */
 void BatchFixedLagSmoother::removeFactors(
     const std::set<size_t>& deleteFactors) {
-  BOOST_FOREACH(size_t slot, deleteFactors) {
+  for(size_t slot: deleteFactors) {
     if (factors_.at(slot)) {
       // Remove references to this factor from the FactorIndex
-      BOOST_FOREACH(Key key, *(factors_.at(slot))) {
+      for(Key key: *(factors_.at(slot))) {
         factorIndex_[key].erase(slot);
       }
       // Remove the factor from the factor graph
@@ -165,7 +165,7 @@ void BatchFixedLagSmoother::removeFactors(
 /* ************************************************************************* */
 void BatchFixedLagSmoother::eraseKeys(const std::set<Key>& keys) {
 
-  BOOST_FOREACH(Key key, keys) {
+  for(Key key: keys) {
     // Erase the key from the values
     theta_.erase(key);
 
@@ -181,7 +181,7 @@ void BatchFixedLagSmoother::eraseKeys(const std::set<Key>& keys) {
   eraseKeyTimestampMap(keys);
 
   // Remove marginalized keys from the ordering and delta
-  BOOST_FOREACH(Key key, keys) {
+  for(Key key: keys) {
     ordering_.erase(std::find(ordering_.begin(), ordering_.end(), key));
     delta_.erase(key);
   }
@@ -198,7 +198,7 @@ void BatchFixedLagSmoother::reorder(const std::set<Key>& marginalizeKeys) {
 
   if (debug) {
     std::cout << "Marginalizable Keys: ";
-    BOOST_FOREACH(Key key, marginalizeKeys) {
+    for(Key key: marginalizeKeys) {
       std::cout << DefaultKeyFormatter(key) << " ";
     }
     std::cout << std::endl;
@@ -288,7 +288,7 @@ FixedLagSmoother::Result BatchFixedLagSmoother::optimize() {
         {
           // for each of the variables, add a prior at the current solution
           double sigma = 1.0 / std::sqrt(lambda);
-          BOOST_FOREACH(const VectorValues::KeyValuePair& key_value, delta_) {
+          for(const VectorValues::KeyValuePair& key_value: delta_) {
             size_t dim = key_value.second.size();
             Matrix A = Matrix::Identity(dim, dim);
             Vector b = key_value.second;
@@ -332,7 +332,7 @@ FixedLagSmoother::Result BatchFixedLagSmoother::optimize() {
           // Put the linearization points and deltas back for specific variables
           if (enforceConsistency_ && (linearKeys_.size() > 0)) {
             theta_.update(linearKeys_);
-            BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, linearKeys_) {
+            for(const Values::ConstKeyValuePair& key_value: linearKeys_) {
               delta_.at(key_value.key) = newDelta.at(key_value.key);
             }
           }
@@ -397,7 +397,7 @@ void BatchFixedLagSmoother::marginalize(const std::set<Key>& marginalizeKeys) {
 
   if (debug) {
     std::cout << "BatchFixedLagSmoother::marginalize  Marginalize Keys: ";
-    BOOST_FOREACH(Key key, marginalizeKeys) {
+    for(Key key: marginalizeKeys) {
       std::cout << DefaultKeyFormatter(key) << " ";
     }
     std::cout << std::endl;
@@ -406,14 +406,14 @@ void BatchFixedLagSmoother::marginalize(const std::set<Key>& marginalizeKeys) {
   // Identify all of the factors involving any marginalized variable. These must be removed.
   std::set<size_t> removedFactorSlots;
   VariableIndex variableIndex(factors_);
-  BOOST_FOREACH(Key key, marginalizeKeys) {
+  for(Key key: marginalizeKeys) {
     const FastVector<size_t>& slots = variableIndex[key];
     removedFactorSlots.insert(slots.begin(), slots.end());
   }
 
   if (debug) {
     std::cout << "BatchFixedLagSmoother::marginalize  Removed Factor Slots: ";
-    BOOST_FOREACH(size_t slot, removedFactorSlots) {
+    for(size_t slot: removedFactorSlots) {
       std::cout << slot << " ";
     }
     std::cout << std::endl;
@@ -421,7 +421,7 @@ void BatchFixedLagSmoother::marginalize(const std::set<Key>& marginalizeKeys) {
 
   // Add the removed factors to a factor graph
   NonlinearFactorGraph removedFactors;
-  BOOST_FOREACH(size_t slot, removedFactorSlots) {
+  for(size_t slot: removedFactorSlots) {
     if (factors_.at(slot)) {
       removedFactors.push_back(factors_.at(slot));
     }
@@ -456,7 +456,7 @@ void BatchFixedLagSmoother::marginalize(const std::set<Key>& marginalizeKeys) {
 void BatchFixedLagSmoother::PrintKeySet(const std::set<Key>& keys,
     const std::string& label) {
   std::cout << label;
-  BOOST_FOREACH(gtsam::Key key, keys) {
+  for(gtsam::Key key: keys) {
     std::cout << " " << gtsam::DefaultKeyFormatter(key);
   }
   std::cout << std::endl;
@@ -466,7 +466,7 @@ void BatchFixedLagSmoother::PrintKeySet(const std::set<Key>& keys,
 void BatchFixedLagSmoother::PrintKeySet(const gtsam::KeySet& keys,
     const std::string& label) {
   std::cout << label;
-  BOOST_FOREACH(gtsam::Key key, keys) {
+  for(gtsam::Key key: keys) {
     std::cout << " " << gtsam::DefaultKeyFormatter(key);
   }
   std::cout << std::endl;
@@ -477,7 +477,7 @@ void BatchFixedLagSmoother::PrintSymbolicFactor(
     const NonlinearFactor::shared_ptr& factor) {
   std::cout << "f(";
   if (factor) {
-    BOOST_FOREACH(Key key, factor->keys()) {
+    for(Key key: factor->keys()) {
       std::cout << " " << gtsam::DefaultKeyFormatter(key);
     }
   } else {
@@ -490,7 +490,7 @@ void BatchFixedLagSmoother::PrintSymbolicFactor(
 void BatchFixedLagSmoother::PrintSymbolicFactor(
     const GaussianFactor::shared_ptr& factor) {
   std::cout << "f(";
-  BOOST_FOREACH(Key key, factor->keys()) {
+  for(Key key: factor->keys()) {
     std::cout << " " << gtsam::DefaultKeyFormatter(key);
   }
   std::cout << " )" << std::endl;
@@ -500,7 +500,7 @@ void BatchFixedLagSmoother::PrintSymbolicFactor(
 void BatchFixedLagSmoother::PrintSymbolicGraph(
     const NonlinearFactorGraph& graph, const std::string& label) {
   std::cout << label << std::endl;
-  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, graph) {
+  for(const NonlinearFactor::shared_ptr& factor: graph) {
     PrintSymbolicFactor(factor);
   }
 }
@@ -509,7 +509,7 @@ void BatchFixedLagSmoother::PrintSymbolicGraph(
 void BatchFixedLagSmoother::PrintSymbolicGraph(const GaussianFactorGraph& graph,
     const std::string& label) {
   std::cout << label << std::endl;
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, graph) {
+  for(const GaussianFactor::shared_ptr& factor: graph) {
     PrintSymbolicFactor(factor);
   }
 }
@@ -568,7 +568,7 @@ NonlinearFactorGraph BatchFixedLagSmoother::calculateMarginalFactors(
     // Wrap in nonlinear container factors
     NonlinearFactorGraph marginalFactors;
     marginalFactors.reserve(marginalLinearFactors.size());
-    BOOST_FOREACH(const GaussianFactor::shared_ptr& gaussianFactor, marginalLinearFactors) {
+    for(const GaussianFactor::shared_ptr& gaussianFactor: marginalLinearFactors) {
       marginalFactors += boost::make_shared<LinearContainerFactor>(
           gaussianFactor, theta);
       if (debug) {

@@ -36,6 +36,26 @@ static const Vector9 kZeroXi = Vector9::Zero();
 
 /* ************************************************************************* */
 TEST(NavState, Constructor) {
+  boost::function<NavState(const Rot3&, const Point3&, const Vector3&)> create =
+      boost::bind(&NavState::Create, _1, _2, _3, boost::none, boost::none,
+          boost::none);
+  Matrix aH1, aH2, aH3;
+  EXPECT(
+      assert_equal(kState1,
+          NavState::Create(kAttitude, kPosition, kVelocity, aH1, aH2, aH3)));
+  EXPECT(
+      assert_equal(
+          numericalDerivative31(create, kAttitude, kPosition, kVelocity), aH1));
+  EXPECT(
+      assert_equal(
+          numericalDerivative32(create, kAttitude, kPosition, kVelocity), aH2));
+  EXPECT(
+      assert_equal(
+          numericalDerivative32(create, kAttitude, kPosition, kVelocity), aH2));
+}
+
+/* ************************************************************************* */
+TEST(NavState, Constructor2) {
   boost::function<NavState(const Pose3&, const Vector3&)> construct =
       boost::bind(&NavState::FromPoseVelocity, _1, _2, boost::none,
           boost::none);
@@ -88,19 +108,6 @@ TEST( NavState, BodyVelocity) {
 }
 
 /* ************************************************************************* */
-TEST( NavState, MatrixGroup ) {
-  // check roundtrip conversion to 7*7 matrix representation
-  Matrix7 T = kState1.matrix();
-  EXPECT(assert_equal(kState1, NavState(T)));
-
-  // check group product agrees with matrix product
-  NavState state2 = kState1 * kState1;
-  Matrix T2 = T * T;
-  EXPECT(assert_equal(state2, NavState(T2)));
-  EXPECT(assert_equal(T2, state2.matrix()));
-}
-
-/* ************************************************************************* */
 TEST( NavState, Manifold ) {
   // Check zero xi
   EXPECT(assert_equal(kIdentity, kIdentity.retract(kZeroXi)));
@@ -114,34 +121,15 @@ TEST( NavState, Manifold ) {
   Rot3 drot = Rot3::Expmap(xi.head<3>());
   Point3 dt = Point3(xi.segment<3>(3));
   Velocity3 dvel = Velocity3(-0.1, -0.2, -0.3);
-  NavState state2 = kState1 * NavState(drot, dt, dvel);
+  NavState state2 = NavState(kState1.attitude() * drot,
+      kState1.position() + kState1.attitude() * dt,
+      kState1.velocity() + kState1.attitude() * dvel);
   EXPECT(assert_equal(state2, kState1.retract(xi)));
   EXPECT(assert_equal(xi, kState1.localCoordinates(state2)));
 
   // roundtrip from state2 to state3 and back
   NavState state3 = state2.retract(xi);
   EXPECT(assert_equal(xi, state2.localCoordinates(state3)));
-
-  // Check derivatives for ChartAtOrigin::Retract
-  Matrix9 aH;
-  //  For zero xi
-  boost::function<NavState(const Vector9&)> Retract = boost::bind(
-      NavState::ChartAtOrigin::Retract, _1, boost::none);
-  NavState::ChartAtOrigin::Retract(kZeroXi, aH);
-  EXPECT(assert_equal(numericalDerivative11(Retract, kZeroXi), aH));
-  //  For non-zero xi
-  NavState::ChartAtOrigin::Retract(xi, aH);
-  EXPECT(assert_equal(numericalDerivative11(Retract, xi), aH));
-
-  // Check derivatives for ChartAtOrigin::Local
-  //  For zero xi
-  boost::function<Vector9(const NavState&)> Local = boost::bind(
-      NavState::ChartAtOrigin::Local, _1, boost::none);
-  NavState::ChartAtOrigin::Local(kIdentity, aH);
-  EXPECT(assert_equal(numericalDerivative11(Local, kIdentity), aH));
-  //  For non-zero xi
-  NavState::ChartAtOrigin::Local(kState1, aH);
-  EXPECT(assert_equal(numericalDerivative11(Local, kState1), aH));
 
   // Check retract derivatives
   Matrix9 aH1, aH2;
@@ -150,6 +138,12 @@ TEST( NavState, Manifold ) {
       boost::bind(&NavState::retract, _1, _2, boost::none, boost::none);
   EXPECT(assert_equal(numericalDerivative21(retract, kState1, xi), aH1));
   EXPECT(assert_equal(numericalDerivative22(retract, kState1, xi), aH2));
+
+  // Check retract derivatives on state 2
+  const Vector9 xi2 = -3.0*xi;
+  state2.retract(xi2, aH1, aH2);
+  EXPECT(assert_equal(numericalDerivative21(retract, state2, xi2), aH1));
+  EXPECT(assert_equal(numericalDerivative22(retract, state2, xi2), aH2));
 
   // Check localCoordinates derivatives
   boost::function<Vector9(const NavState&, const NavState&)> local =
@@ -170,29 +164,6 @@ TEST( NavState, Manifold ) {
 }
 
 /* ************************************************************************* */
-TEST( NavState, Lie ) {
-  // Check zero xi
-  EXPECT(assert_equal(kIdentity, kIdentity.expmap(kZeroXi)));
-  EXPECT(assert_equal(kZeroXi, kIdentity.logmap(kIdentity)));
-  EXPECT(assert_equal(kState1, kState1.expmap(kZeroXi)));
-  EXPECT(assert_equal(kZeroXi, kState1.logmap(kState1)));
-
-  // Expmap/Logmap roundtrip
-  Vector xi(9);
-  xi << 0.1, 0.1, 0.1, 0.2, 0.3, 0.4, -0.1, -0.2, -0.3;
-  NavState state2 = NavState::Expmap(xi);
-  EXPECT(assert_equal(xi, NavState::Logmap(state2)));
-
-  // roundtrip from state2 to state3 and back
-  NavState state3 = state2.expmap(xi);
-  EXPECT(assert_equal(xi, state2.logmap(state3)));
-
-  // For the expmap/logmap (not necessarily expmap/local) -xi goes other way
-  EXPECT(assert_equal(state2, state3.expmap(-xi)));
-  EXPECT(assert_equal(xi, -state3.logmap(state2)));
-}
-
-/* ************************************************************************* */
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 TEST(NavState, Update) {
   Vector3 omega(M_PI / 100.0, 0.0, 0.0);
@@ -201,8 +172,8 @@ TEST(NavState, Update) {
   Matrix9 aF;
   Matrix93 aG1, aG2;
   boost::function<NavState(const NavState&, const Vector3&, const Vector3&)> update =
-      boost::bind(&NavState::update, _1, _2, _3, dt, boost::none,
-          boost::none, boost::none);
+  boost::bind(&NavState::update, _1, _2, _3, dt, boost::none,
+      boost::none, boost::none);
   Vector3 b_acc = kAttitude * acc;
   NavState expected(kAttitude.expmap(dt * omega),
       kPosition + Point3((kVelocity + b_acc * dt / 2) * dt),

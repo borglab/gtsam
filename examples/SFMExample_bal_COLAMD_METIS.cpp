@@ -60,8 +60,8 @@ int main (int argc, char* argv[]) {
 
   // Add measurements to the factor graph
   size_t j = 0;
-  BOOST_FOREACH(const SfM_Track& track, mydata.tracks) {
-    BOOST_FOREACH(const SfM_Measurement& m, track.measurements) {
+  for(const SfM_Track& track: mydata.tracks) {
+    for(const SfM_Measurement& m: track.measurements) {
       size_t i = m.first;
       Point2 uv = m.second;
       graph.push_back(MyFactor(uv, noise, C(i), P(j))); // note use of shorthand symbols C and P
@@ -77,8 +77,8 @@ int main (int argc, char* argv[]) {
   // Create initial estimate
   Values initial;
   size_t i = 0; j = 0;
-  BOOST_FOREACH(const SfM_Camera& camera, mydata.cameras) initial.insert(C(i++), camera);
-  BOOST_FOREACH(const SfM_Track& track, mydata.tracks)    initial.insert(P(j++), track.p);
+  for(const SfM_Camera& camera: mydata.cameras) initial.insert(C(i++), camera);
+  for(const SfM_Track& track: mydata.tracks)    initial.insert(P(j++), track.p);
 
   /** ---------------  COMPARISON  -----------------------**/
   /** ----------------------------------------------------**/

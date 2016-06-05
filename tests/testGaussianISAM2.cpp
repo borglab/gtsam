@@ -23,7 +23,6 @@
 #include <gtsam/base/debug.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/treeTraversal-inst.h>
-#include <boost/foreach.hpp>
 #include <boost/assign/list_of.hpp>
 #include <gtsam/base/deprecated/LieScalar.h>
 using namespace boost::assign;
@@ -212,7 +211,7 @@ struct ConsistencyVisitor
       if(find(node->parent()->children.begin(), node->parent()->children.end(), node) == node->parent()->children.end())
         consistent = false;
     }
-    BOOST_FOREACH(Key j, node->conditional()->frontals())
+    for(Key j: node->conditional()->frontals())
     {
       if(isam.nodes().at(j).get() != node.get())
         consistent = false;
@@ -251,7 +250,7 @@ bool isam_check(const NonlinearFactorGraph& fullgraph, const Values& fullinit, c
   // Check gradient at each node
   bool nodeGradientsOk = true;
   typedef ISAM2::sharedClique sharedClique;
-  BOOST_FOREACH(const sharedClique& clique, isam.nodes() | br::map_values) {
+  for(const sharedClique& clique: isam.nodes() | br::map_values) {
     // Compute expected gradient
     GaussianFactorGraph jfg;
     jfg += clique->conditional();
@@ -483,7 +482,7 @@ TEST(ISAM2, swapFactors)
 
   // Check gradient at each node
   typedef ISAM2::sharedClique sharedClique;
-  BOOST_FOREACH(const sharedClique& clique, isam.nodes() | br::map_values) {
+  for(const sharedClique& clique: isam.nodes() | br::map_values) {
     // Compute expected gradient
     GaussianFactorGraph jfg;
     jfg += clique->conditional();
@@ -608,7 +607,7 @@ TEST(ISAM2, constrained_ordering)
 
   // Check gradient at each node
   typedef ISAM2::sharedClique sharedClique;
-  BOOST_FOREACH(const sharedClique& clique, isam.nodes() | br::map_values) {
+  for(const sharedClique& clique: isam.nodes() | br::map_values) {
     // Compute expected gradient
     GaussianFactorGraph jfg;
     jfg += clique->conditional();
@@ -650,7 +649,7 @@ namespace {
   bool checkMarginalizeLeaves(ISAM2& isam, const FastList<Key>& leafKeys) {
     Matrix expectedAugmentedHessian, expected3AugmentedHessian;
     vector<Key> toKeep;
-    BOOST_FOREACH(Key j, isam.getDelta() | br::map_keys)
+    for(Key j: isam.getDelta() | br::map_keys)
       if(find(leafKeys.begin(), leafKeys.end(), j) == leafKeys.end())
         toKeep.push_back(j);
 

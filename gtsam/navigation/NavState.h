@@ -20,7 +20,7 @@
 
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/Vector.h>
-#include <gtsam/base/ProductLieGroup.h>
+#include <gtsam/base/Manifold.h>
 
 namespace gtsam {
 
@@ -29,9 +29,9 @@ typedef Vector3 Velocity3;
 
 /**
  * Navigation state: Pose (rotation, translation) + velocity
- * Implements semi-direct Lie group product of SO(3) and R^6, where R^6 is position/velocity
+ * NOTE(frank): it does not make sense to make this a Lie group, but it is a 9D manifold
  */
-class NavState: public LieGroup<NavState, 9> {
+class NavState {
 private:
 
   // TODO(frank):
@@ -42,6 +42,10 @@ private:
 
 public:
 
+  enum {
+    dimension = 9
+  };
+
   typedef std::pair<Point3, Velocity3> PositionAndVelocity;
 
   /// @name Constructors
@@ -49,7 +53,7 @@ public:
 
   /// Default constructor
   NavState() :
-      t_(0,0,0), v_(Vector3::Zero()) {
+      t_(0, 0, 0), v_(Vector3::Zero()) {
   }
   /// Construct from attitude, position, velocity
   NavState(const Rot3& R, const Point3& t, const Velocity3& v) :
@@ -59,14 +63,14 @@ public:
   NavState(const Pose3& pose, const Velocity3& v) :
       R_(pose.rotation()), t_(pose.translation()), v_(v) {
   }
-  /// Construct from Matrix group representation (no checking)
-  NavState(const Matrix7& T) :
-      R_(T.block<3, 3>(0, 0)), t_(T.block<3, 1>(0, 6)), v_(T.block<3, 1>(3, 6)) {
-  }
   /// Construct from SO(3) and R^6
   NavState(const Matrix3& R, const Vector9 tv) :
       R_(R), t_(tv.head<3>()), v_(tv.tail<3>()) {
   }
+  /// Named constructor with derivatives
+  static NavState Create(const Rot3& R, const Point3& t, const Velocity3& v,
+      OptionalJacobian<9, 3> H1, OptionalJacobian<9, 3> H2,
+      OptionalJacobian<9, 3> H3);
   /// Named constructor with derivatives
   static NavState FromPoseVelocity(const Pose3& pose, const Vector3& vel,
       OptionalJacobian<9, 6> H1, OptionalJacobian<9, 3> H2);
@@ -116,36 +120,14 @@ public:
   /// @{
 
   /// Output stream operator
-  GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os, const NavState&  state);
+  GTSAM_EXPORT
+  friend std::ostream &operator<<(std::ostream &os, const NavState& state);
 
   /// print
   void print(const std::string& s = "") const;
 
   /// equals
   bool equals(const NavState& other, double tol = 1e-8) const;
-
-  /// @}
-  /// @name Group
-  /// @{
-
-  /// identity for group operation
-  static NavState identity() {
-    return NavState();
-  }
-
-  /// inverse transformation with derivatives
-  NavState inverse() const;
-
-  /// Group compose is the semi-direct product as specified below:
-  /// nTc = nTb * bTc = (nRb * bRc, nRb * b_t + n_t, nRb * b_v + n_v)
-  NavState operator*(const NavState& bTc) const;
-
-  /// Native group action is on position/velocity pairs *in the body frame* as follows:
-  /// nTb * (b_t,b_v) = (nRb * b_t + n_t, nRb * b_v + n_v)
-  PositionAndVelocity operator*(const PositionAndVelocity& b_tv) const;
-
-  /// Act on position alone, n_t = nRb * b_t + n_t
-  Point3 operator*(const Point3& b_t) const;
 
   /// @}
   /// @name Manifold
@@ -172,32 +154,15 @@ public:
     return v.segment<3>(6);
   }
 
-  // Chart at origin, constructs components separately (as opposed to Expmap)
-  struct ChartAtOrigin {
-    static NavState Retract(const Vector9& xi, //
-        OptionalJacobian<9, 9> H = boost::none);
-    static Vector9 Local(const NavState& x, //
-        OptionalJacobian<9, 9> H = boost::none);
-  };
+  /// retract with optional derivatives
+  NavState retract(const Vector9& v, //
+      OptionalJacobian<9, 9> H1 = boost::none, OptionalJacobian<9, 9> H2 =
+          boost::none) const;
 
-  /// @}
-  /// @name Lie Group
-  /// @{
-
-  /// Exponential map at identity - create a NavState from canonical coordinates
-  static NavState Expmap(const Vector9& xi, //
-      OptionalJacobian<9, 9> H = boost::none);
-
-  /// Log map at identity - return the canonical coordinates for this NavState
-  static Vector9 Logmap(const NavState& p, //
-      OptionalJacobian<9, 9> H = boost::none);
-
-  /// Calculate Adjoint map, a 9x9 matrix that takes a tangent vector in the body frame, and transforms
-  /// it to a tangent vector at identity, such that Exmap(AdjointMap()*xi) = (*this) * Exmpap(xi);
-  Matrix9 AdjointMap() const;
-
-  /// wedge creates Lie algebra element from tangent vector
-  static Matrix7 wedge(const Vector9& xi);
+  /// localCoordinates with optional derivatives
+  Vector9 localCoordinates(const NavState& g, //
+      OptionalJacobian<9, 9> H1 = boost::none, OptionalJacobian<9, 9> H2 =
+          boost::none) const;
 
   /// @}
   /// @name Dynamics
@@ -237,14 +202,7 @@ private:
 
 // Specialize NavState traits to use a Retract/Local that agrees with IMUFactors
 template<>
-struct traits<NavState> : Testable<NavState>, internal::LieGroupTraits<NavState> {
+struct traits<NavState> : internal::Manifold<NavState> {
 };
-
-// Partial specialization of wedge
-// TODO: deprecate, make part of traits
-template<>
-inline Matrix wedge<NavState>(const Vector& xi) {
-  return NavState::wedge(xi);
-}
 
 } // namespace gtsam

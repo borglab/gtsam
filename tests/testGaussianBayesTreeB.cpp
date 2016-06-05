@@ -26,7 +26,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/foreach.hpp>
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
 
@@ -220,7 +219,7 @@ TEST( GaussianBayesTree, balanced_smoother_shortcuts )
 //  Permutation toFront(Permutation::PullToFront(C3->keys(), varIndex.size()));
 //  Permutation toFrontInverse(*toFront.inverse());
 //  varIndex.permute(toFront);
-//  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, marginal) {
+//  for(const GaussianFactor::shared_ptr& factor: marginal) {
 //    factor->permuteWithInverse(toFrontInverse); }
 //  GaussianBayesNet actual = *inference::EliminateUntil(marginal, C3->keys().size(), varIndex);
 //  actual.permuteWithInverse(toFront);

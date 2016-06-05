@@ -295,7 +295,7 @@ TEST(DSF, mergePairwiseMatches) {
 
   // Merge matches
   DSF<Measurement> dsf(measurements);
-  BOOST_FOREACH(const Match& m, matches)
+  for(const Match& m: matches)
     dsf.makeUnionInPlace(m.first,m.second);
 
   // Check that sets are merged correctly

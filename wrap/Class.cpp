@@ -20,7 +20,6 @@
 #include "utilities.h"
 #include "Argument.h"
 
-#include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/range/adaptor/map.hpp>
 #include <boost/range/algorithm/copy.hpp>
@@ -157,7 +156,7 @@ void Class::matlab_proxy(Str toolboxPath, Str wrapperName,
       << "    function disp(obj), obj.display; end\n    %DISP Calls print on the object\n";
 
   // Methods 
-  BOOST_FOREACH(const Methods::value_type& name_m, methods_) {
+  for(const Methods::value_type& name_m: methods_) {
     const Method& m = name_m.second;
     m.proxy_wrapper_fragments(proxyFile, wrapperFile, cppName, matlabQualName,
         matlabUniqueName, wrapperName, typeAttributes, functionNames);
@@ -172,7 +171,7 @@ void Class::matlab_proxy(Str toolboxPath, Str wrapperName,
   proxyFile.oss << "  methods(Static = true)\n";
 
   // Static methods 
-  BOOST_FOREACH(const StaticMethods::value_type& name_m, static_methods) {
+  for(const StaticMethods::value_type& name_m: static_methods) {
     const StaticMethod& m = name_m.second;
     m.proxy_wrapper_fragments(proxyFile, wrapperFile, cppName, matlabQualName,
         matlabUniqueName, wrapperName, typeAttributes, functionNames);
@@ -301,7 +300,7 @@ Class Class::expandTemplate(const TemplateSubstitution& ts) const {
 vector<Class> Class::expandTemplate(Str templateArg,
     const vector<Qualified>& instantiations) const {
   vector<Class> result;
-  BOOST_FOREACH(const Qualified& instName, instantiations) {
+  for(const Qualified& instName: instantiations) {
     Qualified expandedClass = (Qualified) (*this);
     expandedClass.expand(instName.name());
     const TemplateSubstitution ts(templateArg, instName, expandedClass);
@@ -319,7 +318,7 @@ vector<Class> Class::expandTemplate(Str templateArg,
 vector<Class> Class::expandTemplate(Str templateArg,
     const vector<int>& integers) const {
   vector<Class> result;
-  BOOST_FOREACH(int i, integers) {
+  for(int i: integers) {
     Qualified expandedClass = (Qualified) (*this);
     stringstream ss; ss << i;
     string instName = ss.str();
@@ -342,7 +341,7 @@ void Class::addMethod(bool verbose, bool is_const, Str methodName,
   if (tmplate.valid()) {
     // Create method to expand
     // For all values of the template argument, create a new method
-    BOOST_FOREACH(const Qualified& instName, tmplate.argValues()) {
+    for(const Qualified& instName: tmplate.argValues()) {
       const TemplateSubstitution ts(tmplate.argName(), instName, *this);
       // substitute template in arguments
       ArgumentList expandedArgs = argumentList.expandTemplate(ts);
@@ -413,7 +412,7 @@ void Class::appendInheritedMethods(const Class& cls,
   if (cls.parentClass) {
 
     // Find parent
-    BOOST_FOREACH(const Class& parent, classes) {
+    for(const Class& parent: classes) {
       // We found a parent class for our parent, TODO improve !
       if (parent.name() == cls.parentClass->name()) {
         methods_.insert(parent.methods_.begin(), parent.methods_.end());
@@ -426,7 +425,7 @@ void Class::appendInheritedMethods(const Class& cls,
 /* ************************************************************************* */
 string Class::getTypedef() const {
   string result;
-  BOOST_FOREACH(Str namesp, namespaces()) {
+  for(Str namesp: namespaces()) {
     result += ("namespace " + namesp + " { ");
   }
   result += ("typedef " + typedefName + " " + name() + ";");
@@ -446,12 +445,12 @@ void Class::comment_fragment(FileWriter& proxyFile) const {
 
   if (!methods_.empty())
     proxyFile.oss << "%\n%-------Methods-------\n";
-  BOOST_FOREACH(const Methods::value_type& name_m, methods_)
+  for(const Methods::value_type& name_m: methods_)
     name_m.second.comment_fragment(proxyFile);
 
   if (!static_methods.empty())
     proxyFile.oss << "%\n%-------Static Methods-------\n";
-  BOOST_FOREACH(const StaticMethods::value_type& name_m, static_methods)
+  for(const StaticMethods::value_type& name_m: static_methods)
     name_m.second.comment_fragment(proxyFile);
 
   if (hasSerialization) {
@@ -653,9 +652,9 @@ string Class::getSerializationExport() const {
 void Class::python_wrapper(FileWriter& wrapperFile) const {
   wrapperFile.oss << "class_<" << name() << ">(\"" << name() << "\")\n";
   constructor.python_wrapper(wrapperFile, name());
-  BOOST_FOREACH(const StaticMethod& m, static_methods | boost::adaptors::map_values)
+  for(const StaticMethod& m: static_methods | boost::adaptors::map_values)
     m.python_wrapper(wrapperFile, name());
-  BOOST_FOREACH(const Method& m, methods_ | boost::adaptors::map_values)
+  for(const Method& m: methods_ | boost::adaptors::map_values)
     m.python_wrapper(wrapperFile, name());
   wrapperFile.oss << ";\n\n";
 }

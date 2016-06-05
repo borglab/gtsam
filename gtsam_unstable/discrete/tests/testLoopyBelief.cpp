@@ -45,7 +45,7 @@ class LoopyBelief {
     void print(const std::string& s = "") const {
       cout << s << ":" << endl;
       star->print("Star graph: ");
-      BOOST_FOREACH(Key key, correctedBeliefIndices | boost::adaptors::map_keys) {
+      for(Key key: correctedBeliefIndices | boost::adaptors::map_keys) {
         cout << "Belief factor index for " << key << ": "
             << correctedBeliefIndices.at(key) << endl;
       }
@@ -70,7 +70,7 @@ public:
   /// print
   void print(const std::string& s = "") const {
     cout << s << ":" << endl;
-    BOOST_FOREACH(Key key, starGraphs_ | boost::adaptors::map_keys) {
+    for(Key key: starGraphs_ | boost::adaptors::map_keys) {
       starGraphs_.at(key).print((boost::format("Node %d:") % key).str());
     }
   }
@@ -83,7 +83,7 @@ public:
     DiscreteFactorGraph::shared_ptr beliefs(new DiscreteFactorGraph());
     std::map<Key, std::map<Key, DiscreteFactor::shared_ptr> > allMessages;
     // Eliminate each star graph
-    BOOST_FOREACH(Key key, starGraphs_ | boost::adaptors::map_keys) {
+    for(Key key: starGraphs_ | boost::adaptors::map_keys) {
 //      cout << "***** Node " << key << "*****" << endl;
       // initialize belief to the unary factor from the original graph
       DecisionTreeFactor::shared_ptr beliefAtKey;
@@ -92,9 +92,9 @@ public:
       std::map<Key, DiscreteFactor::shared_ptr> messages;
 
       // eliminate each neighbor in this star graph one by one
-      BOOST_FOREACH(Key neighbor, starGraphs_.at(key).correctedBeliefIndices | boost::adaptors::map_keys) {
+      for(Key neighbor: starGraphs_.at(key).correctedBeliefIndices | boost::adaptors::map_keys) {
         DiscreteFactorGraph subGraph;
-        BOOST_FOREACH(size_t factor, starGraphs_.at(key).varIndex_[neighbor]) {
+        for(size_t factor: starGraphs_.at(key).varIndex_[neighbor]) {
           subGraph.push_back(starGraphs_.at(key).star->at(factor));
         }
         if (debug) subGraph.print("------- Subgraph:");
@@ -141,9 +141,9 @@ public:
 
     // Update corrected beliefs
     VariableIndex beliefFactors(*beliefs);
-    BOOST_FOREACH(Key key, starGraphs_ | boost::adaptors::map_keys) {
+    for(Key key: starGraphs_ | boost::adaptors::map_keys) {
       std::map<Key, DiscreteFactor::shared_ptr> messages = allMessages[key];
-      BOOST_FOREACH(Key neighbor, starGraphs_.at(key).correctedBeliefIndices | boost::adaptors::map_keys) {
+      for(Key neighbor: starGraphs_.at(key).correctedBeliefIndices | boost::adaptors::map_keys) {
         DecisionTreeFactor correctedBelief = (*boost::dynamic_pointer_cast<
             DecisionTreeFactor>(beliefs->at(beliefFactors[key].front())))
             / (*boost::dynamic_pointer_cast<DecisionTreeFactor>(
@@ -169,13 +169,13 @@ private:
       const std::map<Key, DiscreteKey>& allDiscreteKeys) const {
     StarGraphs starGraphs;
     VariableIndex varIndex(graph); ///< access to all factors of each node
-    BOOST_FOREACH(Key key, varIndex | boost::adaptors::map_keys) {
+    for(Key key: varIndex | boost::adaptors::map_keys) {
       // initialize to multiply with other unary factors later
       DecisionTreeFactor::shared_ptr prodOfUnaries;
 
       // collect all factors involving this key in the original graph
       DiscreteFactorGraph::shared_ptr star(new DiscreteFactorGraph());
-      BOOST_FOREACH(size_t factorIdx, varIndex[key]) {
+      for(size_t factorIdx: varIndex[key]) {
         star->push_back(graph.at(factorIdx));
 
         // accumulate unary factors
@@ -196,7 +196,7 @@ private:
       KeySet neighbors = star->keys();
       neighbors.erase(key);
       CorrectedBeliefIndices correctedBeliefIndices;
-      BOOST_FOREACH(Key neighbor, neighbors) {
+      for(Key neighbor: neighbors) {
         // TODO: default table for keys with more than 2 values?
         string initialBelief;
         for (size_t v = 0; v < allDiscreteKeys.at(neighbor).second - 1; ++v) {

@@ -10,7 +10,6 @@
 #include <gtsam/geometry/CameraSet.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/VectorValues.h>
-#include <boost/foreach.hpp>
 #include <iosfwd>
 
 namespace gtsam {

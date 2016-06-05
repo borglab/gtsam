@@ -18,7 +18,6 @@
 
 #include <gtsam/inference/BayesTreeCliqueBase.h>
 #include <gtsam/base/timing.h>
-#include <boost/foreach.hpp>
 
 namespace gtsam {
 
@@ -83,7 +82,7 @@ namespace gtsam {
   template<class DERIVED, class FACTORGRAPH>
   size_t BayesTreeCliqueBase<DERIVED, FACTORGRAPH>::treeSize() const {
     size_t size = 1;
-    BOOST_FOREACH(const derived_ptr& child, children)
+    for(const derived_ptr& child: children)
       size += child->treeSize();
     return size;
   }
@@ -96,7 +95,7 @@ namespace gtsam {
       return 0;
 
     size_t subtree_count = 1;
-    BOOST_FOREACH(const derived_ptr& child, children)
+    for(const derived_ptr& child: children)
       subtree_count += child->numCachedSeparatorMarginals();
 
     return subtree_count;
@@ -204,7 +203,7 @@ namespace gtsam {
     // root are also generated. So, if this clique's cached shortcut is set,
     // recursively call over all child cliques. Otherwise, it is unnecessary.
     if (cachedSeparatorMarginal_) {
-      BOOST_FOREACH(derived_ptr& child, children) {
+      for(derived_ptr& child: children) {
         child->deleteCachedShortcuts();
       }
 

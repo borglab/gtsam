@@ -131,7 +131,7 @@ SubgraphSolver::splitGraph(const GaussianFactorGraph &jfg) {
   GaussianFactorGraph::shared_ptr Ac(new GaussianFactorGraph());
 
   size_t t = 0;
-  BOOST_FOREACH ( const GaussianFactor::shared_ptr &gf, jfg ) {
+  for ( const GaussianFactor::shared_ptr &gf: jfg ) {
 
     if (gf->keys().size() > 2) {
       throw runtime_error(

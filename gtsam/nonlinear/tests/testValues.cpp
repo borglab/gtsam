@@ -366,7 +366,7 @@ TEST(Values, filter) {
   int i = 0;
   Values::Filtered<Value> filtered = values.filter(boost::bind(std::greater_equal<Key>(), _1, 2));
   EXPECT_LONGS_EQUAL(2, (long)filtered.size());
-  BOOST_FOREACH(const Values::Filtered<>::KeyValuePair& key_value, filtered) {
+  for(const Values::Filtered<>::KeyValuePair& key_value: filtered) {
     if(i == 0) {
       LONGS_EQUAL(2, (long)key_value.key);
       try {key_value.value.cast<Pose2>();} catch (const std::bad_cast& e) { FAIL("can't cast Value to Pose2");}
@@ -401,7 +401,7 @@ TEST(Values, filter) {
   i = 0;
   Values::ConstFiltered<Pose3> pose_filtered = values.filter<Pose3>();
   EXPECT_LONGS_EQUAL(2, (long)pose_filtered.size());
-  BOOST_FOREACH(const Values::ConstFiltered<Pose3>::KeyValuePair& key_value, pose_filtered) {
+  for(const Values::ConstFiltered<Pose3>::KeyValuePair& key_value: pose_filtered) {
     if(i == 0) {
       EXPECT_LONGS_EQUAL(1, (long)key_value.key);
       EXPECT(assert_equal(pose1, key_value.value));
@@ -437,7 +437,7 @@ TEST(Values, Symbol_filter) {
   values.insert(Symbol('y', 3), pose3);
 
   int i = 0;
-  BOOST_FOREACH(const Values::Filtered<Value>::KeyValuePair& key_value, values.filter(Symbol::ChrTest('y'))) {
+  for(const Values::Filtered<Value>::KeyValuePair& key_value: values.filter(Symbol::ChrTest('y'))) {
     if(i == 0) {
       LONGS_EQUAL(Symbol('y', 1), (long)key_value.key);
       EXPECT(assert_equal(pose1, key_value.value.cast<Pose3>()));

@@ -73,6 +73,29 @@ TEST(TangentPreintegration, UpdateEstimate2) {
 }
 
 /* ************************************************************************* */
+TEST(ImuFactor, BiasCorrectionJacobians) {
+  testing::SomeMeasurements measurements;
+
+  boost::function<Vector9(const Vector3&, const Vector3&)> preintegrated =
+      [=](const Vector3& a, const Vector3& w) {
+        TangentPreintegration pim(testing::Params(), Bias(a, w));
+        testing::integrateMeasurements(measurements, &pim);
+        return pim.preintegrated();
+      };
+
+  // Actual pre-integrated values
+  TangentPreintegration pim(testing::Params());
+  testing::integrateMeasurements(measurements, &pim);
+
+  EXPECT(
+      assert_equal(numericalDerivative21(preintegrated, kZero, kZero),
+          pim.preintegrated_H_biasAcc()));
+  EXPECT(
+      assert_equal(numericalDerivative22(preintegrated, kZero, kZero),
+          pim.preintegrated_H_biasOmega(), 1e-3));
+}
+
+/* ************************************************************************* */
 TEST(TangentPreintegration, computeError) {
   TangentPreintegration pim(testing::Params());
   NavState x1, x2;

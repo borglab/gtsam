@@ -395,7 +395,7 @@ namespace gtsam {
 
     }; // const_iterator
 
-    // to make BTree work with BOOST_FOREACH
+    // to make BTree work with range-based for
     // We do *not* want a non-const iterator
     typedef const_iterator iterator;
 

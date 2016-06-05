@@ -17,7 +17,6 @@
  * @author  Christian Potthast
  */
 
-#include <boost/foreach.hpp>
 #include <boost/range/adaptor/map.hpp>
 #include <gtsam/linear/Errors.h>
 #include <gtsam/linear/VectorValues.h>
@@ -31,7 +30,7 @@ Errors::Errors(){}
 
 /* ************************************************************************* */
 Errors::Errors(const VectorValues& V) {
-  BOOST_FOREACH(const Vector& e, V | boost::adaptors::map_values) {
+  for(const Vector& e: V | boost::adaptors::map_values) {
     push_back(e);
   }
 }
@@ -39,7 +38,7 @@ Errors::Errors(const VectorValues& V) {
 /* ************************************************************************* */
 void Errors::print(const std::string& s) const {
   cout << s << endl;
-  BOOST_FOREACH(const Vector& v, *this)
+  for(const Vector& v: *this)
     gtsam::print(v);
 }
 
@@ -66,7 +65,7 @@ Errors Errors::operator+(const Errors& b) const {
 #endif
   Errors result;
   Errors::const_iterator it = b.begin();
-    BOOST_FOREACH(const Vector& ai, *this)
+    for(const Vector& ai: *this)
     result.push_back(ai + *(it++));
   return result;
 }
@@ -81,7 +80,7 @@ Errors Errors::operator-(const Errors& b) const {
 #endif
   Errors result;
   Errors::const_iterator it = b.begin();
-  BOOST_FOREACH(const Vector& ai, *this)
+  for(const Vector& ai: *this)
     result.push_back(ai - *(it++));
   return result;
 }
@@ -89,7 +88,7 @@ Errors Errors::operator-(const Errors& b) const {
 /* ************************************************************************* */
 Errors Errors::operator-() const {
   Errors result;
-  BOOST_FOREACH(const Vector& ai, *this)
+  for(const Vector& ai: *this)
     result.push_back(-ai);
   return result;
 }
@@ -105,7 +104,7 @@ double dot(const Errors& a, const Errors& b) {
 #endif
   double result = 0.0;
   Errors::const_iterator it = b.begin();
-  BOOST_FOREACH(const Vector& ai, a)
+  for(const Vector& ai: a)
     result += gtsam::dot(ai, *(it++));
   return result;
 }
@@ -114,7 +113,7 @@ double dot(const Errors& a, const Errors& b) {
 template<>
 void axpy<Errors,Errors>(double alpha, const Errors& x, Errors& y) {
   Errors::const_iterator it = x.begin();
-  BOOST_FOREACH(Vector& yi, y)
+  for(Vector& yi: y)
     axpy(alpha,*(it++),yi);
 }
 

@@ -50,6 +50,12 @@ void PreintegrationBase::print(const string& s) const {
 }
 
 //------------------------------------------------------------------------------
+void PreintegrationBase::resetIntegrationAndSetBias(const Bias& biasHat) {
+	biasHat_ = biasHat;
+	resetIntegration();
+}
+
+//------------------------------------------------------------------------------
 pair<Vector3, Vector3> PreintegrationBase::correctMeasurementsBySensorPose(
     const Vector3& unbiasedAcc, const Vector3& unbiasedOmega,
     OptionalJacobian<3, 3> correctedAcc_H_unbiasedAcc,

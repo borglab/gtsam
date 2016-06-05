@@ -23,7 +23,6 @@
 #include <Eigen/SVD>
 #include <Eigen/LU>
 
-#include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/tokenizer.hpp>
 
@@ -190,7 +189,7 @@ istream& operator>>(istream& inputStream, Matrix& destinationMatrix) {
   // Copy coefficients to matrix
   destinationMatrix.resize(height, width);
   int row = 0;
-  BOOST_FOREACH(const vector<double>& rowVec, coeffs) {
+  for(const vector<double>& rowVec: coeffs) {
     destinationMatrix.row(row) = Eigen::Map<const Eigen::RowVectorXd>(&rowVec[0], width);
     ++ row;
   }
@@ -419,7 +418,7 @@ Matrix stack(size_t nrMatrices, ...)
 Matrix stack(const std::vector<Matrix>& blocks) {
   if (blocks.size() == 1) return blocks.at(0);
   DenseIndex nrows = 0, ncols = blocks.at(0).cols();
-  BOOST_FOREACH(const Matrix& mat, blocks) {
+  for(const Matrix& mat: blocks) {
     nrows += mat.rows();
     if (ncols != mat.cols())
       throw invalid_argument("Matrix::stack(): column size mismatch!");
@@ -427,7 +426,7 @@ Matrix stack(const std::vector<Matrix>& blocks) {
   Matrix result(nrows, ncols);
 
   DenseIndex cur_row = 0;
-  BOOST_FOREACH(const Matrix& mat, blocks) {
+  for(const Matrix& mat: blocks) {
     result.middleRows(cur_row, mat.rows()) = mat;
     cur_row += mat.rows();
   }
@@ -441,7 +440,7 @@ Matrix collect(const std::vector<const Matrix *>& matrices, size_t m, size_t n)
   size_t dimA1 = m;
   size_t dimA2 = n*matrices.size();
   if (!m && !n) {
-    BOOST_FOREACH(const Matrix* M, matrices) {
+    for(const Matrix* M: matrices) {
       dimA1 =  M->rows();  // TODO: should check if all the same !
       dimA2 += M->cols();
     }
@@ -450,7 +449,7 @@ Matrix collect(const std::vector<const Matrix *>& matrices, size_t m, size_t n)
   // stl::copy version
   Matrix A(dimA1, dimA2);
   size_t hindex = 0;
-  BOOST_FOREACH(const Matrix* M, matrices) {
+  for(const Matrix* M: matrices) {
     size_t row_len = M->cols();
     A.block(0, hindex, dimA1, row_len) = *M;
     hindex += row_len;
@@ -611,7 +610,7 @@ std::string formatMatrixIndented(const std::string& label, const Matrix& matrix,
     boost::tokenizer<boost::char_separator<char> > tok(matrixStr, boost::char_separator<char>("\n"));
 
     DenseIndex row = 0;
-    BOOST_FOREACH(const std::string& line, tok)
+    for(const std::string& line: tok)
     {
       assert(row < effectiveRows);
       if(row > 0)

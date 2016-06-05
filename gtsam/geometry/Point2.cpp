@@ -16,7 +16,6 @@
  */
 
 #include <gtsam/geometry/Point2.h>
-#include <boost/foreach.hpp>
 #include <cmath>
 
 using namespace std;

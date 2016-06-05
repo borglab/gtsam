@@ -18,7 +18,6 @@
 
 #include <gtsam_unstable/base/DSFMap.h>
 
-#include <boost/foreach.hpp>
 #include <boost/assign/std/list.hpp>
 #include <boost/assign/std/set.hpp>
 using namespace boost::assign;
@@ -72,7 +71,7 @@ TEST(DSFMap, mergePairwiseMatches) {
 
   // Merge matches
   DSFMap<size_t> dsf;
-  BOOST_FOREACH(const Match& m, matches)
+  for(const Match& m: matches)
     dsf.merge(m.first,m.second);
 
   // Each point is now associated with a set, represented by one of its members
@@ -102,7 +101,7 @@ TEST(DSFMap, mergePairwiseMatches2) {
 
   // Merge matches
   DSFMap<Measurement> dsf;
-  BOOST_FOREACH(const Match& m, matches)
+  for(const Match& m: matches)
     dsf.merge(m.first,m.second);
 
   // Check that sets are merged correctly
@@ -122,7 +121,7 @@ TEST(DSFMap, sets){
 
   // Merge matches
   DSFMap<size_t> dsf;
-  BOOST_FOREACH(const Match& m, matches)
+  for(const Match& m: matches)
     dsf.merge(m.first,m.second);
 
   map<size_t, set<size_t> > sets = dsf.sets();
@@ -130,9 +129,9 @@ TEST(DSFMap, sets){
   s1 += 1,2,3;
   s2 += 4,5,6;
   
-  /*BOOST_FOREACH(key_pair st, sets){
+  /*for(key_pair st: sets){
     cout << "Set " << st.first << " :{";
-    BOOST_FOREACH(const size_t s, st.second)
+    for(const size_t s: st.second)
       cout << s << ", ";
     cout << "}" << endl;
   }*/

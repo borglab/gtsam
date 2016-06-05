@@ -24,7 +24,6 @@
 #include <gtsam/base/timing.h>
 
 #include <boost/shared_ptr.hpp>
-#include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
 
 #include <utility>
@@ -43,12 +42,12 @@ namespace gtsam
 
       // Gather all keys
       KeySet allKeys;
-      BOOST_FOREACH(const boost::shared_ptr<FACTOR>& factor, factors) {
+      for(const boost::shared_ptr<FACTOR>& factor: factors) {
         allKeys.insert(factor->begin(), factor->end());
       }
 
       // Check keys
-      BOOST_FOREACH(Key key, keys) {
+      for(Key key: keys) {
         if(allKeys.find(key) == allKeys.end())
           throw std::runtime_error("Requested to eliminate a key that is not in the factors");
       }

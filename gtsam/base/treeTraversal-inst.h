@@ -29,7 +29,6 @@
 #include <string>
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
-#include <boost/foreach.hpp>
 #include <boost/bind.hpp>
 
 namespace gtsam {
@@ -91,7 +90,7 @@ void DepthFirstForest(FOREST& forest, DATA& rootData, VISITOR_PRE& visitorPre,
   // Add roots to stack (insert such that they are visited and processed in order
   {
     typename Stack::iterator insertLocation = stack.begin();
-    BOOST_FOREACH(const sharedNode& root, forest.roots())
+    for(const sharedNode& root: forest.roots())
       stack.insert(insertLocation, TraversalNode(root, rootData));
   }
 
@@ -112,7 +111,7 @@ void DepthFirstForest(FOREST& forest, DATA& rootData, VISITOR_PRE& visitorPre,
       node.dataPointer = dataList.insert(dataList.end(),
           visitorPre(node.treeNode, node.parentData));
       typename Stack::iterator insertLocation = stack.begin();
-      BOOST_FOREACH(const sharedNode& child, node.treeNode->children)
+      for(const sharedNode& child: node.treeNode->children)
         stack.insert(insertLocation, TraversalNode(child, *node.dataPointer));
       node.expanded = true;
     }

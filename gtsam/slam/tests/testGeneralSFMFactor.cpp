@@ -465,7 +465,7 @@ TEST(GeneralSFMFactor, BinaryJacobianFactor) {
   }
 
   // Now loop over all these noise models
-  BOOST_FOREACH(SharedNoiseModel model, models) {
+  for(SharedNoiseModel model: models) {
     Projection factor(measurement, model, X(1), L(1));
 
     // Test linearize

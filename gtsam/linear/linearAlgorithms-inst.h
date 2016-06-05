@@ -55,7 +55,7 @@ namespace gtsam
           OptimizeData myData;
           myData.parentData = parentData;
           // Take any ancestor results we'll need
-          BOOST_FOREACH(Key parent, clique->conditional_->parents())
+          for(Key parent: clique->conditional_->parents())
             myData.cliqueResults.insert(std::make_pair(parent, myData.parentData->cliqueResults.at(parent)));
           // Solve and store in our results
           //collectedResult.insert(clique->conditional()->solve(collectedResult/*myData.ancestorResults*/));
@@ -68,7 +68,7 @@ namespace gtsam
               DenseIndex dim = 0;
               FastVector<VectorValues::const_iterator> parentPointers;
               parentPointers.reserve(clique->conditional()->nrParents());
-              BOOST_FOREACH(Key parent, clique->conditional()->parents()) {
+              for(Key parent: clique->conditional()->parents()) {
                 parentPointers.push_back(myData.cliqueResults.at(parent));
                 dim += parentPointers.back()->second.size();
               }
@@ -76,7 +76,7 @@ namespace gtsam
               // Fill parent vector
               xS.resize(dim);
               DenseIndex vectorPos = 0;
-              BOOST_FOREACH(const VectorValues::const_iterator& parentPointer, parentPointers) {
+              for(const VectorValues::const_iterator& parentPointer: parentPointers) {
                 const Vector& parentVector = parentPointer->second;
                 xS.block(vectorPos,0,parentVector.size(),1) = parentVector.block(0,0,parentVector.size(),1);
                 vectorPos += parentVector.size();
@@ -108,7 +108,7 @@ namespace gtsam
       //  OptimizeData myData;
       //  myData.parentData = parentData;
       //  // Take any ancestor results we'll need
-      //  BOOST_FOREACH(Key parent, clique->conditional_->parents())
+      //  for(Key parent: clique->conditional_->parents())
       //    myData.ancestorResults.insert(parent, myData.parentData->ancestorResults[parent]);
       //  // Solve and store in our results
       //  myData.results.insert(clique->conditional()->solve(myData.ancestorResults));

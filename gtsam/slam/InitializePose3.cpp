@@ -43,7 +43,7 @@ GaussianFactorGraph buildLinearOrientationGraph(const NonlinearFactorGraph& g) {
   GaussianFactorGraph linearGraph;
   noiseModel::Unit::shared_ptr model = noiseModel::Unit::Create(9);
 
-  BOOST_FOREACH(const boost::shared_ptr<NonlinearFactor>& factor, g) {
+  for(const boost::shared_ptr<NonlinearFactor>& factor: g) {
     Matrix3 Rij;
 
     boost::shared_ptr<BetweenFactor<Pose3> > pose3Between =
@@ -75,7 +75,7 @@ Values normalizeRelaxedRotations(const VectorValues& relaxedRot3) {
   ppm(0,0) = 1; ppm(1,1) = 1; ppm(2,2) = -1;
 
   Values validRot3;
-  BOOST_FOREACH(const VectorValues::value_type& it, relaxedRot3) {
+  for(const VectorValues::value_type& it: relaxedRot3) {
     Key key = it.first;
     if (key != keyAnchor) {
       const Vector& rotVector = it.second;
@@ -108,7 +108,7 @@ NonlinearFactorGraph buildPose3graph(const NonlinearFactorGraph& graph) {
   gttic(InitializePose3_buildPose3graph);
   NonlinearFactorGraph pose3Graph;
 
-  BOOST_FOREACH(const boost::shared_ptr<NonlinearFactor>& factor, graph) {
+  for(const boost::shared_ptr<NonlinearFactor>& factor: graph) {
 
     // recast to a between on Pose3
     boost::shared_ptr<BetweenFactor<Pose3> > pose3Between =
@@ -150,7 +150,7 @@ Values computeOrientationsGradient(const NonlinearFactorGraph& pose3Graph, const
   // this works on the inverse rotations, according to Tron&Vidal,2011
   Values inverseRot;
   inverseRot.insert(keyAnchor, Rot3());
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, givenGuess) {
+  for(const Values::ConstKeyValuePair& key_value: givenGuess) {
     Key key = key_value.key;
     const Pose3& pose = givenGuess.at<Pose3>(key);
     inverseRot.insert(key, pose.rotation().inverse());
@@ -165,7 +165,7 @@ Values computeOrientationsGradient(const NonlinearFactorGraph& pose3Graph, const
   // calculate max node degree & allocate gradient
   size_t maxNodeDeg = 0;
   VectorValues grad;
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, inverseRot) {
+  for(const Values::ConstKeyValuePair& key_value: inverseRot) {
     Key key = key_value.key;
     grad.insert(key,Vector3::Zero());
     size_t currNodeDeg = (adjEdgesMap.at(key)).size();
@@ -191,12 +191,12 @@ Values computeOrientationsGradient(const NonlinearFactorGraph& pose3Graph, const
     //std::cout << "it  " << it <<" b " << b <<" f0 " << f0 <<" a " << a
     //   <<" rho " << rho <<" stepsize " << stepsize << " maxNodeDeg "<< maxNodeDeg << std::endl;
     maxGrad = 0;
-    BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, inverseRot) {
+    for(const Values::ConstKeyValuePair& key_value: inverseRot) {
       Key key = key_value.key;
       //std::cout << "---------------------------key  " << DefaultKeyFormatter(key) << std::endl;
       Vector gradKey = Vector3::Zero();
       // collect the gradient for each edge incident on key
-      BOOST_FOREACH(const size_t& factorId, adjEdgesMap.at(key)){
+      for(const size_t& factorId: adjEdgesMap.at(key)){
         Rot3 Rij = factorId2RotMap.at(factorId);
         Rot3 Ri = inverseRot.at<Rot3>(key);
         if( key == (pose3Graph.at(factorId))->keys()[0] ){
@@ -236,7 +236,7 @@ Values computeOrientationsGradient(const NonlinearFactorGraph& pose3Graph, const
   // Return correct rotations
   const Rot3& Rref = inverseRot.at<Rot3>(keyAnchor); // This will be set to the identity as so far we included no prior
   Values estimateRot;
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, inverseRot) {
+  for(const Values::ConstKeyValuePair& key_value: inverseRot) {
     Key key = key_value.key;
     if (key != keyAnchor) {
       const Rot3& R = inverseRot.at<Rot3>(key);
@@ -252,7 +252,7 @@ Values computeOrientationsGradient(const NonlinearFactorGraph& pose3Graph, const
 /* ************************************************************************* */
 void createSymbolicGraph(KeyVectorMap& adjEdgesMap, KeyRotMap& factorId2RotMap, const NonlinearFactorGraph& pose3Graph){
   size_t factorId = 0;
-  BOOST_FOREACH(const boost::shared_ptr<NonlinearFactor>& factor, pose3Graph) {
+  for(const boost::shared_ptr<NonlinearFactor>& factor: pose3Graph) {
     boost::shared_ptr<BetweenFactor<Pose3> > pose3Between =
         boost::dynamic_pointer_cast<BetweenFactor<Pose3> >(factor);
     if (pose3Between){
@@ -321,7 +321,7 @@ Values computePoses(NonlinearFactorGraph& pose3graph,  Values& initialRot) {
 
   // put into Values structure
   Values initialPose;
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, initialRot){
+  for(const Values::ConstKeyValuePair& key_value: initialRot){
     Key key = key_value.key;
     const Rot3& rot = initialRot.at<Rot3>(key);
     Pose3 initializedPose = Pose3(rot, Point3(0, 0, 0));
@@ -346,7 +346,7 @@ Values computePoses(NonlinearFactorGraph& pose3graph,  Values& initialRot) {
 
   // put into Values structure
   Values estimate;
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, GNresult) {
+  for(const Values::ConstKeyValuePair& key_value: GNresult) {
     Key key = key_value.key;
     if (key != keyAnchor) {
       const Pose3& pose = GNresult.at<Pose3>(key);
@@ -391,7 +391,7 @@ Values initialize(const NonlinearFactorGraph& graph, const Values& givenGuess, b
   // Compute the full poses (1 GN iteration on full poses)
   return computePoses(pose3Graph, orientations);
 
-  //  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, orientations) {
+  //  for(const Values::ConstKeyValuePair& key_value: orientations) {
   //    Key key = key_value.key;
   //    if (key != keyAnchor) {
   //      const Point3& pos = givenGuess.at<Pose3>(key).translation();

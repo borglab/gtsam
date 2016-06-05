@@ -23,7 +23,6 @@
 
 #include <gtsam/inference/FactorGraph.h>
 
-#include <boost/foreach.hpp>
 #include <boost/bind.hpp>
 
 #include <stdio.h>
@@ -66,7 +65,7 @@ namespace gtsam {
   template<class FACTOR>
   size_t FactorGraph<FACTOR>::nrFactors() const {
     size_t size_ = 0;
-    BOOST_FOREACH(const sharedFactor& factor, factors_)
+    for(const sharedFactor& factor: factors_)
       if (factor) size_++;
     return size_;
   }
@@ -75,7 +74,7 @@ namespace gtsam {
   template<class FACTOR>
   KeySet FactorGraph<FACTOR>::keys() const {
     KeySet keys;
-    BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
+    for(const sharedFactor& factor: this->factors_) {
       if(factor)
         keys.insert(factor->begin(), factor->end());
     }
@@ -87,7 +86,7 @@ namespace gtsam {
   KeyVector FactorGraph<FACTOR>::keyVector() const {
     KeyVector keys;
     keys.reserve(2 * size());  // guess at size
-    BOOST_FOREACH (const sharedFactor& factor, factors_)
+    for (const sharedFactor& factor: factors_)
       if (factor)
         keys.insert(keys.end(), factor->begin(), factor->end());
     std::sort(keys.begin(), keys.end());

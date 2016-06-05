@@ -19,8 +19,6 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/concepts.h>
 
-#include <boost/foreach.hpp>
-
 #include <cmath>
 #include <iostream>
 #include <iomanip>
@@ -314,7 +312,7 @@ boost::optional<Pose2> align(const vector<Point2Pair>& pairs) {
 
   // calculate centroids
   Point2 cp,cq;
-  BOOST_FOREACH(const Point2Pair& pair, pairs) {
+  for(const Point2Pair& pair: pairs) {
     cp += pair.first;
     cq += pair.second;
   }
@@ -323,7 +321,7 @@ boost::optional<Pose2> align(const vector<Point2Pair>& pairs) {
 
   // calculate cos and sin
   double c=0,s=0;
-  BOOST_FOREACH(const Point2Pair& pair, pairs) {
+  for(const Point2Pair& pair: pairs) {
     Point2 dq = pair.first  - cp;
     Point2 dp = pair.second - cq;
     c +=  dp.x() * dq.x() + dp.y() * dq.y();

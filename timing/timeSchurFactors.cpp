@@ -150,7 +150,7 @@ int main(void) {
     ms += m;
   //for (size_t m=10;m<=100;m+=10) ms += m;
   // loop over number of images
-  BOOST_FOREACH(size_t m,ms)
+  for(size_t m: ms)
     timeAll<PinholePose<Cal3Bundler> >(m, NUM_ITERATIONS);
 }
 

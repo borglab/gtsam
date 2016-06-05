@@ -18,7 +18,6 @@
 #include <gtsam/slam/dataset.h>
 #include <gtsam/geometry/CalibratedCamera.h>
 
-#include <boost/foreach.hpp>
 #include <boost/assign/std/vector.hpp>
 
 using namespace boost::assign;
@@ -41,7 +40,7 @@ void createExampleBALFile(const string& filename, const vector<Point3>& P,
   data.cameras.push_back(SfM_Camera(pose1, K));
   data.cameras.push_back(SfM_Camera(pose2, K));
 
-  BOOST_FOREACH(const Point3& p, P) {
+  for(const Point3& p: P) {
 
     // Create the track
     SfM_Track track;
