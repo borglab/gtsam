@@ -68,6 +68,31 @@ TEST(ImuFactor, PreintegratedMeasurementsConstruction) {
 }
 
 /* ************************************************************************* */
+TEST(ImuFactor, PreintegratedMeasurementsReset) {
+
+	auto p = testing::Params();
+	// Create a preintegrated measurement struct and integrate
+	PreintegratedImuMeasurements pimActual(p);
+	Vector3 measuredAcc(0.5, 1.0, 0.5);
+	Vector3 measuredOmega(0.1, 0.3, 0.1);
+	double deltaT = 1.0;
+	pimActual.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+
+	// reset and make sure that it is the same as a fresh one
+	pimActual.resetIntegration();
+	CHECK(assert_equal(pimActual, PreintegratedImuMeasurements(p)));
+
+	// Now create one with a different bias ..
+	Bias nonZeroBias(Vector3(0.2, 0, 0), Vector3(0.1, 0, 0.3));
+	PreintegratedImuMeasurements pimExpected(p, nonZeroBias);
+
+	// integrate again, then reset to a new bias
+	pimActual.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+	pimActual.resetIntegrationAndSetBias(nonZeroBias);
+	CHECK(assert_equal(pimActual, pimExpected));
+}
+
+/* ************************************************************************* */
 TEST(ImuFactor, Accelerating) {
   const double a = 0.2, v = 50;
 

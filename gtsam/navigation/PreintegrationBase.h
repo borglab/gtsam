@@ -97,6 +97,11 @@ public:
   /// Re-initialize PreintegratedMeasurements
   virtual void resetIntegration()=0;
 
+  /// @name Basic utilities
+  /// @{
+  /// Re-initialize PreintegratedMeasurements and set new bias
+  void resetIntegrationAndSetBias(const Bias& biasHat);
+
   /// check parameters equality: checks whether shared pointer points to same Params object.
   bool matchesParamsWith(const PreintegrationBase& other) const {
     return p_.get() == other.p_.get();
