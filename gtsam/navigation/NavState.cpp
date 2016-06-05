@@ -25,6 +25,18 @@ namespace gtsam {
 #define TIE(R,t,v,x) const Rot3& R = (x).R_;const Point3& t = (x).t_;const Velocity3& v = (x).v_;
 
 //------------------------------------------------------------------------------
+NavState NavState::Create(const Rot3& R, const Point3& t, const Velocity3& v,
+    OptionalJacobian<9, 3> H1, OptionalJacobian<9, 3> H2,
+    OptionalJacobian<9, 3> H3) {
+  if (H1)
+    *H1 << I_3x3, Z_3x3, Z_3x3;
+  if (H2)
+    *H2 << Z_3x3, R.transpose(), Z_3x3;
+  if (H3)
+    *H3 << Z_3x3, Z_3x3, R.transpose();
+  return NavState(R, t, v);
+}
+//------------------------------------------------------------------------------
 NavState NavState::FromPoseVelocity(const Pose3& pose, const Vector3& vel,
     OptionalJacobian<9, 6> H1, OptionalJacobian<9, 3> H2) {
   if (H1)
@@ -94,136 +106,53 @@ bool NavState::equals(const NavState& other, double tol) const {
 }
 
 //------------------------------------------------------------------------------
-NavState NavState::inverse() const {
+NavState NavState::retract(const Vector9& xi, //
+    OptionalJacobian<9, 9> H1, OptionalJacobian<9, 9> H2) const {
   TIE(nRb, n_t, n_v, *this);
-  const Rot3 bRn = nRb.inverse();
-  return NavState(bRn, -(bRn * n_t), -(bRn * n_v));
-}
-
-//------------------------------------------------------------------------------
-NavState NavState::operator*(const NavState& bTc) const {
-  TIE(nRb, n_t, n_v, *this);
-  TIE(bRc, b_t, b_v, bTc);
-  return NavState(nRb * bRc, nRb * b_t + n_t, nRb * b_v + n_v);
-}
-
-//------------------------------------------------------------------------------
-NavState::PositionAndVelocity //
-NavState::operator*(const PositionAndVelocity& b_tv) const {
-  TIE(nRb, n_t, n_v, *this);
-  const Point3& b_t = b_tv.first;
-  const Velocity3& b_v = b_tv.second;
-  return PositionAndVelocity(nRb * b_t + n_t, nRb * b_v + n_v);
-}
-
-//------------------------------------------------------------------------------
-Point3 NavState::operator*(const Point3& b_t) const {
-  return Point3(R_ * b_t + t_);
-}
-
-//------------------------------------------------------------------------------
-NavState NavState::ChartAtOrigin::Retract(const Vector9& xi,
-    OptionalJacobian<9, 9> H) {
-  Matrix3 D_R_xi;
-  const Rot3 R = Rot3::Expmap(dR(xi), H ? &D_R_xi : 0);
-  const Point3 p = Point3(dP(xi));
-  const Vector v = dV(xi);
-  const NavState result(R, p, v);
-  if (H) {
-    *H << D_R_xi, Z_3x3, Z_3x3, //
-    Z_3x3, R.transpose(), Z_3x3, //
-    Z_3x3, Z_3x3, R.transpose();
+  Matrix3 D_bRc_xi, D_R_nRb, D_t_nRb, D_v_nRb;
+  const Rot3 bRc = Rot3::Expmap(dR(xi), H2 ? &D_bRc_xi : 0);
+  const Rot3 nRc = nRb.compose(bRc, H1 ? &D_R_nRb : 0);
+  const Point3 t = n_t + nRb.rotate(dP(xi), H1 ? &D_t_nRb : 0);
+  const Point3 v = n_v + nRb.rotate(dV(xi), H1 ? &D_v_nRb : 0);
+  if (H1) {
+    *H1 << D_R_nRb, Z_3x3, Z_3x3, //
+    // Note(frank): the derivative of n_t with respect to xi is nRb
+    // We pre-multiply with nRc' to account for NavState::Create
+    // Then we make use of the identity nRc' * nRb = bRc'
+    nRc.transpose() * D_t_nRb, bRc.transpose(), Z_3x3,
+    // Similar reasoning for v:
+    nRc.transpose() * D_v_nRb, Z_3x3, bRc.transpose();
   }
-  return result;
+  if (H2) {
+    *H2 << D_bRc_xi, Z_3x3, Z_3x3, //
+    Z_3x3, bRc.transpose(), Z_3x3, //
+    Z_3x3, Z_3x3, bRc.transpose();
+  }
+  return NavState(nRc, t, v);
 }
 
 //------------------------------------------------------------------------------
-Vector9 NavState::ChartAtOrigin::Local(const NavState& x,
-    OptionalJacobian<9, 9> H) {
+Vector9 NavState::localCoordinates(const NavState& g, //
+    OptionalJacobian<9, 9> H1, OptionalJacobian<9, 9> H2) const {
+  Matrix3 D_dR_R, D_dt_R, D_dv_R;
+  const Rot3 dR = R_.between(g.R_, H1 ? &D_dR_R : 0);
+  const Point3 dt = R_.unrotate(g.t_ - t_, H1 ? &D_dt_R : 0);
+  const Vector dv = R_.unrotate(g.v_ - v_, H1 ? &D_dv_R : 0);
+
   Vector9 xi;
   Matrix3 D_xi_R;
-  xi << Rot3::Logmap(x.R_, H ? &D_xi_R : 0), x.t(), x.v();
-  if (H) {
-    *H << D_xi_R, Z_3x3, Z_3x3, //
-    Z_3x3, x.R(), Z_3x3, //
-    Z_3x3, Z_3x3, x.R();
+  xi << Rot3::Logmap(dR, (H1 || H2) ? &D_xi_R : 0), dt, dv;
+  if (H1) {
+    *H1 << D_xi_R * D_dR_R, Z_3x3, Z_3x3, //
+    D_dt_R, -I_3x3, Z_3x3, //
+    D_dv_R, Z_3x3, -I_3x3;
+  }
+  if (H2) {
+    *H2 << D_xi_R, Z_3x3, Z_3x3, //
+    Z_3x3, dR.matrix(), Z_3x3, //
+    Z_3x3, Z_3x3, dR.matrix();
   }
   return xi;
-}
-
-//------------------------------------------------------------------------------
-NavState NavState::Expmap(const Vector9& xi, OptionalJacobian<9, 9> H) {
-  if (H)
-    throw runtime_error("NavState::Expmap derivative not implemented yet");
-
-  Eigen::Block<const Vector9, 3, 1> n_omega_nb = dR(xi);
-  Eigen::Block<const Vector9, 3, 1> v = dP(xi);
-  Eigen::Block<const Vector9, 3, 1> a = dV(xi);
-
-  // NOTE(frank): See Pose3::Expmap
-  Rot3 nRb = Rot3::Expmap(n_omega_nb);
-  double theta2 = n_omega_nb.dot(n_omega_nb);
-  if (theta2 > numeric_limits<double>::epsilon()) {
-    // Expmap implements a "screw" motion in the direction of n_omega_nb
-    Vector3 n_t_parallel = n_omega_nb * n_omega_nb.dot(v); // component along rotation axis
-    Vector3 omega_cross_v = n_omega_nb.cross(v); // points towards axis
-    Point3 n_t = Point3(omega_cross_v - nRb * omega_cross_v + n_t_parallel)
-        / theta2;
-    Vector3 n_v_parallel = n_omega_nb * n_omega_nb.dot(a); // component along rotation axis
-    Vector3 omega_cross_a = n_omega_nb.cross(a); // points towards axis
-    Vector3 n_v = (omega_cross_a - nRb * omega_cross_a + n_v_parallel) / theta2;
-    return NavState(nRb, n_t, n_v);
-  } else {
-    return NavState(nRb, Point3(v), a);
-  }
-}
-
-//------------------------------------------------------------------------------
-Vector9 NavState::Logmap(const NavState& nTb, OptionalJacobian<9, 9> H) {
-  if (H)
-    throw runtime_error("NavState::Logmap derivative not implemented yet");
-
-  TIE(nRb, n_p, n_v, nTb);
-  Vector3 n_t = n_p;
-
-  // NOTE(frank): See Pose3::Logmap
-  Vector9 xi;
-  Vector3 n_omega_nb = Rot3::Logmap(nRb);
-  double theta = n_omega_nb.norm();
-  if (theta * theta <= numeric_limits<double>::epsilon()) {
-    xi << n_omega_nb, n_t, n_v;
-  } else {
-    Matrix3 W = skewSymmetric(n_omega_nb / theta);
-    // Formula from Agrawal06iros, equation (14)
-    // simplified with Mathematica, and multiplying in n_t to avoid matrix math
-    double factor = (1 - theta / (2. * tan(0.5 * theta)));
-    Vector3 n_x = W * n_t;
-    Vector3 v = n_t - (0.5 * theta) * n_x + factor * (W * n_x);
-    Vector3 n_y = W * n_v;
-    Vector3 a = n_v - (0.5 * theta) * n_y + factor * (W * n_y);
-    xi << n_omega_nb, v, a;
-  }
-  return xi;
-}
-
-//------------------------------------------------------------------------------
-Matrix9 NavState::AdjointMap() const {
-  // NOTE(frank): See Pose3::AdjointMap
-  const Matrix3 nRb = R();
-  Matrix3 pAr = skewSymmetric(t()) * nRb;
-  Matrix3 vAr = skewSymmetric(v()) * nRb;
-  Matrix9 adj;
-  //     nR/bR nR/bP nR/bV nP/bR nP/bP nP/bV nV/bR nV/bP nV/bV
-  adj << nRb, Z_3x3, Z_3x3, pAr, nRb, Z_3x3, vAr, Z_3x3, nRb;
-  return adj;
-}
-
-//------------------------------------------------------------------------------
-Matrix7 NavState::wedge(const Vector9& xi) {
-  const Matrix3 Omega = skewSymmetric(dR(xi));
-  Matrix7 T;
-  T << Omega, Z_3x3, dP(xi), Z_3x3, Omega, dV(xi), Vector6::Zero().transpose(), 1.0;
-  return T;
 }
 
 //------------------------------------------------------------------------------
@@ -239,7 +168,6 @@ Matrix7 NavState::wedge(const Vector9& xi) {
 #define D_v_v(H) (H)->block<3,3>(6,6)
 
 //------------------------------------------------------------------------------
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
 NavState NavState::update(const Vector3& b_acceleration, const Vector3& b_omega,
     const double dt, OptionalJacobian<9, 9> F, OptionalJacobian<9, 3> G1,
     OptionalJacobian<9, 3> G2) const {
@@ -282,7 +210,6 @@ NavState NavState::update(const Vector3& b_acceleration, const Vector3& b_omega,
   }
   return newState;
 }
-#endif
 
 //------------------------------------------------------------------------------
 Vector9 NavState::coriolis(double dt, const Vector3& omega, bool secondOrder,

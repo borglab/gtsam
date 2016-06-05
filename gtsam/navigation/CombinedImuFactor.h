@@ -22,11 +22,18 @@
 #pragma once
 
 /* GTSAM includes */
+#include <gtsam/navigation/ManifoldPreintegration.h>
+#include <gtsam/navigation/TangentPreintegration.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/navigation/PreintegrationBase.h>
 #include <gtsam/base/Matrix.h>
 
 namespace gtsam {
+
+#ifdef GTSAM_TANGENT_PREINTEGRATION
+typedef TangentPreintegration PreintegrationType;
+#else
+typedef ManifoldPreintegration PreintegrationType;
+#endif
 
 /*
  * If you are using the factor, please cite:
@@ -57,7 +64,7 @@ namespace gtsam {
  *
  * @addtogroup SLAM
  */
-class PreintegratedCombinedMeasurements : public PreintegrationBase {
+class PreintegratedCombinedMeasurements : public PreintegrationType {
 
 public:
 
@@ -123,7 +130,7 @@ public:
   PreintegratedCombinedMeasurements(
       const boost::shared_ptr<Params>& p,
       const imuBias::ConstantBias& biasHat = imuBias::ConstantBias())
-      : PreintegrationBase(p, biasHat) {
+      : PreintegrationType(p, biasHat) {
     preintMeasCov_.setZero();
   }
 
@@ -133,10 +140,10 @@ public:
   /// @{
 
   /// Re-initialize PreintegratedCombinedMeasurements
-  void resetIntegration();
+  void resetIntegration() override;
 
   /// const reference to params, shadows definition in base class
-  Params& p() const { return *boost::static_pointer_cast<Params>(p_);}
+  Params& p() const { return *boost::static_pointer_cast<Params>(this->p_);}
   /// @}
 
   /// @name Access instance variables
@@ -146,7 +153,7 @@ public:
 
   /// @name Testable
   /// @{
-  void print(const std::string& s = "Preintegrated Measurements:") const;
+  void print(const std::string& s = "Preintegrated Measurements:") const override;
   bool equals(const PreintegratedCombinedMeasurements& expected, double tol = 1e-9) const;
   /// @}
 
@@ -163,7 +170,7 @@ public:
    * frame)
    */
   void integrateMeasurement(const Vector3& measuredAcc,
-      const Vector3& measuredOmega, double deltaT);
+      const Vector3& measuredOmega, const double dt) override;
 
   /// @}
 
@@ -183,7 +190,7 @@ public:
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegrationBase);
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegrationType);
     ar& BOOST_SERIALIZATION_NVP(preintMeasCov_);
   }
 };

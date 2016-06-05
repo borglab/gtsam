@@ -132,6 +132,7 @@ TEST( CombinedImuFactor, ErrorWithBiases ) {
 }
 
 /* ************************************************************************* */
+#ifdef GTSAM_TANGENT_PREINTEGRATION
 TEST(CombinedImuFactor, FirstOrderPreIntegratedMeasurements) {
   auto p = testing::Params();
   testing::SomeMeasurements measurements;
@@ -151,6 +152,7 @@ TEST(CombinedImuFactor, FirstOrderPreIntegratedMeasurements) {
   EXPECT(assert_equal(numericalDerivative22<Vector9, Vector3, Vector3>(preintegrated, Z_3x1, Z_3x1),
                       pim.preintegrated_H_biasOmega(), 1e-3));
 }
+#endif
 
 /* ************************************************************************* */
 TEST(CombinedImuFactor, PredictPositionAndVelocity) {
