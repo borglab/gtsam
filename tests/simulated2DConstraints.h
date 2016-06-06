@@ -111,7 +111,7 @@ namespace simulated2D {
      * @return a scalar distance between values
      */
     template<class T1, class T2>
-    double range_trait(const T1& a, const T2& b) { return a.dist(b); }
+    double range_trait(const T1& a, const T2& b) { return a.distance(b); }
 
     /**
      * Binary inequality constraint forcing the range between points

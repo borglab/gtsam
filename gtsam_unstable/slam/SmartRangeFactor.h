@@ -101,7 +101,7 @@ public:
     // loop over all circles
     for(const Circle2& it: circles) {
       // distance between circle centers.
-      double d = circle1.center.dist(it.center);
+      double d = circle1.center.distance(it.center);
       if (d < 1e-9)
         continue; // skip circles that are in the same location
       // Find f and h, the intersection points in normalized circles
@@ -123,8 +123,8 @@ public:
     double error1 = 0, error2 = 0;
     Point2 p1 = intersections.front(), p2 = intersections.back();
     for(const Circle2& it: circles) {
-      error1 += it.center.dist(p1);
-      error2 += it.center.dist(p2);
+      error1 += it.center.distance(p1);
+      error2 += it.center.distance(p2);
     }
     return (error1 < error2) ? p1 : p2;
     //gttoc_(triangulate);

@@ -83,7 +83,6 @@ public:
           "TriangulationFactor must be created with "
               + boost::lexical_cast<std::string>((int) Measurement::dimension)
               + "-dimensional noise model.");
-
   }
 
   /** Virtual destructor */
@@ -160,7 +159,7 @@ public:
 
     // Would be even better if we could pass blocks to project
     const Point3& point = x.at<Point3>(key());
-    b = -(camera_.project2(point, boost::none, A) - measured_).vector();
+    b = traits<Measurement>::Local(camera_.project2(point, boost::none, A), measured_);
     if (noiseModel_)
       this->noiseModel_->WhitenSystem(A, b);
 

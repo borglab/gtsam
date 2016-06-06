@@ -29,15 +29,15 @@ void Point2::print(const string& s) const {
 
 /* ************************************************************************* */
 bool Point2::equals(const Point2& q, double tol) const {
-  return (fabs(x_ - q.x()) < tol && fabs(y_ - q.y()) < tol);
+  return (fabs(x() - q.x()) < tol && fabs(y() - q.y()) < tol);
 }
 
 /* ************************************************************************* */
 double Point2::norm(OptionalJacobian<1,2> H) const {
-  double r = sqrt(x_ * x_ + y_ * y_);
+  double r = std::sqrt(x() * x() + y() * y());
   if (H) {
     if (fabs(r) > 1e-10)
-      *H << x_ / r, y_ / r;
+      *H << x() / r, y() / r;
     else
       *H << 1, 1;  // really infinity, why 1 ?
   }
@@ -83,7 +83,7 @@ boost::optional<Point2> Point2::CircleCircleIntersection(double R_d, double r_d,
   // Hence, there are only solutions if >=0
   if (h2<-tol) return boost::none; // allow *slightly* negative
   else if (h2<tol) return Point2(f,0.0); // one solution
-  else return Point2(f,sqrt(h2)); // two solutions
+  else return Point2(f,std::sqrt(h2)); // two solutions
 }
 
 /* ************************************************************************* */
@@ -120,7 +120,7 @@ list<Point2> Point2::CircleCircleIntersection(Point2 c1, double r1, Point2 c2,
     double r2, double tol) {
 
   // distance between circle centers.
-  double d = c1.dist(c2);
+  double d = c1.distance(c2);
 
   // centers coincide, either no solution or infinite number of solutions.
   if (d<1e-9) return list<Point2>();

@@ -337,7 +337,7 @@ struct UnaryFactor: public gtsam::NoiseModelFactor1<Point2> {
 
   Vector evaluateError(const Point2& x, boost::optional<Matrix&> A = boost::none) const {
     if (A) *A = H(x);
-    return (h(x) - z_).vector();
+    return (h(x) - z_);
   }
 
 };
@@ -593,7 +593,7 @@ inline boost::tuple<GaussianFactorGraph, VectorValues> planarGraph(size_t N) {
   Values zeros;
   for (size_t x = 1; x <= N; x++)
     for (size_t y = 1; y <= N; y++)
-      zeros.insert(key(x, y), Point2());
+      zeros.insert(key(x, y), Point2(0,0));
   VectorValues xtrue;
   for (size_t x = 1; x <= N; x++)
     for (size_t y = 1; y <= N; y++)

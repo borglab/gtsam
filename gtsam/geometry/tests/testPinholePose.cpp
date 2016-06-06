@@ -124,12 +124,12 @@ TEST( PinholePose, backproject2)
   Rot3 rot(1., 0., 0., 0., 0., 1., 0., -1., 0.); // a camera1 looking down
   Camera camera(Pose3(rot, origin), K);
 
-  Point3 actual = camera.backproject(Point2(), 1.);
+  Point3 actual = camera.backproject(Point2(0,0), 1.);
   Point3 expected(0., 1., 0.);
   pair<Point2, bool> x = camera.projectSafe(expected);
 
   EXPECT(assert_equal(expected, actual));
-  EXPECT(assert_equal(Point2(), x.first));
+  EXPECT(assert_equal(Point2(0,0), x.first));
   EXPECT(x.second);
 }
 

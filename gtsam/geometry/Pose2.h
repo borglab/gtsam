@@ -52,7 +52,9 @@ public:
   /// @{
 
   /** default constructor = origin */
-  Pose2() {} // default is origin
+  Pose2() :
+      r_(traits<Rot2>::Identity()), t_(traits<Point2>::Identity()) {
+  }
 
   /** copy constructor */
   Pose2(const Pose2& pose) : r_(pose.r_), t_(pose.t_) {}

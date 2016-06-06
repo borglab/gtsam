@@ -80,7 +80,7 @@ TEST(Expression, Leaves) {
 // Unary(Leaf)
 namespace unary {
 Point2 f1(const Point3& p, OptionalJacobian<2, 3> H) {
-  return Point2();
+  return Point2(0,0);
 }
 double f2(const Point3& p, OptionalJacobian<1, 3> H) {
   return 0.0;

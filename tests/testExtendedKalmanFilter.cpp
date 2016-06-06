@@ -226,7 +226,7 @@ public:
       *H2 = Matrix::Identity(dim(),dim());
 
     // Return the error between the prediction and the supplied value of p2
-    return (p2 - prediction).vector();
+    return (p2 - prediction);
   }
 
 };

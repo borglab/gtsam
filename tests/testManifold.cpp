@@ -78,7 +78,7 @@ TEST(Manifold, Identity) {
   EXPECT_DOUBLES_EQUAL(0.0, traits<double>::Identity(), 0.0);
   EXPECT(assert_equal(Matrix(Matrix24::Zero()), Matrix(traits<Matrix24>::Identity())));
   EXPECT(assert_equal(Pose3(), traits<Pose3>::Identity()));
-  EXPECT(assert_equal(Point2(), traits<Point2>::Identity()));
+  EXPECT(assert_equal(Point2(0,0), traits<Point2>::Identity()));
 }
 
 //******************************************************************************

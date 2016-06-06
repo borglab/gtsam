@@ -152,7 +152,7 @@ TEST( CalibratedCamera, Dproject_point_pose_infinity)
   Point2 result = camera.project2(pointAtInfinity, Dpose, Dpoint);
   Matrix numerical_pose  = numericalDerivative21(projectAtInfinity, camera, pointAtInfinity);
   Matrix numerical_point = numericalDerivative22(projectAtInfinity, camera, pointAtInfinity);
-  CHECK(assert_equal(Point2(), result));
+  CHECK(assert_equal(Point2(0,0), result));
   CHECK(assert_equal(numerical_pose,  Dpose, 1e-7));
   CHECK(assert_equal(numerical_point, Dpoint, 1e-7));
 }

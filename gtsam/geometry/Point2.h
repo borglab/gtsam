@@ -29,10 +29,8 @@ namespace gtsam {
  * @addtogroup geometry
  * \nosubgrouping
  */
-class GTSAM_EXPORT Point2 {
+class GTSAM_EXPORT Point2 : public Vector2 {
 private:
-
-  double x_, y_;
 
 public:
   enum { dimension = 2 };
@@ -40,20 +38,23 @@ public:
   /// @{
 
   /// default constructor
-  Point2(): x_(0), y_(0) {}
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+    // Deprecated default constructor initializes to zero, in contrast to new behavior below
+    Point2() { setZero(); }
+#else
+    Point2() {
+      throw std::runtime_error("Point2 default");
+    }
+#endif
 
-  /// construct from doubles
-  Point2(double x, double y): x_(x), y_(y) {}
+  using Vector2::Vector2;
 
   /// @}
   /// @name Advanced Constructors
   /// @{
 
   /// construct from 2D vector
-  explicit Point2(const Vector2& v) {
-    x_ = v(0);
-    y_ = v(1);
-  }
+  explicit Point2(const Vector2& v):Vector2(v) {}
 
   /*
    * @brief Circle-circle intersection, given normalized radii.
@@ -107,21 +108,7 @@ public:
   /// @{
 
   /// identity
-  inline static Point2 identity() {return Point2();}
-
-  /// inverse
-  inline Point2 operator- () const {return Point2(-x_,-y_);}
-
-  /// add vector on right
-  inline Point2 operator +(const Vector2& v) const {
-    return Point2(x_ + v[0], y_ + v[1]);
-  }
-
-  /// add
-  inline Point2 operator + (const Point2& q) const {return Point2(x_+q.x_,y_+q.y_);}
-
-  /// subtract
-  inline Point2 operator - (const Point2& q) const {return Point2(x_-q.x_,y_-q.y_);}
+  inline static Point2 identity() {return Point2(0,0);}
 
   /// @}
   /// @name Vector Space
@@ -137,35 +124,28 @@ public:
   double distance(const Point2& p2, OptionalJacobian<1,2> H1 = boost::none,
       OptionalJacobian<1,2> H2 = boost::none) const;
 
-  /** @deprecated The following function has been deprecated, use distance above */
-  inline double dist(const Point2& p2) const {
-    return (p2 - *this).norm();
-  }
-
-  /// multiply with a scalar
-  inline Point2 operator * (double s) const {return Point2(x_*s,y_*s);}
-
-  /// divide by a scalar
-  inline Point2 operator / (double q) const {return Point2(x_/q,y_/q);}
-
   /// @}
   /// @name Standard Interface
   /// @{
 
   /// equality
-  inline bool operator ==(const Point2& q) const {return x_==q.x_ && y_==q.y_;}
+  inline bool operator ==(const Point2& q) const {return x()==q.x() && y()==q.y();}
 
   /// get x
-  double x() const {return x_;}
+  inline double x() const {return (*this)[0];}
 
   /// get y
-  double y() const {return y_;}
+  inline double y() const {return (*this)[1];}
 
-  /// return vectorized form (column-wise). TODO: why does this function exist?
-  Vector2 vector() const { return Vector2(x_, y_); }
+  /// return vectorized form (column-wise).
+  const Vector2& vector() const { return *this; }
 
   /// @}
 
+  /// Streaming
+  GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os, const Point2& p);
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
   /// @name Deprecated
   /// @{
   inline void operator += (const Point2& q) {x_+=q.x_;y_+=q.y_;}
@@ -177,10 +157,9 @@ public:
   Point2 retract(const Vector2& v) const { return compose(Point2(v));}
   static Vector2 Logmap(const Point2& p) { return p.vector();}
   static Point2 Expmap(const Vector2& v) { return Point2(v);}
+  inline double dist(const Point2& p2) const {return distance();}
   /// @}
-
-  /// Streaming
-  GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os, const Point2& p);
+#endif
 
 private:
 
@@ -192,11 +171,9 @@ private:
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/)
   {
-    ar & BOOST_SERIALIZATION_NVP(x_);
-    ar & BOOST_SERIALIZATION_NVP(y_);
-  }
+    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Vector2);}
 
-  /// @}
+ /// @}
 };
 
 // Convenience typedef
@@ -207,10 +184,13 @@ std::ostream &operator<<(std::ostream &os, const gtsam::Point2Pair &p);
 typedef std::vector<Point2> Point2Vector;
 
 /// multiply with scalar
-inline Point2 operator*(double s, const Point2& p) {return p*s;}
+inline Point2 operator*(double s, const Point2& p) {
+return p * s;
+}
 
 template<>
-struct traits<Point2> : public internal::VectorSpace<Point2> {};
+struct traits<Point2> : public internal::VectorSpace<Point2> {
+};
 
 } // \ namespace gtsam
 

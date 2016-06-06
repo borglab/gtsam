@@ -27,6 +27,11 @@ GTSAM_CONCEPT_LIE_INST(Point3)
 static Point3 P(0.2, 0.7, -2);
 
 //******************************************************************************
+TEST(Point3 , Constructor) {
+  Point3 p;
+}
+
+//******************************************************************************
 TEST(Point3 , Concept) {
   BOOST_CONCEPT_ASSERT((IsGroup<Point3>));
   BOOST_CONCEPT_ASSERT((IsManifold<Point3>));

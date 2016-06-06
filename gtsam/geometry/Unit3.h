@@ -78,7 +78,7 @@ public:
 
   /// Construct from 2D point in plane at focal length f
   /// Unit3(p,1) can be viewed as normalized homogeneous coordinates of 2D point
-  explicit Unit3(const Point2& p, double f = 1.0) : p_(p.x(), p.y(), f) {
+  explicit Unit3(const Point2& p, double f) : p_(p.x(), p.y(), f) {
     p_.normalize();
   }
 

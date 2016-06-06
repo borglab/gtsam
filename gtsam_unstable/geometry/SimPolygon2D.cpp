@@ -260,7 +260,7 @@ Point2 SimPolygon2D::randomBoundedPoint2(double boundary_size,
       return p;
   }
   throw runtime_error("Failed to find a place for a landmark!");
-  return Point2();
+  return Point2(0,0);
 }
 
 /* ***************************************************************** */
@@ -272,7 +272,7 @@ Point2 SimPolygon2D::randomBoundedPoint2(double boundary_size,
       return p;
   }
   throw runtime_error("Failed to find a place for a landmark!");
-  return Point2();
+  return Point2(0,0);
 }
 
 /* ***************************************************************** */
@@ -285,7 +285,7 @@ Point2 SimPolygon2D::randomBoundedPoint2(double boundary_size,
       return p;
   }
   throw runtime_error("Failed to find a place for a landmark!");
-  return Point2();
+  return Point2(0,0);
 }
 
 /* ***************************************************************** */
@@ -303,7 +303,7 @@ Point2 SimPolygon2D::randomBoundedPoint2(
       return p;
   }
   throw runtime_error("Failed to find a place for a landmark!");
-  return Point2();
+  return Point2(0,0);
 }
 
 /* ***************************************************************** */

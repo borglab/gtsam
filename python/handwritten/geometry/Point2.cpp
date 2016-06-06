@@ -28,6 +28,7 @@ using namespace gtsam;
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(print_overloads, Point2::print, 0, 1)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(equals_overloads, Point2::equals, 1, 2)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(compose_overloads, Point2::compose, 1, 3)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(distance_overloads, Point2::distance, 1, 3)
 
 void exportPoint2(){
 
@@ -35,13 +36,12 @@ void exportPoint2(){
     .def(init<double, double>())
     .def(init<const Vector2 &>())
     .def("identity", &Point2::identity)
-    .def("dist", &Point2::dist)
-    .def("distance", &Point2::distance)
+    .def("distance", &Point2::distance, distance_overloads(args("q","H1","H2")))
     .def("equals", &Point2::equals, equals_overloads(args("q","tol")))
     .def("norm", &Point2::norm)
     .def("print", &Point2::print, print_overloads(args("s")))
     .def("unit", &Point2::unit)
-    .def("vector", &Point2::vector)
+    .def("vector", &Point2::vector, return_value_policy<copy_const_reference>())
     .def("x", &Point2::x)
     .def("y", &Point2::y)
     .def(self * other<double>()) // __mult__

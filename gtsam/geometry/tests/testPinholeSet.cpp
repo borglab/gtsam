@@ -131,7 +131,7 @@ TEST(PinholeSet, Pinhole) {
   }
   EXPECT(
       assert_equal(pointAtInfinity,
-          camera.backprojectPointAtInfinity(Point2())));
+          camera.backprojectPointAtInfinity(Point2(0,0))));
   {
     PinholeSet<Camera>::FBlocks Fs;
     Matrix E;

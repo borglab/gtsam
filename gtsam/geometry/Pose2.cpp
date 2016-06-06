@@ -58,16 +58,16 @@ bool Pose2::equals(const Pose2& q, double tol) const {
 
 /* ************************************************************************* */
 Pose2 Pose2::Expmap(const Vector3& xi, OptionalJacobian<3, 3> H) {
-  if (H) *H = Pose2::ExpmapDerivative(xi);
   assert(xi.size() == 3);
-  Point2 v(xi(0),xi(1));
-  double w = xi(2);
+  if (H) *H = Pose2::ExpmapDerivative(xi);
+  const Point2 v(xi(0),xi(1));
+  const double w = xi(2);
   if (std::abs(w) < 1e-10)
     return Pose2(xi[0], xi[1], xi[2]);
   else {
-    Rot2 R(Rot2::fromAngle(w));
-    Point2 v_ortho = R_PI_2 * v; // points towards rot center
-    Point2 t = (v_ortho - R.rotate(v_ortho)) / w;
+    const Rot2 R(Rot2::fromAngle(w));
+    const Point2 v_ortho = R_PI_2 * v; // points towards rot center
+    const Point2 t = (v_ortho - R.rotate(v_ortho)) / w;
     return Pose2(R, t);
   }
 }
@@ -311,7 +311,7 @@ boost::optional<Pose2> align(const vector<Point2Pair>& pairs) {
   if (n<2) return boost::none; // we need at least two pairs
 
   // calculate centroids
-  Point2 cp,cq;
+  Point2 cp(0,0), cq(0,0);
   for(const Point2Pair& pair: pairs) {
     cp += pair.first;
     cq += pair.second;
