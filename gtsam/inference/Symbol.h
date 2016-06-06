@@ -106,6 +106,15 @@ public:
     return comp != (Key)(*this);
   }
 
+  /** Explicit assignment */
+  Symbol& operator=(const Symbol& symbol2) {
+    if (&symbol2 != this) {
+      (unsigned char&) c_ = symbol2.c_;
+      (std::uint64_t&) j_ = symbol2.j_;
+    }
+    return *this;
+  }
+
   /** Return a filter function that returns true when evaluated on a Key whose
    * character (when converted to a Symbol) matches \c c.  Use this with the
    * Values::filter() function to retrieve all key-value pairs with the
