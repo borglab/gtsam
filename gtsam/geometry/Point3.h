@@ -124,9 +124,9 @@ class GTSAM_EXPORT Point3 : public Vector3 {
     Point3 inverse() const { return -(*this);}
     Point3 compose(const Point3& q) const { return (*this)+q;}
     Point3 between(const Point3& q) const { return q-(*this);}
-    Vector3 localCoordinates(const Point3& q) const { return between(q).vector();}
+    Vector3 localCoordinates(const Point3& q) const { return between(q);}
     Point3 retract(const Vector3& v) const { return compose(Point3(v));}
-    static Vector3 Logmap(const Point3& p) { return p.vector();}
+    static Vector3 Logmap(const Point3& p) { return p;}
     static Point3 Expmap(const Vector3& v) { return Point3(v);}
     inline double dist(const Point3& q) const { return (q - *this).norm(); }
     Point3 normalize(OptionalJacobian<3, 3> H = boost::none) const { return normalized(H);}

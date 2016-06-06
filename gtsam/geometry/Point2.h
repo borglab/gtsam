@@ -43,7 +43,7 @@ public:
     Point2() { setZero(); }
 #else
     Point2() {
-      throw std::runtime_error("Point2 default");
+//      throw std::runtime_error("Point2 default");
     }
 #endif
 
@@ -153,9 +153,9 @@ public:
   Point2 inverse() const { return -(*this);}
   Point2 compose(const Point2& q) const { return (*this)+q;}
   Point2 between(const Point2& q) const { return q-(*this);}
-  Vector2 localCoordinates(const Point2& q) const { return between(q).vector();}
+  Vector2 localCoordinates(const Point2& q) const { return between(q);}
   Point2 retract(const Vector2& v) const { return compose(Point2(v));}
-  static Vector2 Logmap(const Point2& p) { return p.vector();}
+  static Vector2 Logmap(const Point2& p) { return p;}
   static Point2 Expmap(const Vector2& v) { return Point2(v);}
   inline double dist(const Point2& p2) const {return distance();}
   /// @}
