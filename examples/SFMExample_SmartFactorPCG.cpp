@@ -78,6 +78,7 @@ int main(int argc, char* argv[]) {
 
   // Fix the scale ambiguity by adding a prior
   graph.push_back(PriorFactor<Pose3>(1, poses[0], noise));
+
   // Create the initial estimate to the solution
   Values initialEstimate;
   Pose3 delta(Rot3::Rodrigues(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20));
