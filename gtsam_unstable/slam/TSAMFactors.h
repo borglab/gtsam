@@ -48,9 +48,7 @@ public:
   Vector evaluateError(const Pose2& pose, const Point2& point,
       boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
           boost::none) const {
-    Point2 d = pose.transform_to(point, H1, H2);
-    Point2 e = d - measured_;
-    return e.vector();
+    return pose.transform_to(point, H1, H2) - measured_;
   }
 };
 

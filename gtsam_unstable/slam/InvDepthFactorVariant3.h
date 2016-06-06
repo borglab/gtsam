@@ -41,7 +41,9 @@ public:
   typedef boost::shared_ptr<This> shared_ptr;
 
   /// Default constructor
-  InvDepthFactorVariant3a() : K_(new Cal3_S2(444, 555, 666, 777, 888)) {}
+  InvDepthFactorVariant3a() :
+      measured_(0.0, 0.0), K_(new Cal3_S2(444, 555, 666, 777, 888)) {
+  }
 
   /**
    * Constructor
@@ -66,13 +68,13 @@ public:
    * @param keyFormatter optional formatter useful for printing Symbols
    */
   void print(const std::string& s = "InvDepthFactorVariant3a",
-      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter) const {
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
     Base::print(s, keyFormatter);
     measured_.print(s + ".z");
   }
 
   /// equals
-  virtual bool equals(const gtsam::NonlinearFactor& p, double tol = 1e-9) const {
+  virtual bool equals(const NonlinearFactor& p, double tol = 1e-9) const {
     const This *e = dynamic_cast<const This*>(&p);
     return e
         && Base::equals(p, tol)
@@ -89,22 +91,21 @@ public:
       Point3 world_P_landmark = pose.transform_from(pose_P_landmark);
       // Project landmark into Pose2
       PinholeCamera<Cal3_S2> camera(pose, *K_);
-      gtsam::Point2 reprojectionError(camera.project(world_P_landmark) - measured_);
-      return reprojectionError.vector();
+      return camera.project(world_P_landmark) - measured_;
     } catch( CheiralityException& e) {
       std::cout << e.what()
           << ": Inverse Depth Landmark [" << DefaultKeyFormatter(this->key1()) << "," << DefaultKeyFormatter(this->key2()) << "]"
           << " moved behind camera [" << DefaultKeyFormatter(this->key1()) << "]"
           << std::endl;
-      return gtsam::Vector::Ones(2) * 2.0 * K_->fx();
+      return Vector::Ones(2) * 2.0 * K_->fx();
     }
     return (Vector(1) << 0.0).finished();
   }
 
   /// Evaluate error h(x)-z and optionally derivatives
   Vector evaluateError(const Pose3& pose, const Vector3& landmark,
-      boost::optional<gtsam::Matrix&> H1=boost::none,
-      boost::optional<gtsam::Matrix&> H2=boost::none) const {
+      boost::optional<Matrix&> H1=boost::none,
+      boost::optional<Matrix&> H2=boost::none) const {
 
     if(H1) {
       (*H1) = numericalDerivative11<Vector,Pose3>(boost::bind(&InvDepthFactorVariant3a::inverseDepthError, this, _1, landmark), pose);
@@ -117,7 +118,7 @@ public:
   }
 
   /** return the measurement */
-  const gtsam::Point2& imagePoint() const {
+  const Point2& imagePoint() const {
     return measured_;
   }
 
@@ -160,7 +161,9 @@ public:
   typedef boost::shared_ptr<This> shared_ptr;
 
   /// Default constructor
-  InvDepthFactorVariant3b() : K_(new Cal3_S2(444, 555, 666, 777, 888)) {}
+  InvDepthFactorVariant3b() :
+      measured_(0.0, 0.0), K_(new Cal3_S2(444, 555, 666, 777, 888)) {
+  }
 
   /**
    * Constructor
@@ -185,13 +188,13 @@ public:
    * @param keyFormatter optional formatter useful for printing Symbols
    */
   void print(const std::string& s = "InvDepthFactorVariant3",
-      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter) const {
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
     Base::print(s, keyFormatter);
     measured_.print(s + ".z");
   }
 
   /// equals
-  virtual bool equals(const gtsam::NonlinearFactor& p, double tol = 1e-9) const {
+  virtual bool equals(const NonlinearFactor& p, double tol = 1e-9) const {
     const This *e = dynamic_cast<const This*>(&p);
     return e
         && Base::equals(p, tol)
@@ -208,23 +211,22 @@ public:
       Point3 world_P_landmark = pose1.transform_from(pose1_P_landmark);
       // Project landmark into Pose2
       PinholeCamera<Cal3_S2> camera(pose2, *K_);
-      gtsam::Point2 reprojectionError(camera.project(world_P_landmark) - measured_);
-      return reprojectionError.vector();
+      return camera.project(world_P_landmark) - measured_;
     } catch( CheiralityException& e) {
       std::cout << e.what()
           << ": Inverse Depth Landmark [" << DefaultKeyFormatter(this->key1()) << "," << DefaultKeyFormatter(this->key3()) << "]"
           << " moved behind camera " << DefaultKeyFormatter(this->key2())
           << std::endl;
-      return gtsam::Vector::Ones(2) * 2.0 * K_->fx();
+      return Vector::Ones(2) * 2.0 * K_->fx();
     }
     return (Vector(1) << 0.0).finished();
   }
 
   /// Evaluate error h(x)-z and optionally derivatives
   Vector evaluateError(const Pose3& pose1, const Pose3& pose2, const Vector3& landmark,
-      boost::optional<gtsam::Matrix&> H1=boost::none,
-      boost::optional<gtsam::Matrix&> H2=boost::none,
-      boost::optional<gtsam::Matrix&> H3=boost::none) const {
+      boost::optional<Matrix&> H1=boost::none,
+      boost::optional<Matrix&> H2=boost::none,
+      boost::optional<Matrix&> H3=boost::none) const {
 
     if(H1)
       (*H1) = numericalDerivative11<Vector,Pose3>(boost::bind(&InvDepthFactorVariant3b::inverseDepthError, this, _1, pose2, landmark), pose1);
@@ -239,7 +241,7 @@ public:
   }
 
   /** return the measurement */
-  const gtsam::Point2& imagePoint() const {
+  const Point2& imagePoint() const {
     return measured_;
   }
 

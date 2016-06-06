@@ -56,8 +56,7 @@ protected:
     // Project and fill error vector
     Vector b(ZDim * m);
     for (size_t i = 0, row = 0; i < m; i++, row += ZDim) {
-      Z e = predicted[i] - measured[i];
-      b.segment<ZDim>(row) = e.vector();
+      b.segment<ZDim>(row) = traits<Z>::Local(measured[i], predicted[i]);
     }
     return b;
   }

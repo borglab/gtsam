@@ -180,7 +180,7 @@ inline boost::shared_ptr<const NonlinearFactorGraph> sharedNonlinearFactorGraph(
       new NonlinearFactorGraph);
 
   // prior on x1
-  Point2 mu;
+  Point2 mu(0,0);
   shared_nlf f1(new simulated2D::Prior(mu, sigma0_1, X(1)));
   nlfg->push_back(f1);
 
@@ -597,7 +597,7 @@ inline boost::tuple<GaussianFactorGraph, VectorValues> planarGraph(size_t N) {
   VectorValues xtrue;
   for (size_t x = 1; x <= N; x++)
     for (size_t y = 1; y <= N; y++)
-      xtrue.insert(key(x, y), Point2((double)x, (double)y).vector());
+      xtrue.insert(key(x, y), Point2((double)x, (double)y));
 
   // linearize around zero
   boost::shared_ptr<GaussianFactorGraph> gfg = nlfg.linearize(zeros);

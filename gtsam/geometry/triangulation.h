@@ -471,7 +471,7 @@ TriangulationResult triangulateSafe(const std::vector<CAMERA>& cameras,
         if (params.dynamicOutlierRejectionThreshold > 0) {
           const Point2& zi = measured.at(i);
           Point2 reprojectionError(camera.project(point) - zi);
-          totalReprojError += reprojectionError.vector().norm();
+          totalReprojError += reprojectionError.norm();
         }
         i += 1;
       }

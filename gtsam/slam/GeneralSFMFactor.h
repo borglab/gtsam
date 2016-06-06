@@ -122,8 +122,7 @@ public:
   Vector evaluateError(const CAMERA& camera, const LANDMARK& point,
       boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const {
     try {
-      Point2 reprojError(camera.project2(point,H1,H2) - measured_);
-      return reprojError.vector();
+      return camera.project2(point,H1,H2) - measured_;
     }
     catch( CheiralityException& e) {
       if (H1) *H1 = JacobianC::Zero();
@@ -145,8 +144,7 @@ public:
     try {
       const CAMERA& camera = values.at<CAMERA>(key1);
       const LANDMARK& point = values.at<LANDMARK>(key2);
-      Point2 reprojError(camera.project2(point, H1, H2) - measured());
-      b = -reprojError.vector();
+      b = measured() - camera.project2(point, H1, H2);
     } catch (CheiralityException& e) {
       H1.setZero();
       H2.setZero();
@@ -262,8 +260,7 @@ public:
   {
     try {
       Camera camera(pose3,calib);
-      Point2 reprojError(camera.project(point, H1, H2, H3) - measured_);
-      return reprojError.vector();
+      return camera.project(point, H1, H2, H3) - measured_;
     }
     catch( CheiralityException& e) {
       if (H1) *H1 = Matrix::Zero(2, 6);

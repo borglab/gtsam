@@ -139,7 +139,7 @@ public:
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
     Base::print(s);
     std::cout << "  EssentialMatrixFactor2 with measurements\n  ("
-        << dP1_.transpose() << ")' and (" << pn_.vector().transpose()
+        << dP1_.transpose() << ")' and (" << pn_.transpose()
         << ")'" << std::endl;
   }
 
@@ -195,7 +195,7 @@ public:
 
     }
     Point2 reprojectionError = pn - pn_;
-    return f_ * reprojectionError.vector();
+    return f_ * reprojectionError;
   }
 
 };

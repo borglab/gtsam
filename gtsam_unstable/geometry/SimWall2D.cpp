@@ -73,7 +73,7 @@ bool SimWall2D::intersects(const SimWall2D& B, boost::optional<Point2&> pt) cons
   }
 
   // find lower point by y
-  Point2 low, high;
+  Point2 low(0,0), high(0,0);
   if (Ba.y() > Bb.y()) {
     high = Ba;
     low = Bb;

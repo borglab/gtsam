@@ -84,7 +84,7 @@ TEST(PinholeSet, Pinhole) {
   EXPECT(!set.equals(set2));
 
   // Check measurements
-  Point2 expected;
+  Point2 expected(0,0);
   ZZ z = set.project2(p);
   EXPECT(assert_equal(expected, z[0]));
   EXPECT(assert_equal(expected, z[1]));

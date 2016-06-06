@@ -56,7 +56,9 @@ namespace gtsam {
     typedef boost::shared_ptr<This> shared_ptr;
 
     /// Default constructor
-    GenericProjectionFactor() : throwCheirality_(false), verboseCheirality_(false) {}
+  GenericProjectionFactor() :
+      measured_(0, 0), throwCheirality_(false), verboseCheirality_(false) {
+  }
 
     /**
      * Constructor
@@ -134,16 +136,14 @@ namespace gtsam {
             PinholeCamera<CALIBRATION> camera(pose.compose(*body_P_sensor_, H0), *K_);
             Point2 reprojectionError(camera.project(point, H1, H2, boost::none) - measured_);
             *H1 = *H1 * H0;
-            return reprojectionError.vector();
+            return reprojectionError;
           } else {
             PinholeCamera<CALIBRATION> camera(pose.compose(*body_P_sensor_), *K_);
-            Point2 reprojectionError(camera.project(point, H1, H2, boost::none) - measured_);
-            return reprojectionError.vector();
+            return camera.project(point, H1, H2, boost::none) - measured_;
           }
         } else {
           PinholeCamera<CALIBRATION> camera(pose, *K_);
-          Point2 reprojectionError(camera.project(point, H1, H2, boost::none) - measured_);
-          return reprojectionError.vector();
+          return camera.project(point, H1, H2, boost::none) - measured_;
         }
       } catch( CheiralityException& e) {
         if (H1) *H1 = Matrix::Zero(2,6);

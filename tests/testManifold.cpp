@@ -166,7 +166,7 @@ template<> struct traits<MyPoint2Pair> : internal::ManifoldTraits<MyPoint2Pair> 
 
 TEST(Manifold, ProductManifold) {
   BOOST_CONCEPT_ASSERT((IsManifold<MyPoint2Pair>));
-  MyPoint2Pair pair1;
+  MyPoint2Pair pair1(Point2(0,0),Point2(0,0));
   Vector4 d;
   d << 1,2,3,4;
   MyPoint2Pair expected(Point2(1,2),Point2(3,4));

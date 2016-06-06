@@ -119,8 +119,7 @@ public:
   Vector evaluateError(const Point3& point, boost::optional<Matrix&> H2 =
       boost::none) const {
     try {
-      Measurement error(camera_.project2(point, boost::none, H2) - measured_);
-      return error.vector();
+      return traits<Measurement>::Local(measured_, camera_.project2(point, boost::none, H2));
     } catch (CheiralityException& e) {
       if (H2)
         *H2 = Matrix::Zero(Measurement::dimension, 3);
