@@ -179,11 +179,17 @@ macro(gtsamAddTestsGlob_impl groupName globPatterns excludedFiles linkLibraries)
 				set_property(TARGET ${script_name} PROPERTY FOLDER "Unit tests/${groupName}")
 			endforeach()
 		else()
+
+			#skip folders which don't have any tests
+			if(NOT script_srcs)
+				return()
+			endif()
+
 			# Default on MSVC and XCode - combine test group into a single exectuable
 			set(target_name check_${groupName}_program)
 		
 			# Add executable
-			add_executable(${target_name} ${script_srcs} ${script_headers})
+			add_executable(${target_name} "${script_srcs}" ${script_headers})
 			target_link_libraries(${target_name} CppUnitLite ${linkLibraries})
 		
 			# Only have a main function in one script - use preprocessor
@@ -196,7 +202,7 @@ macro(gtsamAddTestsGlob_impl groupName globPatterns excludedFiles linkLibraries)
 			add_dependencies(check.${groupName} ${target_name})
 			add_dependencies(check ${target_name})
 			if(NOT XCODE_VERSION)
-				add_dependencies(all.tests ${script_name})
+				add_dependencies(all.tests ${target_name})
 			endif()
 		
 			# Add TOPSRCDIR
