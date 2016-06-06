@@ -106,7 +106,6 @@ public:
     return comp != (Key)(*this);
   }
 
-
   /** Return a filter function that returns true when evaluated on a Key whose
    * character (when converted to a Symbol) matches \c c.  Use this with the
    * Values::filter() function to retrieve all key-value pairs with the
