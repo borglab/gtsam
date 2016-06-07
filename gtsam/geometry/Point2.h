@@ -22,6 +22,14 @@
 
 namespace gtsam {
 
+#ifdef GTSAM_TYPEDEF_POINTS_TO_VECTORS
+
+  /// As of GTSAM 4, in order to make GTSAM more lean,
+  /// it is now possible to just typedef Point2 to Vector2
+  typedef Vector2 Point2;
+
+#else
+
 /**
  * A 2D point
  * Complies with the Testable Concept
@@ -172,6 +180,12 @@ private:
  /// @}
 };
 
+template<>
+struct traits<Point2> : public internal::VectorSpace<Point2> {
+};
+
+#endif // GTSAM_TYPEDEF_POINTS_TO_VECTORS
+
 // Convenience typedef
 typedef std::pair<Point2, Point2> Point2Pair;
 std::ostream &operator<<(std::ostream &os, const gtsam::Point2Pair &p);
@@ -183,10 +197,6 @@ typedef std::vector<Point2> Point2Vector;
 inline Point2 operator*(double s, const Point2& p) {
 return p * s;
 }
-
-template<>
-struct traits<Point2> : public internal::VectorSpace<Point2> {
-};
 
 } // \ namespace gtsam
 

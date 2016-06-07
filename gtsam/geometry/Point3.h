@@ -29,7 +29,7 @@
 
 namespace gtsam {
 
-#ifdef GTSAM_USE_VECTOR3_POINTS
+#ifdef GTSAM_TYPEDEF_POINTS_TO_VECTORS
 
   /// As of GTSAM 4, in order to make GTSAM more lean,
   /// it is now possible to just typedef Point3 to Vector3
@@ -153,7 +153,7 @@ struct traits<Point3> : public internal::VectorSpace<Point3> {};
 template<>
 struct traits<const Point3> : public internal::VectorSpace<Point3> {};
 
-#endif
+#endif // GTSAM_TYPEDEF_POINTS_TO_VECTORS
 
 // Convenience typedef
 typedef std::pair<Point3, Point3> Point3Pair;

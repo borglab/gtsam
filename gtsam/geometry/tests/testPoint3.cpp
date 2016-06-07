@@ -154,7 +154,7 @@ TEST( Point3, cross2) {
 }
 
 /* ************************************************************************* */
-#ifndef GTSAM_USE_VECTOR3_POINTS
+#ifndef GTSAM_TYPEDEF_POINTS_TO_VECTORS
 TEST( Point3, stream) {
   Point3 p(1, 2, -3);
   std::ostringstream os;

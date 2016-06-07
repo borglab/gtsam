@@ -44,7 +44,7 @@ class_<Point3>("Point3")
   .def("norm", &Point3::norm, norm_overloads(args("OptionalJacobian<1,3>")))
   .def("normalized", &Point3::normalized)
   .def("print", &Point3::print, print_overloads(args("s")))
-#ifndef GTSAM_USE_VECTOR3_POINTS
+#ifndef GTSAM_TYPEDEF_POINTS_TO_VECTORS
   .def("vector", &Point3::vector, return_value_policy<copy_const_reference>())
   .def("x", &Point3::x)
   .def("y", &Point3::y)

@@ -21,7 +21,7 @@ using namespace std;
 
 namespace gtsam {
 
-#ifndef GTSAM_USE_VECTOR3_POINTS
+#ifndef GTSAM_TYPEDEF_POINTS_TO_VECTORS
 bool Point3::equals(const Point3 &q, double tol) const {
   return (fabs(x() - q.x()) < tol && fabs(y() - q.y()) < tol &&
           fabs(z() - q.z()) < tol);
