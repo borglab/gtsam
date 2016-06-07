@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -42,9 +42,7 @@ public:
     // Deprecated default constructor initializes to zero, in contrast to new behavior below
     Point2() { setZero(); }
 #else
-    Point2() {
-//      throw std::runtime_error("Point2 default");
-    }
+    Point2() {}
 #endif
 
   using Vector2::Vector2;
@@ -148,16 +146,14 @@ public:
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
   /// @name Deprecated
   /// @{
-  inline void operator += (const Point2& q) {x_+=q.x_;y_+=q.y_;}
-  inline void operator *= (double s) {x_*=s;y_*=s;}
-  Point2 inverse() const { return -(*this);}
+  Point2 inverse() const { return -(*this); }
   Point2 compose(const Point2& q) const { return (*this)+q;}
   Point2 between(const Point2& q) const { return q-(*this);}
   Vector2 localCoordinates(const Point2& q) const { return between(q);}
   Point2 retract(const Vector2& v) const { return compose(Point2(v));}
   static Vector2 Logmap(const Point2& p) { return p;}
   static Point2 Expmap(const Vector2& v) { return Point2(v);}
-  inline double dist(const Point2& p2) const {return distance();}
+  inline double dist(const Point2& p2) const {return distance(p2);}
   /// @}
 #endif
 
