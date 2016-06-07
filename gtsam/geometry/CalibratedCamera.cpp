@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -24,7 +24,7 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-Matrix26 PinholeBase::Dpose(const Point2& pn, double d) {
+Matrix26 PinholeBase::Dpose(const Vector2& pn, double d) {
   // optimized version of derivatives, see CalibratedCamera.nb
   const double u = pn.x(), v = pn.y();
   double uv = u * v, uu = u * u, vv = v * v;
@@ -34,7 +34,7 @@ Matrix26 PinholeBase::Dpose(const Point2& pn, double d) {
 }
 
 /* ************************************************************************* */
-Matrix23 PinholeBase::Dpoint(const Point2& pn, double d, const Matrix3& Rt) {
+Matrix23 PinholeBase::Dpoint(const Vector2& pn, double d, const Matrix3& Rt) {
   // optimized version of derivatives, see CalibratedCamera.nb
   const double u = pn.x(), v = pn.y();
   Matrix23 Dpn_point;
@@ -85,20 +85,20 @@ const Pose3& PinholeBase::getPose(OptionalJacobian<6, 6> H) const {
 }
 
 /* ************************************************************************* */
-Point2 PinholeBase::Project(const Point3& pc, OptionalJacobian<2, 3> Dpoint) {
+Vector2 PinholeBase::Project(const Point3& pc, OptionalJacobian<2, 3> Dpoint) {
   double d = 1.0 / pc.z();
   const double u = pc.x() * d, v = pc.y() * d;
   if (Dpoint)
     *Dpoint << d, 0.0, -u * d, 0.0, d, -v * d;
-  return Point2(u, v);
+  return Vector2(u, v);
 }
 
 /* ************************************************************************* */
-Point2 PinholeBase::Project(const Unit3& pc, OptionalJacobian<2, 2> Dpoint) {
+Vector2 PinholeBase::Project(const Unit3& pc, OptionalJacobian<2, 2> Dpoint) {
   if (Dpoint) {
     Matrix32 Dpoint3_pc;
     Matrix23 Duv_point3;
-    Point2 uv = Project(pc.point3(Dpoint3_pc), Duv_point3);
+    Vector2 uv = Project(pc.point3(Dpoint3_pc), Duv_point3);
     *Dpoint = Duv_point3 * Dpoint3_pc;
     return uv;
   } else
@@ -106,14 +106,14 @@ Point2 PinholeBase::Project(const Unit3& pc, OptionalJacobian<2, 2> Dpoint) {
 }
 
 /* ************************************************************************* */
-pair<Point2, bool> PinholeBase::projectSafe(const Point3& pw) const {
+pair<Vector2, bool> PinholeBase::projectSafe(const Point3& pw) const {
   const Point3 pc = pose().transform_to(pw);
-  const Point2 pn = Project(pc);
+  const Vector2 pn = Project(pc);
   return make_pair(pn, pc.z() > 0);
 }
 
 /* ************************************************************************* */
-Point2 PinholeBase::project2(const Point3& point, OptionalJacobian<2, 6> Dpose,
+Vector2 PinholeBase::project2(const Point3& point, OptionalJacobian<2, 6> Dpose,
     OptionalJacobian<2, 3> Dpoint) const {
 
   Matrix3 Rt; // calculated by transform_to if needed
@@ -122,7 +122,7 @@ Point2 PinholeBase::project2(const Point3& point, OptionalJacobian<2, 6> Dpose,
   if (q.z() <= 0)
     throw CheiralityException();
 #endif
-  const Point2 pn = Project(q);
+  const Vector2 pn = Project(q);
 
   if (Dpose || Dpoint) {
     const double d = 1.0 / q.z();
@@ -135,7 +135,7 @@ Point2 PinholeBase::project2(const Point3& point, OptionalJacobian<2, 6> Dpose,
 }
 
 /* ************************************************************************* */
-Point2 PinholeBase::project2(const Unit3& pw, OptionalJacobian<2, 6> Dpose,
+Vector2 PinholeBase::project2(const Unit3& pw, OptionalJacobian<2, 6> Dpose,
     OptionalJacobian<2, 2> Dpoint) const {
 
   // world to camera coordinate
@@ -146,7 +146,7 @@ Point2 PinholeBase::project2(const Unit3& pw, OptionalJacobian<2, 6> Dpose,
 
   // camera to normalized image coordinate
   Matrix2 Dpn_pc;
-  const Point2 pn = Project(pc, Dpose || Dpoint ? &Dpn_pc : 0);
+  const Vector2 pn = Project(pc, Dpose || Dpoint ? &Dpn_pc : 0);
 
   // chain the Jacobian matrices
   if (Dpose) {
@@ -161,7 +161,7 @@ Point2 PinholeBase::project2(const Unit3& pw, OptionalJacobian<2, 6> Dpose,
   return pn;
 }
 /* ************************************************************************* */
-Point3 PinholeBase::backproject_from_camera(const Point2& p,
+Point3 PinholeBase::backproject_from_camera(const Vector2& p,
     const double depth) {
   return Point3(p.x() * depth, p.y() * depth, depth);
 }
@@ -178,7 +178,7 @@ CalibratedCamera CalibratedCamera::Lookat(const Point3& eye,
 }
 
 /* ************************************************************************* */
-Point2 CalibratedCamera::project(const Point3& point,
+Vector2 CalibratedCamera::project(const Point3& point,
     OptionalJacobian<2, 6> Dcamera, OptionalJacobian<2, 3> Dpoint) const {
   return project2(point, Dcamera, Dpoint);
 }

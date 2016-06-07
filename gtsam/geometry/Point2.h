@@ -61,43 +61,13 @@ public:
 
   /// construct from 2D vector
   explicit Point2(const Vector2& v):Vector2(v) {}
+  /// @}
+  /// @name Declare circle intersection functionality
+  /// @{
 
-  /*
-   * @brief Circle-circle intersection, given normalized radii.
-   * Calculate f and h, respectively the parallel and perpendicular distance of
-   * the intersections of two circles along and from the line connecting the centers.
-   * Both are dimensionless fractions of the distance d between the circle centers.
-   * If the circles do not intersect or they are identical, returns boost::none.
-   * If one solution (touching circles, as determined by tol), h will be exactly zero.
-   * h is a good measure for how accurate the intersection will be, as when circles touch
-   * or nearly touch, the intersection is ill-defined with noisy radius measurements.
-   * @param R_d : R/d, ratio of radius of first circle to distance between centers
-   * @param r_d : r/d, ratio of radius of second circle to distance between centers
-   * @param tol: absolute tolerance below which we consider touching circles
-   * @return optional Point2 with f and h, boost::none if no solution.
-   */
-  static boost::optional<Point2> CircleCircleIntersection(double R_d, double r_d,
-      double tol = 1e-9);
-
-  /*
-   * @brief Circle-circle intersection, from the normalized radii solution.
-   * @param c1 center of first circle
-   * @param c2 center of second circle
-   * @return list of solutions (0,1, or 2). Identical circles will return empty list, as well.
-   */
-  static std::list<Point2> CircleCircleIntersection(Point2 c1, Point2 c2, boost::optional<Point2>);
-
-  /**
-   * @brief Intersect 2 circles
-   * @param c1 center of first circle
-   * @param r1 radius of first circle
-   * @param c2 center of second circle
-   * @param r2 radius of second circle
-   * @param tol: absolute tolerance below which we consider touching circles
-   * @return list of solutions (0,1, or 2). Identical circles will return empty list, as well.
-   */
-  static std::list<Point2> CircleCircleIntersection(Point2 c1, double r1,
-      Point2 c2, double r2, double tol = 1e-9);
+  friend boost::optional<Point2> circleCircleIntersection(double R_d, double r_d, double tol);
+  friend std::list<Point2> circleCircleIntersection(Point2 c1, Point2 c2, boost::optional<Point2> fh);
+  friend std::list<Point2> circleCircleIntersection(Point2 c1, double r1, Point2 c2, double r2, double tol);
 
   /// @}
   /// @name Testable
@@ -162,6 +132,15 @@ public:
   static Vector2 Logmap(const Point2& p) { return p;}
   static Point2 Expmap(const Vector2& v) { return Point2(v);}
   inline double dist(const Point2& p2) const {return distance(p2);}
+  static boost::optional<Point2> CircleCircleIntersection(double R_d, double r_d, double tol = 1e-9) {
+    return circleCircleIntersection( R_d,  r_d,  tol);
+  }
+  static std::list<Point2> CircleCircleIntersection(Point2 c1, Point2 c2, boost::optional<Point2>) {
+    return circleCircleIntersection( c1,  c2, boost::optional<Point2>);
+  }
+  static std::list<Point2> CircleCircleIntersection(Point2 c1, double r1, Point2 c2, double r2, double tol = 1e-9) {
+    return CircleCircleIntersection(Point2 c1, double r1, Point2 c2, double r2, double tol = 1e-9);
+  }
   /// @}
 #endif
 
@@ -186,6 +165,14 @@ struct traits<Point2> : public internal::VectorSpace<Point2> {
 
 #endif // GTSAM_TYPEDEF_POINTS_TO_VECTORS
 
+/// Distance of the point from the origin, with Jacobian
+double norm(const Point2& p, OptionalJacobian<1, 2> H = boost::none);
+
+/// distance between two points
+double distance(const Point2& p1, const Point2& q,
+                OptionalJacobian<1, 2> H1 = boost::none,
+                OptionalJacobian<1, 2> H2 = boost::none);
+
 // Convenience typedef
 typedef std::pair<Point2, Point2> Point2Pair;
 std::ostream &operator<<(std::ostream &os, const gtsam::Point2Pair &p);
@@ -197,6 +184,42 @@ typedef std::vector<Point2> Point2Vector;
 inline Point2 operator*(double s, const Point2& p) {
 return p * s;
 }
+
+/*
+ * @brief Circle-circle intersection, given normalized radii.
+ * Calculate f and h, respectively the parallel and perpendicular distance of
+ * the intersections of two circles along and from the line connecting the centers.
+ * Both are dimensionless fractions of the distance d between the circle centers.
+ * If the circles do not intersect or they are identical, returns boost::none.
+ * If one solution (touching circles, as determined by tol), h will be exactly zero.
+ * h is a good measure for how accurate the intersection will be, as when circles touch
+ * or nearly touch, the intersection is ill-defined with noisy radius measurements.
+ * @param R_d : R/d, ratio of radius of first circle to distance between centers
+ * @param r_d : r/d, ratio of radius of second circle to distance between centers
+ * @param tol: absolute tolerance below which we consider touching circles
+ * @return optional Point2 with f and h, boost::none if no solution.
+ */
+boost::optional<Point2> circleCircleIntersection(double R_d, double r_d, double tol = 1e-9);
+
+/*
+ * @brief Circle-circle intersection, from the normalized radii solution.
+ * @param c1 center of first circle
+ * @param c2 center of second circle
+ * @return list of solutions (0,1, or 2). Identical circles will return empty list, as well.
+ */
+std::list<Point2> circleCircleIntersection(Point2 c1, Point2 c2, boost::optional<Point2> fh);
+
+/**
+ * @brief Intersect 2 circles
+ * @param c1 center of first circle
+ * @param r1 radius of first circle
+ * @param c2 center of second circle
+ * @param r2 radius of second circle
+ * @param tol: absolute tolerance below which we consider touching circles
+ * @return list of solutions (0,1, or 2). Identical circles will return empty list, as well.
+ */
+std::list<Point2> circleCircleIntersection(Point2 c1, double r1,
+    Point2 c2, double r2, double tol = 1e-9);
 
 } // \ namespace gtsam
 
