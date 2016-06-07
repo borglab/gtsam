@@ -162,7 +162,7 @@ public:
     // The point d*P1 = (x,y,1) is computed in constructor as dP1_
 
     // Project to normalized image coordinates, then uncalibrate
-    Point2 pn;
+    Point2 pn(0,0);
     if (!DE && !Dd) {
 
       Point3 _1T2 = E.direction().point3();

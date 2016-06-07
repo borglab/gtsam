@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -88,7 +88,7 @@ public:
   /// @{
 
   /** Construct from canonical coordinates \f$ [T_x,T_y,\theta] \f$ (Lie algebra) */
-  Pose2(const Vector& v) {
+  Pose2(const Vector& v) : Pose2() {
     *this = Expmap(v);
   }
 

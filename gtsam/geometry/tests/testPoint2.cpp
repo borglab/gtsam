@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -119,7 +119,7 @@ TEST( Point2, unit) {
 namespace {
   /* ************************************************************************* */
   // some shared test values
-  Point2 x1, x2(1, 1), x3(1, 1);
+  Point2 x1(0,0), x2(1, 1), x3(1, 1);
   Point2 l1(1, 0), l2(1, 1), l3(2, 2), l4(1, 3);
 
   /* ************************************************************************* */
