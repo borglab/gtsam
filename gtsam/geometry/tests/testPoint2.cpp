@@ -111,9 +111,9 @@ TEST( Point2, arithmetic) {
 /* ************************************************************************* */
 TEST( Point2, unit) {
   Point2 p0(10, 0), p1(0, -10), p2(10, 10);
-  EXPECT(assert_equal(Point2(1, 0), p0.normalized(), 1e-6));
-  EXPECT(assert_equal(Point2(0,-1), p1.normalized(), 1e-6));
-  EXPECT(assert_equal(Point2(sqrt(2.0)/2.0, sqrt(2.0)/2.0), p2.normalized(), 1e-6));
+  EXPECT(assert_equal(Point2(1, 0), Point2(p0.normalized()), 1e-6));
+  EXPECT(assert_equal(Point2(0,-1), Point2(p1.normalized()), 1e-6));
+  EXPECT(assert_equal(Point2(sqrt(2.0)/2.0, sqrt(2.0)/2.0), Point2(p2.normalized()), 1e-6));
 }
 
 namespace {

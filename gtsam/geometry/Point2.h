@@ -62,14 +62,6 @@ public:
   /// construct from 2D vector
   explicit Point2(const Vector2& v):Vector2(v) {}
   /// @}
-  /// @name Declare circle intersection functionality
-  /// @{
-
-  friend boost::optional<Point2> circleCircleIntersection(double R_d, double r_d, double tol);
-  friend std::list<Point2> circleCircleIntersection(Point2 c1, Point2 c2, boost::optional<Point2> fh);
-  friend std::list<Point2> circleCircleIntersection(Point2 c1, double r1, Point2 c2, double r2, double tol);
-
-  /// @}
   /// @name Testable
   /// @{
 
@@ -132,15 +124,9 @@ public:
   static Vector2 Logmap(const Point2& p) { return p;}
   static Point2 Expmap(const Vector2& v) { return Point2(v);}
   inline double dist(const Point2& p2) const {return distance(p2);}
-  static boost::optional<Point2> CircleCircleIntersection(double R_d, double r_d, double tol = 1e-9) {
-    return circleCircleIntersection( R_d,  r_d,  tol);
-  }
-  static std::list<Point2> CircleCircleIntersection(Point2 c1, Point2 c2, boost::optional<Point2>) {
-    return circleCircleIntersection( c1,  c2, boost::optional<Point2>);
-  }
-  static std::list<Point2> CircleCircleIntersection(Point2 c1, double r1, Point2 c2, double r2, double tol = 1e-9) {
-    return CircleCircleIntersection(Point2 c1, double r1, Point2 c2, double r2, double tol = 1e-9);
-  }
+  static boost::optional<Point2> CircleCircleIntersection(double R_d, double r_d, double tol = 1e-9);
+  static std::list<Point2> CircleCircleIntersection(Point2 c1, Point2 c2, boost::optional<Point2> fh);
+  static std::list<Point2> CircleCircleIntersection(Point2 c1, double r1, Point2 c2, double r2, double tol = 1e-9);
   /// @}
 #endif
 

@@ -34,11 +34,11 @@ void Point3::print(const string& s) const {
 /* ************************************************************************* */
 double Point3::distance(const Point3 &q, OptionalJacobian<1, 3> H1,
                         OptionalJacobian<1, 3> H2) const {
-  return gtsam::distance(*this,q,H1,H2);
+  return gtsam::distance3(*this,q,H1,H2);
 }
 
 double Point3::norm(OptionalJacobian<1,3> H) const {
-  return gtsam::norm(*this, H);
+  return gtsam::norm3(*this, H);
 }
 
 Point3 Point3::normalized(OptionalJacobian<3,3> H) const {

@@ -54,7 +54,7 @@ public:
    *  Some classes template on either PinholeCamera or StereoCamera,
    *  and this typedef informs those classes what "project" returns.
    */
-  typedef Vector2 Measurement;
+  typedef Point2 Measurement;
 
 private:
 
@@ -70,7 +70,7 @@ protected:
    * @param pn projection in normalized coordinates
    * @param d disparity (inverse depth)
    */
-  static Matrix26 Dpose(const Vector2& pn, double d);
+  static Matrix26 Dpose(const Point2& pn, double d);
 
   /**
    * Calculate Jacobian with respect to point
@@ -78,7 +78,7 @@ protected:
    * @param d disparity (inverse depth)
    * @param Rt transposed rotation matrix
    */
-  static Matrix23 Dpoint(const Vector2& pn, double d, const Matrix3& Rt);
+  static Matrix23 Dpoint(const Point2& pn, double d, const Matrix3& Rt);
 
   /// @}
 
@@ -169,7 +169,7 @@ public:
    * Does *not* throw a CheiralityException, even if pc behind image plane
    * @param pc point in camera coordinates
    */
-  static Vector2 Project(const Point3& pc, //
+  static Point2 Project(const Point3& pc, //
       OptionalJacobian<2, 3> Dpoint = boost::none);
 
   /**
@@ -177,18 +177,18 @@ public:
    * Does *not* throw a CheiralityException, even if pc behind image plane
    * @param pc point in camera coordinates
    */
-  static Vector2 Project(const Unit3& pc, //
+  static Point2 Project(const Unit3& pc, //
       OptionalJacobian<2, 2> Dpoint = boost::none);
 
   /// Project a point into the image and check depth
-  std::pair<Vector2, bool> projectSafe(const Point3& pw) const;
+  std::pair<Point2, bool> projectSafe(const Point3& pw) const;
 
   /** Project point into the image
    * Throws a CheiralityException if point behind image plane iff GTSAM_THROW_CHEIRALITY_EXCEPTION
    * @param point 3D point in world coordinates
    * @return the intrinsic coordinates of the projected point
    */
-  Vector2 project2(const Point3& point, OptionalJacobian<2, 6> Dpose =
+  Point2 project2(const Point3& point, OptionalJacobian<2, 6> Dpose =
       boost::none, OptionalJacobian<2, 3> Dpoint = boost::none) const;
 
   /** Project point at infinity into the image
@@ -196,12 +196,12 @@ public:
    * @param point 3D point in world coordinates
    * @return the intrinsic coordinates of the projected point
    */
-  Vector2 project2(const Unit3& point,
+  Point2 project2(const Unit3& point,
       OptionalJacobian<2, 6> Dpose = boost::none,
       OptionalJacobian<2, 2> Dpoint = boost::none) const;
 
   /// backproject a 2-dimensional point to a 3-dimensional point at given depth
-  static Point3 backproject_from_camera(const Vector2& p, const double depth);
+  static Point3 backproject_from_camera(const Point2& p, const double depth);
 
   /// @}
   /// @name Advanced interface
@@ -325,11 +325,11 @@ public:
    * @deprecated
    * Use project2, which is more consistently named across Pinhole cameras
    */
-  Vector2 project(const Point3& point, OptionalJacobian<2, 6> Dcamera =
+  Point2 project(const Point3& point, OptionalJacobian<2, 6> Dcamera =
       boost::none, OptionalJacobian<2, 3> Dpoint = boost::none) const;
 
   /// backproject a 2-dimensional point to a 3-dimensional point at given depth
-  Point3 backproject(const Vector2& pn, double depth) const {
+  Point3 backproject(const Point2& pn, double depth) const {
     return pose().transform_from(backproject_from_camera(pn, depth));
   }
 
