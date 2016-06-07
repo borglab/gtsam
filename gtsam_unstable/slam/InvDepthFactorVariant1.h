@@ -68,7 +68,7 @@ public:
   void print(const std::string& s = "InvDepthFactorVariant1",
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
     Base::print(s, keyFormatter);
-    measured_.print(s + ".z");
+    traits<Point2>::Print(measured_, s + ".z");
   }
 
   /// equals
@@ -76,7 +76,7 @@ public:
     const This *e = dynamic_cast<const This*>(&p);
     return e
         && Base::equals(p, tol)
-        && this->measured_.equals(e->measured_, tol)
+        && traits<Point2>::Equals(this->measured_, e->measured_, tol)
         && this->K_->equals(*e->K_, tol);
   }
 

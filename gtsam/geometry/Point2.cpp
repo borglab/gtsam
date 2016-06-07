@@ -23,7 +23,7 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-double norm(const Point2& p, OptionalJacobian<1,2> H) {
+double norm2(const Point2& p, OptionalJacobian<1,2> H) {
   double r = std::sqrt(p.x() * p.x() + p.y() * p.y());
   if (H) {
     if (fabs(r) > 1e-10)
@@ -35,17 +35,17 @@ double norm(const Point2& p, OptionalJacobian<1,2> H) {
 }
 
 /* ************************************************************************* */
-double distance(const Point2& p, const Point2& q, OptionalJacobian<1,2> H1,
-    OptionalJacobian<1,2> H2) {
+double distance2(const Point2& p, const Point2& q, OptionalJacobian<1, 2> H1,
+                 OptionalJacobian<1, 2> H2) {
   Point2 d = q - p;
   if (H1 || H2) {
     Matrix12 H;
-    double r = norm(d, H);
+    double r = norm2(d, H);
     if (H1) *H1 = -H;
     if (H2) *H2 =  H;
     return r;
   } else {
-    return norm(d);
+    return d.norm();
   }
 }
 
@@ -130,7 +130,7 @@ list<Point2> circleCircleIntersection(Point2 c1, double r1, Point2 c2,
     double r2, double tol) {
 
   // distance between circle centers.
-  double d = distance(c1, c2);
+  double d = distance2(c1, c2);
 
   // centers coincide, either no solution or infinite number of solutions.
   if (d<1e-9) return list<Point2>();

@@ -111,9 +111,9 @@ TEST( Point2, arithmetic) {
 /* ************************************************************************* */
 TEST( Point2, unit) {
   Point2 p0(10, 0), p1(0, -10), p2(10, 10);
-  EXPECT(assert_equal(Point2(1, 0), p0.unit(), 1e-6));
-  EXPECT(assert_equal(Point2(0,-1), p1.unit(), 1e-6));
-  EXPECT(assert_equal(Point2(sqrt(2.0)/2.0, sqrt(2.0)/2.0), p2.unit(), 1e-6));
+  EXPECT(assert_equal(Point2(1, 0), p0.normalized(), 1e-6));
+  EXPECT(assert_equal(Point2(0,-1), p1.normalized(), 1e-6));
+  EXPECT(assert_equal(Point2(sqrt(2.0)/2.0, sqrt(2.0)/2.0), p2.normalized(), 1e-6));
 }
 
 namespace {
@@ -131,19 +131,19 @@ TEST( Point2, norm ) {
   Point2 p0(cos(5.0), sin(5.0));
   DOUBLES_EQUAL(1, p0.norm(), 1e-6);
   Point2 p1(4, 5), p2(1, 1);
-  DOUBLES_EQUAL( 5, p1.distance(p2), 1e-6);
+  DOUBLES_EQUAL( 5, distance2(p1, p2), 1e-6);
   DOUBLES_EQUAL( 5, (p2-p1).norm(), 1e-6);
 
   Matrix expectedH, actualH;
   double actual;
 
   // exception, for (0,0) derivative is [Inf,Inf] but we return [1,1]
-  actual = x1.norm(actualH);
+  actual = norm2(x1, actualH);
   EXPECT_DOUBLES_EQUAL(0, actual, 1e-9);
   expectedH = (Matrix(1, 2) << 1.0, 1.0).finished();
   EXPECT(assert_equal(expectedH,actualH));
 
-  actual = x2.norm(actualH);
+  actual = norm2(x2, actualH);
   EXPECT_DOUBLES_EQUAL(sqrt(2.0), actual, 1e-9);
   expectedH = numericalDerivative11(norm_proxy, x2);
   EXPECT(assert_equal(expectedH,actualH));
@@ -156,20 +156,20 @@ TEST( Point2, norm ) {
 /* ************************************************************************* */
 namespace {
   double distance_proxy(const Point2& location, const Point2& point) {
-    return location.distance(point);
+    return distance2(location, point);
   }
 }
 TEST( Point2, distance ) {
   Matrix expectedH1, actualH1, expectedH2, actualH2;
 
   // establish distance is indeed zero
-  EXPECT_DOUBLES_EQUAL(1, x1.distance(l1), 1e-9);
+  EXPECT_DOUBLES_EQUAL(1, distance2(x1, l1), 1e-9);
 
   // establish distance is indeed 45 degrees
-  EXPECT_DOUBLES_EQUAL(sqrt(2.0), x1.distance(l2), 1e-9);
+  EXPECT_DOUBLES_EQUAL(sqrt(2.0), distance2(x1, l2), 1e-9);
 
   // Another pair
-  double actual23 = x2.distance(l3, actualH1, actualH2);
+  double actual23 = distance2(x2, l3, actualH1, actualH2);
   EXPECT_DOUBLES_EQUAL(sqrt(2.0), actual23, 1e-9);
 
   // Check numerical derivatives
@@ -179,7 +179,7 @@ TEST( Point2, distance ) {
   EXPECT(assert_equal(expectedH2,actualH2));
 
   // Another test
-  double actual34 = x3.distance(l4, actualH1, actualH2);
+  double actual34 = distance2(x3, l4, actualH1, actualH2);
   EXPECT_DOUBLES_EQUAL(2, actual34, 1e-9);
 
   // Check numerical derivatives
@@ -195,42 +195,42 @@ TEST( Point2, circleCircleIntersection) {
   double offset = 0.994987;
   // Test intersections of circle moving from inside to outside
 
-  list<Point2> inside = Point2::CircleCircleIntersection(Point2(0,0),5,Point2(0,0),1);
+  list<Point2> inside = circleCircleIntersection(Point2(0,0),5,Point2(0,0),1);
   EXPECT_LONGS_EQUAL(0,inside.size());
 
-  list<Point2> touching1 = Point2::CircleCircleIntersection(Point2(0,0),5,Point2(4,0),1);
+  list<Point2> touching1 = circleCircleIntersection(Point2(0,0),5,Point2(4,0),1);
   EXPECT_LONGS_EQUAL(1,touching1.size());
   EXPECT(assert_equal(Point2(5,0), touching1.front()));
 
-  list<Point2> common = Point2::CircleCircleIntersection(Point2(0,0),5,Point2(5,0),1);
+  list<Point2> common = circleCircleIntersection(Point2(0,0),5,Point2(5,0),1);
   EXPECT_LONGS_EQUAL(2,common.size());
   EXPECT(assert_equal(Point2(4.9,  offset), common.front(), 1e-6));
   EXPECT(assert_equal(Point2(4.9, -offset), common.back(), 1e-6));
 
-  list<Point2> touching2 = Point2::CircleCircleIntersection(Point2(0,0),5,Point2(6,0),1);
+  list<Point2> touching2 = circleCircleIntersection(Point2(0,0),5,Point2(6,0),1);
   EXPECT_LONGS_EQUAL(1,touching2.size());
   EXPECT(assert_equal(Point2(5,0), touching2.front()));
 
   // test rotated case
-  list<Point2> rotated = Point2::CircleCircleIntersection(Point2(0,0),5,Point2(0,5),1);
+  list<Point2> rotated = circleCircleIntersection(Point2(0,0),5,Point2(0,5),1);
   EXPECT_LONGS_EQUAL(2,rotated.size());
   EXPECT(assert_equal(Point2(-offset, 4.9), rotated.front(), 1e-6));
   EXPECT(assert_equal(Point2( offset, 4.9), rotated.back(), 1e-6));
 
   // test r1<r2
-  list<Point2> smaller = Point2::CircleCircleIntersection(Point2(0,0),1,Point2(5,0),5);
+  list<Point2> smaller = circleCircleIntersection(Point2(0,0),1,Point2(5,0),5);
   EXPECT_LONGS_EQUAL(2,smaller.size());
   EXPECT(assert_equal(Point2(0.1,  offset), smaller.front(), 1e-6));
   EXPECT(assert_equal(Point2(0.1, -offset), smaller.back(), 1e-6));
 
   // test offset case, r1>r2
-  list<Point2> offset1 = Point2::CircleCircleIntersection(Point2(1,1),5,Point2(6,1),1);
+  list<Point2> offset1 = circleCircleIntersection(Point2(1,1),5,Point2(6,1),1);
   EXPECT_LONGS_EQUAL(2,offset1.size());
   EXPECT(assert_equal(Point2(5.9, 1+offset), offset1.front(), 1e-6));
   EXPECT(assert_equal(Point2(5.9, 1-offset), offset1.back(), 1e-6));
 
   // test offset case, r1<r2
-  list<Point2> offset2 = Point2::CircleCircleIntersection(Point2(6,1),1,Point2(1,1),5);
+  list<Point2> offset2 = circleCircleIntersection(Point2(6,1),1,Point2(1,1),5);
   EXPECT_LONGS_EQUAL(2,offset2.size());
   EXPECT(assert_equal(Point2(5.9, 1-offset), offset2.front(), 1e-6));
   EXPECT(assert_equal(Point2(5.9, 1+offset), offset2.back(), 1e-6));
@@ -238,12 +238,14 @@ TEST( Point2, circleCircleIntersection) {
 }
 
 /* ************************************************************************* */
+#ifndef GTSAM_TYPEDEF_POINTS_TO_VECTORS
 TEST( Point2, stream) {
   Point2 p(1, 2);
   std::ostringstream os;
   os << p;
   EXPECT(os.str() == "(1, 2)");
 }
+#endif
 
 /* ************************************************************************* */
 int main () {

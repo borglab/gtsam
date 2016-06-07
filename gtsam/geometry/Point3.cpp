@@ -80,8 +80,8 @@ Point3 Point3::sub(const Point3 &q, OptionalJacobian<3,3> H1,
 
 #endif
 /* ************************************************************************* */
-double distance(const Point3 &p1, const Point3 &q, OptionalJacobian<1, 3> H1,
-                OptionalJacobian<1, 3> H2) {
+double distance3(const Point3 &p1, const Point3 &q, OptionalJacobian<1, 3> H1,
+                 OptionalJacobian<1, 3> H2) {
   double d = (q - p1).norm();
   if (H1) {
     *H1 << p1.x() - q.x(), p1.y() - q.y(), p1.z() - q.z();
@@ -94,7 +94,7 @@ double distance(const Point3 &p1, const Point3 &q, OptionalJacobian<1, 3> H1,
   return d;
 }
 
-double norm(const Point3 &p, OptionalJacobian<1, 3> H) {
+double norm3(const Point3 &p, OptionalJacobian<1, 3> H) {
   double r = sqrt(p.x() * p.x() + p.y() * p.y() + p.z() * p.z());
   if (H) {
     if (fabs(r) > 1e-10)
@@ -106,7 +106,7 @@ double norm(const Point3 &p, OptionalJacobian<1, 3> H) {
 }
 
 Point3 normalize(const Point3 &p, OptionalJacobian<3, 3> H) {
-  Point3 normalized = p / norm(p);
+  Point3 normalized = p / p.norm();
   if (H) {
     // 3*3 Derivative
     double x2 = p.x() * p.x(), y2 = p.y() * p.y(), z2 = p.z() * p.z();

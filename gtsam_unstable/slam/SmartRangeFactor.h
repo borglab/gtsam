@@ -101,11 +101,11 @@ public:
     // loop over all circles
     for(const Circle2& it: circles) {
       // distance between circle centers.
-      double d = circle1.center.distance(it.center);
+      double d = distance2(circle1.center, it.center);
       if (d < 1e-9)
         continue; // skip circles that are in the same location
       // Find f and h, the intersection points in normalized circles
-      boost::optional<Point2> fh = Point2::CircleCircleIntersection(
+      boost::optional<Point2> fh = circleCircleIntersection(
           circle1.radius / d, it.radius / d);
       // Check if this pair is better by checking h = fh->y()
       // if h is large, the intersections are well defined.
@@ -116,15 +116,15 @@ public:
     }
 
     // use best fh to find actual intersection points
-    std::list<Point2> intersections = Point2::CircleCircleIntersection(
+    std::list<Point2> intersections = circleCircleIntersection(
         circle1.center, best_circle->center, best_fh);
 
     // pick winner based on other measurements
     double error1 = 0, error2 = 0;
     Point2 p1 = intersections.front(), p2 = intersections.back();
     for(const Circle2& it: circles) {
-      error1 += it.center.distance(p1);
-      error2 += it.center.distance(p2);
+      error1 += distance2(it.center, p1);
+      error2 += distance2(it.center, p2);
     }
     return (error1 < error2) ? p1 : p2;
     //gttoc_(triangulate);

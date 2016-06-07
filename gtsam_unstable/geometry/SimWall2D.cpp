@@ -14,13 +14,14 @@ using namespace std;
 /* ************************************************************************* */
 void SimWall2D::print(const std::string& s) const {
   std::cout << "SimWall2D " << s << ":" << std::endl;
-  a_.print("  a");
-  b_.print("  b");
+  traits<Point2>::Print(a_, "  a");
+  traits<Point2>::Print(b_, "  b");
 }
 
 /* ************************************************************************* */
 bool SimWall2D::equals(const SimWall2D& other, double tol) const {
-  return a_.equals(other.a_, tol) && b_.equals(other.b_, tol);
+  return traits<Point2>::Equals(a_, other.a_, tol) &&
+         traits<Point2>::Equals(b_, other.b_, tol);
 }
 
 /* ************************************************************************* */
@@ -37,8 +38,8 @@ bool SimWall2D::intersects(const SimWall2D& B, boost::optional<Point2&> pt) cons
   if (debug) cout << "len: " << len << endl;
   Point2 Ba = transform.transform_to(B.a()),
        Bb = transform.transform_to(B.b());
-  if (debug) Ba.print("Ba");
-  if (debug) Bb.print("Bb");
+  if (debug) traits<Point2>::Print(Ba, "Ba");
+  if (debug) traits<Point2>::Print(Bb, "Bb");
 
   // check sides of line
   if (Ba.y() * Bb.y() > 0.0 ||
@@ -81,8 +82,8 @@ bool SimWall2D::intersects(const SimWall2D& B, boost::optional<Point2&> pt) cons
     high = Bb;
     low = Ba;
   }
-  if (debug) high.print("high");
-  if (debug) low.print("low");
+  if (debug) traits<Point2>::Print(high, "high");
+  if (debug) traits<Point2>::Print(low, "low");
 
   // find x-intercept
   double slope = (high.y() - low.y())/(high.x() - low.x());
@@ -138,7 +139,7 @@ std::pair<Pose2, bool> moveWithBounce(const Pose2& cur_pose, double step_size,
     Point2 cur_intersection;
     if (wall.intersects(traj,cur_intersection)) {
       collision = true;
-      if (cur_pose.t().distance(cur_intersection) < cur_pose.t().distance(intersection)) {
+      if (distance2(cur_pose.t(), cur_intersection) < distance2(cur_pose.t(), intersection)) {
         intersection = cur_intersection;
         closest_wall = wall;
       }
@@ -154,7 +155,7 @@ std::pair<Pose2, bool> moveWithBounce(const Pose2& cur_pose, double step_size,
     norm = norm / norm.norm();
 
     // Simple check to make sure norm is on side closest robot
-    if (cur_pose.t().distance(intersection + norm) > cur_pose.t().distance(intersection - norm))
+    if (distance2(cur_pose.t(), intersection + norm) > distance2(cur_pose.t(), intersection - norm))
       norm = - norm;
 
     // using the reflection

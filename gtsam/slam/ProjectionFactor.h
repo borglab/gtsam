@@ -110,7 +110,7 @@ namespace gtsam {
      */
     void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
       std::cout << s << "GenericProjectionFactor, z = ";
-      measured_.print();
+      traits<Point2>::Print(measured_);
       if(this->body_P_sensor_)
         this->body_P_sensor_->print("  sensor pose in body frame: ");
       Base::print("", keyFormatter);
@@ -121,7 +121,7 @@ namespace gtsam {
       const This *e = dynamic_cast<const This*>(&p);
       return e
           && Base::equals(p, tol)
-          && this->measured_.equals(e->measured_, tol)
+          && traits<Point2>::Equals(this->measured_, e->measured_, tol)
           && this->K_->equals(*e->K_, tol)
           && ((!body_P_sensor_ && !e->body_P_sensor_) || (body_P_sensor_ && e->body_P_sensor_ && body_P_sensor_->equals(*e->body_P_sensor_)));
     }

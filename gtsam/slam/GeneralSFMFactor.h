@@ -107,7 +107,7 @@ public:
    */
   void print(const std::string& s = "SFMFactor", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
     Base::print(s, keyFormatter);
-    measured_.print(s + ".z");
+    traits<Point2>::Print(measured_, s + ".z");
   }
 
   /**
@@ -115,7 +115,7 @@ public:
    */
   bool equals(const NonlinearFactor &p, double tol = 1e-9) const {
     const This* e = dynamic_cast<const This*>(&p);
-    return e && Base::equals(p, tol) && this->measured_.equals(e->measured_, tol);
+    return e && Base::equals(p, tol) && traits<Point2>::Equals(this->measured_, e->measured_, tol);
   }
 
   /** h(x)-z */
@@ -241,7 +241,7 @@ public:
    */
   void print(const std::string& s = "SFMFactor2", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
     Base::print(s, keyFormatter);
-    measured_.print(s + ".z");
+    traits<Point2>::Print(measured_, s + ".z");
   }
 
   /**
@@ -249,7 +249,7 @@ public:
    */
   bool equals(const NonlinearFactor &p, double tol = 1e-9) const {
     const This* e = dynamic_cast<const This*>(&p);
-    return e && Base::equals(p, tol) && this->measured_.equals(e->measured_, tol);
+    return e && Base::equals(p, tol) && traits<Point2>::Equals(this->measured_, e->measured_, tol);
   }
 
   /** h(x)-z */

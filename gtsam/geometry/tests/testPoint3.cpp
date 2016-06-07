@@ -183,20 +183,20 @@ TEST (Point3, norm) {
   Matrix actualH;
   Point3 point(3,4,5); // arbitrary point
   double expected = sqrt(50);
-  EXPECT_DOUBLES_EQUAL(expected, norm(point, actualH), 1e-8);
+  EXPECT_DOUBLES_EQUAL(expected, norm3(point, actualH), 1e-8);
   Matrix expectedH = numericalDerivative11<double, Point3>(norm_proxy, point);
   EXPECT(assert_equal(expectedH, actualH, 1e-8));
 }
 
 /* ************************************************************************* */
 double testFunc(const Point3& P, const Point3& Q) {
-  return distance(P,Q);
+  return distance3(P, Q);
 }
 
 TEST (Point3, distance) {
   Point3 P(1., 12.8, -32.), Q(52.7, 4.9, -13.3);
   Matrix H1, H2;
-  double d = distance(P, Q, H1, H2);
+  double d = distance3(P, Q, H1, H2);
   double expectedDistance = 55.542686;
   Matrix numH1 = numericalDerivative21(testFunc, P, Q);
   Matrix numH2 = numericalDerivative22(testFunc, P, Q);

@@ -46,7 +46,7 @@ SimPolygon2D SimPolygon2D::createRectangle(const Point2& p, double height, doubl
 bool SimPolygon2D::equals(const SimPolygon2D& p, double tol) const {
   if (p.size() != size()) return false;
   for (size_t i=0; i<size(); ++i)
-    if (!landmarks_[i].equals(p.landmarks_[i], tol))
+    if (!traits<Point2>::Equals(landmarks_[i], p.landmarks_[i], tol))
       return false;
   return true;
 }
@@ -55,7 +55,7 @@ bool SimPolygon2D::equals(const SimPolygon2D& p, double tol) const {
 void SimPolygon2D::print(const string& s) const {
   cout << "SimPolygon " << s << ": " << endl;
   for(const Point2& p: landmarks_)
-    p.print("   ");
+    traits<Point2>::Print(p, "   ");
 }
 
 /* ************************************************************************* */
@@ -151,7 +151,7 @@ SimPolygon2D SimPolygon2D::randomTriangle(
     Pose2 xC = xB.retract(Vector::Unit(3,0)*dBC);
 
     // use triangle equality to verify non-degenerate triangle
-    double dAC = xA.t().distance(xC.t());
+    double dAC = distance2(xA.t(), xC.t());
 
     // form a triangle and test if it meets requirements
     SimPolygon2D test_tri = SimPolygon2D::createTriangle(xA.t(), xB.t(), xC.t());
@@ -164,7 +164,7 @@ SimPolygon2D SimPolygon2D::randomTriangle(
         insideBox(side_len, test_tri.landmark(0)) &&
         insideBox(side_len, test_tri.landmark(1)) &&
         insideBox(side_len, test_tri.landmark(2)) &&
-        test_tri.landmark(1).distance(test_tri.landmark(2)) > min_side_len &&
+        distance2(test_tri.landmark(1), test_tri.landmark(2)) > min_side_len &&
         !nearExisting(lms, test_tri.landmark(0), min_vertex_dist) &&
         !nearExisting(lms, test_tri.landmark(1), min_vertex_dist) &&
         !nearExisting(lms, test_tri.landmark(2), min_vertex_dist) &&
@@ -320,7 +320,7 @@ bool SimPolygon2D::insideBox(double s, const Point2& p) {
 bool SimPolygon2D::nearExisting(const std::vector<Point2>& S,
     const Point2& p, double threshold) {
   for(const Point2& Sp: S)
-    if (Sp.distance(p) < threshold)
+    if (distance2(Sp, p) < threshold)
       return true;
   return false;
 }

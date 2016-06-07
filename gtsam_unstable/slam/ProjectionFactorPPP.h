@@ -107,7 +107,7 @@ namespace gtsam {
      */
     void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
       std::cout << s << "ProjectionFactorPPP, z = ";
-      measured_.print();
+      traits<Point2>::Print(measured_);
       Base::print("", keyFormatter);
     }
 
@@ -116,7 +116,7 @@ namespace gtsam {
       const This *e = dynamic_cast<const This*>(&p);
       return e
           && Base::equals(p, tol)
-          && this->measured_.equals(e->measured_, tol)
+          && traits<Point2>::Equals(this->measured_, e->measured_, tol)
           && this->K_->equals(*e->K_, tol);
     }
 

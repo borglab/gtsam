@@ -166,12 +166,12 @@ struct traits<Point2> : public internal::VectorSpace<Point2> {
 #endif // GTSAM_TYPEDEF_POINTS_TO_VECTORS
 
 /// Distance of the point from the origin, with Jacobian
-double norm(const Point2& p, OptionalJacobian<1, 2> H = boost::none);
+double norm2(const Point2& p, OptionalJacobian<1, 2> H = boost::none);
 
 /// distance between two points
-double distance(const Point2& p1, const Point2& q,
-                OptionalJacobian<1, 2> H1 = boost::none,
-                OptionalJacobian<1, 2> H2 = boost::none);
+double distance2(const Point2& p1, const Point2& q,
+                 OptionalJacobian<1, 2> H1 = boost::none,
+                 OptionalJacobian<1, 2> H2 = boost::none);
 
 // Convenience typedef
 typedef std::pair<Point2, Point2> Point2Pair;

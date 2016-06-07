@@ -249,7 +249,7 @@ double Pose2::range(const Point2& point,
   Point2 d = point - t_;
   if (!Hpose && !Hpoint) return d.norm();
   Matrix12 D_r_d;
-  double r = norm(d, D_r_d);
+  double r = norm2(d, D_r_d);
   if (Hpose) {
       Matrix23 D_d_pose;
       D_d_pose << -r_.c(),  r_.s(),  0.0,
@@ -267,7 +267,7 @@ double Pose2::range(const Pose2& pose,
   Point2 d = pose.t() - t_;
   if (!Hpose && !Hother) return d.norm();
   Matrix12 D_r_d;
-  double r = norm(d, D_r_d);
+  double r = norm2(d, D_r_d);
   if (Hpose) {
       Matrix23 D_d_pose;
       D_d_pose <<

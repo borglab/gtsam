@@ -743,7 +743,7 @@ namespace {
   /* ************************************************************************* */
   struct Triangle { size_t i_,j_,k_;};
 
-  boost::optional<Pose2> align(const vector<Point2>& ps, const vector<Point2>& qs,
+  boost::optional<Pose2> align2(const vector<Point2>& ps, const vector<Point2>& qs,
     const pair<Triangle, Triangle>& trianglePair) {
       const Triangle& t1 = trianglePair.first, t2 = trianglePair.second;
       vector<Point2Pair> correspondences;
@@ -762,7 +762,7 @@ TEST(Pose2, align_4) {
   Triangle t1; t1.i_=0; t1.j_=1; t1.k_=2;
   Triangle t2; t2.i_=1; t2.j_=2; t2.k_=0;
 
-  boost::optional<Pose2> actual = align(ps, qs, make_pair(t1,t2));
+  boost::optional<Pose2> actual = align2(ps, qs, make_pair(t1,t2));
   EXPECT(assert_equal(expected, *actual));
 }
 

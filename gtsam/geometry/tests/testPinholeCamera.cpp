@@ -278,7 +278,7 @@ TEST( PinholeCamera, range0) {
   double result = camera.range(point1, D1, D2);
   Matrix Hexpected1 = numericalDerivative21(range0, camera, point1);
   Matrix Hexpected2 = numericalDerivative22(range0, camera, point1);
-  EXPECT_DOUBLES_EQUAL(distance(point1, camera.pose().translation()), result,
+  EXPECT_DOUBLES_EQUAL(distance3(point1, camera.pose().translation()), result,
       1e-9);
   EXPECT(assert_equal(Hexpected1, D1, 1e-7));
   EXPECT(assert_equal(Hexpected2, D2, 1e-7));
