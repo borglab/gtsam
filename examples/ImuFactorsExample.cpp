@@ -57,7 +57,7 @@ int main(int argc, char* argv[])
 
   // Set up output file for plotting errors
   FILE* fp_out = fopen(output_filename.c_str(), "w+");
-  //fprintf(fp_out, "#time(s),x(m),y(m),z(m),qx,qy,qz,qw,gt_x(m),gt_y(m),gt_z(m),gt_qx,gt_qy,gt_qz,gt_qw\n");
+  fprintf(fp_out, "#time(s),x(m),y(m),z(m),qx,qy,qz,qw,gt_x(m),gt_y(m),gt_z(m),gt_qx,gt_qy,gt_qz,gt_qw\n");
 
   // Begin parsing the CSV file.  Input the first line for initialization.
   // From there, we'll iterate through the file and we'll preintegrate the IMU
