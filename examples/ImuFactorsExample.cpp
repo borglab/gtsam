@@ -19,7 +19,7 @@
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/PriorFactor.h>
 
-// A row starting with i is the first inital position formatted with
+// A row starting with i is the first initial position formatted with
 //   N, E, D, qx, qY, qZ, qW, velN, velE, velD
 // A row starting with a 0 is an imu measurement
 //   linAccN, linAccE, linAccD, angVelN, angVelE, angVelD
@@ -29,7 +29,7 @@
 // rotation is provided for ground truth comparison.
 
 // Uncomment line below to use the CombinedIMUFactor as opposed to the standard ImuFactor.
-#define USE_COMBINED 
+// #define USE_COMBINED
 
 using namespace gtsam;
 using namespace Eigen;
@@ -54,30 +54,27 @@ int main(int argc, char* argv[])
   } else {
     data_filename = argv[1];
   }
-  printf("1\n");
+
   // Set up output file for plotting errors
   FILE* fp_out = fopen(output_filename.c_str(), "w+");
-  printf("2\n");
   fprintf(fp_out, "#time(s),x(m),y(m),z(m),qx,qy,qz,qw,gt_x(m),gt_y(m),gt_z(m),gt_qx,gt_qy,gt_qz,gt_qw\n");
 
   // Begin parsing the CSV file.  Input the first line for initialization.
   // From there, we'll iterate through the file and we'll preintegrate the IMU
   // or add in the GPS given the input.
-  std::ifstream file(data_filename.c_str());
-  std::string value;
+  ifstream file(data_filename.c_str());
+  string value;
 
   // Format is (N,E,D,qX,qY,qZ,qW,velN,velE,velD)
   Eigen::Matrix<double,10,1> initial_state = Eigen::Matrix<double,10,1>::Zero();
-
   getline(file, value, ','); // i
   for (int i=0; i<9; i++) {
     getline(file, value, ',');
-    initial_state(i) = std::atof(value.c_str());
+    initial_state(i) = atof(value.c_str());
   }
   getline(file, value, '\n');
-  initial_state(9) = std::atof(value.c_str());
-
-  std::cout << "initial state:\n" << initial_state << "\n\n";
+  initial_state(9) = atof(value.c_str());
+  cout << "initial state:\n" << initial_state.transpose() << "\n\n";
 
   // Assemble initial quaternion through gtsam constructor ::quaternion(w,x,y,z);
   Rot3 prior_rotation = Rot3::Quaternion(initial_state(6), initial_state(3), 
@@ -94,29 +91,27 @@ int main(int argc, char* argv[])
   initial_values.insert(B(correction_count), prior_imu_bias);  
 
   // Assemble prior noise model and add it the graph.
-  noiseModel::Diagonal::shared_ptr pose_noise_model = noiseModel::Diagonal::Sigmas((Vector(6) << 0.01, 0.01, 0.01, 0.5, 0.5, 0.5).finished()); // m, m, m, deg, deg, deg
-  noiseModel::Diagonal::shared_ptr velocity_noise_model = noiseModel::Diagonal::Sigmas((Vector(3) << 0.1, 0.1, 0.1).finished()); // m/s
-  noiseModel::Diagonal::shared_ptr bias_noise_model = noiseModel::Diagonal::Sigmas((Vector(6) << 0.001, 0.001, 0.001, 0.001, 0.001, 0.001).finished());
+  noiseModel::Diagonal::shared_ptr pose_noise_model = noiseModel::Diagonal::Sigmas((Vector(6) << 0.01, 0.01, 0.01, 0.5, 0.5, 0.5).finished()); // rad,rad,rad,m, m, m
+  noiseModel::Diagonal::shared_ptr velocity_noise_model = noiseModel::Isotropic::Sigma(3,0.1); // m/s
+  noiseModel::Diagonal::shared_ptr bias_noise_model = noiseModel::Isotropic::Sigma(6,1e-3);
 
   // Add all prior factors (pose, velocity, bias) to the graph.
   NonlinearFactorGraph *graph = new NonlinearFactorGraph();
   graph->add(PriorFactor<Pose3>(X(correction_count), prior_pose, pose_noise_model));
-  graph->add(PriorFactor<Vector3>(V(correction_count), prior_velocity, 
-                                  velocity_noise_model));
-  graph->add(PriorFactor<imuBias::ConstantBias>(B(correction_count), prior_imu_bias, 
-                                                bias_noise_model));
+  graph->add(PriorFactor<Vector3>(V(correction_count), prior_velocity,velocity_noise_model));
+  graph->add(PriorFactor<imuBias::ConstantBias>(B(correction_count), prior_imu_bias,bias_noise_model));
 
   // We use the sensor specs to build the noise model for the IMU factor.
   double accel_noise_sigma = 0.0003924;
   double gyro_noise_sigma = 0.000205689024915;
   double accel_bias_rw_sigma = 0.004905;
   double gyro_bias_rw_sigma = 0.000001454441043;
-  Matrix3d measured_acc_cov = Matrix3d::Identity(3,3) * std::pow(accel_noise_sigma,2);
-  Matrix3d measured_omega_cov = Matrix3d::Identity(3,3) * std::pow(gyro_noise_sigma,2);
-  Matrix3d integration_error_cov = Matrix3d::Identity(3,3)*100000; // ?
-  Matrix3d bias_acc_cov = Matrix3d::Identity(3,3) * std::pow(accel_bias_rw_sigma,2);
-  Matrix3d bias_omega_cov = Matrix3d::Identity(3,3) * std::pow(gyro_bias_rw_sigma,2);
-  Eigen::Matrix<double,6,6> bias_acc_omega_int = MatrixXd::Identity(6,6)*0.001; // ?
+  Matrix3d measured_acc_cov = Matrix3d::Identity(3,3) * pow(accel_noise_sigma,2);
+  Matrix3d measured_omega_cov = Matrix3d::Identity(3,3) * pow(gyro_noise_sigma,2);
+  Matrix3d integration_error_cov = Matrix3d::Identity(3,3)*1e4; // error committed in integrating position from velocities
+  Matrix3d bias_acc_cov = Matrix3d::Identity(3,3) * pow(accel_bias_rw_sigma,2);
+  Matrix3d bias_omega_cov = Matrix3d::Identity(3,3) * pow(gyro_bias_rw_sigma,2);
+  Eigen::Matrix<double,6,6> bias_acc_omega_int = MatrixXd::Identity(6,6)*1e-3; // error in the bias used for preintegration
 
   //#ifdef USE_COMBINED
   boost::shared_ptr<PreintegratedCombinedMeasurements::Params> p = PreintegratedCombinedMeasurements::Params::MakeSharedD(0.0);
@@ -154,29 +149,28 @@ int main(int argc, char* argv[])
 
     // Parse out first value
     getline(file, value, ',');
-    int type = std::atoi(value.c_str());
+    int type = atoi(value.c_str());
 
     if (type == 0) { // IMU measurement
       Eigen::Matrix<double,6,1> imu = Eigen::Matrix<double,6,1>::Zero();
       for (int i=0; i<5; ++i) {
         getline(file, value, ',');
-        imu(i) = std::atof(value.c_str());
+        imu(i) = atof(value.c_str());
       }
       getline(file, value, '\n');
-      imu(5) = std::atof(value.c_str());
+      imu(5) = atof(value.c_str());
 
       // Adding the IMU preintegration.
       imu_preintegrated_->integrateMeasurement(imu.head<3>(), imu.tail<3>(), dt);
-      prop_state = imu_preintegrated_->predict(prev_state, prev_bias);
 
     } else if (type == 1) { // GPS measurement
       Eigen::Matrix<double,7,1> gps = Eigen::Matrix<double,7,1>::Zero();
       for (int i=0; i<6; ++i) {
         getline(file, value, ',');
-        gps(i) = std::atof(value.c_str());
+        gps(i) = atof(value.c_str());
       }
       getline(file, value, '\n');
-      gps(6) = std::atof(value.c_str());
+      gps(6) = atof(value.c_str());
 
       correction_count++;
 
@@ -202,8 +196,7 @@ int main(int argc, char* argv[])
 
 #endif
 
-
-      noiseModel::Diagonal::shared_ptr correction_noise = noiseModel::Diagonal::Variances((Vector(3) << 1, 1, 1).finished());
+      noiseModel::Diagonal::shared_ptr correction_noise = noiseModel::Isotropic::Sigma(3,1.0);
       GPSFactor gps_factor(X(correction_count),
                            Point3(gps(0),  // N,
                                   gps(1),  // E,
@@ -212,12 +205,15 @@ int main(int argc, char* argv[])
       graph->add(gps_factor);
       
       // Now optimize and compare results.
+      prop_state = imu_preintegrated_->predict(prev_state, prev_bias);
       initial_values.insert(X(correction_count), prop_state.pose());
       initial_values.insert(V(correction_count), prop_state.v());
       initial_values.insert(B(correction_count), prev_bias);
 
       LevenbergMarquardtOptimizer optimizer(*graph, initial_values);
       Values result = optimizer.optimize();
+      cout << "Residual error (before opt): " << graph->error(initial_values) << "  ";
+      cout << "Residual error (after opt): " << graph->error(result) << "  ";
 
       // Overwrite the beginning of the preintegration for the next step.
       prev_state = NavState(result.at<Pose3>(X(correction_count)),
@@ -229,26 +225,24 @@ int main(int argc, char* argv[])
       //prev_bias.print();
 
       // Print out the position and orientation error for comparison.
-      Vector3d gtsam_pose = prev_state.pose().translation().vector();
+      Vector3d gtsam_position = prev_state.pose().translation().vector();
+      Vector3d position_error = gtsam_position - gps.head<3>();
+      pose_error_sum += position_error.norm();
+
       Quaterniond gtsam_quat = prev_state.pose().rotation().toQuaternion();
       Quaterniond gps_quat(gps(6), gps(3), gps(4), gps(5));
-
-      Vector3d position_error = gtsam_pose - gps.head<3>();
       Quaterniond quat_error = gtsam_quat * gps_quat.inverse();
       quat_error.normalize();
       Vector3d euler_angle_error(quat_error.x()*2,
                                  quat_error.y()*2,
                                  quat_error.z()*2);
-
-      pose_error_sum += position_error.norm();
       orientation_error_sum += euler_angle_error.norm();
 
-      std::cout << pose_error_sum << "\t " << orientation_error_sum << "\n";
-      //std::cout << "For correction " << correction_count-1 << ", pose error is:\n" << position_error << "\n(in meters, NED), and quaternion error is:\n" << euler_angle_error*(180/M_PI) << "\n(in degrees)\n\n";
-
+      // display statistics
+      cout << "Position error:" << pose_error_sum << "\t " << "Angular error:" << orientation_error_sum << "\n";
 
       fprintf(fp_out, "%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n", 
-              output_time, gtsam_pose(0), gtsam_pose(1), gtsam_pose(2),
+              output_time, gtsam_position(0), gtsam_position(1), gtsam_position(2),
               gtsam_quat.x(), gtsam_quat.y(), gtsam_quat.z(), gtsam_quat.w(),
               gps(0), gps(1), gps(2), 
               gps_quat.x(), gps_quat.y(), gps_quat.z(), gps_quat.w());
@@ -256,7 +250,7 @@ int main(int argc, char* argv[])
       output_time += 1.0;
 
     } else {
-      std::cerr << "ERROR parsing file\n";
+      cerr << "ERROR parsing file\n";
       return 1;
     }
     
@@ -264,6 +258,6 @@ int main(int argc, char* argv[])
 
   fclose(fp_out);
 
-  std::cout << "Complete, results written to " << output_filename << "\n\n";;
+  cout << "Complete, results written to " << output_filename << "\n\n";;
   return 0;
 }
