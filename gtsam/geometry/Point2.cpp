@@ -69,7 +69,7 @@ double Point2::norm(OptionalJacobian<1,2> H) const {
 /* ************************************************************************* */
 double Point2::distance(const Point2& point, OptionalJacobian<1,2> H1,
     OptionalJacobian<1,2> H2) const {
-  return distance(point, H1, H2);
+  return gtsam::distance2(*this, point, H1, H2);
 }
 
 /* ************************************************************************* */
