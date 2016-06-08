@@ -57,7 +57,7 @@ int main(int argc, char* argv[])
 
   // Set up output file for plotting errors
   FILE* fp_out = fopen(output_filename.c_str(), "w+");
-  fprintf(fp_out, "#time(s),x(m),y(m),z(m),qx,qy,qz,qw,gt_x(m),gt_y(m),gt_z(m),gt_qx,gt_qy,gt_qz,gt_qw\n");
+  //fprintf(fp_out, "#time(s),x(m),y(m),z(m),qx,qy,qz,qw,gt_x(m),gt_y(m),gt_z(m),gt_qx,gt_qy,gt_qz,gt_qw\n");
 
   // Begin parsing the CSV file.  Input the first line for initialization.
   // From there, we'll iterate through the file and we'll preintegrate the IMU
@@ -108,10 +108,10 @@ int main(int argc, char* argv[])
   double gyro_bias_rw_sigma = 0.000001454441043;
   Matrix3d measured_acc_cov = Matrix3d::Identity(3,3) * pow(accel_noise_sigma,2);
   Matrix3d measured_omega_cov = Matrix3d::Identity(3,3) * pow(gyro_noise_sigma,2);
-  Matrix3d integration_error_cov = Matrix3d::Identity(3,3)*1e4; // error committed in integrating position from velocities
+  Matrix3d integration_error_cov = Matrix3d::Identity(3,3)*1e-8; // error committed in integrating position from velocities
   Matrix3d bias_acc_cov = Matrix3d::Identity(3,3) * pow(accel_bias_rw_sigma,2);
   Matrix3d bias_omega_cov = Matrix3d::Identity(3,3) * pow(gyro_bias_rw_sigma,2);
-  Eigen::Matrix<double,6,6> bias_acc_omega_int = MatrixXd::Identity(6,6)*1e-3; // error in the bias used for preintegration
+  Eigen::Matrix<double,6,6> bias_acc_omega_int = MatrixXd::Identity(6,6)*1e-5; // error in the bias used for preintegration
 
   //#ifdef USE_COMBINED
   boost::shared_ptr<PreintegratedCombinedMeasurements::Params> p = PreintegratedCombinedMeasurements::Params::MakeSharedD(0.0);
@@ -138,7 +138,7 @@ int main(int argc, char* argv[])
   imuBias::ConstantBias prev_bias = prior_imu_bias;
 
   // Keep track of the total error over the entire run for a simple performance metric.
-  double pose_error_sum = 0.0, orientation_error_sum = 0.0;
+  double current_position_error = 0.0, current_orientation_error = 0.0;
 
   double output_time = 0.0;
   double dt = 0.005;  // The real system has noise, but here, results are nearly 
@@ -212,8 +212,8 @@ int main(int argc, char* argv[])
 
       LevenbergMarquardtOptimizer optimizer(*graph, initial_values);
       Values result = optimizer.optimize();
-      cout << "Residual error (before opt): " << graph->error(initial_values) << "  ";
-      cout << "Residual error (after opt): " << graph->error(result) << "  ";
+      //cout << "Residual error (before opt): " << graph->error(initial_values) << "  ";
+      //cout << "Residual error (after opt): " << graph->error(result) << "  ";
 
       // Overwrite the beginning of the preintegration for the next step.
       prev_state = NavState(result.at<Pose3>(X(correction_count)),
@@ -222,12 +222,15 @@ int main(int argc, char* argv[])
 
       // Reset the preintegration object.
       imu_preintegrated_->resetIntegrationAndSetBias(prev_bias);
-      //prev_bias.print();
+      // prev_bias.print();
 
       // Print out the position and orientation error for comparison.
       Vector3d gtsam_position = prev_state.pose().translation().vector();
       Vector3d position_error = gtsam_position - gps.head<3>();
-      pose_error_sum += position_error.norm();
+      //cout << "gtsam_position " << gtsam_position.transpose() << endl;
+      //cout << "  gps_position " << gps.head<3>().transpose() << endl;
+      //cout << "position_error " << position_error.transpose() << endl;
+      current_position_error = position_error.norm();
 
       Quaterniond gtsam_quat = prev_state.pose().rotation().toQuaternion();
       Quaterniond gps_quat(gps(6), gps(3), gps(4), gps(5));
@@ -236,10 +239,10 @@ int main(int argc, char* argv[])
       Vector3d euler_angle_error(quat_error.x()*2,
                                  quat_error.y()*2,
                                  quat_error.z()*2);
-      orientation_error_sum += euler_angle_error.norm();
+      current_orientation_error = euler_angle_error.norm();
 
       // display statistics
-      cout << "Position error:" << pose_error_sum << "\t " << "Angular error:" << orientation_error_sum << "\n";
+      cout << "Position error:" << current_position_error << "\t " << "Angular error:" << current_orientation_error << "\n";
 
       fprintf(fp_out, "%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n", 
               output_time, gtsam_position(0), gtsam_position(1), gtsam_position(2),
@@ -253,11 +256,8 @@ int main(int argc, char* argv[])
       cerr << "ERROR parsing file\n";
       return 1;
     }
-    
   }
-
   fclose(fp_out);
-
   cout << "Complete, results written to " << output_filename << "\n\n";;
   return 0;
 }
