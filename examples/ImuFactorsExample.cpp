@@ -30,26 +30,23 @@
  *  rotation is provided in the file for ground truth comparison.
  */
 
-// Standard includes.
-#include <fstream>
-#include <iostream>
-
 // GTSAM related includes.
-#include <gtsam/slam/dataset.h>
-#include <gtsam/inference/Symbol.h>
 #include <gtsam/navigation/CombinedImuFactor.h>
 #include <gtsam/navigation/GPSFactor.h>
 #include <gtsam/navigation/ImuFactor.h>
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/slam/dataset.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/inference/Symbol.h>
+#include <fstream>
+#include <iostream>
 
 // Uncomment line below to use the CombinedIMUFactor as opposed to the standard ImuFactor.
 // #define USE_COMBINED
 
 using namespace gtsam;
-using namespace Eigen;
 using namespace std;
 
 using symbol_shorthand::X; // Pose3 (x,y,z,r,p,y)
@@ -123,12 +120,12 @@ int main(int argc, char* argv[])
   double gyro_noise_sigma = 0.000205689024915;
   double accel_bias_rw_sigma = 0.004905;
   double gyro_bias_rw_sigma = 0.000001454441043;
-  Matrix3d measured_acc_cov = Matrix3d::Identity(3,3) * pow(accel_noise_sigma,2);
-  Matrix3d measured_omega_cov = Matrix3d::Identity(3,3) * pow(gyro_noise_sigma,2);
-  Matrix3d integration_error_cov = Matrix3d::Identity(3,3)*1e-8; // error committed in integrating position from velocities
-  Matrix3d bias_acc_cov = Matrix3d::Identity(3,3) * pow(accel_bias_rw_sigma,2);
-  Matrix3d bias_omega_cov = Matrix3d::Identity(3,3) * pow(gyro_bias_rw_sigma,2);
-  Eigen::Matrix<double,6,6> bias_acc_omega_int = MatrixXd::Identity(6,6)*1e-5; // error in the bias used for preintegration
+  Matrix33 measured_acc_cov = Matrix33::Identity(3,3) * pow(accel_noise_sigma,2);
+  Matrix33 measured_omega_cov = Matrix33::Identity(3,3) * pow(gyro_noise_sigma,2);
+  Matrix33 integration_error_cov = Matrix33::Identity(3,3)*1e-8; // error committed in integrating position from velocities
+  Matrix33 bias_acc_cov = Matrix33::Identity(3,3) * pow(accel_bias_rw_sigma,2);
+  Matrix33 bias_omega_cov = Matrix33::Identity(3,3) * pow(gyro_bias_rw_sigma,2);
+  Matrix66 bias_acc_omega_int = Matrix::Identity(6,6)*1e-5; // error in the bias used for preintegration
 
   boost::shared_ptr<PreintegratedCombinedMeasurements::Params> p = PreintegratedCombinedMeasurements::Params::MakeSharedD(0.0);
   // PreintegrationBase params:
@@ -209,7 +206,6 @@ int main(int argc, char* argv[])
       graph->add(BetweenFactor<imuBias::ConstantBias>(B(correction_count-1), 
                                                       B(correction_count  ), 
                                                       zero_bias, bias_noise_model));
-
 #endif
 
       noiseModel::Diagonal::shared_ptr correction_noise = noiseModel::Isotropic::Sigma(3,1.0);
@@ -238,15 +234,15 @@ int main(int argc, char* argv[])
       imu_preintegrated_->resetIntegrationAndSetBias(prev_bias);
 
       // Print out the position and orientation error for comparison.
-      Vector3d gtsam_position = prev_state.pose().translation();
-      Vector3d position_error = gtsam_position - gps.head<3>();
+      Vector3 gtsam_position = prev_state.pose().translation();
+      Vector3 position_error = gtsam_position - gps.head<3>();
       current_position_error = position_error.norm();
 
-      Quaterniond gtsam_quat = prev_state.pose().rotation().toQuaternion();
-      Quaterniond gps_quat(gps(6), gps(3), gps(4), gps(5));
-      Quaterniond quat_error = gtsam_quat * gps_quat.inverse();
+      Quaternion gtsam_quat = prev_state.pose().rotation().toQuaternion();
+      Quaternion gps_quat(gps(6), gps(3), gps(4), gps(5));
+      Quaternion quat_error = gtsam_quat * gps_quat.inverse();
       quat_error.normalize();
-      Vector3d euler_angle_error(quat_error.x()*2,
+      Vector3 euler_angle_error(quat_error.x()*2,
                                  quat_error.y()*2,
                                  quat_error.z()*2);
       current_orientation_error = euler_angle_error.norm();
