@@ -25,13 +25,16 @@
 using namespace boost::python;
 using namespace gtsam;
 
+#ifndef GTSAM_TYPEDEF_POINTS_TO_VECTORS
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(print_overloads, Point2::print, 0, 1)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(equals_overloads, Point2::equals, 1, 2)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(compose_overloads, Point2::compose, 1, 3)
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(distance_overloads, Point2::distance, 1, 3)
+#endif
 
 void exportPoint2(){
 
+#ifndef GTSAM_TYPEDEF_POINTS_TO_VECTORS
   class_<Point2>("Point2", init<>())
     .def(init<double, double>())
     .def(init<const Vector2 &>())
@@ -54,5 +57,5 @@ void exportPoint2(){
     .def(repr(self))
     .def(self == self)
   ;
-
+#endif
 }
