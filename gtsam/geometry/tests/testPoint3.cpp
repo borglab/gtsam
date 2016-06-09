@@ -27,6 +27,11 @@ GTSAM_CONCEPT_LIE_INST(Point3)
 static Point3 P(0.2, 0.7, -2);
 
 //******************************************************************************
+TEST(Point3 , Constructor) {
+  Point3 p;
+}
+
+//******************************************************************************
 TEST(Point3 , Concept) {
   BOOST_CONCEPT_ASSERT((IsGroup<Point3>));
   BOOST_CONCEPT_ASSERT((IsManifold<Point3>));
@@ -149,7 +154,7 @@ TEST( Point3, cross2) {
 }
 
 /* ************************************************************************* */
-#ifndef GTSAM_USE_VECTOR3_POINTS
+#ifndef GTSAM_TYPEDEF_POINTS_TO_VECTORS
 TEST( Point3, stream) {
   Point3 p(1, 2, -3);
   std::ostringstream os;
@@ -178,20 +183,20 @@ TEST (Point3, norm) {
   Matrix actualH;
   Point3 point(3,4,5); // arbitrary point
   double expected = sqrt(50);
-  EXPECT_DOUBLES_EQUAL(expected, norm(point, actualH), 1e-8);
+  EXPECT_DOUBLES_EQUAL(expected, norm3(point, actualH), 1e-8);
   Matrix expectedH = numericalDerivative11<double, Point3>(norm_proxy, point);
   EXPECT(assert_equal(expectedH, actualH, 1e-8));
 }
 
 /* ************************************************************************* */
 double testFunc(const Point3& P, const Point3& Q) {
-  return distance(P,Q);
+  return distance3(P, Q);
 }
 
 TEST (Point3, distance) {
   Point3 P(1., 12.8, -32.), Q(52.7, 4.9, -13.3);
   Matrix H1, H2;
-  double d = distance(P, Q, H1, H2);
+  double d = distance3(P, Q, H1, H2);
   double expectedDistance = 55.542686;
   Matrix numH1 = numericalDerivative21(testFunc, P, Q);
   Matrix numH2 = numericalDerivative22(testFunc, P, Q);

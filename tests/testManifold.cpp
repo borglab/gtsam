@@ -78,7 +78,7 @@ TEST(Manifold, Identity) {
   EXPECT_DOUBLES_EQUAL(0.0, traits<double>::Identity(), 0.0);
   EXPECT(assert_equal(Matrix(Matrix24::Zero()), Matrix(traits<Matrix24>::Identity())));
   EXPECT(assert_equal(Pose3(), traits<Pose3>::Identity()));
-  EXPECT(assert_equal(Point2(), traits<Point2>::Identity()));
+  EXPECT(assert_equal(Point2(0,0), traits<Point2>::Identity()));
 }
 
 //******************************************************************************
@@ -166,7 +166,7 @@ template<> struct traits<MyPoint2Pair> : internal::ManifoldTraits<MyPoint2Pair> 
 
 TEST(Manifold, ProductManifold) {
   BOOST_CONCEPT_ASSERT((IsManifold<MyPoint2Pair>));
-  MyPoint2Pair pair1;
+  MyPoint2Pair pair1(Point2(0,0),Point2(0,0));
   Vector4 d;
   d << 1,2,3,4;
   MyPoint2Pair expected(Point2(1,2),Point2(3,4));

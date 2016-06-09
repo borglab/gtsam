@@ -85,7 +85,7 @@ public:
       OptionalJacobian<1, 3> H2 = boost::none) const {
     static const double Speed = 330;
     Matrix13 D1, D2;
-    double distance = gtsam::distance(location_, microphone, D1, D2);
+    double distance = gtsam::distance3(location_, microphone, D1, D2);
     if (H1)
       // derivative of toa with respect to event
       *H1 << 1.0, D1 / Speed;

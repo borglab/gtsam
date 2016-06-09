@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -23,21 +23,11 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-void Point2::print(const string& s) const {
-  cout << s << *this << endl;
-}
-
-/* ************************************************************************* */
-bool Point2::equals(const Point2& q, double tol) const {
-  return (fabs(x_ - q.x()) < tol && fabs(y_ - q.y()) < tol);
-}
-
-/* ************************************************************************* */
-double Point2::norm(OptionalJacobian<1,2> H) const {
-  double r = sqrt(x_ * x_ + y_ * y_);
+double norm2(const Point2& p, OptionalJacobian<1,2> H) {
+  double r = std::sqrt(p.x() * p.x() + p.y() * p.y());
   if (H) {
     if (fabs(r) > 1e-10)
-      *H << x_ / r, y_ / r;
+      *H << p.x() / r, p.y() / r;
     else
       *H << 1, 1;  // really infinity, why 1 ?
   }
@@ -45,34 +35,66 @@ double Point2::norm(OptionalJacobian<1,2> H) const {
 }
 
 /* ************************************************************************* */
-double Point2::distance(const Point2& point, OptionalJacobian<1,2> H1,
-    OptionalJacobian<1,2> H2) const {
-  Point2 d = point - *this;
+double distance2(const Point2& p, const Point2& q, OptionalJacobian<1, 2> H1,
+                 OptionalJacobian<1, 2> H2) {
+  Point2 d = q - p;
   if (H1 || H2) {
     Matrix12 H;
-    double r = d.norm(H);
+    double r = norm2(d, H);
     if (H1) *H1 = -H;
     if (H2) *H2 =  H;
     return r;
-  } else
+  } else {
     return d.norm();
+  }
 }
 
-/*
- * Calculate f and h, respectively the parallel and perpendicular distance of
- * the intersections of two circles along and from the line connecting the centers.
- * Both are dimensionless fractions of the distance d between the circle centers.
- * If the circles do not intersect or they are identical, returns boost::none.
- * If one solution (touching circles, as determined by tol), h will be exactly zero.
- * h is a good measure for how accurate the intersection will be, as when circles touch
- * or nearly touch, the intersection is ill-defined with noisy radius measurements.
- * @param R_d : R/d, ratio of radius of first circle to distance between centers
- * @param r_d : r/d, ratio of radius of second circle to distance between centers
- * @param tol: absolute tolerance below which we consider touching circles
- */
+#ifndef GTSAM_TYPEDEF_POINTS_TO_VECTORS
+
+/* ************************************************************************* */
+void Point2::print(const string& s) const {
+  cout << s << *this << endl;
+}
+
+/* ************************************************************************* */
+bool Point2::equals(const Point2& q, double tol) const {
+  return (fabs(x() - q.x()) < tol && fabs(y() - q.y()) < tol);
+}
+
+/* ************************************************************************* */
+double Point2::norm(OptionalJacobian<1,2> H) const {
+  return gtsam::norm2(*this, H);
+}
+
+/* ************************************************************************* */
+double Point2::distance(const Point2& point, OptionalJacobian<1,2> H1,
+    OptionalJacobian<1,2> H2) const {
+  return gtsam::distance2(*this, point, H1, H2);
+}
+
+/* ************************************************************************* */
+ostream &operator<<(ostream &os, const Point2& p) {
+  os << '(' << p.x() << ", " << p.y() << ')';
+  return os;
+}
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+boost::optional<Point2> CircleCircleIntersection(double R_d, double r_d, double tol) {
+  return circleCircleIntersection(R_d, r_d, tol);
+}
+std::list<Point2> CircleCircleIntersection(Point2 c1, Point2 c2, boost::optional<Point2> fh) {
+  return circleCircleIntersection(c1, c2, fh);
+}
+std::list<Point2> CircleCircleIntersection(Point2 c1, double r1, Point2 c2, double r2, double tol) {
+  return circleCircleIntersection(c1, r1, c2, r2, tol);
+}
+#endif
+
+#endif // GTSAM_TYPEDEF_POINTS_TO_VECTORS
+
 /* ************************************************************************* */
 // Math inspired by http://paulbourke.net/geometry/circlesphere/
-boost::optional<Point2> Point2::CircleCircleIntersection(double R_d, double r_d,
+boost::optional<Point2> circleCircleIntersection(double R_d, double r_d,
     double tol) {
 
   double R2_d2 = R_d*R_d; // Yes, RD-D2 !
@@ -83,11 +105,11 @@ boost::optional<Point2> Point2::CircleCircleIntersection(double R_d, double r_d,
   // Hence, there are only solutions if >=0
   if (h2<-tol) return boost::none; // allow *slightly* negative
   else if (h2<tol) return Point2(f,0.0); // one solution
-  else return Point2(f,sqrt(h2)); // two solutions
+  else return Point2(f,std::sqrt(h2)); // two solutions
 }
 
 /* ************************************************************************* */
-list<Point2> Point2::CircleCircleIntersection(Point2 c1, Point2 c2,
+list<Point2> circleCircleIntersection(Point2 c1, Point2 c2,
     boost::optional<Point2> fh) {
 
   list<Point2> solutions;
@@ -116,27 +138,21 @@ list<Point2> Point2::CircleCircleIntersection(Point2 c1, Point2 c2,
 }
 
 /* ************************************************************************* */
-list<Point2> Point2::CircleCircleIntersection(Point2 c1, double r1, Point2 c2,
+list<Point2> circleCircleIntersection(Point2 c1, double r1, Point2 c2,
     double r2, double tol) {
 
   // distance between circle centers.
-  double d = c1.dist(c2);
+  double d = distance2(c1, c2);
 
   // centers coincide, either no solution or infinite number of solutions.
   if (d<1e-9) return list<Point2>();
 
   // Calculate f and h given normalized radii
   double _d = 1.0/d, R_d = r1*_d, r_d=r2*_d;
-  boost::optional<Point2> fh = CircleCircleIntersection(R_d,r_d);
+  boost::optional<Point2> fh = circleCircleIntersection(R_d,r_d);
 
   // Call version that takes fh
-  return CircleCircleIntersection(c1, c2, fh);
-}
-
-/* ************************************************************************* */
-ostream &operator<<(ostream &os, const Point2& p) {
-  os << '(' << p.x() << ", " << p.y() << ')';
-  return os;
+  return circleCircleIntersection(c1, c2, fh);
 }
 
 /* ************************************************************************* */

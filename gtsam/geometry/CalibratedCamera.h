@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -19,6 +19,7 @@
 #pragma once
 
 #include <gtsam/geometry/BearingRange.h>
+#include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/concepts.h>
 #include <gtsam/base/Manifold.h>
@@ -27,8 +28,6 @@
 #include <boost/serialization/nvp.hpp>
 
 namespace gtsam {
-
-class Point2;
 
 class GTSAM_EXPORT CheiralityException: public ThreadsafeException<
     CheiralityException> {

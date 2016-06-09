@@ -260,7 +260,7 @@ public:
     std::cout << s << ": NonlinearEquality1(" << keyFormatter(this->key())
         << ")," << "\n";
     this->noiseModel_->print();
-    value_.print("Value");
+    traits<X>::Print(value_, "Value");
   }
 
 private:
