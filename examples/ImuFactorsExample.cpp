@@ -1,8 +1,34 @@
-/*
-   @author Garrett (ghemann@gmail.com), Luca Carlone
-   @date   08.13.15
-   @brief  Test example for using GTSAM ImuFactor and ImuCombinedFactor navigation code.
-*/
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file imuFactorsExample
+ * @brief Test example for using GTSAM ImuFactor and ImuCombinedFactor navigation code.
+ * @author Garrett (ghemann@gmail.com), Luca Carlone
+ */
+
+/**
+ * Example of use of the imuFactors (imuFactor and combinedImuFactor) in conjunction with GPS
+ *  - you can test imuFactor (resp. combinedImuFactor) by commenting (resp. uncommenting)
+ *  the line #define USE_COMBINED (few lines below)
+ *  - we read IMU and GPS data from a CSV file, with the following format:
+ *  A row starting with "i" is the first initial position formatted with
+ *  N, E, D, qx, qY, qZ, qW, velN, velE, velD
+ *  A row starting with "0" is an imu measurement
+ *  linAccN, linAccE, linAccD, angVelN, angVelE, angVelD
+ *  A row starting with "1" is a gps correction formatted with
+ *  N, E, D, qX, qY, qZ, qW
+ *  Note that for GPS correction, we're only using the position not the rotation. The
+ *  rotation is provided in the file for ground truth comparison.
+ */
 
 // Standard includes.
 #include <fstream>
@@ -18,15 +44,6 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/PriorFactor.h>
-
-// A row starting with i is the first initial position formatted with
-//   N, E, D, qx, qY, qZ, qW, velN, velE, velD
-// A row starting with a 0 is an imu measurement
-//   linAccN, linAccE, linAccD, angVelN, angVelE, angVelD
-// A row starting with a 1 is a gps correction formatted with
-//   N, E, D, qX, qY, qZ, qW
-// Note that for correction, we're only using the point not the rotation. The
-// rotation is provided for ground truth comparison.
 
 // Uncomment line below to use the CombinedIMUFactor as opposed to the standard ImuFactor.
 // #define USE_COMBINED
@@ -113,7 +130,6 @@ int main(int argc, char* argv[])
   Matrix3d bias_omega_cov = Matrix3d::Identity(3,3) * pow(gyro_bias_rw_sigma,2);
   Eigen::Matrix<double,6,6> bias_acc_omega_int = MatrixXd::Identity(6,6)*1e-5; // error in the bias used for preintegration
 
-  //#ifdef USE_COMBINED
   boost::shared_ptr<PreintegratedCombinedMeasurements::Params> p = PreintegratedCombinedMeasurements::Params::MakeSharedD(0.0);
   // PreintegrationBase params:
   p->accelerometerCovariance = measured_acc_cov; // acc white noise in continuous
@@ -212,8 +228,6 @@ int main(int argc, char* argv[])
 
       LevenbergMarquardtOptimizer optimizer(*graph, initial_values);
       Values result = optimizer.optimize();
-      //cout << "Residual error (before opt): " << graph->error(initial_values) << "  ";
-      //cout << "Residual error (after opt): " << graph->error(result) << "  ";
 
       // Overwrite the beginning of the preintegration for the next step.
       prev_state = NavState(result.at<Pose3>(X(correction_count)),
@@ -222,14 +236,10 @@ int main(int argc, char* argv[])
 
       // Reset the preintegration object.
       imu_preintegrated_->resetIntegrationAndSetBias(prev_bias);
-      // prev_bias.print();
 
       // Print out the position and orientation error for comparison.
       Vector3d gtsam_position = prev_state.pose().translation();
       Vector3d position_error = gtsam_position - gps.head<3>();
-      //cout << "gtsam_position " << gtsam_position.transpose() << endl;
-      //cout << "  gps_position " << gps.head<3>().transpose() << endl;
-      //cout << "position_error " << position_error.transpose() << endl;
       current_position_error = position_error.norm();
 
       Quaterniond gtsam_quat = prev_state.pose().rotation().toQuaternion();
