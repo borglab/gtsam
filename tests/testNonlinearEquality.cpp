@@ -417,7 +417,7 @@ TEST( testNonlinearEqualityConstraint, odo_simple_optimize ) {
   graph.push_back(factor);
 
   Values initValues;
-  initValues.insert(key1, Point2());
+  initValues.insert(key1, Point2(0,0));
   initValues.insert(key2, badPt);
 
   Values actual = LevenbergMarquardtOptimizer(graph, initValues).optimize();
@@ -454,7 +454,7 @@ TEST (testNonlinearEqualityConstraint, two_pose ) {
 
   Values initialEstimate;
   initialEstimate.insert(x1, pt_x1);
-  initialEstimate.insert(x2, Point2());
+  initialEstimate.insert(x2, Point2(0,0));
   initialEstimate.insert(l1, Point2(1.0, 6.0)); // ground truth
   initialEstimate.insert(l2, Point2(-4.0, 0.0)); // starting with a separate reference frame
 

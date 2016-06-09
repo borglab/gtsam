@@ -266,23 +266,12 @@ class Point2 {
 
   // Group
   static gtsam::Point2 identity();
-  gtsam::Point2 inverse() const;
-  gtsam::Point2 compose(const gtsam::Point2& p2) const;
-  gtsam::Point2 between(const gtsam::Point2& p2) const;
-
-  // Manifold
-  gtsam::Point2 retract(Vector v) const;
-  Vector localCoordinates(const gtsam::Point2& p) const;
-
-  // Lie Group
-  static gtsam::Point2 Expmap(Vector v);
-  static Vector Logmap(const gtsam::Point2& p);
 
   // Standard Interface
   double x() const;
   double y() const;
   Vector vector() const;
-  double dist(const gtsam::Point2& p2) const;
+  double distance(const gtsam::Point2& p2) const;
   double norm() const;
 
   // enabling serialization functionality

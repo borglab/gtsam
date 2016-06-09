@@ -140,7 +140,7 @@ namespace simulated2D {
 
     /// Return error and optional derivative
     Vector evaluateError(const Pose& x, boost::optional<Matrix&> H = boost::none) const {
-      return (prior(x, H) - measured_).vector();
+      return (prior(x, H) - measured_);
     }
 
     virtual ~GenericPrior() {}
@@ -186,7 +186,7 @@ namespace simulated2D {
     Vector evaluateError(const Pose& x1, const Pose& x2,
         boost::optional<Matrix&> H1 = boost::none,
         boost::optional<Matrix&> H2 = boost::none) const {
-      return (odo(x1, x2, H1, H2) - measured_).vector();
+      return (odo(x1, x2, H1, H2) - measured_);
     }
 
     virtual ~GenericOdometry() {}
@@ -233,7 +233,7 @@ namespace simulated2D {
     Vector evaluateError(const Pose& x1, const Landmark& x2,
         boost::optional<Matrix&> H1 = boost::none,
         boost::optional<Matrix&> H2 = boost::none) const {
-      return (mea(x1, x2, H1, H2) - measured_).vector();
+      return (mea(x1, x2, H1, H2) - measured_);
     }
 
     virtual ~GenericMeasurement() {}

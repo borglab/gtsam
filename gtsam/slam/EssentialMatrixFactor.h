@@ -139,7 +139,7 @@ public:
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
     Base::print(s);
     std::cout << "  EssentialMatrixFactor2 with measurements\n  ("
-        << dP1_.transpose() << ")' and (" << pn_.vector().transpose()
+        << dP1_.transpose() << ")' and (" << pn_.transpose()
         << ")'" << std::endl;
   }
 
@@ -162,7 +162,7 @@ public:
     // The point d*P1 = (x,y,1) is computed in constructor as dP1_
 
     // Project to normalized image coordinates, then uncalibrate
-    Point2 pn;
+    Point2 pn(0,0);
     if (!DE && !Dd) {
 
       Point3 _1T2 = E.direction().point3();
@@ -195,7 +195,7 @@ public:
 
     }
     Point2 reprojectionError = pn - pn_;
-    return f_ * reprojectionError.vector();
+    return f_ * reprojectionError;
   }
 
 };

@@ -56,8 +56,7 @@ protected:
     // Project and fill error vector
     Vector b(ZDim * m);
     for (size_t i = 0, row = 0; i < m; i++, row += ZDim) {
-      Z e = predicted[i] - measured[i];
-      b.segment<ZDim>(row) = e.vector();
+      b.segment<ZDim>(row) = traits<Z>::Local(measured[i], predicted[i]);
     }
     return b;
   }
@@ -107,7 +106,8 @@ public:
 
     // Allocate result
     size_t m = this->size();
-    std::vector<Z> z(m);
+    std::vector<Z> z;
+    z.reserve(m);
 
     // Allocate derivatives
     if (E) E->resize(ZDim * m, N);
@@ -117,7 +117,7 @@ public:
     for (size_t i = 0; i < m; i++) {
       MatrixZD Fi;
       Eigen::Matrix<double, ZDim, N> Ei;
-      z[i] = this->at(i).project2(point, Fs ? &Fi : 0, E ? &Ei : 0);
+      z.emplace_back(this->at(i).project2(point, Fs ? &Fi : 0, E ? &Ei : 0));
       if (Fs) (*Fs)[i] = Fi;
       if (E) E->block<ZDim, N>(ZDim * i, 0) = Ei;
     }

@@ -273,7 +273,7 @@ TEST( triangulation, onePose) {
   vector<Point2> measurements;
 
   poses += Pose3();
-  measurements += Point2();
+  measurements += Point2(0,0);
 
   CHECK_EXCEPTION(triangulatePoint3(poses, sharedCal, measurements),
       TriangulationUnderconstrainedException);
@@ -282,7 +282,7 @@ TEST( triangulation, onePose) {
 //******************************************************************************
 TEST( triangulation, StereotriangulateNonlinear ) {
 
-  Cal3_S2Stereo::shared_ptr stereoK(new Cal3_S2Stereo(1733.75, 1733.75, 0, 689.645, 508.835, 0.0699612));
+  auto stereoK = boost::make_shared<Cal3_S2Stereo>(1733.75, 1733.75, 0, 689.645, 508.835, 0.0699612);
 
   // two camera poses m1, m2
   Matrix4 m1, m2;

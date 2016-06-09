@@ -179,7 +179,7 @@ namespace gtsam {
      */
     static Rot3 AxisAngle(const Point3& axis, double angle) {
 #ifdef GTSAM_USE_QUATERNIONS
-      return gtsam::Quaternion(Eigen::AngleAxis<double>(angle, axis.vector()));
+      return gtsam::Quaternion(Eigen::AngleAxis<double>(angle, axis));
 #else
       return Rot3(SO3::AxisAngle(axis,angle));
 #endif

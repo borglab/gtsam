@@ -193,7 +193,7 @@ TEST(ExpressionFactor, Binary) {
   internal::ExecutionTraceStorage traceStorage[size];
   internal::ExecutionTrace<Point2> trace;
   Point2 value = binary.traceExecution(values, trace, traceStorage);
-  EXPECT(assert_equal(Point2(),value, 1e-9));
+  EXPECT(assert_equal(Point2(0,0),value, 1e-9));
   // trace.print();
 
   // Expected Jacobians
@@ -248,7 +248,7 @@ TEST(ExpressionFactor, Shallow) {
   internal::ExecutionTraceStorage traceStorage[size];
   internal::ExecutionTrace<Point2> trace;
   Point2 value = expression.traceExecution(values, trace, traceStorage);
-  EXPECT(assert_equal(Point2(),value, 1e-9));
+  EXPECT(assert_equal(Point2(0,0),value, 1e-9));
   // trace.print();
 
   // Expected Jacobians

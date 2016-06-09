@@ -55,8 +55,8 @@ struct traits<PinholeFactor> : public Testable<PinholeFactor> {};
 
 TEST(SmartFactorBase, Pinhole) {
   PinholeFactor f= PinholeFactor(unit2);
-  f.add(Point2(), 1);
-  f.add(Point2(), 2);
+  f.add(Point2(0,0), 1);
+  f.add(Point2(0,0), 2);
   EXPECT_LONGS_EQUAL(2 * 2, f.dim());
 }
 

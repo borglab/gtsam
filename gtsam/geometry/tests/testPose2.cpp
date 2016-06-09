@@ -43,7 +43,7 @@ TEST(Pose2 , Concept) {
 
 /* ************************************************************************* */
 TEST(Pose2, constructors) {
-  Point2 p;
+  Point2 p(0,0);
   Pose2 pose(0,p);
   Pose2 origin;
   assert_equal(pose,origin);
@@ -371,7 +371,7 @@ TEST(Pose2, compose_c)
 /* ************************************************************************* */
 TEST(Pose2, inverse )
 {
-  Point2 origin, t(1,2);
+  Point2 origin(0,0), t(1,2);
   Pose2 gTl(M_PI/2.0, t); // robot at (1,2) looking towards y
 
   Pose2 identity, lTg = gTl.inverse();
@@ -409,7 +409,7 @@ namespace {
 /* ************************************************************************* */
 TEST( Pose2, matrix )
 {
-  Point2 origin, t(1,2);
+  Point2 origin(0,0), t(1,2);
   Pose2 gTl(M_PI/2.0, t); // robot at (1,2) looking towards y
   Matrix gMl = matrix(gTl);
   EXPECT(assert_equal((Matrix(3,3) <<
@@ -743,7 +743,7 @@ namespace {
   /* ************************************************************************* */
   struct Triangle { size_t i_,j_,k_;};
 
-  boost::optional<Pose2> align(const vector<Point2>& ps, const vector<Point2>& qs,
+  boost::optional<Pose2> align2(const vector<Point2>& ps, const vector<Point2>& qs,
     const pair<Triangle, Triangle>& trianglePair) {
       const Triangle& t1 = trianglePair.first, t2 = trianglePair.second;
       vector<Point2Pair> correspondences;
@@ -762,7 +762,7 @@ TEST(Pose2, align_4) {
   Triangle t1; t1.i_=0; t1.j_=1; t1.k_=2;
   Triangle t2; t2.i_=1; t2.j_=2; t2.k_=0;
 
-  boost::optional<Pose2> actual = align(ps, qs, make_pair(t1,t2));
+  boost::optional<Pose2> actual = align2(ps, qs, make_pair(t1,t2));
   EXPECT(assert_equal(expected, *actual));
 }
 

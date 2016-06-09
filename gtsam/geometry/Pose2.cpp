@@ -53,21 +53,21 @@ void Pose2::print(const string& s) const {
 
 /* ************************************************************************* */
 bool Pose2::equals(const Pose2& q, double tol) const {
-  return t_.equals(q.t_, tol) && r_.equals(q.r_, tol);
+  return equal_with_abs_tol(t_, q.t_, tol) && r_.equals(q.r_, tol);
 }
 
 /* ************************************************************************* */
 Pose2 Pose2::Expmap(const Vector3& xi, OptionalJacobian<3, 3> H) {
-  if (H) *H = Pose2::ExpmapDerivative(xi);
   assert(xi.size() == 3);
-  Point2 v(xi(0),xi(1));
-  double w = xi(2);
+  if (H) *H = Pose2::ExpmapDerivative(xi);
+  const Point2 v(xi(0),xi(1));
+  const double w = xi(2);
   if (std::abs(w) < 1e-10)
     return Pose2(xi[0], xi[1], xi[2]);
   else {
-    Rot2 R(Rot2::fromAngle(w));
-    Point2 v_ortho = R_PI_2 * v; // points towards rot center
-    Point2 t = (v_ortho - R.rotate(v_ortho)) / w;
+    const Rot2 R(Rot2::fromAngle(w));
+    const Point2 v_ortho = R_PI_2 * v; // points towards rot center
+    const Point2 t = (v_ortho - R.rotate(v_ortho)) / w;
     return Pose2(R, t);
   }
 }
@@ -249,7 +249,7 @@ double Pose2::range(const Point2& point,
   Point2 d = point - t_;
   if (!Hpose && !Hpoint) return d.norm();
   Matrix12 D_r_d;
-  double r = d.norm(D_r_d);
+  double r = norm2(d, D_r_d);
   if (Hpose) {
       Matrix23 D_d_pose;
       D_d_pose << -r_.c(),  r_.s(),  0.0,
@@ -267,7 +267,7 @@ double Pose2::range(const Pose2& pose,
   Point2 d = pose.t() - t_;
   if (!Hpose && !Hother) return d.norm();
   Matrix12 D_r_d;
-  double r = d.norm(D_r_d);
+  double r = norm2(d, D_r_d);
   if (Hpose) {
       Matrix23 D_d_pose;
       D_d_pose <<
@@ -311,7 +311,7 @@ boost::optional<Pose2> align(const vector<Point2Pair>& pairs) {
   if (n<2) return boost::none; // we need at least two pairs
 
   // calculate centroids
-  Point2 cp,cq;
+  Point2 cp(0,0), cq(0,0);
   for(const Point2Pair& pair: pairs) {
     cp += pair.first;
     cq += pair.second;
