@@ -225,7 +225,7 @@ int main(int argc, char* argv[])
       // prev_bias.print();
 
       // Print out the position and orientation error for comparison.
-      Vector3d gtsam_position = prev_state.pose().translation().vector();
+      Vector3d gtsam_position = prev_state.pose().translation();
       Vector3d position_error = gtsam_position - gps.head<3>();
       //cout << "gtsam_position " << gtsam_position.transpose() << endl;
       //cout << "  gps_position " << gps.head<3>().transpose() << endl;
