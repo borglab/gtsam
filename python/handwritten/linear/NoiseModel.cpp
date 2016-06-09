@@ -28,6 +28,20 @@
 
 #include "gtsam/linear/NoiseModel.h"
 
+/* Fix to avoid registration warnings */
+// Solution taken from https://github.com/BVLC/caffe/pull/4069/commits/673e8cfc0b8f05f9fa3ebbad7cc6202822e5d9c5 
+#define REGISTER_SHARED_PTR_TO_PYTHON(PTR) do { \
+  const boost::python::type_info info = \
+    boost::python::type_id<boost::shared_ptr<PTR > >(); \
+  const boost::python::converter::registration* reg = \
+    boost::python::converter::registry::query(info); \
+  if (reg == NULL) { \
+    boost::python::register_ptr_to_python<boost::shared_ptr<PTR > >(); \
+  } else if ((*reg).m_to_python == NULL) { \
+    boost::python::register_ptr_to_python<boost::shared_ptr<PTR > >(); \
+  } \
+} while (0)
+
 using namespace boost::python;
 using namespace gtsam;
 using namespace gtsam::noiseModel;
@@ -110,7 +124,7 @@ void exportNoiseModels(){
     .def("Covariance",&Gaussian::Covariance, Gaussian_Covariance_overloads())
     .staticmethod("Covariance")
   ;
-  register_ptr_to_python< boost::shared_ptr<Gaussian> >();
+  REGISTER_SHARED_PTR_TO_PYTHON(Gaussian);
   
   class_<Diagonal, boost::shared_ptr<Diagonal>, bases<Gaussian> >("Diagonal", no_init)
     .def("Sigmas",&Diagonal::Sigmas, Diagonal_Sigmas_overloads())
@@ -120,7 +134,7 @@ void exportNoiseModels(){
     .def("Precisions",&Diagonal::Precisions, Diagonal_Precisions_overloads())
     .staticmethod("Precisions")
   ;
-  register_ptr_to_python< boost::shared_ptr<Diagonal> >();
+  REGISTER_SHARED_PTR_TO_PYTHON(Diagonal);
   
   class_<Isotropic, boost::shared_ptr<Isotropic>, bases<Diagonal> >("Isotropic", no_init)
     .def("Sigma",&Isotropic::Sigma, Isotropic_Sigma_overloads())
@@ -130,12 +144,12 @@ void exportNoiseModels(){
     .def("Precision",&Isotropic::Precision, Isotropic_Precision_overloads())
     .staticmethod("Precision")
   ;
-  register_ptr_to_python< boost::shared_ptr<Isotropic> >();
+  REGISTER_SHARED_PTR_TO_PYTHON(Isotropic);
   
   class_<Unit, boost::shared_ptr<Unit>, bases<Isotropic> >("Unit", no_init)
     .def("Create",&Unit::Create)
     .staticmethod("Create")
   ;
 
-  register_ptr_to_python< boost::shared_ptr<Unit> >();
+  REGISTER_SHARED_PTR_TO_PYTHON(Unit);
 }

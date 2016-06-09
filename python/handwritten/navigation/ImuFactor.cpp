@@ -22,6 +22,21 @@
 #include "gtsam/navigation/ImuFactor.h"
 #include "gtsam/navigation/GPSFactor.h"
 
+/* Fix to avoid registration warnings */
+// Solution taken from https://github.com/BVLC/caffe/pull/4069/commits/673e8cfc0b8f05f9fa3ebbad7cc6202822e5d9c5 
+#define REGISTER_SHARED_PTR_TO_PYTHON(PTR) do { \
+  const boost::python::type_info info = \
+    boost::python::type_id<boost::shared_ptr<PTR > >(); \
+  const boost::python::converter::registration* reg = \
+    boost::python::converter::registry::query(info); \
+  if (reg == NULL) { \
+    boost::python::register_ptr_to_python<boost::shared_ptr<PTR > >(); \
+  } else if ((*reg).m_to_python == NULL) { \
+    boost::python::register_ptr_to_python<boost::shared_ptr<PTR > >(); \
+  } \
+} while (0)
+
+
 using namespace boost::python;
 using namespace gtsam;
 
@@ -78,7 +93,7 @@ void exportImuFactor() {
       .staticmethod("MakeSharedU");
 
   // NOTE(frank): https://mail.python.org/pipermail/cplusplus-sig/2016-January/017362.html
-  register_ptr_to_python< boost::shared_ptr<PreintegrationParams> >();
+  REGISTER_SHARED_PTR_TO_PYTHON(PreintegrationParams);
 
   class_<PreintegrationType>(
 #ifdef GTSAM_TANGENT_PREINTEGRATION
@@ -105,21 +120,21 @@ void exportImuFactor() {
       .def("error", &ImuFactor::error)
       .def(init<Key, Key, Key, Key, Key, const PreintegratedImuMeasurements&>())
       .def(repr(self));
-  register_ptr_to_python<boost::shared_ptr<ImuFactor>>();
+  REGISTER_SHARED_PTR_TO_PYTHON(ImuFactor);
 
   class_<ImuFactor2, bases<NonlinearFactor>, boost::shared_ptr<ImuFactor2>>("ImuFactor2")
       .def("error", &ImuFactor2::error)
       .def(init<Key, Key, Key, const PreintegratedImuMeasurements&>())
       .def(repr(self));
-  register_ptr_to_python<boost::shared_ptr<ImuFactor2>>();
+  REGISTER_SHARED_PTR_TO_PYTHON(ImuFactor2);
 
   class_<GPSFactor, bases<NonlinearFactor>, boost::shared_ptr<GPSFactor>>("GPSFactor")
       .def("error", &GPSFactor::error)
       .def(init<Key, const Point3&, noiseModel::Base::shared_ptr>());
-  register_ptr_to_python<boost::shared_ptr<GPSFactor>>();
+  REGISTER_SHARED_PTR_TO_PYTHON(GPSFactor);
 
   class_<GPSFactor2, bases<NonlinearFactor>, boost::shared_ptr<GPSFactor2>>("GPSFactor2")
       .def("error", &GPSFactor2::error)
       .def(init<Key, const Point3&, noiseModel::Base::shared_ptr>());
-  register_ptr_to_python<boost::shared_ptr<GPSFactor2>>();
+  REGISTER_SHARED_PTR_TO_PYTHON(GPSFactor2);
 }
