@@ -28,23 +28,7 @@
 
 static const double kDt = 0.1;
 
-boost::function<NavState(const NavState, const Vector3&, const Vector3&)> deltaXij =
-    [=](const NavState inputState, const Vector3& a, const Vector3& w) {
-      //        ManifoldPreintegration pim(testing::Params());
-      Matrix9 aH1;
-      Matrix93 aH2, aH3;
-      //        pim.update(a, w, kDt,&aH1,&aH2,&aH3);
-      //        return pim.deltaXij();
-      NavState outputState = inputState.update(a, w, kDt, aH1, aH2, aH3);
-      return outputState;
-    };
-
-NavState f(const NavState& inputState, const Vector3& a, const Vector3& w) {
-  Matrix9 aH1;
-  Matrix93 aH2, aH3;
-  NavState outputState = inputState.update(a, w, kDt, aH1, aH2, aH3);
-  return outputState;
-}
+const imuBias::ConstantBias fixedBias(Vector3(0.1,0.2,0.1),Vector3(0.1,0.1,0.4));
 
 namespace testing {
 // Create default parameters with Z-down and above noise parameters
@@ -57,84 +41,42 @@ static boost::shared_ptr<PreintegrationParams> Params() {
 }
 }
 
-/* ************************************************************************* */
-TEST(ManifoldPreintegration, UpdateEstimate1) {
+NavState fupdate(const NavState& inputState, const Vector3& a, const Vector3& w) {
+  Matrix9 aH1;
+  Matrix93 aH2, aH3;
+  // Correct for bias in the sensor frame
+  Vector3 a_cor = fixedBias.correctAccelerometer(a);
+  Vector3 w_cor = fixedBias.correctGyroscope(w);
+  NavState outputState = inputState.update(a_cor, w_cor, kDt, aH1, aH2, aH3);
+  return outputState;
+}
+
+Vector9 fbias(const imuBias::ConstantBias& bias) {
   ManifoldPreintegration pim0(testing::Params());
-  ManifoldPreintegration pim(pim0);
+  return pim0.biasCorrectedDelta(bias);
+}
+
+/* ************************************************************************* */
+TEST(ManifoldPreintegration, UpdateEstimate) {
+  ManifoldPreintegration pim(testing::Params(),fixedBias);
   const Vector3 acc(0.1, 0.2, 10), omega(0.1, 0.2, 0.3);
   Matrix9 aH1;
   Matrix93 aH2, aH3;
   pim.update(acc, omega, kDt, &aH1, &aH2, &aH3);
   NavState state;
 
-//  boost::function<NavState(const NavState, const Vector3&, const Vector3&)> deltaXij =
-//      [=](const NavState inputState, const Vector3& a, const Vector3& w) {
-//        //        ManifoldPreintegration pim(testing::Params());
-//        Matrix9 aH1;
-//        Matrix93 aH2, aH3;
-//        //        pim.update(a, w, kDt,&aH1,&aH2,&aH3);
-//        //        return pim.deltaXij();
-//        NavState outputState = inputState.update(a, w, kDt, aH1, aH2, aH3);
-//        return outputState;
-//      };
-    EXPECT(assert_equal(numericalDerivative31(f, state, acc, omega), aH1, 1e-9));
-    EXPECT(assert_equal(numericalDerivative32(f, state, acc, omega), aH2, 1e-9));
-    EXPECT(assert_equal(numericalDerivative33(f, state, acc, omega), aH3, 1e-9));
-
-//  EXPECT(assert_equal(numericalDerivative31(f, pim0, zeta, acc, omega), aH1, 1e-9));
-//  EXPECT(assert_equal(numericalDerivative32(f, pim0, zeta, acc, omega), aH2, 1e-9));
-//  EXPECT(assert_equal(numericalDerivative33(f, pim0, zeta, acc, omega), aH3, 1e-9));
+  EXPECT(assert_equal(numericalDerivative31(fupdate, state, acc, omega), aH1, 1e-9));
+  EXPECT(assert_equal(numericalDerivative32(fupdate, state, acc, omega), aH2, 1e-9));
+  EXPECT(assert_equal(numericalDerivative33(fupdate, state, acc, omega), aH3, 1e-9));
 }
 
-/* ************************************************************************* *
-TEST(ManifoldPreintegration, BiasCorrectionJacobians) {
-  testing::SomeMeasurements measurements;
-
-  boost::function<Rot3(const Vector3&, const Vector3&)> deltaRij =
-      [=](const Vector3& a, const Vector3& w) {
-        ManifoldPreintegration pim(testing::Params(), Bias(a, w));
-        testing::integrateMeasurements(measurements, &pim);
-        return pim.deltaRij();
-      };
-
-  boost::function<Point3(const Vector3&, const Vector3&)> deltaPij =
-      [=](const Vector3& a, const Vector3& w) {
-        ManifoldPreintegration pim(testing::Params(), Bias(a, w));
-        testing::integrateMeasurements(measurements, &pim);
-        return pim.deltaPij();
-      };
-
-  boost::function<Vector3(const Vector3&, const Vector3&)> deltaVij =
-      [=](const Vector3& a, const Vector3& w) {
-        ManifoldPreintegration pim(testing::Params(), Bias(a, w));
-        testing::integrateMeasurements(measurements, &pim);
-        return pim.deltaVij();
-      };
-
-  // Actual pre-integrated values
+/* ************************************************************************* */
+TEST(ManifoldPreintegration, biasCorrectedDelta1) {
   ManifoldPreintegration pim(testing::Params());
-  testing::integrateMeasurements(measurements, &pim);
-
-  EXPECT(
-      assert_equal(numericalDerivative21(deltaRij, kZero, kZero),
-          Matrix3(Z_3x3)));
-  EXPECT(
-      assert_equal(numericalDerivative22(deltaRij, kZero, kZero),
-          pim.delRdelBiasOmega(), 1e-3));
-
-  EXPECT(
-      assert_equal(numericalDerivative21(deltaPij, kZero, kZero),
-          pim.delPdelBiasAcc()));
-  EXPECT(
-      assert_equal(numericalDerivative22(deltaPij, kZero, kZero),
-          pim.delPdelBiasOmega(), 1e-3));
-
-  EXPECT(
-      assert_equal(numericalDerivative21(deltaVij, kZero, kZero),
-          pim.delVdelBiasAcc()));
-  EXPECT(
-      assert_equal(numericalDerivative22(deltaVij, kZero, kZero),
-          pim.delVdelBiasOmega(), 1e-3));
+  Matrix96 aH;
+  const imuBias::ConstantBias bias;
+  pim.biasCorrectedDelta(bias, aH);
+  EXPECT(assert_equal(numericalDerivative11(fbias, bias), aH, 1e-9));
 }
 
 /* ************************************************************************* */
