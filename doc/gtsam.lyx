@@ -139,7 +139,7 @@ September 2014
 \begin_layout Standard
 \begin_inset CommandInset include
 LatexCommand input
-filename "../common_macros.tex"
+filename "common_macros.tex"
 
 \end_inset
 
@@ -2129,12 +2129,12 @@ loop closure
 placement h
 wide false
 sideways false
-status collapsed
+status open
 
 \begin_layout Plain Layout
 \align center
 \begin_inset Graphics
-	filename figures/PoseSLAM/example.pdf
+	filename images/example1.pdf
 	width 80text%
 	BoundingBox 30bp 170bp 610bp 630bp
 	clip
@@ -2662,12 +2662,12 @@ reference "fig:SLAM"
 placement h
 wide false
 sideways false
-status collapsed
+status open
 
 \begin_layout Plain Layout
 \align center
 \begin_inset Graphics
-	filename figures/PlanarSLAM/example.pdf
+	filename images/example2.pdf
 	scale 47
 	BoundingBox 90bp 220bp 520bp 555bp
 	clip
@@ -3014,12 +3014,12 @@ A Real-World Example
 placement h
 wide false
 sideways false
-status collapsed
+status open
 
 \begin_layout Plain Layout
 \align center
 \begin_inset Graphics
-	filename figures/PlanarSLAM/Victoria.pdf
+	filename images/Victoria.pdf
 	width 90text%
 	BoundingBox 0bp 0bp 420bp 180bp
 	clip

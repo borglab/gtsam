@@ -1,0 +1,7 @@
+>> graph.error(initialEstimate)
+ans =
+   20.1086
+
+>> graph.error(result)
+ans =
+   8.2631e-18

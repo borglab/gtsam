@@ -1,0 +1,14 @@
+Factor graph:
+size: 5
+factor 0: BetweenFactor(1,2)
+  measured(2, 0, 0)
+  noise model: diagonal sigmas [0.2; 0.2; 0.1];
+factor 1: BetweenFactor(2,3)
+  measured(2, 0, 0)
+  noise model: diagonal sigmas [0.2; 0.2; 0.1];
+factor 2: keys = { 1 }
+  noise model: diagonal sigmas [0.1; 0.1];
+factor 3: keys = { 2 }
+  noise model: diagonal sigmas [0.1; 0.1];
+factor 4: keys = { 3 }
+  noise model: diagonal sigmas [0.1; 0.1];
