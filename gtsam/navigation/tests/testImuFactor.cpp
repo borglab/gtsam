@@ -58,6 +58,41 @@ Rot3 evaluateRotationError(const ImuFactor& factor, const Pose3& pose_i,
 } // namespace
 
 /* ************************************************************************* */
+TEST(ImuFactor, PreintegratedMeasurementsConstruction) {
+  // Actual pre-integrated values
+  PreintegratedImuMeasurements actual(testing::Params());
+  EXPECT(assert_equal(Rot3(), actual.deltaRij()));
+  EXPECT(assert_equal(kZero, actual.deltaPij()));
+  EXPECT(assert_equal(kZero, actual.deltaVij()));
+  DOUBLES_EQUAL(0.0, actual.deltaTij(), 1e-9);
+}
+
+/* ************************************************************************* */
+TEST(ImuFactor, PreintegratedMeasurementsReset) {
+
+	auto p = testing::Params();
+	// Create a preintegrated measurement struct and integrate
+	PreintegratedImuMeasurements pimActual(p);
+	Vector3 measuredAcc(0.5, 1.0, 0.5);
+	Vector3 measuredOmega(0.1, 0.3, 0.1);
+	double deltaT = 1.0;
+	pimActual.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+
+	// reset and make sure that it is the same as a fresh one
+	pimActual.resetIntegration();
+	CHECK(assert_equal(pimActual, PreintegratedImuMeasurements(p)));
+
+	// Now create one with a different bias ..
+	Bias nonZeroBias(Vector3(0.2, 0, 0), Vector3(0.1, 0, 0.3));
+	PreintegratedImuMeasurements pimExpected(p, nonZeroBias);
+
+	// integrate again, then reset to a new bias
+	pimActual.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+	pimActual.resetIntegrationAndSetBias(nonZeroBias);
+	CHECK(assert_equal(pimActual, pimExpected));
+}
+
+/* ************************************************************************* */
 TEST(ImuFactor, Accelerating) {
   const double a = 0.2, v = 50;
 
@@ -83,24 +118,20 @@ TEST(ImuFactor, Accelerating) {
 /* ************************************************************************* */
 TEST(ImuFactor, PreintegratedMeasurements) {
   // Measurements
-  Vector3 measuredAcc(0.1, 0.0, 0.0);
-  Vector3 measuredOmega(M_PI / 100.0, 0.0, 0.0);
+  const double a = 0.1, w = M_PI / 100.0;
+  Vector3 measuredAcc(a, 0.0, 0.0);
+  Vector3 measuredOmega(w, 0.0, 0.0);
   double deltaT = 0.5;
 
   // Expected pre-integrated values
-  Vector3 expectedDeltaR1(0.5 * M_PI / 100.0, 0.0, 0.0);
-  Vector3 expectedDeltaP1(0.5 * 0.1 * 0.5 * 0.5, 0, 0);
+  Vector3 expectedDeltaR1(w * deltaT, 0.0, 0.0);
+  Vector3 expectedDeltaP1(0.5 * a * deltaT*deltaT, 0, 0);
   Vector3 expectedDeltaV1(0.05, 0.0, 0.0);
 
   // Actual pre-integrated values
   PreintegratedImuMeasurements actual(testing::Params());
-  EXPECT(assert_equal(kZero, actual.theta()));
-  EXPECT(assert_equal(kZero, actual.deltaPij()));
-  EXPECT(assert_equal(kZero, actual.deltaVij()));
-  DOUBLES_EQUAL(0.0, actual.deltaTij(), 1e-9);
-
   actual.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
-  EXPECT(assert_equal(expectedDeltaR1, actual.theta()));
+  EXPECT(assert_equal(Rot3::Expmap(expectedDeltaR1), actual.deltaRij()));
   EXPECT(assert_equal(expectedDeltaP1, actual.deltaPij()));
   EXPECT(assert_equal(expectedDeltaV1, actual.deltaVij()));
   DOUBLES_EQUAL(0.5, actual.deltaTij(), 1e-9);
@@ -129,7 +160,7 @@ TEST(ImuFactor, PreintegratedMeasurements) {
 
   // Actual pre-integrated values
   actual.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
-  EXPECT(assert_equal(expectedDeltaR2, actual.theta()));
+  EXPECT(assert_equal(Rot3::Expmap(expectedDeltaR2), actual.deltaRij()));
   EXPECT(assert_equal(expectedDeltaP2, actual.deltaPij()));
   EXPECT(assert_equal(expectedDeltaV2, actual.deltaVij()));
   DOUBLES_EQUAL(1.0, actual.deltaTij(), 1e-9);
@@ -436,27 +467,6 @@ TEST(ImuFactor, fistOrderExponential) {
 
   // This is a first order expansion so the equality is only an approximation
   EXPECT(assert_equal(expectedRot, actualRot));
-}
-
-/* ************************************************************************* */
-TEST(ImuFactor, FirstOrderPreIntegratedMeasurements) {
-  testing::SomeMeasurements measurements;
-
-  boost::function<Vector9(const Vector3&, const Vector3&)> preintegrated =
-      [=](const Vector3& a, const Vector3& w) {
-        PreintegratedImuMeasurements pim(testing::Params(), Bias(a, w));
-        testing::integrateMeasurements(measurements, &pim);
-        return pim.preintegrated();
-      };
-
-  // Actual pre-integrated values
-  PreintegratedImuMeasurements pim(testing::Params());
-  testing::integrateMeasurements(measurements, &pim);
-
-  EXPECT(assert_equal(numericalDerivative21(preintegrated, kZero, kZero),
-                      pim.preintegrated_H_biasAcc()));
-  EXPECT(assert_equal(numericalDerivative22(preintegrated, kZero, kZero),
-                      pim.preintegrated_H_biasOmega(), 1e-3));
 }
 
 /* ************************************************************************* */
@@ -789,6 +799,7 @@ TEST(ImuFactor, bodyPSensorWithBias) {
 }
 
 /* ************************************************************************* */
+#ifdef GTSAM_TANGENT_PREINTEGRATION
 static const double kVelocity = 2.0, kAngularVelocity = M_PI / 6;
 
 struct ImuFactorMergeTest {
@@ -883,6 +894,7 @@ TEST(ImuFactor, MergeWithCoriolis) {
   mergeTest.p_->omegaCoriolis = Vector3(0.1, 0.2, -0.1);
   mergeTest.TestScenarios(result_, name_, kZeroBias, kZeroBias, 1e-4);
 }
+#endif
 
 /* ************************************************************************* */
 // Same values as pre-integration test but now testing covariance

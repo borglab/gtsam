@@ -117,9 +117,9 @@ TEST(testNonlinearISAM, markov_chain_with_disconnects ) {
       new_factors += PriorFactor<Point2>(lm3, landmark3, model2);
 
       // Initialize to origin
-      new_init.insert(lm1, Point2());
-      new_init.insert(lm2, Point2());
-      new_init.insert(lm3, Point2());
+      new_init.insert(lm1, Point2(0,0));
+      new_init.insert(lm2, Point2(0,0));
+      new_init.insert(lm3, Point2(0,0));
     }
 
     isamChol.update(new_factors, new_init);
@@ -194,9 +194,9 @@ TEST(testNonlinearISAM, markov_chain_with_reconnect ) {
       new_factors += PriorFactor<Point2>(lm3, landmark3, model2);
 
       // Initialize to origin
-      new_init.insert(lm1, Point2());
-      new_init.insert(lm2, Point2());
-      new_init.insert(lm3, Point2());
+      new_init.insert(lm1, Point2(0,0));
+      new_init.insert(lm2, Point2(0,0));
+      new_init.insert(lm3, Point2(0,0));
     }
 
     // Reconnect with observation later

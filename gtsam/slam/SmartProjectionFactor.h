@@ -499,8 +499,8 @@ public:
       return Base::totalReprojectionError(cameras, *result_);
     else if (params_.degeneracyMode == HANDLE_INFINITY) {
       // Otherwise, manage the exceptions with rotation-only factors
-      const Point2& z0 = this->measured_.at(0);
-      Unit3 backprojected = cameras.front().backprojectPointAtInfinity(z0);
+      Unit3 backprojected = cameras.front().backprojectPointAtInfinity(
+          this->measured_.at(0));
       return Base::totalReprojectionError(cameras, backprojected);
     } else
       // if we don't want to manage the exceptions we discard the factor

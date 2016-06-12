@@ -104,12 +104,12 @@ TEST( SimpleCamera, backproject2)
   Rot3 rot(1., 0., 0., 0., 0., 1., 0., -1., 0.); // a camera looking down
   SimpleCamera camera(Pose3(rot, origin), K);
 
-  Point3 actual = camera.backproject(Point2(), 1.);
+  Point3 actual = camera.backproject(Point2(0,0), 1.);
   Point3 expected(0., 1., 0.);
   pair<Point2, bool> x = camera.projectSafe(expected);
 
   CHECK(assert_equal(expected, actual));
-  CHECK(assert_equal(Point2(), x.first));
+  CHECK(assert_equal(Point2(0,0), x.first));
   CHECK(x.second);
 }
 

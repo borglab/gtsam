@@ -40,7 +40,7 @@ template<> struct traits<Product> : internal::LieGroupTraits<Product> {
         << m.second.theta() << ")" << endl;
   }
   static bool Equals(const Product& m1, const Product& m2, double tol = 1e-8) {
-    return m1.first.equals(m2.first, tol) && m1.second.equals(m2.second, tol);
+    return traits<Point2>::Equals(m1.first, m2.first, tol) && m1.second.equals(m2.second, tol);
   }
 };
 }

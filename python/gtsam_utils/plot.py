@@ -33,7 +33,7 @@ def plot3DPoints(fignum, values, linespec, marginals=None):
 def plotPose3OnAxes(ax, pose, axisLength=0.1):
     # get rotation and translation (center)
     gRp = pose.rotation().matrix()  # rotation from pose to global
-    C = pose.translation().vector()
+    C = pose.translation()
 
     # draw the camera axes
     xAxis = C + gRp[:, 0] * axisLength

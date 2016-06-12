@@ -74,16 +74,16 @@ int main(int argc, char* argv[]) {
   // 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
   noiseModel::Diagonal::shared_ptr noise = noiseModel::Diagonal::Sigmas(
       (Vector(6) << Vector3::Constant(0.3), Vector3::Constant(0.1)).finished());
-  graph.push_back(PriorFactor<Camera>(0, Camera(poses[0],K), noise));
+  graph.push_back(PriorFactor<Pose3>(0, poses[0], noise));
 
   // Fix the scale ambiguity by adding a prior
-  graph.push_back(PriorFactor<Camera>(1, Camera(poses[0],K), noise));
+  graph.push_back(PriorFactor<Pose3>(1, poses[0], noise));
 
   // Create the initial estimate to the solution
   Values initialEstimate;
   Pose3 delta(Rot3::Rodrigues(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20));
   for (size_t i = 0; i < poses.size(); ++i)
-    initialEstimate.insert(i, Camera(poses[i].compose(delta),K));
+    initialEstimate.insert(i, poses[i].compose(delta));
 
   // We will use LM in the outer optimization loop, but by specifying "Iterative" below
   // We indicate that an iterative linear solver should be used.

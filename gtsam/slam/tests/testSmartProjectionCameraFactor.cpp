@@ -300,20 +300,14 @@ TEST( SmartProjectionCameraFactor, perturbPoseAndOptimizeFromSfM_tracks ) {
 
   SfM_Track track1;
   for (size_t i = 0; i < 3; ++i) {
-    SfM_Measurement measures;
-    measures.first = i + 1; // cameras are from 1 to 3
-    measures.second = measurements_cam1.at(i);
-    track1.measurements.push_back(measures);
+    track1.measurements.emplace_back(i + 1, measurements_cam1.at(i));
   }
   SmartFactor::shared_ptr smartFactor1(new SmartFactor(unit2));
   smartFactor1->add(track1);
 
   SfM_Track track2;
   for (size_t i = 0; i < 3; ++i) {
-    SfM_Measurement measures;
-    measures.first = i + 1; // cameras are from 1 to 3
-    measures.second = measurements_cam2.at(i);
-    track2.measurements.push_back(measures);
+    track2.measurements.emplace_back(i + 1, measurements_cam2.at(i));
   }
   SmartFactor::shared_ptr smartFactor2(new SmartFactor(unit2));
   smartFactor2->add(track2);

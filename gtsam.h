@@ -266,23 +266,12 @@ class Point2 {
 
   // Group
   static gtsam::Point2 identity();
-  gtsam::Point2 inverse() const;
-  gtsam::Point2 compose(const gtsam::Point2& p2) const;
-  gtsam::Point2 between(const gtsam::Point2& p2) const;
-
-  // Manifold
-  gtsam::Point2 retract(Vector v) const;
-  Vector localCoordinates(const gtsam::Point2& p) const;
-
-  // Lie Group
-  static gtsam::Point2 Expmap(Vector v);
-  static Vector Logmap(const gtsam::Point2& p);
 
   // Standard Interface
   double x() const;
   double y() const;
   Vector vector() const;
-  double dist(const gtsam::Point2& p2) const;
+  double distance(const gtsam::Point2& p2) const;
   double norm() const;
 
   // enabling serialization functionality
@@ -2506,30 +2495,8 @@ virtual class PreintegrationParams : gtsam::PreintegratedRotationParams {
   bool   getUse2ndOrderCoriolis()     const;
 };
 
-#include <gtsam/navigation/PreintegrationBase.h>
-virtual class PreintegrationBase {
-  // Constructors
-  PreintegrationBase(const gtsam::PreintegrationParams* params);
-  PreintegrationBase(const gtsam::PreintegrationParams* params,
-      const gtsam::imuBias::ConstantBias& bias);
-
-  // Testable
-  void print(string s) const;
-  bool equals(const gtsam::PreintegrationBase& expected, double tol);
-
-  double deltaTij() const;
-  gtsam::Rot3 deltaRij() const;
-  Vector deltaPij() const;
-  Vector deltaVij() const;
-  Vector biasHatVector() const;
-
-  // Standard Interface
-  gtsam::NavState predict(const gtsam::NavState& state_i,
-      const gtsam::imuBias::ConstantBias& bias) const;
-};
-
 #include <gtsam/navigation/ImuFactor.h>
-virtual class PreintegratedImuMeasurements: gtsam::PreintegrationBase {
+class PreintegratedImuMeasurements {
   // Constructors
   PreintegratedImuMeasurements(const gtsam::PreintegrationParams* params);
   PreintegratedImuMeasurements(const gtsam::PreintegrationParams* params,
@@ -2544,6 +2511,13 @@ virtual class PreintegratedImuMeasurements: gtsam::PreintegrationBase {
       double deltaT);
   void resetIntegration();
   Matrix preintMeasCov() const;
+  double deltaTij() const;
+  gtsam::Rot3 deltaRij() const;
+  Vector deltaPij() const;
+  Vector deltaVij() const;
+  Vector biasHatVector() const;
+  gtsam::NavState predict(const gtsam::NavState& state_i,
+      const gtsam::imuBias::ConstantBias& bias) const;
 };
 
 virtual class ImuFactor: gtsam::NonlinearFactor {
@@ -2559,7 +2533,7 @@ virtual class ImuFactor: gtsam::NonlinearFactor {
 };
 
 #include <gtsam/navigation/CombinedImuFactor.h>
-virtual class PreintegratedCombinedMeasurements: gtsam::PreintegrationBase {
+class PreintegratedCombinedMeasurements {
   // Testable
   void print(string s) const;
   bool equals(const gtsam::PreintegratedCombinedMeasurements& expected,
@@ -2570,6 +2544,13 @@ virtual class PreintegratedCombinedMeasurements: gtsam::PreintegrationBase {
       double deltaT);
   void resetIntegration();
   Matrix preintMeasCov() const;
+  double deltaTij() const;
+  gtsam::Rot3 deltaRij() const;
+  Vector deltaPij() const;
+  Vector deltaVij() const;
+  Vector biasHatVector() const;
+  gtsam::NavState predict(const gtsam::NavState& state_i,
+      const gtsam::imuBias::ConstantBias& bias) const;
 };
 
 virtual class CombinedImuFactor: gtsam::NonlinearFactor {

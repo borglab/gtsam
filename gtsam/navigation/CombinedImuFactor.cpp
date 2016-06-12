@@ -31,22 +31,21 @@ using namespace std;
 //------------------------------------------------------------------------------
 // Inner class PreintegratedCombinedMeasurements
 //------------------------------------------------------------------------------
-void PreintegratedCombinedMeasurements::print(
-    const string& s) const {
-  PreintegrationBase::print(s);
+void PreintegratedCombinedMeasurements::print(const string& s) const {
+  PreintegrationType::print(s);
   cout << "  preintMeasCov [ " << preintMeasCov_ << " ]" << endl;
 }
 
 //------------------------------------------------------------------------------
 bool PreintegratedCombinedMeasurements::equals(
     const PreintegratedCombinedMeasurements& other, double tol) const {
-  return PreintegrationBase::equals(other, tol) &&
-         equal_with_abs_tol(preintMeasCov_, other.preintMeasCov_, tol);
+  return PreintegrationType::equals(other, tol)
+      && equal_with_abs_tol(preintMeasCov_, other.preintMeasCov_, tol);
 }
 
 //------------------------------------------------------------------------------
 void PreintegratedCombinedMeasurements::resetIntegration() {
-  PreintegrationBase::resetIntegration();
+  PreintegrationType::resetIntegration();
   preintMeasCov_.setZero();
 }
 
@@ -68,9 +67,9 @@ void PreintegratedCombinedMeasurements::resetIntegration() {
 void PreintegratedCombinedMeasurements::integrateMeasurement(
     const Vector3& measuredAcc, const Vector3& measuredOmega, double dt) {
   // Update preintegrated measurements.
-  Matrix9 A;  // overall Jacobian wrt preintegrated measurements (df/dx)
+  Matrix9 A; // overall Jacobian wrt preintegrated measurements (df/dx)
   Matrix93 B, C;
-  PreintegrationBase::integrateMeasurement(measuredAcc, measuredOmega, dt, &A, &B, &C);
+  PreintegrationType::update(measuredAcc, measuredOmega, dt, &A, &B, &C);
 
   // Update preintegrated measurements covariance: as in [2] we consider a first
   // order propagation that can be seen as a prediction phase in an EKF
@@ -79,8 +78,8 @@ void PreintegratedCombinedMeasurements::integrateMeasurement(
   // and preintegrated measurements
 
   // Single Jacobians to propagate covariance
-  // TODO(frank): should we not also accout for bias on position?
-  Matrix3 theta_H_biasOmega = - C.topRows<3>();
+  // TODO(frank): should we not also account for bias on position?
+  Matrix3 theta_H_biasOmega = -C.topRows<3>();
   Matrix3 vel_H_biasAcc = -B.bottomRows<3>();
 
   // overall Jacobian wrt preintegrated measurements (df/dx)
@@ -105,18 +104,18 @@ void PreintegratedCombinedMeasurements::integrateMeasurement(
 
   // BLOCK DIAGONAL TERMS
   D_t_t(&G_measCov_Gt) = dt * iCov;
-  D_v_v(&G_measCov_Gt) = (1 / dt) * vel_H_biasAcc *
-                         (aCov + p().biasAccOmegaInt.block<3, 3>(0, 0)) *
-                         (vel_H_biasAcc.transpose());
-  D_R_R(&G_measCov_Gt) = (1 / dt) * theta_H_biasOmega *
-                         (wCov + p().biasAccOmegaInt.block<3, 3>(3, 3)) *
-                         (theta_H_biasOmega.transpose());
+  D_v_v(&G_measCov_Gt) = (1 / dt) * vel_H_biasAcc
+      * (aCov + p().biasAccOmegaInt.block<3, 3>(0, 0))
+      * (vel_H_biasAcc.transpose());
+  D_R_R(&G_measCov_Gt) = (1 / dt) * theta_H_biasOmega
+      * (wCov + p().biasAccOmegaInt.block<3, 3>(3, 3))
+      * (theta_H_biasOmega.transpose());
   D_a_a(&G_measCov_Gt) = dt * p().biasAccCovariance;
   D_g_g(&G_measCov_Gt) = dt * p().biasOmegaCovariance;
 
   // OFF BLOCK DIAGONAL TERMS
-  Matrix3 temp = vel_H_biasAcc * p().biasAccOmegaInt.block<3, 3>(3, 0) *
-                 theta_H_biasOmega.transpose();
+  Matrix3 temp = vel_H_biasAcc * p().biasAccOmegaInt.block<3, 3>(3, 0)
+      * theta_H_biasOmega.transpose();
   D_v_R(&G_measCov_Gt) = temp;
   D_R_v(&G_measCov_Gt) = temp.transpose();
   preintMeasCov_ = F * preintMeasCov_ * F.transpose() + G_measCov_Gt;
@@ -131,7 +130,7 @@ PreintegratedCombinedMeasurements::PreintegratedCombinedMeasurements(
     const Matrix3& biasOmegaCovariance, const Matrix6& biasAccOmegaInt,
     const bool use2ndOrderIntegration) {
   if (!use2ndOrderIntegration)
-    throw("PreintegratedImuMeasurements no longer supports first-order integration: it incorrectly compensated for gravity");
+  throw("PreintegratedImuMeasurements no longer supports first-order integration: it incorrectly compensated for gravity");
   biasHat_ = biasHat;
   boost::shared_ptr<Params> p = Params::MakeSharedD();
   p->gyroscopeCovariance = measuredOmegaCovariance;
@@ -148,12 +147,12 @@ PreintegratedCombinedMeasurements::PreintegratedCombinedMeasurements(
 //------------------------------------------------------------------------------
 // CombinedImuFactor methods
 //------------------------------------------------------------------------------
-CombinedImuFactor::CombinedImuFactor(
-    Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias_i, Key bias_j,
-    const PreintegratedCombinedMeasurements& pim)
-    : Base(noiseModel::Gaussian::Covariance(pim.preintMeasCov_), pose_i, vel_i,
-           pose_j, vel_j, bias_i, bias_j),
-      _PIM_(pim) {}
+CombinedImuFactor::CombinedImuFactor(Key pose_i, Key vel_i, Key pose_j,
+    Key vel_j, Key bias_i, Key bias_j,
+    const PreintegratedCombinedMeasurements& pim) :
+    Base(noiseModel::Gaussian::Covariance(pim.preintMeasCov_), pose_i, vel_i,
+        pose_j, vel_j, bias_i, bias_j), _PIM_(pim) {
+}
 
 //------------------------------------------------------------------------------
 gtsam::NonlinearFactor::shared_ptr CombinedImuFactor::clone() const {
@@ -195,8 +194,8 @@ Vector CombinedImuFactor::evaluateError(const Pose3& pose_i,
   Matrix93 D_r_vel_i, D_r_vel_j;
 
   // error wrt preintegrated measurements
-  Vector9 r_Rpv = _PIM_.computeErrorAndJacobians(pose_i, vel_i, pose_j, vel_j, bias_i,
-      H1 ? &D_r_pose_i : 0, H2 ? &D_r_vel_i : 0, H3 ? &D_r_pose_j : 0,
+  Vector9 r_Rpv = _PIM_.computeErrorAndJacobians(pose_i, vel_i, pose_j, vel_j,
+      bias_i, H1 ? &D_r_pose_i : 0, H2 ? &D_r_vel_i : 0, H3 ? &D_r_pose_j : 0,
       H4 ? &D_r_vel_j : 0, H5 ? &D_r_bias_i : 0);
 
   // if we need the jacobians
@@ -250,11 +249,11 @@ CombinedImuFactor::CombinedImuFactor(
     const CombinedPreintegratedMeasurements& pim, const Vector3& n_gravity,
     const Vector3& omegaCoriolis, const boost::optional<Pose3>& body_P_sensor,
     const bool use2ndOrderCoriolis)
-    : Base(noiseModel::Gaussian::Covariance(pim.preintMeasCov_), pose_i, vel_i,
-           pose_j, vel_j, bias_i, bias_j),
-      _PIM_(pim) {
+: Base(noiseModel::Gaussian::Covariance(pim.preintMeasCov_), pose_i, vel_i,
+    pose_j, vel_j, bias_i, bias_j),
+_PIM_(pim) {
   boost::shared_ptr<CombinedPreintegratedMeasurements::Params> p =
-      boost::make_shared<CombinedPreintegratedMeasurements::Params>(pim.p());
+  boost::make_shared<CombinedPreintegratedMeasurements::Params>(pim.p());
   p->n_gravity = n_gravity;
   p->omegaCoriolis = omegaCoriolis;
   p->body_P_sensor = body_P_sensor;
@@ -263,12 +262,12 @@ CombinedImuFactor::CombinedImuFactor(
 }
 
 void CombinedImuFactor::Predict(const Pose3& pose_i, const Vector3& vel_i,
-                                Pose3& pose_j, Vector3& vel_j,
-                                const imuBias::ConstantBias& bias_i,
-                                CombinedPreintegratedMeasurements& pim,
-                                const Vector3& n_gravity,
-                                const Vector3& omegaCoriolis,
-                                const bool use2ndOrderCoriolis) {
+    Pose3& pose_j, Vector3& vel_j,
+    const imuBias::ConstantBias& bias_i,
+    CombinedPreintegratedMeasurements& pim,
+    const Vector3& n_gravity,
+    const Vector3& omegaCoriolis,
+    const bool use2ndOrderCoriolis) {
   // use deprecated predict
   PoseVelocityBias pvb = pim.predict(pose_i, vel_i, bias_i, n_gravity,
       omegaCoriolis, use2ndOrderCoriolis);
@@ -277,5 +276,6 @@ void CombinedImuFactor::Predict(const Pose3& pose_i, const Vector3& vel_i,
 }
 #endif
 
-} /// namespace gtsam
+}
+ /// namespace gtsam
 

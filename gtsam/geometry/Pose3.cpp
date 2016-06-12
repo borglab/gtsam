@@ -345,7 +345,7 @@ double Pose3::range(const Point3& point, OptionalJacobian<1, 6> H1,
     return local.norm();
   } else {
     Matrix13 D_r_local;
-    const double r = norm(local, D_r_local);
+    const double r = norm3(local, D_r_local);
     if (H1) *H1 = D_r_local * D_local_pose;
     if (H2) *H2 = D_r_local * D_local_point;
     return r;
