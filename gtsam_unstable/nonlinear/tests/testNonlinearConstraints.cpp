@@ -62,11 +62,11 @@ public:
       const LieScalar& x3, std::vector<Matrix>& G11, std::vector<Matrix>& G12,
       std::vector<Matrix>& G13, std::vector<Matrix>& G22,
       std::vector<Matrix>& G23, std::vector<Matrix>& G33) const {
-    G11.push_back(zeros(1, 1));
-    G12.push_back(zeros(1, 1));
-    G13.push_back(zeros(1, 1));
+    G11.push_back(Matrix::Zero(1, 1));
+    G12.push_back(Matrix::Zero(1, 1));
+    G13.push_back(Matrix::Zero(1, 1));
     G22.push_back((Matrix(1, 1) << 2.0).finished());
-    G23.push_back(zeros(1, 1));
+    G23.push_back(Matrix::Zero(1, 1));
     G33.push_back((Matrix(1, 1) << 6.0 * x3.value()).finished());
   }
 };
@@ -126,20 +126,20 @@ public:
       std::vector<Matrix>& G11, std::vector<Matrix>& G12,
       std::vector<Matrix>& G13, std::vector<Matrix>& G22,
       std::vector<Matrix>& G23, std::vector<Matrix>& G33) const {
-    G11.push_back(zeros(2, 2));
+    G11.push_back(Matrix::Zero(2, 2));
     G11.push_back((Matrix(2,2) << 2.0, 0.0, 0.0, 0.0).finished());
 
-    G12.push_back(zeros(2,2));
-    G12.push_back(zeros(2,2));
+    G12.push_back(Matrix::Zero(2, 2));
+    G12.push_back(Matrix::Zero(2, 2));
 
-    G13.push_back(zeros(2,2));
-    G13.push_back(zeros(2,2));
+    G13.push_back(Matrix::Zero(2, 2));
+    G13.push_back(Matrix::Zero(2, 2));
 
     G22.push_back((Matrix(2,2) << 2.0, 0.0, 0.0, 0.0).finished());
-    G22.push_back(zeros(2,2));
+    G22.push_back(Matrix::Zero(2, 2));
 
-    G23.push_back(zeros(2, 2));
-    G23.push_back(zeros(2, 2));
+    G23.push_back(Matrix::Zero(2, 2));
+    G23.push_back(Matrix::Zero(2, 2));
 
     G33.push_back((Matrix(2, 2) << 0.0, 0.0, 0.0, 6.0 * x3.y() ).finished());
     G33.push_back((Matrix(2, 2) << 6.0 * x3.x(), 0.0, 0.0, 0.0 ).finished());

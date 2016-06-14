@@ -51,9 +51,9 @@ public:
       boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
           boost::none) const {
     if (H1)
-      *H1 = eye(1);
+      *H1 = I_1x1;
     if (H2)
-      *H2 = eye(1);
+      *H2 = I_1x1;
     return (Vector(1) << x + y - 1.0).finished();
   }
 };
@@ -65,11 +65,11 @@ TEST(testlcnlpSolver, QPProblem) {
   // Note the Hessian encodes:
   //        0.5*x1'*G11*x1 + x1'*G12*x2 + 0.5*x2'*G22*x2 - x1'*g1 - x2'*g2 + 0.5*f
   // Hence here we have G11 = 2, G12 = 0, G22 = 2, g1 = 0, g2 = 0, f = 0
-  HessianFactor hf(X(1), Y(1), 2.0 * ones(1,1), zero(1), zero(1),
-      2*ones(1,1), zero(1) , 0);
+  HessianFactor hf(X(1), Y(1), 2.0 * Matrix::Ones(1,1), Vector::Zero(1), Vector::Zero(1),
+      2*Matrix::Ones(1,1), Vector::Zero(1) , 0);
 
   EqualityFactorGraph equalities;
-  LinearEquality linearConstraint(X(1), ones(1), Y(1), ones(1), 1*ones(1), dualKey);// x + y - 1 = 0
+  LinearEquality linearConstraint(X(1), Vector::Ones(1), Y(1), Vector::Ones(1), Vector::Ones(1), dualKey);// x + y - 1 = 0
   equalities.push_back(linearConstraint);
 
   // Compare against QP
@@ -81,15 +81,15 @@ TEST(testlcnlpSolver, QPProblem) {
   QPSolver qpSolver(qp);
   // create initial values for optimization
   VectorValues initialVectorValues;
-  initialVectorValues.insert(X(1), zero(1));
-  initialVectorValues.insert(Y(1), ones(1));
+  initialVectorValues.insert(X(1), Vector::Zero(1));
+  initialVectorValues.insert(Y(1), Vector::Ones(1));
   VectorValues expectedSolution = qpSolver.optimize(initialVectorValues).first;
 
   //Instantiate LinearConstraintNLP
   LinearConstraintNLP lcnlp;
   Values linPoint;
-  linPoint.insert<Vector1>(X(1), zero(1));
-  linPoint.insert<Vector1>(Y(1), zero(1));
+  linPoint.insert<Vector1>(X(1), Vector::Zero(1));
+  linPoint.insert<Vector1>(Y(1), Vector::Zero(1));
   lcnlp.cost.add(LinearContainerFactor(hf, linPoint));// wrap it using linearcontainerfactor
   lcnlp.linearEqualities.add(ConstraintProblem1(X(1), Y(1), dualKey));
 
@@ -121,7 +121,7 @@ public:
       boost::none) const {
     if (H)
       *H =
-          (Matrix(1, 6) << zeros(1, 3), pose.rotation().matrix().row(0)).finished();
+          (Matrix(1, 6) << Matrix::Zero(1, 3), pose.rotation().matrix().row(0)).finished();
     return (Vector(1) << pose.x()).finished();
   }
 };
@@ -161,9 +161,9 @@ public:
       boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
           boost::none) const {
     if (H1)
-      *H1 = eye(1);
+      *H1 = I_1x1;
     if (H2)
-      *H2 = eye(1);
+      *H2 = I_1x1;
     return x + y - 1.0;
   }
 };
@@ -175,11 +175,11 @@ TEST(testlcnlpSolver, inequalityConstraint) {
   // Note the Hessian encodes:
   //        0.5*x1'*G11*x1 + x1'*G12*x2 + 0.5*x2'*G22*x2 - x1'*g1 - x2'*g2 + 0.5*f
   // Hence here we have G11 = 2, G12 = 0, G22 = 2, g1 = 0, g2 = 0, f = 0
-  HessianFactor hf(X(1), Y(1), 2.0 * ones(1,1), zero(1), zero(1),
-      2*ones(1,1), zero(1) , 0);
+  HessianFactor hf(X(1), Y(1), 2.0 * Matrix::Ones(1,1), Vector::Zero(1), Vector::Zero(1),
+      2*Matrix::Ones(1,1), Vector::Zero(1) , 0);
 
   InequalityFactorGraph inequalities;
-  LinearInequality linearConstraint(X(1), ones(1), Y(1), ones(1), 1.0, dualKey);// x + y - 1 <= 0
+  LinearInequality linearConstraint(X(1), Vector::Ones(1), Y(1), Vector::Ones(1), 1.0, dualKey);// x + y - 1 <= 0
   inequalities.push_back(linearConstraint);
 
   // Compare against QP
@@ -191,15 +191,15 @@ TEST(testlcnlpSolver, inequalityConstraint) {
   QPSolver qpSolver(qp);
   // create initial values for optimization
   VectorValues initialVectorValues;
-  initialVectorValues.insert(X(1), zero(1));
-  initialVectorValues.insert(Y(1), zero(1));
+  initialVectorValues.insert(X(1), Vector::Zero(1));
+  initialVectorValues.insert(Y(1), Vector::Zero(1));
   VectorValues expectedSolution = qpSolver.optimize(initialVectorValues).first;
 
   //Instantiate LinearConstraintNLP
   LinearConstraintNLP lcnlp;
   Values linPoint;
-  linPoint.insert<Vector1>(X(1), zero(1));
-  linPoint.insert<Vector1>(Y(1), zero(1));
+  linPoint.insert<Vector1>(X(1), Vector::Zero(1));
+  linPoint.insert<Vector1>(Y(1), Vector::Zero(1));
   lcnlp.cost.add(LinearContainerFactor(hf, linPoint));// wrap it using linearcontainerfactor
   lcnlp.linearInequalities.add(InequalityProblem1(X(1), Y(1), dualKey));
 

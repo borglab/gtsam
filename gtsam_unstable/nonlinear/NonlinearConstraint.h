@@ -87,19 +87,19 @@ public:
     std::vector<Matrix> G11;
     evaluateHessians(x1, G11);
 
-    if (dim(lambda) != G11.size()) {
+    if (lambda.size() != G11.size()) {
       throw std::runtime_error(
           "Error in evaluateHessians: the number of returned Gij matrices must be the same as the constraint dimension!");
     }
 
     // Combine the Lagrange-multiplier part into this constraint factor
-    Matrix lG11sum = zeros(G11[0].rows(), G11[0].cols());
+    Matrix lG11sum = Matrix::Zero(G11[0].rows(), G11[0].cols());
     for (size_t i = 0; i < lambda.rows(); ++i) {
       lG11sum += -lambda[i] * G11[i];
     }
 
     HessianFactor::shared_ptr hf(new HessianFactor(Base::key(), lG11sum,
-        zero(X1Dim), 100.0));
+    Vector::Zero(X1Dim), 100.0));
     return hf;
   }
 
@@ -211,15 +211,16 @@ public:
     std::vector<Matrix> G11, G12, G22;
     evaluateHessians(x1, x2, G11, G12, G22);
 
-    if (dim(lambda) != G11.size() || dim(lambda) != G12.size()
-        || dim(lambda) != G22.size()) {
+    if (lambda.size() != G11.size() || lambda.size() != G12.size()
+        || lambda.size() != G22.size()) {
       throw std::runtime_error(
           "Error in evaluateHessians: the number of returned Gij matrices must be the same as the constraint dimension!");
     }
 
     // Combine the Lagrange-multiplier part into this constraint factor
-    Matrix lG11sum = zeros(G11[0].rows(), G11[0].cols()), lG12sum = zeros(
-        G12[0].rows(), G12[0].cols()), lG22sum = zeros(G22[0].rows(),
+    Matrix lG11sum = Matrix::Zero(G11[0].rows(), G11[0].cols()), lG12sum =
+        Matrix::Zero(G12[0].rows(), G12[0].cols()), lG22sum = Matrix::Zero(
+        G22[0].rows(),
             G22[0].cols());
     for (size_t i = 0; i < lambda.rows(); ++i) {
       lG11sum += -lambda[i] * G11[i];
@@ -228,7 +229,8 @@ public:
     }
 
     return boost::make_shared<HessianFactor>(Base::keys_[0], Base::keys_[1],
-        lG11sum, lG12sum, zero(X1Dim), lG22sum, zero(X2Dim), 0.0);
+        lG11sum, lG12sum, Vector::Zero(
+            X1Dim), lG22sum, Vector::Zero(X2Dim), 0.0);
   }
 
   /** evaluate Hessians for lambda factors */
@@ -368,18 +370,19 @@ public:
     std::vector<Matrix> G11, G12, G13, G22, G23, G33;
     evaluateHessians(x1, x2, x3, G11, G12, G13, G22, G23, G33);
 
-    if (dim(lambda) != G11.size() || dim(lambda) != G12.size()
-        || dim(lambda) != G13.size() || dim(lambda) != G22.size()
-        || dim(lambda) != G23.size() || dim(lambda) != G33.size()) {
+    if (lambda.size() != G11.size() || lambda.size() != G12.size()
+        || lambda.size() != G13.size() || lambda.size() != G22.size()
+        || lambda.size() != G23.size() || lambda.size() != G33.size()) {
       throw std::runtime_error(
           "Error in evaluateHessians: the number of returned Gij matrices must be the same as the constraint dimension!");
     }
 
     // Combine the Lagrange-multiplier part into this constraint factor
-    Matrix lG11sum = zeros(G11[0].rows(), G11[0].cols()), lG12sum = zeros(
-        G12[0].rows(), G12[0].cols()), lG13sum = zeros(G13[0].rows(),
-            G13[0].cols()), lG22sum = zeros(G22[0].rows(), G22[0].cols()), lG23sum =
-                zeros(G23[0].rows(), G23[0].cols()), lG33sum = zeros(G33[0].rows(),
+    Matrix lG11sum = Matrix::Zero(G11[0].rows(), G11[0].cols()), lG12sum =
+        Matrix::Zero(G12[0].rows(), G12[0].cols()), lG13sum = Matrix::Zero(
+        G13[0].rows(), G13[0].cols()), lG22sum = Matrix::Zero(G22[0].rows(),
+        G22[0].cols()), lG23sum = Matrix::Zero(G23[0].rows(), G23[0].cols()),
+        lG33sum = Matrix::Zero(G33[0].rows(),
                     G33[0].cols());
     for (size_t i = 0; i < lambda.rows(); ++i) {
       lG11sum += -lambda[i] * G11[i];
@@ -392,8 +395,8 @@ public:
 
     return boost::shared_ptr<HessianFactor>(
         new HessianFactor(Base::keys_[0], Base::keys_[1], Base::keys_[2],
-            lG11sum, lG12sum, lG13sum, zero(X1Dim), lG22sum, lG23sum,
-            zero(X2Dim), lG33sum, zero(X3Dim), 0.0));
+            lG11sum, lG12sum, lG13sum, Vector::Zero(X1Dim), lG22sum, lG23sum,
+            Vector::Zero(X2Dim), lG33sum, Vector::Zero(X3Dim), 0.0));
   }
 
   /**
