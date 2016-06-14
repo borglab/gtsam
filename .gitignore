@@ -1,5 +1,4 @@
 /build*
-/doc*
 *.pyc
 *.DS_Store
 /examples/Data/dubrovnik-3-7-pre-rewritten.txt
@@ -7,3 +6,5 @@
 /examples/Data/pose3example-rewritten.txt
 *.txt.user
 *.txt.user.6d59f0c
+/python-build/
+*.pydevproject

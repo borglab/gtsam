@@ -15,10 +15,9 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
-
+#include <gtsam/base/deprecated/LieMatrix.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Manifold.h>
-#include <gtsam/base/LieMatrix.h>
 
 using namespace gtsam;
 
@@ -30,7 +29,7 @@ TEST( LieMatrix, construction ) {
   Matrix m = (Matrix(2,2) << 1.0,2.0, 3.0,4.0).finished();
   LieMatrix lie1(m), lie2(m);
 
-  EXPECT(lie1.dim() == 4);
+  EXPECT(traits<LieMatrix>::GetDimension(m) == 4);
   EXPECT(assert_equal(m, lie1.matrix()));
   EXPECT(assert_equal(lie1, lie2));
 }
@@ -50,17 +49,17 @@ TEST(LieMatrix, retract) {
   Vector update = (Vector(4) << 3.0, 4.0, 6.0, 7.0).finished();
 
   LieMatrix expected((Matrix(2,2) << 4.0, 6.0, 9.0, 11.0).finished());
-  LieMatrix actual = init.retract(update);
+  LieMatrix actual = traits<LieMatrix>::Retract(init,update);
 
   EXPECT(assert_equal(expected, actual));
 
   Vector expectedUpdate = update;
-  Vector actualUpdate = init.localCoordinates(actual);
+  Vector actualUpdate = traits<LieMatrix>::Local(init,actual);
 
   EXPECT(assert_equal(expectedUpdate, actualUpdate));
 
   Vector expectedLogmap = (Vector(4) << 1, 2, 3, 4).finished();
-  Vector actualLogmap = LieMatrix::Logmap(LieMatrix((Matrix(2,2) << 1.0, 2.0, 3.0, 4.0).finished()));
+  Vector actualLogmap = traits<LieMatrix>::Logmap(LieMatrix((Matrix(2,2) << 1.0, 2.0, 3.0, 4.0).finished()));
   EXPECT(assert_equal(expectedLogmap, actualLogmap));
 }
 

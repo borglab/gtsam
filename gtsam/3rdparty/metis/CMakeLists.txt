@@ -2,14 +2,14 @@ cmake_minimum_required(VERSION 2.8)
 project(METIS)
 
 # Add flags for currect directory and below
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
   add_definitions(-Wno-unused-variable)
   if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 5.0 OR CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL 5.0)
     add_definitions(-Wno-sometimes-uninitialized)
   endif()
 endif()
 
-if(NOT ("${CMAKE_C_COMPILER_ID}" MATCHES "MSVC" OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "MSVC"))
+if(NOT (${CMAKE_C_COMPILER_ID} MATCHES "MSVC" OR ${CMAKE_CXX_COMPILER_ID} MATCHES "MSVC"))
   #add_definitions(-Wno-unknown-pragmas)
 endif()
 
@@ -20,7 +20,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 endif()
 
 set(GKLIB_PATH ${PROJECT_SOURCE_DIR}/GKlib CACHE PATH "path to GKlib")
-set(SHARED FALSE CACHE BOOL "build a shared library")
+set(METIS_SHARED TRUE CACHE BOOL "build a shared library")
 
 if(MSVC)
   set(METIS_INSTALL FALSE)
@@ -29,11 +29,11 @@ else()
 endif()
 
 # Configure libmetis library.
-if(SHARED)
+if(METIS_SHARED)
   set(METIS_LIBRARY_TYPE SHARED)
 else()
   set(METIS_LIBRARY_TYPE STATIC)
-endif(SHARED)
+endif(METIS_SHARED)
 
 include(${GKLIB_PATH}/GKlibSystem.cmake)
 # Add include directories.

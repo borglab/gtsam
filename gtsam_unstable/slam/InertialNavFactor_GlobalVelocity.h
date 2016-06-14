@@ -187,7 +187,7 @@ public:
       Vector GyroCorrected(Bias1.correctGyroscope(measurement_gyro_));
       body_omega_body = body_R_sensor * GyroCorrected;
       Matrix body_omega_body__cross = skewSymmetric(body_omega_body);
-      body_a_body = body_R_sensor * AccCorrected - body_omega_body__cross * body_omega_body__cross * body_P_sensor_->translation().vector();
+      body_a_body = body_R_sensor * AccCorrected - body_omega_body__cross * body_omega_body__cross * body_P_sensor_->translation();
     } else {
       body_a_body = AccCorrected;
     }
@@ -278,9 +278,9 @@ public:
   static inline noiseModel::Gaussian::shared_ptr CalcEquivalentNoiseCov(const noiseModel::Gaussian::shared_ptr& gaussian_acc, const noiseModel::Gaussian::shared_ptr& gaussian_gyro,
       const noiseModel::Gaussian::shared_ptr& gaussian_process){
 
-    Matrix cov_acc = inverse( gaussian_acc->R().transpose() * gaussian_acc->R() );
-    Matrix cov_gyro = inverse( gaussian_gyro->R().transpose() * gaussian_gyro->R() );
-    Matrix cov_process = inverse( gaussian_process->R().transpose() * gaussian_process->R() );
+    Matrix cov_acc = ( gaussian_acc->R().transpose() * gaussian_acc->R() ).inverse();
+    Matrix cov_gyro = ( gaussian_gyro->R().transpose() * gaussian_gyro->R() ).inverse();
+    Matrix cov_process = ( gaussian_process->R().transpose() * gaussian_process->R() ).inverse();
 
     cov_process.block(0,0, 3,3) += cov_gyro;
     cov_process.block(6,6, 3,3) += cov_acc;
@@ -386,12 +386,17 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & boost::serialization::make_nvp("NonlinearFactor2",
         boost::serialization::base_object<Base>(*this));
   }
 
-}; // \class GaussMarkov1stOrderFactor
+}; // \class InertialNavFactor_GlobalVelocity
 
+/// traits
+template<class POSE, class VELOCITY, class IMUBIAS>
+struct traits<InertialNavFactor_GlobalVelocity<POSE, VELOCITY, IMUBIAS> > :
+    public Testable<InertialNavFactor_GlobalVelocity<POSE, VELOCITY, IMUBIAS> > {
+};
 
 } /// namespace aspn

@@ -147,8 +147,10 @@ public:
     return aTp;
   }
 
-};
-// LinearInequality
+}; // \ LinearInequality
 
-}// gtsam
+/// traits
+template<> struct traits<LinearInequality> : public Testable<LinearInequality> {};
+
+} // \ namespace gtsam
 

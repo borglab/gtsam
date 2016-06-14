@@ -47,6 +47,15 @@ TEST( Template, grammar ) {
   EXPECT(actual[2]==Qualified("Vector",Qualified::EIGEN));
   EXPECT(actual[3]==Qualified("Matrix",Qualified::EIGEN));
   actual.clear();
+
+  EXPECT(parse("template<N = {1,2,3,4}>", g, space_p).full);
+  EXPECT_LONGS_EQUAL(4, actual.intList().size());
+  EXPECT(actual.argName()=="N");
+  EXPECT_LONGS_EQUAL(1,actual.intList()[0]);
+  EXPECT_LONGS_EQUAL(2,actual.intList()[1]);
+  EXPECT_LONGS_EQUAL(3,actual.intList()[2]);
+  EXPECT_LONGS_EQUAL(4,actual.intList()[3]);
+  actual.clear();
 }
 
 //******************************************************************************

@@ -10,7 +10,6 @@
 #include <boost/assign/std/set.hpp> // for operator +=
 #include <boost/assign/std/vector.hpp> // for operator +=
 using namespace boost::assign;
-#include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
 #include <CppUnitLite/TestHarness.h>
 
@@ -89,10 +88,10 @@ TEST ( Partition, edgePartitionByMetis )
   vector<size_t> A_expected; A_expected += 0, 1; // frontal
   vector<size_t> B_expected; B_expected += 2, 3; // frontal
   vector<size_t> C_expected;    // separator
-//  BOOST_FOREACH(const size_t a, actual->A)
+//  for(const size_t a: actual->A)
 //    cout << a << " ";
 //  cout << endl;
-//  BOOST_FOREACH(const size_t b, actual->B)
+//  for(const size_t b: actual->B)
 //    cout << b << " ";
 //  cout << endl;
 

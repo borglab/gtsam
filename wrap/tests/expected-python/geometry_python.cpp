@@ -79,6 +79,14 @@ class_<MyTemplateMatrix>("MyTemplateMatrix")
   .def("templatedMethod", &MyTemplateMatrix::templatedMethod);
 ;
 
+class_<MyVector3>("MyVector3")
+  .def("MyVector3", &MyVector3::MyVector3);
+;
+
+class_<MyVector12>("MyVector12")
+  .def("MyVector12", &MyVector12::MyVector12);
+;
+
 class_<MyFactorPosePoint2>("MyFactorPosePoint2")
   .def("MyFactorPosePoint2", &MyFactorPosePoint2::MyFactorPosePoint2);
 ;

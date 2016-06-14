@@ -9,7 +9,7 @@
 #include <tests/smallExample.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/slam/BearingRangeFactor.h>
+#include <gtsam/sam/BearingRangeFactor.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/nonlinear/Values.h>
@@ -23,10 +23,8 @@
 #include <gtsam/base/debug.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/treeTraversal-inst.h>
-#include <gtsam/base/LieScalar.h>
-
-#include <boost/foreach.hpp>
 #include <boost/assign/list_of.hpp>
+#include <gtsam/base/deprecated/LieScalar.h>
 using namespace boost::assign;
 #include <boost/range/adaptor/map.hpp>
 namespace br { using namespace boost::adaptors; using namespace boost::range; }
@@ -187,12 +185,12 @@ done:
 //  Permuted<VectorValues> permuted(permutation, values);
 //
 //  // After permutation, the indices above the threshold are 2 and 2
-//  FastSet<Key> expected;
+//  KeySet expected;
 //  expected.insert(2);
 //  expected.insert(3);
 //
 //  // Indices checked by CheckRelinearization
-//  FastSet<Key> actual = Impl::CheckRelinearization(permuted, 0.1);
+//  KeySet actual = Impl::CheckRelinearization(permuted, 0.1);
 //
 //  EXPECT(assert_equal(expected, actual));
 //}
@@ -213,7 +211,7 @@ struct ConsistencyVisitor
       if(find(node->parent()->children.begin(), node->parent()->children.end(), node) == node->parent()->children.end())
         consistent = false;
     }
-    BOOST_FOREACH(Key j, node->conditional()->frontals())
+    for(Key j: node->conditional()->frontals())
     {
       if(isam.nodes().at(j).get() != node.get())
         consistent = false;
@@ -252,7 +250,7 @@ bool isam_check(const NonlinearFactorGraph& fullgraph, const Values& fullinit, c
   // Check gradient at each node
   bool nodeGradientsOk = true;
   typedef ISAM2::sharedClique sharedClique;
-  BOOST_FOREACH(const sharedClique& clique, isam.nodes() | br::map_values) {
+  for(const sharedClique& clique: isam.nodes() | br::map_values) {
     // Compute expected gradient
     GaussianFactorGraph jfg;
     jfg += clique->conditional();
@@ -302,9 +300,9 @@ TEST(ISAM2, AddFactorsStep1)
   expectedNonlinearFactors += PriorFactor<LieScalar>(11, Zero, model);
   expectedNonlinearFactors += PriorFactor<LieScalar>(2, Zero, model);
 
-  const FastVector<size_t> expectedNewFactorIndices = list_of(1)(3);
+  const FactorIndices expectedNewFactorIndices = list_of(1)(3);
 
-  FastVector<size_t> actualNewFactorIndices;
+  FactorIndices actualNewFactorIndices;
 
   ISAM2::Impl::AddFactorsStep1(newFactors, true, nonlinearFactors, actualNewFactorIndices);
 
@@ -420,7 +418,7 @@ TEST(ISAM2, removeFactors)
   ISAM2 isam = createSlamlikeISAM2(fullinit, fullgraph, ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false));
 
   // Remove the 2nd measurement on landmark 0 (Key 100)
-  FastVector<size_t> toRemove;
+  FactorIndices toRemove;
   toRemove.push_back(12);
   isam.update(NonlinearFactorGraph(), Values(), toRemove);
 
@@ -440,7 +438,7 @@ TEST(ISAM2, removeVariables)
   ISAM2 isam = createSlamlikeISAM2(fullinit, fullgraph, ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false));
 
   // Remove the measurement on landmark 0 (Key 100)
-  FastVector<size_t> toRemove;
+  FactorIndices toRemove;
   toRemove.push_back(7);
   toRemove.push_back(14);
   isam.update(NonlinearFactorGraph(), Values(), toRemove);
@@ -467,7 +465,7 @@ TEST(ISAM2, swapFactors)
   // Remove the measurement on landmark 0 and replace with a different one
   {
     size_t swap_idx = isam.getFactorsUnsafe().size()-2;
-    FastVector<size_t> toRemove;
+    FactorIndices toRemove;
     toRemove.push_back(swap_idx);
     fullgraph.remove(swap_idx);
 
@@ -484,7 +482,7 @@ TEST(ISAM2, swapFactors)
 
   // Check gradient at each node
   typedef ISAM2::sharedClique sharedClique;
-  BOOST_FOREACH(const sharedClique& clique, isam.nodes() | br::map_values) {
+  for(const sharedClique& clique: isam.nodes() | br::map_values) {
     // Compute expected gradient
     GaussianFactorGraph jfg;
     jfg += clique->conditional();
@@ -550,7 +548,7 @@ TEST(ISAM2, constrained_ordering)
     fullinit.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
 
     if(i >= 3)
-      isam.update(newfactors, init, FastVector<size_t>(), constrained);
+      isam.update(newfactors, init, FactorIndices(), constrained);
     else
       isam.update(newfactors, init);
   }
@@ -571,7 +569,7 @@ TEST(ISAM2, constrained_ordering)
     fullinit.insert(100, Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
     fullinit.insert(101, Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
 
-    isam.update(newfactors, init, FastVector<size_t>(), constrained);
+    isam.update(newfactors, init, FactorIndices(), constrained);
     ++ i;
   }
 
@@ -585,7 +583,7 @@ TEST(ISAM2, constrained_ordering)
     init.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
     fullinit.insert((i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
 
-    isam.update(newfactors, init, FastVector<size_t>(), constrained);
+    isam.update(newfactors, init, FactorIndices(), constrained);
   }
 
   // Add odometry from time 10 to 11 and landmark measurement at time 10
@@ -600,7 +598,7 @@ TEST(ISAM2, constrained_ordering)
     init.insert((i+1), Pose2(6.9, 0.1, 0.01));
     fullinit.insert((i+1), Pose2(6.9, 0.1, 0.01));
 
-    isam.update(newfactors, init, FastVector<size_t>(), constrained);
+    isam.update(newfactors, init, FactorIndices(), constrained);
     ++ i;
   }
 
@@ -609,7 +607,7 @@ TEST(ISAM2, constrained_ordering)
 
   // Check gradient at each node
   typedef ISAM2::sharedClique sharedClique;
-  BOOST_FOREACH(const sharedClique& clique, isam.nodes() | br::map_values) {
+  for(const sharedClique& clique: isam.nodes() | br::map_values) {
     // Compute expected gradient
     GaussianFactorGraph jfg;
     jfg += clique->conditional();
@@ -651,7 +649,7 @@ namespace {
   bool checkMarginalizeLeaves(ISAM2& isam, const FastList<Key>& leafKeys) {
     Matrix expectedAugmentedHessian, expected3AugmentedHessian;
     vector<Key> toKeep;
-    BOOST_FOREACH(Key j, isam.getDelta() | br::map_keys)
+    for(Key j: isam.getDelta() | br::map_keys)
       if(find(leafKeys.begin(), leafKeys.end(), j) == leafKeys.end())
         toKeep.push_back(j);
 
@@ -714,7 +712,7 @@ TEST(ISAM2, marginalizeLeaves1)
   constrainedKeys.insert(make_pair(1,1));
   constrainedKeys.insert(make_pair(2,2));
 
-  isam.update(factors, values, FastVector<size_t>(), constrainedKeys);
+  isam.update(factors, values, FactorIndices(), constrainedKeys);
 
   FastList<Key> leafKeys = list_of(0);
   EXPECT(checkMarginalizeLeaves(isam, leafKeys));
@@ -745,7 +743,7 @@ TEST(ISAM2, marginalizeLeaves2)
   constrainedKeys.insert(make_pair(2,2));
   constrainedKeys.insert(make_pair(3,3));
 
-  isam.update(factors, values, FastVector<size_t>(), constrainedKeys);
+  isam.update(factors, values, FactorIndices(), constrainedKeys);
 
   FastList<Key> leafKeys = list_of(0);
   EXPECT(checkMarginalizeLeaves(isam, leafKeys));
@@ -785,7 +783,7 @@ TEST(ISAM2, marginalizeLeaves3)
   constrainedKeys.insert(make_pair(4,4));
   constrainedKeys.insert(make_pair(5,5));
 
-  isam.update(factors, values, FastVector<size_t>(), constrainedKeys);
+  isam.update(factors, values, FactorIndices(), constrainedKeys);
 
   FastList<Key> leafKeys = list_of(0);
   EXPECT(checkMarginalizeLeaves(isam, leafKeys));
@@ -811,7 +809,7 @@ TEST(ISAM2, marginalizeLeaves4)
   constrainedKeys.insert(make_pair(1,1));
   constrainedKeys.insert(make_pair(2,2));
 
-  isam.update(factors, values, FastVector<size_t>(), constrainedKeys);
+  isam.update(factors, values, FactorIndices(), constrainedKeys);
 
   FastList<Key> leafKeys = list_of(1);
   EXPECT(checkMarginalizeLeaves(isam, leafKeys));

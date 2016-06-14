@@ -95,7 +95,7 @@ int main(int argc, char* argv[]) {
 
     // Add an initial guess for the current pose
     // Intentionally initialize the variables off from the ground truth
-    initialEstimate.insert(Symbol('x', i), poses[i].compose(Pose3(Rot3::rodriguez(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20))));
+    initialEstimate.insert(Symbol('x', i), poses[i].compose(Pose3(Rot3::Rodrigues(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20))));
 
     // If this is the first iteration, add a prior on the first pose to set the coordinate frame
     // and a prior on the first landmark to set the scale
@@ -113,7 +113,7 @@ int main(int argc, char* argv[]) {
       // Add initial guesses to all observed landmarks
       // Intentionally initialize the variables off from the ground truth
       for (size_t j = 0; j < points.size(); ++j)
-        initialEstimate.insert(Symbol('l', j), points[j].compose(Point3(-0.25, 0.20, 0.15)));
+        initialEstimate.insert<Point3>(Symbol('l', j), points[j] +Point3(-0.25, 0.20, 0.15));
 
     } else {
       // Update iSAM with the new factors

@@ -180,7 +180,7 @@ inline boost::shared_ptr<const NonlinearFactorGraph> sharedNonlinearFactorGraph(
       new NonlinearFactorGraph);
 
   // prior on x1
-  Point2 mu;
+  Point2 mu(0,0);
   shared_nlf f1(new simulated2D::Prior(mu, sigma0_1, X(1)));
   nlfg->push_back(f1);
 
@@ -260,9 +260,9 @@ inline VectorValues createZeroDelta() {
   using symbol_shorthand::X;
   using symbol_shorthand::L;
   VectorValues c;
-  c.insert(L(1), zero(2));
-  c.insert(X(1), zero(2));
-  c.insert(X(2), zero(2));
+  c.insert(L(1), Z_2x1);
+  c.insert(X(1), Z_2x1);
+  c.insert(X(2), Z_2x1);
   return c;
 }
 
@@ -274,16 +274,16 @@ inline GaussianFactorGraph createGaussianFactorGraph() {
   GaussianFactorGraph fg;
 
   // linearized prior on x1: c[_x1_]+x1=0 i.e. x1=-c[_x1_]
-  fg += JacobianFactor(X(1), 10*eye(2), -1.0*ones(2));
+  fg += JacobianFactor(X(1), 10*I_2x2, -1.0*Vector::Ones(2));
 
   // odometry between x1 and x2: x2-x1=[0.2;-0.1]
-  fg += JacobianFactor(X(1), -10*eye(2), X(2), 10*eye(2), Vector2(2.0, -1.0));
+  fg += JacobianFactor(X(1), -10*I_2x2, X(2), 10*I_2x2, Vector2(2.0, -1.0));
 
   // measurement between x1 and l1: l1-x1=[0.0;0.2]
-  fg += JacobianFactor(X(1), -5*eye(2), L(1), 5*eye(2), Vector2(0.0, 1.0));
+  fg += JacobianFactor(X(1), -5*I_2x2, L(1), 5*I_2x2, Vector2(0.0, 1.0));
 
   // measurement between x2 and l1: l1-x2=[-0.2;0.3]
-  fg += JacobianFactor(X(2), -5*eye(2), L(1), 5*eye(2), Vector2(-1.0, 1.5));
+  fg += JacobianFactor(X(2), -5*I_2x2, L(1), 5*I_2x2, Vector2(-1.0, 1.5));
 
   return fg;
 }
@@ -337,7 +337,7 @@ struct UnaryFactor: public gtsam::NoiseModelFactor1<Point2> {
 
   Vector evaluateError(const Point2& x, boost::optional<Matrix&> A = boost::none) const {
     if (A) *A = H(x);
-    return (h(x) - z_).vector();
+    return (h(x) - z_);
   }
 
 };
@@ -349,7 +349,7 @@ inline boost::shared_ptr<const NonlinearFactorGraph> sharedReallyNonlinearFactor
   using symbol_shorthand::X;
   using symbol_shorthand::L;
   boost::shared_ptr<NonlinearFactorGraph> fg(new NonlinearFactorGraph);
-  Vector z = Vector2(1.0, 0.0);
+  Point2 z(1.0, 0.0);
   double sigma = 0.1;
   boost::shared_ptr<smallOptimize::UnaryFactor> factor(
       new smallOptimize::UnaryFactor(z, noiseModel::Isotropic::Sigma(2,sigma), X(1)));
@@ -409,7 +409,7 @@ inline GaussianFactorGraph createSimpleConstraintGraph() {
   using namespace impl;
   // create unary factor
   // prior on _x_, mean = [1,-1], sigma=0.1
-  Matrix Ax = eye(2);
+  Matrix Ax = I_2x2;
   Vector b1(2);
   b1(0) = 1.0;
   b1(1) = -1.0;
@@ -419,8 +419,8 @@ inline GaussianFactorGraph createSimpleConstraintGraph() {
   // between _x_ and _y_, that is going to be the only factor on _y_
   // |1 0||x_1| + |-1  0||y_1| = |0|
   // |0 1||x_2|   | 0 -1||y_2|   |0|
-  Matrix Ax1 = eye(2);
-  Matrix Ay1 = eye(2) * -1;
+  Matrix Ax1 = I_2x2;
+  Matrix Ay1 = I_2x2 * -1;
   Vector b2 = Vector2(0.0, 0.0);
   JacobianFactor::shared_ptr f2(new JacobianFactor(_x_, Ax1, _y_, Ay1, b2,
       constraintModel));
@@ -450,7 +450,7 @@ inline GaussianFactorGraph createSingleConstraintGraph() {
   using namespace impl;
   // create unary factor
   // prior on _x_, mean = [1,-1], sigma=0.1
-  Matrix Ax = eye(2);
+  Matrix Ax = I_2x2;
   Vector b1(2);
   b1(0) = 1.0;
   b1(1) = -1.0;
@@ -466,7 +466,7 @@ inline GaussianFactorGraph createSingleConstraintGraph() {
   Ax1(0, 1) = 2.0;
   Ax1(1, 0) = 2.0;
   Ax1(1, 1) = 1.0;
-  Matrix Ay1 = eye(2) * 10;
+  Matrix Ay1 = I_2x2 * 10;
   Vector b2 = Vector2(1.0, 2.0);
   JacobianFactor::shared_ptr f2(new JacobianFactor(_x_, Ax1, _y_, Ay1, b2,
       constraintModel));
@@ -492,7 +492,7 @@ inline VectorValues createSingleConstraintValues() {
 inline GaussianFactorGraph createMultiConstraintGraph() {
   using namespace impl;
   // unary factor 1
-  Matrix A = eye(2);
+  Matrix A = I_2x2;
   Vector b = Vector2(-2.0, 2.0);
   JacobianFactor::shared_ptr lf1(new JacobianFactor(_x_, A, b, sigma0_1));
 
@@ -593,11 +593,11 @@ inline boost::tuple<GaussianFactorGraph, VectorValues> planarGraph(size_t N) {
   Values zeros;
   for (size_t x = 1; x <= N; x++)
     for (size_t y = 1; y <= N; y++)
-      zeros.insert(key(x, y), Point2());
+      zeros.insert(key(x, y), Point2(0,0));
   VectorValues xtrue;
   for (size_t x = 1; x <= N; x++)
     for (size_t y = 1; y <= N; y++)
-      xtrue.insert(key(x, y), Point2((double)x, (double)y).vector());
+      xtrue.insert(key(x, y), Point2((double)x, (double)y));
 
   // linearize around zero
   boost::shared_ptr<GaussianFactorGraph> gfg = nlfg.linearize(zeros);

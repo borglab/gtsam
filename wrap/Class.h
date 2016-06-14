@@ -39,7 +39,6 @@
 
 namespace bl = boost::lambda;
 
-#include <boost/foreach.hpp>
 #include <boost/range/adaptor/map.hpp>
 #include <boost/optional.hpp>
 
@@ -106,6 +105,10 @@ public:
   std::vector<Class> expandTemplate(Str templateArg,
       const std::vector<Qualified>& instantiations) const;
 
+  // Create new classes with integer template arguments
+  std::vector<Class> expandTemplate(Str templateArg,
+      const std::vector<int>& integers) const;
+
   /// Add potentially overloaded, potentially templated method
   void addMethod(bool verbose, bool is_const, Str methodName,
       const ArgumentList& argumentList, const ReturnValue& returnValue,
@@ -141,9 +144,9 @@ public:
   friend std::ostream& operator<<(std::ostream& os, const Class& cls) {
     os << "class " << cls.name() << "{\n";
     os << cls.constructor << ";\n";
-    BOOST_FOREACH(const StaticMethod& m, cls.static_methods | boost::adaptors::map_values)
+    for(const StaticMethod& m: cls.static_methods | boost::adaptors::map_values)
       os << m << ";\n";
-    BOOST_FOREACH(const Method& m, cls.methods_ | boost::adaptors::map_values)
+    for(const Method& m: cls.methods_ | boost::adaptors::map_values)
       os << m << ";\n";
     os << "};" << std::endl;
     return os;

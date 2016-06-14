@@ -112,7 +112,7 @@ TEST( Graph, composePoses )
 TEST( GaussianFactorGraph, findMinimumSpanningTree )
 {
   GaussianFactorGraph g;
-  Matrix I = eye(2);
+  Matrix I = I_2x2;
   Vector2 b(0, 0);
   const SharedDiagonal model = noiseModel::Diagonal::Sigmas(Vector2(0.5, 0.5));
   using namespace symbol_shorthand;

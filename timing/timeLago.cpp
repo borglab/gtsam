@@ -19,6 +19,7 @@
 #include <gtsam/slam/dataset.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/lago.h>
+#include <gtsam/geometry/Pose2.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/linear/Sampler.h>
 #include <gtsam/base/timing.h>
@@ -44,7 +45,7 @@ int main(int argc, char *argv[]) {
   Sampler sampler(42u);
   Values::ConstFiltered<Pose2> poses = solution->filter<Pose2>();
   SharedDiagonal noise = noiseModel::Diagonal::Sigmas((Vector(3) << 0.5, 0.5, 15.0 * M_PI / 180.0).finished());
-  BOOST_FOREACH(const Values::ConstFiltered<Pose2>::KeyValuePair& it, poses)
+  for(const Values::ConstFiltered<Pose2>::KeyValuePair& it: poses)
     initial.insert(it.key, it.value.retract(sampler.sampleNewModel(noise)));
 
   // Add prior on the pose having index (key) = 0

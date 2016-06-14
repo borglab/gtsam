@@ -1,6 +1,6 @@
 # install CCOLAMD headers
 install(FILES CCOLAMD/Include/ccolamd.h DESTINATION include/gtsam/3rdparty/CCOLAMD)
-install(FILES UFconfig/UFconfig.h DESTINATION include/gtsam/3rdparty/UFconfig)
+install(FILES SuiteSparse_config/SuiteSparse_config.h DESTINATION include/gtsam/3rdparty/SuiteSparse_config)
 
 if(NOT GTSAM_USE_SYSTEM_EIGEN)
 	# Find plain .h files
@@ -43,7 +43,9 @@ if(NOT GTSAM_USE_SYSTEM_EIGEN)
 endif()
 
 option(GTSAM_BUILD_METIS_EXECUTABLES "Build metis library executables" OFF)
-add_subdirectory(metis)
+if(GTSAM_SUPPORT_NESTED_DISSECTION)
+	add_subdirectory(metis)
+endif()
 
 add_subdirectory(ceres)
 
@@ -58,10 +60,10 @@ add_subdirectory(ceres)
 include(GeographicLib/cmake/FindGeographicLib.cmake)
 
 # Set up the option to install GeographicLib
-if(GEOGRAPHICLIB_FOUND)
-  set(install_geographiclib_default OFF)
-else()
+if(GEOGRAPHICLIB-NOTFOUND)
   set(install_geographiclib_default ON)
+else()
+  set(install_geographiclib_default OFF)
 endif()
 option(GTSAM_INSTALL_GEOGRAPHICLIB "Build and install the 3rd-party library GeographicLib" ${install_geographiclib_default})
 

@@ -30,7 +30,6 @@ using namespace boost::assign;
 #include <sstream>
 #include <CppUnitLite/TestHarness.h>
 #include <boost/tuple/tuple.hpp>
-#include <boost/foreach.hpp>
 
 using namespace std;
 using namespace gtsam;
@@ -148,7 +147,6 @@ TEST( GaussianBayesNet, DeterminantTest )
 }
 
 /* ************************************************************************* */
-typedef Eigen::Matrix<double,10,1> Vector10;
 namespace {
   double computeError(const GaussianBayesNet& gbn, const Vector10& values)
   {

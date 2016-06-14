@@ -45,15 +45,15 @@ TEST( EssentialMatrixConstraint, test ) {
       Rot3::RzRyRx(0.179693265735950, 0.002945368776519, 0.102274823253840),
       Point3(-3.37493895, 6.14660244, -8.93650986));
 
-  Vector expected = zero(5);
+  Vector expected = Z_5x1;
   Vector actual = factor.evaluateError(pose1,pose2);
   CHECK(assert_equal(expected, actual, 1e-8));
 
   // Calculate numerical derivatives
-  Matrix expectedH1 = numericalDerivative11<Vector,Pose3>(
+  Matrix expectedH1 = numericalDerivative11<Vector5,Pose3>(
       boost::bind(&EssentialMatrixConstraint::evaluateError, &factor, _1, pose2,
           boost::none, boost::none), pose1);
-  Matrix expectedH2 = numericalDerivative11<Vector,Pose3>(
+  Matrix expectedH2 = numericalDerivative11<Vector5,Pose3>(
       boost::bind(&EssentialMatrixConstraint::evaluateError, &factor, pose1, _1,
           boost::none, boost::none), pose2);
 

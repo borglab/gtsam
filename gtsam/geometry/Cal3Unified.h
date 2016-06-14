@@ -23,7 +23,6 @@
 #pragma once
 
 #include <gtsam/geometry/Cal3DS2_Base.h>
-#include <gtsam/base/DerivedValue.h>
 
 namespace gtsam {
 
@@ -51,7 +50,7 @@ private:
 
 public:
 
-    Vector10 vector() const ;
+  enum { dimension = 10 };
 
   /// @name Standard Constructors
   /// @{
@@ -76,7 +75,7 @@ public:
   /// @{
 
   /// print with optional string
-  void print(const std::string& s = "") const ;
+  virtual void print(const std::string& s = "") const ;
 
   /// assert equality up to a tolerance
   bool equals(const Cal3Unified& K, double tol = 10e-9) const;
@@ -124,12 +123,17 @@ public:
   /// Return dimensions of calibration manifold object
   static size_t Dim() { return 10; }  //TODO: make a final dimension variable
 
+  /// Return all parameters as a vector
+  Vector10 vector() const ;
+
+  /// @}
+
 private:
 
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
-  void serialize(Archive & ar, const unsigned int version)
+  void serialize(Archive & ar, const unsigned int /*version*/)
   {
     ar & boost::serialization::make_nvp("Cal3Unified",
         boost::serialization::base_object<Cal3DS2_Base>(*this));
@@ -138,23 +142,11 @@ private:
 
 };
 
-// Define GTSAM traits
-namespace traits {
+template<>
+struct traits<Cal3Unified> : public internal::Manifold<Cal3Unified> {};
 
 template<>
-struct GTSAM_EXPORT is_manifold<Cal3Unified> : public boost::true_type{
-};
-
-template<>
-struct GTSAM_EXPORT dimension<Cal3Unified> : public boost::integral_constant<int, 10>{
-};
-
-template<>
-struct GTSAM_EXPORT zero<Cal3Unified> {
-  static Cal3Unified value() { return Cal3Unified();}
-};
-
-}
+struct traits<const Cal3Unified> : public internal::Manifold<Cal3Unified> {};
 
 }
 

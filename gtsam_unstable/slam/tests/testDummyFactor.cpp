@@ -47,7 +47,7 @@ TEST( testDummyFactor, basics ) {
   CHECK(actLinearization);
   noiseModel::Diagonal::shared_ptr model3 = noiseModel::Unit::Create(3);
   GaussianFactor::shared_ptr expLinearization(new JacobianFactor(
-      key1, zeros(3,3), key2, zeros(3,3), zero(3), model3));
+      key1, Matrix::Zero(3,3), key2, Matrix::Zero(3,3), Z_3x1, model3));
   EXPECT(assert_equal(*expLinearization, *actLinearization, tol));
 }
 

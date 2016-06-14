@@ -559,15 +559,15 @@ TEST( ConcurrentBatchSmoother, synchronize_3 )
   ordering = smoother.getOrdering();  // I'm really hoping this is an acceptable ordering...
   GaussianFactorGraph::shared_ptr linearFactors = allFactors.linearize(allValues);
 
-  FastSet<Key> eliminateKeys = linearFactors->keys();
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, filterSeparatorValues) {
+  KeySet eliminateKeys = linearFactors->keys();
+  for(const Values::ConstKeyValuePair& key_value: filterSeparatorValues) {
     eliminateKeys.erase(key_value.key);
   }
   std::vector<Key> variables(eliminateKeys.begin(), eliminateKeys.end());
   GaussianFactorGraph result = *linearFactors->eliminatePartialMultifrontal(variables, EliminateCholesky).second;
 
   expectedSmootherSummarization.resize(0);
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, result) {
+  for(const GaussianFactor::shared_ptr& factor: result) {
     expectedSmootherSummarization.push_back(LinearContainerFactor(factor, allValues));
   }
 

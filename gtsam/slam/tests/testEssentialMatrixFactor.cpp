@@ -8,6 +8,8 @@
 #include <gtsam/slam/EssentialMatrixFactor.h>
 
 #include <gtsam/slam/dataset.h>
+#include <gtsam/nonlinear/expressionTesting.h>
+#include <gtsam/nonlinear/ExpressionFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/geometry/CalibratedCamera.h>
@@ -37,7 +39,9 @@ bool readOK = readBAL(filename, data);
 Rot3 c1Rc2 = data.cameras[1].pose().rotation();
 Point3 c1Tc2 = data.cameras[1].pose().translation();
 PinholeCamera<Cal3_S2> camera2(data.cameras[1].pose(), Cal3_S2());
-EssentialMatrix trueE(c1Rc2, Unit3(c1Tc2));
+Rot3 trueRotation(c1Rc2);
+Unit3 trueDirection(c1Tc2);
+EssentialMatrix trueE(trueRotation, trueDirection);
 double baseline = 0.1; // actual baseline of the camera
 
 Point2 pA(size_t i) {
@@ -84,8 +88,9 @@ TEST (EssentialMatrixFactor, testData) {
 
 //*************************************************************************
 TEST (EssentialMatrixFactor, factor) {
+  Key key(1);
   for (size_t i = 0; i < 5; i++) {
-    EssentialMatrixFactor factor(1, pA(i), pB(i), model1);
+    EssentialMatrixFactor factor(key, pA(i), pB(i), model1);
 
     // Check evaluation
     Vector expected(1);
@@ -96,12 +101,69 @@ TEST (EssentialMatrixFactor, factor) {
 
     // Use numerical derivatives to calculate the expected Jacobian
     Matrix Hexpected;
-    Hexpected = numericalDerivative11<Vector, EssentialMatrix>(
+    typedef Eigen::Matrix<double,1,1> Vector1;
+    Hexpected = numericalDerivative11<Vector1, EssentialMatrix>(
         boost::bind(&EssentialMatrixFactor::evaluateError, &factor, _1,
             boost::none), trueE);
 
     // Verify the Jacobian is correct
     EXPECT(assert_equal(Hexpected, Hactual, 1e-8));
+  }
+}
+
+//*************************************************************************
+TEST(EssentialMatrixFactor, ExpressionFactor) {
+  Key key(1);
+  for (size_t i = 0; i < 5; i++) {
+    boost::function<double(const EssentialMatrix&, OptionalJacobian<1, 5>)> f =
+        boost::bind(&EssentialMatrix::error, _1, vA(i), vB(i), _2);
+    Expression<EssentialMatrix> E_(key); // leaf expression
+    Expression<double> expr(f, E_); // unary expression
+
+    // Test the derivatives using Paul's magic
+    Values values;
+    values.insert(key, trueE);
+    EXPECT_CORRECT_EXPRESSION_JACOBIANS(expr, values, 1e-5, 1e-9);
+
+    // Create the factor
+    ExpressionFactor<double> factor(model1, 0, expr);
+
+    // Check evaluation
+    Vector expected(1);
+    expected << 0;
+    vector<Matrix> Hactual(1);
+    Vector actual = factor.unwhitenedError(values, Hactual);
+    EXPECT(assert_equal(expected, actual, 1e-7));
+  }
+}
+
+//*************************************************************************
+TEST(EssentialMatrixFactor, ExpressionFactorRotationOnly) {
+  Key key(1);
+  for (size_t i = 0; i < 5; i++) {
+    boost::function<double(const EssentialMatrix&, OptionalJacobian<1, 5>)> f =
+        boost::bind(&EssentialMatrix::error, _1, vA(i), vB(i), _2);
+    boost::function<EssentialMatrix(const Rot3&, const Unit3&, OptionalJacobian<5, 3>,
+                                    OptionalJacobian<5, 2>)> g;
+    Expression<Rot3> R_(key);
+    Expression<Unit3> d_(trueDirection);
+    Expression<EssentialMatrix> E_(&EssentialMatrix::FromRotationAndDirection, R_, d_);
+    Expression<double> expr(f, E_);
+
+    // Test the derivatives using Paul's magic
+    Values values;
+    values.insert(key, trueRotation);
+    EXPECT_CORRECT_EXPRESSION_JACOBIANS(expr, values, 1e-5, 1e-9);
+
+    // Create the factor
+    ExpressionFactor<double> factor(model1, 0, expr);
+
+    // Check evaluation
+    Vector expected(1);
+    expected << 0;
+    vector<Matrix> Hactual(1);
+    Vector actual = factor.unwhitenedError(values, Hactual);
+    EXPECT(assert_equal(expected, actual, 1e-7));
   }
 }
 
@@ -159,9 +221,8 @@ TEST (EssentialMatrixFactor2, factor) {
 
     // Check evaluation
     Point3 P1 = data.tracks[i].p, P2 = data.cameras[1].pose().transform_to(P1);
-    const Point2 pi = SimpleCamera::project_to_camera(P2);
-    Point2 reprojectionError(pi - pB(i));
-    Vector expected = reprojectionError.vector();
+    const Point2 pi = PinholeBase::Project(P2);
+    Point2 expected(pi - pB(i));
 
     Matrix Hactual1, Hactual2;
     double d(baseline / P1.z());
@@ -173,8 +234,8 @@ TEST (EssentialMatrixFactor2, factor) {
     boost::function<Vector(const EssentialMatrix&, double)> f = boost::bind(
         &EssentialMatrixFactor2::evaluateError, &factor, _1, _2, boost::none,
         boost::none);
-    Hexpected1 = numericalDerivative21<Vector, EssentialMatrix, double>(f, trueE, d);
-    Hexpected2 = numericalDerivative22<Vector, EssentialMatrix, double>(f, trueE, d);
+    Hexpected1 = numericalDerivative21<Vector2, EssentialMatrix, double>(f, trueE, d);
+    Hexpected2 = numericalDerivative22<Vector2, EssentialMatrix, double>(f, trueE, d);
 
     // Verify the Jacobian is correct
     EXPECT(assert_equal(Hexpected1, Hactual1, 1e-8));
@@ -234,8 +295,7 @@ TEST (EssentialMatrixFactor3, factor) {
     // Check evaluation
     Point3 P1 = data.tracks[i].p;
     const Point2 pi = camera2.project(P1);
-    Point2 reprojectionError(pi - pB(i));
-    Vector expected = reprojectionError.vector();
+    Point2 expected(pi - pB(i));
 
     Matrix Hactual1, Hactual2;
     double d(baseline / P1.z());
@@ -247,8 +307,8 @@ TEST (EssentialMatrixFactor3, factor) {
     boost::function<Vector(const EssentialMatrix&, double)> f = boost::bind(
         &EssentialMatrixFactor3::evaluateError, &factor, _1, _2, boost::none,
         boost::none);
-    Hexpected1 = numericalDerivative21<Vector, EssentialMatrix, double>(f, bodyE, d);
-    Hexpected2 = numericalDerivative22<Vector, EssentialMatrix, double>(f, bodyE, d);
+    Hexpected1 = numericalDerivative21<Vector2, EssentialMatrix, double>(f, bodyE, d);
+    Hexpected2 = numericalDerivative22<Vector2, EssentialMatrix, double>(f, bodyE, d);
 
     // Verify the Jacobian is correct
     EXPECT(assert_equal(Hexpected1, Hactual1, 1e-8));
@@ -376,8 +436,7 @@ TEST (EssentialMatrixFactor2, extraTest) {
     // Check evaluation
     Point3 P1 = data.tracks[i].p;
     const Point2 pi = camera2.project(P1);
-    Point2 reprojectionError(pi - pB(i));
-    Vector expected = reprojectionError.vector();
+    Point2 expected(pi - pB(i));
 
     Matrix Hactual1, Hactual2;
     double d(baseline / P1.z());
@@ -389,8 +448,8 @@ TEST (EssentialMatrixFactor2, extraTest) {
     boost::function<Vector(const EssentialMatrix&, double)> f = boost::bind(
         &EssentialMatrixFactor2::evaluateError, &factor, _1, _2, boost::none,
         boost::none);
-    Hexpected1 = numericalDerivative21<Vector, EssentialMatrix, double>(f, trueE, d);
-    Hexpected2 = numericalDerivative22<Vector, EssentialMatrix, double>(f, trueE, d);
+    Hexpected1 = numericalDerivative21<Vector2, EssentialMatrix, double>(f, trueE, d);
+    Hexpected2 = numericalDerivative22<Vector2, EssentialMatrix, double>(f, trueE, d);
 
     // Verify the Jacobian is correct
     EXPECT(assert_equal(Hexpected1, Hactual1, 1e-6));
@@ -445,8 +504,7 @@ TEST (EssentialMatrixFactor3, extraTest) {
     // Check evaluation
     Point3 P1 = data.tracks[i].p;
     const Point2 pi = camera2.project(P1);
-    Point2 reprojectionError(pi - pB(i));
-    Vector expected = reprojectionError.vector();
+    Point2 expected(pi - pB(i));
 
     Matrix Hactual1, Hactual2;
     double d(baseline / P1.z());
@@ -458,8 +516,8 @@ TEST (EssentialMatrixFactor3, extraTest) {
     boost::function<Vector(const EssentialMatrix&, double)> f = boost::bind(
         &EssentialMatrixFactor3::evaluateError, &factor, _1, _2, boost::none,
         boost::none);
-    Hexpected1 = numericalDerivative21<Vector, EssentialMatrix, double>(f, bodyE, d);
-    Hexpected2 = numericalDerivative22<Vector, EssentialMatrix, double>(f, bodyE, d);
+    Hexpected1 = numericalDerivative21<Vector2, EssentialMatrix, double>(f, bodyE, d);
+    Hexpected2 = numericalDerivative22<Vector2, EssentialMatrix, double>(f, bodyE, d);
 
     // Verify the Jacobian is correct
     EXPECT(assert_equal(Hexpected1, Hactual1, 1e-6));

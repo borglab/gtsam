@@ -46,23 +46,29 @@ TEST( OptionalJacobian, Constructors ) {
   boost::optional<Matrix&> optional(dynamic);
   OptionalJacobian<2, 3> H6(optional);
   EXPECT(H6);
+
+  OptionalJacobian<-1, -1> H7;
+  EXPECT(!H7);
+
+  OptionalJacobian<-1, -1> H8(dynamic);
+  EXPECT(H8);
+
+  OptionalJacobian<-1, -1> H9(boost::none);
+  EXPECT(!H9);
+
+  OptionalJacobian<-1, -1> H10(optional);
+  EXPECT(H10);
 }
 
 //******************************************************************************
+Matrix kTestMatrix = (Matrix23() << 11,12,13,21,22,23).finished();
+
 void test(OptionalJacobian<2, 3> H = boost::none) {
   if (H)
-    *H = Matrix23::Zero();
+    *H = kTestMatrix;
 }
 
-void testPtr(Matrix23* H = NULL) {
-  if (H)
-    *H = Matrix23::Zero();
-}
-
-TEST( OptionalJacobian, Ref2) {
-
-  Matrix expected;
-  expected = Matrix23::Zero();
+TEST( OptionalJacobian, Fixed) {
 
   // Default argument does nothing
   test();
@@ -71,30 +77,83 @@ TEST( OptionalJacobian, Ref2) {
   Matrix23 fixed1;
   fixed1.setOnes();
   test(fixed1);
-  EXPECT(assert_equal(expected,fixed1));
+  EXPECT(assert_equal(kTestMatrix,fixed1));
 
   // Fixed size, no copy, pointer style
   Matrix23 fixed2;
   fixed2.setOnes();
   test(&fixed2);
-  EXPECT(assert_equal(expected,fixed2));
+  EXPECT(assert_equal(kTestMatrix,fixed2));
 
-  // Empty is no longer a sign we don't want a matrix, we want it resized
+  // Passing in an empty matrix means we want it resized
   Matrix dynamic0;
   test(dynamic0);
-  EXPECT(assert_equal(expected,dynamic0));
+  EXPECT(assert_equal(kTestMatrix,dynamic0));
 
   // Dynamic wrong size
   Matrix dynamic1(3, 5);
   dynamic1.setOnes();
   test(dynamic1);
-  EXPECT(assert_equal(expected,dynamic0));
+  EXPECT(assert_equal(kTestMatrix,dynamic1));
 
   // Dynamic right size
   Matrix dynamic2(2, 5);
   dynamic2.setOnes();
   test(dynamic2);
-  EXPECT(assert_equal(dynamic2,dynamic0));
+  EXPECT(assert_equal(kTestMatrix, dynamic2));
+}
+
+//******************************************************************************
+void test2(OptionalJacobian<-1,-1> H = boost::none) {
+  if (H)
+    *H = kTestMatrix; // resizes
+}
+
+TEST( OptionalJacobian, Dynamic) {
+
+  // Default argument does nothing
+  test2();
+
+  // Passing in an empty matrix means we want it resized
+  Matrix dynamic0;
+  test2(dynamic0);
+  EXPECT(assert_equal(kTestMatrix,dynamic0));
+
+  // Dynamic wrong size
+  Matrix dynamic1(3, 5);
+  dynamic1.setOnes();
+  test2(dynamic1);
+  EXPECT(assert_equal(kTestMatrix,dynamic1));
+
+  // Dynamic right size
+  Matrix dynamic2(2, 5);
+  dynamic2.setOnes();
+  test2(dynamic2);
+  EXPECT(assert_equal(kTestMatrix, dynamic2));
+}
+
+//******************************************************************************
+void test3(double add, OptionalJacobian<2,1> H = boost::none) {
+  if (H) *H << add + 10, add + 20;
+}
+
+// This function calls the above function three times, one for each column
+void test4(OptionalJacobian<2, 3> H = boost::none) {
+  if (H) {
+    test3(1, H.cols<1>(0));
+    test3(2, H.cols<1>(1));
+    test3(3, H.cols<1>(2));
+  }
+}
+
+TEST(OptionalJacobian, Block) {
+  // Default argument does nothing
+  test4();
+
+  Matrix23 fixed;
+  fixed.setOnes();
+  test4(fixed);
+  EXPECT(assert_equal(kTestMatrix, fixed));
 }
 
 //******************************************************************************

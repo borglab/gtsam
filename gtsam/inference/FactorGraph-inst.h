@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -23,11 +23,11 @@
 
 #include <gtsam/inference/FactorGraph.h>
 
-#include <boost/foreach.hpp>
 #include <boost/bind.hpp>
 
 #include <stdio.h>
 #include <sstream>
+#include <iostream> // for cout :-(
 
 namespace gtsam {
 
@@ -65,19 +65,34 @@ namespace gtsam {
   template<class FACTOR>
   size_t FactorGraph<FACTOR>::nrFactors() const {
     size_t size_ = 0;
-    BOOST_FOREACH(const sharedFactor& factor, factors_)
+    for(const sharedFactor& factor: factors_)
       if (factor) size_++;
     return size_;
   }
 
   /* ************************************************************************* */
   template<class FACTOR>
-  FastSet<Key> FactorGraph<FACTOR>::keys() const {
-    FastSet<Key> allKeys;
-    BOOST_FOREACH(const sharedFactor& factor, factors_)
+  KeySet FactorGraph<FACTOR>::keys() const {
+    KeySet keys;
+    for(const sharedFactor& factor: this->factors_) {
+      if(factor)
+        keys.insert(factor->begin(), factor->end());
+    }
+    return keys;
+  }
+
+  /* ************************************************************************* */
+  template <class FACTOR>
+  KeyVector FactorGraph<FACTOR>::keyVector() const {
+    KeyVector keys;
+    keys.reserve(2 * size());  // guess at size
+    for (const sharedFactor& factor: factors_)
       if (factor)
-        allKeys.insert(factor->begin(), factor->end());
-    return allKeys;
+        keys.insert(keys.end(), factor->begin(), factor->end());
+    std::sort(keys.begin(), keys.end());
+    auto last = std::unique(keys.begin(), keys.end());
+    keys.erase(last, keys.end());
+    return keys;
   }
 
   /* ************************************************************************* */

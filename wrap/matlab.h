@@ -34,7 +34,6 @@ extern "C" {
 
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
-#include <boost/foreach.hpp>
 
 #include <list>
 #include <string>
@@ -425,3 +424,20 @@ boost::shared_ptr<Class> unwrap_shared_ptr(const mxArray* obj, const string& pro
   boost::shared_ptr<Class>* spp = *reinterpret_cast<boost::shared_ptr<Class>**> (mxGetData(mxh));
   return *spp;
 }
+
+//// throw an error if unwrap_shared_ptr is attempted for an Eigen Vector
+//template <>
+//Vector unwrap_shared_ptr<Vector>(const mxArray* obj, const string& propertyName) {
+//  bool unwrap_shared_ptr_Vector_attempted = false;
+//  BOOST_STATIC_ASSERT(unwrap_shared_ptr_Vector_attempted, "Vector cannot be unwrapped as a shared pointer");
+//  return Vector();
+//}
+
+//// throw an error if unwrap_shared_ptr is attempted for an Eigen Matrix
+//template <>
+//Matrix unwrap_shared_ptr<Matrix>(const mxArray* obj, const string& propertyName) {
+//  bool unwrap_shared_ptr_Matrix_attempted = false;
+//  BOOST_STATIC_ASSERT(unwrap_shared_ptr_Matrix_attempted, "Matrix cannot be unwrapped as a shared pointer");
+//  return Matrix();
+//}
+

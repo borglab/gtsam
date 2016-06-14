@@ -14,7 +14,6 @@
 #include <gtsam/inference/Key.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/base/timing.h>
-#include <boost/foreach.hpp>
 #include <map>
 
 namespace gtsam {
@@ -100,13 +99,13 @@ public:
     boost::optional<Circle2> best_circle;
 
     // loop over all circles
-    BOOST_FOREACH(const Circle2& it, circles) {
+    for(const Circle2& it: circles) {
       // distance between circle centers.
-      double d = circle1.center.dist(it.center);
+      double d = distance2(circle1.center, it.center);
       if (d < 1e-9)
         continue; // skip circles that are in the same location
       // Find f and h, the intersection points in normalized circles
-      boost::optional<Point2> fh = Point2::CircleCircleIntersection(
+      boost::optional<Point2> fh = circleCircleIntersection(
           circle1.radius / d, it.radius / d);
       // Check if this pair is better by checking h = fh->y()
       // if h is large, the intersections are well defined.
@@ -117,15 +116,15 @@ public:
     }
 
     // use best fh to find actual intersection points
-    std::list<Point2> intersections = Point2::CircleCircleIntersection(
+    std::list<Point2> intersections = circleCircleIntersection(
         circle1.center, best_circle->center, best_fh);
 
     // pick winner based on other measurements
     double error1 = 0, error2 = 0;
     Point2 p1 = intersections.front(), p2 = intersections.back();
-    BOOST_FOREACH(const Circle2& it, circles) {
-      error1 += it.center.dist(p1);
-      error2 += it.center.dist(p2);
+    for(const Circle2& it: circles) {
+      error1 += distance2(it.center, p1);
+      error2 += distance2(it.center, p2);
     }
     return (error1 < error2) ? p1 : p2;
     //gttoc_(triangulate);
@@ -141,10 +140,10 @@ public:
       if (H)
         // set Jacobians to zero for n<3
         for (size_t j = 0; j < n; j++)
-          (*H)[j] = zeros(3, 1);
-      return zero(1);
+          (*H)[j] = Matrix::Zero(3, 1);
+      return Z_1x1;
     } else {
-      Vector error = zero(1);
+      Vector error = Z_1x1;
 
       // triangulate to get the optimized point
       // TODO: Should we have a (better?) variant that does this in relative coordinates ?

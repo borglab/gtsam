@@ -47,10 +47,10 @@ TEST(GaussianFactorGraph, initialization) {
   SharedDiagonal unit2 = noiseModel::Unit::Create(2);
 
   fg +=
-    JacobianFactor(0, 10*eye(2), -1.0*ones(2), unit2),
-    JacobianFactor(0, -10*eye(2),1, 10*eye(2), Vector2(2.0, -1.0), unit2),
-    JacobianFactor(0, -5*eye(2), 2, 5*eye(2), Vector2(0.0, 1.0), unit2),
-    JacobianFactor(1, -5*eye(2), 2, 5*eye(2), Vector2(-1.0, 1.5), unit2);
+    JacobianFactor(0, 10*I_2x2, -1.0*Vector::Ones(2), unit2),
+    JacobianFactor(0, -10*I_2x2,1, 10*I_2x2, Vector2(2.0, -1.0), unit2),
+    JacobianFactor(0, -5*I_2x2, 2, 5*I_2x2, Vector2(0.0, 1.0), unit2),
+    JacobianFactor(1, -5*I_2x2, 2, 5*I_2x2, Vector2(-1.0, 1.5), unit2);
 
   EXPECT_LONGS_EQUAL(4, (long)fg.size());
 
@@ -166,13 +166,13 @@ static GaussianFactorGraph createSimpleGaussianFactorGraph() {
   GaussianFactorGraph fg;
   SharedDiagonal unit2 = noiseModel::Unit::Create(2);
   // linearized prior on x1: c[_x1_]+x1=0 i.e. x1=-c[_x1_]
-  fg += JacobianFactor(2, 10*eye(2), -1.0*ones(2), unit2);
+  fg += JacobianFactor(2, 10*I_2x2, -1.0*Vector::Ones(2), unit2);
   // odometry between x1 and x2: x2-x1=[0.2;-0.1]
-  fg += JacobianFactor(0, 10*eye(2), 2, -10*eye(2), Vector2(2.0, -1.0), unit2);
+  fg += JacobianFactor(0, 10*I_2x2, 2, -10*I_2x2, Vector2(2.0, -1.0), unit2);
   // measurement between x1 and l1: l1-x1=[0.0;0.2]
-  fg += JacobianFactor(1, 5*eye(2), 2, -5*eye(2), Vector2(0.0, 1.0), unit2);
+  fg += JacobianFactor(1, 5*I_2x2, 2, -5*I_2x2, Vector2(0.0, 1.0), unit2);
   // measurement between x2 and l1: l1-x2=[-0.2;0.3]
-  fg += JacobianFactor(0, -5*eye(2), 1, 5*eye(2), Vector2(-1.0, 1.5), unit2);
+  fg += JacobianFactor(0, -5*I_2x2, 1, 5*I_2x2, Vector2(-1.0, 1.5), unit2);
   return fg;
 }
 
@@ -280,8 +280,8 @@ TEST( GaussianFactorGraph, multiplyHessianAdd )
 /* ************************************************************************* */
 static GaussianFactorGraph createGaussianFactorGraphWithHessianFactor() {
   GaussianFactorGraph gfg = createSimpleGaussianFactorGraph();
-  gfg += HessianFactor(1, 2, 100*eye(2,2), zeros(2,2),   Vector2(0.0, 1.0),
-                                           400*eye(2,2), Vector2(1.0, 1.0), 3.0);
+  gfg += HessianFactor(1, 2, 100*I_2x2, Z_2x2,   Vector2(0.0, 1.0),
+                                           400*I_2x2, Vector2(1.0, 1.0), 3.0);
   return gfg;
 }
 
@@ -316,30 +316,6 @@ TEST( GaussianFactorGraph, multiplyHessianAdd2 )
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, multiplyHessianAdd3 )
-{
-  GaussianFactorGraph gfg = createGaussianFactorGraphWithHessianFactor();
-
-  // brute force
-  Matrix AtA; Vector eta; boost::tie(AtA,eta) = gfg.hessian();
-  Vector X(6); X<<1,2,3,4,5,6;
-  Vector Y(6); Y<<-450, -450, 300, 400, 2950, 3450;
-  EXPECT(assert_equal(Y,AtA*X));
-
-    double* x = &X[0];
-
-    Vector fast_y = gtsam::zero(6);
-    gfg.multiplyHessianAdd(1.0, x, fast_y.data());
-    EXPECT(assert_equal(Y, fast_y));
-
-    // now, do it with non-zero y
-    gfg.multiplyHessianAdd(1.0, x, fast_y.data());
-    EXPECT(assert_equal(2*Y, fast_y));
-
-}
-
-
-/* ************************************************************************* */
 TEST( GaussianFactorGraph, matricesMixed )
 {
   GaussianFactorGraph gfg = createGaussianFactorGraphWithHessianFactor();
@@ -350,7 +326,6 @@ TEST( GaussianFactorGraph, matricesMixed )
   EXPECT(assert_equal(expected, eta));
   EXPECT(assert_equal(A.transpose()*b, eta));
 }
-
 
 /* ************************************************************************* */
 TEST( GaussianFactorGraph, gradientAtZero )

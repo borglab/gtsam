@@ -31,28 +31,31 @@
 *
 */
 
-#include <gtsam/base/timing.h>
-#include <gtsam/base/treeTraversal-inst.h>
-#include <gtsam/slam/dataset.h>
-#include <gtsam/geometry/Pose2.h>
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/slam/BearingRangeFactor.h>
-#include <gtsam/inference/Symbol.h>
-#include <gtsam/linear/GaussianJunctionTree.h>
-#include <gtsam/linear/GaussianEliminationTree.h>
+#include <gtsam/sam/BearingRangeFactor.h>
+#include <gtsam/slam/dataset.h>
+#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/geometry/Pose2.h>
 #include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/nonlinear/Marginals.h>
+#include <gtsam/linear/GaussianJunctionTree.h>
+#include <gtsam/linear/GaussianEliminationTree.h>
+#include <gtsam/inference/Symbol.h>
+#include <gtsam/base/timing.h>
+#include <gtsam/base/treeTraversal-inst.h>
+#include <gtsam/config.h> // for GTSAM_USE_TBB
+
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/program_options.hpp>
+#include <boost/range/algorithm/set_algorithm.hpp>
+#include <boost/range/adaptor/reversed.hpp>
+#include <boost/random.hpp>
+#include <boost/serialization/export.hpp>
 
 #include <fstream>
 #include <iostream>
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/serialization/export.hpp>
-#include <boost/program_options.hpp>
-#include <boost/range/algorithm/set_algorithm.hpp>
-#include <boost/random.hpp>
 
 #ifdef GTSAM_USE_TBB
 #include <tbb/tbb.h>
@@ -72,30 +75,13 @@ typedef NoiseModelFactor1<Pose> NM1;
 typedef NoiseModelFactor2<Pose,Pose> NM2;
 typedef BearingRangeFactor<Pose,Point2> BR;
 
-BOOST_CLASS_EXPORT(Value);
-BOOST_CLASS_EXPORT(Pose);
-BOOST_CLASS_EXPORT(Rot2);
-BOOST_CLASS_EXPORT(Point2);
-BOOST_CLASS_EXPORT(NonlinearFactor);
-BOOST_CLASS_EXPORT(NoiseModelFactor);
-BOOST_CLASS_EXPORT(NM1);
-BOOST_CLASS_EXPORT(NM2);
-BOOST_CLASS_EXPORT(BetweenFactor<Pose>);
-BOOST_CLASS_EXPORT(PriorFactor<Pose>);
-BOOST_CLASS_EXPORT(BR);
-BOOST_CLASS_EXPORT(noiseModel::Base);
-BOOST_CLASS_EXPORT(noiseModel::Isotropic);
-BOOST_CLASS_EXPORT(noiseModel::Gaussian);
-BOOST_CLASS_EXPORT(noiseModel::Diagonal);
-BOOST_CLASS_EXPORT(noiseModel::Unit);
-
 double chi2_red(const gtsam::NonlinearFactorGraph& graph, const gtsam::Values& config) {
   // Compute degrees of freedom (observations - variables)
   // In ocaml, +1 was added to the observations to account for the prior, but
   // the factor graph already includes a factor for the prior/equality constraint.
   //  double dof = graph.size() - config.size();
   int graph_dim = 0;
-  BOOST_FOREACH(const boost::shared_ptr<gtsam::NonlinearFactor>& nlf, graph) {
+  for(const boost::shared_ptr<gtsam::NonlinearFactor>& nlf: graph) {
     graph_dim += (int)nlf->dim();
   }
   double dof = double(graph_dim) - double(config.dim()); // kaess: changed to dim
@@ -269,12 +255,12 @@ void runIncremental()
       boost::dynamic_pointer_cast<BetweenFactor<Pose> >(datasetMeasurements[nextMeasurement]))
     {
       Key key1 = measurement->key1(), key2 = measurement->key2();
-      if((key1 >= firstStep && key1 < key2) || (key2 >= firstStep && key2 < key1)) {
+      if(((int)key1 >= firstStep && key1 < key2) || ((int)key2 >= firstStep && key2 < key1)) {
         // We found an odometry starting at firstStep
         firstPose = std::min(key1, key2);
         break;
       }
-      if((key2 >= firstStep && key1 < key2) || (key1 >= firstStep && key2 < key1)) {
+      if(((int)key2 >= firstStep && key1 < key2) || ((int)key1 >= firstStep && key2 < key1)) {
         // We found an odometry joining firstStep with a previous pose
         havePreviousPose = true;
         firstPose = std::max(key1, key2);
@@ -295,7 +281,7 @@ void runIncremental()
     NonlinearFactorGraph newFactors;
     Values newVariables;
 
-    newFactors.push_back(boost::make_shared<PriorFactor<Pose> >(firstPose, Pose(), noiseModel::Unit::Create(Pose::Dim())));
+    newFactors.push_back(boost::make_shared<PriorFactor<Pose> >(firstPose, Pose(), noiseModel::Unit::Create(3)));
     newVariables.insert(firstPose, Pose());
 
     isam2.update(newFactors, newVariables);
@@ -303,7 +289,9 @@ void runIncremental()
 
   cout << "Playing forward time steps..." << endl;
 
-  for(size_t step = firstPose; nextMeasurement < datasetMeasurements.size() && (lastStep == -1 || step <= lastStep); ++step)
+  for (size_t step = firstPose;
+      nextMeasurement < datasetMeasurements.size() && (lastStep == -1 || (int)step <= lastStep);
+      ++step)
   {
     Values newVariables;
     NonlinearFactorGraph newFactors;
@@ -434,9 +422,9 @@ void runIncremental()
   //try {
   //  Marginals marginals(graph, values);
   //  int i=0;
-  //  BOOST_REVERSE_FOREACH(Key key1, values.keys()) {
+  //  for (Key key1: boost::adaptors::reverse(values.keys())) {
   //    int j=0;
-  //    BOOST_REVERSE_FOREACH(Key key2, values.keys()) {
+  //    for (Key key12: boost::adaptors::reverse(values.keys())) {
   //      if(i != j) {
   //        gttic_(jointMarginalInformation);
   //        std::vector<Key> keys(2);
@@ -455,7 +443,7 @@ void runIncremental()
   //      break;
   //  }
   //  tictoc_print_();
-  //  BOOST_FOREACH(Key key, values.keys()) {
+  //  for(Key key: values.keys()) {
   //    gttic_(marginalInformation);
   //    Matrix info = marginals.marginalInformation(key);
   //    gttoc_(marginalInformation);
@@ -474,7 +462,7 @@ void runBatch()
   cout << "Creating batch optimizer..." << endl;
 
   NonlinearFactorGraph measurements = datasetMeasurements;
-  measurements.push_back(boost::make_shared<PriorFactor<Pose> >(0, Pose(), noiseModel::Unit::Create(Pose::Dim())));
+  measurements.push_back(boost::make_shared<PriorFactor<Pose> >(0, Pose(), noiseModel::Unit::Create(3)));
 
   gttic_(Create_optimizer);
   GaussNewtonParams params;
@@ -548,7 +536,7 @@ void runCompare()
   vector<Key> commonKeys;
   br::set_intersection(soln1.keys(), soln2.keys(), std::back_inserter(commonKeys));
   double maxDiff = 0.0;
-  BOOST_FOREACH(Key j, commonKeys)
+  for(Key j: commonKeys)
     maxDiff = std::max(maxDiff, soln1.at(j).localCoordinates_(soln2.at(j)).norm());
   cout << "  Maximum solution difference (norm of logmap): " << maxDiff << endl;
 }
@@ -562,7 +550,7 @@ void runPerturb()
 
   // Perturb values
   VectorValues noise;
-  BOOST_FOREACH(const Values::KeyValuePair& key_val, initial)
+  for(const Values::KeyValuePair& key_val: initial)
   {
     Vector noisev(key_val.value.dim());
     for(Vector::Index i = 0; i < noisev.size(); ++i)
@@ -589,7 +577,7 @@ void runStats()
 {
   cout << "Gathering statistics..." << endl;
   GaussianFactorGraph linear = *datasetMeasurements.linearize(initial);
-  GaussianJunctionTree jt(GaussianEliminationTree(linear, Ordering::colamd(linear)));
+  GaussianJunctionTree jt(GaussianEliminationTree(linear, Ordering::Colamd(linear)));
   treeTraversal::ForestStatistics statistics = treeTraversal::GatherStatistics(jt);
 
   ofstream file;

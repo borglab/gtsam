@@ -17,9 +17,6 @@
 
 #pragma once
 
-#include <boost/tuple/tuple.hpp>
-
-#include <gtsam/base/DerivedValue.h>
 #include <gtsam/geometry/Cal3_S2Stereo.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/StereoPoint2.h>
@@ -28,9 +25,10 @@ namespace gtsam {
 
 class GTSAM_EXPORT StereoCheiralityException: public std::runtime_error {
 public:
-  StereoCheiralityException() : std::runtime_error("Stereo Cheirality Exception") {}
+  StereoCheiralityException() :
+      std::runtime_error("Stereo Cheirality Exception") {
+  }
 };
-
 
 /**
  * A stereo camera class, parameterize by left camera pose and stereo calibration
@@ -38,48 +36,66 @@ public:
  */
 class GTSAM_EXPORT StereoCamera {
 
+public:
+
+  /**
+   *  Some classes template on either PinholeCamera or StereoCamera,
+   *  and this typedef informs those classes what "project" returns.
+   */
+  typedef StereoPoint2 Measurement;
+
 private:
   Pose3 leftCamPose_;
   Cal3_S2Stereo::shared_ptr K_;
 
 public:
 
+  enum {
+    dimension = 6
+  };
+
   /// @name Standard Constructors
   /// @{
 
-  StereoCamera() {
+  /// Default constructor allocates a calibration!
+  StereoCamera() :
+      K_(new Cal3_S2Stereo()) {
   }
 
+  /// Construct from pose and shared calibration
   StereoCamera(const Pose3& leftCamPose, const Cal3_S2Stereo::shared_ptr K);
 
-  const Cal3_S2Stereo::shared_ptr calibration() const {
-    return K_;
+  /// Return shared pointer to calibration
+  const Cal3_S2Stereo& calibration() const {
+    return *K_;
   }
 
   /// @}
   /// @name Testable
   /// @{
 
+  /// print
   void print(const std::string& s = "") const {
     leftCamPose_.print(s + ".camera.");
     K_->print(s + ".calibration.");
   }
 
+  /// equals
   bool equals(const StereoCamera &camera, double tol = 1e-9) const {
-    return leftCamPose_.equals(camera.leftCamPose_, tol) && K_->equals(
-        *camera.K_, tol);
+    return leftCamPose_.equals(camera.leftCamPose_, tol)
+        && K_->equals(*camera.K_, tol);
   }
 
   /// @}
   /// @name Manifold
   /// @{
 
-  /** Dimensionality of the tangent space */
+  /// Dimensionality of the tangent space
   inline size_t dim() const {
     return 6;
   }
 
-  /** Dimensionality of the tangent space */
+  /// Dimensionality of the tangent space
   static inline size_t Dim() {
     return 6;
   }
@@ -98,68 +114,69 @@ public:
   /// @name Standard Interface
   /// @{
 
+  /// pose
   const Pose3& pose() const {
     return leftCamPose_;
   }
 
+  /// baseline
   double baseline() const {
     return K_->baseline();
   }
 
-  /*
-   * project 3D point and compute optional derivatives
+  /// Project 3D point to StereoPoint2 (uL,uR,v)
+  StereoPoint2 project(const Point3& point) const;
+
+  /** Project 3D point and compute optional derivatives
+   * @param H1 derivative with respect to pose
+   * @param H2 derivative with respect to point
+   */
+  StereoPoint2 project2(const Point3& point, OptionalJacobian<3, 6> H1 =
+      boost::none, OptionalJacobian<3, 3> H2 = boost::none) const;
+
+  /// back-project a measurement
+  Point3 backproject(const StereoPoint2& z) const;
+
+  /** Back-project the 2D point and compute optional derivatives
+   * @param H1 derivative with respect to pose
+   * @param H2 derivative with respect to point
+   */
+  Point3 backproject2(const StereoPoint2& z,
+                      OptionalJacobian<3, 6> H1 = boost::none,
+                      OptionalJacobian<3, 3> H2 = boost::none) const;
+
+  /// @}
+  /// @name Deprecated
+  /// @{
+
+  /** Project 3D point and compute optional derivatives
+   * @deprecated, use project2 - this class has fixed calibration
    * @param H1 derivative with respect to pose
    * @param H2 derivative with respect to point
    * @param H3 IGNORED (for calibration)
    */
-  StereoPoint2 project(const Point3& point,
-      OptionalJacobian<3, 6> H1 = boost::none,
-      OptionalJacobian<3, 3> H2 = boost::none,
-      OptionalJacobian<3, 6> H3 = boost::none) const;
-
-  /**
-   *
-   */
-  Point3 backproject(const StereoPoint2& z) const {
-    Vector measured = z.vector();
-    double Z = K_->baseline()*K_->fx()/(measured[0]-measured[1]);
-    double X = Z *(measured[0]- K_->px()) / K_->fx();
-    double Y = Z *(measured[2]- K_->py()) / K_->fy();
-    Point3 world_point = leftCamPose_.transform_from(Point3(X, Y, Z));
-    return world_point;
-  }
+  StereoPoint2 project(const Point3& point, OptionalJacobian<3, 6> H1,
+      OptionalJacobian<3, 3> H2 = boost::none, OptionalJacobian<3, 0> H3 =
+          boost::none) const;
 
   /// @}
 
 private:
-  /** utility functions */
-  Matrix3 Dproject_to_stereo_camera1(const Point3& P) const;
 
   friend class boost::serialization::access;
   template<class Archive>
-  void serialize(Archive & ar, const unsigned int version) {
+  void serialize(Archive & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_NVP(leftCamPose_);
     ar & BOOST_SERIALIZATION_NVP(K_);
   }
 
 };
 
-// Define GTSAM traits
-namespace traits {
-
 template<>
-struct GTSAM_EXPORT is_manifold<StereoCamera> : public boost::true_type{
+struct traits<StereoCamera> : public internal::Manifold<StereoCamera> {
 };
 
 template<>
-struct GTSAM_EXPORT dimension<StereoCamera> : public boost::integral_constant<int, 6>{
+struct traits<const StereoCamera> : public internal::Manifold<StereoCamera> {
 };
-
-template<>
-struct GTSAM_EXPORT zero<StereoCamera> {
-  static StereoCamera value() { return StereoCamera();}
-};
-
-}
-
 }

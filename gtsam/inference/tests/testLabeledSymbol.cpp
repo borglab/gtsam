@@ -14,20 +14,19 @@
  * @author Alex Cunningham
  */
 
-#include <boost/assign/std/list.hpp> // for operator +=
-using namespace boost::assign;
-
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/inference/LabeledSymbol.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/TestableAssertions.h>
 
-#include <gtsam/inference/LabeledSymbol.h>
-  
+#include <CppUnitLite/TestHarness.h>
+#include <boost/assign/std/list.hpp> // for operator +=
+
+using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
-TEST( testLabeledSymbol, KeyLabeledSymbolConversion ) {
+TEST(LabeledSymbol, KeyLabeledSymbolConversion ) {
   LabeledSymbol expected('x', 'A', 4);
   Key key(expected);
   LabeledSymbol actual(key);
@@ -36,7 +35,7 @@ TEST( testLabeledSymbol, KeyLabeledSymbolConversion ) {
 }
 
 /* ************************************************************************* */
-TEST( testLabeledSymbol, KeyLabeledSymbolEncoding ) {
+TEST(LabeledSymbol, KeyLabeledSymbolEncoding ) {
 
   // Test encoding of LabeledSymbol <-> size_t <-> string
   // Encoding scheme:
@@ -67,6 +66,17 @@ TEST( testLabeledSymbol, KeyLabeledSymbolEncoding ) {
     EXPECT(assert_equal(str, MultiRobotKeyFormatter(symbol)));
     EXPECT(assert_equal(symbol, LabeledSymbol(key)));
   }
+}
+
+/* ************************************************************************* */
+TEST(LabeledSymbol, ChrTest) {
+  Key key = LabeledSymbol('c','A',3);
+  EXPECT(LabeledSymbol::TypeTest('c')(key));
+  EXPECT(!LabeledSymbol::TypeTest('d')(key));
+  EXPECT(LabeledSymbol::LabelTest('A')(key));
+  EXPECT(!LabeledSymbol::LabelTest('D')(key));
+  EXPECT(LabeledSymbol::TypeLabelTest('c','A')(key));
+  EXPECT(!LabeledSymbol::TypeLabelTest('c','D')(key));
 }
 
 /* ************************************************************************* */

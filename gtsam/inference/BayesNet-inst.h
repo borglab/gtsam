@@ -21,7 +21,7 @@
 #include <gtsam/inference/FactorGraph-inst.h>
 #include <gtsam/inference/BayesNet.h>
 
-#include <boost/foreach.hpp>
+#include <boost/range/adaptor/reversed.hpp>
 #include <fstream>
 
 namespace gtsam {
@@ -40,11 +40,11 @@ namespace gtsam {
     std::ofstream of(s.c_str());
     of << "digraph G{\n";
 
-    BOOST_REVERSE_FOREACH(const sharedConditional& conditional, *this) {
+    for (auto conditional: boost::adaptors::reverse(*this)) {
       typename CONDITIONAL::Frontals frontals = conditional->frontals();
       Key me = frontals.front();
       typename CONDITIONAL::Parents parents = conditional->parents();
-      BOOST_FOREACH(Key p, parents)
+      for(Key p: parents)
         of << keyFormatter(p) << "->" << keyFormatter(me) << std::endl;
     }
 

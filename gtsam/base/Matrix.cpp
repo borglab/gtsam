@@ -20,8 +20,9 @@
 #include <gtsam/base/timing.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/FastList.h>
+#include <Eigen/SVD>
+#include <Eigen/LU>
 
-#include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/tokenizer.hpp>
 
@@ -35,26 +36,6 @@
 using namespace std;
 
 namespace gtsam {
-
-/* ************************************************************************* */
-Matrix zeros( size_t m, size_t n ) {
-  return Matrix::Zero(m,n);
-}
-
-/* ************************************************************************* */
-Matrix ones( size_t m, size_t n ) {
-  return Matrix::Ones(m,n);
-}
-
-/* ************************************************************************* */
-Matrix eye( size_t m, size_t n) {
-  return Matrix::Identity(m, n);
-}
-
-/* ************************************************************************* */ 
-Matrix diag(const Vector& v) {
-  return v.asDiagonal();
-}
 
 /* ************************************************************************* */
 bool assert_equal(const Matrix& expected, const Matrix& actual, double tol) {
@@ -145,16 +126,6 @@ bool linear_dependent(const Matrix& A, const Matrix& B, double tol) {
 }
 
 /* ************************************************************************* */
-void multiplyAdd(double alpha, const Matrix& A, const Vector& x, Vector& e) {
-  e += alpha * A * x;
-}
-
-/* ************************************************************************* */
-void multiplyAdd(const Matrix& A, const Vector& x, Vector& e) {
-  e += A * x;
-}
-
-/* ************************************************************************* */
 Vector operator^(const Matrix& A, const Vector & v) {
   if (A.rows()!=v.size()) throw std::invalid_argument(
       boost::str(boost::format("Matrix operator^ : A.m(%d)!=v.size(%d)") % A.rows() % v.size()));
@@ -165,37 +136,25 @@ Vector operator^(const Matrix& A, const Vector & v) {
 }
 
 /* ************************************************************************* */
-void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, Vector& x) {
-  x += alpha * A.transpose() * e;
-}
-
-/* ************************************************************************* */
-void transposeMultiplyAdd(const Matrix& A, const Vector& e, Vector& x) {
-  x += A.transpose() * e;
-}
-
-/* ************************************************************************* */
-void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, SubVector x) {
-  x += alpha * A.transpose() * e;
-}
-
-/* ************************************************************************* */
+//3 argument call
 void print(const Matrix& A, const string &s, ostream& stream) {
-  size_t m = A.rows(), n = A.cols();
+  static const Eigen::IOFormat matlab(
+      Eigen::StreamPrecision, // precision
+      0, // flags
+      " ", // coeffSeparator
+      ";\n", // rowSeparator
+      " \t",  // rowPrefix
+      "", // rowSuffix
+      "[\n", // matPrefix
+      "\n  ]" // matSuffix
+      );
+  cout << s << A.format(matlab) << endl;
+}
 
-  // print out all elements
-  stream << s << "[\n";
-  for( size_t i = 0 ; i < m ; i++) {
-    for( size_t j = 0 ; j < n ; j++) {
-      double aij = A(i,j);
-      if(aij != 0.0)
-        stream << setw(12) << setprecision(9) << aij << ",\t";
-      else
-        stream << "         0.0,\t";
-    }
-    stream << endl;
-  }
-  stream << "];" << endl;
+/* ************************************************************************* */
+//1 or 2 argument call
+void print(const Matrix& A, const string &s){
+  print(A, s, cout);
 }
 
 /* ************************************************************************* */
@@ -230,17 +189,12 @@ istream& operator>>(istream& inputStream, Matrix& destinationMatrix) {
   // Copy coefficients to matrix
   destinationMatrix.resize(height, width);
   int row = 0;
-  BOOST_FOREACH(const vector<double>& rowVec, coeffs) {
+  for(const vector<double>& rowVec: coeffs) {
     destinationMatrix.row(row) = Eigen::Map<const Eigen::RowVectorXd>(&rowVec[0], width);
     ++ row;
   }
 
   return inputStream;
-}
-
-/* ************************************************************************* */
-void insertSub(Matrix& fullMatrix, const Matrix& subMatrix, size_t i, size_t j) {
-  fullMatrix.block(i, j, subMatrix.rows(), subMatrix.cols()) = subMatrix;
 }
 
 /* ************************************************************************* */
@@ -250,7 +204,7 @@ Matrix diag(const std::vector<Matrix>& Hs) {
     rows+= Hs[i].rows();
     cols+= Hs[i].cols();
   }
-  Matrix results = zeros(rows,cols);
+  Matrix results = Matrix::Zero(rows,cols);
   size_t r = 0, c = 0;
   for (size_t i = 0; i<Hs.size(); ++i) {
     insertSub(results, Hs[i], r, c);
@@ -258,16 +212,6 @@ Matrix diag(const std::vector<Matrix>& Hs) {
     c+=Hs[i].cols();
   }
   return results;
-}
-
-/* ************************************************************************* */
-void insertColumn(Matrix& A, const Vector& col, size_t j) {
-  A.col(j) = col;
-}
-
-/* ************************************************************************* */
-void insertColumn(Matrix& A, const Vector& col, size_t i, size_t j) {
-  A.col(j).segment(i, col.size()) = col;
 }
 
 /* ************************************************************************* */
@@ -280,23 +224,12 @@ Vector columnNormSquare(const Matrix &A) {
 }
 
 /* ************************************************************************* */
-void solve(Matrix& A, Matrix& B) {
-  // Eigen version - untested
-  B = A.fullPivLu().solve(B);
-}
-
-/* ************************************************************************* */
-Matrix inverse(const Matrix& A) {
-  return A.inverse();
-}
-
-/* ************************************************************************* */
 /** Householder QR factorization, Golub & Van Loan p 224, explicit version    */
 /* ************************************************************************* */
 pair<Matrix,Matrix> qr(const Matrix& A) {
   const size_t m = A.rows(), n = A.cols(), kprime = min(m,n);
 
-  Matrix Q=eye(m,m),R(A);
+  Matrix Q=Matrix::Identity(m,m),R(A);
   Vector v(m);
 
   // loop over the kprime first columns
@@ -319,7 +252,7 @@ pair<Matrix,Matrix> qr(const Matrix& A) {
       v(k) = k<j ? 0.0 : vjm(k-j);
 
     // create Householder reflection matrix Qj = I-beta*v*v'
-    Matrix Qj = eye(m) - beta * v * v.transpose();
+    Matrix Qj = Matrix::Identity(m,m) - beta * v * v.transpose();
 
     R = Qj * R; // update R
     Q = Q * Qj; // update Q
@@ -339,7 +272,7 @@ weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
   list<boost::tuple<Vector, double, double> > results;
 
   Vector pseudo(m); // allocate storage for pseudo-inverse
-  Vector weights = reciprocal(emul(sigmas,sigmas)); // calculate weights once
+  Vector weights = sigmas.array().square().inverse(); // calculate weights once
 
   // We loop over all columns, because the columns that can be eliminated
   // are not necessarily contiguous. For each one, estimate the corresponding
@@ -356,7 +289,7 @@ weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
     if (precision < 1e-8) continue;
 
     // create solution and copy into r
-    Vector r(basis(n, j));
+    Vector r(Vector::Unit(n,j));
     for (size_t j2=j+1; j2<n; ++j2)
       r(j2) = pseudo.dot(A.col(j2));
 
@@ -485,7 +418,7 @@ Matrix stack(size_t nrMatrices, ...)
 Matrix stack(const std::vector<Matrix>& blocks) {
   if (blocks.size() == 1) return blocks.at(0);
   DenseIndex nrows = 0, ncols = blocks.at(0).cols();
-  BOOST_FOREACH(const Matrix& mat, blocks) {
+  for(const Matrix& mat: blocks) {
     nrows += mat.rows();
     if (ncols != mat.cols())
       throw invalid_argument("Matrix::stack(): column size mismatch!");
@@ -493,7 +426,7 @@ Matrix stack(const std::vector<Matrix>& blocks) {
   Matrix result(nrows, ncols);
 
   DenseIndex cur_row = 0;
-  BOOST_FOREACH(const Matrix& mat, blocks) {
+  for(const Matrix& mat: blocks) {
     result.middleRows(cur_row, mat.rows()) = mat;
     cur_row += mat.rows();
   }
@@ -507,7 +440,7 @@ Matrix collect(const std::vector<const Matrix *>& matrices, size_t m, size_t n)
   size_t dimA1 = m;
   size_t dimA2 = n*matrices.size();
   if (!m && !n) {
-    BOOST_FOREACH(const Matrix* M, matrices) {
+    for(const Matrix* M: matrices) {
       dimA1 =  M->rows();  // TODO: should check if all the same !
       dimA2 += M->cols();
     }
@@ -516,7 +449,7 @@ Matrix collect(const std::vector<const Matrix *>& matrices, size_t m, size_t n)
   // stl::copy version
   Matrix A(dimA1, dimA2);
   size_t hindex = 0;
-  BOOST_FOREACH(const Matrix* M, matrices) {
+  for(const Matrix* M: matrices) {
     size_t row_len = M->cols();
     A.block(0, hindex, dimA1, row_len) = *M;
     hindex += row_len;
@@ -581,15 +514,6 @@ Matrix vector_scale(const Matrix& A, const Vector& v, bool inf_mask) {
 }
 
 /* ************************************************************************* */
-Matrix3 skewSymmetric(double wx, double wy, double wz)
-{
-  return (Matrix3() <<
-      0.0, -wz, +wy,
-      +wz, 0.0, -wx,
-      -wy, +wx, 0.0).finished();
-}
-
-/* ************************************************************************* */
 Matrix LLt(const Matrix& A)
 {
   Eigen::LLT<Matrix> llt(A);
@@ -609,7 +533,7 @@ Matrix RtR(const Matrix &A)
 Matrix cholesky_inverse(const Matrix &A)
 {
   Eigen::LLT<Matrix> llt(A);
-  Matrix inv = eye(A.rows());
+  Matrix inv = Matrix::Identity(A.rows(),A.rows());
   llt.matrixU().solveInPlace<Eigen::OnTheRight>(inv);
   return inv*inv.transpose();
 }
@@ -621,7 +545,7 @@ Matrix cholesky_inverse(const Matrix &A)
 // inv(B' * B) == A
 Matrix inverse_square_root(const Matrix& A) {
   Eigen::LLT<Matrix> llt(A);
-  Matrix inv = eye(A.rows());
+  Matrix inv = Matrix::Identity(A.rows(),A.rows());
   llt.matrixU().solveInPlace<Eigen::OnTheRight>(inv);
   return inv.transpose();
 }
@@ -657,25 +581,12 @@ boost::tuple<int, double, Vector> DLT(const Matrix& A, double rank_tol) {
 
 /* ************************************************************************* */
 Matrix expm(const Matrix& A, size_t K) {
-  Matrix E = eye(A.rows()), A_k = eye(A.rows());
+  Matrix E = Matrix::Identity(A.rows(),A.rows()), A_k = Matrix::Identity(A.rows(),A.rows());
   for(size_t k=1;k<=K;k++) {
     A_k = A_k*A/double(k);
     E = E + A_k;
   }
   return E;
-}
-
-/* ************************************************************************* */
-Matrix Cayley(const Matrix& A) {
-  Matrix::Index n = A.cols();
-  assert(A.rows() == n);
-
-  // original
-//  const Matrix I = eye(n);
-//  return (I-A)*inverse(I+A);
-
-  // inlined to let Eigen do more optimization
-  return (Matrix::Identity(n, n) - A)*(Matrix::Identity(n, n) + A).inverse();
 }
 
 /* ************************************************************************* */
@@ -699,7 +610,7 @@ std::string formatMatrixIndented(const std::string& label, const Matrix& matrix,
     boost::tokenizer<boost::char_separator<char> > tok(matrixStr, boost::char_separator<char>("\n"));
 
     DenseIndex row = 0;
-    BOOST_FOREACH(const std::string& line, tok)
+    for(const std::string& line: tok)
     {
       assert(row < effectiveRows);
       if(row > 0)
@@ -715,6 +626,24 @@ std::string formatMatrixIndented(const std::string& label, const Matrix& matrix,
   return ss.str();
 }
 
+/* ************************************************************************* */
+void inplace_QR(Matrix& A){
+  size_t rows = A.rows();
+  size_t cols = A.cols();
+  size_t size = std::min(rows,cols);
 
+  typedef Eigen::internal::plain_diag_type<Matrix>::type HCoeffsType;
+  typedef Eigen::internal::plain_row_type<Matrix>::type RowVectorType;
+  HCoeffsType hCoeffs(size);
+  RowVectorType temp(cols);
+
+#if !EIGEN_VERSION_AT_LEAST(3,2,5)
+  Eigen::internal::householder_qr_inplace_blocked<Matrix, HCoeffsType>(A, hCoeffs, 48, temp.data());
+#else
+  Eigen::internal::householder_qr_inplace_blocked<Matrix, HCoeffsType>::run(A, hCoeffs, 48, temp.data());
+#endif
+
+  zeroBelowDiagonal(A);
+}
 
 } // namespace gtsam

@@ -60,7 +60,7 @@ public:
 
   static Point3 unrotate(const Rot2& R, const Point3& p,
       boost::optional<Matrix&> HR = boost::none) {
-    Point3 q = Rot3::yaw(R.theta()).unrotate(p, HR, boost::none);
+    Point3 q = Rot3::Yaw(R.theta()).unrotate(p, HR, boost::none);
     if (HR) {
       // assign to temporary first to avoid error in Win-Debug mode
       Matrix H = HR->col(2);
@@ -76,7 +76,7 @@ public:
       boost::optional<Matrix&> H = boost::none) const {
     // measured bM = nRb� * nM + b
     Point3 hx = unrotate(nRb, nM_, H) + bias_;
-    return (hx - measured_).vector();
+    return (hx - measured_);
   }
 };
 
@@ -114,7 +114,7 @@ public:
       boost::optional<Matrix&> H = boost::none) const {
     // measured bM = nRb� * nM + b
     Point3 hx = nRb.unrotate(nM_, H, boost::none) + bias_;
-    return (hx - measured_).vector();
+    return (hx - measured_);
   }
 };
 
@@ -154,8 +154,8 @@ public:
     // measured bM = nRb� * nM + b, where b is unknown bias
     Point3 hx = bRn_.rotate(nM, boost::none, H1) + bias;
     if (H2)
-      *H2 = eye(3);
-    return (hx - measured_).vector();
+      *H2 = I_3x3;
+    return (hx - measured_);
   }
 };
 
@@ -197,7 +197,7 @@ public:
     Unit3 rotated = bRn_.rotate(direction, boost::none, H2);
     Point3 hx = scale * rotated.point3() + bias;
     if (H1)
-      *H1 = rotated.point3().vector();
+      *H1 = rotated.point3();
     if (H2) // H2 is 2*2, but we need 3*2
     {
       Matrix H;
@@ -205,8 +205,8 @@ public:
       *H2 = scale * H * (*H2);
     }
     if (H3)
-      *H3 = eye(3);
-    return (hx - measured_).vector();
+      *H3 = I_3x3;
+    return (hx - measured_);
   }
 };
 

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -22,6 +22,10 @@
 
 #pragma once
 
+#include <gtsam/geometry/Unit3.h>
+#include <gtsam/geometry/Quaternion.h>
+#include <gtsam/geometry/SO3.h>
+#include <gtsam/base/concepts.h>
 #include <gtsam/config.h> // Get GTSAM_USE_QUATERNIONS macro
 
 // You can override the default coordinate mode using this flag
@@ -40,17 +44,7 @@
   #endif
 #endif
 
-#include <gtsam/base/DerivedValue.h>
-#include <gtsam/base/Matrix.h>
-#include <gtsam/geometry/Point3.h>
-#include <gtsam/geometry/Unit3.h>
-
 namespace gtsam {
-
-  /// Typedef to an Eigen Quaternion<double>, we disable alignment because
-  /// geometry objects are stored in boost pool allocators, in Values
-  /// containers, and and these pool allocators do not support alignment.
-  typedef Eigen::Quaternion<double, Eigen::DontAlign> Quaternion;
 
   /**
    * @brief A 3D rotation represented as a rotation matrix if the preprocessor
@@ -59,13 +53,13 @@ namespace gtsam {
    * @addtogroup geometry
    * \nosubgrouping
    */
-  class GTSAM_EXPORT Rot3 {
+  class GTSAM_EXPORT Rot3 : public LieGroup<Rot3,3> {
 
   private:
 
 #ifdef GTSAM_USE_QUATERNIONS
     /** Internal Eigen Quaternion */
-    Quaternion quaternion_;
+    gtsam::Quaternion quaternion_;
 #else
     Matrix3 rot_;
 #endif
@@ -91,11 +85,33 @@ namespace gtsam {
         double R21, double R22, double R23,
         double R31, double R32, double R33);
 
-    /** constructor from a rotation matrix */
-    Rot3(const Matrix3& R);
+    /**
+     * Constructor from a rotation matrix
+     * Version for generic matrices. Need casting to Matrix3
+     * in quaternion mode, since Eigen's quaternion doesn't
+     * allow assignment/construction from a generic matrix.
+     * See: http://stackoverflow.com/questions/27094132/cannot-understand-if-this-is-circular-dependency-or-clang#tab-top
+     */
+    template<typename Derived>
+    inline explicit Rot3(const Eigen::MatrixBase<Derived>& R) {
+      #ifdef GTSAM_USE_QUATERNIONS
+        quaternion_=Matrix3(R);
+      #else
+        rot_ = R;
+      #endif
+    }
 
-    /** constructor from a rotation matrix */
-    Rot3(const Matrix& R);
+    /**
+     * Constructor from a rotation matrix
+     * Overload version for Matrix3 to avoid casting in quaternion mode.
+     */
+    inline explicit Rot3(const Matrix3& R) {
+      #ifdef GTSAM_USE_QUATERNIONS
+        quaternion_=R;
+      #else
+        rot_ = R;
+      #endif
+    }
 
     /** Constructor from a quaternion.  This can also be called using a plain
      * Vector, due to implicit conversion from Vector to Quaternion
@@ -130,13 +146,13 @@ namespace gtsam {
     }
 
     /// Positive yaw is to right (as in aircraft heading). See ypr
-    static Rot3 yaw  (double t) { return Rz(t); }
+    static Rot3 Yaw  (double t) { return Rz(t); }
 
     /// Positive pitch is up (increasing aircraft altitude).See ypr
-    static Rot3 pitch(double t) { return Ry(t); }
+    static Rot3 Pitch(double t) { return Ry(t); }
 
     //// Positive roll is to right (increasing yaw in aircraft).
-    static Rot3 roll (double t) { return Rx(t); }
+    static Rot3 Roll (double t) { return Rx(t); }
 
     /**
      * Returns rotation nRb from body to nav frame.
@@ -147,54 +163,64 @@ namespace gtsam {
      * as described in http://www.sedris.org/wg8home/Documents/WG80462.pdf.
      * Assumes vehicle coordinate frame X forward, Y right, Z down.
      */
-    static Rot3 ypr  (double y, double p, double r) { return RzRyRx(r,p,y);}
+    static Rot3 Ypr(double y, double p, double r) { return RzRyRx(r,p,y);}
 
     /** Create from Quaternion coefficients */
-    static Rot3 quaternion(double w, double x, double y, double z) {
-      Quaternion q(w, x, y, z);
+    static Rot3 Quaternion(double w, double x, double y, double z) {
+      gtsam::Quaternion q(w, x, y, z);
       return Rot3(q);
     }
 
     /**
-     * Rodriguez' formula to compute an incremental rotation matrix
-     * @param   w is the rotation axis, unit length
-     * @param   theta rotation angle
-     * @return incremental rotation matrix
+     * Convert from axis/angle representation
+     * @param  axisw is the rotation axis, unit length
+     * @param   angle rotation angle
+     * @return incremental rotation
      */
-    static Rot3 rodriguez(const Vector& w, double theta);
+    static Rot3 AxisAngle(const Point3& axis, double angle) {
+#ifdef GTSAM_USE_QUATERNIONS
+      return gtsam::Quaternion(Eigen::AngleAxis<double>(angle, axis));
+#else
+      return Rot3(SO3::AxisAngle(axis,angle));
+#endif
+    }
 
     /**
-     * Rodriguez' formula to compute an incremental rotation matrix
-     * @param   w is the rotation axis, unit length
-     * @param   theta rotation angle
-     * @return incremental rotation matrix
+     * Convert from axis/angle representation
+     * @param   axis is the rotation axis
+     * @param   angle rotation angle
+     * @return incremental rotation
      */
-    static Rot3 rodriguez(const Point3& w, double theta);
+    static Rot3 AxisAngle(const Unit3& axis, double angle) {
+      return AxisAngle(axis.unitVector(),angle);
+    }
 
     /**
-     * Rodriguez' formula to compute an incremental rotation matrix
-     * @param   w is the rotation axis
-     * @param   theta rotation angle
-     * @return incremental rotation matrix
+     * Rodrigues' formula to compute an incremental rotation
+     * @param w a vector of incremental roll,pitch,yaw
+     * @return incremental rotation
      */
-    static Rot3 rodriguez(const Unit3& w, double theta);
+    static Rot3 Rodrigues(const Vector3& w) {
+      return Rot3::Expmap(w);
+    }
 
     /**
-     * Rodriguez' formula to compute an incremental rotation matrix
-     * @param v a vector of incremental roll,pitch,yaw
-     * @return incremental rotation matrix
-     */
-    static Rot3 rodriguez(const Vector3& v);
-
-    /**
-     * Rodriguez' formula to compute an incremental rotation matrix
+     * Rodrigues' formula to compute an incremental rotation
      * @param wx Incremental roll (about X)
      * @param wy Incremental pitch (about Y)
      * @param wz Incremental yaw (about Z)
-     * @return incremental rotation matrix
+     * @return incremental rotation
      */
-    static Rot3 rodriguez(double wx, double wy, double wz)
-      { return rodriguez(Vector3(wx, wy, wz));}
+    static Rot3 Rodrigues(double wx, double wy, double wz) {
+      return Rodrigues(Vector3(wx, wy, wz));
+    }
+
+    /// Determine a rotation to bring two vectors into alignment, using the rotation axis provided
+    static Rot3 AlignPair(const Unit3& axis, const Unit3& a_p, const Unit3& b_p);
+
+    /// Calculate rotation from two pairs of homogeneous points using two successive rotations
+    static Rot3 AlignTwoPairs(const Unit3& a_p, const Unit3& b_p,  //
+                              const Unit3& a_q, const Unit3& b_q);
 
     /// @}
     /// @name Testable
@@ -215,15 +241,13 @@ namespace gtsam {
       return Rot3();
     }
 
-    /// derivative of inverse rotation R^T s.t. inverse(R)*R = identity
-    Rot3 inverse(boost::optional<Matrix3&> H1=boost::none) const;
-
-    /// Compose two rotations i.e., R= (*this) * R2
-    Rot3 compose(const Rot3& R2, OptionalJacobian<3, 3> H1 = boost::none,
-        OptionalJacobian<3, 3> H2 = boost::none) const;
-
-    /** compose two rotations */
+    /// Syntatic sugar for composing two rotations
     Rot3 operator*(const Rot3& R2) const;
+
+    /// inverse of a rotation, TODO should be different for M/Q
+    Rot3 inverse() const {
+      return Rot3(Matrix3(transpose()));
+    }
 
     /**
      * Conjugation: given a rotation acting in frame B, compute rotation c1Rc2 acting in a frame C
@@ -235,22 +259,9 @@ namespace gtsam {
       return cRb * (*this) * cRb.inverse();
     }
 
-    /**
-     * Return relative rotation D s.t. R2=D*R1, i.e. D=R2*R1'
-     */
-    Rot3 between(const Rot3& R2,
-        OptionalJacobian<3,3> H1=boost::none,
-        OptionalJacobian<3,3> H2=boost::none) const;
-
     /// @}
     /// @name Manifold
     /// @{
-
-    /// dimension of the variable - used to autodetect sizes
-    static size_t Dim() { return 3; }
-
-    /// return dimensionality of tangent space, DOF = 3
-    size_t dim() const { return 3; }
 
     /**
      * The method retract() is used to map from the tangent space back to the manifold.
@@ -265,20 +276,28 @@ namespace gtsam {
       EXPMAP, ///< Use the Lie group exponential map to retract
 #ifndef GTSAM_USE_QUATERNIONS
       CAYLEY, ///< Retract and localCoordinates using the Cayley transform.
-      SLOW_CAYLEY ///< Slow matrix implementation of Cayley transform (for tests only).
 #endif
       };
 
 #ifndef GTSAM_USE_QUATERNIONS
+
+    // Cayley chart around origin
+    struct CayleyChart {
+    static Rot3 Retract(const Vector3& v, OptionalJacobian<3, 3> H = boost::none);
+    static Vector3 Local(const Rot3& r, OptionalJacobian<3, 3> H = boost::none);
+    };
+
     /// Retraction from R^3 to Rot3 manifold using the Cayley transform
-    Rot3 retractCayley(const Vector& omega) const;
+    Rot3 retractCayley(const Vector& omega) const {
+      return compose(CayleyChart::Retract(omega));
+    }
+
+    /// Inverse of retractCayley
+    Vector3 localCayley(const Rot3& other) const {
+      return CayleyChart::Local(between(other));
+    }
+
 #endif
-
-    /// Retraction from R^3 \f$ [R_x,R_y,R_z] \f$ to Rot3 manifold neighborhood around current rotation
-    Rot3 retract(const Vector& omega, Rot3::CoordinatesMode mode = ROT3_DEFAULT_COORDINATES_MODE) const;
-
-    /// Returns local retract coordinates \f$ [R_x,R_y,R_z] \f$ in neighborhood around current rotation
-    Vector3 localCoordinates(const Rot3& t2, Rot3::CoordinatesMode mode = ROT3_DEFAULT_COORDINATES_MODE) const;
 
     /// @}
     /// @name Lie Group
@@ -286,48 +305,39 @@ namespace gtsam {
 
     /**
      * Exponential map at identity - create a rotation from canonical coordinates
-     * \f$ [R_x,R_y,R_z] \f$ using Rodriguez' formula
+     * \f$ [R_x,R_y,R_z] \f$ using Rodrigues' formula
      */
-    static Rot3 Expmap(const Vector& v, boost::optional<Matrix3&> H = boost::none) {
-      if(H){
-        H->resize(3,3);
-        *H = Rot3::ExpmapDerivative(v);
-      }
-      if(zero(v))
-        return Rot3();
-      else
-        return rodriguez(v);
+    static Rot3 Expmap(const Vector3& v, OptionalJacobian<3,3> H = boost::none) {
+      if(H) *H = Rot3::ExpmapDerivative(v);
+#ifdef GTSAM_USE_QUATERNIONS
+      return traits<gtsam::Quaternion>::Expmap(v);
+#else
+      return Rot3(traits<SO3>::Expmap(v));
+#endif
     }
 
     /**
-     * Log map at identity - return the canonical coordinates \f$ [R_x,R_y,R_z] \f$ of this rotation
+     * Log map at identity - returns the canonical coordinates
+     * \f$ [R_x,R_y,R_z] \f$ of this rotation
      */
-    static Vector3 Logmap(const Rot3& R, boost::optional<Matrix3&> H = boost::none);
+    static Vector3 Logmap(const Rot3& R, OptionalJacobian<3,3> H = boost::none);
 
-    /// Left-trivialized derivative of the exponential map
-    static Matrix3 dexpL(const Vector3& v);
-
-    /// Left-trivialized derivative inverse of the exponential map
-    static Matrix3 dexpInvL(const Vector3& v);
-
-    /**
-     * Right Jacobian for Exponential map in SO(3) - equation (10.86) and following equations in
-     * G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups", Volume 2, 2008.
-     * expmap(thetahat + omega) \approx expmap(thetahat) * expmap(Jr * omega)
-     * where Jr = ExpmapDerivative(thetahat);
-     * This maps a perturbation in the tangent space (omega) to
-     * a perturbation on the manifold (expmap(Jr * omega))
-     */
+    /// Derivative of Expmap
     static Matrix3 ExpmapDerivative(const Vector3& x);
 
-    /** Right Jacobian for Log map in SO(3) - equation (10.86) and following equations in
-     * G.S. Chirikjian, "Stochastic Models, Information Theory, and Lie Groups", Volume 2, 2008.
-     * logmap( Rhat * expmap(omega) ) \approx logmap( Rhat ) + Jrinv * omega
-     * where Jrinv = LogmapDerivative(omega);
-     * This maps a perturbation on the manifold (expmap(omega))
-     * to a perturbation in the tangent space (Jrinv * omega)
-     */
+    /// Derivative of Logmap
     static Matrix3 LogmapDerivative(const Vector3& x);
+
+    /** Calculate Adjoint map */
+    Matrix3 AdjointMap() const { return matrix(); }
+
+    // Chart at origin, depends on compile-time flag ROT3_DEFAULT_COORDINATES_MODE
+    struct ChartAtOrigin {
+      static Rot3 Retract(const Vector3& v, ChartJacobian H = boost::none);
+      static Vector3 Local(const Rot3& r, ChartJacobian H = boost::none);
+    };
+
+    using LieGroup<Rot3, 3>::inverse; // version with derivative
 
     /// @}
     /// @name Group Action on Point3
@@ -389,13 +399,13 @@ namespace gtsam {
 
     /**
      * Use RQ to calculate yaw-pitch-roll angle representation
-     * @return a vector containing ypr s.t. R = Rot3::ypr(y,p,r)
+     * @return a vector containing ypr s.t. R = Rot3::Ypr(y,p,r)
      */
     Vector3 ypr() const;
 
     /**
      * Use RQ to calculate roll-pitch-yaw angle representation
-     * @return a vector containing ypr s.t. R = Rot3::ypr(y,p,r)
+     * @return a vector containing ypr s.t. R = Rot3::Ypr(y,p,r)
      */
     Vector3 rpy() const;
 
@@ -430,7 +440,7 @@ namespace gtsam {
     /** Compute the quaternion representation of this rotation.
      * @return The quaternion
      */
-    Quaternion toQuaternion() const;
+    gtsam::Quaternion toQuaternion() const;
 
     /**
      * Converts to a generic matrix to allow for use with matlab
@@ -450,12 +460,29 @@ namespace gtsam {
 
     /// @}
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+    /// @name Deprecated
+    /// @{
+    static Rot3 rodriguez(const Point3&  axis, double angle) { return AxisAngle(axis, angle); }
+    static Rot3 rodriguez(const Unit3&   axis, double angle) { return AxisAngle(axis, angle); }
+    static Rot3 rodriguez(const Vector3& w)                  { return Rodrigues(w); }
+    static Rot3 rodriguez(double wx, double wy, double wz)   { return Rodrigues(wx, wy, wz); }
+    static Rot3 yaw  (double t) { return Yaw(t); }
+    static Rot3 pitch(double t) { return Pitch(t); }
+    static Rot3 roll (double t) { return Roll(t); }
+    static Rot3 ypr(double y, double p, double r) { return Ypr(r,p,y);}
+    static Rot3 quaternion(double w, double x, double y, double z) {
+      return Rot3::Quaternion(w, x, y, z);
+    }
+  /// @}
+#endif
+
   private:
 
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version)
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/)
     {
 #ifndef GTSAM_USE_QUATERNIONS
        ar & boost::serialization::make_nvp("rot11", rot_(0,0));
@@ -489,20 +516,10 @@ namespace gtsam {
    */
   GTSAM_EXPORT std::pair<Matrix3,Vector3> RQ(const Matrix3& A);
 
-  // Define GTSAM traits
-  namespace traits {
+  template<>
+  struct traits<Rot3> : public internal::LieGroup<Rot3> {};
 
   template<>
-  struct GTSAM_EXPORT is_group<Rot3> : public boost::true_type{
-  };
-
-  template<>
-  struct GTSAM_EXPORT is_manifold<Rot3> : public boost::true_type{
-  };
-
-  template<>
-  struct GTSAM_EXPORT dimension<Rot3> : public boost::integral_constant<int, 3>{
-  };
-
-  }
+  struct traits<const Rot3> : public internal::LieGroup<Rot3> {};
 }
+

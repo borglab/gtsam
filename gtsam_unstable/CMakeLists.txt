@@ -29,37 +29,6 @@ set (excluded_headers # "")
     "${CMAKE_CURRENT_SOURCE_DIR}/slam/serialization.h"
 )
 
-
-#####################
-# Find lp_solve
-unset(lpsolve_LIBRARY CACHE)
-unset(lpsolve_INCLUDE_DIRS CACHE)
-include(${CMAKE_SOURCE_DIR}/gtsam/3rdparty/lp_solve_5.5/cmake/Findlpsolve.cmake)
-# If lpsolve_LIBRARY is not found, recompile the library 
-message("lpsolve_LIBRARY: " ${lpsolve_LIBRARY} " ...")
-message("lpsolve_BUILD_PATH" ${lpsolve_BUILD_PATH})
-
-if(NOT lpsolve_LIBRARY)
-	if(APPLE)
-		set(lpsolve_BUILD_SCRIPT sh ccc.osx)
-	elseif(UNIX)
-		set(lpsolve_BUILD_SCRIPT sh ccc)
-	elseif(WIN32)
-		set(lpsolve_BUILD_SCRIPT cvc6.bat)
-	endif()
-    message("Building lpsolve. Please wait...")
-    execute_process(COMMAND ${lpsolve_BUILD_SCRIPT} 
-                        WORKING_DIRECTORY ${lpsolve_BUILD_PATH})
-    include(${CMAKE_SOURCE_DIR}/gtsam/3rdparty/lp_solve_5.5/cmake/Findlpsolve.cmake)
-    message("Done!")
-endif()
-message("lpsolve_INCLUDE_DIRS: " ${lpsolve_INCLUDE_DIRS})
-message("lpsolve_LIBRARY: " ${lpsolve_LIBRARY})
-
-include_directories(${lpsolve_INCLUDE_DIRS})
-list(APPEND GTSAM_UNSTABLE_ADDITIONAL_LIBRARIES ${lpsolve_LIBRARY})
-#####################
-
 # assemble core libraries
 foreach(subdir ${gtsam_unstable_subdirs})
     # Build convenience libraries
@@ -110,7 +79,7 @@ if (GTSAM_BUILD_STATIC_LIBRARY)
 			PREFIX "lib"
 			COMPILE_DEFINITIONS GTSAM_UNSTABLE_IMPORT_STATIC)
 	endif()
-	target_link_libraries(gtsam_unstable gtsam ${GTSAM_UNSTABLE_BOOST_LIBRARIES} ${GTSAM_UNSTABLE_ADDITIONAL_LIBRARIES})
+	target_link_libraries(gtsam_unstable gtsam ${GTSAM_UNSTABLE_BOOST_LIBRARIES})
 	install(TARGETS gtsam_unstable EXPORT GTSAM-exports ARCHIVE DESTINATION lib)
 	list(APPEND GTSAM_EXPORTED_TARGETS gtsam_unstable)
 	set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
@@ -128,7 +97,7 @@ else()
 			DEFINE_SYMBOL GTSAM_UNSTABLE_EXPORTS
 			RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
 	endif()
-    target_link_libraries(gtsam_unstable gtsam ${GTSAM_UNSTABLE_BOOST_LIBRARIES} ${GTSAM_UNSTABLE_ADDITIONAL_LIBRARIES})
+    target_link_libraries(gtsam_unstable gtsam ${GTSAM_UNSTABLE_BOOST_LIBRARIES})
     install(TARGETS gtsam_unstable EXPORT GTSAM-exports LIBRARY DESTINATION lib ARCHIVE DESTINATION lib RUNTIME DESTINATION bin)
     list(APPEND GTSAM_EXPORTED_TARGETS gtsam_unstable)
     set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)

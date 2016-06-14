@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -28,12 +28,7 @@ int main()
 {
   int n = 1e6;
 
-  const Pose3 pose1((Matrix)(Matrix(3,3) <<
-      1., 0., 0.,
-      0.,-1., 0.,
-      0., 0.,-1.
-  ).finished(),
-  Point3(0,0,0.5));
+  const Pose3 pose1(Rot3(Vector3(1, -1, -1).asDiagonal()), Point3(0, 0, 0.5));
 
   static Cal3Bundler K(500, 1e-3, 2.0*1e-3);
   const PinholeCamera<Cal3Bundler> camera(pose1,K);
@@ -69,7 +64,7 @@ int main()
     long timeLog = clock();
     Point2 measurement(0,0);
     for(int i = 0; i < n; i++)
-      measurement.localCoordinates(camera.project(point1));
+      camera.project(point1)-measurement;
     long timeLog2 = clock();
     double seconds = (double)(timeLog2-timeLog)/CLOCKS_PER_SEC;
     cout << ((double)seconds*1e9/n) << " nanosecs/call" << endl;

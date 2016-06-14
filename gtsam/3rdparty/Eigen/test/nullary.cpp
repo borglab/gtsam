@@ -80,7 +80,9 @@ void testVectorType(const VectorType& base)
   Matrix<Scalar,1,Dynamic> col_vector(size);
   row_vector.setLinSpaced(size,low,high);
   col_vector.setLinSpaced(size,low,high);
-  VERIFY( row_vector.isApprox(col_vector.transpose(), NumTraits<Scalar>::epsilon()));
+  // when using the extended precision (e.g., FPU) the relative error might exceed 1 bit
+  // when computing the squared sum in isApprox, thus the 2x factor.
+  VERIFY( row_vector.isApprox(col_vector.transpose(), Scalar(2)*NumTraits<Scalar>::epsilon()));
 
   Matrix<Scalar,Dynamic,1> size_changer(size+50);
   size_changer.setLinSpaced(size,low,high);

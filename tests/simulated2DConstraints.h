@@ -90,11 +90,11 @@ namespace simulated2D {
       virtual double value(const Point& x, boost::optional<Matrix&> H =
           boost::none) const {
         if (H) {
-          Matrix D = zeros(1, x.dim());
+          Matrix D = Matrix::Zero(1, traits<Point>::GetDimension(x));
           D(0, IDX) = 1.0;
           *H = D;
         }
-        return Point::Logmap(x)(IDX);
+        return traits<Point>::Logmap(x)(IDX);
       }
     };
 
@@ -111,7 +111,7 @@ namespace simulated2D {
      * @return a scalar distance between values
      */
     template<class T1, class T2>
-    double range_trait(const T1& a, const T2& b) { return a.dist(b); }
+    double range_trait(const T1& a, const T2& b) { return distance2(a, b); }
 
     /**
      * Binary inequality constraint forcing the range between points

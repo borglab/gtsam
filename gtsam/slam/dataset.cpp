@@ -1,5 +1,5 @@
 /* ----------------------------------------------------------------------------
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -15,18 +15,33 @@
  * @brief utility functions for loading datasets
  */
 
-#include <gtsam/slam/dataset.h>
+#include <gtsam/sam/BearingRangeFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/slam/BearingRangeFactor.h>
+#include <gtsam/slam/dataset.h>
+#include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Pose2.h>
-#include <gtsam/linear/Sampler.h>
+#include <gtsam/geometry/Rot3.h>
+#include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/Values.h>
+#include <gtsam/nonlinear/Values-inl.h>
+#include <gtsam/linear/Sampler.h>
+#include <gtsam/base/GenericValue.h>
+#include <gtsam/base/Lie.h>
+#include <gtsam/base/Matrix.h>
+#include <gtsam/base/types.h>
+#include <gtsam/base/Value.h>
+#include <gtsam/base/Vector.h>
 
-#include <boost/filesystem.hpp>
+#include <boost/assign/list_inserter.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
 
+#include <cmath>
 #include <fstream>
-#include <sstream>
-#include <cstdlib>
+#include <iostream>
+#include <stdexcept>
 
 using namespace std;
 namespace fs = boost::filesystem;
@@ -52,8 +67,8 @@ string findExampleDataFile(const string& name) {
   namesToSearch.push_back(name + ".out");
 
   // Find first name that exists
-  BOOST_FOREACH(const fs::path& root, rootsToSearch) {
-    BOOST_FOREACH(const fs::path& name, namesToSearch) {
+  for(const fs::path& root: rootsToSearch) {
+    for(const fs::path& name: namesToSearch) {
       if (fs::is_regular_file(root / name))
         return (root / name).string();
     }
@@ -63,8 +78,8 @@ string findExampleDataFile(const string& name) {
   throw
 invalid_argument(
     "gtsam::findExampleDataFile could not find a matching file in\n"
-    SOURCE_TREE_DATASET_DIR " or\n"
-    INSTALLED_DATASET_DIR " named\n" +
+    GTSAM_SOURCE_TREE_DATASET_DIR " or\n"
+    GTSAM_INSTALLED_DATASET_DIR " named\n" +
     name + ", " + name + ".graph, or " + name + ".txt");
 }
 
@@ -231,6 +246,7 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, Key maxID,
   // Parse the pose constraints
   Key id1, id2;
   bool haveLandmark = false;
+  const bool useModelInFile = !model;
   while (!is.eof()) {
     if (!(is >> tag))
       break;
@@ -251,7 +267,7 @@ GraphAndValues load2D(const string& filename, SharedNoiseModel model, Key maxID,
       if (maxID && (id1 >= maxID || id2 >= maxID))
         continue;
 
-      if (!model)
+      if (useModelInFile)
         model = modelInFile;
 
       if (addNoise)
@@ -349,7 +365,7 @@ void save2D(const NonlinearFactorGraph& graph, const Values& config,
 
   // save poses
 
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, config) {
+  for(const Values::ConstKeyValuePair& key_value: config) {
     const Pose2& pose = key_value.value.cast<Pose2>();
     stream << "VERTEX2 " << key_value.key << " " << pose.x() << " " << pose.y()
         << " " << pose.theta() << endl;
@@ -358,7 +374,7 @@ void save2D(const NonlinearFactorGraph& graph, const Values& config,
   // save edges
   Matrix R = model->R();
   Matrix RR = trans(R) * R; //prod(trans(R),R);
-  BOOST_FOREACH(boost::shared_ptr<NonlinearFactor> factor_, graph) {
+  for(boost::shared_ptr<NonlinearFactor> factor_: graph) {
     boost::shared_ptr<BetweenFactor<Pose2> > factor =
         boost::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor_);
     if (!factor)
@@ -396,13 +412,13 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
 
   // save 2D & 3D poses
   Values::ConstFiltered<Pose2> viewPose2 = estimate.filter<Pose2>();
-  BOOST_FOREACH(const Values::ConstFiltered<Pose2>::KeyValuePair& key_value, viewPose2) {
+  for(const Values::ConstFiltered<Pose2>::KeyValuePair& key_value: viewPose2) {
     stream << "VERTEX_SE2 " << key_value.key << " " << key_value.value.x() << " "
         << key_value.value.y() << " " << key_value.value.theta() << endl;
   }
 
   Values::ConstFiltered<Pose3> viewPose3 = estimate.filter<Pose3>();
-  BOOST_FOREACH(const Values::ConstFiltered<Pose3>::KeyValuePair& key_value, viewPose3) {
+  for(const Values::ConstFiltered<Pose3>::KeyValuePair& key_value: viewPose3) {
       Point3 p = key_value.value.translation();
       Rot3 R = key_value.value.rotation();
       stream << "VERTEX_SE3:QUAT " << key_value.key << " " << p.x() << " "  << p.y() << " " << p.z()
@@ -411,11 +427,11 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
   }
 
   // save edges (2D or 3D)
-  BOOST_FOREACH(boost::shared_ptr<NonlinearFactor> factor_, graph) {
+  for(boost::shared_ptr<NonlinearFactor> factor_: graph) {
     boost::shared_ptr<BetweenFactor<Pose2> > factor =
         boost::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor_);
     if (factor){
-      SharedNoiseModel model = factor->get_noiseModel();
+      SharedNoiseModel model = factor->noiseModel();
       boost::shared_ptr<noiseModel::Gaussian> gaussianModel =
           boost::dynamic_pointer_cast<noiseModel::Gaussian>(model);
       if (!gaussianModel){
@@ -438,7 +454,7 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
         boost::dynamic_pointer_cast< BetweenFactor<Pose3> >(factor_);
 
     if (factor3D){
-      SharedNoiseModel model = factor3D->get_noiseModel();
+      SharedNoiseModel model = factor3D->noiseModel();
 
       boost::shared_ptr<noiseModel::Gaussian> gaussianModel =
           boost::dynamic_pointer_cast<noiseModel::Gaussian>(model);
@@ -455,7 +471,7 @@ void writeG2o(const NonlinearFactorGraph& graph, const Values& estimate,
           << p.x() << " "  << p.y() << " " << p.z()  << " " << R.toQuaternion().x()
           << " " << R.toQuaternion().y() << " " << R.toQuaternion().z()  << " " << R.toQuaternion().w();
 
-      Matrix InfoG2o = eye(6);
+      Matrix InfoG2o = I_6x6;
       InfoG2o.block(0,0,3,3) = Info.block(3,3,3,3); // cov translation
       InfoG2o.block(3,3,3,3) = Info.block(0,0,3,3); // cov rotation
       InfoG2o.block(0,3,3,3) = Info.block(0,3,3,3); // off diagonal
@@ -493,7 +509,7 @@ GraphAndValues load3D(const string& filename) {
       Key id;
       double x, y, z, roll, pitch, yaw;
       ls >> id >> x >> y >> z >> roll >> pitch >> yaw;
-      Rot3 R = Rot3::ypr(yaw,pitch,roll);
+      Rot3 R = Rot3::Ypr(yaw,pitch,roll);
       Point3 t = Point3(x, y, z);
       initial->insert(id, Pose3(R,t));
     }
@@ -501,7 +517,7 @@ GraphAndValues load3D(const string& filename) {
       Key id;
       double x, y, z, qx, qy, qz, qw;
       ls >> id >> x >> y >> z >> qx >> qy >> qz >> qw;
-      Rot3 R = Rot3::quaternion(qw, qx, qy, qz);
+      Rot3 R = Rot3::Quaternion(qw, qx, qy, qz);
       Point3 t = Point3(x, y, z);
       initial->insert(id, Pose3(R,t));
     }
@@ -520,9 +536,9 @@ GraphAndValues load3D(const string& filename) {
       Key id1, id2;
       double x, y, z, roll, pitch, yaw;
       ls >> id1 >> id2 >> x >> y >> z >> roll >> pitch >> yaw;
-      Rot3 R = Rot3::ypr(yaw,pitch,roll);
+      Rot3 R = Rot3::Ypr(yaw,pitch,roll);
       Point3 t = Point3(x, y, z);
-      Matrix m = eye(6);
+      Matrix m = I_6x6;
       for (int i = 0; i < 6; i++)
         for (int j = i; j < 6; j++)
           ls >> m(i, j);
@@ -532,11 +548,11 @@ GraphAndValues load3D(const string& filename) {
       graph->push_back(factor);
     }
     if (tag == "EDGE_SE3:QUAT") {
-      Matrix m = eye(6);
+      Matrix m = I_6x6;
       Key id1, id2;
       double x, y, z, qx, qy, qz, qw;
       ls >> id1 >> id2 >> x >> y >> z >> qx >> qy >> qz >> qw;
-      Rot3 R = Rot3::quaternion(qw, qx, qy, qz);
+      Rot3 R = Rot3::Quaternion(qw, qx, qy, qz);
       Point3 t = Point3(x, y, z);
       for (int i = 0; i < 6; i++){
         for (int j = i; j < 6; j++){
@@ -546,11 +562,13 @@ GraphAndValues load3D(const string& filename) {
           m(j, i) = mij;
         }
       }
-      Matrix mgtsam = eye(6);
-      mgtsam.block(0,0,3,3) = m.block(3,3,3,3); // cov rotation
-      mgtsam.block(3,3,3,3) = m.block(0,0,3,3); // cov translation
-      mgtsam.block(0,3,3,3) = m.block(0,3,3,3); // off diagonal
-      mgtsam.block(3,0,3,3) = m.block(3,0,3,3); // off diagonal
+      Matrix mgtsam = I_6x6;
+
+      mgtsam.block<3,3>(0,0) = m.block<3,3>(3,3); // cov rotation
+      mgtsam.block<3,3>(3,3) = m.block<3,3>(0,0); // cov translation
+      mgtsam.block<3,3>(0,3) = m.block<3,3>(0,3); // off diagonal
+      mgtsam.block<3,3>(3,0) = m.block<3,3>(3,0); // off diagonal
+
       SharedNoiseModel model = noiseModel::Gaussian::Information(mgtsam);
       NonlinearFactor::shared_ptr factor(new BetweenFactor<Pose3>(id1, id2, Pose3(R,t), model));
       graph->push_back(factor);
@@ -641,10 +659,11 @@ bool readBundler(const string& filename, SfM_data &data) {
 
     Pose3 pose = openGL2gtsam(R, tx, ty, tz);
 
-    data.cameras.push_back(SfM_Camera(pose, K));
+    data.cameras.emplace_back(pose, K);
   }
 
   // Get the information for the 3D points
+  data.tracks.reserve(nrPoints);
   for (size_t j = 0; j < nrPoints; j++) {
     SfM_Track track;
 
@@ -664,11 +683,14 @@ bool readBundler(const string& filename, SfM_data &data) {
     size_t nvisible = 0;
     is >> nvisible;
 
+    track.measurements.reserve(nvisible);
+    track.siftIndices.reserve(nvisible);
     for (size_t k = 0; k < nvisible; k++) {
       size_t cam_idx = 0, point_idx = 0;
       float u, v;
       is >> cam_idx >> point_idx >> u >> v;
-      track.measurements.push_back(make_pair(cam_idx, Point2(u, -v)));
+      track.measurements.emplace_back(cam_idx, Point2(u, -v));
+      track.siftIndices.emplace_back(cam_idx, point_idx);
     }
 
     data.tracks.push_back(track);
@@ -698,15 +720,15 @@ bool readBAL(const string& filename, SfM_data &data) {
     size_t i = 0, j = 0;
     float u, v;
     is >> i >> j >> u >> v;
-    data.tracks[j].measurements.push_back(make_pair(i, Point2(u, -v)));
+    data.tracks[j].measurements.emplace_back(i, Point2(u, -v));
   }
 
   // Get the information for the camera poses
   for (size_t i = 0; i < nrPoses; i++) {
-    // Get the rodriguez vector
+    // Get the Rodrigues vector
     float wx, wy, wz;
     is >> wx >> wy >> wz;
-    Rot3 R = Rot3::rodriguez(wx, wy, wz); // BAL-OpenGL rotation matrix
+    Rot3 R = Rot3::Rodrigues(wx, wy, wz); // BAL-OpenGL rotation matrix
 
     // Get the translation vector
     float tx, ty, tz;
@@ -719,7 +741,7 @@ bool readBAL(const string& filename, SfM_data &data) {
     is >> f >> k1 >> k2;
     Cal3Bundler K(f, k1, k2);
 
-    data.cameras.push_back(SfM_Camera(pose, K));
+    data.cameras.emplace_back(pose, K);
   }
 
   // Get the information for the 3D points
@@ -761,7 +783,7 @@ bool writeBAL(const string& filename, SfM_data &data) {
   os << endl;
 
   for (size_t j = 0; j < data.number_tracks(); j++) { // for each 3D point j
-    SfM_Track track = data.tracks[j];
+    const SfM_Track& track = data.tracks[j];
 
     for (size_t k = 0; k < track.number_measurements(); k++) { // for each observation of the 3D point j
       size_t i = track.measurements[k].first; // camera id
@@ -790,7 +812,9 @@ bool writeBAL(const string& filename, SfM_data &data) {
     Cal3Bundler cameraCalibration = data.cameras[i].calibration();
     Pose3 poseOpenGL = gtsam2openGL(poseGTSAM);
     os << Rot3::Logmap(poseOpenGL.rotation()) << endl;
-    os << poseOpenGL.translation().vector() << endl;
+    os << poseOpenGL.translation().x() << endl;
+    os << poseOpenGL.translation().y() << endl;
+    os << poseOpenGL.translation().z() << endl;
     os << cameraCalibration.fx() << endl;
     os << cameraCalibration.k1() << endl;
     os << cameraCalibration.k2() << endl;
@@ -862,7 +886,7 @@ bool writeBALfromValues(const string& filename, const SfM_data &data,
       dataValues.tracks[j].r = 1.0;
       dataValues.tracks[j].g = 0.0;
       dataValues.tracks[j].b = 0.0;
-      dataValues.tracks[j].p = Point3();
+      dataValues.tracks[j].p = Point3(0,0,0);
     }
   }
 
@@ -873,7 +897,7 @@ bool writeBALfromValues(const string& filename, const SfM_data &data,
 Values initialCamerasEstimate(const SfM_data& db) {
   Values initial;
   size_t i = 0; // NO POINTS:  j = 0;
-  BOOST_FOREACH(const SfM_Camera& camera, db.cameras)
+  for(const SfM_Camera& camera: db.cameras)
     initial.insert(i++, camera);
   return initial;
 }
@@ -881,9 +905,9 @@ Values initialCamerasEstimate(const SfM_data& db) {
 Values initialCamerasAndPointsEstimate(const SfM_data& db) {
   Values initial;
   size_t i = 0, j = 0;
-  BOOST_FOREACH(const SfM_Camera& camera, db.cameras)
+  for(const SfM_Camera& camera: db.cameras)
     initial.insert((i++), camera);
-  BOOST_FOREACH(const SfM_Track& track, db.tracks)
+  for(const SfM_Track& track: db.tracks)
     initial.insert(P(j++), track.p);
   return initial;
 }

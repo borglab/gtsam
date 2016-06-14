@@ -93,7 +93,7 @@ TEST( ReferenceFrameFactor, jacobians_zero ) {
 
   PointReferenceFrameFactor tc(lA1, tA1, lB1);
   Vector actCost = tc.evaluateError(global, trans, local),
-      expCost = zero(2);
+      expCost = Z_2x1;
   EXPECT(assert_equal(expCost, actCost, 1e-5));
 
   Matrix actualDT, actualDL, actualDF;

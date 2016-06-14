@@ -14,16 +14,23 @@
  * @brief Base class and basic functions for Manifold types
  * @author Alex Cunningham
  * @author Frank Dellaert
+ * @author Mike Bosse
  */
 
 #pragma once
 
 #include <gtsam/base/Matrix.h>
-#include <boost/static_assert.hpp>
-#include <boost/type_traits.hpp>
-#include <string>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/OptionalJacobian.h>
+
+#include <boost/concept_check.hpp>
+#include <boost/concept/requires.hpp>
+#include <boost/type_traits/is_base_of.hpp>
 
 namespace gtsam {
+
+/// tag to assert a type is a manifold
+struct manifold_tag {};
 
 /**
  * A manifold defines a space in which there is a notion of a linear tangent space
@@ -39,329 +46,185 @@ namespace gtsam {
  * There may be multiple possible retractions for a given manifold, which can be chosen
  * between depending on the computational complexity.  The important criteria for
  * the creation for the retract and localCoordinates functions is that they be
- * inverse operations. The new notion of a Chart guarantees that.
+ * inverse operations.
  *
  */
 
-// Traits, same style as Boost.TypeTraits
-// All meta-functions below ever only declare a single type
-// or a type/value/value_type
-namespace traits {
+template <typename T> struct traits;
 
-// is group, by default this is false
-template<typename T>
-struct is_group: public boost::false_type {
-};
+namespace internal {
 
-// identity, no default provided, by default given by default constructor
-template<typename T>
-struct identity {
-  static T value() {
-    return T();
+/// Requirements on type to pass it to Manifold template below
+template<class Class>
+struct HasManifoldPrereqs {
+
+  enum { dim = Class::dimension };
+
+  Class p, q;
+  Eigen::Matrix<double, dim, 1> v;
+  OptionalJacobian<dim, dim> Hp, Hq, Hv;
+
+  BOOST_CONCEPT_USAGE(HasManifoldPrereqs) {
+    v = p.localCoordinates(q);
+    q = p.retract(v);
   }
 };
 
-// is manifold, by default this is false
-template<typename T>
-struct is_manifold: public boost::false_type {
-};
-
-// dimension, can return Eigen::Dynamic (-1) if not known at compile time
-// defaults to dynamic, TODO makes sense ?
-typedef boost::integral_constant<int, Eigen::Dynamic> Dynamic;
-template<typename T>
-struct dimension: public Dynamic {
-};
-
-/**
- * zero<T>::value is intended to be the origin of a canonical coordinate system
- * with canonical(t) == DefaultChart<T>::local(zero<T>::value, t)
- * Below we provide the group identity as zero *in case* it is a group
- */
-template<typename T> struct zero: public identity<T> {
-  BOOST_STATIC_ASSERT(is_group<T>::value);
-};
-
-// double
-
-template<>
-struct is_group<double> : public boost::true_type {
-};
-
-template<>
-struct is_manifold<double> : public boost::true_type {
-};
-
-template<>
-struct dimension<double> : public boost::integral_constant<int, 1> {
-};
-
-template<>
-struct zero<double> {
-  static double value() {
-    return 0;
+/// Extra manifold traits for fixed-dimension types
+template<class Class, int N>
+struct ManifoldImpl {
+  // Compile-time dimensionality
+  static int GetDimension(const Class&) {
+    return N;
   }
 };
 
-// Fixed size Eigen::Matrix type
-
-template<int M, int N, int Options, int MaxRows, int MaxCols>
-struct is_group<Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > : public boost::true_type {
-};
-
-template<int M, int N, int Options, int MaxRows, int MaxCols>
-struct is_manifold<Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > : public boost::true_type {
-};
-
-template<int M, int N, int Options, int MaxRows, int MaxCols>
-struct dimension<Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > : public boost::integral_constant<
-    int,
-    M == Eigen::Dynamic ? Eigen::Dynamic :
-        (N == Eigen::Dynamic ? Eigen::Dynamic : M * N)> {
-  //TODO after switch to c++11 : the above should should be extracted to a constexpr function
-  // for readability and to reduce code duplication
-};
-
-template<int M, int N, int Options, int MaxRows, int MaxCols>
-struct zero<Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > {
-  BOOST_STATIC_ASSERT_MSG((M!=Eigen::Dynamic && N!=Eigen::Dynamic),
-      "traits::zero is only supported for fixed-size matrices");
-  static Eigen::Matrix<double, M, N, Options> value() {
-    return Eigen::Matrix<double, M, N, Options>::Zero();
+/// Extra manifold traits for variable-dimension types
+template<class Class>
+struct ManifoldImpl<Class, Eigen::Dynamic> {
+  // Run-time dimensionality
+  static int GetDimension(const Class& m) {
+    return m.dim();
   }
 };
 
-template<int M, int N, int Options>
-struct identity<Eigen::Matrix<double, M, N, Options> > : public zero<
-    Eigen::Matrix<double, M, N, Options> > {
-};
+/// A helper that implements the traits interface for GTSAM manifolds.
+/// To use this for your class type, define:
+/// template<> struct traits<Class> : public internal::ManifoldTraits<Class> { };
+template<class Class>
+struct ManifoldTraits: ManifoldImpl<Class, Class::dimension> {
 
-template<typename T> struct is_chart: public boost::false_type {
-};
+  // Check that Class has the necessary machinery
+  BOOST_CONCEPT_ASSERT((HasManifoldPrereqs<Class>));
 
-} // \ namespace traits
+  // Dimension of the manifold
+  enum { dimension = Class::dimension };
 
-// Chart is a map from T -> vector, retract is its inverse
-template<typename T>
-struct DefaultChart {
-  //BOOST_STATIC_ASSERT(traits::is_manifold<T>::value);
-  typedef T type;
-  typedef Eigen::Matrix<double, traits::dimension<T>::value, 1> vector;
+  // Typedefs required by all manifold types.
+  typedef Class ManifoldType;
+  typedef manifold_tag structure_category;
+  typedef Eigen::Matrix<double, dimension, 1> TangentVector;
 
-  static vector local(const T& origin, const T& other) {
+  // Local coordinates
+  static TangentVector Local(const Class& origin, const Class& other) {
     return origin.localCoordinates(other);
   }
-  static T retract(const T& origin, const vector& d) {
-    return origin.retract(d);
-  }
-  static int getDimension(const T& origin) {
-    return origin.dim();
+
+  // Retraction back to manifold
+  static Class Retract(const Class& origin, const TangentVector& v) {
+    return origin.retract(v);
   }
 };
 
-namespace traits {
-// populate default traits
-template<typename T> struct is_chart<DefaultChart<T> > : public boost::true_type {
-};
-template<typename T> struct dimension<DefaultChart<T> > : public dimension<T> {
-};
+/// Both ManifoldTraits and Testable
+template<class Class> struct Manifold: ManifoldTraits<Class>, Testable<Class> {};
+
+} // \ namespace internal
+
+/// Check invariants for Manifold type
+template<typename T>
+BOOST_CONCEPT_REQUIRES(((IsTestable<T>)),(bool)) //
+check_manifold_invariants(const T& a, const T& b, double tol=1e-9) {
+  typename traits<T>::TangentVector v0 = traits<T>::Local(a,a);
+  typename traits<T>::TangentVector v = traits<T>::Local(a,b);
+  T c = traits<T>::Retract(a,v);
+  return v0.norm() < tol && traits<T>::Equals(b,c,tol);
 }
 
-template<class C>
-struct ChartConcept {
+/// Manifold concept
+template<typename T>
+class IsManifold {
+
 public:
-  typedef typename C::type type;
-  typedef typename C::vector vector;
 
-  BOOST_CONCEPT_USAGE(ChartConcept) {
-    // is_chart trait should be true
-    BOOST_STATIC_ASSERT((traits::is_chart<C>::value));
+  typedef typename traits<T>::structure_category structure_category_tag;
+  static const int dim = traits<T>::dimension;
+  typedef typename traits<T>::ManifoldType ManifoldType;
+  typedef typename traits<T>::TangentVector TangentVector;
 
-    /**
-     * Returns Retraction update of val_
-     */
-    type retract_ret = C::retract(val_, vec_);
+  BOOST_CONCEPT_USAGE(IsManifold) {
+    BOOST_STATIC_ASSERT_MSG(
+        (boost::is_base_of<manifold_tag, structure_category_tag>::value),
+        "This type's structure_category trait does not assert it as a manifold (or derived)");
+    BOOST_STATIC_ASSERT(TangentVector::SizeAtCompileTime == dim);
 
-    /**
-     * Returns local coordinates of another object
-     */
-    vec_ = C::local(val_, retract_ret);
-
-    // a way to get the dimension that is compatible with dynamically sized types
-    dim_ = C::getDimension(val_);
+    // make sure Chart methods are defined
+    v = traits<T>::Local(p, q);
+    q = traits<T>::Retract(p, v);
   }
 
 private:
-  type val_;
-  vector vec_;
-  int dim_;
+
+  TangentVector v;
+  ManifoldType p, q;
 };
 
-/**
- * CanonicalChart<Chart<T> > is a chart around zero<T>::value
- * Canonical<T> is CanonicalChart<DefaultChart<T> >
- * An example is Canonical<Rot3>
- */
-template<typename C> struct CanonicalChart {
-  BOOST_CONCEPT_ASSERT((ChartConcept<C>));
-
-  typedef C Chart;
-  typedef typename Chart::type type;
-  typedef typename Chart::vector vector;
-
-  // Convert t of type T into canonical coordinates
-  vector local(const type& t) {
-    return Chart::local(traits::zero<type>::value(), t);
-  }
-  // Convert back from canonical coordinates to T
-  type retract(const vector& v) {
-    return Chart::retract(traits::zero<type>::value(), v);
-  }
-};
-template<typename T> struct Canonical: public CanonicalChart<DefaultChart<T> > {
+/// Give fixed size dimension of a type, fails at compile time if dynamic
+template<typename T>
+struct FixedDimension {
+  typedef const int value_type;
+  static const int value = traits<T>::dimension;
+  BOOST_STATIC_ASSERT_MSG(value != Eigen::Dynamic,
+      "FixedDimension instantiated for dymanically-sized type.");
 };
 
-// double
+/// Helper class to construct the product manifold of two other manifolds, M1 and M2
+/// Assumes nothing except manifold structure for M1 and M2, and the existence
+/// of default constructor for those types
+template<typename M1, typename M2>
+class ProductManifold: public std::pair<M1, M2> {
+  BOOST_CONCEPT_ASSERT((IsManifold<M1>));
+  BOOST_CONCEPT_ASSERT((IsManifold<M2>));
 
-template<>
-struct DefaultChart<double> {
-  typedef double type;
-  typedef Eigen::Matrix<double, 1, 1> vector;
+protected:
+  enum { dimension1 = traits<M1>::dimension };
+  enum { dimension2 = traits<M2>::dimension };
 
-  static vector local(double origin, double other) {
-    vector d;
-    d << other - origin;
-    return d;
+public:
+  enum { dimension = dimension1 + dimension2 };
+  inline static size_t Dim() { return dimension;}
+  inline size_t dim() const { return dimension;}
+
+  typedef Eigen::Matrix<double, dimension, 1> TangentVector;
+  typedef OptionalJacobian<dimension, dimension> ChartJacobian;
+
+  /// Default constructor needs default constructors to be defined
+  ProductManifold():std::pair<M1,M2>(M1(),M2()) {}
+
+  // Construct from two original manifold values
+  ProductManifold(const M1& m1, const M2& m2):std::pair<M1,M2>(m1,m2) {}
+
+  /// Retract delta to manifold
+  ProductManifold retract(const TangentVector& xi) const {
+    M1 m1 = traits<M1>::Retract(this->first,  xi.template head<dimension1>());
+    M2 m2 = traits<M2>::Retract(this->second, xi.template tail<dimension2>());
+    return ProductManifold(m1,m2);
   }
-  static double retract(double origin, const vector& d) {
-    return origin + d[0];
-  }
-  static int getDimension(double) {
-    return 1;
-  }
-};
 
-// Fixed size Eigen::Matrix type
-
-template<int M, int N, int Options, int MaxRows, int MaxCols>
-struct DefaultChart<Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > {
-  /**
-   * This chart for the vector space of M x N matrices (represented by Eigen matrices) chooses as basis the one with respect to which the coordinates are exactly the matrix entries as laid out in memory (as determined by Options).
-   * Computing coordinates for a matrix is then simply a reshape to the row vector of appropriate size.
-   */
-  typedef Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> type;
-  typedef type T;
-  typedef Eigen::Matrix<double, traits::dimension<T>::value, 1> vector;
-
-  BOOST_STATIC_ASSERT_MSG((M!=Eigen::Dynamic && N!=Eigen::Dynamic),
-      "Internal error: DefaultChart for Dynamic should be handled by template below");
-
-  static vector local(const T& origin, const T& other) {
-    return reshape<vector::RowsAtCompileTime, 1, vector::Options>(other)
-        - reshape<vector::RowsAtCompileTime, 1, vector::Options>(origin);
-  }
-  static T retract(const T& origin, const vector& d) {
-    return origin + reshape<M, N, Options>(d);
-  }
-  static int getDimension(const T&origin) {
-    return origin.rows() * origin.cols();
+  /// Compute the coordinates in the tangent space
+  TangentVector localCoordinates(const ProductManifold& other) const {
+    typename traits<M1>::TangentVector v1 = traits<M1>::Local(this->first,  other.first);
+    typename traits<M2>::TangentVector v2 = traits<M2>::Local(this->second, other.second);
+    TangentVector v;
+    v << v1, v2;
+    return v;
   }
 };
 
-// Dynamically sized Vector
-template<>
-struct DefaultChart<Vector> {
-  typedef Vector type;
-  typedef Vector vector;
-  static vector local(const Vector& origin, const Vector& other) {
-    return other - origin;
-  }
-  static Vector retract(const Vector& origin, const vector& d) {
-    return origin + d;
-  }
-  static int getDimension(const Vector& origin) {
-    return origin.size();
-  }
-};
-
-// Dynamically sized Matrix
-template<>
-struct DefaultChart<Matrix> {
-  typedef Matrix type;
-  typedef Vector vector;
-  static vector local(const Matrix& origin, const Matrix& other) {
-    Matrix d = other - origin;
-    return Eigen::Map<Vector>(d.data(),getDimension(d));
-  }
-  static Matrix retract(const Matrix& origin, const vector& d) {
-    return origin + Eigen::Map<const Matrix>(d.data(),origin.rows(),origin.cols());
-  }
-  static int getDimension(const Matrix& m) {
-    return m.size();
-  }
-};
-
-/**
- * Old Concept check class for Manifold types
- * Requires a mapping between a linear tangent space and the underlying
- * manifold, of which Lie is a specialization.
- *
- * The necessary functions to implement for Manifold are defined
- * below with additional details as to the interface.  The
- * concept checking function in class Manifold will check whether or not
- * the function exists and throw compile-time errors.
- *
- * Returns dimensionality of the tangent space, which may be smaller than the number
- * of nonlinear parameters.
- *     size_t dim() const;
- *
- * Returns a new T that is a result of updating *this with the delta v after pulling
- * the updated value back to the manifold T.
- *     T retract(const Vector& v) const;
- *
- * Returns the linear coordinates of lp in the tangent space centered around *this.
- *     Vector localCoordinates(const T& lp) const;
- *
- * By convention, we use capital letters to designate a static function
- * @tparam T is a Lie type, like Point2, Pose3, etc.
- */
-template<class T>
-class ManifoldConcept {
-private:
-  /** concept checking function - implement the functions this demands */
-  static T concept_check(const T& t) {
-
-    /** assignment */
-    T t2 = t;
-
-    /**
-     * Returns dimensionality of the tangent space
-     */
-    size_t dim_ret = t.dim();
-
-    /**
-     * Returns Retraction update of T
-     */
-    T retract_ret = t.retract(gtsam::zero(dim_ret));
-
-    /**
-     * Returns local coordinates of another object
-     */
-    Vector localCoords_ret = t.localCoordinates(t2);
-
-    return retract_ret;
-  }
+// Define any direct product group to be a model of the multiplicative Group concept
+template<typename M1, typename M2>
+struct traits<ProductManifold<M1, M2> > : internal::Manifold<ProductManifold<M1, M2> > {
 };
 
 } // \ namespace gtsam
 
-/**
- * Macros for using the ManifoldConcept
- *  - An instantiation for use inside unit tests
- *  - A typedef for use inside generic algorithms
- *
- * NOTE: intentionally not in the gtsam namespace to allow for classes not in
- * the gtsam namespace to be more easily enforced as testable
- */
-#define GTSAM_CONCEPT_MANIFOLD_INST(T) template class gtsam::ManifoldConcept<T>;
-#define GTSAM_CONCEPT_MANIFOLD_TYPE(T) typedef gtsam::ManifoldConcept<T> _gtsam_ManifoldConcept_##T;
+///**
+// * Macros for using the ManifoldConcept
+// *  - An instantiation for use inside unit tests
+// *  - A typedef for use inside generic algorithms
+// *
+// * NOTE: intentionally not in the gtsam namespace to allow for classes not in
+// * the gtsam namespace to be more easily enforced as testable
+// */
+#define GTSAM_CONCEPT_MANIFOLD_INST(T) template class gtsam::IsManifold<T>;
+#define GTSAM_CONCEPT_MANIFOLD_TYPE(T) typedef gtsam::IsManifold<T> _gtsam_IsManifold_##T;

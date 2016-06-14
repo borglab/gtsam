@@ -25,7 +25,6 @@
 #define DISABLE_TIMING
 
 #include <boost/timer.hpp>
-#include <boost/foreach.hpp>
 #include <boost/tokenizer.hpp>
 #include <boost/assign/std/map.hpp>
 #include <boost/assign/std/vector.hpp>
@@ -39,6 +38,11 @@ using namespace gtsam;
 
 /* ******************************************************************************** */
 typedef AlgebraicDecisionTree<Key> ADT;
+
+// traits
+namespace gtsam {
+template<> struct traits<ADT> : public Testable<ADT> {};
+}
 
 #define DISABLE_DOT
 
@@ -61,7 +65,7 @@ void dot(const T&f, const string& filename) {
  typename DecisionTree<L, double>::Node::Ptr DecisionTree<L, double>::Choice::apply_fC_op_gL(
  Cache& cache, const Leaf& gL, Mul op) const {
  Ptr h(new Choice(label(), cardinality()));
- BOOST_FOREACH(const NodePtr& branch, branches_)
+ for(const NodePtr& branch: branches_)
  h->push_back(branch->apply_f_op_g(cache, gL, op));
  return Unique(cache, h);
  }
@@ -396,7 +400,7 @@ TEST(ADT, constructor)
   DiscreteKey z0(0,5), z1(1,4), z2(2,3), z3(3,2);
   vector<double> table(5 * 4 * 3 * 2);
   double x = 0;
-  BOOST_FOREACH(double& t, table)
+  for(double& t: table)
   t = x++;
   ADT f3(z0 & z1 & z2 & z3, table);
   Assignment<Key> assignment;
@@ -416,16 +420,16 @@ TEST(ADT, conversion)
   ADT fDiscreteKey(X & Y, "0.2 0.5 0.3 0.6");
   dot(fDiscreteKey, "conversion-f1");
 
-  std::map<size_t, size_t> ordering;
-  ordering[0] = 5;
-  ordering[1] = 2;
+  std::map<Key, Key> keyMap;
+  keyMap[0] = 5;
+  keyMap[1] = 2;
 
-  AlgebraicDecisionTree<size_t> fIndexKey(fDiscreteKey, ordering);
+  AlgebraicDecisionTree<Key> fIndexKey(fDiscreteKey, keyMap);
   //  f1.print("f1");
   //  f2.print("f2");
   dot(fIndexKey, "conversion-f2");
 
-  Assignment<size_t> x00, x01, x02, x10, x11, x12;
+  Assignment<Key> x00, x01, x02, x10, x11, x12;
   x00[5] = 0, x00[2] = 0;
   x01[5] = 0, x01[2] = 1;
   x10[5] = 1, x10[2] = 0;

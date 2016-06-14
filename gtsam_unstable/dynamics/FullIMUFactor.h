@@ -87,7 +87,7 @@ public:
     Vector9 z;
     z.head(3).operator=(accel_); // Strange syntax to work around ambiguous operator error with clang
     z.segment(3, 3).operator=(gyro_); // Strange syntax to work around ambiguous operator error with clang
-    z.tail(3).operator=(x2.t().vector()); // Strange syntax to work around ambiguous operator error with clang
+    z.tail(3).operator=(x2.t()); // Strange syntax to work around ambiguous operator error with clang
     if (H1) *H1 = numericalDerivative21<Vector9, PoseRTV, PoseRTV>(
         boost::bind(This::predict_proxy, _1, _2, dt_), x1, x2, 1e-5);
     if (H2) *H2 = numericalDerivative22<Vector9, PoseRTV, PoseRTV>(
@@ -100,7 +100,7 @@ public:
       boost::optional<Matrix&> H1 = boost::none,
       boost::optional<Matrix&> H2 = boost::none) const {
     assert(false);
-    return zero(x1.dim());
+    return Vector6::Zero();
   }
 
 private:
@@ -109,7 +109,7 @@ private:
   static Vector9 predict_proxy(const PoseRTV& x1, const PoseRTV& x2, double dt) {
     Vector9 hx;
     hx.head(6).operator=(x1.imuPrediction(x2, dt)); // Strange syntax to work around ambiguous operator error with clang
-    hx.tail(3).operator=(x1.translationIntegration(x2, dt).vector()); // Strange syntax to work around ambiguous operator error with clang
+    hx.tail(3).operator=(x1.translationIntegration(x2, dt)); // Strange syntax to work around ambiguous operator error with clang
     return hx;
   }
 };

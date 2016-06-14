@@ -16,15 +16,15 @@
  **/
 #pragma once
 
-#include <ostream>
-
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/Lie.h>
+#include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Marginals.h>
 #include <gtsam/linear/GaussianFactor.h>
-#include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/Lie.h>
+
+#include <ostream>
 
 namespace gtsam {
 
@@ -415,11 +415,17 @@ namespace gtsam {
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version) {
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & boost::serialization::make_nvp("NonlinearFactor",
           boost::serialization::base_object<Base>(*this));
       //ar & BOOST_SERIALIZATION_NVP(measured_);
     }
   }; // \class TransformBtwRobotsUnaryFactorEM
+
+  /// traits
+  template<class VALUE>
+  struct traits<TransformBtwRobotsUnaryFactorEM<VALUE> > :
+      public Testable<TransformBtwRobotsUnaryFactorEM<VALUE> > {
+  };
 
 } /// namespace gtsam

@@ -12,13 +12,15 @@
 
 template<typename T> void test_conjugate_gradient_T()
 {
-  ConjugateGradient<SparseMatrix<T>, Lower> cg_colmajor_lower_diag;
-  ConjugateGradient<SparseMatrix<T>, Upper> cg_colmajor_upper_diag;
+  ConjugateGradient<SparseMatrix<T>, Lower      > cg_colmajor_lower_diag;
+  ConjugateGradient<SparseMatrix<T>, Upper      > cg_colmajor_upper_diag;
+  ConjugateGradient<SparseMatrix<T>, Lower|Upper> cg_colmajor_loup_diag;
   ConjugateGradient<SparseMatrix<T>, Lower, IdentityPreconditioner> cg_colmajor_lower_I;
   ConjugateGradient<SparseMatrix<T>, Upper, IdentityPreconditioner> cg_colmajor_upper_I;
 
   CALL_SUBTEST( check_sparse_spd_solving(cg_colmajor_lower_diag)  );
   CALL_SUBTEST( check_sparse_spd_solving(cg_colmajor_upper_diag)  );
+  CALL_SUBTEST( check_sparse_spd_solving(cg_colmajor_loup_diag)   );
   CALL_SUBTEST( check_sparse_spd_solving(cg_colmajor_lower_I)     );
   CALL_SUBTEST( check_sparse_spd_solving(cg_colmajor_upper_I)     );
 }

@@ -26,6 +26,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <boost/assign/std/list.hpp> // for operator +=
+#include <boost/assign/std/vector.hpp>
 #include <boost/assign/list_of.hpp>
 using namespace boost::assign;
 #include <stdexcept>
@@ -55,21 +56,26 @@ int TestValueData::DestructorCount = 0;
 class TestValue {
   TestValueData data_;
 public:
+  enum {dimension = 0};
   void print(const std::string& str = "") const {}
   bool equals(const TestValue& other, double tol = 1e-9) const { return true; }
   size_t dim() const { return 0; }
-  TestValue retract(const Vector&) const { return TestValue(); }
-  Vector localCoordinates(const TestValue&) const { return Vector(); }
+  TestValue retract(const Vector&,
+                    OptionalJacobian<dimension,dimension> H1=boost::none,
+                    OptionalJacobian<dimension,dimension> H2=boost::none) const {
+    return TestValue();
+  }
+  Vector localCoordinates(const TestValue&,
+                          OptionalJacobian<dimension,dimension> H1=boost::none,
+                          OptionalJacobian<dimension,dimension> H2=boost::none) const {
+    return Vector();
+  }
 };
 
 namespace gtsam {
-namespace traits {
-template <>
-struct is_manifold<TestValue> : public boost::true_type {};
-template <>
-struct dimension<TestValue> : public boost::integral_constant<int, 0> {};
+template <> struct traits<TestValue> : public internal::Manifold<TestValue> {};
 }
-}
+
 
 /* ************************************************************************* */
 TEST( Values, equals1 )
@@ -170,9 +176,9 @@ TEST(Values, basic_functions)
   Values values;
   const Values& values_c = values;
   values.insert(2, Vector3());
-  values.insert(4, Vector(3));
+  values.insert(4, Vector3());
   values.insert(6, Matrix23());
-  values.insert(8, Matrix(2,3));
+  values.insert(8, Matrix23());
 
   // find
   EXPECT_LONGS_EQUAL(4, values.find(4)->key);
@@ -303,12 +309,12 @@ TEST(Values, extract_keys)
   config.insert(key3, Pose2());
   config.insert(key4, Pose2());
 
-  FastList<Key> expected, actual;
+  KeyVector expected, actual;
   expected += key1, key2, key3, key4;
   actual = config.keys();
 
   CHECK(actual.size() == expected.size());
-  FastList<Key>::const_iterator itAct = actual.begin(), itExp = expected.begin();
+  KeyVector::const_iterator itAct = actual.begin(), itExp = expected.begin();
   for (; itAct != actual.end() && itExp != expected.end(); ++itAct, ++itExp) {
     EXPECT(*itExp == *itAct);
   }
@@ -360,7 +366,7 @@ TEST(Values, filter) {
   int i = 0;
   Values::Filtered<Value> filtered = values.filter(boost::bind(std::greater_equal<Key>(), _1, 2));
   EXPECT_LONGS_EQUAL(2, (long)filtered.size());
-  BOOST_FOREACH(const Values::Filtered<>::KeyValuePair& key_value, filtered) {
+  for(const Values::Filtered<>::KeyValuePair& key_value: filtered) {
     if(i == 0) {
       LONGS_EQUAL(2, (long)key_value.key);
       try {key_value.value.cast<Pose2>();} catch (const std::bad_cast& e) { FAIL("can't cast Value to Pose2");}
@@ -395,7 +401,7 @@ TEST(Values, filter) {
   i = 0;
   Values::ConstFiltered<Pose3> pose_filtered = values.filter<Pose3>();
   EXPECT_LONGS_EQUAL(2, (long)pose_filtered.size());
-  BOOST_FOREACH(const Values::ConstFiltered<Pose3>::KeyValuePair& key_value, pose_filtered) {
+  for(const Values::ConstFiltered<Pose3>::KeyValuePair& key_value: pose_filtered) {
     if(i == 0) {
       EXPECT_LONGS_EQUAL(1, (long)key_value.key);
       EXPECT(assert_equal(pose1, key_value.value));
@@ -431,7 +437,7 @@ TEST(Values, Symbol_filter) {
   values.insert(Symbol('y', 3), pose3);
 
   int i = 0;
-  BOOST_FOREACH(const Values::Filtered<Value>::KeyValuePair& key_value, values.filter(Symbol::ChrTest('y'))) {
+  for(const Values::Filtered<Value>::KeyValuePair& key_value: values.filter(Symbol::ChrTest('y'))) {
     if(i == 0) {
       LONGS_EQUAL(Symbol('y', 1), (long)key_value.key);
       EXPECT(assert_equal(pose1, key_value.value.cast<Pose3>()));
@@ -471,13 +477,59 @@ TEST(Values, Destructors) {
 }
 
 /* ************************************************************************* */
-TEST(Values, FixedSize) {
+TEST(Values, VectorDynamicInsertFixedRead) {
   Values values;
   Vector v(3); v << 5.0, 6.0, 7.0;
-  values.insertFixed(key1, v, 3);
+  values.insert(key1, v);
   Vector3 expected(5.0, 6.0, 7.0);
-  CHECK(assert_equal((Vector)expected, values.at<Vector3>(key1)));
-  CHECK_EXCEPTION(values.insertFixed(key1, v, 12),runtime_error);
+  Vector3 actual = values.at<Vector3>(key1);
+  CHECK(assert_equal(expected, actual));
+  CHECK_EXCEPTION(values.at<Vector7>(key1), exception);
+}
+
+/* ************************************************************************* */
+TEST(Values, VectorDynamicInsertDynamicRead) {
+  Values values;
+  Vector v(3); v << 5.0, 6.0, 7.0;
+  values.insert(key1, v);
+  Vector expected(3); expected << 5.0, 6.0, 7.0;
+  Vector actual = values.at<Vector>(key1);
+  LONGS_EQUAL(3, actual.rows());
+  LONGS_EQUAL(1, actual.cols());
+  CHECK(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
+TEST(Values, VectorFixedInsertFixedRead) {
+  Values values;
+  Vector3 v; v << 5.0, 6.0, 7.0;
+  values.insert(key1, v);
+  Vector3 expected; expected << 5.0, 6.0, 7.0;
+  Vector3 actual = values.at<Vector3>(key1);
+  CHECK(assert_equal(expected, actual));
+  CHECK_EXCEPTION(values.at<Vector7>(key1), exception);
+}
+
+/* ************************************************************************* */
+//TEST(Values, VectorFixedInsertDynamicRead) {
+//  Values values;
+//  Vector3 v; v << 5.0, 6.0, 7.0;
+//  values.insert(key1, v);
+//  Vector expected(3); expected << 5.0, 6.0, 7.0;
+//  Vector actual = values.at<Vector>(key1);
+//  LONGS_EQUAL(3, actual.rows());
+//  LONGS_EQUAL(1, actual.cols());
+//  CHECK(assert_equal(expected, actual));
+//}
+
+/* ************************************************************************* */
+TEST(Values, MatrixDynamicInsertFixedRead) {
+  Values values;
+  Matrix v(1,3); v << 5.0, 6.0, 7.0;
+  values.insert(key1, v);
+  Vector3 expected(5.0, 6.0, 7.0);
+  CHECK(assert_equal((Vector)expected, values.at<Matrix13>(key1)));
+  CHECK_EXCEPTION(values.at<Matrix23>(key1), exception);
 }
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }

@@ -14,7 +14,6 @@
 #include <boost/assign/std/vector.hpp>
 #include <boost/assign/std/map.hpp>
 #include <boost/optional.hpp>
-#include <boost/foreach.hpp>
 
 using namespace boost::assign;
 using namespace std;

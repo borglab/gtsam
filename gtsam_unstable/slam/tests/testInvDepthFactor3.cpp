@@ -22,7 +22,7 @@ static Cal3_S2::shared_ptr K(new Cal3_S2(1500, 1200, 0, 640, 480));
 static SharedNoiseModel sigma(noiseModel::Unit::Create(2));
 
 // camera pose at (0,0,1) looking straight along the x-axis.
-Pose3 level_pose = Pose3(Rot3::ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1));
+Pose3 level_pose = Pose3(Rot3::Ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1));
 SimpleCamera level_camera(level_pose, *K);
 
 typedef InvDepthFactor3<Pose3, Vector5, double> InverseDepthFactor;

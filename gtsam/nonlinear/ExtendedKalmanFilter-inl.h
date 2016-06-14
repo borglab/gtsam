@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -29,8 +29,8 @@ namespace gtsam {
   template<class VALUE>
   typename ExtendedKalmanFilter<VALUE>::T ExtendedKalmanFilter<VALUE>::solve_(
       const GaussianFactorGraph& linearFactorGraph,
-      const Values& linearizationPoints, Key lastKey,
-      JacobianFactor::shared_ptr& newPrior) const
+      const Values& linearizationPoint, Key lastKey,
+      JacobianFactor::shared_ptr* newPrior)
   {
     // Compute the marginal on the last key
     // Solve the linear factor graph, converting it into a linear Bayes Network
@@ -42,7 +42,8 @@ namespace gtsam {
 
     // Extract the current estimate of x1,P1
     VectorValues result = marginal->solve(VectorValues());
-    T x = linearizationPoints.at<T>(lastKey).retract(result[lastKey]);
+    const T& current = linearizationPoint.at<T>(lastKey);
+    T x = traits<T>::Retract(current, result[lastKey]);
 
     // Create a Jacobian Factor from the root node of the produced Bayes Net.
     // This will act as a prior for the next iteration.
@@ -50,7 +51,7 @@ namespace gtsam {
     // and the key/index needs to be reset to 0, the first key in the next iteration.
     assert(marginal->nrFrontals() == 1);
     assert(marginal->nrParents() == 0);
-    newPrior = boost::make_shared<JacobianFactor>(
+    *newPrior = boost::make_shared<JacobianFactor>(
       marginal->keys().front(),
       marginal->getA(marginal->begin()),
       marginal->getb() - marginal->getA(marginal->begin()) * result[lastKey],
@@ -60,38 +61,25 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  template<class VALUE>
-  ExtendedKalmanFilter<VALUE>::ExtendedKalmanFilter(Key key_initial, T x_initial,
-      noiseModel::Gaussian::shared_ptr P_initial) {
-
-    // Set the initial linearization point to the provided mean
-    x_ = x_initial;
-
+  template <class VALUE>
+  ExtendedKalmanFilter<VALUE>::ExtendedKalmanFilter(
+      Key key_initial, T x_initial, noiseModel::Gaussian::shared_ptr P_initial)
+      : x_(x_initial)  // Set the initial linearization point
+  {
     // Create a Jacobian Prior Factor directly P_initial.
     // Since x0 is set to the provided mean, the b vector in the prior will be zero
-    // TODO Frank asks: is there a reason why noiseModel is not simply P_initial ?
+    // TODO(Frank): is there a reason why noiseModel is not simply P_initial?
+    int n = traits<T>::GetDimension(x_initial);
     priorFactor_ = JacobianFactor::shared_ptr(
-        new JacobianFactor(key_initial, P_initial->R(), Vector::Zero(x_initial.dim()),
-            noiseModel::Unit::Create(P_initial->dim())));
+        new JacobianFactor(key_initial, P_initial->R(), Vector::Zero(n),
+            noiseModel::Unit::Create(n)));
   }
 
   /* ************************************************************************* */
   template<class VALUE>
   typename ExtendedKalmanFilter<VALUE>::T ExtendedKalmanFilter<VALUE>::predict(
-      const MotionFactor& motionFactor) {
-
-    // TODO: This implementation largely ignores the actual factor symbols.
-    // Calling predict() then update() with drastically
-    // different keys will still compute as if a common key-set was used
-
-    // Create Keys
-    Key x0 = motionFactor.key1();
-    Key x1 = motionFactor.key2();
-
-    // Create a set of linearization points
-    Values linearizationPoints;
-    linearizationPoints.insert(x0, x_);
-    linearizationPoints.insert(x1, x_); // TODO should this really be x_ ?
+      const NoiseModelFactor& motionFactor) {
+    const auto keys = motionFactor.keys();
 
     // Create a Gaussian Factor Graph
     GaussianFactorGraph linearFactorGraph;
@@ -100,12 +88,14 @@ namespace gtsam {
     linearFactorGraph.push_back(priorFactor_);
 
     // Linearize motion model and add it to the Kalman Filter graph
-    linearFactorGraph.push_back(
-        motionFactor.linearize(linearizationPoints));
+    Values linearizationPoint;
+    linearizationPoint.insert(keys[0], x_);
+    linearizationPoint.insert(keys[1], x_); // TODO should this really be x_ ?
+    linearFactorGraph.push_back(motionFactor.linearize(linearizationPoint));
 
     // Solve the factor graph and update the current state estimate
     // and the posterior for the next iteration.
-    x_ = solve_(linearFactorGraph, linearizationPoints, x1, priorFactor_);
+    x_ = solve_(linearFactorGraph, linearizationPoint, keys[1], &priorFactor_);
 
     return x_;
   }
@@ -113,18 +103,8 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class VALUE>
   typename ExtendedKalmanFilter<VALUE>::T ExtendedKalmanFilter<VALUE>::update(
-      const MeasurementFactor& measurementFactor) {
-
-    // TODO: This implementation largely ignores the actual factor symbols.
-    // Calling predict() then update() with drastically
-    // different keys will still compute as if a common key-set was used
-
-    // Create Keys
-    Key x0 = measurementFactor.key();
-
-    // Create a set of linearization points
-    Values linearizationPoints;
-    linearizationPoints.insert(x0, x_);
+      const NoiseModelFactor& measurementFactor) {
+    const auto keys = measurementFactor.keys();
 
     // Create a Gaussian Factor Graph
     GaussianFactorGraph linearFactorGraph;
@@ -133,12 +113,13 @@ namespace gtsam {
     linearFactorGraph.push_back(priorFactor_);
 
     // Linearize measurement factor and add it to the Kalman Filter graph
-    linearFactorGraph.push_back(
-        measurementFactor.linearize(linearizationPoints));
+    Values linearizationPoint;
+    linearizationPoint.insert(keys[0], x_);
+    linearFactorGraph.push_back(measurementFactor.linearize(linearizationPoint));
 
     // Solve the factor graph and update the current state estimate
     // and the prior factor for the next iteration
-    x_ = solve_(linearFactorGraph, linearizationPoints, x0, priorFactor_);
+    x_ = solve_(linearFactorGraph, linearizationPoint, keys[0], &priorFactor_);
 
     return x_;
   }

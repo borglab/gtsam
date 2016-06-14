@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -181,23 +181,14 @@ namespace gtsam {
      * @param value The vector to be inserted.
      * @param j The index with which the value will be associated. */
     iterator insert(Key j, const Vector& value) {
-      return insert(std::make_pair(j, value)); // Note only passing a reference to the Vector
+      return insert(std::make_pair(j, value));
     }
 
     /** Insert a vector \c value with key \c j.  Throws an invalid_argument exception if the key \c
      *  j is already used.
      * @param value The vector to be inserted.
      * @param j The index with which the value will be associated. */
-    iterator insert(const std::pair<Key, Vector>& key_value) {
-      // Note that here we accept a pair with a reference to the Vector, but the Vector is copied as
-      // it is inserted into the values_ map.
-      std::pair<iterator, bool> result = values_.insert(key_value);
-      if(!result.second)
-        throw std::invalid_argument(
-        "Requested to insert variable '" + DefaultKeyFormatter(key_value.first)
-        + "' already in this VectorValues.");
-      return result.first;
-    }
+    iterator insert(const std::pair<Key, Vector>& key_value);
 
     /** Insert all values from \c values.  Throws an invalid_argument exception if any keys to be
      *  inserted are already used. */
@@ -376,9 +367,14 @@ namespace gtsam {
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version) {
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_NVP(values_);
     }
   }; // VectorValues definition
+
+  /// traits
+  template<>
+  struct traits<VectorValues> : public Testable<VectorValues> {
+  };
 
 } // \namespace gtsam

@@ -39,11 +39,10 @@
 // have been provided with the library for solving robotics SLAM problems.
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/slam/RangeFactor.h>
+#include <gtsam/sam/RangeFactor.h>
 #include <gtsam/slam/dataset.h>
 
 // Standard headers, added last, so we know headers above work on their own
-#include <boost/foreach.hpp>
 #include <fstream>
 #include <iostream>
 
@@ -82,7 +81,8 @@ vector<RangeTriple> readTriples() {
   ifstream is(data_file.c_str());
 
   while (is) {
-    double t, sender, receiver, range;
+    double t, sender, range;
+    size_t receiver;
     is >> t >> sender >> receiver >> range;
     triples.push_back(RangeTriple(t, receiver, range));
   }
@@ -150,7 +150,7 @@ int main (int argc, char** argv) {
 
   // Loop over odometry
   gttic_(iSAM);
-  BOOST_FOREACH(const TimedOdometry& timedOdometry, odometry) {
+  for(const TimedOdometry& timedOdometry: odometry) {
     //--------------------------------- odometry loop -----------------------------------------
     double t;
     Pose2 odometry;
@@ -195,7 +195,7 @@ int main (int argc, char** argv) {
     }
     i += 1;
     //--------------------------------- odometry loop -----------------------------------------
-  } // BOOST_FOREACH
+  } // end for
   gttoc_(iSAM);
 
   // Print timings

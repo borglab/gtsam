@@ -19,7 +19,7 @@ namespace gtsam {
  */
 class EssentialMatrixFactor: public NoiseModelFactor1<EssentialMatrix> {
 
-  Vector vA_, vB_; ///< Homogeneous versions, in ideal coordinates
+  Vector3 vA_, vB_; ///< Homogeneous versions, in ideal coordinates
 
   typedef NoiseModelFactor1<EssentialMatrix> Base;
   typedef EssentialMatrixFactor This;
@@ -107,9 +107,7 @@ public:
    */
   EssentialMatrixFactor2(Key key1, Key key2, const Point2& pA, const Point2& pB,
       const SharedNoiseModel& model) :
-      Base(model, key1, key2) {
-    dP1_ = Point3(pA.x(), pA.y(), 1);
-    pn_ = pB;
+      Base(model, key1, key2), dP1_(EssentialMatrix::Homogeneous(pA)), pn_(pB) {
     f_ = 1.0;
   }
 
@@ -125,11 +123,8 @@ public:
   template<class CALIBRATION>
   EssentialMatrixFactor2(Key key1, Key key2, const Point2& pA, const Point2& pB,
       const SharedNoiseModel& model, boost::shared_ptr<CALIBRATION> K) :
-      Base(model, key1, key2) {
-    assert(K);
-    Point2 p1 = K->calibrate(pA);
-    dP1_ = Point3(p1.x(), p1.y(), 1); // d*P1 = (x,y,1)
-    pn_ = K->calibrate(pB);
+      Base(model, key1, key2), dP1_(
+          EssentialMatrix::Homogeneous(K->calibrate(pA))), pn_(K->calibrate(pB)) {
     f_ = 0.5 * (K->fx() + K->fy());
   }
 
@@ -144,7 +139,7 @@ public:
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
     Base::print(s);
     std::cout << "  EssentialMatrixFactor2 with measurements\n  ("
-        << dP1_.vector().transpose() << ")' and (" << pn_.vector().transpose()
+        << dP1_.transpose() << ")' and (" << pn_.transpose()
         << ")'" << std::endl;
   }
 
@@ -167,13 +162,13 @@ public:
     // The point d*P1 = (x,y,1) is computed in constructor as dP1_
 
     // Project to normalized image coordinates, then uncalibrate
-    Point2 pn;
+    Point2 pn(0,0);
     if (!DE && !Dd) {
 
       Point3 _1T2 = E.direction().point3();
       Point3 d1T2 = d * _1T2;
       Point3 dP2 = E.rotation().unrotate(dP1_ - d1T2); // 2R1*((x,y,1)-d*1T2)
-      pn = SimpleCamera::project_to_camera(dP2);
+      pn = PinholeBase::Project(dP2);
 
     } else {
 
@@ -186,7 +181,7 @@ public:
       Point3 dP2 = E.rotation().unrotate(dP1_ - d1T2, DdP2_rot, DP2_point);
 
       Matrix23 Dpn_dP2;
-      pn = SimpleCamera::project_to_camera(dP2, Dpn_dP2);
+      pn = PinholeBase::Project(dP2, Dpn_dP2);
 
       if (DE) {
         Matrix DdP2_E(3, 5);
@@ -196,11 +191,11 @@ public:
 
       if (Dd) // efficient backwards computation:
         //      (2*3)    * (3*3)      * (3*1)
-        *Dd = -f_ * (Dpn_dP2 * (DP2_point * _1T2.vector()));
+        *Dd = -f_ * (Dpn_dP2 * (DP2_point * _1T2));
 
     }
     Point2 reprojectionError = pn - pn_;
-    return f_ * reprojectionError.vector();
+    return f_ * reprojectionError;
   }
 
 };

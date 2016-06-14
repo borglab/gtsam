@@ -123,8 +123,11 @@ public:
     return 0.0;
   }
 
-};
-// LinearEquality
+}; // \ LinearEquality
 
-}// gtsam
+
+/// traits
+template<> struct traits<LinearEquality> : public Testable<LinearEquality> {};
+
+} // \ namespace gtsam
 

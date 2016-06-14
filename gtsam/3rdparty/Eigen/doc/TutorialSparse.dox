@@ -241,11 +241,11 @@ In the following \em sm denotes a sparse matrix, \em sv a sparse vector, \em dm 
 sm1.real()   sm1.imag()   -sm1                    0.5*sm1
 sm1+sm2      sm1-sm2      sm1.cwiseProduct(sm2)
 \endcode
-However, a strong restriction is that the storage orders must match. For instance, in the following example:
+However, <strong>a strong restriction is that the storage orders must match</strong>. For instance, in the following example:
 \code
 sm4 = sm1 + sm2 + sm3;
 \endcode
-sm1, sm2, and sm3 must all be row-major or all column major.
+sm1, sm2, and sm3 must all be row-major or all column-major.
 On the other hand, there is no restriction on the target matrix sm4.
 For instance, this means that for computing \f$ A^T + A \f$, the matrix \f$ A^T \f$ must be evaluated into a temporary matrix of compatible storage order:
 \code
@@ -306,6 +306,26 @@ sm2 = sm1 * P.inverse();
 sm2 = sm1.transpose() * P;
     \endcode
 
+
+\subsection TutorialSparse_SubMatrices Block operations
+
+Regarding read-access, sparse matrices expose the same API than for dense matrices to access to sub-matrices such as blocks, columns, and rows. See \ref TutorialBlockOperations for a detailed introduction.
+However, for performance reasons, writing to a sub-sparse-matrix is much more limited, and currently only contiguous sets of columns (resp. rows) of a column-major (resp. row-major) SparseMatrix are writable. Moreover, this information has to be known at compile-time, leaving out methods such as <tt>block(...)</tt> and <tt>corner*(...)</tt>. The available API for write-access to a SparseMatrix are summarized below:
+\code
+SparseMatrix<double,ColMajor> sm1;
+sm1.col(j) = ...;
+sm1.leftCols(ncols) = ...;
+sm1.middleCols(j,ncols) = ...;
+sm1.rightCols(ncols) = ...;
+
+SparseMatrix<double,RowMajor> sm2;
+sm2.row(i) = ...;
+sm2.topRows(nrows) = ...;
+sm2.middleRows(i,nrows) = ...;
+sm2.bottomRows(nrows) = ...;
+\endcode
+
+In addition, sparse matrices expose the SparseMatrixBase::innerVector() and SparseMatrixBase::innerVectors() methods, which are aliases to the col/middleCols methods for a column-major storage, and to the row/middleRows methods for a row-major storage.
 
 \subsection TutorialSparse_TriangularSelfadjoint Triangular and selfadjoint views
 

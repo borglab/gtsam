@@ -24,8 +24,8 @@ using namespace gtsam;
 TEST( InvDepthFactorVariant2, optimize) {
 
   // Create two poses looking in the x-direction
-  Pose3 pose1(Rot3::ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1.0));
-  Pose3 pose2(Rot3::ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1.5));
+  Pose3 pose1(Rot3::Ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1.0));
+  Pose3 pose2(Rot3::Ypr(-M_PI/2, 0., -M_PI/2), gtsam::Point3(0,0,1.5));
 
   // Create a landmark 5 meters in front of pose1 (camera center at (0,0,1))
   Point3 landmark(5, 0, 1);
@@ -46,7 +46,7 @@ TEST( InvDepthFactorVariant2, optimize) {
   Vector3 expected((Vector(3) << theta, phi, rho).finished());
 
 
-  
+
   // Create a factor graph with two inverse depth factors and two pose priors
   Key poseKey1(1);
   Key poseKey2(2);
@@ -72,7 +72,7 @@ TEST( InvDepthFactorVariant2, optimize) {
   LevenbergMarquardtParams params;
   Values result = LevenbergMarquardtOptimizer(graph, values, params).optimize();
   Vector3 actual = result.at<Vector3>(landmarkKey);
-  
+
 //  values.at<Pose3>(poseKey1).print("Pose1 Before:\n");
 //  result.at<Pose3>(poseKey1).print("Pose1 After:\n");
 //  pose1.print("Pose1 Truth:\n");
@@ -87,13 +87,13 @@ TEST( InvDepthFactorVariant2, optimize) {
 //  std::cout << std::endl << std::endl;
 
   // Calculate world coordinates of landmark versions
-  Point3 world_landmarkBefore;
+  Point3 world_landmarkBefore(0,0,0);
   {
     Vector3 landmarkBefore = values.at<Vector3>(landmarkKey);
     double theta = landmarkBefore(0), phi = landmarkBefore(1), rho = landmarkBefore(2);
     world_landmarkBefore = referencePoint + Point3(cos(theta)*cos(phi)/rho, sin(theta)*cos(phi)/rho, sin(phi)/rho);
   }
-  Point3 world_landmarkAfter;
+  Point3 world_landmarkAfter(0,0,0);
   {
     Vector3 landmarkAfter = result.at<Vector3>(landmarkKey);
     double theta = landmarkAfter(0), phi = landmarkAfter(1), rho = landmarkAfter(2);

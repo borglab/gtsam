@@ -9,7 +9,10 @@ set (gtsam_subdirs
     discrete
     linear
     nonlinear
+    sam
+    sfm
     slam
+    smart
 	navigation
 )
 
@@ -23,7 +26,7 @@ set (3rdparty_srcs
  ${eigen_headers} # Set by 3rdparty/CMakeLists.txt
  ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/CCOLAMD/Source/ccolamd.c
  ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/CCOLAMD/Source/ccolamd_global.c
- ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/UFconfig/UFconfig.c)
+ ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/SuiteSparse_config/SuiteSparse_config.c)
 gtsam_assign_source_folders("${3rdparty_srcs}") # Create MSVC structure
 
 # To exclude a source from the library build (in any subfolder)
@@ -85,7 +88,9 @@ configure_file("${PROJECT_SOURCE_DIR}/cmake/dllexport.h.in" "dllexport.h")
 list(APPEND gtsam_srcs "${PROJECT_BINARY_DIR}/gtsam/config.h" "${PROJECT_BINARY_DIR}/gtsam/dllexport.h")
 install(FILES "${PROJECT_BINARY_DIR}/gtsam/config.h" "${PROJECT_BINARY_DIR}/gtsam/dllexport.h" DESTINATION include/gtsam)
 
-list(APPEND GTSAM_ADDITIONAL_LIBRARIES metis)
+if(GTSAM_SUPPORT_NESTED_DISSECTION)
+    list(APPEND GTSAM_ADDITIONAL_LIBRARIES metis)
+endif()
 
 # Versions
 set(gtsam_version   ${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH})
@@ -130,12 +135,6 @@ else()
     list(APPEND GTSAM_EXPORTED_TARGETS gtsam)
     set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
 endif()
-
-# Set dataset paths
-set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/slam/dataset.cpp"
-    APPEND PROPERTY COMPILE_DEFINITIONS
-	"SOURCE_TREE_DATASET_DIR=\"${PROJECT_SOURCE_DIR}/examples/Data\""
-	"INSTALLED_DATASET_DIR=\"${GTSAM_TOOLBOX_INSTALL_PATH}/gtsam_examples/Data\"")
 
 # Special cases
 if(MSVC)

@@ -1,7 +1,7 @@
   // comments!
 
 class VectorNotEigen;
-class ns::OtherClass;
+virtual class ns::OtherClass;
 
 namespace gtsam {
 
@@ -126,6 +126,12 @@ class MyFactor {
 
 // and a typedef specializing it
 typedef MyFactor<gtsam::Pose2, Matrix> MyFactorPosePoint2;
+
+// A class with integer template arguments
+template<N = {3,12}>
+class MyVector {
+  MyVector();
+};
 
 // comments at the end!
 

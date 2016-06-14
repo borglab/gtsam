@@ -59,7 +59,7 @@ class QPSolver {
   GaussianFactorGraph baseGraph_; //!< factor graphs of cost factors and linear equalities. The working set of inequalities will be added to this base graph in the process.
   VariableIndex costVariableIndex_, equalityVariableIndex_,
       inequalityVariableIndex_;
-  FastSet<Key> constrainedKeys_; //!< all constrained keys, will become factors in the dual graph
+  KeySet constrainedKeys_; //!< all constrained keys, will become factors in the dual graph
 
 public:
   /// Constructor
@@ -79,13 +79,13 @@ public:
       const VariableIndex& variableIndex) const {
     std::vector<std::pair<Key, Matrix> > Aterms;
     if (variableIndex.find(key) != variableIndex.end()) {
-      BOOST_FOREACH(size_t factorIx, variableIndex[key]){
-        typename FACTOR::shared_ptr factor = graph.at(factorIx);
-        if (!factor->active()) continue;
-        Matrix Ai = factor->getA(factor->find(key)).transpose();
-        Aterms.push_back(std::make_pair(factor->dualKey(), Ai));
-      }
+      for(size_t factorIx: variableIndex[key]){
+      typename FACTOR::shared_ptr factor = graph.at(factorIx);
+      if (!factor->active()) continue;
+      Matrix Ai = factor->getA(factor->find(key)).transpose();
+      Aterms.push_back(std::make_pair(factor->dualKey(), Ai));
     }
+  }
     return Aterms;
   }
 
@@ -161,8 +161,7 @@ public:
    * And we want to remove the worst one with the largest lambda from the active set.
    *
    */
-  int identifyLeavingConstraint(
-      const LinearInequalityFactorGraph& workingSet,
+  int identifyLeavingConstraint(const LinearInequalityFactorGraph& workingSet,
       const VectorValues& lambdas) const;
 
   /**
@@ -190,43 +189,11 @@ public:
 
   /** Optimize with a provided initial values
    * For this version, it is the responsibility of the caller to provide
-   * a feasible initial value, otherwise the solution will be wrong.
-   * If you don't know a feasible initial value, use the other version
-   * of optimize().
+   * a feasible initial value.
    * @return a pair of <primal, dual> solutions
    */
   std::pair<VectorValues, VectorValues> optimize(
       const VectorValues& initialValues, const VectorValues& duals = VectorValues(), bool useWarmStart = true) const;
-
-  /** Optimize without an initial value.
-   * This version of optimize will try to find a feasible initial value by solving
-   * an LP program before solving this QP graph.
-   * TODO: If no feasible initial point exists, it should throw an InfeasibilityException!
-   * @return a pair of <primal, dual> solutions
-   */
-  std::pair<VectorValues, VectorValues> optimize() const;
-
-  /**
-   * find the max key
-   */
-  std::pair<bool, Key> maxKey(const FastSet<Key>& keys) const;
-
-  /**
-   * Create initial values for the LP subproblem
-   * @return initial values and the key for the first and last slack variables
-   */
-  boost::tuple<VectorValues, Key, Key> initialValuesLP() const;
-
-  /// Create coefficients for the LP subproblem's objective function as the sum of slack var
-  VectorValues objectiveCoeffsLP(Key firstSlackKey) const;
-
-  /// Build constraints and slacks' lower bounds for the LP subproblem
-  boost::tuple<LinearEqualityFactorGraph::shared_ptr,
-      LinearInequalityFactorGraph::shared_ptr, VectorValues> constraintsLP(
-      Key firstSlackKey) const;
-
-  /// Find a feasible initial point
-  std::pair<bool, VectorValues> findFeasibleInitialValues() const;
 
 };
 

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -19,7 +19,8 @@
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/base/timing.h>
 
-#include <boost/foreach.hpp>
+#include <boost/format.hpp>
+#include <boost/make_shared.hpp>
 #include <boost/random/linear_congruential.hpp>
 #include <boost/random/normal_distribution.hpp>
 #include <boost/random/variate_generator.hpp>
@@ -28,6 +29,7 @@
 #include <iostream>
 #include <typeinfo>
 #include <stdexcept>
+#include <cmath>
 
 using namespace std;
 
@@ -56,7 +58,7 @@ boost::optional<Vector> checkIfDiagonal(const Matrix M) {
   for (i = 0; i < m; i++)
     if (!full)
       for (j = i + 1; j < n; j++)
-        if (fabs(M(i, j)) > 1e-9) {
+        if (std::abs(M(i, j)) > 1e-9) {
           full = true;
           break;
         }
@@ -71,32 +73,38 @@ boost::optional<Vector> checkIfDiagonal(const Matrix M) {
 }
 
 /* ************************************************************************* */
+Vector Base::sigmas() const {
+  throw("Base::sigmas: sigmas() not implemented for this noise model");
+}
+
+/* ************************************************************************* */
 Gaussian::shared_ptr Gaussian::SqrtInformation(const Matrix& R, bool smart) {
   size_t m = R.rows(), n = R.cols();
   if (m != n)
     throw invalid_argument("Gaussian::SqrtInformation: R not square");
-  boost::optional<Vector> diagonal = boost::none;
-  if (smart)
-    diagonal = checkIfDiagonal(R);
-  if (diagonal)
-    return Diagonal::Sigmas(reciprocal(*diagonal), true);
-  else
-    return shared_ptr(new Gaussian(R.rows(), R));
+  if (smart) {
+    boost::optional<Vector> diagonal = checkIfDiagonal(R);
+    if (diagonal)
+      return Diagonal::Sigmas(diagonal->array().inverse(), true);
+  }
+  // NOTE(frank): only reaches here if !(smart && diagonal)
+  return shared_ptr(new Gaussian(R.rows(), R));
 }
 
 /* ************************************************************************* */
-Gaussian::shared_ptr Gaussian::Information(const Matrix& M, bool smart) {
-  size_t m = M.rows(), n = M.cols();
+Gaussian::shared_ptr Gaussian::Information(const Matrix& information, bool smart) {
+  size_t m = information.rows(), n = information.cols();
   if (m != n)
     throw invalid_argument("Gaussian::Information: R not square");
   boost::optional<Vector> diagonal = boost::none;
   if (smart)
-    diagonal = checkIfDiagonal(M);
+    diagonal = checkIfDiagonal(information);
   if (diagonal)
     return Diagonal::Precisions(*diagonal, true);
   else {
-    Matrix R = RtR(M);
-    return shared_ptr(new Gaussian(R.rows(), R));
+    Eigen::LLT<Matrix> llt(information);
+    Matrix R = llt.matrixU();
+    return shared_ptr(new Gaussian(n, R));
   }
 }
 
@@ -111,13 +119,18 @@ Gaussian::shared_ptr Gaussian::Covariance(const Matrix& covariance,
     variances = checkIfDiagonal(covariance);
   if (variances)
     return Diagonal::Variances(*variances, true);
-  else
-    return shared_ptr(new Gaussian(n, inverse_square_root(covariance)));
+  else {
+    // NOTE: if cov = L'*L, then the square root information R can be found by
+    // QR, as L.inverse() = Q*R, with Q some rotation matrix. However, R has
+    // annoying sign flips with respect the simpler Information(inv(cov)),
+    // hence we choose the simpler path here:
+    return Information(covariance.inverse(), false);
+  }
 }
 
 /* ************************************************************************* */
 void Gaussian::print(const string& name) const {
-  gtsam::print(thisR(), "Gaussian");
+  gtsam::print(thisR(), name + "Gaussian");
 }
 
 /* ************************************************************************* */
@@ -127,6 +140,12 @@ bool Gaussian::equals(const Base& expected, double tol) const {
   if (typeid(*this) != typeid(*p)) return false;
   //if (!sqrt_information_) return true; // ALEX todo;
   return equal_with_abs_tol(R(), p->R(), sqrt(tol));
+}
+
+/* ************************************************************************* */
+Vector Gaussian::sigmas() const {
+  // TODO(frank): can this be done faster?
+  return Vector((thisR().transpose() * thisR()).inverse().diagonal()).cwiseSqrt();
 }
 
 /* ************************************************************************* */
@@ -171,8 +190,8 @@ SharedDiagonal Gaussian::QR(Matrix& Ab) const {
 
   // get size(A) and maxRank
   // TODO: really no rank problems ?
-  // size_t m = Ab.rows(), n = Ab.cols()-1;
-  // size_t maxRank = min(m,n);
+   size_t m = Ab.rows(), n = Ab.cols()-1;
+   size_t maxRank = min(m,n);
 
   // pre-whiten everything (cheaply if possible)
   WhitenInPlace(Ab);
@@ -181,16 +200,17 @@ SharedDiagonal Gaussian::QR(Matrix& Ab) const {
 
   // Eigen QR - much faster than older householder approach
   inplace_QR(Ab);
+  Ab.triangularView<Eigen::StrictlyLower>().setZero();
 
   // hand-coded householder implementation
   // TODO: necessary to isolate last column?
   // householder(Ab, maxRank);
 
-  return SharedDiagonal();
+  return noiseModel::Unit::Create(maxRank);
 }
 
 void Gaussian::WhitenSystem(vector<Matrix>& A, Vector& b) const {
-  BOOST_FOREACH(Matrix& Aj, A) { WhitenInPlace(Aj); }
+  for(Matrix& Aj: A) { WhitenInPlace(Aj); }
   whitenInPlace(b);
 }
 
@@ -221,9 +241,11 @@ Diagonal::Diagonal() :
 }
 
 /* ************************************************************************* */
-Diagonal::Diagonal(const Vector& sigmas) :
-    Gaussian(sigmas.size()), sigmas_(sigmas), invsigmas_(reciprocal(sigmas)), precisions_(
-        emul(invsigmas_, invsigmas_)) {
+Diagonal::Diagonal(const Vector& sigmas)
+    : Gaussian(sigmas.size()),
+      sigmas_(sigmas),
+      invsigmas_(sigmas.array().inverse()),
+      precisions_(invsigmas_.array().square()) {
 }
 
 /* ************************************************************************* */
@@ -235,7 +257,7 @@ Diagonal::shared_ptr Diagonal::Variances(const Vector& variances, bool smart) {
       if (variances(j) != variances(0)) goto full;
     return Isotropic::Variance(n, variances(0), true);
   }
-  full: return shared_ptr(new Diagonal(esqrt(variances)));
+  full: return shared_ptr(new Diagonal(variances.cwiseSqrt()));
 }
 
 /* ************************************************************************* */
@@ -262,12 +284,12 @@ void Diagonal::print(const string& name) const {
 
 /* ************************************************************************* */
 Vector Diagonal::whiten(const Vector& v) const {
-  return emul(v, invsigmas());
+  return v.cwiseProduct(invsigmas_);
 }
 
 /* ************************************************************************* */
 Vector Diagonal::unwhiten(const Vector& v) const {
-  return emul(v, sigmas_);
+  return v.cwiseProduct(sigmas_);
 }
 
 /* ************************************************************************* */
@@ -293,7 +315,7 @@ namespace internal {
 // switch precisions and invsigmas to finite value
 // TODO: why?? And, why not just ask s==0.0 below ?
 static void fix(const Vector& sigmas, Vector& precisions, Vector& invsigmas) {
-  for (size_t i = 0; i < sigmas.size(); ++i)
+  for (Vector::Index i = 0; i < sigmas.size(); ++i)
     if (!std::isfinite(1. / sigmas[i])) {
       precisions[i] = 0.0;
       invsigmas[i] = 0.0;
@@ -303,7 +325,7 @@ static void fix(const Vector& sigmas, Vector& precisions, Vector& invsigmas) {
 
 /* ************************************************************************* */
 Constrained::Constrained(const Vector& sigmas)
-  : Diagonal(sigmas), mu_(repeat(sigmas.size(), 1000.0)) {
+  : Diagonal(sigmas), mu_(Vector::Constant(sigmas.size(), 1000.0)) {
   internal::fix(sigmas, precisions_, invsigmas_);
 }
 
@@ -342,7 +364,7 @@ Vector Constrained::whiten(const Vector& v) const {
   assert (b.size()==a.size());
   Vector c(n);
   for( size_t i = 0; i < n; i++ ) {
-    const double& ai = a(i), &bi = b(i);
+    const double& ai = a(i), bi = b(i);
     c(i) = (bi==0.0) ? ai : ai/bi; // NOTE: not ediv_()
   }
   return c;
@@ -359,8 +381,11 @@ double Constrained::distance(const Vector& v) const {
 
 /* ************************************************************************* */
 Matrix Constrained::Whiten(const Matrix& H) const {
-  // selective scaling
-  return vector_scale(invsigmas(), H, true);
+  Matrix A = H;
+  for (DenseIndex i=0; i<(DenseIndex)dim_; ++i)
+    if (!constrained(i)) // if constrained, leave row of A as is
+      A.row(i) *= invsigmas_(i);
+  return A;
 }
 
 /* ************************************************************************* */
@@ -379,7 +404,7 @@ void Constrained::WhitenInPlace(Eigen::Block<Matrix> H) const {
 
 /* ************************************************************************* */
 Constrained::shared_ptr Constrained::unit() const {
-  Vector sigmas = ones(dim());
+  Vector sigmas = Vector::Ones(dim());
   for (size_t i=0; i<dim(); ++i)
     if (constrained(i))
       sigmas(i) = 0.0;
@@ -390,81 +415,141 @@ Constrained::shared_ptr Constrained::unit() const {
 // Special version of QR for Constrained calls slower but smarter code
 // that deals with possibly zero sigmas
 // It is Gram-Schmidt orthogonalization rather than Householder
-// Previously Diagonal::QR
+
+// Check whether column a triggers a constraint and corresponding variable is deterministic
+// Return constraint_row with maximum element in case variable plays in multiple constraints
+template <typename VECTOR>
+boost::optional<size_t> check_if_constraint(VECTOR a, const Vector& invsigmas, size_t m) {
+  boost::optional<size_t> constraint_row;
+  // not zero, so roundoff errors will not be counted
+  // TODO(frank): that's a fairly crude way of dealing with roundoff errors :-(
+  double max_element = 1e-9;
+  for (size_t i = 0; i < m; i++) {
+    if (!std::isinf(invsigmas[i]))
+      continue;
+    double abs_ai = std::abs(a(i,0));
+    if (abs_ai > max_element) {
+      max_element = abs_ai;
+      constraint_row.reset(i);
+    }
+  }
+  return constraint_row;
+}
+
 SharedDiagonal Constrained::QR(Matrix& Ab) const {
-  bool verbose = false;
-  if (verbose) cout << "\nStarting Constrained::QR" << endl;
+  static const double kInfinity = std::numeric_limits<double>::infinity();
 
   // get size(A) and maxRank
-  size_t m = Ab.rows(), n = Ab.cols()-1;
-  size_t maxRank = min(m,n);
+  size_t m = Ab.rows();
+  const size_t n = Ab.cols() - 1;
+  const size_t maxRank = min(m, n);
 
   // create storage for [R d]
-  typedef boost::tuple<size_t, Vector, double> Triple;
+  typedef boost::tuple<size_t, Matrix, double> Triple;
   list<Triple> Rd;
 
-  Vector pseudo(m); // allocate storage for pseudo-inverse
-  Vector invsigmas = reciprocal(sigmas_);
-  Vector weights = emul(invsigmas,invsigmas); // calculate weights once
+  Matrix rd(1, n + 1);  // and for row of R
+  Vector invsigmas = sigmas_.array().inverse();
+  Vector weights = invsigmas.array().square();  // calculate weights once
 
   // We loop over all columns, because the columns that can be eliminated
   // are not necessarily contiguous. For each one, estimate the corresponding
   // scalar variable x as d-rS, with S the separator (remaining columns).
   // Then update A and b by substituting x with d-rS, zero-ing out x's column.
-  for (size_t j=0; j<n; ++j) {
+  for (size_t j = 0; j < n; ++j) {
     // extract the first column of A
-    Vector a = Ab.col(j);
+    Eigen::Block<Matrix> a = Ab.block(0, j, m, 1);
 
-    // Calculate weighted pseudo-inverse and corresponding precision
-    gttic(constrained_QR_weightedPseudoinverse);
-    double precision = weightedPseudoinverse(a, weights, pseudo);
-    gttoc(constrained_QR_weightedPseudoinverse);
+    // Check whether we need to handle as a constraint
+    boost::optional<size_t> constraint_row = check_if_constraint(a, invsigmas, m);
 
-    // If precision is zero, no information on this column
-    // This is actually not limited to constraints, could happen in Gaussian::QR
-    // In that case, we're probably hosed. TODO: make sure Householder is rank-revealing
-    if (precision < 1e-8) continue;
+    if (constraint_row) {
+      // Handle this as a constraint, as the i^th row has zero sigma with non-zero entry A(i,j)
 
-    gttic(constrained_QR_create_rd);
-    // create solution [r d], rhs is automatically r(n)
-    Vector rd(n+1); // uninitialized !
-    rd(j)=1.0; // put 1 on diagonal
-    for (size_t j2=j+1; j2<n+1; ++j2) // and fill in remainder with dot-products
-      rd(j2) = pseudo.dot(Ab.col(j2));
-    gttoc(constrained_QR_create_rd);
+      // In this case, the row in [R|d] is simply the row in [A|b]
+      // NOTE(frank): we used to divide by a[i] but there is no need with a constraint
+      rd = Ab.row(*constraint_row);
 
-    // construct solution (r, d, sigma)
-    Rd.push_back(boost::make_tuple(j, rd, precision));
+      // Construct solution (r, d, sigma)
+      Rd.push_back(boost::make_tuple(j, rd, kInfinity));
 
-    // exit after rank exhausted
-    if (Rd.size()>=maxRank) break;
+      // exit after rank exhausted
+      if (Rd.size() >= maxRank)
+        break;
 
-    // update Ab, expensive, using outer product
-    gttic(constrained_QR_update_Ab);
-    Ab.middleCols(j+1,n-j) -= a * rd.segment(j+1, n-j).transpose();
-    gttoc(constrained_QR_update_Ab);
+      // The constraint row will be zeroed out, so we can save work by swapping in the
+      // last valid row and decreasing m. This will save work on subsequent down-dates, too.
+      m -= 1;
+      if (*constraint_row != m) {
+        Ab.row(*constraint_row) = Ab.row(m);
+        weights(*constraint_row) = weights(m);
+        invsigmas(*constraint_row) = invsigmas(m);
+      }
+
+      // get a reduced a-column which is now shorter
+      Eigen::Block<Matrix> a_reduced = Ab.block(0, j, m, 1);
+      a_reduced *= (1.0/rd(0, j)); // NOTE(frank): this is the 1/a[i] = 1/rd(0,j) factor we need!
+
+      // Rank-1 down-date of Ab, expensive, using outer product
+      Ab.block(0, j + 1, m, n - j).noalias() -= a_reduced * rd.middleCols(j + 1, n - j);
+    } else {
+      // Treat in normal Gram-Schmidt way
+      // Calculate weighted pseudo-inverse and corresponding precision
+
+      // Form psuedo-inverse inv(a'inv(Sigma)a)a'inv(Sigma)
+      // For diagonal Sigma, inv(Sigma) = diag(precisions)
+      double precision = 0;
+      Vector pseudo(m);     // allocate storage for pseudo-inverse
+      for (size_t i = 0; i < m; i++) {
+        double ai = a(i, 0);
+        if (std::abs(ai) > 1e-9) {  // also catches remaining sigma==0 rows
+          pseudo[i] = weights[i] * ai;
+          precision += pseudo[i] * ai;
+        } else
+          pseudo[i] = 0;
+      }
+
+      if (precision > 1e-8) {
+        pseudo /= precision;
+
+        // create solution [r d], rhs is automatically r(n)
+        rd(0, j) = 1.0;  // put 1 on diagonal
+        rd.block(0, j + 1, 1, n - j) = pseudo.transpose() * Ab.block(0, j + 1, m, n - j);
+
+        // construct solution (r, d, sigma)
+        Rd.push_back(boost::make_tuple(j, rd, precision));
+      } else {
+        // If precision is zero, no information on this column
+        // This is actually not limited to constraints, could happen in Gaussian::QR
+        // In that case, we're probably hosed. TODO: make sure Householder is rank-revealing
+        continue;  // but even if not, no need to update if a==zeros
+      }
+
+      // exit after rank exhausted
+      if (Rd.size() >= maxRank)
+        break;
+
+      // Rank-1 down-date of Ab, expensive, using outer product
+      Ab.block(0, j + 1, m, n - j).noalias() -= a * rd.middleCols(j + 1, n - j);
+    }
   }
 
   // Create storage for precisions
   Vector precisions(Rd.size());
 
-  gttic(constrained_QR_write_back_into_Ab);
   // Write back result in Ab, imperative as we are
-  // TODO: test that is correct if a column was skipped !!!!
-  size_t i = 0; // start with first row
+  size_t i = 0;  // start with first row
   bool mixed = false;
-  BOOST_FOREACH(const Triple& t, Rd) {
-    const size_t& j  = t.get<0>();
-    const Vector& rd = t.get<1>();
-    precisions(i)    = t.get<2>();
-    if (constrained(i)) mixed = true;
-    for (size_t j2=0; j2<j; ++j2)
-      Ab(i,j2) = 0.0; // fill in zeros below diagonal anway
-    for (size_t j2=j; j2<n+1; ++j2)
-      Ab(i,j2) = rd(j2);
-    i+=1;
+  Ab.setZero();  // make sure we don't look below
+  for (const Triple& t: Rd) {
+    const size_t& j = t.get<0>();
+    const Matrix& rd = t.get<1>();
+    precisions(i) = t.get<2>();
+    if (std::isinf(precisions(i)))
+      mixed = true;
+    Ab.block(i, j, 1, n + 1 - j) = rd.block(0, j, 1, n + 1 - j);
+    i += 1;
   }
-  gttoc(constrained_QR_write_back_into_Ab);
 
   // Must include mu, as the defaults might be higher, resulting in non-convergence
   return mixed ? Constrained::MixedPrecisions(mu_, precisions) : Diagonal::Precisions(precisions);
@@ -474,19 +559,19 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
 // Isotropic
 /* ************************************************************************* */
 Isotropic::shared_ptr Isotropic::Sigma(size_t dim, double sigma, bool smart)  {
-  if (smart && fabs(sigma-1.0)<1e-9) return Unit::Create(dim);
+  if (smart && std::abs(sigma-1.0)<1e-9) return Unit::Create(dim);
   return shared_ptr(new Isotropic(dim, sigma));
 }
 
 /* ************************************************************************* */
 Isotropic::shared_ptr Isotropic::Variance(size_t dim, double variance, bool smart)  {
-  if (smart && fabs(variance-1.0)<1e-9) return Unit::Create(dim);
+  if (smart && std::abs(variance-1.0)<1e-9) return Unit::Create(dim);
   return shared_ptr(new Isotropic(dim, sqrt(variance)));
 }
 
 /* ************************************************************************* */
 void Isotropic::print(const string& name) const {
-  cout << name << "isotropic sigma " << " " << sigma_ << endl;
+  cout << boost::format("isotropic dim=%1% sigma=%2%") % dim() % sigma_ << endl;
 }
 
 /* ************************************************************************* */
@@ -515,6 +600,11 @@ void Isotropic::WhitenInPlace(Matrix& H) const {
 }
 
 /* ************************************************************************* */
+void Isotropic::whitenInPlace(Vector& v) const {
+  v *= invsigma_;
+}
+
+/* ************************************************************************* */
 void Isotropic::WhitenInPlace(Eigen::Block<Matrix> H) const {
   H *= invsigma_;
 }
@@ -532,58 +622,45 @@ void Unit::print(const std::string& name) const {
 
 namespace mEstimator {
 
-/** produce a weight vector according to an error vector and the implemented
- * robust function */
-Vector Base::weight(const Vector &error) const {
+Vector Base::weight(const Vector& error) const {
   const size_t n = error.rows();
   Vector w(n);
-  for ( size_t i = 0 ; i < n ; ++i )
+  for (size_t i = 0; i < n; ++i)
     w(i) = weight(error(i));
   return w;
 }
 
-/** square root version of the weight function */
-Vector Base::sqrtWeight(const Vector &error) const {
-  const size_t n = error.rows();
-  Vector w(n);
-  for ( size_t i = 0 ; i < n ; ++i )
-    w(i) = sqrtWeight(error(i));
-  return w;
-}
-
-
-/** The following three functions reweight block matrices and a vector
- * according to their weight implementation */
+// The following three functions re-weight block matrices and a vector
+// according to their weight implementation
 
 void Base::reweight(Vector& error) const {
-  if(reweight_ == Block) {
+  if (reweight_ == Block) {
     const double w = sqrtWeight(error.norm());
     error *= w;
   } else {
-    const Vector w = sqrtWeight(error);
-    error.array() *= w.array();
+    error.array() *= weight(error).cwiseSqrt().array();
   }
 }
 
-/** Reweight n block matrices with one error vector */
+// Reweight n block matrices with one error vector
 void Base::reweight(vector<Matrix> &A, Vector &error) const {
   if ( reweight_ == Block ) {
     const double w = sqrtWeight(error.norm());
-    BOOST_FOREACH(Matrix& Aj, A) {
+    for(Matrix& Aj: A) {
       Aj *= w;
     }
     error *= w;
   }
   else {
     const Vector W = sqrtWeight(error);
-    BOOST_FOREACH(Matrix& Aj, A) {
+    for(Matrix& Aj: A) {
       vector_scale_inplace(W,Aj);
     }
-    error = emul(W, error);
+    error = W.cwiseProduct(error);
   }
 }
 
-/** Reweight one block matrix with one error vector */
+// Reweight one block matrix with one error vector
 void Base::reweight(Matrix &A, Vector &error) const {
   if ( reweight_ == Block ) {
     const double w = sqrtWeight(error.norm());
@@ -593,11 +670,11 @@ void Base::reweight(Matrix &A, Vector &error) const {
   else {
     const Vector W = sqrtWeight(error);
     vector_scale_inplace(W,A);
-    error = emul(W, error);
+    error = W.cwiseProduct(error);
   }
 }
 
-/** Reweight two block matrix with one error vector */
+// Reweight two block matrix with one error vector
 void Base::reweight(Matrix &A1, Matrix &A2, Vector &error) const {
   if ( reweight_ == Block ) {
     const double w = sqrtWeight(error.norm());
@@ -609,11 +686,11 @@ void Base::reweight(Matrix &A1, Matrix &A2, Vector &error) const {
     const Vector W = sqrtWeight(error);
     vector_scale_inplace(W,A1);
     vector_scale_inplace(W,A2);
-    error = emul(W, error);
+    error = W.cwiseProduct(error);
   }
 }
 
-/** Reweight three block matrix with one error vector */
+// Reweight three block matrix with one error vector
 void Base::reweight(Matrix &A1, Matrix &A2, Matrix &A3, Vector &error) const {
   if ( reweight_ == Block ) {
     const double w = sqrtWeight(error.norm());
@@ -627,7 +704,7 @@ void Base::reweight(Matrix &A1, Matrix &A2, Matrix &A3, Vector &error) const {
     vector_scale_inplace(W,A1);
     vector_scale_inplace(W,A2);
     vector_scale_inplace(W,A3);
-    error = emul(W, error);
+    error = W.cwiseProduct(error);
   }
 }
 
@@ -641,11 +718,9 @@ void Null::print(const std::string &s="") const
 Null::shared_ptr Null::Create()
 { return shared_ptr(new Null()); }
 
-Fair::Fair(const double c, const ReweightScheme reweight)
-  : Base(reweight), c_(c) {
-  if ( c_ <= 0 ) {
-    cout << "mEstimator Fair takes only positive double in constructor. forced to 1.0" << endl;
-    c_ = 1.0;
+Fair::Fair(double c, const ReweightScheme reweight) : Base(reweight), c_(c) {
+  if (c_ <= 0) {
+    throw runtime_error("mEstimator Fair takes only positive double in constructor.");
   }
 }
 
@@ -653,48 +728,39 @@ Fair::Fair(const double c, const ReweightScheme reweight)
 // Fair
 /* ************************************************************************* */
 
-double Fair::weight(const double &error) const
-{ return 1.0 / (1.0 + fabs(error)/c_); }
-
 void Fair::print(const std::string &s="") const
 { cout << s << "fair (" << c_ << ")" << endl; }
 
-bool Fair::equals(const Base &expected, const double tol) const {
+bool Fair::equals(const Base &expected, double tol) const {
   const Fair* p = dynamic_cast<const Fair*> (&expected);
   if (p == NULL) return false;
-  return fabs(c_ - p->c_ ) < tol;
+  return std::abs(c_ - p->c_ ) < tol;
 }
 
-Fair::shared_ptr Fair::Create(const double c, const ReweightScheme reweight)
+Fair::shared_ptr Fair::Create(double c, const ReweightScheme reweight)
 { return shared_ptr(new Fair(c, reweight)); }
 
 /* ************************************************************************* */
 // Huber
 /* ************************************************************************* */
 
-Huber::Huber(const double k, const ReweightScheme reweight)
-  : Base(reweight), k_(k) {
-  if ( k_ <= 0 ) {
-    cout << "mEstimator Huber takes only positive double in constructor. forced to 1.0" << endl;
-    k_ = 1.0;
+Huber::Huber(double k, const ReweightScheme reweight) : Base(reweight), k_(k) {
+  if (k_ <= 0) {
+    throw runtime_error("mEstimator Huber takes only positive double in constructor.");
   }
-}
-
-double Huber::weight(const double &error) const {
-  return (error < k_) ? (1.0) : (k_ / fabs(error));
 }
 
 void Huber::print(const std::string &s="") const {
   cout << s << "huber (" << k_ << ")" << endl;
 }
 
-bool Huber::equals(const Base &expected, const double tol) const {
+bool Huber::equals(const Base &expected, double tol) const {
   const Huber* p = dynamic_cast<const Huber*>(&expected);
   if (p == NULL) return false;
-  return fabs(k_ - p->k_) < tol;
+  return std::abs(k_ - p->k_) < tol;
 }
 
-Huber::shared_ptr Huber::Create(const double c, const ReweightScheme reweight) {
+Huber::shared_ptr Huber::Create(double c, const ReweightScheme reweight) {
   return shared_ptr(new Huber(c, reweight));
 }
 
@@ -702,86 +768,122 @@ Huber::shared_ptr Huber::Create(const double c, const ReweightScheme reweight) {
 // Cauchy
 /* ************************************************************************* */
 
-Cauchy::Cauchy(const double k, const ReweightScheme reweight)
-  : Base(reweight), k_(k) {
-  if ( k_ <= 0 ) {
-    cout << "mEstimator Cauchy takes only positive double in constructor. forced to 1.0" << endl;
-    k_ = 1.0;
+Cauchy::Cauchy(double k, const ReweightScheme reweight) : Base(reweight), k_(k), ksquared_(k * k) {
+  if (k <= 0) {
+    throw runtime_error("mEstimator Cauchy takes only positive double in constructor.");
   }
-}
-
-double Cauchy::weight(const double &error) const {
-  return k_*k_ / (k_*k_ + error*error);
 }
 
 void Cauchy::print(const std::string &s="") const {
   cout << s << "cauchy (" << k_ << ")" << endl;
 }
 
-bool Cauchy::equals(const Base &expected, const double tol) const {
+bool Cauchy::equals(const Base &expected, double tol) const {
   const Cauchy* p = dynamic_cast<const Cauchy*>(&expected);
   if (p == NULL) return false;
-  return fabs(k_ - p->k_) < tol;
+  return std::abs(ksquared_ - p->ksquared_) < tol;
 }
 
-Cauchy::shared_ptr Cauchy::Create(const double c, const ReweightScheme reweight) {
+Cauchy::shared_ptr Cauchy::Create(double c, const ReweightScheme reweight) {
   return shared_ptr(new Cauchy(c, reweight));
 }
 
 /* ************************************************************************* */
 // Tukey
 /* ************************************************************************* */
-Tukey::Tukey(const double c, const ReweightScheme reweight)
-  : Base(reweight), c_(c) {
-}
-
-double Tukey::weight(const double &error) const {
-  if (fabs(error) <= c_) {
-    double xc2 = (error/c_)*(error/c_);
-    double one_xc22 = (1.0-xc2)*(1.0-xc2);
-    return one_xc22;
-  }
-  return 0.0;
-}
+Tukey::Tukey(double c, const ReweightScheme reweight) : Base(reweight), c_(c), csquared_(c * c) {}
 
 void Tukey::print(const std::string &s="") const {
   std::cout << s << ": Tukey (" << c_ << ")" << std::endl;
 }
 
-bool Tukey::equals(const Base &expected, const double tol) const {
+bool Tukey::equals(const Base &expected, double tol) const {
   const Tukey* p = dynamic_cast<const Tukey*>(&expected);
   if (p == NULL) return false;
-  return fabs(c_ - p->c_) < tol;
+  return std::abs(c_ - p->c_) < tol;
 }
 
-Tukey::shared_ptr Tukey::Create(const double c, const ReweightScheme reweight) {
+Tukey::shared_ptr Tukey::Create(double c, const ReweightScheme reweight) {
   return shared_ptr(new Tukey(c, reweight));
 }
 
 /* ************************************************************************* */
 // Welsh
 /* ************************************************************************* */
-Welsh::Welsh(const double c, const ReweightScheme reweight)
-  : Base(reweight), c_(c) {
-}
-
-double Welsh::weight(const double &error) const {
-  double xc2 = (error/c_)*(error/c_);
-  return std::exp(-xc2);
-}
+Welsh::Welsh(double c, const ReweightScheme reweight) : Base(reweight), c_(c), csquared_(c * c) {}
 
 void Welsh::print(const std::string &s="") const {
   std::cout << s << ": Welsh (" << c_ << ")" << std::endl;
 }
 
-bool Welsh::equals(const Base &expected, const double tol) const {
+bool Welsh::equals(const Base &expected, double tol) const {
   const Welsh* p = dynamic_cast<const Welsh*>(&expected);
+  if (p == NULL) return false;
+  return std::abs(c_ - p->c_) < tol;
+}
+
+Welsh::shared_ptr Welsh::Create(double c, const ReweightScheme reweight) {
+  return shared_ptr(new Welsh(c, reweight));
+}
+
+/* ************************************************************************* */
+// GemanMcClure
+/* ************************************************************************* */
+GemanMcClure::GemanMcClure(double c, const ReweightScheme reweight)
+  : Base(reweight), c_(c) {
+}
+
+double GemanMcClure::weight(double error) const {
+  const double c2 = c_*c_;
+  const double c4 = c2*c2;
+  const double c2error = c2 + error*error;
+  return c4/(c2error*c2error);
+}
+
+void GemanMcClure::print(const std::string &s="") const {
+  std::cout << s << ": Geman-McClure (" << c_ << ")" << std::endl;
+}
+
+bool GemanMcClure::equals(const Base &expected, double tol) const {
+  const GemanMcClure* p = dynamic_cast<const GemanMcClure*>(&expected);
   if (p == NULL) return false;
   return fabs(c_ - p->c_) < tol;
 }
 
-Welsh::shared_ptr Welsh::Create(const double c, const ReweightScheme reweight) {
-  return shared_ptr(new Welsh(c, reweight));
+GemanMcClure::shared_ptr GemanMcClure::Create(double c, const ReweightScheme reweight) {
+  return shared_ptr(new GemanMcClure(c, reweight));
+}
+
+/* ************************************************************************* */
+// DCS
+/* ************************************************************************* */
+DCS::DCS(double c, const ReweightScheme reweight)
+  : Base(reweight), c_(c) {
+}
+
+double DCS::weight(double error) const {
+  const double e2 = error*error;
+  if (e2 > c_)
+  {
+    const double w = 2.0*c_/(c_ + e2);
+    return w*w;
+  }
+
+  return 1.0;
+}
+
+void DCS::print(const std::string &s="") const {
+  std::cout << s << ": DCS (" << c_ << ")" << std::endl;
+}
+
+bool DCS::equals(const Base &expected, double tol) const {
+  const DCS* p = dynamic_cast<const DCS*>(&expected);
+  if (p == NULL) return false;
+  return fabs(c_ - p->c_) < tol;
+}
+
+DCS::shared_ptr DCS::Create(double c, const ReweightScheme reweight) {
+  return shared_ptr(new DCS(c, reweight));
 }
 
 } // namespace mEstimator

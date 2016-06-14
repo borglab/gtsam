@@ -26,8 +26,6 @@
 
 #include <utility>
 
-#include <boost/foreach.hpp>
-
 #include <gtsam/base/DerivedValue.h>
 #include <gtsam/nonlinear/Values.h> // Only so Eclipse finds class definition
 
@@ -49,8 +47,12 @@ namespace gtsam {
     const Key key; ///< The key
     const ValueType& value;  ///< The value
 
-    _ValuesConstKeyValuePair(Key _key, const ValueType& _value) : key(_key), value(_value) {}
-    _ValuesConstKeyValuePair(const _ValuesKeyValuePair<ValueType>& rhs) : key(rhs.key), value(rhs.value) {}
+    _ValuesConstKeyValuePair(Key _key, const ValueType& _value) :
+        key(_key), value(_value) {
+    }
+    _ValuesConstKeyValuePair(const _ValuesKeyValuePair<ValueType>& rhs) :
+        key(rhs.key), value(rhs.value) {
+    }
   };
 
   /* ************************************************************************* */
@@ -59,17 +61,20 @@ namespace gtsam {
   // need to use a struct here for later partial specialization
   template<class ValueType, class CastedKeyValuePairType, class KeyValuePairType>
   struct ValuesCastHelper {
-    static CastedKeyValuePairType cast(KeyValuePairType key_value) {
-      // Static cast because we already checked the type during filtering
-      return CastedKeyValuePairType(key_value.key, const_cast<GenericValue<ValueType>&>(static_cast<const GenericValue<ValueType>&>(key_value.value)).value());
-    }
+  static CastedKeyValuePairType cast(KeyValuePairType key_value) {
+    // Static cast because we already checked the type during filtering
+    return CastedKeyValuePairType(key_value.key,
+        const_cast<GenericValue<ValueType>&>(static_cast<const GenericValue<
+            ValueType>&>(key_value.value)).value());
+  }
   };
   // partial specialized version for ValueType == Value
   template<class CastedKeyValuePairType, class KeyValuePairType>
   struct ValuesCastHelper<Value, CastedKeyValuePairType, KeyValuePairType> {
     static CastedKeyValuePairType cast(KeyValuePairType key_value) {
       // Static cast because we already checked the type during filtering
-      // in this case the casted and keyvalue pair are essentially the same type (key, Value&) so perhaps this could be done with just a cast of the key_value?
+      // in this case the casted and keyvalue pair are essentially the same type
+      // (key, Value&) so perhaps this could be done with just a cast of the key_value?
       return CastedKeyValuePairType(key_value.key, key_value.value);
     }
   };
@@ -78,7 +83,8 @@ namespace gtsam {
   struct ValuesCastHelper<const Value, CastedKeyValuePairType, KeyValuePairType> {
     static CastedKeyValuePairType cast(KeyValuePairType key_value) {
       // Static cast because we already checked the type during filtering
-      // in this case the casted and keyvalue pair are essentially the same type (key, Value&) so perhaps this could be done with just a cast of the key_value?
+      // in this case the casted and keyvalue pair are essentially the same type
+      // (key, Value&) so perhaps this could be done with just a cast of the key_value?
       return CastedKeyValuePairType(key_value.key, key_value.value);
     }
   };
@@ -126,23 +132,29 @@ namespace gtsam {
     }
 
   private:
-    Filtered(const boost::function<bool(const Values::ConstKeyValuePair&)>& filter, Values& values) :
-      begin_(boost::make_transform_iterator(
-      boost::make_filter_iterator(
-      filter, values.begin(), values.end()),
-      &ValuesCastHelper<ValueType, KeyValuePair, Values::KeyValuePair>::cast)),
-      end_(boost::make_transform_iterator(
-      boost::make_filter_iterator(
-      filter, values.end(), values.end()),
-      &ValuesCastHelper<ValueType, KeyValuePair, Values::KeyValuePair>::cast)),
-      constBegin_(boost::make_transform_iterator(
-      boost::make_filter_iterator(
-      filter, ((const Values&)values).begin(), ((const Values&)values).end()),
-      &ValuesCastHelper<const ValueType, ConstKeyValuePair, Values::ConstKeyValuePair>::cast)),
-      constEnd_(boost::make_transform_iterator(
-      boost::make_filter_iterator(
-      filter, ((const Values&)values).end(), ((const Values&)values).end()),
-      &ValuesCastHelper<const ValueType, ConstKeyValuePair, Values::ConstKeyValuePair>::cast)) {}
+    Filtered(
+        const boost::function<bool(const Values::ConstKeyValuePair&)>& filter,
+        Values& values) :
+        begin_(
+            boost::make_transform_iterator(
+                boost::make_filter_iterator(filter, values.begin(), values.end()),
+                &ValuesCastHelper<ValueType, KeyValuePair, Values::KeyValuePair>::cast)), end_(
+            boost::make_transform_iterator(
+                boost::make_filter_iterator(filter, values.end(), values.end()),
+                &ValuesCastHelper<ValueType, KeyValuePair, Values::KeyValuePair>::cast)), constBegin_(
+            boost::make_transform_iterator(
+                boost::make_filter_iterator(filter,
+                    ((const Values&) values).begin(),
+                    ((const Values&) values).end()),
+                &ValuesCastHelper<const ValueType, ConstKeyValuePair,
+                    Values::ConstKeyValuePair>::cast)), constEnd_(
+            boost::make_transform_iterator(
+                boost::make_filter_iterator(filter,
+                    ((const Values&) values).end(),
+                    ((const Values&) values).end()),
+                &ValuesCastHelper<const ValueType, ConstKeyValuePair,
+                    Values::ConstKeyValuePair>::cast)) {
+    }
 
     friend class Values;
     iterator begin_;
@@ -191,7 +203,9 @@ namespace gtsam {
     friend class Values;
     const_iterator begin_;
     const_iterator end_;
-    ConstFiltered(const boost::function<bool(const Values::ConstKeyValuePair&)>& filter, const Values& values) {
+    ConstFiltered(
+        const boost::function<bool(const Values::ConstKeyValuePair&)>& filter,
+        const Values& values) {
       // We remove the const from values to create a non-const Filtered
       // view, then pull the const_iterators out of it.
       const Filtered<ValueType> filtered(filter, const_cast<Values&>(values));
@@ -204,7 +218,7 @@ namespace gtsam {
   /** Constructor from a Filtered view copies out all values */
   template<class ValueType>
   Values::Values(const Values::Filtered<ValueType>& view) {
-    BOOST_FOREACH(const typename Filtered<ValueType>::KeyValuePair& key_value, view) {
+    for(const typename Filtered<ValueType>::KeyValuePair& key_value: view) {
       Key key = key_value.key;
       insert(key, static_cast<const ValueType&>(key_value.value));
     }
@@ -213,7 +227,7 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class ValueType>
   Values::Values(const Values::ConstFiltered<ValueType>& view) {
-    BOOST_FOREACH(const typename ConstFiltered<ValueType>::KeyValuePair& key_value, view) {
+    for(const typename ConstFiltered<ValueType>::KeyValuePair& key_value: view) {
       Key key = key_value.key;
       insert(key, static_cast<const ValueType&>(key_value.value));
     }
@@ -247,27 +261,95 @@ namespace gtsam {
 
   /* ************************************************************************* */
    template<>
-   inline bool Values::filterHelper<Value>(const boost::function<bool(Key)> filter, const ConstKeyValuePair& key_value) {
+   inline bool Values::filterHelper<Value>(const boost::function<bool(Key)> filter,
+       const ConstKeyValuePair& key_value) {
      // Filter and check the type
      return filter(key_value.key);
    }
 
-  /* ************************************************************************* */
-  template<typename ValueType>
-  const ValueType& Values::at(Key j) const {
-    // Find the item
-    KeyValueMap::const_iterator item = values_.find(j);
+   /* ************************************************************************* */
 
-    // Throw exception if it does not exist
-    if(item == values_.end())
-      throw ValuesKeyDoesNotExist("retrieve", j);
+   namespace internal {
+
+   // Check the type and throw exception if incorrect
+   // Generic version, partially specialized below for various Eigen Matrix types
+   template <typename ValueType>
+   struct handle {
+     ValueType operator()(Key j, const Value* const pointer) {
+       try {
+         // value returns a const ValueType&, and the return makes a copy !!!!!
+         return dynamic_cast<const GenericValue<ValueType>&>(*pointer).value();
+       } catch (std::bad_cast&) {
+         throw ValuesIncorrectType(j, typeid(*pointer), typeid(ValueType));
+       }
+     }
+   };
+
+   template <typename MatrixType, bool isDynamic>
+   struct handle_matrix;
+
+   // Handle dynamic matrices
+   template <int M, int N>
+   struct handle_matrix<Eigen::Matrix<double, M, N>, true> {
+     Eigen::Matrix<double, M, N> operator()(Key j, const Value* const pointer) {
+       try {
+         // value returns a const Matrix&, and the return makes a copy !!!!!
+         return dynamic_cast<const GenericValue<Eigen::Matrix<double, M, N>>&>(*pointer).value();
+       } catch (std::bad_cast&) {
+         // If a fixed matrix was stored, we end up here as well.
+         throw ValuesIncorrectType(j, typeid(*pointer), typeid(Eigen::Matrix<double, M, N>));
+       }
+     }
+   };
+
+   // Handle fixed matrices
+   template <int M, int N>
+   struct handle_matrix<Eigen::Matrix<double, M, N>, false> {
+     Eigen::Matrix<double, M, N> operator()(Key j, const Value* const pointer) {
+       try {
+         // value returns a const MatrixMN&, and the return makes a copy !!!!!
+         return dynamic_cast<const GenericValue<Eigen::Matrix<double, M, N>>&>(*pointer).value();
+       } catch (std::bad_cast&) {
+         Matrix A;
+         try {
+           // Check if a dynamic matrix was stored
+           A = handle_matrix<Eigen::MatrixXd, true>()(j, pointer);  // will throw if not....
+         } catch (const ValuesIncorrectType&) {
+           // Or a dynamic vector
+           A = handle_matrix<Eigen::VectorXd, true>()(j, pointer);  // will throw if not....
+         }
+         // Yes: check size, and throw if not a match
+         if (A.rows() != M || A.cols() != N)
+           throw NoMatchFoundForFixed(M, N, A.rows(), A.cols());
+         else
+           return A; // copy but not malloc
+       }
+     }
+   };
+
+   // Handle matrices
+   template <int M, int N>
+   struct handle<Eigen::Matrix<double, M, N>> {
+     Eigen::Matrix<double, M, N> operator()(Key j, const Value* const pointer) {
+       return handle_matrix<Eigen::Matrix<double, M, N>,
+                            (M == Eigen::Dynamic || N == Eigen::Dynamic)>()(j, pointer);
+     }
+   };
+
+   }  // internal
+
+   /* ************************************************************************* */
+   template<typename ValueType>
+   ValueType Values::at(Key j) const {
+     // Find the item
+     KeyValueMap::const_iterator item = values_.find(j);
+
+     // Throw exception if it does not exist
+     if(item == values_.end())
+       throw ValuesKeyDoesNotExist("at", j);
 
     // Check the type and throw exception if incorrect
-    try {
-      return dynamic_cast<const GenericValue<ValueType>&>(*item->second).value();
-    } catch (std::bad_cast &) {
-      throw ValuesIncorrectType(j, typeid(*item->second), typeid(ValueType));
-    }
+    return internal::handle<ValueType>()(j,item->second);
   }
 
   /* ************************************************************************* */
@@ -278,10 +360,13 @@ namespace gtsam {
 
     if(item != values_.end()) {
       // dynamic cast the type and throw exception if incorrect
+      const Value& value = *item->second;
       try {
-        return dynamic_cast<const GenericValue<ValueType>&>(*item->second).value();
+        return dynamic_cast<const GenericValue<ValueType>&>(value).value();
       } catch (std::bad_cast &) {
-        throw ValuesIncorrectType(j, typeid(*item->second), typeid(ValueType));
+        // NOTE(abe): clang warns about potential side effects if done in typeid
+        const Value* value = item->second;
+        throw ValuesIncorrectType(j, typeid(*value), typeid(ValueType));
       }
      } else {
       return boost::none;
@@ -289,40 +374,17 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  // insert a plain value using the default chart
+
+  // insert a templated value
   template<typename ValueType>
-   void Values::insert(Key j, const ValueType& val) {
-     insert(j, static_cast<const Value&>(ChartValue<ValueType, DefaultChart<ValueType> >(val)));
-   }
-
-  // insert with custom chart type
-  template<typename ValueType, typename Chart>
-   void Values::insert(Key j, const ValueType& val) {
-     insert(j, static_cast<const Value&>(ChartValue<ValueType, Chart>(val)));
-   }
-
-  // overloaded insert with chart initializer
-  template<typename ValueType, typename Chart>
-  void Values::insert(Key j, const ValueType& val, Chart chart) {
-    insert(j, static_cast<const Value&>(ChartValue<ValueType, Chart>(val, chart)));
+  void Values::insert(Key j, const ValueType& val) {
+    insert(j, static_cast<const Value&>(GenericValue<ValueType>(val)));
   }
 
-  // update with default chart
+  // update with templated value
   template <typename ValueType>
   void Values::update(Key j, const ValueType& val) {
-    update(j, static_cast<const Value&>(ChartValue<ValueType, DefaultChart<ValueType> >(val)));
-  }
-
-  // update with custom chart
-  template <typename ValueType, typename Chart>
-  void Values::update(Key j, const ValueType& val) {
-    update(j, static_cast<const Value&>(ChartValue<ValueType, Chart>(val)));
-  }
-
-  // update with chart initializer, /todo: perhaps there is a way to init chart from old value...
-  template<typename ValueType, typename Chart>
-  void Values::update(Key j, const ValueType& val, Chart chart) {
-    update(j, static_cast<const Value&>(ChartValue<ValueType, Chart>(val, chart)));
+    update(j, static_cast<const Value&>(GenericValue<ValueType>(val)));
   }
 
 }

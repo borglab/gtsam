@@ -54,7 +54,7 @@ public:
 
   /** vector of errors */
   Vector attitudeError(const Rot3& p,
-      boost::optional<Matrix&> H = boost::none) const;
+      OptionalJacobian<2,3> H = boost::none) const;
 };
 
 /**
@@ -122,7 +122,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar
         & boost::serialization::make_nvp("NoiseModelFactor1",
             boost::serialization::base_object<Base>(*this));
@@ -130,6 +130,9 @@ private:
     ar & BOOST_SERIALIZATION_NVP(bRef_);
   }
 };
+
+/// traits
+template<> struct traits<Rot3AttitudeFactor> : public Testable<Rot3AttitudeFactor> {};
 
 /**
  * Version of AttitudeFactor for Pose3
@@ -186,7 +189,7 @@ public:
     Vector e = attitudeError(nTb.rotation(), H);
     if (H) {
       Matrix H23 = *H;
-      *H = Matrix::Zero(2, 6);
+      *H = Matrix::Zero(2,6);
       H->block<2,3>(0,0) = H23;
     }
     return e;
@@ -203,7 +206,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar
         & boost::serialization::make_nvp("NoiseModelFactor1",
             boost::serialization::base_object<Base>(*this));
@@ -211,6 +214,9 @@ private:
     ar & BOOST_SERIALIZATION_NVP(bRef_);
   }
 };
+
+/// traits
+template<> struct traits<Pose3AttitudeFactor> : public Testable<Pose3AttitudeFactor> {};
 
 } /// namespace gtsam
 

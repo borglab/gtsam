@@ -62,7 +62,7 @@ Values BatchOptimize(const NonlinearFactorGraph& graph, const Values& theta, int
 
   // it is the same as the input graph, but we removed the empty factors that may be present in the input graph
   NonlinearFactorGraph graphForISAM2;
-  BOOST_FOREACH(NonlinearFactor::shared_ptr factor,  graph){
+  for(NonlinearFactor::shared_ptr factor:  graph){
     if(factor)
       graphForISAM2.push_back(factor);
   }
@@ -80,18 +80,18 @@ NonlinearFactorGraph CalculateMarginals(const NonlinearFactorGraph& factorGraph,
 
 
   std::set<Key> KeysToKeep;
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, linPoint) { // we cycle over all the keys of factorGraph
+  for(const Values::ConstKeyValuePair& key_value: linPoint) { // we cycle over all the keys of factorGraph
     KeysToKeep.insert(key_value.key);
   } // so far we are keeping all keys, but we want to delete the ones that we are going to marginalize
-  BOOST_FOREACH(Key key, keysToMarginalize) {
+  for(Key key: keysToMarginalize) {
     KeysToKeep.erase(key);
   } // we removed the keys that we have to marginalize
 
   Ordering ordering;
-  BOOST_FOREACH(Key key, keysToMarginalize) {
+  for(Key key: keysToMarginalize) {
     ordering.push_back(key);
   } // the keys that we marginalize should be at the beginning in the ordering
-  BOOST_FOREACH(Key key, KeysToKeep) {
+  for(Key key: KeysToKeep) {
     ordering.push_back(key);
   }
 
@@ -101,7 +101,7 @@ NonlinearFactorGraph CalculateMarginals(const NonlinearFactorGraph& factorGraph,
   GaussianFactorGraph marginal = *linearGraph.eliminatePartialMultifrontal(vector<Key>(keysToMarginalize.begin(), keysToMarginalize.end()), EliminateCholesky).second;
 
   NonlinearFactorGraph LinearContainerForGaussianMarginals;
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, marginal) {
+  for(const GaussianFactor::shared_ptr& factor: marginal) {
     LinearContainerForGaussianMarginals.push_back(LinearContainerFactor(factor, linPoint));
   }
 
@@ -417,7 +417,7 @@ TEST( ConcurrentIncrementalFilter, update_and_marginalize_1 )
   Values expectedValues = optimalValues;
 
   // Check
-  BOOST_FOREACH(Key key, keysToMove) {
+  for(Key key: keysToMove) {
     expectedValues.erase(key);
   }
 
@@ -443,7 +443,7 @@ TEST( ConcurrentIncrementalFilter, update_and_marginalize_1 )
   // ==========================================================
   expectedGraph.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
 
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, marginal) {
+  for(const GaussianFactor::shared_ptr& factor: marginal) {
     // the linearization point for the linear container is optional, but it is not used in the filter,
     // therefore if we add it here it will not pass the test
     //    expectedGraph.push_back(LinearContainerFactor(factor, ordering, partialValues));
@@ -501,7 +501,7 @@ TEST( ConcurrentIncrementalFilter, update_and_marginalize_2 )
   Values expectedValues = optimalValues;
 
   // Check
-  BOOST_FOREACH(Key key, keysToMove) {
+  for(Key key: keysToMove) {
     expectedValues.erase(key);
   }
 
@@ -527,7 +527,7 @@ TEST( ConcurrentIncrementalFilter, update_and_marginalize_2 )
     // ==========================================================
     expectedGraph.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
 
-    BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, marginal) {
+    for(const GaussianFactor::shared_ptr& factor: marginal) {
       // the linearization point for the linear container is optional, but it is not used in the filter,
       // therefore if we add it here it will not pass the test
       //    expectedGraph.push_back(LinearContainerFactor(factor, ordering, partialValues));
@@ -543,7 +543,7 @@ TEST( ConcurrentIncrementalFilter, update_and_marginalize_2 )
   Values optimalValues2 = BatchOptimize(newFactors, optimalValues);
   Values expectedValues2 = optimalValues2;
    // Check
-   BOOST_FOREACH(Key key, keysToMove) {
+   for(Key key: keysToMove) {
      expectedValues2.erase(key);
    }
    Values actualValues2 = filter.calculateEstimate();
@@ -559,7 +559,6 @@ TEST( ConcurrentIncrementalFilter, update_and_marginalize_2 )
 /* ************************************************************************* */
 TEST( ConcurrentIncrementalFilter, synchronize_0 )
 {
-  std::cout << "*********************** synchronize_0 ************************" << std::endl;
   // Create a set of optimizer parameters
   ISAM2Params parameters;
 
@@ -593,7 +592,6 @@ TEST( ConcurrentIncrementalFilter, synchronize_0 )
 ///* ************************************************************************* */
 TEST( ConcurrentIncrementalFilter, synchronize_1 )
 {
-  std::cout << "*********************** synchronize_1 ************************" << std::endl;
   // Create a set of optimizer parameters
   ISAM2Params parameters;
   parameters.relinearizeThreshold = 0;
@@ -641,7 +639,6 @@ TEST( ConcurrentIncrementalFilter, synchronize_1 )
 /* ************************************************************************* */
 TEST( ConcurrentIncrementalFilter, synchronize_2 )
 {
-  std::cout << "*********************** synchronize_2 ************************" << std::endl;
   // Create a set of optimizer parameters
   ISAM2Params parameters;
   parameters.relinearizeThreshold = 0;
@@ -712,7 +709,6 @@ TEST( ConcurrentIncrementalFilter, synchronize_2 )
 /* ************************************************************************* */
 TEST( ConcurrentIncrementalFilter, synchronize_3 )
 {
-  std::cout << "*********************** synchronize_3 ************************" << std::endl;
   // Create a set of optimizer parameters
   ISAM2Params parameters;
   parameters.relinearizeThreshold = 0;
@@ -800,7 +796,6 @@ TEST( ConcurrentIncrementalFilter, synchronize_3 )
 /* ************************************************************************* */
 TEST( ConcurrentIncrementalFilter, synchronize_4 )
 {
-  std::cout << "*********************** synchronize_4 ************************" << std::endl;
   // Create a set of optimizer parameters
   ISAM2Params parameters;
   parameters.relinearizeThreshold = 0;
@@ -896,7 +891,6 @@ TEST( ConcurrentIncrementalFilter, synchronize_4 )
 /* ************************************************************************* */
 TEST( ConcurrentIncrementalFilter, synchronize_5 )
 {
-  std::cout << "*********************** synchronize_5 ************************" << std::endl;
   // Create a set of optimizer parameters
   ISAM2Params parameters;
   parameters.relinearizeThreshold = 0;
@@ -1092,7 +1086,6 @@ TEST( ConcurrentIncrementalFilter, synchronize_5 )
 ///* ************************************************************************* */
 TEST( ConcurrentIncrementalFilter, CalculateMarginals_1 )
 {
-  std::cout << "*********************** CalculateMarginals_1 ************************" << std::endl;
   // We compare the manual computation of the linear marginals from a factor graph, with the function CalculateMarginals
   NonlinearFactor::shared_ptr factor1(new PriorFactor<Pose3>(1, poseInitial, noisePrior));
   NonlinearFactor::shared_ptr factor2(new BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
@@ -1123,7 +1116,7 @@ TEST( ConcurrentIncrementalFilter, CalculateMarginals_1 )
     GaussianFactorGraph marginal = *linearGraph.eliminatePartialMultifrontal(vector<Key>(linearIndices.begin(), linearIndices.end()), EliminateCholesky).second;
 
     NonlinearFactorGraph expectedMarginals;
-    BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, marginal) {
+    for(const GaussianFactor::shared_ptr& factor: marginal) {
       expectedMarginals.push_back(LinearContainerFactor(factor, newValues));
     }
 
@@ -1141,8 +1134,6 @@ TEST( ConcurrentIncrementalFilter, CalculateMarginals_1 )
 ///* ************************************************************************* */
 TEST( ConcurrentIncrementalFilter, CalculateMarginals_2 )
 {
-  std::cout << "*********************** CalculateMarginals_2 ************************" << std::endl;
-
   // We compare the manual computation of the linear marginals from a factor graph, with the function CalculateMarginals
   NonlinearFactor::shared_ptr factor1(new PriorFactor<Pose3>(1, poseInitial, noisePrior));
   NonlinearFactor::shared_ptr factor2(new BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
@@ -1165,7 +1156,6 @@ TEST( ConcurrentIncrementalFilter, CalculateMarginals_2 )
   newValues.insert(3, value3);
 
 
-
     // Create the set of marginalizable variables
   std::vector<Key> linearIndices;
   linearIndices.push_back(1);
@@ -1177,7 +1167,7 @@ TEST( ConcurrentIncrementalFilter, CalculateMarginals_2 )
   GaussianFactorGraph marginal = *linearGraph.eliminatePartialMultifrontal(vector<Key>(linearIndices.begin(), linearIndices.end()), EliminateCholesky).second;
 
   NonlinearFactorGraph expectedMarginals;
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, marginal) {
+  for(const GaussianFactor::shared_ptr& factor: marginal) {
     expectedMarginals.push_back(LinearContainerFactor(factor, newValues));
   }
 
@@ -1190,8 +1180,6 @@ TEST( ConcurrentIncrementalFilter, CalculateMarginals_2 )
 
   // Check
   CHECK(assert_equal(expectedMarginals, actualMarginals, 1e-6));
-//  actualMarginals.print("actualMarginals \n");
-//  expectedMarginals.print("expectedMarginals \n");
 }
 
 
@@ -1199,8 +1187,6 @@ TEST( ConcurrentIncrementalFilter, CalculateMarginals_2 )
 ///* ************************************************************************* */
 TEST( ConcurrentIncrementalFilter, removeFactors_topology_1 )
 {
-  std::cout << "*********************** removeFactors_topology_1 ************************" << std::endl;
-
   // Create a set of optimizer parameters
   ISAM2Params parameters;
   parameters.relinearizeThreshold = 0;
@@ -1233,8 +1219,9 @@ TEST( ConcurrentIncrementalFilter, removeFactors_topology_1 )
 
   // factor we want to remove
   // NOTE: we can remove factors, paying attention that the remaining graph remains connected
-  // we remove a single factor, the number 1, which is a BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery);
-  std::vector<size_t> removeFactorIndices(1,1);
+  // we remove a single factor, the number 1, which is a BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery)
+  FactorIndices removeFactorIndices;
+  removeFactorIndices.push_back(1);
 
   // Add no factors to the filter (we only want to test the removal)
   NonlinearFactorGraph noFactors;
@@ -1245,7 +1232,7 @@ TEST( ConcurrentIncrementalFilter, removeFactors_topology_1 )
 
   NonlinearFactorGraph expectedGraph;
   expectedGraph.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
-  // we removed this one: expectedGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  // we removed this one: expectedGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery))
   // we should add an empty one, so that the ordering and labeling of the factors is preserved
   expectedGraph.push_back(NonlinearFactor::shared_ptr());
   expectedGraph.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
@@ -1258,7 +1245,6 @@ TEST( ConcurrentIncrementalFilter, removeFactors_topology_1 )
 /////* ************************************************************************* */
 TEST( ConcurrentIncrementalFilter, removeFactors_topology_2 )
 {
-  std::cout << "*********************** removeFactors_topology_2 ************************" << std::endl;
   // we try removing the last factor
 
   ISAM2Params parameters;
@@ -1293,7 +1279,7 @@ TEST( ConcurrentIncrementalFilter, removeFactors_topology_2 )
   // factor we want to remove
   // NOTE: we can remove factors, paying attention that the remaining graph remains connected
   // we remove a single factor, the number 1, which is a BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery);
-  std::vector<size_t> removeFactorIndices(1,4);
+  FactorIndices removeFactorIndices(1,4);
 
   // Add no factors to the filter (we only want to test the removal)
   NonlinearFactorGraph noFactors;
@@ -1318,7 +1304,6 @@ TEST( ConcurrentIncrementalFilter, removeFactors_topology_2 )
 /////* ************************************************************************* */
 TEST( ConcurrentIncrementalFilter, removeFactors_topology_3 )
 {
-  std::cout << "*********************** removeFactors_topology_3 ************************" << std::endl;
   // we try removing the first factor
 
   ISAM2Params parameters;
@@ -1353,7 +1338,7 @@ TEST( ConcurrentIncrementalFilter, removeFactors_topology_3 )
   // factor we want to remove
   // NOTE: we can remove factors, paying attention that the remaining graph remains connected
   // we remove a single factor, the number 0, which is a BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery);
-  std::vector<size_t> removeFactorIndices(1,0);
+  FactorIndices removeFactorIndices(1,0);
 
   // Add no factors to the filter (we only want to test the removal)
   NonlinearFactorGraph noFactors;
@@ -1376,7 +1361,6 @@ TEST( ConcurrentIncrementalFilter, removeFactors_topology_3 )
 /////* ************************************************************************* */
 TEST( ConcurrentIncrementalFilter, removeFactors_values )
 {
-  std::cout << "*********************** removeFactors_values ************************" << std::endl;
   // we try removing the last factor
 
   ISAM2Params parameters;
@@ -1411,7 +1395,7 @@ TEST( ConcurrentIncrementalFilter, removeFactors_values )
   // factor we want to remove
   // NOTE: we can remove factors, paying attention that the remaining graph remains connected
   // we remove a single factor, the number 4, which is a BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery);
-  std::vector<size_t> removeFactorIndices(1,4);
+  FactorIndices removeFactorIndices(1,4);
 
   // Add no factors to the filter (we only want to test the removal)
   NonlinearFactorGraph noFactors;

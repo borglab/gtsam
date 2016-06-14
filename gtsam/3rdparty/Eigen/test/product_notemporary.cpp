@@ -58,9 +58,18 @@ template<typename MatrixType> void product_notemporary(const MatrixType& m)
         r1 = internal::random<Index>(8,rows-r0);
 
   VERIFY_EVALUATION_COUNT( m3 = (m1 * m2.adjoint()), 1);
+  VERIFY_EVALUATION_COUNT( m3 = (m1 * m2.adjoint()).transpose(), 1);
   VERIFY_EVALUATION_COUNT( m3.noalias() = m1 * m2.adjoint(), 0);
 
+  VERIFY_EVALUATION_COUNT( m3 = s1 * (m1 * m2.transpose()), 1);
+  VERIFY_EVALUATION_COUNT( m3 = m3 + s1 * (m1 * m2.transpose()), 1);
   VERIFY_EVALUATION_COUNT( m3.noalias() = s1 * (m1 * m2.transpose()), 0);
+
+  VERIFY_EVALUATION_COUNT( m3 = m3 + (m1 * m2.adjoint()), 1);
+  VERIFY_EVALUATION_COUNT( m3 = m3 + (m1 * m2.adjoint()).transpose(), 1);
+  VERIFY_EVALUATION_COUNT( m3.noalias() = m3 + m1 * m2.transpose(), 1);   // 0 in 3.3
+  VERIFY_EVALUATION_COUNT( m3.noalias() += m3 + m1 * m2.transpose(), 1);  // 0 in 3.3
+  VERIFY_EVALUATION_COUNT( m3.noalias() -= m3 + m1 * m2.transpose(), 1);  // 0 in 3.3
 
   VERIFY_EVALUATION_COUNT( m3.noalias() = s1 * m1 * s2 * m2.adjoint(), 0);
   VERIFY_EVALUATION_COUNT( m3.noalias() = s1 * m1 * s2 * (m1*s3+m2*s2).adjoint(), 1);

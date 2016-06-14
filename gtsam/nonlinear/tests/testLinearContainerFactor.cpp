@@ -234,7 +234,7 @@ TEST( testLinearContainerFactor, creation ) {
   // create a linear factor
   SharedDiagonal model = noiseModel::Unit::Create(2);
   JacobianFactor::shared_ptr linear_factor(new JacobianFactor(
-      l3, eye(2,2), l5, 2.0 * eye(2,2), zero(2), model));
+      l3, I_2x2, l5, 2.0 * I_2x2, Z_2x1, model));
 
   // create a set of values - build with full set of values
   gtsam::Values full_values, exp_values;

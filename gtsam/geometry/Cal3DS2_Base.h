@@ -45,9 +45,6 @@ protected:
   double p1_, p2_ ; // tangential distortion
 
 public:
-  Matrix3 K() const ;
-  Vector4 k() const { return Vector4(k1_, k2_, p1_, p2_); }
-  Vector9 vector() const ;
 
   /// @name Standard Constructors
   /// @{
@@ -58,6 +55,8 @@ public:
   Cal3DS2_Base(double fx, double fy, double s, double u0, double v0,
       double k1, double k2, double p1 = 0.0, double p2 = 0.0) :
   fx_(fx), fy_(fy), s_(s), u0_(u0), v0_(v0), k1_(k1), k2_(k2), p1_(p1), p2_(p2) {}
+
+  virtual ~Cal3DS2_Base() {}
 
   /// @}
   /// @name Advanced Constructors
@@ -70,7 +69,7 @@ public:
   /// @{
 
   /// print with optional string
-  void print(const std::string& s = "") const ;
+  virtual void print(const std::string& s = "") const ;
 
   /// assert equality up to a tolerance
   bool equals(const Cal3DS2_Base& K, double tol = 10e-9) const;
@@ -106,6 +105,15 @@ public:
   /// Second tangential distortion coefficient
   inline double p2() const { return p2_;}
 
+  /// return calibration matrix -- not really applicable
+  Matrix3 K() const;
+
+  /// return distortion parameter vector
+  Vector4 k() const { return Vector4(k1_, k2_, p1_, p2_); }
+
+  /// Return all parameters as a vector
+  Vector9 vector() const;
+
   /**
    * convert intrinsic coordinates xy to (distorted) image coordinates uv
    * @param p point in intrinsic coordinates
@@ -126,16 +134,26 @@ public:
   /// Derivative of uncalibrate wrpt the calibration parameters
   Matrix29 D2d_calibration(const Point2& p) const ;
 
-private:
+  /// @}
+  /// @name Clone
+  /// @{
+
+  /// @return a deep copy of this object
+  virtual boost::shared_ptr<Cal3DS2_Base> clone() const {
+    return boost::shared_ptr<Cal3DS2_Base>(new Cal3DS2_Base(*this));
+  }
 
   /// @}
+
+private:
+
   /// @name Advanced Interface
   /// @{
 
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
-  void serialize(Archive & ar, const unsigned int version)
+  void serialize(Archive & ar, const unsigned int /*version*/)
   {
     ar & BOOST_SERIALIZATION_NVP(fx_);
     ar & BOOST_SERIALIZATION_NVP(fy_);

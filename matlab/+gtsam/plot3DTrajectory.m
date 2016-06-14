@@ -33,12 +33,12 @@ for i = 0:keys.size-1
                 end
                 gtsam.plotPose3(lastPose, P, scale);
             catch err
-                warning(['no Pose3 at ' lastKey]);
+                % warning(['no Pose3 at ' lastKey]);
             end
-            lastIndex = i;
         end
+        lastIndex = i;
     catch
-        warning(['no Pose3 at ' key]);
+        % warning(['no Pose3 at ' key]);
     end
     
     % Draw final pose
@@ -53,7 +53,7 @@ for i = 0:keys.size-1
             end
             gtsam.plotPose3(lastPose, P, scale);
         catch
-            warning(['no Pose3 at ' lastIndex]);
+            % warning(['no Pose3 at ' lastIndex]);
         end
     end
     

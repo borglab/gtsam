@@ -24,17 +24,17 @@ namespace gtsam {
  * Ternary factor representing a visual measurement that includes inverse depth
  */
 template<class POSE, class LANDMARK, class INVDEPTH>
-class InvDepthFactor3: public gtsam::NoiseModelFactor3<POSE, LANDMARK, INVDEPTH> {
+class InvDepthFactor3: public NoiseModelFactor3<POSE, LANDMARK, INVDEPTH> {
 protected:
 
   // Keep a copy of measurement and calibration for I/O
-  gtsam::Point2 measured_;                ///< 2D measurement
-  boost::shared_ptr<gtsam::Cal3_S2> K_;  ///< shared pointer to calibration object
+  Point2 measured_;                ///< 2D measurement
+  boost::shared_ptr<Cal3_S2> K_;  ///< shared pointer to calibration object
 
 public:
 
   /// shorthand for base class type
-  typedef gtsam::NoiseModelFactor3<POSE, LANDMARK, INVDEPTH> Base;
+  typedef NoiseModelFactor3<POSE, LANDMARK, INVDEPTH> Base;
 
   /// shorthand for this class
   typedef InvDepthFactor3<POSE, LANDMARK, INVDEPTH> This;
@@ -43,7 +43,9 @@ public:
   typedef boost::shared_ptr<This> shared_ptr;
 
   /// Default constructor
-  InvDepthFactor3() : K_(new gtsam::Cal3_S2(444, 555, 666, 777, 888)) {}
+  InvDepthFactor3() :
+      measured_(0.0, 0.0), K_(new Cal3_S2(444, 555, 666, 777, 888)) {
+  }
 
   /**
    * Constructor
@@ -55,8 +57,8 @@ public:
    * @param invDepthKey is the index of inverse depth
    * @param K shared pointer to the constant calibration
    */
-  InvDepthFactor3(const gtsam::Point2& measured, const gtsam::SharedNoiseModel& model,
-      const gtsam::Key poseKey, gtsam::Key pointKey, gtsam::Key invDepthKey, const Cal3_S2::shared_ptr& K) :
+  InvDepthFactor3(const Point2& measured, const SharedNoiseModel& model,
+      const Key poseKey, Key pointKey, Key invDepthKey, const Cal3_S2::shared_ptr& K) :
         Base(model, poseKey, pointKey, invDepthKey), measured_(measured), K_(K) {}
 
   /** Virtual destructor */
@@ -68,44 +70,43 @@ public:
    * @param keyFormatter optional formatter useful for printing Symbols
    */
   void print(const std::string& s = "InvDepthFactor3",
-      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter) const {
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
     Base::print(s, keyFormatter);
-    measured_.print(s + ".z");
+    traits<Point2>::Print(measured_, s + ".z");
   }
 
   /// equals
-  virtual bool equals(const gtsam::NonlinearFactor& p, double tol = 1e-9) const {
+  virtual bool equals(const NonlinearFactor& p, double tol = 1e-9) const {
     const This *e = dynamic_cast<const This*>(&p);
-    return e && Base::equals(p, tol) && this->measured_.equals(e->measured_, tol) && this->K_->equals(*e->K_, tol);
+    return e && Base::equals(p, tol) && traits<Point2>::Equals(this->measured_, e->measured_, tol) && this->K_->equals(*e->K_, tol);
   }
 
   /// Evaluate error h(x)-z and optionally derivatives
-  gtsam::Vector evaluateError(const POSE& pose, const Vector5& point, const INVDEPTH& invDepth,
-      boost::optional<gtsam::Matrix&> H1=boost::none,
-      boost::optional<gtsam::Matrix&> H2=boost::none,
-      boost::optional<gtsam::Matrix&> H3=boost::none) const {
+  Vector evaluateError(const POSE& pose, const Vector5& point, const INVDEPTH& invDepth,
+      boost::optional<Matrix&> H1=boost::none,
+      boost::optional<Matrix&> H2=boost::none,
+      boost::optional<Matrix&> H3=boost::none) const {
     try {
-      InvDepthCamera3<gtsam::Cal3_S2> camera(pose, K_);
-      gtsam::Point2 reprojectionError(camera.project(point, invDepth, H1, H2, H3) - measured_);
-      return reprojectionError.vector();
+      InvDepthCamera3<Cal3_S2> camera(pose, K_);
+      return camera.project(point, invDepth, H1, H2, H3) - measured_;
     } catch( CheiralityException& e) {
-      if (H1) *H1 = gtsam::zeros(2,6);
-      if (H2) *H2 = gtsam::zeros(2,5);
-      if (H3) *H2 = gtsam::zeros(2,1);
+      if (H1) *H1 = Matrix::Zero(2,6);
+      if (H2) *H2 = Matrix::Zero(2,5);
+      if (H3) *H2 = Matrix::Zero(2,1);
       std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2()) <<
           " moved behind camera " << DefaultKeyFormatter(this->key1()) << std::endl;
-      return gtsam::ones(2) * 2.0 * K_->fx();
+      return Vector::Ones(2) * 2.0 * K_->fx();
     }
-    return (gtsam::Vector(1) << 0.0).finished();
+    return (Vector(1) << 0.0).finished();
   }
 
   /** return the measurement */
-  const gtsam::Point2& imagePoint() const {
+  const Point2& imagePoint() const {
     return measured_;
   }
 
   /** return the calibration object */
-  inline const gtsam::Cal3_S2::shared_ptr calibration() const {
+  inline const Cal3_S2::shared_ptr calibration() const {
     return K_;
   }
 
@@ -114,7 +115,7 @@ private:
   /// Serialization function
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar & BOOST_SERIALIZATION_NVP(measured_);
     ar & BOOST_SERIALIZATION_NVP(K_);

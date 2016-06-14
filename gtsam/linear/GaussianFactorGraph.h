@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -17,7 +17,7 @@
  * @author  Alireza Fathi
  * @author  Richard Roberts
  * @author  Frank Dellaert
- */ 
+ */
 
 #pragma once
 
@@ -135,18 +135,16 @@ namespace gtsam {
      * Return the set of variables involved in the factors (computes a set
      * union).
      */
-    typedef FastSet<Key> Keys;
+    typedef KeySet Keys;
     Keys keys() const;
 
     /* return a map of (Key, dimension) */
     std::map<Key, size_t> getKeyDimMap() const;
 
-    std::vector<size_t> getkeydim() const;
-
     /** unnormalized error */
     double error(const VectorValues& x) const {
       double total_error = 0.;
-      BOOST_FOREACH(const sharedFactor& factor, *this){
+      for(const sharedFactor& factor: *this){
         if(factor)
           total_error += factor->error(x);
       }
@@ -310,10 +308,6 @@ namespace gtsam {
     void multiplyHessianAdd(double alpha, const VectorValues& x,
         VectorValues& y) const;
 
-    ///** y += alpha*A'A*x */
-    void multiplyHessianAdd(double alpha, const double* x,
-        double* y) const;
-
     ///** In-place version e <- A*x that overwrites e. */
     void multiplyInPlace(const VectorValues& x, Errors& e) const;
 
@@ -326,7 +320,7 @@ namespace gtsam {
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version) {
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     }
 
@@ -344,4 +338,9 @@ namespace gtsam {
   //GTSAM_EXPORT void residual(const GaussianFactorGraph& fg, const VectorValues &x, VectorValues &r);
   //GTSAM_EXPORT void multiply(const GaussianFactorGraph& fg, const VectorValues &x, VectorValues &r);
 
-} // namespace gtsam
+/// traits
+template<>
+struct traits<GaussianFactorGraph> : public Testable<GaussianFactorGraph> {
+};
+
+} // \ namespace gtsam

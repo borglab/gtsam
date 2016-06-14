@@ -22,15 +22,14 @@
 
 #include <tests/smallExample.h>
 //#include <gtsam/slam/AntiFactor.h>
-#include <gtsam/slam/BearingFactor.h>
-#include <gtsam/slam/BearingRangeFactor.h>
+#include <gtsam/sam/BearingRangeFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 //#include <gtsam/slam/BoundingConstraint.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
 //#include <gtsam/slam/PartialPriorFactor.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/ProjectionFactor.h>
-#include <gtsam/slam/RangeFactor.h>
+#include <gtsam/sam/RangeFactor.h>
 #include <gtsam/slam/StereoFactor.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/inference/Symbol.h>
@@ -106,9 +105,6 @@ typedef RangeFactor<SimpleCamera, Point3>               RangeFactorSimpleCameraP
 typedef RangeFactor<CalibratedCamera, CalibratedCamera> RangeFactorCalibratedCamera;
 typedef RangeFactor<SimpleCamera, SimpleCamera>         RangeFactorSimpleCamera;
 
-typedef BearingFactor<Pose2, Point2, Rot2> BearingFactor2D;
-typedef BearingFactor<Pose3, Point3, Rot3> BearingFactor3D;
-
 typedef BearingRangeFactor<Pose2, Point2>  BearingRangeFactor2D;
 typedef BearingRangeFactor<Pose3, Point3>  BearingRangeFactor3D;
 
@@ -148,21 +144,21 @@ BOOST_CLASS_EXPORT_GUID(gtsam::SharedDiagonal, "gtsam_SharedDiagonal");
 
 /* Create GUIDs for geometry */
 /* ************************************************************************* */
-BOOST_CLASS_EXPORT(gtsam::LieVector);
-BOOST_CLASS_EXPORT(gtsam::LieMatrix);
-BOOST_CLASS_EXPORT(gtsam::Point2);
-BOOST_CLASS_EXPORT(gtsam::StereoPoint2);
-BOOST_CLASS_EXPORT(gtsam::Point3);
-BOOST_CLASS_EXPORT(gtsam::Rot2);
-BOOST_CLASS_EXPORT(gtsam::Rot3);
-BOOST_CLASS_EXPORT(gtsam::Pose2);
-BOOST_CLASS_EXPORT(gtsam::Pose3);
-BOOST_CLASS_EXPORT(gtsam::Cal3_S2);
-BOOST_CLASS_EXPORT(gtsam::Cal3DS2);
-BOOST_CLASS_EXPORT(gtsam::Cal3_S2Stereo);
-BOOST_CLASS_EXPORT(gtsam::CalibratedCamera);
-BOOST_CLASS_EXPORT(gtsam::SimpleCamera);
-BOOST_CLASS_EXPORT(gtsam::StereoCamera);
+GTSAM_VALUE_EXPORT(gtsam::LieVector);
+GTSAM_VALUE_EXPORT(gtsam::LieMatrix);
+GTSAM_VALUE_EXPORT(gtsam::Point2);
+GTSAM_VALUE_EXPORT(gtsam::StereoPoint2);
+GTSAM_VALUE_EXPORT(gtsam::Point3);
+GTSAM_VALUE_EXPORT(gtsam::Rot2);
+GTSAM_VALUE_EXPORT(gtsam::Rot3);
+GTSAM_VALUE_EXPORT(gtsam::Pose2);
+GTSAM_VALUE_EXPORT(gtsam::Pose3);
+GTSAM_VALUE_EXPORT(gtsam::Cal3_S2);
+GTSAM_VALUE_EXPORT(gtsam::Cal3DS2);
+GTSAM_VALUE_EXPORT(gtsam::Cal3_S2Stereo);
+GTSAM_VALUE_EXPORT(gtsam::CalibratedCamera);
+GTSAM_VALUE_EXPORT(gtsam::SimpleCamera);
+GTSAM_VALUE_EXPORT(gtsam::StereoCamera);
 
 /* Create GUIDs for factors */
 /* ************************************************************************* */
@@ -216,8 +212,6 @@ BOOST_CLASS_EXPORT_GUID(RangeFactorCalibratedCameraPoint, "gtsam::RangeFactorCal
 BOOST_CLASS_EXPORT_GUID(RangeFactorSimpleCameraPoint, "gtsam::RangeFactorSimpleCameraPoint");
 BOOST_CLASS_EXPORT_GUID(RangeFactorCalibratedCamera, "gtsam::RangeFactorCalibratedCamera");
 BOOST_CLASS_EXPORT_GUID(RangeFactorSimpleCamera, "gtsam::RangeFactorSimpleCamera");
-
-BOOST_CLASS_EXPORT_GUID(BearingFactor2D, "gtsam::BearingFactor2D");
 
 BOOST_CLASS_EXPORT_GUID(BearingRangeFactor2D, "gtsam::BearingRangeFactor2D");
 
@@ -393,8 +387,6 @@ TEST (testSerializationSLAM, factors) {
   RangeFactorCalibratedCamera rangeFactorCalibratedCamera(a12, b12, 2.0, model1);
   RangeFactorSimpleCamera rangeFactorSimpleCamera(a13, b13, 2.0, model1);
 
-  BearingFactor2D bearingFactor2D(a08, a03, rot2, model1);
-
   BearingRangeFactor2D bearingRangeFactor2D(a08, a03, rot2, 2.0, model2);
 
   GenericProjectionFactorCal3_S2 genericProjectionFactorCal3_S2(point2, model2, a09, a05, boost::make_shared<Cal3_S2>(cal3_s2));
@@ -455,8 +447,6 @@ TEST (testSerializationSLAM, factors) {
   graph += rangeFactorSimpleCameraPoint;
   graph += rangeFactorCalibratedCamera;
   graph += rangeFactorSimpleCamera;
-
-  graph += bearingFactor2D;
 
   graph += bearingRangeFactor2D;
 
@@ -524,8 +514,6 @@ TEST (testSerializationSLAM, factors) {
   EXPECT(equalsObj<RangeFactorCalibratedCamera>(rangeFactorCalibratedCamera));
   EXPECT(equalsObj<RangeFactorSimpleCamera>(rangeFactorSimpleCamera));
 
-  EXPECT(equalsObj<BearingFactor2D>(bearingFactor2D));
-
   EXPECT(equalsObj<BearingRangeFactor2D>(bearingRangeFactor2D));
 
   EXPECT(equalsObj<GenericProjectionFactorCal3_S2>(genericProjectionFactorCal3_S2));
@@ -592,8 +580,6 @@ TEST (testSerializationSLAM, factors) {
   EXPECT(equalsXML<RangeFactorCalibratedCamera>(rangeFactorCalibratedCamera));
   EXPECT(equalsXML<RangeFactorSimpleCamera>(rangeFactorSimpleCamera));
 
-  EXPECT(equalsXML<BearingFactor2D>(bearingFactor2D));
-
   EXPECT(equalsXML<BearingRangeFactor2D>(bearingRangeFactor2D));
 
   EXPECT(equalsXML<GenericProjectionFactorCal3_S2>(genericProjectionFactorCal3_S2));
@@ -659,8 +645,6 @@ TEST (testSerializationSLAM, factors) {
   EXPECT(equalsBinary<RangeFactorSimpleCameraPoint>(rangeFactorSimpleCameraPoint));
   EXPECT(equalsBinary<RangeFactorCalibratedCamera>(rangeFactorCalibratedCamera));
   EXPECT(equalsBinary<RangeFactorSimpleCamera>(rangeFactorSimpleCamera));
-
-  EXPECT(equalsBinary<BearingFactor2D>(bearingFactor2D));
 
   EXPECT(equalsBinary<BearingRangeFactor2D>(bearingRangeFactor2D));
 

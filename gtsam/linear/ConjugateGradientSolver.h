@@ -20,7 +20,6 @@
 #pragma once
 
 #include <gtsam/linear/IterativeSolver.h>
-#include <iosfwd>
 
 namespace gtsam {
 
@@ -87,9 +86,8 @@ public:
   static BLASKernel blasTranslator(const std::string &s) ;
 };
 
-/*********************************************************************************************/
 /*
- * A template of linear preconditioned conjugate gradient method.
+ * A template for the linear preconditioned conjugate gradient method.
  * System class should support residual(v, g), multiply(v,Av), scal(alpha,v), dot(v,v), axpy(alpha,x,y)
  * leftPrecondition(v, L^{-1}v, rightPrecondition(v, L^{-T}v) where preconditioner M = L*L^T
  * Note that the residual is in the preconditioned domain. Refer to Section 9.2 of Saad's book.
@@ -98,8 +96,9 @@ public:
  * [1] Y. Saad, "Preconditioned Iterations," in Iterative Methods for Sparse Linear Systems,
  * 2nd ed. SIAM, 2003, ch. 9, sec. 2, pp.276-281.
  */
-template <class S, class V>
-V preconditionedConjugateGradient(const S &system, const V &initial, const ConjugateGradientParameters &parameters) {
+template<class S, class V>
+V preconditionedConjugateGradient(const S &system, const V &initial,
+    const ConjugateGradientParameters &parameters) {
 
   V estimate, residual, direction, q1, q2;
   estimate = residual = direction = q1 = q2 = initial;
@@ -149,6 +148,8 @@ V preconditionedConjugateGradient(const S &system, const V &initial, const Conju
                  << ", alpha = " << alpha
                  << ", beta = " << beta
                  << ", ||r||^2 = " << currentGamma
+//                 << "\nx =\n" << estimate
+//                 << "\nr =\n" << residual
                  << std::endl;
   }
   if (parameters.verbosity() >= ConjugateGradientParameters::COMPLEXITY )

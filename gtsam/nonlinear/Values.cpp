@@ -25,9 +25,6 @@
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/linear/VectorValues.h>
 
-#include <list>
-
-#include <boost/foreach.hpp>
 #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -37,6 +34,9 @@
 #pragma GCC diagnostic pop
 #endif
 #include <boost/iterator/transform_iterator.hpp>
+
+#include <list>
+#include <sstream>
 
 using namespace std;
 
@@ -58,18 +58,19 @@ namespace gtsam {
 
   /* ************************************************************************* */
   bool Values::equals(const Values& other, double tol) const {
-    if(this->size() != other.size())
+    if (this->size() != other.size())
       return false;
-    for(const_iterator it1=this->begin(), it2=other.begin(); it1!=this->end(); ++it1, ++it2) {
-      if(typeid(it1->value) != typeid(it2->value))
+    for (const_iterator it1 = this->begin(), it2 = other.begin();
+        it1 != this->end(); ++it1, ++it2) {
+      const Value& value1 = it1->value;
+      const Value& value2 = it2->value;
+      if (typeid(value1) != typeid(value2) || it1->key != it2->key
+          || !value1.equals_(value2, tol)) {
         return false;
-      if(it1->key != it2->key)
-        return false;
-      if(!it1->value.equals_(it2->value, tol))
-        return false;
+      }
     }
     return true; // We return false earlier if we find anything that does not match
-  }
+}
 
   /* ************************************************************************* */
   bool Values::exists(Key j) const {
@@ -85,7 +86,6 @@ namespace gtsam {
       VectorValues::const_iterator vector_item = delta.find(key_value->key);
       Key key = key_value->key;  // Non-const duplicate to deal with non-const insert argument
       if(vector_item != delta.end()) {
-//        const Vector& singleDelta = delta[key_value->key]; // Delta for this value
         const Vector& singleDelta = vector_item->second;
         Value* retractedValue(key_value->value.retract_(singleDelta)); // Retract
         result.values_.insert(key, retractedValue); // Add retracted result directly to result values
@@ -131,24 +131,6 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  void Values::insertFixed(Key j, const Vector& v, size_t n) {
-    switch (n) {
-    case 1: insert<Vector1>(j,v); break;
-    case 2: insert<Vector2>(j,v); break;
-    case 3: insert<Vector3>(j,v); break;
-    case 4: insert<Vector4>(j,v); break;
-    case 5: insert<Vector5>(j,v); break;
-    case 6: insert<Vector6>(j,v); break;
-    case 7: insert<Vector7>(j,v); break;
-    case 8: insert<Vector8>(j,v); break;
-    case 9: insert<Vector9>(j,v); break;
-    default:
-      throw runtime_error(
-          "Values::insert fixed size can only handle n in 1..9");
-    }
-  }
-
-  /* ************************************************************************* */
   void Values::insert(const Values& values) {
     for(const_iterator key_value = values.begin(); key_value != values.end(); ++key_value) {
       Key key = key_value->key; // Non-const duplicate to deal with non-const insert argument
@@ -166,12 +148,13 @@ namespace gtsam {
   void Values::update(Key j, const Value& val) {
     // Find the value to update
     KeyValueMap::iterator item = values_.find(j);
-    if(item == values_.end())
+    if (item == values_.end())
       throw ValuesKeyDoesNotExist("update", j);
 
     // Cast to the derived type
-    if(typeid(*item->second) != typeid(val))
-      throw ValuesIncorrectType(j, typeid(*item->second), typeid(val));
+    const Value& old_value = *item->second;
+    if (typeid(old_value) != typeid(val))
+      throw ValuesIncorrectType(j, typeid(old_value), typeid(val));
 
     values_.replace(item, val.clone_());
   }
@@ -192,8 +175,9 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  FastList<Key> Values::keys() const {
-    FastList<Key> result;
+  KeyVector Values::keys() const {
+    KeyVector result;
+    result.reserve(size());
     for(const_iterator key_value = begin(); key_value != end(); ++key_value)
       result.push_back(key_value->key);
     return result;
@@ -209,7 +193,7 @@ namespace gtsam {
   /* ************************************************************************* */
   size_t Values::dim() const {
     size_t result = 0;
-    BOOST_FOREACH(const ConstKeyValuePair& key_value, *this) {
+    for(const ConstKeyValuePair& key_value: *this) {
       result += key_value.value.dim();
     }
     return result;
@@ -218,7 +202,7 @@ namespace gtsam {
   /* ************************************************************************* */
   VectorValues Values::zeroVectors() const {
     VectorValues result;
-    BOOST_FOREACH(const ConstKeyValuePair& key_value, *this)
+    for(const ConstKeyValuePair& key_value: *this)
       result.insert(key_value.key, Vector::Zero(key_value.value.dim()));
     return result;
   }
@@ -246,6 +230,20 @@ namespace gtsam {
       message_ =
           "Attempting to retrieve value with key \"" + DefaultKeyFormatter(key_) + "\", type stored in Values is " +
           std::string(storedTypeId_.name()) + " but requested type was " + std::string(requestedTypeId_.name());
+    return message_.c_str();
+  }
+
+  /* ************************************************************************* */
+  const char* NoMatchFoundForFixed::what() const throw() {
+    if(message_.empty()) {
+      ostringstream oss;
+    oss
+        << "Attempting to retrieve fixed-size matrix with dimensions " //
+        << M1_ << "x" << N1_
+        << ", but found dynamic Matrix with mismatched dimensions " //
+        << M2_ << "x" << N2_;
+      message_ = oss.str();
+    }
     return message_.c_str();
   }
 

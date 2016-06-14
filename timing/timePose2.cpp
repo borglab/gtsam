@@ -32,7 +32,7 @@ using namespace gtsam;
 
 /* ************************************************************************* */
 Pose2 Pose2betweenDefault(const Pose2& r1, const Pose2& r2) {
-  return between_default(r1, r2);
+  return r1.inverse() * r2;
 }
 
 /* ************************************************************************* */
@@ -63,7 +63,7 @@ Pose2 Pose2betweenOptimized(const Pose2& r1, const Pose2& r2,
       s,  -c,  dt2,
       0.0, 0.0,-1.0).finished();
   }
-  if (H2) *H2 = Matrix::Identity(3,3);
+  if (H2) *H2 = I_3x3;
 
   return Pose2(R,t);
 }

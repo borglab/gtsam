@@ -273,6 +273,13 @@ namespace gtsam {
     /** Get a view of the A matrix */
     ABlock getA() { return Ab_.range(0, size()); }
 
+    /** Update an information matrix by adding the information corresponding to this factor
+     * (used internally during elimination).
+     * @param scatter A mapping from variable index to slot index in this HessianFactor
+     * @param info The information matrix to be updated
+     */
+    void updateHessian(const FastVector<Key>& keys, SymmetricBlockMatrix* info) const;
+
     /** Return A*x */
     Vector operator*(const VectorValues& x) const;
 
@@ -283,9 +290,16 @@ namespace gtsam {
     /** y += alpha * A'*A*x */
     void multiplyHessianAdd(double alpha, const VectorValues& x, VectorValues& y) const;
 
-    void multiplyHessianAdd(double alpha, const double* x, double* y, std::vector<size_t> keys) const;
-
-    void multiplyHessianAdd(double alpha, const double* x, double* y) const {};
+    /**
+     * Raw memory access version of multiplyHessianAdd y += alpha * A'*A*x
+     * Requires the vector accumulatedDims to tell the dimension of
+     * each variable: e.g.: x0 has dim 3, x2 has dim 6, x3 has dim 2,
+     * then accumulatedDims is [0 3 9 11 13]
+     * NOTE: size of accumulatedDims is size of keys + 1!!
+     * TODO(frank): we should probably kill this if no longer needed
+     */
+    void multiplyHessianAdd(double alpha, const double* x, double* y,
+        const std::vector<size_t>& accumulatedDims) const;
 
     /// A'*b for Jacobian
     VectorValues gradientAtZero() const;
@@ -300,7 +314,7 @@ namespace gtsam {
     JacobianFactor whiten() const;
 
     /** Eliminate the requested variables. */
-    std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<JacobianFactor> >
+    std::pair<boost::shared_ptr<GaussianConditional>, shared_ptr>
       eliminate(const Ordering& keys);
 
     /** set noiseModel correctly */
@@ -317,13 +331,15 @@ namespace gtsam {
      * @return The conditional and remaining factor
      *
      * \addtogroup LinearSolving */
-    friend GTSAM_EXPORT std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<JacobianFactor> >
+    friend GTSAM_EXPORT std::pair<boost::shared_ptr<GaussianConditional>, shared_ptr>
       EliminateQR(const GaussianFactorGraph& factors, const Ordering& keys);
 
     /**
      * splits a pre-factorized factor into a conditional, and changes the current
      * factor to be the remaining component. Performs same operation as eliminate(),
      * but without running QR.
+     * NOTE: looks at dimension of noise model to determine how many rows to keep.
+     * @param nrFrontals number of keys to eliminate
      */
     boost::shared_ptr<GaussianConditional> splitConditional(size_t nrFrontals);
 
@@ -353,14 +369,19 @@ namespace gtsam {
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version) {
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
       ar & BOOST_SERIALIZATION_NVP(Ab_);
       ar & BOOST_SERIALIZATION_NVP(model_);
     }
   }; // JacobianFactor
 
-} // gtsam
+/// traits
+template<>
+struct traits<JacobianFactor> : public Testable<JacobianFactor> {
+};
+
+} // \ namespace gtsam
 
 #include <gtsam/linear/JacobianFactor-inl.h>
 

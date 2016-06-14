@@ -57,7 +57,7 @@ struct VelocityPrior : public gtsam::PartialPriorFactor<PoseRTV> {
     this->mask_[0] = 6;
     this->mask_[1] = 7;
     this->mask_[2] = 8;
-    this->H_ = zeros(3, 9);
+    this->H_ = Matrix::Zero(3, 9);
     this->fillH();
   }
 };
@@ -75,13 +75,13 @@ struct DGroundConstraint : public gtsam::PartialPriorFactor<PoseRTV> {
    */
   DGroundConstraint(Key key, double height, const gtsam::SharedNoiseModel& model)
   : Base(key, model) {
-    this->prior_ = delta(4, 0, height); // [z, vz, roll, pitch]
+    this->prior_ = Vector::Unit(4,0)*height; // [z, vz, roll, pitch]
     this->mask_.resize(4);
     this->mask_[0] = 5; // z = height
     this->mask_[1] = 8; // vz
     this->mask_[2] = 0; // roll
     this->mask_[3] = 1; // pitch
-    this->H_ = zeros(3, 9);
+    this->H_ = Matrix::Zero(3, 9);
     this->fillH();
   }
 
@@ -97,7 +97,7 @@ struct DGroundConstraint : public gtsam::PartialPriorFactor<PoseRTV> {
     this->mask_[1] = 8; // vz
     this->mask_[2] = 0; // roll
     this->mask_[3] = 1; // pitch
-    this->H_ = zeros(3, 9);
+    this->H_ = Matrix::Zero(3, 9);
     this->fillH();
   }
 };

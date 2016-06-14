@@ -167,7 +167,7 @@ TEST_UNSAFE( DiscreteMarginals, truss2 ) {
   // Calculate the marginals by brute force
   vector<DiscreteFactor::Values> allPosbValues = cartesianProduct(
       key[0] & key[1] & key[2] & key[3] & key[4]);
-  Vector T = zero(5), F = zero(5);
+  Vector T = Z_5x1, F = Z_5x1;
   for (size_t i = 0; i < allPosbValues.size(); ++i) {
     DiscreteFactor::Values x = allPosbValues[i];
     double px = graph(x);

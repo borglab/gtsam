@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -15,12 +15,14 @@
  * @brief test PinholeCamera class
  */
 
-#include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Cal3Bundler.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/numericalDerivative.h>
+
+#include <CppUnitLite/TestHarness.h>
 
 #include <cmath>
 #include <iostream>
@@ -32,7 +34,7 @@ typedef PinholeCamera<Cal3_S2> Camera;
 
 static const Cal3_S2 K(625, 625, 0, 0, 0);
 
-static const Pose3 pose(Matrix3(Vector3(1, -1, -1).asDiagonal()), Point3(0, 0, 0.5));
+static const Pose3 pose(Rot3(Vector3(1, -1, -1).asDiagonal()), Point3(0, 0, 0.5));
 static const Camera camera(pose, K);
 
 static const Pose3 pose1(Rot3(), Point3(0, 1, 0.5));
@@ -43,16 +45,44 @@ static const Point3 point2(-0.08, 0.08, 0.0);
 static const Point3 point3( 0.08, 0.08, 0.0);
 static const Point3 point4( 0.08,-0.08, 0.0);
 
-static const Point3 point1_inf(-0.16,-0.16, -1.0);
-static const Point3 point2_inf(-0.16, 0.16, -1.0);
-static const Point3 point3_inf( 0.16, 0.16, -1.0);
-static const Point3 point4_inf( 0.16,-0.16, -1.0);
+static const Unit3 point1_inf(-0.16,-0.16, -1.0);
+static const Unit3 point2_inf(-0.16, 0.16, -1.0);
+static const Unit3 point3_inf( 0.16, 0.16, -1.0);
+static const Unit3 point4_inf( 0.16,-0.16, -1.0);
 
 /* ************************************************************************* */
 TEST( PinholeCamera, constructor)
 {
-  EXPECT(assert_equal( camera.calibration(), K));
-  EXPECT(assert_equal( camera.pose(), pose));
+  EXPECT(assert_equal( K, camera.calibration()));
+  EXPECT(assert_equal( pose, camera.pose()));
+}
+
+//******************************************************************************
+TEST(PinholeCamera, Create) {
+
+  Matrix actualH1, actualH2;
+  EXPECT(assert_equal(camera, Camera::Create(pose,K, actualH1, actualH2)));
+
+  // Check derivative
+  boost::function<Camera(Pose3,Cal3_S2)> f = //
+      boost::bind(Camera::Create,_1,_2,boost::none,boost::none);
+  Matrix numericalH1 = numericalDerivative21<Camera,Pose3,Cal3_S2>(f,pose,K);
+  EXPECT(assert_equal(numericalH1, actualH1, 1e-9));
+  Matrix numericalH2 = numericalDerivative22<Camera,Pose3,Cal3_S2>(f,pose,K);
+  EXPECT(assert_equal(numericalH2, actualH2, 1e-8));
+}
+
+//******************************************************************************
+TEST(PinholeCamera, Pose) {
+
+  Matrix actualH;
+  EXPECT(assert_equal(pose, camera.getPose(actualH)));
+
+  // Check derivative
+  boost::function<Pose3(Camera)> f = //
+      boost::bind(&Camera::getPose,_1,boost::none);
+  Matrix numericalH = numericalDerivative11<Pose3,Camera>(f,camera);
+  EXPECT(assert_equal(numericalH, actualH, 1e-9));
 }
 
 /* ************************************************************************* */
@@ -73,20 +103,20 @@ TEST( PinholeCamera, level2)
 TEST( PinholeCamera, lookat)
 {
   // Create a level camera, looking in Y-direction
-  Point3 C(10.0,0.0,0.0);
-  Camera camera = Camera::Lookat(C, Point3(), Point3(0.0,0.0,1.0));
+  Point3 C(10,0,0);
+  Camera camera = Camera::Lookat(C, Point3(0,0,0), Point3(0,0,1));
 
   // expected
   Point3 xc(0,1,0),yc(0,0,-1),zc(-1,0,0);
   Pose3 expected(Rot3(xc,yc,zc),C);
-  EXPECT(assert_equal( camera.pose(), expected));
+  EXPECT(assert_equal(camera.pose(), expected));
 
-  Point3 C2(30.0,0.0,10.0);
-  Camera camera2 = Camera::Lookat(C2, Point3(), Point3(0.0,0.0,1.0));
+  Point3 C2(30,0,10);
+  Camera camera2 = Camera::Lookat(C2, Point3(0,0,0), Point3(0,0,1));
 
   Matrix R = camera2.pose().rotation().matrix();
   Matrix I = trans(R)*R;
-  EXPECT(assert_equal(I, eye(3)));
+  EXPECT(assert_equal(I, I_3x3));
 }
 
 /* ************************************************************************* */
@@ -119,47 +149,47 @@ TEST( PinholeCamera, backprojectInfinity)
 /* ************************************************************************* */
 TEST( PinholeCamera, backproject2)
 {
-  Point3 origin;
+  Point3 origin(0,0,0);
   Rot3 rot(1., 0., 0., 0., 0., 1., 0., -1., 0.); // a camera1 looking down
   Camera camera(Pose3(rot, origin), K);
 
-  Point3 actual = camera.backproject(Point2(), 1.);
+  Point3 actual = camera.backproject(Point2(0,0), 1.);
   Point3 expected(0., 1., 0.);
   pair<Point2, bool> x = camera.projectSafe(expected);
 
   EXPECT(assert_equal(expected, actual));
-  EXPECT(assert_equal(Point2(), x.first));
+  EXPECT(assert_equal(Point2(0,0), x.first));
   EXPECT(x.second);
 }
 
 /* ************************************************************************* */
 TEST( PinholeCamera, backprojectInfinity2)
 {
-  Point3 origin;
+  Point3 origin(0,0,0);
   Rot3 rot(1., 0., 0., 0., 0., 1., 0., -1., 0.); // a camera1 looking down
   Camera camera(Pose3(rot, origin), K);
 
-  Point3 actual = camera.backprojectPointAtInfinity(Point2());
-  Point3 expected(0., 1., 0.);
-  Point2 x = camera.projectPointAtInfinity(expected);
+  Unit3 actual = camera.backprojectPointAtInfinity(Point2(0,0));
+  Unit3 expected(0., 1., 0.);
+  Point2 x = camera.project(expected);
 
   EXPECT(assert_equal(expected, actual));
-  EXPECT(assert_equal(Point2(), x));
+  EXPECT(assert_equal(Point2(0,0), x));
 }
 
 /* ************************************************************************* */
 TEST( PinholeCamera, backprojectInfinity3)
 {
-  Point3 origin;
+  Point3 origin(0,0,0);
   Rot3 rot(1., 0., 0., 0., 1., 0., 0., 0., 1.); // identity
   Camera camera(Pose3(rot, origin), K);
 
-  Point3 actual = camera.backprojectPointAtInfinity(Point2());
-  Point3 expected(0., 0., 1.);
-  Point2 x = camera.projectPointAtInfinity(expected);
+  Unit3 actual = camera.backprojectPointAtInfinity(Point2(0,0));
+  Unit3 expected(0., 0., 1.);
+  Point2 x = camera.project(expected);
 
   EXPECT(assert_equal(expected, actual));
-  EXPECT(assert_equal(Point2(), x));
+  EXPECT(assert_equal(Point2(0,0), x));
 }
 
 /* ************************************************************************* */
@@ -182,17 +212,17 @@ TEST( PinholeCamera, Dproject)
 }
 
 /* ************************************************************************* */
-static Point2 projectInfinity3(const Pose3& pose, const Point3& point3D, const Cal3_S2& cal) {
-  return Camera(pose,cal).projectPointAtInfinity(point3D);
+static Point2 projectInfinity3(const Pose3& pose, const Unit3& point3D, const Cal3_S2& cal) {
+  return Camera(pose,cal).project(point3D);
 }
 
 TEST( PinholeCamera, Dproject_Infinity)
 {
   Matrix Dpose, Dpoint, Dcal;
-  Point3 point3D(point1.x(), point1.y(), -10.0); // a point in front of the camera1
+  Unit3 point3D(point1.x(), point1.y(), -10.0); // a point in front of the camera1
 
   // test Projection
-  Point2 actual = camera.projectPointAtInfinity(point3D, Dpose, Dpoint, Dcal);
+  Point2 actual = camera.project(point3D, Dpose, Dpoint, Dcal);
   Point2 expected(-5.0, 5.0);
   EXPECT(assert_equal(actual, expected,  1e-7));
 
@@ -224,6 +254,20 @@ TEST( PinholeCamera, Dproject2)
 }
 
 /* ************************************************************************* */
+// Add a test with more arbitrary rotation
+TEST( PinholeCamera, Dproject3)
+{
+  static const Pose3 pose1(Rot3::Ypr(0.1, -0.1, 0.4), Point3(0, 0, -10));
+  static const Camera camera(pose1);
+  Matrix Dpose, Dpoint;
+  camera.project2(point1, Dpose, Dpoint);
+  Matrix numerical_pose  = numericalDerivative21(project4, camera, point1);
+  Matrix numerical_point = numericalDerivative22(project4, camera, point1);
+  CHECK(assert_equal(numerical_pose,  Dpose, 1e-7));
+  CHECK(assert_equal(numerical_point, Dpoint, 1e-7));
+}
+
+/* ************************************************************************* */
 static double range0(const Camera& camera, const Point3& point) {
   return camera.range(point);
 }
@@ -234,7 +278,7 @@ TEST( PinholeCamera, range0) {
   double result = camera.range(point1, D1, D2);
   Matrix Hexpected1 = numericalDerivative21(range0, camera, point1);
   Matrix Hexpected2 = numericalDerivative22(range0, camera, point1);
-  EXPECT_DOUBLES_EQUAL(point1.distance(camera.pose().translation()), result,
+  EXPECT_DOUBLES_EQUAL(distance3(point1, camera.pose().translation()), result,
       1e-9);
   EXPECT(assert_equal(Hexpected1, D1, 1e-7));
   EXPECT(assert_equal(Hexpected2, D2, 1e-7));

@@ -34,6 +34,7 @@ namespace gtsam {
 
   public:
 
+    enum { dimension = 6 };
     typedef boost::shared_ptr<Cal3_S2Stereo> shared_ptr;  ///< shared pointer to stereo calibration object
 
     /// @name Standard Constructors
@@ -143,7 +144,7 @@ namespace gtsam {
     /** Serialization function */
     friend class boost::serialization::access;
     template<class Archive>
-    void serialize(Archive & ar, const unsigned int version)
+    void serialize(Archive & ar, const unsigned int /*version*/)
     {
       ar & BOOST_SERIALIZATION_NVP(K_);
       ar & BOOST_SERIALIZATION_NVP(b_);
@@ -153,21 +154,12 @@ namespace gtsam {
   };
 
   // Define GTSAM traits
-  namespace traits {
-
   template<>
-  struct GTSAM_EXPORT is_manifold<Cal3_S2Stereo> : public boost::true_type{
+  struct traits<Cal3_S2Stereo> : public internal::Manifold<Cal3_S2Stereo> {
   };
 
   template<>
-  struct GTSAM_EXPORT dimension<Cal3_S2Stereo> : public boost::integral_constant<int, 6>{
+  struct traits<const Cal3_S2Stereo> : public internal::Manifold<Cal3_S2Stereo> {
   };
-
-  template<>
-  struct GTSAM_EXPORT zero<Cal3_S2Stereo> {
-    static Cal3_S2Stereo value() { return Cal3_S2Stereo();}
-  };
-
-  }
 
 } // \ namespace gtsam

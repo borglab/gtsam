@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -19,6 +19,7 @@
  */
 
 #include <gtsam/geometry/Rot3.h>
+#include <gtsam/geometry/SO3.h>
 #include <boost/math/constants/constants.hpp>
 #include <boost/random.hpp>
 #include <cmath>
@@ -33,29 +34,64 @@ void Rot3::print(const std::string& s) const {
 }
 
 /* ************************************************************************* */
-Rot3 Rot3::rodriguez(const Point3& w, double theta) {
-  return rodriguez((Vector)w.vector(),theta);
-}
-
-/* ************************************************************************* */
-Rot3 Rot3::rodriguez(const Unit3& w, double theta) {
-  return rodriguez(w.point3(),theta);
-}
-
-/* ************************************************************************* */
-Rot3 Rot3::Random(boost::mt19937 & rng) {
+Rot3 Rot3::Random(boost::mt19937& rng) {
   // TODO allow any engine without including all of boost :-(
-  Unit3 w = Unit3::Random(rng);
-  boost::uniform_real<double> randomAngle(-M_PI,M_PI);
+  Unit3 axis = Unit3::Random(rng);
+  boost::uniform_real<double> randomAngle(-M_PI, M_PI);
   double angle = randomAngle(rng);
-  return rodriguez(w,angle);
+  return AxisAngle(axis, angle);
+}
+
+
+
+/* ************************************************************************* */
+Rot3 Rot3::AlignPair(const Unit3& axis, const Unit3& a_p, const Unit3& b_p) {
+  // if a_p is already aligned with b_p, return the identity rotation
+  if (std::abs(a_p.dot(b_p)) > 0.999999999) {
+    return Rot3();
+  }
+
+  // Check axis was not degenerate cross product
+  const Vector3 z = axis.unitVector();
+  if (z.hasNaN())
+    throw std::runtime_error("AlignSinglePair: axis has Nans");
+
+  // Now, calculate rotation that takes b_p to a_p
+  const Matrix3 P = I_3x3 - z * z.transpose();  // orthogonal projector
+  const Vector3 a_po = P * a_p.unitVector();    // point in a orthogonal to axis
+  const Vector3 b_po = P * b_p.unitVector();    // point in b orthogonal to axis
+  const Vector3 x = a_po.normalized();          // x-axis in axis-orthogonal plane, along a_p vector
+  const Vector3 y = z.cross(x);                 // y-axis in axis-orthogonal plane
+  const double u = x.dot(b_po);                 // x-coordinate for b_po
+  const double v = y.dot(b_po);                 // y-coordinate for b_po
+  double angle = std::atan2(v, u);
+  return Rot3::AxisAngle(z, -angle);
 }
 
 /* ************************************************************************* */
-Rot3 Rot3::rodriguez(const Vector3& w) {
-  double t = w.norm();
-  if (t < 1e-10) return Rot3();
-  return rodriguez(w/t, t);
+Rot3 Rot3::AlignTwoPairs(const Unit3& a_p, const Unit3& b_p,  //
+                         const Unit3& a_q, const Unit3& b_q) {
+  // there are three frames in play:
+  // a: the first frame in which p and q are measured
+  // b: the second frame in which p and q are measured
+  // i: intermediate, after aligning first pair
+
+  // First, find rotation around that aligns a_p and b_p
+  Rot3 i_R_b = AlignPair(a_p.cross(b_p), a_p, b_p);
+
+  // Rotate points in frame b to the intermediate frame,
+  // in which we expect the point p to be aligned now
+  Unit3 i_q = i_R_b * b_q;
+  assert(assert_equal(a_p, i_R_b * b_p, 1e-6));
+
+  // Now align second pair: we need to align i_q to a_q
+  Rot3 a_R_i = AlignPair(a_p, a_q, i_q);
+  assert(assert_equal(a_p, a_R_i * a_p, 1e-6));
+  assert(assert_equal(a_q, a_R_i * i_q, 1e-6));
+
+  // The desired rotation is the product of both
+  Rot3 a_R_b = a_R_i * i_R_b;
+  return a_R_b;
 }
 
 /* ************************************************************************* */
@@ -98,7 +134,7 @@ Unit3 Rot3::operator*(const Unit3& p) const {
 Point3 Rot3::unrotate(const Point3& p, OptionalJacobian<3,3> H1,
     OptionalJacobian<3,3> H2) const {
   const Matrix3& Rt = transpose();
-  Point3 q(Rt * p.vector()); // q = Rt*p
+  Point3 q(Rt * p); // q = Rt*p
   const double wx = q.x(), wy = q.y(), wz = q.z();
   if (H1)
     *H1 << 0.0, -wz, +wy, +wz, 0.0, -wx, -wy, +wx, 0.0;
@@ -106,32 +142,6 @@ Point3 Rot3::unrotate(const Point3& p, OptionalJacobian<3,3> H1,
     *H2 = Rt;
   return q;
 }
-
-/* ************************************************************************* */
-/// Follow Iserles05an, B10, pg 147, with a sign change in the second term (left version)
-Matrix3 Rot3::dexpL(const Vector3& v) {
-  if(zero(v)) return eye(3);
-  Matrix3 x = skewSymmetric(v);
-  Matrix3 x2 = x*x;
-  double theta = v.norm(), vi = theta/2.0;
-  double s1 = sin(vi)/vi;
-  double s2 = (theta - sin(theta))/(theta*theta*theta);
-  Matrix3 res = I_3x3 - 0.5*s1*s1*x + s2*x2;
-  return res;
-}
-
-/* ************************************************************************* */
-/// Follow Iserles05an, B11, pg 147, with a sign change in the second term (left version)
-Matrix3 Rot3::dexpInvL(const Vector3& v) {
-  if(zero(v)) return eye(3);
-  Matrix3 x = skewSymmetric(v);
-  Matrix3 x2 = x*x;
-  double theta = v.norm(), vi = theta/2.0;
-  double s2 = (theta*tan(M_PI_2-vi) - 2)/(2*theta*theta);
-  Matrix3 res = I_3x3 + 0.5*x - s2*x2;
-  return res;
-}
-
 
 /* ************************************************************************* */
 Point3 Rot3::column(int index) const{
@@ -165,7 +175,7 @@ Vector3 Rot3::rpy() const {
 
 /* ************************************************************************* */
 Vector Rot3::quaternion() const {
-  Quaternion q = toQuaternion();
+  gtsam::Quaternion q = toQuaternion();
   Vector v(4);
   v(0) = q.w();
   v(1) = q.x();
@@ -175,36 +185,13 @@ Vector Rot3::quaternion() const {
 }
 
 /* ************************************************************************* */
-Matrix3 Rot3::ExpmapDerivative(const Vector3& x)    {
-  // x is the axis-angle representation (exponential coordinates) for a rotation
-  double normx = norm_2(x); // rotation angle
-  Matrix3 Jr;
-  if (normx < 10e-8){
-    Jr = I_3x3;
-  }
-  else{
-    const Matrix3 X = skewSymmetric(x) / normx; // element of Lie algebra so(3): X = x^, normalized by normx
-    Jr = I_3x3 - ((1-cos(normx))/(normx)) * X +
-        (1 -sin(normx)/normx) * X * X; // right Jacobian
-  }
-  return Jr;
+Matrix3 Rot3::ExpmapDerivative(const Vector3& x) {
+  return SO3::ExpmapDerivative(x);
 }
 
 /* ************************************************************************* */
 Matrix3 Rot3::LogmapDerivative(const Vector3& x)    {
-  // x is the axis-angle representation (exponential coordinates) for a rotation
-  double normx = norm_2(x); // rotation angle
-  Matrix3 Jrinv;
-
-  if (normx < 10e-8){
-    Jrinv = I_3x3;
-  }
-  else{
-    const Matrix3 X = skewSymmetric(x); // element of Lie algebra so(3): X = x^
-    Jrinv = I_3x3 +
-        0.5 * X + (1/(normx*normx) - (1+cos(normx))/(2*normx * sin(normx))   ) * X * X;
-  }
-  return Jrinv;
+  return SO3::LogmapDerivative(x);
 }
 
 /* ************************************************************************* */
@@ -237,10 +224,7 @@ ostream &operator<<(ostream &os, const Rot3& R) {
 
 /* ************************************************************************* */
 Rot3 Rot3::slerp(double t, const Rot3& other) const {
-  // amazingly simple in GTSAM :-)
-  assert(t>=0 && t<=1);
-  Vector3 omega = localCoordinates(other, Rot3::EXPMAP);
-  return retract(t * omega, Rot3::EXPMAP);
+  return interpolate(*this, other, t);
 }
 
 /* ************************************************************************* */

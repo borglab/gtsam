@@ -4,7 +4,6 @@
  */
 
 #include <iostream>
-#include <boost/foreach.hpp>
 #include <boost/random/linear_congruential.hpp>
 #include <boost/random/uniform_real.hpp>
 #include <boost/random/normal_distribution.hpp>
@@ -47,7 +46,7 @@ SimPolygon2D SimPolygon2D::createRectangle(const Point2& p, double height, doubl
 bool SimPolygon2D::equals(const SimPolygon2D& p, double tol) const {
   if (p.size() != size()) return false;
   for (size_t i=0; i<size(); ++i)
-    if (!landmarks_[i].equals(p.landmarks_[i], tol))
+    if (!traits<Point2>::Equals(landmarks_[i], p.landmarks_[i], tol))
       return false;
   return true;
 }
@@ -55,8 +54,8 @@ bool SimPolygon2D::equals(const SimPolygon2D& p, double tol) const {
 /* ************************************************************************* */
 void SimPolygon2D::print(const string& s) const {
   cout << "SimPolygon " << s << ": " << endl;
-  BOOST_FOREACH(const Point2& p, landmarks_)
-    p.print("   ");
+  for(const Point2& p: landmarks_)
+    traits<Point2>::Print(p, "   ");
 }
 
 /* ************************************************************************* */
@@ -73,7 +72,7 @@ bool SimPolygon2D::contains(const Point2& c) const {
   vector<SimWall2D> edges = walls();
   bool initialized = false;
   bool lastSide = false;
-  BOOST_FOREACH(const SimWall2D& ab, edges) {
+  for(const SimWall2D& ab: edges) {
     // compute cross product of ab and ac
     Point2 dab = ab.b() - ab.a();
     Point2 dac = c - ab.a();
@@ -97,10 +96,10 @@ bool SimPolygon2D::contains(const Point2& c) const {
 
 /* ************************************************************************* */
 bool SimPolygon2D::overlaps(const SimPolygon2D& p) const {
-  BOOST_FOREACH(const Point2& a, landmarks_)
+  for(const Point2& a: landmarks_)
     if (p.contains(a))
       return true;
-  BOOST_FOREACH(const Point2& a, p.landmarks_)
+  for(const Point2& a: p.landmarks_)
     if (contains(a))
       return true;
   return false;
@@ -108,7 +107,7 @@ bool SimPolygon2D::overlaps(const SimPolygon2D& p) const {
 
 /* ***************************************************************** */
 bool SimPolygon2D::anyContains(const Point2& p, const vector<SimPolygon2D>& obstacles) {
-  BOOST_FOREACH(const SimPolygon2D& poly, obstacles)
+  for(const SimPolygon2D& poly: obstacles)
     if (poly.contains(p))
       return true;
   return false;
@@ -116,7 +115,7 @@ bool SimPolygon2D::anyContains(const Point2& p, const vector<SimPolygon2D>& obst
 
 /* ************************************************************************* */
 bool SimPolygon2D::anyOverlaps(const SimPolygon2D& p, const vector<SimPolygon2D>& obstacles) {
-  BOOST_FOREACH(const SimPolygon2D& poly, obstacles)
+  for(const SimPolygon2D& poly: obstacles)
     if (poly.overlaps(p))
       return true;
   return false;
@@ -134,7 +133,7 @@ SimPolygon2D SimPolygon2D::randomTriangle(
   lms.push_back(Point2(-d2,-d2));
   lms.push_back(Point2( d2,-d2));
 
-  BOOST_FOREACH(const SimPolygon2D& poly, existing_polys)
+  for(const SimPolygon2D& poly: existing_polys)
     lms.insert(lms.begin(), poly.vertices().begin(), poly.vertices().end());
 
   for (size_t i=0; i<max_it; ++i) {
@@ -149,10 +148,10 @@ SimPolygon2D SimPolygon2D::randomTriangle(
 
     // extend from B to find C
     double dBC = randomDistance(mean_side_len, sigma_side_len, min_side_len);
-    Pose2 xC = xB.retract(delta(3, 0, dBC));
+    Pose2 xC = xB.retract(Vector::Unit(3,0)*dBC);
 
     // use triangle equality to verify non-degenerate triangle
-    double dAC = xA.t().distance(xC.t());
+    double dAC = distance2(xA.t(), xC.t());
 
     // form a triangle and test if it meets requirements
     SimPolygon2D test_tri = SimPolygon2D::createTriangle(xA.t(), xB.t(), xC.t());
@@ -165,7 +164,7 @@ SimPolygon2D SimPolygon2D::randomTriangle(
         insideBox(side_len, test_tri.landmark(0)) &&
         insideBox(side_len, test_tri.landmark(1)) &&
         insideBox(side_len, test_tri.landmark(2)) &&
-        test_tri.landmark(1).distance(test_tri.landmark(2)) > min_side_len &&
+        distance2(test_tri.landmark(1), test_tri.landmark(2)) > min_side_len &&
         !nearExisting(lms, test_tri.landmark(0), min_vertex_dist) &&
         !nearExisting(lms, test_tri.landmark(1), min_vertex_dist) &&
         !nearExisting(lms, test_tri.landmark(2), min_vertex_dist) &&
@@ -188,7 +187,7 @@ SimPolygon2D SimPolygon2D::randomRectangle(
   lms.push_back(Point2(-d2, d2));
   lms.push_back(Point2(-d2,-d2));
   lms.push_back(Point2( d2,-d2));
-  BOOST_FOREACH(const SimPolygon2D& poly, existing_polys)
+  for(const SimPolygon2D& poly: existing_polys)
     lms.insert(lms.begin(), poly.vertices().begin(), poly.vertices().end());
 
   const Point2 lower_corner(-side_len,-side_len);
@@ -261,7 +260,7 @@ Point2 SimPolygon2D::randomBoundedPoint2(double boundary_size,
       return p;
   }
   throw runtime_error("Failed to find a place for a landmark!");
-  return Point2();
+  return Point2(0,0);
 }
 
 /* ***************************************************************** */
@@ -273,7 +272,7 @@ Point2 SimPolygon2D::randomBoundedPoint2(double boundary_size,
       return p;
   }
   throw runtime_error("Failed to find a place for a landmark!");
-  return Point2();
+  return Point2(0,0);
 }
 
 /* ***************************************************************** */
@@ -286,7 +285,7 @@ Point2 SimPolygon2D::randomBoundedPoint2(double boundary_size,
       return p;
   }
   throw runtime_error("Failed to find a place for a landmark!");
-  return Point2();
+  return Point2(0,0);
 }
 
 /* ***************************************************************** */
@@ -304,7 +303,7 @@ Point2 SimPolygon2D::randomBoundedPoint2(
       return p;
   }
   throw runtime_error("Failed to find a place for a landmark!");
-  return Point2();
+  return Point2(0,0);
 }
 
 /* ***************************************************************** */
@@ -320,8 +319,8 @@ bool SimPolygon2D::insideBox(double s, const Point2& p) {
 /* ***************************************************************** */
 bool SimPolygon2D::nearExisting(const std::vector<Point2>& S,
     const Point2& p, double threshold) {
-  BOOST_FOREACH(const Point2& Sp, S)
-    if (Sp.distance(p) < threshold)
+  for(const Point2& Sp: S)
+    if (distance2(Sp, p) < threshold)
       return true;
   return false;
 }

@@ -19,9 +19,9 @@ using namespace gtsam::noiseModel;
  * This TEST should fail. If you want it to pass, change noise to 0.
  */
 TEST(BetweenFactor, Rot3) {
-  Rot3 R1 = Rot3::rodriguez(0.1, 0.2, 0.3);
-  Rot3 R2 = Rot3::rodriguez(0.4, 0.5, 0.6);
-  Rot3 noise = Rot3(); // Rot3::rodriguez(0.01, 0.01, 0.01); // Uncomment to make unit test fail
+  Rot3 R1 = Rot3::Rodrigues(0.1, 0.2, 0.3);
+  Rot3 R2 = Rot3::Rodrigues(0.4, 0.5, 0.6);
+  Rot3 noise = Rot3(); // Rot3::Rodrigues(0.01, 0.01, 0.01); // Uncomment to make unit test fail
   Rot3 measured = R1.between(R2)*noise  ;
 
   BetweenFactor<Rot3> factor(R(1), R(2), measured, Isotropic::Sigma(3, 0.05));
@@ -31,13 +31,13 @@ TEST(BetweenFactor, Rot3) {
   Vector expected = Rot3::Logmap(measured.inverse() * R1.between(R2));
   EXPECT(assert_equal(expected,actual/*, 1e-100*/)); // Uncomment to make unit test fail
 
-  Matrix numericalH1 = numericalDerivative21(
+  Matrix numericalH1 = numericalDerivative21<Vector3,Rot3,Rot3>(
       boost::function<Vector(const Rot3&, const Rot3&)>(boost::bind(
           &BetweenFactor<Rot3>::evaluateError, factor, _1, _2, boost::none,
           boost::none)), R1, R2, 1e-5);
   EXPECT(assert_equal(numericalH1,actualH1, 1E-5));
 
-  Matrix numericalH2 = numericalDerivative22(
+  Matrix numericalH2 = numericalDerivative22<Vector3,Rot3,Rot3>(
       boost::function<Vector(const Rot3&, const Rot3&)>(boost::bind(
           &BetweenFactor<Rot3>::evaluateError, factor, _1, _2, boost::none,
           boost::none)), R1, R2, 1e-5);

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -15,10 +15,10 @@
  * @author  Frank Dellaert
  */
 
-#include <time.h>
-#include <iostream>
-
+#include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/CalibratedCamera.h>
+#include <ctime>
+#include <iostream>
 
 using namespace std;
 using namespace gtsam;
@@ -27,12 +27,7 @@ int main()
 {
   int n = 100000;
 
-  const Pose3 pose1(Matrix3((Matrix(3,3) <<
-      1., 0., 0.,
-      0.,-1., 0.,
-      0., 0.,-1.
-  ).finished()),
-  Point3(0,0,0.5));
+  const Pose3 pose1(Rot3(Vector3(1, -1, -1).asDiagonal()), Point3(0, 0, 0.5));
 
   const CalibratedCamera camera(pose1);
   const Point3 point1(-0.08,-0.08, 0.0);

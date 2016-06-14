@@ -19,7 +19,9 @@
 #include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/discrete/DiscreteConditional.h>
 #include <gtsam/inference/FactorGraph-inst.h>
+
 #include <boost/make_shared.hpp>
+#include <boost/range/adaptor/reversed.hpp>
 
 namespace gtsam {
 
@@ -46,7 +48,7 @@ namespace gtsam {
   double DiscreteBayesNet::evaluate(const DiscreteConditional::Values & values) const {
     // evaluate all conditionals and multiply
     double result = 1.0;
-    BOOST_FOREACH(DiscreteConditional::shared_ptr conditional, *this)
+    for(DiscreteConditional::shared_ptr conditional: *this)
       result *= (*conditional)(values);
     return result;
   }
@@ -55,7 +57,7 @@ namespace gtsam {
   DiscreteFactor::sharedValues DiscreteBayesNet::optimize() const {
     // solve each node in turn in topological sort order (parents first)
     DiscreteFactor::sharedValues result(new DiscreteFactor::Values());
-    BOOST_REVERSE_FOREACH (DiscreteConditional::shared_ptr conditional, *this)
+    for (auto conditional: boost::adaptors::reverse(*this))
       conditional->solveInPlace(*result);
     return result;
   }
@@ -64,7 +66,7 @@ namespace gtsam {
   DiscreteFactor::sharedValues DiscreteBayesNet::sample() const {
     // sample each node in turn in topological sort order (parents first)
     DiscreteFactor::sharedValues result(new DiscreteFactor::Values());
-    BOOST_REVERSE_FOREACH(DiscreteConditional::shared_ptr conditional, *this)
+    for (auto conditional: boost::adaptors::reverse(*this))
       conditional->sampleInPlace(*result);
     return result;
   }

@@ -24,8 +24,8 @@ using namespace gtsam;
 TEST( InvDepthFactorVariant1, optimize) {
 
   // Create two poses looking in the x-direction
-  Pose3 pose1(Rot3::ypr(-M_PI/2, 0., -M_PI/2), Point3(0,0,1.0));
-  Pose3 pose2(Rot3::ypr(-M_PI/2, 0., -M_PI/2), Point3(0,0,1.5));
+  Pose3 pose1(Rot3::Ypr(-M_PI/2, 0., -M_PI/2), Point3(0,0,1.0));
+  Pose3 pose2(Rot3::Ypr(-M_PI/2, 0., -M_PI/2), Point3(0,0,1.5));
 
   // Create a landmark 5 meters in front of pose1 (camera center at (0,0,1))
   Point3 landmark(5, 0, 1);
@@ -48,7 +48,7 @@ TEST( InvDepthFactorVariant1, optimize) {
   Vector6 expected((Vector(6) << x, y, z, theta, phi, rho).finished());
 
 
-  
+
   // Create a factor graph with two inverse depth factors and two pose priors
   Key poseKey1(1);
   Key poseKey2(2);
@@ -73,9 +73,8 @@ TEST( InvDepthFactorVariant1, optimize) {
   // Optimize the graph to recover the actual landmark position
   LevenbergMarquardtParams params;
   Values result = LevenbergMarquardtOptimizer(graph, values, params).optimize();
-  Vector6 actual = result.at<Vector6>(landmarkKey);
-  
 
+//  Vector6 actual = result.at<Vector6>(landmarkKey);
 //  values.at<Pose3>(poseKey1).print("Pose1 Before:\n");
 //  result.at<Pose3>(poseKey1).print("Pose1 After:\n");
 //  pose1.print("Pose1 Truth:\n");
@@ -90,14 +89,14 @@ TEST( InvDepthFactorVariant1, optimize) {
 //  cout << endl << endl;
 
   // Calculate world coordinates of landmark versions
-  Point3 world_landmarkBefore;
+  Point3 world_landmarkBefore(0,0,0);
   {
     Vector6 landmarkBefore = values.at<Vector6>(landmarkKey);
     double x = landmarkBefore(0), y = landmarkBefore(1), z = landmarkBefore(2);
     double theta = landmarkBefore(3), phi = landmarkBefore(4), rho = landmarkBefore(5);
     world_landmarkBefore = Point3(x, y, z) + Point3(cos(theta)*cos(phi)/rho, sin(theta)*cos(phi)/rho, sin(phi)/rho);
   }
-  Point3 world_landmarkAfter;
+  Point3 world_landmarkAfter(0,0,0);
   {
     Vector6 landmarkAfter = result.at<Vector6>(landmarkKey);
     double x = landmarkAfter(0), y = landmarkAfter(1), z = landmarkAfter(2);
@@ -116,8 +115,11 @@ TEST( InvDepthFactorVariant1, optimize) {
   // However, since this is an over-parameterization, there can be
   // many 6D landmark values that equate to the same 3D world position
   // Instead, directly test the recovered 3D landmark position
-  //EXPECT(assert_equal(expected, actual, 1e-9));
   EXPECT(assert_equal(landmark, world_landmarkAfter, 1e-9));
+
+  // Frank asks: why commented out?
+  //Vector6 actual = result.at<Vector6>(landmarkKey);
+  //EXPECT(assert_equal(expected, actual, 1e-9));
 }
 
 

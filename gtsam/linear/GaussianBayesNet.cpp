@@ -20,13 +20,10 @@
 #include <gtsam/inference/FactorGraph-inst.h>
 #include <gtsam/base/timing.h>
 
-#include <boost/foreach.hpp>
+#include <boost/range/adaptor/reversed.hpp>
 
 using namespace std;
 using namespace gtsam;
-
-#define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL) 
-#define REVERSE_FOREACH_PAIR( KEY, VAL, COL) BOOST_REVERSE_FOREACH (boost::tie(KEY,VAL),COL)
 
 namespace gtsam {
 
@@ -52,7 +49,7 @@ namespace gtsam {
     VectorValues soln(solutionForMissing); // possibly empty
     // (R*x)./sigmas = y by solving x=inv(R)*(y.*sigmas)
     /** solve each node in turn in topological sort order (parents first)*/
-    BOOST_REVERSE_FOREACH(const sharedConditional& cg, *this) {
+    for (auto cg: boost::adaptors::reverse(*this)) {
       // i^th part of R*x=y, x=inv(R)*y
       // (Rii*xi + R_i*x(i+1:))./si = yi <-> xi = inv(Rii)*(yi.*si - R_i*x(i+1:))
       soln.insert(cg->solve(soln));
@@ -86,7 +83,9 @@ namespace gtsam {
   VectorValues GaussianBayesNet::backSubstitute(const VectorValues& rhs) const
   {
     VectorValues result;
-    BOOST_REVERSE_FOREACH(const sharedConditional& cg, *this) {
+    // TODO this looks pretty sketchy. result is passed as the parents argument
+    //  as it's filled up by solving the gaussian conditionals.
+    for (auto cg: boost::adaptors::reverse(*this)) {
       result.insert(cg->solveOtherRHS(result, rhs));
     }
     return result;
@@ -105,7 +104,7 @@ namespace gtsam {
 
     // we loop from first-eliminated to last-eliminated
     // i^th part of L*gy=gx is done block-column by block-column of L
-    BOOST_FOREACH(const sharedConditional& cg, *this)
+    for(const sharedConditional& cg: *this)
       cg->solveTransposeInPlace(gy);
 
     return gy;
@@ -138,10 +137,24 @@ namespace gtsam {
   //  return grad;
   //}
 
-  /* ************************************************************************* */  
-  pair<Matrix,Vector> GaussianBayesNet::matrix() const
-  {
-    return GaussianFactorGraph(*this).jacobian();
+  /* ************************************************************************* */
+  pair<Matrix, Vector> GaussianBayesNet::matrix() const {
+    GaussianFactorGraph factorGraph(*this);
+    KeySet keys = factorGraph.keys();
+    // add frontal keys in order
+    Ordering ordering;
+    for (const sharedConditional& cg: *this)
+      if (cg) {
+        for (Key key: cg->frontals()) {
+          ordering.push_back(key);
+          keys.erase(key);
+        }
+      }
+    // add remaining keys in case Bayes net is incomplete
+    for (Key key: keys)
+      ordering.push_back(key);
+    // return matrix and RHS
+    return factorGraph.jacobian(ordering);
   }
 
   ///* ************************************************************************* */
@@ -166,7 +179,7 @@ namespace gtsam {
   double GaussianBayesNet::logDeterminant() const
   {
     double logDet = 0.0;
-    BOOST_FOREACH(const sharedConditional& cg, *this) {
+    for(const sharedConditional& cg: *this) {
       if(cg->get_model()) {
         Vector diag = cg->get_R().diagonal();
         cg->get_model()->whitenInPlace(diag);

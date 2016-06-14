@@ -29,19 +29,24 @@ using namespace gtsam;
 using namespace GeographicLib;
 
 // *************************************************************************
-TEST( GPSFactor, Constructors ) {
+namespace example {
+// ENU Origin is where the plane was in hold next to runway
+const double lat0 = 33.86998, lon0 = -84.30626, h0 = 274;
 
-  // Convert from GPS to ENU
-  // ENU Origin is where the plane was in hold next to runway
-  const double lat0 = 33.86998, lon0 = -84.30626, h0 = 274;
-  LocalCartesian enu(lat0, lon0, h0, Geocentric::WGS84);
+// Convert from GPS to ENU
+LocalCartesian origin_ENU(lat0, lon0, h0, Geocentric::WGS84);
 
-  // Dekalb-Peachtree Airport runway 2L
-  const double lat = 33.87071, lon = -84.30482, h = 274;
+// Dekalb-Peachtree Airport runway 2L
+const double lat = 33.87071, lon = -84.30482, h = 274;
+}
+
+// *************************************************************************
+TEST( GPSFactor, Constructor ) {
+  using namespace example;
 
   // From lat-lon to geocentric
   double E, N, U;
-  enu.Forward(lat, lon, h, E, N, U);
+  origin_ENU.Forward(lat, lon, h, E, N, U);
   EXPECT_DOUBLES_EQUAL(133.24, E, 1e-2);
   EXPECT_DOUBLES_EQUAL(80.98, N, 1e-2);
   EXPECT_DOUBLES_EQUAL(0, U, 1e-2);
@@ -53,11 +58,40 @@ TEST( GPSFactor, Constructors ) {
 
   // Create a linearization point at zero error
   Pose3 T(Rot3::RzRyRx(0.15, -0.30, 0.45), Point3(E, N, U));
-  EXPECT(assert_equal(zero(3),factor.evaluateError(T),1e-5));
+  EXPECT(assert_equal(Z_3x1,factor.evaluateError(T),1e-5));
 
   // Calculate numerical derivatives
   Matrix expectedH = numericalDerivative11<Vector,Pose3>(
       boost::bind(&GPSFactor::evaluateError, &factor, _1, boost::none), T);
+
+  // Use the factor to calculate the derivative
+  Matrix actualH;
+  factor.evaluateError(T, actualH);
+
+  // Verify we get the expected error
+  EXPECT(assert_equal(expectedH, actualH, 1e-8));
+}
+
+// *************************************************************************
+TEST( GPSFactor2, Constructor ) {
+  using namespace example;
+
+  // From lat-lon to geocentric
+  double E, N, U;
+  origin_ENU.Forward(lat, lon, h, E, N, U);
+
+  // Factor
+  Key key(1);
+  SharedNoiseModel model = noiseModel::Isotropic::Sigma(3, 0.25);
+  GPSFactor2 factor(key, Point3(E, N, U), model);
+
+  // Create a linearization point at zero error
+  NavState T(Rot3::RzRyRx(0.15, -0.30, 0.45), Point3(E, N, U), Vector3::Zero());
+  EXPECT(assert_equal(Z_3x1,factor.evaluateError(T),1e-5));
+
+  // Calculate numerical derivatives
+  Matrix expectedH = numericalDerivative11<Vector,NavState>(
+      boost::bind(&GPSFactor2::evaluateError, &factor, _1, boost::none), T);
 
   // Use the factor to calculate the derivative
   Matrix actualH;
@@ -89,7 +123,7 @@ TEST(GPSData, init) {
 
   // Check values values
   EXPECT(assert_equal((Vector )Vector3(29.9575, -29.0564, -1.95993), nV, 1e-4));
-  EXPECT( assert_equal(Rot3::ypr(-0.770131, 0.046928, 0), T.rotation(), 1e-5));
+  EXPECT( assert_equal(Rot3::Ypr(-0.770131, 0.046928, 0), T.rotation(), 1e-5));
   Point3 expectedT(2.38461, -2.31289, -0.156011);
   EXPECT(assert_equal(expectedT, T.translation(), 1e-5));
 }

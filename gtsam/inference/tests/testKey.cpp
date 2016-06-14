@@ -14,14 +14,15 @@
  * @author Alex Cunningham
  */
 
-#include <boost/assign/std/list.hpp> // for operator +=
-using namespace boost::assign;
-
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/inference/Key.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/TestableAssertions.h>
-#include <gtsam/inference/Symbol.h>
 
+#include <CppUnitLite/TestHarness.h>
+
+#include <boost/assign/std/list.hpp> // for operator +=
+using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 
@@ -63,6 +64,13 @@ TEST(Key, KeySymbolEncoding) {
   EXPECT_LONGS_EQUAL((long)key, (long)(Key)symbol);
   EXPECT(assert_equal(str, DefaultKeyFormatter(symbol)));
   EXPECT(assert_equal(symbol, Symbol(key)));
+}
+
+/* ************************************************************************* */
+TEST(Key, ChrTest) {
+  Key key = Symbol('c',3);
+  EXPECT(Symbol::ChrTest('c')(key));
+  EXPECT(!Symbol::ChrTest('d')(key));
 }
 
 /* ************************************************************************* */

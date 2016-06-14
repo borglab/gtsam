@@ -165,23 +165,23 @@ namespace gtsam {
       return variableColOffsets_[actualBlock];
     }
 
+    /** Get the apparent first row of the underlying matrix for all operations */
+    const DenseIndex& rowStart() const { return rowStart_; }
+
     /** Get or set the apparent first row of the underlying matrix for all operations */
     DenseIndex& rowStart() { return rowStart_; }
+
+    /** Get the apparent last row (exclusive, i.e. rows() == rowEnd() - rowStart()) of the underlying matrix for all operations */
+    const DenseIndex& rowEnd() const { return rowEnd_; }
 
     /** Get or set the apparent last row (exclusive, i.e. rows() == rowEnd() - rowStart()) of the underlying matrix for all operations */
     DenseIndex& rowEnd() { return rowEnd_; }
 
+    /** Get the apparent first block for all operations */
+    const DenseIndex& firstBlock() const { return blockStart_; }
+
     /** Get or set the apparent first block for all operations */
     DenseIndex& firstBlock() { return blockStart_; }
-
-    /** Get the apparent first row of the underlying matrix for all operations */
-    DenseIndex rowStart() const { return rowStart_; }
-
-    /** Get the apparent last row (exclusive, i.e. rows() == rowEnd() - rowStart()) of the underlying matrix for all operations */
-    DenseIndex rowEnd() const { return rowEnd_; }
-
-    /** Get the apparent first block for all operations */
-    DenseIndex firstBlock() const { return blockStart_; }
 
     /** Access to full matrix (*including* any portions excluded by rowStart(), rowEnd(), and firstBlock()) */
     const Matrix& matrix() const { return matrix_; }
@@ -199,6 +199,7 @@ namespace gtsam {
     }
 
     void checkBlock(DenseIndex block) const {
+      static_cast<void>(block); //Disable unused varibale warnings.
       assert(matrix_.cols() == variableColOffsets_.back());
       assert(block < (DenseIndex)variableColOffsets_.size() - 1);
       assert(variableColOffsets_[block] < matrix_.cols() && variableColOffsets_[block+1] <= matrix_.cols());
@@ -220,7 +221,7 @@ namespace gtsam {
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int version) {
+    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_NVP(matrix_);
       ar & BOOST_SERIALIZATION_NVP(variableColOffsets_);
       ar & BOOST_SERIALIZATION_NVP(rowStart_);

@@ -8,7 +8,6 @@
 #include <gtsam_unstable/discrete/Domain.h>
 #include <gtsam_unstable/discrete/CSP.h>
 #include <gtsam/base/Testable.h>
-#include <boost/foreach.hpp>
 
 using namespace std;
 
@@ -45,7 +44,7 @@ namespace gtsam {
         changed[v] = false;
         // loop over all factors/constraints for variable v
         const VariableIndex::Factors& factors = index[v];
-        BOOST_FOREACH(size_t f,factors) {
+        for(size_t f: factors) {
           // if not already a singleton
           if (!domains[v].isSingleton()) {
             // get the constraint and call its ensureArcConsistency method
@@ -85,7 +84,7 @@ namespace gtsam {
     // TODO: create a new ordering as we go, to ensure a connected graph
     // KeyOrdering ordering;
     // vector<Index> dkeys;
-    BOOST_FOREACH(const DiscreteFactor::shared_ptr& f, factors_) {
+    for(const DiscreteFactor::shared_ptr& f: factors_) {
       Constraint::shared_ptr constraint = boost::dynamic_pointer_cast<Constraint>(f);
       if (!constraint) throw runtime_error("CSP:runArcConsistency: non-constraint factor");
       Constraint::shared_ptr reduced = constraint->partiallyApply(domains);

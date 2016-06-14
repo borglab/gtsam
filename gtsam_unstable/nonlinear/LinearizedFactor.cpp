@@ -16,7 +16,6 @@
  */
 
 #include <gtsam_unstable/nonlinear/LinearizedFactor.h>
-#include <boost/foreach.hpp>
 #include <iostream>
 
 namespace gtsam {
@@ -27,7 +26,7 @@ LinearizedGaussianFactor::LinearizedGaussianFactor(
 : NonlinearFactor(gaussian->keys())
 {
   // Extract the keys and linearization points
-  BOOST_FOREACH(const Key& key, gaussian->keys()) {
+  for(const Key& key: gaussian->keys()) {
     // extract linearization point
     assert(lin_points.exists(key));
     this->lin_points_.insert(key, lin_points.at(key));
@@ -65,7 +64,7 @@ void LinearizedJacobianFactor::print(const std::string& s, const KeyFormatter& k
   std::cout << s << std::endl;
 
   std::cout << "Nonlinear Keys: ";
-  BOOST_FOREACH(const Key& key, this->keys())
+  for(const Key& key: this->keys())
     std::cout << keyFormatter(key) << " ";
   std::cout << std::endl;
 
@@ -105,7 +104,7 @@ LinearizedJacobianFactor::linearize(const Values& c) const {
 
   // Create the 'terms' data structure for the Jacobian constructor
   std::vector<std::pair<Key, Matrix> > terms;
-  BOOST_FOREACH(Key key, keys()) {
+  for(Key key: keys()) {
     terms.push_back(std::make_pair(key, this->A(key)));
   }
 
@@ -120,7 +119,7 @@ Vector LinearizedJacobianFactor::error_vector(const Values& c) const {
 
   Vector errorVector = -b();
 
-  BOOST_FOREACH(Key key, this->keys()) {
+  for(Key key: this->keys()) {
     const Value& newPt = c.at(key);
     const Value& linPt = lin_points_.at(key);
     Vector d = linPt.localCoordinates_(newPt);
@@ -162,7 +161,7 @@ void LinearizedHessianFactor::print(const std::string& s, const KeyFormatter& ke
   std::cout << s << std::endl;
 
   std::cout << "Nonlinear Keys: ";
-  BOOST_FOREACH(const Key& key, this->keys())
+  for(const Key& key: this->keys())
     std::cout << keyFormatter(key) << " ";
   std::cout << std::endl;
 
@@ -194,7 +193,7 @@ bool LinearizedHessianFactor::equals(const NonlinearFactor& expected, double tol
 double LinearizedHessianFactor::error(const Values& c) const {
 
   // Construct an error vector in key-order from the Values
-  Vector dx = zero(dim());
+  Vector dx = Vector::Zero(dim());
   size_t index = 0;
   for(unsigned int i = 0; i < this->size(); ++i){
     Key key = this->keys()[i];
@@ -217,7 +216,7 @@ boost::shared_ptr<GaussianFactor>
 LinearizedHessianFactor::linearize(const Values& c) const {
 
   // Construct an error vector in key-order from the Values
-  Vector dx = zero(dim());
+  Vector dx = Vector::Zero(dim());
   size_t index = 0;
   for(unsigned int i = 0; i < this->size(); ++i){
     Key key = this->keys()[i];

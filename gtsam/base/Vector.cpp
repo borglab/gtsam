@@ -16,45 +16,24 @@
  * @author  Frank Dellaert
  */
 
+#include <gtsam/base/Vector.h>
+#include <boost/optional.hpp>
+#include <stdexcept>
 #include <cstdarg>
 #include <limits>
-#include <iostream>
 #include <fstream>
 #include <sstream>
 #include <iomanip>
 #include <cmath>
-#include <stdexcept>
-#include <boost/foreach.hpp>
-#include <boost/optional.hpp>
 #include <cstdio>
-
-#include <gtsam/base/Vector.h>
-
+#include <vector>
 
 using namespace std;
 
 namespace gtsam {
 
 /* ************************************************************************* */
-bool zero(const Vector& v) {
-  bool result = true;
-  size_t n = v.size();
-  for( size_t j = 0 ; j < n ; j++)
-    result = result && (v(j) == 0.0);
-  return result;
-}
-
-/* ************************************************************************* */
-Vector repeat(size_t n, double value) {
-  return Vector::Constant(n, value);
-}
-
-/* ************************************************************************* */
-Vector delta(size_t n, size_t i, double value) {
-  return Vector::Unit(n, i) * value;
-}
-
-/* ************************************************************************* */
+//3 argument call
 void print(const Vector& v, const string& s, ostream& stream) {
   size_t n = v.size();
 
@@ -63,6 +42,12 @@ void print(const Vector& v, const string& s, ostream& stream) {
       stream << setprecision(9) << v(i) << (i<n-1 ? "; " : "");
   }
   stream << "];" << endl;
+}
+
+/* ************************************************************************* */
+//1 or 2 argument call
+void print(const Vector& v, const string& s) {
+    print(v, s, cout);
 }
 
 /* ************************************************************************* */
@@ -172,28 +157,6 @@ bool linear_dependent(const Vector& vec1, const Vector& vec2, double tol) {
 }
 
 /* ************************************************************************* */
-ConstSubVector sub(const Vector &v, size_t i1, size_t i2) {
-  return v.segment(i1,i2-i1);
-}
-
-/* ************************************************************************* */
-void subInsert(Vector& fullVector, const Vector& subVector, size_t i) {
-  fullVector.segment(i, subVector.size()) = subVector;
-}
-
-/* ************************************************************************* */
-Vector emul(const Vector &a, const Vector &b) {
-  assert (b.size()==a.size());
-  return a.cwiseProduct(b);
-}
-
-/* ************************************************************************* */
-Vector ediv(const Vector &a, const Vector &b) {
-  assert (b.size()==a.size());
-  return a.cwiseQuotient(b);
-}
-
-/* ************************************************************************* */
 Vector ediv_(const Vector &a, const Vector &b) {
   size_t n = a.size();
   assert (b.size()==a.size());
@@ -203,40 +166,6 @@ Vector ediv_(const Vector &a, const Vector &b) {
     c(i) = (bi==0.0 && ai==0.0) ? 0.0 : ai/bi;
   }
   return c;
-}
-
-/* ************************************************************************* */
-double sum(const Vector &a) {
-  return a.sum();
-}
-
-/* ************************************************************************* */
-double norm_2(const Vector& v) {
-  return v.norm();
-}
-
-/* ************************************************************************* */
-Vector reciprocal(const Vector &a) {
-  size_t n = a.size();
-  Vector b(n);
-  for( size_t i = 0; i < n; i++ )
-    b(i) = 1.0/a(i);
-  return b;
-}
-
-/* ************************************************************************* */
-Vector esqrt(const Vector& v) {
-  return v.cwiseSqrt();
-}
-
-/* ************************************************************************* */
-Vector abs(const Vector& v) {
-  return v.cwiseAbs();
-}
-
-/* ************************************************************************* */
-double max(const Vector &a) {
-  return a.maxCoeff();
 }
 
 /* ************************************************************************* */
@@ -291,7 +220,7 @@ double weightedPseudoinverse(const Vector& a, const Vector& weights,
       // Basically, instead of doing a normal QR step with the weighted
       // pseudoinverse, we enforce the constraint by turning
       // ax + AS = b into x + (A/a)S = b/a, for the first row where a!=0
-      pseudo = delta(m, i, 1 / a[i]);
+      pseudo = Vector::Unit(m,i)*(1.0/a[i]);
       return inf;
     }
   }
@@ -334,12 +263,12 @@ weightedPseudoinverse(const Vector& a, const Vector& weights) {
 Vector concatVectors(const std::list<Vector>& vs)
 {
   size_t dim = 0;
-  BOOST_FOREACH(Vector v, vs)
+  for(Vector v: vs)
   dim += v.size();
 
   Vector A(dim);
   size_t index = 0;
-  BOOST_FOREACH(Vector v, vs) {
+  for(Vector v: vs) {
     for(int d = 0; d < v.size(); d++)
       A(d+index) = v(d);
     index += v.size();
@@ -361,7 +290,5 @@ Vector concatVectors(size_t nrVectors, ...)
   va_end(ap);
   return concatVectors(vs);
 }
-
-/* ************************************************************************* */
 
 } // namespace gtsam

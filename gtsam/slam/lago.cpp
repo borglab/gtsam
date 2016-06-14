@@ -30,8 +30,8 @@ using namespace std;
 namespace gtsam {
 namespace lago {
 
-static const Matrix I = eye(1);
-static const Matrix I3 = eye(3);
+static const Matrix I = I_1x1;
+static const Matrix I3 = I_3x3;
 
 static const Key keyAnchor = symbol('Z', 9999999);
 static const noiseModel::Diagonal::shared_ptr priorOrientationNoise =
@@ -82,7 +82,7 @@ key2doubleMap computeThetasToRoot(const key2doubleMap& deltaThetaMap,
   thetaToRootMap.insert(pair<Key, double>(keyAnchor, 0.0));
 
   // for all nodes in the tree
-  BOOST_FOREACH(const key2doubleMap::value_type& it, deltaThetaMap) {
+  for(const key2doubleMap::value_type& it: deltaThetaMap) {
     // compute the orientation wrt root
     Key nodeKey = it.first;
     double nodeTheta = computeThetaToRoot(nodeKey, tree, deltaThetaMap,
@@ -101,7 +101,7 @@ void getSymbolicGraph(
   // Get keys for which you want the orientation
   size_t id = 0;
   // Loop over the factors
-  BOOST_FOREACH(const boost::shared_ptr<NonlinearFactor>& factor, g) {
+  for(const boost::shared_ptr<NonlinearFactor>& factor: g) {
     if (factor->keys().size() == 2) {
       Key key1 = factor->keys()[0];
       Key key2 = factor->keys()[1];
@@ -146,7 +146,7 @@ static void getDeltaThetaAndNoise(NonlinearFactor::shared_ptr factor,
   deltaTheta = (Vector(1) << pose2Between->measured().theta()).finished();
 
   // Retrieve the noise model for the relative rotation
-  SharedNoiseModel model = pose2Between->get_noiseModel();
+  SharedNoiseModel model = pose2Between->noiseModel();
   boost::shared_ptr<noiseModel::Diagonal> diagonalModel =
       boost::dynamic_pointer_cast<noiseModel::Diagonal>(model);
   if (!diagonalModel)
@@ -167,14 +167,14 @@ GaussianFactorGraph buildLinearOrientationGraph(
   noiseModel::Diagonal::shared_ptr model_deltaTheta;
 
   // put original measurements in the spanning tree
-  BOOST_FOREACH(const size_t& factorId, spanningTreeIds) {
+  for(const size_t& factorId: spanningTreeIds) {
     const FastVector<Key>& keys = g[factorId]->keys();
     Key key1 = keys[0], key2 = keys[1];
     getDeltaThetaAndNoise(g[factorId], deltaTheta, model_deltaTheta);
     lagoGraph.add(key1, -I, key2, I, deltaTheta, model_deltaTheta);
   }
   // put regularized measurements in the chordsIds
-  BOOST_FOREACH(const size_t& factorId, chordsIds) {
+  for(const size_t& factorId: chordsIds) {
     const FastVector<Key>& keys = g[factorId]->keys();
     Key key1 = keys[0], key2 = keys[1];
     getDeltaThetaAndNoise(g[factorId], deltaTheta, model_deltaTheta);
@@ -199,7 +199,7 @@ static NonlinearFactorGraph buildPose2graph(const NonlinearFactorGraph& graph) {
   gttic(lago_buildPose2graph);
   NonlinearFactorGraph pose2Graph;
 
-  BOOST_FOREACH(const boost::shared_ptr<NonlinearFactor>& factor, graph) {
+  for(const boost::shared_ptr<NonlinearFactor>& factor: graph) {
 
     // recast to a between on Pose2
     boost::shared_ptr<BetweenFactor<Pose2> > pose2Between =
@@ -213,7 +213,7 @@ static NonlinearFactorGraph buildPose2graph(const NonlinearFactorGraph& graph) {
     if (pose2Prior)
       pose2Graph.add(
           BetweenFactor<Pose2>(keyAnchor, pose2Prior->keys()[0],
-              pose2Prior->prior(), pose2Prior->get_noiseModel()));
+              pose2Prior->prior(), pose2Prior->noiseModel()));
   }
   return pose2Graph;
 }
@@ -226,7 +226,7 @@ static PredecessorMap<Key> findOdometricPath(
   Key minKey = keyAnchor; // this initialization does not matter
   bool minUnassigned = true;
 
-  BOOST_FOREACH(const boost::shared_ptr<NonlinearFactor>& factor, pose2Graph) {
+  for(const boost::shared_ptr<NonlinearFactor>& factor: pose2Graph) {
 
     Key key1 = std::min(factor->keys()[0], factor->keys()[1]);
     Key key2 = std::max(factor->keys()[0], factor->keys()[1]);
@@ -299,7 +299,7 @@ Values computePoses(const NonlinearFactorGraph& pose2graph,
   GaussianFactorGraph linearPose2graph;
 
   // We include the linear version of each between factor
-  BOOST_FOREACH(const boost::shared_ptr<NonlinearFactor>& factor, pose2graph) {
+  for(const boost::shared_ptr<NonlinearFactor>& factor: pose2graph) {
 
     boost::shared_ptr<BetweenFactor<Pose2> > pose2Between =
         boost::dynamic_pointer_cast<BetweenFactor<Pose2> >(factor);
@@ -329,7 +329,7 @@ Values computePoses(const NonlinearFactorGraph& pose2graph,
       // Retrieve the noise model for the relative rotation
       boost::shared_ptr<noiseModel::Diagonal> diagonalModel =
           boost::dynamic_pointer_cast<noiseModel::Diagonal>(
-              pose2Between->get_noiseModel());
+              pose2Between->noiseModel());
 
       linearPose2graph.add(key1, J1, key2, I3, b, diagonalModel);
     } else {
@@ -346,7 +346,7 @@ Values computePoses(const NonlinearFactorGraph& pose2graph,
 
   // put into Values structure
   Values initialGuessLago;
-  BOOST_FOREACH(const VectorValues::value_type& it, posesLago) {
+  for(const VectorValues::value_type& it: posesLago) {
     Key key = it.first;
     if (key != keyAnchor) {
       const Vector& poseVector = it.second;
@@ -383,7 +383,7 @@ Values initialize(const NonlinearFactorGraph& graph,
   VectorValues orientations = initializeOrientations(graph);
 
   // for all nodes in the tree
-  BOOST_FOREACH(const VectorValues::value_type& it, orientations) {
+  for(const VectorValues::value_type& it: orientations) {
     Key key = it.first;
     if (key != keyAnchor) {
       const Pose2& pose = initialGuess.at<Pose2>(key);

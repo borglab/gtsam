@@ -186,6 +186,7 @@ struct GTSAM_EXPORT ISAM2Params {
       enableDetailedResults(false), enablePartialRelinearizationCheck(false),
       findUnusedFactorSlots(false) {}
 
+  /// print iSAM2 parameters
   void print(const std::string& str = "") const {
     std::cout << str << "\n";
     if(optimizationParams.type() == typeid(ISAM2GaussNewtonParams))
@@ -199,7 +200,7 @@ struct GTSAM_EXPORT ISAM2Params {
     else
     {
       std::cout << "relinearizeThreshold:              " << "{mapped}" << "\n";
-      BOOST_FOREACH(const ISAM2ThresholdMapValue& value, boost::get<ISAM2ThresholdMap>(relinearizeThreshold)) {
+      for(const ISAM2ThresholdMapValue& value: boost::get<ISAM2ThresholdMap>(relinearizeThreshold)) {
         std::cout << "                                   '" << value.first << "' -> [" << value.second.transpose() << " ]\n";
       }
     }
@@ -214,7 +215,9 @@ struct GTSAM_EXPORT ISAM2Params {
     std::cout.flush();
   }
 
-   /** Getters and Setters for all properties */
+  /// @name Getters and Setters for all properties
+  /// @{
+
   OptimizationParams getOptimizationParams() const { return this->optimizationParams; }
   RelinearizationThreshold getRelinearizeThreshold() const { return relinearizeThreshold; }
   int getRelinearizeSkip() const { return relinearizeSkip; }
@@ -237,16 +240,24 @@ struct GTSAM_EXPORT ISAM2Params {
   void setEnableDetailedResults(bool enableDetailedResults) { this->enableDetailedResults = enableDetailedResults; }
   void setEnablePartialRelinearizationCheck(bool enablePartialRelinearizationCheck) { this->enablePartialRelinearizationCheck = enablePartialRelinearizationCheck; }
 
-  Factorization factorizationTranslator(const std::string& str) const;
-  std::string factorizationTranslator(const Factorization& value) const;
-
   GaussianFactorGraph::Eliminate getEliminationFunction() const {
     return factorization == CHOLESKY
       ? (GaussianFactorGraph::Eliminate)EliminatePreferCholesky
       : (GaussianFactorGraph::Eliminate)EliminateQR;
   }
+
+  /// @}
+
+  /// @name Some utilities
+  /// @{
+
+  static Factorization factorizationTranslator(const std::string& str);
+  static std::string factorizationTranslator(const Factorization& value);
+
+  /// @}
 };
 
+typedef FastVector<size_t> FactorIndices;
 
 /**
  * @addtogroup ISAM2
@@ -308,7 +319,7 @@ struct GTSAM_EXPORT ISAM2Result {
    * factors passed as \c newFactors to ISAM2::update().  These indices may be
    * used later to refer to the factors in order to remove them.
    */
-  FastVector<size_t> newFactorsIndices;
+  FactorIndices newFactorsIndices;
 
   /** A struct holding detailed results, which must be enabled with
    * ISAM2Params::enableDetailedResults.
@@ -404,7 +415,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar & BOOST_SERIALIZATION_NVP(cachedFactor_);
     ar & BOOST_SERIALIZATION_NVP(gradientContribution_);
@@ -450,7 +461,7 @@ protected:
    * This is \c mutable because it is used internally to not update delta_
    * until it is needed.
    */
-  mutable FastSet<Key> deltaReplacedMask_; // TODO: Make sure accessed in the right way
+  mutable KeySet deltaReplacedMask_; // TODO: Make sure accessed in the right way
 
   /** All original nonlinear factors are stored here to use during relinearization */
   NonlinearFactorGraph nonlinearFactors_;
@@ -466,7 +477,7 @@ protected:
 
   /** Set of variables that are involved with linear factors from marginalized
    * variables and thus cannot have their linearization points changed. */
-  FastSet<Key> fixedVariables_;
+  KeySet fixedVariables_;
 
   int update_count_; ///< Counter incremented every update(), used to determine periodic relinearization
 
@@ -520,7 +531,7 @@ public:
    */
   virtual ISAM2Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(),
       const Values& newTheta = Values(),
-      const std::vector<size_t>& removeFactorIndices = std::vector<size_t>(),
+      const FactorIndices& removeFactorIndices = FactorIndices(),
       const boost::optional<FastMap<Key,int> >& constrainedKeys = boost::none,
       const boost::optional<FastList<Key> >& noRelinKeys = boost::none,
       const boost::optional<FastList<Key> >& extraReelimKeys = boost::none,
@@ -541,11 +552,18 @@ public:
    * indices of any factor that was removed during the 'marginalizeLeaves' call
    */
   void marginalizeLeaves(const FastList<Key>& leafKeys,
-    boost::optional<std::vector<size_t>&> marginalFactorsIndices = boost::none,
-    boost::optional<std::vector<size_t>&> deletedFactorsIndices = boost::none);
+    boost::optional<FactorIndices&> marginalFactorsIndices = boost::none,
+    boost::optional<FactorIndices&> deletedFactorsIndices = boost::none);
 
-  /** Access the current linearization point */
-  const Values& getLinearizationPoint() const { return theta_; }
+  /// Access the current linearization point
+  const Values& getLinearizationPoint() const {
+    return theta_;
+  }
+
+  /// Check whether variable with given key exists in linearization point
+  bool valueExists(Key key) const {
+    return theta_.exists(key);
+  }
 
   /** Compute an estimate from the incomplete linear delta computed during the last update.
    * This delta is incomplete because it was not updated below wildfire_threshold.  If only
@@ -597,7 +615,7 @@ public:
   const VariableIndex& getVariableIndex() const { return variableIndex_; }
 
   /** Access the nonlinear variable index */
-  const FastSet<Key>& getFixedVariables() const { return fixedVariables_; }
+  const KeySet& getFixedVariables() const { return fixedVariables_; }
 
   size_t lastAffectedVariableCount;
   size_t lastAffectedFactorCount;
@@ -623,15 +641,18 @@ public:
 
 protected:
 
-  FastSet<size_t> getAffectedFactors(const FastList<Key>& keys) const;
-  GaussianFactorGraph::shared_ptr relinearizeAffectedFactors(const FastList<Key>& affectedKeys, const FastSet<Key>& relinKeys) const;
+  FastSet<Key> getAffectedFactors(const FastList<Key>& keys) const;
+  GaussianFactorGraph::shared_ptr relinearizeAffectedFactors(const FastList<Key>& affectedKeys, const KeySet& relinKeys) const;
   GaussianFactorGraph getCachedBoundaryFactors(Cliques& orphans);
 
-  virtual boost::shared_ptr<FastSet<Key> > recalculate(const FastSet<Key>& markedKeys, const FastSet<Key>& relinKeys,
-      const std::vector<Key>& observedKeys, const FastSet<Key>& unusedIndices, const boost::optional<FastMap<Key,int> >& constrainKeys, ISAM2Result& result);
+  virtual boost::shared_ptr<KeySet > recalculate(const KeySet& markedKeys, const KeySet& relinKeys,
+      const std::vector<Key>& observedKeys, const KeySet& unusedIndices, const boost::optional<FastMap<Key,int> >& constrainKeys, ISAM2Result& result);
   void updateDelta(bool forceFullSolve = false) const;
 
 }; // ISAM2
+
+/// traits
+template<> struct traits<ISAM2> : public Testable<ISAM2> {};
 
 /// Optimize the BayesTree, starting from the root.
 /// @param replaced Needs to contain
@@ -646,11 +667,11 @@ protected:
 /// @return The number of variables that were solved for
 template<class CLIQUE>
 size_t optimizeWildfire(const boost::shared_ptr<CLIQUE>& root,
-    double threshold, const FastSet<Key>& replaced, VectorValues& delta);
+    double threshold, const KeySet& replaced, VectorValues& delta);
 
 template<class CLIQUE>
 size_t optimizeWildfireNonRecursive(const boost::shared_ptr<CLIQUE>& root,
-    double threshold, const FastSet<Key>& replaced, VectorValues& delta);
+    double threshold, const KeySet& replaced, VectorValues& delta);
 
 /// calculate the number of non-zero entries for the tree starting at clique (use root for complete matrix)
 template<class CLIQUE>

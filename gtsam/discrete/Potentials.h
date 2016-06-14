@@ -19,6 +19,7 @@
 
 #include <gtsam/discrete/AlgebraicDecisionTree.h>
 #include <gtsam/discrete/DiscreteKey.h>
+#include <gtsam/inference/Key.h>
 
 #include <boost/shared_ptr.hpp>
 #include <set>
@@ -87,5 +88,10 @@ namespace gtsam {
 //    GTSAM_EXPORT virtual void reduceWithInverse(const internal::Reduction& inverseReduction);
 
   }; // Potentials
+
+// traits
+template<> struct traits<Potentials> : public Testable<Potentials> {};
+template<> struct traits<Potentials::ADT> : public Testable<Potentials::ADT> {};
+
 
 } // namespace gtsam

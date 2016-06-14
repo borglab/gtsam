@@ -23,6 +23,7 @@
 #include <gtsam/slam/dataset.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/PriorFactor.h>
+#include <gtsam/geometry/Pose2.h>
 #include <gtsam/inference/Symbol.h>
 
 #include <CppUnitLite/TestHarness.h>
@@ -284,7 +285,7 @@ TEST( Lago, largeGraphNoisy_orientations ) {
   Values::shared_ptr expected;
   boost::tie(gmatlab, expected) = readG2o(matlabFile);
 
-  BOOST_FOREACH(const Values::KeyValuePair& key_val, *expected){
+  for(const Values::KeyValuePair& key_val: *expected){
     Key k = key_val.key;
     EXPECT(assert_equal(expected->at<Pose2>(k), actual.at<Pose2>(k), 1e-5));
   }
@@ -310,7 +311,7 @@ TEST( Lago, largeGraphNoisy ) {
   Values::shared_ptr expected;
   boost::tie(gmatlab, expected) = readG2o(matlabFile);
 
-  BOOST_FOREACH(const Values::KeyValuePair& key_val, *expected){
+  for(const Values::KeyValuePair& key_val: *expected){
     Key k = key_val.key;
     EXPECT(assert_equal(expected->at<Pose2>(k), actual.at<Pose2>(k), 1e-2));
   }

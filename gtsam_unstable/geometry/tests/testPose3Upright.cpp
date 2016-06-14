@@ -58,9 +58,9 @@ TEST( testPose3Upright, conversions ) {
   EXPECT(assert_equal(Point3(1.0, 2.0, 3.0), pose.translation(), tol));
   EXPECT(assert_equal(Point2(1.0, 2.0), pose.translation2(), tol));
   EXPECT(assert_equal(Rot2::fromAngle(0.1), pose.rotation2(), tol));
-  EXPECT(assert_equal(Rot3::yaw(0.1), pose.rotation(), tol));
+  EXPECT(assert_equal(Rot3::Yaw(0.1), pose.rotation(), tol));
   EXPECT(assert_equal(Pose2(1.0, 2.0, 0.1), pose.pose2(), tol));
-  EXPECT(assert_equal(Pose3(Rot3::yaw(0.1), Point3(1.0, 2.0, 3.0)), pose.pose(), tol));
+  EXPECT(assert_equal(Pose3(Rot3::Yaw(0.1), Point3(1.0, 2.0, 3.0)), pose.pose(), tol));
 }
 
 /* ************************************************************************* */
@@ -68,9 +68,9 @@ TEST( testPose3Upright, manifold ) {
   Pose3Upright origin, x1(1.0, 2.0, 3.0, 0.0), x2(4.0, 2.0, 7.0, 0.0);
   EXPECT_LONGS_EQUAL(4, origin.dim());
 
-  EXPECT(assert_equal(origin, origin.retract(zero(4)), tol));
-  EXPECT(assert_equal(x1, x1.retract(zero(4)), tol));
-  EXPECT(assert_equal(x2, x2.retract(zero(4)), tol));
+  EXPECT(assert_equal(origin, origin.retract(Z_4x1), tol));
+  EXPECT(assert_equal(x1, x1.retract(Z_4x1), tol));
+  EXPECT(assert_equal(x2, x2.retract(Z_4x1), tol));
 
   Vector delta12 = (Vector(4) << 3.0, 0.0, 4.0, 0.0).finished(), delta21 = -delta12;
   EXPECT(assert_equal(x2, x1.retract(delta12), tol));
@@ -83,8 +83,8 @@ TEST( testPose3Upright, manifold ) {
 /* ************************************************************************* */
 TEST( testPose3Upright, lie ) {
   Pose3Upright origin, x1(1.0, 2.0, 3.0, 0.1);
-  EXPECT(assert_equal(zero(4), Pose3Upright::Logmap(origin), tol));
-  EXPECT(assert_equal(origin, Pose3Upright::Expmap(zero(4)), tol));
+  EXPECT(assert_equal(Z_4x1, Pose3Upright::Logmap(origin), tol));
+  EXPECT(assert_equal(origin, Pose3Upright::Expmap(Z_4x1), tol));
 
   EXPECT(assert_equal(x1, Pose3Upright::Expmap(Pose3Upright::Logmap(x1)), tol));
 }

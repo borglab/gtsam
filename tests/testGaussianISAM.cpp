@@ -22,7 +22,6 @@
 #include <gtsam/linear/GaussianISAM.h>
 #include <gtsam/inference/Ordering.h>
 
-#include <boost/foreach.hpp>
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
 #include <boost/range/adaptor/map.hpp>
@@ -46,7 +45,7 @@ TEST( ISAM, iSAM_smoother )
 
   // run iSAM for every factor
   GaussianISAM actual;
-  BOOST_FOREACH(boost::shared_ptr<GaussianFactor> factor, smoother) {
+  for(boost::shared_ptr<GaussianFactor> factor: smoother) {
     GaussianFactorGraph factorGraph;
     factorGraph.push_back(factor);
     actual.update(factorGraph);
@@ -56,7 +55,7 @@ TEST( ISAM, iSAM_smoother )
   GaussianBayesTree expected = *smoother.eliminateMultifrontal(ordering);
 
   // Verify sigmas in the bayes tree
-  BOOST_FOREACH(const GaussianBayesTree::sharedClique& clique, expected.nodes() | br::map_values) {
+  for(const GaussianBayesTree::sharedClique& clique: expected.nodes() | br::map_values) {
     GaussianConditional::shared_ptr conditional = clique->conditional();
     EXPECT(!conditional->get_model());
   }

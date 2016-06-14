@@ -39,7 +39,7 @@ typedef Pose2 Pose;
 
 typedef NoiseModelFactor1<Pose> NM1;
 typedef NoiseModelFactor2<Pose,Pose> NM2;
-noiseModel::Unit::shared_ptr model = noiseModel::Unit::Create(Pose::Dim());
+noiseModel::Unit::shared_ptr model = noiseModel::Unit::Create(3);
 
 int main(int argc, char *argv[]) {
 
@@ -61,10 +61,10 @@ int main(int argc, char *argv[]) {
     gttic_(Create_measurements);
     if(step == 0) {
       // Add prior
-      newFactors.add(PriorFactor<Pose>(0, Pose(), noiseModel::Unit::Create(Pose::Dim())));
+      newFactors.add(PriorFactor<Pose>(0, Pose(), noiseModel::Unit::Create(3)));
       newVariables.insert(0, Pose());
     } else {
-      Vector eta = Vector::Random(Pose::Dim()) * 0.1;
+      Vector eta = Vector::Random(3) * 0.1;
       Pose2 between = Pose().retract(eta);
       // Add between
       newFactors.add(BetweenFactor<Pose>(step-1, step, between, model));
@@ -93,7 +93,7 @@ int main(int argc, char *argv[]) {
 
   // Write times
   ofstream timesFile("times.txt");
-  BOOST_FOREACH(double t, times) {
+  for(double t: times) {
     timesFile << t << "\n"; }
 
   return 0;

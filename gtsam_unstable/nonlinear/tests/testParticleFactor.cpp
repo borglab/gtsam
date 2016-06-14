@@ -126,33 +126,33 @@ TEST( ParticleFilter, constructor) {
 TEST( ParticleFilter, linear1 ) {
 
   // Create the controls and measurement properties for our example
-  Matrix F = eye(2, 2);
-  Matrix B = eye(2, 2);
+  Matrix F = I_2x2;
+  Matrix B = I_2x2;
   Vector u = Vector2(1.0, 0.0);
   SharedDiagonal modelQ = noiseModel::Isotropic::Sigma(2, 0.1);
-  Matrix Q = 0.01 * eye(2, 2);
-  Matrix H = eye(2, 2);
+  Matrix Q = 0.01 * I_2x2;
+  Matrix H = I_2x2;
   State z1(1.0, 0.0);
   State z2(2.0, 0.0);
   State z3(3.0, 0.0);
   SharedDiagonal modelR = noiseModel::Isotropic::Sigma(2, 0.1);
-  Matrix R = 0.01 * eye(2, 2);
+  Matrix R = 0.01 * I_2x2;
 
 // Create the set of expected output TestValues
   State expected0(0.0, 0.0);
-  Matrix P00 = 0.01 * eye(2, 2);
+  Matrix P00 = 0.01 * I_2x2;
 
   State expected1(1.0, 0.0);
   Matrix P01 = P00 + Q;
-  Matrix I11 = inverse(P01) + inverse(R);
+  Matrix I11 = P01.inverse() + R.inverse();
 
   State expected2(2.0, 0.0);
-  Matrix P12 = inverse(I11) + Q;
-  Matrix I22 = inverse(P12) + inverse(R);
+  Matrix P12 = I11.inverse() + Q;
+  Matrix I22 = P12.inverse() + R.inverse();
 
   State expected3(3.0, 0.0);
-  Matrix P23 = inverse(I22) + Q;
-  Matrix I33 = inverse(P23) + inverse(R);
+  Matrix P23 = I22.inverse() + Q;
+  Matrix I33 = P23.inverse() + R.inverse();
 
 // Create a Kalman filter of dimension 2
   KalmanFilter kf(2);

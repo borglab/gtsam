@@ -23,21 +23,15 @@
 
 namespace gtsam {
 
-/**
- * DLT triangulation: See Hartley and Zisserman, 2nd Ed., page 312
- * @param projection_matrices Projection matrices (K*P^-1)
- * @param measurements 2D measurements
- * @param rank_tol SVD rank tolerance
- * @return Triangulated Point3
- */
-Point3 triangulateDLT(const std::vector<Matrix34>& projection_matrices,
+Vector4 triangulateHomogeneousDLT(
+    const std::vector<Matrix34>& projection_matrices,
     const std::vector<Point2>& measurements, double rank_tol) {
 
   // number of cameras
   size_t m = projection_matrices.size();
 
   // Allocate DLT matrix
-  Matrix A = zeros(m * 2, 4);
+  Matrix A = Matrix::Zero(m * 2, 4);
 
   for (size_t i = 0; i < m; i++) {
     size_t row = i * 2;
@@ -52,13 +46,20 @@ Point3 triangulateDLT(const std::vector<Matrix34>& projection_matrices,
   double error;
   Vector v;
   boost::tie(rank, error, v) = DLT(A, rank_tol);
-  //  std::cout << "s " << s.transpose() << std:endl;
 
   if (rank < 3)
     throw(TriangulationUnderconstrainedException());
 
-  // Create 3D point from eigenvector
-  return Point3(sub((v / v(3)), 0, 3));
+  return v;
+}
+
+Point3 triangulateDLT(const std::vector<Matrix34>& projection_matrices,
+    const std::vector<Point2>& measurements, double rank_tol) {
+
+  Vector4 v = triangulateHomogeneousDLT(projection_matrices, measurements, rank_tol);
+
+  // Create 3D point from homogeneous coordinates
+  return Point3(v.head<3>() / v[3]);
 }
 
 ///
@@ -89,6 +90,4 @@ Point3 optimize(const NonlinearFactorGraph& graph, const Values& values,
   return result.at<Point3>(landmarkKey);
 }
 
-
-} // \namespace gtsam
-
+}  // \namespace gtsam

@@ -204,4 +204,9 @@ private:
 /// Typedef for Matlab wrapping
 typedef ConcurrentBatchSmoother::Result ConcurrentBatchSmootherResult;
 
-}/// namespace gtsam
+/// traits
+template<>
+struct traits<ConcurrentBatchSmoother> : public Testable<ConcurrentBatchSmoother> {
+};
+
+} //\ namespace gtsam

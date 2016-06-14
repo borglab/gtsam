@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -11,7 +11,7 @@
 
 /**
  * @file serializationTestHelpers.h
- * @brief 
+ * @brief
  * @author Alex Cunningham
  * @author Richard Roberts
  * @date Feb 7, 2012
@@ -30,6 +30,11 @@ const bool verbose = false;
 namespace gtsam {
 namespace serializationTestHelpers {
 
+// templated default object creation so we only need to declare one friend (if applicable)
+template<class T>
+T create() {
+  return T();
+}
 
 // Templated round-trip serialization
 template<class T>
@@ -44,23 +49,23 @@ void roundtrip(const T& input, T& output) {
 // This version requires equality operator
 template<class T>
 bool equality(const T& input = T()) {
-  T output;
+  T output = create<T>();
   roundtrip<T>(input,output);
   return input==output;
 }
 
-// This version requires equals
+// This version requires Testable
 template<class T>
 bool equalsObj(const T& input = T()) {
-  T output;
+  T output = create<T>();
   roundtrip<T>(input,output);
-  return input.equals(output);
+  return assert_equal(input, output);
 }
 
-// De-referenced version for pointers
+// De-referenced version for pointers, requires equals method
 template<class T>
 bool equalsDereferenced(const T& input) {
-  T output;
+  T output = create<T>();
   roundtrip<T>(input,output);
   return input->equals(*output);
 }
@@ -79,23 +84,23 @@ void roundtripXML(const T& input, T& output) {
 // This version requires equality operator
 template<class T>
 bool equalityXML(const T& input = T()) {
-  T output;
+  T output = create<T>();
   roundtripXML<T>(input,output);
   return input==output;
 }
 
-// This version requires equals
+// This version requires Testable
 template<class T>
 bool equalsXML(const T& input = T()) {
-  T output;
+  T output = create<T>();
   roundtripXML<T>(input,output);
-  return input.equals(output);
+  return assert_equal(input, output);
 }
 
-// This version is for pointers
+// This version is for pointers, requires equals method
 template<class T>
 bool equalsDereferencedXML(const T& input = T()) {
-  T output;
+  T output = create<T>();
   roundtripXML<T>(input,output);
   return input->equals(*output);
 }
@@ -114,23 +119,23 @@ void roundtripBinary(const T& input, T& output) {
 // This version requires equality operator
 template<class T>
 bool equalityBinary(const T& input = T()) {
-  T output;
+  T output = create<T>();
   roundtripBinary<T>(input,output);
   return input==output;
 }
 
-// This version requires equals
+// This version requires Testable
 template<class T>
 bool equalsBinary(const T& input = T()) {
-  T output;
+  T output = create<T>();
   roundtripBinary<T>(input,output);
-  return input.equals(output);
+  return assert_equal(input, output);
 }
 
-// This version is for pointers
+// This version is for pointers, requires equals method
 template<class T>
 bool equalsDereferencedBinary(const T& input = T()) {
-  T output;
+  T output = create<T>();
   roundtripBinary<T>(input,output);
   return input->equals(*output);
 }

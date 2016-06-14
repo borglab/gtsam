@@ -18,11 +18,12 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/linear/Preconditioner.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/geometry/Point2.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/Preconditioner.h>
 #include <gtsam/linear/PCGSolver.h>
+#include <gtsam/geometry/Point2.h>
 
 using namespace std;
 using namespace gtsam;
@@ -87,6 +88,7 @@ TEST(PCGSolver, simpleLinearSystem) {
   simpleGFG += JacobianFactor(0, (Matrix(2,2)<< 1, 0, 0, 1).finished(), (Vector(2) << 0, 0).finished(), unit2);
   simpleGFG += JacobianFactor(1, (Matrix(2,2)<< 1, 0, 0, 1).finished(), (Vector(2) << 0, 0).finished(), unit2);
   simpleGFG += JacobianFactor(2, (Matrix(2,2)<< 1, 0, 0, 1).finished(), (Vector(2) << 0, 0).finished(), unit2);
+  //simpleGFG.print("system");
 
   // Expected solution
   VectorValues expectedSolution;

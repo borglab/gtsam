@@ -64,6 +64,11 @@ option(GTSAM_WITH_TBB                    "Use Intel Threaded Building Blocks (TB
 option(GTSAM_WITH_EIGEN_MKL              "Eigen will use Intel MKL if available" ON)
 option(GTSAM_WITH_EIGEN_MKL_OPENMP       "Eigen, when using Intel MKL, will also use OpenMP for multithreading if available" ON)
 option(GTSAM_THROW_CHEIRALITY_EXCEPTION "Throw exception when a triangulated point is behind a camera" ON)
+option(GTSAM_BUILD_PYTHON                "Enable/Disable building & installation of Python module" OFF)
+option(GTSAM_ALLOW_DEPRECATED_SINCE_V4   "Allow use of methods/functions deprecated in GTSAM 4" ON)
+option(GTSAM_TYPEDEF_POINTS_TO_VECTORS   "Typdef Point2 and Point3 to Eigen::Vector equivalents" OFF)
+option(GTSAM_SUPPORT_NESTED_DISSECTION   "Support Metis-based nested dissection" ON)
+option(GTSAM_TANGENT_PREINTEGRATION      "Use new ImuFactor with integration on tangent space" ON)
 
 # Options relating to MATLAB wrapper
 # TODO: Check for matlab mex binary before handling building of binaries
@@ -80,6 +85,14 @@ endif()
 
 if(GTSAM_INSTALL_MATLAB_TOOLBOX AND GTSAM_BUILD_STATIC_LIBRARY)
 	message(FATAL_ERROR "GTSAM_INSTALL_MATLAB_TOOLBOX and GTSAM_BUILD_STATIC_LIBRARY are both enabled.  The MATLAB wrapper cannot be compiled with a static GTSAM library because mex modules are themselves shared libraries.  If you want a self-contained mex module, enable GTSAM_MEX_BUILD_STATIC_MODULE instead of GTSAM_BUILD_STATIC_LIBRARY.")
+endif()
+
+if(GTSAM_BUILD_PYTHON AND GTSAM_ALLOW_DEPRECATED_SINCE_V4)
+    message(FATAL_ERROR "GTSAM_BUILD_PYTHON and GTSAM_ALLOW_DEPRECATED_SINCE_V4 are both enabled. The python module cannot be compiled with deprecated functions turned on. Turn one of the two options off.")
+endif()
+
+if(GTSAM_INSTALL_MATLAB_TOOLBOX AND GTSAM_TYPEDEF_POINTS_TO_VECTORS)
+    message(FATAL_ERROR "GTSAM_INSTALL_MATLAB_TOOLBOX and GTSAM_TYPEDEF_POINTS_TO_VECTORS are both enabled. For now, the MATLAB toolbox cannot deal with this yet.  Please turn one of the two options off.")
 endif()
 
 # Flags for choosing default packaging tools
@@ -131,7 +144,7 @@ endif()
 
 if(NOT (${Boost_VERSION} LESS 105600))
 	message("Ignoring Boost restriction on optional lvalue assignment from rvalues")
-	add_definitions(-DBOOST_OPTIONAL_ALLOW_BINDING_TO_RVALUES)
+	add_definitions(-DBOOST_OPTIONAL_ALLOW_BINDING_TO_RVALUES -DBOOST_OPTIONAL_CONFIG_ALLOW_BINDING_TO_RVALUES)
 endif()
 
 ###############################################################################
@@ -158,6 +171,12 @@ else()
 	set(GTSAM_USE_TBB 0)  # This will go into config.h
 endif()
 
+###############################################################################
+# Prohibit Timing build mode in combination with TBB
+if(GTSAM_USE_TBB AND (CMAKE_BUILD_TYPE  STREQUAL "Timing"))
+      message(FATAL_ERROR "Timing build mode cannot be used together with TBB. Use a sampling profiler such as Instruments or Intel VTune Amplifier instead.")
+endif()
+
 
 ###############################################################################
 # Find Google perftools
@@ -173,6 +192,11 @@ if(MKL_FOUND AND GTSAM_WITH_EIGEN_MKL)
     set(EIGEN_USE_MKL_ALL 1) # This will go into config.h - it makes Eigen use MKL
     include_directories(${MKL_INCLUDE_DIR})
     list(APPEND GTSAM_ADDITIONAL_LIBRARIES ${MKL_LIBRARIES})
+
+    # --no-as-needed is required with gcc according to the MKL link advisor
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-as-needed")
+    endif()
 else()
     set(GTSAM_USE_EIGEN_MKL 0)
     set(EIGEN_USE_MKL_ALL 0)
@@ -192,35 +216,40 @@ endif()
 
 ###############################################################################
 # Option for using system Eigen or GTSAM-bundled Eigen
-### Disabled until our patches are included in Eigen ###
+### These patches only affect usage of MKL. If you want to enable MKL, you *must*
+### use our patched version of Eigen
 ### See:  http://eigen.tuxfamily.org/bz/show_bug.cgi?id=704 (Householder QR MKL selection)
 ###       http://eigen.tuxfamily.org/bz/show_bug.cgi?id=705 (Fix MKL LLT return code)
-###       http://eigen.tuxfamily.org/bz/show_bug.cgi?id=716 (Improved comma initialization)
-# option(GTSAM_USE_SYSTEM_EIGEN "Find and use system-installed Eigen. If 'off', use the one bundled with GTSAM" OFF)
-set(GTSAM_USE_SYSTEM_EIGEN OFF)
+option(GTSAM_USE_SYSTEM_EIGEN "Find and use system-installed Eigen. If 'off', use the one bundled with GTSAM" OFF)
 
 # Switch for using system Eigen or GTSAM-bundled Eigen
 if(GTSAM_USE_SYSTEM_EIGEN)
-	# Use generic Eigen include paths e.g. <Eigen/Core>
-	set(GTSAM_EIGEN_INCLUDE_PREFIX "")
-
 	find_package(Eigen3 REQUIRED)
 	include_directories(AFTER "${EIGEN3_INCLUDE_DIR}")
-else()
-	# Use bundled Eigen include paths e.g. <gtsam/3rdparty/Eigen/Eigen/Core>
-	set(GTSAM_EIGEN_INCLUDE_PREFIX "gtsam/3rdparty/Eigen/")
 
+	# Use generic Eigen include paths e.g. <Eigen/Core>
+    set(GTSAM_EIGEN_INCLUDE_PREFIX "${EIGEN3_INCLUDE_DIR}")
+
+	# check if MKL is also enabled - can have one or the other, but not both!
+	# Note: Eigen >= v3.2.5 includes our patches
+	if(EIGEN_USE_MKL_ALL AND (EIGEN3_VERSION VERSION_LESS 3.2.5))
+	  message(FATAL_ERROR "MKL requires at least Eigen 3.2.5, and your system appears to have an older version. Disable GTSAM_USE_SYSTEM_EIGEN to use GTSAM's copy of Eigen, or disable GTSAM_WITH_EIGEN_MKL")
+	endif()
+else()
+	# Use bundled Eigen include path.
 	# Clear any variables set by FindEigen3
 	if(EIGEN3_INCLUDE_DIR)
 		set(EIGEN3_INCLUDE_DIR NOTFOUND CACHE STRING "" FORCE)
 	endif()
+	# Add the bundled version of eigen to the include path so that it can still be included
+	# with  #include <Eigen/Core>
+	include_directories(BEFORE "gtsam/3rdparty/Eigen/")
+
+	# set full path to be used by external projects
+	# this will be added to GTSAM_INCLUDE_DIR by gtsam_extra.cmake.in
+	set(GTSAM_EIGEN_INCLUDE_PREFIX "${CMAKE_INSTALL_PREFIX}/include/gtsam/3rdparty/Eigen/")
+
 endif()
-
-# Write Eigen include file with the paths for either the system Eigen or the GTSAM-bundled Eigen
-configure_file(gtsam/3rdparty/gtsam_eigen_includes.h.in gtsam/3rdparty/gtsam_eigen_includes.h)
-
-# Install the configuration file for Eigen
-install(FILES ${PROJECT_BINARY_DIR}/gtsam/3rdparty/gtsam_eigen_includes.h DESTINATION include/gtsam/3rdparty)
 
 ###############################################################################
 # Global compile options
@@ -262,17 +291,24 @@ endif()
 
 # Include boost - use 'BEFORE' so that a specific boost specified to CMake
 # takes precedence over a system-installed one.
-include_directories(BEFORE ${Boost_INCLUDE_DIR})
+include_directories(BEFORE SYSTEM ${Boost_INCLUDE_DIR})
+
+if(GTSAM_SUPPORT_NESTED_DISSECTION)
+  set(METIS_INCLUDE_DIRECTORIES
+    gtsam/3rdparty/metis/include
+    gtsam/3rdparty/metis/libmetis
+    gtsam/3rdparty/metis/GKlib)
+else()
+  set(METIS_INCLUDE_DIRECTORIES)
+endif()
 
 # Add includes for source directories 'BEFORE' boost and any system include
 # paths so that the compiler uses GTSAM headers in our source directory instead
 # of any previously installed GTSAM headers.
 include_directories(BEFORE
-  gtsam/3rdparty/UFconfig
+  gtsam/3rdparty/SuiteSparse_config
   gtsam/3rdparty/CCOLAMD/Include
-  gtsam/3rdparty/metis/include
-  gtsam/3rdparty/metis/libmetis
-  gtsam/3rdparty/metis/GKlib
+  ${METIS_INCLUDE_DIRECTORIES}
   ${PROJECT_SOURCE_DIR}
   ${PROJECT_BINARY_DIR} # So we can include generated config header files
   CppUnitLite)
@@ -285,6 +321,13 @@ endif()
 # GCC 4.8+ complains about local typedefs which we use for shared_ptr etc.
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.8)
+    add_definitions(-Wno-unused-local-typedefs)
+  endif()
+endif()
+
+# As of XCode 7, clang also complains about this
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+  if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 7.0)
     add_definitions(-Wno-unused-local-typedefs)
   endif()
 endif()
@@ -319,6 +362,20 @@ add_subdirectory(timing)
 # Matlab toolbox
 if (GTSAM_INSTALL_MATLAB_TOOLBOX)
 	add_subdirectory(matlab)
+endif()
+
+# Python wrap
+if (GTSAM_BUILD_PYTHON)
+	include(GtsamPythonWrap)
+
+	# NOTE: The automatic generation of python wrapper from the gtsampy.h interface is
+	#       not working yet, so we're using a handwritten wrapper files on python/handwritten.
+	#       Once the python wrapping from the interface file is working, you can _swap_ the
+	#       comments on the next lines
+
+	# wrap_and_install_python(gtsampy.h "${GTSAM_ADDITIONAL_LIBRARIES}" "")
+	add_subdirectory(python)
+
 endif()
 
 # Build gtsam_unstable
@@ -371,6 +428,8 @@ set(CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-dev (>= 1.43)") #Example: "libc6 (>= 
 # Print configuration variables
 message(STATUS "===============================================================")
 message(STATUS "================  Configuration Options  ======================")
+message(STATUS "  CMAKE_CXX_COMPILER_ID type     : ${CMAKE_CXX_COMPILER_ID}")
+message(STATUS "  CMAKE_CXX_COMPILER_VERSION     : ${CMAKE_CXX_COMPILER_VERSION}")
 message(STATUS "Build flags                                               ")
 print_config_flag(${GTSAM_BUILD_TESTS}                 "Build Tests                    ")
 print_config_flag(${GTSAM_BUILD_EXAMPLES_ALWAYS}       "Build examples with 'make all' ")
@@ -388,6 +447,11 @@ if(NOT MSVC AND NOT XCODE_VERSION)
     message(STATUS "  Build type                     : ${CMAKE_BUILD_TYPE}")
     message(STATUS "  C compilation flags            : ${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_${cmake_build_type_toupper}}")
     message(STATUS "  C++ compilation flags          : ${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${cmake_build_type_toupper}}")
+endif()
+if(GTSAM_USE_SYSTEM_EIGEN)
+    message(STATUS "  Use System Eigen               : Yes")
+else()
+    message(STATUS "  Use System Eigen               : No")
 endif()
 if(GTSAM_USE_TBB)
 	message(STATUS "  Use Intel TBB                  : Yes")
@@ -422,13 +486,29 @@ message(STATUS "  CPack Source Generator         : ${CPACK_SOURCE_GENERATOR}")
 message(STATUS "  CPack Generator                : ${CPACK_GENERATOR}")
 
 message(STATUS "GTSAM flags                                               ")
-print_config_flag(${GTSAM_USE_QUATERNIONS}             "Quaternions as default Rot3    ")
-print_config_flag(${GTSAM_ENABLE_CONSISTENCY_CHECKS}   "Runtime consistency checking   ")
-print_config_flag(${GTSAM_POSE3_EXPMAP}                "Pose3 retract is full ExpMap   ")
+print_config_flag(${GTSAM_USE_QUATERNIONS}             "Quaternions as default Rot3     ")
+print_config_flag(${GTSAM_ENABLE_CONSISTENCY_CHECKS}   "Runtime consistency checking    ")
+print_config_flag(${GTSAM_ROT3_EXPMAP}                 "Rot3 retract is full ExpMap     ")
+print_config_flag(${GTSAM_POSE3_EXPMAP}                "Pose3 retract is full ExpMap    ")
+print_config_flag(${GTSAM_ALLOW_DEPRECATED_SINCE_V4}   "Deprecated in GTSAM 4 allowed   ")
+print_config_flag(${GTSAM_TYPEDEF_POINTS_TO_VECTORS}          "Point3 is typedef to Vector3    ")
+print_config_flag(${GTSAM_SUPPORT_NESTED_DISSECTION}   "Metis-based Nested Dissection   ")
+print_config_flag(${GTSAM_TANGENT_PREINTEGRATION}      "Use tangent-space preintegration")
 
 message(STATUS "MATLAB toolbox flags                                      ")
 print_config_flag(${GTSAM_INSTALL_MATLAB_TOOLBOX}      "Install matlab toolbox         ")
 print_config_flag(${GTSAM_BUILD_WRAP}                  "Build Wrap                     ")
+
+message(STATUS "Python module flags                                       ")
+
+if(GTSAM_PYTHON_WARNINGS)
+	message(STATUS "  Build python module            : No - dependencies missing")
+else()
+	print_config_flag(${GTSAM_BUILD_PYTHON}                "Build python module            ")
+endif()
+if(GTSAM_BUILD_PYTHON)
+	message(STATUS "  Python version                 : ${GTSAM_PYTHON_VERSION}")
+endif()
 message(STATUS "===============================================================")
 
 # Print warnings at the end
@@ -440,6 +520,9 @@ if(GTSAM_WITH_EIGEN_MKL AND NOT MKL_FOUND)
 endif()
 if(GTSAM_WITH_EIGEN_MKL_OPENMP AND NOT OPENMP_FOUND AND MKL_FOUND)
 	message(WARNING "Your compiler does not support OpenMP - this is ok, but performance may be improved with OpenMP.  Set GTSAM_WITH_EIGEN_MKL_OPENMP to 'Off' to avoid this warning.")
+endif()
+if(GTSAM_BUILD_PYTHON AND GTSAM_PYTHON_WARNINGS)
+	message(WARNING "${GTSAM_PYTHON_WARNINGS}")
 endif()
 
 # Include CPack *after* all flags

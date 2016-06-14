@@ -19,7 +19,6 @@
 #include <gtsam/navigation/MagFactor.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam/base/LieScalar.h>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -41,7 +40,7 @@ Point3 nM(22653.29982, -1956.83010, 44202.47862);
 // Let's assume scale factor,
 double scale = 255.0 / 50000.0;
 // ...ground truth orientation,
-Rot3 nRb = Rot3::yaw(-0.1);
+Rot3 nRb = Rot3::Yaw(-0.1);
 Rot2 theta = nRb.yaw();
 // ...and bias
 Point3 bias(10, -10, 50);
@@ -72,19 +71,19 @@ TEST( MagFactor, Factors ) {
 
   // MagFactor
   MagFactor f(1, measured, s, dir, bias, model);
-  EXPECT( assert_equal(zero(3),f.evaluateError(theta,H1),1e-5));
-  EXPECT( assert_equal(numericalDerivative11<Vector,Rot2> //
+  EXPECT( assert_equal(Z_3x1,f.evaluateError(theta,H1),1e-5));
+  EXPECT( assert_equal((Matrix)numericalDerivative11<Vector,Rot2> //
       (boost::bind(&MagFactor::evaluateError, &f, _1, none), theta), H1, 1e-7));
 
 // MagFactor1
   MagFactor1 f1(1, measured, s, dir, bias, model);
-  EXPECT( assert_equal(zero(3),f1.evaluateError(nRb,H1),1e-5));
+  EXPECT( assert_equal(Z_3x1,f1.evaluateError(nRb,H1),1e-5));
   EXPECT( assert_equal(numericalDerivative11<Vector,Rot3> //
       (boost::bind(&MagFactor1::evaluateError, &f1, _1, none), nRb), H1, 1e-7));
 
 // MagFactor2
   MagFactor2 f2(1, 2, measured, nRb, model);
-  EXPECT( assert_equal(zero(3),f2.evaluateError(scaled,bias,H1,H2),1e-5));
+  EXPECT( assert_equal(Z_3x1,f2.evaluateError(scaled,bias,H1,H2),1e-5));
   EXPECT( assert_equal(numericalDerivative11<Vector,Point3> //
       (boost::bind(&MagFactor2::evaluateError, &f2, _1, bias, none, none), scaled),//
       H1, 1e-7));
@@ -94,8 +93,8 @@ TEST( MagFactor, Factors ) {
 
 // MagFactor2
   MagFactor3 f3(1, 2, 3, measured, nRb, model);
-  EXPECT(assert_equal(zero(3),f3.evaluateError(s,dir,bias,H1,H2,H3),1e-5));
-  EXPECT(assert_equal(numericalDerivative11<Vector,double> //
+  EXPECT(assert_equal(Z_3x1,f3.evaluateError(s,dir,bias,H1,H2,H3),1e-5));
+  EXPECT(assert_equal((Matrix)numericalDerivative11<Vector,double> //
       (boost::bind(&MagFactor3::evaluateError, &f3, _1, dir, bias, none, none, none), s),//
       H1, 1e-7));
   EXPECT(assert_equal(numericalDerivative11<Vector,Unit3> //

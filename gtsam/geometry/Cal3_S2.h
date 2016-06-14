@@ -21,7 +21,6 @@
 
 #pragma once
 
-#include <gtsam/base/DerivedValue.h>
 #include <gtsam/geometry/Point2.h>
 
 namespace gtsam {
@@ -36,7 +35,7 @@ private:
   double fx_, fy_, s_, u0_, v0_;
 
 public:
-
+  enum { dimension = 5 };
   typedef boost::shared_ptr<Cal3_S2> shared_ptr; ///< shared pointer to calibration object
 
   /// @name Standard Constructors
@@ -94,6 +93,11 @@ public:
   /// focal length y
   inline double fy() const {
     return fy_;
+  }
+
+  /// aspect ratio
+  inline double aspectRatio() const {
+    return fx_/fy_;
   }
 
   /// skew
@@ -157,9 +161,12 @@ public:
   /**
    * convert image coordinates uv to intrinsic coordinates xy
    * @param p point in image coordinates
+   * @param Dcal optional 2*5 Jacobian wrpt Cal3_S2 parameters
+   * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
    * @return point in intrinsic coordinates
    */
-  Point2 calibrate(const Point2& p) const;
+  Point2 calibrate(const Point2& p, OptionalJacobian<2,5> Dcal = boost::none,
+                   OptionalJacobian<2,2> Dp = boost::none) const;
 
   /**
    * convert homogeneous image coordinates to intrinsic coordinates
@@ -211,7 +218,7 @@ private:
   /// Serialization function
   friend class boost::serialization::access;
   template<class Archive>
-  void serialize(Archive & ar, const unsigned int version) {
+  void serialize(Archive & ar, const unsigned int /*version*/) {
     ar & BOOST_SERIALIZATION_NVP(fx_);
     ar & BOOST_SERIALIZATION_NVP(fy_);
     ar & BOOST_SERIALIZATION_NVP(s_);
@@ -223,22 +230,10 @@ private:
 
 };
 
-// Define GTSAM traits
-namespace traits {
+template<>
+struct traits<Cal3_S2> : public internal::Manifold<Cal3_S2> {};
 
 template<>
-struct GTSAM_EXPORT is_manifold<Cal3_S2> : public boost::true_type{
-};
-
-template<>
-struct GTSAM_EXPORT dimension<Cal3_S2> : public boost::integral_constant<int, 5>{
-};
-
-template<>
-struct GTSAM_EXPORT zero<Cal3_S2> {
-  static Cal3_S2 value() { return Cal3_S2();}
-};
-
-}
+struct traits<const Cal3_S2> : public internal::Manifold<Cal3_S2> {};
 
 } // \ namespace gtsam

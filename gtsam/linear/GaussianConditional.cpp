@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -71,7 +71,7 @@ namespace gtsam {
       model_->print("  Noise model: ");
     else
       cout << "  No noise model" << endl;
-  }    
+  }
 
   /* ************************************************************************* */
   bool GaussianConditional::equals(const GaussianFactor& f, double tol) const
@@ -120,24 +120,24 @@ namespace gtsam {
   VectorValues GaussianConditional::solve(const VectorValues& x) const
   {
     // Concatenate all vector values that correspond to parent variables
-    Vector xS = x.vector(FastVector<Key>(beginParents(), endParents()));
+    const Vector xS = x.vector(FastVector<Key>(beginParents(), endParents()));
 
     // Update right-hand-side
-    xS = getb() - get_S() * xS;
+    const Vector rhs = get_d() - get_S() * xS;
 
     // Solve matrix
-    Vector soln = get_R().triangularView<Eigen::Upper>().solve(xS);
+    const Vector solution = get_R().triangularView<Eigen::Upper>().solve(rhs);
 
     // Check for indeterminant solution
-    if(soln.hasNaN()) throw IndeterminantLinearSystemException(keys().front());
-
-    // TODO, do we not have to scale by sigmas here? Copy/paste bug
+    if (solution.hasNaN()) {
+      throw IndeterminantLinearSystemException(keys().front());
+    }
 
     // Insert solution into a VectorValues
     VectorValues result;
     DenseIndex vectorPosition = 0;
-    for(const_iterator frontal = beginFrontals(); frontal != endFrontals(); ++frontal) {
-      result.insert(*frontal, soln.segment(vectorPosition, getDim(frontal)));
+    for (const_iterator frontal = beginFrontals(); frontal != endFrontals(); ++frontal) {
+      result.insert(*frontal, solution.segment(vectorPosition, getDim(frontal)));
       vectorPosition += getDim(frontal);
     }
 
@@ -183,7 +183,7 @@ namespace gtsam {
     if (frontalVec.hasNaN()) throw IndeterminantLinearSystemException(this->keys().front());
 
     for (const_iterator it = beginParents(); it!= endParents(); it++)
-      gtsam::transposeMultiplyAdd(-1.0, Matrix(getA(it)), frontalVec, gy[*it]);
+      gy[*it] += -1.0 * Matrix(getA(it)).transpose() * frontalVec;
 
     // Scale by sigmas
     if(model_)

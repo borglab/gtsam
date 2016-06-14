@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -18,10 +18,11 @@
 
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/ProjectionFactor.h>
-#include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Point3.h>
@@ -55,7 +56,7 @@ TEST ( NonlinearEquality, linearization ) {
 
   // check linearize
   SharedDiagonal constraintModel = noiseModel::Constrained::All(3);
-  JacobianFactor expLF(key, eye(3), zero(3), constraintModel);
+  JacobianFactor expLF(key, I_3x3, Z_3x1, constraintModel);
   GaussianFactor::shared_ptr actualLF = nle->linearize(linearize);
   EXPECT(assert_equal((const GaussianFactor&)expLF, *actualLF));
 }
@@ -132,11 +133,11 @@ TEST ( NonlinearEquality, error ) {
 
   // check error function outputs
   Vector actual = nle->unwhitenedError(feasible);
-  EXPECT(assert_equal(actual, zero(3)));
+  EXPECT(assert_equal(actual, Z_3x1));
 
   actual = nle->unwhitenedError(bad_linearize);
   EXPECT(
-      assert_equal(actual, repeat(3, std::numeric_limits<double>::infinity())));
+      assert_equal(actual, Vector::Constant(3, std::numeric_limits<double>::infinity())));
 }
 
 //******************************************************************************
@@ -179,7 +180,7 @@ TEST ( NonlinearEquality, allow_error_pose ) {
 
   // check linearization
   GaussianFactor::shared_ptr actLinFactor = nle.linearize(config);
-  Matrix A1 = eye(3, 3);
+  Matrix A1 = I_3x3;
   Vector b = expVec;
   SharedDiagonal model = noiseModel::Constrained::All(3);
   GaussianFactor::shared_ptr expLinFactor(
@@ -262,8 +263,8 @@ TEST( testNonlinearEqualityConstraint, unary_basics ) {
   Values config1;
   config1.insert(key, pt);
   EXPECT(constraint.active(config1));
-  EXPECT(assert_equal(zero(2), constraint.evaluateError(pt), tol));
-  EXPECT(assert_equal(zero(2), constraint.unwhitenedError(config1), tol));
+  EXPECT(assert_equal(Z_2x1, constraint.evaluateError(pt), tol));
+  EXPECT(assert_equal(Z_2x1, constraint.unwhitenedError(config1), tol));
   EXPECT_DOUBLES_EQUAL(0.0, constraint.error(config1), tol);
 
   Values config2;
@@ -288,7 +289,7 @@ TEST( testNonlinearEqualityConstraint, unary_linearization ) {
   config1.insert(key, pt);
   GaussianFactor::shared_ptr actual1 = constraint.linearize(config1);
   GaussianFactor::shared_ptr expected1(
-      new JacobianFactor(key, eye(2, 2), zero(2), hard_model));
+      new JacobianFactor(key, I_2x2, Z_2x1, hard_model));
   EXPECT(assert_equal(*expected1, *actual1, tol));
 
   Values config2;
@@ -296,7 +297,7 @@ TEST( testNonlinearEqualityConstraint, unary_linearization ) {
   config2.insert(key, ptBad);
   GaussianFactor::shared_ptr actual2 = constraint.linearize(config2);
   GaussianFactor::shared_ptr expected2(
-      new JacobianFactor(key, eye(2, 2), Vector2(-1.0, 0.0), hard_model));
+      new JacobianFactor(key, I_2x2, Vector2(-1.0, 0.0), hard_model));
   EXPECT(assert_equal(*expected2, *actual2, tol));
 }
 
@@ -344,8 +345,8 @@ TEST( testNonlinearEqualityConstraint, odo_basics ) {
   config1.insert(key1, x1);
   config1.insert(key2, x2);
   EXPECT(constraint.active(config1));
-  EXPECT(assert_equal(zero(2), constraint.evaluateError(x1, x2), tol));
-  EXPECT(assert_equal(zero(2), constraint.unwhitenedError(config1), tol));
+  EXPECT(assert_equal(Z_2x1, constraint.evaluateError(x1, x2), tol));
+  EXPECT(assert_equal(Z_2x1, constraint.unwhitenedError(config1), tol));
   EXPECT_DOUBLES_EQUAL(0.0, constraint.error(config1), tol);
 
   Values config2;
@@ -373,7 +374,7 @@ TEST( testNonlinearEqualityConstraint, odo_linearization ) {
   config1.insert(key2, x2);
   GaussianFactor::shared_ptr actual1 = constraint.linearize(config1);
   GaussianFactor::shared_ptr expected1(
-      new JacobianFactor(key1, -eye(2, 2), key2, eye(2, 2), zero(2),
+      new JacobianFactor(key1, -I_2x2, key2, I_2x2, Z_2x1,
           hard_model));
   EXPECT(assert_equal(*expected1, *actual1, tol));
 
@@ -384,7 +385,7 @@ TEST( testNonlinearEqualityConstraint, odo_linearization ) {
   config2.insert(key2, x2bad);
   GaussianFactor::shared_ptr actual2 = constraint.linearize(config2);
   GaussianFactor::shared_ptr expected2(
-      new JacobianFactor(key1, -eye(2, 2), key2, eye(2, 2), Vector2(1.0, 1.0),
+      new JacobianFactor(key1, -I_2x2, key2, I_2x2, Vector2(1.0, 1.0),
           hard_model));
   EXPECT(assert_equal(*expected2, *actual2, tol));
 }
@@ -408,8 +409,7 @@ TEST( testNonlinearEqualityConstraint, odo_simple_optimize ) {
 
   // odometry constraint
   eq2D::OdoEqualityConstraint::shared_ptr constraint2(
-      new eq2D::OdoEqualityConstraint(truth_pt1.between(truth_pt2), key1,
-          key2));
+      new eq2D::OdoEqualityConstraint(truth_pt2-truth_pt1, key1, key2));
 
   NonlinearFactorGraph graph;
   graph.push_back(constraint1);
@@ -417,7 +417,7 @@ TEST( testNonlinearEqualityConstraint, odo_simple_optimize ) {
   graph.push_back(factor);
 
   Values initValues;
-  initValues.insert(key1, Point2());
+  initValues.insert(key1, Point2(0,0));
   initValues.insert(key2, badPt);
 
   Values actual = LevenbergMarquardtOptimizer(graph, initValues).optimize();
@@ -454,7 +454,7 @@ TEST (testNonlinearEqualityConstraint, two_pose ) {
 
   Values initialEstimate;
   initialEstimate.insert(x1, pt_x1);
-  initialEstimate.insert(x2, Point2());
+  initialEstimate.insert(x2, Point2(0,0));
   initialEstimate.insert(l1, Point2(1.0, 6.0)); // ground truth
   initialEstimate.insert(l2, Point2(-4.0, 0.0)); // starting with a separate reference frame
 
@@ -514,70 +514,66 @@ TEST (testNonlinearEqualityConstraint, map_warp ) {
   CHECK(assert_equal(expected, actual, tol));
 }
 
-// make a realistic calibration matrix
-static double fov = 60; // degrees
-static int w = 640, h = 480;
-static Cal3_S2 K(fov, w, h);
-static boost::shared_ptr<Cal3_S2> shK(new Cal3_S2(K));
-
-// typedefs for visual SLAM example
-typedef NonlinearFactorGraph VGraph;
-
-// factors for visual slam
-typedef NonlinearEquality2<Point3> Point3Equality;
-
 //******************************************************************************
 TEST (testNonlinearEqualityConstraint, stereo_constrained ) {
 
+  // make a realistic calibration matrix
+  static double fov = 60; // degrees
+  static int w = 640, h = 480;
+  static Cal3_S2 K(fov, w, h);
+  static boost::shared_ptr<Cal3_S2> shK(new Cal3_S2(K));
+
   // create initial estimates
-  Rot3 faceDownY(
-      (Matrix) (Matrix(3, 3) << 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, -1.0, 0.0).finished());
-  Pose3 pose1(faceDownY, Point3()); // origin, left camera
-  SimpleCamera camera1(pose1, K);
-  Pose3 pose2(faceDownY, Point3(2.0, 0.0, 0.0)); // 2 units to the left
-  SimpleCamera camera2(pose2, K);
-  Point3 landmark(1.0, 5.0, 0.0); //centered between the cameras, 5 units away
+  Rot3 faceTowardsY(Point3(1, 0, 0), Point3(0, 0, -1), Point3(0, 1, 0));
+
+  Pose3 poseLeft(faceTowardsY, Point3(0, 0, 0));  // origin, left camera
+  SimpleCamera leftCamera(poseLeft, K);
+
+  Pose3 poseRight(faceTowardsY, Point3(2, 0, 0));  // 2 units to the right
+  SimpleCamera rightCamera(poseRight, K);
+
+  Point3 landmark(1, 5, 0); //centered between the cameras, 5 units away
 
   // keys
-  Symbol x1('x', 1), x2('x', 2);
-  Symbol l1('l', 1), l2('l', 2);
+  Symbol key_x1('x', 1), key_x2('x', 2);
+  Symbol key_l1('l', 1), key_l2('l', 2);
 
   // create graph
-  VGraph graph;
+  NonlinearFactorGraph graph;
 
   // create equality constraints for poses
-  graph += NonlinearEquality<Pose3>(x1, camera1.pose());
-  graph += NonlinearEquality<Pose3>(x2, camera2.pose());
+  graph += NonlinearEquality<Pose3>(key_x1, leftCamera.pose());
+  graph += NonlinearEquality<Pose3>(key_x2, rightCamera.pose());
 
   // create  factors
   SharedDiagonal vmodel = noiseModel::Unit::Create(2);
   graph += GenericProjectionFactor<Pose3, Point3, Cal3_S2>(
-      camera1.project(landmark), vmodel, x1, l1, shK);
+      leftCamera.project(landmark), vmodel, key_x1, key_l1, shK);
   graph += GenericProjectionFactor<Pose3, Point3, Cal3_S2>(
-      camera2.project(landmark), vmodel, x2, l2, shK);
+      rightCamera.project(landmark), vmodel, key_x2, key_l2, shK);
 
-  // add equality constraint
-  graph += Point3Equality(l1, l2);
+  // add equality constraint saying there is only one point
+  graph += NonlinearEquality2<Point3>(key_l1, key_l2);
 
   // create initial data
-  Point3 landmark1(0.5, 5.0, 0.0);
-  Point3 landmark2(1.5, 5.0, 0.0);
+  Point3 landmark1(0.5, 5, 0);
+  Point3 landmark2(1.5, 5, 0);
 
   Values initValues;
-  initValues.insert(x1, pose1);
-  initValues.insert(x2, pose2);
-  initValues.insert(l1, landmark1);
-  initValues.insert(l2, landmark2);
+  initValues.insert(key_x1, poseLeft);
+  initValues.insert(key_x2, poseRight);
+  initValues.insert(key_l1, landmark1);
+  initValues.insert(key_l2, landmark2);
 
   // optimize
   Values actual = LevenbergMarquardtOptimizer(graph, initValues).optimize();
 
   // create config
   Values truthValues;
-  truthValues.insert(x1, camera1.pose());
-  truthValues.insert(x2, camera2.pose());
-  truthValues.insert(l1, landmark);
-  truthValues.insert(l2, landmark);
+  truthValues.insert(key_x1, leftCamera.pose());
+  truthValues.insert(key_x2, rightCamera.pose());
+  truthValues.insert(key_l1, landmark);
+  truthValues.insert(key_l2, landmark);
 
   // check if correct
   CHECK(assert_equal(truthValues, actual, 1e-5));

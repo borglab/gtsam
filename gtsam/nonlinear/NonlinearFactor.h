@@ -112,7 +112,7 @@ public:
    * when the constraint is *NOT* fulfilled.
    * @return true if the constraint is active
    */
-  virtual bool active(const Values& c) const { return true; }
+  virtual bool active(const Values& /*c*/) const { return true; }
 
   /** linearize to a GaussianFactor */
   virtual boost::shared_ptr<GaussianFactor>
@@ -143,6 +143,10 @@ public:
   shared_ptr rekey(const std::vector<Key>& new_keys) const;
 
 }; // \class NonlinearFactor
+
+/// traits
+template<> struct traits<NonlinearFactor> : public Testable<NonlinearFactor> {
+};
 
 /* ************************************************************************* */
 /**
@@ -203,7 +207,12 @@ public:
     return noiseModel_->dim();
   }
 
-  /** access to the noise model */
+  /// access to the noise model
+  const SharedNoiseModel& noiseModel() const {
+    return noiseModel_;
+  }
+
+  /// @deprecated access to the noise model
   SharedNoiseModel get_noiseModel() const {
     return noiseModel_;
   }
@@ -243,7 +252,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & boost::serialization::make_nvp("NonlinearFactor",
         boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(noiseModel_);
@@ -304,7 +313,7 @@ public:
         return evaluateError(x1);
       }
     } else {
-      return zero(this->dim());
+      return Vector::Zero(this->dim());
     }
   }
 
@@ -321,7 +330,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & boost::serialization::make_nvp("NoiseModelFactor",
         boost::serialization::base_object<Base>(*this));
   }
@@ -379,7 +388,7 @@ public:
         return evaluateError(x1, x2);
       }
     } else {
-      return zero(this->dim());
+      return Vector::Zero(this->dim());
     }
   }
 
@@ -397,7 +406,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & boost::serialization::make_nvp("NoiseModelFactor",
         boost::serialization::base_object<Base>(*this));
   }
@@ -454,7 +463,7 @@ public:
       else
         return evaluateError(x.at<X1>(keys_[0]), x.at<X2>(keys_[1]), x.at<X3>(keys_[2]));
     } else {
-      return zero(this->dim());
+      return Vector::Zero(this->dim());
     }
   }
 
@@ -474,7 +483,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & boost::serialization::make_nvp("NoiseModelFactor",
         boost::serialization::base_object<Base>(*this));
   }
@@ -534,7 +543,7 @@ public:
       else
         return evaluateError(x.at<X1>(keys_[0]), x.at<X2>(keys_[1]), x.at<X3>(keys_[2]), x.at<X4>(keys_[3]));
     } else {
-      return zero(this->dim());
+      return Vector::Zero(this->dim());
     }
   }
 
@@ -555,7 +564,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & boost::serialization::make_nvp("NoiseModelFactor",
         boost::serialization::base_object<Base>(*this));
   }
@@ -618,7 +627,7 @@ public:
       else
         return evaluateError(x.at<X1>(keys_[0]), x.at<X2>(keys_[1]), x.at<X3>(keys_[2]), x.at<X4>(keys_[3]), x.at<X5>(keys_[4]));
     } else {
-      return zero(this->dim());
+      return Vector::Zero(this->dim());
     }
   }
 
@@ -640,7 +649,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & boost::serialization::make_nvp("NoiseModelFactor",
         boost::serialization::base_object<Base>(*this));
   }
@@ -706,7 +715,7 @@ public:
       else
         return evaluateError(x.at<X1>(keys_[0]), x.at<X2>(keys_[1]), x.at<X3>(keys_[2]), x.at<X4>(keys_[3]), x.at<X5>(keys_[4]), x.at<X6>(keys_[5]));
     } else {
-      return zero(this->dim());
+      return Vector::Zero(this->dim());
     }
   }
 
@@ -729,7 +738,7 @@ private:
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int version) {
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     ar & boost::serialization::make_nvp("NoiseModelFactor",
         boost::serialization::base_object<Base>(*this));
   }

@@ -41,10 +41,6 @@ static string topdir = "TOPSRCDIR_NOT_CONFIGURED"; // If TOPSRCDIR is not define
 
 typedef vector<string> strvec;
 
-// NOTE: as this path is only used to generate makefiles, it is hardcoded here for testing
-// In practice, this path will be an absolute system path, which makes testing it more annoying
-static const std::string headerPath = "/not_really_a_real_path/borg/gtsam/wrap";
-
 /* ************************************************************************* */
 TEST( wrap, ArgumentList ) {
   ArgumentList args;
@@ -148,7 +144,7 @@ TEST( wrap, Small ) {
 TEST( wrap, Geometry ) {
   string markup_header_path = topdir + "/wrap/tests";
   Module module(markup_header_path.c_str(), "geometry",enable_verbose);
-  EXPECT_LONGS_EQUAL(7, module.classes.size());
+  EXPECT_LONGS_EQUAL(9, module.classes.size());
 
   // forward declarations
   LONGS_EQUAL(2, module.forward_declarations.size());
@@ -159,7 +155,7 @@ TEST( wrap, Geometry ) {
   strvec exp_includes; exp_includes += "folder/path/to/Test.h";
   EXPECT(assert_equal(exp_includes, module.includes));
 
-  LONGS_EQUAL(7, module.classes.size());
+  LONGS_EQUAL(9, module.classes.size());
 
   // Key for ReturnType::return_category
 //  CLASS = 1,
@@ -449,15 +445,17 @@ TEST( wrap, matlab_code_geometry ) {
   string apath = "actual/";
 
   EXPECT(files_equal(epath + "geometry_wrapper.cpp" , apath + "geometry_wrapper.cpp" ));
-  EXPECT(files_equal(epath + "+gtsam/Point2.m"      , apath + "+gtsam/Point2.m"             ));
-  EXPECT(files_equal(epath + "+gtsam/Point3.m"      , apath + "+gtsam/Point3.m"             ));
+  EXPECT(files_equal(epath + "+gtsam/Point2.m"      , apath + "+gtsam/Point2.m"      ));
+  EXPECT(files_equal(epath + "+gtsam/Point3.m"      , apath + "+gtsam/Point3.m"      ));
   EXPECT(files_equal(epath + "Test.m"               , apath + "Test.m"               ));
   EXPECT(files_equal(epath + "MyBase.m"             , apath + "MyBase.m"             ));
+  EXPECT(files_equal(epath + "MyVector3.m"          , apath + "MyVector3.m"          ));
+  EXPECT(files_equal(epath + "MyVector12.m"         , apath + "MyVector12.m"         ));
   EXPECT(files_equal(epath + "MyTemplatePoint2.m"   , apath + "MyTemplatePoint2.m"   ));
   EXPECT(files_equal(epath + "MyTemplateMatrix.m"   , apath + "MyTemplateMatrix.m"   ));
-  EXPECT(files_equal(epath + "MyFactorPosePoint2.m" , apath + "MyFactorPosePoint2.m"));
+  EXPECT(files_equal(epath + "MyFactorPosePoint2.m" , apath + "MyFactorPosePoint2.m" ));
   EXPECT(files_equal(epath + "aGlobalFunction.m"    , apath + "aGlobalFunction.m"    ));
-  EXPECT(files_equal(epath + "overloadedGlobalFunction.m"    , apath + "overloadedGlobalFunction.m"    ));
+  EXPECT(files_equal(epath + "overloadedGlobalFunction.m", apath + "overloadedGlobalFunction.m"));
 }
 
 /* ************************************************************************* */
