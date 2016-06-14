@@ -9,7 +9,6 @@
 #pragma once
 
 #include <gtsam_unstable/linear/InfeasibleOrUnboundedProblem.h>
-#include <gtsam_unstable/linear/QPSolver.h>
 #include <CppUnitLite/Test.h>
 
 namespace gtsam {
@@ -150,7 +149,6 @@ private:
   }
 
   // friend class for unit-testing private methods
-  FRIEND_TEST(LPInitSolver, initialization)
-  ;
+  FRIEND_TEST(LPInitSolver, initialization);
 };
 }
