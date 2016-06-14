@@ -47,10 +47,10 @@ public:
    * Compute error of a guess.
    * Infinity error if it violates an inequality; zero otherwise. */
   double error(const VectorValues& x) const {
-    for(const sharedFactor& factor: *this) {
-      if(factor)
-      if (factor->error(x) > 0)
-      return std::numeric_limits<double>::infinity();
+    for (const sharedFactor& factor : *this) {
+      if (factor)
+        if (factor->error(x) > 0)
+          return std::numeric_limits<double>::infinity();
     }
     return 0.0;
   }

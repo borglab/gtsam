@@ -42,7 +42,8 @@ struct QP {
   QP(const GaussianFactorGraph& _cost,
       const EqualityFactorGraph& _linearEqualities,
       const InequalityFactorGraph& _linearInequalities) :
-      cost(_cost), equalities(_linearEqualities), inequalities(_linearInequalities) {
+      cost(_cost), equalities(_linearEqualities), inequalities(
+          _linearInequalities) {
   }
 
   /** print */

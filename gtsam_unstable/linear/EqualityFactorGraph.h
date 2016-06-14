@@ -26,7 +26,7 @@ namespace gtsam {
  * This class is used to represent an equality constraint on
  * a Programming problem of the form Ax = b.
  */
-class EqualityFactorGraph : public FactorGraph<LinearEquality> {
+class EqualityFactorGraph: public FactorGraph<LinearEquality> {
 public:
   typedef boost::shared_ptr<EqualityFactorGraph> shared_ptr;
 
@@ -36,8 +36,8 @@ public:
    */
   double error(const VectorValues& x) const {
     double total_error = 0.;
-    for(const sharedFactor& factor: *this){
-      if(factor)
+    for (const sharedFactor& factor : *this) {
+      if (factor)
         total_error += factor->error(x);
     }
     return total_error;

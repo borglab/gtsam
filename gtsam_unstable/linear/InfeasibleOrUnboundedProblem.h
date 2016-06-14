@@ -5,7 +5,6 @@
  * @date     1/24/16
  */
 
-
 namespace gtsam {
 
 class InfeasibleOrUnboundedProblem: public ThreadsafeException<

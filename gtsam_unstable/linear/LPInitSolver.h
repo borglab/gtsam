@@ -128,7 +128,7 @@ private:
   /// Collect all terms of a factor into a container.
   std::vector<std::pair<Key, Matrix> > collectTerms(
       const LinearInequality& factor) const {
-    std::vector<std::pair<Key, Matrix> > terms;
+    std::vector < std::pair<Key, Matrix> > terms;
     for (Factor::const_iterator it = factor.begin(); it != factor.end(); it++) {
       terms.push_back(make_pair(*it, factor.getA(it)));
     }
@@ -140,7 +140,7 @@ private:
       const InequalityFactorGraph& inequalities) const {
     InequalityFactorGraph slackInequalities;
     for (const auto& factor : lp_.inequalities) {
-      std::vector<std::pair<Key, Matrix> > terms = collectTerms(*factor); // Cx
+      std::vector < std::pair<Key, Matrix> > terms = collectTerms(*factor); // Cx
       terms.push_back(make_pair(yKey, Matrix::Constant(1, 1, -1.0))); // -y
       double d = factor->getb()[0];
       slackInequalities.push_back(

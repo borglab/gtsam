@@ -28,20 +28,20 @@ using namespace std;
 using namespace gtsam;
 using namespace boost::assign;
 
-GTSAM_CONCEPT_TESTABLE_INST(LinearEquality)
+GTSAM_CONCEPT_TESTABLE_INST (LinearEquality)
 
 namespace {
-  namespace simple {
-    // Terms we'll use
-    const vector<pair<Key, Matrix> > terms = list_of<pair<Key,Matrix> >
-      (make_pair(5, Matrix3::Identity()))
-      (make_pair(10, 2*Matrix3::Identity()))
-      (make_pair(15, 3*Matrix3::Identity()));
+namespace simple {
+// Terms we'll use
+const vector<pair<Key, Matrix> > terms = list_of < pair<Key, Matrix>
+    > (make_pair(5, Matrix3::Identity()))(
+        make_pair(10, 2 * Matrix3::Identity()))(
+        make_pair(15, 3 * Matrix3::Identity()));
 
-    // RHS and sigmas
-    const Vector b = (Vector(3) << 1., 2., 3.).finished();
-    const SharedDiagonal noise = noiseModel::Constrained::All(3);
-  }
+// RHS and sigmas
+const Vector b = (Vector(3) << 1., 2., 3.).finished();
+const SharedDiagonal noise = noiseModel::Constrained::All(3);
+}
 }
 
 /* ************************************************************************* */
@@ -53,7 +53,7 @@ TEST(LinearEquality, constructors_and_accessors)
   {
     // One term constructor
     LinearEquality expected(
-      boost::make_iterator_range(terms.begin(), terms.begin() + 1), b, 0);
+        boost::make_iterator_range(terms.begin(), terms.begin() + 1), b, 0);
     LinearEquality actual(terms[0].first, terms[0].second, b, 0);
     EXPECT(assert_equal(expected, actual));
     LONGS_EQUAL((long)terms[0].first, (long)actual.keys().back());
@@ -65,9 +65,9 @@ TEST(LinearEquality, constructors_and_accessors)
   {
     // Two term constructor
     LinearEquality expected(
-      boost::make_iterator_range(terms.begin(), terms.begin() + 2), b, 0);
+        boost::make_iterator_range(terms.begin(), terms.begin() + 2), b, 0);
     LinearEquality actual(terms[0].first, terms[0].second,
-      terms[1].first, terms[1].second, b, 0);
+        terms[1].first, terms[1].second, b, 0);
     EXPECT(assert_equal(expected, actual));
     LONGS_EQUAL((long)terms[1].first, (long)actual.keys().back());
     EXPECT(assert_equal(terms[1].second, actual.getA(actual.end() - 1)));
@@ -78,9 +78,9 @@ TEST(LinearEquality, constructors_and_accessors)
   {
     // Three term constructor
     LinearEquality expected(
-      boost::make_iterator_range(terms.begin(), terms.begin() + 3), b, 0);
+        boost::make_iterator_range(terms.begin(), terms.begin() + 3), b, 0);
     LinearEquality actual(terms[0].first, terms[0].second,
-      terms[1].first, terms[1].second, terms[2].first, terms[2].second, b, 0);
+        terms[1].first, terms[1].second, terms[2].first, terms[2].second, b, 0);
     EXPECT(assert_equal(expected, actual));
     LONGS_EQUAL((long)terms[2].first, (long)actual.keys().back());
     EXPECT(assert_equal(terms[2].second, actual.getA(actual.end() - 1)));
@@ -93,10 +93,10 @@ TEST(LinearEquality, constructors_and_accessors)
 /* ************************************************************************* */
 TEST(LinearEquality, Hessian_conversion) {
   HessianFactor hessian(0, (Matrix(4,4) <<
-        1.57,        2.695,         -1.1,        -2.35,
-       2.695,      11.3125,        -0.65,      -10.225,
-        -1.1,        -0.65,            1,          0.5,
-       -2.35,      -10.225,          0.5,         9.25).finished(),
+          1.57, 2.695, -1.1, -2.35,
+          2.695, 11.3125, -0.65, -10.225,
+          -1.1, -0.65, 1, 0.5,
+          -2.35, -10.225, 0.5, 9.25).finished(),
       (Vector(4) << -7.885, -28.5175, 2.75, 25.675).finished(),
       73.1725);
 
@@ -169,8 +169,8 @@ TEST(LinearEquality, matrices)
   augmentedJacobianExpected << jacobianExpected, rhsExpected;
 
   Matrix augmentedHessianExpected =
-    augmentedJacobianExpected.transpose() * simple::noise->R().transpose()
-    * simple::noise->R() * augmentedJacobianExpected;
+  augmentedJacobianExpected.transpose() * simple::noise->R().transpose()
+  * simple::noise->R() * augmentedJacobianExpected;
 
   // Whitened Jacobian
   EXPECT(assert_equal(jacobianExpected, factor.jacobian().first));
@@ -210,8 +210,8 @@ TEST(LinearEquality, operators )
   // test gradient at zero
   Matrix A; Vector b2; boost::tie(A,b2) = lf.jacobian();
   VectorValues expectedG;
-  expectedG.insert(1, (Vector(2) <<  0.2, -0.1).finished());
-  expectedG.insert(2, (Vector(2) << -0.2,  0.1).finished());
+  expectedG.insert(1, (Vector(2) << 0.2, -0.1).finished());
+  expectedG.insert(2, (Vector(2) << -0.2, 0.1).finished());
   VectorValues actualG = lf.gradientAtZero();
   EXPECT(assert_equal(expectedG, actualG));
 }
@@ -233,5 +233,8 @@ TEST(LinearEquality, empty )
 }
 
 /* ************************************************************************* */
-int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
+int main() {
+  TestResult tr;
+  return TestRegistry::runAllTests(tr);
+}
 /* ************************************************************************* */

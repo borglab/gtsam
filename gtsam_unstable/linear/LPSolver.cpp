@@ -109,7 +109,7 @@ GaussianFactorGraph::shared_ptr LPSolver::createLeastSquareFactors(
         lp_.cost.end(), std::inserter(difference, difference.end()));
     for (Key k : difference) {
       size_t dim = keysDim_.at(k);
-      graph->push_back(JacobianFactor(k, Matrix::Identity(dim,dim), xk.at(k)));
+      graph->push_back(JacobianFactor(k, Matrix::Identity(dim, dim), xk.at(k)));
     }
   }
   return graph;
@@ -136,10 +136,10 @@ boost::shared_ptr<JacobianFactor> LPSolver::createDualFactor(Key key,
     const InequalityFactorGraph &workingSet, const VectorValues &delta) const {
   // Transpose the A matrix of constrained factors to have the jacobian of the
   // dual key
-  TermsContainer Aterms = collectDualJacobians<LinearEquality>(key,
-      lp_.equalities, equalityVariableIndex_);
-  TermsContainer AtermsInequalities = collectDualJacobians<LinearInequality>(
-      key, workingSet, inequalityVariableIndex_);
+  TermsContainer Aterms = collectDualJacobians < LinearEquality
+      > (key, lp_.equalities, equalityVariableIndex_);
+  TermsContainer AtermsInequalities = collectDualJacobians < LinearInequality
+      > (key, workingSet, inequalityVariableIndex_);
   Aterms.insert(Aterms.end(), AtermsInequalities.begin(),
       AtermsInequalities.end());
 
@@ -149,7 +149,7 @@ boost::shared_ptr<JacobianFactor> LPSolver::createDualFactor(Key key,
     Factor::const_iterator it = lp_.cost.find(key);
     if (it != lp_.cost.end())
       b = lp_.cost.getA(it).transpose();
-    return boost::make_shared<JacobianFactor>(Aterms, b); // compute the least-square approximation of dual variables
+    return boost::make_shared < JacobianFactor > (Aterms, b); // compute the least-square approximation of dual variables
   } else {
     return boost::make_shared<JacobianFactor>();
   }

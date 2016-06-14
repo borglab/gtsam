@@ -42,8 +42,8 @@ QP createTestCase() {
   //TODO:  THIS TEST MIGHT BE WRONG : the last parameter  might be 5 instead of 10 because the form of the equation
   // Should be 0.5x'Gx + gx + f : Nocedal 449
   qp.cost.push_back(
-      HessianFactor(X(1), X(2), 2.0 * I_1x1, -I_1x1,
-          3.0 * I_1x1, 2.0 * I_1x1, Z_1x1, 10.0));
+      HessianFactor(X(1), X(2), 2.0 * I_1x1, -I_1x1, 3.0 * I_1x1, 2.0 * I_1x1,
+          Z_1x1, 10.0));
 
   // Inequality constraints
   qp.inequalities.push_back(LinearInequality(X(1), I_1x1, X(2), I_1x1, 2, 0)); // x1 + x2 <= 2 --> x1 + x2 -2 <= 0, --> b=2
@@ -96,8 +96,8 @@ QP createEqualityConstrainedTest() {
   //        0.5*x1'*G11*x1 + x1'*G12*x2 + 0.5*x2'*G22*x2 - x1'*g1 - x2'*g2 + 0.5*f
   // Hence, we have G11=2, G12 = 0, g1 = 0, G22 = 2, g2 = 0, f = 0
   qp.cost.push_back(
-      HessianFactor(X(1), X(2), 2.0 * I_1x1, Z_1x1, Z_1x1,
-          2.0 * I_1x1, Z_1x1, 0.0));
+      HessianFactor(X(1), X(2), 2.0 * I_1x1, Z_1x1, Z_1x1, 2.0 * I_1x1, Z_1x1,
+          0.0));
 
   // Equality constraints
   // x1 + x2 = 1 --> x1 + x2 -1 = 0, hence we negate the b vector
@@ -140,9 +140,9 @@ TEST(QPSolver, indentifyActiveConstraints) {
       qp.inequalities, currentSolution);
 
   CHECK(!workingSet.at(0)->active()); // inactive
-  CHECK(workingSet.at(1)->active()); // active
-  CHECK(workingSet.at(2)->active()); // active
-  CHECK(!workingSet.at(3)->active()); // inactive
+  CHECK(workingSet.at(1)->active());// active
+  CHECK(workingSet.at(2)->active());// active
+  CHECK(!workingSet.at(3)->active());// inactive
 
   VectorValues solution = solver.solveWithCurrentWorkingSet(workingSet);
   VectorValues expectedSolution;
@@ -211,14 +211,15 @@ TEST(QPSolver, optimizeForst10book_pg171Ex5) {
   expectedSolution.insert(X(2), (Vector(1) << 0.5).finished());
   CHECK(assert_equal(expectedSolution, solution, 1e-100));
 }
+
 pair<QP, QP> testParser(QPSParser parser) {
   QP exampleqp = parser.Parse();
   QP expectedqp;
   Key X1(Symbol('X', 1)), X2(Symbol('X', 2));
   // min f(x,y) = 4 + 1.5x -y + 0.58x^2 + 2xy + 2yx + 10y^2
   expectedqp.cost.push_back(
-      HessianFactor(X1, X2, 8.0 * I_1x1, 2.0 * I_1x1, 1.5 * kOne,
-          10.0 * I_1x1, -2.0 * kOne, 4.0));
+      HessianFactor(X1, X2, 8.0 * I_1x1, 2.0 * I_1x1, 1.5 * kOne, 10.0 * I_1x1,
+          -2.0 * kOne, 4.0));
   // 2x + y >= 2
   // -x + 2y <= 6
   expectedqp.inequalities.push_back(
@@ -267,13 +268,15 @@ QP createTestMatlabQPEx() {
   //        0.5*x1'*G11*x1 + x1'*G12*x2 + 0.5*x2'*G22*x2 - x1'*g1 - x2'*g2 + 0.5*f
   // Hence, we have G11=1, G12 = -1, g1 = +2, G22 = 2, g2 = +6, f = 0
   qp.cost.push_back(
-      HessianFactor(X(1), X(2), 1.0 * I_1x1, -I_1x1, 2.0 * I_1x1,
-          2.0 * I_1x1, 6 * I_1x1, 1000.0));
+      HessianFactor(X(1), X(2), 1.0 * I_1x1, -I_1x1, 2.0 * I_1x1, 2.0 * I_1x1,
+          6 * I_1x1, 1000.0));
 
   // Inequality constraints
   qp.inequalities.push_back(LinearInequality(X(1), I_1x1, X(2), I_1x1, 2, 0)); // x1 + x2 <= 2
-  qp.inequalities.push_back(LinearInequality(X(1), -I_1x1, X(2), 2 * I_1x1, 2, 1)); //-x1 + 2*x2 <=2
-  qp.inequalities.push_back(LinearInequality(X(1), 2 * I_1x1, X(2), I_1x1, 3, 2)); // 2*x1 + x2 <=3
+  qp.inequalities.push_back(
+      LinearInequality(X(1), -I_1x1, X(2), 2 * I_1x1, 2, 1)); //-x1 + 2*x2 <=2
+  qp.inequalities.push_back(
+      LinearInequality(X(1), 2 * I_1x1, X(2), I_1x1, 3, 2)); // 2*x1 + x2 <=3
   qp.inequalities.push_back(LinearInequality(X(1), -I_1x1, 0, 3)); // -x1      <= 0
   qp.inequalities.push_back(LinearInequality(X(2), -I_1x1, 0, 4)); //      -x2 <= 0
 

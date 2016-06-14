@@ -52,9 +52,11 @@ public:
   }
 
   /** Conversion from JacobianFactor */
-  explicit LinearInequality(const JacobianFactor& jf, Key dualKey) : Base(jf), dualKey_(dualKey), active_(true) {
+  explicit LinearInequality(const JacobianFactor& jf, Key dualKey) :
+      Base(jf), dualKey_(dualKey), active_(true) {
     if (!jf.isConstrained()) {
-      throw std::runtime_error("Cannot convert an unconstrained JacobianFactor to LinearInequality");
+      throw std::runtime_error(
+          "Cannot convert an unconstrained JacobianFactor to LinearInequality");
     }
 
     if (jf.get_model()->dim() != 1) {
@@ -64,20 +66,20 @@ public:
 
   /** Construct unary factor */
   LinearInequality(Key i1, const RowVector& A1, double b, Key dualKey) :
-      Base(i1, A1, (Vector(1) << b).finished(), noiseModel::Constrained::All(1)), dualKey_(
-          dualKey), active_(true) {
+      Base(i1, A1, (Vector(1) << b).finished(),
+          noiseModel::Constrained::All(1)), dualKey_(dualKey), active_(true) {
   }
 
   /** Construct binary factor */
-  LinearInequality(Key i1, const RowVector& A1, Key i2, const RowVector& A2, double b,
-      Key dualKey) :
-      Base(i1, A1, i2, A2, (Vector(1) << b).finished(), noiseModel::Constrained::All(1)), dualKey_(
-          dualKey), active_(true) {
+  LinearInequality(Key i1, const RowVector& A1, Key i2, const RowVector& A2,
+      double b, Key dualKey) :
+      Base(i1, A1, i2, A2, (Vector(1) << b).finished(),
+          noiseModel::Constrained::All(1)), dualKey_(dualKey), active_(true) {
   }
 
   /** Construct ternary factor */
-  LinearInequality(Key i1, const RowVector& A1, Key i2, const RowVector& A2, Key i3,
-      const RowVector& A3, double b, Key dualKey) :
+  LinearInequality(Key i1, const RowVector& A1, Key i2, const RowVector& A2,
+      Key i3, const RowVector& A3, double b, Key dualKey) :
       Base(i1, A1, i2, A2, i3, A3, (Vector(1) << b).finished(),
           noiseModel::Constrained::All(1)), dualKey_(dualKey), active_(true) {
   }
@@ -112,21 +114,29 @@ public:
 
   /** Clone this LinearInequality */
   virtual GaussianFactor::shared_ptr clone() const {
-    return boost::static_pointer_cast<GaussianFactor>(
-        boost::make_shared<LinearInequality>(*this));
+    return boost::static_pointer_cast < GaussianFactor
+        > (boost::make_shared < LinearInequality > (*this));
   }
 
   /// dual key
-  Key dualKey() const { return dualKey_; }
+  Key dualKey() const {
+    return dualKey_;
+  }
 
   /// return true if this constraint is active
-  bool active() const { return active_; }
+  bool active() const {
+    return active_;
+  }
 
   /// Make this inequality constraint active
-  void activate() { active_ = true; }
+  void activate() {
+    active_ = true;
+  }
 
   /// Make this inequality constraint inactive
-  void inactivate() { active_ = false; }
+  void inactivate() {
+    active_ = false;
+  }
 
   /** Special error_vector for constraints (A*x-b) */
   Vector error_vector(const VectorValues& c) const {
@@ -149,10 +159,12 @@ public:
     return aTp;
   }
 
-}; // \ LinearInequality
+};
+// \ LinearInequality
 
 /// traits
-template<> struct traits<LinearInequality> : public Testable<LinearInequality> {};
+template<> struct traits<LinearInequality> : public Testable<LinearInequality> {
+};
 
 } // \ namespace gtsam
 

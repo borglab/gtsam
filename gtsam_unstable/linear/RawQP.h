@@ -36,9 +36,7 @@ private:
 
 public:
   RawQP() :
-      row_to_constraint_v(), E(), IG(), IL(), varNumber(1),
-      b(), g(), varname_to_key(), H(), f(),
-      obj_name(), name_(), up(), lo(), Free() {
+      row_to_constraint_v(), E(), IG(), IL(), varNumber(1), b(), g(), varname_to_key(), H(), f(), obj_name(), name_(), up(), lo(), Free() {
   }
 
   void setName(
