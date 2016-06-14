@@ -149,7 +149,6 @@ TEST(QPSolver, indentifyActiveConstraints) {
   expectedSolution.insert(X(1), kZero);
   expectedSolution.insert(X(2), kZero);
   CHECK(assert_equal(expectedSolution, solution, 1e-100));
-
 }
 
 /* ************************************************************************* */

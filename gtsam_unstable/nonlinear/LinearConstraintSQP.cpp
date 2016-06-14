@@ -37,7 +37,7 @@ bool LinearConstraintSQP::isPrimalFeasible(const LinearConstraintNLPState& state
 
 /* ************************************************************************* */
 bool LinearConstraintSQP::isDualFeasible(const VectorValues& duals) const {
-  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, lcnlp_.linearInequalities) {
+  for(const NonlinearFactor::shared_ptr& factor: lcnlp_.linearInequalities) {
     ConstrainedFactor::shared_ptr inequality
         = boost::dynamic_pointer_cast<ConstrainedFactor>(factor);
 
@@ -66,7 +66,7 @@ bool LinearConstraintSQP::checkConvergence(const LinearConstraintNLPState& state
 /* ************************************************************************* */
 VectorValues LinearConstraintSQP::initializeDuals() const {
   VectorValues duals;
-  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, lcnlp_.linearEqualities){
+  for(const NonlinearFactor::shared_ptr& factor: lcnlp_.linearEqualities){
     ConstrainedFactor::shared_ptr constraint
         = boost::dynamic_pointer_cast<ConstrainedFactor>(factor);
     duals.insert(constraint->dualKey(), Vector::Zero(factor->dim()));
@@ -92,7 +92,7 @@ LinearConstraintNLPState LinearConstraintSQP::iterate(
   VectorValues delta, duals;
   QPSolver qpSolver(qp);
   VectorValues zeroInitialValues;
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, state.values)
+  for(const Values::ConstKeyValuePair& key_value: state.values)
     zeroInitialValues.insert(key_value.key, Vector::Zero(key_value.value.dim()));
 
   boost::tie(delta, duals) = qpSolver.optimize(zeroInitialValues, state.duals,

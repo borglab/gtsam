@@ -43,10 +43,11 @@ public:
   template<class LinearGraph>
   KeyDimMap collectKeysDim(const LinearGraph &linearGraph) const {
     KeyDimMap keysDim;
-    BOOST_FOREACH(const typename LinearGraph::sharedFactor &factor, linearGraph) {
-      if (!factor) continue;
-      BOOST_FOREACH(Key key, factor->keys())
-      keysDim[key] = factor->getDim(factor->find(key));
+    for (const typename LinearGraph::sharedFactor &factor : linearGraph) {
+      if (!factor)
+        continue;
+      for (Key key : factor->keys())
+        keysDim[key] = factor->getDim(factor->find(key));
     }
     return keysDim;
   }

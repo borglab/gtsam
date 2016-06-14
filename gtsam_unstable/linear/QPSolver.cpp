@@ -184,9 +184,9 @@ pair<VectorValues, VectorValues> QPSolver::optimize() const {
   //Make an LP with any linear cost function. It doesn't matter for initialization.
   LP initProblem;
   Key newKey = 0; // make an unrelated key for a random variable cost
-  BOOST_FOREACH(Key key, qp_.cost.getKeyDimMap() | boost::adaptors::map_keys)
-  if(newKey < key)
-  newKey = key;
+  for (Key key : qp_.cost.getKeyDimMap() | boost::adaptors::map_keys)
+    if (newKey < key)
+      newKey = key;
   newKey++;
   initProblem.cost = LinearCost(newKey, Vector::Ones(1));
   initProblem.equalities = qp_.equalities;

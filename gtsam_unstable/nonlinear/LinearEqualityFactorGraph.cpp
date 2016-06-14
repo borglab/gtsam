@@ -27,7 +27,7 @@ EqualityFactorGraph::shared_ptr LinearEqualityFactorGraph::linearize(
     const Values& linearizationPoint) const {
   EqualityFactorGraph::shared_ptr linearGraph(
       new EqualityFactorGraph());
-  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, *this){
+  for(const NonlinearFactor::shared_ptr& factor: *this){
     JacobianFactor::shared_ptr jacobian = boost::dynamic_pointer_cast<JacobianFactor>(
         factor->linearize(linearizationPoint));
     ConstrainedFactor::shared_ptr constraint = boost::dynamic_pointer_cast<ConstrainedFactor>(factor);
@@ -38,7 +38,7 @@ EqualityFactorGraph::shared_ptr LinearEqualityFactorGraph::linearize(
 
 /* ************************************************************************* */
 bool LinearEqualityFactorGraph::checkFeasibility(const Values& values, double tol) const {
-  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, *this){
+  for(const NonlinearFactor::shared_ptr& factor: *this){
     NoiseModelFactor::shared_ptr noiseModelFactor
         = boost::dynamic_pointer_cast<NoiseModelFactor>(factor);
     Vector error = noiseModelFactor->unwhitenedError(values);

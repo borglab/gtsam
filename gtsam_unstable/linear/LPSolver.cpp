@@ -161,7 +161,8 @@ InequalityFactorGraph LPSolver::identifyActiveConstraints(
   InequalityFactorGraph workingSet;
   for (const LinearInequality::shared_ptr &factor : inequalities) {
     LinearInequality::shared_ptr workingFactor(new LinearInequality(*factor));
-
+    GTSAM_PRINT(*workingFactor);
+    GTSAM_PRINT(initialValues);
     double error = workingFactor->error(initialValues);
     // TODO: find a feasible initial point for LPSolver.
     // For now, we just throw an exception

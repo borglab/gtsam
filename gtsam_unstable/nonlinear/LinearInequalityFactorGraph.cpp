@@ -26,7 +26,7 @@ namespace gtsam {
 InequalityFactorGraph::shared_ptr LinearInequalityFactorGraph::linearize(
     const Values& linearizationPoint) const {
   InequalityFactorGraph::shared_ptr linearGraph(new InequalityFactorGraph());
-  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, *this) {
+  for(const NonlinearFactor::shared_ptr& factor: *this) {
     JacobianFactor::shared_ptr jacobian = boost::dynamic_pointer_cast<JacobianFactor>(
         factor->linearize(linearizationPoint));
     ConstrainedFactor::shared_ptr constraint
@@ -40,7 +40,7 @@ InequalityFactorGraph::shared_ptr LinearInequalityFactorGraph::linearize(
 bool LinearInequalityFactorGraph::checkFeasibilityAndComplimentary(
     const Values& values, const VectorValues& dualValues, double tol) const {
 
-  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, *this) {
+  for(const NonlinearFactor::shared_ptr& factor: *this) {
     NoiseModelFactor::shared_ptr noiseModelFactor
         = boost::dynamic_pointer_cast<NoiseModelFactor>(factor);
     Vector error = noiseModelFactor->unwhitenedError(values);

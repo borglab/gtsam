@@ -36,7 +36,7 @@ public:
    */
   double error(const VectorValues& x) const {
     double total_error = 0.;
-    BOOST_FOREACH(const sharedFactor& factor, *this){
+    for(const sharedFactor& factor: *this){
       if(factor)
         total_error += factor->error(x);
     }

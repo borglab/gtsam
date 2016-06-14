@@ -45,23 +45,24 @@ namespace gtsam {
  *
  */
 int ActiveSetSolver::identifyLeavingConstraint(
-  const InequalityFactorGraph& workingSet, const VectorValues& lambdas) const {
-int worstFactorIx = -1;
+    const InequalityFactorGraph& workingSet,
+    const VectorValues& lambdas) const {
+  int worstFactorIx = -1;
 // preset the maxLambda to 0.0: if lambda is <= 0.0, the constraint is
 // either
 // inactive or a good inequality constraint, so we don't care!
-double maxLambda = 0.0;
-for (size_t factorIx = 0; factorIx < workingSet.size(); ++factorIx) {
-  const LinearInequality::shared_ptr& factor = workingSet.at(factorIx);
-  if (factor->active()) {
-    double lambda = lambdas.at(factor->dualKey())[0];
-    if (lambda > maxLambda) {
-      worstFactorIx = factorIx;
-      maxLambda = lambda;
+  double maxLambda = 0.0;
+  for (size_t factorIx = 0; factorIx < workingSet.size(); ++factorIx) {
+    const LinearInequality::shared_ptr& factor = workingSet.at(factorIx);
+    if (factor->active()) {
+      double lambda = lambdas.at(factor->dualKey())[0];
+      if (lambda > maxLambda) {
+        worstFactorIx = factorIx;
+        maxLambda = lambda;
+      }
     }
   }
-}
-return worstFactorIx;
+  return worstFactorIx;
 }
 
 /*  This function will create a dual graph that solves for the
@@ -76,15 +77,16 @@ return worstFactorIx;
  *  if lambda > 0  you are violating the constraint.
  */
 GaussianFactorGraph::shared_ptr ActiveSetSolver::buildDualGraph(
-  const InequalityFactorGraph& workingSet, const VectorValues& delta) const {
-GaussianFactorGraph::shared_ptr dualGraph(new GaussianFactorGraph());
-BOOST_FOREACH (Key key, constrainedKeys_) {
-  // Each constrained key becomes a factor in the dual graph
-  JacobianFactor::shared_ptr dualFactor =
-  createDualFactor(key, workingSet, delta);
-  if (!dualFactor->empty()) dualGraph->push_back(dualFactor);
-}
-return dualGraph;
+    const InequalityFactorGraph& workingSet, const VectorValues& delta) const {
+  GaussianFactorGraph::shared_ptr dualGraph(new GaussianFactorGraph());
+  for (Key key : constrainedKeys_) {
+    // Each constrained key becomes a factor in the dual graph
+    JacobianFactor::shared_ptr dualFactor = createDualFactor(key, workingSet,
+        delta);
+    if (!dualFactor->empty())
+      dualGraph->push_back(dualFactor);
+  }
+  return dualGraph;
 }
 
 /*
@@ -96,35 +98,35 @@ return dualGraph;
  *            in the next iteration.
  */
 boost::tuple<double, int> ActiveSetSolver::computeStepSize(
-  const InequalityFactorGraph& workingSet, const VectorValues& xk,
-  const VectorValues& p, const double& startAlpha) const {
-double minAlpha = startAlpha;
-int closestFactorIx = -1;
-for (size_t factorIx = 0; factorIx < workingSet.size(); ++factorIx) {
-  const LinearInequality::shared_ptr& factor = workingSet.at(factorIx);
-  double b = factor->getb()[0];
-  // only check inactive factors
-  if (!factor->active()) {
-    // Compute a'*p
-    double aTp = factor->dotProductRow(p);
+    const InequalityFactorGraph& workingSet, const VectorValues& xk,
+    const VectorValues& p, const double& startAlpha) const {
+  double minAlpha = startAlpha;
+  int closestFactorIx = -1;
+  for (size_t factorIx = 0; factorIx < workingSet.size(); ++factorIx) {
+    const LinearInequality::shared_ptr& factor = workingSet.at(factorIx);
+    double b = factor->getb()[0];
+    // only check inactive factors
+    if (!factor->active()) {
+      // Compute a'*p
+      double aTp = factor->dotProductRow(p);
 
-    // Check if  a'*p >0. Don't care if it's not.
-    if (aTp <= 0)
-      continue;
+      // Check if  a'*p >0. Don't care if it's not.
+      if (aTp <= 0)
+        continue;
 
-    // Compute a'*xk
-    double aTx = factor->dotProductRow(xk);
+      // Compute a'*xk
+      double aTx = factor->dotProductRow(xk);
 
-    // alpha = (b - a'*xk) / (a'*p)
-    double alpha = (b - aTx) / aTp;
-    // We want the minimum of all those max alphas
-    if (alpha < minAlpha) {
-      closestFactorIx = factorIx;
-      minAlpha = alpha;
+      // alpha = (b - a'*xk) / (a'*p)
+      double alpha = (b - aTx) / aTp;
+      // We want the minimum of all those max alphas
+      if (alpha < minAlpha) {
+        closestFactorIx = factorIx;
+        minAlpha = alpha;
+      }
     }
   }
-}
-return boost::make_tuple(minAlpha, closestFactorIx);
+  return boost::make_tuple(minAlpha, closestFactorIx);
 }
 
 }

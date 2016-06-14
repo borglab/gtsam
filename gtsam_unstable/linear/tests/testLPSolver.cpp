@@ -94,7 +94,7 @@ TEST(LPInitSolver, infinite_loop_multi_var) {
   VectorValues starter;
   starter.insert(X, kZero);
   starter.insert(Y, kZero);
-  starter.insert(Z, Vector::Constant(2, 2.0));
+  starter.insert(Z, Vector::Constant(1, 2.0));
   VectorValues results, duals;
   boost::tie(results, duals) = solver.optimize(starter);
   VectorValues expected;
