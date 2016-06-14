@@ -3748,7 +3748,7 @@ GTSAM was made possible by the efforts of many collaborators at Georgia
 
 \begin_inset CommandInset bibtex
 LatexCommand bibtex
-bibfiles "../refs"
+bibfiles "gtsam"
 options "apalike"
 
 \end_inset
