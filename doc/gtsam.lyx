@@ -1117,7 +1117,7 @@ The following C++ code will recover the posterior marginals:
 \begin_inset CommandInset include
 LatexCommand lstinputlisting
 filename "Code/OdometryMarginals.cpp"
-lstparams "aboveskip=10pt,basicstyle={\\ttfamily\\small},caption={Excerpt from examples/OdometryExample.cpp},captionpos=b,frame=single,identifierstyle={\\bfseries},label={listing:OdometryMarginals},language={C++},numbers=left"
+lstparams "aboveskip=10pt,basicstyle={\\ttfamily\\small},captionpos=b,frame=single,identifierstyle={\\bfseries},language={C++},numbers=left,caption={Excerpt from examples/OdometryExample.cpp},label={listing:OdometryMarginals}"
 
 \end_inset
 
@@ -2239,11 +2239,11 @@ reference "listing:Pose2SLAMExample"
 
 \end_inset
 
-:`
+:
 \begin_inset CommandInset include
 LatexCommand lstinputlisting
 filename "Code/Pose2SLAMExample.m"
-lstparams "aboveskip=10pt,basicstyle={\\ttfamily\\small},caption={Excerpt from examples/matlab/Pose2SLAMExample.m},captionpos=b,frame=single,identifierstyle={\\bfseries},label={listing:Pose2SLAMExample-MATLAB},language={Matlab},numbers=left"
+lstparams "aboveskip=10pt,basicstyle={\\ttfamily\\small},captionpos=b,frame=single,identifierstyle={\\bfseries},language={Matlab},numbers=left,caption={Excerpt from matlab/gtsam\\_examples/Pose2SLAMExample.m},label={listing:Pose2SLAMExample-MATLAB}"
 
 \end_inset
 
@@ -2417,7 +2417,7 @@ noindent
 \end_layout
 
 \begin_layout Subsection
-Reading and Optimizing Pose Graphs
+Reading and Optimizing Pose Graphs 
 \end_layout
 
 \begin_layout Standard
@@ -2481,7 +2481,7 @@ load2D
 \begin_inset CommandInset include
 LatexCommand lstinputlisting
 filename "Code/Pose2SLAMExample-graph.m"
-lstparams "aboveskip=10pt,basicstyle={\\ttfamily\\small},caption={Excerpt from examples/matlab/Pose2SLAMExample-graph.m},captionpos=b,frame=single,identifierstyle={\\bfseries},label={listing:Pose2SLAMExample-graph},language={Matlab},numbers=left"
+lstparams "aboveskip=10pt,basicstyle={\\ttfamily\\small},captionpos=b,frame=single,identifierstyle={\\bfseries},language={Matlab},numbers=left,caption={Excerpt from matlab/gtsam\\_examples/Pose2SLAMExample\\_graph.m},label={listing:Pose2SLAMExample-graph}"
 
 \end_inset
 
@@ -2558,7 +2558,7 @@ name "fig:w100-1"
 \begin_inset CommandInset include
 LatexCommand lstinputlisting
 filename "Code/Pose3SLAMExample-graph.m"
-lstparams "aboveskip=10pt,basicstyle={\\ttfamily\\small},caption={Excerpt from examples/matlab/Pose3SLAMExample-graph.m},captionpos=b,frame=single,identifierstyle={\\bfseries},label={listing:Pose3SLAMExample-graph-1},language={Matlab},numbers=left"
+lstparams "aboveskip=10pt,basicstyle={\\ttfamily\\small},captionpos=b,frame=single,identifierstyle={\\bfseries},language={Matlab},numbers=left,caption={Excerpt from matlab/gtsam\\_examples/Pose3SLAMExample\\_graph.m},label={listing:Pose3SLAMExample-graph-1}"
 
 \end_inset
 
@@ -2717,7 +2717,7 @@ reference "listing:PlanarSLAMExample"
 .
  As before, on line 2 we create the factor graph, and Lines 8-18 create
  the prior/odometry chain we are now familiar with.
- However, the code on lines 20-26 is new: it creates three 
+ However, the code on lines 20-25 is new: it creates three 
 \series bold
 measurement factors
 \series default
@@ -2733,10 +2733,17 @@ bearing/range
 \end_layout
 
 \begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
 \begin_inset CommandInset include
 LatexCommand lstinputlisting
 filename "Code/PlanarSLAMExample.m"
-lstparams "aboveskip=10pt,basicstyle={\\ttfamily\\small},caption={Excerpt from examples/matlab/PlanarSLAMExample.m},captionpos=b,frame=single,identifierstyle={\\bfseries},label={listing:PlanarSLAMExample},language={Matlab},numbers=left"
+lstparams "aboveskip=10pt,basicstyle={\\ttfamily\\small},captionpos=b,frame=single,identifierstyle={\\bfseries},language={Matlab},numbers=left,caption={Excerpt from matlab/gtsam\\_examples/PlanarSLAMExample.m},label={listing:PlanarSLAMExample}"
 
 \end_inset
 
@@ -3237,7 +3244,7 @@ Cal3_S2
 \begin_inset CommandInset include
 LatexCommand lstinputlisting
 filename "Code/SFMExample.m"
-lstparams "aboveskip=10pt,basicstyle={\\ttfamily\\small},caption={Excerpt from examples/matlab/SFMExample.m},captionpos=b,frame=single,identifierstyle={\\bfseries},label={listing:SFMExample},language={Matlab},numbers=left"
+lstparams "aboveskip=10pt,basicstyle={\\ttfamily\\small},captionpos=b,frame=single,identifierstyle={\\bfseries},language={Matlab},numbers=left,caption={Excerpt from matlab/gtsam\\_examples/SFMExample.m},label={listing:SFMExample}"
 
 \end_inset
 
@@ -3396,7 +3403,7 @@ The example involves eight 3D points that are seen from eight successive
 \begin_inset CommandInset include
 LatexCommand lstinputlisting
 filename "Code/VisualISAMExample.cpp"
-lstparams "aboveskip=10pt,basicstyle={\\ttfamily\\small},caption={Excerpt from examples/VisualISAMExample.cpp},captionpos=b,frame=single,identifierstyle={\\bfseries},label={listing:iSAMExample},language={Matlab},numbers=left"
+lstparams "aboveskip=10pt,basicstyle={\\ttfamily\\small},captionpos=b,frame=single,identifierstyle={\\bfseries},language={C++},numbers=left,caption={Excerpt from examples/VisualISAMExample.cpp},label={listing:iSAMExample}"
 
 \end_inset
 
