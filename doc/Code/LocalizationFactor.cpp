@@ -8,7 +8,7 @@ public:
   Vector evaluateError(const Pose2& q, 
                        boost::optional<Matrix&> H = boost::none) const
   {
-    if (H) (*H) = (Matrix(2,3)<< 1.0,0.0,0.0, 0.0,1.0,0.0);
-    return (Vector(2) << q.x() - mx_, q.y() - my_);
+    if (H) (*H) = (Matrix(2,3)<< 1.0,0.0,0.0, 0.0,1.0,0.0).finished();
+    return (Vector(2) << q.x() - mx_, q.y() - my_).finished();
   }
 };
