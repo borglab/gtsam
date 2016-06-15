@@ -139,25 +139,17 @@ InequalityFactorGraph QPSolver::identifyActiveConstraints(
   InequalityFactorGraph workingSet;
   for (const LinearInequality::shared_ptr& factor : inequalities) {
     LinearInequality::shared_ptr workingFactor(new LinearInequality(*factor));
-    if (useWarmStart == true && duals.exists(workingFactor->dualKey())) {
-      workingFactor->activate();
+    if (useWarmStart && duals.size() > 0) {
+      if (duals.exists(workingFactor->dualKey())) workingFactor->activate();
+      else workingFactor->inactivate();
     } else {
-      if (useWarmStart == true && duals.size() > 0) {
+      double error = workingFactor->error(initialValues);
+      // Safety guard. This should not happen unless users provide a bad init
+      if (error > 0) throw InfeasibleInitialValues();
+      if (fabs(error) < 1e-7)
+        workingFactor->activate();
+      else
         workingFactor->inactivate();
-      } else {
-        double error = workingFactor->error(initialValues);
-        // TODO: find a feasible initial point for QPSolver.
-        // For now, we just throw an exception, since we don't have an LPSolver
-        // to do this yet
-        if (error > 0)
-          throw InfeasibleInitialValues();
-
-        if (fabs(error) < 1e-7) {
-          workingFactor->activate();
-        } else {
-          workingFactor->inactivate();
-        }
-      }
     }
     workingSet.push_back(workingFactor);
   }
