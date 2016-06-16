@@ -44,10 +44,12 @@ public:
   QPSolver(const QP& qp);
 
   /// Find solution with the current working set
+  //SAME
   VectorValues solveWithCurrentWorkingSet(
       const InequalityFactorGraph& workingSet) const;
 
   /// Create a dual factor
+  //SAME
   JacobianFactor::shared_ptr createDualFactor(Key key,
       const InequalityFactorGraph& workingSet, const VectorValues& delta) const;
 
@@ -66,18 +68,13 @@ public:
    *
    * We want the minimum of all those alphas among all inactive inequality.
    */
+  //SAME
   boost::tuple<double, int> computeStepSize(
       const InequalityFactorGraph& workingSet, const VectorValues& xk,
       const VectorValues& p) const;
 
   /// Iterate 1 step, return a new state with a new workingSet and values
   QPState iterate(const QPState& state) const;
-
-  /// Identify active constraints based on initial values.
-  InequalityFactorGraph identifyActiveConstraints(
-      const InequalityFactorGraph& inequalities,
-      const VectorValues& initialValues, const VectorValues& duals =
-          VectorValues(), bool useWarmStart = true) const;
 
   /**
    * Optimize with provided initial values

@@ -7,6 +7,7 @@
  */
 
 #include <gtsam_unstable/linear/ActiveSetSolver.h>
+#include "InfeasibleInitialValues.h"
 
 namespace gtsam {
 
@@ -129,4 +130,33 @@ boost::tuple<double, int> ActiveSetSolver::computeStepSize(
   return boost::make_tuple(minAlpha, closestFactorIx);
 }
 
+//******************************************************************************
+InequalityFactorGraph ActiveSetSolver::identifyActiveConstraints(
+    const InequalityFactorGraph& inequalities,
+    const VectorValues& initialValues, const VectorValues& duals,
+    bool useWarmStart) const {
+  InequalityFactorGraph workingSet;
+  for (const LinearInequality::shared_ptr &factor : inequalities) {
+    LinearInequality::shared_ptr workingFactor(new LinearInequality(*factor));
+    if (useWarmStart && duals.size() > 0) {
+      if (duals.exists(workingFactor->dualKey()))
+        workingFactor->activate();
+      else
+        workingFactor->inactivate();
+    } else {
+      double error = workingFactor->error(initialValues);
+      // Safety guard. This should not happen unless users provide a bad init
+      if (error > 0)
+        throw InfeasibleInitialValues();
+      if (fabs(error) < 1e-7)
+        workingFactor->activate();
+      else
+        workingFactor->inactivate();
+    }
+    workingSet.push_back(workingFactor);
+  }
+  return workingSet;
+}
+  
+  
 }

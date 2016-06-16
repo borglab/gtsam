@@ -125,31 +125,6 @@ QPState QPSolver::iterate(const QPState& state) const {
 }
 
 //******************************************************************************
-InequalityFactorGraph QPSolver::identifyActiveConstraints(
-    const InequalityFactorGraph& inequalities,
-    const VectorValues& initialValues, const VectorValues& duals,
-    bool useWarmStart) const {
-  InequalityFactorGraph workingSet;
-  for (const LinearInequality::shared_ptr& factor : inequalities) {
-    LinearInequality::shared_ptr workingFactor(new LinearInequality(*factor));
-    if (useWarmStart && duals.size() > 0) {
-      if (duals.exists(workingFactor->dualKey())) workingFactor->activate();
-      else workingFactor->inactivate();
-    } else {
-      double error = workingFactor->error(initialValues);
-      // Safety guard. This should not happen unless users provide a bad init
-      if (error > 0) throw InfeasibleInitialValues();
-      if (fabs(error) < 1e-7)
-        workingFactor->activate();
-      else
-        workingFactor->inactivate();
-    }
-    workingSet.push_back(workingFactor);
-  }
-  return workingSet;
-}
-
-//******************************************************************************
 pair<VectorValues, VectorValues> QPSolver::optimize(
     const VectorValues& initialValues, const VectorValues& duals,
     bool useWarmStart) const {

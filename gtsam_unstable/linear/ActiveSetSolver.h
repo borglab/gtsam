@@ -64,12 +64,22 @@ public:
    */
   int identifyLeavingConstraint(const InequalityFactorGraph& workingSet,
       const VectorValues& lambdas) const;
-
+  
   /**
    * Builds a dual graph from the current working set.
    */
   GaussianFactorGraph::shared_ptr buildDualGraph(
       const InequalityFactorGraph& workingSet, const VectorValues& delta) const;
+  /*
+   * Given an initial value this function determine which constraints are active
+   * which can be used to initialize the working set.
+   * A constraint Ax <= b  is active if we have an x' s.t. Ax' = b
+   */
+  /// Identify active constraints based on initial values.
+  InequalityFactorGraph identifyActiveConstraints(
+      const InequalityFactorGraph& inequalities,
+      const VectorValues& initialValues, const VectorValues& duals =
+          VectorValues(), bool useWarmStart = true) const;
 
 protected:
   /**

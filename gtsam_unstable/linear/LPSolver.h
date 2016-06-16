@@ -34,7 +34,7 @@ public:
    * LP problems. At the end of this iteration the problem should either be found
    * to be unfeasible, solved or the current state changed to reflect a new
    * working set.
-   */
+   */ //SAME
   LPState iterate(const LPState &state) const;
 
   /**
@@ -53,6 +53,7 @@ public:
       const LinearCost &cost, const VectorValues &xk) const;
 
   /// Find solution with the current working set
+  //SAME
   VectorValues solveWithCurrentWorkingSet(const VectorValues &xk,
       const InequalityFactorGraph &workingSet) const;
 
@@ -62,22 +63,15 @@ public:
    * for the following problem: f' = - lambda * g' where f is the objection
    * function g are dual factors and lambda is the lagrangian multiplier.
    */
+  //SAME
   JacobianFactor::shared_ptr createDualFactor(Key key,
       const InequalityFactorGraph &workingSet, const VectorValues &delta) const;
 
   /// TODO(comment)
+  //SAME
   boost::tuple<double, int> computeStepSize(
       const InequalityFactorGraph &workingSet, const VectorValues &xk,
       const VectorValues &p) const;
-
-  /*
-   * Given an initial value this function determine which constraints are active
-   * which can be used to initialize the working set.
-   * A constraint Ax <= b  is active if we have an x' s.t. Ax' = b
-   */
-  InequalityFactorGraph identifyActiveConstraints(
-      const InequalityFactorGraph &inequalities,
-      const VectorValues &initialValues, const VectorValues &duals) const;
 
   /** Optimize with the provided feasible initial values
    * TODO: throw exception if the initial values is not feasible wrt inequality constraints

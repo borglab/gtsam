@@ -146,29 +146,6 @@ boost::shared_ptr<JacobianFactor> LPSolver::createDualFactor(
 }
 
 //******************************************************************************
-InequalityFactorGraph LPSolver::identifyActiveConstraints(
-    const InequalityFactorGraph &inequalities,
-    const VectorValues &initialValues, const VectorValues &duals) const {
-  InequalityFactorGraph workingSet;
-  for (const LinearInequality::shared_ptr &factor : inequalities) {
-    LinearInequality::shared_ptr workingFactor(new LinearInequality(*factor));
-    double error = workingFactor->error(initialValues);
-    // TODO: find a feasible initial point for LPSolver.
-    // For now, we just throw an exception
-    if (error > 0)
-      throw InfeasibleInitialValues();
-
-    if (fabs(error) < 1e-7) {
-      workingFactor->activate();
-    } else {
-      workingFactor->inactivate();
-    }
-    workingSet.push_back(workingFactor);
-  }
-  return workingSet;
-}
-
-//******************************************************************************
 std::pair<VectorValues, VectorValues> LPSolver::optimize(
     const VectorValues &initialValues, const VectorValues &duals) const {
   {
