@@ -106,8 +106,7 @@ TEST(LPInitSolver, infinite_loop_multi_var) {
 
 TEST(LPInitSolver, initialization) {
   LP lp = simpleLP1();
-  LPSolver lpSolver(lp);
-  LPInitSolver initSolver(lpSolver);
+  LPInitSolver initSolver(lp);
 
   GaussianFactorGraph::shared_ptr initOfInitGraph = initSolver.buildInitOfInitGraph();
   VectorValues x0 = initOfInitGraph->optimize();

@@ -92,4 +92,20 @@ protected:
       const InequalityFactorGraph& workingSet, const VectorValues& xk,
       const VectorValues& p, const double& startAlpha) const;
 };
+
+/**
+ * Find the max key in a problem.
+ * Useful to determine unique keys for additional slack variables
+ */
+template <class PROBLEM>
+Key maxKey(const PROBLEM& problem) {
+  Key maxKey =
+      *std::max_element(problem.cost.keys().begin(), problem.cost.keys().end());
+  if (!problem.equalities.empty())
+    maxKey = std::max(maxKey, *problem.equalities.keys().rbegin());
+  if (!problem.inequalities.empty())
+    maxKey = std::max(maxKey, *problem.inequalities.keys().rbegin());
+  return maxKey;
+}
+
 } // namespace gtsam

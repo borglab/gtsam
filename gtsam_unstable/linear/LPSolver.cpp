@@ -19,12 +19,6 @@ LPSolver::LPSolver(const LP &lp) :
   // not in the cost
   baseGraph_.push_back(lp_.equalities);
 
-  // Collect key-dim map of all variables in the constraints to create their
-  // zero priors later
-  keysDim_ = collectKeysDim(lp_.equalities);
-  KeyDimMap keysDim2 = collectKeysDim(lp_.inequalities);
-  keysDim_.insert(keysDim2.begin(), keysDim2.end());
-
   // Variable index
   equalityVariableIndex_ = VariableIndex(lp_.equalities);
   inequalityVariableIndex_ = VariableIndex(lp_.inequalities);
@@ -101,14 +95,15 @@ GaussianFactorGraph::shared_ptr LPSolver::createLeastSquareFactors(
   KeySet allKeys = lp_.inequalities.keys();
   allKeys.merge(lp_.equalities.keys());
   allKeys.merge(KeySet(lp_.cost.keys()));
-  // add the corresponding factors for all variables that are not explicitly in the
-  // cost function for vars that are not in the cost, the cost gradient is zero (g=0), so b=xk
+  // Add corresponding factors for all variables that are not explicitly in the
+  // cost function. Gradients of the cost function wrt to these variables are 
+  // zero (g=0), so b=xk
   if (cost.keys().size() != allKeys.size()) {
     KeySet difference;
     std::set_difference(allKeys.begin(), allKeys.end(), lp_.cost.begin(),
         lp_.cost.end(), std::inserter(difference, difference.end()));
     for (Key k : difference) {
-      size_t dim = keysDim_.at(k);
+      size_t dim = lp_.constrainedKeyDimMap().at(k);
       graph->push_back(JacobianFactor(k, Matrix::Identity(dim, dim), xk.at(k)));
     }
   }
@@ -203,7 +198,7 @@ boost::tuples::tuple<double, int> LPSolver::computeStepSize(
 }
 
 pair<VectorValues, VectorValues> LPSolver::optimize() const {
-  LPInitSolver initSolver(*this);
+  LPInitSolver initSolver(lp_);
   VectorValues initValues = initSolver.solve();
   return optimize(initValues);
 }

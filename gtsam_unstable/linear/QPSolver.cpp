@@ -172,25 +172,19 @@ pair<VectorValues, VectorValues> QPSolver::optimize(
   return make_pair(state.values, state.duals);
 }
 
+//******************************************************************************
 pair<VectorValues, VectorValues> QPSolver::optimize() const {
   //Make an LP with any linear cost function. It doesn't matter for initialization.
   LP initProblem;
-  // make an unrelated key for a random variable cost: max key + 1
-  Key newKey = *qp_.cost.keys().rbegin();
-  if (!qp_.equalities.empty())
-    newKey = std::max(newKey, *qp_.equalities.keys().rbegin());
-  if (!qp_.inequalities.empty())
-    newKey = std::max(newKey, *qp_.inequalities.keys().rbegin());
-  ++newKey;
+  // make an unrelated key for a random variable cost
+  Key newKey = maxKey(qp_) + 1;
   initProblem.cost = LinearCost(newKey, Vector::Ones(1));
   initProblem.equalities = qp_.equalities;
   initProblem.inequalities = qp_.inequalities;
-  LPSolver solver(initProblem);
-  LPInitSolver initSolver(solver);
+  LPInitSolver initSolver(initProblem);
   VectorValues initValues = initSolver.solve();
 
   return optimize(initValues);
 }
-;
 
 } /* namespace gtsam */
