@@ -15,7 +15,6 @@ namespace gtsam {
 //******************************************************************************
 LPSolver::LPSolver(const LP &lp) :
     lp_(lp) {
-  // Variable index
   equalityVariableIndex_ = VariableIndex(lp_.equalities);
   inequalityVariableIndex_ = VariableIndex(lp_.inequalities);
   constrainedKeys_ = lp_.equalities.keys();
@@ -149,20 +148,22 @@ boost::shared_ptr<JacobianFactor> LPSolver::createDualFactor(
 //******************************************************************************
 InequalityFactorGraph LPSolver::identifyActiveConstraints(
     const InequalityFactorGraph &inequalities,
-    const VectorValues &initialValues, const VectorValues &duals) const {
+    const VectorValues &initialValues, const VectorValues &duals,
+    bool useWarmStart) const {
   InequalityFactorGraph workingSet;
   for (const LinearInequality::shared_ptr &factor : inequalities) {
     LinearInequality::shared_ptr workingFactor(new LinearInequality(*factor));
-    double error = workingFactor->error(initialValues);
-    // TODO: find a feasible initial point for LPSolver.
-    // For now, we just throw an exception
-    if (error > 0)
-      throw InfeasibleInitialValues();
-
-    if (fabs(error) < 1e-7) {
-      workingFactor->activate();
+    if (useWarmStart && duals.size() > 0) {
+      if (duals.exists(workingFactor->dualKey())) workingFactor->activate();
+      else workingFactor->inactivate();
     } else {
-      workingFactor->inactivate();
+      double error = workingFactor->error(initialValues);
+      // Safety guard. This should not happen unless users provide a bad init
+      if (error > 0) throw InfeasibleInitialValues();
+      if (fabs(error) < 1e-7)
+        workingFactor->activate();
+      else
+        workingFactor->inactivate();
     }
     workingSet.push_back(workingFactor);
   }
@@ -171,11 +172,12 @@ InequalityFactorGraph LPSolver::identifyActiveConstraints(
 
 //******************************************************************************
 std::pair<VectorValues, VectorValues> LPSolver::optimize(
-    const VectorValues &initialValues, const VectorValues &duals) const {
+    const VectorValues &initialValues, const VectorValues &duals,
+    bool useWarmStart) const {
   {
     // Initialize workingSet from the feasible initialValues
     InequalityFactorGraph workingSet = identifyActiveConstraints(
-        lp_.inequalities, initialValues, duals);
+        lp_.inequalities, initialValues, duals, useWarmStart);
     LPState state(initialValues, duals, workingSet, false, 0);
 
     /// main loop of the solver

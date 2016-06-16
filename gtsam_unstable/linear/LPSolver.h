@@ -75,14 +75,15 @@ public:
    */
   InequalityFactorGraph identifyActiveConstraints(
       const InequalityFactorGraph &inequalities,
-      const VectorValues &initialValues, const VectorValues &duals) const;
+      const VectorValues &initialValues, const VectorValues &duals,
+      bool useWarmStart = false) const;
 
   /** Optimize with the provided feasible initial values
    * TODO: throw exception if the initial values is not feasible wrt inequality constraints
    * TODO: comment duals
    */
   pair<VectorValues, VectorValues> optimize(const VectorValues &initialValues,
-      const VectorValues &duals = VectorValues()) const;
+      const VectorValues &duals = VectorValues(), bool useWarmStart = false) const;
 
   /**
    * Optimize without initial values.
