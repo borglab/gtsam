@@ -16,13 +16,9 @@
  * @author  Duy-Nguyen Ta
  */
 
-#include <gtsam/inference/Symbol.h>
-#include <gtsam/inference/FactorGraph-inst.h>
 #include <gtsam_unstable/linear/QPSolver.h>
-#include <gtsam_unstable/linear/LPSolver.h>
-#include <gtsam_unstable/linear/InfeasibleInitialValues.h>
 #include <gtsam_unstable/linear/QPInitSolver.h>
-#include <boost/range/adaptor/map.hpp>
+#include <gtsam_unstable/linear/InfeasibleInitialValues.h>
 
 using namespace std;
 

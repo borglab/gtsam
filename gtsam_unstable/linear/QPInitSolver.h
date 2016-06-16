@@ -1,6 +1,17 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /**
  * @file     QPInitSolver.h
- * @brief    This QPInitSolver implements the strategy in Matlab.
+ * @brief    This finds a feasible solution for a QP problem
  * @author   Duy Nguyen Ta
  * @author   Ivan Dario Jimenez
  * @date     6/16/16
@@ -24,9 +35,7 @@ public:
     /// Constructor with a QP problem
     QPInitSolver(const QP& qp) : qp_(qp) {}
 
-    /**
-     * @return a feasible initialization point
-     */
+    ///@return a feasible initialization point
     VectorValues solve() const {
       // Make an LP with any linear cost function. It doesn't matter for
       // initialization.

@@ -1,3 +1,14 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /**
  * @file     LPSolver.h
  * @brief    Class used to solve Linear Programming Problems as defined in LP.h
@@ -14,10 +25,7 @@
 #include <gtsam_unstable/linear/LinearCost.h>
 #include <gtsam/linear/VectorValues.h>
 
-#include <boost/range/adaptor/map.hpp>
-
 namespace gtsam {
-
 
 class LPSolver: public ActiveSetSolver {
   const LP &lp_; //!< the linear programming problem
