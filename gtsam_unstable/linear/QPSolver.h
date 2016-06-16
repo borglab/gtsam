@@ -53,22 +53,6 @@ public:
   JacobianFactor::shared_ptr createDualFactor(Key key,
       const InequalityFactorGraph& workingSet, const VectorValues& delta) const;
 
-  /* We have to make sure the new solution with alpha satisfies all INACTIVE inequality constraints
-   * If some inactive inequality constraints complain about the full step (alpha = 1),
-   * we have to adjust alpha to stay within the inequality constraints' feasible regions.
-   *
-   * For each inactive inequality j:
-   *  - We already have: aj'*xk - bj <= 0, since xk satisfies all inequality constraints
-   *  - We want: aj'*(xk + alpha*p) - bj <= 0
-   *  - If aj'*p <= 0, we have: aj'*(xk + alpha*p) <= aj'*xk <= bj, for all alpha>0
-   *  it's good!
-   *  - We only care when aj'*p > 0. In this case, we need to choose alpha so that
-   *  aj'*xk + alpha*aj'*p - bj <= 0  --> alpha <= (bj - aj'*xk) / (aj'*p)
-   *  We want to step as far as possible, so we should choose alpha = (bj - aj'*xk) / (aj'*p)
-   *
-   * We want the minimum of all those alphas among all inactive inequality.
-   */
-
   /// Iterate 1 step, return a new state with a new workingSet and values
   QPState iterate(const QPState& state) const;
 
