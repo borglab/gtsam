@@ -12,13 +12,9 @@
 #include <gtsam_unstable/linear/LPInitSolver.h>
 
 namespace gtsam {
+//******************************************************************************
 LPSolver::LPSolver(const LP &lp) :
-    lp_(lp), addedZeroPriorsIndex_() {
-  // Push back factors that are the same in every iteration to the base graph.
-  // Those include the equality constraints and zero priors for keys that are
-  // not in the cost
-  baseGraph_.push_back(lp_.equalities);
-
+    lp_(lp) {
   // Variable index
   equalityVariableIndex_ = VariableIndex(lp_.equalities);
   inequalityVariableIndex_ = VariableIndex(lp_.inequalities);
@@ -26,6 +22,7 @@ LPSolver::LPSolver(const LP &lp) :
   constrainedKeys_.merge(lp_.inequalities.keys());
 }
 
+//******************************************************************************
 LPState LPSolver::iterate(const LPState &state) const {
   // Solve with the current working set
   // LP: project the objective neg. gradient to the constraint's null space
@@ -39,7 +36,7 @@ LPState LPSolver::iterate(const LPState &state) const {
     // Compute lambda from the dual graph
     // LP: project the objective's gradient onto each constraint gradient to
     // obtain the dual scaling factors
-    //	is it true??
+    //  is it true??
     GaussianFactorGraph::shared_ptr dualGraph = buildDualGraph(state.workingSet,
         newValues);
     VectorValues duals = dualGraph->optimize();
@@ -64,8 +61,8 @@ LPState LPSolver::iterate(const LPState &state) const {
     // If we CAN make some progress, i.e. p_k != 0
     // Adapt stepsize if some inactive constraints complain about this move
     // LP: projection on nullspace is NOT zero:
-    // 		find and put a blocking inactive constraint to the working set,
-    // 		otherwise the problem is unbounded!!!
+    //    find and put a blocking inactive constraint to the working set,
+    //    otherwise the problem is unbounded!!!
     double alpha;
     int factorIx;
     VectorValues p = newValues - state.values;
@@ -83,6 +80,7 @@ LPState LPSolver::iterate(const LPState &state) const {
   }
 }
 
+//******************************************************************************
 GaussianFactorGraph::shared_ptr LPSolver::createLeastSquareFactors(
     const LinearCost &cost, const VectorValues &xk) const {
   GaussianFactorGraph::shared_ptr graph(new GaussianFactorGraph());
@@ -110,16 +108,13 @@ GaussianFactorGraph::shared_ptr LPSolver::createLeastSquareFactors(
   return graph;
 }
 
+//******************************************************************************
 VectorValues LPSolver::solveWithCurrentWorkingSet(const VectorValues &xk,
     const InequalityFactorGraph &workingSet) const {
-  GaussianFactorGraph workingGraph = baseGraph_; // || X - Xk + g ||^2
-//  We remove the old zero priors from the base graph we are going to use to solve
-  //This iteration's problem
-//  for (size_t index : addedZeroPriorsIndex_) {
-//    workingGraph.remove(index);
-//  }
-
+  GaussianFactorGraph workingGraph;
+  // || X - Xk + g ||^2
   workingGraph.push_back(*createLeastSquareFactors(lp_.cost, xk));
+  workingGraph.push_back(lp_.equalities);
   for (const LinearInequality::shared_ptr &factor : workingSet) {
     if (factor->active())
       workingGraph.push_back(factor);
@@ -127,37 +122,36 @@ VectorValues LPSolver::solveWithCurrentWorkingSet(const VectorValues &xk,
   return workingGraph.optimize();
 }
 
-boost::shared_ptr<JacobianFactor> LPSolver::createDualFactor(Key key,
-    const InequalityFactorGraph &workingSet, const VectorValues &delta) const {
+//******************************************************************************
+boost::shared_ptr<JacobianFactor> LPSolver::createDualFactor(
+    Key key, const InequalityFactorGraph &workingSet,
+    const VectorValues &delta) const {
   // Transpose the A matrix of constrained factors to have the jacobian of the
   // dual key
-  TermsContainer Aterms = collectDualJacobians < LinearEquality
-      > (key, lp_.equalities, equalityVariableIndex_);
-  TermsContainer AtermsInequalities = collectDualJacobians < LinearInequality
-      > (key, workingSet, inequalityVariableIndex_);
+  TermsContainer Aterms = collectDualJacobians<LinearEquality>(
+      key, lp_.equalities, equalityVariableIndex_);
+  TermsContainer AtermsInequalities = collectDualJacobians<LinearInequality>(
+      key, workingSet, inequalityVariableIndex_);
   Aterms.insert(Aterms.end(), AtermsInequalities.begin(),
-      AtermsInequalities.end());
+                AtermsInequalities.end());
 
   // Collect the gradients of unconstrained cost factors to the b vector
   if (Aterms.size() > 0) {
-    Vector b = Vector::Zero(delta.at(key).size());
-    Factor::const_iterator it = lp_.cost.find(key);
-    if (it != lp_.cost.end())
-      b = lp_.cost.getA(it).transpose();
-    return boost::make_shared < JacobianFactor > (Aterms, b); // compute the least-square approximation of dual variables
+    Vector b = lp_.costGradient(key, delta);
+    // to compute the least-square approximation of dual variables
+    return boost::make_shared<JacobianFactor>(Aterms, b);
   } else {
     return boost::make_shared<JacobianFactor>();
   }
 }
 
+//******************************************************************************
 InequalityFactorGraph LPSolver::identifyActiveConstraints(
     const InequalityFactorGraph &inequalities,
     const VectorValues &initialValues, const VectorValues &duals) const {
   InequalityFactorGraph workingSet;
   for (const LinearInequality::shared_ptr &factor : inequalities) {
     LinearInequality::shared_ptr workingFactor(new LinearInequality(*factor));
-    GTSAM_PRINT(*workingFactor);
-    GTSAM_PRINT(initialValues);
     double error = workingFactor->error(initialValues);
     // TODO: find a feasible initial point for LPSolver.
     // For now, we just throw an exception
@@ -174,6 +168,7 @@ InequalityFactorGraph LPSolver::identifyActiveConstraints(
   return workingSet;
 }
 
+//******************************************************************************
 std::pair<VectorValues, VectorValues> LPSolver::optimize(
     const VectorValues &initialValues, const VectorValues &duals) const {
   {
@@ -190,6 +185,7 @@ std::pair<VectorValues, VectorValues> LPSolver::optimize(
   }
 }
 
+//******************************************************************************
 boost::tuples::tuple<double, int> LPSolver::computeStepSize(
     const InequalityFactorGraph &workingSet, const VectorValues &xk,
     const VectorValues &p) const {
@@ -197,6 +193,7 @@ boost::tuples::tuple<double, int> LPSolver::computeStepSize(
       std::numeric_limits<double>::infinity());
 }
 
+//******************************************************************************
 pair<VectorValues, VectorValues> LPSolver::optimize() const {
   LPInitSolver initSolver(lp_);
   VectorValues initValues = initSolver.solve();

@@ -74,6 +74,13 @@ public:
     cachedConstrainedKeyDimMap_.insert(keysDim2.begin(), keysDim2.end());
     return cachedConstrainedKeyDimMap_;
   }
+
+  Vector costGradient(Key key, const VectorValues& delta) const {
+    Vector g = Vector::Zero(delta.at(key).size());
+    Factor::const_iterator it = cost.find(key);
+    if (it != cost.end()) g = cost.getA(it).transpose();
+    return g;
+  }
 };
 
 /// traits

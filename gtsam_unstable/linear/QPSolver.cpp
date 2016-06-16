@@ -31,9 +31,6 @@ namespace gtsam {
 //******************************************************************************
 QPSolver::QPSolver(const QP& qp) :
     qp_(qp) {
-  baseGraph_ = qp_.cost;
-  baseGraph_.push_back(qp_.equalities.begin(), qp_.equalities.end());
-  costVariableIndex_ = VariableIndex(qp_.cost);
   equalityVariableIndex_ = VariableIndex(qp_.equalities);
   inequalityVariableIndex_ = VariableIndex(qp_.inequalities);
   constrainedKeys_ = qp_.equalities.keys();
@@ -43,7 +40,8 @@ QPSolver::QPSolver(const QP& qp) :
 //***************************************************cc***************************
 VectorValues QPSolver::solveWithCurrentWorkingSet(
     const InequalityFactorGraph& workingSet) const {
-  GaussianFactorGraph workingGraph = baseGraph_;
+  GaussianFactorGraph workingGraph = qp_.cost;
+  workingGraph.push_back(qp_.equalities);
   for (const LinearInequality::shared_ptr& factor : workingSet) {
     if (factor->active())
       workingGraph.push_back(factor);
@@ -52,28 +50,23 @@ VectorValues QPSolver::solveWithCurrentWorkingSet(
 }
 
 //******************************************************************************
-JacobianFactor::shared_ptr QPSolver::createDualFactor(Key key,
-    const InequalityFactorGraph& workingSet, const VectorValues& delta) const {
+JacobianFactor::shared_ptr QPSolver::createDualFactor(
+    Key key, const InequalityFactorGraph& workingSet,
+    const VectorValues& delta) const {
   // Transpose the A matrix of constrained factors to have the jacobian of the
   // dual key
-  std::vector < std::pair<Key, Matrix> > Aterms = collectDualJacobians
-      < LinearEquality > (key, qp_.equalities, equalityVariableIndex_);
-  std::vector < std::pair<Key, Matrix> > AtermsInequalities =
-      collectDualJacobians < LinearInequality
-          > (key, workingSet, inequalityVariableIndex_);
+  TermsContainer Aterms = collectDualJacobians<LinearEquality>(
+      key, qp_.equalities, equalityVariableIndex_);
+  TermsContainer AtermsInequalities = collectDualJacobians<LinearInequality>(
+      key, workingSet, inequalityVariableIndex_);
   Aterms.insert(Aterms.end(), AtermsInequalities.begin(),
-      AtermsInequalities.end());
+                AtermsInequalities.end());
 
   // Collect the gradients of unconstrained cost factors to the b vector
   if (Aterms.size() > 0) {
-    Vector b = Vector::Zero(delta.at(key).size());
-    if (costVariableIndex_.find(key) != costVariableIndex_.end()) {
-      for (size_t factorIx : costVariableIndex_[key]) {
-        GaussianFactor::shared_ptr factor = qp_.cost.at(factorIx);
-        b += factor->gradient(key, delta);
-      }
-    }
-    return boost::make_shared < JacobianFactor > (Aterms, b); // compute the least-square approximation of dual variables
+    Vector b = qp_.costGradient(key, delta);
+    // to compute the least-square approximation of dual variables
+    return boost::make_shared<JacobianFactor>(Aterms, b);
   } else {
     return boost::make_shared<JacobianFactor>();
   }

@@ -21,7 +21,6 @@ namespace gtsam {
 
 class LPSolver: public ActiveSetSolver {
   const LP &lp_; //!< the linear programming problem
-  std::vector<size_t> addedZeroPriorsIndex_;
 public:
   /// Constructor
   LPSolver(const LP &lp);

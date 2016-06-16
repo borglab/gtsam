@@ -21,10 +21,7 @@ namespace gtsam {
 class ActiveSetSolver {
 protected:
   KeySet constrainedKeys_; //!< all constrained keys, will become factors in dual graphs
-  GaussianFactorGraph baseGraph_; //!< factor graphs of cost factors and linear equalities.
-  //!< used to initialize the working set factor graph,
-  //!< to which active inequalities will be added
-  VariableIndex costVariableIndex_, equalityVariableIndex_,
+  VariableIndex equalityVariableIndex_,
       inequalityVariableIndex_; //!< index to corresponding factors to build dual graphs
 
 public:
