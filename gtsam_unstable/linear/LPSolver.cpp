@@ -23,12 +23,55 @@ LPSolver::LPSolver(const LP &lp) :
 }
 
 //******************************************************************************
+GaussianFactorGraph LPSolver::buildCostFunction(const VectorValues &xk) const {
+  GaussianFactorGraph graph;
+  for (LinearCost::const_iterator it = lp_.cost.begin(); it != lp_.cost.end();
+       ++it) {
+    size_t dim = lp_.cost.getDim(it);
+    Vector b = xk.at(*it) - lp_.cost.getA(it).transpose();  // b = xk-g
+    graph.push_back(JacobianFactor(*it, Matrix::Identity(dim, dim), b));
+  }
+
+  KeySet allKeys = lp_.inequalities.keys();
+  allKeys.merge(lp_.equalities.keys());
+  allKeys.merge(KeySet(lp_.cost.keys()));
+  // Add corresponding factors for all variables that are not explicitly in the
+  // cost function. Gradients of the cost function wrt to these variables are 
+  // zero (g=0), so b=xk
+  if (lp_.cost.keys().size() != allKeys.size()) {
+    KeySet difference;
+    std::set_difference(allKeys.begin(), allKeys.end(), lp_.cost.begin(),
+        lp_.cost.end(), std::inserter(difference, difference.end()));
+    for (Key k : difference) {
+      size_t dim = lp_.constrainedKeyDimMap().at(k);
+      graph.push_back(JacobianFactor(k, Matrix::Identity(dim, dim), xk.at(k)));
+    }
+  }
+  return graph;
+}
+
+//******************************************************************************
+GaussianFactorGraph LPSolver::buildWorkingGraph(
+    const InequalityFactorGraph &workingSet, const VectorValues &xk) const {
+  GaussianFactorGraph workingGraph;
+  // || X - Xk + g ||^2
+  workingGraph.push_back(buildCostFunction(xk));
+  workingGraph.push_back(lp_.equalities);
+  for (const LinearInequality::shared_ptr &factor : workingSet) {
+    if (factor->active()) workingGraph.push_back(factor);
+  }
+  return workingGraph;
+}
+
+//******************************************************************************
 LPState LPSolver::iterate(const LPState &state) const {
   // Solve with the current working set
   // LP: project the objective neg. gradient to the constraint's null space
   // to find the direction to move
-  VectorValues newValues = solveWithCurrentWorkingSet(state.values,
-      state.workingSet);
+  GaussianFactorGraph workingGraph =
+      buildWorkingGraph(state.workingSet, state.values);
+  VectorValues newValues = workingGraph.optimize();
+
   // If we CAN'T move further
   // LP: projection on the constraints' nullspace is zero: we are at a vertex
   if (newValues.equals(state.values, 1e-7)) {
@@ -78,48 +121,6 @@ LPState LPSolver::iterate(const LPState &state) const {
     return LPState(newValues, state.duals, newWorkingSet, false,
         state.iterations + 1);
   }
-}
-
-//******************************************************************************
-GaussianFactorGraph::shared_ptr LPSolver::createLeastSquareFactors(
-    const LinearCost &cost, const VectorValues &xk) const {
-  GaussianFactorGraph::shared_ptr graph(new GaussianFactorGraph());
-  for (LinearCost::const_iterator it = cost.begin(); it != cost.end(); ++it) {
-    size_t dim = cost.getDim(it);
-    Vector b = xk.at(*it) - cost.getA(it).transpose(); // b = xk-g
-    graph->push_back(JacobianFactor(*it, Matrix::Identity(dim, dim), b));
-  }
-
-  KeySet allKeys = lp_.inequalities.keys();
-  allKeys.merge(lp_.equalities.keys());
-  allKeys.merge(KeySet(lp_.cost.keys()));
-  // Add corresponding factors for all variables that are not explicitly in the
-  // cost function. Gradients of the cost function wrt to these variables are 
-  // zero (g=0), so b=xk
-  if (cost.keys().size() != allKeys.size()) {
-    KeySet difference;
-    std::set_difference(allKeys.begin(), allKeys.end(), lp_.cost.begin(),
-        lp_.cost.end(), std::inserter(difference, difference.end()));
-    for (Key k : difference) {
-      size_t dim = lp_.constrainedKeyDimMap().at(k);
-      graph->push_back(JacobianFactor(k, Matrix::Identity(dim, dim), xk.at(k)));
-    }
-  }
-  return graph;
-}
-
-//******************************************************************************
-VectorValues LPSolver::solveWithCurrentWorkingSet(const VectorValues &xk,
-    const InequalityFactorGraph &workingSet) const {
-  GaussianFactorGraph workingGraph;
-  // || X - Xk + g ||^2
-  workingGraph.push_back(*createLeastSquareFactors(lp_.cost, xk));
-  workingGraph.push_back(lp_.equalities);
-  for (const LinearInequality::shared_ptr &factor : workingSet) {
-    if (factor->active())
-      workingGraph.push_back(factor);
-  }
-  return workingGraph.optimize();
 }
 
 //******************************************************************************

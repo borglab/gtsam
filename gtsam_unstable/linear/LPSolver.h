@@ -49,12 +49,10 @@ public:
    * The least-square solution of this quadratic subject to a set of linear constraints
    * is the projection of the gradient onto the constraints' subspace
    */
-  GaussianFactorGraph::shared_ptr createLeastSquareFactors(
-      const LinearCost &cost, const VectorValues &xk) const;
+  GaussianFactorGraph buildCostFunction(const VectorValues &xk) const;
 
-  /// Find solution with the current working set
-  VectorValues solveWithCurrentWorkingSet(const VectorValues &xk,
-      const InequalityFactorGraph &workingSet) const;
+  GaussianFactorGraph buildWorkingGraph(
+    const InequalityFactorGraph& workingSet, const VectorValues& xk) const;
 
   /*
    * A dual factor takes the objective function and a set of constraints.

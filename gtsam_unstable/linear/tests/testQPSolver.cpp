@@ -144,7 +144,7 @@ TEST(QPSolver, indentifyActiveConstraints) {
   CHECK(workingSet.at(2)->active());// active
   CHECK(!workingSet.at(3)->active());// inactive
 
-  VectorValues solution = solver.solveWithCurrentWorkingSet(workingSet);
+  VectorValues solution = solver.buildWorkingGraph(workingSet).optimize();
   VectorValues expectedSolution;
   expectedSolution.insert(X(1), kZero);
   expectedSolution.insert(X(2), kZero);

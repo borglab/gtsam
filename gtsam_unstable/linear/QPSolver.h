@@ -43,9 +43,14 @@ public:
   /// Constructor
   QPSolver(const QP& qp);
 
-  /// Find solution with the current working set
-  VectorValues solveWithCurrentWorkingSet(
-      const InequalityFactorGraph& workingSet) const;
+  const GaussianFactorGraph& buildCostFunction(
+      const VectorValues& xk = VectorValues()) const {
+    return qp_.cost;
+  }
+
+  GaussianFactorGraph buildWorkingGraph(
+      const InequalityFactorGraph& workingSet,
+      const VectorValues& xk = VectorValues()) const;
 
   /// Create a dual factor
   JacobianFactor::shared_ptr createDualFactor(Key key,

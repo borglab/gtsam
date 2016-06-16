@@ -37,16 +37,16 @@ QPSolver::QPSolver(const QP& qp) :
   constrainedKeys_.merge(qp_.inequalities.keys());
 }
 
-//***************************************************cc***************************
-VectorValues QPSolver::solveWithCurrentWorkingSet(
-    const InequalityFactorGraph& workingSet) const {
-  GaussianFactorGraph workingGraph = qp_.cost;
+//******************************************************************************
+GaussianFactorGraph QPSolver::buildWorkingGraph(
+    const InequalityFactorGraph& workingSet, const VectorValues& xk) const {
+  GaussianFactorGraph workingGraph;
+  workingGraph.push_back(buildCostFunction(xk));
   workingGraph.push_back(qp_.equalities);
   for (const LinearInequality::shared_ptr& factor : workingSet) {
-    if (factor->active())
-      workingGraph.push_back(factor);
+    if (factor->active()) workingGraph.push_back(factor);
   }
-  return workingGraph.optimize();
+  return workingGraph;
 }
 
 //******************************************************************************
@@ -84,7 +84,9 @@ QPState QPSolver::iterate(const QPState& state) const {
   // Algorithm 16.3 from Nocedal06book.
   // Solve with the current working set eqn 16.39, but instead of solving for p
   // solve for x
-  VectorValues newValues = solveWithCurrentWorkingSet(state.workingSet);
+  GaussianFactorGraph workingGraph =
+      buildWorkingGraph(state.workingSet, state.values);
+  VectorValues newValues = workingGraph.optimize();
   // If we CAN'T move further
   // if p_k = 0 is the original condition, modified by Duy to say that the state
   // update is zero.

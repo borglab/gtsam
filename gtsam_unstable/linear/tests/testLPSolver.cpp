@@ -184,8 +184,6 @@ LPSolver lpSolver(lp);
 VectorValues init;
 init.insert(1, Vector::Zero(2));
 
-VectorValues x1 = lpSolver.solveWithCurrentWorkingSet(init,
-    InequalityFactorGraph());
 VectorValues expected_x1;
 expected_x1.insert(1, Vector::Ones(2));
 CHECK(assert_equal(expected_x1, x1, 1e-10));
@@ -195,6 +193,8 @@ boost::tie(result, duals) = lpSolver.optimize(init);
 VectorValues expectedResult;
 expectedResult.insert(1, Vector2(8./3., 2./3.));
 CHECK(assert_equal(expectedResult, result, 1e-10));
+  VectorValues x1 =
+      lpSolver.buildWorkingGraph(InequalityFactorGraph(), init).optimize();
 }
 
 /* ************************************************************************* */
