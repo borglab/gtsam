@@ -14,7 +14,7 @@
 namespace gtsam {
 //******************************************************************************
 LPSolver::LPSolver(const LP &lp) :
-    lp_(lp) {
+    ActiveSetSolver(std::numeric_limits<double>::infinity()), lp_(lp) {
   // Variable index
   equalityVariableIndex_ = VariableIndex(lp_.equalities);
   inequalityVariableIndex_ = VariableIndex(lp_.inequalities);
@@ -160,14 +160,6 @@ std::pair<VectorValues, VectorValues> LPSolver::optimize(
     }
     return make_pair(state.values, state.duals);
   }
-}
-
-//******************************************************************************
-boost::tuples::tuple<double, int> LPSolver::computeStepSize(
-    const InequalityFactorGraph &workingSet, const VectorValues &xk,
-    const VectorValues &p) const {
-  return ActiveSetSolver::computeStepSize(workingSet, xk, p,
-      std::numeric_limits<double>::infinity());
 }
 
 //******************************************************************************

@@ -30,7 +30,7 @@ namespace gtsam {
 
 //******************************************************************************
 QPSolver::QPSolver(const QP& qp) :
-    qp_(qp) {
+    ActiveSetSolver(1.0), qp_(qp) {
   equalityVariableIndex_ = VariableIndex(qp_.equalities);
   inequalityVariableIndex_ = VariableIndex(qp_.inequalities);
   constrainedKeys_ = qp_.equalities.keys();
@@ -71,14 +71,7 @@ JacobianFactor::shared_ptr QPSolver::createDualFactor(
     return boost::make_shared<JacobianFactor>();
   }
 }
-
-//******************************************************************************
-boost::tuple<double, int> QPSolver::computeStepSize(
-    const InequalityFactorGraph& workingSet, const VectorValues& xk,
-    const VectorValues& p) const {
-  return ActiveSetSolver::computeStepSize(workingSet, xk, p, 1);
-}
-
+  
 //******************************************************************************
 QPState QPSolver::iterate(const QPState& state) const {
   // Algorithm 16.3 from Nocedal06book.

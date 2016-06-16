@@ -68,10 +68,6 @@ public:
    *
    * We want the minimum of all those alphas among all inactive inequality.
    */
-  //SAME
-  boost::tuple<double, int> computeStepSize(
-      const InequalityFactorGraph& workingSet, const VectorValues& xk,
-      const VectorValues& p) const;
 
   /// Iterate 1 step, return a new state with a new workingSet and values
   QPState iterate(const QPState& state) const;

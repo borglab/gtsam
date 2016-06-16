@@ -67,12 +67,6 @@ public:
   JacobianFactor::shared_ptr createDualFactor(Key key,
       const InequalityFactorGraph &workingSet, const VectorValues &delta) const;
 
-  /// TODO(comment)
-  //SAME
-  boost::tuple<double, int> computeStepSize(
-      const InequalityFactorGraph &workingSet, const VectorValues &xk,
-      const VectorValues &p) const;
-
   /** Optimize with the provided feasible initial values
    * TODO: throw exception if the initial values is not feasible wrt inequality constraints
    * TODO: comment duals

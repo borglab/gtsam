@@ -23,7 +23,7 @@ protected:
   KeySet constrainedKeys_; //!< all constrained keys, will become factors in dual graphs
   VariableIndex equalityVariableIndex_,
       inequalityVariableIndex_; //!< index to corresponding factors to build dual graphs
-
+  double startAlpha_;
 public:
   typedef std::vector<std::pair<Key, Matrix> > TermsContainer; //!< vector of key matrix pairs
   //Matrices are usually the A term for a factor.
@@ -86,8 +86,8 @@ protected:
    * Protected constructor because this class doesn't have any meaning without
    * a concrete Programming problem to solve.
    */
-  ActiveSetSolver() :
-      constrainedKeys_() {
+  ActiveSetSolver(double startAlpha) :
+      constrainedKeys_(), startAlpha_(startAlpha) {
   }
 
   /**
@@ -97,7 +97,7 @@ protected:
    */
   boost::tuple<double, int> computeStepSize(
       const InequalityFactorGraph& workingSet, const VectorValues& xk,
-      const VectorValues& p, const double& startAlpha) const;
+      const VectorValues& p) const;
 };
 
 /**

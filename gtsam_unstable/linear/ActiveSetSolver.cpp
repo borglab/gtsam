@@ -89,7 +89,6 @@ GaussianFactorGraph::shared_ptr ActiveSetSolver::buildDualGraph(
   }
   return dualGraph;
 }
-
 /*
  * Compute step size alpha for the new solution x' = xk + alpha*p, where alpha \in [0,1]
  *
@@ -100,8 +99,8 @@ GaussianFactorGraph::shared_ptr ActiveSetSolver::buildDualGraph(
  */
 boost::tuple<double, int> ActiveSetSolver::computeStepSize(
     const InequalityFactorGraph& workingSet, const VectorValues& xk,
-    const VectorValues& p, const double& startAlpha) const {
-  double minAlpha = startAlpha;
+    const VectorValues& p) const {
+  double minAlpha = startAlpha_;
   int closestFactorIx = -1;
   for (size_t factorIx = 0; factorIx < workingSet.size(); ++factorIx) {
     const LinearInequality::shared_ptr& factor = workingSet.at(factorIx);
