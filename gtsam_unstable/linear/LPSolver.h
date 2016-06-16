@@ -18,12 +18,9 @@
 
 namespace gtsam {
 
-typedef std::map<Key, size_t> KeyDimMap;
 
 class LPSolver: public ActiveSetSolver {
   const LP &lp_; //!< the linear programming problem
-  KeyDimMap keysDim_; //!< key-dim map of all variables in the constraints, used to create zero priors
-  std::vector<size_t> addedZeroPriorsIndex_;
 public:
   /// Constructor
   LPSolver(const LP &lp);
@@ -31,30 +28,6 @@ public:
   const LP &lp() const {
     return lp_;
   }
-
-  const KeyDimMap &keysDim() const {
-    return keysDim_;
-  }
-
-  /*
-   * Iterates through every factor in a linear graph and generates a
-   * mapping between every factor key and it's corresponding dimensionality.
-   */
-  template<class LinearGraph>
-  KeyDimMap collectKeysDim(const LinearGraph &linearGraph) const {
-    KeyDimMap keysDim;
-    for (const typename LinearGraph::sharedFactor &factor : linearGraph) {
-      if (!factor)
-        continue;
-      for (Key key : factor->keys())
-        keysDim[key] = factor->getDim(factor->find(key));
-    }
-    return keysDim;
-  }
-
-  /// Create a zero prior for any keys in the graph that don't exist in the cost
-  GaussianFactorGraph::shared_ptr createZeroPriors(const KeyVector &costKeys,
-      const KeyDimMap &keysDim) const;
 
   /*
    * This function performs an iteration of the Active Set Method for solving

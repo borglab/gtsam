@@ -40,12 +40,10 @@ namespace gtsam {
  */
 class LPInitSolver {
 private:
-  const LPSolver& lpSolver_;
   const LP& lp_;
 
 public:
-  LPInitSolver(const LPSolver& lpSolver) :
-      lpSolver_(lpSolver), lp_(lpSolver.lp()) {
+  LPInitSolver(const LP& lp) : lp_(lp) {
   }
 
   virtual ~LPInitSolver() {
@@ -56,7 +54,7 @@ public:
     GaussianFactorGraph::shared_ptr initOfInitGraph = buildInitOfInitGraph();
     VectorValues x0 = initOfInitGraph->optimize();
     double y0 = compute_y0(x0);
-    Key yKey = maxKey(lpSolver_.keysDim()) + 1; // the unique key for y0
+    Key yKey = maxKey(lp_) + 1; // the unique key for y0
     VectorValues xy0(x0);
     xy0.insert(yKey, Vector::Constant(1, y0));
 
@@ -85,15 +83,6 @@ private:
     return initLP;
   }
 
-  /// Find the max key in the problem to determine unique keys for additional slack variables
-  Key maxKey(const KeyDimMap& keysDim) const {
-    Key maxK = 0;
-    for (Key key : keysDim | boost::adaptors::map_keys)
-      if (maxK < key)
-        maxK = key;
-    return maxK;
-  }
-
   /**
    * Build the following graph to solve for an initial value of the initial problem
    *    min   ||x||^2    s.t.   Ax = b
@@ -104,9 +93,9 @@ private:
         new GaussianFactorGraph(lp_.equalities));
 
     // create factor ||x||^2 and add to the graph
-    const KeyDimMap& keysDim = lpSolver_.keysDim();
-    for (Key key : keysDim | boost::adaptors::map_keys) {
-      size_t dim = keysDim.at(key);
+    const KeyDimMap& constrainedKeyDim = lp_.constrainedKeyDimMap();
+    for (Key key : constrainedKeyDim | boost::adaptors::map_keys) {
+      size_t dim = constrainedKeyDim.at(key);
       initGraph->push_back(
           JacobianFactor(key, Matrix::Identity(dim, dim), Vector::Zero(dim)));
     }

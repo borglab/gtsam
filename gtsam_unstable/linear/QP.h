@@ -33,6 +33,10 @@ struct QP {
   EqualityFactorGraph equalities; //!< linear equality constraints: cE(x) = 0
   InequalityFactorGraph inequalities; //!< linear inequality constraints: cI(x) <= 0
 
+private:
+  mutable VariableIndex cachedCostVariableIndex_;
+
+public:
   /** default constructor */
   QP() :
       cost(), equalities(), inequalities() {
@@ -52,6 +56,23 @@ struct QP {
     cost.print("Quadratic cost factors: ");
     equalities.print("Linear equality factors: ");
     inequalities.print("Linear inequality factors: ");
+  }
+
+  const VariableIndex& costVariableIndex() const {
+    if (cachedCostVariableIndex_.size() == 0)
+      cachedCostVariableIndex_ = VariableIndex(cost);
+    return cachedCostVariableIndex_;
+  }
+
+  Vector costGradient(Key key, const VectorValues& delta) const {
+    Vector g = Vector::Zero(delta.at(key).size());
+    if (costVariableIndex().find(key) != costVariableIndex().end()) {
+      for (size_t factorIx : costVariableIndex()[key]) {
+        GaussianFactor::shared_ptr factor = cost.at(factorIx);
+        g += factor->gradient(key, delta);
+      }
+    }
+    return g;
   }
 };
 

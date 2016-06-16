@@ -21,10 +21,7 @@ namespace gtsam {
 class ActiveSetSolver {
 protected:
   KeySet constrainedKeys_; //!< all constrained keys, will become factors in dual graphs
-  GaussianFactorGraph baseGraph_; //!< factor graphs of cost factors and linear equalities.
-  //!< used to initialize the working set factor graph,
-  //!< to which active inequalities will be added
-  VariableIndex costVariableIndex_, equalityVariableIndex_,
+  VariableIndex equalityVariableIndex_,
       inequalityVariableIndex_; //!< index to corresponding factors to build dual graphs
 
 public:
@@ -92,4 +89,20 @@ protected:
       const InequalityFactorGraph& workingSet, const VectorValues& xk,
       const VectorValues& p, const double& startAlpha) const;
 };
+
+/**
+ * Find the max key in a problem.
+ * Useful to determine unique keys for additional slack variables
+ */
+template <class PROBLEM>
+Key maxKey(const PROBLEM& problem) {
+  auto keys = problem.cost.keys();
+  Key maxKey = *std::max_element(keys.begin(), keys.end());
+  if (!problem.equalities.empty())
+    maxKey = std::max(maxKey, *problem.equalities.keys().rbegin());
+  if (!problem.inequalities.empty())
+    maxKey = std::max(maxKey, *problem.inequalities.keys().rbegin());
+  return maxKey;
+}
+
 } // namespace gtsam
