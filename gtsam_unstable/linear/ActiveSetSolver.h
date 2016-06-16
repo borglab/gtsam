@@ -99,8 +99,8 @@ protected:
  */
 template <class PROBLEM>
 Key maxKey(const PROBLEM& problem) {
-  Key maxKey =
-      *std::max_element(problem.cost.keys().begin(), problem.cost.keys().end());
+  auto keys = problem.cost.keys();
+  Key maxKey = *std::max_element(keys.begin(), keys.end());
   if (!problem.equalities.empty())
     maxKey = std::max(maxKey, *problem.equalities.keys().rbegin());
   if (!problem.inequalities.empty())
