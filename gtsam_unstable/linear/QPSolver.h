@@ -27,7 +27,8 @@ namespace gtsam {
 
 /// Policy for ActivetSetSolver to solve Linear Programming \sa QP problems
 struct QPPolicy {
-  /// Maximum alpha for line search. For QP, it's 1
+  /// Maximum alpha for line search x'=xk + alpha*p, where p is the cost gradient
+  /// For QP, maxAlpha = 1 is the minimum point of the quadratic cost
   static constexpr double maxAlpha = 1.0;
 
   /// Simply the cost of the QP problem

@@ -75,7 +75,7 @@ private:
   double compute_y0(const VectorValues& x0) const;
 
   /// Collect all terms of a factor into a container.
-  std::vector<std::pair<Key, Matrix> > collectTerms(
+  std::vector<std::pair<Key, Matrix>> collectTerms(
       const LinearInequality& factor) const;
 
   /// Turn Cx <= d into Cx - y <= d factors

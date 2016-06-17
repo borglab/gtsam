@@ -28,7 +28,8 @@ namespace gtsam {
 
 /// Policy for ActivetSetSolver to solve Linear Programming \sa LP problems
 struct LPPolicy {
-  /// Maximum alpha for line search. For LP, it's infinity
+  /// Maximum alpha for line search x'=xk + alpha*p, where p is the cost gradient
+  /// For LP, maxAlpha = Infinity
   static constexpr double maxAlpha = std::numeric_limits<double>::infinity();
 
   /**

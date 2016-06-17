@@ -25,7 +25,7 @@
 namespace gtsam {
 
 /**
- * This class implementations the active set algorithm for solving convex
+ * This class implements the active set algorithm for solving convex
  * Programming problems.
  *
  * @tparam PROBLEM Type of the problem to solve, e.g. LP (linear program) or 
@@ -36,18 +36,15 @@ namespace gtsam {
 template <class PROBLEM, class POLICY, class INITSOLVER>
 class ActiveSetSolver {
 public:
-  /**
-   * This struct contains the state information for a single iteration of an
-   * active set method iteration.
-   */
+  /// This struct contains the state information for a single iteration
   struct State {
     VectorValues values;  //!< current best values at each step
     VectorValues duals;   //!< current values of dual variables at each step
     InequalityFactorGraph workingSet; /*!< keep track of current active/inactive
                                            inequality constraints */
     bool converged;     //!< True if the algorithm has converged to a solution
-    size_t iterations;  //!< number of iterations. Incremented at the end of
-                        //each iter.
+    size_t iterations;  /*!< Number of iterations. Incremented at the end of
+                        each iteration. */
 
     /// Default constructor
     State()
