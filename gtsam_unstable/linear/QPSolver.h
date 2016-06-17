@@ -10,71 +10,34 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    QPSolver.h
- * @brief   A quadratic programming solver implements the active set method
- * @date    Apr 15, 2014
- * @author  Ivan Dario Jimenez
- * @author  Duy-Nguyen Ta
+ * @file     QPSolver.h
+ * @brief    Policy of ActiveSetSolver to solve Quadratic Programming Problems
+ * @author   Duy Nguyen Ta
+ * @author   Ivan Dario Jimenez
+ * @date     6/16/16
  */
-
-#pragma once
 
 #include <gtsam_unstable/linear/QP.h>
 #include <gtsam_unstable/linear/ActiveSetSolver.h>
-#include <gtsam_unstable/linear/QPState.h>
-#include <gtsam/linear/VectorValues.h>
-
-#include <vector>
-#include <set>
+#include <gtsam_unstable/linear/QPInitSolver.h>
+#include <limits>
+#include <algorithm>
 
 namespace gtsam {
 
-/**
- * This QPSolver uses the active set method to solve a quadratic programming problem
- * defined in the QP struct.
- * Note: This version of QPSolver only works with a feasible initial value.
- */
-//TODO: Remove Vector Values
-class QPSolver: public ActiveSetSolver {
+/// Policy for ActivetSetSolver to solve Linear Programming \sa QP problems
+struct QPPolicy {
+  /// Maximum alpha for line search x'=xk + alpha*p, where p is the cost gradient
+  /// For QP, maxAlpha = 1 is the minimum point of the quadratic cost
+  static constexpr double maxAlpha = 1.0;
 
-  const QP& qp_; //!< factor graphs of the QP problem, can't be modified!
-
-public:
-  /// Constructor
-  QPSolver(const QP& qp);
-
-  /// Find solution with the current working set
-  //SAME
-  VectorValues solveWithCurrentWorkingSet(
-      const InequalityFactorGraph& workingSet) const;
-
-  /// Create a dual factor
-  //SAME
-  JacobianFactor::shared_ptr createDualFactor(Key key,
-      const InequalityFactorGraph& workingSet, const VectorValues& delta) const;
-
-  /// Iterate 1 step, return a new state with a new workingSet and values
-  QPState iterate(const QPState& state) const;
-
-  /**
-   * Optimize with provided initial values
-   * For this version, it is the responsibility of the caller to provide
-   * a feasible initial value, otherwise, an exception will be thrown.
-   * @return a pair of <primal, dual> solutions
-   */
-  std::pair<VectorValues, VectorValues> optimize(
-      const VectorValues& initialValues, const VectorValues& duals =
-          VectorValues(), bool useWarmStart = true) const;
-
-  /**
-   * For this version the caller will not have to provide an initial value
-   * Uses the matlab strategy for initialization
-   * See  http://www.mathworks.com/help/optim/ug/quadratic-programming-algorithms.html#brrzwpf-22
-   * For details
-   * @return a pair of <primal, dual> solutions
-   */
-  std::pair<VectorValues, VectorValues> optimize() const;
-
+  /// Simply the cost of the QP problem
+  static const GaussianFactorGraph& buildCostFunction(
+      const QP& qp, const VectorValues& xk = VectorValues()) {
+    return qp.cost;
+  }
 };
 
-} // namespace gtsam
+using QPSolver = ActiveSetSolver<QP, QPPolicy, QPInitSolver>;
+
+}

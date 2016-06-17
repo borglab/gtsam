@@ -1,6 +1,17 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /**
  * @file     ActiveSetSolver.h
- * @brief    Abstract class above for solving problems with the abstract set method.
+ * @brief    Active set method for solving LP, QP problems
  * @author   Ivan Dario Jimenez
  * @author   Duy Nguyen Ta
  * @date     1/25/16
@@ -14,26 +25,98 @@
 namespace gtsam {
 
 /**
- * This is a base class for all implementations of the active set algorithm for solving 
- * Programming problems. It provides services and variables all active set implementations
- * share.
+ * This class implements the active set algorithm for solving convex
+ * Programming problems.
+ *
+ * @tparam PROBLEM Type of the problem to solve, e.g. LP (linear program) or 
+ *                 QP (quadratic program).
+ * @tparam POLICY specific detail policy tailored for the particular program
+ * @tparam INITSOLVER Solver for an initial feasible solution of this problem.
  */
+template <class PROBLEM, class POLICY, class INITSOLVER>
 class ActiveSetSolver {
-protected:
-  KeySet constrainedKeys_; //!< all constrained keys, will become factors in dual graphs
-  VariableIndex equalityVariableIndex_,
-      inequalityVariableIndex_; //!< index to corresponding factors to build dual graphs
-  double startAlpha_;
 public:
-  typedef std::vector<std::pair<Key, Matrix> > TermsContainer; //!< vector of key matrix pairs
-  //Matrices are usually the A term for a factor.
+  /// This struct contains the state information for a single iteration
+  struct State {
+    VectorValues values;  //!< current best values at each step
+    VectorValues duals;   //!< current values of dual variables at each step
+    InequalityFactorGraph workingSet; /*!< keep track of current active/inactive
+                                           inequality constraints */
+    bool converged;     //!< True if the algorithm has converged to a solution
+    size_t iterations;  /*!< Number of iterations. Incremented at the end of
+                        each iteration. */
+
+    /// Default constructor
+    State()
+        : values(), duals(), workingSet(), converged(false), iterations(0) {}
+
+    /// Constructor with initial values
+    State(const VectorValues& initialValues, const VectorValues& initialDuals,
+          const InequalityFactorGraph& initialWorkingSet, bool _converged,
+          size_t _iterations)
+        : values(initialValues),
+          duals(initialDuals),
+          workingSet(initialWorkingSet),
+          converged(_converged),
+          iterations(_iterations) {}
+  };
+
+protected:
+  const PROBLEM& problem_;  //!< the particular [convex] problem to solve
+  VariableIndex equalityVariableIndex_,
+      inequalityVariableIndex_;  /*!< index to corresponding factors to build
+                                 dual graphs */
+  KeySet constrainedKeys_;  /*!< all constrained keys, will become factors in
+                                 dual graphs */
+
+  /// Vector of key matrix pairs. Matrices are usually the A term for a factor.
+  typedef std::vector<std::pair<Key, Matrix> > TermsContainer; 
+
+public:
+  /// Constructor
+  ActiveSetSolver(const PROBLEM& problem) :  problem_(problem) {
+    equalityVariableIndex_ = VariableIndex(problem_.equalities);
+    inequalityVariableIndex_ = VariableIndex(problem_.inequalities);
+    constrainedKeys_ = problem_.equalities.keys();
+    constrainedKeys_.merge(problem_.inequalities.keys());
+  }
+
   /**
-   * Creates a dual factor from the current workingSet and the key of the
-   * the variable used to created the dual factor.
+   * Optimize with provided initial values
+   * For this version, it is the responsibility of the caller to provide
+   * a feasible initial value, otherwise, an exception will be thrown.
+   * @return a pair of <primal, dual> solutions
    */
-  virtual JacobianFactor::shared_ptr createDualFactor(Key key,
-      const InequalityFactorGraph& workingSet,
-      const VectorValues& delta) const = 0;
+  std::pair<VectorValues, VectorValues> optimize(
+      const VectorValues& initialValues,
+      const VectorValues& duals = VectorValues(),
+      bool useWarmStart = false) const;
+
+  /**
+   * For this version the caller will not have to provide an initial value
+   * @return a pair of <primal, dual> solutions
+   */
+  std::pair<VectorValues, VectorValues> optimize() const;
+
+protected:
+  /**
+   * Compute minimum step size alpha to move from the current point @p xk to the 
+   * next feasible point along a direction @p p:  x' = xk + alpha*p, 
+   * where alpha \in [0,maxAlpha]. 
+   * 
+   * For QP, maxAlpha = 1. For LP: maxAlpha = Inf.
+   *
+   * @return a tuple of (minAlpha, closestFactorIndex) where closestFactorIndex
+   * is the closest inactive inequality constraint that blocks xk to move 
+   * further and that has the minimum alpha, or (-1, maxAlpha) if there is no 
+   * such inactive blocking constraint.
+   * 
+   * If there is a blocking constraint, the closest one will be added to the 
+   * working set and become active in the next iteration.
+   */
+  boost::tuple<double, int> computeStepSize(
+      const InequalityFactorGraph& workingSet, const VectorValues& xk,
+      const VectorValues& p, const double& maxAlpha) const;
 
   /**
    * Finds the active constraints in the given factor graph and returns the 
@@ -59,45 +142,46 @@ public:
     }
     return Aterms;
   }
+
   /**
-   * Identifies active constraints that shouldn't be active anymore.
+   * Creates a dual factor from the current workingSet and the key of the
+   * the variable used to created the dual factor.
    */
-  int identifyLeavingConstraint(const InequalityFactorGraph& workingSet,
-      const VectorValues& lambdas) const;
-  
-  /**
-   * Builds a dual graph from the current working set.
-   */
+  JacobianFactor::shared_ptr createDualFactor(
+    Key key, const InequalityFactorGraph& workingSet,
+    const VectorValues& delta) const;
+
+public: /// Just for testing...
+
+  /// Builds a dual graph from the current working set.
   GaussianFactorGraph::shared_ptr buildDualGraph(
       const InequalityFactorGraph& workingSet, const VectorValues& delta) const;
-  /*
-   * Given an initial value this function determine which constraints are active
-   * which can be used to initialize the working set.
-   * A constraint Ax <= b  is active if we have an x' s.t. Ax' = b
+
+  /**
+   * Build a working graph of cost, equality and active inequality constraints
+   * to solve at each iteration.
+   * @param  workingSet the collection of all cost and constrained factors
+   * @param  xk   current solution, used to build a special quadratic cost in LP
+   * @return      a new better solution
    */
+  GaussianFactorGraph buildWorkingGraph(
+      const InequalityFactorGraph& workingSet,
+      const VectorValues& xk = VectorValues()) const;
+
+  /// Iterate 1 step, return a new state with a new workingSet and values
+  State iterate(const State& state) const;
+
   /// Identify active constraints based on initial values.
   InequalityFactorGraph identifyActiveConstraints(
       const InequalityFactorGraph& inequalities,
-      const VectorValues& initialValues, const VectorValues& duals =
-          VectorValues(), bool useWarmStart = true) const;
+      const VectorValues& initialValues,
+      const VectorValues& duals = VectorValues(),
+      bool useWarmStart = false) const;
 
-protected:
-  /**
-   * Protected constructor because this class doesn't have any meaning without
-   * a concrete Programming problem to solve.
-   */
-  ActiveSetSolver(double startAlpha) :
-      constrainedKeys_(), startAlpha_(startAlpha) {
-  }
+  /// Identifies active constraints that shouldn't be active anymore.
+  int identifyLeavingConstraint(const InequalityFactorGraph& workingSet,
+      const VectorValues& lambdas) const;
 
-  /**
-   * Computes the distance to move from the current point being examined to the next 
-   * location to be examined by the graph. This should only be used where there are less 
-   * than two constraints active.
-   */
-  boost::tuple<double, int> computeStepSize(
-      const InequalityFactorGraph& workingSet, const VectorValues& xk,
-      const VectorValues& p) const;
 };
 
 /**
@@ -116,3 +200,5 @@ Key maxKey(const PROBLEM& problem) {
 }
 
 } // namespace gtsam
+
+#include <gtsam_unstable/linear/ActiveSetSolver-inl.h>
