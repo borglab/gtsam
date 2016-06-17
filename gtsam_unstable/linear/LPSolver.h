@@ -11,39 +11,25 @@
 
 /**
  * @file     LPSolver.h
- * @brief    Class used to solve Linear Programming Problems as defined in LP.h
+ * @brief    Policy of ActiveSetSolver to solve Linear Programming Problems
  * @author   Duy Nguyen Ta
  * @author   Ivan Dario Jimenez
- * @date     1/24/16
+ * @date     6/16/16
  */
 
-#pragma once
-
-#include <gtsam_unstable/linear/LPState.h>
 #include <gtsam_unstable/linear/LP.h>
 #include <gtsam_unstable/linear/ActiveSetSolver.h>
-#include <gtsam_unstable/linear/LinearCost.h>
-#include <gtsam/linear/VectorValues.h>
+#include <gtsam_unstable/linear/LPInitSolver.h>
+
+#include <limits>
+#include <algorithm>
 
 namespace gtsam {
 
-class LPSolver: public ActiveSetSolver {
-  const LP &lp_; //!< the linear programming problem
-public:
-  /// Constructor
-  LPSolver(const LP &lp);
-
-  const LP &lp() const {
-    return lp_;
-  }
-
-  /*
-   * This function performs an iteration of the Active Set Method for solving
-   * LP problems. At the end of this iteration the problem should either be found
-   * to be unfeasible, solved or the current state changed to reflect a new
-   * working set.
-   */
-  LPState iterate(const LPState &state) const;
+/// Policy for ActivetSetSolver to solve Linear Programming \sa LP problems
+struct LPPolicy {
+  /// Maximum alpha for line search. For LP, it's infinity
+  static constexpr double maxAlpha = std::numeric_limits<double>::infinity();
 
   /**
    * Create the factor ||x-xk - (-g)||^2 where xk is the current feasible solution
@@ -57,45 +43,37 @@ public:
    * The least-square solution of this quadratic subject to a set of linear constraints
    * is the projection of the gradient onto the constraints' subspace
    */
-  GaussianFactorGraph buildCostFunction(const VectorValues &xk) const;
+  static GaussianFactorGraph buildCostFunction(const LP& lp,
+                                               const VectorValues& xk) {
+    GaussianFactorGraph graph;
+    for (LinearCost::const_iterator it = lp.cost.begin(); it != lp.cost.end();
+         ++it) {
+      size_t dim = lp.cost.getDim(it);
+      Vector b = xk.at(*it) - lp.cost.getA(it).transpose();  // b = xk-g
+      graph.push_back(JacobianFactor(*it, Matrix::Identity(dim, dim), b));
+    }
 
-  GaussianFactorGraph buildWorkingGraph(
-    const InequalityFactorGraph& workingSet, const VectorValues& xk) const;
-
-  /*
-   * A dual factor takes the objective function and a set of constraints.
-   * It then creates a least-square approximation of the lagrangian multipliers
-   * for the following problem: f' = - lambda * g' where f is the objection
-   * function g are dual factors and lambda is the lagrangian multiplier.
-   */
-  JacobianFactor::shared_ptr createDualFactor(Key key,
-      const InequalityFactorGraph &workingSet, const VectorValues &delta) const;
-
-  /// TODO(comment)
-  boost::tuple<double, int> computeStepSize(
-      const InequalityFactorGraph &workingSet, const VectorValues &xk,
-      const VectorValues &p) const;
-
-  /*
-   * Given an initial value this function determine which constraints are active
-   * which can be used to initialize the working set.
-   * A constraint Ax <= b  is active if we have an x' s.t. Ax' = b
-   */
-  InequalityFactorGraph identifyActiveConstraints(
-      const InequalityFactorGraph &inequalities,
-      const VectorValues &initialValues, const VectorValues &duals,
-      bool useWarmStart = false) const;
-
-  /** Optimize with the provided feasible initial values
-   * TODO: throw exception if the initial values is not feasible wrt inequality constraints
-   * TODO: comment duals
-   */
-  pair<VectorValues, VectorValues> optimize(const VectorValues &initialValues,
-      const VectorValues &duals = VectorValues(), bool useWarmStart = false) const;
-
-  /**
-   * Optimize without initial values.
-   */
-  pair<VectorValues, VectorValues> optimize() const;
+    KeySet allKeys = lp.inequalities.keys();
+    allKeys.merge(lp.equalities.keys());
+    allKeys.merge(KeySet(lp.cost.keys()));
+    // Add corresponding factors for all variables that are not explicitly in
+    // the cost function. Gradients of the cost function wrt to these variables 
+    // are zero (g=0), so b=xk
+    if (lp.cost.keys().size() != allKeys.size()) {
+      KeySet difference;
+      std::set_difference(allKeys.begin(), allKeys.end(), lp.cost.begin(),
+                          lp.cost.end(),
+                          std::inserter(difference, difference.end()));
+      for (Key k : difference) {
+        size_t dim = lp.constrainedKeyDimMap().at(k);
+        graph.push_back(
+            JacobianFactor(k, Matrix::Identity(dim, dim), xk.at(k)));
+      }
+    }
+    return graph;
+  }
 };
-} // namespace gtsam
+
+using LPSolver = ActiveSetSolver<LP, LPPolicy, LPInitSolver>;
+
+}

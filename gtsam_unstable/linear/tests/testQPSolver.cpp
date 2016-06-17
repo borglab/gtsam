@@ -21,8 +21,6 @@
 #include <gtsam_unstable/linear/QPSolver.h>
 #include <gtsam_unstable/linear/QPSParser.h>
 #include <CppUnitLite/TestHarness.h>
-#include <gtsam_unstable/linear/InfeasibleInitialValues.h>
-#include <gtsam_unstable/linear/InfeasibleOrUnboundedProblem.h>
 
 using namespace std;
 using namespace gtsam;
@@ -179,7 +177,8 @@ TEST(QPSolver, iterate) {
   InequalityFactorGraph workingSet = solver.identifyActiveConstraints(
       qp.inequalities, currentSolution);
 
-  QPState state(currentSolution, VectorValues(), workingSet, false, 100);
+  QPSolver::State state(currentSolution, VectorValues(), workingSet, false,
+                        100);
 
   int it = 0;
   while (!state.converged) {

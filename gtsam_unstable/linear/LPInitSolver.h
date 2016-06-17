@@ -21,7 +21,7 @@
 
 #include <gtsam_unstable/linear/LP.h>
 #include <gtsam_unstable/linear/InfeasibleOrUnboundedProblem.h>
-#include <gtsam_unstable/linear/QPSolver.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <CppUnitLite/Test.h>
 
 namespace gtsam {
