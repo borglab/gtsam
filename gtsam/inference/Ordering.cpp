@@ -19,6 +19,7 @@
 #include <limits>
 
 #include <boost/format.hpp>
+#include <boost/serialization/serialization.hpp>
 
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/3rdparty/CCOLAMD/Include/ccolamd.h>
