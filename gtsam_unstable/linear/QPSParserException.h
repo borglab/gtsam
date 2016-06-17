@@ -1,8 +1,19 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /**
- * @file QPSParserException
- * @brief Exception thrown if there is an error parsing a QPS file
- * @date jan 24, 2015
- * @author Duy-Nguyen Ta
+ * @file     QPSParserException.h
+ * @brief    Exception thrown if there is an error parsing a QPS file
+ * @author   Ivan Dario Jimenez
+ * @date     3/5/16
  */
 
 #pragma once

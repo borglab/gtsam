@@ -1,8 +1,19 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /**
- * @file     LPSolver.cpp
+ * @file     QPParser.h
  * @brief    QPS parser implementation
  * @author   Ivan Dario Jimenez
- * @date     1/26/16
+ * @date     3/5/16
  */
 
 #pragma once
