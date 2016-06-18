@@ -190,6 +190,13 @@ This::buildWorkingGraph(const InequalityFactorGraph& workingSet,
 }
 
 //******************************************************************************
+Template VectorValues
+This::evaluateCostFunction(const VectorValues &xk) const {
+  GaussianFactorGraph costGraph;
+  costGraph.push_back(POLICY::buildCostFunction(problem_, xk));
+  return costGraph.optimize();
+}
+//******************************************************************************
 Template typename This::State This::iterate(
     const typename This::State& state) const {
   // Algorithm 16.3 from Nocedal06book.

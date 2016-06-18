@@ -257,6 +257,20 @@ TEST(QPSolver, ParserSemanticTest) {
   CHECK(assert_equal(actualSolution, expectedSolution, 1e-7));
 }
 
+TEST(QPSolver, QPExampleTest){
+  QP problem = QPSParser("QPExample.QPS").Parse();
+  VectorValues actualSolution;
+  auto solver = QPSolver(problem);
+  boost::tie(actualSolution, boost::tuples::ignore) = solver.optimize();
+  VectorValues expectedSolution;
+  expectedSolution.insert(Symbol('X',1),0.7625*I_1x1);
+  expectedSolution.insert(Symbol('X',2),0.4750*I_1x1);
+  VectorValues actualCost = solver.evaluateCostFunction(actualSolution);
+  VectorValues expectedCost = solver.evaluateCostFunction(expectedCost);
+  GTSAM_PRINT(actualCost);
+  CHECK(assert_equal(expectedCost, actualCost))
+  CHECK(assert_equal(expectedSolution, actualSolution, 1e-7))
+}
 /* ************************************************************************* */
 // Create Matlab's test graph as in http://www.mathworks.com/help/optim/ug/quadprog.html
 QP createTestMatlabQPEx() {
