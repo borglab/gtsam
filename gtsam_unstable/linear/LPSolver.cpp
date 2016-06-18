@@ -10,14 +10,16 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    QPSolver.cpp
- * @brief
- * @date    Apr 15, 2014
- * @author  Duy-Nguyen Ta
+ * @file     LPSolver.cpp
+ * @brief    
+ * @author   Duy Nguyen Ta
+ * @author   Ivan Dario Jimenez
+ * @date     1/26/16
  */
 
-#include <gtsam_unstable/linear/QPSolver.h>
+#include <gtsam_unstable/linear/LPSolver.h>
 
 namespace gtsam {
-constexpr double QPPolicy::maxAlpha;
+constexpr double LPPolicy::maxAlpha;
 }
+

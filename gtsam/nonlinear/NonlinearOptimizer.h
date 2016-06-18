@@ -42,7 +42,7 @@ public:
   double error;
 
   /** The number of optimization iterations performed. */
-  int iterations;
+  size_t iterations;
 
   NonlinearOptimizerState() {}
 
@@ -50,7 +50,7 @@ public:
   virtual ~NonlinearOptimizerState() {}
 
 protected:
-  NonlinearOptimizerState(const NonlinearFactorGraph& graph, const Values& values, unsigned int iterations = 0) :
+  NonlinearOptimizerState(const NonlinearFactorGraph& graph, const Values& values, size_t iterations = 0) :
     values(values), error(graph.error(values)), iterations(iterations) {}
 
   NonlinearOptimizerState(const Values& values, double error, unsigned int iterations) :
@@ -166,7 +166,7 @@ public:
   double error() const { return _state().error; }
 
   /// return number of iterations
-  int iterations() const { return _state().iterations; }
+  size_t iterations() const { return _state().iterations; }
 
   /// return values
   const Values& values() const { return _state().values; }

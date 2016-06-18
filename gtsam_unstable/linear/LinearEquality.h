@@ -9,11 +9,11 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * LinearEquality.h
- * @brief: LinearEquality derived from Base with constrained noise model
- * @date: Nov 27, 2014
- * @author: thduynguyen
+/**
+ * @file    LinearEquality.h
+ * @brief   LinearEquality derived from Base with constrained noise model
+ * @date    Nov 27, 2014
+ * @author  Duy-Nguyen Ta
  */
 
 #pragma once
@@ -23,7 +23,7 @@
 namespace gtsam {
 
 /**
- * This class defines Linear constraints by inherit Base
+ * This class defines a linear equality constraints, inheriting JacobianFactor
  * with the special Constrained noise model
  */
 class LinearEquality: public JacobianFactor {
@@ -39,6 +39,17 @@ public:
   /** default constructor for I/O */
   LinearEquality() :
       Base() {
+  }
+
+  /**
+   * Construct from a constrained noisemodel JacobianFactor with a dual key.
+   */
+  explicit LinearEquality(const JacobianFactor& jf, Key dualKey) :
+      Base(jf), dualKey_(dualKey) {
+    if (!jf.isConstrained()) {
+      throw std::runtime_error(
+          "Cannot convert an unconstrained JacobianFactor to LinearEquality");
+    }
   }
 
   /** Conversion from HessianFactor (does Cholesky to obtain Jacobian matrix) */
@@ -90,15 +101,19 @@ public:
 
   /** Clone this LinearEquality */
   virtual GaussianFactor::shared_ptr clone() const {
-    return boost::static_pointer_cast<GaussianFactor>(
-        boost::make_shared<LinearEquality>(*this));
+    return boost::static_pointer_cast < GaussianFactor
+        > (boost::make_shared < LinearEquality > (*this));
   }
 
   /// dual key
-  Key dualKey() const { return dualKey_; }
+  Key dualKey() const {
+    return dualKey_;
+  }
 
   /// for active set method: equality constraints are always active
-  bool active() const { return true; }
+  bool active() const {
+    return true;
+  }
 
   /** Special error_vector for constraints (A*x-b) */
   Vector error_vector(const VectorValues& c) const {
@@ -113,11 +128,12 @@ public:
     return 0.0;
   }
 
-}; // \ LinearEquality
-
+};
+// \ LinearEquality
 
 /// traits
-template<> struct traits<LinearEquality> : public Testable<LinearEquality> {};
+template<> struct traits<LinearEquality> : public Testable<LinearEquality> {
+};
 
 } // \ namespace gtsam
 

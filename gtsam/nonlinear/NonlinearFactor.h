@@ -131,7 +131,8 @@ public:
   }
 
   /**
-   * Creates a shared_ptr clone of the factor with different keys using
+   * Creates a shared_ptr clone of the
+   * factor with different keys using
    * a map from old->new keys
    */
   shared_ptr rekey(const std::map<Key,Key>& rekey_mapping) const;
