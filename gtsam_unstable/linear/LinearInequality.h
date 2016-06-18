@@ -14,6 +14,7 @@
  * @brief   LinearInequality derived from Base with constrained noise model
  * @date    Nov 27, 2014
  * @author  Duy-Nguyen Ta
+ * @author  Ivan Dario Jimenez
  */
 
 #pragma once
@@ -26,7 +27,7 @@ namespace gtsam {
 typedef Eigen::RowVectorXd RowVector;
 
 /**
- * This class defines a linear inequality constraint g(x)<=0,
+ * This class defines a linear inequality constraint Ax-b <= 0,
  * inheriting JacobianFactor with the special Constrained noise model
  */
 class LinearInequality: public JacobianFactor {

@@ -237,23 +237,21 @@ pair<QP, QP> testParser(QPSParser parser) {
 
 TEST(QPSolver, ParserSyntaticTest) {
   auto expectedActual = testParser(QPSParser("QPExample.QPS"));
-  CHECK(
-      assert_equal(expectedActual.first.cost, expectedActual.second.cost, 1e-7));
-  CHECK(
-      assert_equal(expectedActual.first.inequalities,
-          expectedActual.second.inequalities, 1e-7));
-  CHECK(
-      assert_equal(expectedActual.first.equalities,
-          expectedActual.second.equalities, 1e-7));
+  CHECK(assert_equal(expectedActual.first.cost, expectedActual.second.cost,
+                     1e-7));
+  CHECK(assert_equal(expectedActual.first.inequalities,
+                     expectedActual.second.inequalities, 1e-7));
+  CHECK(assert_equal(expectedActual.first.equalities,
+                     expectedActual.second.equalities, 1e-7));
 }
 
 TEST(QPSolver, ParserSemanticTest) {
   auto expected_actual = testParser(QPSParser("QPExample.QPS"));
   VectorValues actualSolution, expectedSolution;
-  boost::tie(expectedSolution, boost::tuples::ignore) = QPSolver(
-      expected_actual.first).optimize();
-  boost::tie(actualSolution, boost::tuples::ignore) = QPSolver(
-      expected_actual.second).optimize();
+  boost::tie(expectedSolution, boost::tuples::ignore) =
+      QPSolver(expected_actual.first).optimize();
+  boost::tie(actualSolution, boost::tuples::ignore) =
+      QPSolver(expected_actual.second).optimize();
   CHECK(assert_equal(actualSolution, expectedSolution, 1e-7));
 }
 
