@@ -222,9 +222,9 @@ pair<QP, QP> testParser(QPSParser parser) {
   // 2x + y >= 2
   // -x + 2y <= 6
   expectedqp.inequalities.push_back(
-      LinearInequality(X2, -I_1x1, X1, -2.0 * I_1x1, -2, 0));
+      LinearInequality(X1, -2.0 * I_1x1, X2, -I_1x1, -2, 0));
   expectedqp.inequalities.push_back(
-      LinearInequality(X2, 2.0 * I_1x1, X1, -I_1x1, 6, 1));
+      LinearInequality(X1, -I_1x1, X2, 2.0 * I_1x1, 6, 1));
   // x<= 20
   expectedqp.inequalities.push_back(LinearInequality(X1, I_1x1, 20, 4));
   //x >= 0
