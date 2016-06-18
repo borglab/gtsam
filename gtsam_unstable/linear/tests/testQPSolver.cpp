@@ -217,8 +217,8 @@ pair<QP, QP> testParser(QPSParser parser) {
   Key X1(Symbol('X', 1)), X2(Symbol('X', 2));
   // min f(x,y) = 4 + 1.5x -y + 0.58x^2 + 2xy + 2yx + 10y^2
   expectedqp.cost.push_back(
-      HessianFactor(X1, X2, 8.0 * I_1x1, 2.0 * I_1x1, 1.5 * kOne, 10.0 * I_1x1,
-          -2.0 * kOne, 4.0));
+      HessianFactor(X1, X2, 8.0 * I_1x1, 2.0 * I_1x1, -1.5 * kOne, 10.0 * I_1x1,
+          2.0 * kOne, 4.0));
   // 2x + y >= 2
   // -x + 2y <= 6
   expectedqp.inequalities.push_back(
@@ -263,12 +263,12 @@ TEST(QPSolver, QPExampleTest){
   VectorValues expectedSolution;
   expectedSolution.insert(Symbol('X',1),0.7625*I_1x1);
   expectedSolution.insert(Symbol('X',2),0.4750*I_1x1);
-  VectorValues actualCost = solver.evaluateCostFunction(actualSolution);
-  VectorValues expectedCost = solver.evaluateCostFunction(expectedCost);
-  GTSAM_PRINT(actualCost);
-  CHECK(assert_equal(expectedCost, actualCost))
+  double error_expected = problem.cost.error(expectedSolution);
+  double error_actual = problem.cost.error(actualSolution);
   CHECK(assert_equal(expectedSolution, actualSolution, 1e-7))
+  CHECK(assert_equal(error_expected, error_actual))
 }
+
 /* ************************************************************************* */
 // Create Matlab's test graph as in http://www.mathworks.com/help/optim/ug/quadprog.html
 QP createTestMatlabQPEx() {

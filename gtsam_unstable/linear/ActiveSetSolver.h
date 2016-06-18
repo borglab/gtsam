@@ -168,8 +168,6 @@ public: /// Just for testing...
       const InequalityFactorGraph& workingSet,
       const VectorValues& xk = VectorValues()) const;
   
-  VectorValues evaluateCostFunction(const VectorValues& xk) const;
-  
   /// Iterate 1 step, return a new state with a new workingSet and values
   State iterate(const State& state) const;
 

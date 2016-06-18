@@ -216,7 +216,7 @@ QP RawQP::makeQP() {
     }
   }
   for (Key key1 : keys) {
-    gs.push_back(g[key1]);
+    gs.push_back(-g[key1]);
   }
   int dual_key_num = keys.size() + 1;
   QP madeQP;
