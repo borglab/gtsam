@@ -22,18 +22,16 @@
 #include <gtsam_unstable/linear/LinearEquality.h>
 
 namespace gtsam {
+
 /**
- * This class is used to represent an equality constraint on
- * a Programming problem of the form Ax = b.
+ * Collection of all Linear Equality constraints Ax=b of
+ * a Programming problem as a Factor Graph
  */
 class EqualityFactorGraph: public FactorGraph<LinearEquality> {
 public:
   typedef boost::shared_ptr<EqualityFactorGraph> shared_ptr;
 
-  /** compute error of a guess.
-   * TODO: This code is duplicated in GaussianFactorGraph and NonlinearFactorGraph!!
-   * Remove it!
-   */
+  /// Compute error of a guess.
   double error(const VectorValues& x) const {
     double total_error = 0.;
     for (const sharedFactor& factor : *this) {

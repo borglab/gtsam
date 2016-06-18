@@ -25,6 +25,10 @@
 
 namespace gtsam {
 
+/**
+ * Collection of all Linear Inequality constraints Ax-b <= 0 of
+ * a Programming problem as a Factor Graph
+ */
 class InequalityFactorGraph: public FactorGraph<LinearInequality> {
 private:
   typedef FactorGraph<LinearInequality> Base;

@@ -225,31 +225,31 @@ QP RawQP::makeQP() {
   madeQP.cost.push_back(obj);
 
   for (auto kv : E) {
-    std::vector < std::pair<Key, Matrix11> > KeyMatPair;
+    std::map<Key, Matrix11> keyMatrixMap;
     for (auto km : kv.second) {
-      KeyMatPair.push_back(km);
+      keyMatrixMap.insert(km);
     }
     madeQP.equalities.push_back(
-        LinearEquality(KeyMatPair, b[kv.first] * I_1x1, dual_key_num++));
+        LinearEquality(keyMatrixMap, b[kv.first] * I_1x1, dual_key_num++));
   }
 
   for (auto kv : IG) {
-    std::vector < std::pair<Key, Matrix11> > KeyMatPair;
+    std::map<Key, Matrix11> keyMatrixMap;
     for (auto km : kv.second) {
       km.second = -km.second;
-      KeyMatPair.push_back(km);
+      keyMatrixMap.insert(km);
     }
     madeQP.inequalities.push_back(
-        LinearInequality(KeyMatPair, -b[kv.first], dual_key_num++));
+        LinearInequality(keyMatrixMap, -b[kv.first], dual_key_num++));
   }
 
   for (auto kv : IL) {
-    std::vector < std::pair<Key, Matrix11> > KeyMatPair;
+    std::map<Key, Matrix11> keyMatrixMap;
     for (auto km : kv.second) {
-      KeyMatPair.push_back(km);
+      keyMatrixMap.insert(km);
     }
     madeQP.inequalities.push_back(
-        LinearInequality(KeyMatPair, b[kv.first], dual_key_num++));
+        LinearInequality(keyMatrixMap, b[kv.first], dual_key_num++));
   }
 
   for (Key k : keys) {
