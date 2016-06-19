@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -27,7 +27,7 @@
 #include <gtsam/base/VerticalBlockMatrix.h>
 
 #include <boost/assign/list_of.hpp>
-#include <boost/assign/std/list.hpp> // for operator +=
+#include <boost/assign/std/list.hpp>  // for operator +=
 using namespace boost::assign;
 
 #include <gtsam/base/TestableAssertions.h>
@@ -36,7 +36,7 @@ using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 
-//static SharedDiagonal
+// static SharedDiagonal
 //  sigma0_1 = noiseModel::Isotropic::Sigma(2,0.1), sigma_02 = noiseModel::Isotropic::Sigma(2,0.2),
 //  constraintModel = noiseModel::Constrained::All(2);
 
@@ -56,11 +56,11 @@ TEST(GaussianFactorGraph, initialization) {
 
   // Test sparse, which takes a vector and returns a matrix, used in MATLAB
   // Note that this the augmented vector and the RHS is in column 7
-  Matrix expectedIJS = (Matrix(3, 22) <<
-          1.,   2.,  1.,  2.,     3.,   4.,   3.,   4.,  3.,  4.,    5.,  6., 5., 6., 5., 6.,    7.,  8., 7., 8.,  7., 8.,
-          1.,   2.,  7.,  7.,     1.,   2.,   3.,   4.,  7.,  7.,    1.,  2., 5., 6., 7., 7.,    3.,  4., 5., 6.,  7., 7.,
-          10., 10., -1., -1.,   -10., -10.,  10.,  10.,  2., -1.,   -5., -5., 5., 5., 0., 1.,   -5., -5., 5., 5., -1., 1.5
-  ).finished();
+  Matrix expectedIJS =
+      (Matrix(3, 22) << 1., 2., 1., 2., 3., 4., 3., 4., 3., 4., 5., 6., 5., 6., 5., 6., 7., 8., 7.,
+       8., 7., 8., 1., 2., 7., 7., 1., 2., 3., 4., 7., 7., 1., 2., 5., 6., 7., 7., 3., 4., 5., 6.,
+       7., 7., 10., 10., -1., -1., -10., -10., 10., 10., 2., -1., -5., -5., 5., 5., 0., 1., -5.,
+       -5., 5., 5., -1., 1.5).finished();
   Matrix actualIJS = fg.sparseJacobian_();
   EQUALITY(expectedIJS, actualIJS);
 }
@@ -98,7 +98,8 @@ TEST(GaussianFactorGraph, sparseJacobian) {
   GaussianFactorGraph gfg;
   SharedDiagonal model = noiseModel::Isotropic::Sigma(2, 0.5);
   gfg.add(0, (Matrix(2, 3) << 1., 2., 3., 5., 6., 7.).finished(), Vector2(4., 8.), model);
-  gfg.add(0, (Matrix(2, 3) << 9.,10., 0., 0., 0., 0.).finished(), 1, (Matrix(2, 2) << 11., 12., 14., 15.).finished(), Vector2(13.,16.), model);
+  gfg.add(0, (Matrix(2, 3) << 9., 10., 0., 0., 0., 0.).finished(), 1,
+          (Matrix(2, 2) << 11., 12., 14., 15.).finished(), Vector2(13., 16.), model);
 
   Matrix actual = gfg.sparseJacobian_();
 
@@ -121,73 +122,73 @@ TEST(GaussianFactorGraph, matrices) {
   GaussianFactorGraph gfg;
   SharedDiagonal model = noiseModel::Unit::Create(2);
   gfg.add(0, A00, Vector2(4., 8.), model);
-  gfg.add(0, A10, 1, A11, Vector2(13.,16.), model);
+  gfg.add(0, A10, 1, A11, Vector2(13., 16.), model);
 
-  Matrix Ab(4,6);
-  Ab <<
-      1, 2, 3, 0, 0, 4,
-      5, 6, 7, 0, 0, 8,
-      9,10, 0,11,12,13,
-      0, 0, 0,14,15,16;
+  Matrix Ab(4, 6);
+  Ab << 1, 2, 3, 0, 0, 4, 5, 6, 7, 0, 0, 8, 9, 10, 0, 11, 12, 13, 0, 0, 0, 14, 15, 16;
 
   // augmented versions
   EXPECT(assert_equal(Ab, gfg.augmentedJacobian()));
   EXPECT(assert_equal(Ab.transpose() * Ab, gfg.augmentedHessian()));
 
   // jacobian
-  Matrix A = Ab.leftCols(Ab.cols()-1);
-  Vector b = Ab.col(Ab.cols()-1);
-  Matrix actualA; Vector actualb; boost::tie(actualA,actualb) = gfg.jacobian();
+  Matrix A = Ab.leftCols(Ab.cols() - 1);
+  Vector b = Ab.col(Ab.cols() - 1);
+  Matrix actualA;
+  Vector actualb;
+  boost::tie(actualA, actualb) = gfg.jacobian();
   EXPECT(assert_equal(A, actualA));
   EXPECT(assert_equal(b, actualb));
 
   // hessian
   Matrix L = A.transpose() * A;
   Vector eta = A.transpose() * b;
-  Matrix actualL; Vector actualeta; boost::tie(actualL,actualeta) = gfg.hessian();
+  Matrix actualL;
+  Vector actualeta;
+  boost::tie(actualL, actualeta) = gfg.hessian();
   EXPECT(assert_equal(L, actualL));
   EXPECT(assert_equal(eta, actualeta));
 
   // hessianBlockDiagonal
-  VectorValues expectLdiagonal; // Make explicit that diagonal is sum-squares of columns
-  expectLdiagonal.insert(0, Vector3(1+25+81, 4+36+100, 9+49));
-  expectLdiagonal.insert(1, Vector2(121+196, 144+225));
+  VectorValues expectLdiagonal;  // Make explicit that diagonal is sum-squares of columns
+  expectLdiagonal.insert(0, Vector3(1 + 25 + 81, 4 + 36 + 100, 9 + 49));
+  expectLdiagonal.insert(1, Vector2(121 + 196, 144 + 225));
   EXPECT(assert_equal(expectLdiagonal, gfg.hessianDiagonal()));
 
   // hessianBlockDiagonal
-  map<Key,Matrix> actualBD = gfg.hessianBlockDiagonal();
-  LONGS_EQUAL(2,actualBD.size());
-  EXPECT(assert_equal(A00.transpose()*A00 + A10.transpose()*A10,actualBD[0]));
-  EXPECT(assert_equal(A11.transpose()*A11,actualBD[1]));
+  map<Key, Matrix> actualBD = gfg.hessianBlockDiagonal();
+  LONGS_EQUAL(2, actualBD.size());
+  EXPECT(assert_equal(A00.transpose() * A00 + A10.transpose() * A10, actualBD[0]));
+  EXPECT(assert_equal(A11.transpose() * A11, actualBD[1]));
 }
 
 /* ************************************************************************* */
+/// Factor graph with 2 2D factors on 3 2D variables
 static GaussianFactorGraph createSimpleGaussianFactorGraph() {
   GaussianFactorGraph fg;
+  Key x1 = 2, x2 = 0, l1 = 1;
   SharedDiagonal unit2 = noiseModel::Unit::Create(2);
   // linearized prior on x1: c[_x1_]+x1=0 i.e. x1=-c[_x1_]
-  fg += JacobianFactor(2, 10*I_2x2, -1.0*Vector::Ones(2), unit2);
+  fg += JacobianFactor(x1, 10 * I_2x2, -1.0 * Vector::Ones(2), unit2);
   // odometry between x1 and x2: x2-x1=[0.2;-0.1]
-  fg += JacobianFactor(0, 10*I_2x2, 2, -10*I_2x2, Vector2(2.0, -1.0), unit2);
+  fg += JacobianFactor(x2, 10 * I_2x2, x1, -10 * I_2x2, Vector2(2.0, -1.0), unit2);
   // measurement between x1 and l1: l1-x1=[0.0;0.2]
-  fg += JacobianFactor(1, 5*I_2x2, 2, -5*I_2x2, Vector2(0.0, 1.0), unit2);
+  fg += JacobianFactor(l1, 5 * I_2x2, x1, -5 * I_2x2, Vector2(0.0, 1.0), unit2);
   // measurement between x2 and l1: l1-x2=[-0.2;0.3]
-  fg += JacobianFactor(0, -5*I_2x2, 1, 5*I_2x2, Vector2(-1.0, 1.5), unit2);
+  fg += JacobianFactor(x2, -5 * I_2x2, l1, 5 * I_2x2, Vector2(-1.0, 1.5), unit2);
   return fg;
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, gradient )
-{
+TEST(GaussianFactorGraph, gradient) {
   GaussianFactorGraph fg = createSimpleGaussianFactorGraph();
 
   // Construct expected gradient
-  // 2*f(x) = 100*(x1+c[X(1)])^2 + 100*(x2-x1-[0.2;-0.1])^2 + 25*(l1-x1-[0.0;0.2])^2 + 25*(l1-x2-[-0.2;0.3])^2
+  // 2*f(x) = 100*(x1+c[X(1)])^2 + 100*(x2-x1-[0.2;-0.1])^2 + 25*(l1-x1-[0.0;0.2])^2 +
+  // 25*(l1-x2-[-0.2;0.3])^2
   // worked out: df/dx1 = 100*[0.1;0.1] + 100*[0.2;-0.1]) + 25*[0.0;0.2] = [10+20;10-10+5] = [30;5]
-  VectorValues expected = map_list_of<Key, Vector>
-    (1, Vector2(5.0, -12.5))
-    (2, Vector2(30.0, 5.0))
-    (0, Vector2(-25.0, 17.5));
+  VectorValues expected = map_list_of<Key, Vector>(1, Vector2(5.0, -12.5))(2, Vector2(30.0, 5.0))(
+      0, Vector2(-25.0, 17.5));
 
   // Check the gradient at delta=0
   VectorValues zero = VectorValues::Zero(expected);
@@ -202,18 +203,14 @@ TEST( GaussianFactorGraph, gradient )
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, transposeMultiplication )
-{
+TEST(GaussianFactorGraph, transposeMultiplication) {
   GaussianFactorGraph A = createSimpleGaussianFactorGraph();
 
-  Errors e; e +=
-    Vector2(0.0, 0.0),
-    Vector2(15.0, 0.0),
-    Vector2(0.0,-5.0),
-    Vector2(-7.5,-5.0);
+  Errors e;
+  e += Vector2(0.0, 0.0), Vector2(15.0, 0.0), Vector2(0.0, -5.0), Vector2(-7.5, -5.0);
 
   VectorValues expected;
-  expected.insert(1, Vector2(-37.5,-50.0));
+  expected.insert(1, Vector2(-37.5, -50.0));
   expected.insert(2, Vector2(-150.0, 25.0));
   expected.insert(0, Vector2(187.5, 25.0));
 
@@ -222,8 +219,7 @@ TEST( GaussianFactorGraph, transposeMultiplication )
 }
 
 /* ************************************************************************* */
-TEST(GaussianFactorGraph, eliminate_empty )
-{
+TEST(GaussianFactorGraph, eliminate_empty) {
   // eliminate an empty factor
   GaussianFactorGraph gfg;
   gfg.add(JacobianFactor());
@@ -243,25 +239,31 @@ TEST(GaussianFactorGraph, eliminate_empty )
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, matrices2 )
-{
+TEST(GaussianFactorGraph, matrices2) {
   GaussianFactorGraph gfg = createSimpleGaussianFactorGraph();
-  Matrix A; Vector b; boost::tie(A,b) = gfg.jacobian();
-  Matrix AtA; Vector eta; boost::tie(AtA,eta) = gfg.hessian();
-  EXPECT(assert_equal(A.transpose()*A, AtA));
-  EXPECT(assert_equal(A.transpose()*b, eta));
+  Matrix A;
+  Vector b;
+  boost::tie(A, b) = gfg.jacobian();
+  Matrix AtA;
+  Vector eta;
+  boost::tie(AtA, eta) = gfg.hessian();
+  EXPECT(assert_equal(A.transpose() * A, AtA));
+  EXPECT(assert_equal(A.transpose() * b, eta));
+  Matrix expectedAtA(6, 6);
+  expectedAtA << 125, 0, -25, 0, -100, 0,  //
+      0, 125, 0, -25, 0, -100,             //
+      -25, 0, 50, 0, -25, 0,               //
+      0, -25, 0, 50, 0, -25,               //
+      -100, 0, -25, 0, 225, 0,             //
+      0, -100, 0, -25, 0, 225;
+  EXPECT(assert_equal(expectedAtA, AtA));
 }
 
-
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, multiplyHessianAdd )
-{
+TEST(GaussianFactorGraph, multiplyHessianAdd) {
   GaussianFactorGraph gfg = createSimpleGaussianFactorGraph();
 
-  VectorValues x = map_list_of<Key, Vector>
-    (0, Vector2(1,2))
-    (1, Vector2(3,4))
-    (2, Vector2(5,6));
+  VectorValues x = map_list_of<Key, Vector>(0, Vector2(1, 2))(1, Vector2(3, 4))(2, Vector2(5, 6));
 
   VectorValues expected;
   expected.insert(0, Vector2(-450, -450));
@@ -274,7 +276,7 @@ TEST( GaussianFactorGraph, multiplyHessianAdd )
 
   // now, do it with non-zero y
   gfg.multiplyHessianAdd(1.0, x, actual);
-  EXPECT(assert_equal(2*expected, actual));
+  EXPECT(assert_equal(2 * expected, actual));
 }
 
 /* ************************************************************************* */
@@ -286,20 +288,20 @@ static GaussianFactorGraph createGaussianFactorGraphWithHessianFactor() {
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, multiplyHessianAdd2 )
-{
+TEST(GaussianFactorGraph, multiplyHessianAdd2) {
   GaussianFactorGraph gfg = createGaussianFactorGraphWithHessianFactor();
 
   // brute force
-  Matrix AtA; Vector eta; boost::tie(AtA,eta) = gfg.hessian();
-  Vector X(6); X<<1,2,3,4,5,6;
-  Vector Y(6); Y<<-450, -450, 300, 400, 2950, 3450;
-  EXPECT(assert_equal(Y,AtA*X));
+  Matrix AtA;
+  Vector eta;
+  boost::tie(AtA, eta) = gfg.hessian();
+  Vector X(6);
+  X << 1, 2, 3, 4, 5, 6;
+  Vector Y(6);
+  Y << -450, -450, 300, 400, 2950, 3450;
+  EXPECT(assert_equal(Y, AtA * X));
 
-  VectorValues x = map_list_of<Key, Vector>
-    (0, Vector2(1,2))
-    (1, Vector2(3,4))
-    (2, Vector2(5,6));
+  VectorValues x = map_list_of<Key, Vector>(0, Vector2(1, 2))(1, Vector2(3, 4))(2, Vector2(5, 6));
 
   VectorValues expected;
   expected.insert(0, Vector2(-450, -450));
@@ -312,24 +314,26 @@ TEST( GaussianFactorGraph, multiplyHessianAdd2 )
 
   // now, do it with non-zero y
   gfg.multiplyHessianAdd(1.0, x, actual);
-  EXPECT(assert_equal(2*expected, actual));
+  EXPECT(assert_equal(2 * expected, actual));
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, matricesMixed )
-{
+TEST(GaussianFactorGraph, matricesMixed) {
   GaussianFactorGraph gfg = createGaussianFactorGraphWithHessianFactor();
-  Matrix A; Vector b; boost::tie(A,b) = gfg.jacobian(); // incorrect !
-  Matrix AtA; Vector eta; boost::tie(AtA,eta) = gfg.hessian(); // correct
-  EXPECT(assert_equal(A.transpose()*A, AtA));
-  Vector expected = - (Vector(6) << -25, 17.5, 5, -13.5, 29, 4).finished();
+  Matrix A;
+  Vector b;
+  boost::tie(A, b) = gfg.jacobian();  // incorrect !
+  Matrix AtA;
+  Vector eta;
+  boost::tie(AtA, eta) = gfg.hessian();  // correct
+  EXPECT(assert_equal(A.transpose() * A, AtA));
+  Vector expected = -(Vector(6) << -25, 17.5, 5, -13.5, 29, 4).finished();
   EXPECT(assert_equal(expected, eta));
-  EXPECT(assert_equal(A.transpose()*b, eta));
+  EXPECT(assert_equal(A.transpose() * b, eta));
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, gradientAtZero )
-{
+TEST(GaussianFactorGraph, gradientAtZero) {
   GaussianFactorGraph gfg = createGaussianFactorGraphWithHessianFactor();
   VectorValues expected;
   VectorValues actual = gfg.gradientAtZero();
@@ -340,29 +344,28 @@ TEST( GaussianFactorGraph, gradientAtZero )
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, clone ) {
+TEST(GaussianFactorGraph, clone) {
   // 2 variables, frontal has dim=4
   VerticalBlockMatrix blockMatrix(list_of(4)(2)(1), 4);
-  blockMatrix.matrix() <<
-      1.0, 0.0, 2.0, 0.0, 3.0, 0.0, 0.1,
-      0.0, 1.0, 0.0, 2.0, 0.0, 3.0, 0.2,
-      0.0, 0.0, 3.0, 0.0, 4.0, 0.0, 0.3,
-      0.0, 0.0, 0.0, 3.0, 0.0, 4.0, 0.4;
+  blockMatrix.matrix() << 1.0, 0.0, 2.0, 0.0, 3.0, 0.0, 0.1, 0.0, 1.0, 0.0, 2.0, 0.0, 3.0, 0.2, 0.0,
+      0.0, 3.0, 0.0, 4.0, 0.0, 0.3, 0.0, 0.0, 0.0, 3.0, 0.0, 4.0, 0.4;
   GaussianConditional cg(list_of(1)(2), 1, blockMatrix);
 
   GaussianFactorGraph init_graph = createGaussianFactorGraphWithHessianFactor();
-  init_graph.push_back(GaussianFactor::shared_ptr()); /// Add null factor
+  init_graph.push_back(GaussianFactor::shared_ptr());  /// Add null factor
   init_graph.push_back(GaussianConditional(cg));
 
-  GaussianFactorGraph exp_graph = createGaussianFactorGraphWithHessianFactor(); // Created separately
-  exp_graph.push_back(GaussianFactor::shared_ptr()); /// Add null factor
+  GaussianFactorGraph exp_graph =
+      createGaussianFactorGraphWithHessianFactor();   // Created separately
+  exp_graph.push_back(GaussianFactor::shared_ptr());  /// Add null factor
   exp_graph.push_back(GaussianConditional(cg));
 
   GaussianFactorGraph actCloned = init_graph.clone();
-  EXPECT(assert_equal(init_graph, actCloned)); // Same as the original version
+  EXPECT(assert_equal(init_graph, actCloned));  // Same as the original version
 
   // Apply an in-place change to init_graph and compare
-  JacobianFactor::shared_ptr jacFactor0 = boost::dynamic_pointer_cast<JacobianFactor>(init_graph.at(0));
+  JacobianFactor::shared_ptr jacFactor0 =
+      boost::dynamic_pointer_cast<JacobianFactor>(init_graph.at(0));
   CHECK(jacFactor0);
   jacFactor0->getA(jacFactor0->begin()) *= 7.;
   EXPECT(assert_inequal(init_graph, exp_graph));
@@ -370,9 +373,9 @@ TEST( GaussianFactorGraph, clone ) {
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, negate ) {
+TEST(GaussianFactorGraph, negate) {
   GaussianFactorGraph init_graph = createGaussianFactorGraphWithHessianFactor();
-  init_graph.push_back(GaussianFactor::shared_ptr()); /// Add null factor
+  init_graph.push_back(GaussianFactor::shared_ptr());  /// Add null factor
   GaussianFactorGraph actNegation = init_graph.negate();
   GaussianFactorGraph expNegation;
   expNegation.push_back(init_graph.at(0)->negate());
@@ -385,8 +388,7 @@ TEST( GaussianFactorGraph, negate ) {
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, hessianDiagonal )
-{
+TEST(GaussianFactorGraph, hessianDiagonal) {
   GaussianFactorGraph gfg = createGaussianFactorGraphWithHessianFactor();
   VectorValues expected;
   Matrix infoMatrix = gfg.hessian().first;
@@ -399,6 +401,16 @@ TEST( GaussianFactorGraph, hessianDiagonal )
   EXPECT(assert_equal(expected, actual));
 }
 
+TEST(GaussianFactorGraph, DenseSolve) {
+  GaussianFactorGraph fg = createSimpleGaussianFactorGraph();
+  VectorValues expected = fg.optimize();
+  VectorValues actual = fg.optimizeDensely();
+  EXPECT(assert_equal(expected, actual));
+}
+
 /* ************************************************************************* */
-int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
+int main() {
+  TestResult tr;
+  return TestRegistry::runAllTests(tr);
+}
 /* ************************************************************************* */

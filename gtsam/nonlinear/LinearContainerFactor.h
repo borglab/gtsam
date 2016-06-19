@@ -11,7 +11,6 @@
 
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
-
 namespace gtsam {
 
   // Forward declarations
@@ -141,8 +140,15 @@ public:
    * Utility function for converting linear graphs to nonlinear graphs
    * consisting of LinearContainerFactors.
    */
-  static NonlinearFactorGraph convertLinearGraph(const GaussianFactorGraph& linear_graph,
+  static NonlinearFactorGraph ConvertLinearGraph(const GaussianFactorGraph& linear_graph,
       const Values& linearizationPoint = Values());
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
+  static NonlinearFactorGraph convertLinearGraph(const GaussianFactorGraph& linear_graph,
+      const Values& linearizationPoint = Values()) {
+    return ConvertLinearGraph(linear_graph, linearizationPoint);
+  }
+#endif
 
 protected:
   void initializeLinearizationPoint(const Values& linearizationPoint);

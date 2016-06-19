@@ -175,7 +175,7 @@ public:
 
   /// Print
   virtual void print(const std::string& indent = "") const {
-    std::cout << indent << "Leaf, key = " << key_ << std::endl;
+    std::cout << indent << "Leaf, key = " << DefaultKeyFormatter(key_) << std::endl;
   }
 
   /// Return keys that play in this expression
@@ -310,11 +310,13 @@ public:
     assert(reinterpret_cast<size_t>(ptr) % TraceAlignment == 0);
 
     // Create a Record in the memory pointed to by ptr
-    // Calling the construct will record the traces for all arguments
+    // Calling the constructor will record the traces for all arguments
     // Write an Expression<A> execution trace in record->trace
     // Iff Constant or Leaf, this will not write to traceStorage, only to trace.
     // Iff the expression is functional, write all Records in traceStorage buffer
     // Return value of type T is recorded in record->value
+    // NOTE(frank, abe): The destructor on this record is never called due to this placement new
+    // Records must only contain statically sized objects!
     Record* record = new (ptr) Record(values, *expression1_, ptr);
 
     // Our trace parameter is set to point to the Record
@@ -389,6 +391,7 @@ public:
     ExecutionTrace<A1> trace1;
     ExecutionTrace<A2> trace2;
 
+    // TODO(frank): These aren't needed kill them!
     A1 value1;
     A2 value2;
 
@@ -632,91 +635,82 @@ class ScalarMultiplyNode : public ExpressionNode<T> {
   }
 };
 
+
 //-----------------------------------------------------------------------------
-/// Sum Expression
+/// Binary Sum Expression
 template <class T>
-class SumExpressionNode : public ExpressionNode<T> {
+class BinarySumNode : public ExpressionNode<T> {
   typedef ExpressionNode<T> NodeT;
-  std::vector<boost::shared_ptr<NodeT>> expressions_;
+  boost::shared_ptr<ExpressionNode<T> > expression1_;
+  boost::shared_ptr<ExpressionNode<T> > expression2_;
 
  public:
-  explicit SumExpressionNode(const std::vector<Expression<T>>& expressions) {
+  explicit BinarySumNode() {
     this->traceSize_ = upAligned(sizeof(Record));
-    for (const Expression<T>& e : expressions)
-      add(e);
   }
 
-  void add(const Expression<T>& e) {
-    expressions_.push_back(e.root());
-    this->traceSize_ += e.traceSize();
+  /// Constructor with a binary function f, and two input arguments
+  BinarySumNode(const Expression<T>& e1, const Expression<T>& e2)
+      : expression1_(e1.root()), expression2_(e2.root()) {
+    this->traceSize_ =  //
+        upAligned(sizeof(Record)) + e1.traceSize() + e2.traceSize();
   }
 
   /// Destructor
-  virtual ~SumExpressionNode() {}
-
-  size_t nrTerms() const {
-    return expressions_.size();
-  }
+  virtual ~BinarySumNode() {}
 
   /// Print
   virtual void print(const std::string& indent = "") const {
-    std::cout << indent << "SumExpressionNode" << std::endl;
-    for (const auto& node : expressions_)
-      node->print(indent + "  ");
+    std::cout << indent << "BinarySumNode" << std::endl;
+    expression1_->print(indent + "  ");
+    expression2_->print(indent + "  ");
   }
 
   /// Return value
   virtual T value(const Values& values) const {
-    auto it = expressions_.begin();
-    T sum = (*it)->value(values);
-    for (++it; it != expressions_.end(); ++it)
-      sum = sum + (*it)->value(values);
-    return sum;
+    return expression1_->value(values) + expression2_->value(values);
   }
 
   /// Return keys that play in this expression
   virtual std::set<Key> keys() const {
-    std::set<Key> keys;
-    for (const auto& node : expressions_) {
-      std::set<Key> myKeys = node->keys();
-      keys.insert(myKeys.begin(), myKeys.end());
-    }
+    std::set<Key> keys = expression1_->keys();
+    std::set<Key> myKeys = expression2_->keys();
+    keys.insert(myKeys.begin(), myKeys.end());
     return keys;
   }
 
   /// Return dimensions for each argument
   virtual void dims(std::map<Key, int>& map) const {
-    for (const auto& node : expressions_)
-      node->dims(map);
+    expression1_->dims(map);
+    expression2_->dims(map);
   }
 
   // Inner Record Class
   struct Record : public CallRecordImplementor<Record, traits<T>::dimension> {
-    std::vector<ExecutionTrace<T>> traces_;
-
-    explicit Record(size_t nrArguments) : traces_(nrArguments) {}
+    ExecutionTrace<T> trace1;
+    ExecutionTrace<T> trace2;
 
     /// Print to std::cout
     void print(const std::string& indent) const {
-      std::cout << indent << "SumExpressionNode::Record {" << std::endl;
-      for (const auto& trace : traces_)
-        trace.print(indent);
+      std::cout << indent << "BinarySumNode::Record {" << std::endl;
+      trace1.print(indent);
+      trace2.print(indent);
       std::cout << indent << "}" << std::endl;
     }
 
-    /// If the SumExpression is the root, we just start as many pipelines as there are terms.
+    /// If the BinarySumExpression is the root, we just start as many pipelines as there are terms.
     void startReverseAD4(JacobianMap& jacobians) const {
-      for (const auto& trace : traces_)
-        // NOTE(frank): equivalent to trace.reverseAD1(dTdA, jacobians) with dTdA=Identity
-        trace.startReverseAD1(jacobians);
+      // NOTE(frank): equivalent to trace.reverseAD1(dTdA, jacobians) with dTdA=Identity
+      trace1.startReverseAD1(jacobians);
+      trace2.startReverseAD1(jacobians);
     }
 
     /// If we are not the root, we simply pass on the adjoint matrix dFdT to all terms
     template <typename MatrixType>
     void reverseAD4(const MatrixType& dFdT, JacobianMap& jacobians) const {
-      for (const auto& trace : traces_)
-        // NOTE(frank): equivalent to trace.reverseAD1(dFdT * dTdA, jacobians) with dTdA=Identity
-        trace.reverseAD1(dFdT, jacobians);
+      // NOTE(frank): equivalent to trace.reverseAD1(dFdT * dTdA, jacobians) with dTdA=Identity
+      trace1.reverseAD1(dFdT, jacobians);
+      trace2.reverseAD1(dFdT, jacobians);
     }
   };
 
@@ -724,17 +718,13 @@ class SumExpressionNode : public ExpressionNode<T> {
   virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
                            ExecutionTraceStorage* ptr) const {
     assert(reinterpret_cast<size_t>(ptr) % TraceAlignment == 0);
-    size_t nrArguments = expressions_.size();
-    Record* record = new (ptr) Record(nrArguments);
-    ptr += upAligned(sizeof(Record));
-    size_t i = 0;
-    T sum = traits<T>::Identity();
-    for (const auto& node : expressions_) {
-      sum = sum + node->traceExecution(values, record->traces_[i++], ptr);
-      ptr += node->traceSize();
-    }
+    Record* record = new (ptr) Record();
     trace.setFunction(record);
-    return sum;
+
+    ExecutionTraceStorage* ptr1 = ptr + upAligned(sizeof(Record));
+    ExecutionTraceStorage* ptr2 = ptr1 + expression1_->traceSize();
+    return expression1_->traceExecution(values, record->trace1, ptr1) +
+           expression2_->traceExecution(values, record->trace2, ptr2);
   }
 };
 

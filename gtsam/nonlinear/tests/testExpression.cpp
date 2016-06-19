@@ -307,18 +307,18 @@ TEST(Expression, ternary) {
 /* ************************************************************************* */
 TEST(Expression, ScalarMultiply) {
   const Key key(67);
-  const Point3_ sum_ = 23 * Point3_(key);
+  const Point3_ expr = 23 * Point3_(key);
 
   set<Key> expected_keys = list_of(key);
-  EXPECT(expected_keys == sum_.keys());
+  EXPECT(expected_keys == expr.keys());
 
   map<Key, int> actual_dims, expected_dims = map_list_of<Key, int>(key, 3);
-  sum_.dims(actual_dims);
+  expr.dims(actual_dims);
   EXPECT(actual_dims == expected_dims);
 
   // Check dims as map
   std::map<Key, int> map;
-  sum_.dims(map);
+  expr.dims(map);
   LONGS_EQUAL(1, map.size());
 
   Values values;
@@ -326,16 +326,16 @@ TEST(Expression, ScalarMultiply) {
 
   // Check value
   const Point3 expected(23, 0, 46);
-  EXPECT(assert_equal(expected, sum_.value(values)));
+  EXPECT(assert_equal(expected, expr.value(values)));
 
   // Check value + Jacobians
   std::vector<Matrix> H(1);
-  EXPECT(assert_equal(expected, sum_.value(values, H)));
+  EXPECT(assert_equal(expected, expr.value(values, H)));
   EXPECT(assert_equal(23 * I_3x3, H[0]));
 }
 
 /* ************************************************************************* */
-TEST(Expression, Sum) {
+TEST(Expression, BinarySum) {
   const Key key(67);
   const Point3_ sum_ = Point3_(key) + Point3_(Point3(1, 1, 1));
 
@@ -368,9 +368,31 @@ TEST(Expression, Sum) {
 TEST(Expression, TripleSum) {
   const Key key(67);
   const Point3_ p1_(Point3(1, 1, 1)), p2_(key);
-  const SumExpression<Point3> sum_ = p1_ + p2_ + p1_;
+  const Expression<Point3> sum_ = p1_ + p2_ + p1_;
 
-  LONGS_EQUAL(3, sum_.nrTerms());
+  LONGS_EQUAL(1, sum_.keys().size());
+
+  Values values;
+  values.insert<Point3>(key, Point3(2, 2, 2));
+
+  // Check value
+  const Point3 expected(4, 4, 4);
+  EXPECT(assert_equal(expected, sum_.value(values)));
+
+  // Check value + Jacobians
+  std::vector<Matrix> H(1);
+  EXPECT(assert_equal(expected, sum_.value(values, H)));
+  EXPECT(assert_equal(I_3x3, H[0]));
+}
+
+/* ************************************************************************* */
+TEST(Expression, PlusEqual) {
+  const Key key(67);
+  const Point3_ p1_(Point3(1, 1, 1)), p2_(key);
+  Expression<Point3> sum_ = p1_;
+  sum_ += p2_;
+  sum_ += p1_;
+
   LONGS_EQUAL(1, sum_.keys().size());
 
   Values values;

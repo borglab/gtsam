@@ -247,6 +247,11 @@ namespace gtsam {
       const Eliminate& function = EliminationTraitsType::DefaultEliminate) const;
 
     /**
+     * Optimize using Eigen's dense Cholesky factorization
+     */
+    VectorValues optimizeDensely() const;
+
+    /**
      * Compute the gradient of the energy function,
      * \f$ \nabla_{x=x_0} \left\Vert \Sigma^{-1} A x - b \right\Vert^2 \f$,
      * centered around \f$ x = x_0 \f$.

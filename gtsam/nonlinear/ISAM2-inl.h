@@ -140,6 +140,7 @@ bool optimizeWildfireNode(const boost::shared_ptr<CLIQUE>& clique, double thresh
 
   // Solve clique if it was replaced, or if any parents were changed above the
   // threshold or themselves replaced.
+  // TODO(gareth): This code shares a lot of logic w/ linearAlgorithms-inst, potentially refactor
   if(recalculate)
   {
     // Temporary copy of the original values, to check how much they change
@@ -188,16 +189,21 @@ bool optimizeWildfireNode(const boost::shared_ptr<CLIQUE>& clique, double thresh
             vectorPos += parentVector.size();
           }
         }
-        xS = c.getb() - c.get_S() * xS;
-        Vector soln = c.get_R().triangularView<Eigen::Upper>().solve(xS);
+
+        // NOTE(gareth): We can no longer write: xS = b - S * xS
+        // This is because Eigen (as of 3.3) no longer evaluates S * xS into
+        // a temporary, and the operation trashes valus in xS.
+        // See: http://eigen.tuxfamily.org/index.php?title=3.3
+        const Vector rhs = c.getb() - c.get_S() * xS;
+        const Vector solution = c.get_R().triangularView<Eigen::Upper>().solve(rhs);
 
         // Check for indeterminant solution
-        if(soln.hasNaN()) throw IndeterminantLinearSystemException(c.keys().front());
+        if(solution.hasNaN()) throw IndeterminantLinearSystemException(c.keys().front());
 
         // Insert solution into a VectorValues
         DenseIndex vectorPosition = 0;
         for(GaussianConditional::const_iterator frontal = c.beginFrontals(); frontal != c.endFrontals(); ++frontal) {
-          clique->solnPointers_.at(*frontal)->second = soln.segment(vectorPosition, c.getDim(frontal));
+          clique->solnPointers_.at(*frontal)->second = solution.segment(vectorPosition, c.getDim(frontal));
           vectorPosition += c.getDim(frontal);
         }
       }

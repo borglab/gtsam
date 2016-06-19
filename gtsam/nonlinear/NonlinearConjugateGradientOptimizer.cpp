@@ -17,15 +17,16 @@
  */
 
 #include <gtsam/nonlinear/NonlinearConjugateGradientOptimizer.h>
+#include <gtsam/nonlinear/internal/NonlinearOptimizerState.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
 
 #include <cmath>
 
-using namespace std;
-
 namespace gtsam {
+
+typedef internal::NonlinearOptimizerState State;
 
 /**
  * @brief Return the gradient vector of a nonlinear factor graph
@@ -40,8 +41,11 @@ static VectorValues gradientInPlace(const NonlinearFactorGraph &nfg,
   return linear->gradientAtZero();
 }
 
-double NonlinearConjugateGradientOptimizer::System::error(
-    const State &state) const {
+NonlinearConjugateGradientOptimizer::NonlinearConjugateGradientOptimizer(
+    const NonlinearFactorGraph& graph, const Values& initialValues, const Parameters& params)
+    : Base(graph, std::unique_ptr<State>(new State(initialValues, graph.error(initialValues)))) {}
+
+double NonlinearConjugateGradientOptimizer::System::error(const State& state) const {
   return graph_.error(state);
 }
 
@@ -57,21 +61,26 @@ NonlinearConjugateGradientOptimizer::System::State NonlinearConjugateGradientOpt
   return current.retract(step);
 }
 
-void NonlinearConjugateGradientOptimizer::iterate() {
+GaussianFactorGraph::shared_ptr NonlinearConjugateGradientOptimizer::iterate() {
+  Values newValues;
   int dummy;
-  boost::tie(state_.values, dummy) = nonlinearConjugateGradient<System, Values>(
-      System(graph_), state_.values, params_, true /* single iterations */);
-  ++state_.iterations;
-  state_.error = graph_.error(state_.values);
+  boost::tie(newValues, dummy) = nonlinearConjugateGradient<System, Values>(
+      System(graph_), state_->values, params_, true /* single iteration */);
+  state_.reset(new State(newValues, graph_.error(newValues), state_->iterations + 1));
+
+  // NOTE(frank): We don't linearize this system, so we must return null here.
+  return nullptr;
 }
 
 const Values& NonlinearConjugateGradientOptimizer::optimize() {
   // Optimize until convergence
   System system(graph_);
-  boost::tie(state_.values, state_.iterations) = //
-      nonlinearConjugateGradient(system, state_.values, params_, false);
-  state_.error = graph_.error(state_.values);
-  return state_.values;
+  Values newValues;
+  int iterations;
+  boost::tie(newValues, iterations) =
+      nonlinearConjugateGradient(system, state_->values, params_, false);
+  state_.reset(new State(std::move(newValues), graph_.error(newValues), iterations));
+  return state_->values;
 }
 
 } /* namespace gtsam */

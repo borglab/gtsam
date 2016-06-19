@@ -72,7 +72,7 @@ Ordering Ordering::ColamdConstrained(const VariableIndex& variableIndex,
     for(size_t factorIndex: column) {
       A[count++] = (int) factorIndex; // copy sparse column
     }
-    p[index + 1] = count; // column j (base 1) goes from A[j-1] to A[j]-1
+    p[index + 1] = count;  // column j (base 1) goes from A[j-1] to A[j]-1
     // Store key in array and increment index
     keys[index] = key_factors.first;
     ++index;
@@ -123,6 +123,7 @@ Ordering Ordering::ColamdConstrainedLast(const VariableIndex& variableIndex,
   std::vector<int> cmember(n, 0);
 
   // Build a mapping to look up sorted Key indices by Key
+  // TODO(frank): think of a way to not build this
   FastMap<Key, size_t> keyIndices;
   size_t j = 0;
   for (auto key_factors: variableIndex)

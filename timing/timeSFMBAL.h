@@ -67,6 +67,7 @@ int optimize(const SfM_data& db, const NonlinearFactorGraph& graph,
   // Set parameters to be similar to ceres
   LevenbergMarquardtParams params;
   LevenbergMarquardtParams::SetCeresDefaults(&params);
+//  params.setLinearSolverType("SEQUENTIAL_CHOLESKY");
 //  params.setVerbosityLM("SUMMARY");
 
   if (gUseSchur) {

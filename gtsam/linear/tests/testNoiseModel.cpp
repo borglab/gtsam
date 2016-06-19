@@ -448,6 +448,15 @@ TEST(NoiseModel, WhitenInPlace)
 }
 
 /* ************************************************************************* */
+
+/*
+ * These tests are responsible for testing the weight functions for the m-estimators in GTSAM.
+ * The weight function is related to the analytic derivative of the residual function. See
+ *  http://research.microsoft.com/en-us/um/people/zhang/INRIA/Publis/Tutorial-Estim/node24.html
+ * for details. This weight function is required when optimizing cost functions with robust
+ * penalties using iteratively re-weighted least squares.
+ */
+
 TEST(NoiseModel, robustFunctionHuber)
 {
   const double k = 5.0, error1 = 1.0, error2 = 10.0;
@@ -476,6 +485,26 @@ TEST(NoiseModel, robustFunctionDCS)
                weight2 = dcs->weight(error2);
   DOUBLES_EQUAL(1.0       , weight1, 1e-8);
   DOUBLES_EQUAL(0.00039211, weight2, 1e-8);
+}
+
+TEST(NoiseModel, robustFunctionL2WithDeadZone)
+{
+  const double k = 1.0, e0 = -10.0, e1 = -1.01, e2 = -0.99, e3 = 0.99, e4 = 1.01, e5 = 10.0;
+  const mEstimator::L2WithDeadZone::shared_ptr lsdz = mEstimator::L2WithDeadZone::Create(k);
+
+  DOUBLES_EQUAL(0.9,           lsdz->weight(e0), 1e-8);
+  DOUBLES_EQUAL(0.00990099009, lsdz->weight(e1), 1e-8);
+  DOUBLES_EQUAL(0.0,           lsdz->weight(e2), 1e-8);
+  DOUBLES_EQUAL(0.0,           lsdz->weight(e3), 1e-8);
+  DOUBLES_EQUAL(0.00990099009, lsdz->weight(e4), 1e-8);
+  DOUBLES_EQUAL(0.9,           lsdz->weight(e5), 1e-8);
+
+  DOUBLES_EQUAL(40.5,    lsdz->residual(e0), 1e-8);
+  DOUBLES_EQUAL(0.00005, lsdz->residual(e1), 1e-8);
+  DOUBLES_EQUAL(0.0,     lsdz->residual(e2), 1e-8);
+  DOUBLES_EQUAL(0.0,     lsdz->residual(e3), 1e-8);
+  DOUBLES_EQUAL(0.00005, lsdz->residual(e4), 1e-8);
+  DOUBLES_EQUAL(40.5,    lsdz->residual(e5), 1e-8);
 }
 
 /* ************************************************************************* */
@@ -548,6 +577,31 @@ TEST(NoiseModel, robustNoiseDCS)
   DOUBLES_EQUAL(a01, A(0,1), 1e-8);
   DOUBLES_EQUAL(sqrt_weight*a10, A(1,0), 1e-8);
   DOUBLES_EQUAL(sqrt_weight*a11, A(1,1), 1e-8);
+}
+
+TEST(NoiseModel, robustNoiseL2WithDeadZone)
+{
+  double dead_zone_size = 1.0;
+  SharedNoiseModel robust = noiseModel::Robust::Create(
+    noiseModel::mEstimator::L2WithDeadZone::Create(dead_zone_size),
+    Unit::Create(3));
+
+/*
+ * TODO(mike): There is currently a bug in GTSAM, where none of the mEstimator classes
+ * implement a residual function, and GTSAM calls the weight function to evaluate the
+ * total penalty, rather than calling the residual function. The weight function should be
+ * used during iteratively reweighted least squares optimization, but should not be used to
+ * evaluate the total penalty. The long-term solution is for all mEstimators to implement
+ * both a weight and a residual function, and for GTSAM to call the residual function when
+ * evaluating the total penalty. This bug causes the test below to fail, so I'm leaving it
+ * commented out until the underlying bug in GTSAM is fixed.
+ *
+ * for (int i = 0; i < 5; i++) {
+ *   Vector3 error = Vector3(i, 0, 0);
+ *   DOUBLES_EQUAL(0.5*max(0,i-1)*max(0,i-1), robust->distance(error), 1e-8);
+ * }
+ */
+
 }
 
 /* ************************************************************************* */
