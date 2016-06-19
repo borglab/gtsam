@@ -10,14 +10,31 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    QPSolver.cpp
- * @brief
- * @date    Apr 15, 2014
- * @author  Duy-Nguyen Ta
+ * @file     QPParser.h
+ * @brief    QPS parser implementation
+ * @author   Ivan Dario Jimenez
+ * @date     3/5/16
  */
 
-#include <gtsam_unstable/linear/QPSolver.h>
+#pragma once
+
+#include <gtsam_unstable/linear/QP.h>
+#include <fstream>
 
 namespace gtsam {
-constexpr double QPPolicy::maxAlpha;
+
+class QPSParser {
+
+private:
+  std::string fileName_;
+  struct MPSGrammar;
+public:
+
+  QPSParser(const std::string& fileName) :
+      fileName_(findExampleDataFile(fileName)) {
+  }
+
+  QP Parse();
+};
 }
+
