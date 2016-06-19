@@ -40,15 +40,15 @@ struct NonlinearOptimizerState {
   const double error;
 
   /** The number of optimization iterations performed. */
-  const unsigned int iterations;
+  const size_t iterations;
 
   virtual ~NonlinearOptimizerState() {}
 
-  NonlinearOptimizerState(const Values& values, double error, unsigned int iterations = 0)
+  NonlinearOptimizerState(const Values& values, double error, size_t iterations = 0)
       : values(values), error(error), iterations(iterations) {}
 
   // Constructor version that takes ownership of values
-  NonlinearOptimizerState(Values&& values, double error, unsigned int iterations = 0)
+  NonlinearOptimizerState(Values&& values, double error, size_t iterations = 0)
       : values(std::move(values)), error(error), iterations(iterations) {}
 };
 

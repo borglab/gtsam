@@ -109,7 +109,7 @@ public:
   double error() const;
 
   /// return number of iterations
-  int iterations() const;
+  size_t iterations() const;
 
   /// return values
   const Values& values() const;
