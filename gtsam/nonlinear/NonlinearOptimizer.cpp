@@ -53,7 +53,7 @@ double NonlinearOptimizer::error() const {
   return state_->error;
 }
 
-int NonlinearOptimizer::iterations() const {
+size_t NonlinearOptimizer::iterations() const {
   return state_->iterations;
 }
 
