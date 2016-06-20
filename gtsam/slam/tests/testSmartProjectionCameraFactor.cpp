@@ -300,20 +300,14 @@ TEST( SmartProjectionCameraFactor, perturbPoseAndOptimizeFromSfM_tracks ) {
 
   SfM_Track track1;
   for (size_t i = 0; i < 3; ++i) {
-    SfM_Measurement measures;
-    measures.first = i + 1; // cameras are from 1 to 3
-    measures.second = measurements_cam1.at(i);
-    track1.measurements.push_back(measures);
+    track1.measurements.emplace_back(i + 1, measurements_cam1.at(i));
   }
   SmartFactor::shared_ptr smartFactor1(new SmartFactor(unit2));
   smartFactor1->add(track1);
 
   SfM_Track track2;
   for (size_t i = 0; i < 3; ++i) {
-    SfM_Measurement measures;
-    measures.first = i + 1; // cameras are from 1 to 3
-    measures.second = measurements_cam2.at(i);
-    track2.measurements.push_back(measures);
+    track2.measurements.emplace_back(i + 1, measurements_cam2.at(i));
   }
   SmartFactor::shared_ptr smartFactor2(new SmartFactor(unit2));
   smartFactor2->add(track2);
@@ -651,8 +645,7 @@ TEST( SmartProjectionCameraFactor, comparisonGeneralSfMFactor ) {
   values.insert(l1, expectedPoint); // note: we get rid of possible errors in the triangulation
   Vector e1 = sfm1.evaluateError(values.at<Camera>(c1), values.at<Point3>(l1));
   Vector e2 = sfm2.evaluateError(values.at<Camera>(c2), values.at<Point3>(l1));
-  double actualError = 0.5
-      * (e1.norm() * e1.norm() + e2.norm() * e2.norm());
+  double actualError = 0.5 * (e1.squaredNorm() + e2.squaredNorm());
   double actualErrorGraph = generalGraph.error(values);
 
   DOUBLES_EQUAL(expectedErrorGraph, actualErrorGraph, 1e-7);

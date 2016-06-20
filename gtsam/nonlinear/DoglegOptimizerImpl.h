@@ -32,7 +32,7 @@ namespace gtsam {
 struct GTSAM_EXPORT DoglegOptimizerImpl {
 
   struct GTSAM_EXPORT IterationResult {
-    double Delta;
+    double delta;
     VectorValues dx_d;
     double f_error;
   };
@@ -58,7 +58,7 @@ struct GTSAM_EXPORT DoglegOptimizerImpl {
 
   /**
    * Compute the update point for one iteration of the Dogleg algorithm, given
-   * an initial trust region radius \f$ \Delta \f$.  The trust region radius is
+   * an initial trust region radius \f$ \delta \f$.  The trust region radius is
    * adapted based on the error of a NonlinearFactorGraph \f$ f(x) \f$, and
    * depending on the update mode \c mode.
    *
@@ -80,24 +80,24 @@ struct GTSAM_EXPORT DoglegOptimizerImpl {
    * @tparam F For normal usage this will be NonlinearFactorGraph<VALUES>.
    * @tparam VALUES The Values or TupleValues to pass to F::error() to evaluate
    * the error function.
-   * @param Delta The initial trust region radius.
+   * @param delta The initial trust region radius.
    * @param mode See DoglegOptimizerImpl::TrustRegionAdaptationMode
    * @param Rd The Bayes' net or tree as described above.
    * @param f The original nonlinear factor graph with which to evaluate the
-   * accuracy of \f$ M(\delta x) \f$ to adjust \f$ \Delta \f$.
+   * accuracy of \f$ M(\delta x) \f$ to adjust \f$ \delta \f$.
    * @param x0 The linearization point about which \f$ \bayesNet \f$ was created
    * @param ordering The variable ordering used to create\f$ \bayesNet \f$
    * @param f_error The result of <tt>f.error(x0)</tt>.
-   * @return A DoglegIterationResult containing the new \c Delta, the linear
+   * @return A DoglegIterationResult containing the new \c delta, the linear
    * update \c dx_d, and the resulting nonlinear error \c f_error.
    */
   template<class M, class F, class VALUES>
   static IterationResult Iterate(
-      double Delta, TrustRegionAdaptationMode mode, const VectorValues& dx_u, const VectorValues& dx_n,
+      double delta, TrustRegionAdaptationMode mode, const VectorValues& dx_u, const VectorValues& dx_n,
       const M& Rd, const F& f, const VALUES& x0, const double f_error, const bool verbose=false);
 
   /**
-   * Compute the dogleg point given a trust region radius \f$ \Delta \f$.  The
+   * Compute the dogleg point given a trust region radius \f$ \delta \f$.  The
    * dogleg point is the intersection between the dogleg path and the trust
    * region boundary, see doc/trustregion.pdf for more details.
    *
@@ -113,30 +113,30 @@ struct GTSAM_EXPORT DoglegOptimizerImpl {
    * upper-triangular and \f$ d \f$ is a vector, in GTSAM represented as a
    * GaussianBayesNet, containing GaussianConditional s.
    *
-   * @param Delta The trust region radius
+   * @param delta The trust region radius
    * @param dx_u The steepest descent point, i.e. the Cauchy point
    * @param dx_n The Gauss-Newton point
    * @return The dogleg point \f$ \delta x_d \f$
    */
-  static VectorValues ComputeDoglegPoint(double Delta, const VectorValues& dx_u, const VectorValues& dx_n, const bool verbose=false);
+  static VectorValues ComputeDoglegPoint(double delta, const VectorValues& dx_u, const VectorValues& dx_n, const bool verbose=false);
 
   /** Compute the point on the line between the steepest descent point and the
    * Newton's method point intersecting the trust region boundary.
    * Mathematically, computes \f$ \tau \f$ such that \f$ 0<\tau<1 \f$ and
-   * \f$ \| (1-\tau)\delta x_u + \tau\delta x_n \| = \Delta \f$, where \f$ \Delta \f$
+   * \f$ \| (1-\tau)\delta x_u + \tau\delta x_n \| = \delta \f$, where \f$ \delta \f$
    * is the trust region radius.
-   * @param Delta Trust region radius
+   * @param delta Trust region radius
    * @param x_u Steepest descent minimizer
    * @param x_n Newton's method minimizer
    */
-  static VectorValues ComputeBlend(double Delta, const VectorValues& x_u, const VectorValues& x_n, const bool verbose=false);
+  static VectorValues ComputeBlend(double delta, const VectorValues& x_u, const VectorValues& x_n, const bool verbose=false);
 };
 
 
 /* ************************************************************************* */
 template<class M, class F, class VALUES>
 typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
-    double Delta, TrustRegionAdaptationMode mode, const VectorValues& dx_u, const VectorValues& dx_n,
+    double delta, TrustRegionAdaptationMode mode, const VectorValues& dx_u, const VectorValues& dx_n,
     const M& Rd, const F& f, const VALUES& x0, const double f_error, const bool verbose)
 {
   gttic(M_error);
@@ -151,10 +151,10 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
   while(stay) {
     gttic(Dog_leg_point);
     // Compute dog leg point
-    result.dx_d = ComputeDoglegPoint(Delta, dx_u, dx_n, verbose);
+    result.dx_d = ComputeDoglegPoint(delta, dx_u, dx_n, verbose);
     gttoc(Dog_leg_point);
 
-    if(verbose) std::cout << "Delta = " << Delta << ", dx_d_norm = " << result.dx_d.norm() << std::endl;
+    if(verbose) std::cout << "delta = " << delta << ", dx_d_norm = " << result.dx_d.norm() << std::endl;
 
     gttic(retract);
     // Compute expmapped solution
@@ -174,7 +174,7 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
     if(verbose) std::cout << std::setprecision(15) << "f error: " << f_error << " -> " << result.f_error << std::endl;
     if(verbose) std::cout << std::setprecision(15) << "M error: " << M_error << " -> " << new_M_error << std::endl;
 
-    gttic(adjust_Delta);
+    gttic(adjust_delta);
     // Compute gain ratio.  Here we take advantage of the invariant that the
     // Bayes' net error at zero is equal to the nonlinear error
     const double rho = fabs(f_error - result.f_error) < 1e-15 || fabs(M_error - new_M_error) < 1e-15 ?
@@ -186,35 +186,35 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
     if(rho >= 0.75) {
       // M agrees very well with f, so try to increase lambda
       const double dx_d_norm = result.dx_d.norm();
-      const double newDelta = std::max(Delta, 3.0 * dx_d_norm); // Compute new Delta
+      const double newDelta = std::max(delta, 3.0 * dx_d_norm); // Compute new delta
 
       if(mode == ONE_STEP_PER_ITERATION || mode == SEARCH_REDUCE_ONLY)
-        stay = false;   // If not searching, just return with the new Delta
+        stay = false;   // If not searching, just return with the new delta
       else if(mode == SEARCH_EACH_ITERATION) {
-        if(fabs(newDelta - Delta) < 1e-15 || lastAction == DECREASED_DELTA)
+        if(fabs(newDelta - delta) < 1e-15 || lastAction == DECREASED_DELTA)
           stay = false; // Searching, but Newton's solution is within trust region so keep the same trust region
         else {
-          stay = true;  // Searching and increased Delta, so try again to increase Delta
+          stay = true;  // Searching and increased delta, so try again to increase delta
           lastAction = INCREASED_DELTA;
         }
       } else {
         assert(false); }
 
-      Delta = newDelta; // Update Delta from new Delta
+      delta = newDelta; // Update delta from new delta
 
     } else if(0.75 > rho && rho >= 0.25) {
-      // M agrees so-so with f, keep the same Delta
+      // M agrees so-so with f, keep the same delta
       stay = false;
 
     } else if(0.25 > rho && rho >= 0.0) {
-      // M does not agree well with f, decrease Delta until it does
+      // M does not agree well with f, decrease delta until it does
       double newDelta;
       bool hitMinimumDelta;
-      if(Delta > 1e-5) {
-        newDelta = 0.5 * Delta;
+      if(delta > 1e-5) {
+        newDelta = 0.5 * delta;
         hitMinimumDelta = false;
       } else {
-        newDelta = Delta;
+        newDelta = delta;
         hitMinimumDelta = true;
       }
       if(mode == ONE_STEP_PER_ITERATION || /* mode == SEARCH_EACH_ITERATION && */ lastAction == INCREASED_DELTA || hitMinimumDelta)
@@ -225,19 +225,19 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
       } else {
         assert(false); }
 
-      Delta = newDelta; // Update Delta from new Delta
+      delta = newDelta; // Update delta from new delta
 
     } else {
-      // f actually increased, so keep decreasing Delta until f does not decrease.
+      // f actually increased, so keep decreasing delta until f does not decrease.
       // NOTE:  NaN and Inf solutions also will fall into this case, so that we
-      // decrease Delta if the solution becomes undetermined.
+      // decrease delta if the solution becomes undetermined.
       assert(0.0 > rho);
-      if(Delta > 1e-5) {
-        Delta *= 0.5;
+      if(delta > 1e-5) {
+        delta *= 0.5;
         stay = true;
         lastAction = DECREASED_DELTA;
       } else {
-        if(verbose) std::cout << "Warning:  Dog leg stopping because cannot decrease error with minimum Delta" << std::endl;
+        if(verbose) std::cout << "Warning:  Dog leg stopping because cannot decrease error with minimum delta" << std::endl;
         result.dx_d.setZero(); // Set delta to zero - don't allow error to increase
         result.f_error = f_error;
         stay = false;
@@ -247,7 +247,7 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
   }
 
   // dx_d and f_error have already been filled in during the loop
-  result.Delta = Delta;
+  result.delta = delta;
   return result;
 }
 

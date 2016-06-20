@@ -40,6 +40,14 @@ inline Point3_ transform_from(const Pose3_& x, const Point3_& p) {
   return Point3_(x, &Pose3::transform_from, p);
 }
 
+inline Point3_ rotate(const Rot3_& x, const Point3_& p) {
+  return Point3_(x, &Rot3::rotate, p);
+}
+
+inline Point3_ unrotate(const Rot3_& x, const Point3_& p) {
+  return Point3_(x, &Rot3::unrotate, p);
+}
+
 // Projection
 
 typedef Expression<Cal3_S2> Cal3_S2_;
@@ -58,40 +66,37 @@ inline Point2_ project(const Unit3_& p_cam) {
 
 namespace internal {
 // Helper template for project2 expression below
-template<class CAMERA, class POINT>
-Point2 project4(const CAMERA& camera, const POINT& p,
-    OptionalJacobian<2, CAMERA::dimension> Dcam,
-    OptionalJacobian<2, FixedDimension<POINT>::value> Dpoint) {
+template <class CAMERA, class POINT>
+Point2 project4(const CAMERA& camera, const POINT& p, OptionalJacobian<2, CAMERA::dimension> Dcam,
+                OptionalJacobian<2, FixedDimension<POINT>::value> Dpoint) {
   return camera.project2(p, Dcam, Dpoint);
 }
 }
 
-template<class CAMERA, class POINT>
-Point2_ project2(const Expression<CAMERA>& camera_,
-    const Expression<POINT>& p_) {
+template <class CAMERA, class POINT>
+Point2_ project2(const Expression<CAMERA>& camera_, const Expression<POINT>& p_) {
   return Point2_(internal::project4<CAMERA, POINT>, camera_, p_);
 }
 
 namespace internal {
 // Helper template for project3 expression below
-template<class CALIBRATION, class POINT>
+template <class CALIBRATION, class POINT>
 inline Point2 project6(const Pose3& x, const Point3& p, const Cal3_S2& K,
-    OptionalJacobian<2, 6> Dpose, OptionalJacobian<2, 3> Dpoint,
-    OptionalJacobian<2, 5> Dcal) {
+                       OptionalJacobian<2, 6> Dpose, OptionalJacobian<2, 3> Dpoint,
+                       OptionalJacobian<2, 5> Dcal) {
   return PinholeCamera<Cal3_S2>(x, K).project(p, Dpose, Dpoint, Dcal);
 }
 }
 
-template<class CALIBRATION, class POINT>
+template <class CALIBRATION, class POINT>
 inline Point2_ project3(const Pose3_& x, const Expression<POINT>& p,
-    const Expression<CALIBRATION>& K) {
+                        const Expression<CALIBRATION>& K) {
   return Point2_(internal::project6<CALIBRATION, POINT>, x, p, K);
 }
 
-template<class CALIBRATION>
+template <class CALIBRATION>
 Point2_ uncalibrate(const Expression<CALIBRATION>& K, const Point2_& xy_hat) {
   return Point2_(K, &CALIBRATION::uncalibrate, xy_hat);
 }
 
-} // \namespace gtsam
-
+}  // \namespace gtsam

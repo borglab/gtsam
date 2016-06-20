@@ -112,7 +112,8 @@ std::pair<NonlinearFactorGraph, Values> triangulationGraph(
   Values values;
   values.insert(landmarkKey, initialEstimate); // Initial landmark value
   NonlinearFactorGraph graph;
-  static SharedNoiseModel unit(noiseModel::Unit::Create(CAMERA::Measurement::dimension));
+  static SharedNoiseModel unit(noiseModel::Unit::Create(
+      traits<typename CAMERA::Measurement>::dimension));
   for (size_t i = 0; i < measurements.size(); i++) {
     const CAMERA& camera_i = cameras[i];
     graph.push_back(TriangulationFactor<CAMERA> //
@@ -457,7 +458,7 @@ TriangulationResult triangulateSafe(const std::vector<CAMERA>& cameras,
       for(const CAMERA& camera: cameras) {
         const Pose3& pose = camera.pose();
         if (params.landmarkDistanceThreshold > 0
-            && distance(pose.translation(), point)
+            && distance3(pose.translation(), point)
                 > params.landmarkDistanceThreshold)
           return TriangulationResult::Degenerate();
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
@@ -471,7 +472,7 @@ TriangulationResult triangulateSafe(const std::vector<CAMERA>& cameras,
         if (params.dynamicOutlierRejectionThreshold > 0) {
           const Point2& zi = measured.at(i);
           Point2 reprojectionError(camera.project(point) - zi);
-          totalReprojError += reprojectionError.vector().norm();
+          totalReprojError += reprojectionError.norm();
         }
         i += 1;
       }

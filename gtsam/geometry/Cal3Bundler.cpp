@@ -106,7 +106,7 @@ Point2 Cal3Bundler::calibrate(const Point2& pi, const double tol) const {
   const int maxIterations = 10;
   int iteration;
   for (iteration = 0; iteration < maxIterations; ++iteration) {
-    if (uncalibrate(pn).distance(pi) <= tol)
+    if (distance2(uncalibrate(pn), pi) <= tol)
       break;
     const double x = pn.x(), y = pn.y(), xx = x * x, yy = y * y;
     const double rr = xx + yy;

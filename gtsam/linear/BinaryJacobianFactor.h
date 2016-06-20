@@ -73,12 +73,12 @@ struct BinaryJacobianFactor: JacobianFactor {
       Eigen::Block<const Matrix, M, 1> b(Ab, 0, N1 + N2);
 
       // We perform I += A'*A to the upper triangle
-      (*info)(slot1, slot1).selfadjointView().rankUpdate(A1.transpose());
-      (*info)(slot1, slot2).knownOffDiagonal() += A1.transpose() * A2;
-      (*info)(slot1, slotB).knownOffDiagonal() += A1.transpose() * b;
-      (*info)(slot2, slot2).selfadjointView().rankUpdate(A2.transpose());
-      (*info)(slot2, slotB).knownOffDiagonal() += A2.transpose() * b;
-      (*info)(slotB, slotB)(0, 0) += b.transpose() * b;
+      info->diagonalBlock(slot1).rankUpdate(A1.transpose());
+      info->updateOffDiagonalBlock(slot1, slot2, A1.transpose() * A2);
+      info->updateOffDiagonalBlock(slot1, slotB, A1.transpose() * b);
+      info->diagonalBlock(slot2).rankUpdate(A2.transpose());
+      info->updateOffDiagonalBlock(slot2, slotB, A2.transpose() * b);
+      info->updateDiagonalBlock(slotB, b.transpose() * b);
     }
   }
 };

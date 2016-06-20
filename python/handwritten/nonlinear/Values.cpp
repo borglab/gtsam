@@ -47,6 +47,8 @@ void exportValues(){
   void  (Values::*insert_pose3) (Key, const gtsam::Pose3&) = &Values::insert;
   void  (Values::*insert_bias) (Key, const Bias&) = &Values::insert;
   void  (Values::*insert_navstate) (Key, const NavState&) = &Values::insert;
+  void  (Values::*insert_vector) (Key, const gtsam::Vector&) = &Values::insert;
+  void  (Values::*insert_vector2) (Key, const gtsam::Vector2&) = &Values::insert;
   void  (Values::*insert_vector3) (Key, const gtsam::Vector3&) = &Values::insert;
 
   class_<Values>("Values", init<>())
@@ -67,6 +69,8 @@ void exportValues(){
   .def("insert", insert_pose3)
   .def("insert", insert_bias)
   .def("insert", insert_navstate)
+  .def("insert", insert_vector)
+  .def("insert", insert_vector2)
   .def("insert", insert_vector3)
   .def("atPoint2", &Values::at<Point2>)
   .def("atRot2", &Values::at<Rot2>)
@@ -76,6 +80,8 @@ void exportValues(){
   .def("atPose3", &Values::at<Pose3>)
   .def("atConstantBias", &Values::at<Bias>)
   .def("atNavState", &Values::at<NavState>)
+  .def("atVector", &Values::at<Vector>)
+  .def("atVector2", &Values::at<Vector2>)
   .def("atVector3", &Values::at<Vector3>)
   .def("exists", exists1)
   .def("keys", &Values::keys)

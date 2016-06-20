@@ -146,6 +146,12 @@ namespace gtsam {
     /** Copy constructor duplicates all keys and values */
     Values(const Values& other);
 
+    /** Move constructor */
+    Values(Values&& other);
+
+    /** Construct from a Values and an update vector: identical to other.retract(delta) */
+    Values(const Values& other, const VectorValues& delta);
+
     /** Constructor from a Filtered view copies out all values */
     template<class ValueType>
     Values(const Filtered<ValueType>& view);

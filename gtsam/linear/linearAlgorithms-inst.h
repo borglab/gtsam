@@ -57,8 +57,8 @@ namespace gtsam
           // Take any ancestor results we'll need
           for(Key parent: clique->conditional_->parents())
             myData.cliqueResults.insert(std::make_pair(parent, myData.parentData->cliqueResults.at(parent)));
+
           // Solve and store in our results
-          //collectedResult.insert(clique->conditional()->solve(collectedResult/*myData.ancestorResults*/));
           {
             GaussianConditional& c = *clique->conditional();
             // Solve matrix
@@ -82,17 +82,24 @@ namespace gtsam
                 vectorPos += parentVector.size();
               }
             }
-            xS = c.getb() - c.get_S() * xS;
-            Vector soln = c.get_R().triangularView<Eigen::Upper>().solve(xS);
+
+            // NOTE(gareth): We can no longer write: xS = b - S * xS
+            // This is because Eigen (as of 3.3) no longer evaluates S * xS into
+            // a temporary, and the operation trashes valus in xS.
+            // See: http://eigen.tuxfamily.org/index.php?title=3.3
+            const Vector rhs = c.getb() - c.get_S() * xS;
+
+            // TODO(gareth): Inline instantiation of Eigen::Solve and check flag
+            const Vector solution = c.get_R().triangularView<Eigen::Upper>().solve(rhs);
 
             // Check for indeterminant solution
-            if(soln.hasNaN()) throw IndeterminantLinearSystemException(c.keys().front());
+            if(solution.hasNaN()) throw IndeterminantLinearSystemException(c.keys().front());
 
             // Insert solution into a VectorValues
             DenseIndex vectorPosition = 0;
             for(GaussianConditional::const_iterator frontal = c.beginFrontals(); frontal != c.endFrontals(); ++frontal) {
               VectorValues::const_iterator r =
-                collectedResult.insert(*frontal, soln.segment(vectorPosition, c.getDim(frontal)));
+                collectedResult.insert(*frontal, solution.segment(vectorPosition, c.getDim(frontal)));
               myData.cliqueResults.insert(make_pair(r->first, r));
               vectorPosition += c.getDim(frontal);
             }

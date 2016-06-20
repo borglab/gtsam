@@ -62,11 +62,11 @@ int main(int argc, char* argv[]) {
     // readBAL converts to GTSAM format, so we need to convert back !
     Pose3 openGLpose = gtsam2openGL(camera.pose());
     Vector9 v9;
-    v9 << Pose3::Logmap(openGLpose), camera.calibration().vector();
+    v9 << Pose3::Logmap(openGLpose), camera.calibration();
     initial.insert(C(i++), v9);
   }
   for (const SfM_Track& track: db.tracks) {
-    Vector3 v3 = track.p.vector();
+    Vector3 v3 = track.p;
     initial.insert(P(j++), v3);
   }
 

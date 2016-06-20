@@ -80,7 +80,7 @@ TEST(Expression, Leaves) {
 // Unary(Leaf)
 namespace unary {
 Point2 f1(const Point3& p, OptionalJacobian<2, 3> H) {
-  return Point2();
+  return Point2(0,0);
 }
 double f2(const Point3& p, OptionalJacobian<1, 3> H) {
   return 0.0;
@@ -111,24 +111,43 @@ TEST(Expression, Unary3) {
 }
 
 /* ************************************************************************* */
+class Class : public Point3 {
+ public:
+  enum {dimension = 3};
+  using Point3::Point3;
+  const Vector3& vector() const { return *this; }
+  inline static Class identity() { return Class(0,0,0); }
+  double norm(OptionalJacobian<1,3> H = boost::none) const {
+    return norm3(*this, H);
+  }
+  bool equals(const Class &q, double tol) const {
+    return (fabs(x() - q.x()) < tol && fabs(y() - q.y()) < tol && fabs(z() - q.z()) < tol);
+  }
+  void print(const string& s) const { cout << s << *this << endl;}
+};
+
+namespace gtsam {
+template<> struct traits<Class> : public internal::VectorSpace<Class> {};
+}
+
 // Nullary Method
 TEST(Expression, NullaryMethod) {
   // Create expression
-  Expression<Point3> p(67);
-  Expression<double> norm(&gtsam::norm, p);
+  Expression<Class> p(67);
+  Expression<double> norm_(p, &Class::norm);
 
   // Create Values
   Values values;
-  values.insert(67, Point3(3, 4, 5));
+  values.insert(67, Class(3, 4, 5));
 
   // Check dims as map
   std::map<Key, int> map;
-  norm.dims(map);
+  norm_.dims(map);
   LONGS_EQUAL(1, map.size());
 
   // Get value and Jacobians
   std::vector<Matrix> H(1);
-  double actual = norm.value(values, H);
+  double actual = norm_.value(values, H);
 
   // Check all
   EXPECT(actual == sqrt(50));
@@ -288,18 +307,18 @@ TEST(Expression, ternary) {
 /* ************************************************************************* */
 TEST(Expression, ScalarMultiply) {
   const Key key(67);
-  const Point3_ sum_ = 23 * Point3_(key);
+  const Point3_ expr = 23 * Point3_(key);
 
   set<Key> expected_keys = list_of(key);
-  EXPECT(expected_keys == sum_.keys());
+  EXPECT(expected_keys == expr.keys());
 
   map<Key, int> actual_dims, expected_dims = map_list_of<Key, int>(key, 3);
-  sum_.dims(actual_dims);
+  expr.dims(actual_dims);
   EXPECT(actual_dims == expected_dims);
 
   // Check dims as map
   std::map<Key, int> map;
-  sum_.dims(map);
+  expr.dims(map);
   LONGS_EQUAL(1, map.size());
 
   Values values;
@@ -307,16 +326,16 @@ TEST(Expression, ScalarMultiply) {
 
   // Check value
   const Point3 expected(23, 0, 46);
-  EXPECT(assert_equal(expected, sum_.value(values)));
+  EXPECT(assert_equal(expected, expr.value(values)));
 
   // Check value + Jacobians
   std::vector<Matrix> H(1);
-  EXPECT(assert_equal(expected, sum_.value(values, H)));
+  EXPECT(assert_equal(expected, expr.value(values, H)));
   EXPECT(assert_equal(23 * I_3x3, H[0]));
 }
 
 /* ************************************************************************* */
-TEST(Expression, Sum) {
+TEST(Expression, BinarySum) {
   const Key key(67);
   const Point3_ sum_ = Point3_(key) + Point3_(Point3(1, 1, 1));
 
@@ -349,9 +368,31 @@ TEST(Expression, Sum) {
 TEST(Expression, TripleSum) {
   const Key key(67);
   const Point3_ p1_(Point3(1, 1, 1)), p2_(key);
-  const SumExpression<Point3> sum_ = p1_ + p2_ + p1_;
+  const Expression<Point3> sum_ = p1_ + p2_ + p1_;
 
-  LONGS_EQUAL(3, sum_.nrTerms());
+  LONGS_EQUAL(1, sum_.keys().size());
+
+  Values values;
+  values.insert<Point3>(key, Point3(2, 2, 2));
+
+  // Check value
+  const Point3 expected(4, 4, 4);
+  EXPECT(assert_equal(expected, sum_.value(values)));
+
+  // Check value + Jacobians
+  std::vector<Matrix> H(1);
+  EXPECT(assert_equal(expected, sum_.value(values, H)));
+  EXPECT(assert_equal(I_3x3, H[0]));
+}
+
+/* ************************************************************************* */
+TEST(Expression, PlusEqual) {
+  const Key key(67);
+  const Point3_ p1_(Point3(1, 1, 1)), p2_(key);
+  Expression<Point3> sum_ = p1_;
+  sum_ += p2_;
+  sum_ += p1_;
+
   LONGS_EQUAL(1, sum_.keys().size());
 
   Values values;
@@ -370,7 +411,7 @@ TEST(Expression, TripleSum) {
 /* ************************************************************************* */
 TEST(Expression, SumOfUnaries) {
   const Key key(67);
-  const Double_ norm_(&gtsam::norm, Point3_(key));
+  const Double_ norm_(&gtsam::norm3, Point3_(key));
   const Double_ sum_ = norm_ + norm_;
 
   Values values;
@@ -389,7 +430,7 @@ TEST(Expression, SumOfUnaries) {
 TEST(Expression, UnaryOfSum) {
   const Key key1(42), key2(67);
   const Point3_ sum_ = Point3_(key1) + Point3_(key2);
-  const Double_ norm_(&gtsam::norm, sum_);
+  const Double_ norm_(&gtsam::norm3, sum_);
 
   map<Key, int> actual_dims, expected_dims = map_list_of<Key, int>(key1, 3)(key2, 3);
   norm_.dims(actual_dims);

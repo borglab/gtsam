@@ -48,9 +48,7 @@ public:
   Vector evaluateError(const Pose2& pose, const Point2& point,
       boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
           boost::none) const {
-    Point2 d = pose.transform_to(point, H1, H2);
-    Point2 e = d - measured_;
-    return e.vector();
+    return pose.transform_to(point, H1, H2) - measured_;
   }
 };
 
@@ -99,12 +97,12 @@ public:
         *H3 = D_e_point_g * D_point_g_base2;
       if (H4)
         *H4 = D_e_point_g * D_point_g_point;
-      return (d - measured_).vector();
+      return d - measured_;
     } else {
       Pose2 pose_g = base1.compose(pose);
       Point2 point_g = base2.transform_from(point);
       Point2 d = pose_g.transform_to(point_g);
-      return (d - measured_).vector();
+      return d - measured_;
     }
   }
 };

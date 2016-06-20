@@ -52,6 +52,13 @@ Cal3_S2::Cal3_S2(const std::string &path) :
 }
 
 /* ************************************************************************* */
+ostream& operator<<(ostream& os, const Cal3_S2& cal) {
+  os << "{fx: " << cal.fx() << ", fy: " << cal.fy() << ", s:" << cal.skew() << ", px:" << cal.px()
+     << ", py:" << cal.py() << "}";
+  return os;
+}
+
+/* ************************************************************************* */
 void Cal3_S2::print(const std::string& s) const {
   gtsam::print((Matrix)matrix(), s);
 }

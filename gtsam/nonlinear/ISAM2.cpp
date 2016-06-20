@@ -1004,7 +1004,7 @@ void ISAM2::updateDelta(bool forceFullSolve) const
 
     gttic(Copy_dx_d);
     // Update Delta and linear step
-    doglegDelta_ = doglegResult.Delta;
+    doglegDelta_ = doglegResult.delta;
     delta_ = doglegResult.dx_d; // Copy the VectorValues containing with the linear solution
     gttoc(Copy_dx_d);
   }

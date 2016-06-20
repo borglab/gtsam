@@ -25,16 +25,7 @@
 namespace gtsam {
 
 /**  An implementation of the nonlinear CG method using the template below */
-class GTSAM_EXPORT NonlinearConjugateGradientState: public NonlinearOptimizerState {
-public:
-  typedef NonlinearOptimizerState Base;
-  NonlinearConjugateGradientState(const NonlinearFactorGraph& graph,
-      const Values& values) :
-      Base(graph, values) {
-  }
-};
-
-class GTSAM_EXPORT NonlinearConjugateGradientOptimizer: public NonlinearOptimizer {
+class GTSAM_EXPORT NonlinearConjugateGradientOptimizer : public NonlinearOptimizer {
 
   /* a class for the nonlinearConjugateGradient template */
   class System {
@@ -63,29 +54,24 @@ public:
   typedef boost::shared_ptr<NonlinearConjugateGradientOptimizer> shared_ptr;
 
 protected:
-  NonlinearConjugateGradientState state_;
   Parameters params_;
+
+  const NonlinearOptimizerParams& _params() const override {
+    return params_;
+  }
 
 public:
 
   /// Constructor
   NonlinearConjugateGradientOptimizer(const NonlinearFactorGraph& graph,
-      const Values& initialValues, const Parameters& params = Parameters()) :
-      Base(graph), state_(graph, initialValues), params_(params) {
-  }
+      const Values& initialValues, const Parameters& params = Parameters());
 
   /// Destructor
   virtual ~NonlinearConjugateGradientOptimizer() {
   }
 
-  virtual void iterate();
-  virtual const Values& optimize();
-  virtual const NonlinearOptimizerState& _state() const {
-    return state_;
-  }
-  virtual const NonlinearOptimizerParams& _params() const {
-    return params_;
-  }
+  GaussianFactorGraph::shared_ptr iterate() override;
+  const Values& optimize() override;
 };
 
 /** Implement the golden-section line search algorithm */
@@ -156,7 +142,7 @@ boost::tuple<V, int> nonlinearConjugateGradient(const S &system,
 
   // GTSAM_CONCEPT_MANIFOLD_TYPE(V);
 
-  int iteration = 0;
+  size_t iteration = 0;
 
   // check if we're already close enough
   double currentError = system.error(initial);

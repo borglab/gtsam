@@ -69,7 +69,7 @@ class ImuFactorExample(PreintegrationExample):
             # get measurements and add them to PIM
             measuredOmega = self.runner.measuredAngularVelocity(t)
             measuredAcc = self.runner.measuredSpecificForce(t)
-            pim.integrateMeasurement(measuredAcc, measuredOmega, self.dt, H9, H9)
+            pim.integrateMeasurement(measuredAcc, measuredOmega, self.dt)
             
             # Plot IMU many times
             if k % 10 == 0:

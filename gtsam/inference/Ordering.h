@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -79,7 +79,10 @@ public:
   /// it is faster to use COLAMD(const VariableIndex&)
   template<class FACTOR>
   static Ordering Colamd(const FactorGraph<FACTOR>& graph) {
-    return Colamd(VariableIndex(graph));
+    if (graph.empty())
+      return Ordering();
+    else
+      return Colamd(VariableIndex(graph));
   }
 
   /// Compute a fill-reducing ordering using COLAMD from a VariableIndex.
@@ -96,8 +99,10 @@ public:
   template<class FACTOR>
   static Ordering ColamdConstrainedLast(const FactorGraph<FACTOR>& graph,
       const std::vector<Key>& constrainLast, bool forceOrder = false) {
-    return ColamdConstrainedLast(VariableIndex(graph), constrainLast,
-        forceOrder);
+    if (graph.empty())
+      return Ordering();
+    else
+      return ColamdConstrainedLast(VariableIndex(graph), constrainLast, forceOrder);
   }
 
   /// Compute a fill-reducing ordering using constrained COLAMD from a VariableIndex.  This
@@ -121,8 +126,10 @@ public:
   template<class FACTOR>
   static Ordering ColamdConstrainedFirst(const FactorGraph<FACTOR>& graph,
       const std::vector<Key>& constrainFirst, bool forceOrder = false) {
-    return ColamdConstrainedFirst(VariableIndex(graph), constrainFirst,
-        forceOrder);
+    if (graph.empty())
+      return Ordering();
+    else
+      return ColamdConstrainedFirst(VariableIndex(graph), constrainFirst, forceOrder);
   }
 
   /// Compute a fill-reducing ordering using constrained COLAMD from a VariableIndex.  This
@@ -148,7 +155,10 @@ public:
   template<class FACTOR>
   static Ordering ColamdConstrained(const FactorGraph<FACTOR>& graph,
       const FastMap<Key, int>& groups) {
-    return ColamdConstrained(VariableIndex(graph), groups);
+    if (graph.empty())
+      return Ordering();
+    else
+      return ColamdConstrained(VariableIndex(graph), groups);
   }
 
   /// Compute a fill-reducing ordering using constrained COLAMD from a VariableIndex.  In this
@@ -190,6 +200,8 @@ public:
   template<class FACTOR>
   static Ordering Create(OrderingType orderingType,
       const FactorGraph<FACTOR>& graph) {
+    if (graph.empty())
+      return Ordering();
 
     switch (orderingType) {
     case COLAMD:

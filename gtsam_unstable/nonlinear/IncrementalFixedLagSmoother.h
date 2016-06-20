@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -117,7 +117,7 @@ protected:
   void eraseKeysBefore(double timestamp);
 
   /** Fill in an iSAM2 ConstrainedKeys structure such that the provided keys are eliminated before all others */
-  void createOrderingConstraints(const std::set<Key>& marginalizableKeys,
+  void createOrderingConstraints(const KeyVector& marginalizableKeys,
       boost::optional<FastMap<Key, int> >& constrainedKeys) const;
 
 private:

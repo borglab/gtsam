@@ -33,8 +33,8 @@ namespace gtsam {
  */
 class GTSAM_EXPORT Symbol {
 protected:
-  const unsigned char c_;
-  const std::uint64_t j_;
+  unsigned char c_;
+  std::uint64_t j_;
 
 public:
 

@@ -354,3 +354,5 @@ namespace gtsam {
   }; // FactorGraph
 
 } // namespace gtsam
+
+#include <gtsam/inference/FactorGraph-inst.h>

@@ -47,12 +47,21 @@ namespace gtsam {
   VectorValues::VectorValues(const Vector& x, const Dims& dims) {
     typedef pair<Key, size_t> Pair;
     size_t j = 0;
-    for(const Pair& v: dims) {
+    for (const Pair& v : dims) {
       Key key;
       size_t n;
       boost::tie(key, n) = v;
-      values_.insert(make_pair(key, x.segment(j,n)));
+      values_.insert(make_pair(key, x.segment(j, n)));
       j += n;
+    }
+  }
+
+  /* ************************************************************************* */
+  VectorValues::VectorValues(const Vector& x, const Scatter& scatter) {
+    size_t j = 0;
+    for (const SlotEntry& v : scatter) {
+      values_.insert(make_pair(v.key, x.segment(j, v.dimension)));
+      j += v.dimension;
     }
   }
 

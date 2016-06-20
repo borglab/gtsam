@@ -104,10 +104,10 @@ JacobianFactor::JacobianFactor(const Key i1, const Matrix& A1, Key i2,
 /* ************************************************************************* */
 JacobianFactor::JacobianFactor(const HessianFactor& factor) :
     Base(factor), Ab_(
-        VerticalBlockMatrix::LikeActiveViewOf(factor.matrixObject(),
+        VerticalBlockMatrix::LikeActiveViewOf(factor.info(),
             factor.rows())) {
   // Copy Hessian into our matrix and then do in-place Cholesky
-  Ab_.full() = factor.matrixObject().full();
+  Ab_.full() = factor.info().selfadjointView();
 
   // Do Cholesky to get a Jacobian
   size_t maxrank;
@@ -532,10 +532,10 @@ void JacobianFactor::updateHessian(const FastVector<Key>& infoKeys,
       // Fill off-diagonal blocks with Ai'*Aj
       for (DenseIndex i = 0; i < j; ++i) {
         const DenseIndex I = slots[i];  // because i<j, slots[i] is valid.
-        (*info)(I, J).knownOffDiagonal() += Ab_(i).transpose() * Ab_j;
+        info->updateOffDiagonalBlock(I, J, Ab_(i).transpose() * Ab_j);
       }
       // Fill diagonal block with Aj'*Aj
-      (*info)(J, J).selfadjointView().rankUpdate(Ab_j.transpose());
+      info->diagonalBlock(J).rankUpdate(Ab_j.transpose());
     }
   }
 }
